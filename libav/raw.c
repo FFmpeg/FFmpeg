@@ -84,27 +84,25 @@ static int raw_read_header(AVFormatContext *s,
     return 0;
 }
 
-#define MIN_SIZE 1024
+#define RAW_PACKET_SIZE 1024
 
 int raw_read_packet(AVFormatContext *s,
                     AVPacket *pkt)
 {
-    int packet_size, n, ret;
+    int ret;
 
-    if (url_feof(&s->pb))
-        return -EIO;
-
-    packet_size = url_get_packet_size(&s->pb);
-    n = MIN_SIZE / packet_size;
-    if (n <= 0)
-        n = 1;
-    if (av_new_packet(pkt, n * packet_size) < 0)
+    if (av_new_packet(pkt, RAW_PACKET_SIZE) < 0)
         return -EIO;
 
     pkt->stream_index = 0;
-    ret = get_buffer(&s->pb, pkt->data, pkt->size);
-    if (ret < 0)
+    ret = get_buffer(&s->pb, pkt->data, RAW_PACKET_SIZE);
+    if (ret <= 0) {
         av_free_packet(pkt);
+        return -EIO;
+    }
+    /* note: we need to modify the packet size here to handle the last
+       packet */
+    pkt->size = ret;
     return ret;
 }
 
