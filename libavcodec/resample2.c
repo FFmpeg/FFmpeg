@@ -141,7 +141,7 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
     c->phase_mask= phase_count-1;
     c->linear= linear;
 
-    c->filter_length= ceil(filter_size/factor);
+    c->filter_length= FFMAX(ceil(filter_size/factor), 1);
     c->filter_bank= av_mallocz(c->filter_length*(phase_count+1)*sizeof(FELEM));
     av_build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, 1);
     memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
@@ -194,6 +194,22 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
     int dst_incr=      c->dst_incr / c->src_incr;
     int compensation_distance= c->compensation_distance;
     
+  if(compensation_distance == 0 && c->filter_length == 1 && c->phase_shift==0){
+        assert(index >= 0);
+        for(dst_index=0; dst_index < dst_size; dst_index++){
+            if(index < src_size)
+                dst[dst_index] = src[index];
+            else
+                break;
+
+            frac += dst_incr_frac;
+            index += dst_incr;
+            if(frac >= c->src_incr){
+                frac -= c->src_incr;
+                index++;
+            }
+        }
+  }else{
     for(dst_index=0; dst_index < dst_size; dst_index++){
         FELEM *filter= c->filter_bank + c->filter_length*(index & c->phase_mask);
         int sample_index= index >> c->phase_shift;
@@ -234,6 +250,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
             dst_incr=      c->ideal_dst_incr / c->src_incr;
         }
     }
+  }
     *consumed= FFMAX(index, 0) >> c->phase_shift;
     if(index>=0) index &= c->phase_mask;
 
