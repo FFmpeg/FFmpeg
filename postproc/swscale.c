@@ -132,6 +132,8 @@ untested special converters
 #define RU ((int)(-0.148*(1<<RGB2YUV_SHIFT)+0.5))
 
 extern int verbose; // defined in mplayer.c
+extern const int32_t Inverse_Table_6_9[8][4];
+
 /*
 NOTES
 Special versions: fast Y 1:1 scaling (no interpolation in y direction)
@@ -1960,6 +1962,50 @@ static void getSubSampleFactors(int *h, int *v, int format){
 	}
 }
 
+static uint16_t roundToInt16(float f){
+	     if(f<-0x7FFF) f= -0x7FFF;
+	else if(f> 0x7FFF) f=  0x7FFF;
+	
+	return (int)floor(f + 0.5);
+}
+
+/**
+ * @param colorspace colorspace
+ * @param fullRange if 1 then the luma range is 0..255 if 0 its 16..235
+ */
+void setInputColorspaceDetails(SwsContext *c, int colorspace, int fullRange, float brightness, float contrast, float saturation){
+
+	float crv =  Inverse_Table_6_9[colorspace][0]/65536.0;
+	float cbu =  Inverse_Table_6_9[colorspace][1]/65536.0;
+	float cgu = -Inverse_Table_6_9[colorspace][2]/65536.0;
+	float cgv = -Inverse_Table_6_9[colorspace][3]/65536.0;
+	float cy  = 1.0;
+	float oy  = 0;
+
+	c->uOffset=   0x0400040004000400LL;
+	c->vOffset=   0x0400040004000400LL;
+
+	if(!fullRange){
+		cy= (cy*255.0) / 219.0;
+		oy= 16.0;
+	}
+
+	cy *= contrast;
+	crv*= contrast * saturation;
+	cbu*= contrast * saturation;
+	cgu*= contrast * saturation;
+	cgv*= contrast * saturation;
+
+	oy -= 256.0*brightness;
+
+	c->yCoeff=    roundToInt16(cy *8192) * 0x0001000100010001ULL;
+	c->vrCoeff=   roundToInt16(crv*8192) * 0x0001000100010001ULL;
+	c->ubCoeff=   roundToInt16(cbu*8192) * 0x0001000100010001ULL;
+	c->vgCoeff=   roundToInt16(cgv*8192) * 0x0001000100010001ULL;
+	c->ugCoeff=   roundToInt16(cgu*8192) * 0x0001000100010001ULL;
+	c->yOffset=   roundToInt16(oy *   8) * 0x0001000100010001ULL;
+}
+
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
                          SwsFilter *srcFilter, SwsFilter *dstFilter){
 
@@ -2019,15 +2065,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	c->dstFormat= dstFormat;
 	c->srcFormat= srcFormat;
 
-	c->yCoeff=    0x2568256825682568LL;
-	c->vrCoeff=   0x3343334333433343LL;
-	c->ubCoeff=   0x40cf40cf40cf40cfLL;
-	c->vgCoeff=   0xE5E2E5E2E5E2E5E2LL;
-	c->ugCoeff=   0xF36EF36EF36EF36ELL;
-	c->yOffset=   0x0080008000800080LL;
-	c->uOffset=   0x0400040004000400LL;
-	c->vOffset=   0x0400040004000400LL;
-
+	setInputColorspaceDetails(c, SWS_CS_DEFAULT, 0, 0.0, 1.0, 1.0);
+	
 	usesFilter=0;
 	if(dstFilter->lumV!=NULL && dstFilter->lumV->length>1) usesFilter=1;
 	if(dstFilter->lumH!=NULL && dstFilter->lumH->length>1) usesFilter=1;
@@ -2677,5 +2716,4 @@ void freeSwsContext(SwsContext *c){
 
 	free(c);
 }
-
 
