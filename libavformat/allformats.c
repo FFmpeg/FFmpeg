@@ -21,8 +21,6 @@
 /* If you do not call this function, then you can select exactly which
    formats you want to support */
 
-char *video_device = "none";
-
 /**
  * Initialize libavcodec and register all the codecs and formats.
  */

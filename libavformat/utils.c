@@ -41,6 +41,8 @@ AVInputFormat *first_iformat;
 AVOutputFormat *first_oformat;
 AVImageFormat *first_image_format;
 
+const char *video_device = "none";
+
 void av_register_input_format(AVInputFormat *format)
 {
     AVInputFormat **p;

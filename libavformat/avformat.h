@@ -379,7 +379,11 @@ int filename_number_test(const char *filename);
 int video_grab_init(void);
 int audio_init(void);
 
-extern const char *v4l_device;
+/* DV1394 */
+int dv1394_init(void);
+extern int dv1394_channel;
+
+extern const char *video_device;
 extern const char *audio_device;
 
 #ifdef HAVE_AV_CONFIG_H
