@@ -1244,7 +1244,7 @@ if test "$lshared" = "yes" ; then
   echo "PIC=-fPIC" >> config.mak
 fi
 echo "EXTRALIBS=$extralibs" >> config.mak
-version=`grep '#define FFMPEG_VERSION ' $source_path/libavcodec/avcodec.h |
+version=`grep '#define FFMPEG_VERSION ' "$source_path/libavcodec/avcodec.h" |
  cut -d '"' -f 2`
 echo "VERSION=$version" >>config.mak
 # if you do not want to use encoders, disable that.
@@ -1460,10 +1460,10 @@ if test "$source_path_used" = "yes" ; then
             mkdir -p $dir
     done
     for f in $FILES ; do
-        ln -sf $source_path/$f $f
+        ln -sf "$source_path/$f" $f
     done
 fi
-echo "SRC_PATH=$source_path" >> config.mak
+echo "SRC_PATH='$source_path'" >> config.mak
 
 if test "$amr_wb" = "yes" ; then
   echo "#define AMR_WB 1" >> $TMPH

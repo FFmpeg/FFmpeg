@@ -5,14 +5,14 @@
 #
 #set -x
 # Even in the 21st century some diffs are not supporting -u.
-diff -u $0 $0 > /dev/null 2>&1
+diff -u "$0" "$0" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
   diff_cmd="diff -u"
 else
   diff_cmd="diff"
 fi
 
-diff -w $0 $0 > /dev/null 2>&1
+diff -w "$0" "$0" > /dev/null 2>&1
 if [ $? -eq 0 ]; then
   diff_cmd="$diff_cmd -w"
 fi
@@ -644,7 +644,7 @@ fi
 
 
 
-if $diff_cmd $logfile $reffile ; then
+if $diff_cmd "$logfile" "$reffile" ; then
     echo 
     echo Regression test succeeded.
     exit 0
