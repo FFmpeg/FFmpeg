@@ -38,5 +38,7 @@
 #define STREAM_TYPE_PRIVATE_SECTION 0x05
 #define STREAM_TYPE_PRIVATE_DATA    0x06
 
+#define STREAM_TYPE_AUDIO_AC3       0x81
+
 unsigned int mpegts_crc32(const uint8_t *data, int len);
 extern AVOutputFormat mpegts_mux;

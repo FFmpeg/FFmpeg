@@ -405,9 +405,10 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 
 static int mpegps_probe(AVProbeData *p)
 {
-    int code;
+    int code, c, i;
     const uint8_t *d;
 
+    code = 0xff;
     /* we search the first start code. If it is a packet start code,
        then we decide it is mpeg ps. We do not send highest value to
        give a chance to mpegts */
@@ -416,20 +417,23 @@ static int mpegps_probe(AVProbeData *p)
 
     if (p->buf_size < 6)
         return 0;
-    d = p->buf;
-    code = (d[0] << 24) | (d[1] << 16) | (d[2] << 8) | (d[3]);
-    if ((code & 0xffffff00) == 0x100) {
-        if (code == PACK_START_CODE ||
-            code == SYSTEM_HEADER_START_CODE ||
-            (code >= 0x1e0 && code <= 0x1ef) ||
-            (code >= 0x1c0 && code <= 0x1df) ||
-            code == PRIVATE_STREAM_2 ||
-            code == PROGRAM_STREAM_MAP ||
-            code == PRIVATE_STREAM_1 ||
-            code == PADDING_STREAM)
-            return AVPROBE_SCORE_MAX - 1;
-        else
-            return 0;
+
+    for (i = 0; i < 20; i++) {
+        c = p->buf[i];
+        code = (code << 8) | c;
+        if ((code & 0xffffff00) == 0x100) {
+            if (code == PACK_START_CODE ||
+                code == SYSTEM_HEADER_START_CODE ||
+                (code >= 0x1e0 && code <= 0x1ef) ||
+                (code >= 0x1c0 && code <= 0x1df) ||
+                code == PRIVATE_STREAM_2 ||
+                code == PROGRAM_STREAM_MAP ||
+                code == PRIVATE_STREAM_1 ||
+                code == PADDING_STREAM)
+                return AVPROBE_SCORE_MAX - 1;
+            else
+                return 0;
+        }
     }
     return 0;
 }

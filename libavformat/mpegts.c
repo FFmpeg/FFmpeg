@@ -387,6 +387,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
         case STREAM_TYPE_AUDIO_MPEG2:
         case STREAM_TYPE_VIDEO_MPEG1:
         case STREAM_TYPE_VIDEO_MPEG2:
+        case STREAM_TYPE_AUDIO_AC3:
             add_pes_stream(ts->stream, pid);
             break;
         default:
@@ -613,16 +614,19 @@ static void mpegts_push_data(void *opaque,
                 if (pes->header[0] == 0x00 && pes->header[1] == 0x00 &&
                     pes->header[2] == 0x01) {
                     /* it must be an mpeg2 PES stream */
-                    /* XXX: add AC3 support */
                     code = pes->header[3] | 0x100;
                     if (!((code >= 0x1c0 && code <= 0x1df) ||
-                          (code >= 0x1e0 && code <= 0x1ef)))
+                          (code >= 0x1e0 && code <= 0x1ef) ||
+                          (code == 0x1bd)))
                         goto skip;
                     if (!pes->st) {
                         /* allocate stream */
                         if (code >= 0x1c0 && code <= 0x1df) {
                             codec_type = CODEC_TYPE_AUDIO;
                             codec_id = CODEC_ID_MP2;
+                        } else if (code == 0x1bd) {
+                            codec_type = CODEC_TYPE_AUDIO;
+                            codec_id = CODEC_ID_AC3;
                         } else {
                             codec_type = CODEC_TYPE_VIDEO;
                             codec_id = CODEC_ID_MPEG1VIDEO;
@@ -805,6 +809,8 @@ static int handle_packets(AVFormatContext *s, int nb_packets)
     ByteIOContext *pb = &s->pb;
     uint8_t packet[TS_FEC_PACKET_SIZE];
     int packet_num, len;
+    int i, found = 0;
+    int64_t pos;
 
     ts->stop_parse = 0;
     packet_num = 0;
@@ -814,13 +820,32 @@ static int handle_packets(AVFormatContext *s, int nb_packets)
         packet_num++;
         if (nb_packets != 0 && packet_num >= nb_packets)
             break;
+        pos = url_ftell(pb);
         len = get_buffer(pb, packet, ts->raw_packet_size);
         if (len != ts->raw_packet_size)
             return AVERROR_IO;
         /* check paquet sync byte */
-        /* XXX: accept to resync ? */
         if (packet[0] != 0x47)
-            return AVERROR_INVALIDDATA;
+        {
+           //printf("bad packet: 0x%x\n", packet[0]);
+           found = 0;
+           for (i = 0; i < ts->raw_packet_size; i++)
+           {
+               if (packet[i] == 0x47)
+               {
+                   found = 1;
+                   //printf("packet start at: %d\n", i);
+                   break;
+               }
+           }
+           
+           if (found)
+           {
+               url_fseek(pb, pos + i, SEEK_SET);
+               continue;
+           }
+           return AVERROR_INVALIDDATA;
+        }
         handle_packet(s, packet);
     }
     return 0;
