@@ -3445,9 +3445,12 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     ptr_cr = s->new_picture.data[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
 
     if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
-        ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, wrap_y, 16, 16, mb_x*16, mb_y*16, s->width, s->height);
+        ff_emulated_edge_mc(s->edge_emu_buffer            , ptr_y , wrap_y,16,16,mb_x*16,mb_y*16, s->width   , s->height);
         ptr_y= s->edge_emu_buffer;
-        emu=1;
+        ff_emulated_edge_mc(s->edge_emu_buffer+16*wrap_y  , ptr_cb, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+        ptr_cb= s->edge_emu_buffer+16*wrap_y;
+        ff_emulated_edge_mc(s->edge_emu_buffer+16*wrap_y+8, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+        ptr_cr= s->edge_emu_buffer+16*wrap_y+8;
     }
 
     if (s->mb_intra) {
@@ -3479,12 +3482,6 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             skip_dct[4]= 1;
             skip_dct[5]= 1;
         }else{
-            if(emu){ //FIXME move out of loop and fix edge_emu_buffer mess
-                ff_emulated_edge_mc(s->edge_emu_buffer, ptr_cb, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-                ptr_cb= s->edge_emu_buffer;
-                ff_emulated_edge_mc(s->edge_emu_buffer+8, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-                ptr_cr= s->edge_emu_buffer+8;
-            }
 	    s->dsp.get_pixels(s->block[4], ptr_cb, wrap_c);
             s->dsp.get_pixels(s->block[5], ptr_cr, wrap_c);
         }
@@ -3545,12 +3542,6 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             skip_dct[4]= 1;
             skip_dct[5]= 1;
         }else{
-            if(emu){
-                ff_emulated_edge_mc(s->edge_emu_buffer, ptr_cb, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-                ptr_cb= s->edge_emu_buffer;
-                ff_emulated_edge_mc(s->edge_emu_buffer+8, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-                ptr_cr= s->edge_emu_buffer+8;
-            }
             s->dsp.diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
             s->dsp.diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
         }
