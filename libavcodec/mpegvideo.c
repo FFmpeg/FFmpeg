@@ -992,7 +992,7 @@ static inline void mpeg_motion(MpegEncContext *s,
                                int motion_x, int motion_y, int h)
 {
     UINT8 *ptr;
-    int dxy, offset, mx, my, src_x, src_y, height, linesize;
+    int dxy, offset, mx, my, src_x, src_y, height, linesize, uvlinesize;
     int emu=0;
     
 if(s->quarter_sample)
@@ -1012,7 +1012,8 @@ if(s->quarter_sample)
     src_y = clip(src_y, -16, height);
     if (src_y == height)
         dxy &= ~2;
-    linesize = s->linesize << field_based;
+    linesize   = s->linesize << field_based;
+    uvlinesize = s->uvlinesize << field_based;
     ptr = ref_picture[0] + (src_y * linesize) + (src_x) + src_offset;
     dest_y += dest_offset;
 
@@ -1053,21 +1054,20 @@ if(s->quarter_sample)
     src_y = clip(src_y, -8, height >> 1);
     if (src_y == (height >> 1))
         dxy &= ~2;
-
-    offset = (src_y * s->uvlinesize) + src_x + (src_offset >> 1);
+    offset = (src_y * uvlinesize) + src_x + (src_offset >> 1);
     ptr = ref_picture[1] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s->edge_emu_buffer, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
-    pix_op[dxy](dest_cb + (dest_offset >> 1), ptr, s->uvlinesize, h >> 1);
+    pix_op[dxy](dest_cb + (dest_offset >> 1), ptr, uvlinesize, h >> 1);
 
     ptr = ref_picture[2] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s->edge_emu_buffer, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
-    pix_op[dxy](dest_cr + (dest_offset >> 1), ptr, s->uvlinesize, h >> 1);
+    pix_op[dxy](dest_cr + (dest_offset >> 1), ptr, uvlinesize, h >> 1);
 }
 
 static inline void qpel_motion(MpegEncContext *s,
