@@ -52,7 +52,7 @@ $(PPLIB): $(PPOBJS)
 install: all
 ifeq ($(SHARED_PP),yes)
 ifeq ($(CONFIG_WIN32),yes)
-       install $(INSTALLSTRIP) -m 755 $(SPPLIB) "$(prefix)"
+	install $(INSTALLSTRIP) -m 755 $(SPPLIB) "$(prefix)"
 else
 	install -d $(libdir)
 	install $(INSTALLSTRIP) -m 755 $(SPPLIB) $(libdir)/$(SPPLIB).$(SPPVERSION)
