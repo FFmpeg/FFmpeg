@@ -515,9 +515,9 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
     put_be16(pb, 1); /* Frame count (= 1) */
     
     memset(compressor_name,0,32);
-    if (track->enc->codec->name)
+    if (track->enc->codec && track->enc->codec->name)
         strncpy(compressor_name,track->enc->codec->name,31);
-    put_byte(pb, FFMAX(strlen(compressor_name),32) );
+    put_byte(pb, strlen(compressor_name));
     put_buffer(pb, compressor_name, 31);
     
     put_be16(pb, 0x18); /* Reserved */
