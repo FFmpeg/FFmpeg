@@ -137,6 +137,9 @@ typedef struct Vp3Fragment {
     int last_coeff;
     int motion_x;
     int motion_y;
+    /* this indicates which ffmpeg put_pixels() function to use:
+     * 00b = no halfpel, 01b = x halfpel, 10b = y halfpel, 11b = both halfpel */
+    int motion_halfpel_index;
     /* address of first pixel taking into account which plane the fragment
      * lives on as well as the plane stride */
     int first_pixel;
@@ -1321,7 +1324,55 @@ static void unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
             }
         }
     }
+}
 
+/*
+ * This function adjusts the components of a motion vector for the halfpel
+ * motion grid. c_plane indicates whether the vector applies to the U or V
+ * plane. The function returns the halfpel function index to be used in
+ * ffmpeg's put_pixels[]() array of functions.
+ */
+static inline int adjust_vector(int *x, int *y, int c_plane)
+{
+    int motion_halfpel_index = 0;
+    int x_halfpel;
+    int y_halfpel;
+
+    if (!c_plane) {
+
+        x_halfpel = *x & 1;
+        motion_halfpel_index |= x_halfpel;
+        if (*x >= 0)
+            *x >>= 1;
+        else
+            *x = -( (-(*x) >> 1) + x_halfpel);
+
+        y_halfpel = *y & 1;
+        motion_halfpel_index |= (y_halfpel << 1);
+        if (*y >= 0)
+            *y >>= 1;
+        else
+            *y = -( (-(*y) >> 1) + y_halfpel);
+
+    } else {
+
+        x_halfpel = ((*x & 0x03) != 0);
+        motion_halfpel_index |= x_halfpel;
+        if (*x >= 0)
+            *x >>= 2;
+        else
+            *x = -( (-(*x) >> 2) + x_halfpel);
+
+        y_halfpel = ((*y & 0x03) != 0);
+        motion_halfpel_index |= (y_halfpel << 1);
+        if (*y >= 0)
+            *y >>= 2;
+        else
+            *y = -( (-(*y) >> 2) + y_halfpel);
+
+    }
+
+    return motion_halfpel_index;
 }
 
 /*
@@ -1460,6 +1511,14 @@ static void unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                     last_motion_x = motion_x[0];
                     last_motion_y = motion_y[0];
                     break;
+
+                default:
+                    /* covers intra, inter without MV, golden without MV */
+                    memset(motion_x, 0, 6 * sizeof(int));
+                    memset(motion_y, 0, 6 * sizeof(int));
+
+                    /* no vector maintenance */
+                    break;
                 }
 
                 /* assign the motion vectors to the correct fragments */
@@ -1469,10 +1528,14 @@ static void unpack_vectors(Vp3DecodeContext *s, GetBitContext *gb)
                 for (k = 0; k < 6; k++) {
                     current_fragment = 
                         s->macroblock_fragments[current_macroblock * 6 + k];
+                    s->all_fragments[current_fragment].motion_halfpel_index =
+                        adjust_vector(&motion_x[k], &motion_y[k],
+                        ((k == 4) || (k == 5)));
                     s->all_fragments[current_fragment].motion_x = motion_x[k];
-                    s->all_fragments[current_fragment].motion_x = motion_y[k];
-                    debug_vectors("    vector %d: fragment %d = (%d, %d)\n",
-                        k, current_fragment, motion_x[k], motion_y[k]);
+                    s->all_fragments[current_fragment].motion_y = motion_y[k];
+                    debug_vectors("    vector %d: fragment %d = (%d, %d), index %d\n",
+                        k, current_fragment, motion_x[k], motion_y[k],
+                        s->all_fragments[current_fragment].motion_halfpel_index);
                 }
             }
         }
@@ -1942,8 +2005,8 @@ static void reverse_dc_prediction(Vp3DecodeContext *s,
  */
 static void render_fragments(Vp3DecodeContext *s,
                              int first_fragment,
-                             int fragment_width,
-                             int fragment_height,
+                             int width,
+                             int height,
                              int plane /* 0 = Y, 1 = U, 2 = V */) 
 {
     int x, y;
@@ -1956,6 +2019,10 @@ static void render_fragments(Vp3DecodeContext *s,
     unsigned char *last_plane;
     unsigned char *golden_plane;
     int stride;
+    int motion_x, motion_y;
+    int motion_x_limit, motion_y_limit;
+    int motion_halfpel_index;
+    unsigned char *motion_source;
 
     debug_vp3("  vp3: rendering final fragments for %s\n",
         (plane == 0) ? "Y plane" : (plane == 1) ? "U plane" : "V plane");
@@ -1981,22 +2048,70 @@ static void render_fragments(Vp3DecodeContext *s,
         stride = -s->current_frame.linesize[2];
     }
 
+    motion_x_limit = width - 8;
+    motion_y_limit = height - 8;
+
     /* for each fragment row... */
-    for (y = 0; y < fragment_height; y++) {
+    for (y = 0; y < height; y += 8) {
 
         /* for each fragment in a row... */
-        for (x = 0; x < fragment_width; x++, i++) {
+        for (x = 0; x < width; x += 8, i++) {
 
             /* transform if this block was coded */
-            if (s->all_fragments[i].coding_method == MODE_INTRA) {
+            if (s->all_fragments[i].coding_method != MODE_COPY) {
+//            if (s->all_fragments[i].coding_method == MODE_INTRA) {
+
+                /* sort out the motion vector */
+                motion_x = x + s->all_fragments[i].motion_x;
+                motion_y = y + s->all_fragments[i].motion_y;
+                motion_halfpel_index = s->all_fragments[i].motion_halfpel_index;
+
+                if (motion_x < 0)
+                    motion_x = 0;
+                if (motion_y < 0)
+                    motion_y = 0;
+                if (motion_x > motion_x_limit)
+                    motion_x = motion_x_limit;
+                if (motion_y > motion_y_limit)
+                    motion_y = motion_y_limit;
+
+                /* first, take care of copying a block from either the
+                 * previous or the golden frame */
+                if ((s->all_fragments[i].coding_method == MODE_USING_GOLDEN) ||
+                    (s->all_fragments[i].coding_method == MODE_GOLDEN_MV)) {
+
+                    motion_source = golden_plane;
+                    motion_source += motion_x;
+                    motion_source += (motion_y * -stride);
+
+                    s->dsp.put_pixels_tab[1][motion_halfpel_index](
+                        output_plane + s->all_fragments[i].first_pixel,
+                        motion_source,
+                        stride, 8);
+
+                } else 
+                if (s->all_fragments[i].coding_method != MODE_INTRA) {
+
+                    motion_source = last_plane;
+                    motion_source += motion_x;
+                    motion_source += (motion_y * -stride);
+
+                    s->dsp.put_pixels_tab[1][motion_halfpel_index](
+                        output_plane + s->all_fragments[i].first_pixel,
+                        motion_source,
+                        stride, 8);
+                }
+
                 /* dequantize the DCT coefficients */
+                debug_idct("fragment %d, coding mode %d, DC = %d, dequant = %d:\n", 
+                    i, s->all_fragments[i].coding_method, 
+                    s->all_fragments[i].coeffs[0], dequantizer[0]);
                 for (j = 0; j < 64; j++)
                     dequant_block[dequant_index[j]] =
                         s->all_fragments[i].coeffs[j] *
                         dequantizer[j];
                 dequant_block[0] += 1024;
 
-                debug_idct("fragment %d:\n", i);
                 debug_idct("dequantized block:\n");
                 for (m = 0; m < 8; m++) {
                     for (n = 0; n < 8; n++) {
@@ -2007,32 +2122,36 @@ static void render_fragments(Vp3DecodeContext *s,
                 debug_idct("\n");
 
                 /* invert DCT and place in final output */
-                s->dsp.idct_put(
-                    output_plane + s->all_fragments[i].first_pixel,
-                    stride, dequant_block);
 
-/*
-                debug_idct("idct block:\n");
+                if (s->all_fragments[i].coding_method == MODE_INTRA)
+                    s->dsp.idct_put(
+                        output_plane + s->all_fragments[i].first_pixel,
+                        stride, dequant_block);
+                else
+//                    s->dsp.idct_add(
+                    s->dsp.idct_put(
+                        output_plane + s->all_fragments[i].first_pixel,
+                        stride, dequant_block);
+
+                debug_idct("block after idct_%s():\n",
+                    (s->all_fragments[i].coding_method == MODE_INTRA)?
+                    "put" : "add");
                 for (m = 0; m < 8; m++) {
                     for (n = 0; n < 8; n++) {
-                        debug_idct(" %3d", pixels[m * 8 + n]);
+                        debug_idct(" %3d", *(output_plane + 
+                            s->all_fragments[i].first_pixel + (m * stride + n)));
                     }
                     debug_idct("\n");
                 }
                 debug_idct("\n");
-*/
-            } else if (s->all_fragments[i].coding_method == MODE_COPY) {
-
-                /* copy directly from the previous frame */
-                for (m = 0; m < 8; m++)
-                    memcpy(
-                        output_plane + s->all_fragments[i].first_pixel + stride * m,
-                        last_plane + s->all_fragments[i].first_pixel + stride * m,
-                        8);
 
             } else {
 
-                /* carry out the motion compensation */
+                /* copy directly from the previous frame */
+                s->dsp.put_pixels_tab[1][0](
+                    output_plane + s->all_fragments[i].first_pixel,
+                    last_plane + s->all_fragments[i].first_pixel,
+                    stride, 8);
 
             }
         }
@@ -2187,10 +2306,10 @@ static int vp3_decode_init(AVCodecContext *avctx)
     s->macroblock_coded = av_malloc(s->macroblock_count + 1);
     init_block_mapping(s);
 
-    /* make sure that frames are available to be freed on the first decode */
-    if(avctx->get_buffer(avctx, &s->golden_frame) < 0) {
-        printf("vp3: get_buffer() failed\n");
-        return -1;
+    for (i = 0; i < 3; i++) {
+        s->current_frame.data[i] = NULL;
+        s->last_frame.data[i] = NULL;
+        s->golden_frame.data[i] = NULL;
     }
 
     return 0;
@@ -2224,7 +2343,12 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     if (s->keyframe) {
         /* release the previous golden frame and get a new one */
-        avctx->release_buffer(avctx, &s->golden_frame);
+        if (s->golden_frame.data[0])
+            avctx->release_buffer(avctx, &s->golden_frame);
+
+        /* last frame, if allocated, is hereby invalidated */
+        if (s->last_frame.data[0])
+            avctx->release_buffer(avctx, &s->last_frame);
 
         s->golden_frame.reference = 0;
         if(avctx->get_buffer(avctx, &s->golden_frame) < 0) {
@@ -2270,17 +2394,18 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     reverse_dc_prediction(s, s->v_fragment_start,
         s->fragment_width / 2, s->fragment_height / 2);
 
-    render_fragments(s, 0, s->fragment_width, s->fragment_height, 0);
-    render_fragments(s, s->u_fragment_start,
-        s->fragment_width / 2, s->fragment_height / 2, 1);
-    render_fragments(s, s->v_fragment_start,
-        s->fragment_width / 2, s->fragment_height / 2, 2);
+    render_fragments(s, 0, s->width, s->height, 0);
+    render_fragments(s, s->u_fragment_start, s->width / 2, s->height / 2, 1);
+    render_fragments(s, s->v_fragment_start, s->width / 2, s->height / 2, 2);
 
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data= s->current_frame;
 
-    /* release the last frame, if it was allocated */
-    avctx->release_buffer(avctx, &s->last_frame);
+    /* release the last frame, if it is allocated and if it is not the
+     * golden frame */
+    if ((s->last_frame.data[0]) &&
+        (s->last_frame.data[0] != s->golden_frame.data[0]))
+        avctx->release_buffer(avctx, &s->last_frame);
 
     /* shuffle frames (last = current) */
     memcpy(&s->last_frame, &s->current_frame, sizeof(AVFrame));
