@@ -129,6 +129,10 @@ typedef struct MpegEncContext {
     INT64 wanted_bits;
     INT64 total_bits;
     
+    /* H.263 specific */
+    int gob_number;
+    int first_gob_line;
+    
     /* H.263+ specific */
     int umvplus;
     int umvplus_dec;

@@ -252,7 +252,7 @@ INT16 *h263_pred_motion(MpegEncContext * s, int block,
     mot_val = s->motion_val[(x) + (y) * wrap];
 
     /* special case for first line */
-    if (y == 1 || s->first_slice_line) {
+    if (y == 1 || s->first_slice_line || s->first_gob_line) {
         A = s->motion_val[(x-1) + (y) * wrap];
         *px = A[0];
         *py = A[1];
@@ -779,32 +779,32 @@ int h263_decode_mb(MpegEncContext *s,
     unsigned int val;
     INT16 *mot_val;
     static INT8 quant_tab[4] = { -1, -2, 1, 2 };
-        
+    unsigned int gfid;        
+    
     /* Check for GOB Start Code */
     val = show_bits(&s->gb, 16);
     
     if (val == 0) {
         /* We have a GBSC probably with GSTUFF */
-#ifdef DEBUG
-        unsigned int gn, gfid;
-#endif
         //skip_bits(&s->gb, 16); /* Drop the zeros */
         while (get_bits1(&s->gb) == 0); /* Seek the '1' bit */
 #ifdef DEBUG
         fprintf(stderr,"\nGOB Start Code at MB %d\n", 
             (s->mb_y * s->mb_width) + s->mb_x);
-        gn = get_bits(&s->gb, 5); /* GN */
+#endif
+        s->gob_number = get_bits(&s->gb, 5); /* GN */
         gfid = get_bits(&s->gb, 2); /* GFID */
-#else
-        skip_bits(&s->gb, 5); /* GN */
-        skip_bits(&s->gb, 2); /* GFID */
-#endif        
         s->qscale = get_bits(&s->gb, 5); /* GQUANT */
 #ifdef DEBUG
         fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", gn, gfid, s->qscale);
 #endif
     }
-    
+
+    if (s->mb_y == s->gob_number)
+        s->first_gob_line = 1;
+    else
+        s->first_gob_line = 0;
+            
     if (s->pict_type == P_TYPE) {
         if (get_bits1(&s->gb)) {
             /* skip mb */
@@ -863,6 +863,9 @@ int h263_decode_mb(MpegEncContext *s,
                 return -1;
             s->mv[0][0][0] = mx;
             s->mv[0][0][1] = my;
+            /*fprintf(stderr, "\n MB %d", (s->mb_y * s->mb_width) + s->mb_x);
+            fprintf(stderr, "\n\tmvx: %d\t\tpredx: %d", mx, pred_x);
+            fprintf(stderr, "\n\tmvy: %d\t\tpredy: %d", my, pred_y);*/
             if (s->umvplus_dec && (mx - pred_x) == 1 && (my - pred_y) == 1)
                skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
                            
@@ -957,6 +960,7 @@ static int h263_decode_motion(MpegEncContext * s, int pred)
             val += 64;
         if (pred > 32 && val > 63)
             val -= 64;
+        
     }
     return val;
 }
@@ -1211,6 +1215,10 @@ int h263_decode_picture_header(MpegEncContext *s)
     skip_bits1(&s->gb);	/* camera  off */
     skip_bits1(&s->gb);	/* freeze picture release off */
 
+    /* Reset GOB data */
+    s->gob_number = 0;
+    s->first_gob_line = 0;
+    
     format = get_bits(&s->gb, 3);
 
     if (format != 7) {
