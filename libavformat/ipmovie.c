@@ -121,6 +121,8 @@ typedef struct IPMVEContext {
 
     offset_t next_chunk_offset;
 
+    AVPaletteControl palette_control;
+
 } IPMVEContext;
 
 static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb, 
@@ -165,37 +167,31 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
 
     } else if (s->decode_map_chunk_offset) {
 
+        /* send both the decode map and the video data together */
+
+        if (av_new_packet(pkt, s->decode_map_chunk_size + s->video_chunk_size))
+            return CHUNK_NOMEM;
+
         url_fseek(pb, s->decode_map_chunk_offset, SEEK_SET);
         s->decode_map_chunk_offset = 0;
 
-        if (av_new_packet(pkt, s->decode_map_chunk_size))
-            return CHUNK_NOMEM;
-
-        pkt->stream_index = s->video_stream_index;
-        pkt->pts = s->video_pts;
         if (get_buffer(pb, pkt->data, s->decode_map_chunk_size) != 
             s->decode_map_chunk_size) {
             av_free_packet(pkt);
             return CHUNK_EOF;
         }
 
-        chunk_type = CHUNK_VIDEO;
-
-    } else if (s->video_chunk_offset) {
-
         url_fseek(pb, s->video_chunk_offset, SEEK_SET);
         s->video_chunk_offset = 0;
 
-        if (av_new_packet(pkt, s->video_chunk_size))
-            return CHUNK_NOMEM;
-
-        pkt->stream_index = s->video_stream_index;
-        pkt->pts = s->video_pts;
-        if (get_buffer(pb, pkt->data, s->video_chunk_size) != 
-            s->video_chunk_size) {
+        if (get_buffer(pb, pkt->data + s->decode_map_chunk_size,
+            s->video_chunk_size) != s->video_chunk_size) {
             av_free_packet(pkt);
             return CHUNK_EOF;
         }
+
+        pkt->stream_index = s->video_stream_index;
+        pkt->pts = s->video_pts;
 
         s->video_pts += s->frame_pts_inc;
 
@@ -224,7 +220,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
     unsigned char opcode_version;
     int opcode_size;
     unsigned char scratch[1024];
-    int j;
+    int i, j;
     int first_color, last_color;
     int audio_flags;
 
@@ -456,13 +452,15 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
                 break;
             }
             j = 4;  /* offset of first palette data */
-#if 0
             for (i = first_color; i <= last_color; i++) {
-                s->palette[i].r = scratch[j++] * 4;
-                s->palette[i].g = scratch[j++] * 4;
-                s->palette[i].b = scratch[j++] * 4;
+                /* the palette is stored as a 6-bit VGA palette, thus each
+                 * component is shifted up to a 8-bit range */
+                s->palette_control.palette[i * 3 + 0] = scratch[j++] * 4;
+                s->palette_control.palette[i * 3 + 1] = scratch[j++] * 4;
+                s->palette_control.palette[i * 3 + 2] = scratch[j++] * 4;
             }
-#endif
+            /* indicate a palette change */
+            s->palette_control.palette_changed = 1;
             break;
 
         case OPCODE_SET_PALETTE_COMPRESSED:
@@ -554,6 +552,10 @@ static int ipmovie_read_header(AVFormatContext *s,
     st->codec.codec_tag = 0;  /* no fourcc */
     st->codec.width = ipmovie->video_width;
     st->codec.height = ipmovie->video_height;
+
+    /* palette considerations */
+    st->codec.extradata_size = sizeof(AVPaletteControl);
+    st->codec.extradata = &ipmovie->palette_control;
 
     st = av_new_stream(s, 0);
     if (!st)
