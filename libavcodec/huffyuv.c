@@ -51,6 +51,7 @@ typedef struct HYuvContext{
     int width, height;
     int flags;
     int picture_number;
+    int last_slice_end;
     int linesize[3];
     uint8_t __align8 temp[3][2500];
     uint64_t stats[3][256];
@@ -157,15 +158,24 @@ static inline void add_left_prediction_bgr32(uint8_t *dst, uint8_t *src, int w, 
     *blue= b;
 }
 
-//FIXME optimize
-static inline int sub_left_prediction(uint8_t *dst, uint8_t *src, int w, int left){
+static inline int sub_left_prediction(HYuvContext *s, uint8_t *dst, uint8_t *src, int w, int left){
     int i;
-    for(i=0; i<w; i++){
-        const int temp= src[i];
-        dst[i]= temp - left;
-        left= temp;
+    if(w<32){
+        for(i=0; i<w; i++){
+            const int temp= src[i];
+            dst[i]= temp - left;
+            left= temp;
+        }
+        return left;
+    }else{
+        for(i=0; i<16; i++){
+            const int temp= src[i];
+            dst[i]= temp - left;
+            left= temp;
+        }
+        s->dsp.diff_bytes(dst+16, src+16, src+15, w-16);
+        return src[w-1];
     }
-    return left;
 }
 
 static void read_len_table(uint8_t *dst, GetBitContext *gb){
@@ -648,6 +658,32 @@ static void decode_bgr_bitstream(HYuvContext *s, int count){
     }
 }
 
+static void draw_slice(HYuvContext *s, int y){
+    int h, cy;
+    UINT8 *src_ptr[3];
+    
+    if(s->avctx->draw_horiz_band==NULL) 
+        return;
+        
+    h= y - s->last_slice_end;
+    y -= h;
+    
+    if(s->bitstream_bpp==12){
+        cy= y>>1;
+    }else{
+        cy= y;
+    }
+    
+    src_ptr[0] = s->picture[0] + s->linesize[0]*y;
+    src_ptr[1] = s->picture[1] + s->linesize[1]*cy;
+    src_ptr[2] = s->picture[2] + s->linesize[2]*cy;
+    emms_c();
+
+    s->avctx->draw_horiz_band(s->avctx, src_ptr, s->linesize[0], y, s->width, h);
+    
+    s->last_slice_end= y + h;
+}
+
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size){
     HYuvContext *s = avctx->priv_data;
     const int width= s->width;
@@ -684,6 +720,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     fake_ystride= s->interlaced ? s->linesize[0]*2  : s->linesize[0];
     fake_ustride= s->interlaced ? s->linesize[1]*2  : s->linesize[1];
     fake_vstride= s->interlaced ? s->linesize[2]*2  : s->linesize[2];
+    
+    s->last_slice_end= 0;
         
     if(s->bitstream_bpp<24){
         int y, cy;
@@ -732,6 +770,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                         if(y>=s->height) break;
                     }
                     
+                    draw_slice(s, y);
+                    
                     ydst= s->picture[0] + s->linesize[0]*y;
                     udst= s->picture[1] + s->linesize[1]*cy;
                     vdst= s->picture[2] + s->linesize[2]*cy;
@@ -753,6 +793,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                         }
                     }
                 }
+                draw_slice(s, height);
+                
                 break;
             case MEDIAN:
                 /* first line except first 2 pixels is left predicted */
@@ -808,6 +850,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                         }
                         if(y>=height) break;
                     }
+                    draw_slice(s, y);
 
                     decode_422_bitstream(s, width);
 
@@ -821,6 +864,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                         add_median_prediction(vdst, vdst - fake_vstride, s->temp[2], width2, &leftv, &lefttopv);
                     }
                 }
+
+                draw_slice(s, height);
                 break;
             }
         }
@@ -859,6 +904,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
                         }
                     }
                 }
+                draw_slice(s, height); // just 1 large slice as this isnt possible in reverse order
                 break;
             default:
                 fprintf(stderr, "prediction type not supported!\n");
@@ -922,9 +968,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         put_bits(&s->pb, 8, leftu= s->picture[1][0]);
         put_bits(&s->pb, 8,        s->picture[0][0]);
         
-        lefty= sub_left_prediction(s->temp[0], s->picture[0]+2, width-2 , lefty);
-        leftu= sub_left_prediction(s->temp[1], s->picture[1]+1, width2-1, leftu);
-        leftv= sub_left_prediction(s->temp[2], s->picture[2]+1, width2-1, leftv);
+        lefty= sub_left_prediction(s, s->temp[0], s->picture[0]+2, width-2 , lefty);
+        leftu= sub_left_prediction(s, s->temp[1], s->picture[1]+1, width2-1, leftu);
+        leftv= sub_left_prediction(s, s->temp[2], s->picture[2]+1, width2-1, leftv);
         
         encode_422_bitstream(s, width-2);
         
@@ -932,17 +978,17 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             int lefttopy, lefttopu, lefttopv;
             cy=y=1;
             if(s->interlaced){
-                lefty= sub_left_prediction(s->temp[0], s->picture[0]+s->linesize[0], width , lefty);
-                leftu= sub_left_prediction(s->temp[1], s->picture[1]+s->linesize[1], width2, leftu);
-                leftv= sub_left_prediction(s->temp[2], s->picture[2]+s->linesize[2], width2, leftv);
+                lefty= sub_left_prediction(s, s->temp[0], s->picture[0]+s->linesize[0], width , lefty);
+                leftu= sub_left_prediction(s, s->temp[1], s->picture[1]+s->linesize[1], width2, leftu);
+                leftv= sub_left_prediction(s, s->temp[2], s->picture[2]+s->linesize[2], width2, leftv);
         
                 encode_422_bitstream(s, width);
                 y++; cy++;
             }
             
-            lefty= sub_left_prediction(s->temp[0], s->picture[0]+fake_ystride, 4, lefty);
-            leftu= sub_left_prediction(s->temp[1], s->picture[1]+fake_ystride, 2, leftu);
-            leftv= sub_left_prediction(s->temp[2], s->picture[2]+fake_ystride, 2, leftv);
+            lefty= sub_left_prediction(s, s->temp[0], s->picture[0]+fake_ystride, 4, lefty);
+            leftu= sub_left_prediction(s, s->temp[1], s->picture[1]+fake_ystride, 2, leftu);
+            leftv= sub_left_prediction(s, s->temp[2], s->picture[2]+fake_ystride, 2, leftv);
         
             encode_422_bitstream(s, 4);
 
@@ -986,11 +1032,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                     ydst= s->picture[0] + s->linesize[0]*y;
 
                     if(s->predictor == PLANE && s->interlaced < y){
-                        s->dsp.diff_bytes(s->temp[0], ydst, ydst - fake_ystride, width);
+                        s->dsp.diff_bytes(s->temp[1], ydst, ydst - fake_ystride, width);
 
-                        lefty= sub_left_prediction(s->temp[0], s->temp[0], width , lefty);
+                        lefty= sub_left_prediction(s, s->temp[0], s->temp[1], width , lefty);
                     }else{
-                        lefty= sub_left_prediction(s->temp[0], ydst, width , lefty);
+                        lefty= sub_left_prediction(s, s->temp[0], ydst, width , lefty);
                     }
                     encode_gray_bitstream(s, width);
                     y++;
@@ -1002,17 +1048,17 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 vdst= s->picture[2] + s->linesize[2]*cy;
 
                 if(s->predictor == PLANE && s->interlaced < cy){
-                    s->dsp.diff_bytes(s->temp[0], ydst, ydst - fake_ystride, width);
-                    s->dsp.diff_bytes(s->temp[1], udst, udst - fake_ustride, width2);
-                    s->dsp.diff_bytes(s->temp[2], vdst, vdst - fake_vstride, width2);
+                    s->dsp.diff_bytes(s->temp[1], ydst, ydst - fake_ystride, width);
+                    s->dsp.diff_bytes(s->temp[2], udst, udst - fake_ustride, width2);
+                    s->dsp.diff_bytes(s->temp[3], vdst, vdst - fake_vstride, width2);
 
-                    lefty= sub_left_prediction(s->temp[0], s->temp[0], width , lefty);
-                    leftu= sub_left_prediction(s->temp[1], s->temp[1], width2, leftu);
-                    leftv= sub_left_prediction(s->temp[2], s->temp[2], width2, leftv);
+                    lefty= sub_left_prediction(s, s->temp[0], s->temp[1], width , lefty);
+                    leftu= sub_left_prediction(s, s->temp[1], s->temp[2], width2, leftu);
+                    leftv= sub_left_prediction(s, s->temp[2], s->temp[3], width2, leftv);
                 }else{
-                    lefty= sub_left_prediction(s->temp[0], ydst, width , lefty);
-                    leftu= sub_left_prediction(s->temp[1], udst, width2, leftu);
-                    leftv= sub_left_prediction(s->temp[2], vdst, width2, leftv);
+                    lefty= sub_left_prediction(s, s->temp[0], ydst, width , lefty);
+                    leftu= sub_left_prediction(s, s->temp[1], udst, width2, leftu);
+                    leftv= sub_left_prediction(s, s->temp[2], vdst, width2, leftv);
                 }
 
                 encode_422_bitstream(s, width);
@@ -1069,7 +1115,7 @@ AVCodec huffyuv_decoder = {
     NULL,
     decode_end,
     decode_frame,
-    CODEC_CAP_DR1,
+    CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND,
     NULL
 };
 
