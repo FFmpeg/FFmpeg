@@ -2373,7 +2373,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
  */
 int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]){
-	c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
+	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 }
 
 /**
@@ -2388,7 +2388,7 @@ int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcS
 	sws_orderYUV(c->origSrcFormat, src, srcStride, srcParam, srcStrideParam);
 	sws_orderYUV(c->origDstFormat, dst, dstStride, dstParam, dstStrideParam);
 //printf("sws: slice %d %d\n", srcSliceY, srcSliceH);
-	c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
+	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 }
 
 /**
