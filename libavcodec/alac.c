@@ -134,7 +134,6 @@ static uint32_t readbits_16(alac_file *alac, int bits)
     if (alac->input_buffer_index + 2 >= alac->input_buffer_size) {
         av_log(NULL, AV_LOG_ERROR, "alac: input buffer went out of bounds (%d >= %d)\n",
             alac->input_buffer_index + 2, alac->input_buffer_size);
-//        exit (0);
     }
     result = (alac->input_buffer[alac->input_buffer_index + 0] << 16) |
              (alac->input_buffer[alac->input_buffer_index + 1] << 8) |
@@ -186,7 +185,6 @@ static int readbit(alac_file *alac)
     if (alac->input_buffer_index >= alac->input_buffer_size) {
         av_log(NULL, AV_LOG_ERROR, "alac: input buffer went out of bounds (%d >= %d)\n",
             alac->input_buffer_index + 2, alac->input_buffer_size);
-        exit (0);
     }
 
     result = alac->input_buffer[alac->input_buffer_index];
