@@ -125,11 +125,11 @@ static int jpeg_read(ByteIOContext *f,
             switch(c->pix_fmt) {
             default:
             case PIX_FMT_YUV420P:
-                w >>= 1;
-                h >>= 1;
+                w = (w + 1) >> 1;
+                h = (h + 1) >> 1;
                 break;
             case PIX_FMT_YUV422P:
-                w >>= 1;
+                w = (w + 1) >> 1;
                 break;
             case PIX_FMT_YUV444P:
                 break;
