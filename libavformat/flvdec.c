@@ -40,8 +40,6 @@ static int flv_probe(AVProbeData *p)
     return 0;
 }
 
-#define FRAME_RATE_UNKNOWN 31415 //yes i know its beatifull
-
 static int flv_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
@@ -55,25 +53,6 @@ static int flv_read_header(AVFormatContext *s,
     url_fskip(&s->pb, 4);
     flags = get_byte(&s->pb);
 
-    if ((flags & 1)) {
-        st = av_new_stream(s, 0);
-        if (!st)
-            return AVERROR_NOMEM;
-        st->codec.codec_type = CODEC_TYPE_VIDEO;
-        st->codec.codec_id = CODEC_ID_FLV1;
-        st->codec.frame_rate= FRAME_RATE_UNKNOWN;
-//        st->codec.frame_rate= ap->frame_rate;
-//        st->codec.frame_rate_base= ap->frame_rate_base;
-    }
-
-    if ((flags & 4)) {
-        st = av_new_stream(s, 1);
-        if (!st)
-            return AVERROR_NOMEM;
-        st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_id = CODEC_ID_MP3;
-    }
-
     offset = get_be32(&s->pb);
     url_fseek(&s->pb, offset, SEEK_SET);
 
@@ -82,10 +61,10 @@ static int flv_read_header(AVFormatContext *s,
 
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, i, type, size, pts, flags;
+    int ret, i, type, size, pts, flags, is_audio;
     AVStream *st;
     
- redo:
+ for(;;){
     url_fskip(&s->pb, 4); /* size of previous packet */
     type = get_byte(&s->pb);
     size = get_be24(&s->pb);
@@ -95,43 +74,68 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         return -EIO;
     url_fskip(&s->pb, 4); /* reserved */
     flags = 0;
+    
+    if(size == 0)
+        continue;
+    
     if (type == 8) {
+        is_audio=1;
         flags = get_byte(&s->pb);
         size--;
-        if ((flags >> 4) != 2) { /* 0: uncompressed 1: ADPCM 2: mp3 5: Nellymoser 8kHz mono 6: Nellymoser*/
-            goto skip;
-        }
     } else if (type == 9) {
+        is_audio=0;
         flags = get_byte(&s->pb);
         size--;
-        if ((flags & 0xF) != 2) { /* 2: only format */
-            goto skip;
-        }
     } else {
-    skip:
         /* skip packet */
         av_log(s, AV_LOG_ERROR, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
         url_fskip(&s->pb, size);
-        goto redo;
+        continue;
     }
 
     /* now find stream */
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        if (st->id == ((type == 9) ? 0 : 1))
-            goto found;
+        if (st->id == is_audio)
+            break;
     }
-    goto skip;
- found:
-    if(type == 8 && st->codec.sample_rate == 0){
-        st->codec.channels = (flags&1)+1;
-        st->codec.sample_rate = (44100<<((flags>>2)&3))>>3;
+    if(i == s->nb_streams){
+        st = av_new_stream(s, is_audio);
+        if (!st)
+            return AVERROR_NOMEM;
+        st->codec.frame_rate_base= 0;
     }
+    break;
+ }
 
-    //guess the frame rate
-    if(type==9 && st->codec.frame_rate == FRAME_RATE_UNKNOWN && pts){
-        st->codec.frame_rate_base=1;
-        st->codec.frame_rate= (1000 + pts/2)/pts;
+    if(is_audio){
+        if(st->codec.sample_rate == 0){
+            st->codec.codec_type = CODEC_TYPE_AUDIO;
+            st->codec.channels = (flags&1)+1;
+            if((flags >> 4) == 5)
+                st->codec.sample_rate= 8000;
+            else
+                st->codec.sample_rate = (44100<<((flags>>2)&3))>>3;
+            switch(flags >> 4){/* 0: uncompressed 1: ADPCM 2: mp3 5: Nellymoser 8kHz mono 6: Nellymoser*/
+            case 2: st->codec.codec_id = CODEC_ID_MP3; break;
+            default:
+                st->codec.codec_tag= (flags >> 4);
+            }
+        }
+    }else{
+        if(st->codec.frame_rate_base == 0){
+            st->codec.codec_type = CODEC_TYPE_VIDEO;
+            //guess the frame rate
+            if(pts){
+                st->codec.frame_rate_base=1;
+                st->codec.frame_rate= (1000 + pts/2)/pts;
+            }
+            switch(flags & 0xF){
+            case 2: st->codec.codec_id = CODEC_ID_FLV1; break;
+            default:
+                st->codec.codec_tag= flags & 0xF;
+            }
+        }
     }
 
     if (av_new_packet(pkt, size) < 0)

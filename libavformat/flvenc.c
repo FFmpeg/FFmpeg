@@ -18,6 +18,9 @@
  */
 #include "avformat.h"
 
+#undef NDEBUG
+#include <assert.h>
+
 #define VIDEO_FIFO_SIZE 512
 
 typedef struct FLVFrame {
@@ -32,25 +35,13 @@ typedef struct FLVFrame {
 typedef struct FLVContext {
     int hasAudio;
     int hasVideo;
-#ifdef CONFIG_MP3LAME
-    int audioTime;
-    int audioInPos;
-    int audioOutPos;
-    int audioSize;
-//    int audioRate;
     int initDelay;
-    int soundDelay;
-    uint8_t *audioFifo;
     int64_t sampleCount;
-#endif // CONFIG_MP3LAME
     int64_t frameCount;
     FLVFrame *frames;
 } FLVContext;
 
-
 #ifdef CONFIG_MP3LAME
-
-#define AUDIO_FIFO_SIZE 65536
 
 static const int sSampleRates[3][4] = {
     {44100, 48000, 32000, 0},
@@ -138,16 +129,7 @@ static int flv_write_header(AVFormatContext *s)
     flv->hasAudio = 0;
     flv->hasVideo = 0;
 
-#ifdef CONFIG_MP3LAME
-    flv->audioTime = -1;
-    flv->audioFifo = av_malloc(AUDIO_FIFO_SIZE);
-    flv->audioInPos = 0;
-    flv->audioOutPos = 0;
-    flv->audioSize = 0;
-//    flv->audioRate = 44100;
     flv->initDelay = -1;
-    flv->soundDelay = 0;
-#endif // CONFIG_MP3LAME
 
     flv->frames = 0;
 
@@ -248,19 +230,22 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
     ByteIOContext *pb = &s->pb;
     AVCodecContext *enc = &s->streams[stream_index]->codec;
     FLVContext *flv = s->priv_data;
+    FLVFrame *frame = av_malloc(sizeof(FLVFrame));
 
+    frame->next = 0;
+    frame->size = size;
+    frame->data = av_malloc(size);
+    frame->timestamp = timestamp;
+    memcpy(frame->data,buf,size);
+    
+//    av_log(s, AV_LOG_DEBUG, "type:%d pts: %lld size:%d\n", enc->codec_type, timestamp, size);
+    
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
-        FLVFrame *frame = av_malloc(sizeof(FLVFrame));
-        frame->next = 0;
         frame->type = 9;
         frame->flags = 2; // choose h263
         frame->flags |= enc->coded_frame->key_frame ? 0x10 : 0x20; // add keyframe indicator
-        frame->timestamp = timestamp;
         //frame->timestamp = ( ( flv->frameCount * (int64_t)FRAME_RATE_BASE * (int64_t)1000 ) / (int64_t)enc->frame_rate );
         //printf("%08x %f %f\n",frame->timestamp,(double)enc->frame_rate/(double)FRAME_RATE_BASE,1000*(double)FRAME_RATE_BASE/(double)enc->frame_rate);
-        frame->size = size;
-        frame->data = av_malloc(size);
-        memcpy(frame->data,buf,size);
         flv->hasVideo = 1;
 
         InsertSorted(flv,frame);
@@ -268,105 +253,81 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
         flv->frameCount ++;
     }
     else if (enc->codec_type == CODEC_TYPE_AUDIO) {
-#ifdef CONFIG_MP3LAME
-        if (enc->codec_id == CODEC_ID_MP3 ) {
-            int c=0;
+        int soundFormat = 0x02;
 
-            for (;c<size;c++) {
-                flv->audioFifo[(flv->audioOutPos+c)%AUDIO_FIFO_SIZE] = buf[c];
-            }
-            flv->audioSize += size;
-            flv->audioOutPos += size;
-            flv->audioOutPos %= AUDIO_FIFO_SIZE;
+        switch (enc->sample_rate) {
+            case    44100:
+                soundFormat |= 0x0C;
+                break;
+            case    22050:
+                soundFormat |= 0x08;
+                break;
+            case    11025:
+                soundFormat |= 0x04;
+                break;
+            case     8000: //nellymoser only
+            case     5512: //not mp3
+                soundFormat |= 0x00;
+                break;
+            default:
+                assert(0);
+        }
 
-            if ( flv->initDelay == -1 ) {
-                flv->initDelay = timestamp;
-            }
+        if (enc->channels > 1) {
+            soundFormat |= 0x01;
+        }
+        
+        switch(enc->codec_id){
+        case CODEC_ID_MP3:
+            soundFormat |= 0x20;
+            break;
+        case 0:
+            soundFormat |= enc->codec_tag<<4;
+            break;
+        default:
+            assert(0);
+        }
+
+        assert(size);
+        if ( flv->initDelay == -1 ) {
+            flv->initDelay = timestamp;
+        }
+
+        frame->type = 8;
+        frame->flags = soundFormat;
 
 //            if ( flv->audioTime == -1 ) {
-                flv->audioTime = timestamp;
 //                flv->audioTime = ( ( ( flv->sampleCount - enc->delay ) * 8000 ) / flv->audioRate ) - flv->initDelay - 250;
 //                if ( flv->audioTime < 0 ) {
 //                    flv->audioTime = 0;
 //                }
 //            }
-        }
-        for ( ; flv->audioSize >= 4 ; ) {
 
+#ifdef CONFIG_MP3LAME
+        if (enc->codec_id == CODEC_ID_MP3 ) {
             int mp3FrameSize = 0;
             int mp3SampleRate = 0;
             int mp3IsMono = 0;
             int mp3SamplesPerFrame = 0;
-            int c=0;
 
             /* copy out mp3 header from ring buffer */
-            uint8_t header[4];
-            for (c=0; c<4; c++) {
-                header[c] = flv->audioFifo[(flv->audioInPos+c) % AUDIO_FIFO_SIZE];
-            }
+            if(!mp3info(buf,&mp3FrameSize,&mp3SamplesPerFrame,&mp3SampleRate,&mp3IsMono))
+                assert(0);
+            assert ( size == mp3FrameSize );
+            assert(enc->sample_rate == mp3SampleRate);
+//            assert(enc->frame_size == mp3SamplesPerFrame);
+//av_log(NULL, AV_LOG_DEBUG, "sizes: %d %d\n", enc->frame_size, mp3SamplesPerFrame);
 
-            if ( mp3info(header,&mp3FrameSize,&mp3SamplesPerFrame,&mp3SampleRate,&mp3IsMono) ) {
-                if ( flv->audioSize >= mp3FrameSize ) {
-
-                    int soundFormat = 0x22;
-                    int c=0;
-                    FLVFrame *frame = av_malloc(sizeof(FLVFrame));
-
-//                    flv->audioRate = mp3SampleRate;
-
-                    switch (mp3SampleRate) {
-                        case    44100:
-                            soundFormat |= 0x0C;
-                            break;
-                        case    22050:
-                            soundFormat |= 0x08;
-                            break;
-                        case    11025:
-                            soundFormat |= 0x04;
-                            break;
-                    }
-
-                    if ( !mp3IsMono ) {
-                        soundFormat |= 0x01;
-                    }
-
-                    frame->next = 0;
-                    frame->type = 8;
-                    frame->flags = soundFormat;
-                    frame->timestamp = flv->audioTime;
-                    frame->timestamp = (1000*flv->sampleCount + mp3SampleRate/2)/(mp3SampleRate);
-                    frame->size = mp3FrameSize;
-                    frame->data = av_malloc(mp3FrameSize);
-
-                    for (;c<mp3FrameSize;c++) {
-                        frame->data[c] = flv->audioFifo[(flv->audioInPos+c)%AUDIO_FIFO_SIZE];
-                    }
-
-                    flv->audioInPos += mp3FrameSize;
-                    flv->audioSize -= mp3FrameSize;
-                    flv->audioInPos %= AUDIO_FIFO_SIZE;
-                    flv->sampleCount += mp3SamplesPerFrame;
-
-                    flv->audioTime += 1000*mp3SamplesPerFrame/mp3SampleRate;
-                    // We got audio! Make sure we set this to the global flags on closure
-                    flv->hasAudio = 1;
-
-                    InsertSorted(flv,frame);
-//                    av_log(NULL,AV_LOG_DEBUG, "insert sound\n");
-                    continue;
-                }
-//                av_log(NULL,AV_LOG_DEBUG, "insuficent data\n");
-                break;
-            }
-            av_log(NULL,AV_LOG_DEBUG, "head trashed\n");
-            flv->audioInPos ++;
-            flv->audioSize --;
-            flv->audioInPos %= AUDIO_FIFO_SIZE;
-            // no audio in here!
-            flv->audioTime = -1;
+            frame->timestamp = (1000*flv->sampleCount + enc->sample_rate/2)/(enc->sample_rate);
+            flv->sampleCount += mp3SamplesPerFrame;
         }
 #endif
-    }
+
+        // We got audio! Make sure we set this to the global flags on closure
+        flv->hasAudio = 1;
+        InsertSorted(flv,frame);
+    }else
+        assert(0);
     Dump(flv,pb,128);
     put_flush_packet(pb);
     return 0;
