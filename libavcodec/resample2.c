@@ -31,10 +31,28 @@
 #define PHASE_SHIFT 10
 #define PHASE_COUNT (1<<PHASE_SHIFT)
 #define PHASE_MASK (PHASE_COUNT-1)
+#define FILTER_SIZE 16
+//#define LINEAR 1
+
+#if 1
 #define FILTER_SHIFT 15
 
+#define FELEM int16_t
+#define FELEM2 int32_t
+#define FELEM_MAX INT16_MAX
+#define FELEM_MIN INT16_MIN
+#else
+#define FILTER_SHIFT 24
+
+#define FELEM int32_t
+#define FELEM2 int64_t
+#define FELEM_MAX INT32_MAX
+#define FELEM_MIN INT32_MIN
+#endif
+
+
 typedef struct AVResampleContext{
-    short *filter_bank;
+    FELEM *filter_bank;
     int filter_length;
     int ideal_dst_incr;
     int dst_incr;
@@ -65,7 +83,7 @@ double bessel(double x){
  * @param scale wanted sum of coefficients for each filter
  * @param type 0->cubic, 1->blackman nuttall windowed sinc, 2->kaiser windowed sinc beta=16
  */
-void av_build_filter(int16_t *filter, double factor, int tap_count, int phase_count, int scale, int type){
+void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_count, int scale, int type){
     int ph, i, v;
     double x, y, w, tab[tap_count];
     const int center= (tap_count-1)/2;
@@ -104,7 +122,7 @@ void av_build_filter(int16_t *filter, double factor, int tap_count, int phase_co
 
         /* normalize so that an uniform color remains the same */
         for(i=0;i<tap_count;i++) {
-            v = clip(lrintf(tab[i] * scale / norm + e), -32768, 32767);
+            v = clip(lrintf(tab[i] * scale / norm + e), FELEM_MIN, FELEM_MAX);
             filter[ph * tap_count + i] = v;
             e += tab[i] * scale / norm - v;
         }
@@ -121,10 +139,10 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate){
 
     memset(c, 0, sizeof(AVResampleContext));
 
-    c->filter_length= ceil(16.0/factor);
-    c->filter_bank= av_mallocz(c->filter_length*(PHASE_COUNT+1)*sizeof(short));
+    c->filter_length= ceil(FILTER_SIZE/factor);
+    c->filter_bank= av_mallocz(c->filter_length*(PHASE_COUNT+1)*sizeof(FELEM));
     av_build_filter(c->filter_bank, factor, c->filter_length, PHASE_COUNT, 1<<FILTER_SHIFT, 1);
-    memcpy(&c->filter_bank[c->filter_length*PHASE_COUNT+1], c->filter_bank, (c->filter_length-1)*sizeof(short));
+    memcpy(&c->filter_bank[c->filter_length*PHASE_COUNT+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
     c->filter_bank[c->filter_length*PHASE_COUNT]= c->filter_bank[c->filter_length - 1];
 
     c->src_incr= out_rate;
@@ -163,9 +181,9 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
     int compensation_distance= c->compensation_distance;
     
     for(dst_index=0; dst_index < dst_size; dst_index++){
-        short *filter= c->filter_bank + c->filter_length*(index & PHASE_MASK);
+        FELEM *filter= c->filter_bank + c->filter_length*(index & PHASE_MASK);
         int sample_index= index >> PHASE_SHIFT;
-        int val=0;
+        FELEM2 val=0;
                 
         if(sample_index < 0){
             for(i=0; i<c->filter_length; i++)
@@ -173,17 +191,17 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         }else if(sample_index + c->filter_length > src_size){
             break;
         }else{
-#if 0
+#ifdef LINEAR
             int64_t v=0;
             int sub_phase= (frac<<12) / c->src_incr;
             for(i=0; i<c->filter_length; i++){
-                int64_t coeff= filter[i]*(4096 - sub_phase) + filter[i + c->filter_length]*sub_phase;
+                int64_t coeff= filter[i]*(FELEM2)(4096 - sub_phase) + filter[i + c->filter_length]*(FELEM2)sub_phase;
                 v += src[sample_index + i] * coeff;
             }
             val= v>>12;
 #else
             for(i=0; i<c->filter_length; i++){
-                val += src[sample_index + i] * filter[i];
+                val += src[sample_index + i] * (FELEM2)filter[i];
             }
 #endif
         }
