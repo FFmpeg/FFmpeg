@@ -232,7 +232,7 @@ static int ffm_write_packet(AVFormatContext *s, int stream_index,
     /* packet size & key_frame */
     header[0] = stream_index;
     header[1] = 0;
-    if (st->codec.coded_picture->key_frame)
+    if (st->codec.coded_picture && st->codec.coded_picture->key_frame)
         header[1] |= FLAG_KEY_FRAME;
     header[2] = (size >> 16) & 0xff;
     header[3] = (size >> 8) & 0xff;
