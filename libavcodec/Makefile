@@ -134,9 +134,10 @@ motion-test: motion_test.o $(LIB)
 
 install: all
 ifeq ($(BUILD_SHARED),yes)
+	install -d $(prefix)/lib
 	install -s -m 755 $(SLIB) $(prefix)/lib/libavcodec-$(VERSION).so
-	ln -sf $(prefix)/lib/libavcodec-$(VERSION).so $(prefix)/lib/libavcodec.so
-	ldconfig
+	ln -sf libavcodec-$(VERSION).so $(prefix)/lib/libavcodec.so
+	ldconfig || true
 	mkdir -p $(prefix)/include/ffmpeg
 	install -m 644 avcodec.h $(prefix)/include/ffmpeg/avcodec.h
 	install -m 644 common.h $(prefix)/include/ffmpeg/common.h

@@ -60,6 +60,7 @@ ffplay: ffmpeg$(EXE)
 
 install: all
 	$(MAKE) -C libavcodec install
+	install -d $(prefix)/bin
 	install -s -m 755 $(PROG) $(prefix)/bin
 	ln -sf ffmpeg $(prefix)/bin/ffplay 
 
