@@ -474,10 +474,10 @@ static int canMMX2BeUsed=0;
 			"psllq $16, %%mm3		\n\t" /* RGBRGB00 3 */\
 			"por %%mm4, %%mm3		\n\t" /* RGBRGBRG 2.5 */\
 \
-			"leal (%%eax, %%eax, 2), %%ebx	\n\t"\
-			MOVNTQ(%%mm0, (%4, %%ebx))\
-			MOVNTQ(%%mm2, 8(%4, %%ebx))\
-			MOVNTQ(%%mm3, 16(%4, %%ebx))\
+			MOVNTQ(%%mm0, (%%ebx))\
+			MOVNTQ(%%mm2, 8(%%ebx))\
+			MOVNTQ(%%mm3, 16(%%ebx))\
+			"addl $24, %%ebx		\n\t"\
 \
 			"addl $8, %%eax			\n\t"\
 			"cmpl %5, %%eax			\n\t"\
@@ -740,10 +740,11 @@ FULL_YSCALEYUV2RGB
 		else if(dstbpp==24)
 		{
 			asm volatile(
+				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB
 				WRITEBGR24
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstw),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
 			);
@@ -922,9 +923,10 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 		else if(dstbpp==24)
 		{
 			asm volatile(
+				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB1
 				WRITEBGR24
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstw),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
 			);
@@ -978,9 +980,10 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 		else if(dstbpp==24)
 		{
 			asm volatile(
+				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB1b
 				WRITEBGR24
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstw),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
 			);
