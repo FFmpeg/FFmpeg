@@ -179,11 +179,10 @@ static void ff_jref_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
     add_pixels_clamped(block, dest, line_size);
 }
 
-/* init common structure for both encoder and decoder */
-int MPV_common_init(MpegEncContext *s)
+/* init common dct for both encoder and decoder */
+int DCT_common_init(MpegEncContext *s)
 {
-    int c_size, i;
-    UINT8 *pict;
+    int i;
 
     s->dct_unquantize_h263 = dct_unquantize_h263_c;
     s->dct_unquantize_mpeg1 = dct_unquantize_mpeg1_c;
@@ -219,7 +218,6 @@ int MPV_common_init(MpegEncContext *s)
 #ifdef HAVE_MMI
     MPV_common_init_mmi(s);
 #endif
-    
 
     /* load & permutate scantables
        note: only wmv uses differnt ones 
@@ -228,6 +226,17 @@ int MPV_common_init(MpegEncContext *s)
     ff_init_scantable(s, &s->intra_scantable  , ff_zigzag_direct);
     ff_init_scantable(s, &s->intra_h_scantable, ff_alternate_horizontal_scan);
     ff_init_scantable(s, &s->intra_v_scantable, ff_alternate_vertical_scan);
+
+    return 0;
+}
+
+/* init common structure for both encoder and decoder */
+int MPV_common_init(MpegEncContext *s)
+{
+    int c_size, i;
+    UINT8 *pict;
+
+    DCT_common_init(s);
 
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;

@@ -489,6 +489,7 @@ typedef struct MpegEncContext {
     void (*idct_add)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 } MpegEncContext;
 
+int DCT_common_init(MpegEncContext *s);
 int MPV_common_init(MpegEncContext *s);
 void MPV_common_end(MpegEncContext *s);
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);

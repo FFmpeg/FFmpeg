@@ -113,12 +113,8 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
     /* ugly way to get the idct & scantable */
     /* XXX: fix it */
     memset(&s2, 0, sizeof(MpegEncContext));
-    s2.flags = avctx->flags;
     s2.avctx = avctx;
-//    s2->out_format = FMT_MJPEG;
-    s2.width = 8;
-    s2.height = 8;
-    if (MPV_common_init(&s2) < 0)
+    if (DCT_common_init(&s2) < 0)
        return -1;
 
     s->idct_put[0] = s2.idct_put;
@@ -128,8 +124,6 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
     /* XXX: use MMX also for idct248 */
     s->idct_put[1] = simple_idct248_put;
     memcpy(s->dv_zigzag[1], dv_248_zigzag, 64);
-
-    MPV_common_end(&s2);
 
     /* XXX: do it only for constant case */
     dv_build_unquantize_tables(s);
@@ -151,7 +145,7 @@ typedef struct BlockInfo {
 } BlockInfo;
 
 /* block size in bits */
-const static UINT16 block_sizes[6] = {
+static const UINT16 block_sizes[6] = {
     112, 112, 112, 112, 80, 80
 };
 
