@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4739
+#define LIBAVCODEC_BUILD       4740
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -859,8 +859,10 @@ typedef struct AVCodecContext {
     /* The RTP callcack: This function is called  */
     /* every time the encoder as a packet to send */
     /* Depends on the encoder if the data starts  */
-    /* with a Start Code (it should) H.263 does   */
-    void (*rtp_callback)(struct AVCodecContext *avctx, void *data, int size, int packet_number); 
+    /* with a Start Code (it should) H.263 does.  */
+    /* mb_nb contains the number of macroblocks   */
+    /* encoded in the RTP payload                 */
+    void (*rtp_callback)(struct AVCodecContext *avctx, void *data, int size, int mb_nb); 
 
     /* statistics, used for 2-pass encoding */
     int mv_bits;
