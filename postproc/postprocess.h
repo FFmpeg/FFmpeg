@@ -59,6 +59,9 @@
 
 #define GET_PP_QUALITY_MAX 6
 
+//must be defined if stride%8 != 0
+#define PP_FUNNY_STRIDE
+
 //#define TIMING
 //#define MORE_TIMING
 

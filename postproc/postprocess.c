@@ -2561,6 +2561,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 
 			if(!isColor) yHistogram[ srcBlock[srcStride*5] ]++;
 
+#ifdef PP_FUNNY_STRIDE
 			//can we mess with a 8x16 block, if not use a temp buffer, yes again
 			if(x+7 >= width)
 			{
@@ -2577,6 +2578,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				dstBlock= tempDstBlock;
 				srcBlock= tempSrcBlock;
 			}
+#endif
 
 			blockCopy(dstBlock + dstStride*5, dstStride,
 				srcBlock + srcStride*5, srcStride, 8, mode & LEVEL_FIX);
@@ -2657,6 +2659,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				dering(dstBlock - stride*9 + width-9, stride, QP);
 			//FIXME dering filter will not be applied to last block (bottom right)
 
+#ifdef PP_FUNNY_STRIDE
 			/* did we use a tmp-block buffer */
 			if(x+7 >= width)
 			{
@@ -2669,6 +2672,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 					memcpy(dstBlock+i*dstStride, tempDstBlock+i*dstStride, width-x);
 				}
 			}
+#endif
 
 			dstBlock+=8;
 			srcBlock+=8;
