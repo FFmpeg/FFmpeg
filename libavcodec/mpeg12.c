@@ -80,6 +80,13 @@ extern void XVMC_pack_pblocks(MpegEncContext *s,int cbp);
 extern void XVMC_init_block(MpegEncContext *s);//set s->block
 #endif
 
+const enum PixelFormat pixfmt_yuv_420[]= {PIX_FMT_YUV420P,-1};
+const enum PixelFormat pixfmt_yuv_422[]= {PIX_FMT_YUV422P,-1};
+const enum PixelFormat pixfmt_yuv_444[]= {PIX_FMT_YUV444P,-1};
+const enum PixelFormat pixfmt_xvmc_mpg2_420[] = {
+                                           PIX_FMT_XVMC_MPEG2_IDCT,
+                                           PIX_FMT_XVMC_MPEG2_MC,
+					   -1};
 #ifdef CONFIG_ENCODERS
 static uint8_t (*mv_penalty)[MAX_MV*2+1]= NULL;
 static uint8_t fcode_tab[MAX_MV*2+1];
@@ -2354,8 +2361,12 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
             );
         avctx->bit_rate = s->bit_rate;
         
-        //get_format() or set_video(width,height,aspect,pix_fmt);
-        //until then pix_fmt may be changed right after codec init
+        if(avctx->xvmc_acceleration){
+            avctx->pix_fmt = avctx->get_format(avctx,pixfmt_xvmc_mpg2_420);
+        }else{
+            avctx->pix_fmt = avctx->get_format(avctx,pixfmt_yuv_420);
+        }
+	
         if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT )
             if( avctx->idct_algo == FF_IDCT_AUTO )
                 avctx->idct_algo = FF_IDCT_SIMPLE;
@@ -2458,8 +2469,12 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     avctx->has_b_frames= 0; //true?
     s->low_delay= 1;
 
-    //get_format() or set_video(width,height,aspect,pix_fmt);
-    //until then pix_fmt may be changed right after codec init
+    if(avctx->xvmc_acceleration){
+        avctx->pix_fmt = avctx->get_format(avctx,pixfmt_xvmc_mpg2_420);
+    }else{
+        avctx->pix_fmt = avctx->get_format(avctx,pixfmt_yuv_420);
+    }
+
     if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT )
         if( avctx->idct_algo == FF_IDCT_AUTO )
             avctx->idct_algo = FF_IDCT_SIMPLE;
