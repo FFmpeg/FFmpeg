@@ -208,8 +208,6 @@ dts_decode_frame (AVCodecContext *avctx, void *data, int *data_size,
 {
   uint8_t * start = buff;
   uint8_t * end = buff + buff_size;
-  *data_size = 0;
-
   static uint8_t buf[BUFFER_SIZE];
   static uint8_t * bufptr = buf;
   static uint8_t * bufpos = buf + HEADER_SIZE;
@@ -220,6 +218,8 @@ dts_decode_frame (AVCodecContext *avctx, void *data, int *data_size,
   int bit_rate;
   int len;
   dts_state_t *state = avctx->priv_data;
+
+  *data_size = 0;
 
   while (1)
     {
