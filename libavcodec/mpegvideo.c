@@ -249,6 +249,9 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->width = avctx->width;
     s->height = avctx->height;
     s->gop_size = avctx->gop_size;
+    s->rtp_mode = avctx->rtp_mode;
+    s->rtp_payload_size = avctx->rtp_payload_size;
+    
     if (s->gop_size <= 1) {
         s->intra_only = 1;
         s->gop_size = 12;
@@ -276,6 +279,8 @@ int MPV_encode_init(AVCodecContext *avctx)
         break;
     case CODEC_ID_H263P:
         s->out_format = FMT_H263;
+        s->rtp_mode = 1;
+        s->rtp_payload_size = 1200; 
         s->h263_plus = 1;
         s->unrestricted_mv = 1;
         
@@ -819,7 +824,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
 static void encode_picture(MpegEncContext *s, int picture_number)
 {
-    int mb_x, mb_y, wrap;
+    int mb_x, mb_y, wrap, last_gob;
     UINT8 *ptr;
     int i, motion_x, motion_y;
 
@@ -869,7 +874,29 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->mv_type = MV_TYPE_16X16;
     s->mv_dir = MV_DIR_FORWARD;
 
+    /* Get the GOB height based on picture height */
+    if (s->out_format == FMT_H263 && s->h263_plus) {
+        if (s->height <= 400)
+            s->gob_index = 1;
+        else if (s->height <= 800)
+            s->gob_index = 2;
+        else
+            s->gob_index = 4;
+    }
+        
     for(mb_y=0; mb_y < s->mb_height; mb_y++) {
+        /* Put GOB header based on RTP MTU */
+        if (!mb_y) {
+            s->ptr_lastgob = s->pb.buf_ptr;
+            s->ptr_last_mb_line = s->pb.buf_ptr;
+        } else if (s->out_format == FMT_H263 && s->h263_plus) {
+            last_gob = h263_encode_gob_header(s, mb_y);
+            if (last_gob) {
+                //fprintf(stderr,"\nLast GOB size: %d", last_gob);
+                s->first_gob_line = 1;
+            } else
+                s->first_gob_line = 0;
+        }
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
 
             s->mb_x = mb_x;
@@ -981,7 +1008,17 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
             MPV_decode_mb(s, s->block);
         }
+        /* Obtain average MB line size for RTP */
+        if (!mb_y)
+            s->mb_line_avgsize = s->pb.buf_ptr - s->ptr_last_mb_line;
+        else    
+            s->mb_line_avgsize = (s->mb_line_avgsize + s->pb.buf_ptr - s->ptr_last_mb_line) >> 1;
+        //fprintf(stderr, "\nMB line: %d\tSize: %u\tAvg. Size: %u", s->mb_y, 
+        //                    (s->pb.buf_ptr - s->ptr_last_mb_line), s->mb_line_avgsize);
+        s->ptr_last_mb_line = s->pb.buf_ptr;
     }
+    //if (s->gob_number)
+    //    fprintf(stderr,"\nNumber of GOB: %d", s->gob_number);
 }
 
 static int dct_quantize(MpegEncContext *s, 

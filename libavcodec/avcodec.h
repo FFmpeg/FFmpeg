@@ -103,6 +103,19 @@ typedef struct AVCodecContext {
     struct AVCodec *codec;
     void *priv_data;
 
+    /* The following data is for RTP friendly coding */
+    /* By now only H.263/H.263+ coder honours this   */
+    int rtp_mode;   /* 1 for activate RTP friendly-mode           */
+                    /* highers numbers represent more error-prone */
+                    /* enviroments, by now just "1" exist         */
+    
+    int rtp_payload_size;   /* The size of the RTP payload, the coder will  */
+                            /* do it's best to deliver a chunk with size    */
+                            /* below rtp_payload_size, the chunk will start */
+                            /* with a start code on some codecs like H.263  */
+                            /* This doesn't take account of any particular  */
+                            /* headers inside the transmited RTP payload    */
+                 
     /* the following fields are ignored */
     void *opaque;   /* can be used to carry app specific stuff */
     char codec_name[32];
@@ -239,8 +252,8 @@ void avcodec_register_all(void);
 
 #ifdef FF_POSTPROCESS
 #ifndef MBC
-#define MBC 120
-#define MBR 72
+#define MBC 48
+#define MBR 36
 #endif
 extern int quant_store[MBR+1][MBC+1]; // [Review]
 #endif

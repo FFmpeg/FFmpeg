@@ -140,12 +140,45 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     put_bits(&s->pb, 1, 0);	/* no PEI */
 }
 
+int h263_encode_gob_header(MpegEncContext * s, int mb_line)
+{
+    int pdif=0;
+    
+    /* Check to see if we need to put a new GBSC */
+    /* for RTP packetization                    */
+    if (s->rtp_mode) {
+        pdif = s->pb.buf_ptr - s->ptr_lastgob;
+        if (pdif >= s->rtp_payload_size) {
+            /* Bad luck, packet must be cut before */
+            align_put_bits(&s->pb);
+            s->ptr_lastgob = s->pb.buf_ptr;
+            put_bits(&s->pb, 17, 1); /* GBSC */
+            s->gob_number = mb_line;
+            put_bits(&s->pb, 5, s->gob_number); /* GN */
+            put_bits(&s->pb, 2, 1); /* GFID */
+            put_bits(&s->pb, 5, s->qscale); /* GQUANT */
+            return pdif;
+       } else if (pdif + s->mb_line_avgsize >= s->rtp_payload_size) {
+           /* Cut the packet before we can't */
+           align_put_bits(&s->pb);
+           s->ptr_lastgob = s->pb.buf_ptr;
+           put_bits(&s->pb, 17, 1); /* GBSC */
+           s->gob_number = mb_line;
+           put_bits(&s->pb, 5, s->gob_number); /* GN */
+           put_bits(&s->pb, 2, 1); /* GFID */
+           put_bits(&s->pb, 5, s->qscale); /* GQUANT */
+           return pdif;
+       }
+   }
+   return 0;
+}
+    
 void h263_encode_mb(MpegEncContext * s,
 		    DCTELEM block[6][64],
 		    int motion_x, int motion_y)
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y;
-
+   
     //    printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
    if (!s->mb_intra) {
 	   /* compute cbp */
@@ -772,42 +805,38 @@ void h263_decode_init_vlc(MpegEncContext *s)
     }
 }
 
+int h263_decode_gob_header(MpegEncContext *s)
+{
+    unsigned int val, gfid;
+    
+    /* Check for GOB Start Code */
+    val = show_bits(&s->gb, 16);
+    if (val == 0) {
+        /* We have a GBSC probably with GSTUFF */
+        skip_bits(&s->gb, 16); /* Drop the zeros */
+        while (get_bits1(&s->gb) == 0); /* Seek the '1' bit */
+#ifdef DEBUG
+        fprintf(stderr,"\nGOB Start Code at MB %d\n", (s->mb_y * s->mb_width) + s->mb_x);
+#endif
+        s->gob_number = get_bits(&s->gb, 5); /* GN */
+        gfid = get_bits(&s->gb, 2); /* GFID */
+        s->qscale = get_bits(&s->gb, 5); /* GQUANT */
+#ifdef DEBUG
+        fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", gn, gfid, s->qscale);
+#endif
+        return 1;
+    }
+    return 0;
+            
+}
+
 int h263_decode_mb(MpegEncContext *s,
                    DCTELEM block[6][64])
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
-    unsigned int val;
     INT16 *mot_val;
     static INT8 quant_tab[4] = { -1, -2, 1, 2 };
-    unsigned int gfid;        
     
-    /* Check for GOB Start Code */
-    if (s->mb_x == 0) {
-        val = show_bits(&s->gb, 16);
-        if (val == 0) {
-            /* We have a GBSC probably with GSTUFF */
-            skip_bits(&s->gb, 16); /* Drop the zeros */
-            while (get_bits1(&s->gb) == 0); /* Seek the '1' bit */
-#ifdef DEBUG
-            fprintf(stderr,"\nGOB Start Code at MB %d\n", 
-                (s->mb_y * s->mb_width) + s->mb_x);
-#endif
-            s->gob_number = get_bits(&s->gb, 5); /* GN */
-            gfid = get_bits(&s->gb, 2); /* GFID */
-            s->qscale = get_bits(&s->gb, 5); /* GQUANT */
-#ifdef DEBUG
-            fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", gn, gfid, s->qscale);
-#endif
-        }
-    }
-    /* FIXME: In the future H.263+ will have intra prediction */
-    /* and we are gonna need another way to detect MPEG4      */
-    if (!s->h263_pred) {
-        if (s->mb_y == s->gob_number)
-            s->first_gob_line = 1;
-        else
-            s->first_gob_line = 0;
-    }        
     if (s->pict_type == P_TYPE) {
         if (get_bits1(&s->gb)) {
             /* skip mb */

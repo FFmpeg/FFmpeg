@@ -140,6 +140,12 @@ static int h263_decode_frame(AVCodecContext *avctx,
 
     /* decode each macroblock */
     for(s->mb_y=0; s->mb_y < s->mb_height; s->mb_y++) {
+        /* Check for GOB headers on H.263 */
+        /* FIXME: In the future H.263+ will have intra prediction */
+        /* and we are gonna need another way to detect MPEG4      */
+        if (s->mb_y && !s->h263_pred) {
+            s->first_gob_line = h263_decode_gob_header(s);
+        }
         for(s->mb_x=0; s->mb_x < s->mb_width; s->mb_x++) {
 #ifdef DEBUG
             printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
