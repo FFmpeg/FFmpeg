@@ -744,7 +744,7 @@ static inline int halfpel_motion_search(MpegEncContext * s,
         *mx_ptr = 0;
         *my_ptr = 0;
         return dmin;
-    }else
+    }
 
     xx = 16 * s->mb_x + 8*(n&1);
     yy = 16 * s->mb_y + 8*(n>>1);
