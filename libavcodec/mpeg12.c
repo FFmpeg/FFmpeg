@@ -1768,9 +1768,9 @@ static int mpeg_decode_init(AVCodecContext *avctx)
 
 /* return the 8 bit start code value and update the search
    state. Return -1 if no start code found */
-static int find_start_code(uint8_t **pbuf_ptr, uint8_t *buf_end)
+static int find_start_code(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
 {
-    uint8_t *buf_ptr;
+    const uint8_t *buf_ptr;
     unsigned int state=0xFFFFFFFF, v;
     int val;
 
@@ -1791,7 +1791,7 @@ static int find_start_code(uint8_t **pbuf_ptr, uint8_t *buf_end)
 }
 
 static int mpeg1_decode_picture(AVCodecContext *avctx, 
-                                uint8_t *buf, int buf_size)
+                                const uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
@@ -2019,7 +2019,7 @@ static void mpeg_decode_picture_coding_extension(MpegEncContext *s)
 }
 
 static void mpeg_decode_extension(AVCodecContext *avctx, 
-                                  uint8_t *buf, int buf_size)
+                                  const uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
@@ -2114,7 +2114,7 @@ static int mpeg_field_start(MpegEncContext *s){
  *         DECODE_SLICE_OK if this slice is ok<br>
  */
 static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
-                              uint8_t **buf, int buf_size)
+                             const uint8_t **buf, int buf_size)
 {
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     AVCodecContext *avctx= s->avctx;
@@ -2365,7 +2365,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
 }
 
 static int mpeg1_decode_sequence(AVCodecContext *avctx, 
-                                 uint8_t *buf, int buf_size)
+                                 const uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
@@ -2584,7 +2584,7 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
 }
 
 static void mpeg_decode_gop(AVCodecContext *avctx, 
-                            uint8_t *buf, int buf_size){
+                            const uint8_t *buf, int buf_size){
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
 
@@ -2659,7 +2659,8 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                              uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s = avctx->priv_data;
-    uint8_t *buf_end, *buf_ptr;
+    const uint8_t *buf_end;
+    const uint8_t *buf_ptr;
     int ret, start_code, input_size;
     AVFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
@@ -2733,13 +2734,13 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                 switch(start_code) {
                 case SEQ_START_CODE:
                     mpeg1_decode_sequence(avctx, buf_ptr, 
-                                          input_size);
+					  input_size);
                     break;
                             
                 case PICTURE_START_CODE:
                     /* we have a complete image : we try to decompress it */
                     mpeg1_decode_picture(avctx, 
-                                         buf_ptr, input_size);
+					 buf_ptr, input_size);
                     break;
                 case EXT_START_CODE:
                     mpeg_decode_extension(avctx,
