@@ -4642,26 +4642,26 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                         int qscale, int *overflow){
     const int *qmat;
     const uint8_t *scantable= s->intra_scantable.scantable;
+    const uint8_t *perm_scantable= s->intra_scantable.permutated;
     int max=0;
     unsigned int threshold1, threshold2;
     int bias=0;
     int run_tab[65];
     int level_tab[65];
     int score_tab[65];
+    int survivor[65];
+    int survivor_count;
     int last_run=0;
     int last_level=0;
     int last_score= 0;
-    int last_i= 0;
+    int last_i;
     int coeff[2][64];
     int coeff_count[64];
     int qmul, qadd, start_i, last_non_zero, i, dc;
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
     uint8_t * last_length;
-    int score_limit=0;
-    int left_limit= 0;
     const int lambda= s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
-    const int patch_table= s->out_format == FMT_MPEG1 && !s->mb_intra;
         
     s->dsp.fdct (block);
     
@@ -4700,6 +4700,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         length     = s->inter_ac_vlc_length;
         last_length= s->inter_ac_vlc_last_length;
     }
+    last_i= start_i;
 
     threshold1= (1<<QMAT_SHIFT) - bias - 1;
     threshold2= (threshold1<<1);
@@ -4716,7 +4717,6 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     for(i=start_i; i<=last_non_zero; i++) {
         const int j = scantable[i];
-        const int k= i-start_i;
         int level = block[j] * qmat[j];
 
 //        if(   bias+level >= (1<<(QMAT_SHIFT - 3))
@@ -4724,21 +4724,21 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         if(((unsigned)(level+threshold1))>threshold2){
             if(level>0){
                 level= (bias + level)>>QMAT_SHIFT;
-                coeff[0][k]= level;
-                coeff[1][k]= level-1;
+                coeff[0][i]= level;
+                coeff[1][i]= level-1;
 //                coeff[2][k]= level-2;
             }else{
                 level= (bias - level)>>QMAT_SHIFT;
-                coeff[0][k]= -level;
-                coeff[1][k]= -level+1;
+                coeff[0][i]= -level;
+                coeff[1][i]= -level+1;
 //                coeff[2][k]= -level+2;
             }
-            coeff_count[k]= FFMIN(level, 2);
-            assert(coeff_count[k]);
+            coeff_count[i]= FFMIN(level, 2);
+            assert(coeff_count[i]);
             max |=level;
         }else{
-            coeff[0][k]= (level>>31)|1;
-            coeff_count[k]= 1;
+            coeff[0][i]= (level>>31)|1;
+            coeff_count[i]= 1;
         }
     }
     
@@ -4749,19 +4749,15 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         return last_non_zero;
     }
 
-    score_tab[0]= 0;
+    score_tab[start_i]= 0;
+    survivor[0]= start_i;
+    survivor_count= 1;
     
-    if(patch_table){
-//        length[UNI_AC_ENC_INDEX(0, 63)]=
-//        length[UNI_AC_ENC_INDEX(0, 65)]= 2;
-    }
-
-    for(i=0; i<=last_non_zero - start_i; i++){
-        int level_index, run, j;
-        const int dct_coeff= ABS(block[ scantable[i + start_i] ]);
+    for(i=start_i; i<=last_non_zero; i++){
+        int level_index, j;
+        const int dct_coeff= ABS(block[ scantable[i] ]);
         const int zero_distoration= dct_coeff*dct_coeff;
         int best_score=256*256*256*120;
-
         for(level_index=0; level_index < coeff_count[i]; level_index++){
             int distoration;
             int level= coeff[level_index][i];
@@ -4773,7 +4769,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             if(s->out_format == FMT_H263){
                 unquant_coeff= alevel*qmul + qadd;
             }else{ //MPEG1
-                j= s->dsp.idct_permutation[ scantable[i + start_i] ]; //FIXME optimize
+                j= s->dsp.idct_permutation[ scantable[i] ]; //FIXME optimize
                 if(s->mb_intra){
                         unquant_coeff = (int)(  alevel  * qscale * s->intra_matrix[j]) >> 3;
                         unquant_coeff =   (unquant_coeff - 1) | 1;
@@ -4787,20 +4783,21 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             distoration= (unquant_coeff - dct_coeff) * (unquant_coeff - dct_coeff) - zero_distoration;
             level+=64;
             if((level&(~127)) == 0){
-                for(run=0; run<=i - left_limit; run++){
+                for(j=survivor_count-1; j>=0; j--){
+                    int run= i - survivor[j];
                     int score= distoration + length[UNI_AC_ENC_INDEX(run, level)]*lambda;
                     score += score_tab[i-run];
                     
                     if(score < best_score){
-                        best_score= 
-                        score_tab[i+1]= score;
+                        best_score= score;
                         run_tab[i+1]= run;
                         level_tab[i+1]= level-64;
                     }
                 }
 
                 if(s->out_format == FMT_H263){
-                    for(run=0; run<=i - left_limit; run++){
+                    for(j=survivor_count-1; j>=0; j--){
+                        int run= i - survivor[j];
                         int score= distoration + last_length[UNI_AC_ENC_INDEX(run, level)]*lambda;
                         score += score_tab[i-run];
                         if(score < last_score){
@@ -4813,19 +4810,20 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                 }
             }else{
                 distoration += esc_length*lambda;
-                for(run=0; run<=i - left_limit; run++){
+                for(j=survivor_count-1; j>=0; j--){
+                    int run= i - survivor[j];
                     int score= distoration + score_tab[i-run];
                     
                     if(score < best_score){
-                        best_score= 
-                        score_tab[i+1]= score;
+                        best_score= score;
                         run_tab[i+1]= run;
                         level_tab[i+1]= level-64;
                     }
                 }
 
                 if(s->out_format == FMT_H263){
-                    for(run=0; run<=i - left_limit; run++){
+                  for(j=survivor_count-1; j>=0; j--){
+                        int run= i - survivor[j];
                         int score= distoration + score_tab[i-run];
                         if(score < last_score){
                             last_score= score;
@@ -4837,22 +4835,28 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                 }
             }
         }
-
-        if(score_tab[i+1] < score_limit)
-            score_limit= score_tab[i+1];
         
+        score_tab[i+1]= best_score;
+
         //Note: there is a vlc code in mpeg4 which is 1 bit shorter then another one with a shorter run and the same level
-        while(score_tab[ left_limit ] > score_limit + lambda) left_limit++;
-    
-        if(patch_table){
-//            length[UNI_AC_ENC_INDEX(0, 63)]=
-//            length[UNI_AC_ENC_INDEX(0, 65)]= 3;
+        if(last_non_zero <= 27){
+            for(; survivor_count; survivor_count--){
+                if(score_tab[ survivor[survivor_count-1] ] <= best_score)
+                    break;
+            }
+        }else{
+            for(; survivor_count; survivor_count--){
+                if(score_tab[ survivor[survivor_count-1] ] <= best_score + lambda)
+                    break;
+            }
         }
+
+        survivor[ survivor_count++ ]= i+1;
     }
 
     if(s->out_format != FMT_H263){
         last_score= 256*256*256*120;
-        for(i= left_limit; i<=last_non_zero - start_i + 1; i++){
+        for(i= survivor[0]; i<=last_non_zero + 1; i++){
             int score= score_tab[i];
             if(i) score += lambda*2; //FIXME exacter?
 
@@ -4868,7 +4872,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     s->coded_score[n] = last_score;
     
     dc= ABS(block[0]);
-    last_non_zero= last_i - 1 + start_i;
+    last_non_zero= last_i - 1;
     memset(block + start_i, 0, (64-start_i)*sizeof(DCTELEM));
     
     if(last_non_zero < start_i)
@@ -4910,15 +4914,12 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     i= last_i;
     assert(last_level);
-//FIXME use permutated scantable
-    block[ s->dsp.idct_permutation[ scantable[last_non_zero] ] ]= last_level;
+
+    block[ perm_scantable[last_non_zero] ]= last_level;
     i -= last_run + 1;
     
-    for(;i>0 ; i -= run_tab[i] + 1){
-        const int j= s->dsp.idct_permutation[ scantable[i - 1 + start_i] ];
-    
-        block[j]= level_tab[i];
-        assert(block[j]);
+    for(; i>start_i; i -= run_tab[i] + 1){
+        block[ perm_scantable[i-1] ]= level_tab[i];
     }
 
     return last_non_zero;
