@@ -477,7 +477,7 @@ void mjpeg_picture_header(MpegEncContext *s)
 
 static void escape_FF(MpegEncContext *s, int start)
 {
-    int size= get_bit_count(&s->pb) - start*8;
+    int size= put_bits_count(&s->pb) - start*8;
     int i, ff_count;
     uint8_t *buf= s->pb.buf + start;
     int align= (-(size_t)(buf))&3;
@@ -533,7 +533,7 @@ static void escape_FF(MpegEncContext *s, int start)
 
 void mjpeg_picture_trailer(MpegEncContext *s)
 {
-    int pad= (-get_bit_count(&s->pb))&7;
+    int pad= (-put_bits_count(&s->pb))&7;
     
     put_bits(&s->pb, pad,0xFF>>(8-pad));
     flush_put_bits(&s->pb);
@@ -651,7 +651,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
     
     mjpeg_picture_header(s);
 
-    s->header_bits= get_bit_count(&s->pb);
+    s->header_bits= put_bits_count(&s->pb);
 
     if(avctx->pix_fmt == PIX_FMT_RGBA32){
         int x, y, i;
@@ -770,7 +770,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 
     flush_put_bits(&s->pb);
     return pbBufPtr(&s->pb) - s->pb.buf;
-//    return (get_bit_count(&f->pb)+7)/8;
+//    return (put_bits_count(&f->pb)+7)/8;
 }
 
 #endif //CONFIG_ENCODERS

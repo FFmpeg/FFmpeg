@@ -519,10 +519,10 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     emms_c();
     
     align_put_bits(&a->pb);
-    while(get_bit_count(&a->pb)&31)
+    while(put_bits_count(&a->pb)&31)
         put_bits(&a->pb, 8, 0);
     
-    size= get_bit_count(&a->pb)/32;
+    size= put_bits_count(&a->pb)/32;
     
     if(avctx->codec_id == CODEC_ID_ASV1)
         a->dsp.bswap_buf((uint32_t*)buf, (uint32_t*)buf, size);

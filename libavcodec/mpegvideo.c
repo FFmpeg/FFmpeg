@@ -3734,10 +3734,10 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
 
     encode_mb(s, motion_x, motion_y);
     
-    score= get_bit_count(&s->pb);
+    score= put_bits_count(&s->pb);
     if(s->data_partitioning){
-        score+= get_bit_count(&s->pb2);
-        score+= get_bit_count(&s->tex_pb);
+        score+= put_bits_count(&s->pb2);
+        score+= put_bits_count(&s->tex_pb);
     }
    
     if(s->avctx->mb_decision == FF_MB_DECISION_RD){
@@ -4012,7 +4012,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     if(s->current_picture.key_frame)
         s->picture_in_gop_number=0;
 
-    s->last_bits= get_bit_count(&s->pb);
+    s->last_bits= put_bits_count(&s->pb);
     switch(s->out_format) {
     case FMT_MJPEG:
         mjpeg_picture_header(s);
@@ -4041,7 +4041,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     default:
         assert(0);
     }
-    bits= get_bit_count(&s->pb);
+    bits= put_bits_count(&s->pb);
     s->header_bits= bits - s->last_bits;
     s->last_bits= bits;
     s->mv_bits=0;
@@ -4134,11 +4134,11 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     align_put_bits(&s->pb);
                     flush_put_bits(&s->pb);
 
-                    assert((get_bit_count(&s->pb)&7) == 0);
+                    assert((put_bits_count(&s->pb)&7) == 0);
                     current_packet_size= pbBufPtr(&s->pb) - s->ptr_lastgob;
                     
                     if(s->avctx->error_rate && s->resync_mb_x + s->resync_mb_y > 0){
-                        int r= get_bit_count(&s->pb)/8 + s->picture_number + s->codec_id + s->mb_x + s->mb_y;
+                        int r= put_bits_count(&s->pb)/8 + s->picture_number + s->codec_id + s->mb_x + s->mb_y;
                         int d= 100 / s->avctx->error_rate;
                         if(r % d == 0){
                             current_packet_size=0;
@@ -4169,7 +4169,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     }
 
                     if(s->flags&CODEC_FLAG_PASS1){
-                        int bits= get_bit_count(&s->pb);
+                        int bits= put_bits_count(&s->pb);
                         s->misc_bits+= bits - s->last_bits;
                         s->last_bits= bits;
                     }
@@ -4394,23 +4394,23 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
                 copy_context_after_encode(s, &best_s, -1);
                 
-                pb_bits_count= get_bit_count(&s->pb);
+                pb_bits_count= put_bits_count(&s->pb);
                 flush_put_bits(&s->pb);
                 ff_copy_bits(&backup_s.pb, bit_buf[next_block^1], pb_bits_count);
                 s->pb= backup_s.pb;
                 
                 if(s->data_partitioning){
-                    pb2_bits_count= get_bit_count(&s->pb2);
+                    pb2_bits_count= put_bits_count(&s->pb2);
                     flush_put_bits(&s->pb2);
                     ff_copy_bits(&backup_s.pb2, bit_buf2[next_block^1], pb2_bits_count);
                     s->pb2= backup_s.pb2;
                     
-                    tex_pb_bits_count= get_bit_count(&s->tex_pb);
+                    tex_pb_bits_count= put_bits_count(&s->tex_pb);
                     flush_put_bits(&s->tex_pb);
                     ff_copy_bits(&backup_s.tex_pb, bit_buf_tex[next_block^1], tex_pb_bits_count);
                     s->tex_pb= backup_s.tex_pb;
                 }
-                s->last_bits= get_bit_count(&s->pb);
+                s->last_bits= put_bits_count(&s->pb);
                
 #ifdef CONFIG_RISKY
                 if (s->out_format == FMT_H263 && s->pict_type!=B_TYPE)
@@ -4574,7 +4574,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             }
             if(s->loop_filter)
                 ff_h263_loop_filter(s);
-//printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_stride, get_bit_count(&s->pb));
+//printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_stride, put_bits_count(&s->pb));
         }
     }
     emms_c();

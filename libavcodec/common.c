@@ -64,7 +64,7 @@ void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size)
 #if 1
 
 /* return the number of bits output */
-int get_bit_count(PutBitContext *s)
+int put_bits_count(PutBitContext *s)
 {
 #ifdef ALT_BITSTREAM_WRITER
     return s->index;

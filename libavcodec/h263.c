@@ -1972,7 +1972,7 @@ void h263_encode_init(MpegEncContext *s)
 
 //            ff_mpeg4_stuffing(&s->pb); ?
             flush_put_bits(&s->pb);
-            s->avctx->extradata_size= (get_bit_count(&s->pb)+7)>>3;
+            s->avctx->extradata_size= (put_bits_count(&s->pb)+7)>>3;
         }
         
         break;
@@ -2146,7 +2146,7 @@ void ff_mpeg4_stuffing(PutBitContext * pbc)
 {
     int length;
     put_bits(pbc, 1, 0);
-    length= (-get_bit_count(pbc))&7;
+    length= (-put_bits_count(pbc))&7;
     if(length) put_bits(pbc, length, (1<<length)-1);
 }
 
@@ -2972,9 +2972,9 @@ void ff_mpeg4_init_partitions(MpegEncContext *s)
 
 void ff_mpeg4_merge_partitions(MpegEncContext *s)
 {
-    const int pb2_len   = get_bit_count(&s->pb2   );
-    const int tex_pb_len= get_bit_count(&s->tex_pb);
-    const int bits= get_bit_count(&s->pb);
+    const int pb2_len   = put_bits_count(&s->pb2   );
+    const int tex_pb_len= put_bits_count(&s->tex_pb);
+    const int bits= put_bits_count(&s->pb);
 
     if(s->pict_type==I_TYPE){
         put_bits(&s->pb, 19, DC_MARKER);
@@ -2992,7 +2992,7 @@ void ff_mpeg4_merge_partitions(MpegEncContext *s)
 
     ff_copy_bits(&s->pb, s->pb2_buffer   , pb2_len);
     ff_copy_bits(&s->pb, s->tex_pb_buffer, tex_pb_len);
-    s->last_bits= get_bit_count(&s->pb);
+    s->last_bits= put_bits_count(&s->pb);
 }
 
 #endif //CONFIG_ENCODERS

@@ -409,7 +409,7 @@ static inline void encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], i
                 }
             }
             
-//            printf("count:%d index:%d, mode:%d, x:%d y:%d pos:%d\n", run_count, run_index, run_mode, x, y, (int)get_bit_count(&s->pb));
+//            printf("count:%d index:%d, mode:%d, x:%d y:%d pos:%d\n", run_count, run_index, run_mode, x, y, (int)put_bits_count(&s->pb));
 
             if(run_mode == 0)
                 put_vlc_symbol(&s->pb, &p->vlc_state[context], diff, bits);
@@ -689,7 +689,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         return put_cabac_terminate(c, 1);
     }else{
         flush_put_bits(&f->pb); //nicer padding FIXME
-        return used_count + (get_bit_count(&f->pb)+7)/8;
+        return used_count + (put_bits_count(&f->pb)+7)/8;
     }
 }
 

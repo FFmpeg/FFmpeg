@@ -288,7 +288,7 @@ typedef struct PutBitContext {
 
 void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size);
 
-int get_bit_count(PutBitContext *s); /* XXX: change function name */
+int put_bits_count(PutBitContext *s);
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
 void put_string(PutBitContext * pbc, char *s);

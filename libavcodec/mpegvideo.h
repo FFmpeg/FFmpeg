@@ -749,7 +749,7 @@ static inline void ff_update_block_index(MpegEncContext *s){
 }
 
 static inline int get_bits_diff(MpegEncContext *s){
-    const int bits= get_bit_count(&s->pb);
+    const int bits= put_bits_count(&s->pb);
     const int last= s->last_bits;
 
     s->last_bits = bits;
