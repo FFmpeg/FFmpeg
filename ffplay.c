@@ -1609,7 +1609,7 @@ void toggle_audio_display(void)
 void event_loop(void)
 {
     SDL_Event event;
-    double incr, pos;
+    double incr, pos, frac;
 
     for(;;) {
         SDL_WaitEvent(&event);
@@ -1660,6 +1660,24 @@ void event_loop(void)
                 break;
             }
             break;
+        case SDL_MOUSEBUTTONDOWN:
+	    if (cur_stream) {
+		int ns, hh, mm, ss;
+		int tns, thh, tmm, tss;
+		tns = cur_stream->ic->duration/1000000LL;
+		thh = tns/3600;
+		tmm = (tns%3600)/60;
+		tss = (tns%60);
+		frac = (double)event.button.x/(double)cur_stream->width;
+		ns = frac*tns;
+		hh = ns/3600;
+		mm = (ns%3600)/60;
+		ss = (ns%60);
+		fprintf(stderr, "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
+			hh, mm, ss, thh, tmm, tss);
+		stream_seek(cur_stream, (int64_t)(cur_stream->ic->start_time+frac*cur_stream->ic->duration));
+	    }
+	    break;
         case SDL_VIDEORESIZE:
             if (cur_stream) {
                 screen = SDL_SetVideoMode(event.resize.w, event.resize.h, 0, 
@@ -1790,6 +1808,7 @@ void show_help(void)
            "w                   show audio waves\n"
            "left/right          seek backward/forward 10 seconds\n"
            "down/up             seek backward/forward 1 minute\n"
+           "mouse click         seek to percentage in file corresponding to fraction of width\n"
            );
     exit(1);
 }
