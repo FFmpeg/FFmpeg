@@ -438,7 +438,7 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 	}
 
         /* update mv_cache */
-        fill_rectangle(h->mv_cache[0][scan8[k]], part_width>>2, part_height>>2, 8, (mx&0xFFFF)+(my<<16), 4);
+        fill_rectangle(h->mv_cache[0][scan8[k]], part_width>>2, part_height>>2, 8, pack16to32(mx,my), 4);
       }
     }
 

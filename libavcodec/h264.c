@@ -297,6 +297,14 @@ static VLC run7_vlc;
 static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
 static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
 
+static inline uint32_t pack16to32(int a, int b){
+#ifdef WORDS_BIGENDIAN
+   return (b&0xFFFF) + (a<<16);
+#else
+   return (a&0xFFFF) + (b<<16);
+#endif
+}
+
 /**
  * fill a rectangle.
  * @param h height of the recatangle, should be a constant
@@ -3226,7 +3234,7 @@ static int decode_mb(H264Context *h){
             fill_caches(h, mb_type); //FIXME check what is needed and what not ...
             pred_pskip_motion(h, &mx, &my);
             fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);
-            fill_rectangle(  h->mv_cache[0][scan8[0]], 4, 4, 8, (mx&0xFFFF)+(my<<16), 4);
+            fill_rectangle(  h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mx,my), 4);
             write_back_motion(h, mb_type);
 
             s->current_picture.mb_type[mb_xy]= mb_type; //FIXME SKIP type
@@ -3456,7 +3464,7 @@ decode_intra_mb:
                     my += get_se_golomb(&s->gb);
                     tprintf("final mv:%d %d\n", mx, my);
 
-                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, (mx&0xFFFF) + (my<<16), 4);
+                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
                 }
             }
         }
@@ -3479,7 +3487,7 @@ decode_intra_mb:
                         my += get_se_golomb(&s->gb);
                         tprintf("final mv:%d %d\n", mx, my);
 
-                        fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, (mx&0xFFFF) + (my<<16), 4);
+                        fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx,my), 4);
                     }
                 }
             }
@@ -3503,7 +3511,7 @@ decode_intra_mb:
                         my += get_se_golomb(&s->gb);
                         tprintf("final mv:%d %d\n", mx, my);
 
-                        fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, (mx&0xFFFF) + (my<<16), 4);
+                        fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx,my), 4);
                     }
                 }
             }
@@ -3999,7 +4007,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
     AVCodecContext * const avctx= s->avctx;
     int buf_index=0;
     int i;
-#if 0    
+#if 0
     for(i=0; i<32; i++){
         printf("%X ", buf[i]);
     }
