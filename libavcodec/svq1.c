@@ -2577,6 +2577,8 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 #endif
     return result;
   }
+  
+  if(avctx->hurry_up && s->pict_type==B_TYPE) return buf_size;
 
   /* decode y, u and v components */
   for (i=0; i < 3; i++) {
@@ -2645,7 +2647,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   }
 
   *data_size=sizeof(AVPicture);
-  return 0;
+  return buf_size;
 }
 
 static int svq1_decode_init(AVCodecContext *avctx)
