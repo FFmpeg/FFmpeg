@@ -1792,6 +1792,12 @@ void dsputil_init(DSPContext* c, unsigned mask)
 
 #ifdef HAVE_MMX
     dsputil_init_mmx(c, mask);
+    if (ff_bit_exact)
+    {
+        /* FIXME - AVCodec context should have flag for bitexact match */
+	/* fprintf(stderr, "\n\n\nff_bit_exact %d\n\n\n\n", ff_bit_exact); */
+	dsputil_set_bit_exact_mmx(c, mask);
+    }
 #endif
 #ifdef ARCH_ARMV4L
     dsputil_init_armv4l(c, mask);
@@ -1817,7 +1823,7 @@ void avcodec_set_bit_exact(void)
 {
     ff_bit_exact=1;
 #ifdef HAVE_MMX
-#warning FIXME - set_bit_exact
+// FIXME - better set_bit_exact
 //    dsputil_set_bit_exact_mmx();
 #endif
 }
