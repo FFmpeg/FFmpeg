@@ -2634,7 +2634,6 @@ static int decode_init(AVCodecContext *avctx){
     
     if(avctx->extradata_size > 0 && avctx->extradata &&
        *(char *)avctx->extradata == 1){
-        av_log(avctx, AV_LOG_INFO, "assuming AVC1 format\n");
         h->is_avc = 1;
         h->got_avcC = 0;
     } else {
