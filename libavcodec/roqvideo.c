@@ -41,6 +41,9 @@ typedef struct {
   int idx[4];
 } roq_qcell;
 
+static int uiclip[1024], *uiclp;  /* clipping table */
+#define avg2(a,b) uiclp[(((int)(a)+(int)(b)+1)>>1)]
+#define avg4(a,b,c,d) uiclp[(((int)(a)+(int)(b)+(int)(c)+(int)(d)+2)>>2)]
 
 typedef struct RoqContext {
 
@@ -132,9 +135,9 @@ static void apply_vector_4x4(RoqContext *ri, int x, int y, roq_cell *cell)
 }
 
 static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
-    char mean_x, char mean_y)
+    signed char mean_x, signed char mean_y)
 {
-    int i, mx, my;
+    int i, hw, mx, my;
     unsigned char *pa, *pb;
 
     mx = x + 8 - (mv >> 4) - mean_x;
@@ -151,6 +154,7 @@ static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
         pb += ri->y_stride;
     }
 
+#if 0
     pa = ri->current_frame.data[1] + (y/2) * (ri->c_stride) + x/2;
     pb = ri->last_frame.data[1] + (my/2) * (ri->c_stride) + (mx + 1)/2;
     for(i = 0; i < 2; i++) {
@@ -168,12 +172,53 @@ static void apply_motion_4x4(RoqContext *ri, int x, int y, unsigned char mv,
         pa += ri->c_stride;
         pb += ri->c_stride;
     }
+#else
+    hw = ri->y_stride/2;
+    pa = ri->current_frame.data[1] + (y * ri->y_stride)/4 + x/2;
+    pb = ri->last_frame.data[1] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
+
+    for(i = 0; i < 2; i++) {
+        switch(((my & 0x01) << 1) | (mx & 0x01)) {
+
+        case 0:
+            pa[0] = pb[0];
+            pa[1] = pb[1];
+            pa[hw] = pb[hw];
+            pa[hw+1] = pb[hw+1];
+            break;
+
+        case 1:
+            pa[0] = avg2(pb[0], pb[1]);
+            pa[1] = avg2(pb[1], pb[2]);
+            pa[hw] = avg2(pb[hw], pb[hw+1]);
+            pa[hw+1] = avg2(pb[hw+1], pb[hw+2]);
+            break;
+
+        case 2:
+            pa[0] = avg2(pb[0], pb[hw]);
+            pa[1] = avg2(pb[1], pb[hw+1]);
+            pa[hw] = avg2(pb[hw], pb[hw*2]);
+            pa[hw+1] = avg2(pb[hw+1], pb[(hw*2)+1]);
+            break;
+
+        case 3:
+            pa[0] = avg4(pb[0], pb[1], pb[hw], pb[hw+1]);
+            pa[1] = avg4(pb[1], pb[2], pb[hw+1], pb[hw+2]);
+            pa[hw] = avg4(pb[hw], pb[hw+1], pb[hw*2], pb[(hw*2)+1]);
+            pa[hw+1] = avg4(pb[hw+1], pb[hw+2], pb[(hw*2)+1], pb[(hw*2)+1]);
+            break;
+        }
+
+        pa = ri->current_frame.data[2] + (y * ri->y_stride)/4 + x/2;
+        pb = ri->last_frame.data[2] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
+    }
+#endif
 }
 
 static void apply_motion_8x8(RoqContext *ri, int x, int y,
-    unsigned char mv, char mean_x, char mean_y)
+    unsigned char mv, signed char mean_x, signed char mean_y)
 {
-    int mx, my, i;
+    int mx, my, i, j, hw;
     unsigned char *pa, *pb;
 
     mx = x + 8 - (mv >> 4) - mean_x;
@@ -194,6 +239,7 @@ static void apply_motion_8x8(RoqContext *ri, int x, int y,
         pb += ri->y_stride;
     }
 
+#if 0
     pa = ri->current_frame.data[1] + (y/2) * (ri->c_stride) + x/2;
     pb = ri->last_frame.data[1] + (my/2) * (ri->c_stride) + (mx + 1)/2;
     for(i = 0; i < 4; i++) {
@@ -215,6 +261,50 @@ static void apply_motion_8x8(RoqContext *ri, int x, int y,
         pa += ri->c_stride;
         pb += ri->c_stride;
     }
+#else
+    hw = ri->c_stride;
+    pa = ri->current_frame.data[1] + (y * ri->y_stride)/4 + x/2;
+    pb = ri->last_frame.data[1] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
+    for(j = 0; j < 2; j++) {
+        for(i = 0; i < 4; i++) {
+            switch(((my & 0x01) << 1) | (mx & 0x01)) {
+
+            case 0:
+                pa[0] = pb[0];
+                pa[1] = pb[1];
+                pa[2] = pb[2];
+                pa[3] = pb[3];
+                break;
+
+            case 1:
+                pa[0] = avg2(pb[0], pb[1]);
+                pa[1] = avg2(pb[1], pb[2]);
+                pa[2] = avg2(pb[2], pb[3]);
+                pa[3] = avg2(pb[3], pb[4]);
+                break;
+ 
+            case 2:
+                pa[0] = avg2(pb[0], pb[hw]);
+                pa[1] = avg2(pb[1], pb[hw+1]);
+                pa[2] = avg2(pb[2], pb[hw+2]);
+                pa[3] = avg2(pb[3], pb[hw+3]);
+                break;
+
+            case 3:
+                pa[0] = avg4(pb[0], pb[1], pb[hw], pb[hw+1]);
+                pa[1] = avg4(pb[1], pb[2], pb[hw+1], pb[hw+2]);
+                pa[2] = avg4(pb[2], pb[3], pb[hw+2], pb[hw+3]);
+                pa[3] = avg4(pb[3], pb[4], pb[hw+3], pb[hw+4]);
+                break;
+            }
+            pa += ri->c_stride;
+            pb += ri->c_stride;
+        }
+
+        pa = ri->current_frame.data[2] + (y * ri->y_stride)/4 + x/2;
+        pb = ri->last_frame.data[2] + (my/2) * (ri->y_stride/2) + (mx + 1)/2;
+    }
+#endif
 }
 
 static void roqvideo_decode_frame(RoqContext *ri)
@@ -339,12 +429,17 @@ static void roqvideo_decode_frame(RoqContext *ri)
 static int roq_decode_init(AVCodecContext *avctx)
 {
     RoqContext *s = avctx->priv_data;
+    int i;
 
     s->avctx = avctx;
     s->first_frame = 1;
     avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
+
+    uiclp = uiclip+512;
+    for(i = -512; i < 512; i++)
+        uiclp[i] = (i < 0 ? 0 : (i > 255 ? 255 : i));
 
     return 0;
 }
