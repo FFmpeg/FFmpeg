@@ -69,6 +69,25 @@ const uint8_t ff_h264_lps_state[64]= {
  36,36,37,37,37,38,38,63,
 };
 
+const uint8_t ff_h264_norm_shift[256]= {
+ 8,7,6,6,5,5,5,5,4,4,4,4,4,4,4,4,
+ 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
+ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+ 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
+ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
+ 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 
+};
+
 /**
  *
  * @param buf_size size of buf in bits
@@ -95,10 +114,14 @@ void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
     c->bytestream= buf;
     c->bytestream_end= buf + buf_size;
 
-    c->low= *c->bytestream++;
-    c->low= (c->low<<9) + ((*c->bytestream++)<<1);
-    c->range= 0x1FE00;
-    c->bits_left= 7;
+#if CABAC_BITS == 16
+    c->low =  (*c->bytestream++)<<18;
+    c->low+=  (*c->bytestream++)<<10;
+#else
+    c->low =  (*c->bytestream++)<<10;
+#endif
+    c->low+= ((*c->bytestream++)<<2) + 2;
+    c->range= 0x1FE<<(CABAC_BITS + 1);
 }
 
 void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4], 
@@ -107,8 +130,8 @@ void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4],
     
     for(i=0; i<state_count; i++){
         for(j=0; j<4; j++){ //FIXME check if this is worth the 1 shift we save
-            c->lps_range[2*i+0][j]=
-            c->lps_range[2*i+1][j]= lps_range[i][j];
+            c->lps_range[2*i+0][j+4]=
+            c->lps_range[2*i+1][j+4]= lps_range[i][j];
         }
 
         c->mps_state[2*i+0]= 2*mps_state[i];

@@ -27,6 +27,9 @@
 #undef NDEBUG
 #include <assert.h>
 
+#define CABAC_BITS 8
+#define CABAC_MASK ((1<<CABAC_BITS)-1)
+
 typedef struct CABACContext{
     int low;
     int range;
@@ -34,19 +37,20 @@ typedef struct CABACContext{
 #ifdef STRICT_LIMITS
     int symCount;
 #endif
-    uint8_t lps_range[2*64][4];   ///< rangeTabLPS
+    uint8_t lps_range[2*65][4];   ///< rangeTabLPS
     uint8_t lps_state[2*64];      ///< transIdxLPS
     uint8_t mps_state[2*64];      ///< transIdxMPS
     const uint8_t *bytestream_start;
     const uint8_t *bytestream;
     const uint8_t *bytestream_end;
-    int bits_left;                ///<
     PutBitContext pb;
 }CABACContext;
 
 extern const uint8_t ff_h264_lps_range[64][4];
 extern const uint8_t ff_h264_mps_state[64];
 extern const uint8_t ff_h264_lps_state[64];
+extern const uint8_t ff_h264_norm_shift[256];
+
 
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size);
 void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size);
@@ -80,7 +84,7 @@ static inline void renorm_cabac_encoder(CABACContext *c){
 }
 
 static inline void put_cabac(CABACContext *c, uint8_t * const state, int bit){
-    int RangeLPS= c->lps_range[*state][((c->range)>>6)&3];
+    int RangeLPS= c->lps_range[*state][c->range>>6];
     
     if(bit == ((*state)&1)){
         c->range -= RangeLPS;
@@ -249,63 +253,101 @@ static inline void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int ma
     }
 }
 
+static void refill(CABACContext *c){
+    if(c->bytestream < c->bytestream_end)
+#if CABAC_BITS == 16
+        c->low+= ((c->bytestream[0]<<9) + (c->bytestream[1])<<1);
+#else
+        c->low+= c->bytestream[0]<<1;
+#endif
+    c->low -= CABAC_MASK;
+    c->bytestream+= CABAC_BITS/8;
+}
+
+static void refill2(CABACContext *c){
+    int i, x;
+
+    x= c->low ^ (c->low-1);
+    i= 8 - ff_h264_norm_shift[x>>(CABAC_BITS+1)];
+
+    x= -CABAC_MASK;
+    
+    if(c->bytestream < c->bytestream_end)
+#if CABAC_BITS == 16
+        x+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
+#else
+        x+= c->bytestream[0]<<1;
+#endif
+    
+    c->low += x<<i;
+    c->bytestream+= CABAC_BITS/8;
+}
+
+
 static inline void renorm_cabac_decoder(CABACContext *c){
-    while(c->range < 0x10000){
+    while(c->range < (0x200 << CABAC_BITS)){
         c->range+= c->range;
         c->low+= c->low;
-        if(--c->bits_left == 0){
-            if(c->bytestream < c->bytestream_end)
-                c->low+= *c->bytestream;
-            c->bytestream++;
-            c->bits_left= 8;
-        }
+        if(!(c->low & CABAC_MASK))
+            refill(c);
     }
+}
+
+static inline void renorm_cabac_decoder_once(CABACContext *c){
+    int mask= (c->range - (0x200 << CABAC_BITS))>>31;
+    c->range+= c->range&mask;
+    c->low  += c->low  &mask;
+    if(!(c->low & CABAC_MASK))
+        refill(c);
 }
 
 static inline int get_cabac(CABACContext *c, uint8_t * const state){
-    int RangeLPS= c->lps_range[*state][((c->range)>>14)&3]<<8;
-    int bit;
+    int RangeLPS= c->lps_range[*state][c->range>>(CABAC_BITS+7)]<<(CABAC_BITS+1);
+    int bit, lps_mask;
     
     c->range -= RangeLPS;
+#if 1
     if(c->low < c->range){
         bit= (*state)&1;
         *state= c->mps_state[*state];
+        renorm_cabac_decoder_once(c);
     }else{
+//        int shift= ff_h264_norm_shift[RangeLPS>>17];
         bit= ((*state)&1)^1;
         c->low -= c->range;
-        c->range = RangeLPS;
         *state= c->lps_state[*state];
-    }
-    renorm_cabac_decoder(c);
-    
-    return bit;    
-}
-
-static inline int get_cabac_static(CABACContext *c, int RangeLPS){
-    int bit;
-    
-    c->range -= RangeLPS;
-    if(c->low < c->range){
-        bit= 0;
-    }else{
-        bit= 1;
-        c->low -= c->range;
         c->range = RangeLPS;
+        renorm_cabac_decoder(c);
+/*        c->range = RangeLPS<<shift;
+        c->low <<= shift;
+        if(!(c->low & 0xFFFF)){
+            refill2(c);
+        }*/
     }
-    renorm_cabac_decoder(c);
+#else
+    lps_mask= (c->range - c->low)>>31;
     
+    c->low -= c->range & lps_mask;
+    c->range += (RangeLPS - c->range) & lps_mask;
+    
+    bit= ((*state)^lps_mask)&1;
+    *state= c->mps_state[(*state) - (128&lps_mask)];
+    
+    lps_mask= ff_h264_norm_shift[c->range>>(CABAC_BITS+2)];
+    c->range<<= lps_mask;
+    c->low  <<= lps_mask;
+    if(!(c->low & CABAC_MASK))
+        refill2(c);
+#endif
+
     return bit;    
 }
 
 static inline int get_cabac_bypass(CABACContext *c){
     c->low += c->low;
 
-    if(--c->bits_left == 0){
-        if(c->bytestream < c->bytestream_end)
-            c->low+= *c->bytestream;
-        c->bytestream++;
-        c->bits_left= 8;
-    }
+    if(!(c->low & CABAC_MASK))
+        refill(c);
     
     if(c->low < c->range){
         return 0;
@@ -320,9 +362,9 @@ static inline int get_cabac_bypass(CABACContext *c){
  * @return the number of bytes read or 0 if no end
  */
 static inline int get_cabac_terminate(CABACContext *c){
-    c->range -= 2<<8;
+    c->range -= 4<<CABAC_BITS;
     if(c->low < c->range){
-        renorm_cabac_decoder(c);    
+        renorm_cabac_decoder_once(c);
         return 0;
     }else{
         return c->bytestream - c->bytestream_start;
