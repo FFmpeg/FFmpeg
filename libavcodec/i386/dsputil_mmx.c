@@ -563,7 +563,7 @@ static int sse16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size) {
       "psrlq $32, %%mm7\n"	/* shift hi dword to lo */
       "paddd %%mm7,%%mm1\n"
       "movd %%mm1,%2\n"
-      : "+r" (pix1), "+r" (pix2), "=r"(tmp) : "r" (line_size) : "ecx");
+      : "+r" (pix1), "+r" (pix2), "=r"(tmp) : "r" (line_size) : "%ecx");
     return tmp;
 }
 
