@@ -88,6 +88,7 @@ typedef INT64 int64_t;
 #    endif
 
 #    define snprintf _snprintf
+#    define vsnprintf _vsnprintf
 
 /* CONFIG_WIN32 end */
 #elif defined (CONFIG_OS2)
