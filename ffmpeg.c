@@ -50,7 +50,7 @@ typedef struct {
 #define OPT_EXPERT 0x0004
 #define OPT_STRING 0x0008
     union {
-        void (*func_arg)();
+        void (*func_arg)(const char *);
         int *int_arg;
         char **str_arg;
     } u;
@@ -291,7 +291,7 @@ static int read_key(void)
 
 #endif
 
-int read_ffserver_streams(AVFormatContext *s, const char *filename)
+static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 {
     int i, err;
     AVFormatContext *ic;
@@ -690,7 +690,7 @@ static void do_video_out(AVFormatContext *s,
 
 static double psnr(double d){
     if(d==0) return INFINITY;
-    return -10.0*log(d)/log(10);
+    return -10.0*log(d)/log(10.0);
 }
 
 static void do_video_stats(AVFormatContext *os, AVOutputStream *ost, 
@@ -742,9 +742,9 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
     }
 }
 
-void print_report(AVFormatContext **output_files, 
-                  AVOutputStream **ost_table, int nb_ostreams,
-                  int is_last_report)
+static void print_report(AVFormatContext **output_files,
+			 AVOutputStream **ost_table, int nb_ostreams,
+			 int is_last_report)
 {
     char buf[1024];
     AVOutputStream *ost;
@@ -1524,7 +1524,7 @@ int file_read(const char *filename)
 }
 #endif
 
-void show_licence(void)
+static void show_licence(void)
 {
     printf(
     "ffmpeg version " FFMPEG_VERSION "\n"
@@ -1546,7 +1546,7 @@ void show_licence(void)
     exit(1);
 }
 
-void opt_image_format(const char *arg)
+static void opt_image_format(const char *arg)
 {
     AVImageFormat *f;
     
@@ -1561,7 +1561,7 @@ void opt_image_format(const char *arg)
     image_format = f;
 }
 
-void opt_format(const char *arg)
+static void opt_format(const char *arg)
 {
     /* compatibility stuff for pgmyuv */
     if (!strcmp(arg, "pgmyuv")) {
@@ -1577,80 +1577,80 @@ void opt_format(const char *arg)
     }
 }
 
-void opt_video_bitrate(const char *arg)
+static void opt_video_bitrate(const char *arg)
 {
     video_bit_rate = atoi(arg) * 1000;
 }
 
-void opt_video_bitrate_tolerance(const char *arg)
+static void opt_video_bitrate_tolerance(const char *arg)
 {
     video_bit_rate_tolerance = atoi(arg) * 1000;
 }
 
-void opt_video_bitrate_max(const char *arg)
+static void opt_video_bitrate_max(const char *arg)
 {
     video_rc_max_rate = atoi(arg) * 1000;
 }
 
-void opt_video_bitrate_min(const char *arg)
+static void opt_video_bitrate_min(const char *arg)
 {
     video_rc_min_rate = atoi(arg) * 1000;
 }
 
-void opt_video_buffer_size(const char *arg)
+static void opt_video_buffer_size(const char *arg)
 {
     video_rc_buffer_size = atoi(arg) * 1000;
 }
 
-void opt_video_rc_eq(char *arg)
+static void opt_video_rc_eq(char *arg)
 {
     video_rc_eq = arg;
 }
 
-void opt_video_rc_override_string(char *arg)
+static void opt_video_rc_override_string(char *arg)
 {
     video_rc_override_string = arg;
 }
 
 
-void opt_workaround_bugs(const char *arg)
+static void opt_workaround_bugs(const char *arg)
 {
     workaround_bugs = atoi(arg);
 }
 
-void opt_dct_algo(const char *arg)
+static void opt_dct_algo(const char *arg)
 {
     dct_algo = atoi(arg);
 }
 
-void opt_idct_algo(const char *arg)
+static void opt_idct_algo(const char *arg)
 {
     idct_algo = atoi(arg);
 }
 
 
-void opt_error_resilience(const char *arg)
+static void opt_error_resilience(const char *arg)
 {
     error_resilience = atoi(arg);
 }
 
-void opt_error_concealment(const char *arg)
+static void opt_error_concealment(const char *arg)
 {
     error_concealment = atoi(arg);
 }
 
-void opt_debug(const char *arg)
+static void opt_debug(const char *arg)
 {
     debug = atoi(arg);
 }
 
-void opt_frame_rate(const char *arg)
+static void opt_frame_rate(const char *arg)
 {
     frame_rate = (int)(strtod(arg, 0) * FRAME_RATE_BASE);
 }
 
 
-void opt_frame_crop_top(const char *arg)
+static void opt_frame_crop_top(const char *arg)
 {
     frame_topBand = atoi(arg); 
     if (frame_topBand < 0) {
@@ -1668,7 +1668,7 @@ void opt_frame_crop_top(const char *arg)
     frame_height -= frame_topBand;
 }
 
-void opt_frame_crop_bottom(const char *arg)
+static void opt_frame_crop_bottom(const char *arg)
 {
     frame_bottomBand = atoi(arg);
     if (frame_bottomBand < 0) {
@@ -1686,7 +1686,7 @@ void opt_frame_crop_bottom(const char *arg)
     frame_height -= frame_bottomBand;
 }
 
-void opt_frame_crop_left(const char *arg)
+static void opt_frame_crop_left(const char *arg)
 {
     frame_leftBand = atoi(arg);
     if (frame_leftBand < 0) {
@@ -1704,7 +1704,7 @@ void opt_frame_crop_left(const char *arg)
     frame_width -= frame_leftBand;
 }
 
-void opt_frame_crop_right(const char *arg)
+static void opt_frame_crop_right(const char *arg)
 {
     frame_rightBand = atoi(arg);
     if (frame_rightBand < 0) {
@@ -1722,7 +1722,7 @@ void opt_frame_crop_right(const char *arg)
     frame_width -= frame_rightBand;
 }
 
-void opt_frame_size(const char *arg)
+static void opt_frame_size(const char *arg)
 {
     parse_image_size(&frame_width, &frame_height, arg);
     if (frame_width <= 0 || frame_height <= 0) {
@@ -1735,12 +1735,12 @@ void opt_frame_size(const char *arg)
     }
 }
 
-void opt_gop_size(const char *arg)
+static void opt_gop_size(const char *arg)
 {
     gop_size = atoi(arg);
 }
 
-void opt_b_frames(const char *arg)
+static void opt_b_frames(const char *arg)
 {
     b_frames = atoi(arg);
     if (b_frames > FF_MAX_B_FRAMES) {
@@ -1752,7 +1752,7 @@ void opt_b_frames(const char *arg)
     }
 }
 
-void opt_qscale(const char *arg)
+static void opt_qscale(const char *arg)
 {
     video_qscale = atoi(arg);
     if (video_qscale < 0 ||
@@ -1762,7 +1762,7 @@ void opt_qscale(const char *arg)
     }
 }
 
-void opt_qmin(const char *arg)
+static void opt_qmin(const char *arg)
 {
     video_qmin = atoi(arg);
     if (video_qmin < 0 ||
@@ -1772,7 +1772,7 @@ void opt_qmin(const char *arg)
     }
 }
 
-void opt_qmax(const char *arg)
+static void opt_qmax(const char *arg)
 {
     video_qmax = atoi(arg);
     if (video_qmax < 0 ||
@@ -1782,7 +1782,7 @@ void opt_qmax(const char *arg)
     }
 }
 
-void opt_mb_qmin(const char *arg)
+static void opt_mb_qmin(const char *arg)
 {
     video_mb_qmin = atoi(arg);
     if (video_mb_qmin < 0 ||
@@ -1792,7 +1792,7 @@ void opt_mb_qmin(const char *arg)
     }
 }
 
-void opt_mb_qmax(const char *arg)
+static void opt_mb_qmax(const char *arg)
 {
     video_mb_qmax = atoi(arg);
     if (video_mb_qmax < 0 ||
@@ -1802,7 +1802,7 @@ void opt_mb_qmax(const char *arg)
     }
 }
 
-void opt_qdiff(const char *arg)
+static void opt_qdiff(const char *arg)
 {
     video_qdiff = atoi(arg);
     if (video_qdiff < 0 ||
@@ -1812,84 +1812,84 @@ void opt_qdiff(const char *arg)
     }
 }
 
-void opt_qblur(const char *arg)
+static void opt_qblur(const char *arg)
 {
     video_qblur = atof(arg);
 }
 
-void opt_qcomp(const char *arg)
+static void opt_qcomp(const char *arg)
 {
     video_qcomp = atof(arg);
 }
 
-void opt_rc_initial_cplx(const char *arg)
+static void opt_rc_initial_cplx(const char *arg)
 {
     video_rc_initial_cplx = atof(arg);
 }
-void opt_b_qfactor(const char *arg)
+static void opt_b_qfactor(const char *arg)
 {
     video_b_qfactor = atof(arg);
 }
-void opt_i_qfactor(const char *arg)
+static void opt_i_qfactor(const char *arg)
 {
     video_i_qfactor = atof(arg);
 }
-void opt_b_qoffset(const char *arg)
+static void opt_b_qoffset(const char *arg)
 {
     video_b_qoffset = atof(arg);
 }
-void opt_i_qoffset(const char *arg)
+static void opt_i_qoffset(const char *arg)
 {
     video_i_qoffset = atof(arg);
 }
 
-void opt_packet_size(const char *arg)
+static void opt_packet_size(const char *arg)
 {
     packet_size= atoi(arg);
 }
 
-void opt_strict(const char *arg)
+static void opt_strict(const char *arg)
 {
     strict= atoi(arg);
 }
 
-void opt_audio_bitrate(const char *arg)
+static void opt_audio_bitrate(const char *arg)
 {
     audio_bit_rate = atoi(arg) * 1000;
 }
 
-void opt_audio_rate(const char *arg)
+static void opt_audio_rate(const char *arg)
 {
     audio_sample_rate = atoi(arg);
 }
 
-void opt_audio_channels(const char *arg)
+static void opt_audio_channels(const char *arg)
 {
     audio_channels = atoi(arg);
 }
 
-void opt_video_device(const char *arg)
+static void opt_video_device(const char *arg)
 {
     video_device = av_strdup(arg);
 }
 
-void opt_video_channel(const char *arg)
+static void opt_video_channel(const char *arg)
 {
     video_channel = strtol(arg, NULL, 0);
 }
 
-void opt_audio_device(const char *arg)
+static void opt_audio_device(const char *arg)
 {
     audio_device = av_strdup(arg);
 }
 
-void opt_dv1394(const char *arg)
+static void opt_dv1394(const char *arg)
 {
     video_grab_format = "dv1394";
     audio_grab_format = NULL;
 }
 
-void opt_audio_codec(const char *arg)
+static void opt_audio_codec(const char *arg)
 {
     AVCodec *p;
 
@@ -1911,7 +1911,7 @@ void opt_audio_codec(const char *arg)
     }
 }
 
-void add_frame_hooker(const char *arg)
+static void add_frame_hooker(const char *arg)
 {
     int argc = 0;
     char *argv[64];
@@ -1940,7 +1940,7 @@ const char *motion_str[] = {
     NULL,
 };
 
-void opt_motion_estimation(const char *arg)
+static void opt_motion_estimation(const char *arg)
 {
     const char **p;
     p = motion_str;
@@ -1956,7 +1956,7 @@ void opt_motion_estimation(const char *arg)
     me_method = (p - motion_str) + 1;
 }
 
-void opt_video_codec(const char *arg)
+static void opt_video_codec(const char *arg)
 {
     AVCodec *p;
 
@@ -1978,7 +1978,7 @@ void opt_video_codec(const char *arg)
     }
 }
 
-void opt_map(const char *arg)
+static void opt_map(const char *arg)
 {
     AVStreamMap *m;
     const char *p;
@@ -1993,12 +1993,12 @@ void opt_map(const char *arg)
     m->stream_index = strtol(p, (char **)&p, 0);
 }
 
-void opt_recording_time(const char *arg)
+static void opt_recording_time(const char *arg)
 {
     recording_time = parse_date(arg, 1);
 }
 
-void print_error(const char *filename, int err)
+static void print_error(const char *filename, int err)
 {
     switch(err) {
     case AVERROR_NUMEXPECTED:
@@ -2020,7 +2020,7 @@ void print_error(const char *filename, int err)
     }
 }
 
-void opt_input_file(const char *filename)
+static void opt_input_file(const char *filename)
 {
     AVFormatContext *ic;
     AVFormatParameters params, *ap = &params;
@@ -2098,7 +2098,7 @@ void opt_input_file(const char *filename)
     image_format = NULL;
 }
 
-void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
+static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
 {
     int has_video, has_audio, i, j;
     AVFormatContext *ic;
@@ -2125,7 +2125,7 @@ void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
     *has_audio_ptr = has_audio;
 }
 
-void opt_output_file(const char *filename)
+static void opt_output_file(const char *filename)
 {
     AVStream *st;
     AVFormatContext *oc;
@@ -2418,7 +2418,7 @@ void opt_output_file(const char *filename)
 }
 
 /* prepare dummy protocols for grab */
-void prepare_grab(void)
+static void prepare_grab(void)
 {
     int has_video, has_audio, i, j;
     AVFormatContext *oc;
@@ -2493,7 +2493,7 @@ void prepare_grab(void)
 }
 
 /* open the necessary output devices for playing */
-void prepare_play(void)
+static void prepare_play(void)
 {
     int has_video, has_audio;
     
@@ -2527,7 +2527,7 @@ void prepare_play(void)
 }
 
 /* same option as mencoder */
-void opt_pass(const char *pass_str)
+static void opt_pass(const char *pass_str)
 {
     int pass;
     pass = atoi(pass_str);
@@ -2539,12 +2539,12 @@ void opt_pass(const char *pass_str)
 }
 
 #if defined(CONFIG_WIN32) || defined(CONFIG_OS2)
-INT64 getutime(void)
+static INT64 getutime(void)
 {
   return av_gettime();
 }
 #else
-INT64 getutime(void)
+static INT64 getutime(void)
 {
     struct rusage rusage;
 
@@ -2555,14 +2555,14 @@ INT64 getutime(void)
 
 extern int ffm_nopts;
 
-void opt_bitexact(void)
+static void opt_bitexact(void)
 {
     avcodec_set_bit_exact();
     /* disable generate of real time pts in ffm (need to be supressed anyway) */
     ffm_nopts = 1;
 }
 
-void show_formats(void)
+static void show_formats(void)
 {
     AVInputFormat *ifmt;
     AVOutputFormat *ofmt;
@@ -2813,7 +2813,7 @@ int main(int argc, char **argv)
             } else if (po->flags & OPT_BOOL) {
                 *po->u.int_arg = 1;
             } else {
-                po->u.func_arg(arg);
+		po->u.func_arg(arg);
             }
         } else {
             if (!do_play) {

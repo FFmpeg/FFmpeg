@@ -284,7 +284,7 @@ static long gettime_ms(void)
 
 static FILE *logfile = NULL;
 
-static void http_log(char *fmt, ...)
+static void http_log(const char *fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
@@ -1698,7 +1698,7 @@ static void compute_stats(HTTPContext *c)
             for (i = 0; i < stream->nb_streams; i++) {
                 AVStream *st = stream->streams[i];
                 AVCodec *codec = avcodec_find_encoder(st->codec.codec_id);
-                char *type = "unknown";
+                const char *type = "unknown";
                 char parameters[64];
 
                 parameters[0] = 0;
@@ -2049,7 +2049,7 @@ static int compute_send_delay(HTTPContext *c)
 #else
 
 /* just fall backs */
-int av_read_frame(AVFormatContext *s, AVPacket *pkt)
+static int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
     return av_read_packet(s, pkt);
 }
@@ -2763,7 +2763,7 @@ static HTTPContext *find_rtp_session(const char *session_id)
     return NULL;
 }
 
-RTSPTransportField *find_transport(RTSPHeader *h, enum RTSPProtocol protocol)
+static RTSPTransportField *find_transport(RTSPHeader *h, enum RTSPProtocol protocol)
 {
     RTSPTransportField *th;
     int i;
@@ -3165,7 +3165,7 @@ static int rtp_new_av_stream(HTTPContext *c,
 /********************************************************************/
 /* ffserver initialization */
 
-AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec)
+static AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec)
 {
     AVStream *fst;
 
@@ -3180,8 +3180,7 @@ AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec)
 }
 
 /* return the stream number in the feed */
-int add_av_stream(FFStream *feed,
-                  AVStream *st)
+static int add_av_stream(FFStream *feed, AVStream *st)
 {
     AVStream *fst;
     AVCodecContext *av, *av1;
@@ -3222,7 +3221,7 @@ int add_av_stream(FFStream *feed,
     return i;
 }
 
-void remove_stream(FFStream *stream)
+static void remove_stream(FFStream *stream)
 {
     FFStream **ps;
     ps = &first_stream;
@@ -3236,7 +3235,7 @@ void remove_stream(FFStream *stream)
 }
 
 /* specific mpeg4 handling : we extract the raw parameters */
-void extract_mpeg4_header(AVFormatContext *infile)
+static void extract_mpeg4_header(AVFormatContext *infile)
 {
     int mpeg4_count, i, size;
     AVPacket pkt;
@@ -3284,7 +3283,7 @@ void extract_mpeg4_header(AVFormatContext *infile)
 }
 
 /* compute the needed AVStream for each file */
-void build_file_streams(void)
+static void build_file_streams(void)
 {
     FFStream *stream, *stream_next;
     AVFormatContext *infile;
@@ -3325,7 +3324,7 @@ void build_file_streams(void)
 }
 
 /* compute the needed AVStream for each feed */
-void build_feed_streams(void)
+static void build_feed_streams(void)
 {
     FFStream *stream, *feed;
     int i;
@@ -3522,7 +3521,7 @@ static void get_arg(char *buf, int buf_size, const char **pp)
 }
 
 /* add a codec and set the default parameters */
-void add_codec(FFStream *stream, AVCodecContext *av)
+static void add_codec(FFStream *stream, AVCodecContext *av)
 {
     AVStream *st;
 
@@ -3582,7 +3581,7 @@ void add_codec(FFStream *stream, AVCodecContext *av)
     memcpy(&st->codec, av, sizeof(AVCodecContext));
 }
 
-int opt_audio_codec(const char *arg)
+static int opt_audio_codec(const char *arg)
 {
     AVCodec *p;
 
@@ -3599,7 +3598,7 @@ int opt_audio_codec(const char *arg)
     return p->id;
 }
 
-int opt_video_codec(const char *arg)
+static int opt_video_codec(const char *arg)
 {
     AVCodec *p;
 
@@ -3642,7 +3641,7 @@ void load_module(const char *filename)
 }
 #endif
 
-int parse_ffconfig(const char *filename)
+static int parse_ffconfig(const char *filename)
 {
     FILE *f;
     char line[1024];
@@ -4268,7 +4267,7 @@ static void write_packet(FFCodec *ffenc,
 }
 #endif
 
-void help(void)
+static void help(void)
 {
     printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n"
            "usage: ffserver [-L] [-h] [-f configfile]\n"
@@ -4280,7 +4279,7 @@ void help(void)
            );
 }
 
-void licence(void)
+static void licence(void)
 {
     printf(
     "ffserver version " FFMPEG_VERSION "\n"
