@@ -6,6 +6,7 @@
  *               Software YUV to RGB convertor
  *  Written by Nick Kurshev.
  *  palette & yuv & runtime cpu stuff by Michael (michaelni@gmx.at) (under GPL)
+ *  lot of big-endian byteorder fixes by Alex Beregszaszi
  */
 
 #include <stddef.h>
@@ -102,10 +103,17 @@ static inline void RENAME(rgb24to32)(const uint8_t *src,uint8_t *dst,unsigned sr
 #endif
   while(s < end)
   {
+#ifdef WORDS_BIGENDIAN
+    *dest++ = 0;
+    *dest++ = *s++;
+    *dest++ = *s++;
+    *dest++ = *s++;
+#else
     *dest++ = *s++;
     *dest++ = *s++;
     *dest++ = *s++;
     *dest++ = 0;
+#endif
   }
 }
 
@@ -179,10 +187,17 @@ static inline void RENAME(rgb32to24)(const uint8_t *src,uint8_t *dst,unsigned sr
 #endif
   while(s < end)
   {
+#ifdef WORDS_BIGENDIAN
+    s++;
+    *dest++ = *s++;
+    *dest++ = *s++;
+    *dest++ = *s++;
+#else
     *dest++ = *s++;
     *dest++ = *s++;
     *dest++ = *s++;
     s++;
+#endif
   }
 }
 
@@ -388,6 +403,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 #endif
 	while(s < end)
 	{
+		// FIXME on bigendian
 		const int src= *s; s += 4;
 		*d++ = ((src&0xFF)>>3) + ((src&0xFC00)>>5) + ((src&0xF80000)>>8);
 //		*d++ = ((src>>3)&0x1F) + ((src>>5)&0x7E0) + ((src>>8)&0xF800);
@@ -450,6 +466,7 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, unsign
 #endif
 	while(s < end)
 	{
+		// FIXME on bigendian
 		const int src= *s; s += 4;
 		*d++ = ((src&0xF8)<<8) + ((src&0xFC00)>>5) + ((src&0xF80000)>>19);
 	}
@@ -546,6 +563,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 #endif
 	while(s < end)
 	{
+		// FIXME on bigendian
 		const int src= *s; s += 4;
 		*d++ = ((src&0xFF)>>3) + ((src&0xF800)>>6) + ((src&0xF80000)>>9);
 	}
@@ -607,6 +625,7 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, unsign
 #endif
 	while(s < end)
 	{
+		// FIXME on bigendian
 		const int src= *s; s += 4;
 		*d++ = ((src&0xF8)<<7) + ((src&0xF800)>>6) + ((src&0xF80000)>>19);
 	}
@@ -1233,10 +1252,18 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, unsigned 
 //FIXME this is very likely wrong for bigendian (and the following converters too)
 		register uint16_t bgr;
 		bgr = *s++;
+#ifdef WORDS_BIGENDIAN
+		*d++ = 0;
+		*d++ = (bgr&0x1F)<<3;
+		*d++ = (bgr&0x3E0)>>2;
+		*d++ = (bgr&0x7C00)>>7;
+#else
 		*d++ = (bgr&0x1F)<<3;
 		*d++ = (bgr&0x3E0)>>2;
 		*d++ = (bgr&0x7C00)>>7;
 		*d++ = 0;
+#endif
+
 #endif
 	}
 }
@@ -1299,10 +1326,17 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, unsigned 
 	{
 		register uint16_t bgr;
 		bgr = *s++;
+#ifdef WORDS_BIGENDIAN
+		*d++ = 0;
+		*d++ = (bgr&0x1F)<<3;
+		*d++ = (bgr&0x7E0)>>3;
+		*d++ = (bgr&0xF800)>>8;
+#else
 		*d++ = (bgr&0x1F)<<3;
 		*d++ = (bgr&0x7E0)>>3;
 		*d++ = (bgr&0xF800)>>8;
 		*d++ = 0;
+#endif
 	}
 }
 
