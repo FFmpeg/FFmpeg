@@ -1625,7 +1625,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'u', 'd', 't', 'a' ), mov_read_leaf },
 { MKTAG( 'u', 'r', 'l', ' ' ), mov_read_leaf },
 { MKTAG( 'u', 'r', 'n', ' ' ), mov_read_leaf },
-{ MKTAG( 'u', 'u', 'i', 'd' ), mov_read_default },
+{ MKTAG( 'u', 'u', 'i', 'd' ), mov_read_leaf },
 { MKTAG( 'v', 'm', 'h', 'd' ), mov_read_leaf }, /* video media info header */
 { MKTAG( 'w', 'a', 'v', 'e' ), mov_read_default },
 /* extra mp4 */
