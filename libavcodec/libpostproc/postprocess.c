@@ -243,9 +243,77 @@ static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c){
 
 static inline int isHorizMinMaxOk(uint8_t src[], int stride, int QP)
 {
-	if(abs(src[0] - src[7]) > 2*QP) return 0;
-
+	int i;
+#if 1
+	for(i=0; i<2; i++){
+		if((unsigned)(src[0] - src[5] + 2*QP) > 4*QP) return 0;
+		src += stride;
+		if((unsigned)(src[2] - src[7] + 2*QP) > 4*QP) return 0;
+		src += stride;
+		if((unsigned)(src[4] - src[1] + 2*QP) > 4*QP) return 0;
+		src += stride;
+		if((unsigned)(src[6] - src[3] + 2*QP) > 4*QP) return 0;
+		src += stride;
+	}
+#else        
+	for(i=0; i<8; i++){
+		if((unsigned)(src[0] - src[7] + 2*QP) > 4*QP) return 0;
+		src += stride;
+	}
+#endif
 	return 1;
+}
+
+static inline int isVertMinMaxOk_C(uint8_t src[], int stride, int QP)
+{
+#if 1
+#if 1
+	int x;
+	src+= stride*4;
+	for(x=0; x<BLOCK_SIZE; x+=4)
+	{
+		if((unsigned)(src[  x + 0*stride] - src[  x + 5*stride] + 2*QP) > 4*QP) return 0;
+		if((unsigned)(src[1+x + 2*stride] - src[1+x + 7*stride] + 2*QP) > 4*QP) return 0;
+		if((unsigned)(src[2+x + 4*stride] - src[2+x + 1*stride] + 2*QP) > 4*QP) return 0;
+		if((unsigned)(src[3+x + 6*stride] - src[3+x + 3*stride] + 2*QP) > 4*QP) return 0;
+	}
+#else
+	int x;
+	src+= stride*3;
+	for(x=0; x<BLOCK_SIZE; x++)
+	{
+		if((unsigned)(src[x + stride] - src[x + (stride<<3)] + 2*QP) > 4*QP) return 0;
+	}
+#endif
+	return 1;
+#else
+	int x;
+	src+= stride*4;
+	for(x=0; x<BLOCK_SIZE; x++)
+	{
+		int min=255;
+		int max=0;
+		int y;
+		for(y=0; y<8; y++){
+			int v= src[x + y*stride];
+			if(v>max) max=v;
+			if(v<min) min=v;
+		}
+		if(max-min > 2*QP) return 0;
+	}
+	return 1;
+#endif
+}
+
+static inline int vertClassify_C(uint8_t src[], int stride, PPContext *c){
+	if( isVertDC_C(src, stride, c) ){
+		if( isVertMinMaxOk_C(src, stride, c->QP) )
+			return 1;
+		else
+			return 0;
+	}else{
+		return 2;
+	}
 }
 
 static inline void doHorizDefFilter(uint8_t dst[], int stride, int QP)

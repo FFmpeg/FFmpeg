@@ -49,65 +49,81 @@
 	"paddb " #a ", " #b " \n\t"
 #endif
 
-
 //FIXME? |255-0| = 1 (shouldnt be a problem ...)
 #ifdef HAVE_MMX
 /**
  * Check if the middle 8x8 Block in the given 8x16 block is flat
  */
-static inline int RENAME(isVertDC)(uint8_t src[], int stride, PPContext *c){
-	int numEq= 0;
+static inline int RENAME(vertClassify)(uint8_t src[], int stride, PPContext *c){
+	int numEq= 0, dcOk;
 	src+= stride*4; // src points to begin of the 8x8 Block
 asm volatile(
-		"leal (%1, %2), %%eax				\n\t"
+		"leal (%2, %3), %%eax				\n\t"
 //	0	1	2	3	4	5	6	7	8	9
 //	%1	eax	eax+%2	eax+2%2	%1+4%2	ecx	ecx+%2	ecx+2%2	%1+8%2	ecx+4%2
-		"movq %3, %%mm7					\n\t" 
-		"movq %4, %%mm6					\n\t" 
+		"movq %4, %%mm7					\n\t" 
+		"movq %5, %%mm6					\n\t" 
 
-		"movq (%1), %%mm0				\n\t"
+		"movq (%2), %%mm0				\n\t"
 		"movq (%%eax), %%mm1				\n\t"
+                "movq %%mm0, %%mm3				\n\t"
+                "movq %%mm0, %%mm4				\n\t"
+                PMAXUB(%%mm1, %%mm4)
+                PMINUB(%%mm1, %%mm3, %%mm5)
 		"psubb %%mm1, %%mm0				\n\t" // mm0 = differnece
 		"paddb %%mm7, %%mm0				\n\t"
 		"pcmpgtb %%mm6, %%mm0				\n\t"
 
-		"movq (%%eax,%2), %%mm2				\n\t"
+		"movq (%%eax,%3), %%mm2				\n\t"
+                PMAXUB(%%mm2, %%mm4)
+                PMINUB(%%mm2, %%mm3, %%mm5)
 		"psubb %%mm2, %%mm1				\n\t"
 		"paddb %%mm7, %%mm1				\n\t"
 		"pcmpgtb %%mm6, %%mm1				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 
-		"movq (%%eax, %2, 2), %%mm1			\n\t"
+		"movq (%%eax, %3, 2), %%mm1			\n\t"
+                PMAXUB(%%mm1, %%mm4)
+                PMINUB(%%mm1, %%mm3, %%mm5)
 		"psubb %%mm1, %%mm2				\n\t"
 		"paddb %%mm7, %%mm2				\n\t"
 		"pcmpgtb %%mm6, %%mm2				\n\t"
 		"paddb %%mm2, %%mm0				\n\t"
 		
-		"leal (%%eax, %2, 4), %%eax			\n\t"
+		"leal (%%eax, %3, 4), %%eax			\n\t"
 
-		"movq (%1, %2, 4), %%mm2			\n\t"
+		"movq (%2, %3, 4), %%mm2			\n\t"
+                PMAXUB(%%mm2, %%mm4)
+                PMINUB(%%mm2, %%mm3, %%mm5)
 		"psubb %%mm2, %%mm1				\n\t"
 		"paddb %%mm7, %%mm1				\n\t"
 		"pcmpgtb %%mm6, %%mm1				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 
 		"movq (%%eax), %%mm1				\n\t"
+                PMAXUB(%%mm1, %%mm4)
+                PMINUB(%%mm1, %%mm3, %%mm5)
 		"psubb %%mm1, %%mm2				\n\t"
 		"paddb %%mm7, %%mm2				\n\t"
 		"pcmpgtb %%mm6, %%mm2				\n\t"
 		"paddb %%mm2, %%mm0				\n\t"
 
-		"movq (%%eax, %2), %%mm2			\n\t"
+		"movq (%%eax, %3), %%mm2			\n\t"
+                PMAXUB(%%mm2, %%mm4)
+                PMINUB(%%mm2, %%mm3, %%mm5)
 		"psubb %%mm2, %%mm1				\n\t"
 		"paddb %%mm7, %%mm1				\n\t"
 		"pcmpgtb %%mm6, %%mm1				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 
-		"movq (%%eax, %2, 2), %%mm1			\n\t"
+		"movq (%%eax, %3, 2), %%mm1			\n\t"
+                PMAXUB(%%mm1, %%mm4)
+                PMINUB(%%mm1, %%mm3, %%mm5)
 		"psubb %%mm1, %%mm2				\n\t"
 		"paddb %%mm7, %%mm2				\n\t"
 		"pcmpgtb %%mm6, %%mm2				\n\t"
 		"paddb %%mm2, %%mm0				\n\t"
+		"psubusb %%mm3, %%mm4				\n\t"
 
 		"						\n\t"
 #ifdef HAVE_MMX2
@@ -124,69 +140,27 @@ asm volatile(
 		"psrlq $32, %%mm0				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 #endif
+                "movq %6, %%mm7					\n\t" // QP,..., QP
+		"paddusb %%mm7, %%mm7				\n\t" // 2QP ... 2QP
+		"psubusb %%mm7, %%mm4				\n\t" // Diff <= 2QP -> 0
+		"packssdw %%mm4, %%mm4				\n\t"
 		"movd %%mm0, %0					\n\t"
-		: "=r" (numEq)
-		: "r" (src), "r" (stride), "m" (c->mmxDcOffset[c->nonBQP]),  "m" (c->mmxDcThreshold[c->nonBQP])
+		"movd %%mm4, %1					\n\t"
+
+		: "=r" (numEq), "=r" (dcOk)
+		: "r" (src), "r" (stride), "m" (c->mmxDcOffset[c->nonBQP]),  "m" (c->mmxDcThreshold[c->nonBQP]), "m" (c->pQPb)
 		: "%eax"
 		);
+
 	numEq= (-numEq) &0xFF;
-	return numEq > c->ppMode.flatnessThreshold;
+	if(numEq > c->ppMode.flatnessThreshold){
+            if(dcOk) return 0;
+            else     return 1;
+        }else{
+            return 2;
+        }
 }
 #endif
-
-static inline int RENAME(isVertMinMaxOk)(uint8_t src[], int stride, PPContext *c)
-{
-#ifdef HAVE_MMX
-	int isOk;
-	src+= stride*3;
-	asm volatile(
-		"movq (%1, %2), %%mm0				\n\t"
-		"movq (%1, %2, 8), %%mm1			\n\t"
-		"movq %%mm0, %%mm2				\n\t"
-		"psubusb %%mm1, %%mm0				\n\t"
-		"psubusb %%mm2, %%mm1				\n\t"
-		"por %%mm1, %%mm0				\n\t" // ABS Diff
-
-		"movq %3, %%mm7					\n\t" // QP,..., QP
-		"paddusb %%mm7, %%mm7				\n\t" // 2QP ... 2QP
-		"psubusb %%mm7, %%mm0				\n\t" // Diff <= 2QP -> 0
-		"packssdw %%mm0, %%mm0				\n\t"
-		"movd %%mm0, %0					\n\t"
-		: "=r" (isOk)
-		: "r" (src), "r" (stride), "m" (c->pQPb)
-		);
-	return isOk==0;
-#else
-#if 1
-	int x;
-	const int QP= c->QP;
-	src+= stride*3;
-	for(x=0; x<BLOCK_SIZE; x++)
-	{
-		if((unsigned)(src[x + stride] - src[x + (stride<<3)] + 2*QP) > 4*QP) return 0;
-	}
-
-	return 1;
-#else
-	int x;
-	const int QP= c->QP;
-	src+= stride*4;
-	for(x=0; x<BLOCK_SIZE; x++)
-	{
-		int min=255;
-		int max=0;
-		int y;
-		for(y=0; y<8; y++){
-			int v= src[x + y*stride];
-			if(v>max) max=v;
-			if(v<min) min=v;
-		}
-		if(max-min > 2*QP) return 0;
-	}
-	return 1;
-#endif
-#endif
-}
 
 /**
  * Do a vertical low pass filter on the 8x16 block (only write to the 8x8 block in the middle)
@@ -3119,12 +3093,11 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 					RENAME(vertX1Filter)(dstBlock, stride, &c);
 				else if(mode & V_DEBLOCK)
 				{
-					if( RENAME(isVertDC)(dstBlock, stride, &c))
-					{
-						if(RENAME(isVertMinMaxOk)(dstBlock, stride, &c))
-							RENAME(doVertLowPass)(dstBlock, stride, &c);
-					}
-					else
+					const int t= RENAME(vertClassify)(dstBlock, stride, &c);
+
+					if(t==1)
+						RENAME(doVertLowPass)(dstBlock, stride, &c);
+					else if(t==2)
 						RENAME(doVertDefFilter)(dstBlock, stride, &c);
 				}
 			}
@@ -3140,12 +3113,12 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 					RENAME(vertX1Filter)(tempBlock1, 16, &c);
 				else if(mode & H_DEBLOCK)
 				{
-					if( RENAME(isVertDC)(tempBlock1, 16, &c))
-					{
-						if(RENAME(isVertMinMaxOk)(tempBlock1, 16, &c))
-							RENAME(doVertLowPass)(tempBlock1, 16, &c);
-					}
-					else
+//START_TIMER
+					const int t= RENAME(vertClassify)(tempBlock1, 16, &c);
+//STOP_TIMER("dc & minmax")
+                                        if(t==1)
+						RENAME(doVertLowPass)(tempBlock1, 16, &c);
+					else if(t==2)
 						RENAME(doVertDefFilter)(tempBlock1, 16, &c);
 				}
 
