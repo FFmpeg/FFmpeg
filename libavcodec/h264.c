@@ -6111,22 +6111,26 @@ static int decode_frame(AVCodecContext *avctx,
         Picture *prev = h->delayed_pic[0];
         Picture *out;
 
-        if(cur->pict_type == B_TYPE
+        if(s->low_delay
+           && (cur->pict_type == B_TYPE
            || (!h->sps.gaps_in_frame_num_allowed_flag
-               && prev && cur->poc - prev->poc > 2)){
+               && prev && cur->poc - prev->poc > 2))){
             s->low_delay = 0;
             s->avctx->has_b_frames = 1;
+            if(prev && prev->poc > cur->poc)
+                // too late to display this frame
+                cur = prev;
         }
 
         if(s->low_delay || !prev || cur->pict_type == B_TYPE)
             out = cur;
-        else{
+        else
             out = prev;
-            if(prev->reference == 1)
+        if(s->low_delay || !prev || out == prev){
+            if(prev && prev->reference == 1)
                 prev->reference = 0;
-        }
-        if(!s->low_delay && (!prev || out == prev))
             h->delayed_pic[0] = cur;
+        }
 
         *pict= *(AVFrame*)out;
     }
