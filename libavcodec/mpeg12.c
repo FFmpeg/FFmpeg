@@ -855,6 +855,8 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 if (cbp & (1 << (5 - i))) {
                     if (mpeg2_decode_block_intra(s, block[i], i) < 0)
                         return -1;
+                } else {
+                    s->block_last_index[i] = -1;
                 }
             }
         } else {
@@ -862,6 +864,8 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 if (cbp & (1 << (5 - i))) {
                     if (mpeg2_decode_block_non_intra(s, block[i], i) < 0)
                         return -1;
+                } else {
+                    s->block_last_index[i] = -1;
                 }
             }
         }
@@ -870,6 +874,8 @@ static int mpeg_decode_mb(MpegEncContext *s,
             if (cbp & (1 << (5 - i))) {
                 if (mpeg1_decode_block(s, block[i], i) < 0)
                     return -1;
+            } else {
+                s->block_last_index[i] = -1;
             }
         }
     }
