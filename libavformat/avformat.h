@@ -412,6 +412,9 @@ int westwood_init(void);
 /* segafilm.c */
 int film_init(void);
 
+/* idcin.c */
+int idcin_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"

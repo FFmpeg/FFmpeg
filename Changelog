@@ -6,6 +6,7 @@ version <next>:
 - Cinepak decoder
 - Sega FILM (CPK) file demuxer
 - Westwood multimedia support (VQA/AUD file demuxer, audio decoder)
+- Id Quake II CIN playback support
 
 version 0.4.8:
 
