@@ -4,8 +4,6 @@
 
 // a52_resample() should do the conversion.
 
-#include <inttypes.h>
-#include <stdio.h>
 #include "a52.h"
 #include "mm_accel.h"
 #include "config.h"
