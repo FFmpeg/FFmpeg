@@ -559,7 +559,15 @@ static void do_video_out(AVFormatContext *s,
                 fprintf(ost->logfile, "%s", enc->stats_out);
             }
         } else {
-            write_picture(s, ost->index, picture, enc->pix_fmt, enc->width, enc->height);
+            if (s->oformat->flags & AVFMT_RAWPICTURE) {
+                /* raw pictures are written as AVPicture structure to
+                   avoid any copies. We support temorarily the older
+                   method. */
+                s->oformat->write_packet(s, ost->index, 
+                                         (UINT8 *)picture, sizeof(AVPicture), 0);
+            } else {
+                write_picture(s, ost->index, picture, enc->pix_fmt, enc->width, enc->height);
+            }
         }
     }
     the_end:
