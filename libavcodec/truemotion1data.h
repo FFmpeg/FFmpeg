@@ -6,6 +6,8 @@
  * GNU LGPL using the common understanding that data tables necessary for
  * decoding algorithms are not necessarily licensable.
  */
+#ifndef TRUEMOTION1DATA_H
+#define TRUEMOTION1DATA_H
 
 /* Y delta tables, skinny and fat */
 static int16_t ydt1[8] = { 0, -2, 2, -6, 6, -12, 12, -12 };
@@ -807,4 +809,5 @@ static uint8_t pc_tbl4[] = {
 0x2,0x77
 };
 
-uint8_t *tables[] = { pc_tbl2, pc_tbl3, pc_tbl4 };
+static uint8_t *tables[] = { pc_tbl2, pc_tbl3, pc_tbl4 };
+#endif
