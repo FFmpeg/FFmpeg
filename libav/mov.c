@@ -103,7 +103,7 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_SVQ1, MKTAG('S', 'V', 'Q', '1') }, /* Sorenson Video v1 */
     { CODEC_ID_SVQ1, MKTAG('s', 'v', 'q', '1') }, /* Sorenson Video v1 */
     { CODEC_ID_SVQ1, MKTAG('s', 'v', 'q', 'i') }, /* Sorenson Video v1 (from QT specs)*/
-    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') }, /* OpenDiVX *//* yeah ! */
+    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') },
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') }, /* OpenDiVX *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
 /*    { CODEC_ID_, MKTAG('I', 'V', '5', '0') }, *//* Indeo 5.0 */
     { CODEC_ID_H263, MKTAG('h', '2', '6', '3') }, /* H263 */
@@ -158,6 +158,9 @@ typedef struct MOVStreamContext {
     long time_scale;
     long current_sample;
     long left_in_chunk; /* how many samples before next chunk */
+    /* specific MPEG4 header which is added at the beginning of the stream */
+    int header_len;
+    uint8_t *header_data;
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -580,21 +583,50 @@ static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     return 0;
 }
 
+static int mp4_read_descr_len(ByteIOContext *pb)
+{
+    int c, len, count;
+
+    len = 0;
+    count = 0;
+    for(;;) {
+        c = get_byte(pb);
+        len = (len << 7) | (c & 0x7f);
+        if ((c & 0x80) == 0)
+            break;
+        if (++count == 4)
+            break;
+    }
+    return len;
+}
+
+static int mp4_read_descr(ByteIOContext *pb, int *tag)
+{
+    int len;
+    *tag = get_byte(pb);
+    len = mp4_read_descr_len(pb);
+#ifdef DEBUG
+    printf("MPEG4 description: tag=0x%02x len=%d\n", *tag, len);
+#endif
+    return len;
+}
+
 static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
-    int entries, size, samp_sz, frames_per_sample;
+    int entries, size, samp_sz, frames_per_sample, id;
     UINT32 format;
     AVStream *st;
+    MOVStreamContext *sc;
 #ifdef DEBUG
     print_atom("stsd", atom_type, atom_offset, atom_size);
 #endif
     c = (MOVContext *)param;
     st = c->fc->streams[c->fc->nb_streams-1];
+    sc = (MOVStreamContext *)st->priv_data;
 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
-
 
     entries = get_be32(pb);
 
@@ -605,8 +637,24 @@ static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
         get_be32(pb); /* reserved */
         get_be16(pb); /* reserved */
         get_be16(pb); /* index */
-/*        if(format == MKTAG('m', 'p', '4', 'v')) */
-/*            st->codec.codec_type=CODEC_TYPE_VIDEO; *//* force things (XXX: was this for .mp4 ?) */
+
+        /* for MPEG4: set codec type by looking for it */
+        id = codec_get_id(mov_video_tags, format);
+        if (id >= 0) {
+            AVCodec *codec;
+            codec = avcodec_find_decoder(id);
+            if (codec)
+                st->codec.codec_type = codec->type;
+        }
+#ifdef DEBUG
+        printf("size=%d 4CC= %c%c%c%c codec_type=%d\n", 
+               size, 
+               (format >> 0) & 0xff,
+               (format >> 8) & 0xff,
+               (format >> 16) & 0xff,
+               (format >> 24) & 0xff,
+               st->codec.codec_type);
+#endif
         if(st->codec.codec_type==CODEC_TYPE_VIDEO) {
             st->codec.codec_tag = format;
             st->codec.codec_id = codec_get_id(mov_video_tags, format);
@@ -617,6 +665,14 @@ static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
             get_be32(pb); /* spacial quality */
             st->codec.width = get_be16(pb); /* width */
             st->codec.height = get_be16(pb); /* height */
+#if 1
+            if (st->codec.codec_id == CODEC_ID_MPEG4) {
+                /* in some MPEG4 the width/height are not correct, so
+                   we ignore this info */
+                st->codec.width = 0;
+                st->codec.height = 0;
+            }
+#endif
             get_be32(pb); /* horiz resolution */
             get_be32(pb); /* vert resolution */
             get_be32(pb); /* data size, always 0 */
@@ -628,13 +684,74 @@ static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
 
             get_be16(pb); /* depth */
             get_be16(pb); /* colortable id */
-            get_be16(pb); /*  */
-            get_be16(pb); /*  */
             
-            st->codec.sample_rate = 25 * FRAME_RATE_BASE;
+            st->codec.frame_rate = 25 * FRAME_RATE_BASE;
             
-            if(size > 16)
-                url_fskip(pb, size-(16+24+18+32));
+            size -= (16+8*4+2+32+2*2);
+            while (size >= 8) {
+                int atom_size, atom_type;
+                INT64 start_pos;
+                
+                atom_size = get_be32(pb);
+                atom_type = get_le32(pb);
+                size -= 8;
+#ifdef DEBUG
+                printf("VIDEO: atom_type=%c%c%c%c atom_size=%d size_left=%d\n", 
+                       (atom_type >> 0) & 0xff,
+                       (atom_type >> 8) & 0xff,
+                       (atom_type >> 16) & 0xff,
+                       (atom_type >> 24) & 0xff,
+                       atom_size, size);
+#endif
+                start_pos = url_ftell(pb);
+
+                switch(atom_type) {
+                case MKTAG('e', 's', 'd', 's'):
+                    {
+                        int tag, len;
+                        /* Well, broken but suffisant for some MP4 streams */
+                        get_be32(pb); /* version + flags */
+                        len = mp4_read_descr(pb, &tag);
+                        if (tag == 0x03) {
+                            /* MP4ESDescrTag */
+                            get_be16(pb); /* ID */
+                            get_byte(pb); /* priority */
+                            len = mp4_read_descr(pb, &tag);
+                            if (tag != 0x04)
+                                goto fail;
+                            /* MP4DecConfigDescrTag */
+                            get_byte(pb); /* objectTypeId */
+                            get_be32(pb); /* streamType + buffer size */
+                            get_be32(pb); /* max bit rate */
+                            get_be32(pb); /* avg bit rate */
+                            len = mp4_read_descr(pb, &tag);
+                            if (tag != 0x05)
+                                goto fail;
+                            /* MP4DecSpecificDescrTag */
+#ifdef DEBUG
+                            printf("Specific MPEG4 header len=%d\n", len);
+#endif
+                            sc->header_data = av_mallocz(len);
+                            if (sc->header_data) {
+                                get_buffer(pb, sc->header_data, len);
+                                sc->header_len = len;
+                            }
+                        }
+                        /* in any case, skip garbage */
+                    }
+                    break;
+                default:
+                    break;
+                }
+            fail:
+                url_fskip(pb, (atom_size - 8) - 
+                          ((url_ftell(pb) - start_pos)));
+                size -= atom_size - 8;
+            }
+            if (size > 0) {
+                /* unknown extension */
+                url_fskip(pb, size);
+            }
         } else {
             st->codec.codec_tag = format;
 
@@ -658,21 +775,6 @@ static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
             
             st->codec.sample_rate = ((get_be32(pb) >> 16));
             st->codec.bit_rate = 0;
-
-            /* this is for .mp4 files */
-            if(format == MKTAG('m', 'p', '4', 'v')) { /* XXX */
-                st->codec.codec_type=CODEC_TYPE_VIDEO; /* force things */
-                st->codec.codec_id = CODEC_ID_MPEG4;
-                st->codec.frame_rate = 25 * FRAME_RATE_BASE;
-                st->codec.bit_rate = 100000;
-            }
-//            if(format == MKTAG('m', 'p', '4', 'a')) { /* XXX */
-//                st->codec.codec_type=CODEC_TYPE_AUDIO; /* force things */
-//                st->codec.codec_id = CODEC_ID_AAC;
-////                st->codec.frame_rate = 25 * FRAME_RATE_BASE;
-////                st->codec.bit_rate = 100000;
-//            }
-
 #if 0
 
             get_be16(pb); get_be16(pb); /*  */
@@ -684,9 +786,6 @@ static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
             if(size > 16)
                 url_fskip(pb, size-(16+20));
         }
-#ifdef DEBUG
-        printf("4CC= %c%c%c%c\n", *((char *)&format), ((char *)&format)[1], ((char *)&format)[2], ((char *)&format)[3]);
-#endif
     }
 /*
     if(len) {
@@ -722,15 +821,18 @@ static int parse_stco(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     if(atom_type == MKTAG('s', 't', 'c', 'o')) {
         for(i=0; i<entries; i++) {
             sc->chunk_offsets[i] = get_be32(pb);
-            /*printf("chunk offset=%ld\n", sc->chunk_offsets[i]);*/
         }
     } else if(atom_type == MKTAG('c', 'o', '6', '4')) {
         for(i=0; i<entries; i++) {
             sc->chunk_offsets[i] = get_be64(pb);
-            /*printf("chunk offset=%ld\n", sc->chunk_offsets[i]);*/
         }
     } else
         return -1;
+#ifdef DEBUG
+    for(i=0; i<entries; i++) {
+        printf("chunk offset=0x%Lx\n", sc->chunk_offsets[i]);
+    }
+#endif
     return 0;
 }
 
@@ -971,43 +1073,50 @@ static void mov_free_stream_context(MOVStreamContext *sc)
     if(sc) {
         av_free(sc->chunk_offsets);
         av_free(sc->sample_to_chunk);
+        av_free(sc->header_data);
         av_free(sc);
     }
+}
+
+static uint32_t to_tag(uint8_t *buf)
+{
+    return buf[0] | (buf[1] << 8) | (buf[2] << 16) | (buf[3] << 24);
+}
+
+static uint32_t to_be32(uint8_t *buf)
+{
+    return (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
 }
 
 /* XXX: is it suffisant ? */
 static int mov_probe(AVProbeData *p)
 {
-    int offset;
+    unsigned int offset;
+    uint32_t tag;
 
     /* check file header */
     if (p->buf_size <= 12)
         return 0;
-    if ((p->buf[4] == 'm' && p->buf[5] == 'o' &&
-         p->buf[6] == 'o' && p->buf[7] == 'v') ||
-        (p->buf[4] == 'w' && p->buf[5] == 'i' &&
-         p->buf[6] == 'd' && p->buf[7] == 'e') ||
-        (p->buf[4] == 'f' && p->buf[5] == 'r' &&
-         p->buf[6] == 'e' && p->buf[7] == 'e') ||
-        (p->buf[4] == 'm' && p->buf[5] == 'd' &&
-         p->buf[6] == 'a' && p->buf[7] == 't'))
-        return AVPROBE_SCORE_MAX;
-    if (p->buf[4] == 'f' && p->buf[5] == 't' &&
-        p->buf[6] == 'y' && p->buf[7] == 'p') {
-        offset = p->buf[0]; offset <<= 8;
-        offset |= p->buf[1]; offset <<= 8;
-        offset |= p->buf[2]; offset <<= 8;
-        offset |= p->buf[3];
-        if (offset > p->buf_size)
+    offset = 0;
+    for(;;) {
+        /* ignore invalid offset */
+        if ((offset + 8) > (unsigned int)p->buf_size)
             return 0;
-        if ((p->buf[offset+4] == 'm' && p->buf[offset+5] == 'o' &&
-             p->buf[offset+6] == 'o' && p->buf[offset+7] == 'v') ||
-            (p->buf[offset+4] == 'w' && p->buf[offset+5] == 'i' &&
-             p->buf[offset+6] == 'd' && p->buf[offset+7] == 'e') ||
-            (p->buf[offset+4] == 'm' && p->buf[offset+5] == 'd' &&
-             p->buf[offset+6] == 'a' && p->buf[offset+7] == 't'))
+        tag = to_tag(p->buf + offset + 4);
+        switch(tag) {
+        case MKTAG( 'm', 'o', 'o', 'v' ):
+        case MKTAG( 'w', 'i', 'd', 'e' ):
+        case MKTAG( 'f', 'r', 'e', 'e' ):
+        case MKTAG( 'm', 'd', 'a', 't'):
             return AVPROBE_SCORE_MAX;
-
+        case MKTAG( 'f', 't', 'y', 'p' ):
+        case MKTAG( 's', 'k', 'i', 'p' ):            
+            offset = to_be32(p->buf) + offset;
+            break;
+        default:
+            /* unrecognized tag */
+            return 0;
+        }
     }
     return 0;
 }
@@ -1086,11 +1195,12 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVContext *mov = s->priv_data;
+    MOVStreamContext *sc;
     INT64 offset = 0x0FFFFFFFFFFFFFFF;
     int i;
     int st_id = 0, size;
     size = 0x0FFFFFFF;
-
+    
 #ifdef MOV_SPLIT_CHUNKS
     if (mov->partial) {
         
@@ -1167,7 +1277,6 @@ again:
 #endif
 
 readchunk:
-
 //printf("chunk: [%i] %lli -> %lli (%i)\n", st_id, offset, offset + size, size);
     if(size == 0x0FFFFFFF)
         size = mov->mdat_size + mov->mdat_offset - offset;
@@ -1175,10 +1284,20 @@ readchunk:
         return -1;
     if(size == 0)
         return -1;
-    av_new_packet(pkt, size);
-    pkt->stream_index = mov->streams[st_id]->ffindex;
-
-    get_buffer(&s->pb, pkt->data, pkt->size);
+    url_fseek(&s->pb, offset, SEEK_SET);
+    sc = mov->streams[st_id];
+    if (sc->header_len > 0) {
+        av_new_packet(pkt, size + sc->header_len);
+        memcpy(pkt->data, sc->header_data, sc->header_len);
+        get_buffer(&s->pb, pkt->data + sc->header_len, size);
+        /* free header */
+        av_freep(&sc->header_data);
+        sc->header_len = 0;
+    } else {
+        av_new_packet(pkt, size);
+        get_buffer(&s->pb, pkt->data, pkt->size);
+    }
+    pkt->stream_index = sc->ffindex;
 
 #ifdef DEBUG
 /*
