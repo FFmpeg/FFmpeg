@@ -1546,7 +1546,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
             score=fbmin;
             type= MB_TYPE_BIDIR;
         }
-        score= (score*score)>>8;
+        score= (score*score + 128*256)>>16;
         s->mc_mb_var_sum += score;
         s->mc_mb_var[mb_y*s->mb_width + mb_x] = score; //FIXME use SSD
     }
@@ -1698,18 +1698,15 @@ void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, i
         int xy= (y+1)* (s->mb_width+2)+1;
         int i= y*s->mb_width;
         for(x=0; x<s->mb_width; x++){
-            if(s->mb_type[i]&type){
-                if(   fcode_tab[mv_table[xy][0] + MAX_MV] > f_code
-                   || fcode_tab[mv_table[xy][0] + MAX_MV] == 0
-                   || fcode_tab[mv_table[xy][1] + MAX_MV] > f_code
-                   || fcode_tab[mv_table[xy][1] + MAX_MV] == 0 ){
-                    if(s->mb_type[i]&(~type)) s->mb_type[i] &= ~type;
-                    else{
-                        mv_table[xy][0] = 0;
-                        mv_table[xy][1] = 0;
-                        //this is certainly bad FIXME            
-                    }
-                }
+            if(   fcode_tab[mv_table[xy][0] + MAX_MV] > f_code
+               || fcode_tab[mv_table[xy][0] + MAX_MV] == 0){
+                if(mv_table[xy][0]>0) mv_table[xy][0]=  (16<<f_code)-1;
+                else                  mv_table[xy][0]= -(16<<f_code);
+            }
+            if(   fcode_tab[mv_table[xy][1] + MAX_MV] > f_code
+               || fcode_tab[mv_table[xy][1] + MAX_MV] == 0){
+                if(mv_table[xy][1]>0) mv_table[xy][1]=  (16<<f_code)-1;
+                else                  mv_table[xy][1]= -(16<<f_code);
             }
             xy++;
             i++;
