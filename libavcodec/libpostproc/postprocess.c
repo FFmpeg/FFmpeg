@@ -725,6 +725,7 @@ char *pp_help=
 "*	*		a	autoq		CPU power dependent enabler\n"
 "			c	chrom		chrominance filtering enabled\n"
 "			y	nochrom		chrominance filtering disabled\n"
+"			n	noluma		luma filtering disabled\n"
 "hb	hdeblock	(2 threshold)		horizontal deblocking filter\n"
 "	1. difference factor: default=32, higher -> more deblocking\n"
 "	2. flatness threshold: default=39, lower -> more deblocking\n"
@@ -790,6 +791,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 		char *filterName;
 		int q= 1000000; //PP_QUALITY_MAX;
 		int chrom=-1;
+		int luma=-1;
 		char *option;
 		char *options[OPTIONS_ARRAY_SIZE];
 		int i;
@@ -817,6 +819,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 			if(!strcmp("autoq", option) || !strcmp("a", option)) q= quality;
 			else if(!strcmp("nochrom", option) || !strcmp("y", option)) chrom=0;
 			else if(!strcmp("chrom", option) || !strcmp("c", option)) chrom=1;
+			else if(!strcmp("noluma", option) || !strcmp("n", option)) luma=0;
 			else
 			{
 				options[numOfUnknownOptions] = option;
@@ -863,7 +866,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 				filterNameOk=1;
 				if(!enable) break; // user wants to disable it
 
-				if(q >= filters[i].minLumQuality)
+				if(q >= filters[i].minLumQuality && luma)
 					ppMode->lumMode|= filters[i].mask;
 				if(chrom==1 || (chrom==-1 && filters[i].chromDefault))
 					if(q >= filters[i].minChromQuality)
