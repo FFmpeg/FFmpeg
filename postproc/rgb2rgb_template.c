@@ -23,6 +23,10 @@
 #define MOVNTQ "movq"
 #endif
 
+#ifdef HAVE_MMX2
+#define SFENCE "sfence"
+#endif
+
 void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
   uint8_t *dest = dst;
@@ -65,6 +69,9 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
     dest += 16;
     s += 12;
   }
+#ifdef SFENCE
+  __asm __volatile(SFENCE:::"memory");
+#endif
   __asm __volatile(EMMS:::"memory");
 #endif
   while(s < end)
