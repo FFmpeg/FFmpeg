@@ -484,6 +484,7 @@ int main(int argc, char **argv)
             dct_error("IJG-AAN-INT", 0, fdct_ifast, fdct, test);
             dct_error("IJG-LLM-INT", 0, ff_jpeg_fdct_islow, fdct, test);
             dct_error("MMX", 0, ff_fdct_mmx, fdct, test);
+            dct_error("MMX2", 0, ff_fdct_mmx2, fdct, test);
             dct_error("FAAN", 0, ff_faandct, fdct, test);
         } else {
             dct_error("REF-DBL", 1, idct, idct, test);

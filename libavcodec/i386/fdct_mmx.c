@@ -233,6 +233,8 @@ static always_inline void fdct_row_mmx2(const int16_t *in, int16_t *out, const i
     pmaddwd_m2r(*(table + 12), mm1);
     pmaddwd_m2r(*(table + 24), mm5);
     pmaddwd_m2r(*(table + 28), mm6);
+    paddd_r2r(mm4, mm3);
+    paddd_r2r(mm7, mm2);
     paddd_r2r(mm1, mm0);
     paddd_r2r(mm6, mm5);
     movq_m2r(*fdct_r_row, mm7);
