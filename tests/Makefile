@@ -1,6 +1,6 @@
 #
 # Makefile for tests
-# (c) 2002 Gerard Lantau
+# (c) 2002 Fabrice Bellard
 #
 include ../config.mak
 

@@ -175,15 +175,13 @@ do_ffmpeg_crc $file -i $file
 
 # swf (decode audio only)
 file=${outfile}libav.swf
-# broken
-#do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
-#do_ffmpeg_crc $file -i $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+do_ffmpeg_crc $file -i $file
 
 # ffm
 file=${outfile}libav.ffm
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
-# broken
-#do_ffmpeg_crc $file -i $file
+do_ffmpeg_crc $file -i $file
 
 # XXX: need mov and mpegts tests (add bitstreams or add output capability in ffmpeg)
 
@@ -192,8 +190,7 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $f
 # mjpeg
 file=${outfile}libav.mjpeg
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
-# broken
-#do_ffmpeg_crc $file -i $file
+do_ffmpeg_crc $file -i $file
 
 # pgmpipe
 file=${outfile}libav.pgmpipe
@@ -219,6 +216,11 @@ do_ffmpeg_crc $file -i $file
 
 # ppm (we do not do md5 on image files yet)
 file=${outfile}libav%d.ppm
+$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
+do_ffmpeg_crc $file -i $file
+
+# jpeg (we do not do md5 on image files yet)
+file=${outfile}libav%d.jpg
 $ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
 do_ffmpeg_crc $file -i $file
 
