@@ -1,0 +1,63 @@
+ffmpeg TODO list:
+----------------
+
+(in approximate decreasing priority order)
+
+Planned in next release:
+
+(DONE) - apply header fixes
+(DONE) - mpeg audio decoder.
+(DONE) - fix decode/encode codec string.
+(DONE) - fix EINTR error if VIDIOCSYNC.
+(DONE) - add CONFIG system. 
+(DONE) - merge mplayer mmx accel.
+(DONE) - fix emms bug.
+(DONE) - add I263 handling
+(DONE) - add RV10 decoding.
+(DONE) - add true pgm support.
+(DONE) - msmpeg4 0x18 fix.
+- add qscale out.
+- add format autodetect with content (for example to distinguish
+  mpegvideo/mpegmux).
+- add external alloc for libavcodec (avifile request).
+- fix -sameq in grabbing
+- find a solution to clear feed1.ffm if format change.
+- new grab architecture : use avformat instead of audio: and video:
+  protocol.
+- correct PTS handling to sync audio and video.
+- fix 0 size picture in AVIs = skip picture
+
+BUGS:
+
+- fix audio/video synchro (including real player synchro bugs)
+
+- Improve the bit rate control for video codecs.
+
+- see ov511.o YUV problem (420 instead of 420P).
+
+- fix file caching pb in windows (add correct headers)
+
+- add low pass filter to suppress noise coming from cheap TV cards.
+
+- test/debug audio in flash format
+
+- sort out ASF streaming pbs.
+
+- Improve psycho acoustic model for AC3 & mpeg audio.
+
+FEATURES:
+
+- add MPEG4 in mpegmux support.
+
+- add RTP / multicast layer.
+
+- demux streams for CCTV : N streams in one stream. Add option to
+  generate multiple streams.
+
+- add disconnect user option in stat.html.
+
+- deny & allow + password in ffserver.
+
+- graphical user interface.
+
+- animated gif as output format

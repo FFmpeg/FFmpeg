@@ -1,0 +1,46 @@
+Technical notes:
+---------------
+
+Video:
+-----
+
+- The decision intra/predicted macroblock is the algorithm suggested
+  by the mpeg 1 specification.
+
+- only Huffman based H263 is supported, mainly because of patent
+  issues.
+
+- MPEG4 is supported, as an extension of the H263 encoder. MPEG4 DC
+  prediction is used, but not AC prediction. Specific VLC are used for
+  intra pictures. The output format is compatible with Open DIVX
+  version 47.
+
+- MJPEG is supported, but in the current version the huffman tables
+  are not optimized. It could be interesting to add this feature for
+  the flash format.
+
+- To increase speed, only motion vectors (0,0) are tested for real
+  time compression. NEW: now motion compensation is done with several
+  methods : none, full, log, and phods. The code is mmx/sse optimized.
+
+- In high quality mode, full search is used for motion
+  vectors. Currently, only fcode = 1 is used for both H263/MPEG1. Half
+  pel vectors are used.
+
+I also plan to improve the bitrate control which is too simplistic.
+
+Audio:
+-----
+
+- I rewrote the mpeg audio layer 2 compatible encoder from scratch. It
+  is one of the simplest encoder you can imagine (800 lines of C code
+  !). It is also one of the fastest because of its simplicity. There
+  are still some problems of overflow. A minimal psycho acoustic model
+  could be added. Currently, stereo is supported, but not joint
+  stereo.
+
+- I rewrote the AC3 audio encoder from scratch. It is fairly naive,
+  but the result are quiet interesting at 64 kbit/s. It includes
+  extensions for low sampling rates used in some Internet
+  formats. Differential and coupled stereo is not handled. Stereo
+  channels are simply handled as two mono channels.
