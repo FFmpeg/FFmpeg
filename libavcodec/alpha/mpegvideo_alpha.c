@@ -23,7 +23,7 @@
 
 extern UINT8 zigzag_end[64];
 
-static void dct_unquantize_h263_mvi(MpegEncContext *s, DCTELEM *block,
+static void dct_unquantize_h263_axp(MpegEncContext *s, DCTELEM *block,
                                     int n, int qscale)
 {
     int i, n_coeffs;
@@ -31,8 +31,6 @@ static void dct_unquantize_h263_mvi(MpegEncContext *s, DCTELEM *block,
     uint64_t correction;
     DCTELEM *orig_block = block;
     DCTELEM block0;
-
-    ASM_ACCEPT_MVI;
 
     if (s->mb_intra) {
         if (!s->h263_aic) {
@@ -58,8 +56,17 @@ static void dct_unquantize_h263_mvi(MpegEncContext *s, DCTELEM *block,
         if (levels == 0)
             continue;
 
+#ifdef __alpha_max__
+        /* I don't think the speed difference justifies runtime
+           detection.  */
+	ASM_ACCEPT_MVI;
         negmask = maxsw4(levels, -1); /* negative -> ffff (-1) */
         negmask = minsw4(negmask, 0); /* positive -> 0000 (0) */
+#else
+        negmask = cmpbge(WORD_VEC(0x7fff), levels);
+        negmask &= (negmask >> 1) | (1 << 7);
+        negmask = zap(-1, negmask);
+#endif
 
         zeros = cmpbge(0, levels);
         zeros &= zeros >> 1;
@@ -86,7 +93,5 @@ static void dct_unquantize_h263_mvi(MpegEncContext *s, DCTELEM *block,
 
 void MPV_common_init_axp(MpegEncContext *s)
 {
-    if (amask(AMASK_MVI) == 0) {
-        s->dct_unquantize_h263 = dct_unquantize_h263_mvi;
-    }
+    s->dct_unquantize_h263 = dct_unquantize_h263_axp;
 }
