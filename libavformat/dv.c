@@ -538,7 +538,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
 {
     const uint8_t* as_pack;
     const DVprofile* sys;
-    int freq, smpls, quant, i;
+    int freq, smpls, quant, i, ach;
 
     sys = dv_frame_profile(frame);
     as_pack = dv_extract_pack(frame, dv_audio_source);
@@ -550,23 +550,24 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     smpls = as_pack[1] & 0x3f; /* samples in this frame - min. samples */
     freq = (as_pack[4] >> 3) & 0x07; /* 0 - 48KHz, 1 - 44,1kHz, 2 - 32 kHz */
     quant = as_pack[4] & 0x07; /* 0 - 16bit linear, 1 - 12bit nonlinear */
-    c->ach = (quant && freq == 2) ? 2 : 1;
+    ach = (quant && freq == 2) ? 2 : 1;
 
-    /* The second stereo channel could appear in IEC 61834 stream only */
-    if (c->ach == 2 && !c->ast[1]) {
-        c->ast[1] = av_new_stream(c->fctx, 0);
-	if (c->ast[1]) {
-            av_set_pts_info(c->ast[1], 64, 1, 30000);
-	    c->ast[1]->codec.codec_type = CODEC_TYPE_AUDIO;
-	    c->ast[1]->codec.codec_id = CODEC_ID_PCM_S16LE;
-	} else
-	    c->ach = 1;
-    }
-    for (i=0; i<c->ach; i++) {
+    /* Dynamic handling of the audio streams in DV */
+    for (i=0; i<ach; i++) {
+       if (!c->ast[i]) {
+           c->ast[i] = av_new_stream(c->fctx, 0);
+	   if (!c->ast[i])
+	       break;
+	   av_set_pts_info(c->ast[i], 64, 1, 30000);
+	   c->ast[i]->codec.codec_type = CODEC_TYPE_AUDIO;
+	   c->ast[i]->codec.codec_id = CODEC_ID_PCM_S16LE;
+       }
        c->ast[i]->codec.sample_rate = dv_audio_frequency[freq];
        c->ast[i]->codec.channels = 2;
        c->ast[i]->codec.bit_rate = 2 * dv_audio_frequency[freq] * 16;
+       c->ast[i]->start_time = 0;
     }
+    c->ach = i;
     
     return (sys->audio_min_samples[freq] + smpls) * 4; /* 2ch, 2bytes */;
 }
@@ -732,14 +733,14 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
         return NULL;
 
     c->vst = av_new_stream(s, 0);
-    c->ast[0] = av_new_stream(s, 0);
-    if (!c->vst || !c->ast[0])
-        goto fail;
+    if (!c->vst) {
+        av_free(c);        
+        return NULL;
+    }
     av_set_pts_info(c->vst, 64, 1, 30000);
-    av_set_pts_info(c->ast[0], 64, 1, 30000);
 
     c->fctx = s;
-    c->ast[1] = NULL;
+    c->ast[0] = c->ast[1] = NULL;
     c->ach = 0;
     c->frames = 0;
     c->abytes = 0;
@@ -751,21 +752,7 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     c->vst->codec.bit_rate = 25000000;
     c->vst->start_time = 0;
     
-    c->ast[0]->codec.codec_type = CODEC_TYPE_AUDIO;
-    c->ast[0]->codec.codec_id = CODEC_ID_PCM_S16LE;
-    c->ast[0]->codec.sample_rate = 48000;
-    c->ast[0]->codec.channels = 2;
-    c->ast[0]->start_time = 0;
-    
     return c;
-    
-fail:
-    if (c->vst)
-        av_free(c->vst);
-    if (c->ast[0])
-        av_free(c->ast[0]);
-    av_free(c);
-    return NULL;
 }
 
 static void __destruct_pkt(struct AVPacket *pkt)
