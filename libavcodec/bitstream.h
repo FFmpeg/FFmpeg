@@ -824,7 +824,7 @@ static inline int get_xbits_trace(GetBitContext *s, int n, char *file, const cha
 #define tprintf(...) {}
 #endif
 
-static int decode012(GetBitContext *gb){
+static inline int decode012(GetBitContext *gb){
     int n;
     n = get_bits1(gb);
     if (n == 0)
