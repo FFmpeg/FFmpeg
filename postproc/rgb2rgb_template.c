@@ -259,3 +259,30 @@ void palette8torgb15(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
 	for(i=0; i<src_size; i++)
 		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
 }
+
+void yv12toyuy2(uint8_t *ysrc, uint8_t *usrc, uint8_t *vsrc, uint8_t *dst, int src_size)
+{
+	int i;
+	src_size>>=1;
+	for(i=0; i<src_size; i++)
+	{
+		dst[4*i+0] = ysrc[2*i+0];
+		dst[4*i+1] = usrc[i];
+		dst[4*i+2] = ysrc[2*i+1];
+		dst[4*i+3] = vsrc[i];
+	}
+
+}
+
+void yuy2toyv12(uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst, int src_size)
+{
+	int i;
+	src_size>>=1;
+	for(i=0; i<src_size; i++)
+	{
+		 ydst[2*i+0] 	= src[4*i+0];
+		 udst[i] 	= src[4*i+1];
+		 ydst[2*i+1] 	= src[4*i+2];
+		 vdst[i] 	= src[4*i+3];
+	}
+}
