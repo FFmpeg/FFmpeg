@@ -89,32 +89,6 @@ void register_avcodec(AVCodec *format)
     format->next = NULL;
 }
 
-void avcodec_get_chroma_sub_sample(int fmt, int *h_shift, int *v_shift){
-    switch(fmt){
-    case PIX_FMT_YUV410P:
-        *h_shift=2;
-        *v_shift=2;
-        break;
-    case PIX_FMT_YUV420P:
-        *h_shift=1;
-        *v_shift=1;
-        break;
-    case PIX_FMT_YUV411P:
-        *h_shift=2;
-        *v_shift=0;
-        break;
-    case PIX_FMT_YUV422P:
-    case PIX_FMT_YUV422:
-        *h_shift=1;
-        *v_shift=0;
-        break;
-    default: //RGB/...
-        *h_shift=0;
-        *v_shift=0;
-        break;
-    }
-}
-
 typedef struct DefaultPicOpaque{
     int last_pic_num;
     uint8_t *data[4];
@@ -152,7 +126,6 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         case PIX_FMT_BGR24:
             pixel_size=3;
             break;
-        case PIX_FMT_BGRA32:
         case PIX_FMT_RGBA32:
             pixel_size=4;
             break;
@@ -462,7 +435,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (enc->codec_id == CODEC_ID_RAWVIDEO) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s",
-                     pix_fmt_str[enc->pix_fmt]);
+                     avcodec_get_pix_fmt_name(enc->pix_fmt));
         }
         if (enc->width) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
@@ -577,7 +550,6 @@ void avpicture_fill(AVPicture *picture, UINT8 *ptr,
         picture->linesize[0] = width * 3;
         break;
     case PIX_FMT_RGBA32:
-    case PIX_FMT_BGRA32:
         picture->data[0] = ptr;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
@@ -617,7 +589,6 @@ int avpicture_get_size(int pix_fmt, int width, int height)
         size = (size * 3);
         break;
     case PIX_FMT_RGBA32:
-    case PIX_FMT_BGRA32:
         size = (size * 4);
         break;
     case PIX_FMT_YUV422:
