@@ -33,6 +33,7 @@ Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
 TODO
 more intelligent missalignment avoidance for the horizontal scaler
+bicubic scaler
 */
 
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
@@ -912,7 +913,6 @@ static inline void hyscale(uint16_t *dst, int dstWidth, uint8_t *src, int srcWid
       unsigned int xpos=0;
       // *** horizontal scale Y line to temp buffer
 #ifdef ARCH_X86
-
 #ifdef HAVE_MMX2
 	if(canMMX2BeUsed)
 	{
@@ -1012,7 +1012,7 @@ FUNNY_Y_CODE
       for(i=0;i<dstWidth;i++){
 	register unsigned int xx=xpos>>16;
         register unsigned int xalpha=(xpos&0xFFFF)>>9;
-	dst[i]=(src[xx]*(xalpha^127)+src[xx+1]*xalpha);
+	dst[i]= (src[xx]<<7) + (src[xx+1] - src[xx])*xalpha;
 	xpos+=xInc;
       }
 #endif
@@ -1068,8 +1068,6 @@ FUNNYUVCODE
 FUNNYUVCODE
 FUNNYUVCODE
 FUNNYUVCODE
-
-
 		"xorl %%eax, %%eax		\n\t" // i
 		"movl %6, %%esi			\n\t" // src
 		"movl %1, %%edi			\n\t" // buf1
@@ -1143,6 +1141,10 @@ FUNNYUVCODE
           register unsigned int xalpha=(xpos&0xFFFF)>>9;
 	  dst[i]=(src1[xx]*(xalpha^127)+src1[xx+1]*xalpha);
 	  dst[i+2048]=(src2[xx]*(xalpha^127)+src2[xx+1]*xalpha);
+/* slower
+	  dst[i]= (src1[xx]<<7) + (src1[xx+1] - src1[xx])*xalpha;
+	  dst[i+2048]=(src2[xx]<<7) + (src2[xx+1] - src2[xx])*xalpha;
+*/
 	  xpos+=xInc;
       }
 #endif
@@ -1195,8 +1197,8 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0 && (srcWidth&15)==0) ? 1 : 0;
 if(canMMX2BeUsed) 	s_xinc+= 20;
 else			s_xinc = ((srcWidth-2)<<16)/(dstw-2) - 20;
 
-if(fullUVIpol && !dstbpp==12) 	s_xinc2= s_xinc>>1;
-else				s_xinc2= s_xinc;
+if(fullUVIpol && !(dstbpp==12)) 	s_xinc2= s_xinc>>1;
+else					s_xinc2= s_xinc;
   // force calculation of the horizontal interpolation of the first line
 
   if(y==0){
@@ -1440,7 +1442,7 @@ else				s_xinc2= s_xinc;
 
 #ifdef HAVE_MMX
 	__asm __volatile(SFENCE:::"memory");
-	__asm __volatile(EMMS);
+	__asm __volatile(EMMS:::"memory");
 #endif
 }
 
