@@ -11,7 +11,7 @@ CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H -I.. -D_FILE_OFFSET_BITS=64 -D_L
 LDFLAGS= -g
 
 OBJS= common.o utils.o mem.o allcodecs.o \
-      mpegvideo.o h263.o jrevdct.o jfdctfst.o \
+      mpegvideo.o h263.o jrevdct.o jfdctfst.o jfdctint.o\
       mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o msmpeg4.o \
       mpeg12.o h263dec.o svq1.o rv10.o mpegaudiodec.o pcm.o simple_idct.o \

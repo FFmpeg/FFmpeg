@@ -552,16 +552,21 @@ void unused_var_warning_killer(){
 void MPV_common_init_mmx(MpegEncContext *s)
 {
     if (mm_flags & MM_MMX) {
+        const int dct_algo= s->avctx->dct_algo;
         s->dct_unquantize_h263 = dct_unquantize_h263_mmx;
         s->dct_unquantize_mpeg1 = dct_unquantize_mpeg1_mmx;
         s->dct_unquantize_mpeg2 = dct_unquantize_mpeg2_mmx;
 
         draw_edges = draw_edges_mmx;
 
-        if(mm_flags & MM_MMXEXT){
-            dct_quantize= dct_quantize_MMX2;
-        } else {
-            dct_quantize= dct_quantize_MMX;
+        if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
+            s->fdct = fdct_mmx;
+
+            if(mm_flags & MM_MMXEXT){
+                s->dct_quantize= dct_quantize_MMX2;
+            } else {
+                s->dct_quantize= dct_quantize_MMX;
+            }
         }
     }
 }

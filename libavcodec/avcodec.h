@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4620
-#define LIBAVCODEC_BUILD_STR   "4620"
+#define LIBAVCODEC_BUILD       4621
+#define LIBAVCODEC_BUILD_STR   "4621"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -95,6 +95,7 @@ extern int motion_estimation_method;
 /* ME algos sorted by quality */
 static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG, 
                                        ME_X1, ME_EPZS, ME_FULL };
+
 
 #define FF_MAX_B_FRAMES 4
 
@@ -308,6 +309,12 @@ typedef struct AVCodecContext {
     int aspected_width;
     int aspected_height;
 
+    int dct_algo;
+#define FF_DCT_AUTO 0
+#define FF_DCT_FASTINT 1
+#define FF_DCT_INT 2
+#define FF_DCT_MMX 3
+
     //FIXME this should be reordered after kabis API is finished ...
     //TODO kill kabi
     /*
@@ -338,7 +345,7 @@ typedef struct AVCodecContext {
 	    uc_res6,uc_res7,uc_res8,uc_res9,uc_res10,uc_res11,uc_res12;
     unsigned int
 	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5,ui_res6,ui_res7,ui_res8,ui_res9,
-	    ui_res10,ui_res11,ui_res12,ui_res13,ui_res14,ui_res15,ui_res16,ui_res17;
+	    ui_res10,ui_res11,ui_res12,ui_res13,ui_res14,ui_res15,ui_res16;
 } AVCodecContext;
 
 typedef struct AVCodec {

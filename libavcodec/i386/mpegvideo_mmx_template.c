@@ -40,7 +40,8 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     const UINT16 *qmat, *bias;
     static __align8 INT16 temp_block[64];
 
-    av_fdct (block);
+    //s->fdct (block);
+    fdct_mmx (block); //cant be anything else ...
 
     if (s->mb_intra) {
         int dummy;
