@@ -115,45 +115,50 @@ Notes:
 #define GET_MODE_BUFFER_SIZE 500
 #define OPTIONS_ARRAY_SIZE 10
 
-
+#ifdef HAVE_MMX
+static uint64_t __attribute__((aligned(8))) packedYOffset=	0x0000000000000000LL;
+static uint64_t __attribute__((aligned(8))) packedYScale=	0x0100010001000100LL;
+static uint64_t __attribute__((aligned(8))) w05=		0x0005000500050005LL;
+static uint64_t __attribute__((aligned(8))) w20=		0x0020002000200020LL;
+static uint64_t __attribute__((aligned(8))) w1400=		0x1400140014001400LL;
+static uint64_t __attribute__((aligned(8))) bm00000001=		0x00000000000000FFLL;
+static uint64_t __attribute__((aligned(8))) bm00010000=		0x000000FF00000000LL;
+static uint64_t __attribute__((aligned(8))) bm00001000=		0x00000000FF000000LL;
+static uint64_t __attribute__((aligned(8))) bm10000000=		0xFF00000000000000LL;
+static uint64_t __attribute__((aligned(8))) bm10000001=		0xFF000000000000FFLL;
+static uint64_t __attribute__((aligned(8))) bm11000011=		0xFFFF00000000FFFFLL;
+static uint64_t __attribute__((aligned(8))) bm00000011=		0x000000000000FFFFLL;
+static uint64_t __attribute__((aligned(8))) bm11111110=		0xFFFFFFFFFFFFFF00LL;
+static uint64_t __attribute__((aligned(8))) bm11000000=		0xFFFF000000000000LL;
+static uint64_t __attribute__((aligned(8))) bm00011000=		0x000000FFFF000000LL;
+static uint64_t __attribute__((aligned(8))) bm00110011=		0x0000FFFF0000FFFFLL;
+static uint64_t __attribute__((aligned(8))) bm11001100=		0xFFFF0000FFFF0000LL;
+static uint64_t __attribute__((aligned(8))) b00= 		0x0000000000000000LL;
+static uint64_t __attribute__((aligned(8))) b01= 		0x0101010101010101LL;
+static uint64_t __attribute__((aligned(8))) b02= 		0x0202020202020202LL;
+static uint64_t __attribute__((aligned(8))) b0F= 		0x0F0F0F0F0F0F0F0FLL;
+static uint64_t __attribute__((aligned(8))) b04= 		0x0404040404040404LL;
+static uint64_t __attribute__((aligned(8))) b08= 		0x0808080808080808LL;
+static uint64_t __attribute__((aligned(8))) bFF= 		0xFFFFFFFFFFFFFFFFLL;
+static uint64_t __attribute__((aligned(8))) b20= 		0x2020202020202020LL;
+static uint64_t __attribute__((aligned(8))) b80= 		0x8080808080808080LL;
+static uint64_t __attribute__((aligned(8))) b7E= 		0x7E7E7E7E7E7E7E7ELL;
+static uint64_t __attribute__((aligned(8))) b7C= 		0x7C7C7C7C7C7C7C7CLL;
+static uint64_t __attribute__((aligned(8))) b3F= 		0x3F3F3F3F3F3F3F3FLL;
+static uint64_t __attribute__((aligned(8))) temp0=0;
+static uint64_t __attribute__((aligned(8))) temp1=0;
+static uint64_t __attribute__((aligned(8))) temp2=0;
+static uint64_t __attribute__((aligned(8))) temp3=0;
+static uint64_t __attribute__((aligned(8))) temp4=0;
+static uint64_t __attribute__((aligned(8))) temp5=0;
+static uint64_t __attribute__((aligned(8))) pQPb=0;
+static uint64_t __attribute__((aligned(8))) pQPb2=0;
+static uint8_t __attribute__((aligned(8))) tempBlocks[8*16*2]; //used for the horizontal code
+#else
 static uint64_t packedYOffset=	0x0000000000000000LL;
 static uint64_t packedYScale=	0x0100010001000100LL;
-static uint64_t w05=		0x0005000500050005LL;
-static uint64_t w20=		0x0020002000200020LL;
-static uint64_t w1400=		0x1400140014001400LL;
-static uint64_t bm00000001=	0x00000000000000FFLL;
-static uint64_t bm00010000=	0x000000FF00000000LL;
-static uint64_t bm00001000=	0x00000000FF000000LL;
-static uint64_t bm10000000=	0xFF00000000000000LL;
-static uint64_t bm10000001=	0xFF000000000000FFLL;
-static uint64_t bm11000011=	0xFFFF00000000FFFFLL;
-static uint64_t bm00000011=	0x000000000000FFFFLL;
-static uint64_t bm11111110=	0xFFFFFFFFFFFFFF00LL;
-static uint64_t bm11000000=	0xFFFF000000000000LL;
-static uint64_t bm00011000=	0x000000FFFF000000LL;
-static uint64_t bm00110011=	0x0000FFFF0000FFFFLL;
-static uint64_t bm11001100=	0xFFFF0000FFFF0000LL;
-static uint64_t b00= 		0x0000000000000000LL;
-static uint64_t b01= 		0x0101010101010101LL;
-static uint64_t b02= 		0x0202020202020202LL;
-static uint64_t b0F= 		0x0F0F0F0F0F0F0F0FLL;
-static uint64_t b04= 		0x0404040404040404LL;
-static uint64_t b08= 		0x0808080808080808LL;
-static uint64_t bFF= 		0xFFFFFFFFFFFFFFFFLL;
-static uint64_t b20= 		0x2020202020202020LL;
-static uint64_t b80= 		0x8080808080808080LL;
-static uint64_t b7E= 		0x7E7E7E7E7E7E7E7ELL;
-static uint64_t b7C= 		0x7C7C7C7C7C7C7C7CLL;
-static uint64_t b3F= 		0x3F3F3F3F3F3F3F3FLL;
-static uint64_t temp0=0;
-static uint64_t temp1=0;
-static uint64_t temp2=0;
-static uint64_t temp3=0;
-static uint64_t temp4=0;
-static uint64_t temp5=0;
-static uint64_t pQPb=0;
-static uint64_t pQPb2=0;
 static uint8_t tempBlocks[8*16*2]; //used for the horizontal code
+#endif
 
 int hFlatnessThreshold= 56 - 16;
 int vFlatnessThreshold= 56 - 16;
@@ -189,15 +194,17 @@ static char *replaceTable[]=
 	NULL //End Marker
 };
 
+#ifdef HAVE_MMX
 static inline void unusedVariableWarningFixer()
 {
 if(
  packedYOffset + packedYScale + w05 + w20 + w1400 + bm00000001 + bm00010000
  + bm00001000 + bm10000000 + bm10000001 + bm11000011 + bm00000011 + bm11111110
  + bm11000000 + bm00011000 + bm00110011 + bm11001100 + b00 + b01 + b02 + b0F
- + bFF + b20 + b80 + b7E + b7C + b3F + temp0 + temp1 + temp2 + temp3 + temp4
+ + bFF + b20 + b04+ b08 + pQPb2 + b80 + b7E + b7C + b3F + temp0 + temp1 + temp2 + temp3 + temp4
  + temp5 + pQPb== 0) b00=0;
 }
+#endif
 
 #ifdef TIMING
 static inline long long rdtsc()
@@ -3108,7 +3115,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	if(mode & LEVEL_FIX)	QPCorrecture= packedYScale &0xFFFF;
 	else			QPCorrecture= 256;
 
-	/* line before the first one */
+	/* copy & deinterlace first row of blocks */
 	y=-BLOCK_SIZE;
 	{
 		//1% speedup if these are here instead of the inner loop
@@ -3247,7 +3254,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			if(!isColor)
 			{
 				QP= (QP* QPCorrecture)>>8;
-				yHistogram[ srcBlock[srcStride*4 + 4] ]++;
+				yHistogram[ srcBlock[srcStride*12 + 4] ]++;
 			}
 #ifdef HAVE_MMX
 			asm volatile(
