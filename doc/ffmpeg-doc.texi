@@ -35,7 +35,7 @@ video on the fly with a high quality polyphase filter.
   Gerd Knorr which I find very good. You must also set correctly the
   audio recording levels with a standard mixer.
 
-@section Video and Audio file format convertion
+@section Video and Audio file format conversion
 
 * ffmpeg can use any supported file format and protocol as input: 
 
@@ -83,7 +83,7 @@ Examples:
   Convert the audio file a.wav and the raw yuv video file a.yuv
   to mpeg file a.mpg
 
-* You can also do audio and video convertions at the same time:
+* You can also do audio and video conversions at the same time:
 
 @example
   ffmpeg -i /tmp/a.wav -ar 22050 /tmp/a.mp2
@@ -108,13 +108,13 @@ Examples:
   ffmpeg -i snatch_1.vob -f avi -vcodec mpeg4 -b 800 -g 300 -bf 2 -acodec mp3 -ab 128 snatch.avi
 @end example
 
-  This is a typicall DVD ripper example, input from a VOB file, output
+  This is a typical DVD ripper example, input from a VOB file, output
   to an AVI file with MPEG-4 video and MP3 audio, note that in this
   command we use B frames so the MPEG-4 stream is DivX5 compatible, GOP
   size is 300 that means an INTRA frame every 10 seconds for 29.97 fps
   input video.  Also the audio stream is MP3 encoded so you need LAME
   support which is enabled using @code{--enable-mp3lame} when
-  configuring.  The mapping is particullary usefull for DVD transcoding
+  configuring.  The mapping is particularly useful for DVD transcoding
   to get the desired audio language.
 
   NOTE: to see the supported input formats, use @code{ffmpeg -formats}.
@@ -136,7 +136,7 @@ Examples:
   files.
 
   By default, ffmpeg tries to convert as losslessly as possible: it
-  uses the same audio and video parameter fors the outputs as the one
+  uses the same audio and video parameter for the outputs as the one
   specified for the inputs.
 
 @section Main options
@@ -299,7 +299,7 @@ ffmpeg handles also many protocols specified with the URL syntax.
 @item If your computer is not fast enough, you can speed up the
   compression at the expense of the compression ratio. You can use
   '-me zero' to speed up motion estimation, and '-intra' to disable
-  completly motion estimation (you have only I frames, which means it
+  completely motion estimation (you have only I frames, which means it
   is about as good as JPEG compression).
 
 @item To have very low bitrates in audio, reduce the sampling frequency
@@ -321,7 +321,7 @@ You can use the @code{-formats} option to have an exhaustive list.
 
 @section File Formats
 
-FFmpeg supports the following file formats thru the @code{libavformat}
+FFmpeg supports the following file formats through the @code{libavformat}
 library:
 
 @multitable @columnfractions .4 .1 .1
@@ -399,11 +399,11 @@ solutions.
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
 @item MPEG audio layer 2     @tab  IX  @tab  IX 
 @item MPEG audio layer 1/3   @tab IX   @tab  IX
-@tab MP3 encoding is supported thru the external library LAME
+@tab MP3 encoding is supported through the external library LAME
 @item AC3                    @tab  IX  @tab  X
 @tab liba52 is used internally for decoding.
 @item Vorbis                 @tab  X   @tab  X
-@tab supported thru the external library libvorbis.
+@tab supported through the external library libvorbis.
 @item WMA V1/V2              @tab      @tab X
 
 @end multitable
@@ -418,7 +418,7 @@ performances on systems without hardware floating point support).
 @section Linux
 
 ffmpeg should be compiled with at least GCC 2.95.3. GCC 3.2 is the
-prefered compiler now for ffmpeg. All futur optimizations will depend on
+preferred compiler now for ffmpeg. All future optimizations will depend on
 features only found in GCC 3.2.
 
 @section BSD
@@ -490,10 +490,10 @@ When you submit your patch, try to send a unified diff (diff '-u'
 option). I cannot read other diffs :-)
 
 Run the regression tests before submitting a patch so that you can
-verify that there is no big problems.
+verify that there are no big problems.
 
 Except if your patch is really big and adds an important feature, by
-submitting it to me, you accept implicitely to put it under my
+submitting it to me, you accept implicitly to put it under my
 copyright. I prefer to do this to avoid potential problems if
 licensing of ffmpeg changes.
 
@@ -504,14 +504,18 @@ transmission) to the ffmpeg-devel mailinglist, see
 
 @section Regression tests
 
-Before submitting a patch (or commiting with CVS), you should at least
+Before submitting a patch (or committing with CVS), you should at least
 test that you did not break anything.
 
 The regression test build a synthetic video stream and a synthetic
-audio stream. Then there are encoded then decoded with all codecs or
+audio stream. Then these are encoded then decoded with all codecs or
 formats. The CRC (or MD5) of each generated file is recorded in a
 result file. Then a 'diff' is launched with the reference results and
 the result file.
+
+The regression test then goes on to test the ffserver code with a 
+limited set of streams. It is important that this step runs correctly
+as well.
 
 Run 'make test' to test all the codecs.
 
