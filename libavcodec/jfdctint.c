@@ -30,8 +30,10 @@
 
 #define SHIFT_TEMPS
 #define DCTSIZE 8
+#define BITS_IN_JSAMPLE 8
 #define GLOBAL(x) x
 #define RIGHT_SHIFT(x, n) ((x) >> (n))
+#define MULTIPLY16C16(var,const) ((var)*(const))
 
 #if 1 //def USE_ACCURATE_ROUNDING
 #define DESCALE(x,n)  RIGHT_SHIFT((x) + (1 << ((n) - 1)), n)
@@ -85,7 +87,7 @@
 
 #if BITS_IN_JSAMPLE == 8
 #define CONST_BITS  13
-#define PASS1_BITS  2
+#define PASS1_BITS  4		/* set this to 2 if 16x16 multiplies are faster */
 #else
 #define CONST_BITS  13
 #define PASS1_BITS  1		/* lose a little precision to avoid overflow */
@@ -134,7 +136,7 @@
  * For 12-bit samples, a full 32-bit multiplication will be needed.
  */
 
-#if BITS_IN_JSAMPLE == 8
+#if BITS_IN_JSAMPLE == 8 && CONST_BITS<=13 && PASS1_BITS<=2
 #define MULTIPLY(var,const)  MULTIPLY16C16(var,const)
 #else
 #define MULTIPLY(var,const)  ((var) * (const))
