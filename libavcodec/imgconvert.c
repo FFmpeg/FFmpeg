@@ -245,6 +245,34 @@ static void shrink22(UINT8 *dst, int dst_wrap,
     }
 }
 
+/* 1x1 -> 2x2 */
+static void grow22(UINT8 *dst, int dst_wrap,
+                     UINT8 *src, int src_wrap,
+                     int width, int height)
+{
+    int w;
+    UINT8 *s1, *d;
+
+    for(;height > 0; height--) {
+        s1 = src;
+        d = dst;
+        for(w = width;w >= 4; w-=4) {
+            d[1] = d[0] = s1[0];
+            d[3] = d[2] = s1[1];
+            s1 += 2;
+            d += 4;
+        }
+        for(;w > 0; w--) {
+            d[0] = s1[0];
+            s1 ++;
+            d++;
+        }
+        if (height%2)
+            src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
 static void img_copy(UINT8 *dst, int dst_wrap, 
                      UINT8 *src, int src_wrap,
                      int width, int height)
@@ -382,6 +410,17 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     } else if (dst_pix_fmt == PIX_FMT_YUV420P) {
         
         switch(pix_fmt) {
+        case PIX_FMT_YUV410P:
+            img_copy(dst->data[0], dst->linesize[0],
+                     src->data[0], src->linesize[0],
+                     width, height);
+            grow22(dst->data[1], dst->linesize[1],
+                     src->data[1], src->linesize[1],
+                     width/2, height/2);
+            grow22(dst->data[2], dst->linesize[2],
+                     src->data[2], src->linesize[2],
+                     width/2, height/2);
+            break;
         case PIX_FMT_YUV420P:
             for(i=0;i<3;i++) {
                 img_copy(dst->data[i], dst->linesize[i],
