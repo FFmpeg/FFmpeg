@@ -678,6 +678,7 @@ void ff_er_frame_end(MpegEncContext *s){
         av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
             
         for(i=0; i<2; i++){
+            pic->ref_index[i]= av_mallocz(size * sizeof(uint8_t));
             pic->motion_val_base[i]= av_mallocz((size+2) * 2 * sizeof(uint16_t));
             pic->motion_val[i]= pic->motion_val_base[i]+2;
         }
