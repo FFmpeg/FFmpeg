@@ -176,6 +176,10 @@ static const GUID head2_guid = {
     0xabd3d211, 0xa9ba, 0x11cf, { 0x8e, 0xe6, 0x00, 0xc0, 0x0c, 0x20, 0x53, 0x65 },
 };
 
+static const GUID extended_content_header = {
+        0xD2D0A440, 0xE307, 0x11D2, { 0x97, 0xF0, 0x00, 0xA0, 0xC9, 0x5E, 0xA8, 0x50 },
+};
+
 /* I am not a number !!! This GUID is the one found on the PC used to
    generate the stream */
 static const GUID my_guid = {
@@ -947,6 +951,38 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_str16_nolen(pb, len3, s->copyright, sizeof(s->copyright));
             get_str16_nolen(pb, len4, s->comment, sizeof(s->comment));
 	    url_fskip(pb, len5);
+       } else if (!memcmp(&g, &extended_content_header, sizeof(GUID))) {
+                int desc_count, i;
+
+                desc_count = get_le16(pb);
+                for(i=0;i<desc_count;i++)
+                {
+                        int name_len,value_type,value_len,value_num = 0;
+                        char *name, *value;
+
+                        name_len = get_le16(pb);
+                        name = (char *)av_mallocz(name_len);
+                        get_str16_nolen(pb, name_len, name, name_len);
+                        value_type = get_le16(pb);
+                        value_len = get_le16(pb);
+                        if ((value_type == 0) || (value_type == 1)) // unicode or byte
+                        {
+                                value = (char *)av_mallocz(value_len);
+                                get_str16_nolen(pb, value_len, value, value_len);
+                                if (strcmp(name,"WM/AlbumTitle")==0) { strcpy(s->album, value); }
+                                av_free(value);
+                        }
+                        if ((value_type >= 2) || (value_type <= 5)) // boolean or DWORD or QWORD or WORD
+                        {
+                                if (value_type==2) value_num = get_le32(pb);
+                                if (value_type==3) value_num = get_le32(pb);
+                                if (value_type==4) value_num = get_le64(pb);
+                                if (value_type==5) value_num = get_le16(pb);
+                                if (strcmp(name,"WM/Track")==0) s->track = value_num + 1;
+                                if (strcmp(name,"WM/TrackNumber")==0) s->track = value_num;
+                        }
+                        av_free(name);
+                }
 #if 0
         } else if (!memcmp(&g, &head1_guid, sizeof(GUID))) {
             int v1, v2;
