@@ -63,7 +63,7 @@ static int ogg_write_header(AVFormatContext *avfcontext)
 	vorbis_block_init(&vd, &vb) ;
 	
 	vorbis_comment_init(&vc) ;
-	vorbis_comment_add_tag(&vc, "encoder", "ffmpeg") ;
+	vorbis_comment_add_tag(&vc, "encoder", LIBAVFORMAT_IDENT) ;
 	if(*avfcontext->title)
 	    vorbis_comment_add_tag(&vc, "title", avfcontext->title) ;
 

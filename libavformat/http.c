@@ -184,13 +184,13 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr)
 
     snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.0\n"
-             "User-Agent: FFmpeg %s\n"
+             "User-Agent: %s\n"
              "Accept: */*\n"
              "Host: %s\n"
              "\n",
              post ? "POST" : "GET",
              path,
-             LIBAVFORMAT_VERSION,
+             LIBAVFORMAT_IDENT,
              hoststr);
     
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
