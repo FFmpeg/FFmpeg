@@ -179,14 +179,19 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		    handler != MKTAG('d', 'v', 's', 'l'))
 	           goto fail;
                 
+		ast = s->streams[0]->priv_data;
 		av_freep(&s->streams[0]->codec.extradata);
 		av_freep(&s->streams[0]);
 		s->nb_streams = 0;
 	        avi->dv_demux = dv_init_demux(s);
 		if (!avi->dv_demux)
 		    goto fail;
+		s->streams[0]->priv_data = ast;
+		url_fskip(pb, 3 * 4);
+		ast->scale = get_le32(pb);
+		ast->rate = get_le32(pb);
 	        stream_index = s->nb_streams - 1;
-		url_fskip(pb, size - 8);
+		url_fskip(pb, size - 7*4);
 		break;
 	    case MKTAG('v', 'i', 'd', 's'):
                 codec_type = CODEC_TYPE_VIDEO;
