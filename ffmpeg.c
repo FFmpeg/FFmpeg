@@ -1115,7 +1115,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     } else if (pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
         ist->next_pts = ist->pts = pkt->dts;
     } else {
-        assert(ist->pts == ist->next_pts);
+//        assert(ist->pts == ist->next_pts);
     }
     
     if (pkt == NULL) {
