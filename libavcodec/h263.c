@@ -4552,11 +4552,11 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              s->b_code=1;
 
          if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-             printf("qp:%d fc:%d bc:%d type:%s size:%d pro:%d alt:%d top:%d qpel:%d part:%d resync:%d w:%d a:%d\n", 
+             printf("qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d\n", 
                  s->qscale, s->f_code, s->b_code, 
                  s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
                  gb->size,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
-                 s->quarter_sample, s->data_partitioning, s->resync_marker, s->num_sprite_warping_points,
+                 s->quarter_sample ? "q" : "h", s->data_partitioning, s->resync_marker, s->num_sprite_warping_points,
                  s->sprite_warping_accuracy); 
          }
 

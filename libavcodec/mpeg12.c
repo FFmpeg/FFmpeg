@@ -736,6 +736,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
             s->mv[1][0][0] = s->last_mv[1][0][0];
             s->mv[1][0][1] = s->last_mv[1][0][1];
         }
+
         s->mb_skiped = 1;
         return 0;
     }
@@ -1617,6 +1618,15 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         s->first_slice = 0;
         if(MPV_frame_start(s, avctx) < 0)
             return DECODE_SLICE_FATAL_ERROR;
+            
+        if(s->avctx->debug&FF_DEBUG_PICT_INFO){
+             printf("qp:%d fc:%d%d%d%d %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n", 
+                 s->qscale, s->mpeg_f_code[0][0],s->mpeg_f_code[0][1],s->mpeg_f_code[1][0],s->mpeg_f_code[1][1],
+                 s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
+                 s->progressive_sequence ? "pro" :"", s->alternate_scan ? "alt" :"", s->top_field_first ? "top" :"", 
+                 s->intra_dc_precision, s->picture_structure, s->frame_pred_frame_dct, s->concealment_motion_vectors,
+                 s->q_scale_type, s->intra_vlc_format, s->repeat_first_field, s->chroma_420_type ? "420" :"");
+        }
     }
 
     init_get_bits(&s->gb, buf, buf_size);

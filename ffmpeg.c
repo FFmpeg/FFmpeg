@@ -123,6 +123,7 @@ static int dct_algo = 0;
 static int idct_algo = 0;
 static int use_part = 0;
 static int packet_size = 0;
+static int debug = 0;
 
 static int gop_size = 12;
 static int intra_only = 0;
@@ -1597,6 +1598,10 @@ void opt_error_concealment(const char *arg)
     error_concealment = atoi(arg);
 }
 
+void opt_debug(const char *arg)
+{
+    debug = atoi(arg);
+}
 
 void opt_frame_rate(const char *arg)
 {
@@ -1987,6 +1992,7 @@ void opt_input_file(const char *filename)
             enc->error_resilience = error_resilience; 
             enc->error_concealment = error_concealment; 
             enc->idct_algo= idct_algo;
+            enc->debug= debug;
 /*            if(enc->codec->capabilities & CODEC_CAP_TRUNCATED)
                 enc->flags|= CODEC_FLAG_TRUNCATED; */
             if(/*enc->codec_id==CODEC_ID_MPEG4 || */enc->codec_id==CODEC_ID_MPEG1VIDEO)
@@ -2163,6 +2169,7 @@ void opt_output_file(const char *filename)
                 video_enc->qblur = video_qblur;
                 video_enc->qcompress = video_qcomp;
                 video_enc->rc_eq = video_rc_eq;
+                video_enc->debug= debug;
                 
                 p= video_rc_override_string;
                 for(i=0; p; i++){
@@ -2581,6 +2588,7 @@ const OptionDef options[] = {
     { "i_qfactor", HAS_ARG | OPT_EXPERT, {(void*)opt_i_qfactor}, "qp factor between p and i frames", "factor" },
     { "b_qoffset", HAS_ARG | OPT_EXPERT, {(void*)opt_b_qoffset}, "qp offset between p and b frames", "offset" },
     { "i_qoffset", HAS_ARG | OPT_EXPERT, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
+//    { "b_strategy", HAS_ARG | OPT_EXPERT, {(void*)opt_b_strategy}, "dynamic b frame selection strategy", "strategy" },
     { "rc_eq", HAS_ARG | OPT_EXPERT, {(void*)opt_video_rc_eq}, "", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT, {(void*)opt_video_rc_override_string}, "Rate control override", "qualities for specific intervals" },
     { "bt", HAS_ARG, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
@@ -2594,7 +2602,7 @@ const OptionDef options[] = {
     { "dct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
     { "idct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_idct_algo}, "set idct algo",  "algo" },
     { "er", HAS_ARG | OPT_EXPERT, {(void*)opt_error_resilience}, "set error resilience",  "" },
-    { "ec", HAS_ARG | OPT_EXPERT, {(void*)opt_error_resilience}, "set error concealment",  "" },
+    { "ec", HAS_ARG | OPT_EXPERT, {(void*)opt_error_concealment}, "set error concealment",  "" },
     { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
     { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },
     { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
@@ -2603,6 +2611,7 @@ const OptionDef options[] = {
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "packet size", "size in bits" },
     { "sameq", OPT_BOOL, {(void*)&same_quality}, 
       "use same video quality as source (implies VBR)" },
+    { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info" },
     /* audio options */
     { "ab", HAS_ARG, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
     { "ar", HAS_ARG, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },

@@ -914,7 +914,6 @@ alloc:
 void MPV_frame_end(MpegEncContext *s)
 {
     int i;
-
     /* draw edge for correct motion prediction if outside */
     if(s->codec_id!=CODEC_ID_SVQ1){
         if (s->pict_type != B_TYPE && !s->intra_only && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
@@ -3463,6 +3462,15 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
 #endif
             block[i] = level;
         }
+    }
+}
+
+char ff_get_pict_type_char(int pict_type){
+    switch(pict_type){
+    case I_TYPE: return 'I'; 
+    case P_TYPE: return 'P'; 
+    case B_TYPE: return 'B'; 
+    case S_TYPE: return 'S'; 
     }
 }
 

@@ -553,6 +553,8 @@ void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_init_scantable(MpegEncContext *s, ScanTable *st, const UINT8 *src_scantable);
 void ff_error_resilience(MpegEncContext *s);
 void ff_draw_horiz_band(MpegEncContext *s);
+char ff_get_pict_type_char(int pict_type);
+
 
 extern int ff_bit_exact;
 

@@ -330,7 +330,7 @@ static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, doubl
     const int pict_type= rce->new_pict_type;
     const double last_p_q    = rcc->last_qscale_for[P_TYPE];
     const double last_non_b_q= rcc->last_qscale_for[rcc->last_non_b_pict_type];
-
+    
     if     (pict_type==I_TYPE && (a->i_quant_factor>0.0 || rcc->last_non_b_pict_type==P_TYPE))
         q= last_p_q    *ABS(a->i_quant_factor) + a->i_quant_offset;
     else if(pict_type==B_TYPE && a->b_quant_factor>0.0)
@@ -339,6 +339,7 @@ static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, doubl
     /* last qscale / qdiff stuff */
     if(rcc->last_non_b_pict_type==pict_type || pict_type!=I_TYPE){
         double last_q= rcc->last_qscale_for[pict_type];
+
         if     (q > last_q + a->max_qdiff) q= last_q + a->max_qdiff;
         else if(q < last_q - a->max_qdiff) q= last_q - a->max_qdiff;
     }
@@ -658,17 +659,16 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
 
         assert(q>0.0);
     }
-//printf("qmin:%d, qmax:%d, q:%f\n", qmin, qmax, q);
-    
+
+    if(s->avctx->debug&FF_DEBUG_RC){
+        printf("%c qp:%d<%2.1f<%d %d want:%d total:%d comp:%f st_q:%2.2f size:%d var:%d/%d br:%d fps:%d\n",
+        ff_get_pict_type_char(pict_type), qmin, q, qmax, picture_number, (int)wanted_bits/1000, (int)s->total_bits/1000,
+        br_compensation, short_term_q, s->frame_bits, pic->mb_var_sum, pic->mc_mb_var_sum, s->bit_rate/1000, (int)fps
+        );
+    }
 
     if     (q<qmin) q=qmin; 
     else if(q>qmax) q=qmax;
-        
-//    printf("%f %d %d %d\n", q, picture_number, (int)wanted_bits, (int)s->total_bits);
-       
-//printf("diff:%d comp:%f st_q:%f last_size:%d type:%d\n", (int)diff, br_compensation, 
-//       short_term_q, s->frame_bits, pict_type);
-//printf("%d %d\n", s->bit_rate, (int)fps);
 
     if(s->adaptive_quant)
         adaptive_quantization(s, q);
