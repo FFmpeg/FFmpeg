@@ -578,8 +578,6 @@ typedef struct MpegEncContext {
     int rtp_payload_size;
     void (*rtp_callback)(void *data, int size, int packet_number);
     uint8_t *ptr_lastgob;
-    uint8_t *ptr_last_mb_line;
-    uint32_t mb_line_avgsize;
     
     DCTELEM (*block)[64]; ///< points to one of the following blocks 
     DCTELEM blocks[2][6][64] __align8; // for HQ mode we need to keep the best block

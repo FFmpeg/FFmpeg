@@ -3043,7 +3043,6 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->resync_mb_y=0;
     s->first_slice_line = 1;
     s->ptr_lastgob = s->pb.buf;
-    s->ptr_last_mb_line = s->pb.buf;
     for(mb_y=0; mb_y < s->mb_height; mb_y++) {
         s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
         s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
@@ -3078,7 +3077,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 is_gob_start=0;
                 
                 if(s->codec_id==CODEC_ID_MPEG4){
-                    if(current_packet_size + s->mb_line_avgsize/s->mb_width >= s->rtp_payload_size
+                    if(current_packet_size >= s->rtp_payload_size
                        && s->mb_y + s->mb_x>0){
 
                         if(s->partitioned_frame){
@@ -3096,7 +3095,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                         is_gob_start=1;
                     }
                 }else{
-                    if(current_packet_size + s->mb_line_avgsize*s->gob_index >= s->rtp_payload_size
+                    if(current_packet_size >= s->rtp_payload_size
                        && s->mb_x==0 && s->mb_y>0 && s->mb_y%s->gob_index==0){
                        
                         h263_encode_gob_header(s, mb_y);                       
@@ -3410,17 +3409,6 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     w>>1, h>>1, s->uvlinesize);
             }
 //printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_width, get_bit_count(&s->pb));
-        }
-
-
-        /* Obtain average mb_row size for RTP */
-        if (s->rtp_mode) {
-            if (mb_y==0)
-                s->mb_line_avgsize = pbBufPtr(&s->pb) - s->ptr_last_mb_line;
-            else {    
-                s->mb_line_avgsize = (s->mb_line_avgsize + pbBufPtr(&s->pb) - s->ptr_last_mb_line) >> 1;
-            }
-            s->ptr_last_mb_line = pbBufPtr(&s->pb);
         }
     }
     emms_c();
