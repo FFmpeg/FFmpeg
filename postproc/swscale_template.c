@@ -6,6 +6,7 @@
 // the parts written by michael are under GNU GPL
 
 #include <inttypes.h>
+#include <string.h>
 #include "../config.h"
 #include "swscale.h"
 

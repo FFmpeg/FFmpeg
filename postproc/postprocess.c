@@ -74,6 +74,9 @@ Notes:
 #include <stdlib.h>
 #include <string.h>
 #include "../config.h"
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 //#undef HAVE_MMX2
 //#define HAVE_3DNOW
 //#undef HAVE_MMX
