@@ -119,9 +119,7 @@ void av_register_all(void)
     av_register_image_format(&ppm_image_format);
     av_register_image_format(&pam_image_format);
     av_register_image_format(&pgmyuv_image_format);
-#endif
     av_register_image_format(&yuv_image_format);
-#if 0
 #ifdef CONFIG_ZLIB
     av_register_image_format(&png_image_format);
 #endif
