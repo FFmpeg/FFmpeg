@@ -123,6 +123,12 @@ typedef struct AVCodecContext {
     /* with a Start Code (it should) H.263 does   */
     void (*rtp_callback)(void *data, int size, int packet_number); 
 
+    /* These are for PSNR calculation, if you set get_psnr to 1 */
+    /* after encoding you will have the PSNR on psnr_y/cb/cr    */
+    int get_psnr;
+    float psnr_y;
+    float psnr_cb;
+    float psnr_cr;
                  
     /* the following fields are ignored */
     void *opaque;   /* can be used to carry app specific stuff */

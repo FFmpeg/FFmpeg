@@ -96,14 +96,14 @@ static void dct_unquantize_h263_mmx(MpegEncContext *s,
                 block[0] = block[0] * s->c_dc_scale;
         }
         for(i=1; i<8; i++) {
-    	    level = block[i];
-	        if (level) {
-		        if (level < 0) {
-			        level = level * qmul - qadd;
-		        } else {
-			        level = level * qmul + qadd;
-		        }
-		        block[i] = level;
+            level = block[i];
+            if (level) {
+    	        if (level < 0) {
+                    level = level * qmul - qadd;
+                } else {
+                    level = level * qmul + qadd;
+                }
+                block[i] = level;
             }
         }
         nCoeffs=64;

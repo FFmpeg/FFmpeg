@@ -2,6 +2,7 @@
 #define DSPUTIL_H
 
 #include "common.h"
+#include "avcodec.h"
 
 /* dct code */
 typedef short DCTELEM;
@@ -138,4 +139,9 @@ void dsputil_init_alpha(void);
 
 #endif
 
+/* PSNR */
+void get_psnr(UINT8 *orig_image[3], UINT8 *coded_image[3],
+              int orig_linesize[3], int coded_linesize,
+              AVCodecContext *avctx);
+              
 #endif

@@ -522,6 +522,12 @@ int MPV_encode_picture(AVCodecContext *avctx,
     s->total_bits += (pbBufPtr(&s->pb) - s->pb.buf) * 8;
 
     avctx->quality = s->qscale;
+    if (avctx->get_psnr) {
+        /* At this point pict->data should have the original frame   */
+        /* an s->current_picture should have the coded/decoded frame */
+        get_psnr(pict->data, s->current_picture,
+                 pict->linesize, s->linesize, avctx);
+    }
     return pbBufPtr(&s->pb) - s->pb.buf;
 }
 

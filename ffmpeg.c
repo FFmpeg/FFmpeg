@@ -98,6 +98,7 @@ static char *str_comment = NULL;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
 static int do_play = 0;
+static int do_psnr = 0;
 
 typedef struct AVOutputStream {
     int file_index;          /* file index */
@@ -958,6 +959,8 @@ static int av_encode(AVFormatContext **output_files,
                         frame_number = ist->frame_number;
                         sprintf(buf + strlen(buf), "frame=%5d q=%2d ",
                                 frame_number, enc->quality);
+                        if (do_psnr)
+                            sprintf(buf + strlen(buf), "PSNR=%6.2f ", enc->psnr_y);
                         vid = 1;
                     }
                     /* compute min pts value */
@@ -1006,6 +1009,8 @@ static int av_encode(AVFormatContext **output_files,
                 frame_number = ist->frame_number;
                 sprintf(buf + strlen(buf), "frame=%5d q=%2d ",
                         frame_number, enc->quality);
+                if (do_psnr)
+                    sprintf(buf + strlen(buf), "PSNR=%6.2f ", enc->psnr_y);
                 vid = 1;
             }
             /* compute min pts value */
@@ -1618,6 +1623,10 @@ void opt_output_file(const char *filename)
                 video_enc->flags |= CODEC_FLAG_QSCALE;
                 video_enc->quality = video_qscale;
             }
+            if (do_psnr)
+                video_enc->get_psnr = 1;
+            else
+                video_enc->get_psnr = 0;
             /* XXX: need to find a way to set codec parameters */
             if (oc->format == &ppm_format ||
                 oc->format == &ppmpipe_format) {
@@ -1960,6 +1969,7 @@ const OptionDef options[] = {
       "add timings for benchmarking" },
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump}, 
       "dump each input packet" },
+    { "psnr", OPT_BOOL | OPT_EXPERT, {(void*)&do_psnr}, "calculate PSNR of compressed frames" }, 
 
     { NULL, },
 };

@@ -16,6 +16,11 @@ OBJS+= ac3dec.o \
        libac3/imdct.o  libac3/parse.o
 endif
 
+ifeq ($(TARGET_GPROF),yes)
+CFLAGS+=-p
+LDFLAGS+=-p
+endif
+
 # i386 mmx specific stuff
 ifeq ($(TARGET_MMX),yes)
 OBJS += i386/fdct_mmx.o i386/cputest.o \
