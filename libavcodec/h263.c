@@ -18,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * ac prediction encoding by Michael Niedermayer <michaelni@gmx.at>
+ * ac prediction encoding & b-frame support by Michael Niedermayer <michaelni@gmx.at>
  */
 #include "common.h"
 #include "dsputil.h"
@@ -282,7 +282,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 s->mv[0][0][1]= 
                 s->mv[1][0][0]= 
                 s->mv[1][0][1]= 0;
-//                s->mv_dir= MV_DIR_FORWARD; //doesnt matter
+                s->mv_dir= MV_DIR_FORWARD; //doesnt matter
                 return;
             }
 
@@ -334,7 +334,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 s->last_mv[0][0][0]= motion_x;
                 s->last_mv[0][0][1]= motion_y;
                 break;
-            default: 
+            default:
+                printf("unknown mb type\n");
                 return;
             }
             bits= get_bit_count(&s->pb);
@@ -959,6 +960,31 @@ static void put_string(PutBitContext * pbc, char *s)
     put_bits(pbc, 8, 0);
 }
 
+/* must be called before writing the header */
+void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
+    int time_div, time_mod;
+
+    if(s->pict_type==I_TYPE){ //we will encode a vol header
+        s->time_increment_resolution= s->frame_rate/ff_gcd(s->frame_rate, FRAME_RATE_BASE);
+        if(s->time_increment_resolution>=256*256) s->time_increment_resolution= 256*128;
+
+        s->time_increment_bits = av_log2(s->time_increment_resolution - 1) + 1;
+    }
+
+    s->time= picture_number*(int64_t)FRAME_RATE_BASE*s->time_increment_resolution/s->frame_rate;
+    time_div= s->time/s->time_increment_resolution;
+    time_mod= s->time%s->time_increment_resolution;
+
+    if(s->pict_type==B_TYPE){
+        s->bp_time= s->last_non_b_time - s->time;
+    }else{
+        s->last_time_base= s->time_base;
+        s->time_base= time_div;
+        s->pp_time= s->time - s->last_non_b_time;
+        s->last_non_b_time= s->time;
+    }
+}
+
 static void mpeg4_encode_vol_header(MpegEncContext * s)
 {
     int vo_ver_id=1; //must be 2 if we want GMC or q-pel
@@ -983,11 +1009,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     put_bits(&s->pb, 2, RECT_SHAPE);	/* vol shape= rectangle */
     put_bits(&s->pb, 1, 1);		/* marker bit */
     
-    s->time_increment_resolution= s->frame_rate/ff_gcd(s->frame_rate, FRAME_RATE_BASE);
-    if(s->time_increment_resolution>=256*256) s->time_increment_resolution= 256*128;
-
     put_bits(&s->pb, 16, s->time_increment_resolution);
-    s->time_increment_bits = av_log2(s->time_increment_resolution - 1) + 1;
     if (s->time_increment_bits < 1)
         s->time_increment_bits = 1;
     put_bits(&s->pb, 1, 1);		/* marker bit */
@@ -1034,9 +1056,6 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     
     if(s->pict_type==I_TYPE) mpeg4_encode_vol_header(s);
     
-    s->time= s->picture_number*(int64_t)FRAME_RATE_BASE*s->time_increment_resolution/s->frame_rate;
-    time_div= s->time/s->time_increment_resolution;
-    time_mod= s->time%s->time_increment_resolution;
 //printf("num:%d rate:%d base:%d\n", s->picture_number, s->frame_rate, FRAME_RATE_BASE);
     
     if(get_bit_count(&s->pb)!=0) mpeg4_stuffing(&s->pb);
@@ -1044,15 +1063,8 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     put_bits(&s->pb, 16, 0x1B6);	/* vop header */
     put_bits(&s->pb, 2, s->pict_type - 1);	/* pict type: I = 0 , P = 1 */
 
-    if(s->pict_type==B_TYPE){
-        s->bp_time= s->last_non_b_time - s->time;
-    }else{
-        s->last_time_base= s->time_base;
-        s->time_base= time_div;
-        s->pp_time= s->time - s->last_non_b_time;
-        s->last_non_b_time= s->time;
-    }
-
+    time_div= s->time/s->time_increment_resolution;
+    time_mod= s->time%s->time_increment_resolution;
     time_incr= time_div - s->last_time_base;
     while(time_incr--)
         put_bits(&s->pb, 1, 1);
@@ -1770,6 +1782,7 @@ int h263_decode_mb(MpegEncContext *s,
             s->last_mv[0][0][1]= 
             s->last_mv[1][0][0]= 
             s->last_mv[1][0][1]= 0;
+//            printf("\n");
         }
 
         /* if we skipped it in the future P Frame than skip it now too */
@@ -1789,6 +1802,7 @@ int h263_decode_mb(MpegEncContext *s,
 //FIXME is this correct?
 /*            s->last_mv[0][0][0]=
             s->last_mv[0][0][1]=0;*/
+//            printf("S");
             return 0;
         }
 
@@ -1837,6 +1851,7 @@ int h263_decode_mb(MpegEncContext *s,
             s->mv[0][0][1] = 
             s->mv[1][0][0] = 
             s->mv[1][0][1] = 1000;*/
+//            printf("D");
             break;
         case 1: 
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
@@ -1849,6 +1864,7 @@ int h263_decode_mb(MpegEncContext *s,
             my = h263_decode_motion(s, s->last_mv[1][0][1], s->b_code);
             s->last_mv[1][0][0]= s->mv[1][0][0] = mx;
             s->last_mv[1][0][1]= s->mv[1][0][1] = my;
+//            printf("I");
             break;
         case 2: 
             s->mv_dir = MV_DIR_BACKWARD;
@@ -1856,6 +1872,7 @@ int h263_decode_mb(MpegEncContext *s,
             my = h263_decode_motion(s, s->last_mv[1][0][1], s->b_code);
             s->last_mv[1][0][0]= s->mv[1][0][0] = mx;
             s->last_mv[1][0][1]= s->mv[1][0][1] = my;
+//            printf("B");
             break;
         case 3:
             s->mv_dir = MV_DIR_FORWARD;
@@ -1863,6 +1880,7 @@ int h263_decode_mb(MpegEncContext *s,
             my = h263_decode_motion(s, s->last_mv[0][0][1], s->f_code);
             s->last_mv[0][0][0]= s->mv[0][0][0] = mx;
             s->last_mv[0][0][1]= s->mv[0][0][1] = my;
+//            printf("F");
             break;
         default: return -1;
         }

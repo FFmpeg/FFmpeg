@@ -141,7 +141,8 @@ typedef struct MpegEncContext {
     INT16 (*b_direct_forw_mv_table)[2];/* MV table (1MV per MB) direct mode b-frame encoding */
     INT16 (*b_direct_back_mv_table)[2];/* MV table (1MV per MB) direct mode b-frame encoding */
     INT16 (*b_direct_mv_table)[2];     /* MV table (1MV per MB) direct mode b-frame encoding */
-    int me_method;          /* ME algorithm */
+    int me_method;                     /* ME algorithm */
+    uint8_t *me_scratchpad;            /* data area for the me algo, so that the ME doesnt need to malloc/free */
     int mv_dir;
 #define MV_DIR_BACKWARD  1
 #define MV_DIR_FORWARD   2
@@ -164,7 +165,8 @@ typedef struct MpegEncContext {
     UINT8 *fcode_tab; /* smallest fcode needed for each MV */
 
     int has_b_frames;
-    int no_rounding; /* apply no rounding to motion compensation (MPEG4, msmpeg4, ...) */
+    int no_rounding; /* apply no rounding to motion compensation (MPEG4, msmpeg4, ...) 
+                        for b-frames rounding mode is allways 0 */
 
     /* macroblock layer */
     int mb_x, mb_y;
@@ -335,9 +337,7 @@ typedef struct MpegEncContext {
     UINT32 mb_line_avgsize;
     
     DCTELEM (*block)[64]; /* points to one of the following blocks */
-    DCTELEM intra_block[6][64] __align8;
-    DCTELEM inter_block[6][64] __align8;
-    DCTELEM inter4v_block[6][64] __align8;
+    DCTELEM blocks[2][6][64] __align8; // for HQ mode we need to keep the best block
     void (*dct_unquantize_mpeg1)(struct MpegEncContext *s, 
                            DCTELEM *block, int n, int qscale);
     void (*dct_unquantize_mpeg2)(struct MpegEncContext *s, 
@@ -421,6 +421,7 @@ INT16 *h263_pred_motion(MpegEncContext * s, int block,
                         int *px, int *py);
 void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n, 
                    int dir);
+void ff_set_mpeg4_time(MpegEncContext * s, int picture_number);
 void mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 void h263_encode_init(MpegEncContext *s);
 

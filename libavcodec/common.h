@@ -881,6 +881,16 @@ static inline int mid_pred(int a, int b, int c)
     return a + b + c - vmin - vmax;
 }
 
+static inline int clip(int a, int amin, int amax)
+{
+    if (a < amin)
+        return amin;
+    else if (a > amax)
+        return amax;
+    else
+        return a;
+}
+
 /* memory */
 void *av_mallocz(int size);
 

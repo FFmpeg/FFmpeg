@@ -225,6 +225,12 @@ int MPV_common_init(MpegEncContext *s)
             goto fail;
         }
 
+        s->me_scratchpad = av_mallocz( s->linesize*16*3*sizeof(uint8_t));
+        if (s->me_scratchpad == NULL) {
+            perror("malloc");
+            goto fail;
+        }
+
         if(s->max_b_frames){
             for(j=0; j<REORDER_BUFFER_SIZE; j++){
                 int i;
@@ -297,7 +303,7 @@ int MPV_common_init(MpegEncContext *s)
     if (!s->mbskip_table)
         goto fail;
     
-    s->block= s->intra_block;
+    s->block= s->blocks[0];
 
     s->context_initialized = 1;
     return 0;
@@ -333,6 +339,7 @@ void MPV_common_end(MpegEncContext *s)
     CHECK_FREE(s->ac_val[0]);
     CHECK_FREE(s->coded_block);
     CHECK_FREE(s->mbintra_table);
+    CHECK_FREE(s->me_scratchpad);
 
     CHECK_FREE(s->mbskip_table);
     for(i=0;i<3;i++) {
@@ -759,16 +766,6 @@ int MPV_encode_picture(AVCodecContext *avctx,
 //        printf("%f\n", avctx->psnr_y);
     }
     return pbBufPtr(&s->pb) - s->pb.buf;
-}
-
-static inline int clip(int a, int amin, int amax)
-{
-    if (a < amin)
-        return amin;
-    else if (a > amax)
-        return amax;
-    else
-        return a;
 }
 
 static inline void gmc1_motion(MpegEncContext *s,
@@ -1225,7 +1222,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         if (!s->mb_intra) {
             /* motion handling */
             if((s->flags&CODEC_FLAG_HQ) || (!s->encoding)){
-                if (!s->no_rounding){
+                if ((!s->no_rounding) || s->pict_type==B_TYPE){                
                     op_pix = put_pixels_tab;
                     op_qpix= qpel_mc_rnd_tab;
                 }else{
@@ -1235,7 +1232,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
                 if (s->mv_dir & MV_DIR_FORWARD) {
                     MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture, op_pix, op_qpix);
-                    if (!s->no_rounding) 
+                    if ((!s->no_rounding) || s->pict_type==B_TYPE)
                         op_pix = avg_pixels_tab;
                     else
                         op_pix = avg_no_rnd_pixels_tab;
@@ -1312,7 +1309,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         dest_cb = s->current_picture[1] + (mb_y * 8  * (s->linesize >> 1)) + mb_x * 8;
         dest_cr = s->current_picture[2] + (mb_y * 8  * (s->linesize >> 1)) + mb_x * 8;
 
-        if (!s->no_rounding){
+        if ((!s->no_rounding) || s->pict_type==B_TYPE){
             op_pix = put_pixels_tab;
             op_qpix= qpel_mc_rnd_tab;
         }else{
@@ -1322,7 +1319,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 
         if (s->mv_dir & MV_DIR_FORWARD) {
             MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture, op_pix, op_qpix);
-            if (!s->no_rounding) 
+           if ((!s->no_rounding) || s->pict_type==B_TYPE)
                 op_pix = avg_pixels_tab;
             else
                 op_pix = avg_no_rnd_pixels_tab;
@@ -1429,6 +1426,8 @@ static void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int
     d->skip_count= s->skip_count;
     d->misc_bits= s->misc_bits;
     d->last_bits= s->last_bits;
+
+    d->mb_skiped= s->mb_skiped;
 }
 
 static void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int type){
@@ -1453,6 +1452,7 @@ static void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int 
     d->last_bits= s->last_bits;
 
     d->mb_intra= s->mb_intra;
+    d->mb_skiped= s->mb_skiped;
     d->mv_type= s->mv_type;
     d->mv_dir= s->mv_dir;
     d->pb= s->pb;
@@ -1468,7 +1468,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     int i;
     int bits;
     MpegEncContext best_s, backup_s;
-    UINT8 bit_buf[4][3000]; //FIXME check that this is ALLWAYS large enogh for a MB
+    UINT8 bit_buf[7][3000]; //FIXME check that this is ALLWAYS large enogh for a MB
 
     s->picture_number = picture_number;
 
@@ -1483,7 +1483,11 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     /* Reset the average MB variance */
     s->avg_mb_var = 0;
     s->mc_mb_var = 0;
-    
+
+    /* we need to initialize some time vars before we can encode b-frames */
+    if (s->h263_pred && !s->h263_msmpeg4)
+        ff_set_mpeg4_time(s, s->picture_number); 
+
     /* Estimate motion for every MB */
     if(s->pict_type != I_TYPE){
 //        int16_t (*tmp)[2]= s->p_mv_table;
@@ -1535,9 +1539,11 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     if(s->pict_type==B_TYPE){
         s->f_code= ff_get_best_fcode(s, s->b_forw_mv_table, MB_TYPE_FORWARD);
         s->b_code= ff_get_best_fcode(s, s->b_back_mv_table, MB_TYPE_BACKWARD);
-        //FIXME if BIDIR != for&back
-        ff_fix_long_b_mvs(s, s->b_forw_mv_table, s->f_code, MB_TYPE_FORWARD |MB_TYPE_BIDIR);
-        ff_fix_long_b_mvs(s, s->b_back_mv_table, s->b_code, MB_TYPE_BACKWARD|MB_TYPE_BIDIR);
+
+        ff_fix_long_b_mvs(s, s->b_forw_mv_table, s->f_code, MB_TYPE_FORWARD);
+        ff_fix_long_b_mvs(s, s->b_back_mv_table, s->b_code, MB_TYPE_BACKWARD);
+        ff_fix_long_b_mvs(s, s->b_bidir_forw_mv_table, s->f_code, MB_TYPE_BIDIR);
+        ff_fix_long_b_mvs(s, s->b_bidir_back_mv_table, s->b_code, MB_TYPE_BIDIR);
     }
     
 //printf("f_code %d ///\n", s->f_code);
@@ -1632,7 +1638,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         s->block_index[4]= s->block_wrap[4]*(mb_y + 1)                    + s->block_wrap[0]*(s->mb_height*2 + 2);
         s->block_index[5]= s->block_wrap[4]*(mb_y + 1 + s->mb_height + 2) + s->block_wrap[0]*(s->mb_height*2 + 2);
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
-            /*const */int mb_type= s->mb_type[mb_y * s->mb_width + mb_x];
+            const int mb_type= s->mb_type[mb_y * s->mb_width + mb_x];
+            const int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
             PutBitContext pb;
             int d;
             int dmin=10000000;
@@ -1647,19 +1654,19 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->block_index[4]++;
             s->block_index[5]++;
             if(mb_type & (mb_type-1)){ // more than 1 MB type possible
+                int next_block=0;
                 pb= s->pb;
-                s->mv_dir = MV_DIR_FORWARD;
 
                 copy_context_before_encode(&backup_s, s, -1);
 
                 if(mb_type&MB_TYPE_INTER){
-                    int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
+                    s->mv_dir = MV_DIR_FORWARD;
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_intra= 0;
                     s->mv[0][0][0] = s->p_mv_table[xy][0];
                     s->mv[0][0][1] = s->p_mv_table[xy][1];
                     init_put_bits(&s->pb, bit_buf[1], 3000, NULL, NULL);
-                    s->block= s->inter_block;
+                    s->block= s->blocks[next_block];
 
                     encode_mb(s, s->mv[0][0][0], s->mv[0][0][1]);
                     d= get_bit_count(&s->pb);
@@ -1668,10 +1675,12 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                         dmin=d;
                         copy_context_after_encode(&best_s, s, MB_TYPE_INTER);
                         best=1;
+                        next_block^=1;
                     }
                 }
                 if(mb_type&MB_TYPE_INTER4V){                 
                     copy_context_before_encode(s, &backup_s, MB_TYPE_INTER4V);
+                    s->mv_dir = MV_DIR_FORWARD;
                     s->mv_type = MV_TYPE_8X8;
                     s->mb_intra= 0;
                     for(i=0; i<4; i++){
@@ -1679,25 +1688,111 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                         s->mv[0][i][1] = s->motion_val[s->block_index[i]][1];
                     }
                     init_put_bits(&s->pb, bit_buf[2], 3000, NULL, NULL);
-                    s->block= s->inter4v_block;
+                    s->block= s->blocks[next_block];
 
                     encode_mb(s, 0, 0);
                     d= get_bit_count(&s->pb);
-                    if(d<dmin && 0){
+                    if(d<dmin){
                         flush_put_bits(&s->pb);
                         dmin=d;
                         copy_context_after_encode(&best_s, s, MB_TYPE_INTER4V);
                         best=2;
+                        next_block^=1;
+                    }
+                }
+                if(mb_type&MB_TYPE_FORWARD){
+                    copy_context_before_encode(s, &backup_s, MB_TYPE_FORWARD);
+                    s->mv_dir = MV_DIR_FORWARD;
+                    s->mv_type = MV_TYPE_16X16;
+                    s->mb_intra= 0;
+                    s->mv[0][0][0] = s->b_forw_mv_table[xy][0];
+                    s->mv[0][0][1] = s->b_forw_mv_table[xy][1];
+                    init_put_bits(&s->pb, bit_buf[3], 3000, NULL, NULL);
+                    s->block= s->blocks[next_block];
+
+                    encode_mb(s, s->mv[0][0][0], s->mv[0][0][1]);
+                    d= get_bit_count(&s->pb);
+                    if(d<dmin){
+                        flush_put_bits(&s->pb);
+                        dmin=d;
+                        copy_context_after_encode(&best_s, s, MB_TYPE_FORWARD);
+                        best=3;
+                        next_block^=1;
+                    }
+                }
+                if(mb_type&MB_TYPE_BACKWARD){
+                    copy_context_before_encode(s, &backup_s, MB_TYPE_BACKWARD);
+                    s->mv_dir = MV_DIR_BACKWARD;
+                    s->mv_type = MV_TYPE_16X16;
+                    s->mb_intra= 0;
+                    s->mv[1][0][0] = s->b_back_mv_table[xy][0];
+                    s->mv[1][0][1] = s->b_back_mv_table[xy][1];
+                    init_put_bits(&s->pb, bit_buf[4], 3000, NULL, NULL);
+                    s->block= s->blocks[next_block];
+
+                    encode_mb(s, s->mv[1][0][0], s->mv[1][0][1]);
+                    d= get_bit_count(&s->pb);
+                    if(d<dmin){
+                        flush_put_bits(&s->pb);
+                        dmin=d;
+                        copy_context_after_encode(&best_s, s, MB_TYPE_BACKWARD);
+                        best=4;
+                        next_block^=1;
+                    }
+                }
+                if(mb_type&MB_TYPE_BIDIR){
+                    copy_context_before_encode(s, &backup_s, MB_TYPE_BIDIR);
+                    s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
+                    s->mv_type = MV_TYPE_16X16;
+                    s->mb_intra= 0;
+                    s->mv[0][0][0] = s->b_bidir_forw_mv_table[xy][0];
+                    s->mv[0][0][1] = s->b_bidir_forw_mv_table[xy][1];
+                    s->mv[1][0][0] = s->b_bidir_back_mv_table[xy][0];
+                    s->mv[1][0][1] = s->b_bidir_back_mv_table[xy][1];
+                    init_put_bits(&s->pb, bit_buf[5], 3000, NULL, NULL);
+                    s->block= s->blocks[next_block];
+
+                    encode_mb(s, 0, 0);
+                    d= get_bit_count(&s->pb);
+                    if(d<dmin){
+                        flush_put_bits(&s->pb);
+                        dmin=d;
+                        copy_context_after_encode(&best_s, s, MB_TYPE_BIDIR);
+                        best=5;
+                        next_block^=1;
+                    }
+                }
+                if(mb_type&MB_TYPE_DIRECT){
+                    copy_context_before_encode(s, &backup_s, MB_TYPE_DIRECT);
+                    s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
+                    s->mv_type = MV_TYPE_16X16; //FIXME
+                    s->mb_intra= 0;
+                    s->mv[0][0][0] = s->b_direct_forw_mv_table[xy][0];
+                    s->mv[0][0][1] = s->b_direct_forw_mv_table[xy][1];
+                    s->mv[1][0][0] = s->b_direct_back_mv_table[xy][0];
+                    s->mv[1][0][1] = s->b_direct_back_mv_table[xy][1];
+                    init_put_bits(&s->pb, bit_buf[6], 3000, NULL, NULL);
+                    s->block= s->blocks[next_block];
+
+                    encode_mb(s, s->b_direct_mv_table[xy][0], s->b_direct_mv_table[xy][1]);
+                    d= get_bit_count(&s->pb);
+                    if(d<dmin){
+                        flush_put_bits(&s->pb);
+                        dmin=d;
+                        copy_context_after_encode(&best_s, s, MB_TYPE_DIRECT);
+                        best=6;
+                        next_block^=1;
                     }
                 }
                 if(mb_type&MB_TYPE_INTRA){
                     copy_context_before_encode(s, &backup_s, MB_TYPE_INTRA);
+                    s->mv_dir = MV_DIR_FORWARD;
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_intra= 1;
                     s->mv[0][0][0] = 0;
                     s->mv[0][0][1] = 0;
                     init_put_bits(&s->pb, bit_buf[0], 3000, NULL, NULL);
-                    s->block= s->intra_block;
+                    s->block= s->blocks[next_block];
                    
                     encode_mb(s, 0, 0);
                     d= get_bit_count(&s->pb);
@@ -1706,6 +1801,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                         dmin=d;
                         copy_context_after_encode(&best_s, s, MB_TYPE_INTRA);
                         best=0;
+                        next_block^=1;
                     }
                     /* force cleaning of ac/dc pred stuff if needed ... */
                     if(s->h263_pred || s->h263_aic)
@@ -1718,30 +1814,30 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 int motion_x, motion_y;
                 s->mv_type=MV_TYPE_16X16;
                 // only one MB-Type possible
-                //FIXME convert to swicth()
-                if(mb_type&MB_TYPE_INTRA){
+                switch(mb_type){
+                case MB_TYPE_INTRA:
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mb_intra= 1;
                     motion_x= s->mv[0][0][0] = 0;
                     motion_y= s->mv[0][0][1] = 0;
-                }else if(mb_type&MB_TYPE_INTER){
-                    int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
+                    break;
+                case MB_TYPE_INTER:
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mb_intra= 0;
                     motion_x= s->mv[0][0][0] = s->p_mv_table[xy][0];
                     motion_y= s->mv[0][0][1] = s->p_mv_table[xy][1];
-                }else if(mb_type&MB_TYPE_DIRECT){
-                    int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
+                    break;
+                case MB_TYPE_DIRECT:
                     s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
                     s->mb_intra= 0;
-                    motion_x=0;
-                    motion_y=0;
-                    s->mv[0][0][0] = 0;
-                    s->mv[0][0][1] = 0;
-                    s->mv[1][0][0] = 0;
-                    s->mv[1][0][1] = 0;
-                }else if(mb_type&MB_TYPE_BIDIR){
-                    int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
+                    motion_x=s->b_direct_mv_table[xy][0];
+                    motion_y=s->b_direct_mv_table[xy][1];
+                    s->mv[0][0][0] = s->b_direct_forw_mv_table[xy][0];
+                    s->mv[0][0][1] = s->b_direct_forw_mv_table[xy][1];
+                    s->mv[1][0][0] = s->b_direct_back_mv_table[xy][0];
+                    s->mv[1][0][1] = s->b_direct_back_mv_table[xy][1];
+                    break;
+                case MB_TYPE_BIDIR:
                     s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
                     s->mb_intra= 0;
                     motion_x=0;
@@ -1750,24 +1846,30 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s->mv[0][0][1] = s->b_bidir_forw_mv_table[xy][1];
                     s->mv[1][0][0] = s->b_bidir_back_mv_table[xy][0];
                     s->mv[1][0][1] = s->b_bidir_back_mv_table[xy][1];
-                }else if(mb_type&MB_TYPE_BACKWARD){
-                    int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
+                    break;
+                case MB_TYPE_BACKWARD:
                     s->mv_dir = MV_DIR_BACKWARD;
                     s->mb_intra= 0;
                     motion_x= s->mv[1][0][0] = s->b_back_mv_table[xy][0];
                     motion_y= s->mv[1][0][1] = s->b_back_mv_table[xy][1];
-                }else if(mb_type&MB_TYPE_FORWARD){
-                    int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
+                    break;
+                case MB_TYPE_FORWARD:
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mb_intra= 0;
                     motion_x= s->mv[0][0][0] = s->b_forw_mv_table[xy][0];
                     motion_y= s->mv[0][0][1] = s->b_forw_mv_table[xy][1];
 //                    printf(" %d %d ", motion_x, motion_y);
-                }else{
+                    break;
+                default:
                     motion_x=motion_y=0; //gcc warning fix
                     printf("illegal MB type\n");
                 }
                 encode_mb(s, motion_x, motion_y);
+            }
+            /* clean the MV table in IPS frames for direct mode in B frames */
+            if(s->mb_intra /* && I,P,S_TYPE */){
+                s->p_mv_table[xy][0]=0;
+                s->p_mv_table[xy][1]=0;
             }
 
             MPV_decode_mb(s, s->block);
