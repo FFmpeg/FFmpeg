@@ -124,11 +124,13 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             switch(flags >> 4){/* 0: uncompressed 1: ADPCM 2: mp3 5: Nellymoser 8kHz mono 6: Nellymoser*/
 	    case 0: if (flags&2) st->codec.codec_id = CODEC_ID_PCM_S16BE;
 		    else st->codec.codec_id = CODEC_ID_PCM_S8; break;
+	    case 1: st->codec.codec_id = CODEC_ID_ADPCM_SWF; break;
             case 2: st->codec.codec_id = CODEC_ID_MP3; break;
 	    // this is not listed at FLV but at SWF, strange...
 	    case 3: if (flags&2) st->codec.codec_id = CODEC_ID_PCM_S16LE;
 		    else st->codec.codec_id = CODEC_ID_PCM_S8; break;
             default:
+    		av_log(s, AV_LOG_INFO, "Unsupported audio codec (%x)\n", flags >> 4);
                 st->codec.codec_tag= (flags >> 4);
             }
         }
@@ -137,6 +139,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             switch(flags & 0xF){
             case 2: st->codec.codec_id = CODEC_ID_FLV1; break;
             default:
+    		av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flags & 0xf);
                 st->codec.codec_tag= flags & 0xF;
             }
     }
