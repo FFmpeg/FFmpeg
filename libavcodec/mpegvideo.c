@@ -4623,7 +4623,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         
     s->me.scene_change_score=0;
     
-    s->lambda= s->current_picture_ptr->quality; //FIXME qscale / ... stuff for ME ratedistoration
+//    s->lambda= s->current_picture_ptr->quality; //FIXME qscale / ... stuff for ME ratedistoration
     
     if(s->pict_type==I_TYPE){
         if(s->msmpeg4_version >= 3) s->no_rounding=1;

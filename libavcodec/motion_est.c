@@ -223,18 +223,17 @@ static inline int get_penalty_factor(MpegEncContext *s, int type){
     switch(type&0xFF){
     default:
     case FF_CMP_SAD:
-        return s->qscale*2;
+        return s->lambda>>FF_LAMBDA_SHIFT;
     case FF_CMP_DCT:
-        return s->qscale*3;
+        return (3*s->lambda)>>(FF_LAMBDA_SHIFT+1);
     case FF_CMP_SATD:
-        return s->qscale*6;
-    case FF_CMP_SSE:
-        return s->qscale*s->qscale*2;
-    case FF_CMP_BIT:
-        return 1;
+        return (2*s->lambda)>>FF_LAMBDA_SHIFT;
     case FF_CMP_RD:
     case FF_CMP_PSNR:
-        return (s->qscale*s->qscale*185 + 64)>>7;
+    case FF_CMP_SSE:
+        return s->lambda2>>FF_LAMBDA_SHIFT;
+    case FF_CMP_BIT:
+        return 1;
     }
 }
 
