@@ -274,7 +274,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 1, 1);
             put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
             put_bits(&s->pb, 6, (uint32_t)((time_code % fps) / MPEG1_FRAME_RATE_BASE));
-            put_bits(&s->pb, 1, 1); /* closed gop */
+            put_bits(&s->pb, 1, 0); /* closed gop */
             put_bits(&s->pb, 1, 0); /* broken link */
         }
 
