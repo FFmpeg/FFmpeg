@@ -3095,6 +3095,13 @@ void ff_mpeg_flush(AVCodecContext *avctx){
         avctx->release_buffer(avctx, (AVFrame*)&s->picture[i]);
     }
     s->last_picture_ptr = s->next_picture_ptr = NULL;
+    
+    s->parse_context.state= -1;
+    s->parse_context.frame_start_found= 0;
+    s->parse_context.overread= 0;
+    s->parse_context.overread_index= 0;
+    s->parse_context.index= 0;
+    s->parse_context.last_index= 0;
 }
 
 #ifdef CONFIG_ENCODERS
