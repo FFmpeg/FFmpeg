@@ -325,7 +325,7 @@ static inline void put_vlc_symbol(PutBitContext *pb, VlcState * const state, int
 #endif
     
 //printf("v:%d/%d bias:%d error:%d drift:%d count:%d k:%d\n", v, code, state->bias, state->error_sum, state->drift, state->count, k);
-    set_sr_golomb_ffv1(pb, code, k, 12, bits);
+    set_sr_golomb(pb, code, k, 12, bits);
 
     update_vlc_state(state, v);
 }
@@ -342,7 +342,7 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state, int 
 
     assert(k<=8);
 
-    v= get_sr_golomb_ffv1(gb, k, 12, bits);
+    v= get_sr_golomb(gb, k, 12, bits);
 //printf("v:%d bias:%d error:%d drift:%d count:%d k:%d", v, state->bias, state->error_sum, state->drift, state->count, k);
 
 #if 0 // JPEG LS

@@ -263,7 +263,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit, int 
 /**
  * read signed golomb rice code (ffv1).
  */
-static inline int get_sr_golomb_ffv1(GetBitContext *gb, int k, int limit, int esc_len){
+static inline int get_sr_golomb(GetBitContext *gb, int k, int limit, int esc_len){
     int v= get_ur_golomb(gb, k, limit, esc_len);
     
     v++;
@@ -272,24 +272,13 @@ static inline int get_sr_golomb_ffv1(GetBitContext *gb, int k, int limit, int es
     
 //    return (v>>1) ^ -(v&1);
 }
-/**
 
+/**
  * read signed golomb rice code (flac).
  */
 static inline int get_sr_golomb_flac(GetBitContext *gb, int k, int limit, int esc_len){
     int v= get_ur_golomb_jpegls(gb, k, limit, esc_len);
     return (v>>1) ^ -(v&1);
-}
-
-/**
- * read signed golomb rice code (sonic).
- */
-static inline int get_sr_golomb_sonic(GetBitContext *gb, int k, int limit, int esc_len){
-    int v= get_ur_golomb(gb, k, limit, esc_len);
-    
-    v++;
-    if (v&1) return -(v>>1);
-    else return v>>1;
 }
 
 #ifdef TRACE
@@ -432,7 +421,7 @@ static inline void set_ur_golomb_jpegls(PutBitContext *pb, int i, int k, int lim
 /**
  * write signed golomb rice code (ffv1).
  */
-static inline void set_sr_golomb_ffv1(PutBitContext *pb, int i, int k, int limit, int esc_len){
+static inline void set_sr_golomb(PutBitContext *pb, int i, int k, int limit, int esc_len){
     int v;
 
     v = -2*i-1;
@@ -451,16 +440,4 @@ static inline void set_sr_golomb_flac(PutBitContext *pb, int i, int k, int limit
     v ^= (v>>31);
 
     set_ur_golomb_jpegls(pb, v, k, limit, esc_len);
-}
-
-/**
- * write signed golomb rice code (sonic).
- */
-static inline void set_sr_golomb_sonic(PutBitContext *pb, int i, int k, int limit, int esc_len){
-    int v;
-
-    v = 2*i-1;
-    if (v<0) v ^= -1;
-
-    set_ur_golomb(pb, v, k, limit, esc_len);
 }
