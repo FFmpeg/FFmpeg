@@ -66,6 +66,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     struct video_tuner tuner;
     struct video_audio audio;
     const char *video_device;
+    int j;
 
     if (!ap || ap->width <= 0 || ap->height <= 0 || ap->frame_rate <= 0)
         return -1;
@@ -229,6 +230,10 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             }
             goto fail;
         }
+	for (j = 1; j < s->gb_buffers.frames; j++) {
+	  s->gb_buf.frame = j;
+	  ioctl(video_fd, VIDIOCMCAPTURE, &s->gb_buf);
+	}
         s->frame_format = s->gb_buf.format;
         s->use_mmap = 1;
     }
@@ -273,8 +278,14 @@ static int v4l_mm_read_picture(VideoData *s, uint8_t *buf)
 {
     uint8_t *ptr;
 
+    while (ioctl(s->fd, VIDIOCSYNC, &s->gb_frame) < 0 &&
+           (errno == EAGAIN || errno == EINTR));
+
+    ptr = s->video_buf + s->gb_buffers.offsets[s->gb_frame];
+    memcpy(buf, ptr, s->frame_size);
+
     /* Setup to capture the next frame */
-    s->gb_buf.frame = (s->gb_frame + 1) % s->gb_buffers.frames;
+    s->gb_buf.frame = s->gb_frame;
     if (ioctl(s->fd, VIDIOCMCAPTURE, &s->gb_buf) < 0) {
         if (errno == EAGAIN)
             av_log(NULL, AV_LOG_ERROR, "Cannot Sync\n");
@@ -283,14 +294,8 @@ static int v4l_mm_read_picture(VideoData *s, uint8_t *buf)
         return -EIO;
     }
 
-    while (ioctl(s->fd, VIDIOCSYNC, &s->gb_frame) < 0 &&
-           (errno == EAGAIN || errno == EINTR));
-
-    ptr = s->video_buf + s->gb_buffers.offsets[s->gb_frame];
-    memcpy(buf, ptr, s->frame_size);
-
     /* This is now the grabbing frame */
-    s->gb_frame = s->gb_buf.frame;
+    s->gb_frame = (s->gb_frame + 1) % s->gb_buffers.frames;
 
     return s->frame_size;
 }
