@@ -64,6 +64,9 @@ untested special converters
 #endif
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#if defined(MAP_ANON) && !defined(MAP_ANONYMOUS)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
 #endif
 #include "swscale.h"
 #include "swscale_internal.h"
@@ -2070,7 +2073,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 		if(c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR))
 		{
 #define MAX_FUNNY_CODE_SIZE 10000
-#ifdef HAVE_SYS_MMAN_H
+#ifdef MAP_ANONYMOUS
 			c->funnyYCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 			c->funnyUVCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
 #else
