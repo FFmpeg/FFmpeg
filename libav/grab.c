@@ -148,7 +148,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         val = 1;
         ioctl(video_fd, VIDIOCCAPTURE, &val);
 
-        s->time_frame = gettime();
+        s->time_frame = av_gettime();
         s->use_mmap = 0;
     } else {
         video_buf = mmap(0,gb_buffers.size,PROT_READ|PROT_WRITE,MAP_SHARED,video_fd,0);
@@ -157,7 +157,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             goto fail;
         }
         gb_frame = 0;
-        s->time_frame = gettime();
+        s->time_frame = av_gettime();
         
         /* start to grab the first frame */
         gb_buf.frame = gb_frame % gb_buffers.frames;
@@ -249,14 +249,6 @@ static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
     while (ioctl(s->fd, VIDIOCSYNC, &gb_frame) < 0 &&
            (errno == EAGAIN || errno == EINTR));
 
-    /*
-    gettimeofday(&tv_e, 0);
-
-    delay = (tv_e.tv_sec - tv_s.tv_sec) * 1000000 + tv_e.tv_usec - tv_s.tv_usec;
-    if (delay > 10000) 
-        printf("VIDIOCSYNC took %d us\n", delay);
-    */
-
     ptr = video_buf + gb_buffers.offsets[gb_frame];
     memcpy(buf, ptr, s->frame_size);
 
@@ -280,7 +272,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     /* wait based on the frame rate */
     for(first = 1;; first = 0) {
-        curtime = gettime();
+        curtime = av_gettime();
         delay = s->time_frame - curtime;
         if (delay <= 0) {
             if (delay < -per_frame) {

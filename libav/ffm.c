@@ -178,7 +178,7 @@ static int ffm_write_header(AVFormatContext *s)
         if (ffm_nopts)
             fst->pts = 0;
         else
-            fst->pts = gettime();
+            fst->pts = av_gettime();
     }
 
     /* flush until end of block reached */
