@@ -133,7 +133,7 @@ SHFLAGS="-dynamiclib"
 extralibs=""
 darwin="yes"
 strip="strip -x"
-LDFLAGS="$LDFLAGS -d"
+LDFLAGS="-d"
 FFSLDFLAGS=-Wl,-bind_at_load
 gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f4-)"
 case "$gcc_version" in
