@@ -2709,9 +2709,9 @@ i--;
 
 	for(;dstY < dstH; dstY++){
 		unsigned char *dest =dst[0]+dstStride[0]*dstY;
-		unsigned char *uDest=dst[1]+dstStride[1]*(dstY>>1);
-		unsigned char *vDest=dst[2]+dstStride[2]*(dstY>>1);
-		const int chrDstY= isHalfChrV(dstFormat) ? (dstY>>1) : dstY;
+		const int chrDstY= dstY>>c->chrDstVSubSample;
+		unsigned char *uDest=dst[1]+dstStride[1]*chrDstY;
+		unsigned char *vDest=dst[2]+dstStride[2]*chrDstY;
 
 		const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
 		const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input

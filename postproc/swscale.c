@@ -102,8 +102,6 @@ untested special converters
 //FIXME replace this with something faster
 #define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YVU9)
 #define isYUV(x)       ((x)==IMGFMT_YUY2 || isPlanarYUV(x))
-#define isHalfChrV(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
-#define isHalfChrH(x)  ((x)==IMGFMT_YUY2 || (x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
 #define isGray(x)      ((x)==IMGFMT_Y800)
 #define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
