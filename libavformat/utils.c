@@ -1224,8 +1224,12 @@ typedef struct {
 } AbvEntry;
 
 static AbvEntry frame_abvs[] = {
-    { "ntsc",      352, 240, 30000, 1001 },
-    { "pal",       352, 288,    25,    1 },
+    { "ntsc",      720, 480, 30000, 1001 },
+    { "pal",       720, 576,    25,    1 },
+    { "qntsc",     352, 240, 30000, 1001 }, /* VCD compliant ntsc */
+    { "qpal",      352, 288,    25,    1 }, /* VCD compliant pal */
+    { "sntsc",     352, 240, 30000, 1001 }, /* square pixel ntsc */
+    { "spal",      352, 288,    25,    1 }, /* square pixel pal */
     { "film",      352, 240,    24,    1 },
     { "ntsc-film", 352, 240, 24000, 1001 },
     { "sqcif",     128,  96,     0,    0 },

@@ -2577,7 +2577,7 @@ static void show_formats(void)
         printf(" %s:", up->name);
     printf("\n");
     
-    printf("Frame size, frame rate abbreviations: ntsc pal film ntsc-film sqcif qcif cif 4cif\n");
+    printf("Frame size, frame rate abbreviations: ntsc pal qntsc qpal sntsc spal film ntsc-film sqcif qcif cif 4cif\n");
     printf("Motion estimation methods:");
     pp = motion_str;
     while (*pp) {
