@@ -1,6 +1,9 @@
 /*
  * Copyright (c) 2002 Dieter Shirley
  *
+ * dct_unquantize_h263_altivec:
+ * Copyright (c) 2003 Romain Dolbeau <romain@dolbeau.org>
+ *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
