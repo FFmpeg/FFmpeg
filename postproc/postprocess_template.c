@@ -2449,6 +2449,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
  * Copies a block from src to dst and fixes the blacklevel
  * levelFix == 0 -> dont touch the brighness & contrast
  */
+#undef SCALED_CPY
+
 static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, uint8_t src[], int srcStride,
 	int levelFix)
 {
