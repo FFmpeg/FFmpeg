@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4604
-#define LIBAVCODEC_BUILD_STR   "4604"
+#define LIBAVCODEC_BUILD       4605
+#define LIBAVCODEC_BUILD_STR   "4605"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -93,6 +93,7 @@ static const int Motion_Est_QTab[] = { 1, 4, 3, 6, 5, 2 };
 #define CODEC_FLAG_INPUT_PRESERVED 0x0100
 #define CODEC_FLAG_PASS1 0x0200  /* use internal 2pass ratecontrol in first  pass mode */
 #define CODEC_FLAG_PASS2 0x0400  /* use internal 2pass ratecontrol in second pass mode */
+#define CODEC_FLAG_EXTERN_HUFF 0x1000 /* use external huffman table (for mjpeg) */
 
 /* codec capabilities */
 
@@ -109,6 +110,12 @@ typedef struct AVCodecContext {
                       stored there */
     
     int me_method; /* ME algorithm used for video coding */
+    
+    /* extra data from parent application to codec, e.g. huffman table
+       for mjpeg */
+    /* the parent should allocate and free this buffer */
+    void *extradata;
+    int extradata_size;
     
     /* video only */
     int frame_rate; /* frames per sec multiplied by FRAME_RATE_BASE */

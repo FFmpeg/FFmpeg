@@ -15,6 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * Support for external huffman table and various fixed by
+ *                                    Alex Beregszaszi <alex@naxine.org>
  */
 //#define DEBUG
 #include "avcodec.h"
@@ -33,12 +36,87 @@ typedef struct MJpegContext {
     UINT16 huff_code_ac_chrominance[256];
 } MJpegContext;
 
-#define SOF0 0xc0
-#define SOI 0xd8
-#define EOI 0xd9
-#define DQT 0xdb
-#define DHT 0xc4
-#define SOS 0xda
+/* JPEG marker codes */
+typedef enum {
+    /* start of frame */
+    SOF0  = 0xc0,	/* baseline */
+    SOF1  = 0xc1,	/* extended sequential, huffman */
+    SOF2  = 0xc2,	/* progressive, huffman */
+    SOF3  = 0xc3,	/* lossless, huffman */
+
+    SOF5  = 0xc5,	/* differential sequential, huffman */
+    SOF6  = 0xc6,	/* differential progressive, huffman */
+    SOF7  = 0xc7,	/* differential lossless, huffman */
+    JPG   = 0xc8,	/* reserved for JPEG extension */
+    SOF9  = 0xc9,	/* extended sequential, arithmetic */
+    SOF10 = 0xca,	/* progressive, arithmetic */
+    SOF11 = 0xcb,	/* lossless, arithmetic */
+
+    SOF13 = 0xcd,	/* differential sequential, arithmetic */
+    SOF14 = 0xce,	/* differential progressive, arithmetic */
+    SOF15 = 0xcf,	/* differential lossless, arithmetic */
+
+    DHT   = 0xc4,	/* define huffman tables */
+
+    DAC   = 0xcc,	/* define arithmetic-coding conditioning */
+
+    /* restart with modulo 8 count "m" */
+    RST0  = 0xd0,
+    RST1  = 0xd1,
+    RST2  = 0xd2,
+    RST3  = 0xd3,
+    RST4  = 0xd4,
+    RST5  = 0xd5,
+    RST6  = 0xd6,
+    RST7  = 0xd7,
+
+    SOI   = 0xd8,	/* start of image */
+    EOI   = 0xd9,	/* end of image */
+    SOS   = 0xda,	/* start of scan */
+    DQT   = 0xdb,	/* define quantization tables */
+    DNL   = 0xdc,	/* define number of lines */
+    DRI   = 0xdd,	/* define restart interval */
+    DHP   = 0xde,	/* define hierarchical progression */
+    EXP   = 0xdf,	/* expand reference components */
+
+    APP0  = 0xe0,
+    APP1  = 0xe1,
+    APP2  = 0xe2,
+    APP3  = 0xe3,
+    APP4  = 0xe4,
+    APP5  = 0xe5,
+    APP6  = 0xe6,
+    APP7  = 0xe7,
+    APP8  = 0xe8,
+    APP9  = 0xe9,
+    APP10 = 0xea,
+    APP11 = 0xeb,
+    APP12 = 0xec,
+    APP13 = 0xed,
+    APP14 = 0xee,
+    APP15 = 0xef,
+
+    JPG0  = 0xf0,
+    JPG1  = 0xf1,
+    JPG2  = 0xf2,
+    JPG3  = 0xf3,
+    JPG4  = 0xf4,
+    JPG5  = 0xf5,
+    JPG6  = 0xf6,
+    JPG7  = 0xf7,
+    JPG8  = 0xf8,
+    JPG9  = 0xf9,
+    JPG10 = 0xfa,
+    JPG11 = 0xfb,
+    JPG12 = 0xfc,
+    JPG13 = 0xfd,
+
+    COM   = 0xfe,	/* comment */
+
+    TEM   = 0x01,	/* temporary private use for arithmetic coding */
+
+    /* 0x02 -> 0xbf reserved */
+} JPEG_MARKER;
 
 #if 0
 /* These are the sample quantization tables given in JPEG spec section K.1.
@@ -487,6 +565,13 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     build_vlc(&s->vlcs[0][1], bits_dc_chrominance, val_dc_chrominance, 12);
     build_vlc(&s->vlcs[1][0], bits_ac_luminance, val_ac_luminance, 251);
     build_vlc(&s->vlcs[1][1], bits_ac_chrominance, val_ac_chrominance, 251);
+    
+    if (avctx->flags & CODEC_FLAG_EXTERN_HUFF)
+    {
+	printf("mjpeg: using external huffman table\n");
+	mjpeg_decode_dht(s, avctx->extradata, avctx->extradata_size);
+	/* should check for error - but dunno */
+    }
     return 0;
 }
 
@@ -503,7 +588,10 @@ static int mjpeg_decode_dqt(MJpegDecodeContext *s,
     while (len >= 65) {
         /* only 8 bit precision handled */
         if (get_bits(&s->gb, 4) != 0)
+	{
+	    dprintf("dqt: 16bit precision\n");
             return -1;
+	}
         index = get_bits(&s->gb, 4);
         if (index >= 4)
             return -1;
@@ -636,21 +724,26 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
         }
         s->first_picture = 0;
     }
+
+    if (len != 8+(3*nb_components))
+	dprintf("decode_sof0: error, len(%d) mismatch\n", len);
     
     return 0;
 }
 
 static inline int decode_dc(MJpegDecodeContext *s, int dc_index)
 {
-    VLC *dc_vlc;
     int code, diff;
 
-    dc_vlc = &s->vlcs[0][dc_index];
-    code = get_vlc(&s->gb, dc_vlc);
+    code = get_vlc(&s->gb, &s->vlcs[0][dc_index]);
     if (code < 0)
+    {
+	dprintf("decode_dc: bad vlc: %d:%d\n", 0, dc_index);
         return 0xffff;
+    }
     if (code == 0) {
         diff = 0;
+//	dprintf("decode_dc: bad code\n");
     } else {
         diff = get_bits(&s->gb, code);
         if ((diff & (1 << (code - 1))) == 0) 
@@ -668,13 +761,13 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     VLC *ac_vlc;
     INT16 *quant_matrix;
 
-    quant_matrix = s->quant_matrixes[quant_index];
     /* DC coef */
     val = decode_dc(s, dc_index);
     if (val == 0xffff) {
         dprintf("error dc\n");
         return -1;
     }
+    quant_matrix = s->quant_matrixes[quant_index];
     val = val * quant_matrix[0] + s->last_dc[component];
     s->last_dc[component] = val;
     block[0] = val;
@@ -731,7 +824,10 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
     nb_components = get_bits(&s->gb, 8);
     /* XXX: only interleaved scan accepted */
     if (nb_components != 3)
+    {
+	dprintf("decode_sos: components(%d) mismatch\n", nb_components);
         return -1;
+    }
     vmax = 0;
     hmax = 0;
     for(i=0;i<nb_components;i++) {
@@ -741,7 +837,10 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
             if (id == s->component_id[index])
                 break;
         if (index == s->nb_components)
+	{
+	    dprintf("decode_sos: index out of components\n");
             return -1;
+	}
 
         comp_index[i] = index;
         nb_blocks[i] = s->h_count[index] * s->v_count[index];
@@ -749,15 +848,31 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
         v_count[i] = s->v_count[index];
 
         dc_index[i] = get_bits(&s->gb, 4);
-        if (dc_index[i] >= 4)
-            return -1;
         ac_index[i] = get_bits(&s->gb, 4);
-        if (ac_index[i] >= 4)
-            return -1;
+
+	if (dc_index[i] < 0 || ac_index[i] < 0 ||
+	    dc_index[i] >= 4 || ac_index[i] >= 4)
+	    goto out_of_range;
+	switch(s->start_code)
+	{
+	    case SOF0:
+		if (dc_index[i] > 1 || ac_index[i] > 1)
+		    goto out_of_range;
+		break;
+	    case SOF1:
+	    case SOF2:
+		if (dc_index[i] > 3 || ac_index[i] > 3)
+		    goto out_of_range;
+		break;
+	    case SOF3:
+		if (dc_index[i] > 3 || ac_index[i] != 0)
+		    goto out_of_range;
+		break;	
+	}
     }
     get_bits(&s->gb, 8); /* Ss */
     get_bits(&s->gb, 8); /* Se */
-    get_bits(&s->gb, 8); /* not used */
+    get_bits(&s->gb, 8); /* Ah and Al (each are 4 bits) */
 
     for(i=0;i<nb_components;i++) 
         s->last_dc[i] = 1024;
@@ -796,6 +911,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
                         ret = -1;
                         goto the_end;
                     }
+//		    dprintf("mb: %d %d processed\n", mb_y, mb_x);
                     ff_idct (s->block);
                     ptr = s->current_picture[c] + 
                         (s->linesize[c] * (v * mb_y + y) * 8) + 
@@ -815,6 +931,9 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
  the_end:
     emms_c();
     return ret;
+ out_of_range:
+    dprintf("decode_sos: ac/dc index out of range\n");
+    return -1;
 }
 
 /* return the 8 bit start code value and update the search
@@ -858,8 +977,9 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 {
     MJpegDecodeContext *s = avctx->priv_data;
     UINT8 *buf_end, *buf_ptr, *buf_start;
-    int len, code, start_code, input_size, i;
+    int len, code, input_size, i;
     AVPicture *picture = data;
+    unsigned int start_code;
 
     *data_size = 0;
 
@@ -884,7 +1004,8 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
             memcpy(s->buf_ptr, buf_start, len);
             s->buf_ptr += len;
             /* if we got FF 00, we copy FF to the stream to unescape FF 00 */
-            if (code == 0) {
+	    /* valid marker code is between 00 and ff - alex */
+            if (code == 0 || code == 0xff) {
                 s->buf_ptr--;
             } else if (code > 0) {
                 /* prepare data for next start code */
