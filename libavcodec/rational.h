@@ -27,19 +27,27 @@
 #ifndef RATIONAL_H
 #define RATIONAL_H
 
+/**
+ * Rational number num/den.
+ */
 typedef struct AVRational{
-    int num; 
-    int den;
+    int num; ///< numerator
+    int den; ///< denominator
 } AVRational;
 
+/**
+ * returns 0 if a==b, 1 if a>b and -1 if a<b.
+ */
 static inline int av_cmp_q(AVRational a, AVRational b){
     const int64_t tmp= a.num * (int64_t)b.den - b.num * (int64_t)a.den;
 
-    if     (tmp <  0) return -1;
-    else if(tmp == 0) return  0;
-    else              return  1;
+    if(tmp) return (tmp>>63)|1;
+    else    return 0;
 }
 
+/**
+ * converts the given AVRational to a double.
+ */
 static inline double av_q2d(AVRational a){
     return a.num / (double) a.den;
 }
