@@ -166,6 +166,7 @@ static int audio_codec_id = CODEC_ID_NONE;
 
 static int64_t recording_time = 0;
 static int64_t start_time = 0;
+static int64_t rec_timestamp = 0;
 static int file_overwrite = 0;
 static char *str_title = NULL;
 static char *str_author = NULL;
@@ -2213,6 +2214,11 @@ static void opt_start_time(const char *arg)
     start_time = parse_date(arg, 1);
 }
 
+static void opt_rec_timestamp(const char *arg)
+{
+    rec_timestamp = parse_date(arg, 0) / 1000000;
+}
+
 static void opt_input_file(const char *filename)
 {
     AVFormatContext *ic;
@@ -2658,7 +2664,9 @@ static void opt_output_file(const char *filename)
             exit(1);
         }
 
-        if (str_title)
+        oc->timestamp = rec_timestamp;
+	    
+	if (str_title)
             pstrcpy(oc->title, sizeof(oc->title), str_title);
         if (str_author)
             pstrcpy(oc->author, sizeof(oc->author), str_author);
@@ -3127,6 +3135,7 @@ const OptionDef options[] = {
     { "t", HAS_ARG, {(void*)opt_recording_time}, "set the recording time", "duration" },
     { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
+    { "timestamp", HAS_ARG, {(void*)&opt_rec_timestamp}, "set the timestamp", "time" },
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
     { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },

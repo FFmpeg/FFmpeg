@@ -26,6 +26,7 @@
 #include <sys/poll.h>
 #include <errno.h>
 #include <sys/time.h>
+#undef time //needed because HAVE_AV_CONFIG_H is defined on top
 #include <time.h>
 #include <sys/types.h>
 #include <sys/socket.h>

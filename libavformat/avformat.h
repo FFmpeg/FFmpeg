@@ -251,6 +251,7 @@ typedef struct AVFormatContext {
     AVStream *streams[MAX_STREAMS];
     char filename[1024]; /* input or output filename */
     /* stream info */
+    int64_t timestamp;
     char title[512];
     char author[512];
     char copyright[512];
