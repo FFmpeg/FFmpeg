@@ -252,21 +252,6 @@ void add_pixels_clamped_c(const DCTELEM *block, UINT8 *pixels, int line_size)
     }
 }
 
-#ifdef __GNUC__
-
-struct unaligned_64 { uint64_t l; } __attribute__((packed));
-struct unaligned_32 { uint32_t l; } __attribute__((packed));
-
-#define LD32(a) (((const struct unaligned_32 *) (a))->l)
-#define LD64(a) (((const struct unaligned_64 *) (a))->l)
-
-#else /* __GNUC__ */
-
-#define LD32(a) (*((uint32_t*)(a)))
-#define LD64(a) (*((uint64_t*)(a)))
-
-#endif /* !__GNUC__ */
-
 #if 0
 
 #define PIXOP2(OPNAME, OP) \

@@ -168,6 +168,25 @@ void dsputil_init_alpha(void);
 
 #endif
 
+#ifdef __GNUC__
+
+struct unaligned_64 { uint64_t l; } __attribute__((packed));
+struct unaligned_32 { uint32_t l; } __attribute__((packed));
+
+#define LD32(a) (((const struct unaligned_32 *) (a))->l)
+#define LD64(a) (((const struct unaligned_64 *) (a))->l)
+
+#define ST32(a, b) (((struct unaligned_32 *) (a))->l) = (b)
+
+#else /* __GNUC__ */
+
+#define LD32(a) (*((uint32_t*)(a)))
+#define LD64(a) (*((uint64_t*)(a)))
+
+#define ST32(a, b) *((uint32_t*)(a)) = (b)
+
+#endif /* !__GNUC__ */
+
 /* PSNR */
 void get_psnr(UINT8 *orig_image[3], UINT8 *coded_image[3],
               int orig_linesize[3], int coded_linesize,
