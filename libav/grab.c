@@ -221,6 +221,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->fd = video_fd;
     s->frame_size = frame_size;
     
+    st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = CODEC_ID_RAWVIDEO;
     st->codec.width = width;
     st->codec.height = height;
@@ -245,11 +246,11 @@ static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
     /* Setup to capture the next frame */
     gb_buf.frame = (gb_frame + 1) % gb_buffers.frames;
     if (ioctl(s->fd, VIDIOCMCAPTURE, &gb_buf) < 0) {
-	if (errno == EAGAIN)
-	    fprintf(stderr,"Cannot Sync\n");
-	else
+        if (errno == EAGAIN)
+            fprintf(stderr,"Cannot Sync\n");
+        else
             perror("VIDIOCMCAPTURE");
-	return -EIO;
+        return -EIO;
     }
 
     gettimeofday(&tv_s, 0);
