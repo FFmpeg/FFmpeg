@@ -652,7 +652,7 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
  
     s->error_status_table[start_xy] |= VP_START;
 
-    if(start_xy > 0 && s->avctx->thread_count <= 1){
+    if(start_xy > 0 && s->avctx->thread_count <= 1 && s->avctx->skip_top*s->mb_width < start_i){
         int prev_status= s->error_status_table[ s->mb_index2xy[start_i - 1] ];
         
         prev_status &= ~ VP_START;
@@ -667,9 +667,10 @@ void ff_er_frame_end(MpegEncContext *s){
     int threshold= 50;
     int is_intra_likely;
     
-    if(!s->error_resilience || s->error_count==0) return;
+    if(!s->error_resilience || s->error_count==0 || 
+       s->error_count==3*s->mb_width*(s->avctx->skip_top + s->avctx->skip_bottom)) return;
 
-    av_log(s->avctx, AV_LOG_INFO, "concealing errors\n");
+    av_log(s->avctx, AV_LOG_INFO, "concealing %d errors\n", s->error_count);
     
     if(s->current_picture.motion_val[0] == NULL){
         int size = s->b8_stride * 2 * s->mb_height;

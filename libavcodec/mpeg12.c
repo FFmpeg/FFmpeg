@@ -2869,6 +2869,11 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         if(avctx->hurry_up>=5) break;
                         
                         if (!s->mpeg_enc_ctx_allocated) break;
+
+                        if(s2->codec_id == CODEC_ID_MPEG2VIDEO){
+                            if(mb_y < avctx->skip_top || mb_y >= s2->mb_height - avctx->skip_bottom)
+                                break;
+                        }
                         
                         if(s2->first_slice){
                             s2->first_slice=0;
