@@ -381,6 +381,9 @@ int MPV_encode_init(AVCodecContext *avctx)
     else if (s->out_format == FMT_MPEG1)
         mpeg1_encode_init(s);
 
+    /* dont use mv_penalty table for crap MV as it would be confused */
+    if(s->full_search<4) s->mv_penalty= default_mv_penalty;
+
     s->encoding = 1;
 
     /* init */
@@ -1126,8 +1129,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         }
     }
 
-    /* find best f_code */
-    if(s->pict_type==P_TYPE){
+    /* find best f_code for ME which do unlimited searches */
+    if(s->pict_type==P_TYPE && s->full_search>3){
         int mv_num[8];
         int i;
         int loose=0;
@@ -1149,6 +1152,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             if(loose > 10) break; //FIXME this is pretty ineffective
         }
         s->f_code= i;
+/*        for(i=0; i<=MAX_FCODE; i++){
+            printf("%d ", mv_num[i]);
+        }
+        printf("\n");*/
     }else{
         s->f_code= 1;
     }

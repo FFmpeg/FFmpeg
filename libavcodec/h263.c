@@ -51,6 +51,7 @@ extern UINT32 inverse[256];
 
 static UINT16 mv_penalty[MAX_FCODE][MAX_MV*2+1];
 static UINT8 fcode_tab[MAX_MV*2+1];
+static UINT8 umv_fcode_tab[MAX_MV*2+1];
 
 int h263_get_picture_format(int width, int height)
 {
@@ -689,12 +690,15 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
             mv_penalty[f_code][mv+MAX_MV]= len;
         }
     }
-    
 
     for(f_code=MAX_FCODE; f_code>0; f_code--){
         for(mv=-(16<<f_code); mv<(16<<f_code); mv++){
             fcode_tab[mv+MAX_MV]= f_code;
         }
+    }
+
+    for(mv=0; mv<MAX_MV*2+1; mv++){
+        umv_fcode_tab[mv]= 1;
     }
 }
 
@@ -709,10 +713,11 @@ void h263_encode_init(MpegEncContext *s)
 
         init_mv_penalty_and_fcode(s);
     }
-    s->mv_penalty= mv_penalty;
+    s->mv_penalty= mv_penalty; //FIXME exact table for msmpeg4 & h263p
     
-    // use fcodes >1 only for mpeg4&h263 FIXME
-    if(!s->h263_msmpeg4) s->fcode_tab= fcode_tab;
+    // use fcodes >1 only for mpeg4 & h263 & h263p FIXME
+    if(s->h263_plus)      s->fcode_tab= umv_fcode_tab;
+    else if(s->h263_pred) s->fcode_tab= fcode_tab;
 }
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
