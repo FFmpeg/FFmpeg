@@ -48,6 +48,9 @@ endif
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
 PPOBJS+= beosaudio.o
+EXTRALIBS+=-lbe -lmedia
+# this should be the default !
+EXTRALIBS+=-lavcodec -L../libavcodec
 endif
 
 ifeq ($(CONFIG_NETWORK),yes)
@@ -77,7 +80,7 @@ $(LIB): $(OBJS) $(PPOBJS)
 	$(RANLIB) $@
 
 $(SLIB): $(OBJS)
-	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
+	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS) $(AMREXTRALIBS)
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
