@@ -1460,7 +1460,7 @@ static void seek_to_maindata(MPADecodeContext *s, unsigned int backstep)
     uint8_t *ptr;
 
     /* compute current position in stream */
-    ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
+    ptr = (uint8_t *)(s->gb.buffer + (get_bits_count(&s->gb)>>3));
 
     /* copy old data before current one */
     ptr -= backstep;
@@ -2376,7 +2376,7 @@ static int decode_frame(AVCodecContext * avctx,
 
 		if (check_header(header) < 0) {
 		    /* no sync found : move by one byte (inefficient, but simple!) */
-		    memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
+		    memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
 		    s->inbuf_ptr--;
                     dprintf("skip %x\n", header);
                     /* reset free format frame size to give a chance
@@ -2402,7 +2402,7 @@ static int decode_frame(AVCodecContext * avctx,
             if (len == 0) {
 		/* frame too long: resync */
                 s->frame_size = 0;
-		memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
+		memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
 		s->inbuf_ptr--;
             } else {
                 uint8_t *p, *pend;
