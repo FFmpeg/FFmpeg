@@ -614,6 +614,7 @@ library:
 @item Raw MPEG video @tab X  @tab  X 
 @item Raw PCM8/16 bits, mulaw/Alaw@tab X  @tab  X 
 @item SUN AU format @tab X  @tab  X 
+@item NUT @tab X @tab X @tab NUT Open Container Format
 @item Quicktime        @tab X @tab  X 
 @item MPEG4            @tab X @tab  X 
 @tab MPEG4 is a variant of Quicktime
@@ -680,6 +681,7 @@ following image formats are supported:
 @item Intel Indeo 3          @tab     @tab  X @tab only works on i386 right now
 @item FLV                    @tab  X  @tab  X @tab Flash H263 variant
 @item ATI VCR1               @tab     @tab  X @tab fourcc: VCR1
+@item ATI VCR2               @tab     @tab  X @tab fourcc: VCR2
 @item Cirrus Logic AccuPak   @tab     @tab  X @tab fourcc: CLJR
 @item 4X Video               @tab     @tab  X @tab used in certain computer games
 @item Sony Playstation MDEC  @tab     @tab  X 
