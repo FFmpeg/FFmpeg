@@ -442,7 +442,7 @@ int ff_xvid_encode_frame(AVCodecContext *avctx,
         else if( xvid_enc_stats.type == XVID_TYPE_BVOP )
             p->pict_type = FF_B_TYPE;
         else if( xvid_enc_stats.type == XVID_TYPE_SVOP )
-            p->pict_type = FF_SP_TYPE;
+            p->pict_type = FF_S_TYPE;
         else
             p->pict_type = FF_I_TYPE;
         if( xvid_enc_frame.out_flags & XVID_KEYFRAME ) {
