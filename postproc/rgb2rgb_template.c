@@ -16,11 +16,11 @@ static const uint64_t mask15b  __attribute__((aligned(8))) = 0x001F001F001F001FU
 static const uint64_t mask15rg __attribute__((aligned(8))) = 0x7FE07FE07FE07FE0ULL; /* 01111111 11100000  RGx */
 #endif
 
-void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
+void rgb24to32(const uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
   uint8_t *dest = dst;
-  uint8_t *s = src;
-  uint8_t *end;
+  const uint8_t *s = src;
+  const uint8_t *end;
 #ifdef HAVE_MMX
   uint8_t *mm_end;
 #endif
@@ -62,11 +62,11 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
   }
 }
 
-void rgb32to24(uint8_t *src,uint8_t *dst,uint32_t src_size)
+void rgb32to24(const uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
   uint8_t *dest = dst;
-  uint8_t *s = src;
-  uint8_t *end;
+  const uint8_t *s = src;
+  const uint8_t *end;
 #ifdef HAVE_MMX
   uint8_t *mm_end;
 #endif
@@ -120,10 +120,10 @@ void rgb32to24(uint8_t *src,uint8_t *dst,uint32_t src_size)
  ported to gcc & bugfixed : A'rpi
  MMX2, 3DNOW optimization by Nick Kurshev
 */
-void rgb15to16(uint8_t *src,uint8_t *dst,uint32_t src_size)
+void rgb15to16(const uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
 #ifdef HAVE_MMX
-  register char* s=src+src_size;
+  register const char* s=src+src_size;
   register char* d=dst+src_size;
   register int offs=-src_size;
   __asm __volatile(PREFETCH"	%0"::"m"(*(s+offs)):"memory");
@@ -157,7 +157,7 @@ void rgb15to16(uint8_t *src,uint8_t *dst,uint32_t src_size)
   __asm __volatile(SFENCE:::"memory");
   __asm __volatile(EMMS:::"memory");
 #else
-   uint16_t *s1=( uint16_t * )src;
+   const uint16_t *s1=( uint16_t * )src;
    uint16_t *d1=( uint16_t * )dst;
    uint16_t *e=((uint8_t *)s1)+src_size;
    while( s1<e ){
