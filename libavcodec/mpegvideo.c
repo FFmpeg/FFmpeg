@@ -1715,7 +1715,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
 {
     MpegEncContext *s = avctx->priv_data;
     AVFrame *pic_arg = data;
-    int i;
+    int i, stuffing_count;
 
     if(avctx->pix_fmt != PIX_FMT_YUV420P){
         av_log(avctx, AV_LOG_ERROR, "this codec supports only YUV420P\n");
@@ -1767,11 +1767,35 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     flush_put_bits(&s->pb);
     s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
+
+    stuffing_count= ff_vbv_update(s, s->frame_bits);
+    if(stuffing_count){
+        switch(s->codec_id){
+        case CODEC_ID_MPEG1VIDEO:
+        case CODEC_ID_MPEG2VIDEO:
+            while(stuffing_count--){
+                put_bits(&s->pb, 8, 0);
+            }
+        break;
+        case CODEC_ID_MPEG4:
+            put_bits(&s->pb, 16, 0);
+            put_bits(&s->pb, 16, 0x1C3);
+            stuffing_count -= 4;
+            while(stuffing_count--){
+                put_bits(&s->pb, 8, 0xFF);
+            }
+        break;
+        default:
+            av_log(s->avctx, AV_LOG_ERROR, "vbv buffer overflow\n");
+        }
+        flush_put_bits(&s->pb);
+        s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
+    }
     
     s->total_bits += s->frame_bits;
     avctx->frame_bits  = s->frame_bits;
     
-    return pbBufPtr(&s->pb) - s->pb.buf;
+    return s->frame_bits/8;
 }
 
 #endif //CONFIG_ENCODERS

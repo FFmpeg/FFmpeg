@@ -195,7 +195,7 @@ static inline double bits2qp(RateControlEntry *rce, double bits){
     return rce->qscale * (double)(rce->i_tex_bits + rce->p_tex_bits+1)/ bits;
 }
     
-static void update_rc_buffer(MpegEncContext *s, int frame_size){
+int ff_vbv_update(MpegEncContext *s, int frame_size){
     RateControlContext *rcc= &s->rc_context;
     const double fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
     const double buffer_size= s->avctx->rc_buffer_size;
@@ -216,10 +216,19 @@ static void update_rc_buffer(MpegEncContext *s, int frame_size){
         rcc->buffer_index += clip(left, min_rate, max_rate);
 
         if(rcc->buffer_index > s->avctx->rc_buffer_size){
-            av_log(s->avctx, AV_LOG_ERROR, "rc buffer overflow\n");
-            rcc->buffer_index= s->avctx->rc_buffer_size;
+            int stuffing= ceil((rcc->buffer_index - s->avctx->rc_buffer_size)/8);
+            
+            if(stuffing < 4 && s->codec_id == CODEC_ID_MPEG4)
+                stuffing=4;
+            rcc->buffer_index -= 8*stuffing;
+            
+            if(s->avctx->debug & FF_DEBUG_RC)
+                av_log(s->avctx, AV_LOG_DEBUG, "stuffing %d bytes\n", stuffing);
+
+            return stuffing;
         }
     }
+    return 0;
 }
 
 /**
@@ -619,9 +628,6 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
         rce->b_code   = s->b_code;
         rce->misc_bits= 1;
 
-        if(picture_number>0)
-            update_rc_buffer(s, s->frame_bits);
-
         bits= predict_size(&rcc->pred[pict_type], rce->qscale, sqrt(var));
         if(pict_type== I_TYPE){
             rce->i_count   = s->mb_num;
@@ -814,7 +820,7 @@ static int init_pass2(MpegEncContext *s)
             rce->new_qscale= modify_qscale(s, rce, blured_qscale[i], i);
             bits= qp2bits(rce, rce->new_qscale) + rce->mv_bits + rce->misc_bits;
 //printf("%d %f\n", rce->new_bits, blured_qscale[i]);
-            update_rc_buffer(s, bits);
+            bits += 8*ff_vbv_update(s, bits);
 
             rce->expected_bits= expected_bits;
             expected_bits += bits;

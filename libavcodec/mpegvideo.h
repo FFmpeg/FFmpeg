@@ -897,6 +897,7 @@ double ff_eval(char *s, double *const_value, const char **const_name,
                double (**func1)(void *, double), const char **func1_name,
                double (**func2)(void *, double, double), char **func2_name,
                void *opaque);
+int ff_vbv_update(MpegEncContext *s, int frame_size);
 
 
 #endif /* AVCODEC_MPEGVIDEO_H */
