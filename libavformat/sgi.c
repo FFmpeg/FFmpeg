@@ -86,9 +86,7 @@ static int read_uncompressed_sgi(const SGIInfo *si,
         AVPicture *pict, ByteIOContext *f)
 {
     int x, y, z, chan_offset, ret = 0;
-    uint8_t *dest_row, *tmp_row = NULL;
-
-    tmp_row = av_malloc(si->xsize);
+    uint8_t *dest_row;
 
     /* skip header */ 
     url_fseek(f, SGI_HEADER_SIZE, SEEK_SET);
@@ -108,28 +106,23 @@ static int read_uncompressed_sgi(const SGIInfo *si,
         for (y = si->ysize - 1; y >= 0; y--) {
             dest_row = pict->data[0] + (y * si->xsize * si->zsize);
 
-            if (!get_buffer(f, tmp_row, si->xsize)) {
-                ret = -1;
-                goto cleanup;
-            }
             for (x = 0; x < si->xsize; x++) {
-                dest_row[chan_offset] = tmp_row[x]; 
+                dest_row[chan_offset] = get_byte(f); 
                 dest_row += si->zsize;
             }
         }
     }
 
-cleanup:
-    av_free(tmp_row);
     return ret;
 }
 
 
 /* expand an rle row into a channel */
-static void expand_rle_row(unsigned char *optr, unsigned char *iptr, 
+static int expand_rle_row(ByteIOContext *f, unsigned char *optr,
         int chan_offset, int pixelstride)
 {
     unsigned char pixel, count;
+    int length = 0;
  
 #ifndef WORDS_BIGENDIAN
     /* rgba -> bgra for rgba32 on little endian cpus */
@@ -141,22 +134,23 @@ static void expand_rle_row(unsigned char *optr, unsigned char *iptr,
     optr += chan_offset;
 
     while (1) {
-        pixel = *iptr++;
+        pixel = get_byte(f);
 
         if (!(count = (pixel & 0x7f))) {
-            return;
+            return length;
         }
         if (pixel & 0x80) {
             while (count--) {
-                *optr = *iptr;
+                *optr = get_byte(f);
+                length++;
                 optr += pixelstride;
-                iptr++;
             }
         } else {
-            pixel = *iptr++;
+            pixel = get_byte(f);
 
             while (count--) {
                 *optr = pixel;
+                length++;
                 optr += pixelstride;
             }
         }
@@ -168,17 +162,15 @@ static void expand_rle_row(unsigned char *optr, unsigned char *iptr,
 static int read_rle_sgi(const SGIInfo *sgi_info, 
         AVPicture *pict, ByteIOContext *f)
 {
-    uint8_t *dest_row, *rle_data = NULL;
-    unsigned long *start_table, *length_table;
+    uint8_t *dest_row;
+    unsigned long *start_table;
     int y, z, xsize, ysize, zsize, tablen; 
-    long start_offset, run_length;
+    long start_offset;
     int ret = 0;
 
     xsize = sgi_info->xsize;
     ysize = sgi_info->ysize;
     zsize = sgi_info->zsize;
-
-    rle_data = av_malloc(xsize);
 
     /* skip header */ 
     url_fseek(f, SGI_HEADER_SIZE, SEEK_SET);
@@ -187,40 +179,35 @@ static int read_rle_sgi(const SGIInfo *sgi_info,
     tablen = ysize * zsize * sizeof(long);
 
     start_table = (unsigned long *)av_malloc(tablen);
-    length_table = (unsigned long *)av_malloc(tablen);
 
     if (!get_buffer(f, (uint8_t *)start_table, tablen)) {
-        ret = -1;
+        ret = AVERROR_IO;
         goto fail;
     }
 
-    if (!get_buffer(f, (uint8_t *)length_table, tablen)) {
-        ret = -1;
-        goto fail;
-    }
+    /* skip run length table */ 
+    url_fseek(f, tablen, SEEK_CUR);
 
     for (z = 0; z < zsize; z++) {
         for (y = 0; y < ysize; y++) {
             dest_row = pict->data[0] + (ysize - 1 - y) * (xsize * zsize);
 
             start_offset = BE_32(&start_table[y + z * ysize]);
-            run_length = BE_32(&length_table[y + z * ysize]);
 
-            /* don't seek if already in the correct spot */
+            /* don't seek if already at the next rle start offset */
             if (url_ftell(f) != start_offset) {
                 url_fseek(f, start_offset, SEEK_SET);
             }
 
-            get_buffer(f, rle_data, run_length);
-            
-            expand_rle_row(dest_row, rle_data, z, zsize);
+            if (expand_rle_row(f, dest_row, z, zsize) != xsize) {
+              ret =  AVERROR_INVALIDDATA;
+              goto fail;
+            }
         }
     }
 
 fail:
     av_free(start_table);
-    av_free(length_table);
-    av_free(rle_data);
 
     return ret;
 }
