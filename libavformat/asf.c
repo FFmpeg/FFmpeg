@@ -1225,6 +1225,8 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    asf_st->seq = asf->packet_seq;
 	    asf_st->pkt.pts = asf->packet_frag_timestamp - asf->hdr.preroll;
 	    asf_st->pkt.stream_index = asf->stream_index;
+	    if (s->streams[asf->stream_index]->codec.codec_type == CODEC_TYPE_AUDIO) 
+		asf->packet_key_frame = 1;
 	    if (asf->packet_key_frame)
 		asf_st->pkt.flags |= PKT_FLAG_KEY;
 	}
@@ -1286,20 +1288,136 @@ static int asf_read_close(AVFormatContext *s)
     return 0;
 }
 
+// Added to support seeking after packets have been read
+// If information is not reset, read_packet fails due to
+// leftover information from previous reads
+static void asf_reset_header(AVFormatContext *s)
+{
+    ASFContext *asf = s->priv_data;
+
+    asf->packet_nb_frames = 0;
+    asf->packet_timestamp_start = -1;
+    asf->packet_timestamp_end = -1;
+    asf->packet_size_left = 0;
+    asf->packet_segments = 0;
+    asf->packet_flags = 0;
+    asf->packet_property = 0;
+    asf->packet_timestamp = 0;
+    asf->packet_segsizetype = 0;
+    asf->packet_segments = 0;
+    asf->packet_seq = 0;
+    asf->packet_replic_size = 0;
+    asf->packet_key_frame = 0;
+    asf->packet_padsize = 0;
+    asf->packet_frag_offset = 0;
+    asf->packet_frag_size = 0;
+    asf->packet_frag_timestamp = 0;
+    asf->packet_multi_size = 0;
+    asf->packet_obj_size = 0;
+    asf->packet_time_delta = 0;
+    asf->packet_time_start = 0;
+}
+
+static int64_t asf_read_pts(AVFormatContext *s, int64_t pos)
+{
+    ASFContext *asf = s->priv_data;
+    AVPacket pkt1, *pkt = &pkt1;
+    int64_t seek_pos;
+
+    // ensure we are on the byte boundry
+    if (pos > asf->packet_size)
+        seek_pos = s->data_offset + ((pos / asf->packet_size) * asf->packet_size);
+    else seek_pos = pos;
+
+    url_fseek(&s->pb, seek_pos, SEEK_SET);
+    asf_reset_header(s);
+    if (av_read_frame(s, pkt) < 0)
+    	return AV_NOPTS_VALUE;
+    return pkt->pts;
+}
+
 static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
 {
-#if 0
     ASFContext *asf = s->priv_data;
-    int i;
+    AVStream *st;
+    AVPacket pkt1, *pkt;
+    int block_align, byte_rate;
+    int64_t pos;
+    int64_t pos_min, pos_max, pts_min, pts_max, cur_pts;
 
-    for(i = 0;; i++) {
-        url_fseek(&s->pb, asf->data_offset + i * asf->packet_size, SEEK_SET);
-        if (asf_get_packet(s) < 0)
-            break;
-        printf("timestamp=%0.3f\n",  asf->packet_timestamp / 1000.0);
+    pkt = &pkt1;
+
+    // Currently we only support single stream files like WMA
+    if (s->nb_streams > 1) return -1;
+
+    // Validate pts
+    if (pts < 0)
+	pts = 0;
+
+    // Acquire the specified stream
+    // If no stream is specified, use the only one we work with
+    if (stream_index == -1)
+	st = s->streams[0];
+    else st = s->streams[stream_index];
+
+    // ASF files have fixed block sizes, store this to determine offset
+    block_align = asf->packet_size;
+
+    byte_rate = st->codec.bit_rate / 8;
+    if (block_align <= 0 || byte_rate <= 0)
+        return -1;
+
+    pos_min = 0;
+    pts_min = asf_read_pts(s, s->data_offset);
+    if (pts_min == AV_NOPTS_VALUE) return -1;
+   
+    pos_max = url_filesize(url_fileno(&s->pb)) - 1;
+    pts_max = pts_min + s->duration;
+
+    while (pos_min <= pos_max) {
+
+        if (pts <= pts_min) {
+            pos = pos_min;
+            goto found;
+        } else if (pts >= pts_max) {
+            pos = pos_max;
+            goto found;
+        } else {
+            // interpolate position (better than dichotomy)
+            pos = (int64_t)((double)(pos_max - pos_min) *
+                            (double)(pts - pts_min) /
+                            (double)(pts_max - pts_min)) + pos_min;
+        }
+
+        // read the next timestamp 
+    	cur_pts = asf_read_pts(s, pos);    
+	
+        /* check if we are lucky */
+        if (pts == cur_pts) {
+            goto found;
+        } else if (cur_pts == AV_NOPTS_VALUE) {
+	    return -1;
+        } else if (pts < cur_pts) {
+            pos_max = pos;
+	    pts_max = asf_read_pts(s, pos_max);
+            if (pts >= pts_max) {
+                pos = pos_max;
+                goto found;
+            }
+        } else {
+            pos_min = pos + asf->packet_size;
+	    pts_min = asf_read_pts(s, pos_min);
+            if (pts <= pts_min) {
+                goto found;
+            }
+        }
     }
-#endif
-    return -1;
+    pos = pos_min;
+found:
+    pos = s->data_offset + ((pos / block_align) * block_align);
+    url_fseek(&s->pb, pos, SEEK_SET);
+    asf_reset_header(s);
+    return 0;
 }
 
 static AVInputFormat asf_iformat = {
