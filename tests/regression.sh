@@ -567,9 +567,9 @@ $ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
 do_ffmpeg_crc $file -i $file
 
 # jpeg (we do not do md5 on image files yet)
-#file=${outfile}libav%d.jpg
-#$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
-#do_ffmpeg_crc $file -i $file
+file=${outfile}libav%d.jpg
+$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src -f image2 $file
+do_ffmpeg_crc $file -f image2 -i $file
 
 ####################
 # audio only
