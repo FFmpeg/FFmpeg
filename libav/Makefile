@@ -8,7 +8,7 @@ VPATH=$(SRC_PATH)/libav
 
 CFLAGS= $(OPTFLAGS) -Wall -g -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 
-OBJS= utils.o 
+OBJS= utils.o cutils.o allformats.o
 
 # mux and demuxes
 OBJS+=mpeg.o mpegts.o ffm.o crc.o img.o raw.o rm.o asf.o \
@@ -35,6 +35,14 @@ all: $(LIB)
 $(LIB): $(OBJS)
 	rm -f $@
 	$(AR) rcs $@ $(OBJS)
+
+installlib: all
+	install -m 644 $(LIB) $(prefix)/lib
+	mkdir -p $(prefix)/include/ffmpeg
+	install -m 644 $(SRC_PATH)/libav/avformat.h $(SRC_PATH)/libav/avio.h \
+                $(SRC_PATH)/libav/rtp.h $(SRC_PATH)/libav/rtsp.h \
+                $(SRC_PATH)/libav/rtspcodes.h \
+                $(prefix)/include/ffmpeg
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
