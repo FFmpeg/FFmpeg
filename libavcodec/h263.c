@@ -1473,7 +1473,7 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block,
         if(block==0){ //most common case
             if(s->mb_x  == s->resync_mb_x){ //rare
                 *px= *py = 0;
-            }else if(s->mb_x + 1 == s->resync_mb_x){ //rare
+            }else if(s->mb_x + 1 == s->resync_mb_x && s->h263_pred){ //rare
                 C = s->motion_val[xy + off[block] - wrap];
                 if(s->mb_x==0){
                     *px = C[0];
@@ -1487,7 +1487,7 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block,
                 *py = A[1];
             }
         }else if(block==1){
-            if(s->mb_x + 1 == s->resync_mb_x){ //rare
+            if(s->mb_x + 1 == s->resync_mb_x && s->h263_pred){ //rare
                 C = s->motion_val[xy + off[block] - wrap];
                 *px = mid_pred(A[0], 0, C[0]);
                 *py = mid_pred(A[1], 0, C[1]);
