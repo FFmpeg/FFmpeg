@@ -2213,13 +2213,13 @@ if(firstTime)
 	char *dither= "";
 #endif
 	if(sws_flags==SWS_FAST_BILINEAR)
-		fprintf(stderr, "SwScaler: FAST_BILINEAR scaler ");
+		fprintf(stderr, "\nSwScaler: FAST_BILINEAR scaler ");
 	else if(sws_flags==SWS_BILINEAR)
-		fprintf(stderr, "SwScaler: BILINEAR scaler ");
+		fprintf(stderr, "\nSwScaler: BILINEAR scaler ");
 	else if(sws_flags==SWS_BICUBIC)
-		fprintf(stderr, "SwScaler: BICUBIC scaler ");
+		fprintf(stderr, "\nSwScaler: BICUBIC scaler ");
 	else
-		fprintf(stderr, "SwScaler: ehh flags invalid?! ");
+		fprintf(stderr, "\nSwScaler: ehh flags invalid?! ");
 
 	if(dstbpp==15)
 		fprintf(stderr, "with%s BGR15 output ", dither);
