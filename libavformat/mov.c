@@ -55,6 +55,8 @@
 #include <fcntl.h>
 #endif
 
+#include "qtpalette.h"
+
 /* allows chunk splitting - should work now... */
 /* in case you can't read a file, try commenting */
 #define MOV_SPLIT_CHUNKS
@@ -102,6 +104,7 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_RPZA, MKTAG('r', 'p', 'z', 'a') }, /* Apple Video (RPZA) */
     { CODEC_ID_CINEPAK, MKTAG('c', 'v', 'i', 'd') }, /* Cinepak */
     { CODEC_ID_8BPS, MKTAG('8', 'B', 'P', 'S') }, /* Planar RGB (8BPS) */
+    { CODEC_ID_SMC, MKTAG('s', 'm', 'c', ' ') }, /* Apple Graphics (SMC) */
     { CODEC_ID_NONE, 0 },
 };
 
@@ -246,6 +249,8 @@ typedef struct MOVContext {
     MOV_ctab_t **ctab;           /* color tables */
     const struct MOVParseTableEntry *parse_table; /* could be eventually used to change the table */
     /* NOTE: for recursion save to/ restore from local variable! */
+
+    AVPaletteControl palette_control;
 } MOVContext;
 
 
@@ -713,6 +718,18 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     int entries, frames_per_sample;
     uint32_t format;
 
+    /* for palette traversal */
+    int color_depth;
+    int color_start;
+    int color_count;
+    int color_end;
+    int color_index;
+    int color_dec;
+    int color_greyscale;
+    unsigned char *color_table;
+    int j;
+    unsigned char r, g, b;
+
     print_atom("stsd", atom);
 
     get_byte(pb); /* version */
@@ -851,6 +868,77 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 url_fskip(pb, size);
             }
 #else
+
+            /* figure out the palette situation */
+            color_depth = st->codec.bits_per_sample & 0x1F;
+            color_greyscale = st->codec.bits_per_sample & 0x20;
+
+            /* if the depth is 2, 4, or 8 bpp, file is palettized */
+            if ((color_depth == 2) || (color_depth == 4) || 
+                (color_depth == 8)) {
+
+                if (color_greyscale) {
+
+                    /* compute the greyscale palette */
+                    color_count = 1 << color_depth;
+                    color_index = 255;
+                    color_dec = 256 / (color_count - 1);
+                    for (j = 0; j < color_count; j++) {
+                        r = g = b = color_index;
+                        c->palette_control.palette[j] =
+                            (r << 16) | (g << 8) | (b);
+                        color_index -= color_dec;
+                        if (color_index < 0)
+                            color_index = 0;
+                    }
+
+                } else if (st->codec.color_table_id & 0x08) {
+
+                    /* if flag bit 3 is set, use the default palette */
+                    color_count = 1 << color_depth;
+                    if (color_depth == 2)
+                        color_table = qt_default_palette_4;
+                    else if (color_depth == 4)
+                        color_table = qt_default_palette_16;
+                    else
+                        color_table = qt_default_palette_256;
+
+                    for (j = 0; j < color_count; j++) {
+                        r = color_table[j * 4 + 0];
+                        g = color_table[j * 4 + 1];
+                        b = color_table[j * 4 + 2];
+                        c->palette_control.palette[j] =
+                            (r << 16) | (g << 8) | (b);
+                    }
+
+                } else {
+
+                    /* load the palette from the file */
+                    color_start = get_be32(pb);
+                    color_count = get_be16(pb);
+                    color_end = get_be16(pb);
+                    for (j = color_start; j <= color_end; j++) {
+                        /* each R, G, or B component is 16 bits;
+                         * only use the top 8 bits; skip alpha bytes
+                         * up front */
+                        get_byte(pb);
+                        get_byte(pb);
+                        r = get_byte(pb);
+                        get_byte(pb);
+                        g = get_byte(pb);
+                        get_byte(pb);
+                        b = get_byte(pb);
+                        get_byte(pb);
+                        c->palette_control.palette[j] =
+                            (r << 16) | (g << 8) | (b);
+                    }
+                }
+
+                st->codec.palctrl = &c->palette_control;
+                st->codec.palctrl->palette_changed = 1;
+            } else
+                st->codec.palctrl = NULL;
+
             a.size = size;
 	    mov_read_default(c, pb, a);
 #endif
