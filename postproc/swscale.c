@@ -1127,11 +1127,24 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	if(srcFormat==IMGFMT_Y8)   srcFormat=IMGFMT_Y800;
 	if(dstFormat==IMGFMT_Y8)   dstFormat=IMGFMT_Y800;
 
-	if(!isSupportedIn(srcFormat)) return NULL;
-	if(!isSupportedOut(dstFormat)) return NULL;
+	if(!isSupportedIn(srcFormat)) 
+	{
+		fprintf(stderr, "swScaler: %s is not supported as input format\n", vo_format_name(srcFormat));
+		return NULL;
+	}
+	if(!isSupportedOut(dstFormat))
+	{
+		fprintf(stderr, "swScaler: %s is not supported as output format\n", vo_format_name(dstFormat));
+		return NULL;
+	}
 
 	/* sanity check */
-	if(srcW<4 || srcH<1 || dstW<8 || dstH<1) return NULL; //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
+	if(srcW<4 || srcH<1 || dstW<8 || dstH<1) //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
+	{
+		fprintf(stderr, "swScaler: %dx%d -> %dx%d is invalid scaling dimension\n", 
+			srcW, srcH, dstW, dstH);
+		return NULL;
+	}
 
 	if(!dstFilter) dstFilter= &dummyFilter;
 	if(!srcFilter) srcFilter= &dummyFilter;
