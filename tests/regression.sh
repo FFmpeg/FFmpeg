@@ -36,7 +36,7 @@ fi
 
 
 # various files
-ffmpeg="../ffmpeg"
+ffmpeg="../ffmpeg_g"
 outfile="$datadir/a-"
 reffile="$2"
 benchfile="$datadir/ffmpeg.bench"

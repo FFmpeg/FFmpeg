@@ -865,6 +865,7 @@ extern AVCodec mp3_decoder;
 extern AVCodec mace3_decoder;
 extern AVCodec mace6_decoder;
 extern AVCodec huffyuv_decoder;
+extern AVCodec oggvorbis_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
