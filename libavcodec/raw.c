@@ -78,6 +78,7 @@ static int raw_decode(AVCodecContext *avctx,
 			    uint8_t *buf, int buf_size)
 {
     RawVideoContext *context = avctx->priv_data;
+    int bytesNeeded;
 
     AVPicture * picture = (AVPicture *) data;
 
@@ -88,7 +89,7 @@ static int raw_decode(AVCodecContext *avctx,
         return buf_size;
     }
 
-    int bytesNeeded = context->length - (context->p - context->buffer);
+    bytesNeeded = context->length - (context->p - context->buffer);
     if (buf_size < bytesNeeded) {
         memcpy(context->p, buf, buf_size);
         context->p += buf_size;
