@@ -617,6 +617,60 @@ static void  denoise_dct_mmx(MpegEncContext *s, DCTELEM *block){
     );
 }
 
+static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
+    const int intra= s->mb_intra;
+    int *sum= s->dct_error_sum[intra];
+    uint16_t *offset= s->dct_offset[intra];
+
+    s->dct_count[intra]++;
+
+    asm volatile(
+        "pxor %%xmm7, %%xmm7		\n\t"
+        "1:				\n\t"
+        "pxor %%xmm0, %%xmm0		\n\t"
+        "pxor %%xmm1, %%xmm1		\n\t"
+        "movdqa (%0), %%xmm2		\n\t"
+        "movdqa 16(%0), %%xmm3		\n\t"
+        "pcmpgtw %%xmm2, %%xmm0		\n\t"
+        "pcmpgtw %%xmm3, %%xmm1		\n\t"
+        "pxor %%xmm0, %%xmm2		\n\t"
+        "pxor %%xmm1, %%xmm3		\n\t"
+        "psubw %%xmm0, %%xmm2		\n\t"
+        "psubw %%xmm1, %%xmm3		\n\t"
+        "movdqa %%xmm2, %%xmm4		\n\t"
+        "movdqa %%xmm3, %%xmm5		\n\t"
+        "psubusw (%2), %%xmm2		\n\t"
+        "psubusw 16(%2), %%xmm3		\n\t"
+        "pxor %%xmm0, %%xmm2		\n\t"
+        "pxor %%xmm1, %%xmm3		\n\t"
+        "psubw %%xmm0, %%xmm2		\n\t"
+        "psubw %%xmm1, %%xmm3		\n\t"
+        "movdqa %%xmm2, (%0)		\n\t"
+        "movdqa %%xmm3, 16(%0)		\n\t"
+        "movdqa %%xmm4, %%xmm6		\n\t"
+        "movdqa %%xmm5, %%xmm0		\n\t"
+        "punpcklwd %%xmm7, %%xmm4	\n\t"
+        "punpckhwd %%xmm7, %%xmm6	\n\t"
+        "punpcklwd %%xmm7, %%xmm5	\n\t"
+        "punpckhwd %%xmm7, %%xmm0	\n\t"
+        "paddd (%1), %%xmm4		\n\t"
+        "paddd 16(%1), %%xmm6		\n\t"
+        "paddd 32(%1), %%xmm5		\n\t"
+        "paddd 48(%1), %%xmm0		\n\t"
+        "movdqa %%xmm4, (%1)		\n\t"
+        "movdqa %%xmm6, 16(%1)		\n\t"
+        "movdqa %%xmm5, 32(%1)		\n\t"
+        "movdqa %%xmm0, 48(%1)		\n\t"
+        "addl $32, %0			\n\t"
+        "addl $64, %1			\n\t"
+        "addl $32, %2			\n\t"
+        "cmpl %3, %0			\n\t"
+            " jb 1b			\n\t"
+        : "+r" (block), "+r" (sum), "+r" (offset)
+        : "r"(block+64)
+    );
+}
+
 #undef HAVE_MMX2
 #define RENAME(a) a ## _MMX
 #define RENAMEl(a) a ## _mmx
@@ -643,7 +697,11 @@ void MPV_common_init_mmx(MpegEncContext *s)
 
         draw_edges = draw_edges_mmx;
         
-        s->denoise_dct= denoise_dct_mmx;
+        if (mm_flags & MM_SSE2) {
+	    s->denoise_dct= denoise_dct_sse2;
+	} else {
+    	    s->denoise_dct= denoise_dct_mmx;
+	}
 
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
             if(mm_flags & MM_MMXEXT){
