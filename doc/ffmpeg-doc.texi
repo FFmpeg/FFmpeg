@@ -198,9 +198,9 @@ set the video bitrate in kbit/s (default = 200 kb/s)
 @item -r fps           
 set frame rate (default = 25)
 @item -s size             
-set frame size. The format is @samp{WxH}. (default 160x128)
-The following abbreviations are regognized:
-@table @sampe
+set frame size. The format is @samp{WxH} (default 160x128).  The
+following abbreviations are recognized:
+@table @samp
 @item sqcif
 128x96
 @item qcif
@@ -232,15 +232,19 @@ set min video bitrate tolerance (in kbit/s)
 @item -bufsize size
 set ratecontrol buffere size (in kbit)
 @item -vcodec codec       
-force video codec
+force video codec to @var{codec}. Use the @code{copy} special value to
+tell that the raw codec data must be copied as is.
 @item -sameq
 use same video quality as source (implies VBR)
 
 @item -pass n  
-select the pass number (1 or 2). It is useful to do two pass encoding. The statistics of the video are recorded in the first pass and the video at the exact requested bit rate is generated in the second pass.
+select the pass number (1 or 2). It is useful to do two pass
+encoding. The statistics of the video are recorded in the first pass and
+the video at the exact requested bit rate is generated in the second
+pass.
 
 @item -passlogfile file   
-select two pass log file name
+select two pass log file name to @var{file}.
 
 @end table
 
@@ -275,14 +279,16 @@ qp offset between p and b frames
 @item -i_qoffset offset
 qp offset between p and i frames
 @item -rc_eq equation
-set rate control equation (@pxref{FFmpeg formula evaluator})
-@item -rc_override override_string
-rate control override for specific internals
+set rate control equation (@pxref{FFmpeg formula
+evaluator}). Default is @code{tex^qComp}.
+@item -rc_override override
+rate control override for specific intervals
 @item -me method
-set motion estimation method. Available methods are (from lower to best quality):
+set motion estimation method to @var{method}. Available methods are
+(from lower to best quality):
 @table @samp
 @item zero
-Try just (0, 0) vector.
+Try just the (0, 0) vector.
 @item phods
 @item log
 @item x1
@@ -293,7 +299,7 @@ exhaustive search (slow and marginally better than epzs)
 @end table
 
 @item -dct_algo algo
-set dct algo
+set dct algorithm to @var{algo}. Available values are:
 @table @samp
 @item 0
 FF_DCT_AUTO (default)
@@ -310,7 +316,7 @@ FF_DCT_ALTIVEC
 @end table
 
 @item -idct_algo algo
-set idct algo
+set idct algorithm to @var{algo}. Available values are:
 @table @samp
 @item 0
 FF_IDCT_AUTO (default)
@@ -337,25 +343,26 @@ FF_IDCT_SIMPLEARM
 @end table
 
 @item -er n
-set error resilience to 'n'
+set error resilience to @var{n}.
 @table @samp
 @item 1 
-FF_ER_CAREFULL
+FF_ER_CAREFULL (default)
 @item 2
-FF_ER_COMPLIANT (default)
+FF_ER_COMPLIANT
 @item 3
 FF_ER_AGGRESSIVE
 @item 4
 FF_ER_VERY_AGGRESSIVE
 @end table
 
-@item -ec n
-set error concealment to n
+@item -ec bit_mask
+set error concealment to @var{bit_mask}. @var{bit_mask} is a bit mask of
+the following values:
 @table @samp
 @item 1
-FF_EC_GUESS_MVS
+FF_EC_GUESS_MVS (default=enabled)
 @item 2
-FF_EC_DEBLOCK
+FF_EC_DEBLOCK (default=enabled)
 @end table
 
 @item -bf frames
@@ -379,20 +386,20 @@ use data partitioning (only MPEG-4)
 workaround not auto detected encoder bugs
 @item -strict strictness
 how strictly to follow the standarts
+@item -aic
+enable Advanced intra coding (h263+)
+@item -umv
+enable Unlimited Motion Vector (h263+)
 
 @item -deinterlace
 deinterlace pictures
 @item -psnr
 calculate PSNR of compressed frames
 @item -vstats
-dump video coding statistics to file
+dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vhook module
 insert video processing @var{module}. @var{module} contains the module
 name and its parameters separated by spaces.
-@item -aic
-enable Advanced intra coding (h263+)
-@item -umv
-enable Unlimited Motion Vector (h263+)
 @end table
 
 @section Audio Options
@@ -401,15 +408,16 @@ enable Unlimited Motion Vector (h263+)
 @item -ab bitrate         
 set audio bitrate (in kbit/s)
 @item -ar freq    
- set the audio sampling freq (default = 44100 Hz)
+set the audio sampling freq (default = 44100 Hz)
 @item -ab bitrate 
- set the audio bitrate in kbit/s (default = 64)
+set the audio bitrate in kbit/s (default = 64)
 @item -ac channels
- set the number of audio channels (default = 1)
-@item -an     
- disable audio recording
-@item -acodec codec       
-force audio codec
+set the number of audio channels (default = 1)
+@item -an
+disable audio recording
+@item -acodec codec
+force audio codec to @var{codec}. Use the @code{copy} special value to
+tell that the raw codec data must be copied as is.
 @end table
 
 @section Audio/Video grab options
@@ -442,6 +450,11 @@ dump each input packet
 only use bit exact algorithms (for codec testing)
 @item -ps size
 set packet size in bits
+@item -re
+read input at native frame rate. Mainly used to simulate a grab device.
+@item -loop
+loop over the input stream. Currently it works only for image
+streams. This option is used for ffserver automatic testing.
 @end table
 
 @node FFmpeg formula evaluator
@@ -827,7 +840,7 @@ as well.
 
 Run 'make test' to test all the codecs.
 
-Run 'make libavtest' to test all the codecs.
+Run 'make fulltest' to test all the codecs, formats and ffserver.
 
 [Of course, some patches may change the regression tests results. In
 this case, the regression tests reference results shall be modified

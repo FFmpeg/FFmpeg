@@ -210,7 +210,8 @@ use @file{configfile} instead of @file{/etc/ffserver.conf}
 @settitle FFserver video server
 
 @c man begin SEEALSO
-ffmpeg(1), ffplay(1) and the html documentation of @file{ffmpeg}.
+ffmpeg(1), ffplay(1), the @file{ffmpeg/doc/ffserver.conf} example and
+the html documentation of @file{ffmpeg}.
 @c man end
 
 @c man begin AUTHOR
