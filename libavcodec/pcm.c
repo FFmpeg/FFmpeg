@@ -299,6 +299,9 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     samples = data;
     src = buf;
 
+    if(buf_size > AVCODEC_MAX_AUDIO_FRAME_SIZE/2)
+        buf_size = AVCODEC_MAX_AUDIO_FRAME_SIZE/2;
+
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_S16LE:
         n = buf_size >> 1;
