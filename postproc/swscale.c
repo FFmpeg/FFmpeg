@@ -136,12 +136,38 @@ void in_asm_used_var_warning_killer()
 
 //Note: we have C, X86, MMX, MMX2, 3DNOW version therse no 3DNOW+MMX2 one
 //Plain C versions
+#if !defined (HAVE_MMX) || defined (RUNTIME_CPUDETECT)
+#define COMPILE_C
+#endif
+
+#ifdef CAN_COMPILE_X86_ASM
+
+#if (defined (HAVE_MMX) && !defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
+#define COMPILE_MMX
+#endif
+
+#if defined (HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
+#define COMPILE_MMX2
+#endif
+
+#if (defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
+#define COMPILE_3DNOW
+#endif
+#endif //CAN_COMPILE_X86_ASM
+
+#undef HAVE_MMX
+#undef HAVE_MMX2
+#undef HAVE_3DNOW
+#undef ARCH_X86
+
+#ifdef COMPILE_C
 #undef HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
 #undef ARCH_X86
 #define RENAME(a) a ## _C
 #include "swscale_template.c"
+#endif
 
 #ifdef CAN_COMPILE_X86_ASM
 
@@ -156,6 +182,7 @@ void in_asm_used_var_warning_killer()
 #include "swscale_template.c"
 */
 //MMX versions
+#ifdef COMPILE_MMX
 #undef RENAME
 #define HAVE_MMX
 #undef HAVE_MMX2
@@ -163,8 +190,10 @@ void in_asm_used_var_warning_killer()
 #define ARCH_X86
 #define RENAME(a) a ## _MMX
 #include "swscale_template.c"
+#endif
 
 //MMX2 versions
+#ifdef COMPILE_MMX2
 #undef RENAME
 #define HAVE_MMX
 #define HAVE_MMX2
@@ -172,8 +201,10 @@ void in_asm_used_var_warning_killer()
 #define ARCH_X86
 #define RENAME(a) a ## _MMX2
 #include "swscale_template.c"
+#endif
 
 //3DNOW versions
+#ifdef COMPILE_3DNOW
 #undef RENAME
 #define HAVE_MMX
 #undef HAVE_MMX2
@@ -181,6 +212,7 @@ void in_asm_used_var_warning_killer()
 #define ARCH_X86
 #define RENAME(a) a ## _3DNow
 #include "swscale_template.c"
+#endif
 
 #endif //CAN_COMPILE_X86_ASM
 
@@ -200,7 +232,7 @@ void SwScale_YV12slice(unsigned char* srcptr[],int stride[], int y, int h,
 // scaling factors:
 //static int s_yinc=(vo_dga_src_height<<16)/vo_dga_vp_height;
 //static int s_xinc=(vo_dga_src_width<<8)/vo_dga_vp_width;
-
+#ifdef RUNTIME_CPUDETECT
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
 	if(gCpuCaps.hasMMX2)
@@ -214,6 +246,17 @@ void SwScale_YV12slice(unsigned char* srcptr[],int stride[], int y, int h,
 #else
 		SwScale_YV12slice_C(srcptr, stride, y, h, dstptr, dststride, dstw, dstbpp, s_xinc, s_yinc);
 #endif
+#else //RUNTIME_CPUDETECT
+#ifdef HAVE_MMX2
+		SwScale_YV12slice_MMX2(srcptr, stride, y, h, dstptr, dststride, dstw, dstbpp, s_xinc, s_yinc);
+#elif defined (HAVE_3DNOW)
+		SwScale_YV12slice_3DNow(srcptr, stride, y, h, dstptr, dststride, dstw, dstbpp, s_xinc, s_yinc);
+#elif defined (HAVE_MMX)
+		SwScale_YV12slice_MMX(srcptr, stride, y, h, dstptr, dststride, dstw, dstbpp, s_xinc, s_yinc);
+#else
+		SwScale_YV12slice_C(srcptr, stride, y, h, dstptr, dststride, dstw, dstbpp, s_xinc, s_yinc);
+#endif
+#endif //!RUNTIME_CPUDETECT
 
 }
 
