@@ -814,6 +814,34 @@ static void glue(RGB_NAME, _to_pal8)(AVPicture *dst, AVPicture *src,
 
 #endif /* defined(FMT_RGB24) || defined(FMT_RGBA32) */
         
+#ifdef RGBA_IN
+
+static int glue(get_alpha_info_, RGB_NAME)(AVPicture *src, int width, int height)
+{
+    const unsigned char *p;
+    int src_wrap, ret, x, y;
+    unsigned int r, g, b, a;
+
+    p = src->data[0];
+    src_wrap = src->linesize[0] - BPP * width;
+    ret = 0;
+    for(y=0;y<height;y++) {
+        for(x=0;x<width;x++) {
+            RGBA_IN(r, g, b, a, p);
+            if (a == 0x00) {
+                ret |= FF_ALPHA_TRANSP;
+            } else if (a != 0xff) {
+                ret |= FF_ALPHA_SEMI_TRANSP;
+            }
+            p += BPP;
+        }
+        p += src_wrap;
+    }
+    return ret;
+}
+
+#endif /* RGBA_IN */
+
 #undef RGB_IN
 #undef RGBA_IN
 #undef RGB_OUT

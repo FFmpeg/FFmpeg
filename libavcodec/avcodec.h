@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4665
-#define LIBAVCODEC_BUILD_STR   "4665"
+#define LIBAVCODEC_BUILD       4666
+#define LIBAVCODEC_BUILD_STR   "4666"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -1275,6 +1275,10 @@ int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
                              int has_alpha);
 int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
                               int has_alpha, int *loss_ptr);
+
+#define FF_ALPHA_TRANSP       0x0001 /* image has some totally transparent pixels */
+#define FF_ALPHA_SEMI_TRANSP  0x0002 /* image has some transparent pixels */
+int img_get_alpha_info(AVPicture *src, int pix_fmt, int width, int height);
 
 /* convert among pixel formats */
 int img_convert(AVPicture *dst, int dst_pix_fmt,

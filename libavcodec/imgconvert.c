@@ -475,7 +475,9 @@ static void img_copy_plane(uint8_t *dst, int dst_wrap,
     }
 }
 
-/* copy image 'src' to 'dst' */
+/**
+ * Copy image 'src' to 'dst'.
+ */
 void img_copy(AVPicture *dst, AVPicture *src,
               int pix_fmt, int width, int height)
 {
@@ -1808,6 +1810,62 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     return ret;
 }
 
+/* NOTE: we scan all the pixels to have an exact information */
+static int get_alpha_info_pal8(AVPicture *src, int width, int height)
+{
+    const unsigned char *p;
+    int src_wrap, ret, x, y;
+    unsigned int a;
+    uint32_t *palette = (uint32_t *)src->data[1];
+    
+    p = src->data[0];
+    src_wrap = src->linesize[0] - width;
+    ret = 0;
+    for(y=0;y<height;y++) {
+        for(x=0;x<width;x++) {
+            a = palette[p[0]] >> 24;
+            if (a == 0x00) {
+                ret |= FF_ALPHA_TRANSP;
+            } else if (a != 0xff) {
+                ret |= FF_ALPHA_SEMI_TRANSP;
+            }
+            p++;
+        }
+        p += src_wrap;
+    }
+    return ret;
+}
+
+/**
+ * Tell if an image really has transparent alpha values.
+ * @return ored mask of FF_ALPHA_xxx constants
+ */
+int img_get_alpha_info(AVPicture *src, int pix_fmt, int width, int height)
+{
+    PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
+    int ret;
+
+    pf = &pix_fmt_info[pix_fmt];
+    /* no alpha can be represented in format */
+    if (!pf->is_alpha)
+        return 0;
+    switch(pix_fmt) {
+    case PIX_FMT_RGBA32:
+        ret = get_alpha_info_rgba32(src, width, height);
+        break;
+    case PIX_FMT_RGB555:
+        ret = get_alpha_info_rgb555(src, width, height);
+        break;
+    case PIX_FMT_PAL8:
+        ret = get_alpha_info_pal8(src, width, height);
+        break;
+    default:
+        /* we do not know, so everything is indicated */
+        ret = FF_ALPHA_TRANSP | FF_ALPHA_SEMI_TRANSP;
+        break;
+    }
+    return ret;
+}
 
 #ifdef HAVE_MMX
 #define DEINT_INPLACE_LINE_LUM \
