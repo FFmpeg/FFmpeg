@@ -9,7 +9,7 @@
   http://www.elecard.com/peter/idct.shtml
   Rounding trick Copyright (c) 2000 Michel Lespinasse <walken@zoy.org>
 
-  mmi port by leonvs@iae.nl
+  MMI port by Leon van Stuivenberg
 */  
 #include "../common.h"
 #include "../dsputil.h"
