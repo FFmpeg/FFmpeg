@@ -2019,7 +2019,7 @@ static void opt_format(const char *arg)
     /* compatibility stuff for pgmyuv */
     if (!strcmp(arg, "pgmyuv")) {
         pgmyuv_compatibility_hack=1;
-        opt_image_format(arg);
+//        opt_image_format(arg);
         arg = "image2";
     }
 
