@@ -503,6 +503,9 @@ void MPV_common_init_axp(MpegEncContext *s);
 #ifdef HAVE_MLIB
 void MPV_common_init_mlib(MpegEncContext *s);
 #endif
+#ifdef HAVE_MMI
+void MPV_common_init_mmi(MpegEncContext *s);
+#endif
 extern void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w);
 void ff_conceal_past_errors(MpegEncContext *s, int conceal_all);
 void ff_copy_bits(PutBitContext *pb, UINT8 *src, int length);

@@ -216,6 +216,9 @@ int MPV_common_init(MpegEncContext *s)
 #ifdef HAVE_MLIB
     MPV_common_init_mlib(s);
 #endif
+#ifdef HAVE_MMI
+    MPV_common_init_mmi(s);
+#endif
     
 
     /* load & permutate scantables

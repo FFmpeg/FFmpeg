@@ -20,96 +20,113 @@
  */
 
 #include "../dsputil.h"
-
-void ff_mmi_idct(DCTELEM * block);
-
 #include "mmi.h"
+
+/* the provided 'as' in binutils 2.9EE doesn't support
+the EE's mips3 instructions properly */
+#define AS_BUGGY
 
 
 static void clear_blocks_mmi(DCTELEM * blocks)
 {
-    /* $4 = blocks */
     int i;
     for (i = 0; i < 6; i++) {
-        sq($0, 0, $4);
-        sq($0, 16, $4);
-        sq($0, 32, $4);
-        sq($0, 48, $4);
-        sq($0, 64, $4);
-        sq($0, 80, $4);
-        sq($0, 96, $4);
-        sq($0, 112, $4);
-        __asm__ __volatile__("addi $4, $4, 128");
+        asm volatile(
+        "sq     $0, 0(%0)       \n\t"
+        "sq     $0, 16(%0)      \n\t"
+        "sq     $0, 32(%0)      \n\t"
+        "sq     $0, 48(%0)      \n\t"
+        "sq     $0, 64(%0)      \n\t"
+        "sq     $0, 80(%0)      \n\t"
+        "sq     $0, 96(%0)      \n\t"
+        "sq     $0, 112(%0)     \n\t" :: "r" (blocks) : "memory" );
+        blocks += 64;
     }
 }
 
 
-static void put_pixels_clamped_mmi(const DCTELEM * block, UINT8 * pixels,
-				   int line_size)
+static void get_pixels_mmi(DCTELEM *block, const UINT8 *pixels, int line_size)
 {
-    /* $4 = block, $5 = pixels, $6 = line_size */
-    __asm__ __volatile__("li $11, 255":::"$11");
-    lq($4, 0, $12);
-    pcpyld($11, $11, $11);
-    pcpyh($11, $11);
-
-#define PUT(rs) \
-    ppacb($0, $##rs, $##rs); \
-    sd3(rs, 0, 5); \
-    __asm__ __volatile__ ("add $5, $5, $6");
-
-    pminh($12, $11, $12);
-    pmaxh($12, $0, $12);
-    lq($4, 16, $13);
-    PUT(12);
-
-    pminh($13, $11, $13);
-    pmaxh($13, $0, $13);
-    lq($4, 32, $12);
-    PUT(13);
-
-    pminh($12, $11, $12);
-    pmaxh($12, $0, $12);
-    lq($4, 48, $13);
-    PUT(12);
-
-    pminh($13, $11, $13);
-    pmaxh($13, $0, $13);
-    lq($4, 64, $12);
-    PUT(13);
-
-    pminh($12, $11, $12);
-    pmaxh($12, $0, $12);
-    lq($4, 80, $13);
-    PUT(12);
-
-    pminh($13, $11, $13);
-    pmaxh($13, $0, $13);
-    lq($4, 96, $12);
-    PUT(13);
-
-    pminh($12, $11, $12);
-    pmaxh($12, $0, $12);
-    lq($4, 112, $13);
-    PUT(12);
-
-    pminh($13, $11, $13);
-    pmaxh($13, $0, $13);
-    PUT(13);
+    int i;
+    for(i=0;i<8;i++) {
+#ifdef AS_BUGGY
+        ld3(5, 0, 8);
+        asm volatile(
+        "add    %1, %1, %2      \n\t"
+        "pextlb $8, $0, $8      \n\t"
+        "sq     $8, 0(%0)       \n\t" :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
+#else
+        asm volatile(
+        "ld     $8, 0(%1)       \n\t"
+        "add    %1, %1, %2      \n\t"
+        "pextlb $8, $0, $8      \n\t"
+        "sq     $8, 0(%0)       \n\t" :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
+#endif
+        block += 8;
+    }
 }
 
-/* todo
-static void add_pixels_clamped_mmi(const DCTELEM * block, UINT8 * pixels,
-				   int line_size)
+
+static void put_pixels8_mmi(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
+    int i;
+    for(i=0; i<h; i++) {
+#ifdef AS_BUGGY
+        ldr3(5, 0, 8);
+        ldl3(5, 7, 8);
+        asm volatile ( "add $5, $5, $6 \n\t" );
+        sd3(8, 0, 4);
+        asm volatile ( "add $4, $4, $6 \n\t" );
+#else
+        asm volatile(
+        "ldr    $8, 0(%1)       \n\t"
+        "ldl    $8, 7(%1)       \n\t"
+        "add    %1, %1, %2      \n\t"
+        "sd     $8, 0(%0)       \n\t"
+        "add    %0, %0, %2      \n\t" :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
+#endif
+    }
 }
-*/
+
+
+static void put_pixels16_mmi(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+{
+    int i;
+    for(i=0; i<h; i++) {
+#ifdef AS_BUGGY
+        ldr3(5, 0, 8);
+        ldl3(5, 7, 8);
+        ldr3(5, 8, 9);
+        ldl3(5, 15, 9);
+        asm volatile ( "add $5, $5, $6 \n\t" );
+        pcpyld($9, $8, $8);
+        sq($8, 0, $4);
+        asm volatile ( "add $4, $4, $6 \n\t" );
+#else
+        asm volatile (
+        "ldr    $8, 0(%1)       \n\t"
+        "ldl    $8, 7(%1)       \n\t"
+        "ldr    $9, 8(%1)       \n\t"
+        "ldl    $9, 15(%1)      \n\t"
+        "add    %1, %1, %2      \n\t"
+        "pcpyld $8, $9, $8      \n\t"
+        "sq     $8, 0(%0)       \n\t"
+        "add    %0, %0, %2      \n\t" :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "$9", "memory" );
+#endif
+    }
+}
 
 
 void dsputil_init_mmi(void)
 {
-    put_pixels_clamped = put_pixels_clamped_mmi;
-    //add_pixels_clamped = add_pixels_clamped_mmi;
     clear_blocks = clear_blocks_mmi;
-    ff_idct = ff_mmi_idct;
+    
+    put_pixels_tab[1][0] = put_pixels8_mmi;
+    put_no_rnd_pixels_tab[1][0] = put_pixels8_mmi;
+    
+    put_pixels_tab[0][0] = put_pixels16_mmi;
+    put_no_rnd_pixels_tab[0][0] = put_pixels16_mmi;
+    
+    get_pixels = get_pixels_mmi;
 }
+

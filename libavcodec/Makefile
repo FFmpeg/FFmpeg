@@ -77,7 +77,7 @@ OBJS += ppc/dsputil_ppc.o
 endif
 
 ifeq ($(TARGET_MMI),yes)
-OBJS += ps2/dsputil_mmi.o ps2/idct_mmi.o
+OBJS += ps2/dsputil_mmi.o ps2/idct_mmi.o ps2/mpegvideo_mmi.o
 endif
 
 ifeq ($(TARGET_ALTIVEC),yes)

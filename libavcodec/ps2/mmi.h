@@ -49,6 +49,20 @@
 	__asm__ __volatile__ ("sq " #reg ", %0("#base ")" : : "i" (off) )
 
 /*
+#define	ld(base, off, reg)	\
+	__asm__ __volatile__ ("ld " #reg ", " #off "("#base ")")
+*/
+
+#define	ld3(base, off, reg)	\
+	__asm__ __volatile__ (".word %0" : : "i" ( 0xdc000000 | (base<<21) | (reg<<16) | (off)))
+
+#define	ldr3(base, off, reg)	\
+	__asm__ __volatile__ (".word %0" : : "i" ( 0x6c000000 | (base<<21) | (reg<<16) | (off)))
+
+#define	ldl3(base, off, reg)	\
+	__asm__ __volatile__ (".word %0" : : "i" ( 0x68000000 | (base<<21) | (reg<<16) | (off)))
+
+/*
 #define	sd(reg, off, base)	\
 	__asm__ __volatile__ ("sd " #reg ", " #off "("#base ")")
 */
@@ -116,5 +130,23 @@
 #define	pminh(rs, rt, rd) \
 	__asm__ __volatile__ ("pminh " #rd ", " #rs ", " #rt )
 
+#define	pinteh(rs, rt, rd) \
+	__asm__ __volatile__ ("pinteh  " #rd ", " #rs ", " #rt )
+
+#define	paddh(rs, rt, rd) \
+	__asm__ __volatile__ ("paddh  " #rd ", " #rs ", " #rt )
+
+#define	psubh(rs, rt, rd) \
+	__asm__ __volatile__ ("psubh  " #rd ", " #rs ", " #rt )
+
+#define	psrah(rt, sa, rd) \
+	__asm__ __volatile__ ("psrah  " #rd ", " #rt ", %0" : : "i"(sa) )
+
+#define	pmfhl_uw(rd) \
+	__asm__ __volatile__ ("pmfhl.uw  " #rd)
+
+#define	pextlb(rs, rt, rd) \
+	__asm__ __volatile__ ("pextlb  " #rd ", " #rs ", " #rt )
 
 #endif
+
