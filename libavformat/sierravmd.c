@@ -212,7 +212,8 @@ static int vmd_read_header(AVFormatContext *s,
 
         /* if the frame size is 0, do not count the frame and bring the
          * total frame count down */
-        vmd->frame_table[i].frame_size = LE_32(&current_frame_record[2]);
+        // note, we limit the size to 1Gb to ensure that we dont end up overflowing the size integer used to allocate the memory
+        vmd->frame_table[i].frame_size = LE_32(&current_frame_record[2]) & 0x3FFFFFFF; 
 
         /* this logic is present so that 0-length audio chunks are not
          * accounted */
