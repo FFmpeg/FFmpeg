@@ -195,7 +195,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
     case dv_timecode:
           ct = (time_t)(c->frames / ((float)c->sys->frame_rate / 
                                      (float)c->sys->frame_rate_base));
-          gmtime_r(&ct, &tc);
+          brktimegm(ct, &tc);
           /* 
            * LTC drop-frame frame counter drops two frames (0 and 1) every 
            * minute, unless it is exactly divisible by 10
@@ -253,15 +253,15 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
     case dv_viedo_recdate:  /* VAUX recording date */
           ct = c->start_time + (time_t)(c->frames / 
 	       ((float)c->sys->frame_rate / (float)c->sys->frame_rate_base));
-          gmtime_r(&ct, &tc);
+          brktimegm(ct, &tc);
 	  buf[1] = 0xff; /* ds, tm, tens of time zone, units of time zone */
 	                 /* 0xff is very likely to be "unknown" */
 	  buf[2] = (3 << 6) | /* reserved -- always 1 */
 		   ((tc.tm_mday / 10) << 4) | /* Tens of day */
 		   (tc.tm_mday % 10);         /* Units of day */
 	  buf[3] = /* we set high 4 bits to 0, shouldn't we set them to week? */
-	           (((tc.tm_mon + 1) / 10) << 4) |    /* Tens of month */
-		   ((tc.tm_mon + 1) % 10);            /* Units of month */
+	           ((tc.tm_mon / 10) << 4) |    /* Tens of month */
+		   (tc.tm_mon  % 10);           /* Units of month */
 	  buf[4] = (((tc.tm_year % 100) / 10) << 4) | /* Tens of year */
 		   (tc.tm_year % 10);                 /* Units of year */
           break;
@@ -269,7 +269,7 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
     case dv_video_rectime:  /* VAUX recording time */
           ct = c->start_time + (time_t)(c->frames / 
 	       ((float)c->sys->frame_rate / (float)c->sys->frame_rate_base));
-          gmtime_r(&ct, &tc);
+	  brktimegm(ct, &tc);
 	  buf[1] = (3 << 6) | /* reserved -- always 1 */
 		   0x3f; /* tens of frame, units of frame: 0x3f - "unknown" ? */
 	  buf[2] = (1 << 7) | /* reserved -- always 1 */ 

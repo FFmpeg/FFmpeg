@@ -620,6 +620,7 @@ do {\
 #endif
 
 time_t mktimegm(struct tm *tm);
+struct tm *brktimegm(time_t secs, struct tm *tm);
 const char *small_strptime(const char *p, const char *fmt, 
                            struct tm *dt);
 
