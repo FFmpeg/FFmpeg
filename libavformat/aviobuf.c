@@ -333,10 +333,28 @@ int get_buffer(ByteIOContext *s, unsigned char *buf, int size)
         if (len > size)
             len = size;
         if (len == 0) {
-            fill_buffer(s);
-            len = s->buf_end - s->buf_ptr;
-            if (len == 0)
-                break;
+            if(size > s->buffer_size && !s->update_checksum){
+                len = s->read_packet(s->opaque, buf, size);
+                if (len <= 0) {
+                    /* do not modify buffer if EOF reached so that a seek back can
+                    be done without rereading data */
+                    s->eof_reached = 1;
+                    if(len<0)
+                        s->error= len;
+                    break;
+                } else {
+                    s->pos += len;
+                    size -= len;
+                    buf += len;
+                    s->buf_ptr = s->buffer;
+                    s->buf_end = s->buffer/* + len*/;
+                }
+            }else{
+                fill_buffer(s);
+                len = s->buf_end - s->buf_ptr;
+                if (len == 0)
+                    break;
+            }
         } else {
             memcpy(buf, s->buf_ptr, len);
             buf += len;
