@@ -569,7 +569,7 @@ static int mov_read_esds(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef DEBUG
 	    av_log(NULL, AV_LOG_DEBUG, "Specific MPEG4 header len=%d\n", len);
 #endif
-	    st->codec.extradata = (uint8_t*) av_mallocz(len);
+	    st->codec.extradata = (uint8_t*) av_mallocz(len + FF_INPUT_BUFFER_PADDING_SIZE);
 	    if (st->codec.extradata) {
 		get_buffer(pb, st->codec.extradata, len);
 		st->codec.extradata_size = len;
@@ -680,7 +680,7 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     // this should be fixed and just SMI header should be passed
     av_free(st->codec.extradata);
     st->codec.extradata_size = 0x5a + atom.size;
-    st->codec.extradata = (uint8_t*) av_mallocz(st->codec.extradata_size);
+    st->codec.extradata = (uint8_t*) av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
     if (st->codec.extradata) {
 	strcpy(st->codec.extradata, "SVQ3"); // fake

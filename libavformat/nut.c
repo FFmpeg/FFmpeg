@@ -982,7 +982,7 @@ static int decode_stream_header(NUTContext *nut){
     /* codec specific data headers */
     while(get_v(bc) != 0){
         st->codec.extradata_size= get_v(bc);
-        st->codec.extradata= av_mallocz(st->codec.extradata_size);
+        st->codec.extradata= av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
         get_buffer(bc, st->codec.extradata, st->codec.extradata_size);            
 //	    url_fskip(bc, get_v(bc));
     }

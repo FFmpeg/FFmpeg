@@ -301,7 +301,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* ClrImportant */
 
                     st->codec.extradata_size= size - 10*4;
-                    st->codec.extradata= av_malloc(st->codec.extradata_size);
+                    st->codec.extradata= av_malloc(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
                     get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
                     
                     if(st->codec.extradata_size & 1) //FIXME check if the encoder really did this correctly

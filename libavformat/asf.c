@@ -274,7 +274,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		url_fskip(pb, 20);
 		if (size > 40) {
 		    st->codec.extradata_size = size - 40;
-		    st->codec.extradata = av_mallocz(st->codec.extradata_size);
+		    st->codec.extradata = av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
 		    get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
 		}
 

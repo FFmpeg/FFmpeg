@@ -154,7 +154,7 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
 	if (codec->extradata_size > 0) {
 	    if (codec->extradata_size > size - 18)
 	        codec->extradata_size = size - 18;
-            codec->extradata = av_mallocz(codec->extradata_size);
+            codec->extradata = av_mallocz(codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             get_buffer(pb, codec->extradata, codec->extradata_size);
         } else
 	    codec->extradata_size = 0;
