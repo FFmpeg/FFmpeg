@@ -114,7 +114,7 @@ typedef signed long long INT64;
 #define UINT64_C(c)    (c ## ULL)
 #endif
 
-#include "bswap.h"
+#include "../bswap.h"
 
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
