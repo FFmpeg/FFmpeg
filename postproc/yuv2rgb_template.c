@@ -39,20 +39,20 @@
 #include "../mmx_defs.h"
 
 /* hope these constant values are cache line aligned */
-uint64_t mmx_80w = 0x0080008000800080;
-uint64_t mmx_10w = 0x1010101010101010;
-uint64_t mmx_00ffw = 0x00ff00ff00ff00ff;
-uint64_t mmx_Y_coeff = 0x253f253f253f253f;
+uint64_t __attribute__((aligned(8))) mmx_80w = 0x0080008000800080;
+uint64_t __attribute__((aligned(8))) mmx_10w = 0x1010101010101010;
+uint64_t __attribute__((aligned(8))) mmx_00ffw = 0x00ff00ff00ff00ff;
+uint64_t __attribute__((aligned(8))) mmx_Y_coeff = 0x253f253f253f253f;
 
 /* hope these constant values are cache line aligned */
-uint64_t mmx_U_green = 0xf37df37df37df37d;
-uint64_t mmx_U_blue = 0x4093409340934093;
-uint64_t mmx_V_red = 0x3312331233123312;
-uint64_t mmx_V_green = 0xe5fce5fce5fce5fc;
+uint64_t __attribute__((aligned(8))) mmx_U_green = 0xf37df37df37df37d;
+uint64_t __attribute__((aligned(8))) mmx_U_blue = 0x4093409340934093;
+uint64_t __attribute__((aligned(8))) mmx_V_red = 0x3312331233123312;
+uint64_t __attribute__((aligned(8))) mmx_V_green = 0xe5fce5fce5fce5fc;
 
 /* hope these constant values are cache line aligned */
-uint64_t mmx_redmask = 0xf8f8f8f8f8f8f8f8;
-uint64_t mmx_grnmask = 0xfcfcfcfcfcfcfcfc;
+uint64_t __attribute__((aligned(8))) mmx_redmask = 0xf8f8f8f8f8f8f8f8;
+uint64_t __attribute__((aligned(8))) mmx_grnmask = 0xfcfcfcfcfcfcfcfc;
 
 #define YUV2RGB \
 		     /* Do the multiply part of the conversion for even and odd pixels,
