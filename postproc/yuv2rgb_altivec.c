@@ -64,6 +64,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <inttypes.h>
 #include <assert.h>
 #include "config.h"
@@ -220,7 +221,7 @@ do {										       \
 //#define out_pixels(a,b,c,ptr) vec_mstrgb32(typeof(a),((typeof (a))(0)),a,a,a,ptr)
 
 
-static inline cvtyuvtoRGB (SwsContext *c,
+static inline void cvtyuvtoRGB (SwsContext *c,
 			   vector signed short Y, vector signed short U, vector signed short V,
 			   vector signed short *R, vector signed short *G, vector signed short *B)
 {
@@ -492,6 +493,7 @@ static int altivec_uyvy_rgb32 (SwsContext *c,
       img += 32;
     }
   }
+  return srcSliceH;
 }
 
 
@@ -554,9 +556,6 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
     case IMGFMT_RGB32:
       MSG_WARN("ALTIVEC: Color Space UYVY -> RGB32\n");
       return altivec_uyvy_rgb32;
-    case IMGFMT_RGB24:
-    case IMGFMT_BGR32:
-
     default: return NULL;
     }
     break;
@@ -566,9 +565,8 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
 }
 
 
-int yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4])
+void yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4])
 {
-
   vector signed short
     CY  = (vector signed short)(0x7fff),
     CRV = (vector signed short)(22972),
@@ -576,8 +574,6 @@ int yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4])
     CGU = (vector signed short)(-11276),
     CGV = (vector signed short)(-23400),
     OY;
-
-  vector unsigned short CSHIFT = (vector unsigned short)(1);
 
   vector signed short Y0;
   int brightness = c->brightness,  contrast = c->contrast,  saturation = c->saturation;
@@ -617,7 +613,6 @@ int yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4])
 
   oy -= 256*brightness;
 
-
   //printf("%llx %llx %llx %llx %llx\n", cy, crv, cbu, cgu, cgv);
 
   //  vector signed short CBU,CRV,CGU,CGY,CY;
@@ -643,17 +638,15 @@ int yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4])
   CGV = vec_lde (0, &tmp);
   CGV  = vec_splat (CGV, 0);
 
-  CSHIFT = (vector unsigned short)(2);
-#if 1
-  c->CSHIFT = CSHIFT;
+  c->CSHIFT = (vector unsigned short)(2);
   c->CY = CY;
   c->OY = OY;
   c->CRV = CRV;
   c->CBU = CBU;
   c->CGU = CGU;
   c->CGV = CGV;
-#endif
-#if 1
+
+#if 0
   printf ("cy:  %hvx\n", CY);
   printf ("oy:  %hvx\n", OY);
   printf ("crv: %hvx\n", CRV);
@@ -661,6 +654,8 @@ int yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4])
   printf ("cgv: %hvx\n", CGV);
   printf ("cgu: %hvx\n", CGU);
 #endif
+
+ return;
 }
 
 
