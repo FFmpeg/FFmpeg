@@ -851,30 +851,24 @@ static int h261_find_frame_end(ParseContext *pc, AVCodecContext* avctx, const ui
     vop_found= pc->frame_start_found;
     state= pc->state;
    
-    i=0;
-    if(!vop_found){
-        for(i=0; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            for(j=0; j<8; j++){
-                if(( (  (state<<j)  |  (buf[i]>>(8-j))  )>>(32-20) == 0x10 )&&(((state >> (17-j)) & 0x4000) == 0x0)){
-                    i++;
-                    vop_found=1;
-                    break;
-                }
+    for(i=0; i<buf_size && !vop_found; i++){
+        state= (state<<8) | buf[i];
+        for(j=0; j<8; j++){
+            if(((state>>j)&0xFFFFF) == 0x00010){
+                i++;
+                vop_found=1;
+                break;
             }
-            if(vop_found)
-                    break;    
         }
     }
     if(vop_found){
         for(; i<buf_size; i++){
-            if(avctx->flags & CODEC_FLAG_TRUNCATED)//XXX ffplay workaround, someone a better solution?
-                state= (state<<8) | buf[i];
+            state= (state<<8) | buf[i];
             for(j=0; j<8; j++){
-                if(( (  (state<<j)  |  (buf[i]>>(8-j))  )>>(32-20) == 0x10 )&&(((state >> (17-j)) & 0x4000) == 0x0)){
+                if(((state>>j)&0xFFFFF) == 0x00010){
                     pc->frame_start_found=0;
-                    pc->state=-1;
-                    return i-3;
+                    pc->state= state>>(2*8);
+                    return i-1;
                 }
             }
         }
@@ -908,18 +902,11 @@ static int h261_parse(AVCodecParserContext *s,
  * returns the number of bytes consumed for building the current frame
  */
 static int get_consumed_bytes(MpegEncContext *s, int buf_size){
-    if(s->flags&CODEC_FLAG_TRUNCATED){
-        int pos= (get_bits_count(&s->gb)+7)>>3;
-        pos -= s->parse_context.last_index;
-        if(pos<0) pos=0;// padding is not really read so this might be -1
-        return pos;
-    }else{
-        int pos= get_bits_count(&s->gb)>>3;
-        if(pos==0) pos=1; //avoid infinite loops (i doubt thats needed but ...)
-        if(pos+10>buf_size) pos=buf_size; // oops ;)
+    int pos= get_bits_count(&s->gb)>>3;
+    if(pos==0) pos=1; //avoid infinite loops (i doubt thats needed but ...)
+    if(pos+10>buf_size) pos=buf_size; // oops ;)
 
-        return pos;
-    }
+    return pos;
 }
 
 static int h261_decode_frame(AVCodecContext *avctx,
@@ -942,16 +929,8 @@ static int h261_decode_frame(AVCodecContext *avctx,
     if (buf_size == 0) {
         return 0;
     }
-
-    if(s->flags&CODEC_FLAG_TRUNCATED){
-        int next;
-
-        next= h261_find_frame_end(&s->parse_context,avctx, buf, buf_size);
-
-        if( ff_combine_frame(&s->parse_context, next, &buf, &buf_size) < 0 )
-            return buf_size;
-    }
-
+    
+    h->gob_start_code_skipped=0;
 
 retry:
 
@@ -1013,7 +992,7 @@ retry:
 
 assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
 assert(s->current_picture.pict_type == s->pict_type);
-    *pict= *(AVFrame*)&s->current_picture;
+    *pict= *(AVFrame*)s->current_picture_ptr;
     ff_print_debug_info(s, pict);
 
     /* Return the Picture timestamp as the frame number */
@@ -1053,7 +1032,7 @@ AVCodec h261_decoder = {
     NULL,
     h261_decode_end,
     h261_decode_frame,
-    CODEC_CAP_TRUNCATED,
+    CODEC_CAP_DR1,
 };
 
 AVCodecParser h261_parser = {
