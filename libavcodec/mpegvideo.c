@@ -1103,8 +1103,7 @@ static inline void put_dct(MpegEncContext *s,
 {
     if (!s->mpeg2)
         s->dct_unquantize(s, block, i, s->qscale);
-    ff_idct (block);
-    put_pixels_clamped(block, dest, line_size);
+    ff_idct_put (dest, line_size, block);
 }
 
 /* add block[] to dest[] */
@@ -1119,8 +1118,7 @@ static inline void add_dct(MpegEncContext *s,
             if(s->encoding || (!s->h263_msmpeg4))
                 s->dct_unquantize(s, block, i, s->qscale);
 
-        ff_idct (block);
-        add_pixels_clamped(block, dest, line_size);
+        ff_idct_add (dest, line_size, block);
     }
 }
 
