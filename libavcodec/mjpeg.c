@@ -1832,9 +1832,9 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 			*(dst++) = x;
 			if (x == 0xff)
 			{
-			    while(*src == 0xff) src++;
+                            while(src<buf_end && x == 0xff)
+                                x = *(src++);
 
-			    x = *(src++);
 			    if (x >= 0xd0 && x <= 0xd7)
 				*(dst++) = x;
 			    else if (x)
