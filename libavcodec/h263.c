@@ -1367,6 +1367,7 @@ static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, 
 {
     int a, b, c, wrap, pred, scale;
     UINT16 *dc_val;
+    int dummy;
 
     /* find prediction */
     if (n < 4) {
