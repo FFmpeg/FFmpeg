@@ -1577,15 +1577,15 @@ static inline int direct_search(MpegEncContext * s, uint8_t *src_data[3], uint8_
 
         max= FFMAX(s->me.direct_basis_mv[i][0], s->me.direct_basis_mv[i][0] - s->me.co_located_mv[i][0])>>shift;
         min= FFMIN(s->me.direct_basis_mv[i][0], s->me.direct_basis_mv[i][0] - s->me.co_located_mv[i][0])>>shift;
-        max+= (2*mb_x + (i& 1))*8 + 1; // +-1 is for the simpler rounding
-        min+= (2*mb_x + (i& 1))*8 - 1;
+        max+= 16*mb_x + 1; // +-1 is for the simpler rounding
+        min+= 16*mb_x - 1;
         xmax= FFMIN(xmax, s->width - max);
         xmin= FFMAX(xmin, - 16     - min);
 
         max= FFMAX(s->me.direct_basis_mv[i][1], s->me.direct_basis_mv[i][1] - s->me.co_located_mv[i][1])>>shift;
         min= FFMIN(s->me.direct_basis_mv[i][1], s->me.direct_basis_mv[i][1] - s->me.co_located_mv[i][1])>>shift;
-        max+= (2*mb_y + (i>>1))*8 + 1; // +-1 is for the simpler rounding
-        min+= (2*mb_y + (i>>1))*8 - 1;
+        max+= 16*mb_y + 1; // +-1 is for the simpler rounding
+        min+= 16*mb_y - 1;
         ymax= FFMIN(ymax, s->height - max);
         ymin= FFMAX(ymin, - 16      - min);
         
