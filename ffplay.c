@@ -94,6 +94,7 @@ typedef struct VideoState {
     int show_audio; /* if true, display audio samples */
     int16_t sample_array[SAMPLE_ARRAY_SIZE];
     int sample_array_index;
+    int last_i_start;
     
     double video_clock; /* current video clock value */
     int video_stream;
@@ -128,7 +129,7 @@ static int show_status;
 /* current context */
 static int is_full_screen;
 static VideoState *cur_stream;
-static int16_t audio_callback_time;
+static int64_t audio_callback_time;
 
 #define FF_ALLOC_EVENT   (SDL_USEREVENT)
 #define FF_REFRESH_EVENT (SDL_USEREVENT + 1)
@@ -374,22 +375,27 @@ static void video_audio_display(VideoState *s)
     /* compute display index : center on currently output samples */
     channels = s->audio_st->codec.channels;
     nb_display_channels = channels;
-    n = 2 * channels;
-    delay = audio_write_get_buf_size(s);
-    delay /= n;
-    
-    /* to be more precise, we take into account the time spent since
-       the last buffer computation */
-    if (audio_callback_time) {
-        time_diff = av_gettime() - audio_callback_time;
-        delay += (time_diff * s->audio_st->codec.sample_rate) / 1000000;
+    if (!s->paused) {
+        n = 2 * channels;
+        delay = audio_write_get_buf_size(s);
+        delay /= n;
+        
+        /* to be more precise, we take into account the time spent since
+           the last buffer computation */
+        if (audio_callback_time) {
+            time_diff = av_gettime() - audio_callback_time;
+            delay += (time_diff * s->audio_st->codec.sample_rate) / 1000000;
+        }
+        
+        delay -= s->width / 2;
+        if (delay < s->width)
+            delay = s->width;
+        i_start = compute_mod(s->sample_array_index - delay * channels, SAMPLE_ARRAY_SIZE);
+        s->last_i_start = i_start;
+    } else {
+        i_start = s->last_i_start;
     }
 
-    delay -= s->width / 2;
-    if (delay < s->width)
-        delay = s->width;
-    i_start = compute_mod(s->sample_array_index - delay * channels, SAMPLE_ARRAY_SIZE);
-    
     bgcolor = SDL_MapRGB(screen->format, 0x00, 0x00, 0x00);
     fill_rectangle(screen, 
                    s->xleft, s->ytop, s->width, s->height, 
