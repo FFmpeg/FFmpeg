@@ -16,13 +16,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * Support for external huffman table and various fixed by
+ * Support for external huffman table and various fixes (AVID workaround) by
  *                                    Alex Beregszaszi <alex@naxine.org>
  */
 //#define DEBUG
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+
+#ifdef USE_FASTMEMCPY
+#include "fastmemcpy.h"
+#endif
 
 typedef struct MJpegContext {
     UINT8 huff_size_dc_luminance[12];
@@ -533,6 +537,8 @@ typedef struct MJpegDecodeContext {
     int linesize[MAX_COMPONENTS];
     DCTELEM block[64] __align8;
     UINT8 buffer[PICTURE_BUFFER_SIZE]; 
+
+    int buggy_avid;
 } MJpegDecodeContext;
 
 static void build_vlc(VLC *vlc, const UINT8 *bits_table, const UINT8 *val_table, 
@@ -725,8 +731,10 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
         s->first_picture = 0;
     }
 
-    if (len != 8+(3*nb_components))
+    if (len != (8+(3*nb_components)))
+    {
 	dprintf("decode_sof0: error, len(%d) mismatch\n", len);
+    }
     
     return 0;
 }
@@ -936,6 +944,39 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
     return -1;
 }
 
+#define FOURCC(a,b,c,d) ((a << 24) | (b << 16) | (c << 8) | d)
+static int mjpeg_decode_app(MJpegDecodeContext *s,
+                             UINT8 *buf, int buf_size)
+{
+    int len, id;
+
+    init_get_bits(&s->gb, buf, buf_size);
+
+    /* XXX: verify len field validity */
+    len = get_bits(&s->gb, 16)-2;
+    if (len < 5)
+	return -1;
+    id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
+    if (get_bits(&s->gb, 8) != 0)
+	return -1;
+    
+    /* buggy avid, it puts EOI only at every 10th frame */
+    if (id == FOURCC('A','V','I','1'))
+    {
+	s->buggy_avid = 1;
+	if (s->first_picture)
+	    printf("mjpeg: workarounding buggy AVID\n");
+    }
+    
+    /* if id == JFIF, we can extract some infos (aspect ratio), others
+       are useless */
+
+    /* should check for further values.. */
+
+    return 0;
+}
+#undef FOURCC
+
 /* return the 8 bit start code value and update the search
    state. Return -1 if no start code found */
 static int find_marker(UINT8 **pbuf_ptr, UINT8 *buf_end, 
@@ -1005,9 +1046,9 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
             s->buf_ptr += len;
             /* if we got FF 00, we copy FF to the stream to unescape FF 00 */
 	    /* valid marker code is between 00 and ff - alex */
-            if (code == 0 || code == 0xff) {
+	    if (code <= 0 || code >= 0xff) {
                 s->buf_ptr--;
-            } else if (code > 0) {
+            } else {
                 /* prepare data for next start code */
                 input_size = s->buf_ptr - s->buffer;
                 start_code = s->start_code;
@@ -1029,7 +1070,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     break;
                 case SOS:
                     mjpeg_decode_sos(s, s->buffer, input_size);
-                    if (s->start_code == EOI) {
+                    if (s->start_code == EOI || s->buggy_avid) {
                         int l;
                         if (s->interlaced) {
                             s->bottom_field ^= 1;
@@ -1068,6 +1109,24 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                         goto the_end;
                     }
                     break;
+		case APP0:
+		    mjpeg_decode_app(s, s->buffer, input_size);
+		    break;
+		case SOF1:
+		case SOF2:
+		case SOF3:
+		case SOF5:
+		case SOF6:
+		case SOF7:
+		case SOF9:
+		case SOF10:
+		case SOF11:
+		case SOF13:
+		case SOF14:
+		case SOF15:
+		case JPG:
+		    printf("mjpeg: unsupported coding type (%x)\n", start_code);
+		    return -1;
                 }
             }
         }
