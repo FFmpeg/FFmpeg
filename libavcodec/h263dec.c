@@ -351,6 +351,9 @@ retry:
         }
         ret = ff_mpeg4_decode_picture_header(s, &s->gb);
 
+        if(s->flags& CODEC_FLAG_LOW_DELAY)
+            s->low_delay=1;
+
         s->has_b_frames= !s->low_delay;
     } else if (s->h263_intel) {
         ret = intel_h263_decode_picture_header(s);

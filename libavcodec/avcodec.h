@@ -132,6 +132,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
                                                 allows the last part of a frame to be decoded earlier */
 #define CODEC_FLAG_NORMALIZE_AQP  0x00020000 /* normalize adaptive quantization */
 #define CODEC_FLAG_INTERLACED_DCT 0x00040000 /* use interlaced dct */
+#define CODEC_FLAG_LOW_DELAY      0x00080000 /* force low delay / will fail on b frames */
 
 /* codec capabilities */
 
