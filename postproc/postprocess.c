@@ -137,7 +137,7 @@ int maxAllowedY=255;
 //FIXME can never make a movie´s black brighter (anyone needs that?)
 int minAllowedY=0;
 
-
+#ifdef TIMEING
 static inline long long rdtsc()
 {
 	long long l;
@@ -147,7 +147,9 @@ static inline long long rdtsc()
 //	printf("%d\n", int(l/1000));
 	return l;
 }
+#endif
 
+#ifdef HAVE_MMX2
 static inline void prefetchnta(void *p)
 {
 	asm volatile(	"prefetchnta (%0)\n\t"
@@ -175,6 +177,7 @@ static inline void prefetcht2(void *p)
 		: : "r" (p)
 	);
 }
+#endif
 
 //FIXME? |255-0| = 1 (shouldnt be a problem ...)
 /**
@@ -1814,8 +1817,13 @@ FIND_MIN_MAX(%%ebx, %1, 2)
 #endif
 }
 
+#ifdef HAVE_ODIVX_POSTPROCESS
+#include "../opendivx/postprocess.h"
+int use_old_pp=0;
+#endif
 
-
+static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
+	QP_STORE_T QPs[], int QPStride, int isColor, int mode);
 
 /**
  * ...
@@ -1830,7 +1838,17 @@ void  postprocess(unsigned char * src[], int src_stride,
 					  int mode)
 {
 
-	if(mode<0) mode= getModeForQuality(-mode);
+#ifdef HAVE_ODIVX_POSTPROCESS
+// Note: I could make this shit outside of this file, but it would mean one
+// more function call...
+	if(use_old_pp){
+	    odivx_postprocess(src,src_stride,dst,dst_stride,horizontal_size,vertical_size,QP_store,QP_stride,mode);
+	    return;
+	}
+#endif
+
+	// I'm calling this from dec_video.c:video_set_postprocess()
+	// if(mode<0) mode= getModeForQuality(-mode);
 
 /*
 	long long T= rdtsc();
@@ -1869,21 +1887,46 @@ void  postprocess(unsigned char * src[], int src_stride,
 		memcpy(dst[2], src[2], src_stride*horizontal_size);
 	}
 }
+
 /**
  * gets the mode flags for a given quality (larger values mean slower but better postprocessing)
- * 0 <= quality < 64
+ * 0 <= quality <= 6
  */
-int getModeForQuality(int quality){
-	int modes[6]= {
+int getPpModeForQuality(int quality){
+	int modes[1+GET_PP_QUALITY_MAX]= {
+		0,
+#if 1
+		// horizontal filters first
+		LUM_H_DEBLOCK,
+		LUM_H_DEBLOCK | LUM_V_DEBLOCK,
+		LUM_H_DEBLOCK | LUM_V_DEBLOCK | CHROM_H_DEBLOCK,
+		LUM_H_DEBLOCK | LUM_V_DEBLOCK | CHROM_H_DEBLOCK | CHROM_V_DEBLOCK,
+		LUM_H_DEBLOCK | LUM_V_DEBLOCK | CHROM_H_DEBLOCK | CHROM_V_DEBLOCK | LUM_DERING,
+		LUM_H_DEBLOCK | LUM_V_DEBLOCK | CHROM_H_DEBLOCK | CHROM_V_DEBLOCK | LUM_DERING | CHROM_DERING
+#else
+		// vertical filters first
 		LUM_V_DEBLOCK,
 		LUM_V_DEBLOCK | LUM_H_DEBLOCK,
 		LUM_V_DEBLOCK | LUM_H_DEBLOCK | CHROM_V_DEBLOCK,
 		LUM_V_DEBLOCK | LUM_H_DEBLOCK | CHROM_V_DEBLOCK | CHROM_H_DEBLOCK,
 		LUM_V_DEBLOCK | LUM_H_DEBLOCK | CHROM_V_DEBLOCK | CHROM_H_DEBLOCK | LUM_DERING,
 		LUM_V_DEBLOCK | LUM_H_DEBLOCK | CHROM_V_DEBLOCK | CHROM_H_DEBLOCK | LUM_DERING | CHROM_DERING
-		};
+#endif
+	};
 
-	return modes[ (quality*6) >>6 ];
+#ifdef HAVE_ODIVX_POSTPROCESS
+	int odivx_modes[1+GET_PP_QUALITY_MAX]= {
+		0,
+		PP_DEBLOCK_Y_H,
+		PP_DEBLOCK_Y_H|PP_DEBLOCK_Y_V,
+		PP_DEBLOCK_Y_H|PP_DEBLOCK_Y_V|PP_DEBLOCK_C_H,
+		PP_DEBLOCK_Y_H|PP_DEBLOCK_Y_V|PP_DEBLOCK_C_H|PP_DEBLOCK_C_V,
+		PP_DEBLOCK_Y_H|PP_DEBLOCK_Y_V|PP_DEBLOCK_C_H|PP_DEBLOCK_C_V|PP_DERING_Y,
+		PP_DEBLOCK_Y_H|PP_DEBLOCK_Y_V|PP_DEBLOCK_C_H|PP_DEBLOCK_C_V|PP_DERING_Y|PP_DERING_C
+	};
+	if(use_old_pp) return odivx_modes[quality];
+#endif
+	return modes[quality];
 }
 
 //} // extern "C"
@@ -2010,7 +2053,7 @@ SIMPLE_CPY
 /**
  * Filters array of bytes (Y or U or V values)
  */
-void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
+static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
 	QP_STORE_T QPs[], int QPStride, int isColor, int mode)
 {
 	int x,y;
