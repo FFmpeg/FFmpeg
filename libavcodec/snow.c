@@ -375,6 +375,7 @@ typedef struct SubBand{
     int qlog;                                   ///< log(qscale)/log[2^(1/6)]
     DWTELEM *buf;
     int16_t *x;
+    DWTELEM *coeff;
     struct SubBand *parent;
     uint8_t state[/*7*2*/ 7 + 512][32];
 }SubBand;
@@ -1903,92 +1904,7 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
     int x,y;
 
     START_TIMER
-#if 0    
-    for(y=0; y<b->height; y++)
-        memset(&src[y*stride], 0, b->width*sizeof(DWTELEM));
 
-    int plane;
-    for(plane=24; plane>=0; plane--){
-        int run;
-
-        run= get_symbol(&s->c, b->state[1], 0);
-                
-#define HIDE(c, plane) c= c>=0 ? c&((-1)<<(plane)) : -((-c)&((-1)<<(plane)));
-        
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                int v, p=0, lv;
-                int /*ll=0, */l=0, lt=0, t=0, rt=0;
-                int d=0, r=0, rd=0, ld=0;
-                lv= src[x + y*stride];
-
-                if(y){
-                    t= src[x + (y-1)*stride];
-                    if(x){
-                        lt= src[x - 1 + (y-1)*stride];
-                    }
-                    if(x + 1 < w){
-                        rt= src[x + 1 + (y-1)*stride];
-                    }
-                }
-                if(x){
-                    l= src[x - 1 + y*stride];
-                    /*if(x > 1){
-                        if(orientation==1) ll= src[y + (x-2)*stride];
-                        else               ll= src[x - 2 + y*stride];
-                    }*/
-                }
-                if(y+1<h){
-                    d= src[x + (y+1)*stride];
-                    if(x)         ld= src[x - 1 + (y+1)*stride];
-                    if(x + 1 < w) rd= src[x + 1 + (y+1)*stride];
-                }
-                if(x + 1 < w)
-                    r= src[x + 1 + y*stride];
-
-                if(parent){
-                    int px= x>>1;
-                    int py= y>>1;
-                    if(px<b->parent->width && py<b->parent->height) 
-                        p= parent[px + py*2*stride];
-                }
-                HIDE( p, plane)
-                if(/*ll|*/l|lt|t|rt|r|rd|ld|d|p|lv){
-                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p)
-                                                      +3*ABS(r) + ABS(rd) + 2*ABS(d) + ABS(ld));
-
-                    if(lv){
-                        assert(context + 8*av_log2(ABS(lv)) < 512 - 100);
-                        if(get_cabac(&s->c, &b->state[99][context + 8*(av_log2(ABS(lv))-plane)])){
-                            if(lv<0) v= lv - (1<<plane);
-                            else     v= lv + (1<<plane);
-                        }else
-                            v=lv;
-                    }else{
-                        v= get_cabac(&s->c, &b->state[ 0][context]) << plane;
-                    }
-                }else{
-                    assert(!lv);
-                    if(!run){
-                        run= get_symbol(&s->c, b->state[1], 0);
-                        v= 1<<plane;
-                    }else{
-                        run--;
-                        v=0;
-                    }
-                }
-                if(v && !lv){
-                    int context=    clip(quant3b[l&0xFF] + quant3b[r&0xFF], -1,1)
-                                + 3*clip(quant3b[t&0xFF] + quant3b[d&0xFF], -1,1);
-                    if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + context]))
-                        v= -v;
-                }
-                src[x + y*stride]= v;
-            }
-        }
-    }
-    return;    
-#endif
     if(1){
         int run;
         int index=0;
@@ -2002,26 +1918,22 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
 
         run= get_symbol2(&s->c, b->state[1], 3);
         for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                int v, p=0;
-                int /*ll=0, */l=0, lt=0, t=0, rt=0;
+            int v=0;
+            int lt=0, t=0, rt=0;
 
-                if(y){
-                    t= src[x + (y-1)*stride];
-                    if(x){
-                        lt= src[x - 1 + (y-1)*stride];
-                    }
-                    if(x + 1 < w){
-                        rt= src[x + 1 + (y-1)*stride];
-                    }
-                }
-                if(x){
-                    l= src[x - 1 + y*stride];
-                    /*if(x > 1){
-                        if(orientation==1) ll= src[y + (x-2)*stride];
-                        else               ll= src[x - 2 + y*stride];
-                    }*/
-                }
+            if(y){
+                rt= src[(y-1)*stride];
+            }
+            for(x=0; x<w; x++){
+                int p=0;
+                const int l= v;
+                
+                lt= t; t= rt;
+
+                if(y && x + 1 < w){
+                    rt= src[x + 1 + (y-1)*stride];
+                }else
+                    rt= 0;
                 if(parent){
                     int px= x>>1;
                     int py= y>>1;
@@ -2062,7 +1974,8 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                     if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]]))
                         v= -v;
                     src[x + y*stride]= v;
-                    b->x[index++]=x;
+                    b->x[index++]=x; //FIXME interleave x/coeff
+//                    b->coeff[index++]= v;
                 }
             }
             b->x[index++]= w+1; //end marker
@@ -2896,15 +2809,6 @@ static int decode_header(SnowContext *s){
     return 0;
 }
 
-static int init_subband(SubBand *b, int w, int h, int stride){
-    b->width= w;
-    b->height= h;
-    b->stride= stride;
-    b->buf= av_mallocz(b->stride * b->height*sizeof(DWTELEM));
-    b->x= av_mallocz(((b->width+1) * b->height+1)*sizeof(int16_t));
-    return 0;
-}
-
 static int common_init(AVCodecContext *avctx){
     SnowContext *s = avctx->priv_data;
     int width, height;
@@ -2989,7 +2893,8 @@ static int common_init(AVCodecContext *avctx){
                 
                 if(level)
                     b->parent= &s->plane[plane_index].band[level-1][orientation];
-                b->x= av_mallocz(((b->width+1) * b->height+1)*sizeof(int16_t));
+                b->x    = av_mallocz(((b->width+1) * b->height+1)*sizeof(int16_t));
+                b->coeff= av_mallocz(((b->width+1) * b->height+1)*sizeof(DWTELEM));
             }
             w= (w+1)>>1;
             h= (h+1)>>1;
@@ -3311,6 +3216,7 @@ static void common_end(SnowContext *s){
                 SubBand *b= &s->plane[plane_index].band[level][orientation];
                 
                 av_freep(&b->x);
+                av_freep(&b->coeff);
             }
         }
     }
