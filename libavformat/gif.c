@@ -167,9 +167,11 @@ static void gif_flush_put_bits_rev(PutBitContext *s)
 /* !RevPutBitContext */
 
 /* GIF header */
-static int gif_image_write_header(ByteIOContext *pb, int width, int height)
+static int gif_image_write_header(ByteIOContext *pb, 
+                                  int width, int height, uint32_t *palette)
 {
     int i;
+    unsigned int v;
 
     put_tag(pb, "GIF");
     put_tag(pb, "89a");
@@ -181,10 +183,18 @@ static int gif_image_write_header(ByteIOContext *pb, int width, int height)
     put_byte(pb, 0); /* aspect ratio */
 
     /* the global palette */
-
-    put_buffer(pb, (unsigned char *)gif_clut, 216*3);
-    for(i=0;i<((256-216)*3);i++)
-       put_byte(pb, 0);
+    if (!palette) {
+        put_buffer(pb, (unsigned char *)gif_clut, 216*3);
+        for(i=0;i<((256-216)*3);i++)
+            put_byte(pb, 0);
+    } else {
+        for(i=0;i<256;i++) {
+            v = palette[i];
+            put_byte(pb, (v >> 16) & 0xff);
+            put_byte(pb, (v >> 8) & 0xff);
+            put_byte(pb, (v) & 0xff);
+        }
+    }
 
     /* application extension header */
     /* XXX: not really sure what to put in here... */
@@ -202,7 +212,7 @@ static int gif_image_write_header(ByteIOContext *pb, int width, int height)
 }
 
 /* this is maybe slow, but allows for extensions */
-static inline unsigned char gif_clut_index(rgb_triplet *clut, UINT8 r, UINT8 g, UINT8 b)
+static inline unsigned char gif_clut_index(UINT8 r, UINT8 g, UINT8 b)
 {
     return ((((r)/47)%6)*6*6+(((g)/47)%6)*6+(((b)/47)%6));
 }
@@ -210,11 +220,11 @@ static inline unsigned char gif_clut_index(rgb_triplet *clut, UINT8 r, UINT8 g, 
 
 static int gif_image_write_image(ByteIOContext *pb, 
                                  int x1, int y1, int width, int height,
-                                 uint8_t *buf, int linesize)
+                                 uint8_t *buf, int linesize, int pix_fmt)
 {
     PutBitContext p;
     UINT8 buffer[200]; /* 100 * 9 / 8 = 113 */
-    int i, left, w;
+    int i, left, w, v;
     uint8_t *ptr;
     /* image block */
 
@@ -243,8 +253,13 @@ static int gif_image_write_image(ByteIOContext *pb,
         gif_put_bits_rev(&p, 9, 0x0100); /* clear code */
 
         for(i=0;i<GIF_CHUNKS;i++) {
-	    gif_put_bits_rev(&p, 9, gif_clut_index(NULL, ptr[0], ptr[1], ptr[2]));
-            ptr+=3;
+            if (pix_fmt == PIX_FMT_RGB24) {
+                v = gif_clut_index(ptr[0], ptr[1], ptr[2]);
+                ptr+=3;
+            } else {
+                v = *ptr++;
+            }
+            gif_put_bits_rev(&p, 9, v);
             if (--w == 0) {
                 w = width;
                 buf += linesize;
@@ -309,21 +324,11 @@ static int gif_write_header(AVFormatContext *s)
     /* XXX: is it allowed ? seems to work so far... */
     video_enc->pix_fmt = PIX_FMT_RGB24;
 
-    gif_image_write_header(pb, width, height);
+    gif_image_write_header(pb, width, height, NULL);
 
     put_flush_packet(&s->pb);
     return 0;
 }
-
-/* chunk writer callback */
-/* !!! XXX:deprecated
-static void gif_put_chunk(void *pbctx, UINT8 *buffer, int count)
-{
-    ByteIOContext *pb = (ByteIOContext *)pbctx;
-    put_byte(pb, (UINT8)count);
-    put_buffer(pb, buffer, count);
-}
-*/
 
 static int gif_write_video(AVFormatContext *s, 
                            AVCodecContext *enc, UINT8 *buf, int size)
@@ -354,7 +359,7 @@ static int gif_write_video(AVFormatContext *s,
     put_byte(pb, 0x00);
 
     gif_image_write_image(pb, 0, 0, enc->width, enc->height,
-                          buf, enc->width * 3);
+                          buf, enc->width * 3, PIX_FMT_RGB24);
 
     put_flush_packet(&s->pb);
     return 0;
@@ -382,9 +387,11 @@ static int gif_write_trailer(AVFormatContext *s)
 /* better than nothing gif image writer */
 int gif_write(ByteIOContext *pb, AVImageInfo *info)
 {
-    gif_image_write_header(pb, info->width, info->height);
+    gif_image_write_header(pb, info->width, info->height, 
+                           (uint32_t *)info->pict.data[1]);
     gif_image_write_image(pb, 0, 0, info->width, info->height, 
-                          info->pict.data[0], info->pict.linesize[0]);
+                          info->pict.data[0], info->pict.linesize[0], 
+                          PIX_FMT_PAL8);
     put_byte(pb, 0x3b);
     put_flush_packet(pb);
     return 0;

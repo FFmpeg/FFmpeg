@@ -39,6 +39,9 @@ typedef struct GifState {
     int color_resolution;
     uint8_t *image_buf;
     int image_linesize;
+    uint32_t *image_palette;
+    int pix_fmt;
+
     /* after the frame is displayed, the disposal method is used */
     int gce_disposal;
     /* delay during which the frame is shown */
@@ -274,7 +277,7 @@ static int gif_read_image(GifState *s)
 {
     ByteIOContext *f = s->f;
     int left, top, width, height, bits_per_pixel, code_size, flags;
-    int is_interleaved, has_local_palette, y, x, pass, y1, linesize;
+    int is_interleaved, has_local_palette, y, x, pass, y1, linesize, n, i;
     uint8_t *ptr, *line, *d, *spal, *palette, *sptr, *ptr1;
 
     left = get_le16(f);
@@ -294,6 +297,7 @@ static int gif_read_image(GifState *s)
         palette = s->local_palette;
     } else {
         palette = s->global_palette;
+        bits_per_pixel = s->bits_per_pixel;
     }
     
     /* verify that all the image is inside the screen dimensions */
@@ -301,32 +305,51 @@ static int gif_read_image(GifState *s)
         top + height > s->screen_height)
         return -EINVAL;
 
-    line = av_malloc(width);
-    if (!line)
-        return -ENOMEM;
+    /* build the palette */
+    if (s->pix_fmt == PIX_FMT_RGB24) {
+        line = av_malloc(width);
+        if (!line)
+            return -ENOMEM;
+    } else {
+        n = (1 << bits_per_pixel);
+        spal = palette;
+        for(i = 0; i < n; i++) {
+            s->image_palette[i] = (0xff << 24) | 
+                (spal[0] << 16) | (spal[1] << 8) | (spal[2]);
+            spal += 3;
+        }
+        for(; i < 256; i++)
+            s->image_palette[i] = (0xff << 24);
+        line = NULL;
+    }
 
     /* now get the image data */
     s->f = f;
     code_size = get_byte(f);
     GLZWDecodeInit(s, code_size);
 
-    /* read all the image and transcode it to RGB24 (horrible) */
+    /* read all the image */
     linesize = s->image_linesize;
     ptr1 = s->image_buf + top * linesize + (left * 3);
     ptr = ptr1;
     pass = 0;
     y1 = 0;
     for (y = 0; y < height; y++) {
-	GLZWDecode(s, line, width);
-        d = ptr;
-        sptr = line;
-        for(x = 0; x < width; x++) {
-            spal = palette + sptr[0] * 3;
-            d[0] = spal[0];
-            d[1] = spal[1];
-            d[2] = spal[2];
-            d += 3;
-            sptr++;
+        if (s->pix_fmt == PIX_FMT_RGB24) {
+            /* transcode to RGB24 */
+            GLZWDecode(s, line, width);
+            d = ptr;
+            sptr = line;
+            for(x = 0; x < width; x++) {
+                spal = palette + sptr[0] * 3;
+                d[0] = spal[0];
+                d[1] = spal[1];
+                d[2] = spal[2];
+                d += 3;
+                sptr++;
+            }
+        } else {
+            GLZWDecode(s, ptr, width);
         }
         if (is_interleaved) {
             switch(pass) {
@@ -504,6 +527,7 @@ static int gif_read_header(AVFormatContext * s1,
     s->image_buf = av_malloc(s->screen_height * s->image_linesize);
     if (!s->image_buf)
         return -ENOMEM;
+    s->pix_fmt = PIX_FMT_RGB24;
     /* now we are ready: build format streams */
     st = av_new_stream(s1, 0);
     if (!st)
@@ -559,13 +583,14 @@ static int gif_read(ByteIOContext *f,
         return -1;
     info->width = s->screen_width;
     info->height = s->screen_height;
-    info->pix_fmt = PIX_FMT_RGB24;
+    info->pix_fmt = PIX_FMT_PAL8;
     ret = alloc_cb(opaque, info);
     if (ret)
         return ret;
     s->image_buf = info->pict.data[0];
     s->image_linesize = info->pict.linesize[0];
-    
+    s->image_palette = (uint32_t *)info->pict.data[1];
+
     if (gif_parse_next_image(s) < 0)
         return -1;
     return 0;
@@ -587,6 +612,6 @@ AVImageFormat gif_image_format = {
     "gif",
     gif_image_probe,
     gif_read,
-    (1 << PIX_FMT_RGB24),
+    (1 << PIX_FMT_PAL8),
     gif_write,
 };
