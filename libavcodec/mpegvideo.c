@@ -470,16 +470,16 @@ int MPV_encode_picture(AVCodecContext *avctx,
             h >>= 1;
         }
 
-	if(s->intra_only && dest_wrap==src_wrap){
-	    s->current_picture[i] = pict->data[i];
+	if(dest_wrap==src_wrap){
+	    s->new_picture[i] = pict->data[i];
 	}else {
             for(j=0;j<h;j++) {
                 memcpy(dest, src, w);
                 dest += dest_wrap;
                 src += src_wrap;
             }
+            s->new_picture[i] = s->current_picture[i];
 	}
-        s->new_picture[i] = s->current_picture[i];
     }
 
     encode_picture(s, s->picture_number);
