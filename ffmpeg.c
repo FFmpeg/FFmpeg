@@ -1815,6 +1815,9 @@ void opt_input_file(const char *filename)
     AVFormatParameters params, *ap = &params;
     int err, i, ret, rfps;
 
+    if (!strcmp(filename, "-"))
+        filename = "pipe:";
+
     /* get default parameters from command line */
     memset(ap, 0, sizeof(*ap));
     ap->sample_rate = audio_sample_rate;
