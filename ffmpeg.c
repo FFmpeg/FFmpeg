@@ -2543,6 +2543,7 @@ static void opt_output_file(const char *filename)
                 
                 audio_enc->bit_rate = audio_bit_rate;
                 audio_enc->sample_rate = audio_sample_rate;
+                audio_enc->strict_std_compliance = strict;
                 /* For audio codecs other than AC3 we limit */
                 /* the number of coded channels to stereo   */
                 if (audio_channels > 2 && codec_id != CODEC_ID_AC3) {
