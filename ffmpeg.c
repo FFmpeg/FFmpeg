@@ -141,6 +141,10 @@ static int do_play = 0;
 static int do_psnr = 0;
 static int do_vstats = 0;
 static int mpeg_vcd = 0;
+static int do_pass = 0;
+static char *pass_logfilename = NULL;
+
+#define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
 #ifndef CONFIG_AUDIO_OSS
 const char *audio_device = "none";
@@ -165,6 +169,7 @@ typedef struct AVOutputStream {
     int audio_resample;
     ReSampleContext *resample; /* for audio resampling */
     FifoBuffer fifo;     /* for compression: one audio fifo per codec */
+    FILE *logfile;
 } AVOutputStream;
 
 typedef struct AVInputStream {
@@ -546,6 +551,10 @@ static void do_video_out(AVFormatContext *s,
             //fprintf(stderr,"\nFrame: %3d %3d size: %5d type: %d",
             //        enc->frame_number-1, enc->real_pict_num, ret,
             //        enc->pict_type);
+            /* if two pass, output log */
+            if (ost->logfile && enc->stats_out) {
+                fprintf(ost->logfile, "%s", enc->stats_out);
+            }
         } else {
             write_picture(s, ost->index, picture, enc->pix_fmt, enc->width, enc->height);
         }
@@ -841,6 +850,45 @@ static int av_encode(AVFormatContext **output_files,
             break;
         default:
             av_abort();
+        }
+        /* two pass mode */
+        if (ost->encoding_needed && 
+            (codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
+            char logfilename[1024];
+            FILE *f;
+            int size;
+            char *logbuffer;
+            
+            snprintf(logfilename, sizeof(logfilename), "%s-%d.log", 
+                     pass_logfilename ? 
+                     pass_logfilename : DEFAULT_PASS_LOGFILENAME, i);
+            if (codec->flags & CODEC_FLAG_PASS1) {
+                f = fopen(logfilename, "w");
+                if (!f) {
+                    perror(logfilename);
+                    exit(1);
+                }
+                ost->logfile = f;
+            } else {
+                /* read the log file */
+                f = fopen(logfilename, "r");
+                if (!f) {
+                    perror(logfilename);
+                    exit(1);
+                }
+                fseek(f, 0, SEEK_END);
+                size = ftell(f);
+                fseek(f, 0, SEEK_SET);
+                logbuffer = av_malloc(size + 1);
+                if (!logbuffer) {
+                    fprintf(stderr, "Could not allocate log buffer\n");
+                    exit(1);
+                }
+                fread(logbuffer, 1, size, f);
+                fclose(f);
+                logbuffer[size] = '\0';
+                codec->stats_in = logbuffer;
+            }
         }
     }
 
@@ -1245,6 +1293,7 @@ static int av_encode(AVFormatContext **output_files,
     for(i=0;i<nb_ostreams;i++) {
         ost = ost_table[i];
         if (ost->encoding_needed) {
+            av_freep(&ost->st->codec.stats_in);
             avcodec_close(&ost->st->codec);
         }
     }
@@ -1280,6 +1329,10 @@ static int av_encode(AVFormatContext **output_files,
         for(i=0;i<nb_ostreams;i++) {
             ost = ost_table[i];
             if (ost) {
+                if (ost->logfile) {
+                    fclose(ost->logfile);
+                    ost->logfile = NULL;
+                }
                 fifo_free(&ost->fifo); /* works even if fifo is not
                                           initialized but set to zero */
                 av_free(ost->pict_tmp.data[0]);
@@ -1942,6 +1995,15 @@ void opt_output_file(const char *filename)
                 video_enc->get_psnr = 0;
             
             video_enc->me_method = me_method;
+
+            /* two pass mode */
+            if (do_pass) {
+                if (do_pass == 1) {
+                    video_enc->flags |= CODEC_FLAG_PASS1;
+                } else {
+                    video_enc->flags |= CODEC_FLAG_PASS2;
+                }
+            }
             
             /* XXX: need to find a way to set codec parameters */
             if (oc->oformat->flags & AVFMT_RGB24) {
@@ -2128,6 +2190,17 @@ void prepare_play(void)
     opt_output_file(audio_device);
 }
 
+/* same option as mencoder */
+void opt_pass(const char *pass_str)
+{
+    int pass;
+    pass = atoi(pass_str);
+    if (pass != 1 && pass != 2) {
+        fprintf(stderr, "pass number can be only 1 or 2\n");
+        exit(1);
+    }
+    do_pass = pass;
+}
 
 #ifndef CONFIG_WIN32
 INT64 getutime(void)
@@ -2265,6 +2338,8 @@ const OptionDef options[] = {
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
     { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
+    { "pass", HAS_ARG, {(void*)&opt_pass}, "select the pass number (1 or 2)", "n" },
+    { "passlogfile", HAS_ARG | OPT_STRING, {(void*)&pass_logfilename}, "select two pass log file name", "file" },
     /* video options */
     { "b", HAS_ARG, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
     { "r", HAS_ARG, {(void*)opt_frame_rate}, "set frame rate (in Hz)", "rate" },
