@@ -16,7 +16,7 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       motion_est.o imgconvert.o imgresample.o \
       mpeg12.o mpegaudiodec.o pcm.o simple_idct.o \
       ratecontrol.o adpcm.o eval.o dv.o error_resilience.o \
-      fft.o mdct.o mace.o huffyuv.o cyuv.o
+      fft.o mdct.o mace.o huffyuv.o cyuv.o opts.o
 ASM_OBJS=
 
 # codecs which are patented in some non free countries like the us
