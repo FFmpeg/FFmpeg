@@ -83,7 +83,6 @@ if [ "$gprof" = "yes" ] ; then
   echo "TARGET_GPROF=yes" >> config.mak
   echo "#define HAVE_GPROF 1" >> config.h
 fi
-echo "#define BIN_PORTABILITY 1 /*undefine it if you want to get maximal performance*/" >> config.h
 
 # if you do not want to use encoders, disable that.
 echo "#define CONFIG_ENCODERS 1" >> config.h
