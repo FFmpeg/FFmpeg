@@ -1108,34 +1108,37 @@ static int mpeg_decode_mb(MpegEncContext *s,
                                                     s->last_mv[i][0][1] >> 1);
                             dmy = get_dmv(s);
                             s->mv_type = MV_TYPE_DMV;
-                            /* XXX: totally broken */
+
+
+                            s->last_mv[i][0][1] = my<<1;
+                            s->last_mv[i][1][1] = my<<1;
+
+                            s->mv[i][0][0] = mx;
+                            s->mv[i][0][1] = my;
+                            s->mv[i][1][0] = mx;//not used
+                            s->mv[i][1][1] = my;//not used
+
                             if (s->picture_structure == PICT_FRAME) {
                                 mb_type |= MB_TYPE_16x16 | MB_TYPE_INTERLACED; 
 
-                                s->last_mv[i][0][1] = my << 1;
-                                s->last_mv[i][1][1] = my << 1;
-
+                                //m = 1 + 2 * s->top_field_first;
                                 m = s->top_field_first ? 1 : 3;
+
                                 /* top -> top pred */
-                                s->mv[i][0][0] = mx; 
-                                s->mv[i][0][1] = my << 1;
-                                s->mv[i][1][0] = ((mx * m + (mx > 0)) >> 1) + dmx;
-                                s->mv[i][1][1] = ((my * m + (my > 0)) >> 1) + dmy - 1;
+                                s->mv[i][2][0] = ((mx * m + (mx > 0)) >> 1) + dmx;
+                                s->mv[i][2][1] = ((my * m + (my > 0)) >> 1) + dmy - 1;
                                 m = 4 - m;
-                                s->mv[i][2][0] = mx;
-                                s->mv[i][2][1] = my << 1;
                                 s->mv[i][3][0] = ((mx * m + (mx > 0)) >> 1) + dmx;
                                 s->mv[i][3][1] = ((my * m + (my > 0)) >> 1) + dmy + 1;
                             } else {
                                 mb_type |= MB_TYPE_16x16;
 
-                                s->last_mv[i][0][1] = my;
-                                s->last_mv[i][1][1] = my;
-                                s->mv[i][0][0] = mx;
-                                s->mv[i][0][1] = my;
-                                s->mv[i][1][0] = ((mx + (mx > 0)) >> 1) + dmx;
-                                s->mv[i][1][1] = ((my + (my > 0)) >> 1) + dmy - 1 
-                                    /* + 2 * cur_field */;
+                                s->mv[i][2][0] = ((mx + (mx > 0)) >> 1) + dmx;
+                                s->mv[i][2][1] = ((my + (my > 0)) >> 1) + dmy;
+                                if(s->picture_structure == PICT_TOP_FIELD)
+                                    s->mv[i][2][1]--;
+                                else 
+                                    s->mv[i][2][1]++;
                             }
                         }
                         break;

@@ -2190,6 +2190,71 @@ static inline void MPV_motion(MpegEncContext *s,
                         s->mv[dir][0][0], s->mv[dir][0][1], 16);
         }
         break;
+    case MV_TYPE_DMV:
+    {
+    op_pixels_func (*dmv_pix_op)[4];
+    int offset;
+
+        dmv_pix_op = s->dsp.put_pixels_tab;
+
+        if(s->picture_structure == PICT_FRAME){
+            //put top field from top field
+            mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
+                        ref_picture, 0,
+                        1, dmv_pix_op,
+                        s->mv[dir][0][0], s->mv[dir][0][1], 8);
+            //put bottom field from bottom field
+            mpeg_motion(s, dest_y, dest_cb, dest_cr, s->linesize,
+                        ref_picture, s->linesize,
+                        1, dmv_pix_op,
+                        s->mv[dir][0][0], s->mv[dir][0][1], 8);
+
+            dmv_pix_op = s->dsp.avg_pixels_tab; 
+        
+            //avg top field from bottom field
+            mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
+                        ref_picture, s->linesize,
+                        1, dmv_pix_op,
+                        s->mv[dir][2][0], s->mv[dir][2][1], 8);
+            //avg bottom field from top field
+            mpeg_motion(s, dest_y, dest_cb, dest_cr, s->linesize,
+                        ref_picture, 0,
+                        1, dmv_pix_op,
+                        s->mv[dir][3][0], s->mv[dir][3][1], 8);
+
+        }else{
+            offset=(s->picture_structure == PICT_BOTTOM_FIELD)? 
+                         s->linesize : 0;
+
+            //put field from the same parity
+            //same parity is never in the same frame
+            mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
+                        ref_picture,offset,
+                        0,dmv_pix_op,
+                        s->mv[dir][0][0],s->mv[dir][0][1],16);
+
+            // after put we make avg of the same block
+            dmv_pix_op=s->dsp.avg_pixels_tab; 
+
+            //opposite parity is always in the same frame if this is second field
+            if(!s->first_field){
+                ref_picture = s->current_picture.data;    
+                //top field is one linesize from frame beginig
+                offset=(s->picture_structure == PICT_BOTTOM_FIELD)? 
+                        -s->linesize : s->linesize;
+            }else 
+                offset=(s->picture_structure == PICT_BOTTOM_FIELD)? 
+                        0 : s->linesize;
+
+            //avg field from the opposite parity
+            mpeg_motion(s, dest_y, dest_cb, dest_cr,0,
+                        ref_picture, offset,
+                        0,dmv_pix_op,
+                        s->mv[dir][2][0],s->mv[dir][2][1],16);
+        }
+    }
+    break;
+
     }
 }
 
