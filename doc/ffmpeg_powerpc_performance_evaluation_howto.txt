@@ -1,6 +1,6 @@
 FFmpeg & evaluating performance on the PowerPC Architecture HOWTO
 
-(c) 2003 Romain Dolbeau <romain@dolbeau.org>
+(c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
 
 
 
@@ -17,6 +17,7 @@ The firsts are always available, always active, but they're not very accurate : 
 
 The PMC are much more useful : not only they can report cycle-accurate timing, but they can also be used to monitor many other parameters, such as the number of AltiVec stalls for every kind of instructions, or instruction cache misses. The downside is that not all processors support the PMC (all G3, all G4 and the 970 do support them), and they're inactive by default - you need to activate them with a dedicated tool. Also, the number of available PMC depend on the procesor : the various 604 have 2, the various 75x (aka. G3) have 4, anbd the various 74xx (aka G4) have 6.
 
+*WARNING*: The powerpc 970 is not very well documented, and it seems its PMC registers are 64bits wide. The current implementation in FFMpeg assume the register are 32bits wide, and will *not* work on a powerpc 970 (aka G5).
 
 
 II - Enabling FFmpeg PowerPC performance support
