@@ -3943,7 +3943,7 @@ static int find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
     }
     
     pc->state= state;
-    return -1;
+    return END_NOT_FOUND;
 }
 
 static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){

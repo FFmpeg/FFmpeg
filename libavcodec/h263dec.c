@@ -338,7 +338,7 @@ static int mpeg4_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
     }
     pc->frame_start_found= vop_found;
     pc->state= state;
-    return -1;
+    return END_NOT_FOUND;
 }
 
 /**
