@@ -163,7 +163,7 @@ int pcm_read_seek(AVFormatContext *s,
     pos = (pos / block_align) * block_align;
 
     /* recompute exact position */
-    st->cur_dts = (pos * AV_TIME_BASE) / byte_rate;
+    st->cur_dts = av_rescale(pos, st->time_base.den, byte_rate * (int64_t)st->time_base.num);
     url_fseek(&s->pb, pos + s->data_offset, SEEK_SET);
     return 0;
 }

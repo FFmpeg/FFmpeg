@@ -488,47 +488,6 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 /**********************************************************/
 
-/* convert the packet time stamp units and handle wrapping. The
-   wrapping is handled by considering the next PTS/DTS as a delta to
-   the previous value. We handle the delta as a fraction to avoid any
-   rounding errors. */
-static inline int64_t convert_timestamp_units(AVStream *s,
-                                        int64_t *plast_pkt_pts,
-                                        int *plast_pkt_pts_frac,
-                                        int64_t *plast_pkt_stream_pts,
-                                        int64_t pts)
-{
-    int64_t stream_pts;
-    int64_t delta_pts;
-    int shift, pts_frac;
-
-    if (pts != AV_NOPTS_VALUE) {
-        stream_pts = pts;
-        if (*plast_pkt_stream_pts != AV_NOPTS_VALUE) {
-            shift = 64 - s->pts_wrap_bits;
-            delta_pts = ((stream_pts - *plast_pkt_stream_pts) << shift) >> shift;
-            /* XXX: overflow possible but very unlikely as it is a delta */
-            delta_pts = delta_pts * AV_TIME_BASE * s->time_base.num;
-            pts = *plast_pkt_pts + (delta_pts / s->time_base.den);
-            pts_frac = *plast_pkt_pts_frac + (delta_pts % s->time_base.den);
-            if (pts_frac >= s->time_base.den) {
-                pts_frac -= s->time_base.den;
-                pts++;
-            }
-        } else {
-            /* no previous pts, so no wrapping possible */
-//            pts = av_rescale(stream_pts, (int64_t)AV_TIME_BASE * s->time_base.num, s->time_base.den);
-            pts = (int64_t)(((double)stream_pts * AV_TIME_BASE * s->time_base.num) / 
-                            (double)s->time_base.den);
-            pts_frac = 0;
-        }
-        *plast_pkt_stream_pts = stream_pts;
-        *plast_pkt_pts = pts;
-        *plast_pkt_pts_frac = pts_frac;
-    }
-    return pts;
-}
-
 /* get the number of samples of an audio frame. Return (-1) if error */
 static int get_audio_frame_size(AVCodecContext *enc, int size)
 {
@@ -598,15 +557,27 @@ static void compute_frame_duration(int *pnum, int *pden,
     }
 }
 
+static int64_t lsb2full(int64_t lsb, int64_t last_ts, int lsb_bits){
+    int64_t mask = (1LL<<lsb_bits)-1;
+    int64_t delta= last_ts - mask/2;
+    return  ((lsb - delta)&mask) + delta;
+}
+
 static void compute_pkt_fields(AVFormatContext *s, AVStream *st, 
                                AVCodecParserContext *pc, AVPacket *pkt)
 {
     int num, den, presentation_delayed;
 
+    /* handle wrapping */
+    if(pkt->pts != AV_NOPTS_VALUE)
+        pkt->pts= lsb2full(pkt->pts, st->cur_dts, st->pts_wrap_bits);
+    if(pkt->dts != AV_NOPTS_VALUE)
+        pkt->dts= lsb2full(pkt->dts, st->cur_dts, st->pts_wrap_bits);
+    
     if (pkt->duration == 0) {
         compute_frame_duration(&num, &den, s, st, pc, pkt);
         if (den && num) {
-            pkt->duration = (num * (int64_t)AV_TIME_BASE) / den;
+            pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num);
         }
     }
 
@@ -621,6 +592,9 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
              st->codec.codec_id == CODEC_ID_H264) && 
             pc && pc->pict_type != FF_B_TYPE)
             presentation_delayed = 1;
+        /* this may be redundant, but it shouldnt hurt */
+        if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
+            presentation_delayed = 1;
     }
 
     /* interpolate PTS and DTS if they are not present */
@@ -628,18 +602,22 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         /* DTS = decompression time stamp */
         /* PTS = presentation time stamp */
         if (pkt->dts == AV_NOPTS_VALUE) {
-            pkt->dts = st->cur_dts;
+            /* if we know the last pts, use it */
+            if(st->last_IP_pts != AV_NOPTS_VALUE)
+                st->cur_dts = pkt->dts = st->last_IP_pts;
+            else
+                pkt->dts = st->cur_dts;
         } else {
             st->cur_dts = pkt->dts;
         }
         /* this is tricky: the dts must be incremented by the duration
            of the frame we are displaying, i.e. the last I or P frame */
-        //FIXME / XXX this is wrong if duration is wrong
         if (st->last_IP_duration == 0)
             st->cur_dts += pkt->duration;
         else
             st->cur_dts += st->last_IP_duration;
         st->last_IP_duration  = pkt->duration;
+        st->last_IP_pts= pkt->pts;
         /* cannot compute PTS if not present (we can compute it only
            by knowing the futur */
     } else {
@@ -657,7 +635,6 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             st->cur_dts = pkt->pts;
             pkt->dts = pkt->pts;
         }
-        //FIXME / XXX this will drift away from the exact solution
         st->cur_dts += pkt->duration;
     }
     
@@ -678,6 +655,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         }
     }
 
+    /* convert the packet time stamp units */
+    if(pkt->pts != AV_NOPTS_VALUE)
+        pkt->pts = av_rescale(pkt->pts, AV_TIME_BASE * (int64_t)st->time_base.num, st->time_base.den);
+    if(pkt->dts != AV_NOPTS_VALUE)
+        pkt->dts = av_rescale(pkt->dts, AV_TIME_BASE * (int64_t)st->time_base.num, st->time_base.den);
+
+    /* duration field */
+    pkt->duration = av_rescale(pkt->duration, AV_TIME_BASE * (int64_t)st->time_base.num, st->time_base.den);
 }
 
 static void av_destruct_packet_nofree(AVPacket *pkt)
@@ -750,29 +735,6 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
             
             st = s->streams[s->cur_pkt.stream_index];
-
-            /* convert the packet time stamp units and handle wrapping */
-            s->cur_pkt.pts = convert_timestamp_units(st, 
-                                               &st->last_pkt_pts, &st->last_pkt_pts_frac,
-                                               &st->last_pkt_stream_pts,
-                                               s->cur_pkt.pts);
-            s->cur_pkt.dts = convert_timestamp_units(st, 
-                                               &st->last_pkt_dts,  &st->last_pkt_dts_frac,
-                                               &st->last_pkt_stream_dts,
-                                               s->cur_pkt.dts);
-#if 0
-            if (s->cur_pkt.stream_index == 0) {
-                if (s->cur_pkt.pts != AV_NOPTS_VALUE) 
-                    printf("PACKET pts=%0.3f\n", 
-                           (double)s->cur_pkt.pts / AV_TIME_BASE);
-                if (s->cur_pkt.dts != AV_NOPTS_VALUE) 
-                    printf("PACKET dts=%0.3f\n", 
-                           (double)s->cur_pkt.dts / AV_TIME_BASE);
-            }
-#endif
-
-            /* duration field */
-            s->cur_pkt.duration = av_rescale(s->cur_pkt.duration, AV_TIME_BASE * (int64_t)st->time_base.num, st->time_base.den);
 
             s->cur_st = st;
             s->cur_ptr = s->cur_pkt.data;
@@ -881,6 +843,7 @@ static void av_read_frame_flush(AVFormatContext *s)
             av_parser_close(st->parser);
             st->parser = NULL;
         }
+        st->last_IP_pts = AV_NOPTS_VALUE;
         st->cur_dts = 0; /* we set the current DTS to an unspecified origin */
     }
 }
@@ -1153,7 +1116,7 @@ av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%L
     for(i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
 
-        st->cur_dts = ts;
+        st->cur_dts = av_rescale(ts, st->time_base.den, AV_TIME_BASE*(int64_t)st->time_base.num);
     }
 
     return 0;
@@ -1189,7 +1152,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
     for(i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
 
-        st->cur_dts = timestamp;
+        st->cur_dts = av_rescale(timestamp, st->time_base.den, AV_TIME_BASE*(int64_t)st->time_base.num);
     }
 
     return 0;
@@ -1804,10 +1767,7 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
 
     /* default pts settings is MPEG like */
     av_set_pts_info(st, 33, 1, 90000);
-    st->last_pkt_pts = AV_NOPTS_VALUE;
-    st->last_pkt_dts = AV_NOPTS_VALUE;
-    st->last_pkt_stream_pts = AV_NOPTS_VALUE;
-    st->last_pkt_stream_dts = AV_NOPTS_VALUE;
+    st->last_IP_pts = AV_NOPTS_VALUE;
 
     s->streams[s->nb_streams++] = st;
     return st;

@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4613
+#define LIBAVFORMAT_BUILD       4614
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -228,20 +228,13 @@ typedef struct AVStream {
        seconds. */
     int64_t duration;
 
-    /* the following are used for pts/dts unit conversion */
-    int64_t last_pkt_stream_pts;
-    int64_t last_pkt_stream_dts;
-    int64_t last_pkt_pts;
-    int64_t last_pkt_dts;
-    int last_pkt_pts_frac;
-    int last_pkt_dts_frac;
-    
     /* av_read_frame() support */
     int need_parsing;
     struct AVCodecParserContext *parser;
 
     int64_t cur_dts;
     int last_IP_duration;
+    int64_t last_IP_pts;
     /* av_seek_frame() support */
     AVIndexEntry *index_entries; /* only used if the format does not
                                     support seeking natively */
