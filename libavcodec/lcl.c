@@ -41,6 +41,7 @@
 #include <stdlib.h>
 
 #include "common.h"
+#include "bitstream.h"
 #include "avcodec.h"
 
 #ifdef CONFIG_ZLIB

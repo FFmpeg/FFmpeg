@@ -27,6 +27,7 @@
 #define AVCODEC_MPEGVIDEO_H
 
 #include "dsputil.h"
+#include "bitstream.h"
 
 #define FRAME_SKIPED 100 ///< return value for header parsers if frame is not coded
 

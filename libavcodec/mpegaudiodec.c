@@ -24,6 +24,7 @@
 
 //#define DEBUG
 #include "avcodec.h"
+#include "bitstream.h"
 #include "mpegaudio.h"
 #include "dsputil.h"
 

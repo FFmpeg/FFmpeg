@@ -32,6 +32,7 @@
  */
 
 #include "avcodec.h"
+#include "bitstream.h"
 #include "dsputil.h"
 
 /* size of blocks */

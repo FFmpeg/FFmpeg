@@ -22,6 +22,7 @@
 #include <limits.h>
 #include "avcodec.h"
 #include "common.h"
+#include "bitstream.h"
 
 /**
  * G.726 11bit float.

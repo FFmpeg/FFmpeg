@@ -23,6 +23,7 @@
  */
  
 #include "avcodec.h"
+#include "bitstream.h"
 #include "mpegaudio.h"
 
 /* currently, cannot change these constants (need to modify

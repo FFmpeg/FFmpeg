@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "bitstream.h"
 #include "cabac.h"
 
 const uint8_t ff_h264_lps_range[64][4]= {

@@ -34,6 +34,7 @@
 #include <limits.h>
  
 #include "avcodec.h"
+#include "bitstream.h"
 #include "golomb.h"
 
 #undef NDEBUG

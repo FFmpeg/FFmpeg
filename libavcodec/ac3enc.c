@@ -24,7 +24,7 @@
 //#define DEBUG
 //#define DEBUG_BITALLOC
 #include "avcodec.h"
-
+#include "bitstream.h"
 #include "ac3.h"
 
 typedef struct AC3EncodeContext {

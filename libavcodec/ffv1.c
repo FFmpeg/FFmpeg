@@ -25,6 +25,7 @@
  */
 
 #include "common.h"
+#include "bitstream.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "rangecoder.h"
