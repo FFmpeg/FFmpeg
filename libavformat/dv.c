@@ -17,13 +17,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
-
-#define NTSC_FRAME_SIZE 120000
-#define PAL_FRAME_SIZE  144000
+#include "dvcore.h"
 
 typedef struct DVDemuxContext {
     int       is_audio;
-    uint8_t   buf[PAL_FRAME_SIZE];
+    uint8_t   buf[144000];    
     int       size;
 } DVDemuxContext;
 
@@ -39,7 +37,7 @@ static int dv_read_header(AVFormatContext *s,
         return AVERROR_NOMEM;
     vst->codec.codec_type = CODEC_TYPE_VIDEO;
     vst->codec.codec_id = CODEC_ID_DVVIDEO;
-
+    vst->codec.bit_rate = 25000000;
 
     ast = av_new_stream(s, 1);
     if (!ast)
@@ -60,18 +58,14 @@ static void __destruct_pkt(struct AVPacket *pkt)
 
 static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, dsf;
+    int ret;
     DVDemuxContext *c = s->priv_data;
     
     if (!c->is_audio) {
         ret = get_buffer(&s->pb, c->buf, 4);
         if (ret <= 0) 
             return -EIO;
-        dsf = c->buf[3] & 0x80;
-        if (!dsf)
-            c->size = NTSC_FRAME_SIZE;
-        else
-            c->size = PAL_FRAME_SIZE;
+	c->size = dv_frame_profile(&c->buf[0])->frame_size;
 	
 	ret = get_buffer(&s->pb, c->buf + 4, c->size - 4);
 	if (ret <= 0)
@@ -94,6 +88,50 @@ static int dv_read_close(AVFormatContext *s)
     return 0;
 }
 
+int dv_write_header(struct AVFormatContext *s)
+{
+    DVMuxContext *c = s->priv_data;
+    
+    if (s->nb_streams != 2 || dv_core_init(c, s->streams) != 0) {
+        fprintf(stderr, "Can't initialize DV format!\n"
+		    "Make sure that you supply exactly two streams:\n"
+		    "     video: 25fps or 29.97fps, audio: 2ch/48Khz/PCM\n");
+	return -1;
+    }
+    return 0;
+}
+
+int dv_write_packet(struct AVFormatContext *s, 
+                     int stream_index,
+                     unsigned char *buf, int size, int force_pts)
+{
+    DVMuxContext *c = s->priv_data;
+   
+    if (stream_index == c->vst)
+        dv_assemble_frame(c, buf, NULL, 0);
+    else
+        dv_assemble_frame(c, NULL, buf, size);
+   
+    if (c->has_audio && c->has_video) {
+        put_buffer(&s->pb, &c->frame_buf[0], c->sys->frame_size);
+        put_flush_packet(&s->pb);
+    }
+    
+    return 0;
+}
+
+/* 
+ * We might end up with some extra A/V data without matching counterpart.
+ * E.g. video data without enough audio to write the complete frame.
+ * Currently we simply drop the last frame. I don't know whether this 
+ * is the best strategy of all
+ */
+int dv_write_trailer(struct AVFormatContext *s)
+{
+    dv_core_delete((DVMuxContext *)s->priv_data);
+    return 0;
+}
+
 static AVInputFormat dv_iformat = {
     "dv",
     "DV video format",
@@ -105,34 +143,14 @@ static AVInputFormat dv_iformat = {
     .extensions = "dv",
 };
 
-
-int dv_write_header(struct AVFormatContext *s)
-{
-    return 0;
-}
-
-int dv_write_packet(struct AVFormatContext *s, 
-                     int stream_index,
-                     unsigned char *buf, int size, int force_pts)
-{
-    put_buffer(&s->pb, buf, size);
-    put_flush_packet(&s->pb);
-    return 0;
-}
-
-int dv_write_trailer(struct AVFormatContext *s)
-{
-    return 0;
-}
-
 AVOutputFormat dv_oformat = {
     "dv",
     "DV video format",
     NULL,
     "dv",
-    0,
+    sizeof(DVMuxContext),
+    CODEC_ID_PCM_S16LE,
     CODEC_ID_DVVIDEO,
-    CODEC_ID_DVAUDIO,
     dv_write_header,
     dv_write_packet,
     dv_write_trailer,
