@@ -1,7 +1,7 @@
 
 // Software scaling and colorspace conversion routines for MPlayer
 
-// Orginal C implementation by ?
+// Orginal C implementation by A'rpi/ESP-team <arpi@thot.banki.hu>
 // current version mostly by Michael Niedermayer (michaelni@gmx.at)
 
 #include <inttypes.h>
