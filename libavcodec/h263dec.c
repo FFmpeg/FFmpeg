@@ -516,6 +516,11 @@ retry:
         if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==0)
             s->divx_version= 400; //divx 4
     }
+    
+    if(s->xvid_build && s->divx_version){
+        s->divx_version=
+        s->divx_build= 0;
+    }
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
         s->workaround_bugs &= ~FF_BUG_NO_PADDING;
