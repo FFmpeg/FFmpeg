@@ -555,7 +555,7 @@ static int mpegps_read_packet(AVFormatContext *s,
         len -= 2;
         if (header_len > len)
             goto redo;
-        if ((flags & 0xc0) == 0x40) {
+        if ((flags & 0xc0) == 0x80) {
             pts = get_pts(&s->pb, -1);
             dts = pts;
             header_len -= 5;
@@ -590,10 +590,6 @@ static int mpegps_read_packet(AVFormatContext *s,
         if (st->id == startcode)
             goto found;
     }
-    /* no stream found: add a new stream */
-    st = av_new_stream(s, startcode);
-    if (!st) 
-        goto skip;
     if (startcode >= 0x1e0 && startcode <= 0x1ef) {
         type = CODEC_TYPE_VIDEO;
         codec_id = CODEC_ID_MPEG1VIDEO;
@@ -609,6 +605,10 @@ static int mpegps_read_packet(AVFormatContext *s,
         url_fskip(&s->pb, len);
         goto redo;
     }
+    /* no stream found: add a new stream */
+    st = av_new_stream(s, startcode);
+    if (!st) 
+        goto skip;
     st->codec.codec_type = type;
     st->codec.codec_id = codec_id;
  found:
