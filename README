@@ -1,5 +1,3 @@
-FFmpeg - (c) 2000,2001 Gerard Lantau.
-
 1) Introduction
 ---------------
 
@@ -61,13 +59,12 @@ ffmpeg is made of two programs:
 3) Licensing:
 ------------
 
-* See the file COPYING. ffmpeg and the associated library are licensed
-  under the GNU General Public License. I may change the license of
-  libavcodec and libav to LGPL if many people ask it (and if they
-  submit good patches!).
+* See the file COPYING. ffmpeg and the associated library EXCEPT
+  liba52 are licensed under the Lesser GNU General Public
+  License. liba52 is distributed under the GNU General Public License.
 
 * This code should be patent free since it is very simple. I took care
   to use the same video encoder/decoder core for all formats to show
-  that they really ARE THE SAME except for the encoding huffman codes.
+  that they really are mostly the same.
 
-Gerard Lantau (glantau@yahoo.fr).
+Fabrice Bellard.
