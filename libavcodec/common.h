@@ -639,7 +639,7 @@ static inline void skip_bits1(GetBitContext *s){
 void init_get_bits(GetBitContext *s,
                    UINT8 *buffer, int buffer_size);
 
-int check_marker(GetBitContext *s, char *msg);
+int check_marker(GetBitContext *s, const char *msg);
 void align_get_bits(GetBitContext *s);
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,

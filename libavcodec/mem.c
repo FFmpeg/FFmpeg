@@ -26,7 +26,7 @@
    linker will do it automatically */
 
 /* memory alloc */
-void *av_malloc(int size)
+void *av_malloc(unsigned int size)
 {
     void *ptr;
 #if defined (HAVE_MEMALIGN)

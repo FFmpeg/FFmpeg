@@ -773,7 +773,7 @@ typedef struct AVCodecContext {
 } AVCodecContext;
 
 typedef struct AVCodec {
-    char *name;
+    const char *name;
     int type;
     int id;
     int priv_data_size;
@@ -1021,8 +1021,8 @@ typedef enum {
 int avcodec(void* handle, avc_cmd_t cmd, void* pin, void* pout);
 
 /* memory */
-void *av_malloc(int size);
-void *av_mallocz(int size);
+void *av_malloc(unsigned int size);
+void *av_mallocz(unsigned int size);
 void av_free(void *ptr);
 void __av_freep(void **ptr);
 #define av_freep(p) __av_freep((void **)(p))

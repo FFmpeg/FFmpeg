@@ -133,7 +133,7 @@ void align_get_bits(GetBitContext *s)
     if(n) skip_bits(s, n);
 }
 
-int check_marker(GetBitContext *s, char *msg)
+int check_marker(GetBitContext *s, const char *msg)
 {
     int bit= get_bits1(s);
     if(!bit) printf("Marker bit missing %s\n", msg);
@@ -147,7 +147,7 @@ int check_marker(GetBitContext *s, char *msg)
 
 #define GET_DATA(v, table, i, wrap, size) \
 {\
-    UINT8 *ptr = (UINT8 *)table + i * wrap;\
+    const UINT8 *ptr = (UINT8 *)table + i * wrap;\
     switch(size) {\
     case 1:\
         v = *(UINT8 *)ptr;\

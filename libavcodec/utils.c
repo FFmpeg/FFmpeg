@@ -20,7 +20,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 
-void *av_mallocz(int size)
+void *av_mallocz(unsigned int size)
 {
     void *ptr;
     ptr = av_malloc(size);

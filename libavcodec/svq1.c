@@ -591,7 +591,7 @@ static vlc_code_t svq1_inter_mean_table_5[292] = {
       }
 
 #define SVQ1_CALC_CODEBOOK_ENTRIES(cbook)\
-      codebook = (uint32_t *) cbook[level];\
+      codebook = (const uint32_t *) cbook[level];\
       bit_cache = get_bits (bitbuf, 4*stages);\
       /* calculate codebook entries for this vector */\
       for (j=0; j < stages; j++) {\
@@ -605,11 +605,11 @@ static int svq1_decode_block_intra (bit_buffer_t *bitbuf, uint8_t *pixels, int p
   vlc_code_t *vlc;
   uint8_t    *list[63];
   uint32_t   *dst;
-  uint32_t   *codebook;
+  const uint32_t *codebook;
   int	      entries[6];
   int	      i, j, m, n;
   int	      mean, stages;
-  int	      x, y, width, height, level;
+  unsigned    x, y, width, height, level;
   uint32_t    n1, n2, n3, n4;
 
   /* initialize list for breadth first processing of vectors */
@@ -681,7 +681,7 @@ static int svq1_decode_block_non_intra (bit_buffer_t *bitbuf, uint8_t *pixels, i
   vlc_code_t *vlc;
   uint8_t    *list[63];
   uint32_t   *dst;
-  uint32_t   *codebook;
+  const uint32_t *codebook;
   int	      entries[6];
   int	      i, j, m, n;
   int	      mean, stages;

@@ -303,7 +303,8 @@ int MPV_common_init(MpegEncContext *s)
       s->uvlinesize = s->mb_width * 8  +     EDGE_WIDTH;
 
       for(i=0;i<3;i++) {
-        int w, h, shift, pict_start, size;
+	int w, h, shift, pict_start;
+	unsigned size;
 
         w = s->linesize;
         h = s->mb_height * 16 + 2 * EDGE_WIDTH;
