@@ -1167,10 +1167,11 @@ static int stream_component_open(VideoState *is, int stream_index)
     }
 
     codec = avcodec_find_decoder(enc->codec_id);
+    enc->debug_mv = debug_mv;
+    enc->debug = debug;
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
-    enc->debug = debug;
 #if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
     if(thread_count>1)
         avcodec_thread_init(enc, thread_count);
@@ -1204,7 +1205,6 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         packet_queue_init(&is->videoq);
         is->video_tid = SDL_CreateThread(video_thread, is);
-        enc->debug_mv = debug_mv;
         break;
     default:
         break;
