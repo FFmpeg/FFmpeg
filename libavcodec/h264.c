@@ -2632,15 +2632,13 @@ static int decode_init(AVCodecContext *avctx){
 
     decode_init_vlc(h);
     
-    if(avctx->codec_tag != 0x31637661 && avctx->codec_tag != 0x31435641) // avc1
-        h->is_avc = 0;
-    else {
-        if((avctx->extradata_size == 0) || (avctx->extradata == NULL)) {
-            av_log(avctx, AV_LOG_ERROR, "AVC codec requires avcC data\n");
-            return -1;
-        }
+    if(avctx->extradata_size > 0 && avctx->extradata &&
+       *(char *)avctx->extradata == 1){
+        av_log(avctx, AV_LOG_INFO, "assuming AVC1 format\n");
         h->is_avc = 1;
         h->got_avcC = 0;
+    } else {
+        h->is_avc = 0;
     }
 
     return 0;
