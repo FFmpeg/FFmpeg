@@ -1317,6 +1317,7 @@ static int decode_thread(void *arg)
             ret = -1;
             goto fail;
         }
+        ic->pb.eof_reached= 0; //FIXME hack, ffplay maybe shouldnt use url_feof() to test for the end
     }
 
     /* if seeking requested, we execute it */
