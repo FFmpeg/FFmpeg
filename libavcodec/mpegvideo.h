@@ -110,7 +110,7 @@ typedef struct ScanTable{
 } ScanTable;
 
 typedef struct Picture{
-    FF_COMMON_PICTURE    
+    FF_COMMON_FRAME
 
     int mb_var_sum;             /* sum of MB variance for current frame */
     int mc_mb_var_sum;          /* motion compensated MB variance for current frame */

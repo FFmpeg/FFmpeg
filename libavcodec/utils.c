@@ -120,7 +120,7 @@ typedef struct DefaultPicOpaque{
     uint8_t *data[4];
 }DefaultPicOpaque;
 
-int avcodec_default_get_buffer(AVCodecContext *s, AVVideoFrame *pic){
+int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
     const int width = s->width;
     const int height= s->height;
@@ -202,7 +202,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVVideoFrame *pic){
     return 0;
 }
 
-void avcodec_default_release_buffer(AVCodecContext *s, AVVideoFrame *pic){
+void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
     
     assert(pic->type==FF_BUFFER_TYPE_INTERNAL);
@@ -249,11 +249,11 @@ AVCodecContext *avcodec_alloc_context(void){
 }
 
 /**
- * allocates a AVPicture and set it to defaults.
+ * allocates a AVPFrame and set it to defaults.
  * this can be deallocated by simply calling free() 
  */
-AVVideoFrame *avcodec_alloc_picture(void){
-    AVVideoFrame *pic= av_mallocz(sizeof(AVVideoFrame));
+AVFrame *avcodec_alloc_frame(void){
+    AVFrame *pic= av_mallocz(sizeof(AVFrame));
     
     return pic;
 }
@@ -290,7 +290,7 @@ int avcodec_encode_audio(AVCodecContext *avctx, UINT8 *buf, int buf_size,
 }
 
 int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
-                         const AVVideoFrame *pict)
+                         const AVFrame *pict)
 {
     int ret;
 
@@ -305,7 +305,7 @@ int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size,
 /* decode a frame. return -1 if error, otherwise return the number of
    bytes used. If no frame could be decompressed, *got_picture_ptr is
    zero. Otherwise, it is non zero */
-int avcodec_decode_video(AVCodecContext *avctx, AVVideoFrame *picture, 
+int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture, 
                          int *got_picture_ptr,
                          UINT8 *buf, int buf_size)
 {
@@ -672,7 +672,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
         for(i=0; i<MAX_PICTURE_COUNT; i++){
            if(s->picture[i].data[0] && (   s->picture[i].type == FF_BUFFER_TYPE_INTERNAL
                                         || s->picture[i].type == FF_BUFFER_TYPE_USER))
-            avctx->release_buffer(avctx, (AVVideoFrame*)&s->picture[i]);
+            avctx->release_buffer(avctx, (AVFrame*)&s->picture[i]);
         }
         break;
     default:

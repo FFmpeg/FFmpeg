@@ -320,7 +320,7 @@ static int avi_write_packet(AVFormatContext *s, int stream_index,
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         tag[2] = 'd';
         tag[3] = 'c';
-        flags = enc->coded_picture->key_frame ? 0x10 : 0x00;
+        flags = enc->coded_frame->key_frame ? 0x10 : 0x00;
     } else {
         tag[2] = 'w';
         tag[3] = 'b';

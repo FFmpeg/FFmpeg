@@ -128,11 +128,17 @@ static int pcm_encode_init(AVCodecContext *avctx)
     default:
         break;
     }
+    
+    avctx->coded_frame= avcodec_alloc_frame();
+    avctx->coded_frame->key_frame= 1;
+    
     return 0;
 }
 
 static int pcm_encode_close(AVCodecContext *avctx)
 {
+    av_freep(&avctx->coded_frame);
+
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_ALAW:
         if (--linear_to_alaw_ref == 0)
@@ -237,7 +243,6 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     default:
         return -1;
     }
-    avctx->key_frame = 1;
     //avctx->frame_size = (dst - frame) / (sample_size * avctx->channels);
 
     return dst - frame;

@@ -164,7 +164,7 @@ void video_encode_example(const char *filename)
     AVCodecContext *c= NULL;
     int i, out_size, size, x, y, outbuf_size;
     FILE *f;
-    AVVideoFrame *picture;
+    AVFrame *picture;
     UINT8 *outbuf, *picture_buf;
 
     printf("Video encoding\n");
@@ -177,7 +177,7 @@ void video_encode_example(const char *filename)
     }
 
     c= avcodec_alloc_context();
-    picture= avcodec_alloc_picture();
+    picture= avcodec_alloc_frame();
     
     /* put sample parameters */
     c->bit_rate = 400000;
@@ -278,7 +278,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     AVCodecContext *c= NULL;
     int frame, size, got_picture, len;
     FILE *f;
-    AVVideoFrame *picture;
+    AVFrame *picture;
     UINT8 inbuf[INBUF_SIZE], *inbuf_ptr;
     char buf[1024];
 
@@ -292,7 +292,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     }
 
     c= avcodec_alloc_context();
-    picture= avcodec_alloc_picture();
+    picture= avcodec_alloc_frame();
 
     if(codec->capabilities&CODEC_CAP_TRUNCATED)
         c->flags|= CODEC_FLAG_TRUNCATED; /* we dont send complete frames */

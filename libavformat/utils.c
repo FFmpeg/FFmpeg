@@ -458,7 +458,7 @@ int av_find_stream_info(AVFormatContext *ic)
     AVCodec *codec;
     AVStream *st;
     AVPacket *pkt;
-    AVVideoFrame picture;
+    AVFrame picture;
     AVPacketList *pktl=NULL, **ppktl;
     short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
     UINT8 *ptr;

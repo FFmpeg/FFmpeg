@@ -57,7 +57,7 @@ typedef struct HYuvContext{
     uint8_t len[3][256];
     uint32_t bits[3][256];
     VLC vlc[3];
-    AVVideoFrame picture;
+    AVFrame picture;
     uint8_t __align8 bitstream_buffer[1024*1024*3]; //FIXME dynamic alloc or some other solution
     DSPContext dsp; 
 }HYuvContext;
@@ -332,7 +332,7 @@ static int decode_init(AVCodecContext *avctx)
     
     width= s->width= avctx->width;
     height= s->height= avctx->height;
-    avctx->coded_picture= &s->picture;
+    avctx->coded_frame= &s->picture;
 
 s->bgr32=1;
     assert(width && height);
@@ -460,7 +460,7 @@ static int encode_init(AVCodecContext *avctx)
     avctx->stats_out= av_mallocz(1024*10);
     s->version=2;
     
-    avctx->coded_picture= &s->picture;
+    avctx->coded_frame= &s->picture;
     s->picture.pict_type= FF_I_TYPE;
     s->picture.key_frame= 1;
     
@@ -670,9 +670,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     const int width2= s->width>>1;
     const int height= s->height;
     int fake_ystride, fake_ustride, fake_vstride;
-    AVVideoFrame * const p= &s->picture;
+    AVFrame * const p= &s->picture;
 
-    AVVideoFrame *picture = data;
+    AVFrame *picture = data;
 
     *data_size = 0;
 
@@ -893,7 +893,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     
     avctx->release_buffer(avctx, p);
 
-    *data_size = sizeof(AVVideoFrame);
+    *data_size = sizeof(AVFrame);
     
     return (get_bits_count(&s->gb)+7)>>3;
 }
@@ -920,14 +920,14 @@ static int decode_end(AVCodecContext *avctx)
 
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     HYuvContext *s = avctx->priv_data;
-    AVVideoFrame *pict = data;
+    AVFrame *pict = data;
     const int width= s->width;
     const int width2= s->width>>1;
     const int height= s->height;
     const int fake_ystride= s->interlaced ? pict->linesize[0]*2  : pict->linesize[0];
     const int fake_ustride= s->interlaced ? pict->linesize[1]*2  : pict->linesize[1];
     const int fake_vstride= s->interlaced ? pict->linesize[2]*2  : pict->linesize[2];
-    AVVideoFrame * const p= &s->picture;
+    AVFrame * const p= &s->picture;
     int i, size;
 
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);

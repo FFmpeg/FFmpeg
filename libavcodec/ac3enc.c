@@ -826,7 +826,6 @@ static int AC3_encode_init(AVCodecContext *avctx)
     };
 
     avctx->frame_size = AC3_FRAME_SIZE;
-    avctx->key_frame = 1; /* always key frame */
     
     /* number of channels */
     if (channels < 1 || channels > 6)
@@ -890,6 +889,9 @@ static int AC3_encode_init(AVCodecContext *avctx)
     }
 
     ac3_crc_init();
+    
+    avctx->coded_frame= avcodec_alloc_frame();
+    avctx->coded_frame->key_frame= 1;
 
     return 0;
 }
@@ -1447,6 +1449,11 @@ static int AC3_encode_frame(AVCodecContext *avctx,
     return output_frame_end(s);
 }
 
+static int AC3_encode_close(AVCodecContext *avctx)
+{
+    av_freep(&avctx->coded_frame);
+}
+
 #if 0
 /*************************************************************************/
 /* TEST */
@@ -1546,5 +1553,6 @@ AVCodec ac3_encoder = {
     sizeof(AC3EncodeContext),
     AC3_encode_init,
     AC3_encode_frame,
+    AC3_encode_close,
     NULL,
 };

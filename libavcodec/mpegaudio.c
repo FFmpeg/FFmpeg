@@ -70,7 +70,6 @@ int MPA_encode_init(AVCodecContext *avctx)
     s->freq = freq;
     s->bit_rate = bitrate * 1000;
     avctx->frame_size = MPA_FRAME_SIZE;
-    avctx->key_frame = 1; /* always key frame */
 
     /* encoding freq */
     s->lsf = 0;
@@ -168,6 +167,9 @@ int MPA_encode_init(AVCodecContext *avctx)
             v = v * 3;
         total_quant_bits[i] = 12 * v;
     }
+
+    avctx->coded_frame= avcodec_alloc_frame();
+    avctx->coded_frame->key_frame= 1;
 
     return 0;
 }
@@ -765,6 +767,10 @@ int MPA_encode_frame(AVCodecContext *avctx,
     return pbBufPtr(&s->pb) - s->pb.buf;
 }
 
+static int MPA_encode_close(AVCodecContext *avctx)
+{
+    av_freep(&avctx->coded_frame);
+}
 
 AVCodec mp2_encoder = {
     "mp2",
@@ -773,6 +779,7 @@ AVCodec mp2_encoder = {
     sizeof(MpegAudioContext),
     MPA_encode_init,
     MPA_encode_frame,
+    MPA_encode_close,
     NULL,
 };
 

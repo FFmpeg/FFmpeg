@@ -126,12 +126,17 @@ static int adpcm_encode_init(AVCodecContext *avctx)
         return -1;
         break;
     }
+
+    avctx->coded_frame= avcodec_alloc_frame();
+    avctx->coded_frame->key_frame= 1;
+
     return 0;
 }
 
 static int adpcm_encode_close(AVCodecContext *avctx)
 {
-    /* nothing to free */
+    av_freep(&avctx->coded_frame);
+
     return 0;
 }
 
@@ -253,7 +258,6 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
     default:
         return -1;
     }
-    avctx->key_frame = 1;
     return dst - frame;
 }
 

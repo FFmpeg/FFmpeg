@@ -1955,7 +1955,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                     /* we use the codec indication because it is
                        more accurate than the demux flags */
                     pkt->flags = 0;
-                    if (st->codec.coded_picture->key_frame) 
+                    if (st->codec.coded_frame->key_frame) 
                         pkt->flags |= PKT_FLAG_KEY;
                     return 0;
                 }
@@ -2211,7 +2211,7 @@ static int http_prepare_data(HTTPContext *c)
                             codec = &ctx->streams[pkt.stream_index]->codec;
                         }
                         
-                        codec->key_frame = ((pkt.flags & PKT_FLAG_KEY) != 0);
+                        codec->coded_frame->key_frame = ((pkt.flags & PKT_FLAG_KEY) != 0);
                         
 #ifdef PJSG
                         if (codec->codec_type == CODEC_TYPE_AUDIO) {

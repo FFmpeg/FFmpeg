@@ -349,7 +349,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
 {
     MpegEncContext *s = avctx->priv_data;
     int ret,i;
-    AVVideoFrame *pict = data; 
+    AVFrame *pict = data; 
     float new_aspect;
     
 #ifdef PRINT_FRAME_TIME
@@ -676,9 +676,9 @@ retry:
 }
 #endif
     if(s->pict_type==B_TYPE || s->low_delay){
-        *pict= *(AVVideoFrame*)&s->current_picture;
+        *pict= *(AVFrame*)&s->current_picture;
     } else {
-        *pict= *(AVVideoFrame*)&s->last_picture;
+        *pict= *(AVFrame*)&s->last_picture;
     }
 
     /* Return the Picture timestamp as the frame number */
@@ -687,7 +687,7 @@ retry:
 
     /* dont output the last pic after seeking */
     if(s->last_picture.data[0] || s->low_delay)
-        *data_size = sizeof(AVVideoFrame);
+        *data_size = sizeof(AVFrame);
 #ifdef PRINT_FRAME_TIME
 printf("%Ld\n", rdtsc()-time);
 #endif

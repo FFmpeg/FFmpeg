@@ -629,9 +629,9 @@ static void do_video_out(AVFormatContext *s,
     /* XXX: pb because no interleaving */
     for(i=0;i<nb_frames;i++) {
         if (enc->codec_id != CODEC_ID_RAWVIDEO) {
-            AVVideoFrame big_picture;
+            AVFrame big_picture;
             
-            memset(&big_picture, 0, sizeof(AVVideoFrame));
+            memset(&big_picture, 0, sizeof(AVFrame));
             *(AVPicture*)&big_picture= *final_picture;
                         
             /* handles sameq here. This is not correct because it may
@@ -709,9 +709,9 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
     total_size += frame_size;
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         frame_number = ost->frame_number;
-        fprintf(fvstats, "frame= %5d q= %2.1f ", frame_number, enc->coded_picture->quality);
+        fprintf(fvstats, "frame= %5d q= %2.1f ", frame_number, enc->coded_frame->quality);
         if (enc->flags&CODEC_FLAG_PSNR)
-            fprintf(fvstats, "PSNR= %6.2f ", psnr(enc->coded_picture->error[0]/(enc->width*enc->height*255.0*255.0)));
+            fprintf(fvstats, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0]/(enc->width*enc->height*255.0*255.0)));
         
         fprintf(fvstats,"f_size= %6d ", frame_size);
         /* compute pts value */
@@ -723,7 +723,7 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
         avg_bitrate = (double)(total_size * 8) / ti1 / 1000.0;
         fprintf(fvstats, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
             (double)total_size / 1024, ti1, bitrate, avg_bitrate);
-        fprintf(fvstats,"type= %s\n", enc->coded_picture->key_frame == 1 ? "I" : "P");        
+        fprintf(fvstats,"type= %s\n", enc->coded_frame->key_frame == 1 ? "I" : "P");        
     }
 }
 
@@ -767,14 +767,14 @@ void print_report(AVFormatContext **output_files,
         enc = &ost->st->codec;
         if (vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             sprintf(buf + strlen(buf), "q=%2.1f ",
-                    enc->coded_picture->quality);
+                    enc->coded_frame->quality);
         }
         if (!vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             frame_number = ost->frame_number;
             sprintf(buf + strlen(buf), "frame=%5d q=%2.1f ",
-                    frame_number, enc->coded_picture ? enc->coded_picture->quality : 0);
+                    frame_number, enc->coded_frame ? enc->coded_frame->quality : 0);
             if (enc->flags&CODEC_FLAG_PSNR)
-                sprintf(buf + strlen(buf), "PSNR= %6.2f ", psnr(enc->coded_picture->error[0]/(enc->width*enc->height*255.0*255.0)));
+                sprintf(buf + strlen(buf), "PSNR= %6.2f ", psnr(enc->coded_frame->error[0]/(enc->width*enc->height*255.0*255.0)));
             vid = 1;
         }
         /* compute min output value */
@@ -1287,7 +1287,7 @@ static int av_encode(AVFormatContext **output_files,
                                      ist->st->codec.height);
                         ret = len;
                     } else {
-                        AVVideoFrame big_picture;
+                        AVFrame big_picture;
 
                         data_size = (ist->st->codec.width * ist->st->codec.height * 3) / 2;
                         ret = avcodec_decode_video(&ist->st->codec, 

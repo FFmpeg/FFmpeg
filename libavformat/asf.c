@@ -556,7 +556,7 @@ static void put_frame_header(AVFormatContext *s, ASFStream *stream, int timestam
     int val;
 
     val = stream->num;
-    if (s->streams[val - 1]->codec.coded_picture->key_frame /* && frag_offset == 0 */)
+    if (s->streams[val - 1]->codec.coded_frame->key_frame /* && frag_offset == 0 */)
         val |= 0x80;
     put_byte(pb, val);
     put_byte(pb, stream->seq);

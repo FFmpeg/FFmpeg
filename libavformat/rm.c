@@ -333,7 +333,7 @@ static int rm_write_audio(AVFormatContext *s, UINT8 *buf, int size)
     /* XXX: suppress this malloc */
     buf1= (UINT8*) av_malloc( size * sizeof(UINT8) );
     
-    write_packet_header(s, stream, size, stream->enc->key_frame);
+    write_packet_header(s, stream, size, stream->enc->coded_frame->key_frame);
     
     /* for AC3, the words seems to be reversed */
     for(i=0;i<size;i+=2) {
@@ -352,7 +352,7 @@ static int rm_write_video(AVFormatContext *s, UINT8 *buf, int size)
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     StreamInfo *stream = rm->video_stream;
-    int key_frame = stream->enc->coded_picture->key_frame;
+    int key_frame = stream->enc->coded_frame->key_frame;
 
     /* XXX: this is incorrect: should be a parameter */
 

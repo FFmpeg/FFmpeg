@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4644
-#define LIBAVCODEC_BUILD_STR   "4644"
+#define LIBAVCODEC_BUILD       4645
+#define LIBAVCODEC_BUILD_STR   "4645"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -159,7 +159,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 
 #define FRAME_RATE_BASE 10000
 
-#define FF_COMMON_PICTURE \
+#define FF_COMMON_FRAME \
     uint8_t *data[4];\
     int linesize[4];\
     /**\
@@ -279,9 +279,9 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define FF_B_TYPE 3 // Bi-dir predicted
 #define FF_S_TYPE 4 // S(GMC)-VOP MPEG4
 
-typedef struct AVVideoFrame {
-    FF_COMMON_PICTURE
-} AVVideoFrame;
+typedef struct AVFrame {
+    FF_COMMON_FRAME
+} AVFrame;
 
 typedef struct AVCodecContext {
     /**
@@ -395,13 +395,6 @@ typedef struct AVCodecContext {
     int real_pict_num;  /* returns the real picture number of
                            previous encoded frame */
     
-    /**
-     * 1 -> keyframe, 0-> not (this if for audio only, for video, AVVideoFrame.key_frame should be used)
-     * encoding: set by lavc (for the outputed bitstream, not the input frame)
-     * decoding: set by lavc (for the decoded  bitstream, not the displayed frame)
-     */
-    int key_frame;
-
     /**
      * number of frames the decoded output will be delayed relative to 
      * the encoded input
@@ -574,7 +567,7 @@ typedef struct AVCodecContext {
      * encoding: unused
      * decoding: set by lavc, user can override
      */
-    int (*get_buffer)(struct AVCodecContext *c, AVVideoFrame *pic);
+    int (*get_buffer)(struct AVCodecContext *c, AVFrame *pic);
     
     /**
      * called to release buffers which where allocated with get_buffer.
@@ -583,7 +576,7 @@ typedef struct AVCodecContext {
      * encoding: unused
      * decoding: set by lavc, user can override
      */
-    void (*release_buffer)(struct AVCodecContext *c, AVVideoFrame *pic);
+    void (*release_buffer)(struct AVCodecContext *c, AVFrame *pic);
 
     /**
      * is 1 if the decoded stream contains b frames, 0 otherwise
@@ -820,7 +813,7 @@ typedef struct AVCodecContext {
      * encoding: set by lavc
      * decoding: set by lavc
      */
-    AVVideoFrame *coded_picture;
+    AVFrame *coded_frame;
 
     /**
      * debug 
@@ -1001,16 +994,16 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
 void avcodec_get_context_defaults(AVCodecContext *s);
 AVCodecContext *avcodec_alloc_context(void);
-AVVideoFrame *avcodec_alloc_picture(void);
+AVFrame *avcodec_alloc_frame(void);
 
-int avcodec_default_get_buffer(AVCodecContext *s, AVVideoFrame *pic);
-void avcodec_default_release_buffer(AVCodecContext *s, AVVideoFrame *pic);
+int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
+void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
 
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 int avcodec_decode_audio(AVCodecContext *avctx, INT16 *samples, 
                          int *frame_size_ptr,
                          UINT8 *buf, int buf_size);
-int avcodec_decode_video(AVCodecContext *avctx, AVVideoFrame *picture, 
+int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture, 
                          int *got_picture_ptr,
                          UINT8 *buf, int buf_size);
 int avcodec_parse_frame(AVCodecContext *avctx, UINT8 **pdata, 
@@ -1019,7 +1012,7 @@ int avcodec_parse_frame(AVCodecContext *avctx, UINT8 **pdata,
 int avcodec_encode_audio(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
                          const short *samples);
 int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
-                         const AVVideoFrame *pict);
+                         const AVFrame *pict);
 
 int avcodec_close(AVCodecContext *avctx);
 

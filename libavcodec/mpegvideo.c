@@ -282,7 +282,7 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         
         assert(!pic->data[0]);
         
-        r= s->avctx->get_buffer(s->avctx, (AVVideoFrame*)pic);
+        r= s->avctx->get_buffer(s->avctx, (AVFrame*)pic);
         
         if(r<0 || !pic->age || !pic->type || !pic->data[0]){
             fprintf(stderr, "get_buffer() failed (%d %d %d %X)\n", r, pic->age, pic->type, (int)pic->data[0]);
@@ -327,7 +327,7 @@ static void free_picture(MpegEncContext *s, Picture *pic){
     int i;
 
     if(pic->data[0] && pic->type!=FF_BUFFER_TYPE_SHARED){
-        s->avctx->release_buffer(s->avctx, (AVVideoFrame*)pic);
+        s->avctx->release_buffer(s->avctx, (AVFrame*)pic);
     }
 
     av_freep(&pic->mb_var);
@@ -383,7 +383,7 @@ int MPV_common_init(MpegEncContext *s)
 
     CHECKED_ALLOCZ(s->edge_emu_buffer, (s->width+64)*2*17*2); //(width + edge + align)*interlaced*MBsize*tolerance
 
-    s->avctx->coded_picture= (AVVideoFrame*)&s->current_picture;
+    s->avctx->coded_frame= (AVFrame*)&s->current_picture;
 
     if (s->encoding) {
         int mv_table_size= (s->mb_width+2)*(s->mb_height+2);
@@ -843,7 +843,7 @@ static int find_unused_picture(MpegEncContext *s, int shared){
 int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 {
     int i;
-    AVVideoFrame *pic;
+    AVFrame *pic;
 
     s->mb_skiped = 0;
     
@@ -853,7 +853,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 //printf("%8X %d %d %X %X\n", s->picture[i].data[0], s->picture[i].type, i, s->next_picture.data[0], s->last_picture.data[0]);
             if(s->picture[i].data[0] == s->last_picture.data[0]){
 //                s->picture[i].reference=0;
-                avctx->release_buffer(avctx, (AVVideoFrame*)&s->picture[i]);
+                avctx->release_buffer(avctx, (AVFrame*)&s->picture[i]);
                 break;
             }    
         }
@@ -865,7 +865,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             for(i=0; i<MAX_PICTURE_COUNT; i++){
                 if(s->picture[i].data[0] && s->picture[i].data[0] != s->next_picture.data[0] && s->picture[i].reference){
                     fprintf(stderr, "releasing zombie picture\n");
-                    avctx->release_buffer(avctx, (AVVideoFrame*)&s->picture[i]);                
+                    avctx->release_buffer(avctx, (AVFrame*)&s->picture[i]);                
                 }
             }
         }
@@ -874,7 +874,7 @@ alloc:
     if(!s->encoding){
         i= find_unused_picture(s, 0);
     
-        pic= (AVVideoFrame*)&s->picture[i];
+        pic= (AVFrame*)&s->picture[i];
         pic->reference= s->pict_type != B_TYPE;
         pic->coded_picture_number= s->current_picture.coded_picture_number+1;
         
@@ -946,7 +946,7 @@ void MPV_frame_end(MpegEncContext *s)
     /* release non refernce frames */
     for(i=0; i<MAX_PICTURE_COUNT; i++){
         if(s->picture[i].data[0] && !s->picture[i].reference /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/)
-            s->avctx->release_buffer(s->avctx, (AVVideoFrame*)&s->picture[i]);
+            s->avctx->release_buffer(s->avctx, (AVFrame*)&s->picture[i]);
     }
 }
 
@@ -984,8 +984,8 @@ static int get_intra_count(MpegEncContext *s, uint8_t *src, uint8_t *ref, int st
 }
 
 
-static int load_input_picture(MpegEncContext *s, AVVideoFrame *pic_arg){
-    AVVideoFrame *pic;
+static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
+    AVFrame *pic;
     int i;
     const int encoding_delay= s->max_b_frames;
     int direct=1;
@@ -1000,7 +1000,7 @@ static int load_input_picture(MpegEncContext *s, AVVideoFrame *pic_arg){
     if(direct){
         i= find_unused_picture(s, 1);
 
-        pic= (AVVideoFrame*)&s->picture[i];
+        pic= (AVFrame*)&s->picture[i];
         pic->reference= 1;
     
         for(i=0; i<4; i++){
@@ -1011,7 +1011,7 @@ static int load_input_picture(MpegEncContext *s, AVVideoFrame *pic_arg){
     }else{
         i= find_unused_picture(s, 0);
 
-        pic= (AVVideoFrame*)&s->picture[i];
+        pic= (AVFrame*)&s->picture[i];
         pic->reference= 1;
 
         alloc_picture(s, (Picture*)pic, 0);
@@ -1194,7 +1194,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
                        unsigned char *buf, int buf_size, void *data)
 {
     MpegEncContext *s = avctx->priv_data;
-    AVVideoFrame *pic_arg = data;
+    AVFrame *pic_arg = data;
     int i;
 
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);

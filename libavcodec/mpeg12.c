@@ -1595,7 +1595,7 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
  *         DECODE_SLICE_EOP if the end of the picture is reached
  */
 static int mpeg_decode_slice(AVCodecContext *avctx, 
-                              AVVideoFrame *pict,
+                              AVFrame *pict,
                               int start_code,
                               UINT8 *buf, int buf_size)
 {
@@ -1703,7 +1703,7 @@ eos: //end of slice
         MPV_frame_end(s);
 
         if (s->pict_type == B_TYPE || s->low_delay) {
-            *pict= *(AVVideoFrame*)&s->current_picture;
+            *pict= *(AVFrame*)&s->current_picture;
         } else {
             s->picture_number++;
             /* latency of 1 frame for I and P frames */
@@ -1711,7 +1711,7 @@ eos: //end of slice
             if (s->picture_number == 1) {
                 return DECODE_SLICE_OK;
             } else {
-                *pict= *(AVVideoFrame*)&s->last_picture;
+                *pict= *(AVFrame*)&s->last_picture;
             }
         }
         return DECODE_SLICE_EOP;
@@ -1839,7 +1839,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     Mpeg1Context *s = avctx->priv_data;
     UINT8 *buf_end, *buf_ptr, *buf_start;
     int len, start_code_found, ret, code, start_code, input_size;
-    AVVideoFrame *picture = data;
+    AVFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
             
     dprintf("fill_buffer\n");
@@ -1849,9 +1849,9 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     /* special case for last picture */
     if (buf_size == 0) {
         if (s2->picture_number > 0) {
-            *picture= *(AVVideoFrame*)&s2->next_picture;
+            *picture= *(AVFrame*)&s2->next_picture;
 
-            *data_size = sizeof(AVVideoFrame);
+            *data_size = sizeof(AVFrame);
         }
         return 0;
     }

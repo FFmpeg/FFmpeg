@@ -472,7 +472,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
 {
     MpegEncContext *s = avctx->priv_data;
     int i;
-    AVVideoFrame *pict = data; 
+    AVFrame *pict = data; 
 
 #ifdef DEBUG
     printf("*****frame %d size=%d\n", avctx->frame_number, buf_size);
@@ -505,9 +505,9 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     if(s->mb_y>=s->mb_height){
         MPV_frame_end(s);
         
-        *pict= *(AVVideoFrame*)&s->current_picture;
+        *pict= *(AVFrame*)&s->current_picture;
     
-        *data_size = sizeof(AVVideoFrame);
+        *data_size = sizeof(AVFrame);
     }else{
         *data_size = 0;
     }

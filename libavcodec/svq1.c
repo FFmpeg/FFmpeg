@@ -1063,7 +1063,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   MpegEncContext *s=avctx->priv_data;
   uint8_t      *current, *previous;
   int		result, i, x, y, width, height;
-  AVVideoFrame *pict = data; 
+  AVFrame *pict = data; 
 
   /* initialize bit buffer */
   init_get_bits(&s->gb,buf,buf_size);
@@ -1161,12 +1161,12 @@ static int svq1_decode_frame(AVCodecContext *avctx,
     }
   }
   
-  *pict = *(AVVideoFrame*)&s->current_picture;
+  *pict = *(AVFrame*)&s->current_picture;
 
 
   MPV_frame_end(s);
   
-  *data_size=sizeof(AVVideoFrame);
+  *data_size=sizeof(AVFrame);
   return buf_size;
 }
 
