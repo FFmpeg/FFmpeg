@@ -19,7 +19,7 @@
 void audio_encode_example(const char *filename)
 {
     AVCodec *codec;
-    AVCodecContext codec_context, *c = &codec_context;
+    AVCodecContext *c= NULL;
     int frame_size, i, j, out_size, outbuf_size;
     FILE *f;
     short *samples;
@@ -35,9 +35,8 @@ void audio_encode_example(const char *filename)
         exit(1);
     }
 
-    /* put default values */
-    memset(c, 0, sizeof(*c));
-
+    c= avcodec_alloc_context();
+    
     /* put sample parameters */
     c->bit_rate = 64000;
     c->sample_rate = 44100;
@@ -79,6 +78,7 @@ void audio_encode_example(const char *filename)
     free(samples);
 
     avcodec_close(c);
+    free(c);
 }
 
 /*
@@ -87,7 +87,7 @@ void audio_encode_example(const char *filename)
 void audio_decode_example(const char *outfilename, const char *filename)
 {
     AVCodec *codec;
-    AVCodecContext codec_context, *c = &codec_context;
+    AVCodecContext *c= NULL;
     int out_size, size, len;
     FILE *f, *outfile;
     UINT8 *outbuf;
@@ -102,8 +102,7 @@ void audio_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-    /* put default values */
-    memset(c, 0, sizeof(*c));
+    c= avcodec_alloc_context();
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
@@ -120,7 +119,7 @@ void audio_decode_example(const char *outfilename, const char *filename)
     }
     outfile = fopen(outfilename, "w");
     if (!outfile) {
-        fprintf(stderr, "could not open %s\n", outfilename);
+        free(c);
         exit(1);
     }
         
@@ -153,6 +152,7 @@ void audio_decode_example(const char *outfilename, const char *filename)
     free(outbuf);
 
     avcodec_close(c);
+    free(c);
 }
 
 /*
@@ -161,7 +161,7 @@ void audio_decode_example(const char *outfilename, const char *filename)
 void video_encode_example(const char *filename)
 {
     AVCodec *codec;
-    AVCodecContext codec_context, *c = &codec_context;
+    AVCodecContext *c= NULL;
     int i, out_size, size, x, y, outbuf_size;
     FILE *f;
     AVPicture picture;
@@ -176,9 +176,8 @@ void video_encode_example(const char *filename)
         exit(1);
     }
 
-    /* put default values */
-    memset(c, 0, sizeof(*c));
-
+    c= avcodec_alloc_context();
+    
     /* put sample parameters */
     c->bit_rate = 400000;
     /* resolution must be a multiple of two */
@@ -251,6 +250,7 @@ void video_encode_example(const char *filename)
     free(outbuf);
 
     avcodec_close(c);
+    free(c);
     printf("\n");
 }
 
@@ -273,7 +273,7 @@ void pgm_save(unsigned char *buf,int wrap, int xsize,int ysize,char *filename)
 void video_decode_example(const char *outfilename, const char *filename)
 {
     AVCodec *codec;
-    AVCodecContext codec_context, *c = &codec_context;
+    AVCodecContext *c= NULL;
     int frame, size, got_picture, len;
     FILE *f;
     AVPicture picture;
@@ -289,8 +289,7 @@ void video_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-    /* put default values */
-    memset(c, 0, sizeof(*c));
+    c= avcodec_alloc_context();
 
     /* for some codecs, such as msmpeg4 and mpeg4, width and height
        MUST be initialized there because these info are not available
@@ -375,6 +374,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     fclose(f);
 
     avcodec_close(c);
+    free(c);
     printf("\n");
 }
 
