@@ -423,6 +423,7 @@ void dsputil_init_mmx(void)
         pix_abs8x8_x2 = pix_abs8x8_x2_mmx;
         pix_abs8x8_y2 = pix_abs8x8_y2_mmx;
         pix_abs8x8_xy2= pix_abs8x8_xy2_mmx;
+
         av_fdct = fdct_mmx;
 
         put_pixels_tab[0] = put_pixels_mmx;
@@ -535,6 +536,13 @@ void dsputil_set_bit_exact_mmx(void)
             put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_mmx;
             put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_mmx;
             avg_pixels_tab[3] = avg_pixels_xy2_mmx;
+
+            pix_abs16x16_x2  = pix_abs16x16_x2_mmx;
+            pix_abs16x16_y2  = pix_abs16x16_y2_mmx;
+            pix_abs16x16_xy2 = pix_abs16x16_xy2_mmx;
+            pix_abs8x8_x2 = pix_abs8x8_x2_mmx;
+            pix_abs8x8_y2 = pix_abs8x8_y2_mmx;
+            pix_abs8x8_xy2= pix_abs8x8_xy2_mmx;
         } else if (mm_flags & MM_3DNOW) {
             put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_mmx;
             put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_mmx;
