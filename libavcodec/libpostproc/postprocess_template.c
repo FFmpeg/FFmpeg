@@ -50,7 +50,7 @@
 #ifdef HAVE_MMX2
 #define REAL_PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
 #elif defined (HAVE_3DNOW)
-#define REAL_RPAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
+#define REAL_PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
 #define PAVGB(a,b)  REAL_PAVGB(a,b)
 
