@@ -738,6 +738,9 @@ static inline int check_intra_pred_mode(H264Context *h, int mode){
     static const int8_t top [7]= {LEFT_DC_PRED8x8, 1,-1,-1};
     static const int8_t left[7]= { TOP_DC_PRED8x8,-1, 2,-1,DC_128_PRED8x8};
     
+    if(mode < 0 || mode > 6)
+        return -1;
+    
     if(!(h->top_samples_available&0x8000)){
         mode= top[ mode ];
         if(mode<0){
@@ -5136,13 +5139,13 @@ static int decode_slice(H264Context *h){
             int ret = decode_mb_cabac(h);
             int eos = get_cabac_terminate( &h->cabac ); /* End of Slice flag */
 
-            hl_decode_mb(h);
+            if(ret>=0) hl_decode_mb(h);
 
             /* XXX: useless as decode_mb_cabac it doesn't support that ... */
             if( ret >= 0 && h->sps.mb_aff ) { //FIXME optimal? or let mb_decode decode 16x32 ?
                 s->mb_y++;
 
-                ret = decode_mb_cabac(h);
+                if(ret>=0) ret = decode_mb_cabac(h);
                 eos = get_cabac_terminate( &h->cabac );
 
                 hl_decode_mb(h);
@@ -5180,13 +5183,13 @@ static int decode_slice(H264Context *h){
         for(;;){
             int ret = decode_mb_cavlc(h);
 
-            hl_decode_mb(h);
+            if(ret>=0) hl_decode_mb(h);
 
             if(ret>=0 && h->sps.mb_aff){ //FIXME optimal? or let mb_decode decode 16x32 ?
                 s->mb_y++;
                 ret = decode_mb_cavlc(h);
 
-                hl_decode_mb(h);
+                if(ret>=0) hl_decode_mb(h);
                 s->mb_y--;
             }
 
