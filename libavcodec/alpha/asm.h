@@ -42,14 +42,14 @@
 #define AMASK_CIX (1 << 2)
 #define AMASK_MVI (1 << 8)
 
-inline static uint64_t BYTE_VEC(uint64_t x)
+static inline uint64_t BYTE_VEC(uint64_t x)
 {
     x |= x <<  8;
     x |= x << 16;
     x |= x << 32;
     return x;
 }
-inline static uint64_t WORD_VEC(uint64_t x)
+static inline uint64_t WORD_VEC(uint64_t x)
 {
     x |= x << 16;
     x |= x << 32;
