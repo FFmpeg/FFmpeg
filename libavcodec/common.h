@@ -165,7 +165,7 @@ inline void dprintf(const char* fmt,...) {}
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 
-#ifdef ARCH_X86
+#if defined ARCH_X86 && (__GNUC__ != 3 || __GNUC_MINOR__ > 1)
 // inverse for shift optimization (gcc should do that ...)
 #define INV32(a) (-a)
 #else
