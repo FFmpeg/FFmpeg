@@ -138,10 +138,14 @@ void register_all(void)
     register_avformat(&rm_format);
     register_avformat(&asf_format);
     register_avformat(&avi_format);
+    register_avformat(&mov_format);
+    register_avformat(&mp4_format);
     register_avformat(&mpjpeg_format);
     register_avformat(&jpeg_format);
     register_avformat(&single_jpeg_format);
     register_avformat(&swf_format);
+    register_avformat(&gif_format);
+    register_avformat(&au_format);
     register_avformat(&wav_format);
     register_avformat(&pcm_s16le_format);
     register_avformat(&pcm_s16be_format);

@@ -113,6 +113,10 @@ extern AVFormat asf_format;
 /* avienc.c */
 extern AVFormat avi_format;
 
+/* mov.c */
+extern AVFormat mov_format;
+extern AVFormat mp4_format;
+
 /* jpegenc.c */
 extern AVFormat mpjpeg_format;
 extern AVFormat jpeg_format;
@@ -120,6 +124,11 @@ extern AVFormat single_jpeg_format;
 
 /* swfenc.c */
 extern AVFormat swf_format;
+
+/* gif.c */
+extern AVFormat gif_format;
+/* au.c */
+extern AVFormat au_format;
 
 /* wav.c */
 extern AVFormat wav_format;
