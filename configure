@@ -549,6 +549,19 @@ if $cc -o $TMPE $TMPC -lImlib2 2> /dev/null  ; then
 imlib2=yes
 fi
 
+cat > $TMPC << EOF
+#include <ft2build.h>
+int main( void ) { return (int) FT_Init_FreeType(0); }
+EOF
+
+freetype2=no
+which freetype-config > /dev/null
+if test $? -eq 0; then
+    if $cc -o $TMPE $TMPC `freetype-config --cflags` `freetype-config --libs`  2> /dev/null ; then
+    freetype2=yes
+    fi
+fi
+
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
 cat << EOF
 
@@ -623,6 +636,7 @@ echo "risky / patent encumbered codecs $risky"
 
 if test "$vhook" = "yes" ; then
 echo "Imlib2 support   $imlib2"
+echo "freetype support $freetype2"
 fi
 
 echo "Creating config.mak and config.h"
@@ -701,6 +715,9 @@ else
 fi
 if test "$imlib2" = "yes" ; then
   echo "HAVE_IMLIB2=yes" >> config.mak
+fi
+if test "$freetype2" = "yes" ; then
+  echo "HAVE_FREETYPE2=yes" >> config.mak
 fi
 if test "$have_lrintf" = "yes" ; then
   echo "#define HAVE_LRINTF 1" >> $TMPH
