@@ -27,32 +27,32 @@
 static void DEF(put_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
-        "xorl %%eax, %%eax		\n\t"
-        ".balign 16			\n\t"
-        "1:				\n\t"
-	"movq (%1, %%eax), %%mm0	\n\t"
-	"movq 1(%1, %%eax), %%mm1	\n\t"
-	"movq (%2, %%eax), %%mm2	\n\t"
-	"movq 1(%2, %%eax), %%mm3	\n\t"
+        "lea (%3, %3), %%eax		\n\t"
+	"1:				\n\t"
+	"movq (%1), %%mm0		\n\t"
+	"movq (%1, %3), %%mm2		\n\t"
+	"movq 1(%1), %%mm1		\n\t"
+	"movq 1(%1, %3), %%mm3		\n\t"
+        "addl %%eax, %1			\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm3, %%mm2		\n\t"
-	"movq %%mm0, (%3, %%eax)	\n\t"
-	"movq %%mm2, (%4, %%eax)	\n\t"
-        "addl %5, %%eax			\n\t"
-	"movq (%1, %%eax), %%mm0	\n\t"
-	"movq 1(%1, %%eax), %%mm1	\n\t"
-	"movq (%2, %%eax), %%mm2	\n\t"
-	"movq 1(%2, %%eax), %%mm3	\n\t"
+	"movq %%mm0, (%2)		\n\t"
+	"movq %%mm2, (%2, %3)		\n\t"
+	"movq (%1), %%mm0		\n\t"
+	"movq 1(%1), %%mm1		\n\t"
+	"movq (%1, %3), %%mm2		\n\t"
+	"movq 1(%1, %3), %%mm3		\n\t"
+        "addl %%eax, %2			\n\t"
+	"addl %%eax, %1			\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm3, %%mm2		\n\t"
-	"movq %%mm0, (%3, %%eax)	\n\t"
-	"movq %%mm2, (%4, %%eax)	\n\t"
-        "addl %5, %%eax			\n\t"
+        "movq %%mm0, (%2)		\n\t"
+	"movq %%mm2, (%2, %3)		\n\t"
+        "addl %%eax, %2			\n\t"
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
-	:"+g"(h)
-        :"D"(pixels), "S"(pixels+line_size), "r" (block), "r" (block+line_size),
-        "g"(line_size<<1)
+        :"+g"(h), "+S"(pixels), "+D"(block)
+	:"c" (line_size)
 	:"%eax", "memory");
 }
  
@@ -60,102 +60,68 @@ static void DEF(put_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size,
 static void DEF(put_no_rnd_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
-        "xorl %%eax, %%eax		\n\t"
+        "lea (%3, %3), %%eax		\n\t"
 	MOVQ_BONE(%%mm7)
-        ".balign 16			\n\t"
         "1:				\n\t"
-	"movq (%1, %%eax), %%mm0	\n\t"
-	"movq 1(%1, %%eax), %%mm1	\n\t"
-	"movq (%2, %%eax), %%mm2	\n\t"
-	"movq 1(%2, %%eax), %%mm3	\n\t"
+	"movq (%1), %%mm0		\n\t"
+	"movq (%1, %3), %%mm2		\n\t"
+	"movq 1(%1), %%mm1		\n\t"
+	"movq 1(%1, %3), %%mm3		\n\t"
+        "addl %%eax, %1			\n\t"
         "psubusb %%mm7, %%mm0		\n\t"
         "psubusb %%mm7, %%mm2		\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm3, %%mm2		\n\t"
-	"movq %%mm0, (%3, %%eax)	\n\t"
-	"movq %%mm2, (%4, %%eax)	\n\t"
-        "addl %5, %%eax			\n\t"
-	"movq (%1, %%eax), %%mm0	\n\t"
-	"movq 1(%1, %%eax), %%mm1	\n\t"
-	"movq (%2, %%eax), %%mm2	\n\t"
-	"movq 1(%2, %%eax), %%mm3	\n\t"
+	"movq %%mm0, (%2)		\n\t"
+	"movq %%mm2, (%2, %3)		\n\t"
+	"movq (%1), %%mm0		\n\t"
+	"movq 1(%1), %%mm1		\n\t"
+	"movq (%1, %3), %%mm2		\n\t"
+	"movq 1(%1, %3), %%mm3		\n\t"
+        "addl %%eax, %2			\n\t"
+	"addl %%eax, %1			\n\t"
         "psubusb %%mm7, %%mm0		\n\t"
         "psubusb %%mm7, %%mm2		\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm3, %%mm2		\n\t"
-	"movq %%mm0, (%3, %%eax)	\n\t"
-	"movq %%mm2, (%4, %%eax)	\n\t"
-        "addl %5, %%eax			\n\t"
+        "movq %%mm0, (%2)		\n\t"
+	"movq %%mm2, (%2, %3)		\n\t"
+        "addl %%eax, %2			\n\t"
         "subl $4, %0			\n\t"
-        " jnz 1b			\n\t"
-	:"+g"(h)
-        :"D"(pixels), "S"(pixels+line_size), "r" (block), "r" (block+line_size),
-        "r"(line_size<<1)
+        "jnz 1b				\n\t"
+        :"+g"(h), "+S"(pixels), "+D"(block)
+	:"c" (line_size)
 	:"%eax", "memory");
 }
 
 static void DEF(put_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
-#if 1
-    // Michael - measure me
     __asm __volatile(
         "lea (%3, %3), %%eax            \n\t"
         "movq (%1), %%mm0		\n\t"
         "subl %3, %2			\n\t"
-        ".balign 16			\n\t"
         "1:				\n\t"
 	"movq (%1, %3), %%mm1		\n\t"
 	"movq (%1, %%eax), %%mm2	\n\t"
+        "addl %%eax, %1			\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm2, %%mm1		\n\t"
-        "addl %%eax, %1			\n\t"
 	"movq %%mm0, (%2, %3)		\n\t"
 	"movq %%mm1, (%2, %%eax)	\n\t"
 	"movq (%1, %3), %%mm1		\n\t"
 	"movq (%1, %%eax), %%mm0	\n\t"
-	PAVGB" %%mm1, %%mm2		\n\t"
-	PAVGB" %%mm0, %%mm1		\n\t"
         "addl %%eax, %2			\n\t"
         "addl %%eax, %1			\n\t"
+	PAVGB" %%mm1, %%mm2		\n\t"
+	PAVGB" %%mm0, %%mm1		\n\t"
 	"movq %%mm2, (%2, %3)		\n\t"
 	"movq %%mm1, (%2, %%eax)	\n\t"
         "addl %%eax, %2			\n\t"
         "subl $4, %0			\n\t"
         "jnz 1b				\n\t"
-        :"+g"(h), "+D"(pixels), "+S" (block)
+        :"+g"(h), "+S"(pixels), "+D" (block)
 	:"c"(line_size)
 	:"%eax", "memory");
-#else
-   // kabi measure me
-    __asm __volatile(
-	"movq (%2), %%mm0		\n\t"
-        "addl %1, %2			\n\t"
-        "xorl %%eax, %%eax		\n\t"
-        "leal (%1, %2), %%edi		\n\t"
-        "leal (%1, %3), %%esi		\n\t"
-        "addl %1, %1			\n\t"
-        ".balign 16			\n\t"
-        "1:				\n\t"
-	"movq (%2   , %%eax), %%mm1	\n\t"
-	"movq (%%edi, %%eax), %%mm2	\n\t"
-	PAVGB" %%mm1, %%mm0		\n\t"
-	PAVGB" %%mm2, %%mm1		\n\t"
-	"movq %%mm0, (%3   , %%eax)	\n\t"
-	"movq %%mm1, (%%esi, %%eax)	\n\t"
-        "addl %1, %%eax			\n\t"
-	"movq (%2   , %%eax), %%mm1	\n\t"
-	"movq (%%edi, %%eax), %%mm0	\n\t"
-	PAVGB" %%mm1, %%mm2		\n\t"
-	PAVGB" %%mm0, %%mm1		\n\t"
-	"movq %%mm2, (%3   , %%eax)	\n\t"
-	"movq %%mm1, (%%esi, %%eax)	\n\t"
-        "addl %1, %%eax			\n\t"
-        "subl $4, %0			\n\t"
-        " jnz 1b			\n\t"
-	:"+g"(h), "+r"(line_size), "+r"(pixels)
-	: "r" (block)
-	: "%eax", "%esi", "%edi", "memory");
-#endif
 }
 
 /* GL: this function does incorrect rounding if overflow */
@@ -163,32 +129,33 @@ static void DEF(put_no_rnd_pixels_y2)(UINT8 *block, const UINT8 *pixels, int lin
 {
     __asm __volatile(
 	MOVQ_BONE(%%mm7)
-        "xorl %%eax, %%eax		\n\t"
-	"movq (%1), %%mm0		\n\t"
-        ".balign 16			\n\t"
+        "lea (%3, %3), %%eax            \n\t"
+        "movq (%1), %%mm0		\n\t"
+        "subl %3, %2			\n\t"
         "1:				\n\t"
-	"movq (%2, %%eax), %%mm1	\n\t"
-	"movq (%3, %%eax), %%mm2	\n\t"
+	"movq (%1, %3), %%mm1		\n\t"
+	"movq (%1, %%eax), %%mm2	\n\t"
+        "addl %%eax, %1			\n\t"
         "psubusb %%mm7, %%mm1		\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm2, %%mm1		\n\t"
-	"movq %%mm0, (%4, %%eax)	\n\t"
-	"movq %%mm1, (%5, %%eax)	\n\t"
-        "addl %6, %%eax			\n\t"
-	"movq (%2, %%eax), %%mm1	\n\t"
-	"movq (%3, %%eax), %%mm0	\n\t"
+	"movq %%mm0, (%2, %3)		\n\t"
+	"movq %%mm1, (%2, %%eax)	\n\t"
+	"movq (%1, %3), %%mm1		\n\t"
+	"movq (%1, %%eax), %%mm0	\n\t"
+        "addl %%eax, %2			\n\t"
+        "addl %%eax, %1			\n\t"
         "psubusb %%mm7, %%mm1		\n\t"
 	PAVGB" %%mm1, %%mm2		\n\t"
 	PAVGB" %%mm0, %%mm1		\n\t"
-	"movq %%mm2, (%4, %%eax)	\n\t"
-	"movq %%mm1, (%5, %%eax)	\n\t"
-        "addl %6, %%eax			\n\t"
+	"movq %%mm2, (%2, %3)		\n\t"
+	"movq %%mm1, (%2, %%eax)	\n\t"
+        "addl %%eax, %2			\n\t"
         "subl $4, %0			\n\t"
-        " jnz 1b			\n\t"
-	:"+g"(h)
-	:"D"(pixels), "S"(pixels+line_size), "r"(pixels+line_size*2), "r" (block),
-         "r" (block+line_size), "g"(line_size<<1)
-	:"%eax",  "memory");
+        "jnz 1b				\n\t"
+        :"+g"(h), "+S"(pixels), "+D" (block)
+	:"c"(line_size)
+	:"%eax", "memory");
 }
 
 static void DEF(avg_pixels)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
