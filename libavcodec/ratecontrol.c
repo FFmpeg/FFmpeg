@@ -26,6 +26,14 @@
 #undef NDEBUG // allways check asserts, the speed effect is far too small to disable them
 #include <assert.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
+#ifndef M_E
+#define M_E 2.718281828
+#endif
+
 static int init_pass2(MpegEncContext *s);
 static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_factor, int frame_num);
 
