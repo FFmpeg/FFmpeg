@@ -64,7 +64,7 @@ static int findPixelFormat(unsigned int fourcc)
     return PIX_FMT_YUV420P;
 }
 
-static unsigned int findFourCC(int fmt)
+unsigned int avcodec_pix_fmt_to_codec_tag(enum PixelFormat fmt)
 {
     const PixelFormatTag * tags = pixelFormatTags;
     while (tags->pix_fmt >= 0) {
@@ -152,7 +152,7 @@ static int raw_init_encoder(AVCodecContext *avctx)
     avctx->coded_frame->pict_type = FF_I_TYPE;
     avctx->coded_frame->key_frame = 1;
     if(!avctx->codec_tag)
-        avctx->codec_tag = findFourCC(avctx->pix_fmt);
+        avctx->codec_tag = avcodec_pix_fmt_to_codec_tag(avctx->pix_fmt);
     return 0;
 }
 

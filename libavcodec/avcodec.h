@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4728
+#define LIBAVCODEC_BUILD       4729
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1996,6 +1996,7 @@ void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
 const char *avcodec_get_pix_fmt_name(int pix_fmt);
 void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
 enum PixelFormat avcodec_get_pix_fmt(const char* name);
+unsigned int avcodec_pix_fmt_to_codec_tag(enum PixelFormat p);
 
 #define FF_LOSS_RESOLUTION  0x0001 /* loss due to resolution change */
 #define FF_LOSS_DEPTH       0x0002 /* loss due to color depth change */
