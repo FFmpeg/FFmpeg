@@ -348,9 +348,20 @@ static int read_old_huffman_tables(HYuvContext *s){
 #endif
 }
 
+static void alloc_temp(HYuvContext *s){
+    int i;
+    
+    if(s->bitstream_bpp<24){
+        for(i=0; i<3; i++){
+            s->temp[i]= av_malloc(s->width + 16);
+        }
+    }else{
+        s->temp[0]= av_malloc(4*s->width + 16);
+    }
+}
+
 static int common_init(AVCodecContext *avctx){
     HYuvContext *s = avctx->priv_data;
-    int i;
 
     s->avctx= avctx;
     s->flags= avctx->flags;
@@ -360,10 +371,7 @@ static int common_init(AVCodecContext *avctx){
     s->width= avctx->width;
     s->height= avctx->height;
     assert(s->width>0 && s->height>0);
-    
-    for(i=0; i<3; i++){
-        s->temp[i]= av_malloc(avctx->width + 16);
-    }
+        
     return 0;
 }
 
@@ -455,6 +463,8 @@ s->bgr32=1;
     default:
         assert(0);
     }
+    
+    alloc_temp(s);
     
 //    av_log(NULL, AV_LOG_DEBUG, "pred:%d bpp:%d hbpp:%d il:%d\n", s->predictor, s->bitstream_bpp, avctx->bits_per_sample, s->interlaced);
 
@@ -598,6 +608,8 @@ static int encode_init(AVCodecContext *avctx)
     }
     
 //    printf("pred:%d bpp:%d hbpp:%d il:%d\n", s->predictor, s->bitstream_bpp, avctx->bits_per_sample, s->interlaced);
+
+    alloc_temp(s);
 
     s->picture_number=0;
 
@@ -1148,11 +1160,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 if(s->predictor == PLANE && s->interlaced < cy){
                     s->dsp.diff_bytes(s->temp[1], ydst, ydst - fake_ystride, width);
                     s->dsp.diff_bytes(s->temp[2], udst, udst - fake_ustride, width2);
-                    s->dsp.diff_bytes(s->temp[2] + 1250, vdst, vdst - fake_vstride, width2);
+                    s->dsp.diff_bytes(s->temp[2] + width2, vdst, vdst - fake_vstride, width2);
 
                     lefty= sub_left_prediction(s, s->temp[0], s->temp[1], width , lefty);
                     leftu= sub_left_prediction(s, s->temp[1], s->temp[2], width2, leftu);
-                    leftv= sub_left_prediction(s, s->temp[2], s->temp[2] + 1250, width2, leftv);
+                    leftv= sub_left_prediction(s, s->temp[2], s->temp[2] + width2, width2, leftv);
                 }else{
                     lefty= sub_left_prediction(s, s->temp[0], ydst, width , lefty);
                     leftu= sub_left_prediction(s, s->temp[1], udst, width2, leftu);
