@@ -2241,9 +2241,9 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     for(;;) {
         /* find start next code */
         start_code = find_start_code(&buf_ptr, buf_end);
-        if (start_code < 0){ 
-            printf("missing end of picture\n");
-            return FFMAX(1, buf_ptr - buf - s2->parse_context.last_index);
+        if (start_code < 0){
+//            printf("missing end of picture\n");
+            return FFMAX(0, buf_ptr - buf - s2->parse_context.last_index);
         }
 
                 /* prepare data for next start code */
