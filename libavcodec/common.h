@@ -293,10 +293,6 @@ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
 
 /* bit output */
 
-struct PutBitContext;
-
-typedef void (*WriteDataFunc)(void *, uint8_t *, int);
-
 /* buf and buf_end must be present and used by every alternative writer. */
 typedef struct PutBitContext {
 #ifdef ALT_BITSTREAM_WRITER
