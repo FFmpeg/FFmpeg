@@ -167,12 +167,14 @@ int av_dup_packet(AVPacket *pkt)
 {
     if (pkt->destruct != av_destruct_packet) {
         uint8_t *data;
-        /* we duplicate the packet */
-        data = av_malloc(pkt->size);
+        /* we duplicate the packet and don't forget to put the padding
+           again */
+        data = av_malloc(pkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
         if (!data) {
             return AVERROR_NOMEM;
         }
         memcpy(data, pkt->data, pkt->size);
+        memset(data + pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
         pkt->data = data;
         pkt->destruct = av_destruct_packet;
     }
