@@ -778,7 +778,7 @@ int h263_decode_mb(MpegEncContext *s,
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     INT16 *mot_val;
-    static UINT8 quant_tab[4] = { -1, -2, 1, 2 };
+    static INT8 quant_tab[4] = { -1, -2, 1, 2 };
 
     if (s->pict_type == P_TYPE) {
         if (get_bits1(&s->gb)) {

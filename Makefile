@@ -3,8 +3,8 @@
 #
 include config.mak
 
-CFLAGS= $(OPTFLAGS) -Wall -g -I./libavcodec -I./libav 
-LDFLAGS= -g 
+CFLAGS= $(OPTFLAGS) -Wall -I./libavcodec -I./libav 
+LDFLAGS=  
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
 LDFLAGS+=-p
