@@ -1825,7 +1825,7 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     bit_rate_ext = get_bits(&s->gb, 12);  /* XXX: handle it */
     s->bit_rate = ((s->bit_rate / 400) | (bit_rate_ext << 12)) * 400;
     skip_bits1(&s->gb); /* marker */
-    vbv_buf_ext = get_bits(&s->gb, 8);
+    s->avctx->rc_buffer_size += get_bits(&s->gb, 8)*1024*16<<10;
 
     s->low_delay = get_bits1(&s->gb);
     if(s->flags & CODEC_FLAG_LOW_DELAY) s->low_delay=1;
@@ -1854,7 +1854,8 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     }
     
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(s->avctx, AV_LOG_DEBUG, "profile: %d, level: %d \n", profile, level);
+        av_log(s->avctx, AV_LOG_DEBUG, "profile: %d, level: %d vbv buffer: %d, bitrate:%d\n", 
+               profile, level, s->avctx->rc_buffer_size, s->bit_rate);
 }
 
 static void mpeg_decode_sequence_display_extension(Mpeg1Context *s1)
@@ -2391,7 +2392,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         s->swap_uv = 0;//just in case vcr2 and mpeg2 stream have been concatinated
     }
 
-    skip_bits(&s->gb, 10); /* vbv_buffer_size */
+    s->avctx->rc_buffer_size= get_bits(&s->gb, 10) * 1024*16;
     skip_bits(&s->gb, 1);
 
     /* get matrix */
@@ -2446,6 +2447,11 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->codec_id= s->avctx->codec_id= CODEC_ID_MPEG1VIDEO;
     avctx->sub_id = 1; /* indicates mpeg1 */
     if(s->flags & CODEC_FLAG_LOW_DELAY) s->low_delay=1;
+    
+    if(s->avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(s->avctx, AV_LOG_DEBUG, "vbv buffer: %d, bitrate:%d\n", 
+               s->avctx->rc_buffer_size, s->bit_rate);
+    
     return 0;
 }
 
