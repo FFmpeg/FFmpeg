@@ -17,7 +17,7 @@
 */
 
 /*
-  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24, RGB32, RGB24, Y8, Y800
+  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24, BGR16, RGB32, RGB24, Y8, Y800
   supported output formats: YV12, I420, IYUV, BGR15, BGR16, BGR24, BGR32 (grayscale soon too)
   BGR15/16 support dithering
   
@@ -87,7 +87,7 @@ untested special converters
 #define isPacked(x)    ((x)==IMGFMT_YUY2 || ((x)&IMGFMT_BGR_MASK)==IMGFMT_BGR || ((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
 #define isGray(x)      ((x)==IMGFMT_Y800)
 #define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 \
-			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24\
+			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16\
 			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
 			|| (x)==IMGFMT_Y800)
 #define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 \

@@ -1666,6 +1666,55 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 #endif
 }
 
+static inline void RENAME(bgr16ToY)(uint8_t *dst, uint8_t *src, int width)
+{
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int d= src[i*2] + (src[i*2+1]<<8);
+		int b= d&0x1F;
+		int g= (d>>5)&0x3F;
+		int r= (d>>11)&0x1F;
+
+		dst[i]= ((2*RY*r + GY*g + 2*BY*b)>>(RGB2YUV_SHIFT-2)) + 16;
+	}
+}
+
+static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+{
+	int i;
+	for(i=0; i<width; i++)
+	{
+//FIXME optimize
+		int d0= src1[i*4] + (src1[i*4+1]<<8);
+		int b0= d0&0x1F;
+		int g0= (d0>>5)&0x3F;
+		int r0= (d0>>11)&0x1F;
+
+		int d1= src1[i*4+2] + (src1[i*4+3]<<8);
+		int b1= d1&0x1F;
+		int g1= (d1>>5)&0x3F;
+		int r1= (d1>>11)&0x1F;
+
+		int d2= src2[i*4] + (src2[i*4+1]<<8);
+		int b2= d2&0x1F;
+		int g2= (d2>>5)&0x3F;
+		int r2= (d2>>11)&0x1F;
+
+		int d3= src2[i*4+2] + (src2[i*4+3]<<8);
+		int b3= d3&0x1F;
+		int g3= (d3>>5)&0x3F;
+		int r3= (d3>>11)&0x1F;
+
+		int b= b0 + b1 + b2 + b3;
+		int g= g0 + g1 + g2 + g3;
+		int r= r0 + r1 + r2 + r3;
+
+		dstU[i]= ((2*RU*r + GU*g + 2*BU*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
+		dstV[i]= ((2*RV*r + GV*g + 2*BV*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
+	}
+}
+
 static inline void RENAME(rgb32ToY)(uint8_t *dst, uint8_t *src, int width)
 {
 	int i;
@@ -1903,6 +1952,11 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
 	RENAME(bgr24ToY)(formatConvBuffer, src, srcW);
 	src= formatConvBuffer;
     }
+    else if(srcFormat==IMGFMT_BGR16)
+    {
+	RENAME(bgr16ToY)(formatConvBuffer, src, srcW);
+	src= formatConvBuffer;
+    }
     else if(srcFormat==IMGFMT_RGB32)
     {
 	RENAME(rgb32ToY)(formatConvBuffer, src, srcW);
@@ -2057,6 +2111,12 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, u
     else if(srcFormat==IMGFMT_BGR24)
     {
 	RENAME(bgr24ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
+	src1= formatConvBuffer;
+	src2= formatConvBuffer+2048;
+    }
+    else if(srcFormat==IMGFMT_BGR16)
+    {
+	RENAME(bgr16ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
 	src1= formatConvBuffer;
 	src2= formatConvBuffer+2048;
     }
