@@ -4722,6 +4722,8 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 
             if (cache&0x80000000) {
                 if (cache&0x40000000) {
+                    int ulevel;
+
                     /* third escape */
                     SKIP_CACHE(re, &s->gb, 2);
                     last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
@@ -4747,10 +4749,16 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         SKIP_COUNTER(re, &s->gb, 1+12+1);
                     }
  
-                    if(level*s->qscale>1024 || level*s->qscale<-1024){
+                    if(s->mpeg_quant){
+                        if(intra) ulevel= level*s->qscale*s->intra_matrix[scan_table[1]];
+                        else      ulevel= level*s->qscale*s->inter_matrix[scan_table[0]];
+                    }else
+                        ulevel= level*s->qscale*16;
+                    if(ulevel>1030*16 || ulevel<-1030*16){
                         av_log(s->avctx, AV_LOG_ERROR, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
                         return -1;
                     }
+
 #if 0
                     if(s->error_resilience >= FF_ER_COMPLIANT){
                         const int abs_level= ABS(level);
