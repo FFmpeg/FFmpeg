@@ -4,19 +4,19 @@
  *
  * This file is part of libavcodec.
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
+ * This library is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *  
  * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *  
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
 #ifdef HAVE_AV_CONFIG_H
@@ -25,12 +25,10 @@
 
 #include "avcodec.h"
 #include <dts.h>
-#include "dts_internal.h"
 
 #include <stdlib.h>
 #include <string.h>
 #include <malloc.h>
-#include <math.h>
 
 #define INBUF_SIZE 4096
 #define BUFFER_SIZE 4096
@@ -43,26 +41,6 @@
 #define CONVERT_LEVEL 1
 #define CONVERT_BIAS 384
 #endif
-
-static void
-pre_calc_cosmod (dts_state_t * state)
-{
-  int i, j, k;
-
-  for (j=0,k=0;k<16;k++)
-    for (i=0;i<16;i++)
-      state->cos_mod[j++] = cos((2*i+1)*(2*k+1)*M_PI/64);
-
-  for (k=0;k<16;k++)
-    for (i=0;i<16;i++)
-      state->cos_mod[j++] = cos((i)*(2*k+1)*M_PI/32);
-
-  for (k=0;k<16;k++)
-    state->cos_mod[j++] = 0.25/(2*cos((2*k+1)*M_PI/128));
-
-  for (k=0;k<16;k++)
-    state->cos_mod[j++] = -0.25/(2.0*sin((2*k+1)*M_PI/128));
-}
 
 static inline
 int16_t convert (int32_t i)
@@ -311,22 +289,9 @@ dts_decode_frame (AVCodecContext *avctx, void *data, int *data_size,
 static int
 dts_decode_init (AVCodecContext *avctx)
 {
-  dts_state_t * state;
-  int i;
-
-  state = avctx->priv_data;
-  memset (state, 0, sizeof (dts_state_t));
-
-  state->samples = (sample_t *) memalign (16, 256 * 12 * sizeof (sample_t));
-  if (state->samples == NULL)
+  avctx->priv_data = dts_init (0);
+  if (avctx->priv_data == NULL)
     return 1;
-
-  for (i = 0; i < 256 * 12; i++)
-    state->samples[i] = 0;
-
-  /* Pre-calculate cosine modulation coefficients */
-  pre_calc_cosmod (state);
-  state->downmixed = 1;
 
   return 0;
 }
@@ -341,7 +306,7 @@ AVCodec dts_decoder = {
   "dts", 
   CODEC_TYPE_AUDIO,
   CODEC_ID_DTS,
-  sizeof (dts_state_t),
+  sizeof (dts_state_t *),
   dts_decode_init,
   NULL,
   dts_decode_end,
