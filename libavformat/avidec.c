@@ -243,6 +243,21 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     if(st->codec.extradata_size & 1) //FIXME check if the encoder really did this correctly
                         get_byte(pb);
 
+                    /* Extract palette from extradata if bpp <= 8 */
+                    /* This code assumes that extradata contains only palette */
+                    /* This is true for all paletted codecs implemented in ffmpeg */
+                    if (st->codec.extradata_size && (st->codec.bits_per_sample <= 8)) {
+                        st->codec.palctrl = av_mallocz(sizeof(AVPaletteControl));
+#ifdef WORDS_BIGENDIAN
+                        for (i = 0; i < FFMIN(st->codec.extradata_size / 4, 256); i++)
+                            st->codec.palctrl->palette[i] = bswap_32(st->codec.extradata)[i * 4]);
+#else
+                        memcpy(st->codec.palctrl->palette, st->codec.extradata,
+                               FFMIN(st->codec.extradata_size, AVPALETTE_SIZE));
+#endif
+                        st->codec.palctrl->palette_changed = 1;
+                    }
+
 #ifdef DEBUG
                     print_tag("video", tag1, 0);
 #endif
@@ -382,6 +397,7 @@ static int avi_read_close(AVFormatContext *s)
         AVStream *st = s->streams[i];
 //        av_free(st->priv_data);
         av_free(st->codec.extradata);
+        av_free(st->codec.palctrl);
     }
 
     if (avi->dv_demux)

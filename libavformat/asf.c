@@ -908,6 +908,22 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		    st->codec.extradata = av_mallocz(st->codec.extradata_size);
 		    get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
 		}
+
+        /* Extract palette from extradata if bpp <= 8 */
+        /* This code assumes that extradata contains only palette */
+        /* This is true for all paletted codecs implemented in ffmpeg */
+        if (st->codec.extradata_size && (st->codec.bits_per_sample <= 8)) {
+            st->codec.palctrl = av_mallocz(sizeof(AVPaletteControl));
+#ifdef WORDS_BIGENDIAN
+            for (i = 0; i < FFMIN(st->codec.extradata_size / 4, 256); i++)
+                st->codec.palctrl->palette[i] = bswap_32(st->codec.extradata)[i * 4]);
+#else
+            memcpy(st->codec.palctrl->palette, st->codec.extradata,
+                   FFMIN(st->codec.extradata_size, AVPALETTE_SIZE));
+#endif
+            st->codec.palctrl->palette_changed = 1;
+        }
+
                 st->codec.codec_tag = tag1;
 		st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
             }
@@ -1226,6 +1242,7 @@ static int asf_read_close(AVFormatContext *s)
 	AVStream *st = s->streams[i];
 	av_free(st->priv_data);
 	av_free(st->codec.extradata);
+    av_free(st->codec.palctrl);
     }
     return 0;
 }
