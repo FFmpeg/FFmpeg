@@ -174,7 +174,7 @@ int MPV_common_init(MpegEncContext *s)
         }
     }
     
-    if (s->out_format == FMT_H263) {
+    if (s->out_format == FMT_H263 || s->encoding) {
         int size;
         /* MV prediction */
         size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
@@ -295,6 +295,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->qblur= avctx->qblur;
     s->avctx = avctx;
     s->aspect_ratio_info= avctx->aspect_ratio_info;
+    s->hq= (avctx->flags & CODEC_FLAG_HQ);
     
     if (s->gop_size <= 1) {
         s->intra_only = 1;
@@ -506,7 +507,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     if (!s->intra_only) {
         /* first picture of GOP is intra */
-        if (s->picture_in_gop_number >= s->gop_size){
+        if (s->picture_in_gop_number % s->gop_size==0){
             s->picture_in_gop_number=0;
             s->pict_type = I_TYPE;
         }else
@@ -1097,6 +1098,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     for(mb_y=0; mb_y < s->mb_height; mb_y++) {
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
             int xy= mb_y * s->mb_width + mb_x;
+            const int mot_stride = s->mb_width*2 + 2;
+            int mot_xy = (mb_y*2 + 1)*mot_stride + mb_x*2 + 1;
             s->mb_x = mb_x;
             s->mb_y = mb_y;
 
@@ -1114,6 +1117,16 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->mb_type[xy] = s->mb_intra;
             s->mv_table[0][xy] = motion_x;
             s->mv_table[1][xy] = motion_y;
+
+            s->motion_val[mot_xy  ][0]= motion_x;
+            s->motion_val[mot_xy  ][1]= motion_y;
+            s->motion_val[mot_xy+1][0]= motion_x;
+            s->motion_val[mot_xy+1][1]= motion_y;
+            mot_xy += mot_stride;
+            s->motion_val[mot_xy  ][0]= motion_x;
+            s->motion_val[mot_xy  ][1]= motion_y;
+            s->motion_val[mot_xy+1][0]= motion_x;
+            s->motion_val[mot_xy+1][1]= motion_y;
         }
     }
     emms_c();

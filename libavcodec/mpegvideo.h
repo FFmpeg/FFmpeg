@@ -65,6 +65,7 @@ typedef struct MpegEncContext {
     int qmax;         /* max qscale */
     int max_qdiff;    /* max qscale difference between frames */
     int encoding;     /* true if we are encoding (vs decoding) */
+    int hq;           /* set if CODEC_FLAG_HQ is used in AVCodecContext.flags */
     /* the following fields are managed internally by the encoder */
 
     /* bit output */

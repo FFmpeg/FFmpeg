@@ -579,7 +579,6 @@ static inline void halfpel_motion_search(MpegEncContext * s,
     int mx, my, mx1, my1, d, xx, yy, dminh;
     UINT8 *pix, *ptr;
 
-    
     mx = *mx_ptr;
     my = *my_ptr;
     ptr = s->last_picture[0] + (my * s->linesize) + mx;
@@ -678,17 +677,18 @@ int estimate_motion(MpegEncContext * s,
     case ME_PHODS:
 	dmin = phods_motion_search(s, &mx, &my, range / 2, xmin, ymin, xmax, ymax);
         break;
-    case ME_X1: // just reserving some space for experiments ...
+    case ME_X1:
     case ME_EPZS:
-        rel_xmin= xmin - s->mb_x*16;
-        rel_xmax= xmax - s->mb_x*16;
-        rel_ymin= ymin - s->mb_y*16;
-        rel_ymax= ymax - s->mb_y*16;
-        if(s->out_format == FMT_H263){
+       {
             static const int off[4]= {2, 1, 1, -1};
             const int mot_stride = s->mb_width*2 + 2;
             const int mot_xy = (s->mb_y*2 + 1)*mot_stride + s->mb_x*2 + 1;
-         
+
+            rel_xmin= xmin - s->mb_x*16;
+            rel_xmax= xmax - s->mb_x*16;
+            rel_ymin= ymin - s->mb_y*16;
+            rel_ymax= ymax - s->mb_y*16;
+
             P[0][0] = s->motion_val[mot_xy    ][0];
             P[0][1] = s->motion_val[mot_xy    ][1];
             P[1][0] = s->motion_val[mot_xy - 1][0];
@@ -697,8 +697,8 @@ int estimate_motion(MpegEncContext * s,
 
             /* special case for first line */
             if ((s->mb_y == 0 || s->first_slice_line || s->first_gob_line)) {
-                pred_x = P[1][0];
-                pred_y = P[1][1];
+                P[4][0] = P[1][0];
+                P[4][1] = P[1][1];
             } else {
                 P[2][0] = s->motion_val[mot_xy - mot_stride             ][0];
                 P[2][1] = s->motion_val[mot_xy - mot_stride             ][1];
@@ -708,37 +708,15 @@ int estimate_motion(MpegEncContext * s,
                 if(P[3][0] < (rel_xmin<<shift)) P[3][0]= (rel_xmin<<shift);
                 if(P[3][1] > (rel_ymax<<shift)) P[3][1]= (rel_ymax<<shift);
         
-                P[4][0]= pred_x = mid_pred(P[1][0], P[2][0], P[3][0]);
-                P[4][1]= pred_y = mid_pred(P[1][1], P[2][1], P[3][1]);
-            }
-        }else {
-            const int xy= s->mb_y*s->mb_width + s->mb_x;
-            pred_x= s->last_mv[0][0][0];
-            pred_y= s->last_mv[0][0][1];
-
-            P[0][0]= s->mv_table[0][xy  ];
-            P[0][1]= s->mv_table[1][xy  ];
-            if(s->mb_x == 0){
-                P[1][0]= 0;
-                P[1][1]= 0;
-            }else{
-                P[1][0]= s->mv_table[0][xy-1];
-                P[1][1]= s->mv_table[1][xy-1];
-                if(P[1][0] > (rel_xmax<<shift)) P[1][0]= (rel_xmax<<shift);
-            }
-    
-            if (!(s->mb_y == 0 || s->first_slice_line || s->first_gob_line)) {
-                P[2][0] = s->mv_table[0][xy - s->mb_width];
-                P[2][1] = s->mv_table[1][xy - s->mb_width];
-                P[3][0] = s->mv_table[0][xy - s->mb_width+1];
-                P[3][1] = s->mv_table[1][xy - s->mb_width+1];
-                if(P[2][1] > (rel_ymax<<shift)) P[2][1]= (rel_ymax<<shift);
-                if(P[3][0] > (rel_xmax<<shift)) P[3][0]= (rel_xmax<<shift);
-                if(P[3][0] < (rel_xmin<<shift)) P[3][0]= (rel_xmin<<shift);
-                if(P[3][1] > (rel_ymax<<shift)) P[3][1]= (rel_ymax<<shift);
-        
                 P[4][0]= mid_pred(P[1][0], P[2][0], P[3][0]);
                 P[4][1]= mid_pred(P[1][1], P[2][1], P[3][1]);
+            }
+            if(s->out_format == FMT_H263){
+                pred_x = P[4][0];
+                pred_y = P[4][1];
+            }else { /* mpeg1 at least */
+                pred_x= P[1][0];
+                pred_y= P[1][1];
             }
         }
         dmin = epzs_motion_search(s, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax);
