@@ -29,6 +29,16 @@ void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,
 void add_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels, 
 				int line_size);
 
+void get_pixels_mvi(DCTELEM *restrict block,
+                    const uint8_t *restrict pixels, int line_size);
+void diff_pixels_mvi(DCTELEM *block, const uint8_t *s1, const uint8_t *s2,
+                     int stride);
+int pix_abs8x8_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
+int pix_abs16x16_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
+int pix_abs16x16_x2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
+int pix_abs16x16_y2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
+int pix_abs16x16_xy2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
+
 #if 0
 /* These functions were the base for the optimized assembler routines,
    and remain here for documentation purposes.  */
@@ -286,5 +296,13 @@ void dsputil_init_alpha(void)
     if (amask(AMASK_MVI) == 0) {
         put_pixels_clamped = put_pixels_clamped_mvi_asm;
         add_pixels_clamped = add_pixels_clamped_mvi_asm;
+
+        get_pixels       = get_pixels_mvi;
+        diff_pixels      = diff_pixels_mvi;
+        pix_abs8x8       = pix_abs8x8_mvi;
+        pix_abs16x16     = pix_abs16x16_mvi;
+        pix_abs16x16_x2  = pix_abs16x16_x2_mvi;
+        pix_abs16x16_y2  = pix_abs16x16_y2_mvi;
+        pix_abs16x16_xy2 = pix_abs16x16_xy2_mvi;
     }
 }

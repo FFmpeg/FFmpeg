@@ -62,7 +62,7 @@ endif
 
 # alpha specific stuff
 ifeq ($(TARGET_ARCH_ALPHA),yes)
-OBJS += alpha/dsputil_alpha.o alpha/mpegvideo_alpha.o
+OBJS += alpha/dsputil_alpha.o alpha/mpegvideo_alpha.o alpha/motion_est_alpha.o
 ASM_OBJS += alpha/dsputil_alpha_asm.o
 CFLAGS += -Wa,-mpca56 -finline-limit=8000 -fforce-addr -freduce-all-givs
 endif
