@@ -7,6 +7,7 @@
 
 #include <inttypes.h>
 #include <string.h>
+#include <math.h>
 //#include <stdio.h> //FOR DEBUG ONLY
 #include "../config.h"
 #include "swscale.h"
@@ -60,6 +61,7 @@ static uint64_t __attribute__((aligned(8))) bFC=       0xFCFCFCFCFCFCFCFCLL;
 static uint64_t __attribute__((aligned(8))) w400=      0x0400040004000400LL;
 static uint64_t __attribute__((aligned(8))) w80=       0x0080008000800080LL;
 static uint64_t __attribute__((aligned(8))) w10=       0x0010001000100010LL;
+static uint64_t __attribute__((aligned(8))) w02=       0x0002000200020002LL;
 static uint64_t __attribute__((aligned(8))) bm00001111=0x00000000FFFFFFFFLL;
 static uint64_t __attribute__((aligned(8))) bm00000111=0x0000000000FFFFFFLL;
 static uint64_t __attribute__((aligned(8))) bm11111000=0xFFFFFFFFFF000000LL;
@@ -96,9 +98,17 @@ static uint64_t __attribute__((aligned(8))) asm_uvalpha1;
 // 16bit for now (mmx likes it more compact)
 static uint16_t __attribute__((aligned(8))) pix_buf_y[4][2048];
 static uint16_t __attribute__((aligned(8))) pix_buf_uv[2][2048*2];
+static int16_t __attribute__((aligned(8))) hLumFilter[8000];
+static int16_t __attribute__((aligned(8))) hLumFilterPos[2000];
+static int16_t __attribute__((aligned(8))) hChrFilter[8000];
+static int16_t __attribute__((aligned(8))) hChrFilterPos[2000];
 #else
 static uint16_t pix_buf_y[4][2048];
 static uint16_t pix_buf_uv[2][2048*2];
+static int16_t hLumFilter[8000];
+static int16_t hLumFilterPos[2000];
+static int16_t hChrFilter[8000];
+static int16_t hChrFilterPos[2000];
 #endif
 
 // clipping helper table for C implementations:
@@ -118,6 +128,11 @@ static    int yuvtab_0c92[256];
 static    int yuvtab_1a1e[256];
 static    int yuvtab_40cf[256];
 
+static int hLumFilterSize;
+static int hChrFilterSize;
+
+int sws_flags=0;
+
 #ifdef CAN_COMPILE_X86_ASM
 static uint8_t funnyYCode[10000];
 static uint8_t funnyUVCode[10000];
@@ -128,9 +143,9 @@ static int canMMX2BeUsed=0;
 #ifdef CAN_COMPILE_X86_ASM
 void in_asm_used_var_warning_killer()
 {
- int i= yCoeff+vrCoeff+ubCoeff+vgCoeff+ugCoeff+bF8+bFC+w400+w80+w10+
+ volatile int i= yCoeff+vrCoeff+ubCoeff+vgCoeff+ugCoeff+bF8+bFC+w400+w80+w10+
  bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+temp0+asm_yalpha1+ asm_uvalpha1+
- M24A+M24B+M24C;
+ M24A+M24B+M24C+w02 + funnyYCode[0]+ funnyUVCode[0]+b5Dither+g5Dither+r5Dither+g6Dither+dither4[0]+dither8[0];
  if(i) i=0;
 }
 #endif

@@ -1,4 +1,8 @@
 
+#define SWS_FAST_BILINEAR 0
+#define SWS_BILINEAR 1
+#define SWS_BICUBIC 2
+
 // *** bilinear scaling and yuv->rgb & yuv->yuv conversion of yv12 slices:
 // *** Note: it's called multiple times while decoding a frame, first time y==0
 // *** Designed to upscale, but may work for downscale too.
