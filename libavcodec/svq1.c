@@ -1108,10 +1108,10 @@ static void svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plan
         s->m.me_method= s->avctx->me_method;
         
         if(!s->motion_val8[plane]){
-            s->motion_val8 [plane]= av_mallocz(s->m.b8_stride*block_height*2*2*sizeof(int16_t));
-            s->motion_val16[plane]= av_mallocz(s->m.mb_stride*block_height*2*sizeof(int16_t));
+            s->motion_val8 [plane]= av_mallocz((s->m.b8_stride*block_height*2 + 2)*2*sizeof(int16_t));
+            s->motion_val16[plane]= av_mallocz((s->m.mb_stride*(block_height + 2) + 1)*2*sizeof(int16_t));
         }
-        
+
         s->m.mb_type= s->mb_type;
         
         //dummies, to avoid segfaults
@@ -1120,8 +1120,8 @@ static void svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plan
         s->m.current_picture.mc_mb_var= (uint16_t*)s->dummy;
         s->m.current_picture.mb_type= s->dummy;
         
-        s->m.current_picture.motion_val[0]= s->motion_val8[plane];
-        s->m.p_mv_table= s->motion_val16[plane];
+        s->m.current_picture.motion_val[0]= s->motion_val8[plane] + 2;
+        s->m.p_mv_table= s->motion_val16[plane] + s->m.mb_stride + 1;
         s->m.dsp= s->dsp; //move
         ff_init_me(&s->m);
     
