@@ -428,6 +428,16 @@ int stristart(const char *str, const char *val, const char **ptr);
 void pstrcpy(char *buf, int buf_size, const char *str);
 char *pstrcat(char *buf, int buf_size, const char *s);
 
+void __dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem);
+
+#define dynarray_add(tab, nb_ptr, elem)\
+do {\
+    typeof(tab) _tab = (tab);\
+    typeof(elem) _elem = (elem);\
+    (void)sizeof(**_tab == _elem); /* check that types are compatible */\
+    __dynarray_add((unsigned long **)_tab, nb_ptr, (unsigned long)_elem);\
+} while(0)
+
 struct in_addr;
 int resolve_host(struct in_addr *sin_addr, const char *hostname);
 

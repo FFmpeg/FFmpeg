@@ -108,3 +108,24 @@ char *pstrcat(char *buf, int buf_size, const char *s)
 }
 
 #endif
+
+/* add one element to a dynamic array */
+void __dynarray_add(unsigned long **tab_ptr, int *nb_ptr, unsigned long elem)
+{
+    int nb, nb_alloc;
+    unsigned long *tab;
+
+    nb = *nb_ptr;
+    tab = *tab_ptr;
+    if ((nb & (nb - 1)) == 0) {
+        if (nb == 0)
+            nb_alloc = 1;
+        else
+            nb_alloc = nb * 2;
+        tab = av_realloc(tab, nb_alloc * sizeof(unsigned long));
+        *tab_ptr = tab;
+    }
+    tab[nb++] = elem;
+    *nb_ptr = nb;
+}
+
