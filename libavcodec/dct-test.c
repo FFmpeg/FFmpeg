@@ -90,7 +90,7 @@ void dct_error(const char *name, int is_idct,
         fdct_func(block);
         emms(); /* for ff_mmx_idct */
 
-        if (fdct_func == jpeg_fdct_ifast) {
+        if (fdct_func == fdct_ifast) {
             for(i=0; i<64; i++) {
                 scale = (1 << (AANSCALE_BITS + 11)) / aanscales[i];
                 block[i] = (block[i] * scale) >> AANSCALE_BITS;
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 
     if (!test_idct) {
         dct_error("REF", 0, fdct, fdct); /* only to verify code ! */
-        dct_error("AAN", 0, jpeg_fdct_ifast, fdct);
+        dct_error("AAN", 0, fdct_ifast, fdct);
         dct_error("MMX", 0, fdct_mmx, fdct);
     } else {
         dct_error("REF", 1, idct, idct);

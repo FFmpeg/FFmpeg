@@ -23,6 +23,7 @@
 #include "simple_idct.h"
 
 void (*ff_idct)(DCTELEM *block);
+void (*av_fdct)(DCTELEM *block);
 void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 void (*diff_pixels)(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
 void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
@@ -1278,7 +1279,7 @@ void dsputil_init(void)
     pix_abs8x8_x2  = pix_abs8x8_x2_c;
     pix_abs8x8_y2  = pix_abs8x8_y2_c;
     pix_abs8x8_xy2 = pix_abs8x8_xy2_c;
-    av_fdct = jpeg_fdct_ifast;
+    av_fdct = fdct_ifast;
 
     use_permuted_idct = 1;
 

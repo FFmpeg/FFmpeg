@@ -81,7 +81,7 @@ static void convert_matrix(int (*qmat)[64], uint16_t (*qmat16)[64], uint16_t (*q
 
     for(qscale=1; qscale<32; qscale++){
         int i;
-        if (av_fdct == jpeg_fdct_ifast) {
+        if (av_fdct == fdct_ifast) {
             for(i=0;i<64;i++) {
                 const int j= block_permute_op(i);
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */

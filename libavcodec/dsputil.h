@@ -26,13 +26,13 @@
 /* dct code */
 typedef short DCTELEM;
 
-void jpeg_fdct_ifast (DCTELEM *data);
+void fdct_ifast (DCTELEM *data);
 
 void j_rev_dct (DCTELEM *data);
 
 void fdct_mmx(DCTELEM *block);
 
-void (*av_fdct)(DCTELEM *block);
+extern void (*av_fdct)(DCTELEM *block);
 
 /* encoding scans */
 extern UINT8 ff_alternate_horizontal_scan[64];
