@@ -123,6 +123,11 @@ static int same_quality = 0;
 static int b_frames = 0;
 static int use_hq = 0;
 static int use_4mv = 0;
+/* Fx */
+static int use_aic = 0;
+static int use_umv = 0;
+/* /Fx */
+static int use_h263p_extra = 0;
 static int do_deinterlace = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
 static int error_resilience = 2;
@@ -2230,7 +2235,14 @@ static void opt_output_file(const char *filename)
                 if (use_hq) {
                     video_enc->flags |= CODEC_FLAG_HQ;
                 }
-            
+           	/* Fx */ 
+                if (use_umv) {
+                    video_enc->flags |= CODEC_FLAG_H263P_UMV;
+                }
+           	if (use_aic) {
+                    video_enc->flags |= CODEC_FLAG_H263P_AIC;
+                }
+           	/* /Fx */ 
                 if (use_4mv) {
                     video_enc->flags |= CODEC_FLAG_HQ;
                     video_enc->flags |= CODEC_FLAG_4MV;
@@ -2769,6 +2781,10 @@ const OptionDef options[] = {
     { "vstats", OPT_BOOL | OPT_EXPERT, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "bitexact", OPT_EXPERT, {(void*)opt_bitexact}, "only use bit exact algorithms (for codec testing)" }, 
     { "vhook", HAS_ARG | OPT_EXPERT, {(void*)add_frame_hooker}, "insert video processing module", "module name and parameters" },
+    /* Fx */
+    { "aic", OPT_BOOL | OPT_EXPERT, {(void*)&use_aic}, "enable Advanced intra coding (h263+)" },
+    { "umv", OPT_BOOL | OPT_EXPERT, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
+    /* /Fx */
     { NULL, },
 };
 

@@ -160,7 +160,19 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_TRELLIS_QUANT  0x00200000 /* use trellis quantization */
 #define CODEC_FLAG_GLOBAL_HEADER  0x00400000 /* place global headers in extradata instead of every keyframe */
 #define CODEC_FLAG_BITEXACT       0x00800000 /* use only bitexact stuff (except (i)dct) */
-
+/* Fx : Flag for h263+ extra options */
+#define CODEC_FLAG_H263P_AIC      0x01000000 /* Advanced intra coding */
+#define CODEC_FLAG_H263P_UMV      0x02000000 /* Unlimited motion vector  */
+/* For advanced prediction mode, we reuse the 4MV flag */
+/* Unsupported options :
+ * 		Syntax Arithmetic coding (SAC)
+ * 		Deblocking filter internal loop
+ * 		Slice structured
+ * 		Reference Picture Selection
+ * 		Independant Segment Decoding
+ * 		Alternative Inter * 		VLC
+ * 		Modified Quantization */
+/* /Fx */
 /* codec capabilities */
 
 #define CODEC_CAP_DRAW_HORIZ_BAND 0x0001 /* decoder can use draw_horiz_band callback */

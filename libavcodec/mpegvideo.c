@@ -581,9 +581,10 @@ int MPV_encode_init(AVCodecContext *avctx)
     case CODEC_ID_H263P:
         s->out_format = FMT_H263;
         s->h263_plus = 1;
-        s->unrestricted_mv = 1;
-        s->h263_aic = 1;
-        
+	/* Fx */
+	s->unrestricted_mv=(avctx->flags & CODEC_FLAG_H263P_UMV) ? 1:0;
+	s->h263_aic= (avctx->flags & CODEC_FLAG_H263P_AIC) ? 1:0;
+	/* /Fx */
         /* These are just to be sure */
         s->umvplus = 1;
         avctx->delay=0;
