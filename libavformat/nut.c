@@ -980,6 +980,7 @@ static int decode_stream_header(NUTContext *nut){
     nom = get_v(bc);
     denom = get_v(bc);
     nut->stream[stream_id].msb_timestamp_shift = get_v(bc);
+    st->codec.has_b_frames=
     nut->stream[stream_id].decode_delay= get_v(bc);
     get_byte(bc); /* flags */
 
