@@ -443,6 +443,12 @@ typedef struct MJpegDecodeContext {
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
     INT16 quant_matrixes[4][64];
     VLC vlcs[2][4];
+
+    int org_width, org_height;  /* size given at codec init */
+    int first_picture;    /* true if decoding first picture */
+    int interlaced;     /* true if interlaced */
+    int bottom_field;   /* true if bottom field */
+
     int width, height;
     int nb_components;
     int component_id[MAX_COMPONENTS];
@@ -479,6 +485,9 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
                                                  account FF 00 case */
     s->start_code = -1;
     s->buf_ptr = s->buffer;
+    s->first_picture = 1;
+    s->org_width = avctx->width;
+    s->org_height = avctx->height;
 
     build_vlc(&s->vlcs[0][0], bits_dc_luminance, val_dc_luminance, 12);
     build_vlc(&s->vlcs[0][1], bits_dc_chrominance, val_dc_chrominance, 12);
@@ -611,6 +620,14 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
         }
         s->width = width;
         s->height = height;
+        /* test interlaced mode */
+        if (s->first_picture &&
+            s->org_height != 0 &&
+            s->height < ((s->org_height * 3) / 4)) {
+            s->interlaced = 1;
+            s->bottom_field = 0;
+        }
+
         for(i=0;i<nb_components;i++) {
             int w, h, hh, vv;
             hh = s->h_max / s->h_count[i];
@@ -619,12 +636,15 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
             h = (s->height + 8 * vv - 1) / (8 * vv);
             w = w * 8;
             h = h * 8;
+            if (s->interlaced)
+                w *= 2;
             s->linesize[i] = w;
             /* memory test is done in mjpeg_decode_sos() */
             s->current_picture[i] = av_mallocz(w * h);
         }
+        s->first_picture = 0;
     }
-
+    
     return 0;
 }
 
@@ -788,6 +808,8 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
                     ptr = s->current_picture[c] + 
                         (s->linesize[c] * (v * mb_y + y) * 8) + 
                         (h * mb_x + x) * 8;
+                    if (s->interlaced && s->bottom_field)
+                        ptr += s->linesize[c] >> 1;
                     put_pixels_clamped(s->block, ptr, s->linesize[c]);
                     if (++x == h) {
                         x = 0;
@@ -895,12 +917,24 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                 case SOS:
                     mjpeg_decode_sos(s, s->buffer, input_size);
                     if (s->start_code == EOI) {
+                        int l;
+                        if (s->interlaced) {
+                            s->bottom_field ^= 1;
+                            /* if not bottom field, do not output image yet */
+                            if (s->bottom_field)
+                                goto the_end;
+                        }
                         for(i=0;i<3;i++) {
                             picture->data[i] = s->current_picture[i];
-                            picture->linesize[i] = s->linesize[i];
+                            l = s->linesize[i];
+                            if (s->interlaced)
+                                l >>= 1;
+                            picture->linesize[i] = l;
                         }
                         *data_size = sizeof(AVPicture);
                         avctx->height = s->height;
+                        if (s->interlaced)
+                            avctx->height *= 2;
                         avctx->width = s->width;
                         /* XXX: not complete test ! */
                         switch((s->h_count[0] << 4) | s->v_count[0]) {
