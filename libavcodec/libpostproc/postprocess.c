@@ -103,14 +103,20 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #define TEMP_STRIDE 8
 //#define NUM_BLOCKS_AT_ONCE 16 //not used yet
 
+#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#    define attribute_used __attribute__((used))
+#else
+#    define attribute_used
+#endif
+
 #ifdef ARCH_X86
-static uint64_t __attribute__((aligned(8))) w05=		0x0005000500050005LL;
-static uint64_t __attribute__((aligned(8))) w20=		0x0020002000200020LL;
-static uint64_t __attribute__((aligned(8))) b00= 		0x0000000000000000LL;
-static uint64_t __attribute__((aligned(8))) b01= 		0x0101010101010101LL;
-static uint64_t __attribute__((aligned(8))) b02= 		0x0202020202020202LL;
-static uint64_t __attribute__((aligned(8))) b08= 		0x0808080808080808LL;
-static uint64_t __attribute__((aligned(8))) b80= 		0x8080808080808080LL;
+static uint64_t __attribute__((aligned(8))) attribute_used w05=		0x0005000500050005LL;
+static uint64_t __attribute__((aligned(8))) attribute_used w20=		0x0020002000200020LL;
+static uint64_t __attribute__((aligned(8))) attribute_used b00= 		0x0000000000000000LL;
+static uint64_t __attribute__((aligned(8))) attribute_used b01= 		0x0101010101010101LL;
+static uint64_t __attribute__((aligned(8))) attribute_used b02= 		0x0202020202020202LL;
+static uint64_t __attribute__((aligned(8))) attribute_used b08= 		0x0808080808080808LL;
+static uint64_t __attribute__((aligned(8))) attribute_used b80= 		0x8080808080808080LL;
 #endif
 
 
@@ -119,7 +125,7 @@ static uint8_t * const clip_tab= clip_table + 256;
 
 static int verbose= 0;
 
-static const int deringThreshold= 20;
+static const int attribute_used deringThreshold= 20;
 
 
 static struct PPFilter filters[]=
