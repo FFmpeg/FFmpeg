@@ -697,6 +697,7 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
     MOVContext *mov = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVCodecContext *enc;
+    int cl, id;
 
     enc = &s->streams[stream_index]->codec;
     if (!url_is_streamed(&s->pb)) {
@@ -740,8 +741,8 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
             }
         }
 
-        int cl = trk->entry / MOV_INDEX_CLUSTER_SIZE;
-        int id = trk->entry % MOV_INDEX_CLUSTER_SIZE;
+        cl = trk->entry / MOV_INDEX_CLUSTER_SIZE;
+        id = trk->entry % MOV_INDEX_CLUSTER_SIZE;
 
         if (trk->ents_allocated <= trk->entry) {
             trk->cluster = av_realloc(trk->cluster, (cl+1)*sizeof(void*)); 
