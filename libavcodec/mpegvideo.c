@@ -3585,6 +3585,9 @@ void ff_mpeg_flush(AVCodecContext *avctx){
     int i;
     MpegEncContext *s = avctx->priv_data;
     
+    if(s==NULL || s->picture==NULL) 
+        return;
+    
     for(i=0; i<MAX_PICTURE_COUNT; i++){
        if(s->picture[i].data[0] && (   s->picture[i].type == FF_BUFFER_TYPE_INTERNAL
                                     || s->picture[i].type == FF_BUFFER_TYPE_USER))
