@@ -75,7 +75,13 @@ int mm_support(void);
 
 static inline void emms(void)
 {
-	asm volatile ("emms;");
+    __asm __volatile ("emms;":::"memory");
+}
+
+#define emms_c() \
+{\
+    if (mm_flags & MM_MMX)\
+        emms();\
 }
 
 #define __align8 __attribute__ ((aligned (8)))
@@ -83,6 +89,8 @@ static inline void emms(void)
 void dsputil_init_mmx(void);
 
 #else
+
+#define emms_c()
 
 #define __align8
 

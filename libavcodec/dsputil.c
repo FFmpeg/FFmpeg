@@ -21,10 +21,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#ifdef HAVE_MMX
-int mm_flags; /* multimedia extension flags */
-#endif
-
 void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
