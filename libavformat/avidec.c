@@ -90,7 +90,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     uint32_t tag, tag1, handler;
-    int codec_type, stream_index, frame_period, bit_rate, scale, rate;
+    int codec_type, stream_index, frame_period, bit_rate;
     unsigned int size, nb_frames;
     int i, n;
     AVStream *st;
@@ -164,9 +164,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 #ifdef DEBUG
         print_tag("strh", tag1, -1);
 #endif
-            switch(tag1) {
-            case MKTAG('i', 'a', 'v', 's'):
-	    case MKTAG('i', 'v', 'a', 's'):
+            if(tag1 == MKTAG('i', 'a', 'v', 's') || tag1 == MKTAG('i', 'v', 'a', 's')){
                 /* 
 	         * After some consideration -- I don't think we 
 	         * have to support anything but DV in a type1 AVIs.
@@ -192,96 +190,67 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		ast->rate = get_le32(pb);
 	        stream_index = s->nb_streams - 1;
 		url_fskip(pb, size - 7*4);
-		break;
+                break;
+            }
+
+            if (stream_index >= s->nb_streams) {
+                url_fskip(pb, size - 8);
+                break;
+            } 
+            st = s->streams[stream_index];
+            ast = st->priv_data;
+            st->codec.stream_codec_tag= handler;
+
+            get_le32(pb); /* flags */
+            get_le16(pb); /* priority */
+            get_le16(pb); /* language */
+            get_le32(pb); /* initial frame */
+            ast->scale = get_le32(pb);
+            ast->rate = get_le32(pb);
+            if(ast->scale && ast->rate){
+            }else if(frame_period){
+                ast->rate = 1000000;
+                ast->scale = frame_period;
+            }else{
+                ast->rate = 25;
+                ast->scale = 1;
+            }
+            av_set_pts_info(st, 64, ast->scale, ast->rate);
+                    
+            ast->start= get_le32(pb); /* start */
+            nb_frames = get_le32(pb);
+
+            st->start_time = 0;
+            st->duration = av_rescale(nb_frames, ast->scale*(int64_t)AV_TIME_BASE, ast->rate);
+            get_le32(pb); /* buffer size */
+            get_le32(pb); /* quality */
+            ast->sample_size = get_le32(pb); /* sample ssize */
+//            av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d\n", ast->rate, ast->scale, ast->start, ast->sample_size);
+
+            switch(tag1) {
 	    case MKTAG('v', 'i', 'd', 's'):
                 codec_type = CODEC_TYPE_VIDEO;
 
-                if (stream_index >= s->nb_streams) {
-                    url_fskip(pb, size - 8);
-                    break;
-                } 
-
-                st = s->streams[stream_index];
-                ast = st->priv_data;
-                st->codec.stream_codec_tag= handler;
-                
-                get_le32(pb); /* flags */
-                get_le16(pb); /* priority */
-                get_le16(pb); /* language */
-                get_le32(pb); /* XXX: initial frame ? */
-                scale = get_le32(pb); /* scale */
-                rate = get_le32(pb); /* rate */
-
-                if(scale && rate){
-                }else if(frame_period){
-                    rate = 1000000;
-                    scale = frame_period;
-                }else{
-                    rate = 25;
-                    scale = 1;
-                }
-                ast->rate = rate;
-                ast->scale = scale;
-                av_set_pts_info(st, 64, scale, rate);
-                st->codec.frame_rate = rate;
-                st->codec.frame_rate_base = scale;
-                get_le32(pb); /* start */
-                nb_frames = get_le32(pb);
-                st->start_time = 0;
-                st->duration = av_rescale(nb_frames,
-                    st->codec.frame_rate_base * (int64_t)AV_TIME_BASE,
-                    st->codec.frame_rate);
-		url_fskip(pb, size - 9 * 4);
+                ast->sample_size = 0;
+                st->codec.frame_rate = ast->rate;
+                st->codec.frame_rate_base = ast->scale;
                 break;
             case MKTAG('a', 'u', 'd', 's'):
-                {
-                    unsigned int length;
-
-                    codec_type = CODEC_TYPE_AUDIO;
-
-                    if (stream_index >= s->nb_streams) {
-                        url_fskip(pb, size - 8);
-                        break;
-                    } 
-                    st = s->streams[stream_index];
-                    ast = st->priv_data;
-                    
-                    get_le32(pb); /* flags */
-                    get_le16(pb); /* priority */
-                    get_le16(pb); /* language */
-                    get_le32(pb); /* initial frame */
-                    ast->scale = get_le32(pb); /* scale */
-                    ast->rate = get_le32(pb);
-                    if(!ast->rate)
-                        ast->rate= 1; //wrong but better then 1/0
-                    if(!ast->scale)
-                        ast->scale= 1; //wrong but better then 1/0
-                    av_set_pts_info(st, 64, ast->scale, ast->rate);
-                    ast->start= get_le32(pb); /* start */
-                    length = get_le32(pb); /* length, in samples or bytes */
-                    get_le32(pb); /* buffer size */
-                    get_le32(pb); /* quality */
-                    ast->sample_size = get_le32(pb); /* sample ssize */
-//av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d\n", ast->scale, ast->rate, ast->sample_size, ast->start);
-                    st->start_time = 0;
-                    st->duration = av_rescale(length, ast->scale*(int64_t)AV_TIME_BASE, ast->rate);
-                    url_fskip(pb, size - 12 * 4);
-                }
+                codec_type = CODEC_TYPE_AUDIO;
                 break;
             case MKTAG('t', 'x', 't', 's'):
                 //FIXME 
                 codec_type = CODEC_TYPE_DATA; //CODEC_TYPE_SUB ?  FIXME
-                url_fskip(pb, size - 8);
                 break;
             case MKTAG('p', 'a', 'd', 's'):
                 codec_type = CODEC_TYPE_UNKNOWN;
-                url_fskip(pb, size - 8);
                 stream_index--;
                 break;
             default:
                 av_log(s, AV_LOG_ERROR, "unknown stream type %X\n", tag1);
                 goto fail;
             }
+            url_fskip(pb, size - 12 * 4);
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
