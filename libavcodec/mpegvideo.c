@@ -3497,7 +3497,8 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }
         }
         ff_set_qscale(s, last_qp + s->dquant);
-    }
+    }else if(s->flags&CODEC_FLAG_QP_RD)
+        ff_set_qscale(s, s->qscale + s->dquant);
 
     wrap_y = s->linesize;
     wrap_c = s->uvlinesize;
