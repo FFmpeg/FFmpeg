@@ -72,6 +72,19 @@ typedef struct _CachedImage {
     int height;
 } CachedImage;
 
+void Release(void *ctx)
+{
+    ContextInfo *ci;
+    ci = (ContextInfo *) ctx;
+
+    if (ci->cache) {
+        imlib_context_set_image(ci->cache->image);
+        imlib_free_image();
+        av_free(ci->cache);
+    }
+    if (ctx)
+        av_free(ctx);
+}
 
 int Configure(void **ctxp, int argc, char *argv[])
 {
@@ -261,6 +274,3 @@ done:
     ;
 }
 
-/* To ensure correct typing */
-FrameHookConfigureFn ConfigureFn = Configure;
-FrameHookProcessFn ProcessFn = Process;

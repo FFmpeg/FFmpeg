@@ -82,6 +82,11 @@ static void dorange(const char *s, int *first, int *second, int maxval)
         *second = maxval;
 }
 
+void Release(void *ctx)
+{
+    if (ctx)
+        av_free(ctx);
+}
 
 int Configure(void **ctxp, int argc, char *argv[])
 {
@@ -325,6 +330,3 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     }
 }
 
-/* To ensure correct typing */
-FrameHookConfigureFn ConfigureFn = Configure;
-FrameHookProcessFn ProcessFn = Process;

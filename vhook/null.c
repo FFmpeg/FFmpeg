@@ -24,6 +24,14 @@ typedef struct {
     int dummy;
 } ContextInfo;
 
+void Release(void *ctx)
+{
+    ContextInfo *ci;
+    ci = (ContextInfo *) ctx;
+
+    if (ctx)
+        av_free(ctx);
+}
 
 int Configure(void **ctxp, int argc, char *argv[])
 {
@@ -68,6 +76,3 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     av_free(buf);
 }
 
-/* To ensure correct typing */
-FrameHookConfigureFn ConfigureFn = Configure;
-FrameHookProcessFn ProcessFn = Process;
