@@ -67,8 +67,8 @@ static int common_init(AVCodecContext *avctx){
 }
 
 static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
-    char buf1[32];
-    int h;
+    char buf1[32], tuple_type[32];
+    int h, w, depth, maxval;;
 
     pnm_get(s, buf1, sizeof(buf1));
     if (!strcmp(buf1, "P4")) {
@@ -80,6 +80,52 @@ static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
             avctx->pix_fmt = PIX_FMT_GRAY8;
     } else if (!strcmp(buf1, "P6")) {
         avctx->pix_fmt = PIX_FMT_RGB24;
+    } else if (!strcmp(buf1, "P7")) {
+        w = -1;
+        h = -1;
+        maxval = -1;
+        depth = -1;
+        tuple_type[0] = '\0';
+        for(;;) {
+            pnm_get(s, buf1, sizeof(buf1));
+            if (!strcmp(buf1, "WIDTH")) {
+                pnm_get(s, buf1, sizeof(buf1));
+                w = strtol(buf1, NULL, 10);
+            } else if (!strcmp(buf1, "HEIGHT")) {
+                pnm_get(s, buf1, sizeof(buf1));
+                h = strtol(buf1, NULL, 10);
+            } else if (!strcmp(buf1, "DEPTH")) {
+                pnm_get(s, buf1, sizeof(buf1));
+                depth = strtol(buf1, NULL, 10);
+            } else if (!strcmp(buf1, "MAXVAL")) {
+                pnm_get(s, buf1, sizeof(buf1));
+                maxval = strtol(buf1, NULL, 10);
+            } else if (!strcmp(buf1, "TUPLETYPE")) {
+                pnm_get(s, tuple_type, sizeof(tuple_type));
+            } else if (!strcmp(buf1, "ENDHDR")) {
+                break;
+            } else {
+                return -1;
+            }
+        }
+        /* check that all tags are present */
+        if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0')
+            return -1;
+        avctx->width = w;
+        avctx->height = h;
+        if (depth == 1) {
+            if (maxval == 1)
+                avctx->pix_fmt = PIX_FMT_MONOWHITE;
+            else 
+                avctx->pix_fmt = PIX_FMT_GRAY8;
+        } else if (depth == 3) {
+            avctx->pix_fmt = PIX_FMT_RGB24;
+        } else if (depth == 4) {
+            avctx->pix_fmt = PIX_FMT_RGBA32;
+        } else {
+            return -1;
+        }
+        return 0;
     } else {
         return -1;
     }
@@ -128,7 +174,7 @@ static int pnm_decode_frame(AVCodecContext *avctx,
     s->bytestream_end= buf + buf_size;
     
     if(pnm_decode_header(avctx, s) < 0)
-        return h;
+        return -1;
     
     if(p->data[0])
         avctx->release_buffer(avctx, p);
@@ -151,6 +197,7 @@ static int pnm_decode_frame(AVCodecContext *avctx,
         n = avctx->width;
         goto do_read;
     case PIX_FMT_MONOWHITE:
+    case PIX_FMT_MONOBLACK:
         n = (avctx->width + 7) >> 3;
     do_read:
         ptr = p->data[0];
@@ -185,6 +232,22 @@ static int pnm_decode_frame(AVCodecContext *avctx,
                 ptr1 += p->linesize[1];
                 ptr2 += p->linesize[2];
             }
+        }
+        break;
+    case PIX_FMT_RGBA32:
+        ptr = p->data[0];
+        linesize = p->linesize[0];
+        for(i = 0; i < avctx->height; i++) {
+            int j, r, g, b, a;
+
+            for(j = 0;j < avctx->width; j++) {
+                r = *s->bytestream++;
+                g = *s->bytestream++;
+                b = *s->bytestream++;
+                a = *s->bytestream++;
+                ((uint32_t *)ptr)[j] = (a << 24) | (r << 16) | (g << 8) | b;
+            }
+            ptr += linesize;
         }
         break;
     }
@@ -264,128 +327,6 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
                 ptr2 += p->linesize[2];
         }
     }
-    return s->bytestream - s->bytestream_start;
-}
-
-static int pam_decode_frame(AVCodecContext *avctx, 
-                        void *data, int *data_size,
-                        uint8_t *buf, int buf_size)
-{
-    PNMContext * const s = avctx->priv_data;
-    AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&s->picture;
-    int i, n, linesize, h, w, depth, maxval;
-    char buf1[32], tuple_type[32];
-    unsigned char *ptr;
-
-    /* special case for last picture */
-    if (buf_size == 0) {
-        return 0;
-    }
-    
-    s->bytestream_start=
-    s->bytestream= buf;
-    s->bytestream_end= buf + buf_size;
-
-    pnm_get(s, buf1, sizeof(buf1));
-    if (strcmp(buf1, "P7") != 0)
-        return -1;
-    w = -1;
-    h = -1;
-    maxval = -1;
-    depth = -1;
-    tuple_type[0] = '\0';
-    for(;;) {
-        pnm_get(s, buf1, sizeof(buf1));
-        if (!strcmp(buf1, "WIDTH")) {
-            pnm_get(s, buf1, sizeof(buf1));
-            w = strtol(buf1, NULL, 10);
-        } else if (!strcmp(buf1, "HEIGHT")) {
-            pnm_get(s, buf1, sizeof(buf1));
-            h = strtol(buf1, NULL, 10);
-        } else if (!strcmp(buf1, "DEPTH")) {
-            pnm_get(s, buf1, sizeof(buf1));
-            depth = strtol(buf1, NULL, 10);
-        } else if (!strcmp(buf1, "MAXVAL")) {
-            pnm_get(s, buf1, sizeof(buf1));
-            maxval = strtol(buf1, NULL, 10);
-        } else if (!strcmp(buf1, "TUPLETYPE")) {
-            pnm_get(s, tuple_type, sizeof(tuple_type));
-        } else if (!strcmp(buf1, "ENDHDR")) {
-            break;
-        } else {
-            return -1;
-        }
-    }
-    /* check that all tags are present */
-    if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0')
-        return -1;
-    avctx->width = w;
-    avctx->height = h;
-    if (depth == 1) {
-        if (maxval == 1)
-            avctx->pix_fmt = PIX_FMT_MONOWHITE;
-        else 
-            avctx->pix_fmt = PIX_FMT_GRAY8;
-    } else if (depth == 3) {
-        avctx->pix_fmt = PIX_FMT_RGB24;
-    } else if (depth == 4) {
-        avctx->pix_fmt = PIX_FMT_RGBA32;
-    } else {
-        return -1;
-    }
-    
-    if(p->data[0])
-        avctx->release_buffer(avctx, p);
-
-    p->reference= 0;
-    if(avctx->get_buffer(avctx, p) < 0){
-        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
-    }
-    p->pict_type= FF_I_TYPE;
-    p->key_frame= 1;
-    
-    switch(avctx->pix_fmt) {
-    default:
-        return -1;
-    case PIX_FMT_RGB24:
-        n = avctx->width * 3;
-        goto do_read;
-    case PIX_FMT_GRAY8:
-        n = avctx->width;
-        goto do_read;
-    case PIX_FMT_MONOWHITE:
-        n = (avctx->width + 7) >> 3;
-    do_read:
-        ptr = p->data[0];
-        linesize = p->linesize[0];
-        for(i = 0; i < avctx->height; i++) {
-            memcpy(ptr, s->bytestream, n);
-            s->bytestream += n;
-            ptr += linesize;
-        }
-        break;
-    case PIX_FMT_RGBA32:
-        ptr = p->data[0];
-        linesize = p->linesize[0];
-        for(i = 0; i < avctx->height; i++) {
-            int j, r, g, b, a;
-
-            for(j = 0;j < w; j++) {
-                r = *s->bytestream++;
-                g = *s->bytestream++;
-                b = *s->bytestream++;
-                a = *s->bytestream++;
-                ((uint32_t *)ptr)[j] = (a << 24) | (r << 16) | (g << 8) | b;
-            }
-            ptr += linesize;
-        }
-        break;
-    }   
-    *picture= *(AVFrame*)&s->picture;
-    *data_size = sizeof(AVPicture);
-
     return s->bytestream - s->bytestream_start;
 }
 
@@ -563,7 +504,7 @@ retry:
 }
 
 AVCodecParser pnm_parser = {
-    { CODEC_ID_PGM, CODEC_ID_PGMYUV, CODEC_ID_PPM, CODEC_ID_PBM},
+    { CODEC_ID_PGM, CODEC_ID_PGMYUV, CODEC_ID_PPM, CODEC_ID_PBM, CODEC_ID_PAM},
     sizeof(ParseContext),
     NULL,
     pnm_parse,
@@ -626,6 +567,6 @@ AVCodec pam_encoder = {
     common_init,
     pam_encode_frame,
     NULL, //encode_end,
-    pam_decode_frame,
+    pnm_decode_frame,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGBA32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, -1}, 
 };
