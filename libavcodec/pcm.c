@@ -334,7 +334,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     default:
-        *data_size = 0;
         return -1;
     }
     *data_size = (uint8_t *)samples - (uint8_t *)data;
