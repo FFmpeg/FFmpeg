@@ -115,6 +115,10 @@ extern const struct AVOption avoptions_workaround_bug[11];
 #define INT64_MAX int64_t_C(9223372036854775807)
 #endif
 
+#ifndef UINT64_MAX
+#define UINT64_MAX uint64_t_C(0xFFFFFFFFFFFFFFFF)
+#endif
+
 #ifdef EMULATE_FAST_INT
 /* note that we don't emulate 64bit ints */
 typedef signed char int_fast8_t;
