@@ -52,10 +52,10 @@ more intelligent missalignment avoidance for the horizontal scaler
 
 #ifdef HAVE_MMX
 static uint64_t __attribute__((aligned(8))) yCoeff=    0x2568256825682568LL;
-static uint64_t __attribute__((aligned(8))) ubCoeff=   0x3343334333433343LL;
-static uint64_t __attribute__((aligned(8))) vrCoeff=   0x40cf40cf40cf40cfLL;
-static uint64_t __attribute__((aligned(8))) ugCoeff=   0xE5E2E5E2E5E2E5E2LL;
-static uint64_t __attribute__((aligned(8))) vgCoeff=   0xF36EF36EF36EF36ELL;
+static uint64_t __attribute__((aligned(8))) vrCoeff=   0x3343334333433343LL;
+static uint64_t __attribute__((aligned(8))) ubCoeff=   0x40cf40cf40cf40cfLL;
+static uint64_t __attribute__((aligned(8))) vgCoeff=   0xE5E2E5E2E5E2E5E2LL;
+static uint64_t __attribute__((aligned(8))) ugCoeff=   0xF36EF36EF36EF36ELL;
 static uint64_t __attribute__((aligned(8))) w400=      0x0400040004000400LL;
 static uint64_t __attribute__((aligned(8))) w80=       0x0080008000800080LL;
 static uint64_t __attribute__((aligned(8))) w10=       0x0010001000100010LL;
@@ -606,9 +606,9 @@ FULL_YSCALEYUV2RGB
 				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
 				int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19);
 				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
-				dest[0]=clip_table[((Y + yuvtab_3343[U]) >>13)];
-				dest[1]=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
-				dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
+				dest[0]=clip_table[((Y + yuvtab_40cf[U]) >>13)];
+				dest[1]=clip_table[((Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13)];
+				dest[2]=clip_table[((Y + yuvtab_3343[V]) >>13)];
 				dest+=dstbpp>>3;
 			}
 		}
@@ -621,9 +621,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<3)&0x07E0) |
-					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<8)&0xF800);
+					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
+					((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
 				dest+=2;
 			}
 		}
@@ -636,9 +636,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<2)&0x03E0) |
-					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<7)&0x7C00);
+					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
+					((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
 				dest+=2;
 			}
 		}
@@ -714,9 +714,9 @@ FULL_YSCALEYUV2RGB
 				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
 				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
-				dest[0]=clip_table[((Y + yuvtab_3343[U]) >>13)];
-				dest[1]=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
-				dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
+				dest[0]=clip_table[((Y + yuvtab_40cf[U]) >>13)];
+				dest[1]=clip_table[((Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13)];
+				dest[2]=clip_table[((Y + yuvtab_3343[V]) >>13)];
 				dest+=dstbpp>>3;
 			}
 		}
@@ -729,9 +729,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<3)&0x07E0) |
-					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<8)&0xF800);
+					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
+					((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
 				dest+=2;
 			}
 		}
@@ -744,9 +744,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<2)&0x03E0) |
-					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<7)&0x7C00);
+					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
+					((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
 				dest+=2;
 			}
 		}
@@ -831,9 +831,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 				int Y=yuvtab_2568[buf0[i]>>7];
 				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
-				dest[0]=clip_table[((Y + yuvtab_3343[U]) >>13)];
-				dest[1]=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
-				dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
+				dest[0]=clip_table[((Y + yuvtab_40cf[U]) >>13)];
+				dest[1]=clip_table[((Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13)];
+				dest[2]=clip_table[((Y + yuvtab_3343[V]) >>13)];
 				dest+=dstbpp>>3;
 			}
 		}
@@ -846,9 +846,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<3)&0x07E0) |
-					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<8)&0xF800);
+					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
+					((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
 				dest+=2;
 			}
 		}
@@ -861,9 +861,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<2)&0x03E0) |
-					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<7)&0x7C00);
+					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
+					((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
 				dest+=2;
 			}
 		}
