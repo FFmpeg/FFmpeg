@@ -30,6 +30,8 @@ enum CodecID {
     CODEC_ID_SVQ1,
     CODEC_ID_DVVIDEO,
     CODEC_ID_DVAUDIO,
+    CODEC_ID_WMAV1,
+    CODEC_ID_WMAV2,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -74,7 +76,7 @@ enum SampleFormat {
 };
 
 /* in bytes */
-#define AVCODEC_MAX_AUDIO_FRAME_SIZE 18432
+#define AVCODEC_MAX_AUDIO_FRAME_SIZE 131072
 
 /* motion estimation type, EPZS by default */
 enum Motion_Est_ID {
@@ -526,7 +528,7 @@ typedef struct AVCodecContext {
      */
     int dr_ip_buffer_count;
     
-    int block_align; /* currently only for adpcm codec in wav/avi */
+    int block_align; /* used by some WAV based audio codecs */
     
     int parse_only; /* decoding only: if true, only parsing is done
                        (function avcodec_parse_frame()). The frame
@@ -835,6 +837,8 @@ extern AVCodec rv10_decoder;
 extern AVCodec svq1_decoder;
 extern AVCodec dvvideo_decoder;
 extern AVCodec dvaudio_decoder;
+extern AVCodec wmav1_decoder;
+extern AVCodec wmav2_decoder;
 extern AVCodec mjpeg_decoder;
 extern AVCodec mp2_decoder;
 extern AVCodec mp3_decoder;

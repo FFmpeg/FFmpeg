@@ -74,6 +74,8 @@ void avcodec_register_all(void)
     register_avcodec(&mjpeg_decoder);
     register_avcodec(&mp2_decoder);
     register_avcodec(&mp3_decoder);
+    register_avcodec(&wmav1_decoder);
+    register_avcodec(&wmav2_decoder);
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif
