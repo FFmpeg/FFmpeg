@@ -67,6 +67,13 @@ static void msrle_decode_pal8(MsrleContext *s)
     int row_ptr = (s->avctx->height - 1) * row_dec;
     int frame_size = row_dec * s->avctx->height;
 
+    /* make the palette available */
+    memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
+    if (s->avctx->palctrl->palette_changed) {
+        s->frame.palette_has_changed = 1;
+        s->avctx->palctrl->palette_changed = 0;
+    }
+
     while (row_ptr >= 0) {
         FETCH_NEXT_STREAM_BYTE();
         rle_code = stream_byte;
@@ -126,13 +133,6 @@ static void msrle_decode_pal8(MsrleContext *s)
                 pixel_ptr++;
             }
         }
-    }
-
-    /* make the palette available */
-    memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
-    if (s->avctx->palctrl->palette_changed) {
-        s->frame.palette_has_changed = 1;
-        s->avctx->palctrl->palette_changed = 0;
     }
 
     /* one last sanity check on the way out */
