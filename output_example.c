@@ -33,8 +33,9 @@
 #include "avformat.h"
 
 /* 5 seconds stream duration */
-#define STREAM_DURATION 5.0
-
+#define STREAM_DURATION   5.0
+#define STREAM_FRAME_RATE 25 /* 25 images/s */
+#define STREAM_NB_FRAMES  ((int)(STREAM_DURATION * STREAM_FRAME_RATE))
 
 /**************************************************************/
 /* audio output */
@@ -192,10 +193,14 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
     c->width = 352;  
     c->height = 288;
     /* frames per second */
-    c->frame_rate = 25;  
-    c->frame_rate_base= 1;
-    c->gop_size = 12; /* emit one intra frame every twelve frames */
-
+    c->frame_rate = STREAM_FRAME_RATE;  
+    c->frame_rate_base = 1;
+    c->gop_size = 12; /* emit one intra frame every twelve frames at most */
+    if (c->codec_id == CODEC_ID_MPEG1VIDEO ||
+        c->codec_id == CODEC_ID_MPEG2VIDEO) {
+        /* just for testing, we also add B frames */
+        c->max_b_frames = 2;
+    }
     return st;
 }
 
@@ -294,18 +299,27 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
 {
     int out_size, ret;
     AVCodecContext *c;
-
+    AVFrame *picture_ptr;
+    
     c = &st->codec;
     
-    if (c->pix_fmt != PIX_FMT_YUV420P) {
-        /* as we only generate a YUV420P picture, we must convert it
-           to the codec pixel format if needed */
-        fill_yuv_image(tmp_picture, frame_count, c->width, c->height);
-        img_convert((AVPicture *)picture, c->pix_fmt, 
-                    (AVPicture *)tmp_picture, PIX_FMT_YUV420P,
-                    c->width, c->height);
+    if (frame_count >= STREAM_NB_FRAMES) {
+        /* no more frame to compress. The codec has a latency of a few
+           frames if using B frames, so we get the last frames by
+           passing a NULL picture */
+        picture_ptr = NULL;
     } else {
-        fill_yuv_image(picture, frame_count, c->width, c->height);
+        if (c->pix_fmt != PIX_FMT_YUV420P) {
+            /* as we only generate a YUV420P picture, we must convert it
+               to the codec pixel format if needed */
+            fill_yuv_image(tmp_picture, frame_count, c->width, c->height);
+            img_convert((AVPicture *)picture, c->pix_fmt, 
+                        (AVPicture *)tmp_picture, PIX_FMT_YUV420P,
+                        c->width, c->height);
+        } else {
+            fill_yuv_image(picture, frame_count, c->width, c->height);
+        }
+        picture_ptr = picture;
     }
 
     
@@ -313,13 +327,18 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
         /* raw video case. The API will change slightly in the near
            futur for that */
         ret = av_write_frame(oc, st->index, 
-                       (uint8_t *)picture, sizeof(AVPicture));
+                       (uint8_t *)picture_ptr, sizeof(AVPicture));
     } else {
         /* encode the image */
-        out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture);
-        
-        /* write the compressed frame in the media file */
-        ret = av_write_frame(oc, st->index, video_outbuf, out_size);
+        out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture_ptr);
+        /* if zero size, it means the image was buffered */
+        if (out_size != 0) {
+            /* write the compressed frame in the media file */
+            /* XXX: in case of B frames, the pts is not yet valid */
+            ret = av_write_frame(oc, st->index, video_outbuf, out_size);
+        } else {
+            ret = 0;
+        }
     }
     if (ret != 0) {
         fprintf(stderr, "Error while writing video frame\n");
