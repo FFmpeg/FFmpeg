@@ -49,7 +49,4 @@ Philip'a TODO list: (alphabetically ordered) (please help)
 
 unassigned TODO: (stuff which should/must be done but noone seems to do it)
 ---------------
-- fix avi de(muxer) to handle the global header thing (needed for huffyuv/WMV2/ some M4S2)
-- (try) to fix mpeg1/2 PTS
-- MPEG2 field pictures
 - use AVFrame for audio codecs too
