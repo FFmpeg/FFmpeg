@@ -484,6 +484,10 @@ retry:
     if(s->xvid_build==0 && s->divx_version==0 && s->lavc_build==0){
         if(s->avctx->codec_tag == ff_get_fourcc("XVID") || s->avctx->codec_tag == ff_get_fourcc("XVIX"))
             s->xvid_build= -1;
+        
+        if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==1
+           && s->padding_bug_score > 0 && s->low_delay) // XVID with modified fourcc 
+            s->xvid_build= -1;
 
         if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==0)
             s->divx_version= 400; //divx 4
@@ -577,6 +581,11 @@ retry:
         SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_old_c)
     }
 
+    if(avctx->debug & FF_DEBUG_BUGS)
+        printf("bugs: %X lavc_build:%d xvid_build:%d divx_version:%d divx_build:%d %s\n", 
+               s->workaround_bugs, s->lavc_build, s->xvid_build, s->divx_version, s->divx_build,
+               s->divx_packed ? "p" : "");
+    
 #if 0 // dump bits per frame / qp / complexity
 {
     static FILE *f=NULL;
