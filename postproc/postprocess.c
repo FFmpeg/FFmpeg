@@ -2603,6 +2603,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	   after watching a black picture for 5 hours*/
 	static uint64_t *yHistogram= NULL;
 	int black=0, white=255; // blackest black and whitest white in the picture
+	int QPCorrecture= 256;
 
 	/* Temporary buffers for handling the last row(s) */
 	static uint8_t *tempDst= NULL;
@@ -2693,6 +2694,9 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		packedYOffset= 0;
 	}
 
+	if(mode & LEVEL_FIX)	QPCorrecture= packedYScale &0xFFFF;
+	else			QPCorrecture= 256;
+
 	/* copy first row of 8x8 blocks */
 	for(x=0; x<width; x+=BLOCK_SIZE)
 		blockCopy(dst + x, dstStride, src + x, srcStride, 8, mode & LEVEL_FIX);
@@ -2702,7 +2706,11 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		//1% speedup if these are here instead of the inner loop
 		uint8_t *srcBlock= &(src[y*srcStride]);
 		uint8_t *dstBlock= &(dst[y*dstStride]);
-
+#ifdef ARCH_X86
+		int *QPptr= isColor ? &QPs[(y>>3)*QPStride] :&QPs[(y>>4)*QPStride];
+		int QPDelta= isColor ? 1<<(32-3) : 1<<(32-4);
+		int QPFrac= QPDelta;
+#endif
 		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards, if not
 		   than use a temporary buffer */
 		if(y+15 >= height)
@@ -2734,16 +2742,26 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		for(x=0; x<width; x+=BLOCK_SIZE)
 		{
 			const int stride= dstStride;
-			int QP;
-			if(isColor)
+#ifdef ARCH_X86
+			int QP= *QPptr;
+			asm volatile(
+				"addl %2, %1		\n\t"
+				"sbbl %%eax, %%eax	\n\t"
+				"shll $2, %%eax		\n\t"
+				"subl %%eax, %0		\n\t"
+				: "+r" (QPptr), "+m" (QPFrac)
+				: "r" (QPDelta)
+				: "%eax"
+			);
+#else
+			int QP= isColor ?
+                                QPs[(y>>3)*QPStride + (x>>3)]:
+                                QPs[(y>>4)*QPStride + (x>>4)];
+#endif
+			if(!isColor)
 			{
-				QP=QPs[(y>>3)*QPStride + (x>>3)];
-			}
-			else
-			{
-				QP= QPs[(y>>4)*QPStride + (x>>4)];
-				if(mode & LEVEL_FIX) QP= (QP* (packedYScale &0xFFFF))>>8;
-				yHistogram[ srcBlock[srcStride*5] ]++;
+				QP= (QP* QPCorrecture)>>8;
+				yHistogram[ srcBlock[srcStride*4 + 4] ]++;
 			}
 #ifdef HAVE_MMX
 			asm volatile(
@@ -2761,10 +2779,38 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 #endif
 
 #ifdef HAVE_MMX2
+/*
 			prefetchnta(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
 			prefetchnta(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
 			prefetcht0(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
 			prefetcht0(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
+*/
+/*
+			prefetchnta(srcBlock + (((x>>2)&6) + 5)*srcStride + 32);
+			prefetchnta(srcBlock + (((x>>2)&6) + 6)*srcStride + 32);
+			prefetcht0(dstBlock + (((x>>2)&6) + 5)*dstStride + 32);
+			prefetcht0(dstBlock + (((x>>2)&6) + 6)*dstStride + 32);
+*/
+
+			asm(
+				"movl %4, %%eax			\n\t"
+				"shrl $2, %%eax			\n\t"
+				"andl $6, %%eax			\n\t"
+				"addl $5, %%eax			\n\t"
+				"movl %%eax, %%ebx		\n\t"
+				"imul %1, %%eax			\n\t"
+				"imul %3, %%ebx			\n\t"
+				"prefetchnta 32(%%eax, %0)	\n\t"
+				"prefetcht0 32(%%ebx, %2)	\n\t"
+				"addl %1, %%eax			\n\t"
+				"addl %3, %%ebx			\n\t"
+				"prefetchnta 32(%%eax, %0)	\n\t"
+				"prefetcht0 32(%%ebx, %2)	\n\t"
+			:: "r" (srcBlock), "r" (srcStride), "r" (dstBlock), "r" (dstStride),
+			"m" (x)
+			: "%eax", "%ebx"
+			);
+
 #elif defined(HAVE_3DNOW)
 //FIXME check if this is faster on an 3dnow chip or if its faster without the prefetch or ...
 /*			prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
