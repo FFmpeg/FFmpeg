@@ -27,7 +27,6 @@
  * - checksumming
  * - correct rate denom/nom and sample_mul
  * - correct timestamp handling
- * - correct startcodes
  * - index writing
  * - info and index packet reading support
  * - startcode searching for broken streams
@@ -114,18 +113,17 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc)
     return 0;
 }
 
-static int get_padding(NUTContext *nut, ByteIOContext *bc)
-{
-    int i, tmp, len = nut->curr_frame_size - (url_ftell(bc) - nut->curr_frame_start);
+/**
+ * 
+ */
+static int get_length(uint64_t val){
+    int i;
 
-    for (i = 0; i < len; i++)
-    {
-	tmp = get_byte(bc);
-	if (tmp != 0)
-	    fprintf(stderr, "bad padding\n");
-    }
+    for (i=7; ; i+=7)
+	if ((val>>i) == 0)
+	    return i;
 
-    return 0;
+    return 7; //not reached
 }
 
 static int put_v(ByteIOContext *bc, uint64_t val)
@@ -139,9 +137,7 @@ static int put_v(ByteIOContext *bc, uint64_t val)
 	return -1;
 
     val &= 0x7FFFFFFFFFFFFFFFULL; // FIXME can only encode upto 63 bits currently
-    for (i=7; ; i+=7)
-	if ((val>>i) == 0)
-	    break;
+    i= get_length(val);
 
     for (i-=7; i>0; i-=7){
 	put_byte(bc, 0x80 | (val>>i));
@@ -171,11 +167,11 @@ static int put_b(ByteIOContext *bc, char *data, int len)
     return 0;
 }
 
-static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int est_size)
+static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size)
 {
     put_flush_packet(bc);
     nut->curr_frame_start = url_ftell(bc);
-    nut->curr_frame_size = est_size;
+    nut->curr_frame_size = max_size;
     
     /* packet header */
     put_v(bc, nut->curr_frame_size); /* forward ptr */
@@ -188,16 +184,22 @@ static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int est_size)
     return 0;
 }
 
-static int put_padding(NUTContext *nut, ByteIOContext *bc)
-{
-    int i, len = nut->curr_frame_size - (url_ftell(bc) - nut->curr_frame_start);
+static int update_packetheader(NUTContext *nut, ByteIOContext *bc, int additional_size){
+    offset_t start= nut->curr_frame_start;
+    offset_t cur= url_ftell(bc);
+    int size= cur - start + additional_size;
     
-    put_flush_packet(bc);
-    for (i = 0; i < len; i++)
-	put_byte(bc, 0);
+    assert( size <= nut->curr_frame_size );
+    
+    url_fseek(bc, start, SEEK_SET);
+    put_v(bc, size);
+    if(get_length(size) < get_length(nut->curr_frame_size))
+        put_byte(bc, 0x80);
+    nut->curr_frame_size= size;
+    dprintf("Packet update: size: %d\n", size);
 
-    dprintf("padded %d bytes\n", i);
-
+    url_fseek(bc, cur, SEEK_SET);    
+    
     return 0;
 }
 
@@ -215,7 +217,7 @@ static int nut_write_header(AVFormatContext *s)
 	    stream_length = s->streams[i]->duration * (AV_TIME_BASE / 1000);
     }
 
-    put_packetheader(nut, bc, 16); /* FIXME: estimation */
+    put_packetheader(nut, bc, 120);
     
     /* main header */
     put_be64(bc, MAIN_STARTCODE);
@@ -223,15 +225,16 @@ static int nut_write_header(AVFormatContext *s)
     put_v(bc, s->nb_streams);
     put_v(bc, 0); /* file size */
     put_v(bc, stream_length); /* len in msec */
-    put_padding(nut, bc);
     put_be32(bc, 0); /* FIXME: checksum */
+    
+    update_packetheader(nut, bc, 0);
     
     /* stream headers */
     for (i = 0; i < s->nb_streams; i++)
     {
 	codec = &s->streams[i]->codec;
 	
-	put_packetheader(nut, bc, 64); /* FIXME: estimation */
+	put_packetheader(nut, bc, 120);
 	put_be64(bc, STREAM_STARTCODE);
 	put_v(bc, s->streams[i]->index);
 	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
@@ -266,7 +269,6 @@ static int nut_write_header(AVFormatContext *s)
 	    case CODEC_TYPE_AUDIO:
 		put_v(bc, codec->sample_rate / (double)(codec->frame_rate_base / codec->frame_rate));
 		put_v(bc, codec->channels);
-		put_padding(nut, bc);
 		put_be32(bc, 0); /* FIXME: checksum */
 		break;
 	    case CODEC_TYPE_VIDEO:
@@ -275,16 +277,16 @@ static int nut_write_header(AVFormatContext *s)
 		put_v(bc, 0); /* aspected w */
 		put_v(bc, 0); /* aspected h */
 		put_v(bc, 0); /* csp type -- unknown */
-		put_padding(nut, bc);
 		put_be32(bc, 0); /* FIXME: checksum */
 		break;
 	}
+        update_packetheader(nut, bc, 0);
     }
 
 #if 0
     /* info header */
     put_packetheader(nut, bc, 16+strlen(s->author)+strlen(s->title)+
-        strlen(s->comment)+strlen(s->copyright)); /* FIXME: estimation */
+        strlen(s->comment)+strlen(s->copyright)); 
     put_be64(bc, INFO_STARTCODE);
     if (s->author[0])
     {
@@ -310,8 +312,8 @@ static int nut_write_header(AVFormatContext *s)
     put_v(bc, 9); /* type */
     put_b(bc, LIBAVFORMAT_IDENT, strlen(LIBAVFORMAT_IDENT));
 
-    put_padding(nut, bc);
     put_be32(bc, 0); /* FIXME: checksum */
+    update_packetheader(nut, bc, 0);
 #endif
         
     put_flush_packet(bc);
@@ -335,7 +337,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     if (enc->codec_type == CODEC_TYPE_VIDEO)
 	key_frame = enc->coded_frame->key_frame;
 
-    put_packetheader(nut, bc, size+(key_frame?16:8)+4); /* FIXME: estimation */
+    put_packetheader(nut, bc, size+(key_frame?8:0)+20);
 
     if (key_frame)
 	put_be64(bc, KEYFRAME_STARTCODE);
@@ -350,11 +352,10 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     put_byte(bc, flags);
     put_v(bc, stream_index);
     put_s(bc, 0); /* lsb_timestamp */
+    update_packetheader(nut, bc, size);
     
     put_buffer(bc, buf, size);
     
-    put_padding(nut, bc);
-
     put_flush_packet(bc);
 
     return 0;
@@ -371,12 +372,12 @@ static int nut_write_trailer(AVFormatContext *s)
 
     for (i = 0; s->nb_streams; i++)
     {
-	put_packetheader(nut, bc, 64); /* FIXME: estimation */
+	put_packetheader(nut, bc, 64);
 	put_be64(bc, INDEX_STARTCODE);
 	put_v(bc, s->streams[i]->id);
 	put_v(bc, ...);
-	put_padding(nut, bc);
 	put_be32(bc, 0); /* FIXME: checksum */
+        update_packetheader(nut, bc, 0);
     }
 #endif
 
@@ -423,7 +424,6 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     s->file_size = get_v(bc);
     s->duration = get_v(bc) / (AV_TIME_BASE / 1000);
 
-    get_padding(nut, bc);
     get_be32(bc); /* checkusm */
     
     s->bit_rate = 0;
@@ -485,14 +485,12 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    get_v(bc); /* aspected w */
 	    get_v(bc); /* aspected h */
 	    get_v(bc); /* csp type */
-	    get_padding(nut, bc);
 	    get_le32(bc); /* checksum */
 	}
 	if (class == 32) /* AUDIO */
 	{
 	    st->codec.sample_rate = get_v(bc) * (double)(st->codec.frame_rate_base / st->codec.frame_rate);
 	    st->codec.channels = get_v(bc);
-	    get_padding(nut, bc);
 	    get_le32(bc); /* checksum */
 	}
     }    
