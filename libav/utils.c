@@ -548,3 +548,59 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
     return 0;
 }
 
+/* Return in 'buf' the path with '%d' replaced by number. Also handles
+   the '%0nd' format where 'n' is the total number of digits and
+   '%%'. Return 0 if OK, and -1 if format error */
+int get_frame_filename(char *buf, int buf_size,
+                       const char *path, int number)
+{
+    const char *p;
+    char *q, buf1[20];
+    int nd, len, c, percentd_found;
+
+    q = buf;
+    p = path;
+    percentd_found = 0;
+    for(;;) {
+        c = *p++;
+        if (c == '\0')
+            break;
+        if (c == '%') {
+            nd = 0;
+            while (*p >= '0' && *p <= '9') {
+                nd = nd * 10 + *p++ - '0';
+            }
+            c = *p++;
+            switch(c) {
+            case '%':
+                goto addchar;
+            case 'd':
+                if (percentd_found)
+                    goto fail;
+                percentd_found = 1;
+                snprintf(buf1, sizeof(buf1), "%0*d", nd, number);
+                len = strlen(buf1);
+                if ((q - buf + len) > buf_size - 1)
+                    goto fail;
+                memcpy(q, buf1, len);
+                q += len;
+                break;
+            default:
+                goto fail;
+            }
+        } else {
+        addchar:
+            if ((q - buf) < buf_size - 1)
+                *q++ = c;
+        }
+    }
+    if (!percentd_found)
+        goto fail;
+    *q = '\0';
+    return 0;
+ fail:
+    *q = '\0';
+    return -1;
+}
+
+

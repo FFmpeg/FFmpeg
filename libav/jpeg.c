@@ -1,6 +1,6 @@
 /*
- * Miscellaneous MJPEG based formats
- * Copyright (c) 2000 Gerard Lantau.
+ * JPEG based formats
+ * Copyright (c) 2000, 2001 Gerard Lantau.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -126,7 +126,9 @@ static int jpeg_write_packet(AVFormatContext *s1, int stream_index,
     char filename[1024];
     ByteIOContext f1, *pb = &f1;
 
-    snprintf(filename, sizeof(filename), s->path, s->img_number);
+    if (get_frame_filename(filename, sizeof(filename), 
+                           s->path, s->img_number) < 0)
+        return -EIO;
     if (url_fopen(pb, filename, URL_WRONLY) < 0)
         return -EIO;
 
@@ -173,7 +175,8 @@ static int jpeg_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     /* try to find the first image */
     for(i=0;i<5;i++) {
-        snprintf(buf, sizeof(buf), s->path, s->img_number);
+        if (get_frame_filename(buf, sizeof(buf), s->path, s->img_number) < 0)
+            goto fail;
         if (url_fopen(f, buf, URL_RDONLY) >= 0)
             break;
         s->img_number++;
@@ -201,7 +204,9 @@ static int jpeg_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int size;
     ByteIOContext f1, *f = &f1;
 
-    snprintf(filename, sizeof(filename), s->path, s->img_number);
+    if (get_frame_filename(filename, sizeof(filename), 
+                           s->path, s->img_number) < 0)
+        return -EIO;
     
     f = &f1;
     if (url_fopen(f, filename, URL_RDONLY) < 0)
@@ -241,5 +246,5 @@ AVFormat jpeg_format = {
     jpeg_read_packet,
     jpeg_read_close,
     NULL,
-    AVFMT_NOFILE,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };

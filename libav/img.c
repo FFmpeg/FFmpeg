@@ -169,7 +169,9 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int ret;
     ByteIOContext f1, *f;
 
-    snprintf(filename, sizeof(filename), s->path, s->img_number);
+    if (get_frame_filename(filename, sizeof(filename),
+                           s->path, s->img_number) < 0)
+        return -EIO;
     
     if (!s->is_pipe) {
         f = &f1;
@@ -223,6 +225,7 @@ static int sizes[][2] = {
     { 160, 128 },
     { 512, 384 },
     { 640, 352 },
+    { 640, 240 },
 };
 
 static int infer_size(int *width_ptr, int *height_ptr, int size)
@@ -288,7 +291,8 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (!s->is_pipe) {
         /* try to find the first image */
         for(i=0;i<5;i++) {
-            snprintf(buf, sizeof(buf), s->path, s->img_number);
+            if (get_frame_filename(buf, sizeof(buf), s->path, s->img_number) < 0)
+                goto fail;
             if (url_fopen(f, buf, URL_RDONLY) >= 0)
                 break;
             s->img_number++;
@@ -543,7 +547,9 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
         return -EIO;
     }
     
-    snprintf(filename, sizeof(filename), img->path, img->img_number);
+    if (get_frame_filename(filename, sizeof(filename), 
+                           img->path, img->img_number) < 0)
+        return -EIO;
 
     if (!img->is_pipe) {
         pb = &pb1;
@@ -596,7 +602,7 @@ AVFormat pgm_format = {
     img_read_packet,
     img_read_close,
     NULL,
-    AVFMT_NOFILE,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
 AVFormat pgmyuv_format = {
@@ -614,7 +620,7 @@ AVFormat pgmyuv_format = {
     img_read_packet,
     img_read_close,
     NULL,
-    AVFMT_NOFILE,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
 AVFormat ppm_format = {
@@ -632,7 +638,7 @@ AVFormat ppm_format = {
     img_read_packet,
     img_read_close,
     NULL,
-    AVFMT_NOFILE,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
 AVFormat imgyuv_format = {
@@ -650,7 +656,7 @@ AVFormat imgyuv_format = {
     img_read_packet,
     img_read_close,
     NULL,
-    AVFMT_NOFILE,
+    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
 AVFormat pgmpipe_format = {
