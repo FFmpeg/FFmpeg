@@ -312,6 +312,7 @@ static void vqa_decode_chunk(VqaContext *s)
     int i;
     unsigned char r, g, b;
     unsigned int *palette32;
+    int index_shift;
 
     int cbf0_chunk = -1;
     int cbfz_chunk = -1;
@@ -462,6 +463,10 @@ static void vqa_decode_chunk(VqaContext *s)
         s->decode_buffer, s->decode_buffer_size, 1);
 
     /* render the final PAL8 frame */
+    if (s->vector_height == 4)
+        index_shift = 4;
+    else
+        index_shift = 3;
     for (y = 0; y < s->frame.linesize[0] * s->height; 
         y += s->frame.linesize[0] * s->vector_height) {
 
@@ -482,7 +487,7 @@ static void vqa_decode_chunk(VqaContext *s)
                 lobyte = s->decode_buffer[lobytes];
                 hibyte = s->decode_buffer[hibytes];
                 vector_index = (hibyte << 8) | lobyte;
-                vector_index *= 8;
+                vector_index <<= index_shift;
                 lines = s->vector_height;
                 break;
 
