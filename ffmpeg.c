@@ -133,6 +133,7 @@ static int video_inter_quant_bias= FF_DEFAULT_QUANT_BIAS;
 static int me_method = ME_EPZS;
 static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
+static int video_codec_tag = 0;
 static int same_quality = 0;
 static int b_frames = 0;
 static int mb_decision = FF_MB_DECISION_SIMPLE;
@@ -200,6 +201,7 @@ static int audio_bit_rate = 64000;
 static int audio_disable = 0;
 static int audio_channels = 1;
 static int audio_codec_id = CODEC_ID_NONE;
+static int audio_codec_tag = 0;
 
 static int mux_rate= 0;
 static int mux_packet_size= 0;
@@ -1489,7 +1491,7 @@ static int av_encode(AVFormatContext **output_files,
             /* if stream_copy is selected, no need to decode or encode */
             codec->codec_id = icodec->codec_id;
             codec->codec_type = icodec->codec_type;
-            codec->codec_tag = icodec->codec_tag;
+            if(!codec->codec_tag) codec->codec_tag = icodec->codec_tag;
             codec->bit_rate = icodec->bit_rate;
             switch(codec->codec_type) {
             case CODEC_TYPE_AUDIO:
@@ -2613,6 +2615,24 @@ static void opt_audio_codec(const char *arg)
     }
 }
 
+static void opt_audio_tag(const char *arg)
+{
+    char *tail;
+    audio_codec_tag= strtol(arg, &tail, 0);
+
+    if(!tail || *tail)
+        audio_codec_tag= arg[0] + (arg[1]<<8) + (arg[2]<<16) + (arg[3]<<24);
+}
+
+static void opt_video_tag(const char *arg)
+{
+    char *tail;
+    video_codec_tag= strtol(arg, &tail, 0);
+
+    if(!tail || *tail)
+        video_codec_tag= arg[0] + (arg[1]<<8) + (arg[2]<<16) + (arg[3]<<24);
+}
+
 static void add_frame_hooker(const char *arg)
 {
     int argc = 0;
@@ -2955,6 +2975,9 @@ static void opt_output_file(const char *filename)
 
             video_enc = &st->codec;
             
+            if(video_codec_tag)
+                video_enc->codec_tag= video_codec_tag;
+                
             if(!strcmp(file_oformat->name, "mp4") || !strcmp(file_oformat->name, "mov") || !strcmp(file_oformat->name, "3gp"))
                 video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
             if (video_stream_copy) {
@@ -3204,6 +3227,9 @@ static void opt_output_file(const char *filename)
 
             audio_enc = &st->codec;
             audio_enc->codec_type = CODEC_TYPE_AUDIO;
+
+            if(audio_codec_tag)
+                audio_enc->codec_tag= audio_codec_tag;
 
             if(!strcmp(file_oformat->name, "mp4") || !strcmp(file_oformat->name, "mov") || !strcmp(file_oformat->name, "3gp"))
                 audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
@@ -3870,6 +3896,7 @@ const OptionDef options[] = {
     { "nssew", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&nsse_weight}, "weight", "" },
     { "subq", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&subpel_quality}, "", "" },
     { "lowres", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&lowres}, "", "" },
+    { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
@@ -3877,6 +3904,7 @@ const OptionDef options[] = {
     { "ac", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
     { "an", OPT_BOOL | OPT_AUDIO, {(void*)&audio_disable}, "disable audio" },
     { "acodec", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
+    { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_tag}, "force audio tag/fourcc", "fourcc/tag" },
 
     /* grab options */
     { "vd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_device}, "set video grab device", "device" },
