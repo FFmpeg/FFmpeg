@@ -1934,6 +1934,17 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
 
             s->mb_x = 0;
             s->mb_y++;
+
+            if(s->mb_y<<field_pic >= s->mb_height){
+                int left= s->gb.size_in_bits - get_bits_count(&s->gb);
+
+                if(left < 0 || (left && show_bits(&s->gb, FFMIN(left, 23)))
+                   || (avctx->error_resilience >= FF_ER_AGGRESSIVE && left>8)){
+                    fprintf(stderr, "end missmatch left=%d\n", left);
+                    return -1;
+                }else
+                    goto eos;
+            }
         }
 
         /* skip mb handling */
@@ -1962,10 +1973,6 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
                     break;
                 }
             }
-        }
-        if(s->mb_y<<field_pic >= s->mb_height){
-            fprintf(stderr, "slice too long\n");
-            return -1;
         }
     }
 eos: // end of slice
@@ -2248,9 +2255,14 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
             }
             return FFMAX(0, buf_ptr - buf - s2->parse_context.last_index);
         }
+        
+        input_size = buf_end - buf_ptr;
+
+        if(avctx->debug & FF_DEBUG_STARTCODE){
+            printf("%3X at %d left %d\n", start_code, buf_ptr-buf, input_size);
+        }
 
                 /* prepare data for next start code */
-                input_size = buf_end - buf_ptr;
                 switch(start_code) {
                 case SEQ_START_CODE:
                     mpeg1_decode_sequence(avctx, buf_ptr, 
