@@ -465,7 +465,7 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
 static void do_video_out(AVFormatContext *s, 
                          AVOutputStream *ost, 
                          AVInputStream *ist,
-                         AVPicture *in_picture,
+                         AVFrame *in_picture,
                          int *frame_size, AVOutputStream *audio_sync)
 {
     int nb_frames, i, ret;
@@ -557,13 +557,13 @@ static void do_video_out(AVFormatContext *s,
         avpicture_fill(formatted_picture, buf, target_pixfmt, dec->width, dec->height);
         
         if (img_convert(formatted_picture, target_pixfmt, 
-                        in_picture, dec->pix_fmt, 
+                        (AVPicture *)in_picture, dec->pix_fmt, 
                         dec->width, dec->height) < 0) {
             fprintf(stderr, "pixel format conversion not handled\n");
             goto the_end;
         }
     } else {
-        formatted_picture = in_picture;
+        formatted_picture = (AVPicture *)in_picture;
     }
 
     /* XXX: resampling could be done before raw format convertion in
@@ -627,7 +627,11 @@ static void do_video_out(AVFormatContext *s,
             
             memset(&big_picture, 0, sizeof(AVFrame));
             *(AVPicture*)&big_picture= *final_picture;
-                        
+            /* better than nothing: use input picture interlaced
+               settings */
+            big_picture.interlaced_frame = in_picture->interlaced_frame;
+            big_picture.top_field_first = in_picture->top_field_first;
+
             /* handles sameq here. This is not correct because it may
                not be a global option */
             if (same_quality) {
@@ -1187,7 +1191,7 @@ static int av_encode(AVFormatContext **output_files,
         int len;
         uint8_t *data_buf;
         int data_size, got_picture;
-        AVPicture picture;
+        AVFrame picture;
         short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
         void *buffer_to_free;
         double pts_min;
@@ -1285,32 +1289,27 @@ static int av_encode(AVFormatContext **output_files,
                         (2 * ist->st->codec.channels);
                     break;
                 case CODEC_TYPE_VIDEO:
-                    {
-                        AVFrame big_picture;
-
-                        data_size = (ist->st->codec.width * ist->st->codec.height * 3) / 2;
-                        ret = avcodec_decode_video(&ist->st->codec, 
-                                                   &big_picture, &got_picture, ptr, len);
-                        picture= *(AVPicture*)&big_picture;
-                        ist->st->quality= big_picture.quality;
-                        if (ret < 0) {
-                        fail_decode:
-                            fprintf(stderr, "Error while decoding stream #%d.%d\n",
-                                    ist->file_index, ist->index);
-                            av_free_packet(&pkt);
-                            goto redo;
-                        }
-                        if (!got_picture) {
-                            /* no picture yet */
-                            goto discard_packet;
-                        }
-                        if (ist->st->codec.frame_rate_base != 0) {
-                            ist->next_pts += ((int64_t)AV_TIME_BASE * 
-                                ist->st->codec.frame_rate_base) /
-                                ist->st->codec.frame_rate;
-                        }
-                        len = 0;
+                    data_size = (ist->st->codec.width * ist->st->codec.height * 3) / 2;
+                    ret = avcodec_decode_video(&ist->st->codec, 
+                                               &picture, &got_picture, ptr, len);
+                    ist->st->quality= picture.quality;
+                    if (ret < 0) {
+                    fail_decode:
+                        fprintf(stderr, "Error while decoding stream #%d.%d\n",
+                                ist->file_index, ist->index);
+                        av_free_packet(&pkt);
+                        goto redo;
                     }
+                    if (!got_picture) {
+                        /* no picture yet */
+                        goto discard_packet;
+                    }
+                    if (ist->st->codec.frame_rate_base != 0) {
+                        ist->next_pts += ((int64_t)AV_TIME_BASE * 
+                                          ist->st->codec.frame_rate_base) /
+                            ist->st->codec.frame_rate;
+                    }
+                    len = 0;
                     break;
                 default:
                     goto fail_decode;
@@ -1324,7 +1323,8 @@ static int av_encode(AVFormatContext **output_files,
 
             buffer_to_free = NULL;
             if (ist->st->codec.codec_type == CODEC_TYPE_VIDEO) {
-                pre_process_video_frame(ist, &picture, &buffer_to_free);
+                pre_process_video_frame(ist, (AVPicture *)&picture, 
+                                        &buffer_to_free);
             }
 
             /* frame rate emulation */

@@ -1560,7 +1560,9 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
     pic->quality= pic_arg->quality;
     pic->pict_type= pic_arg->pict_type;
     pic->pts = pic_arg->pts;
-    
+    pic->interlaced_frame = pic_arg->interlaced_frame;
+    pic->top_field_first = pic_arg->top_field_first;
+
     if(s->input_picture[encoding_delay])
         pic->display_picture_number= s->input_picture[encoding_delay]->display_picture_number + 1;
     
