@@ -39,7 +39,6 @@ typedef struct DVVideoDecodeContext {
     
     uint8_t dv_zigzag[2][64];
     uint8_t dv_idct_shift[2][22][64];
-    uint8_t dv_dct_shift[2][22][64];
   
     void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
     void (*fdct[2])(DCTELEM *block);
@@ -50,9 +49,22 @@ typedef struct DVVideoDecodeContext {
 } DVVideoDecodeContext;
 
 #define TEX_VLC_BITS 9
+
+#ifdef DV_CODEC_TINY_TARGET
+#define DV_VLC_MAP_RUN_SIZE 15
+#define DV_VLC_MAP_LEV_SIZE 23
+#else
+#define DV_VLC_MAP_RUN_SIZE  64 
+#define DV_VLC_MAP_LEV_SIZE 512
+#endif
+
 /* XXX: also include quantization */
 static RL_VLC_ELEM *dv_rl_vlc[1];
-static VLC_TYPE dv_vlc_codes[15][23];
+/* VLC encoding lookup table */
+static struct dv_vlc_pair {
+   uint32_t vlc;
+   uint8_t  size;
+} (*dv_vlc_map)[DV_VLC_MAP_LEV_SIZE] = NULL;
 
 static void dv_build_unquantize_tables(DVVideoDecodeContext *s, uint8_t* perm)
 {
@@ -66,8 +78,6 @@ static void dv_build_unquantize_tables(DVVideoDecodeContext *s, uint8_t* perm)
             j = perm[i];
             s->dv_idct_shift[0][q][j] =
                 dv_quant_shifts[q][dv_88_areas[i]] + 1;
-            s->dv_dct_shift[0][q][i] =
-                dv_quant_shifts[q][dv_88_areas[ff_zigzag_direct[i]]] + 4;
         }
         
         /* 248DCT */
@@ -75,8 +85,6 @@ static void dv_build_unquantize_tables(DVVideoDecodeContext *s, uint8_t* perm)
             /* 248 table */
             s->dv_idct_shift[1][q][i] =  
                 dv_quant_shifts[q][dv_248_areas[i]] + 1;
-	    s->dv_dct_shift[1][q][i] =  
-                dv_quant_shifts[q][dv_248_areas[ff_zigzag248_direct[i]]] + 4;
         }
     }
 }
@@ -86,7 +94,7 @@ static int dvvideo_init(AVCodecContext *avctx)
     DVVideoDecodeContext *s = avctx->priv_data;
     DSPContext dsp;
     static int done=0;
-    int i;
+    int i, j;
 
     if (!done) {
         int i;
@@ -94,12 +102,20 @@ static int dvvideo_init(AVCodecContext *avctx)
 
         done = 1;
 
+        dv_vlc_map = av_mallocz(DV_VLC_MAP_LEV_SIZE*DV_VLC_MAP_RUN_SIZE*sizeof(struct dv_vlc_pair));
+	if (!dv_vlc_map)
+	    return -ENOMEM;
+
         /* NOTE: as a trick, we use the fact the no codes are unused
            to accelerate the parsing of partial codes */
         init_vlc(&dv_vlc, TEX_VLC_BITS, NB_DV_VLC, 
                  dv_vlc_len, 1, 1, dv_vlc_bits, 2, 2);
 
         dv_rl_vlc[0] = av_malloc(dv_vlc.table_size * sizeof(RL_VLC_ELEM));
+	if (!dv_rl_vlc[0]) {
+	    av_free(dv_vlc_map);
+	    return -ENOMEM;
+	}
         for(i = 0; i < dv_vlc.table_size; i++){
             int code= dv_vlc.table[i][0];
             int len = dv_vlc.table[i][1];
@@ -121,10 +137,42 @@ static int dvvideo_init(AVCodecContext *avctx)
             dv_rl_vlc[0][i].run = run;
         }
 
-	memset(dv_vlc_codes, 0xff, sizeof(dv_vlc_codes));
 	for (i = 0; i < NB_DV_VLC - 1; i++) {
-	   if (dv_vlc_run[i] < 15 && dv_vlc_level[i] < 23 && dv_vlc_len[i] < 15)
-	       dv_vlc_codes[dv_vlc_run[i]][dv_vlc_level[i]] = i;
+           if (dv_vlc_run[i] >= DV_VLC_MAP_RUN_SIZE || dv_vlc_level[i] >= DV_VLC_MAP_LEV_SIZE)
+	       continue;
+	   
+	   if (dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].size != 0)
+	       continue;
+	       
+	   dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].vlc = dv_vlc_bits[i] << 
+	                                                    (!!dv_vlc_level[i]);
+	   dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].size = dv_vlc_len[i] + 
+	                                                     (!!dv_vlc_level[i]);
+	}
+	for (i = 0; i < DV_VLC_MAP_RUN_SIZE; i++) {
+#ifdef DV_CODEC_TINY_TARGET
+	   for (j = 1; j < DV_VLC_MAP_LEV_SIZE; j++) {
+	      if (dv_vlc_map[i][j].size == 0) {
+	          dv_vlc_map[i][j].vlc = dv_vlc_map[0][j].vlc |
+		            (dv_vlc_map[i-1][0].vlc << (dv_vlc_map[0][j].size));
+	          dv_vlc_map[i][j].size = dv_vlc_map[i-1][0].size + 
+		                          dv_vlc_map[0][j].size;
+	      }
+	   }
+#else
+	   for (j = 1; j < DV_VLC_MAP_LEV_SIZE/2; j++) {
+	      if (dv_vlc_map[i][j].size == 0) {
+	          dv_vlc_map[i][j].vlc = dv_vlc_map[0][j].vlc |
+		            (dv_vlc_map[i-1][0].vlc << (dv_vlc_map[0][j].size));
+	          dv_vlc_map[i][j].size = dv_vlc_map[i-1][0].size + 
+		                          dv_vlc_map[0][j].size;
+	      }
+	      dv_vlc_map[i][((uint16_t)(-j))&0x1ff].vlc = 
+	                                    dv_vlc_map[i][j].vlc | 1;
+	      dv_vlc_map[i][((uint16_t)(-j))&0x1ff].size = 
+	                                    dv_vlc_map[i][j].size;
+	   }
+#endif
 	}
     }
 
@@ -171,6 +219,10 @@ typedef struct BlockInfo {
 static const uint16_t block_sizes[6] = {
     112, 112, 112, 112, 80, 80
 };
+/* bit budget for AC only in 5 MBs */
+static const int vs_total_ac_bits = (100 * 4 + 68*2) * 5;
+/* see dv_88_areas and dv_248_areas for details */
+static const int mb_area_start[5] = { 1, 6, 21, 43, 64 }; 
 
 #ifndef ALT_BITSTREAM_READER
 #warning only works with ALT_BITSTREAM_READER
@@ -517,8 +569,9 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
     }
 }
 
+#ifdef DV_CODEC_TINY_TARGET
 /* Converts run and level (where level != 0) pair into vlc, returning bit size */
-static inline int dv_rl2vlc(int run, int l, uint32_t* vlc)
+static always_inline int dv_rl2vlc(int run, int l, uint32_t* vlc)
 {
     int sign = l >> 8;
     int level = (l ^ sign) - sign;
@@ -526,158 +579,216 @@ static inline int dv_rl2vlc(int run, int l, uint32_t* vlc)
     
     sign = (sign & 1);
 
-    if (run < 15 && level < 23 && dv_vlc_codes[run][level] != -1) {
-        *vlc = (dv_vlc_bits[dv_vlc_codes[run][level]] << 1) | sign; 
-	size = dv_vlc_len[dv_vlc_codes[run][level]] + 1;
+    if (run < DV_VLC_MAP_RUN_SIZE && level < DV_VLC_MAP_LEV_SIZE) {
+        *vlc = dv_vlc_map[run][level].vlc | sign;
+	size = dv_vlc_map[run][level].size;
     }
     else { 
-	if (level < 23) {
-	    *vlc = (dv_vlc_bits[dv_vlc_codes[0][level]] << 1) | sign; 
-	    size = dv_vlc_len[dv_vlc_codes[0][level]] + 1;
+        if (level < DV_VLC_MAP_LEV_SIZE) {
+	    *vlc = dv_vlc_map[0][level].vlc | sign;
+	    size = dv_vlc_map[0][level].size;
 	} else {
-	    *vlc = 0xfe00 | (level << 1) | sign;
+            *vlc = 0xfe00 | (level << 1) | sign;
 	    size = 16;
 	}
-
-	switch(run) {
-	case 0:
-	    break;
-	case 1:
-	case 2:
-	    *vlc |= ((0x7ce | (run - 1)) << size);
-	    size += 11;
-	    break;
-	case 3:
-	case 4:
-	case 5:
-	case 6:
-	    *vlc |= ((0xfac | (run - 3)) << size);
-	    size += 12;
-	    break;
-	default:
-	    *vlc |= ((0x1f80 | (run - 1)) << size);
-	    size += 13;
-	    break;
+	if (run) {
+	    *vlc |= ((run < 16) ? dv_vlc_map[run-1][0].vlc : 
+	                          (0x1f80 | (run - 1))) << size;
+	    size += (run < 16) ? dv_vlc_map[run-1][0].size : 13;
 	}
     }
     
     return size;
 }
 
+static always_inline int dv_rl2vlc_size(int run, int l)
+{
+    int level = (l ^ (l >> 8)) - (l >> 8);
+    int size;
+    
+    if (run < DV_VLC_MAP_RUN_SIZE && level < DV_VLC_MAP_LEV_SIZE) {
+	size = dv_vlc_map[run][level].size; 
+    }
+    else { 
+	size = (level < DV_VLC_MAP_LEV_SIZE) ? dv_vlc_map[0][level].size : 16;
+	if (run) {
+	    size += (run < 16) ? dv_vlc_map[run-1][0].size : 13;
+	}
+    }
+    return size;
+}
+#else
+static always_inline int dv_rl2vlc(int run, int l, uint32_t* vlc)
+{
+    *vlc = dv_vlc_map[run][((uint16_t)l)&0x1ff].vlc;
+    return dv_vlc_map[run][((uint16_t)l)&0x1ff].size;
+}
+
+static always_inline int dv_rl2vlc_size(int run, int l)
+{
+    return dv_vlc_map[run][((uint16_t)l)&0x1ff].size;
+}
+#endif
+
 typedef struct EncBlockInfo {
-    int qno;
+    int area_q[4];
+    int bit_size[4];
+    int prev_run[4];
+    int cur_ac;
     int cno;
     int dct_mode;
-    int block_size;
     DCTELEM *mb;
-    PutBitContext pb;
-    const uint8_t* zigzag_scan;
-    uint8_t *dv_shift;
+    uint8_t partial_bit_count;
+    uint32_t partial_bit_buffer; /* we can't use uint16_t here */
 } EncBlockInfo;
 
-static inline int dv_bits_left(EncBlockInfo* bi)
+static always_inline int dv_bits_left(PutBitContext* s)
 {
-    return (bi->block_size - get_bit_count(&bi->pb));
+    return (s->buf_end - s->buf) * 8 - 
+           ((s->buf_ptr - s->buf + s->data_out_size) * 8 + 32 - (int64_t)s->bit_left);
 }
 
-static inline void dv_encode_ac(EncBlockInfo* bi, PutBitContext* heap)
+static always_inline void dv_encode_ac(EncBlockInfo* bi, PutBitContext* pb_pool, 
+                                       int pb_size)
 {
-    int i, level, size, run = 0;
-    uint32_t vlc;
-    PutBitContext* cpb = &bi->pb;
-    int bias = (bi->cno == 3);
+    int run;
+    int bits_left;
+    PutBitContext* pb = pb_pool;
+    int size = bi->partial_bit_count;
+    uint32_t vlc = bi->partial_bit_buffer;
     
-    for (i=1; i<64; i++) {
-       level = bi->mb[bi->zigzag_scan[i]] / (1<<(bi->dv_shift[i] + bias));
-       if (level != 0) {
-	   size = dv_rl2vlc(run, level, &vlc);
-put_vlc:
-
-#ifdef VLC_DEBUG
-           printf(" %3d:%3d", run, level);
-#endif
-	   if (cpb == &bi->pb && size > dv_bits_left(bi)) {
-	       size -= dv_bits_left(bi);
-	       put_bits(cpb, dv_bits_left(bi), vlc >> size);
-	       vlc = vlc & ((1<<size)-1);
-	       cpb = heap;
+    bi->partial_bit_count = bi->partial_bit_buffer = 0;
+vlc_loop:
+       /* Find suitable storage space */
+       for (; size > (bits_left = dv_bits_left(pb)); pb++) {
+          if (bits_left) {
+              size -= bits_left;
+	      put_bits(pb, bits_left, vlc >> size);
+	      vlc = vlc & ((1<<size)-1);
+	  }
+	  if (pb_size == 1) {
+	      bi->partial_bit_count = size;
+	      bi->partial_bit_buffer = vlc;
+	      return;
+	  }
+	  --pb_size;
+       }
+       
+       /* Store VLC */
+       put_bits(pb, size, vlc);
+       
+       /* Construct the next VLC */
+       run = 0;
+       for (; bi->cur_ac < 64; bi->cur_ac++, run++) {
+           if (bi->mb[bi->cur_ac]) {
+	       size = dv_rl2vlc(run, bi->mb[bi->cur_ac], &vlc);
+	       bi->cur_ac++;
+	       goto vlc_loop;
 	   }
-	   put_bits(cpb, size, vlc);
-	   run = 0;
-       } else
-	   run++;
-    }
+       }
    
-    if (i == 64) {
-        size = 4; vlc = 6; /* End Of Block stamp */
-	goto put_vlc;
-    }
+       if (bi->cur_ac == 64) {
+           size = 4; vlc = 6; /* End Of Block stamp */
+	   bi->cur_ac++;
+	   goto vlc_loop;
+       }
 }
 
-static inline void dv_redistr_bits(EncBlockInfo* bi, int count, uint8_t* extra_data, int extra_bits, PutBitContext* heap)
+static always_inline void dv_set_class_number(DCTELEM* blk, EncBlockInfo* bi, 
+                                              const uint8_t* zigzag_scan, int bias)
 {
-    int i;
-    GetBitContext gb;
-    
-    init_get_bits(&gb, extra_data, extra_bits);
-    
-    for (i=0; i<count; i++) {
-       int bits_left = dv_bits_left(bi);
-#ifdef VLC_DEBUG
-       if (bits_left)
-           printf("------------> inserting %d bytes in %d:%d\n", bits_left, i/6, i%6);
-#endif
-       if (bits_left > extra_bits) {
-           bit_copy(&bi->pb, &gb, extra_bits); 
-	   extra_bits = 0;
-	   break;
-       } else
-           bit_copy(&bi->pb, &gb, bits_left);
-	   
-       extra_bits -= bits_left;
-       bi++;
-    }
-    
-    if (extra_bits > 0 && heap)
-	bit_copy(heap, &gb, extra_bits);
-}
+    int i, area;
+    int run;
+    int classes[] = {12, 24, 36, 0xffff};
 
-static inline void dv_set_class_number(EncBlockInfo* bi, int j)
-{
-    int i, max_ac = 0;
-
-    for (i=1; i<64; i++) {
-       int ac = abs(bi->mb[ff_zigzag_direct[i]]) / 4;
-       if (max_ac < ac)
-           max_ac = ac;
+    run = 0;
+    bi->mb[0] = blk[0]; 
+    bi->cno = 0;
+    for (area = 0; area < 4; area++) {
+       bi->prev_run[area] = run;
+       bi->bit_size[area] = 0;
+       for (i=mb_area_start[area]; i<mb_area_start[area+1]; i++) {
+          bi->mb[i] = (blk[zigzag_scan[i]] / 16);
+          while ((bi->mb[i] ^ (bi->mb[i] >> 8)) > classes[bi->cno])
+              bi->cno++;
+       
+          if (bi->mb[i]) {
+              bi->bit_size[area] += dv_rl2vlc_size(run, bi->mb[i]);
+	      run = 0;
+          } else
+              ++run;
+       }
     }
-    if (max_ac < 12)
-        bi->cno = j;
-    else if (max_ac < 24)
-        bi->cno = j + 1;
-    else if (max_ac < 36)
-        bi->cno = j + 2;
-    else
-        bi->cno = j + 3;
+    bi->bit_size[3] += 4; /* EOB marker */
+    bi->cno += bias;
     
-    if (bi->cno > 3)
+    if (bi->cno >= 3) { /* FIXME: we have to recreate bit_size[], prev_run[] */
         bi->cno = 3;
+	for (i=1; i<64; i++)
+	   bi->mb[i] /= 2;
+    }
 }
 
-#define SQ(a) ((a)*(a))
-static int dv_score_lines(DCTELEM *s, int stride) {
-    int score=0;
-    int x, y;
+#define SC(x, y) ((s[x] - s[y]) ^ ((s[x] - s[y]) >> 7))
+static always_inline int dv_guess_dct_mode(DCTELEM *blk) {
+    DCTELEM *s;
+    int score88 = 0;
+    int score248 = 0;
+    int i;
     
-    for(y=0; y<4; y++) {
-        for(x=0; x<8; x+=4){
-            score+= SQ(s[x  ] - s[x  +stride]) + SQ(s[x+1] - s[x+1+stride]) 
-                   +SQ(s[x+2] - s[x+2+stride]) + SQ(s[x+3] - s[x+3+stride]);
-        }
-        s+= stride;
+    /* Compute 8-8 score (small values give a better chance for 8-8 DCT) */
+    s = blk;
+    for(i=0; i<7; i++) {
+        score88 += SC(0,  8) + SC(1, 9) + SC(2, 10) + SC(3, 11) + 
+	           SC(4, 12) + SC(5,13) + SC(6, 14) + SC(7, 15);
+        s += 8;
     }
+    /* Compute 2-4-8 score (small values give a better chance for 2-4-8 DCT) */
+    s = blk;
+    for(i=0; i<6; i++) {
+        score248 += SC(0, 16) + SC(1,17) + SC(2, 18) + SC(3, 19) +
+	            SC(4, 20) + SC(5,21) + SC(6, 22) + SC(7, 23);
+        s += 8;
+    }
+
+    return (score88 - score248 > -10);
+}
+
+static inline void dv_guess_qnos(EncBlockInfo* blks, int* qnos)
+{
+    int size[5];
+    int i, j, k, a, run;
+    EncBlockInfo* b;
     
-    return score;
+    do {
+       b = blks;
+       for (i=0; i<5; i++) {
+          if (!qnos[i])
+	      continue;
+	  
+	  qnos[i]--;
+	  size[i] = 0;
+          for (j=0; j<6; j++, b++) {
+	     for (a=0; a<4; a++) {
+	        if (b->area_q[a] != dv_quant_shifts[qnos[i] + dv_quant_offset[b->cno]][a]) {
+		    b->bit_size[a] = (a==3)?4:0;
+		    b->area_q[a]++;
+		    run = b->prev_run[a];
+		    for (k=mb_area_start[a]; k<mb_area_start[a+1]; k++) {
+		       b->mb[k] /= 2;
+		       if (b->mb[k]) {
+                           b->bit_size[a] += dv_rl2vlc_size(run, b->mb[k]);
+	                   run = 0;
+                       } else
+                           ++run;
+		    }
+		}
+		size[i] += b->bit_size[a];
+	     }
+	  }
+       }
+    } while ((vs_total_ac_bits < size[0] + size[1] + size[2] + size[3] + size[4]) && 
+             (qnos[0]|qnos[1]|qnos[2]|qnos[3]|qnos[4]));
 }
 
 /*
@@ -693,21 +804,18 @@ static inline void dv_encode_video_segment(DVVideoDecodeContext *s,
     int mb_x, mb_y, c_offset, linesize; 
     uint8_t*  y_ptr;
     uint8_t*  data;
+    uint8_t*  ptr;
     int       do_edge_wrap;
-    DCTELEM  *block;
+    DCTELEM   block[64] __align8;
     EncBlockInfo  enc_blks[5*6];
+    PutBitContext pbs[5*6];
+    PutBitContext* pb; 
     EncBlockInfo* enc_blk;
-    int       free_vs_bits;
-    int extra_bits;
-    PutBitContext extra_vs;
-    uint8_t   extra_vs_data[5*6*128];
-    uint8_t   extra_mb_data[6*128];
-
-    int       QNO = 15;
+    int       vs_bit_size = 0;
+    int       qnos[5];
    
-    /* Stage 1 -- doing DCT on 5 MBs */
-    block = &s->block[0][0];
     enc_blk = &enc_blks[0];
+    pb = &pbs[0];
     for(mb_index = 0; mb_index < 5; mb_index++) {
         v = *mb_pos_ptr++;
         mb_x = v & 0xff;
@@ -717,6 +825,8 @@ static inline void dv_encode_video_segment(DVVideoDecodeContext *s,
 	           ((mb_y * s->picture.linesize[1] * 8) + ((mb_x >> 2) * 8)) :
 		   (((mb_y >> 1) * s->picture.linesize[1] * 8) + ((mb_x >> 1) * 8));
 	do_edge_wrap = 0;
+	qnos[mb_index] = 15; /* No quantization */
+        ptr = dif + mb_index*80 + 4;
         for(j = 0;j < 6; j++) {
             if (j < 4) {  /* Four Y blocks */
 		/* NOTE: at end of line, the macroblock is handled as 420 */
@@ -749,100 +859,57 @@ static inline void dv_encode_video_segment(DVVideoDecodeContext *s,
 	        s->get_pixels(block, data, linesize);
 	    }
 	  
-	    if (dv_score_lines(block, 8) + dv_score_lines(block+8*4, 8) - 100 >
-	        dv_score_lines(block, 16) + dv_score_lines(block+8, 16)) {
-               enc_blk->dct_mode = 1;
-	       enc_blk->zigzag_scan = ff_zigzag248_direct; 
-	    } else {
-	       enc_blk->dct_mode = 0;
-	       enc_blk->zigzag_scan = ff_zigzag_direct;
-	    }
-	    enc_blk->mb = block;
-            enc_blk->block_size = block_sizes[j];
+            enc_blk->dct_mode = dv_guess_dct_mode(block);
+	    enc_blk->mb = &s->block[mb_index*6+j][0];
+	    enc_blk->area_q[0] = enc_blk->area_q[1] = enc_blk->area_q[2] = enc_blk->area_q[3] = 0;
+	    enc_blk->partial_bit_count = 0;
+	    enc_blk->partial_bit_buffer = 0;
+	    enc_blk->cur_ac = 1;
 	    
 	    s->fdct[enc_blk->dct_mode](block);
 	    
-	    dv_set_class_number(enc_blk, j/4*(j%2));
-
-	    block += 64;
-	    enc_blk++;
+	    dv_set_class_number(block, enc_blk, 
+	                        enc_blk->dct_mode ? ff_zigzag248_direct : ff_zigzag_direct,
+				j/4*(j%2));
+           
+            init_put_bits(pb, ptr, block_sizes[j]/8);
+	    put_bits(pb, 9, (uint16_t)(((enc_blk->mb[0] >> 3) - 1024) >> 2));
+	    put_bits(pb, 1, enc_blk->dct_mode);
+	    put_bits(pb, 2, enc_blk->cno);
+	    
+	    vs_bit_size += enc_blk->bit_size[0] + enc_blk->bit_size[1] +
+	                   enc_blk->bit_size[2] + enc_blk->bit_size[3];
+	    ++enc_blk;
+	    ++pb;
+	    ptr += block_sizes[j]/8;
         }
     }
 
-    /* Stage 2 -- encoding by trial-and-error */
-encode_vs:
-    enc_blk = &enc_blks[0];
+    if (vs_total_ac_bits < vs_bit_size)
+        dv_guess_qnos(&enc_blks[0], &qnos[0]);
+
     for (i=0; i<5; i++) {
-       uint8_t* p = dif + i*80 + 4;
-       for (j=0; j<6; j++) {
-          enc_blk->qno = QNO;
-	  enc_blk->dv_shift = &(s->dv_dct_shift[0]
-	                           [QNO + dv_quant_offset[enc_blk->cno]][0]);
-	  init_put_bits(&enc_blk->pb, p, block_sizes[j]/8);
-	  enc_blk++;
-	  p += block_sizes[j]/8;
-       }
+       dif[i*80 + 3] = qnos[i];
     }
 
-    init_put_bits(&extra_vs, extra_vs_data, sizeof(extra_vs_data));
-    free_vs_bits = 0;
-    enc_blk = &enc_blks[0];
-    for (i=0; i<5; i++) {
-       PutBitContext extra_mb;
-       EncBlockInfo* enc_blk2 = enc_blk;
-       int free_mb_bits = 0;
+    /* First pass over individual cells only */
+    for (j=0; j<5*6; j++)
+       dv_encode_ac(&enc_blks[j], &pbs[j], 1);
 
-       init_put_bits(&extra_mb, extra_mb_data, sizeof(extra_mb_data));
-       dif[i*80 + 3] = enc_blk->qno;
-       
-       for (j=0; j<6; j++) {
-	  uint16_t dc = ((enc_blk->mb[0] >> 3) - 1024) >> 2;
-
-	  put_bits(&enc_blk->pb, 9, dc);
-	  put_bits(&enc_blk->pb, 1, enc_blk->dct_mode);
-	  put_bits(&enc_blk->pb, 2, enc_blk->cno);
-
-#ifdef VLC_DEBUG
-          printf("[%d, %d]: ", i, j);
-#endif
-	  dv_encode_ac(enc_blk, &extra_mb);
-#ifdef VLC_DEBUG
-          printf("\n");
-#endif
-	  
-	  free_mb_bits += dv_bits_left(enc_blk);
-	  enc_blk++;
-       }
-       
-       /* We can't flush extra_mb just yet -- since it'll round up bit number */
-       extra_bits = get_bit_count(&extra_mb);
-       if (free_mb_bits > extra_bits)
-           free_vs_bits += free_mb_bits - extra_bits;
-    
-       if (extra_bits) {  /* FIXME: speed up things when free_mb_bits == 0 */
-           flush_put_bits(&extra_mb);
-           dv_redistr_bits(enc_blk2, 6, extra_mb_data, extra_bits, &extra_vs);
-       }
-    }
-    
-    /* We can't flush extra_mb just yet -- since it'll round up bit number */
-    extra_bits = get_bit_count(&extra_vs);
-    if (extra_bits > free_vs_bits && QNO) { /* FIXME: very crude trial-and-error */
-        QNO--;
-	goto encode_vs;
-    }
-    
-    if (extra_bits) {
-        flush_put_bits(&extra_vs);
-        dv_redistr_bits(&enc_blks[0], 5*6, extra_vs_data, extra_bits, NULL);
+    /* Second pass over each MB space */
+    for (j=0; j<5*6; j++) {
+       if (enc_blks[j].cur_ac < 65 || enc_blks[j].partial_bit_count)
+           dv_encode_ac(&enc_blks[j], &pbs[(j/6)*6], 6);
     }
 
-    for (i=0; i<6*5; i++) {
-       flush_put_bits(&enc_blks[i].pb);
-#ifdef VLC_DEBUG
-       printf("[%d:%d] qno=%d cno=%d\n", i/6, i%6, enc_blks[i].qno, enc_blks[i].cno);
-#endif
+    /* Third and final pass over the whole vides segment space */
+    for (j=0; j<5*6; j++) {
+       if (enc_blks[j].cur_ac < 65 || enc_blks[j].partial_bit_count)
+           dv_encode_ac(&enc_blks[j], &pbs[0], 6*5);
     }
+
+    for (j=0; j<5*6; j++)
+       flush_put_bits(&pbs[j]);
 }
 
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
