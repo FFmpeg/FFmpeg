@@ -118,6 +118,8 @@ void a52_upmix (sample_t * samples, int acmod, int output);
 void a52_imdct_init (uint32_t mm_accel);
 void a52_imdct_256 (sample_t * data, sample_t * delay, sample_t bias);
 void a52_imdct_512 (sample_t * data, sample_t * delay, sample_t bias);
+//extern void (* a52_imdct_256) (sample_t data[], sample_t delay[], sample_t bias);
+//extern void (* a52_imdct_512) (sample_t data[], sample_t delay[], sample_t bias);
 
 #define ROUND(x) ((int)((x) + ((x) > 0 ? 0.5 : -0.5)))
 

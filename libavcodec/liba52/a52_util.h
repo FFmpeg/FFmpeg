@@ -1,6 +1,6 @@
 /*
- * mm_accel.h
- * Copyright (C) 2000-2002 Michel Lespinasse <walken@zoy.org>
+ * a52_util.h
+ * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
  * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of a52dec, a free ATSC A-52 stream decoder.
@@ -21,22 +21,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef MM_ACCEL_H
-#define MM_ACCEL_H
+#ifndef A52_UTIL_H
+#define A52_UTIL_H
 
-/* generic accelerations */
-#define MM_ACCEL_DJBFFT		0x00000001
+uint16_t a52_crc16_block(uint8_t *data,uint32_t num_bytes);
 
-/* x86 accelerations */
-#define MM_ACCEL_X86_MMX	0x80000000
-#define MM_ACCEL_X86_3DNOW	0x40000000
-#define MM_ACCEL_X86_MMXEXT	0x20000000
-#define MM_ACCEL_X86_SSE	0x10000000
-#define MM_ACCEL_X86_3DNOWEXT	0x08000000
+void* a52_resample_init(uint32_t mm_accel,int flags,int chans);
+extern int (* a52_resample) (float * _f, int16_t * s16);
 
-/* PPC accelerations */
-#define MM_ACCEL_PPC_ALTIVEC	0x00010000
-
-uint32_t mm_accel (void);
-
-#endif /* MM_ACCEL_H */
+#endif /* A52_H */
