@@ -1348,6 +1348,8 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
      s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table; //FIXME add short header support 
      s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
+     s->h_edge_pos= s->width;
+     s->v_edge_pos= s->height;
 }
 
 static void h263_dc_scale(MpegEncContext * s)
@@ -3851,11 +3853,15 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                  printf("Error, header damaged or not MPEG4 header (f_code=0)\n");
                  return -1; // makes no sense to continue, as the MV decoding will break very quickly
              }
-         }
+         }else
+             s->f_code=1;
+     
          if (s->pict_type == B_TYPE) {
              s->b_code = get_bits(&s->gb, 3);
 //printf("b-code %d\n", s->b_code);
-         }
+         }else
+             s->b_code=1;
+
 //printf("quant:%d fcode:%d bcode:%d type:%d\n", s->qscale, s->f_code, s->b_code, s->pict_type);
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {
@@ -3884,6 +3890,10 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
      s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table; //FIXME add short header support 
      s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
 
+     if(s->divx_version==0 || s->divx_version < 500){
+         s->h_edge_pos= s->width;
+         s->v_edge_pos= s->height;
+     }
      return 0;
 }
 

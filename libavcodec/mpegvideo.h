@@ -130,6 +130,7 @@ typedef struct MpegEncContext {
     int picture_in_gop_number; /* 0-> first pic in gop, ... */
     int b_frames_since_non_b;  /* used for encoding, relative to not yet reordered input */
     int mb_width, mb_height;   /* number of MBs horizontally & vertically */
+    int h_edge_pos, v_edge_pos;/* horizontal / vertical position of the right/bottom edge (pixel replicateion)*/
     int mb_num;                /* number of MBs of a picture */
     int linesize;              /* line size, in bytes, may be different from width */
     int uvlinesize;            /* line size, for chroma in bytes, may be different from width */
