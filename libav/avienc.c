@@ -68,7 +68,7 @@ CodecTag codec_bmp_tags[] = {
     { 0, 0 },
 };
 
-unsigned int codec_get_tag(CodecTag *tags, int id)
+unsigned int codec_get_tag(const CodecTag *tags, int id)
 {
     while (tags->id != 0) {
         if (tags->id == id)
@@ -78,7 +78,7 @@ unsigned int codec_get_tag(CodecTag *tags, int id)
     return 0;
 }
 
-int codec_get_id(CodecTag *tags, unsigned int tag)
+int codec_get_id(const CodecTag *tags, unsigned int tag)
 {
     while (tags->id != 0) {
         if (tags->tag == tag)

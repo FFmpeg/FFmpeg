@@ -76,7 +76,7 @@ void print_atom(const char *str, UINT32 type, UINT64 offset, UINT64 size)
 /* getting rid of these */
 #define CODEC_TYPE_MOV_OTHER 2
 
-CodecTag mov_video_tags[] = {
+static const CodecTag mov_video_tags[] = {
 /*  { CODEC_ID_, MKTAG('c', 'v', 'i', 'd') }, *//* Cinepak */
 /*  { CODEC_ID_JPEG, MKTAG('j', 'p', 'e', 'g') }, *//* JPEG */
     { CODEC_ID_H263, MKTAG('r', 'a', 'w', ' ') }, /* Uncompressed RGB */
@@ -97,7 +97,7 @@ CodecTag mov_video_tags[] = {
     { 0, 0 }, 
 };
 
-CodecTag mov_audio_tags[] = {
+static const CodecTag mov_audio_tags[] = {
 /*    { CODEC_ID_PCM_S16BE, MKTAG('N', 'O', 'N', 'E') }, *//* uncompressed */
     { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') }, /* 16 bits */
     { CODEC_ID_PCM_S8, MKTAG('t', 'w', 'o', 's') }, /* 8 bits */
@@ -765,7 +765,7 @@ static void mov_free_stream_context(MOVStreamContext *sc)
     }
 }
 
-int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MOVContext *mov;
     ByteIOContext *pb = &s->pb;
@@ -839,7 +839,7 @@ int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 /* Yes, this is ugly... I didn't write the specs of QT :p */
 /* XXX:remove useless commented code sometime */
-int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
+static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVContext *mov = s->priv_data;
     INT64 offset = 0x0FFFFFFFFFFFFFFF;
@@ -911,7 +911,7 @@ again:
     return 0;
 }
 
-int mov_read_close(AVFormatContext *s)
+static int mov_read_close(AVFormatContext *s)
 {
     int i;
     MOVContext *mov = s->priv_data;

@@ -365,7 +365,7 @@ static int gif_write_video(AVFormatContext *s,
 }
 
 static int gif_write_packet(AVFormatContext *s, int stream_index, 
-                           UINT8 *buf, int size)
+                           UINT8 *buf, int size, int force_pts)
 {
     AVCodecContext *codec = &s->streams[stream_index]->codec;
     if (codec->codec_type == CODEC_TYPE_AUDIO)
@@ -401,4 +401,3 @@ AVFormat gif_format = {
     NULL, /* read_packet */
     NULL, /* read_close */
 };
-

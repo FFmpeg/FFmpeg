@@ -73,7 +73,7 @@ static int au_write_header(AVFormatContext *s)
 }
 
 static int au_write_packet(AVFormatContext *s, int stream_index_ptr,
-                           UINT8 *buf, int size)
+                           UINT8 *buf, int size, int force_pts)
 {
     ByteIOContext *pb = &s->pb;
     put_buffer(pb, buf, size);

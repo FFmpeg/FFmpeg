@@ -21,8 +21,8 @@ typedef struct CodecTag {
 extern CodecTag codec_bmp_tags[];
 extern CodecTag codec_wav_tags[];
 
-unsigned int codec_get_tag(CodecTag *tags, int id);
-int codec_get_id(CodecTag *tags, unsigned int tag);
+unsigned int codec_get_tag(const CodecTag *tags, int id);
+int codec_get_id(const CodecTag *tags, unsigned int tag);
 
 /* avidec.c */
 int avi_read_header(AVFormatContext *s, AVFormatParameters *ap);
