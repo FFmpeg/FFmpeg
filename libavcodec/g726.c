@@ -23,15 +23,16 @@
 #include "avcodec.h"
 #include "common.h"
 
-/*
+/**
+ * G.726 11bit float.
  * G.726 Standard uses rather odd 11bit floating point arithmentic for 
  * numerous occasions. It's a mistery to me why they did it this way
  * instead of simply using 32bit integer arithmetic.
  */
 typedef struct Float11 {
-	int sign;   /* 1bit sign */
-	int exp;    /* 4bit exponent */
-	int mant;   /* 6bit mantissa */
+	int sign;   /**< 1bit sign */
+	int exp;    /**< 4bit exponent */
+	int mant;   /**< 6bit mantissa */
 } Float11;
 
 static inline Float11* i2f(int16_t i, Float11* f)
@@ -61,35 +62,35 @@ static inline int sgn(int value)
 }
 
 typedef struct G726Tables {
-	int  bits;            /* bits per sample */
-	int* quant;           /* quantization table */
-	int* iquant;          /* inverse quantization table */
-	int* W;               /* special table #1 ;-) */
-	int* F;               /* special table #2 */
+	int  bits;            /**< bits per sample */
+	int* quant;           /**< quantization table */
+	int* iquant;          /**< inverse quantization table */
+	int* W;               /**< special table #1 ;-) */
+	int* F;               /**< special table #2 */
 } G726Tables;
 
 typedef struct G726Context {
-	 G726Tables* tbls;    /* static tables needed for computation */
+	 G726Tables* tbls;    /**< static tables needed for computation */
 	 
-	 Float11 sr[2];       /* prev. reconstructed samples */
-	 Float11 dq[6];       /* prev. difference */
-	 int a[2];            /* second order predictor coeffs */
-	 int b[6];            /* sixth order predictor coeffs */
-	 int pk[2];           /* signs of prev. 2 sez + dq */
+	 Float11 sr[2];       /**< prev. reconstructed samples */
+	 Float11 dq[6];       /**< prev. difference */
+	 int a[2];            /**< second order predictor coeffs */
+	 int b[6];            /**< sixth order predictor coeffs */
+	 int pk[2];           /**< signs of prev. 2 sez + dq */
 	 
-	 int ap;              /* scale factor control */
-	 int yu;              /* fast scale factor */
-	 int yl;              /* slow scale factor */
-	 int dms;             /* short average magnitude of F[i] */
-	 int dml;             /* long average magnitude of F[i] */
-	 int td;              /* tone detect */
+	 int ap;              /**< scale factor control */
+	 int yu;              /**< fast scale factor */
+	 int yl;              /**< slow scale factor */
+	 int dms;             /**< short average magnitude of F[i] */
+	 int dml;             /**< long average magnitude of F[i] */
+	 int td;              /**< tone detect */
 
-	 int se;              /* estimated signal for the next iteration */
-	 int sez;             /* estimated second order prediction */
-	 int y;               /* quantizer scaling factor for the next iteration */
+	 int se;              /**< estimated signal for the next iteration */
+	 int sez;             /**< estimated second order prediction */
+	 int y;               /**< quantizer scaling factor for the next iteration */
 } G726Context;
 
-static int quant_tbl16[] =                       /* 16kbit/s 2bits per sample */
+static int quant_tbl16[] =                       /**< 16kbit/s 2bits per sample */
            { 260, INT_MAX }; 
 static int iquant_tbl16[] =
            { 116, 365, 365, 116 };
@@ -98,7 +99,7 @@ static int W_tbl16[] =
 static int F_tbl16[] =
            { 0, 7, 7, 0 };
 	   
-static int quant_tbl24[] =                       /* 24kbit/s 3bits per sample */
+static int quant_tbl24[] =                       /**< 24kbit/s 3bits per sample */
            {  7, 217, 330, INT_MAX };
 static int iquant_tbl24[] =
            { INT_MIN, 135, 273, 373, 373, 273, 135, INT_MIN };
@@ -107,7 +108,7 @@ static int W_tbl24[] =
 static int F_tbl24[] =
            { 0, 1, 2, 7, 7, 2, 1, 0 };
 	   
-static int quant_tbl32[] =                       /* 32kbit/s 4bits per sample */
+static int quant_tbl32[] =                       /**< 32kbit/s 4bits per sample */
            { -125,  79, 177, 245, 299, 348, 399, INT_MAX };
 static int iquant_tbl32[] =
            { INT_MIN,   4, 135, 213, 273, 323, 373, 425,  
@@ -118,7 +119,7 @@ static int W_tbl32[] =
 static int F_tbl32[] = 
            { 0, 0, 0, 1, 1, 1, 3, 7, 7, 3, 1, 1, 1, 0, 0, 0 };
 	   
-static int quant_tbl40[] =                      /* 40kbit/s 5bits per sample */
+static int quant_tbl40[] =                      /**< 40kbit/s 5bits per sample */
            { -122, -16,  67, 138, 197, 249, 297, 338,
 	      377, 412, 444, 474, 501, 527, 552, INT_MAX };
 static int iquant_tbl40[] =
@@ -142,7 +143,7 @@ static G726Tables G726Tables_pool[] =
             { 5, quant_tbl40, iquant_tbl40, W_tbl40, F_tbl40 }};
 					       
 
-/*
+/**
  * Para 4.2.2 page 18: Adaptive quantizer. 
  */
 static inline uint8_t quant(G726Context* c, int d)
@@ -168,7 +169,7 @@ static inline uint8_t quant(G726Context* c, int d)
    return i; 
 }
 
-/* 
+/**
  * Para 4.2.3 page 22: Inverse adaptive quantizer.
  */
 static inline int16_t inverse_quant(G726Context* c, int i)
