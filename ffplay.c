@@ -1166,6 +1166,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     enc->debug = debug;
     enc->workaround_bugs = workaround_bugs;
     enc->lowres = lowres;
+    if(lowres) enc->flags |= CODEC_FLAG_EMU_EDGE;
     enc->idct_algo= idct;
     if(fast) enc->flags2 |= CODEC_FLAG2_FAST;
     if (!codec ||
