@@ -24,10 +24,18 @@ int av_new_packet(AVPacket *pkt, int size);
 void av_free_packet(AVPacket *pkt);
 
 /*************************************************/
-/* output formats */
+/* input/output formats */
 
 struct AVFormatContext;
-struct AVFormatInputContext;
+
+/* this structure contains the data a format has to probe a file */
+typedef struct AVProbeData {
+    char *filename;
+    unsigned char *buf;
+    int buf_size;
+} AVProbeData;
+
+#define AVPROBE_SCORE_MAX 100
 
 typedef struct AVFormatParameters {
     int frame_rate;
@@ -38,12 +46,21 @@ typedef struct AVFormatParameters {
     enum PixelFormat pix_fmt;
 } AVFormatParameters;
 
-typedef struct AVFormat {
+#define AVFMT_NOFILE        0x0001 /* no file should be opened */
+#define AVFMT_NEEDNUMBER    0x0002 /* needs '%d' in filename */ 
+#define AVFMT_NOHEADER      0x0004 /* signal that no header is present
+                                      (streams are added dynamically) */
+#define AVFMT_SHOW_IDS      0x0008 /* show format stream IDs numbers */
+#define AVFMT_RGB24         0x0010 /* force RGB24 output for ppm (hack
+                                      - need better api) */
+
+typedef struct AVOutputFormat {
     const char *name;
     const char *long_name;
     const char *mime_type;
     const char *extensions; /* comma separated extensions */
-
+    /* size of private data so that it can be allocated in the wrapper */
+    int priv_data_size;
     /* output support */
     enum CodecID audio_codec; /* default audio codec */
     enum CodecID video_codec; /* default video codec */
@@ -52,14 +69,28 @@ typedef struct AVFormat {
                         int stream_index,
                         unsigned char *buf, int size, int force_pts);
     int (*write_trailer)(struct AVFormatContext *);
+    /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER */
+    int flags;
+    /* private fields */
+    struct AVOutputFormat *next;
+} AVOutputFormat;
 
-    /* optional input support */
-    /* read the format header and initialize the AVFormatInputContext
+typedef struct AVInputFormat {
+    const char *name;
+    const char *long_name;
+    /* size of private data so that it can be allocated in the wrapper */
+    int priv_data_size;
+    /* tell if a given file has a chance of being parsing by this format */
+    int (*read_probe)(AVProbeData *);
+    /* read the format header and initialize the AVFormatContext
        structure. Return 0 if OK. 'ap' if non NULL contains
-       additionnal paramters. Only used in raw format right now */
+       additionnal paramters. Only used in raw format right
+       now. 'av_new_stream' should be called to create new streams.  */
     int (*read_header)(struct AVFormatContext *,
                        AVFormatParameters *ap);
-    /* read one packet and put it in 'pkt'. pts and flags are also set */
+    /* read one packet and put it in 'pkt'. pts and flags are also
+       set. 'av_new_stream' can be called only if the flag
+       AVFMT_NOHEADER is used. */
     int (*read_packet)(struct AVFormatContext *, AVPacket *pkt);
     /* close the stream. The AVFormatContext and AVStreams are not
        freed by this function */
@@ -67,24 +98,37 @@ typedef struct AVFormat {
     /* seek at or before a given pts (given in microsecond). The pts
        origin is defined by the stream */
     int (*read_seek)(struct AVFormatContext *, INT64 pts);
+    /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_NOHEADER */
     int flags;
-#define AVFMT_NOFILE        0x0001 /* no file should be opened */
-#define AVFMT_NEEDNUMBER    0x0002 /* needs '%d' in filename */ 
-    struct AVFormat *next;
-} AVFormat;
+    /* if extensions are defined, then no probe is done. You should
+       usually not use extension format guessing because it is not
+       reliable enough */
+    const char *extensions;
+    /* general purpose read only value that the format can use */
+    int value;
+    /* private fields */
+    struct AVInputFormat *next;
+} AVInputFormat;
 
 typedef struct AVStream {
-    int id;       /* internal stream id */
+    int index;    /* stream index in AVFormatContext */
+    int id;       /* format specific stream id */
     AVCodecContext codec; /* codec context */
     int r_frame_rate;     /* real frame rate of the stream */
     void *priv_data;
+    /* internal data used in av_find_stream_info() */
+    int codec_info_state;     
+    int codec_info_nb_repeat_frames;
+    int codec_info_nb_real_frames;
 } AVStream;
 
 #define MAX_STREAMS 20
 
 /* format I/O context */
 typedef struct AVFormatContext {
-    struct AVFormat *format;
+    /* can only be iformat or oformat, not both at the same time */
+    struct AVInputFormat *iformat;
+    struct AVOutputFormat *oformat;
     void *priv_data;
     ByteIOContext pb;
     int nb_streams;
@@ -107,86 +151,76 @@ typedef struct AVPacketList {
     struct AVPacketList *next;
 } AVPacketList;
 
-extern AVFormat *first_format;
+extern AVInputFormat *first_iformat;
+extern AVOutputFormat *first_oformat;
 
-/* rv10enc.c */
-extern AVFormat rm_format;
+/* XXX: use automatic init with either ELF sections or C file parser */
+/* modules */
 
-/* mpegmux.c */
+/* mpeg.c */
 #define AVF_FLAG_VCD   0x00000001   /* VCD compatible MPEG-PS */
-extern AVFormat mpeg_mux_format;
+int mpegps_init(void);
 
-/* asfenc.c */
-extern AVFormat asf_format;
+/* mpegts.c */
+extern AVInputFormat mpegts_demux;
+int mpegts_init(void);
 
-/* avienc.c */
-extern AVFormat avi_format;
-
-/* mov.c */
-extern AVFormat mov_format;
-extern AVFormat mp4_format;
-
-/* jpegenc.c */
-extern AVFormat mpjpeg_format;
-extern AVFormat jpeg_format;
-extern AVFormat single_jpeg_format;
-
-/* swfenc.c */
-extern AVFormat swf_format;
-
-/* gif.c */
-extern AVFormat gif_format;
-/* au.c */
-extern AVFormat au_format;
-
-/* wav.c */
-extern AVFormat wav_format;
+/* rm.c */
+int rm_init(void);
 
 /* crc.c */
-extern AVFormat crc_format;
+int crc_init(void);
 
 /* img.c */
-extern AVFormat pgm_format;
-extern AVFormat ppm_format;
-extern AVFormat pgmyuv_format;
-extern AVFormat imgyuv_format;
+int img_init(void);
 
-extern AVFormat pgmpipe_format;
-extern AVFormat pgmyuvpipe_format;
-extern AVFormat ppmpipe_format;
+/* asf.c */
+int asf_init(void);
+
+/* avienc.c */
+int avienc_init(void);
+
+/* avidec.c */
+int avidec_init(void);
+
+/* swf.c */
+int swf_init(void);
+
+/* mov.c */
+int mov_init(void);
+
+/* jpeg.c */
+int jpeg_init(void);
+
+/* gif.c */
+int gif_init(void);
+
+/* au.c */
+int au_init(void);
+
+/* wav.c */
+int wav_init(void);
 
 /* raw.c */
-extern AVFormat mp2_format;
-extern AVFormat ac3_format;
-extern AVFormat h263_format;
-extern AVFormat mpeg1video_format;
-extern AVFormat mjpeg_format;
-extern AVFormat pcm_s16le_format;
-extern AVFormat pcm_s16be_format;
-extern AVFormat pcm_u16le_format;
-extern AVFormat pcm_u16be_format;
-extern AVFormat pcm_s8_format;
-extern AVFormat pcm_u8_format;
-extern AVFormat pcm_mulaw_format;
-extern AVFormat pcm_alaw_format;
-extern AVFormat rawvideo_format;
+int raw_init(void);
 
 /* ffm.c */
-extern AVFormat ffm_format;
+int ffm_init(void);
 
-/* formats.c */
-
+/* utils.c */
 #define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
 #define MKBETAG(a,b,c,d) (d | (c << 8) | (b << 16) | (a << 24))
 
-void register_avformat(AVFormat *format);
-AVFormat *guess_format(const char *short_name, const char *filename, const char *mime_type);
+void av_register_input_format(AVInputFormat *format);
+void av_register_output_format(AVOutputFormat *format);
+AVOutputFormat *guess_format(const char *short_name, 
+                             const char *filename, const char *mime_type);
 
 int strstart(const char *str, const char *val, const char **ptr);
-void nstrcpy(char *buf, int buf_size, const char *str);
-/* This does what strncpy ought to do. */
-void strlcpy(char *dst, const char *src, int dst_size);
+void pstrcpy(char *buf, int buf_size, const char *str);
+
 int match_ext(const char *filename, const char *extensions);
+void av_hex_dump(UINT8 *buf, int size);
 
 void register_all(void);
 
@@ -203,14 +237,29 @@ int fifo_size(FifoBuffer *f, UINT8 *rptr);
 int fifo_read(FifoBuffer *f, UINT8 *buf, int buf_size, UINT8 **rptr_ptr);
 void fifo_write(FifoBuffer *f, UINT8 *buf, int size, UINT8 **wptr_ptr);
 
-AVFormatContext *av_open_input_file(const char *filename, 
-                                    const char *format_name,
-                                    int buf_size,
-                                    AVFormatParameters *ap);
+/* media file input */
+AVInputFormat *av_find_input_format(const char *short_name);
+int av_open_input_file(AVFormatContext **ic_ptr, const char *filename, 
+                       AVInputFormat *fmt,
+                       int buf_size,
+                       AVFormatParameters *ap);
+
+#define AVERROR_UNKNOWN     (-1)  /* unknown error */
+#define AVERROR_IO          (-2)  /* i/o error */
+#define AVERROR_NUMEXPECTED (-3)  /* number syntax expected in filename */
+#define AVERROR_INVALIDDATA (-4)  /* invalid data found */
+#define AVERROR_NOMEM       (-5)  /* not enough memory */
+#define AVERROR_NOFMT       (-6)  /* unknown format */
+
+int av_find_stream_info(AVFormatContext *ic);
 int av_read_packet(AVFormatContext *s, AVPacket *pkt);
 void av_close_input_file(AVFormatContext *s);
+AVStream *av_new_stream(AVFormatContext *s, int id);
 
+/* media file output */
+int av_write_header(AVFormatContext *s);
 int av_write_packet(AVFormatContext *s, AVPacket *pkt, int force_pts);
+int av_write_trailer(AVFormatContext *s);
 
 void dump_format(AVFormatContext *ic,
                  int index, 
@@ -230,10 +279,11 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
 
 int get_frame_filename(char *buf, int buf_size,
                        const char *path, int number);
+int filename_number_test(const char *filename);
 
-/* grab/output specific */
-extern AVFormat video_grab_device_format;
-extern AVFormat audio_device_format;
+/* grab specific */
+int video_grab_init(void);
+int audio_init(void);
 
 extern const char *v4l_device;
 extern const char *audio_device;

@@ -1,6 +1,6 @@
 /*
  * Various utilities for ffmpeg system
- * Copyright (c) 2000,2001 Gerard Lantau
+ * Copyright (c) 2000, 2001, 2002 Gerard Lantau
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,12 +29,22 @@
 #include <sys/timeb.h>
 #endif
 
-AVFormat *first_format;
+AVInputFormat *first_iformat;
+AVOutputFormat *first_oformat;
 
-void register_avformat(AVFormat *format)
+void av_register_input_format(AVInputFormat *format)
 {
-    AVFormat **p;
-    p = &first_format;
+    AVInputFormat **p;
+    p = &first_iformat;
+    while (*p != NULL) p = &(*p)->next;
+    *p = format;
+    format->next = NULL;
+}
+
+void av_register_output_format(AVOutputFormat *format)
+{
+    AVOutputFormat **p;
+    p = &first_oformat;
     while (*p != NULL) p = &(*p)->next;
     *p = format;
     format->next = NULL;
@@ -64,15 +74,16 @@ int match_ext(const char *filename, const char *extensions)
     return 0;
 }
 
-AVFormat *guess_format(const char *short_name, const char *filename, const char *mime_type)
+AVOutputFormat *guess_format(const char *short_name, const char *filename, 
+                             const char *mime_type)
 {
-    AVFormat *fmt, *fmt_found;
+    AVOutputFormat *fmt, *fmt_found;
     int score_max, score;
 
     /* find the proper file type */
     fmt_found = NULL;
     score_max = 0;
-    fmt = first_format;
+    fmt = first_oformat;
     while (fmt != NULL) {
         score = 0;
         if (fmt->name && short_name && !strcmp(fmt->name, short_name))
@@ -92,8 +103,26 @@ AVFormat *guess_format(const char *short_name, const char *filename, const char 
     return fmt_found;
 }   
 
-/* return TRUE if val is a prefix of str. If it returns TRUE, ptr is
-   set to the next character in 'str' after the prefix */
+AVInputFormat *av_find_input_format(const char *short_name)
+{
+    AVInputFormat *fmt;
+    for(fmt = first_iformat; fmt != NULL; fmt = fmt->next) {
+        if (!strcmp(fmt->name, short_name))
+            return fmt;
+    }
+    return NULL;
+}
+
+
+/**
+ * Return TRUE if val is a prefix of str. If it returns TRUE, ptr is
+ * set to the next character in 'str' after the prefix.
+ *
+ * @param str input string
+ * @param val prefix to test
+ * @param ptr updated after the prefix in str in there is a match
+ * @return TRUE if there is a match
+ */
 int strstart(const char *str, const char *val, const char **ptr)
 {
     const char *p, *q;
@@ -110,7 +139,17 @@ int strstart(const char *str, const char *val, const char **ptr)
     return 1;
 }
 
-void nstrcpy(char *buf, int buf_size, const char *str)
+/**
+ * Copy the string str to buf. If str length is bigger than buf_size -
+ * 1 then it is clamped to buf_size - 1.
+ * NOTE: this function does what strncpy should have done to be
+ * useful. NEVER use strncpy.
+ * 
+ * @param buf destination buffer
+ * @param buf_size size of destination buffer
+ * @param str source string
+ */
+void pstrcpy(char *buf, int buf_size, const char *str)
 {
     int c;
     char *q = buf;
@@ -124,67 +163,34 @@ void nstrcpy(char *buf, int buf_size, const char *str)
     *q = '\0';
 }
 
-void strlcpy(char *dst, const char *src, int len)
-{
-    int slen = strlen(src) + 1;
-
-    if (slen <= len) {
-        memcpy(dst, src, slen);
-    } else {
-        memcpy(dst, src, len - 1);
-        dst[len - 1] = 0;
-    }
-}
-
 void register_all(void)
 {
     avcodec_init();
     avcodec_register_all();
 
-    register_avformat(&mp2_format);
-    register_avformat(&ac3_format);
-    register_avformat(&mpeg_mux_format);
-    register_avformat(&mpeg1video_format);
-    register_avformat(&mjpeg_format);
-    register_avformat(&h263_format);
-    register_avformat(&rm_format);
-    register_avformat(&asf_format);
-    register_avformat(&avi_format);
-    register_avformat(&mov_format);
-    register_avformat(&mp4_format);
-    register_avformat(&mpjpeg_format);
-    register_avformat(&jpeg_format);
-    register_avformat(&single_jpeg_format);
-    register_avformat(&swf_format);
-    register_avformat(&gif_format);
-    register_avformat(&au_format);
-    register_avformat(&wav_format);
-    register_avformat(&crc_format);
+    mpegps_init();
+    mpegts_init();
+    crc_init();
+    img_init();
+    raw_init();
+    rm_init();
+    asf_init();
+    avienc_init();
+    avidec_init();
+    wav_init();
+    swf_init();
+    au_init();
+    gif_init();
+    mov_init();
+    jpeg_init();
 
-    register_avformat(&pcm_s16le_format);
-    register_avformat(&pcm_s16be_format);
-    register_avformat(&pcm_u16le_format);
-    register_avformat(&pcm_u16be_format);
-    register_avformat(&pcm_s8_format);
-    register_avformat(&pcm_u8_format);
-    register_avformat(&pcm_mulaw_format);
-    register_avformat(&pcm_alaw_format);
-    register_avformat(&rawvideo_format);
 #ifndef CONFIG_WIN32
-    register_avformat(&ffm_format);
+    ffm_init();
 #endif
-    register_avformat(&pgm_format);
-    register_avformat(&ppm_format);
-    register_avformat(&pgmyuv_format);
-    register_avformat(&imgyuv_format);
-    register_avformat(&pgmpipe_format);
-    register_avformat(&pgmyuvpipe_format);
-    register_avformat(&ppmpipe_format);
 #ifdef CONFIG_GRAB
-    register_avformat(&video_grab_device_format);
-    register_avformat(&audio_device_format);
+    video_grab_init();    
+    audio_init();
 #endif
-
     /* file protocols */
     register_protocol(&file_protocol);
     register_protocol(&pipe_protocol);
@@ -196,11 +202,18 @@ void register_all(void)
 
 /* memory handling */
 
+/**
+ * Allocate the payload of a packet and intialized its fields to default values.
+ *
+ * @param pkt packet
+ * @param size wanted payload size
+ * @return 0 if OK. AVERROR_xxx otherwise.
+ */
 int av_new_packet(AVPacket *pkt, int size)
 {
     pkt->data = av_malloc(size);
     if (!pkt->data)
-        return -ENOMEM;
+        return AVERROR_NOMEM;
     pkt->size = size;
     /* sane state */
     pkt->pts = 0;
@@ -209,6 +222,11 @@ int av_new_packet(AVPacket *pkt, int size)
     return 0;
 }
 
+/**
+ * Free a packet
+ *
+ * @param pkt packet to free
+ */
 void av_free_packet(AVPacket *pkt)
 {
     av_freep(&pkt->data);
@@ -293,61 +311,146 @@ void fifo_write(FifoBuffer *f, UINT8 *buf, int size, UINT8 **wptr_ptr)
     *wptr_ptr = wptr;
 }
 
-/* media file handling. 
-   'filename' is the filename to open.
-   'format_name' is used to force the file format (NULL if auto guess).
-   'buf_size' is the optional buffer size (zero if default is OK).
-   'ap' are additionnal parameters needed when opening the file (NULL if default).
-*/
-
-AVFormatContext *av_open_input_file(const char *filename, 
-                                    const char *format_name,
-                                    int buf_size,
-                                    AVFormatParameters *ap)
+int filename_number_test(const char *filename)
 {
-    AVFormat *fmt;
+    char buf[1024];
+    return get_frame_filename(buf, sizeof(buf), filename, 1);
+}
+
+/* guess file format */
+static AVInputFormat *probe_input_format(AVProbeData *pd, int is_opened)
+{
+    AVInputFormat *fmt1, *fmt;
+    int score, score_max;
+
+    fmt = NULL;
+    score_max = 0;
+    for(fmt1 = first_iformat; fmt1 != NULL; fmt1 = fmt1->next) {
+        if (!is_opened && !(fmt1->flags & AVFMT_NOFILE))
+            continue;
+        score = 0;
+        if (fmt1->extensions) {
+            if (match_ext(pd->filename, fmt1->extensions)) {
+                score = 50;
+            }
+        } else if (fmt1->read_probe) {
+            score = fmt1->read_probe(pd);
+        }
+        if (score > score_max) {
+            score_max = score;
+            fmt = fmt1;
+        }
+    }
+    return fmt;
+}
+
+/************************************************************/
+/* input media file */
+
+#define PROBE_BUF_SIZE 2048
+
+/**
+ * Open a media file as input. The codec are not opened. Only the file
+ * header (if present) is read.
+ *
+ * @param ic_ptr the opened media file handle is put here
+ * @param filename filename to open.
+ * @param fmt if non NULL, force the file format to use
+ * @param buf_size optional buffer size (zero if default is OK)
+ * @param ap additionnal parameters needed when opening the file (NULL if default)
+ * @return 0 if OK. AVERROR_xxx otherwise.
+ */
+int av_open_input_file(AVFormatContext **ic_ptr, const char *filename, 
+                       AVInputFormat *fmt,
+                       int buf_size,
+                       AVFormatParameters *ap)
+{
     AVFormatContext *ic = NULL;
     int err;
+    char buf[PROBE_BUF_SIZE];
+    AVProbeData probe_data, *pd = &probe_data;
 
     ic = av_mallocz(sizeof(AVFormatContext));
-    if (!ic)
+    if (!ic) {
+        err = AVERROR_NOMEM;
         goto fail;
+    }
+    pstrcpy(ic->filename, sizeof(ic->filename), filename);
+    pd->filename = ic->filename;
+    pd->buf = buf;
+    pd->buf_size = 0;
 
-    /* find format */
-    if (format_name != NULL) {
-        fmt = guess_format(format_name, NULL, NULL);
-    } else {
-        fmt = guess_format(NULL, filename, NULL);
+    if (!fmt) {
+        /* guess format if no file can be opened  */
+        fmt = probe_input_format(pd, 0);
     }
-    if (!fmt || !fmt->read_header) {
-        return NULL;
-    }
-    ic->format = fmt;
 
     /* if no file needed do not try to open one */
-    if (!(fmt->flags & AVFMT_NOFILE)) {
-        if (url_fopen(&ic->pb, filename, URL_RDONLY) < 0)
+    if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
+        if (url_fopen(&ic->pb, filename, URL_RDONLY) < 0) {
+            err = AVERROR_IO;
             goto fail;
+        }
         if (buf_size > 0) {
             url_setbufsize(&ic->pb, buf_size);
         }
+        /* read probe data */
+        pd->buf_size = get_buffer(&ic->pb, buf, PROBE_BUF_SIZE);
+        url_fseek(&ic->pb, 0, SEEK_SET);
     }
     
-    err = ic->format->read_header(ic, ap);
-    if (err < 0) {
-        if (!(fmt->flags & AVFMT_NOFILE)) {
-            url_fclose(&ic->pb);
-        }
+    /* guess file format */
+    if (!fmt) {
+        fmt = probe_input_format(pd, 1);
+    }
+
+    /* if still no format found, error */
+    if (!fmt) {
+        err = AVERROR_NOFMT;
         goto fail;
     }
-    
-    return ic;
+        
+    ic->iformat = fmt;
 
+    /* allocate private data */
+    ic->priv_data = av_mallocz(fmt->priv_data_size);
+    if (!ic->priv_data) {
+        err = AVERROR_NOMEM;
+        goto fail;
+    }
+
+    /* check filename in case of an image number is expected */
+    if (ic->iformat->flags & AVFMT_NEEDNUMBER) {
+        if (filename_number_test(ic->filename) < 0) { 
+            err = AVERROR_NUMEXPECTED;
+            goto fail1;
+        }
+    }
+    
+    err = ic->iformat->read_header(ic, ap);
+    if (err < 0)
+        goto fail1;
+    *ic_ptr = ic;
+    return 0;
+ fail1:
+    if (!(fmt->flags & AVFMT_NOFILE)) {
+        url_fclose(&ic->pb);
+    }
  fail:
+    if (ic) {
+        av_free(ic->priv_data);
+    }
     av_free(ic);
-    return NULL;
+    *ic_ptr = NULL;
+    return err;
 }
 
+/**
+ * Read a packet from a media file
+ * @param s media file handle
+ * @param pkt is filled 
+ * @return 0 if OK. AVERROR_xxx if error.
+ */
 int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVPacketList *pktl;
@@ -360,16 +463,240 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_free(pktl);
         return 0;
     } else {
-        return s->format->read_packet(s, pkt);
+        return s->iformat->read_packet(s, pkt);
     }
 }
 
+/* state for codec information */
+#define CSTATE_NOTFOUND    0
+#define CSTATE_DECODING    1
+#define CSTATE_FOUND       2
+
+static int has_codec_parameters(AVCodecContext *enc)
+{
+    int val;
+    switch(enc->codec_type) {
+    case CODEC_TYPE_AUDIO:
+        val = enc->sample_rate;
+        break;
+    case CODEC_TYPE_VIDEO:
+        val = enc->width;
+        break;
+    default:
+        val = 1;
+        break;
+    }
+    return (val != 0);
+}
+
+/**
+ * Read the beginning of a media file to get stream information. This
+ * is useful for file formats with no headers such as MPEG. This
+ * function also compute the real frame rate in case of mpeg2 repeat
+ * frame mode.
+ *
+ * @param ic media file handle
+ * @return >=0 if OK. AVERROR_xxx if error.  
+ */
+int av_find_stream_info(AVFormatContext *ic)
+{
+    int i, count, ret, got_picture, size, read_size;
+    AVCodec *codec;
+    AVStream *st;
+    AVPacket *pkt;
+    AVPicture picture;
+    AVPacketList *pktl=NULL, **ppktl;
+    short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
+    UINT8 *ptr;
+    int min_read_size, max_read_size;
+
+    /* typical mpeg ts rate is 40 Mbits. DVD rate is about 10
+       Mbits. We read at most 0.1 second of file to find all streams */
+
+    /* XXX: base it on stream bitrate when possible */
+    if (ic->iformat == &mpegts_demux) {
+        /* maximum number of bytes we accept to read to find all the streams
+           in a file */
+        min_read_size = 3000000;
+    } else {
+        min_read_size = 125000;
+    }
+    /* max read size is 2 seconds of video max */
+    max_read_size = min_read_size * 20;
+
+    /* set initial codec state */
+    for(i=0;i<ic->nb_streams;i++) {
+        st = ic->streams[i];
+        if (has_codec_parameters(&st->codec))
+            st->codec_info_state = CSTATE_FOUND;
+        else
+            st->codec_info_state = CSTATE_NOTFOUND;
+        st->codec_info_nb_repeat_frames = 0;
+        st->codec_info_nb_real_frames = 0;
+    }
+
+    count = 0;
+    read_size = 0;
+    ppktl = &ic->packet_buffer;
+    for(;;) {
+        /* check if one codec still needs to be handled */
+        for(i=0;i<ic->nb_streams;i++) {
+            st = ic->streams[i];
+            if (st->codec_info_state != CSTATE_FOUND)
+                break;
+        }
+        if (i == ic->nb_streams) {
+            /* NOTE: if the format has no header, then we need to read
+               some packets to get most of the streams, so we cannot
+               stop here */
+            if (!(ic->iformat->flags & AVFMT_NOHEADER) ||
+                read_size >= min_read_size) {
+                /* if we found the info for all the codecs, we can stop */
+                ret = count;
+                break;
+            }
+        } else {
+            /* we did not get all the codec info, but we read too much data */
+            if (read_size >= max_read_size) {
+                ret = count;
+                break;
+            }
+        }
+
+        pktl = av_mallocz(sizeof(AVPacketList));
+        if (!pktl) {
+            ret = AVERROR_NOMEM;
+            break;
+        }
+
+        /* add the packet in the buffered packet list */
+        *ppktl = pktl;
+        ppktl = &pktl->next;
+
+        /* NOTE: a new stream can be added there if no header in file
+           (AVFMT_NOHEADER) */
+        pkt = &pktl->pkt;
+        if (ic->iformat->read_packet(ic, pkt) < 0) {
+            /* EOF or error */
+            ret = -1; /* we could not have all the codec parameters before EOF */
+            if ((ic->iformat->flags & AVFMT_NOHEADER) &&
+                i == ic->nb_streams)
+                ret = 0;
+            break;
+        }
+        read_size += pkt->size;
+
+        /* open new codecs */
+        for(i=0;i<ic->nb_streams;i++) {
+            st = ic->streams[i];
+            if (st->codec_info_state == CSTATE_NOTFOUND) {
+                /* set to found in case of error */
+                st->codec_info_state = CSTATE_FOUND; 
+                codec = avcodec_find_decoder(st->codec.codec_id);
+                if (codec) {
+                    ret = avcodec_open(&st->codec, codec);
+                    if (ret >= 0)
+                        st->codec_info_state = CSTATE_DECODING;
+                }
+            }
+        }
+
+        st = ic->streams[pkt->stream_index];
+        if (st->codec_info_state == CSTATE_DECODING) {
+            /* decode the data and update codec parameters */
+            ptr = pkt->data;
+            size = pkt->size;
+            while (size > 0) {
+                switch(st->codec.codec_type) {
+                case CODEC_TYPE_VIDEO:
+                    ret = avcodec_decode_video(&st->codec, &picture, 
+                                               &got_picture, ptr, size);
+                    break;
+                case CODEC_TYPE_AUDIO:
+                    ret = avcodec_decode_audio(&st->codec, samples, 
+                                               &got_picture, ptr, size);
+                    break;
+                default:
+                    ret = -1;
+                    break;
+                }
+                if (ret < 0) {
+                    /* if error, simply ignore because another packet
+                       may be OK */
+                    break;
+                }
+                if (got_picture) {
+                    /* we got the parameters - now we can stop
+                       examining this stream */
+                    /* XXX: add a codec info so that we can decide if
+                       the codec can repeat frames */
+                    if (st->codec.codec_id == CODEC_ID_MPEG1VIDEO && 
+                        ic->iformat != &mpegts_demux &&
+                        st->codec.sub_id == 2) {
+                        /* for mpeg2 video, we want to know the real
+                           frame rate, so we decode 40 frames. In mpeg
+                           TS case we do not do it because it would be
+                           too long */
+                        st->codec_info_nb_real_frames++;
+                        st->codec_info_nb_repeat_frames += st->codec.repeat_pict;
+#if 0
+                        /* XXX: testing */
+                        if ((st->codec_info_nb_real_frames % 24) == 23) {
+                            st->codec_info_nb_repeat_frames += 2;
+                        }
+#endif
+                        /* stop after 40 frames */
+                        if (st->codec_info_nb_real_frames >= 40) {
+                            st->r_frame_rate = (st->codec.frame_rate * 
+                                                st->codec_info_nb_real_frames) /
+                                (st->codec_info_nb_real_frames + 
+                                 (st->codec_info_nb_repeat_frames >> 1));
+                            goto close_codec;
+                        }
+                    } else {
+                    close_codec:
+                        st->codec_info_state = CSTATE_FOUND;
+                        avcodec_close(&st->codec);
+                    }
+                    break;
+                }
+                ptr += ret;
+                size -= ret;
+            }
+        }
+        count++;
+    }
+
+    /* close each codec if there are opened */
+    for(i=0;i<ic->nb_streams;i++) {
+        st = ic->streams[i];
+        if (st->codec_info_state == CSTATE_DECODING)
+            avcodec_close(&st->codec);
+    }
+
+    /* set real frame rate info */
+    for(i=0;i<ic->nb_streams;i++) {
+        st = ic->streams[i];
+        if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
+            if (!st->r_frame_rate)
+                st->r_frame_rate = st->codec.frame_rate;
+        }
+    }
+
+    return ret;
+}
+
+/**
+ * Close a media file (but not its codecs)
+ *
+ * @param s media file handle
+ */
 void av_close_input_file(AVFormatContext *s)
 {
     int i;
 
-    if (s->format->read_close)
-        s->format->read_close(s);
+    if (s->iformat->read_close)
+        s->iformat->read_close(s);
     for(i=0;i<s->nb_streams;i++) {
         av_free(s->streams[i]);
     }
@@ -384,17 +711,81 @@ void av_close_input_file(AVFormatContext *s)
         }
         s->packet_buffer = NULL;
     }
-    if (!(s->format->flags & AVFMT_NOFILE)) {
+    if (!(s->iformat->flags & AVFMT_NOFILE)) {
         url_fclose(&s->pb);
     }
+    av_free(s->priv_data);
     av_free(s);
 }
 
+/**
+ * Add a new stream to a media file. Can only be called in the
+ * read_header function. If the flag AVFMT_NOHEADER is in the format
+ * description, then new streams can be added in read_packet too.
+ *
+ *
+ * @param s media file handle
+ * @param id file format dependent stream id
+ */
+AVStream *av_new_stream(AVFormatContext *s, int id)
+{
+    AVStream *st;
 
+    if (s->nb_streams >= MAX_STREAMS)
+        return NULL;
+
+    st = av_mallocz(sizeof(AVStream));
+    if (!st)
+        return NULL;
+    st->index = s->nb_streams;
+    st->id = id;
+    s->streams[s->nb_streams++] = st;
+    return st;
+}
+
+/************************************************************/
+/* output media file */
+
+/**
+ * allocate the stream private data and write the stream header to an
+ * output media file
+ *
+ * @param s media file handle
+ * @return 0 if OK. AVERROR_xxx if error.  
+ */
+int av_write_header(AVFormatContext *s)
+{
+    s->priv_data = av_mallocz(s->oformat->priv_data_size);
+    if (!s->priv_data)
+        return AVERROR_NOMEM;
+    return s->oformat->write_header(s);
+}
+
+/**
+ * write a packet to an output media file
+ *
+ * @param s media file handle
+ * @param pkt packet to write
+ * @param force_pts XXX: need to suppress that
+ */
 int av_write_packet(AVFormatContext *s, AVPacket *pkt, int force_pts)
 {
     /* XXX: currently, an emulation because internal API must change */
-    return s->format->write_packet(s, pkt->stream_index, pkt->data, pkt->size, force_pts);
+    return s->oformat->write_packet(s, pkt->stream_index, pkt->data, pkt->size, force_pts);
+}
+
+/**
+ * write the stream trailer to an output media file and and free the
+ * file private data.
+ *
+ * @param s media file handle
+ * @return 0 if OK. AVERROR_xxx if error.  */
+int av_write_trailer(AVFormatContext *s)
+{
+    int ret;
+    ret = s->oformat->write_trailer(s);
+    av_freep(&s->priv_data);
+    return ret;
 }
 
 /* "user interface" functions */
@@ -404,17 +795,28 @@ void dump_format(AVFormatContext *ic,
                  const char *url,
                  int is_output)
 {
-    int i;
+    int i, flags;
     char buf[256];
 
     fprintf(stderr, "%s #%d, %s, %s '%s':\n", 
             is_output ? "Output" : "Input",
-            index, ic->format->name, 
+            index, 
+            is_output ? ic->oformat->name : ic->iformat->name, 
             is_output ? "to" : "from", url);
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
         avcodec_string(buf, sizeof(buf), &st->codec, is_output);
-        fprintf(stderr, "  Stream #%d.%d: %s\n", index, i, buf);
+        fprintf(stderr, "  Stream #%d.%d", index, i);
+        /* the pid is an important information, so we display it */
+        /* XXX: add a generic system */
+        if (is_output)
+            flags = ic->oformat->flags;
+        else
+            flags = ic->iformat->flags;
+        if (flags & AVFMT_SHOW_IDS) {
+            fprintf(stderr, "[0x%x]", st->id);
+        }
+        fprintf(stderr, ": %s\n", buf);
     }
 }
 
@@ -661,3 +1063,36 @@ void ticker_init(Ticker *tick, INT64 inrate, INT64 outrate)
     tick->div = tick->outrate / tick->inrate;
     tick->mod = tick->outrate % tick->inrate;
 }
+
+/**
+ *
+ * Print on stdout a nice hexa dump of a buffer
+ * @param buf buffer
+ * @param size buffer size
+ */
+void av_hex_dump(UINT8 *buf, int size)
+{
+    int len, i, j, c;
+
+    for(i=0;i<size;i+=16) {
+        len = size - i;
+        if (len > 16)
+            len = 16;
+        printf("%08x ", i);
+        for(j=0;j<16;j++) {
+            if (j < len)
+                printf(" %02x", buf[i+j]);
+            else
+                printf("   ");
+        }
+        printf(" ");
+        for(j=0;j<len;j++) {
+            c = buf[i+j];
+            if (c < ' ' || c > '~')
+                c = '.';
+            printf("%c", c);
+        }
+        printf("\n");
+    }
+}
+
