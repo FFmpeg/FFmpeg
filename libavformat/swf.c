@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
+#include "bitstream.h"
 
 /* should have a generic way to indicate probable size */
 #define DUMMY_FILE_SIZE   (100 * 1024 * 1024)

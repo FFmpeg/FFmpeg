@@ -38,6 +38,7 @@
  */
 
 #include "avformat.h"
+#include "bitstream.h"
 
 /* bitstream minipacket size */
 #define GIF_CHUNKS 100

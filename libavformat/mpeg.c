@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
+#include "bitstream.h"
 
 #define MAX_PAYLOAD_SIZE 4096
 //#define DEBUG_SEEK
