@@ -200,6 +200,10 @@ typedef struct MotionEstContext{
     int co_located_mv[4][2];           ///< mv from last p frame for direct mode ME 
     int direct_basis_mv[4][2];
     uint8_t *scratchpad;               ///< data area for the me algo, so that the ME doesnt need to malloc/free 
+    uint8_t *best_mb;
+    uint8_t *temp_mb[2];
+    uint8_t *temp;
+    int best_bits;
     uint32_t *map;                     ///< map to avoid duplicate evaluations 
     uint32_t *score_map;               ///< map to store the scores 
     int map_generation;  
@@ -207,31 +211,33 @@ typedef struct MotionEstContext{
     int penalty_factor;
     int sub_penalty_factor;
     int mb_penalty_factor;
+    int flags;
+    int sub_flags;
+    int mb_flags;
     int pre_pass;                      ///< = 1 for the pre pass 
     int dia_size;
     int xmin;
     int xmax;
     int ymin;
     int ymax;
+    int pred_x;
+    int pred_y;
+    uint8_t *src[4][4];
+    uint8_t *ref[4][4];
+    int stride;
+    int uvstride;
+/*    cmp, chroma_cmp;*/
+    op_pixels_func (*hpel_put)[4];
+    op_pixels_func (*hpel_avg)[4];
+    op_pixels_func (*chroma_hpel_put)[4];
+    qpel_mc_func (*qpel_put)[16];
+    qpel_mc_func (*qpel_avg)[16];
     uint8_t (*mv_penalty)[MAX_MV*2+1];  ///< amount of bits needed to encode a MV 
+    uint8_t *current_mv_penalty;
     int (*sub_motion_search)(struct MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
-                                  int pred_x, int pred_y, uint8_t *src_data[3],
-                                  uint8_t *ref_data[6], int stride, int uvstride,
-                                  int size, int h, uint8_t * const mv_penalty);
-    int (*motion_search[7])(struct MpegEncContext * s,
-                             int *mx_ptr, int *my_ptr,
-                             int P[10][2], int pred_x, int pred_y, uint8_t *src_data[3],
-                             uint8_t *ref_data[6], int stride, int uvstride, int16_t (*last_mv)[2], 
-                             int ref_mv_scale, uint8_t * const mv_penalty);
-    int (*pre_motion_search)(struct MpegEncContext * s,
-                             int *mx_ptr, int *my_ptr,
-                             int P[10][2], int pred_x, int pred_y, uint8_t *src_data[3], 
-                             uint8_t *ref_data[6], int stride, int uvstride, int16_t (*last_mv)[2], 
-                             int ref_mv_scale, uint8_t * const mv_penalty);
-    int (*get_mb_score)(struct MpegEncContext * s, int mx, int my, int pred_x, int pred_y, uint8_t *src_data[3],
-                                  uint8_t *ref_data[6], int stride, int uvstride,    
-                                  uint8_t * const mv_penalty);
+                                  int src_index, int ref_index,
+                                  int size, int h);
 }MotionEstContext;
 
 /**

@@ -1575,7 +1575,7 @@ typedef struct AVCodecContext {
      * - encoding: set by user
      * - decoding: set by user
      */
-    void *me_threshold;
+     int me_threshold;
 } AVCodecContext;
 
 
