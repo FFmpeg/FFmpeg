@@ -9,6 +9,7 @@
 #include <string.h>
 #include "../config.h"
 #include "swscale.h"
+#include "../mmx_defs.h"
 
 //#undef HAVE_MMX2
 //#undef HAVE_MMX
@@ -929,20 +930,15 @@ static inline void hyscale(uint16_t *dst, int dstWidth, uint8_t *src, int srcWid
 			"xorl %%ecx, %%ecx		\n\t"
 			"xorl %%ebx, %%ebx		\n\t"
 			"movw %4, %%bx			\n\t" // (xInc*4)&0xFFFF
-#ifdef HAVE_MMX2
+
 #define FUNNY_Y_CODE \
-			"prefetchnta 1024(%%esi)	\n\t"\
-			"prefetchnta 1056(%%esi)	\n\t"\
-			"prefetchnta 1088(%%esi)	\n\t"\
+			PREFETCH" 1024(%%esi)		\n\t"\
+			PREFETCH" 1056(%%esi)		\n\t"\
+			PREFETCH" 1088(%%esi)		\n\t"\
 			"call funnyYCode		\n\t"\
 			"movq temp0, %%mm2		\n\t"\
 			"xorl %%ecx, %%ecx		\n\t"
-#else
-#define FUNNY_Y_CODE \
-			"call funnyYCode		\n\t"\
-			"movq temp0, %%mm2		\n\t"\
-			"xorl %%ecx, %%ecx		\n\t"
-#endif
+
 FUNNY_Y_CODE
 FUNNY_Y_CODE
 FUNNY_Y_CODE
@@ -1046,20 +1042,13 @@ inline static void hcscale(uint16_t *dst, int dstWidth,
 		"xorl %%ebx, %%ebx		\n\t"
 		"movw %4, %%bx			\n\t" // (xInc*4)&0xFFFF
 
-#ifdef HAVE_MMX2
 #define FUNNYUVCODE \
-			"prefetchnta 1024(%%esi)	\n\t"\
-			"prefetchnta 1056(%%esi)	\n\t"\
-			"prefetchnta 1088(%%esi)	\n\t"\
+			PREFETCH" 1024(%%esi)		\n\t"\
+			PREFETCH" 1056(%%esi)		\n\t"\
+			PREFETCH" 1088(%%esi)		\n\t"\
 			"call funnyUVCode		\n\t"\
 			"movq temp0, %%mm2		\n\t"\
 			"xorl %%ecx, %%ecx		\n\t"
-#else
-#define FUNNYUVCODE \
-			"call funnyUVCode		\n\t"\
-			"movq temp0, %%mm2		\n\t"\
-			"xorl %%ecx, %%ecx		\n\t"
-#endif
 
 FUNNYUVCODE
 FUNNYUVCODE
@@ -1439,12 +1428,8 @@ else				s_xinc2= s_xinc;
 	g16Dither2= g16Dither;
 #endif
   }
-
-#ifdef HAVE_3DNOW
-	asm volatile("femms");
-#elif defined (HAVE_MMX)
-	asm volatile("emms");
-#endif
+__asm __volatile(SFENCE:::"memory");
+__asm __volatile(EMMS:::"memory");
 }
 
 
