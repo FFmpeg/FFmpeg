@@ -583,6 +583,43 @@ static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     for(; i<w; i++)
         dst[i+0] = src1[i+0]-src2[i+0];
 }
+
+static void sub_hfyu_median_prediction_mmx2(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w, int *left, int *left_top){
+    int i=0;
+    uint8_t l, lt;
+
+    asm volatile(
+        "1:				\n\t"
+        "movq  -1(%1, %0), %%mm0	\n\t" // LT
+        "movq  (%1, %0), %%mm1		\n\t" // T
+        "movq  -1(%2, %0), %%mm2	\n\t" // L
+        "movq  (%2, %0), %%mm3		\n\t" // X
+        "movq %%mm2, %%mm4		\n\t" // L
+        "psubb %%mm0, %%mm2		\n\t"
+        "paddb %%mm1, %%mm2		\n\t" // L + T - LT
+        "movq %%mm4, %%mm5		\n\t" // L
+        "pmaxub %%mm1, %%mm4		\n\t" // max(T, L)
+        "pminub %%mm5, %%mm1		\n\t" // min(T, L)
+        "pminub %%mm2, %%mm4		\n\t" 
+        "pmaxub %%mm1, %%mm4		\n\t"
+        "psubb %%mm4, %%mm3		\n\t" // dst - pred
+        "movq %%mm3, (%3, %0)		\n\t"
+        "addl $8, %0			\n\t"
+        "cmpl %4, %0			\n\t"
+        " jb 1b				\n\t"
+        : "+r" (i)
+        : "r"(src1), "r"(src2), "r"(dst), "r"(w)
+    );
+
+    l= *left;
+    lt= *left_top;
+    
+    dst[0]= src2[0] - mid_pred(l, src1[0], (l + src1[0] - lt)&0xFF);
+    
+    *left_top= src1[w-1];
+    *left    = src2[w-1];
+}
+
 #define LBUTTERFLY2(a1,b1,a2,b2)\
     "paddw " #b1 ", " #a1 "		\n\t"\
     "paddw " #b2 ", " #a2 "		\n\t"\
@@ -1699,6 +1736,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             SET_QPEL_FUNC(qpel_pixels_tab[1][14], qpel8_mc23_mmx2)
             SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_mmx2)
 #endif
+
+            c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_mmx2;
         } else if (mm_flags & MM_3DNOW) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_3dnow;
             c->put_pixels_tab[0][2] = put_pixels16_y2_3dnow;

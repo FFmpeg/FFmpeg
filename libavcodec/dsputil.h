@@ -234,6 +234,11 @@ typedef struct DSPContext {
     /* huffyuv specific */
     void (*add_bytes)(uint8_t *dst/*align 16*/, uint8_t *src/*align 16*/, int w);
     void (*diff_bytes)(uint8_t *dst/*align 16*/, uint8_t *src1/*align 16*/, uint8_t *src2/*align 1*/,int w);
+    /**
+     * subtract huffyuv's variant of median prediction
+     * note, this might read from src1[-1], src2[-1]
+     */
+    void (*sub_hfyu_median_prediction)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w, int *left, int *left_top);
     void (*bswap_buf)(uint32_t *dst, uint32_t *src, int w);
     
     /* (I)DCT */

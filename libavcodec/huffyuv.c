@@ -153,25 +153,6 @@ static inline void add_median_prediction(uint8_t *dst, uint8_t *src1, uint8_t *d
     *left_top= lt;
 }
 
-//FIXME optimize
-static inline void sub_median_prediction(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w, int *left, int *left_top){
-    int i;
-    uint8_t l, lt;
-
-    l= *left;
-    lt= *left_top;
-
-    for(i=0; i<w; i++){
-        const int pred= mid_pred(l, src1[i], (l + src1[i] - lt)&0xFF);
-        lt= src1[i];
-        l= src2[i];
-        dst[i]= l - pred;
-    }    
-
-    *left= l;
-    *left_top= lt;
-}
-
 static inline void add_left_prediction_bgr32(uint8_t *dst, uint8_t *src, int w, int *red, int *green, int *blue){
     int i;
     int r,g,b;
@@ -999,9 +980,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             lefttopy= p->data[0][3];
             lefttopu= p->data[1][1];
             lefttopv= p->data[2][1];
-            sub_median_prediction(s->temp[0], p->data[0]+4, p->data[0] + fake_ystride+4, width-4 , &lefty, &lefttopy);
-            sub_median_prediction(s->temp[1], p->data[1]+2, p->data[1] + fake_ustride+2, width2-2, &leftu, &lefttopu);
-            sub_median_prediction(s->temp[2], p->data[2]+2, p->data[2] + fake_vstride+2, width2-2, &leftv, &lefttopv);
+            s->dsp.sub_hfyu_median_prediction(s->temp[0], p->data[0]+4, p->data[0] + fake_ystride+4, width-4 , &lefty, &lefttopy);
+            s->dsp.sub_hfyu_median_prediction(s->temp[1], p->data[1]+2, p->data[1] + fake_ustride+2, width2-2, &leftu, &lefttopu);
+            s->dsp.sub_hfyu_median_prediction(s->temp[2], p->data[2]+2, p->data[2] + fake_vstride+2, width2-2, &leftv, &lefttopv);
             encode_422_bitstream(s, width-4);
             y++; cy++;
 
@@ -1011,7 +992,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 if(s->bitstream_bpp==12){
                     while(2*cy > y){
                         ydst= p->data[0] + p->linesize[0]*y;
-                        sub_median_prediction(s->temp[0], ydst - fake_ystride, ydst, width , &lefty, &lefttopy);
+                        s->dsp.sub_hfyu_median_prediction(s->temp[0], ydst - fake_ystride, ydst, width , &lefty, &lefttopy);
                         encode_gray_bitstream(s, width);
                         y++;
                     }
@@ -1021,9 +1002,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 udst= p->data[1] + p->linesize[1]*cy;
                 vdst= p->data[2] + p->linesize[2]*cy;
 
-                sub_median_prediction(s->temp[0], ydst - fake_ystride, ydst, width , &lefty, &lefttopy);
-                sub_median_prediction(s->temp[1], udst - fake_ustride, udst, width2, &leftu, &lefttopu);
-                sub_median_prediction(s->temp[2], vdst - fake_vstride, vdst, width2, &leftv, &lefttopv);
+                s->dsp.sub_hfyu_median_prediction(s->temp[0], ydst - fake_ystride, ydst, width , &lefty, &lefttopy);
+                s->dsp.sub_hfyu_median_prediction(s->temp[1], udst - fake_ustride, udst, width2, &leftu, &lefttopu);
+                s->dsp.sub_hfyu_median_prediction(s->temp[2], vdst - fake_vstride, vdst, width2, &leftv, &lefttopv);
 
                 encode_422_bitstream(s, width);
             }
