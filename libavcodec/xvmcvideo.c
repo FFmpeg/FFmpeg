@@ -146,7 +146,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
 
     if(s->encoding){
-        fprintf(stderr,"XVMC doesn't support encoding!!!\n");
+        av_log(s->avctx, AV_LOG_ERROR, "XVMC doesn't support encoding!!!\n");
 	av_abort();
     }
 
