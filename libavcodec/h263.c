@@ -3042,8 +3042,8 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     
                     SKIP_COUNTER(re, &s->gb, 1+12+1);
                     
-                    if(level>512 || level<-512){ //FIXME check that QP=1 is ok with this too
-                        fprintf(stderr, "|level| overflow in 3. esc\n");
+                    if(level*s->qscale>1024 || level*s->qscale<-1024){
+                        fprintf(stderr, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
                         return DECODING_AC_LOST;
                     }
 #if 1 
