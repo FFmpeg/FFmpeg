@@ -85,13 +85,15 @@ gmc1
 pix_sum
 	used for encoding
         
-hadamard8_diff / sse / sad == pix_norm1 / dct_sad / quant_psnr
+hadamard8_diff / sse / sad == pix_norm1 / dct_sad / quant_psnr / rd / bit
 	specific compare functions used in encoding, it depends upon the command line
         switches which of these are used
         dont waste ur time with dct_sad & quant_psnr they arent really usefull
 
 put_pixels_clamped / add_pixels_clamped
-	used for en/decoding, easy
+	used for en/decoding in the IDCT, easy
+        Note, some optimized IDCTs have the add/put clamped code included and then 
+        put_pixels_clamped / add_pixels_clamped will be unused
 
 idct/fdct
 	idct (encoding & decoding)
@@ -149,3 +151,4 @@ http://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
 
 a bit old (note "+" is valid for input-output, even though the next says its not)
 http://www.cs.virginia.edu/~clc5q/gcc-inline-asm.pdf
+
