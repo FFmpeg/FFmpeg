@@ -9,10 +9,8 @@
 #include <stdio.h>
 
 #include <ogg/ogg.h>
-#include <vorbis/vorbisenc.h>
 
 #include "avformat.h"
-#include "oggvorbis.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -35,59 +33,34 @@ typedef struct OggContext {
 static int ogg_write_header(AVFormatContext *avfcontext) 
 {
     OggContext *context = avfcontext->priv_data;
-    AVCodecContext *avccontext ;
-    vorbis_info vi ;
-    vorbis_dsp_state vd ;
-    vorbis_comment vc ;
-    vorbis_block vb ;
-    ogg_packet header, header_comm, header_code ; 
-    int n ;
+    ogg_packet *op= &context->op;    
+    int n, i;
 
     av_set_pts_info(avfcontext, 60, 1, AV_TIME_BASE);
 
     ogg_stream_init(&context->os, 31415);
     
     for(n = 0 ; n < avfcontext->nb_streams ; n++) {
-	avccontext = &avfcontext->streams[n]->codec ;
+        AVCodecContext *codec = &avfcontext->streams[n]->codec;
+        uint8_t *p= codec->extradata;
+        
+        for(i=0; i < codec->extradata_size; i+= op->bytes){
+            op->bytes = p[i++]<<8;
+            op->bytes+= p[i++];
 
-	/* begin vorbis specific code */
-		
-	vorbis_info_init(&vi) ;
+            op->packet= &p[i];
+            op->b_o_s= op->packetno==0;
 
-	/* code copied from libavcodec/oggvorbis.c */
+            ogg_stream_packetin(&context->os, op);
 
-	if(oggvorbis_init_encoder(&vi, avccontext) < 0) {
-	    fprintf(stderr, "ogg_write_header: init_encoder failed") ;
-	    return -1 ;
-	}
-
-	vorbis_analysis_init(&vd, &vi) ;
-	vorbis_block_init(&vd, &vb) ;
-	
-	vorbis_comment_init(&vc) ;
-	vorbis_comment_add_tag(&vc, "encoder", LIBAVFORMAT_IDENT) ;
-	if(*avfcontext->title)
-	    vorbis_comment_add_tag(&vc, "title", avfcontext->title) ;
-
-	vorbis_analysis_headerout(&vd, &vc, &header,
-				  &header_comm, &header_code) ;
-	ogg_stream_packetin(&context->os, &header) ;
-	ogg_stream_packetin(&context->os, &header_comm) ;
-	ogg_stream_packetin(&context->os, &header_code) ;  
-	
-	vorbis_block_clear(&vb) ;
-	vorbis_dsp_clear(&vd) ;
-	vorbis_info_clear(&vi) ;
-	vorbis_comment_clear(&vc) ;
-	
-	/* end of vorbis specific code */
+            op->packetno++; //FIXME multiple streams
+        }
 
 	context->header_handled = 0 ;
     }
     
     return 0 ;
 }
-
 
 static int ogg_write_packet(AVFormatContext *avfcontext,
 			    int stream_index,

@@ -7,7 +7,6 @@
 #include <vorbis/vorbisenc.h>
 
 #include "avcodec.h"
-#include "oggvorbis.h"
 
 //#define OGGVORBIS_FRAME_SIZE 1024
 #define OGGVORBIS_FRAME_SIZE 64
@@ -27,7 +26,7 @@ typedef struct OggVorbisContext {
 } OggVorbisContext ;
 
 
-int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
+static int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
 
 #ifdef OGGVORBIS_VBR_BY_ESTIMATE
     /* variable bitrate by estimate */
@@ -44,9 +43,10 @@ int oggvorbis_init_encoder(vorbis_info *vi, AVCodecContext *avccontext) {
 #endif
 }
 
-
 static int oggvorbis_encode_init(AVCodecContext *avccontext) {
     OggVorbisContext *context = avccontext->priv_data ;
+    ogg_packet header, header_comm, header_code;
+    uint8_t *p;
 
     vorbis_info_init(&context->vi) ;
     if(oggvorbis_init_encoder(&context->vi, avccontext) < 0) {
@@ -56,6 +56,34 @@ static int oggvorbis_encode_init(AVCodecContext *avccontext) {
     vorbis_analysis_init(&context->vd, &context->vi) ;
     vorbis_block_init(&context->vd, &context->vb) ;
 
+    vorbis_comment_init(&context->vc);
+    vorbis_comment_add_tag(&context->vc, "encoder", LIBAVCODEC_IDENT) ;
+
+    vorbis_analysis_headerout(&context->vd, &context->vc, &header,
+                                &header_comm, &header_code);
+    
+    avccontext->extradata_size= 3*2 + header.bytes + header_comm.bytes +  header_code.bytes;
+    p= avccontext->extradata= av_mallocz(avccontext->extradata_size);
+    
+    *(p++) = header.bytes>>8;
+    *(p++) = header.bytes&0xFF;
+    memcpy(p, header.packet, header.bytes);
+    p += header.bytes;
+    
+    *(p++) = header_comm.bytes>>8;
+    *(p++) = header_comm.bytes&0xFF;
+    memcpy(p, header_comm.packet, header_comm.bytes);
+    p += header_comm.bytes;
+    
+    *(p++) = header_code.bytes>>8;
+    *(p++) = header_code.bytes&0xFF;
+    memcpy(p, header_code.packet, header_code.bytes);
+                                
+/*    vorbis_block_clear(&context->vb);
+    vorbis_dsp_clear(&context->vd);
+    vorbis_info_clear(&context->vi);*/
+    vorbis_comment_clear(&context->vc);
+       
     avccontext->frame_size = OGGVORBIS_FRAME_SIZE ;
  
     avccontext->coded_frame= avcodec_alloc_frame();
@@ -103,7 +131,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
     }
 
     if(context->buffer_index){
-        ogg_packet *op2= context->buffer;
+        ogg_packet *op2= (ogg_packet*)context->buffer;
         op2->packet = context->buffer + sizeof(ogg_packet);
         l=  op2->bytes;
         
@@ -143,6 +171,7 @@ static int oggvorbis_encode_close(AVCodecContext *avccontext) {
     vorbis_info_clear(&context->vi);
 
     av_freep(&avccontext->coded_frame);
+    av_freep(&avccontext->extradata);
   
     return 0 ;
 }
