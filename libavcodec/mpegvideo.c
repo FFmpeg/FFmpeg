@@ -4408,7 +4408,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                             if(qp < s->avctx->qmin || qp > s->avctx->qmax)
                                 break;
                             backup_s.dquant= dquant;
-                            if(s->mb_intra){
+                            if(s->mb_intra && s->dc_val[0]){
                                 for(i=0; i<6; i++){
                                     dc[i]= s->dc_val[0][ s->block_index[i] ];
                                     memcpy(ac[i], s->ac_val[0][s->block_index[i]], sizeof(DCTELEM)*16);
@@ -4418,7 +4418,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                             encode_mb_hq(s, &backup_s, &best_s, CANDIDATE_MB_TYPE_INTER /* wrong but unused */, pb, pb2, tex_pb, 
                                          &dmin, &next_block, s->mv[mvdir][0][0], s->mv[mvdir][0][1]);
                             if(best_s.qscale != qp){
-                                if(s->mb_intra){
+                                if(s->mb_intra && s->dc_val[0]){
                                     for(i=0; i<6; i++){
                                         s->dc_val[0][ s->block_index[i] ]= dc[i];
                                         memcpy(s->ac_val[0][s->block_index[i]], ac[i], sizeof(DCTELEM)*16);
