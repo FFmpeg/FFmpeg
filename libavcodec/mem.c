@@ -46,7 +46,13 @@ void *av_malloc(unsigned int size)
 {
     void *ptr;
     
-#if defined (HAVE_MEMALIGN)
+#ifdef MEMALIGN_HACK
+    int diff;
+    ptr = malloc(size+16+1);
+    diff= ((-(int)ptr - 1)&15) + 1;
+    ptr += diff;
+    ((char*)ptr)[-1]= diff;
+#elif defined (HAVE_MEMALIGN) 
     ptr = memalign(16,size);
     /* Why 64? 
        Indeed, we should align it:
@@ -87,7 +93,13 @@ void *av_malloc(unsigned int size)
  */
 void *av_realloc(void *ptr, unsigned int size)
 {
+#ifdef MEMALIGN_HACK
+    //FIXME this isnt aligned correctly though it probably isnt needed
+    int diff= ptr ? ((char*)ptr)[-1] : 0;
+    return realloc(ptr - diff, size + diff) + diff;
+#else
     return realloc(ptr, size);
+#endif
 }
 
 /* NOTE: ptr = NULL is explicetly allowed */
@@ -95,6 +107,10 @@ void av_free(void *ptr)
 {
     /* XXX: this test should not be needed on most libcs */
     if (ptr)
+#ifdef MEMALIGN_HACK
+        free(ptr - ((char*)ptr)[-1]);
+#else
         free(ptr);
+#endif
 }
 

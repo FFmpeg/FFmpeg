@@ -62,6 +62,7 @@ echo "  --disable-ffserver       disable ffserver build"
 echo "  --disable-ffplay         disable ffplay build"
 echo "  --disable-risky          disables patent encumbered codecs"
 echo "  --enable-small           optimize for size instead of speed"
+echo "  --enable-memalign-hack   emulate memalign, interferes with memory debuggers"
 echo ""
 echo "NOTE: The object files are build at the place where configure is launched"
 exit 1
@@ -178,6 +179,7 @@ amr_nb_fixed="no"
 sunmlib="no"
 pthreads="no"
 gpl="no"
+memalignhack="no"
 
 # OS specific
 targetos=`uname -s`
@@ -426,6 +428,8 @@ for opt do
   --enable-pthreads) pthreads="yes"
   ;;
   --enable-gpl) gpl="yes"
+  ;;
+  --enable-memalign-hack) memalignhack="yes"
   ;;
   esac
 done
@@ -1268,6 +1272,11 @@ if test "$_memalign" = "yes" ; then
 else
   echo "#undef  HAVE_MEMALIGN" >> $TMPH
 fi
+
+if test "$memalignhack" = "yes" ; then
+  echo "#define MEMALIGN_HACK 1" >> $TMPH
+fi
+
 
 if test "$netserver" = "yes" ; then
   echo "#define CONFIG_BEOS_NETSERVER 1" >> $TMPH
