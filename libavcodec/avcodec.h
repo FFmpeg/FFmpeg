@@ -56,14 +56,18 @@ enum SampleFormat {
 /* in bytes */
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 18432
 
-/* motion estimation type */
-extern int motion_estimation_method;
-#define ME_ZERO   0
-#define ME_FULL   1
-#define ME_LOG    2
-#define ME_PHODS  3
-#define ME_EPZS   4
-#define ME_X1     5
+/* motion estimation type, EPZS by default */
+enum Motion_Est_ID {
+    ME_ZERO = -4,
+    ME_FULL,
+    ME_LOG,
+    ME_PHODS,
+    ME_EPZS,
+    ME_X1
+};
+
+/* ME algos sorted by quality */
+static const int Motion_Est_QTab[] = { -4, -1, -2, 1, 0, -3 };
 
 /* encoding support */
 /* note not everything is supported yet */
@@ -89,6 +93,9 @@ typedef struct AVCodecContext {
     int flags;
     int sub_id;    /* some codecs needs additionnal format info. It is
                       stored there */
+    
+    int me_method; /* ME algorithm used for video coding */
+    
     /* video only */
     int frame_rate; /* frames per sec multiplied by FRAME_RATE_BASE */
     int width, height;

@@ -113,7 +113,7 @@ typedef struct MpegEncContext {
     int b_code; /* backward resolution for B Frames (mpeg4) */
     INT16 *mv_table[2];    /* MV table (1MV per MB)*/
     INT16 (*motion_val)[2]; /* used for MV prediction (4MV per MB)*/
-    int full_search;
+    int me_method;          /* ME algorithm */
     int mv_dir;
 #define MV_DIR_BACKWARD  1
 #define MV_DIR_FORWARD   2

@@ -594,7 +594,7 @@ static int epzs_motion_search(MpegEncContext * s,
     CHECK_MV(P[0][0]>>shift, P[0][1]>>shift)
 
 //check(best[0],best[1],0, b0)
-    if(s->full_search==ME_EPZS)
+    if(s->me_method==ME_EPZS)
         dmin= small_diamond_search(s, best, dmin, new_pic, old_pic, pic_stride, 
                                    pred_x, pred_y, mv_penalty, quant, xmin, ymin, xmax, ymax, shift);
     else
@@ -825,7 +825,7 @@ void estimate_motion(MpegEncContext * s,
     int P[6][2];
     const int shift= 1+s->quarter_sample;
     int mb_type=0;
-    
+    //static int skip=0;    
     range = 8 * (1 << (s->f_code - 1));
     /* XXX: temporary kludge to avoid overflow for msmpeg4 */
     if (s->out_format == FMT_H263 && !s->h263_msmpeg4)
@@ -851,7 +851,7 @@ void estimate_motion(MpegEncContext * s,
         xmax = s->mb_width*16 - 16;
         ymax = s->mb_height*16 - 16;
     }
-    switch(s->full_search) {
+    switch(s->me_method) {
     case ME_ZERO:
     default:
 	no_motion_search(s, &mx, &my);
@@ -999,6 +999,7 @@ void estimate_motion(MpegEncContext * s,
     s->avg_mb_var+= varc;
     s->mc_mb_var += vard;
 
+    
 #if 0
     printf("varc=%4d avg_var=%4d (sum=%4d) vard=%4d mx=%2d my=%2d\n",
 	   varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
@@ -1016,12 +1017,19 @@ void estimate_motion(MpegEncContext * s,
     }else{
         if (vard <= 64 || vard < varc) {
             mb_type|= MB_TYPE_INTER;
-            if (s->full_search != ME_ZERO) {
+            if (s->me_method != ME_ZERO) {
                 halfpel_motion_search(s, &mx, &my, dmin, xmin, ymin, xmax, ymax, pred_x, pred_y);
             } else {
                 mx -= 16 * mb_x;
                 my -= 16 * mb_y;
             }
+#if 0
+            if (vard < 10) {
+                skip++;
+                fprintf(stderr,"\nEarly skip: %d vard: %2d varc: %5d dmin: %d", 
+                                skip, vard, varc, dmin);
+            }
+#endif
         }else{
             mb_type|= MB_TYPE_INTRA;
             mx = 0;//mx*2 - 32 * mb_x;

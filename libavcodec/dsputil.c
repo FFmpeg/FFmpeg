@@ -89,6 +89,8 @@ UINT8 ff_alternate_vertical_scan[64] = {
     38, 46, 54, 62, 39, 47, 55, 63,
 };
 
+#ifdef SIMPLE_IDCT
+
 /* Input permutation for the simple_idct_mmx */
 static UINT8 simple_mmx_permutation[64]={
 	0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D, 
@@ -100,6 +102,7 @@ static UINT8 simple_mmx_permutation[64]={
 	0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F, 
 	0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
 };
+#endif
 
 /* a*inverse[b]>>32 == a/b for all 0<=a<=65536 && 2<=b<=255 */
 UINT32 inverse[256]={

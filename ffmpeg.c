@@ -82,9 +82,11 @@ static int video_qmax = 15;
 static int video_qdiff = 3;
 static float video_qblur = 0.5;
 static float video_qcomp = 0.5;
+static int motion_estimation_method = 0;
 static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
 static int same_quality = 0;
+static int use_hq = 0;
 static int use_4mv = 0;
 static int do_deinterlace = 0;
 
@@ -1386,7 +1388,7 @@ void opt_motion_estimation(const char *arg)
             break;
         p++;
     }
-    motion_estimation_method = p - motion_str;
+    motion_estimation_method = (p - motion_str) - 4;
 }
 
 void opt_video_codec(const char *arg)
@@ -1763,6 +1765,10 @@ void opt_output_file(const char *filename)
                 video_enc->quality = video_qscale;
             }
             
+            if (use_hq) {
+                video_enc->flags |= CODEC_FLAG_HQ;
+            }
+            
             if (use_4mv) {
                 video_enc->flags |= CODEC_FLAG_HQ;
                 video_enc->flags |= CODEC_FLAG_4MV;
@@ -1777,6 +1783,9 @@ void opt_output_file(const char *filename)
                 video_enc->get_psnr = 1;
             else
                 video_enc->get_psnr = 0;
+            
+            video_enc->me_method = motion_estimation_method;
+            
             /* XXX: need to find a way to set codec parameters */
             if (oc->format == &ppm_format ||
                 oc->format == &ppmpipe_format) {
@@ -2029,11 +2038,11 @@ void show_formats(void)
     pp = motion_str;
     while (*pp) {
         printf(" %s", *pp);
-        if ((pp - motion_str) == ME_ZERO) 
+        if ((pp - motion_str - 4) == ME_ZERO) 
             printf("(fastest)");
-        else if ((pp - motion_str) == ME_FULL) 
+        else if ((pp - motion_str - 4) == ME_FULL) 
             printf("(slowest)");
-        else if ((pp - motion_str) == ME_LOG) 
+        else if ((pp - motion_str - 4) == ME_EPZS) 
             printf("(default)");
         pp++;
     }
@@ -2115,6 +2124,7 @@ const OptionDef options[] = {
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
+    { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },
     { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
     { "sameq", OPT_BOOL, {(void*)&same_quality}, 
       "use same video quality as source (implies VBR)" },

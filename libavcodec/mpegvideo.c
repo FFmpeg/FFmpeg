@@ -313,8 +313,10 @@ int MPV_encode_init(AVCodecContext *avctx)
     } else {
         s->intra_only = 0;
     }
-    s->full_search = motion_estimation_method;
-
+    
+    /* ME algorithm */
+    s->me_method = avctx->me_method;
+    /* Fixed QSCALE */
     s->fixed_qscale = (avctx->flags & CODEC_FLAG_QSCALE);
     
     switch(avctx->codec->id) {
@@ -413,7 +415,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         mpeg1_encode_init(s);
 
     /* dont use mv_penalty table for crap MV as it would be confused */
-    if(s->full_search<4) s->mv_penalty= default_mv_penalty;
+    if (s->me_method < 0) s->mv_penalty = default_mv_penalty;
 
     s->encoding = 1;
 
@@ -1344,7 +1346,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
 
     /* find best f_code for ME which do unlimited searches */
-    if(s->pict_type==P_TYPE && s->full_search>3){
+    if(s->pict_type == P_TYPE && s->me_method >= 0){
         int mv_num[8];
         int i;
         int loose=0;
