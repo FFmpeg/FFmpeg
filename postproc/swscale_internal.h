@@ -19,6 +19,10 @@
 #ifndef SWSCALE_INTERNAL_H
 #define SWSCALE_INTERNAL_H
 
+#ifdef HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
+
 #include "../mp_msg.h"
 
 #define MSG_WARN(args...) mp_msg(MSGT_SWS,MSGL_WARN, ##args )
