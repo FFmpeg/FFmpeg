@@ -50,7 +50,17 @@
 #define CAN_COMPILE_X86_ASM
 #endif
 
-uint8_t  __attribute__((aligned(8))) dither_8x8_32[8][8]={
+const uint8_t  __attribute__((aligned(8))) dither_2x2_4[2][8]={
+{  1,   3,   1,   3,   1,   3,   1,   3, },
+{  2,   0,   2,   0,   2,   0,   2,   0, },
+};
+
+const uint8_t  __attribute__((aligned(8))) dither_2x2_8[2][8]={
+{  6,   2,   6,   2,   6,   2,   6,   2, },
+{  0,   4,   0,   4,   0,   4,   0,   4, },
+};
+
+const uint8_t  __attribute__((aligned(8))) dither_8x8_32[8][8]={
 { 17,   9,  23,  15,  16,   8,  22,  14, },
 {  5,  29,   3,  27,   4,  28,   2,  26, },
 { 21,  13,  19,  11,  20,  12,  18,  10, },
@@ -61,7 +71,8 @@ uint8_t  __attribute__((aligned(8))) dither_8x8_32[8][8]={
 {  1,  25,   7,  31,   0,  24,   6,  30, },
 };
 
-uint8_t  __attribute__((aligned(8))) dither_8x8_64[8][8]={
+#if 0
+const uint8_t  __attribute__((aligned(8))) dither_8x8_64[8][8]={
 {  0,  48,  12,  60,   3,  51,  15,  63, },
 { 32,  16,  44,  28,  35,  19,  47,  31, },
 {  8,  56,   4,  52,  11,  59,   7,  55, },
@@ -71,8 +82,21 @@ uint8_t  __attribute__((aligned(8))) dither_8x8_64[8][8]={
 { 10,  58,   6,  54,   9,  57,   5,  53, },
 { 42,  26,  38,  22,  41,  25,  37,  21, },
 };
+#endif
 
-uint8_t  __attribute__((aligned(8))) dither_8x8_128[8][8]={
+const uint8_t  __attribute__((aligned(8))) dither_8x8_73[8][8]={
+{  0,  55,  14,  68,   3,  58,  17,  72, },
+{ 37,  18,  50,  32,  40,  22,  54,  35, },
+{  9,  64,   5,  59,  13,  67,   8,  63, },
+{ 46,  27,  41,  23,  49,  31,  44,  26, },
+{  2,  57,  16,  71,   1,  56,  15,  70, },
+{ 39,  21,  52,  34,  38,  19,  51,  33, },
+{ 11,  66,   7,  62,  10,  65,   6,  60, },
+{ 48,  30,  43,  25,  47,  29,  42,  24, },
+};
+
+#if 0
+const uint8_t  __attribute__((aligned(8))) dither_8x8_128[8][8]={
 { 68,  36,  92,  60,  66,  34,  90,  58, },
 { 20, 116,  12, 108,  18, 114,  10, 106, },
 { 84,  52,  76,  44,  82,  50,  74,  42, },
@@ -82,6 +106,56 @@ uint8_t  __attribute__((aligned(8))) dither_8x8_128[8][8]={
 { 80,  48,  72,  40,  86,  54,  78,  46, },
 {  4, 100,  28, 124,   2,  98,  26, 122, },
 };
+#endif
+
+#if 1
+const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
+{117,  62, 158, 103, 113,  58, 155, 100, },
+{ 34, 199,  21, 186,  31, 196,  17, 182, },
+{144,  89, 131,  76, 141,  86, 127,  72, },
+{  0, 165,  41, 206,  10, 175,  52, 217, },
+{110,  55, 151,  96, 120,  65, 162, 107, },
+{ 28, 193,  14, 179,  38, 203,  24, 189, },
+{138,  83, 124,  69, 148,  93, 134,  79, },
+{  7, 172,  48, 213,   3, 168,  45, 210, },
+};
+#elif 1
+// tries to correct a gamma of 1.5
+const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
+{  0, 143,  18, 200,   2, 156,  25, 215, },
+{ 78,  28, 125,  64,  89,  36, 138,  74, },
+{ 10, 180,   3, 161,  16, 195,   8, 175, },
+{109,  51,  93,  38, 121,  60, 105,  47, },
+{  1, 152,  23, 210,   0, 147,  20, 205, },
+{ 85,  33, 134,  71,  81,  30, 130,  67, },
+{ 14, 190,   6, 171,  12, 185,   5, 166, },
+{117,  57, 101,  44, 113,  54,  97,  41, },
+};
+#elif 1
+// tries to correct a gamma of 2.0
+const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
+{  0, 124,   8, 193,   0, 140,  12, 213, },
+{ 55,  14, 104,  42,  66,  19, 119,  52, },
+{  3, 168,   1, 145,   6, 187,   3, 162, },
+{ 86,  31,  70,  21,  99,  39,  82,  28, },
+{  0, 134,  11, 206,   0, 129,   9, 200, },
+{ 62,  17, 114,  48,  58,  16, 109,  45, },
+{  5, 181,   2, 157,   4, 175,   1, 151, },
+{ 95,  36,  78,  26,  90,  34,  74,  24, },
+};
+#else
+// tries to correct a gamma of 2.5
+const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
+{  0, 107,   3, 187,   0, 125,   6, 212, },
+{ 39,   7,  86,  28,  49,  11, 102,  36, },
+{  1, 158,   0, 131,   3, 180,   1, 151, },
+{ 68,  19,  52,  12,  81,  25,  64,  17, },
+{  0, 119,   5, 203,   0, 113,   4, 195, },
+{ 45,   9,  96,  33,  42,   8,  91,  30, },
+{  2, 172,   1, 144,   2, 165,   0, 137, },
+{ 77,  23,  60,  15,  72,  21,  56,  14, },
+};
+#endif
 
 #ifdef CAN_COMPILE_X86_ASM
 
@@ -156,7 +230,7 @@ const int32_t Inverse_Table_6_9[8][4] = {
     {117579, 136230, 16907, 35559}  /* SMPTE 240M (1987) */
 };
 
-static void yuv2rgb_c_init (unsigned bpp, int mode);
+void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_gU[256], int table_gV[256], void *table_bU[256]);
 
 yuv2rgb_fun yuv2rgb;
 
@@ -181,6 +255,11 @@ static void yuv2rgb_c (void * dst, uint8_t * py,
 	dst += 2 * rgb_stride;
     }
 }
+
+void * table_rV[256];
+void * table_gU[256];
+int table_gV[256];
+void * table_bU[256];
 
 void yuv2rgb_init (unsigned bpp, int mode)
 {
@@ -216,15 +295,10 @@ void yuv2rgb_init (unsigned bpp, int mode)
 #endif
     if (yuv2rgb == NULL) {
 	mp_msg(MSGT_SWS,MSGL_INFO,"No accelerated colorspace conversion found\n");
-	yuv2rgb_c_init (bpp, mode);
+	yuv2rgb_c_init (bpp, mode, table_rV, table_gU, table_gV, table_bU);
 	yuv2rgb = (yuv2rgb_fun)yuv2rgb_c;
     }
 }
-
-void * table_rV[256];
-void * table_gU[256];
-int table_gV[256];
-void * table_bU[256];
 
 #define RGB(i)					\
 	U = pu[i];				\
@@ -479,8 +553,8 @@ static void yuv2rgb_c_8_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
     dst_2 = _dst_2;
 
     while (h_size--) {
-	uint8_t *d32= dither_8x8_32[v_pos&7];
-	uint8_t *d64= dither_8x8_64[v_pos&7];
+	const uint8_t *d32= dither_8x8_32[v_pos&7];
+	const uint8_t *d64= dither_8x8_73[v_pos&7];
 #define DST1bpp8(i,o)					\
 	Y = py_1[2*i];				\
 	dst_1[2*i] = r[Y+d32[0+o]] + g[Y+d32[0+o]] + b[Y+d64[0+o]];	\
@@ -573,8 +647,8 @@ static void yuv2rgb_c_4_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
     dst_2 = _dst_2;
 
     while (h_size--) {
-	uint8_t *d64= dither_8x8_64 [v_pos&7];
-	uint8_t *d128=dither_8x8_128[v_pos&7];
+	const uint8_t *d64= dither_8x8_73[v_pos&7];
+	const uint8_t *d128=dither_8x8_220[v_pos&7];
 
 #define DST1bpp4(i,o)					\
 	Y = py_1[2*i];				\
@@ -628,7 +702,7 @@ static void yuv2rgb_c_1_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
     g= table_gU[128] + table_gV[128];
 
     while (h_size--) {
-	uint8_t *d128=dither_8x8_128[v_pos&7];
+	const uint8_t *d128=dither_8x8_220[v_pos&7];
 	char out_1=0, out_2=0;
 
 #define DST1bpp1(i,o)					\
@@ -676,7 +750,7 @@ static int div_round (int dividend, int divisor)
 	return -((-dividend + (divisor>>1)) / divisor);
 }
 
-static void yuv2rgb_c_init (unsigned bpp, int mode)
+void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_gU[256], int table_gV[256], void *table_bU[256])
 {  
     int i;
     uint8_t table_Y[1024];
@@ -688,6 +762,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
     uint8_t *table_1 = 0;
     int entry_size = 0;
     void *table_r = 0, *table_g = 0, *table_b = 0;
+    void *table_start;
 
     int crv = Inverse_Table_6_9[matrix_coefficients][0];
     int cbu = Inverse_Table_6_9[matrix_coefficients][1];
@@ -706,7 +781,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
     case 32:
 	yuv2rgb_c_internal = yuv2rgb_c_32;
 
-	table_32 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint32_t));
+	table_start= table_32 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint32_t));
 
 	entry_size = sizeof (uint32_t);
 	table_r = table_32 + 197;
@@ -725,7 +800,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
 //	yuv2rgb_c_internal = (mode==MODE_RGB) ? yuv2rgb_c_24_rgb : yuv2rgb_c_24_bgr;
 	yuv2rgb_c_internal = (mode!=MODE_RGB) ? yuv2rgb_c_24_rgb : yuv2rgb_c_24_bgr;
 
-	table_8 = malloc ((256 + 2*232) * sizeof (uint8_t));
+	table_start= table_8 = malloc ((256 + 2*232) * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
 	table_r = table_g = table_b = table_8 + 232;
@@ -738,7 +813,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
     case 16:
 	yuv2rgb_c_internal = yuv2rgb_c_16;
 
-	table_16 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint16_t));
+	table_start= table_16 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint16_t));
 
 	entry_size = sizeof (uint16_t);
 	table_r = table_16 + 197;
@@ -771,7 +846,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
     case 8:
 	yuv2rgb_c_internal = yuv2rgb_c_8_ordered_dither; //yuv2rgb_c_8;
 
-	table_332 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
+	table_start= table_332 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
 	table_r = table_332 + 197;
@@ -779,8 +854,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
 	table_g = table_332 + 197 + 2*682;
 
 	for (i = -197; i < 256+197; i++) {
-	    int j = (table_Y[i+384] - 16) >> 5;
-	    if(j<0) j=0;
+	    int j = (table_Y[i+384 - 16] + 18)/36;
 
 	    if (mode == MODE_RGB)
 		j <<= 5;
@@ -788,8 +862,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
 	    ((uint8_t *)table_r)[i] = j;
 	}
 	for (i = -132; i < 256+132; i++) {
-	    int j = (table_Y[i+384] - 16) >> 5;
-	    if(j<0) j=0;
+	    int j = (table_Y[i+384 - 16] + 18)/36;
 
 	    if (mode == MODE_BGR)
 		j <<= 1;
@@ -797,8 +870,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
 	    ((uint8_t *)table_g)[i] = j << 2;
 	}
 	for (i = -232; i < 256+232; i++) {
-	    int j = (table_Y[i+384] - 32) >> 6;
-	    if(j<0) j=0;
+	    int j = (table_Y[i+384 - 37] + 43)/85;
 
 	    if (mode == MODE_BGR)
 		j <<= 6;
@@ -809,7 +881,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
     case 4:
 	yuv2rgb_c_internal = yuv2rgb_c_4_ordered_dither; //yuv2rgb_c_4;
 
-	table_121 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
+	table_start= table_121 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
 	table_r = table_121 + 197;
@@ -817,8 +889,7 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
 	table_g = table_121 + 197 + 2*682;
 
 	for (i = -197; i < 256+197; i++) {
-	    int j = (table_Y[i+384] - 64) >> 7;
-	    if(j<0) j=0;
+	    int j = table_Y[i+384 - 110] >> 7;
 
 	    if (mode == MODE_RGB)
 		j <<= 3;
@@ -826,14 +897,12 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
 	    ((uint8_t *)table_r)[i] = j;
 	}
 	for (i = -132; i < 256+132; i++) {
-	    int j = (table_Y[i+384] - 32) >> 6;
-	    if(j<0) j=0;
+	    int j = (table_Y[i+384 - 37]+ 43)/85;
 
 	    ((uint8_t *)table_g)[i] = j << 1;
 	}
 	for (i = -232; i < 256+232; i++) {
-	    int j =(table_Y[i+384] - 64) >> 7;
-	    if(j<0) j=0;
+	    int j =table_Y[i+384 - 110] >> 7;
 
 	    if (mode == MODE_BGR)
 		j <<= 3;
@@ -845,21 +914,21 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
     case 1:
 	yuv2rgb_c_internal = yuv2rgb_c_1_ordered_dither;
 
-	table_1 = malloc ((132*2 + 256) * sizeof (uint8_t));
+	table_start= table_1 = malloc (256*2 * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
-	table_g = table_1 + 132;
+	table_g = table_1;
 	table_r = table_b = NULL;
 
-	for (i = -132; i < 256+132; i++) {
-	    int j = (table_Y[i+384] - 64) >> 7;
-	    if(j<0) j=0;
+	for (i = 0; i < 256+256; i++) {
+	    int j = table_Y[i + 384 - 110]>>7;
 
 	    ((uint8_t *)table_g)[i] = j;
 	}
 	break;
 
     default:
+	table_start= NULL;
 	mp_msg(MSGT_SWS,MSGL_ERR,"%ibpp not supported by yuv2rgb\n", bpp);
 	//exit (1);
     }
@@ -870,4 +939,6 @@ static void yuv2rgb_c_init (unsigned bpp, int mode)
 	table_gV[i] = entry_size * div_round (cgv * (i-128), 76309);
 	table_bU[i] = table_b + entry_size * div_round (cbu * (i-128), 76309);
     }
+
+    return table_start; 
 }
