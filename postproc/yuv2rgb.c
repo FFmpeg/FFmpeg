@@ -553,9 +553,9 @@ PROLOG(yuv2rgb_c_4b_ordered_dither, uint8_t)
 EPILOG(8)
 
 PROLOG(yuv2rgb_c_1_ordered_dither, uint8_t)
-	g= c->table_gU[128] + c->table_gV[128];
 	const uint8_t *d128=dither_8x8_220[y&7];
 	char out_1=0, out_2=0;
+	g= c->table_gU[128] + c->table_gV[128];
 
 #define DST1bpp1(i,o)					\
 	Y = py_1[2*i];				\
