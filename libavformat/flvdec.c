@@ -40,11 +40,15 @@ static int flv_probe(AVProbeData *p)
     return 0;
 }
 
+#define FRAME_RATE_UNKNOWN 31415 //yes i know its beatifull
+
 static int flv_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     int offset, flags;
     AVStream *st;
+    
+    s->ctx_flags |= AVFMTCTX_NOHEADER; //ok we have a header but theres no fps, codec type, sample_rate, ...
 
     av_set_pts_info(s, 24, 1, 1000); /* 24 bit pts in ms */
 
@@ -57,8 +61,9 @@ static int flv_read_header(AVFormatContext *s,
             return AVERROR_NOMEM;
         st->codec.codec_type = CODEC_TYPE_VIDEO;
         st->codec.codec_id = CODEC_ID_FLV1;
-        st->codec.frame_rate= ap->frame_rate;
-        st->codec.frame_rate_base= ap->frame_rate_base;
+        st->codec.frame_rate= FRAME_RATE_UNKNOWN;
+//        st->codec.frame_rate= ap->frame_rate;
+//        st->codec.frame_rate_base= ap->frame_rate_base;
     }
 
     if ((flags & 4)) {
@@ -118,9 +123,15 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     goto skip;
  found:
-    if(type == 8){
+    if(type == 8 && st->codec.sample_rate == 0){
         st->codec.channels = (flags&1)+1;
         st->codec.sample_rate = (44100<<((flags>>2)&3))>>3;
+    }
+
+    //guess the frame rate
+    if(type==9 && st->codec.frame_rate == FRAME_RATE_UNKNOWN && pts){
+        st->codec.frame_rate_base=1;
+        st->codec.frame_rate= (1000 + pts/2)/pts;
     }
 
     if (av_new_packet(pkt, size) < 0)
