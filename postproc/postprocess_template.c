@@ -2607,7 +2607,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	for(x=0; x<width; x+=BLOCK_SIZE)
 		blockCopy(dst + x, dstStride, src + x, srcStride, 8, mode & LEVEL_FIX);
 
-	for(y=0; y<height; y+=BLOCK_SIZE)
+	for(y=0; y<height-7; y+=BLOCK_SIZE)
 	{
 		//1% speedup if these are here instead of the inner loop
 		uint8_t *srcBlock= &(src[y*srcStride]);
