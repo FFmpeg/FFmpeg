@@ -1466,7 +1466,7 @@ static inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStrid
 		sortedStride[1]= stride[2];
 		sortedStride[2]= stride[1];
 	}
-	else if(isPacked(format) || isGray(format))
+	else if(isPacked(format) || isGray(format) || format == IMGFMT_Y8)
 	{
 		sortedP[0]= p[0];
 		sortedP[1]= 
@@ -2096,6 +2096,7 @@ int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcS
 	sws_orderYUV(c->origSrcFormat, src, srcStride, srcParam, srcStrideParam);
 	sws_orderYUV(c->origDstFormat, dst, dstStride, dstParam, dstStrideParam);
 //printf("sws: slice %d %d\n", srcSliceY, srcSliceH);
+
 	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 }
 
