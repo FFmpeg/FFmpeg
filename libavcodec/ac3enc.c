@@ -20,24 +20,45 @@
 //#define DEBUG_BITALLOC
 #include "avcodec.h"
 
-#include "ac3enc.h"
-#include "ac3tab.h"
+#include "ac3.h"
 
+typedef struct AC3EncodeContext {
+    PutBitContext pb;
+    int nb_channels;
+    int nb_all_channels;
+    int lfe_channel;
+    int bit_rate;
+    int sample_rate;
+    int bsid;
+    int frame_size_min; /* minimum frame size in case rounding is necessary */
+    int frame_size; /* current frame size in words */
+    int halfratecod;
+    int frmsizecod;
+    int fscod; /* frequency */
+    int acmod;
+    int lfe;
+    int bsmod;
+    short last_samples[AC3_MAX_CHANNELS][256];
+    int chbwcod[AC3_MAX_CHANNELS];
+    int nb_coefs[AC3_MAX_CHANNELS];
+    
+    /* bitrate allocation control */
+    int sgaincod, sdecaycod, fdecaycod, dbkneecod, floorcod; 
+    AC3BitAllocParameters bit_alloc;
+    int csnroffst;
+    int fgaincod[AC3_MAX_CHANNELS];
+    int fsnroffst[AC3_MAX_CHANNELS];
+    /* mantissa encoding */
+    int mant1_cnt, mant2_cnt, mant4_cnt;
+} AC3EncodeContext;
+
+#include "ac3tab.h"
 
 #define MDCT_NBITS 9
 #define N         (1 << MDCT_NBITS)
-#define NB_BLOCKS 6 /* number of PCM blocks inside an AC3 frame */
 
 /* new exponents are sent if their Norm 1 exceed this number */
 #define EXP_DIFF_THRESHOLD 1000
-
-/* exponent encoding strategy */
-#define EXP_REUSE 0
-#define EXP_NEW   1
-
-#define EXP_D15   1
-#define EXP_D25   2
-#define EXP_D45   3
 
 static void fft_init(int ln);
 static void ac3_crc_init(void);
@@ -88,11 +109,12 @@ static inline int calc_lowcomp(int a, int b0, int b1, int bin)
 }
 
 /* AC3 bit allocation. The algorithm is the one described in the AC3
-   spec with some optimizations because of our simplified encoding
-   assumptions. */
-void parametric_bit_allocation(AC3EncodeContext *s, UINT8 *bap,
-                               INT8 *exp, int start, int end,
-                               int snroffset, int fgain, int is_lfe)
+   spec. */
+void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, UINT8 *bap,
+                                   INT8 *exp, int start, int end,
+                                   int snroffset, int fgain, int is_lfe,
+                                   int deltbae,int deltnseg, 
+                                   UINT8 *deltoffst, UINT8 *deltlen, UINT8 *deltba)
 {
     int bin,i,j,k,end1,v,v1,bndstrt,bndend,lowcomp,begin;
     int fastleak,slowleak,address,tmp;
@@ -138,48 +160,57 @@ void parametric_bit_allocation(AC3EncodeContext *s, UINT8 *bap,
     bndstrt = masktab[start];
     bndend = masktab[end-1] + 1;
     
-    lowcomp = 0;
-    lowcomp = calc_lowcomp1(lowcomp, bndpsd[0], bndpsd[1]) ;
-    excite[0] = bndpsd[0] - fgain - lowcomp ;
-    lowcomp = calc_lowcomp1(lowcomp, bndpsd[1], bndpsd[2]) ;
-    excite[1] = bndpsd[1] - fgain - lowcomp ;
-    begin = 7 ;
-    for (bin = 2; bin < 7; bin++) {
-	if (!(is_lfe && bin == 6))
-	    lowcomp = calc_lowcomp1(lowcomp, bndpsd[bin], bndpsd[bin+1]) ;
-        fastleak = bndpsd[bin] - fgain ;
-        slowleak = bndpsd[bin] - s->sgain ;
-        excite[bin] = fastleak - lowcomp ;
-	if (!(is_lfe && bin == 6)) {
-	    if (bndpsd[bin] <= bndpsd[bin+1]) {
-		begin = bin + 1 ;
-		break ;
-	    }
-	}
-    }
+    if (bndstrt == 0) {
+        lowcomp = 0;
+        lowcomp = calc_lowcomp1(lowcomp, bndpsd[0], bndpsd[1]) ;
+        excite[0] = bndpsd[0] - fgain - lowcomp ;
+        lowcomp = calc_lowcomp1(lowcomp, bndpsd[1], bndpsd[2]) ;
+        excite[1] = bndpsd[1] - fgain - lowcomp ;
+        begin = 7 ;
+        for (bin = 2; bin < 7; bin++) {
+            if (!(is_lfe && bin == 6))
+                lowcomp = calc_lowcomp1(lowcomp, bndpsd[bin], bndpsd[bin+1]) ;
+            fastleak = bndpsd[bin] - fgain ;
+            slowleak = bndpsd[bin] - s->sgain ;
+            excite[bin] = fastleak - lowcomp ;
+            if (!(is_lfe && bin == 6)) {
+                if (bndpsd[bin] <= bndpsd[bin+1]) {
+                    begin = bin + 1 ;
+                    break ;
+                }
+            }
+        }
     
-    end1=bndend;
-    if (end1 > 22) end1=22;
+        end1=bndend;
+        if (end1 > 22) end1=22;
     
-    for (bin = begin; bin < end1; bin++) {
-	if (!(is_lfe && bin == 6))
-	    lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin+1], bin) ;
+        for (bin = begin; bin < end1; bin++) {
+            if (!(is_lfe && bin == 6))
+                lowcomp = calc_lowcomp(lowcomp, bndpsd[bin], bndpsd[bin+1], bin) ;
         
-        fastleak -= s->fdecay ;
-        v = bndpsd[bin] - fgain;
-        if (fastleak < v) fastleak = v;
+            fastleak -= s->fdecay ;
+            v = bndpsd[bin] - fgain;
+            if (fastleak < v) fastleak = v;
         
-        slowleak -= s->sdecay ;
-        v = bndpsd[bin] - s->sgain;
-        if (slowleak < v) slowleak = v;
+            slowleak -= s->sdecay ;
+            v = bndpsd[bin] - s->sgain;
+            if (slowleak < v) slowleak = v;
         
-        v=fastleak - lowcomp;
-        if (slowleak > v) v=slowleak;
+            v=fastleak - lowcomp;
+            if (slowleak > v) v=slowleak;
         
-        excite[bin] = v;
+            excite[bin] = v;
+        }
+        begin = 22;
+    } else {
+        /* coupling channel */
+        begin = bndstrt;
+        
+        fastleak = (s->cplfleak << 8) + 768;
+        slowleak = (s->cplsleak << 8) + 768;
     }
 
-    for (bin = 22; bin < bndend; bin++) {
+    for (bin = begin; bin < bndend; bin++) {
         fastleak -= s->fdecay ;
         v = bndpsd[bin] - fgain;
         if (fastleak < v) fastleak = v;
@@ -203,6 +234,25 @@ void parametric_bit_allocation(AC3EncodeContext *s, UINT8 *bap,
         v=hth[bin >> s->halfratecod][s->fscod];
         if (v1 > v) v=v1;
         mask[bin] = v;
+    }
+
+    /* delta bit allocation */
+
+    if (deltbae == 0 || deltbae == 1) {
+        int band, seg, delta;
+        band = 0 ;
+        for (seg = 0; seg < deltnseg; seg++) {
+            band += deltoffst[seg] ;
+            if (deltba[seg] >= 4) {
+                delta = (deltba[seg] - 3) << 7;
+            } else {
+                delta = (deltba[seg] - 4) << 7;
+            }
+            for (k = 0; k < deltlen[seg]; k++) {
+                mask[band] += delta ;
+                band++ ;
+            }
+        }
     }
 
     /* compute bit allocation */
@@ -600,12 +650,14 @@ static int bit_alloc(AC3EncodeContext *s,
         s->mant2_cnt = 0;
         s->mant4_cnt = 0;
         for(ch=0;ch<s->nb_all_channels;ch++) {
-            parametric_bit_allocation(s, bap[i][ch], (INT8 *)encoded_exp[i][ch], 
-                                      0, s->nb_coefs[ch], 
-                                      (((csnroffst-15) << 4) + 
-                                       fsnroffst) << 2, 
-                                      fgaintab[s->fgaincod[ch]],
-				      ch == s->lfe_channel);
+            ac3_parametric_bit_allocation(&s->bit_alloc, 
+                                          bap[i][ch], (INT8 *)encoded_exp[i][ch], 
+                                          0, s->nb_coefs[ch], 
+                                          (((csnroffst-15) << 4) + 
+                                           fsnroffst) << 2, 
+                                          fgaintab[s->fgaincod[ch]],
+                                          ch == s->lfe_channel,
+                                          2, 0, NULL, NULL, NULL);
             frame_bits += compute_mantissa_size(s, bap[i][ch], 
                                                  s->nb_coefs[ch]);
         }
@@ -641,12 +693,14 @@ static int compute_bit_allocation(AC3EncodeContext *s,
         s->fgaincod[ch] = 4;
     
     /* compute real values */
-    s->sdecay = sdecaytab[s->sdecaycod] >> s->halfratecod;
-    s->fdecay = fdecaytab[s->fdecaycod] >> s->halfratecod;
-    s->sgain = sgaintab[s->sgaincod];
-    s->dbknee = dbkneetab[s->dbkneecod];
-    s->floor = floortab[s->floorcod];
-
+    s->bit_alloc.fscod = s->fscod;
+    s->bit_alloc.halfratecod = s->halfratecod;
+    s->bit_alloc.sdecay = sdecaytab[s->sdecaycod] >> s->halfratecod;
+    s->bit_alloc.fdecay = fdecaytab[s->fdecaycod] >> s->halfratecod;
+    s->bit_alloc.sgain = sgaintab[s->sgaincod];
+    s->bit_alloc.dbknee = dbkneetab[s->dbkneecod];
+    s->bit_alloc.floor = floortab[s->floorcod];
+    
     /* header size */
     frame_bits += 65;
     // if (s->acmod == 2)
@@ -738,16 +792,31 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     return 0;
 }
 
+void ac3_common_init(void)
+{
+    int i, j, k, l, v;
+    /* compute bndtab and masktab from bandsz */
+    k = 0;
+    l = 0;
+    for(i=0;i<50;i++) {
+        bndtab[i] = l;
+        v = bndsz[i];
+        for(j=0;j<v;j++) masktab[k++]=i;
+        l += v;
+    }
+    bndtab[50] = 0;
+}
+
+
 static int AC3_encode_init(AVCodecContext *avctx)
 {
     int freq = avctx->sample_rate;
     int bitrate = avctx->bit_rate;
     int channels = avctx->channels;
     AC3EncodeContext *s = avctx->priv_data;
-    int i, j, k, l, ch, v;
+    int i, j, ch;
     float alpha;
-    static unsigned short freqs[3] = { 48000, 44100, 32000 };
-    static int acmod_defs[6] = {
+    static const UINT8 acmod_defs[6] = {
 	0x01, /* C */
 	0x02, /* L R */
 	0x03, /* L C R */
@@ -771,7 +840,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     /* frequency */
     for(i=0;i<3;i++) {
         for(j=0;j<3;j++) 
-            if ((freqs[j] >> i) == freq)
+            if ((ac3_freqs[j] >> i) == freq)
                 goto found;
     }
     return -1;
@@ -785,7 +854,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     /* bitrate & frame size */
     bitrate /= 1000;
     for(i=0;i<19;i++) {
-        if ((bitratetab[i] >> s->halfratecod) == bitrate)
+        if ((ac3_bitratetab[i] >> s->halfratecod) == bitrate)
             break;
     }
     if (i == 19)
@@ -810,16 +879,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
     /* initial snr offset */
     s->csnroffst = 40;
 
-    /* compute bndtab and masktab from bandsz */
-    k = 0;
-    l = 0;
-    for(i=0;i<50;i++) {
-        bndtab[i] = l;
-        v = bndsz[i];
-        for(j=0;j<v;j++) masktab[k++]=i;
-        l += v;
-    }
-    bndtab[50] = 0;
+    ac3_common_init();
 
     /* mdct init */
     fft_init(MDCT_NBITS - 2);
@@ -1282,8 +1342,8 @@ static int output_frame_end(AC3EncodeContext *s)
     return frame_size * 2;
 }
 
-int AC3_encode_frame(AVCodecContext *avctx,
-                     unsigned char *frame, int buf_size, void *data)
+static int AC3_encode_frame(AVCodecContext *avctx,
+                            unsigned char *frame, int buf_size, void *data)
 {
     AC3EncodeContext *s = avctx->priv_data;
     short *samples = data;
