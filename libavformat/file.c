@@ -103,6 +103,9 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     } else {
         fd = 0;
     }
+#if defined(CONFIG_WIN32) || defined(CONFIG_OS2) || defined(__CYGWIN__)
+    setmode(fd, O_BINARY);
+#endif
     h->priv_data = (void *)fd;
     return 0;
 }
