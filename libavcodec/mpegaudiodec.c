@@ -2130,7 +2130,7 @@ void sample_dump(int fnum, int32_t *tab, int n)
     
     f = files[fnum];
     if (!f) {
-        sprintf(buf, "/tmp/out%d.%s.pcm", 
+        snprintf(buf, sizeof(buf), "/tmp/out%d.%s.pcm", 
                 fnum, 
 #ifdef USE_HIGHPRECISION
                 "hp"

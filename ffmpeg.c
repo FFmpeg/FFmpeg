@@ -949,7 +949,7 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
     if (!fvstats) {
         today2 = time(NULL);
         today = localtime(&today2);
-        sprintf(filename, "vstats_%02d%02d%02d.log", today->tm_hour,
+        snprintf(filename, sizeof(filename), "vstats_%02d%02d%02d.log", today->tm_hour,
                                                today->tm_min,
                                                today->tm_sec);
         fvstats = fopen(filename,"w");

@@ -415,7 +415,8 @@ int options_example(int argc, char* argv[])
     AVCodec* codec = avcodec_find_encoder_by_name((argc > 1) ? argv[2] : "mpeg4");
     const AVOption* c;
     AVCodecContext* avctx;
-    char* def = av_malloc(5000);
+#define DEF_SIZE 5000
+    char* def = av_malloc(DEF_SIZE);
     const char* col = "";
     int i = 0;
 
@@ -449,16 +450,16 @@ int options_example(int argc, char* argv[])
 		       "unknown??", c->name);
 		switch (t) {
 		case FF_OPT_TYPE_BOOL:
-		    i += sprintf(def + i, "%s%s=%s",
+		    i += snprintf(def + i, DEF_SIZE-i, "%s%s=%s",
 				 col, c->name,
 				 c->defval != 0. ? "on" : "off");
 		    break;
 		case FF_OPT_TYPE_DOUBLE:
-		    i += sprintf(def + i, "%s%s=%f",
+		    i += snprintf(def + i, DEF_SIZE-i, "%s%s=%f",
 				 col, c->name, c->defval);
 		    break;
 		case FF_OPT_TYPE_INT:
-		    i += sprintf(def + i, "%s%s=%d",
+		    i += snprintf(def + i, DEF_SIZE-i, "%s%s=%d",
 				 col, c->name, (int) c->defval);
 		    break;
 		case FF_OPT_TYPE_STRING:
@@ -467,7 +468,7 @@ int options_example(int argc, char* argv[])
 			char* f = strchr(d, ',');
 			if (f)
                             *f = 0;
-			i += sprintf(def + i, "%s%s=%s",
+			i += snprintf(def + i, DEF_SIZE-i, "%s%s=%s",
 				     col, c->name, d);
                         av_free(d);
 		    }

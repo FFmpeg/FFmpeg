@@ -1170,13 +1170,14 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     if((s->flags&CODEC_FLAG_PASS1) && (s->picture_number&31)==0){
         int j;
         char *p= avctx->stats_out;
+        char *end= p + 1024*30;
         for(i=0; i<3; i++){
             for(j=0; j<256; j++){
-                sprintf(p, "%llu ", s->stats[i][j]);
+                snprintf(p, end-p, "%llu ", s->stats[i][j]);
                 p+= strlen(p);
                 s->stats[i][j]= 0;
             }
-            sprintf(p, "\n");
+            snprintf(p, end-p, "\n");
             p++;
         }
     }else{

@@ -762,7 +762,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                 strcpy(channels_str, "5:1");
                 break;
             default:
-                sprintf(channels_str, "%d channels", enc->channels);
+                snprintf(channels_str, sizeof(channels_str), "%d channels", enc->channels);
                 break;
         }
         if (enc->sample_rate) {

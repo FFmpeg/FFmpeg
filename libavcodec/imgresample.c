@@ -730,7 +730,7 @@ int main(int argc, char **argv)
                            img + 50 * XSIZE, XSIZE, XSIZE, YSIZE - 100);
         img_resample_close(s);
 
-        sprintf(buf, "/tmp/out%d.pgm", i);
+        snprintf(buf, sizeof(buf), "/tmp/out%d.pgm", i);
         save_pgm(buf, img1, xsize, ysize);
     }
 

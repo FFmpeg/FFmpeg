@@ -121,7 +121,7 @@ struct addrinfo* udp_ipv6_resolve_host(const char *hostname, int port, int type,
     const char *node = 0, *service = 0;
 
     if (port > 0) {
-        sprintf(sport, "%d", port);
+        snprintf(sport, sizeof(sport), "%d", port);
         service = sport;
     }
     if ((hostname) && (hostname[0] != '\0') && (hostname[0] != '?')) {

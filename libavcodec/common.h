@@ -499,6 +499,7 @@ tend= rdtsc();\
 #define time time_is_forbidden_due_to_security_issues
 #define rand rand_is_forbidden_due_to_state_trashing
 #define srand srand_is_forbidden_due_to_state_trashing
+#define sprintf sprintf_is_forbidden_due_to_security_issues_use_snprintf
 #if !(defined(LIBAVFORMAT_BUILD) || defined(_FRAMEHOOK_H))
 #define printf please_use_av_log
 #define fprintf please_use_av_log
