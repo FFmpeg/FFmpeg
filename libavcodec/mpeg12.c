@@ -2655,6 +2655,20 @@ AVCodec mpeg2video_decoder = {
     .flush= ff_mpeg_flush,
 };
 
+//legacy decoder
+AVCodec mpegvideo_decoder = {
+    "mpegvideo",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MPEG2VIDEO,
+    sizeof(Mpeg1Context),
+    mpeg_decode_init,
+    NULL,
+    mpeg_decode_end,
+    mpeg_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
+    .flush= ff_mpeg_flush,
+};
+
 #ifdef HAVE_XVMC
 static int mpeg_mc_decode_init(AVCodecContext *avctx){
     Mpeg1Context *s;
