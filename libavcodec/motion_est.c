@@ -870,8 +870,8 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
 
         dmin4= s->me.sub_motion_search(s, &mx4, &my4, dmin4, rel_xmin4, rel_ymin4, rel_xmax4, rel_ymax4, 
 					  pred_x4, pred_y4, &s->last_picture, block, 1, mv_penalty);
- 
-        if(s->dsp.me_sub_cmp != s->dsp.mb_cmp){
+        
+        if(s->dsp.me_sub_cmp[0] != s->dsp.mb_cmp[0]){
             int dxy;
             const int offset= ((block&1) + (block>>1)*s->linesize)*8;
             uint8_t *dest_y = s->me.scratchpad + offset;
@@ -881,17 +881,17 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
                 dxy = ((my4 & 3) << 2) | (mx4 & 3);
 
                 if(s->no_rounding)
-                    s->dsp.put_no_rnd_qpel_pixels_tab[0][dxy](dest_y   , ref    , s->linesize);
+                    s->dsp.put_no_rnd_qpel_pixels_tab[1][dxy](dest_y   , ref    , s->linesize);
                 else
-                    s->dsp.put_qpel_pixels_tab       [0][dxy](dest_y   , ref    , s->linesize);
+                    s->dsp.put_qpel_pixels_tab       [1][dxy](dest_y   , ref    , s->linesize);
             }else{
                 uint8_t *ref= s->last_picture.data[0] + (s->mb_x*16 + (mx4>>1)) + (s->mb_y*16 + (my4>>1))*s->linesize + offset;
                 dxy = ((my4 & 1) << 1) | (mx4 & 1);
 
                 if(s->no_rounding)
-                    s->dsp.put_no_rnd_pixels_tab[0][dxy](dest_y    , ref    , s->linesize, 16);
+                    s->dsp.put_no_rnd_pixels_tab[1][dxy](dest_y    , ref    , s->linesize, 8);
                 else
-                    s->dsp.put_pixels_tab       [0][dxy](dest_y    , ref    , s->linesize, 16);
+                    s->dsp.put_pixels_tab       [1][dxy](dest_y    , ref    , s->linesize, 8);
             }
             dmin_sum+= (mv_penalty[mx4-pred_x4] + mv_penalty[my4-pred_y4])*s->me.mb_penalty_factor;
         }else
@@ -909,7 +909,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
         s->motion_val[ s->block_index[block] ][1]= my4;
     }
     
-    if(s->dsp.me_sub_cmp != s->dsp.mb_cmp){
+    if(s->dsp.me_sub_cmp[0] != s->dsp.mb_cmp[0]){
         dmin_sum += s->dsp.mb_cmp[0](s, s->new_picture.data[0] + s->mb_x*16 + s->mb_y*16*s->linesize, s->me.scratchpad, s->linesize);
     }
     
