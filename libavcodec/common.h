@@ -186,6 +186,7 @@ void init_put_bits(PutBitContext *s,
 INT64 get_bit_count(PutBitContext *s); /* XXX: change function name */
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
+void put_string(PutBitContext * pbc, char *s);
 
 /* jpeg specific put_bits */
 void jflush_put_bits(PutBitContext *s);

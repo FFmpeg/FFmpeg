@@ -1102,15 +1102,6 @@ static void mpeg4_stuffing(PutBitContext * pbc)
     put_bits(pbc, length, (1<<length)-1);
 }
 
-static void put_string(PutBitContext * pbc, char *s)
-{
-    while(*s){
-        put_bits(pbc, 8, *s);
-        s++;
-    }
-    put_bits(pbc, 8, 0);
-}
-
 /* must be called before writing the header */
 void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
     int time_div, time_mod;
