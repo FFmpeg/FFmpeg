@@ -1001,6 +1001,8 @@ static int asf_get_packet(AVFormatContext *s)
         asf->packet_segsizetype = 0x80;
     }
     asf->packet_size_left = packet_length - padsize - rsize;
+    if (packet_length < asf->hdr.min_pktsize)
+        padsize += asf->hdr.min_pktsize - packet_length;
     asf->packet_padsize = padsize;
 #ifdef DEBUG
     printf("packet: size=%d padsize=%d  left=%d\n", asf->packet_size, asf->packet_padsize, asf->packet_size_left);
@@ -1046,9 +1048,11 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 // it should be always at least 8 bytes - FIXME validate
 		asf->packet_obj_size = get_le32(pb);
 		asf->packet_frag_timestamp = get_le32(pb); // timestamp
+		if (asf->packet_replic_size > 8)
+		    url_fskip(pb, asf->packet_replic_size - 8);
 		rsize += asf->packet_replic_size; // FIXME - check validity
 	    } else {
-		// multipacket - frag_offset is beginig timestamp
+		// multipacket - frag_offset is begining timestamp
 		asf->packet_time_start = asf->packet_frag_offset;
                 asf->packet_frag_offset = 0;
 		asf->packet_frag_timestamp = asf->packet_timestamp;
@@ -1060,6 +1064,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    }
 	    if (asf->packet_flags & 0x01) {
 		DO_2BITS(asf->packet_segsizetype >> 6, asf->packet_frag_size, 0); // 0 is illegal
+#undef DO_2BITS
 		//printf("Fragsize %d\n", asf->packet_frag_size);
 	    } else {
 		asf->packet_frag_size = asf->packet_size_left - rsize;
@@ -1072,7 +1077,6 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     continue;
 		}
 	    }
-#undef DO_2BITS
 	    asf->packet_size_left -= rsize;
 	    //printf("___objsize____  %d   %d    rs:%d\n", asf->packet_obj_size, asf->packet_frag_offset, rsize);
 
