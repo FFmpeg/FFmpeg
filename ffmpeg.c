@@ -138,6 +138,7 @@ typedef struct AVInputStream {
     int discard;             /* true if stream data should be discarded */
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
     INT64 pts;               /* current pts */
+    int   pts_increment;     /* expected pts increment for next packet */
     int frame_number;        /* current frame */
     INT64 sample_index;      /* current sample */
 } AVInputStream;
@@ -599,13 +600,12 @@ static int av_encode(AVFormatContext **output_files,
     AVInputStream *ist, **ist_table = NULL;
     INT64 min_pts, start_time;
     AVInputFile *file_table;
+    AVFormatContext *stream_no_data;
 
-    file_table= (AVInputFile*) malloc(nb_input_files * sizeof(AVInputFile));
+    file_table= (AVInputFile*) av_mallocz(nb_input_files * sizeof(AVInputFile));
     if (!file_table)
         goto fail;
 
-    memset(file_table, 0, sizeof(file_table));
-    
     /* input stream init */
     j = 0;
     for(i=0;i<nb_input_files;i++) {
@@ -797,6 +797,8 @@ static int av_encode(AVFormatContext **output_files,
                 ist->decoding_needed = 1;
             }
             break;
+        default:
+            abort();
         }
     }
 
@@ -871,6 +873,8 @@ static int av_encode(AVFormatContext **output_files,
 
     start_time = gettime();
     min_pts = 0;
+    stream_no_data = 0;
+
     for(;;) {
         int file_index, ist_index;
         AVPacket pkt;
@@ -891,14 +895,26 @@ static int av_encode(AVFormatContext **output_files,
         min_pts = MAXINT64;
         for(i=0;i<nb_istreams;i++) {
             ist = ist_table[i];
-            if (!ist->discard && !file_table[ist->file_index].eof_reached && ist->pts < min_pts) {
-                min_pts = ist->pts;
+            /* For some reason, the pts_increment code breaks q estimation?!? */
+            if (!ist->discard && !file_table[ist->file_index].eof_reached && 
+                ist->pts /* + ist->pts_increment */ < min_pts && input_files[ist->file_index] != stream_no_data) {
+                min_pts = ist->pts /* + ist->pts_increment */;
                 file_index = ist->file_index;
             }
         }
         /* if none, if is finished */
-        if (file_index < 0)
+        if (file_index < 0) {
+            if (stream_no_data) {
+                struct timespec ts;
+
+                ts.tv_sec = 0;
+                ts.tv_nsec = 1000 * 1000 * 10;
+                nanosleep(&ts, 0);
+                stream_no_data = 0;
+                continue;
+            }
             break;
+        }    
         /* finish if recording time exhausted */
         if (recording_time > 0 && min_pts >= recording_time)
             break;
@@ -908,11 +924,19 @@ static int av_encode(AVFormatContext **output_files,
             file_table[file_index].eof_reached = 1;
             continue;
         }
+        if (!pkt.size) {
+            stream_no_data = is;
+        } else {
+            stream_no_data = 0;
+        }
         ist_index = file_table[file_index].ist_index + pkt.stream_index;
         ist = ist_table[ist_index];
         if (ist->discard) {
             continue;
         }
+
+        if (pkt.flags & PKT_FLAG_DROPPED_FRAME)
+            ist->frame_number++;
 
         if (do_hex_dump) {
             printf("stream #%d, size=%d:\n", pkt.stream_index, pkt.size);
@@ -986,12 +1010,17 @@ static int av_encode(AVFormatContext **output_files,
             case CODEC_TYPE_AUDIO:
                 ist->pts = (INT64)1000000 * ist->sample_index / ist->st->codec.sample_rate;
                 ist->sample_index += data_size / (2 * ist->st->codec.channels);
+                ist->pts_increment = (INT64) (data_size / (2 * ist->st->codec.channels)) * 1000000 / ist->st->codec.sample_rate;
                 break;
             case CODEC_TYPE_VIDEO:
                 ist->frame_number++;
                 ist->pts = ((INT64)ist->frame_number * 1000000 * FRAME_RATE_BASE) / 
                     ist->st->codec.frame_rate;
+                ist->pts_increment = ((INT64) 1000000 * FRAME_RATE_BASE) / 
+                    ist->st->codec.frame_rate;
                 break;
+            default:
+                abort();
             }
             ptr += ret;
             len -= ret;
@@ -1014,6 +1043,8 @@ static int av_encode(AVFormatContext **output_files,
                             if (do_vstats)
                                 do_video_stats(ost, ist, frame_size);
                             break;
+                        default:
+                            abort();
                         }
                     } else {
                         /* no reencoding needed : output the packet directly */
@@ -1662,6 +1693,8 @@ void opt_input_file(const char *filename)
             frame_width = enc->width;
             frame_rate = enc->frame_rate;
             break;
+        default:
+            abort();
         }
     }
     
@@ -1690,6 +1723,8 @@ void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
             case CODEC_TYPE_VIDEO:
                 has_video = 1;
                 break;
+            default:
+                abort();
             }
         }
     }
@@ -1947,6 +1982,8 @@ void prepare_grab(void)
                     ap->frame_rate = enc->frame_rate;
                 has_video = 1;
                 break;
+            default:
+                abort();
             }
         }
     }
