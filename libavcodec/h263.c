@@ -1314,8 +1314,11 @@ void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
 
         s->time_increment_bits = av_log2(s->time_increment_resolution - 1) + 1;
     }
-
-    s->time= picture_number*(INT64)FRAME_RATE_BASE*s->time_increment_resolution/s->frame_rate;
+    
+    if(s->avctx->pts)
+        s->time= (s->avctx->pts*s->time_increment_resolution + 500*1000)/(1000*1000);
+    else
+        s->time= picture_number*(INT64)FRAME_RATE_BASE*s->time_increment_resolution/s->frame_rate;
     time_div= s->time/s->time_increment_resolution;
     time_mod= s->time%s->time_increment_resolution;
 
@@ -3993,7 +3996,9 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             return FRAME_SKIPED;
         }
     }
-
+    
+    s->avctx->pts= s->time*1000LL*1000LL / s->time_increment_resolution;
+    
     if(check_marker(&s->gb, "before vop_coded")==0 && s->picture_number==0){
         printf("hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
         for(s->time_increment_bits++ ;s->time_increment_bits<16; s->time_increment_bits++){

@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4621
-#define LIBAVCODEC_BUILD_STR   "4621"
+#define LIBAVCODEC_BUILD       4622
+#define LIBAVCODEC_BUILD_STR   "4622"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -318,6 +318,11 @@ typedef struct AVCodecContext {
 #define FF_DCT_MMX     3
 #define FF_DCT_MLIB    4
 
+    long long int pts; /* timestamp in micro seconds
+                          for decoding: the timestamp from the stream or 0
+                          for encoding: the timestamp which will be stored in the stream
+                                        if 0 then the frame_rate will be used */   
+
     //FIXME this should be reordered after kabis API is finished ...
     //TODO kill kabi
     /*
@@ -330,7 +335,7 @@ typedef struct AVCodecContext {
     */
     unsigned long long int
 	    ull_res0,ull_res1,ull_res2,ull_res3,ull_res4,ull_res5,
-	    ull_res6,ull_res7,ull_res8,ull_res9,ull_res10,ull_res11,ull_res12;
+	    ull_res6,ull_res7,ull_res8,ull_res9,ull_res10,ull_res11;
     float
 	    flt_res0,flt_res1,flt_res2,flt_res3,flt_res4,flt_res5,
 	    flt_res6,flt_res7,flt_res8,flt_res9,flt_res10,flt_res11,flt_res12;
