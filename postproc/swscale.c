@@ -3,54 +3,91 @@
 
 // Orginal C implementation by A'rpi/ESP-team <arpi@thot.banki.hu>
 // current version mostly by Michael Niedermayer (michaelni@gmx.at)
+// the parts written by michael are under GNU GPL
 
 #include <inttypes.h>
 #include "../config.h"
+#include "swscale.h"
 
 //#undef HAVE_MMX2
 //#undef HAVE_MMX
 //#undef ARCH_X86
-#define DITHER16BPP
-//#define ALT_ERROR
+#define DITHER1XBPP
+int fullUVIpol=0;
+//disables the unscaled height version
+int allwaysIpol=0;
 
 #define RET 0xC3 //near return opcode
 /*
 NOTES
 
-known BUGS with known cause (no bugreports please!)
-code reads 1 sample too much (might cause a sig11)
+known BUGS with known cause (no bugreports please!, but patches are welcome :) )
+horizontal MMX2 scaler reads 1-7 samples too much (might cause a sig11)
+
+Supported output formats BGR15 BGR16 BGR24 BGR32 (15,24 are untested)
+BGR15 & BGR16 MMX verions support dithering
+Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
 TODO
-check alignment off everything
+more intelligent missalignment avoidance for the horizontal scaler
 */
 
-static uint64_t yCoeff=    0x2568256825682568LL;
-static uint64_t ubCoeff=   0x3343334333433343LL;
-static uint64_t vrCoeff=   0x40cf40cf40cf40cfLL;
-static uint64_t ugCoeff=   0xE5E2E5E2E5E2E5E2LL;
-static uint64_t vgCoeff=   0xF36EF36EF36EF36ELL;
-static uint64_t w80=       0x0080008000800080LL;
-static uint64_t w10=       0x0010001000100010LL;
-static uint64_t bm00000111=0x0000000000FFFFFFLL;
-static uint64_t bm11111000=0xFFFFFFFFFF000000LL;
+#define ABS(a) ((a) > 0 ? (a) : (-(a)))
 
-static uint64_t b16Dither= 0x0004000400040004LL;
-static uint64_t b16Dither1=0x0004000400040004LL;
-static uint64_t b16Dither2=0x0602060206020602LL;
-static uint64_t g16Dither= 0x0002000200020002LL;
-static uint64_t g16Dither1=0x0002000200020002LL;
-static uint64_t g16Dither2=0x0301030103010301LL;
+#ifdef HAVE_MMX2
+#define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
+#elif defined (HAVE_3DNOW)
+#define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
+#endif
 
-static uint64_t b16Mask=   0x001F001F001F001FLL;
-static uint64_t g16Mask=   0x07E007E007E007E0LL;
-static uint64_t r16Mask=   0xF800F800F800F800LL;
-static uint64_t temp0;
+#ifdef HAVE_MMX2
+#define MOVNTQ(a,b) "movntq " #a ", " #b " \n\t"
+#else
+#define MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
+#endif
 
+
+#ifdef HAVE_MMX
+static uint64_t __attribute__((aligned(8))) yCoeff=    0x2568256825682568LL;
+static uint64_t __attribute__((aligned(8))) ubCoeff=   0x3343334333433343LL;
+static uint64_t __attribute__((aligned(8))) vrCoeff=   0x40cf40cf40cf40cfLL;
+static uint64_t __attribute__((aligned(8))) ugCoeff=   0xE5E2E5E2E5E2E5E2LL;
+static uint64_t __attribute__((aligned(8))) vgCoeff=   0xF36EF36EF36EF36ELL;
+static uint64_t __attribute__((aligned(8))) w400=      0x0400040004000400LL;
+static uint64_t __attribute__((aligned(8))) w80=       0x0080008000800080LL;
+static uint64_t __attribute__((aligned(8))) w10=       0x0010001000100010LL;
+static uint64_t __attribute__((aligned(8))) bm00001111=0x00000000FFFFFFFFLL;
+static uint64_t __attribute__((aligned(8))) bm00000111=0x0000000000FFFFFFLL;
+static uint64_t __attribute__((aligned(8))) bm11111000=0xFFFFFFFFFF000000LL;
+
+static uint64_t __attribute__((aligned(8))) b16Dither= 0x0004000400040004LL;
+static uint64_t __attribute__((aligned(8))) b16Dither1=0x0004000400040004LL;
+static uint64_t __attribute__((aligned(8))) b16Dither2=0x0602060206020602LL;
+static uint64_t __attribute__((aligned(8))) g16Dither= 0x0002000200020002LL;
+static uint64_t __attribute__((aligned(8))) g16Dither1=0x0002000200020002LL;
+static uint64_t __attribute__((aligned(8))) g16Dither2=0x0301030103010301LL;
+
+static uint64_t __attribute__((aligned(8))) b16Mask=   0x001F001F001F001FLL;
+static uint64_t __attribute__((aligned(8))) g16Mask=   0x07E007E007E007E0LL;
+static uint64_t __attribute__((aligned(8))) r16Mask=   0xF800F800F800F800LL;
+static uint64_t __attribute__((aligned(8))) b15Mask=   0x001F001F001F001FLL;
+static uint64_t __attribute__((aligned(8))) g15Mask=   0x03E003E003E003E0LL;
+static uint64_t __attribute__((aligned(8))) r15Mask=   0x7C007C007C007C00LL;
+
+static uint64_t __attribute__((aligned(8))) temp0;
+static uint64_t __attribute__((aligned(8))) asm_yalpha1;
+static uint64_t __attribute__((aligned(8))) asm_uvalpha1;
+#endif
 
 // temporary storage for 4 yuv lines:
 // 16bit for now (mmx likes it more compact)
+#ifdef HAVE_MMX
+static uint16_t __attribute__((aligned(8))) pix_buf_y[4][2048];
+static uint16_t __attribute__((aligned(8))) pix_buf_uv[2][2048*2];
+#else
 static uint16_t pix_buf_y[4][2048];
 static uint16_t pix_buf_uv[2][2048*2];
+#endif
 
 // clipping helper table for C implementations:
 static unsigned char clip_table[768];
@@ -65,6 +102,770 @@ static    int yuvtab_40cf[256];
 
 static uint8_t funnyYCode[10000];
 static uint8_t funnyUVCode[10000];
+
+#define FULL_YSCALEYUV2RGB \
+		"pxor %%mm7, %%mm7		\n\t"\
+		"movd %6, %%mm6			\n\t" /*yalpha1*/\
+		"punpcklwd %%mm6, %%mm6		\n\t"\
+		"punpcklwd %%mm6, %%mm6		\n\t"\
+		"movd %7, %%mm5			\n\t" /*uvalpha1*/\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+		"xorl %%eax, %%eax		\n\t"\
+		"1:				\n\t"\
+		"movq (%0, %%eax, 2), %%mm0	\n\t" /*buf0[eax]*/\
+		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf1[eax]*/\
+		"movq (%2, %%eax,2), %%mm2	\n\t" /* uvbuf0[eax]*/\
+		"movq (%3, %%eax,2), %%mm3	\n\t" /* uvbuf1[eax]*/\
+		"psubw %%mm1, %%mm0		\n\t" /* buf0[eax] - buf1[eax]*/\
+		"psubw %%mm3, %%mm2		\n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
+		"pmulhw %%mm6, %%mm0		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw %%mm5, %%mm2		\n\t" /* (uvbuf0[eax] - uvbuf1[eax])uvalpha1>>16*/\
+		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
+		"movq 4096(%2, %%eax,2), %%mm4	\n\t" /* uvbuf0[eax+2048]*/\
+		"psraw $4, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
+		"paddw %%mm0, %%mm1		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
+		"movq 4096(%3, %%eax,2), %%mm0	\n\t" /* uvbuf1[eax+2048]*/\
+		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax]uvalpha1 - uvbuf1[eax](1-uvalpha1)*/\
+		"psubw %%mm0, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
+		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
+		"psubw w400, %%mm3		\n\t" /* 8(U-128)*/\
+		"pmulhw yCoeff, %%mm1		\n\t"\
+\
+\
+		"pmulhw %%mm5, %%mm4		\n\t" /* (uvbuf0[eax+2048] - uvbuf1[eax+2048])uvalpha1>>16*/\
+		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
+		"pmulhw ubCoeff, %%mm3		\n\t"\
+		"psraw $4, %%mm0		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
+		"pmulhw ugCoeff, %%mm2		\n\t"\
+		"paddw %%mm4, %%mm0		\n\t" /* uvbuf0[eax+2048]uvalpha1 - uvbuf1[eax+2048](1-uvalpha1)*/\
+		"psubw w400, %%mm0		\n\t" /* (V-128)8*/\
+\
+\
+		"movq %%mm0, %%mm4		\n\t" /* (V-128)8*/\
+		"pmulhw vrCoeff, %%mm0		\n\t"\
+		"pmulhw vgCoeff, %%mm4		\n\t"\
+		"paddw %%mm1, %%mm3		\n\t" /* B*/\
+		"paddw %%mm1, %%mm0		\n\t" /* R*/\
+		"packuswb %%mm3, %%mm3		\n\t"\
+\
+		"packuswb %%mm0, %%mm0		\n\t"\
+		"paddw %%mm4, %%mm2		\n\t"\
+		"paddw %%mm2, %%mm1		\n\t" /* G*/\
+\
+		"packuswb %%mm1, %%mm1		\n\t"
+
+#define YSCALEYUV2RGB \
+		"movd %6, %%mm6			\n\t" /*yalpha1*/\
+		"punpcklwd %%mm6, %%mm6		\n\t"\
+		"punpcklwd %%mm6, %%mm6		\n\t"\
+		"movq %%mm6, asm_yalpha1	\n\t"\
+		"movd %7, %%mm5			\n\t" /*uvalpha1*/\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+		"movq %%mm5, asm_uvalpha1	\n\t"\
+		"xorl %%eax, %%eax		\n\t"\
+		"1:				\n\t"\
+		"movq (%2, %%eax), %%mm2	\n\t" /* uvbuf0[eax]*/\
+		"movq (%3, %%eax), %%mm3	\n\t" /* uvbuf1[eax]*/\
+		"movq 4096(%2, %%eax), %%mm5	\n\t" /* uvbuf0[eax+2048]*/\
+		"movq 4096(%3, %%eax), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
+		"psubw %%mm3, %%mm2		\n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
+		"psubw %%mm4, %%mm5		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
+		"movq asm_uvalpha1, %%mm0	\n\t"\
+		"pmulhw %%mm0, %%mm2		\n\t" /* (uvbuf0[eax] - uvbuf1[eax])uvalpha1>>16*/\
+		"pmulhw %%mm0, %%mm5		\n\t" /* (uvbuf0[eax+2048] - uvbuf1[eax+2048])uvalpha1>>16*/\
+		"psraw $4, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
+		"psraw $4, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
+		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax]uvalpha1 - uvbuf1[eax](1-uvalpha1)*/\
+		"paddw %%mm5, %%mm4		\n\t" /* uvbuf0[eax+2048]uvalpha1 - uvbuf1[eax+2048](1-uvalpha1)*/\
+		"psubw w400, %%mm3		\n\t" /* (U-128)8*/\
+		"psubw w400, %%mm4		\n\t" /* (V-128)8*/\
+		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
+		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
+		"pmulhw ugCoeff, %%mm3		\n\t"\
+		"pmulhw vgCoeff, %%mm4		\n\t"\
+	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
+		"movq (%0, %%eax, 2), %%mm0	\n\t" /*buf0[eax]*/\
+		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf1[eax]*/\
+		"movq 8(%0, %%eax, 2), %%mm6	\n\t" /*buf0[eax]*/\
+		"movq 8(%1, %%eax, 2), %%mm7	\n\t" /*buf1[eax]*/\
+		"psubw %%mm1, %%mm0		\n\t" /* buf0[eax] - buf1[eax]*/\
+		"psubw %%mm7, %%mm6		\n\t" /* buf0[eax] - buf1[eax]*/\
+		"pmulhw asm_yalpha1, %%mm0	\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw asm_yalpha1, %%mm6	\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
+		"psraw $4, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
+		"paddw %%mm0, %%mm1		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
+		"paddw %%mm6, %%mm7		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
+		"pmulhw ubCoeff, %%mm2		\n\t"\
+		"pmulhw vrCoeff, %%mm5		\n\t"\
+		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
+		"psubw w80, %%mm7		\n\t" /* 8(Y-16)*/\
+		"pmulhw yCoeff, %%mm1		\n\t"\
+		"pmulhw yCoeff, %%mm7		\n\t"\
+	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
+		"paddw %%mm3, %%mm4		\n\t"\
+		"movq %%mm2, %%mm0		\n\t"\
+		"movq %%mm5, %%mm6		\n\t"\
+		"movq %%mm4, %%mm3		\n\t"\
+		"punpcklwd %%mm2, %%mm2		\n\t"\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+		"punpcklwd %%mm4, %%mm4		\n\t"\
+		"paddw %%mm1, %%mm2		\n\t"\
+		"paddw %%mm1, %%mm5		\n\t"\
+		"paddw %%mm1, %%mm4		\n\t"\
+		"punpckhwd %%mm0, %%mm0		\n\t"\
+		"punpckhwd %%mm6, %%mm6		\n\t"\
+		"punpckhwd %%mm3, %%mm3		\n\t"\
+		"paddw %%mm7, %%mm0		\n\t"\
+		"paddw %%mm7, %%mm6		\n\t"\
+		"paddw %%mm7, %%mm3		\n\t"\
+		/* mm0=B1, mm2=B2, mm3=G2, mm4=G1, mm5=R1, mm6=R2 */\
+		"packuswb %%mm0, %%mm2		\n\t"\
+		"packuswb %%mm6, %%mm5		\n\t"\
+		"packuswb %%mm3, %%mm4		\n\t"\
+		"pxor %%mm7, %%mm7		\n\t"
+
+#define YSCALEYUV2RGB1 \
+		"xorl %%eax, %%eax		\n\t"\
+		"1:				\n\t"\
+		"movq (%2, %%eax), %%mm3	\n\t" /* uvbuf0[eax]*/\
+		"movq 4096(%2, %%eax), %%mm4	\n\t" /* uvbuf0[eax+2048]*/\
+		"psraw $4, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
+		"psraw $4, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
+		"psubw w400, %%mm3		\n\t" /* (U-128)8*/\
+		"psubw w400, %%mm4		\n\t" /* (V-128)8*/\
+		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
+		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
+		"pmulhw ugCoeff, %%mm3		\n\t"\
+		"pmulhw vgCoeff, %%mm4		\n\t"\
+	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
+		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf0[eax]*/\
+		"movq 8(%1, %%eax, 2), %%mm7	\n\t" /*buf0[eax]*/\
+		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
+		"psraw $4, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
+		"pmulhw ubCoeff, %%mm2		\n\t"\
+		"pmulhw vrCoeff, %%mm5		\n\t"\
+		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
+		"psubw w80, %%mm7		\n\t" /* 8(Y-16)*/\
+		"pmulhw yCoeff, %%mm1		\n\t"\
+		"pmulhw yCoeff, %%mm7		\n\t"\
+	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
+		"paddw %%mm3, %%mm4		\n\t"\
+		"movq %%mm2, %%mm0		\n\t"\
+		"movq %%mm5, %%mm6		\n\t"\
+		"movq %%mm4, %%mm3		\n\t"\
+		"punpcklwd %%mm2, %%mm2		\n\t"\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+		"punpcklwd %%mm4, %%mm4		\n\t"\
+		"paddw %%mm1, %%mm2		\n\t"\
+		"paddw %%mm1, %%mm5		\n\t"\
+		"paddw %%mm1, %%mm4		\n\t"\
+		"punpckhwd %%mm0, %%mm0		\n\t"\
+		"punpckhwd %%mm6, %%mm6		\n\t"\
+		"punpckhwd %%mm3, %%mm3		\n\t"\
+		"paddw %%mm7, %%mm0		\n\t"\
+		"paddw %%mm7, %%mm6		\n\t"\
+		"paddw %%mm7, %%mm3		\n\t"\
+		/* mm0=B1, mm2=B2, mm3=G2, mm4=G1, mm5=R1, mm6=R2 */\
+		"packuswb %%mm0, %%mm2		\n\t"\
+		"packuswb %%mm6, %%mm5		\n\t"\
+		"packuswb %%mm3, %%mm4		\n\t"\
+		"pxor %%mm7, %%mm7		\n\t"
+
+#define WRITEBGR32 \
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
+			"movq %%mm2, %%mm1		\n\t" /* B */\
+			"movq %%mm5, %%mm6		\n\t" /* R */\
+			"punpcklbw %%mm4, %%mm2		\n\t" /* GBGBGBGB 0 */\
+			"punpcklbw %%mm7, %%mm5		\n\t" /* 0R0R0R0R 0 */\
+			"punpckhbw %%mm4, %%mm1		\n\t" /* GBGBGBGB 2 */\
+			"punpckhbw %%mm7, %%mm6		\n\t" /* 0R0R0R0R 2 */\
+			"movq %%mm2, %%mm0		\n\t" /* GBGBGBGB 0 */\
+			"movq %%mm1, %%mm3		\n\t" /* GBGBGBGB 2 */\
+			"punpcklwd %%mm5, %%mm0		\n\t" /* 0RGB0RGB 0 */\
+			"punpckhwd %%mm5, %%mm2		\n\t" /* 0RGB0RGB 1 */\
+			"punpcklwd %%mm6, %%mm1		\n\t" /* 0RGB0RGB 2 */\
+			"punpckhwd %%mm6, %%mm3		\n\t" /* 0RGB0RGB 3 */\
+\
+			MOVNTQ(%%mm0, (%4, %%eax, 4))\
+			MOVNTQ(%%mm2, 8(%4, %%eax, 4))\
+			MOVNTQ(%%mm1, 16(%4, %%eax, 4))\
+			MOVNTQ(%%mm3, 24(%4, %%eax, 4))\
+\
+			"addl $8, %%eax			\n\t"\
+			"cmpl %5, %%eax			\n\t"\
+			" jb 1b				\n\t"
+
+#define WRITEBGR16 \
+			"movq %%mm2, %%mm1		\n\t" /* B */\
+			"movq %%mm4, %%mm3		\n\t" /* G */\
+			"movq %%mm5, %%mm6		\n\t" /* R */\
+\
+			"punpcklbw %%mm7, %%mm3		\n\t" /* 0G0G0G0G */\
+			"punpcklbw %%mm7, %%mm2		\n\t" /* 0B0B0B0B */\
+			"punpcklbw %%mm7, %%mm5		\n\t" /* 0R0R0R0R */\
+\
+			"psrlw $3, %%mm2		\n\t"\
+			"psllw $3, %%mm3		\n\t"\
+			"psllw $8, %%mm5		\n\t"\
+\
+			"pand g16Mask, %%mm3		\n\t"\
+			"pand r16Mask, %%mm5		\n\t"\
+\
+			"por %%mm3, %%mm2		\n\t"\
+			"por %%mm5, %%mm2		\n\t"\
+\
+			"punpckhbw %%mm7, %%mm4		\n\t" /* 0G0G0G0G */\
+			"punpckhbw %%mm7, %%mm1		\n\t" /* 0B0B0B0B */\
+			"punpckhbw %%mm7, %%mm6		\n\t" /* 0R0R0R0R */\
+\
+			"psrlw $3, %%mm1		\n\t"\
+			"psllw $3, %%mm4		\n\t"\
+			"psllw $8, %%mm6		\n\t"\
+\
+			"pand g16Mask, %%mm4		\n\t"\
+			"pand r16Mask, %%mm6		\n\t"\
+\
+			"por %%mm4, %%mm1		\n\t"\
+			"por %%mm6, %%mm1		\n\t"\
+\
+			MOVNTQ(%%mm2, (%4, %%eax, 2))\
+			MOVNTQ(%%mm1, 8(%4, %%eax, 2))\
+\
+			"addl $8, %%eax			\n\t"\
+			"cmpl %5, %%eax			\n\t"\
+			" jb 1b				\n\t"
+
+#define WRITEBGR15 \
+			"movq %%mm2, %%mm1		\n\t" /* B */\
+			"movq %%mm4, %%mm3		\n\t" /* G */\
+			"movq %%mm5, %%mm6		\n\t" /* R */\
+\
+			"punpcklbw %%mm7, %%mm3		\n\t" /* 0G0G0G0G */\
+			"punpcklbw %%mm7, %%mm2		\n\t" /* 0B0B0B0B */\
+			"punpcklbw %%mm7, %%mm5		\n\t" /* 0R0R0R0R */\
+\
+			"psrlw $3, %%mm2		\n\t"\
+			"psllw $2, %%mm3		\n\t"\
+			"psllw $7, %%mm5		\n\t"\
+\
+			"pand g15Mask, %%mm3		\n\t"\
+			"pand r15Mask, %%mm5		\n\t"\
+\
+			"por %%mm3, %%mm2		\n\t"\
+			"por %%mm5, %%mm2		\n\t"\
+\
+			"punpckhbw %%mm7, %%mm4		\n\t" /* 0G0G0G0G */\
+			"punpckhbw %%mm7, %%mm1		\n\t" /* 0B0B0B0B */\
+			"punpckhbw %%mm7, %%mm6		\n\t" /* 0R0R0R0R */\
+\
+			"psrlw $3, %%mm1		\n\t"\
+			"psllw $2, %%mm4		\n\t"\
+			"psllw $7, %%mm6		\n\t"\
+\
+			"pand g15Mask, %%mm4		\n\t"\
+			"pand r15Mask, %%mm6		\n\t"\
+\
+			"por %%mm4, %%mm1		\n\t"\
+			"por %%mm6, %%mm1		\n\t"\
+\
+			MOVNTQ(%%mm2, (%4, %%eax, 2))\
+			MOVNTQ(%%mm1, 8(%4, %%eax, 2))\
+\
+			"addl $8, %%eax			\n\t"\
+			"cmpl %5, %%eax			\n\t"\
+			" jb 1b				\n\t"
+// FIXME find a faster way to shuffle it to BGR24
+#define WRITEBGR24 \
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
+			"movq %%mm2, %%mm1		\n\t" /* B */\
+			"movq %%mm5, %%mm6		\n\t" /* R */\
+			"punpcklbw %%mm4, %%mm2		\n\t" /* GBGBGBGB 0 */\
+			"punpcklbw %%mm7, %%mm5		\n\t" /* 0R0R0R0R 0 */\
+			"punpckhbw %%mm4, %%mm1		\n\t" /* GBGBGBGB 2 */\
+			"punpckhbw %%mm7, %%mm6		\n\t" /* 0R0R0R0R 2 */\
+			"movq %%mm2, %%mm0		\n\t" /* GBGBGBGB 0 */\
+			"movq %%mm1, %%mm3		\n\t" /* GBGBGBGB 2 */\
+			"punpcklbw %%mm5, %%mm0		\n\t" /* 0RGB0RGB 0 */\
+			"punpckhbw %%mm5, %%mm2		\n\t" /* 0RGB0RGB 1 */\
+			"punpcklbw %%mm6, %%mm1		\n\t" /* 0RGB0RGB 2 */\
+			"punpckhbw %%mm6, %%mm3		\n\t" /* 0RGB0RGB 3 */\
+\
+			"movq %%mm0, %%mm4		\n\t" /* 0RGB0RGB 0 */\
+			"psrlq $8, %%mm0		\n\t" /* 00RGB0RG 0 */\
+			"pand bm00000111, %%mm4		\n\t" /* 00000RGB 0 */\
+			"pand bm11111000, %%mm0		\n\t" /* 00RGB000 0.5 */\
+			"por %%mm4, %%mm0		\n\t" /* 00RGBRGB 0 */\
+			"movq %%mm2, %%mm4		\n\t" /* 0RGB0RGB 1 */\
+			"psllq $48, %%mm2		\n\t" /* GB000000 1 */\
+			"por %%mm2, %%mm0		\n\t" /* GBRGBRGB 0 */\
+\
+			"movq %%mm4, %%mm2		\n\t" /* 0RGB0RGB 1 */\
+			"psrld $16, %%mm4		\n\t" /* 000R000R 1 */\
+			"psrlq $24, %%mm2		\n\t" /* 0000RGB0 1.5 */\
+			"por %%mm4, %%mm2		\n\t" /* 000RRGBR 1 */\
+			"pand bm00001111, %%mm2		\n\t" /* 0000RGBR 1 */\
+			"movq %%mm1, %%mm4		\n\t" /* 0RGB0RGB 2 */\
+			"psrlq $8, %%mm1		\n\t" /* 00RGB0RG 2 */\
+			"pand bm00000111, %%mm4		\n\t" /* 00000RGB 2 */\
+			"pand bm11111000, %%mm1		\n\t" /* 00RGB000 2.5 */\
+			"por %%mm4, %%mm1		\n\t" /* 00RGBRGB 2 */\
+			"movq %%mm1, %%mm4		\n\t" /* 00RGBRGB 2 */\
+			"psllq $32, %%mm1		\n\t" /* BRGB0000 2 */\
+			"por %%mm1, %%mm2		\n\t" /* BRGBRGBR 1 */\
+\
+			"psrlq $32, %%mm4		\n\t" /* 000000RG 2.5 */\
+			"movq %%mm3, %%mm5		\n\t" /* 0RGB0RGB 3 */\
+			"psrlq $8, %%mm3		\n\t" /* 00RGB0RG 3 */\
+			"pand bm00000111, %%mm5		\n\t" /* 00000RGB 3 */\
+			"pand bm11111000, %%mm3		\n\t" /* 00RGB000 3.5 */\
+			"por %%mm5, %%mm3		\n\t" /* 00RGBRGB 3 */\
+			"psllq $16, %%mm3		\n\t" /* RGBRGB00 3 */\
+			"por %%mm4, %%mm3		\n\t" /* RGBRGBRG 2.5 */\
+\
+			"leal (%%eax, %%eax, 2), %%ebx	\n\t"\
+			MOVNTQ(%%mm0, (%4, %%ebx))\
+			MOVNTQ(%%mm2, 8(%4, %%ebx))\
+			MOVNTQ(%%mm3, 16(%4, %%ebx))\
+\
+			"addl $8, %%eax			\n\t"\
+			"cmpl %5, %%eax			\n\t"\
+			" jb 1b				\n\t"
+
+
+/**
+ * vertical scale YV12 to RGB
+ */
+static inline void yuv2rgbX(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
+			    uint8_t *dest, int dstw, int yalpha, int uvalpha, int dstbpp)
+{
+	int yalpha1=yalpha^4095;
+	int uvalpha1=uvalpha^4095;
+	int i;
+
+	if(fullUVIpol)
+	{
+
+#ifdef HAVE_MMX
+		if(dstbpp == 32)
+		{
+			asm volatile(
+
+
+FULL_YSCALEYUV2RGB
+			"punpcklbw %%mm1, %%mm3		\n\t" // BGBGBGBG
+			"punpcklbw %%mm7, %%mm0		\n\t" // R0R0R0R0
+
+			"movq %%mm3, %%mm1		\n\t"
+			"punpcklwd %%mm0, %%mm3		\n\t" // BGR0BGR0
+			"punpckhwd %%mm0, %%mm1		\n\t" // BGR0BGR0
+
+			MOVNTQ(%%mm3, (%4, %%eax, 4))
+			MOVNTQ(%%mm1, 8(%4, %%eax, 4))
+
+			"addl $4, %%eax			\n\t"
+			"cmpl %5, %%eax			\n\t"
+			" jb 1b				\n\t"
+
+
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+		else if(dstbpp==24)
+		{
+			asm volatile(
+
+FULL_YSCALEYUV2RGB
+
+								// lsb ... msb
+			"punpcklbw %%mm1, %%mm3		\n\t" // BGBGBGBG
+			"punpcklbw %%mm7, %%mm0		\n\t" // R0R0R0R0
+
+			"movq %%mm3, %%mm1		\n\t"
+			"punpcklwd %%mm0, %%mm3		\n\t" // BGR0BGR0
+			"punpckhwd %%mm0, %%mm1		\n\t" // BGR0BGR0
+
+			"movq %%mm3, %%mm2		\n\t" // BGR0BGR0
+			"psrlq $8, %%mm3		\n\t" // GR0BGR00
+			"pand bm00000111, %%mm2		\n\t" // BGR00000
+			"pand bm11111000, %%mm3		\n\t" // 000BGR00
+			"por %%mm2, %%mm3		\n\t" // BGRBGR00
+			"movq %%mm1, %%mm2		\n\t"
+			"psllq $48, %%mm1		\n\t" // 000000BG
+			"por %%mm1, %%mm3		\n\t" // BGRBGRBG
+
+			"movq %%mm2, %%mm1		\n\t" // BGR0BGR0
+			"psrld $16, %%mm2		\n\t" // R000R000
+			"psrlq $24, %%mm1		\n\t" // 0BGR0000
+			"por %%mm2, %%mm1		\n\t" // RBGRR000
+
+			"movl %4, %%ebx			\n\t"
+			"addl %%eax, %%ebx		\n\t"
+
+#ifdef HAVE_MMX2
+			//FIXME Alignment
+			"movntq %%mm3, (%%ebx, %%eax, 2)\n\t"
+			"movntq %%mm1, 8(%%ebx, %%eax, 2)\n\t"
+#else
+			"movd %%mm3, (%%ebx, %%eax, 2)	\n\t"
+			"psrlq $32, %%mm3		\n\t"
+			"movd %%mm3, 4(%%ebx, %%eax, 2)	\n\t"
+			"movd %%mm1, 8(%%ebx, %%eax, 2)	\n\t"
+#endif
+			"addl $4, %%eax			\n\t"
+			"cmpl %5, %%eax			\n\t"
+			" jb 1b				\n\t"
+
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax", "%ebx"
+			);
+		}
+		else if(dstbpp==15)
+		{
+			asm volatile(
+
+FULL_YSCALEYUV2RGB
+#ifdef DITHER1XBPP
+			"paddusb b16Dither, %%mm1	\n\t"
+			"paddusb b16Dither, %%mm0	\n\t"
+			"paddusb b16Dither, %%mm3	\n\t"
+#endif
+			"punpcklbw %%mm7, %%mm1		\n\t" // 0G0G0G0G
+			"punpcklbw %%mm7, %%mm3		\n\t" // 0B0B0B0B
+			"punpcklbw %%mm7, %%mm0		\n\t" // 0R0R0R0R
+
+			"psrlw $3, %%mm3		\n\t"
+			"psllw $2, %%mm1		\n\t"
+			"psllw $7, %%mm0		\n\t"
+			"pand g15Mask, %%mm1		\n\t"
+			"pand r15Mask, %%mm0		\n\t"
+
+			"por %%mm3, %%mm1		\n\t"
+			"por %%mm1, %%mm0		\n\t"
+
+			MOVNTQ(%%mm0, (%4, %%eax, 2))
+
+			"addl $4, %%eax			\n\t"
+			"cmpl %5, %%eax			\n\t"
+			" jb 1b				\n\t"
+
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+		else if(dstbpp==16)
+		{
+			asm volatile(
+
+FULL_YSCALEYUV2RGB
+#ifdef DITHER1XBPP
+			"paddusb g16Dither, %%mm1	\n\t"
+			"paddusb b16Dither, %%mm0	\n\t"
+			"paddusb b16Dither, %%mm3	\n\t"
+#endif
+			"punpcklbw %%mm7, %%mm1		\n\t" // 0G0G0G0G
+			"punpcklbw %%mm7, %%mm3		\n\t" // 0B0B0B0B
+			"punpcklbw %%mm7, %%mm0		\n\t" // 0R0R0R0R
+
+			"psrlw $3, %%mm3		\n\t"
+			"psllw $3, %%mm1		\n\t"
+			"psllw $8, %%mm0		\n\t"
+			"pand g16Mask, %%mm1		\n\t"
+			"pand r16Mask, %%mm0		\n\t"
+
+			"por %%mm3, %%mm1		\n\t"
+			"por %%mm1, %%mm0		\n\t"
+
+			MOVNTQ(%%mm0, (%4, %%eax, 2))
+
+			"addl $4, %%eax			\n\t"
+			"cmpl %5, %%eax			\n\t"
+			" jb 1b				\n\t"
+
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+#else
+		if(dstbpp==32 || dstbpp==24)
+		{
+			for(i=0;i<dstw;i++){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19);
+				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
+				dest[0]=clip_table[((Y + yuvtab_3343[U]) >>13)];
+				dest[1]=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
+				dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
+				dest+=dstbpp>>3;
+			}
+		}
+		else if(dstbpp==16)
+		{
+			for(i=0;i<dstw;i++){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19);
+				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
+
+				((uint16_t*)dest)[0] =
+					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
+					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<3)&0x07E0 |
+					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<8)&0xF800;
+				dest+=2;
+			}
+		}
+		else if(dstbpp==15)
+		{
+			for(i=0;i<dstw;i++){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19);
+				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
+
+				((uint16_t*)dest)[0] =
+					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
+					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<2)&0x03E0 |
+					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<7)&0x7C00;
+				dest+=2;
+			}
+		}
+#endif
+	}//FULL_UV_IPOL
+	else
+	{
+#ifdef HAVE_MMX
+		if(dstbpp == 32)
+		{
+			asm volatile(
+				YSCALEYUV2RGB
+				WRITEBGR32
+
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+		else if(dstbpp==24)
+		{
+			asm volatile(
+				YSCALEYUV2RGB
+				WRITEBGR24
+
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax", "%ebx"
+			);
+		}
+		else if(dstbpp==15)
+		{
+			asm volatile(
+				YSCALEYUV2RGB
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+				"paddusb b16Dither, %%mm2	\n\t"
+				"paddusb b16Dither, %%mm4	\n\t"
+				"paddusb b16Dither, %%mm5	\n\t"
+#endif
+
+				WRITEBGR15
+
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+		else if(dstbpp==16)
+		{
+			asm volatile(
+				YSCALEYUV2RGB
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+				"paddusb g16Dither, %%mm2	\n\t"
+				"paddusb b16Dither, %%mm4	\n\t"
+				"paddusb b16Dither, %%mm5	\n\t"
+#endif
+
+				WRITEBGR16
+
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+#else
+//FIXME unroll C loop and dont recalculate UV
+		if(dstbpp==32 || dstbpp==24)
+		{
+			for(i=0;i<dstw;i++){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+				dest[0]=clip_table[((Y + yuvtab_3343[U]) >>13)];
+				dest[1]=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
+				dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
+				dest+=dstbpp>>3;
+			}
+		}
+		else if(dstbpp==16)
+		{
+			for(i=0;i<dstw;i++){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+
+				((uint16_t*)dest)[0] =
+					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
+					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<3)&0x07E0 |
+					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<8)&0xF800;
+				dest+=2;
+			}
+		}
+		else if(dstbpp==15)
+		{
+			for(i=0;i<dstw;i++){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+
+				((uint16_t*)dest)[0] =
+					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
+					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<2)&0x03E0 |
+					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<7)&0x7C00;
+				dest+=2;
+			}
+		}
+#endif
+	} //!FULL_UV_IPOL
+}
+
+/**
+ * YV12 to RGB without scaling or interpolating
+ */
+static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
+			    uint8_t *dest, int dstw, int yalpha, int uvalpha, int dstbpp)
+{
+	int yalpha1=yalpha^4095;
+	int uvalpha1=uvalpha^4095;
+	int i;
+	if(fullUVIpol || allwaysIpol)
+	{
+		yuv2rgbX(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
+		return;
+	}
+#ifdef HAVE_MMX
+		if(dstbpp == 32)
+		{
+			asm volatile(
+				YSCALEYUV2RGB1
+				WRITEBGR32
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+		else if(dstbpp==24)
+		{
+			asm volatile(
+				YSCALEYUV2RGB1
+				WRITEBGR24
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax", "%ebx"
+			);
+		}
+		else if(dstbpp==15)
+		{
+			asm volatile(
+				YSCALEYUV2RGB1
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+				"paddusb b16Dither, %%mm2	\n\t"
+				"paddusb b16Dither, %%mm4	\n\t"
+				"paddusb b16Dither, %%mm5	\n\t"
+#endif
+				WRITEBGR15
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+		else if(dstbpp==16)
+		{
+			asm volatile(
+				YSCALEYUV2RGB1
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+				"paddusb g16Dither, %%mm2	\n\t"
+				"paddusb b16Dither, %%mm4	\n\t"
+				"paddusb b16Dither, %%mm5	\n\t"
+#endif
+
+				WRITEBGR16
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+#else
+//FIXME unroll C loop and dont recalculate UV
+		if(dstbpp==32 || dstbpp==24)
+		{
+			for(i=0;i<dstw;i++){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y=yuvtab_2568[buf0[i]>>7];
+				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+				dest[0]=clip_table[((Y + yuvtab_3343[U]) >>13)];
+				dest[1]=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
+				dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
+				dest+=dstbpp>>3;
+			}
+		}
+		else if(dstbpp==16)
+		{
+			for(i=0;i<dstw;i++){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y=yuvtab_2568[buf0[i]>>7];
+				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+
+				((uint16_t*)dest)[0] =
+					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
+					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<3)&0x07E0 |
+					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<8)&0xF800;
+				dest+=2;
+			}
+		}
+		else if(dstbpp==15)
+		{
+			for(i=0;i<dstw;i++){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y=yuvtab_2568[buf0[i]>>7];
+				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+
+				((uint16_t*)dest)[0] =
+					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
+					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<2)&0x03E0 |
+					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<7)&0x7C00;
+				dest+=2;
+			}
+		}
+#endif
+}
+
+
 
 
 // *** bilinear scaling and yuv->rgb conversion of yv12 slices:
@@ -95,10 +896,12 @@ static int static_dstw;
 // used to detect a horizontal size change
 static int old_dstw= -1;
 static int old_s_xinc= -1;
-
 #endif
+
 int canMMX2BeUsed=0;
 int srcWidth= (dstw*s_xinc + 0x8000)>>16;
+int dstUVw= fullUVIpol ? dstw : dstw/2;
+
 
 #ifdef HAVE_MMX2
 canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0 && (srcWidth&15)==0) ? 1 : 0;
@@ -111,8 +914,9 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0 && (srcWidth&15)==0) ? 1 : 0;
 // first and last pixel
 if(canMMX2BeUsed) 	s_xinc+= 20;
 else			s_xinc = ((srcWidth-2)<<16)/(dstw-2) - 20;
-s_xinc2=s_xinc>>1;
 
+if(fullUVIpol) 	s_xinc2= s_xinc>>1;
+else		s_xinc2= s_xinc;
   // force calculation of the horizontal interpolation of the first line
   s_last_ypos=-99;
   s_last_y1pos=-99;
@@ -215,13 +1019,17 @@ s_xinc2=s_xinc>>1;
 				funnyYCode[fragmentLength*i/4 + imm8OfPShufW2]=
 					a | (b<<2) | (c<<4) | (d<<6);
 
+				// if we dont need to read 8 bytes than dont :), reduces the chance of
+				// crossing a cache line
+				if(d<3) funnyYCode[fragmentLength*i/4 + 1]= 0x6E;
+
 				funnyYCode[fragmentLength*(i+4)/4]= RET;
 			}
 			xpos+=s_xinc;
 		}
 
 		xpos= 0; //s_xinc2/2 - 0x10000; // difference between centers of chrom samples
-		for(i=0; i<dstw/8; i++)
+		for(i=0; i<dstUVw/8; i++)
 		{
 			int xx=xpos>>16;
 
@@ -237,6 +1045,10 @@ s_xinc2=s_xinc>>1;
 				funnyUVCode[fragmentLength*i/4 + imm8OfPShufW1]=
 				funnyUVCode[fragmentLength*i/4 + imm8OfPShufW2]=
 					a | (b<<2) | (c<<4) | (d<<6);
+
+				// if we dont need to read 8 bytes than dont :), reduces the chance of
+				// crossing a cache line
+				if(d<3) funnyUVCode[fragmentLength*i/4 + 1]= 0x6E;
 
 				funnyUVCode[fragmentLength*(i+4)/4]= RET;
 			}
@@ -255,10 +1067,8 @@ s_xinc2=s_xinc>>1;
 	// points to the dst Pixels center in the source (0 is the center of pixel 0,0 in src)
     int srcuvpos= s_srcypos + s_yinc/2 - 0x8000;
     int y1=(srcuvpos + 0x1FFFF)>>17; // first chrominance source line number below the dst line
-    int yalpha=((s_srcypos-1)&0xFFFF)>>7;
-    int yalpha1=yalpha^511;
-    int uvalpha=((srcuvpos-1)&0x1FFFF)>>8;
-    int uvalpha1=uvalpha^511;
+    int yalpha=((s_srcypos-1)&0xFFFF)>>4;
+    int uvalpha=((srcuvpos-1)&0x1FFFF)>>5;
     uint16_t *buf0=pix_buf_y[y0&1];		// top line of the interpolated slice
     uint16_t *buf1=pix_buf_y[((y0+1)&1)];	// bottom line of the interpolated slice
     uint16_t *uvbuf0=pix_buf_uv[y1&1];		// top line of the interpolated slice
@@ -320,29 +1130,29 @@ s_xinc2=s_xinc>>1;
 			"xorl %%ecx, %%ecx		\n\t"
 			"xorl %%ebx, %%ebx		\n\t"
 			"movw %4, %%bx			\n\t" // (s_xinc*4)&0xFFFF
-	//	"int $3\n\t"
-			"call funnyYCode			\n\t"
-			"movq temp0, %%mm2		\n\t"
+#ifdef HAVE_MMX2
+#define FUNNY_Y_CODE \
+			"prefetchnta 1024(%%esi)	\n\t"\
+			"prefetchnta 1056(%%esi)	\n\t"\
+			"prefetchnta 1088(%%esi)	\n\t"\
+			"call funnyYCode		\n\t"\
+			"movq temp0, %%mm2		\n\t"\
 			"xorl %%ecx, %%ecx		\n\t"
-			"call funnyYCode			\n\t"
-			"movq temp0, %%mm2		\n\t"
+#else
+#define FUNNY_Y_CODE \
+			"call funnyYCode		\n\t"\
+			"movq temp0, %%mm2		\n\t"\
 			"xorl %%ecx, %%ecx		\n\t"
-			"call funnyYCode			\n\t"
-			"movq temp0, %%mm2		\n\t"
-			"xorl %%ecx, %%ecx		\n\t"
-			"call funnyYCode			\n\t"
-			"movq temp0, %%mm2		\n\t"
-			"xorl %%ecx, %%ecx		\n\t"
-			"call funnyYCode			\n\t"
-			"movq temp0, %%mm2		\n\t"
-			"xorl %%ecx, %%ecx		\n\t"
-			"call funnyYCode			\n\t"
-			"movq temp0, %%mm2		\n\t"
-			"xorl %%ecx, %%ecx		\n\t"
-			"call funnyYCode			\n\t"
-			"movq temp0, %%mm2		\n\t"
-			"xorl %%ecx, %%ecx		\n\t"
-			"call funnyYCode			\n\t"
+#endif
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+
 			:: "m" (src), "m" (buf1), "m" (dstw), "m" ((s_xinc*4)>>16),
 			"m" ((s_xinc*4)&0xFFFF), "m" (s_xinc&0xFFFF)
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
@@ -352,8 +1162,7 @@ s_xinc2=s_xinc>>1;
 	else
 	{
 #endif
-	//NO MMX just normal asm ... FIXME try/write funny MMX2 variant
-	//FIXME add prefetch
+	//NO MMX just normal asm ...
 	asm volatile(
 		"xorl %%eax, %%eax		\n\t" // i
 		"xorl %%ebx, %%ebx		\n\t" // xx
@@ -438,11 +1247,20 @@ s_xinc2=s_xinc>>1;
 		"xorl %%ebx, %%ebx		\n\t"
 		"movw %4, %%bx			\n\t" // (s_xinc*4)&0xFFFF
 
-//	"int $3\n\t"
+#ifdef HAVE_MMX2
 #define FUNNYUVCODE \
-		"call funnyUVCode		\n\t"\
-		"movq temp0, %%mm2		\n\t"\
-		"xorl %%ecx, %%ecx		\n\t"
+			"prefetchnta 1024(%%esi)	\n\t"\
+			"prefetchnta 1056(%%esi)	\n\t"\
+			"prefetchnta 1088(%%esi)	\n\t"\
+			"call funnyUVCode		\n\t"\
+			"movq temp0, %%mm2		\n\t"\
+			"xorl %%ecx, %%ecx		\n\t"
+#else
+#define FUNNYUVCODE \
+			"call funnyUVCode		\n\t"\
+			"movq temp0, %%mm2		\n\t"\
+			"xorl %%ecx, %%ecx		\n\t"
+#endif
 
 FUNNYUVCODE
 FUNNYUVCODE
@@ -453,7 +1271,6 @@ FUNNYUVCODE
 FUNNYUVCODE
 FUNNYUVCODE
 FUNNYUVCODE
-
 
 
 		"xorl %%eax, %%eax		\n\t" // i
@@ -471,11 +1288,11 @@ FUNNYUVCODE
 FUNNYUVCODE
 FUNNYUVCODE
 
-		:: "m" (src1), "m" (uvbuf1), "m" (dstw), "m" ((s_xinc2*4)>>16),
+		:: "m" (src1), "m" (uvbuf1), "m" (dstUVw), "m" ((s_xinc2*4)>>16),
 		  "m" ((s_xinc2*4)&0xFFFF), "m" (s_xinc2&0xFFFF), "m" (src2)
 		: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
 	);
-		for(i=dstw-1; (i*s_xinc2)>>16 >=srcWidth/2-1; i--)
+		for(i=dstUVw-1; (i*s_xinc2)>>16 >=srcWidth/2-1; i--)
 		{
 			uvbuf1[i] = src1[srcWidth/2-1]*128;
 			uvbuf1[i+2048] = src2[srcWidth/2-1]*128;
@@ -516,8 +1333,7 @@ FUNNYUVCODE
 		"cmpl %2, %%eax			\n\t"
 		" jb 1b				\n\t"
 
-
-		:: "m" (src1), "m" (uvbuf1), "m" (dstw), "m" (s_xinc2>>16), "m" (s_xinc2&0xFFFF),
+		:: "m" (src1), "m" (uvbuf1), "m" (dstUVw), "m" (s_xinc2>>16), "m" (s_xinc2&0xFFFF),
 		"r" (src2)
 		: "%eax", "%ebx", "%ecx", "%edi", "%esi"
 		);
@@ -525,7 +1341,7 @@ FUNNYUVCODE
 	} //if MMX2 cant be used
 #endif
 #else
-      for(i=0;i<dstw;i++){
+      for(i=0;i<dstUVw;i++){
 	  register unsigned int xx=xpos>>16;
           register unsigned int xalpha=(xpos&0xFFFF)>>9;
 	  uvbuf1[i]=(src1[xx]*(xalpha^127)+src1[xx+1]*xalpha);
@@ -541,237 +1357,20 @@ FUNNYUVCODE
 	}
     }
 
+	if(ABS(s_yinc - 0x10000) < 10)
+		yuv2rgb1(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
+	else
+		yuv2rgbX(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
 
-    // Note1: this code can be resticted to n*8 (or n*16) width lines to simplify optimization...
-    // Re: Note1: ok n*4 for now
-    // Note2: instead of using lookup tabs, mmx version could do the multiply...
-    // Re: Note2: yep
-    // Note3: maybe we should make separated 15/16, 24 and 32bpp version of this:
-    // Re: done (32 & 16) and 16 has dithering :) but 16 is untested
 #ifdef HAVE_MMX
-	//FIXME write lq version with less uv ...
-	//FIXME reorder / optimize
-	if(dstbpp == 32)
-	{
-		asm volatile(
-
-#define YSCALEYUV2RGB \
-		"pxor %%mm7, %%mm7		\n\t"\
-		"movd %6, %%mm6			\n\t" /*yalpha1*/\
-		"punpcklwd %%mm6, %%mm6		\n\t"\
-		"punpcklwd %%mm6, %%mm6		\n\t"\
-		"movd %7, %%mm5			\n\t" /*uvalpha1*/\
-		"punpcklwd %%mm5, %%mm5		\n\t"\
-		"punpcklwd %%mm5, %%mm5		\n\t"\
-		"xorl %%eax, %%eax		\n\t"\
-		"1:				\n\t"\
-		"movq (%0, %%eax, 2), %%mm0	\n\t" /*buf0[eax]*/\
-		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf1[eax]*/\
-		"movq (%2, %%eax,2), %%mm2	\n\t" /* uvbuf0[eax]*/\
-		"movq (%3, %%eax,2), %%mm3	\n\t" /* uvbuf1[eax]*/\
-		"psubw %%mm1, %%mm0		\n\t" /* buf0[eax] - buf1[eax]*/\
-		"psubw %%mm3, %%mm2		\n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
-		"pmulhw %%mm6, %%mm0		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
-		"pmulhw %%mm5, %%mm2		\n\t" /* (uvbuf0[eax] - uvbuf1[eax])uvalpha1>>16*/\
-		"psraw $7, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>7*/\
-		"movq 4096(%2, %%eax,2), %%mm4	\n\t" /* uvbuf0[eax+2048]*/\
-		"psraw $7, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>7*/\
-		"paddw %%mm0, %%mm1		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
-		"movq 4096(%3, %%eax,2), %%mm0	\n\t" /* uvbuf1[eax+2048]*/\
-		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax]uvalpha1 - uvbuf1[eax](1-uvalpha1)*/\
-		"psubw %%mm0, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
-		"psubw w10, %%mm1		\n\t" /* Y-16*/\
-		"psubw w80, %%mm3		\n\t" /* (U-128)*/\
-		"psllw $3, %%mm1		\n\t" /* (y-16)*8*/\
-		"psllw $3, %%mm3		\n\t" /*(U-128)8*/\
-		"pmulhw yCoeff, %%mm1		\n\t"\
-\
-\
-		"pmulhw %%mm5, %%mm4		\n\t" /* (uvbuf0[eax+2048] - uvbuf1[eax+2048])uvalpha1>>16*/\
-		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
-		"pmulhw ubCoeff, %%mm3		\n\t"\
-		"psraw $7, %%mm0		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>7*/\
-		"pmulhw ugCoeff, %%mm2		\n\t"\
-		"paddw %%mm4, %%mm0		\n\t" /* uvbuf0[eax+2048]uvalpha1 - uvbuf1[eax+2048](1-uvalpha1)*/\
-		"psubw w80, %%mm0		\n\t" /* (V-128)*/\
-		"psllw $3, %%mm0		\n\t" /* (V-128)8*/\
-\
-\
-		"movq %%mm0, %%mm4		\n\t" /* (V-128)8*/\
-		"pmulhw vrCoeff, %%mm0		\n\t"\
-		"pmulhw vgCoeff, %%mm4		\n\t"\
-		"paddw %%mm1, %%mm3		\n\t" /* B*/\
-		"paddw %%mm1, %%mm0		\n\t" /* R*/\
-		"packuswb %%mm3, %%mm3		\n\t"\
-\
-		"packuswb %%mm0, %%mm0		\n\t"\
-		"paddw %%mm4, %%mm2		\n\t"\
-		"paddw %%mm2, %%mm1		\n\t" /* G*/\
-\
-		"packuswb %%mm1, %%mm1		\n\t"
-
-YSCALEYUV2RGB
-		"punpcklbw %%mm1, %%mm3		\n\t" // BGBGBGBG
-		"punpcklbw %%mm7, %%mm0		\n\t" // R0R0R0R0
-
-		"movq %%mm3, %%mm1		\n\t"
-		"punpcklwd %%mm0, %%mm3		\n\t" // BGR0BGR0
-		"punpckhwd %%mm0, %%mm1		\n\t" // BGR0BGR0
-#ifdef HAVE_MMX2
-		"movntq %%mm3, (%4, %%eax, 4)	\n\t"
-		"movntq %%mm1, 8(%4, %%eax, 4)	\n\t"
-#else
-		"movq %%mm3, (%4, %%eax, 4)	\n\t"
-		"movq %%mm1, 8(%4, %%eax, 4)	\n\t"
-#endif
-		"addl $4, %%eax			\n\t"
-		"cmpl %5, %%eax			\n\t"
-		" jb 1b				\n\t"
-
-
-		:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
-		"m" (yalpha1), "m" (uvalpha1)
-		: "%eax"
-		);
-	}
-	else if(dstbpp==24)
-	{
-		asm volatile(
-
-YSCALEYUV2RGB
-
-							// lsb ... msb
-		"punpcklbw %%mm1, %%mm3		\n\t" // BGBGBGBG
-		"punpcklbw %%mm7, %%mm0		\n\t" // R0R0R0R0
-
-		"movq %%mm3, %%mm1		\n\t"
-		"punpcklwd %%mm0, %%mm3		\n\t" // BGR0BGR0
-		"punpckhwd %%mm0, %%mm1		\n\t" // BGR0BGR0
-
-		"movq %%mm3, %%mm2		\n\t" // BGR0BGR0
-		"psrlq $8, %%mm3		\n\t" // GR0BGR00
-		"pand bm00000111, %%mm2		\n\t" // BGR00000
-		"pand bm11111000, %%mm3		\n\t" // 000BGR00
-		"por %%mm2, %%mm3		\n\t" // BGRBGR00
-		"movq %%mm1, %%mm2		\n\t"
-		"psllq $48, %%mm1		\n\t" // 000000BG
-		"por %%mm1, %%mm3		\n\t" // BGRBGRBG
-
-		"movq %%mm2, %%mm1		\n\t" // BGR0BGR0
-		"psrld $16, %%mm2		\n\t" // R000R000
-		"psrlq $24, %%mm1		\n\t" // 0BGR0000
-		"por %%mm2, %%mm1		\n\t" // RBGRR000
-
-		"movl %4, %%ebx			\n\t"
-		"addl %%eax, %%ebx		\n\t"
-#ifdef HAVE_MMX2
-		//FIXME Alignment
-		"movntq %%mm3, (%%ebx, %%eax, 2)\n\t"
-		"movntq %%mm1, 8(%%ebx, %%eax, 2)\n\t"
-#else
-		"movd %%mm3, (%%ebx, %%eax, 2)	\n\t"
-		"psrlq $32, %%mm3		\n\t"
-		"movd %%mm3, 4(%%ebx, %%eax, 2)	\n\t"
-		"movd %%mm1, 8(%%ebx, %%eax, 2)	\n\t"
-#endif
-		"addl $4, %%eax			\n\t"
-		"cmpl %5, %%eax			\n\t"
-		" jb 1b				\n\t"
-
-		:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstw),
-		"m" (yalpha1), "m" (uvalpha1)
-		: "%eax", "%ebx"
-		);
-	}
-	else if(dstbpp==16)
-	{
-		asm volatile(
-
-YSCALEYUV2RGB
-#ifdef DITHER16BPP
-		"paddusb g16Dither, %%mm1	\n\t"
-		"paddusb b16Dither, %%mm0	\n\t"
-		"paddusb b16Dither, %%mm3	\n\t"
-#endif
-		"punpcklbw %%mm7, %%mm1		\n\t" // 0G0G0G0G
-		"punpcklbw %%mm7, %%mm3		\n\t" // 0B0B0B0B
-		"punpcklbw %%mm7, %%mm0		\n\t" // 0R0R0R0R
-
-		"psrlw $3, %%mm3		\n\t"
-		"psllw $3, %%mm1		\n\t"
-		"psllw $8, %%mm0		\n\t"
-		"pand g16Mask, %%mm1		\n\t"
-		"pand r16Mask, %%mm0		\n\t"
-
-		"por %%mm3, %%mm1		\n\t"
-		"por %%mm1, %%mm0		\n\t"
-#ifdef HAVE_MMX2
-		"movntq %%mm0, (%4, %%eax, 2)	\n\t"
-#else
-		"movq %%mm0, (%4, %%eax, 2)	\n\t"
-#endif
-		"addl $4, %%eax			\n\t"
-		"cmpl %5, %%eax			\n\t"
-		" jb 1b				\n\t"
-
-		:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
-		"m" (yalpha1), "m" (uvalpha1)
-		: "%eax"
-		);
-	}
-#else
-	if(dstbpp==32 || dstbpp==24)
-	{
-		for(i=0;i<dstw;i++){
-			// vertical linear interpolation && yuv2rgb in a single step:
-			int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>16)];
-			int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>16);
-			int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>16);
-			dest[0]=clip_table[((Y + yuvtab_3343[U]) >>13)];
-			dest[1]=clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)];
-			dest[2]=clip_table[((Y + yuvtab_40cf[V]) >>13)];
-			dest+=dstbpp>>3;
-		}
-	}
-	else if(dstbpp==16)
-	{
-		for(i=0;i<dstw;i++){
-			// vertical linear interpolation && yuv2rgb in a single step:
-			int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>16)];
-			int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>16);
-			int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>16);
-
-			((uint16_t*)dest)[0] =
-				(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
-				(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<3)&0x07E0 |
-				(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<8)&0xF800;
-			dest+=2;
-		}
-	}
-	else if(dstbpp==15) //15bit FIXME how do i figure out if its 15 or 16?
-	{
-		for(i=0;i<dstw;i++){
-			// vertical linear interpolation && yuv2rgb in a single step:
-			int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>16)];
-			int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>16);
-			int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>16);
-
-			((uint16_t*)dest)[0] =
-				(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
-				(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<2)&0x03E0 |
-				(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<7)&0x7C00;
-			dest+=2;
-		}
-	}
-#endif
-
-	b16Dither= b16Dither1;
+    	b16Dither= b16Dither1;
 	b16Dither1= b16Dither2;
 	b16Dither2= b16Dither;
 
 	g16Dither= g16Dither1;
 	g16Dither1= g16Dither2;
 	g16Dither2= g16Dither;
+#endif
   }
 
 #ifdef HAVE_3DNOW
