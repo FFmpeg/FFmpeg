@@ -820,7 +820,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     }
 
     if (avctx->get_buffer(avctx, &s->current_frame)) {
-        printf ("  Interplay Video: get_buffer() failed\n");
+        printf ("  Xan Video: get_buffer() failed\n");
         return -1;
     }
     s->current_frame.reference = 3;
