@@ -7,7 +7,7 @@ CFLAGS=-fPIC $(SHCFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PA
 ifeq ($(CONFIG_DARWIN),yes)
 SHFLAGS+=-flat_namespace -undefined suppress
 endif
-HOOKS=null.so fish.so ppm.so
+HOOKS=null.so fish.so ppm.so watermark.so
 
 ifeq ($(HAVE_IMLIB2),yes)
     HOOKS += imlib2.so
