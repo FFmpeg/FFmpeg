@@ -149,6 +149,8 @@ typedef struct DSPContext {
     /* maybe create an array for 16/8 functions */
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
+     * this is an array[2][4] of motion compensation funcions for 2 
+     * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination where the result is stored
      * @param pixels source
@@ -159,6 +161,8 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
+     * this is an array[2][4] of motion compensation funcions for 2 
+     * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b+1)>>1
      * @param pixels source
@@ -169,6 +173,8 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
+     * this is an array[2][4] of motion compensation funcions for 2 
+     * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination where the result is stored
      * @param pixels source
@@ -179,6 +185,8 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
+     * this is an array[2][4] of motion compensation funcions for 2 
+     * horizontal blocksizes (8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b)>>1
      * @param pixels source
