@@ -287,15 +287,28 @@ static void copy_picture_attributes(MpegEncContext *s, AVFrame *dst, AVFrame *sr
     dst->interlaced_frame       = src->interlaced_frame;
     dst->top_field_first        = src->top_field_first;
 
-    if(src->motion_val[0] && src->motion_val[0] != dst->motion_val[0]){
+    if(s->avctx->me_threshold){
+        if(!src->motion_val[0])
+            av_log(s->avctx, AV_LOG_ERROR, "AVFrame.motion_val not set!\n");
+        if(!src->mb_type)
+            av_log(s->avctx, AV_LOG_ERROR, "AVFrame.mb_type not set!\n");
+        if(!src->ref_index[0])
+            av_log(s->avctx, AV_LOG_ERROR, "AVFrame.ref_index not set!\n");
         if(src->motion_subsample_log2 != dst->motion_subsample_log2)
             av_log(s->avctx, AV_LOG_ERROR, "AVFrame.motion_subsample_log2 doesnt match!\n");
-        else{
+
+        memcpy(dst->mb_type, src->mb_type, s->mb_stride * s->mb_height * sizeof(dst->mb_type[0]));
+        
+        for(i=0; i<2; i++){
             int stride= ((16*s->mb_width )>>src->motion_subsample_log2) + 1;
             int height= ((16*s->mb_height)>>src->motion_subsample_log2);
 
-            for(i=0; i<2; i++)
-                memcpy(dst->motion_val[i], src->motion_val[i], stride*height*sizeof(int16_t));
+            if(src->motion_val[i] && src->motion_val[i] != dst->motion_val[i]){
+                memcpy(dst->motion_val[i], src->motion_val[i], 2*stride*height*sizeof(int16_t));
+            }
+            if(src->ref_index[i] && src->ref_index[i] != dst->ref_index[i]){
+                memcpy(dst->ref_index[i], src->ref_index[i], s->mb_stride*s->mb_height*sizeof(int8_t)); //FIXME init this too
+            }
         }
     }
 }
@@ -363,6 +376,7 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
             for(i=0; i<2; i++){
                 CHECKED_ALLOCZ(pic->motion_val_base[i], 2 * (b8_array_size+2) * sizeof(int16_t))
                 pic->motion_val[i]= pic->motion_val_base[i]+2;
+                CHECKED_ALLOCZ(pic->ref_index[i], mb_array_size * sizeof(int8_t))
             }
             pic->motion_subsample_log2= 3;
         }

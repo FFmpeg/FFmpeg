@@ -223,7 +223,7 @@ typedef struct AVOutputStream {
     int64_t sync_opts;
     /* video only */
     int video_resample;      /* video_resample and video_crop are mutually exclusive */
-    AVPicture pict_tmp;      /* temporary image for resampling */
+    AVFrame pict_tmp;      /* temporary image for resampling */
     ImgReSampleContext *img_resample_ctx; /* for image resampling */
 
     int video_crop;          /* video_resample and video_crop are mutually exclusive */
@@ -554,14 +554,17 @@ static void do_video_out(AVFormatContext *s,
                          int *frame_size, AVOutputStream *audio_sync)
 {
     int nb_frames, i, ret;
-    AVPicture *final_picture, *formatted_picture;
-    AVPicture picture_format_temp, picture_crop_temp;
+    AVFrame *final_picture, *formatted_picture;
+    AVFrame picture_format_temp, picture_crop_temp;
     static uint8_t *video_buffer= NULL;
     uint8_t *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
     enum PixelFormat target_pixfmt;
-
+    
 #define VIDEO_BUFFER_SIZE (1024*1024)
+
+    avcodec_get_frame_defaults(&picture_format_temp);
+    avcodec_get_frame_defaults(&picture_crop_temp);
 
     enc = &ost->st->codec;
     dec = &ist->st->codec;
@@ -641,9 +644,9 @@ static void do_video_out(AVFormatContext *s,
         if (!buf)
             return;
         formatted_picture = &picture_format_temp;
-        avpicture_fill(formatted_picture, buf, target_pixfmt, dec->width, dec->height);
+        avpicture_fill((AVPicture*)formatted_picture, buf, target_pixfmt, dec->width, dec->height);
         
-        if (img_convert(formatted_picture, target_pixfmt, 
+        if (img_convert((AVPicture*)formatted_picture, target_pixfmt, 
                         (AVPicture *)in_picture, dec->pix_fmt, 
                         dec->width, dec->height) < 0) {
 
@@ -653,7 +656,7 @@ static void do_video_out(AVFormatContext *s,
             goto the_end;
         }
     } else {
-        formatted_picture = (AVPicture *)in_picture;
+        formatted_picture = in_picture;
     }
 
     /* XXX: resampling could be done before raw format conversion in
@@ -661,10 +664,10 @@ static void do_video_out(AVFormatContext *s,
     /* XXX: only works for YUV420P */
     if (ost->video_resample) {
         final_picture = &ost->pict_tmp;
-        img_resample(ost->img_resample_ctx, final_picture, formatted_picture);
+        img_resample(ost->img_resample_ctx, (AVPicture*)final_picture, (AVPicture*)formatted_picture);
        
         if (ost->padtop || ost->padbottom || ost->padleft || ost->padright) {
-            fill_pad_region(final_picture, enc->height, enc->width,
+            fill_pad_region((AVPicture*)final_picture, enc->height, enc->width,
                     ost->padtop, ost->padbottom, ost->padleft, ost->padright,
                     padcolor);
         }
@@ -679,10 +682,10 @@ static void do_video_out(AVFormatContext *s,
             if (!buf)
                 return;
             final_picture = &picture_format_temp;
-            avpicture_fill(final_picture, buf, enc->pix_fmt, enc->width, enc->height);
+            avpicture_fill((AVPicture*)final_picture, buf, enc->pix_fmt, enc->width, enc->height);
         
-            if (img_convert(final_picture, enc->pix_fmt, 
-                            &ost->pict_tmp, PIX_FMT_YUV420P, 
+            if (img_convert((AVPicture*)final_picture, enc->pix_fmt, 
+                            (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P, 
                             enc->width, enc->height) < 0) {
 
                 if (verbose >= 0)
@@ -729,7 +732,7 @@ static void do_video_out(AVFormatContext *s,
             }
         }
 
-        fill_pad_region(final_picture, enc->height, enc->width,
+        fill_pad_region((AVPicture*)final_picture, enc->height, enc->width,
                 ost->padtop, ost->padbottom, ost->padleft, ost->padright,
                 padcolor);
         
@@ -743,10 +746,10 @@ static void do_video_out(AVFormatContext *s,
             if (!buf)
                 return;
             final_picture = &picture_format_temp;
-            avpicture_fill(final_picture, buf, enc->pix_fmt, enc->width, enc->height);
+            avpicture_fill((AVPicture*)final_picture, buf, enc->pix_fmt, enc->width, enc->height);
 
-            if (img_convert(final_picture, enc->pix_fmt, 
-                        &ost->pict_tmp, PIX_FMT_YUV420P, 
+            if (img_convert((AVPicture*)final_picture, enc->pix_fmt, 
+                        (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P, 
                         enc->width, enc->height) < 0) {
 
                 if (verbose >= 0)
@@ -772,9 +775,8 @@ static void do_video_out(AVFormatContext *s,
 	    enc->coded_frame = old_frame;
         } else {
             AVFrame big_picture;
-            
-            avcodec_get_frame_defaults(&big_picture);
-            *(AVPicture*)&big_picture= *final_picture;
+
+            big_picture= *final_picture;
             /* better than nothing: use input picture interlaced
                settings */
             big_picture.interlaced_frame = in_picture->interlaced_frame;
@@ -791,6 +793,7 @@ static void do_video_out(AVFormatContext *s,
                 big_picture.quality = ist->st->quality;
             }else
                 big_picture.quality = ost->st->quality;
+            big_picture.pict_type = 0;
             ret = avcodec_encode_video(enc, 
                                        video_buffer, VIDEO_BUFFER_SIZE,
                                        &big_picture);
@@ -1419,15 +1422,16 @@ static int av_encode(AVFormatContext **output_files,
                     ost->padleft = frame_padleft;
                     ost->padbottom = frame_padbottom;
                     ost->padright = frame_padright;
-                    if( avpicture_alloc( &ost->pict_tmp, PIX_FMT_YUV420P,
+                    if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P,
                                 codec->width, codec->height ) )
                         goto fail;
                 } else {
                     ost->video_resample = 1;
                     ost->video_crop = 0; // cropping is handled as part of resample
-                    if( avpicture_alloc( &ost->pict_tmp, PIX_FMT_YUV420P,
+                    if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P,
                                          codec->width, codec->height ) )
                         goto fail;
+                    avcodec_get_frame_defaults(&ost->pict_tmp);
 
                     ost->img_resample_ctx = img_resample_full_init( 
                                       ost->st->codec.width, ost->st->codec.height,

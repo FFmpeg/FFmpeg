@@ -138,7 +138,6 @@ typedef struct Picture{
      */
     uint8_t *interpolated[3];
     int16_t (*motion_val_base[2])[2];
-    int8_t *ref_index[2];
     uint32_t *mb_type_base;
 #define MB_TYPE_INTRA MB_TYPE_INTRA4x4 //default mb_type if theres just one type
 #define IS_INTRA4x4(a)   ((a)&MB_TYPE_INTRA4x4)
