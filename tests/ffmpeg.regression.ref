@@ -41,6 +41,9 @@ stddev:  8.87 bytes:7602176
 4b37703d3dc03873f99603165c0fe11e *./data/a-rv10.rm
 255469fef47bee94cfb2e3385ebb736b *./data/out.yuv
 stddev: 13.42 bytes:7602176
+89ad858355f9b0a92d024c5ba6e369dd *./data/a-asv1.avi
+b3e1696d73071c8f7f0ff4e10c1677ca *./data/out.yuv
+stddev: 19.19 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2
 116d1290ba1b4eb98fdee52e423417b1 *./data/out.wav
 048b9c3444c788bac6ce5cc3a8f4db00 *./data/a-ac3.rm

@@ -45,6 +45,7 @@ else
     do_rc=y
     do_mpeg4adv=y
     do_mpeg1b=y
+    do_asv1=y
 fi
 
 
@@ -250,6 +251,16 @@ file=${outfile}rv10.rm
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an $file 
 
 # rv10 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_asv1" ] ; then
+# asv1 encoding
+file=${outfile}asv1.avi
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec asv1 $file
+
+# asv1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
