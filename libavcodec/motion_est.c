@@ -417,7 +417,7 @@ int estimate_motion(MpegEncContext * s,
 	            (cuz the drawn edge isnt large enough))*/
             xmax = s->width;
             ymax = s->height;
-	}
+        }
     } else {
         xmin = 0;
         ymin = 0;

@@ -146,7 +146,25 @@ int MPV_common_init(MpegEncContext *s)
             s->aux_picture[i] = pict + pict_start;
         }
     }
-
+    
+    if (s->encoding) {
+        /* Allocate MB type table */
+        s->mb_type = malloc(s->mb_width * s->mb_height * sizeof(char));
+        if (s->mb_type == NULL) {
+            perror("malloc");
+            goto fail;
+        }
+    
+        /* Allocate MV table */
+        /* By now we just have one MV per MB */
+        s->mv_table[0] = malloc(s->mb_width * s->mb_height * sizeof(INT16));
+        s->mv_table[1] = malloc(s->mb_width * s->mb_height * sizeof(INT16));
+        if (s->mv_table[1] == NULL || s->mv_table[0] == NULL) {
+            perror("malloc");
+            goto fail;
+        }
+    }
+    
     if (s->out_format == FMT_H263) {
         int size;
         /* MV prediction */
@@ -204,6 +222,12 @@ int MPV_common_init(MpegEncContext *s)
     s->context_initialized = 1;
     return 0;
  fail:
+    if (s->mb_type)
+        free(s->mb_type);
+    if (s->mv_table[0])
+        free(s->mv_table[0]);
+    if (s->mv_table[1])
+        free(s->mv_table[1]);
     if (s->motion_val)
         free(s->motion_val);
     if (s->dc_val[0])
@@ -232,6 +256,12 @@ void MPV_common_end(MpegEncContext *s)
 {
     int i;
 
+    if (s->mb_type)
+        free(s->mb_type);
+    if (s->mv_table[0])
+        free(s->mv_table[0]);
+    if (s->mv_table[1])
+        free(s->mv_table[1]);
     if (s->motion_val)
         free(s->motion_val);
     if (s->h263_pred) {
@@ -277,7 +307,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->full_search = motion_estimation_method;
 
     s->fixed_qscale = (avctx->flags & CODEC_FLAG_QSCALE);
-
+    
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
@@ -285,21 +315,21 @@ int MPV_encode_init(AVCodecContext *avctx)
     case CODEC_ID_MJPEG:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
-	s->mjpeg_write_tables = 1; /* write all tables */
-	s->mjpeg_vsample[0] = 2; /* set up default sampling factors */
-	s->mjpeg_vsample[1] = 1; /* the only currently supported values */
-	s->mjpeg_vsample[2] = 1; 
-	s->mjpeg_hsample[0] = 2; 
-	s->mjpeg_hsample[1] = 1; 
-	s->mjpeg_hsample[2] = 1; 
+        s->mjpeg_write_tables = 1; /* write all tables */
+        s->mjpeg_vsample[0] = 2; /* set up default sampling factors */
+        s->mjpeg_vsample[1] = 1; /* the only currently supported values */
+        s->mjpeg_vsample[2] = 1; 
+        s->mjpeg_hsample[0] = 2; 
+        s->mjpeg_hsample[1] = 1; 
+        s->mjpeg_hsample[2] = 1; 
         if (mjpeg_init(s) < 0)
             return -1;
         break;
     case CODEC_ID_H263:
-        if (h263_get_picture_format(s->width, s->height) == 7){
-	    printf("Input picture size isn't suitable for h263 codec! try h263+\n");
+        if (h263_get_picture_format(s->width, s->height) == 7) {
+            printf("Input picture size isn't suitable for h263 codec! try h263+\n");
             return -1;
-	}
+        }
         s->out_format = FMT_H263;
         break;
     case CODEC_ID_H263P:
@@ -368,6 +398,7 @@ int MPV_encode_end(AVCodecContext *avctx)
     MPV_common_end(s);
     if (s->out_format == FMT_MJPEG)
         mjpeg_close(s);
+      
     return 0;
 }
 
@@ -479,16 +510,16 @@ int MPV_encode_picture(AVCodecContext *avctx,
             h >>= 1;
         }
 
-	if(dest_wrap==src_wrap){
-	    s->new_picture[i] = pict->data[i];
-	}else {
+        if(dest_wrap==src_wrap){
+            s->new_picture[i] = pict->data[i];
+        } else {
             for(j=0;j<h;j++) {
                 memcpy(dest, src, w);
                 dest += dest_wrap;
                 src += src_wrap;
             }
             s->new_picture[i] = s->current_picture[i];
-	}
+	    }
     }
 
     encode_picture(s, s->picture_number);
@@ -944,8 +975,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 }
             }
         }
+        
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
-
             s->mb_x = mb_x;
             s->mb_y = mb_y;
 
@@ -959,7 +990,33 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             } else {
                 s->mb_intra = 1;
             }
+            /* Store MB type and MV */
+            s->mb_type[mb_y * s->mb_width + mb_x] = s->mb_intra;
+            s->mv_table[0][mb_y * s->mb_width + mb_x] = motion_x;
+            s->mv_table[1][mb_y * s->mb_width + mb_x] = motion_y;
+        }
+                    
+        for(mb_x=0; mb_x < s->mb_width; mb_x++) {
 
+            s->mb_x = mb_x;
+            s->mb_y = mb_y;
+#if 0
+            /* compute motion vector and macro block type (intra or non intra) */
+            motion_x = 0;
+            motion_y = 0;
+            if (s->pict_type == P_TYPE) {
+                s->mb_intra = estimate_motion(s, mb_x, mb_y,
+                                              &motion_x,
+                                              &motion_y);
+            } else {
+                s->mb_intra = 1;
+            }
+#endif
+
+            s->mb_intra = s->mb_type[mb_y * s->mb_width + mb_x];
+            motion_x = s->mv_table[0][mb_y * s->mb_width + mb_x];
+            motion_y = s->mv_table[1][mb_y * s->mb_width + mb_x];
+            
             /* get the pixels */
             wrap = s->linesize;
             ptr = s->new_picture[0] + (mb_y * 16 * wrap) + mb_x * 16;

@@ -88,6 +88,7 @@ typedef struct MpegEncContext {
     int h263_long_vectors; /* use horrible h263v1 long vector mode */
 
     int f_code; /* resolution */
+    INT16 *mv_table[2];    /* MV table */
     INT16 (*motion_val)[2]; /* used for MV prediction */
     int full_search;
     int mv_dir;
@@ -115,6 +116,8 @@ typedef struct MpegEncContext {
     int mb_x, mb_y;
     int mb_incr;
     int mb_intra;
+    char *mb_type;    /* Table for MB type */
+    
     /* matrix transmitted in the bitstream */
     UINT16 intra_matrix[64];
     UINT16 chroma_intra_matrix[64];
