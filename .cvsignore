@@ -6,3 +6,6 @@ ffserver
 Makefile.*
 .depend
 .libs
+ffplay
+ffplay_g
+output_example
