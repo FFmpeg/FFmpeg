@@ -119,6 +119,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_GRAY  0x2000  /* only decode/encode grayscale */
 #define CODEC_FLAG_EMU_EDGE 0x4000/* dont draw edges */
 #define CODEC_FLAG_DR1    0x8000 /* dr1 */
+#define CODEC_FLAG_NOT_TRUNCATED  0x00010000 /* input bitstream is not truncated, except before a startcode */
 /* codec capabilities */
 
 /* decoder can use draw_horiz_band callback */

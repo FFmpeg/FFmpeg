@@ -584,7 +584,7 @@ static VLC mb_ptype_vlc;
 static VLC mb_btype_vlc;
 static VLC mb_pat_vlc;
 
-void mpeg1_init_vlc(MpegEncContext *s)
+static void init_vlcs(MpegEncContext *s)
 {
     static int done = 0;
 
@@ -1260,6 +1260,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     
     s->mpeg_enc_ctx.flags= avctx->flags;
     common_init(&s->mpeg_enc_ctx);
+    init_vlcs(&s->mpeg_enc_ctx);
 
     s->header_state = 0xff;
     s->mpeg_enc_ctx_allocated = 0;
@@ -1468,7 +1469,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
 
     start_code = (start_code - 1) & 0xff;
     if (start_code >= s->mb_height){
-        fprintf(stderr, "slice below image\n");
+        fprintf(stderr, "slice below image (%d >= %d)\n", start_code, s->mb_height);
         return -1;
     }
     s->last_dc[0] = 1 << (7 + s->intra_dc_precision);
@@ -1590,7 +1591,6 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         
         if (MPV_common_init(s) < 0)
             return -1;
-        mpeg1_init_vlc(s);
         s1->mpeg_enc_ctx_allocated = 1;
     }
 
@@ -1711,7 +1711,17 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         } else {
             memcpy(s->buf_ptr, buf_start, len);
             s->buf_ptr += len;
-            
+            if(   (s2->flags&CODEC_FLAG_NOT_TRUNCATED) && (!start_code_found) 
+               && s->buf_ptr+4<s->buffer+s->buffer_size){
+                start_code_found= 1;
+                code= 0x1FF;
+                s->header_state=0xFF;
+                s->buf_ptr[0]=0;
+                s->buf_ptr[1]=0;
+                s->buf_ptr[2]=1;
+                s->buf_ptr[3]=0xFF;
+                s->buf_ptr+=4;
+            }
             if (start_code_found) {
                 /* prepare data for next start code */
                 input_size = s->buf_ptr - s->buffer;
