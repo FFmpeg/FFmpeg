@@ -110,7 +110,7 @@ static void put_swf_rect(ByteIOContext *pb,
     uint8_t buf[256];
     int nbits, mask;
 
-    init_put_bits(&p, buf, sizeof(buf), NULL, NULL);
+    init_put_bits(&p, buf, sizeof(buf));
     
     nbits = 0;
     max_nbits(&nbits, xmin);
@@ -166,7 +166,7 @@ static void put_swf_matrix(ByteIOContext *pb,
     PutBitContext p;
     uint8_t buf[256];
 
-    init_put_bits(&p, buf, sizeof(buf), NULL, NULL);
+    init_put_bits(&p, buf, sizeof(buf));
     
     put_bits(&p, 1, 1); /* a, d present */
     put_bits(&p, 5, 20); /* nb bits */
@@ -251,7 +251,7 @@ static int swf_write_header(AVFormatContext *s)
     put_byte(pb, 0); /* no line style */
     
     /* shape drawing */
-    init_put_bits(&p, buf1, sizeof(buf1), NULL, NULL);
+    init_put_bits(&p, buf1, sizeof(buf1));
     put_bits(&p, 4, 1); /* one fill bit */
     put_bits(&p, 4, 0); /* zero line bit */
     

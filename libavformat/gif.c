@@ -240,7 +240,7 @@ static int gif_image_write_image(ByteIOContext *pb,
 
     left= width * height;
 
-    init_put_bits(&p, buffer, 130, NULL, NULL);
+    init_put_bits(&p, buffer, 130);
 
 /*
  * the thing here is the bitstream is written as little packets, with a size byte before

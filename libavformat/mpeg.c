@@ -71,7 +71,7 @@ static int put_pack_header(AVFormatContext *ctx,
     MpegMuxContext *s = ctx->priv_data;
     PutBitContext pb;
     
-    init_put_bits(&pb, buf, 128, NULL, NULL);
+    init_put_bits(&pb, buf, 128);
 
     put_bits(&pb, 32, PACK_START_CODE);
     if (s->is_mpeg2) {
@@ -107,7 +107,7 @@ static int put_system_header(AVFormatContext *ctx, uint8_t *buf)
     int size, rate_bound, i, private_stream_coded, id;
     PutBitContext pb;
 
-    init_put_bits(&pb, buf, 128, NULL, NULL);
+    init_put_bits(&pb, buf, 128);
 
     put_bits(&pb, 32, SYSTEM_HEADER_START_CODE);
     put_bits(&pb, 16, 0);
