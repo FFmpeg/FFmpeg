@@ -99,3 +99,7 @@ static const UINT16 sprite_trajectory_tab[15][2] = {
  {0x0E, 4}, {0x1E, 5},  {0x3E, 6},  {0x7E, 7}, {0xFE, 8}, 
  {0x1FE, 9},{0x3FE, 10},{0x7FE, 11},{0xFFE, 12},
 };
+
+static const UINT8 mb_type_b_tab[4][2] = {
+ {1, 1}, {1, 2}, {1, 3}, {1, 4},
+};

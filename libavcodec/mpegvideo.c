@@ -430,6 +430,7 @@ void MPV_frame_start(MpegEncContext *s)
             s->current_picture[i] = s->aux_picture[i];
         }
     } else {
+        s->last_non_b_pict_type= s->pict_type;
         for(i=0;i<3;i++) {
             /* swap next and last */
             tmp = s->last_picture[i];
@@ -745,7 +746,7 @@ static inline void MPV_motion(MpegEncContext *s,
                         ref_picture, 0,
                         16);
 #endif
-        }else if(s->quarter_sample){
+        }else if(s->quarter_sample && dir==0){ //FIXME
             qpel_motion(s, dest_y, dest_cb, dest_cr, 0,
                         ref_picture, 0,
                         0, pix_op, qpix_op,
@@ -930,8 +931,9 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     else if (s->h263_pred || s->h263_aic)
         s->mbintra_table[mb_x + mb_y*s->mb_width]=1;
 
-    /* update motion predictor */
+    /* update motion predictor, not for B-frames as they need the motion_val from the last P/S-Frame */
     if (s->out_format == FMT_H263) {
+      if(s->pict_type!=B_TYPE){
         int xy, wrap, motion_x, motion_y;
         
         wrap = 2 * s->mb_width + 2;
@@ -954,6 +956,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->motion_val[xy + 1 + wrap][0] = motion_x;
             s->motion_val[xy + 1 + wrap][1] = motion_y;
         }
+      }
     }
     
     if (!s->intra_only) {

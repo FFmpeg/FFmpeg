@@ -45,6 +45,7 @@ static int h263_decode_init(AVCodecContext *avctx)
     case CODEC_ID_MPEG4:
         s->time_increment_bits = 4; /* default value for broken headers */
         s->h263_pred = 1;
+        s->has_b_frames = 1;
         break;
     case CODEC_ID_MSMPEG4:
         s->h263_msmpeg4 = 1;
@@ -219,9 +220,15 @@ static int h263_decode_frame(AVCodecContext *avctx,
 
     MPV_frame_end(s);
     
-    pict->data[0] = s->current_picture[0];
-    pict->data[1] = s->current_picture[1];
-    pict->data[2] = s->current_picture[2];
+    if(s->pict_type==B_TYPE){
+        pict->data[0] = s->current_picture[0];
+        pict->data[1] = s->current_picture[1];
+        pict->data[2] = s->current_picture[2];
+    } else {
+        pict->data[0] = s->last_picture[0];
+        pict->data[1] = s->last_picture[1];
+        pict->data[2] = s->last_picture[2];
+    }
     pict->linesize[0] = s->linesize;
     pict->linesize[1] = s->linesize / 2;
     pict->linesize[2] = s->linesize / 2;

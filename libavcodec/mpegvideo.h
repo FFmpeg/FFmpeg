@@ -84,19 +84,21 @@ typedef struct MpegEncContext {
 
     int qscale;
     int pict_type;
+    int last_non_b_pict_type; /* used for mpeg4 gmc b-frames */
     int frame_rate_index;
     /* motion compensation */
     int unrestricted_mv;
     int h263_long_vectors; /* use horrible h263v1 long vector mode */
 
     int f_code; /* resolution */
-    int b_code; /* resolution for B Frames*/
-    INT16 *mv_table[2];    /* MV table */
-    INT16 (*motion_val)[2]; /* used for MV prediction */
+    int b_code; /* backward resolution for B Frames (mpeg4) */
+    INT16 *mv_table[2];    /* MV table (1MV per MB)*/
+    INT16 (*motion_val)[2]; /* used for MV prediction (4MV per MB)*/
     int full_search;
     int mv_dir;
 #define MV_DIR_BACKWARD  1
 #define MV_DIR_FORWARD   2
+#define MV_DIRECT        4 // bidirectional mode where the difference equals the MV of the last P/S/I-Frame (mpeg4)
     int mv_type;
 #define MV_TYPE_16X16       0   /* 1 vector for the whole mb */
 #define MV_TYPE_8X8         1   /* 4 vectors (h263) */
@@ -156,7 +158,12 @@ typedef struct MpegEncContext {
     int h263_aic_dir; /* AIC direction: 0 = left, 1 = top */
     
     /* mpeg4 specific */
+    int time_increment_resolution;
     int time_increment_bits;
+    int time_increment;
+    int time_base;
+    int time;
+    int last_non_b_time[2];
     int shape;
     int vol_sprite_usage;
     int sprite_width;
