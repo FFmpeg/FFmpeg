@@ -26,6 +26,7 @@
 #undef PAVGB
 
 //#undef HAVE_MMX2
+//#define HAVE_3DNOW
 //#undef HAVE_MMX
 //#undef ARCH_X86
 #define DITHER1XBPP
@@ -787,7 +788,7 @@ cpuCaps= gCpuCaps;
 	if(gCpuCaps.hasMMX2)
 		swScale= swScale_MMX2;
 	else if(gCpuCaps.has3DNow)
-		swScale= swScale_3DNOW;
+		swScale= swScale_3DNow;
 	else if(gCpuCaps.hasMMX)
 		swScale= swScale_MMX;
 	else
@@ -802,7 +803,7 @@ cpuCaps= gCpuCaps;
 	swScale= swScale_MMX2;
 	cpuCaps.has3DNow = 0;
 #elif defined (HAVE_3DNOW)
-	swScale= swScale_3DNOW;
+	swScale= swScale_3DNow;
 	cpuCaps.hasMMX2 = 0;
 #elif defined (HAVE_MMX)
 	swScale= swScale_MMX;
@@ -1122,3 +1123,4 @@ double *sum(double *a, int aLength, double *b, int bLength){
 	for(i=0; i<aLength; i++) coeff[i]+= a[i];
 }
 */
+
