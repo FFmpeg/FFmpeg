@@ -448,6 +448,8 @@ static inline void yuv2yuv(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uin
 	int uvalpha1=uvalpha^4095;
 	int i;
 
+	asm volatile ("\n\t"::: "memory");
+
 	for(i=0;i<dstw;i++)
 	{
 		((uint8_t*)dest)[0] = (buf0[i]*yalpha1+buf1[i]*yalpha)>>19;
@@ -625,6 +627,8 @@ FULL_YSCALEYUV2RGB
 			);
 		}
 #else
+		asm volatile ("\n\t"::: "memory");
+
 		if(dstbpp==32 || dstbpp==24)
 		{
 			for(i=0;i<dstw;i++){
@@ -733,6 +737,8 @@ FULL_YSCALEYUV2RGB
 		}
 #else
 //FIXME unroll C loop and dont recalculate UV
+		asm volatile ("\n\t"::: "memory");
+
 		if(dstbpp==32 || dstbpp==24)
 		{
 			for(i=0;i<dstw;i++){
@@ -850,6 +856,8 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 		}
 #else
 //FIXME unroll C loop and dont recalculate UV
+		asm volatile ("\n\t"::: "memory");
+
 		if(dstbpp==32 || dstbpp==24)
 		{
 			for(i=0;i<dstw;i++){
