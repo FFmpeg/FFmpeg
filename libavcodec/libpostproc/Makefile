@@ -43,7 +43,9 @@ $(SPPLIB): $(SPPOBJS)
 endif
 
 $(PPLIB): $(PPOBJS)
-	$(AR) r $(PPLIB) $(PPOBJS)
+	rm -f $@
+	$(AR) rc $@ $(PPOBJS)
+	$(RANLIB) $@
 
 install: all
 ifeq ($(SHARED_PP),yes)
