@@ -24,7 +24,6 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-#include <sys/poll.h>
 #include <termios.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -466,6 +465,8 @@ int av_grab(AVFormatContext *s)
 
             if (pix_fmt != PIX_FMT_YUV420P) {
                 picture = &picture_tmp1;
+                avpicture_fill(picture, picture_420p, 
+                               PIX_FMT_YUV420P, width, height);
                 img_convert(picture, PIX_FMT_YUV420P,
                             picture2, pix_fmt, 
                             width, height);
@@ -1762,6 +1763,21 @@ int find_codec_parameters(AVFormatContext *ic)
     return ret;
 }
 
+int filename_number_test(const char *filename)
+{
+    char buf[1024];
+
+    if (get_frame_filename(buf, sizeof(buf), filename, 1) < 0) {
+        fprintf(stderr, "%s: Incorrect image filename syntax.\n"
+                "Use '%%d' to specify the image number:\n"
+                "  for img1.jpg, img2.jpg, ..., use 'img%%d.jpg';\n"
+                "  for img001.jpg, img002.jpg, ..., use 'img%%03d.jpg'.\n", 
+                filename);
+        return -1;
+    } else {
+        return 0;
+    }
+}
 
 void opt_input_file(const char *filename)
 {
@@ -1824,6 +1840,12 @@ void opt_input_file(const char *filename)
         ap->width = frame_width;
     if (!ap->height)
         ap->height = frame_height;
+
+    /* check filename in case of an image number is expected */
+    if (ic->format->flags & AVFMT_NEEDNUMBER) {
+        if (filename_number_test(ic->filename) < 0)
+            exit(1);
+    }
     
     err = ic->format->read_header(ic, ap);
     if (err < 0) {
@@ -1862,11 +1884,36 @@ void opt_input_file(const char *filename)
     file_format = NULL;
 }
 
+void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
+{
+    int has_video, has_audio, i, j;
+    AVFormatContext *ic;
+
+    has_video = 0;
+    has_audio = 0;
+    for(j=0;j<nb_input_files;j++) {
+        ic = input_files[j];
+        for(i=0;i<ic->nb_streams;i++) {
+            AVCodecContext *enc = &ic->streams[i]->codec;
+            switch(enc->codec_type) {
+            case CODEC_TYPE_AUDIO:
+                has_audio = 1;
+                break;
+            case CODEC_TYPE_VIDEO:
+                has_video = 1;
+                break;
+            }
+        }
+    }
+    *has_video_ptr = has_video;
+    *has_audio_ptr = has_audio;
+}
+
 void opt_output_file(const char *filename)
 {
     AVStream *st;
     AVFormatContext *oc;
-    int use_video, use_audio, nb_streams;
+    int use_video, use_audio, nb_streams, input_has_video, input_has_audio;
     int codec_id;
 
     if (!strcmp(filename, "-"))
@@ -1893,7 +1940,15 @@ void opt_output_file(const char *filename)
     } else {
         use_video = file_format->video_codec != CODEC_ID_NONE;
         use_audio = file_format->audio_codec != CODEC_ID_NONE;
-        
+
+        /* disable if no corresponding type found */
+        check_audio_video_inputs(&input_has_video, &input_has_audio);
+        if (!input_has_video)
+            use_video = 0;
+        if (!input_has_audio)
+            use_audio = 0;
+
+        /* manual disable */
         if (audio_disable) {
             use_audio = 0;
         }
@@ -1967,7 +2022,7 @@ void opt_output_file(const char *filename)
         oc->nb_streams = nb_streams;
 
         if (!nb_streams) {
-            fprintf(stderr, "No audio or video selected\n");
+            fprintf(stderr, "No audio or video streams available\n");
             exit(1);
         }
 
@@ -1987,6 +2042,13 @@ void opt_output_file(const char *filename)
     nb_output_files++;
 
     strcpy(oc->filename, filename);
+
+    /* check filename in case of an image number is expected */
+    if (oc->format->flags & AVFMT_NEEDNUMBER) {
+        if (filename_number_test(oc->filename) < 0)
+            exit(1);
+    }
+
     if (!(oc->format->flags & AVFMT_NOFILE)) {
         /* test if it already exists to avoid loosing precious files */
         if (!file_overwrite && 
