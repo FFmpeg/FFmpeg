@@ -53,7 +53,7 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
                  raten, rated,
                  inter,
                  aspectn, aspectd,
-		 (st->codec.pix_fmt == PIX_FMT_YUV411P) ? " XYSCSS=411" : "");
+		 (st->codec.pix_fmt == PIX_FMT_YUV411P) ? " C411 XYSCSS=411" : " C420mpeg2 XYSCSS=420MPEG2");
 		 
     return n;
 }
