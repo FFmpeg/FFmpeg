@@ -1,5 +1,5 @@
 /*
- * RTSP client
+ * RTSP/SDP client
  * Copyright (c) 2002 Fabrice Bellard.
  *
  * This library is free software; you can redistribute it and/or
@@ -21,6 +21,7 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <ctype.h>
 #ifndef __BEOS__
 # include <arpa/inet.h>
 #else
@@ -41,7 +42,12 @@ typedef struct RTSPState {
 typedef struct RTSPStream {
     AVFormatContext *ic;
     int interleaved_min, interleaved_max;  /* interleave ids, if TCP transport */
-    char control_url[1024]; /* url for this stream */
+    char control_url[1024]; /* url for this stream (from SDP) */
+
+    int sdp_port; /* port (from SDP content - not used in RTSP) */
+    struct in_addr sdp_ip; /* IP address  (from SDP content - not used in RTSP) */
+    int sdp_ttl;  /* IP TTL (from SDP content - not used in RTSP) */
+    int sdp_payload_type; /* payload type - only used in SDP */
 } RTSPStream;
 
 /* suppress this hack */
@@ -115,21 +121,139 @@ static void get_word(char *buf, int buf_size, const char **pp)
     *pp = p;
 }
 
-static void sdp_parse_line(AVFormatContext *s, 
+/* parse the rtpmap description: <codec_name>/<clock_rate>[/<other
+   params>] */
+static int sdp_parse_rtpmap(AVCodecContext *codec, const char *p)
+{
+    char buf[256];
+
+    /* codec name */
+    get_word_sep(buf, sizeof(buf), "/", &p);
+    if (!strcmp(buf, "MP4V-ES")) {
+        codec->codec_id = CODEC_ID_MPEG4;
+        return 0;
+    } else {
+        return -1;
+    }
+}
+
+/* return the length and optionnaly the data */
+static int hex_to_data(uint8_t *data, const char *p)
+{
+    int c, len, v;
+
+    len = 0;
+    v = 1;
+    for(;;) {
+        skip_spaces(&p);
+        if (p == '\0')
+            break;
+        c = toupper((unsigned char)*p++);
+        if (c >= '0' && c <= '9')
+            c = c - '0';
+        else if (c >= 'A' && c <= 'F')
+            c = c - 'A' + 10;
+        else
+            break;
+        v = (v << 4) | c;
+        if (v & 0x100) {
+            if (data)
+                data[len] = v;
+            len++;
+            v = 1;
+        }
+    }
+    return len;
+}
+
+static void sdp_parse_fmtp(AVCodecContext *codec, const char *p)
+{
+    char attr[256];
+    char value[4096];
+    int len;
+
+    /* loop on each attribute */
+    for(;;) {
+        skip_spaces(&p);
+        if (*p == '\0')
+            break;
+        get_word_sep(attr, sizeof(attr), "=", &p);
+        if (*p == '=') 
+            p++;
+        get_word_sep(value, sizeof(value), ";", &p);
+        if (*p == ';')
+            p++;
+        /* handle MPEG4 video */
+        switch(codec->codec_id) {
+        case CODEC_ID_MPEG4:
+            if (!strcmp(attr, "config")) {
+                /* decode the hexa encoded parameter */
+                len = hex_to_data(NULL, value);
+                codec->extradata = av_mallocz(len);
+                if (!codec->extradata)
+                    goto fail;
+                codec->extradata_size = len;
+                hex_to_data(codec->extradata, value);
+            }
+            break;
+        default:
+            /* ignore data for other codecs */
+            break;
+        }
+    fail: ;
+        //        printf("'%s' = '%s'\n", attr, value);
+    }
+}
+
+typedef struct SDPParseState {
+    /* SDP only */
+    struct in_addr default_ip;
+    int default_ttl;
+} SDPParseState;
+
+static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                            int letter, const char *buf)
 {
     char buf1[64], st_type[64];
     const char *p;
-    int codec_type, payload_type;
+    int codec_type, payload_type, i;
     AVStream *st;
     RTSPStream *rtsp_st;
-    
+    struct in_addr sdp_ip;
+    int ttl;
+
 #ifdef DEBUG
     printf("sdp: %c='%s'\n", letter, buf);
 #endif
 
     p = buf;
     switch(letter) {
+    case 'c':
+        get_word(buf1, sizeof(buf1), &p);
+        if (strcmp(buf1, "IN") != 0)
+            return;
+        get_word(buf1, sizeof(buf1), &p);
+        if (strcmp(buf1, "IP4") != 0)
+            return;
+        get_word_sep(buf1, sizeof(buf1), "/", &p);
+        if (inet_aton(buf1, &sdp_ip) == 0)
+            return;
+        ttl = 16;
+        if (*p == '/') {
+            p++;
+            get_word_sep(buf1, sizeof(buf1), "/", &p);
+            ttl = atoi(buf1);
+        }
+        if (s->nb_streams == 0) {
+            s1->default_ip = sdp_ip;
+            s1->default_ttl = ttl;
+        } else {
+            st = s->streams[s->nb_streams - 1];
+            rtsp_st = st->priv_data;
+            rtsp_st->sdp_ip = sdp_ip;
+            rtsp_st->sdp_ttl = ttl;
+        }
+        break;
     case 's':
         pstrcpy(s->title, sizeof(s->title), p);
         break;
@@ -149,12 +273,6 @@ static void sdp_parse_line(AVFormatContext *s,
         } else {
             return;
         }
-        get_word(buf1, sizeof(buf1), &p); /* port */
-        get_word(buf1, sizeof(buf1), &p); /* protocol */
-        /* XXX: handle list of formats */
-        get_word(buf1, sizeof(buf1), &p); /* format list */
-        payload_type = atoi(buf1);
-
         rtsp_st = av_mallocz(sizeof(RTSPStream));
         if (!rtsp_st)
             return;
@@ -162,10 +280,27 @@ static void sdp_parse_line(AVFormatContext *s,
         if (!st) 
             return;
         st->priv_data = rtsp_st;
+
+        rtsp_st->sdp_ip = s1->default_ip;
+        rtsp_st->sdp_ttl = s1->default_ttl;
+
+        st->codec.codec_type = codec_type;
+
+        get_word(buf1, sizeof(buf1), &p); /* port */
+        rtsp_st->sdp_port = atoi(buf1);
+
+        get_word(buf1, sizeof(buf1), &p); /* protocol (ignored) */
+        
+        /* XXX: handle list of formats */
+        get_word(buf1, sizeof(buf1), &p); /* format list */
+        rtsp_st->sdp_payload_type = atoi(buf1);
+        if (rtsp_st->sdp_payload_type < 96) {
+            /* if standard payload type, we can find the codec right now */
+            rtp_get_codec_info(&st->codec, rtsp_st->sdp_payload_type);
+        }
+
         /* put a default control url */
         pstrcpy(rtsp_st->control_url, sizeof(rtsp_st->control_url), s->filename);
-        st->codec.codec_type = codec_type;
-        rtp_get_codec_info(&st->codec, payload_type);
         break;
     case 'a':
         if (strstart(p, "control:", &p) && s->nb_streams > 0) {
@@ -183,6 +318,28 @@ static void sdp_parse_line(AVFormatContext *s,
             } else {
                 pstrcpy(rtsp_st->control_url, sizeof(rtsp_st->control_url), p);
             }
+        } else if (strstart(p, "rtpmap:", &p)) {
+            /* NOTE: rtpmap is only supported AFTER the 'm=' tag */
+            get_word(buf1, sizeof(buf1), &p); 
+            payload_type = atoi(buf1);
+            for(i = 0; i < s->nb_streams;i++) {
+                st = s->streams[i];
+                rtsp_st = st->priv_data;
+                if (rtsp_st->sdp_payload_type == payload_type) {
+                    sdp_parse_rtpmap(&st->codec, p);
+                }
+            }
+        } else if (strstart(p, "fmtp:", &p)) {
+            /* NOTE: fmtp is only supported AFTER the 'a=rtpmap:xxx' tag */
+            get_word(buf1, sizeof(buf1), &p); 
+            payload_type = atoi(buf1);
+            for(i = 0; i < s->nb_streams;i++) {
+                st = s->streams[i];
+                rtsp_st = st->priv_data;
+                if (rtsp_st->sdp_payload_type == payload_type) {
+                    sdp_parse_fmtp(&st->codec, p);
+                }
+            }
         }
         break;
     }
@@ -193,7 +350,9 @@ int sdp_parse(AVFormatContext *s, const char *content)
     const char *p;
     int letter;
     char buf[1024], *q;
-
+    SDPParseState sdp_parse_state, *s1 = &sdp_parse_state;
+    
+    memset(s1, 0, sizeof(SDPParseState));
     p = content;
     for(;;) {
         skip_spaces(&p);
@@ -212,7 +371,7 @@ int sdp_parse(AVFormatContext *s, const char *content)
             p++;
         }
         *q = '\0';
-        sdp_parse_line(s, letter, buf);
+        sdp_parse_line(s, s1, letter, buf);
     next_line:
         while (*p != '\n' && *p != '\0')
             p++;
@@ -825,6 +984,103 @@ static AVInputFormat rtsp_demux = {
     .flags = AVFMT_NOFILE,
 };
 
+
+/* XXX: add mime type support */
+static int sdp_probe(AVProbeData *p)
+{
+    if (match_ext(p->filename, "sdp"))
+        return AVPROBE_SCORE_MAX;
+    return 0;
+}
+
+#define SDP_MAX_SIZE 8192
+
+static int sdp_read_header(AVFormatContext *s,
+                           AVFormatParameters *ap)
+{
+    AVStream *st;
+    RTSPStream *rtsp_st;
+    int size, i, err;
+    char *content;
+    char url[1024];
+
+    /* read the whole sdp file */
+    /* XXX: better loading */
+    content = av_malloc(SDP_MAX_SIZE);
+    size = get_buffer(&s->pb, content, SDP_MAX_SIZE - 1);
+    if (size <= 0) {
+        av_free(content);
+        return AVERROR_INVALIDDATA;
+    }
+    content[size] ='\0';
+
+    sdp_parse(s, content);
+    av_free(content);
+
+    /* open each RTP stream */
+    for(i=0;i<s->nb_streams;i++) {
+        st = s->streams[i];
+        rtsp_st = st->priv_data;
+        
+        snprintf(url, sizeof(url), "rtp://%s:%d?multicast=1&ttl=%d", 
+                 inet_ntoa(rtsp_st->sdp_ip), 
+                 rtsp_st->sdp_port,
+                 rtsp_st->sdp_ttl);
+        if (av_open_input_file(&rtsp_st->ic, url, &rtp_demux, 0, NULL) < 0) {
+            err = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+    }
+    return 0;
+ fail:
+    for(i=0;i<s->nb_streams;i++) {
+        st = s->streams[i];
+        rtsp_st = st->priv_data;
+        if (rtsp_st) {
+            if (rtsp_st->ic)
+                av_close_input_file(rtsp_st->ic);
+        }
+        av_free(rtsp_st);
+    }
+    return err;
+}
+
+static int sdp_read_packet(AVFormatContext *s,
+                            AVPacket *pkt)
+{
+    return udp_read_packet(s, pkt);
+}
+
+static int sdp_read_close(AVFormatContext *s)
+{
+    AVStream *st;
+    RTSPStream *rtsp_st;
+    int i;
+
+    for(i=0;i<s->nb_streams;i++) {
+        st = s->streams[i];
+        rtsp_st = st->priv_data;
+        if (rtsp_st) {
+            if (rtsp_st->ic)
+                av_close_input_file(rtsp_st->ic);
+        }
+        av_free(rtsp_st);
+    }
+    return 0;
+}
+
+
+static AVInputFormat sdp_demux = {
+    "sdp",
+    "SDP",
+    sizeof(RTSPState),
+    sdp_probe,
+    sdp_read_header,
+    sdp_read_packet,
+    sdp_read_close,
+};
+
+
 /* dummy redirector format (used directly in av_open_input_file now) */
 static int redir_probe(AVProbeData *pd)
 {
@@ -892,5 +1148,6 @@ int rtsp_init(void)
 {
     av_register_input_format(&rtsp_demux);
     av_register_input_format(&redir_demux);
+    av_register_input_format(&sdp_demux);
     return 0;
 }
