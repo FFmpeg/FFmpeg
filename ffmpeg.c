@@ -3684,12 +3684,16 @@ void opt_intra_matrix(const char *arg)
 static void opt_target(const char *arg)
 {
     int norm = -1;
+    static const char const *frame_rates[] = {"25", "30000/1001", "24000/1001"};
 
     if(!strncmp(arg, "pal-", 4)) {
         norm = 0;
         arg += 4;
     } else if(!strncmp(arg, "ntsc-", 5)) {
         norm = 1;
+        arg += 5;
+    } else if(!strncmp(arg, "film-", 5)) {
+        norm = 2;
         arg += 5;
     } else {
         int fr;
@@ -3727,8 +3731,8 @@ static void opt_target(const char *arg)
     }
 
     if(norm < 0) {
-        fprintf(stderr, "Could not determine norm (PAL/NTSC) for target.\n");
-        fprintf(stderr, "Please prefix target with \"pal-\" or \"ntsc-\",\n");
+        fprintf(stderr, "Could not determine norm (PAL/NTSC/NTSC-Film) for target.\n");
+        fprintf(stderr, "Please prefix target with \"pal-\", \"ntsc-\" or \"film-\",\n");
         fprintf(stderr, "or set a framerate with \"-r xxx\".\n");
         exit(1);
     }
@@ -3740,6 +3744,7 @@ static void opt_target(const char *arg)
         opt_format("vcd");
 
         opt_frame_size(norm ? "352x240" : "352x288");
+        opt_frame_rate(frame_rates[norm]);
 
         video_bit_rate = 1150000;
         video_rc_max_rate = 1150000;
@@ -3765,6 +3770,7 @@ static void opt_target(const char *arg)
         opt_format("svcd");
 
         opt_frame_size(norm ? "480x480" : "480x576");
+        opt_frame_rate(frame_rates[norm]);
         opt_gop_size(norm ? "18" : "15");
 
         video_bit_rate = 2040000;
@@ -3785,6 +3791,7 @@ static void opt_target(const char *arg)
         opt_format("dvd");
 
         opt_frame_size(norm ? "720x480" : "720x576");
+        opt_frame_rate(frame_rates[norm]);
         opt_gop_size(norm ? "18" : "15");
 
         video_bit_rate = 6000000;
