@@ -1482,7 +1482,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         int i;
         for(i=0; i<s->nb_streams; i++){
             if(startcode == s->streams[i]->id) {
-                av_add_index_entry(s->streams[i], *ppos, dts, 0, 0 /* FIXME keyframe? */);
+                av_add_index_entry(s->streams[i], *ppos, dts, 0, AVINDEX_KEYFRAME /* FIXME keyframe? */);
             }
         }
     }

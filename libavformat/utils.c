@@ -1024,7 +1024,7 @@ int av_add_index_entry(AVStream *st,
 
     st->index_entries= entries;
 
-    index= av_index_search_timestamp(st, timestamp, 0);
+    index= av_index_search_timestamp(st, timestamp, AVSEEK_FLAG_ANY);
 
     if(index<0){
         index= st->nb_index_entries++;
@@ -1090,13 +1090,14 @@ static int is_raw_stream(AVFormatContext *s)
 
 /**
  * gets the index for a specific timestamp.
- * @param backward if non zero then the returned index will correspond to 
+ * @param flags if AVSEEK_FLAG_BACKWARD then the returned index will correspond to 
  *                 the timestamp which is <= the requested one, if backward is 0 
  *                 then it will be >=
+ *              if AVSEEK_FLAG_ANY seek to any frame, only keyframes otherwise
  * @return < 0 if no such timestamp could be found
  */
 int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp,
-                              int backward)
+                              int flags)
 {
     AVIndexEntry *entries= st->index_entries;
     int nb_entries= st->nb_index_entries;
@@ -1114,7 +1115,13 @@ int av_index_search_timestamp(AVStream *st, int64_t wanted_timestamp,
         if(timestamp <= wanted_timestamp)
             a = m;
     }
-    m= backward ? a : b;
+    m= (flags & AVSEEK_FLAG_BACKWARD) ? a : b;
+    
+    if(!(flags & AVSEEK_FLAG_ANY)){
+        while(m>=0 && m<nb_entries && !(entries[m].flags & AVINDEX_KEYFRAME)){
+            m += (flags & AVSEEK_FLAG_BACKWARD) ? -1 : 1;
+        }
+    }
 
     if(m == nb_entries) 
         return -1;
@@ -1152,7 +1159,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     if(st->index_entries){
         AVIndexEntry *e;
 
-        index= av_index_search_timestamp(st, target_ts, 1);
+        index= av_index_search_timestamp(st, target_ts, flags | AVSEEK_FLAG_BACKWARD); //FIXME whole func must be checked for non keyframe entries in index case, especially read_timestamp()
         index= FFMAX(index, 0);
         e= &st->index_entries[index];
 
@@ -1166,8 +1173,10 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         }else{
             assert(index==0);
         }
-        index++;
-        if(index < st->nb_index_entries){
+        
+        index= av_index_search_timestamp(st, target_ts, flags & ~AVSEEK_FLAG_BACKWARD); 
+        assert(index < st->nb_index_entries);
+        if(index >= 0){
             e= &st->index_entries[index];
             assert(e->timestamp >= target_ts);
             pos_max= e->pos;
@@ -1316,7 +1325,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
     }
 
     st = s->streams[stream_index];
-    index = av_index_search_timestamp(st, timestamp, flags & AVSEEK_FLAG_BACKWARD);
+    index = av_index_search_timestamp(st, timestamp, flags);
     if (index < 0)
         return -1;
 
