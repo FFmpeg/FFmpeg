@@ -121,6 +121,8 @@ for example:
 
 
 Links:
+http://www.aggregate.org/MAGIC/
+
 X86 specific:
 http://developer.intel.com/design/pentium4/manuals/248966.htm
 
@@ -134,4 +136,8 @@ AMD Athlon Processor x86 Code Optimization Guide:
 http://www.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/22007.pdf
 
 GCC asm links:
-FIXME
+official doc but quite ugly
+http://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html
+
+a bit old (note "+" is valid for input-output, even though the next says its not)
+http://www.cs.virginia.edu/~clc5q/gcc-inline-asm.pdf
