@@ -545,9 +545,10 @@ static void adaptive_quantization(MpegEncContext *s, double q){
 
     /* handle qmin/qmax cliping */
     if(s->flags&CODEC_FLAG_NORMALIZE_AQP){
+        float factor= bits_sum/cplx_sum;
         for(i=0; i<s->mb_num; i++){
             float newq= q*cplx_tab[i]/bits_tab[i];
-            newq*= bits_sum/cplx_sum;
+            newq*= factor;
 
             if     (newq > qmax){
                 bits_sum -= bits_tab[i];
@@ -558,6 +559,8 @@ static void adaptive_quantization(MpegEncContext *s, double q){
                 cplx_sum -= cplx_tab[i]*q/qmin;
             }
         }
+        if(bits_sum < 0.001) bits_sum= 0.001;
+        if(cplx_sum < 0.001) cplx_sum= 0.001;
     }
    
     for(i=0; i<s->mb_num; i++){
