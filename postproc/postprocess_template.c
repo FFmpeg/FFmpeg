@@ -25,9 +25,10 @@ doVertDefFilter		Ec	Ec	Ec
 isHorizDC		Ec	Ec
 isHorizMinMaxOk		a	E
 doHorizLowPass		E		e	e
-doHorizDefFilter	E	E	E
+doHorizDefFilter	Ec	Ec	Ec
 deRing
 Vertical RKAlgo1	E		a	a
+Horizontal RKAlgo1			a	a
 Vertical X1		a		E	E
 Horizontal X1		a		E	E
 LinIpolDeinterlace	e		E	E*
@@ -60,10 +61,11 @@ compare the quality & speed of all filters
 split this huge file
 fix warnings (unused vars, ...)
 noise reduction filters
+border remover
 ...
 
 Notes:
-
+fixed difference with -vo md5 between doVertDefFilter() C and MMX / MMX2 versions
 */
 
 //Changelog: use the CVS log
@@ -163,6 +165,16 @@ static char *replaceTable[]=
 	NULL //End Marker
 };
 
+static inline void unusedVariableWarningFixer()
+{
+if(
+ packedYOffset + packedYScale + w05 + w20 + w1400 + bm00000001 + bm00010000
+ + bm00001000 + bm10000000 + bm10000001 + bm11000011 + bm00000011 + bm11111110
+ + bm11000000 + bm00011000 + bm00110011 + bm11001100 + b00 + b01 + b02 + b0F
+ + bFF + b20 + b80 + b7E + b7C + b3F + temp0 + temp1 + temp2 + temp3 + temp4
+ + temp5 + pQPb== 0) b00=0;
+}
+
 #ifdef TIMING
 static inline long long rdtsc()
 {
@@ -211,7 +223,9 @@ static inline void prefetcht2(void *p)
  */
 static inline int isVertDC(uint8_t src[], int stride){
 	int numEq= 0;
+#ifndef HAVE_MMX
 	int y;
+#endif
 	src+= stride*4; // src points to begin of the 8x8 Block
 #ifdef HAVE_MMX
 asm volatile(
@@ -267,11 +281,17 @@ asm volatile(
 		"movq %%mm0, %%mm1				\n\t"
 		"psrlw $8, %%mm0				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
+#ifdef HAVE_MMX2
+		"pshufw $0xF9, %%mm0, %%mm1			\n\t"
+		"paddb %%mm1, %%mm0				\n\t"
+		"pshufw $0xFE, %%mm0, %%mm1			\n\t"
+#else
 		"movq %%mm0, %%mm1				\n\t"
 		"psrlq $16, %%mm0				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 		"movq %%mm0, %%mm1				\n\t"
 		"psrlq $32, %%mm0				\n\t"
+#endif
 		"paddb %%mm1, %%mm0				\n\t"
 		"movd %%mm0, %0					\n\t"
 		: "=r" (numEq)
@@ -527,13 +547,13 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 		sums[8] = src[l8] + last;
 
 		src[l1]= ((sums[0]<<2) + ((first + sums[2])<<1) + sums[4] + 8)>>4;
-		src[l2]= ((src[l2]<<2) + (first + sums[0] + sums[3]<<1) + sums[5] + 8)>>4;
-		src[l3]= ((src[l3]<<2) + (first + sums[1] + sums[4]<<1) + sums[6] + 8)>>4;
-		src[l4]= ((src[l4]<<2) + (sums[2] + sums[5]<<1) + sums[0] + sums[7] + 8)>>4;
-		src[l5]= ((src[l5]<<2) + (sums[3] + sums[6]<<1) + sums[1] + sums[8] + 8)>>4;
-		src[l6]= ((src[l6]<<2) + (last + sums[7] + sums[4]<<1) + sums[2] + 8)>>4;
-		src[l7]= ((last + src[l7]<<2) + (src[l8] + sums[5]<<1) + sums[3] + 8)>>4;
-		src[l8]= ((sums[8]<<2) + (last + sums[6]<<1) + sums[4] + 8)>>4;
+		src[l2]= ((src[l2]<<2) + ((first + sums[0] + sums[3])<<1) + sums[5] + 8)>>4;
+		src[l3]= ((src[l3]<<2) + ((first + sums[1] + sums[4])<<1) + sums[6] + 8)>>4;
+		src[l4]= ((src[l4]<<2) + ((sums[2] + sums[5])<<1) + sums[0] + sums[7] + 8)>>4;
+		src[l5]= ((src[l5]<<2) + ((sums[3] + sums[6])<<1) + sums[1] + sums[8] + 8)>>4;
+		src[l6]= ((src[l6]<<2) + ((last + sums[7] + sums[4])<<1) + sums[2] + 8)>>4;
+		src[l7]= (((last + src[l7])<<2) + ((src[l8] + sums[5])<<1) + sums[3] + 8)>>4;
+		src[l8]= ((sums[8]<<2) + ((last + sums[6])<<1) + sums[4] + 8)>>4;
 
 		src++;
 	}
@@ -623,9 +643,9 @@ static inline void vertRK1Filter(uint8_t *src, int stride, int QP)
 	const int l4= stride + l3;
 	const int l5= stride + l4;
 	const int l6= stride + l5;
-	const int l7= stride + l6;
-	const int l8= stride + l7;
-	const int l9= stride + l8;
+//	const int l7= stride + l6;
+//	const int l8= stride + l7;
+//	const int l9= stride + l8;
 	int x;
 	src+= stride*3;
 	for(x=0; x<BLOCK_SIZE; x++)
@@ -749,8 +769,8 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 	const int l5= stride + l4;
 	const int l6= stride + l5;
 	const int l7= stride + l6;
-	const int l8= stride + l7;
-	const int l9= stride + l8;
+//	const int l8= stride + l7;
+//	const int l9= stride + l8;
 	int x;
 
 	src+= stride*3;
@@ -1203,17 +1223,14 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 		"pxor %%mm2, %%mm2				\n\t"
 		"pxor %%mm3, %%mm3				\n\t"
 
-		// FIXME rounding error
-		"psraw $1, %%mm0				\n\t" // (L3 - L4)/2
-		"psraw $1, %%mm1				\n\t" // (H3 - H4)/2
 		"pcmpgtw %%mm0, %%mm2				\n\t" // sign (L3-L4)
 		"pcmpgtw %%mm1, %%mm3				\n\t" // sign (H3-H4)
 		"pxor %%mm2, %%mm0				\n\t"
 		"pxor %%mm3, %%mm1				\n\t"
 		"psubw %%mm2, %%mm0				\n\t" // |L3-L4|
 		"psubw %%mm3, %%mm1				\n\t" // |H3-H4|
-//		"psrlw $1, %%mm0				\n\t" // |L3 - L4|/2
-//		"psrlw $1, %%mm1				\n\t" // |H3 - H4|/2
+		"psrlw $1, %%mm0				\n\t" // |L3 - L4|/2
+		"psrlw $1, %%mm1				\n\t" // |H3 - H4|/2
 
 		"pxor %%mm6, %%mm2				\n\t"
 		"pxor %%mm7, %%mm3				\n\t"
@@ -1774,13 +1791,13 @@ Implemented	Exact 7-Tap
 		sums[8] = dst[7] + last;
 
 		dst[0]= ((sums[0]<<2) + ((first + sums[2])<<1) + sums[4] + 8)>>4;
-		dst[1]= ((dst[1]<<2) + (first + sums[0] + sums[3]<<1) + sums[5] + 8)>>4;
-		dst[2]= ((dst[2]<<2) + (first + sums[1] + sums[4]<<1) + sums[6] + 8)>>4;
-		dst[3]= ((dst[3]<<2) + (sums[2] + sums[5]<<1) + sums[0] + sums[7] + 8)>>4;
-		dst[4]= ((dst[4]<<2) + (sums[3] + sums[6]<<1) + sums[1] + sums[8] + 8)>>4;
-		dst[5]= ((dst[5]<<2) + (last + sums[7] + sums[4]<<1) + sums[2] + 8)>>4;
-		dst[6]= ((last + dst[6]<<2) + (dst[7] + sums[5]<<1) + sums[3] + 8)>>4;
-		dst[7]= ((sums[8]<<2) + (last + sums[6]<<1) + sums[4] + 8)>>4;
+		dst[1]= ((dst[1]<<2) + ((first + sums[0] + sums[3])<<1) + sums[5] + 8)>>4;
+		dst[2]= ((dst[2]<<2) + ((first + sums[1] + sums[4])<<1) + sums[6] + 8)>>4;
+		dst[3]= ((dst[3]<<2) + ((sums[2] + sums[5])<<1) + sums[0] + sums[7] + 8)>>4;
+		dst[4]= ((dst[4]<<2) + ((sums[3] + sums[6])<<1) + sums[1] + sums[8] + 8)>>4;
+		dst[5]= ((dst[5]<<2) + ((last + sums[7] + sums[4])<<1) + sums[2] + 8)>>4;
+		dst[6]= (((last + dst[6])<<2) + ((dst[7] + sums[5])<<1) + sums[3] + 8)>>4;
+		dst[7]= ((sums[8]<<2) + ((last + sums[6])<<1) + sums[4] + 8)>>4;
 
 		dst+= stride;
 	}
@@ -1818,25 +1835,46 @@ FIND_MIN_MAX(%0, %1, 8)
 FIND_MIN_MAX(%%ebx, %1, 2)
 
 		"movq %%mm6, %%mm4				\n\t"
-		"psrlq $32, %%mm6				\n\t"
-		"pminub %%mm4, %%mm6				\n\t"
+		"psrlq $8, %%mm6				\n\t"
+		"pminub %%mm4, %%mm6				\n\t" // min of pixels
+#ifdef HAVE_MMX2
+		"pshufw $0xF9, %%mm6, %%mm4			\n\t"
+		"pminub %%mm4, %%mm6				\n\t" // min of pixels
+		"pshufw $0xFE, %%mm6, %%mm4			\n\t"
+#else
 		"movq %%mm6, %%mm4				\n\t"
 		"psrlq $16, %%mm6				\n\t"
 		"pminub %%mm4, %%mm6				\n\t"
 		"movq %%mm6, %%mm4				\n\t"
-		"psrlq $8, %%mm6				\n\t"
-		"pminub %%mm4, %%mm6				\n\t" // min of pixels
+		"psrlq $32, %%mm6				\n\t"
+#endif
+		"pminub %%mm4, %%mm6				\n\t"
+
 
 		"movq %%mm7, %%mm4				\n\t"
-		"psrlq $32, %%mm7				\n\t"
-		"pmaxub %%mm4, %%mm7				\n\t"
+		"psrlq $8, %%mm7				\n\t"
+		"pmaxub %%mm4, %%mm7				\n\t" // max of pixels
+#ifdef HAVE_MMX2
+		"pshufw $0xF9, %%mm7, %%mm4			\n\t"
+		"pmaxub %%mm4, %%mm7				\n\t" // min of pixels
+		"pshufw $0xFE, %%mm7, %%mm4			\n\t"
+#else
 		"movq %%mm7, %%mm4				\n\t"
 		"psrlq $16, %%mm7				\n\t"
 		"pmaxub %%mm4, %%mm7				\n\t"
 		"movq %%mm7, %%mm4				\n\t"
-		"psrlq $8, %%mm7				\n\t"
-		"pmaxub %%mm4, %%mm7				\n\t" // max of pixels
+		"psrlq $32, %%mm7				\n\t"
+#endif
+		"pmaxub %%mm4, %%mm7				\n\t"
 		PAVGB(%%mm6, %%mm7)				      // (max + min)/2
+		"punpcklbw %%mm7, %%mm7				\n\t"
+		"punpcklbw %%mm7, %%mm7				\n\t"
+		"punpcklbw %%mm7, %%mm7				\n\t"
+
+		"movq (%0), %%mm0				\n\t"
+		"movq %%mm0, %%mm1				\n\t"
+
+
 
 
 		: : "r" (src), "r" (stride), "r" (QP)
@@ -2136,6 +2174,7 @@ MEDIAN((%%ebx, %1), (%%ebx, %1, 2), (%0, %1, 8))
 #endif
 }
 
+#ifdef HAVE_MMX
 /**
  * transposes and shift the given 8x8 Block into dst1 and dst2
  */
@@ -2299,7 +2338,7 @@ static inline void transpose2(uint8_t *dst, int dstStride, uint8_t *src)
 	: "%eax", "%ebx"
 	);
 }
-
+#endif
 
 #ifdef HAVE_ODIVX_POSTPROCESS
 #include "../opendivx/postprocess.h"
@@ -2357,7 +2396,6 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
 	for(;;){
-		char *p2;
 		char *filterName;
 		int q= GET_PP_QUALITY_MAX;
 		int chrom=-1;
@@ -2603,7 +2641,9 @@ int getPpModeForQuality(int quality){
 static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int srcStride,
 	int numLines, int levelFix)
 {
+#ifndef HAVE_MMX
 	int i;
+#endif
 	if(levelFix)
 	{
 #ifdef HAVE_MMX
@@ -2729,11 +2769,16 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	static uint8_t *tempDstBlock= NULL;
 	static uint8_t *tempSrcBlock= NULL;
 
+#ifdef PP_FUNNY_STRIDE
 	uint8_t *dstBlockPtrBackup;
 	uint8_t *srcBlockPtrBackup;
+#endif
 
+#ifdef MORE_TIMING
+	long long T0, T1, diffTime=0;
+#endif
 #ifdef TIMING
-	long long T0, T1, memcpyTime=0, vertTime=0, horizTime=0, sumTime, diffTime=0;
+	long long memcpyTime=0, vertTime=0, horizTime=0, sumTime;
 	sumTime= rdtsc();
 #endif
 
@@ -3071,9 +3116,11 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			dstBlock+=8;
 			srcBlock+=8;
 
+#ifdef HAVE_MMX
 			tmpXchg= tempBlock1;
 			tempBlock1= tempBlock2;
 			tempBlock2 = tmpXchg;
+#endif
 		}
 
 		/* did we use a tmp buffer */
