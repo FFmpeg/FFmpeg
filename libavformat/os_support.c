@@ -31,6 +31,9 @@
 #endif
 #include <time.h>
 
+/**
+ * gets the current time in micro seconds.
+ */
 int64_t av_gettime(void)
 {
 #ifdef CONFIG_WIN32
