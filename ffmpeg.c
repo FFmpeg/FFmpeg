@@ -96,6 +96,7 @@ static char *str_author = NULL;
 static char *str_copyright = NULL;
 static char *str_comment = NULL;
 static int do_benchmark = 0;
+static int do_hex_dump = 0;
 
 typedef struct AVOutputStream {
     int file_index;          /* file index */
@@ -648,7 +649,7 @@ static void do_audio_out(AVFormatContext *s,
     }
 
     /* now encode as many frames as possible */
-    if (enc->codec_id != CODEC_ID_PCM) {
+    if (enc->frame_size > 1) {
         /* output resampled raw samples */
         fifo_write(&ost->fifo, buftmp, size_out, 
                    &ost->fifo.wptr);
@@ -657,13 +658,26 @@ static void do_audio_out(AVFormatContext *s,
         
         while (fifo_read(&ost->fifo, audio_buf, frame_bytes, 
                      &ost->fifo.rptr) == 0) {
-            ret = avcodec_encode_audio(enc,
-                                       audio_out, sizeof(audio_out), (short *)audio_buf);
+            ret = avcodec_encode_audio(enc, audio_out, sizeof(audio_out), 
+                                       (short *)audio_buf);
             s->format->write_packet(s, ost->index, audio_out, ret);
         }
     } else {
-        /* XXX: handle endianness */
-        s->format->write_packet(s, ost->index, buftmp, size_out);
+        /* output a pcm frame */
+        /* XXX: change encoding codec API to avoid this ? */
+        switch(enc->codec->id) {
+        case CODEC_ID_PCM_S16LE:
+        case CODEC_ID_PCM_S16BE:
+        case CODEC_ID_PCM_U16LE:
+        case CODEC_ID_PCM_U16BE:
+            break;
+        default:
+            size_out = size_out >> 1;
+            break;
+        }
+        ret = avcodec_encode_audio(enc, audio_out, size_out, 
+                                   (short *)buftmp);
+        s->format->write_packet(s, ost->index, audio_out, ret);
     }
 }
 
@@ -860,9 +874,6 @@ static void do_video_out(AVFormatContext *s,
         free(buf1);
 }
 
-//#define HEX_DUMP
-
-#ifdef HEX_DUMP
 static void hex_dump(UINT8 *buf, int size)
 {
     int len, i, j, c;
@@ -888,7 +899,6 @@ static void hex_dump(UINT8 *buf, int size)
         printf("\n");
     }
 }
-#endif
 
 /*
  * The following code is the main loop of the file converter
@@ -1191,10 +1201,10 @@ static int av_encode(AVFormatContext **output_files,
             continue;
         }
 
-#ifdef HEX_DUMP
-        printf("stream #%d, size=%d:\n", pkt.stream_index, pkt.size);
-        hex_dump(pkt.data, pkt.size);
-#endif
+        if (do_hex_dump) {
+            printf("stream #%d, size=%d:\n", pkt.stream_index, pkt.size);
+            hex_dump(pkt.data, pkt.size);
+        }
 
         //        printf("read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
 
@@ -1208,24 +1218,19 @@ static int av_encode(AVFormatContext **output_files,
             if (ist->decoding_needed) {
                 switch(ist->st->codec.codec_type) {
                 case CODEC_TYPE_AUDIO:
-                    if (ist->st->codec.codec_id == CODEC_ID_PCM) {
-                        /* no need to call a codec */
-                        data_buf = ptr;
-                        data_size = len;
-                        ret = len;
-                    } else {
-                        ret = avcodec_decode_audio(&ist->st->codec, samples, &data_size,
-                                                   ptr, len);
-                        if (ret < 0)
-                            goto fail_decode;
-                        if (data_size == 0) {
-                            /* no audio frame */
-                            ptr += ret;
-                            len -= ret;
-                            continue;
-                        }
-                        data_buf = (UINT8 *)samples;
+                    /* XXX: could avoid copy if PCM 16 bits with same
+                       endianness as CPU */
+                    ret = avcodec_decode_audio(&ist->st->codec, samples, &data_size,
+                                               ptr, len);
+                    if (ret < 0)
+                        goto fail_decode;
+                    if (data_size == 0) {
+                        /* no audio frame */
+                        ptr += ret;
+                        len -= ret;
+                        continue;
                     }
+                    data_buf = (UINT8 *)samples;
                     break;
                 case CODEC_TYPE_VIDEO:
                     if (ist->st->codec.codec_id == CODEC_ID_RAWVIDEO) {
@@ -2230,6 +2235,8 @@ const OptionDef options[] = {
       "deinterlace pictures" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark}, 
       "add timings for benchmarking" },
+    { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump}, 
+      "dump each input packet" },
 
     { NULL, },
 };
