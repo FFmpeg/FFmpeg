@@ -794,6 +794,7 @@ static void do_video_out(AVFormatContext *s,
             }else
                 big_picture.quality = ost->st->quality;
             big_picture.pict_type = 0;
+            big_picture.pts = AV_NOPTS_VALUE; //FIXME
             ret = avcodec_encode_video(enc, 
                                        video_buffer, VIDEO_BUFFER_SIZE,
                                        &big_picture);
