@@ -868,9 +868,10 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     if (code < 0 || code >= rl->n)
                         return -1;
                     run = rl->table_run[code];
-                    level = rl->table_level[code] * qmul + qadd;
+                    level = rl->table_level[code];
                     last = code >= rl->last;
                     run += rl->max_run[last][level] + run_diff;
+                    level= level * qmul + qadd;
                     if (get_bits1(&s->gb))
                         level = -level;
                 }
