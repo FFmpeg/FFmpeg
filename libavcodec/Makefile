@@ -51,6 +51,9 @@ OBJS += i386/fdct_mmx.o i386/cputest.o \
 	i386/dsputil_mmx.o i386/mpegvideo_mmx.o \
 	i386/idct_mmx.o i386/motion_est_mmx.o \
 	i386/simple_idct_mmx.o i386/fft_sse.o
+ifdef TARGET_BUILTIN_VECTOR
+i386/fft_sse.o: CFLAGS+= -msse
+endif
 endif
 
 # armv4l specific stuff
@@ -131,7 +134,7 @@ alpha/motion_est_alpha.o: alpha/motion_est_alpha.c
 endif
 
 .depend: $(SRCS)
-	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
+	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 dep:	depend
 
