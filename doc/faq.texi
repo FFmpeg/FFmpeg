@@ -101,7 +101,12 @@ this will also apply cleanly to other 2.4 kernels
 
 pass 'combfilter=1 lumafilter=1' to the bttv driver, note though that 'combfilter=1'
 will cause somewhat too strong filtering, a fix is too apply (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.4.26.patch})
+or (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.6.6.patch})
 and pass 'combfilter=2'
+
+@section -f jpeg doesnt work.
+
+try '-f image -img jpeg test%d.jpg'
 
 @chapter Development
 
