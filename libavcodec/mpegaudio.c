@@ -317,7 +317,7 @@ static void filter(MpegAudioContext *s, int ch, short *samples, int incr)
         for(i=0;i<32;i++) {
             norm |= abs(tmp1[i]);
         }
-        n = log2(norm) - 12;
+        n = av_log2(norm) - 12;
         if (n > 0) {
             for(i=0;i<32;i++) 
                 tmp1[i] >>= n;
@@ -364,7 +364,7 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
             }
             /* compute the scale factor index using log 2 computations */
             if (vmax > 0) {
-                n = log2(vmax);
+                n = av_log2(vmax);
                 /* n is the position of the MSB of vmax. now 
                    use at most 2 compares to find the index */
                 index = (21 - n) * 3 - 3;

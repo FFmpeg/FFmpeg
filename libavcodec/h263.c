@@ -1178,7 +1178,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         skip_bits1(&s->gb);   /* marker */
         
         time_increment_resolution = get_bits(&s->gb, 16);
-        s->time_increment_bits = log2(time_increment_resolution - 1) + 1;
+        s->time_increment_bits = av_log2(time_increment_resolution - 1) + 1;
         if (s->time_increment_bits < 1)
             s->time_increment_bits = 1;
         skip_bits1(&s->gb);   /* marker */
