@@ -37,12 +37,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <limits.h>
 
 #include "common.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "bswap.h"
+
+#undef NDEBUG
+#include <assert.h>
 
 static VLC svq1_block_type;
 static VLC svq1_motion_component;
@@ -65,6 +69,8 @@ typedef struct SVQ1Context {
     AVFrame picture;
     PutBitContext pb;
     GetBitContext gb;
+    
+    PutBitContext reorder_pb[6]; //why ooh why this sick breadth first order, everything is slower and more complex
 
     int frame_width;
     int frame_height;
@@ -1303,6 +1309,125 @@ av_log(s->avctx, AV_LOG_INFO, "\n");
 }
 #endif
 
+static int encode_block(SVQ1Context *s, uint8_t *src, int stride, int level, int threshold, int lambda){
+    int count, y, x, i, j, split, best_mean, best_score, best_count;
+    int best_vector[6];
+    int block_sum[7]= {0, 0, 0, 0, 0, 0};
+    int w= 2<<((level+2)>>1);
+    int h= 2<<((level+1)>>1);
+    int size=w*h;
+    int16_t block[7][256];
+    
+    best_score=0;
+    for(y=0; y<h; y++){
+        for(x=0; x<w; x++){
+            int v= src[x + y*stride];
+            block[0][x + w*y]= v;
+            best_score += v*v;
+            block_sum[0] += v;
+        }
+    }
+
+    best_count=0;
+    best_score -= ((block_sum[0]*block_sum[0])>>(level+3));
+    best_mean= (block_sum[0] + (size>>1)) >> (level+3);
+
+    if(level<4){
+        for(count=1; count<7; count++){
+            int best_vector_score= INT_MAX;
+            int best_vector_sum=-99, best_vector_mean=-99;
+            const int stage= count-1;
+            int8_t *vector;
+    
+            for(i=0; i<16; i++){
+                int sum=0;
+                int sqr=0;
+                int diff, mean, score;
+    
+                vector = svq1_intra_codebooks[level] + stage*size*16 + i*size;
+    
+                for(j=0; j<size; j++){
+                    int v= vector[j];
+                    sum += v;
+                    sqr += (v - block[stage][j])*(v - block[stage][j]);
+                }
+                diff= block_sum[stage] - sum;
+                mean= (diff + (size>>1)) >> (level+3);
+                assert(mean >-50 && mean<300);
+                mean= clip(mean, 0, 255);
+                score= sqr - ((diff*(int64_t)diff)>>(level+3)); //FIXME 64bit slooow
+                if(score < best_vector_score){
+                    best_vector_score= score;
+                    best_vector[stage]= i;
+                    best_vector_sum= sum;
+                    best_vector_mean= mean;
+                }
+            }
+            assert(best_vector_mean != -99);
+            vector= svq1_intra_codebooks[level] + stage*size*16 + best_vector[stage]*size;
+            for(j=0; j<size; j++){
+                block[stage+1][j] = block[stage][j] - vector[j];
+            }
+            block_sum[stage+1]= block_sum[stage] - best_vector_sum;
+            best_vector_score += 
+                lambda*(+ 1 + 4*count
+                        + svq1_intra_multistage_vlc[level][1+count][1]
+                        + svq1_intra_mean_vlc[best_vector_mean][1]);
+    
+            if(best_vector_score < best_score){
+                best_score= best_vector_score;
+                best_count= count;
+                best_mean= best_vector_mean;
+            }
+        }
+    }
+    
+    split=0;
+    if(best_score > threshold && level){
+        int score=0;
+        int offset= (level&1) ? stride*h/2 : w/2;
+        PutBitContext backup[6];
+
+        for(i=level-1; i>=0; i--){
+            backup[i]= s->reorder_pb[i];
+        }
+        score += encode_block(s, src         , stride, level-1, threshold>>1, lambda);
+        score += encode_block(s, src + offset, stride, level-1, threshold>>1, lambda);
+        score += lambda;
+        
+        if(score < best_score){
+            best_score= score;
+            split=1;
+        }else{
+            for(i=level-1; i>=0; i--){
+                s->reorder_pb[i]= backup[i];
+            }
+        }
+    }
+    if (level > 0)
+        put_bits(&s->reorder_pb[level], 1, split);
+
+    if(!split){
+        assert(best_mean >= 0 && best_mean<256);
+        assert(best_count >=0 && best_count<7);
+        assert(level<4 || best_count==0);
+            
+        /* output the encoding */
+        put_bits(&s->reorder_pb[level], 
+            svq1_intra_multistage_vlc[level][1 + best_count][1],
+            svq1_intra_multistage_vlc[level][1 + best_count][0]);
+        put_bits(&s->reorder_pb[level], svq1_intra_mean_vlc[best_mean][1],
+            svq1_intra_mean_vlc[best_mean][0]);
+
+        for (i = 0; i < best_count; i++){
+            assert(best_vector[i]>=0 && best_vector[i]<16);
+            put_bits(&s->reorder_pb[level], 4, best_vector[i]);
+        }
+    }
+
+    return best_score;
+}
+
 static void svq1_encode_plane(SVQ1Context *s, unsigned char *plane,
     int width, int height, int stride)
 {
@@ -1337,6 +1462,7 @@ av_log(s->avctx, AV_LOG_INFO, "********* frame #%d\n", frame++);
     for (y = 0; y < block_height; y++) {
 
         for (x = 0; x < block_width; x++) {
+            uint8_t reorder_buffer[6][7*32];
 
 #ifdef DEBUG_SVQ1
 av_log(s->avctx, AV_LOG_INFO, "* level 5 vector @ %d, %d:\n", x * 16, y * 16);
@@ -1344,6 +1470,19 @@ av_log(s->avctx, AV_LOG_INFO, "* level 5 vector @ %d, %d:\n", x * 16, y * 16);
 
             /* copy the block into the current work buffer */
             left_edge = (y * 16 * stride) + (x * 16);
+            
+            for(i=0; i<6; i++){
+                init_put_bits(&s->reorder_pb[i], reorder_buffer[i], 7*32);
+            }
+            encode_block(s, &plane[left_edge], stride, 5, 256, (s->picture.quality*s->picture.quality) >> (2*FF_LAMBDA_SHIFT));
+            for(i=5; i>=0; i--){
+                int count= put_bits_count(&s->reorder_pb[i]);
+                
+                flush_put_bits(&s->reorder_pb[i]);
+                ff_copy_bits(&s->pb, s->reorder_pb[i].buf, count);
+            }
+            
+#if 0
             for (i = 0; i < 256; i += 16) {
                 memcpy(&buffer0[i], &plane[left_edge], 16);
                 left_edge += stride;
@@ -1416,6 +1555,7 @@ av_log(s->avctx, AV_LOG_INFO, "  split to level %d\n", level - 1);
                 if (!subvector_count)
                     break;
             }
+#endif
         }
     }
 }
