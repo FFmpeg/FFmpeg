@@ -1447,7 +1447,10 @@ int h263_decode_picture_header(MpegEncContext *s)
         if (s->pict_type != I_TYPE &&
             s->pict_type != P_TYPE)
             return -1;
-        skip_bits(&s->gb, 7);
+        skip_bits(&s->gb, 2);
+        s->no_rounding = get_bits1(&s->gb);
+        //fprintf(stderr, "\nRTYPE: %d", s->no_rounding);
+        skip_bits(&s->gb, 4);
         
         /* Get the picture dimensions */
         if (ufep) {
