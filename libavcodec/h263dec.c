@@ -144,7 +144,11 @@ uint64_t time= rdtsc();
 
     s->hurry_up= avctx->hurry_up;
     s->error_resilience= avctx->error_resilience;
+
     s->workaround_bugs= avctx->workaround_bugs;
+    if(s->avctx->fourcc == ff_get_fourcc("XVIX") && s->workaround_bugs==0) 
+        s->workaround_bugs=2;
+
     s->flags= avctx->flags;
 
     *data_size = 0;

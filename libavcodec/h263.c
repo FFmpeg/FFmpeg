@@ -4231,7 +4231,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         s->last_time_base= s->time_base;
         s->time_base+= time_incr;
         s->time= s->time_base*s->time_increment_resolution + time_increment;
-        if(s->workaround_bugs==3 || s->avctx->fourcc== 'U' + ('M'<<8) + ('P'<<16) + ('4'<<24)){
+        if(s->workaround_bugs==3 || s->avctx->fourcc == ff_get_fourcc("UMP4")){
             if(s->time < s->last_non_b_time){
 //                fprintf(stderr, "header is not mpeg4 compatible, broken encoder, trying to workaround\n");
                 s->time_base++;

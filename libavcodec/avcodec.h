@@ -680,7 +680,7 @@ typedef struct AVCodecContext {
      * fourcc (LSB first, so "ABCD" -> ('D'<<24) + ('C'<<16) + ('B'<<8) + 'A')
      * this is used to workaround some encoder bugs
      * encoding: unused
-     * decoding: set by user
+     * decoding: set by user, will be converted to upper case by lavc during init
      */
     int fourcc;
 

@@ -18,6 +18,8 @@
  *
  * 4MV & hq & b-frame encoding stuff by Michael Niedermayer <michaelni@gmx.at>
  */
+ 
+#include <ctype.h>
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -162,6 +164,12 @@ int MPV_common_init(MpegEncContext *s)
     /* set default edge pos, will be overriden in decode_header if needed */
     s->h_edge_pos= s->mb_width*16;
     s->v_edge_pos= s->mb_height*16;
+    
+    /* convert fourcc to upper case */
+    s->avctx->fourcc=   toupper( s->avctx->fourcc     &0xFF)          
+                     + (toupper((s->avctx->fourcc>>8 )&0xFF)<<8 )
+                     + (toupper((s->avctx->fourcc>>16)&0xFF)<<16) 
+                     + (toupper((s->avctx->fourcc>>24)&0xFF)<<24);
 
     s->mb_num = s->mb_width * s->mb_height;
     if(!(s->flags&CODEC_FLAG_DR1)){

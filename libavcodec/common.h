@@ -922,6 +922,16 @@ static inline int ff_sqrt(int a)
     }
     return ret;
 }
+
+/**
+ * converts fourcc string to int
+ */
+static inline int ff_get_fourcc(char *s){
+    assert( strlen(s)==4 );
+    
+    return (s[0]) + (s[1]<<8) + (s[2]<<16) + (s[3]<<24);
+}
+
 #if __CPU__ >= 686 && !defined(RUNTIME_CPUDETECT)
 #define COPY3_IF_LT(x,y,a,b,c,d)\
 asm volatile (\
