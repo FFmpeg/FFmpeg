@@ -18,6 +18,11 @@
  */
 #include "avformat.h"
 
+/* TODO:
+ * - add 2, 4 and 16 bit depth support
+ * - use filters when generating a png (better compression)
+ */
+
 #ifdef CONFIG_ZLIB
 #include <zlib.h>
 
@@ -44,6 +49,8 @@
 #define PNG_ALLIMAGE  0x0004
 #define PNG_PLTE      0x0008
 
+#define NB_PASSES 7
+
 #define IOBUF_SIZE 4096
 
 typedef struct PNGDecodeState {
@@ -62,15 +69,47 @@ typedef struct PNGDecodeState {
     int image_linesize;
     uint32_t palette[256];
     uint8_t *crow_buf;
-    uint8_t *empty_row;
+    uint8_t *last_row;
     uint8_t *tmp_row;
+    int pass;
     int crow_size; /* compressed row size (include filter type) */
     int row_size; /* decompressed row size */
+    int pass_row_size; /* decompress row size of the current pass */
     int y;
     z_stream zstream;
 } PNGDecodeState;
 
 static const uint8_t pngsig[8] = {137, 80, 78, 71, 13, 10, 26, 10};
+
+/* Mask to determine which y pixels are valid in a pass */
+static const uint8_t png_pass_ymask[NB_PASSES] = {
+    0x80, 0x80, 0x08, 0x88, 0x22, 0xaa, 0x55,
+};
+
+/* Mask to determine which y pixels can be written in a pass */
+static const uint8_t png_pass_dsp_ymask[NB_PASSES] = {
+    0xff, 0xff, 0x0f, 0xcc, 0x33, 0xff, 0x55,
+};
+
+/* minimum x value */
+static const uint8_t png_pass_xmin[NB_PASSES] = {
+    0, 4, 0, 2, 0, 1, 0
+};
+
+/* x shift to get row width */
+static const uint8_t png_pass_xshift[NB_PASSES] = {
+    3, 3, 2, 2, 1, 1, 0
+};
+
+/* Mask to determine which pixels are valid in a pass */
+static const uint8_t png_pass_mask[NB_PASSES] = {
+    0x80, 0x08, 0x88, 0x22, 0xaa, 0x55, 0xff
+};
+
+/* Mask to determine which pixels to overwrite while displaying */
+static const uint8_t png_pass_dsp_mask[NB_PASSES] = { 
+    0xff, 0x0f, 0xff, 0x33, 0xff, 0x55, 0xff
+};
 
 static int png_probe(AVProbeData *pd)
 {
@@ -89,6 +128,127 @@ static void *png_zalloc(void *opaque, unsigned int items, unsigned int size)
 static void png_zfree(void *opaque, void *ptr)
 {
     av_free(ptr);
+}
+
+static int png_get_nb_channels(int color_type)
+{
+    int channels;
+    channels = 1;
+    if ((color_type & (PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE)) ==
+        PNG_COLOR_MASK_COLOR)
+        channels = 3;
+    if (color_type & PNG_COLOR_MASK_ALPHA)
+        channels++;
+    return channels;
+}
+
+/* compute the row size of an interleaved pass */
+static int png_pass_row_size(int pass, int bits_per_pixel, int width)
+{
+    int shift, xmin, pass_width;
+
+    xmin = png_pass_xmin[pass];
+    if (width <= xmin)
+        return 0;
+    shift = png_pass_xshift[pass];
+    pass_width = (width - xmin + (1 << shift) - 1) >> shift;
+    return (pass_width * bits_per_pixel + 7) >> 3;
+}
+
+/* NOTE: we try to construct a good looking image at each pass. width
+   is the original image width. We also do pixel format convertion at
+   this stage */
+static void png_put_interlaced_row(uint8_t *dst, int width, 
+                                   int bits_per_pixel, int pass, 
+                                   int color_type, const uint8_t *src)
+{
+    int x, mask, dsp_mask, j, src_x, b, bpp;
+    uint8_t *d;
+    const uint8_t *s;
+    
+    mask = png_pass_mask[pass];
+    dsp_mask = png_pass_dsp_mask[pass];
+    switch(bits_per_pixel) {
+    case 1:
+        /* we must intialize the line to zero before writing to it */
+        if (pass == 0)
+            memset(dst, 0, (width + 7) >> 3);
+        src_x = 0;
+        for(x = 0; x < width; x++) {
+            j = (x & 7);
+            if ((dsp_mask << j) & 0x80) {
+                b = (src[src_x >> 3] >> (7 - (src_x & 7))) & 1;
+                dst[x >> 3] |= b << (7 - j);
+            }
+            if ((mask << j) & 0x80)
+                src_x++;
+        }
+        break;
+    default:
+        bpp = bits_per_pixel >> 3;
+        d = dst;
+        s = src;
+        if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+            for(x = 0; x < width; x++) {
+                j = x & 7;
+                if ((dsp_mask << j) & 0x80) {
+                    *(uint32_t *)d = (s[3] << 24) | (s[0] << 16) | (s[1] << 8) | s[2];
+                }
+                d += bpp;
+                if ((mask << j) & 0x80)
+                    s += bpp;
+            }
+        } else {
+            for(x = 0; x < width; x++) {
+                j = x & 7;
+                if ((dsp_mask << j) & 0x80) {
+                    memcpy(d, s, bpp);
+                }
+                d += bpp;
+                if ((mask << j) & 0x80)
+                    s += bpp;
+            }
+        }
+        break;
+    }
+}
+
+static void png_get_interlaced_row(uint8_t *dst, int row_size, 
+                                   int bits_per_pixel, int pass, 
+                                   const uint8_t *src, int width)
+{
+    int x, mask, dst_x, j, b, bpp;
+    uint8_t *d;
+    const uint8_t *s;
+
+    mask = png_pass_mask[pass];
+    switch(bits_per_pixel) {
+    case 1:
+        memset(dst, 0, row_size);
+        dst_x = 0;
+        for(x = 0; x < width; x++) {
+            j = (x & 7);
+            if ((mask << j) & 0x80) {
+                b = (src[x >> 3] >> (7 - j)) & 1;
+                dst[dst_x >> 3] |= b << (7 - (dst_x & 7));
+                dst_x++;
+            }
+        }
+        break;
+    default:
+        bpp = bits_per_pixel >> 3;
+        d = dst;
+        s = src;
+        for(x = 0; x < width; x++) {
+            j = x & 7;
+            if ((mask << j) & 0x80) {
+                memcpy(d, s, bpp);
+                d += bpp;
+            }
+            s += bpp;
+        }
+        break;
+    }
 }
 
 /* XXX: optimize */
@@ -158,43 +318,107 @@ static void png_filter_row(uint8_t *dst, int filter_type,
     }
 }
 
+static void convert_from_rgba32(uint8_t *dst, const uint8_t *src, int width)
+{
+    uint8_t *d;
+    int j;
+    unsigned int v;
+    
+    d = dst;
+    for(j = 0; j < width; j++) {
+        v = ((uint32_t *)src)[j];
+        d[0] = v >> 16;
+        d[1] = v >> 8;
+        d[2] = v;
+        d[3] = v >> 24;
+        d += 4;
+    }
+}
+
+static void convert_to_rgba32(uint8_t *dst, const uint8_t *src, int width)
+{
+    int j;
+    unsigned int r, g, b, a;
+
+    for(j = 0;j < width; j++) {
+        r = src[0];
+        g = src[1];
+        b = src[2];
+        a = src[3];
+        *(uint32_t *)dst = (a << 24) | (r << 16) | (g << 8) | b;
+        dst += 4;
+        src += 4;
+    }
+}
+
+/* process exactly one decompressed row */
 static void png_handle_row(PNGDecodeState *s)
 {
     uint8_t *ptr, *last_row;
-
-    ptr = s->image_buf + s->image_linesize * s->y;
-
-    /* need to swap bytes correctly for RGB_ALPHA */
-    if (s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-        int j, w;
-        unsigned int r, g, b, a;
-        const uint8_t *src;
-
-        png_filter_row(s->tmp_row, s->crow_buf[0], s->crow_buf + 1, 
-                       s->empty_row, s->row_size, s->bpp);
-        memcpy(s->empty_row, s->tmp_row, s->row_size);
-
-        src = s->tmp_row;
-        w = s->width;
-        for(j = 0;j < w; j++) {
-            r = src[0];
-            g = src[1];
-            b = src[2];
-            a = src[3];
-            *(uint32_t *)ptr = (a << 24) | (r << 16) | (g << 8) | b;
-            ptr += 4;
-            src += 4;
+    int got_line;
+    
+    if (!s->interlace_type) {
+        ptr = s->image_buf + s->image_linesize * s->y;
+        /* need to swap bytes correctly for RGB_ALPHA */
+        if (s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+            png_filter_row(s->tmp_row, s->crow_buf[0], s->crow_buf + 1, 
+                           s->last_row, s->row_size, s->bpp);
+            memcpy(s->last_row, s->tmp_row, s->row_size);
+            convert_to_rgba32(ptr, s->tmp_row, s->width);
+        } else {
+            /* in normal case, we avoid one copy */
+            if (s->y == 0)
+                last_row = s->last_row;
+            else
+                last_row = ptr - s->image_linesize;
+            
+            png_filter_row(ptr, s->crow_buf[0], s->crow_buf + 1, 
+                           last_row, s->row_size, s->bpp);
+        }
+        s->y++;
+        if (s->y == s->height) {
+            s->state |= PNG_ALLIMAGE;
         }
     } else {
-        /* in normal case, we avoid one copy */
-
-        if (s->y == 0)
-            last_row = s->empty_row;
-        else
-            last_row = ptr - s->image_linesize;
-        
-        png_filter_row(ptr, s->crow_buf[0], s->crow_buf + 1, 
-                       last_row, s->row_size, s->bpp);
+        got_line = 0;
+        for(;;) {
+            ptr = s->image_buf + s->image_linesize * s->y;
+            if ((png_pass_ymask[s->pass] << (s->y & 7)) & 0x80) {
+                /* if we already read one row, it is time to stop to
+                   wait for the next one */
+                if (got_line)
+                    break;
+                png_filter_row(s->tmp_row, s->crow_buf[0], s->crow_buf + 1, 
+                               s->last_row, s->pass_row_size, s->bpp);
+                memcpy(s->last_row, s->tmp_row, s->pass_row_size);
+                got_line = 1;
+            }
+            if ((png_pass_dsp_ymask[s->pass] << (s->y & 7)) & 0x80) {
+                /* NOTE: rgba32 is handled directly in png_put_interlaced_row */
+                png_put_interlaced_row(ptr, s->width, s->bits_per_pixel, s->pass, 
+                                       s->color_type, s->last_row);
+            }
+            s->y++;
+            if (s->y == s->height) {
+                for(;;) {
+                    if (s->pass == NB_PASSES - 1) {
+                        s->state |= PNG_ALLIMAGE;
+                        goto the_end;
+                    } else {
+                        s->pass++;
+                        s->y = 0;
+                        s->pass_row_size = png_pass_row_size(s->pass, 
+                                                             s->bits_per_pixel, 
+                                                             s->width);
+                        s->crow_size = s->pass_row_size + 1;
+                        if (s->pass_row_size != 0)
+                            break;
+                        /* skip pass if empty row */
+                    }
+                }
+            }
+        }
+    the_end: ;
     }
 }
 
@@ -220,11 +444,8 @@ static int png_decode_idat(PNGDecodeState *s, ByteIOContext *f, int length)
                 return -1;
             }
             if (s->zstream.avail_out == 0) {
-                if (s->y < s->height) {
+                if (!(s->state & PNG_ALLIMAGE)) {
                     png_handle_row(s);
-                    s->y++;
-                    if (s->y == s->height)
-                        s->state |= PNG_ALLIMAGE;
                 }
                 s->zstream.avail_out = s->crow_size;
                 s->zstream.next_out = s->crow_buf;
@@ -298,47 +519,44 @@ static int png_read(ByteIOContext *f,
                 /* init image info */
                 info->width = s->width;
                 info->height = s->height;
+                info->progressive = (s->interlace_type != 0);
 
-                s->channels = 1;
-                if ((s->color_type & (PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE)) ==
-                    PNG_COLOR_MASK_COLOR)
-                    s->channels = 3;
-                if (s->color_type & PNG_COLOR_MASK_ALPHA)
-                    s->channels++;
+                s->channels = png_get_nb_channels(s->color_type);
                 s->bits_per_pixel = s->bit_depth * s->channels;
                 s->bpp = (s->bits_per_pixel + 7) >> 3;
+                s->row_size = (info->width * s->bits_per_pixel + 7) >> 3;
+
                 if (s->bit_depth == 8 && 
                     s->color_type == PNG_COLOR_TYPE_RGB) {
                     info->pix_fmt = PIX_FMT_RGB24;
-                    s->row_size = s->width * 3;
                 } else if (s->bit_depth == 8 && 
                            s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
                     info->pix_fmt = PIX_FMT_RGBA32;
-                    s->row_size = s->width * 4;
                 } else if (s->bit_depth == 8 && 
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     info->pix_fmt = PIX_FMT_GRAY8;
-                    s->row_size = s->width;
                 } else if (s->bit_depth == 1 && 
                            s->color_type == PNG_COLOR_TYPE_GRAY) {
                     info->pix_fmt = PIX_FMT_MONOBLACK;
-                    s->row_size = (s->width + 7) >> 3;
                 } else if (s->color_type == PNG_COLOR_TYPE_PALETTE) {
                     info->pix_fmt = PIX_FMT_PAL8;
-                    s->row_size = s->width;
                 } else {
-                    goto fail;
-                }
-                /* compute the compressed row size */
-                if (!s->interlace_type) {
-                    s->crow_size = s->row_size + 1;
-                } else {
-                    /* XXX: handle interlacing */
                     goto fail;
                 }
                 ret = alloc_cb(opaque, info);
                 if (ret) 
                     goto the_end;
+
+                /* compute the compressed row size */
+                if (!s->interlace_type) {
+                    s->crow_size = s->row_size + 1;
+                } else {
+                    s->pass = 0;
+                    s->pass_row_size = png_pass_row_size(s->pass, 
+                                                         s->bits_per_pixel, 
+                                                         s->width);
+                    s->crow_size = s->pass_row_size + 1;
+                }
 #ifdef DEBUG
                 printf("row_size=%d crow_size =%d\n", 
                        s->row_size, s->crow_size);
@@ -349,16 +567,17 @@ static int png_read(ByteIOContext *f,
                 if (s->color_type == PNG_COLOR_TYPE_PALETTE)
                     memcpy(info->pict.data[1], s->palette, 256 * sizeof(uint32_t));
                 /* empty row is used if differencing to the first row */
-                s->empty_row = av_mallocz(s->row_size);
-                if (!s->empty_row)
+                s->last_row = av_mallocz(s->row_size);
+                if (!s->last_row)
                     goto fail;
-                if (s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+                if (s->interlace_type ||
+                    s->color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
                     s->tmp_row = av_malloc(s->row_size);
                     if (!s->tmp_row)
                         goto fail;
                 }
                 /* compressed row */
-                s->crow_buf = av_malloc(s->crow_size);
+                s->crow_buf = av_malloc(s->row_size + 1);
                 if (!s->crow_buf)
                     goto fail;
                 s->zstream.avail_out = s->crow_size;
@@ -424,7 +643,7 @@ static int png_read(ByteIOContext *f,
  the_end:
     inflateEnd(&s->zstream);
     av_free(s->crow_buf);
-    av_free(s->empty_row);
+    av_free(s->last_row);
     av_free(s->tmp_row);
     return ret;
  fail:
@@ -462,66 +681,99 @@ static void to_be32(uint8_t *p, uint32_t v)
     p[3] = v;
 }
 
+typedef struct PNGEncodeState {
+    ByteIOContext *f;
+    z_stream zstream;
+    uint8_t buf[IOBUF_SIZE];
+} PNGEncodeState;
+
+
+/* XXX: do filtering */
+static int png_write_row(PNGEncodeState *s, const uint8_t *data, int size)
+{
+    int ret;
+
+    s->zstream.avail_in = size;
+    s->zstream.next_in = (uint8_t *)data;
+    while (s->zstream.avail_in > 0) {
+        ret = deflate(&s->zstream, Z_NO_FLUSH);
+        if (ret != Z_OK)
+            return -1;
+        if (s->zstream.avail_out == 0) {
+            png_write_chunk(s->f, MKTAG('I', 'D', 'A', 'T'), s->buf, IOBUF_SIZE);
+            s->zstream.avail_out = IOBUF_SIZE;
+            s->zstream.next_out = s->buf;
+        }
+    }
+    return 0;
+}
+
 static int png_write(ByteIOContext *f, AVImageInfo *info)
 {
-    int bit_depth, color_type, y, len, row_size, ret;
+    PNGEncodeState s1, *s = &s1;
+    int bit_depth, color_type, y, len, row_size, ret, is_progressive;
+    int bits_per_pixel, pass_row_size;
     uint8_t *ptr;
-    uint8_t buf[IOBUF_SIZE];
     uint8_t *crow_buf = NULL;
-    z_stream zstream;
+    uint8_t *tmp_buf = NULL;
     
+    s->f = f;
+    is_progressive = info->progressive;
     switch(info->pix_fmt) {
     case PIX_FMT_RGBA32:
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_RGB_ALPHA;
-        row_size = info->width * 4;
         break;
     case PIX_FMT_RGB24:
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_RGB;
-        row_size = info->width * 3;
         break;
     case PIX_FMT_GRAY8:
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_GRAY;
-        row_size = info->width;
         break;
     case PIX_FMT_MONOBLACK:
         bit_depth = 1;
         color_type = PNG_COLOR_TYPE_GRAY;
-        row_size = (info->width + 7) >> 3;
         break;
     case PIX_FMT_PAL8:
         bit_depth = 8;
         color_type = PNG_COLOR_TYPE_PALETTE;
-        row_size = info->width;
         break;
     default:
         return -1;
     }
-    zstream.zalloc = png_zalloc;
-    zstream.zfree = png_zfree;
-    zstream.opaque = NULL;
-    ret = deflateInit2(&zstream, Z_DEFAULT_COMPRESSION,
+    bits_per_pixel = png_get_nb_channels(color_type) * bit_depth;
+    row_size = (info->width * bits_per_pixel + 7) >> 3;
+
+    s->zstream.zalloc = png_zalloc;
+    s->zstream.zfree = png_zfree;
+    s->zstream.opaque = NULL;
+    ret = deflateInit2(&s->zstream, Z_DEFAULT_COMPRESSION,
                        Z_DEFLATED, 15, 8, Z_DEFAULT_STRATEGY);
     if (ret != Z_OK)
         return -1;
     crow_buf = av_malloc(row_size + 1);
     if (!crow_buf)
         goto fail;
+    if (is_progressive) {
+        tmp_buf = av_malloc(row_size + 1);
+        if (!tmp_buf)
+            goto fail;
+    }
 
     /* write png header */
     put_buffer(f, pngsig, 8);
     
-    to_be32(buf, info->width);
-    to_be32(buf + 4, info->height);
-    buf[8] = bit_depth;
-    buf[9] = color_type;
-    buf[10] = 0; /* compression type */
-    buf[11] = 0; /* filter type */
-    buf[12] = 0; /* interlace type */
+    to_be32(s->buf, info->width);
+    to_be32(s->buf + 4, info->height);
+    s->buf[8] = bit_depth;
+    s->buf[9] = color_type;
+    s->buf[10] = 0; /* compression type */
+    s->buf[11] = 0; /* filter type */
+    s->buf[12] = is_progressive; /* interlace type */
     
-    png_write_chunk(f, MKTAG('I', 'H', 'D', 'R'), buf, 13);
+    png_write_chunk(f, MKTAG('I', 'H', 'D', 'R'), s->buf, 13);
 
     /* put the palette if needed */
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
@@ -531,8 +783,8 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
         uint8_t *alpha_ptr;
         
         palette = (uint32_t *)info->pict.data[1];
-        ptr = buf;
-        alpha_ptr = buf + 256 * 3;
+        ptr = s->buf;
+        alpha_ptr = s->buf + 256 * 3;
         has_alpha = 0;
         for(i = 0; i < 256; i++) {
             v = palette[i];
@@ -545,60 +797,63 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
             ptr[2] = v;
             ptr += 3;
         }
-        png_write_chunk(f, MKTAG('P', 'L', 'T', 'E'), buf, 256 * 3);
+        png_write_chunk(f, MKTAG('P', 'L', 'T', 'E'), s->buf, 256 * 3);
         if (has_alpha) {
-            png_write_chunk(f, MKTAG('t', 'R', 'N', 'S'), buf + 256 * 3, 256);
+            png_write_chunk(f, MKTAG('t', 'R', 'N', 'S'), s->buf + 256 * 3, 256);
         }
     }
 
     /* now put each row */
-    zstream.avail_out = IOBUF_SIZE;
-    zstream.next_out = buf;
-    for(y = 0;y < info->height; y++) {
-        /* XXX: do filtering */
-        ptr = info->pict.data[0] + y * info->pict.linesize[0];
-        if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
-            uint8_t *d;
-            int j, w;
-            unsigned int v;
+    s->zstream.avail_out = IOBUF_SIZE;
+    s->zstream.next_out = s->buf;
+    if (is_progressive) {
+        uint8_t *ptr1;
+        int pass;
 
-            w = info->width;
-            d = crow_buf + 1;
-            for(j = 0; j < w; j++) {
-                v = ((uint32_t *)ptr)[j];
-                d[0] = v >> 16;
-                d[1] = v >> 8;
-                d[2] = v;
-                d[3] = v >> 24;
-                d += 4;
+        for(pass = 0; pass < NB_PASSES; pass++) {
+            /* NOTE: a pass is completely omited if no pixels would be
+               output */
+            pass_row_size = png_pass_row_size(pass, bits_per_pixel, info->width);
+            if (pass_row_size > 0) {
+                for(y = 0; y < info->height; y++) {
+                    if ((png_pass_ymask[pass] << (y & 7)) & 0x80) {
+                        ptr = info->pict.data[0] + y * info->pict.linesize[0];
+                        if (color_type == PNG_COLOR_TYPE_RGB_ALPHA) {
+                            convert_from_rgba32(tmp_buf, ptr, info->width);
+                            ptr1 = tmp_buf;
+                        } else {
+                            ptr1 = ptr;
+                        }
+                        png_get_interlaced_row(crow_buf + 1, pass_row_size, 
+                                               bits_per_pixel, pass, 
+                                               ptr1, info->width);
+                        crow_buf[0] = PNG_FILTER_VALUE_NONE;
+                        png_write_row(s, crow_buf, pass_row_size + 1);
+                    }
+                }
             }
-        } else {
-            memcpy(crow_buf + 1, ptr, row_size);
         }
-        crow_buf[0] = PNG_FILTER_VALUE_NONE;
-        zstream.avail_in = row_size + 1;
-        zstream.next_in = crow_buf;
-        while (zstream.avail_in > 0) {
-            ret = deflate(&zstream, Z_NO_FLUSH);
-            if (ret != Z_OK)
-                goto fail;
-            if (zstream.avail_out == 0) {
-                png_write_chunk(f, MKTAG('I', 'D', 'A', 'T'), buf, IOBUF_SIZE);
-                zstream.avail_out = IOBUF_SIZE;
-                zstream.next_out = buf;
-            }
+    } else {
+        for(y = 0; y < info->height; y++) {
+            ptr = info->pict.data[0] + y * info->pict.linesize[0];
+            if (color_type == PNG_COLOR_TYPE_RGB_ALPHA)
+                convert_from_rgba32(crow_buf + 1, ptr, info->width);
+            else
+                memcpy(crow_buf + 1, ptr, row_size);
+            crow_buf[0] = PNG_FILTER_VALUE_NONE;
+            png_write_row(s, crow_buf, row_size + 1);
         }
     }
     /* compress last bytes */
     for(;;) {
-        ret = deflate(&zstream, Z_FINISH);
+        ret = deflate(&s->zstream, Z_FINISH);
         if (ret == Z_OK || ret == Z_STREAM_END) {
-            len = IOBUF_SIZE - zstream.avail_out;
+            len = IOBUF_SIZE - s->zstream.avail_out;
             if (len > 0) {
-                png_write_chunk(f, MKTAG('I', 'D', 'A', 'T'), buf, len);
+                png_write_chunk(f, MKTAG('I', 'D', 'A', 'T'), s->buf, len);
             }
-            zstream.avail_out = IOBUF_SIZE;
-            zstream.next_out = buf;
+            s->zstream.avail_out = IOBUF_SIZE;
+            s->zstream.next_out = s->buf;
             if (ret == Z_STREAM_END)
                 break;
         } else {
@@ -611,7 +866,8 @@ static int png_write(ByteIOContext *f, AVImageInfo *info)
     ret = 0;
  the_end:
     av_free(crow_buf);
-    deflateEnd(&zstream);
+    av_free(tmp_buf);
+    deflateEnd(&s->zstream);
     return ret;
  fail:
     ret = -1;
@@ -626,5 +882,6 @@ AVImageFormat png_image_format = {
     (1 << PIX_FMT_RGBA32) | (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_GRAY8) | 
     (1 << PIX_FMT_MONOBLACK) | (1 << PIX_FMT_PAL8),
     png_write,
+    AVIMAGE_PROGRESSIVE,
 };
 #endif
