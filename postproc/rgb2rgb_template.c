@@ -181,6 +181,27 @@ void palette8torgb32(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
 		((uint32_t *)dst)[i] = ((uint32_t *)palette)[ src[i] ];
 }
 
+/**
+ * Pallete is assumed to contain bgr32
+ */
+void palette8torgb24(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
+{
+	int i;
+/*
+	writes 1 byte o much and might cause alignment issues on some architectures?
+	for(i=0; i<src_size; i++)
+		((uint32_t *)(&dst[i*3])) = ((uint32_t *)palette)[ src[i] ];
+*/
+	for(i=0; i<src_size; i++)
+	{
+		//FIXME slow?
+		dst[0]= palette[ src[i]*4+0 ];
+		dst[1]= palette[ src[i]*4+1 ];
+		dst[2]= palette[ src[i]*4+2 ];
+		dst+= 3;
+	}
+}
+
 void rgb32to16(uint8_t *src, uint8_t *dst, int src_size)
 {
 	int i;

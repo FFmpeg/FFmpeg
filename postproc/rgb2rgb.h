@@ -16,6 +16,6 @@ void rgb32to15(uint8_t *src, uint8_t *dst, int src_size);
 void palette8torgb32(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette);
 void palette8torgb16(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette);
 void palette8torgb15(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette);
-
+void palette8torgb24(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette);
 
 #endif
