@@ -790,7 +790,7 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
         "addl %4, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b				\n\t"\
-        : "+a"(src), "+b"(dst), "+c"(h)\
+        : "+a"(src), "+c"(dst), "+m"(h)\
         : "d"(srcStride), "S"(dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
         : "memory"\
     );\
@@ -903,7 +903,7 @@ void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStr
         "addl %4, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b			\n\t"\
-        : "+a"(src), "+b"(dst), "+c"(h)\
+        : "+a"(src), "+c"(dst), "+m"(h)\
         : "S"(srcStride), "D"(dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
         : "memory"\
     );\
@@ -961,14 +961,14 @@ static void OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src,
         "punpckhbw %%mm7, %%mm3		\n\t"\
         "movq %%mm0, (%1)		\n\t"\
         "movq %%mm1, 17*8(%1)		\n\t"\
-        "movq %%mm2, (%1, %4)		\n\t"\
-        "movq %%mm3, (%1, %5)		\n\t"\
+        "movq %%mm2, 2*17*8(%1)		\n\t"\
+        "movq %%mm3, 3*17*8(%1)		\n\t"\
         "addl $8, %1			\n\t"\
         "addl %3, %0			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b			\n\t"\
         : "+r" (src), "+r" (temp_ptr), "+r"(count)\
-        : "r" (srcStride), "r"(2*8*17), "r"(3*8*17)\
+        : "r" (srcStride)\
         : "memory"\
     );\
     \
@@ -1014,7 +1014,7 @@ static void OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src,
         "decl %2			\n\t"\
         " jnz 1b			\n\t"\
         \
-        : "+r"(temp_ptr), "+r"(dst), "+r"(count)\
+        : "+r"(temp_ptr), "+r"(dst), "+g"(count)\
         : "r"(dstStride), "r"(2*dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(ROUNDER), "g"(4-14*dstStride)\
         :"memory"\
     );\

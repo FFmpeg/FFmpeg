@@ -85,7 +85,11 @@ static void DEF(put, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int
 	"addl	%5, %3			\n\t"
 	"subl	$4, %0			\n\t"
 	"jnz	1b			\n\t"
-	:"+a"(h), "+b"(src1), "+c"(src2), "+d"(dst)
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+        :"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+        :"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
 	:"S"(src1Stride), "D"(dstStride)
 	:"memory");
 }
@@ -163,7 +167,11 @@ static void DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, in
 	"addl	$32, %2			\n\t"
 	"subl	$2, %0			\n\t"
 	"jnz	1b			\n\t"
-	:"+a"(h), "+b"(src1), "+c"(src2), "+d"(dst)
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+	:"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
 	:"S"(src1Stride), "D"(dstStride)
 	:"memory"); 
 }
