@@ -2178,7 +2178,7 @@ static void mpeg4_encode_gop_header(MpegEncContext * s){
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, GOP_STARTCODE);
     
-    if(s->current_picture_ptr->pts){
+    if(s->current_picture_ptr->pts && s->reordered_input_picture[1]){
         time= FFMIN(s->reordered_input_picture[1]->pts, s->current_picture_ptr->pts);
         time= (time*s->time_increment_resolution + 500*1000)/(1000*1000);
     }else
