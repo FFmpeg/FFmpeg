@@ -4670,7 +4670,10 @@ decode_intra_mb:
             nnz[ scan8[20]+0 ] = nnz[ scan8[20]+1 ] =nnz[ scan8[20]+8 ] =nnz[ scan8[20]+9 ] = 0;
         }
     } else {
-        memset( &h->non_zero_count_cache[8], 0, 8*5 );
+        uint8_t * const nnz= &h->non_zero_count_cache[0];
+        fill_rectangle(&nnz[scan8[0]], 4, 4, 8, 0, 1);
+        nnz[ scan8[16]+0 ] = nnz[ scan8[16]+1 ] =nnz[ scan8[16]+8 ] =nnz[ scan8[16]+9 ] =
+        nnz[ scan8[20]+0 ] = nnz[ scan8[20]+1 ] =nnz[ scan8[20]+8 ] =nnz[ scan8[20]+9 ] = 0;
     }
 
     s->current_picture.qscale_table[mb_xy]= s->qscale;
