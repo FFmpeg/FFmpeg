@@ -3131,6 +3131,7 @@ static void opt_output_file(const char *filename)
                 video_enc->rc_max_rate = video_rc_max_rate;
                 video_enc->rc_min_rate = video_rc_min_rate;
                 video_enc->rc_buffer_size = video_rc_buffer_size;
+                video_enc->rc_initial_buffer_occupancy = video_rc_buffer_size*3/4;
                 video_enc->rc_buffer_aggressivity= video_rc_buffer_aggressivity;
                 video_enc->rc_initial_cplx= video_rc_initial_cplx;
                 video_enc->i_quant_factor = video_i_qfactor;
