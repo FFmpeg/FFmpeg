@@ -1616,6 +1616,7 @@ static int mov_probe(AVProbeData *p)
 {
     unsigned int offset;
     uint32_t tag;
+    int score = 0;
 
     /* check file header */
     if (p->buf_size <= 12)
@@ -1624,26 +1625,33 @@ static int mov_probe(AVProbeData *p)
     for(;;) {
         /* ignore invalid offset */
         if ((offset + 8) > (unsigned int)p->buf_size)
-            return 0;
+            return score;
         tag = mov_to_tag(p->buf + offset + 4);
         switch(tag) {
+        /* check for obvious tags */
         case MKTAG( 'm', 'o', 'o', 'v' ):
-        case MKTAG( 'w', 'i', 'd', 'e' ):
-        case MKTAG( 'f', 'r', 'e', 'e' ):
         case MKTAG( 'm', 'd', 'a', 't' ):
         case MKTAG( 'p', 'n', 'o', 't' ): /* detect movs with preview pics like ew.mov and april.mov */
         case MKTAG( 'u', 'd', 't', 'a' ): /* Packet Video PVAuthor adds this and a lot of more junk */
             return AVPROBE_SCORE_MAX;
+        /* those are more common words, so rate then a bit less */
+        case MKTAG( 'w', 'i', 'd', 'e' ):
+        case MKTAG( 'f', 'r', 'e', 'e' ):
+        case MKTAG( 'j', 'u', 'n', 'k' ):
+        case MKTAG( 'p', 'i', 'c', 't' ):
+            return AVPROBE_SCORE_MAX - 5;
         case MKTAG( 'f', 't', 'y', 'p' ):
         case MKTAG( 's', 'k', 'i', 'p' ):
             offset = to_be32(p->buf+offset) + offset;
+            /* if we only find those cause probedata is too small at least rate them */
+            score = AVPROBE_SCORE_MAX - 50;
             break;
         default:
             /* unrecognized tag */
-            return 0;
+            return score;
         }
     }
-    return 0;
+    return score;
 }
 
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
