@@ -199,7 +199,7 @@ fi
 ###################################
 if [ -n "$do_mpeg4" ] ; then
 # mpeg4
-file=${outfile}odivx.avi
+file=${outfile}odivx.mp4
 do_ffmpeg $file -y -4mv -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
