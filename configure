@@ -59,6 +59,7 @@ vorbis="no"
 a52="yes"
 a52bin="no"
 win32="no"
+mingw32="no"
 cygwin="no"
 lshared="no"
 extralibs="-lm"
@@ -147,6 +148,13 @@ CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer"
 CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic"
 ;;
 esac
+;;
+MINGW32*)
+v4l="no"
+audio_oss="no"
+ffserver="no"
+network="no"
+mingw32="yes"
 ;;
 CYGWIN*)
 v4l="no"
@@ -272,6 +280,8 @@ for opt do
   ;;
   --enable-win32) win32="yes"
   ;;
+  --enable-mingw32) mingw32="yes"
+  ;;
   --enable-shared) lshared="yes"
   ;;
   --disable-mpegaudio-hp) mpegaudio_hp="no"
@@ -338,6 +348,13 @@ fi
 
 if test "$win32" = "yes" ; then
     cross_prefix="i386-mingw32msvc-"
+    v4l="no"
+    audio_oss="no"
+    network="no"
+fi
+
+if test "$mingw32" = "yes" ; then
+    cross_prefix=""
     v4l="no"
     audio_oss="no"
     network="no"
@@ -465,6 +482,7 @@ echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
 echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]"
 echo "  --enable-vorbis          enable vorbis support via libvorbisenc [default=no]"
 echo "  --enable-win32           enable win32 cross compile"
+echo "  --enable-mingw32         enable mingw32 native windows compile"
 echo "  --disable-a52            disable GPL'ed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
@@ -671,6 +689,13 @@ fi
 if test "$win32" = "yes" ; then
   echo "#define CONFIG_WIN32 1" >> $TMPH
   echo "CONFIG_WIN32=yes" >> config.mak
+fi
+
+if test "$mingw32" = "yes" ; then
+  echo "#define CONFIG_WIN32 1" >> $TMPH
+  echo "CONFIG_WIN32=yes" >> config.mak
+  echo "#define __MINGW32__ 1" >> $TMPH
+  echo "__MINGW32__=1" >> config.mak
 fi
 
 if test "$cygwin" = "yes" ; then
