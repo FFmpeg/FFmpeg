@@ -175,7 +175,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.width = s->width;
     st->codec.height = s->height;
     st->codec.pix_fmt = s->pix_fmt;
-    s->img_size = avpicture_get_size(s->pix_fmt, s->width, s->height);
+    s->img_size = avpicture_get_size(s->pix_fmt, (s->width+15)&(~15), (s->height+15)&(~15));
 
     return 0;
  fail1:
@@ -193,7 +193,7 @@ static int read_packet_alloc_cb(void *opaque, AVImageInfo *info)
     if (info->width != s->width ||
         info->height != s->height)
         return -1;
-    avpicture_fill(&info->pict, s->ptr, info->pix_fmt, info->width, info->height);
+    avpicture_fill(&info->pict, s->ptr, info->pix_fmt, (info->width+15)&(~15), (info->height+15)&(~15));
     return 0;
 }
 
