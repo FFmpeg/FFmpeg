@@ -292,7 +292,7 @@ static int ipvideo_decode_block_opcode_0x7(void)
 
         for (y = 0; y < 8; y++) {
             flags = B[y];
-            for (x = 0x80; x != 0; x >>= 1) {
+            for (x = 0x01; x <= 0x80; x <<= 1) {
                 if (flags & x)
                     *sg_output_plane++ = P1;
                 else
@@ -308,10 +308,10 @@ static int ipvideo_decode_block_opcode_0x7(void)
         B[0] = *sg_stream_ptr++;
         B[1] = *sg_stream_ptr++;
 
-        flags = (B[0] << 8) | B[1];
-        bitmask = 0x8000;
+        flags = (B[1] << 8) | B[0];
+        bitmask = 0x0001;
         for (y = 0; y < 8; y += 2) {
-            for (x = 0; x < 8; x += 2, bitmask >>= 1) {
+            for (x = 0; x < 8; x += 2, bitmask <<= 1) {
                 if (flags & bitmask) {
                     *(sg_output_plane + x) = P0;
                     *(sg_output_plane + x + 1) = P0;
@@ -366,23 +366,23 @@ static int ipvideo_decode_block_opcode_0x8(void)
             /* time to reload flags? */
             if (y == 0) {
                 flags =
-                    ((B[0] & 0xF0) << 24) | ((B[4] & 0xF0) << 20) |
-                    ((B[0] & 0x0F) << 20) | ((B[4] & 0x0F) << 16) |
-                    ((B[1] & 0xF0) <<  8) | ((B[5] & 0xF0) <<  4) |
-                    ((B[1] & 0x0F) <<  4) | ((B[5] & 0x0F) <<  0);
-                bitmask = 0x80000000;
+                    ((B[0] & 0xF0) <<  4) | ((B[4] & 0xF0) <<  8) |
+                    ((B[0] & 0x0F)      ) | ((B[4] & 0x0F) <<  4) |
+                    ((B[1] & 0xF0) << 20) | ((B[5] & 0xF0) << 24) |
+                    ((B[1] & 0x0F) << 16) | ((B[5] & 0x0F) << 20);
+                bitmask = 0x00000001;
                 lower_half = 0;  /* still on top half */
             } else if (y == 4) {
                 flags =
-                    ((B[2] & 0xF0) << 24) | ((B[6] & 0xF0) << 20) |
-                    ((B[2] & 0x0F) << 20) | ((B[6] & 0x0F) << 16) |
-                    ((B[3] & 0xF0) <<  8) | ((B[7] & 0xF0) <<  4) |
-                    ((B[3] & 0x0F) <<  4) | ((B[7] & 0x0F) <<  0);
-                bitmask = 0x80000000;
+                    ((B[2] & 0xF0) <<  4) | ((B[6] & 0xF0) <<  8) |
+                    ((B[2] & 0x0F)      ) | ((B[6] & 0x0F) <<  4) |
+                    ((B[3] & 0xF0) << 20) | ((B[7] & 0xF0) << 24) |
+                    ((B[3] & 0x0F) << 16) | ((B[7] & 0x0F) << 20);
+                bitmask = 0x00000001;
                 lower_half = 4;
             }
 
-            for (x = 0; x < 8; x++, bitmask >>= 1) {
+            for (x = 0; x < 8; x++, bitmask <<= 1) {
                 /* get the pixel values ready for this quadrant */
                 if (x == 0) {
                     P0 = P[lower_half + 0];
@@ -419,21 +419,21 @@ static int ipvideo_decode_block_opcode_0x8(void)
                 /* time to reload flags? */
                 if (y == 0) {
                     flags =
-                        ((B[0] & 0xF0) << 24) | ((B[4] & 0xF0) << 20) |
-                        ((B[0] & 0x0F) << 20) | ((B[4] & 0x0F) << 16) |
-                        ((B[1] & 0xF0) <<  8) | ((B[5] & 0xF0) <<  4) |
-                        ((B[1] & 0x0F) <<  4) | ((B[5] & 0x0F) <<  0);
-                    bitmask = 0x80000000;
+                        ((B[0] & 0xF0) <<  4) | ((B[4] & 0xF0) <<  8) |
+                        ((B[0] & 0x0F)      ) | ((B[4] & 0x0F) <<  4) |
+                        ((B[1] & 0xF0) << 20) | ((B[5] & 0xF0) << 24) |
+                        ((B[1] & 0x0F) << 16) | ((B[5] & 0x0F) << 20);
+                    bitmask = 0x00000001;
                 } else if (y == 4) {
                     flags =
-                        ((B[2] & 0xF0) << 24) | ((B[6] & 0xF0) << 20) |
-                        ((B[2] & 0x0F) << 20) | ((B[6] & 0x0F) << 16) |
-                        ((B[3] & 0xF0) <<  8) | ((B[7] & 0xF0) <<  4) |
-                        ((B[3] & 0x0F) <<  4) | ((B[7] & 0x0F) <<  0);
-                    bitmask = 0x80000000;
+                        ((B[2] & 0xF0) <<  4) | ((B[6] & 0xF0) <<  8) |
+                        ((B[2] & 0x0F)      ) | ((B[6] & 0x0F) <<  4) |
+                        ((B[3] & 0xF0) << 20) | ((B[7] & 0xF0) << 24) |
+                        ((B[3] & 0x0F) << 16) | ((B[7] & 0x0F) << 20);
+                    bitmask = 0x00000001;
                 }
 
-                for (x = 0; x < 8; x++, bitmask >>= 1) {
+                for (x = 0; x < 8; x++, bitmask <<= 1) {
                     /* get the pixel values ready for this half */
                     if (x == 0) {
                         P0 = P[0];
@@ -466,7 +466,7 @@ static int ipvideo_decode_block_opcode_0x8(void)
                     P1 = P[3];
                 }
 
-                for (bitmask = 0x80; bitmask != 0; bitmask >>= 1) {
+                for (bitmask = 0x01; bitmask <= 0x80; bitmask <<= 1) {
 
                     if (flags & bitmask)
                         *sg_output_plane++ = P0;
@@ -486,6 +486,7 @@ static int ipvideo_decode_block_opcode_0x9(void)
 {
     int x, y;
     unsigned char P[4];
+    unsigned char B[4];
     unsigned int flags = 0;
     int shifter = 0;
     unsigned char pix;
@@ -503,9 +504,9 @@ static int ipvideo_decode_block_opcode_0x9(void)
 
         for (y = 0; y < 8; y++) {
             /* get the next set of 8 2-bit flags */
-            flags = (sg_stream_ptr[0] << 8) | sg_stream_ptr[1];
+            flags = (sg_stream_ptr[1] << 8) | sg_stream_ptr[0];
             sg_stream_ptr += 2;
-            for (x = 0, shifter = 14; x < 8; x++, shifter -= 2) {
+            for (x = 0, shifter = 0; x < 8; x++, shifter += 2) {
                 *sg_output_plane++ = P[(flags >> shifter) & 0x03];
             }
             sg_output_plane += sg_line_inc;
@@ -516,15 +517,15 @@ static int ipvideo_decode_block_opcode_0x9(void)
         /* 1 of 4 colors for each 2x2 block, need 4 more bytes */
         CHECK_STREAM_PTR(4);
 
-        flags = 0;
-        flags = (flags << 8) | *sg_stream_ptr++;
-        flags = (flags << 8) | *sg_stream_ptr++;
-        flags = (flags << 8) | *sg_stream_ptr++;
-        flags = (flags << 8) | *sg_stream_ptr++;
-        shifter = 30;
+        B[0] = *sg_stream_ptr++;
+        B[1] = *sg_stream_ptr++;
+        B[2] = *sg_stream_ptr++;
+        B[3] = *sg_stream_ptr++;
+        flags = (B[3] << 24) | (B[2] << 16) | (B[1] << 8) | B[0];
+        shifter = 0;
 
         for (y = 0; y < 8; y += 2) {
-            for (x = 0; x < 8; x += 2, shifter -= 2) {
+            for (x = 0; x < 8; x += 2, shifter += 2) {
                 pix = P[(flags >> shifter) & 0x03];
                 *(sg_output_plane + x) = pix;
                 *(sg_output_plane + x + 1) = pix;
@@ -542,14 +543,14 @@ static int ipvideo_decode_block_opcode_0x9(void)
         for (y = 0; y < 8; y++) {
             /* time to reload flags? */
             if ((y == 0) || (y == 4)) {
-                flags = 0;
-                flags = (flags << 8) | *sg_stream_ptr++;
-                flags = (flags << 8) | *sg_stream_ptr++;
-                flags = (flags << 8) | *sg_stream_ptr++;
-                flags = (flags << 8) | *sg_stream_ptr++;
-                shifter = 30;
+                B[0] = *sg_stream_ptr++;
+                B[1] = *sg_stream_ptr++;
+                B[2] = *sg_stream_ptr++;
+                B[3] = *sg_stream_ptr++;
+                flags = (B[3] << 24) | (B[2] << 16) | (B[1] << 8) | B[0];
+                shifter = 0;
             }
-            for (x = 0; x < 8; x += 2, shifter -= 2) {
+            for (x = 0; x < 8; x += 2, shifter += 2) {
                 pix = P[(flags >> shifter) & 0x03];
                 *(sg_output_plane + x) = pix;
                 *(sg_output_plane + x + 1) = pix;
@@ -565,14 +566,14 @@ static int ipvideo_decode_block_opcode_0x9(void)
         for (y = 0; y < 8; y += 2) {
             /* time to reload flags? */
             if ((y == 0) || (y == 4)) {
-                flags = 0;
-                flags = (flags << 8) | *sg_stream_ptr++;
-                flags = (flags << 8) | *sg_stream_ptr++;
-                flags = (flags << 8) | *sg_stream_ptr++;
-                flags = (flags << 8) | *sg_stream_ptr++;
-                shifter = 30;
+                B[0] = *sg_stream_ptr++;
+                B[1] = *sg_stream_ptr++;
+                B[2] = *sg_stream_ptr++;
+                B[3] = *sg_stream_ptr++;
+                flags = (B[3] << 24) | (B[2] << 16) | (B[1] << 8) | B[0];
+                shifter = 0;
             }
-            for (x = 0; x < 8; x++, shifter -= 2) {
+            for (x = 0; x < 8; x++, shifter += 2) {
                 pix = P[(flags >> shifter) & 0x03];
                 *(sg_output_plane + x) = pix;
                 *(sg_output_plane + sg_stride + x) = pix;
@@ -620,9 +621,9 @@ static int ipvideo_decode_block_opcode_0xA(void)
         for (y = 0; y < 8; y++) {
 
             lower_half = (y >= 4) ? 4 : 0;
-            flags = (B[y] << 8) | B[y + 8];
+            flags = (B[y + 8] << 8) | B[y];
 
-            for (x = 0, shifter = 14; x < 8; x++, shifter -= 2) {
+            for (x = 0, shifter = 0; x < 8; x++, shifter += 2) {
                 split = (x >= 4) ? 8 : 0;
                 index = split + lower_half + ((flags >> shifter) & 0x03);
                 *sg_output_plane++ = P[index];
@@ -649,10 +650,10 @@ static int ipvideo_decode_block_opcode_0xA(void)
             /* block is divided into left and right halves */
             for (y = 0; y < 8; y++) {
 
-                flags = (B[y] << 8) | B[y + 8];
+                flags = (B[y + 8] << 8) | B[y];
                 split = 0;
 
-                for (x = 0, shifter = 14; x < 8; x++, shifter -= 2) {
+                for (x = 0, shifter = 0; x < 8; x++, shifter += 2) {
                     if (x == 4)
                         split = 4;
                     *sg_output_plane++ = P[split + ((flags >> shifter) & 0x03)];
@@ -667,11 +668,11 @@ static int ipvideo_decode_block_opcode_0xA(void)
             split = 0;
             for (y = 0; y < 8; y++) {
 
-                flags = (B[y * 2] << 8) | B[y * 2 + 1];
+                flags = (B[y * 2 + 1] << 8) | B[y * 2];
                 if (y == 4)
                     split = 4;
 
-                for (x = 0, shifter = 14; x < 8; x++, shifter -= 2)
+                for (x = 0, shifter = 0; x < 8; x++, shifter += 2)
                     *sg_output_plane++ = P[split + ((flags >> shifter) & 0x03)];
 
                 sg_output_plane += sg_line_inc;
