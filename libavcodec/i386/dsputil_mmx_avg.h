@@ -20,7 +20,7 @@
  * MMX optimization by Nick Kurshev <nickols_k@mail.ru>
  * mostly rewritten by Michael Niedermayer <michaelni@gmx.at>
  */
-
+ 
 static void DEF(put_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
@@ -57,7 +57,7 @@ static void DEF(put_no_rnd_pixels_x2)(UINT8 *block, const UINT8 *pixels, int lin
 {
     __asm __volatile(
         "xorl %%eax, %%eax		\n\t"
-        "movq "MANGLE(mm_bone)", %%mm7	\n\t"
+	MOVQ_BONE(%%mm7)
         ".balign 16			\n\t"
         "1:				\n\t"
 	"movq (%1, %%eax), %%mm0	\n\t"
@@ -122,7 +122,7 @@ static void DEF(put_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
 static void DEF(put_no_rnd_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
-        "movq "MANGLE(mm_bone)", %%mm7	\n\t"
+	MOVQ_BONE(%%mm7)
         "xorl %%eax, %%eax		\n\t"
 	"movq (%1), %%mm0		\n\t"
         ".balign 16			\n\t"
@@ -264,7 +264,7 @@ static void DEF(avg_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
 static void DEF(avg_pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
-        "movq "MANGLE(mm_bone)", %%mm7	\n\t"
+	MOVQ_BONE(%%mm7)
         "xorl %%eax, %%eax		\n\t"
 	"movq (%1), %%mm0		\n\t"
 	"movq 1(%1), %%mm1		\n\t"

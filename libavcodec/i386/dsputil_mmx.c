@@ -50,9 +50,9 @@ void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
 
 /* pixel operations */
-static const unsigned long long int mm_bone __attribute__ ((aligned(8))) = 0x0101010101010101LL;
-static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001LL;
-static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002LL;
+static const uint64_t mm_bone __attribute__ ((aligned(8))) = 0x0101010101010101ULL;
+static const uint64_t mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001ULL;
+static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002ULL;
 //static const unsigned short mm_wone[4] __attribute__ ((aligned(8))) = { 0x1, 0x1, 0x1, 0x1 };
 //static const unsigned short mm_wtwo[4] __attribute__ ((aligned(8))) = { 0x2, 0x2, 0x2, 0x2 };
 
@@ -62,6 +62,7 @@ static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x000
 #ifndef PIC
 #define MOVQ_WONE(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(mm_wone))
 #define MOVQ_WTWO(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(mm_wtwo))
+#define MOVQ_BONE(regd)  "movq "MANGLE(mm_bone)", "#regd" \n\t"
 #else
 // for shared library it's better to use this way for accessing constants
 // pcmpeqd -> -1
@@ -75,7 +76,13 @@ static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x000
        "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
        "psrlw $15, %%" #regd " \n\t" \
        "psllw $1, %%" #regd ::)
+
+#define MOVQ_BONE(regd) \
+       "pcmpeqd " #regd ", " #regd " \n\t" \
+       "psrlw $15, " #regd " \n\t"\
+       "packuswb " #regd ", " #regd " \n\t"
 #endif
+
 
 /***********************************/
 /* 3Dnow specific */
