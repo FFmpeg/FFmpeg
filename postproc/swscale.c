@@ -294,6 +294,9 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 {
 	if(dstFormat==IMGFMT_BGR32)
 	{
+#ifdef WORDS_BIGENDIAN
+	dest++;
+#endif
 		int i;
 		for(i=0; i<(dstW>>1); i++){
 			int j;
