@@ -35,7 +35,7 @@ LinIpolDeinterlace	e		E	E*
 CubicIpolDeinterlace	a		e	e*
 LinBlendDeinterlace	e		E	E*
 MedianDeinterlace#	 	Ec	Ec
-TempDeNoiser#		a
+TempDeNoiser#		E		e	e
 
 * i dont have a 3dnow CPU -> its untested, but noone said it doesnt work so it seems to work
 # more or less selfinvented filters so the exactness isnt too meaningfull
@@ -61,6 +61,7 @@ split this huge file
 border remover
 optimize c versions
 try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
+smart blur
 ...
 
 Notes:
@@ -2592,10 +2593,294 @@ static inline void transpose2(uint8_t *dst, int dstStride, uint8_t *src)
 	);
 }
 #endif
+//static int test=0;
 
 static void inline tempNoiseReducer(uint8_t *src, int stride,
 				    uint8_t *tempBlured, int *maxNoise)
 {
+#define FAST_L2_DIFF
+//#define L1_DIFF //u should change the thresholds too if u try that one
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	asm volatile(
+		"leal (%2, %2, 2), %%eax			\n\t" // 3*stride
+		"leal (%2, %2, 4), %%ebx			\n\t" // 5*stride
+		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
+//	0	1	2	3	4	5	6	7	8	9
+//	%x	%x+%2	%x+2%2	%x+eax	%x+4%2	%x+ebx	%x+2eax	%x+ecx	%x+8%2
+//FIXME reorder?
+#ifdef L1_DIFF //needs mmx2
+		"movq (%0), %%mm0				\n\t" // L0
+		"psadbw (%1), %%mm0				\n\t" // |L0-R0|
+		"movq (%0, %2), %%mm1				\n\t" // L1
+		"psadbw (%1, %2), %%mm1				\n\t" // |L1-R1|
+		"movq (%0, %2, 2), %%mm2			\n\t" // L2
+		"psadbw (%1, %2, 2), %%mm2			\n\t" // |L2-R2|
+		"movq (%0, %%eax), %%mm3			\n\t" // L3
+		"psadbw (%1, %%eax), %%mm3			\n\t" // |L3-R3|
+
+		"movq (%0, %2, 4), %%mm4			\n\t" // L4
+		"paddw %%mm1, %%mm0				\n\t"
+		"psadbw (%1, %2, 4), %%mm4			\n\t" // |L4-R4|
+		"movq (%0, %%ebx), %%mm5			\n\t" // L5
+		"paddw %%mm2, %%mm0				\n\t"
+		"psadbw (%1, %%ebx), %%mm5			\n\t" // |L5-R5|
+		"movq (%0, %%eax, 2), %%mm6			\n\t" // L6
+		"paddw %%mm3, %%mm0				\n\t"
+		"psadbw (%1, %%eax, 2), %%mm6			\n\t" // |L6-R6|
+		"movq (%0, %%ecx), %%mm7			\n\t" // L7
+		"paddw %%mm4, %%mm0				\n\t"
+		"psadbw (%1, %%ecx), %%mm7			\n\t" // |L7-R7|
+		"paddw %%mm5, %%mm6				\n\t"
+		"paddw %%mm7, %%mm6				\n\t"
+		"paddw %%mm6, %%mm0				\n\t"
+#elif defined (FAST_L2_DIFF)
+		"pcmpeqb %%mm7, %%mm7				\n\t"
+		"movq b80, %%mm6				\n\t"
+		"pxor %%mm0, %%mm0				\n\t"
+#define L2_DIFF_CORE(a, b)\
+		"movq " #a ", %%mm5				\n\t"\
+		"movq " #b ", %%mm2				\n\t"\
+		"pxor %%mm7, %%mm2				\n\t"\
+		PAVGB(%%mm2, %%mm5)\
+		"paddb %%mm6, %%mm5				\n\t"\
+		"movq %%mm5, %%mm2				\n\t"\
+		"psllw $8, %%mm5				\n\t"\
+		"pmaddwd %%mm5, %%mm5				\n\t"\
+		"pmaddwd %%mm2, %%mm2				\n\t"\
+		"paddd %%mm2, %%mm5				\n\t"\
+		"psrld $14, %%mm5				\n\t"\
+		"paddd %%mm5, %%mm0				\n\t"
+
+L2_DIFF_CORE((%0), (%1))
+L2_DIFF_CORE((%0, %2), (%1, %2))
+L2_DIFF_CORE((%0, %2, 2), (%1, %2, 2))
+L2_DIFF_CORE((%0, %%eax), (%1, %%eax))
+L2_DIFF_CORE((%0, %2, 4), (%1, %2, 4))
+L2_DIFF_CORE((%0, %%ebx), (%1, %%ebx))
+L2_DIFF_CORE((%0, %%eax,2), (%1, %%eax,2))
+L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
+
+#else
+		"pxor %%mm7, %%mm7				\n\t"
+		"pxor %%mm0, %%mm0				\n\t"
+#define L2_DIFF_CORE(a, b)\
+		"movq " #a ", %%mm5				\n\t"\
+		"movq " #b ", %%mm2				\n\t"\
+		"movq %%mm5, %%mm1				\n\t"\
+		"movq %%mm2, %%mm3				\n\t"\
+		"punpcklbw %%mm7, %%mm5				\n\t"\
+		"punpckhbw %%mm7, %%mm1				\n\t"\
+		"punpcklbw %%mm7, %%mm2				\n\t"\
+		"punpckhbw %%mm7, %%mm3				\n\t"\
+		"psubw %%mm2, %%mm5				\n\t"\
+		"psubw %%mm3, %%mm1				\n\t"\
+		"pmaddwd %%mm5, %%mm5				\n\t"\
+		"pmaddwd %%mm1, %%mm1				\n\t"\
+		"paddd %%mm1, %%mm5				\n\t"\
+		"paddd %%mm5, %%mm0				\n\t"
+
+L2_DIFF_CORE((%0), (%1))
+L2_DIFF_CORE((%0, %2), (%1, %2))
+L2_DIFF_CORE((%0, %2, 2), (%1, %2, 2))
+L2_DIFF_CORE((%0, %%eax), (%1, %%eax))
+L2_DIFF_CORE((%0, %2, 4), (%1, %2, 4))
+L2_DIFF_CORE((%0, %%ebx), (%1, %%ebx))
+L2_DIFF_CORE((%0, %%eax,2), (%1, %%eax,2))
+L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
+
+#endif
+
+		"movq %%mm0, %%mm4				\n\t"
+		"psrlq $32, %%mm0				\n\t"
+		"paddd %%mm0, %%mm4				\n\t"
+		"movd %%mm4, %%ecx				\n\t"
+//		"movl %3, %%ecx				\n\t"
+//		"movl %%ecx, test				\n\t"
+//		"jmp 4f \n\t"
+		"cmpl %4, %%ecx				\n\t"
+		" jb 2f						\n\t"
+		"cmpl %5, %%ecx				\n\t"
+		" jb 1f						\n\t"
+
+		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
+		"movq (%0), %%mm0				\n\t" // L0
+		"movq (%0, %2), %%mm1				\n\t" // L1
+		"movq (%0, %2, 2), %%mm2			\n\t" // L2
+		"movq (%0, %%eax), %%mm3			\n\t" // L3
+		"movq (%0, %2, 4), %%mm4			\n\t" // L4
+		"movq (%0, %%ebx), %%mm5			\n\t" // L5
+		"movq (%0, %%eax, 2), %%mm6			\n\t" // L6
+		"movq (%0, %%ecx), %%mm7			\n\t" // L7
+		"movq %%mm0, (%1)				\n\t" // L0
+		"movq %%mm1, (%1, %2)				\n\t" // L1
+		"movq %%mm2, (%1, %2, 2)			\n\t" // L2
+		"movq %%mm3, (%1, %%eax)			\n\t" // L3
+		"movq %%mm4, (%1, %2, 4)			\n\t" // L4
+		"movq %%mm5, (%1, %%ebx)			\n\t" // L5
+		"movq %%mm6, (%1, %%eax, 2)			\n\t" // L6
+		"movq %%mm7, (%1, %%ecx)			\n\t" // L7
+		"jmp 4f						\n\t"
+
+		"1:						\n\t"
+		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
+		"movq (%0), %%mm0				\n\t" // L0
+		"pavgb (%1), %%mm0				\n\t" // L0
+		"movq (%0, %2), %%mm1				\n\t" // L1
+		"pavgb (%1, %2), %%mm1				\n\t" // L1
+		"movq (%0, %2, 2), %%mm2			\n\t" // L2
+		"pavgb (%1, %2, 2), %%mm2			\n\t" // L2
+		"movq (%0, %%eax), %%mm3			\n\t" // L3
+		"pavgb (%1, %%eax), %%mm3			\n\t" // L3
+		"movq (%0, %2, 4), %%mm4			\n\t" // L4
+		"pavgb (%1, %2, 4), %%mm4			\n\t" // L4
+		"movq (%0, %%ebx), %%mm5			\n\t" // L5
+		"pavgb (%1, %%ebx), %%mm5			\n\t" // L5
+		"movq (%0, %%eax, 2), %%mm6			\n\t" // L6
+		"pavgb (%1, %%eax, 2), %%mm6			\n\t" // L6
+		"movq (%0, %%ecx), %%mm7			\n\t" // L7
+		"pavgb (%1, %%ecx), %%mm7			\n\t" // L7
+		"movq %%mm0, (%1)				\n\t" // R0
+		"movq %%mm1, (%1, %2)				\n\t" // R1
+		"movq %%mm2, (%1, %2, 2)			\n\t" // R2
+		"movq %%mm3, (%1, %%eax)			\n\t" // R3
+		"movq %%mm4, (%1, %2, 4)			\n\t" // R4
+		"movq %%mm5, (%1, %%ebx)			\n\t" // R5
+		"movq %%mm6, (%1, %%eax, 2)			\n\t" // R6
+		"movq %%mm7, (%1, %%ecx)			\n\t" // R7
+		"movq %%mm0, (%0)				\n\t" // L0
+		"movq %%mm1, (%0, %2)				\n\t" // L1
+		"movq %%mm2, (%0, %2, 2)			\n\t" // L2
+		"movq %%mm3, (%0, %%eax)			\n\t" // L3
+		"movq %%mm4, (%0, %2, 4)			\n\t" // L4
+		"movq %%mm5, (%0, %%ebx)			\n\t" // L5
+		"movq %%mm6, (%0, %%eax, 2)			\n\t" // L6
+		"movq %%mm7, (%0, %%ecx)			\n\t" // L7
+		"jmp 4f						\n\t"
+
+		"2:						\n\t"
+		"cmpl %3, %%ecx					\n\t"
+		" jb 3f						\n\t"
+
+		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
+		"movq (%0), %%mm0				\n\t" // L0
+		"movq (%0, %2), %%mm1				\n\t" // L1
+		"movq (%0, %2, 2), %%mm2			\n\t" // L2
+		"movq (%0, %%eax), %%mm3			\n\t" // L3
+		"movq (%1), %%mm4				\n\t" // R0
+		"movq (%1, %2), %%mm5				\n\t" // R1
+		"movq (%1, %2, 2), %%mm6			\n\t" // R2
+		"movq (%1, %%eax), %%mm7			\n\t" // R3
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		"movq %%mm0, (%1)				\n\t" // R0
+		"movq %%mm1, (%1, %2)				\n\t" // R1
+		"movq %%mm2, (%1, %2, 2)			\n\t" // R2
+		"movq %%mm3, (%1, %%eax)			\n\t" // R3
+		"movq %%mm0, (%0)				\n\t" // L0
+		"movq %%mm1, (%0, %2)				\n\t" // L1
+		"movq %%mm2, (%0, %2, 2)			\n\t" // L2
+		"movq %%mm3, (%0, %%eax)			\n\t" // L3
+
+		"movq (%0, %2, 4), %%mm0			\n\t" // L4
+		"movq (%0, %%ebx), %%mm1			\n\t" // L5
+		"movq (%0, %%eax, 2), %%mm2			\n\t" // L6
+		"movq (%0, %%ecx), %%mm3			\n\t" // L7
+		"movq (%1, %2, 4), %%mm4			\n\t" // R4
+		"movq (%1, %%ebx), %%mm5			\n\t" // R5
+		"movq (%1, %%eax, 2), %%mm6			\n\t" // R6
+		"movq (%1, %%ecx), %%mm7			\n\t" // R7
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		"movq %%mm0, (%1, %2, 4)			\n\t" // R4
+		"movq %%mm1, (%1, %%ebx)			\n\t" // R5
+		"movq %%mm2, (%1, %%eax, 2)			\n\t" // R6
+		"movq %%mm3, (%1, %%ecx)			\n\t" // R7
+		"movq %%mm0, (%0, %2, 4)			\n\t" // L4
+		"movq %%mm1, (%0, %%ebx)			\n\t" // L5
+		"movq %%mm2, (%0, %%eax, 2)			\n\t" // L6
+		"movq %%mm3, (%0, %%ecx)			\n\t" // L7
+		"jmp 4f						\n\t"
+
+		"3:						\n\t"
+		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
+		"movq (%0), %%mm0				\n\t" // L0
+		"movq (%0, %2), %%mm1				\n\t" // L1
+		"movq (%0, %2, 2), %%mm2			\n\t" // L2
+		"movq (%0, %%eax), %%mm3			\n\t" // L3
+		"movq (%1), %%mm4				\n\t" // R0
+		"movq (%1, %2), %%mm5				\n\t" // R1
+		"movq (%1, %2, 2), %%mm6			\n\t" // R2
+		"movq (%1, %%eax), %%mm7			\n\t" // R3
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		"movq %%mm0, (%1)				\n\t" // R0
+		"movq %%mm1, (%1, %2)				\n\t" // R1
+		"movq %%mm2, (%1, %2, 2)			\n\t" // R2
+		"movq %%mm3, (%1, %%eax)			\n\t" // R3
+		"movq %%mm0, (%0)				\n\t" // L0
+		"movq %%mm1, (%0, %2)				\n\t" // L1
+		"movq %%mm2, (%0, %2, 2)			\n\t" // L2
+		"movq %%mm3, (%0, %%eax)			\n\t" // L3
+
+		"movq (%0, %2, 4), %%mm0			\n\t" // L4
+		"movq (%0, %%ebx), %%mm1			\n\t" // L5
+		"movq (%0, %%eax, 2), %%mm2			\n\t" // L6
+		"movq (%0, %%ecx), %%mm3			\n\t" // L7
+		"movq (%1, %2, 4), %%mm4			\n\t" // R4
+		"movq (%1, %%ebx), %%mm5			\n\t" // R5
+		"movq (%1, %%eax, 2), %%mm6			\n\t" // R6
+		"movq (%1, %%ecx), %%mm7			\n\t" // R7
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		PAVGB(%%mm4, %%mm0)
+		PAVGB(%%mm5, %%mm1)
+		PAVGB(%%mm6, %%mm2)
+		PAVGB(%%mm7, %%mm3)
+		"movq %%mm0, (%1, %2, 4)			\n\t" // R4
+		"movq %%mm1, (%1, %%ebx)			\n\t" // R5
+		"movq %%mm2, (%1, %%eax, 2)			\n\t" // R6
+		"movq %%mm3, (%1, %%ecx)			\n\t" // R7
+		"movq %%mm0, (%0, %2, 4)			\n\t" // L4
+		"movq %%mm1, (%0, %%ebx)			\n\t" // L5
+		"movq %%mm2, (%0, %%eax, 2)			\n\t" // L6
+		"movq %%mm3, (%0, %%ecx)			\n\t" // L7
+
+		"4:						\n\t"
+
+		:: "r" (src), "r" (tempBlured), "r"(stride),
+		   "m"(maxNoise[0]), "m"(maxNoise[1]), "m"(maxNoise[2])
+		: "%eax", "%ebx", "%ecx", "memory"
+		);
+//printf("%d\n", test);
+#else
 	int y;
 	int d=0;
 	int sysd=0;
@@ -2608,7 +2893,10 @@ static void inline tempNoiseReducer(uint8_t *src, int stride,
 			int ref= tempBlured[ x + y*stride ];
 			int cur= src[ x + y*stride ];
 			int d1=ref - cur;
-			d+= ABS(d1); //d1*d1;
+//			if(x==0 || x==7) d1+= d1>>1;
+//			if(y==0 || y==7) d1+= d1>>1;
+//			d+= ABS(d1);
+			d+= d1*d1;
 			sysd+= d1;
 		}
 	}
@@ -2682,6 +2970,7 @@ Switch between
 			}
 		}
 	}
+#endif
 }
 
 #ifdef HAVE_ODIVX_POSTPROCESS
@@ -2914,9 +3203,9 @@ void  postprocess(unsigned char * src[], int src_stride,
 	ppMode.lumMode= mode;
 	mode= ((mode&0xFF)>>4) | (mode&0xFFFFFF00);
 	ppMode.chromMode= mode;
-	ppMode.maxTmpNoise[0]= 150;
-	ppMode.maxTmpNoise[1]= 200;
-	ppMode.maxTmpNoise[2]= 400;
+	ppMode.maxTmpNoise[0]= 700;
+	ppMode.maxTmpNoise[1]= 1500;
+	ppMode.maxTmpNoise[2]= 3000;
 
 #ifdef HAVE_ODIVX_POSTPROCESS
 // Note: I could make this shit outside of this file, but it would mean one
