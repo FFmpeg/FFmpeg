@@ -66,7 +66,7 @@ static void h_resample_fast(UINT8 *dst, int dst_width, UINT8 *src, int src_width
         /* test */
         if ((src_pos >> POS_FRAC_BITS) < 0 ||
             (src_pos >> POS_FRAC_BITS) > (src_width - NB_TAPS))
-            abort();
+            av_abort();
 #endif
         s = src + (src_pos >> POS_FRAC_BITS);
         phase = get_phase(src_pos);
