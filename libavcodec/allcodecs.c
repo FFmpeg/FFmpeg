@@ -81,6 +81,7 @@ void avcodec_register_all(void)
     register_avcodec(&h263i_decoder);
     register_avcodec(&rv10_decoder);
     register_avcodec(&svq1_decoder);
+    register_avcodec(&svq3_decoder);
     register_avcodec(&wmav1_decoder);
     register_avcodec(&wmav2_decoder);
     register_avcodec(&indeo3_decoder);

@@ -195,6 +195,9 @@ typedef struct H264Context{
     int b_stride;
     int b8_stride;
 
+    int halfpel_flag;
+    int thirdpel_flag;
+
     SPS sps_buffer[MAX_SPS_COUNT];
     SPS sps; ///< current sps
     
@@ -290,6 +293,9 @@ static VLC chroma_dc_total_zeros_vlc[3];
 
 static VLC run_vlc[6];
 static VLC run7_vlc;
+
+static void svq3_luma_dc_dequant_idct_c(DCTELEM *block, int qp);
+static void svq3_add_idct_c(uint8_t *dst, DCTELEM *block, int stride, int qp, int dc);
 
 /**
  * fill a rectangle.
@@ -1676,7 +1682,7 @@ static void pred16x16_128_dc_c(uint8_t *src, int stride){
     }
 }
 
-static void pred16x16_plane_c(uint8_t *src, int stride){
+static inline void pred16x16_plane_compat_c(uint8_t *src, int stride, const int svq3){
   int i, j, k;
   int a;
   uint8_t *cm = cropTbl + MAX_NEG_CROP;
@@ -1690,8 +1696,13 @@ static void pred16x16_plane_c(uint8_t *src, int stride){
     H += k*(src0[k] - src0[-k]);
     V += k*(src1[0] - src2[ 0]);
   }
-  H = ( 5*H+32 ) >> 6;
-  V = ( 5*V+32 ) >> 6;
+  if(svq3){
+    H = ( 5*(H/4) ) / 16;
+    V = ( 5*(V/4) ) / 16;
+  }else{
+    H = ( 5*H+32 ) >> 6;
+    V = ( 5*V+32 ) >> 6;
+  }
 
   a = 16*(src1[0] + src2[16] + 1) - 7*(V+H);
   for(j=16; j>0; --j) {
@@ -1706,6 +1717,10 @@ static void pred16x16_plane_c(uint8_t *src, int stride){
     }
     src += stride;
   }
+}
+
+static void pred16x16_plane_c(uint8_t *src, int stride){
+    pred16x16_plane_compat_c(src, stride, 0);
 }
 
 static void pred8x8_vertical_c(uint8_t *src, int stride){
@@ -2240,15 +2255,22 @@ static void hl_decode_mb(H264Context *h){
                     }
 
                     h->pred4x4[ dir ](ptr, topright, linesize);
-                    if(h->non_zero_count_cache[ scan8[i] ])
-                        h264_add_idct_c(ptr, h->mb + i*16, linesize);
+                    if(h->non_zero_count_cache[ scan8[i] ]){
+                        if(s->codec_id == CODEC_ID_H264)
+                            h264_add_idct_c(ptr, h->mb + i*16, linesize);
+                        else
+                            svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
+                    }
                 }
             }
         }else{
             h->pred16x16[ h->intra16x16_pred_mode ](dest_y , linesize);
-            h264_luma_dc_dequant_idct_c(h->mb, s->qscale);
+            if(s->codec_id == CODEC_ID_H264)
+                h264_luma_dc_dequant_idct_c(h->mb, s->qscale);
+            else
+                svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
         }
-    }else{
+    }else if(s->codec_id == CODEC_ID_H264){
         hl_motion(h, dest_y, dest_cb, dest_cr,
                   s->dsp.put_h264_qpel_pixels_tab, s->dsp.put_h264_chroma_pixels_tab, 
                   s->dsp.avg_h264_qpel_pixels_tab, s->dsp.avg_h264_chroma_pixels_tab);
@@ -2259,7 +2281,10 @@ static void hl_decode_mb(H264Context *h){
         for(i=0; i<16; i++){
             if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
                 uint8_t * const ptr= dest_y + h->block_offset[i];
-                h264_add_idct_c(ptr, h->mb + i*16, linesize);
+                if(s->codec_id == CODEC_ID_H264)
+                    h264_add_idct_c(ptr, h->mb + i*16, linesize);
+                else
+                    svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, IS_INTRA(mb_type) ? 1 : 0);
             }
         }
     }
@@ -2270,13 +2295,19 @@ static void hl_decode_mb(H264Context *h){
         for(i=16; i<16+4; i++){
             if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
                 uint8_t * const ptr= dest_cb + h->block_offset[i];
-                h264_add_idct_c(ptr, h->mb + i*16, uvlinesize);
+                if(s->codec_id == CODEC_ID_H264)
+                    h264_add_idct_c(ptr, h->mb + i*16, uvlinesize);
+                else
+                    svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
             }
         }
         for(i=20; i<20+4; i++){
             if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
                 uint8_t * const ptr= dest_cr + h->block_offset[i];
-                h264_add_idct_c(ptr, h->mb + i*16, uvlinesize);
+                if(s->codec_id == CODEC_ID_H264)
+                    h264_add_idct_c(ptr, h->mb + i*16, uvlinesize);
+                else
+                    svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
             }
         }
     }
@@ -4370,3 +4401,4 @@ AVCodec h264_decoder = {
     /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
 };
 
+#include "svq3.c"
