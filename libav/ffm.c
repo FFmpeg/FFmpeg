@@ -172,7 +172,7 @@ static int ffm_write_header(AVFormatContext *s)
             put_le16(pb, codec->frame_size);
             break;
         default:
-            abort();
+            av_abort();
         }
         /* hack to have real time */
         if (ffm_nopts)
@@ -198,8 +198,7 @@ static int ffm_write_header(AVFormatContext *s)
  fail:
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        fst = st->priv_data;
-        av_free(fst);
+        av_freep(&st->priv_data);
     }
     return -1;
 }
@@ -251,7 +250,7 @@ static int ffm_write_trailer(AVFormatContext *s)
     put_flush_packet(pb);
 
     for(i=0;i<s->nb_streams;i++)
-        av_free(s->streams[i]->priv_data);
+        av_freep(&s->streams[i]->priv_data);
     return 0;
 }
 
@@ -320,7 +319,7 @@ static int ffm_read_data(AVFormatContext *s,
                 }
                 ffm->first_packet = 0;
                 if ((frame_offset & 0x7ffff) < FFM_HEADER_SIZE)
-                    abort();
+                    av_abort();
                 ffm->packet_ptr = ffm->packet + (frame_offset & 0x7fff) - FFM_HEADER_SIZE;
                 if (!first)
                     break;
@@ -403,7 +402,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->frame_size = get_le16(pb);
             break;
         default:
-            abort();
+            av_abort();
         }
 
     }
@@ -424,8 +423,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
         if (st) {
-            fst = st->priv_data;
-            av_free(fst);
+            av_freep(&st->priv_data);
             av_free(st);
         }
     }
@@ -604,16 +602,16 @@ static int ffm_read_close(AVFormatContext *s)
 
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        av_free(st->priv_data);
+        av_freep(&st->priv_data);
     }
-    av_free(s->priv_data);
+    av_freep(&s->priv_data);
     return 0;
 }
 
 AVInputFormat ffm_iformat = {
     "ffm",
     "ffm format",
-    sizeof(FFMContext),
+    sizeof(FFMContext) + FFM_PACKET_SIZE,
     NULL,
     ffm_read_header,
     ffm_read_packet,
