@@ -266,7 +266,6 @@ void dump_format(AVFormatContext *ic,
                  const char *url,
                  int is_output);
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str);
-INT64 gettime(void);
 INT64 parse_date(const char *datestr, int duration);
 
 /* ffm specific for ffserver */
