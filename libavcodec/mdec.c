@@ -189,9 +189,9 @@ static int decode_frame(AVCodecContext *avctx,
     a->last_dc[2]= 0;
 
     a->bitstream_buffer= av_fast_realloc(a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    for(i=0; 2*i<buf_size; i+=2){
-        ((uint16_t*)a->bitstream_buffer)[i]  = ((uint16_t*)buf)[i+1];
-        ((uint16_t*)a->bitstream_buffer)[i+1]= ((uint16_t*)buf)[i  ];
+    for(i=0; i<buf_size; i+=2){
+        a->bitstream_buffer[i]  = buf[i+1];
+        a->bitstream_buffer[i+1]= buf[i  ];
     }
 //    a->dsp.bswap_buf((uint32_t*)a->bitstream_buffer, (uint32_t*)buf, buf_size/4);
     init_get_bits(&a->gb, a->bitstream_buffer, buf_size*8);
