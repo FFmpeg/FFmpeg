@@ -2075,7 +2075,7 @@ static inline void RENAME(transpose2)(uint8_t *dst, int dstStride, uint8_t *src)
 #endif
 //static int test=0;
 
-static void inline RENAME(tempNoiseReducer)(uint8_t *src, int stride,
+static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 				    uint8_t *tempBlured, uint32_t *tempBluredPast, int *maxNoise)
 {
 	// to save a register (FIXME do this outside of the loops)
@@ -2828,6 +2828,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 			memcpy(dst, tempDst + 9*dstStride, copyAhead*dstStride);
 		else
 		{
+			int i;
 			for(i=0; i<copyAhead; i++)
 			{
 				memcpy(dst + i*dstStride, tempDst + (9+i)*dstStride, width);
