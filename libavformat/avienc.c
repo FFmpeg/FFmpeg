@@ -86,6 +86,8 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_HUFFYUV, MKTAG('H', 'F', 'Y', 'U') },
     { CODEC_ID_HUFFYUV, MKTAG('h', 'f', 'y', 'u') },
+    { CODEC_ID_CYUV, MKTAG('C', 'Y', 'U', 'V') },
+    { CODEC_ID_CYUV, MKTAG('c', 'y', 'u', 'v') },
     { 0, 0 },
 };
 
