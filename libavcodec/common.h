@@ -102,7 +102,7 @@ extern const struct AVOption avoptions_workaround_bug[11];
 #endif /* HAVE_INTTYPES_H */
 
 #ifndef INT64_MAX
-#define INT64_MAX 9223372036854775807LL
+#define INT64_MAX int64_t_C(9223372036854775807)
 #endif
 
 #ifdef EMULATE_FAST_INT
