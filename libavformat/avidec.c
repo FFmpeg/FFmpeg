@@ -512,6 +512,8 @@ resync:
 
             first = get_byte(pb);
             clr = get_byte(pb);
+	    if(!clr) /* all 256 colors used */
+		clr = 256;
             flags = get_le16(pb);
             p = 4;
             for (k = first; k < clr + first; k++) {
