@@ -33,8 +33,8 @@ aeb300900461bdf9e0321934aa6dcc93 *./data/a-mpeg4-adv.avi
 e465df12f2c8a6492a6ec0b1bddc1d0d *./data/out.yuv
 stddev:  4.97 bytes:7602176
 2ec827a941ee8e82911280405987f8ef *./data/a-mpeg1b.mpg
-145c3741d70bc40d5c93de709aca70ee *./data/out.yuv
-stddev:  4.12 bytes:6842368
+2935a090a88c74ccb220c18c1399cea7 *./data/out.yuv
+stddev:  4.69 bytes:6993920
 e9218a1db885fe0262e88f9df630307d *./data/a-mjpeg.avi
 a365b4da246ad68caf96b702b7f961a1 *./data/out.yuv
 stddev:  4.76 bytes:7602176

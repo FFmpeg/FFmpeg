@@ -1770,18 +1770,15 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
     }
 }
 
-#define DECODE_SLICE_MB_ADDR_ERROR -3 //we faild decoding the mb_x/y info
 #define DECODE_SLICE_FATAL_ERROR -2
 #define DECODE_SLICE_ERROR -1
 #define DECODE_SLICE_OK 0
-#define DECODE_SLICE_EOP 1
 
 /**
  * decodes a slice.
  * @return DECODE_SLICE_FATAL_ERROR if a non recoverable error occured<br>
  *         DECODE_SLICE_ERROR if the slice is damaged<br>
  *         DECODE_SLICE_OK if this slice is ok<br>
- *         DECODE_SLICE_EOP if the end of the picture is reached
  */
 static int mpeg_decode_slice(AVCodecContext *avctx, 
                               AVFrame *pict,
@@ -1793,10 +1790,13 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     int ret;
     const int field_pic= s->picture_structure != PICT_FRAME;
 
+    s->resync_mb_x= s->mb_x = 
+    s->resync_mb_y= s->mb_y = -1;
+    
     start_code = (start_code - 1) & 0xff;
     if (start_code >= s->mb_height){
         fprintf(stderr, "slice below image (%d >= %d)\n", start_code, s->mb_height);
-        return DECODE_SLICE_MB_ADDR_ERROR;
+        return -1;
     }
     
     ff_mpeg1_clean_buffers(s);
@@ -1856,7 +1856,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     s->qscale = get_qscale(s);
     if(s->qscale == 0){
         fprintf(stderr, "qscale == 0\n");
-        return DECODE_SLICE_MB_ADDR_ERROR;
+        return -1;
     }
     
     /* extra slice info */
@@ -1870,7 +1870,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
         if (code < 0){
             fprintf(stderr, "first mb_incr damaged\n");
-            return DECODE_SLICE_MB_ADDR_ERROR;
+            return -1;
         }
         if (code >= 33) {
             if (code == 33) {
@@ -1901,7 +1901,9 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
             const int xy = s->mb_x*2 + 1 + (s->mb_y*2 +1)*wrap;
             int motion_x, motion_y;
 
-            if (s->mb_intra || s->mv_type == MV_TYPE_16X16) {
+            if (s->mb_intra) {
+                motion_x = motion_y = 0;
+            }else if (s->mv_type == MV_TYPE_16X16) {
                 motion_x = s->mv[0][0][0];
                 motion_y = s->mv[0][0][1];
             } else /*if (s->mv_type == MV_TYPE_FIELD)*/ {
@@ -1963,20 +1965,26 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         }
         if(s->mb_y<<field_pic >= s->mb_height){
             fprintf(stderr, "slice too long\n");
-            return DECODE_SLICE_ERROR;
+            return -1;
         }
     }
-eos: //end of slice
-//printf("y %d %d %d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
-    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_END|DC_END|MV_END);
-
-    emms_c();
-    
+eos: // end of slice
     *buf += get_bits_count(&s->gb)/8 - 1;
-    
-//intf("%d %d %d %d\n", s->mb_y, s->mb_height, s->pict_type, s->picture_number);
+//printf("y %d %d %d %d\n", s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y);
+    return 0;
+}
+
+/**
+ * handles slice ends.
+ * @return 1 if it seems to be the last slice of 
+ */
+static int slice_end(AVCodecContext *avctx, AVFrame *pict)
+{
+    Mpeg1Context *s1 = avctx->priv_data;
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
+       
     /* end of slice reached */
-    if (s->mb_y<<field_pic == s->mb_height && !s->first_field) {
+    if (/*s->mb_y<<field_pic == s->mb_height &&*/ !s->first_field) {
         /* end of image */
 
         if(s->mpeg2){
@@ -2000,9 +2008,9 @@ eos: //end of slice
                  ff_print_debug_info(s, s->last_picture_ptr);
             }
         }
-        return DECODE_SLICE_EOP;
+        return 1;
     } else {
-        return DECODE_SLICE_OK;
+        return 0;
     }
 }
 
@@ -2234,7 +2242,10 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         /* find start next code */
         start_code = find_start_code(&buf_ptr, buf_end);
         if (start_code < 0){
-//            printf("missing end of picture\n");
+            if (slice_end(avctx, picture)) {
+                if(s2->last_picture_ptr) //FIXME merge with the stuff in mpeg_decode_slice
+                    *data_size = sizeof(AVPicture);
+            }
             return FFMAX(0, buf_ptr - buf - s2->parse_context.last_index);
         }
 
@@ -2274,17 +2285,14 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
                         ret = mpeg_decode_slice(avctx, picture,
                                                 start_code, &buf_ptr, input_size);
+                        emms_c();
 
-                        if (ret == DECODE_SLICE_EOP) {
-                            if(s2->last_picture_ptr) //FIXME merge with the stuff in mpeg_decode_slice
-                                *data_size = sizeof(AVPicture);
-                            return FFMAX(0, buf_ptr - buf - s2->parse_context.last_index);
-                        }else if(ret < 0){
-                            if(ret == DECODE_SLICE_ERROR)
+                        if(ret < 0){
+                            if(s2->resync_mb_x>=0 && s2->resync_mb_y>=0)
                                 ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x, s2->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
-                                
-                            fprintf(stderr,"Error while decoding slice\n");
-			    if(ret==DECODE_SLICE_FATAL_ERROR) return -1;
+                            if(ret==DECODE_SLICE_FATAL_ERROR) return -1;
+                        }else{
+                            ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x-1, s2->mb_y, AC_END|DC_END|MV_END);
                         }
                     }
                     break;

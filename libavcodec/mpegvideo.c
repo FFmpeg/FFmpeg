@@ -1064,6 +1064,84 @@ void MPV_frame_end(MpegEncContext *s)
 }
 
 /**
+ * draws an line from (ex, ey) -> (sx, sy).
+ * @param w width of the image
+ * @param h height of the image
+ * @param stride stride/linesize of the image
+ * @param color color of the arrow
+ */
+static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h, int stride, int color){
+    int t, x, y, f;
+    
+    sx= clip(sx, 0, w-1);
+    sy= clip(sy, 0, h-1);
+    ex= clip(ex, 0, w-1);
+    ey= clip(ey, 0, h-1);
+    
+    buf[sy*stride + sx]+= color;
+    
+    if(ABS(ex - sx) > ABS(ey - sy)){
+        if(sx > ex){
+            t=sx; sx=ex; ex=t;
+            t=sy; sy=ey; ey=t;
+        }
+        buf+= sx + sy*stride;
+        ex-= sx;
+        f= ((ey-sy)<<16)/ex;
+        for(x= 0; x <= ex; x++){
+            y= ((x*f) + (1<<15))>>16;
+            buf[y*stride + x]+= color;
+        }
+    }else{
+        if(sy > ey){
+            t=sx; sx=ex; ex=t;
+            t=sy; sy=ey; ey=t;
+        }
+        buf+= sx + sy*stride;
+        ey-= sy;
+        if(ey) f= ((ex-sx)<<16)/ey;
+        else   f= 0;
+        for(y= 0; y <= ey; y++){
+            x= ((y*f) + (1<<15))>>16;
+            buf[y*stride + x]+= color;
+        }
+    }
+}
+
+/**
+ * draws an arrow from (ex, ey) -> (sx, sy).
+ * @param w width of the image
+ * @param h height of the image
+ * @param stride stride/linesize of the image
+ * @param color color of the arrow
+ */
+static void draw_arrow(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h, int stride, int color){ 
+    int dx,dy;
+
+    sx= clip(sx, -100, w+100);
+    sy= clip(sy, -100, h+100);
+    ex= clip(ex, -100, w+100);
+    ey= clip(ey, -100, h+100);
+    
+    dx= ex - sx;
+    dy= ey - sy;
+    
+    if(dx*dx + dy*dy > 3*3){
+        int rx=  dx + dy;
+        int ry= -dx + dy;
+        int length= ff_sqrt((rx*rx + ry*ry)<<8);
+        
+        //FIXME subpixel accuracy
+        rx= ROUNDED_DIV(rx*3<<4, length);
+        ry= ROUNDED_DIV(ry*3<<4, length);
+        
+        draw_line(buf, sx, sy, sx + rx, sy + ry, w, h, stride, color);
+        draw_line(buf, sx, sy, sx - ry, sy + rx, w, h, stride, color);
+    }
+    draw_line(buf, sx, sy, ex, ey, w, h, stride, color);
+}
+
+/**
  * prints debuging info for the given picture.
  */
 void ff_print_debug_info(MpegEncContext *s, Picture *pict){
@@ -1135,6 +1213,39 @@ void ff_print_debug_info(MpegEncContext *s, Picture *pict){
 //                printf(" ");
             }
             printf("\n");
+        }
+    }
+    
+    if((s->avctx->debug&FF_DEBUG_VIS_MV) && s->motion_val){
+        const int shift= 1 + s->quarter_sample;
+        int mb_y;
+        uint8_t *ptr= pict->data[0];
+        s->low_delay=0; //needed to see the vectors without trashing the buffers
+
+        for(mb_y=0; mb_y<s->mb_height; mb_y++){
+            int mb_x;
+            for(mb_x=0; mb_x<s->mb_width; mb_x++){
+                const int mb_index= mb_x + mb_y*s->mb_stride;
+                if(IS_8X8(s->current_picture.mb_type[mb_index])){
+                    int i;
+                    for(i=0; i<4; i++){
+                        int sx= mb_x*16 + 4 + 8*(i&1);
+                        int sy= mb_y*16 + 4 + 8*(i>>1);
+                        int xy= 1 + mb_x*2 + (i&1) + (mb_y*2 + 1 + (i>>1))*(s->mb_width*2 + 2);
+                        int mx= (s->motion_val[xy][0]>>shift) + sx;
+                        int my= (s->motion_val[xy][1]>>shift) + sy;
+                        draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                    }
+                }else{
+                    int sx= mb_x*16 + 8;
+                    int sy= mb_y*16 + 8;
+                    int xy= 1 + mb_x*2 + (mb_y*2 + 1)*(s->mb_width*2 + 2);
+                    int mx= (s->motion_val[xy][0]>>shift) + sx;
+                    int my= (s->motion_val[xy][1]>>shift) + sy;
+                    draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                }
+                s->mbskip_table[mb_index]=0;
+            }
         }
     }
 }

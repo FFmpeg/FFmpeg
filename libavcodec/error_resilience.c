@@ -733,7 +733,7 @@ void ff_er_frame_end(MpegEncContext *s){
         for(i=s->mb_num-2; i>=s->mb_width+100; i--){ //FIXME +100 hack
             const int mb_xy= s->mb_index2xy[i];
             int error1= s->error_status_table[mb_xy  ];
-            int error2= s->error_status_table[mb_xy+1];
+            int error2= s->error_status_table[s->mb_index2xy[i+1]];
         
             if(error1&VP_START)
                 end_ok=1;

@@ -33,8 +33,8 @@ stddev: 10.53 bytes:7145472
 b54262af56f6681186fa2c44e4ef6ec7 *./data/out.yuv
 stddev:  7.32 bytes:7602176
 a38cb11e3035a280f3dad3ccdff5997b *./data/a-mpeg1b.mpg
-da8e21c7b78b7a25558dc319524b91d8 *./data/out.yuv
-stddev:  6.32 bytes:6842368
+bd047a4567c366566da96874d176199d *./data/out.yuv
+stddev:  6.35 bytes:6993920
 07042f42b3119c39eb26537a84a451df *./data/a-mjpeg.avi
 f23a9e50a559e174766ee808c48fea22 *./data/out.yuv
 stddev:  8.87 bytes:7602176
