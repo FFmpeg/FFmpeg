@@ -28,6 +28,8 @@
 # include "barpainet.h"
 #endif
 #include <netdb.h>
+#include <sys/time.h>
+#include <fcntl.h>
 
 typedef struct TCPContext {
     int fd;
@@ -55,7 +57,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     int port, fd = -1;
     TCPContext *s;
     const char *p;
-
+    fd_set wfds;
+    int fd_max, ret;
+    struct timeval tv;
+    socklen_t optlen;
+    
     s = av_malloc(sizeof(TCPContext));
     if (!s)
         return -ENOMEM;
@@ -85,32 +91,72 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     fd = socket(PF_INET, SOCK_STREAM, 0);
     if (fd < 0)
         goto fail;
+    fcntl(fd, F_SETFL, O_NONBLOCK);
+    
+ redo:
+    ret = connect(fd, (struct sockaddr *)&dest_addr, 
+                  sizeof(dest_addr));
+    if (ret < 0) {
+        if (errno == EINTR)
+            goto redo;
+        if (errno != EINPROGRESS)
+            goto fail;
 
-    if (connect(fd, (struct sockaddr *)&dest_addr, 
-                sizeof(dest_addr)) < 0)
-        goto fail;
-
+        /* wait until we are connected or until abort */
+        for(;;) {
+            if (url_interrupt_cb()) {
+                ret = -EINTR;
+                goto fail1;
+            }
+            fd_max = fd;
+            FD_ZERO(&wfds);
+            FD_SET(fd, &wfds);
+            tv.tv_sec = 0;
+            tv.tv_usec = 100 * 1000;
+            ret = select(fd_max + 1, NULL, &wfds, NULL, &tv);
+            if (ret > 0 && FD_ISSET(fd, &wfds))
+                break;
+        }
+        
+        /* test error */
+        optlen = sizeof(ret);
+        getsockopt (fd, SOL_SOCKET, SO_ERROR, &ret, &optlen);
+        if (ret != 0)
+            goto fail;
+    }
     s->fd = fd;
     return 0;
 
  fail:
+    ret = -EIO;
+ fail1:
     if (fd >= 0)
         close(fd);
     av_free(s);
-    return -EIO;
+    return ret;
 }
 
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int size1, len;
+    int size1, len, fd_max;
+    fd_set rfds;
+    struct timeval tv;
 
     size1 = size;
     while (size > 0) {
-#ifdef CONFIG_BEOS_NETSERVER
-        len = recv (s->fd, buf, size, 0);
+        if (url_interrupt_cb())
+            return -EINTR;
+        fd_max = s->fd;
+        FD_ZERO(&rfds);
+        FD_SET(s->fd, &rfds);
+        tv.tv_sec = 0;
+        tv.tv_usec = 100 * 1000;
+        select(fd_max + 1, &rfds, NULL, NULL, &tv);
+#ifdef __BEOS__
+        len = recv(s->fd, buf, size, 0);
 #else
-        len = read (s->fd, buf, size);
+        len = read(s->fd, buf, size);
 #endif
         if (len < 0) {
             if (errno != EINTR && errno != EAGAIN)
@@ -133,14 +179,24 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
 static int tcp_write(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int ret, size1;
+    int ret, size1, fd_max;
+    fd_set wfds;
+    struct timeval tv;
 
     size1 = size;
     while (size > 0) {
-#ifdef CONFIG_BEOS_NETSERVER
-        ret = send (s->fd, buf, size, 0);
+        if (url_interrupt_cb())
+            return -EINTR;
+        fd_max = s->fd;
+        FD_ZERO(&wfds);
+        FD_SET(s->fd, &wfds);
+        tv.tv_sec = 0;
+        tv.tv_usec = 100 * 1000;
+        select(fd_max + 1, NULL, &wfds, NULL, &tv);
+#ifdef __BEOS__
+        ret = send(s->fd, buf, size, 0);
 #else
-        ret = write (s->fd, buf, size);
+        ret = write(s->fd, buf, size);
 #endif
         if (ret < 0 && errno != EINTR && errno != EAGAIN)
 #ifdef __BEOS__
