@@ -1728,6 +1728,69 @@ static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 	}
 }
 
+static inline void RENAME(bgr15ToY)(uint8_t *dst, uint8_t *src, int width)
+{
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int d= src[i*2] + (src[i*2+1]<<8);
+		int b= d&0x1F;
+		int g= (d>>5)&0x1F;
+		int r= (d>>10)&0x1F;
+
+		dst[i]= ((RY*r + GY*g + BY*b)>>(RGB2YUV_SHIFT-3)) + 16;
+	}
+}
+
+static inline void RENAME(bgr15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+{
+	int i;
+	for(i=0; i<width; i++)
+	{
+#if 1
+		int d0= le2me_32( ((uint32_t*)src1)[i] );
+		int d1= le2me_32( ((uint32_t*)src2)[i] );
+		
+		int dl= (d0&0x03E07C1F) + (d1&0x03E07C1F);
+		int dh= ((d0>>5)&0x03E0F81F) + ((d1>>5)&0x03E0F81F);
+
+		int dh2= (dh>>11) + (dh<<21);
+		int d= dh2 + dl;
+
+		int b= d&0x7F;
+		int r= (d>>10)&0x7F;
+		int g= d>>21;
+#else
+		int d0= src1[i*4] + (src1[i*4+1]<<8);
+		int b0= d0&0x1F;
+		int g0= (d0>>5)&0x1F;
+		int r0= (d0>>10)&0x1F;
+
+		int d1= src1[i*4+2] + (src1[i*4+3]<<8);
+		int b1= d1&0x1F;
+		int g1= (d1>>5)&0x1F;
+		int r1= (d1>>10)&0x1F;
+
+		int d2= src2[i*4] + (src2[i*4+1]<<8);
+		int b2= d2&0x1F;
+		int g2= (d2>>5)&0x1F;
+		int r2= (d2>>10)&0x1F;
+
+		int d3= src2[i*4+2] + (src2[i*4+3]<<8);
+		int b3= d3&0x1F;
+		int g3= (d3>>5)&0x1F;
+		int r3= (d3>>10)&0x1F;
+
+		int b= b0 + b1 + b2 + b3;
+		int g= g0 + g1 + g2 + g3;
+		int r= r0 + r1 + r2 + r3;
+#endif
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2-3)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2-3)) + 128;
+	}
+}
+
+
 static inline void RENAME(rgb32ToY)(uint8_t *dst, uint8_t *src, int width)
 {
 	int i;
@@ -1970,6 +2033,11 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
 	RENAME(bgr16ToY)(formatConvBuffer, src, srcW);
 	src= formatConvBuffer;
     }
+    else if(srcFormat==IMGFMT_BGR15)
+    {
+	RENAME(bgr15ToY)(formatConvBuffer, src, srcW);
+	src= formatConvBuffer;
+    }
     else if(srcFormat==IMGFMT_RGB32)
     {
 	RENAME(rgb32ToY)(formatConvBuffer, src, srcW);
@@ -2130,6 +2198,12 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, u
     else if(srcFormat==IMGFMT_BGR16)
     {
 	RENAME(bgr16ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
+	src1= formatConvBuffer;
+	src2= formatConvBuffer+2048;
+    }
+    else if(srcFormat==IMGFMT_BGR15)
+    {
+	RENAME(bgr15ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
 	src1= formatConvBuffer;
 	src2= formatConvBuffer+2048;
     }
