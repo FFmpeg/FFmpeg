@@ -557,7 +557,7 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 
 	if(!context) context=getSwsContextFromCmdLine(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat);
 
-	swScale(context, src, srcStride, srcSliceY, srcSliceH, dst, dstStride3);
+	context->swScale(context, src, srcStride, srcSliceY, srcSliceH, dst, dstStride3);
 }
 
 // will use sws_flags & src_filter (from cmd line)
@@ -1111,12 +1111,110 @@ cpuCaps= gCpuCaps;
 
 /* Warper functions for yuv2bgr */
 static void planarYuvToBgr(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-             int srcSliceH, uint8_t* dst[], int dstStride[]){
+             int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
 
 	if(c->srcFormat==IMGFMT_YV12)
-		yuv2rgb( dst[0],src[0],src[1],src[2],c->srcW,c->srcH,dstStride[0],srcStride[0],srcStride[1] );
+		yuv2rgb( dst,src[0],src[1],src[2],c->srcW,srcSliceH,dstStride[0],srcStride[0],srcStride[1] );
 	else /* I420 & IYUV */
-		yuv2rgb( dst[0],src[0],src[2],src[1],c->srcW,c->srcH,dstStride[0],srcStride[0],srcStride[1] );
+		yuv2rgb( dst,src[0],src[2],src[1],c->srcW,srcSliceH,dstStride[0],srcStride[0],srcStride[1] );
+}
+
+/* unscaled copy like stuff (assumes nearly identical formats) */
+static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+             int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+
+	int srcStride[3];
+	uint8_t *src[3];
+	uint8_t *dst[3];
+
+	if(c->srcFormat == IMGFMT_I420){
+		src[0]= srcParam[0];
+		src[1]= srcParam[2];
+		src[2]= srcParam[1];
+		srcStride[0]= srcStrideParam[0];
+		srcStride[1]= srcStrideParam[2];
+		srcStride[2]= srcStrideParam[1];
+	}
+	else if(c->srcFormat==IMGFMT_YV12){
+		src[0]= srcParam[0];
+		src[1]= srcParam[1];
+		src[2]= srcParam[2];
+		srcStride[0]= srcStrideParam[0];
+		srcStride[1]= srcStrideParam[1];
+		srcStride[2]= srcStrideParam[2];
+	}
+	else if(isPacked(c->srcFormat) || isGray(c->srcFormat)){
+		src[0]= srcParam[0];
+		src[1]=
+		src[2]= NULL;
+		srcStride[0]= srcStrideParam[0];
+		srcStride[1]=
+		srcStride[2]= 0;
+	}
+
+	if(c->dstFormat == IMGFMT_I420){
+		dst[0]= dstParam[0];
+		dst[1]= dstParam[2];
+		dst[2]= dstParam[1];
+		
+	}else{
+		dst[0]= dstParam[0];
+		dst[1]= dstParam[1];
+		dst[2]= dstParam[2];
+	}
+
+	if(isPacked(c->srcFormat))
+	{
+		if(dstStride[0]==srcStride[0])
+			memcpy(dst[0] + dstStride[0]*srcSliceY, src[0], srcSliceH*dstStride[0]);
+		else
+		{
+			int i;
+			uint8_t *srcPtr= src[0];
+			uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+			int length;
+			
+			if(c->srcFormat==IMGFMT_YUY2) 		length= c->srcW*2;
+			else if(c->srcFormat==IMGFMT_BGR15) 	length= c->srcW*2;
+			else if(c->srcFormat==IMGFMT_BGR16) 	length= c->srcW*2;
+			else if(c->srcFormat==IMGFMT_BGR24) 	length= c->srcW*3;
+			else if(c->srcFormat==IMGFMT_BGR32) 	length= c->srcW*4;
+			else return; /* that shouldnt happen */
+
+			for(i=0; i<srcSliceH; i++)
+			{
+				memcpy(dstPtr, srcPtr, length);
+				srcPtr+= srcStride[0];
+				dstPtr+= dstStride[0];
+			}
+		}
+	}
+	else 
+	{ /* Planar YUV */
+		int plane;
+		for(plane=0; plane<3; plane++)
+		{
+			int length= plane==0 ? c->srcW  : ((c->srcW+1)>>1);
+			int y=      plane==0 ? srcSliceY: ((srcSliceY+1)>>1);
+			int height= plane==0 ? srcSliceH: ((srcSliceH+1)>>1);
+printf("%d %d %d %d %d %d\n", plane, length, y, height, dstStride[plane], srcStride[plane] );
+			if(dstStride[plane]==srcStride[plane])
+				memcpy(dst[plane] + dstStride[plane]*y, src[plane], height*dstStride[plane]);
+			else
+			{
+				int i;
+				uint8_t *srcPtr= src[plane];
+				uint8_t *dstPtr= dst[plane] + dstStride[plane]*y;
+				for(i=0; i<height; i++)
+				{
+					memcpy(dstPtr, srcPtr, length);
+					srcPtr+= srcStride[plane];
+					dstPtr+= dstStride[plane];
+				}
+			}
+		}
+	}
 }
 
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
@@ -1191,9 +1289,20 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if(isPlanarYUV(srcFormat) && isBGR(dstFormat))
 		{
 			// FIXME multiple yuv2rgb converters wont work that way cuz that thing is full of globals&statics
-			yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_BGR);
+			yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_RGB);
 			c->swScale= planarYuvToBgr;
-			
+
+			if(flags&SWS_PRINT_INFO)
+				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* simple copy */
+		if(srcFormat == dstFormat || (isPlanarYUV(srcFormat) && isPlanarYUV(dstFormat)))
+		{
+			c->swScale= simpleCopy;
+
 			if(flags&SWS_PRINT_INFO)
 				printf("SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
