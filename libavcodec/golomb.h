@@ -167,7 +167,10 @@ static inline int svq3_get_se_golomb(GetBitContext *gb){
         
         return ff_interleaved_se_golomb_vlc_code[buf];
     }else{
-        buf |=1;
+        LAST_SKIP_BITS(re, gb, 8);
+        UPDATE_CACHE(re, gb);
+        buf |= 1 | (GET_CACHE(re, gb) >> 8);
+
         if((buf & 0xAAAAAAAA) == 0)
             return INVALID_VLC;
 
@@ -175,7 +178,7 @@ static inline int svq3_get_se_golomb(GetBitContext *gb){
             buf = (buf << 2) - ((buf << log) >> (log - 1)) + (buf >> 30);
         }
 
-        LAST_SKIP_BITS(re, gb, 63 - 2*log);
+        LAST_SKIP_BITS(re, gb, 63 - 2*log - 8);
         CLOSE_READER(re, gb);
 
         return (signed) (((((buf << log) >> log) - 1) ^ -(buf & 0x1)) + 1) >> 1;
