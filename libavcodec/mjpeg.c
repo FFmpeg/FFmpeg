@@ -1068,7 +1068,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     if (len < 5)
 	return -1;
 
-    id = be2me_32((get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16));
+    id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
+    id = be2me_32(id);
     len -= 6;
 
     /* buggy AVID, it puts EOI only at every 10th frame */
@@ -1124,7 +1125,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     /* Apple MJPEG-A */
     if ((s->start_code == APP1) && (len > (0x28 - 8)))
     {
-	id = be2me_32((get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16));
+	id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
+	id = be2me_32(id);
 	len -= 4;
 	if (id == ff_get_fourcc("mjpg")) /* Apple MJPEG-A */
 	{
