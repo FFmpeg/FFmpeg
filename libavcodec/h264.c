@@ -6310,7 +6310,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             if(s->flags& CODEC_FLAG_LOW_DELAY)
                 s->low_delay=1;
       
-            avctx->has_b_frames= !s->low_delay;
+            if(avctx->has_b_frames < 2)
+                avctx->has_b_frames= !s->low_delay;
             break;
         case NAL_PPS:
             init_get_bits(&s->gb, ptr, bit_length);
@@ -6470,16 +6471,15 @@ static int decode_frame(AVCodecContext *avctx,
             }
         if(cur->reference == 0)
             cur->reference = 1;
+        for(i=0; h->delayed_pic[i]; i++)
+            if(h->delayed_pic[i]->key_frame)
+                h->delayed_output_poc = -1;
         if(pics > FFMAX(1, s->avctx->has_b_frames)){
             if(out->reference == 1)
                 out->reference = 0;
             for(i=out_idx; h->delayed_pic[i]; i++)
                 h->delayed_pic[i] = h->delayed_pic[i+1];
         }
-
-        for(i=0; h->delayed_pic[i]; i++)
-            if(h->delayed_pic[i]->key_frame)
-                h->delayed_output_poc = -1;
 
         if((h->delayed_output_poc >=0 && h->delayed_output_poc > cur->poc)
           || (s->low_delay && (cur->pict_type == B_TYPE
