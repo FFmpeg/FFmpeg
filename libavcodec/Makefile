@@ -107,6 +107,7 @@ ifeq ($(BUILD_SHARED),yes)
 	ldconfig
 	mkdir -p $(prefix)/include/libffmpeg
 	install -m 644 avcodec.h $(prefix)/include/libffmpeg/avcodec.h
+	install -m 644 common.h $(prefix)/include/libffmpeg/common.h
 endif
 #
 # include dependency files if they exist
