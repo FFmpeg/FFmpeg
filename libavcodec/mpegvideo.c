@@ -586,6 +586,31 @@ int MPV_encode_init(AVCodecContext *avctx)
     
     s->progressive_sequence= !(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
 
+    if((s->flags & CODEC_FLAG_4MV) && s->codec_id != CODEC_ID_MPEG4){
+        fprintf(stderr, "4MV not supporetd by codec\n");
+        return -1;
+    }
+    
+    if(s->quarter_sample && s->codec_id != CODEC_ID_MPEG4){
+        fprintf(stderr, "qpel not supporetd by codec\n");
+        return -1;
+    }
+
+    if(s->data_partitioning && s->codec_id != CODEC_ID_MPEG4){
+        fprintf(stderr, "data partitioning not supporetd by codec\n");
+        return -1;
+    }
+    
+    if(s->max_b_frames && (s->codec_id != CODEC_ID_MPEG4 || s->codec_id != CODEC_ID_MPEG1VIDEO)){
+        fprintf(stderr, "b frames not supporetd by codec\n");
+        return -1;
+    }
+    
+    if(s->mpeg_quant && s->codec_id != CODEC_ID_MPEG4){ //FIXME mpeg2 uses that too
+        fprintf(stderr, "mpeg2 style quantization not supporetd by codec\n");
+        return -1;
+    }
+        
     if(s->codec_id==CODEC_ID_MJPEG){
         s->intra_quant_bias= 1<<(QUANT_BIAS_SHIFT-1); //(a + x/2)/x
         s->inter_quant_bias= 0;
