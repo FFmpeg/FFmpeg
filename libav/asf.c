@@ -426,7 +426,7 @@ static int asf_write_header(AVFormatContext *s)
     asf->nb_packets = 0;
 
     if (asf_write_header1(s, 0, 50) < 0) {
-        av_free(asf);
+        //av_free(asf);
         return -1;
     }
 
@@ -885,7 +885,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_free(st->priv_data);
         av_free(st);
     }
-    av_free(asf);
+    //av_free(asf);
     return -1;
 }
 
@@ -1024,7 +1024,7 @@ static int asf_read_close(AVFormatContext *s)
         AVStream *st = s->streams[i];
         av_free(st->priv_data);
     }
-    av_free(asf);
+    //av_free(asf);
     return 0;
 }
 
