@@ -1510,6 +1510,12 @@ static int av_encode(AVFormatContext **output_files,
     /* dump report by using the first video and audio streams */
     print_report(output_files, ost_table, nb_ostreams, 1);
 
+    /* write the trailer if needed and close file */
+    for(i=0;i<nb_output_files;i++) {
+        os = output_files[i];
+        av_write_trailer(os);
+    }
+
     /* close each encoder */
     for(i=0;i<nb_ostreams;i++) {
         ost = ost_table[i];
@@ -1526,13 +1532,7 @@ static int av_encode(AVFormatContext **output_files,
             avcodec_close(&ist->st->codec);
         }
     }
-    
 
-    /* write the trailer if needed and close file */
-    for(i=0;i<nb_output_files;i++) {
-        os = output_files[i];
-        av_write_trailer(os);
-    }
     /* finished ! */
     
     ret = 0;
