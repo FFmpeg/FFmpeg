@@ -406,7 +406,6 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 static int mpegps_probe(AVProbeData *p)
 {
     int code, c, i;
-    const uint8_t *d;
 
     code = 0xff;
     /* we search the first start code. If it is a packet start code,

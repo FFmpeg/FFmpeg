@@ -26,7 +26,7 @@ static int yuv4_write_header(AVFormatContext *s)
 {
     AVStream *st;
     int width, height;
-    int raten, rated, aspectn, aspectd, fps, fps1, n, gcd;
+    int raten, rated, aspectn, aspectd, n;
     char buf[Y4M_LINE_MAX+1];
 
     if (s->nb_streams != 1)
@@ -40,51 +40,55 @@ static int yuv4_write_header(AVFormatContext *s)
     //this is identical to the code below for exact fps
     av_reduce(&raten, &rated, st->codec.frame_rate, st->codec.frame_rate_base, (1UL<<31)-1);
 #else
-    fps = st->codec.frame_rate;
-    fps1 = (((float)fps / st->codec.frame_rate_base) * 1000);
-   
-   /* Sorry about this messy code, but mpeg2enc is very picky about
-    * the framerates it accepts. */
-    switch(fps1) {
-    case 23976:
-        raten = 24000; /* turn the framerate into a ratio */
-        rated = 1001;
-        break;
-    case 29970:
-        raten = 30000;
-        rated = 1001;
-        break;
-    case 25000:
-        raten = 25;
-        rated = 1;
-        break;
-    case 30000:
-        raten = 30;
-        rated = 1;
-        break;
-    case 24000:
-        raten = 24;
-        rated = 1;
-        break;
-    case 50000:
-        raten = 50;
-        rated = 1;
-        break;
-    case 59940:
-        raten = 60000;
-        rated = 1001;
-        break;
-    case 60000:
-        raten = 60;
-        rated = 1;
-        break;
-    default:
-        raten = st->codec.frame_rate; /* this setting should work, but often doesn't */
-        rated = st->codec.frame_rate_base;
-        gcd= av_gcd(raten, rated);
-        raten /= gcd;
-        rated /= gcd;
-        break;
+    {
+        int gcd, fps, fps1;
+
+        fps = st->codec.frame_rate;
+        fps1 = (((float)fps / st->codec.frame_rate_base) * 1000);
+        
+        /* Sorry about this messy code, but mpeg2enc is very picky about
+         * the framerates it accepts. */
+        switch(fps1) {
+        case 23976:
+            raten = 24000; /* turn the framerate into a ratio */
+            rated = 1001;
+            break;
+        case 29970:
+            raten = 30000;
+            rated = 1001;
+            break;
+        case 25000:
+            raten = 25;
+            rated = 1;
+            break;
+        case 30000:
+            raten = 30;
+            rated = 1;
+            break;
+        case 24000:
+            raten = 24;
+            rated = 1;
+            break;
+        case 50000:
+            raten = 50;
+            rated = 1;
+            break;
+        case 59940:
+            raten = 60000;
+            rated = 1001;
+            break;
+        case 60000:
+            raten = 60;
+            rated = 1;
+            break;
+        default:
+            raten = st->codec.frame_rate; /* this setting should work, but often doesn't */
+            rated = st->codec.frame_rate_base;
+            gcd= av_gcd(raten, rated);
+            raten /= gcd;
+            rated /= gcd;
+            break;
+        }
     }
 #endif
     
