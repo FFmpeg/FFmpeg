@@ -586,7 +586,7 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
     put_be32(pb, 0); /* size */
     put_tag(pb, "hdlr");
     put_be32(pb, 0); /* Version & flags */
-    put_tag(pb, hdlr); /* handler */
+    put_buffer(pb, hdlr, 4); /* handler */
     put_tag(pb, hdlr_type); /* handler type */
     put_be32(pb ,0); /* reserved */
     put_be32(pb ,0); /* reserved */
