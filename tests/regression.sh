@@ -34,6 +34,8 @@ elif [ "$1" = "ac3" ] ; then
     do_ac3=y
 elif [ "$1" = "huffyuv" ] ; then
     do_huffyuv=y
+elif [ "$1" = "mpeg2thread" ] ; then
+    do_mpeg2thread=y
 elif [ "$1" = "libavtest" ] ; then
     do_libav=y
     logfile="$datadir/libav.regression"
@@ -181,6 +183,13 @@ if [ -n "$do_mpeg2thread" ] ; then
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2thread.mpg
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -bf 2 -ildct -ilme -threads 2 $file 
+
+# mpeg2 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+
+# mpeg2 encoding interlaced
+file=${outfile}mpeg2reuse.mpg
+do_ffmpeg $file -y -sameq -me_threshold 256 -mb_threshold 1024 -i ${outfile}mpeg2thread.mpg -vcodec mpeg2video -f mpeg1video -bf 2 -ildct -ilme -threads 4 $file 
 
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst

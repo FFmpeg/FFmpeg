@@ -19,6 +19,10 @@ d3d2fd4dd186d8c9de7666398d5af13a *./data/a-mpeg2thread.mpg
 816506 ./data/a-mpeg2thread.mpg
 9db3aca554bb8ee337a109a3b8629575 *./data/out.yuv
 stddev:  7.64 PSNR:30.45 bytes:7602176
+052bcdb13286f4f7137a50c4db032104 *./data/a-mpeg2reuse.mpg
+2115703 ./data/a-mpeg2reuse.mpg
+526e6e6818296a1b63d91fc165e0bda8 *./data/out.yuv
+stddev:  7.68 PSNR:30.41 bytes:7602176
 e7ff3a8780ebdc6687352646c8fbe876 *./data/a-msmpeg4v2.avi
 642666 ./data/a-msmpeg4v2.avi
 7646e5cc93452b5fb380c8c4c5f535f4 *./data/out.yuv
