@@ -169,7 +169,7 @@ struct MOVParseTableEntry;
  0: continue to parse next atom
  -1: error occured, exit
  */
-typedef int (*mov_parse_function)(struct MOVParseTableEntry *parse_table,
+typedef int (*mov_parse_function)(const struct MOVParseTableEntry *parse_table,
                                   ByteIOContext *pb,
                                   UINT32 atom_type,
                                   INT64 atom_offset, /* after the size and type field (and eventually the extended size) */
@@ -182,7 +182,7 @@ typedef struct MOVParseTableEntry {
     mov_parse_function func;
 } MOVParseTableEntry;
 
-static int parse_leaf(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_leaf(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
 #ifdef DEBUG
     print_atom("leaf", atom_type, atom_offset, atom_size);
@@ -194,7 +194,7 @@ static int parse_leaf(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
 }
 
 
-static int parse_default(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_default(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     UINT32 type, foo=0;
     UINT64 offset, size;
@@ -233,7 +233,7 @@ static int parse_default(MOVParseTableEntry *parse_table, ByteIOContext *pb, UIN
         for(i=0; parse_table[i].type != 0L && parse_table[i].type != type; i++);
         
 //        printf(" i=%ld\n", i);
-        if(parse_table[i].type == NULL) { /* skip leaf atoms data */
+	if (parse_table[i].type == 0) { /* skip leaf atoms data */
 //            url_seek(pb, atom_offset+atom_size, SEEK_SET);
 #ifdef DEBUG
             print_atom("unknown", type, offset, size);
@@ -252,7 +252,7 @@ static int parse_default(MOVParseTableEntry *parse_table, ByteIOContext *pb, UIN
     return err;
 }
 
-static int parse_mvhd(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_mvhd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
 #ifdef DEBUG
@@ -287,7 +287,7 @@ static int parse_mvhd(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
 }
 
 /* this atom should contain all header atoms */
-static int parse_moov(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_moov(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     int err;
     MOVContext *c;
@@ -306,9 +306,8 @@ static int parse_moov(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
 }
 
 /* this atom contains actual media data */
-static int parse_mdat(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_mdat(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
-    int err;
     MOVContext *c;
 #ifdef DEBUG
     print_atom("mdat", atom_type, atom_offset, atom_size);
@@ -326,7 +325,7 @@ static int parse_mdat(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
     return 0; /* now go for moov */
 }
 
-static int parse_trak(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_trak(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
     AVStream *st;
@@ -347,7 +346,7 @@ static int parse_trak(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
     return parse_default(parse_table, pb, atom_type, atom_offset, atom_size, param);
 }
 
-static int parse_tkhd(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_tkhd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
     AVStream *st;
@@ -391,7 +390,7 @@ static int parse_tkhd(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
     return 0;
 }
 
-static int parse_hdlr(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
     int len;
@@ -413,7 +412,7 @@ static int parse_hdlr(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
     type = get_le32(pb); /* component subtype */
 
 #ifdef DEBUG
-    printf("ctype= %c%c%c%c (0x%08lx)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], ctype);
+    printf("ctype= %c%c%c%c (0x%08lx)\n", *((char *)&ctype), ((char *)&ctype)[1], ((char *)&ctype)[2], ((char *)&ctype)[3], (long) ctype);
     printf("stype= %c%c%c%c\n", *((char *)&type), ((char *)&type)[1], ((char *)&type)[2], ((char *)&type)[3]);
 #endif
 #ifdef DEBUG
@@ -458,7 +457,7 @@ static int parse_hdlr(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
 #ifdef DEBUG
         puts("MP4!!!");
 #endif
-        while(ch=get_byte(pb));
+	while ((ch = get_byte(pb)));
     } else {
         len = get_byte(pb);
         if(len) {
@@ -475,11 +474,10 @@ static int parse_hdlr(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
     return 0;
 }
 
-static int parse_stsd(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
     int entries, size, samp_sz, frames_per_sample;
-    char *buf;
     UINT32 format;
     AVStream *st;
 #ifdef DEBUG
@@ -518,7 +516,7 @@ static int parse_stsd(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
             get_be32(pb); /* data size, always 0 */
             frames_per_sample = get_be16(pb); /* frame per samples */
 #ifdef DEBUG
-            printf("frames/samples = %ld\n", frames_per_sample);
+	    printf("frames/samples = %d\n", frames_per_sample);
 #endif
             url_fskip(pb, 32); /* codec name */
 
@@ -590,7 +588,7 @@ static int parse_stsd(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
     return 0;
 }
 
-static int parse_stco(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_stco(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
     int entries, i;
@@ -624,7 +622,7 @@ static int parse_stco(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
     return 0;
 }
 
-static int parse_stsc(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_stsc(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
     int entries, i;
@@ -654,7 +652,7 @@ static int parse_stsc(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32
     return 0;
 }
 
-static int parse_stsz(MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+static int parse_stsz(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
     int entries, i;
@@ -771,10 +769,8 @@ int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MOVContext *mov;
     ByteIOContext *pb = &s->pb;
-    UINT32 tag, tag1;
-    int i, j, nb, bps, err;
+    int i, j, nb, err;
     INT64 size;
-    AVStream *st;
 
     mov = malloc(sizeof(MOVContext));
     if (!mov)
@@ -791,7 +787,7 @@ int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         size = 0x7FFFFFFFFFFFFFFF;
 
 #ifdef DEBUG
-    printf("filesz=%ld\n", size);
+    printf("filesz=%Ld\n", size);
 #endif
 
     /* check MOV header */
@@ -801,7 +797,7 @@ int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
         exit(1);
     }
 #ifdef DEBUG
-    printf("on_parse_exit_offset=%ld\n", url_ftell(pb));
+    printf("on_parse_exit_offset=%d\n", (int) url_ftell(pb));
 #endif
     /* some cleanup : make sure we are on the mdat atom */
     if(!url_is_streamed(pb) && (url_ftell(pb) != mov->mdat_offset))
@@ -810,11 +806,11 @@ int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     mov->next_chunk_offset = mov->mdat_offset; /* initialise reading */
 
 #ifdef DEBUG
-    printf("mdat_reset_offset=%ld\n", url_ftell(pb));
+    printf("mdat_reset_offset=%d\n", (int) url_ftell(pb));
 #endif
 
 #ifdef DEBUG
-    printf("streams= %ld\n", s->nb_streams);
+    printf("streams= %d\n", s->nb_streams);
 #endif
     mov->total_streams = nb = s->nb_streams;
     
@@ -836,7 +832,7 @@ int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 #endif
 #ifdef DEBUG
-    printf("real streams= %ld\n", s->nb_streams);
+    printf("real streams= %d\n", s->nb_streams);
 #endif
     return 0;
 }
@@ -847,7 +843,7 @@ int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVContext *mov = s->priv_data;
     INT64 offset = 0x0FFFFFFFFFFFFFFF;
-    int i, j;
+    int i;
     int st_id = 0, size;
     size = 0x0FFFFFFF;
     
