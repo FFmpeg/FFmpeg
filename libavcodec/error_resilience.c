@@ -614,13 +614,13 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
             s->error_status_table[i] &= mask;
         }
     }
-
-    s->error_status_table[start_xy] |= VP_START;
-    
+   
     if(end_xy < s->mb_num){
         s->error_status_table[end_xy] &= mask;
         s->error_status_table[end_xy] |= status;
     }
+ 
+    s->error_status_table[start_xy] |= VP_START;
 }
 
 void ff_er_frame_end(MpegEncContext *s){

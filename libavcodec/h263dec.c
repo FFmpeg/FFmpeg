@@ -484,7 +484,7 @@ retry:
     avctx->has_b_frames= !s->low_delay;
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
-        if(s->padding_bug_score > -2 && !s->data_partitioning)
+        if(s->padding_bug_score > -2 && !s->data_partitioning && !s->resync_marker)
             s->workaround_bugs |=  FF_BUG_NO_PADDING;
         else
             s->workaround_bugs &= ~FF_BUG_NO_PADDING;
