@@ -328,6 +328,9 @@ int wav_init(void);
 /* raw.c */
 int raw_init(void);
 
+/* yuv4mpeg.c */
+int yuv4mpeg_init(void);
+
 /* ogg.c */
 int ogg_init(void);
 

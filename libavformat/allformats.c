@@ -54,7 +54,7 @@ void av_register_all(void)
 #ifdef AMR_NB
     amr_init();
 #endif
-    av_register_output_format(&yuv4mpegpipe_oformat);
+    yuv4mpeg_init();
     
 #ifdef CONFIG_VORBIS
     ogg_init();

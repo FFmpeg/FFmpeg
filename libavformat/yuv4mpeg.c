@@ -173,4 +173,101 @@ AVOutputFormat yuv4mpegpipe_oformat = {
     .flags = AVFMT_RAWPICTURE,
 };
 
+#define MAX_YUV4_HEADER 50
+#define MAX_FRAME_HEADER 10
+
+static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
+{
+    char header[MAX_YUV4_HEADER+1];
+    int i;
+    ByteIOContext *pb = &s->pb;
+    int width, height, raten, rated, aspectn, aspectd;
+    char lacing;
+    AVStream *st;
+    
+    for (i=0; i<MAX_YUV4_HEADER; i++) {
+        header[i] = get_byte(pb);
+	if (header[i] == '\n') {
+	    header[i+1] = 0;
+	    break;
+	}
+    }
+    if (i == MAX_YUV4_HEADER) return -1;
+    if (strncmp(header, Y4M_MAGIC, strlen(Y4M_MAGIC))) return -1;
+    sscanf(header+strlen(Y4M_MAGIC), " W%d H%d F%d:%d I%c A%d:%d",
+           &width, &height, &raten, &rated, &lacing, &aspectn, &aspectd);
+    
+    st = av_new_stream(s, 0);
+    st = s->streams[0];
+    st->codec.width = width;
+    st->codec.height = height;
+    av_reduce(&raten, &rated, raten, rated, (1UL<<31)-1);
+    st->codec.frame_rate = raten;
+    st->codec.frame_rate_base = rated;
+    st->codec.pix_fmt = PIX_FMT_YUV420P;
+    st->codec.codec_type = CODEC_TYPE_VIDEO;
+    st->codec.codec_id = CODEC_ID_RAWVIDEO;
+
+    return 0;
+}
+
+static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    int i;
+    char header[MAX_FRAME_HEADER+1];
+    int packet_size, ret, width, height;
+    AVStream *st = s->streams[0];
+
+    for (i=0; i<MAX_FRAME_HEADER; i++) {
+        header[i] = get_byte(&s->pb);
+	if (header[i] == '\n') {
+	    header[i+1] = 0;
+	    break;
+	}
+    }
+    if (i == MAX_FRAME_HEADER) return -1;
+    if (strncmp(header, Y4M_FRAME_MAGIC, strlen(Y4M_FRAME_MAGIC))) return -1;
+    
+    width = st->codec.width;
+    height = st->codec.height;
+
+    packet_size = avpicture_get_size(st->codec.pix_fmt, width, height);
+    if (packet_size < 0)
+        av_abort();
+
+    if (av_new_packet(pkt, packet_size) < 0)
+        return -EIO;
+
+    pkt->stream_index = 0;
+    ret = get_buffer(&s->pb, pkt->data, pkt->size);
+    if (ret != pkt->size) {
+        av_free_packet(pkt);
+        return -EIO;
+    } else {
+        return 0;
+    }
+}
+
+static int yuv4_read_close(AVFormatContext *s)
+{
+    return 0;
+}
+
+AVInputFormat yuv4mpegpipe_iformat = {
+    "yuv4mpegpipe",
+    "YUV4MPEG pipe format",
+    0,
+    NULL,
+    yuv4_read_header,
+    yuv4_read_packet,
+    yuv4_read_close,
+    .extensions = "yuv4mpeg"
+};
+
+int yuv4mpeg_init(void)
+{
+    av_register_input_format(&yuv4mpegpipe_iformat);
+    av_register_output_format(&yuv4mpegpipe_oformat);
+    return 0;
+}
 
