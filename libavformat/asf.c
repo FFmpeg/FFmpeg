@@ -1378,27 +1378,13 @@ static int64_t asf_read_pts(AVFormatContext *s, int64_t *ppos, int stream_index)
 static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
 {
     ASFContext *asf = s->priv_data;
-    AVStream *st;
-    AVPacket pkt1, *pkt;
-    int block_align;
     int64_t pos;
     int64_t pos_min, pos_max, pts_min, pts_max, cur_pts, pos_limit;
-
-    pkt = &pkt1;
-
-    // Validate pts
-    if (pts < 0)
-	pts = 0;
 
     if (stream_index == -1)
         stream_index= av_find_default_stream_index(s);
     
-    st = s->streams[stream_index];
-
-    // ASF files have fixed block sizes, store this to determine offset
-    block_align = asf->packet_size;
-
-    if (block_align <= 0)
+    if (asf->packet_size <= 0)
         return -1;
 
     pos_min = 0;
@@ -1413,6 +1399,9 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
         int64_t start_pos;
 
         assert(pos_limit <= pos_max);
+        assert(pos_limit % asf->packet_size == 0);
+        assert(pos_max % asf->packet_size == 0);
+        assert(pos_min % asf->packet_size == 0);
 
         // interpolate position (better than dichotomy)
         pos = (int64_t)((double)(pos_limit - pos_min) *
