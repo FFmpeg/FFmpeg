@@ -1973,6 +1973,92 @@ static void just_return() { return; }
     c->put_no_rnd_ ## postfix1 = put_no_rnd_ ## postfix2;\
     c->avg_ ## postfix1 = avg_ ## postfix2;
 
+static int try_8x8basis_mmx(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale){
+    int i=0;
+    
+    assert(ABS(scale) < 256);
+    scale<<= 16 + 1 - BASIS_SHIFT + RECON_SHIFT;
+
+    asm volatile(
+        "pcmpeqw %%mm6, %%mm6		\n\t" // -1w
+        "psrlw $15, %%mm6		\n\t" //  1w
+        "pxor %%mm7, %%mm7		\n\t"
+        "movd  %4, %%mm5		\n\t" 
+        "punpcklwd %%mm5, %%mm5		\n\t" 
+        "punpcklwd %%mm5, %%mm5		\n\t" 
+        "1:				\n\t"
+        "movq  (%1, %0), %%mm0		\n\t" 
+        "movq  8(%1, %0), %%mm1		\n\t"
+        "pmulhw %%mm5, %%mm0		\n\t"
+        "pmulhw %%mm5, %%mm1		\n\t"
+        "paddw %%mm6, %%mm0		\n\t"
+        "paddw %%mm6, %%mm1		\n\t"
+        "psraw $1, %%mm0		\n\t"
+        "psraw $1, %%mm1		\n\t"
+        "paddw (%2, %0), %%mm0		\n\t"
+        "paddw 8(%2, %0), %%mm1		\n\t"
+        "psraw $6, %%mm0		\n\t"
+        "psraw $6, %%mm1		\n\t"
+        "pmullw (%3, %0), %%mm0		\n\t"
+        "pmullw 8(%3, %0), %%mm1	\n\t"
+        "pmaddwd %%mm0, %%mm0		\n\t"
+        "pmaddwd %%mm1, %%mm1		\n\t"
+        "paddd %%mm1, %%mm0		\n\t"
+        "psrld $4, %%mm0		\n\t"
+        "paddd %%mm0, %%mm7		\n\t"
+        "addl $16, %0			\n\t"
+        "cmpl $128, %0			\n\t" //FIXME optimize & bench
+        " jb 1b				\n\t"
+        "movq %%mm7, %%mm6		\n\t"
+        "psrlq $32, %%mm7		\n\t"
+        "paddd %%mm6, %%mm7		\n\t"
+        "psrld $2, %%mm7		\n\t"
+        "movd %%mm7, %0			\n\t"
+        
+        : "+r" (i)
+        : "r"(basis), "r"(rem), "r"(weight), "g"(scale)
+    );
+    return i;
+}
+
+static void add_8x8basis_mmx(int16_t rem[64], int16_t basis[64], int scale){
+    int i=0;
+    
+    if(ABS(scale) < 256){
+        scale<<= 16 + 1 - BASIS_SHIFT + RECON_SHIFT;
+        asm volatile(
+                "pcmpeqw %%mm6, %%mm6		\n\t" // -1w
+                "psrlw $15, %%mm6		\n\t" //  1w
+                "movd  %3, %%mm5		\n\t" 
+                "punpcklwd %%mm5, %%mm5		\n\t" 
+                "punpcklwd %%mm5, %%mm5		\n\t" 
+                "1:				\n\t"
+                "movq  (%1, %0), %%mm0		\n\t" 
+                "movq  8(%1, %0), %%mm1		\n\t"
+                "pmulhw %%mm5, %%mm0		\n\t"
+                "pmulhw %%mm5, %%mm1		\n\t"
+                "paddw %%mm6, %%mm0		\n\t" 
+                "paddw %%mm6, %%mm1		\n\t"
+                "psraw $1, %%mm0		\n\t"
+                "psraw $1, %%mm1		\n\t"
+                "paddw (%2, %0), %%mm0		\n\t"
+                "paddw 8(%2, %0), %%mm1		\n\t"
+                "movq %%mm0, (%2, %0)		\n\t"
+                "movq %%mm1, 8(%2, %0)		\n\t"
+                "addl $16, %0			\n\t"
+                "cmpl $128, %0			\n\t" //FIXME optimize & bench
+                " jb 1b				\n\t"
+                
+                : "+r" (i)
+                : "r"(basis), "r"(rem), "g"(scale)
+        );
+    }else{
+        for(i=0; i<8*8; i++){
+            rem[i] += (basis[i]*scale + (1<<(BASIS_SHIFT - RECON_SHIFT-1)))>>(BASIS_SHIFT - RECON_SHIFT);
+        }    
+    }
+}
+    
 /* external functions, from idct_mmx.c */
 void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
@@ -2125,10 +2211,16 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
             c->vsad[0] = vsad16_mmx;
         }
+        
+        if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
+            c->try_8x8basis= try_8x8basis_mmx;
+        }
+        c->add_8x8basis= add_8x8basis_mmx;
+        
 #endif //CONFIG_ENCODERS
 
         c->h263_v_loop_filter= h263_v_loop_filter_mmx;
-        c->h263_h_loop_filter= h263_h_loop_filter_mmx;
+        c->h263_h_loop_filter= h263_h_loop_filter_mmx;        
         
         if (mm_flags & MM_MMXEXT) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;

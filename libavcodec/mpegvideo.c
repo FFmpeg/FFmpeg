@@ -4915,8 +4915,6 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     return last_non_zero;
 }
 
-#define BASIS_SHIFT 16
-#define RECON_SHIFT 6
 //#define REFINE_STATS 1
 static int16_t basis[64][64];
 
@@ -4937,29 +4935,6 @@ static void build_basis(uint8_t *perm){
             }
         }
     }
-}
-
-static int try_basis(int16_t rem[64], int16_t weight[64], int index, int scale){
-    int i;
-    unsigned int sum=0;
-
-    for(i=0; i<8*8; i++){
-        int b= rem[i] - ((basis[index][i]*scale + (1<<(BASIS_SHIFT - RECON_SHIFT-1)))>>(BASIS_SHIFT - RECON_SHIFT));
-        int w= weight[i];
-        b= (b + (1<<(RECON_SHIFT-1))) >> RECON_SHIFT;
-        assert(-512<b && b<512);
-
-        sum += (w*b)*(w*b)>>4;
-    }
-    return sum>>2;
-}
-
-static void add_basis(int16_t rem[64], int index, int scale){
-    int i;
-
-    for(i=0; i<8*8; i++){
-        rem[i] -= (basis[index][i]*scale + (1<<(BASIS_SHIFT - RECON_SHIFT-1)))>>(BASIS_SHIFT - RECON_SHIFT);
-    }    
 }
 
 static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
@@ -5028,8 +5003,9 @@ static int messed_sign=0;
 #ifdef REFINE_STATS
 {START_TIMER
 #endif
-    for(i=0; i<64; i++){ //FIXME memsetw or similar
-        rem[i]= (orig[i]<<RECON_SHIFT) - dc; //FIXME  use orig dirrectly insteadof copying to rem[]
+    dc += (1<<(RECON_SHIFT-1));
+    for(i=0; i<64; i++){
+        rem[i]= dc - (orig[i]<<RECON_SHIFT); //FIXME  use orig dirrectly insteadof copying to rem[]
     }
 #ifdef REFINE_STATS
 STOP_TIMER("memset rem[]")}
@@ -5067,7 +5043,7 @@ STOP_TIMER("memset rem[]")}
             run_tab[rle_index++]=run;
             run=0;
 
-            add_basis(rem, j, coeff);
+            s->dsp.add_8x8basis(rem, basis[j], coeff);
         }else{
             run++;
         }
@@ -5081,7 +5057,7 @@ STOP_TIMER("init rem[]")
 {START_TIMER
 #endif
     for(;;){
-        int best_score=try_basis(rem, weight, 0, 0);
+        int best_score=s->dsp.try_8x8basis(rem, weight, basis[0], 0);
         int nochange_score= best_score;
         int best_coeff=0;
         int best_change=0;
@@ -5105,7 +5081,7 @@ STOP_TIMER("init rem[]")
                 if(new_coeff >= 2048 || new_coeff < 0)
                     continue;
 
-                score= try_basis(rem, weight, 0, new_coeff - old_coeff);
+                score= s->dsp.try_8x8basis(rem, weight, basis[0], new_coeff - old_coeff);
                 if(score<best_score){
                     best_score= score;
                     best_coeff= 0;
@@ -5221,7 +5197,7 @@ STOP_TIMER("init rem[]")
                 unquant_change= new_coeff - old_coeff;
                 assert((score < 100*lambda && score > -100*lambda) || lambda==0);
                 
-                score+= try_basis(rem, weight, j, unquant_change);
+                score+= s->dsp.try_8x8basis(rem, weight, basis[j], unquant_change);
                 if(score<best_score){
                     best_score= score;
                     best_coeff= i;
@@ -5295,7 +5271,7 @@ if(256*256*256*64 % count == 0){
                  }
             }
             
-            add_basis(rem, j, best_unquant_change);
+            s->dsp.add_8x8basis(rem, basis[j], best_unquant_change);
         }else{
             break;
         }

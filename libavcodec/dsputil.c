@@ -2532,6 +2532,29 @@ static int pix_abs8_xy2_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, 
     return s;
 }
 
+static int try_8x8basis_c(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale){
+    int i;
+    unsigned int sum=0;
+
+    for(i=0; i<8*8; i++){
+        int b= rem[i] + ((basis[i]*scale + (1<<(BASIS_SHIFT - RECON_SHIFT-1)))>>(BASIS_SHIFT - RECON_SHIFT));
+        int w= weight[i];
+        b>>= RECON_SHIFT;
+        assert(-512<b && b<512);
+
+        sum += (w*b)*(w*b)>>4;
+    }
+    return sum>>2;
+}
+
+static void add_8x8basis_c(int16_t rem[64], int16_t basis[64], int scale){
+    int i;
+
+    for(i=0; i<8*8; i++){
+        rem[i] += (basis[i]*scale + (1<<(BASIS_SHIFT - RECON_SHIFT-1)))>>(BASIS_SHIFT - RECON_SHIFT);
+    }    
+}
+
 /**
  * permutes an 8x8 block.
  * @param block the block which will be permuted according to the given permutation vector
@@ -3235,6 +3258,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     
     c->h263_h_loop_filter= h263_h_loop_filter_c;
     c->h263_v_loop_filter= h263_v_loop_filter_c;
+    
+    c->try_8x8basis= try_8x8basis_c;
+    c->add_8x8basis= add_8x8basis_c;
 
 #ifdef HAVE_MMX
     dsputil_init_mmx(c, avctx);
