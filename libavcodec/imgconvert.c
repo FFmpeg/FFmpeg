@@ -520,7 +520,7 @@ static void rgb_name ## _to_yuv420p(AVPicture *dst, AVPicture *src,     \
     cr = dst->data[2];                                                  \
                                                                         \
     wrap = width;                                                       \
-    wrap3 = width * 3;                                                  \
+    wrap3 = width * BPP;                                                \
     p = src->data[0];                                                   \
     for(y=0;y<height;y+=2) {                                            \
         for(x=0;x<width;x+=2) {                                         \
@@ -562,11 +562,64 @@ static void rgb_name ## _to_yuv420p(AVPicture *dst, AVPicture *src,     \
                                                                         \
             cb++;                                                       \
             cr++;                                                       \
-            p += -wrap3 + 2 * 3;                                        \
+            p += -wrap3 + 2 * BPP;                                      \
             lum += -wrap + 2;                                           \
         }                                                               \
         p += wrap3;                                                     \
         lum += wrap;                                                    \
+    }                                                                   \
+}                                                                       \
+                                                                        \
+static void rgb_name ## _to_gray(AVPicture *dst, AVPicture *src,        \
+                                 int width, int height)                 \
+{                                                                       \
+    const unsigned char *p;                                             \
+    unsigned char *q;                                                   \
+    int r, g, b, dst_wrap, src_wrap;                                    \
+    int x, y;                                                           \
+                                                                        \
+    p = src->data[0];                                                   \
+    src_wrap = src->linesize[0] - BPP * width;                          \
+                                                                        \
+    q = dst->data[0];                                                   \
+    dst_wrap = dst->linesize[0] - width;                                \
+                                                                        \
+    for(y=0;y<height;y++) {                                             \
+        for(x=0;x<width;x++) {                                          \
+            RGB_IN(r, g, b, p);                                         \
+            q[0] = (FIX(0.29900) * r + FIX(0.58700) * g +               \
+                    FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;          \
+            q++;                                                        \
+            p += BPP;                                                   \
+        }                                                               \
+        p += src_wrap;                                                  \
+        q += dst_wrap;                                                  \
+    }                                                                   \
+}                                                                       \
+                                                                        \
+static void gray_to_ ## rgb_name(AVPicture *dst, AVPicture *src,        \
+                                 int width, int height)                 \
+{                                                                       \
+    const unsigned char *p;                                             \
+    unsigned char *q;                                                   \
+    int r, dst_wrap, src_wrap;                                          \
+    int x, y;                                                           \
+                                                                        \
+    p = src->data[0];                                                   \
+    src_wrap = src->linesize[0] - width;                                \
+                                                                        \
+    q = dst->data[0];                                                   \
+    dst_wrap = dst->linesize[0] - BPP * width;                          \
+                                                                        \
+    for(y=0;y<height;y++) {                                             \
+        for(x=0;x<width;x++) {                                          \
+            r = p[0];                                                   \
+            RGB_OUT(q, r, r, r);                                        \
+            q += BPP;                                                   \
+            p ++;                                                       \
+        }                                                               \
+        p += src_wrap;                                                  \
+        q += dst_wrap;                                                  \
     }                                                                   \
 }
 
@@ -757,66 +810,6 @@ static void rgb24_to_rgb555(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void rgb24_to_gray(AVPicture *dst, AVPicture *src,
-                          int width, int height)
-{
-    const unsigned char *p;
-    unsigned char *q;
-    int r, g, b, dst_wrap, src_wrap;
-    int x, y;
-
-    p = src->data[0];
-    src_wrap = src->linesize[0] - 3 * width;
-
-    q = dst->data[0];
-    dst_wrap = dst->linesize[0] - width;
-
-    for(y=0;y<height;y++) {
-        for(x=0;x<width;x++) {
-            r = p[0];
-            g = p[1];
-            b = p[2];
-
-            q[0] = (FIX(0.29900) * r + FIX(0.58700) * g + 
-                    FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
-            q++;
-            p += 3;
-        }
-        p += src_wrap;
-        q += dst_wrap;
-    }
-}
-
-static void gray_to_rgb24(AVPicture *dst, AVPicture *src,
-                          int width, int height)
-{
-    const unsigned char *p;
-    unsigned char *q;
-    int r, dst_wrap, src_wrap;
-    int x, y;
-
-    p = src->data[0];
-    src_wrap = src->linesize[0] - width;
-
-    q = dst->data[0];
-    dst_wrap = dst->linesize[0] - 3 * width;
-
-    for(y=0;y<height;y++) {
-        for(x=0;x<width;x++) {
-            r = p[0];
-
-            q[0] = r;
-            q[1] = r;
-            q[2] = r;
-            
-            q += 3;
-            p ++;
-        }
-        p += src_wrap;
-        q += dst_wrap;
-    }
-}
-
 static void mono_to_gray(AVPicture *dst, AVPicture *src,
                          int width, int height, int xor_mask)
 {
@@ -994,25 +987,49 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         [PIX_FMT_YUV420P] = { 
             .convert = rgba32_to_yuv420p
         },
+        [PIX_FMT_GRAY8] = { 
+            .convert = rgba32_to_gray
+        },
     },
     [PIX_FMT_BGR24] = {
         [PIX_FMT_YUV420P] = { 
             .convert = bgr24_to_yuv420p
+        },
+        [PIX_FMT_GRAY8] = { 
+            .convert = bgr24_to_gray
         },
     },
     [PIX_FMT_RGB555] = {
         [PIX_FMT_YUV420P] = { 
             .convert = rgb555_to_yuv420p
         },
+        [PIX_FMT_GRAY8] = { 
+            .convert = rgb555_to_gray
+        },
     },
     [PIX_FMT_RGB565] = {
         [PIX_FMT_YUV420P] = { 
             .convert = rgb565_to_yuv420p
         },
+        [PIX_FMT_GRAY8] = { 
+            .convert = rgb565_to_gray
+        },
     },
     [PIX_FMT_GRAY8] = {
+        [PIX_FMT_RGB555] = { 
+            .convert = gray_to_rgb555
+        },
+        [PIX_FMT_RGB565] = { 
+            .convert = gray_to_rgb565
+        },
         [PIX_FMT_RGB24] = { 
             .convert = gray_to_rgb24
+        },
+        [PIX_FMT_BGR24] = { 
+            .convert = gray_to_bgr24
+        },
+        [PIX_FMT_RGBA32] = { 
+            .convert = gray_to_rgba32
         },
         [PIX_FMT_MONOWHITE] = { 
             .convert = gray_to_monowhite
@@ -1072,10 +1089,10 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
         return -1;
     if (src_width <= 0 || src_height <= 0)
         return 0;
-    
+
     dst_width = src_width;
     dst_height = src_height;
-    
+
     dst_pix = &pix_fmt_info[dst_pix_fmt];
     src_pix = &pix_fmt_info[src_pix_fmt];
     if (src_pix_fmt == dst_pix_fmt) {
