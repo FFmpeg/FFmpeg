@@ -3,7 +3,7 @@
 
 #define LIBAVFORMAT_VERSION_INT 0x000406  
 #define LIBAVFORMAT_VERSION     "0.4.6"
-#define LIBAVFORMAT_BUILD       4601
+#define LIBAVFORMAT_BUILD       4602
 
 #include "avcodec.h"
 
@@ -121,6 +121,9 @@ typedef struct AVStream {
     int id;       /* format specific stream id */
     AVCodecContext codec; /* codec context */
     int r_frame_rate;     /* real frame rate of the stream */
+    uint64_t time_length; /* real length of the stream in miliseconds */
+    void* extra_data;     /* some extra data - i.e. longer WAVEFORMATEX */
+    int extra_data_size;  /* size of extra data chunk */
     void *priv_data;
     /* internal data used in av_find_stream_info() */
     int codec_info_state;     
