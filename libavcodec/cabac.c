@@ -113,7 +113,7 @@ void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4],
         c->mps_state[2*i+0]= 2*mps_state[i];
         c->mps_state[2*i+1]= 2*mps_state[i]+1;
 
-        if(lps_state[i]){
+        if( i ){
             c->lps_state[2*i+0]= 2*lps_state[i];
             c->lps_state[2*i+1]= 2*lps_state[i]+1;
         }else{

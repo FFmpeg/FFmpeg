@@ -31,6 +31,8 @@
 #include "h264data.h"
 #include "golomb.h"
 
+#include "cabac.h"
+
 #undef NDEBUG
 #include <assert.h>
 
@@ -284,6 +286,19 @@ typedef struct H264Context{
     GetBitContext *inter_gb_ptr;
     
     DCTELEM mb[16*24] __align8;
+
+    /**
+     * Cabac
+     */
+    CABACContext cabac;
+    uint8_t      cabac_state[399];
+    int          cabac_init_idc;
+
+    /* 0x100 -> non null luma_dc, 0x80/0x40 -> non null chroma_dc (cb/cr), 0x?0 -> chroma_cbp(0,1,2), 0x0? luma_cbp */
+    uint16_t     *cbp_table;
+    uint8_t     *chroma_pred_mode_table;
+    int         last_qscale_diff;
+
 }H264Context;
 
 static VLC coeff_token_vlc[4];
@@ -1004,6 +1019,7 @@ static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *c
     return dst;
 }
 
+#if 0
 /**
  * @param src the data which should be escaped
  * @param dst the target buffer, dst+1 == src is allowed as a special case
@@ -1076,6 +1092,7 @@ static void encode_rbsp_trailing(PutBitContext *pb){
     length= (-put_bits_count(pb))&7;
     if(length) put_bits(pb, length, 0);
 }
+#endif
 
 /**
  * identifies the exact end of the bitstream
@@ -1135,6 +1152,7 @@ static void h264_luma_dc_dequant_idct_c(DCTELEM *block, int qp){
     }
 }
 
+#if 0
 /**
  * dct tranforms the 16 dc values.
  * @param qp quantization parameter ??? FIXME
@@ -1172,6 +1190,8 @@ static void h264_luma_dc_dct_c(DCTELEM *block/*, int qp*/){
         block[stride*10+offset]= (z0 - z3)>>1;
     }
 }
+#endif
+
 #undef xStride
 #undef stride
 
@@ -1197,6 +1217,7 @@ static void chroma_dc_dequant_idct_c(DCTELEM *block, int qp){
     block[stride*1 + xStride*1]= ((e-b)*qmul + 0)>>1;
 }
 
+#if 0
 static void chroma_dc_dct_c(DCTELEM *block){
     const int stride= 16*2;
     const int xStride= 16;
@@ -1217,6 +1238,7 @@ static void chroma_dc_dct_c(DCTELEM *block){
     block[stride*1 + xStride*0]= (a-c);
     block[stride*1 + xStride*1]= (e-b);
 }
+#endif
 
 /**
  * gets the chroma qp.
@@ -1286,6 +1308,7 @@ static void h264_add_idct_c(uint8_t *dst, DCTELEM *block, int stride){
 #endif
 }
 
+#if 0
 static void h264_diff_dct_c(DCTELEM *block, uint8_t *src1, uint8_t *src2, int stride){
     int i;
     //FIXME try int temp instead of block
@@ -1318,6 +1341,7 @@ static void h264_diff_dct_c(DCTELEM *block, uint8_t *src1, uint8_t *src2, int st
         block[3*4 + i]=   z3 - 2*z2;
     }
 }
+#endif
 
 //FIXME need to check that this doesnt overflow signed 32 bit for low qp, iam not sure, its very close
 //FIXME check that gcc inlines this (and optimizes intra & seperate_dc stuff away)
@@ -2109,11 +2133,13 @@ static void init_pred_ptrs(H264Context *h){
 
 static void free_tables(H264Context *h){
     av_freep(&h->intra4x4_pred_mode);
+    av_freep(&h->chroma_pred_mode_table);
+    av_freep(&h->cbp_table);
     av_freep(&h->non_zero_count);
     av_freep(&h->slice_table_base);
     av_freep(&h->top_border);
     h->slice_table= NULL;
-    
+
     av_freep(&h->mb2b_xy);
     av_freep(&h->mb2b8_xy);
 }
@@ -2128,9 +2154,18 @@ static int alloc_tables(H264Context *h){
     int x,y;
 
     CHECKED_ALLOCZ(h->intra4x4_pred_mode, big_mb_num * 8  * sizeof(uint8_t))
+
     CHECKED_ALLOCZ(h->non_zero_count    , big_mb_num * 16 * sizeof(uint8_t))
     CHECKED_ALLOCZ(h->slice_table_base  , big_mb_num * sizeof(uint8_t))
     CHECKED_ALLOCZ(h->top_border       , s->mb_width * (16+8+8) * sizeof(uint8_t))
+
+    if( h->pps.cabac ) {
+        CHECKED_ALLOCZ(h->chroma_pred_mode_table, big_mb_num * sizeof(uint8_t))
+        CHECKED_ALLOCZ(h->cbp_table, big_mb_num * sizeof(uint16_t))
+    } else {
+        h->chroma_pred_mode_table = NULL;
+        h->cbp_table = NULL;
+    }
 
     memset(h->slice_table_base, -1, big_mb_num  * sizeof(uint8_t));
     h->slice_table= h->slice_table_base + s->mb_stride + 1;
@@ -2409,10 +2444,6 @@ static void hl_decode_mb(H264Context *h){
         backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         filter_mb(h, mb_x, mb_y, dest_y, dest_cb, dest_cr);
     }
-}
-
-static void decode_mb_cabac(H264Context *h){
-//    MpegEncContext * const s = &h->s;
 }
 
 /**
@@ -3057,9 +3088,12 @@ static int decode_slice_header(H264Context *h){
     
     if(s->current_picture.reference)
         decode_ref_pic_marking(h);
-    //FIXME CABAC stuff
 
-    s->qscale = h->pps.init_qp + get_se_golomb(&s->gb); //slice_qp_delta
+    if( h->slice_type != I_TYPE && h->slice_type != SI_TYPE && h->pps.cabac )
+        h->cabac_init_idc = get_ue_golomb(&s->gb);
+
+    h->last_qscale_diff = 0;
+    s->qscale = h->pps.init_qp + get_se_golomb(&s->gb);
     if(s->qscale<0 || s->qscale>51){
         av_log(s->avctx, AV_LOG_ERROR, "QP %d out of range\n", s->qscale);
         return -1;
@@ -3273,7 +3307,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
  * decodes a macroblock
  * @returns 0 if ok, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
  */
-static int decode_mb(H264Context *h){
+static int decode_mb_cavlc(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int mb_type, partition_count, cbp;
@@ -3708,6 +3742,729 @@ decode_intra_mb:
     return 0;
 }
 
+static int decode_cabac_mb_type( H264Context *h ) {
+    MpegEncContext * const s = &h->s;
+
+    if( h->slice_type == I_TYPE ) {
+        const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+        int ctx = 0;
+        int mb_type;
+
+        if( s->mb_x > 0 && !IS_INTRA4x4( s->current_picture.mb_type[mb_xy-1] ) )
+            ctx++;
+        if( s->mb_y > 0 && !IS_INTRA4x4( s->current_picture.mb_type[mb_xy-s->mb_stride] ) )
+            ctx++;
+
+        if( get_cabac( &h->cabac, &h->cabac_state[3+ctx] ) == 0 )
+            return 0;   /* I4x4 */
+
+        if( get_cabac_terminate( &h->cabac ) )
+            return 25;  /* PCM */
+
+        mb_type = 1;    /* I16x16 */
+        if( get_cabac( &h->cabac, &h->cabac_state[3+3] ) )
+            mb_type += 12;  /* cbp_luma != 0 */
+
+        if( get_cabac( &h->cabac, &h->cabac_state[3+4] ) ) {
+            if( get_cabac( &h->cabac, &h->cabac_state[3+5] ) )
+                mb_type += 4 * 2;   /* cbp_chroma == 2 */
+            else
+                mb_type += 4 * 1;   /* cbp_chroma == 1 */
+        }
+        if( get_cabac( &h->cabac, &h->cabac_state[3+6] ) )
+            mb_type += 2;
+        if( get_cabac( &h->cabac, &h->cabac_state[3+7] ) )
+            mb_type += 1;
+        return mb_type;
+
+    } else if( h->slice_type == P_TYPE ) {
+        if( get_cabac( &h->cabac, &h->cabac_state[14] ) == 0 ) {
+            /* P-type */
+            if( get_cabac( &h->cabac, &h->cabac_state[15] ) == 0 ) {
+                if( get_cabac( &h->cabac, &h->cabac_state[16] ) == 0 )
+                    return 0; /* P_L0_D16x16; */
+                else
+                    return 3; /* P_8x8; */
+            } else {
+                if( get_cabac( &h->cabac, &h->cabac_state[17] ) == 0 )
+                    return 1; /* P_L0_D16x8; */
+                else
+                    return 2; /* P_L0_D8x16; */
+            }
+        } else {
+            int mb_type;
+            /* I-type */
+            if( get_cabac( &h->cabac, &h->cabac_state[17] ) == 0 )
+                return 5+0; /* I_4x4 */
+            if( get_cabac_terminate( &h->cabac ) )
+                return 5+25; /*I_PCM */
+            mb_type = 5+1;    /* I16x16 */
+            if( get_cabac( &h->cabac, &h->cabac_state[17+1] ) )
+                mb_type += 12;  /* cbp_luma != 0 */
+
+            if( get_cabac( &h->cabac, &h->cabac_state[17+2] ) ) {
+                if( get_cabac( &h->cabac, &h->cabac_state[17+2] ) )
+                    mb_type += 4 * 2;   /* cbp_chroma == 2 */
+                else
+                    mb_type += 4 * 1;   /* cbp_chroma == 1 */
+            }
+            if( get_cabac( &h->cabac, &h->cabac_state[17+3] ) )
+                mb_type += 2;
+            if( get_cabac( &h->cabac, &h->cabac_state[17+3] ) )
+                mb_type += 1;
+
+            return mb_type;
+        }
+    } else {
+        /* TODO do others frames types */
+        return -1;
+    }
+}
+
+static int decode_cabac_mb_skip( H264Context *h) {
+    MpegEncContext * const s = &h->s;
+    const int mb_xy = s->mb_x + s->mb_y*s->mb_stride;
+    const int mba_xy = mb_xy - 1;
+    const int mbb_xy = mb_xy - s->mb_stride;
+    int ctx = 0;
+
+    if( s->mb_x > 0 && !IS_SKIP( s->current_picture.mb_type[mba_xy] ) )
+        ctx++;
+    if( s->mb_y > 0 && !IS_SKIP( s->current_picture.mb_type[mbb_xy] ) )
+        ctx++;
+
+    if( h->slice_type == P_TYPE || h->slice_type == SP_TYPE)
+        return get_cabac( &h->cabac, &h->cabac_state[11+ctx] );
+    else /* B-frame */
+        return get_cabac( &h->cabac, &h->cabac_state[24+ctx] );
+}
+
+static int decode_cabac_mb_intra4x4_pred_mode( H264Context *h, int pred_mode ) {
+    int mode = 0;
+
+    if( get_cabac( &h->cabac, &h->cabac_state[68] ) )
+        return pred_mode;
+
+    if( get_cabac( &h->cabac, &h->cabac_state[69] ) )
+        mode += 1;
+    if( get_cabac( &h->cabac, &h->cabac_state[69] ) )
+        mode += 2;
+    if( get_cabac( &h->cabac, &h->cabac_state[69] ) )
+        mode += 4;
+    if( mode >= pred_mode )
+        return mode + 1;
+    else
+        return mode;
+}
+
+static int decode_cabac_mb_chroma_pre_mode( H264Context *h) {
+    MpegEncContext * const s = &h->s;
+    const int mb_xy = s->mb_x + s->mb_y*s->mb_stride;
+    const int mba_xy = mb_xy - 1;
+    const int mbb_xy = mb_xy - s->mb_stride;
+
+    int ctx = 0;
+
+    if( s->mb_x > 0 &&
+        ( IS_INTRA4x4( s->current_picture.mb_type[mba_xy] ) || IS_INTRA16x16( s->current_picture.mb_type[mba_xy] ) ) &&
+        h->chroma_pred_mode_table[mba_xy] != 0 ) {
+        ctx++;
+    }
+    if( s->mb_y > 0 &&
+        ( IS_INTRA4x4( s->current_picture.mb_type[mbb_xy] ) || IS_INTRA16x16( s->current_picture.mb_type[mbb_xy] ) ) &&
+        h->chroma_pred_mode_table[mbb_xy] != 0 ) {
+        ctx++;
+    }
+
+    if( get_cabac( &h->cabac, &h->cabac_state[64+ctx] ) == 0 )
+        return 0;
+
+    if( get_cabac( &h->cabac, &h->cabac_state[64+3] ) == 0 )
+        return 1;
+    if( get_cabac( &h->cabac, &h->cabac_state[64+3] ) == 0 )
+        return 2;
+    else
+        return 3;
+}
+
+static const uint8_t block_idx_x[16] = {
+    0, 1, 0, 1, 2, 3, 2, 3, 0, 1, 0, 1, 2, 3, 2, 3
+};
+static const uint8_t block_idx_y[16] = {
+    0, 0, 1, 1, 0, 0, 1, 1, 2, 2, 3, 3, 2, 2, 3, 3
+};
+static const uint8_t block_idx_xy[4][4] = {
+    { 0, 2, 8,  10},
+    { 1, 3, 9,  11},
+    { 4, 6, 12, 14},
+    { 5, 7, 13, 15}
+};
+
+static int decode_cabac_mb_cbp_luma( H264Context *h) {
+    MpegEncContext * const s = &h->s;
+    const int mb_xy = s->mb_x + s->mb_y*s->mb_stride;
+
+    int cbp = 0;
+    int i8x8;
+
+    h->cbp_table[mb_xy] = 0;  /* FIXME aaahahahah beurk */
+
+    for( i8x8 = 0; i8x8 < 4; i8x8++ ) {
+        int mba_xy = -1;
+        int mbb_xy = -1;
+        int x, y;
+        int ctx = 0;
+
+        x = block_idx_x[4*i8x8];
+        y = block_idx_y[4*i8x8];
+
+        if( x > 0 )
+            mba_xy = mb_xy;
+        else if( s->mb_x > 0 )
+            mba_xy = mb_xy - 1;
+
+        if( y > 0 )
+            mbb_xy = mb_xy;
+        else if( s->mb_y > 0 )
+            mbb_xy = mb_xy - s->mb_stride;
+
+        if( mba_xy >= 0 ) {
+            int i8x8a = block_idx_xy[(x-1)&0x03][y]/4;
+            if( IS_SKIP( s->current_picture.mb_type[mba_xy] ) || ((h->cbp_table[mba_xy] >> i8x8a)&0x01) == 0 )
+                ctx++;
+        }
+
+        if( mbb_xy >= 0 ) {
+            int i8x8b = block_idx_xy[x][(y-1)&0x03]/4;
+            if( IS_SKIP( s->current_picture.mb_type[mbb_xy] ) || ((h->cbp_table[mbb_xy] >> i8x8b)&0x01) == 0 )
+                ctx += 2;
+        }
+
+        if( get_cabac( &h->cabac, &h->cabac_state[73 + ctx] ) ) {
+            cbp |= 1 << i8x8;
+            h->cbp_table[mb_xy] = cbp;  /* FIXME aaahahahah beurk */
+        }
+    }
+    return cbp;
+}
+static int decode_cabac_mb_cbp_chroma( H264Context *h) {
+    MpegEncContext * const s = &h->s;
+    const int mb_xy = s->mb_x + s->mb_y*s->mb_stride;
+    int ctx;
+    int cbp_a, cbp_b;
+
+    if( s->mb_x > 0 && !IS_SKIP( s->current_picture.mb_type[mb_xy-1] ) )
+        cbp_a = (h->cbp_table[mb_xy-1]>>4)&0x03;
+    else
+        cbp_a = -1;
+
+    if( s->mb_y > 0 && !IS_SKIP( s->current_picture.mb_type[mb_xy-s->mb_stride] ) )
+        cbp_b = (h->cbp_table[mb_xy-s->mb_stride]>>4)&0x03;
+    else
+        cbp_b = -1;
+
+    ctx = 0;
+    if( cbp_a > 0 ) ctx++;
+    if( cbp_b > 0 ) ctx += 2;
+    if( get_cabac( &h->cabac, &h->cabac_state[77 + ctx] ) == 0 )
+        return 0;
+
+    ctx = 4;
+    if( cbp_a == 2 ) ctx++;
+    if( cbp_b == 2 ) ctx += 2;
+    if( get_cabac( &h->cabac, &h->cabac_state[77 + ctx] ) )
+        return 2;
+    else
+        return 1;
+}
+static int decode_cabac_mb_dqp( H264Context *h) {
+    MpegEncContext * const s = &h->s;
+    int mbn_xy;
+    int   ctx = 0;
+    int   val = 0;
+
+    if( s->mb_x > 0 )
+        mbn_xy = s->mb_x + s->mb_y*s->mb_stride - 1;
+    else
+        mbn_xy = s->mb_width - 1 + (s->mb_y-1)*s->mb_stride;
+
+    if( mbn_xy >= 0 && h->last_qscale_diff != 0 && ( IS_INTRA16x16(s->current_picture.mb_type[mbn_xy] ) || (h->cbp_table[mbn_xy]&0x3f) ) )
+        ctx++;
+
+    while( get_cabac( &h->cabac, &h->cabac_state[60 + ctx] ) ) {
+        if( ctx < 2 )
+            ctx = 2;
+        else
+            ctx = 3;
+        val++;
+    }
+
+    if( val&0x01 )
+        return (val + 1)/2;
+    else
+        return -(val + 1)/2;
+}
+
+static int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
+    MpegEncContext * const s = &h->s;
+    const int mb_xy  = s->mb_x + s->mb_y*s->mb_stride;
+    int mba_xy = -1;
+    int mbb_xy = -1;
+
+    int nza = -1;
+    int nzb = -1;
+    int ctx = 0;
+
+    if( cat == 0 ) {
+        if( s->mb_x > 0 ) {
+            mba_xy = mb_xy - 1;
+            if( IS_INTRA16x16(s->current_picture.mb_type[mba_xy] ) )
+                    nza = h->cbp_table[mba_xy]&0x100;
+        }
+        if( s->mb_y > 0 ) {
+            mbb_xy = mb_xy - s->mb_stride;
+            if( IS_INTRA16x16(s->current_picture.mb_type[mbb_xy] ) )
+                    nzb = h->cbp_table[mbb_xy]&0x100;
+        }
+    } else if( cat == 1 || cat == 2 ) {
+        int i8x8a, i8x8b;
+        int x, y;
+
+        x = block_idx_x[idx];
+        y = block_idx_y[idx];
+
+        if( x > 0 )
+            mba_xy = mb_xy;
+        else if( s->mb_x > 0 )
+            mba_xy = mb_xy - 1;
+
+        if( y > 0 )
+            mbb_xy = mb_xy;
+        else if( s->mb_y > 0 )
+            mbb_xy = mb_xy - s->mb_stride;
+
+        if( mba_xy >= 0 ) {
+            i8x8a = block_idx_xy[(x-1)&0x03][y]/4;
+
+            if( !IS_SKIP(s->current_picture.mb_type[mba_xy] ) &&
+                !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
+                ((h->cbp_table[mba_xy]&0x0f)>>i8x8a))
+                nza = h->non_zero_count_cache[scan8[idx] - 1];
+        }
+
+        if( mbb_xy >= 0 ) {
+            i8x8b = block_idx_xy[x][(y-1)&0x03]/4;
+
+            if( !IS_SKIP(s->current_picture.mb_type[mbb_xy] ) &&
+                !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
+                ((h->cbp_table[mbb_xy]&0x0f)>>i8x8b))
+                nzb = h->non_zero_count_cache[scan8[idx] - 8];
+        }
+    } else if( cat == 3 ) {
+        if( s->mb_x > 0 ) {
+            mba_xy = mb_xy - 1;
+
+            if( !IS_SKIP(s->current_picture.mb_type[mba_xy] ) &&
+                !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
+                (h->cbp_table[mba_xy]&0x30) )
+                nza = (h->cbp_table[mba_xy]>>(6+idx))&0x01;
+        }
+        if( s->mb_y > 0 ) {
+            mbb_xy = mb_xy - s->mb_stride;
+
+            if( !IS_SKIP(s->current_picture.mb_type[mbb_xy] ) &&
+                !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
+                (h->cbp_table[mbb_xy]&0x30) )
+                nzb = (h->cbp_table[mbb_xy]>>(6+idx))&0x01;
+        }
+    } else if( cat == 4 ) {
+        int idxc = idx % 4 ;
+        if( idxc == 1 || idxc == 3 )
+            mba_xy = mb_xy;
+        else if( s->mb_x > 0 )
+            mba_xy = mb_xy -1;
+
+        if( idxc == 2 || idxc == 3 )
+            mbb_xy = mb_xy;
+        else if( s->mb_y > 0 )
+            mbb_xy = mb_xy - s->mb_stride;
+
+        if( mba_xy >= 0 &&
+            !IS_SKIP(s->current_picture.mb_type[mba_xy] ) &&
+            !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
+            (h->cbp_table[mba_xy]&0x30) == 0x20 )
+            nza = h->non_zero_count_cache[scan8[16+idx] - 1];
+
+        if( mbb_xy >= 0 &&
+            !IS_SKIP(s->current_picture.mb_type[mbb_xy] ) &&
+            !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
+            (h->cbp_table[mbb_xy]&0x30) == 0x20 )
+            nzb = h->non_zero_count_cache[scan8[16+idx] - 8];
+    }
+
+    if( ( mba_xy < 0 && IS_INTRA( s->current_picture.mb_type[mb_xy] ) ) ||
+        ( mba_xy >= 0 && IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) ) ||
+          nza > 0 )
+        ctx++;
+
+    if( ( mbb_xy < 0 && IS_INTRA( s->current_picture.mb_type[mb_xy] ) ) ||
+        ( mbb_xy >= 0 && IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) ) ||
+          nzb > 0 )
+        ctx += 2;
+
+    return ctx + 4 * cat;
+}
+
+static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int qp, int max_coeff) {
+    const int mb_xy  = h->s.mb_x + h->s.mb_y*h->s.mb_stride;
+    const uint16_t *qmul= dequant_coeff[qp];
+    static const int significant_coeff_flag_offset[5] = { 0, 15, 29, 44, 47 };
+    static const int last_significant_coeff_flag_offset[5] = { 0, 15, 29, 44, 47 };
+    static const int coeff_abs_level_m1_offset[5] = { 0, 10, 20, 30, 39 };
+
+    int coeff[16];
+
+    int last = 0;
+    int coeff_count = 0;
+    int nz[16] = {0};
+    int i;
+
+    int abslevel1 = 0;
+    int abslevelgt1 = 0;
+
+    /* cat: 0-> DC 16x16  n = 0
+     *      1-> AC 16x16  n = luma4x4idx
+     *      2-> Luma4x4   n = luma4x4idx
+     *      3-> DC Chroma n = iCbCr
+     *      4-> AC Chroma n = 4 * iCbCr + chroma4x4idx
+     */
+
+    /* read coded block flag */
+    if( get_cabac( &h->cabac, &h->cabac_state[85 + get_cabac_cbf_ctx( h, cat, n ) ] ) == 0 ) {
+        if( cat == 1 || cat == 2 )
+            h->non_zero_count_cache[scan8[n]] = 0;
+        else if( cat == 4 )
+            h->non_zero_count_cache[scan8[16+n]] = 0;
+
+        return 0;
+    }
+
+    while( last < max_coeff - 1 ) {
+        int ctx = FFMIN( last, max_coeff - 2 );
+
+        if( get_cabac( &h->cabac, &h->cabac_state[105+significant_coeff_flag_offset[cat]+ctx] ) == 0 ) {
+            nz[last++] = 0;
+        }
+        else {
+            nz[last++] = 1;
+            coeff_count++;
+            if( get_cabac( &h->cabac, &h->cabac_state[166+last_significant_coeff_flag_offset[cat]+ctx] ) ) {
+                while( last < max_coeff ) {
+                    nz[last++] = 0;
+                }
+                break;
+            }
+        }
+    }
+    if( last == max_coeff -1 ) {
+        nz[last++] = 1;
+        coeff_count++;
+    }
+
+    if( cat == 0 && coeff_count > 0 )
+        h->cbp_table[mb_xy] |= 0x100;
+    else if( cat == 1 || cat == 2 )
+        h->non_zero_count_cache[scan8[n]] = coeff_count;
+    else if( cat == 3 && coeff_count > 0 )
+        h->cbp_table[mb_xy] |= 0x40 << n;
+    else if( cat == 4 )
+        h->non_zero_count_cache[scan8[16+n]] = coeff_count;
+
+    for( i = coeff_count - 1; i >= 0; i-- ) {
+        int coeff_abs_m1;
+
+        int ctx = (abslevelgt1 != 0 ? 0 : FFMIN( 4, abslevel1 + 1 )) + coeff_abs_level_m1_offset[cat];
+
+        if( get_cabac( &h->cabac, &h->cabac_state[227+ctx] ) == 0 ) {
+            coeff_abs_m1 = 0;
+        } else {
+            coeff_abs_m1 = 1;
+            ctx = 5 + FFMIN( 4, abslevelgt1 ) + coeff_abs_level_m1_offset[cat];
+            while( coeff_abs_m1 < 14 && get_cabac( &h->cabac, &h->cabac_state[227+ctx] ) ) {
+                coeff_abs_m1++;
+            }
+        }
+
+        if( coeff_abs_m1 >= 14 ) {
+            int j = 0;
+            while( get_cabac_bypass( &h->cabac ) ) {
+                coeff_abs_m1 += 1 << j;
+                j++;
+            }
+
+            while( j-- ) {
+                if( get_cabac_bypass( &h->cabac ) )
+                    coeff_abs_m1 += 1 << j ;
+            }
+        }
+        if( get_cabac_bypass( &h->cabac ) )
+            coeff[i] = -1 *( coeff_abs_m1 + 1 );
+        else
+            coeff[i] = coeff_abs_m1 + 1;
+
+        if( coeff_abs_m1 == 0 )
+            abslevel1++;
+        else
+            abslevelgt1++;
+    }
+
+    if( cat == 0 || cat == 3 ) { /* DC */
+        int j;
+        for( i = 0, j = 0; j < coeff_count; i++ ) {
+            if( nz[i] ) {
+                block[scantable[i]] = coeff[j];
+
+                j++;
+            }
+        }
+
+    } else { /* AC */
+        int j;
+        for( i = 0, j = 0; j < coeff_count; i++ ) {
+            if( nz[i] ) {
+                block[scantable[i]] = coeff[j] * qmul[scantable[i]];
+
+                j++;
+            }
+        }
+    }
+    return 0;
+}
+
+/**
+ * decodes a macroblock
+ * @returns 0 if ok, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
+ */
+static int decode_mb_cabac(H264Context *h) {
+    MpegEncContext * const s = &h->s;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+    int mb_type, partition_count, cbp = 0;
+
+    s->dsp.clear_blocks(h->mb); //FIXME avoid if allready clear (move after skip handlong?)
+
+    if( h->slice_type == B_TYPE ) {
+        av_log( h->s.avctx, AV_LOG_ERROR, "B-frame not supported with CABAC\n" );
+        return -1;
+    }
+    if( h->sps.mb_aff ) {
+        av_log( h->s.avctx, AV_LOG_ERROR, "Fields not supported with CABAC\n" );
+        return -1;
+    }
+
+    if( h->slice_type != I_TYPE && h->slice_type != SI_TYPE ) {
+        /* read skip flags */
+        if( decode_cabac_mb_skip( h ) ) {
+            int mx, my;
+
+            /* skip mb */
+            mb_type= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P1L0|MB_TYPE_SKIP;
+
+            memset(h->non_zero_count[mb_xy], 0, 16);
+            memset(h->non_zero_count_cache + 8, 0, 8*5); //FIXME ugly, remove pfui
+#if 0
+            if(h->sps.mb_aff && s->mb_skip_run==0 && (s->mb_y&1)==0){
+                h->mb_field_decoding_flag= get_bits1(&s->gb);
+            }
+            if(h->mb_field_decoding_flag)
+                mb_type|= MB_TYPE_INTERLACED;
+#endif
+
+            fill_caches(h, mb_type); //FIXME check what is needed and what not ...
+            pred_pskip_motion(h, &mx, &my);
+            fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);
+            fill_rectangle(  h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mx,my), 4);
+            write_back_motion(h, mb_type);
+
+            s->current_picture.mb_type[mb_xy]= mb_type; //FIXME SKIP type
+            s->current_picture.qscale_table[mb_xy]= s->qscale;
+            h->slice_table[ mb_xy ]= h->slice_num;
+            h->cbp_table[mb_xy] = 0;
+            h->last_qscale_diff = 0;
+
+            h->prev_mb_skiped= 1;
+
+            return 0;
+
+        }
+    }
+    h->prev_mb_skiped = 0;
+
+    if( ( mb_type = decode_cabac_mb_type( h ) ) < 0 ) {
+        av_log( h->s.avctx, AV_LOG_ERROR, "decode_cabac_mb_type failed\n" );
+        return -1;
+    }
+    //av_log( s->avctx, AV_LOG_ERROR, "mb_type=%d\n", mb_type );
+
+    if( h->slice_type == P_TYPE ) {
+        if( mb_type < 5) {
+            partition_count= p_mb_type_info[mb_type].partition_count;
+            mb_type=         p_mb_type_info[mb_type].type;
+            av_log( h->s.avctx, AV_LOG_ERROR, "gni P-type not yet supported\n" );
+            return -1;
+        } else {
+            mb_type -= 5;
+            goto decode_intra_mb;
+        }
+    } else {
+       assert(h->slice_type == I_TYPE);
+decode_intra_mb:
+        partition_count = 0;
+        cbp= i_mb_type_info[mb_type].cbp;
+        h->intra16x16_pred_mode= i_mb_type_info[mb_type].pred_mode;
+        mb_type= i_mb_type_info[mb_type].type;
+    }
+#if 0
+    if(h->mb_field_decoding_flag)
+        mb_type |= MB_TYPE_INTERLACED;
+#endif
+
+    s->current_picture.mb_type[mb_xy]= mb_type;
+    h->slice_table[ mb_xy ]= h->slice_num;
+
+    if(IS_INTRA_PCM(mb_type)) {
+        /* TODO */
+        h->cbp_table[mb_xy] = 0xf +4*2;
+        s->current_picture.qscale_table[mb_xy]= s->qscale;
+        return -1;
+    }
+
+    fill_caches(h, mb_type);
+
+    if( IS_INTRA( mb_type ) ) {
+        if( IS_INTRA4x4( mb_type ) ) {
+            int i;
+            for( i = 0; i < 16; i++ ) {
+                int pred = pred_intra_mode( h, i );
+                h->intra4x4_pred_mode_cache[ scan8[i] ] = decode_cabac_mb_intra4x4_pred_mode( h, pred );
+
+                //av_log( s->avctx, AV_LOG_ERROR, "i4x4 pred=%d mode=%d\n", pred, h->intra4x4_pred_mode_cache[ scan8[i] ] );
+            }
+            write_back_intra_pred_mode(h);
+            if( check_intra4x4_pred_mode(h) < 0 ) return -1;
+        } else {
+            h->intra16x16_pred_mode= check_intra_pred_mode( h, h->intra16x16_pred_mode );
+            if( h->intra16x16_pred_mode < 0 ) return -1;
+        }
+        h->chroma_pred_mode_table[mb_xy] =
+            h->chroma_pred_mode          = decode_cabac_mb_chroma_pre_mode( h );
+
+        h->chroma_pred_mode= check_intra_pred_mode( h, h->chroma_pred_mode );
+        if( h->chroma_pred_mode < 0 ) return -1;
+    } else if( partition_count == 4 ) {
+        /* TODO */
+        return -1;
+    } else if( !IS_DIRECT(mb_type) ) {
+        /* TODO */
+        return -1;
+    }
+
+   if( IS_INTER( mb_type ) )
+        write_back_motion( h, mb_type );
+
+    if( !IS_INTRA16x16( mb_type ) ) {
+        cbp  = decode_cabac_mb_cbp_luma( h );
+        cbp |= decode_cabac_mb_cbp_chroma( h ) << 4;
+    }
+
+    //av_log( NULL, AV_LOG_ERROR, "cbp=%d\n", cbp );
+    h->cbp_table[mb_xy] = cbp;
+
+    if( cbp || IS_INTRA16x16( mb_type ) ) {
+        const uint8_t *scan, *dc_scan;
+        int dqp;
+
+        if(IS_INTERLACED(mb_type)){
+            scan= field_scan;
+            dc_scan= luma_dc_field_scan;
+        }else{
+            scan= zigzag_scan;
+            dc_scan= luma_dc_zigzag_scan;
+        }
+
+        h->last_qscale_diff = dqp = decode_cabac_mb_dqp( h );
+        s->qscale += dqp;
+        if(((unsigned)s->qscale) > 51){
+            if(s->qscale<0) s->qscale+= 52;
+            else            s->qscale-= 52;
+        }
+        h->chroma_qp = get_chroma_qp(h, s->qscale);
+
+        if( IS_INTRA16x16( mb_type ) ) {
+            int i;
+            //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 DC\n" );
+            if( decode_cabac_residual( h, h->mb, 0, 0, dc_scan, s->qscale, 16) < 0)
+                return -1;
+            if( cbp&15 ) {
+                for( i = 0; i < 16; i++ ) {
+                    //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 AC:%d\n", i );
+                    if( decode_cabac_residual(h, h->mb + 16*i, 1, i, scan + 1, s->qscale, 15) < 0 )
+                        return -1;
+                }
+            } else {
+                fill_rectangle(&h->non_zero_count_cache[scan8[0]], 4, 4, 8, 0, 1);
+            }
+        } else {
+            int i8x8, i4x4;
+            for( i8x8 = 0; i8x8 < 4; i8x8++ ) {
+                if( cbp & (1<<i8x8) ) {
+                    for( i4x4 = 0; i4x4 < 4; i4x4++ ) {
+                        const int index = 4*i8x8 + i4x4;
+                        //av_log( s->avctx, AV_LOG_ERROR, "Luma4x4: %d\n", index );
+                        if( decode_cabac_residual(h, h->mb + 16*index, 2, index, scan, s->qscale, 16) < 0 )
+                            return -1;
+                    }
+                } else {
+                    uint8_t * const nnz= &h->non_zero_count_cache[ scan8[4*i8x8] ];
+                    nnz[0] = nnz[1] = nnz[8] = nnz[9] = 0;
+                }
+            }
+        }
+
+        if( cbp&0x30 ){
+            int c;
+            for( c = 0; c < 2; c++ ) {
+                //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-DC\n",c );
+                if( decode_cabac_residual(h, h->mb + 256 + 16*4*c, 3, c, chroma_dc_scan, h->chroma_qp, 4) < 0)
+                    return -1;
+            }
+        }
+
+        if( cbp&0x20 ) {
+            int c, i;
+            for( c = 0; c < 2; c++ ) {
+                for( i = 0; i < 4; i++ ) {
+                    const int index = 16 + 4 * c + i;
+                    //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-AC %d\n",c, index - 16 );
+                    if( decode_cabac_residual(h, h->mb + 16*index, 4, index - 16, scan + 1, h->chroma_qp, 15) < 0)
+                        return -1;
+                }
+            }
+        } else {
+            uint8_t * const nnz= &h->non_zero_count_cache[0];
+            nnz[ scan8[16]+0 ] = nnz[ scan8[16]+1 ] =nnz[ scan8[16]+8 ] =nnz[ scan8[16]+9 ] =
+            nnz[ scan8[20]+0 ] = nnz[ scan8[20]+1 ] =nnz[ scan8[20]+8 ] =nnz[ scan8[20]+9 ] = 0;
+        }
+    } else {
+        memset( &h->non_zero_count_cache[8], 0, 8*5 );
+    }
+
+    s->current_picture.qscale_table[mb_xy]= s->qscale;
+    write_back_non_zero_count(h);
+
+    return 0;
+}
+
+
 static void filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int bS[4], int qp ) {
     int i, d;
     const int index_a = clip( qp + h->slice_alpha_c0_offset, 0, 51 );
@@ -4097,59 +4854,129 @@ static int decode_slice(H264Context *h){
     const int part_mask= s->partitioned_frame ? (AC_END|AC_ERROR) : 0x7F;
 
     s->mb_skip_run= -1;
-    
-#if 1
-    for(;;){
-        int ret= decode_mb(h);
-            
-        hl_decode_mb(h);
-        
-        if(ret>=0 && h->sps.mb_aff){ //FIXME optimal? or let mb_decode decode 16x32 ?
-            s->mb_y++;
-            ret= decode_mb(h);
-            
+
+    if( h->pps.cabac ) {
+        int i;
+
+        /* realign */
+        align_get_bits( &s->gb );
+
+        /* init cabac */
+        ff_init_cabac_states( &h->cabac, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64 );
+        ff_init_cabac_decoder( &h->cabac,
+                               s->gb.buffer + get_bits_count(&s->gb)/8,
+                               ( s->gb.size_in_bits - get_bits_count(&s->gb) ) );
+        /* calculate pre-state */
+        for( i= 0; i < 399; i++ ) {
+            int pre;
+            if( h->slice_type == I_TYPE )
+                pre = clip( ((cabac_context_init_I[i][0] * s->qscale) >>4 ) + cabac_context_init_I[i][1], 1, 126 );
+            else
+                pre = clip( ((cabac_context_init_PB[h->cabac_init_idc][i][0] * s->qscale) >>4 ) + cabac_context_init_PB[h->cabac_init_idc][i][1], 1, 126 );
+
+            if( pre <= 63 )
+                h->cabac_state[i] = 2 * ( 63 - pre ) + 0;
+            else
+                h->cabac_state[i] = 2 * ( pre - 64 ) + 1;
+        }
+
+        for(;;){
+            int ret = decode_mb_cabac(h);
+            int eos = get_cabac_terminate( &h->cabac ); /* End of Slice flag */
+
             hl_decode_mb(h);
-            s->mb_y--;
+
+            /* XXX: useless as decode_mb_cabac it doesn't support that ... */
+            if( ret >= 0 && h->sps.mb_aff ) { //FIXME optimal? or let mb_decode decode 16x32 ?
+                s->mb_y++;
+
+                ret = decode_mb_cabac(h);
+                eos = get_cabac_terminate( &h->cabac );
+
+                hl_decode_mb(h);
+                s->mb_y--;
+            }
+
+            if( ret < 0 ) {
+                av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
+                return -1;
+            }
+
+            if( ++s->mb_x >= s->mb_width ) {
+                s->mb_x = 0;
+                ff_draw_horiz_band(s, 16*s->mb_y, 16);
+                if( ++s->mb_y >= s->mb_height ) {
+                    tprintf("slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
+                }
+            }
+
+            if( eos || s->mb_y >= s->mb_height ) {
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+                return 0;
+            }
+#if 0
+            /* TODO test over-reading in cabac code */
+            else if( read too much in h->cabac ) {
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
+                return -1;
+            }
+#endif
         }
 
-        if(ret<0){
-            av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
-            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
+    } else {
+        for(;;){
+            int ret = decode_mb_cavlc(h);
 
-            return -1;
-        }
-        
-        if(++s->mb_x >= s->mb_width){
-            s->mb_x=0;
-            ff_draw_horiz_band(s, 16*s->mb_y, 16);
-            if(++s->mb_y >= s->mb_height){
-                tprintf("slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
+            hl_decode_mb(h);
 
-                if(get_bits_count(&s->gb) == s->gb.size_in_bits){
+            if(ret>=0 && h->sps.mb_aff){ //FIXME optimal? or let mb_decode decode 16x32 ?
+                s->mb_y++;
+                ret = decode_mb_cavlc(h);
+
+                hl_decode_mb(h);
+                s->mb_y--;
+            }
+
+            if(ret<0){
+                av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
+
+                return -1;
+            }
+
+            if(++s->mb_x >= s->mb_width){
+                s->mb_x=0;
+                ff_draw_horiz_band(s, 16*s->mb_y, 16);
+                if(++s->mb_y >= s->mb_height){
+                    tprintf("slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
+
+                    if(get_bits_count(&s->gb) == s->gb.size_in_bits ) {
+                        ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+
+                        return 0;
+                    }else{
+                        ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+
+                        return -1;
+                    }
+                }
+            }
+
+            if(get_bits_count(&s->gb) >= s->gb.size_in_bits && s->mb_skip_run<=0){
+                if(get_bits_count(&s->gb) == s->gb.size_in_bits ){
                     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
 
                     return 0;
                 }else{
-                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
 
                     return -1;
                 }
             }
         }
-        
-        if(get_bits_count(&s->gb) >= s->gb.size_in_bits && s->mb_skip_run<=0){
-            if(get_bits_count(&s->gb) == s->gb.size_in_bits){
-                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
-
-                return 0;
-            }else{
-                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
-
-                return -1;
-            }
-        }
     }
-#endif
+
 #if 0
     for(;s->mb_y < s->mb_height; s->mb_y++){
         for(;s->mb_x < s->mb_width; s->mb_x++){

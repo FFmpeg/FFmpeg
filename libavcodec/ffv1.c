@@ -650,6 +650,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         
     ff_init_cabac_encoder(c, buf, buf_size);
     ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
+    c->lps_state[2] = 1;
+    c->lps_state[3] = 0;
     
     *p = *pict;
     p->pict_type= FF_I_TYPE;
@@ -954,6 +956,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     ff_init_cabac_decoder(c, buf, buf_size);
     ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
+    c->lps_state[2] = 1;
+    c->lps_state[3] = 0;
+
 
     p->pict_type= FF_I_TYPE; //FIXME I vs. P
     if(get_cabac_bypass(c)){
