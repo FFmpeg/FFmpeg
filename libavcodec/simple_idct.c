@@ -25,6 +25,8 @@
 #include "dsputil.h"
 #include "simple_idct.h"
 
+//#define ARCH_ALPHA
+
 #if 0
 #define W1 2841 /* 2048*sqrt (2)*cos (1*pi/16) */
 #define W2 2676 /* 2048*sqrt (2)*cos (2*pi/16) */
@@ -83,10 +85,13 @@ static inline int idctRowCondDC(int16_t *row)
 			return 0;
 		if ((lrow[0] & ~0xffffULL) == 0) {
 			uint64_t v;
-
+#if 1			//is ok if |a0| < 1024 than theres an +-1 error (for the *W4 case for W4=16383 !!!)
+			a0 = row[0]<<3;
+#else
 			a0 = W4 * row[0];
 			a0 += 1 << (ROW_SHIFT - 1);
 			a0 >>= ROW_SHIFT;
+#endif
 			v = (uint16_t) a0;
 			v += v << 16;
 			v += v << 32;
@@ -478,6 +483,71 @@ static inline void idctSparseColAdd (UINT8 *dest, int line_size,
         dest[0] = cm[dest[0] + ((a0 - b0) >> COL_SHIFT)];
 }
 
+static inline void idctSparseCol (int16_t * col)
+{
+	int a0, a1, a2, a3, b0, b1, b2, b3;
+        UINT8 *cm = cropTbl + MAX_NEG_CROP;
+
+        /* XXX: I did that only to give same values as previous code */
+	a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4));
+	a1 = a0;
+	a2 = a0;
+	a3 = a0;
+
+        a0 +=  + W2*col[8*2];
+        a1 +=  + W6*col[8*2];
+        a2 +=  - W6*col[8*2];
+        a3 +=  - W2*col[8*2];
+
+        MUL16(b0, W1, col[8*1]);
+        MUL16(b1, W3, col[8*1]);
+        MUL16(b2, W5, col[8*1]);
+        MUL16(b3, W7, col[8*1]);
+
+        MAC16(b0, + W3, col[8*3]);
+        MAC16(b1, - W7, col[8*3]);
+        MAC16(b2, - W1, col[8*3]);
+        MAC16(b3, - W5, col[8*3]);
+
+	if(col[8*4]){
+            a0 += + W4*col[8*4];
+            a1 += - W4*col[8*4];
+            a2 += - W4*col[8*4];
+            a3 += + W4*col[8*4];
+	}
+
+	if (col[8*5]) {
+            MAC16(b0, + W5, col[8*5]);
+            MAC16(b1, - W1, col[8*5]);
+            MAC16(b2, + W7, col[8*5]);
+            MAC16(b3, + W3, col[8*5]);
+	}
+
+	if(col[8*6]){
+            a0 += + W6*col[8*6];
+            a1 += - W2*col[8*6];
+            a2 += + W2*col[8*6];
+            a3 += - W6*col[8*6];
+	}
+
+	if (col[8*7]) {
+            MAC16(b0, + W7, col[8*7]);
+            MAC16(b1, - W5, col[8*7]);
+            MAC16(b2, + W3, col[8*7]);
+            MAC16(b3, - W1, col[8*7]);
+	}
+
+        col[0 ] = ((a0 + b0) >> COL_SHIFT);
+        col[8 ] = ((a1 + b1) >> COL_SHIFT);
+        col[16] = ((a2 + b2) >> COL_SHIFT);
+        col[24] = ((a3 + b3) >> COL_SHIFT);
+        col[32] = ((a3 - b3) >> COL_SHIFT);
+        col[40] = ((a2 - b2) >> COL_SHIFT);
+        col[48] = ((a1 - b1) >> COL_SHIFT);
+        col[56] = ((a0 - b0) >> COL_SHIFT);
+}
+
+
 #ifdef ARCH_ALPHA
 /* If all rows but the first one are zero after row transformation,
    all rows will be identical after column transformation.  */
@@ -576,6 +646,16 @@ void simple_idct_add(UINT8 *dest, int line_size, INT16 *block)
     
     for(i=0; i<8; i++)
         idctSparseColAdd(dest + i, line_size, block + i);
+}
+
+void simple_idct(INT16 *block)
+{
+    int i;
+    for(i=0; i<8; i++)
+        idctRowCondDC(block + i*8);
+    
+    for(i=0; i<8; i++)
+        idctSparseCol(block + i);
 }
 
 #endif
