@@ -2,7 +2,7 @@
  * MPEG1/2 tables
  */
 
-const UINT8 default_intra_matrix[64] = {
+INT16 default_intra_matrix[64] = {
 	8, 16, 19, 22, 26, 27, 29, 34,
 	16, 16, 22, 24, 27, 29, 34, 37,
 	19, 22, 26, 27, 29, 34, 34, 38,
@@ -13,7 +13,7 @@ const UINT8 default_intra_matrix[64] = {
 	27, 29, 35, 38, 46, 56, 69, 83
 };
 
-const UINT8 default_non_intra_matrix[64] = {
+INT16 default_non_intra_matrix[64] = {
     16, 16, 16, 16, 16, 16, 16, 16,
     16, 16, 16, 16, 16, 16, 16, 16,
     16, 16, 16, 16, 16, 16, 16, 16,
@@ -329,18 +329,6 @@ static const UINT8 mbMotionVectorTable[17][2] = {
 { 0xe, 10 },
 { 0xd, 10 },
 { 0xc, 10 },
-};
-
-//const 
-UINT8 zigzag_direct[64] = {
-    0, 1, 8, 16, 9, 2, 3, 10,
-    17, 24, 32, 25, 18, 11, 4, 5,
-    12, 19, 26, 33, 40, 48, 41, 34,
-    27, 20, 13, 6, 7, 14, 21, 28,
-    35, 42, 49, 56, 57, 50, 43, 36,
-    29, 22, 15, 23, 30, 37, 44, 51,
-    58, 59, 52, 45, 38, 31, 39, 46,
-    53, 60, 61, 54, 47, 55, 62, 63
 };
 
 static const int frame_rate_tab[9] = {
