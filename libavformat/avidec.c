@@ -236,7 +236,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* ClrImportant */
 
                     st->codec.extradata_size= size - 10*4;
-                    st->codec.extradata= av_malloc(st->codec.extradata_size); //FIXME where should we free this?
+                    st->codec.extradata= av_malloc(st->codec.extradata_size);
                     get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
                     
                     if(st->codec.extradata_size & 1) //FIXME check if the encoder really did this correctly
@@ -272,6 +272,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* check stream number */
     if (stream_index != s->nb_streams - 1) {
     fail:
+        av_free(avi->buf);
         for(i=0;i<s->nb_streams;i++) {
             av_freep(&s->streams[i]->codec.extradata);
             av_freep(&s->streams[i]);
@@ -373,6 +374,16 @@ pkt_init:
 
 static int avi_read_close(AVFormatContext *s)
 {
+    int i;
+    AVIContext *avi = s->priv_data;
+    av_free(avi->buf);
+
+    for(i=0;i<s->nb_streams;i++) {
+        AVStream *st = s->streams[i];
+//        av_free(st->priv_data);
+        av_free(st->codec.extradata);
+    }
+
     return 0;
 }
 
