@@ -158,6 +158,10 @@ static inline int asv2_get_bits(GetBitContext *gb, int n){
     return reverse[ get_bits(gb, n) << (8-n) ];
 }
 
+static inline void asv2_put_bits(PutBitContext *pb, int n, int v){
+    put_bits(pb, n, reverse[ v << (8-n) ]);
+}
+
 static inline int asv1_get_level(GetBitContext *gb){
     int code= get_vlc2(gb, level_vlc.table, VLC_BITS, 1);
 
@@ -179,6 +183,16 @@ static inline void asv1_put_level(PutBitContext *pb, int level){
     else{
         put_bits(pb, level_tab[3][1], level_tab[3][0]);
         put_bits(pb, 8, level&0xFF);
+    }
+}
+
+static inline void asv2_put_level(PutBitContext *pb, int level){
+    unsigned int index= level + 31;
+
+    if(index <= 62) put_bits(pb, asv2_level_tab[index][1], asv2_level_tab[index][0]);
+    else{
+        put_bits(pb, asv2_level_tab[31][1], asv2_level_tab[31][0]);
+        asv2_put_bits(pb, 8, level&0xFF);
     }
 }
 
@@ -235,7 +249,7 @@ static inline int asv2_decode_block(ASV1Context *a, DCTELEM block[64]){
     return 0;
 }
 
-static inline void encode_block(ASV1Context *a, DCTELEM block[64]){
+static inline void asv1_encode_block(ASV1Context *a, DCTELEM block[64]){
     int i;
     int nc_count=0;
     
@@ -268,6 +282,44 @@ static inline void encode_block(ASV1Context *a, DCTELEM block[64]){
     put_bits(&a->pb, ccp_tab[16][1], ccp_tab[16][0]);
 }
 
+static inline void asv2_encode_block(ASV1Context *a, DCTELEM block[64]){
+    int i;
+    int count=0;
+    
+    for(count=63; count>3; count--){
+        const int index= scantab[count];
+
+        if( (block[index]*a->q_intra_matrix[index] + (1<<15))>>16 ) 
+            break;
+    }
+    
+    count >>= 2;
+
+    asv2_put_bits(&a->pb, 4, count);
+    asv2_put_bits(&a->pb, 8, (block[0] + 32)>>6);
+    block[0]= 0;
+    
+    for(i=0; i<=count; i++){
+        const int index= scantab[4*i];
+        int ccp=0;
+
+        if( (block[index + 0] = (block[index + 0]*a->q_intra_matrix[index + 0] + (1<<15))>>16) ) ccp |= 8;
+        if( (block[index + 8] = (block[index + 8]*a->q_intra_matrix[index + 8] + (1<<15))>>16) ) ccp |= 4;
+        if( (block[index + 1] = (block[index + 1]*a->q_intra_matrix[index + 1] + (1<<15))>>16) ) ccp |= 2;
+        if( (block[index + 9] = (block[index + 9]*a->q_intra_matrix[index + 9] + (1<<15))>>16) ) ccp |= 1;
+
+        if(i) put_bits(&a->pb, ac_ccp_tab[ccp][1], ac_ccp_tab[ccp][0]);
+        else  put_bits(&a->pb, dc_ccp_tab[ccp][1], dc_ccp_tab[ccp][0]);
+
+        if(ccp){
+            if(ccp&8) asv2_put_level(&a->pb, block[index + 0]);
+            if(ccp&4) asv2_put_level(&a->pb, block[index + 8]);
+            if(ccp&2) asv2_put_level(&a->pb, block[index + 1]);
+            if(ccp&1) asv2_put_level(&a->pb, block[index + 9]);
+        }
+    }
+}
+
 static inline int decode_mb(ASV1Context *a, DCTELEM block[6][64]){
     int i;
 
@@ -290,8 +342,12 @@ static inline int decode_mb(ASV1Context *a, DCTELEM block[6][64]){
 static inline void encode_mb(ASV1Context *a, DCTELEM block[6][64]){
     int i;
 
-    for(i=0; i<6; i++){
-        encode_block(a, block[i]);
+    if(a->avctx->codec_id == CODEC_ID_ASV1){
+        for(i=0; i<6; i++)
+            asv1_encode_block(a, block[i]);
+    }else{
+        for(i=0; i<6; i++)
+            asv2_encode_block(a, block[i]);
     }
 }
 
@@ -417,9 +473,6 @@ for(i=0; i<s->avctx->extradata_size; i++){
 }
 #endif
 
-    p->quality= (32 + a->inv_qscale/2)/a->inv_qscale;
-    memset(p->qscale_table, p->quality, p->qstride*a->mb_height);
-    
     *picture= *(AVFrame*)&a->picture;
     *data_size = sizeof(AVPicture);
 
@@ -471,7 +524,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     
     size= get_bit_count(&a->pb)/32;
     
-    a->dsp.bswap_buf((uint32_t*)buf, (uint32_t*)buf, size);
+    if(avctx->codec_id == CODEC_ID_ASV1)
+        a->dsp.bswap_buf((uint32_t*)buf, (uint32_t*)buf, size);
+    else{
+        int i;
+        for(i=0; i<4*size; i++)
+            buf[i]= reverse[ buf[i] ];
+    }
     
     return size*4;
 }
@@ -494,6 +553,7 @@ static int decode_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
     AVFrame *p= (AVFrame*)&a->picture;
     int i;
+    const int scale= avctx->codec_id == CODEC_ID_ASV1 ? 1 : 2;
  
     common_init(avctx);
     init_vlcs(a);
@@ -511,14 +571,13 @@ static int decode_init(AVCodecContext *avctx){
     for(i=0; i<64; i++){
         int index= scantab[i];
 
-        if(avctx->codec_id == CODEC_ID_ASV1)
-            a->intra_matrix[i]= 64 *ff_mpeg1_default_intra_matrix[index] / a->inv_qscale;
-        else
-            a->intra_matrix[i]= 128*ff_mpeg1_default_intra_matrix[index] / a->inv_qscale;
+        a->intra_matrix[i]= 64*scale*ff_mpeg1_default_intra_matrix[index] / a->inv_qscale;
     }
 
     p->qstride= a->mb_width;
     p->qscale_table= av_mallocz( p->qstride * a->mb_height);
+    p->quality= (32*scale + a->inv_qscale/2)/a->inv_qscale;
+    memset(p->qscale_table, p->quality, p->qstride*a->mb_height);
 
     return 0;
 }
@@ -526,12 +585,13 @@ static int decode_init(AVCodecContext *avctx){
 static int encode_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
     int i;
- 
+    const int scale= avctx->codec_id == CODEC_ID_ASV1 ? 1 : 2;
+
     common_init(avctx);
     
     if(avctx->global_quality == 0) avctx->global_quality= 4*FF_QUALITY_SCALE;
 
-    a->inv_qscale= (32*FF_QUALITY_SCALE +  avctx->global_quality/2) / avctx->global_quality;
+    a->inv_qscale= (32*scale*FF_QUALITY_SCALE +  avctx->global_quality/2) / avctx->global_quality;
     
     avctx->extradata= av_mallocz(8);
     avctx->extradata_size=8;
@@ -539,7 +599,7 @@ static int encode_init(AVCodecContext *avctx){
     ((uint32_t*)avctx->extradata)[1]= le2me_32(ff_get_fourcc("ASUS"));
     
     for(i=0; i<64; i++){
-        int q= 32*ff_mpeg1_default_intra_matrix[i];
+        int q= 32*scale*ff_mpeg1_default_intra_matrix[i];
         a->q_intra_matrix[i]= ((a->inv_qscale<<16) + q/2) / q;
     }
 
@@ -588,6 +648,16 @@ AVCodec asv1_encoder = {
     "asv1",
     CODEC_TYPE_VIDEO,
     CODEC_ID_ASV1,
+    sizeof(ASV1Context),
+    encode_init,
+    encode_frame,
+    //encode_end,
+};
+
+AVCodec asv2_encoder = {
+    "asv2",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_ASV2,
     sizeof(ASV1Context),
     encode_init,
     encode_frame,
