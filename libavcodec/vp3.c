@@ -1132,6 +1132,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     int current_run = 0;
     int decode_fully_flags = 0;
     int decode_partial_blocks = 0;
+    int first_c_fragment_seen;
 
     int i, j;
     int current_fragment;
@@ -1223,6 +1224,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     s->coded_fragment_list_index = 0;
     s->first_coded_y_fragment = s->first_coded_c_fragment = 0;
     s->last_coded_y_fragment = s->last_coded_c_fragment = -1;
+    first_c_fragment_seen = 0;
     memset(s->macroblock_coding, MODE_COPY, s->macroblock_count);
     for (i = 0; i < s->superblock_count; i++) {
 
@@ -1253,15 +1255,18 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                     }
 
                     if (bit) {
-                        /* mode will be decoded in the next phase */
+                        /* default mode; actual mode will be decoded in 
+                         * the next phase */
                         s->all_fragments[current_fragment].coding_method = 
                             MODE_INTER_NO_MV;
                         s->coded_fragment_list[s->coded_fragment_list_index] = 
                             current_fragment;
                         if ((current_fragment >= s->u_fragment_start) &&
-                            (s->last_coded_y_fragment == -1)) {
+                            (s->last_coded_y_fragment == -1) &&
+                            (!first_c_fragment_seen)) {
                             s->first_coded_c_fragment = s->coded_fragment_list_index;
                             s->last_coded_y_fragment = s->first_coded_c_fragment - 1;
+                            first_c_fragment_seen = 1;
                         }
                         s->coded_fragment_list_index++;
                         s->macroblock_coding[s->all_fragments[current_fragment].macroblock] = MODE_INTER_NO_MV;
@@ -1286,9 +1291,11 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                     s->coded_fragment_list[s->coded_fragment_list_index] = 
                         current_fragment;
                     if ((current_fragment >= s->u_fragment_start) &&
-                        (s->last_coded_y_fragment == -1)) {
+                        (s->last_coded_y_fragment == -1) &&
+                        (!first_c_fragment_seen)) {
                         s->first_coded_c_fragment = s->coded_fragment_list_index;
                         s->last_coded_y_fragment = s->first_coded_c_fragment - 1;
+                        first_c_fragment_seen = 1;
                     }
                     s->coded_fragment_list_index++;
                     s->macroblock_coding[s->all_fragments[current_fragment].macroblock] = MODE_INTER_NO_MV;
@@ -1299,11 +1306,13 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
         }
     }
 
-    if (s->first_coded_c_fragment == 0)
-        /* no C fragments coded */
+    if (!first_c_fragment_seen)
+        /* only Y fragments coded in this frame */
         s->last_coded_y_fragment = s->coded_fragment_list_index - 1;
-    else
+    else 
+        /* end the list of coded fragments */
         s->last_coded_c_fragment = s->coded_fragment_list_index - 1;
+
     debug_block_coding("    %d total coded fragments, y: %d -> %d, c: %d -> %d\n",
         s->coded_fragment_list_index,
         s->first_coded_y_fragment,
@@ -1656,14 +1665,12 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     DCTELEM coeff;
     Vp3Fragment *fragment;
 
-    if ((first_fragment < 0) ||
-        (first_fragment >= s->fragment_count) ||
-        (last_fragment < 0) ||
+    if ((first_fragment >= s->fragment_count) ||
         (last_fragment >= s->fragment_count)) {
 
         printf ("  vp3:unpack_vlcs(): bad fragment number (%d -> %d ?)\n",
             first_fragment, last_fragment);
-        return 1;
+        return 0;
     }
 
     for (i = first_fragment; i <= last_fragment; i++) {
@@ -2433,6 +2440,11 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     counter++;
 
     if (s->keyframe) {
+
+        debug_vp3(", keyframe\n");
+        /* skip the other 2 header bytes for now */
+        skip_bits(&gb, 16);
+
         if (s->last_frame.data[0] == s->golden_frame.data[0]) {
             if (s->golden_frame.data[0])
                 avctx->release_buffer(avctx, &s->golden_frame);
@@ -2458,21 +2470,15 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     } else {
 
+        debug_vp3("\n");
+
         /* allocate a new current frame */
         s->current_frame.reference = 0;
         if(avctx->get_buffer(avctx, &s->current_frame) < 0) {
             printf("vp3: get_buffer() failed\n");
             return -1;
         }
-
     }
-
-    if (s->keyframe) {
-      debug_vp3(", keyframe\n");
-      /* skip the other 2 header bytes for now */
-      skip_bits(&gb, 16);
-    } else
-      debug_vp3("\n");
 
     init_frame(s, &gb);
 
