@@ -376,32 +376,32 @@ static inline void doHorizDefFilter_C(uint8_t dst[], int stride, PPContext *c)
  */
 static inline void doHorizLowPass_C(uint8_t dst[], int stride, PPContext *c)
 {
-
 	int y;
 	for(y=0; y<BLOCK_SIZE; y++)
 	{
 		const int first= ABS(dst[-1] - dst[0]) < c->QP ? dst[-1] : dst[0];
 		const int last= ABS(dst[8] - dst[7]) < c->QP ? dst[8] : dst[7];
 
-		int sums[9];
-		sums[0] = first + dst[0];
-		sums[1] = dst[0] + dst[1];
-		sums[2] = dst[1] + dst[2];
-		sums[3] = dst[2] + dst[3];
-		sums[4] = dst[3] + dst[4];
-		sums[5] = dst[4] + dst[5];
-		sums[6] = dst[5] + dst[6];
-		sums[7] = dst[6] + dst[7];
-		sums[8] = dst[7] + last;
+		int sums[10];
+		sums[0] = 4*first + dst[0] + dst[1] + dst[2] + 4;
+		sums[1] = sums[0] - first  + dst[3];
+		sums[2] = sums[1] - first  + dst[4];
+		sums[3] = sums[2] - first  + dst[5];
+		sums[4] = sums[3] - first  + dst[6];
+		sums[5] = sums[4] - dst[0] + dst[7];
+		sums[6] = sums[5] - dst[1] + last;
+		sums[7] = sums[6] - dst[2] + last;
+		sums[8] = sums[7] - dst[3] + last;
+		sums[9] = sums[8] - dst[4] + last;
 
-		dst[0]= ((sums[0]<<2) + ((first + sums[2])<<1) + sums[4] + 8)>>4;
-		dst[1]= ((dst[1]<<2) + ((first + sums[0] + sums[3])<<1) + sums[5] + 8)>>4;
-		dst[2]= ((dst[2]<<2) + ((first + sums[1] + sums[4])<<1) + sums[6] + 8)>>4;
-		dst[3]= ((dst[3]<<2) + ((sums[2] + sums[5])<<1) + sums[0] + sums[7] + 8)>>4;
-		dst[4]= ((dst[4]<<2) + ((sums[3] + sums[6])<<1) + sums[1] + sums[8] + 8)>>4;
-		dst[5]= ((dst[5]<<2) + ((last + sums[7] + sums[4])<<1) + sums[2] + 8)>>4;
-		dst[6]= (((last + dst[6])<<2) + ((dst[7] + sums[5])<<1) + sums[3] + 8)>>4;
-		dst[7]= ((sums[8]<<2) + ((last + sums[6])<<1) + sums[4] + 8)>>4;
+		dst[0]= (sums[0] + sums[2] + 2*dst[0])>>4;
+		dst[1]= (sums[1] + sums[3] + 2*dst[1])>>4;
+		dst[2]= (sums[2] + sums[4] + 2*dst[2])>>4;
+		dst[3]= (sums[3] + sums[5] + 2*dst[3])>>4;
+		dst[4]= (sums[4] + sums[6] + 2*dst[4])>>4;
+		dst[5]= (sums[5] + sums[7] + 2*dst[5])>>4;
+		dst[6]= (sums[6] + sums[8] + 2*dst[6])>>4;
+		dst[7]= (sums[7] + sums[9] + 2*dst[7])>>4;
 
 		dst+= stride;
 	}

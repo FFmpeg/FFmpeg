@@ -317,25 +317,26 @@ static inline void RENAME(doVertLowPass)(uint8_t *src, int stride, PPContext *c)
 		const int first= ABS(src[0] - src[l1]) < c->QP ? src[0] : src[l1];
 		const int last= ABS(src[l8] - src[l9]) < c->QP ? src[l9] : src[l8];
 
-		int sums[9];
-		sums[0] = first + src[l1];
-		sums[1] = src[l1] + src[l2];
-		sums[2] = src[l2] + src[l3];
-		sums[3] = src[l3] + src[l4];
-		sums[4] = src[l4] + src[l5];
-		sums[5] = src[l5] + src[l6];
-		sums[6] = src[l6] + src[l7];
-		sums[7] = src[l7] + src[l8];
-		sums[8] = src[l8] + last;
+		int sums[10];
+		sums[0] = 4*first + src[l1] + src[l2] + src[l3] + 4;
+		sums[1] = sums[0] - first  + src[l4];
+		sums[2] = sums[1] - first  + src[l5];
+		sums[3] = sums[2] - first  + src[l6];
+		sums[4] = sums[3] - first  + src[l7];
+		sums[5] = sums[4] - src[l1] + src[l8];
+		sums[6] = sums[5] - src[l2] + last;
+		sums[7] = sums[6] - src[l3] + last;
+		sums[8] = sums[7] - src[l4] + last;
+		sums[9] = sums[8] - src[l5] + last;
 
-		src[l1]= ((sums[0]<<2) + ((first + sums[2])<<1) + sums[4] + 8)>>4;
-		src[l2]= ((src[l2]<<2) + ((first + sums[0] + sums[3])<<1) + sums[5] + 8)>>4;
-		src[l3]= ((src[l3]<<2) + ((first + sums[1] + sums[4])<<1) + sums[6] + 8)>>4;
-		src[l4]= ((src[l4]<<2) + ((sums[2] + sums[5])<<1) + sums[0] + sums[7] + 8)>>4;
-		src[l5]= ((src[l5]<<2) + ((sums[3] + sums[6])<<1) + sums[1] + sums[8] + 8)>>4;
-		src[l6]= ((src[l6]<<2) + ((last + sums[7] + sums[4])<<1) + sums[2] + 8)>>4;
-		src[l7]= (((last + src[l7])<<2) + ((src[l8] + sums[5])<<1) + sums[3] + 8)>>4;
-		src[l8]= ((sums[8]<<2) + ((last + sums[6])<<1) + sums[4] + 8)>>4;
+		src[l1]= (sums[0] + sums[2] + 2*src[l1])>>4;
+		src[l2]= (sums[1] + sums[3] + 2*src[l2])>>4;
+		src[l3]= (sums[2] + sums[4] + 2*src[l3])>>4;
+		src[l4]= (sums[3] + sums[5] + 2*src[l4])>>4;
+		src[l5]= (sums[4] + sums[6] + 2*src[l5])>>4;
+		src[l6]= (sums[5] + sums[7] + 2*src[l6])>>4;
+		src[l7]= (sums[6] + sums[8] + 2*src[l7])>>4;
+		src[l8]= (sums[7] + sums[9] + 2*src[l8])>>4;
 
 		src++;
 	}
