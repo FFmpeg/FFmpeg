@@ -1728,9 +1728,9 @@ static int open_input_stream(HTTPContext *c, const char *info)
             stream_pos = parse_date(buf, 0);
         } else if (find_info_tag(buf, sizeof(buf), "buffer", info)) {
             int prebuffer = strtol(buf, 0, 10);
-            stream_pos = av_gettime() - prebuffer * 1000000;
+            stream_pos = av_gettime() - prebuffer * (INT64)1000000;
         } else {
-            stream_pos = av_gettime() - c->stream->prebuffer * 1000;
+            stream_pos = av_gettime() - c->stream->prebuffer * (INT64)1000;
         }
     } else {
         strcpy(input_filename, c->stream->feed_filename);
@@ -3104,6 +3104,73 @@ void build_feed_streams(void)
     for(feed = first_feed; feed != NULL; feed = feed->next_feed) {
         int fd;
 
+        if (url_exist(feed->feed_filename)) {
+            /* See if it matches */
+            AVFormatContext *s;
+            int matches = 0;
+
+            if (av_open_input_file(&s, feed->feed_filename, NULL, FFM_PACKET_SIZE, NULL) >= 0) {
+                /* Now see if it matches */
+                if (s->nb_streams == feed->nb_streams) {
+                    matches = 1;
+                    for(i=0;i<s->nb_streams;i++) {
+                        AVStream *sf, *ss;
+                        sf = feed->streams[i];
+                        ss = s->streams[i];
+
+                        if (sf->index != ss->index ||
+                            sf->id != ss->id) {
+                            printf("Index & Id do not match for stream %d\n", i);
+                            matches = 0;
+                        } else {
+                            AVCodecContext *ccf, *ccs;
+
+                            ccf = &sf->codec;
+                            ccs = &ss->codec;
+#define CHECK_CODEC(x)  (ccf->x != ccs->x)
+
+                            if (CHECK_CODEC(codec) || CHECK_CODEC(codec_type)) {
+                                printf("Codecs do not match for stream %d\n", i);
+                                matches = 0;
+                            } else if (CHECK_CODEC(bit_rate) || CHECK_CODEC(flags)) {
+                                printf("Codec bitrates do not match for stream %d\n", i);
+                                matches = 0;
+                            } else if (ccf->codec_type == CODEC_TYPE_VIDEO) {
+                                if (CHECK_CODEC(frame_rate) ||
+                                    CHECK_CODEC(width) ||
+                                    CHECK_CODEC(height)) {
+                                    printf("Codec width, height and framerate do not match for stream %d\n", i);
+                                    matches = 0;
+                                }
+                            } else if (ccf->codec_type == CODEC_TYPE_AUDIO) {
+                                if (CHECK_CODEC(sample_rate) ||
+                                    CHECK_CODEC(channels) ||
+                                    CHECK_CODEC(frame_size)) {
+                                    printf("Codec sample_rate, channels, frame_size do not match for stream %d\n", i);
+                                    matches = 0;
+                                }
+                            } else {
+                                printf("Unknown codec type\n");
+                                matches = 0;
+                            }
+                        }
+                        if (!matches) {
+                            break;
+                        }
+                    }
+                } else {
+                    printf("Deleting feed file '%s' as stream counts differ (%d != %d)\n",
+                        feed->feed_filename, s->nb_streams, feed->nb_streams);
+                }
+
+                av_close_input_file(s);
+            } else {
+                printf("Deleting feed file '%s' as it appears to be corrupt\n",
+                        feed->feed_filename);
+            }
+            if (!matches)
+                unlink(feed->feed_filename);
+        }
         if (!url_exist(feed->feed_filename)) {
             AVFormatContext s1, *s = &s1;
 
@@ -3452,6 +3519,7 @@ int parse_ffconfig(const char *filename)
                 fprintf(stderr, "%s:%d: No corresponding <Feed> for </Feed>\n",
                         filename, line_num);
                 errors++;
+#if 0
             } else {
                 /* Make sure that we start out clean */
                 if (unlink(feed->feed_filename) < 0 
@@ -3460,6 +3528,7 @@ int parse_ffconfig(const char *filename)
                         filename, line_num, feed->feed_filename, strerror(errno));
                     errors++;
                 }
+#endif
             }
             feed = NULL;
         } else if (!strcasecmp(cmd, "<Stream")) {
