@@ -77,7 +77,7 @@ typedef INT64 int64_t;
 
 /* unix */
 
-#include <stdint.h>
+#include <inttypes.h>
 
 #ifndef __WINE_WINDEF16_H
 /* workaround for typedef conflict in MPlayer (wine typedefs) */
