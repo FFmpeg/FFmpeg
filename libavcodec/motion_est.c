@@ -1009,6 +1009,9 @@ void estimate_motion(MpegEncContext * s,
         if (varc*2 + 200 > vard){
             mb_type|= MB_TYPE_INTER;
             halfpel_motion_search(s, &mx, &my, dmin, xmin, ymin, xmax, ymax, pred_x, pred_y);
+        }else{
+            mx = mx*2 - mb_x*32;
+            my = my*2 - mb_y*32;
         }
     }else{
         if (vard <= 64 || vard < varc) {
