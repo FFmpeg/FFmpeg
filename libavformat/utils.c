@@ -555,6 +555,7 @@ static void flush_packet_queue(AVFormatContext *s)
         if (!pktl) 
             break;
         s->packet_buffer = pktl->next;
+        av_free_packet(&pktl->pkt);
         av_free(pktl);
     }
 }
@@ -594,9 +595,9 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic)
         if (pkt->pts != AV_NOPTS_VALUE) {
             if (st->start_time == AV_NOPTS_VALUE)
                 st->start_time = (int64_t)((double)pkt->pts * ic->pts_num * (double)AV_TIME_BASE / ic->pts_den);
-         }
-         av_free_packet(pkt);
-     }
+        }
+        av_free_packet(pkt);
+    }
 
     /* we compute the minimum start_time and use it as default */
     start_time = MAXINT64;
