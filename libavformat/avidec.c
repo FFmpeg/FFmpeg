@@ -229,7 +229,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 nb_frames = get_le32(pb);
                 st->start_time = 0;
                 st->duration = av_rescale(nb_frames,
-                    st->codec.frame_rate_base * AV_TIME_BASE,
+                    st->codec.frame_rate_base * (int64_t)AV_TIME_BASE,
                     st->codec.frame_rate);
 		url_fskip(pb, size - 9 * 4);
                 break;
