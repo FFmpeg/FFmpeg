@@ -21,11 +21,15 @@
 #include "../dsputil.h"
 
 void put_pixels_axp_asm(uint8_t *block, const uint8_t *pixels,
-			int line_size, int h);
+                        int line_size, int h);
 void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,
-				int line_size);
+                                int line_size);
 void add_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels, 
-				int line_size);
+                                int line_size);
+void (*put_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
+                                 int line_size);
+void (*add_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels, 
+                                 int line_size);
 
 void get_pixels_mvi(DCTELEM *restrict block,
                     const uint8_t *restrict pixels, int line_size);
@@ -147,14 +151,14 @@ static inline uint64_t avg2(uint64_t a, uint64_t b)
 static inline uint64_t avg4(uint64_t l1, uint64_t l2, uint64_t l3, uint64_t l4)
 {
     uint64_t r1 = ((l1 & ~BYTE_VEC(0x03)) >> 2)
-		+ ((l2 & ~BYTE_VEC(0x03)) >> 2)
-		+ ((l3 & ~BYTE_VEC(0x03)) >> 2)
-		+ ((l4 & ~BYTE_VEC(0x03)) >> 2);
+                + ((l2 & ~BYTE_VEC(0x03)) >> 2)
+                + ((l3 & ~BYTE_VEC(0x03)) >> 2)
+                + ((l4 & ~BYTE_VEC(0x03)) >> 2);
     uint64_t r2 = ((  (l1 & BYTE_VEC(0x03))
-		    + (l2 & BYTE_VEC(0x03))
-		    + (l3 & BYTE_VEC(0x03))
-		    + (l4 & BYTE_VEC(0x03))
-		    + BYTE_VEC(0x02)) >> 2) & BYTE_VEC(0x03);
+                    + (l2 & BYTE_VEC(0x03))
+                    + (l3 & BYTE_VEC(0x03))
+                    + (l4 & BYTE_VEC(0x03))
+                    + BYTE_VEC(0x02)) >> 2) & BYTE_VEC(0x03);
     return r1 + r2;
 }
 #endif
@@ -338,4 +342,7 @@ void dsputil_init_alpha(DSPContext* c, unsigned mask)
         c->pix_abs16x16_y2  = pix_abs16x16_y2_mvi;
         c->pix_abs16x16_xy2 = pix_abs16x16_xy2_mvi;
     }
+
+    put_pixels_clamped_axp_p = c->put_pixels_clamped;
+    add_pixels_clamped_axp_p = c->add_pixels_clamped;
 }

@@ -27,6 +27,11 @@
 #include "asm.h"
 #include "../dsputil.h"
 
+extern void (*put_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels,
+                                        int line_size);
+extern void (*add_pixels_clamped_axp_p)(const DCTELEM *block, uint8_t *pixels, 
+                                        int line_size);
+
 // cos(i * M_PI / 16) * sqrt(2) * (1 << 14)
 // W4 is actually exactly 16384, but using 16383 works around
 // accumulating rounding errors for some encoders
@@ -296,11 +301,11 @@ void simple_idct_axp(DCTELEM *block)
 void simple_idct_put_axp(uint8_t *dest, int line_size, DCTELEM *block)
 {
     simple_idct_axp(block);
-    put_pixels_clamped(block, dest, line_size);
+    put_pixels_clamped_axp_p(block, dest, line_size);
 }
 
 void simple_idct_add_axp(uint8_t *dest, int line_size, DCTELEM *block)
 {
     simple_idct_axp(block);
-    add_pixels_clamped(block, dest, line_size);
+    add_pixels_clamped_axp_p(block, dest, line_size);
 }
