@@ -366,8 +366,17 @@ void mpeg4_encode_mb(MpegEncContext * s,
                    why didnt they just compress the skip-mb bits instead of reusing them ?! */
                 if(s->max_b_frames>0){
                     int i;
-                    const int offset= (s->mb_x + s->mb_y*s->linesize)*16;
-                    uint8_t *p_pic= s->new_picture[0] + offset;
+                    int x,y, offset;
+                    uint8_t *p_pic;
+
+                    x= s->mb_x*16;
+                    y= s->mb_y*16;
+                    if(x+16 > s->width)  x= s->width-16;
+                    if(y+16 > s->height) y= s->height-16;
+
+                    offset= x + y*s->linesize;
+                    p_pic= s->new_picture[0] + offset;
+                    
                     s->mb_skiped=1;
                     for(i=0; i<s->max_b_frames; i++){
                         uint8_t *b_pic;
@@ -377,7 +386,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
                         b_pic= s->coded_order[i+1].picture[0] + offset;
                         diff= pix_abs16x16(p_pic, b_pic, s->linesize);
-                        if(diff>s->qscale*70){
+                        if(diff>s->qscale*70){ //FIXME check that 70 is optimal
                             s->mb_skiped=0;
                             break;
                         }
@@ -394,6 +403,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     return;
                 }
             }
+
             put_bits(&s->pb, 1, 0);	/* mb coded */
             if(s->mv_type==MV_TYPE_16X16){
                 cbpc = cbp & 3;
@@ -2040,7 +2050,9 @@ int h263_decode_mb(MpegEncContext *s,
             s->last_mv[0][0][1]= s->mv[0][0][1] = my;
             PRINT_MB_TYPE("F");
             break;
-        default: return -1;
+        default: 
+            printf("illegal MB_type\n");
+            return -1;
         }
     } else { /* I-Frame */
         cbpc = get_vlc(&s->gb, &intra_MCBPC_vlc);
