@@ -200,12 +200,16 @@ static int tcp_write(URLContext *h, uint8_t *buf, int size)
 #else
         ret = write(s->fd, buf, size);
 #endif
-        if (ret < 0 && errno != EINTR && errno != EAGAIN)
+        if (ret < 0) {
+            if (errno != EINTR && errno != EAGAIN) {
 #ifdef __BEOS__
-            return errno;
+                return errno;
 #else
-            return -errno;
+                return -errno;
 #endif
+            }
+            continue;
+        }
         size -= ret;
         buf += ret;
     }
