@@ -70,7 +70,7 @@ typedef struct {
     unsigned char *buf_ptr, *buf_end;
     void *opaque;
     int (*read_packet)(void *opaque, uint8_t *buf, int buf_size);
-    void (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
+    int (*write_packet)(void *opaque, uint8_t *buf, int buf_size);
     int (*seek)(void *opaque, offset_t offset, int whence);
     offset_t pos; /* position in the file of the current buffer */
     int must_flush; /* true if the next seek should flush */
@@ -81,6 +81,7 @@ typedef struct {
     unsigned long checksum;
     unsigned char *checksum_ptr;
     unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
+    int error;         ///< contains the error code or 0 if no error happened
 } ByteIOContext;
 
 int init_put_byte(ByteIOContext *s,
@@ -89,7 +90,7 @@ int init_put_byte(ByteIOContext *s,
                   int write_flag,
                   void *opaque,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  void (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int (*seek)(void *opaque, offset_t offset, int whence));
 
 void put_byte(ByteIOContext *s, int b);
@@ -109,6 +110,7 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence);
 void url_fskip(ByteIOContext *s, offset_t offset);
 offset_t url_ftell(ByteIOContext *s);
 int url_feof(ByteIOContext *s);
+int url_ferror(ByteIOContext *s);
 
 #define URL_EOF (-1)
 int url_fgetc(ByteIOContext *s);

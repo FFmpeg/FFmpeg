@@ -28,7 +28,7 @@ int init_put_byte(ByteIOContext *s,
                   int write_flag,
                   void *opaque,
                   int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
-                  void (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int (*seek)(void *opaque, offset_t offset, int whence))
 {
     s->buffer = buffer;
@@ -46,6 +46,7 @@ int init_put_byte(ByteIOContext *s,
     s->pos = 0;
     s->must_flush = 0;
     s->eof_reached = 0;
+    s->error = 0;
     s->is_streamed = 0;
     s->max_packet_size = 0;
     s->update_checksum= NULL;
@@ -57,8 +58,12 @@ int init_put_byte(ByteIOContext *s,
 static void flush_buffer(ByteIOContext *s)
 {
     if (s->buf_ptr > s->buffer) {
-        if (s->write_packet)
-            s->write_packet(s->opaque, s->buffer, s->buf_ptr - s->buffer);
+        if (s->write_packet && !s->error){
+            int ret= s->write_packet(s->opaque, s->buffer, s->buf_ptr - s->buffer);
+            if(ret < 0){
+                s->error = ret;
+            }
+        }
         if(s->update_checksum){
             s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_ptr - s->checksum_ptr);
             s->checksum_ptr= s->buffer;
@@ -172,6 +177,11 @@ int url_feof(ByteIOContext *s)
     return s->eof_reached;
 }
 
+int url_ferror(ByteIOContext *s)
+{
+    return s->error;
+}
+
 #ifdef CONFIG_ENCODERS
 void put_le32(ByteIOContext *s, unsigned int val)
 {
@@ -260,6 +270,8 @@ static void fill_buffer(ByteIOContext *s)
         /* do not modify buffer if EOF reached so that a seek back can
            be done without rereading data */
         s->eof_reached = 1;
+    if(len<0)
+        s->error= len;
     } else {
         s->pos += len;
         s->buf_ptr = s->buffer;
@@ -432,10 +444,10 @@ uint64_t get_be64(ByteIOContext *s)
 /* link with avio functions */
 
 #ifdef CONFIG_ENCODERS
-static void url_write_packet(void *opaque, uint8_t *buf, int buf_size)
+static int url_write_packet(void *opaque, uint8_t *buf, int buf_size)
 {
     URLContext *h = opaque;
-    url_write(h, buf, buf_size);
+    return url_write(h, buf, buf_size);
 }
 #else
 #define	url_write_packet NULL
@@ -609,7 +621,7 @@ typedef struct DynBuffer {
     uint8_t io_buffer[1];
 } DynBuffer;
 
-static void dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
+static int dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
 {
     DynBuffer *d = opaque;
     int new_size, new_allocated_size;
@@ -627,28 +639,32 @@ static void dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
     if (new_allocated_size > d->allocated_size) {
         d->buffer = av_realloc(d->buffer, new_allocated_size);
         if(d->buffer == NULL)
-             return ;
+             return -1234;
         d->allocated_size = new_allocated_size;
     }
     memcpy(d->buffer + d->pos, buf, buf_size);
     d->pos = new_size;
     if (d->pos > d->size)
         d->size = d->pos;
+    return buf_size;
 }
 
-static void dyn_packet_buf_write(void *opaque, uint8_t *buf, int buf_size)
+static int dyn_packet_buf_write(void *opaque, uint8_t *buf, int buf_size)
 {
     unsigned char buf1[4];
+    int ret;
 
     /* packetized write: output the header */
     buf1[0] = (buf_size >> 24);
     buf1[1] = (buf_size >> 16);
     buf1[2] = (buf_size >> 8);
     buf1[3] = (buf_size);
-    dyn_buf_write(opaque, buf1, 4);
+    ret= dyn_buf_write(opaque, buf1, 4);
+    if(ret < 0)
+        return ret;
 
     /* then the data */
-    dyn_buf_write(opaque, buf, buf_size);
+    return dyn_buf_write(opaque, buf, buf_size);
 }
 
 static int dyn_buf_seek(void *opaque, offset_t offset, int whence)
