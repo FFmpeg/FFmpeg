@@ -325,14 +325,16 @@ static int mpeg4_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
             }
         }
     }
-    
-    for(; i<buf_size; i++){
+
+    if(vop_found){    
+      for(; i<buf_size; i++){
         state= (state<<8) | buf[i];
         if((state&0xFFFFFF00) == 0x100){
             pc->frame_start_found=0;
             pc->state=-1; 
             return i-3;
         }
+      }
     }
     pc->frame_start_found= vop_found;
     pc->state= state;

@@ -1543,16 +1543,8 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     return 0;
 }
 
-/* compressed picture size */
-#define PICTURE_BUFFER_SIZE 100000
-
 typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
-    uint32_t header_state;
-    int start_code; /* current start code */
-    uint8_t buffer[PICTURE_BUFFER_SIZE]; 
-    uint8_t *buf_ptr;
-    int buffer_size;
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
     int repeat_field; /* true if we must repeat the field */
 } Mpeg1Context;
@@ -1565,11 +1557,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     common_init(&s->mpeg_enc_ctx);
     init_vlcs(&s->mpeg_enc_ctx);
 
-    s->header_state = 0xff;
     s->mpeg_enc_ctx_allocated = 0;
-    s->buffer_size = PICTURE_BUFFER_SIZE;
-    s->start_code = -1;
-    s->buf_ptr = s->buffer;
     s->mpeg_enc_ctx.picture_number = 0;
     s->repeat_field = 0;
     s->mpeg_enc_ctx.codec_id= avctx->codec->id;
@@ -1578,14 +1566,12 @@ static int mpeg_decode_init(AVCodecContext *avctx)
 
 /* return the 8 bit start code value and update the search
    state. Return -1 if no start code found */
-static int find_start_code(uint8_t **pbuf_ptr, uint8_t *buf_end, 
-                           uint32_t *header_state)
+static int find_start_code(uint8_t **pbuf_ptr, uint8_t *buf_end)
 {
     uint8_t *buf_ptr;
-    unsigned int state, v;
+    unsigned int state=0xFFFFFFFF, v;
     int val;
 
-    state = *header_state;
     buf_ptr = *pbuf_ptr;
     while (buf_ptr < buf_end) {
         v = *buf_ptr++;
@@ -1599,7 +1585,6 @@ static int find_start_code(uint8_t **pbuf_ptr, uint8_t *buf_end,
     val = -1;
  found:
     *pbuf_ptr = buf_ptr;
-    *header_state = state;
     return val;
 }
 
@@ -1809,7 +1794,7 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
 static int mpeg_decode_slice(AVCodecContext *avctx, 
                               AVFrame *pict,
                               int start_code,
-                              uint8_t *buf, int buf_size)
+                              uint8_t **buf, int buf_size)
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
@@ -1874,7 +1859,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     }
     s->first_slice = 0;
 
-    init_get_bits(&s->gb, buf, buf_size*8);
+    init_get_bits(&s->gb, *buf, buf_size*8);
 
     s->qscale = get_qscale(s);
     if(s->qscale == 0){
@@ -1928,7 +1913,6 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
                 motion_x = s->mv[0][0][0];
                 motion_y = s->mv[0][0][1];
             } else /*if (s->mv_type == MV_TYPE_FIELD)*/ {
-                int i;
                 motion_x = s->mv[0][0][0] + s->mv[0][1][0];
                 motion_y = s->mv[0][0][1] + s->mv[0][1][1];
                 motion_x = (motion_x>>1) | (motion_x&1);
@@ -1996,6 +1980,8 @@ eos: //end of slice
 
     emms_c();
     
+    *buf += get_bits_count(&s->gb)/8 - 1;
+    
 //intf("%d %d %d %d\n", s->mb_y, s->mb_height, s->pict_type, s->picture_number);
     /* end of slice reached */
     if (s->mb_y<<field_pic == s->mb_height && !s->first_field) {
@@ -2017,9 +2003,7 @@ eos: //end of slice
             s->picture_number++;
             /* latency of 1 frame for I and P frames */
             /* XXX: use another variable than picture_number */
-            if (s->last_picture_ptr == NULL) {
-                return DECODE_SLICE_OK;
-            } else {
+            if (s->last_picture_ptr != NULL) {
                 *pict= *(AVFrame*)&s->last_picture;
                  ff_print_debug_info(s, s->last_picture_ptr);
             }
@@ -2170,17 +2154,55 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
     }
 }
 
+/**
+ * finds the end of the current frame in the bitstream.
+ * @return the position of the first byte of the next frame, or -1
+ */
+static int mpeg1_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
+    ParseContext *pc= &s->parse_context;
+    int i;
+    uint32_t state;
+    
+    state= pc->state;
+    
+    i=0;
+    if(!pc->frame_start_found){
+        for(i=0; i<buf_size; i++){
+            state= (state<<8) | buf[i];
+            if(state >= SLICE_MIN_START_CODE && state <= SLICE_MAX_START_CODE){
+                i++;
+                pc->frame_start_found=1;
+                break;
+            }
+        }
+    }
+    
+    if(pc->frame_start_found){
+        for(; i<buf_size; i++){
+            state= (state<<8) | buf[i];
+            if((state&0xFFFFFF00) == 0x100){
+                if(state < SLICE_MIN_START_CODE || state > SLICE_MAX_START_CODE){
+                    pc->frame_start_found=0;
+                    pc->state=-1; 
+                    return i-3;
+                }
+            }
+        }
+    }        
+    pc->state= state;
+    return -1;
+}
+
 /* handle buffering and image synchronisation */
 static int mpeg_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
                              uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s = avctx->priv_data;
-    uint8_t *buf_end, *buf_ptr, *buf_start;
-    int len, start_code_found, ret, code, start_code, input_size;
+    uint8_t *buf_end, *buf_ptr;
+    int ret, start_code, input_size;
     AVFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
-            
     dprintf("fill_buffer\n");
 
     *data_size = 0;
@@ -2195,6 +2217,15 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         return 0;
     }
 
+    if(s2->flags&CODEC_FLAG_TRUNCATED){
+        int next;
+        
+        next= mpeg1_find_frame_end(s2, buf, buf_size);
+        
+        if( ff_combine_frame(s2, next, &buf, &buf_size) < 0 )
+            return buf_size;
+    }    
+    
     buf_ptr = buf;
     buf_end = buf + buf_size;
 
@@ -2209,60 +2240,34 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         }
     }
 #endif
-    while (buf_ptr < buf_end) {
-        buf_start = buf_ptr;
+    for(;;) {
         /* find start next code */
-        code = find_start_code(&buf_ptr, buf_end, &s->header_state);
-        if (code >= 0) {
-            start_code_found = 1;
-        } else {
-            start_code_found = 0;
+        start_code = find_start_code(&buf_ptr, buf_end);
+        if (start_code < 0){ 
+            printf("missing end of picture\n");
+            return FFMAX(1, buf_ptr - buf - s2->parse_context.last_index);
         }
-        /* copy to buffer */
-        len = buf_ptr - buf_start;
-        if (len + (s->buf_ptr - s->buffer) > s->buffer_size) {
-            /* data too big : flush */
-            s->buf_ptr = s->buffer;
-            if (start_code_found)
-                s->start_code = code;
-        } else {
-            memcpy(s->buf_ptr, buf_start, len);
-            s->buf_ptr += len;
-            if(   (!(s2->flags&CODEC_FLAG_TRUNCATED)) && (!start_code_found) 
-               && s->buf_ptr+4<s->buffer+s->buffer_size){
-                start_code_found= 1;
-                code= 0x1FF;
-                s->header_state=0xFF;
-                s->buf_ptr[0]=0;
-                s->buf_ptr[1]=0;
-                s->buf_ptr[2]=1;
-                s->buf_ptr[3]=0xFF;
-                s->buf_ptr+=4;
-            }
-            if (start_code_found) {
+
                 /* prepare data for next start code */
-                input_size = s->buf_ptr - s->buffer;
-                start_code = s->start_code;
-                s->buf_ptr = s->buffer;
-                s->start_code = code;
+                input_size = buf_end - buf_ptr;
                 switch(start_code) {
                 case SEQ_START_CODE:
-                    mpeg1_decode_sequence(avctx, s->buffer, 
+                    mpeg1_decode_sequence(avctx, buf_ptr, 
                                           input_size);
                     break;
                             
                 case PICTURE_START_CODE:
                     /* we have a complete image : we try to decompress it */
                     mpeg1_decode_picture(avctx, 
-                                         s->buffer, input_size);
+                                         buf_ptr, input_size);
                     break;
                 case EXT_START_CODE:
                     mpeg_decode_extension(avctx,
-                                          s->buffer, input_size);
+                                          buf_ptr, input_size);
                     break;
                 case USER_START_CODE:
                     mpeg_decode_user_data(avctx, 
-                                          s->buffer, input_size);
+                                          buf_ptr, input_size);
                     break;
                 default:
                     if (start_code >= SLICE_MIN_START_CODE &&
@@ -2274,15 +2279,16 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         if(avctx->hurry_up && s2->pict_type==B_TYPE) break;
                         /* skip everything if we are in a hurry>=5 */
                         if(avctx->hurry_up>=5) break;
-
+                        
                         if (!s->mpeg_enc_ctx_allocated) break;
 
                         ret = mpeg_decode_slice(avctx, picture,
-                                                start_code, s->buffer, input_size);
+                                                start_code, &buf_ptr, input_size);
 
                         if (ret == DECODE_SLICE_EOP) {
-                            *data_size = sizeof(AVPicture);
-                            goto the_end;
+                            if(s2->last_picture_ptr) //FIXME merge with the stuff in mpeg_decode_slice
+                                *data_size = sizeof(AVPicture);
+                            return FFMAX(1, buf_ptr - buf - s2->parse_context.last_index);
                         }else if(ret < 0){
                             if(ret == DECODE_SLICE_ERROR)
                                 ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x, s2->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
@@ -2293,11 +2299,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                     }
                     break;
                 }
-            }
-        }
     }
- the_end:
-    return buf_ptr - buf;
 }
 
 static int mpeg_decode_end(AVCodecContext *avctx)
