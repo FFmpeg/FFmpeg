@@ -3063,6 +3063,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 				memcpy(dstBlock, tempDst + dstStride, dstStride*(height-y));
 			else
 			{
+				int i;
 				for(i=0; i<height-y; i++)
 				{
 					memcpy(dstBlock + i*dstStride, tempDst + (i+1)*dstStride, width);
