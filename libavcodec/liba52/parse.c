@@ -45,7 +45,7 @@ typedef struct {
 
 static uint8_t halfrate[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3};
 
-a52_state_t * ff_a52_init (uint32_t mm_accel)
+a52_state_t * a52_init (uint32_t mm_accel)
 {
     a52_state_t * state;
     int i;
@@ -70,12 +70,12 @@ a52_state_t * ff_a52_init (uint32_t mm_accel)
     return state;
 }
 
-sample_t * ff_a52_samples (a52_state_t * state)
+sample_t * a52_samples (a52_state_t * state)
 {
     return state->samples;
 }
 
-int ff_a52_syncinfo (uint8_t * buf, int * flags,
+int a52_syncinfo (uint8_t * buf, int * flags,
 		  int * sample_rate, int * bit_rate)
 {
     static int rate[] = { 32,  40,  48,  56,  64,  80,  96, 112,
@@ -120,7 +120,7 @@ int ff_a52_syncinfo (uint8_t * buf, int * flags,
     }
 }
 
-int ff_a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
+int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
 	       sample_t * level, sample_t bias)
 {
     static sample_t clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
@@ -192,7 +192,7 @@ int ff_a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
     return 0;
 }
 
-void ff_a52_dynrng (a52_state_t * state,
+void a52_dynrng (a52_state_t * state,
 		 sample_t (* call) (sample_t, void *), void * data)
 {
     state->dynrnge = 0;
@@ -512,7 +512,7 @@ static void coeff_get_coupling (a52_state_t * state, int nfchans,
     }
 }
 
-int ff_a52_block (a52_state_t * state)
+int a52_block (a52_state_t * state)
 {
     static const uint8_t nfchans_tbl[] = {2, 1, 2, 3, 3, 4, 4, 5, 1, 1, 2};
     static int rematrix_band[4] = {25, 37, 61, 253};
@@ -887,7 +887,7 @@ int ff_a52_block (a52_state_t * state)
     return 0;
 }
 
-void ff_a52_free (a52_state_t * state)
+void a52_free (a52_state_t * state)
 {
     free (state->samples);
     free (state);
