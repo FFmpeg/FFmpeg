@@ -3684,12 +3684,27 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 					horizX1Filter(dstBlock-4, stride, QP);
 				else if(mode & H_DEBLOCK)
 				{
+#ifdef HAVE_ALTIVEC
+					unsigned char __attribute__ ((aligned(16))) tempBlock[272];
+					transpose_16x8_char_toPackedAlign_altivec(tempBlock, dstBlock - (4 + 1), stride);
+
+					const int t=vertClassify_altivec(tempBlock-48, 16, &c);
+					if(t==1) {
+						doVertLowPass_altivec(tempBlock-48, 16, &c);
+                                                transpose_8x16_char_fromPackedAlign_altivec(dstBlock - (4 + 1), tempBlock, stride);
+                                        }
+					else if(t==2) {
+						doVertDefFilter_altivec(tempBlock-48, 16, &c);
+                                                transpose_8x16_char_fromPackedAlign_altivec(dstBlock - (4 + 1), tempBlock, stride);
+                                        }
+#else
 					const int t= RENAME(horizClassify)(dstBlock-4, stride, &c);
 
 					if(t==1)
 						RENAME(doHorizLowPass)(dstBlock-4, stride, &c);
 					else if(t==2)
 						RENAME(doHorizDefFilter)(dstBlock-4, stride, &c);
+#endif
 				}else if(mode & H_A_DEBLOCK){
 					RENAME(do_a_deblock)(dstBlock-8, 1, stride, &c);
 				}

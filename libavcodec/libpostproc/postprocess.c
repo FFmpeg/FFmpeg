@@ -29,10 +29,10 @@ isVertDC		Ec	Ec			Ec
 isVertMinMaxOk		Ec	Ec			Ec
 doVertLowPass		E		e	e	Ec
 doVertDefFilter		Ec	Ec	e	e	Ec
-isHorizDC		Ec	Ec
-isHorizMinMaxOk		a	E
-doHorizLowPass		E		e	e
-doHorizDefFilter	Ec	Ec	e	e
+isHorizDC		Ec	Ec			Ec
+isHorizMinMaxOk		a	E			Ec
+doHorizLowPass		E		e	e	Ec
+doHorizDefFilter	Ec	Ec	e	e	Ec
 do_a_deblock		Ec	E	Ec	E
 deRing			E		e	e*	Ecp
 Vertical RKAlgo1	E		a	a
@@ -43,7 +43,7 @@ LinIpolDeinterlace	e		E	E*
 CubicIpolDeinterlace	a		e	e*
 LinBlendDeinterlace	e		E	E*
 MedianDeinterlace#	E	Ec	Ec
-TempDeNoiser#		E		e	e
+TempDeNoiser#		E		e	e	Ec
 
 * i dont have a 3dnow CPU -> its untested, but noone said it doesnt work so it seems to work
 # more or less selfinvented filters so the exactness isnt too meaningfull
