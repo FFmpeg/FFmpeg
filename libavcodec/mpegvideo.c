@@ -1542,6 +1542,7 @@ void MPV_frame_end(MpegEncContext *s)
     memset(&s->next_picture, 0, sizeof(Picture));
     memset(&s->current_picture, 0, sizeof(Picture));
 #endif
+    s->avctx->coded_frame= (AVFrame*)s->current_picture_ptr;
 }
 
 /**
