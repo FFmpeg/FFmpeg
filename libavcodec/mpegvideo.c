@@ -6048,6 +6048,7 @@ AVCodec mpeg4_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .options = mpeg4_options,
+    .capabilities= CODEC_CAP_DELAY,
 };
 
 AVCodec msmpeg4v1_encoder = {

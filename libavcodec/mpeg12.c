@@ -2973,6 +2973,7 @@ AVCodec mpeg1video_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .supported_framerates= frame_rate_tab+1,
+    .capabilities= CODEC_CAP_DELAY,
 };
 
 #ifdef CONFIG_RISKY
@@ -2986,6 +2987,7 @@ AVCodec mpeg2video_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .supported_framerates= frame_rate_tab+1,
+    .capabilities= CODEC_CAP_DELAY,
 };
 #endif
 #endif
