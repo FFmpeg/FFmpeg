@@ -343,8 +343,29 @@ if test $altivec = "default"; then
     fi
 fi
 
+# See if we have <altivec.h>
+cat > $TMPC << EOF
+#include <altivec.h>
+int main( void ) { return 0; }
+EOF
+
+_altivec_h="no"
+if $cc -o $TMPE $TMPC 2> /dev/null ; then
+_altivec_h="yes"
+fi
+
 # See does our compiler support Motorola AltiVec C API
 if test $altivec = "yes"; then
+if test $_altivec_h = "yes"; then
+cat > $TMPC << EOF
+#include <altivec.h>
+int main(void) {
+    vector signed int v1, v2, v3;
+    v1 = vec_add(v2,v3);
+    return 0;
+}
+EOF
+else
 cat > $TMPC << EOF
 int main(void) {
     vector signed int v1, v2, v3;
@@ -352,7 +373,12 @@ int main(void) {
     return 0;
 }
 EOF
+fi
+if test "$darwin" = "yes"; then
 $cc -o $TMPE $TMPC -faltivec 2> /dev/null || altivec="no"
+else
+$cc -o $TMPE $TMPC -maltivec -mabi=altivec 2> /dev/null || altivec="no"
+fi
 fi
 
 # Can only do mmi on mips
@@ -742,6 +768,11 @@ if test "$altivec" = "yes" ; then
   echo "#define HAVE_ALTIVEC 1" >> $TMPH
   echo "// Enable the next line to use the reference C code instead of AltiVec" >> $TMPH
   echo "// #define ALTIVEC_USE_REFERENCE_C_CODE 1" >> $TMPH
+  if test "$_altivec_h" = "yes" ; then
+    echo "#define HAVE_ALTIVEC_H 1" >> $TMPH
+  else
+    echo "#undef HAVE_ALTIVEC_H 1" >> $TMPH
+  fi
 fi
 if test "$gprof" = "yes" ; then
   echo "TARGET_GPROF=yes" >> config.mak

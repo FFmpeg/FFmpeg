@@ -20,6 +20,8 @@
 
 #include "../dsputil.h"
 
+#include "gcc_fixes.h"
+
 #include "dsputil_altivec.h"
 
 /*

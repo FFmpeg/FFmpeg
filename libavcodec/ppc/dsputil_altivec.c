@@ -19,6 +19,9 @@
  */
  
 #include "../dsputil.h"
+
+#include "gcc_fixes.h"
+
 #include "dsputil_altivec.h"
 
 #ifdef CONFIG_DARWIN
@@ -303,11 +306,8 @@ int pix_abs8x8_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     vector signed int sumdiffs;
 
     sad = (vector unsigned int)vec_splat_u32(0);
-#ifdef CONFIG_DARWIN
-    permclear = (vector unsigned char)(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
-#else
-    permclear = (vector unsigned char){255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0};
-#endif
+
+    permclear = (vector unsigned char)AVV(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
 
     for(i=0;i<8;i++) {
 	/* Read potentially unaligned pixels into t1 and t2
@@ -387,11 +387,9 @@ int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
     vector signed int sumsqr;
     
     sum = (vector unsigned int)vec_splat_u32(0);
-#ifdef CONFIG_DARWIN
-    permclear = (vector unsigned char)(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
-#else
-    permclear = (vector unsigned char){255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0};
-#endif
+
+    permclear = (vector unsigned char)AVV(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
+
     
     for(i=0;i<8;i++) {
 	/* Read potentially unaligned pixels into t1 and t2
