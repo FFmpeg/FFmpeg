@@ -267,6 +267,7 @@ static int rpza_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
+    s->frame.reference = 1;
     if (avctx->get_buffer(avctx, &s->frame)) {
         printf ("  RPZA Video: get_buffer() failed\n");
         return -1;
