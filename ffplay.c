@@ -169,6 +169,7 @@ static int debug = 0;
 static int debug_mv = 0;
 static int step = 0;
 static int thread_count = 1;
+static int workaround_bugs = 1;
 
 /* current context */
 static int is_full_screen;
@@ -1169,6 +1170,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     codec = avcodec_find_decoder(enc->codec_id);
     enc->debug_mv = debug_mv;
     enc->debug = debug;
+    enc->workaround_bugs = workaround_bugs;
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
@@ -1824,6 +1826,7 @@ const OptionDef options[] = {
     { "img", HAS_ARG, {(void*)opt_image_format}, "force image format", "img_fmt" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
     { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
+    { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&workaround_bugs}, "workaround bugs", "" },
     { "vismv", HAS_ARG | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
 #ifdef CONFIG_NETWORK
     { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },
