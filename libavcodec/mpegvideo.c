@@ -1066,6 +1066,21 @@ static int dct_quantize(MpegEncContext *s,
 {
     int i, j, level, last_non_zero, q;
     const int *qmat;
+    int minLevel, maxLevel;
+
+    if(s->avctx!=NULL && s->avctx->codec->id==CODEC_ID_MPEG4){
+	/* mpeg4 */
+        minLevel= -2048;
+	maxLevel= 2047;
+    }else if(s->out_format==FMT_MPEG1){
+	/* mpeg1 */
+        minLevel= -255;
+	maxLevel= 255;
+    }else{
+	/* h263 / msmpeg4 */
+        minLevel= -128;
+	maxLevel= 127;
+    }
 
     av_fdct (block);
 
@@ -1138,10 +1153,10 @@ static int dct_quantize(MpegEncContext *s,
                h263:  -128..127
                mpeg4: -2048..2047
             */
-            if (level > 127)
-                level = 127;
-            else if (level < -128)
-                level = -128;
+            if (level > maxLevel)
+                level = maxLevel;
+            else if (level < minLevel)
+                level = minLevel;
             block[j] = level;
             last_non_zero = i;
         } else {
@@ -1157,6 +1172,21 @@ static int dct_quantize_mmx(MpegEncContext *s,
 {
     int i, j, level, last_non_zero, q;
     const int *qmat;
+    int minLevel, maxLevel;
+
+    if(s->avctx!=NULL && s->avctx->codec->id==CODEC_ID_MPEG4){
+	/* mpeg4 */
+        minLevel= -2048;
+	maxLevel= 2047;
+    }else if(s->out_format==FMT_MPEG1){
+	/* mpeg1 */
+        minLevel= -255;
+	maxLevel= 255;
+    }else{
+	/* h263 / msmpeg4 */
+        minLevel= -128;
+	maxLevel= 127;
+    }
 
     av_fdct (block);
     
@@ -1202,10 +1232,10 @@ static int dct_quantize_mmx(MpegEncContext *s,
                h263:  -128..127
                mpeg4: -2048..2047
             */
-            if (level > 127)
-                level = 127;
-            else if (level < -128)
-                level = -128;
+            if (level > maxLevel)
+                level = maxLevel;
+            else if (level < minLevel)
+                level = minLevel;
             block[j] = level;
             last_non_zero = i;
         } else {
