@@ -15,14 +15,15 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4675
-#define LIBAVCODEC_BUILD_STR   "4675"
+#define LIBAVCODEC_BUILD       4676
+#define LIBAVCODEC_BUILD_STR   "4676"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
 enum CodecID {
     CODEC_ID_NONE, 
     CODEC_ID_MPEG1VIDEO,
+    CODEC_ID_MPEG2VIDEO,
     CODEC_ID_MPEG2VIDEO_XVMC,
     CODEC_ID_H263,
     CODEC_ID_RV10,
@@ -218,6 +219,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
    used */
 #define CODEC_CAP_PARSE_ONLY      0x0004
 #define CODEC_CAP_TRUNCATED       0x0008
+
 
 #define FF_COMMON_FRAME \
     /**\
@@ -462,7 +464,7 @@ typedef struct AVCodecContext {
      *                    do something for a generic case as well.
      * - decoding: set by lavc.
      */
-    enum PixelFormat pix_fmt;
+    enum PixelFormat pix_fmt; //FIXME move to AVFrme
  
     /**
      * Frame rate emulation. If not zero lower layer (i.e. format handler) 
@@ -710,7 +712,7 @@ typedef struct AVCodecContext {
                        data is returned. Only MPEG codecs support this now. */
     
     /**
-     * 0-> h263 quant 1-> mpeg quant.
+     * 0-> default, 1-> mpeg quant.
      * - encoding: set by user.
      * - decoding: unused
      */
@@ -1281,6 +1283,7 @@ extern AVCodec mp2_encoder;
 extern AVCodec mp3lame_encoder;
 extern AVCodec oggvorbis_encoder;
 extern AVCodec mpeg1video_encoder;
+extern AVCodec mpeg2video_encoder;
 extern AVCodec h263_encoder;
 extern AVCodec h263p_encoder;
 extern AVCodec flv_encoder;
@@ -1587,7 +1590,7 @@ typedef enum {
 int avcodec(void* handle, avc_cmd_t cmd, void* pin, void* pout);
 
 /* memory */
-void *av_malloc(unsigned int size);
+void *av_malloc(unsigned int size); //FIXME unsigned could be bad, dunno, need thinking
 void *av_mallocz(unsigned int size);
 void *av_realloc(void *ptr, unsigned int size);
 void av_free(void *ptr);

@@ -52,6 +52,7 @@ void avcodec_register_all(void)
     register_avcodec(&mpeg1video_encoder);
 //    register_avcodec(&h264_encoder);
 #ifdef CONFIG_RISKY
+    register_avcodec(&mpeg2video_encoder);
     register_avcodec(&h263_encoder);
     register_avcodec(&h263p_encoder);
     register_avcodec(&flv_encoder);

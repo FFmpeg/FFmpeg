@@ -32,8 +32,8 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 
-//#undef NDEBUG
-//#include <assert.h>
+#undef NDEBUG
+#include <assert.h>
 
 #define SQ(a) ((a)*(a))
 
@@ -1507,7 +1507,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         type = MB_TYPE_FORWARD;
         
         // RAL: No MB_TYPE_DIRECT in MPEG-1 video (only MPEG-4)
-        if (s->codec_id != CODEC_ID_MPEG1VIDEO && dmin <= score){
+        if (s->codec_id == CODEC_ID_MPEG4 && dmin <= score){
             score = dmin;
             type = MB_TYPE_DIRECT;
         }
@@ -1586,8 +1586,9 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
 {
     const int f_code= s->f_code;
     int y, range;
+    assert(s->pict_type==P_TYPE);
 
-    range = (((s->codec_id == CODEC_ID_MPEG1VIDEO) ? 8 : 16) << f_code);
+    range = (((s->out_format == FMT_MPEG1) ? 8 : 16) << f_code);
     
     if(s->msmpeg4_version) range= 16;
     
@@ -1647,7 +1648,7 @@ void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, i
     int y;
 
     // RAL: 8 in MPEG-1, 16 in MPEG-4
-    int range = (((s->codec_id == CODEC_ID_MPEG1VIDEO) ? 8 : 16) << f_code);
+    int range = (((s->out_format == FMT_MPEG1) ? 8 : 16) << f_code);
     
     if(s->avctx->me_range && range > s->avctx->me_range) range= s->avctx->me_range;
 
@@ -1673,3 +1674,53 @@ void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, i
         }
     }
 }
+#if 0
+/**
+ * estimates global motion and inits sprite_ref
+ */
+void ff_estimate_global_motion(MpegEncContext *s, int sprite_ref[3][2]){
+    int y;
+    int num= 16<<s->f_code;
+    int score[2][num];
+    int best_i[2]={0,0};
+    int best_score[2]={0,0};
+    
+    memset(score, 0, 2*num*sizeof(int));
+    
+    for(y=0; y<s->mb_height; y++){
+        int x;
+        int xy= (y+1)* (s->mb_width+2)+1;
+        int i= y*s->mb_width;
+        for(x=0; x<s->mb_width; x++){
+            int mv[2];
+           
+            if(!(s->mb_type[i]&MB_TYPE_INTER))
+                continue;
+            
+            mv[0]= s->p_mv_table[xy][0];
+            mv[1]= s->p_mv_table[xy][1];
+
+            if(mv[0]==0 && mv[1]==0) continue;
+            
+            score[0][mv[0] + num/2]++;
+            score[1][mv[1] + num/2]++;
+        }
+    }
+
+    for(n=0; n<2; n++){
+        for(i=1; i<num-1; i++){
+            int s= score[n][i-1] + score[n][i]*2 + score[n][i+1];
+    
+            if(s > best_score[n]){
+                best_score[n]= s;
+                best_i[n]= i;
+            }
+        }
+    }
+    
+    sprite_ref[0][0]= best_i[0] - num/2;
+    sprite_ref[0][1]= best_i[1] - num/2;
+    
+    // decide block type
+}
+#endif

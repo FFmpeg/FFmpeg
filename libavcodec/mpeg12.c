@@ -19,7 +19,7 @@
  
 /**
  * @file mpeg12.c
- * MPEG1 codec / MPEG2 decoder.
+ * MPEG1/2 codec
  */
  
 //#define DEBUG
@@ -228,9 +228,9 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 4, s->aspect_ratio_info);
             put_bits(&s->pb, 4, s->frame_rate_index);
             v = (s->bit_rate + 399) / 400;
-            if (v > 0x3ffff)
+            if (v > 0x3ffff && s->codec_id == CODEC_ID_MPEG1VIDEO)
                 v = 0x3ffff;
-            put_bits(&s->pb, 18, v);
+            put_bits(&s->pb, 18, v & 0x3FFFF);
             put_bits(&s->pb, 1, 1); /* marker */
 
             if(s->avctx->rc_buffer_size)
@@ -238,12 +238,30 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             else
                 /* VBV calculation: Scaled so that a VCD has the proper VBV size of 40 kilobytes */
                 vbv_buffer_size = (( 20 * s->bit_rate) / (1151929 / 2)) * 8 * 1024;	 
-            put_bits(&s->pb, 10, (vbv_buffer_size + 16383) / 16384); 
+            put_bits(&s->pb, 10, ((vbv_buffer_size + 16383) / 16384) & 0x3FF); 
             put_bits(&s->pb, 1, 1); /* constrained parameter flag */
             
             ff_write_quant_matrix(&s->pb, s->avctx->intra_matrix);
             ff_write_quant_matrix(&s->pb, s->avctx->inter_matrix);
 
+            if(s->codec_id == CODEC_ID_MPEG2VIDEO){
+                put_header(s, EXT_START_CODE);
+                put_bits(&s->pb, 4, 1); //seq ext
+                put_bits(&s->pb, 1, 0); //esc
+                put_bits(&s->pb, 3, 4); //profile
+                put_bits(&s->pb, 4, 8); //level
+                put_bits(&s->pb, 1, s->progressive_sequence=1);
+                put_bits(&s->pb, 2, 1); //chroma format 4:2:0
+                put_bits(&s->pb, 2, 0); //horizontal size ext
+                put_bits(&s->pb, 2, 0); //vertical size ext
+                put_bits(&s->pb, 12, v>>18); //bitrate ext
+                put_bits(&s->pb, 1, 1); //marker
+                put_bits(&s->pb, 8, vbv_buffer_size >>10); //vbv buffer ext
+                put_bits(&s->pb, 1, s->low_delay);
+                put_bits(&s->pb, 2, 0); // frame_rate_ext_n
+                put_bits(&s->pb, 5, 0); // frame_rate_ext_d
+            }
+            
             put_header(s, GOP_START_CODE);
             put_bits(&s->pb, 1, 0); /* do drop frame */
             /* time code : we must convert from the real frame rate to a
@@ -286,6 +304,8 @@ static inline void encode_mb_skip_run(MpegEncContext *s, int run){
 /* insert a fake P picture */
 static void mpeg1_skip_picture(MpegEncContext *s, int pict_num)
 {
+    assert(s->codec_id == CODEC_ID_MPEG1VIDEO); // mpeg2 can do these repeat things
+
     /* mpeg1 picture header */
     put_header(s, PICTURE_START_CODE);
     /* temporal reference */
@@ -372,9 +392,30 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     if (s->pict_type == B_TYPE) {
         put_bits(&s->pb, 1, 0); /* half pel coordinates */
         put_bits(&s->pb, 3, s->b_code); /* backward_f_code */
-        }
+    }
 
     put_bits(&s->pb, 1, 0); /* extra bit picture */
+    
+    if(s->codec_id == CODEC_ID_MPEG2VIDEO){
+        put_header(s, EXT_START_CODE);
+        put_bits(&s->pb, 4, 8); //pic ext
+        put_bits(&s->pb, 4, s->f_code);
+        put_bits(&s->pb, 4, s->f_code);
+        put_bits(&s->pb, 4, s->b_code);
+        put_bits(&s->pb, 4, s->b_code);
+        put_bits(&s->pb, 2, s->intra_dc_precision);
+        put_bits(&s->pb, 2, s->picture_structure= PICT_FRAME);
+        put_bits(&s->pb, 1, s->top_field_first);
+        put_bits(&s->pb, 1, s->frame_pred_frame_dct= 1);
+        put_bits(&s->pb, 1, s->concealment_motion_vectors);
+        put_bits(&s->pb, 1, s->q_scale_type);
+        put_bits(&s->pb, 1, s->intra_vlc_format);
+        put_bits(&s->pb, 1, s->alternate_scan);
+        put_bits(&s->pb, 1, s->repeat_first_field);
+        put_bits(&s->pb, 1, s->chroma_420_type=1);
+        put_bits(&s->pb, 1, s->progressive_frame=1);
+        put_bits(&s->pb, 1, 0); //composite_display_flag
+    }
     
     s->mb_y=0;
     ff_mpeg1_encode_slice_header(s);
@@ -396,7 +437,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
             cbp |= 1 << (5 - i);
     }
 
-    if (cbp == 0 && !first_mb && (mb_x != s->mb_width - 1 || mb_y != s->mb_height - 1) && 
+    if (cbp == 0 && !first_mb && (mb_x != s->mb_width - 1 || (mb_y != s->mb_height - 1 && s->codec_id == CODEC_ID_MPEG1VIDEO)) && 
         ((s->pict_type == P_TYPE && (motion_x | motion_y) == 0) ||
         (s->pict_type == B_TYPE && s->mv_dir == s->last_mv_dir && (((s->mv_dir & MV_DIR_FORWARD) ? ((s->mv[0][0][0] - s->last_mv[0][0][0])|(s->mv[0][0][1] - s->last_mv[0][0][1])) : 0) |
         ((s->mv_dir & MV_DIR_BACKWARD) ? ((s->mv[1][0][0] - s->last_mv[1][0][0])|(s->mv[1][0][1] - s->last_mv[1][0][1])) : 0)) == 0))) {
@@ -708,8 +749,13 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
     }
     s->me.mv_penalty= mv_penalty;
     s->fcode_tab= fcode_tab;
-    s->min_qcoeff=-255;
-    s->max_qcoeff= 255;
+    if(s->codec_id == CODEC_ID_MPEG1VIDEO){
+        s->min_qcoeff=-255;
+        s->max_qcoeff= 255;
+    }else{
+        s->min_qcoeff=-2047;
+        s->max_qcoeff= 2047;
+    }
     s->intra_ac_vlc_length=
     s->inter_ac_vlc_length= uni_mpeg1_ac_vlc_len;
 }
@@ -747,6 +793,12 @@ static void mpeg1_encode_block(MpegEncContext *s,
         encode_dc(s, diff, component);
         s->last_dc[component] = dc;
         i = 1;
+/*
+        if (s->intra_vlc_format)
+            rl = &rl_mpeg2;
+        else
+            rl = &rl_mpeg1;
+*/
     } else {
         /* encode the first coefficient : needs to be done here because
            it is handled slightly differently */
@@ -791,14 +843,18 @@ static void mpeg1_encode_block(MpegEncContext *s,
                 put_bits(&s->pb, mpeg1_vlc[111/*rl->n*/][1], mpeg1_vlc[111/*rl->n*/][0]);
                 /* escape: only clip in this case */
                 put_bits(&s->pb, 6, run);
-                if (alevel < 128) {
-                    put_bits(&s->pb, 8, level & 0xff);
-                } else {
-                    if (level < 0) {
-                        put_bits(&s->pb, 16, 0x8001 + level + 255);
+                if(s->codec_id == CODEC_ID_MPEG1VIDEO){
+                    if (alevel < 128) {
+                        put_bits(&s->pb, 8, level & 0xff);
                     } else {
-                        put_bits(&s->pb, 16, level & 0xffff);
+                        if (level < 0) {
+                            put_bits(&s->pb, 16, 0x8001 + level + 255);
+                        } else {
+                            put_bits(&s->pb, 16, level & 0xffff);
+                        }
                     }
+                }else{
+                    put_bits(&s->pb, 12, level & 0xfff);
                 }
             }
             last_non_zero = i;
@@ -868,7 +924,7 @@ static inline int get_dmv(MpegEncContext *s)
 static inline int get_qscale(MpegEncContext *s)
 {
     int qscale = get_bits(&s->gb, 5);
-    if (s->mpeg2) {
+    if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
         if (s->q_scale_type) {
             return non_linear_qscale[qscale];
         } else {
@@ -987,7 +1043,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
             memset(s->last_mv, 0, sizeof(s->last_mv)); /* reset mv prediction */
         s->mb_intra = 1;
 
-        if (s->mpeg2) {
+        if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
             for(i=0;i<6;i++) {
                 if (mpeg2_decode_block_intra(s, block[i], i) < 0)
                     return -1;
@@ -1165,7 +1221,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
             }
             cbp++;
 
-            if (s->mpeg2) {
+            if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
                 for(i=0;i<6;i++) {
                     if (cbp & 32) {
                         if (mpeg2_decode_block_non_intra(s, block[i], i) < 0)
@@ -1648,9 +1704,12 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     int horiz_size_ext, vert_size_ext;
     int bit_rate_ext, vbv_buf_ext;
     int frame_rate_ext_n, frame_rate_ext_d;
+    int level, profile;
     float aspect;
 
-    skip_bits(&s->gb, 8); /* profil and level */
+    skip_bits(&s->gb, 1); /* profil and level esc*/
+    profile= get_bits(&s->gb, 3);
+    level= get_bits(&s->gb, 4);
     s->progressive_sequence = get_bits1(&s->gb); /* progressive_sequence */
     skip_bits(&s->gb, 2); /* chroma_format */
     horiz_size_ext = get_bits(&s->gb, 2);
@@ -1675,12 +1734,15 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
         1<<30);
 
     dprintf("sequence extension\n");
-    s->mpeg2 = 1;
+    s->codec_id= s->avctx->codec_id= CODEC_ID_MPEG2VIDEO;
     s->avctx->sub_id = 2; /* indicates mpeg2 found */
 
     aspect= mpeg2_aspect[s->aspect_ratio_info];
     if(aspect>0.0)      s->avctx->aspect_ratio= s->width/(aspect*s->height);
     else if(aspect<0.0) s->avctx->aspect_ratio= -1.0/aspect;
+    
+    if(s->avctx->debug & FF_DEBUG_PICT_INFO)
+        printf("profile: %d, level: %d \n", profile, level);
 }
 
 static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
@@ -2046,7 +2108,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
     if (/*s->mb_y<<field_pic == s->mb_height &&*/ !s->first_field) {
         /* end of image */
 
-        if(s->mpeg2){
+        if(s->codec_id == CODEC_ID_MPEG2VIDEO){
             s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_MPEG2;
         }else
             s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_MPEG1;
@@ -2089,7 +2151,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     width = get_bits(&s->gb, 12);
     height = get_bits(&s->gb, 12);
     s->aspect_ratio_info= get_bits(&s->gb, 4);
-    if(!s->mpeg2){
+    if(s->codec_id == CODEC_ID_MPEG1VIDEO){
         aspect= mpeg1_aspect[s->aspect_ratio_info];
         if(aspect!=0.0) avctx->aspect_ratio= width/(aspect*height);
     }
@@ -2187,7 +2249,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->progressive_frame = 1;
     s->picture_structure = PICT_FRAME;
     s->frame_pred_frame_dct = 1;
-    s->mpeg2 = 0;
+    s->codec_id= s->avctx->codec_id= CODEC_ID_MPEG1VIDEO;
     avctx->sub_id = 1; /* indicates mpeg1 */
     return 0;
 }
@@ -2233,7 +2295,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s->progressive_frame = 1;
     s->picture_structure = PICT_FRAME;
     s->frame_pred_frame_dct = 1;
-    s->mpeg2 = 1;
+    s->codec_id= s->avctx->codec_id= CODEC_ID_MPEG2VIDEO;
     avctx->sub_id = 2; /* indicates mpeg2 */
     return 0;
 }
