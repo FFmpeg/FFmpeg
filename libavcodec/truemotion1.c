@@ -62,10 +62,10 @@ typedef struct TrueMotion1Context {
     int block_width;
     int block_height;
 
-    int16_t *ydt;
-    int16_t *cdt;
-    int16_t *fat_ydt;
-    int16_t *fat_cdt;
+    int16_t ydt[8];
+    int16_t cdt[8];
+    int16_t fat_ydt[8];
+    int16_t fat_cdt[8];
     
     int last_deltaset, last_vectable;
 
@@ -146,10 +146,10 @@ static void select_delta_tables(TrueMotion1Context *s, int delta_table_index)
     if (delta_table_index > 3)
         return;
 
-    s->ydt = ydts[delta_table_index];
-    s->cdt = cdts[delta_table_index];
-    s->fat_ydt = fat_ydts[delta_table_index];
-    s->fat_cdt = fat_cdts[delta_table_index];
+    memcpy(s->ydt, ydts[delta_table_index], 8 * sizeof(int16_t));
+    memcpy(s->cdt, cdts[delta_table_index], 8 * sizeof(int16_t));
+    memcpy(s->fat_ydt, fat_ydts[delta_table_index], 8 * sizeof(int16_t));
+    memcpy(s->fat_cdt, fat_cdts[delta_table_index], 8 * sizeof(int16_t));
 
     /* Y skinny deltas need to be halved for some reason; maybe the
      * skinny Y deltas should be modified */
