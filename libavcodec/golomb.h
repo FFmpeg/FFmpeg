@@ -66,7 +66,7 @@ static inline int get_te0_golomb(GetBitContext *gb, int range){
     assert(range >= 1);
     
     if(range==1)      return 0;
-    else if(range==2) return get_bits1(gb);
+    else if(range==2) return get_bits1(gb)^1;
     else              return get_ue_golomb(gb);
 }
 
@@ -76,7 +76,7 @@ static inline int get_te0_golomb(GetBitContext *gb, int range){
 static inline int get_te_golomb(GetBitContext *gb, int range){
     assert(range >= 1);
     
-    if(range==2) return get_bits1(gb);
+    if(range==2) return get_bits1(gb)^1;
     else         return get_ue_golomb(gb);
 }
 
@@ -193,7 +193,7 @@ static inline void set_te_golomb(PutBitContext *pb, int i, int range){
     assert(range >= 1);
     assert(i<=range);
 
-    if(range==2) put_bits(pb, 1, i);
+    if(range==2) put_bits(pb, 1, i^1);
     else         set_ue_golomb(pb, i);
 }
 

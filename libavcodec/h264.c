@@ -733,6 +733,21 @@ static inline int pred_non_zero_count(H264Context *h, int n){
     return i&31;
 }
 
+static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, int list, int part_width){
+    const int topright_ref= h->ref_cache[list][ i - 8 + part_width ];
+
+    if(topright_ref != PART_NOT_AVAILABLE){
+        *C= h->mv_cache[list][ i - 8 + part_width ];
+        return topright_ref;
+    }else{
+#ifdef TRACE
+    printf("topright MV not available\n");
+#endif
+        *C= h->mv_cache[list][ i - 8 - 1 ];
+        return h->ref_cache[list][ i - 8 - 1 ];
+    }
+}
+
 /**
  * gets the predicted MV.
  * @param n the block index
@@ -744,14 +759,14 @@ static inline void pred_motion(H264Context * const h, int n, int part_width, int
     MpegEncContext * const s = &h->s;
     const int index8= scan8[n];
     const int top_ref=      h->ref_cache[list][ index8 - 8 ];
-    const int topright_ref= h->ref_cache[list][ index8 - 8 + part_width ];
     const int left_ref=     h->ref_cache[list][ index8 - 1 ];
     const int16_t * const A= h->mv_cache[list][ index8 - 1 ];
     const int16_t * const B= h->mv_cache[list][ index8 - 8 ];
-    const int16_t * const C= h->mv_cache[list][ index8 - 8 + part_width ];
-    
+    const int16_t * C;
+    int diagonal_ref, match_count;
+
     assert(part_width==1 || part_width==2 || part_width==4);
-    
+
 /* mv_cache
   B . . A T T T T 
   U . . L . . , .
@@ -759,36 +774,36 @@ static inline void pred_motion(H264Context * const h, int n, int part_width, int
   U . . L . . , .
   . . . L . . . .
 */
-    if(topright_ref != PART_NOT_AVAILABLE){
-        if((topright_ref==ref) + (top_ref==ref) + (left_ref==ref) == 1){
-            *mx= A[0] + B[0] + C[0];
-            *my= A[1] + B[1] + C[1];
+
+    diagonal_ref= fetch_diagonal_mv(h, &C, index8, list, part_width);
+    match_count= (diagonal_ref==ref) + (top_ref==ref) + (left_ref==ref);
+    
+    if(match_count > 1){ //most common
+        *mx= mid_pred(A[0], B[0], C[0]);
+        *my= mid_pred(A[1], B[1], C[1]);
+    }else if(match_count==1){
+        if(left_ref==ref){
+            *mx= A[0];
+            *my= A[1];        
+        }else if(top_ref==ref){
+            *mx= B[0];
+            *my= B[1];        
+        }else{
+            *mx= C[0];
+            *my= C[1];        
+        }
+    }else{
+        if(top_ref == PART_NOT_AVAILABLE && diagonal_ref == PART_NOT_AVAILABLE && left_ref != PART_NOT_AVAILABLE){
+            *mx= A[0];
+            *my= A[1];        
         }else{
             *mx= mid_pred(A[0], B[0], C[0]);
             *my= mid_pred(A[1], B[1], C[1]);
         }
-    }else{
-        const int topleft_ref= h->ref_cache[list][ index8 - 9 ];
-        const int16_t * const D= h->mv_cache[list][ index8 - 9 ];
-        if(top_ref == PART_NOT_AVAILABLE && left_ref != PART_NOT_AVAILABLE){ //FIXME check rare FMO case where std isnt clear
-            *mx= A[0];
-            *my= A[1];
-        }else{
-            if((topleft_ref==ref) + (top_ref==ref) + (left_ref==ref) == 1){
-                *mx= A[0] + B[0] + D[0];
-                *my= A[1] + B[1] + D[1];
-            }else{
-                *mx= mid_pred(A[0], B[0], D[0]);
-                *my= mid_pred(A[1], B[1], D[1]);
-            }
-        }
+    }
         
 #ifdef TRACE
-printf("topleft: %2d %2d %2d ", topleft_ref, D[0], D[1]);
-#endif
-    }
-#ifdef TRACE
-printf("pred_motion (%2d %2d %2d) (%2d %2d %2d) (%2d %2d %2d) -> (%2d %2d %2d) at %2d %2d %d list %d\n", top_ref, B[0], B[1], topright_ref, C[0], C[1], left_ref, A[0], A[1], ref, *mx, *my, s->mb_x, s->mb_y, n, list);
+printf("pred_motion (%2d %2d %2d) (%2d %2d %2d) (%2d %2d %2d) -> (%2d %2d %2d) at %2d %2d %d list %d\n", top_ref, B[0], B[1], diagonal_ref, C[0], C[1], left_ref, A[0], A[1], ref, *mx, *my, s->mb_x, s->mb_y, n, list);
 #endif
 }
 
@@ -854,31 +869,19 @@ printf("pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d", left_ref, A[0], A[1], s
             return;
         }
     }else{
-        const int topright_ref= h->ref_cache[list][ scan8[4] - 8 + 2 ];
-        const int16_t * const C= h->mv_cache[list][ scan8[4] - 8 + 2 ];
+        const int16_t * C;
+        int diagonal_ref;
+
+        diagonal_ref= fetch_diagonal_mv(h, &C, scan8[4], list, 2);
         
 #ifdef TRACE
-printf("pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d", topright_ref, C[0], C[1], s->mb_x, s->mb_y, n, list);
+printf("pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d", diagonal_ref, C[0], C[1], s->mb_x, s->mb_y, n, list);
 #endif
 
-        if(topright_ref == ref){ 
+        if(diagonal_ref == ref){ 
             *mx= C[0];
             *my= C[1];
             return;
-        }
-        
-        if(topright_ref == PART_NOT_AVAILABLE){ //insanity ...
-            const int topleft_ref= h->ref_cache[list][ scan8[4] - 9 ];
-            const int16_t * const D= h->mv_cache[list][ scan8[4] - 9 ];
-
-#ifdef TRACE
-printf("pred_8x16: insanity (%2d %2d %2d) at %2d %2d %d list %d", topleft_ref, D[0], D[1], s->mb_x, s->mb_y, n, list);
-#endif
-            if(topleft_ref == ref){ 
-                *mx= D[0];
-                *my= D[1];
-                return;
-            }
         }
     }
 
@@ -1947,7 +1950,7 @@ static inline void mc_part(H264Context *h, int n, int square, int chroma_height,
     y_offset += 8*s->mb_y;
     
     if(list0){
-        Picture *ref= &h->ref_list[0][ h->ref_cache[0][ scan8[0] ] ];
+        Picture *ref= &h->ref_list[0][ h->ref_cache[0][ scan8[n] ] ];
         mc_dir_part(h, ref, n, square, chroma_height, delta, 0,
                            dest_y, dest_cb, dest_cr, x_offset, y_offset,
                            qpix_op, chroma_op);
@@ -1957,7 +1960,7 @@ static inline void mc_part(H264Context *h, int n, int square, int chroma_height,
     }
 
     if(list1){
-        Picture *ref= &h->ref_list[1][ h->ref_cache[1][ scan8[0] ] ];
+        Picture *ref= &h->ref_list[1][ h->ref_cache[1][ scan8[n] ] ];
         mc_dir_part(h, ref, n, square, chroma_height, delta, 1,
                            dest_y, dest_cb, dest_cr, x_offset, y_offset,
                            qpix_op, chroma_op);
@@ -2539,16 +2542,21 @@ static void idr(H264Context *h){
     h->short_ref_count=0;
 }
 
-//static void 
 /**
  *
  * @return the removed picture or NULL if an error occures
  */
 static Picture * remove_short(H264Context *h, int frame_num){
+    MpegEncContext * const s = &h->s;
     int i;
+    
+    if(s->avctx->debug&FF_DEBUG_MMCO)
+        printf("remove short %d count %d\n", frame_num, h->short_ref_count);
     
     for(i=0; i<h->short_ref_count; i++){
         Picture *pic= h->short_ref[i];
+        if(s->avctx->debug&FF_DEBUG_MMCO)
+            printf("%d %d %X\n", i, pic->frame_num, (int)pic);
         if(pic->frame_num == frame_num){
             h->short_ref[i]= NULL;
             memmove(&h->short_ref[i], &h->short_ref[i+1], (h->short_ref_count - i - 1)*sizeof(Picture*));
@@ -2653,8 +2661,9 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         }
         
         if(h->short_ref_count)
-            memmove(&h->short_ref[1], &h->short_ref[0], (h->short_ref_count - 1)*sizeof(Picture*));
-        h->short_ref[0]= s->current_picture_ptr;    
+            memmove(&h->short_ref[1], &h->short_ref[0], h->short_ref_count*sizeof(Picture*));
+
+        h->short_ref[0]= s->current_picture_ptr;
         h->short_ref[0]->long_ref=0;
         h->short_ref_count++;
     }
@@ -2884,6 +2893,7 @@ static int decode_slice_header(H264Context *h){
         frame_start(h);
     }
 
+    s->current_picture_ptr->frame_num= //FIXME frame_num cleanup
     h->frame_num= get_bits(&s->gb, h->sps.log2_max_frame_num);
 
     if(h->sps.frame_mbs_only_flag){
@@ -3176,7 +3186,7 @@ printf("level: %d suffix_length:%d\n", level[i], suffix_length);
 static int decode_mb(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int mb_xy= s->mb_x + s->mb_y*h->mb_stride;
-    int mb_type, /*ref0,*/ partition_count, cbp;
+    int mb_type, partition_count, cbp;
 
     memset(h->mb, 0, sizeof(int16_t)*24*16); //FIXME avoid if allready clear (move after skip handlong?
 
@@ -4096,7 +4106,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
     if(s->current_picture_ptr->reference)
         execute_ref_pic_marking(h, h->mmco, h->mmco_index);
     else
-        assert(h->mmco_index=0);
+        assert(h->mmco_index==0);
 
     ff_er_frame_end(s);
     MPV_frame_end(s);
