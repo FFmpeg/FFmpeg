@@ -197,10 +197,15 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
     c->frame_rate = STREAM_FRAME_RATE;  
     c->frame_rate_base = 1;
     c->gop_size = 12; /* emit one intra frame every twelve frames at most */
-    if (c->codec_id == CODEC_ID_MPEG1VIDEO ||
-        c->codec_id == CODEC_ID_MPEG2VIDEO) {
+    if (c->codec_id == CODEC_ID_MPEG2VIDEO) {
         /* just for testing, we also add B frames */
         c->max_b_frames = 2;
+    }
+    if (c->codec_id == CODEC_ID_MPEG1VIDEO){
+        /* needed to avoid using macroblocks in which some coeffs overflow 
+           this doesnt happen with normal video, it just happens here as the 
+           motion of the chroma plane doesnt match the luma plane */
+        c->mb_decision=2;
     }
     // some formats want stream headers to be seperate
     if(!strcmp(oc->oformat->name, "mp4") || !strcmp(oc->oformat->name, "mov") || !strcmp(oc->oformat->name, "3gp"))
