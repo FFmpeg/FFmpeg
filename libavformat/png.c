@@ -18,6 +18,7 @@
  */
 #include "avformat.h"
 
+#ifdef CONFIG_ZLIB
 #include <zlib.h>
 
 //#define DEBUG
@@ -563,3 +564,4 @@ AVImageFormat png_image_format = {
     (1 << PIX_FMT_RGB24) | (1 << PIX_FMT_GRAY8) | (1 << PIX_FMT_MONOBLACK) | (1 << PIX_FMT_PAL8),
     png_write,
 };
+#endif

@@ -253,7 +253,9 @@ extern AVImageFormat pgm_image_format;
 extern AVImageFormat ppm_image_format;
 extern AVImageFormat pgmyuv_image_format;
 extern AVImageFormat yuv_image_format;
+#ifdef CONFIG_ZLIB
 extern AVImageFormat png_image_format;
+#endif
 extern AVImageFormat jpeg_image_format;
 extern AVImageFormat gif_image_format;
 
