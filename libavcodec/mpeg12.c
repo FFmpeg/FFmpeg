@@ -702,8 +702,6 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
     s->fcode_tab= fcode_tab;
     s->min_qcoeff=-255;
     s->max_qcoeff= 255;
-    s->intra_quant_bias= 3<<(QUANT_BIAS_SHIFT-3); //(a + x*3/8)/x
-    s->inter_quant_bias= 0;
     s->intra_ac_vlc_length=
     s->inter_ac_vlc_length= uni_mpeg1_ac_vlc_len;
 }

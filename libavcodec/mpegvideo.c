@@ -551,6 +551,22 @@ int MPV_encode_init(AVCodecContext *avctx)
     
     s->progressive_sequence= !(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
 
+    if(s->codec_id==CODEC_ID_MJPEG){
+        s->intra_quant_bias= 1<<(QUANT_BIAS_SHIFT-1); //(a + x/2)/x
+        s->inter_quant_bias= 0;
+    }else if(s->mpeg_quant || s->codec_id==CODEC_ID_MPEG1VIDEO){
+        s->intra_quant_bias= 3<<(QUANT_BIAS_SHIFT-3); //(a + x*3/8)/x
+        s->inter_quant_bias= 0;
+    }else{
+        s->intra_quant_bias=0;
+        s->inter_quant_bias=-(1<<(QUANT_BIAS_SHIFT-2)); //(a - x/4)/x
+    }
+    
+    if(avctx->intra_quant_bias != FF_DEFAULT_QUANT_BIAS)
+        s->intra_quant_bias= avctx->intra_quant_bias;
+    if(avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
+        s->inter_quant_bias= avctx->inter_quant_bias;
+    
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;

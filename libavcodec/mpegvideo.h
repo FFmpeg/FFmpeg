@@ -360,7 +360,7 @@ typedef struct MpegEncContext {
     uint16_t chroma_intra_matrix[64];
     uint16_t inter_matrix[64];
     uint16_t chroma_inter_matrix[64];
-#define QUANT_BIAS_SHIFT 4
+#define QUANT_BIAS_SHIFT 8
     int intra_quant_bias;    ///< bias for the quantizer 
     int inter_quant_bias;    ///< bias for the quantizer 
     int min_qcoeff;          ///< minimum encodable coefficient 

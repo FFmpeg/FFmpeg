@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4662
-#define LIBAVCODEC_BUILD_STR   "4662"
+#define LIBAVCODEC_BUILD       4663
+#define LIBAVCODEC_BUILD_STR   "4663"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -1038,8 +1038,23 @@ typedef struct AVCodecContext {
      * - decoding: set by lavc.
      * @todo move this after frame_rate
      */
-    int frame_rate_base;
 
+    int frame_rate_base;
+    /**
+     * intra quantizer bias.
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int intra_quant_bias;
+#define FF_DEFAULT_QUANT_BIAS 999999
+    
+    /**
+     * inter quantizer bias.
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int inter_quant_bias;
+    
 } AVCodecContext;
 
 

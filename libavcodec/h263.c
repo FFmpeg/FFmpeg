@@ -1484,14 +1484,6 @@ void h263_encode_init(MpegEncContext *s)
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
-
-    if(s->mpeg_quant){
-        s->intra_quant_bias= 3<<(QUANT_BIAS_SHIFT-3); //(a + x*3/8)/x
-        s->inter_quant_bias= 0;
-    }else{
-        s->intra_quant_bias=0;
-        s->inter_quant_bias=-(1<<(QUANT_BIAS_SHIFT-2)); //(a - x/4)/x
-    }
 }
 
 /**
