@@ -375,8 +375,8 @@ static inline void encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], i
     for(x=0; x<w; x++){
         int diff, context;
         
-        context= get_context(s, sample[1]+x, sample[0]+x, sample[2]+x);
-        diff= sample[1][x] - predict(sample[1]+x, sample[0]+x);
+        context= get_context(s, sample[0]+x, sample[1]+x, sample[2]+x);
+        diff= sample[0][x] - predict(sample[0]+x, sample[1]+x);
 
         if(context < 0){
             context = -context;
@@ -429,25 +429,22 @@ static inline void encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], i
 }
 
 static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride, int plane_index){
-    int x,y;
-    int_fast16_t sample_buffer[3][w+6];
-    int_fast16_t *sample[3]= {sample_buffer[0]+3, sample_buffer[1]+3, sample_buffer[2]+3};
+    int x,y,i;
+    const int ring_size=2;
+    int_fast16_t sample_buffer[ring_size][w+6], *sample[ring_size];
     s->run_index=0;
     
     memset(sample_buffer, 0, sizeof(sample_buffer));
     
     for(y=0; y<h; y++){
-        int_fast16_t *temp= sample[0]; //FIXME try a normal buffer
-
-        sample[0]= sample[1];
-        sample[1]= sample[2];
-        sample[2]= temp;
+        for(i=0; i<ring_size; i++)
+            sample[i]= sample_buffer[(h+i-y)%ring_size]+3;
         
-        sample[1][-1]= sample[0][0  ];
-        sample[0][ w]= sample[0][w-1];
+        sample[0][-1]= sample[1][0  ];
+        sample[1][ w]= sample[1][w-1];
 //{START_TIMER
         for(x=0; x<w; x++){
-            sample[1][x]= src[x + stride*y];
+            sample[0][x]= src[x + stride*y];
         }
         encode_line(s, w, sample, plane_index, 8);
 //STOP_TIMER("encode line")}
@@ -455,17 +452,18 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
 }
 
 static void encode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int stride){
-    int x, y, p;
-    int_fast16_t sample_buffer[3][2][w+6];
-    int_fast16_t *sample[3][2]= {
-        {sample_buffer[0][0]+3, sample_buffer[0][1]+3},
-        {sample_buffer[1][0]+3, sample_buffer[1][1]+3},
-        {sample_buffer[2][0]+3, sample_buffer[2][1]+3}};
+    int x, y, p, i;
+    const int ring_size=2;
+    int_fast16_t sample_buffer[3][ring_size][w+6], *sample[3][ring_size];
     s->run_index=0;
     
     memset(sample_buffer, 0, sizeof(sample_buffer));
     
     for(y=0; y<h; y++){
+        for(i=0; i<ring_size; i++)
+            for(p=0; p<3; p++)
+                sample[p][i]= sample_buffer[p][(h+i-y)%ring_size]+3;
+
         for(x=0; x<w; x++){
             int v= src[x + stride*y];
             int b= v&0xFF;
@@ -485,13 +483,8 @@ static void encode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int st
             sample[2][0][x]= r;
         }
         for(p=0; p<3; p++){
-            int_fast16_t *temp= sample[p][0]; //FIXME try a normal buffer
-
-            sample[p][0]= sample[p][1];
-            sample[p][1]= temp;
-
-            sample[p][1][-1]= sample[p][0][0  ];
-            sample[p][0][ w]= sample[p][0][w-1];
+            sample[p][0][-1]= sample[p][1][0  ];
+            sample[p][1][ w]= sample[p][1][w-1];
             encode_line(s, w, sample[p], FFMIN(p, 1), 9);
         }
     }
