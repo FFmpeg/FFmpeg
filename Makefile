@@ -172,7 +172,8 @@ clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C tests clean
-	rm -f *.o *.d *~ .libs .depend gmon.out TAGS ffmpeg_g$(EXESUF) ffplay_g$(EXESUF) $(PROG) $(PROGTEST)
+	rm -f *.o *.d *~ .libs .depend gmon.out TAGS ffmpeg_g$(EXESUF) \
+	   ffplay_g$(EXESUF) $(PROG) $(PROGTEST) $(QTFASTSTART)
 
 clean-vhook:
 	$(MAKE) -C vhook clean
