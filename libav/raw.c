@@ -372,8 +372,12 @@ int rawvideo_read_packet(AVFormatContext *s,
         return -EIO;
 
     pkt->stream_index = 0;
+#if 0
     /* bypass buffered I/O */
     ret = url_read(url_fileno(&s->pb), pkt->data, pkt->size);
+#else
+    ret = get_buffer(&s->pb, pkt->data, pkt->size);
+#endif
     if (ret != pkt->size) {
         av_free_packet(pkt);
         return -EIO;
