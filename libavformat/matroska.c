@@ -2243,7 +2243,7 @@ matroska_read_header (AVFormatContext    *s,
 /*                 codec_id = CODEC_ID_DTS; */
             else if (!strcmp(track->codec_id,
                              MATROSKA_CODEC_ID_AUDIO_VORBIS)) {
-                u_char *p = track->codec_priv, *cdp;
+                unsigned char *p = track->codec_priv, *cdp;
                 int cps = track->codec_priv_size;
                 int nf, s[3], cds;
                 int i;
