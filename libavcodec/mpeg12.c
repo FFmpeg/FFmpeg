@@ -852,16 +852,13 @@ static inline int get_dmv(MpegEncContext *s)
 
 static inline int get_qscale(MpegEncContext *s)
 {
-    int qscale;
+    int qscale = get_bits(&s->gb, 5);
     if (s->mpeg2) {
         if (s->q_scale_type) {
-            qscale = non_linear_qscale[get_bits(&s->gb, 5)];
+            return non_linear_qscale[qscale];
         } else {
-            qscale = get_bits(&s->gb, 5) << 1;
+            return qscale << 1;
         }
-    } else {
-        /* for mpeg1, we use the generic unquant code */
-        qscale = get_bits(&s->gb, 5);
     }
     return qscale;
 }
