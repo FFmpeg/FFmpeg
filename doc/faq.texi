@@ -104,6 +104,12 @@ will cause somewhat too strong filtering, a fix is too apply (@url{http://www.mp
 or (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.6.6.patch})
 and pass 'combfilter=2'
 
+@section I have a problem with an old version of ffmpeg, where should i report it?
+Nowhere, upgrade to the latest release or if there is no recent release upgrade
+to cvs, you could also try to report it, maybe you are lucky and
+will become the first person in history to get a different awnser from "upgrade
+to cvs".
+
 @section -f jpeg doesnt work.
 
 try '-f image -img jpeg test%d.jpg'
