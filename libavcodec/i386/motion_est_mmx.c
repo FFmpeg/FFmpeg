@@ -263,6 +263,7 @@ static inline int sum_mmx2()
     return ret;
 }
 
+
 #define PIX_SAD(suf)\
 int pix_abs8x8_ ## suf(UINT8 *blk2, UINT8 *blk1, int stride)\
 {\
@@ -282,7 +283,7 @@ int pix_abs8x8_x2_ ## suf(UINT8 *blk2, UINT8 *blk1, int stride)\
                  :: "m"(round_tab[1]) \
                  );\
 \
-    sad8_2_ ## suf(blk1, blk2+1, blk2, stride, 3);\
+    sad8_2_ ## suf(blk1, blk1+1, blk2, stride, 3);\
 \
     return sum_ ## suf();\
 }\
