@@ -582,6 +582,7 @@ static void fill_pad_region(AVPicture* img, int height, int width,
     }
 }
 
+static uint8_t *video_buffer= NULL; //FIXME rename, its used for audio too at the end
 
 static void do_video_out(AVFormatContext *s, 
                          AVOutputStream *ost, 
@@ -592,7 +593,6 @@ static void do_video_out(AVFormatContext *s,
     int nb_frames, i, ret;
     AVFrame *final_picture, *formatted_picture;
     AVFrame picture_format_temp, picture_crop_temp;
-    static uint8_t *video_buffer= NULL;
     uint8_t *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
     enum PixelFormat target_pixfmt;
@@ -1206,6 +1206,58 @@ static int output_packet(AVInputStream *ist, int ist_index,
             av_free(buffer_to_free);
         }
  discard_packet:
+    if (pkt == NULL) {
+        /* EOF handling */
+  
+        for(i=0;i<nb_ostreams;i++) {
+            ost = ost_table[i];
+            if (ost->source_index == ist_index) {
+                AVCodecContext *enc= &ost->st->codec;
+                os = output_files[ost->file_index];
+                
+                if(ost->st->codec.codec_type == CODEC_TYPE_AUDIO && enc->frame_size <=1)
+                    continue;
+                if(ost->st->codec.codec_type == CODEC_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE))
+                    continue;
+
+                if (ost->encoding_needed) {
+                    for(;;) {
+                        AVPacket pkt;
+                        av_init_packet(&pkt);
+                        pkt.stream_index= ost->index;
+ 
+                        switch(ost->st->codec.codec_type) {
+                        case CODEC_TYPE_AUDIO:        
+                            ret = avcodec_encode_audio(enc, video_buffer, VIDEO_BUFFER_SIZE, NULL);
+                            audio_size += ret;
+                            pkt.flags |= PKT_FLAG_KEY;
+                            break;
+                        case CODEC_TYPE_VIDEO:
+                            ret = avcodec_encode_video(enc, video_buffer, VIDEO_BUFFER_SIZE, NULL);
+                            video_size += ret;
+                            if(enc->coded_frame && enc->coded_frame->key_frame)
+                                pkt.flags |= PKT_FLAG_KEY;
+                            if (ost->logfile && enc->stats_out) {
+                                fprintf(ost->logfile, "%s", enc->stats_out);
+                            }
+                            break;
+                        default:
+                            ret=-1;
+                        }
+                            
+                        if(ret<=0)
+                            break;
+                        pkt.data= video_buffer;
+                        pkt.size= ret;
+                        if(enc->coded_frame)
+                            pkt.pts= enc->coded_frame->pts;
+                        av_interleaved_write_frame(os, &pkt);
+                    }
+                }
+            }
+        }
+    }
+ 
     return 0;
  fail_decode:
     return -1;

@@ -1980,6 +1980,10 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
     AVStream *st= s->streams[ pkt->stream_index];
 
     compute_pkt_fields2(st, pkt);
+    
+    //FIXME/XXX/HACK drop zero sized packets
+    if(st->codec.codec_type == CODEC_TYPE_AUDIO && pkt->size==0)
+        return 0;
 
     if(pkt->dts == AV_NOPTS_VALUE)
         return -1;

@@ -453,24 +453,25 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
                          const short *samples)
 {
-    int ret;
-
-    ret = avctx->codec->encode(avctx, buf, buf_size, (void *)samples);
-    avctx->frame_number++;
-    return ret;
+    if((avctx->codec->capabilities & CODEC_CAP_DELAY) || samples){
+        int ret = avctx->codec->encode(avctx, buf, buf_size, (void *)samples);
+        avctx->frame_number++;
+        return ret;
+    }else
+        return 0;
 }
 
 int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
                          const AVFrame *pict)
 {
-    int ret;
-
-    ret = avctx->codec->encode(avctx, buf, buf_size, (void *)pict);
+    if((avctx->codec->capabilities & CODEC_CAP_DELAY) || pict){
+        int ret = avctx->codec->encode(avctx, buf, buf_size, (void *)pict);
+        avctx->frame_number++;
+        emms_c(); //needed to avoid a emms_c() call before every return;
     
-    emms_c(); //needed to avoid a emms_c() call before every return;
-
-    avctx->frame_number++;
-    return ret;
+        return ret;
+    }else
+        return 0;
 }
 
 /** 

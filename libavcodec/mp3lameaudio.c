@@ -136,7 +136,9 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
 	int lame_result;
 
 	/* lame 3.91 dies on '1-channel interleaved' data */
-	if (s->stereo) {
+
+    if(data){
+        if (s->stereo) {
             lame_result = lame_encode_buffer_interleaved(
                 s->gfp, 
                 data,
@@ -144,12 +146,19 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
                 s->buffer + s->buffer_index, 
                 BUFFER_SIZE - s->buffer_index
                 );
-	} else {
+        } else {
             lame_result = lame_encode_buffer(
                 s->gfp, 
                 data, 
                 data, 
                 avctx->frame_size,
+                s->buffer + s->buffer_index, 
+                BUFFER_SIZE - s->buffer_index
+                );
+        }
+    }else{
+        lame_result= lame_encode_flush(
+                s->gfp, 
                 s->buffer + s->buffer_index, 
                 BUFFER_SIZE - s->buffer_index
                 );
@@ -174,7 +183,6 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
 
             memmove(s->buffer, s->buffer+len, s->buffer_index);
             //FIXME fix the audio codec API, so we dont need the memcpy()
-            //FIXME fix the audio codec API, so we can output multiple packets if we have them
 /*for(i=0; i<len; i++){
     av_log(avctx, AV_LOG_DEBUG, "%2X ", frame[i]);
 }*/
@@ -201,5 +209,6 @@ AVCodec mp3lame_encoder = {
     sizeof(Mp3AudioContext),
     MP3lame_encode_init,
     MP3lame_encode_frame,
-    MP3lame_encode_close
+    MP3lame_encode_close,
+    .capabilities= CODEC_CAP_DELAY,
 };

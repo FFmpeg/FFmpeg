@@ -21,7 +21,6 @@ typedef struct OggVorbisContext {
     vorbis_block vb ;
     uint8_t buffer[BUFFER_SIZE];
     int buffer_index;
-    int64_t fake_pts; //pts which libavformat will guess, HACK FIXME
 
     /* decoder */
     vorbis_comment vc ;
@@ -104,7 +103,7 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
     float **buffer ;
     ogg_packet op ;
     signed char *audio = data ;
-    int l, samples = OGGVORBIS_FRAME_SIZE ;
+    int l, samples = data ? OGGVORBIS_FRAME_SIZE : 0;
 
     buffer = vorbis_analysis_buffer(&context->vd, samples) ;
 
@@ -125,6 +124,8 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
 	vorbis_bitrate_addblock(&context->vb) ;
 
 	while(vorbis_bitrate_flushpacket(&context->vd, &op)) {
+            if(op.bytes==1) //id love to say this is a hack, bad sadly its not, appearently the end of stream decission is in libogg
+                continue;
             memcpy(context->buffer + context->buffer_index, &op, sizeof(ogg_packet));
             context->buffer_index += sizeof(ogg_packet);
             memcpy(context->buffer + context->buffer_index, op.packet, op.bytes);
@@ -138,21 +139,15 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
         ogg_packet *op2= (ogg_packet*)context->buffer;
         op2->packet = context->buffer + sizeof(ogg_packet);
 
-        if(op2->granulepos <= context->fake_pts /*&& (context->fake_pts || context->buffer_index > 4*1024)*/){
-            assert(op2->granulepos == context->fake_pts);
-            l=  op2->bytes;
+        l=  op2->bytes;
+        avccontext->coded_frame->pts= av_rescale(op2->granulepos, AV_TIME_BASE, avccontext->sample_rate);
 
-            memcpy(packets, op2->packet, l);
-            context->buffer_index -= l + sizeof(ogg_packet);
-            memcpy(context->buffer, context->buffer + l + sizeof(ogg_packet), context->buffer_index);
-        }
+        memcpy(packets, op2->packet, l);
+        context->buffer_index -= l + sizeof(ogg_packet);
+        memcpy(context->buffer, context->buffer + l + sizeof(ogg_packet), context->buffer_index);
 //        av_log(avccontext, AV_LOG_DEBUG, "E%d\n", l);
     }
 
-    if(l || context->fake_pts){
-        context->fake_pts += avccontext->frame_size;
-    }
-        
     return l;
 }
 
@@ -162,19 +157,6 @@ static int oggvorbis_encode_close(AVCodecContext *avccontext) {
 /*  ogg_packet op ; */
     
     vorbis_analysis_wrote(&context->vd, 0) ; /* notify vorbisenc this is EOF */
-
-    /* We need to write all the remaining packets into the stream
-     * on closing */
-    
-    av_log(avccontext, AV_LOG_ERROR, "fixme: not all packets written on oggvorbis_encode_close()\n") ;
-
-/*
-    while(vorbis_bitrate_flushpacket(&context->vd, &op)) {
-	memcpy(packets + l, &op, sizeof(ogg_packet)) ;
-	memcpy(packets + l + sizeof(ogg_packet), op.packet, op.bytes) ;
-	l += sizeof(ogg_packet) + op.bytes ;	
-    }
-*/
 
     vorbis_block_clear(&context->vb);
     vorbis_dsp_clear(&context->vd);
@@ -194,7 +176,8 @@ AVCodec oggvorbis_encoder = {
     sizeof(OggVorbisContext),
     oggvorbis_encode_init,
     oggvorbis_encode_frame,
-    oggvorbis_encode_close
+    oggvorbis_encode_close,
+    .capabilities= CODEC_CAP_DELAY,
 } ;
 
 
@@ -313,4 +296,5 @@ AVCodec oggvorbis_decoder = {
     NULL,
     oggvorbis_decode_close,
     oggvorbis_decode_frame,
+    .capabilities= CODEC_CAP_DELAY,
 } ;

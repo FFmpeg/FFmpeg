@@ -294,6 +294,8 @@ extern int motion_estimation_method;
 #define CODEC_CAP_TRUNCATED       0x0008
 /* codec can export data for HW decoding (XvMC) */
 #define CODEC_CAP_HWACCEL         0x0010
+/** codec has a non zero delay and needs to be feeded with NULL at the end to get the delayed data */
+#define CODEC_CAP_DELAY           0x0020
 
 //the following defines might change, so dont expect compatibility if u use them
 #define MB_TYPE_INTRA4x4   0x0001
