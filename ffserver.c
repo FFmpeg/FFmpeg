@@ -3637,8 +3637,6 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
             av->b_quant_factor = 1.25;
         if (!av->b_quant_offset)
             av->b_quant_offset = 1.25;
-        if (!av->rc_min_rate)
-            av->rc_min_rate = av->bit_rate / 2;
         if (!av->rc_max_rate)
             av->rc_max_rate = av->bit_rate * 2;
 
