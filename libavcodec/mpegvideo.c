@@ -656,8 +656,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->h263_aic = 1;
         
         /* These are just to be sure */
-        s->umvplus = 0;
-        s->umvplus_dec = 0;
+        s->umvplus = 1;
         avctx->delay=0;
         s->low_delay=1;
         break;
@@ -2908,17 +2907,14 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     
     s->qscale= (int)(s->frame_qscale + 0.5); //FIXME qscale / ... stuff for ME ratedistoration
     
-    if(s->msmpeg4_version){
-        if(s->pict_type==I_TYPE)
-            s->no_rounding=1;
-        else if(s->flipflop_rounding)
-            s->no_rounding ^= 1;          
-    }else if(s->out_format == FMT_H263){
-        if(s->pict_type==I_TYPE)
-            s->no_rounding=0;
-        else if(s->pict_type!=B_TYPE)
+    if(s->pict_type==I_TYPE){
+        if(s->msmpeg4_version) s->no_rounding=1;
+        else                   s->no_rounding=0;
+    }else if(s->pict_type!=B_TYPE){
+        if(s->flipflop_rounding || s->codec_id == CODEC_ID_H263P || s->codec_id == CODEC_ID_MPEG4)
             s->no_rounding ^= 1;          
     }
+    
     /* Estimate motion for every MB */
     s->mb_intra=0; //for the rate distoration & bit compare functions
     if(s->pict_type != I_TYPE){
@@ -2993,7 +2989,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 //printf("Scene change detected, encoding as I Frame %d %d\n", s->current_picture.mb_var_sum, s->current_picture.mc_mb_var_sum);
     }
 
-    if(s->codec_id != CODEC_ID_H263P){ //FIXME use umvplus or something
+    if(!s->umvplus){
         if(s->pict_type==P_TYPE || s->pict_type==S_TYPE) {
             s->f_code= ff_get_best_fcode(s, s->p_mv_table, MB_TYPE_INTER);
         

@@ -251,7 +251,7 @@ typedef struct MpegEncContext {
     int last_non_b_pict_type;   /* used for mpeg4 gmc b-frames & ratecontrol */
     int frame_rate_index;
     /* motion compensation */
-    int unrestricted_mv;
+    int unrestricted_mv;          /* mv can point outside of the coded picture */
     int h263_long_vectors; /* use horrible h263v1 long vector mode */
 
     DSPContext dsp;             /* pointers for accelerated dsp fucntions */
@@ -399,8 +399,7 @@ typedef struct MpegEncContext {
     int gob_index;
         
     /* H.263+ specific */
-    int umvplus;
-    int umvplus_dec;
+    int umvplus;                    /* == H263+ && unrestricted_mv */
     int h263_aic; /* Advanded INTRA Coding (AIC) */
     int h263_aic_dir; /* AIC direction: 0 = left, 1 = top */
     
