@@ -133,6 +133,13 @@ CodecTag codec_asf_bmp_tags[] = {
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') },
     { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x') },
+    { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0') },
+    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D') },
+    { CODEC_ID_MPEG4, MKTAG('x', 'v', 'i', 'd') },
+    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 's') },
+    { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
+    { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
+    { CODEC_ID_MPEG4, MKTAG('m', '4', 's', '2') },
     { CODEC_ID_MPEG4, MKTAG(0x04, 0, 0, 0) }, /* some broken avi use this */
     { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') }, /* default signature when using MSMPEG4 */ 
     { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3') },
