@@ -937,6 +937,9 @@ Comments: for functions visible from other modules, use the JavaDoc
 format (see examples in @file{libav/utils.c}) so that a documentation
 can be generated automatically.
 
+fprintf and printf are forbidden in libavformat and libavcodec, 
+please use av_log() instead.
+
 @section Submitting patches
 
 When you submit your patch, try to send a unified diff (diff '-up'
@@ -969,7 +972,7 @@ The regression test then goes on to test the ffserver code with a
 limited set of streams. It is important that this step runs correctly
 as well.
 
-Run 'make test' to test all the codecs.
+Run 'make test' to test all the codecs and formats.
 
 Run 'make fulltest' to test all the codecs, formats and ffserver.
 
