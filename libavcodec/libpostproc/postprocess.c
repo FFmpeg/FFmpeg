@@ -83,6 +83,10 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 
 #include "mangle.h" //FIXME should be supressed
 
+#ifndef HAVE_MEMALIGN
+#define memalign(a,b) malloc(b)
+#endif
+
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 #define MAX(a,b) ((a) < (b) ? (b) : (a))
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
@@ -749,7 +753,6 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride){
 
 pp_context_t *pp_get_context(int width, int height, int cpuCaps){
 	PPContext *c= memalign(32, sizeof(PPContext));
-	int i;
 	int stride= (width+15)&(~15); //assumed / will realloc if needed
         
 	memset(c, 0, sizeof(PPContext));
