@@ -852,6 +852,10 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
         for(y=  bp->height%tile_h; y< bp->height; y+=tile_h){
             for(x=  bp->width%tile_w; x< bp->width; x+=tile_w){
                 code = get_vlc2(&v->gb, vc9_norm6_vlc.table, VC9_NORM6_VLC_BITS, 2);
+                if(code<0){
+                    av_log(v->avctx, AV_LOG_DEBUG, "inavlid NORM-6 VLC\n");
+                    return -1;
+                }
                 //FIXME following is a pure guess and probably wrong
                 //FIXME A bitplane (0 | !0), so could the shifts be avoided ?
                 planep[x     + 0*bp->stride]= (code>>0)&1;
