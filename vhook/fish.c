@@ -337,7 +337,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                     FILE *f;
                     char fname[256];
 
-                    sprintf(fname, "%s/fishimg%ld_%lld.ppm", ci->dir, time(0), pts);
+                    snprintf(fname, sizeof(fname), "%s/fishimg%ld_%lld.ppm", ci->dir, time(0), pts);
                     f = fopen(fname, "w");
                     if (f) {
                         fprintf(f, "P6 %d %d 255\n", width, height);
