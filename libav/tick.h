@@ -17,7 +17,7 @@ typedef struct Ticker {
 
 extern void ticker_init(Ticker *tick, INT64 inrate, INT64 outrate);
 
-extern inline int ticker_tick(Ticker *tick, int num)
+static inline int ticker_tick(Ticker *tick, int num)
 {
     int n = num * tick->div;
 
