@@ -845,16 +845,6 @@ static int output_picture2(VideoState *is, AVFrame *src_frame, double pts1)
     
     pts = pts1;
 
-    /* if B frames are present, and if the current picture is a I
-       or P frame, we use the last pts */
-    if (is->video_st->codec.has_b_frames && 
-        src_frame->pict_type != FF_B_TYPE) {
-        /* use last pts */
-        pts = is->video_last_P_pts;
-        /* get the pts for the next I or P frame if present */
-        is->video_last_P_pts = pts1;
-    }
-
     if (pts != 0) {
         /* update video clock with pts, if present */
         is->video_clock = pts;
@@ -904,8 +894,8 @@ static int video_thread(void *arg)
         /* NOTE: ipts is the PTS of the _first_ picture beginning in
            this packet, if any */
         pts = 0;
-        if (pkt->pts != AV_NOPTS_VALUE)
-            pts = (double)pkt->pts / AV_TIME_BASE;
+        if (pkt->dts != AV_NOPTS_VALUE)
+            pts = (double)pkt->dts / AV_TIME_BASE;
 
         if (is->video_st->codec.codec_id == CODEC_ID_RAWVIDEO) {
             avpicture_fill((AVPicture *)frame, pkt->data, 
