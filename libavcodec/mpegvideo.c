@@ -2428,6 +2428,7 @@ static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *
     d->block= s->block;
     for(i=0; i<6; i++)
         d->block_last_index[i]= s->block_last_index[i];
+    d->interlaced_dct= s->interlaced_dct;
 }
 
 static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegEncContext *best, int type, 
