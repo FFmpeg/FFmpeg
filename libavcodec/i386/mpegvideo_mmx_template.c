@@ -48,6 +48,10 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
 	/* mpeg1 */
         minLevel= -255;
 	maxLevel= 255;
+    }else if(s->out_format==FMT_MJPEG){
+	/* (m)jpeg */
+        minLevel= -1023;
+	maxLevel= 1023;
     }else{
 	/* h263 / msmpeg4 */
         minLevel= -128;
