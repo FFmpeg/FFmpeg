@@ -949,10 +949,6 @@ static int mov_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int Timestamp(void) {
-    return 1067949799U+(24107*86400); //its the modification time of this line :)
-}
-
 static int mov_write_packet(AVFormatContext *s, int stream_index,
                             const uint8_t *buf, int size, int64_t pts)
 {
@@ -994,7 +990,7 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
 
     if ((enc->codec_id == CODEC_ID_MPEG4 || enc->codec_id == CODEC_ID_AAC)
         && trk->vosLen == 0) {
-        assert(enc->extradata_size);
+//        assert(enc->extradata_size);
 
         trk->vosLen = enc->extradata_size;
         trk->vosData = av_malloc(trk->vosLen);
@@ -1016,7 +1012,7 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
     if (mov->mdat_written == 0) {
         mov_write_mdat_tag(pb, mov);
         mov->mdat_written = 1;
-        mov->time = Timestamp();
+        mov->time = s->timestamp;
     }
 
     trk->cluster[cl][id].pos = url_ftell(pb);
