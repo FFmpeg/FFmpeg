@@ -23,10 +23,18 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "common.h"
+
+#include <string.h>
+#include <stdio.h>
 
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
 #endif
+
+/* use two quantizer table (one for luminance and one for chrominance) */
+/* not yet working */
+#undef TWOMATRIXES
 
 typedef struct MJpegContext {
     UINT8 huff_size_dc_luminance[12];
@@ -214,7 +222,6 @@ static const UINT8 val_ac_chrominance[] =
   0xf9, 0xfa 
 };
 
-
 /* isn't this function nicer than the one in the libjpeg ? */
 static void build_huffman_codes(UINT8 *huff_size, UINT16 *huff_code,
                                 const UINT8 *bits_table, const UINT8 *val_table)
@@ -310,14 +317,18 @@ static void jpeg_table_header(MpegEncContext *s)
 
     /* quant matrixes */
     put_marker(p, DQT);
+#ifdef TWOMATRIXES
+    put_bits(p, 16, 2 + 2 * (1 + 64));
+#else
     put_bits(p, 16, 2 + 1 * (1 + 64));
+#endif
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 0); /* table 0 */
     for(i=0;i<64;i++) {
         j = zigzag_direct[i];
         put_bits(p, 8, s->intra_matrix[j]);
     }
-#if 0
+#ifdef TWOMATRIXES
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 1); /* table 1 */
     for(i=0;i<64;i++) {
@@ -341,9 +352,43 @@ static void jpeg_table_header(MpegEncContext *s)
     ptr[1] = size;
 }
 
+static void jpeg_put_comments(MpegEncContext *s)
+{
+    PutBitContext *p = &s->pb;
+    int size;
+    UINT8 *ptr;
+
+#if 0
+    /* JFIF header */
+    put_marker(p, APP0);
+    put_bits(p, 16, 16);
+    put_string(p, "JFIF"); /* this puts the trailing zero-byte too */
+    put_bits(p, 16, 0x101);
+    put_bits(p, 8, 0); /* units type: 0 - aspect ratio */
+    put_bits(p, 16, 1); /* aspect: 1:1 */
+    put_bits(p, 16, 1);
+    put_bits(p, 8, 0); /* thumbnail width */
+    put_bits(p, 8, 0); /* thumbnail height */
+#endif
+
+    /* comment */
+    put_marker(p, COM);
+    flush_put_bits(p);
+    ptr = pbBufPtr(p);
+    put_bits(p, 16, 0); /* patched later */
+#define VERSION "FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
+    put_string(p, VERSION);
+    size = strlen(VERSION)+3;
+#undef VERSION
+    ptr[0] = size >> 8;
+    ptr[1] = size;
+}
+
 void mjpeg_picture_header(MpegEncContext *s)
 {
     put_marker(&s->pb, SOI);
+
+    jpeg_put_comments(s);    
 
     if (s->mjpeg_write_tables) jpeg_table_header(s);
 
@@ -365,13 +410,21 @@ void mjpeg_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 8, 2); /* component number */
     put_bits(&s->pb, 4, s->mjpeg_hsample[1]); /* H factor */
     put_bits(&s->pb, 4, s->mjpeg_vsample[1]); /* V factor */
+#ifdef TWOMATRIXES
+    put_bits(&s->pb, 8, 1); /* select matrix */
+#else
     put_bits(&s->pb, 8, 0); /* select matrix */
+#endif
 
     /* Cr component */
     put_bits(&s->pb, 8, 3); /* component number */
     put_bits(&s->pb, 4, s->mjpeg_hsample[2]); /* H factor */
     put_bits(&s->pb, 4, s->mjpeg_vsample[2]); /* V factor */
+#ifdef TWOMATRIXES
+    put_bits(&s->pb, 8, 1); /* select matrix */
+#else
     put_bits(&s->pb, 8, 0); /* select matrix */
+#endif
 
     /* scan header */
     put_marker(&s->pb, SOS);
@@ -395,7 +448,7 @@ void mjpeg_picture_header(MpegEncContext *s)
 
     put_bits(&s->pb, 8, 0); /* Ss (not used) */
     put_bits(&s->pb, 8, 63); /* Se (not used) */
-    put_bits(&s->pb, 8, 0); /* (not used) */
+    put_bits(&s->pb, 8, 0); /* Ah/Al (not used) */
 }
 
 void mjpeg_picture_trailer(MpegEncContext *s)
@@ -512,6 +565,7 @@ void mjpeg_encode_mb(MpegEncContext *s,
 #define MAX_COMPONENTS 4
 
 typedef struct MJpegDecodeContext {
+    AVCodecContext *avctx;
     GetBitContext gb;
     UINT32 header_state;
     int start_code; /* current start code */
@@ -540,7 +594,16 @@ typedef struct MJpegDecodeContext {
     UINT8 buffer[PICTURE_BUFFER_SIZE]; 
 
     int buggy_avid;
+    int restart_interval;
+    int restart_count;
+    int interleaved_rows;
 } MJpegDecodeContext;
+
+#define SKIP_REMAINING(gb, len) { \
+    dprintf("reamining %d bytes in marker\n", len); \
+    if (len) while (--len) \
+	skip_bits(gb, 8); \
+}
 
 static void build_vlc(VLC *vlc, const UINT8 *bits_table, const UINT8 *val_table, 
                       int nb_codes)
@@ -557,6 +620,8 @@ static void build_vlc(VLC *vlc, const UINT8 *bits_table, const UINT8 *val_table,
 static int mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
+
+    s->avctx = avctx;
 
     s->header_state = 0;
     s->mpeg_enc_ctx_allocated = 0;
@@ -588,9 +653,8 @@ static int mjpeg_decode_dqt(MJpegDecodeContext *s,
 {
     int len, index, i, j;
     init_get_bits(&s->gb, buf, buf_size);
-
-    len = get_bits(&s->gb, 16);
-    len -= 2;
+    
+    len = get_bits(&s->gb, 16) - 2;
 
     while (len >= 65) {
         /* only 8 bit precision handled */
@@ -606,10 +670,13 @@ static int mjpeg_decode_dqt(MJpegDecodeContext *s,
         /* read quant table */
         for(i=0;i<64;i++) {
             j = zigzag_direct[i];
-            s->quant_matrixes[index][j] = get_bits(&s->gb, 8);
+	    s->quant_matrixes[index][j] = get_bits(&s->gb, 8);
         }
         len -= 65;
     }
+    
+    SKIP_REMAINING(&s->gb, len);
+
     return 0;
 }
 
@@ -676,6 +743,7 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
         return -1;
     height = get_bits(&s->gb, 16);
     width = get_bits(&s->gb, 16);
+    dprintf("sof0: picture: %dx%d\n", width, height);
 
     nb_components = get_bits(&s->gb, 8);
     if (nb_components <= 0 ||
@@ -697,7 +765,8 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
         s->quant_index[i] = get_bits(&s->gb, 8);
         if (s->quant_index[i] >= 4)
             return -1;
-        dprintf("component %d %d:%d\n", i, s->h_count[i], s->v_count[i]);
+        dprintf("component %d %d:%d id: %d quant:%d\n", i, s->h_count[i],
+	    s->v_count[i], s->component_id[i], s->quant_index[i]);
     }
 
     /* if different size, realloc/alloc picture */
@@ -714,7 +783,7 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
             s->org_height != 0 &&
             s->height < ((s->org_height * 3) / 4)) {
             s->interlaced = 1;
-            s->bottom_field = 0;
+	    s->bottom_field = 0;
         }
 
         for(i=0;i<nb_components;i++) {
@@ -747,12 +816,12 @@ static inline int decode_dc(MJpegDecodeContext *s, int dc_index)
     code = get_vlc(&s->gb, &s->vlcs[0][dc_index]);
     if (code < 0)
     {
-	dprintf("decode_dc: bad vlc: %d:%d\n", 0, dc_index);
+	dprintf("decode_dc: bad vlc: %d:%d (%x)\n", 0, dc_index,
+	    &s->vlcs[0][dc_index]);
         return 0xffff;
     }
     if (code == 0) {
         diff = 0;
-//	dprintf("decode_dc: bad code\n");
     } else {
         diff = get_bits(&s->gb, code);
         if ((diff & (1 << (code - 1))) == 0) 
@@ -841,13 +910,14 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
     hmax = 0;
     for(i=0;i<nb_components;i++) {
         id = get_bits(&s->gb, 8) - 1;
+	dprintf("component: %d\n", id);
         /* find component index */
         for(index=0;index<s->nb_components;index++)
             if (id == s->component_id[index])
                 break;
         if (index == s->nb_components)
 	{
-	    dprintf("decode_sos: index out of components\n");
+	    dprintf("decode_sos: index(%d) out of components\n", index);
             return -1;
 	}
 
@@ -879,9 +949,9 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
 		break;	
 	}
     }
-    get_bits(&s->gb, 8); /* Ss */
-    get_bits(&s->gb, 8); /* Se */
-    get_bits(&s->gb, 8); /* Ah and Al (each are 4 bits) */
+    skip_bits(&s->gb, 8); /* Ss */
+    skip_bits(&s->gb, 8); /* Se */
+    skip_bits(&s->gb, 8); /* Ah and Al (each are 4 bits) */
 
     for(i=0;i<nb_components;i++) 
         s->last_dc[i] = 1024;
@@ -911,6 +981,8 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
                 v = v_count[i];
                 x = 0;
                 y = 0;
+		if (s->restart_interval && !s->restart_count)
+		    s->restart_count = s->restart_interval;
                 for(j=0;j<n;j++) {
                     memset(s->block, 0, sizeof(s->block));
                     if (decode_block(s, s->block, i, 
@@ -945,38 +1017,135 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
     return -1;
 }
 
+static int mjpeg_decode_dri(MJpegDecodeContext *s,
+                             UINT8 *buf, int buf_size)
+{
+    init_get_bits(&s->gb, buf, buf_size);
+
+    if (get_bits(&s->gb, 16) != 4)
+	return -1;
+    s->restart_interval = get_bits(&s->gb, 16);
+    printf("restart interval: %d\n", s->restart_interval);
+
+    return 0;
+}
+
 #define FOURCC(a,b,c,d) ((a << 24) | (b << 16) | (c << 8) | d)
 static int mjpeg_decode_app(MJpegDecodeContext *s,
-                             UINT8 *buf, int buf_size)
+                             UINT8 *buf, int buf_size, int start_code)
 {
     int len, id;
 
     init_get_bits(&s->gb, buf, buf_size);
 
     /* XXX: verify len field validity */
-    len = get_bits(&s->gb, 16)-2;
+    len = get_bits(&s->gb, 16);
     if (len < 5)
 	return -1;
+
     id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
-    if (get_bits(&s->gb, 8) != 0)
-	return -1;
-    
-    /* buggy avid, it puts EOI only at every 10th frame */
+    len -= 6;
+
+    /* buggy AVID, it puts EOI only at every 10th frame */
+    /* also this fourcc is used by non-avid files too, it means
+       interleaving, but it's always present in AVID files */
     if (id == FOURCC('A','V','I','1'))
+    {
+	/* structure:
+	    4bytes	AVI1
+	    1bytes	polarity
+	    1bytes	always zero
+	    4bytes	field_size
+	    4bytes	field_size_less_padding
+	*/
+    	s->buggy_avid = 1;
+	if (s->first_picture)
+	    printf("mjpeg: workarounding buggy AVID\n");
+	s->interleaved_rows = get_bits(&s->gb, 8);
+#if 0
+	skip_bits(&s->gb, 8);
+	skip_bits(&s->gb, 32);
+	skip_bits(&s->gb, 32);
+	len -= 10;
+#endif
+	if (s->interleaved_rows)
+	    printf("mjpeg: interleaved rows: %d\n", s->interleaved_rows);
+	goto out;
+    }
+    
+    len -= 2;
+    
+    if (id == FOURCC('J','F','I','F'))
+    {
+	skip_bits(&s->gb, 8); /* the trailing zero-byte */
+	printf("mjpeg: JFIF header found (version: %x.%x)\n",
+	    get_bits(&s->gb, 8), get_bits(&s->gb, 8));
+	goto out;
+    }
+    
+    /* Apple MJPEG-A */
+    if ((start_code == APP1) && (len > (0x28 - 8)))
+    {
+	id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
+	len -= 4;
+        if (id == FOURCC('m','j','p','g')) /* Apple MJPEG-A */
+	{
+#if 0
+	    skip_bits(&s->gb, 32); /* field size */
+	    skip_bits(&s->gb, 32); /* pad field size */
+	    skip_bits(&s->gb, 32); /* next off */
+	    skip_bits(&s->gb, 32); /* quant off */
+	    skip_bits(&s->gb, 32); /* huff off */
+	    skip_bits(&s->gb, 32); /* image off */
+	    skip_bits(&s->gb, 32); /* scan off */
+	    skip_bits(&s->gb, 32); /* data off */
+#endif
+	    if (s->first_picture)
+		printf("mjpeg: Apple MJPEG-A header found\n");
+	}
+    }
+
+out:
+    /* should check for further values.. */
+    SKIP_REMAINING(&s->gb, len);
+
+    return 0;
+}
+#undef FOURCC
+
+static int mjpeg_decode_com(MJpegDecodeContext *s,
+                             UINT8 *buf, int buf_size)
+{
+    int len, i;
+    UINT8 *cbuf;
+
+    init_get_bits(&s->gb, buf, buf_size);
+
+    /* XXX: verify len field validity */
+    len = get_bits(&s->gb, 16)-2;
+    cbuf = malloc(len+1);
+
+    for (i = 0; i < len; i++)
+	cbuf[i] = get_bits(&s->gb, 8);
+    if (cbuf[i-1] == '\n')
+	cbuf[i-1] = 0;
+    else
+	cbuf[i] = 0;
+
+    printf("mjpeg comment: '%s'\n", cbuf);
+
+    /* buggy avid, it puts EOI only at every 10th frame */
+    if (!strcmp(cbuf, "AVID"))
     {
 	s->buggy_avid = 1;
 	if (s->first_picture)
 	    printf("mjpeg: workarounding buggy AVID\n");
     }
     
-    /* if id == JFIF, we can extract some infos (aspect ratio), others
-       are useless */
-
-    /* should check for further values.. */
+    free(cbuf);
 
     return 0;
 }
-#undef FOURCC
 
 /* return the 8 bit start code value and update the search
    state. Return -1 if no start code found */
@@ -1058,6 +1227,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                 dprintf("marker=%x\n", start_code);
                 switch(start_code) {
                 case SOI:
+		    s->restart_interval = 0;
                     /* nothing to do on SOI */
                     break;
                 case DQT:
@@ -1071,7 +1241,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     break;
                 case SOS:
                     mjpeg_decode_sos(s, s->buffer, input_size);
-                    if (s->start_code == EOI || s->buggy_avid) {
+                    if (s->start_code == EOI || s->buggy_avid || s->restart_interval) {
                         int l;
                         if (s->interlaced) {
                             s->bottom_field ^= 1;
@@ -1106,12 +1276,12 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                         }
                         /* dummy quality */
                         /* XXX: infer it with matrix */
-                        avctx->quality = 3; 
+                    	avctx->quality = 3; 
                         goto the_end;
                     }
                     break;
-		case APP0:
-		    mjpeg_decode_app(s, s->buffer, input_size);
+		case DRI:
+		    mjpeg_decode_dri(s, s->buffer, input_size);
 		    break;
 		case SOF1:
 		case SOF2:
@@ -1129,6 +1299,21 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		    printf("mjpeg: unsupported coding type (%x)\n", start_code);
 		    return -1;
                 }
+#if 1
+		if (start_code >= 0xd0 && start_code <= 0xd7)
+		{
+		    dprintf("restart marker: %d\n", start_code&0x0f);
+		}
+		else if (s->first_picture)
+		{
+		    /* APP fields */
+		    if (start_code >= 0xe0 && start_code <= 0xef)
+			mjpeg_decode_app(s, s->buffer, input_size, start_code);
+		    /* Comment */
+		    else if (start_code == COM)
+			mjpeg_decode_com(s, s->buffer, input_size);
+		}
+#endif
             }
         }
     }
@@ -1159,4 +1344,6 @@ AVCodec mjpeg_decoder = {
     NULL,
     mjpeg_decode_end,
     mjpeg_decode_frame,
+    0,
+    NULL
 };
