@@ -162,7 +162,10 @@ static void rv10_write_header(AVFormatContext *ctx,
         put_be32(s, 0);           /* start time */
         put_be32(s, BUFFER_DURATION);           /* preroll */
         /* duration */
-        put_be32(s, (int)(stream->total_frames * 1000 / stream->frame_rate));
+        if (url_is_streamed(s) || !stream->total_frames)
+            put_be32(s, (int)(3600 * 1000));
+        else
+            put_be32(s, (int)(stream->total_frames * 1000 / stream->frame_rate));
         put_str8(s, desc);
         put_str8(s, mimetype);
         put_be32(s, codec_data_size);
@@ -226,9 +229,9 @@ static void rv10_write_header(AVFormatContext *ctx,
             put_tag(s,"VIDORV10");
             put_be16(s, stream->enc->width);
             put_be16(s, stream->enc->height);
-            put_be16(s, 24); /* frames per seconds ? */
+            put_be16(s, (int) stream->frame_rate); /* frames per seconds ? */
             put_be32(s,0);     /* unknown meaning */
-            put_be16(s, 12);  /* unknown meaning */
+            put_be16(s, (int) stream->frame_rate);  /* unknown meaning */
             put_be32(s,0);     /* unknown meaning */
             put_be16(s, 8);    /* unknown meaning */
             /* Seems to be the codec version: only use basic H263. The next
@@ -315,6 +318,8 @@ static int rm_write_header(AVFormatContext *s)
             stream->nb_packets = 0;
             stream->total_frames = stream->nb_packets;
             break;
+        default:
+            abort();
         }
     }
 
@@ -354,7 +359,7 @@ static int rm_write_video(AVFormatContext *s, UINT8 *buf, int size)
     ByteIOContext *pb = &s->pb;
     StreamInfo *stream = rm->video_stream;
     int key_frame = stream->enc->key_frame;
-    
+
     /* XXX: this is incorrect: should be a parameter */
 
     /* Well, I spent some time finding the meaning of these bits. I am
@@ -478,6 +483,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     INT64 codec_pos;
     unsigned int h263_hack_version;
     char buf[128];
+    int flags = 0;
 
     if (get_le32(pb) != MKTAG('.', 'R', 'M', 'F'))
         return -EIO;
@@ -521,7 +527,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_be32(pb); /* index offset */
             get_be32(pb); /* data offset */
             get_be16(pb); /* nb streams */
-            get_be16(pb); /* flags */
+            flags = get_be16(pb); /* flags */
             break;
         case MKTAG('C', 'O', 'N', 'T'):
             get_str(pb, s->title, sizeof(s->title));
@@ -625,6 +631,8 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
  header_end:
     rm->nb_packets = get_be32(pb); /* number of packets */
+    if (!rm->nb_packets && (flags & 4))
+        rm->nb_packets = 3600 * 25;
     get_be32(pb); /* next data header */
     return 0;
 
@@ -642,6 +650,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st;
     int len, num, timestamp, i, tmp, j;
     UINT8 *ptr;
+    int flags;
 
  redo:
     if (rm->nb_packets == 0)
@@ -653,7 +662,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     num = get_be16(pb);
     timestamp = get_be32(pb);
     get_byte(pb); /* reserved */
-    get_byte(pb); /* flags */
+    flags = get_byte(pb); /* flags */
     rm->nb_packets--;
     len -= 12;
 
@@ -668,6 +677,16 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         url_fskip(pb, len);
         goto redo;
     }
+
+    if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
+        get_byte(pb);
+        get_byte(pb);
+        get_be16(pb);
+        get_be16(pb);
+        get_byte(pb);
+        len -= 7;
+    }
+
     
     av_new_packet(pkt, len);
     pkt->stream_index = i;
