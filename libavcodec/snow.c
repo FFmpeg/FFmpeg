@@ -1403,6 +1403,25 @@ static void vertical_compose97iL1(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int wid
     }
 }
 
+static void vertical_compose97i(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, DWTELEM *b3, DWTELEM *b4, DWTELEM *b5, int width){
+    int i;
+    
+    for(i=0; i<width; i++){
+        int r;
+        b4[i] -= (W_DM*(b3[i] + b5[i])+W_DO)>>W_DS;
+#ifdef lift5
+        b3[i] -= (W_CM*(b2[i] + b4[i])+W_CO)>>W_CS;
+#else
+        r= 3*(b2[i] + b4[i]);
+        r+= r>>4;
+        r+= r>>8;
+        b3[i] -= (r+W_CO)>>W_CS;
+#endif
+        b2[i] += (W_BM*(b1[i] + b3[i])+W_BO)>>W_BS;
+        b1[i] += (W_AM*(b0[i] + b2[i])+W_AO)>>W_AS;
+    }
+}
+
 static void spatial_compose97i_buffered_init(dwt_compose_t *cs, slice_buffer * sb, int height, int stride_line){
     cs->b0 = slice_buffer_get_line(sb, mirror(-3-1, height-1) * stride_line);
     cs->b1 = slice_buffer_get_line(sb, mirror(-3  , height-1) * stride_line);
@@ -1435,31 +1454,17 @@ static void spatial_compose97i_dy_buffered(dwt_compose_t *cs, slice_buffer * sb,
     DWTELEM *b4= slice_buffer_get_line(sb, mirror4 * stride_line);
     DWTELEM *b5= slice_buffer_get_line(sb, mirror5 * stride_line);
         
-        if(stride_line == 1 && y+4 < height && 0){ 
-            int x;
-            for(x=0; x<width/2; x++)
-                b5[x] += 64*2;
-            for(; x<width; x++)
-                b5[x] += 169*2;
-        }
-        
-//        if(mirror3 <= mirror5 && mirror2 <= mirror4 && mirror1 <= mirror3 && mirror0 <= mirror2)
-//        {
-//{START_TIMER
-//            vertical_compose97_complete(b0, b1, b2, b3, b4, b5, width);
-//if(width>400){
-//STOP_TIMER("vertical_compose97i-NEW")}}
-//        }
-//        else
-//        {
 {START_TIMER
-            if(mirror3 <= mirror5) vertical_compose97iL1(b3, b4, b5, width);
-            if(mirror2 <= mirror4) vertical_compose97iH1(b2, b3, b4, width);
-            if(mirror1 <= mirror3) vertical_compose97iL0(b1, b2, b3, width);
-            if(mirror0 <= mirror2) vertical_compose97iH0(b0, b1, b2, width);
+    if(y>0 && y+4<height){
+        vertical_compose97i(b0, b1, b2, b3, b4, b5, width);
+    }else{
+        if(mirror3 <= mirror5) vertical_compose97iL1(b3, b4, b5, width);
+        if(mirror2 <= mirror4) vertical_compose97iH1(b2, b3, b4, width);
+        if(mirror1 <= mirror3) vertical_compose97iL0(b1, b2, b3, width);
+        if(mirror0 <= mirror2) vertical_compose97iH0(b0, b1, b2, width);
+    }
 if(width>400){
 STOP_TIMER("vertical_compose97i")}}
-//        }
 
 {START_TIMER
         if(y-1>=  0) horizontal_compose97i(b0, width);
