@@ -1867,3 +1867,7 @@ static UINT8 *wmv1_scantable[WMV1_SCANTABLE_COUNT+1]={
     wmv1_scantable03,
 };
 
+static UINT8 table_inter_intra[4][2]={
+    {0,1},{2,2},{6,3},{7,3}
+};
+

@@ -392,6 +392,7 @@ typedef struct MpegEncContext {
     UINT8 *intra_h_scantable;
     /* [mb_intra][isChroma][level][run][last] */
     int ac_stats[2][2][MAX_LEVEL+1][MAX_RUN+1][2];
+    int inter_intra_pred;
     
 
     /* decompression specific */
