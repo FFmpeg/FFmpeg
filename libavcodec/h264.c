@@ -5532,24 +5532,17 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
     /* dir : 0 -> vertical edge, 1 -> horizontal edge */
     for( dir = 0; dir < 2; dir++ )
     {
-        int start = 0;
         int edge;
+        const int mbm_xy = dir == 0 ? mb_xy -1 : mb_xy - s->mb_stride;
+        int start = h->slice_table[mbm_xy] == 255 ? 1 : 0;
 
-        /* test picture boundary */
-        if( ( dir == 0 && mb_x == 0 ) || ( dir == 1 && mb_y == 0 ) ) {
+        if (h->deblocking_filter==2 && h->slice_table[mbm_xy] != h->slice_table[mb_xy])
             start = 1;
-        }
-        if( 0 == start && 2 == h->deblocking_filter) {
-            const int mbn_xy = dir == 0 ? mb_xy -1 : mb_xy - s->mb_stride;
-            if (h->slice_table[mbn_xy] != h->slice_table[mb_xy]) {
-                start = 1;
-            }
-        }
 
         /* Calculate bS */
         for( edge = start; edge < 4; edge++ ) {
             /* mbn_xy: neighbour macroblock (how that works for field ?) */
-            int mbn_xy = edge > 0 ? mb_xy : ( dir == 0 ? mb_xy -1 : mb_xy - s->mb_stride );
+            int mbn_xy = edge > 0 ? mb_xy : mbm_xy;
             int bS[4];
             int qp;
 
