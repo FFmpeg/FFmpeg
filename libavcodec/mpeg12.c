@@ -929,7 +929,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
     case I_TYPE:
         if (get_bits1(&s->gb) == 0) {
             if (get_bits1(&s->gb) == 0){
-                fprintf("invalid mb type in I Frame at %d %d\n", s->mb_x, s->mb_y);
+                fprintf(stderr, "invalid mb type in I Frame at %d %d\n", s->mb_x, s->mb_y);
                 return -1;
             }
             mb_type = MB_TYPE_QUANT | MB_TYPE_INTRA;
@@ -2154,8 +2154,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
-    int i, v, j;
-    float aspect;
+    int i, v;
 
     /* start new mpeg1 context decoding */
     s->out_format = FMT_MPEG1;
@@ -2182,13 +2181,12 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
         s->chroma_inter_matrix[j] = v;
     }
 
-    /* we set mpeg2 parameters so that it emulates mpeg1 */
     s->progressive_sequence = 1;
     s->progressive_frame = 1;
     s->picture_structure = PICT_FRAME;
     s->frame_pred_frame_dct = 1;
     s->mpeg2 = 1;
-    avctx->sub_id = 2; /* indicates mpeg1 */
+    avctx->sub_id = 2; /* indicates mpeg2 */
     return 0;
 }
 
