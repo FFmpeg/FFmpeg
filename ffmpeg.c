@@ -2191,6 +2191,9 @@ static void opt_output_file(const char *filename)
             avcodec_get_context_defaults(&st->codec);
 
             video_enc = &st->codec;
+            
+            if(!strcmp(file_oformat->name, "mp4") || !strcmp(file_oformat->name, "mov") || !strcmp(file_oformat->name, "3gp"))
+                video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
             if (video_stream_copy) {
                 st->stream_copy = 1;
                 video_enc->codec_type = CODEC_TYPE_VIDEO;
