@@ -2217,78 +2217,11 @@ static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index
        
         if     (level>maxlevel) level=maxlevel;
         else if(level<minlevel) level=minlevel;
+
         block[j]= level;
     }
 }
 
-static inline void requantize_coeffs(MpegEncContext *s, DCTELEM block[64], int oldq, int newq, int n)
-{
-    int i;
-
-    if(s->mb_intra){
-        i=1; //skip clipping of intra dc
-         //FIXME requantize, note (mpeg1/h263/h263p-aic dont need it,...)
-    }else
-        i=0;
-    
-    for(;i<=s->block_last_index[n]; i++){
-        const int j = s->intra_scantable.permutated[i];
-        int level = block[j];
-        
-        block[j]= ROUNDED_DIV(level*oldq, newq);
-    }
-
-    for(i=s->block_last_index[n]; i>=0; i--){
-        const int j = s->intra_scantable.permutated[i];
-        if(block[j]) break;
-    }
-    s->block_last_index[n]= i;
-}
-
-static inline void auto_requantize_coeffs(MpegEncContext *s, DCTELEM block[6][64])
-{
-    int i,n, newq;
-    const int maxlevel= s->max_qcoeff;
-    const int minlevel= s->min_qcoeff;
-    int largest=0, smallest=0;
-
-    assert(s->adaptive_quant);
-    
-    for(n=0; n<6; n++){
-        if(s->mb_intra){
-            i=1; //skip clipping of intra dc
-             //FIXME requantize, note (mpeg1/h263/h263p-aic dont need it,...)
-        }else
-            i=0;
-
-        for(;i<=s->block_last_index[n]; i++){
-            const int j = s->intra_scantable.permutated[i];
-            int level = block[n][j];
-            if(largest  < level) largest = level;
-            if(smallest > level) smallest= level;
-        }
-    }
-    
-    for(newq=s->qscale+1; newq<32; newq++){
-        if(   ROUNDED_DIV(smallest*s->qscale, newq) >= minlevel
-           && ROUNDED_DIV(largest *s->qscale, newq) <= maxlevel) 
-            break;
-    }
-        
-    if(s->out_format==FMT_H263){
-        /* h263 like formats cannot change qscale by more than 2 easiely */
-        if(s->avctx->qmin + 2 < newq)
-            newq= s->avctx->qmin + 2;
-    }
-
-    for(n=0; n<6; n++){
-        requantize_coeffs(s, block[n], s->qscale, newq, n);
-        clip_coeffs(s, block[n], s->block_last_index[n]);
-    }
-     
-    s->dquant+= newq - s->qscale;
-    s->qscale= newq;
-}
 #if 0
 static int pix_vcmp16x8(uint8_t *s, int stride){ //FIXME move to dsputil & optimize
     int score=0;
