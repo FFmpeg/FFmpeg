@@ -773,6 +773,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int entries, frames_per_sample;
     uint32_t format;
+    uint8_t codec_name[32];
 
     /* for palette traversal */
     int color_depth;
@@ -845,7 +846,11 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 #ifdef DEBUG
 	    av_log(NULL, AV_LOG_DEBUG, "frames/samples = %d\n", frames_per_sample);
 #endif
-	    get_buffer(pb, (uint8_t *)st->codec.codec_name, 32); /* codec name */
+        get_buffer(pb, codec_name, 32); /* codec name, pascal string (FIXME: true for mp4?) */
+        if (codec_name[0] <= 31) {
+            memcpy(st->codec.codec_name, &codec_name[1],codec_name[0]);
+            st->codec.codec_name[codec_name[0]] = 0;
+        }
 
 	    st->codec.bits_per_sample = get_be16(pb); /* depth */
             st->codec.color_table_id = get_be16(pb); /* colortable id */
