@@ -88,6 +88,7 @@ static AVOutputFormat *file_oformat;
 static AVImageFormat *image_format;
 static int frame_width  = 160;
 static int frame_height = 128;
+static float frame_aspect_ratio = 0;
 static int frame_topBand  = 0;
 static int frame_bottomBand = 0;
 static int frame_leftBand  = 0;
@@ -2015,6 +2016,7 @@ static void opt_input_file(const char *filename)
         case CODEC_TYPE_VIDEO:
             frame_height = enc->height;
             frame_width = enc->width;
+	    frame_aspect_ratio = enc->aspect_ratio;
             rfps      = ic->streams[i]->r_frame_rate;
             rfps_base = ic->streams[i]->r_frame_rate_base;
             enc->workaround_bugs = workaround_bugs;
@@ -2171,6 +2173,7 @@ static void opt_output_file(const char *filename)
                 
                 video_enc->width = frame_width;
                 video_enc->height = frame_height;
+		video_enc->aspect_ratio = frame_aspect_ratio;
 
                 if (!intra_only)
                     video_enc->gop_size = gop_size;
