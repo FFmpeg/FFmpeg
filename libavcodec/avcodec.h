@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4702
+#define LIBAVCODEC_BUILD       4703
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -131,6 +131,8 @@ enum CodecID {
     CODEC_ID_ROQ_DPCM,
     CODEC_ID_INTERPLAY_DPCM,
     CODEC_ID_XAN_DPCM,
+    
+    CODEC_ID_FLAC,
     
     CODEC_ID_MPEG2TS, /* _FAKE_ codec to indicate a raw MPEG2 transport
                          stream (only used by libavformat) */
@@ -623,11 +625,6 @@ typedef struct AVCodecContext {
      */
     int width, height;
     
-#define FF_ASPECT_SQUARE 1
-#define FF_ASPECT_4_3_625 2
-#define FF_ASPECT_4_3_525 3
-#define FF_ASPECT_16_9_625 4
-#define FF_ASPECT_16_9_525 5
 #define FF_ASPECT_EXTENDED 15
 
     /**
@@ -1729,6 +1726,7 @@ extern AVCodec roq_dpcm_decoder;
 extern AVCodec interplay_dpcm_decoder;
 extern AVCodec xan_dpcm_decoder;
 extern AVCodec qtrle_decoder;
+extern AVCodec flac_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
