@@ -285,6 +285,16 @@ void put_pixels16_axp_asm(uint8_t *block, const uint8_t *pixels,
     put_pixels_axp_asm(block + 8, pixels + 8, line_size, h);
 }
 
+static int sad16x16_mvi(void *s, uint8_t *a, uint8_t *b, int stride)
+{
+    return pix_abs16x16_mvi_asm(a, b, stride);
+}
+
+static int sad8x8_mvi(void *s, uint8_t *a, uint8_t *b, int stride)
+{
+    return pix_abs8x8_mvi(a, b, stride);
+}
+
 void dsputil_init_alpha(DSPContext* c, unsigned mask)
 {
     c->put_pixels_tab[0][0] = put_pixels16_axp_asm;
@@ -336,6 +346,8 @@ void dsputil_init_alpha(DSPContext* c, unsigned mask)
 
         c->get_pixels       = get_pixels_mvi;
         c->diff_pixels      = diff_pixels_mvi;
+        c->sad[0]           = sad16x16_mvi;
+        c->sad[1]           = sad8x8_mvi;
         c->pix_abs8x8       = pix_abs8x8_mvi;
         c->pix_abs16x16     = pix_abs16x16_mvi_asm;
         c->pix_abs16x16_x2  = pix_abs16x16_x2_mvi;
