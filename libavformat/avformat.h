@@ -3,7 +3,7 @@
 
 #define LIBAVFORMAT_VERSION_INT 0x000406  
 #define LIBAVFORMAT_VERSION     "0.4.6"
-#define LIBAVFORMAT_BUILD       4602
+#define LIBAVFORMAT_BUILD       4603
 
 #include "avcodec.h"
 
@@ -60,6 +60,7 @@ typedef struct AVFormatParameters {
     int width;
     int height;
     enum PixelFormat pix_fmt;
+    struct AVImageFormat *image_format;
 } AVFormatParameters;
 
 #define AVFMT_NOFILE        0x0001 /* no file should be opened */
@@ -67,8 +68,6 @@ typedef struct AVFormatParameters {
 #define AVFMT_NOHEADER      0x0004 /* signal that no header is present
                                       (streams are added dynamically) */
 #define AVFMT_SHOW_IDS      0x0008 /* show format stream IDs numbers */
-#define AVFMT_RGB24         0x0010 /* force RGB24 output for ppm (hack
-                                      - need better api) */
 #define AVFMT_RAWPICTURE    0x0020 /* format wants AVPicture structure for
                                       raw picture data */
 
@@ -90,6 +89,8 @@ typedef struct AVOutputFormat {
     int (*write_trailer)(struct AVFormatContext *);
     /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER */
     int flags;
+    /* currently only used to set pixel format if not YUV420P */
+    int (*set_parameters)(struct AVFormatContext *, AVFormatParameters *);
     /* private fields */
     struct AVOutputFormat *next;
 } AVOutputFormat;
@@ -184,6 +185,51 @@ typedef struct AVPacketList {
 extern AVInputFormat *first_iformat;
 extern AVOutputFormat *first_oformat;
 
+/* still image support */
+struct AVInputImageContext;
+typedef struct AVInputImageContext AVInputImageContext;
+
+typedef struct AVImageInfo {
+    enum PixelFormat pix_fmt; /* requested pixel format */
+    int width; /* requested width */
+    int height; /* requested height */
+    AVPicture pict; /* returned allocated image */
+} AVImageInfo;
+
+typedef struct AVImageFormat {
+    const char *name;
+    const char *extensions;
+    /* tell if a given file has a chance of being parsing by this format */
+    int (*img_probe)(AVProbeData *);
+    /* read a whole image. 'alloc_cb' is called when the image size is
+       known so that the caller can allocate the image. If 'allo_cb'
+       returns non zero, then the parsing is aborted. Return '0' if
+       OK. */
+    int (*img_read)(ByteIOContext *, 
+                    int (*alloc_cb)(void *, AVImageInfo *info), void *);
+    /* write the image */
+    int supported_pixel_formats; /* mask of supported formats for output */
+    int (*img_write)(ByteIOContext *, AVImageInfo *);
+    struct AVImageFormat *next;
+} AVImageFormat;
+
+void av_register_image_format(AVImageFormat *img_fmt);
+AVImageFormat *av_probe_image_format(AVProbeData *pd);
+AVImageFormat *guess_image_format(const char *filename);
+int av_read_image(ByteIOContext *pb, const char *filename,
+                  AVImageFormat *fmt,
+                  int (*alloc_cb)(void *, AVImageInfo *info), void *opaque);
+int av_write_image(ByteIOContext *pb, AVImageFormat *fmt, AVImageInfo *img);
+
+extern AVImageFormat *first_image_format;
+
+extern AVImageFormat pnm_image_format;
+extern AVImageFormat pbm_image_format;
+extern AVImageFormat pgm_image_format;
+extern AVImageFormat ppm_image_format;
+extern AVImageFormat pgmyuv_image_format;
+extern AVImageFormat yuv_image_format;
+
 /* XXX: use automatic init with either ELF sections or C file parser */
 /* modules */
 
@@ -250,6 +296,9 @@ int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
 
 #include "rtsp.h"
 
+/* yuv4mpeg.c */
+extern AVOutputFormat yuv4mpegpipe_oformat;
+
 /* utils.c */
 #define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
 #define MKBETAG(a,b,c,d) (d | (c << 8) | (b << 16) | (a << 24))
@@ -299,6 +348,7 @@ void av_set_pts_info(AVFormatContext *s, int pts_wrap_bits,
                      int pts_num, int pts_den);
 
 /* media file output */
+int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
 int av_write_header(AVFormatContext *s);
 int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf, 
                    int size);
