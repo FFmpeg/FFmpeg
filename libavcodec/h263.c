@@ -2812,13 +2812,19 @@ int h263_decode_mb(MpegEncContext *s,
             return 0;
         }
 
-        modb1= get_bits1(&s->gb);
-        if(modb1==0){
+        modb1= get_bits1(&s->gb); 
+        if(modb1){
+            mb_type=4; //like MB_TYPE_B_DIRECT but no vectors coded
+            cbp=0;
+        }else{
+            int field_mv;
+        
             modb2= get_bits1(&s->gb);
             mb_type= get_vlc2(&s->gb, mb_type_b_vlc.table, MB_TYPE_B_VLC_BITS, 1);
-            if(modb2==0) cbp= get_bits(&s->gb, 6);
-            else cbp=0;
-            if (mb_type && cbp) {
+            if(modb2) cbp= 0;
+            else      cbp= get_bits(&s->gb, 6);
+
+            if (mb_type!=MB_TYPE_B_DIRECT && cbp) {
                 if(get_bits1(&s->gb)){
                     s->qscale +=get_bits1(&s->gb)*4 - 2;
                     if (s->qscale < 1)
@@ -2828,87 +2834,81 @@ int h263_decode_mb(MpegEncContext *s,
                     h263_dc_scale(s);
                 }
             }
-            s->mv_type= MV_TYPE_16X16; //might be changed to 8X8 or FIELD later
+            field_mv=0;
 
             if(!s->progressive_sequence){
                 if(cbp)
                     s->interlaced_dct= get_bits1(&s->gb);
 
-                if(mb_type!=MB_TYPE_B_DIRECT){
-                    if(get_bits1(&s->gb)){
-                        s->mv_type= MV_TYPE_FIELD;
+                if(mb_type!=MB_TYPE_B_DIRECT && get_bits1(&s->gb))
+                    field_mv=1;
+            }
 
-                        if(mb_type!=MB_TYPE_B_BACKW){
-                            s->field_select[0][0]= get_bits1(&s->gb); //FIXME move down
-                            s->field_select[0][1]= get_bits1(&s->gb);
-                        }
-                        if(mb_type!=MB_TYPE_B_FORW){
-                            s->field_select[1][0]= get_bits1(&s->gb);
-                            s->field_select[1][1]= get_bits1(&s->gb);
-                        }
+            if(mb_type!=MB_TYPE_B_DIRECT && !field_mv){
+                s->mv_type= MV_TYPE_16X16;
+                if(mb_type!=MB_TYPE_B_BACKW){
+                    s->mv_dir = MV_DIR_FORWARD;
+
+                    mx = h263_decode_motion(s, s->last_mv[0][0][0], s->f_code);
+                    my = h263_decode_motion(s, s->last_mv[0][0][1], s->f_code);
+                    s->last_mv[0][1][0]= s->last_mv[0][0][0]= s->mv[0][0][0] = mx;
+                    s->last_mv[0][1][1]= s->last_mv[0][0][1]= s->mv[0][0][1] = my;
+                }else
+                    s->mv_dir = 0;
+    
+                if(mb_type!=MB_TYPE_B_FORW){
+                    s->mv_dir |= MV_DIR_BACKWARD;
+
+                    mx = h263_decode_motion(s, s->last_mv[1][0][0], s->b_code);
+                    my = h263_decode_motion(s, s->last_mv[1][0][1], s->b_code);
+                    s->last_mv[1][1][0]= s->last_mv[1][0][0]= s->mv[1][0][0] = mx;
+                    s->last_mv[1][1][1]= s->last_mv[1][0][1]= s->mv[1][0][1] = my;
+                }
+                if(mb_type!=MB_TYPE_B_DIRECT)
+                    PRINT_MB_TYPE(mb_type==MB_TYPE_B_FORW ? "F" : (mb_type==MB_TYPE_B_BACKW ? "B" : "T"));
+            }else if(mb_type!=MB_TYPE_B_DIRECT){
+                s->mv_type= MV_TYPE_FIELD;
+                if(mb_type!=MB_TYPE_B_BACKW){
+                    s->mv_dir = MV_DIR_FORWARD;
+                    s->field_select[0][0]= get_bits1(&s->gb);
+                    s->field_select[0][1]= get_bits1(&s->gb);
+                
+                    for(i=0; i<2; i++){
+                        mx = h263_decode_motion(s, s->last_mv[0][i][0]  , s->f_code);
+                        my = h263_decode_motion(s, s->last_mv[0][i][1]/2, s->f_code);
+                        s->last_mv[0][i][0]=  s->mv[0][i][0] = mx;
+                        s->last_mv[0][i][1]= (s->mv[0][i][1] = my)*2;
+                    }
+                }else
+                    s->mv_dir = 0;
+    
+                if(mb_type!=MB_TYPE_B_FORW){
+                    s->mv_dir |= MV_DIR_BACKWARD;
+                    s->field_select[1][0]= get_bits1(&s->gb);
+                    s->field_select[1][1]= get_bits1(&s->gb);
+
+                    for(i=0; i<2; i++){
+                        mx = h263_decode_motion(s, s->last_mv[1][i][0]  , s->b_code);
+                        my = h263_decode_motion(s, s->last_mv[1][i][1]/2, s->b_code);
+                        s->last_mv[1][i][0]=  s->mv[1][i][0] = mx;
+                        s->last_mv[1][i][1]= (s->mv[1][i][1] = my)*2;
                     }
                 }
+                if(mb_type!=MB_TYPE_B_DIRECT)
+                    PRINT_MB_TYPE(mb_type==MB_TYPE_B_FORW ? "f" : (mb_type==MB_TYPE_B_BACKW ? "b" : "t"));
             }
-        }else{
-            s->mv_type= MV_TYPE_16X16; //might be changed to 8X8 later
-            mb_type=4; //like MB_TYPE_B_DIRECT but no vectors coded
-            cbp=0;
         }
-        
-        mx=my=0;
-        if(mb_type==MB_TYPE_B_DIRECT){
-            mx = h263_decode_motion(s, 0, 1);
-            my = h263_decode_motion(s, 0, 1);
-        }
-        
-        if(s->mv_type==MV_TYPE_16X16){
-            if(mb_type==MB_TYPE_B_FORW || mb_type==MB_TYPE_B_BIDIR){
-                s->mv_dir = MV_DIR_FORWARD;
-                mx = h263_decode_motion(s, s->last_mv[0][0][0], s->f_code);
-                my = h263_decode_motion(s, s->last_mv[0][0][1], s->f_code);
-                s->last_mv[0][1][0]= s->last_mv[0][0][0]= s->mv[0][0][0] = mx;
-                s->last_mv[0][1][1]= s->last_mv[0][0][1]= s->mv[0][0][1] = my;
-            }else
-                s->mv_dir = 0;
-
-            if(mb_type==MB_TYPE_B_BACKW || mb_type==MB_TYPE_B_BIDIR){
-                s->mv_dir |= MV_DIR_BACKWARD;
-                mx = h263_decode_motion(s, s->last_mv[1][0][0], s->b_code);
-                my = h263_decode_motion(s, s->last_mv[1][0][1], s->b_code);
-                s->last_mv[1][1][0]= s->last_mv[1][0][0]= s->mv[1][0][0] = mx;
-                s->last_mv[1][1][1]= s->last_mv[1][0][1]= s->mv[1][0][1] = my;
-            }
-            if(mb_type!=4 && mb_type!=MB_TYPE_B_DIRECT)
-                PRINT_MB_TYPE(mb_type==MB_TYPE_B_FORW ? "F" : (mb_type==MB_TYPE_B_BACKW ? "B" : "T"));
-        }else{
-            /* MV_TYPE_FIELD */
-            if(mb_type==MB_TYPE_B_FORW || mb_type==MB_TYPE_B_BIDIR){
-                s->mv_dir = MV_DIR_FORWARD;
-                for(i=0; i<2; i++){
-                    mx = h263_decode_motion(s, s->last_mv[0][i][0]  , s->f_code);
-                    my = h263_decode_motion(s, s->last_mv[0][i][1]/2, s->f_code);
-                    s->last_mv[0][i][0]= s->mv[0][i][0] = mx;
-                    s->last_mv[0][i][1]= (s->mv[0][i][1] = my)*2;
-                }
-            }else
-                s->mv_dir = 0;
-
-            if(mb_type==MB_TYPE_B_BACKW || mb_type==MB_TYPE_B_BIDIR){
-                s->mv_dir |= MV_DIR_BACKWARD;
-                for(i=0; i<2; i++){
-                    mx = h263_decode_motion(s, s->last_mv[1][i][0]  , s->b_code);
-                    my = h263_decode_motion(s, s->last_mv[1][i][1]/2, s->b_code);
-                    s->last_mv[1][i][0]=  s->mv[1][i][0] = mx;
-                    s->last_mv[1][i][1]= (s->mv[1][i][1] = my)*2;
-                }
-            }
-            if(mb_type!=4 && mb_type!=MB_TYPE_B_DIRECT)
-                PRINT_MB_TYPE(mb_type==MB_TYPE_B_FORW ? "f" : (mb_type==MB_TYPE_B_BACKW ? "b" : "t"));
-        }
-  
+          
         if(mb_type==4 || mb_type==MB_TYPE_B_DIRECT){
             int mb_index= s->mb_x + s->mb_y*s->mb_width;
             int i;
+            
+            if(mb_type==4)
+                mx=my=0;
+            else{
+                mx = h263_decode_motion(s, 0, 1);
+                my = h263_decode_motion(s, 0, 1);
+            }
  
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
             xy= s->block_index[0];
@@ -2918,6 +2918,7 @@ int h263_decode_mb(MpegEncContext *s,
             //FIXME avoid divides
             switch(s->co_located_type_table[mb_index]){
             case 0:
+                s->mv_type= MV_TYPE_16X16;
                 s->mv[0][0][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
                 s->mv[0][0][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
                 s->mv[1][0][0] = mx ? s->mv[0][0][0] - s->motion_val[xy][0]
