@@ -178,7 +178,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         val = 1;
         ioctl(video_fd, VIDIOCCAPTURE, &val);
 
-        s->time_frame = av_gettime();
+        s->time_frame = av_gettime() * s->frame_rate / s->frame_rate_base;
         s->use_mmap = 0;
         
         /* ATI All In Wonder automatic activation */
@@ -197,7 +197,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             goto fail;
         }
         s->gb_frame = 0;
-        s->time_frame = av_gettime();
+        s->time_frame = av_gettime() * s->frame_rate / s->frame_rate_base;
         
         /* start to grab the first frame */
         s->gb_buf.frame = s->gb_frame % s->gb_buffers.frames;
@@ -305,19 +305,18 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     VideoData *s = s1->priv_data;
     int64_t curtime, delay;
     struct timespec ts;
-    int64_t per_frame = (int64_t_C(1000000) * s->frame_rate_base) / s->frame_rate;
 
     /* Calculate the time of the next frame */
-    s->time_frame += per_frame;
+    s->time_frame += int64_t_C(1000000);
 
     /* wait based on the frame rate */
     for(;;) {
         curtime = av_gettime();
-        delay = s->time_frame - curtime;
+        delay = s->time_frame  * s->frame_rate_base / s->frame_rate - curtime;
         if (delay <= 0) {
-            if (delay < -per_frame) {
+            if (delay < int64_t_C(-1000000) * s->frame_rate_base / s->frame_rate) {
                 /* printf("grabbing is %d frames late (dropping)\n", (int) -(delay / 16666)); */
-                s->time_frame += per_frame;
+                s->time_frame += int64_t_C(1000000);
             }
             break;
         }    
