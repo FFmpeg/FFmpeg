@@ -27,6 +27,7 @@ endif
 ifeq ($(CONFIG_FFPLAY),yes)
 MANPAGE+=$(SRC_PATH)/doc/ffplay.1
 PROG+=ffplay$(EXESUF)
+FFPLAY_O=ffplay.o
 endif
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
@@ -78,7 +79,7 @@ ifeq ($(BUILD_DOC),yes)
 DOC=documentation
 endif
 
-OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
+OBJS = ffmpeg.o ffserver.o cmdutils.o $(FFPLAY_O)
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBS = -L./libavformat -lavformat -L./libavcodec -lavcodec
 
@@ -109,7 +110,7 @@ output_example$(EXESUF): output_example.o .libs
 	$(CC) $(LDFLAGS) -o $@ output_example.o $(FFLIBS) $(EXTRALIBS)
 
 qt-faststart$(EXESUF): qt-faststart.c
-	$(CC) qt-faststart.c -o qt-faststart$(EXESUF)
+	$(CC) $(SRC_PATH)/qt-faststart.c -o qt-faststart$(EXESUF)
 
 ffplay.o: ffplay.c
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $< 
