@@ -25,6 +25,9 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 
+#define ABS(a) ((a)>0 ? (a) : -(a))
+#define INTER_BIAS	257
+
 static void halfpel_motion_search(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
 				  int xmin, int ymin, int xmax, int ymax,
@@ -48,6 +51,28 @@ static int pix_sum(UINT8 * pix, int line_size)
 	    s += pix[5];
 	    s += pix[6];
 	    s += pix[7];
+	    pix += 8;
+	}
+	pix += line_size - 16;
+    }
+    return s;
+}
+
+static int pix_dev(UINT8 * pix, int line_size, int mean)
+{
+    int s, i, j;
+
+    s = 0;
+    for (i = 0; i < 16; i++) {
+	for (j = 0; j < 16; j += 8) {
+	    s += ABS(pix[0]-mean);
+	    s += ABS(pix[1]-mean);
+	    s += ABS(pix[2]-mean);
+	    s += ABS(pix[3]-mean);
+	    s += ABS(pix[4]-mean);
+	    s += ABS(pix[5]-mean);
+	    s += ABS(pix[6]-mean);
+	    s += ABS(pix[7]-mean);
 	    pix += 8;
 	}
 	pix += line_size - 16;
@@ -732,21 +757,18 @@ int estimate_motion(MpegEncContext * s,
     ppix = s->last_picture[0] + (my * s->linesize) + mx;
 
     sum = pix_sum(pix, s->linesize);
-    varc = pix_norm1(pix, s->linesize);
-    vard = pix_norm(pix, ppix, s->linesize);
+    varc = pix_dev(pix, s->linesize, (sum+128)>>8);
+    vard = pix_abs16x16(pix, ppix, s->linesize, 16);
 
-    vard = vard >> 8;
-    sum = sum >> 8;
-    varc = (varc >> 8) - (sum * sum);
     s->mb_var[s->mb_width * mb_y + mb_x] = varc;
     s->avg_mb_var += varc;
     s->mc_mb_var += vard;
-     
+
 #if 0
     printf("varc=%4d avg_var=%4d (sum=%4d) vard=%4d mx=%2d my=%2d\n",
 	   varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
 #endif
-    if (vard <= 64 || vard < varc) {
+    if (vard <= 64 || vard < varc + INTER_BIAS) {
         if (s->full_search != ME_ZERO) {
             halfpel_motion_search(s, &mx, &my, dmin, xmin, ymin, xmax, ymax, pred_x, pred_y);
         } else {
@@ -754,7 +776,7 @@ int estimate_motion(MpegEncContext * s,
             my -= 16 * s->mb_y;
         }
 //        check(mx + 32*s->mb_x, my + 32*s->mb_y, 1, end)
-        
+
 	*mx_ptr = mx;
 	*my_ptr = my;
 	return 0;
