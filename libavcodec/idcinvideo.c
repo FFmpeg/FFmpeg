@@ -192,7 +192,7 @@ static void idcin_decode_vlcs(IdcinContext *s)
 
             while(node_num >= HUF_TOKENS) {
                 if(!bit_pos) {
-                    if(dat_pos > s->size) {
+                    if(dat_pos >= s->size) {
                         av_log(s->avctx, AV_LOG_ERROR, "Huffman decode error.\n");
                         return;
                     }
