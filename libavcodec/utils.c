@@ -677,7 +677,8 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
            if(s->picture[i].data[0] && (   s->picture[i].type == FF_BUFFER_TYPE_INTERNAL
                                         || s->picture[i].type == FF_BUFFER_TYPE_USER))
             avctx->release_buffer(avctx, (AVFrame*)&s->picture[i]);
-        }
+	}
+	s->last_picture.data[0] = s->next_picture.data[0] = NULL;
         break;
     default:
         //FIXME
