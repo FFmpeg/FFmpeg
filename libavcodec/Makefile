@@ -23,7 +23,7 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       flac.o vp3dsp.o integer.o snow.o tscc.o sonic.o ulti.o h264idct.o \
       qdrw.o xl.o rangecoder.o png.o pnm.o qpeg.o vc9.o h263.o h261.o \
       msmpeg4.o h263dec.o svq1.o rv10.o wmadec.o indeo3.o shorten.o loco.o \
-      alac.o wnv1.o
+      alac.o wnv1.o ws-snd1.o
 
 AMROBJS=
 ifeq ($(AMR_NB),yes)

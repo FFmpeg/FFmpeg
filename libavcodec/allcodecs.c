@@ -201,6 +201,7 @@ void avcodec_register_all(void)
     register_avcodec(&flac_decoder);
     register_avcodec(&shorten_decoder);
     register_avcodec(&alac_decoder);
+    register_avcodec(&ws_snd1_decoder);
 #endif /* CONFIG_DECODERS */
 
 #ifdef AMR_NB

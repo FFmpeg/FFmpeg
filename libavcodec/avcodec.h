@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4750
+#define LIBAVCODEC_BUILD       4751
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -167,6 +167,7 @@ enum CodecID {
     CODEC_ID_MP3ON4,
     CODEC_ID_SHORTEN,
     CODEC_ID_ALAC,
+    CODEC_ID_WESTWOOD_SND1,
     
     CODEC_ID_OGGTHEORA= 0x16000, 
     
@@ -2015,6 +2016,7 @@ extern AVCodec shorten_decoder;
 extern AVCodec loco_decoder;
 extern AVCodec wnv1_decoder;
 extern AVCodec alac_decoder;
+extern AVCodec ws_snd1_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
