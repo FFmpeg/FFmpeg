@@ -73,7 +73,7 @@ void ff_faandct(DCTELEM * data)
     FLOAT temp[64];
     int i;
 
-    emms();
+    emms_c();
 
     for (i=0; i<8*8; i+=8) {
         tmp0= data[0 + i] + data[7 + i];
