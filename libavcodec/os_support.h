@@ -24,8 +24,8 @@
 
 #if defined(CONFIG_OS2)
 #include <stdlib.h>
-static inline usleep(unsigned int t) { return _sleep2((t) / 1000); }
-static inline float floatf(float x) { return floor(n); }
+static inline int usleep(unsigned int t) { return _sleep2(t / 1000); }
+static inline float floatf(float f) { return floor(f); }
 static inline int strcasecmp(const char* s1, const char* s2) { return stricmp(s1,s2); }
 #endif
 
