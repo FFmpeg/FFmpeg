@@ -324,10 +324,11 @@ int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
     /* compute loss */
     loss = 0;
     pf = &pix_fmt_info[dst_pix_fmt];
-    if (pf->depth < ps->depth)
+    if (pf->depth < ps->depth ||
+        (dst_pix_fmt == PIX_FMT_RGB555 && src_pix_fmt == PIX_FMT_RGB565))
         loss |= FF_LOSS_DEPTH;
-    if (pf->x_chroma_shift >= ps->x_chroma_shift ||
-        pf->y_chroma_shift >= ps->y_chroma_shift)
+    if (pf->x_chroma_shift > ps->x_chroma_shift ||
+        pf->y_chroma_shift > ps->y_chroma_shift)
         loss |= FF_LOSS_RESOLUTION;
     switch(pf->color_type) {
     case FF_COLOR_RGB:
@@ -345,7 +346,8 @@ int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
         break;
     case FF_COLOR_YUV_JPEG:
         if (ps->color_type != FF_COLOR_YUV_JPEG &&
-            ps->color_type != FF_COLOR_YUV)
+            ps->color_type != FF_COLOR_YUV && 
+            ps->color_type != FF_COLOR_GRAY)
             loss |= FF_LOSS_COLORSPACE;
         break;
     default:
@@ -867,16 +869,16 @@ static void shrink22(uint8_t *dst, int dst_wrap,
         s2 = s1 + src_wrap;
         d = dst;
         for(w = width;w >= 4; w-=4) {
-            d[0] = (s1[0] + s1[1] + s2[0] + s2[1] + 2) >> 1;
-            d[1] = (s1[2] + s1[3] + s2[2] + s2[3] + 2) >> 1;
-            d[2] = (s1[4] + s1[5] + s2[4] + s2[5] + 2) >> 1;
-            d[3] = (s1[6] + s1[7] + s2[6] + s2[7] + 2) >> 1;
+            d[0] = (s1[0] + s1[1] + s2[0] + s2[1] + 2) >> 2;
+            d[1] = (s1[2] + s1[3] + s2[2] + s2[3] + 2) >> 2;
+            d[2] = (s1[4] + s1[5] + s2[4] + s2[5] + 2) >> 2;
+            d[3] = (s1[6] + s1[7] + s2[6] + s2[7] + 2) >> 2;
             s1 += 8;
             s2 += 8;
             d += 4;
         }
         for(;w > 0; w--) {
-            d[0] = (s1[0] + s1[1] + s2[0] + s2[1] + 2) >> 1;
+            d[0] = (s1[0] + s1[1] + s2[0] + s2[1] + 2) >> 2;
             s1 += 2;
             s2 += 2;
             d++;
