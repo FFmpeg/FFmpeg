@@ -51,7 +51,7 @@ int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ByteIOContext *pb = &s->pb;
     UINT32 tag, tag1;
     int codec_type, stream_index, size, frame_period, bit_rate;
-    int i, bps;
+    int i;
     AVStream *st;
 
     /* check RIFF header */
@@ -160,19 +160,7 @@ int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     url_fskip(pb, size - 5 * 4);
                     break;
                 case CODEC_TYPE_AUDIO:
-                    tag1 = get_le16(pb);
-                    st->codec.codec_type = CODEC_TYPE_AUDIO;
-                    st->codec.codec_tag = tag1;
-#ifdef DEBUG
-                    printf("audio: 0x%x\n", tag1);
-#endif
-                    st->codec.channels = get_le16(pb);
-                    st->codec.sample_rate = get_le32(pb);
-                    st->codec.bit_rate = get_le32(pb) * 8;
-                    get_le16(pb); /* block align */
-                    bps = get_le16(pb);
-                    st->codec.codec_id = wav_codec_get_id(tag1, bps);
-                    url_fskip(pb, size - 4 * 4);
+                    get_wav_header(pb, &st->codec, (size >= 18));
                     break;
                 default:
                     url_fskip(pb, size);

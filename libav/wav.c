@@ -1,6 +1,6 @@
 /* 
  * WAV encoder and decoder
- * Copyright (c) 2001 Fabrice Bellard.
+ * Copyright (c) 2001, 2002 Fabrice Bellard.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -29,6 +29,8 @@ CodecTag codec_wav_tags[] = {
     { CODEC_ID_PCM_MULAW, 0x07 },
     { CODEC_ID_ADPCM_MS, 0x02 },
     { CODEC_ID_ADPCM_IMA_WAV, 0x11 },
+    { CODEC_ID_WMAV1, 0x160 },
+    { CODEC_ID_WMAV2, 0x161 },
     { 0, 0 },
 };
 
@@ -100,6 +102,32 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 
     return hdrsize;
 }
+
+void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, 
+                    int has_extra_data)
+{
+    int id, bps, size;
+
+    id = get_le16(pb);
+    codec->codec_type = CODEC_TYPE_AUDIO;
+    codec->codec_tag = id;
+    codec->fourcc = id;
+    codec->channels = get_le16(pb);
+    codec->sample_rate = get_le32(pb);
+    codec->bit_rate = get_le32(pb) * 8;
+    codec->block_align = get_le16(pb);
+    bps = get_le16(pb); /* bits per sample */
+    codec->codec_id = wav_codec_get_id(id, bps);
+    if (has_extra_data) {
+        size = get_le16(pb);
+        if (size > 0) {
+            codec->extradata = av_mallocz(size);
+            get_buffer(pb, codec->extradata, size);
+            codec->extradata_size = size;
+        }
+    }
+}
+
 
 int wav_codec_get_id(unsigned int tag, int bps)
 {
@@ -213,8 +241,6 @@ static int wav_read_header(AVFormatContext *s,
     int size;
     unsigned int tag;
     ByteIOContext *pb = &s->pb;
-    unsigned int id, channels, rate, bit_rate, extra_size, bps;
-    unsigned int blkalign;
     AVStream *st;
 
     /* check RIFF header */
@@ -231,34 +257,15 @@ static int wav_read_header(AVFormatContext *s,
     size = find_tag(pb, MKTAG('f', 'm', 't', ' '));
     if (size < 0)
         return -1;
-    id = get_le16(pb); 
-    channels = get_le16(pb);
-    rate = get_le32(pb);
-    bit_rate = get_le32(pb) * 8;
-    blkalign = get_le16(pb); /* block align */
-    bps = get_le16(pb); /* bits per sample */
-    if (size >= 18) {
-        /* wav_extra_size */
-        extra_size = get_le16(pb); 
-        /* skip unused data */
-        url_fseek(pb, size - 18, SEEK_CUR);
-    }
-
-    size = find_tag(pb, MKTAG('d', 'a', 't', 'a'));
-    if (size < 0)
-        return -1;
-    
-    /* now we are ready: build format streams */
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
 
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_tag = id;
-    st->codec.codec_id = wav_codec_get_id(id, bps);
-    st->codec.channels = channels;
-    st->codec.sample_rate = rate;
-    st->codec.block_align = blkalign;
+    get_wav_header(pb, &st->codec, (size >= 18));
+    
+    size = find_tag(pb, MKTAG('d', 'a', 't', 'a'));
+    if (size < 0)
+        return -1;
     return 0;
 }
 

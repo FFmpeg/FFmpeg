@@ -745,7 +745,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ByteIOContext *pb = &s->pb;
     AVStream *st;
     ASFStream *asf_st;
-    int size, i, bps;
+    int size, i;
     INT64 gsize;
 
     av_set_pts_info(s, 32, 1, 1000); /* 32 bit pts in ms */
@@ -784,7 +784,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    asf->packet_size = asf->hdr.max_pktsize;
             asf->nb_packets = asf->hdr.packets_count;
         } else if (!memcmp(&g, &stream_header, sizeof(GUID))) {
-            int type, id, total_size;
+            int type, total_size;
             unsigned int tag1;
             INT64 pos1, pos2;
 
@@ -819,20 +819,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    st->codec.codec_type = type;
             st->codec.frame_rate = 1000000; // us
             if (type == CODEC_TYPE_AUDIO) {
-                id = get_le16(pb);
-                st->codec.codec_tag = id;
-                st->codec.channels = get_le16(pb);
-		st->codec.sample_rate = get_le32(pb);
-                st->codec.bit_rate = get_le32(pb) * 8;
-		st->codec.block_align = get_le16(pb); /* block align */
-                bps = get_le16(pb); /* bits per sample */
-                st->codec.codec_id = wav_codec_get_id(id, bps);
-		size = get_le16(pb);
-		if (size > 0) {
-		    st->extra_data = av_mallocz(size);
-		    get_buffer(pb, st->extra_data, size);
-		    st->extra_data_size = size;
-		}
+                get_wav_header(pb, &st->codec, 1);
 		/* We have to init the frame size at some point .... */
 		pos2 = url_ftell(pb);
 		if (gsize > (pos2 + 8 - pos1 + 24)) {
