@@ -80,7 +80,7 @@ videohook:
 install: all $(INSTALLVHOOK)
 	$(MAKE) -C libavcodec install
 	install -d $(prefix)/bin
-	install -s -m 755 $(PROG) $(prefix)/bin
+	install -c -s -m 755 $(PROG) $(prefix)/bin
 	ln -sf ffmpeg $(prefix)/bin/ffplay 
 
 install-vhook: $(prefix)/lib/vhook
