@@ -4652,8 +4652,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     int last_level=0;
     int last_score= 0;
     int last_i= 0;
-    int not_coded_score= 0;
-    int coeff[3][64];
+    int coeff[2][64];
     int coeff_count[64];
     int qmul, qadd, start_i, last_non_zero, i, dc;
     const int esc_length= s->ac_esc_length;
@@ -4668,7 +4667,6 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     
     if(s->dct_error_sum)
         ff_denoise_dct(s, block);
-    
     qmul= qscale*16;
     qadd= ((qscale-1)|1)*8;
 
@@ -4706,11 +4704,20 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     threshold1= (1<<QMAT_SHIFT) - bias - 1;
     threshold2= (threshold1<<1);
 
-    for(i=start_i; i<64; i++) {
+    for(i=63; i>=start_i; i--) {
+        const int j = scantable[i];
+        int level = block[j] * qmat[j];
+
+        if(((unsigned)(level+threshold1))>threshold2){
+            last_non_zero = i;
+            break;
+        }
+    }
+
+    for(i=start_i; i<=last_non_zero; i++) {
         const int j = scantable[i];
         const int k= i-start_i;
-        int level = block[j];
-        level = level * qmat[j];
+        int level = block[j] * qmat[j];
 
 //        if(   bias+level >= (1<<(QMAT_SHIFT - 3))
 //           || bias-level >= (1<<(QMAT_SHIFT - 3))){
@@ -4729,7 +4736,6 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             coeff_count[k]= FFMIN(level, 2);
             assert(coeff_count[k]);
             max |=level;
-            last_non_zero = i;
         }else{
             coeff[0][k]= (level>>31)|1;
             coeff_count[k]= 1;
@@ -4756,8 +4762,6 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         const int zero_distoration= dct_coeff*dct_coeff;
         int best_score=256*256*256*120;
 
-        last_score += zero_distoration;
-        not_coded_score += zero_distoration;
         for(level_index=0; level_index < coeff_count[i]; level_index++){
             int distoration;
             int level= coeff[level_index][i];
@@ -4793,7 +4797,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                 unquant_coeff<<= 3;
             }
 
-            distoration= (unquant_coeff - dct_coeff) * (unquant_coeff - dct_coeff);
+            distoration= (unquant_coeff - dct_coeff) * (unquant_coeff - dct_coeff) - zero_distoration;
             level+=64;
             if((level&(~127)) == 0){
                 for(run=0; run<=i - left_limit; run++){
@@ -4847,10 +4851,6 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
             }
         }
 
-        for(j=left_limit; j<=i; j++){
-            score_tab[j] += zero_distoration;
-        }
-        score_limit+= zero_distoration;
         if(score_tab[i+1] < score_limit)
             score_limit= score_tab[i+1];
         
@@ -4878,7 +4878,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         }
     }
 
-    s->coded_score[n] = last_score - not_coded_score;
+    s->coded_score[n] = last_score;
     
     dc= block[0];
     last_non_zero= last_i - 1 + start_i;
@@ -4951,7 +4951,7 @@ static int dct_quantize_c(MpegEncContext *s,
                         DCTELEM *block, int n,
                         int qscale, int *overflow)
 {
-    int i, j, level, last_non_zero, q;
+    int i, j, level, last_non_zero, q, start_i;
     const int *qmat;
     const uint8_t *scantable= s->intra_scantable.scantable;
     int bias;
@@ -4976,23 +4976,32 @@ static int dct_quantize_c(MpegEncContext *s,
             
         /* note: block[0] is assumed to be positive */
         block[0] = (block[0] + (q >> 1)) / q;
-        i = 1;
+        start_i = 1;
         last_non_zero = 0;
         qmat = s->q_intra_matrix[qscale];
         bias= s->intra_quant_bias<<(QMAT_SHIFT - QUANT_BIAS_SHIFT);
     } else {
-        i = 0;
+        start_i = 0;
         last_non_zero = -1;
         qmat = s->q_inter_matrix[qscale];
         bias= s->inter_quant_bias<<(QMAT_SHIFT - QUANT_BIAS_SHIFT);
     }
     threshold1= (1<<QMAT_SHIFT) - bias - 1;
     threshold2= (threshold1<<1);
-
-    for(;i<64;i++) {
+    for(i=63;i>=start_i;i--) {
         j = scantable[i];
-        level = block[j];
-        level = level * qmat[j];
+        level = block[j] * qmat[j];
+
+        if(((unsigned)(level+threshold1))>threshold2){
+            last_non_zero = i;
+            break;
+        }else{
+            block[j]=0;
+        }
+    }
+    for(i=start_i; i<=last_non_zero; i++) {
+        j = scantable[i];
+        level = block[j] * qmat[j];
 
 //        if(   bias+level >= (1<<QMAT_SHIFT)
 //           || bias-level >= (1<<QMAT_SHIFT)){
@@ -5005,7 +5014,6 @@ static int dct_quantize_c(MpegEncContext *s,
                 block[j]= -level;
             }
             max |=level;
-            last_non_zero = i;
         }else{
             block[j]=0;
         }
