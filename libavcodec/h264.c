@@ -3150,10 +3150,12 @@ static void idr(H264Context *h){
             break; \
         }
 
-    for(i=0; i<h->long_ref_count; i++){
-        h->long_ref[i]->reference=0;
-        CHECK_DELAY(h->long_ref[i]);
-        h->long_ref[i]= NULL;
+    for(i=0; i<16; i++){
+        if (h->long_ref[i] != NULL) {
+            h->long_ref[i]->reference=0;
+            CHECK_DELAY(h->long_ref[i]);
+            h->long_ref[i]= NULL;
+        }
     }
     h->long_ref_count=0;
 
@@ -3263,6 +3265,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             
             h->long_ref[ mmco[i].long_index ]= remove_short(h, mmco[i].short_frame_num);
             h->long_ref[ mmco[i].long_index ]->long_ref=1;
+            h->long_ref_count++;
             break;
         case MMCO_LONG2UNUSED:
             pic= remove_long(h, mmco[i].long_index);
