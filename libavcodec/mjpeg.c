@@ -1874,6 +1874,9 @@ not_the_end:
         }
     }
 the_end:
+    if(buf_ptr > buf_end)
+      buf_ptr = buf_end;
+
     dprintf("mjpeg decode frame unused %d bytes\n", buf_end - buf_ptr);
 //    return buf_end - buf_ptr;
     return buf_ptr - buf;
