@@ -453,8 +453,9 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 
       mb_type = MB_TYPE_SKIP;
     } else {
-      svq3_mc_dir (h, s->next_picture.mb_type[mb_xy], PREDICT_MODE, 0, 0);
-      svq3_mc_dir (h, s->next_picture.mb_type[mb_xy], PREDICT_MODE, 1, 1);
+      mb_type= FFMIN(s->next_picture.mb_type[mb_xy], 0);
+      svq3_mc_dir (h, mb_type, PREDICT_MODE, 0, 0);
+      svq3_mc_dir (h, mb_type, PREDICT_MODE, 1, 1);
 
       mb_type = MB_TYPE_16x16;
     }
