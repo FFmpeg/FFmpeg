@@ -87,15 +87,15 @@ typedef struct WMADecodeContext {
     int block_pos; /* current position in frame */
     uint8_t ms_stereo; /* true if mid/side stereo mode */
     uint8_t channel_coded[MAX_CHANNELS]; /* true if channel is coded */
-    float exponents[MAX_CHANNELS][BLOCK_MAX_SIZE];
+    float exponents[MAX_CHANNELS][BLOCK_MAX_SIZE] __attribute__((aligned(16)));
     float max_exponent[MAX_CHANNELS];
     int16_t coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
-    float coefs[MAX_CHANNELS][BLOCK_MAX_SIZE];
+    float coefs[MAX_CHANNELS][BLOCK_MAX_SIZE] __attribute__((aligned(16)));
     MDCTContext mdct_ctx[BLOCK_NB_SIZES];
-    float *windows[BLOCK_NB_SIZES];
-    FFTSample mdct_tmp[BLOCK_MAX_SIZE]; /* temporary storage for imdct */
+    float *windows[BLOCK_NB_SIZES] __attribute__((aligned(16)));
+    FFTSample mdct_tmp[BLOCK_MAX_SIZE] __attribute__((aligned(16))); /* temporary storage for imdct */
     /* output buffer for one frame and the last for IMDCT windowing */
-    float frame_out[MAX_CHANNELS][BLOCK_MAX_SIZE * 2];
+    float frame_out[MAX_CHANNELS][BLOCK_MAX_SIZE * 2] __attribute__((aligned(16)));
     /* last frame info */
     uint8_t last_superframe[MAX_CODED_SUPERFRAME_SIZE + 4]; /* padding added */
     int last_bitoffset;
@@ -1118,7 +1118,7 @@ static int wma_decode_block(WMADecodeContext *s)
     
     for(ch = 0; ch < s->nb_channels; ch++) {
         if (s->channel_coded[ch]) {
-            FFTSample output[BLOCK_MAX_SIZE * 2];
+            FFTSample output[BLOCK_MAX_SIZE * 2] __attribute__((aligned(16)));
             float *ptr;
             int i, n4, index, n;
 
