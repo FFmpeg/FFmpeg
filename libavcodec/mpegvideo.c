@@ -4567,7 +4567,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     current_packet_size= pbBufPtr(&s->pb) - s->ptr_lastgob;
                     
                     if(s->avctx->error_rate && s->resync_mb_x + s->resync_mb_y > 0){
-                        int r= put_bits_count(&s->pb)/8 + s->picture_number + s->codec_id + s->mb_x + s->mb_y;
+                        int r= put_bits_count(&s->pb)/8 + s->picture_number + 16 + s->mb_x + s->mb_y;
                         int d= 100 / s->avctx->error_rate;
                         if(r % d == 0){
                             current_packet_size=0;
