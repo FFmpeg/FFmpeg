@@ -100,7 +100,7 @@ int dct_quantize_altivec(MpegEncContext* s,
     int lastNonZero;
     vector float row0, row1, row2, row3, row4, row5, row6, row7;
     vector float alt0, alt1, alt2, alt3, alt4, alt5, alt6, alt7;
-    const vector float zero = {FOUR_INSTANCES(0.0f)};
+    const vector float zero = (vector float)(FOUR_INSTANCES(0.0f));
 
     // Load the data into the row/alt vectors
     {
@@ -144,18 +144,18 @@ int dct_quantize_altivec(MpegEncContext* s,
 		// in the vector local variables, as floats, which we'll use during the
 		// quantize step...
     {
-        const vector float vec_0_298631336 = {FOUR_INSTANCES(0.298631336f)};
-        const vector float vec_0_390180644 = {FOUR_INSTANCES(-0.390180644f)};
-        const vector float vec_0_541196100 = {FOUR_INSTANCES(0.541196100f)};
-        const vector float vec_0_765366865 = {FOUR_INSTANCES(0.765366865f)};
-        const vector float vec_0_899976223 = {FOUR_INSTANCES(-0.899976223f)};
-        const vector float vec_1_175875602 = {FOUR_INSTANCES(1.175875602f)};
-        const vector float vec_1_501321110 = {FOUR_INSTANCES(1.501321110f)};
-        const vector float vec_1_847759065 = {FOUR_INSTANCES(-1.847759065f)};
-        const vector float vec_1_961570560 = {FOUR_INSTANCES(-1.961570560f)};
-        const vector float vec_2_053119869 = {FOUR_INSTANCES(2.053119869f)};
-        const vector float vec_2_562915447 = {FOUR_INSTANCES(-2.562915447f)};
-        const vector float vec_3_072711026 = {FOUR_INSTANCES(3.072711026f)};
+        const vector float vec_0_298631336 = (vector float)(FOUR_INSTANCES(0.298631336f));
+        const vector float vec_0_390180644 = (vector float)(FOUR_INSTANCES(-0.390180644f));
+        const vector float vec_0_541196100 = (vector float)(FOUR_INSTANCES(0.541196100f));
+        const vector float vec_0_765366865 = (vector float)(FOUR_INSTANCES(0.765366865f));
+        const vector float vec_0_899976223 = (vector float)(FOUR_INSTANCES(-0.899976223f));
+        const vector float vec_1_175875602 = (vector float)(FOUR_INSTANCES(1.175875602f));
+        const vector float vec_1_501321110 = (vector float)(FOUR_INSTANCES(1.501321110f));
+        const vector float vec_1_847759065 = (vector float)(FOUR_INSTANCES(-1.847759065f));
+        const vector float vec_1_961570560 = (vector float)(FOUR_INSTANCES(-1.961570560f));
+        const vector float vec_2_053119869 = (vector float)(FOUR_INSTANCES(2.053119869f));
+        const vector float vec_2_562915447 = (vector float)(FOUR_INSTANCES(-2.562915447f));
+        const vector float vec_3_072711026 = (vector float)(FOUR_INSTANCES(3.072711026f));
 
 
         int whichPass, whichHalf;

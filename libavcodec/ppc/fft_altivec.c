@@ -1,7 +1,7 @@
 /*
  * FFT/IFFT transforms
  * AltiVec-enabled
- * Copyright (c) 2002 Romain Dolbeau <romain@dolbeau.org>
+ * Copyright (c) 2003 Romain Dolbeau <romain@dolbeau.org>
  * Based on code Copyright (c) 2002 Fabrice Bellard.
  *
  * This library is free software; you can redistribute it and/or
@@ -22,31 +22,6 @@
 
 #include "dsputil_altivec.h"
 
-// used to build registers permutation vectors (vcprm)
-// the 's' are for words in the _s_econd vector
-#define WORD_0 0x00,0x01,0x02,0x03
-#define WORD_1 0x04,0x05,0x06,0x07
-#define WORD_2 0x08,0x09,0x0a,0x0b
-#define WORD_3 0x0c,0x0d,0x0e,0x0f
-#define WORD_s0 0x10,0x11,0x12,0x13
-#define WORD_s1 0x14,0x15,0x16,0x17
-#define WORD_s2 0x18,0x19,0x1a,0x1b
-#define WORD_s3 0x1c,0x1d,0x1e,0x1f
-
-#define vcprm(a,b,c,d) (const vector unsigned char)(WORD_ ## a, WORD_ ## b, WORD_ ## c, WORD_ ## d)
-
-// vcprmle is used to keep the same index as in the SSE version.
-// it's the same as vcprm, with the index inversed
-// ('le' is Little Endian)
-#define vcprmle(a,b,c,d) vcprm(d,c,b,a)
-
-// used to build inverse/identity vectors (vcii)
-// n is _n_egative, p is _p_ositive
-#define FLOAT_n -1.
-#define FLOAT_p 1.
-
-#define vcii(a,b,c,d) (const vector float)(FLOAT_ ## a, FLOAT_ ## b, FLOAT_ ## c, FLOAT_ ## d)
-
 /**
  * Do a complex FFT with the parameters defined in fft_init(). The
  * input data must be permuted before with s->revtab table. No
@@ -55,16 +30,8 @@
  * This code assumes that the 'z' pointer is 16 bytes-aligned
  * It also assumes all FFTComplex are 8 bytes-aligned pair of float
  * The code is exactly the same as the SSE version, except
- * that successive MUL + ADD/SUB have been fusionned into
+ * that successive MUL + ADD/SUB have been merged into
  * fused multiply-add ('vec_madd' in altivec)
- *
- * To test this code you can use fft-test in libavcodec ; use
- * the following line in libavcodec to compile (MacOS X):
- * #####
- * gcc -I. -Ippc -no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic -Wall
- *     -faltivec -DARCH_POWERPC -DHAVE_ALTIVEC -DCONFIG_DARWIN fft-test.c fft.c
- *     ppc/fft_altivec.c ppc/dsputil_altivec.c mdct.c -DHAVE_LRINTF -o fft-test
- * #####
  */
 void fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
