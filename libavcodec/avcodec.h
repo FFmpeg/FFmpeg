@@ -327,6 +327,8 @@ int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
 
 extern AVCodec *first_avcodec;
 
+/* returns LIBAVCODEC_VERSION_INT constant */
+unsigned avcodec_version( void );
 void avcodec_init(void);
 
 void register_avcodec(AVCodec *format);

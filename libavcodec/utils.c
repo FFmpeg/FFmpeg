@@ -402,6 +402,10 @@ int avpicture_get_size(int pix_fmt, int width, int height)
     return size;
 }
 
+unsigned avcodec_version( void )
+{
+  return LIBAVCODEC_VERSION_INT;
+}
 
 /* must be called before any other functions */
 void avcodec_init(void)
