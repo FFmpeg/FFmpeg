@@ -19,7 +19,7 @@
 #ifndef NEWPOSTPROCESS_H
 #define NEWPOSTPROCESS_H
 
-#define GET_PP_QUALITY_MAX 6
+#define PP_QUALITY_MAX 6
 
 #define QP_STORE_T int8_t
 
@@ -34,7 +34,12 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
                  QP_STORE_T *QP_store,  int QP_stride,
 		 pp_mode_t *mode, pp_context_t *ppContext, int pict_type);
 
-// name is the stuff after "-pp" on the command line
+
+/**
+ * returns a pp_mode_t or NULL if an error occured
+ * name is the string after "-pp" on the command line
+ * quality is a number from 0 to PP_QUALITY_MAX
+ */
 pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality);
 void pp_free_mode(pp_mode_t *mode);
 

@@ -518,11 +518,6 @@ char *pp_help=
 "fq	forceQuant	<quantizer>		Force quantizer\n"
 ;
 
-/**
- * returns a PPMode struct which will have a non 0 error variable if an error occured
- * name is the string after "-pp" on the command line
- * quality is a number from 0 to GET_PP_QUALITY_MAX
- */
 pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 {
 	char temp[GET_MODE_BUFFER_SIZE];
@@ -553,7 +548,7 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 
 	for(;;){
 		char *filterName;
-		int q= 1000000; //GET_PP_QUALITY_MAX;
+		int q= 1000000; //PP_QUALITY_MAX;
 		int chrom=-1;
 		char *option;
 		char *options[OPTIONS_ARRAY_SIZE];
