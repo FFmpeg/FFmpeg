@@ -234,6 +234,18 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, int payload_t
             av_free(s);
             return NULL;
         }
+    } else {
+        switch(st->codec.codec_id) {
+        case CODEC_ID_MPEG1VIDEO:
+        case CODEC_ID_MPEG2VIDEO:
+        case CODEC_ID_MP2:
+        case CODEC_ID_MP3:
+        case CODEC_ID_MPEG4:
+            st->need_parsing = 1;
+            break;
+        default:
+            break;
+        }
     }
     return s;
 }
@@ -322,7 +334,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
             memcpy(pkt->data, buf, len);
             break;
         case CODEC_ID_MPEG1VIDEO:
-            /* better than nothing: skip mpeg audio RTP header */
+            /* better than nothing: skip mpeg video RTP header */
             if (len <= 4)
                 return -1;
             h = decode_be32(buf);
