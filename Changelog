@@ -1,12 +1,45 @@
-version 0.4.7:
+<HTML>
+<HEAD>
+<TITLE>
+FFmpeg Changelog
+</TITLE>
+</HEAD>
+<body>
+<h1> FFmpeg Changelog </h1>
+<PRE>
+version 0.4.7 (0.5 ???):
 
+- 4X multimedia playback system including 4xm file demuxer (Mike
+  Melanson), and 4X video and audio codecs (Michael)
+- Creative YUV (CYUV) decoder (Mike Melanson)
+- FFV1 codec (our very simple lossless intra only codec, compresses much better
+  then huffyuv) (Michael)
+- ASV1 (Asus), H.264, Intel indeo3 codecs has been added (Various)
+- Tiny PNG encoder and decoder, tiny GIF decoder, PAM decoder (PPM with
+  alpha support), JPEG YUV colorspace support. (Fabrice Bellard)
+- ffplay has been replaced with a newer version which uses SDL (optionally)
+  for multi platform support (fabrice)
+- Sorenson Version 3 codec (SVQ3) support has been added (decoding only) - donated
+  by anonymous
+- AMR format has been added (Johannes Carlsson)
+- 3gp support has been added (Joca, improved by Johannes Carlson)
+- VP3 codec has been added (Mike Melanson)
+- more MPEG-1/2 fixes
+- Better Multi platform support, MS Visual Studio fixes (various)
+- Altivec optimizations (Magnus Damn and others)
+- SH4 processor support has been added (BERO)
+- New public interfaces (avcodec_get_pix_fmt) (Roman Shaposhnick)
+- VOB Streaming support (Brian Foley)
+- Better MP3 Autodetection (Andriy Rysin)
 - qpel encoding (Michael)
 - 4mv+b frames encoding finally fixed (Michael)
 - chroma ME (Michael)
 - 5 comparission functions for ME (Michael)
 - b frame encoding speedup (Michael)
-- wmv2 codec (unfinished)
+- wmv2 codec (unfinished - Michael)
 - user specified diamond size for EPZS (Michael)
+
+.. And lots more new enhances and fixes.
 
 version 0.4.6:
 
@@ -47,8 +80,8 @@ version 0.4.6:
 
 version 0.4.5:
 
-- some header fixes (Zdenek Kabelac <kabi@informatics.muni.cz>).
-- many MMX optimizations (Nick Kurshev <nickols_k@mail.ru>).
+- some header fixes (Zdenek Kabelac &lt;kabi@informatics.muni.cz&gt;).
+- many MMX optimizations (Nick Kurshev &lt;nickols_k@mail.ru&gt;).
 - added configure system (actually a small shell script).
 - added mpeg audio layer 1/2/3 decoding using LGPL'ed mpglib by
   Michael Hipp (temporary solution - waiting for integer only
@@ -65,12 +98,12 @@ version 0.4.5:
 - added MJPEG decoder.
 - added mmx/mmxext idct from libmpeg2.
 - added pgmyuvpipe, ppm, and ppm_pipe formats (original patch by Celer
-  <celer@shell.scrypt.net>).
+  &lt;celer@shell.scrypt.net&gt;).
 - added pixel format convertion layer (e.g. for MJPEG or PPM).
 - added deinterlacing option.
 - mpeg1/2 fixes.
-- mpeg4 vol header fixes (Jonathan Marsden <snmjbm@pacbell.net>).
-- ARM optimizations (Lionel Ulmer <lionel.ulmer@free.fr>).
+- mpeg4 vol header fixes (Jonathan Marsden &lt;snmjbm@pacbell.net&gt;).
+- ARM optimizations (Lionel Ulmer &lt;lionel.ulmer@free.fr&gt;).
 - Windows porting of file converter.
 - added MJPEG raw format (input/ouput).
 - added JPEG image format support (input/output).
@@ -78,7 +111,7 @@ version 0.4.5:
 version 0.4.4:
 
 - fixed some std header definitions (Bjorn Lindgren
-  <bjorn.e.lindgren@telia.com>).
+  &lt;bjorn.e.lindgren@telia.com&gt;).
 - added mpeg demux (mpeg 1 and 2 compatible).
 - added ASF demux.
 - added prototype RM demux.
@@ -100,7 +133,7 @@ version 0.4.4:
 
 version 0.4.3:
 
-- BGR24 patch (initial patch by Jeroen Vreeken <pe1rxq@amsat.org>).
+- BGR24 patch (initial patch by Jeroen Vreeken &lt;pe1rxq@amsat.org&gt;).
 - fixed raw yuv output.
 - added motion rounding support in MPEG4.
 - fixed motion bug rounding in MSMPEG4.
@@ -115,7 +148,7 @@ this +codec ;) (JuanJo).
 - suppressed 'img:' protocol. Simply use: /tmp/test%d.[pgm|Y] as input or
   output.
 - added pgmpipe I/O format (original patch from Martin Aumueller
-  <lists@reserv.at>, but changed completely since we use a format
+  &lt;lists@reserv.at&gt;, but changed completely since we use a format
   instead of a protocol).
 
 version 0.4.2:
@@ -167,7 +200,7 @@ version 0.4.0:
 - added wav format support.
 - added "tty user interface" to ffmpeg to stop grabbing gracefully.
 - added MMX/SSE optimizations to SAD (Sums of Absolutes Diferences)
-  (Juan J. Sierralta P. a.k.a. "Juanjo" <juanjo@atmlab.utfsm.cl>).
+  (Juan J. Sierralta P. a.k.a. "Juanjo" &lt;juanjo@atmlab.utfsm.cl&gt;).
 - added MMX DCT from mpeg2_movie 1.5 (Juanjo).
 - added new motion estimation algorithms, log and phods (Juanjo).
 - changed directories : libav for format handling, libavcodec for
@@ -197,3 +230,7 @@ version 0.3.1: added avi/divx support
 - added sound for flash format (not tested)
 
 version 0.3: initial public release
+</PRE>
+<hr>Copyright (c) 2001, 2002 Fabrice Bellard <hr>Fabrice Bellard - <em> fabrice.bellard at free.fr </em> - <A HREF="http://bellard.org/"> http://bellard.org/ </A> - <A HREF="http://www.ffmpeg.org/"> http://www.ffmpeg.org/ </A>
+</body>
+</html>
