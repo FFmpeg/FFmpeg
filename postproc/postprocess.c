@@ -670,20 +670,19 @@ static inline void vertRK1Filter(uint8_t *src, int stride, int QP)
 //	const int l8= stride + l7;
 //	const int l9= stride + l8;
 	int x;
+	const int QP15= QP + (QP>>2);
 	src+= stride*3;
 	for(x=0; x<BLOCK_SIZE; x++)
 	{
-		if(ABS(src[l4]-src[l5]) < QP + QP/4)
+		const int v = (src[x+l5] - src[x+l4]);
+		if(ABS(v) < QP15)
 		{
-			int v = (src[l5] - src[l4]);
-
-			src[l3] +=v/8;
-			src[l4] +=v/2;
-			src[l5] -=v/2;
-			src[l6] -=v/8;
+			src[x+l3] +=v>>3;
+			src[x+l4] +=v>>1;
+			src[x+l5] -=v>>1;
+			src[x+l6] -=v>>3;
 
 		}
-		src++;
 	}
 
 #endif
@@ -803,18 +802,19 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 		int b= src[l4] - src[l5];
 		int c= src[l5] - src[l6];
 
-		int d= MAX(ABS(b) - (ABS(a) + ABS(c))/2, 0);
+		int d= ABS(b) - ((ABS(a) + ABS(c))>>1);
+		d= MAX(d, 0);
 
 		if(d < QP)
 		{
 			int v = d * SIGN(-b);
 
-			src[l2] +=v/8;
-			src[l3] +=v/4;
-			src[l4] +=3*v/8;
-			src[l5] -=3*v/8;
-			src[l6] -=v/4;
-			src[l7] -=v/8;
+			src[l2] +=v>>3;
+			src[l3] +=v>>2;
+			src[l4] +=(3*v)>>3;
+			src[l5] -=(3*v)>>3;
+			src[l6] -=v>>2;
+			src[l7] -=v>>3;
 
 		}
 		src++;
