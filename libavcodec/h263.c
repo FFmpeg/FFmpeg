@@ -1122,6 +1122,7 @@ static void h263_encode_motion(MpegEncContext * s, int val, int f_code)
             put_bits(&s->pb, bit_size, bits);
         }
     }
+
 }
 
 /* Encode MV differences on H.263+ with Unrestricted MV mode */
@@ -2688,7 +2689,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s,
 
             /* decode each block */
             for (i = 0; i < 6; i++) {
-                int ret= mpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1, 1);
+                int ret= mpeg4_decode_block(s, block[i], i, cbp&32, 1);
                 if(ret==DECODING_AC_LOST){
                     fprintf(stderr, "texture corrupted at %d %d (trying to continue with mc/dc only)\n", s->mb_x, s->mb_y);
                     s->decoding_error=DECODING_AC_LOST;
@@ -2698,6 +2699,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s,
                     s->decoding_error=DECODING_ACDC_LOST;
                     break;
                 }
+                cbp+=cbp;
             }
         }else if(!s->mb_intra){
 //            s->mcsel= 0; //FIXME do we need to init that
@@ -2711,12 +2713,13 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s,
             if(s->decoding_error==0 && cbp){
                 /* decode each block */
                 for (i = 0; i < 6; i++) {
-                    int ret= mpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1, 0);
+                    int ret= mpeg4_decode_block(s, block[i], i, cbp&32, 0);
                     if(ret==DECODING_AC_LOST){
                         fprintf(stderr, "texture corrupted at %d %d (trying to continue with mc/dc only)\n", s->mb_x, s->mb_y);
                         s->decoding_error=DECODING_AC_LOST;
                         break;
                     }
+                    cbp+=cbp;
                 }
             }
         }
@@ -2727,7 +2730,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s,
         
         /* decode each block */
         for (i = 0; i < 6; i++) {
-            int ret= mpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1, 1);
+            int ret= mpeg4_decode_block(s, block[i], i, cbp&32, 1);
             if(ret==DECODING_AC_LOST){
                 fprintf(stderr, "texture corrupted at %d %d (trying to continue with dc only)\n", s->mb_x, s->mb_y);
                 s->decoding_error=DECODING_AC_LOST;
@@ -2736,6 +2739,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s,
                 fprintf(stderr, "dc corrupted at %d %d\n", s->mb_x, s->mb_y);
                 return -1;
             }
+            cbp+=cbp;
         }
     }
 
@@ -3162,13 +3166,15 @@ intra:
         /* decode each block */
         if (s->h263_pred) {
             for (i = 0; i < 6; i++) {
-                if (mpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1, 1) < 0)
+                if (mpeg4_decode_block(s, block[i], i, cbp&32, 1) < 0)
                     return -1;
+                cbp+=cbp;
             }
         } else {
             for (i = 0; i < 6; i++) {
-                if (h263_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1) < 0)
+                if (h263_decode_block(s, block[i], i, cbp&32) < 0)
                     return -1;
+                cbp+=cbp;
             }
         }
         return 0;
@@ -3177,13 +3183,15 @@ intra:
     /* decode each block */
     if (s->h263_pred) {
         for (i = 0; i < 6; i++) {
-            if (mpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1, 0) < 0)
+            if (mpeg4_decode_block(s, block[i], i, cbp&32, 0) < 0)
                 return -1;
+            cbp+=cbp;
         }
     } else {
         for (i = 0; i < 6; i++) {
-            if (h263_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1) < 0)
+            if (h263_decode_block(s, block[i], i, cbp&32) < 0)
                 return -1;
+            cbp+=cbp;
         }
     }
     return 0;
@@ -3416,9 +3424,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             goto not_coded;
         rl = &rl_intra;
         rl_vlc = rl_intra.rl_vlc[0];
-        if(s->alternate_scan)
-            scan_table = s->intra_v_scantable.permutated; /* left */
-        else if (s->ac_pred) {
+        if (s->ac_pred) {
             if (dc_pred_dir == 0) 
                 scan_table = s->intra_v_scantable.permutated; /* left */
             else
@@ -3436,10 +3442,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         }
         rl = &rl_inter;
    
-        if(s->alternate_scan)
-            scan_table = s->intra_v_scantable.permutated; /* left */
-        else
-            scan_table = s->intra_scantable.permutated;
+        scan_table = s->intra_scantable.permutated;
 
         if(s->mpeg_quant){
             qmul=1;
@@ -4093,11 +4096,20 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 
                 /* load custom intra matrix */
                 if(get_bits1(&s->gb)){
+                    int last=0;
                     for(i=0; i<64; i++){
                         v= get_bits(&s->gb, 8);
                         if(v==0) break;
+                        
+                        last= v;
+                        j= s->idct_permutation[ ff_zigzag_direct[i] ];
+                        s->intra_matrix[j]= v;
+                        s->chroma_intra_matrix[j]= v;
+                    }
 
-                        j= s->intra_scantable.permutated[i];
+                    /* replicate last value */
+                    for(; i<64; i++){
+                        j= s->idct_permutation[ ff_zigzag_direct[i] ];
                         s->intra_matrix[j]= v;
                         s->chroma_intra_matrix[j]= v;
                     }
@@ -4105,20 +4117,22 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 
                 /* load custom non intra matrix */
                 if(get_bits1(&s->gb)){
+                    int last=0;
                     for(i=0; i<64; i++){
                         v= get_bits(&s->gb, 8);
                         if(v==0) break;
 
-                        j= s->intra_scantable.permutated[i];
+                        last= v;
+                        j= s->idct_permutation[ ff_zigzag_direct[i] ];
                         s->inter_matrix[j]= v;
                         s->chroma_inter_matrix[j]= v;
                     }
 
                     /* replicate last value */
                     for(; i<64; i++){
-                        j= s->intra_scantable.permutated[i];
-                        s->inter_matrix[j]= v;
-                        s->chroma_inter_matrix[j]= v;
+                        j= s->idct_permutation[ ff_zigzag_direct[i] ];
+                        s->inter_matrix[j]= last;
+                        s->chroma_inter_matrix[j]= last;
                     }
                 }
 
@@ -4321,6 +4335,18 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
              s->alternate_scan= 0;
      }
 
+     if(s->alternate_scan){
+         ff_init_scantable(s, &s->inter_scantable  , ff_alternate_vertical_scan);
+         ff_init_scantable(s, &s->intra_scantable  , ff_alternate_vertical_scan);
+         ff_init_scantable(s, &s->intra_h_scantable, ff_alternate_vertical_scan);
+         ff_init_scantable(s, &s->intra_v_scantable, ff_alternate_vertical_scan);
+     } else{
+         ff_init_scantable(s, &s->inter_scantable  , ff_zigzag_direct);
+         ff_init_scantable(s, &s->intra_scantable  , ff_zigzag_direct);
+         ff_init_scantable(s, &s->intra_h_scantable, ff_alternate_horizontal_scan);
+         ff_init_scantable(s, &s->intra_v_scantable, ff_alternate_vertical_scan);
+     }
+ 
      if(s->pict_type == S_TYPE && (s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE)){
          if(s->num_sprite_warping_points){
              mpeg4_decode_sprite_trajectory(s);
