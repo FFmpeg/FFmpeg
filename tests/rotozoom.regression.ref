@@ -50,6 +50,9 @@ stddev: 13.18 bytes:7602176
 9c4f5a4613a5595c90c6b99bf143b6a9 *./data/a-asv1.avi
 4251d7f496bbf362251b065e840a1b73 *./data/out.yuv
 stddev:  9.80 bytes:7602176
+19652f2aac2d4d0379d37ce17e0bbea7 *./data/a-asv2.avi
+7d887519f7884e7c49c591831c11ac50 *./data/out.yuv
+stddev:  9.71 bytes:7602176
 bee27a404ab6a1b7ab1d3551eb4f1877 *./data/a-flv.flv
 86da6ee46d2df190b4a0d72523b14a25 *./data/out.yuv
 stddev:  5.29 bytes:7602176
