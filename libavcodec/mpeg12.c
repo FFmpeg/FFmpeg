@@ -2453,9 +2453,11 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         /* find start next code */
         start_code = find_start_code(&buf_ptr, buf_end);
         if (start_code < 0){
-            if (slice_end(avctx, picture)) {
-                if(s2->last_picture_ptr) //FIXME merge with the stuff in mpeg_decode_slice
-                    *data_size = sizeof(AVPicture);
+            if(s2->pict_type != B_TYPE || avctx->hurry_up==0){
+                if (slice_end(avctx, picture)) {
+                    if(s2->last_picture_ptr) //FIXME merge with the stuff in mpeg_decode_slice
+                        *data_size = sizeof(AVPicture);
+                }
             }
             return FFMAX(0, buf_ptr - buf - s2->parse_context.last_index);
         }
