@@ -118,7 +118,7 @@ void rgb32to24(uint8_t *src,uint8_t *dst,uint32_t src_size)
 /*
  Original by Strepto/Astral
  ported to gcc & bugfixed : A'rpi
- MMX,  3DNOW optimization by Nick Kurshev
+ MMX2, 3DNOW optimization by Nick Kurshev
 */
 void rgb15to16(uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
