@@ -25,13 +25,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#define ALT_BITSTREAM_READER
+#define ALIGNED_BITSTREAM
+#include "common.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "bswap.h"
-//#define ALT_BITSTREAM_READER
-//#define ALIGNED_BITSTREAM
-#include "common.h"
 #define bit_buffer_t GetBitContext
 #define get_bit_cache(buf) (show_bits(buf,24)<<8)
 
@@ -40,8 +40,6 @@ typedef struct vlc_code_s {
   int16_t	 value	:10,
 		 length	:6;
 } vlc_code_t;
-
-#define VIDEOBUFSIZE	1280 * 1024
 
 #define MEDIAN(a,b,c)	((a < b != b >= c) ? b : ((a < c != c > b) ? c : a))
 
@@ -61,7 +59,7 @@ typedef struct svq1_pmv_s {
 } svq1_pmv_t;
 
 /* 6x16-entry codebook for inter-coded 4x2 vectors */
-static int8_t inter_codebook_4x2[768] = {
+static int8_t svq1_inter_codebook_4x2[768] = {
     7,  2, -6, -7,  7,  3, -3, -4, -7, -2,  7,  8, -8, -4,  3,  4,
    19, 17,  9,  3,-14,-16,-12, -8,-18,-16, -8, -3, 11, 14, 12,  8,
     7,-16,-10, 20,  7,-17,-10, 20, -6, 18,  8,-21, -7, 18,  9,-20,
@@ -113,7 +111,7 @@ static int8_t inter_codebook_4x2[768] = {
 };
 
 /* 6x16-entry codebook for inter-coded 4x4 vectors */
-static int8_t inter_codebook_4x4[1536] = {
+static int8_t svq1_inter_codebook_4x4[1536] = {
     4,  0, -6, -7, -4, -8,-13, -9, -8, -8, -1,  6, -2,  5, 22, 27,
   -16, -7, 11, 10,-18, -7, 13, 10,-15, -4, 12,  8, -9, -1,  9,  5,
    -2,  2, 15,-16, -3,  2, 19,-19, -3,  2, 19,-19, -2,  3, 15,-14,
@@ -213,7 +211,7 @@ static int8_t inter_codebook_4x4[1536] = {
 };
 
 /* 6x16-entry codebook for inter-coded 8x4 vectors */
-static int8_t inter_codebook_8x4[3072] = {
+static int8_t svq1_inter_codebook_8x4[3072] = {
     9,  8,  4,  0, -3, -4, -4, -3,  9,  8,  4, -1, -4, -5, -5, -3,
     8,  7,  3, -2, -5, -5, -5, -4,  6,  4,  1, -2, -4, -5, -4, -3,
   -12,-14,-11, -4,  1,  5,  6,  6, -8,-10, -7, -5, -2,  1,  1,  1,
@@ -409,7 +407,7 @@ static int8_t inter_codebook_8x4[3072] = {
 };
 
 /* 6x16-entry codebook for inter-coded 8x8 vectors */
-static int8_t inter_codebook_8x8[6144] = {
+static int8_t svq1_inter_codebook_8x8[6144] = {
    -4, -3,  4,  5,  2,  1,  1,  0, -5, -3,  5,  5,  2,  1,  0,  0,
    -6, -4,  5,  5,  2,  1,  0,  0, -7, -4,  4,  5,  2,  1,  0,  0,
    -8, -5,  3,  4,  2,  1,  0,  0, -8, -6,  3,  4,  1,  1,  1,  0,
@@ -797,12 +795,13 @@ static int8_t inter_codebook_8x8[6144] = {
 };
 
 /* list of codebooks for inter-coded vectors */
-static uint8_t *inter_codebooks[4] = {
-  inter_codebook_4x2, inter_codebook_4x4, inter_codebook_8x4, inter_codebook_8x8
+static uint8_t *svq1_inter_codebooks[4] = {
+  svq1_inter_codebook_4x2, svq1_inter_codebook_4x4,
+  svq1_inter_codebook_8x4, svq1_inter_codebook_8x8
 };
 
 /* 6x16-entry codebook for intra-coded 4x2 vectors */
-static int8_t intra_codebook_4x2[768] = {
+static int8_t svq1_intra_codebook_4x2[768] = {
    12, 13, 13, 11, -7,-10,-15,-17,-16,-15,-12,-10, 11, 15, 15, 12,
     2, 17, 20, 15,-45,-24,  2, 13, 21, 20, -6,-36, 12, 16, -1,-27,
   -18,-21, 10, 45,-11,-20, -7, 21, 43, -8,-28,  0, 33,-16,-28,  3,
@@ -854,7 +853,7 @@ static int8_t intra_codebook_4x2[768] = {
 };
 
 /* 6x16-entry codebook for intra-coded 4x4 vectors */
-static int8_t intra_codebook_4x4[1536] = {
+static int8_t svq1_intra_codebook_4x4[1536] = {
   -11, -3,  3,  6,-10, -1,  5,  7, -9, -1,  6,  7, -9, -1,  4,  6,
     5,  7,  0,-14,  6,  9,  2,-15,  6,  9,  2,-15,  4,  6,  0,-14,
    16,  3, -5, -6, 16,  1, -8, -8, 14, -1, -9, -9, 12,  0, -8, -8,
@@ -954,7 +953,7 @@ static int8_t intra_codebook_4x4[1536] = {
 };
 
 /* 6x16-entry codebook for intra-coded 8x4 vectors */
-static int8_t intra_codebook_8x4[3072] = {
+static int8_t svq1_intra_codebook_8x4[3072] = {
     5,  6,  6,  6,  7,  7,  8,  8,  0,  0,  0,  0,  0,  1,  2,  3,
    -3, -4, -4, -5, -5, -4, -3, -2, -4, -4, -4, -5, -4, -4, -3, -3,
     1,  2,  2,  2,  2,  3,  3,  3,  2,  3,  3,  4,  4,  5,  5,  5,
@@ -1150,7 +1149,7 @@ static int8_t intra_codebook_8x4[3072] = {
 };
 
 /* 6x16-entry codebook for intra-coded 8x8 vectors */
-static int8_t intra_codebook_8x8[6144] = {
+static int8_t svq1_intra_codebook_8x8[6144] = {
     4,  4,  3,  2,  2,  1,  0, -1,  4,  3,  3,  2,  1,  0, -1, -1,
     3,  3,  2,  2,  1,  0, -1, -2,  3,  2,  2,  1,  0, -1, -2, -3,
     2,  2,  1,  0, -1, -1, -2, -3,  2,  1,  0,  0, -1, -2, -3, -4,
@@ -1538,12 +1537,13 @@ static int8_t intra_codebook_8x8[6144] = {
 };
 
 /* list of codebooks for intra-coded vectors */
-static uint8_t *intra_codebooks[4] = {
-  intra_codebook_4x2, intra_codebook_4x4, intra_codebook_8x4, intra_codebook_8x8
+static uint8_t *svq1_intra_codebooks[4] = {
+  svq1_intra_codebook_4x2, svq1_intra_codebook_4x4,
+  svq1_intra_codebook_8x4, svq1_intra_codebook_8x8
 };
 
 /* block type, codes 000 .. 1xx */
-static vlc_code_t block_type_table[8] = {
+static vlc_code_t svq1_block_type_table[8] = {
   { SVQ1_BLOCK_INTRA, 3 }, { SVQ1_BLOCK_INTER_4V, 3 },
   { SVQ1_BLOCK_INTER, 2 }, { SVQ1_BLOCK_INTER,    2 },
   { SVQ1_BLOCK_SKIP,  1 }, { SVQ1_BLOCK_SKIP,     1 },
@@ -1551,7 +1551,7 @@ static vlc_code_t block_type_table[8] = {
 };
 
 /* motion vector, codes 0000011 .. 011xxxx */
-static vlc_code_t motion_table_0[61] = {
+static vlc_code_t svq1_motion_table_0[61] = {
   { 7, 8 }, { 6, 8 }, { 5, 8 }, { 4, 7 }, { 4, 7 },
   { 3, 5 }, { 3, 5 }, { 3, 5 }, { 3, 5 }, { 3, 5 }, { 3, 5 }, { 3, 5 }, { 3, 5 },
   { 2, 4 }, { 2, 4 }, { 2, 4 }, { 2, 4 }, { 2, 4 }, { 2, 4 }, { 2, 4 }, { 2, 4 },
@@ -1563,7 +1563,7 @@ static vlc_code_t motion_table_0[61] = {
 };
 
 /* motion vector, codes 000000000010 ... 0000010111xx */
-static vlc_code_t motion_table_1[94] = {
+static vlc_code_t svq1_motion_table_1[94] = {
   {32, 13}, {31, 13}, {30, 12}, {30, 12}, {29, 12}, {29, 12},
   {28, 12}, {28, 12}, {27, 12}, {27, 12}, {26, 12}, {26, 12}, {25, 12}, {25, 12},
   {24, 11}, {24, 11}, {24, 11}, {24, 11}, {23, 11}, {23, 11}, {23, 11}, {23, 11},
@@ -1579,7 +1579,7 @@ static vlc_code_t motion_table_1[94] = {
 };
 
 /* inter-coded vector codebook count tables, codes 000000 ... 111111 */
-static vlc_code_t inter_vector_tables[6][64] = {
+static vlc_code_t svq1_inter_vector_tables[6][64] = {
   /* 4x2 vector, codes 0000xxx ... 11xxxxx */
   { { 6, 4 }, { 6, 4 }, { 6, 4 }, { 6, 4 }, { 5, 4 }, { 5, 4 }, { 5, 4 }, { 5, 4 },
     { 4, 3 }, { 4, 3 }, { 4, 3 }, { 4, 3 }, { 4, 3 }, { 4, 3 }, { 4, 3 }, { 4, 3 },
@@ -1642,7 +1642,7 @@ static vlc_code_t inter_vector_tables[6][64] = {
 };
 
 /* vector codebook count tables, codes 0000000 ... 1111111 */
-static vlc_code_t intra_vector_tables[6][128] = {
+static vlc_code_t svq1_intra_vector_tables[6][128] = {
   /* 4x2 vector, codes 00000xx ... 1xxxxxx */
   { { 5, 5 }, { 5, 5 }, { 5, 5 }, { 5, 5 }, {-1, 5 }, {-1, 5 }, {-1, 5 }, {-1, 5 },
     { 6, 4 }, { 6, 4 }, { 6, 4 }, { 6, 4 }, { 6, 4 }, { 6, 4 }, { 6, 4 }, { 6, 4 },
@@ -1753,7 +1753,7 @@ static vlc_code_t intra_vector_tables[6][128] = {
 };
 
 /* intra mean value, codes 00100101 ... 1111xxxx */
-static vlc_code_t intra_mean_table_0[219] = {
+static vlc_code_t svq1_intra_mean_table_0[219] = {
   {135, 8 }, {136, 8 }, {165, 8 },
   {134, 8 }, {129, 8 }, {164, 8 }, {163, 8 }, {133, 8 }, {162, 8 }, {174, 8 }, {175, 8 },
   {161, 8 }, {160, 8 }, {159, 8 }, {158, 8 }, {157, 8 }, {156, 8 }, {155, 8 }, {154, 8 },
@@ -1785,7 +1785,7 @@ static vlc_code_t intra_mean_table_0[219] = {
 };
 
 /* intra mean value, codes 0000001101 ... 001001001x */
-static vlc_code_t intra_mean_table_1[135] = {
+static vlc_code_t svq1_intra_mean_table_1[135] = {
   {218, 10}, {219, 10}, {220, 10},
   {221, 10}, {222, 10}, {217, 10}, {230, 10}, {215, 10}, {208, 10}, {207, 10}, {206, 10},
   {214, 10}, {204, 10}, {223, 10}, {224, 10}, {225, 10}, {226, 10}, {227, 10}, {228, 10},
@@ -1807,7 +1807,7 @@ static vlc_code_t intra_mean_table_1[135] = {
 };
 
 /* intra mean value, codes 00000000000001 ... 00000011001xxx */
-static vlc_code_t intra_mean_table_2[207] = {
+static vlc_code_t svq1_intra_mean_table_2[207] = {
   {255, 14}, { 14, 14}, { 13, 14}, { 17, 12}, { 17, 12}, { 17, 12}, { 17, 12},
   {243, 11}, {243, 11}, {243, 11}, {243, 11}, {243, 11}, {243, 11}, {243, 11}, {243, 11},
   {242, 11}, {242, 11}, {242, 11}, {242, 11}, {242, 11}, {242, 11}, {242, 11}, {242, 11},
@@ -1837,7 +1837,7 @@ static vlc_code_t intra_mean_table_2[207] = {
 };
 
 /* intra mean value, codes 00000000000000000000 ... 000000000000001xxxxx */
-static vlc_code_t intra_mean_table_3[64] = {
+static vlc_code_t svq1_intra_mean_table_3[64] = {
   {  6, 20}, {  3, 20}, {  4, 20}, {  5, 20}, {  7, 20}, {  8, 20}, {  9, 19}, {  9, 19},
   {  2, 17}, {  2, 17}, {  2, 17}, {  2, 17}, {  2, 17}, {  2, 17}, {  2, 17}, {  2, 17},
   { 16, 16}, { 16, 16}, { 16, 16}, { 16, 16}, { 16, 16}, { 16, 16}, { 16, 16}, { 16, 16},
@@ -1849,7 +1849,7 @@ static vlc_code_t intra_mean_table_3[64] = {
 };
 
 /* inter mean value, codes 00001011 ... 1xxxxxxx */
-static vlc_code_t inter_mean_table_0[245] = {
+static vlc_code_t svq1_inter_mean_table_0[245] = {
   { 10, 8 }, { 12, 8 }, { 11, 8 }, {-11, 8 }, {-12, 8 },
   {-10, 8 }, { -9, 8 }, { -7, 7 }, { -7, 7 }, { -6, 7 }, { -6, 7 }, {  8, 7 }, {  8, 7 },
   { -8, 7 }, { -8, 7 }, {  9, 7 }, {  9, 7 }, {  6, 7 }, {  6, 7 }, {  7, 7 }, {  7, 7 },
@@ -1884,7 +1884,7 @@ static vlc_code_t inter_mean_table_0[245] = {
 };
 
 /* inter mean value, codes 000000010010 ... 00001011xxxx */
-static vlc_code_t inter_mean_table_1[158] = {
+static vlc_code_t svq1_inter_mean_table_1[158] = {
   {-30, 12}, {-31, 12}, {-32, 12}, {-33, 12}, { 31, 12}, {-34, 12},
   {-35, 12}, { 29, 12}, { 30, 12}, { 33, 12}, { 34, 12}, { 32, 12}, {-29, 11}, {-29, 11},
   {-28, 11}, {-28, 11}, { 28, 11}, { 28, 11}, {-27, 11}, {-27, 11}, {-26, 11}, {-26, 11},
@@ -1908,7 +1908,7 @@ static vlc_code_t inter_mean_table_1[158] = {
 };
 
 /* inter mean value, codes 000000000010111 ... 0000000100011xx */
-static vlc_code_t inter_mean_table_2[121] = {
+static vlc_code_t svq1_inter_mean_table_2[121] = {
   { 61, 15},
   { 52, 15}, { 58, 15}, {-56, 15}, {-57, 15}, { 59, 15}, {-55, 15}, { 60, 15}, {-54, 15},
   { 53, 15}, {-62, 15}, {-60, 15}, {-59, 15}, {-58, 15}, { 57, 15}, { 56, 15}, {-53, 15},
@@ -1928,7 +1928,7 @@ static vlc_code_t inter_mean_table_2[121] = {
 };
 
 /* inter mean value, codes 000000000000100101 ... 0000000000101101xx */
-static vlc_code_t inter_mean_table_3[147] = {
+static vlc_code_t svq1_inter_mean_table_3[147] = {
   {111, 18}, {102, 18}, { 99, 18},
   {-86, 18}, { 97, 18}, {-97, 18}, { 96, 18}, {-95, 18}, {-76, 18}, {-77, 18}, {-78, 18},
   {-85, 18}, {-80, 18}, {-81, 18}, { 89, 18}, { 90, 18}, {-84, 18}, {-89, 18}, { 80, 18},  
@@ -1951,7 +1951,7 @@ static vlc_code_t inter_mean_table_3[147] = {
 };
 
 /* inter mean value, codes 00000000000001001001 ... 0000000000001001001x */
-static vlc_code_t inter_mean_table_4[75] = {
+static vlc_code_t svq1_inter_mean_table_4[75] = {
   {142, 20}, {135, 20}, {125, 20}, {123, 20}, {122, 20}, {119, 20}, {117, 20},
   {113, 20}, {104, 20}, {103, 20}, {-120,20}, {-114,20}, {-108,20}, {-104,20}, {-102,20},
   {-101,20}, {-93, 20}, {-91, 19}, {-91, 19}, {-96, 19}, {-96, 19}, { 88, 19}, { 88, 19},
@@ -1965,7 +1965,7 @@ static vlc_code_t inter_mean_table_4[75] = {
 };
 
 /* inter mean value, codes 0000000000000000000000 ... 000000000000010010001x */
-static vlc_code_t inter_mean_table_5[292] = {
+static vlc_code_t svq1_inter_mean_table_5[292] = {
   {255, 22}, {254, 22}, {253, 22}, {252, 22}, {251, 22}, {250, 22}, {249, 22}, {248, 22},
   {247, 22}, {246, 22}, {245, 22}, {244, 22}, {243, 22}, {242, 22}, {241, 22}, {240, 22},
   {239, 22}, {238, 22}, {237, 22}, {236, 22}, {235, 22}, {234, 22}, {233, 22}, {232, 22},
@@ -2005,9 +2005,82 @@ static vlc_code_t inter_mean_table_5[292] = {
   {-119,21}, {-119,21}, {-117,21}, {-117,21}
 };
 
+#define SVQ1_PROCESS_VECTOR()\
+    for (; level > 0; i++) {\
+      /* process next depth */\
+      if (i == m) {\
+	m = n;\
+	if (--level == 0)\
+	  break;\
+      }\
+      /* divide block if next bit set */\
+      if (get_bits (bitbuf, 1) == 0)\
+	break;\
+      /* add child nodes */\
+      list[n++] = list[i];\
+      list[n++] = list[i] + (((level & 1) ? pitch : 1) << ((level / 2) + 1));\
+    }
 
+#define SVQ1_ADD_CODEBOOK()\
+	  /* add codebook entries to vector */\
+	  for (j=0; j < stages; j++) {\
+	    n3  = codebook[entries[j]] ^ 0x80808080;\
+	    n1 += ((n3 & 0xFF00FF00) >> 8);\
+	    n2 +=  (n3 & 0x00FF00FF);\
+	  }\
+\
+	  /* clip to [0..255] */\
+	  if (n1 & 0xFF00FF00) {\
+	    n3  = ((( n1 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;\
+	    n1 += 0x7F007F00;\
+	    n1 |= (((~n1 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;\
+	    n1 &= (n3 & 0x00FF00FF);\
+	  }\
+\
+	  if (n2 & 0xFF00FF00) {\
+	    n3  = ((( n2 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;\
+	    n2 += 0x7F007F00;\
+	    n2 |= (((~n2 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;\
+	    n2 &= (n3 & 0x00FF00FF);\
+	  }
 
-static int decode_svq1_block (bit_buffer_t *bitbuf, uint8_t *pixels, int pitch, int intra) {
+#define SVQ1_DO_CODEBOOK_INTRA()\
+      for (y=0; y < height; y++) {\
+	for (x=0; x < (width / 4); x++, codebook++) {\
+	n1 = n4;\
+	n2 = n4;\
+	SVQ1_ADD_CODEBOOK()\
+	/* store result */\
+	dst[x] = (n1 << 8) | n2;\
+	}\
+	dst += (pitch / 4);\
+      }
+
+#define SVQ1_DO_CODEBOOK_NONINTRA()\
+      for (y=0; y < height; y++) {\
+	for (x=0; x < (width / 4); x++, codebook++) {\
+	n3 = dst[x];\
+	/* add mean value to vector */\
+	n1 = ((n3 & 0xFF00FF00) >> 8) + n4;\
+	n2 =  (n3 & 0x00FF00FF)	  + n4;\
+	SVQ1_ADD_CODEBOOK()\
+	/* store result */\
+	dst[x] = (n1 << 8) | n2;\
+	}\
+	dst += (pitch / 4);\
+      }
+
+#define SVQ1_CALC_CODEBOOK_ENTRIES(cbook)\
+      codebook = (uint32_t *) cbook[level];\
+      bit_cache = get_bits (bitbuf, 4*stages);\
+      /* calculate codebook entries for this vector */\
+      for (j=0; j < stages; j++) {\
+	entries[j] = (((bit_cache >> (4*(stages - j - 1))) & 0xF) + 16*j) << (level + 1);\
+      }\
+      mean -= (stages * 128);\
+      n4    = ((mean + (mean >> 31)) << 16) | (mean & 0xFFFF);
+
+static int svq1_decode_block_intra (bit_buffer_t *bitbuf, uint8_t *pixels, int pitch ) {
   uint32_t    bit_cache;
   vlc_code_t *vlc;
   uint8_t    *list[63];
@@ -2024,24 +2097,7 @@ static int decode_svq1_block (bit_buffer_t *bitbuf, uint8_t *pixels, int pitch, 
 
   /* recursively process vector */
   for (i=0, m=1, n=1, level=5; i < n; i++) {
-    for (; level > 0; i++) {
-
-      /* process next depth */
-      if (i == m) {
-	m = n;
-
-	if (--level == 0)
-	  break;
-      }
-
-      /* divide block if next bit set */
-      if (get_bits (bitbuf, 1) == 0)
-	break;
-
-      /* add child nodes */
-      list[n++] = list[i];
-      list[n++] = list[i] + (((level & 1) ? pitch : 1) << ((level / 2) + 1));
-    }
+    SVQ1_PROCESS_VECTOR();
 
     /* destination address and vector size */
     dst = (uint32_t *) list[i];
@@ -2051,27 +2107,22 @@ static int decode_svq1_block (bit_buffer_t *bitbuf, uint8_t *pixels, int pitch, 
     /* get number of stages (-1 skips vector, 0 for mean only) */
     bit_cache = get_bit_cache (bitbuf);
 
-    if (intra)
-      vlc = &intra_vector_tables[level][bit_cache >> (32 - 7)];
-    else
-      vlc = &inter_vector_tables[level][bit_cache >> (32 - 6)];
+    vlc = &svq1_intra_vector_tables[level][bit_cache >> (32 - 7)];
 
     /* flush bits */
     stages	    = vlc->value;
     skip_bits(bitbuf,vlc->length);
 
     if (stages == -1) {
-      if (intra) {
 	for (y=0; y < height; y++) {
 	  memset (&dst[y*(pitch / 4)], 0, width);
 	}
-      }
       continue;		/* skip vector */
     }
 
     if ((stages > 0) && (level >= 4)) {
 #ifdef DEBUG_SVQ1
-    printf("Error (decode_svq1_block): invalid vector: stages=%i level=%i\n",stages,level);
+    printf("Error (svq1_decode_block_intra): invalid vector: stages=%i level=%i\n",stages,level);
 #endif
       return -1;	/* invalid vector */
     }
@@ -2079,98 +2130,101 @@ static int decode_svq1_block (bit_buffer_t *bitbuf, uint8_t *pixels, int pitch, 
     /* get mean value for vector */
     bit_cache = get_bit_cache (bitbuf);
 
-    if (intra) {
-      if (bit_cache >= 0x25000000)
-	vlc = &intra_mean_table_0[(bit_cache >> (32 - 8)) - 37];
-      else if (bit_cache >= 0x03400000)
-	vlc = &intra_mean_table_1[(bit_cache >> (32 - 10)) - 13];
-      else if (bit_cache >= 0x00040000) 
-	vlc = &intra_mean_table_2[(bit_cache >> (32 - 14)) - 1];
-      else
-	vlc = &intra_mean_table_3[bit_cache >> (32 - 20)];
-    } else {
-      if (bit_cache >= 0x0B000000)
-	vlc = &inter_mean_table_0[(bit_cache >> (32 - 8)) - 11];
-      else if (bit_cache >= 0x01200000)
-	vlc = &inter_mean_table_1[(bit_cache >> (32 - 12)) - 18];
-      else if (bit_cache >= 0x002E0000) 
-	vlc = &inter_mean_table_2[(bit_cache >> (32 - 15)) - 23];
-      else if (bit_cache >= 0x00094000)
-	vlc = &inter_mean_table_3[(bit_cache >> (32 - 18)) - 37];
-      else if (bit_cache >= 0x00049000)
-	vlc = &inter_mean_table_4[(bit_cache >> (32 - 20)) - 73];
-      else
-	vlc = &inter_mean_table_5[bit_cache >> (32 - 22)];
-    }
+    if (bit_cache >= 0x25000000)
+	vlc = &svq1_intra_mean_table_0[(bit_cache >> (32 - 8)) - 37];
+    else if (bit_cache >= 0x03400000)
+	vlc = &svq1_intra_mean_table_1[(bit_cache >> (32 - 10)) - 13];
+    else if (bit_cache >= 0x00040000) 
+	vlc = &svq1_intra_mean_table_2[(bit_cache >> (32 - 14)) - 1];
+    else
+	vlc = &svq1_intra_mean_table_3[bit_cache >> (32 - 20)];
 
     /* flush bits */
     mean	    = vlc->value;
     skip_bits(bitbuf,vlc->length);
 
-    if (intra && stages == 0) {
+    if (stages == 0) {
       for (y=0; y < height; y++) {
 	memset (&dst[y*(pitch / 4)], mean, width);
       }
     } else {
-      codebook = (uint32_t *) (intra ? intra_codebooks[level] : inter_codebooks[level]);
-      bit_cache = get_bits (bitbuf, 4*stages);
-
-      /* calculate codebook entries for this vector */
-      for (j=0; j < stages; j++) {
-	entries[j] = (((bit_cache >> (4*(stages - j - 1))) & 0xF) + 16*j) << (level + 1);
-      }
-
-      mean -= (stages * 128);
-      n4    = ((mean + (mean >> 31)) << 16) | (mean & 0xFFFF);
-
-      for (y=0; y < height; y++) {
-	for (x=0; x < (width / 4); x++, codebook++) {
-	  if (intra) {
-	    n1 = n4;
-	    n2 = n4;
-	  } else {
-	    n3 = dst[x];
-
-	    /* add mean value to vector */
-	    n1 = ((n3 & 0xFF00FF00) >> 8) + n4;
-	    n2 =  (n3 & 0x00FF00FF)	  + n4;
-	  }
-
-	  /* add codebook entries to vector */
-	  for (j=0; j < stages; j++) {
-	    n3  = codebook[entries[j]] ^ 0x80808080;
-	    n1 += ((n3 & 0xFF00FF00) >> 8);
-	    n2 +=  (n3 & 0x00FF00FF);
-	  }
-
-	  /* clip to [0..255] */
-	  if (n1 & 0xFF00FF00) {
-	    n3  = ((( n1 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;
-	    n1 += 0x7F007F00;
-	    n1 |= (((~n1 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;
-	    n1 &= (n3 & 0x00FF00FF);
-	  }
-
-	  if (n2 & 0xFF00FF00) {
-	    n3  = ((( n2 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;
-	    n2 += 0x7F007F00;
-	    n2 |= (((~n2 >> 15) & 0x00010001) | 0x01000100) - 0x00010001;
-	    n2 &= (n3 & 0x00FF00FF);
-	  }
-
-	  /* store result */
-	  dst[x] = (n1 << 8) | n2;
-        }
-
-        dst += (pitch / 4);
-      }
+      SVQ1_CALC_CODEBOOK_ENTRIES(svq1_intra_codebooks);
+      SVQ1_DO_CODEBOOK_INTRA()
     }
   }
 
   return 0;
 }
 
-static int decode_motion_vector (bit_buffer_t *bitbuf, svq1_pmv_t *mv, svq1_pmv_t **pmv) {
+static int svq1_decode_block_non_intra (bit_buffer_t *bitbuf, uint8_t *pixels, int pitch ) {
+  uint32_t    bit_cache;
+  vlc_code_t *vlc;
+  uint8_t    *list[63];
+  uint32_t   *dst;
+  uint32_t   *codebook;
+  int	      entries[6];
+  int	      i, j, m, n;
+  int	      mean, stages;
+  int	      x, y, width, height, level;
+  uint32_t    n1, n2, n3, n4;
+
+  /* initialize list for breadth first processing of vectors */
+  list[0] = pixels;
+
+  /* recursively process vector */
+  for (i=0, m=1, n=1, level=5; i < n; i++) {
+    SVQ1_PROCESS_VECTOR();
+
+    /* destination address and vector size */
+    dst = (uint32_t *) list[i];
+    width = 1 << ((4 + level) /2);
+    height = 1 << ((3 + level) /2);
+
+    /* get number of stages (-1 skips vector, 0 for mean only) */
+    bit_cache = get_bit_cache (bitbuf);
+
+    vlc = &svq1_inter_vector_tables[level][bit_cache >> (32 - 6)];
+
+    /* flush bits */
+    stages	    = vlc->value;
+    skip_bits(bitbuf,vlc->length);
+
+    if (stages == -1) continue;	/* skip vector */
+
+    if ((stages > 0) && (level >= 4)) {
+#ifdef DEBUG_SVQ1
+    printf("Error (svq1_decode_block_non_intra): invalid vector: stages=%i level=%i\n",stages,level);
+#endif
+      return -1;	/* invalid vector */
+    }
+
+    /* get mean value for vector */
+    bit_cache = get_bit_cache (bitbuf);
+
+    if (bit_cache >= 0x0B000000)
+	vlc = &svq1_inter_mean_table_0[(bit_cache >> (32 - 8)) - 11];
+    else if (bit_cache >= 0x01200000)
+	vlc = &svq1_inter_mean_table_1[(bit_cache >> (32 - 12)) - 18];
+    else if (bit_cache >= 0x002E0000) 
+	vlc = &svq1_inter_mean_table_2[(bit_cache >> (32 - 15)) - 23];
+    else if (bit_cache >= 0x00094000)
+	vlc = &svq1_inter_mean_table_3[(bit_cache >> (32 - 18)) - 37];
+    else if (bit_cache >= 0x00049000)
+	vlc = &svq1_inter_mean_table_4[(bit_cache >> (32 - 20)) - 73];
+    else
+	vlc = &svq1_inter_mean_table_5[bit_cache >> (32 - 22)];
+
+    /* flush bits */
+    mean	    = vlc->value;
+    skip_bits(bitbuf,vlc->length);
+
+    SVQ1_CALC_CODEBOOK_ENTRIES(svq1_inter_codebooks);
+    SVQ1_DO_CODEBOOK_NONINTRA()
+  }
+  return 0;
+}
+
+static int svq1_decode_motion_vector (bit_buffer_t *bitbuf, svq1_pmv_t *mv, svq1_pmv_t **pmv) {
   uint32_t    bit_cache;
   vlc_code_t *vlc;
   int	      diff, sign;
@@ -2192,9 +2246,9 @@ static int decode_motion_vector (bit_buffer_t *bitbuf, svq1_pmv_t *mv, svq1_pmv_
 
     } else {
       if (bit_cache >= 0x06000000) {
-        vlc = &motion_table_0[(bit_cache >> (32 - 7)) - 3];
+        vlc = &svq1_motion_table_0[(bit_cache >> (32 - 7)) - 3];
       } else {
-        vlc = &motion_table_1[(bit_cache >> (32 - 12)) - 2];
+        vlc = &svq1_motion_table_1[(bit_cache >> (32 - 12)) - 2];
       }
 
       /* decode motion vector differential */
@@ -2215,7 +2269,7 @@ static int decode_motion_vector (bit_buffer_t *bitbuf, svq1_pmv_t *mv, svq1_pmv_
   return 0;
 }
 
-static void skip_block (uint8_t *current, uint8_t *previous, int pitch, int x, int y) {
+static void svq1_skip_block (uint8_t *current, uint8_t *previous, int pitch, int x, int y) {
   uint8_t *src;
   uint8_t *dst;
   int	   i;
@@ -2230,7 +2284,7 @@ static void skip_block (uint8_t *current, uint8_t *previous, int pitch, int x, i
   }
 }
 
-static int motion_inter_block (bit_buffer_t *bitbuf,
+static int svq1_motion_inter_block (bit_buffer_t *bitbuf,
 			       uint8_t *current, uint8_t *previous, int pitch,
 			       svq1_pmv_t *motion, int x, int y) {
   uint8_t    *src;
@@ -2241,24 +2295,25 @@ static int motion_inter_block (bit_buffer_t *bitbuf,
 
   /* predict and decode motion vector */
   pmv[0] = &motion[0];
-  pmv[1] = &motion[(x / 8) + 2];
-  pmv[2] = &motion[(x / 8) + 4];
-
   if (y == 0) {
-    pmv[1] = pmv[0];
+    pmv[1] =
     pmv[2] = pmv[0];
   }
+  else {
+    pmv[1] = &motion[(x / 8) + 2];
+    pmv[2] = &motion[(x / 8) + 4];
+  }
 
-  result = decode_motion_vector (bitbuf, &mv, pmv);
+  result = svq1_decode_motion_vector (bitbuf, &mv, pmv);
 
   if (result != 0)
     return result;
 
-  motion[0].x		= mv.x;
-  motion[0].y		= mv.y;
-  motion[(x / 8) + 2].x	= mv.x;
-  motion[(x / 8) + 2].y	= mv.y;
+  motion[0].x		=
+  motion[(x / 8) + 2].x	=
   motion[(x / 8) + 3].x	= mv.x;
+  motion[0].y		=
+  motion[(x / 8) + 2].y	=
   motion[(x / 8) + 3].y	= mv.y;
 
   src = &previous[(x + (mv.x >> 1)) + (y + (mv.y >> 1))*pitch];
@@ -2270,7 +2325,7 @@ static int motion_inter_block (bit_buffer_t *bitbuf,
   return 0;
 }
 
-static int motion_inter_4v_block (bit_buffer_t *bitbuf,
+static int svq1_motion_inter_4v_block (bit_buffer_t *bitbuf,
 				  uint8_t *current, uint8_t *previous, int pitch,
 				  svq1_pmv_t *motion,int x, int y) {
   uint8_t    *src;
@@ -2281,29 +2336,30 @@ static int motion_inter_4v_block (bit_buffer_t *bitbuf,
 
   /* predict and decode motion vector (0) */
   pmv[0] = &motion[0];
-  pmv[1] = &motion[(x / 8) + 2];
-  pmv[2] = &motion[(x / 8) + 4];
-
   if (y == 0) {
-    pmv[1] = pmv[0];
+    pmv[1] =
     pmv[2] = pmv[0];
   }
+  else {
+    pmv[1] = &motion[(x / 8) + 2];
+    pmv[2] = &motion[(x / 8) + 4];
+  }
 
-  result = decode_motion_vector (bitbuf, &mv, pmv);
+  result = svq1_decode_motion_vector (bitbuf, &mv, pmv);
 
   if (result != 0)
     return result;
 
   /* predict and decode motion vector (1) */
   pmv[0] = &mv;
-  pmv[1] = &motion[(x / 8) + 3];
-
   if (y == 0) {
-    pmv[1] = pmv[0];
+    pmv[1] =
     pmv[2] = pmv[0];
   }
-
-  result = decode_motion_vector (bitbuf, &motion[0], pmv);
+  else {
+    pmv[1] = &motion[(x / 8) + 3];
+  }
+  result = svq1_decode_motion_vector (bitbuf, &motion[0], pmv);
 
   if (result != 0)
     return result;
@@ -2312,7 +2368,7 @@ static int motion_inter_4v_block (bit_buffer_t *bitbuf,
   pmv[1] = &motion[0];
   pmv[2] = &motion[(x / 8) + 1];
 
-  result = decode_motion_vector (bitbuf, &motion[(x / 8) + 2], pmv);
+  result = svq1_decode_motion_vector (bitbuf, &motion[(x / 8) + 2], pmv);
 
   if (result != 0)
     return result;
@@ -2321,7 +2377,7 @@ static int motion_inter_4v_block (bit_buffer_t *bitbuf,
   pmv[2] = &motion[(x / 8) + 2];
   pmv[3] = &motion[(x / 8) + 3];
 
-  result = decode_motion_vector (bitbuf, pmv[3], pmv);
+  result = svq1_decode_motion_vector (bitbuf, pmv[3], pmv);
 
   if (result != 0)
     return result;
@@ -2346,7 +2402,7 @@ static int motion_inter_4v_block (bit_buffer_t *bitbuf,
   return 0;
 }
 
-static int decode_delta_block (bit_buffer_t *bitbuf,
+static int svq1_decode_delta_block (bit_buffer_t *bitbuf,
 			uint8_t *current, uint8_t *previous, int pitch,
 			svq1_pmv_t *motion, int x, int y) {
   uint32_t bit_cache;
@@ -2357,52 +2413,52 @@ static int decode_delta_block (bit_buffer_t *bitbuf,
   bit_cache = get_bit_cache (bitbuf);
 
   bit_cache	>>= (32 - 3);
-  block_type	  = block_type_table[bit_cache].value;
-  skip_bits(bitbuf,block_type_table[bit_cache].length);
+  block_type	  = svq1_block_type_table[bit_cache].value;
+  skip_bits(bitbuf,svq1_block_type_table[bit_cache].length);
 
   /* reset motion vectors */
   if (block_type == SVQ1_BLOCK_SKIP || block_type == SVQ1_BLOCK_INTRA) {
-    motion[0].x		  = 0;
-    motion[0].y		  = 0;
-    motion[(x / 8) + 2].x = 0;
-    motion[(x / 8) + 2].y = 0;
-    motion[(x / 8) + 3].x = 0;
+    motion[0].x		  =
+    motion[0].y		  =
+    motion[(x / 8) + 2].x =
+    motion[(x / 8) + 2].y =
+    motion[(x / 8) + 3].x =
     motion[(x / 8) + 3].y = 0;
   }
 
   switch (block_type) {
   case SVQ1_BLOCK_SKIP:
-    skip_block (current, previous, pitch, x, y);
+    svq1_skip_block (current, previous, pitch, x, y);
     break;
 
   case SVQ1_BLOCK_INTER:
-    result = motion_inter_block (bitbuf, current, previous, pitch, motion, x, y);
+    result = svq1_motion_inter_block (bitbuf, current, previous, pitch, motion, x, y);
 
     if (result != 0)
     {
 #ifdef DEBUG_SVQ1
-    printf("Error in motion_inter_block %i\n",result);
+    printf("Error in svq1_motion_inter_block %i\n",result);
 #endif
       break;
     }
-    result = decode_svq1_block (bitbuf, current, pitch, 0);
+    result = svq1_decode_block_non_intra (bitbuf, current, pitch);
     break;
 
   case SVQ1_BLOCK_INTER_4V:
-    result = motion_inter_4v_block (bitbuf, current, previous, pitch, motion, x, y);
+    result = svq1_motion_inter_4v_block (bitbuf, current, previous, pitch, motion, x, y);
 
     if (result != 0)
     {
 #ifdef DEBUG_SVQ1
-    printf("Error in motion_inter_4v_block %i\n",result);
+    printf("Error in svq1_motion_inter_4v_block %i\n",result);
 #endif
       break;
     }
-    result = decode_svq1_block (bitbuf, current, pitch, 0);
+    result = svq1_decode_block_non_intra (bitbuf, current, pitch);
     break;
 
   case SVQ1_BLOCK_INTRA:
-    result = decode_svq1_block (bitbuf, current, pitch, 1);
+    result = svq1_decode_block_intra (bitbuf, current, pitch);
     break;
   }
 
@@ -2410,12 +2466,12 @@ static int decode_delta_block (bit_buffer_t *bitbuf,
 }
 
 /* standard video sizes */
-static struct { int width; int height; } frame_size_table[8] = {
+static struct { int width; int height; } svq1_frame_size_table[8] = {
   { 160, 120 }, { 128,  96 }, { 176, 144 }, { 352, 288 },
   { 704, 576 }, { 240, 180 }, { 320, 240 }, {  -1,  -1 }
 };
 
-static int decode_frame_header (bit_buffer_t *bitbuf,MpegEncContext *s) {
+static int svq1_decode_frame_header (bit_buffer_t *bitbuf,MpegEncContext *s) {
   int frame_size_code;
 
   /* unknown field */
@@ -2454,8 +2510,8 @@ static int decode_frame_header (bit_buffer_t *bitbuf,MpegEncContext *s) {
         return -1;
     } else {
       /* get width, height from table */
-      s->width = frame_size_table[frame_size_code].width;
-      s->height = frame_size_table[frame_size_code].height;
+      s->width = svq1_frame_size_table[frame_size_code].width;
+      s->height = svq1_frame_size_table[frame_size_code].height;
     }
   }
 
@@ -2491,8 +2547,6 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   int		result, i, x, y, width, height;
   AVPicture *pict = data; 
 
-//  memcpy(temp_buf,buffer,buffer_len); buffer=temp_buf;
-  
   /* initialize bit buffer */
   init_get_bits(&s->gb,buf,buf_size);
 
@@ -2511,12 +2565,12 @@ static int svq1_decode_frame(AVCodecContext *avctx,
     }
   }
 
-  result = decode_frame_header (&s->gb, s);
+  result = svq1_decode_frame_header (&s->gb, s);
 
   if (result != 0)
   {
 #ifdef DEBUG_SVQ1
-    printf("Error in decode_frame_header %i\n",result);
+    printf("Error in svq1_decode_frame_header %i\n",result);
 #endif
     return result;
   }
@@ -2524,11 +2578,11 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   /* decode y, u and v components */
   for (i=0; i < 3; i++) {
     if (i == 0) {
-      width  = s->width;
-      height = s->height;
+      width  = (s->width+15)&~15;
+      height = (s->height+15)&~15;
     } else {
-      width  = s->width/4;
-      height = s->height/4;
+      width  = (s->width/4+15)&~15;
+      height = (s->height/4+15)&~15;
     }
 
     current  = s->current_picture[i];
@@ -2538,11 +2592,11 @@ static int svq1_decode_frame(AVCodecContext *avctx,
       /* keyframe */
       for (y=0; y < height; y+=16) {
 	for (x=0; x < width; x+=16) {
-	  result = decode_svq1_block (&s->gb, &current[x], width, 1);
+	  result = svq1_decode_block_intra (&s->gb, &current[x], width);
 	  if (result != 0)
 	  {
 #ifdef DEBUG_SVQ1
-	    printf("Error in decode_svq1_block %i (keyframe)\n",result);
+	    printf("Error in svq1_decode_block %i (keyframe)\n",result);
 #endif
 	    return result;
 	  }
@@ -2555,42 +2609,35 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 
       for (y=0; y < height; y+=16) {
 	for (x=0; x < width; x+=16) {
-	  result = decode_delta_block (&s->gb, &current[x], previous,
+	  result = svq1_decode_delta_block (&s->gb, &current[x], previous,
 				       width, s->opaque, x, y);
 	  if (result != 0)
 	  {
 #ifdef DEBUG_SVQ1
-    printf("Error in decode_delta_block %i\n",result);
+    printf("Error in svq1_decode_delta_block %i\n",result);
 #endif
 	    return result;
 	  }
 	}
 
-	((svq1_pmv_t *)s->opaque)[0].x = 0;
+	((svq1_pmv_t *)s->opaque)[0].x =
 	((svq1_pmv_t *)s->opaque)[0].y = 0;
 
 	current += 16*width;
       }
     }
-  }
 
-  /* update backward reference frame */
-  if (!s->hurry_up)
-  {
-	pict->data[0] = s->current_picture[0];
-	pict->data[1] = s->current_picture[1];
-	pict->data[2] = s->current_picture[2];
-	pict->linesize[0] = s->width;
-	pict->linesize[1] = s->width / 4;
-	pict->linesize[2] = s->width / 4;
-	for(i=0;i<3;i++)
-	{
-	    uint8_t *tmp = s->last_picture[i];
-	    s->last_picture[i] = s->current_picture[i];
-	    s->current_picture[i] = tmp;
-	}
-    *data_size=1;
+    /* update backward reference frame */
+    if (!s->hurry_up)
+    {
+	uint8_t *tmp = s->last_picture[i];
+	pict->data[i] = s->current_picture[i];
+	pict->linesize[i] = width;
+	s->last_picture[i] = s->current_picture[i];
+	s->current_picture[i] = tmp;
+    }
   }
+  *data_size=sizeof(AVPicture);
   return 0;
 }
 
