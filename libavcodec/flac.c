@@ -565,8 +565,8 @@ static int flac_decode_frame(AVCodecContext *avctx,
 {
     FLACContext *s = avctx->priv_data;
     int metadata_last, metadata_type, metadata_size;
-    int tmp = 0, i, j = 0, input_buf_size;
-    int16_t *samples = data, *left, *right;
+    int tmp = 0, i, j = 0, input_buf_size = 0;
+    int16_t *samples = data;
 
     if(s->max_framesize == 0){
         s->max_framesize= 8192; // should hopefully be enough for the first header
