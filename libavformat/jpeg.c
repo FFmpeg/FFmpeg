@@ -160,6 +160,7 @@ static int jpeg_read(ByteIOContext *f,
     return jctx.ret_code;
 }
 
+#ifdef CONFIG_ENCODERS
 static int jpeg_write(ByteIOContext *pb, AVImageInfo *info)
 {
     AVCodecContext *c;
@@ -221,6 +222,7 @@ static int jpeg_write(ByteIOContext *pb, AVImageInfo *info)
     av_free(c);
     return ret;
 }
+#endif //CONFIG_ENCODERS
 
 AVImageFormat jpeg_image_format = {
     "jpeg",
@@ -228,5 +230,9 @@ AVImageFormat jpeg_image_format = {
     jpeg_probe,
     jpeg_read,
     (1 << PIX_FMT_YUVJ420P) | (1 << PIX_FMT_YUVJ422P) | (1 << PIX_FMT_YUVJ444P),
+#ifdef CONFIG_ENCODERS
     jpeg_write,
+#else
+    NULL,
+#endif //CONFIG_ENCODERS
 };
