@@ -53,9 +53,9 @@ ifeq ($(SHARED_PP),yes)
 	install -s -m 755 $(SPPLIB) $(prefix)/lib/$(SPPLIB).$(SPPVERSION)
 	ln -sf $(SPPLIB).$(SPPVERSION) $(prefix)/lib/$(SPPLIB)
 	ldconfig || true
+endif
 	mkdir -p $(prefix)/include/postproc
 	install -m 644 postprocess.h $(prefix)/include/postproc/postprocess.h
-endif
 
 
 #
