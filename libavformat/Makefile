@@ -23,15 +23,17 @@ OBJS+= asf.o
 OBJS+= asf-enc.o
 endif
 
+AMROBJS=
 ifeq ($(AMR_NB),yes)
-OBJS+= amr.o
+AMROBJS= amr.o
 endif
 ifeq ($(AMR_NB_FIXED),yes)
-OBJS+= amr.o
+AMROBJS= amr.o
 endif
 ifeq ($(AMR_WB),yes)
-OBJS+= amr.o
+AMROBJS= amr.o
 endif
+OBJS+= $(AMROBJS)
 
 # image formats
 OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o sgi.o

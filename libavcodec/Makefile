@@ -23,14 +23,16 @@ OBJS= bitstream.o utils.o mem.o allcodecs.o \
       flac.o vp3dsp.o integer.o snow.o tscc.o sonic.o ulti.o h264idct.o \
       qdrw.o xl.o rangecoder.o png.o pnm.o qpeg.o
 
+AMROBJS=
 ifeq ($(AMR_NB),yes)
 ifeq ($(AMR_NB_FIXED),yes)
-OBJS+= amr.o
+AMROBJS= amr.o
 AMREXTRALIBS+= amr/*.o
 AMRLIBS=amrlibs
 CLEANAMR=cleanamr
 else
-OBJS+= amr.o amr_float/sp_dec.o amr_float/sp_enc.o amr_float/interf_dec.o amr_float/interf_enc.o
+AMROBJS= amr.o
+OBJS+= amr_float/sp_dec.o amr_float/sp_enc.o amr_float/interf_dec.o amr_float/interf_enc.o
 CLEANAMR=cleanamrfloat
 endif
 endif
@@ -48,13 +50,15 @@ OBJS+= beosthread.o
 endif
 
 ifeq ($(AMR_WB),yes)
-OBJS+= amr.o amrwb_float/dec_acelp.o amrwb_float/dec_dtx.o amrwb_float/dec_gain.o \
+AMROBJS= amr.o
+OBJS+= amrwb_float/dec_acelp.o amrwb_float/dec_dtx.o amrwb_float/dec_gain.o \
 		amrwb_float/dec_if.o amrwb_float/dec_lpc.o amrwb_float/dec_main.o \
 		amrwb_float/dec_rom.o amrwb_float/dec_util.o amrwb_float/enc_acelp.o \
 		amrwb_float/enc_dtx.o amrwb_float/enc_gain.o amrwb_float/enc_if.o \
 		amrwb_float/enc_lpc.o amrwb_float/enc_main.o amrwb_float/enc_rom.o \
 		amrwb_float/enc_util.o amrwb_float/if_rom.o
 endif
+OBJS+= $(AMROBJS)
 CLEANAMRWB=cleanamrwbfloat
 ASM_OBJS=
 
