@@ -36,6 +36,7 @@
 #include <inttypes.h>
 
 #include "rgb2rgb.h"
+#include "../mmx_defs.h"
 
 /* hope these constant values are cache line aligned */
 uint64_t mmx_80w = 0x0080008000800080;
@@ -52,23 +53,6 @@ uint64_t mmx_V_green = 0xe5fce5fce5fce5fc;
 /* hope these constant values are cache line aligned */
 uint64_t mmx_redmask = 0xf8f8f8f8f8f8f8f8;
 uint64_t mmx_grnmask = 0xfcfcfcfcfcfcfcfc;
-uint64_t mmx_grnshift = 0x03;
-uint64_t mmx_blueshift = 0x03;
-
-#ifdef HAVE_MMX2
-/* use this for K7 and p3 only */
-#define MOVNTQ "movntq"
-#else
-/* for MMX-only processors */
-#define MOVNTQ "movq"
-#endif
-
-#if !defined( HAVE_MMX2) && defined( HAVE_3DNOW)
-/* for K6 2/2+/3 */
-#define EMMS "femms;"
-#else
-#define EMMS "emms;"
-#endif
 
 #define YUV2RGB \
 		     /* Do the multiply part of the conversion for even and odd pixels,
@@ -174,6 +158,12 @@ static void yuv420_rgb16_mmx (uint8_t * image, uint8_t * py,
 	       pixels in each iteration */
 
 	    __asm__ __volatile__ (
+/* no speed diference on my p3@500 with prefetch,
+ * if it is faster for anyone with -benchmark then tell me
+			PREFETCH" 64(%0) \n\t"
+			PREFETCH" 64(%1) \n\t"
+			PREFETCH" 64(%2) \n\t"
+*/
 YUV2RGB
 
 		     /* mask unneeded bits off */
@@ -181,7 +171,7 @@ YUV2RGB
 		     "pand mmx_grnmask, %%mm2;" /* g7g6g5g4 g3g2_0_0 g7g6g5g4 g3g2_0_0 */
 		     "pand mmx_redmask, %%mm1;" /* r7r6r5r4 r3_0_0_0 r7r6r5r4 r3_0_0_0 */
 
-		     "psrlw mmx_blueshift,%%mm0;" /* 0_0_0_b7 b6b5b4b3 0_0_0_b7 b6b5b4b3 */
+		     "psrlw $3,%%mm0;" /* 0_0_0_b7 b6b5b4b3 0_0_0_b7 b6b5b4b3 */
 		     "pxor %%mm4, %%mm4;" /* zero mm4 */
 
 		     "movq %%mm0, %%mm5;" /* Copy B7-B0 */
@@ -191,7 +181,7 @@ YUV2RGB
 		     "punpcklbw %%mm4, %%mm2;" /* 0_0_0_0 0_0_0_0 g7g6g5g4 g3g2_0_0 */
 		     "punpcklbw %%mm1, %%mm0;" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */
 
-		     "psllw mmx_blueshift,%%mm2;" /* 0_0_0_0 0_g7g6g5 g4g3g2_0 0_0_0_0 */
+		     "psllw $3, %%mm2;" /* 0_0_0_0 0_g7g6g5 g4g3g2_0 0_0_0_0 */
 		     "por %%mm2, %%mm0;" /* r7r6r5r4 r3g7g6g5 g4g3g2b7 b6b5b4b3 */
 
 		     "movq 8 (%0), %%mm6;" /* Load 8 Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
@@ -201,7 +191,7 @@ YUV2RGB
 		     "punpckhbw %%mm4, %%mm7;" /* 0_0_0_0 0_0_0_0 g7g6g5g4 g3g2_0_0 */
 		     "punpckhbw %%mm1, %%mm5;" /* r7r6r5r4 r3_0_0_0 0_0_0_b7 b6b5b4b3 */
 
-		     "psllw mmx_blueshift,%%mm7;" /* 0_0_0_0 0_g7g6g5 g4g3g2_0 0_0_0_0 */
+		     "psllw $3, %%mm7;" /* 0_0_0_0 0_g7g6g5 g4g3g2_0 0_0_0_0 */
 		     "movd 4 (%1), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
 
 		     "por %%mm7, %%mm5;" /* r7r6r5r4 r3g7g6g5 g4g3g2b7 b6b5b4b3 */
@@ -266,7 +256,7 @@ YUV2RGB
 		     "pand mmx_redmask, %%mm2;" /* g7g6g5g4 g3_0_0_0 g7g6g5g4 g3_0_0_0 */
 		     "pand mmx_redmask, %%mm1;" /* r7r6r5r4 r3_0_0_0 r7r6r5r4 r3_0_0_0 */
 
-		     "psrlw mmx_blueshift,%%mm0;" /* 0_0_0_b7 b6b5b4b3 0_0_0_b7 b6b5b4b3 */
+		     "psrlw $3,%%mm0;" /* 0_0_0_b7 b6b5b4b3 0_0_0_b7 b6b5b4b3 */
 		     "psrlw $1,%%mm1;"            /* 0_r7r6r5  r4r3_0_0 0_r7r6r5 r4r3_0_0 */
 		     "pxor %%mm4, %%mm4;" /* zero mm4 */
 
@@ -521,7 +511,6 @@ YUV2RGB
 
 yuv2rgb_fun yuv2rgb_init_mmx (int bpp, int mode)
 {
-//    if (bpp == 15 || bpp == 16) {
     if (bpp == 15 && mode == MODE_RGB) return yuv420_rgb15_mmx;
     if (bpp == 16 && mode == MODE_RGB) return yuv420_rgb16_mmx;
     if (bpp == 24 && mode == MODE_RGB) return yuv420_rgb24_mmx;
