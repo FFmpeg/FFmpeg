@@ -719,6 +719,7 @@ static int dvaudio_decode_frame(AVCodecContext *avctx,
 	return -1; /* Unsupported quantization */
 
     avctx->sample_rate = dv_audio_frequency[freq];
+    avctx->channels = 2;
     // What about:
     // avctx->bit_rate = 
     // avctx->frame_size =

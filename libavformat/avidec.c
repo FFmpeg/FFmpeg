@@ -21,6 +21,18 @@
 
 //#define DEBUG
 
+static const struct AVI1Handler {
+   enum CodecID vcid;
+   enum CodecID acid;
+   uint32_t tag;
+} AVI1Handlers[] = {
+  { CODEC_ID_DVVIDEO, CODEC_ID_DVAUDIO, MKTAG('d', 'v', 's', 'd') },
+  { CODEC_ID_DVVIDEO, CODEC_ID_DVAUDIO, MKTAG('d', 'v', 'h', 'd') },
+  { CODEC_ID_DVVIDEO, CODEC_ID_DVAUDIO, MKTAG('d', 'v', 's', 'l') },
+  /* This is supposed to be the last one */
+  { CODEC_ID_NONE, CODEC_ID_NONE, 0 },
+};
+
 typedef struct AVIIndex {
     unsigned char tag[4];
     unsigned int flags, pos, len;
@@ -30,6 +42,10 @@ typedef struct AVIIndex {
 typedef struct {
     int64_t riff_end;
     int64_t movi_end;
+    int     type;
+    uint8_t *buf;
+    int      buf_size;
+    int      stream_index;
     offset_t movi_list;
     AVIIndex *first, *last;
 } AVIContext;
@@ -67,7 +83,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    uint32_t tag, tag1;
+    uint32_t tag, tag1, handler;
     int codec_type, stream_index, frame_period, bit_rate, scale, rate;
     unsigned int size;
     int i;
@@ -80,6 +96,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     stream_index = -1;
     codec_type = -1;
     frame_period = 0;
+    avi->type = 2;
+    avi->buf = av_malloc(1);
+    if (!avi->buf)
+        return -1;
+    avi->buf_size = 1;
     for(;;) {
         if (url_feof(pb))
             goto fail;
@@ -126,7 +147,13 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             stream_index++;
             tag1 = get_le32(pb);
             switch(tag1) {
-            case MKTAG('v', 'i', 'd', 's'):
+            case MKTAG('i', 'a', 'v', 's'):
+	    case MKTAG('i', 'v', 'a', 's'):
+	        if (s->nb_streams != 1)
+		    goto fail;
+		avi->type = 1;
+		avi->stream_index = 0;
+	    case MKTAG('v', 'i', 'd', 's'):
                 codec_type = CODEC_TYPE_VIDEO;
 
                 if (stream_index >= s->nb_streams) {
@@ -136,26 +163,48 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
                 st = s->streams[stream_index];
 
-                get_le32(pb); /* codec tag */
+                handler = get_le32(pb); /* codec tag */
                 get_le32(pb); /* flags */
                 get_le16(pb); /* priority */
                 get_le16(pb); /* language */
                 get_le32(pb); /* XXX: initial frame ? */
-                scale= get_le32(pb); /* scale */
-                rate= get_le32(pb); /* rate */
+                scale = get_le32(pb); /* scale */
+                rate = get_le32(pb); /* rate */
 
                 if(scale && rate){
                     st->codec.frame_rate = rate;
-                    st->codec.frame_rate_base= scale;
+                    st->codec.frame_rate_base = scale;
                 }else if(frame_period){
                     st->codec.frame_rate = 1000000;
-                    st->codec.frame_rate_base= frame_period;
+                    st->codec.frame_rate_base = frame_period;
                 }else{
                     st->codec.frame_rate = 25;
                     st->codec.frame_rate_base = 1;
                 }
                 
-                url_fskip(pb, size - 7 * 4);
+                if (avi->type == 1) {
+                    AVStream *st = av_mallocz(sizeof(AVStream));
+                    if (!st)
+		        goto fail;
+                    
+		    avcodec_get_context_defaults(&st->codec);
+		    s->streams[s->nb_streams++] = st;
+		    stream_index++;
+		    
+		    for (i=0; AVI1Handlers[i].tag != 0; ++i)
+		       if (AVI1Handlers[i].tag == handler)
+		           break;
+
+		    if (AVI1Handlers[i].tag != 0) {
+		        s->streams[0]->codec.codec_type = CODEC_TYPE_VIDEO;
+                        s->streams[0]->codec.codec_id   = AVI1Handlers[i].vcid;
+		        s->streams[1]->codec.codec_type = CODEC_TYPE_AUDIO;
+                        s->streams[1]->codec.codec_id   = AVI1Handlers[i].acid;
+		    } else
+		        goto fail;
+		}
+		
+		url_fskip(pb, size - 7 * 4);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
                 codec_type = CODEC_TYPE_AUDIO;
@@ -168,7 +217,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
-            if (stream_index >= s->nb_streams) {
+            if (stream_index >= s->nb_streams || avi->type == 1) {
                 url_fskip(pb, size);
             } else {
                 st = s->streams[stream_index];
@@ -233,13 +282,22 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
+static void __destruct_pkt(struct AVPacket *pkt)
+{
+    pkt->data = NULL; pkt->size = 0;
+    return;
+}
+
 static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int n, d[8], size, i;
-    
+
     memset(d, -1, sizeof(int)*8);
+
+    if (avi->type == 1 && avi->stream_index)
+        goto pkt_init;
 
     for(i=url_ftell(pb); !url_feof(pb); i++) {
         int j;
@@ -280,24 +338,37 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
         n= (d[0] - '0') * 10 + (d[1] - '0');
         if(    d[0] >= '0' && d[0] <= '9'
             && d[1] >= '0' && d[1] <= '9'
-            &&((d[2] == 'd' && d[3] == 'c') || (d[2] == 'w' && d[3] == 'b') || (d[2] == 'd' && d[3] == 'b') )
-
+            && ((d[2] == 'd' && d[3] == 'c') || 
+	        (d[2] == 'w' && d[3] == 'b') || 
+		(d[2] == 'd' && d[3] == 'b') ||
+		(d[2] == '_' && d[3] == '_'))
             && n < s->nb_streams
-            && i + size <= avi->movi_end){
+            && i + size <= avi->movi_end) {
         
-            av_new_packet(pkt, size);
-            pkt->stream_index = n;
-
-            get_buffer(pb, pkt->data, pkt->size);
-
-            if (size & 1)
-                get_byte(pb);
- 
-            return 0;
+	    uint8_t *tbuf = av_realloc(avi->buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
+	    if (!tbuf)
+		return -1;
+	    avi->buf = tbuf;
+            avi->buf_size = size;
+	    get_buffer(pb, avi->buf, size);
+	    if (size & 1)
+	        get_byte(pb);
+	    if (avi->type != 1)
+	        avi->stream_index = n;
+	    goto pkt_init;
         }
     }
     
     return -1;
+
+pkt_init:
+    av_init_packet(pkt);
+    pkt->data = avi->buf;
+    pkt->size = avi->buf_size;
+    pkt->destruct = __destruct_pkt;
+    pkt->stream_index = avi->stream_index;
+    avi->stream_index = !avi->stream_index;
+    return 0;
 }
 
 static int avi_read_close(AVFormatContext *s)
