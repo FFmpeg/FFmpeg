@@ -401,9 +401,13 @@ static int rv20_decode_picture_header(MpegEncContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "unknown bit4 set\n");
 //            return -1;
         }
-        mb_pos= get_bits(&s->gb, av_log2(s->mb_num-1)+1);
-        s->mb_x= mb_pos % s->mb_width;
-        s->mb_y= mb_pos / s->mb_width;
+        if(s->avctx->sub_id == 0x20201002){
+            mb_pos= ff_h263_decode_mba(s);
+        }else{
+            mb_pos= get_bits(&s->gb, av_log2(s->mb_num-1)+1);
+            s->mb_x= mb_pos % s->mb_width;
+            s->mb_y= mb_pos / s->mb_width;
+        }
     }else{
         seq= get_bits(&s->gb, 8)*128;
         mb_pos= ff_h263_decode_mba(s);
@@ -504,7 +508,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
     default:
         av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", avctx->sub_id);
     }
-//printf("ver:%X\n", avctx->sub_id);
+//av_log(avctx, AV_LOG_DEBUG, "ver:%X\n", avctx->sub_id);
     if (MPV_common_init(s) < 0)
         return -1;
 
@@ -686,8 +690,8 @@ static int rv10_decode_frame(AVCodecContext *avctx,
             *pict= *(AVFrame*)&s->last_picture;
             ff_print_debug_info(s, pict);
         }
-        
-        *data_size = sizeof(AVFrame);
+        if(s->last_picture_ptr || s->low_delay)
+            *data_size = sizeof(AVFrame);
     }
 
     return buf_size;
