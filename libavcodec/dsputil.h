@@ -123,6 +123,13 @@ void dsputil_init_armv4l(void);
 
 void dsputil_init_mlib(void);   
 
+#elif defined(ARCH_ALPHA)
+
+#define emms_c()
+#define __align8 __attribute__ ((aligned (8)))
+
+void dsputil_init_alpha(void);
+
 #else
 
 #define emms_c()

@@ -497,6 +497,10 @@ void dsputil_init(void)
     dsputil_init_mlib();
     use_permuted_idct = 0;
 #endif
+#ifdef ARCH_ALPHA
+    dsputil_init_alpha();
+    use_permuted_idct = 0;
+#endif
 
 #ifdef SIMPLE_IDCT
     if(ff_idct == simple_idct) use_permuted_idct=0;

@@ -460,7 +460,19 @@ static int msmpeg4_pred_dc(MpegEncContext * s, int n,
 	: "r" (scale)
 	: "%eax", "%edx"
     );
-#else    
+#elif defined (ARCH_ALPHA)
+    /* Divisions are extremely costly on Alpha; optimize the most
+       common case.  */
+    if (scale == 8) {
+	a = (a + (8 >> 1)) / 8;
+	b = (b + (8 >> 1)) / 8;
+	c = (c + (8 >> 1)) / 8;
+    } else {
+	a = (a + (scale >> 1)) / scale;
+	b = (b + (scale >> 1)) / scale;
+	c = (c + (scale >> 1)) / scale;
+    }
+#else
     a = (a + (scale >> 1)) / scale;
     b = (b + (scale >> 1)) / scale;
     c = (c + (scale >> 1)) / scale;

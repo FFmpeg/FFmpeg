@@ -23,6 +23,7 @@
 #include <inttypes.h>
 
 #include "simple_idct.h"
+#include "../config.h"
 
 #if 0
 #define W1 2841 /* 2048*sqrt (2)*cos (1*pi/16) */
@@ -102,6 +103,107 @@ static int inline idctRowCondZ (int16_t * row)
 	return 1;
 }
 
+#ifdef ARCH_ALPHA
+static int inline idctRowCondDC(int16_t *row)
+{
+	int_fast32_t a0, a1, a2, a3, b0, b1, b2, b3;
+	uint64_t *lrow = (uint64_t *) row;
+
+	if (lrow[1] == 0) {
+		if (lrow[0] == 0)
+			return 0;
+		if ((lrow[0] & ~0xffffULL) == 0) {
+			uint64_t v;
+
+			a0 = W4 * row[0];
+			a0 += 1 << (ROW_SHIFT - 1);
+			a0 >>= ROW_SHIFT;
+			v = (uint16_t) a0;
+			v += v << 16;
+			v += v << 32;
+			lrow[0] = v;
+			lrow[1] = v;
+
+			return 1;
+		}
+	}
+
+	a0 = W4 * row[0];
+	a1 = W4 * row[0];
+	a2 = W4 * row[0];
+	a3 = W4 * row[0];
+
+	if (row[2]) {
+		a0 += W2 * row[2];
+		a1 += W6 * row[2];
+		a2 -= W6 * row[2];
+		a3 -= W2 * row[2];
+	}
+
+	if (row[4]) {
+		a0 += W4 * row[4];
+		a1 -= W4 * row[4];
+		a2 -= W4 * row[4];
+		a3 += W4 * row[4];
+	}
+
+	if (row[6]) {
+		a0 += W6 * row[6];
+		a1 -= W2 * row[6];
+		a2 += W2 * row[6];
+		a3 -= W6 * row[6];
+	}
+
+	a0 += 1 << (ROW_SHIFT - 1);
+	a1 += 1 << (ROW_SHIFT - 1);
+	a2 += 1 << (ROW_SHIFT - 1);
+	a3 += 1 << (ROW_SHIFT - 1);
+
+	if (row[1]) {
+		b0 = W1 * row[1];
+		b1 = W3 * row[1];
+		b2 = W5 * row[1];
+		b3 = W7 * row[1];
+	} else {
+		b0 = 0;
+		b1 = 0;
+		b2 = 0;
+		b3 = 0;
+	}
+
+	if (row[3]) {
+		b0 += W3 * row[3];
+		b1 -= W7 * row[3];
+		b2 -= W1 * row[3];
+		b3 -= W5 * row[3];
+	}
+
+	if (row[5]) {
+		b0 += W5 * row[5];
+		b1 -= W1 * row[5];
+		b2 += W7 * row[5];
+		b3 += W3 * row[5];
+	}
+
+	if (row[7]) {
+		b0 += W7 * row[7];
+		b1 -= W5 * row[7];
+		b2 += W3 * row[7];
+		b3 -= W1 * row[7];
+	}
+
+	row[0] = (a0 + b0) >> ROW_SHIFT;
+	row[1] = (a1 + b1) >> ROW_SHIFT;
+	row[2] = (a2 + b2) >> ROW_SHIFT;
+	row[3] = (a3 + b3) >> ROW_SHIFT;
+	row[4] = (a3 - b3) >> ROW_SHIFT;
+	row[5] = (a2 - b2) >> ROW_SHIFT;
+	row[6] = (a1 - b1) >> ROW_SHIFT;
+	row[7] = (a0 - b0) >> ROW_SHIFT;
+
+	return 1;
+}
+#else  /* not ARCH_ALPHA */
 static int inline idctRowCondDC (int16_t * row)
 {
 	int a0, a1, a2, a3, b0, b1, b2, b3;
@@ -147,6 +249,7 @@ static int inline idctRowCondDC (int16_t * row)
 	
 	return 1;
 }
+#endif /* not ARCH_ALPHA */
 
 static void inline idctCol (int16_t * col)
 {
@@ -243,6 +346,7 @@ static void inline idctSparseCol (int16_t * col)
 		b3 += - W1*col[8*7];
 	}
 
+#ifndef ARCH_ALPHA
 	if(!(b0|b1|b2|b3)){
 		col[8*0] = (a0) >> COL_SHIFT;
 		col[8*7] = (a0) >> COL_SHIFT;
@@ -253,6 +357,7 @@ static void inline idctSparseCol (int16_t * col)
 		col[8*3] = (a3) >> COL_SHIFT;
 		col[8*4] = (a3) >> COL_SHIFT;
 	}else{
+#endif
 		col[8*0] = (a0 + b0) >> COL_SHIFT;
 		col[8*7] = (a0 - b0) >> COL_SHIFT;
 		col[8*1] = (a1 + b1) >> COL_SHIFT;
@@ -261,7 +366,9 @@ static void inline idctSparseCol (int16_t * col)
 		col[8*5] = (a2 - b2) >> COL_SHIFT;
 		col[8*3] = (a3 + b3) >> COL_SHIFT;
 		col[8*4] = (a3 - b3) >> COL_SHIFT;
+#ifndef ARCH_ALPHA
 	}
+#endif
 }
 
 static void inline idctSparse2Col (int16_t * col)
@@ -337,6 +444,34 @@ static void inline idctSparse2Col (int16_t * col)
 	col[8*4] = (a3 - b3) >> COL_SHIFT;
 }
 
+#ifdef ARCH_ALPHA
+/* If all rows but the first one are zero after row transformation,
+   all rows will be identical after column transformation.  */
+static inline void idctCol2(int16_t *col)
+{
+	int i;
+	uint64_t l, r;
+	uint64_t *lcol = (uint64_t *) col;
+
+	for (i = 0; i < 8; ++i) {
+		int a0 = col[0] + (1 << (COL_SHIFT - 1)) / W4;
+
+		a0 *= W4;
+		col[0] = a0 >> COL_SHIFT;
+		++col;
+	}
+
+	l = lcol[0];
+	r = lcol[1];
+	lcol[ 2] = l; lcol[ 3] = r;
+	lcol[ 4] = l; lcol[ 5] = r;
+	lcol[ 6] = l; lcol[ 7] = r;
+	lcol[ 8] = l; lcol[ 9] = r;
+	lcol[10] = l; lcol[11] = r;
+	lcol[12] = l; lcol[13] = r;
+	lcol[14] = l; lcol[15] = r;
+}
+#endif
 
 void simple_idct (short *block)
 {
@@ -411,7 +546,22 @@ void simple_idct (short *block)
 		for(i=0; i<8; i++)
 			idctSparse2Col(block + i);
 	}
-#else		
+#elif defined(ARCH_ALPHA)
+	int shortcut = 1;
+
+	for (i = 0; i < 8; i++) {
+		int anynonzero = idctRowCondDC(block + 8 * i);
+		if (i > 0 && anynonzero)
+			shortcut = 0;
+	}
+
+	if (shortcut) {
+		idctCol2(block);
+	} else {
+		for (i = 0; i < 8; i++)
+			idctSparseCol(block + i);
+	}
+#else
 	for(i=0; i<8; i++)
 		idctRowCondDC(block + i*8);
 	

@@ -37,6 +37,12 @@ OBJS += mlib/dsputil_mlib.o
 CFLAGS += $(MLIB_INC)
 endif
 
+# alpha specific stuff
+ifeq ($(TARGET_ARCH_ALPHA),yes)
+OBJS += alpha/dsputil_alpha.o alpha/mpegvideo_alpha.o
+CFLAGS += -Wa,-mpca56
+endif
+
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 
 LIB= libavcodec.a
@@ -74,6 +80,7 @@ clean:
 	rm -f *.o *~ $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
+	   alpha/*.o alpha/*~ \
            libac3/*.o libac3/*~ \
            apiexample $(TESTS)
 
