@@ -21,8 +21,25 @@
 #define POSTPROCESS_H
 
 #define BLOCK_SIZE 8
-
 #define TEMP_STRIDE 8
+
+#define V_DEBLOCK	0x01
+#define H_DEBLOCK	0x02
+#define DERING		0x04
+
+#define LUM_V_DEBLOCK	V_DEBLOCK
+#define LUM_H_DEBLOCK	H_DEBLOCK
+#define CHROM_V_DEBLOCK	(V_DEBLOCK<<4)
+#define CHROM_H_DEBLOCK	(H_DEBLOCK<<4)
+#define LUM_DERING	DERING
+#define CHROM_DERING	(DERING<<4)
+
+// Experimental stuff
+#define RK_FILTER		0x0100
+#define LUM_V_RK_FILTER		RK_FILTER
+#define CHROM_V_RK_FILTER	(RK_FILTER<<4)
+
+
 #define TIMEING
 #define MORE_TIMEING
 
@@ -33,11 +50,17 @@
 
 #define QP_STORE_T int
 
+#ifdef HAVE_MMX2
+#define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
+#elif defined (HAVE_3DNOW)
+#define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
+#endif
+
 #ifdef __cplusplus
 //#include <inttypes.h>
 
 void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, bool isColor);
+	QP_STORE_T QPs[], int QPStride, bool isColor, int mode);
 #endif
 
 #ifdef __cplusplus
@@ -49,6 +72,8 @@ void postprocess(unsigned char * src[], int src_stride,
                  int horizontal_size,   int vertical_size,
                  QP_STORE_T *QP_store,  int QP_stride,
 		 					   int mode);
+
+int getModeForQuality(int quality);
 #ifdef __cplusplus
 }
 #endif

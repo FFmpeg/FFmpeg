@@ -17,17 +17,18 @@
 */
 
 /*
-			C	MMX	MMX2
+			C	MMX	MMX2	3DNow*
 isVertDC		Ec	Ec
 isVertMinMaxOk		Ec	Ec
-doVertLowPass		E		e
+doVertLowPass		E		e	e*
 doVertDefFilter		Ec	Ec	Ec
 isHorizDC		Ec	Ec
 isHorizMinMaxOk		a
-doHorizLowPass		E		a
-doHorizDefFilter	E		a
+doHorizLowPass		E		a	a*
+doHorizDefFilter	E	ac	ac
 deRing
 
+* i dont have a 3dnow CPU -> its untested
 E = Exact implementation
 e = allmost exact implementation
 a = alternative / approximate impl
@@ -39,25 +40,37 @@ TODO:
 verify that everything workes as it should
 reduce the time wasted on the mem transfer
 implement dering
-implement everything in C at least
+implement everything in C at least (done at the moment but ...)
 figure range of QP out (assuming <256 for now)
 unroll stuff if instructions depend too much on the prior one
 we use 8x8 blocks for the horizontal filters, opendivx seems to use 8x4?
 move YScale thing to the end instead of fixing QP
+write a faster and higher quality deblocking filter :)
 ...
 
 Notes:
 
 */
 
+/*
+Changelog:
+0.1.2
+	fixed a bug in the horizontal default filter
+	3dnow version of the Horizontal & Vertical Lowpass filters
+	mmx version of the Horizontal Default filter
+	mmx2 & C versions of a simple filter described in a paper from ramkishor & karandikar
+	added mode flags & quality2mode function
+0.1.1
+*/
+
 
 #include <inttypes.h>
 #include <stdio.h>
 #include "../config.h"
-#include "postprocess.h"
 //#undef HAVE_MMX2
+//#define HAVE_3DNOW
 //#undef HAVE_MMX
-
+#include "postprocess.h"
 
 
 static uint64_t packedYOffset=	0x0000000000000000LL;
@@ -71,6 +84,8 @@ static uint64_t bm00001000=	0x00000000FF000000LL;
 static uint64_t bm10000000=	0xFF00000000000000LL;
 static uint64_t bm10000001=	0xFF000000000000FFLL;
 static uint64_t bm11000011=	0xFFFF00000000FFFFLL;
+static uint64_t bm00000011=	0x000000000000FFFFLL;
+static uint64_t bm11000000=	0xFFFF000000000000LL;
 static uint64_t bm00011000=	0x000000FFFF000000LL;
 static uint64_t bm00110011=	0x0000FFFF0000FFFFLL;
 static uint64_t bm11001100=	0xFFFF0000FFFF0000LL;
@@ -78,6 +93,8 @@ static uint64_t b00= 		0x0000000000000000LL;
 static uint64_t b02= 		0x0202020202020202LL;
 static uint64_t b0F= 		0x0F0F0F0F0F0F0F0FLL;
 static uint64_t bFF= 		0xFFFFFFFFFFFFFFFFLL;
+static uint64_t b20= 		0x2020202020202020LL;
+static uint64_t b80= 		0x8080808080808080LL;
 static uint64_t b7E= 		0x7E7E7E7E7E7E7E7ELL;
 static uint64_t b7C= 		0x7C7C7C7C7C7C7C7CLL;
 static uint64_t b3F= 		0x3F3F3F3F3F3F3F3FLL;
@@ -312,7 +329,8 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 {
 //	QP= 64;
 
-#ifdef HAVE_MMX2
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+//#ifdef HAVE_MMX2
 	asm volatile(	//"movv %0 %1 %2\n\t"
 		"pushl %0 \n\t"
 		"movq pQPb, %%mm0				\n\t"  // QP,..., QP
@@ -372,81 +390,81 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 */
 		"movq (%0, %1), %%mm0				\n\t" //  1
 		"movq %%mm0, %%mm1				\n\t" //  1
-		"pavgb %%mm6, %%mm0				\n\t" //1 1	/2
-		"pavgb %%mm6, %%mm0				\n\t" //3 1	/4
+		PAVGB(%%mm6, %%mm0)				      //1 1	/2
+		PAVGB(%%mm6, %%mm0)				      //3 1	/4
 
 		"movq (%0, %1, 4), %%mm2			\n\t" //     1
 		"movq %%mm2, %%mm5				\n\t" //     1
-		"pavgb (%%eax), %%mm2				\n\t" //    11	/2
-		"pavgb (%0, %1, 2), %%mm2			\n\t" //   211	/4
+		PAVGB((%%eax), %%mm2)				      //    11	/2
+		PAVGB((%0, %1, 2), %%mm2)			      //   211	/4
 		"movq %%mm2, %%mm3				\n\t" //   211	/4
 		"movq (%0), %%mm4				\n\t" // 1
-		"pavgb %%mm4, %%mm3				\n\t" // 4 211	/8
-		"pavgb %%mm0, %%mm3				\n\t" //642211	/16
+		PAVGB(%%mm4, %%mm3)				      // 4 211	/8
+		PAVGB(%%mm0, %%mm3)				      //642211	/16
 		"movq %%mm3, (%0)				\n\t" // X
 		// mm1=2 mm2=3(211) mm4=1 mm5=5 mm6=0 mm7=9
 		"movq %%mm1, %%mm0				\n\t" //  1
-		"pavgb %%mm6, %%mm0				\n\t" //1 1	/2
+		PAVGB(%%mm6, %%mm0)				      //1 1	/2
 		"movq %%mm4, %%mm3				\n\t" // 1
-		"pavgb (%0,%1,2), %%mm3				\n\t" // 1 1	/2
-		"pavgb (%%eax,%1,2), %%mm5			\n\t" //     11	/2
-		"pavgb (%%eax), %%mm5				\n\t" //    211 /4
-		"pavgb %%mm5, %%mm3				\n\t" // 2 2211 /8
-		"pavgb %%mm0, %%mm3				\n\t" //4242211 /16
+		PAVGB((%0,%1,2), %%mm3)				      // 1 1	/2
+		PAVGB((%%eax,%1,2), %%mm5)			      //     11	/2
+		PAVGB((%%eax), %%mm5)				      //    211 /4
+		PAVGB(%%mm5, %%mm3)				      // 2 2211 /8
+		PAVGB(%%mm0, %%mm3)				      //4242211 /16
 		"movq %%mm3, (%0,%1)				\n\t" //  X
 		// mm1=2 mm2=3(211) mm4=1 mm5=4(211) mm6=0 mm7=9
-		"pavgb %%mm4, %%mm6				\n\t" //11	/2
+		PAVGB(%%mm4, %%mm6)				      //11	/2
 		"movq (%%ebx), %%mm0				\n\t" //       1
-		"pavgb (%%eax, %1, 2), %%mm0			\n\t" //      11/2
+		PAVGB((%%eax, %1, 2), %%mm0)			      //      11/2
 		"movq %%mm0, %%mm3				\n\t" //      11/2
-		"pavgb %%mm1, %%mm0				\n\t" //  2   11/4
-		"pavgb %%mm6, %%mm0				\n\t" //222   11/8
-		"pavgb %%mm2, %%mm0				\n\t" //22242211/16
+		PAVGB(%%mm1, %%mm0)				      //  2   11/4
+		PAVGB(%%mm6, %%mm0)				      //222   11/8
+		PAVGB(%%mm2, %%mm0)				      //22242211/16
 		"movq (%0, %1, 2), %%mm2			\n\t" //   1
 		"movq %%mm0, (%0, %1, 2)			\n\t" //   X
 		// mm1=2 mm2=3 mm3=6(11) mm4=1 mm5=4(211) mm6=0(11) mm7=9
 		"movq (%%eax, %1, 4), %%mm0			\n\t" //        1
-		"pavgb (%%ebx), %%mm0				\n\t" //       11	/2
-		"pavgb %%mm0, %%mm6				\n\t" //11     11	/4
-		"pavgb %%mm1, %%mm4				\n\t" // 11		/2
-		"pavgb %%mm2, %%mm1				\n\t" //  11		/2
-		"pavgb %%mm1, %%mm6				\n\t" //1122   11	/8
-		"pavgb %%mm5, %%mm6				\n\t" //112242211	/16
+		PAVGB((%%ebx), %%mm0)				      //       11	/2
+		PAVGB(%%mm0, %%mm6)				      //11     11	/4
+		PAVGB(%%mm1, %%mm4)				      // 11		/2
+		PAVGB(%%mm2, %%mm1)				      //  11		/2
+		PAVGB(%%mm1, %%mm6)				      //1122   11	/8
+		PAVGB(%%mm5, %%mm6)				      //112242211	/16
 		"movq (%%eax), %%mm5				\n\t" //    1
 		"movq %%mm6, (%%eax)				\n\t" //    X
 		// mm0=7(11) mm1=2(11) mm2=3 mm3=6(11) mm4=1(11) mm5=4 mm7=9
 		"movq (%%eax, %1, 4), %%mm6			\n\t" //        1
-		"pavgb %%mm7, %%mm6				\n\t" //        11	/2
-		"pavgb %%mm4, %%mm6				\n\t" // 11     11	/4
-		"pavgb %%mm3, %%mm6				\n\t" // 11   2211	/8
-		"pavgb %%mm5, %%mm2				\n\t" //   11		/2
+		PAVGB(%%mm7, %%mm6)				      //        11	/2
+		PAVGB(%%mm4, %%mm6)				      // 11     11	/4
+		PAVGB(%%mm3, %%mm6)				      // 11   2211	/8
+		PAVGB(%%mm5, %%mm2)				      //   11		/2
 		"movq (%0, %1, 4), %%mm4			\n\t" //     1
-		"pavgb %%mm4, %%mm2				\n\t" //   112		/4
-		"pavgb %%mm2, %%mm6				\n\t" // 112242211	/16
+		PAVGB(%%mm4, %%mm2)				      //   112		/4
+		PAVGB(%%mm2, %%mm6)				      // 112242211	/16
 		"movq %%mm6, (%0, %1, 4)			\n\t" //     X
 		// mm0=7(11) mm1=2(11) mm2=3(112) mm3=6(11) mm4=5 mm5=4 mm7=9
-		"pavgb %%mm7, %%mm1				\n\t" //  11     2	/4
-		"pavgb %%mm4, %%mm5				\n\t" //    11		/2
-		"pavgb %%mm5, %%mm0				\n\t" //    11 11	/4
+		PAVGB(%%mm7, %%mm1)				      //  11     2	/4
+		PAVGB(%%mm4, %%mm5)				      //    11		/2
+		PAVGB(%%mm5, %%mm0)				      //    11 11	/4
 		"movq (%%eax, %1, 2), %%mm6			\n\t" //      1
-		"pavgb %%mm6, %%mm1				\n\t" //  11  4  2	/8
-		"pavgb %%mm0, %%mm1				\n\t" //  11224222	/16
+		PAVGB(%%mm6, %%mm1)				      //  11  4  2	/8
+		PAVGB(%%mm0, %%mm1)				      //  11224222	/16
 //		"pxor %%mm1, %%mm1 \n\t"
 		"movq %%mm1, (%%eax, %1, 2)			\n\t" //      X
 		// mm2=3(112) mm3=6(11) mm4=5 mm5=4(11) mm6=6 mm7=9
-		"pavgb (%%ebx), %%mm2				\n\t" //   112 4	/8
+		PAVGB((%%ebx), %%mm2)				      //   112 4	/8
 		"movq (%%eax, %1, 4), %%mm0			\n\t" //        1
-		"pavgb %%mm0, %%mm6				\n\t" //      1 1	/2
-		"pavgb %%mm7, %%mm6				\n\t" //      1 12	/4
-		"pavgb %%mm2, %%mm6				\n\t" //   1122424	/4
+		PAVGB(%%mm0, %%mm6)				      //      1 1	/2
+		PAVGB(%%mm7, %%mm6)				      //      1 12	/4
+		PAVGB(%%mm2, %%mm6)				      //   1122424	/4
 //		"pxor %%mm6, %%mm6 \n\t"
 		"movq %%mm6, (%%ebx)				\n\t" //       X
 		// mm0=8 mm3=6(11) mm4=5 mm5=4(11) mm7=9
-		"pavgb %%mm7, %%mm5				\n\t" //    11   2	/4
-		"pavgb %%mm7, %%mm5				\n\t" //    11   6	/8
+		PAVGB(%%mm7, %%mm5)				      //    11   2	/4
+		PAVGB(%%mm7, %%mm5)				      //    11   6	/8
 
-		"pavgb %%mm3, %%mm0				\n\t" //      112	/4
-		"pavgb %%mm0, %%mm5				\n\t" //    112246	/16
+		PAVGB(%%mm3, %%mm0)				      //      112	/4
+		PAVGB(%%mm0, %%mm5)				      //    112246	/16
 //		"pxor %%mm5, %%mm5 \n\t"
 //		"movq pQPb, %%mm5 \n\t"
 		"movq %%mm5, (%%eax, %1, 4)			\n\t" //        X
@@ -456,7 +474,6 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 		: "r" (src), "r" (stride)
 		: "%eax", "%ebx"
 	);
-
 #else
 	const int l1= stride;
 	const int l2= stride + l1;
@@ -498,6 +515,153 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 
 #endif
 }
+
+/**
+ * Experimental implementation of the filter (Algorithm 1) described in a paper from Ramkishor & Karandikar
+ * values are correctly clipped (MMX2)
+ * values are wraparound (C)
+ * conclusion: its fast, but introduces ugly horizontal patterns if there is a continious gradient
+	0 8 16 24
+	x = 8
+	x/2 = 4
+	x/8 = 1
+	1 12 12 23
+ */
+static inline void vertRKFilter(uint8_t *src, int stride, int QP)
+{
+#ifdef HAVE_MMX2
+// FIXME rounding
+	asm volatile(
+		"pxor %%mm7, %%mm7				\n\t" // 0
+		"movq b80, %%mm6				\n\t" // MIN_SIGNED_BYTE
+		"leal (%0, %1), %%eax				\n\t"
+		"leal (%%eax, %1, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
+		"movq pQPb, %%mm0				\n\t" // QP,..., QP
+		"movq %%mm0, %%mm1				\n\t" // QP,..., QP
+		"paddusb b02, %%mm0				\n\t"
+		"psrlw $2, %%mm0				\n\t"
+		"pand b3F, %%mm0				\n\t" // QP/4,..., QP/4
+		"paddusb %%mm1, %%mm0				\n\t" // QP*1.25 ...
+		"movq (%0, %1, 4), %%mm2			\n\t" // line 4
+		"movq (%%ebx), %%mm3				\n\t" // line 5
+		"movq %%mm2, %%mm4				\n\t" // line 4
+		"pcmpeqb %%mm5, %%mm5				\n\t" // -1
+		"pxor %%mm2, %%mm5				\n\t" // -line 4 - 1
+		"pavgb %%mm3, %%mm5				\n\t"
+		"paddb %%mm6, %%mm5				\n\t" // (l5-l4)/2
+		"psubusb %%mm3, %%mm4				\n\t"
+		"psubusb %%mm2, %%mm3				\n\t"
+		"por %%mm3, %%mm4				\n\t" // |l4 - l5|
+		"psubusb %%mm0, %%mm4				\n\t"
+		"pcmpeqb %%mm7, %%mm4				\n\t"
+		"pand %%mm4, %%mm5				\n\t" // d/2
+
+//		"paddb %%mm6, %%mm2				\n\t" // line 4 + 0x80
+		"paddb %%mm5, %%mm2				\n\t"
+//		"psubb %%mm6, %%mm2				\n\t"
+		"movq %%mm2, (%0,%1, 4)				\n\t"
+
+		"movq (%%ebx), %%mm2				\n\t"
+//		"paddb %%mm6, %%mm2				\n\t" // line 5 + 0x80
+		"psubb %%mm5, %%mm2				\n\t"
+//		"psubb %%mm6, %%mm2				\n\t"
+		"movq %%mm2, (%%ebx)				\n\t"
+
+		"paddb %%mm6, %%mm5				\n\t"
+		"psrlw $2, %%mm5				\n\t"
+		"pand b3F, %%mm5				\n\t"
+		"psubb b20, %%mm5				\n\t" // (l5-l4)/8
+
+		"movq (%%eax, %1, 2), %%mm2			\n\t"
+		"paddb %%mm6, %%mm2				\n\t" // line 3 + 0x80
+		"paddsb %%mm5, %%mm2				\n\t"
+		"psubb %%mm6, %%mm2				\n\t"
+		"movq %%mm2, (%%eax, %1, 2)			\n\t"
+
+		"movq (%%ebx, %1), %%mm2			\n\t"
+		"paddb %%mm6, %%mm2				\n\t" // line 6 + 0x80
+		"psubsb %%mm5, %%mm2				\n\t"
+		"psubb %%mm6, %%mm2				\n\t"
+		"movq %%mm2, (%%ebx, %1)			\n\t"
+
+		:
+		: "r" (src), "r" (stride)
+		: "%eax", "%ebx"
+	);
+#else
+ 	const int l1= stride;
+	const int l2= stride + l1;
+	const int l3= stride + l2;
+	const int l4= stride + l3;
+	const int l5= stride + l4;
+	const int l6= stride + l5;
+	const int l7= stride + l6;
+	const int l8= stride + l7;
+	const int l9= stride + l8;
+	for(int x=0; x<BLOCK_SIZE; x++)
+	{
+		if(ABS(src[l4]-src[l5]) < QP + QP/4)
+		{
+			int x = src[l5] - src[l4];
+
+			src[l3] +=x/8;
+			src[l4] +=x/2;
+			src[l5] -=x/2;
+			src[l6] -=x/8;
+		}
+		src++;
+	}
+
+#endif
+}
+
+/**
+ * Experimental Filter 1
+ */
+static inline void vertX1Filter(uint8_t *src, int stride, int QP)
+{
+#ifdef HAVE_MMX2X
+// FIXME
+	asm volatile(
+
+		:
+		: "r" (src), "r" (stride)
+		: "%eax", "%ebx"
+	);
+#else
+ 	const int l1= stride;
+	const int l2= stride + l1;
+	const int l3= stride + l2;
+	const int l4= stride + l3;
+	const int l5= stride + l4;
+	const int l6= stride + l5;
+	const int l7= stride + l6;
+	const int l8= stride + l7;
+	const int l9= stride + l8;
+	for(int x=0; x<BLOCK_SIZE; x++)
+	{
+		int v2= src[l2];
+		int v3= src[l3];
+		int v4= src[l4];
+		int v5= src[l5];
+		int v6= src[l6];
+		int v7= src[l7];
+
+		if(ABS(v4-v5)<QP &&  ABS(v4-v5) - (ABS(v3-v4) + ABS(v5-v6))>0 )
+		{
+			src[l3] = (6*v2 + 4*v3 + 3*v4 + 2*v5 + v6         )/16;
+			src[l4] = (3*v2 + 3*v3 + 4*v4 + 3*v5 + 2*v6 + v7  )/16;
+			src[l5] = (1*v2 + 2*v3 + 3*v4 + 4*v5 + 3*v6 + 3*v7)/16;
+			src[l6] = (       1*v3 + 2*v4 + 3*v5 + 4*v6 + 6*v7)/16;
+		}
+		src++;
+	}
+
+#endif
+}
+
 
 static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 {
@@ -915,7 +1079,7 @@ FIXME
 
 static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP)
 {
-#ifdef HAVE_MMX2
+#ifdef HAVE_MMX
 	asm volatile(
 		"pushl %0					\n\t"
 		"pxor %%mm7, %%mm7				\n\t"
@@ -930,17 +1094,48 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 		"leal tempBlock, %%eax				\n\t"
 
 //FIXME? "unroll by 2" and mix
-#define HDF(i)	"movq " #i "(%%eax), %%mm0			\n\t"\
+#ifdef HAVE_MMX2
+#define HDF(i)	\
+		"movq " #i "(%%eax), %%mm0			\n\t"\
 		"movq %%mm0, %%mm1				\n\t"\
 		"movq %%mm0, %%mm2				\n\t"\
 		"psrlq $8, %%mm1				\n\t"\
 		"psubusb %%mm1, %%mm2				\n\t"\
 		"psubusb %%mm0, %%mm1				\n\t"\
-		"por %%mm2, %%mm1				\n\t" /* |px - p(x+1)| */\
-		"pcmpeqb %%mm7, %%mm2				\n\t" /* sgn[px - p(x+1)] */\
-		"pshufw $0xAA, %%mm1, %%mm3			\n\t"\
-		"pminub %%mm1, %%mm3				\n\t"\
-		"psrlq $16, %%mm3				\n\t"\
+		"por %%mm2, %%mm1				\n\t" /* p´x = |px - p(x+1)| */\
+		"pcmpeqb %%mm7, %%mm2				\n\t" /* p´x = sgn[px - p(x+1)] */\
+		"pshufw $0x00, %%mm1, %%mm3			\n\t" /* p´5 = |p1 - p2| */\
+		"pminub %%mm1, %%mm3				\n\t" /* p´5 = min(|p2-p1|, |p6-p5|)*/\
+		"psrlq $16, %%mm3				\n\t" /* p´3 = min(|p2-p1|, |p6-p5|)*/\
+		"psubusb %%mm3, %%mm1			\n\t" /* |p3-p4|-min(|p1-p2|,|p5-p6|) */\
+		"paddb %%mm5, %%mm1				\n\t"\
+		"psubusb %%mm5, %%mm1				\n\t"\
+		"psrlw $2, %%mm1				\n\t"\
+		"pxor %%mm2, %%mm1				\n\t"\
+		"psubb %%mm2, %%mm1				\n\t"\
+		"pand %%mm6, %%mm1				\n\t"\
+		"psubb %%mm1, %%mm0				\n\t"\
+		"psllq $8, %%mm1				\n\t"\
+		"paddb %%mm1, %%mm0				\n\t"\
+		"movd %%mm0, (%0)				\n\t"\
+		"psrlq $32, %%mm0				\n\t"\
+		"movd %%mm0, 4(%0)				\n\t"
+#else
+#define HDF(i)\
+		"movq " #i "(%%eax), %%mm0			\n\t"\
+		"movq %%mm0, %%mm1				\n\t"\
+		"movq %%mm0, %%mm2				\n\t"\
+		"psrlq $8, %%mm1				\n\t"\
+		"psubusb %%mm1, %%mm2				\n\t"\
+		"psubusb %%mm0, %%mm1				\n\t"\
+		"por %%mm2, %%mm1				\n\t" /* p´x = |px - p(x+1)| */\
+		"pcmpeqb %%mm7, %%mm2				\n\t" /* p´x = sgn[px - p(x+1)] */\
+		"movq %%mm1, %%mm3				\n\t"\
+		"psllq $32, %%mm3				\n\t"\
+		"movq %%mm3, %%mm4				\n\t"\
+		"psubusb %%mm1, %%mm4				\n\t"\
+		"psubb %%mm4, %%mm3				\n\t"\
+		"psrlq $16, %%mm3				\n\t" /* p´3 = min(|p2-p1|, |p6-p5|)*/\
 		"psubusb %%mm3, %%mm1			\n\t" /* |p3-p4|-min(|p1-p2|,|p5,ü6|) */\
 		"paddb %%mm5, %%mm1				\n\t"\
 		"psubusb %%mm5, %%mm1				\n\t"\
@@ -954,7 +1149,7 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 		"movd %%mm0, (%0)				\n\t"\
 		"psrlq $32, %%mm0				\n\t"\
 		"movd %%mm0, 4(%0)				\n\t"
-
+#endif
 		HDF(0)
 		"addl %1, %0					\n\t"
 		HDF(8)
@@ -1025,21 +1220,21 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 /**
  * Do a horizontal low pass filter on the 8x8 block
  * useing the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16 (C version)
- * useing approximately the 7-Tap Filter (1,2,3,4,3,2,1)/16 (MMX2 version)
+ * useing approximately the 7-Tap Filter (1,2,3,4,3,2,1)/16 (MMX2/3DNOW version)
  */
 static inline void doHorizLowPassAndCopyBack(uint8_t dst[], int stride, int QP)
 {
 //return;
-#ifdef HAVE_MMX2
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	asm volatile(	//"movv %0 %1 %2\n\t"
 		"pushl %0\n\t"
 		"pxor %%mm7, %%mm7					\n\t"
 		"leal tempBlock, %%eax					\n\t"
-
+/*
 #define HLP1	"movq (%0), %%mm0					\n\t"\
 		"movq %%mm0, %%mm1					\n\t"\
 		"psllq $8, %%mm0					\n\t"\
-		"pavgb %%mm1, %%mm0					\n\t"\
+		PAVGB(%%mm1, %%mm0)\
 		"psrlw $8, %%mm0					\n\t"\
 		"pxor %%mm1, %%mm1					\n\t"\
 		"packuswb %%mm1, %%mm0					\n\t"\
@@ -1048,13 +1243,13 @@ static inline void doHorizLowPassAndCopyBack(uint8_t dst[], int stride, int QP)
 		"psllq $32, %%mm0					\n\t"\
 		"paddb %%mm0, %%mm1					\n\t"\
 		"psllq $16, %%mm2					\n\t"\
-		"pavgb %%mm2, %%mm0					\n\t"\
+		PAVGB(%%mm2, %%mm0)\
 		"movq %%mm0, %%mm3					\n\t"\
 		"pand bm11001100, %%mm0					\n\t"\
 		"paddusb %%mm0, %%mm3					\n\t"\
 		"psrlq $8, %%mm3					\n\t"\
-		"pavgb %%mm1, %%mm4					\n\t"\
-		"pavgb %%mm3, %%mm2					\n\t"\
+		PAVGB(%%mm1, %%mm4)\
+		PAVGB(%%mm3, %%mm2)\
 		"psrlq $16, %%mm2					\n\t"\
 		"punpcklbw %%mm2, %%mm2					\n\t"\
 		"movq %%mm2, (%0)					\n\t"\
@@ -1062,23 +1257,23 @@ static inline void doHorizLowPassAndCopyBack(uint8_t dst[], int stride, int QP)
 #define HLP2	"movq (%0), %%mm0					\n\t"\
 		"movq %%mm0, %%mm1					\n\t"\
 		"psllq $8, %%mm0					\n\t"\
-		"pavgb %%mm1, %%mm0					\n\t"\
+		PAVGB(%%mm1, %%mm0)\
 		"psrlw $8, %%mm0					\n\t"\
 		"pxor %%mm1, %%mm1					\n\t"\
 		"packuswb %%mm1, %%mm0					\n\t"\
 		"movq %%mm0, %%mm2					\n\t"\
 		"psllq $32, %%mm0					\n\t"\
 		"psllq $16, %%mm2					\n\t"\
-		"pavgb %%mm2, %%mm0					\n\t"\
+		PAVGB(%%mm2, %%mm0)\
 		"movq %%mm0, %%mm3					\n\t"\
 		"pand bm11001100, %%mm0					\n\t"\
 		"paddusb %%mm0, %%mm3					\n\t"\
 		"psrlq $8, %%mm3					\n\t"\
-		"pavgb %%mm3, %%mm2					\n\t"\
+		PAVGB(%%mm3, %%mm2)\
 		"psrlq $16, %%mm2					\n\t"\
 		"punpcklbw %%mm2, %%mm2					\n\t"\
 		"movq %%mm2, (%0)					\n\t"\
-
+*/
 // approximately a 7-Tap Filter with Vector (1,2,3,4,3,2,1)/16
 /*
  31
@@ -1100,6 +1295,7 @@ Implemented	Exact 7-Tap
      1249	   123A
 
 */
+#ifdef HAVE_MMX2
 #define HLP3(i)	"movq " #i "(%%eax), %%mm0				\n\t"\
 		"movq %%mm0, %%mm1					\n\t"\
 		"movq %%mm0, %%mm2					\n\t"\
@@ -1111,16 +1307,47 @@ Implemented	Exact 7-Tap
 		"pand bm10000000, %%mm4					\n\t"\
 		"por %%mm3, %%mm1					\n\t"\
 		"por %%mm4, %%mm2					\n\t"\
-		"pavgb %%mm2, %%mm1					\n\t"\
-		"pavgb %%mm1, %%mm0					\n\t"\
+		PAVGB(%%mm2, %%mm1)\
+		PAVGB(%%mm1, %%mm0)\
 \
 		"pshufw $0xF9, %%mm0, %%mm3				\n\t"\
 		"pshufw $0x90, %%mm0, %%mm4				\n\t"\
-		"pavgb %%mm3, %%mm4					\n\t"\
-		"pavgb %%mm4, %%mm0					\n\t"\
+		PAVGB(%%mm3, %%mm4)\
+		PAVGB(%%mm4, %%mm0)\
 		"movd %%mm0, (%0)					\n\t"\
 		"psrlq $32, %%mm0					\n\t"\
-		"movd %%mm0, 4(%0)					\n\t"\
+		"movd %%mm0, 4(%0)					\n\t"
+#else
+#define HLP3(i)	"movq " #i "(%%eax), %%mm0				\n\t"\
+		"movq %%mm0, %%mm1					\n\t"\
+		"movq %%mm0, %%mm2					\n\t"\
+		"movq %%mm0, %%mm3					\n\t"\
+		"movq %%mm0, %%mm4					\n\t"\
+		"psllq $8, %%mm1					\n\t"\
+		"psrlq $8, %%mm2					\n\t"\
+		"pand bm00000001, %%mm3					\n\t"\
+		"pand bm10000000, %%mm4					\n\t"\
+		"por %%mm3, %%mm1					\n\t"\
+		"por %%mm4, %%mm2					\n\t"\
+		PAVGB(%%mm2, %%mm1)\
+		PAVGB(%%mm1, %%mm0)\
+\
+		"movq %%mm0, %%mm3					\n\t"\
+		"movq %%mm0, %%mm4					\n\t"\
+		"movq %%mm0, %%mm5					\n\t"\
+		"psrlq $16, %%mm3					\n\t"\
+		"psllq $16, %%mm4					\n\t"\
+		"pand bm11000000, %%mm5					\n\t"\
+		"por %%mm5, %%mm3					\n\t"\
+		"movq %%mm0, %%mm5					\n\t"\
+		"pand bm00000011, %%mm5					\n\t"\
+		"por %%mm5, %%mm4					\n\t"\
+		PAVGB(%%mm3, %%mm4)\
+		PAVGB(%%mm4, %%mm0)\
+		"movd %%mm0, (%0)					\n\t"\
+		"psrlq $32, %%mm0					\n\t"\
+		"movd %%mm0, 4(%0)					\n\t"
+#endif
 
 #define HLP(i) HLP3(i)
 
@@ -1229,7 +1456,7 @@ FIND_MIN_MAX(%%ebx, %1, 2)
 		"movq %%mm7, %%mm4				\n\t"
 		"psrlq $8, %%mm7				\n\t"
 		"pmaxub %%mm4, %%mm7				\n\t" // max of pixels
-		"pavgb %%mm6, %%mm7				\n\t" // (max + min)/2
+		PAVGB(%%mm6, %%mm7)				      // (max + min)/2
 
 
 		: : "r" (src), "r" (stride), "r" (QP)
@@ -1241,8 +1468,13 @@ FIND_MIN_MAX(%%ebx, %1, 2)
 #endif
 }
 
+
+
+
 /**
  * ...
+ * the mode value is interpreted as a quality value if its negative, its range is then (-1 ... -63)
+ * -63 is best quality -1 is worst
  */
 extern "C"{
 void  postprocess(unsigned char * src[], int src_stride,
@@ -1251,6 +1483,9 @@ void  postprocess(unsigned char * src[], int src_stride,
                  QP_STORE_T *QP_store,  int QP_stride,
 					  int mode)
 {
+
+	if(mode<0) mode= getModeForQuality(-mode);
+
 /*
 	long long T= rdtsc();
 	for(int y=vertical_size-1; y>=0 ; y--)
@@ -1266,8 +1501,8 @@ void  postprocess(unsigned char * src[], int src_stride,
 
 	return;
 */
-	postProcess(src[0], src_stride,
-		dst[0], dst_stride, horizontal_size, vertical_size, QP_store, QP_stride, false);
+	postProcess(src[0], src_stride, dst[0], dst_stride,
+		horizontal_size, vertical_size, QP_store, QP_stride, false, mode);
 
 	horizontal_size >>= 1;
 	vertical_size   >>= 1;
@@ -1276,10 +1511,10 @@ void  postprocess(unsigned char * src[], int src_stride,
 
 	if(1)
 	{
-		postProcess(src[1], src_stride,
-			dst[1], dst_stride, horizontal_size, vertical_size, QP_store, QP_stride, true);
-		postProcess(src[2], src_stride,
-			dst[2], dst_stride, horizontal_size, vertical_size, QP_store, QP_stride, true);
+		postProcess(src[1], src_stride, dst[1], dst_stride,
+			horizontal_size, vertical_size, QP_store, QP_stride, true, mode >>4);
+		postProcess(src[2], src_stride, dst[2], dst_stride,
+			horizontal_size, vertical_size, QP_store, QP_stride, true, mode >>4);
 	}
 	else
 	{
@@ -1287,7 +1522,24 @@ void  postprocess(unsigned char * src[], int src_stride,
 		memcpy(dst[2], src[2], src_stride*horizontal_size);
 	}
 }
+/**
+ * gets the mode flags for a given quality (larger values mean slower but better postprocessing)
+ * 0 <= quality < 64
+ */
+int getModeForQuality(int quality){
+	int modes[6]= {
+		LUM_V_DEBLOCK,
+		LUM_V_DEBLOCK | LUM_H_DEBLOCK,
+		LUM_V_DEBLOCK | LUM_H_DEBLOCK | CHROM_V_DEBLOCK,
+		LUM_V_DEBLOCK | LUM_H_DEBLOCK | CHROM_V_DEBLOCK | CHROM_H_DEBLOCK,
+		LUM_V_DEBLOCK | LUM_H_DEBLOCK | CHROM_V_DEBLOCK | CHROM_H_DEBLOCK | LUM_DERING,
+		LUM_V_DEBLOCK | LUM_H_DEBLOCK | CHROM_V_DEBLOCK | CHROM_H_DEBLOCK | LUM_DERING | CHROM_DERING
+		};
+
+	return modes[ (quality*6) >>6 ];
 }
+
+} // extern "C"
 
 /**
  * Copies a block from src to dst and fixes the blacklevel
@@ -1367,7 +1619,7 @@ CPY
  * Filters array of bytes (Y or U or V values)
  */
 void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, bool isColor)
+	QP_STORE_T QPs[], int QPStride, bool isColor, int mode)
 {
 
 #ifdef TIMEING
@@ -1413,7 +1665,6 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 		packedYOffset|= packedYOffset<<16;
 		packedYOffset|= packedYOffset<<8;
 
-//		uint64_t scale= (int)(256.0*256.0/(white-black) + 0.5);
 		double scale= (double)(maxAllowedY - minAllowedY) / (double)(white-black);
 
 		packedYScale= uint16_t(scale*256.0 + 0.5);
@@ -1462,12 +1713,19 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 #ifdef MORE_TIMEING
 				T0= rdtsc();
 #endif
-#ifdef HAVE_MMX2
 
+#ifdef HAVE_MMX2
 				prefetchnta(vertSrcBlock + (((x>>3)&3) + 2)*srcStride + 32);
 				prefetchnta(vertSrcBlock + (((x>>3)&3) + 6)*srcStride + 32);
 				prefetcht0(vertBlock + (((x>>3)&3) + 2)*dstStride + 32);
 				prefetcht0(vertBlock + (((x>>3)&3) + 6)*dstStride + 32);
+#elif defined(HAVE_3DNOW)
+//FIXME check if this is faster on an 3dnow chip or if its faster without the prefetch or ...
+/*				prefetch(vertSrcBlock + (((x>>3)&3) + 2)*srcStride + 32);
+				prefetch(vertSrcBlock + (((x>>3)&3) + 6)*srcStride + 32);
+				prefetchw(vertBlock + (((x>>3)&3) + 2)*dstStride + 32);
+				prefetchw(vertBlock + (((x>>3)&3) + 6)*dstStride + 32);
+*/
 #endif
 				if(!isColor) yHistogram[ srcBlock[0] ]++;
 
@@ -1480,15 +1738,23 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 				memcpyTime+= T1-T0;
 				T0=T1;
 #endif
-
-				if( isVertDC(vertBlock, stride))
+				if(mode & V_DEBLOCK)
 				{
-					if(isVertMinMaxOk(vertBlock, stride, QP))
-						doVertLowPass(vertBlock, stride, QP);
+					if(mode & RK_FILTER)
+						vertRKFilter(vertBlock, stride, QP);
+					else if(0)
+						vertX1Filter(vertBlock, stride, QP);
+					else
+					{
+						if( isVertDC(vertBlock, stride))
+						{
+							if(isVertMinMaxOk(vertBlock, stride, QP))
+								doVertLowPass(vertBlock, stride, QP);
+						}
+						else
+							doVertDefFilter(vertBlock, stride, QP);
+					}
 				}
-				else if(x<width)
-					doVertDefFilter(vertBlock, stride, QP);
-
 #ifdef MORE_TIMEING
 				T1= rdtsc();
 				vertTime+= T1-T0;
@@ -1508,15 +1774,16 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 #ifdef MORE_TIMEING
 				T0= rdtsc();
 #endif
-
-				if( isHorizDCAndCopy2Temp(dstBlock-4, stride))
+				if(mode & H_DEBLOCK)
 				{
-					if(isHorizMinMaxOk(tempBlock, TEMP_STRIDE, QP))
-						doHorizLowPassAndCopyBack(dstBlock-4, stride, QP);
+					if( isHorizDCAndCopy2Temp(dstBlock-4, stride))
+					{
+						if(isHorizMinMaxOk(tempBlock, TEMP_STRIDE, QP))
+							doHorizLowPassAndCopyBack(dstBlock-4, stride, QP);
+					}
+					else
+						doHorizDefFilterAndCopyBack(dstBlock-4, stride, QP);
 				}
-				else
-					doHorizDefFilterAndCopyBack(dstBlock-4, stride, QP);
-
 #ifdef MORE_TIMEING
 				T1= rdtsc();
 				horizTime+= T1-T0;
@@ -1535,7 +1802,9 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 			vertSrcBlock+=8;
 		}
 	}
-#ifdef HAVE_MMX
+#ifdef HAVE_3DNOW
+	asm volatile("femms");
+#elif defined (HAVE_MMX)
 	asm volatile("emms");
 #endif
 
@@ -1549,3 +1818,5 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 			, black, white);
 #endif
 }
+
+
