@@ -1889,7 +1889,7 @@ static inline void RENAME(initFilter)(int16_t *dstFilter, int16_t *filterPos, in
 //		printf("%d %d %d\n", filterSize, srcW, dstW);
 		*filterSize= (*filterSize +(filterAlign-1)) & (~(filterAlign-1));
 
-		xDstInSrc= xInc - 0x8000;
+		xDstInSrc= xInc/2 - 0x8000;
 		for(i=0; i<dstW; i++)
 		{
 			int xx= (xDstInSrc>>16) - (*filterSize>>1) + 1;
@@ -1937,10 +1937,10 @@ static inline void RENAME(initFilter)(int16_t *dstFilter, int16_t *filterPos, in
 //		printf("%d %d %d\n", *filterSize, srcW, dstW);
 		*filterSize= (*filterSize +(filterAlign-1)) & (~(filterAlign-1));
 
-		xDstInSrc= xInc - 0x8000;
+		xDstInSrc= xInc/2 - 0x8000;
 		for(i=0; i<dstW; i++)
 		{
-			int xx= (int)((double)xDstInSrc/(double)(1<<16) - *filterSize*0.5 + 0.5);
+			int xx= (int)((double)xDstInSrc/(double)(1<<16) - ((*filterSize)-1)*0.5 + 0.5);
 			int j;
 
 			filterPos[i]= xx;
