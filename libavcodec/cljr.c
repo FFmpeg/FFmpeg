@@ -67,9 +67,8 @@ static int decode_frame(AVCodecContext *avctx,
     for(y=0; y<avctx->height; y++){
         int offset;
         uint8_t *luma= &a->picture.data[0][ y*a->picture.linesize[0] ];
-        uint8_t *cb= &a->picture.data[1][ (y>>2)*a->picture.linesize[1] ];
-        uint8_t *cr= &a->picture.data[2][ (y>>2)*a->picture.linesize[2] ];
-
+        uint8_t *cb= &a->picture.data[1][ y*a->picture.linesize[1] ];
+        uint8_t *cr= &a->picture.data[2][ y*a->picture.linesize[2] ];
         for(x=0; x<avctx->width; x+=4){
     	    luma[3] = get_bits(&a->gb, 5) << 3;
 	    luma[2] = get_bits(&a->gb, 5) << 3;
@@ -127,7 +126,7 @@ static int decode_init(AVCodecContext *avctx){
  
     common_init(avctx);
     
-    avctx->pix_fmt= PIX_FMT_YUV410P;
+    avctx->pix_fmt= PIX_FMT_YUV411P;
 
     return 0;
 }
