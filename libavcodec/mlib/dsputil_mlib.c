@@ -112,12 +112,18 @@ static void add_pixels_clamped_mlib(const DCTELEM *block, UINT8 *pixels, int lin
     mlib_VideoAddBlock_U8_S16(pixels, (mlib_s16 *)block, line_size);
 }
 
-
-void ff_idct_mlib(DCTELEM *data)
+/* XXX: those functions should be suppressed ASAP when all IDCTs are
+   converted */
+static void mlib_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
 {
     mlib_VideoIDCT8x8_S16_S16 (data, data);
+    put_pixels_clamped(block, dest, line_size);
 }
-
+static void mlib_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    mlib_VideoIDCT8x8_S16_S16 (data, data);
+    add_pixels_clamped(block, dest, line_size);
+}
 
 void ff_fdct_mlib(DCTELEM *data)
 {
@@ -126,8 +132,6 @@ void ff_fdct_mlib(DCTELEM *data)
 
 void dsputil_init_mlib(void)
 {
-    ff_idct = ff_idct_mlib;
-
     put_pixels_tab[1][0] = put_pixels_mlib;
     put_pixels_tab[1][1] = put_pixels_x2_mlib;
     put_pixels_tab[1][2] = put_pixels_y2_mlib;
@@ -145,7 +149,18 @@ void dsputil_init_mlib(void)
 
 void MPV_common_init_mlib(MpegEncContext *s)
 {
+    int i;
+    const int idct_algo= s->avctx->idct_algo;
+
     if(s->avctx->dct_algo==FF_DCT_AUTO || s->avctx->dct_algo==FF_DCT_MLIB){
 	s->fdct = ff_fdct_mlib;
     }
+
+    if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_MLIB){
+        s->idct_put= mlib_idct_put;
+        s->idct_add= mlib_idct_add;
+        for(i=0; i<64; i++)
+            s->idct_permutation[i]= i;
+    }
+
 }

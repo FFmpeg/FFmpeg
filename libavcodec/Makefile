@@ -55,7 +55,7 @@ endif
 # armv4l specific stuff
 ifeq ($(TARGET_ARCH_ARMV4L),yes)
 ASM_OBJS += armv4l/jrevdct_arm.o
-OBJS += armv4l/dsputil_arm.o
+OBJS += armv4l/dsputil_arm.o armv4l/mpegvideo_arm.o
 endif
 
 # sun mediaLib specific stuff

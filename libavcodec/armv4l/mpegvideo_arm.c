@@ -1,6 +1,5 @@
 /*
- * ARMv4L optimized DSP utils
- * Copyright (c) 2001 Lionel Ulmer.
+ * Copyright (c) 2002 Michael Niedermayer
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -15,13 +14,37 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
  */
 
 #include "../dsputil.h"
+#include "../mpegvideo.h"
+#include "../avcodec.h"
 
 extern void j_rev_dct_ARM(DCTELEM *data);
 
-void dsputil_init_armv4l(void)
+/* XXX: those functions should be suppressed ASAP when all IDCTs are
+   converted */
+static void arm_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
 {
-//  ff_idct = j_rev_dct_ARM;
+    j_rev_dct_ARM (block);
+    put_pixels_clamped(block, dest, line_size);
+}
+static void arm_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    j_rev_dct_ARM (block);
+    add_pixels_clamped(block, dest, line_size);
+}
+
+void MPV_common_init_armv4l(MpegEncContext *s)
+{
+    int i;
+    const int idct_algo= s->avctx->idct_algo;
+
+    if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_ARM){
+        s->idct_put= arm_idct_put;
+        s->idct_add= arm_idct_add;
+        for(i=0; i<64; i++)
+            s->idct_permutation[i]= i;
+    }
 }

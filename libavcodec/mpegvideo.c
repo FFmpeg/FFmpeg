@@ -218,6 +218,10 @@ int DCT_common_init(MpegEncContext *s)
 #ifdef HAVE_MMI
     MPV_common_init_mmi(s);
 #endif
+#ifdef ARCH_ARMV4L
+    MPV_common_init_armv4l();
+#endif
+
 
     /* load & permutate scantables
        note: only wmv uses differnt ones 
