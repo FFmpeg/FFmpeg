@@ -3010,25 +3010,28 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                         else                                pred+= abs_diff_pic_num;
                         pred &= h->max_pic_num - 1;
                     
-                        for(i= h->ref_count[list]-1; i>=index; i--){
-                            if(h->ref_list[list][i].pic_id == pred && h->ref_list[list][i].long_ref==0)
+                        for(i= h->ref_count[list]-1; i>=0; i--){
+                            if(h->ref_list[list][i].data[0] != NULL && h->ref_list[list][i].pic_id == pred && h->ref_list[list][i].long_ref==0) // ignore non existing pictures by testing data[0] pointer
                                 break;
                         }
                     }else{
                         pic_id= get_ue_golomb(&s->gb); //long_term_pic_idx
 
-                        for(i= h->ref_count[list]-1; i>=index; i--){
-                            if(h->ref_list[list][i].pic_id == pic_id && h->ref_list[list][i].long_ref==1)
+                        for(i= h->ref_count[list]-1; i>=0; i--){
+                            if(h->ref_list[list][i].pic_id == pic_id && h->ref_list[list][i].long_ref==1) // no need to ignore non existing pictures as non existing pictures have long_ref==0
                                 break;
                         }
                     }
 
-                    if(i < index){
+                    if (i < 0) {
                         av_log(h->s.avctx, AV_LOG_ERROR, "reference picture missing during reorder\n");
                         memset(&h->ref_list[list][index], 0, sizeof(Picture)); //FIXME
-                    }else if(i > index){
+                    } else if (i != index) /* this test is not necessary, it is only an optimisation to skip double copy of Picture structure in this case */ {
                         Picture tmp= h->ref_list[list][i];
-                        for(; i>index; i--){
+                        if (i < index) {
+                            i = h->ref_count[list];
+                        }
+                        for(; i > index; i--){
                             h->ref_list[list][i]= h->ref_list[list][i-1];
                         }
                         h->ref_list[list][index]= tmp;
