@@ -53,7 +53,12 @@ static int dv_read_header(AVFormatContext *s,
     return 0;
 }
 
-/* XXX: build fake audio stream when DV audio decoder will be finished */
+static void __destruct_pkt(struct AVPacket *pkt)
+{
+    pkt->data = NULL; pkt->size = 0;
+    return;
+}
+
 static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, dsf;
@@ -74,13 +79,14 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    return -EIO;
     }
     
-    if (av_new_packet(pkt, c->size) < 0)
-        return -EIO;
-
+    av_init_packet(pkt);
+    pkt->destruct = __destruct_pkt;
+    pkt->data     = c->buf;
+    pkt->size     = c->size;
     pkt->stream_index = c->is_audio;
+    
     c->is_audio = !c->is_audio;
-    memcpy(pkt->data, c->buf, c->size);
-    return ret;
+    return c->size;
 }
 
 static int dv_read_close(AVFormatContext *s)
