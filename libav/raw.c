@@ -81,13 +81,19 @@ static int raw_read_header(AVFormatContext *s,
 int raw_read_packet(AVFormatContext *s,
                     AVPacket *pkt)
 {
-    int ret;
+    int ret, size;
+    AVStream *st = s->streams[0];
+    
+    if(st->codec.codec_id == CODEC_ID_MPEG4)
+        size= 1024*1024; //cant handle partial frames
+    else
+        size= RAW_PACKET_SIZE;
 
-    if (av_new_packet(pkt, RAW_PACKET_SIZE) < 0)
+    if (av_new_packet(pkt, size) < 0)
         return -EIO;
 
     pkt->stream_index = 0;
-    ret = get_buffer(&s->pb, pkt->data, RAW_PACKET_SIZE);
+    ret = get_buffer(&s->pb, pkt->data, size);
     if (ret <= 0) {
         av_free_packet(pkt);
         return -EIO;
@@ -132,7 +138,8 @@ static int video_read_header(AVFormatContext *s,
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = s->iformat->value;
     /* for mjpeg, specify frame rate */
-    if (st->codec.codec_id == CODEC_ID_MJPEG) {
+    /* for mpeg4 specify it too (most mpeg4 streams dont have the fixed_vop_rate set ...)*/
+    if (st->codec.codec_id == CODEC_ID_MJPEG || st->codec.codec_id == CODEC_ID_MPEG4) {
         if (ap) {
             st->codec.frame_rate = ap->frame_rate;
         } else {
@@ -231,6 +238,17 @@ AVOutputFormat h263_oformat = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+};
+
+AVInputFormat m4v_iformat = {
+    "m4v",
+    "raw MPEG4 video format",
+    0,
+    mpegvideo_probe,
+    video_read_header,
+    raw_read_packet,
+    raw_read_close,
+    value: CODEC_ID_MPEG4,
 };
 
 AVOutputFormat m4v_oformat = {
@@ -434,6 +452,7 @@ int raw_init(void)
 
     av_register_output_format(&h263_oformat);
     
+    av_register_input_format(&m4v_iformat);
     av_register_output_format(&m4v_oformat);
 
     av_register_input_format(&mpegvideo_iformat);
