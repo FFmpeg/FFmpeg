@@ -222,12 +222,23 @@ static int fourxm_read_packet(AVFormatContext *s,
         switch (fourcc_tag) {
 
         case ifrm_TAG:
-        case pfrm_TAG:
-        case cfrm_TAG:
 printf (" %cfrm chunk\n", (char)(fourcc_tag >> 24) & 0xFF);
 url_fseek(pb, size, SEEK_CUR);
             break;
-
+        case pfrm_TAG:
+printf (" %cfrm chunk\n", (char)(fourcc_tag >> 24) & 0xFF);
+url_fseek(pb, size, SEEK_CUR);
+            break;
+        case cfrm_TAG:{
+get_le32(pb);
+int id= get_le32(pb);
+int whole= get_le32(pb);
+static int stats[1000];
+stats[id] += size - 12;
+printf(" cfrm chunk id:%d size:%d whole:%d until now:%d\n", id, size, whole, stats[id]);
+url_fseek(pb, size-12, SEEK_CUR);
+            break;
+        }
         case snd__TAG:
 printf (" snd_ chunk, ");
             track_number = get_le32(pb);
