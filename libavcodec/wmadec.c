@@ -19,8 +19,8 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-//#define DEBUG_PARAMS
-//#define DEBUG_TRACE
+#define DEBUG_PARAMS
+#define DEBUG_TRACE
 
 /* size of blocks */
 #define BLOCK_MIN_BITS 7
@@ -34,7 +34,7 @@
 
 #define NB_LSP_COEFS 10
 
-/* XXX: is it a suitable [18~value ? */
+/* XXX: is it a suitable value ? */
 #define MAX_CODED_SUPERFRAME_SIZE 4096
 
 #define MAX_CHANNELS 2
