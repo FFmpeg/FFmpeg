@@ -109,7 +109,7 @@ static int encode_init(AVCodecContext *avctx)
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_ALAW:
         if (linear_to_alaw_ref == 0) {
-            linear_to_alaw = malloc(16384);
+            linear_to_alaw = av_malloc(16384);
             if (!linear_to_alaw)
                 return -1;
             build_xlaw_table(linear_to_alaw, alaw2linear, 0xd5);
@@ -118,7 +118,7 @@ static int encode_init(AVCodecContext *avctx)
         break;
     case CODEC_ID_PCM_MULAW:
         if (linear_to_ulaw_ref == 0) {
-            linear_to_ulaw = malloc(16384);
+            linear_to_ulaw = av_malloc(16384);
             if (!linear_to_ulaw)
                 return -1;
             build_xlaw_table(linear_to_ulaw, ulaw2linear, 0xff);
@@ -136,11 +136,11 @@ static int encode_close(AVCodecContext *avctx)
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_ALAW:
         if (--linear_to_alaw_ref == 0)
-            free(linear_to_alaw);
+            av_free(linear_to_alaw);
         break;
     case CODEC_ID_PCM_MULAW:
         if (--linear_to_ulaw_ref == 0)
-            free(linear_to_ulaw);
+            av_free(linear_to_ulaw);
         break;
     default:
         /* nothing to free */

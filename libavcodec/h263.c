@@ -1553,11 +1553,11 @@ void init_rl(RLTable *rl)
             if (run > max_run[level])
                 max_run[level] = run;
         }
-        rl->max_level[last] = malloc(MAX_RUN + 1);
+        rl->max_level[last] = av_malloc(MAX_RUN + 1);
         memcpy(rl->max_level[last], max_level, MAX_RUN + 1);
-        rl->max_run[last] = malloc(MAX_LEVEL + 1);
+        rl->max_run[last] = av_malloc(MAX_LEVEL + 1);
         memcpy(rl->max_run[last], max_run, MAX_LEVEL + 1);
-        rl->index_run[last] = malloc(MAX_RUN + 1);
+        rl->index_run[last] = av_malloc(MAX_RUN + 1);
         memcpy(rl->index_run[last], index_run, MAX_RUN + 1);
     }
 }

@@ -16,12 +16,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-#include "dsputil.h"
 #include "avcodec.h"
+#include "dsputil.h"
 
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
@@ -454,7 +450,7 @@ ImgReSampleContext *img_resample_init(int owidth, int oheight,
 
     return s;
  fail:
-    free(s);
+    av_free(s);
     return NULL;
 }
 
@@ -474,8 +470,8 @@ void img_resample(ImgReSampleContext *s,
 
 void img_resample_close(ImgReSampleContext *s)
 {
-    free(s->line_buf);
-    free(s);
+    av_free(s->line_buf);
+    av_free(s);
 }
 
 #ifdef TEST

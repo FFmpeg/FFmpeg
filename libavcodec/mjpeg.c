@@ -23,10 +23,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "common.h"
-
-#include <string.h>
-#include <stdio.h>
 
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
@@ -246,7 +242,7 @@ int mjpeg_init(MpegEncContext *s)
 {
     MJpegContext *m;
     
-    m = malloc(sizeof(MJpegContext));
+    m = av_malloc(sizeof(MJpegContext));
     if (!m)
         return -1;
     
@@ -278,7 +274,7 @@ int mjpeg_init(MpegEncContext *s)
 
 void mjpeg_close(MpegEncContext *s)
 {
-    free(s->mjpeg_ctx);
+    av_free(s->mjpeg_ctx);
 }
 
 static inline void put_marker(PutBitContext *p, int code)
@@ -777,10 +773,8 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
     /* if different size, realloc/alloc picture */
     /* XXX: also check h_count and v_count */
     if (width != s->width || height != s->height) {
-        for(i=0;i<MAX_COMPONENTS;i++) {
-            free(s->current_picture[i]);
-            s->current_picture[i] = NULL;
-        }
+        for(i=0;i<MAX_COMPONENTS;i++)
+            av_freep(&s->current_picture[i]);
         s->width = width;
         s->height = height;
         /* test interlaced mode */
@@ -1128,7 +1122,7 @@ static int mjpeg_decode_com(MJpegDecodeContext *s,
 
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16)-2;
-    cbuf = malloc(len+1);
+    cbuf = av_malloc(len+1);
 
     for (i = 0; i < len; i++)
 	cbuf[i] = get_bits(&s->gb, 8);
@@ -1147,7 +1141,7 @@ static int mjpeg_decode_com(MJpegDecodeContext *s,
 	    printf("mjpeg: workarounding buggy AVID\n");
     }
     
-    free(cbuf);
+    av_free(cbuf);
 
     return 0;
 }
@@ -1332,7 +1326,7 @@ static int mjpeg_decode_end(AVCodecContext *avctx)
     int i, j;
 
     for(i=0;i<MAX_COMPONENTS;i++)
-        free(s->current_picture[i]);
+        av_free(s->current_picture[i]);
     for(i=0;i<2;i++) {
         for(j=0;j<4;j++)
             free_vlc(&s->vlcs[i][j]);

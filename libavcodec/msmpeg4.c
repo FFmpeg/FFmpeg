@@ -16,12 +16,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include "common.h"
+#include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "avcodec.h"
 
 /*
  * You can also call this codec : MPEG4 with a twist ! 
@@ -137,7 +134,7 @@ static void init_mv_table(MVTable *tab)
 {
     int i, x, y;
 
-    tab->table_mv_index = malloc(sizeof(UINT16) * 4096);
+    tab->table_mv_index = av_malloc(sizeof(UINT16) * 4096);
     /* mark all entries as not used */
     for(i=0;i<4096;i++)
         tab->table_mv_index[i] = tab->n;

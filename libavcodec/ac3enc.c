@@ -19,7 +19,6 @@
 //#define DEBUG
 //#define DEBUG_BITALLOC
 #include "avcodec.h"
-#include <math.h>
 
 #include "ac3enc.h"
 #include "ac3tab.h"

@@ -18,7 +18,6 @@
  */
 
 #include "avcodec.h"
-#include <math.h>
 #include "mpegaudio.h"
 #include <lame/lame.h>
 

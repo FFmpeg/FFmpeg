@@ -18,10 +18,6 @@
  *
  * 4MV & hq & b-frame encoding stuff by Michael Niedermayer <michaelni@gmx.at>
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <string.h>
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -264,7 +260,7 @@ int MPV_common_init(MpegEncContext *s)
         int size;
         /* MV prediction */
         size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
-        s->motion_val = malloc(size * 2 * sizeof(INT16));
+        s->motion_val = av_malloc(size * 2 * sizeof(INT16));
         if (s->motion_val == NULL)
             goto fail;
         memset(s->motion_val, 0, size * 2 * sizeof(INT16));
@@ -278,7 +274,7 @@ int MPV_common_init(MpegEncContext *s)
         y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
         c_size = (s->mb_width + 2) * (s->mb_height + 2);
         size = y_size + 2 * c_size;
-        s->dc_val[0] = malloc(size * sizeof(INT16));
+        s->dc_val[0] = av_malloc(size * sizeof(INT16));
         if (s->dc_val[0] == NULL)
             goto fail;
         s->dc_val[1] = s->dc_val[0] + y_size;
@@ -326,44 +322,38 @@ int MPV_common_init(MpegEncContext *s)
     return -1;
 }
 
-#define CHECK_FREE(p)\
-{\
-    if(p) free(p);\
-    p= NULL;\
-}
-
 /* init common structure for both encoder and decoder */
 void MPV_common_end(MpegEncContext *s)
 {
     int i;
 
-    CHECK_FREE(s->mb_type);
-    CHECK_FREE(s->mb_var);
-    CHECK_FREE(s->p_mv_table);
-    CHECK_FREE(s->last_p_mv_table);
-    CHECK_FREE(s->b_forw_mv_table);
-    CHECK_FREE(s->b_back_mv_table);
-    CHECK_FREE(s->b_bidir_forw_mv_table);
-    CHECK_FREE(s->b_bidir_back_mv_table);
-    CHECK_FREE(s->b_direct_forw_mv_table);
-    CHECK_FREE(s->b_direct_back_mv_table);
-    CHECK_FREE(s->b_direct_mv_table);
-    CHECK_FREE(s->motion_val);
-    CHECK_FREE(s->dc_val[0]);
-    CHECK_FREE(s->ac_val[0]);
-    CHECK_FREE(s->coded_block);
-    CHECK_FREE(s->mbintra_table);
-    CHECK_FREE(s->me_scratchpad);
+    av_freep(&s->mb_type);
+    av_freep(&s->mb_var);
+    av_freep(&s->p_mv_table);
+    av_freep(&s->last_p_mv_table);
+    av_freep(&s->b_forw_mv_table);
+    av_freep(&s->b_back_mv_table);
+    av_freep(&s->b_bidir_forw_mv_table);
+    av_freep(&s->b_bidir_back_mv_table);
+    av_freep(&s->b_direct_forw_mv_table);
+    av_freep(&s->b_direct_back_mv_table);
+    av_freep(&s->b_direct_mv_table);
+    av_freep(&s->motion_val);
+    av_freep(&s->dc_val[0]);
+    av_freep(&s->ac_val[0]);
+    av_freep(&s->coded_block);
+    av_freep(&s->mbintra_table);
+    av_freep(&s->me_scratchpad);
 
-    CHECK_FREE(s->mbskip_table);
-    CHECK_FREE(s->bitstream_buffer);
+    av_freep(&s->mbskip_table);
+    av_freep(&s->bitstream_buffer);
     for(i=0;i<3;i++) {
         int j;
-        CHECK_FREE(s->last_picture_base[i]);
-        CHECK_FREE(s->next_picture_base[i]);
-        CHECK_FREE(s->aux_picture_base[i]);
+        av_freep(&s->last_picture_base[i]);
+        av_freep(&s->next_picture_base[i]);
+        av_freep(&s->aux_picture_base[i]);
         for(j=0; j<REORDER_BUFFER_SIZE; j++){
-            CHECK_FREE(s->picture_buffer[j][i]);
+            av_freep(&s->picture_buffer[j][i]);
         }
     }
     s->context_initialized = 0;

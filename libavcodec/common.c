@@ -19,7 +19,6 @@
  * alternative bitstream reader & writer by Michael Niedermayer <michaelni@gmx.at>
  */
 #include "common.h"
-#include <math.h>
 
 void init_put_bits(PutBitContext *s, 
                    UINT8 *buffer, int buffer_size,
@@ -444,10 +443,8 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
                     bits, bits_wrap, bits_size,
                     codes, codes_wrap, codes_size,
                     0, 0) < 0) {
-        if (vlc->table_bits)
-            free(vlc->table_bits);
-        if (vlc->table_codes)
-            free(vlc->table_codes);
+        av_free(vlc->table_bits);
+        av_free(vlc->table_codes);
         return -1;
     }
     return 0;
@@ -456,8 +453,8 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
 
 void free_vlc(VLC *vlc)
 {
-    free(vlc->table_bits);
-    free(vlc->table_codes);
+    av_free(vlc->table_bits);
+    av_free(vlc->table_codes);
 }
 
 int ff_gcd(int a, int b){

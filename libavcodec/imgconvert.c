@@ -481,7 +481,7 @@ static void deinterlace_bottom_field(UINT8 *dst, int dst_wrap,
     int y, y1, i;
     UINT8 *buf;
 
-    buf= (UINT8*) malloc(5 * width);
+    buf = (UINT8*)av_malloc(5 * width);
 
     src = src1;
     for(y=0;y<height;y+=2) {
@@ -511,7 +511,7 @@ static void deinterlace_bottom_field(UINT8 *dst, int dst_wrap,
         dst += dst_wrap;
         src += (2 + 1) * src_wrap;
     }
-    free(buf);
+    av_free(buf);
 }
 
 

@@ -17,7 +17,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #include "avcodec.h"
-#include <math.h>
 #include "mpegaudio.h"
 
 /* currently, cannot change these constants (need to modify

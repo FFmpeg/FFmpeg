@@ -106,10 +106,10 @@ void ff_rate_control_uninit(MpegEncContext *s)
     RateControlContext *rcc= &s->rc_context;
     emms_c();
 
-    if(rcc->stats_file) fclose(rcc->stats_file);
-    if(rcc->entry) free(rcc->entry);
-    rcc->stats_file= NULL;
-    rcc->entry= NULL;
+    if(rcc->stats_file) 
+        fclose(rcc->stats_file);
+    rcc->stats_file = NULL;
+    av_freep(&rcc->entry);
 }
 
 //----------------------------------

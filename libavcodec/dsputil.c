@@ -18,9 +18,6 @@
  *
  * gmc & q-pel & 32/64 bit based MC by Michael Niedermayer <michaelni@gmx.at>
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
 #include "avcodec.h"
 #include "dsputil.h"
 #include "simple_idct.h"

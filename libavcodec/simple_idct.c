@@ -20,10 +20,9 @@
   based upon some outcommented c code from mpeg2dec (idct_mmx.c written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>)
 */
 
-#include <inttypes.h>
+#include "avcodec.h"
 
 #include "simple_idct.h"
-#include "../config.h"
 
 #if 0
 #define W1 2841 /* 2048*sqrt (2)*cos (1*pi/16) */

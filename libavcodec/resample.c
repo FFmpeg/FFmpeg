@@ -17,7 +17,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #include "avcodec.h"
-#include <math.h>
 
 typedef struct {
     /* fractional resampling */
@@ -193,7 +192,7 @@ static int mono_resample(ReSampleChannelContext *s, short *output, short *input,
     short *buf1;
     short *buftmp;
 
-    buf1= (short*) malloc( nb_samples * sizeof(short) );
+    buf1= (short*)av_malloc( nb_samples * sizeof(short) );
 
     /* first downsample by an integer factor with averaging filter */
     if (s->iratio > 1) {
@@ -209,7 +208,7 @@ static int mono_resample(ReSampleChannelContext *s, short *output, short *input,
     } else {
         memcpy(output, buftmp, nb_samples * sizeof(short));
     }
-    free(buf1);
+    av_free(buf1);
     return nb_samples;
 }
 
@@ -260,13 +259,13 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
     }
 
     /* XXX: move those malloc to resample init code */
-    bufin[0]= (short*) malloc( nb_samples * sizeof(short) );
-    bufin[1]= (short*) malloc( nb_samples * sizeof(short) );
+    bufin[0]= (short*) av_malloc( nb_samples * sizeof(short) );
+    bufin[1]= (short*) av_malloc( nb_samples * sizeof(short) );
     
     /* make some zoom to avoid round pb */
     lenout= (int)(nb_samples * s->ratio) + 16;
-    bufout[0]= (short*) malloc( lenout * sizeof(short) );
-    bufout[1]= (short*) malloc( lenout * sizeof(short) );
+    bufout[0]= (short*) av_malloc( lenout * sizeof(short) );
+    bufout[1]= (short*) av_malloc( lenout * sizeof(short) );
 
     if (s->input_channels == 2 &&
         s->output_channels == 1) {
@@ -299,15 +298,15 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         stereo_mux(output, buftmp3[0], buftmp3[1], nb_samples1);
     }
 
-    free(bufin[0]);
-    free(bufin[1]);
+    av_free(bufin[0]);
+    av_free(bufin[1]);
 
-    free(bufout[0]);
-    free(bufout[1]);
+    av_free(bufout[0]);
+    av_free(bufout[1]);
     return nb_samples1;
 }
 
 void audio_resample_close(ReSampleContext *s)
 {
-    free(s);
+    av_free(s);
 }
