@@ -193,5 +193,16 @@ PCM_CODEC(CODEC_ID_ADPCM_XA, adpcm_xa);
 PCM_CODEC(CODEC_ID_ADPCM_ADX, adpcm_adx);
 
 #undef PCM_CODEC
+
+    /* parsers */ 
+    av_register_codec_parser(&mpegvideo_parser);
+    av_register_codec_parser(&mpeg4video_parser);
+    av_register_codec_parser(&h263_parser);
+    av_register_codec_parser(&h264_parser);
+
+    av_register_codec_parser(&mpegaudio_parser);
+#ifdef CONFIG_AC3
+    av_register_codec_parser(&ac3_parser);
+#endif
 }
 

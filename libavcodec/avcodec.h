@@ -16,7 +16,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4691
+#define LIBAVCODEC_BUILD       4692
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1838,6 +1838,50 @@ typedef enum {
  * integer resulting value
  */
 int avcodec(void* handle, avc_cmd_t cmd, void* pin, void* pout);
+
+/* frame parsing */
+typedef struct AVCodecParserContext {
+    void *priv_data;
+    struct AVCodecParser *parser;
+    int64_t frame_offset; /* offset of the current frame */
+    int64_t cur_offset; /* current offset 
+                           (incremented by each av_parser_parse()) */
+    int64_t last_frame_offset; /* offset of the last frame */
+    /* video info */
+    int pict_type; /* XXX: put it back in AVCodecContext */
+    int repeat_pict; /* XXX: put it back in AVCodecContext */
+    int64_t pts;     /* in us, if given by the codec (used by raw mpeg4) */
+    int64_t dts;     /* in us, if given by the codec (used by raw mpeg4) */
+} AVCodecParserContext;
+
+typedef struct AVCodecParser {
+    int codec_ids[3]; /* several codec IDs are permitted */
+    int priv_data_size;
+    int (*parser_init)(AVCodecParserContext *s);
+    int (*parser_parse)(AVCodecParserContext *s, 
+                        AVCodecContext *avctx,
+                        uint8_t **poutbuf, int *poutbuf_size, 
+                        const uint8_t *buf, int buf_size);
+    void (*parser_close)(AVCodecParserContext *s);
+    struct AVCodecParser *next;
+} AVCodecParser;
+
+extern AVCodecParser *av_first_parser;
+
+void av_register_codec_parser(AVCodecParser *parser);
+AVCodecParserContext *av_parser_init(int codec_id);
+int av_parser_parse(AVCodecParserContext *s, 
+                    AVCodecContext *avctx,
+                    uint8_t **poutbuf, int *poutbuf_size, 
+                    const uint8_t *buf, int buf_size);
+void av_parser_close(AVCodecParserContext *s);
+
+extern AVCodecParser mpegvideo_parser;
+extern AVCodecParser mpeg4video_parser;
+extern AVCodecParser h263_parser;
+extern AVCodecParser h264_parser;
+extern AVCodecParser mpegaudio_parser;
+extern AVCodecParser ac3_parser;
 
 /* memory */
 void *av_malloc(unsigned int size);
