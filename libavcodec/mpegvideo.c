@@ -1275,43 +1275,76 @@ static inline void MPV_motion(MpegEncContext *s,
         }           
         break;
     case MV_TYPE_8X8:
-if(s->quarter_sample){ fprintf(stderr, "qpel4mv"); fflush(stderr);}
-        for(i=0;i<4;i++) {
-            motion_x = s->mv[dir][i][0];
-            motion_y = s->mv[dir][i][1];
+        mx = 0;
+        my = 0;
+        if(s->quarter_sample){
+            for(i=0;i<4;i++) {
+                motion_x = s->mv[dir][i][0];
+                motion_y = s->mv[dir][i][1];
 
-            dxy = ((motion_y & 1) << 1) | (motion_x & 1);
-            src_x = mb_x * 16 + (motion_x >> 1) + (i & 1) * 8;
-            src_y = mb_y * 16 + (motion_y >> 1) + (i >>1) * 8;
+                dxy = ((motion_y & 3) << 2) | (motion_x & 3);
+                src_x = mb_x * 16 + (motion_x >> 2) + (i & 1) * 8;
+                src_y = mb_y * 16 + (motion_y >> 2) + (i >>1) * 8;
                     
-            /* WARNING: do no forget half pels */
-            src_x = clip(src_x, -16, s->width);
-            if (src_x == s->width)
-                dxy &= ~1;
-            src_y = clip(src_y, -16, s->height);
-            if (src_y == s->height)
-                dxy &= ~2;
+                /* WARNING: do no forget half pels */
+                src_x = clip(src_x, -16, s->width);
+                if (src_x == s->width)
+                    dxy &= ~3;
+                src_y = clip(src_y, -16, s->height);
+                if (src_y == s->height)
+                    dxy &= ~12;
                     
-            ptr = ref_picture[0] + (src_y * s->linesize) + (src_x);
-            if(s->flags&CODEC_FLAG_EMU_EDGE){
-                if(src_x<0 || src_y<0 || src_x + (motion_x&1) + 8 > s->h_edge_pos
-                                      || src_y + (motion_y&1) + 8 > s->v_edge_pos){
-                    emulated_edge_mc(s, ptr, s->linesize, 9, 9, src_x, src_y, s->h_edge_pos, s->v_edge_pos);
-                    ptr= s->edge_emu_buffer;
+                ptr = ref_picture[0] + (src_y * s->linesize) + (src_x);
+                if(s->flags&CODEC_FLAG_EMU_EDGE){
+                    if(src_x<0 || src_y<0 || src_x + (motion_x&3) + 8 > s->h_edge_pos
+                                          || src_y + (motion_y&3) + 8 > s->v_edge_pos){
+                        emulated_edge_mc(s, ptr, s->linesize, 9, 9, src_x, src_y, s->h_edge_pos, s->v_edge_pos);
+                        ptr= s->edge_emu_buffer;
+                    }
                 }
+                dest = dest_y + ((i & 1) * 8) + (i >> 1) * 8 * s->linesize;
+                qpix_op[1][dxy](dest, ptr, s->linesize);
+
+                mx += s->mv[dir][i][0]/2;
+                my += s->mv[dir][i][1]/2;
             }
-            dest = dest_y + ((i & 1) * 8) + (i >> 1) * 8 * s->linesize;
-            pix_op[1][dxy](dest, ptr, s->linesize, 8);
+        }else{
+            for(i=0;i<4;i++) {
+                motion_x = s->mv[dir][i][0];
+                motion_y = s->mv[dir][i][1];
+
+                dxy = ((motion_y & 1) << 1) | (motion_x & 1);
+                src_x = mb_x * 16 + (motion_x >> 1) + (i & 1) * 8;
+                src_y = mb_y * 16 + (motion_y >> 1) + (i >>1) * 8;
+                    
+                /* WARNING: do no forget half pels */
+                src_x = clip(src_x, -16, s->width);
+                if (src_x == s->width)
+                    dxy &= ~1;
+                src_y = clip(src_y, -16, s->height);
+                if (src_y == s->height)
+                    dxy &= ~2;
+                    
+                ptr = ref_picture[0] + (src_y * s->linesize) + (src_x);
+                if(s->flags&CODEC_FLAG_EMU_EDGE){
+                    if(src_x<0 || src_y<0 || src_x + (motion_x&1) + 8 > s->h_edge_pos
+                                          || src_y + (motion_y&1) + 8 > s->v_edge_pos){
+                        emulated_edge_mc(s, ptr, s->linesize, 9, 9, src_x, src_y, s->h_edge_pos, s->v_edge_pos);
+                        ptr= s->edge_emu_buffer;
+                    }
+                }
+                dest = dest_y + ((i & 1) * 8) + (i >> 1) * 8 * s->linesize;
+                pix_op[1][dxy](dest, ptr, s->linesize, 8);
+
+                mx += s->mv[dir][i][0];
+                my += s->mv[dir][i][1];
+            }
         }
-    
+
         if(s->flags&CODEC_FLAG_GRAY) break;
         /* In case of 8X8, we construct a single chroma motion vector
            with a special rounding */
-        mx = 0;
-        my = 0;
         for(i=0;i<4;i++) {
-            mx += s->mv[dir][i][0];
-            my += s->mv[dir][i][1];
         }
         if (mx >= 0)
             mx = (h263_chroma_roundtab[mx & 0xf] + ((mx >> 3) & ~1));
