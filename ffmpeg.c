@@ -163,6 +163,7 @@ typedef struct AVOutputStream {
     /* input pts and corresponding output pts
        for A/V sync */
     double sync_ipts;
+    double sync_ipts_offset;
     INT64 sync_opts;
     /* video only */
     AVPicture pict_tmp;         /* temporary image for resizing */
@@ -541,12 +542,24 @@ static void do_video_out(AVFormatContext *s,
         double vdelta;
 
         if (ost->sync_ipts != AV_NOPTS_VALUE) {
-            vdelta = (double)(ost->st->pts.val) * s->pts_num / s->pts_den - ost->sync_ipts;
-            if (vdelta < -AV_DELAY_MAX)
-                nb_frames = 2;
-            else if (vdelta > AV_DELAY_MAX)
-                nb_frames = 0;
-            //printf("vdelta=%f\n", vdelta); 
+            vdelta = (double)(ost->st->pts.val) * s->pts_num / s->pts_den - (ost->sync_ipts - ost->sync_ipts_offset);
+            if (vdelta < 100 && vdelta > -100) {
+                if (vdelta < -AV_DELAY_MAX)
+                    nb_frames = 2;
+                else if (vdelta > AV_DELAY_MAX)
+                    nb_frames = 0;
+            } else {
+                ost->sync_ipts_offset -= vdelta;
+            }
+
+#if 0
+            {
+                static char *action[] = { "drop frame", "copy frame", "dup frame" };
+                printf("Input PTS %12.6f, output PTS %12.6f: %s\n",
+                    (double) ost->sync_ipts, (double) ost->st->pts.val * s->pts_num / s->pts_den,
+                    action[nb_frames]);
+            }
+#endif
         }
     }
     if (nb_frames <= 0) 
