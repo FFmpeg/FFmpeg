@@ -596,7 +596,7 @@ static int decode_mv_component(GetBitContext *gb, int v){
 
 static int h261_decode_mb(H261Context *h){
     MpegEncContext * const s = &h->s;
-    int i, cbp, xy, old_mtype;
+    int i, cbp, xy;
 
     cbp = 63;
     // Read mba
@@ -634,7 +634,6 @@ static int h261_decode_mb(H261Context *h){
     s->dsp.clear_blocks(s->block[0]);
 
     // Read mtype
-    old_mtype = h->mtype;
     h->mtype = get_vlc2(&s->gb, h261_mtype_vlc.table, H261_MTYPE_VLC_BITS, 2);
     h->mtype = h261_mtype_map[h->mtype];
 
@@ -654,7 +653,7 @@ static int h261_decode_mb(H261Context *h){
         // 2) evaluating MVD for macroblocks in which MBA does not represent a difference of 1;
         // 3) MTYPE of the previous macroblock was not MC.
         if ( ( h->current_mba == 1 ) || ( h->current_mba == 12 ) || ( h->current_mba == 23 ) ||
-             ( h->mba_diff != 1) || ( !IS_16X16 ( old_mtype ) ))
+             ( h->mba_diff != 1))
         {
             h->current_mv_x = 0;
             h->current_mv_y = 0;
@@ -662,6 +661,9 @@ static int h261_decode_mb(H261Context *h){
 
         h->current_mv_x= decode_mv_component(&s->gb, h->current_mv_x);
         h->current_mv_y= decode_mv_component(&s->gb, h->current_mv_y);
+    }else{
+        h->current_mv_x = 0;
+        h->current_mv_y = 0;
     }
 
     // Read cbp
@@ -678,14 +680,8 @@ static int h261_decode_mb(H261Context *h){
     s->mv_dir = MV_DIR_FORWARD;
     s->mv_type = MV_TYPE_16X16;
     s->current_picture.mb_type[xy]= MB_TYPE_16x16 | MB_TYPE_L0;
-    if(IS_16X16 ( h->mtype )){
-        s->mv[0][0][0] = h->current_mv_x * 2;//gets divided by 2 in motion compensation
-        s->mv[0][0][1] = h->current_mv_y * 2;
-    }
-    else{
-        h->current_mv_x = s->mv[0][0][0] = 0;
-        h->current_mv_x = s->mv[0][0][1] = 0;
-    }
+    s->mv[0][0][0] = h->current_mv_x * 2;//gets divided by 2 in motion compensation
+    s->mv[0][0][1] = h->current_mv_y * 2;
 
 intra:
     /* decode each block */
