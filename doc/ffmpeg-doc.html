@@ -1,6 +1,6 @@
 <HTML>
 <HEAD>
-<!-- Created by texi2html 1.56k from ffmpeg-doc.texi on 19 November 2002 -->
+<!-- Created by texi2html 1.56k from ffmpeg-doc.texi on 28 December 2002 -->
 
 <TITLE>FFmpeg Documentation</TITLE>
 </HEAD>
@@ -14,7 +14,7 @@
 <LI><A NAME="TOC2" HREF="ffmpeg-doc.html#SEC2">2. Quick Start</A>
 <UL>
 <LI><A NAME="TOC3" HREF="ffmpeg-doc.html#SEC3">2.1 Video and Audio grabbing</A>
-<LI><A NAME="TOC4" HREF="ffmpeg-doc.html#SEC4">2.2 Video and Audio file format convertion</A>
+<LI><A NAME="TOC4" HREF="ffmpeg-doc.html#SEC4">2.2 Video and Audio file format conversion</A>
 </UL>
 <LI><A NAME="TOC5" HREF="ffmpeg-doc.html#SEC5">3. Invocation</A>
 <UL>
@@ -41,7 +41,7 @@
 <LI><A NAME="TOC22" HREF="ffmpeg-doc.html#SEC22">6.4 MacOS X</A>
 <LI><A NAME="TOC23" HREF="ffmpeg-doc.html#SEC23">6.5 BeOS</A>
 </UL>
-<LI><A NAME="TOC24" HREF="ffmpeg-doc.html#SEC24">7. Developpers Guide</A>
+<LI><A NAME="TOC24" HREF="ffmpeg-doc.html#SEC24">7. Developers Guide</A>
 <UL>
 <LI><A NAME="TOC25" HREF="ffmpeg-doc.html#SEC25">7.1 API</A>
 <LI><A NAME="TOC26" HREF="ffmpeg-doc.html#SEC26">7.2 Integrating libavcodec or libavformat in your program</A>
@@ -99,7 +99,7 @@ video on the fly with a high quality polyphase filter.
 
 
 
-<H2><A NAME="SEC4" HREF="ffmpeg-doc.html#TOC4">2.2 Video and Audio file format convertion</A></H2>
+<H2><A NAME="SEC4" HREF="ffmpeg-doc.html#TOC4">2.2 Video and Audio file format conversion</A></H2>
 
 <P>
 * ffmpeg can use any supported file format and protocol as input: 
@@ -172,7 +172,7 @@ Examples:
 
 
 <P>
-* You can also do audio and video convertions at the same time:
+* You can also do audio and video conversions at the same time:
 
 
 
@@ -210,13 +210,13 @@ Examples:
 </PRE>
 
 <P>
-  This is a typicall DVD ripper example, input from a VOB file, output
+  This is a typical DVD ripper example, input from a VOB file, output
   to an AVI file with MPEG-4 video and MP3 audio, note that in this
   command we use B frames so the MPEG-4 stream is DivX5 compatible, GOP
   size is 300 that means an INTRA frame every 10 seconds for 29.97 fps
   input video.  Also the audio stream is MP3 encoded so you need LAME
   support which is enabled using <CODE>--enable-mp3lame</CODE> when
-  configuring.  The mapping is particullary usefull for DVD transcoding
+  configuring.  The mapping is particularly useful for DVD transcoding
   to get the desired audio language.
 
 
@@ -254,7 +254,7 @@ Examples:
 
 <P>
   By default, ffmpeg tries to convert as losslessly as possible: it
-  uses the same audio and video parameter fors the outputs as the one
+  uses the same audio and video parameter for the outputs as the one
   specified for the inputs.
 
 
@@ -494,7 +494,7 @@ ffmpeg handles also many protocols specified with the URL syntax.
 
   compression at the expense of the compression ratio. You can use
   '-me zero' to speed up motion estimation, and '-intra' to disable
-  completly motion estimation (you have only I frames, which means it
+  completely motion estimation (you have only I frames, which means it
   is about as good as JPEG compression).
 
 <LI>To have very low bitrates in audio, reduce the sampling frequency
@@ -526,7 +526,7 @@ You can use the <CODE>-formats</CODE> option to have an exhaustive list.
 <H2><A NAME="SEC14" HREF="ffmpeg-doc.html#TOC14">5.1 File Formats</A></H2>
 
 <P>
-FFmpeg supports the following file formats thru the <CODE>libavformat</CODE>
+FFmpeg supports the following file formats through the <CODE>libavformat</CODE>
 library:
 
 
@@ -701,15 +701,15 @@ solutions.
 </TR>
 <TR><TD>MPEG audio layer 1/3   </TD><TD> IX   </TD><TD>  IX</TD>
 
-</TD><TD> MP3 encoding is supported thru the external library LAME
+</TD><TD> MP3 encoding is supported through the external library LAME
 </TR>
 <TR><TD>AC3                    </TD><TD>  IX  </TD><TD>  X</TD>
 
 </TD><TD> liba52 is used internally for decoding.
 </TR>
-<TR><TD>Vorbis                 </TD><TD>  X   </TD><TD></TD>
+<TR><TD>Vorbis                 </TD><TD>  X   </TD><TD>  X</TD>
 
-</TD><TD> encoding is supported thru the external library libvorbis.
+</TD><TD> supported through the external library libvorbis.
 </TR>
 <TR><TD>WMA V1/V2              </TD><TD>      </TD><TD> X</TD>
 
@@ -734,7 +734,7 @@ performances on systems without hardware floating point support).
 
 <P>
 ffmpeg should be compiled with at least GCC 2.95.3. GCC 3.2 is the
-prefered compiler now for ffmpeg. All futur optimizations will depend on
+preferred compiler now for ffmpeg. All future optimizations will depend on
 features only found in GCC 3.2.
 
 
@@ -786,7 +786,7 @@ valid results, then crashes.
 
 
 
-<H1><A NAME="SEC24" HREF="ffmpeg-doc.html#TOC24">7. Developpers Guide</A></H1>
+<H1><A NAME="SEC24" HREF="ffmpeg-doc.html#TOC24">7. Developers Guide</A></H1>
 
 
 
@@ -855,12 +855,12 @@ option). I cannot read other diffs :-)
 
 <P>
 Run the regression tests before submitting a patch so that you can
-verify that there is no big problems.
+verify that there are no big problems.
 
 
 <P>
 Except if your patch is really big and adds an important feature, by
-submitting it to me, you accept implicitely to put it under my
+submitting it to me, you accept implicitly to put it under my
 copyright. I prefer to do this to avoid potential problems if
 licensing of ffmpeg changes.
 
@@ -877,16 +877,22 @@ transmission) to the ffmpeg-devel mailinglist, see
 <H2><A NAME="SEC29" HREF="ffmpeg-doc.html#TOC29">7.5 Regression tests</A></H2>
 
 <P>
-Before submitting a patch (or commiting with CVS), you should at least
+Before submitting a patch (or committing with CVS), you should at least
 test that you did not break anything.
 
 
 <P>
 The regression test build a synthetic video stream and a synthetic
-audio stream. Then there are encoded then decoded with all codecs or
+audio stream. Then these are encoded then decoded with all codecs or
 formats. The CRC (or MD5) of each generated file is recorded in a
 result file. Then a 'diff' is launched with the reference results and
 the result file.
+
+
+<P>
+The regression test then goes on to test the ffserver code with a 
+limited set of streams. It is important that this step runs correctly
+as well.
 
 
 <P>
@@ -904,7 +910,7 @@ accordingly].
 
 
 <P><HR><P>
-This document was generated on 19 November 2002 using
+This document was generated on 28 December 2002 using
 <A HREF="http://wwwinfo.cern.ch/dis/texi2html/">texi2html</A>&nbsp;1.56k.
 </BODY>
 </HTML>
