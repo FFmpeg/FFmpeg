@@ -20,6 +20,7 @@
  */
  
 #include <ctype.h>
+#include <limits.h>
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -322,6 +323,12 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         pic->qstride= s->mb_width;
     }
     
+    //it might be nicer if the application would keep track of these but it would require a API change
+    memmove(s->prev_pict_types+1, s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE-1);
+    s->prev_pict_types[0]= s->pict_type;
+    if(pic->age < PREV_PICT_TYPES_BUFFER_SIZE && s->prev_pict_types[pic->age] == B_TYPE)
+        pic->age= INT_MAX; // skiped MBs in b frames are quite rare in mpeg1/2 and its a bit tricky to skip them anyway
+    
     return 0;
 fail: //for the CHECKED_ALLOCZ macro
     return -1;
@@ -479,6 +486,7 @@ int MPV_common_init(MpegEncContext *s)
     /* init macroblock skip table */
     CHECKED_ALLOCZ(s->mbskip_table, s->mb_num+1);
     //Note the +1 is for a quicker mpeg4 slice_end detection
+    CHECKED_ALLOCZ(s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE);
     
     s->block= s->blocks[0];
 
@@ -518,6 +526,7 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->me.score_map);
     
     av_freep(&s->mbskip_table);
+    av_freep(&s->prev_pict_types);
     av_freep(&s->bitstream_buffer);
     av_freep(&s->tex_pb_buffer);
     av_freep(&s->pb2_buffer);
@@ -2016,14 +2025,13 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 if(*mbskip_ptr >99) *mbskip_ptr= 99;
 
                 /* if previous was skipped too, then nothing to do !  */
-                if (*mbskip_ptr >= age){
-//if(s->pict_type!=B_TYPE && s->mb_x==0) printf("\n");
-//if(s->pict_type!=B_TYPE) printf("%d%d ", *mbskip_ptr, age);
-                    if(s->pict_type!=B_TYPE) return;
-                    if(s->avctx->draw_horiz_band==NULL && *mbskip_ptr > age) return; 
-                    /* we dont draw complete frames here so we cant skip */
+                if (*mbskip_ptr >= age && s->current_picture.reference){
+                    return;
                 }
-            } else {
+            } else if(!s->current_picture.reference){
+                (*mbskip_ptr) ++; /* increase counter so the age can be compared cleanly */
+                if(*mbskip_ptr >99) *mbskip_ptr= 99;
+            } else{
                 *mbskip_ptr = 0; /* not skipped */
             }
         }else

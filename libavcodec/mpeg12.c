@@ -767,6 +767,8 @@ static int mpeg_decode_mb(MpegEncContext *s,
     
     dprintf("decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
 
+    assert(s->mb_skiped==0);
+
     if (--s->mb_incr != 0) {
         /* skip mb */
         s->mb_intra = 0;
@@ -779,15 +781,18 @@ static int mpeg_decode_mb(MpegEncContext *s,
             s->mv[0][0][0] = s->mv[0][0][1] = 0;
             s->last_mv[0][0][0] = s->last_mv[0][0][1] = 0;
             s->last_mv[0][1][0] = s->last_mv[0][1][1] = 0;
+            s->mb_skiped = 1;
         } else {
             /* if B type, reuse previous vectors and directions */
             s->mv[0][0][0] = s->last_mv[0][0][0];
             s->mv[0][0][1] = s->last_mv[0][0][1];
             s->mv[1][0][0] = s->last_mv[1][0][0];
             s->mv[1][0][1] = s->last_mv[1][0][1];
+
+            if((s->mv[0][0][0]|s->mv[0][0][1]|s->mv[1][0][0]|s->mv[1][0][1])==0) 
+                s->mb_skiped = 1;
         }
 
-        s->mb_skiped = 1;
         return 0;
     }
 
@@ -1670,7 +1675,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
             return DECODE_SLICE_FATAL_ERROR;
             
         if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-             printf("qp:%d fc:%d%d%d%d %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n", 
+             printf("qp:%d fc:%2d%2d%2d%2d %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n", 
                  s->qscale, s->mpeg_f_code[0][0],s->mpeg_f_code[0][1],s->mpeg_f_code[1][0],s->mpeg_f_code[1][1],
                  s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
                  s->progressive_sequence ? "pro" :"", s->alternate_scan ? "alt" :"", s->top_field_first ? "top" :"", 
