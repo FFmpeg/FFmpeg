@@ -38,6 +38,7 @@ typedef struct {
 typedef struct {
     int seqno;
     int packet_size;
+    int is_streamed;
 
     ASFStream streams[2];
     /* non streamed additonnal info */
@@ -254,7 +255,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
         bit_rate += enc->bit_rate;
     }
 
-    if (url_is_streamed(&s->pb)) {
+    if (asf->is_streamed) {
         put_chunk(s, 0x4824, 0, 0xc00); /* start of stream (length will be patched later) */
     }
 
@@ -276,7 +277,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
     put_le64(pb, asf->duration); /* duration (in 100ns units) */
     put_le32(pb, 0); /* start time stamp */ 
     put_le32(pb, 0); /* ??? */ 
-    put_le32(pb, url_is_streamed(&s->pb) ? 1 : 0); /* ??? */ 
+    put_le32(pb, asf->is_streamed ? 1 : 0); /* ??? */ 
     put_le32(pb, asf->packet_size); /* packet size */
     put_le32(pb, asf->packet_size); /* packet size */
     put_le32(pb, bit_rate); /* Nominal data rate in bps */
@@ -403,7 +404,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
 
     cur_pos = url_ftell(pb);
     header_size = cur_pos - header_offset;
-    if (url_is_streamed(&s->pb)) {
+    if (asf->is_streamed) {
         header_size += 8 + 30 + 50;
 
         url_fseek(pb, header_offset - 10 - 30, SEEK_SET);
@@ -453,6 +454,15 @@ static int asf_write_header(AVFormatContext *s)
     return 0;
 }
 
+static int asf_write_stream_header(AVFormatContext *s)
+{
+    ASFContext *asf = s->priv_data;
+
+    asf->is_streamed = 1;
+
+    return asf_write_header(s);
+}
+
 /* write a fixed size packet */
 static int put_packet(AVFormatContext *s, 
                        unsigned int timestamp, unsigned int duration, 
@@ -462,7 +472,7 @@ static int put_packet(AVFormatContext *s,
     ByteIOContext *pb = &s->pb;
     int flags;
 
-    if (url_is_streamed(&s->pb)) {
+    if (asf->is_streamed) {
         put_chunk(s, 0x4424, asf->packet_size, 0);
     }
 
@@ -610,7 +620,7 @@ static int asf_write_trailer(AVFormatContext *s)
     if (asf->pb.buf_ptr > asf->pb.buffer)
         flush_packet(s);
 
-    if (url_is_streamed(&s->pb)) {
+    if (asf->is_streamed) {
         put_chunk(s, 0x4524, 0, 0); /* end of stream */
     } else {
         /* rewrite an updated header */
@@ -1066,9 +1076,27 @@ AVOutputFormat asf_oformat = {
     asf_write_trailer,
 };
 
+AVOutputFormat asf_stream_oformat = {
+    "asf_stream",
+    "asf format",
+    "application/octet-stream",
+    "asf,wmv",
+    sizeof(ASFContext),
+#ifdef CONFIG_MP3LAME
+    CODEC_ID_MP3LAME,
+#else
+    CODEC_ID_MP2,
+#endif
+    CODEC_ID_MSMPEG4,
+    asf_write_stream_header,
+    asf_write_packet,
+    asf_write_trailer,
+};
+
 int asf_init(void)
 {
     av_register_input_format(&asf_iformat);
     av_register_output_format(&asf_oformat);
+    av_register_output_format(&asf_stream_oformat);
     return 0;
 }
