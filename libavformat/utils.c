@@ -658,7 +658,7 @@ static void av_destruct_packet_nofree(AVPacket *pkt)
 static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st;
-    int len, ret;
+    int len, ret, i;
 
     for(;;) {
         /* select current input stream component */
@@ -690,6 +690,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 
                 /* return packet if any */
                 if (pkt->size) {
+                got_packet:
                     pkt->duration = 0;
                     pkt->stream_index = st->index;
                     pkt->pts = st->cur_frame_pts;
@@ -707,8 +708,23 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
         } else {
             /* read next packet */
             ret = av_read_packet(s, &s->cur_pkt);
-            if (ret < 0)
+            if (ret < 0) {
+                if (ret == -EAGAIN)
+                    return ret;
+                /* return the last frames, if any */
+                for(i = 0; i < s->nb_streams; i++) {
+                    st = s->streams[i];
+                    if (st->parser) {
+                        av_parser_parse(st->parser, &st->codec, 
+                                        &pkt->data, &pkt->size, 
+                                        NULL, 0);
+                        if (pkt->size)
+                            goto got_packet;
+                    }
+                }
+                /* no more packets: really terminates parsing */
                 return ret;
+            }
 
             /* convert the packet time stamp units and handle wrapping */
             s->cur_pkt.pts = convert_timestamp_units(s, 
@@ -2052,8 +2068,12 @@ void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload)
     fprintf(f, "stream #%d:\n", pkt->stream_index);
     fprintf(f, "  keyframe=%d\n", ((pkt->flags & PKT_FLAG_KEY) != 0));
     fprintf(f, "  duration=%0.3f\n", (double)pkt->duration / AV_TIME_BASE);
-    /* DTS is _always_ valid */
-    fprintf(f, "  dts=%0.3f\n", (double)pkt->dts / AV_TIME_BASE);
+    /* DTS is _always_ valid after av_read_frame() */
+    fprintf(f, "  dts=");
+    if (pkt->dts == AV_NOPTS_VALUE)
+        fprintf(f, "N/A");
+    else
+        fprintf(f, "%0.3f", (double)pkt->dts / AV_TIME_BASE);
     /* PTS may be not known if B frames are present */
     fprintf(f, "  pts=");
     if (pkt->pts == AV_NOPTS_VALUE)
