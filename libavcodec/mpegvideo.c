@@ -262,10 +262,6 @@ int MPV_common_init(MpegEncContext *s)
         
         /* cbp values */
         CHECKED_ALLOCZ(s->coded_block, y_size);
-
-        /* which mb is a intra block */
-        CHECKED_ALLOCZ(s->mbintra_table, s->mb_num);
-        memset(s->mbintra_table, 1, s->mb_num);
         
         /* divx501 bitstream reorder buffer */
         CHECKED_ALLOCZ(s->bitstream_buffer, BITSTREAM_BUFFER_SIZE);
@@ -275,6 +271,10 @@ int MPV_common_init(MpegEncContext *s)
         CHECKED_ALLOCZ(s->pred_dir_table, s->mb_num * sizeof(UINT8))
     }
     CHECKED_ALLOCZ(s->qscale_table  , s->mb_num * sizeof(UINT8))
+    
+    /* which mb is a intra block */
+    CHECKED_ALLOCZ(s->mbintra_table, s->mb_num);
+    memset(s->mbintra_table, 1, s->mb_num);
     
     /* default structure is frame */
     s->picture_structure = PICT_FRAME;
