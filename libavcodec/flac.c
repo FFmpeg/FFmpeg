@@ -52,7 +52,6 @@ typedef struct FLACContext {
     int bps, curr_bps;
     enum channel_order order;
 
-    int32_t *residual[MAX_CHANNELS];
     int32_t *decoded[MAX_CHANNELS];
     uint8_t *bitstream;
     int bitstream_size;
@@ -120,7 +119,6 @@ static void allocate_buffers(FLACContext *s){
     for (i = 0; i < s->channels; i++)
     {
         s->decoded[i] = av_realloc(s->decoded[i], sizeof(int32_t)*s->max_blocksize);
-        s->residual[i] = av_realloc(s->residual[i], sizeof(int32_t)*s->max_blocksize);
     }
 
     s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
@@ -176,13 +174,13 @@ static int decode_residuals(FLACContext *s, int channel, int pred_order)
             av_log(s->avctx, AV_LOG_DEBUG, "fixed len partition\n");
             tmp = get_bits(&s->gb, 5);
             for (; i < samples; i++, sample++)
-                s->residual[channel][sample] = get_sbits(&s->gb, tmp);
+                s->decoded[channel][sample] = get_sbits(&s->gb, tmp);
         }
         else
         {
 //            av_log(s->avctx, AV_LOG_DEBUG, "rice coded partition k=%d\n", tmp);
             for (; i < samples; i++, sample++){
-                s->residual[channel][sample] = get_sr_golomb_flac(&s->gb, tmp, INT_MAX, 0);
+                s->decoded[channel][sample] = get_sr_golomb_flac(&s->gb, tmp, INT_MAX, 0);
                 if(get_bits_count(&s->gb) > s->gb.size_in_bits){
                     av_log(s->avctx, AV_LOG_ERROR, "fucking FLAC\n");
                     return -1;
@@ -218,34 +216,28 @@ static int decode_subframe_fixed(FLACContext *s, int channel, int pred_order)
     switch(pred_order)
     {
         case 0:
-            for (i = pred_order; i < s->blocksize; i++)
-                s->decoded[channel][i] = s->residual[channel][i];
             break;
         case 1:
             for (i = pred_order; i < s->blocksize; i++)
-                s->decoded[channel][i] = s->residual[channel][i] +
-                                        s->decoded[channel][i-1];
+                s->decoded[channel][i] +=   s->decoded[channel][i-1];
             break;
         case 2:
             for (i = pred_order; i < s->blocksize; i++)
-                s->decoded[channel][i] = s->residual[channel][i] +
-                                        (s->decoded[channel][i-1] << 1) -
-                                        s->decoded[channel][i-2];
+                s->decoded[channel][i] += 2*s->decoded[channel][i-1]
+                                          - s->decoded[channel][i-2];
             break;
         case 3:
             for (i = pred_order; i < s->blocksize; i++)
-                s->decoded[channel][i] = s->residual[channel][i] +
-                                        3*(s->decoded[channel][i-1] - s->decoded[channel][i-2])
-                                        + s->decoded[channel][i-3];
+                s->decoded[channel][i] += 3*s->decoded[channel][i-1] 
+                                        - 3*s->decoded[channel][i-2]
+                                        +   s->decoded[channel][i-3];
             break;
         case 4:
             for (i = pred_order; i < s->blocksize; i++)
-                s->decoded[channel][i] = s->residual[channel][i] +
-                                        ((s->decoded[channel][i-1] +
-                                        s->decoded[channel][i-3]) << 2) -
-                                        ((s->decoded[channel][i-2] << 2) +
-                                        (s->decoded[channel][i-2] << 1)) -
-                                        s->decoded[channel][i-4];
+                s->decoded[channel][i] += 4*s->decoded[channel][i-1] 
+                                        - 6*s->decoded[channel][i-2]
+                                        + 4*s->decoded[channel][i-3]
+                                        -   s->decoded[channel][i-4];
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "illegal pred order %d\n", pred_order);
@@ -296,7 +288,7 @@ assert(qlevel >= 0); //FIXME
         sum = 0;
         for (j = 0; j < pred_order; j++)
             sum += coeffs[j] * s->decoded[channel][i-j-1];
-        s->decoded[channel][i] = s->residual[channel][i] + (sum >> qlevel);
+        s->decoded[channel][i] += sum >> qlevel;
     }
     
     return 0;
@@ -502,7 +494,6 @@ static int decode_frame(FLACContext *s)
 /*        if (s->blocksize != s->last_blocksize)
         {
             s->decoded[i] = av_realloc(s->decoded[i], sizeof(uint32_t)*s->blocksize);
-            s->residual[i] = av_realloc(s->residual[i], sizeof(uint8_t)*s->blocksize);
         }*/
 //        av_log(s->avctx, AV_LOG_DEBUG, "decoded: %x residual: %x\n", s->decoded[i], s->residual[i]);
         if (decode_subframe(s, i) < 0)
@@ -716,7 +707,6 @@ static int flac_decode_close(AVCodecContext *avctx)
     for (i = 0; i < s->channels; i++)
     {
         av_freep(&s->decoded[i]);
-        av_freep(&s->residual[i]);
     }
     av_freep(&s->bitstream);
     
