@@ -56,6 +56,7 @@ enum CodecID {
     CODEC_ID_AAC,
     CODEC_ID_MPEG4AAC,
     CODEC_ID_ASV1,
+    CODEC_ID_4XM,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -71,6 +72,7 @@ enum CodecID {
     CODEC_ID_ADPCM_IMA_QT,
     CODEC_ID_ADPCM_IMA_WAV,
     CODEC_ID_ADPCM_MS,
+    CODEC_ID_ADPCM_4XM,
 
 	/* AMR */
     CODEC_ID_AMR_NB,
