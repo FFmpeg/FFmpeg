@@ -85,6 +85,7 @@ enum RTPPayloadType {
     RTP_PT_MPEGVIDEO = 32,
     RTP_PT_MPEG2TS = 33,
     RTP_PT_H263 = 34, /* old H263 encapsulation */
+    RTP_PT_PRIVATE = 96,
 };
 
 typedef struct RTPContext {
@@ -358,7 +359,7 @@ static int rtp_write_header(AVFormatContext *s1)
 
     payload_type = rtp_get_payload_type(&st->codec);
     if (payload_type < 0)
-        return -1;
+        payload_type = RTP_PT_PRIVATE; /* private payload type */
     s->payload_type = payload_type;
 
     s->base_timestamp = random();
@@ -570,6 +571,32 @@ static void rtp_send_mpegvideo(AVFormatContext *s1,
     s->cur_timestamp++;
 }
 
+static void rtp_send_raw(AVFormatContext *s1,
+                         UINT8 *buf1, int size)
+{
+    RTPContext *s = s1->priv_data;
+    AVStream *st = s1->streams[0];
+    int len, max_packet_size;
+
+    max_packet_size = s->max_payload_size;
+
+    while (size > 0) {
+        len = max_packet_size;
+        if (len > size)
+            len = size;
+
+        /* 90 KHz time stamp */
+        /* XXX: overflow */
+        s->timestamp = s->base_timestamp + 
+            (s->cur_timestamp * 90000LL * FRAME_RATE_BASE) / st->codec.frame_rate;
+        rtp_send_data(s1, buf1, len);
+
+        buf1 += len;
+        size -= len;
+    }
+    s->cur_timestamp++;
+}
+
 /* write an RTP packet. 'buf1' must contain a single specific frame. */
 static int rtp_write_packet(AVFormatContext *s1, int stream_index,
                             UINT8 *buf1, int size, int force_pts)
@@ -615,7 +642,9 @@ static int rtp_write_packet(AVFormatContext *s1, int stream_index,
         rtp_send_mpegvideo(s1, buf1, size);
         break;
     default:
-        return AVERROR_IO;
+        /* better than nothing : send the codec raw data */
+        rtp_send_raw(s1, buf1, size);
+        break;
     }
     return 0;
 }
