@@ -14,7 +14,7 @@ SERVER_REFFILE=$(SRC_PATH)/tests/ffserver.regression.ref
 
 LIBAV_REFFILE=$(SRC_PATH)/tests/libav.regression.ref
 
-all: test libavtest test-server
+all fulltest: test libavtest test-server
 
 test-server: vsynth1/0.pgm asynth1.sw
 	@$(SRC_PATH)/tests/server-regression.sh $(SERVER_REFFILE) $(SRC_PATH)/tests/test.conf

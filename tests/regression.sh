@@ -17,6 +17,7 @@ set -e
 datadir="./data"
 
 logfile="$datadir/ffmpeg.regression"
+outfile="$datadir/a-"
 
 # tests to do
 if [ "$1" = "mpeg4" ] ; then
@@ -28,6 +29,7 @@ elif [ "$1" = "ac3" ] ; then
 elif [ "$1" = "libavtest" ] ; then
     do_libav=y
     logfile="$datadir/libav.regression"
+    outfile="$datadir/b-"
 else
     do_mpeg=y
     do_msmpeg4v2=y
@@ -54,7 +56,6 @@ fi
 # various files
 ffmpeg="../ffmpeg_g"
 tiny_psnr="./tiny_psnr"
-outfile="$datadir/a-"
 reffile="$2"
 benchfile="$datadir/ffmpeg.bench"
 raw_src="$3/%d.pgm"
