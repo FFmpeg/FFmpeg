@@ -307,6 +307,8 @@ typedef struct H264Context{
 
     /* 0x100 -> non null luma_dc, 0x80/0x40 -> non null chroma_dc (cb/cr), 0x?0 -> chroma_cbp(0,1,2), 0x0? luma_cbp */
     uint16_t     *cbp_table;
+    int top_cbp;
+    int left_cbp;
     /* chroma_pred_mode for i4x4 or i16x16, else 0 */
     uint8_t     *chroma_pred_mode_table;
     int         last_qscale_diff;
@@ -513,6 +515,8 @@ static inline void fill_caches(H264Context *h, int mb_type){
     
         h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][10];
         h->non_zero_count_cache[2+8*3]= h->non_zero_count[top_xy][11];
+        
+        h->top_cbp= h->cbp_table[top_xy];
     }else{
         h->non_zero_count_cache[4+8*0]=      
         h->non_zero_count_cache[5+8*0]=
@@ -523,7 +527,10 @@ static inline void fill_caches(H264Context *h, int mb_type){
         h->non_zero_count_cache[2+8*0]=
     
         h->non_zero_count_cache[1+8*3]=
-        h->non_zero_count_cache[2+8*3]= 64;
+        h->non_zero_count_cache[2+8*3]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
+        
+        if(IS_INTRA(mb_type)) h->top_cbp= 0x1C0;
+        else                  h->top_cbp= 0;
     }
     
     if(left_type[0]){
@@ -531,11 +538,15 @@ static inline void fill_caches(H264Context *h, int mb_type){
         h->non_zero_count_cache[3+8*2]= h->non_zero_count[left_xy[0]][5];
         h->non_zero_count_cache[0+8*1]= h->non_zero_count[left_xy[0]][9]; //FIXME left_block
         h->non_zero_count_cache[0+8*4]= h->non_zero_count[left_xy[0]][12];
+        h->left_cbp= h->cbp_table[left_xy[0]]; //FIXME interlacing
     }else{
         h->non_zero_count_cache[3+8*1]= 
         h->non_zero_count_cache[3+8*2]= 
         h->non_zero_count_cache[0+8*1]= 
-        h->non_zero_count_cache[0+8*4]= 64;
+        h->non_zero_count_cache[0+8*4]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
+        
+        if(IS_INTRA(mb_type)) h->left_cbp= 0x1C0;//FIXME interlacing
+        else                  h->left_cbp= 0;
     }
     
     if(left_type[1]){
@@ -547,7 +558,7 @@ static inline void fill_caches(H264Context *h, int mb_type){
         h->non_zero_count_cache[3+8*3]= 
         h->non_zero_count_cache[3+8*4]= 
         h->non_zero_count_cache[0+8*2]= 
-        h->non_zero_count_cache[0+8*5]= 64;
+        h->non_zero_count_cache[0+8*5]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
     }
     
 #if 1
@@ -4012,21 +4023,11 @@ static int decode_cabac_mb_cbp_luma( H264Context *h) {
     return cbp;
 }
 static int decode_cabac_mb_cbp_chroma( H264Context *h) {
-    MpegEncContext * const s = &h->s;
-    const int mb_xy = s->mb_x + s->mb_y*s->mb_stride;
     int ctx;
     int cbp_a, cbp_b;
 
-    /* No need to test for skip */
-    if( s->mb_x > 0 )
-        cbp_a = (h->cbp_table[mb_xy-1]>>4)&0x03;
-    else
-        cbp_a = -1;
-
-    if( s->mb_y > 0 )
-        cbp_b = (h->cbp_table[mb_xy-s->mb_stride]>>4)&0x03;
-    else
-        cbp_b = -1;
+    cbp_a = (h->left_cbp>>4)&0x03;
+    cbp_b = (h-> top_cbp>>4)&0x03;
 
     ctx = 0;
     if( cbp_a > 0 ) ctx++;
@@ -4037,10 +4038,7 @@ static int decode_cabac_mb_cbp_chroma( H264Context *h) {
     ctx = 4;
     if( cbp_a == 2 ) ctx++;
     if( cbp_b == 2 ) ctx += 2;
-    if( get_cabac( &h->cabac, &h->cabac_state[77 + ctx] ) )
-        return 2;
-    else
-        return 1;
+    return 1 + get_cabac( &h->cabac, &h->cabac_state[77 + ctx] );
 }
 static int decode_cabac_mb_dqp( H264Context *h) {
     MpegEncContext * const s = &h->s;
@@ -4156,105 +4154,28 @@ static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
 
 
 static int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
-    MpegEncContext * const s = &h->s;
-    const int mb_xy  = s->mb_x + s->mb_y*s->mb_stride;
-    int mba_xy = -1;
-    int mbb_xy = -1;
-
-    int nza = -1;
-    int nzb = -1;
+    int nza, nzb;
     int ctx = 0;
 
     if( cat == 0 ) {
-        if( s->mb_x > 0 ) {
-            mba_xy = mb_xy - 1;
-            if( IS_INTRA16x16(s->current_picture.mb_type[mba_xy] ) )
-                    nza = h->cbp_table[mba_xy]&0x100;
-        }
-        if( s->mb_y > 0 ) {
-            mbb_xy = mb_xy - s->mb_stride;
-            if( IS_INTRA16x16(s->current_picture.mb_type[mbb_xy] ) )
-                    nzb = h->cbp_table[mbb_xy]&0x100;
-        }
+        nza = h->left_cbp&0x100;
+        nzb = h-> top_cbp&0x100;
     } else if( cat == 1 || cat == 2 ) {
-        int i8x8a, i8x8b;
-        int x, y;
-
-        x = block_idx_x[idx];
-        y = block_idx_y[idx];
-
-        if( x > 0 )
-            mba_xy = mb_xy;
-        else if( s->mb_x > 0 )
-            mba_xy = mb_xy - 1;
-
-        if( y > 0 )
-            mbb_xy = mb_xy;
-        else if( s->mb_y > 0 )
-            mbb_xy = mb_xy - s->mb_stride;
-
-        /* No need to test for skip */
-        if( mba_xy >= 0 ) {
-            i8x8a = block_idx_xy[(x-1)&0x03][y]/4;
-
-            if( !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
-                ((h->cbp_table[mba_xy]&0x0f)>>i8x8a))
-                nza = h->non_zero_count_cache[scan8[idx] - 1];
-        }
-
-        if( mbb_xy >= 0 ) {
-            i8x8b = block_idx_xy[x][(y-1)&0x03]/4;
-
-            if( !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
-                ((h->cbp_table[mbb_xy]&0x0f)>>i8x8b))
-                nzb = h->non_zero_count_cache[scan8[idx] - 8];
-        }
+        nza = h->non_zero_count_cache[scan8[idx] - 1];
+        nzb = h->non_zero_count_cache[scan8[idx] - 8];
     } else if( cat == 3 ) {
-        if( s->mb_x > 0 ) {
-            mba_xy = mb_xy - 1;
-
-            if( !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
-                (h->cbp_table[mba_xy]&0x30) )
-                nza = (h->cbp_table[mba_xy]>>(6+idx))&0x01;
-        }
-        if( s->mb_y > 0 ) {
-            mbb_xy = mb_xy - s->mb_stride;
-
-            if( !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
-                (h->cbp_table[mbb_xy]&0x30) )
-                nzb = (h->cbp_table[mbb_xy]>>(6+idx))&0x01;
-        }
-    } else if( cat == 4 ) {
-        int idxc = idx % 4 ;
-        if( idxc == 1 || idxc == 3 )
-            mba_xy = mb_xy;
-        else if( s->mb_x > 0 )
-            mba_xy = mb_xy -1;
-
-        if( idxc == 2 || idxc == 3 )
-            mbb_xy = mb_xy;
-        else if( s->mb_y > 0 )
-            mbb_xy = mb_xy - s->mb_stride;
-
-        if( mba_xy >= 0 &&
-            !IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) &&
-            (h->cbp_table[mba_xy]&0x30) == 0x20 )
-            nza = h->non_zero_count_cache[scan8[16+idx] - 1];
-
-        if( mbb_xy >= 0 &&
-            !IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) &&
-            (h->cbp_table[mbb_xy]&0x30) == 0x20 )
-            nzb = h->non_zero_count_cache[scan8[16+idx] - 8];
+        nza = (h->left_cbp>>(6+idx))&0x01;
+        nzb = (h-> top_cbp>>(6+idx))&0x01;
+    } else {
+        assert(cat == 4);
+        nza = h->non_zero_count_cache[scan8[16+idx] - 1];
+        nzb = h->non_zero_count_cache[scan8[16+idx] - 8];
     }
 
-    if( ( mba_xy < 0 && IS_INTRA( s->current_picture.mb_type[mb_xy] ) ) ||
-        ( mba_xy >= 0 && IS_INTRA_PCM(s->current_picture.mb_type[mba_xy] ) ) ||
-          nza > 0 )
+    if( nza > 0 )
         ctx++;
 
-    if( ( mbb_xy < 0 && IS_INTRA( s->current_picture.mb_type[mb_xy] ) ) ||
-        ( mbb_xy >= 0 && IS_INTRA_PCM(s->current_picture.mb_type[mbb_xy] ) ) ||
-          nzb > 0 )
+    if( nzb > 0 )
         ctx += 2;
 
     return ctx + 4 * cat;
@@ -4463,7 +4384,9 @@ decode_intra_mb:
 
     if(IS_INTRA_PCM(mb_type)) {
         /* TODO */
-        h->cbp_table[mb_xy] = 0xf +4*2;
+        assert(0);
+        h->cbp_table[mb_xy] = 0xf +4*2; //FIXME ?!
+        h->cbp_table[mb_xy] |= 0x1C0;
         h->chroma_pred_mode_table[mb_xy] = 0;
         s->current_picture.qscale_table[mb_xy]= s->qscale;
         return -1;
