@@ -87,33 +87,6 @@ void flush_put_bits(PutBitContext *s)
 #endif
 }
 
-/* pad the end of the output stream with zeros */
-#ifndef ALT_BITSTREAM_WRITER
-void jflush_put_bits(PutBitContext *s)
-{
-    unsigned int b;
-    s->bit_buf<<= s->bit_left;
-    s->bit_buf |= ~1U >> (32 - s->bit_left); /* set all the unused bits to one */
-
-    while (s->bit_left < 32) {
-        b = s->bit_buf >> 24;
-        *s->buf_ptr++ = b;
-        if (b == 0xff)
-            *s->buf_ptr++ = 0;
-        s->bit_buf<<=8;
-        s->bit_left+=8;
-    }
-    s->bit_left=32;
-    s->bit_buf=0;
-}
-#else
-void jflush_put_bits(PutBitContext *s)
-{
-    int num= (  - s->index) & 7;
-    jput_bits(s, num,0xFF>>(8-num));
-}
-#endif
-
 void put_string(PutBitContext * pbc, char *s)
 {
     while(*s){

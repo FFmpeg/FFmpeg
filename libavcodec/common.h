@@ -108,7 +108,6 @@ typedef signed int INT32;
 typedef signed long long INT64;
 
 #    ifdef HAVE_AV_CONFIG_H
-
 #        ifndef INT64_C
 #            define INT64_C(c)     (c ## LL)
 #            define UINT64_C(c)    (c ## ULL)
@@ -117,7 +116,6 @@ typedef signed long long INT64;
 #        ifdef USE_FASTMEMCPY
 #            include "fastmemcpy.h"
 #        endif
-
 #    endif /* HAVE_AV_CONFIG_H */
 
 #endif /* !CONFIG_WIN32 */
@@ -219,9 +217,6 @@ INT64 get_bit_count(PutBitContext *s); /* XXX: change function name */
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
 void put_string(PutBitContext * pbc, char *s);
-
-/* jpeg specific put_bits */
-void jflush_put_bits(PutBitContext *s);
 
 /* bit input */
 
@@ -383,94 +378,6 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 }
 #endif
 
-#ifndef ALT_BITSTREAM_WRITER
-/* for jpeg : escape 0xff with 0x00 after it */
-static inline void jput_bits(PutBitContext *s, int n, unsigned int value)
-{
-    unsigned int bit_buf, b;
-    int bit_left, i;
-    
-    assert(n == 32 || value < (1U << n));
-
-    bit_buf = s->bit_buf;
-    bit_left = s->bit_left;
-
-    //printf("n=%d value=%x cnt=%d buf=%x\n", n, value, bit_cnt, bit_buf);
-    /* XXX: optimize */
-    if (n < bit_left) {
-        bit_buf = (bit_buf<<n) | value;
-        bit_left-=n;
-    } else {
-	bit_buf<<=bit_left;
-        bit_buf |= value >> (n - bit_left);
-        /* handle escape */
-        for(i=0;i<4;i++) {
-            b = (bit_buf >> 24);
-            *(s->buf_ptr++) = b;
-            if (b == 0xff)
-                *(s->buf_ptr++) = 0;
-            bit_buf <<= 8;
-        }
-
-	bit_left+= 32 - n;
-        bit_buf = value;
-    }
-    
-    s->bit_buf = bit_buf;
-    s->bit_left = bit_left;
-}
-#endif
-
-
-#ifdef ALT_BITSTREAM_WRITER
-static inline void jput_bits(PutBitContext *s, int n, int value)
-{
-    int index= s->index;
-    uint32_t *ptr= (uint32_t*)(((uint8_t *)s->buf)+(index>>3));
-    int v= ptr[0];
-//if(n>24) printf("%d %d\n", n, value);
-    
-    v |= be2me_32(value<<(32-n-(index&7) ));
-    if(((v+0x01010101)^0xFFFFFFFF)&v&0x80808080)
-    {
-	/* handle idiotic (m)jpeg escapes */
-	uint8_t *bPtr= (uint8_t*)ptr;
-	int numChecked= ((index+n)>>3) - (index>>3);
-	
-	v= be2me_32(v);
-
-	*(bPtr++)= v>>24;
-	if((v&0xFF000000)==0xFF000000 && numChecked>0){
-		*(bPtr++)= 0x00;
-		index+=8;
-	}
-	*(bPtr++)= (v>>16)&0xFF;
-	if((v&0x00FF0000)==0x00FF0000 && numChecked>1){
-		*(bPtr++)= 0x00;
-		index+=8;
-	}
-	*(bPtr++)= (v>>8)&0xFF;
-	if((v&0x0000FF00)==0x0000FF00 && numChecked>2){
-		*(bPtr++)= 0x00;
-		index+=8;
-	}
-	*(bPtr++)= v&0xFF;
-	if((v&0x000000FF)==0x000000FF && numChecked>3){
-		*(bPtr++)= 0x00;
-		index+=8;
-	}
-	*((uint32_t*)bPtr)= 0;
-    }
-    else
-    {
-	ptr[0] = v;
-	ptr[1] = 0;
-    }
-
-    index+= n;
-    s->index= index;
- }
-#endif
 
 static inline uint8_t* pbBufPtr(PutBitContext *s)
 {

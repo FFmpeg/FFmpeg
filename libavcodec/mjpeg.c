@@ -470,9 +470,71 @@ void mjpeg_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 8, 0); /* Ah/Al (not used) */
 }
 
+static void escape_FF(MpegEncContext *s)
+{
+    int size= get_bit_count(&s->pb) - s->header_bits;
+    int i, ff_count;
+    uint8_t *buf= s->pb.buf + (s->header_bits>>3);
+    int align= (-(int)(buf))&3;
+    
+    assert((size&7) == 0);
+    size >>= 3;
+    
+    ff_count=0;
+    for(i=0; i<size && i<align; i++){
+        if(buf[i]==0xFF) ff_count++;
+    }
+    for(; i<size-15; i+=16){
+        int acc, v;
+
+        v= *(uint32_t*)(&buf[i]);
+        acc= (((v & (v>>4))&0x0F0F0F0F)+0x01010101)&0x10101010;
+        v= *(uint32_t*)(&buf[i+4]);
+        acc+=(((v & (v>>4))&0x0F0F0F0F)+0x01010101)&0x10101010;
+        v= *(uint32_t*)(&buf[i+8]);
+        acc+=(((v & (v>>4))&0x0F0F0F0F)+0x01010101)&0x10101010;
+        v= *(uint32_t*)(&buf[i+12]);
+        acc+=(((v & (v>>4))&0x0F0F0F0F)+0x01010101)&0x10101010;
+
+        acc>>=4;
+        acc+= (acc>>16);
+        acc+= (acc>>8);
+        ff_count+= acc&0xFF;
+    }
+    for(; i<size; i++){
+        if(buf[i]==0xFF) ff_count++;
+    }
+
+    if(ff_count==0) return;
+    
+    /* skip put bits */
+    for(i=0; i<ff_count-3; i+=4)
+        put_bits(&s->pb, 32, 0);
+    put_bits(&s->pb, (ff_count-i)*8, 0);
+    flush_put_bits(&s->pb); 
+
+    for(i=size-1; ff_count; i--){
+        int v= buf[i];
+
+        if(v==0xFF){
+//printf("%d %d\n", i, ff_count);
+            buf[i+ff_count]= 0;
+            ff_count--;
+        }
+
+        buf[i+ff_count]= v;
+    }
+}
+
 void mjpeg_picture_trailer(MpegEncContext *s)
 {
-    jflush_put_bits(&s->pb);
+    int pad= (-get_bit_count(&s->pb))&7;
+    
+    put_bits(&s->pb, pad,0xFF>>(8-pad));
+    flush_put_bits(&s->pb);
+
+    escape_FF(s);
+
     put_marker(&s->pb, EOI);
 }
 
@@ -482,7 +544,7 @@ static inline void mjpeg_encode_dc(MpegEncContext *s, int val,
     int mant, nbits;
 
     if (val == 0) {
-        jput_bits(&s->pb, huff_size[0], huff_code[0]);
+        put_bits(&s->pb, huff_size[0], huff_code[0]);
     } else {
         mant = val;
         if (val < 0) {
@@ -497,9 +559,9 @@ static inline void mjpeg_encode_dc(MpegEncContext *s, int val,
             nbits++;
         }
             
-        jput_bits(&s->pb, huff_size[nbits], huff_code[nbits]);
+        put_bits(&s->pb, huff_size[nbits], huff_code[nbits]);
         
-        jput_bits(&s->pb, nbits, mant & ((1 << nbits) - 1));
+        put_bits(&s->pb, nbits, mant & ((1 << nbits) - 1));
     }
 }
 
@@ -537,7 +599,7 @@ static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
             run++;
         } else {
             while (run >= 16) {
-                jput_bits(&s->pb, huff_size_ac[0xf0], huff_code_ac[0xf0]);
+                put_bits(&s->pb, huff_size_ac[0xf0], huff_code_ac[0xf0]);
                 run -= 16;
             }
             mant = val;
@@ -554,16 +616,16 @@ static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
             }
             code = (run << 4) | nbits;
 
-            jput_bits(&s->pb, huff_size_ac[code], huff_code_ac[code]);
+            put_bits(&s->pb, huff_size_ac[code], huff_code_ac[code]);
         
-            jput_bits(&s->pb, nbits, mant & ((1 << nbits) - 1));
+            put_bits(&s->pb, nbits, mant & ((1 << nbits) - 1));
             run = 0;
         }
     }
 
     /* output EOB only if not already 64 values */
     if (last_index < 63 || run != 0)
-        jput_bits(&s->pb, huff_size_ac[0], huff_code_ac[0]);
+        put_bits(&s->pb, huff_size_ac[0], huff_code_ac[0]);
 }
 
 void mjpeg_encode_mb(MpegEncContext *s, 
@@ -1316,6 +1378,8 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 			*(dst++) = x;
 			if (x == 0xff)
 			{
+			    while(*src == 0xff) src++;
+
 			    x = *(src++);
 			    if (x >= 0xd0 && x <= 0xd7)
 				*(dst++) = x;
