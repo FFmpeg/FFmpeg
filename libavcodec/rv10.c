@@ -296,6 +296,10 @@ static int rv10_decode_picture_header(MpegEncContext *s)
         return -1;
 
     s->qscale = get_bits(&s->gb, 5);
+    if(s->qscale==0){
+        fprintf(stderr, "error, qscale:0\n");
+        return -1;
+    }
 
     if (s->pict_type == I_TYPE) {
         if (s->rv10_version == 3) {
@@ -322,7 +326,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
         s->mb_y = 0;
         mb_count = s->mb_width * s->mb_height;
     }
-
+//printf("%d\n", get_bits(&s->gb, 3));
     get_bits(&s->gb, 3);	/* ignored */
     s->f_code = 1;
     s->unrestricted_mv = 1;
@@ -352,6 +356,9 @@ static int rv10_decode_init(AVCodecContext *avctx)
         return -1;
 
     h263_decode_init_vlc(s);
+
+    s->y_dc_scale_table=
+    s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
 
     /* init rv vlc */
     if (!done) {
