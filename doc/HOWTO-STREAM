@@ -2,7 +2,7 @@ The FFserver streaming HOWTO
 ----------------------------
 
 Philip Gladstone <philip-ffserver@gladstonefamily.net>
-Last updated: May 16, 2002
+Last updated: July 26, 2002
 
 0. What is this HOWTO about?
 
@@ -128,3 +128,34 @@ that will be discarded.
 
 * You may want to adjust the MaxBandwidth in the ffserver.conf to limit
 the amount of bandwidth consumed by live streams.
+
+8. Why does the ?buffer / Preroll stop working after a time?
+
+It turns out that (on my machine at least) the number of frames successfully
+grabbed is marginally less than the number that ought to be grabbed. This
+means that the timestamp in the encoded data stream gets behind real time.
+This means that if you say 'preroll 10', then when the stream gets 10
+or more seconds behind, there is no preroll left.
+
+Fixing this requires a require in the internals in how timestampts are 
+handled.
+
+9. Does the ?date= stuff work.
+
+Yes (subject to the caution above). Also note that whenever you start
+ffserver, it deletes the ffm file, thus wiping out what you had recorded
+before. This behaviour is a temporary fix to various crashes. The aim is
+to fix it so that the old data is saved if possible.
+
+The format of the ?date=xxxxxx is fairly flexible. You should use one
+of the following formats (the 'T' is literal):
+
+* YYYY-MM-DDTHH:MM:SS     (localtime)
+* YYYY-MM-DDTHH:MM:SSZ    (UTC)
+
+You can omit the YYYY-MM-DD, and then it refers to the current day. However 
+note that ?date=16:00:00  refers to 4PM on the current day -- this may be
+in the future and so unlikely to useful.
+
+You use this by adding the ?date= to the end of the URL for the stream.
+For example:   http://localhost:8080/test.asf?date=2002-07-26T23:05:00
