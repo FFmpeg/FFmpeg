@@ -1017,7 +1017,7 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
     
     if(p_type && USES_LIST(mb_type, 1)){
         av_log(c->avctx, AV_LOG_ERROR, "backward motion vector in P frame\n");
-        return INT_MAX;
+        return INT_MAX/4;
     }
     assert(IS_INTRA(mb_type) || USES_LIST(mb_type,0) || USES_LIST(mb_type,1));
     
@@ -1035,7 +1035,7 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
         
         if(!(s->flags & CODEC_FLAG_INTERLACED_ME)){
             av_log(c->avctx, AV_LOG_ERROR, "Interlaced macroblock selected but interlaced motion estimation disabled\n");
-            return INT_MAX;
+            return INT_MAX/4;
         }
 
         if(USES_LIST(mb_type, 0)){
@@ -1096,7 +1096,7 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
     }else if(IS_8X8(mb_type)){
         if(!(s->flags & CODEC_FLAG_4MV)){
             av_log(c->avctx, AV_LOG_ERROR, "4MV macroblock selected but 4MV encoding disabled\n");
-            return INT_MAX;
+            return INT_MAX/4;
         }
         cmpf= s->dsp.sse[1];
         chroma_cmpf= s->dsp.sse[1];
