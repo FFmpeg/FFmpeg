@@ -143,7 +143,7 @@ int main(int argc, char* argv[])
     }
 
     mm_flags = mm_support();
-    printf("dsptest: CPU flags:");
+    printf("%s: detected CPU flags:", argv[0]);
     if (mm_flags & MM_MMX)
         printf(" mmx");
     if (mm_flags & MM_MMXEXT)
