@@ -502,6 +502,9 @@ int matroska_init(void);
 /* sol.c */
 int sol_init(void);
 
+/* electronicarts.c */
+int ea_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"

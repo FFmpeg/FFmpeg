@@ -105,6 +105,7 @@ void av_register_all(void)
     nut_init();
     matroska_init();
     sol_init();
+    ea_init();
 
 #ifdef CONFIG_ENCODERS
     /* image formats */
