@@ -671,8 +671,12 @@ following image formats are supported:
 @item WMV8                   @tab  X  @tab  X @tab Not completely working
 @item H263(+)                @tab  X  @tab  X @tab Also known as Real Video 1.0
 @item MJPEG                  @tab  X  @tab  X 
+@item Lossless MJPEG         @tab  X  @tab  X
+@item Apple MJPEG-B          @tab     @tab  X
+@item Sunplus MJPEG          @tab     @tab  X @tab fourcc: SP5X
 @item DV                     @tab  X  @tab  X 
 @item Huff YUV               @tab  X  @tab  X
+@item FFmpeg Video 1         @tab  X  @tab  X @tab Lossless codec (fourcc: FFV1)
 @item Asus v1                @tab  X  @tab  X @tab fourcc: ASV1
 @item Asus v2                @tab  X  @tab  X @tab fourcc: ASV2
 @item Creative YUV           @tab     @tab  X @tab fourcc: CYUV
@@ -680,6 +684,7 @@ following image formats are supported:
 @item Sorenson Video 1       @tab     @tab  X @tab fourcc: SVQ1
 @item Sorenson Video 3       @tab     @tab  X @tab fourcc: SVQ3
 @item On2 VP3                @tab     @tab  X @tab still experimental
+@item Theora                 @tab     @tab  X @tab still experimental
 @item Intel Indeo 3          @tab     @tab  X @tab only works on i386 right now
 @item FLV                    @tab  X  @tab  X @tab Flash H263 variant
 @item ATI VCR1               @tab     @tab  X @tab fourcc: VCR1
@@ -741,6 +746,8 @@ solutions.
 @tab used in various Interplay computer games
 @item Xan DPCM               @tab      @tab X
 @tab used in Origin's Wing Commander IV AVI files
+@item Apple MACE 3           @tab      @tab X
+@item Apple MACE 6           @tab      @tab X
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
