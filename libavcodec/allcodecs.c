@@ -105,6 +105,7 @@ void avcodec_register_all(void)
     register_avcodec(&h264_decoder);
     register_avcodec(&vp3_decoder);
     register_avcodec(&asv1_decoder);
+    register_avcodec(&fourxm_decoder);
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif

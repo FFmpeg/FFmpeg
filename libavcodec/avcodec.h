@@ -1248,6 +1248,7 @@ extern AVCodec amr_nb_decoder;
 extern AVCodec aac_decoder;
 extern AVCodec mpeg4aac_decoder;
 extern AVCodec asv1_decoder;
+extern AVCodec fourxm_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

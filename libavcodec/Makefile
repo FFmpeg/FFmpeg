@@ -17,7 +17,7 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       mpeg12.o mpegaudiodec.o pcm.o simple_idct.o \
       ratecontrol.o adpcm.o eval.o dv.o error_resilience.o \
       fft.o mdct.o mace.o huffyuv.o cyuv.o opts.o raw.o h264.o golomb.o \
-      vp3.o asv1.o
+      vp3.o asv1.o 4xm.o cabac.o
 
 ifeq ($(AMR_NB),yes)
 OBJS+= amr.o
