@@ -131,8 +131,12 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
 {
         unsigned int vbv_buffer_size;
         unsigned int fps, v;
-        int n;
+        int n, i;
         UINT64 time_code;
+        float best_aspect_error= 1E10;
+        float aspect_ratio= s->avctx->aspect_ratio;
+        
+        if(aspect_ratio==0.0) aspect_ratio= s->width / (float)s->height; //pixel aspect 1:1 (VGA)
         
         if (s->current_picture.key_frame) {
             /* mpeg1 header repeated every gop */
@@ -154,7 +158,18 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
  
             put_bits(&s->pb, 12, s->width);
             put_bits(&s->pb, 12, s->height);
-            put_bits(&s->pb, 4, 1); /* 1/1 aspect ratio */
+            
+            for(i=1; i<15; i++){
+                float error= mpeg1_aspect[i] - s->width/(s->height*aspect_ratio);
+                error= ABS(error);
+                
+                if(error < best_aspect_error){
+                    best_aspect_error= error;
+                    s->aspect_ratio_info= i;
+                }
+            }
+            
+            put_bits(&s->pb, 4, s->aspect_ratio_info);
             put_bits(&s->pb, 4, s->frame_rate_index);
             v = s->bit_rate / 400;
             if (v > 0x3ffff)
