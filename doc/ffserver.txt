@@ -43,7 +43,7 @@ MPEG file.
 
   etc...
 
-  Note that ffserver generate multiple streams in multiple formats AT
+  Note that ffserver generates multiple streams in multiple formats AT
   THE SAME TIME. It should be able to handle hundreds of users at the
   same time if you internet connection is fast enough.
 
