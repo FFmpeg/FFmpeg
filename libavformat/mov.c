@@ -1712,6 +1712,7 @@ static int mov_probe(AVProbeData *p)
             return AVPROBE_SCORE_MAX - 5;
         case MKTAG( 'f', 't', 'y', 'p' ):
         case MKTAG( 's', 'k', 'i', 'p' ):
+        case MKTAG( 'u', 'u', 'i', 'd' ):
             offset = to_be32(p->buf+offset) + offset;
             /* if we only find those cause probedata is too small at least rate them */
             score = AVPROBE_SCORE_MAX - 50;
