@@ -30,6 +30,9 @@ extern void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *
 extern void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
 	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride);
+extern void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+	unsigned int width, unsigned int height,
+	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride);
 
 #define MODE_RGB  0x1
 #define MODE_BGR  0x2
