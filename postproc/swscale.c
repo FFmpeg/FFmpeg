@@ -604,6 +604,7 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 		case 2: flags|= SWS_BICUBIC; break;
 		case 3: flags|= SWS_X; break;
 		case 4: flags|= SWS_POINT; break;
+		case 5: flags|= SWS_AREA; break;
 		default:flags|= SWS_BILINEAR; break;
 	}
 
@@ -666,7 +667,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		int xDstInSrc;
 		if     (flags&SWS_BICUBIC) filterSize= 4;
 		else if(flags&SWS_X      ) filterSize= 4;
-		else			   filterSize= 2;
+		else			   filterSize= 2; // SWS_BILINEAR / SWS_AREA 
 //		printf("%d %d %d\n", filterSize, srcW, dstW);
 		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
 
@@ -705,6 +706,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 			}
 			else
 			{
+				//Bilinear upscale / linear interpolate / Area averaging
 				for(j=0; j<filterSize; j++)
 				{
 					double d= ABS((xx<<16) - xDstInSrc)/(double)(1<<16);
@@ -721,9 +723,10 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	else // downscale
 	{
 		int xDstInSrc;
-		if(flags&SWS_BICUBIC) filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
-		else if(flags&SWS_X)  filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
-		else		      filterSize= (int)ceil(1 + 2.0*srcW / (double)dstW);
+		if(flags&SWS_BICUBIC)	filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
+		else if(flags&SWS_X)	filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
+		else if(flags&SWS_AREA)	filterSize= (int)ceil(1 + 1.0*srcW / (double)dstW);
+		else /* BILINEAR */	filterSize= (int)ceil(1 + 2.0*srcW / (double)dstW);
 //		printf("%d %d %d\n", *filterSize, srcW, dstW);
 		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
 
@@ -749,15 +752,19 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 					else
 						coeff=0.0;
 				}
-/*				else if(flags & SWS_X)
+				else if(flags & SWS_AREA)
 				{
-				}*/
+					double srcPixelSize= (1<<16)/(double)xInc;
+					if(d + srcPixelSize/2 < 0.5) coeff= 1.0;
+					else if(d - srcPixelSize/2 < 0.5) coeff= (0.5-d)/srcPixelSize + 0.5;
+					else coeff=0.0;
+				}
 				else
 				{
 					coeff= 1.0 - d;
 					if(coeff<0) coeff=0;
 				}
-//				printf("%1.3f %d %d \n", coeff, (int)d, xDstInSrc);
+//				printf("%1.3f %2.3f %d \n", coeff, d, xDstInSrc);
 				filter[i*filterSize + j]= coeff;
 				xx++;
 			}
@@ -1225,7 +1232,9 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		else if(flags&SWS_BICUBIC)
 			fprintf(stderr, "\nSwScaler: BICUBIC scaler ");
 		else if(flags&SWS_POINT)
-			fprintf(stderr, "\nSwScaler: POINT scaler ");
+			fprintf(stderr, "\nSwScaler: Nearest Neighbor / POINT scaler ");
+		else if(flags&SWS_AREA)
+			fprintf(stderr, "\nSwScaler: Area Averageing scaler ");
 		else
 			fprintf(stderr, "\nSwScaler: ehh flags invalid?! ");
 

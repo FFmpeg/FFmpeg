@@ -22,6 +22,7 @@
 #define SWS_BICUBIC  4
 #define SWS_X        8
 #define SWS_POINT    0x10
+#define SWS_AREA     0x20
 #define SWS_FULL_UV_IPOL 0x100
 #define SWS_PRINT_INFO 0x1000
 
