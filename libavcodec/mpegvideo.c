@@ -1480,7 +1480,6 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 motion_x = s->mv[0][0][0] + s->mv[0][1][0];
                 motion_y = s->mv[0][0][1] + s->mv[0][1][1];
                 motion_x = (motion_x>>1) | (motion_x&1);
-                motion_y = (motion_y>>1) | (motion_y&1);
             }
             /* no update if 8X8 because it has been done during parsing */
             s->motion_val[xy][0] = motion_x;

@@ -2722,7 +2722,7 @@ int h263_decode_mb(MpegEncContext *s,
                         return -1;
 
                     s->mv[0][i][0] = mx;
-                    s->mv[0][i][1] = my*2;
+                    s->mv[0][i][1] = my;
                 }
             }else{
                 PRINT_MB_TYPE("P");
@@ -3194,7 +3194,9 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             goto not_coded;
         rl = &rl_intra;
         rl_vlc = rl_intra.rl_vlc[0];
-        if (s->ac_pred) {
+        if(s->alternate_scan)
+            scan_table = ff_alternate_vertical_scan; /* left */
+        else if (s->ac_pred) {
             if (dc_pred_dir == 0) 
                 scan_table = ff_alternate_vertical_scan; /* left */
             else
@@ -3211,7 +3213,12 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             return 0;
         }
         rl = &rl_inter;
-        scan_table = zigzag_direct;
+   
+        if(s->alternate_scan)
+            scan_table = ff_alternate_vertical_scan; /* left */
+        else
+            scan_table = zigzag_direct;
+
         if(s->mpeg_quant){
             qmul=1;
             qadd=0;
@@ -4054,8 +4061,8 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
          if(!s->progressive_sequence){
              s->top_field_first= get_bits1(&s->gb);
              s->alternate_scan= get_bits1(&s->gb);
-//printf("top:%d alt:%d\n", s->top_field_first, s->alternate_scan);
-         }
+         }else
+             s->alternate_scan= 0;
      }
 
      if(s->pict_type == S_TYPE && (s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE)){
@@ -4090,7 +4097,8 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
          }else
              s->b_code=1;
 
-//printf("quant:%d fcode:%d bcode:%d type:%d size:%d\n", s->qscale, s->f_code, s->b_code, s->pict_type, s->gb.size);
+//printf("qpuant:%d fcode:%d bcode:%d type:%d size:%d pro:%d alt:%d\n", 
+//    s->qscale, s->f_code, s->b_code, s->pict_type, s->gb.size,s->progressive_sequence, s->alternate_scan);
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {
                  skip_bits1(&s->gb); // vop shape coding type
