@@ -1078,7 +1078,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
     uint8_t *data_buf;
     int data_size, got_picture;
     AVFrame picture;
-    short samples[pkt && pkt->size > AVCODEC_MAX_AUDIO_FRAME_SIZE/2 ? pkt->size : AVCODEC_MAX_AUDIO_FRAME_SIZE/2];
     void *buffer_to_free;
 
     if (pkt && pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
@@ -1103,9 +1102,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
         data_size = 0;
         if (ist->decoding_needed) {
             switch(ist->st->codec.codec_type) {
-            case CODEC_TYPE_AUDIO:
+            case CODEC_TYPE_AUDIO:{
                     /* XXX: could avoid copy if PCM 16 bits with same
                        endianness as CPU */
+                short samples[pkt && pkt->size > AVCODEC_MAX_AUDIO_FRAME_SIZE/2 ? pkt->size : AVCODEC_MAX_AUDIO_FRAME_SIZE/2];
                 ret = avcodec_decode_audio(&ist->st->codec, samples, &data_size,
                                            ptr, len);
                 if (ret < 0)
@@ -1121,7 +1121,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 data_buf = (uint8_t *)samples;
                 ist->next_pts += ((int64_t)AV_TIME_BASE/2 * data_size) / 
                     (ist->st->codec.sample_rate * ist->st->codec.channels);
-                break;
+                break;}
             case CODEC_TYPE_VIDEO:
                     data_size = (ist->st->codec.width * ist->st->codec.height * 3) / 2;
                     /* XXX: allocate picture correctly */
