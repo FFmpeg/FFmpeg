@@ -244,10 +244,11 @@ AVInputFormat m4v_iformat = {
     "m4v",
     "raw MPEG4 video format",
     0,
-    mpegvideo_probe,
+    NULL /*mpegvideo_probe*/,
     video_read_header,
     raw_read_packet,
     raw_read_close,
+    extensions: "m4v", //FIXME remove after writing mpeg4_probe
     value: CODEC_ID_MPEG4,
 };
 
