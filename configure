@@ -958,6 +958,30 @@ if (texi2html -version) >/dev/null 2>&1; then
 texi2html=yes
 fi
 
+if test "$network" = "yes" ; then
+##########################################
+# IPv6 probe
+
+cat > $TMPC << EOF
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+int main( void ) {
+  struct sockaddr_storage saddr;
+  struct ipv6_mreq mreq6;
+  getaddrinfo(0,0,0,0);
+  getnameinfo(0,0,0,0,0,0,0);
+  IN6_IS_ADDR_MULTICAST(0);
+}
+EOF
+
+ipv6=no
+if $cc -o $TMPE $TMPC > /dev/null 2>&1  ; then
+ipv6=yes
+fi
+fi
+
 case "`$cc -v 2>&1 | grep version`" in
     *gcc*)
 	CFLAGS="-Wall $CFLAGS"
@@ -1046,6 +1070,10 @@ echo "pthreads support"      $pthreads
 echo "AMR-NB float support"  $amr_nb
 echo "AMR-NB fixed support"  $amr_nb_fixed
 echo "AMR-WB float support"  $amr_wb
+echo "network support      $network"
+if test "$network" = "yes" ; then
+echo "IPv6 support         $ipv6"
+fi
 if test "$gpl" = "no" ; then
 echo "License: LGPL"
 else
@@ -1292,6 +1320,10 @@ fi
 if test "$network" = "yes" ; then
   echo "#define CONFIG_NETWORK 1" >> $TMPH
   echo "CONFIG_NETWORK=yes" >> config.mak
+fi
+
+if test "$ipv6" = "yes" ; then
+  echo "#define CONFIG_IPV6 1" >> $TMPH
 fi
 
 if test "$zlib" = "yes" ; then
