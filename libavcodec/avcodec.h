@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4700
+#define LIBAVCODEC_BUILD       4701
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -222,12 +222,6 @@ typedef struct RcOverride{
 
 /* only for ME compatiblity with old apps */
 extern int motion_estimation_method;
-
-/* ME algos sorted by quality */
-//FIXME remove IMHO
-static const __attribute__((unused)) int Motion_Est_QTab[] =
- { ME_ZERO, ME_PHODS, ME_LOG, ME_X1, ME_EPZS, ME_FULL };
-
 
 #define FF_MAX_B_FRAMES 8
 
