@@ -84,7 +84,11 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
 
     dv->width   = DV1394_WIDTH;
     dv->height  = DV1394_HEIGHT;
-    dv->channel = ap->channel;
+
+    if (ap->channel)
+        dv->channel = ap->channel;
+    else
+        dv->channel = DV1394_DEFAULT_CHANNEL;
 
     dv->frame_rate = 30;
 
