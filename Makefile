@@ -111,11 +111,17 @@ ffplay.o: ffplay.c
 videohook: .libs
 	$(MAKE) -C vhook all
 
+.PHONY: install
+
 install: all install-man $(INSTALLVHOOK)
 	$(MAKE) -C libavcodec install
 	$(MAKE) -C libavformat install
 	install -d $(prefix)/bin
 	install -c -s -m 755 $(PROG) $(prefix)/bin
+
+# create the window installer
+wininstaller: all install
+	makensis ffinstall.nsi
 
 # install man from source dir if available
 install-man:
