@@ -464,7 +464,7 @@ static void compute_exp_strategy(uint8_t exp_strategy[NB_BLOCKS][AC3_MAX_CHANNEL
     for(i=1;i<NB_BLOCKS;i++) {
         exp_diff = calc_exp_diff(exp[i][ch], exp[i-1][ch], N/2);
 #ifdef DEBUG            
-        av_log(AV_LOG_DEBUG, "exp_diff=%d\n", exp_diff);
+        av_log(NULL, AV_LOG_DEBUG, "exp_diff=%d\n", exp_diff);
 #endif
         if (exp_diff > EXP_DIFF_THRESHOLD)
             exp_strategy[i][ch] = EXP_NEW;
@@ -580,11 +580,11 @@ static int encode_exp(uint8_t encoded_exp[N/2],
     }
     
 #if defined(DEBUG)
-    av_log(AV_LOG_DEBUG, "exponents: strategy=%d\n", exp_strategy);
+    av_log(NULL, AV_LOG_DEBUG, "exponents: strategy=%d\n", exp_strategy);
     for(i=0;i<=nb_groups * group_size;i++) {
-        av_log(AV_LOG_DEBUG, "%d ", encoded_exp[i]);
+        av_log(NULL, AV_LOG_DEBUG, "%d ", encoded_exp[i]);
     }
-    av_log(AV_LOG_DEBUG, "\n");
+    av_log(NULL, AV_LOG_DEBUG, "\n");
 #endif
 
     return 4 + (nb_groups / 3) * 7;
@@ -1021,7 +1021,7 @@ static void output_audio_block(AC3EncodeContext *s,
 #if defined(DEBUG) 
     {
       static int count = 0;
-      av_log(AV_LOG_DEBUG, "Block #%d (%d)\n", block_num, count++);
+      av_log(NULL, AV_LOG_DEBUG, "Block #%d (%d)\n", block_num, count++);
     }
 #endif
     /* exponent strategy */

@@ -117,7 +117,7 @@ static int MPA_encode_init(AVCodecContext *avctx)
     s->alloc_table = alloc_tables[table];
 
 #ifdef DEBUG
-    av_log(AV_LOG_DEBUG, "%d kb/s, %d Hz, frame_size=%d bits, table=%d, padincr=%x\n", 
+    av_log(avctx, AV_LOG_DEBUG, "%d kb/s, %d Hz, frame_size=%d bits, table=%d, padincr=%x\n", 
            bitrate, freq, s->frame_size, table, s->frame_frac_incr);
 #endif
 

@@ -24,7 +24,7 @@ void* tmp;
     if(mm_accel&MM_ACCEL_X86_MMX){
 	tmp=a52_resample_MMX(flags,chans);
 	if(tmp){
-	    if(a52_resample==NULL) fprintf(stderr, "Using MMX optimized resampler\n");
+	    if(a52_resample==NULL) av_log(NULL, AV_LOG_INFO, "Using MMX optimized resampler\n");
 	    a52_resample=tmp;
 	    return tmp;
 	}
@@ -33,11 +33,11 @@ void* tmp;
 
     tmp=a52_resample_C(flags,chans);
     if(tmp){
-	if(a52_resample==NULL) fprintf(stderr, "No accelerated resampler found\n");
+	if(a52_resample==NULL) av_log(NULL, AV_LOG_INFO, "No accelerated resampler found\n");
 	a52_resample=tmp;
 	return tmp;
     }
     
-    fprintf(stderr, "Unimplemented resampler for mode 0x%X -> %d channels conversion - Contact MPlayer developers!\n", flags, chans);
+    av_log(NULL, AV_LOG_ERROR, "Unimplemented resampler for mode 0x%X -> %d channels conversion - Contact MPlayer developers!\n", flags, chans);
     return NULL;
 }

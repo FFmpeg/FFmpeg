@@ -87,7 +87,7 @@ static int faac_init_mp4(AVCodecContext *avctx)
     // else r = s->faacDecInit(s->faac_handle ... );
 
     if (r < 0)
-	fprintf(stderr, "faacDecInit2 failed r:%d   sr:%ld  ch:%d  s:%d\n",
+	av_log(avctx, AV_LOG_ERROR, "faacDecInit2 failed r:%d   sr:%ld  ch:%d  s:%d\n",
 		r, samplerate, channels, avctx->extradata_size);
 
     return r;
@@ -109,7 +109,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
     //printf("DECODE FRAME %d, %d, %d - %p\n", buf_size, frame_info.samples, frame_info.bytesconsumed, out);
 
     if (frame_info.error > 0) {
-	fprintf(stderr, "faac: frame decodinf failed: %s\n",
+	av_log(avctx, AV_LOG_ERROR, "faac: frame decodinf failed: %s\n",
 		s->faacDecGetErrorMessage(frame_info.error));
         return 0;
     }
@@ -146,7 +146,7 @@ static int faac_decode_init(AVCodecContext *avctx)
     s->handle = dlopen(libfaadname, RTLD_LAZY);
     if (!s->handle)
     {
-	fprintf(stderr, "FAAD library: %s could not be opened! \n%s\n",
+	av_log(avctx, AV_LOG_ERROR, "FAAD library: %s could not be opened! \n%s\n",
 		libfaadname, dlerror());
         return -1;
     }
@@ -182,7 +182,7 @@ static int faac_decode_init(AVCodecContext *avctx)
     }
     if (err) {
         dlclose(s->handle);
-	fprintf(stderr, "FAAD library: cannot resolve %s in %s!\n",
+	av_log(avctx, AV_LOG_ERROR, "FAAD library: cannot resolve %s in %s!\n",
 		err, libfaadname);
         return -1;
     }
@@ -190,7 +190,7 @@ static int faac_decode_init(AVCodecContext *avctx)
 
     s->faac_handle = s->faacDecOpen();
     if (!s->faac_handle) {
-        fprintf(stderr, "FAAD library: cannot create handler!\n");
+        av_log(avctx, AV_LOG_ERROR, "FAAD library: cannot create handler!\n");
         faac_decode_end(avctx);
         return -1;
     }
@@ -200,7 +200,7 @@ static int faac_decode_init(AVCodecContext *avctx)
 
     if (faac_cfg) {
 	switch (avctx->bits_per_sample) {
-	case 8: fprintf(stderr, "FAADlib unsupported bps %d\n", avctx->bits_per_sample); break;
+	case 8: av_log(avctx, AV_LOG_ERROR, "FAADlib unsupported bps %d\n", avctx->bits_per_sample); break;
 	default:
 	case 16:
 	    faac_cfg->outputFormat = FAAD_FMT_16BIT;
