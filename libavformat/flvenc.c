@@ -224,13 +224,15 @@ static void Dump(FLVContext *flv, ByteIOContext *pb, int count)
 
 static int flv_write_trailer(AVFormatContext *s)
 {
+    int64_t file_size;
+    int flags = 0;
+
     ByteIOContext *pb = &s->pb;
     FLVContext *flv = s->priv_data;
 
     Dump(flv,pb,1);
 
-    int64_t file_size = url_ftell(pb);
-    int flags = 0;
+    file_size = url_ftell(pb);
     flags |= flv->hasAudio ? 4 : 0;
     flags |= flv->hasVideo ? 1 : 0;
     url_fseek(pb, 4, SEEK_SET);
