@@ -37,6 +37,7 @@ enum powerpc_perf_index {
   altivec_put_pixels16_xy2_num,
   altivec_put_no_rnd_pixels16_xy2_num,
   powerpc_clear_blocks_dcbz32,
+  powerpc_clear_blocks_dcbz128,
   powerpc_perf_total
 };
 enum powerpc_data_index {

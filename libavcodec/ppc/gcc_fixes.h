@@ -13,9 +13,15 @@
 
 #ifdef CONFIG_DARWIN
 #define AVV(x...) (x)
+/* The Apple assembler shipped w/ gcc-3.3 knows about DCBZL, previous assemblers don't
+   We assume here that the Darwin GCC is from Apple.... */
+#if (__GNUC__ * 100 + __GNUC_MINOR__ < 303)
+#define NO_DCBZL
+#endif
 #else
 #define AVV(x...) {x}
-
+/* I don't think any non-Apple assembler knows about DCBZL */
+#define NO_DCBZL
 #if (__GNUC__ * 100 + __GNUC_MINOR__ < 303)  
 
 /* This code was provided to me by Bartosch Pixa
