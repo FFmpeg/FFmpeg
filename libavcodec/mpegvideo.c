@@ -2190,6 +2190,40 @@ static inline void MPV_motion(MpegEncContext *s,
                         s->mv[dir][0][0], s->mv[dir][0][1], 16);
         }
         break;
+    case MV_TYPE_16X8:{
+        int offset;
+         uint8_t ** ref2picture;
+
+            if(s->picture_structure == s->field_select[dir][0] + 1 || s->pict_type == B_TYPE || s->first_field){
+                ref2picture= ref_picture;
+                offset= s->field_select[dir][0] ? s->linesize : 0;
+            }else{
+                ref2picture= s->current_picture.data;
+                offset= s->field_select[dir][0] ? s->linesize : -s->linesize; 
+            } 
+
+            mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
+                        ref2picture, offset,
+                        0, pix_op,
+                        s->mv[dir][0][0], s->mv[dir][0][1], 8);
+
+
+            if(s->picture_structure == s->field_select[dir][1] + 1 || s->pict_type == B_TYPE || s->first_field){
+                ref2picture= ref_picture;
+                offset= s->field_select[dir][1] ? s->linesize : 0;
+            }else{
+                ref2picture= s->current_picture.data;
+                offset= s->field_select[dir][1] ? s->linesize : -s->linesize; 
+            } 
+            // I know it is ugly but this is the only way to fool emu_edge without rewrite mpeg_motion
+            mpeg_motion(s, dest_y+16*s->linesize, dest_cb+8*s->uvlinesize, dest_cr+8*s->uvlinesize,
+                        0,
+                        ref2picture, offset,
+                        0, pix_op,
+                        s->mv[dir][1][0], s->mv[dir][1][1]+16, 8);
+        }
+        
+        break;
     case MV_TYPE_DMV:
     {
     op_pixels_func (*dmv_pix_op)[4];
