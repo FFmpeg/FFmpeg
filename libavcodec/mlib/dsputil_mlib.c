@@ -198,6 +198,9 @@ static void avg_pixels8_xy2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 
+static void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
+
+
 static void add_pixels_clamped_mlib(const DCTELEM *block, UINT8 *pixels, int line_size)
 {
     mlib_VideoAddBlock_U8_S16(pixels, (mlib_s16 *)block, line_size);
@@ -215,7 +218,7 @@ static void ff_idct_put_mlib(UINT8 *dest, int line_size, DCTELEM *data)
 static void ff_idct_add_mlib(UINT8 *dest, int line_size, DCTELEM *data)
 {
     mlib_VideoIDCT8x8_S16_S16 (data, data);
-    add_pixels_clamped(data, dest, line_size);
+    mlib_VideoAddBlock_U8_S16(dest, (mlib_s16 *)data, line_size);
 }
 
 static void ff_fdct_mlib(DCTELEM *data)
@@ -247,6 +250,7 @@ void dsputil_init_mlib(DSPContext* c, unsigned mask)
     c->put_no_rnd_pixels_tab[1][0] = put_pixels8_mlib;
 
     c->add_pixels_clamped = add_pixels_clamped_mlib;
+    put_pixels_clamped = c->put_pixels_clamped;
 }
 
 void MPV_common_init_mlib(MpegEncContext *s)
