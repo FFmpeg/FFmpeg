@@ -2018,6 +2018,44 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
     return 0;
 }
 
+static inline int block_max(DCTELEM *block){
+    int i, max;
+    
+    max=0;
+    for(i=0; i<64; i++){
+        int v= ABS(block[i]);
+        if(v>max) max= v;
+    }
+    return max;
+}
+
+static int skip_check(MpegEncContext *s, Picture *p, Picture *ref){
+    int x, y, plane;
+    int score=0;
+
+    for(plane=0; plane<3; plane++){
+        const int stride= p->linesize[plane];
+        const int bw= plane ? 1 : 2;
+        for(y=0; y<s->mb_height*bw; y++){
+            for(x=0; x<s->mb_width*bw; x++){
+                int v;
+                
+                s->dsp.diff_pixels(s->block[0], p->data[plane] + 8*(x + y*stride), ref->data[plane] + 8*(x + y*stride), stride);
+                v= block_max(s->block[0]);
+                
+                if(v>score) 
+                    score=v;
+            }
+        }
+    }
+
+    if(score < s->avctx->frame_skip_threshold)
+        return 1;
+    if(score < ((s->avctx->frame_skip_factor * s->lambda)>>8))
+        return 1;
+    return 0;
+}
+
 static void select_input_picture(MpegEncContext *s){
     int i;
 
@@ -2033,7 +2071,26 @@ static void select_input_picture(MpegEncContext *s){
             s->reordered_input_picture[0]->coded_picture_number= s->coded_picture_number++;
         }else{
             int b_frames;
+
+            if(s->avctx->frame_skip_threshold || s->avctx->frame_skip_factor){
+                if(skip_check(s, s->input_picture[0], s->next_picture_ptr)){
+//av_log(NULL, AV_LOG_DEBUG, "skip %p %Ld\n", s->input_picture[0]->data[0], s->input_picture[0]->pts);
+                
+                    if(s->input_picture[0]->type == FF_BUFFER_TYPE_SHARED){
+                        for(i=0; i<4; i++)
+                            s->input_picture[0]->data[i]= NULL;
+                        s->input_picture[0]->type= 0;            
+                    }else{
+                        assert(   s->input_picture[0]->type==FF_BUFFER_TYPE_USER 
+                               || s->input_picture[0]->type==FF_BUFFER_TYPE_INTERNAL);
             
+                        s->avctx->release_buffer(s->avctx, (AVFrame*)s->input_picture[0]);
+                    }
+
+                    goto no_output_pic;
+                }
+            }
+
             if(s->flags&CODEC_FLAG_PASS2){
                 for(i=0; i<s->max_b_frames+1; i++){
                     int pict_num= s->input_picture[0]->display_picture_number + i;
@@ -2116,7 +2173,7 @@ static void select_input_picture(MpegEncContext *s){
             }
         }
     }
-    
+no_output_pic:
     if(s->reordered_input_picture[0]){
         s->reordered_input_picture[0]->reference= s->reordered_input_picture[0]->pict_type!=B_TYPE ? 3 : 0;
 

@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4734
+#define LIBAVCODEC_BUILD       4735
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1683,12 +1683,26 @@ typedef struct AVCodecContext {
      int lowres;
 
     /**
-     * bistream width / height. may be different from width/height if lowres
+     * bitsream width / height. may be different from width/height if lowres
      * or other things are used
      * - encoding: unused
      * - decoding: set by user before init if known, codec should override / dynamically change if needed
      */
     int coded_width, coded_height;
+
+    /**
+     * frame skip threshold
+     * - encoding: set by user
+     * - decoding: unused
+     */
+    int frame_skip_threshold;
+
+    /**
+     * frame skip factor
+     * - encoding: set by user
+     * - decoding: unused
+     */
+    int frame_skip_factor;
 } AVCodecContext;
 
 
