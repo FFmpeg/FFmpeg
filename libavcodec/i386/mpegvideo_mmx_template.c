@@ -76,12 +76,12 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         block[0]=0; //avoid fake overflow
 //        temp_block[0] = (block[0] + (q >> 1)) / q;
         last_non_zero_p1 = 1;
-        bias = s->q_intra_matrix16_bias[qscale];
-        qmat = s->q_intra_matrix16[qscale];
+        bias = s->q_intra_matrix16[qscale][1];
+        qmat = s->q_intra_matrix16[qscale][0];
     } else {
         last_non_zero_p1 = 0;
-        bias = s->q_inter_matrix16_bias[qscale];
-        qmat = s->q_inter_matrix16[qscale];
+        bias = s->q_inter_matrix16[qscale][1];
+        qmat = s->q_inter_matrix16[qscale][0];
     }
 
     if(s->out_format == FMT_H263 && s->mpeg_quant==0){

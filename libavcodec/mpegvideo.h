@@ -459,11 +459,9 @@ typedef struct MpegEncContext {
     /** precomputed matrix (combine qscale and DCT renorm) */
     int (*q_intra_matrix)[64];
     int (*q_inter_matrix)[64];
-    /** identical to the above but for MMX & these are not permutated */
-    uint16_t __align8 q_intra_matrix16[32][64];
-    uint16_t __align8 q_inter_matrix16[32][64];
-    uint16_t __align8 q_intra_matrix16_bias[32][64];
-    uint16_t __align8 q_inter_matrix16_bias[32][64];
+    /** identical to the above but for MMX & these are not permutated, second 64 entries are bias*/
+    uint16_t (*q_intra_matrix16)[2][64];
+    uint16_t (*q_inter_matrix16)[2][64];
     int block_last_index[6];  ///< last non zero coefficient in block
     /* scantables */
     ScanTable __align8 intra_scantable;
