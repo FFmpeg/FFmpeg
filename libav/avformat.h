@@ -1,9 +1,9 @@
 #ifndef AVFORMAT_H
 #define AVFORMAT_H
 
-#define LIBAV_VERSION_INT 0x000406  
-#define LIBAV_VERSION     "0.4.6"
-#define LIBAV_BUILD       4601
+#define LIBAVFORMAT_VERSION_INT 0x000406  
+#define LIBAVFORMAT_VERSION     "0.4.6"
+#define LIBAVFORMAT_BUILD       4601
 
 #include "avcodec.h"
 
@@ -232,9 +232,7 @@ AVOutputFormat *guess_format(const char *short_name,
 
 void av_hex_dump(UINT8 *buf, int size);
 
-void register_all(void);
-
-INT64 gettime(void);
+void av_register_all(void);
 
 typedef struct FifoBuffer {
     UINT8 *buffer;
@@ -249,6 +247,7 @@ void fifo_write(FifoBuffer *f, UINT8 *buf, int size, UINT8 **wptr_ptr);
 
 /* media file input */
 AVInputFormat *av_find_input_format(const char *short_name);
+AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened);
 int av_open_input_file(AVFormatContext **ic_ptr, const char *filename, 
                        AVInputFormat *fmt,
                        int buf_size,
@@ -277,6 +276,8 @@ void dump_format(AVFormatContext *ic,
                  int is_output);
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str);
 INT64 parse_date(const char *datestr, int duration);
+
+INT64 av_gettime(void);
 
 /* ffm specific for ffserver */
 #define FFM_PACKET_SIZE 4096
