@@ -68,6 +68,8 @@ untested special converters
 //#undef ARCH_X86
 #define DITHER1XBPP
 
+#define FAST_BGR2YV12 // use 7 bit coeffs instead of 15bit
+
 #define RET 0xC3 //near return opcode for X86
 
 #ifdef MP_DEBUG
@@ -177,6 +179,14 @@ static uint64_t __attribute__((aligned(8))) r15Mask=   0x7C007C007C007C00LL;
 static uint64_t __attribute__((aligned(8))) M24A=   0x00FF0000FF0000FFLL;
 static uint64_t __attribute__((aligned(8))) M24B=   0xFF0000FF0000FF00LL;
 static uint64_t __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000LL;
+
+#ifdef FAST_BGR2YV12
+static const uint64_t bgr2YCoeff  __attribute__((aligned(8))) = 0x000000210041000DULL;
+#else
+static const uint64_t bgr2YCoeff  __attribute__((aligned(8))) = 0x000020E540830C8BULL;
+#endif
+static const uint64_t bgr2YOffset __attribute__((aligned(8))) = 0x1010101010101010ULL;
+static const uint64_t w1111       __attribute__((aligned(8))) = 0x0001000100010001ULL;
 
 // FIXME remove
 static uint64_t __attribute__((aligned(8))) asm_yalpha1;
