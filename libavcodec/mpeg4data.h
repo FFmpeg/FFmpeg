@@ -4,6 +4,9 @@
 #define BIN_ONLY_SHAPE   2
 #define GRAY_SHAPE       3
 
+#define SIMPLE_VO_TYPE 1
+#define CORE_VO_TYPE   3
+
 // aspect_ratio_info
 #define EXTENDET_PAR 15
 

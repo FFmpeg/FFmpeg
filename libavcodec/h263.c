@@ -1008,7 +1008,9 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
 {
     int vo_ver_id=1; //must be 2 if we want GMC or q-pel
     char buf[255];
-    
+
+    s->vo_type= s->has_b_frames ? CORE_VO_TYPE : SIMPLE_VO_TYPE;
+
     if(get_bit_count(&s->pb)!=0) mpeg4_stuffing(&s->pb);
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, 0x100);        /* video obj */
@@ -1016,7 +1018,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     put_bits(&s->pb, 16, 0x120);        /* video obj layer */
 
     put_bits(&s->pb, 1, 0);		/* random access vol */
-    put_bits(&s->pb, 8, 1);		/* video obj type indication= simple obj */
+    put_bits(&s->pb, 8, s->vo_type);	/* video obj type indication */
     put_bits(&s->pb, 1, 1);		/* is obj layer id= yes */
       put_bits(&s->pb, 4, vo_ver_id);	/* is obj layer ver id */
       put_bits(&s->pb, 3, 1);		/* is obj layer priority */
@@ -1024,7 +1026,16 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
         put_bits(&s->pb, 4, s->aspect_ratio_info);/* aspect ratio info */
     else
         put_bits(&s->pb, 4, 1);		/* aspect ratio info= sqare pixel */
-    put_bits(&s->pb, 1, 0);		/* vol control parameters= no */
+
+    if(s->low_delay){
+        put_bits(&s->pb, 1, 1);		/* vol control parameters= yes */
+        put_bits(&s->pb, 2, 1);		/* chroma format 422 */
+        put_bits(&s->pb, 1, s->low_delay);
+        put_bits(&s->pb, 1, 0);		/* vbv parameters= no */
+    }else{
+        put_bits(&s->pb, 1, 0);		/* vol control parameters= no */
+    }
+
     put_bits(&s->pb, 2, RECT_SHAPE);	/* vol shape= rectangle */
     put_bits(&s->pb, 1, 1);		/* marker bit */
     
@@ -2579,7 +2590,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 
         /* vol header */
         skip_bits(&s->gb, 1); /* random access */
-        skip_bits(&s->gb, 8); /* vo_type */
+        s->vo_type= get_bits(&s->gb, 8);
         if (get_bits1(&s->gb) != 0) { /* is_ol_id */
             vo_ver_id = get_bits(&s->gb, 4); /* vo_ver_id */
             skip_bits(&s->gb, 3); /* vo_priority */
@@ -2594,9 +2605,19 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         }
 
         if(get_bits1(&s->gb)){ /* vol control parameter */
-            printf("vol control parameter not supported\n");
-            return -1;   
+            int chroma_format= get_bits(&s->gb, 2);
+            if(chroma_format!=1){
+                printf("illegal chroma format\n");
+            }
+            s->low_delay= get_bits1(&s->gb);
+            if(get_bits1(&s->gb)){ /* vbv parameters */
+                printf("vbv parameters not supported\n");
+                return -1;
+            }
+        }else{
+            s->low_delay=0;
         }
+
         s->shape = get_bits(&s->gb, 2); /* vol shape */
         if(s->shape != RECT_SHAPE) printf("only rectangular vol supported\n");
         if(s->shape == GRAY_SHAPE && vo_ver_id != 1){

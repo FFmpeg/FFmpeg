@@ -45,7 +45,7 @@ static int h263_decode_init(AVCodecContext *avctx)
     case CODEC_ID_MPEG4:
         s->time_increment_bits = 4; /* default value for broken headers */
         s->h263_pred = 1;
-        s->has_b_frames = 1;
+        s->has_b_frames = 1; //default, might be overriden in the vol header during header parsing
         break;
     case CODEC_ID_MSMPEG4V1:
         s->h263_msmpeg4 = 1;
@@ -129,6 +129,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
         ret = msmpeg4_decode_picture_header(s);
     } else if (s->h263_pred) {
         ret = mpeg4_decode_picture_header(s);
+        s->has_b_frames= !s->low_delay;
     } else if (s->h263_intel) {
         ret = intel_h263_decode_picture_header(s);
     } else {

@@ -409,6 +409,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
+        avctx->delay=0; //FIXME not sure, should check the spec
         break;
     case CODEC_ID_MJPEG:
         s->out_format = FMT_MJPEG;
@@ -422,6 +423,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->mjpeg_hsample[2] = 1; 
         if (mjpeg_init(s) < 0)
             return -1;
+        avctx->delay=0;
         break;
     case CODEC_ID_H263:
         if (h263_get_picture_format(s->width, s->height) == 7) {
@@ -429,6 +431,7 @@ int MPV_encode_init(AVCodecContext *avctx)
             return -1;
         }
         s->out_format = FMT_H263;
+        avctx->delay=0;
         break;
     case CODEC_ID_H263P:
         s->out_format = FMT_H263;
@@ -440,16 +443,20 @@ int MPV_encode_init(AVCodecContext *avctx)
         /* These are just to be sure */
         s->umvplus = 0;
         s->umvplus_dec = 0;
+        avctx->delay=0;
         break;
     case CODEC_ID_RV10:
         s->out_format = FMT_H263;
         s->h263_rv10 = 1;
+        avctx->delay=0;
         break;
     case CODEC_ID_MPEG4:
         s->out_format = FMT_H263;
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
         s->has_b_frames= s->max_b_frames ? 1 : 0;
+        s->low_delay=0;
+        avctx->delay= s->low_delay ? 0 : (s->max_b_frames + 1); 
         break;
     case CODEC_ID_MSMPEG4V1:
         s->out_format = FMT_H263;
@@ -457,6 +464,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
         s->msmpeg4_version= 1;
+        avctx->delay=0;
         break;
     case CODEC_ID_MSMPEG4V2:
         s->out_format = FMT_H263;
@@ -464,6 +472,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
         s->msmpeg4_version= 2;
+        avctx->delay=0;
         break;
     case CODEC_ID_MSMPEG4V3:
         s->out_format = FMT_H263;
@@ -471,6 +480,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
         s->msmpeg4_version= 3;
+        avctx->delay=0;
         break;
     default:
         return -1;

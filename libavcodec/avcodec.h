@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4601
-#define LIBAVCODEC_BUILD_STR   "4601"
+#define LIBAVCODEC_BUILD       4602
+#define LIBAVCODEC_BUILD_STR   "4602"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -140,6 +140,9 @@ typedef struct AVCodecContext {
     int frame_number; /* audio or video frame number */
     int key_frame;    /* true if the previous compressed frame was 
                          a key frame (intra, or seekable) */
+    int delay;        /* number of frames the decoded output will be delayed relative to the encoded input */
+    
+    /* encoding parameters */
     int quality;      /* quality of the previous encoded frame 
                          (between 1 (good) and 31 (bad)) 
                          this is allso used to set the quality in vbr mode

@@ -296,6 +296,8 @@ typedef struct MpegEncContext {
     int data_partioning;
     int resync_marker;
     int resync_x_pos;
+    int low_delay;                   /* no reordering needed / has no b-frames */
+    int vo_type;
 
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;
