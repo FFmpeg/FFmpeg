@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4747
+#define LIBAVCODEC_BUILD       4748
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -909,7 +909,7 @@ typedef struct AVCodecContext {
     
     /**
      * workaround bugs in encoders which sometimes cannot be detected automatically.
-     * - encoding: unused
+     * - encoding: set by user
      * - decoding: set by user
      */
     int workaround_bugs;
@@ -927,6 +927,7 @@ typedef struct AVCodecContext {
 #define FF_BUG_EDGE             1024
 #define FF_BUG_HPEL_CHROMA      2048
 #define FF_BUG_DC_CLIP          4096
+#define FF_BUG_MS               8192 ///< workaround various bugs in microsofts broken decoders
 //#define FF_BUG_FAKE_SCALABILITY 16 //autodetection should work 100%
         
     /**

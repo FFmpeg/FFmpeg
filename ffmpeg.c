@@ -3265,6 +3265,7 @@ static void opt_output_file(const char *filename)
                 video_enc->rc_eq = video_rc_eq;
                 video_enc->debug = debug;
                 video_enc->debug_mv = debug_mv;
+                video_enc->workaround_bugs = workaround_bugs;
                 video_enc->thread_count = thread_count;
                 p= video_rc_override_string;
                 for(i=0; p; i++){

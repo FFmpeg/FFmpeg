@@ -2021,7 +2021,8 @@ void h263_encode_init(MpegEncContext *s)
             s->avctx->extradata= av_malloc(1024);
             init_put_bits(&s->pb, s->avctx->extradata, 1024);
             
-            mpeg4_encode_visual_object_header(s);
+            if(!(s->workaround_bugs & FF_BUG_MS))
+                mpeg4_encode_visual_object_header(s);
             mpeg4_encode_vol_header(s, 0, 0);
 
 //            ff_mpeg4_stuffing(&s->pb); ?
@@ -2320,9 +2321,13 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
 
     put_bits(&s->pb, 1, 0);		/* random access vol */
     put_bits(&s->pb, 8, s->vo_type);	/* video obj type indication */
-    put_bits(&s->pb, 1, 1);		/* is obj layer id= yes */
-      put_bits(&s->pb, 4, vo_ver_id);	/* is obj layer ver id */
-      put_bits(&s->pb, 3, 1);		/* is obj layer priority */
+    if(s->workaround_bugs & FF_BUG_MS) {
+        put_bits(&s->pb, 1, 0);        /* is obj layer id= no */
+    } else {
+        put_bits(&s->pb, 1, 1);        /* is obj layer id= yes */
+        put_bits(&s->pb, 4, vo_ver_id);    /* is obj layer ver id */
+        put_bits(&s->pb, 3, 1);        /* is obj layer priority */
+    }
     
     aspect_to_info(s, s->avctx->sample_aspect_ratio);
 
@@ -2332,10 +2337,14 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
         put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.den);
     }
 
-    put_bits(&s->pb, 1, 1);		/* vol control parameters= yes */
-    put_bits(&s->pb, 2, 1);		/* chroma format YUV 420/YV12 */
-    put_bits(&s->pb, 1, s->low_delay);
-    put_bits(&s->pb, 1, 0);		/* vbv parameters= no */
+    if(s->workaround_bugs & FF_BUG_MS) { //
+        put_bits(&s->pb, 1, 0);        /* vol control parameters= no @@@ */
+    } else {
+        put_bits(&s->pb, 1, 1);        /* vol control parameters= yes */
+        put_bits(&s->pb, 2, 1);        /* chroma format YUV 420/YV12 */
+        put_bits(&s->pb, 1, s->low_delay);
+        put_bits(&s->pb, 1, 0);        /* vbv parameters= no */
+    }
 
     put_bits(&s->pb, 2, RECT_SHAPE);	/* vol shape= rectangle */
     put_bits(&s->pb, 1, 1);		/* marker bit */
@@ -2405,7 +2414,8 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
             if(s->strict_std_compliance < 2 || picture_number==0) //HACK, the reference sw is buggy
                 mpeg4_encode_vol_header(s, 0, 0);
         }
-        mpeg4_encode_gop_header(s);
+        if(!(s->workaround_bugs & FF_BUG_MS))
+            mpeg4_encode_gop_header(s);
     }
     
     s->partitioned_frame= s->data_partitioning && s->pict_type!=B_TYPE;
