@@ -109,6 +109,7 @@ static int mp3_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     AVStream *st;
+    int pos;
 
     st = av_new_stream(s, 0);
     if (!st)
@@ -116,6 +117,19 @@ static int mp3_read_header(AVFormatContext *s,
 
     st->codec.codec_type = CODEC_TYPE_AUDIO;
     st->codec.codec_id = CODEC_ID_MP2;
+
+    /* looking for 11111111 111MMLLC - MPEG synchronization tag
+	MM: 00 - MPEG-2.5, 10 - MPEG-2, 11 - MPEG-1
+	LL: 11 - Layer I, 10 - Layer II, 01 - Layer III
+	XXX: this code does not read more bytes from file 
+	so if ID3 (or other stuff) length > IO_BUFFER_SIZE it fails back to CODEC_ID_MP2 */
+    for(pos=0; pos < s->pb.buffer_size-1; pos++)
+	if( s->pb.buffer[pos] == 0xFF && (s->pb.buffer[pos] & 0xE0) == 0xE0 )
+	    break;
+	    
+    if( pos < s->pb.buffer_size-1 && (s->pb.buffer[pos+1] & 6) == 2 )
+	st->codec.codec_id = CODEC_ID_MP3LAME;
+
     /* the parameters will be extracted from the compressed bitstream */
     return 0;
 }
