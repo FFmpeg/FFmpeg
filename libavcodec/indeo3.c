@@ -463,10 +463,11 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                     lp2++;
                     break;
                   case 1:
-                    res = ((le2me_16(((unsigned short *)(ref_lp))[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1++]) << 1;
+                    res = ((le2me_16(((unsigned short *)(ref_lp))[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1]) << 1;
                     ((unsigned short *)cur_lp)[0] = le2me_16(res);
                     res = ((le2me_16(((unsigned short *)(ref_lp))[1]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1;
                     ((unsigned short *)cur_lp)[1] = le2me_16(res);
+                    buf1++;
                     lp2++;
                     break;
                   case 2:
@@ -570,7 +571,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                     break;
 
                   case 1:
-                    res = ((le2me_16(((unsigned short *)ref_lp)[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1++]) << 1;
+                    res = ((le2me_16(((unsigned short *)ref_lp)[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1]) << 1;
                     ((unsigned short *)cur_lp)[width_tbl[2]] = le2me_16(res);
                     res = ((le2me_16(((unsigned short *)ref_lp)[1]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1;
                     ((unsigned short *)cur_lp)[width_tbl[2]+1] = le2me_16(res);
@@ -579,6 +580,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                       cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
                     else
                       cur_lp[0] = cur_lp[width_tbl[1]];
+                    buf1++;
                     lp2++;
                     break;
 
@@ -702,7 +704,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                       break;
 
                     case 1:
-                      cur_lp[width_tbl[1]] = le2me_32(((le2me_32(lv1) >> 1) + correctionloworder_lp[lp2 & 0x01][*buf1++]) << 1);
+                      cur_lp[width_tbl[1]] = le2me_32(((le2me_32(lv1) >> 1) + correctionloworder_lp[lp2 & 0x01][*buf1]) << 1);
                       cur_lp[width_tbl[1]+1] = le2me_32(((le2me_32(lv2) >> 1) + correctionloworder_lp[lp2 & 0x01][k]) << 1);
                       if(lp2 > 0 || strip->ypos != 0 || flag1 == 0) {
                         cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
@@ -711,6 +713,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                         cur_lp[0] = cur_lp[width_tbl[1]];
                         cur_lp[1] = cur_lp[width_tbl[1]+1];
                       }
+                      buf1++;
                       lp2++;
                       break;
 
