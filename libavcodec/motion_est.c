@@ -241,8 +241,14 @@ if((x) >= xmin && 4*(x) + (dx) <= 4*xmax && (y) >= ymin && 4*(y) + (dy) <= 4*yma
         int fxy= (fx&3) + 4*(fy&3);\
         int bxy= (bx&3) + 4*(by&3);\
 \
-        qpel_put[0][fxy](s->me.scratchpad, (ref_y ) + (fx>>2) + (fy>>2)*(stride), stride);\
-        qpel_avg[0][bxy](s->me.scratchpad, (ref2_y) + (bx>>2) + (by>>2)*(stride), stride);\
+        qpel_put[1][fxy](s->me.scratchpad               , (ref_y ) + (fx>>2) + (fy>>2)*(stride)               , stride);\
+        qpel_put[1][fxy](s->me.scratchpad + 8           , (ref_y ) + (fx>>2) + (fy>>2)*(stride) + 8           , stride);\
+        qpel_put[1][fxy](s->me.scratchpad     + 8*stride, (ref_y ) + (fx>>2) + (fy>>2)*(stride)     + 8*stride, stride);\
+        qpel_put[1][fxy](s->me.scratchpad + 8 + 8*stride, (ref_y ) + (fx>>2) + (fy>>2)*(stride) + 8 + 8*stride, stride);\
+        qpel_avg[1][bxy](s->me.scratchpad               , (ref2_y) + (bx>>2) + (by>>2)*(stride)               , stride);\
+        qpel_avg[1][bxy](s->me.scratchpad + 8           , (ref2_y) + (bx>>2) + (by>>2)*(stride) + 8           , stride);\
+        qpel_avg[1][bxy](s->me.scratchpad     + 8*stride, (ref2_y) + (bx>>2) + (by>>2)*(stride)     + 8*stride, stride);\
+        qpel_avg[1][bxy](s->me.scratchpad + 8 + 8*stride, (ref2_y) + (bx>>2) + (by>>2)*(stride) + 8 + 8*stride, stride);\
     }\
     d = cmp_func(s, s->me.scratchpad, src_y, stride);\
 }else\

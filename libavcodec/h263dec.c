@@ -332,6 +332,13 @@ static int mpeg4_find_frame_end(MpegEncContext *s, UINT8 *buf, int buf_size){
     return -1;
 }
 
+/**
+ * draws an line from (ex, ey) -> (sx, sy).
+ * @param w width of the image
+ * @param h height of the image
+ * @param stride stride/linesize of the image
+ * @param color color of the arrow
+ */
 static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h, int stride, int color){
     int t, x, y, f;
     
@@ -368,6 +375,13 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h
     }
 }
 
+/**
+ * draws an arrow from (ex, ey) -> (sx, sy).
+ * @param w width of the image
+ * @param h height of the image
+ * @param stride stride/linesize of the image
+ * @param color color of the arrow
+ */
 static void draw_arrow(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h, int stride, int color){ 
     int dx= ex - sx;
     int dy= ey - sy;
@@ -510,6 +524,11 @@ retry:
         if(s->lavc_build && s->lavc_build<4653)
             s->workaround_bugs|= FF_BUG_STD_QPEL;
         
+        if(s->lavc_build && s->lavc_build<4655)
+            s->workaround_bugs|= FF_BUG_DIRECT_BLOCKSIZE;
+
+        if(s->divx_version)
+            s->workaround_bugs|= FF_BUG_DIRECT_BLOCKSIZE;
 //printf("padding_bug_score: %d\n", s->padding_bug_score);
 #if 0
         if(s->divx_version==500)

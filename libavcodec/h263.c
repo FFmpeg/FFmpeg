@@ -403,17 +403,20 @@ void ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
     uint16_t time_pp= s->pp_time;
     uint16_t time_pb= s->pb_time;
     int i;
-        
+    
     //FIXME avoid divides
     switch(s->co_located_type_table[mb_index]){
     case 0:
-        s->mv_type= MV_TYPE_16X16;
-        s->mv[0][0][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
-        s->mv[0][0][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
-        s->mv[1][0][0] = mx ? s->mv[0][0][0] - s->motion_val[xy][0]
+        s->mv[0][0][0] = s->mv[0][1][0] = s->mv[0][2][0] = s->mv[0][3][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
+        s->mv[0][0][1] = s->mv[0][1][1] = s->mv[0][2][1] = s->mv[0][3][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
+        s->mv[1][0][0] = s->mv[1][1][0] = s->mv[1][2][0] = s->mv[1][3][0] = mx ? s->mv[0][0][0] - s->motion_val[xy][0]
                             : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp;
-        s->mv[1][0][1] = my ? s->mv[0][0][1] - s->motion_val[xy][1] 
+        s->mv[1][0][1] = s->mv[1][1][1] = s->mv[1][2][1] = s->mv[1][3][1] = my ? s->mv[0][0][1] - s->motion_val[xy][1] 
                             : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp;
+        if((s->avctx->workaround_bugs & FF_BUG_DIRECT_BLOCKSIZE) || !s->quarter_sample)
+            s->mv_type= MV_TYPE_16X16;
+        else
+            s->mv_type= MV_TYPE_8X8;
         break;
     case CO_LOCATED_TYPE_4MV:
         s->mv_type = MV_TYPE_8X8;
