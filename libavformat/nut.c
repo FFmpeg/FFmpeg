@@ -25,7 +25,6 @@
 
 /*
  * TODO:
- * - checksumming
  * - seeking
  * - index writing
  * - index packet reading support
@@ -284,7 +283,7 @@ static int get_str(ByteIOContext *bc, char *string, int maxlen){
         return 0;
 }
 
-static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int prefix_length)
+static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int prefix_length, int calculate_checksum)
 {
     int64_t start, size, last_size;
     start= url_ftell(bc) - prefix_length;
@@ -293,6 +292,9 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int prefix_lengt
         av_log(nut->avf, AV_LOG_ERROR, "get_packetheader called at weird position\n");
         return -1;
     }
+    
+    if(calculate_checksum)
+        init_checksum(bc, update_adler32, 0);
 
     size= get_v(bc);
     last_size= get_v(bc);
@@ -306,6 +308,11 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int prefix_lengt
     nut->written_packet_size= size;
 
     return size;
+}
+
+static int check_checksum(ByteIOContext *bc){
+    unsigned long checksum= get_checksum(bc);
+    return checksum != get_be32(bc);
 }
 
 /**
@@ -352,13 +359,16 @@ static int put_str(ByteIOContext *bc, const char *string){
     return 0;
 }
 
-static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size)
+static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size, int calculate_checksum)
 {
     put_flush_packet(bc);
     nut->last_packet_start= nut->packet_start;
     nut->packet_start+= nut->written_packet_size;
     nut->packet_size_pos = url_ftell(bc);
     nut->written_packet_size = max_size;
+    
+    if(calculate_checksum)
+        init_checksum(bc, update_adler32, 0);
 
     /* packet header */
     put_v(bc, nut->written_packet_size); /* forward ptr */
@@ -367,10 +377,13 @@ static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size)
     return 0;
 }
 
-static int update_packetheader(NUTContext *nut, ByteIOContext *bc, int additional_size){
+static int update_packetheader(NUTContext *nut, ByteIOContext *bc, int additional_size, int calculate_checksum){
     int64_t start= nut->packet_start;
     int64_t cur= url_ftell(bc);
     int size= cur - start + additional_size;
+    
+    if(calculate_checksum)
+        size += 4;
     
     if(size != nut->written_packet_size){
         int i;
@@ -384,6 +397,9 @@ static int update_packetheader(NUTContext *nut, ByteIOContext *bc, int additiona
 
         url_fseek(bc, cur, SEEK_SET);
         nut->written_packet_size= size; //FIXME may fail if multiple updates with differing sizes, as get_length may differ
+        
+        if(calculate_checksum)
+            put_be32(bc, get_checksum(bc));
     }
     
     return 0;
@@ -405,10 +421,10 @@ static int nut_write_header(AVFormatContext *s)
     
     /* main header */
     put_be64(bc, MAIN_STARTCODE);
-    put_packetheader(nut, bc, 120+5*256);
+    put_packetheader(nut, bc, 120+5*256, 1);
     put_v(bc, 1); /* version */
     put_v(bc, s->nb_streams);
-    put_v(bc, 3); /* checksum threshold */
+    put_v(bc, 3);
     
     build_frame_code(s);
     assert(nut->frame_code['N'].flags == 1);
@@ -435,9 +451,7 @@ static int nut_write_header(AVFormatContext *s)
         put_v(bc, j);
     }
 
-    put_be32(bc, 0); /* FIXME: checksum */
-    
-    update_packetheader(nut, bc, 0);
+    update_packetheader(nut, bc, 0, 1);
     
     /* stream headers */
     for (i = 0; i < s->nb_streams; i++)
@@ -447,7 +461,7 @@ static int nut_write_header(AVFormatContext *s)
 	codec = &s->streams[i]->codec;
 	
 	put_be64(bc, STREAM_STARTCODE);
-	put_packetheader(nut, bc, 120 + codec->extradata_size);
+	put_packetheader(nut, bc, 120 + codec->extradata_size, 1);
 	put_v(bc, i /*s->streams[i]->index*/);
 	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
 	if (codec->codec_tag)
@@ -520,14 +534,13 @@ static int nut_write_header(AVFormatContext *s)
             default:
                 break;
 	}
-	put_be32(bc, 0); /* FIXME: checksum */
-        update_packetheader(nut, bc, 0);
+        update_packetheader(nut, bc, 0, 1);
     }
 
     /* info header */
     put_be64(bc, INFO_STARTCODE);
     put_packetheader(nut, bc, 30+strlen(s->author)+strlen(s->title)+
-        strlen(s->comment)+strlen(s->copyright)+strlen(LIBAVFORMAT_IDENT)); 
+        strlen(s->comment)+strlen(s->copyright)+strlen(LIBAVFORMAT_IDENT), 1); 
     if (s->author[0])
     {
         put_v(bc, 9); /* type */
@@ -553,9 +566,7 @@ static int nut_write_header(AVFormatContext *s)
     put_str(bc, LIBAVFORMAT_IDENT);
     
     put_v(bc, 0); /* eof info */
-
-    put_be32(bc, 0); /* FIXME: checksum */
-    update_packetheader(nut, bc, 0);
+    update_packetheader(nut, bc, 0, 1);
         
     put_flush_packet(bc);
     
@@ -594,7 +605,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     }
 
     if(frame_type>0){
-        update_packetheader(nut, bc, 0);
+        update_packetheader(nut, bc, 0, 0);
         reset(s);
         full_pts=1;
     }
@@ -684,7 +695,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     put_byte(bc, frame_code);
 
     if(frame_type>0)
-        put_packetheader(nut, bc, FFMAX(size+20, MAX_TYPE1_DISTANCE));
+        put_packetheader(nut, bc, FFMAX(size+20, MAX_TYPE1_DISTANCE), 0);
     if(nut->frame_code[frame_code].stream_id_plus1 == 0)
         put_v(bc, stream_index);
     if (flags & FLAG_PTS){
@@ -697,7 +708,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
         put_v(bc, size / size_mul);
     if(size > MAX_TYPE1_DISTANCE){
         assert(frame_type > 0);
-        update_packetheader(nut, bc, size);
+        update_packetheader(nut, bc, size, 0);
     }
     
     put_buffer(bc, buf, size);
@@ -712,7 +723,7 @@ static int nut_write_trailer(AVFormatContext *s)
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
 
-    update_packetheader(nut, bc, 0);
+    update_packetheader(nut, bc, 0, 0);
 
 #if 0
     int i;
@@ -722,11 +733,10 @@ static int nut_write_trailer(AVFormatContext *s)
     for (i = 0; s->nb_streams; i++)
     {
 	put_be64(bc, INDEX_STARTCODE);
-	put_packetheader(nut, bc, 64);
+	put_packetheader(nut, bc, 64, 1);
 	put_v(bc, s->streams[i]->id);
 	put_v(bc, ...);
-	put_be32(bc, 0); /* FIXME: checksum */
-        update_packetheader(nut, bc, 0);
+        update_packetheader(nut, bc, 0, 1);
     }
 #endif
 
@@ -768,7 +778,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     tmp = get_be64(bc);
     if (tmp != MAIN_STARTCODE)
 	av_log(s, AV_LOG_ERROR, "damaged? startcode!=1 (%Ld)\n", tmp);
-    get_packetheader(nut, bc, 8);
+    get_packetheader(nut, bc, 8, 1);
     
     tmp = get_v(bc);
     if (tmp != 1)
@@ -821,7 +831,10 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
     
-    get_be32(bc); /* checkusm */
+    if(check_checksum(bc)){
+        av_log(s, AV_LOG_ERROR, "Main header checksum missmatch\n");
+        return -1;
+    }
     
     s->bit_rate = 0;
 
@@ -836,7 +849,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	tmp = get_be64(bc);
 	if (tmp != STREAM_STARTCODE)
 	    av_log(s, AV_LOG_ERROR, "damaged? startcode!=1 (%Ld)\n", tmp);
-	get_packetheader(nut, bc, 8);
+	get_packetheader(nut, bc, 8, 1);
 	st = av_new_stream(s, get_v(bc));
 	if (!st)
 	    return AVERROR_NOMEM;
@@ -895,14 +908,17 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    st->codec.sample_rate = (get_v(bc) * nom) / denom;
 	    st->codec.channels = get_v(bc);
 	}
-        get_be32(bc); /* checksum */
+        if(check_checksum(bc)){
+            av_log(s, AV_LOG_ERROR, "Stream header %d checksum missmatch\n", cur_stream);
+            return -1;
+        }
         nut->stream[cur_stream].rate_num= nom;
         nut->stream[cur_stream].rate_den= denom;
     }
         
     tmp = get_be64(bc);
     if (tmp == INFO_STARTCODE){
-	get_packetheader(nut, bc, 8);
+	get_packetheader(nut, bc, 8, 1);
     
         for(;;){
             int id= get_v(bc);
@@ -943,7 +959,9 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_str(bc, NULL, 0);
             }
         }
-        get_be32(bc); /* checksum */
+        if(check_checksum(bc)){
+            av_log(s, AV_LOG_ERROR, "Info header checksum missmatch\n");
+        }
     }else
         url_fseek(bc, -8, SEEK_CUR);
     
@@ -986,9 +1004,9 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(flags & FLAG_FRAME_TYPE){
         reset(s);
         if(frame_type==2){
-            get_packetheader(nut, bc, 8+1);
+            get_packetheader(nut, bc, 8+1, 0);
         }else{
-            get_packetheader(nut, bc, 1);
+            get_packetheader(nut, bc, 1, 0);
             frame_type= 1;
         }
     }

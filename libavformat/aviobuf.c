@@ -48,6 +48,8 @@ int init_put_byte(ByteIOContext *s,
     s->eof_reached = 0;
     s->is_streamed = 0;
     s->max_packet_size = 0;
+    s->checksum_ptr= NULL;
+    s->update_checksum= NULL;
     return 0;
 }
                   
@@ -58,6 +60,10 @@ static void flush_buffer(ByteIOContext *s)
     if (s->buf_ptr > s->buffer) {
         if (s->write_packet)
             s->write_packet(s->opaque, s->buffer, s->buf_ptr - s->buffer);
+        if(s->checksum_ptr){
+            s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_ptr - s->checksum_ptr);
+            s->checksum_ptr= s->buffer;
+        }
         s->pos += s->buf_ptr - s->buffer;
     }
     s->buf_ptr = s->buffer;
@@ -243,6 +249,12 @@ static void fill_buffer(ByteIOContext *s)
     /* no need to do anything if EOF already reached */
     if (s->eof_reached)
         return;
+
+    if(s->checksum_ptr){
+        s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_end - s->checksum_ptr);
+        s->checksum_ptr= s->buffer;
+    }
+
     len = s->read_packet(s->opaque, s->buffer, s->buffer_size);
     if (len <= 0) {
         /* do not modify buffer if EOF reached so that a seek back can
@@ -253,6 +265,18 @@ static void fill_buffer(ByteIOContext *s)
         s->buf_ptr = s->buffer;
         s->buf_end = s->buffer + len;
     }
+}
+
+unsigned long get_checksum(ByteIOContext *s){
+    s->checksum= s->update_checksum(s->checksum, s->checksum_ptr, s->buf_ptr - s->checksum_ptr);
+    s->checksum_ptr= NULL;
+    return s->checksum;
+}
+
+void init_checksum(ByteIOContext *s, unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len), unsigned long checksum){
+    s->update_checksum= update_checksum;
+    s->checksum= s->update_checksum(checksum, NULL, 0);
+    s->checksum_ptr= s->buf_ptr;
 }
 
 /* NOTE: return 0 if EOF, so you cannot use it if EOF handling is

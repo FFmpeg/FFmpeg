@@ -78,6 +78,9 @@ typedef struct {
     int write_flag;  /* true if open for writing */
     int is_streamed;
     int max_packet_size;
+    unsigned long checksum;
+    unsigned char *checksum_ptr;
+    unsigned long (*update_checksum)(unsigned long checksum, const uint8_t *buf, unsigned int size);
 } ByteIOContext;
 
 int init_put_byte(ByteIOContext *s,
@@ -149,6 +152,10 @@ int url_close_buf(ByteIOContext *s);
 int url_open_dyn_buf(ByteIOContext *s);
 int url_open_dyn_packet_buf(ByteIOContext *s, int max_packet_size);
 int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer);
+
+unsigned long get_checksum(ByteIOContext *s);
+void init_checksum(ByteIOContext *s, unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len), unsigned long checksum);
+unsigned long update_adler32(unsigned long adler, const uint8_t *buf, unsigned int len);
 
 /* file.c */
 extern URLProtocol file_protocol;
