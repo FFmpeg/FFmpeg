@@ -79,6 +79,10 @@ static AVInputFormat *file_iformat;
 static AVOutputFormat *file_oformat;
 static int frame_width  = 160;
 static int frame_height = 128;
+static int frame_topBand  = 0;
+static int frame_bottomBand = 0;
+static int frame_leftBand  = 0;
+static int frame_rightBand = 0;
 static int frame_rate = 25 * FRAME_RATE_BASE;
 static int video_bit_rate = 200*1000;
 static int video_bit_rate_tolerance = 4000*1000;
@@ -821,9 +825,11 @@ static int av_encode(AVFormatContext **output_files,
                     ost->pict_tmp.linesize[1] = codec->width / 2;
                     ost->pict_tmp.linesize[2] = codec->width / 2;
 
-                    ost->img_resample_ctx = img_resample_init( 
+                    ost->img_resample_ctx = img_resample_full_init( 
                                       ost->st->codec.width, ost->st->codec.height,
-                                      ist->st->codec.width, ist->st->codec.height);
+                                      ist->st->codec.width, ist->st->codec.height,
+                                      frame_topBand, frame_bottomBand,
+                                      frame_leftBand, frame_rightBand);
                 }
                 ost->encoding_needed = 1;
                 ist->decoding_needed = 1;
@@ -1380,6 +1386,79 @@ void opt_dct_algo(const char *arg)
 void opt_frame_rate(const char *arg)
 {
     frame_rate = (int)(strtod(arg, 0) * FRAME_RATE_BASE);
+}
+
+
+void opt_frame_crop_top(const char *arg)
+{
+    frame_topBand = atoi(arg); 
+    if (frame_topBand < 0) {
+        fprintf(stderr, "Incorrect top crop size\n");
+        exit(1);
+    }
+    if ((frame_topBand % 2) != 0) {
+        fprintf(stderr, "Top crop size must be a multiple of 2\n");
+        exit(1);
+    }
+    if ((frame_topBand) >= frame_height){
+    	fprintf(stderr, "Vertical crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
+        exit(1);
+    }
+    frame_height -= frame_topBand;
+}
+
+void opt_frame_crop_bottom(const char *arg)
+{
+    frame_bottomBand = atoi(arg);
+    if (frame_bottomBand < 0) {
+        fprintf(stderr, "Incorrect bottom crop size\n");
+        exit(1);
+    }
+    if ((frame_bottomBand % 2) != 0) {
+        fprintf(stderr, "Bottom crop size must be a multiple of 2\n");
+        exit(1);        
+    }
+    if ((frame_bottomBand) >= frame_height){
+    	fprintf(stderr, "Vertical crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
+        exit(1);
+    }
+    frame_height -= frame_bottomBand;
+}
+
+void opt_frame_crop_left(const char *arg)
+{
+    frame_leftBand = atoi(arg);
+    if (frame_leftBand < 0) {
+        fprintf(stderr, "Incorrect left crop size\n");
+        exit(1);
+    }
+    if ((frame_leftBand % 2) != 0) {
+        fprintf(stderr, "Left crop size must be a multiple of 2\n");
+        exit(1);
+    }
+    if ((frame_leftBand) >= frame_width){
+    	fprintf(stderr, "Horizontal crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
+        exit(1);
+    }
+    frame_width -= frame_leftBand;
+}
+
+void opt_frame_crop_right(const char *arg)
+{
+    frame_rightBand = atoi(arg);
+    if (frame_rightBand < 0) {
+        fprintf(stderr, "Incorrect right crop size\n");
+        exit(1);
+    }
+    if ((frame_rightBand % 2) != 0) {
+        fprintf(stderr, "Right crop size must be a multiple of 2\n");
+        exit(1);        
+    }
+    if ((frame_rightBand) >= frame_width){
+    	fprintf(stderr, "Horizontal crop dimensions are outside the range of the original image.\nRemember to crop first and scale second.\n");
+        exit(1);
+    }
+    frame_width -= frame_rightBand;
 }
 
 void opt_frame_size(const char *arg)
@@ -2135,6 +2214,10 @@ const OptionDef options[] = {
     { "b", HAS_ARG, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
     { "r", HAS_ARG, {(void*)opt_frame_rate}, "set frame rate (in Hz)", "rate" },
     { "s", HAS_ARG, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
+    { "croptop", HAS_ARG, {(void*)opt_frame_crop_top}, "set top crop band size (in pixels)", "size" },
+    { "cropbottom", HAS_ARG, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
+    { "cropleft", HAS_ARG, {(void*)opt_frame_crop_left}, "set left crop band size (in pixels)", "size" },
+    { "cropright", HAS_ARG, {(void*)opt_frame_crop_right}, "set right crop band size (in pixels)", "size" },
     { "g", HAS_ARG | OPT_EXPERT, {(void*)opt_gop_size}, "set the group of picture size", "gop_size" },
     { "intra", OPT_BOOL | OPT_EXPERT, {(void*)&intra_only}, "use only intra frames"},
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },

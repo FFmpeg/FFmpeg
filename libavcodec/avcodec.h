@@ -463,6 +463,12 @@ typedef struct ImgReSampleContext ImgReSampleContext;
 
 ImgReSampleContext *img_resample_init(int output_width, int output_height,
                                       int input_width, int input_height);
+
+ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
+                                      int iwidth, int iheight,
+                                      int topBand, int bottomBand,
+                                      int leftBand, int rightBand);
+
 void img_resample(ImgReSampleContext *s, 
                   AVPicture *output, AVPicture *input);
 

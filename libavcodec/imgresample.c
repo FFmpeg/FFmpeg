@@ -30,6 +30,7 @@
 #define NB_PHASES  (1 << PHASE_BITS)
 #define NB_TAPS    4
 #define FCENTER    1  /* index of the center of the filter */
+//#define TEST    1  /* Test it */
 
 #define POS_FRAC_BITS 16
 #define POS_FRAC      (1 << POS_FRAC_BITS)
@@ -39,7 +40,7 @@
 #define LINE_BUF_HEIGHT (NB_TAPS * 4)
 
 struct ImgReSampleContext {
-    int iwidth, iheight, owidth, oheight;
+    int iwidth, iheight, owidth, oheight, topBand, bottomBand, leftBand, rightBand;
     int h_incr, v_incr;
     INT16 h_filters[NB_PHASES][NB_TAPS] __align8; /* horizontal filters */
     INT16 v_filters[NB_PHASES][NB_TAPS] __align8; /* vertical filters */
@@ -353,8 +354,8 @@ static void component_resample(ImgReSampleContext *s,
             if (++ring_y >= LINE_BUF_HEIGHT + NB_TAPS)
                 ring_y = NB_TAPS;
             last_src_y++;
-            /* handle limit conditions : replicate line (slighly
-               inefficient because we filter multiple times */
+            /* handle limit conditions : replicate line (slightly
+               inefficient because we filter multiple times) */
             y1 = last_src_y;
             if (y1 < 0) {
                 y1 = 0;
@@ -428,6 +429,14 @@ static void build_filter(INT16 *filter, float factor)
 ImgReSampleContext *img_resample_init(int owidth, int oheight,
                                       int iwidth, int iheight)
 {
+	return img_resample_full_init(owidth, oheight, iwidth, iheight, 0, 0, 0, 0);
+}
+
+ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
+                                      int iwidth, int iheight,
+                                      int topBand, int bottomBand,
+                                      int leftBand, int rightBand)
+{
     ImgReSampleContext *s;
 
     s = av_mallocz(sizeof(ImgReSampleContext));
@@ -441,12 +450,16 @@ ImgReSampleContext *img_resample_init(int owidth, int oheight,
     s->oheight = oheight;
     s->iwidth = iwidth;
     s->iheight = iheight;
+    s->topBand = topBand;
+    s->bottomBand = bottomBand;
+    s->leftBand = leftBand;
+    s->rightBand = rightBand;
     
-    s->h_incr = (iwidth * POS_FRAC) / owidth;
-    s->v_incr = (iheight * POS_FRAC) / oheight;
+    s->h_incr = ((iwidth - leftBand - rightBand) * POS_FRAC) / owidth;
+    s->v_incr = ((iheight - topBand - bottomBand) * POS_FRAC) / oheight;
     
-    build_filter(&s->h_filters[0][0], (float)owidth / (float)iwidth);
-    build_filter(&s->v_filters[0][0], (float)oheight / (float)iheight);
+    build_filter(&s->h_filters[0][0], (float) owidth  / (float) (iwidth - leftBand - rightBand));
+    build_filter(&s->v_filters[0][0], (float) oheight / (float) (iheight - topBand - bottomBand));
 
     return s;
  fail:
@@ -463,8 +476,9 @@ void img_resample(ImgReSampleContext *s,
         shift = (i == 0) ? 0 : 1;
         component_resample(s, output->data[i], output->linesize[i], 
                            s->owidth >> shift, s->oheight >> shift,
-                           input->data[i], input->linesize[i], 
-                           s->iwidth >> shift, s->iheight >> shift);
+                           input->data[i] + (input->linesize[i] * (s->topBand >> shift)) + (s->leftBand >> shift),
+                           input->linesize[i], ((s->iwidth - s->leftBand - s->rightBand) >> shift),
+                           (s->iheight - s->topBand - s->bottomBand) >> shift);
     }
 }
 
@@ -482,6 +496,13 @@ void *av_mallocz(int size)
     ptr = malloc(size);
     memset(ptr, 0, size);
     return ptr;
+}
+
+void av_free(void *ptr)
+{
+    /* XXX: this test should not be needed on most libcs */
+    if (ptr)
+        free(ptr);
 }
 
 /* input */
@@ -569,19 +590,19 @@ int main(int argc, char **argv)
             } else {
                 v = ((x + y - XSIZE) * 255) / XSIZE;
             }
-            img[y * XSIZE + x] = v;
+            img[(YSIZE - y) * XSIZE + (XSIZE - x)] = v;
         }
     }
     save_pgm("/tmp/in.pgm", img, XSIZE, YSIZE);
     for(i=0;i<sizeof(factors)/sizeof(float);i++) {
         fact = factors[i];
         xsize = (int)(XSIZE * fact);
-        ysize = (int)(YSIZE * fact);
-        s = img_resample_init(xsize, ysize, XSIZE, YSIZE);
+        ysize = (int)((YSIZE - 100) * fact);
+        s = img_resample_full_init(xsize, ysize, XSIZE, YSIZE, 50 ,50);
         printf("Factor=%0.2f\n", fact);
         dump_filter(&s->h_filters[0][0]);
         component_resample(s, img1, xsize, xsize, ysize,
-                           img, XSIZE, XSIZE, YSIZE);
+                           img + 50 * XSIZE, XSIZE, XSIZE, YSIZE - 100);
         img_resample_close(s);
 
         sprintf(buf, "/tmp/out%d.pgm", i);
