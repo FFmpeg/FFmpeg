@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4745
+#define LIBAVCODEC_BUILD       4746
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -165,12 +165,12 @@ enum CodecID {
     CODEC_ID_MP3ADU,
     CODEC_ID_MP3ON4,
     CODEC_ID_SHORTEN,
+    CODEC_ID_ALAC,
     
     CODEC_ID_OGGTHEORA= 0x16000, 
     
     CODEC_ID_MPEG2TS= 0x20000, /* _FAKE_ codec to indicate a raw MPEG2 transport
                          stream (only used by libavformat) */
-    CODEC_ID_ALAC,
 };
 
 /* CODEC_ID_MP3LAME is absolete */
