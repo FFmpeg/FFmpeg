@@ -786,49 +786,36 @@ char av_get_pict_type_char(int pict_type){
 }
 
 int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max){
-    int exact=1, sign=0;
-    int64_t gcd;
+    AVRational a0={0,1}, a1={1,0};
+    int sign= (nom<0) ^ (den<0);
+    int64_t gcd= ff_gcd(ABS(nom), ABS(den));
 
-    assert(den != 0);
-
-    if(den < 0)
-        return av_reduce(dst_nom, dst_den, -nom, -den, max);
-    
-    sign= nom < 0;
-    nom= ABS(nom);
-    
-    gcd = ff_gcd(nom, den);
-    nom /= gcd;
-    den /= gcd;
-    
-    if(nom > max || den > max){
-        AVRational a0={0,1}, a1={1,0};
-        exact=0;
-
-        for(;;){
-            int64_t x= nom / den;
-            int64_t a2n= x*a1.num + a0.num;
-            int64_t a2d= x*a1.den + a0.den;
-
-            if(a2n > max || a2d > max) break;
-
-            nom %= den;
-        
-            a0= a1;
-            a1= (AVRational){a2n, a2d};
-            if(nom==0) break;
-            x= nom; nom=den; den=x;
-        }
-        nom= a1.num;
-        den= a1.den;
+    nom = ABS(nom)/gcd;
+    den = ABS(den)/gcd;
+    if(nom<=max && den<=max){
+        a1= (AVRational){nom, den};
+        den=0;
     }
     
-    assert(ff_gcd(nom, den) == 1);
+    while(den){
+        int64_t x       = nom / den;
+        int64_t next_den= nom - den*x;
+        int64_t a2n= x*a1.num + a0.num;
+        int64_t a2d= x*a1.den + a0.den;
+
+        if(a2n > max || a2d > max) break;
+
+        a0= a1;
+        a1= (AVRational){a2n, a2d};
+        nom= den;
+        den= next_den;
+    }
+    assert(ff_gcd(a1.num, a1.den) == 1);
     
-    *dst_nom = sign ? -nom : nom;
-    *dst_den = den;
+    *dst_nom = sign ? -a1.num : a1.num;
+    *dst_den = a1.den;
     
-    return exact;
+    return den==0;
 }
 
 int64_t av_rescale(int64_t a, int64_t b, int64_t c){
