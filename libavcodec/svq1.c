@@ -1294,11 +1294,6 @@ static int svq1_encode_init(AVCodecContext *avctx)
     s->dummy          = av_mallocz((s->y_block_width+1)*s->y_block_height*sizeof(int32_t));
     h263_encode_init(&s->m); //mv_penalty
     
-av_log(s->avctx, AV_LOG_INFO, " Hey: %d x %d, %d x %d, %d x %d\n",
-  s->frame_width, s->frame_height,
-  s->y_block_width, s->y_block_height,
-  s->c_block_width, s->c_block_height);
-
     return 0;
 }
 
