@@ -1222,21 +1222,6 @@ static inline int direct_search(MpegEncContext * s,
     int16_t (*mv_table)[2]= s->b_direct_mv_table;
     uint16_t * const mv_penalty= s->me.mv_penalty[1] + MAX_MV;
     
-    P_LEFT[0]        = mv_table[mot_xy - 1][0];
-    P_LEFT[1]        = mv_table[mot_xy - 1][1];
-
-    /* special case for first line */
-    if ((mb_y == 0 || s->first_slice_line)) {
-    } else {
-        P_TOP[0] = mv_table[mot_xy - mot_stride             ][0];
-        P_TOP[1] = mv_table[mot_xy - mot_stride             ][1];
-        P_TOPRIGHT[0] = mv_table[mot_xy - mot_stride + 1         ][0];
-        P_TOPRIGHT[1] = mv_table[mot_xy - mot_stride + 1         ][1];
-    
-        P_MEDIAN[0]= mid_pred(P_LEFT[0], P_TOP[0], P_TOPRIGHT[0]);
-        P_MEDIAN[1]= mid_pred(P_LEFT[1], P_TOP[1], P_TOPRIGHT[1]);
-    }
-
     ymin= xmin=(-32)>>shift;
     ymax= xmax=   31>>shift;
 
@@ -1283,6 +1268,21 @@ static inline int direct_search(MpegEncContext * s,
         return 256*256*256*64;
     }
 
+    P_LEFT[0]        = clip(mv_table[mot_xy - 1][0], xmin<<shift, xmax<<shift);
+    P_LEFT[1]        = clip(mv_table[mot_xy - 1][1], ymin<<shift, ymax<<shift);
+
+    /* special case for first line */
+    if ((mb_y == 0 || s->first_slice_line)) {
+    } else {
+        P_TOP[0]      = clip(mv_table[mot_xy - mot_stride             ][0], xmin<<shift, xmax<<shift);
+        P_TOP[1]      = clip(mv_table[mot_xy - mot_stride             ][1], ymin<<shift, ymax<<shift);
+        P_TOPRIGHT[0] = clip(mv_table[mot_xy - mot_stride + 1         ][0], xmin<<shift, xmax<<shift);
+        P_TOPRIGHT[1] = clip(mv_table[mot_xy - mot_stride + 1         ][1], ymin<<shift, ymax<<shift);
+    
+        P_MEDIAN[0]= mid_pred(P_LEFT[0], P_TOP[0], P_TOPRIGHT[0]);
+        P_MEDIAN[1]= mid_pred(P_LEFT[1], P_TOP[1], P_TOPRIGHT[1]);
+    }
+    
     if(s->flags&CODEC_FLAG_QPEL){
         dmin = simple_direct_qpel_epzs_motion_search(s, 0, &mx, &my, P, 0, 0, xmin, ymin, xmax, ymax, 
                                                      &s->last_picture, mv_table, 1<<14, mv_penalty);
