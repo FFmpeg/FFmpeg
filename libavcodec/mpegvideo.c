@@ -645,6 +645,7 @@ void reorder_input(MpegEncContext *s, AVPicture *pict)
         s->coded_order[j]= s->coded_order[j+1];
     }
     s->coded_order[j].picture[0]= s->coded_order[j].picture[1]= s->coded_order[j].picture[2]= NULL; //catch uninitalized buffers
+    s->coded_order[j].pict_type=0;
 
     switch(s->input_pict_type){
     default: 

@@ -359,8 +359,13 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     uint8_t *p_pic= s->new_picture[0] + offset;
                     s->mb_skiped=1;
                     for(i=0; i<s->max_b_frames; i++){
-                        uint8_t *b_pic= s->coded_order[i+1].picture[0] + offset;
-                        int diff= pix_abs16x16(p_pic, b_pic, s->linesize);
+                        uint8_t *b_pic;
+                        int diff;
+
+                        if(s->coded_order[i+1].pict_type!=B_TYPE) break;
+
+                        b_pic= s->coded_order[i+1].picture[0] + offset;
+                        diff= pix_abs16x16(p_pic, b_pic, s->linesize);
                         if(diff>s->qscale*70){
                             s->mb_skiped=0;
                             break;
