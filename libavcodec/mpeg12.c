@@ -533,6 +533,7 @@ void mpeg1_init_vlc(MpegEncContext *s)
     static int done = 0;
 
     if (!done) {
+        done = 1;
 
         init_vlc(&dc_lum_vlc, 9, 12, 
                  vlc_dc_lum_bits, 1, 1,
