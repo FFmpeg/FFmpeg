@@ -2406,7 +2406,8 @@ static void render_fragments(Vp3DecodeContext *s,
             }
 
             /* transform if this block was coded */
-            if (s->all_fragments[i].coding_method != MODE_COPY) {
+            if ((s->all_fragments[i].coding_method != MODE_COPY) &&
+		!((s->avctx->flags & CODEC_FLAG_GRAY) && plane)) {
 
                 if ((s->all_fragments[i].coding_method == MODE_USING_GOLDEN) ||
                     (s->all_fragments[i].coding_method == MODE_GOLDEN_MV))
@@ -2792,8 +2793,9 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     if (s->theora >= 0x030300)
         skip_bits1(&gb);
 
-    debug_vp3(" VP3 %sframe #%d: Q index = %d\n",
-	s->keyframe?"key":"", counter, s->quality_index);
+    if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+	av_log(s->avctx, AV_LOG_INFO, " VP3 %sframe #%d: Q index = %d\n",
+	    s->keyframe?"key":"", counter, s->quality_index);
     counter++;
 
     if (s->quality_index != s->last_quality_index)
