@@ -25,7 +25,7 @@
 /* Function to test if multimedia instructions are supported...  */
 int mm_support(void)
 {
-    int rval;
+    int rval = 0;
     int eax, ebx, ecx, edx;
     long a, c;
     
@@ -64,7 +64,7 @@ int mm_support(void)
         cpuid(1, eax, ebx, ecx, edx);
         if ((edx & 0x00800000) == 0)
             return 0;
-        rval = MM_MMX;
+        rval |= MM_MMX;
         if (edx & 0x02000000) 
             rval |= MM_MMXEXT | MM_SSE;
         if (edx & 0x04000000) 
@@ -85,7 +85,7 @@ int mm_support(void)
             rval |= MM_3DNOW;
         if (edx & 0x00400000)
             rval |= MM_MMXEXT;
-        return rval;
+        goto inteltest;
     } else if (ebx == 0x746e6543 &&
                edx == 0x48727561 &&
                ecx == 0x736c7561) {  /*  "CentaurHauls" */
