@@ -5,7 +5,7 @@
 #define FFMPEG_VERSION     "0.4.6"
 
 #if defined(WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
-#define CONFIG_WIN32
+#    define CONFIG_WIN32
 #endif
 
 //#define ALT_BITSTREAM_WRITER
@@ -17,33 +17,33 @@
 
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
-#include "config.h"
+#    include "config.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#ifndef __BEOS__
-#include <errno.h>
-#else
-#include "berrno.h"
-#endif
-#include <math.h>
+#    include <stdlib.h>
+#    include <stdio.h>
+#    include <string.h>
+#    ifndef __BEOS__
+#        include <errno.h>
+#    else
+#        include "berrno.h"
+#    endif
+#    include <math.h>
 
-#ifndef ENODATA
-#define ENODATA  61
-#endif
+#    ifndef ENODATA
+#        define ENODATA  61
+#    endif
 
 #endif /* HAVE_AV_CONFIG_H */
 
 /* Suppress restrict if it was not defined in config.h.  */
 #ifndef restrict
-#define restrict
+#    define restrict
 #endif
 
 #if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
-#define always_inline __attribute__((always_inline)) inline
+#    define always_inline __attribute__((always_inline)) inline
 #else
-#define always_inline inline
+#    define always_inline inline
 #endif
 
 #ifdef CONFIG_WIN32
@@ -68,37 +68,37 @@ typedef INT32 int32_t;
 typedef UINT64 uint64_t;
 typedef INT64 int64_t;
 
-#ifndef __MINGW32__
-#define INT64_C(c)     (c ## i64)
-#define UINT64_C(c)    (c ## i64)
+#    ifndef __MINGW32__
+#        define INT64_C(c)     (c ## i64)
+#        define UINT64_C(c)    (c ## i64)
 
-#define inline __inline
+#        define inline __inline
 
-#else
-#define INT64_C(c)     (c ## LL)
-#define UINT64_C(c)    (c ## ULL)
-#endif /* __MINGW32__ */
+#    else
+#        define INT64_C(c)     (c ## LL)
+#        define UINT64_C(c)    (c ## ULL)
+#    endif /* __MINGW32__ */
 
-#define M_PI    3.14159265358979323846
-#define M_SQRT2 1.41421356237309504880  /* sqrt(2) */
+#    define M_PI    3.14159265358979323846
+#    define M_SQRT2 1.41421356237309504880  /* sqrt(2) */
 
-#ifdef _DEBUG
-#define DEBUG
-#endif
+#    ifdef _DEBUG
+#        define DEBUG
+#    endif
 
-#define snprintf _snprintf
+#    define snprintf _snprintf
 
 #else /* CONFIG_WIN32 */
 
 /* unix */
 
-#include <inttypes.h>
+#    include <inttypes.h>
 
-#ifndef __WINE_WINDEF16_H
+#    ifndef __WINE_WINDEF16_H
 /* workaround for typedef conflict in MPlayer (wine typedefs) */
 typedef unsigned short UINT16;
 typedef signed short INT16;
-#endif
+#    endif
 
 typedef unsigned char UINT8;
 typedef unsigned int UINT32;
@@ -107,55 +107,55 @@ typedef signed char INT8;
 typedef signed int INT32;
 typedef signed long long INT64;
 
-#ifdef HAVE_AV_CONFIG_H
+#    ifdef HAVE_AV_CONFIG_H
 
-#ifndef INT64_C
-#define INT64_C(c)     (c ## LL)
-#define UINT64_C(c)    (c ## ULL)
-#endif
+#        ifndef INT64_C
+#            define INT64_C(c)     (c ## LL)
+#            define UINT64_C(c)    (c ## ULL)
+#        endif
 
-#ifdef USE_FASTMEMCPY
-#include "fastmemcpy.h"
-#endif
+#        ifdef USE_FASTMEMCPY
+#            include "fastmemcpy.h"
+#        endif
 
-#endif /* HAVE_AV_CONFIG_H */
+#    endif /* HAVE_AV_CONFIG_H */
 
 #endif /* !CONFIG_WIN32 */
 
 #ifdef HAVE_AV_CONFIG_H
 
-#include "bswap.h"
+#    include "bswap.h"
 
-#if defined(__MINGW32__) || defined(__CYGWIN__) || \
-    defined(__OS2__) || defined (__OpenBSD__)
-#define MANGLE(a) "_" #a
-#else
-#define MANGLE(a) #a
-#endif
+#    if defined(__MINGW32__) || defined(__CYGWIN__) || \
+        defined(__OS2__) || defined (__OpenBSD__)
+#        define MANGLE(a) "_" #a
+#    else
+#        define MANGLE(a) #a
+#    endif
 
 /* debug stuff */
 
-#ifndef DEBUG
-#define NDEBUG
-#endif
-#include <assert.h>
+#    ifndef DEBUG
+#        define NDEBUG
+#    endif
+#    include <assert.h>
 
 /* dprintf macros */
-#if defined(CONFIG_WIN32) && !defined(__MINGW32__)
+#    if defined(CONFIG_WIN32) && !defined(__MINGW32__)
 
 inline void dprintf(const char* fmt,...) {}
 
-#else
+#    else
 
-#ifdef DEBUG
-#define dprintf(fmt,args...) printf(fmt, ## args)
-#else
-#define dprintf(fmt,args...)
-#endif
+#        ifdef DEBUG
+#            define dprintf(fmt,args...) printf(fmt, ## args)
+#        else
+#            define dprintf(fmt,args...)
+#        endif
 
-#endif /* !CONFIG_WIN32 */
+#    endif /* !CONFIG_WIN32 */
 
-#define av_abort()      do { fprintf(stderr, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
+#    define av_abort()      do { fprintf(stderr, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
 
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
@@ -180,8 +180,8 @@ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
     return a;
 }
 #else
-#define NEG_SSR32(a,s) ((( int32_t)(a))>>(32-(s)))
-#define NEG_USR32(a,s) (((uint32_t)(a))>>(32-(s)))
+#    define NEG_SSR32(a,s) ((( int32_t)(a))>>(32-(s)))
+#    define NEG_USR32(a,s) (((uint32_t)(a))>>(32-(s)))
 #endif
 
 /* bit output */
@@ -252,9 +252,9 @@ typedef struct RL_VLC_ELEM {
 
 /* used to avoid missaligned exceptions on some archs (alpha, ...) */
 #ifdef ARCH_X86
-#define unaligned32(a) (*(UINT32*)(a))
+#    define unaligned32(a) (*(UINT32*)(a))
 #else
-#ifdef __GNUC__
+#    ifdef __GNUC__
 static inline uint32_t unaligned32(const void *v) {
     struct Unaligned {
 	uint32_t i;
@@ -262,15 +262,15 @@ static inline uint32_t unaligned32(const void *v) {
 
     return ((const struct Unaligned *) v)->i;
 }
-#elif defined(__DECC)
+#    elif defined(__DECC)
 static inline uint32_t unaligned32(const void *v) {
     return *(const __unaligned uint32_t *) v;
 }
-#else
+#    else
 static inline uint32_t unaligned32(const void *v) {
     return *(const uint32_t *) v;
 }
-#endif
+#    endif
 #endif //!ARCH_X86
 
 #ifndef ALT_BITSTREAM_WRITER
@@ -312,8 +312,8 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #ifdef ALT_BITSTREAM_WRITER
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 {
-#ifdef ALIGNED_BITSTREAM_WRITER
-#ifdef ARCH_X86
+#    ifdef ALIGNED_BITSTREAM_WRITER
+#        ifdef ARCH_X86
     asm volatile(
 	"movl %0, %%ecx			\n\t"
 	"xorl %%eax, %%eax		\n\t"
@@ -331,7 +331,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 	: "r" (s->buf), "r" (n), "0" (s->index), "1" (value<<(-n))
 	: "%eax", "%ecx"
     );
-#else
+#        else
     int index= s->index;
     uint32_t *ptr= ((uint32_t *)s->buf)+(index>>5);
     
@@ -342,9 +342,9 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 //if(n>24) printf("%d %d\n", n, value);
     index+= n;
     s->index= index;
-#endif
-#else //ALIGNED_BITSTREAM_WRITER
-#ifdef ARCH_X86
+#        endif
+#    else //ALIGNED_BITSTREAM_WRITER
+#        ifdef ARCH_X86
     asm volatile(
 	"movl $7, %%ecx			\n\t"
 	"andl %0, %%ecx			\n\t"
@@ -361,7 +361,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 	: "r" (s->buf), "r" (n), "0" (s->index), "1" (value)
 	: "%ecx"
     );
-#else
+#        else
     int index= s->index;
     uint32_t *ptr= (uint32_t*)(((uint8_t *)s->buf)+(index>>3));
     
@@ -370,8 +370,8 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 //if(n>24) printf("%d %d\n", n, value);
     index+= n;
     s->index= index;
-#endif
-#endif //!ALIGNED_BITSTREAM_WRITER
+#        endif
+#    endif //!ALIGNED_BITSTREAM_WRITER
 }
 #endif
 
