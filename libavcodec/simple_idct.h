@@ -18,5 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-void simple_idct(short *block);
+void simple_idct_put(UINT8 *dest, int line_size, INT16 *block);
+void simple_idct_add(UINT8 *dest, int line_size, INT16 *block);
 void simple_idct_mmx(short *block);

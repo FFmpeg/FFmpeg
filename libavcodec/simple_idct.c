@@ -22,7 +22,7 @@
   written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>) 
  */
 #include "avcodec.h"
-
+#include "dsputil.h"
 #include "simple_idct.h"
 
 #if 0
@@ -261,9 +261,11 @@ static inline void idctRowCondDC (int16_t * row)
 }
 #endif /* not ARCH_ALPHA */
 
-static inline void idctSparseCol (int16_t * col)
+static inline void idctSparseColPut (UINT8 *dest, int line_size, 
+                                     int16_t * col)
 {
 	int a0, a1, a2, a3, b0, b1, b2, b3;
+        UINT8 *cm = cropTbl + MAX_NEG_CROP;
 
         /* XXX: I did that only to give same values as previous code */
 	a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4));
@@ -314,14 +316,93 @@ static inline void idctSparseCol (int16_t * col)
             MAC16(b3, - W1, col[8*7]);
 	}
 
-        col[8*0] = (a0 + b0) >> COL_SHIFT;
-        col[8*7] = (a0 - b0) >> COL_SHIFT;
-        col[8*1] = (a1 + b1) >> COL_SHIFT;
-        col[8*6] = (a1 - b1) >> COL_SHIFT;
-        col[8*2] = (a2 + b2) >> COL_SHIFT;
-        col[8*5] = (a2 - b2) >> COL_SHIFT;
-        col[8*3] = (a3 + b3) >> COL_SHIFT;
-        col[8*4] = (a3 - b3) >> COL_SHIFT;
+        dest[0] = cm[(a0 + b0) >> COL_SHIFT];
+        dest += line_size;
+        dest[0] = cm[(a1 + b1) >> COL_SHIFT];
+        dest += line_size;
+        dest[0] = cm[(a2 + b2) >> COL_SHIFT];
+        dest += line_size;
+        dest[0] = cm[(a3 + b3) >> COL_SHIFT];
+        dest += line_size;
+        dest[0] = cm[(a3 - b3) >> COL_SHIFT];
+        dest += line_size;
+        dest[0] = cm[(a2 - b2) >> COL_SHIFT];
+        dest += line_size;
+        dest[0] = cm[(a1 - b1) >> COL_SHIFT];
+        dest += line_size;
+        dest[0] = cm[(a0 - b0) >> COL_SHIFT];
+}
+
+static inline void idctSparseColAdd (UINT8 *dest, int line_size, 
+                                     int16_t * col)
+{
+	int a0, a1, a2, a3, b0, b1, b2, b3;
+        UINT8 *cm = cropTbl + MAX_NEG_CROP;
+
+        /* XXX: I did that only to give same values as previous code */
+	a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4));
+	a1 = a0;
+	a2 = a0;
+	a3 = a0;
+
+        a0 +=  + W2*col[8*2];
+        a1 +=  + W6*col[8*2];
+        a2 +=  - W6*col[8*2];
+        a3 +=  - W2*col[8*2];
+
+        MUL16(b0, W1, col[8*1]);
+        MUL16(b1, W3, col[8*1]);
+        MUL16(b2, W5, col[8*1]);
+        MUL16(b3, W7, col[8*1]);
+
+        MAC16(b0, + W3, col[8*3]);
+        MAC16(b1, - W7, col[8*3]);
+        MAC16(b2, - W1, col[8*3]);
+        MAC16(b3, - W5, col[8*3]);
+
+	if(col[8*4]){
+            a0 += + W4*col[8*4];
+            a1 += - W4*col[8*4];
+            a2 += - W4*col[8*4];
+            a3 += + W4*col[8*4];
+	}
+
+	if (col[8*5]) {
+            MAC16(b0, + W5, col[8*5]);
+            MAC16(b1, - W1, col[8*5]);
+            MAC16(b2, + W7, col[8*5]);
+            MAC16(b3, + W3, col[8*5]);
+	}
+
+	if(col[8*6]){
+            a0 += + W6*col[8*6];
+            a1 += - W2*col[8*6];
+            a2 += + W2*col[8*6];
+            a3 += - W6*col[8*6];
+	}
+
+	if (col[8*7]) {
+            MAC16(b0, + W7, col[8*7]);
+            MAC16(b1, - W5, col[8*7]);
+            MAC16(b2, + W3, col[8*7]);
+            MAC16(b3, - W1, col[8*7]);
+	}
+
+        dest[0] = cm[dest[0] + ((a0 + b0) >> COL_SHIFT)];
+        dest += line_size;
+        dest[0] = cm[dest[0] + ((a1 + b1) >> COL_SHIFT)];
+        dest += line_size;
+        dest[0] = cm[dest[0] + ((a2 + b2) >> COL_SHIFT)];
+        dest += line_size;
+        dest[0] = cm[dest[0] + ((a3 + b3) >> COL_SHIFT)];
+        dest += line_size;
+        dest[0] = cm[dest[0] + ((a3 - b3) >> COL_SHIFT)];
+        dest += line_size;
+        dest[0] = cm[dest[0] + ((a2 - b2) >> COL_SHIFT)];
+        dest += line_size;
+        dest[0] = cm[dest[0] + ((a1 - b1) >> COL_SHIFT)];
+        dest += line_size;
+        dest[0] = cm[dest[0] + ((a0 - b0) >> COL_SHIFT)];
 }
 
 #ifdef ARCH_ALPHA
@@ -389,16 +470,39 @@ void simple_idct (short *block)
 	}
 }
 
+/* XXX: suppress this mess */
+void simple_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    simple_idct(block);
+    put_pixels_clamped(block, dest, line_size);
+}
+
+void simple_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    simple_idct(block);
+    add_pixels_clamped(block, dest, line_size);
+}
+
 #else
 
-void simple_idct (short *block)
+void simple_idct_put(UINT8 *dest, int line_size, INT16 *block)
 {
     int i;
     for(i=0; i<8; i++)
         idctRowCondDC(block + i*8);
     
     for(i=0; i<8; i++)
-        idctSparseCol(block + i);
+        idctSparseColPut(dest + i, line_size, block + i);
+}
+
+void simple_idct_add(UINT8 *dest, int line_size, INT16 *block)
+{
+    int i;
+    for(i=0; i<8; i++)
+        idctRowCondDC(block + i*8);
+    
+    for(i=0; i<8; i++)
+        idctSparseColAdd(dest + i, line_size, block + i);
 }
 
 #endif
