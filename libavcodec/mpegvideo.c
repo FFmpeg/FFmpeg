@@ -879,7 +879,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
         avctx->i_tex_bits  = s->i_tex_bits;
         avctx->p_tex_bits  = s->p_tex_bits;
         avctx->i_count     = s->i_count;
-        avctx->p_count     = s->p_count;
+        avctx->p_count     = s->mb_num - s->i_count - s->skip_count; //FIXME f/b_count in avctx
         avctx->skip_count  = s->skip_count;
 
         MPV_frame_end(s);
@@ -1894,7 +1894,8 @@ static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext 
     d->i_tex_bits= s->i_tex_bits;
     d->p_tex_bits= s->p_tex_bits;
     d->i_count= s->i_count;
-    d->p_count= s->p_count;
+    d->f_count= s->f_count;
+    d->b_count= s->b_count;
     d->skip_count= s->skip_count;
     d->misc_bits= s->misc_bits;
     d->last_bits= 0;
@@ -1918,7 +1919,8 @@ static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *
     d->i_tex_bits= s->i_tex_bits;
     d->p_tex_bits= s->p_tex_bits;
     d->i_count= s->i_count;
-    d->p_count= s->p_count;
+    d->f_count= s->f_count;
+    d->b_count= s->b_count;
     d->skip_count= s->skip_count;
     d->misc_bits= s->misc_bits;
 
@@ -2118,7 +2120,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->i_tex_bits=0;
     s->p_tex_bits=0;
     s->i_count=0;
-    s->p_count=0;
+    s->f_count=0;
+    s->b_count=0;
     s->skip_count=0;
 
     /* init last dc values */

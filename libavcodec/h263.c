@@ -18,7 +18,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * ac prediction encoding & b-frame support by Michael Niedermayer <michaelni@gmx.at>
+ * ac prediction encoding, b-frame support, error resilience, optimizations,
+ * qpel decoding, gmc decoding, interlaced decoding, 
+ * by Michael Niedermayer <michaelni@gmx.at>
  */
  
 //#define DEBUG
@@ -363,6 +365,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
             case 0: /* direct */
                 h263_encode_motion(s, motion_x, 1);
                 h263_encode_motion(s, motion_y, 1);                
+                s->b_count++;
+                s->f_count++;
                 break;
             case 1: /* bidir */
                 h263_encode_motion(s, s->mv[0][0][0] - s->last_mv[0][0][0], s->f_code);
@@ -373,18 +377,22 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 s->last_mv[0][0][1]= s->mv[0][0][1];
                 s->last_mv[1][0][0]= s->mv[1][0][0];
                 s->last_mv[1][0][1]= s->mv[1][0][1];
+                s->b_count++;
+                s->f_count++;
                 break;
             case 2: /* backward */
                 h263_encode_motion(s, motion_x - s->last_mv[1][0][0], s->b_code);
                 h263_encode_motion(s, motion_y - s->last_mv[1][0][1], s->b_code);
                 s->last_mv[1][0][0]= motion_x;
                 s->last_mv[1][0][1]= motion_y;
+                s->b_count++;
                 break;
             case 3: /* forward */
                 h263_encode_motion(s, motion_x - s->last_mv[0][0][0], s->f_code);
                 h263_encode_motion(s, motion_y - s->last_mv[0][0][1], s->f_code);
                 s->last_mv[0][0][0]= motion_x;
                 s->last_mv[0][0][1]= motion_y;
+                s->f_count++;
                 break;
             default:
                 printf("unknown mb type\n");
@@ -515,7 +523,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 s->p_tex_bits+= bits - s->last_bits;
                 s->last_bits=bits;
             }
-            s->p_count++;
+            s->f_count++;
         }
     } else {
         int cbp;
@@ -2851,9 +2859,9 @@ int h263_decode_mb(MpegEncContext *s,
             s->mv[0][0][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
             s->mv[0][0][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
             s->mv[1][0][0] = mx ? s->mv[0][0][0] - s->motion_val[xy][0]
-                                : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp + mx;
+                                : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp;
             s->mv[1][0][1] = my ? s->mv[0][0][1] - s->motion_val[xy][1] 
-                                : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp + my;
+                                : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp;
             if(s->non_b_mv4_table[xy]){
                 int i;
                 s->mv_type = MV_TYPE_8X8;
@@ -2862,9 +2870,9 @@ int h263_decode_mb(MpegEncContext *s,
                     s->mv[0][i][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
                     s->mv[0][i][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
                     s->mv[1][i][0] = mx ? s->mv[0][i][0] - s->motion_val[xy][0]
-                                        : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp + mx;
+                                        : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp;
                     s->mv[1][i][1] = my ? s->mv[0][i][1] - s->motion_val[xy][1] 
-                                        : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp + my;
+                                        : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp;
                 }
                 PRINT_MB_TYPE("4");
             }else{
@@ -2970,7 +2978,7 @@ intra:
 
 static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
 {
-    int code, val, sign, shift, l, m;
+    int code, val, sign, shift, l;
 
     code = get_vlc2(&s->gb, mv_vlc.table, MV_VLC_BITS, 2);
     if (code < 0)
@@ -2991,11 +2999,10 @@ static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
     /* modulo decoding */
     if (!s->h263_long_vectors) {
         l = (1 << (f_code - 1)) * 32;
-        m = 2 * l;
         if (val < -l) {
-            val += m;
+            val += l<<1;
         } else if (val >= l) {
-            val -= m;
+            val -= l<<1;
         }
     } else {
         /* horrible h263 long vector mode */

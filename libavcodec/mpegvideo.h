@@ -301,7 +301,8 @@ typedef struct MpegEncContext {
     int i_tex_bits;
     int p_tex_bits;
     int i_count;
-    int p_count;
+    int f_count;
+    int b_count;
     int skip_count;
     int misc_bits; // cbp, mb_type
     int last_bits; //temp var used for calculating the above vars
