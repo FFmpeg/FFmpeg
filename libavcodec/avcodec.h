@@ -13,6 +13,7 @@ extern "C" {
 
 #include "common.h"
 #include "rational.h"
+#include <sys/types.h> /* size_t */
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
