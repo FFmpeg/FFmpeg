@@ -1558,8 +1558,8 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			"addl $4, %0			\n\t"
 			" jnc 1b			\n\t"
 
-			: "+r" (counter)
-			: "r" (filter), "m" (filterPos), "m" (dst), "m"(src+filterSize),
+			: "+r" (counter), "+r" (filter)
+			: "m" (filterPos), "m" (dst), "m"(src+filterSize),
 			  "m" (src), "r" (filterSize*2)
 			: "%ebx", "%eax", "%ecx"
 		);
@@ -2339,12 +2339,14 @@ else		chrYInc= lumYInc>>1, chrDstH= dstH;
 		for(i=0; i<vLumBufSize; i++) memset(lumPixBuf[i], 0, 4000);
 		for(i=0; i<vChrBufSize; i++) memset(chrPixBuf[i], 64, 8000);
 
+		ASSERT(chrDstH<=dstH)
+		ASSERT(vLumFilterSize*dstH*4<16000)
+		ASSERT(vChrFilterSize*chrDstH*4<16000)
 #ifdef HAVE_MMX
 		// pack filter data for mmx code
 		for(i=0; i<vLumFilterSize*dstH; i++)
 			lumMmxFilter[4*i]=lumMmxFilter[4*i+1]=lumMmxFilter[4*i+2]=lumMmxFilter[4*i+3]=
 				vLumFilter[i];
-
 		for(i=0; i<vChrFilterSize*chrDstH; i++)
 			chrMmxFilter[4*i]=chrMmxFilter[4*i+1]=chrMmxFilter[4*i+2]=chrMmxFilter[4*i+3]=
 				vChrFilter[i];

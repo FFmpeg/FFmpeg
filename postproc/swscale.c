@@ -206,7 +206,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 			int u=0;
 			int v=0;
 			int j;
-			for(j=0; j<lumFilterSize; j++)
+			for(j=0; j<chrFilterSize; j++)
 			{
 				u += chrSrc[j][i] * chrFilter[j];
 				v += chrSrc[j][i + 2048] * chrFilter[j];
