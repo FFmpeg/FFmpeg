@@ -124,13 +124,16 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_le32(pb); /* XXX: initial frame ? */
                 get_le32(pb); /* scale */
                 get_le32(pb); /* rate */
-                size -= 6 * 4;
+                url_fskip(pb, size - 7 * 4);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
                 codec_type = CODEC_TYPE_AUDIO;
                 /* nothing really useful */
+                url_fskip(pb, size - 4);
+                break;
+            default:
+                goto fail;
             }
-	    url_fskip(pb, size - 4);
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
@@ -158,7 +161,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
                     url_fskip(pb, size - 5 * 4);
                     break;
-		case CODEC_TYPE_AUDIO:
+                case CODEC_TYPE_AUDIO:
                     get_wav_header(pb, &st->codec, (size >= 18));
                     if (size%2) /* 2-aligned (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
                         url_fskip(pb, 1);
@@ -194,25 +197,27 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int n, d1, d2, size;
-
-    for(;;) {
-	if (url_feof(pb) || url_ftell(pb) >= avi->movi_end)
-	    return -1;
-	d1 = get_byte(pb) - '0';
-	d2 = get_byte(pb) - '0';
-	if (d1 < 0 || d1 > 9 || d2 < 0 || d2 > 9)
-	    continue;
-
-	n = d1 * 10 + d2;
-	if (n < 0 || n >= s->nb_streams)
-	    continue;
-
-	d1 = get_byte(pb);
-	d2 = get_byte(pb);
-	if ((d1 == 'd' && d2 == 'c')
-	    || (d1 == 'w' && d2 == 'b'))
-	    break;
-    }
+    
+ find_next:
+    if (url_feof(pb) || url_ftell(pb) >= avi->movi_end)
+        return -1;
+    d1 = get_byte(pb);
+    if (d1 < '0' || d1 > '9')
+        goto find_next;
+    d2 = get_byte(pb);
+    if (d2 < '0' || d2 > '9')
+        goto find_next;
+    n = (d1 - '0') * 10 + (d2 - '0');
+    
+    if (n < 0 || n >= s->nb_streams)
+        goto find_next;
+    
+    d1 = get_byte(pb);
+    d2 = get_byte(pb);
+    if ((d1 != 'd' && d2 != 'c') &&
+        (d1 != 'w' && d2 != 'b'))
+        goto find_next;
+    
     size = get_le32(pb);
     av_new_packet(pkt, size);
     pkt->stream_index = n;
