@@ -43,12 +43,6 @@ EXTRALIBS+=-lmp3lame
 endif
 endif
 
-ifeq ($(AMR_NB),yes)
-EXTRALIBS+= libavcodec/amr/spc.a libavcodec/amr/fipop.a
-AMRLIBS=amrlibs
-CLEANAMR=cleanamr
-endif
-
 ifeq ($(CONFIG_VORBIS),yes)
 EXTRALIBS+=-logg -lvorbis -lvorbisenc
 endif
@@ -83,9 +77,6 @@ lib: $(AMRLIBS)
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libavformat all
 
-#make sure you have added -DMMS_IO to CFLAGS in libavcodec/amr/makefile!!
-amrlibs:
-	$(MAKE) -C libavcodec/amr spclib fipoplib
 
 ffmpeg_g$(EXE): ffmpeg.o .libs
 	$(CC) $(LDFLAGS) -o $@ ffmpeg.o $(FFLIBS) $(EXTRALIBS)
@@ -138,7 +129,7 @@ endif
 	@test -f .libs || touch .libs
 	@for i in $(DEP_LIBS) ; do if $(TEST) $$i -nt .libs ; then touch .libs; fi ; done
 
-clean: $(CLEANVHOOK) $(CLEANAMR)
+clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C tests clean
@@ -150,9 +141,6 @@ clean-vhook:
 distclean: clean
 	$(MAKE) -C libavcodec distclean
 	rm -f config.mak config.h
-
-cleanamr:
-	$(MAKE) -C libavcodec/amr clean
 
 TAGS:
 	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]

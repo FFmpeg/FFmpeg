@@ -92,6 +92,7 @@ SLIBSUF=".so"
 risky="yes"
 small="no"
 amr_nb="no"
+amr_nb_fixed="no"
 
 # OS specific
 targetos=`uname -s`
@@ -321,6 +322,8 @@ for opt do
   --enable-small) small="yes"
   ;;
   --enable-amr_nb) amr_nb="yes"
+  ;;
+  --enable-amr_nb-fixed) amr_nb_fixed="yes"
   ;;
   esac
 done
@@ -636,7 +639,8 @@ echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
 echo "  --disable-pp             disable GPL'ed post processing support [default=no]"
 echo "  --enable-shared-pp       use libpostproc.so [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
-echo "  --enable-amr_nb          enable amr_nb audio codec"
+echo "  --enable-amr_nb          enable amr_nb float audio codec"
+echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
 echo ""
 echo "Advanced options (experts only):"
 echo "  --source-path=PATH       path of source code [$source_path]"
@@ -702,7 +706,8 @@ if test "$vhook" = "yes" ; then
 echo "Imlib2 support   $imlib2"
 echo "freetype support $freetype2"
 fi
-echo "AMR-NB support"  $amr_nb
+echo "AMR-NB float support"  $amr_nb
+echo "AMR-NB fixed support"  $amr_nb_fixed
 
 echo "Creating config.mak and config.h"
 
@@ -984,11 +989,24 @@ if test "$amr_nb" = "yes" ; then
   echo "#define AMR_NB 1" >> $TMPH
   echo "AMR_NB=yes" >> config.mak
   echo
-  echo "AMR NB NOTICE! Make sure you have downloaded TS26.073 from "
+if test "$amr_nb_fixed" = "yes" ; then
+  echo "AMR_NB_FIXED=yes" >> config.mak
+  echo "#define AMR_NB_FIXED 1" >> $TMPH
+  echo "AMR NB FIXED POINT NOTICE! Make sure you have downloaded TS26.073 "
+  echo "REL-5 version 5.1.0 from "
   echo "http://www.3gpp.org/ftp/Specs/latest/Rel-5/26_series/26073-510.zip"
   echo "and extracted src to libavcodec/amr"
-  echo "You must also add -DMMS_IO to CFLAGS in libavcodec/amr/makefile."
+  echo "You must also add -DMMS_IO and remove -pedantic-errors to/from CFLAGS in libavcodec/amr/makefile."
+  echo "i.e. CFLAGS = -Wall -I. \$(CFLAGS_\$(MODE)) -D\$(VAD) -DMMS_IO"
   echo
+else
+  echo "AMR NB FLOAT NOTICE ! Make sure you have downloaded TS26.104"
+  echo "REL-5 V5.1.0 from "
+  echo "http://www.3gpp.org/ftp/Specs/latest/Rel-5/26_series/26104-510.zip"
+  echo "and extracted the source to libavcodec/amr_float"
+  echo
+fi
+
 fi
 
 diff $TMPH config.h >/dev/null 2>&1

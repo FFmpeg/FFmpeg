@@ -49,6 +49,9 @@ void av_register_all(void)
     dv_init();
     fourxm_init();
 
+#ifdef AMR_NB
+    amr_init();
+#endif
     av_register_output_format(&yuv4mpegpipe_oformat);
     
 #ifdef CONFIG_VORBIS

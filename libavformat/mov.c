@@ -1330,6 +1330,7 @@ static int mov_probe(AVProbeData *p)
         case MKTAG( 'f', 'r', 'e', 'e' ):
         case MKTAG( 'm', 'd', 'a', 't' ):
         case MKTAG( 'p', 'n', 'o', 't' ): /* detect movs with preview pics like ew.mov and april.mov */
+        case MKTAG( 'u', 'd', 't', 'a' ): /* Packet Video PVAuthor adds this and a lot of more junk */
             return AVPROBE_SCORE_MAX;
         case MKTAG( 'f', 't', 'y', 'p' ):
         case MKTAG( 's', 'k', 'i', 'p' ):
@@ -1486,6 +1487,33 @@ again:
 	    && ((msc->chunk_offsets[msc->next_chunk] - offset) < size))
 	    size = msc->chunk_offsets[msc->next_chunk] - offset;
     }
+
+#ifdef MOV_MINOLTA_FIX
+    //Make sure that size is according to sample_size (Needed by .mov files 
+    //created on a Minolta Dimage Xi where audio chunks contains waste data in the end)
+    //Maybe we should really not only check sc->sample_size, but also sc->sample_sizes
+    //but I have no such movies
+    if (sc->sample_size > 0) { 
+        int foundsize=0;
+        for(i=0; i<(sc->sample_to_chunk_sz); i++) {
+            if( (sc->sample_to_chunk[i].first)<=(sc->next_chunk) && (sc->sample_size>0) )
+            {
+                foundsize=sc->sample_to_chunk[i].count*sc->sample_size;
+            }
+#ifdef DEBUG
+            /*printf("sample_to_chunk first=%ld count=%ld, id=%ld\n", sc->sample_to_chunk[i].first, sc->sample_to_chunk[i].count, sc->sample_to_chunk[i].id);*/
+#endif
+        }
+        if( (foundsize>0) && (foundsize<size) )
+        {
+#ifdef DEBUG
+            /*printf("this size should actually be %d\n",foundsize);*/
+#endif
+            size=foundsize;
+        }
+    }
+#endif //MOV_MINOLTA_FIX
+
 #ifdef MOV_SPLIT_CHUNKS
     /* split chunks into samples */
     if (sc->sample_size == 0) {

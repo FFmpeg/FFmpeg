@@ -20,6 +20,10 @@ ifeq ($(CONFIG_RISKY),yes)
 OBJS+= asf.o
 endif
 
+ifeq ($(AMR_NB),yes)
+OBJS+= amr.o
+endif
+
 # image formats
 OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o
 # file I/O

@@ -20,7 +20,15 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       vp3.o asv1.o 4xm.o cabac.o
 
 ifeq ($(AMR_NB),yes)
+ifeq ($(AMR_NB_FIXED),yes)
 OBJS+= amr.o
+AMREXTRALIBS+= amr/*.o
+AMRLIBS=amrlibs
+CLEANAMR=cleanamr
+else
+OBJS+= amr.o amr_float/sp_dec.o amr_float/sp_enc.o amr_float/interf_dec.o amr_float/interf_enc.o
+CLEANAMR=cleanamrfloat
+endif
 endif
 
 ASM_OBJS=
@@ -140,15 +148,18 @@ TESTS= imgresample-test dct-test motion-test fft-test
 
 all: $(LIB) $(SLIB)
 
+amrlibs:
+	$(MAKE) -C amr spclib fipoplib
+
 tests: apiexample cpuid_test $(TESTS)
 
-$(LIB): $(OBJS)
+$(LIB): $(OBJS) $(AMRLIBS)
 	rm -f $@
-	$(AR) rc $@ $(OBJS)
+	$(AR) rc $@ $(OBJS) $(AMREXTRALIBS)
 	$(RANLIB) $@
 
 $(SLIB): $(OBJS)
-	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
+	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
 
 dsputil.o: dsputil.c dsputil.h
 
@@ -177,7 +188,7 @@ depend: $(SRCS)
 
 dep:	depend
 
-clean: 
+clean: $(CLEANAMR)
 	rm -f *.o *.d *~ .depend $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
@@ -191,6 +202,12 @@ clean:
 
 distclean: clean
 	rm -f Makefile.bak .depend
+
+cleanamr:
+	$(MAKE) -C amr clean
+
+cleanamrfloat:
+	rm -f amr_float/*.o
 
 # api example program
 apiexample: apiexample.c $(LIB)

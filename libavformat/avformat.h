@@ -310,6 +310,9 @@ int gif_init(void);
 /* au.c */
 int au_init(void);
 
+/* amr.c */
+int amr_init(void);
+
 /* wav.c */
 int wav_init(void);
 
