@@ -1993,8 +1993,8 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
     next_point = &s->packet_buffer;
     while(*next_point){
         AVStream *st2= s->streams[ (*next_point)->pkt.stream_index];
-        int64_t left=  st2->time_base.num * st ->time_base.den;
-        int64_t right= st ->time_base.num * st2->time_base.den;
+        int64_t left=  st2->time_base.num * (int64_t)st ->time_base.den;
+        int64_t right= st ->time_base.num * (int64_t)st2->time_base.den;
         if((*next_point)->pkt.dts * left > pkt->dts * right) //FIXME this can overflow
             break;
         next_point= &(*next_point)->next;
