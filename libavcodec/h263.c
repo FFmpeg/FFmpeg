@@ -2843,10 +2843,10 @@ void ff_mpeg4_clean_buffers(MpegEncContext *s)
 int ff_h263_resync(MpegEncContext *s){
     int left, ret;
     
-    if(s->codec_id==CODEC_ID_MPEG4)
+    if(s->codec_id==CODEC_ID_MPEG4){
         skip_bits1(&s->gb);
-    
-    align_get_bits(&s->gb);
+        align_get_bits(&s->gb);
+    }
 
     if(show_bits(&s->gb, 16)==0){
         if(s->codec_id==CODEC_ID_MPEG4)
@@ -3316,7 +3316,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
     int16_t *mot_val;
     static int8_t quant_tab[4] = { -1, -2, 1, 2 };
     const int xy= s->mb_x + s->mb_y * s->mb_stride;
-
+    
     if (s->pict_type == P_TYPE || s->pict_type==S_TYPE) {
       do{
         if (get_bits1(&s->gb)) {
