@@ -1436,8 +1436,11 @@ else				s_xinc2= s_xinc;
 	g16Dither2= g16Dither;
 #endif
   }
-__asm __volatile(SFENCE:::"memory");
-__asm __volatile(EMMS:::"memory");
+
+#ifdef HAVE_MMX
+	__asm __volatile(SFENCE:::"memory");
+	__asm __volatile(EMMS);
+#endif
 }
 
 
