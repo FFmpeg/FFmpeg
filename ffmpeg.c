@@ -207,8 +207,11 @@ static int read_key(void)
     tv.tv_usec = 0;
     n = select(1, &rfds, NULL, NULL, &tv);
     if (n > 0) {
-        if (read(0, &ch, 1) == 1)
+        n = read(0, &ch, 1);
+        if (n == 1)
             return ch;
+
+        return n;
     }
     return -1;
 }
@@ -226,7 +229,7 @@ static void term_init(void)
 
 static int read_key(void)
 {
-    return -1;
+    return 0;
 }
 
 #endif
@@ -417,7 +420,7 @@ static void do_video_out(AVFormatContext *s,
     int n1, n2, nb, i, ret, frame_number, dec_frame_rate;
     AVPicture *picture, *picture2, *pict;
     AVPicture picture_tmp1, picture_tmp2;
-    UINT8 *video_buffer;
+    static UINT8 *video_buffer;
     UINT8 *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
 
@@ -436,7 +439,8 @@ static void do_video_out(AVFormatContext *s,
     if (nb <= 0) 
         return;
 
-    video_buffer= av_malloc(VIDEO_BUFFER_SIZE);
+    if (!video_buffer)
+        video_buffer= av_malloc(VIDEO_BUFFER_SIZE);
     if(!video_buffer) return;
 
     /* deinterlace : must be done before any resize */
@@ -521,7 +525,6 @@ static void do_video_out(AVFormatContext *s,
     the_end:
     av_free(buf);
     av_free(buf1);
-    av_free(video_buffer);
 }
 
 static void do_video_stats(AVOutputStream *ost, 
@@ -597,6 +600,7 @@ static int av_encode(AVFormatContext **output_files,
     INT64 min_pts, start_time;
     AVInputFile *file_table;
     AVFormatContext *stream_no_data;
+    int key;
 
     file_table= (AVInputFile*) av_mallocz(nb_input_files * sizeof(AVInputFile));
     if (!file_table)
@@ -884,6 +888,7 @@ static int av_encode(AVFormatContext **output_files,
     start_time = gettime();
     min_pts = 0;
     stream_no_data = 0;
+    key = -1;
 
     for(;;) {
         int file_index, ist_index;
@@ -897,8 +902,12 @@ static int av_encode(AVFormatContext **output_files,
 
     redo:
         /* if 'q' pressed, exits */
-        if (read_key() == 'q')
-            break;
+        if (key) {
+            /* read_key() returns 0 on EOF */
+            key = read_key();
+            if (key == 'q')
+                break;
+        }
 
         /* select the input file with the smallest pts */
         file_index = -1;
