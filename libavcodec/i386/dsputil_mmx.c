@@ -589,7 +589,7 @@ static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     "paddw " #b1 ", " #b1 "		\n\t"\
     "paddw " #b2 ", " #b2 "		\n\t"\
     "psubw " #a1 ", " #b1 "		\n\t"\
-    "psubw " #a2 ", " #b1 "		\n\t"
+    "psubw " #a2 ", " #b2 "		\n\t"
 
 #define HADAMARD48\
         LBUTTERFLY2(%%mm0, %%mm1, %%mm2, %%mm3)\
