@@ -110,8 +110,8 @@ static void msrle_decode_pal4(MsrleContext *s)
                 FETCH_NEXT_STREAM_BYTE();
                 s->frame.data[0][row_ptr + pixel_ptr] = stream_byte >> 4;
                 pixel_ptr++;
-      	      if (i + 1 == rle_code && odd_pixel)
-        	        break;
+                if (i + 1 == rle_code && odd_pixel)
+                    break;
                 if (pixel_ptr >= s->avctx->width)
                     break;
                 s->frame.data[0][row_ptr + pixel_ptr] = stream_byte & 0x0F;
@@ -254,9 +254,9 @@ static int msrle_decode_frame(AVCodecContext *avctx,
 {
     MsrleContext *s = (MsrleContext *)avctx->priv_data;
 
-	/* no supplementary picture */
-	if (buf_size == 0)
-		return 0;
+    /* no supplementary picture */
+    if (buf_size == 0)
+        return 0;
 
     s->buf = buf;
     s->size = buf_size;

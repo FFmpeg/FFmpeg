@@ -303,15 +303,15 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
 {
     Msvideo1Context *s = (Msvideo1Context *)avctx->priv_data;
 
-	/* no supplementary picture */
-	if (buf_size == 0)
-		return 0;
+    /* no supplementary picture */
+    if (buf_size == 0)
+        return 0;
 
     s->buf = buf;
     s->size = buf_size;
 
-	s->frame.reference = 1;
-	s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    s->frame.reference = 1;
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     if (avctx->reget_buffer(avctx, &s->frame)) {
         av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
