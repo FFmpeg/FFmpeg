@@ -297,14 +297,14 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 1, 0); /* do drop frame */
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
-            fps = frame_rate_tab[s->frame_rate_index];
-            time_code = (int64_t)s->fake_picture_number * MPEG1_FRAME_RATE_BASE;
+            fps = (frame_rate_tab[s->frame_rate_index] + MPEG1_FRAME_RATE_BASE/2)/ MPEG1_FRAME_RATE_BASE;
+            time_code = s->fake_picture_number;
             s->gop_picture_number = s->fake_picture_number;
             put_bits(&s->pb, 5, (uint32_t)((time_code / (fps * 3600)) % 24));
             put_bits(&s->pb, 6, (uint32_t)((time_code / (fps * 60)) % 60));
             put_bits(&s->pb, 1, 1);
             put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
-            put_bits(&s->pb, 6, (uint32_t)((time_code % fps) / MPEG1_FRAME_RATE_BASE));
+            put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
             put_bits(&s->pb, 1, 0); /* closed gop */
             put_bits(&s->pb, 1, 0); /* broken link */
         }
@@ -1786,7 +1786,6 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
 
     ref = get_bits(&s->gb, 10); /* temporal ref */
     s->pict_type = get_bits(&s->gb, 3);
-    dprintf("pict_type=%d number=%d\n", s->pict_type, s->picture_number);
 
     vbv_delay= get_bits(&s->gb, 16);
     if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
@@ -1807,6 +1806,9 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     }
     s->current_picture.pict_type= s->pict_type;
     s->current_picture.key_frame= s->pict_type == I_TYPE;
+    
+//    if(avctx->debug & FF_DEBUG_PICT_INFO)
+//        av_log(avctx, AV_LOG_DEBUG, "vbv_delay %d, ref %d\n", vbv_delay, ref);
     
     s->y_dc_scale = 8;
     s->c_dc_scale = 8;
