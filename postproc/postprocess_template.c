@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001 Michael Niedermayer (michaelni@gmx.at)
+    Copyright (C) 2001-2002 Michael Niedermayer (michaelni@gmx.at)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -2587,7 +2587,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	   after watching a black picture for 5 hours*/
 	static uint64_t *yHistogram= NULL;
 	int black=0, white=255; // blackest black and whitest white in the picture
-	int QPCorrecture= 256;
+	int QPCorrecture= 256*256;
 
 	/* Temporary buffers for handling the last row(s) */
 	static uint8_t *tempDst= NULL;
@@ -2615,7 +2615,6 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	long long memcpyTime=0, vertTime=0, horizTime=0, sumTime;
 	sumTime= rdtsc();
 #endif
-
 	dcOffset= ppMode->maxDcDiff;
 	dcThreshold= ppMode->maxDcDiff*2 + 1;
 
@@ -2727,15 +2726,16 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 
 		packedYScale|= packedYScale<<32;
 		packedYScale|= packedYScale<<16;
+		
+		if(mode & LEVEL_FIX)	QPCorrecture= (int)(scale*256*256 + 0.5);
+		else			QPCorrecture= 256*256;
 	}
 	else
 	{
 		packedYScale= 0x0100010001000100LL;
 		packedYOffset= 0;
+		QPCorrecture= 256*256;
 	}
-
-	if(mode & LEVEL_FIX)	QPCorrecture= packedYScale &0xFFFF;
-	else			QPCorrecture= 256;
 
 	/* copy & deinterlace first row of blocks */
 	y=-BLOCK_SIZE;
@@ -2819,8 +2819,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 #endif
 #ifdef ARCH_X86
 		int *QPptr= isColor ? &QPs[(y>>3)*QPStride] :&QPs[(y>>4)*QPStride];
-		int QPDelta= isColor ? 1<<(32-3) : 1<<(32-4);
-		int QPFrac= QPDelta;
+		int QPDelta= isColor ? (-1) : 1<<31;
+		int QPFrac= 1<<30;
 #endif
 		int QP=0;
 		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
@@ -2875,7 +2875,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 #endif
 			if(!isColor)
 			{
-				QP= (QP* QPCorrecture)>>8;
+				QP= (QP* QPCorrecture + 256*128)>>16;
 				yHistogram[ srcBlock[srcStride*12 + 4] ]++;
 			}
 #ifdef HAVE_MMX
