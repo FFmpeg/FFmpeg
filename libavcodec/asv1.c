@@ -1,5 +1,5 @@
 /*
- * ASUS V1 codec
+ * ASUS V1/V2 codec
  * Copyright (c) 2003 Michael Niedermayer
  *
  * This library is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  
 /**
  * @file asv1.c
- * ASUS V1 codec.
+ * ASUS V1/V2 codec.
  */
  
 #include "avcodec.h"
@@ -29,8 +29,9 @@
 //#undef NDEBUG
 //#include <assert.h>
 
-#define VLC_BITS 5
-
+#define VLC_BITS 6
+#define ASV2_LEVEL_VLC_BITS 10
+ 
 typedef struct ASV1Context{
     AVCodecContext *avctx;
     DSPContext dsp;
@@ -56,13 +57,36 @@ static const uint8_t scantab[64]={
     0x04,0x0C,0x05,0x0D,0x20,0x28,0x21,0x29,
     0x06,0x0E,0x07,0x0F,0x14,0x1C,0x15,0x1D,
     0x22,0x2A,0x23,0x2B,0x30,0x38,0x31,0x39,
+    0x16,0x1E,0x17,0x1F,0x24,0x2C,0x25,0x2D,
+    0x32,0x3A,0x33,0x3B,0x26,0x2E,0x27,0x2F,
+    0x34,0x3C,0x35,0x3D,0x36,0x3E,0x37,0x3F,
+};
+
+
+static const uint8_t reverse[256]={
+0x00,0x80,0x40,0xC0,0x20,0xA0,0x60,0xE0,0x10,0x90,0x50,0xD0,0x30,0xB0,0x70,0xF0,
+0x08,0x88,0x48,0xC8,0x28,0xA8,0x68,0xE8,0x18,0x98,0x58,0xD8,0x38,0xB8,0x78,0xF8,
+0x04,0x84,0x44,0xC4,0x24,0xA4,0x64,0xE4,0x14,0x94,0x54,0xD4,0x34,0xB4,0x74,0xF4,
+0x0C,0x8C,0x4C,0xCC,0x2C,0xAC,0x6C,0xEC,0x1C,0x9C,0x5C,0xDC,0x3C,0xBC,0x7C,0xFC,
+0x02,0x82,0x42,0xC2,0x22,0xA2,0x62,0xE2,0x12,0x92,0x52,0xD2,0x32,0xB2,0x72,0xF2,
+0x0A,0x8A,0x4A,0xCA,0x2A,0xAA,0x6A,0xEA,0x1A,0x9A,0x5A,0xDA,0x3A,0xBA,0x7A,0xFA,
+0x06,0x86,0x46,0xC6,0x26,0xA6,0x66,0xE6,0x16,0x96,0x56,0xD6,0x36,0xB6,0x76,0xF6,
+0x0E,0x8E,0x4E,0xCE,0x2E,0xAE,0x6E,0xEE,0x1E,0x9E,0x5E,0xDE,0x3E,0xBE,0x7E,0xFE,
+0x01,0x81,0x41,0xC1,0x21,0xA1,0x61,0xE1,0x11,0x91,0x51,0xD1,0x31,0xB1,0x71,0xF1,
+0x09,0x89,0x49,0xC9,0x29,0xA9,0x69,0xE9,0x19,0x99,0x59,0xD9,0x39,0xB9,0x79,0xF9,
+0x05,0x85,0x45,0xC5,0x25,0xA5,0x65,0xE5,0x15,0x95,0x55,0xD5,0x35,0xB5,0x75,0xF5,
+0x0D,0x8D,0x4D,0xCD,0x2D,0xAD,0x6D,0xED,0x1D,0x9D,0x5D,0xDD,0x3D,0xBD,0x7D,0xFD,
+0x03,0x83,0x43,0xC3,0x23,0xA3,0x63,0xE3,0x13,0x93,0x53,0xD3,0x33,0xB3,0x73,0xF3,
+0x0B,0x8B,0x4B,0xCB,0x2B,0xAB,0x6B,0xEB,0x1B,0x9B,0x5B,0xDB,0x3B,0xBB,0x7B,0xFB,
+0x07,0x87,0x47,0xC7,0x27,0xA7,0x67,0xE7,0x17,0x97,0x57,0xD7,0x37,0xB7,0x77,0xF7,
+0x0F,0x8F,0x4F,0xCF,0x2F,0xAF,0x6F,0xEF,0x1F,0x9F,0x5F,0xDF,0x3F,0xBF,0x7F,0xFF,
 };
 
 static const uint8_t ccp_tab[17][2]={
-    {0x2,2}, {0xE,5}, {0xD,5}, {0xC,5},
-    {0xB,5}, {0xA,5}, {0x9,5}, {0x8,5},
-    {0x7,5}, {0x6,5}, {0x5,5}, {0x4,5},
-    {0x3,5}, {0x2,5}, {0x1,5}, {0x3,2},
+    {0x2,2}, {0x7,5}, {0xB,5}, {0x3,5},
+    {0xD,5}, {0x5,5}, {0x9,5}, {0x1,5},
+    {0xE,5}, {0x6,5}, {0xA,5}, {0x2,5}, 
+    {0xC,5}, {0x4,5}, {0x8,5}, {0x3,2},
     {0xF,5}, //EOB
 };
 
@@ -70,8 +94,40 @@ static const uint8_t level_tab[7][2]={
     {3,4}, {3,3}, {3,2}, {0,3}, {2,2}, {2,3}, {2,4}
 };
 
+static const uint8_t dc_ccp_tab[8][2]={
+    {0x1,2}, {0xD,4}, {0xF,4}, {0xC,4},
+    {0x5,3}, {0xE,4}, {0x4,3}, {0x0,2},
+};
+
+static const uint8_t ac_ccp_tab[16][2]={
+    {0x00,2}, {0x3B,6}, {0x0A,4}, {0x3A,6},
+    {0x02,3}, {0x39,6}, {0x3C,6}, {0x38,6},
+    {0x03,3}, {0x3D,6}, {0x08,4}, {0x1F,5},
+    {0x09,4}, {0x0B,4}, {0x0D,4}, {0x0C,4},
+};
+
+static const uint8_t asv2_level_tab[63][2]={
+    {0x3F,10},{0x2F,10},{0x37,10},{0x27,10},{0x3B,10},{0x2B,10},{0x33,10},{0x23,10},
+    {0x3D,10},{0x2D,10},{0x35,10},{0x25,10},{0x39,10},{0x29,10},{0x31,10},{0x21,10},
+    {0x1F, 8},{0x17, 8},{0x1B, 8},{0x13, 8},{0x1D, 8},{0x15, 8},{0x19, 8},{0x11, 8},
+    {0x0F, 6},{0x0B, 6},{0x0D, 6},{0x09, 6},
+    {0x07, 4},{0x05, 4},
+    {0x03, 2},
+    {0x00, 5},
+    {0x02, 2},
+    {0x04, 4},{0x06, 4},
+    {0x08, 6},{0x0C, 6},{0x0A, 6},{0x0E, 6},
+    {0x10, 8},{0x18, 8},{0x14, 8},{0x1C, 8},{0x12, 8},{0x1A, 8},{0x16, 8},{0x1E, 8},
+    {0x20,10},{0x30,10},{0x28,10},{0x38,10},{0x24,10},{0x34,10},{0x2C,10},{0x3C,10},
+    {0x22,10},{0x32,10},{0x2A,10},{0x3A,10},{0x26,10},{0x36,10},{0x2E,10},{0x3E,10},
+};
+
+
 static VLC ccp_vlc;
 static VLC level_vlc;
+static VLC dc_ccp_vlc;
+static VLC ac_ccp_vlc;
+static VLC asv2_level_vlc;
 
 static void init_vlcs(ASV1Context *a){
     static int done = 0;
@@ -82,20 +138,41 @@ static void init_vlcs(ASV1Context *a){
         init_vlc(&ccp_vlc, VLC_BITS, 17, 
                  &ccp_tab[0][1], 2, 1,
                  &ccp_tab[0][0], 2, 1);
+        init_vlc(&dc_ccp_vlc, VLC_BITS, 8, 
+                 &dc_ccp_tab[0][1], 2, 1,
+                 &dc_ccp_tab[0][0], 2, 1);
+        init_vlc(&ac_ccp_vlc, VLC_BITS, 16, 
+                 &ac_ccp_tab[0][1], 2, 1,
+                 &ac_ccp_tab[0][0], 2, 1);
         init_vlc(&level_vlc,  VLC_BITS, 7, 
                  &level_tab[0][1], 2, 1,
                  &level_tab[0][0], 2, 1);
+        init_vlc(&asv2_level_vlc, ASV2_LEVEL_VLC_BITS, 63, 
+                 &asv2_level_tab[0][1], 2, 1,
+                 &asv2_level_tab[0][0], 2, 1);
     }
 }
 
-static inline int get_level(GetBitContext *gb){
+//FIXME write a reversed bitstream reader to avoid the double reverse
+static inline int asv2_get_bits(GetBitContext *gb, int n){
+    return reverse[ get_bits(gb, n) << (8-n) ];
+}
+
+static inline int asv1_get_level(GetBitContext *gb){
     int code= get_vlc2(gb, level_vlc.table, VLC_BITS, 1);
 
     if(code==3) return get_sbits(gb, 8);
     else        return code - 3;
 }
 
-static inline void put_level(PutBitContext *pb, int level){
+static inline int asv2_get_level(GetBitContext *gb){
+    int code= get_vlc2(gb, asv2_level_vlc.table, ASV2_LEVEL_VLC_BITS, 1);
+
+    if(code==31) return (int8_t)asv2_get_bits(gb, 8);
+    else         return code - 31;
+}
+
+static inline void asv1_put_level(PutBitContext *pb, int level){
     unsigned int index= level + 3;
 
     if(index <= 6) put_bits(pb, level_tab[index][1], level_tab[index][0]);
@@ -105,7 +182,7 @@ static inline void put_level(PutBitContext *pb, int level){
     }
 }
 
-static inline int decode_block(ASV1Context *a, DCTELEM block[64]){
+static inline int asv1_decode_block(ASV1Context *a, DCTELEM block[64]){
     int i;
 
     block[0]= 8*get_bits(&a->gb, 8);
@@ -120,13 +197,41 @@ static inline int decode_block(ASV1Context *a, DCTELEM block[64]){
                 return -1;
             }
 
-            if(ccp&1) block[a->scantable.permutated[4*i+0]]= (get_level(&a->gb) * a->intra_matrix[4*i+0])>>4;
-            if(ccp&2) block[a->scantable.permutated[4*i+1]]= (get_level(&a->gb) * a->intra_matrix[4*i+1])>>4;
-            if(ccp&4) block[a->scantable.permutated[4*i+2]]= (get_level(&a->gb) * a->intra_matrix[4*i+2])>>4;
-            if(ccp&8) block[a->scantable.permutated[4*i+3]]= (get_level(&a->gb) * a->intra_matrix[4*i+3])>>4;
+            if(ccp&8) block[a->scantable.permutated[4*i+0]]= (asv1_get_level(&a->gb) * a->intra_matrix[4*i+0])>>4;
+            if(ccp&4) block[a->scantable.permutated[4*i+1]]= (asv1_get_level(&a->gb) * a->intra_matrix[4*i+1])>>4;
+            if(ccp&2) block[a->scantable.permutated[4*i+2]]= (asv1_get_level(&a->gb) * a->intra_matrix[4*i+2])>>4;
+            if(ccp&1) block[a->scantable.permutated[4*i+3]]= (asv1_get_level(&a->gb) * a->intra_matrix[4*i+3])>>4;
         }
     }
 
+    return 0;
+}
+
+static inline int asv2_decode_block(ASV1Context *a, DCTELEM block[64]){
+    int i, count, ccp;
+
+    count= asv2_get_bits(&a->gb, 4);
+    
+    block[0]= 8*asv2_get_bits(&a->gb, 8);
+    
+    ccp= get_vlc2(&a->gb, dc_ccp_vlc.table, VLC_BITS, 1);
+    if(ccp){
+        if(ccp&4) block[a->scantable.permutated[1]]= (asv2_get_level(&a->gb) * a->intra_matrix[1])>>4;
+        if(ccp&2) block[a->scantable.permutated[2]]= (asv2_get_level(&a->gb) * a->intra_matrix[2])>>4;
+        if(ccp&1) block[a->scantable.permutated[3]]= (asv2_get_level(&a->gb) * a->intra_matrix[3])>>4;
+    }
+
+    for(i=1; i<count+1; i++){
+        const int ccp= get_vlc2(&a->gb, ac_ccp_vlc.table, VLC_BITS, 1);
+
+        if(ccp){
+            if(ccp&8) block[a->scantable.permutated[4*i+0]]= (asv2_get_level(&a->gb) * a->intra_matrix[4*i+0])>>4;
+            if(ccp&4) block[a->scantable.permutated[4*i+1]]= (asv2_get_level(&a->gb) * a->intra_matrix[4*i+1])>>4;
+            if(ccp&2) block[a->scantable.permutated[4*i+2]]= (asv2_get_level(&a->gb) * a->intra_matrix[4*i+2])>>4;
+            if(ccp&1) block[a->scantable.permutated[4*i+3]]= (asv2_get_level(&a->gb) * a->intra_matrix[4*i+3])>>4;
+        }
+    }
+    
     return 0;
 }
 
@@ -141,10 +246,10 @@ static inline void encode_block(ASV1Context *a, DCTELEM block[64]){
         const int index= scantab[4*i];
         int ccp=0;
 
-        if( (block[index + 0] = (block[index + 0]*a->q_intra_matrix[index + 0] + (1<<15))>>16) ) ccp |= 1;
-        if( (block[index + 8] = (block[index + 8]*a->q_intra_matrix[index + 8] + (1<<15))>>16) ) ccp |= 2;
-        if( (block[index + 1] = (block[index + 1]*a->q_intra_matrix[index + 1] + (1<<15))>>16) ) ccp |= 4;
-        if( (block[index + 9] = (block[index + 9]*a->q_intra_matrix[index + 9] + (1<<15))>>16) ) ccp |= 8;
+        if( (block[index + 0] = (block[index + 0]*a->q_intra_matrix[index + 0] + (1<<15))>>16) ) ccp |= 8;
+        if( (block[index + 8] = (block[index + 8]*a->q_intra_matrix[index + 8] + (1<<15))>>16) ) ccp |= 4;
+        if( (block[index + 1] = (block[index + 1]*a->q_intra_matrix[index + 1] + (1<<15))>>16) ) ccp |= 2;
+        if( (block[index + 9] = (block[index + 9]*a->q_intra_matrix[index + 9] + (1<<15))>>16) ) ccp |= 1;
 
         if(ccp){
             for(;nc_count; nc_count--) 
@@ -152,10 +257,10 @@ static inline void encode_block(ASV1Context *a, DCTELEM block[64]){
 
             put_bits(&a->pb, ccp_tab[ccp][1], ccp_tab[ccp][0]);
             
-            if(ccp&1) put_level(&a->pb, block[index + 0]);
-            if(ccp&2) put_level(&a->pb, block[index + 8]);
-            if(ccp&4) put_level(&a->pb, block[index + 1]);
-            if(ccp&8) put_level(&a->pb, block[index + 9]);
+            if(ccp&8) asv1_put_level(&a->pb, block[index + 0]);
+            if(ccp&4) asv1_put_level(&a->pb, block[index + 8]);
+            if(ccp&2) asv1_put_level(&a->pb, block[index + 1]);
+            if(ccp&1) asv1_put_level(&a->pb, block[index + 9]);
         }else{
             nc_count++;
         }
@@ -168,9 +273,16 @@ static inline int decode_mb(ASV1Context *a, DCTELEM block[6][64]){
 
     a->dsp.clear_blocks(block[0]);
     
-    for(i=0; i<6; i++){
-        if( decode_block(a, block[i]) < 0) 
-            return -1;
+    if(a->avctx->codec_id == CODEC_ID_ASV1){
+        for(i=0; i<6; i++){
+            if( asv1_decode_block(a, block[i]) < 0) 
+                return -1;
+        }
+    }else{
+        for(i=0; i<6; i++){
+            if( asv2_decode_block(a, block[i]) < 0) 
+                return -1;
+        }
     }
     return 0;
 }
@@ -254,7 +366,15 @@ static int decode_frame(AVCodecContext *avctx,
     p->key_frame= 1;
 
     a->bitstream_buffer= av_fast_realloc(a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-    a->dsp.bswap_buf((uint32_t*)a->bitstream_buffer, (uint32_t*)buf, buf_size/4);
+    
+    if(avctx->codec_id == CODEC_ID_ASV1)
+        a->dsp.bswap_buf((uint32_t*)a->bitstream_buffer, (uint32_t*)buf, buf_size/4);
+    else{
+        int i;
+        for(i=0; i<buf_size; i++)
+            a->bitstream_buffer[i]= reverse[ buf[i] ];
+    }
+
     init_get_bits(&a->gb, a->bitstream_buffer, buf_size*8);
 
     for(mb_y=0; mb_y<a->mb_height2; mb_y++){
@@ -379,15 +499,22 @@ static int decode_init(AVCodecContext *avctx){
     init_vlcs(a);
     ff_init_scantable(a->dsp.idct_permutation, &a->scantable, scantab);
 
-    a->inv_qscale= le2me_32(((uint32_t*)avctx->extradata)[0]);
+    a->inv_qscale= ((uint8_t*)avctx->extradata)[0];
     if(a->inv_qscale == 0){
         printf("illegal qscale 0\n");
-        a->inv_qscale= 6;
+        if(avctx->codec_id == CODEC_ID_ASV1)
+            a->inv_qscale= 6;
+        else
+            a->inv_qscale= 10;
     }
 
     for(i=0; i<64; i++){
         int index= scantab[i];
-        a->intra_matrix[i]= 64*ff_mpeg1_default_intra_matrix[index] / a->inv_qscale;
+
+        if(avctx->codec_id == CODEC_ID_ASV1)
+            a->intra_matrix[i]= 64 *ff_mpeg1_default_intra_matrix[index] / a->inv_qscale;
+        else
+            a->intra_matrix[i]= 128*ff_mpeg1_default_intra_matrix[index] / a->inv_qscale;
     }
 
     p->qstride= a->mb_width;
@@ -435,6 +562,18 @@ AVCodec asv1_decoder = {
     "asv1",
     CODEC_TYPE_VIDEO,
     CODEC_ID_ASV1,
+    sizeof(ASV1Context),
+    decode_init,
+    NULL,
+    decode_end,
+    decode_frame,
+    CODEC_CAP_DR1,
+};
+
+AVCodec asv2_decoder = {
+    "asv2",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_ASV2,
     sizeof(ASV1Context),
     decode_init,
     NULL,

@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4676
-#define LIBAVCODEC_BUILD_STR   "4676"
+#define LIBAVCODEC_BUILD       4677
+#define LIBAVCODEC_BUILD_STR   "4677"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -60,6 +60,7 @@ enum CodecID {
     CODEC_ID_AAC,
     CODEC_ID_MPEG4AAC,
     CODEC_ID_ASV1,
+    CODEC_ID_ASV2,
     CODEC_ID_FFV1,
     CODEC_ID_4XM,
     CODEC_ID_VCR1,
@@ -353,8 +354,9 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define FF_QSCALE_TYPE_MPEG2	1
 
 #define FF_BUFFER_TYPE_INTERNAL 1
-#define FF_BUFFER_TYPE_USER     2 ///< Direct rendering buffers
-#define FF_BUFFER_TYPE_SHARED   4 ///< buffer from somewher else, dont dealloc
+#define FF_BUFFER_TYPE_USER     2 ///< Direct rendering buffers (image is (de)allocated by user)
+#define FF_BUFFER_TYPE_SHARED   4 ///< buffer from somewher else, dont dealloc image (data/base)
+#define FF_BUFFER_TYPE_COPY     8 ///< just a (modified) copy of some other buffer, dont dealloc anything
 
 
 #define FF_I_TYPE 1 // Intra
@@ -1298,6 +1300,7 @@ extern AVCodec wmv2_encoder;
 extern AVCodec huffyuv_encoder;
 extern AVCodec h264_encoder;
 extern AVCodec asv1_encoder;
+extern AVCodec asv2_encoder;
 extern AVCodec vcr1_encoder;
 extern AVCodec ffv1_encoder;
 extern AVCodec mdec_encoder;
@@ -1338,6 +1341,7 @@ extern AVCodec amr_nb_encoder;
 extern AVCodec aac_decoder;
 extern AVCodec mpeg4aac_decoder;
 extern AVCodec asv1_decoder;
+extern AVCodec asv2_decoder;
 extern AVCodec vcr1_decoder;
 extern AVCodec cljr_decoder;
 extern AVCodec ffv1_decoder;
