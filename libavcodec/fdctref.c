@@ -103,6 +103,7 @@ short *block;
         	s += c[i][5] * tmp[8 * 5 + j];
         	s += c[i][6] * tmp[8 * 6 + j];
         	s += c[i][7] * tmp[8 * 7 + j];
+		s*=8.0;
 
     		block[8 * i + j] = (short)floor(s + 0.499999);
 /*

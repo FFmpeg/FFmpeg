@@ -25,7 +25,7 @@
 
 #define BITS_FRW_ACC	3 //; 2 or 3 for accuracy
 #define SHIFT_FRW_COL	BITS_FRW_ACC
-#define SHIFT_FRW_ROW	(BITS_FRW_ACC + 17)
+#define SHIFT_FRW_ROW	(BITS_FRW_ACC + 17 - 3)
 //#define RND_FRW_ROW		(262144 * (BITS_FRW_ACC - 1)) //; 1 << (SHIFT_FRW_ROW-1)
 #define RND_FRW_ROW		(1 << (SHIFT_FRW_ROW-1))
 //#define RND_FRW_COL		(2 * (BITS_FRW_ACC - 1)) //; 1 << (SHIFT_FRW_COL-1)

@@ -101,8 +101,12 @@ void dct_error(const char *name, int is_idct,
         case 0: 
             for(i=0;i<64;i++)
                 block1[i] = (random() % 512) -256;
-            if (is_idct)
+            if (is_idct){
                 fdct(block1);
+
+                for(i=0;i<64;i++)
+                    block1[i]>>=3;
+            }
         break;
         case 1:{
             int num= (random()%10)+1;
@@ -153,14 +157,8 @@ void dct_error(const char *name, int is_idct,
 
         if (fdct_func == fdct_ifast) {
             for(i=0; i<64; i++) {
-                scale = (1 << (AANSCALE_BITS + 11)) / aanscales[i];
+                scale = 8*(1 << (AANSCALE_BITS + 11)) / aanscales[i];
                 block[i] = (block[i] * scale /*+ (1<<(AANSCALE_BITS-1))*/) >> AANSCALE_BITS;
-            }
-        }
-
-        if (fdct_func == ff_jpeg_fdct_islow) {
-            for(i=0; i<64; i++) {
-                block[i] = (block[i]+3)>>3;
             }
         }
 
@@ -212,8 +210,12 @@ void dct_error(const char *name, int is_idct,
     case 0: 
         for(i=0;i<64;i++)
             block1[i] = (random() % 512) -256;
-        if (is_idct)
+        if (is_idct){
             fdct(block1);
+
+            for(i=0;i<64;i++)
+                block1[i]>>=3;
+        }
     break;
     case 1:{
     case 2:

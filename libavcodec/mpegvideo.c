@@ -90,7 +90,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
                 /* 3444240       >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= 275 */
                 
-                qmat[qscale][j] = (int)((UINT64_C(1) << (QMAT_SHIFT-3)) / 
+                qmat[qscale][j] = (int)((UINT64_C(1) << QMAT_SHIFT) / 
                                 (qscale * quant_matrix[j]));
             }
         } else if (s->fdct == fdct_ifast) {
@@ -101,7 +101,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
                 /* 3444240       >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= 275 */
                 
-                qmat[qscale][j] = (int)((UINT64_C(1) << (QMAT_SHIFT + 11)) / 
+                qmat[qscale][j] = (int)((UINT64_C(1) << (QMAT_SHIFT + 14)) / 
                                 (aanscales[i] * qscale * quant_matrix[j]));
             }
         } else {
@@ -115,7 +115,6 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
                 qmat16[qscale][i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[block_permute_op(i)]);
 
                 if(qmat16[qscale][i]==0 || qmat16[qscale][i]==128*256) qmat16[qscale][i]=128*256-1;
-
                 qmat16_bias[qscale][i]= ROUNDED_DIV(bias<<(16-QUANT_BIAS_SHIFT), qmat16[qscale][i]);
             }
         }
@@ -2487,15 +2486,15 @@ static int dct_quantize_c(MpegEncContext *s,
         i = 1;
         last_non_zero = 0;
         qmat = s->q_intra_matrix[qscale];
-        bias= s->intra_quant_bias<<(QMAT_SHIFT - 3 - QUANT_BIAS_SHIFT);
+        bias= s->intra_quant_bias<<(QMAT_SHIFT - QUANT_BIAS_SHIFT);
     } else {
         i = 0;
         last_non_zero = -1;
         qmat = s->q_inter_matrix[qscale];
-        bias= s->inter_quant_bias<<(QMAT_SHIFT - 3 - QUANT_BIAS_SHIFT);
+        bias= s->inter_quant_bias<<(QMAT_SHIFT - QUANT_BIAS_SHIFT);
     }
-    threshold1= (1<<(QMAT_SHIFT - 3)) - bias - 1;
-    threshold2= threshold1<<1;
+    threshold1= (1<<QMAT_SHIFT) - bias - 1;
+    threshold2= (threshold1<<1);
 
     for(;i<64;i++) {
         j = zigzag_direct[i];
@@ -2506,10 +2505,10 @@ static int dct_quantize_c(MpegEncContext *s,
 //           || bias-level >= (1<<(QMAT_SHIFT - 3))){
         if(((unsigned)(level+threshold1))>threshold2){
             if(level>0){
-                level= (bias + level)>>(QMAT_SHIFT - 3);
+                level= (bias + level)>>QMAT_SHIFT;
                 block[j]= level;
             }else{
-                level= (bias - level)>>(QMAT_SHIFT - 3);
+                level= (bias - level)>>QMAT_SHIFT;
                 block[j]= -level;
             }
             max |=level;
