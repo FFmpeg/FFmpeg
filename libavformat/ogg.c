@@ -30,8 +30,9 @@ typedef struct OggContext {
 } OggContext ;
 
 
-static int ogg_write_header(AVFormatContext *avfcontext) {
-    OggContext *context ;
+static int ogg_write_header(AVFormatContext *avfcontext) 
+{
+    OggContext *context = avfcontext->priv_data;
     AVCodecContext *avccontext ;
     vorbis_info vi ;
     vorbis_dsp_state vd ;
@@ -39,10 +40,6 @@ static int ogg_write_header(AVFormatContext *avfcontext) {
     vorbis_block vb ;
     ogg_packet header, header_comm, header_code ; 
     int n ;
-    
-    if(!(context = malloc(sizeof(OggContext))))
-	return -1 ;
-    avfcontext->priv_data = context ;
     
     srand(time(NULL));
     ogg_stream_init(&context->os, rand());
@@ -190,17 +187,11 @@ static int next_packet(AVFormatContext *avfcontext, ogg_packet *op) {
 
 static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
 {
-    OggContext *context ;
+    OggContext *context = avfcontext->priv_data;
     char *buf ;
     ogg_page og ;
     AVStream *ast ;
     
-    if(!(context = malloc(sizeof(OggContext)))) {
-	perror("malloc") ;
-	return -1 ;
-    }
-    avfcontext->priv_data = context ;
-
     ogg_sync_init(&context->oy) ;
     buf = ogg_sync_buffer(&context->oy, DECODER_BUFFER_SIZE) ;
 
