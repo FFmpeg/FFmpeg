@@ -26,8 +26,12 @@
 #ifdef __BEOS__
 #  ifndef usleep
 #    include <OS.h>
-#    define usleep(t)    snooze((bigtime_t)(t))
+#    define usleep(t)  snooze((bigtime_t)(t))
 #  endif
+#endif
+#if defined(CONFIG_OS2)
+#  include <stdlib.h>
+#  define usleep(t)    _sleep2((t) / 1000)
 #endif
 
 typedef struct {

@@ -48,14 +48,16 @@ ifeq ($(CONFIG_VORBIS),yes)
 OBJS+= ogg.o
 endif
 
-LIB= libavformat.a
+LIB= $(LIBPREF)avformat$(LIBSUF)
 
 all: $(LIB)
 
 $(LIB): $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS)
+ifneq ($(CONFIG_OS2),yes)
 	$(RANLIB) $@
+endif
 
 installlib: all
 	install -m 644 $(LIB) $(prefix)/lib
@@ -73,4 +75,4 @@ installlib: all
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $< 
 
 clean: 
-	rm -f *.o *~ *.a 
+	rm -f *.o *~ *.a $(LIB)

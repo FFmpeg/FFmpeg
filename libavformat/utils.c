@@ -18,14 +18,18 @@
  */
 #include "avformat.h"
 #include <ctype.h>
-#ifndef CONFIG_WIN32
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/time.h>
-#else
+#ifdef CONFIG_WIN32
 #define strcasecmp _stricmp
 #include <sys/types.h>
 #include <sys/timeb.h>
+#elif defined(CONFIG_OS2)
+#include <string.h>
+#define strcasecmp stricmp
+#include <sys/time.h>
+#else
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/time.h>
 #endif
 #include <time.h>
 
@@ -362,7 +366,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     }
         
     /* XXX: suppress this hack for redirectors */
-#ifndef __MINGW32__
+#ifdef CONFIG_NETWORK
     if (fmt == &redir_demux) {
         err = redir_open(ic_ptr, &ic->pb);
         url_fclose(&ic->pb);

@@ -18,10 +18,15 @@ ifeq ($(CONFIG_WIN32),yes)
 EXE=.exe
 PROG=ffmpeg$(EXE)
 else
-EXT=
+ifeq ($(CONFIG_OS2),yes)
+EXE=.exe
+PROG=ffmpeg$(EXE)
+else
+EXE=
 PROG=ffmpeg ffplay
 ifeq ($(CONFIG_FFSERVER),yes)
 PROG+=ffserver
+endif
 endif
 endif
 
@@ -30,9 +35,9 @@ EXTRALIBS+=-lmedia -lbe
 endif
 
 ifeq ($(BUILD_SHARED),yes)
-DEP_LIBS=libavcodec/libavcodec.so libavformat/libavformat.a
+DEP_LIBS=libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF)
 else
-DEP_LIBS=libavcodec/libavcodec.a libavformat/libavformat.a
+DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF)
 ifeq ($(CONFIG_MP3LAME),yes)
 EXTRALIBS+=-lmp3lame
 endif
@@ -61,7 +66,8 @@ ffmpeg_g$(EXE): ffmpeg.o $(DEP_LIBS)
               -lavformat -lavcodec $(EXTRALIBS)
 
 ffmpeg$(EXE): ffmpeg_g$(EXE)
-	cp -p $< $@ ; $(STRIP) $@
+	cp -p $< $@
+	$(STRIP) $@
 
 ffserver$(EXE): ffserver.o $(DEP_LIBS)
 	$(CC) $(LDFLAGS) $(FFSLDFLAGS) \

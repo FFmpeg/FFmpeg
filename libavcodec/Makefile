@@ -91,9 +91,9 @@ endif
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
 
-LIB= libavcodec.a
+LIB= $(LIBPREF)avcodec$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
-SLIB= libavcodec.so
+SLIB= $(SLIBPREF)avcodec$(SLIBSUF)
 endif
 TESTS= imgresample-test dct-test motion-test fft-test
 
@@ -104,7 +104,9 @@ tests: apiexample cpuid_test $(TESTS)
 $(LIB): $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS)
+ifneq ($(CONFIG_OS2),yes)
 	$(RANLIB) $@
+endif
 
 $(SLIB): $(OBJS)
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)

@@ -13,6 +13,7 @@ fi
 
 TMPC="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
 TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
+TMPE="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}"
 TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
@@ -61,6 +62,7 @@ a52bin="no"
 win32="no"
 mingw32="no"
 cygwin="no"
+os2="no"
 lshared="no"
 extralibs="-lm"
 simpleidct="yes"
@@ -75,6 +77,10 @@ need_inet_aton="no"
 ffserver="yes"
 LDFLAGS=-Wl,--warn-common
 FFSLDFLAGS=-Wl,-E
+LIBPREF="lib"
+LIBSUF=".a"
+SLIBPREF="lib"
+SLIBSUF=".so"
 
 # OS specific
 targetos=`uname -s`
@@ -169,6 +175,25 @@ echo "Missing inttypes.h, please copy cygwin_inttypes.h to" \
 Linux)
 LDFLAGS="$LDFLAGS -rdynamic"
 ;;
+OS/2)
+TMPE=$TMPE".exe"
+ar="emxomfar -p32"
+strip="echo ignore strip"
+CFLAGS="-Zomf"
+LDFLAGS="-Zomf -Zstack 16384"
+SHFLAGS=""
+FFSLDFLAGS=""
+LIBPREF=""
+LIBSUF=".lib"
+SLIBPREF=""
+SLIBSUF=".dll"
+extralibs=""
+v4l="no"
+audio_oss="no"
+network="no"
+ffserver="no"
+os2="yes"
+;;
 *) ;;
 esac
 
@@ -190,13 +215,13 @@ EOF
 
 ldl=-ldl
 
-if $cc -o $TMPO $TMPC -ldl 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC -ldl 2> /dev/null  ; then
 vhook=yes
 dlfcn=yes
 dlopen=yes
 fi
 
-if $cc -o $TMPO $TMPC 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC 2> /dev/null  ; then
 vhook=yes
 dlfcn=yes
 dlopen=yes
@@ -207,12 +232,12 @@ cat > $TMPC << EOF
 int main( void ) { return (int) dlopen("foo", 0); }
 EOF
 
-if $cc -o $TMPO $TMPC -ldl 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC -ldl 2> /dev/null  ; then
 vhook=yes
 dlopen=yes
 fi
 
-if $cc -o $TMPO $TMPC 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC 2> /dev/null  ; then
 vhook=yes
 dlopen=yes
 ldl=""
@@ -226,7 +251,7 @@ int main( void ) { return (int) imlib_load_font("foo"); }
 EOF
 
 imlib2=no
-if $cc -o $TMPO $TMPC -lImlib2 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC -lImlib2 2> /dev/null  ; then
 imlib2=yes
 fi
 
@@ -318,7 +343,7 @@ int main(void) {
     return 0;
 }
 EOF
-$cc -o $TMPO $TMPC -faltivec 2> /dev/null || altivec="no"
+$cc -o $TMPE $TMPC -faltivec 2> /dev/null || altivec="no"
 fi
 
 # Can only do mmi on mips
@@ -338,7 +363,7 @@ int main(void) {
     return 0;
 }
 EOF
-$cc -o $TMPO $TMPC 2> /dev/null || mmi="no"
+$cc -o $TMPE $TMPC 2> /dev/null || mmi="no"
 fi
 
 # Checking for CFLAGS
@@ -377,8 +402,8 @@ int main(int argc, char ** argv){
 }
 EOF
 
-if $cc -o $TMPO $TMPC 2>/dev/null ; then
-$TMPO && bigendian="yes"
+if $cc -o $TMPE $TMPC 2>/dev/null ; then
+$TMPE && bigendian="yes"
 else
 echo big/little test failed
 fi
@@ -402,7 +427,7 @@ EOF
 
 _memalign=no
 _malloc_h=no
-if $cc -o $TMPO $TMPC 2> /dev/null ; then
+if $cc -o $TMPE $TMPC 2> /dev/null ; then
 _malloc_h=yes
 _memalign=yes
 # check for memalign - atmos
@@ -414,7 +439,7 @@ string = memalign(64, sizeof(char));
 return 0;
 }
 EOF
-$cc -o $TMPO $TMPC 2> /dev/null || _memalign=no
+$cc -o $TMPE $TMPC 2> /dev/null || _memalign=no
 fi
 
 cat > $TMPC << EOF
@@ -424,7 +449,7 @@ int main( void ) { return *strptime("", "", 0); }
 EOF
 
 strptime=no
-if $cc -o $TMPO $TMPC 2> /dev/null ; then
+if $cc -o $TMPE $TMPC 2> /dev/null ; then
   strptime=yes
 fi
 
@@ -439,8 +464,8 @@ if (zlibVersion() != ZLIB_VERSION)
 return 0;
 }
 EOF
-$cc -o $TMPO $TMPC -lz 2> /dev/null || zlib="no"
-# $TMPO 2> /dev/null > /dev/null || zlib="no"
+$cc -o $TMPE $TMPC -lz 2> /dev/null || zlib="no"
+# $TMPE 2> /dev/null > /dev/null || zlib="no"
 # XXX: more tests needed - runtime test
 fi
 if test "$zlib" = "yes"; then
@@ -455,9 +480,9 @@ int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
 EOF
 
 have_lrintf="no"
-if $cc $extralibs -o $TMPO $TMPC 2> /dev/null ; then
+if $cc $extralibs -o $TMPE $TMPC 2> /dev/null ; then
   have_lrintf="yes"
-  $TMPO 2> /dev/null > /dev/null || have_lrintf="no"
+  $TMPE 2> /dev/null > /dev/null || have_lrintf="no"
 fi
 
 _restrict=
@@ -577,6 +602,10 @@ echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "FFSLDFLAGS=$FFSLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
+echo "LIBPREF=$LIBPREF" >> config.mak
+echo "LIBSUF=$LIBSUF" >> config.mak
+echo "SLIBPREF=$SLIBPREF" >> config.mak
+echo "SLIBSUF=$SLIBSUF" >> config.mak
 if test "$cpu" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH
@@ -728,6 +757,11 @@ if test "$cygwin" = "yes" ; then
   echo "CONFIG_WIN32=yes" >> config.mak
 fi
 
+if test "$os2" = "yes" ; then
+  echo "#define CONFIG_OS2 1" >> $TMPH
+  echo "CONFIG_OS2=yes" >> config.mak
+fi
+
 if test "$darwin" = "yes"; then
   echo "#define CONFIG_DARWIN 1"  >> $TMPH
   echo "CONFIG_DARWIN=yes" >> config.mak
@@ -786,4 +820,4 @@ else
 	echo "config.h is unchanged"
 fi
 
-rm -f $TMPO $TMPC $TMPS $TMPH
+rm -f $TMPO $TMPC $TMPE $TMPS $TMPH

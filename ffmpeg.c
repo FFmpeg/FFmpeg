@@ -28,6 +28,11 @@
 #include <termios.h>
 #include <sys/resource.h>
 #endif
+#ifdef CONFIG_OS2
+#include <sys/types.h>
+#include <sys/select.h>
+#include <stdlib.h>
+#endif
 #include <time.h>
 #include <ctype.h>
 
@@ -2497,18 +2502,18 @@ void opt_pass(const char *pass_str)
     do_pass = pass;
 }
 
-#ifndef CONFIG_WIN32
+#if defined(CONFIG_WIN32) || defined(CONFIG_OS2)
+INT64 getutime(void)
+{
+  return av_gettime();
+}
+#else
 INT64 getutime(void)
 {
     struct rusage rusage;
 
     getrusage(RUSAGE_SELF, &rusage);
     return (rusage.ru_utime.tv_sec * 1000000LL) + rusage.ru_utime.tv_usec;
-}
-#else
-INT64 getutime(void)
-{
-  return av_gettime();
 }
 #endif
 
