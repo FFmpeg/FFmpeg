@@ -24,6 +24,8 @@
 #ifndef A52_H
 #define A52_H
 
+#include "../avcodec.h"
+
 #ifndef LIBA52_DOUBLE
 typedef float sample_t;
 #else

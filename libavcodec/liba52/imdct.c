@@ -24,18 +24,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "config.h"
-
-#include <math.h>
-#include <stdio.h>
-#ifdef LIBA52_DJBFFT
-#include <fftc4.h>
-#endif
-#ifndef M_PI
-#define M_PI 3.1415926535897932384626433832795029
-#endif
-#include <inttypes.h>
-
 #include "a52.h"
 #include "a52_internal.h"
 #include "mm_accel.h"
