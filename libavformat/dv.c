@@ -377,9 +377,9 @@ static void dv_format_frame(DVMuxContext *c, uint8_t* buf)
        /* DV Audio/Video: 135 Video DIFs + 9 Audio DIFs */
        for (j = 0; j < 135; j++) {
             if (j%15 == 0) {
+	        memset(buf, 0xff, 80);
 	        buf += dv_write_dif_id(dv_sect_audio, i, j/15, buf);
-	        buf += dv_write_pack(dv_aaux_packs_dist[i][j/15], c, buf);
-		buf += 72; /* shuffled PCM audio */
+                buf += 77; /* audio control & shuffled PCM audio */
 	    }
 	    buf += dv_write_dif_id(dv_sect_video, i, j, buf);
 	    buf += 77; /* 1 video macro block: 1 bytes control
@@ -397,6 +397,7 @@ static void dv_inject_audio(DVMuxContext *c, const uint8_t* pcm, uint8_t* frame_
     for (i = 0; i < c->sys->difseg_size; i++) {
        frame_ptr += 6 * 80; /* skip DIF segment header */
        for (j = 0; j < 9; j++) {
+	  dv_write_pack(dv_aaux_packs_dist[i][j], c, &frame_ptr[3]);
           for (d = 8; d < 80; d+=2) {
 	     of = c->sys->audio_shuffle[i][j] + (d - 8)/2 * c->sys->audio_stride;
 	     if (of*2 >= size)
@@ -614,7 +615,9 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
     if (c->has_audio && c->has_video) {  /* must be a stale frame */
         dv_format_frame(c, *frame);
 	c->frames++;
-	c->has_audio = c->has_video = 0;
+	if (c->has_audio > 0)
+	    c->has_audio = 0;
+	c->has_video = 0;
     }
     
     if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
@@ -625,6 +628,8 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
         dv_inject_video(c, data, *frame);
 	c->has_video = 1;
 	data_size = 0;
+	if (c->has_audio < 0)
+	    goto out;
     } 
     
     reqasize = 4 * dv_audio_frame_size(c->sys, c->frames);
@@ -649,56 +654,59 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
 	fifo_write(&c->audio_data, (uint8_t *)data, data_size, &c->audio_data.wptr);
     }
 
+out:
     return (c->has_audio && c->has_video) ? c->sys->frame_size : 0;
 }
 
 DVMuxContext* dv_init_mux(AVFormatContext* s)
 {
     DVMuxContext *c;
-    AVStream *vst;
-    AVStream *ast;
+    AVStream *vst = NULL;
+    AVStream *ast = NULL;
+    int i;
+
+    if (s->nb_streams > 2)
+        return NULL;
 
     c = av_mallocz(sizeof(DVMuxContext));
     if (!c)
         return NULL;
 
-    if (s->nb_streams != 2)
-        goto bail_out;
-
     /* We have to sort out where audio and where video stream is */
-    if (s->streams[0]->codec.codec_type == CODEC_TYPE_VIDEO &&
-        s->streams[1]->codec.codec_type == CODEC_TYPE_AUDIO) {
-       vst = s->streams[0];
-       ast = s->streams[1];
+    for (i=0; i<s->nb_streams; i++) {
+         switch (s->streams[i]->codec.codec_type) {
+	 case CODEC_TYPE_VIDEO:
+	       vst = s->streams[i];
+	       break;
+	 case CODEC_TYPE_AUDIO:
+	       ast = s->streams[i];
+	       break;
+	 default:
+	       goto bail_out;
+	 }
     }
-    else if (s->streams[1]->codec.codec_type == CODEC_TYPE_VIDEO &&
-             s->streams[0]->codec.codec_type == CODEC_TYPE_AUDIO) {
-           vst = s->streams[1];
-           ast = s->streams[0];
-    } else
-        goto bail_out;
-  
+    
     /* Some checks -- DV format is very picky about its incoming streams */
-    if (vst->codec.codec_id != CODEC_ID_DVVIDEO ||
-	ast->codec.codec_id != CODEC_ID_PCM_S16LE)
-       goto bail_out;
-    if (ast->codec.sample_rate != 48000 ||
-	ast->codec.channels != 2)
-       goto bail_out;
-
+    if (!vst || vst->codec.codec_id != CODEC_ID_DVVIDEO)
+        goto bail_out;
+    if (ast  && (ast->codec.codec_id != CODEC_ID_PCM_S16LE ||
+	         ast->codec.sample_rate != 48000 ||
+	         ast->codec.channels != 2))
+	goto bail_out;
     c->sys = dv_codec_profile(&vst->codec);
     if (!c->sys)
 	goto bail_out;
     
     /* Ok, everything seems to be in working order */
     c->frames = 0;
-    c->has_audio = c->has_video = 0;
+    c->has_audio = ast ? 0 : -1;
+    c->has_video = 0;
     c->start_time = (time_t)s->timestamp;
     c->aspect = 0; /* 4:3 is the default */
     if ((int)(av_q2d(vst->codec.sample_aspect_ratio) * vst->codec.width / vst->codec.height * 10) == 17) /* 16:9 */ 
         c->aspect = 0x07;
 
-    if (fifo_init(&c->audio_data, 100*AVCODEC_MAX_AUDIO_FRAME_SIZE) < 0)
+    if (ast && fifo_init(&c->audio_data, 100*AVCODEC_MAX_AUDIO_FRAME_SIZE) < 0)
         goto bail_out;
 
     dv_format_frame(c, &c->frame_buf[0]);
