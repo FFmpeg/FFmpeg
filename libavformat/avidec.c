@@ -532,7 +532,11 @@ resync:
           st = s->streams[n];
           ast = st->priv_data;
           
-          if(st->discard){
+          if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
+             /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & PKT_FLAG_KEY))*/ //FIXME needs a little reordering
+             || st->discard >= AVDISCARD_ALL){
+                if(ast->sample_size) ast->frame_offset += pkt->size;
+                else                 ast->frame_offset++;
                 url_fskip(pb, size);
                 goto resync;
           }
@@ -554,7 +558,6 @@ resync:
             ast->packet_size= size + 8;
             ast->remaining= size;
             goto resync;
-
           }
         }
         /* palette changed chunk */

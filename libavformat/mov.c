@@ -1855,7 +1855,7 @@ again:
     }
 
 //av_log(NULL, AV_LOG_DEBUG, "chunk: [%i] %lli -> %lli\n", st_id, mov->next_chunk_offset, offset);
-    if(!sc->is_ff_stream || s->streams[sc->ffindex]->discard) {
+    if(!sc->is_ff_stream || (s->streams[sc->ffindex]->discard >= AVDISCARD_ALL)) {
         url_fskip(&s->pb, (offset - mov->next_chunk_offset));
         mov->next_chunk_offset = offset;
 	offset = 0x0FFFFFFFFFFFFFFFLL;

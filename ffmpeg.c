@@ -136,6 +136,7 @@ static int video_intra_quant_bias= FF_DEFAULT_QUANT_BIAS;
 static int video_inter_quant_bias= FF_DEFAULT_QUANT_BIAS;
 static int me_method = ME_EPZS;
 static int video_disable = 0;
+static int video_discard = 0;
 static int video_codec_id = CODEC_ID_NONE;
 static int video_codec_tag = 0;
 static int same_quality = 0;
@@ -2902,7 +2903,7 @@ static void opt_input_file(const char *filename)
             audio_channels = enc->channels;
             audio_sample_rate = enc->sample_rate;
             if(audio_disable)
-                ic->streams[i]->discard= 1;
+                ic->streams[i]->discard= AVDISCARD_ALL;
             break;
         case CODEC_TYPE_VIDEO:
             frame_height = enc->height;
@@ -2937,7 +2938,9 @@ static void opt_input_file(const char *filename)
 
             enc->rate_emu = rate_emu;
             if(video_disable)
-                ic->streams[i]->discard= 1;
+                ic->streams[i]->discard= AVDISCARD_ALL;
+            else if(video_discard)
+                ic->streams[i]->discard= video_discard;
             break;
         case CODEC_TYPE_DATA:
             break;
@@ -3947,6 +3950,7 @@ const OptionDef options[] = {
     { "g", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_gop_size}, "set the group of picture size", "gop_size" },
     { "intra", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_only}, "use only intra frames"},
     { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
+    { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
     { "qmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qmin}, "min video quantiser scale (VBR)", "q" },
     { "qmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qmax}, "max video quantiser scale (VBR)", "q" },

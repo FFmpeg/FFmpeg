@@ -1222,14 +1222,18 @@ av_log(s, AV_LOG_DEBUG, "fs:%lld fc:%d ft:%d kf:%d pts:%lld size:%d mul:%d lsb:%
 static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code, int frame_type, int64_t frame_start){
     AVFormatContext *s= nut->avf;
     ByteIOContext *bc = &s->pb;
-    int size, stream_id, key_frame;
-    int64_t pts;
+    int size, stream_id, key_frame, discard;
+    int64_t pts, last_IP_pts;
     
     size= decode_frame_header(nut, &key_frame, &pts, &stream_id, frame_code, frame_type, frame_start);
     if(size < 0)
         return -1;
 
-    if(s->streams[ stream_id ]->discard){
+    discard= s->streams[ stream_id ]->discard;
+    last_IP_pts= s->streams[ stream_id ]->last_IP_pts;
+    if(  (discard >= AVDISCARD_NONKEY && !key_frame)
+       ||(discard >= AVDISCARD_BIDIR && last_IP_pts != AV_NOPTS_VALUE && last_IP_pts > pts)
+       || discard >= AVDISCARD_ALL){
         url_fskip(bc, size);
         return 1;
     }

@@ -1541,7 +1541,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     if (codec_id != CODEC_ID_PCM_S16BE)
         st->need_parsing = 1;
  found:
-    if(st->discard)
+    if(st->discard >= AVDISCARD_ALL)
         goto skip;
     if (startcode >= 0xa0 && startcode <= 0xbf) {
         int b1, freq;

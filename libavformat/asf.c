@@ -545,7 +545,10 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    asf->packet_size_left -= rsize;
 	    //printf("___objsize____  %d   %d    rs:%d\n", asf->packet_obj_size, asf->packet_frag_offset, rsize);
 
-	    if (asf->stream_index < 0 || s->streams[asf->stream_index]->discard) {
+	    if (asf->stream_index < 0
+                || s->streams[asf->stream_index]->discard >= AVDISCARD_ALL
+                || (!asf->packet_key_frame && s->streams[asf->stream_index]->discard >= AVDISCARD_NONKEY)
+                ) {
                 asf->packet_time_start = 0;
 		/* unhandled packet (should not happen) */
 		url_fskip(pb, asf->packet_frag_size);

@@ -2420,7 +2420,7 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                     av_free(origdata);
                     break;
                 }
-                if(matroska->ctx->streams[ matroska->tracks[track]->stream_index ]->discard){
+                if(matroska->ctx->streams[ matroska->tracks[track]->stream_index ]->discard >= AVDISCARD_ALL){
                     av_free(origdata);
                     break;                
                 }

@@ -105,7 +105,11 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         st->codec.frame_rate_base= 1;
         st->codec.frame_rate= 1000;
     }
-    if(st->discard){
+//    av_log(NULL, AV_LOG_DEBUG, "%d %X %d \n", is_audio, flags, st->discard);
+    if(  (st->discard >= AVDISCARD_NONKEY && !((flags >> 4)==1 ||  is_audio))
+       ||(st->discard >= AVDISCARD_BIDIR  &&  ((flags >> 4)==3 && !is_audio))
+       || st->discard >= AVDISCARD_ALL
+       ){
         url_fskip(&s->pb, size);
         continue;
     }
@@ -158,7 +162,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pts = pts;
     pkt->stream_index = st->index;
     
-    if (!is_audio && ((flags >> 4)==1))
+    if (is_audio || ((flags >> 4)==1))
 	pkt->flags |= PKT_FLAG_KEY;
     
     return ret;

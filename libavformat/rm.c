@@ -854,7 +854,8 @@ resync:
             rm->remaining_len-= len;
         }
 
-        if(st->discard){
+        if(  (st->discard >= AVDISCARD_NONKEY && !(flags&2))
+           || st->discard >= AVDISCARD_ALL){
             url_fskip(pb, len);
             goto resync;
         }
