@@ -943,7 +943,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     stream->start_dts = new_start_dts;
     stream->nb_frames++;
     if (stream->frame_start_offset == 0)
-        stream->frame_start_offset = stream->buffer_ptr;
+        stream->frame_start_offset = stream->buffer_ptr + 1;
     while (size > 0) {
         avail_size = get_packet_payload_size(ctx, stream_index,
                                              stream->start_pts, 
