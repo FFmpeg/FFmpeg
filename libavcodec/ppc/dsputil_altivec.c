@@ -1,7 +1,7 @@
 /*
  * Copyright (c) 2002 Brian Foley
  * Copyright (c) 2002 Dieter Shirley
- * Copyright (c) 2003 Romain Dolbeau <romain@dolbeau.org>
+ * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -1300,6 +1300,135 @@ POWERPC_PERF_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
    
 POWERPC_PERF_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
+}
+
+int hadamard8_diff8x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, uint8_t *src, int stride, int h){
+POWERPC_PERF_DECLARE(altivec_hadamard8_diff8x8_num, 1);
+  int sum;
+POWERPC_PERF_START_COUNT(altivec_hadamard8_diff8x8_num, 1);
+  {
+    const_vector unsigned char vzero = (const_vector unsigned char)vec_splat_u8(0);
+#ifdef CONFIG_DARWIN
+    const_vector signed short vprod1 = (const_vector signed short)( 1,-1, 1,-1, 1,-1, 1,-1);
+    const_vector signed short vprod2 = (const_vector signed short)( 1, 1,-1,-1, 1, 1,-1,-1);
+    const_vector signed short vprod3 = (const_vector signed short)( 1, 1, 1, 1,-1,-1,-1,-1);
+    const_vector unsigned char perm1 = (const_vector unsigned char)
+      (0x02, 0x03, 0x00, 0x01,
+       0x06, 0x07, 0x04, 0x05,
+       0x0A, 0x0B, 0x08, 0x09,
+       0x0E, 0x0F, 0x0C, 0x0D);
+    const_vector unsigned char perm2 = (const_vector unsigned char)
+      (0x04, 0x05, 0x06, 0x07,
+       0x00, 0x01, 0x02, 0x03,
+       0x0C, 0x0D, 0x0E, 0x0F,
+       0x08, 0x09, 0x0A, 0x0B);
+    const_vector unsigned char perm3 = (const_vector unsigned char)
+      (0x08, 0x09, 0x0A, 0x0B,
+       0x0C, 0x0D, 0x0E, 0x0F,
+       0x00, 0x01, 0x02, 0x03,
+       0x04, 0x05, 0x06, 0x07);
+#else
+    const_vector signed short vprod1 = (const_vector signed short){ 1,-1, 1,-1, 1,-1, 1,-1};
+    const_vector signed short vprod2 = (const_vector signed short){ 1, 1,-1,-1, 1, 1,-1,-1};
+    const_vector signed short vprod3 = (const_vector signed short){ 1, 1, 1, 1,-1,-1,-1,-1};
+    const_vector unsigned char perm1 = (const_vector unsigned char)
+      {0x02, 0x03, 0x00, 0x01,
+       0x06, 0x07, 0x04, 0x05,
+       0x0A, 0x0B, 0x08, 0x09,
+       0x0E, 0x0F, 0x0C, 0x0D};
+    const_vector unsigned char perm2 = (const_vector unsigned char)
+      {0x04, 0x05, 0x06, 0x07,
+       0x00, 0x01, 0x02, 0x03,
+       0x0C, 0x0D, 0x0E, 0x0F,
+       0x08, 0x09, 0x0A, 0x0B};
+    const_vector unsigned char perm3 = (const_vector unsigned char)
+      {0x08, 0x09, 0x0A, 0x0B,
+       0x0C, 0x0D, 0x0E, 0x0F,
+       0x00, 0x01, 0x02, 0x03,
+       0x04, 0x05, 0x06, 0x07};
+#endif
+
+#define ONEITERBUTTERFLY(i, res)					\
+    {									\
+      vector unsigned char src1, src2, srcO;				\
+      vector unsigned char dst1, dst2, dstO;				\
+      src1 = vec_ld(stride * i, src);					\
+      if ((((stride * i) + (unsigned long)src) & 0x0000000F) > 8)	\
+	src2 = vec_ld((stride * i) + 16, src);				\
+      srcO = vec_perm(src1, src2, vec_lvsl(stride * i, src));		\
+      dst1 = vec_ld(stride * i, dst);					\
+      if ((((stride * i) + (unsigned long)dst) & 0x0000000F) > 8)	\
+	dst2 = vec_ld((stride * i) + 16, dst);				\
+      dstO = vec_perm(dst1, dst2, vec_lvsl(stride * i, dst));		\
+      /* promote the unsigned chars to signed shorts */			\
+      /* we're in the 8x8 function, we only care for the first 8 */	\
+      vector signed short srcV =					\
+	(vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)srcO); \
+      vector signed short dstV =					\
+	(vector signed short)vec_mergeh((vector signed char)vzero, (vector signed char)dstO); \
+      /* substractions inside the first butterfly */			\
+      vector signed short but0 = vec_sub(srcV, dstV);			\
+      vector signed short op1 = vec_perm(but0, but0, perm1);		\
+      vector signed short but1 = vec_mladd(but0, vprod1, op1);		\
+      vector signed short op2 = vec_perm(but1, but1, perm2);		\
+      vector signed short but2 = vec_mladd(but1, vprod2, op2);		\
+      vector signed short op3 = vec_perm(but2, but2, perm3);		\
+      res = vec_mladd(but2, vprod3, op3);				\
+    }
+    vector signed short temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
+    ONEITERBUTTERFLY(0, temp0);
+    ONEITERBUTTERFLY(1, temp1);
+    ONEITERBUTTERFLY(2, temp2);
+    ONEITERBUTTERFLY(3, temp3);
+    ONEITERBUTTERFLY(4, temp4);
+    ONEITERBUTTERFLY(5, temp5);
+    ONEITERBUTTERFLY(6, temp6);
+    ONEITERBUTTERFLY(7, temp7);
+#undef ONEITERBUTTERFLY
+    {
+      vector signed int vsum;
+      vector signed short line0 = vec_add(temp0, temp1);
+      vector signed short line1 = vec_sub(temp0, temp1);
+      vector signed short line2 = vec_add(temp2, temp3);
+      vector signed short line3 = vec_sub(temp2, temp3);
+      vector signed short line4 = vec_add(temp4, temp5);
+      vector signed short line5 = vec_sub(temp4, temp5);
+      vector signed short line6 = vec_add(temp6, temp7);
+      vector signed short line7 = vec_sub(temp6, temp7);
+      
+      vector signed short line0B = vec_add(line0, line2);
+      vector signed short line2B = vec_sub(line0, line2);
+      vector signed short line1B = vec_add(line1, line3);
+      vector signed short line3B = vec_sub(line1, line3);
+      vector signed short line4B = vec_add(line4, line6);
+      vector signed short line6B = vec_sub(line4, line6);
+      vector signed short line5B = vec_add(line5, line7);
+      vector signed short line7B = vec_sub(line5, line7);
+      
+      vector signed short line0C = vec_add(line0B, line4B);
+      vector signed short line4C = vec_sub(line0B, line4B);
+      vector signed short line1C = vec_add(line1B, line5B);
+      vector signed short line5C = vec_sub(line1B, line5B);
+      vector signed short line2C = vec_add(line2B, line6B);
+      vector signed short line6C = vec_sub(line2B, line6B);
+      vector signed short line3C = vec_add(line3B, line7B);
+      vector signed short line7C = vec_sub(line3B, line7B);
+      
+      vsum = vec_sum4s(vec_abs(line0C), vec_splat_s32(0));
+      vsum = vec_sum4s(vec_abs(line1C), vsum);
+      vsum = vec_sum4s(vec_abs(line2C), vsum);
+      vsum = vec_sum4s(vec_abs(line3C), vsum);
+      vsum = vec_sum4s(vec_abs(line4C), vsum);
+      vsum = vec_sum4s(vec_abs(line5C), vsum);
+      vsum = vec_sum4s(vec_abs(line6C), vsum);
+      vsum = vec_sum4s(vec_abs(line7C), vsum);
+      vsum = vec_sums(vsum, (vector signed int)vzero);
+      vsum = vec_splat(vsum, 3);
+      vec_ste(vsum, 0, &sum);
+    }
+  }
+POWERPC_PERF_STOP_COUNT(altivec_hadamard8_diff8x8_num, 1);
+  return sum;
 }
 
 int has_altivec(void)

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002 Brian Foley
  * Copyright (c) 2002 Dieter Shirley
+ * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,6 +60,7 @@ static unsigned char* perfname[] = {
   "put_no_rnd_pixels8_xy2_altivec",
   "put_pixels16_xy2_altivec",
   "put_no_rnd_pixels16_xy2_altivec",
+  "hadamard8_diff8x8_altivec",
   "clear_blocks_dcbz32_ppc",
   "clear_blocks_dcbz128_ppc"
 };
@@ -224,6 +226,12 @@ long check_dcbzl_effect(void)
 }
 #endif
 
+#ifdef HAVE_ALTIVEC
+// can't put that in dsputil_altivec.c,
+// has WARPER8_16_SQ declare the function "static" ...
+WARPER8_16_SQ(hadamard8_diff8x8_altivec, hadamard8_diff16_altivec)
+#endif
+
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
     // Common optimizations whether Altivec is available or not
@@ -262,7 +270,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         c->add_bytes= add_bytes_altivec;
 #endif /* 0 */
         c->put_pixels_tab[0][0] = put_pixels16_altivec;
-        /* the tow functions do the same thing, so use the same code */
+        /* the two functions do the same thing, so use the same code */
         c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;
         c->avg_pixels_tab[0][0] = avg_pixels16_altivec;
 // next one disabled as it's untested.
@@ -275,6 +283,9 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_altivec;
         
 	c->gmc1 = gmc1_altivec;
+
+	c->hadamard8_diff[0] = hadamard8_diff16_altivec;
+	c->hadamard8_diff[1] = hadamard8_diff8x8_altivec;
 
 #ifdef CONFIG_ENCODERS
 	if (avctx->dct_algo == FF_DCT_AUTO ||

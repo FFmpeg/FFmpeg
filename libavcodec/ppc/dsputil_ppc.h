@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Romain Dolbeau <romain@dolbeau.org>
+ * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,6 +50,7 @@ enum powerpc_perf_index {
   altivec_put_no_rnd_pixels8_xy2_num,
   altivec_put_pixels16_xy2_num,
   altivec_put_no_rnd_pixels16_xy2_num,
+  altivec_hadamard8_diff8x8_num,
   powerpc_clear_blocks_dcbz32,
   powerpc_clear_blocks_dcbz128,
   powerpc_perf_total

@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2002 Brian Foley
  * Copyright (c) 2002 Dieter Shirley
+ * Copyright (c) 2003-2004 Romain Dolbeau <romain@dolbeau.org>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -45,6 +46,7 @@ extern void put_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int l
 extern void put_no_rnd_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 extern void put_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h);
 extern void put_no_rnd_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h);
+extern int hadamard8_diff8x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, uint8_t *src, int stride, int h);
 
 extern void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h, int x16, int y16, int rounder);
 
