@@ -109,6 +109,15 @@ typedef struct ScanTable{
 #endif
 } ScanTable;
 
+typedef struct ParseContext{
+    UINT8 *buffer;
+    int index;
+    int last_index;
+    int buffer_size;
+    int state;
+    int frame_start_found;
+} ParseContext;
+
 typedef struct MpegEncContext {
     struct AVCodecContext *avctx;
     /* the following parameters must be initialized before encoding */
@@ -351,6 +360,8 @@ typedef struct MpegEncContext {
     int mb_num_left;                 /* number of MBs left in this video packet (for partitioned Slices only)*/
     int next_p_frame_damaged;        /* set if the next p frame is damaged, to avoid showing trashed b frames */
     int error_resilience;
+    
+    ParseContext parse_context;
 
     /* H.263 specific */
     int gob_number;

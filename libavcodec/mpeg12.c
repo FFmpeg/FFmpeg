@@ -1876,7 +1876,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         } else {
             memcpy(s->buf_ptr, buf_start, len);
             s->buf_ptr += len;
-            if(   (s2->flags&CODEC_FLAG_NOT_TRUNCATED) && (!start_code_found) 
+            if(   (!(s2->flags&CODEC_FLAG_TRUNCATED)) && (!start_code_found) 
                && s->buf_ptr+4<s->buffer+s->buffer_size){
                 start_code_found= 1;
                 code= 0x1FF;
@@ -1971,5 +1971,5 @@ AVCodec mpeg_decoder = {
     NULL,
     mpeg_decode_end,
     mpeg_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
 };

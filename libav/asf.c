@@ -1224,7 +1224,7 @@ AVOutputFormat asf_oformat = {
 #else
     CODEC_ID_MP2,
 #endif
-    CODEC_ID_MSMPEG4,
+    CODEC_ID_MSMPEG4V3,
     asf_write_header,
     asf_write_packet,
     asf_write_trailer,
@@ -1241,7 +1241,7 @@ AVOutputFormat asf_stream_oformat = {
 #else
     CODEC_ID_MP2,
 #endif
-    CODEC_ID_MSMPEG4,
+    CODEC_ID_MSMPEG4V3,
     asf_write_stream_header,
     asf_write_packet,
     asf_write_trailer,

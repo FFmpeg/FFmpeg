@@ -1854,6 +1854,11 @@ void opt_input_file(const char *filename)
             enc->error_resilience = error_resilience; 
             enc->error_concealment = error_concealment; 
             enc->idct_algo= idct_algo;
+/*            if(enc->codec->capabilities & CODEC_CAP_TRUNCATED)
+                enc->flags|= CODEC_FLAG_TRUNCATED; */
+            if(/*enc->codec_id==CODEC_ID_MPEG4 || */enc->codec_id==CODEC_ID_MPEG1VIDEO)
+                enc->flags|= CODEC_FLAG_TRUNCATED;
+
             if (enc->frame_rate != rfps) {
                 fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
                     i, (float)enc->frame_rate / FRAME_RATE_BASE,

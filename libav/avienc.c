@@ -418,7 +418,7 @@ static AVOutputFormat avi_oformat = {
     "avi",
     sizeof(AVIContext),
     CODEC_ID_MP2,
-    CODEC_ID_MSMPEG4,
+    CODEC_ID_MSMPEG4V3,
     avi_write_header,
     avi_write_packet,
     avi_write_trailer,

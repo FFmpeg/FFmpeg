@@ -536,6 +536,9 @@ int av_find_stream_info(AVFormatContext *ic)
                 st->codec_info_state = CSTATE_FOUND; 
                 codec = avcodec_find_decoder(st->codec.codec_id);
                 if (codec) {
+                    if(codec->capabilities & CODEC_CAP_TRUNCATED)
+                        st->codec.flags |= CODEC_FLAG_TRUNCATED;
+
                     ret = avcodec_open(&st->codec, codec);
                     if (ret >= 0)
                         st->codec_info_state = CSTATE_DECODING;

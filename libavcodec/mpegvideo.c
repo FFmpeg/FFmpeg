@@ -445,6 +445,8 @@ int MPV_common_init(MpegEncContext *s)
     
     s->block= s->blocks[0];
 
+    s->parse_context.state= -1;
+
     s->context_initialized = 1;
     return 0;
  fail:

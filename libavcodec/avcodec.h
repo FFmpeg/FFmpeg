@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4634
-#define LIBAVCODEC_BUILD_STR   "4634"
+#define LIBAVCODEC_BUILD       4635
+#define LIBAVCODEC_BUILD_STR   "4635"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -50,7 +50,6 @@ enum CodecID {
     CODEC_ID_ADPCM_IMA_WAV,
     CODEC_ID_ADPCM_MS,
 };
-#define CODEC_ID_MSMPEG4 CODEC_ID_MSMPEG4V3
 
 enum CodecType {
     CODEC_TYPE_UNKNOWN = -1,
@@ -79,6 +78,12 @@ enum SampleFormat {
 
 /* in bytes */
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 131072
+
+/**
+ * Required number of zero bytes at the end of the input bitstream for decoding.
+ * to avoid overreading (and possibly segfaulting)
+ */
+#define FF_INPUT_BUFFER_PADDING_SIZE 8
 
 /* motion estimation type, EPZS by default */
 enum Motion_Est_ID {
@@ -128,8 +133,8 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_GRAY  0x2000   /* only decode/encode grayscale */
 #define CODEC_FLAG_EMU_EDGE 0x4000/* dont draw edges */
 #define CODEC_FLAG_DR1    0x8000  /* direct renderig type 1 (store internal frames in external buffers) */
-#define CODEC_FLAG_NOT_TRUNCATED  0x00010000 /* input bitstream is not truncated, except before a startcode 
-                                                allows the last part of a frame to be decoded earlier */
+#define CODEC_FLAG_TRUNCATED  0x00010000 /* input bitstream might be truncated at a random location instead 
+                                            of only at frame boundaries */
 #define CODEC_FLAG_NORMALIZE_AQP  0x00020000 /* normalize adaptive quantization */
 #define CODEC_FLAG_INTERLACED_DCT 0x00040000 /* use interlaced dct */
 #define CODEC_FLAG_LOW_DELAY      0x00080000 /* force low delay / will fail on b frames */
@@ -141,6 +146,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 /* if 'parse_only' field is true, then avcodec_parse_frame() can be
    used */
 #define CODEC_CAP_PARSE_ONLY      0x0004
+#define CODEC_CAP_TRUNCATED       0x0008
 
 #define FRAME_RATE_BASE 10000
 
@@ -770,10 +776,13 @@ typedef struct AVCodec {
     struct AVCodec *next;
 } AVCodec;
 
-/* three components are given, that's all */
+/** 
+ * four components are given, that's all.
+ * the last component is alpha
+ */
 typedef struct AVPicture {
-    UINT8 *data[3];
-    int linesize[3];
+    UINT8 *data[4];
+    int linesize[4];
 } AVPicture;
 
 extern AVCodec ac3_encoder;
@@ -924,13 +933,6 @@ int avcodec_close(AVCodecContext *avctx);
 void avcodec_register_all(void);
 
 void avcodec_flush_buffers(AVCodecContext *avctx);
-
-// deprecated / obsolete stuff, WILL be removed
-#ifndef MBC
-#define MBC 128
-#define MBR 96
-#endif
-#define QP_TYPE int
 
 /**
  * Interface for 0.5.0 version

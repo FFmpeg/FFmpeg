@@ -125,9 +125,14 @@ static int h263_decode_end(AVCodecContext *avctx)
  */
 static int get_consumed_bytes(MpegEncContext *s, int buf_size){
     int pos= (get_bits_count(&s->gb)+7)>>3;
+    
     if(s->divx_version>=500){
         //we would have to scan through the whole buf to handle the weird reordering ...
         return buf_size; 
+    }else if(s->flags&CODEC_FLAG_TRUNCATED){
+        pos -= s->parse_context.last_index;
+        if(pos<0) pos=0; // padding is not really read so this might be -1
+        return pos;
     }else{
         if(pos==0) pos=1; //avoid infinite loops (i doubt thats needed but ...)
         if(pos+10>buf_size) pos=buf_size; // oops ;)
@@ -299,6 +304,43 @@ static int decode_slice(MpegEncContext *s){
     return -1;
 }
 
+/**
+ * finds the end of the current frame in the bitstream.
+ * @return the position of the first byte of the next frame, or -1
+ */
+static int mpeg4_find_frame_end(MpegEncContext *s, UINT8 *buf, int buf_size){
+    ParseContext *pc= &s->parse_context;
+    int vop_found, i;
+    uint32_t state;
+    
+    vop_found= pc->frame_start_found;
+    state= pc->state;
+    
+    i=0;
+    if(!vop_found){
+        for(i=0; i<buf_size; i++){
+            state= (state<<8) | buf[i];
+            if(state == 0x1B6){
+                i++;
+                vop_found=1;
+                break;
+            }
+        }
+    }
+    
+    for(; i<buf_size; i++){
+        state= (state<<8) | buf[i];
+        if((state&0xFFFFFF00) == 0x100){
+            pc->frame_start_found=0;
+            pc->state=-1; 
+            return i-3;
+        }
+    }
+    pc->frame_start_found= vop_found;
+    pc->state= state;
+    return -1;
+}
+
 static int h263_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
                              UINT8 *buf, int buf_size)
@@ -324,6 +366,42 @@ uint64_t time= rdtsc();
    /* no supplementary picture */
     if (buf_size == 0) {
         return 0;
+    }
+    
+    if(s->flags&CODEC_FLAG_TRUNCATED){
+        int next;
+        ParseContext *pc= &s->parse_context;
+        
+        pc->last_index= pc->index;
+
+        if(s->codec_id==CODEC_ID_MPEG4){
+            next= mpeg4_find_frame_end(s, buf, buf_size);
+        }else{
+            fprintf(stderr, "this codec doesnt support truncated bitstreams\n");
+            return -1;
+        }
+        if(next==-1){
+            if(buf_size + FF_INPUT_BUFFER_PADDING_SIZE + pc->index > pc->buffer_size){
+                pc->buffer_size= buf_size + pc->index + 10*1024;
+                pc->buffer= realloc(pc->buffer, pc->buffer_size);
+            }
+
+            memcpy(&pc->buffer[pc->index], buf, buf_size);
+            pc->index += buf_size;
+            return buf_size;
+        }
+
+        if(pc->index){
+            if(next + FF_INPUT_BUFFER_PADDING_SIZE + pc->index > pc->buffer_size){
+                pc->buffer_size= next + pc->index + 10*1024;
+                pc->buffer= realloc(pc->buffer, pc->buffer_size);
+            }
+
+            memcpy(&pc->buffer[pc->index], buf, next + FF_INPUT_BUFFER_PADDING_SIZE );
+            pc->index = 0;
+            buf= pc->buffer;
+            buf_size= pc->last_index + next;
+        }
     }
 
 retry:
@@ -627,7 +705,7 @@ AVCodec mpeg4_decoder = {
     NULL,
     h263_decode_end,
     h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
 };
 
 AVCodec h263_decoder = {
