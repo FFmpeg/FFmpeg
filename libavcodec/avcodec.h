@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4641
-#define LIBAVCODEC_BUILD_STR   "4641"
+#define LIBAVCODEC_BUILD       4642
+#define LIBAVCODEC_BUILD_STR   "4642"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -812,6 +812,20 @@ typedef struct AVCodecContext {
      * decoding: set by lavc
      */
     AVVideoFrame *coded_picture;
+
+    /**
+     * debug 
+     * encoding: set by user.
+     * decoding: set by user.
+     */
+    int debug;
+#define FF_DEBUG_PICT_INFO 1
+#define FF_DEBUG_RC        2
+#define FF_DEBUG_BITSTREAM 4
+#define FF_DEBUG_MB_TYPE   8
+#define FF_DEBUG_QP        16
+#define FF_DEBUG_MV        32
+#define FF_DEBUG_VIS_MV    64
 } AVCodecContext;
 
 typedef struct AVCodec {
