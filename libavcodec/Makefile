@@ -37,7 +37,7 @@ LIB= libavcodec.a
 TESTS= imgresample-test dct-test
 
 all: $(LIB)
-tests: apiexample $(TESTS)
+tests: apiexample cpuid_test $(TESTS)
 
 $(LIB): $(OBJS) $(ASM_OBJS)
 	rm -f $@
@@ -69,6 +69,10 @@ distclean: clean
 # api example program
 apiexample: apiexample.c $(LIB)
 	$(CC) $(CFLAGS) -o $@ $< $(LIB) -lm
+
+# cpuid test
+cpuid_test: i386/cputest.c
+	$(CC) $(CFLAGS) -D__TEST__ -o $@ $<
 
 # testing progs
 

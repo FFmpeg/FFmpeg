@@ -6,13 +6,13 @@
 
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index,eax,ebx,ecx,edx)\
-    asm ("movl %%ebx, %%esi\n\t"\
+    __asm __volatile\
+	("movl %%ebx, %%esi\n\t"\
          "cpuid\n\t"\
          "xchgl %%ebx, %%esi"\
          : "=a" (eax), "=S" (ebx),\
            "=c" (ecx), "=d" (edx)\
-         : "0" (index)\
-         : "cc")\
+         : "0" (index));
 
 /* Function to test if multimedia instructions are supported...  */
 int mm_support(void)
@@ -102,3 +102,13 @@ int mm_support(void)
         return 0;
     }
 }
+
+#ifdef __TEST__
+int main ( void )
+{
+  int mm_flags;
+  mm_flags = mm_support();
+  printf("mm_support = 0x%08u\n",mm_flags);
+  return 0;
+}
+#endif
