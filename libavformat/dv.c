@@ -821,10 +821,19 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
                            
 int64_t dv_frame_offset(DVDemuxContext *c, int64_t timestamp)
 {
-    const DVprofile* sys = dv_codec_profile(&c->vst->codec);
+    const DVprofile* sys;
+    
+    // FIXME: sys may be wrong if last dv_read_packet() failed (buffer is junk)
+    sys = dv_codec_profile(&c->vst->codec);
 
-    return sys->frame_size * ((timestamp * sys->frame_rate) / 
-	                      (AV_TIME_BASE * sys->frame_rate_base));
+    // timestamp was scaled by time_base/AV_BASE_RATE by av_seek_frame()
+    int64_t frame_number = av_rescale(sys->frame_rate, timestamp, 
+				      (int64_t) 30000 * sys->frame_rate_base);
+
+    // offset must be a multiple of frame_size else dv_read_packet() will fail
+    int64_t offset = (int64_t) sys->frame_size * frame_number;
+
+    return offset;
 }
 
 /************************************************************
