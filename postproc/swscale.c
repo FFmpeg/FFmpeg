@@ -11,14 +11,13 @@
 //#undef HAVE_MMX
 //#undef ARCH_X86
 #define DITHER16BPP
-#define ALT_ERROR
+//#define ALT_ERROR
 
 #define RET 0xC3 //near return opcode
 /*
 NOTES
 
 known BUGS with known cause (no bugreports please!)
-line at the right (c,asm and mmx2)
 code reads 1 sample too much (might cause a sig11)
 
 TODO
@@ -97,24 +96,23 @@ static int static_dstw;
 static int old_dstw= -1;
 static int old_s_xinc= -1;
 
-// difference between the requested xinc and the required one for the mmx2 routine
-static int s_xinc_diff=0;
-static int s_xinc2_diff=0;
 #endif
-int canMMX2BeUsed;
-
-// we need that precission at least for the mmx2 code
-//s_xinc*= 256;
-s_xinc2=s_xinc>>1;
-canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
+int canMMX2BeUsed=0;
+static int test=0;
+int srcWidth= (dstw*s_xinc + 0x8000)>>16;
 
 #ifdef HAVE_MMX2
-	if(canMMX2BeUsed)
-	{
-		s_xinc+= s_xinc_diff;
-		s_xinc2+= s_xinc2_diff;
-	}
+canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0 && (srcWidth&15)==0) ? 1 : 0;
 #endif
+
+// match pixel 0 of the src to pixel 0 of dst and match pixel n-2 of src to pixel n-2 of dst
+// n-2 is the last chrominance sample available
+// FIXME this is not perfect, but noone shuld notice the difference, the more correct variant
+// would be like the vertical one, but that would require some special code for the
+// first and last pixel
+if(canMMX2BeUsed) 	s_xinc+= 20;
+else			s_xinc = ((srcWidth-2)<<16)/(dstw-2) - 20;
+s_xinc2=s_xinc>>1;
 
   // force calculation of the horizontal interpolation of the first line
   s_last_ypos=-99;
@@ -185,21 +183,21 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
 			 "=r" (fragmentLength)
 		);
 
-		xpos= xx=xalpha= 0;
+		xpos= 0; //s_xinc/2 - 0x8000; // difference between pixel centers
 
 		/* choose xinc so that all 8 parts fit exactly
 		   Note: we cannot use just 1 part because it would not fit in the code cache */
-		s_xinc2_diff= -((((s_xinc2*(dstw/8))&0xFFFF))/(dstw/8))+10;
+//		s_xinc2_diff= -((((s_xinc2*(dstw/8))&0xFFFF))/(dstw/8))-10;
 //		s_xinc_diff= -((((s_xinc*(dstw/8))&0xFFFF))/(dstw/8));
 #ifdef ALT_ERROR
-		s_xinc2_diff+= ((0x10000/(dstw/8)));
+//		s_xinc2_diff+= ((0x10000/(dstw/8)));
 #endif
-		s_xinc_diff= s_xinc2_diff*2;
+//		s_xinc_diff= s_xinc2_diff*2;
 
-		s_xinc2+= s_xinc2_diff;
-		s_xinc+= s_xinc_diff;
+//		s_xinc2+= s_xinc2_diff;
+//		s_xinc+= s_xinc_diff;
 
-		old_s_xinc= s_xinc;
+//		old_s_xinc= s_xinc;
 
 		for(i=0; i<dstw/8; i++)
 		{
@@ -223,8 +221,7 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
 			xpos+=s_xinc;
 		}
 
-		xpos= xx=xalpha= 0;
-		//FIXME choose size and or xinc so that they fit exactly
+		xpos= 0; //s_xinc2/2 - 0x10000; // difference between centers of chrom samples
 		for(i=0; i<dstw/8; i++)
 		{
 			int xx=xpos>>16;
@@ -351,6 +348,7 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
 			"m" ((s_xinc*4)&0xFFFF), "m" (s_xinc&0xFFFF)
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
 		);
+		for(i=dstw-1; (i*s_xinc)>>16 >=srcWidth-1; i--) buf1[i] = src[srcWidth-1]*128;
 	}
 	else
 	{
@@ -478,6 +476,11 @@ FUNNYUVCODE
 		  "m" ((s_xinc2*4)&0xFFFF), "m" (s_xinc2&0xFFFF), "m" (src2)
 		: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
 	);
+		for(i=dstw-1; (i*s_xinc2)>>16 >=srcWidth/2-1; i--)
+		{
+			uvbuf1[i] = src1[srcWidth/2-1]*128;
+			uvbuf1[i+2048] = src2[srcWidth/2-1]*128;
+		}
 	}
 	else
 	{
