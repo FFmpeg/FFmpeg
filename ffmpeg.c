@@ -2637,7 +2637,7 @@ const OptionDef options[] = {
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "packet size", "size in bits" },
     { "sameq", OPT_BOOL, {(void*)&same_quality}, 
       "use same video quality as source (implies VBR)" },
-    { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info" },
+    { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
     /* audio options */
     { "ab", HAS_ARG, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
     { "ar", HAS_ARG, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
