@@ -851,9 +851,12 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             get_le32(pb);
 	    st->codec.codec_type = type;
-            st->codec.frame_rate = 15 * s->pts_den / s->pts_num; // 15 fps default
+            /* 1 fps default (XXX: put 0 fps instead) */
+            st->codec.frame_rate = 1; 
+            st->codec.frame_rate_base = 1;
             if (type == CODEC_TYPE_AUDIO) {
                 get_wav_header(pb, &st->codec, type_specific_size);
+                st->need_parsing = 1;
 		/* We have to init the frame size at some point .... */
 		pos2 = url_ftell(pb);
 		if (gsize > (pos2 + 8 - pos1 + 24)) {
@@ -1247,9 +1250,19 @@ static int asf_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int asf_read_seek(AVFormatContext *s, int64_t pts)
+static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
 {
-    printf("SEEK TO %lld", pts);
+#if 0
+    ASFContext *asf = s->priv_data;
+    int i;
+
+    for(i = 0;; i++) {
+        url_fseek(&s->pb, asf->data_offset + i * asf->packet_size, SEEK_SET);
+        if (asf_get_packet(s) < 0)
+            break;
+        printf("timestamp=%0.3f\n",  asf->packet_timestamp / 1000.0);
+    }
+#endif
     return -1;
 }
 
