@@ -1701,6 +1701,8 @@ static void add_xblock(DWTELEM *dst, uint8_t *src, uint8_t *obmc, int s_x, int s
         b_h = h - s_y;
     }
 
+    if(b_w<=0 || b_h<=0) return;
+    
     dst += s_x + s_y*dst_stride;
     
     if(mb_type==1){
