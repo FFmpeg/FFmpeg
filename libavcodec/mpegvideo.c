@@ -4362,6 +4362,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
 }
 
+#endif //CONFIG_ENCODERS
+
 void ff_denoise_dct(MpegEncContext *s, DCTELEM *block){
     const int intra= s->mb_intra;
     int i;
@@ -4385,6 +4387,8 @@ void ff_denoise_dct(MpegEncContext *s, DCTELEM *block){
         }
     }
 }
+
+#ifdef CONFIG_ENCODERS
 
 static int dct_quantize_trellis_c(MpegEncContext *s, 
                         DCTELEM *block, int n,
