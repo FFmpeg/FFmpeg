@@ -564,58 +564,28 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
   return NULL;
 }
 
-
 void yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4])
 {
-  vector signed short
-    CY  = (vector signed short)(0x7fff),
-    CRV = (vector signed short)(22972),
-    CBU = (vector signed short)(29029),
-    CGU = (vector signed short)(-11276),
-    CGV = (vector signed short)(-23400),
-    OY;
-
-  vector signed short Y0;
-  int brightness = c->brightness,  contrast = c->contrast,  saturation = c->saturation;
-  int64_t crv  __attribute__ ((aligned(16)));
-  int64_t cbu  __attribute__ ((aligned(16)));
-  int64_t cgu  __attribute__ ((aligned(16)));
-  int64_t cgv  __attribute__ ((aligned(16)));
+  vector signed short CY, CRV, CBU, CGU, CGV, OY, Y0;
+  int64_t crv __attribute__ ((aligned(16))) = inv_table[0];
+  int64_t cbu __attribute__ ((aligned(16))) = inv_table[1];
+  int64_t cgu __attribute__ ((aligned(16))) = inv_table[2];
+  int64_t cgv __attribute__ ((aligned(16))) = inv_table[3];
+  int64_t cy = (1<<16)-1;
+  int64_t oy = 0;
   short tmp __attribute__ ((aligned(16)));
-
-  int64_t cy  = (1<<16)-1;
-  int64_t oy  = 0;
 
   if ((c->flags & SWS_CPU_CAPS_ALTIVEC) == 0)
     return;
 
-  crv = inv_table[0];
-  cbu = inv_table[1];
-  cgu = inv_table[2];
-  cgv = inv_table[3];
+  cy = (cy *c->contrast             )>>17;
+  crv= (crv*c->contrast * c->saturation)>>32;
+  cbu= (cbu*c->contrast * c->saturation)>>32;
+  cgu= (cgu*c->contrast * c->saturation)>>32;
+  cgv= (cgv*c->contrast * c->saturation)>>32;
 
-#if 0
-  printf ("crv: %hvx\n", CRV);
-  printf ("cbu: %hvx\n", CBU);
-  printf ("cgv: %hvx\n", CGV);
-  printf ("cgu: %hvx\n", CGU);
+  oy -= 256*c->brightness;
 
-  printf ("contrast: %d,   brightness: %d, saturation: %d\n", contrast, brightness, saturation);
-
-  printf("%lld %lld %lld %lld %lld\n", cy, crv, cbu, cgu, cgv);
-#endif
-
-  cy = (cy *contrast             )>>17;
-  crv= (crv*contrast * saturation)>>32;
-  cbu= (cbu*contrast * saturation)>>32;
-  cgu= (cgu*contrast * saturation)>>32;
-  cgv= (cgv*contrast * saturation)>>32;
-
-  oy -= 256*brightness;
-
-  //printf("%llx %llx %llx %llx %llx\n", cy, crv, cbu, cgu, cgv);
-
-  //  vector signed short CBU,CRV,CGU,CGY,CY;
   tmp = cy;
   CY = vec_lde (0, &tmp);
   CY  = vec_splat (CY, 0);
@@ -827,5 +797,3 @@ altivec_yuv2packedX (SwsContext *c,
   if (vCCoeffsBank) free (vCCoeffsBank);
 
 }
-
-
