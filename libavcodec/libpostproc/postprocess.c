@@ -800,6 +800,7 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
 {
 	int mbWidth = (width+15)>>4;
 	int mbHeight= (height+15)>>4;
+	int horz_size,vert_size;
 	PPMode *mode = (PPMode*)vm;
 	PPContext *c = (PPContext*)vc;
         int minStride= MAX(srcStride[0], dstStride[0]);
@@ -847,18 +848,40 @@ for(y=0; y<mbHeight; y++){
 		printf("using npp filters 0x%X/0x%X\n", mode->lumMode, mode->chromMode);
 	}
 
+	/* special case for 405.avi: (width=356)%8 !=0  */
+	horz_size = (width / BLOCK_SIZE) * BLOCK_SIZE;
+
 	postProcess(src[0], srcStride[0], dst[0], dstStride[0],
-		width, height, QP_store, QPStride, 0, mode, c);
+		horz_size, height, QP_store, QPStride, 0, mode, c);
+
+	if(horz_size < width)
+	{
+		unsigned y,tail;
+		tail = width-horz_size;
+		for(y=0; y<height; y++)
+			memcpy(&(dst[0][y*dstStride[0]+horz_size]), &(src[0][y*srcStride[0]+horz_size]), tail);
+	}
 
 	width  = (width )>>c->hChromaSubSample;
+	horz_size = (width / BLOCK_SIZE) * BLOCK_SIZE;
 	height = (height)>>c->vChromaSubSample;
 
 	if(mode->chromMode)
 	{
 		postProcess(src[1], srcStride[1], dst[1], dstStride[1],
-			width, height, QP_store, QPStride, 1, mode, c);
+			horz_size, height, QP_store, QPStride, 1, mode, c);
 		postProcess(src[2], srcStride[2], dst[2], dstStride[2],
-			width, height, QP_store, QPStride, 2, mode, c);
+			horz_size, height, QP_store, QPStride, 2, mode, c);
+		if(horz_size < width)
+		{
+			unsigned y,tail;
+			tail = width-horz_size;
+			for(y=0; y<height; y++)
+			{
+				memcpy(&(dst[1][y*dstStride[1]+horz_size]), &(src[1][y*srcStride[1]+horz_size]), tail);
+				memcpy(&(dst[2][y*dstStride[2]+horz_size]), &(src[2][y*srcStride[2]+horz_size]), tail);
+			}
+		}
 	}
 	else if(srcStride[1] == dstStride[1] && srcStride[2] == dstStride[2])
 	{
