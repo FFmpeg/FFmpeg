@@ -9,6 +9,7 @@
 #endif
 
 //#define ALT_BITSTREAM_READER
+//#define ALIGNED_BITSTREAM
 
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
@@ -200,6 +201,29 @@ typedef struct VLC {
     int table_size, table_allocated;
 } VLC;
 
+/* used to avoid missaligned exceptions on some archs (alpha, ...) */
+#ifdef ARCH_X86
+#define unaligned32(a) (*(UINT32*)(a))
+#else
+#ifdef __GNUC__
+static inline uint32_t unaligned32(const void *v) {
+    struct Unaligned {
+	uint32_t i;
+    } __attribute__((packed));
+
+    return ((const struct Unaligned *) v)->i;
+}
+#elif defined(__DECC)
+static inline uint32_t unaligned32(const void *v) {
+    return *(const __unaligned uint32_t *) v;
+}
+#else
+static inline uint32_t unaligned32(const void *v) {
+    return *(const uint32_t *) v;
+}
+#endif
+#endif //!ARCH_X86
+
 void init_get_bits(GetBitContext *s, 
                    UINT8 *buffer, int buffer_size);
 
@@ -210,8 +234,27 @@ unsigned int show_bits_long(GetBitContext *s, int n);
 
 static inline unsigned int get_bits(GetBitContext *s, int n){
 #ifdef ALT_BITSTREAM_READER
+#ifdef ALIGNED_BITSTREAM
     int index= s->index;
-    uint32_t result= be2me_32( *(uint32_t *)(((uint8_t *)s->buffer)+(index>>3)) );
+    uint32_t result1= be2me_32( ((uint32_t *)s->buffer)[index>>5] );
+    uint32_t result2= be2me_32( ((uint32_t *)s->buffer)[(index>>5) + 1] );
+#ifdef ARCH_X86
+    asm ("shldl %%cl, %2, %0\n\t"
+         : "=r" (result1)
+	 : "0" (result1), "r" (result2), "c" (index));
+#else
+    result1<<= (index&0x1F);
+    result2>>= 32-(index&0x1F);
+    if((index&0x1F)!=0) result1|= result2;
+#endif
+    result1>>= 32 - n;
+    index+= n;
+    s->index= index;
+    
+    return result1;
+#else //ALIGNED_BITSTREAM
+    int index= s->index;
+    uint32_t result= be2me_32( unaligned32( ((uint8_t *)s->buffer)+(index>>3) ) );
 
     result<<= (index&0x07);
     result>>= 32 - n;
@@ -219,7 +262,8 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
     s->index= index;
     
     return result;
-#else
+#endif //!ALIGNED_BITSTREAM
+#else //ALT_BITSTREAM_READER
     if(s->bit_cnt>=n){
         /* most common case here */
         unsigned int val = s->bit_buf >> (32 - n);
@@ -231,16 +275,15 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
 	return val;
     }
     return get_bits_long(s,n);
-#endif
+#endif //!ALT_BITSTREAM_READER
 }
 
 static inline unsigned int get_bits1(GetBitContext *s){
 #ifdef ALT_BITSTREAM_READER
     int index= s->index;
-    uint32_t result= be2me_32( *(uint32_t *)(((uint8_t *)s->buffer)+(index>>3)) );
-
-    result<<= (index&0x07);
-    result>>= 32 - 1;
+    uint8_t result= s->buffer[ index>>3 ];
+    result>>= 7-(index&0x07);
+    result&=1;
     index++;
     s->index= index;
     
@@ -266,21 +309,39 @@ static inline unsigned int get_bits1(GetBitContext *s){
 static inline unsigned int show_bits(GetBitContext *s, int n)
 {
 #ifdef ALT_BITSTREAM_READER
+#ifdef ALIGNED_BITSTREAM
     int index= s->index;
-    uint32_t result= be2me_32( *(uint32_t *)(((uint8_t *)s->buffer)+(index>>3)) );
+    uint32_t result1= be2me_32( ((uint32_t *)s->buffer)[index>>5] );
+    uint32_t result2= be2me_32( ((uint32_t *)s->buffer)[(index>>5) + 1] );
+#ifdef ARCH_X86
+    asm ("shldl %%cl, %2, %0\n\t"
+         : "=r" (result1)
+	 : "0" (result1), "r" (result2), "c" (index));
+#else
+    result1<<= (index&0x1F);
+    result2>>= 32-(index&0x1F);
+    if((index&0x1F)!=0) result1|= result2;
+#endif
+    result1>>= 32 - n;
+    
+    return result1;
+#else //ALIGNED_BITSTREAM
+    int index= s->index;
+    uint32_t result= be2me_32( unaligned32( ((uint8_t *)s->buffer)+(index>>3) ) );
 
     result<<= (index&0x07);
     result>>= 32 - n;
     
     return result;
-#else
+#endif //!ALIGNED_BITSTREAM
+#else //ALT_BITSTREAM_READER
     if(s->bit_cnt>=n) {
         /* most common case here */
         unsigned int val = s->bit_buf >> (32 - n);
         return val;
     }
     return show_bits_long(s,n);
-#endif
+#endif //!ALT_BITSTREAM_READER
 }
 
 static inline void skip_bits(GetBitContext *s, int n){
@@ -331,7 +392,6 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
              const void *codes, int codes_wrap, int codes_size);
 void free_vlc(VLC *vlc);
-int get_vlc(GetBitContext *s, VLC *vlc);
 
 #ifdef ALT_BITSTREAM_READER
 #define SHOW_BITS(s, val, n) val= show_bits(s, n);
@@ -381,6 +441,67 @@ int get_vlc(GetBitContext *s, VLC *vlc);
     (s)->bit_cnt = bit_cnt;\
 }
 #endif // !ALT_BITSTREAM_READER
+
+static inline int get_vlc(GetBitContext *s, VLC *vlc)
+{
+    int code, n, nb_bits, index;
+    INT16 *table_codes;
+    INT8 *table_bits;
+#ifndef ALT_BITSTREAM_READER
+    int bit_cnt;
+    UINT32 bit_buf;
+    UINT8 *buf_ptr;
+#endif
+
+    SAVE_BITS(s);
+    nb_bits = vlc->bits;
+    table_codes = vlc->table_codes;
+    table_bits = vlc->table_bits;
+    
+    SHOW_BITS(s, index, nb_bits);
+    code = table_codes[index];
+    n = table_bits[index];
+    if (n > 0) {
+        /* most common case (90%)*/
+        FLUSH_BITS(n);
+        RESTORE_BITS(s);
+        return code;
+    } else if (n == 0) {
+        return -1;
+    } else {
+        FLUSH_BITS(nb_bits);
+        nb_bits = -n;
+        table_codes = vlc->table_codes + code;
+        table_bits = vlc->table_bits + code;
+    }
+    for(;;) {
+        SHOW_BITS(s, index, nb_bits);
+        code = table_codes[index];
+        n = table_bits[index];
+        if (n > 0) {
+            /* most common case */
+            FLUSH_BITS(n);
+#ifdef STATS
+            st_bit_counts[st_current_index] += n;
+#endif
+            break;
+        } else if (n == 0) {
+            return -1;
+        } else {
+            FLUSH_BITS(nb_bits);
+#ifdef STATS
+            st_bit_counts[st_current_index] += nb_bits;
+#endif
+            nb_bits = -n;
+            table_codes = vlc->table_codes + code;
+            table_bits = vlc->table_bits + code;
+        }
+    }
+    RESTORE_BITS(s);
+    return code;
+}
+
+
 /* define it to include statistics code (useful only for optimizing
    codec efficiency */
 //#define STATS
