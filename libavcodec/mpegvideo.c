@@ -1393,20 +1393,81 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 
 static void copy_bits(PutBitContext *pb, UINT8 *src, int length)
 {
+#if 1
+    int bytes= length>>4;
+    int bits= length&15;
+    int i;
+
+    for(i=0; i<bytes; i++) put_bits(pb, 16, be2me_16(((uint16_t*)src)[i]));
+    put_bits(pb, bits, be2me_16(((uint16_t*)src)[i])>>(16-bits));
+#else
     int bytes= length>>3;
     int bits= length&7;
     int i;
 
     for(i=0; i<bytes; i++) put_bits(pb, 8, src[i]);
     put_bits(pb, bits, src[i]>>(8-bits));
+#endif
 }
+
+static void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int type){
+    int i;
+
+    memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster then a loop?
+
+    /* mpeg1 */
+    d->mb_incr= s->mb_incr;
+    for(i=0; i<3; i++)
+        d->last_dc[i]= s->last_dc[i];
+    
+    /* statistics */
+    d->mv_bits= s->mv_bits;
+    d->i_tex_bits= s->i_tex_bits;
+    d->p_tex_bits= s->p_tex_bits;
+    d->i_count= s->i_count;
+    d->p_count= s->p_count;
+    d->skip_count= s->skip_count;
+    d->misc_bits= s->misc_bits;
+    d->last_bits= s->last_bits;
+}
+
+static void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int type){
+    int i;
+
+    memcpy(d->mv, s->mv, 2*4*2*sizeof(int)); 
+    memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster then a loop?
+    
+    /* mpeg1 */
+    d->mb_incr= s->mb_incr;
+    for(i=0; i<3; i++)
+        d->last_dc[i]= s->last_dc[i];
+    
+    /* statistics */
+    d->mv_bits= s->mv_bits;
+    d->i_tex_bits= s->i_tex_bits;
+    d->p_tex_bits= s->p_tex_bits;
+    d->i_count= s->i_count;
+    d->p_count= s->p_count;
+    d->skip_count= s->skip_count;
+    d->misc_bits= s->misc_bits;
+    d->last_bits= s->last_bits;
+
+    d->mb_intra= s->mb_intra;
+    d->mv_type= s->mv_type;
+    d->mv_dir= s->mv_dir;
+    d->pb= s->pb;
+    d->block= s->block;
+    for(i=0; i<6; i++)
+        d->block_last_index[i]= s->block_last_index[i];
+}
+
 
 static void encode_picture(MpegEncContext *s, int picture_number)
 {
     int mb_x, mb_y, last_gob, pdif = 0;
     int i;
     int bits;
-    MpegEncContext best_s;
+    MpegEncContext best_s, backup_s;
     UINT8 bit_buf[4][3000]; //FIXME check that this is ALLWAYS large enogh for a MB
 
     s->picture_number = picture_number;
@@ -1585,10 +1646,12 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->block_index[3]+=2;
             s->block_index[4]++;
             s->block_index[5]++;
-
             if(mb_type & (mb_type-1)){ // more than 1 MB type possible
                 pb= s->pb;
                 s->mv_dir = MV_DIR_FORWARD;
+
+                copy_context_before_encode(&backup_s, s, -1);
+
                 if(mb_type&MB_TYPE_INTER){
                     int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
                     s->mv_type = MV_TYPE_16X16;
@@ -1603,18 +1666,12 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     if(d<dmin){
                         flush_put_bits(&s->pb);
                         dmin=d;
-                        best_s.mv[0][0][0]= s->mv[0][0][0];
-                        best_s.mv[0][0][1]= s->mv[0][0][1];
-                        best_s.mb_intra= 0;
-                        best_s.mv_type = MV_TYPE_16X16;
-                        best_s.pb=s->pb;
-                        best_s.block= s->block;
+                        copy_context_after_encode(&best_s, s, MB_TYPE_INTER);
                         best=1;
-                        for(i=0; i<6; i++)
-                            best_s.block_last_index[i]= s->block_last_index[i];
                     }
                 }
-                if(mb_type&MB_TYPE_INTER4V){
+                if(mb_type&MB_TYPE_INTER4V){                 
+                    copy_context_before_encode(s, &backup_s, MB_TYPE_INTER4V);
                     s->mv_type = MV_TYPE_8X8;
                     s->mb_intra= 0;
                     for(i=0; i<4; i++){
@@ -1629,20 +1686,12 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     if(d<dmin && 0){
                         flush_put_bits(&s->pb);
                         dmin=d;
-                        for(i=0; i<4; i++){
-                            best_s.mv[0][i][0] = s->mv[0][i][0];
-                            best_s.mv[0][i][1] = s->mv[0][i][1];
-                        }
-                        best_s.mb_intra= 0;
-                        best_s.mv_type = MV_TYPE_8X8;
-                        best_s.pb=s->pb;
-                        best_s.block= s->block;
+                        copy_context_after_encode(&best_s, s, MB_TYPE_INTER4V);
                         best=2;
-                        for(i=0; i<6; i++)
-                            best_s.block_last_index[i]= s->block_last_index[i];
                     }
                 }
                 if(mb_type&MB_TYPE_INTRA){
+                    copy_context_before_encode(s, &backup_s, MB_TYPE_INTRA);
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_intra= 1;
                     s->mv[0][0][0] = 0;
@@ -1655,29 +1704,15 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     if(d<dmin){
                         flush_put_bits(&s->pb);
                         dmin=d;
-                        best_s.mv[0][0][0]= 0;
-                        best_s.mv[0][0][1]= 0;
-                        best_s.mb_intra= 1;
-                        best_s.mv_type = MV_TYPE_16X16;
-                        best_s.pb=s->pb;
-                        best_s.block= s->block;
-                        for(i=0; i<6; i++)
-                            best_s.block_last_index[i]= s->block_last_index[i];
+                        copy_context_after_encode(&best_s, s, MB_TYPE_INTRA);
                         best=0;
                     }
-                    /* force cleaning of ac/dc if needed ... */
-                    s->mbintra_table[mb_x + mb_y*s->mb_width]=1;
+                    /* force cleaning of ac/dc pred stuff if needed ... */
+                    if(s->h263_pred || s->h263_aic)
+                        s->mbintra_table[mb_x + mb_y*s->mb_width]=1;
                 }
-                for(i=0; i<4; i++){
-                   s->mv[0][i][0] =  best_s.mv[0][i][0];
-                   s->mv[0][i][1] =  best_s.mv[0][i][1];
-                }
-                s->mb_intra= best_s.mb_intra;
-                s->mv_type= best_s.mv_type;
-                for(i=0; i<6; i++)
-                   s->block_last_index[i]= best_s.block_last_index[i];
+                copy_context_after_encode(s, &best_s, -1);
                 copy_bits(&pb, bit_buf[best], dmin);
-                s->block= best_s.block;
                 s->pb= pb;
             } else {
                 int motion_x, motion_y;
