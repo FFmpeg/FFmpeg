@@ -1805,10 +1805,9 @@ DEINT_L5(%%mm1, %%mm0, (%%edx, %1, 2), (%0, %1, 8)   , (%%edx, %1, 4))
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
- * will shift the image up by 1 line (FIXME if this is a problem)
  * this filter will read lines 4-13 and write 4-11
  */
-static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride)
+static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride, uint8_t *tmp)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	src+= 4*stride;
@@ -1818,43 +1817,43 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride)
 //	0	1	2	3	4	5	6	7	8	9
 //	%0	eax	eax+%1	eax+2%1	%0+4%1	edx	edx+%1	edx+2%1	%0+8%1	edx+4%1
 
-		"movq (%0), %%mm0				\n\t" // L0
-		"movq (%%eax, %1), %%mm1			\n\t" // L2
+		"movq (%2), %%mm0				\n\t" // L0
+		"movq (%%eax), %%mm1				\n\t" // L2
 		PAVGB(%%mm1, %%mm0)				      // L0+L2
-		"movq (%%eax), %%mm2				\n\t" // L1
+		"movq (%0), %%mm2				\n\t" // L1
 		PAVGB(%%mm2, %%mm0)
 		"movq %%mm0, (%0)				\n\t"
-		"movq (%%eax, %1, 2), %%mm0			\n\t" // L3
+		"movq (%%eax, %1), %%mm0			\n\t" // L3
 		PAVGB(%%mm0, %%mm2)				      // L1+L3
 		PAVGB(%%mm1, %%mm2)				      // 2L2 + L1 + L3
 		"movq %%mm2, (%%eax)				\n\t"
-		"movq (%0, %1, 4), %%mm2			\n\t" // L4
+		"movq (%%eax, %1, 2), %%mm2			\n\t" // L4
 		PAVGB(%%mm2, %%mm1)				      // L2+L4
 		PAVGB(%%mm0, %%mm1)				      // 2L3 + L2 + L4
 		"movq %%mm1, (%%eax, %1)			\n\t"
-		"movq (%%edx), %%mm1				\n\t" // L5
+		"movq (%0, %1, 4), %%mm1			\n\t" // L5
 		PAVGB(%%mm1, %%mm0)				      // L3+L5
 		PAVGB(%%mm2, %%mm0)				      // 2L4 + L3 + L5
 		"movq %%mm0, (%%eax, %1, 2)			\n\t"
-		"movq (%%edx, %1), %%mm0			\n\t" // L6
+		"movq (%%edx), %%mm0				\n\t" // L6
 		PAVGB(%%mm0, %%mm2)				      // L4+L6
 		PAVGB(%%mm1, %%mm2)				      // 2L5 + L4 + L6
 		"movq %%mm2, (%0, %1, 4)			\n\t"
-		"movq (%%edx, %1, 2), %%mm2			\n\t" // L7
+		"movq (%%edx, %1), %%mm2			\n\t" // L7
 		PAVGB(%%mm2, %%mm1)				      // L5+L7
 		PAVGB(%%mm0, %%mm1)				      // 2L6 + L5 + L7
 		"movq %%mm1, (%%edx)				\n\t"
-		"movq (%0, %1, 8), %%mm1			\n\t" // L8
+		"movq (%%edx, %1, 2), %%mm1			\n\t" // L8
 		PAVGB(%%mm1, %%mm0)				      // L6+L8
 		PAVGB(%%mm2, %%mm0)				      // 2L7 + L6 + L8
 		"movq %%mm0, (%%edx, %1)			\n\t"
-		"movq (%%edx, %1, 4), %%mm0			\n\t" // L9
+		"movq (%0, %1, 8), %%mm0			\n\t" // L9
 		PAVGB(%%mm0, %%mm2)				      // L7+L9
 		PAVGB(%%mm1, %%mm2)				      // 2L8 + L7 + L9
 		"movq %%mm2, (%%edx, %1, 2)			\n\t"
+		"movq %%mm1, (%2)				\n\t"
 
-
-		: : "r" (src), "r" (stride)
+		: : "r" (src), "r" (stride), "r" (tmp)
 		: "%eax", "%edx"
 	);
 #else
@@ -1862,41 +1861,43 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride)
 	src+= 4*stride;
 
 	for(x=0; x<2; x++){
-		a= *(uint32_t*)&src[stride*0];
-		b= *(uint32_t*)&src[stride*1];
-		c= *(uint32_t*)&src[stride*2];
+		a= *(uint32_t*)&tmp[stride*0];
+		b= *(uint32_t*)&src[stride*0];
+		c= *(uint32_t*)&src[stride*1];
 		a= (a&c) + (((a^c)&0xFEFEFEFEUL)>>1);
 		*(uint32_t*)&src[stride*0]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
 
-		a= *(uint32_t*)&src[stride*3];
+		a= *(uint32_t*)&src[stride*2];
 		b= (a&b) + (((a^b)&0xFEFEFEFEUL)>>1);
 		*(uint32_t*)&src[stride*1]= (c|b) - (((c^b)&0xFEFEFEFEUL)>>1);
 
-		b= *(uint32_t*)&src[stride*4];
+		b= *(uint32_t*)&src[stride*3];
 		c= (b&c) + (((b^c)&0xFEFEFEFEUL)>>1);
 		*(uint32_t*)&src[stride*2]= (c|a) - (((c^a)&0xFEFEFEFEUL)>>1);
 
-		c= *(uint32_t*)&src[stride*5];
+		c= *(uint32_t*)&src[stride*4];
 		a= (a&c) + (((a^c)&0xFEFEFEFEUL)>>1);
 		*(uint32_t*)&src[stride*3]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
 
-		a= *(uint32_t*)&src[stride*6];
+		a= *(uint32_t*)&src[stride*5];
 		b= (a&b) + (((a^b)&0xFEFEFEFEUL)>>1);
 		*(uint32_t*)&src[stride*4]= (c|b) - (((c^b)&0xFEFEFEFEUL)>>1);
 
-		b= *(uint32_t*)&src[stride*7];
+		b= *(uint32_t*)&src[stride*6];
 		c= (b&c) + (((b^c)&0xFEFEFEFEUL)>>1);
 		*(uint32_t*)&src[stride*5]= (c|a) - (((c^a)&0xFEFEFEFEUL)>>1);
 
-		c= *(uint32_t*)&src[stride*8];
+		c= *(uint32_t*)&src[stride*7];
 		a= (a&c) + (((a^c)&0xFEFEFEFEUL)>>1);
 		*(uint32_t*)&src[stride*6]= (a|b) - (((a^b)&0xFEFEFEFEUL)>>1);
 
-		a= *(uint32_t*)&src[stride*9];
+		a= *(uint32_t*)&src[stride*8];
 		b= (a&b) + (((a^b)&0xFEFEFEFEUL)>>1);
 		*(uint32_t*)&src[stride*7]= (c|b) - (((c^b)&0xFEFEFEFEUL)>>1);
 
+		*(uint32_t*)&tmp[stride*0]= c;
 		src += 4;
+		tmp += 4;
 	}
 #endif
 }
@@ -2933,7 +2934,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 			if(mode & LINEAR_IPOL_DEINT_FILTER)
 				RENAME(deInterlaceInterpolateLinear)(dstBlock, dstStride);
 			else if(mode & LINEAR_BLEND_DEINT_FILTER)
-				RENAME(deInterlaceBlendLinear)(dstBlock, dstStride);
+				RENAME(deInterlaceBlendLinear)(dstBlock, dstStride, c.deintTemp + x);
 			else if(mode & MEDIAN_DEINT_FILTER)
 				RENAME(deInterlaceMedian)(dstBlock, dstStride);
 			else if(mode & CUBIC_IPOL_DEINT_FILTER)
@@ -3077,7 +3078,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 			if(mode & LINEAR_IPOL_DEINT_FILTER)
 				RENAME(deInterlaceInterpolateLinear)(dstBlock, dstStride);
 			else if(mode & LINEAR_BLEND_DEINT_FILTER)
-				RENAME(deInterlaceBlendLinear)(dstBlock, dstStride);
+				RENAME(deInterlaceBlendLinear)(dstBlock, dstStride, c.deintTemp + x);
 			else if(mode & MEDIAN_DEINT_FILTER)
 				RENAME(deInterlaceMedian)(dstBlock, dstStride);
 			else if(mode & CUBIC_IPOL_DEINT_FILTER)
