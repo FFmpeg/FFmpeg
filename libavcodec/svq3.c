@@ -453,9 +453,11 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 
       mb_type = MB_TYPE_SKIP;
     } else {
-      mb_type= FFMIN(s->next_picture.mb_type[mb_xy], 0);
-      svq3_mc_dir (h, mb_type, PREDICT_MODE, 0, 0);
-      svq3_mc_dir (h, mb_type, PREDICT_MODE, 1, 1);
+      mb_type= FFMIN(s->next_picture.mb_type[mb_xy], 6);
+      if(svq3_mc_dir (h, mb_type, PREDICT_MODE, 0, 0) < 0)
+        return -1;
+      if(svq3_mc_dir (h, mb_type, PREDICT_MODE, 1, 1) < 0)
+        return -1;
 
       mb_type = MB_TYPE_16x16;
     }
@@ -513,17 +515,20 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 
     /* decode motion vector(s) and form prediction(s) */
     if (s->pict_type == P_TYPE) {
-      svq3_mc_dir (h, (mb_type - 1), mode, 0, 0);
+      if(svq3_mc_dir (h, (mb_type - 1), mode, 0, 0) < 0)
+        return -1;
     } else {	/* B_TYPE */
       if (mb_type != 2) {
-	svq3_mc_dir (h, 0, mode, 0, 0);
+	if(svq3_mc_dir (h, 0, mode, 0, 0) < 0)
+          return -1;
       } else {
 	for (i=0; i < 4; i++) {
 	  memset (s->current_picture.motion_val[0][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
 	}
       }
       if (mb_type != 1) {
-	svq3_mc_dir (h, 0, mode, 1, (mb_type == 3));
+	if(svq3_mc_dir (h, 0, mode, 1, (mb_type == 3)) < 0)
+          return -1;
       } else {
 	for (i=0; i < 4; i++) {
 	  memset (s->current_picture.motion_val[1][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
