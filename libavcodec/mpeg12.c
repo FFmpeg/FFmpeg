@@ -1338,6 +1338,8 @@ static void mpeg_decode_picture_coding_extension(MpegEncContext *s)
     /* composite display not parsed */
     dprintf("intra_dc_precision=%d\n", s->intra_dc_precision);
     dprintf("picture_structure=%d\n", s->picture_structure);
+    dprintf("top field first=%d\n", s->top_field_first);
+    dprintf("repeat first field=%d\n", s->repeat_first_field);
     dprintf("conceal=%d\n", s->concealment_motion_vectors);
     dprintf("intra_vlc_format=%d\n", s->intra_vlc_format);
     dprintf("alternate_scan=%d\n", s->alternate_scan);
@@ -1587,15 +1589,18 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     buf_ptr = buf;
     buf_end = buf + buf_size;
-    
-    if (s->repeat_field % 2 == 1 && avctx->repeat_pict) {
+
+#if 0    
+    if (s->repeat_field % 2 == 1) { 
         s->repeat_field++;
         //fprintf(stderr,"\nRepeating last frame: %d -> %d! pict: %d %d", avctx->frame_number-1, avctx->frame_number,
-        //                                                         s2->picture_number, s->repeat_field);
-        *data_size = sizeof(AVPicture);
-        goto the_end;
+        //        s2->picture_number, s->repeat_field);
+        if (avctx->flags & CODEC_FLAG_REPEAT_FIELD) {
+            *data_size = sizeof(AVPicture);
+            goto the_end;
+        }
     }
-
+#endif
     while (buf_ptr < buf_end) {
         buf_start = buf_ptr;
         /* find start next code */
@@ -1645,13 +1650,27 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         if (ret == 1) {
                             /* got a picture: exit */
                             /* first check if we must repeat the frame */
+                            avctx->repeat_pict = 0;
+#if 0
                             if (s2->progressive_frame && s2->repeat_first_field) {
                                 //fprintf(stderr,"\nRepeat this frame: %d! pict: %d",avctx->frame_number,s2->picture_number);
-                                s2->repeat_first_field = 0;
-                                s2->progressive_frame = 0;
+                                //s2->repeat_first_field = 0;
+                                //s2->progressive_frame = 0;
                                 if (++s->repeat_field > 2)
                                     s->repeat_field = 0;
+                                avctx->repeat_pict = 1;
                             }
+#endif                      
+                            if (s2->repeat_first_field) {
+                                if (s2->progressive_sequence) {
+                                    if (s2->top_field_first)
+                                        avctx->repeat_pict = 4;
+                                    else
+                                        avctx->repeat_pict = 2;
+                                } else if (s2->progressive_frame) {
+                                    avctx->repeat_pict = 1;
+                                }
+                            }         
                             *data_size = sizeof(AVPicture);
                             goto the_end;
                         }

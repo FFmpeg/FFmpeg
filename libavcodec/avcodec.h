@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4608
-#define LIBAVCODEC_BUILD_STR   "4608"
+#define LIBAVCODEC_BUILD       4609
+#define LIBAVCODEC_BUILD_STR   "4609"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -130,8 +130,9 @@ typedef struct AVCodecContext {
 #define FF_ASPECT_16_9_525 5
     int gop_size; /* 0 = intra only */
     enum PixelFormat pix_fmt;  /* pixel format, see PIX_FMT_xxx */
-    int repeat_pict; /* set this to 1 if you want the decoder
-                        to repeat frames for 3:2 pulldown (MPEG-2) */
+    int repeat_pict; /* when decoding, this signal how much the picture */
+                     /* must be delayed.                                */
+                     /* extra_delay = (repeat_pict / 2) * (1/fps)       */
     /* if non NULL, 'draw_horiz_band' is called by the libavcodec
        decoder to draw an horizontal band. It improve cache usage. Not
        all codecs can do that. You must check the codec capabilities
