@@ -334,6 +334,9 @@ int swf_init(void);
 /* mov.c */
 int mov_init(void);
 
+/* movenc.c */
+int movenc_init(void);
+
 /* flvenc.c */
 int flvenc_init(void);
 

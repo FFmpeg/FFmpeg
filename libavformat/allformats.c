@@ -45,6 +45,7 @@ void av_register_all(void)
     au_init();
     gif_init();
     mov_init();
+    movenc_init();
     jpeg_init();
     dv_init();
     fourxm_init();
