@@ -1,19 +1,29 @@
 /*
  * drawtext.c: print text over the screen
- ******************************************************************
+ ******************************************************************************
  * Options:
- * -f <filename>    font filename
- * -s <pixel_size>  font size in pixels
+ * -f <filename>    font filename (MANDATORY!!!)
+ * -s <pixel_size>  font size in pixels [default 16]
  * -b               print background
  * -o               outline glyphs (use the bg color)
- * -x <pos>         x position ( > 0)
- * -y <pos>         y position ( > 0)
+ * -x <pos>         x position ( >= 0) [default 0]
+ * -y <pos>         y position ( >= 0) [default 0]
  * -t <text>        text to print (will be passed to strftime())
- * -c <#RRGGBB>     foreground color ('internet' way)
- * -C <#RRGGBB>     background color ('internet' way)
+ *                  MANDATORY: will be used even when -T is used. 
+ *                  in this case, -t will be used if some error 
+ *                  occurs
+ * -T <filename>    file with the text (re-read every frame)
+ * -c <#RRGGBB>     foreground color ('internet' way) [default #ffffff]
+ * -C <#RRGGBB>     background color ('internet' way) [default #000000]
  *
- ******************************************************************
- *
+ ******************************************************************************
+ * Features:
+ * - True Type, Type1 and others via FreeType2 library
+ * - Font kerning (better output)
+ * - Line Wrap (if the text doesn't fit, the next char go to the next line)
+ * - Background box
+ * - Outline
+ ******************************************************************************
  * Author: Gustavo Sverzut Barbieri <gsbarbieri@yahoo.com.br>
  *
  * This library is free software; you can redistribute it and/or
@@ -30,6 +40,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+#define MAXSIZE_TEXT 1024
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
@@ -43,6 +56,7 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include FT_GLYPH_H
 
 #define RGB_TO_YUV(rgb_color, yuv_color) { \
     yuv_color[0] = ( 0.257 * rgb_color[0]) + (0.504 * rgb_color[1]) + (0.098 * rgb_color[2]) +  16; \
@@ -72,15 +86,25 @@
 
 
 typedef struct {
-  char *text;
+  unsigned char *text;
+  unsigned char *file;
   unsigned int x;
   unsigned int y;
   int bg;
   int outline;
   unsigned char bgcolor[3]; /* YUV */
   unsigned char fgcolor[3]; /* YUV */
-  FT_Library ft_lib;
-  FT_Face ft_face;
+  FT_Library library;
+  FT_Face    face;
+  FT_Glyph   glyphs[ 255 ]; 
+  FT_Bitmap  bitmaps[ 255 ];
+  int        advance[ 255 ];
+  int        bitmap_left[ 255 ];
+  int        bitmap_top[ 255 ];
+  unsigned int glyphs_index[ 255 ];
+  int        text_height;
+  int        baseline;
+  int use_kerning;
 } ContextInfo;
 
 
@@ -112,8 +136,6 @@ int ParseColor(char *text, unsigned char yuv_color[3])
 
   RGB_TO_YUV(rgb_color, yuv_color);
 
-  printf("RGB=%d,%d,%d    YUV=%d,%d,%d\n",rgb_color[0],rgb_color[1],rgb_color[2],
-	 yuv_color[0],yuv_color[1],yuv_color[2]);
   return 0;
 }
 
@@ -124,12 +146,14 @@ int Configure(void **ctxp, int argc, char *argv[])
     ContextInfo *ci=NULL;
     char *font=NULL;
     unsigned int size=16;
-
+    FT_BBox bbox;
+    int yMax, yMin;
     *ctxp = av_mallocz(sizeof(ContextInfo));
     ci = (ContextInfo *) *ctxp;
 
     /* configure Context Info */
     ci->text = NULL;
+    ci->file = NULL;
     ci->x = ci->y = 0;
     ci->fgcolor[0]=255;
     ci->fgcolor[1]=128;
@@ -139,15 +163,19 @@ int Configure(void **ctxp, int argc, char *argv[])
     ci->fgcolor[2]=128;
     ci->bg = 0;
     ci->outline = 0;
+    ci->text_height = 0;
 
     optind = 0;
-    while ((c = getopt(argc, argv, "f:t:x:y:s:c:C:bo")) > 0) {
+    while ((c = getopt(argc, argv, "f:t:T:x:y:s:c:C:bo")) > 0) {
       switch (c) {
       case 'f':
 	font = optarg;
 	break;
       case 't':
 	ci->text = av_strdup(optarg);
+	break;
+      case 'T':
+	ci->file = av_strdup(optarg);
 	break;
       case 'x':
 	ci->x = (unsigned int) atoi(optarg);
@@ -190,32 +218,85 @@ int Configure(void **ctxp, int argc, char *argv[])
 	return -1;
       }
 
+    if (ci->file)
+      {
+	FILE *fp;
+	if ((fp=fopen(ci->file, "r")) == NULL)
+	  {
+	    perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
+	  }
+	else
+	  {
+	    fclose(fp);
+	  }
+      }
+
     if (!font)
       {
 	fprintf(stderr,"ERROR: No font file provided! (-f filename)\n");
 	return -1;
       }
 
-    if ((error = FT_Init_FreeType(&(ci->ft_lib))) != 0)
+    if ((error = FT_Init_FreeType(&(ci->library))) != 0)
       {
 	fprintf(stderr,"ERROR: Could not load FreeType (error# %d)\n",error);
 	return -1;
       }
 
-    if ((error = FT_New_Face( ci->ft_lib, font, 0, &(ci->ft_face) )) != 0)
+    if ((error = FT_New_Face( ci->library, font, 0, &(ci->face) )) != 0)
       {
 	fprintf(stderr,"ERROR: Could not load face: %s  (error# %d)\n",font, error);
 	return -1;
       }
     
-    if ((error = FT_Set_Pixel_Sizes( ci->ft_face, 0, size)) != 0)
+    if ((error = FT_Set_Pixel_Sizes( ci->face, 0, size)) != 0)
       {
 	fprintf(stderr,"ERROR: Could not set font size to %d pixels (error# %d)\n",size, error);
 	return -1;
       }
-                 
+
+    ci->use_kerning = FT_HAS_KERNING(ci->face);
+
+    /* load and cache glyphs */
+    yMax = -32000;
+    yMin =  32000;
+    for (c=0; c < 256; c++)
+      {
+	/* Load char */
+	error = FT_Load_Char( ci->face, (unsigned char) c, FT_LOAD_RENDER | FT_LOAD_MONOCHROME );
+	if (error) continue;  /* ignore errors */
+   
+	/* Save bitmap */
+	ci->bitmaps[c] = ci->face->glyph->bitmap;
+	/* Save bitmap left */
+	ci->bitmap_left[c] = ci->face->glyph->bitmap_left;
+	/* Save bitmap top */
+	ci->bitmap_top[c] = ci->face->glyph->bitmap_top;
+
+	/* Save advance */
+	ci->advance[c] = ci->face->glyph->advance.x >> 6;
+
+	/* Save glyph */
+	error = FT_Get_Glyph( ci->face->glyph, &(ci->glyphs[c]) );
+	/* Save glyph index */
+	ci->glyphs_index[c] = FT_Get_Char_Index( ci->face, (unsigned char) c );	
+
+	/* Measure text height to calculate text_height (or the maximum text height) */
+	FT_Glyph_Get_CBox( ci->glyphs[ c ], ft_glyph_bbox_pixels, &bbox );
+	if (bbox.yMax > yMax)
+	  yMax = bbox.yMax;
+	if (bbox.yMin < yMin)
+	  yMin = bbox.yMin;
+	
+      }
+
+    ci->text_height = yMax - yMin;
+    ci->baseline = yMax;
+
     return 0;
 }
+
+
 
 
 inline void draw_glyph(AVPicture *picture, FT_Bitmap *bitmap, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char yuv_fgcolor[3], unsigned char yuv_bgcolor[3], int outline)
@@ -257,14 +338,15 @@ inline void draw_glyph(AVPicture *picture, FT_Bitmap *bitmap, unsigned int x, un
 		      /* 'draw' right pixel border */
 		      COPY_3(dpixel, yuv_bgcolor);
 		    }
-		  else if (in_glyph) 
+		  
+		  if (in_glyph) 
 		    /* see if we have a top/bottom border */
 		    {
 		      /* top */
 		      if ( (r-1 >= 0) && (! bitmap->buffer[(r-1)*bitmap->pitch +c/8] & (0x80>>(c%8))) )
 			/* we have a top border */
 			SET_PIXEL(picture, yuv_bgcolor, (c+x), (y+r-1));
-		      
+
 		      /* bottom */
 		      if ( (r+1 < height) && (! bitmap->buffer[(r+1)*bitmap->pitch +c/8] & (0x80>>(c%8))) )
 			/* we have a bottom border */
@@ -280,16 +362,66 @@ inline void draw_glyph(AVPicture *picture, FT_Bitmap *bitmap, unsigned int x, un
 }
 
 
+inline void draw_box(AVPicture *picture, unsigned int x, unsigned int y, unsigned int width, unsigned int height, unsigned char yuv_color[3])
+{
+  int i, j;
+
+  for (j = 0; (j < height); j++)
+    for (i = 0; (i < width); i++) 
+      {	
+	SET_PIXEL(picture, yuv_color, (i+x), (y+j));
+      }
+  
+}
+
+
+
+
 void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, int64_t pts)
 {
   ContextInfo *ci = (ContextInfo *) ctx;
-  FT_Face face = ci->ft_face;
+  FT_Face face = ci->face;
   FT_GlyphSlot  slot = face->glyph;  
-  char *text = ci->text;
-  int x = 0, y = 0, i=0, j=0, size=0, error;
-  int str_w, str_h;
-  char buff[1000];
+  unsigned char *text = ci->text;
+  unsigned char c;
+  int x = 0, y = 0, i=0, size=0;
+  unsigned char buff[MAXSIZE_TEXT];
+  unsigned char tbuff[MAXSIZE_TEXT];
   time_t now = time(0);
+  int str_w, str_w_max;
+  FT_Vector pos[MAXSIZE_TEXT];  
+  FT_Vector delta;
+
+  if (ci->file) 
+    {
+      int fd = open(ci->file, O_RDONLY);
+      
+      if (fd < 0) 
+	{
+	  text = ci->text;
+	  perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
+	} 
+      else 
+	{
+	  int l = read(fd, tbuff, sizeof(tbuff) - 1);
+	  
+	  if (l >= 0) 
+	    {
+	      tbuff[l] = 0;
+	      text = tbuff;
+	    } 
+	  else 
+	    {
+	      text = ci->text;
+	      perror("WARNING: the file could not be opened. Using text provided with -t switch. ");
+	    }
+	  close(fd);
+	}
+    }
+  else
+    {
+      text = ci->text;
+    }
 
   strftime(buff, sizeof(buff), text, localtime(&now));
 
@@ -297,50 +429,91 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
 
   size = strlen(text);
   
+
+
+
+  /* measure string size and save glyphs position*/
+  str_w = str_w_max = 0;
   x = ci->x; 
   y = ci->y;
-
-
-  /* measure string size */
-  str_w = str_h = 0;
   for (i=0; i < size; i++)
     {
-      /* load glyph image into the slot (erase previous one) */
-      error = FT_Load_Char( face, text[i], FT_LOAD_RENDER | FT_LOAD_MONOCHROME );
-      if (error) continue;  /* ignore errors */
+      c = text[i];
 
-      str_w += slot->advance.x >> 6;
-
-      if (slot->bitmap_top > str_h)
-	str_h = slot->bitmap_top;
+      /* kerning */
+      if ( (ci->use_kerning) && (i > 0) && (ci->glyphs_index[c]) )
+	{
+	  FT_Get_Kerning( ci->face, 
+			  ci->glyphs_index[ text[i-1] ], 
+			  ci->glyphs_index[c],
+			  ft_kerning_default, 
+			  &delta );
+	  
+	  x += delta.x >> 6;
+	}
       
+      if (( (x + ci->advance[ c ]) >= width ) || ( c == '\n' ))
+	{
+	  str_w = width - ci->x - 1;
+
+	  y += ci->text_height;
+	  x = ci->x;
+	}
+
+
+      /* save position */
+      pos[i].x = x + ci->bitmap_left[c];
+      pos[i].y = y - ci->bitmap_top[c] + ci->baseline;
+
+
+      x += ci->advance[c];
+
+
+      if (str_w > str_w_max)
+	str_w_max = str_w;
+
+    }
+
+  
+
+
+  if (ci->bg)
+    {
+      /* Check if it doesn't pass the limits */
+      if ( str_w_max + ci->x >= width )
+	str_w_max = width - ci->x - 1;
+      if ( y >= height )
+	y = height - 1 - 2*ci->y;
+
+      /* Draw Background */
+      draw_box( picture, ci->x, ci->y, str_w_max, y - ci->y, ci->bgcolor );      
     }
 
 
-  if (ci->bg) 
-    /* draw background */
-    for (j = 0; (j < str_h) && (j+y < height); j++)
-      for (i = 0; (i < str_w) && (i+x < width); i++) 
-	{	
-	  SET_PIXEL(picture, ci->bgcolor, (i+x), (y+j));
-	}
 
   /* Draw Glyphs */
   for (i=0; i < size; i++)
     {
-      /* load glyph image into the slot (erase previous one) */
-      error = FT_Load_Char( face, text[i], FT_LOAD_RENDER | FT_LOAD_MONOCHROME );
-      if (error) continue;  /* ignore errors */
-      
-      if (text[i] != '_') /* skip '_' (consider as space) */
+      c = text[i];
+
+      if (
+	  ( (c == '_') && (text == ci->text) ) || /* skip '_' (consider as space) 
+						     IF text was specified in cmd line 
+						     (which doesn't like neasted quotes)  */
+	  ( c == '\n' ) /* Skip new line char, just go to new line */
+	  )
+	continue;
+
 	/* now, draw to our target surface */
-	
-	draw_glyph( picture, &slot->bitmap,
-		    x + slot->bitmap_left,
-		    y - slot->bitmap_top + str_h,
-		    width, height,
-		    ci->fgcolor, ci->bgcolor,
-		    ci->outline);
+	draw_glyph( picture, 
+		    &(ci->bitmaps[ c ]),
+		    pos[i].x,
+		    pos[i].y,
+		    width, 
+		    height,
+		    ci->fgcolor,
+		    ci->bgcolor,
+		    ci->outline );
 		    
       /* increment pen position */
       x += slot->advance.x >> 6;
