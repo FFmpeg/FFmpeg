@@ -833,7 +833,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!asf_st)
                 goto fail;
             st->priv_data = asf_st;
-	    st->time_length = (asf->hdr.send_time - asf->hdr.preroll) / 10000;
+	    st->time_length = (asf->hdr.send_time - asf->hdr.preroll) / 10; // us
             get_guid(pb, &g);
             if (!memcmp(&g, &audio_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_AUDIO;
@@ -852,7 +852,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             get_le32(pb);
 	    st->codec.codec_type = type;
-            st->codec.frame_rate = 1000; // in packet ticks
+            st->codec.frame_rate = 1000000; // us
             if (type == CODEC_TYPE_AUDIO) {
                 id = get_le16(pb);
                 st->codec.codec_tag = id;
@@ -1018,15 +1018,13 @@ static int asf_get_packet(AVFormatContext *s)
     uint32_t packet_length, padsize;
     int rsize = 11;
     int c = get_byte(pb);
-    if (c != 0x82)
-    {
+    if (c != 0x82) {
 	printf("BAD HRD %x  at:%Ld\n", c, url_ftell(pb));
 	return -EIO;
     }
     if ((c & 0x0f) == 2) { // always true for now
-	if (get_le16(pb) != 0)
-	{
-	    printf("BAD NO ZERO\n");
+	if (get_le16(pb) != 0) {
+	    printf("ff asf BAD NO ZERO\n");
 	    return -EIO;
 	}
     }
@@ -1062,19 +1060,16 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
     ASFContext *asf = s->priv_data;
     ASFStream *asf_st = 0;
     ByteIOContext *pb = &s->pb;
-    static int pc = 0;
+    //static int pc = 0;
     for (;;) {
 	int rsize = 0;
 	if (asf->packet_size_left < FRAME_HEADER_SIZE
-	    || asf->packet_segments < 0) {
+	    || asf->packet_segments < 1) {
 	    //asf->packet_size_left <= asf->packet_padsize) {
-	    int ret;
-	    //printf("PACKETLEFTSIZE  %d\n", asf->packet_size_left);
-            /* fail safe */
-            if (asf->packet_size_left)
-		url_fskip(pb, asf->packet_size_left);
-            if (asf->packet_padsize)
-		url_fskip(pb, asf->packet_padsize);
+	    int ret = asf->packet_size_left + asf->packet_padsize;
+	    //printf("PacketLeftSize:%d  Pad:%d Pos:%Ld\n", asf->packet_size_left, asf->packet_padsize, url_ftell(pb));
+	    /* fail safe */
+	    url_fskip(pb, ret);
 	    ret = asf_get_packet(s);
 	    //printf("READ ASF PACKET  %d   r:%d   c:%d\n", ret, asf->packet_size_left, pc++);
 	    if (ret < 0)
@@ -1083,24 +1078,12 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             continue;
 	}
 	if (asf->packet_time_start == 0) {
-            int num;
-	    if (--asf->packet_segments < 0)
-		continue;
 	    /* read frame header */
-	    num = get_byte(pb);
+            int num = get_byte(pb);
+	    asf->packet_segments--;
 	    rsize++;
 	    asf->packet_key_frame = (num & 0x80) >> 7;
 	    asf->stream_index = asf->asfid2avid[num & 0x7f];
-	    if (asf->stream_index < 0)
-	    {
-		/* unhandled packet (should not happen) */
-		url_fskip(pb, asf->packet_frag_size);
-		asf->packet_size_left -= asf->packet_frag_size;
-		printf("ff asf skip %d  %d\n", asf->packet_frag_size, num &0x7f);
-                continue;
-	    }
-	    asf->asf_st = s->streams[asf->stream_index]->priv_data;
-	    //printf("ASFST  %p    %d <> %d\n", asf->asf_st, asf->stream_index, num & 0x7f);
 	    // sequence should be ignored!
 	    DO_2BITS(asf->packet_property >> 4, asf->packet_seq, 0);
 	    DO_2BITS(asf->packet_property >> 2, asf->packet_frag_offset, 0);
@@ -1122,7 +1105,6 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 		    rsize++;
 		}
 	    }
-
 	    if (asf->packet_flags & 0x01) {
 		DO_2BITS(asf->packet_segsizetype >> 6, asf->packet_frag_size, 0); // 0 is illegal
 		//printf("Fragsize %d\n", asf->packet_frag_size);
@@ -1130,11 +1112,9 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 		asf->packet_frag_size = asf->packet_size_left - rsize;
 		//printf("Using rest  %d %d %d\n", asf->packet_frag_size, asf->packet_size_left, rsize);
 	    }
-	    if (asf->packet_replic_size == 1)
-	    {
+	    if (asf->packet_replic_size == 1) {
 		asf->packet_multi_size = asf->packet_frag_size;
-		if (asf->packet_multi_size > asf->packet_size_left)
-		{
+		if (asf->packet_multi_size > asf->packet_size_left) {
 		    asf->packet_segments = 0;
                     continue;
 		}
@@ -1142,6 +1122,16 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 #undef DO_2BITS
 	    asf->packet_size_left -= rsize;
 	    //printf("___objsize____  %d   %d    rs:%d\n", asf->packet_obj_size, asf->packet_frag_offset, rsize);
+
+	    if (asf->stream_index < 0) {
+                asf->packet_time_start = 0;
+		/* unhandled packet (should not happen) */
+		url_fskip(pb, asf->packet_frag_size);
+		asf->packet_size_left -= asf->packet_frag_size;
+		printf("ff asf skip %d  %d\n", asf->packet_frag_size, num & 0x7f);
+                continue;
+	    }
+	    asf->asf_st = s->streams[asf->stream_index]->priv_data;
 	}
 	asf_st = asf->asf_st;
 
@@ -1183,12 +1173,12 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    asf->packet_multi_size -= asf->packet_obj_size;
 	    //printf("COMPRESS size  %d  %d  %d   ms:%d\n", asf->packet_obj_size, asf->packet_frag_timestamp, asf->packet_size_left, asf->packet_multi_size);
 	}
-
 	if (asf_st->frag_offset == 0) {
 	    /* new packet */
 	    av_new_packet(&asf_st->pkt, asf->packet_obj_size);
 	    asf_st->seq = asf->packet_seq;
 	    asf_st->pkt.pts = asf->packet_frag_timestamp - asf->hdr.preroll;
+            asf_st->pkt.pts *= 1000; // us
 	    asf_st->pkt.stream_index = asf->stream_index;
 	    if (asf->packet_key_frame)
 		asf_st->pkt.flags |= PKT_FLAG_KEY;
@@ -1227,7 +1217,6 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 		    asf_st->pkt.data = newdata;
 		}
 	    }
-
 	    asf_st->frag_offset = 0;
 	    memcpy(pkt, &asf_st->pkt, sizeof(AVPacket));
 	    //printf("packet %d %d\n", asf_st->pkt.size, asf->packet_frag_size);
@@ -1247,6 +1236,7 @@ static int asf_read_close(AVFormatContext *s)
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
         av_free(st->priv_data);
+        av_free(st->extra_data);
     }
     //av_free(asf);
     return 0;
