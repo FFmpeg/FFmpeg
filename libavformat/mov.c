@@ -1075,6 +1075,30 @@ fail:
     return ret;
 }
 
+static int mov_aaxc_crypto(MOVContext *c)
+{
+    if (c->audible_key_size != 16) {
+        av_log(c->fc, AV_LOG_FATAL, "[aaxc] audible_key value needs to be 16 bytes!\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (c->audible_iv_size != 16) {
+        av_log(c->fc, AV_LOG_FATAL, "[aaxc] audible_iv value needs to be 16 bytes!\n");
+        return AVERROR(EINVAL);
+    }
+
+    c->aes_decrypt = av_aes_alloc();
+    if (!c->aes_decrypt) {
+        return AVERROR(ENOMEM);
+    }
+
+    memcpy(c->file_key, c->audible_key, 16);
+    memcpy(c->file_iv, c->audible_iv, 16);
+    c->aax_mode = 1;
+
+    return 0;
+}
+
 // Audible AAX (and AAX+) bytestream decryption
 static int aax_filter(uint8_t *input, int size, MOVContext *c)
 {
@@ -1122,6 +1146,11 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     comp_brands_str[comp_brand_size] = 0;
     av_dict_set(&c->fc->metadata, "compatible_brands",
                 comp_brands_str, AV_DICT_DONT_STRDUP_VAL);
+
+    // Logic for handling Audible's .aaxc files
+    if (!strcmp(type, "aaxc")) {
+        mov_aaxc_crypto(c);
+    }
 
     return 0;
 }
@@ -8169,6 +8198,10 @@ static const AVOption mov_options[] = {
     { "export_xmp", "Export full XMP metadata", OFFSET(export_xmp),
         AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, .flags = FLAGS },
     { "activation_bytes", "Secret bytes for Audible AAX files", OFFSET(activation_bytes),
+        AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_DECODING_PARAM },
+    { "audible_key", "AES-128 Key for Audible AAXC files", OFFSET(audible_key),
+        AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_DECODING_PARAM },
+    { "audible_iv", "AES-128 IV for Audible AAXC files", OFFSET(audible_iv),
         AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_DECODING_PARAM },
     { "audible_fixed_key", // extracted from libAAX_SDK.so and AAXSDKWin.dll files!
         "Fixed key used for handling Audible AAX files", OFFSET(audible_fixed_key),
