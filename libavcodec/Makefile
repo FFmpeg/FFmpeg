@@ -15,7 +15,8 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o msmpeg4.o \
       mpeg12.o h263dec.o svq1.o rv10.o mpegaudiodec.o pcm.o simple_idct.o \
-      ratecontrol.o adpcm.o eval.o dv.o error_resilience.o
+      ratecontrol.o adpcm.o eval.o dv.o error_resilience.o \
+      wmadec.o fft.o mdct.o
 ASM_OBJS=
 
 # currently using liba52 for ac3 decoding
@@ -93,7 +94,7 @@ LIB= libavcodec.a
 ifeq ($(BUILD_SHARED),yes)
 SLIB= libavcodec.so
 endif
-TESTS= imgresample-test dct-test motion-test
+TESTS= imgresample-test dct-test motion-test fft-test
 
 all: $(LIB) $(SLIB)
 
@@ -108,6 +109,14 @@ $(SLIB): $(OBJS)
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
 
 dsputil.o: dsputil.c dsputil.h
+
+# specific sse code
+%_sse.o : %_sse.c
+	$(CC) $(CFLAGS) -msse -c -o $@ $< 
+
+# specific 3dnow code
+%_3dnow.o : %_3dnow.c
+	$(CC) $(CFLAGS) -m3dnow -c -o $@ $< 
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
@@ -163,6 +172,9 @@ dct-test: dct-test.o jfdctfst.o jfdctint.o i386/fdct_mmx.o\
 	$(CC) -o $@ $^ -lm
 
 motion-test: motion_test.o $(LIB)
+	$(CC) -o $@ $^ -lm
+
+fft-test: fft-test.o fft.o mdct.o
 	$(CC) -o $@ $^ -lm
 
 install: all
