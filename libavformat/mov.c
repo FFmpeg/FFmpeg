@@ -1431,11 +1431,18 @@ static int mov_read_cmov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 /* edit list atom */
 static int mov_read_elst(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
+  int i, edit_count;
   print_atom("elst", atom);
 
   get_byte(pb); /* version */
   get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
-  c->streams[c->fc->nb_streams-1]->edit_count = get_be32(pb);     /* entries */
+  edit_count= c->streams[c->fc->nb_streams-1]->edit_count = get_be32(pb);     /* entries */
+  
+  for(i=0; i<edit_count; i++){
+    get_be32(pb); /* Track duration */
+    get_be32(pb); /* Media time */
+    get_be32(pb); /* Media rate */
+  }
 #ifdef DEBUG
   av_log(NULL, AV_LOG_DEBUG, "track[%i].edit_count = %i\n", c->fc->nb_streams-1, c->streams[c->fc->nb_streams-1]->edit_count);
 #endif
@@ -1452,7 +1459,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'd', 'p', 'n', 'd' ), mov_read_leaf },
 { MKTAG( 'd', 'r', 'e', 'f' ), mov_read_leaf },
 { MKTAG( 'e', 'd', 't', 's' ), mov_read_default },
-//{ MKTAG( 'e', 'l', 's', 't' ), mov_read_elst }, //broken, try some movs from http://videos.av7.net/
+{ MKTAG( 'e', 'l', 's', 't' ), mov_read_elst },
 { MKTAG( 'f', 'r', 'e', 'e' ), mov_read_leaf },
 { MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
 { MKTAG( 'h', 'i', 'n', 't' ), mov_read_leaf },
