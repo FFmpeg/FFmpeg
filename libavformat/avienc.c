@@ -127,6 +127,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', '2', '5') },
     { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'g', '1') }, 
     { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'g', '2') }, 
+    { CODEC_ID_MPEG2VIDEO, MKTAG('m', 'p', 'g', '2') }, 
     { CODEC_ID_MPEG1VIDEO, MKTAG('P', 'I', 'M', '1') }, 
     { CODEC_ID_MPEG1VIDEO, MKTAG('V', 'C', 'R', '2') }, 
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
