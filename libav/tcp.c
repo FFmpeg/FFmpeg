@@ -22,7 +22,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+#ifndef __BEOS__
+# include <arpa/inet.h>
+#else
+# include "barpainet.h"
+#endif
 #include <netdb.h>
 
 typedef struct TCPContext {
@@ -103,10 +107,18 @@ static int tcp_read(URLContext *h, UINT8 *buf, int size)
 
     size1 = size;
     while (size > 0) {
+#ifdef CONFIG_BEOS_NETSERVER
+        len = recv (s->fd, buf, size, 0);
+#else
         len = read (s->fd, buf, size);
+#endif
         if (len < 0) {
             if (errno != EINTR && errno != EAGAIN)
+#ifdef __BEOS__
+                return errno;
+#else
                 return -errno;
+#endif
             else
                 continue;
         } else if (len == 0) {
@@ -125,9 +137,17 @@ static int tcp_write(URLContext *h, UINT8 *buf, int size)
 
     size1 = size;
     while (size > 0) {
+#ifdef CONFIG_BEOS_NETSERVER
+        ret = send (s->fd, buf, size, 0);
+#else
         ret = write (s->fd, buf, size);
+#endif
         if (ret < 0 && errno != EINTR && errno != EAGAIN)
+#ifdef __BEOS__
+            return errno;
+#else
             return -errno;
+#endif
         size -= ret;
         buf += ret;
     }
@@ -137,7 +157,11 @@ static int tcp_write(URLContext *h, UINT8 *buf, int size)
 static int tcp_close(URLContext *h)
 {
     TCPContext *s = h->priv_data;
+#ifdef CONFIG_BEOS_NETSERVER
+    closesocket(s->fd);
+#else
     close(s->fd);
+#endif
     av_free(s);
     return 0;
 }

@@ -21,7 +21,11 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
+#ifndef __BEOS__
+# include <arpa/inet.h>
+#else
+# include "barpainet.h"
+#endif
 
 //#define DEBUG
 

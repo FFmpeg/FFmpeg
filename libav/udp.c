@@ -21,7 +21,11 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
+#ifndef __BEOS__
+# include <arpa/inet.h>
+#else
+# include "barpainet.h"
+#endif
 #include <netdb.h>
 
 typedef struct {
@@ -154,6 +158,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     getsockname(udp_fd, (struct sockaddr *)&my_addr1, &len);
     s->local_port = ntohs(my_addr1.sin_port);
 
+#ifndef CONFIG_BEOS_NETSERVER
     if (s->is_multicast) {
         if (h->flags & URL_WRONLY) {
             /* output */
@@ -174,6 +179,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             }
         }
     }
+#endif
 
     if (is_output) {
         /* limit the tx buf size to limit latency */
@@ -189,7 +195,11 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     return 0;
  fail:
     if (udp_fd >= 0)
+#ifdef CONFIG_BEOS_NETSERVER
+        closesocket(udp_fd);
+#else
         close(udp_fd);
+#endif
     av_free(s);
     return -EIO;
 }
@@ -237,6 +247,7 @@ static int udp_close(URLContext *h)
 {
     UDPContext *s = h->priv_data;
 
+#ifndef CONFIG_BEOS_NETSERVER
     if (s->is_multicast && !(h->flags & URL_WRONLY)) {
         if (setsockopt(s->udp_fd, IPPROTO_IP, IP_DROP_MEMBERSHIP, 
                        &s->mreq, sizeof(s->mreq)) < 0) {
@@ -244,6 +255,9 @@ static int udp_close(URLContext *h)
         }
     }
     close(s->udp_fd);
+#else
+    closesocket(s->udp_fd);
+#endif
     av_free(s);
     return 0;
 }

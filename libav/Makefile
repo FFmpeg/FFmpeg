@@ -31,6 +31,10 @@ endif
 
 ifeq ($(CONFIG_NETWORK),yes)
 OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o
+# BeOS network stuff
+ifeq ($(CONFIG_BEOS_NETSERVER),yes)
+OBJS+= barpainet.o
+endif
 endif
 
 ifeq ($(CONFIG_VORBIS),yes)

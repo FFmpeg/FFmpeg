@@ -27,10 +27,6 @@
 #include <termios.h>
 #include <sys/resource.h>
 #endif
-#ifdef __BEOS__
-/* for snooze() */
-#include <OS.h>
-#endif
 #include <time.h>
 #include <ctype.h>
 
@@ -227,14 +223,18 @@ static void term_init(void)
     tcsetattr (0, TCSANOW, &tty);
 
     atexit(term_exit);
+#ifdef CONFIG_BEOS_NETSERVER
+    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK);
+#endif
 }
 
 /* read a key without blocking */
 static int read_key(void)
 {
-    struct timeval tv;
-    int n;
+    int n = 1;
     unsigned char ch;
+#ifndef CONFIG_BEOS_NETSERVER
+    struct timeval tv;
     fd_set rfds;
 
     FD_ZERO(&rfds);
@@ -242,6 +242,7 @@ static int read_key(void)
     tv.tv_sec = 0;
     tv.tv_usec = 0;
     n = select(1, &rfds, NULL, NULL, &tv);
+#endif
     if (n > 0) {
         n = read(0, &ch, 1);
         if (n == 1)
