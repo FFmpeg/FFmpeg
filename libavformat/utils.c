@@ -86,7 +86,9 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
     int score_max, score;
 
     /* specific test for image sequences */
-    if (!short_name && filename && filename_number_test(filename) >= 0) {
+    if (!short_name && filename && 
+        filename_number_test(filename) >= 0 &&
+        guess_image_format(filename)) {
         return guess_format("image", NULL, NULL);
     }
 

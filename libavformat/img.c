@@ -47,7 +47,7 @@ int emulate_frame_rate;
 
 static int image_probe(AVProbeData *p)
 {
-    if (filename_number_test(p->filename) >= 0)
+    if (filename_number_test(p->filename) >= 0 && guess_image_format(p->filename))
         return AVPROBE_SCORE_MAX;
     else
         return 0;
@@ -358,7 +358,7 @@ static AVOutputFormat imagepipe_oformat = {
     img_write_header,
     img_write_packet,
     img_write_trailer,
-    AVFMT_NEEDNUMBER | AVFMT_RAWPICTURE,
+    AVFMT_RAWPICTURE,
     img_set_parameters,
 };
 
