@@ -111,6 +111,7 @@ static int use_hq = 0;
 static int use_4mv = 0;
 static int do_deinterlace = 0;
 static int workaround_bugs = 0;
+static int dct_algo = 0;
 
 static int gop_size = 12;
 static int intra_only = 0;
@@ -1371,6 +1372,11 @@ void opt_workaround_bugs(const char *arg)
     workaround_bugs = atoi(arg);
 }
 
+void opt_dct_algo(const char *arg)
+{
+    dct_algo = atoi(arg);
+}
+
 void opt_frame_rate(const char *arg)
 {
     frame_rate = (int)(strtod(arg, 0) * FRAME_RATE_BASE);
@@ -1794,6 +1800,7 @@ void opt_output_file(const char *filename)
             video_enc->b_quant_factor = video_b_qfactor;
             video_enc->i_quant_offset = video_i_qoffset;
             video_enc->b_quant_offset = video_b_qoffset;
+            video_enc->dct_algo = dct_algo;
             
             if (do_psnr)
                 video_enc->get_psnr = 1;
@@ -2145,6 +2152,7 @@ const OptionDef options[] = {
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
+    { "dct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
     { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
     { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },
     { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },

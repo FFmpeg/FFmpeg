@@ -47,8 +47,8 @@ do_ffmpeg()
 {
     f="$1"
     shift
-    echo $ffmpeg -bitexact $*
-    $ffmpeg -bitexact -benchmark $* > $datadir/bench.tmp
+    echo $ffmpeg -bitexact -dct_algo 1 $*
+    $ffmpeg -bitexact -dct_algo 1 -benchmark $* > $datadir/bench.tmp
     md5sum -b $f >> $logfile
     expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
     echo `cat $datadir/bench2.tmp` $f >> $benchfile
@@ -58,8 +58,8 @@ do_ffmpeg_crc()
 {
     f="$1"
     shift
-    echo $ffmpeg -y -bitexact $* -f crc $datadir/ffmpeg.crc
-    $ffmpeg -y -bitexact $* -f crc $datadir/ffmpeg.crc
+    echo $ffmpeg -y -bitexact -dct_algo 1 $* -f crc $datadir/ffmpeg.crc
+    $ffmpeg -y -bitexact -dct_algo 1 $* -f crc $datadir/ffmpeg.crc
     echo -n "$f " >> $logfile
     cat $datadir/ffmpeg.crc >> $logfile
 }
