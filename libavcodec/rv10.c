@@ -438,12 +438,12 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         }
         seq= get_bits(&s->gb, 14)<<1;
 
-        if(v>1){
+        if(v>1 || (s->avctx->sub_id < 0x20201002 && v>0)){
             f= get_bits(&s->gb, av_log2(v-1)+1);
         }
         
         if(s->avctx->debug & FF_DEBUG_PICT_INFO){
-            av_log(s->avctx, AV_LOG_DEBUG, "F %d\n", f);
+            av_log(s->avctx, AV_LOG_DEBUG, "F %d/%d\n", f, v);
         }
 
         mb_pos= get_bits(&s->gb, av_log2(s->mb_num-1)+1);
