@@ -292,7 +292,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int frame_rate_index, ext_type, bytes_left;
     int frame_rate_ext_n, frame_rate_ext_d;
     int picture_structure, top_field_first, repeat_first_field, progressive_frame;
-    int horiz_size_ext, vert_size_ext;
+    int horiz_size_ext, vert_size_ext, bit_rate_ext;
 
     s->repeat_pict = 0;
     buf_end = buf + buf_size;
@@ -306,13 +306,14 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
             }
             break;
         case SEQ_START_CODE:
-            if (bytes_left >= 4) {
+            if (bytes_left >= 7) {
                 pc->width  = (buf[0] << 4) | (buf[1] >> 4);
                 pc->height = ((buf[1] & 0x0f) << 8) | buf[2];
                 avcodec_set_dimensions(avctx, pc->width, pc->height);
                 frame_rate_index = buf[3] & 0xf;
                 pc->frame_rate = avctx->frame_rate = frame_rate_tab[frame_rate_index];
                 avctx->frame_rate_base = MPEG1_FRAME_RATE_BASE;
+                avctx->bit_rate = ((buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6))*400;
                 avctx->codec_id = CODEC_ID_MPEG1VIDEO;
                 avctx->sub_id = 1;
             }
@@ -325,6 +326,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                     if (bytes_left >= 6) {
                         horiz_size_ext = ((buf[1] & 1) << 1) | (buf[2] >> 7);
                         vert_size_ext = (buf[2] >> 5) & 3;
+                        bit_rate_ext = ((buf[2] & 0x1F)<<7) | (buf[3]>>1);
                         frame_rate_ext_n = (buf[5] >> 5) & 3;
                         frame_rate_ext_d = (buf[5] & 0x1f);
                         pc->progressive_sequence = buf[1] & (1 << 3);
@@ -332,6 +334,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 
                         pc->width  |=(horiz_size_ext << 12);
                         pc->height |=( vert_size_ext << 12);
+                        avctx->bit_rate += (bit_rate_ext << 18) * 400;
                         avcodec_set_dimensions(avctx, pc->width, pc->height);
                         avctx->frame_rate = pc->frame_rate * (frame_rate_ext_n + 1);
                         avctx->frame_rate_base = MPEG1_FRAME_RATE_BASE * (frame_rate_ext_d + 1);
