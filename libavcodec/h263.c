@@ -273,10 +273,11 @@ void h263_encode_mb(MpegEncContext * s,
     }
 }
 
-static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr)
+
+void h263_pred_acdc(MpegEncContext * s, INT16 *block, int n)
 {
-    int a, c, x, y, wrap, pred, scale;
-    UINT16 *dc_val;
+    int x, y, wrap, a, c, pred_dc, scale, i;
+    INT16 *dc_val, *ac_val, *ac_val1;
 
     /* find prediction */
     if (n < 4) {
@@ -284,78 +285,68 @@ static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr)
         y = 2 * s->mb_y + 1 + ((n & 2) >> 1);
         wrap = s->mb_width * 2 + 2;
         dc_val = s->dc_val[0];
+        ac_val = s->ac_val[0][0];
         scale = s->y_dc_scale;
     } else {
         x = s->mb_x + 1;
         y = s->mb_y + 1;
         wrap = s->mb_width + 2;
         dc_val = s->dc_val[n - 4 + 1];
+        ac_val = s->ac_val[n - 4 + 1][0];
         scale = s->c_dc_scale;
     }
-
+    
+    ac_val += ((y) * wrap + (x)) * 16;
+    ac_val1 = ac_val;
+    
     /* B C
      * A X 
      */
     a = dc_val[(x - 1) + (y) * wrap];
     c = dc_val[(x) + (y - 1) * wrap];
     
-    if (s->ac_pred) {
-        if (s->h263_aic_dir)
-            pred = a;
-        else
-            pred = c;
-    } else if (a != 1024 && c != 1024)
-        pred = (a + c) >> 1;
-    else if (a != 1024)
-        pred = a;
-    else
-        pred = c;
-        
-    
-    /* we assume pred is positive */
-    pred = (pred) / scale;
-
-    /* prepare address for prediction update */
-    *dc_val_ptr = &dc_val[(x) + (y) * wrap];
-
-    return pred;
-}
-
-void h263_pred_ac(MpegEncContext * s, INT16 *block, int n)
-{
-    int x, y, wrap, i;
-    INT16 *ac_val, *ac_val1;
-
-    /* find prediction */
-    if (n < 4) {
-        x = 2 * s->mb_x + 1 + (n & 1);
-        y = 2 * s->mb_y + 1 + ((n & 2) >> 1);
-        wrap = s->mb_width * 2 + 2;
-        ac_val = s->ac_val[0][0];
-    } else {
-        x = s->mb_x + 1;
-        y = s->mb_y + 1;
-        wrap = s->mb_width + 2;
-        ac_val = s->ac_val[n - 4 + 1][0];
-    }
-    ac_val += ((y) * wrap + (x)) * 16;
-    ac_val1 = ac_val;
-
+    pred_dc = 1024;
     if (s->ac_pred) {
         if (s->h263_aic_dir) {
             /* left prediction */
-            ac_val -= 16;
-            for(i=1;i<8;i++) {
-                block[block_permute_op(i*8)] += ac_val[i];
+            if (a != 1024) {
+                ac_val -= 16;
+                for(i=1;i<8;i++) {
+                    block[block_permute_op(i*8)] += ac_val[i];
+                }
+                pred_dc = a;
             }
         } else {
             /* top prediction */
-            ac_val -= 16 * wrap;
-            for(i=1;i<8;i++) {
-                block[block_permute_op(i)] += ac_val[i + 8];
+            if (c != 1024) {
+                ac_val -= 16 * wrap;
+                for(i=1;i<8;i++) {
+                    block[block_permute_op(i)] += ac_val[i + 8];
+                }
+                pred_dc = c;
             }
         }
+    } else {
+        /* just DC prediction */
+        if (a != 1024 && c != 1024)
+            pred_dc = (a + c) >> 1;
+        else if (a != 1024)
+            pred_dc = a;
+        else
+            pred_dc = c;
     }
+    
+    /* we assume pred is positive */
+    block[0]=block[0]*scale + pred_dc;
+    
+    if (block[0] < 0)
+        block[0] = 0;
+    else if (!(block[0] & 1))
+        block[0]++;
+    
+    /* Update AC/DC tables */
+    dc_val[(x) + (y) * wrap] = block[0];
+    
     /* left copy */
     for(i=1;i<8;i++)
         ac_val1[i] = block[block_permute_op(i * 8)];
@@ -363,6 +354,7 @@ void h263_pred_ac(MpegEncContext * s, INT16 *block, int n)
     for(i=1;i<8;i++)
         ac_val1[8 + i] = block[block_permute_op(i)];
 }
+
 
 static inline int mid_pred(int a, int b, int c)
 {
@@ -1057,6 +1049,10 @@ int h263_decode_mb(MpegEncContext *s,
             if (s->ac_pred && s->h263_aic)
                 s->h263_aic_dir = get_bits1(&s->gb);
         }
+        if (s->h263_aic) {
+            s->y_dc_scale = 2 * s->qscale;
+            s->c_dc_scale = 2 * s->qscale;
+        }
         cbpy = get_vlc(&s->gb, &cbpy_vlc);
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
@@ -1154,11 +1150,10 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
 {
     int code, level, i, j, last, run;
     RLTable *rl = &rl_inter;
-    UINT16 *dc_val;
     const UINT8 *scan_table;
 
     scan_table = zigzag_direct;
-    if (s->h263_aic) {
+    if (s->h263_aic && s->mb_intra) {
         rl = &rl_intra_aic;
         i = 0;
         if (s->ac_pred) {
@@ -1194,16 +1189,8 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
         i = 0;
     }
     if (!coded) {
-        if (s->mb_intra && s->h263_aic) {
-            level = h263_pred_dc(s, n, &dc_val);
-            if (level < 0)
-                level = 0;
-            *dc_val = level * s->y_dc_scale;  
-            block[0] = level;
-            h263_pred_ac(s, block, n);
-            i = 64;
-            //i = 1;
-        }
+        if (s->mb_intra && s->h263_aic)
+            goto not_coded;
         s->block_last_index[n] = i - 1;
         return 0;
     }
@@ -1229,15 +1216,6 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             if (get_bits1(&s->gb))
                 level = -level;
         }
-        if (!i && s->h263_aic) {
-            level += h263_pred_dc(s, n, &dc_val);
-            if (level < 0)
-                level = 0;
-            else if (level & 1)
-                level++;
-            *dc_val = level * s->y_dc_scale;
-            
-        }
         i += run;
         if (i >= 64)
             return -1;
@@ -1247,9 +1225,9 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             break;
         i++;
     }
-    
-    if (s->h263_aic) {
-        h263_pred_ac(s, block, n);
+not_coded:    
+    if (s->mb_intra && s->h263_aic) {
+        h263_pred_acdc(s, block, n);
         i = 64;
     }
     s->block_last_index[n] = i;

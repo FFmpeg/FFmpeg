@@ -745,7 +745,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
-        if (s->h263_pred) {
+        if (s->h263_pred || s->h263_aic) {
           if(s->mbintra_table[mb_x + mb_y*s->mb_width])
           {
             int wrap, xy, v;
@@ -754,7 +754,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             xy = 2 * mb_x + 1 +  (2 * mb_y + 1) * wrap;
             v = 1024;
             
-	    s->dc_val[0][xy] = v;
+            s->dc_val[0][xy] = v;
             s->dc_val[0][xy + 1] = v;
             s->dc_val[0][xy + wrap] = v;
             s->dc_val[0][xy + 1 + wrap] = v;
@@ -784,7 +784,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->last_dc[2] = 128 << s->intra_dc_precision;
         }
     }
-    else if (s->h263_pred)
+    else if (s->h263_pred || s->h263_aic)
         s->mbintra_table[mb_x + mb_y*s->mb_width]=1;
 
     /* update motion predictor */
@@ -1327,12 +1327,14 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
 {
     int i, level, qmul, qadd;
     int nCoeffs;
-
+    
     if (s->mb_intra) {
-        if (n < 4) 
-            block[0] = block[0] * s->y_dc_scale;
-        else
-            block[0] = block[0] * s->c_dc_scale;
+        if (!s->h263_aic) {
+            if (n < 4) 
+                block[0] = block[0] * s->y_dc_scale;
+            else
+                block[0] = block[0] * s->c_dc_scale;
+        }
         i = 1;
         nCoeffs= 64; //does not allways use zigzag table 
     } else {

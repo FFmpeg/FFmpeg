@@ -89,26 +89,27 @@ static void dct_unquantize_h263_mmx(MpegEncContext *s,
         qadd = (s->qscale - 1) | 1;
 
     if (s->mb_intra) {
-        if (n < 4)
-            block[0] = block[0] * s->y_dc_scale;
-        else
-            block[0] = block[0] * s->c_dc_scale;
-
-	for(i=1; i<8; i++) {
-		level = block[i];
-		if (level) {
-			if (level < 0) {
-				level = level * qmul - qadd;
-			} else {
-				level = level * qmul + qadd;
-			}
-			block[i] = level;
-		}
-	}
-	nCoeffs=64;
+        if (!s->h263_aic) {
+            if (n < 4)
+                block[0] = block[0] * s->y_dc_scale;
+            else
+                block[0] = block[0] * s->c_dc_scale;
+        }
+	    for(i=1; i<8; i++) {
+		    level = block[i];
+		    if (level) {
+			    if (level < 0) {
+				    level = level * qmul - qadd;
+			    } else {
+				    level = level * qmul + qadd;
+			    }
+			    block[i] = level;
+		    }
+	    }
+        nCoeffs=64;
     } else {
         i = 0;
-	nCoeffs= zigzag_end[ s->block_last_index[n] ];
+        nCoeffs= zigzag_end[ s->block_last_index[n] ];
     }
 //printf("%d %d  ", qmul, qadd);
 asm volatile(
