@@ -32,10 +32,10 @@ stddev:  0.00 bytes:7602176
 6a469f42ce6946dd4c708f9e51e3da6a *./data/a-mpeg4-rc.avi
 df9de7134d961119705b4e0cabca1f12 *./data/out.yuv
 stddev:  4.20 bytes:7145472
-bb11d9808375911ea63d4f0889306037 *./data/a-mpeg4-adv.avi
-e465df12f2c8a6492a6ec0b1bddc1d0d *./data/out.yuv
+742ffadf3c309d2c4ac888a6a0905bf9 *./data/a-mpeg4-adv.avi
+b02f71e91e9368ce94814ab3d74f91ba *./data/out.yuv
 stddev:  4.97 bytes:7602176
-fd09e45413a6b6e3a19bf9dd77503b17 *./data/a-mpeg1b.mpg
+f68c426a1ccb7e1e7e0a76ebf01c8860 *./data/a-mpeg1b.mpg
 71e80b8ff8da567f1bbff000cd925627 *./data/out.yuv
 stddev:  4.07 bytes:6842368
 e9218a1db885fe0262e88f9df630307d *./data/a-mjpeg.avi

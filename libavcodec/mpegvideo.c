@@ -3916,7 +3916,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                         ff_mpeg4_stuffing(&s->pb);
 
                     align_put_bits(&s->pb);
-//                    flush_put_bits(&s->pb);
+                    flush_put_bits(&s->pb);
+
+                    assert((get_bit_count(&s->pb)&7) == 0);
                     current_packet_size= pbBufPtr(&s->pb) - s->ptr_lastgob;
         
                     if (s->avctx->rtp_callback)
@@ -3944,7 +3946,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                         s->last_bits= bits;
                     }
     
-                    s->ptr_lastgob = pbBufPtr(&s->pb);
+                    s->ptr_lastgob += current_packet_size;
                     s->first_slice_line=1;
                     s->resync_mb_x=mb_x;
                     s->resync_mb_y=mb_y;
