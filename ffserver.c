@@ -245,6 +245,7 @@ static int compute_send_delay(HTTPContext *c);
 /* RTSP handling */
 static int rtsp_parse_request(HTTPContext *c);
 static void rtsp_cmd_describe(HTTPContext *c, const char *url);
+static void rtsp_cmd_options(HTTPContext *c, const char *url);
 static void rtsp_cmd_setup(HTTPContext *c, const char *url, RTSPHeader *h);
 static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPHeader *h);
 static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPHeader *h);
@@ -2613,6 +2614,8 @@ static int rtsp_parse_request(HTTPContext *c)
 
     if (!strcmp(cmd, "DESCRIBE")) {
         rtsp_cmd_describe(c, url);
+    } else if (!strcmp(cmd, "OPTIONS")) {
+        rtsp_cmd_options(c, url);
     } else if (!strcmp(cmd, "SETUP")) {
         rtsp_cmd_setup(c, url, header);
     } else if (!strcmp(cmd, "PLAY")) {
@@ -2722,6 +2725,15 @@ static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer,
     url_close_dyn_buf(pb, pbuffer);
     av_free(*pbuffer);
     return -1;
+}
+
+static void rtsp_cmd_options(HTTPContext *c, const char *url)
+{
+//    rtsp_reply_header(c, RTSP_STATUS_OK);
+    url_fprintf(c->pb, "RTSP/1.0 %d %s\r\n", RTSP_STATUS_OK, "OK");
+    url_fprintf(c->pb, "CSeq: %d\r\n", c->seq);
+    url_fprintf(c->pb, "Public: %s\r\n", "OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY, PAUSE");
+    url_fprintf(c->pb, "\r\n");
 }
 
 static void rtsp_cmd_describe(HTTPContext *c, const char *url)
