@@ -2125,7 +2125,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             break;
         }
         state = ((state << 8) | v) & 0xffffff;
-        if( get_bits_count(&s->gb) > s->gb.size*8){
+        if( get_bits_count(&s->gb) > s->gb.size*8-32){
             printf("no VOP startcode found\n");
             return -1;
         }
