@@ -29,10 +29,10 @@
 
 //the following 4 flags are not completly implemented
 //internal chrominace subsamling info
-#define SWS_FULL_CHR_H_INT	0x200
+#define SWS_FULL_CHR_H_INT	0x2000
 //input subsampling info
-#define SWS_FULL_CHR_H_INP	0x400
-#define SWS_DIRECT_BGR		0x800
+#define SWS_FULL_CHR_H_INP	0x4000
+#define SWS_DIRECT_BGR		0x8000
 
 #define SWS_PRINT_INFO 0x1000
 
