@@ -14,6 +14,9 @@ version 0.4.5:
 - fixed msmpeg4 slice issues (tell me if you still find problems).
 - fixed opendivx bugs with newer versions (added VOL header decoding).
 - added support for mplayer interface.
+- added macroblock skip optimization.
+- added MJPEG decoder (still lacking some jpeg features).
+- added mmx/mmxext idct from libmpeg2.
 
 version 0.4.4:
 
