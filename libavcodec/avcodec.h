@@ -100,6 +100,9 @@ enum CodecID {
     CODEC_ID_PGMYUV,
     CODEC_ID_PAM,
     CODEC_ID_FFVHUFF,
+    CODEC_ID_RV30,
+    CODEC_ID_RV40,
+    
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -1884,6 +1887,8 @@ extern AVCodec h263i_decoder;
 extern AVCodec flv_decoder;
 extern AVCodec rv10_decoder;
 extern AVCodec rv20_decoder;
+extern AVCodec rv30_decoder;
+extern AVCodec rv40_decoder;
 extern AVCodec svq1_decoder;
 extern AVCodec svq3_decoder;
 extern AVCodec dvvideo_decoder;

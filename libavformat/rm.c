@@ -652,7 +652,9 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st->codec.codec_tag = get_le32(pb);
 //                av_log(NULL, AV_LOG_DEBUG, "%X %X\n", st->codec.codec_tag, MKTAG('R', 'V', '2', '0'));
                 if (   st->codec.codec_tag != MKTAG('R', 'V', '1', '0')
-                    && st->codec.codec_tag != MKTAG('R', 'V', '2', '0'))
+                    && st->codec.codec_tag != MKTAG('R', 'V', '2', '0')
+                    && st->codec.codec_tag != MKTAG('R', 'V', '3', '0')
+                    && st->codec.codec_tag != MKTAG('R', 'V', '4', '0'))
                     goto fail1;
                 st->codec.width = get_be16(pb);
                 st->codec.height = get_be16(pb);
@@ -676,10 +678,13 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 h263_hack_version = bswap_32(((uint32_t*)st->codec.extradata)[1]);
 #endif
                 st->codec.sub_id = h263_hack_version;
-                if((h263_hack_version>>28)==1)
-                    st->codec.codec_id = CODEC_ID_RV10;
-                else
-                    st->codec.codec_id = CODEC_ID_RV20;
+                switch((h263_hack_version>>28)){
+                case 1: st->codec.codec_id = CODEC_ID_RV10; break;
+                case 2: st->codec.codec_id = CODEC_ID_RV20; break;
+                case 3: st->codec.codec_id = CODEC_ID_RV30; break;
+                case 4: st->codec.codec_id = CODEC_ID_RV40; break;
+                default: goto fail1;
+                }
             }
 skip:
             /* skip codec info */
