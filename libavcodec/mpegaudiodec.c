@@ -25,6 +25,7 @@
 //#define DEBUG
 #include "avcodec.h"
 #include "mpegaudio.h"
+#include "dsputil.h"
 
 /*
  * TODO:
