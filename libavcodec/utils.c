@@ -518,20 +518,20 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
 }
 
 
-static int encode_init(AVCodecContext *s)
+static int raw_encode_init(AVCodecContext *s)
 {
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, 
-                        void *data, int *data_size,
-                        UINT8 *buf, int buf_size)
+static int raw_decode_frame(AVCodecContext *avctx,
+			    void *data, int *data_size,
+			    UINT8 *buf, int buf_size)
 {
     return -1;
 }
 
-static int encode_frame(AVCodecContext *avctx,
-                        unsigned char *frame, int buf_size, void *data)
+static int raw_encode_frame(AVCodecContext *avctx,
+			    unsigned char *frame, int buf_size, void *data)
 {
     return -1;
 }
@@ -541,8 +541,8 @@ AVCodec rawvideo_codec = {
     CODEC_TYPE_VIDEO,
     CODEC_ID_RAWVIDEO,
     0,
-    encode_init,
-    encode_frame,
+    raw_encode_init,
+    raw_encode_frame,
     NULL,
-    decode_frame,
+    raw_decode_frame,
 };

@@ -222,3 +222,10 @@ jpeg_fdct_ifast (DCTELEM * data)
     dataptr++;			/* advance pointer to next column */
   }
 }
+
+
+#undef GLOBAL
+#undef CONST_BITS
+#undef DESCALE
+#undef FIX_0_541196100
+#undef FIX_1_306562965

@@ -934,7 +934,7 @@ int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
     return 0;
 }
 
-static inline void memsetw(short *tab, int val, int n)
+static inline void msmpeg4_memsetw(short *tab, int val, int n)
 {
     int i;
     for(i=0;i<n;i++)
@@ -1074,23 +1074,23 @@ int msmpeg4_decode_mb(MpegEncContext *s,
             int wrap;
             /* reset DC pred (set previous line to 1024) */
             wrap = 2 * s->mb_width + 2;
-            memsetw(&s->dc_val[0][(1) + (2 * s->mb_y) * wrap], 
-                    1024, 2 * s->mb_width);
-            wrap = s->mb_width + 2;
-            memsetw(&s->dc_val[1][(1) + (s->mb_y) * wrap], 
-                    1024, s->mb_width);
-            memsetw(&s->dc_val[2][(1) + (s->mb_y) * wrap], 
-                    1024, s->mb_width);
-            
-            /* reset AC pred (set previous line to 0) */
-            wrap = s->mb_width * 2 + 2;
-            memsetw(s->ac_val[0][0] + (1 + (2 * s->mb_y) * wrap)*16,
-                    0, 2 * s->mb_width*16);
-            wrap = s->mb_width + 2;
-            memsetw(s->ac_val[1][0] + (1 + (s->mb_y) * wrap)*16,
-                    0, s->mb_width*16);
-            memsetw(s->ac_val[2][0] + (1 + (s->mb_y) * wrap)*16,
-                    0, s->mb_width*16);
+	    msmpeg4_memsetw(&s->dc_val[0][(1) + (2 * s->mb_y) * wrap],
+			    1024, 2 * s->mb_width);
+	    wrap = s->mb_width + 2;
+	    msmpeg4_memsetw(&s->dc_val[1][(1) + (s->mb_y) * wrap],
+			    1024, s->mb_width);
+	    msmpeg4_memsetw(&s->dc_val[2][(1) + (s->mb_y) * wrap],
+			    1024, s->mb_width);
+
+	    /* reset AC pred (set previous line to 0) */
+	    wrap = s->mb_width * 2 + 2;
+	    msmpeg4_memsetw(s->ac_val[0][0] + (1 + (2 * s->mb_y) * wrap)*16,
+			    0, 2 * s->mb_width*16);
+	    wrap = s->mb_width + 2;
+	    msmpeg4_memsetw(s->ac_val[1][0] + (1 + (s->mb_y) * wrap)*16,
+			    0, s->mb_width*16);
+	    msmpeg4_memsetw(s->ac_val[2][0] + (1 + (s->mb_y) * wrap)*16,
+			    0, s->mb_width*16);
 
             s->first_slice_line = 1;
         } else {

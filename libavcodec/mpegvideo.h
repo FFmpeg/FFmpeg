@@ -17,6 +17,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef AVCODEC_MPEGVIDEO_H
+#define AVCODEC_MPEGVIDEO_H
+
 #define FRAME_SKIPED 100 // return value for header parsers if frame is not coded
 
 enum OutputFormat {
@@ -510,6 +513,4 @@ int ff_rate_estimate_qscale_pass2(MpegEncContext *s);
 void ff_write_pass1_stats(MpegEncContext *s);
 void ff_rate_control_uninit(MpegEncContext *s);
 
-
-
-
+#endif /* AVCODEC_MPEGVIDEO_H */

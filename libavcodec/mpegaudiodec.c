@@ -2498,3 +2498,14 @@ AVCodec mp3_decoder =
     NULL,
     decode_frame,
 };
+
+#undef C1
+#undef C2
+#undef C3
+#undef C4
+#undef C5
+#undef C6
+#undef C7
+#undef C8
+#undef FRAC_BITS
+#undef HEADER_SIZE

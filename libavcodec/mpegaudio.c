@@ -775,3 +775,5 @@ AVCodec mp2_encoder = {
     MPA_encode_frame,
     NULL,
 };
+
+#undef FIX

@@ -548,3 +548,5 @@ int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
     }
     return 0;
 }
+
+#undef FIX

@@ -456,8 +456,8 @@ void mjpeg_picture_trailer(MpegEncContext *s)
     put_marker(&s->pb, EOI);
 }
 
-static inline void encode_dc(MpegEncContext *s, int val, 
-                             UINT8 *huff_size, UINT16 *huff_code)
+static inline void mjpeg_encode_dc(MpegEncContext *s, int val,
+				   UINT8 *huff_size, UINT16 *huff_code)
 {
     int mant, nbits;
 
@@ -496,11 +496,11 @@ static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
     dc = block[0]; /* overflow is impossible */
     val = dc - s->last_dc[component];
     if (n < 4) {
-        encode_dc(s, val, m->huff_size_dc_luminance, m->huff_code_dc_luminance);
+        mjpeg_encode_dc(s, val, m->huff_size_dc_luminance, m->huff_code_dc_luminance);
         huff_size_ac = m->huff_size_ac_luminance;
         huff_code_ac = m->huff_code_ac_luminance;
     } else {
-        encode_dc(s, val, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+        mjpeg_encode_dc(s, val, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
         huff_size_ac = m->huff_size_ac_chrominance;
         huff_code_ac = m->huff_code_ac_chrominance;
     }
@@ -808,14 +808,14 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
     return 0;
 }
 
-static inline int decode_dc(MJpegDecodeContext *s, int dc_index)
+static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
 {
     int code, diff;
 
     code = get_vlc(&s->gb, &s->vlcs[0][dc_index]);
     if (code < 0)
     {
-	dprintf("decode_dc: bad vlc: %d:%d (%p)\n", 0, dc_index,
+	dprintf("mjpeg_decode_dc: bad vlc: %d:%d (%p)\n", 0, dc_index,
                 &s->vlcs[0][dc_index]);
         return 0xffff;
     }
@@ -839,7 +839,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     INT16 *quant_matrix;
 
     /* DC coef */
-    val = decode_dc(s, dc_index);
+    val = mjpeg_decode_dc(s, dc_index);
     if (val == 0xffff) {
         dprintf("error dc\n");
         return -1;

@@ -103,7 +103,7 @@ static void build_xlaw_table(UINT8 *linear_to_xlaw,
     linear_to_xlaw[0] = linear_to_xlaw[1];
 }
 
-static int encode_init(AVCodecContext *avctx)
+static int pcm_encode_init(AVCodecContext *avctx)
 {
     avctx->frame_size = 1;
     switch(avctx->codec->id) {
@@ -131,7 +131,7 @@ static int encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int encode_close(AVCodecContext *avctx)
+static int pcm_encode_close(AVCodecContext *avctx)
 {
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_ALAW:
@@ -149,8 +149,8 @@ static int encode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static int encode_frame(AVCodecContext *avctx,
-                        unsigned char *frame, int buf_size, void *data)
+static int pcm_encode_frame(AVCodecContext *avctx,
+			    unsigned char *frame, int buf_size, void *data)
 {
     int n, sample_size, v;
     short *samples;
@@ -247,7 +247,7 @@ typedef struct PCMDecode {
     short table[256];
 } PCMDecode;
 
-static int decode_init(AVCodecContext * avctx)
+static int pcm_decode_init(AVCodecContext * avctx)
 {
     PCMDecode *s = avctx->priv_data;
     int i;
@@ -267,9 +267,9 @@ static int decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, 
-                        void *data, int *data_size,
-                        UINT8 *buf, int buf_size)
+static int pcm_decode_frame(AVCodecContext *avctx,
+			    void *data, int *data_size,
+			    UINT8 *buf, int buf_size)
 {
     PCMDecode *s = avctx->priv_data;
     int n;
@@ -344,9 +344,9 @@ AVCodec name ## _encoder = {                    \
     CODEC_TYPE_AUDIO,                           \
     id,                                         \
     0,                                          \
-    encode_init,                                \
-    encode_frame,                               \
-    encode_close,                               \
+    pcm_encode_init,				\
+    pcm_encode_frame,				\
+    pcm_encode_close,				\
     NULL,                                       \
 };                                              \
 AVCodec name ## _decoder = {                    \
@@ -354,10 +354,10 @@ AVCodec name ## _decoder = {                    \
     CODEC_TYPE_AUDIO,                           \
     id,                                         \
     sizeof(PCMDecode),                          \
-    decode_init,                                \
+    pcm_decode_init,				\
     NULL,                                       \
     NULL,                                       \
-    decode_frame,                               \
+    pcm_decode_frame,                           \
 };
 
 PCM_CODEC(CODEC_ID_PCM_S16LE, pcm_s16le);
@@ -368,3 +368,5 @@ PCM_CODEC(CODEC_ID_PCM_S8, pcm_s8);
 PCM_CODEC(CODEC_ID_PCM_U8, pcm_u8);
 PCM_CODEC(CODEC_ID_PCM_ALAW, pcm_alaw);
 PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
+
+#undef PCM_CODEC

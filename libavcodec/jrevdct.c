@@ -1166,4 +1166,5 @@ void j_rev_dct(DCTBLOCK data)
   }
 }
 
-
+#undef FIX
+#undef CONST_BITS

@@ -587,3 +587,5 @@ void simple_idct (short *block)
 		idctSparseCol(block + i);
 #endif
 }
+
+#undef COL_SHIFT
