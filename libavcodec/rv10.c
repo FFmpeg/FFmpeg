@@ -345,6 +345,8 @@ static int rv10_decode_init(AVCodecContext *avctx)
 
     s->h263_rv10 = 1;
     s->rv10_version = avctx->sub_id;
+    
+    s->flags= avctx->flags;
 
     if (MPV_common_init(s) < 0)
         return -1;
@@ -507,4 +509,5 @@ AVCodec rv10_decoder = {
     NULL,
     rv10_decode_end,
     rv10_decode_frame,
+    CODEC_CAP_DR1
 };
