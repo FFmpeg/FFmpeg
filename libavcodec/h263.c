@@ -4648,7 +4648,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     int time_incr, time_increment;
 
     s->pict_type = get_bits(gb, 2) + I_TYPE;	/* pict type: I = 0 , P = 1 */
-    if(s->pict_type==B_TYPE && s->low_delay && s->vol_control_parameters==0){
+    if(s->pict_type==B_TYPE && s->low_delay && s->vol_control_parameters==0 && !(s->flags & CODEC_FLAG_LOW_DELAY)){
         printf("low_delay flag set, but shouldnt, clearing it\n");
         s->low_delay=0;
     }
