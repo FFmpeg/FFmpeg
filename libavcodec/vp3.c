@@ -2061,10 +2061,6 @@ static void render_fragments(Vp3DecodeContext *s,
     int motion_halfpel_index;
     uint8_t *motion_source;
 
-    int16_t *op;
-    uint8_t *dest;
-    int j, k;
-
     debug_vp3("  vp3: rendering final fragments for %s\n",
         (plane == 0) ? "Y plane" : (plane == 1) ? "U plane" : "V plane");
 
@@ -2186,22 +2182,9 @@ av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, 
                     s->all_fragments[i].coeff_count,
                     output_samples);
                 if (s->all_fragments[i].coding_method == MODE_INTRA) {
-                    /* this really needs to be optimized sooner or later */
-                    op = output_samples;
-                    dest = output_plane + s->all_fragments[i].first_pixel;
-                    for (j = 0; j < 8; j++) {
-                        for (k = 0; k < 8; k++) {
-                            if (*op < -128)
-                                *dest = 0;
-                            else if (*op > 127)
-                                *dest = 255;
-                            else
-                                *dest = (uint8_t)(*op + 128);
-                            op++;
-                            dest++;
-                        }
-                        dest += (stride - 8);
-                    }
+                    s->dsp.put_signed_pixels_clamped(output_samples,
+                        output_plane + s->all_fragments[i].first_pixel,
+                        stride);
                 } else {
                     s->dsp.add_pixels_clamped(output_samples,
                         output_plane + s->all_fragments[i].first_pixel,
