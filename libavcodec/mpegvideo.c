@@ -137,12 +137,7 @@ int MPV_common_init(MpegEncContext *s)
 #ifdef ARCH_ALPHA
     MPV_common_init_axp(s);
 #endif
-    //setup default unquantizers (mpeg4 might change it later)
-    if(s->out_format == FMT_H263)
-        s->dct_unquantize = s->dct_unquantize_h263;
-    else
-        s->dct_unquantize = s->dct_unquantize_mpeg1;
-    
+
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
     
@@ -671,6 +666,16 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 avctx->dr_opaque_frame= s->next_dr_opaque;
         }
     }
+
+    /* set dequantizer, we cant do it during init as it might change for mpeg4
+       and we cant do it in the header decode as init isnt called for mpeg4 there yet */
+    if(s->out_format == FMT_H263){
+        if(s->mpeg_quant)
+            s->dct_unquantize = s->dct_unquantize_mpeg2;
+        else
+            s->dct_unquantize = s->dct_unquantize_h263;
+    }else 
+        s->dct_unquantize = s->dct_unquantize_mpeg1;
 }
 
 /* generic function for encode/decode called after a frame has been coded/decoded */
@@ -1513,7 +1518,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             if(s->hurry_up>1) goto the_end;
 
             /* add dct residue */
-            if(s->encoding || !(s->mpeg2 || s->h263_msmpeg4 || s->codec_id==CODEC_ID_MPEG4)){
+            if(s->encoding || !(s->mpeg2 || s->h263_msmpeg4 || (s->codec_id==CODEC_ID_MPEG4 && !s->mpeg_quant))){
                 add_dequant_dct(s, block[0], 0, dest_y, dct_linesize);
                 add_dequant_dct(s, block[1], 1, dest_y + 8, dct_linesize);
                 add_dequant_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);

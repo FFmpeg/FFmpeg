@@ -361,6 +361,7 @@ typedef struct MpegEncContext {
 #define PB_BUFFER_SIZE 1024*256
     uint8_t *tex_pb_buffer;          
     uint8_t *pb2_buffer;
+    int mpeg_quant;
 
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;

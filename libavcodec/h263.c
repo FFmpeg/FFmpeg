@@ -1452,9 +1452,11 @@ void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
     /* left copy */
     for(i=1;i<8;i++)
         ac_val1[i] = block[block_permute_op(i * 8)];
+
     /* top copy */
     for(i=1;i<8;i++)
         ac_val1[8 + i] = block[block_permute_op(i)];
+
 }
 
 static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
@@ -2641,6 +2643,7 @@ int h263_decode_mb(MpegEncContext *s,
         case 0: /* direct */
             mx = h263_decode_motion(s, 0, 1);
             my = h263_decode_motion(s, 0, 1);
+            PRINT_MB_TYPE("S");
         case 4: /* direct with mx=my=0 */
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
             xy= s->block_index[0];
@@ -2659,7 +2662,7 @@ int h263_decode_mb(MpegEncContext *s,
             s->mv[0][0][1] = 
             s->mv[1][0][0] = 
             s->mv[1][0][1] = 1000;*/
-            PRINT_MB_TYPE("D");
+            if(mb_type==4) PRINT_MB_TYPE("D");
             break;
         case 1: 
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
@@ -2701,13 +2704,14 @@ int h263_decode_mb(MpegEncContext *s,
         dquant = cbpc & 4;
         s->mb_intra = 1;
 intra:
-        PRINT_MB_TYPE("I");
         s->ac_pred = 0;
         if (s->h263_pred || s->h263_aic) {
             s->ac_pred = get_bits1(&s->gb);
             if (s->ac_pred && s->h263_aic)
                 s->h263_aic_dir = get_bits1(&s->gb);
         }
+        PRINT_MB_TYPE(s->ac_pred ? "A" : "I");
+        
         cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
         if(cbpy<0) return -1;
         cbp = (cbpc & 3) | (cbpy << 2);
@@ -2995,10 +2999,16 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             return 0;
         }
         rl = &rl_inter;
-        rl_vlc = rl_inter.rl_vlc[s->qscale];
         scan_table = zigzag_direct;
-        qmul = s->qscale << 1;
-        qadd = (s->qscale - 1) | 1;
+        if(s->mpeg_quant){
+            qmul=1;
+            qadd=0;
+            rl_vlc = rl_inter.rl_vlc[0];        
+        }else{
+            qmul = s->qscale << 1;
+            qadd = (s->qscale - 1) | 1;
+            rl_vlc = rl_inter.rl_vlc[s->qscale];
+        }
     }
   {
     OPEN_READER(re, &s->gb);
@@ -3615,8 +3625,9 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             
             // FIXME a bunch of grayscale shape things
 
-            if(get_bits1(&s->gb)){ /* vol_quant_type */
+            if((s->mpeg_quant=get_bits1(&s->gb))){ /* vol_quant_type */
                 int i, j, v;
+                
                 /* load default matrixes */
                 for(i=0; i<64; i++){
                     v= ff_mpeg4_default_intra_matrix[i];
@@ -3659,11 +3670,8 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                     }
                 }
 
-                s->dct_unquantize= s->dct_unquantize_mpeg2;
-
                 // FIXME a bunch of grayscale shape things
-            }else
-                s->dct_unquantize= s->dct_unquantize_h263;
+            }
 
             if(vo_ver_id != 1)
                  s->quarter_sample= get_bits1(&s->gb);
@@ -3758,7 +3766,6 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         s->low_delay=0;
     }
 // printf("pic: %d, qpel:%d\n", s->pict_type, s->quarter_sample); 
-//printf("%d", s->pict_type);
     time_incr=0;
     while (get_bits1(&s->gb) != 0) 
         time_incr++;
