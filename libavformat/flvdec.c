@@ -115,6 +115,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     goto skip;
  found:
+    if(type == 8){
+        st->codec.channels = (flags&1)+1;
+        st->codec.sample_rate = (44100<<((flags>>2)&3))>>3;
+    }
 
     if (av_new_packet(pkt, size) < 0)
         return -EIO;
