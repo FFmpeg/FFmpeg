@@ -110,7 +110,7 @@ do_ffmpeg()
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
     elif [ $f = $pcm_dst ] ; then
-        $tiny_psnr $f $pcm_ref >> $logfile
+        $tiny_psnr $f $pcm_ref 2 >> $logfile
     else
         wc -c $f >> $logfile
     fi
@@ -458,6 +458,7 @@ do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src $file
 
 # mp2 decoding
 do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst 
+$tiny_psnr $pcm_dst $pcm_ref 2 1924 >> $logfile
 fi
 
 ###################################
