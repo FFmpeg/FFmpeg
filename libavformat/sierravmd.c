@@ -185,7 +185,8 @@ static int vmd_read_header(AVFormatContext *s,
 
     /* each on-disk VMD frame has an audio part and a video part; demuxer
      * accounts them separately */
-    vmd->frame_count *= 2;
+    if(vmd->sample_rate)
+	vmd->frame_count *= 2;
     raw_frame_table = NULL;
     vmd->frame_table = NULL;
     raw_frame_table_size = vmd->frame_count * BYTES_PER_FRAME_RECORD;
