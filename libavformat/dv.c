@@ -32,6 +32,7 @@ struct DVDemuxContext {
     AVStream*        vst;
     AVStream*        ast[2];       
     AVPacket         audio_pkt[2];
+    uint8_t          audio_buf[2][8192];
     int              ach;
     int              frames;
     uint64_t         abytes;
@@ -544,7 +545,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     as_pack = dv_extract_pack(frame, dv_audio_source);
     if (!as_pack || !sys) {    /* No audio ? */
         c->ach = 0;
-	return -1;
+	return 0;
     }
     
     smpls = as_pack[1] & 0x3f; /* samples in this frame - min. samples */
@@ -561,6 +562,12 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
 	   av_set_pts_info(c->ast[i], 64, 1, 30000);
 	   c->ast[i]->codec.codec_type = CODEC_TYPE_AUDIO;
 	   c->ast[i]->codec.codec_id = CODEC_ID_PCM_S16LE;
+
+           av_init_packet(&c->audio_pkt[i]);
+           c->audio_pkt[i].size     = 0;
+           c->audio_pkt[i].data     = c->audio_buf[i];
+           c->audio_pkt[i].stream_index = c->ast[i]->index;
+           c->audio_pkt[i].flags |= PKT_FLAG_KEY;
        }
        c->ast[i]->codec.sample_rate = dv_audio_frequency[freq];
        c->ast[i]->codec.channels = 2;
@@ -744,21 +751,13 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     c->ach = 0;
     c->frames = 0;
     c->abytes = 0;
-    c->audio_pkt[0].size = 0;
-    c->audio_pkt[1].size = 0;
-    
+
     c->vst->codec.codec_type = CODEC_TYPE_VIDEO;
     c->vst->codec.codec_id = CODEC_ID_DVVIDEO;
     c->vst->codec.bit_rate = 25000000;
     c->vst->start_time = 0;
     
     return c;
-}
-
-static void __destruct_pkt(struct AVPacket *pkt)
-{
-    pkt->data = NULL; pkt->size = 0;
-    return;
 }
 
 int dv_get_packet(DVDemuxContext *c, AVPacket *pkt)
@@ -790,21 +789,16 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     /* Queueing audio packet */
     /* FIXME: in case of no audio/bad audio we have to do something */
     size = dv_extract_audio_info(c, buf);
-    c->audio_pkt[0].data = c->audio_pkt[1].data = NULL;
     for (i=0; i<c->ach; i++) {
-       if (av_new_packet(&c->audio_pkt[i], size) < 0)
-           return AVERROR_NOMEM;
-       c->audio_pkt[i].stream_index = c->ast[i]->index;
-       c->audio_pkt[i].pts = c->abytes * 30000*8 / c->ast[i]->codec.bit_rate;
-       c->audio_pkt[i].flags |= PKT_FLAG_KEY;
+       c->audio_pkt[i].size = size;
+       c->audio_pkt[i].pts  = c->abytes * 30000*8 / c->ast[i]->codec.bit_rate;
     }
-    dv_extract_audio(buf, c->audio_pkt[0].data, c->audio_pkt[1].data);
+    dv_extract_audio(buf, c->audio_buf[0], c->audio_buf[1]);
     c->abytes += size;
     
     /* Now it's time to return video packet */
     size = dv_extract_video_info(c, buf);
     av_init_packet(pkt);
-    pkt->destruct = __destruct_pkt;
     pkt->data     = buf;
     pkt->size     = size; 
     pkt->flags   |= PKT_FLAG_KEY;
@@ -842,6 +836,11 @@ static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
     else if (offset < 0) offset = 0;
 
     return offset;
+}
+
+void dv_flush_audio_packets(DVDemuxContext *c)
+{
+    c->audio_pkt[0].size = c->audio_pkt[1].size = 0;
 }
 
 /************************************************************
@@ -898,21 +897,16 @@ static int dv_read_seek(AVFormatContext *s, int stream_index,
 {
     RawDVContext *r = s->priv_data;
     DVDemuxContext *c = r->dv_demux;
-    int i;
     int64_t offset= dv_frame_offset(s, c, timestamp, flags);
     const DVprofile* sys = dv_codec_profile(&c->vst->codec);
 
     c->frames= offset / sys->frame_size;
-    c->abytes= av_rescale(c->frames,
+    if (c->ach)
+        c->abytes= av_rescale(c->frames,
                           c->ast[0]->codec.bit_rate * (int64_t)sys->frame_rate_base,
                           8*sys->frame_rate);
-    for (i=0; i<c->ach; i++) {
-       if (c->ast[i] && c->audio_pkt[i].size) {
-           av_free_packet(&c->audio_pkt[i]);
-           c->audio_pkt[i].size = 0;
-       }
-    }
-
+			  
+    dv_flush_audio_packets(c);
     return url_fseek(&s->pb, offset, SEEK_SET);
 }
 

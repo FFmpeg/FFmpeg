@@ -27,6 +27,7 @@ typedef struct DVDemuxContext DVDemuxContext;
 DVDemuxContext* dv_init_demux(AVFormatContext* s);
 int dv_get_packet(DVDemuxContext*, AVPacket *);
 int dv_produce_packet(DVDemuxContext*, AVPacket*, uint8_t*, int);
+void dv_flush_audio_packets(DVDemuxContext*);
 
 typedef struct DVMuxContext DVMuxContext;
 DVMuxContext* dv_init_mux(AVFormatContext* s);

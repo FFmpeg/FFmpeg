@@ -735,6 +735,8 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
                ast->frame_offset);
 #endif
     }
+    if (avi->dv_demux)
+        dv_flush_audio_packets(avi->dv_demux);
     /* do the seek */
     pos += avi->movi_list;
     url_fseek(&s->pb, pos, SEEK_SET);
