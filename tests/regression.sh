@@ -32,6 +32,8 @@ elif [ "$1" = "mpeg" ] ; then
     do_mpeg2=y
 elif [ "$1" = "ac3" ] ; then
     do_ac3=y
+elif [ "$1" = "huffyuv" ] ; then
+    do_huffyuv=y
 elif [ "$1" = "libavtest" ] ; then
     do_libav=y
     logfile="$datadir/libav.regression"
@@ -542,18 +544,18 @@ do_ffmpeg_crc $file -i $file
 
 # pbmpipe
 file=${outfile}libav.pbm
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f imagepipe $file
-do_ffmpeg_crc $file -f imagepipe -i $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f image2pipe $file
+do_ffmpeg_crc $file -f image2pipe -i $file
 
 # pgmpipe
 file=${outfile}libav.pgm
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f imagepipe $file
-do_ffmpeg_crc $file -f imagepipe -i $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f image2pipe $file
+do_ffmpeg_crc $file -f image2pipe -i $file
 
 # ppmpipe
 file=${outfile}libav.ppm
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f imagepipe $file
-do_ffmpeg_crc $file -f imagepipe -i $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f image2pipe $file
+do_ffmpeg_crc $file -f image2pipe -i $file
 
 # gif
 file=${outfile}libav.gif
