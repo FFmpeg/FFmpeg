@@ -46,6 +46,10 @@ The same system is used for the other image formats.
 No. FFmpeg only supports open source codecs. Windows DLLs are not
 portable, bloated and often slow.
 
+@section How can I read from the standard input or write to the standard output ?
+
+Use @file{-} as filename.
+
 @chapter Development
 
 @section Can you support my C compiler XXX ?

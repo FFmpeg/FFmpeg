@@ -1,6 +1,6 @@
 <HTML>
 <HEAD>
-<!-- Created by texi2html 1.56k from ffmpeg-doc.texi on 27 October 2002 -->
+<!-- Created by texi2html 1.56k from ffmpeg-doc.texi on 19 November 2002 -->
 
 <TITLE>FFmpeg Documentation</TITLE>
 </HEAD>
@@ -32,13 +32,21 @@
 <LI><A NAME="TOC15" HREF="ffmpeg-doc.html#SEC15">5.2 Video Codecs</A>
 <LI><A NAME="TOC16" HREF="ffmpeg-doc.html#SEC16">5.3 Audio Codecs</A>
 </UL>
-<LI><A NAME="TOC17" HREF="ffmpeg-doc.html#SEC17">6. Developpers Guide</A>
+<LI><A NAME="TOC17" HREF="ffmpeg-doc.html#SEC17">6. Platform Specific information</A>
 <UL>
-<LI><A NAME="TOC18" HREF="ffmpeg-doc.html#SEC18">6.1 API</A>
-<LI><A NAME="TOC19" HREF="ffmpeg-doc.html#SEC19">6.2 Integrating libavcodec or libavformat in your program</A>
-<LI><A NAME="TOC20" HREF="ffmpeg-doc.html#SEC20">6.3 Coding Rules</A>
-<LI><A NAME="TOC21" HREF="ffmpeg-doc.html#SEC21">6.4 Submitting patches</A>
-<LI><A NAME="TOC22" HREF="ffmpeg-doc.html#SEC22">6.5 Regression tests</A>
+<LI><A NAME="TOC18" HREF="ffmpeg-doc.html#SEC18">6.1 Linux</A>
+<LI><A NAME="TOC19" HREF="ffmpeg-doc.html#SEC19">6.2 BSD</A>
+<LI><A NAME="TOC20" HREF="ffmpeg-doc.html#SEC20">6.3 Windows</A>
+<LI><A NAME="TOC21" HREF="ffmpeg-doc.html#SEC21">6.4 MacOS X</A>
+<LI><A NAME="TOC22" HREF="ffmpeg-doc.html#SEC22">6.5 BeOS</A>
+</UL>
+<LI><A NAME="TOC23" HREF="ffmpeg-doc.html#SEC23">7. Developpers Guide</A>
+<UL>
+<LI><A NAME="TOC24" HREF="ffmpeg-doc.html#SEC24">7.1 API</A>
+<LI><A NAME="TOC25" HREF="ffmpeg-doc.html#SEC25">7.2 Integrating libavcodec or libavformat in your program</A>
+<LI><A NAME="TOC26" HREF="ffmpeg-doc.html#SEC26">7.3 Coding Rules</A>
+<LI><A NAME="TOC27" HREF="ffmpeg-doc.html#SEC27">7.4 Submitting patches</A>
+<LI><A NAME="TOC28" HREF="ffmpeg-doc.html#SEC28">7.5 Regression tests</A>
 </UL>
 </UL>
 <P><HR><P>
@@ -438,8 +446,8 @@ dump video coding statistics to file
 <H2><A NAME="SEC11" HREF="ffmpeg-doc.html#TOC11">3.6 Protocols</A></H2>
 
 <P>
-The output file can be "-" to output to a pipe. This is only possible
-with mpeg1 and h263 formats. 
+The filename can be <TT>`-'</TT> to read from the standard input or to write
+to the standard output.
 
 
 <P>
@@ -685,11 +693,71 @@ performances on systems without hardware floating point support).
 
 
 
-<H1><A NAME="SEC17" HREF="ffmpeg-doc.html#TOC17">6. Developpers Guide</A></H1>
+<H1><A NAME="SEC17" HREF="ffmpeg-doc.html#TOC17">6. Platform Specific information</A></H1>
 
 
 
-<H2><A NAME="SEC18" HREF="ffmpeg-doc.html#TOC18">6.1 API</A></H2>
+<H2><A NAME="SEC18" HREF="ffmpeg-doc.html#TOC18">6.1 Linux</A></H2>
+
+<P>
+ffmpeg should be compiled with at least GCC 2.95.3. GCC 3.2 is the
+prefered compiler now for ffmpeg. All futur optimizations will depend on
+features only found in GCC 3.2.
+
+
+
+
+<H2><A NAME="SEC19" HREF="ffmpeg-doc.html#TOC19">6.2 BSD</A></H2>
+
+
+
+<H2><A NAME="SEC20" HREF="ffmpeg-doc.html#TOC20">6.3 Windows</A></H2>
+
+
+
+<H2><A NAME="SEC21" HREF="ffmpeg-doc.html#TOC21">6.4 MacOS X</A></H2>
+
+
+
+<H2><A NAME="SEC22" HREF="ffmpeg-doc.html#TOC22">6.5 BeOS</A></H2>
+
+<P>
+The configure script should guess the configuration itself.
+Networking support is currently not finished.
+errno issues fixed by Andrew Bachmann.
+
+
+<P>
+Old stuff:
+
+
+<P>
+François Revol - revol at free dot fr - April 2002
+
+
+<P>
+The configure script should guess the configuration itself, 
+however I still didn't tested building on net_server version of BeOS.
+
+
+<P>
+ffserver is broken (needs poll() implementation).
+
+
+<P>
+There is still issues with errno codes, which are negative in BeOs, and
+that ffmpeg negates when returning. This ends up turning errors into 
+valid results, then crashes.
+(To be fixed)
+
+
+
+
+<H1><A NAME="SEC23" HREF="ffmpeg-doc.html#TOC23">7. Developpers Guide</A></H1>
+
+
+
+<H2><A NAME="SEC24" HREF="ffmpeg-doc.html#TOC24">7.1 API</A></H2>
 
 <UL>
 <LI>libavcodec is the library containing the codecs (both encoding and
@@ -704,7 +772,7 @@ performances on systems without hardware floating point support).
 
 
 
-<H2><A NAME="SEC19" HREF="ffmpeg-doc.html#TOC19">6.2 Integrating libavcodec or libavformat in your program</A></H2>
+<H2><A NAME="SEC25" HREF="ffmpeg-doc.html#TOC25">7.2 Integrating libavcodec or libavformat in your program</A></H2>
 
 <P>
 You can integrate all the source code of the libraries to link them
@@ -721,7 +789,7 @@ to send your patches to the ffmpeg mailing list.
 
 
 
-<H2><A NAME="SEC20" HREF="ffmpeg-doc.html#TOC20">6.3 Coding Rules</A></H2>
+<H2><A NAME="SEC26" HREF="ffmpeg-doc.html#TOC26">7.3 Coding Rules</A></H2>
 
 <P>
 ffmpeg is programmed in ANSI C language. GCC extensions are
@@ -745,7 +813,7 @@ can be generated automatically.
 
 
 
-<H2><A NAME="SEC21" HREF="ffmpeg-doc.html#TOC21">6.4 Submitting patches</A></H2>
+<H2><A NAME="SEC27" HREF="ffmpeg-doc.html#TOC27">7.4 Submitting patches</A></H2>
 
 <P>
 When you submit your patch, try to send a unified diff (diff '-u'
@@ -773,7 +841,7 @@ transmission) to the ffmpeg-devel mailinglist, see
 
 
 
-<H2><A NAME="SEC22" HREF="ffmpeg-doc.html#TOC22">6.5 Regression tests</A></H2>
+<H2><A NAME="SEC28" HREF="ffmpeg-doc.html#TOC28">7.5 Regression tests</A></H2>
 
 <P>
 Before submitting a patch (or commiting with CVS), you should at least
@@ -803,7 +871,7 @@ accordingly].
 
 
 <P><HR><P>
-This document was generated on 27 October 2002 using
+This document was generated on 19 November 2002 using
 <A HREF="http://wwwinfo.cern.ch/dis/texi2html/">texi2html</A>&nbsp;1.56k.
 </BODY>
 </HTML>

@@ -266,8 +266,8 @@ dump video coding statistics to file
 
 @section Protocols
 
-The output file can be "-" to output to a pipe. This is only possible
-with mpeg1 and h263 formats. 
+The filename can be @file{-} to read from the standard input or to write
+to the standard output.
 
 ffmpeg handles also many protocols specified with the URL syntax.
 
@@ -397,6 +397,40 @@ solutions.
 
 @code{I} means that an integer only version is available too (ensures highest
 performances on systems without hardware floating point support).
+
+@chapter Platform Specific information
+
+@section Linux
+
+ffmpeg should be compiled with at least GCC 2.95.3. GCC 3.2 is the
+prefered compiler now for ffmpeg. All futur optimizations will depend on
+features only found in GCC 3.2.
+
+@section BSD
+
+@section Windows
+
+@section MacOS X
+
+@section BeOS
+
+The configure script should guess the configuration itself.
+Networking support is currently not finished.
+errno issues fixed by Andrew Bachmann.
+
+Old stuff:
+
+François Revol - revol at free dot fr - April 2002
+
+The configure script should guess the configuration itself, 
+however I still didn't tested building on net_server version of BeOS.
+
+ffserver is broken (needs poll() implementation).
+
+There is still issues with errno codes, which are negative in BeOs, and
+that ffmpeg negates when returning. This ends up turning errors into 
+valid results, then crashes.
+(To be fixed)
 
 @chapter Developpers Guide
 
