@@ -281,6 +281,7 @@ typedef struct H264Context{
     Picture default_ref_list[2][32];
     Picture ref_list[2][32]; //FIXME size?
     Picture field_ref_list[2][32]; //FIXME size?
+    Picture *delayed_pic[16]; //FIXME size?
     
     /**
      * memory management control operations buffer.
@@ -2929,20 +2930,30 @@ static int pred_weight_table(H264Context *h){
  * instantaneous decoder refresh.
  */
 static void idr(H264Context *h){
-    int i;
+    int i,j;
+
+#define CHECK_DELAY(pic) \
+    for(j = 0; h->delayed_pic[j]; j++) \
+        if(pic == h->delayed_pic[j]){ \
+            pic->reference=1; \
+            break; \
+        }
 
     for(i=0; i<h->long_ref_count; i++){
         h->long_ref[i]->reference=0;
+        CHECK_DELAY(h->long_ref[i]);
         h->long_ref[i]= NULL;
     }
     h->long_ref_count=0;
 
     for(i=0; i<h->short_ref_count; i++){
         h->short_ref[i]->reference=0;
+        CHECK_DELAY(h->short_ref[i]);
         h->short_ref[i]= NULL;
     }
     h->short_ref_count=0;
 }
+#undef CHECK_DELAY
 
 /**
  *
@@ -6088,19 +6099,38 @@ static int decode_frame(AVCodecContext *avctx,
     //FIXME do something with unavailable reference frames    
  
 //    if(ret==FRAME_SKIPED) return get_consumed_bytes(s, buf_index, buf_size);
-#if 0
-    if(s->pict_type==B_TYPE || s->low_delay){
-        *pict= *(AVFrame*)&s->current_picture;
-    } else {
-        *pict= *(AVFrame*)&s->last_picture;
-    }
-#endif
     if(!s->current_picture_ptr){
         av_log(h->s.avctx, AV_LOG_DEBUG, "error, NO frame\n");
         return -1;
     }
 
-    *pict= *(AVFrame*)&s->current_picture; //FIXME 
+    {
+        /* Sort B-frames into display order
+         * FIXME doesn't allow for multiple delayed frames */
+        Picture *cur = s->current_picture_ptr;
+        Picture *prev = h->delayed_pic[0];
+        Picture *out;
+
+        if(cur->pict_type == B_TYPE
+           || (!h->sps.gaps_in_frame_num_allowed_flag
+               && prev && cur->poc - prev->poc > 2)){
+            s->low_delay = 0;
+            s->avctx->has_b_frames = 1;
+        }
+
+        if(s->low_delay || !prev || cur->pict_type == B_TYPE)
+            out = cur;
+        else{
+            out = prev;
+            if(prev->reference == 1)
+                prev->reference = 0;
+        }
+        if(!s->low_delay && (!prev || out == prev))
+            h->delayed_pic[0] = cur;
+
+        *pict= *(AVFrame*)out;
+    }
+
     ff_print_debug_info(s, pict);
     assert(pict->data[0]);
 //printf("out %d\n", (int)pict->data[0]);
