@@ -1413,7 +1413,55 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
 			: "%eax"
 		);
 #else
-#if __WORDSIZE >= 64
+
+#if defined ARCH_ALPHA && defined HAVE_MVI
+#define pl2yuy2(n)					\
+	y1 = yc[n];					\
+	y2 = yc2[n];					\
+	u = uc[n];					\
+	v = vc[n];					\
+	asm("unpkbw %1, %0" : "=r"(y1) : "r"(y1));	\
+	asm("unpkbw %1, %0" : "=r"(y2) : "r"(y2));	\
+	asm("unpkbl %1, %0" : "=r"(u) : "r"(u));	\
+	asm("unpkbl %1, %0" : "=r"(v) : "r"(v));	\
+	yuv1 = (u << 8) + (v << 24);			\
+	yuv2 = yuv1 + y2;				\
+	yuv1 += y1;					\
+	qdst[n] = yuv1;					\
+	qdst2[n] = yuv2;
+
+		int i;
+		uint64_t *qdst = (uint64_t *) dst;
+		uint64_t *qdst2 = (uint64_t *) (dst + dstStride);
+		const uint32_t *yc = (uint32_t *) ysrc;
+		const uint32_t *yc2 = (uint32_t *) (ysrc + lumStride);
+		const uint16_t *uc = (uint16_t*) usrc, *vc = (uint16_t*) vsrc;
+		for(i = 0; i < chromWidth; i += 8){
+			uint64_t y1, y2, yuv1, yuv2;
+			uint64_t u, v;
+			/* Prefetch */
+			asm("ldq $31,64(%0)" :: "r"(yc));
+			asm("ldq $31,64(%0)" :: "r"(yc2));
+			asm("ldq $31,64(%0)" :: "r"(uc));
+			asm("ldq $31,64(%0)" :: "r"(vc));
+
+			pl2yuy2(0);
+			pl2yuy2(1);
+			pl2yuy2(2);
+			pl2yuy2(3);
+
+			yc += 4;
+			yc2 += 4;
+			uc += 4;
+			vc += 4;
+			qdst += 4;
+			qdst2 += 4;
+		}
+		y++;
+		ysrc += lumStride;
+		dst += dstStride;
+
+#elif __WORDSIZE >= 64
 		int i;
 		uint64_t *ldst = (uint64_t *) dst;
 		const uint8_t *yc = ysrc, *uc = usrc, *vc = vsrc;
@@ -2354,7 +2402,7 @@ static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2
 	x2=0;
 	x=0;
 #ifdef HAVE_MMX
-	for(;x<w;x+=8,x2+=32)
+	for(;x<w-7;x+=8,x2+=32)
 	{
 	    asm volatile(
 		PREFETCH" 32%1\n\t"
