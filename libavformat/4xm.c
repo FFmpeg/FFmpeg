@@ -86,6 +86,7 @@ typedef struct FourxmDemuxContext {
     int64_t audio_pts;
     int64_t video_pts;
     int video_pts_inc;
+    float fps;
 } FourxmDemuxContext;
 
 static float get_le_float(unsigned char *buffer)
@@ -132,11 +133,11 @@ static int fourxm_read_header(AVFormatContext *s,
     int i;
     int current_track = -1;
     AVStream *st;
-    float fps;
 
     fourxm->track_count = 0;
     fourxm->tracks = NULL;
     fourxm->selected_track = 0;
+    fourxm->fps = 1.0;
 
     /* skip the first 3 32-bit numbers */
     url_fseek(pb, 12, SEEK_CUR);
@@ -160,8 +161,8 @@ static int fourxm_read_header(AVFormatContext *s,
         size = LE_32(&header[i + 4]);
 
         if (fourcc_tag == std__TAG) {
-            fps = get_le_float(&header[i + 12]);
-            fourxm->video_pts_inc = (int)(90000.0 / fps);
+            fourxm->fps = get_le_float(&header[i + 12]);
+            fourxm->video_pts_inc = (int)(90000.0 / fourxm->fps);
         } else if (fourcc_tag == vtrk_TAG) {
             /* check that there is enough data */
             if (size != vtrk_SIZE) {
@@ -179,6 +180,8 @@ static int fourxm_read_header(AVFormatContext *s,
 
             fourxm->video_stream_index = st->index;
 
+            st->codec.frame_rate = fourxm->fps;
+            st->codec.frame_rate_base = 1.0;
             st->codec.codec_type = CODEC_TYPE_VIDEO;
             st->codec.codec_id = CODEC_ID_4XM;
             st->codec.codec_tag = 0;  /* no fourcc */
