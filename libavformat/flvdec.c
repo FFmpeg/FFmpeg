@@ -132,6 +132,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     		av_log(s, AV_LOG_INFO, "Unsupported audio codec (%x)\n", flags >> 4);
                 st->codec.codec_tag= (flags >> 4);
             }
+	    st->codec.bits_per_sample = (flags & 2) ? 16 : 8;
         }
     }else{
             st->codec.codec_type = CODEC_TYPE_VIDEO;

@@ -35,7 +35,7 @@ static void put_be24(ByteIOContext *pb, int value)
 }
 
 static int get_audio_flags(AVCodecContext *enc){
-    int flags = 0;
+    int flags = (enc->bits_per_sample == 16) ? 0x2 : 0x0;
 
     switch (enc->sample_rate) {
         case    44100:
