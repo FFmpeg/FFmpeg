@@ -72,10 +72,10 @@ typedef struct MpegEncContext {
     UINT8 *aux_picture_base[3]; /* real start of the picture */
     UINT8 *current_picture[3]; /* buffer to store the decompressed current picture */
     int last_dc[3]; /* last DC values for MPEG1 */
-    INT16 *dc_val[3]; /* used for mpeg4 DC prediction */
+    INT16 *dc_val[3]; /* used for mpeg4 DC prediction, all 3 arrays must be continuous */
     int y_dc_scale, c_dc_scale;
     UINT8 *coded_block; /* used for coded block pattern prediction */
-    INT16 (*ac_val[3])[16]; /* used for for mpeg4 AC prediction */
+    INT16 (*ac_val[3])[16]; /* used for for mpeg4 AC prediction, all 3 arrays must be continuous */
     int ac_pred;
     int mb_skiped;              /* MUST BE SET only during DECODING */
     UINT8 *mbskip_table;        /* used to avoid copy if macroblock
@@ -123,7 +123,10 @@ typedef struct MpegEncContext {
     int mb_intra;
     INT16 *mb_var;      /* Table for MB variances */
     char *mb_type;    /* Table for MB type */
-    
+
+    int block_index[6];
+    int block_wrap[6];
+
     /* matrix transmitted in the bitstream */
     UINT16 intra_matrix[64];
     UINT16 chroma_intra_matrix[64];

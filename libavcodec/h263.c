@@ -208,24 +208,12 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
     int i, n;
 
     for(n=0; n<6; n++){
-        int x, y, wrap;
         INT16 *ac_val, *ac_val1;
 
-        if (n < 4) {
-            x = 2 * s->mb_x + 1 + (n & 1);
-            y = 2 * s->mb_y + 1 + (n >> 1);
-            wrap = s->mb_width * 2 + 2;
-            ac_val = s->ac_val[0][0];
-        } else {
-            x = s->mb_x + 1;
-            y = s->mb_y + 1;
-            wrap = s->mb_width + 2;
-            ac_val = s->ac_val[n - 4 + 1][0];
-        }
-        ac_val += ((y) * wrap + (x)) * 16;
+        ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val1= ac_val;
         if(dir[n]){
-            ac_val-= wrap*16;
+            ac_val-= s->block_wrap[n]*16;
             for(i=1; i<8; i++){
                 const int level= block[n][block_permute_op(i   )];
                 score0+= ABS(level);
@@ -357,21 +345,9 @@ void mpeg4_encode_mb(MpegEncContext * s,
         if(s->ac_pred){
             for(i=0; i<6; i++){
                 int j;    
-                int x, y, wrap;
                 INT16 *ac_val;
 
-                if (i < 4) {
-                    x = 2 * s->mb_x + 1 + (i & 1);
-                    y = 2 * s->mb_y + 1 + (i >> 1);
-                    wrap = s->mb_width * 2 + 2;
-                    ac_val = s->ac_val[0][0];
-                } else {
-                    x = s->mb_x + 1;
-                    y = s->mb_y + 1;
-                    wrap = s->mb_width + 2;
-                    ac_val = s->ac_val[i - 4 + 1][0];
-                }
-                ac_val += ((y) * wrap + (x)) * 16;
+                ac_val = s->ac_val[0][0] + s->block_index[i] * 16;
 
                 if(dir[i]){
                     for(j=1; j<8; j++) 
@@ -569,19 +545,17 @@ static inline int mid_pred(int a, int b, int c)
 INT16 *h263_pred_motion(MpegEncContext * s, int block, 
                         int *px, int *py)
 {
-    int xy, y, wrap;
+    int xy, wrap;
     INT16 *A, *B, *C, *mot_val;
     static const int off[4]= {2, 1, 1, -1};
 
-    wrap = 2 * s->mb_width + 2;
-    y = xy = 2 * s->mb_y + 1 + (block >> 1); // y
-    xy *= wrap; // y * wrap
-    xy += 2 * s->mb_x + 1 + (block & 1); // x + y * wrap
+    wrap = s->block_wrap[0];
+    xy = s->block_index[block];
 
     mot_val = s->motion_val[xy];
 
     /* special case for first line */
-    if (y == 1 || s->first_slice_line || s->first_gob_line) {
+    if (s->mb_y == 0 || s->first_slice_line || s->first_gob_line) {
         A = s->motion_val[xy - 1];
         *px = A[0];
         *py = A[1];
@@ -890,33 +864,25 @@ void h263_dc_scale(MpegEncContext * s)
 
 static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr)
 {
-    int a, b, c, xy, wrap, pred, scale;
+    int a, b, c, wrap, pred, scale;
     UINT16 *dc_val;
     int dummy;
 
     /* find prediction */
     if (n < 4) {
-	wrap = s->mb_width * 2 + 2;
-	xy = 2 * s->mb_y + 1 + (n >> 1);
-        xy *= wrap;
-	xy += 2 * s->mb_x + 1 + (n & 1);
-	dc_val = s->dc_val[0];
 	scale = s->y_dc_scale;
     } else {
-	wrap = s->mb_width + 2;
-	xy = s->mb_y + 1;
-	xy *= wrap;
-	xy += s->mb_x + 1;
-	dc_val = s->dc_val[n - 4 + 1];
 	scale = s->c_dc_scale;
     }
+    wrap= s->block_wrap[n];
+    dc_val = s->dc_val[0] + s->block_index[n];
 
     /* B C
      * A X 
      */
-    a = dc_val[xy - 1];
-    b = dc_val[xy - 1 - wrap];
-    c = dc_val[xy - wrap];
+    a = dc_val[ - 1];
+    b = dc_val[ - 1 - wrap];
+    c = dc_val[ - wrap];
 
     if (abs(a - b) < abs(b - c)) {
 	pred = c;
@@ -938,7 +904,7 @@ static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, 
 #endif
 
     /* prepare address for prediction update */
-    *dc_val_ptr = &dc_val[xy];
+    *dc_val_ptr = &dc_val[0];
 
     return pred;
 }
@@ -946,22 +912,11 @@ static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, 
 void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
                    int dir)
 {
-    int x, y, wrap, i;
+    int i;
     INT16 *ac_val, *ac_val1;
 
     /* find prediction */
-    if (n < 4) {
-	x = 2 * s->mb_x + 1 + (n & 1);
-	y = 2 * s->mb_y + 1 + (n >> 1);
-	wrap = s->mb_width * 2 + 2;
-	ac_val = s->ac_val[0][0];
-    } else {
-	x = s->mb_x + 1;
-	y = s->mb_y + 1;
-	wrap = s->mb_width + 2;
-	ac_val = s->ac_val[n - 4 + 1][0];
-    }
-    ac_val += ((y) * wrap + (x)) * 16;
+    ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
     ac_val1 = ac_val;
     if (s->ac_pred) {
         if (dir == 0) {
@@ -972,7 +927,7 @@ void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
             }
         } else {
             /* top prediction */
-            ac_val -= 16 * wrap;
+            ac_val -= 16 * s->block_wrap[n];
             for(i=1;i<8;i++) {
                 block[block_permute_op(i)] += ac_val[i + 8];
             }
@@ -989,22 +944,11 @@ void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
 static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
                               int dir)
 {
-    int x, y, wrap, i;
+    int i;
     INT16 *ac_val;
 
     /* find prediction */
-    if (n < 4) {
-	x = 2 * s->mb_x + 1 + (n & 1);
-	y = 2 * s->mb_y + 1 + (n >> 1);
-	wrap = s->mb_width * 2 + 2;
-	ac_val = s->ac_val[0][0];
-    } else {
-	x = s->mb_x + 1;
-	y = s->mb_y + 1;
-	wrap = s->mb_width + 2;
-	ac_val = s->ac_val[n - 4 + 1][0];
-    }
-    ac_val += ((y) * wrap + (x)) * 16;
+    ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
  
     if (dir == 0) {
         /* left prediction */
@@ -1014,7 +958,7 @@ static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
         }
     } else {
         /* top prediction */
-        ac_val -= 16 * wrap;
+        ac_val -= 16 * s->block_wrap[n];
         for(i=1;i<8;i++) {
             block[block_permute_op(i)] -= ac_val[i + 8];
         }
@@ -1448,7 +1392,7 @@ int h263_decode_mb(MpegEncContext *s,
             my = h263_decode_motion(s, 0, 1);
         case 4: 
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
-            xy= (2*s->mb_width + 2)*(2*s->mb_y + 1) + 2*s->mb_x + 1;
+            xy= s->block_index[0];
             time_pp= s->last_non_b_time[0] - s->last_non_b_time[1];
             time_pb= s->time - s->last_non_b_time[1];
 //if(time_pp>3000 )printf("%d %d  ", time_pp, time_pb);

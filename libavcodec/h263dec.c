@@ -140,6 +140,12 @@ static int h263_decode_frame(AVCodecContext *avctx,
 #endif
 
     /* decode each macroblock */
+    s->block_wrap[0]=
+    s->block_wrap[1]=
+    s->block_wrap[2]=
+    s->block_wrap[3]= s->mb_width*2 + 2;
+    s->block_wrap[4]=
+    s->block_wrap[5]= s->mb_width + 2;
     for(s->mb_y=0; s->mb_y < s->mb_height; s->mb_y++) {
         /* Check for GOB headers on H.263 */
         /* FIXME: In the future H.263+ will have intra prediction */
@@ -147,7 +153,19 @@ static int h263_decode_frame(AVCodecContext *avctx,
         if (s->mb_y && !s->h263_pred) {
             s->first_gob_line = h263_decode_gob_header(s);
         }
+        s->block_index[0]= s->block_wrap[0]*(s->mb_y*2 + 1) - 1;
+        s->block_index[1]= s->block_wrap[0]*(s->mb_y*2 + 1);
+        s->block_index[2]= s->block_wrap[0]*(s->mb_y*2 + 2) - 1;
+        s->block_index[3]= s->block_wrap[0]*(s->mb_y*2 + 2);
+        s->block_index[4]= s->block_wrap[4]*(s->mb_y + 1)                    + s->block_wrap[0]*(s->mb_height*2 + 2);
+        s->block_index[5]= s->block_wrap[4]*(s->mb_y + 1 + s->mb_height + 2) + s->block_wrap[0]*(s->mb_height*2 + 2);
         for(s->mb_x=0; s->mb_x < s->mb_width; s->mb_x++) {
+            s->block_index[0]+=2;
+            s->block_index[1]+=2;
+            s->block_index[2]+=2;
+            s->block_index[3]+=2;
+            s->block_index[4]++;
+            s->block_index[5]++;
 #ifdef DEBUG
             printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
 #endif

@@ -1123,6 +1123,12 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     
     s->avg_mb_var = s->avg_mb_var / s->mb_num;        
     
+    s->block_wrap[0]=
+    s->block_wrap[1]=
+    s->block_wrap[2]=
+    s->block_wrap[3]= s->mb_width*2 + 2;
+    s->block_wrap[4]=
+    s->block_wrap[5]= s->mb_width + 2;
     for(mb_y=0; mb_y < s->mb_height; mb_y++) {
         /* Put GOB header based on RTP MTU */
         /* TODO: Put all this stuff in a separate generic function */
@@ -1138,10 +1144,22 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             }
         }
         
+        s->block_index[0]= s->block_wrap[0]*(mb_y*2 + 1) - 1;
+        s->block_index[1]= s->block_wrap[0]*(mb_y*2 + 1);
+        s->block_index[2]= s->block_wrap[0]*(mb_y*2 + 2) - 1;
+        s->block_index[3]= s->block_wrap[0]*(mb_y*2 + 2);
+        s->block_index[4]= s->block_wrap[4]*(mb_y + 1)                    + s->block_wrap[0]*(s->mb_height*2 + 2);
+        s->block_index[5]= s->block_wrap[4]*(mb_y + 1 + s->mb_height + 2) + s->block_wrap[0]*(s->mb_height*2 + 2);
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
 
             s->mb_x = mb_x;
             s->mb_y = mb_y;
+            s->block_index[0]+=2;
+            s->block_index[1]+=2;
+            s->block_index[2]+=2;
+            s->block_index[3]+=2;
+            s->block_index[4]++;
+            s->block_index[5]++;
 #if 0
             /* compute motion vector and macro block type (intra or non intra) */
             motion_x = 0;
