@@ -122,7 +122,7 @@ static uint64_t temp3=0;
 static uint64_t temp4=0;
 static uint64_t temp5=0;
 static uint64_t pQPb=0;
-static uint8_t tempBlock[16*16];
+static uint8_t tempBlock[16*16]; //used so the horizontal code gets aligned data
 
 int hFlatnessThreshold= 56 - 16;
 int vFlatnessThreshold= 56 - 16;
@@ -132,7 +132,7 @@ double maxClippedThreshold= 0.01;
 
 int maxAllowedY=255;
 //FIXME can never make a movie´s black brighter (anyone needs that?)
-int minAllowedY=0;
+int minAllowedY=16;
 
 #ifdef TIMING
 static inline long long rdtsc()
@@ -2398,6 +2398,13 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	static uint8_t *tempDst= NULL;
 	static uint8_t *tempSrc= NULL;
 
+	/* Temporary buffers for handling the last block */
+	static uint8_t *tempDstBlock= NULL;
+	static uint8_t *tempSrcBlock= NULL;
+
+	uint8_t *dstBlockPtrBackup;
+	uint8_t *srcBlockPtrBackup;
+
 #ifdef TIMING
 	long long T0, T1, memcpyTime=0, vertTime=0, horizTime=0, sumTime, diffTime=0;
 	sumTime= rdtsc();
@@ -2407,6 +2414,8 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	{
 		tempDst= (uint8_t*)memalign(8, 1024*24);
 		tempSrc= (uint8_t*)memalign(8, 1024*24);
+		tempDstBlock= (uint8_t*)memalign(8, 1024*24);
+		tempSrcBlock= (uint8_t*)memalign(8, 1024*24);
 	}
 
 	if(!yHistogram)
@@ -2414,6 +2423,12 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		int i;
 		yHistogram= (uint64_t*)malloc(8*256);
 		for(i=0; i<256; i++) yHistogram[i]= width*height/64*15/256;
+
+		if(mode & FULL_Y_RANGE)
+		{
+			maxAllowedY=255;
+			minAllowedY=0;
+		}
 	}
 
 	if(!isColor)
@@ -2505,6 +2520,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			srcBlock= tempSrc;
 		}
 
+		// From this point on it is guranteed that we can read and write 16 lines downward
 		// finish 1 block before the next otherwise we´ll might have a problem
 		// with the L1 Cache of the P4 ... or only a few blocks at a time or soemthing
 		for(x=0; x<width; x+=BLOCK_SIZE)
@@ -2544,6 +2560,23 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 #endif
 
 			if(!isColor) yHistogram[ srcBlock[srcStride*5] ]++;
+
+			//can we mess with a 8x16 block, if not use a temp buffer, yes again
+			if(x+7 >= width)
+			{
+				int i;
+				dstBlockPtrBackup= dstBlock;
+				srcBlockPtrBackup= srcBlock;
+
+				for(i=0;i<BLOCK_SIZE*2; i++)
+				{
+					memcpy(tempSrcBlock+i*srcStride, srcBlock+i*srcStride, width-x);
+					memcpy(tempDstBlock+i*dstStride, dstBlock+i*dstStride, width-x);
+				}
+
+				dstBlock= tempDstBlock;
+				srcBlock= tempSrcBlock;
+			}
 
 			blockCopy(dstBlock + dstStride*5, dstStride,
 				srcBlock + srcStride*5, srcStride, 8, mode & LEVEL_FIX);
@@ -2593,7 +2626,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			}
 
 			/* check if we have a previous block to deblock it with dstBlock */
-			if(x - 8 >= 0 && x<width)
+			if(x - 8 >= 0)
 			{
 #ifdef MORE_TIMING
 				T0= rdtsc();
@@ -2624,12 +2657,25 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				dering(dstBlock - stride*9 + width-9, stride, QP);
 			//FIXME dering filter will not be applied to last block (bottom right)
 
+			/* did we use a tmp-block buffer */
+			if(x+7 >= width)
+			{
+				int i;
+				dstBlock= dstBlockPtrBackup;
+				srcBlock= srcBlockPtrBackup;
+
+				for(i=0;i<BLOCK_SIZE*2; i++)
+				{
+					memcpy(dstBlock+i*dstStride, tempDstBlock+i*dstStride, width-x);
+				}
+			}
+
 			dstBlock+=8;
 			srcBlock+=8;
 		}
 
 		/* did we use a tmp buffer */
-		if(y+15 > height)
+		if(y+15 >= height)
 		{
 			uint8_t *dstBlock= &(dst[y*dstStride]);
 			memcpy(dstBlock, tempDst, dstStride*(height-y) );

@@ -46,6 +46,9 @@
 #define H_RK1_FILTER	0x1000			// 4096 (not implemented yet)
 #define H_X1_FILTER	0x2000			// 8192
 
+// select between full y range (255-0) or standart one (
+#define FULL_Y_RANGE	0x8000			// 32768
+
 //Deinterlacing Filters
 #define	LINEAR_IPOL_DEINT_FILTER	0x10000	// 65536
 #define	LINEAR_BLEND_DEINT_FILTER	0x20000	// 131072
