@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "common.h"
+#include "dsputil.h"
 
 #define PHASE_SHIFT 10
 #define PHASE_COUNT (1<<PHASE_SHIFT)

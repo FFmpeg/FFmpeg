@@ -20,6 +20,7 @@
 #include <limits.h>
 #include "avformat.h"
 #include "framehook.h"
+#include "dsputil.h"
 
 #ifndef CONFIG_WIN32
 #include <unistd.h>
