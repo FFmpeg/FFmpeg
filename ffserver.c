@@ -880,8 +880,9 @@ static int http_prepare_data(HTTPContext *c)
                         }
                     }
                 } else {
-                send_it:
-                    av_write_packet(&c->fmt_ctx, &pkt);
+		send_it:
+                    if (av_write_packet(&c->fmt_ctx, &pkt))
+			c->state = HTTPSTATE_SEND_DATA_TRAILER;
                 }
                 
                 av_free_packet(&pkt);

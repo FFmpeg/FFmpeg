@@ -23,7 +23,7 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-
+#include <time.h>
 
 typedef struct {
     int fd;
