@@ -33,6 +33,8 @@ more intelligent missalignment avoidance for the horizontal scaler
 */
 
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
+#define MIN(a,b) ((a) > (b) ? (b) : (a))
+#define MAX(a,b) ((a) < (b) ? (b) : (a))
 
 #ifdef HAVE_MMX2
 #define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
@@ -102,6 +104,8 @@ static    int yuvtab_40cf[256];
 
 static uint8_t funnyYCode[10000];
 static uint8_t funnyUVCode[10000];
+
+static int canMMX2BeUsed=0;
 
 #define FULL_YSCALEYUV2RGB \
 		"pxor %%mm7, %%mm7		\n\t"\
@@ -616,9 +620,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
-					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<3)&0x07E0 |
-					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<8)&0xF800;
+					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<3)&0x07E0) |
+					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<8)&0xF800);
 				dest+=2;
 			}
 		}
@@ -631,9 +635,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
-					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<2)&0x03E0 |
-					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<7)&0x7C00;
+					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<2)&0x03E0) |
+					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<7)&0x7C00);
 				dest+=2;
 			}
 		}
@@ -724,9 +728,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
-					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<3)&0x07E0 |
-					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<8)&0xF800;
+					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<3)&0x07E0) |
+					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<8)&0xF800);
 				dest+=2;
 			}
 		}
@@ -739,9 +743,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
-					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<2)&0x03E0 |
-					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<7)&0x7C00;
+					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<2)&0x03E0) |
+					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<7)&0x7C00);
 				dest+=2;
 			}
 		}
@@ -841,9 +845,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
-					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<3)&0x07E0 |
-					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<8)&0xF800;
+					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<3)&0x07E0) |
+					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<8)&0xF800);
 				dest+=2;
 			}
 		}
@@ -856,9 +860,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[0] =
-					(clip_table[((Y + yuvtab_3343[U]) >>13)]>>3) |
-					(clip_table[((Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13)]<<2)&0x03E0 |
-					(clip_table[((Y + yuvtab_40cf[V]) >>13)]<<7)&0x7C00;
+					(clip_table[(Y + yuvtab_3343[U]) >>13]>>3) |
+					((clip_table[(Y + yuvtab_0c92[V] + yuvtab_1a1e[U]) >>13]<<2)&0x03E0) |
+					((clip_table[(Y + yuvtab_40cf[V]) >>13]<<7)&0x7C00);
 				dest+=2;
 			}
 		}
@@ -866,6 +870,259 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 }
 
 
+static inline void hyscale(uint16_t *dst, int dstWidth, uint8_t *src, int srcWidth, int xInc)
+{
+	int i;
+      unsigned int xpos=0;
+      // *** horizontal scale Y line to temp buffer
+#ifdef ARCH_X86
+
+#ifdef HAVE_MMX2
+	if(canMMX2BeUsed)
+	{
+		asm volatile(
+			"pxor %%mm7, %%mm7		\n\t"
+			"pxor %%mm2, %%mm2		\n\t" // 2*xalpha
+			"movd %5, %%mm6			\n\t" // xInc&0xFFFF
+			"punpcklwd %%mm6, %%mm6		\n\t"
+			"punpcklwd %%mm6, %%mm6		\n\t"
+			"movq %%mm6, %%mm2		\n\t"
+			"psllq $16, %%mm2		\n\t"
+			"paddw %%mm6, %%mm2		\n\t"
+			"psllq $16, %%mm2		\n\t"
+			"paddw %%mm6, %%mm2		\n\t"
+			"psllq $16, %%mm2		\n\t" //0,t,2t,3t		t=xInc&0xFF
+			"movq %%mm2, temp0		\n\t"
+			"movd %4, %%mm6			\n\t" //(xInc*4)&0xFFFF
+			"punpcklwd %%mm6, %%mm6		\n\t"
+			"punpcklwd %%mm6, %%mm6		\n\t"
+			"xorl %%eax, %%eax		\n\t" // i
+			"movl %0, %%esi			\n\t" // src
+			"movl %1, %%edi			\n\t" // buf1
+			"movl %3, %%edx			\n\t" // (xInc*4)>>16
+			"xorl %%ecx, %%ecx		\n\t"
+			"xorl %%ebx, %%ebx		\n\t"
+			"movw %4, %%bx			\n\t" // (xInc*4)&0xFFFF
+#ifdef HAVE_MMX2
+#define FUNNY_Y_CODE \
+			"prefetchnta 1024(%%esi)	\n\t"\
+			"prefetchnta 1056(%%esi)	\n\t"\
+			"prefetchnta 1088(%%esi)	\n\t"\
+			"call funnyYCode		\n\t"\
+			"movq temp0, %%mm2		\n\t"\
+			"xorl %%ecx, %%ecx		\n\t"
+#else
+#define FUNNY_Y_CODE \
+			"call funnyYCode		\n\t"\
+			"movq temp0, %%mm2		\n\t"\
+			"xorl %%ecx, %%ecx		\n\t"
+#endif
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+FUNNY_Y_CODE
+
+			:: "m" (src), "m" (dst), "m" (dstWidth), "m" ((xInc*4)>>16),
+			"m" ((xInc*4)&0xFFFF), "m" (xInc&0xFFFF)
+			: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
+		);
+		for(i=dstWidth-1; (i*xInc)>>16 >=srcWidth-1; i--) dst[i] = src[srcWidth-1]*128;
+	}
+	else
+	{
+#endif
+	//NO MMX just normal asm ...
+	asm volatile(
+		"xorl %%eax, %%eax		\n\t" // i
+		"xorl %%ebx, %%ebx		\n\t" // xx
+		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
+		"1:				\n\t"
+		"movzbl  (%0, %%ebx), %%edi	\n\t" //src[xx]
+		"movzbl 1(%0, %%ebx), %%esi	\n\t" //src[xx+1]
+		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
+		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
+		"shll $16, %%edi		\n\t"
+		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+		"movl %1, %%edi			\n\t"
+		"shrl $9, %%esi			\n\t"
+		"movw %%si, (%%edi, %%eax, 2)	\n\t"
+		"addw %4, %%cx			\n\t" //2*xalpha += xInc&0xFF
+		"adcl %3, %%ebx			\n\t" //xx+= xInc>>8 + carry
+
+		"movzbl (%0, %%ebx), %%edi	\n\t" //src[xx]
+		"movzbl 1(%0, %%ebx), %%esi	\n\t" //src[xx+1]
+		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
+		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
+		"shll $16, %%edi		\n\t"
+		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+		"movl %1, %%edi			\n\t"
+		"shrl $9, %%esi			\n\t"
+		"movw %%si, 2(%%edi, %%eax, 2)	\n\t"
+		"addw %4, %%cx			\n\t" //2*xalpha += xInc&0xFF
+		"adcl %3, %%ebx			\n\t" //xx+= xInc>>8 + carry
+
+
+		"addl $2, %%eax			\n\t"
+		"cmpl %2, %%eax			\n\t"
+		" jb 1b				\n\t"
+
+
+		:: "r" (src), "m" (dst), "m" (dstWidth), "m" (xInc>>16), "m" (xInc&0xFFFF)
+		: "%eax", "%ebx", "%ecx", "%edi", "%esi"
+		);
+#ifdef HAVE_MMX2
+	} //if MMX2 cant be used
+#endif
+#else
+      for(i=0;i<dstWidth;i++){
+	register unsigned int xx=xpos>>16;
+        register unsigned int xalpha=(xpos&0xFFFF)>>9;
+	dst[i]=(src[xx]*(xalpha^127)+src[xx+1]*xalpha);
+	xpos+=xInc;
+      }
+#endif
+}
+
+inline static void hcscale(uint16_t *dst, int dstWidth,
+				uint8_t *src1, uint8_t *src2, int srcWidth, int xInc)
+{
+	int xpos=0;
+	int i;
+#ifdef ARCH_X86
+#ifdef HAVE_MMX2
+	if(canMMX2BeUsed)
+	{
+		asm volatile(
+		"pxor %%mm7, %%mm7		\n\t"
+		"pxor %%mm2, %%mm2		\n\t" // 2*xalpha
+		"movd %5, %%mm6			\n\t" // xInc&0xFFFF
+		"punpcklwd %%mm6, %%mm6		\n\t"
+		"punpcklwd %%mm6, %%mm6		\n\t"
+		"movq %%mm6, %%mm2		\n\t"
+		"psllq $16, %%mm2		\n\t"
+		"paddw %%mm6, %%mm2		\n\t"
+		"psllq $16, %%mm2		\n\t"
+		"paddw %%mm6, %%mm2		\n\t"
+		"psllq $16, %%mm2		\n\t" //0,t,2t,3t		t=xInc&0xFFFF
+		"movq %%mm2, temp0		\n\t"
+		"movd %4, %%mm6			\n\t" //(xInc*4)&0xFFFF
+		"punpcklwd %%mm6, %%mm6		\n\t"
+		"punpcklwd %%mm6, %%mm6		\n\t"
+		"xorl %%eax, %%eax		\n\t" // i
+		"movl %0, %%esi			\n\t" // src
+		"movl %1, %%edi			\n\t" // buf1
+		"movl %3, %%edx			\n\t" // (xInc*4)>>16
+		"xorl %%ecx, %%ecx		\n\t"
+		"xorl %%ebx, %%ebx		\n\t"
+		"movw %4, %%bx			\n\t" // (xInc*4)&0xFFFF
+
+#ifdef HAVE_MMX2
+#define FUNNYUVCODE \
+			"prefetchnta 1024(%%esi)	\n\t"\
+			"prefetchnta 1056(%%esi)	\n\t"\
+			"prefetchnta 1088(%%esi)	\n\t"\
+			"call funnyUVCode		\n\t"\
+			"movq temp0, %%mm2		\n\t"\
+			"xorl %%ecx, %%ecx		\n\t"
+#else
+#define FUNNYUVCODE \
+			"call funnyUVCode		\n\t"\
+			"movq temp0, %%mm2		\n\t"\
+			"xorl %%ecx, %%ecx		\n\t"
+#endif
+
+FUNNYUVCODE
+FUNNYUVCODE
+FUNNYUVCODE
+FUNNYUVCODE
+
+FUNNYUVCODE
+FUNNYUVCODE
+FUNNYUVCODE
+FUNNYUVCODE
+
+
+		"xorl %%eax, %%eax		\n\t" // i
+		"movl %6, %%esi			\n\t" // src
+		"movl %1, %%edi			\n\t" // buf1
+		"addl $4096, %%edi		\n\t"
+
+FUNNYUVCODE
+FUNNYUVCODE
+FUNNYUVCODE
+FUNNYUVCODE
+
+FUNNYUVCODE
+FUNNYUVCODE
+FUNNYUVCODE
+FUNNYUVCODE
+
+		:: "m" (src1), "m" (dst), "m" (dstWidth), "m" ((xInc*4)>>16),
+		  "m" ((xInc*4)&0xFFFF), "m" (xInc&0xFFFF), "m" (src2)
+		: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
+	);
+		for(i=dstWidth-1; (i*xInc)>>16 >=srcWidth/2-1; i--)
+		{
+			dst[i] = src1[srcWidth/2-1]*128;
+			dst[i+2048] = src2[srcWidth/2-1]*128;
+		}
+	}
+	else
+	{
+#endif
+	asm volatile(
+		"xorl %%eax, %%eax		\n\t" // i
+		"xorl %%ebx, %%ebx		\n\t" // xx
+		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
+		"1:				\n\t"
+		"movl %0, %%esi			\n\t"
+		"movzbl  (%%esi, %%ebx), %%edi	\n\t" //src[xx]
+		"movzbl 1(%%esi, %%ebx), %%esi	\n\t" //src[xx+1]
+		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
+		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
+		"shll $16, %%edi		\n\t"
+		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+		"movl %1, %%edi			\n\t"
+		"shrl $9, %%esi			\n\t"
+		"movw %%si, (%%edi, %%eax, 2)	\n\t"
+
+		"movzbl  (%5, %%ebx), %%edi	\n\t" //src[xx]
+		"movzbl 1(%5, %%ebx), %%esi	\n\t" //src[xx+1]
+		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
+		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
+		"shll $16, %%edi		\n\t"
+		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+		"movl %1, %%edi			\n\t"
+		"shrl $9, %%esi			\n\t"
+		"movw %%si, 4096(%%edi, %%eax, 2)\n\t"
+
+		"addw %4, %%cx			\n\t" //2*xalpha += xInc&0xFF
+		"adcl %3, %%ebx			\n\t" //xx+= xInc>>8 + carry
+		"addl $1, %%eax			\n\t"
+		"cmpl %2, %%eax			\n\t"
+		" jb 1b				\n\t"
+
+		:: "m" (src1), "m" (dst), "m" (dstWidth), "m" (xInc>>16), "m" (xInc&0xFFFF),
+		"r" (src2)
+		: "%eax", "%ebx", "%ecx", "%edi", "%esi"
+		);
+#ifdef HAVE_MMX2
+	} //if MMX2 cant be used
+#endif
+#else
+      for(i=0;i<dstWidth;i++){
+	  register unsigned int xx=xpos>>16;
+          register unsigned int xalpha=(xpos&0xFFFF)>>9;
+	  dst[i]=(src1[xx]*(xalpha^127)+src1[xx+1]*xalpha);
+	  dst[i+2048]=(src2[xx]*(xalpha^127)+src2[xx+1]*xalpha);
+	  xpos+=xInc;
+      }
+#endif
+}
 
 
 // *** bilinear scaling and yuv->rgb conversion of yv12 slices:
@@ -898,7 +1155,6 @@ static int old_dstw= -1;
 static int old_s_xinc= -1;
 #endif
 
-int canMMX2BeUsed=0;
 int srcWidth= (dstw*s_xinc + 0x8000)>>16;
 int dstUVw= fullUVIpol ? dstw : dstw/2;
 
@@ -918,12 +1174,12 @@ else			s_xinc = ((srcWidth-2)<<16)/(dstw-2) - 20;
 if(fullUVIpol) 	s_xinc2= s_xinc>>1;
 else		s_xinc2= s_xinc;
   // force calculation of the horizontal interpolation of the first line
-  s_last_ypos=-99;
-  s_last_y1pos=-99;
 
   if(y==0){
-      s_srcypos=-0x8000;
-      s_ypos=0;
+	s_last_ypos=-99;
+	s_last_y1pos=-99;
+	s_srcypos= s_yinc/2 - 0x8000;
+	s_ypos=0;
 #ifdef HAVE_MMX2
 // cant downscale !!!
 	if((old_s_xinc != s_xinc || old_dstw!=dstw) && canMMX2BeUsed)
@@ -1060,7 +1316,6 @@ else		s_xinc2= s_xinc;
 #endif // HAVE_MMX2
   } // reset counters
 
-
   while(1){
     unsigned char *dest=dstptr+dststride*s_ypos;
     int y0=(s_srcypos + 0xFFFF)>>16;  // first luminance source line number below the dst line
@@ -1075,14 +1330,10 @@ else		s_xinc2= s_xinc;
     uint16_t *uvbuf1=pix_buf_uv[(y1+1)&1];	// bottom line of the interpolated slice
     int i;
 
-    // if this is before the first line than use only the first src line
-    if(y0==0) buf0= buf1;
-    if(y1==0) uvbuf0= uvbuf1; // yes we do have to check this, its not the same as y0==0
-
     if(y0>=y+h) break; // FIXME wrong, skips last lines, but they are dupliactes anyway
 
     // if this is after the last line than use only the last src line
-    if(y0>=y+h)
+ /*   if(y0>=y+h)
     {
 	buf1= buf0;
 	s_last_ypos=y0;
@@ -1092,270 +1343,66 @@ else		s_xinc2= s_xinc;
 	uvbuf1= uvbuf0;
 	s_last_y1pos=y1;
     }
-
+*/
 
     s_ypos++; s_srcypos+=s_yinc;
 
     //only interpolate the src line horizontally if we didnt do it allready
-    if(s_last_ypos!=y0){
-      unsigned char *src=srcptr[0]+(y0-y)*stride[0];
-      unsigned int xpos=0;
-      s_last_ypos=y0;
-      // *** horizontal scale Y line to temp buffer
-#ifdef ARCH_X86
-
-#ifdef HAVE_MMX2
-	if(canMMX2BeUsed)
+	if(s_last_ypos!=y0)
 	{
-		asm volatile(
-			"pxor %%mm7, %%mm7		\n\t"
-			"pxor %%mm2, %%mm2		\n\t" // 2*xalpha
-			"movd %5, %%mm6			\n\t" // s_xinc&0xFFFF
-			"punpcklwd %%mm6, %%mm6		\n\t"
-			"punpcklwd %%mm6, %%mm6		\n\t"
-			"movq %%mm6, %%mm2		\n\t"
-			"psllq $16, %%mm2		\n\t"
-			"paddw %%mm6, %%mm2		\n\t"
-			"psllq $16, %%mm2		\n\t"
-			"paddw %%mm6, %%mm2		\n\t"
-			"psllq $16, %%mm2		\n\t" //0,t,2t,3t		t=s_xinc&0xFF
-			"movq %%mm2, temp0		\n\t"
-			"movd %4, %%mm6			\n\t" //(s_xinc*4)&0xFFFF
-			"punpcklwd %%mm6, %%mm6		\n\t"
-			"punpcklwd %%mm6, %%mm6		\n\t"
-			"xorl %%eax, %%eax		\n\t" // i
-			"movl %0, %%esi			\n\t" // src
-			"movl %1, %%edi			\n\t" // buf1
-			"movl %3, %%edx			\n\t" // (s_xinc*4)>>16
-			"xorl %%ecx, %%ecx		\n\t"
-			"xorl %%ebx, %%ebx		\n\t"
-			"movw %4, %%bx			\n\t" // (s_xinc*4)&0xFFFF
-#ifdef HAVE_MMX2
-#define FUNNY_Y_CODE \
-			"prefetchnta 1024(%%esi)	\n\t"\
-			"prefetchnta 1056(%%esi)	\n\t"\
-			"prefetchnta 1088(%%esi)	\n\t"\
-			"call funnyYCode		\n\t"\
-			"movq temp0, %%mm2		\n\t"\
-			"xorl %%ecx, %%ecx		\n\t"
-#else
-#define FUNNY_Y_CODE \
-			"call funnyYCode		\n\t"\
-			"movq temp0, %%mm2		\n\t"\
-			"xorl %%ecx, %%ecx		\n\t"
-#endif
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-FUNNY_Y_CODE
-
-			:: "m" (src), "m" (buf1), "m" (dstw), "m" ((s_xinc*4)>>16),
-			"m" ((s_xinc*4)&0xFFFF), "m" (s_xinc&0xFFFF)
-			: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
-		);
-		for(i=dstw-1; (i*s_xinc)>>16 >=srcWidth-1; i--) buf1[i] = src[srcWidth-1]*128;
-	}
-	else
-	{
-#endif
-	//NO MMX just normal asm ...
-	asm volatile(
-		"xorl %%eax, %%eax		\n\t" // i
-		"xorl %%ebx, %%ebx		\n\t" // xx
-		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
-		"1:				\n\t"
-		"movzbl  (%0, %%ebx), %%edi	\n\t" //src[xx]
-		"movzbl 1(%0, %%ebx), %%esi	\n\t" //src[xx+1]
-		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
-		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
-		"shll $16, %%edi		\n\t"
-		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
-		"movl %1, %%edi			\n\t"
-		"shrl $9, %%esi			\n\t"
-		"movw %%si, (%%edi, %%eax, 2)	\n\t"
-		"addw %4, %%cx			\n\t" //2*xalpha += s_xinc&0xFF
-		"adcl %3, %%ebx			\n\t" //xx+= s_xinc>>8 + carry
-
-		"movzbl (%0, %%ebx), %%edi	\n\t" //src[xx]
-		"movzbl 1(%0, %%ebx), %%esi	\n\t" //src[xx+1]
-		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
-		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
-		"shll $16, %%edi		\n\t"
-		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
-		"movl %1, %%edi			\n\t"
-		"shrl $9, %%esi			\n\t"
-		"movw %%si, 2(%%edi, %%eax, 2)	\n\t"
-		"addw %4, %%cx			\n\t" //2*xalpha += s_xinc&0xFF
-		"adcl %3, %%ebx			\n\t" //xx+= s_xinc>>8 + carry
-
-
-		"addl $2, %%eax			\n\t"
-		"cmpl %2, %%eax			\n\t"
-		" jb 1b				\n\t"
-
-
-		:: "r" (src), "m" (buf1), "m" (dstw), "m" (s_xinc>>16), "m" (s_xinc&0xFFFF)
-		: "%eax", "%ebx", "%ecx", "%edi", "%esi"
-		);
-#ifdef HAVE_MMX2
-	} //if MMX2 cant be used
-#endif
-#else
-      for(i=0;i<dstw;i++){
-	register unsigned int xx=xpos>>16;
-        register unsigned int xalpha=(xpos&0xFFFF)>>9;
-	buf1[i]=(src[xx]*(xalpha^127)+src[xx+1]*xalpha);
-	xpos+=s_xinc;
-      }
-#endif
-    }
-      // *** horizontal scale U and V lines to temp buffer
-    if(s_last_y1pos!=y1){
-        unsigned char *src1=srcptr[1]+(y1-y/2)*stride[1];
-        unsigned char *src2=srcptr[2]+(y1-y/2)*stride[2];
-        int xpos=0;
-	s_last_y1pos= y1;
-#ifdef ARCH_X86
-#ifdef HAVE_MMX2
-	if(canMMX2BeUsed)
-	{
-		asm volatile(
-		"pxor %%mm7, %%mm7		\n\t"
-		"pxor %%mm2, %%mm2		\n\t" // 2*xalpha
-		"movd %5, %%mm6			\n\t" // s_xinc&0xFFFF
-		"punpcklwd %%mm6, %%mm6		\n\t"
-		"punpcklwd %%mm6, %%mm6		\n\t"
-		"movq %%mm6, %%mm2		\n\t"
-		"psllq $16, %%mm2		\n\t"
-		"paddw %%mm6, %%mm2		\n\t"
-		"psllq $16, %%mm2		\n\t"
-		"paddw %%mm6, %%mm2		\n\t"
-		"psllq $16, %%mm2		\n\t" //0,t,2t,3t		t=s_xinc&0xFFFF
-		"movq %%mm2, temp0		\n\t"
-		"movd %4, %%mm6			\n\t" //(s_xinc*4)&0xFFFF
-		"punpcklwd %%mm6, %%mm6		\n\t"
-		"punpcklwd %%mm6, %%mm6		\n\t"
-		"xorl %%eax, %%eax		\n\t" // i
-		"movl %0, %%esi			\n\t" // src
-		"movl %1, %%edi			\n\t" // buf1
-		"movl %3, %%edx			\n\t" // (s_xinc*4)>>16
-		"xorl %%ecx, %%ecx		\n\t"
-		"xorl %%ebx, %%ebx		\n\t"
-		"movw %4, %%bx			\n\t" // (s_xinc*4)&0xFFFF
-
-#ifdef HAVE_MMX2
-#define FUNNYUVCODE \
-			"prefetchnta 1024(%%esi)	\n\t"\
-			"prefetchnta 1056(%%esi)	\n\t"\
-			"prefetchnta 1088(%%esi)	\n\t"\
-			"call funnyUVCode		\n\t"\
-			"movq temp0, %%mm2		\n\t"\
-			"xorl %%ecx, %%ecx		\n\t"
-#else
-#define FUNNYUVCODE \
-			"call funnyUVCode		\n\t"\
-			"movq temp0, %%mm2		\n\t"\
-			"xorl %%ecx, %%ecx		\n\t"
-#endif
-
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-
-
-		"xorl %%eax, %%eax		\n\t" // i
-		"movl %6, %%esi			\n\t" // src
-		"movl %1, %%edi			\n\t" // buf1
-		"addl $4096, %%edi		\n\t"
-
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-
-		:: "m" (src1), "m" (uvbuf1), "m" (dstUVw), "m" ((s_xinc2*4)>>16),
-		  "m" ((s_xinc2*4)&0xFFFF), "m" (s_xinc2&0xFFFF), "m" (src2)
-		: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
-	);
-		for(i=dstUVw-1; (i*s_xinc2)>>16 >=srcWidth/2-1; i--)
+		unsigned char *src;
+		// skip if first line has been horiz scaled alleady
+		if(s_last_ypos != y0-1)
 		{
-			uvbuf1[i] = src1[srcWidth/2-1]*128;
-			uvbuf1[i+2048] = src2[srcWidth/2-1]*128;
+			// check if first line is before any available src lines
+			if(y0-1 < y) 	src=srcptr[0]+(0     )*stride[0];
+			else		src=srcptr[0]+(y0-y-1)*stride[0];
+
+			hyscale(buf0, dstw, src, srcWidth, s_xinc);
 		}
+		// check if second line is after any available src lines
+		if(y0-y >= h)	src=srcptr[0]+(h-1)*stride[0];
+		else		src=srcptr[0]+(y0-y)*stride[0];
+
+		// the min() is required to avoid reuseing lines which where not available
+		s_last_ypos= MIN(y0, y+h-1);
+		hyscale(buf1, dstw, src, srcWidth, s_xinc);
 	}
-	else
+//	printf("%d %d %d %d\n", y, y1, s_last_y1pos, h);
+      // *** horizontal scale U and V lines to temp buffer
+	if(s_last_y1pos!=y1)
 	{
-#endif
-	asm volatile(
-		"xorl %%eax, %%eax		\n\t" // i
-		"xorl %%ebx, %%ebx		\n\t" // xx
-		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
-		"1:				\n\t"
-		"movl %0, %%esi			\n\t"
-		"movzbl  (%%esi, %%ebx), %%edi	\n\t" //src[xx]
-		"movzbl 1(%%esi, %%ebx), %%esi	\n\t" //src[xx+1]
-		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
-		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
-		"shll $16, %%edi		\n\t"
-		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
-		"movl %1, %%edi			\n\t"
-		"shrl $9, %%esi			\n\t"
-		"movw %%si, (%%edi, %%eax, 2)	\n\t"
+		uint8_t *src1, *src2;
+		// skip if first line has been horiz scaled alleady
+		if(s_last_y1pos != y1-1)
+		{
+			// check if first line is before any available src lines
+			if(y1-y/2-1 < 0)
+			{
+				src1= srcptr[1]+(0)*stride[1];
+				src2= srcptr[2]+(0)*stride[2];
+			}else{
+				src1= srcptr[1]+(y1-y/2-1)*stride[1];
+				src2= srcptr[2]+(y1-y/2-1)*stride[2];
+			}
+			hcscale(uvbuf0, dstUVw, src1, src2, srcWidth, s_xinc2);
+		}
 
-		"movzbl  (%5, %%ebx), %%edi	\n\t" //src[xx]
-		"movzbl 1(%5, %%ebx), %%esi	\n\t" //src[xx+1]
-		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
-		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
-		"shll $16, %%edi		\n\t"
-		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
-		"movl %1, %%edi			\n\t"
-		"shrl $9, %%esi			\n\t"
-		"movw %%si, 4096(%%edi, %%eax, 2)\n\t"
+		// check if second line is after any available src lines
+		if(y1 - y/2 >= h/2)
+		{
+			src1= srcptr[1]+(h/2-1)*stride[1];
+			src2= srcptr[2]+(h/2-1)*stride[2];
+		}else{
+			src1= srcptr[1]+(y1-y/2)*stride[1];
+			src2= srcptr[2]+(y1-y/2)*stride[2];
+		}
+		hcscale(uvbuf1, dstUVw, src1, src2, srcWidth, s_xinc2);
 
-		"addw %4, %%cx			\n\t" //2*xalpha += s_xinc&0xFF
-		"adcl %3, %%ebx			\n\t" //xx+= s_xinc>>8 + carry
-		"addl $1, %%eax			\n\t"
-		"cmpl %2, %%eax			\n\t"
-		" jb 1b				\n\t"
-
-		:: "m" (src1), "m" (uvbuf1), "m" (dstUVw), "m" (s_xinc2>>16), "m" (s_xinc2&0xFFFF),
-		"r" (src2)
-		: "%eax", "%ebx", "%ecx", "%edi", "%esi"
-		);
-#ifdef HAVE_MMX2
-	} //if MMX2 cant be used
-#endif
-#else
-      for(i=0;i<dstUVw;i++){
-	  register unsigned int xx=xpos>>16;
-          register unsigned int xalpha=(xpos&0xFFFF)>>9;
-	  uvbuf1[i]=(src1[xx]*(xalpha^127)+src1[xx+1]*xalpha);
-	  uvbuf1[i+2048]=(src2[xx]*(xalpha^127)+src2[xx+1]*xalpha);
-	  xpos+=s_xinc2;
-      }
-#endif
-	// if this is the line before the first line
-	if(s_srcypos == s_xinc - 0x8000)
-	{
-		s_srcypos= s_yinc/2 - 0x8000;
-		continue;
+		// the min() is required to avoid reuseing lines which where not available
+		s_last_y1pos= MIN(y1, y/2+h/2-1);
 	}
-    }
+
 
 	if(ABS(s_yinc - 0x10000) < 10)
 		yuv2rgb1(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
