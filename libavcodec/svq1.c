@@ -880,6 +880,8 @@ static int svq1_decode_end(AVCodecContext *avctx)
 
 static void svq1_write_header(SVQ1Context *s, int frame_type)
 {
+    int i;
+
     /* frame code */
     put_bits(&s->pb, 22, 0x20);
 
@@ -898,12 +900,22 @@ static void svq1_write_header(SVQ1Context *s, int frame_type)
         /* output 5 unknown bits (2 + 2 + 1) */
         put_bits(&s->pb, 5, 0);
 
-        /* forget about matching up resolutions, just use the free-form
-         * resolution code (7) for now */
-        put_bits(&s->pb, 3, 7);
-        put_bits(&s->pb, 12, s->frame_width);
-        put_bits(&s->pb, 12, s->frame_height);
-
+	for (i = 0; i < 7; i++)
+	{
+	    if ((svq1_frame_size_table[i].width == s->frame_width) &&
+		(svq1_frame_size_table[i].height == s->frame_height))
+	    {
+		put_bits(&s->pb, 3, i);
+		break;
+	    }
+	}
+	
+	if (i == 7)
+	{
+	    put_bits(&s->pb, 3, 7);
+    	    put_bits(&s->pb, 12, s->frame_width);
+    	    put_bits(&s->pb, 12, s->frame_height);
+	}
     }
 
     /* no checksum or extra data (next 2 bits get 0) */
