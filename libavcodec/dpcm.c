@@ -125,6 +125,9 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     unsigned char byte;
     short diff;
 
+    if (!buf_size)
+        return 0;
+
     switch(avctx->codec->id) {
 
     case CODEC_ID_ROQ_DPCM:
