@@ -4,10 +4,10 @@
  */
 
 /* possible frequencies */
-const uint16_t ac3_freqs[3] = { 48000, 44100, 32000 };
+static const uint16_t ac3_freqs[3] = { 48000, 44100, 32000 };
 
 /* possible bitrates */
-const uint16_t ac3_bitratetab[19] = {
+static const uint16_t ac3_bitratetab[19] = {
     32, 40, 48, 56, 64, 80, 96, 112, 128, 
     160, 192, 224, 256, 320, 384, 448, 512, 576, 640 
 };
@@ -15,7 +15,7 @@ const uint16_t ac3_bitratetab[19] = {
 /* AC3 MDCT window */
 
 /* MDCT window */
-const int16_t ac3_window[256] = {
+static const int16_t ac3_window[256] = {
     4,    7,   12,   16,   21,   28,   34,   42,
    51,   61,   72,   84,   97,  111,  127,  145,
   164,  184,  207,  231,  257,  285,  315,  347,
@@ -144,27 +144,27 @@ static const uint8_t baptab[64]= {
     15, 15, 15, 15,
 };
 
-const uint8_t sdecaytab[4]={ 
+static const uint8_t sdecaytab[4]={ 
     0x0f, 0x11, 0x13, 0x15,
 };
 
-const uint8_t fdecaytab[4]={ 
+static const uint8_t fdecaytab[4]={ 
     0x3f, 0x53, 0x67, 0x7b, 
 };
 
-const uint16_t sgaintab[4]= { 
+static const uint16_t sgaintab[4]= { 
     0x540, 0x4d8, 0x478, 0x410,
 };
 
-const uint16_t dbkneetab[4]= { 
+static const uint16_t dbkneetab[4]= { 
     0x000, 0x700, 0x900, 0xb00,
 };
 
-const uint16_t floortab[8]= { 
+static const uint16_t floortab[8]= { 
     0x2f0, 0x2b0, 0x270, 0x230, 0x1f0, 0x170, 0x0f0, 0xf800,
 };
 
-const uint16_t fgaintab[8]= {
+static const uint16_t fgaintab[8]= {
     0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400,
 };
 
