@@ -116,7 +116,7 @@ static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
 	    }
             pos += p2;
         } else { //Run of pixels
-            int pix[3]; //original pixel
+            int pix[4]; //original pixel
             switch(c->bpp){
             case  8: pix[0] = *src++;
                      break;
@@ -126,6 +126,11 @@ static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
             case 24: pix[0] = *src++;
                      pix[1] = *src++;
                      pix[2] = *src++;
+                     break;
+            case 32: pix[0] = *src++;
+                     pix[1] = *src++;
+                     pix[2] = *src++;
+                     pix[3] = *src++;
                      break;
             }
             if (output + p1 * (c->bpp / 8) > output_end)
@@ -140,6 +145,11 @@ static int decode_rle(CamtasiaContext *c, unsigned int srcsize)
                 case 24: *output++ = pix[0];
                          *output++ = pix[1];
                          *output++ = pix[2];
+                         break;
+                case 32: *output++ = pix[0];
+                         *output++ = pix[1];
+                         *output++ = pix[2];
+                         *output++ = pix[3];
                          break;
                 }
             }
@@ -252,9 +262,10 @@ static int decode_init(AVCodecContext *avctx)
     switch(avctx->bits_per_sample){
     case  8: avctx->pix_fmt = PIX_FMT_PAL8; break;
     case 16: avctx->pix_fmt = PIX_FMT_RGB555; break;
-    case 24: av_log(avctx, AV_LOG_ERROR, "Camtasia warning: RGB24 is just guessed\n");
+    case 24:
              avctx->pix_fmt = PIX_FMT_BGR24;
              break;
+    case 32: avctx->pix_fmt = PIX_FMT_RGBA32; break;
     default: av_log(avctx, AV_LOG_ERROR, "Camtasia error: unknown depth %i bpp\n", avctx->bits_per_sample);
              return -1;             
     }
