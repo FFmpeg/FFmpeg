@@ -99,7 +99,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     optind = 0;
 
     ci->dir = "/tmp";
-    ci->threshold = 1000;
+    ci->threshold = 100;
     ci->file_limit = 100;
     ci->min_interval = 1000000;
     ci->inset = 10;     /* Percent */
@@ -126,6 +126,10 @@ int Configure(void **ctxp, int argc, char *argv[])
                 break;
             case 't':
                 ci->threshold = atof(optarg) * 1000;
+                if (ci->threshold > 1000 || ci->threshold < 0) {
+                    fprintf(stderr, "Invalid threshold value '%s' (range is 0-1)\n", optarg);
+                    return -1;
+                }
                 break;
             case 'w':
                 ci->min_width = atoi(optarg);
@@ -199,6 +203,11 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     uint8_t *cm = cropTbl + MAX_NEG_CROP;                                         
     int rowsize = picture->linesize[0];
 
+#if 0
+    printf("pix_fmt = %d, width = %d, pts = %lld, ci->next_pts = %lld\n",
+        pix_fmt, width, pts, ci->next_pts);
+#endif
+
     if (pts < ci->next_pts)
         return;
 
@@ -224,9 +233,9 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
 
         pixcnt = ((h_start - h_end) >> 1) * (w_start - w_end);
 
-        y = picture->data[0];
-        u = picture->data[1];
-        v = picture->data[2];
+        y = picture->data[0] + h_end * picture->linesize[0] + w_end * 2;
+        u = picture->data[1] + h_end * picture->linesize[1] + w_end;
+        v = picture->data[2] + h_end * picture->linesize[2] + w_end;
 
         for (h = h_start; h > h_end; h -= 2) {
             int w;
@@ -265,10 +274,13 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                 v++;
             }
 
-            y += picture->linesize[0] * 2 - width;
-            u += picture->linesize[1] - width2;
-            v += picture->linesize[2] - width2;
+            y += picture->linesize[0] * 2 - (w_start - w_end) * 2;
+            u += picture->linesize[1] - (w_start - w_end);
+            v += picture->linesize[2] - (w_start - w_end);
         }
+
+        if (ci->debug) 
+            fprintf(stderr, "Fish: Inrange=%d of %d = %d threshold\n", inrange, pixcnt, 1000 * inrange / pixcnt);
 
         if (inrange * 1000 / pixcnt >= ci->threshold) {
             /* Save to file */
@@ -277,9 +289,6 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
             AVPicture picture1;
             static int frame_counter;
             static int foundfile;
-
-            if (ci->debug) 
-                fprintf(stderr, "Fish: Inrange=%d of %d = %d threshold\n", inrange, pixcnt, 1000 * inrange / pixcnt);
 
             if ((frame_counter++ % 20) == 0) {
                 /* Check how many files we have */
