@@ -753,6 +753,13 @@ pp_context_t *pp_get_context(int width, int height, int cpuCaps){
         
 	memset(c, 0, sizeof(PPContext));
 	c->cpuCaps= cpuCaps;
+	if(cpuCaps&PP_FORMAT){
+		c->hChromaSubSample= cpuCaps&0x3;
+		c->vChromaSubSample= (cpuCaps>>4)&0x3;
+	}else{
+		c->hChromaSubSample= 1;
+		c->vChromaSubSample= 1;
+	}
 
 	reallocBuffers(c, width, height, stride);
         
@@ -795,7 +802,6 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
 	
 	if(c->stride < minStride)
 		reallocBuffers(c, width, height, minStride);
-        
 
 	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)) 
 	{
@@ -840,8 +846,8 @@ for(y=0; y<mbHeight; y++){
 	postProcess(src[0], srcStride[0], dst[0], dstStride[0],
 		width, height, QP_store, QPStride, 0, mode, c);
 
-	width  = (width +1)>>1;
-	height = (height+1)>>1;
+	width  = (width )>>c->hChromaSubSample;
+	height = (height)>>c->vChromaSubSample;
 
 	if(mode->chromMode)
 	{

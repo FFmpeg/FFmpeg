@@ -2663,6 +2663,9 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	int i;
 #endif
 
+	const int qpHShift= isColor ? 4-c.hChromaSubSample : 4;
+	const int qpVShift= isColor ? 4-c.vChromaSubSample : 4;
+
 	//FIXME remove
 	uint64_t * const yHistogram= c.yHistogram;
 	uint8_t * const tempSrc= c.tempSrc;
@@ -2846,8 +2849,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 		uint8_t *tempBlock1= c.tempBlocks;
 		uint8_t *tempBlock2= c.tempBlocks + 8;
 #endif
-		int8_t *QPptr= isColor ? &QPs[(y>>3)*QPStride] :&QPs[(y>>4)*QPStride];
-		int8_t *nonBQPptr= isColor ? &c.nonBQPTable[(y>>3)*mbWidth] :&c.nonBQPTable[(y>>4)*mbWidth];
+		int8_t *QPptr= &QPs[(y>>qpVShift)*QPStride];
+		int8_t *nonBQPptr= &c.nonBQPTable[(y>>qpVShift)*mbWidth];
 		int QP=0;
 		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
 		   if not than use a temporary buffer */
@@ -2886,8 +2889,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 #endif
 			if(isColor)
 			{
-				QP= QPptr[x>>3];
-				c.nonBQP= nonBQPptr[x>>3];
+				QP= QPptr[x>>qpHShift];
+				c.nonBQP= nonBQPptr[x>>qpHShift];
 			}
 			else
 			{

@@ -119,6 +119,9 @@ typedef struct PPContext{
 	int cpuCaps;
         
 	int stride; //size of some buffers (needed to realloc them if needed)
+        
+	int hChromaSubSample;
+	int vChromaSubSample;
 
 	PPMode ppMode;
 } PPContext;

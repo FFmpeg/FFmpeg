@@ -43,11 +43,17 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
 pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality);
 void pp_free_mode(pp_mode_t *mode);
 
-pp_context_t *pp_get_context(int width, int height, int cpuCaps);
+pp_context_t *pp_get_context(int width, int height, int flags);
 void pp_free_context(pp_context_t *ppContext);
 
 #define PP_CPU_CAPS_MMX   0x80000000
 #define PP_CPU_CAPS_MMX2  0x20000000
 #define PP_CPU_CAPS_3DNOW 0x40000000
+
+#define PP_FORMAT         0x00000008
+#define PP_FORMAT_420    (0x00000011|PP_FORMAT)
+#define PP_FORMAT_422    (0x00000001|PP_FORMAT)
+#define PP_FORMAT_411    (0x00000002|PP_FORMAT)
+#define PP_FORMAT_444    (0x00000000|PP_FORMAT)
 
 #endif
