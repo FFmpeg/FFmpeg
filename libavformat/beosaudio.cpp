@@ -51,7 +51,7 @@ typedef struct {
     int frame_size; /* in bytes ! */
     CodecID codec_id;
     int flip_left : 1;
-    UINT8 buffer[AUDIO_BUFFER_SIZE];
+    uint8_t buffer[AUDIO_BUFFER_SIZE];
     int buffer_ptr;
     int pipefd; /* the other end of the pipe */
     /* ring buffer */
@@ -268,7 +268,7 @@ static int audio_write_header(AVFormatContext *s1)
 }
 
 static int audio_write_packet(AVFormatContext *s1, int stream_index,
-                              UINT8 *buf, int size, int force_pts)
+                              uint8_t *buf, int size, int force_pts)
 {
     AudioData *s = (AudioData *)s1->priv_data;
     int len, ret;
