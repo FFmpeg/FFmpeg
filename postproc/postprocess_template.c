@@ -2183,21 +2183,21 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 		"1:						\n\t"
 		"leal (%%ebx, %2, 2), %%ecx			\n\t" // 7*stride
 		"movq (%0), %%mm0				\n\t" // L0
-		"pavgb (%1), %%mm0				\n\t" // L0
+		PAVGB((%1), %%mm0)				      // L0
 		"movq (%0, %2), %%mm1				\n\t" // L1
-		"pavgb (%1, %2), %%mm1				\n\t" // L1
+		PAVGB((%1, %2), %%mm1)				      // L1
 		"movq (%0, %2, 2), %%mm2			\n\t" // L2
-		"pavgb (%1, %2, 2), %%mm2			\n\t" // L2
+		PAVGB((%1, %2, 2), %%mm2)			      // L2
 		"movq (%0, %%eax), %%mm3			\n\t" // L3
-		"pavgb (%1, %%eax), %%mm3			\n\t" // L3
+		PAVGB((%1, %%eax), %%mm3)			      // L3
 		"movq (%0, %2, 4), %%mm4			\n\t" // L4
-		"pavgb (%1, %2, 4), %%mm4			\n\t" // L4
+		PAVGB((%1, %2, 4), %%mm4)			      // L4
 		"movq (%0, %%ebx), %%mm5			\n\t" // L5
-		"pavgb (%1, %%ebx), %%mm5			\n\t" // L5
+		PAVGB((%1, %%ebx), %%mm5)			      // L5
 		"movq (%0, %%eax, 2), %%mm6			\n\t" // L6
-		"pavgb (%1, %%eax, 2), %%mm6			\n\t" // L6
+		PAVGB((%1, %%eax, 2), %%mm6)			      // L6
 		"movq (%0, %%ecx), %%mm7			\n\t" // L7
-		"pavgb (%1, %%ecx), %%mm7			\n\t" // L7
+		PAVGB((%1, %%ecx), %%mm7)			      // L7
 		"movq %%mm0, (%1)				\n\t" // R0
 		"movq %%mm1, (%1, %2)				\n\t" // R1
 		"movq %%mm2, (%1, %2, 2)			\n\t" // R2
