@@ -205,6 +205,7 @@ typedef struct AVInputStream {
 
     int64_t       start;     /* time when read started */
     unsigned long frame;     /* current frame */
+    AVFrac          pts;     /* synthetic pts for cases where pkt.pts == 0 */
 } AVInputStream;
 
 typedef struct AVInputFile {
@@ -507,16 +508,21 @@ static void do_video_out(AVFormatContext *s,
                     ost->sync_ipts_offset = 0.000001; /* one microsecond */
             }
 
-#if defined(PJSG)
-            {
-                static char *action[] = { "drop frame", "copy frame", "dup frame" };
-                printf("Input PTS %12.6f, output PTS %12.6f: %s\n",
-                    (double) ost->sync_ipts, (double) ost->st->pts.val * s->pts_num / s->pts_den,
-                    action[nb_frames]);
-            }
-#endif
         }
     }
+    
+#if defined(AVSYNC_DEBUG)
+    static char *action[] = { "drop frame", "copy frame", "dup frame" };
+    if (audio_sync)
+        fprintf(stderr, "Input APTS %12.6f, output APTS %12.6f, ",
+	        (double) audio_sync->sync_ipts, 
+	        (double) audio_sync->st->pts.val * s->pts_num / s->pts_den);
+    fprintf(stderr, "Input VPTS %12.6f, output VPTS %12.6f: %s\n",
+            (double) ost->sync_ipts, 
+  	    (double) ost->st->pts.val * s->pts_num / s->pts_den,
+            action[nb_frames]);
+#endif
+
     if (nb_frames <= 0) 
         return;
 
@@ -751,7 +757,7 @@ static int av_encode(AVFormatContext **output_files,
                      int nb_input_files,
                      AVStreamMap *stream_maps, int nb_stream_maps)
 {
-    int ret, i, j, k, n, nb_istreams = 0, nb_ostreams = 0, pts_set;
+    int ret, i, j, k, n, nb_istreams = 0, nb_ostreams = 0;
     AVFormatContext *is, *os;
     AVCodecContext *codec, *icodec;
     AVOutputStream *ost, **ost_table = NULL;
@@ -1101,6 +1107,19 @@ static int av_encode(AVFormatContext **output_files,
     /* init pts */
     for(i=0;i<nb_istreams;i++) {
         ist = ist_table[i];
+	is = input_files[ist->file_index];
+        switch (ist->st->codec.codec_type) {
+        case CODEC_TYPE_AUDIO:
+	    av_frac_init(&ist->pts, 
+	                 0, 0, is->pts_num * ist->st->codec.sample_rate);
+            break;
+        case CODEC_TYPE_VIDEO:
+            av_frac_init(&ist->pts, 
+	                 0, 0, is->pts_num * ist->st->codec.frame_rate);
+            break;
+        default:
+            break;
+	}
     }
     
     /* compute buffer size max (should use a complete heuristic) */
@@ -1200,7 +1219,6 @@ static int av_encode(AVFormatContext **output_files,
 
         len = pkt.size;
         ptr = pkt.data;
-        pts_set = 0;
         while (len > 0) {
             int64_t ipts;
 
@@ -1214,12 +1232,10 @@ static int av_encode(AVFormatContext **output_files,
                    frame has begun (MPEG semantics) */
                 /* NOTE2: even if the fraction is not initialized,
                    av_frac_set can be used to set the integer part */
-                if (ist->frame_decoded && 
-                    pkt.pts != AV_NOPTS_VALUE && 
-                    !pts_set) {
-                    ipts = pkt.pts;
+                if (ist->frame_decoded) { 
+		    /* If pts is unavailable -- we have to use synthetic one */
+		    ipts = (pkt.pts == AV_NOPTS_VALUE) ? ist->pts.val : pkt.pts;
                     ist->frame_decoded = 0;
-                    pts_set = 1;
                 }
 
                 switch(ist->st->codec.codec_type) {
@@ -1239,6 +1255,8 @@ static int av_encode(AVFormatContext **output_files,
                         continue;
                     }
                     data_buf = (uint8_t *)samples;
+		    av_frac_add(&ist->pts, 
+			        is->pts_den * data_size / (2 * ist->st->codec.channels));
                     break;
                 case CODEC_TYPE_VIDEO:
                     {
@@ -1262,7 +1280,8 @@ static int av_encode(AVFormatContext **output_files,
                             len -= ret;
                             continue;
                         }
-                                  
+                        av_frac_add(&ist->pts, 
+			            is->pts_den * ist->st->codec.frame_rate_base);          
                     }
                     break;
                 default:
@@ -1597,11 +1616,11 @@ static void opt_debug(const char *arg)
 
 static void opt_frame_rate(const char *arg)
 {
-    frame_rate_base = DEFAULT_FRAME_RATE_BASE; //FIXME not optimal
-    frame_rate = (int)(strtod(arg, 0) * frame_rate_base + 0.5);
-    //FIXME parse fractions 
+    if (parse_frame_rate(&frame_rate, &frame_rate_base, arg) < 0) {
+        fprintf(stderr, "Incorrect frame rate\n");
+	exit(1);
+    }
 }
-
 
 static void opt_frame_crop_top(const char *arg)
 {
@@ -1677,8 +1696,7 @@ static void opt_frame_crop_right(const char *arg)
 
 static void opt_frame_size(const char *arg)
 {
-    parse_image_size(&frame_width, &frame_height, arg);
-    if (frame_width <= 0 || frame_height <= 0) {
+    if (parse_image_size(&frame_width, &frame_height, arg) < 0) {
         fprintf(stderr, "Incorrect frame size\n");
         exit(1);
     }
@@ -2582,7 +2600,7 @@ static void show_formats(void)
         printf(" %s:", up->name);
     printf("\n");
     
-    printf("Frame size abbreviations: sqcif qcif cif 4cif\n");
+    printf("Frame size, frame rate abbreviations: ntsc pal film ntsc-film sqcif qcif cif 4cif\n");
     printf("Motion estimation methods:");
     pp = motion_str;
     while (*pp) {
@@ -2617,7 +2635,7 @@ const OptionDef options[] = {
     { "passlogfile", HAS_ARG | OPT_STRING, {(void*)&pass_logfilename}, "select two pass log file name", "file" },
     /* video options */
     { "b", HAS_ARG, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
-    { "r", HAS_ARG, {(void*)opt_frame_rate}, "set frame rate (in Hz)", "rate" },
+    { "r", HAS_ARG, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
     { "re", OPT_BOOL|OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate" },
     { "s", HAS_ARG, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },

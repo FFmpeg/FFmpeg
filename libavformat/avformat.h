@@ -408,6 +408,7 @@ void dump_format(AVFormatContext *ic,
                  const char *url,
                  int is_output);
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str);
+int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg);
 int64_t parse_date(const char *datestr, int duration);
 
 int64_t av_gettime(void);

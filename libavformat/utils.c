@@ -879,28 +879,33 @@ void dump_format(AVFormatContext *ic,
 }
 
 typedef struct {
-    const char *str;
+    const char *abv;
     int width, height;
-} SizeEntry;
+    int frame_rate, frame_rate_base;
+} AbvEntry;
 
-static SizeEntry sizes[] = {
-    { "sqcif", 128, 96 },
-    { "qcif", 176, 144 },
-    { "cif", 352, 288 },
-    { "4cif", 704, 576 },
+static AbvEntry frame_abvs[] = {
+    { "ntsc",      352, 240, 30000, 1001 },
+    { "pal",       352, 288,    25,    1 },
+    { "film",      352, 240,    24,    1 },
+    { "ntsc-film", 352, 240, 24000, 1001 },
+    { "sqcif",     128,  96,     0,    0 },
+    { "qcif",      176, 144,     0,    0 },
+    { "cif",       352, 288,     0,    0 },
+    { "4cif",      704, 576,     0,    0 },
 };
-    
+
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
-    int n = sizeof(sizes) / sizeof(SizeEntry);
+    int n = sizeof(frame_abvs) / sizeof(AbvEntry);
     const char *p;
     int frame_width = 0, frame_height = 0;
 
     for(i=0;i<n;i++) {
-        if (!strcmp(sizes[i].str, str)) {
-            frame_width = sizes[i].width;
-            frame_height = sizes[i].height;
+        if (!strcmp(frame_abvs[i].abv, str)) {
+            frame_width = frame_abvs[i].width;
+            frame_height = frame_abvs[i].height;
             break;
         }
     }
@@ -916,6 +921,40 @@ int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
     *width_ptr = frame_width;
     *height_ptr = frame_height;
     return 0;
+}
+
+int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
+{
+    int i;
+    char* cp;
+   
+    /* First, we check our abbreviation table */
+    for (i = 0; i < sizeof(frame_abvs)/sizeof(*frame_abvs); ++i)
+         if (!strcmp(frame_abvs[i].abv, arg)) {
+	     *frame_rate = frame_abvs[i].frame_rate;
+	     *frame_rate_base = frame_abvs[i].frame_rate_base;
+	     return 0;
+	 }
+
+    /* Then, we try to parse it as fraction */
+    cp = strchr(arg, '/');
+    if (cp) {
+        char* cpp;
+	*frame_rate = strtol(arg, &cpp, 10);
+	if (cpp != arg || cpp == cp) 
+	    *frame_rate_base = strtol(cp+1, &cpp, 10);
+	else
+	   *frame_rate = 0;
+    } 
+    else {
+        /* Finally we give up and parse it as double */
+        *frame_rate_base = DEFAULT_FRAME_RATE_BASE;
+        *frame_rate = (int)(strtod(arg, 0) * (*frame_rate_base) + 0.5);
+    }
+    if (!*frame_rate || !*frame_rate_base)
+        return -1;
+    else
+        return 0;
 }
 
 int64_t av_gettime(void)
