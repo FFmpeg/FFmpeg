@@ -1699,7 +1699,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, int width)
 		"packuswb %%mm4, %%mm0		\n\t"
 		"paddusb bgr2YOffset, %%mm0	\n\t"
 
-		MOVNTQ(%%mm0, (%1, %%eax))
+		"movq %%mm0, (%1, %%eax)	\n\t"
 		"addl $8, %%eax			\n\t"
 		" js 1b				\n\t"
 		: : "r" (src+width*3), "r" (dst+width), "g" (-width)
@@ -1720,7 +1720,156 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, int width)
 
 static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
-#ifdef HAVE_MMXFIXME
+#ifdef HAVE_MMX
+	asm volatile(
+		"movl %4, %%eax			\n\t"
+		"movq w1111, %%mm5		\n\t"
+		"movq bgr2UCoeff, %%mm6		\n\t"
+		"pxor %%mm7, %%mm7		\n\t"
+		"leal (%%eax, %%eax, 2), %%ebx	\n\t"
+		"addl %%ebx, %%ebx		\n\t"
+		".balign 16			\n\t"
+		"1:				\n\t"
+		PREFETCH" 64(%0, %%ebx)		\n\t"
+		PREFETCH" 64(%1, %%ebx)		\n\t"
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+		"movq (%0, %%ebx), %%mm0	\n\t"
+		"movq (%1, %%ebx), %%mm1	\n\t"
+		"movq 6(%0, %%ebx), %%mm2	\n\t"
+		"movq 6(%1, %%ebx), %%mm3	\n\t"
+		PAVGB(%%mm1, %%mm0)
+		PAVGB(%%mm3, %%mm2)
+		"movq %%mm0, %%mm1		\n\t"
+		"movq %%mm2, %%mm3		\n\t"
+		"psrlq $24, %%mm0		\n\t"
+		"psrlq $24, %%mm2		\n\t"
+		PAVGB(%%mm1, %%mm0)
+		PAVGB(%%mm3, %%mm2)
+		"punpcklbw %%mm7, %%mm0		\n\t"
+		"punpcklbw %%mm7, %%mm2		\n\t"
+#else
+		"movd (%0, %%ebx), %%mm0	\n\t"
+		"movd (%1, %%ebx), %%mm1	\n\t"
+		"movd 3(%0, %%ebx), %%mm2	\n\t"
+		"movd 3(%1, %%ebx), %%mm3	\n\t"
+		"punpcklbw %%mm7, %%mm0		\n\t"
+		"punpcklbw %%mm7, %%mm1		\n\t"
+		"punpcklbw %%mm7, %%mm2		\n\t"
+		"punpcklbw %%mm7, %%mm3		\n\t"
+		"paddw %%mm1, %%mm0		\n\t"
+		"paddw %%mm3, %%mm2		\n\t"
+		"paddw %%mm2, %%mm0		\n\t"
+		"movd 6(%0, %%ebx), %%mm4	\n\t"
+		"movd 6(%1, %%ebx), %%mm1	\n\t"
+		"movd 9(%0, %%ebx), %%mm2	\n\t"
+		"movd 9(%1, %%ebx), %%mm3	\n\t"
+		"punpcklbw %%mm7, %%mm4		\n\t"
+		"punpcklbw %%mm7, %%mm1		\n\t"
+		"punpcklbw %%mm7, %%mm2		\n\t"
+		"punpcklbw %%mm7, %%mm3		\n\t"
+		"paddw %%mm1, %%mm4		\n\t"
+		"paddw %%mm3, %%mm2		\n\t"
+		"paddw %%mm4, %%mm2		\n\t"
+		"psrlw $2, %%mm0		\n\t"
+		"psrlw $2, %%mm2		\n\t"
+#endif
+		"movq bgr2VCoeff, %%mm1		\n\t"
+		"movq bgr2VCoeff, %%mm3		\n\t"
+		
+		"pmaddwd %%mm0, %%mm1		\n\t"
+		"pmaddwd %%mm2, %%mm3		\n\t"
+		"pmaddwd %%mm6, %%mm0		\n\t"
+		"pmaddwd %%mm6, %%mm2		\n\t"
+#ifndef FAST_BGR2YV12
+		"psrad $8, %%mm0		\n\t"
+		"psrad $8, %%mm1		\n\t"
+		"psrad $8, %%mm2		\n\t"
+		"psrad $8, %%mm3		\n\t"
+#endif
+		"packssdw %%mm2, %%mm0		\n\t"
+		"packssdw %%mm3, %%mm1		\n\t"
+		"pmaddwd %%mm5, %%mm0		\n\t"
+		"pmaddwd %%mm5, %%mm1		\n\t"
+		"packssdw %%mm1, %%mm0		\n\t" // V1 V0 U1 U0
+		"psraw $7, %%mm0		\n\t"
+
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+		"movq 12(%0, %%ebx), %%mm4	\n\t"
+		"movq 12(%1, %%ebx), %%mm1	\n\t"
+		"movq 18(%0, %%ebx), %%mm2	\n\t"
+		"movq 18(%1, %%ebx), %%mm3	\n\t"
+		PAVGB(%%mm1, %%mm4)
+		PAVGB(%%mm3, %%mm2)
+		"movq %%mm4, %%mm1		\n\t"
+		"movq %%mm2, %%mm3		\n\t"
+		"psrlq $24, %%mm4		\n\t"
+		"psrlq $24, %%mm2		\n\t"
+		PAVGB(%%mm1, %%mm4)
+		PAVGB(%%mm3, %%mm2)
+		"punpcklbw %%mm7, %%mm4		\n\t"
+		"punpcklbw %%mm7, %%mm2		\n\t"
+#else
+		"movd 12(%0, %%ebx), %%mm4	\n\t"
+		"movd 12(%1, %%ebx), %%mm1	\n\t"
+		"movd 15(%0, %%ebx), %%mm2	\n\t"
+		"movd 15(%1, %%ebx), %%mm3	\n\t"
+		"punpcklbw %%mm7, %%mm4		\n\t"
+		"punpcklbw %%mm7, %%mm1		\n\t"
+		"punpcklbw %%mm7, %%mm2		\n\t"
+		"punpcklbw %%mm7, %%mm3		\n\t"
+		"paddw %%mm1, %%mm4		\n\t"
+		"paddw %%mm3, %%mm2		\n\t"
+		"paddw %%mm2, %%mm4		\n\t"
+		"movd 18(%0, %%ebx), %%mm5	\n\t"
+		"movd 18(%1, %%ebx), %%mm1	\n\t"
+		"movd 21(%0, %%ebx), %%mm2	\n\t"
+		"movd 21(%1, %%ebx), %%mm3	\n\t"
+		"punpcklbw %%mm7, %%mm5		\n\t"
+		"punpcklbw %%mm7, %%mm1		\n\t"
+		"punpcklbw %%mm7, %%mm2		\n\t"
+		"punpcklbw %%mm7, %%mm3		\n\t"
+		"paddw %%mm1, %%mm5		\n\t"
+		"paddw %%mm3, %%mm2		\n\t"
+		"paddw %%mm5, %%mm2		\n\t"
+		"movq w1111, %%mm5		\n\t"
+		"psrlw $2, %%mm4		\n\t"
+		"psrlw $2, %%mm2		\n\t"
+#endif
+		"movq bgr2VCoeff, %%mm1		\n\t"
+		"movq bgr2VCoeff, %%mm3		\n\t"
+		
+		"pmaddwd %%mm4, %%mm1		\n\t"
+		"pmaddwd %%mm2, %%mm3		\n\t"
+		"pmaddwd %%mm6, %%mm4		\n\t"
+		"pmaddwd %%mm6, %%mm2		\n\t"
+#ifndef FAST_BGR2YV12
+		"psrad $8, %%mm4		\n\t"
+		"psrad $8, %%mm1		\n\t"
+		"psrad $8, %%mm2		\n\t"
+		"psrad $8, %%mm3		\n\t"
+#endif
+		"packssdw %%mm2, %%mm4		\n\t"
+		"packssdw %%mm3, %%mm1		\n\t"
+		"pmaddwd %%mm5, %%mm4		\n\t"
+		"pmaddwd %%mm5, %%mm1		\n\t"
+		"addl $24, %%ebx		\n\t"
+		"packssdw %%mm1, %%mm4		\n\t" // V3 V2 U3 U2
+		"psraw $7, %%mm4		\n\t"
+		
+		"movq %%mm0, %%mm1		\n\t"
+		"punpckldq %%mm4, %%mm0		\n\t"
+		"punpckhdq %%mm4, %%mm1		\n\t"
+		"packsswb %%mm1, %%mm0		\n\t"
+		"paddb bgr2UVOffset, %%mm0	\n\t"
+
+		"movd %%mm0, (%2, %%eax)	\n\t"
+		"punpckhdq %%mm0, %%mm0		\n\t"
+		"movd %%mm0, (%3, %%eax)	\n\t"
+		"addl $4, %%eax			\n\t"
+		" js 1b				\n\t"
+		: : "r" (src1+width*6), "r" (src2+width*6), "r" (dstU+width), "r" (dstV+width), "g" (-width)
+		: "%eax", "%ebx"
+	);
 #else
 	int i;
 	for(i=0; i<width; i++)

@@ -182,10 +182,15 @@ static uint64_t __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000LL;
 
 #ifdef FAST_BGR2YV12
 static const uint64_t bgr2YCoeff  __attribute__((aligned(8))) = 0x000000210041000DULL;
+static const uint64_t bgr2UCoeff  __attribute__((aligned(8))) = 0x0000FFEEFFDC0038ULL;
+static const uint64_t bgr2VCoeff  __attribute__((aligned(8))) = 0x00000038FFD2FFF8ULL;
 #else
 static const uint64_t bgr2YCoeff  __attribute__((aligned(8))) = 0x000020E540830C8BULL;
+static const uint64_t bgr2UCoeff  __attribute__((aligned(8))) = 0x0000ED0FDAC23831ULL;
+static const uint64_t bgr2VCoeff  __attribute__((aligned(8))) = 0x00003831D0E6F6EAULL;
 #endif
 static const uint64_t bgr2YOffset __attribute__((aligned(8))) = 0x1010101010101010ULL;
+static const uint64_t bgr2UVOffset __attribute__((aligned(8)))= 0x8080808080808080ULL;
 static const uint64_t w1111       __attribute__((aligned(8))) = 0x0001000100010001ULL;
 
 // FIXME remove
