@@ -743,7 +743,7 @@ following image formats are supported:
 @item Sorenson Video 3       @tab     @tab  X @tab fourcc: SVQ3
 @item On2 VP3                @tab     @tab  X @tab still experimental
 @item Theora                 @tab     @tab  X @tab still experimental
-@item Intel Indeo 3          @tab     @tab  X @tab only works on i386 right now
+@item Intel Indeo 3          @tab     @tab  X
 @item FLV                    @tab  X  @tab  X @tab Sorenson H.263 used in Flash
 @item ATI VCR1               @tab     @tab  X @tab fourcc: VCR1
 @item ATI VCR2               @tab     @tab  X @tab fourcc: VCR2
