@@ -369,7 +369,8 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     s->mv_table_index = 1; /* only if P frame */
     s->use_skip_mb_code = 1; /* only if P frame */
     s->per_mb_rl_table = 0;
-    s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==P_TYPE);
+    if(s->msmpeg4_version==4)
+        s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==P_TYPE);
 
     if (s->pict_type == I_TYPE) {
         s->no_rounding = 1;
