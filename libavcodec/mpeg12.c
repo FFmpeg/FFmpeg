@@ -358,14 +358,10 @@ static inline void encode_mb_skip_run(MpegEncContext *s, int run){
 
 static void common_init(MpegEncContext *s)
 {
-int i;
 
     s->y_dc_scale_table=
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
 
-    if(!s->encoding)    
-    for(i=0;i<64;i++)
-       s->dsp.idct_permutation[i]=i;
 }
 
 void ff_mpeg1_clean_buffers(MpegEncContext *s){
@@ -1763,7 +1759,14 @@ static int mpeg_decode_init(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
+    int i;
     
+    //we need some parmutation to store
+    //matrixes, until MPV_common_init()
+    //set the real permutatuon 
+    for(i=0;i<64;i++)
+       s2->dsp.idct_permutation[i]=i;
+
     MPV_decode_defaults(s2);
     
     s->mpeg_enc_ctx.avctx= avctx;
