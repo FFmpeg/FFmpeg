@@ -62,19 +62,19 @@ typedef struct HYuvContext{
     DSPContext dsp; 
 }HYuvContext;
 
-static unsigned char classic_shift_luma[] = {
+static const unsigned char classic_shift_luma[] = {
   34,36,35,69,135,232,9,16,10,24,11,23,12,16,13,10,14,8,15,8,
   16,8,17,20,16,10,207,206,205,236,11,8,10,21,9,23,8,8,199,70,
   69,68, 0
 };
 
-static unsigned char classic_shift_chroma[] = {
+static const unsigned char classic_shift_chroma[] = {
   66,36,37,38,39,40,41,75,76,77,110,239,144,81,82,83,84,85,118,183,
   56,57,88,89,56,89,154,57,58,57,26,141,57,56,58,57,58,57,184,119,
   214,245,116,83,82,49,80,79,78,77,44,75,41,40,39,38,37,36,34, 0
 };
 
-static unsigned char classic_add_luma[256] = {
+static const unsigned char classic_add_luma[256] = {
     3,  9,  5, 12, 10, 35, 32, 29, 27, 50, 48, 45, 44, 41, 39, 37,
    73, 70, 68, 65, 64, 61, 58, 56, 53, 50, 49, 46, 44, 41, 38, 36,
    68, 65, 63, 61, 58, 55, 53, 51, 48, 46, 45, 43, 41, 39, 38, 36,
@@ -93,7 +93,7 @@ static unsigned char classic_add_luma[256] = {
    46, 47, 49, 51, 26, 28, 30, 31, 33, 34, 18, 19, 11, 13,  7,  8,
 };
 
-static unsigned char classic_add_chroma[256] = {
+static const unsigned char classic_add_chroma[256] = {
     3,  1,  2,  2,  2,  2,  3,  3,  7,  5,  7,  5,  8,  6, 11,  9,
     7, 13, 11, 10,  9,  8,  7,  5,  9,  7,  6,  4,  7,  5,  8,  7,
    11,  8, 13, 11, 19, 15, 22, 23, 20, 33, 32, 28, 27, 29, 51, 77,
