@@ -16,8 +16,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4655
-#define LIBAVCODEC_BUILD_STR   "4655"
+#define LIBAVCODEC_BUILD       4656
+#define LIBAVCODEC_BUILD_STR   "4656"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -86,6 +86,7 @@ enum PixelFormat {
     PIX_FMT_GRAY8,
     PIX_FMT_MONOWHITE, /* 0 is white */
     PIX_FMT_MONOBLACK, /* 0 is black */
+    PIX_FMT_PAL8,      /* 8 bit with RGBA palette */
     PIX_FMT_NB,
 };
 

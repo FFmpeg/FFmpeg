@@ -108,6 +108,12 @@ static PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .name = "monob",
         .nb_components = 1, .is_packed = 1, .is_gray = 1,
     },
+
+    /* paletted formats */
+    [PIX_FMT_PAL8] = {
+        .name = "pal8",
+        .nb_components = 1, .is_packed = 1, .is_paletted = 1,
+    },
 };
 
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift)
@@ -188,10 +194,19 @@ int avpicture_fill(AVPicture *picture, UINT8 *ptr,
         picture->data[2] = NULL;
         picture->linesize[0] = (width + 7) >> 3;
         return picture->linesize[0] * height;
+    case PIX_FMT_PAL8:
+        size2 = (size + 3) & ~3;
+        picture->data[0] = ptr;
+        picture->data[1] = ptr + size2; /* palette is stored here as 256 32 bit words */
+        picture->data[2] = NULL;
+        picture->linesize[0] = width;
+        picture->linesize[1] = 4;
+        return size2 + 256 * 4;
     default:
         picture->data[0] = NULL;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
+        picture->data[3] = NULL;
         return -1;
     }
 }
@@ -678,6 +693,38 @@ static void gray_to_ ## rgb_name(AVPicture *dst, AVPicture *src,        \
         p += src_wrap;                                                  \
         q += dst_wrap;                                                  \
     }                                                                   \
+}                                                                       \
+                                                                        \
+static void pal8_to_ ## rgb_name(AVPicture *dst, AVPicture *src,        \
+                                 int width, int height)                 \
+{                                                                       \
+    const unsigned char *p;                                             \
+    unsigned char *q;                                                   \
+    int r, g, b, dst_wrap, src_wrap;                                    \
+    int x, y;                                                           \
+    uint32_t v;\
+    const uint32_t *palette;\
+\
+    p = src->data[0];                                                   \
+    src_wrap = src->linesize[0] - width;                                \
+    palette = (uint32_t *)src->data[1];\
+                                                                        \
+    q = dst->data[0];                                                   \
+    dst_wrap = dst->linesize[0] - BPP * width;                          \
+                                                                        \
+    for(y=0;y<height;y++) {                                             \
+        for(x=0;x<width;x++) {                                          \
+            v = palette[p[0]];\
+            r = (v >> 16) & 0xff;\
+            g = (v >> 8) & 0xff;\
+            b = (v) & 0xff;\
+            RGB_OUT(q, r, g, b);                                        \
+            q += BPP;                                                   \
+            p ++;                                                       \
+        }                                                               \
+        p += src_wrap;                                                  \
+        q += dst_wrap;                                                  \
+    }                                                                   \
 }
 
 /* copy bit n to bits 0 ... n - 1 */
@@ -977,6 +1024,58 @@ static void gray_to_monoblack(AVPicture *dst, AVPicture *src,
     gray_to_mono(dst, src, width, height, 0x00);
 }
 
+/* this is maybe slow, but allows for extensions */
+static inline unsigned char gif_clut_index(UINT8 r, UINT8 g, UINT8 b)
+{
+    return ((((r)/47)%6)*6*6+(((g)/47)%6)*6+(((b)/47)%6));
+}
+
+/* XXX: put jpeg quantize code instead */
+static void rgb24_to_pal8(AVPicture *dst, AVPicture *src,
+                          int width, int height)
+{
+    const unsigned char *p;
+    unsigned char *q;
+    int r, g, b, dst_wrap, src_wrap;
+    int x, y, i;
+    static const uint8_t pal_value[6] = { 0x00, 0x33, 0x66, 0x99, 0xcc, 0xff };
+    uint32_t *pal;
+
+    p = src->data[0];
+    src_wrap = src->linesize[0] - 3 * width;
+
+    q = dst->data[0];
+    dst_wrap = dst->linesize[0] - width;
+
+    for(y=0;y<height;y++) {
+        for(x=0;x<width;x++) {
+            r = p[0];
+            g = p[1];
+            b = p[2];
+
+            q[0] = gif_clut_index(r, g, b);
+            q++;
+            p += 3;
+        }
+        p += src_wrap;
+        q += dst_wrap;
+    }
+
+    /* build palette */
+    pal = (uint32_t *)dst->data[1];
+    i = 0;
+    for(r = 0; r < 6; r++) {
+        for(g = 0; g < 6; g++) {
+            for(b = 0; b < 6; b++) {
+                pal[i++] = (0xff << 24) | (pal_value[r] << 16) | 
+                    (pal_value[g] << 8) | pal_value[b];
+            }
+        }
+    }
+    while (i < 256)
+        pal[i++] = 0;
+}
+        
 typedef struct ConvertEntry {
     void (*convert)(AVPicture *dst, AVPicture *src, int width, int height);
 } ConvertEntry;
@@ -1038,6 +1137,9 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         },
         [PIX_FMT_GRAY8] = { 
             .convert = rgb24_to_gray
+        },
+        [PIX_FMT_PAL8] = { 
+            .convert = rgb24_to_pal8
         },
     },
     [PIX_FMT_RGBA32] = {
@@ -1103,6 +1205,23 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     [PIX_FMT_MONOBLACK] = {
         [PIX_FMT_GRAY8] = { 
             .convert = monoblack_to_gray
+        },
+    },
+    [PIX_FMT_PAL8] = {
+        [PIX_FMT_RGB555] = { 
+            .convert = pal8_to_rgb555
+        },
+        [PIX_FMT_RGB565] = { 
+            .convert = pal8_to_rgb565
+        },
+        [PIX_FMT_BGR24] = { 
+            .convert = pal8_to_bgr24
+        },
+        [PIX_FMT_RGB24] = { 
+            .convert = pal8_to_rgb24
+        },
+        [PIX_FMT_RGBA32] = { 
+            .convert = pal8_to_rgba32
         },
     },
 };
