@@ -244,6 +244,7 @@ static int rtp_new_av_stream(HTTPContext *c,
                              int stream_index, struct sockaddr_in *dest_addr);
 
 static const char *my_program_name;
+static const char *my_program_dir;
 
 static int ffserver_debug;
 static int ffserver_daemon;
@@ -379,6 +380,9 @@ static void start_children(FFStream *feed)
                     slash++;
                 }
                 strcpy(slash, "ffmpeg");
+
+                /* This is needed to make relative pathnames work */
+                chdir(my_program_dir);
 
                 execvp(pathname, feed->child_argv);
 
@@ -3301,7 +3305,10 @@ void add_codec(FFStream *stream, AVCodecContext *av)
             av->b_quant_factor = 1.25;
         if (!av->b_quant_offset)
             av->b_quant_offset = 1.25;
-            
+        if (!av->rc_min_rate)
+            av->rc_min_rate = av->bit_rate / 2;
+        if (!av->rc_max_rate)
+            av->rc_max_rate = av->bit_rate * 2;
 
         break;
     default:
@@ -3695,6 +3702,26 @@ int parse_ffconfig(const char *filename)
             if (stream) {
                 audio_enc.quality = atof(arg) * 1000;
             }
+        } else if (!strcasecmp(cmd, "VideoBitRateRange")) {
+            if (stream) {
+                int minrate, maxrate;
+
+                get_arg(arg, sizeof(arg), &p);
+
+                if (sscanf(arg, "%d-%d", &minrate, &maxrate) == 2) {
+                    video_enc.rc_min_rate = minrate * 1000;
+                    video_enc.rc_max_rate = maxrate * 1000;
+                } else {
+                    fprintf(stderr, "%s:%d: Incorrect format for VideoBitRateRange -- should be <min>-<max>: %s\n", 
+                            filename, line_num, arg);
+                    errors++;
+                }
+            }
+        } else if (!strcasecmp(cmd, "VideoBitRateTolerance")) {
+            if (stream) {
+                get_arg(arg, sizeof(arg), &p);
+                video_enc.bit_rate_tolerance = atoi(arg) * 1000;
+            }
         } else if (!strcasecmp(cmd, "VideoBitRate")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
@@ -4018,6 +4045,7 @@ int main(int argc, char **argv)
     config_filename = "/etc/ffserver.conf";
 
     my_program_name = argv[0];
+    my_program_dir = getcwd(0, 0);
     ffserver_daemon = 1;
     
     for(;;) {
