@@ -113,6 +113,7 @@ typedef struct HTTPContext {
     AVFormatContext *fmt_in;
     long start_time;            /* In milliseconds - this wraps fairly often */
     int64_t first_pts;            /* initial pts value */
+    int64_t cur_pts;              /* current pts value */
     int pts_stream_index;       /* stream we choose as clock reference */
     /* output format handling */
     struct FFStream *stream;
@@ -786,6 +787,7 @@ static int handle_connection(HTTPContext *c)
         if (!(c->poll_entry->revents & POLLIN))
             return 0;
         /* read the data */
+    read_loop:
         len = read(c->fd, c->buffer_ptr, 1);
         if (len < 0) {
             if (errno != EAGAIN && errno != EINTR)
@@ -810,7 +812,7 @@ static int handle_connection(HTTPContext *c)
             } else if (ptr >= c->buffer_end) {
                 /* request too long: cannot do anything */
                 return -1;
-            }
+            } else goto read_loop;
         }
         break;
 
@@ -2078,11 +2080,20 @@ static int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 static int compute_send_delay(HTTPContext *c)
 {
     int datarate = 8 * get_longterm_datarate(&c->datarate, c->data_count); 
+    int64_t delta_pts;
+    int64_t time_pts;
+    int m_delay;
 
     if (datarate > c->stream->bandwidth * 2000) {
         return 1000;
     }
-    return 0;
+    if(!c->stream->feed && c->first_pts!=AV_NOPTS_VALUE) {
+      time_pts = ((int64_t)(cur_time - c->start_time) * c->fmt_in->pts_den) / 
+        ((int64_t) c->fmt_in->pts_num*1000);
+      delta_pts = c->cur_pts - time_pts;
+      m_delay = (delta_pts * 1000 * c->fmt_in->pts_num) / c->fmt_in->pts_den;
+      return m_delay>0 ? m_delay : 0;
+    } else return 0;
 }
 
 #endif
@@ -2189,9 +2200,11 @@ static int http_prepare_data(HTTPContext *c)
                     }
                 } else {
                     /* update first pts if needed */
-                    if (c->first_pts == AV_NOPTS_VALUE)
+                    if (c->first_pts == AV_NOPTS_VALUE) {
                         c->first_pts = pkt.pts;
-                    
+                        c->start_time = cur_time;
+                    }
+                    c->cur_pts = pkt.pts;
                     /* send it to the appropriate stream */
                     if (c->stream->feed) {
                         /* if coming from a feed, select the right stream */
@@ -2239,7 +2252,7 @@ static int http_prepare_data(HTTPContext *c)
                             ctx = c->rtp_ctx[c->packet_stream_index];
                             if(!ctx) {
                               av_free_packet(&pkt);
-                              return -1;
+                              break;
                             }
                             codec = &ctx->streams[0]->codec;
                             /* only one stream per RTP connection */
@@ -3044,7 +3057,7 @@ static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPHeader *h)
     }
     
     rtp_c->state = HTTPSTATE_READY;
-    
+    rtp_c->first_pts = AV_NOPTS_VALUE;
     /* now everything is OK, so we can send the connection parameters */
     rtsp_reply_header(c, RTSP_STATUS_OK);
     /* session ID */
