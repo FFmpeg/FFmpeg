@@ -890,3 +890,8 @@ void av_log_set_callback(void (*callback)(void*, int, const char*, va_list))
     av_log_callback = callback;
 }
 
+#if !defined(HAVE_PTHREADS) && !defined(HAVE_W32THREADS)
+int avcodec_thread_init(AVCodecContext *s, int thread_count){
+    return -1;
+}
+#endif
