@@ -2064,9 +2064,13 @@ static void select_input_picture(MpegEncContext *s){
             }
 
             if(s->picture_in_gop_number + b_frames >= s->gop_size){
+              if((s->flags2 & CODEC_FLAG2_STRICT_GOP) && s->gop_size > s->picture_in_gop_number){
+                    b_frames= s->gop_size - s->picture_in_gop_number - 1;
+              }else{
                 if(s->flags & CODEC_FLAG_CLOSED_GOP)
                     b_frames=0;
                 s->input_picture[b_frames]->pict_type= I_TYPE;
+              }
             }
             
             if(   (s->flags & CODEC_FLAG_CLOSED_GOP)
