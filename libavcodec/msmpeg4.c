@@ -60,10 +60,11 @@ static int msmpeg4_decode_motion(MpegEncContext * s,
 static void msmpeg4v2_encode_motion(MpegEncContext * s, int val);
 static void init_h263_dc_for_msmpeg4(void);
 static inline void msmpeg4_memsetw(short *tab, int val, int n);
-
+static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, int level, int intra);
 
 
 extern UINT32 inverse[256];
+
 
 #ifdef DEBUG
 int intra_count = 0;
@@ -71,6 +72,8 @@ int frame_count = 0;
 #endif
 
 #include "msmpeg4data.h"
+
+static int rl_length[2][NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 
 #ifdef STATS
 
@@ -187,7 +190,6 @@ static void common_init(MpegEncContext * s)
                 wmv1_scantable[i][k]= block_permute_op(j);
             }
         }
-
     }
 }
 
@@ -236,6 +238,20 @@ void ff_msmpeg4_encode_init(MpegEncContext *s)
         init_mv_table(&mv_tables[1]);
         for(i=0;i<NB_RL_TABLES;i++)
             init_rl(&rl_table[i]);
+
+        for(i=0; i<NB_RL_TABLES; i++){
+            int level;
+            for(level=0; level<=MAX_LEVEL; level++){
+                int run;
+                for(run=0; run<=MAX_RUN; run++){
+                    int last;
+                    for(last=0; last<2; last++){
+                        rl_length[0][i][level][run][last]= get_size_of_code(s, &rl_table[  i], last, run, level,0);
+                        rl_length[1][i][level][run][last]= get_size_of_code(s, &rl_table[  i], last, run, level,1);
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -285,8 +301,7 @@ static void find_best_tables(MpegEncContext * s)
     int i;
     int best       =-1, best_size       =9999999;
     int chroma_best=-1, best_chroma_size=9999999;
-    int last_size=0;
-    
+
     for(i=0; i<3; i++){
         int level;
         int chroma_size=0;
@@ -300,20 +315,22 @@ static void find_best_tables(MpegEncContext * s)
             int run;
             for(run=0; run<=MAX_RUN; run++){
                 int last;
+                const int last_size= size + chroma_size;
                 for(last=0; last<2; last++){
                     int inter_count       = s->ac_stats[0][0][level][run][last] + s->ac_stats[0][1][level][run][last];
                     int intra_luma_count  = s->ac_stats[1][0][level][run][last];
                     int intra_chroma_count= s->ac_stats[1][1][level][run][last];
-
+                    
                     if(s->pict_type==I_TYPE){
-                        size       += intra_luma_count  *get_size_of_code(s, &rl_table[  i], last, run, level,1);
-                        chroma_size+= intra_chroma_count*get_size_of_code(s, &rl_table[3+i], last, run, level,1);
+                        size       += intra_luma_count  *rl_length[1][i  ][level][run][last];
+                        chroma_size+= intra_chroma_count*rl_length[1][i+3][level][run][last];
                     }else{
-                        size+=        intra_luma_count  *get_size_of_code(s, &rl_table[  i], last, run, level,1)
-                                     +intra_chroma_count*get_size_of_code(s, &rl_table[3+i], last, run, level,1)
-                                     +inter_count       *get_size_of_code(s, &rl_table[3+i], last, run, level,0);
+                        size+=        intra_luma_count  *rl_length[1][i  ][level][run][last]
+                                     +intra_chroma_count*rl_length[1][i+3][level][run][last]
+                                     +inter_count       *rl_length[0][i+3][level][run][last];
                     }                   
                 }
+                if(last_size == size+chroma_size) break;
             }
         }
         if(size<best_size){
@@ -325,6 +342,7 @@ static void find_best_tables(MpegEncContext * s)
             chroma_best= i;
         }
     }
+
 //    printf("type:%d, best:%d, qp:%d, var:%d, mcvar:%d, size:%d //\n", 
 //           s->pict_type, best, s->qscale, s->mb_var_sum, s->mc_mb_var_sum, best_size);
            
@@ -952,6 +970,7 @@ static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int
 		sign = 1;
 		level = -level;
 	    }
+
             if(level<=MAX_LEVEL && run<=MAX_RUN){
                 s->ac_stats[s->mb_intra][n>3][level][run][last]++;
             }
