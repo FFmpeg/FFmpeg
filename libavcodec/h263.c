@@ -782,29 +782,32 @@ int h263_decode_mb(MpegEncContext *s,
     unsigned int gfid;        
     
     /* Check for GOB Start Code */
-    val = show_bits(&s->gb, 16);
-    
-    if (val == 0) {
-        /* We have a GBSC probably with GSTUFF */
-        //skip_bits(&s->gb, 16); /* Drop the zeros */
-        while (get_bits1(&s->gb) == 0); /* Seek the '1' bit */
+    if (s->mb_x == 0) {
+        val = show_bits(&s->gb, 16);
+        if (val == 0) {
+            /* We have a GBSC probably with GSTUFF */
+            skip_bits(&s->gb, 16); /* Drop the zeros */
+            while (get_bits1(&s->gb) == 0); /* Seek the '1' bit */
 #ifdef DEBUG
-        fprintf(stderr,"\nGOB Start Code at MB %d\n", 
-            (s->mb_y * s->mb_width) + s->mb_x);
+            fprintf(stderr,"\nGOB Start Code at MB %d\n", 
+                (s->mb_y * s->mb_width) + s->mb_x);
 #endif
-        s->gob_number = get_bits(&s->gb, 5); /* GN */
-        gfid = get_bits(&s->gb, 2); /* GFID */
-        s->qscale = get_bits(&s->gb, 5); /* GQUANT */
+            s->gob_number = get_bits(&s->gb, 5); /* GN */
+            gfid = get_bits(&s->gb, 2); /* GFID */
+            s->qscale = get_bits(&s->gb, 5); /* GQUANT */
 #ifdef DEBUG
-        fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", gn, gfid, s->qscale);
+            fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", gn, gfid, s->qscale);
 #endif
+        }
     }
-
-    if (s->mb_y == s->gob_number)
-        s->first_gob_line = 1;
-    else
-        s->first_gob_line = 0;
-            
+    /* FIXME: In the future H.263+ will have intra prediction */
+    /* and we are gonna need another way to detect MPEG4      */
+    if (!s->h263_pred) {
+        if (s->mb_y == s->gob_number)
+            s->first_gob_line = 1;
+        else
+            s->first_gob_line = 0;
+    }        
     if (s->pict_type == P_TYPE) {
         if (get_bits1(&s->gb)) {
             /* skip mb */
@@ -1215,10 +1218,9 @@ int h263_decode_picture_header(MpegEncContext *s)
     skip_bits1(&s->gb);	/* camera  off */
     skip_bits1(&s->gb);	/* freeze picture release off */
 
-    /* Reset GOB data */
+    /* Reset GOB number */
     s->gob_number = 0;
-    s->first_gob_line = 0;
-    
+        
     format = get_bits(&s->gb, 3);
 
     if (format != 7) {
