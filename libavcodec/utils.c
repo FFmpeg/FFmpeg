@@ -205,6 +205,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     const char *codec_name;
     AVCodec *p;
     char buf1[32];
+    int bitrate;
 
     if (encode)
         p = avcodec_find_encoder(enc->codec_id);
@@ -245,6 +246,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      enc->width, enc->height, 
                      (float)enc->frame_rate / FRAME_RATE_BASE);
         }
+        bitrate = enc->bit_rate;
         break;
     case CODEC_TYPE_AUDIO:
         snprintf(buf, buf_size,
@@ -256,13 +258,31 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      enc->sample_rate,
                      enc->channels == 2 ? "stereo" : "mono");
         }
+        /* for PCM codecs, compute bitrate directly */
+        switch(enc->codec_id) {
+        case CODEC_ID_PCM_S16LE:
+        case CODEC_ID_PCM_S16BE:
+        case CODEC_ID_PCM_U16LE:
+        case CODEC_ID_PCM_U16BE:
+            bitrate = enc->sample_rate * 16;
+            break;
+        case CODEC_ID_PCM_S8:
+        case CODEC_ID_PCM_U8:
+        case CODEC_ID_PCM_ALAW:
+        case CODEC_ID_PCM_MULAW:
+            bitrate = enc->sample_rate * 8;
+            break;
+        default:
+            bitrate = enc->bit_rate;
+            break;
+        }
         break;
     default:
         abort();
     }
-    if (enc->bit_rate != 0) {
+    if (bitrate != 0) {
         snprintf(buf + strlen(buf), buf_size - strlen(buf), 
-                 ", %d kb/s", enc->bit_rate / 1000);
+                 ", %d kb/s", bitrate / 1000);
     }
 }
 
@@ -370,7 +390,6 @@ void avcodec_register_all(void)
     register_avcodec(&mpeg4_encoder);
     register_avcodec(&msmpeg4_encoder);
 #endif /* CONFIG_ENCODERS */
-    register_avcodec(&pcm_codec);
     register_avcodec(&rawvideo_codec);
 
     /* decoders */
@@ -382,13 +401,28 @@ void avcodec_register_all(void)
     register_avcodec(&h263i_decoder);
     register_avcodec(&rv10_decoder);
     register_avcodec(&mjpeg_decoder);
-//#ifdef CONFIG_MPGLIB
     register_avcodec(&mp3_decoder);
-//#endif
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif
 #endif /* CONFIG_DECODERS */
+
+    /* pcm codecs */
+
+#define PCM_CODEC(id, name) \
+    register_avcodec(& name ## _encoder); \
+    register_avcodec(& name ## _decoder); \
+
+PCM_CODEC(CODEC_ID_PCM_S16LE, pcm_s16le);
+PCM_CODEC(CODEC_ID_PCM_S16BE, pcm_s16be);
+PCM_CODEC(CODEC_ID_PCM_U16LE, pcm_u16le);
+PCM_CODEC(CODEC_ID_PCM_U16BE, pcm_u16be);
+PCM_CODEC(CODEC_ID_PCM_S8, pcm_s8);
+PCM_CODEC(CODEC_ID_PCM_U8, pcm_u8);
+PCM_CODEC(CODEC_ID_PCM_ALAW, pcm_alaw);
+PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
+
+#undef PCM_CODEC
 }
 
 static int encode_init(AVCodecContext *s)
@@ -408,18 +442,6 @@ static int encode_frame(AVCodecContext *avctx,
 {
     return -1;
 }
-
-/* dummy pcm codec */
-AVCodec pcm_codec = {
-    "pcm",
-    CODEC_TYPE_AUDIO,
-    CODEC_ID_PCM,
-    0,
-    encode_init,
-    encode_frame,
-    NULL,
-    decode_frame,
-};
 
 AVCodec rawvideo_codec = {
     "rawvideo",
