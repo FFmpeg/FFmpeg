@@ -408,7 +408,9 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     s->fake_picture_number++;
     
     put_bits(&s->pb, 3, s->pict_type);
-    put_bits(&s->pb, 16, 0xffff); /* non constant bit rate */
+
+    s->vbv_delay_ptr= s->pb.buf + get_bit_count(&s->pb)/8;
+    put_bits(&s->pb, 16, 0xFFFF); /* vbv_delay */
     
     // RAL: Forward f_code also needed for B frames
     if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
@@ -1758,7 +1760,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
-    int ref, f_code;
+    int ref, f_code, vbv_delay;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
@@ -1766,7 +1768,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     s->pict_type = get_bits(&s->gb, 3);
     dprintf("pict_type=%d number=%d\n", s->pict_type, s->picture_number);
 
-    skip_bits(&s->gb, 16);
+    vbv_delay= get_bits(&s->gb, 16);
     if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
         s->full_pel[0] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);

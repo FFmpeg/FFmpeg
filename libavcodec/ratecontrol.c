@@ -198,11 +198,11 @@ static inline double bits2qp(RateControlEntry *rce, double bits){
 int ff_vbv_update(MpegEncContext *s, int frame_size){
     RateControlContext *rcc= &s->rc_context;
     const double fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
-    const double buffer_size= s->avctx->rc_buffer_size;
+    const int buffer_size= s->avctx->rc_buffer_size;
     const double min_rate= s->avctx->rc_min_rate/fps;
     const double max_rate= s->avctx->rc_max_rate/fps;
-
-//printf("%f %f %d %f %f\n", buffer_size, rcc->buffer_index, frame_size, min_rate, max_rate);
+    
+//printf("%d %f %d %f %f\n", buffer_size, rcc->buffer_index, frame_size, min_rate, max_rate);
     if(buffer_size){
         int left;
 
@@ -215,8 +215,8 @@ int ff_vbv_update(MpegEncContext *s, int frame_size){
         left= buffer_size - rcc->buffer_index - 1;
         rcc->buffer_index += clip(left, min_rate, max_rate);
 
-        if(rcc->buffer_index > s->avctx->rc_buffer_size){
-            int stuffing= ceil((rcc->buffer_index - s->avctx->rc_buffer_size)/8);
+        if(rcc->buffer_index > buffer_size){
+            int stuffing= ceil((rcc->buffer_index - buffer_size)/8);
             
             if(stuffing < 4 && s->codec_id == CODEC_ID_MPEG4)
                 stuffing=4;
@@ -413,6 +413,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
     /* buffer overflow/underflow protection */
     if(buffer_size){
         double expected_size= rcc->buffer_index;
+        double q_limit;
 
         if(min_rate){
             double d= 2*(buffer_size - expected_size)/buffer_size;
@@ -420,7 +421,13 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
             else if(d<0.0001) d=0.0001;
             q*= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
 
-            q= FFMIN(q, bits2qp(rce, FFMAX((min_rate - buffer_size + rcc->buffer_index)*3, 1)));
+            q_limit= bits2qp(rce, FFMAX((min_rate - buffer_size + rcc->buffer_index)*3, 1));
+            if(q > q_limit){
+                if(s->avctx->debug&FF_DEBUG_RC){
+                    av_log(s->avctx, AV_LOG_DEBUG, "limiting QP %f -> %f\n", q, q_limit);
+                }
+                q= q_limit;
+            }
         }
 
         if(max_rate){
@@ -429,7 +436,13 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
             else if(d<0.0001) d=0.0001;
             q/= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
 
-            q= FFMAX(q, bits2qp(rce, FFMAX(rcc->buffer_index/3, 1)));
+            q_limit= bits2qp(rce, FFMAX(rcc->buffer_index/3, 1));
+            if(q < q_limit){
+                if(s->avctx->debug&FF_DEBUG_RC){
+                    av_log(s->avctx, AV_LOG_DEBUG, "limiting QP %f -> %f\n", q, q_limit);
+                }
+                q= q_limit;
+            }
         }
     }
 //printf("q:%f max:%f min:%f size:%f index:%d bits:%f agr:%f\n", q,max_rate, min_rate, buffer_size, rcc->buffer_index, bits, s->avctx->rc_buffer_aggressivity);

@@ -1865,7 +1865,23 @@ int MPV_encode_picture(AVCodecContext *avctx,
         flush_put_bits(&s->pb);
         s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
     }
-    
+
+    /* update mpeg1/2 vbv_delay for CBR */    
+    if(s->avctx->rc_max_rate && s->avctx->rc_min_rate == s->avctx->rc_max_rate){
+        int vbv_delay;
+
+        assert(s->repeat_first_field==0 && s->avctx->repeat_pic==0);
+        
+        vbv_delay= lrint(90000 * s->rc_context.buffer_index / s->avctx->rc_max_rate);
+        assert(vbv_delay < 0xFFFF);
+
+        s->vbv_delay_ptr[0] &= 0xF8;
+        s->vbv_delay_ptr[0] |= vbv_delay>>13;
+        s->vbv_delay_ptr[1]  = vbv_delay>>5;
+        s->vbv_delay_ptr[2] &= 0x07;
+        s->vbv_delay_ptr[2] |= vbv_delay<<3;
+    }
+
     s->total_bits += s->frame_bits;
     avctx->frame_bits  = s->frame_bits;
     
