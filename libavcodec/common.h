@@ -33,6 +33,10 @@
 #        define ENODATA  61
 #    endif
 
+#ifndef M_PI
+#define M_PI    3.14159265358979323846
+#endif
+
 #endif /* HAVE_AV_CONFIG_H */
 
 /* Suppress restrict if it was not defined in config.h.  */
@@ -78,9 +82,6 @@ typedef INT64 int64_t;
 #        define INT64_C(c)     (c ## LL)
 #        define UINT64_C(c)    (c ## ULL)
 #    endif /* __MINGW32__ */
-
-#    define M_PI    3.14159265358979323846
-#    define M_SQRT2 1.41421356237309504880  /* sqrt(2) */
 
 #    ifdef _DEBUG
 #        define DEBUG
