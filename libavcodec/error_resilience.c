@@ -677,8 +677,8 @@ void ff_er_frame_end(MpegEncContext *s){
             
         for(i=0; i<2; i++){
             pic->ref_index[i]= av_mallocz(size * sizeof(uint8_t));
-            pic->motion_val_base[i]= av_mallocz((size+2) * 2 * sizeof(uint16_t));
-            pic->motion_val[i]= pic->motion_val_base[i]+2;
+            pic->motion_val_base[i]= av_mallocz((size+4) * 2 * sizeof(uint16_t));
+            pic->motion_val[i]= pic->motion_val_base[i]+4;
         }
         pic->motion_subsample_log2= 3;
         s->current_picture= *s->current_picture_ptr;
