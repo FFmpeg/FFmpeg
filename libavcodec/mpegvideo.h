@@ -44,6 +44,7 @@ typedef struct MpegEncContext {
     int h263_msmpeg4; /* generate MSMPEG4 compatible stream */
     int h263_intel; /* use I263 intel h263 header */
     int fixed_qscale; /* fixed qscale if non zero */
+    int encoding;     /* true if we are encoding (vs decoding) */
     /* the following fields are managed internally by the encoder */
 
     /* bit output */
@@ -70,6 +71,9 @@ typedef struct MpegEncContext {
     UINT8 *coded_block; /* used for coded block pattern prediction */
     INT16 (*ac_val[3])[16]; /* used for for mpeg4 AC prediction */
     int ac_pred;
+    int mb_skiped;              /* MUST BE SET only during DECODING */
+    UINT8 *mbskip_table;        /* used to avoid copy if macroblock
+                                   skipped (for black regions for example) */
 
     int qscale;
     int pict_type;

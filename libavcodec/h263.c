@@ -738,6 +738,7 @@ int h263_decode_mb(MpegEncContext *s,
             s->mv_type = MV_TYPE_16X16;
             s->mv[0][0][0] = 0;
             s->mv[0][0][1] = 0;
+            s->mb_skiped = 1;
             return 0;
         }
         cbpc = get_vlc(&s->gb, &inter_MCBPC_vlc);

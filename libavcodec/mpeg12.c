@@ -542,6 +542,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
             s->mv[1][0][0] = s->last_mv[1][0][0];
             s->mv[1][0][1] = s->last_mv[1][0][1];
         }
+        s->mb_skiped = 1;
         return 0;
     }
 

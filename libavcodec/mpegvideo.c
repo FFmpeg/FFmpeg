@@ -171,6 +171,13 @@ int MPV_common_init(MpegEncContext *s)
         s->non_intra_matrix[i] = default_non_intra_matrix[i];
         s->chroma_non_intra_matrix[i] = default_non_intra_matrix[i];
     }
+    /* init macroblock skip table */
+    if (!s->encoding) {
+        s->mbskip_table = av_mallocz(s->mb_width * s->mb_height);
+        if (!s->mbskip_table)
+            goto fail;
+    }
+
     s->context_initialized = 1;
     return 0;
  fail:
@@ -182,6 +189,8 @@ int MPV_common_init(MpegEncContext *s)
         free(s->ac_val[0]);
     if (s->coded_block)
         free(s->coded_block);
+    if (s->mbskip_table)
+        free(s->mbskip_table);
     for(i=0;i<3;i++) {
         if (s->last_picture_base[i])
             free(s->last_picture_base[i]);
@@ -205,6 +214,8 @@ void MPV_common_end(MpegEncContext *s)
         free(s->ac_val[0]);
         free(s->coded_block);
     }
+    if (s->mbskip_table)
+        free(s->mbskip_table);
     for(i=0;i<3;i++) {
         free(s->last_picture_base[i]);
         free(s->next_picture_base[i]);
@@ -275,6 +286,8 @@ int MPV_encode_init(AVCodecContext *avctx)
 
     if (s->out_format == FMT_H263)
         h263_encode_init_vlc(s);
+
+    s->encoding = 1;
 
     /* init */
     if (MPV_common_init(s) < 0)
@@ -712,6 +725,21 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     
     if (!s->intra_only) {
         UINT8 *dest_y, *dest_cb, *dest_cr;
+        UINT8 *mbskip_ptr;
+
+        /* avoid copy if macroblock skipped in last frame too */
+        if (!s->encoding) {
+            mbskip_ptr = &s->mbskip_table[s->mb_y * s->mb_width + s->mb_x];
+            if (s->mb_skiped) {
+                s->mb_skiped = 0;
+                /* if previous was skipped too, then nothing to do ! */
+                if (*mbskip_ptr != 0) 
+                    goto the_end;
+                *mbskip_ptr = 1; /* indicate that this time we skiped it */
+            } else {
+                *mbskip_ptr = 0; /* not skipped */
+            }
+        }
 
         dest_y = s->current_picture[0] + (mb_y * 16 * s->linesize) + mb_x * 16;
         dest_cb = s->current_picture[1] + (mb_y * 8 * (s->linesize >> 1)) + mb_x * 8;
@@ -762,6 +790,8 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             put_dct(s, block[5], 5, dest_cr, dct_linesize >> 1);
         }
     }
+ the_end:
+    emms_c();
 }
 
 static void encode_picture(MpegEncContext *s, int picture_number)
@@ -885,6 +915,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 ptr = s->last_picture[2] + offset;
                 sub_pixels_2(block[5], ptr, s->linesize >> 1, dxy);
             }
+            emms_c();
 
             /* DCT & quantize */
             if (s->h263_msmpeg4) {
