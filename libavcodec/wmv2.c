@@ -726,6 +726,7 @@ static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->mv[0][0][0] = 0;
             s->mv[0][0][1] = 0;
             s->mb_skiped = 1;
+            w->hshift=0;
             return 0;
         }
 
