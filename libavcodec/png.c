@@ -501,12 +501,14 @@ static int decode_frame(AVCodecContext *avctx,
     if (ret != Z_OK)
         return -1;
     for(;;) {
+        int tag32;
         if (s->bytestream >= s->bytestream_end)
             goto fail;
         length = get32(&s->bytestream);
         if (length > 0x7fffffff)
             goto fail;
-        tag = bswap_32(get32(&s->bytestream));
+        tag32 = get32(&s->bytestream);
+        tag = bswap_32(tag32);
 #ifdef DEBUG
         printf("png: tag=%c%c%c%c length=%u\n", 
                (tag & 0xff),
