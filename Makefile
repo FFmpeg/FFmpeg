@@ -111,7 +111,8 @@ endif
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 .libs: lib
-	touch .libs
+	@test -f .libs || touch .libs
+	@for i in $(DEP_LIBS) ; do if test $$i -nt .libs ; then touch .libs; fi ; done
 
 clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
