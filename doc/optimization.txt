@@ -68,11 +68,19 @@ get_pixels / diff_pixels
         
 clear_blocks
 	easiest, to optimize
- 
+        
 gmc
 	used for mpeg4 gmc
         optimizing this should have a significant effect on the gmc decoding speed but
         its very likely impossible to write in SIMD
+
+gmc1
+	used for chroma blocks in mpeg4 gmc with 1 warp point
+	(there are 4 luma & 2 chroma blocks per macrobock, so 
+        only 1/3 of the gmc blocks use this, the other 2/3 
+        use the normal put_pixel* code, but only if there is 
+        just 1 warp point)
+        Note: Divx5 gmc always uses just 1 warp point
 
 pix_sum
 	used for encoding
