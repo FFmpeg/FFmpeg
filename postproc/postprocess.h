@@ -33,8 +33,8 @@
 #define LUM_H_DEBLOCK	H_DEBLOCK		//   2
 #define CHROM_V_DEBLOCK	(V_DEBLOCK<<4)		//  16
 #define CHROM_H_DEBLOCK	(H_DEBLOCK<<4)		//  32
-#define LUM_DERING	DERING			//   4 (not implemented yet)
-#define CHROM_DERING	(DERING<<4)		//  64 (not implemented yet)
+#define LUM_DERING	DERING			//   4
+#define CHROM_DERING	(DERING<<4)		//  64
 #define LUM_LEVEL_FIX	LEVEL_FIX		//   8
 #define CHROM_LEVEL_FIX	(LEVEL_FIX<<4)		// 128 (not implemented yet)
 
@@ -43,7 +43,7 @@
 #define V_X1_FILTER	0x0200			// 512
 
 // Experimental horizontal filters
-#define H_RK1_FILTER	0x1000			// 4096 (not implemented yet)
+#define H_RK1_FILTER	0x1000			// 4096
 #define H_X1_FILTER	0x2000			// 8192
 
 // select between full y range (255-0) or standart one (234-16)
