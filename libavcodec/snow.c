@@ -30,6 +30,7 @@
 #define MAX_PLANES 4
 #define DWTELEM int
 #define QROOT 8 
+#define LOSSLESS_QLOG -128
 
 static const int8_t quant3[256]={
  0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -2246,6 +2247,8 @@ static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int b
 
     assert(QROOT==8);
 
+    if(s->qlog == LOSSLESS_QLOG) return;
+ 
     bias= bias ? 0 : (3*qmul)>>3;
     thres1= ((qmul - bias)>>QEXPSHIFT) - 1;
     thres2= 2*thres1;
@@ -2304,6 +2307,8 @@ static void dequantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride){
     const int qmul= qexp[qlog&7]<<(qlog>>3);
     const int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     int x,y;
+    
+    if(s->qlog == LOSSLESS_QLOG) return;
     
     assert(QROOT==8);
 
@@ -2673,9 +2678,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     s->keyframe=avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
     pict->pict_type= s->keyframe ? FF_I_TYPE : FF_P_TYPE;
     
-    s->qlog= rint(QROOT*log(pict->quality / (float)FF_QP2LAMBDA)/log(2));
-    //<64 >60
-    s->qlog += 61;
+    if(pict->quality){
+        s->qlog= rint(QROOT*log(pict->quality / (float)FF_QP2LAMBDA)/log(2));
+        //<64 >60
+        s->qlog += 61;
+    }else{
+        s->qlog= LOSSLESS_QLOG;
+    }
 
     for(i=0; i<s->mb_band.stride * s->mb_band.height; i++){
         s->mb_band.buf[i]= s->keyframe;
@@ -2877,8 +2886,16 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             }
         }
         predict_plane(s, s->spatial_dwt_buffer, plane_index, 0);
-        spatial_dwt(s, s->spatial_dwt_buffer, w, h, w);
+        if(s->qlog == LOSSLESS_QLOG){
+            for(y=0; y<h; y++){
+                for(x=0; x<w; x++){
+                    s->spatial_dwt_buffer[y*w + x]= (s->spatial_dwt_buffer[y*w + x] + 127)>>8;
+                }
+            }
+        }
  
+        spatial_dwt(s, s->spatial_dwt_buffer, w, h, w);
+
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &p->band[level][orientation];
@@ -2901,8 +2918,15 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 dequantize(s, b, b->buf, b->stride);
             }
         }
-        
+
         spatial_idwt(s, s->spatial_dwt_buffer, w, h, w);
+        if(s->qlog == LOSSLESS_QLOG){
+            for(y=0; y<h; y++){
+                for(x=0; x<w; x++){
+                    s->spatial_dwt_buffer[y*w + x]<<=8;
+                }
+            }
+        }
         predict_plane(s, s->spatial_dwt_buffer, plane_index, 1);
         //FIXME optimize
         for(y=0; y<h; y++){
@@ -2918,11 +2942,10 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     if(pict->data[plane_index]) //FIXME gray hack
             for(y=0; y<h; y++){
                 for(x=0; x<w; x++){
-                    int d= s->spatial_dwt_buffer[y*w + x] - pict->data[plane_index][y*pict->linesize[plane_index] + x]*256;
+                    int d= s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x] - pict->data[plane_index][y*pict->linesize[plane_index] + x];
                     error += d*d;
                 }
             }
-            error= (error + 128*256)>>16;
             s->avctx->error[plane_index] += error;
             s->avctx->error[3] += error;
         }
@@ -3041,6 +3064,13 @@ if(!(s->avctx->debug&1024))
         }
 
         spatial_idwt(s, s->spatial_dwt_buffer, w, h, w);
+        if(s->qlog == LOSSLESS_QLOG){
+            for(y=0; y<h; y++){
+                for(x=0; x<w; x++){
+                    s->spatial_dwt_buffer[y*w + x]<<=8;
+                }
+            }
+        }
         predict_plane(s, s->spatial_dwt_buffer, plane_index, 1);
 
         //FIXME optimize
