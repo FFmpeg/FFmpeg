@@ -91,6 +91,8 @@ enum CodecID {
     CODEC_ID_TRUEMOTION1,
     CODEC_ID_VMDVIDEO,
     CODEC_ID_VMDAUDIO,
+    CODEC_ID_MSZH,
+    CODEC_ID_ZLIB,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1624,6 +1626,7 @@ extern AVCodec asv2_encoder;
 extern AVCodec vcr1_encoder;
 extern AVCodec ffv1_encoder;
 extern AVCodec mdec_encoder;
+extern AVCodec zlib_encoder;
 
 extern AVCodec h263_decoder;
 extern AVCodec mpeg4_decoder;
@@ -1687,6 +1690,8 @@ extern AVCodec flic_decoder;
 extern AVCodec vmdvideo_decoder;
 extern AVCodec vmdaudio_decoder;
 extern AVCodec truemotion1_decoder;
+extern AVCodec mszh_decoder;
+extern AVCodec zlib_decoder;
 extern AVCodec ra_144_decoder;
 extern AVCodec ra_288_decoder;
 extern AVCodec roq_dpcm_decoder;
