@@ -75,7 +75,7 @@ static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr);
 static void mpeg4_encode_visual_object_header(MpegEncContext * s);
 static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_number);
 #endif //CONFIG_ENCODERS
-static void mpeg4_decode_sprite_trajectory(MpegEncContext * s);
+static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb);
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr, int *dir_ptr);
 
 #ifdef CONFIG_ENCODERS
@@ -3166,7 +3166,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
             skip_bits(&s->gb, 3); /* intra dc vlc threshold */
 //FIXME dont just ignore everything
             if(s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE){
-                mpeg4_decode_sprite_trajectory(s);
+                mpeg4_decode_sprite_trajectory(s, &s->gb);
                 av_log(s->avctx, AV_LOG_ERROR, "untested\n");
             }
 
@@ -5186,7 +5186,7 @@ int h263_decode_picture_header(MpegEncContext *s)
     return 0;
 }
 
-static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
+static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb)
 {
     int i;
     int a= 2<<s->sprite_warping_accuracy;
@@ -5206,17 +5206,17 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
         int length;
         int x=0, y=0;
 
-        length= get_vlc(&s->gb, &sprite_trajectory);
+        length= get_vlc(gb, &sprite_trajectory);
         if(length){
-            x= get_xbits(&s->gb, length);
+            x= get_xbits(gb, length);
         }
-        if(!(s->divx_version==500 && s->divx_build==413)) skip_bits1(&s->gb); /* marker bit */
+        if(!(s->divx_version==500 && s->divx_build==413)) skip_bits1(gb); /* marker bit */
         
-        length= get_vlc(&s->gb, &sprite_trajectory);
+        length= get_vlc(gb, &sprite_trajectory);
         if(length){
-            y=get_xbits(&s->gb, length);
+            y=get_xbits(gb, length);
         }
-        skip_bits1(&s->gb); /* marker bit */
+        skip_bits1(gb); /* marker bit */
 //printf("%d %d %d %d\n", x, y, i, s->sprite_warping_accuracy);
         d[i][0]= x;
         d[i][1]= y;
@@ -5845,7 +5845,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
      }
  
      if(s->pict_type == S_TYPE && (s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE)){
-         mpeg4_decode_sprite_trajectory(s);
+         mpeg4_decode_sprite_trajectory(s, gb);
          if(s->sprite_brightness_change) av_log(s->avctx, AV_LOG_ERROR, "sprite_brightness_change not supported\n");
          if(s->vol_sprite_usage==STATIC_SPRITE) av_log(s->avctx, AV_LOG_ERROR, "static sprite not supported\n");
      }
