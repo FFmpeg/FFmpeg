@@ -842,7 +842,7 @@ typedef struct MJpegDecodeContext {
 
 static int mjpeg_decode_dht(MJpegDecodeContext *s);
 
-static void build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_table, 
+static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_table, 
                       int nb_codes)
 {
     uint8_t huff_size[256];
@@ -851,7 +851,7 @@ static void build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_ta
     memset(huff_size, 0, sizeof(huff_size));
     build_huffman_codes(huff_size, huff_code, bits_table, val_table);
     
-    init_vlc(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2);
+    return init_vlc(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2);
 }
 
 static int mjpeg_decode_init(AVCodecContext *avctx)
@@ -970,7 +970,9 @@ static int mjpeg_decode_dht(MJpegDecodeContext *s)
         free_vlc(&s->vlcs[class][index]);
         dprintf("class=%d index=%d nb_codes=%d\n",
                class, index, code_max + 1);
-        build_vlc(&s->vlcs[class][index], bits_table, val_table, code_max + 1);
+        if(build_vlc(&s->vlcs[class][index], bits_table, val_table, code_max + 1) < 0){
+            return -1;
+        }
     }
     return 0;
 }
@@ -1778,7 +1780,10 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     mjpeg_decode_dqt(s);
                     break;
                 case DHT:
-                    mjpeg_decode_dht(s);
+                    if(mjpeg_decode_dht(s) < 0){
+                        fprintf(stderr, "huffman table decode error\n");
+                        return -1;
+                    }
                     break;
                 case SOF0:
                     s->lossless=0;
