@@ -593,8 +593,8 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     case CODEC_ID_MPEG1VIDEO:
     case CODEC_ID_H263:
     case CODEC_ID_RV10:
-    case CODEC_ID_MJPEG:
-    case CODEC_ID_MJPEGB:
+//    case CODEC_ID_MJPEG:
+//    case CODEC_ID_MJPEGB:
     case CODEC_ID_MPEG4:
     case CODEC_ID_MSMPEG4V1:
     case CODEC_ID_MSMPEG4V2:
