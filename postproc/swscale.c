@@ -17,7 +17,7 @@
 */
 
 /*
-  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24 (grayscale soon too)
+  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24, Y8, Y800
   supported output formats: YV12, I420, IYUV, BGR15, BGR16, BGR24, BGR32 (grayscale soon too)
   BGR15/16 support dithering
 */
@@ -58,13 +58,19 @@
 #endif
 
 //FIXME replace this with something faster
-#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
+#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
 #define isYUV(x)       ((x)==IMGFMT_YUY2 || isPlanarYUV(x))
-#define isHalfChrV(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
-#define isHalfChrH(x)  ((x)==IMGFMT_YUY2 || (x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
+#define isHalfChrV(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
+#define isHalfChrH(x)  ((x)==IMGFMT_YUY2 || (x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
 #define isPacked(x)    ((x)==IMGFMT_YUY2 || (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24)
+#define isGray(x)      ((x)==IMGFMT_Y800)
+#define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 \
+			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24\
+			|| (x)==IMGFMT_Y800)
+#define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 \
+			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15)
 
-#define RGB2YUV_SHIFT 8
+#define RGB2YUV_SHIFT 16
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
 #define BV ((int)(-0.071*(1<<RGB2YUV_SHIFT)+0.5))
 #define BU ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
@@ -90,7 +96,8 @@ change the distance of the u & v buffer
 write special vertical cubic upscale version
 Optimize C code (yv12 / minmax)
 add support for packed pixel yuv input & output
-add support for Y8 input & output
+add support for Y8 output
+optimize bgr24 & bgr32
 add BGR4 output support
 write special BGR->BGR scaler
 */
@@ -118,6 +125,7 @@ static uint64_t __attribute__((aligned(8))) w02=       0x0002000200020002LL;
 static uint64_t __attribute__((aligned(8))) bm00001111=0x00000000FFFFFFFFLL;
 static uint64_t __attribute__((aligned(8))) bm00000111=0x0000000000FFFFFFLL;
 static uint64_t __attribute__((aligned(8))) bm11111000=0xFFFFFFFFFF000000LL;
+static uint64_t __attribute__((aligned(8))) bm01010101=0x00FF00FF00FF00FFLL;
 
 static volatile uint64_t __attribute__((aligned(8))) b5Dither;
 static volatile uint64_t __attribute__((aligned(8))) g5Dither;
@@ -198,7 +206,7 @@ void in_asm_used_var_warning_killer()
 {
  volatile int i= yCoeff+vrCoeff+ubCoeff+vgCoeff+ugCoeff+bF8+bFC+w400+w80+w10+
  bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+asm_yalpha1+ asm_uvalpha1+
- M24A+M24B+M24C+w02 + b5Dither+g5Dither+r5Dither+g6Dither+dither4[0]+dither8[0];
+ M24A+M24B+M24C+w02 + b5Dither+g5Dither+r5Dither+g6Dither+dither4[0]+dither8[0]+bm01010101;
  if(i) i=0;
 }
 #endif
@@ -1114,11 +1122,15 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 
 	if(swScale==NULL) globalInit();
 
+	/* avoid dupplicate Formats, so we dont need to check to much */
+	if(srcFormat==IMGFMT_IYUV) srcFormat=IMGFMT_I420;
+	if(srcFormat==IMGFMT_Y8)   srcFormat=IMGFMT_Y800;
+	
+	if(!isSupportedIn(srcFormat)) return NULL;
+	if(!isSupportedOut(dstFormat)) return NULL;
+
 	/* sanity check */
 	if(srcW<4 || srcH<1 || dstW<8 || dstH<1) return NULL; //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
-	
-//	if(!isSupportedIn(srcFormat)) return NULL;
-//	if(!isSupportedOut(dstFormat)) return NULL;
 
 	if(!dstFilter) dstFilter= &dummyFilter;
 	if(!srcFilter) srcFilter= &dummyFilter;

@@ -1535,9 +1535,26 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 #endif
 }
 
+//FIXME yuy2* can read upto 7 samples to much
+
 static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, int width)
 {
-#ifdef HAVE_MMXFIXME
+#ifdef HAVE_MMX
+	asm volatile(
+		"movq "MANGLE(bm01010101)", %%mm2\n\t"
+		"movl %0, %%eax			\n\t"
+		"1:				\n\t"
+		"movq (%1, %%eax,2), %%mm0	\n\t"
+		"movq 8(%1, %%eax,2), %%mm1	\n\t"
+		"pand %%mm2, %%mm0		\n\t"
+		"pand %%mm2, %%mm1		\n\t"
+		"packuswb %%mm1, %%mm0		\n\t"
+		"movq %%mm0, (%2, %%eax)	\n\t"
+		"addl $8, %%eax			\n\t"
+		" js 1b				\n\t"
+		: : "g" (-width), "r" (src+width*2), "r" (dst+width)
+		: "%eax"
+	);
 #else
 	int i;
 	for(i=0; i<width; i++)
@@ -1547,7 +1564,32 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, int width)
 
 static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
 {
-#ifdef HAVE_MMXFIXME
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	asm volatile(
+		"movq "MANGLE(bm01010101)", %%mm4\n\t"
+		"movl %0, %%eax			\n\t"
+		"1:				\n\t"
+		"movq (%1, %%eax,4), %%mm0	\n\t"
+		"movq 8(%1, %%eax,4), %%mm1	\n\t"
+		"movq (%2, %%eax,4), %%mm2	\n\t"
+		"movq 8(%2, %%eax,4), %%mm3	\n\t"
+		PAVGB(%%mm2, %%mm0)
+		PAVGB(%%mm3, %%mm1)
+		"psrlw $8, %%mm0		\n\t"
+		"psrlw $8, %%mm1		\n\t"
+		"packuswb %%mm1, %%mm0		\n\t"
+		"movq %%mm0, %%mm1		\n\t"
+		"psrlw $8, %%mm0		\n\t"
+		"pand %%mm4, %%mm1		\n\t"
+		"packuswb %%mm0, %%mm0		\n\t"
+		"packuswb %%mm1, %%mm1		\n\t"
+		"movd %%mm0, (%4, %%eax)	\n\t"
+		"movd %%mm1, (%3, %%eax)	\n\t"
+		"addl $4, %%eax			\n\t"
+		" js 1b				\n\t"
+		: : "g" (-width), "r" (src1+width*4), "r" (src2+width*4), "r" (dstU+width), "r" (dstV+width)
+		: "%eax"
+	);
 #else
 	int i;
 	for(i=0; i<width; i++)
@@ -1954,6 +1996,10 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, u
 	src1= formatConvBuffer;
 	src2= formatConvBuffer+2048;
     }
+    else if(isGray(srcFormat))
+    {
+    	return;
+    }
 
 #ifdef HAVE_MMX
 	// use the new MMX scaler if th mmx2 cant be used (its faster than the x86asm one)
@@ -2170,7 +2216,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		srcStride[1]=
 		srcStride[2]= srcStrideParam[0]<<1;
 	}
-	else if(c->srcFormat==IMGFMT_Y8){
+	else if(isGray(c->srcFormat)){
 		src[0]= srcParam[0];
 		src[1]=
 		src[2]= NULL;
