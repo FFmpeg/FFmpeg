@@ -125,6 +125,7 @@ static int use_umv = 0;
 static int use_alt_scan = 0;
 static int use_trell = 0;
 static int use_scan_offset = 0;
+static int qns = 0;
 static int closed_gop = 0;
 static int do_deinterlace = 0;
 static int do_interlace_dct = 0;
@@ -659,7 +660,6 @@ static void do_video_out(AVFormatContext *s,
                 big_picture.quality = ist->st->quality;
             }else
                 big_picture.quality = ost->st->quality;
-            
             ret = avcodec_encode_video(enc, 
                                        video_buffer, VIDEO_BUFFER_SIZE,
                                        &big_picture);
@@ -1987,6 +1987,11 @@ static void opt_noise_reduction(const char *arg)
     noise_reduction= atoi(arg);
 }
 
+static void opt_qns(const char *arg)
+{
+    qns= atoi(arg);
+}
+
 static void opt_sc_threshold(const char *arg)
 {
     sc_threshold= atoi(arg);
@@ -2400,6 +2405,7 @@ static void opt_output_file(const char *filename)
                 video_enc->ildct_cmp = ildct_cmp;
                 video_enc->me_sub_cmp = sub_cmp;
                 video_enc->me_cmp = cmp;
+                video_enc->quantizer_noise_shaping= qns;
                 
                 if (use_umv) {
                     video_enc->flags |= CODEC_FLAG_H263P_UMV;
@@ -3080,6 +3086,7 @@ const OptionDef options[] = {
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
     { "nr", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_noise_reduction}, "noise reduction", "" },
+    { "qns", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qns}, "quantization noise shaping", "" },
     { "sc_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sc_threshold}, "scene change threshold", "threshold" },
 
     /* audio options */

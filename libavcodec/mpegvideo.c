@@ -26,6 +26,7 @@
  */ 
  
 #include <limits.h>
+#include <math.h> //for PI
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -57,6 +58,7 @@ static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w);
 #ifdef CONFIG_ENCODERS
 static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 static int dct_quantize_trellis_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
+static int dct_quantize_refine(MpegEncContext *s, DCTELEM *block, int16_t *weight, DCTELEM *orig, int n, int qscale);
 static int sse_mb(MpegEncContext *s);
 static void  denoise_dct_c(MpegEncContext *s, DCTELEM *block);
 #endif //CONFIG_ENCODERS
@@ -3264,8 +3266,33 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
 
 #ifdef CONFIG_ENCODERS
 
+static void get_vissual_weight(int16_t *weight, uint8_t *ptr, int stride){
+    int x, y;
+//FIXME optimize
+    for(y=0; y<8; y++){
+        for(x=0; x<8; x++){
+            int x2, y2;
+            int sum=0;
+            int sqr=0;
+            int count=0;
+
+            for(y2= FFMAX(y-1, 0); y2 < FFMIN(8, y+2); y2++){
+                for(x2= FFMAX(x-1, 0); x2 < FFMIN(8, x+2); x2++){
+                    int v= ptr[x2 + y2*stride];
+                    sum += v;
+                    sqr += v*v;
+                    count++;
+                }
+            }
+            weight[x + 8*y]= (36*ff_sqrt(count*sqr - sum*sum)) / count;
+        }
+    }
+}
+
 static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 {
+    int16_t weight[6][64];
+    DCTELEM orig[6][64];
     const int mb_x= s->mb_x;
     const int mb_y= s->mb_y;
     int i;
@@ -3298,16 +3325,19 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     }
 
     if (s->mb_intra) {
-        uint8_t *ptr;
-        int wrap_y;
+        uint8_t *ptr_y, *ptr_cb, *ptr_cr;
+        int wrap_y, wrap_c;
         int emu=0;
 
         wrap_y = s->linesize;
-        ptr = s->new_picture.data[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
+        wrap_c = s->uvlinesize;
+        ptr_y = s->new_picture.data[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
+        ptr_cb = s->new_picture.data[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
+        ptr_cr = s->new_picture.data[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
 
         if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
-            ff_emulated_edge_mc(s->edge_emu_buffer, ptr, wrap_y, 16, 16, mb_x*16, mb_y*16, s->width, s->height);
-            ptr= s->edge_emu_buffer;
+            ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, wrap_y, 16, 16, mb_x*16, mb_y*16, s->width, s->height);
+            ptr_y= s->edge_emu_buffer;
             emu=1;
         }
         
@@ -3315,12 +3345,12 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             int progressive_score, interlaced_score;
 
             s->interlaced_dct=0;
-            progressive_score= s->dsp.ildct_cmp[4](s, ptr           , NULL, wrap_y, 8) 
-                              +s->dsp.ildct_cmp[4](s, ptr + wrap_y*8, NULL, wrap_y, 8) - 400;
+            progressive_score= s->dsp.ildct_cmp[4](s, ptr_y           , NULL, wrap_y, 8) 
+                              +s->dsp.ildct_cmp[4](s, ptr_y + wrap_y*8, NULL, wrap_y, 8) - 400;
 
             if(progressive_score > 0){
-                interlaced_score = s->dsp.ildct_cmp[4](s, ptr           , NULL, wrap_y*2, 8) 
-                                  +s->dsp.ildct_cmp[4](s, ptr + wrap_y  , NULL, wrap_y*2, 8);
+                interlaced_score = s->dsp.ildct_cmp[4](s, ptr_y           , NULL, wrap_y*2, 8) 
+                                  +s->dsp.ildct_cmp[4](s, ptr_y + wrap_y  , NULL, wrap_y*2, 8);
                 if(progressive_score > interlaced_score){
                     s->interlaced_dct=1;
             
@@ -3330,29 +3360,36 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }
         }
         
-	s->dsp.get_pixels(s->block[0], ptr                 , wrap_y);
-        s->dsp.get_pixels(s->block[1], ptr              + 8, wrap_y);
-        s->dsp.get_pixels(s->block[2], ptr + dct_offset    , wrap_y);
-        s->dsp.get_pixels(s->block[3], ptr + dct_offset + 8, wrap_y);
+	s->dsp.get_pixels(s->block[0], ptr_y                 , wrap_y);
+        s->dsp.get_pixels(s->block[1], ptr_y              + 8, wrap_y);
+        s->dsp.get_pixels(s->block[2], ptr_y + dct_offset    , wrap_y);
+        s->dsp.get_pixels(s->block[3], ptr_y + dct_offset + 8, wrap_y);
 
         if(s->flags&CODEC_FLAG_GRAY){
             skip_dct[4]= 1;
             skip_dct[5]= 1;
         }else{
-            int wrap_c = s->uvlinesize;
-            ptr = s->new_picture.data[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
             if(emu){
-                ff_emulated_edge_mc(s->edge_emu_buffer, ptr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-                ptr= s->edge_emu_buffer;
+                ff_emulated_edge_mc(s->edge_emu_buffer, ptr_cb, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+                ptr_cb= s->edge_emu_buffer;
             }
-	    s->dsp.get_pixels(s->block[4], ptr, wrap_c);
+	    s->dsp.get_pixels(s->block[4], ptr_cb, wrap_c);
 
-            ptr = s->new_picture.data[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
             if(emu){
-                ff_emulated_edge_mc(s->edge_emu_buffer, ptr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
-                ptr= s->edge_emu_buffer;
+                ff_emulated_edge_mc(s->edge_emu_buffer, ptr_cr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+                ptr_cr= s->edge_emu_buffer;
             }
-            s->dsp.get_pixels(s->block[5], ptr, wrap_c);
+            s->dsp.get_pixels(s->block[5], ptr_cr, wrap_c);
+        }
+
+        if(s->avctx->quantizer_noise_shaping){
+            get_vissual_weight(weight[0], ptr_y                 , wrap_y);
+            get_vissual_weight(weight[1], ptr_y              + 8, wrap_y);
+            get_vissual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
+            get_vissual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
+            get_vissual_weight(weight[4], ptr_cb                , wrap_c);
+            get_vissual_weight(weight[5], ptr_cr               , wrap_c);
+            memcpy(orig[0], s->block[0], sizeof(DCTELEM)*64*6);
         }
     }else{
         op_pixels_func (*op_pix)[4];
@@ -3445,23 +3482,17 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             if(s->dsp.sad[1](NULL, ptr_y +dct_offset+ 8, dest_y +dct_offset+ 8, wrap_y, 8) < 20*s->qscale) skip_dct[3]= 1;
             if(s->dsp.sad[1](NULL, ptr_cb              , dest_cb              , wrap_c, 8) < 20*s->qscale) skip_dct[4]= 1;
             if(s->dsp.sad[1](NULL, ptr_cr              , dest_cr              , wrap_c, 8) < 20*s->qscale) skip_dct[5]= 1;
-#if 0
-{
- static int stat[7];
- int num=0;
- for(i=0; i<6; i++)
-  if(skip_dct[i]) num++;
- stat[num]++;
- 
- if(s->mb_x==0 && s->mb_y==0){
-  for(i=0; i<7; i++){
-   printf("%6d %1d\n", stat[i], i);
-  }
- }
-}
-#endif
         }
 
+        if(s->avctx->quantizer_noise_shaping){
+            if(!skip_dct[0]) get_vissual_weight(weight[0], ptr_y                 , wrap_y);
+            if(!skip_dct[1]) get_vissual_weight(weight[1], ptr_y              + 8, wrap_y);
+            if(!skip_dct[2]) get_vissual_weight(weight[2], ptr_y + dct_offset    , wrap_y);
+            if(!skip_dct[3]) get_vissual_weight(weight[3], ptr_y + dct_offset + 8, wrap_y);
+            if(!skip_dct[4]) get_vissual_weight(weight[4], ptr_cb                , wrap_c);
+            if(!skip_dct[5]) get_vissual_weight(weight[5], ptr_cr                , wrap_c);
+            memcpy(orig[0], s->block[0], sizeof(DCTELEM)*64*6);
+        }
     }
             
     /* DCT & quantize */
@@ -3482,6 +3513,13 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
                 if (overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
             }else
                 s->block_last_index[i]= -1;
+        }
+        if(s->avctx->quantizer_noise_shaping){
+            for(i=0;i<6;i++) {
+                if(!skip_dct[i]){
+                    s->block_last_index[i] = dct_quantize_refine(s, s->block[i], weight[i], orig[i], i, s->qscale);
+                }
+            }
         }
         
         if(s->luma_elim_threshold && !s->mb_intra)
@@ -4907,6 +4945,401 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     for(; i>start_i; i -= run_tab[i] + 1){
         block[ perm_scantable[i-1] ]= level_tab[i];
     }
+
+    return last_non_zero;
+}
+
+#define BASIS_SHIFT 16
+#define RECON_SHIFT 6
+//#define REFINE_STATS 1
+static int16_t basis[64][64];
+
+static void build_basis(uint8_t *perm){
+    int i, j, x, y;
+    emms_c();
+    for(i=0; i<8; i++){
+        for(j=0; j<8; j++){
+            for(y=0; y<8; y++){
+                for(x=0; x<8; x++){
+                    double s= 0.25*(1<<BASIS_SHIFT);
+                    int index= 8*i + j;
+                    int perm_index= perm[index];
+                    if(i==0) s*= sqrt(0.5);
+                    if(j==0) s*= sqrt(0.5);
+                    basis[perm_index][8*x + y]= lrintf(s * cos((M_PI/8.0)*i*(x+0.5)) * cos((M_PI/8.0)*j*(y+0.5)));
+                }
+            }
+        }
+    }
+}
+
+static int try_basis(int16_t rem[64], int16_t weight[64], int index, int scale){
+    int i;
+    unsigned int sum=0;
+
+    for(i=0; i<8*8; i++){
+        int b= rem[i] - ((basis[index][i]*scale + (1<<(BASIS_SHIFT - RECON_SHIFT-1)))>>(BASIS_SHIFT - RECON_SHIFT));
+        int w= weight[i];
+        b= (b + (1<<(RECON_SHIFT-1))) >> RECON_SHIFT;
+        assert(-512<b && b<512);
+
+        sum += (w*b)*(w*b)>>4;
+    }
+    return sum>>2;
+}
+
+static void add_basis(int16_t rem[64], int index, int scale){
+    int i;
+
+    for(i=0; i<8*8; i++){
+        rem[i] -= (basis[index][i]*scale + (1<<(BASIS_SHIFT - RECON_SHIFT-1)))>>(BASIS_SHIFT - RECON_SHIFT);
+    }    
+}
+
+static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
+                        DCTELEM *block, int16_t *weight, DCTELEM *orig,
+                        int n, int qscale){
+    int16_t rem[64];
+    const int *qmat;
+    const uint8_t *scantable= s->intra_scantable.scantable;
+    const uint8_t *perm_scantable= s->intra_scantable.permutated;
+//    unsigned int threshold1, threshold2;
+//    int bias=0;
+    int run_tab[65];
+    int prev_run=0;
+    int prev_level=0;
+    int qmul, qadd, start_i, last_non_zero, i, dc;
+    const int esc_length= s->ac_esc_length;
+    uint8_t * length;
+    uint8_t * last_length;
+    int lambda;
+    int rle_index, run, q, sum;
+#ifdef REFINE_STATS
+static int count=0;
+static int after_last=0;
+static int to_zero=0;
+static int from_zero=0;
+static int raise=0;
+static int lower=0;
+static int messed_sign=0;
+#endif
+
+    if(basis[0][0] == 0)
+        build_basis(s->dsp.idct_permutation);
+    
+    qmul= qscale*2;
+    qadd= (qscale-1)|1;
+    if (s->mb_intra) {
+        if (!s->h263_aic) {
+            if (n < 4)
+                q = s->y_dc_scale;
+            else
+                q = s->c_dc_scale;
+        } else{
+            /* For AIC we skip quant/dequant of INTRADC */
+            q = 1;
+            qadd=0;
+        }
+        q <<= RECON_SHIFT-3;
+        /* note: block[0] is assumed to be positive */
+        dc= block[0]*q;
+//        block[0] = (block[0] + (q >> 1)) / q;
+        start_i = 1;
+        qmat = s->q_intra_matrix[qscale];
+//        if(s->mpeg_quant || s->out_format == FMT_MPEG1)
+//            bias= 1<<(QMAT_SHIFT-1);
+        length     = s->intra_ac_vlc_length;
+        last_length= s->intra_ac_vlc_last_length;
+    } else {
+        dc= 0;
+        start_i = 0;
+        qmat = s->q_inter_matrix[qscale];
+        length     = s->inter_ac_vlc_length;
+        last_length= s->inter_ac_vlc_last_length;
+    }
+    last_non_zero = s->block_last_index[n];
+
+#ifdef REFINE_STATS
+{START_TIMER
+#endif
+    for(i=0; i<64; i++){ //FIXME memsetw or similar
+        rem[i]= (orig[i]<<RECON_SHIFT) - dc; //FIXME  use orig dirrectly insteadof copying to rem[]
+    }
+#ifdef REFINE_STATS
+STOP_TIMER("memset rem[]")}
+#endif
+    sum=0;
+    for(i=0; i<64; i++){
+        int one= 36;
+        int qns=4;
+        int w;
+
+        w= ABS(weight[i]) + qns*one;
+        w= 15 + (48*qns*one + w/2)/w; // 16 .. 63
+
+        weight[i] = w;
+//        w=weight[i] = (63*qns + (w/2)) / w;
+         
+        assert(w>0);
+        assert(w<(1<<6));
+        sum += w*w;
+    }
+    lambda= sum*(uint64_t)s->lambda2 >> (FF_LAMBDA_SHIFT - 6 + 6 + 6 + 6);
+#ifdef REFINE_STATS
+{START_TIMER
+#endif
+    run=0;
+    rle_index=0;
+    for(i=start_i; i<=last_non_zero; i++){
+        int j= perm_scantable[i];
+        const int level= block[j];
+        int coeff;
+        
+        if(level){
+            if(level<0) coeff= qmul*level - qadd;
+            else        coeff= qmul*level + qadd;
+            run_tab[rle_index++]=run;
+            run=0;
+
+            add_basis(rem, j, coeff);
+        }else{
+            run++;
+        }
+    }
+#ifdef REFINE_STATS
+if(last_non_zero>0){
+STOP_TIMER("init rem[]")
+}
+}
+
+{START_TIMER
+#endif
+    for(;;){
+        int best_score=try_basis(rem, weight, 0, 0);
+        int nochange_score= best_score;
+        int best_coeff=0;
+        int best_change=0;
+        int run2, best_unquant_change;
+#ifdef REFINE_STATS
+{START_TIMER
+#endif
+        if(start_i){
+            const int level= block[0];
+            int change, old_coeff;
+
+            assert(s->mb_intra);
+            
+            old_coeff= q*level;
+            
+            for(change=-1; change<=1; change+=2){
+                int new_level= level + change;
+                int score, new_coeff;
+                
+                new_coeff= q*new_level;
+                if(new_coeff >= 2048 || new_coeff < 0)
+                    continue;
+
+                score= try_basis(rem, weight, 0, new_coeff - old_coeff);
+                if(score<best_score){
+                    best_score= score;
+                    best_coeff= 0;
+                    best_change= change;
+                    best_unquant_change= new_coeff - old_coeff;
+                }
+            }
+        }
+        
+        run=0;
+        rle_index=0;
+        run2= run_tab[rle_index++];
+        prev_level=0;
+        prev_run=0;
+
+        for(i=start_i; i<64; i++){
+            int j= perm_scantable[i];
+            const int level= block[j];
+            int change, old_coeff;
+
+            if(s->avctx->quantizer_noise_shaping < 3 && i > last_non_zero + 1)
+                break;
+
+            if(level){
+                if(level<0) old_coeff= qmul*level - qadd;
+                else        old_coeff= qmul*level + qadd;
+                run2= run_tab[rle_index++]; //FIXME ! maybe after last
+            }else{
+                old_coeff=0;
+                run2--;
+                assert(run2>=0 || i >= last_non_zero );
+            }
+            
+            for(change=-1; change<=1; change+=2){
+                int new_level= level + change;
+                int score, new_coeff, unquant_change;
+                
+                score=0;
+                if(s->avctx->quantizer_noise_shaping < 2 && ABS(new_level) > ABS(level))
+                   continue;
+
+                if(new_level){
+                    if(new_level<0) new_coeff= qmul*new_level - qadd;
+                    else            new_coeff= qmul*new_level + qadd;
+                    if(new_coeff >= 2048 || new_coeff <= -2048)
+                        continue;
+                    //FIXME check for overflow
+                    
+                    if(level){
+                        if(level < 63 && level > -63){
+                            if(i < last_non_zero)
+                                score +=   length[UNI_AC_ENC_INDEX(run, new_level+64)]
+                                         - length[UNI_AC_ENC_INDEX(run, level+64)];
+                            else
+                                score +=   last_length[UNI_AC_ENC_INDEX(run, new_level+64)]
+                                         - last_length[UNI_AC_ENC_INDEX(run, level+64)];
+                        }
+                    }else{
+                        assert(ABS(new_level)==1);
+                        if(i < last_non_zero){
+                            int next_i= i + run2 + 1;
+                            int next_level= block[ perm_scantable[next_i] ] + 64;
+                            
+                            if(next_level&(~127))
+                                next_level= 0;
+
+                            if(next_i < last_non_zero)
+                                score +=   length[UNI_AC_ENC_INDEX(run, 65)]
+                                         + length[UNI_AC_ENC_INDEX(run2, next_level)]
+                                         - length[UNI_AC_ENC_INDEX(run + run2 + 1, next_level)];
+                            else
+                                score +=  length[UNI_AC_ENC_INDEX(run, 65)]
+                                        + last_length[UNI_AC_ENC_INDEX(run2, next_level)]
+                                        - last_length[UNI_AC_ENC_INDEX(run + run2 + 1, next_level)];
+                        }else{
+                            score += last_length[UNI_AC_ENC_INDEX(run, 65)];
+                            if(prev_level){
+                                score +=  length[UNI_AC_ENC_INDEX(prev_run, prev_level)]
+                                        - last_length[UNI_AC_ENC_INDEX(prev_run, prev_level)];
+                            }
+                        }
+                    }
+                }else{
+                    new_coeff=0;
+                    assert(ABS(level)==1);
+
+                    if(i < last_non_zero){
+                        int next_i= i + run2 + 1;
+                        int next_level= block[ perm_scantable[next_i] ] + 64;
+                            
+                        if(next_level&(~127))
+                            next_level= 0;
+
+                        if(next_i < last_non_zero)
+                            score +=   length[UNI_AC_ENC_INDEX(run + run2 + 1, next_level)]
+                                     - length[UNI_AC_ENC_INDEX(run2, next_level)]
+                                     - length[UNI_AC_ENC_INDEX(run, 65)];
+                        else
+                            score +=   last_length[UNI_AC_ENC_INDEX(run + run2 + 1, next_level)]
+                                     - last_length[UNI_AC_ENC_INDEX(run2, next_level)]
+                                     - length[UNI_AC_ENC_INDEX(run, 65)];
+                    }else{
+                        score += -last_length[UNI_AC_ENC_INDEX(run, 65)];
+                        if(prev_level){
+                            score +=  last_length[UNI_AC_ENC_INDEX(prev_run, prev_level)]
+                                    - length[UNI_AC_ENC_INDEX(prev_run, prev_level)];
+                        }
+                    }
+                }
+                
+                score *= lambda;
+
+                unquant_change= new_coeff - old_coeff;
+                assert((score < 100*lambda && score > -100*lambda) || lambda==0);
+                
+                score+= try_basis(rem, weight, j, unquant_change);
+                if(score<best_score){
+                    best_score= score;
+                    best_coeff= i;
+                    best_change= change;
+                    best_unquant_change= unquant_change;
+                }
+            }
+            if(level){
+                prev_level= level + 64;
+                if(prev_level&(~127))
+                    prev_level= 0;
+                prev_run= run;
+                run=0;
+            }else{
+                run++;
+            }
+        }
+#ifdef REFINE_STATS
+STOP_TIMER("iterative step")}
+#endif
+
+        if(best_change){
+            int j= perm_scantable[ best_coeff ];
+            
+            block[j] += best_change;
+            
+            if(best_coeff > last_non_zero){
+                last_non_zero= best_coeff;
+                assert(block[j]);
+#ifdef REFINE_STATS
+after_last++;
+#endif
+            }else{
+#ifdef REFINE_STATS
+if(block[j]){
+    if(block[j] - best_change){
+        if(ABS(block[j]) > ABS(block[j] - best_change)){
+            raise++;
+        }else{
+            lower++;
+        }
+    }else{
+        from_zero++;
+    }
+}else{
+    to_zero++;
+}
+#endif
+                for(; last_non_zero>=start_i; last_non_zero--){
+                    if(block[perm_scantable[last_non_zero]])
+                        break;
+                }
+            }
+#ifdef REFINE_STATS
+count++;
+if(256*256*256*64 % count == 0){
+    printf("after_last:%d to_zero:%d from_zero:%d raise:%d lower:%d sign:%d xyp:%d/%d/%d\n", after_last, to_zero, from_zero, raise, lower, messed_sign, s->mb_x, s->mb_y, s->picture_number);
+}
+#endif
+            run=0;
+            rle_index=0;
+            for(i=start_i; i<=last_non_zero; i++){
+                int j= perm_scantable[i];
+                const int level= block[j];
+        
+                 if(level){
+                     run_tab[rle_index++]=run;
+                     run=0;
+                 }else{
+                     run++;
+                 }
+            }
+            
+            add_basis(rem, j, best_unquant_change);
+        }else{
+            break;
+        }
+    }
+#ifdef REFINE_STATS
+if(last_non_zero>0){
+STOP_TIMER("iterative search")
+}
+}
+#endif
 
     return last_non_zero;
 }

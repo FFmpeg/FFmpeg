@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4699
+#define LIBAVCODEC_BUILD       4700
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1504,6 +1504,12 @@ typedef struct AVCodecContext {
 #define FF_AA_FASTINT 1 //not implemented yet
 #define FF_AA_INT     2
 #define FF_AA_FLOAT   3
+    /**
+     * Quantizer noise shaping.
+     * - encoding: set by user
+     * - decoding: unused
+     */
+    int quantizer_noise_shaping;
 } AVCodecContext;
 
 
