@@ -25,6 +25,7 @@
  
 #include "avcodec.h"
 #include "common.h"
+#include "bitstream.h"
 
 
 typedef struct WNV1Context{
@@ -32,59 +33,27 @@ typedef struct WNV1Context{
     AVFrame pic;
 
     int shift;
-    /* bit buffer */
-    unsigned long bitbuf;
-    int bits;
-    uint8_t *buf;
+    GetBitContext gb;
 } WNV1Context;
+
+static uint16_t code_tab[16][2]={
+{0x1FD,9}, {0xFD,8}, {0x7D,7}, {0x3D,6}, {0x1D,5}, {0x0D,4}, {0x005,3},
+{0x000,1}, 
+{0x004,3}, {0x0C,4}, {0x1C,5}, {0x3C,6}, {0x7C,7}, {0xFC,8}, {0x1FC,9}, {0xFF,8}
+};
+
+#define CODE_VLC_BITS 9
+static VLC code_vlc;
 
 /* returns modified base_value */
 static inline int wnv1_get_code(WNV1Context *w, int base_value)
 {
-    int v = 0;
-            
-    if (w->bits < 16) { /* need to fill bit buffer */
-        w->bitbuf |= LE_16(w->buf) << w->bits;
-        w->buf += 2;
-        w->bits += 16;
-    }
+    int v = get_vlc2(&w->gb, code_vlc.table, CODE_VLC_BITS, 1);
 
-    /* escape code */
-    if ((w->bitbuf & 0xFF) == 0xFF) {
-        w->bitbuf >>= 8;
-        w->bits -= 8;
-        if (w->bits < 16) { /* need to fill bit buffer */
-            w->bitbuf |= LE_16(w->buf) << w->bits;
-            w->buf += 2;
-            w->bits += 16;
-        }
-        v = w->bitbuf & (0xFF >> w->shift);
-        w->bitbuf >>= 8 - w->shift;
-        w->bits -= 8 - w->shift;
-        return v << w->shift;
-    }
-
-    /* zero code */
-    if (!(w->bitbuf & 1)) {
-        w->bitbuf >>= 1;
-        w->bits--;
-        return base_value;
-    }
-    
-    /* reversed unary code and sign */
-    while (w->bits && w->bitbuf & 1) {
-        w->bitbuf >>= 1;
-        w->bits--;
-        v++;
-    }
-    w->bitbuf >>= 1;
-    w->bits--;
-    if(w->bitbuf & 1)
-        v = -v;
-    w->bitbuf >>= 1;
-    w->bits--;
-    v <<= w->shift;
-    return base_value + v;
+    if(v==15)
+        return ff_reverse[ get_bits(&w->gb, 8 - w->shift) ];
+    else
+        return base_value + ((v - 7)<<w->shift);
 }
 
 static int decode_frame(AVCodecContext *avctx, 
@@ -106,11 +75,11 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
     p->key_frame = 1;
-    
-    l->bitbuf = 0;
-    l->bits = 0;
-    l->buf = buf + 8;
-    
+
+    for(i=8; i<buf_size; i++)
+        buf[i]= ff_reverse[ buf[i] ]; //FIXME ensure that the buffer is modifyable or use a temp one
+    init_get_bits(&l->gb, buf+8, (buf_size-8)*8);
+
     if (buf[2] >> 4 == 6)
         l->shift = 2;
     else {
@@ -152,6 +121,12 @@ static int decode_init(AVCodecContext *avctx){
 
     l->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_YUV422P;
+
+    if(!code_vlc.table){
+        init_vlc(&code_vlc, CODE_VLC_BITS, 16,
+                    &code_tab[0][1], 4, 2,
+                    &code_tab[0][0], 4, 2, 1);
+    }
 
     return 0;
 }
