@@ -1018,22 +1018,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     return bytes_read;
 }
 
-static int decode_end(AVCodecContext *avctx)
-{
-    FFV1Context *s = avctx->priv_data;
-    int i;
-    
-    if(avctx->get_buffer == avcodec_default_get_buffer){
-        for(i=0; i<4; i++){
-            av_freep(&s->picture.base[i]);
-            s->picture.data[i]= NULL;
-        }
-        av_freep(&s->picture.opaque);
-    }
-
-    return 0;
-}
-
 AVCodec ffv1_decoder = {
     "ffv1",
     CODEC_TYPE_VIDEO,
@@ -1041,7 +1025,7 @@ AVCodec ffv1_decoder = {
     sizeof(FFV1Context),
     decode_init,
     NULL,
-    decode_end,
+    NULL,
     decode_frame,
     CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
     NULL

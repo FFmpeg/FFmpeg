@@ -133,13 +133,6 @@ static int encode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static int decode_end(AVCodecContext *avctx){
-
-    avcodec_default_free_buffers(avctx);
-
-    return 0;
-}
-
 AVCodec cljr_decoder = {
     "cljr",
     CODEC_TYPE_VIDEO,
@@ -147,7 +140,7 @@ AVCodec cljr_decoder = {
     sizeof(CLJRContext),
     decode_init,
     NULL,
-    decode_end,
+    NULL,
     decode_frame,
     CODEC_CAP_DR1,
 };

@@ -29,6 +29,8 @@
 #include "mpegvideo.h"
 #include <stdarg.h>
 
+static void avcodec_default_free_buffers(AVCodecContext *s);
+
 void *av_mallocz(unsigned int size)
 {
     void *ptr;
@@ -514,6 +516,7 @@ int avcodec_close(AVCodecContext *avctx)
 {
     if (avctx->codec->close)
         avctx->codec->close(avctx);
+    avcodec_default_free_buffers(avctx);
     av_freep(&avctx->priv_data);
     avctx->codec = NULL;
     return 0;
@@ -738,7 +741,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
         avctx->codec->flush(avctx);
 }
 
-void avcodec_default_free_buffers(AVCodecContext *s){
+static void avcodec_default_free_buffers(AVCodecContext *s){
     int i, j;
 
     if(s->internal_buffer==NULL) return;

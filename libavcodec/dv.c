@@ -235,12 +235,6 @@ static int dvvideo_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int dvvideo_end(AVCodecContext *avctx)
-{
-    avcodec_default_free_buffers(avctx);    
-    return 0;
-}
-
 // #define VLC_DEBUG
 // #define printf(...) av_log(NULL, AV_LOG_ERROR, __VA_ARGS__)
 
@@ -954,7 +948,7 @@ AVCodec dvvideo_encoder = {
     sizeof(DVVideoContext),
     dvvideo_init,
     dvvideo_encode_frame,
-    dvvideo_end,
+    NULL,
     NULL,
     CODEC_CAP_DR1,
     NULL
@@ -967,7 +961,7 @@ AVCodec dvvideo_decoder = {
     sizeof(DVVideoContext),
     dvvideo_init,
     NULL,
-    dvvideo_end,
+    NULL,
     dvvideo_decode_frame,
     CODEC_CAP_DR1,
     NULL

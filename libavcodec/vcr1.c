@@ -165,13 +165,6 @@ static int encode_init(AVCodecContext *avctx){
     return 0;
 }
 
-static int decode_end(AVCodecContext *avctx){
-
-    avcodec_default_free_buffers(avctx);
-
-    return 0;
-}
-
 AVCodec vcr1_decoder = {
     "vcr1",
     CODEC_TYPE_VIDEO,
@@ -179,7 +172,7 @@ AVCodec vcr1_decoder = {
     sizeof(VCR1Context),
     decode_init,
     NULL,
-    decode_end,
+    NULL,
     decode_frame,
     CODEC_CAP_DR1,
 };

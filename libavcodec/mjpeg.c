@@ -1340,7 +1340,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s){
                         (h * mb_x + x) * 8;
                     if (s->interlaced && s->bottom_field)
                         ptr += s->linesize[c] >> 1;
-//printf("%d %d %d %d %d %d %d %d \n", mb_x, mb_y, x, y, c, s->bottom_field, (v * mb_y + y) * 8, (h * mb_x + x) * 8);
+//av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d %d %d %d %d \n", mb_x, mb_y, x, y, c, s->bottom_field, (v * mb_y + y) * 8, (h * mb_x + x) * 8);
                     s->idct_put(ptr, s->linesize[c], s->block);
                     if (++x == h) {
                         x = 0;
@@ -2171,7 +2171,6 @@ static int mjpeg_decode_end(AVCodecContext *avctx)
 
     av_free(s->buffer);
     av_free(s->qscale_table);
-    avcodec_default_free_buffers(avctx);
     
     for(i=0;i<2;i++) {
         for(j=0;j<4;j++)

@@ -613,8 +613,6 @@ static int decode_end(AVCodecContext *avctx){
     av_freep(&a->picture.qscale_table);
     a->bitstream_buffer_size=0;
     
-    avcodec_default_free_buffers(avctx);
-
     return 0;
 }
 

@@ -916,8 +916,6 @@ static int decode_end(AVCodecContext *avctx)
     for(i=0; i<3; i++){
         free_vlc(&s->vlc[i]);
     }
-    
-    avcodec_default_free_buffers(avctx);
 
     return 0;
 }
