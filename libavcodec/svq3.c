@@ -46,6 +46,7 @@
 #define FULLPEL_MODE  1 
 #define HALFPEL_MODE  2 
 #define THIRDPEL_MODE 3
+#define PREDICT_MODE  4
  
 /* dual scan (from some older h264 draft)
  o-->o-->o   o
@@ -324,9 +325,114 @@ static inline void svq3_mc_dir_part (MpegEncContext *s,
   }
 }
 
+static inline int svq3_mc_dir (H264Context *h, int size, int mode, int dir, int avg) {
+
+  int i, j, k, mx, my, dx, dy, x, y;
+  MpegEncContext *const s = (MpegEncContext *) h;
+  const int part_width  = ((size & 5) == 4) ? 4 : 16 >> (size & 1);
+  const int part_height = 16 >> ((unsigned) (size + 1) / 3);
+  const int extra_width = (mode == PREDICT_MODE) ? -16*6 : 0;
+  const int h_edge_pos  = 6*(s->h_edge_pos - part_width ) - extra_width;
+  const int v_edge_pos  = 6*(s->v_edge_pos - part_height) - extra_width;
+
+  for (i=0; i < 16; i+=part_height) {
+    for (j=0; j < 16; j+=part_width) {
+      const int b_xy = (4*s->mb_x+(j>>2)) + (4*s->mb_y+(i>>2))*h->b_stride;
+      int dxy;
+      x = 16*s->mb_x + j;
+      y = 16*s->mb_y + i;
+      k = ((j>>2)&1) + ((i>>1)&2) + ((j>>1)&4) + (i&8);
+
+      if (mode != PREDICT_MODE) {
+	pred_motion (h, k, (part_width >> 2), dir, 1, &mx, &my);
+      } else {
+	mx = s->next_picture.motion_val[0][b_xy][0]<<1;
+	my = s->next_picture.motion_val[0][b_xy][1]<<1;
+
+	if (dir == 0) {
+	  mx = ((mx * h->frame_num_offset) / h->prev_frame_num_offset + 1)>>1;
+	  my = ((my * h->frame_num_offset) / h->prev_frame_num_offset + 1)>>1;
+	} else {
+	  mx = ((mx * (h->frame_num_offset - h->prev_frame_num_offset)) / h->prev_frame_num_offset + 1)>>1;
+	  my = ((my * (h->frame_num_offset - h->prev_frame_num_offset)) / h->prev_frame_num_offset + 1)>>1;
+	}
+      }
+
+      /* clip motion vector prediction to frame border */
+      mx = clip (mx, extra_width - 6*x, h_edge_pos - 6*x);
+      my = clip (my, extra_width - 6*y, v_edge_pos - 6*y);
+
+      /* get (optional) motion vector differential */
+      if (mode == PREDICT_MODE) {
+	dx = dy = 0;
+      } else {
+	dy = svq3_get_se_golomb (&s->gb);
+	dx = svq3_get_se_golomb (&s->gb);
+
+	if (dx == INVALID_VLC || dy == INVALID_VLC) {
+	  return -1;
+	}
+      }
+
+      /* compute motion vector */
+      if (mode == THIRDPEL_MODE) {
+	int fx, fy;
+	mx = ((mx + 1)>>1) + dx;
+	my = ((my + 1)>>1) + dy;
+	fx= ((unsigned)(mx + 0x3000))/3 - 0x1000;
+	fy= ((unsigned)(my + 0x3000))/3 - 0x1000;
+	dxy= (mx - 3*fx) + 4*(my - 3*fy);
+
+	svq3_mc_dir_part (s, x, y, part_width, part_height, fx, fy, dxy, 1, dir, avg);
+	mx += mx;
+	my += my;
+      } else if (mode == HALFPEL_MODE || mode == PREDICT_MODE) {
+	mx = ((unsigned)(mx + 1 + 0x3000))/3 + dx - 0x1000;
+	my = ((unsigned)(my + 1 + 0x3000))/3 + dy - 0x1000;
+	dxy= (mx&1) + 2*(my&1);
+
+	svq3_mc_dir_part (s, x, y, part_width, part_height, mx>>1, my>>1, dxy, 0, dir, avg);
+	mx *= 3;
+	my *= 3;
+      } else {
+	mx = ((unsigned)(mx + 3 + 0x6000))/6 + dx - 0x1000;
+	my = ((unsigned)(my + 3 + 0x6000))/6 + dy - 0x1000;
+
+	svq3_mc_dir_part (s, x, y, part_width, part_height, mx, my, 0, 0, dir, avg);
+	mx *= 6;
+	my *= 6;
+      }
+
+      /* update mv_cache */
+      if (mode != PREDICT_MODE) {
+	int32_t mv = pack16to32(mx,my);
+
+	if (part_height == 8 && i < 8) {
+	  *(int32_t *) h->mv_cache[dir][scan8[k] + 1*8] = mv;
+
+	  if (part_width == 8 && j < 8) {
+	    *(int32_t *) h->mv_cache[dir][scan8[k] + 1 + 1*8] = mv;
+	  }
+	}
+	if (part_width == 8 && j < 8) {
+	  *(int32_t *) h->mv_cache[dir][scan8[k] + 1] = mv;
+	}
+	if (part_width == 4 || part_height == 4) {
+	  *(int32_t *) h->mv_cache[dir][scan8[k]] = mv;
+	}
+      }
+
+      /* write back motion vectors */
+      fill_rectangle(s->current_picture.motion_val[dir][b_xy], part_width>>2, part_height>>2, h->b_stride, pack16to32(mx,my), 4);
+    }
+  }
+
+  return 0;
+}
+
 static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
-  int cbp, dir, mode, mx, my, dx, dy, x, y, part_width, part_height;
-  int i, j, k, l, m;
+  int i, j, k, m, dir, mode;
+  int cbp = 0;
   uint32_t vlc;
   int8_t *top, *left;
   MpegEncContext *const s = (MpegEncContext *) h;
@@ -338,52 +444,21 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
   h->topright_samples_available	= 0xFFFF;
 
   if (mb_type == 0) {		/* SKIP */
-    if (s->pict_type == P_TYPE) {
+    if (s->pict_type == P_TYPE || s->next_picture.mb_type[mb_xy] == -1) {
       svq3_mc_dir_part (s, 16*s->mb_x, 16*s->mb_y, 16, 16, 0, 0, 0, 0, 0, 0);
 
-      cbp = 0;
-      mb_type = MB_TYPE_SKIP;
-    } else {
-      for (dir=0; dir < 2; dir++) {
-	for (i=0; i < 4; i++) {
-	  for (j=0; j < 4; j++) {
-	    int dxy;
-	    x = 16*s->mb_x + 4*j;
-	    y = 16*s->mb_y + 4*i;
-
-	    mx = 2*s->next_picture.motion_val[0][b_xy + j + i*h->b_stride][0];
-	    my = 2*s->next_picture.motion_val[0][b_xy + j + i*h->b_stride][1];
-
-	    if (dir == 0) {
-	      mx = (mx * h->frame_num_offset) / h->prev_frame_num_offset;
-	      my = (my * h->frame_num_offset) / h->prev_frame_num_offset;
-	    } else {
-	      mx = (mx * (h->frame_num_offset - h->prev_frame_num_offset)) / h->prev_frame_num_offset;
-	      my = (my * (h->frame_num_offset - h->prev_frame_num_offset)) / h->prev_frame_num_offset;
-	    }
-
-	    mx = ((unsigned)(mx + 3 + 0x6000))/6 - 0x1000;
-	    my = ((unsigned)(my + 3 + 0x6000))/6 - 0x1000;
-	    dxy= (mx&1) + 2*(my&1);
-
-	    /* update mv_cache */
-	    s->current_picture.motion_val[dir][b_xy + j + i*h->b_stride][0] = 3*mx;
-	    s->current_picture.motion_val[dir][b_xy + j + i*h->b_stride][1] = 3*my;
-
-	    svq3_mc_dir_part (s, x, y, 4, 4, mx>>1, my>>1, dxy, 0, dir, (dir == 1));
-	  }
-	}
+      if (s->pict_type == B_TYPE) {
+	svq3_mc_dir_part (s, 16*s->mb_x, 16*s->mb_y, 16, 16, 0, 0, 0, 0, 1, 1);
       }
 
-      if ((vlc = svq3_get_ue_golomb (&s->gb)) >= 48)
-	return -1;
+      mb_type = MB_TYPE_SKIP;
+    } else {
+      svq3_mc_dir (h, s->next_picture.mb_type[mb_xy], PREDICT_MODE, 0, 0);
+      svq3_mc_dir (h, s->next_picture.mb_type[mb_xy], PREDICT_MODE, 1, 1);
 
-      cbp = golomb_to_inter_cbp[vlc];
       mb_type = MB_TYPE_16x16;
     }
   } else if (mb_type < 8) {	/* INTER */
-    int dir0, dir1;
-
     if (h->thirdpel_flag && h->halfpel_flag == !get_bits (&s->gb, 1)) {
       mode = THIRDPEL_MODE;
     } else if (h->halfpel_flag && h->thirdpel_flag == !get_bits (&s->gb, 1)) {
@@ -424,7 +499,7 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 	}else
 	  h->ref_cache[m][scan8[0] + 4 - 1*8] = PART_NOT_AVAILABLE;
 	if (s->mb_x > 0) {
-	  *(uint32_t *) h->mv_cache[0][scan8[0] - 1 - 1*8] = *(uint32_t *) s->current_picture.motion_val[m][b_xy - h->b_stride - 1];
+	  *(uint32_t *) h->mv_cache[m][scan8[0] - 1 - 1*8] = *(uint32_t *) s->current_picture.motion_val[m][b_xy - h->b_stride - 1];
 	  h->ref_cache[m][scan8[0] - 1 - 1*8] = (h->intra4x4_pred_mode[mb_xy - s->mb_stride - 1][3] == -1) ? PART_NOT_AVAILABLE : 1;
 	}else
 	  h->ref_cache[m][scan8[0] - 1 - 1*8] = PART_NOT_AVAILABLE;
@@ -437,90 +512,17 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 
     /* decode motion vector(s) and form prediction(s) */
     if (s->pict_type == P_TYPE) {
-      part_width  = ((mb_type & 5) == 5) ? 4 : 8 << (mb_type & 1);
-      part_height = 16 >> ((unsigned) mb_type / 3);
-      dir0 = 0;
-      dir1 = 0;
+      svq3_mc_dir (h, (mb_type - 1), mode, 0, 0);
     } else {	/* B_TYPE */
-      part_width  = 16;
-      part_height = 16;
-      dir0 = (mb_type == 2) ? 1 : 0;
-      dir1 = (mb_type == 1) ? 0 : 1;
-    }
-
-  for (dir=dir0; dir <= dir1; dir++) {
-    for (i=0; i < 16; i+=part_height) {
-      for (j=0; j < 16; j+=part_width) {
-	int avg=(dir == 1 && dir0 != dir1);
-	int dxy;
-	x = 16*s->mb_x + j;
-	y = 16*s->mb_y + i;
-	k = ((j>>2)&1) + ((i>>1)&2) + ((j>>1)&4) + (i&8);
-
-	pred_motion (h, k, (part_width >> 2), dir, 1, &mx, &my);
-
-	/* clip motion vector prediction to frame border */
-	mx = clip (mx, -6*x, 6*(s->h_edge_pos - part_width  - x));
-	my = clip (my, -6*y, 6*(s->v_edge_pos - part_height - y));
-
-	/* get motion vector differential */
-	dy = svq3_get_se_golomb (&s->gb);
-	dx = svq3_get_se_golomb (&s->gb);
-
-	if (dx == INVALID_VLC || dy == INVALID_VLC) {
-	  return -1;
-	}
-	/* compute motion vector */
-	if (mode == THIRDPEL_MODE) {
-          int fx, fy;
-          mx = ((mx + 1)>>1) + dx;
-          my = ((my + 1)>>1) + dy;
-          fx= ((unsigned)(mx + 0x3000))/3 - 0x1000;
-          fy= ((unsigned)(my + 0x3000))/3 - 0x1000;
-          dxy= (mx - 3*fx) + 4*(my - 3*fy);
-
-          svq3_mc_dir_part (s, x, y, part_width, part_height, fx, fy, dxy, 1, dir, avg);
-          mx += mx;
-          my += my;
-	} else if (mode == HALFPEL_MODE) {
-	  mx = ((unsigned)(mx + 1 + 0x3000))/3 + dx - 0x1000;
-	  my = ((unsigned)(my + 1 + 0x3000))/3 + dy - 0x1000;
-          dxy= (mx&1) + 2*(my&1);
-
-          svq3_mc_dir_part (s, x, y, part_width, part_height, mx>>1, my>>1, dxy, 0, dir, avg);
-          mx *= 3;
-          my *= 3;
-	} else {
-          assert(mode == FULLPEL_MODE);
-	  mx = ((unsigned)(mx + 3 + 0x6000))/6 + dx - 0x1000;
-	  my = ((unsigned)(my + 3 + 0x6000))/6 + dy - 0x1000;
-
-	  svq3_mc_dir_part (s, x, y, part_width, part_height, mx, my, 0, 0, dir, avg);
-          mx *= 6;
-          my *= 6;
-	}
-
-        /* update mv_cache */
-        fill_rectangle(h->mv_cache[dir][scan8[k]], part_width>>2, part_height>>2, 8, pack16to32(mx,my), 4);
-      }
-    }
-  }
-
-    /* write back or clear motion vectors */
-    if (s->pict_type == P_TYPE || mb_type != 2) {
-      for (i=0; i < 4; i++) {
-	memcpy (s->current_picture.motion_val[0][b_xy + i*h->b_stride], h->mv_cache[0][scan8[0] + 8*i], 4*2*sizeof(int16_t));
-      }
-    } else {
-      for (i=0; i < 4; i++) {
-	memset (s->current_picture.motion_val[0][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
-      }
-    }
-    if (s->pict_type == B_TYPE) {
-      if (mb_type != 1) {
+      if (mb_type != 2) {
+	svq3_mc_dir (h, 0, mode, 0, 0);
+      } else {
 	for (i=0; i < 4; i++) {
-	  memcpy (s->current_picture.motion_val[1][b_xy + i*h->b_stride], h->mv_cache[1][scan8[0] + 8*i], 4*2*sizeof(int16_t));
-        }
+	  memset (s->current_picture.motion_val[0][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
+	}
+      }
+      if (mb_type != 1) {
+	svq3_mc_dir (h, 0, mode, 1, (mb_type == 3));
       } else {
 	for (i=0; i < 4; i++) {
 	  memset (s->current_picture.motion_val[1][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
@@ -528,10 +530,6 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
       }
     }
 
-    if ((vlc = svq3_get_ue_golomb (&s->gb)) >= 48)
-      return -1;
-
-    cbp = golomb_to_inter_cbp[vlc];
     mb_type = MB_TYPE_16x16;
   } else if (mb_type == 8 || mb_type == 33) {	/* INTRA4x4 */
     memset (h->intra4x4_pred_mode_cache, -1, 8*5*sizeof(int8_t));
@@ -572,8 +570,7 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 	if (left[1] == -1 || left[2] == -1)
 	  return -1;
       }
-    } else {
-      /* DC_128_PRED block type */
+    } else {	/* mb_type == 33, DC_128_PRED block type */
       for (i=0; i < 4; i++) {
 	memset (&h->intra4x4_pred_mode_cache[scan8[0] + 8*i], DC_PRED, 4);
       }
@@ -595,10 +592,6 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
       h->left_samples_available = 0x5F5F;
     }
 
-    if ((vlc = svq3_get_ue_golomb (&s->gb)) >= 48)
-      return -1;
-
-    cbp = golomb_to_intra4x4_cbp[vlc];
     mb_type = MB_TYPE_INTRA4x4;
   } else {			/* INTRA16x16 */
     dir = i_mb_type_info[mb_type - 8].pred_mode;
@@ -624,11 +617,17 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
   if (!IS_INTRA4x4(mb_type)) {
     memset (h->intra4x4_pred_mode[mb_xy], DC_PRED, 8);
   }
-  if (!IS_SKIP(mb_type)) {
+  if (!IS_SKIP(mb_type) || s->pict_type == B_TYPE) {
     memset (h->non_zero_count_cache + 8, 0, 4*9*sizeof(uint8_t));
     s->dsp.clear_blocks(h->mb);
   }
 
+  if (!IS_INTRA16x16(mb_type) && (!IS_SKIP(mb_type) || s->pict_type == B_TYPE)) {
+    if ((vlc = svq3_get_ue_golomb (&s->gb)) >= 48)
+      return -1;
+
+    cbp = IS_INTRA(mb_type) ? golomb_to_intra4x4_cbp[vlc] : golomb_to_inter_cbp[vlc];
+  }
   if (IS_INTRA16x16(mb_type) || (s->pict_type != I_TYPE && s->adaptive_quant && cbp)) {
     s->qscale += svq3_get_se_golomb (&s->gb);
 
@@ -640,17 +639,17 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
       return -1;
   }
 
-  if (!IS_SKIP(mb_type) && cbp) {
-    l = IS_INTRA16x16(mb_type) ? 1 : 0;
-    m = ((s->qscale < 24 && IS_INTRA4x4(mb_type)) ? 2 : 1);
+  if (cbp) {
+    const int index = IS_INTRA16x16(mb_type) ? 1 : 0;
+    const int type = ((s->qscale < 24 && IS_INTRA4x4(mb_type)) ? 2 : 1);
 
     for (i=0; i < 4; i++) {
       if ((cbp & (1 << i))) {
 	for (j=0; j < 4; j++) {
-	  k = l ? ((j&1) + 2*(i&1) + 2*(j&2) + 4*(i&2)) : (4*i + j);
+	  k = index ? ((j&1) + 2*(i&1) + 2*(j&2) + 4*(i&2)) : (4*i + j);
 	  h->non_zero_count_cache[ scan8[k] ] = 1;
 
-	  if (svq3_decode_block (&s->gb, &h->mb[16*k], l, m))
+	  if (svq3_decode_block (&s->gb, &h->mb[16*k], index, type))
 	    return -1;
 	}
       }
@@ -927,6 +926,11 @@ static int svq3_decode_frame (AVCodecContext *avctx,
 
       if (mb_type != 0) {
 	hl_decode_mb (h);
+      }
+
+      if (s->pict_type != B_TYPE && !s->low_delay) {
+	s->current_picture.mb_type[s->mb_x + s->mb_y*s->mb_stride] =
+			(s->pict_type == P_TYPE && mb_type < 8) ? (mb_type - 1) : -1;
       }
     }
 

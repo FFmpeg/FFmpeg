@@ -1712,6 +1712,9 @@ static inline void pred16x16_plane_compat_c(uint8_t *src, int stride, const int 
   if(svq3){
     H = ( 5*(H/4) ) / 16;
     V = ( 5*(V/4) ) / 16;
+
+    /* required for 100% accuracy */
+    i = H; H = V; V = i;
   }else{
     H = ( 5*H+32 ) >> 6;
     V = ( 5*V+32 ) >> 6;
