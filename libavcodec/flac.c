@@ -591,12 +591,12 @@ static int flac_decode_frame(AVCodecContext *avctx,
     int16_t *samples = data;
 
     if(s->max_framesize == 0){
-        s->max_framesize= 8192; // should hopefully be enough for the first header
+        s->max_framesize= 65536; // should hopefully be enough for the first header
         s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
     }
 
     if(1 && s->max_framesize){//FIXME truncated
-            buf_size= FFMIN(buf_size, s->max_framesize - s->bitstream_size);
+            buf_size= FFMAX(FFMIN(buf_size, s->max_framesize - s->bitstream_size), 0);
             input_buf_size= buf_size;
 
             if(s->bitstream_index + s->bitstream_size + buf_size > s->allocated_bitstream_size){
@@ -638,9 +638,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
                     int bits_count= get_bits_count(&s->gb);
 
                     metadata_streaminfo(s);
-                    buf= &s->bitstream[s->bitstream_index];
-                    init_get_bits(&s->gb, buf, buf_size*8);
-                    skip_bits(&s->gb, bits_count);
 
                     dump_headers(s);
                     break;}
