@@ -482,7 +482,7 @@ typedef struct AVCodecContext {
     /**
      * width / height.
      * - encoding: MUST be set by user. 
-     * - decoding: set by user, some codecs might override / change it during playback
+     * - decoding: set by user if known, codec should override / dynamically change if needed
      */
     int width, height;
     
