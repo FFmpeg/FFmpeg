@@ -264,8 +264,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     ast->sample_size = get_le32(pb); /* sample ssize */
 //av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d\n", ast->scale, ast->rate, ast->sample_size, ast->start);
                     st->start_time = 0;
-                    if (ast->rate != 0)
-                        st->duration = (int64_t)length * AV_TIME_BASE / ast->rate;
+                    st->duration = av_rescale(length, ast->scale*(int64_t)AV_TIME_BASE, ast->rate);
                     url_fskip(pb, size - 12 * 4);
                 }
                 break;
