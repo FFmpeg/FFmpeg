@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4673
-#define LIBAVCODEC_BUILD_STR   "4673"
+#define LIBAVCODEC_BUILD       4674
+#define LIBAVCODEC_BUILD_STR   "4674"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -63,6 +63,7 @@ enum CodecID {
     CODEC_ID_4XM,
     CODEC_ID_VCR1,
     CODEC_ID_CLJR,
+    CODEC_ID_MDEC,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1283,6 +1284,7 @@ extern AVCodec h264_encoder;
 extern AVCodec asv1_encoder;
 extern AVCodec vcr1_encoder;
 extern AVCodec ffv1_encoder;
+extern AVCodec mdec_encoder;
 
 extern AVCodec h263_decoder;
 extern AVCodec mpeg4_decoder;
@@ -1323,6 +1325,7 @@ extern AVCodec vcr1_decoder;
 extern AVCodec cljr_decoder;
 extern AVCodec ffv1_decoder;
 extern AVCodec fourxm_decoder;
+extern AVCodec mdec_decoder;
 extern AVCodec ra_144_decoder;
 extern AVCodec ra_288_decoder;
 

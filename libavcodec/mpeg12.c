@@ -819,7 +819,7 @@ static VLC mb_ptype_vlc;
 static VLC mb_btype_vlc;
 static VLC mb_pat_vlc;
 
-static void init_vlcs(MpegEncContext *s)
+static void init_vlcs()
 {
     static int done = 0;
 
@@ -1227,23 +1227,23 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
     return val;
 }
 
-static inline int decode_dc(MpegEncContext *s, int component)
+static inline int decode_dc(GetBitContext *gb, int component)
 {
     int code, diff;
 
     if (component == 0) {
-        code = get_vlc2(&s->gb, dc_lum_vlc.table, DC_VLC_BITS, 2);
+        code = get_vlc2(gb, dc_lum_vlc.table, DC_VLC_BITS, 2);
     } else {
-        code = get_vlc2(&s->gb, dc_chroma_vlc.table, DC_VLC_BITS, 2);
+        code = get_vlc2(gb, dc_chroma_vlc.table, DC_VLC_BITS, 2);
     }
     if (code < 0){
-        fprintf(stderr, "invalid dc code at %d %d\n", s->mb_x, s->mb_y);
+        fprintf(stderr, "invalid dc code at\n");
         return 0xffff;
     }
     if (code == 0) {
         diff = 0;
     } else {
-        diff = get_xbits(&s->gb, code);
+        diff = get_xbits(gb, code);
     }
     return diff;
 }
@@ -1261,7 +1261,7 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
 
     /* DC coef */
     component = (n <= 3 ? 0 : n - 4 + 1);
-    diff = decode_dc(s, component);
+    diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
         return -1;
     dc = s->last_dc[component];
@@ -1498,7 +1498,7 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
         quant_matrix = s->chroma_intra_matrix;
         component = n - 3;
     }
-    diff = decode_dc(s, component);
+    diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
         return -1;
     dc = s->last_dc[component];
@@ -1570,7 +1570,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     
     s->mpeg_enc_ctx.flags= avctx->flags;
     common_init(&s->mpeg_enc_ctx);
-    init_vlcs(&s->mpeg_enc_ctx);
+    init_vlcs();
 
     s->mpeg_enc_ctx_allocated = 0;
     s->mpeg_enc_ctx.picture_number = 0;
@@ -2477,3 +2477,8 @@ AVCodec mpeg_xvmc_decoder = {
 };
 
 #endif
+
+/* this is ugly i know, but the alternative is too make 
+   hundreds of vars global and prefix them with ff_mpeg1_
+   which is far uglier. */
+#include "mdec.c"  
