@@ -621,6 +621,11 @@ library:
 @item DV               @tab  @tab X
 @item 4xm              @tab    @tab X
 @tab 4X Technologies format, used in some games
+@item Playstation STR  @tab    @tab X
+@item Id RoQ           @tab    @tab X
+@tab used in Quake III, Jedi Knight 2, other computer games
+@item Interplay MVE    @tab    @tab X
+@tab format used in various Interplay computer games
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -660,6 +665,7 @@ following image formats are supported:
 @item DV                     @tab     @tab  X 
 @item Huff YUV               @tab  X  @tab  X
 @item Asus v1                @tab  X  @tab  X @tab fourcc: ASV1
+@item Asus v2                @tab  X  @tab  X @tab fourcc: ASV2
 @item Creative YUV           @tab     @tab  X @tab fourcc: CYUV
 @item H.264                  @tab     @tab  X
 @item Sorenson Video 1       @tab     @tab  X @tab fourcc: SVQ1
@@ -667,6 +673,11 @@ following image formats are supported:
 @item On2 VP3                @tab     @tab  X @tab still experimental
 @item Intel Indeo 3          @tab     @tab  X @tab only works on i386 right now
 @item FLV                    @tab  X  @tab  X @tab Flash H263 variant
+@item ATI VCR1               @tab     @tab  X @tab fourcc: VCR1
+@item Cirrus Logic AccuPak   @tab     @tab  X @tab fourcc: CLJR
+@item 4X Video               @tab     @tab  X @tab used in certain computer games
+@item Sony Playstation MDEC  @tab     @tab  X 
+@item Id RoQ                 @tab     @tab  X @tab used in Quake III, Jedi Knight 2, other computer games
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -688,7 +699,9 @@ solutions.
 @tab supported through the external library libvorbis
 @item WMA V1/V2              @tab      @tab X
 @item Microsoft ADPCM        @tab X    @tab X
-@item IMA ADPCM              @tab X    @tab X
+@item MS IMA ADPCM           @tab X    @tab X
+@item QT IMA ADPCM           @tab      @tab X
+@item 4X IMA ADPCM           @tab      @tab X
 @item RA144                  @tab      @tab X
 @tab Real 14400 bit/s codec
 @item RA288                  @tab      @tab X
@@ -696,6 +709,10 @@ solutions.
 @item AMR-NB                 @tab X    @tab X
 @tab supported through an external library
 @item DV audio               @tab      @tab X
+@item Id RoQ DPCM            @tab      @tab X
+@tab used in Quake III, Jedi Knight 2, other computer games
+@item Interplay MVE DPCM     @tab      @tab X
+@tab used in various Interplay computer games
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
