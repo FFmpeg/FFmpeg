@@ -133,6 +133,9 @@ static inline uint64_t avg2(uint64_t a, uint64_t b)
     return (a | b) - (((a ^ b) & BYTE_VEC(0xfe)) >> 1);    
 }
 
+#if 0
+/* The XY2 routines basically utilize this scheme, but reuse parts in
+   each iteration.  */
 static inline uint64_t avg4(uint64_t l1, uint64_t l2, uint64_t l3, uint64_t l4)
 {
     uint64_t r1 = ((l1 & ~BYTE_VEC(0x03)) >> 2)
@@ -146,21 +149,7 @@ static inline uint64_t avg4(uint64_t l1, uint64_t l2, uint64_t l3, uint64_t l4)
 		    + BYTE_VEC(0x02)) >> 2) & BYTE_VEC(0x03);
     return r1 + r2;
 }
-
-static inline uint64_t avg4_no_rnd(uint64_t l1, uint64_t l2,
-				   uint64_t l3, uint64_t l4)
-{
-    uint64_t r1 = ((l1 & ~BYTE_VEC(0x03)) >> 2)
-		+ ((l2 & ~BYTE_VEC(0x03)) >> 2)
-		+ ((l3 & ~BYTE_VEC(0x03)) >> 2)
-		+ ((l4 & ~BYTE_VEC(0x03)) >> 2);
-    uint64_t r2 = ((  (l1 & BYTE_VEC(0x03))
-		    + (l2 & BYTE_VEC(0x03))
-		    + (l3 & BYTE_VEC(0x03))
-		    + (l4 & BYTE_VEC(0x03))
-		    + BYTE_VEC(0x01)) >> 2) & BYTE_VEC(0x03);
-    return r1 + r2;
-}
+#endif
 
 #define OP(LOAD, STORE, INCR)			\
     do {					\
@@ -194,36 +183,47 @@ static inline uint64_t avg4_no_rnd(uint64_t l1, uint64_t l2,
 	} while (--h);				\
     } while (0)
 
-#define OP_XY2(LOAD, STORE, INCR)					\
-    do {								\
-	uint64_t pix1 = LOAD(pixels);					\
-	uint64_t pix2 = pix1 >> 8 | ((uint64_t) pixels[8] << 56);	\
-									\
-	do {								\
-	    uint64_t next_pix1, next_pix2;				\
-									\
-	    pixels += line_size;					\
-	    next_pix1 = LOAD(pixels);					\
-	    next_pix2 = next_pix1 >> 8 | ((uint64_t) pixels[8] << 56);	\
-									\
-	    STORE(AVG4(pix1, pix2, next_pix1, next_pix2), block);	\
-									\
-	    block += INCR;						\
-	    pix1 = next_pix1;						\
-	    pix2 = next_pix2;						\
-	} while (--h);							\
+#define OP_XY2(LOAD, STORE, INCR)                                           \
+    do {                                                                    \
+        uint64_t pix1 = LOAD(pixels);                                       \
+        uint64_t pix2 = pix1 >> 8 | ((uint64_t) pixels[8] << 56);           \
+        uint64_t pix_l = (pix1 & BYTE_VEC(0x03))                            \
+                       + (pix2 & BYTE_VEC(0x03));                           \
+        uint64_t pix_h = ((pix1 & ~BYTE_VEC(0x03)) >> 2)                    \
+                       + ((pix2 & ~BYTE_VEC(0x03)) >> 2);                   \
+                                                                            \
+        do {                                                                \
+            uint64_t npix1, npix2;                                          \
+            uint64_t npix_l, npix_h;                                        \
+            uint64_t avg;                                                   \
+                                                                            \
+            pixels += line_size;                                            \
+            npix1 = LOAD(pixels);                                           \
+            npix2 = npix1 >> 8 | ((uint64_t) pixels[8] << 56);              \
+            npix_l = (npix1 & BYTE_VEC(0x03))                               \
+                   + (npix2 & BYTE_VEC(0x03));                              \
+            npix_h = ((npix1 & ~BYTE_VEC(0x03)) >> 2)                       \
+                   + ((npix2 & ~BYTE_VEC(0x03)) >> 2);                      \
+            avg = (((pix_l + npix_l + AVG4_ROUNDER) >> 2) & BYTE_VEC(0x03)) \
+                + pix_h + npix_h;                                           \
+            STORE(avg, block);                                              \
+                                                                            \
+            block += INCR;                                                  \
+            pix_l = npix_l;                                                 \
+            pix_h = npix_h;                                                 \
+        } while (--h);                                                      \
     } while (0)
 
-#define MAKE_OP(BTYPE, OPNAME, SUFF, OPKIND, STORE, INCR)		\
-static void OPNAME ## _pixels ## SUFF ## _axp(BTYPE *block,		\
-					      const uint8_t *pixels,	\
-					      int line_size, int h)	\
-{									\
-    if ((size_t) pixels & 0x7) {					\
-	OPKIND(uldq, STORE, INCR);					\
-    } else {								\
-	OPKIND(ldq, STORE, INCR);					\
-    }									\
+#define MAKE_OP(BTYPE, OPNAME, SUFF, OPKIND, STORE, INCR)       \
+static void OPNAME ## _pixels ## SUFF ## _axp                   \
+        (BTYPE *restrict block, const uint8_t *restrict pixels, \
+         int line_size, int h)                                  \
+{                                                               \
+    if ((size_t) pixels & 0x7) {                                \
+        OPKIND(uldq, STORE, INCR);                              \
+    } else {                                                    \
+        OPKIND(ldq, STORE, INCR);                               \
+    }                                                           \
 }
 
 #define PIXOP(BTYPE, OPNAME, STORE, INCR)		\
@@ -235,6 +235,7 @@ static void OPNAME ## _pixels ## SUFF ## _axp(BTYPE *block,		\
 /* Rounding primitives.  */
 #define AVG2 avg2
 #define AVG4 avg4
+#define AVG4_ROUNDER BYTE_VEC(0x02)
 #define STORE(l, b) stq(l, b)
 PIXOP(uint8_t, put, STORE, line_size);
 
@@ -245,9 +246,11 @@ PIXOP(uint8_t, avg, STORE, line_size);
 /* Not rounding primitives.  */
 #undef AVG2
 #undef AVG4
+#undef AVG4_ROUNDER
 #undef STORE
 #define AVG2 avg2_no_rnd
 #define AVG4 avg4_no_rnd
+#define AVG4_ROUNDER BYTE_VEC(0x01)
 #define STORE(l, b) stq(l, b)
 PIXOP(uint8_t, put_no_rnd, STORE, line_size);
 
