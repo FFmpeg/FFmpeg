@@ -124,8 +124,8 @@ static const GUID my_guid = {
 };
 
 CodecTag codec_asf_bmp_tags[] = {
-    { CODEC_ID_H263, MKTAG('U', '2', '6', '3') },
-    { CODEC_ID_H263P, MKTAG('U', '2', '6', '3') },
+    { CODEC_ID_H263, MKTAG('H', '2', '6', '3') },
+    { CODEC_ID_H263P, MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') },

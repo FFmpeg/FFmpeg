@@ -56,8 +56,8 @@ void end_tag(ByteIOContext *pb, offset_t start)
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */
 CodecTag codec_bmp_tags[] = {
-    { CODEC_ID_H263, MKTAG('U', '2', '6', '3') },
-    { CODEC_ID_H263P, MKTAG('U', '2', '6', '3') },
+    { CODEC_ID_H263, MKTAG('H', '2', '6', '3') },
+    { CODEC_ID_H263P, MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') },

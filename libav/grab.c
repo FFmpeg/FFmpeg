@@ -238,8 +238,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
 {
     UINT8 *ptr;
-    struct timeval tv_s, tv_e;
-    int delay;
+    struct timeval tv_s;
+    //struct timeval tv_e;
+    //int delay;
 
     /* Setup to capture the next frame */
     gb_buf.frame = (gb_frame + 1) % gb_buffers.frames;
