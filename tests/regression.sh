@@ -24,7 +24,7 @@ else
     do_h263=y
     do_mpeg4=y
     do_mjpeg=y
-    #do_rv10=y #broken
+    do_rv10=y
     do_mp2=y
     do_ac3=y
 fi
