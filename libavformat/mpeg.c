@@ -684,6 +684,55 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
                 size = put_system_header(ctx, buf_ptr, id);
                 buf_ptr += size;
             }
+        } else if (s->is_dvd) {
+            if (stream->align_iframe || s->packet_number == 0){
+                int bytes_to_iframe;
+                int PES_bytes_to_fill;
+                if (stream->fifo_iframe_ptr >= stream->fifo.rptr) {
+                    bytes_to_iframe = stream->fifo_iframe_ptr - stream->fifo.rptr;
+                } else {
+                    bytes_to_iframe = (stream->fifo.end - stream->fifo.rptr) + (stream->fifo_iframe_ptr - stream->fifo.buffer);
+                }
+                PES_bytes_to_fill = s->packet_size - size - 10;
+
+                if (pts != AV_NOPTS_VALUE) {
+                    if (dts != pts)
+                        PES_bytes_to_fill -= 5 + 5;
+                    else
+                        PES_bytes_to_fill -= 5;
+                }
+
+                if (bytes_to_iframe == 0 || s->packet_number == 0) {
+                    size = put_system_header(ctx, buf_ptr, 0);
+                    buf_ptr += size;
+                    size = buf_ptr - buffer;
+                    put_buffer(&ctx->pb, buffer, size);
+
+                    put_be32(&ctx->pb, PRIVATE_STREAM_2);
+                    put_be16(&ctx->pb, 0x03d4);         // length
+                    put_byte(&ctx->pb, 0x00);           // substream ID, 00=PCI
+                    for (i = 0; i < 979; i++)
+                        put_byte(&ctx->pb, 0x00);
+
+                    put_be32(&ctx->pb, PRIVATE_STREAM_2);
+                    put_be16(&ctx->pb, 0x03fa);         // length
+                    put_byte(&ctx->pb, 0x01);           // substream ID, 01=DSI
+                    for (i = 0; i < 1017; i++)
+                        put_byte(&ctx->pb, 0x00);
+
+                    memset(buffer, 0, 128);
+                    buf_ptr = buffer;
+                    s->packet_number++;
+                    stream->align_iframe = 0;
+                    scr += s->packet_size*90000LL / (s->mux_rate*50LL); //FIXME rounding and first few bytes of each packet
+                    size = put_pack_header(ctx, buf_ptr, scr);
+                    s->last_scr= scr;
+                    buf_ptr += size;
+                    /* GOP Start */
+                } else if (bytes_to_iframe < PES_bytes_to_fill) {
+                    pad_packet_bytes = PES_bytes_to_fill - bytes_to_iframe;
+                }
+            }
         } else {
             if ((s->packet_number % s->system_header_freq) == 0) {
                 size = put_system_header(ctx, buf_ptr, 0);
@@ -761,10 +810,26 @@ static int flush_packet(AVFormatContext *ctx, int stream_index,
                 timestamp_len += s->is_mpeg2 ? 5 : 4;
             pts=dts= AV_NOPTS_VALUE;
             header_len -= timestamp_len;
-            payload_size += timestamp_len;
+            if (s->is_dvd && stream->align_iframe) {
+                pad_packet_bytes += timestamp_len;
+                packet_size -= timestamp_len;
+            } else {
+                payload_size += timestamp_len;
+            }
             stuffing_size += timestamp_len;
             if(payload_size > trailer_size)
                 stuffing_size += payload_size - trailer_size;
+        }
+
+        if (pad_packet_bytes > 0 && pad_packet_bytes <= 7) { // can't use padding, so use stuffing
+            packet_size += pad_packet_bytes;
+            payload_size += pad_packet_bytes; // undo the previous adjustment
+            if (stuffing_size < 0) {
+                stuffing_size = pad_packet_bytes;
+            } else {
+                stuffing_size += pad_packet_bytes;
+            }
+            pad_packet_bytes = 0;
         }
 
         if (stuffing_size < 0)
