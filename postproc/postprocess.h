@@ -116,7 +116,7 @@ void postprocess2(unsigned char * src[], int src_stride,
 int getPpModeForQuality(int quality);
 
 // name is the stuff after "-pp" on the command line
-struct PPMode getPpModeByNameAndQuality(char *name, int quality);
+struct PPMode getPPModeByNameAndQuality(char *name, int quality);
 
 int readPPOpt(void *conf, char *arg);
 
