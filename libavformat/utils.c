@@ -741,6 +741,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         /* cannot compute PTS if not present (we can compute it only
            by knowing the futur */
     } else {
+        if(pkt->pts != AV_NOPTS_VALUE && pkt->duration){
+            int64_t old_diff= ABS(st->cur_dts - pkt->duration - pkt->pts);
+            int64_t new_diff= ABS(st->cur_dts - pkt->pts);
+            if(old_diff < new_diff && old_diff < (pkt->duration>>3)){
+                pkt->pts += pkt->duration;
+            }
+        }
+    
         /* presentation is not delayed : PTS and DTS are the same */
         if (pkt->pts == AV_NOPTS_VALUE) {
             if (pkt->dts == AV_NOPTS_VALUE) {
