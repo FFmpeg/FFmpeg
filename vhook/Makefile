@@ -2,7 +2,7 @@ include ../config.mak
 
 VPATH=$(SRC_PATH)/vhook
 
-CFLAGS=-fPIC $(OPTFLAGS) -g -Wall -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H
+CFLAGS=-fPIC $(OPTFLAGS) -Wall -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H
 
 ifeq ($(CONFIG_DARWIN),yes)
 SHFLAGS+=-bundle -flat_namespace -undefined suppress

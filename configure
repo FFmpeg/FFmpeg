@@ -78,6 +78,8 @@ mingw32="no"
 cygwin="no"
 os2="no"
 lshared="no"
+optimize="yes"
+debug="yes"
 extralibs="-lm"
 simpleidct="yes"
 bigendian="no"
@@ -97,7 +99,6 @@ LIBSUF=".a"
 SLIBPREF="lib"
 SLIBSUF=".so"
 risky="yes"
-small="no"
 amr_nb="no"
 amr_nb_fixed="no"
 sunmlib="no"
@@ -108,7 +109,7 @@ case $targetos in
 BeOS)
 prefix="/boot/home/config"
 # helps building libavcodec
-CFLAGS="-O3 -DPIC -fomit-frame-pointer"
+CFLAGS="-DPIC -fomit-frame-pointer"
 # 3 gcc releases known for BeOS, each with ugly bugs
 gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
 case "$gcc_version" in
@@ -174,13 +175,13 @@ FFSLDFLAGS=-Wl,-bind_at_load
 gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
 case "$gcc_version" in
 *2.95*) 
-CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer"
+CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer"
 ;;
 *3.3*) 
-CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic -force_cpusubtype_ALL"
+CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic -force_cpusubtype_ALL"
 ;;
 *) 
-CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic"
+CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic"
 ;;
 esac
 ;;
@@ -215,7 +216,7 @@ TMPE=$TMPE".exe"
 ar="emxomfar -p64"
 ranlib="echo ignoring ranlib"
 strip="echo ignoring strip"
-CFLAGS="-Zomf -O3"
+CFLAGS="-Zomf"
 LDFLAGS="-Zomf -Zstack 16384 -s"
 SHFLAGS=""
 FFSLDFLAGS=""
@@ -333,6 +334,10 @@ for opt do
   ;;
   --enable-shared) lshared="yes"
   ;;
+  --disable-debug) debug="no"
+  ;;
+  --disable-opts) optimize="no"
+  ;;
   --disable-mpegaudio-hp) mpegaudio_hp="no"
   ;;
   --disable-ffserver) ffserver="no"
@@ -341,7 +346,7 @@ for opt do
   ;;
   --disable-risky) risky="no"
   ;;
-  --enable-small) small="yes"
+  --enable-small) optimize="small"
   ;;
   --enable-amr_nb) amr_nb="yes"
   ;;
@@ -492,11 +497,6 @@ int main(void) {
 }
 EOF
 $cc -o $TMPE $TMPC 2> /dev/null || mmi="no"
-fi
-
-# Checking for CFLAGS
-if test -z "$CFLAGS"; then
-    CFLAGS="-O3"
 fi
 
 if test "$mingw32" = "yes" ; then
@@ -723,9 +723,17 @@ if test "$sdl" = "no" ; then
    ffplay=no
 fi
 
-if test "$small" = "yes"; then
+if test "$debug" = "yes"; then
+	CFLAGS="$CFLAGS -g"
+fi
+
+if test "$optimize" = "small"; then
 #  CFLAGS=${CFLAGS//-O3/-Os}
   CFLAGS="$CFLAGS -Os"
+fi
+
+if test "$optimize" = "yes"; then
+	CFLAGS="$CFLAGS -O3"
 fi
 
 if test x"$mandir" = x""; then
@@ -779,6 +787,8 @@ echo "  --disable-zlib           disable zlib [default=no]"
 echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
 echo "  --disable-vhook          disable video hooking support"
 echo "  --enable-gprof           enable profiling with gprof [$gprof]"
+echo "  --disable-debug          disable debugging symbols"
+echo "  --disable-opts           disable compiler optimizations"
 echo "  --disable-mpegaudio-hp   faster (but less accurate)"
 echo "                           mpegaudio decoding [default=no]"
 echo "  --disable-ffserver       disable ffserver build"
@@ -815,6 +825,8 @@ echo "faadbin enabled  $faadbin"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
 echo "pp support       $pp"
+echo "debug symbols    $debug"
+echo "optimize         $optimize"
 echo "shared pp        $shared_pp"
 echo "Video hooking    $vhook"
 echo "SDL support      $sdl"
@@ -822,7 +834,6 @@ if test $sdl_too_old = "yes"; then
 echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support"
 fi
 echo "risky / patent encumbered codecs $risky"
-echo "optimize for size $small"
 
 if test "$vhook" = "yes" ; then
 echo "Imlib2 support   $imlib2"
