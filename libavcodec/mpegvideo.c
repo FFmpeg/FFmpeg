@@ -404,9 +404,10 @@ int MPV_common_init(MpegEncContext *s)
     s->y_dc_scale_table=
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     s->chroma_qscale_table= ff_default_chroma_qscale_table;
-    s->progressive_sequence= 
+    if (!s->encoding)
+        s->progressive_sequence= 1;
     s->progressive_frame= 1;
-    
+
     y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
     c_size = (s->mb_width + 2) * (s->mb_height + 2);
     yc_size = y_size + 2 * c_size;
