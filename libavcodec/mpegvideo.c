@@ -1364,7 +1364,6 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
        // empty
         }else{
             int h_chroma_shift, v_chroma_shift;
-        
             avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
         
             for(i=0; i<3; i++){
@@ -1548,6 +1547,11 @@ int MPV_encode_picture(AVCodecContext *avctx,
     AVFrame *pic_arg = data;
     int i;
 
+    if(avctx->pix_fmt != PIX_FMT_YUV420P){
+        fprintf(stderr, "this codec supports only YUV420P\n");
+        return -1;
+    }
+    
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
 
     s->picture_in_gop_number++;
