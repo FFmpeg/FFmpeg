@@ -684,7 +684,7 @@ char av_get_pict_type_char(int pict_type){
 
 int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max){
     int exact=1, sign=0;
-    int64_t gcd, larger;
+    int64_t gcd;
 
     assert(den != 0);
 
@@ -698,21 +698,33 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
         sign= 1;
     }
     
-    for(;;){ //note is executed 1 or 2 times 
-        gcd = ff_gcd(nom, den);
-        nom /= gcd;
-        den /= gcd;
+    gcd = ff_gcd(nom, den);
+    nom /= gcd;
+    den /= gcd;
     
-        larger= FFMAX(nom, den);
-    
-        if(larger > max){
-            int64_t div= (larger + max - 1) / max;
-            nom =  (nom + div/2)/div;
-            den =  (den + div/2)/div;
-            exact=0;
-        }else 
-            break;
+    if(nom > max || den > max){
+        AVRational a0={0,1}, a1={1,0};
+        exact=0;
+
+        for(;;){
+            int64_t x= nom / den;
+            int64_t a2n= x*a1.num + a0.num;
+            int64_t a2d= x*a1.den + a0.den;
+
+            if(a2n > max || a2d > max) break;
+
+            nom %= den;
+        
+            a0= a1;
+            a1= (AVRational){a2n, a2d};
+            if(nom==0) break;
+            x= nom; nom=den; den=x;
+        }
+        nom= a1.num;
+        den= a1.den;
     }
+    
+    assert(ff_gcd(nom, den) == 1);
     
     if(sign) nom= -nom;
     
