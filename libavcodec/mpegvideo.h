@@ -229,7 +229,6 @@ typedef struct MotionEstContext{
 /*    cmp, chroma_cmp;*/
     op_pixels_func (*hpel_put)[4];
     op_pixels_func (*hpel_avg)[4];
-    op_pixels_func (*chroma_hpel_put)[4];
     qpel_mc_func (*qpel_put)[16];
     qpel_mc_func (*qpel_avg)[16];
     uint8_t (*mv_penalty)[MAX_MV*2+1];  ///< amount of bits needed to encode a MV 

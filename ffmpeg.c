@@ -161,6 +161,7 @@ static int sc_threshold = 0;
 static int debug = 0;
 static int debug_mv = 0;
 static int me_threshold = 0;
+static int mb_threshold = 0;
 extern int loop_input; /* currently a hack */
 
 static int gop_size = 12;
@@ -1866,6 +1867,10 @@ static void opt_me_threshold(const char *arg)
     me_threshold = atoi(arg);
 }
 
+static void opt_mb_threshold(const char *arg)
+{
+    mb_threshold = atoi(arg);
+}
 
 static void opt_error_resilience(const char *arg)
 {
@@ -2873,6 +2878,7 @@ static void opt_output_file(const char *filename)
                 video_enc->dct_algo = dct_algo;
                 video_enc->idct_algo = idct_algo;
                 video_enc->me_threshold= me_threshold;
+                video_enc->mb_threshold= mb_threshold;
                 video_enc->strict_std_compliance = strict;
                 video_enc->error_rate = error_rate;
                 video_enc->noise_reduction= noise_reduction;
@@ -3494,6 +3500,7 @@ const OptionDef options[] = {
     { "dct_algo", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
     { "idct_algo", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_idct_algo}, "set idct algo",  "algo" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
+    { "mb_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_threshold}, "macroblock threshold",  "" },
     { "er", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_resilience}, "set error resilience",  "n" },
     { "ec", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_concealment}, "set error concealment",  "bit_mask" },
     { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames", "frames" },

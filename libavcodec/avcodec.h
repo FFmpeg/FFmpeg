@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4709
+#define LIBAVCODEC_BUILD       4710
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1570,12 +1570,20 @@ typedef struct AVCodecContext {
     void *thread_opaque;
 
     /**
-     * Motion estimation threshold.
+     * Motion estimation threshold. under which no motion estimation is 
+     * performed, but instead the user specified motion vectors are used
      * 
      * - encoding: set by user
-     * - decoding: set by user
+     * - decoding: unused
      */
      int me_threshold;
+
+    /**
+     * Macroblock threshold. under which the user specified macroblock types will be used
+     * - encoding: set by user
+     * - decoding: unused
+     */
+     int mb_threshold;
 } AVCodecContext;
 
 
