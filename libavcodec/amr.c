@@ -141,7 +141,7 @@ static int amr_nb_decode_init(AVCodecContext * avctx)
     
     if(Speech_Decode_Frame_init(&s->speech_decoder_state, "Decoder"))
     {
-        printf("Speech_Decode_Frame_init error\n");
+        av_log(avctx, AV_LOG_ERROR, "Speech_Decode_Frame_init error\n");
         return -1;
     }
     return 0;
@@ -161,7 +161,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     {
         if(avctx->debug)
         {
-            fprintf(stderr, "Only 8000Hz sample rate supported\n");
+            av_log(avctx, AV_LOG_DEBUG, "Only 8000Hz sample rate supported\n");
         }
         return -1;
     }
@@ -170,7 +170,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     {
         if(avctx->debug)
         {
-            fprintf(stderr, "Only mono supported\n");
+            av_log(avctx, AV_LOG_DEBUG, "Only mono supported\n");
         }
         return -1;
     }
@@ -182,7 +182,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     {
         if(avctx->debug)
         {
-            fprintf(stderr, "Speech_Encode_Frame_init error\n");
+            av_log(avctx, AV_LOG_DEBUG, "Speech_Encode_Frame_init error\n");
         }
         return -1;
     }
@@ -344,7 +344,7 @@ static int amr_nb_decode_init(AVCodecContext * avctx)
     s->decState=Decoder_Interface_init();
     if(!s->decState)
     {
-        printf("Decoder_Interface_init error\r\n");
+        av_log(avctx, AV_LOG_ERROR, "Decoder_Interface_init error\r\n");
         return -1;
     }
     return 0;
@@ -359,7 +359,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     {
         if(avctx->debug)
         {
-            fprintf(stderr, "Only 8000Hz sample rate supported\n");
+            av_log(avctx, AV_LOG_DEBUG, "Only 8000Hz sample rate supported\n");
         }
         return -1;
     }
@@ -368,7 +368,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     {
         if(avctx->debug)
         {
-            fprintf(stderr, "Only mono supported\n");
+            av_log(avctx, AV_LOG_DEBUG, "Only mono supported\n");
         }
         return -1;
     }
@@ -381,7 +381,7 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     {
         if(avctx->debug)
         {
-            fprintf(stderr, "Encoder_Interface_init error\n");
+            av_log(avctx, AV_LOG_DEBUG, "Encoder_Interface_init error\n");
         }
         return -1;
     }
@@ -543,7 +543,7 @@ static int amr_wb_encode_init(AVCodecContext * avctx)
     {
         if(avctx->debug)
         {
-            fprintf(stderr, "Only 16000Hz sample rate supported\n");
+            av_log(avctx, AV_LOG_DEBUG, "Only 16000Hz sample rate supported\n");
         }
         return -1;
     }
@@ -552,7 +552,7 @@ static int amr_wb_encode_init(AVCodecContext * avctx)
     {
         if(avctx->debug)
         {
-            fprintf(stderr, "Only mono supported\n");
+            av_log(avctx, AV_LOG_DEBUG, "Only mono supported\n");
         }
         return -1;
     }
