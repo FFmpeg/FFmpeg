@@ -132,6 +132,16 @@ Choose a different codec with the -vcodec command line option.
 Try a 'make distclean' in the ffmpeg source directory. If this does not help see
 (@url{ffmpeg-bugreport.html}).
 
+@section How do I encode XviD or DIVX video with ffmpeg?
+
+Both XviD and DIVX (version 4+) are implementations of the ISO MPEG-4
+standard (note that there are many other coding formats that use this
+same standard). Thus, use '-vcodec mpeg4' to encode these formats. The
+default fourcc stored in a MPEG-4-coded file will be 'DIVX'. If you want
+a different fourcc, use the '-vtag' option. E.g., '-vtag xvid' will 
+force the fourcc 'xvid' to be stored as the video fourcc rather than the 
+default.
+
 @chapter Development
 
 @section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat ?
