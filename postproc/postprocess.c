@@ -34,7 +34,7 @@ Horizontal X1#		a		E	E
 LinIpolDeinterlace	e		E	E*
 CubicIpolDeinterlace	a		e	e*
 LinBlendDeinterlace	e		E	E*
-MedianDeinterlace#	 	Ec	Ec
+MedianDeinterlace#	E	Ec	Ec
 TempDeNoiser#		E		e	e
 
 * i dont have a 3dnow CPU -> its untested, but noone said it doesnt work so it seems to work

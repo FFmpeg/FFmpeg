@@ -1889,19 +1889,24 @@ MEDIAN((%%edx, %1), (%%edx, %1, 2), (%0, %1, 8))
 	);
 #endif // MMX
 #else
-	//FIXME
-	int x;
+	int x, y;
 	src+= 4*stride;
+	// FIXME - there should be a way to do a few columns in parallel like w/mmx
 	for(x=0; x<8; x++)
 	{
-		src[0       ] = (src[0       ] + 2*src[stride  ] + src[stride*2])>>2;
-		src[stride  ] = (src[stride  ] + 2*src[stride*2] + src[stride*3])>>2;
-		src[stride*2] = (src[stride*2] + 2*src[stride*3] + src[stride*4])>>2;
-		src[stride*3] = (src[stride*3] + 2*src[stride*4] + src[stride*5])>>2;
-		src[stride*4] = (src[stride*4] + 2*src[stride*5] + src[stride*6])>>2;
-		src[stride*5] = (src[stride*5] + 2*src[stride*6] + src[stride*7])>>2;
-		src[stride*6] = (src[stride*6] + 2*src[stride*7] + src[stride*8])>>2;
-		src[stride*7] = (src[stride*7] + 2*src[stride*8] + src[stride*9])>>2;
+		uint8_t *colsrc = src;
+		for (y=0; y<4; y++)
+		{
+			int a, b, c, d, e, f;
+			a = colsrc[0       ];
+			b = colsrc[stride  ];
+			c = colsrc[stride*2];
+			d = (a-b)>>31;
+			e = (b-c)>>31;
+			f = (c-a)>>31;
+			colsrc[stride  ] = (a|(d^f)) & (b|(d^e)) & (c|(e^f));
+			colsrc += stride*2;
+		}
 		src++;
 	}
 #endif
