@@ -41,6 +41,7 @@ void ff_jpeg_fdct_islow (DCTELEM *data);
 void j_rev_dct (DCTELEM *data);
 
 void ff_fdct_mmx(DCTELEM *block);
+void ff_fdct_mmx2(DCTELEM *block);
 
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];

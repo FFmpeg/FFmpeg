@@ -1603,8 +1603,13 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         const int idct_algo= avctx->idct_algo;
 
 #ifdef CONFIG_ENCODERS
-        if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX)
-            c->fdct = ff_fdct_mmx;
+        if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
+            if(mm_flags & MM_MMXEXT){
+                c->fdct = ff_fdct_mmx2;
+            }else{
+                c->fdct = ff_fdct_mmx;
+            }
+        }
 #endif //CONFIG_ENCODERS
 
         if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SIMPLEMMX){
