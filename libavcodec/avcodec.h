@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4707
+#define LIBAVCODEC_BUILD       4708
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1821,7 +1821,10 @@ ImgReSampleContext *img_resample_init(int output_width, int output_height,
 ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
                                       int iwidth, int iheight,
                                       int topBand, int bottomBand,
-                                      int leftBand, int rightBand);
+                                      int leftBand, int rightBand,
+                                      int padtop, int padbottom,
+                                      int padleft, int padright);
+
 
 void img_resample(ImgReSampleContext *s, 
                   AVPicture *output, const AVPicture *input);

@@ -234,6 +234,18 @@ set bottom crop band size (in pixels)
 set left crop band size (in pixels)
 @item -cropright size
 set right crop band size (in pixels)
+@item -padtop size
+set top pad band size (in pixels)
+@item -padbottom size
+set bottom pad band size (in pixels)
+@item -padleft size
+set left pad band size (in pixels)
+@item -padright size
+set right pad band size (in pixels)
+@item -padcolor color
+set right pad band size (hex). The value for pad color is expressed 
+as a six digit hexidecimal number where the first two digits represent red, 
+middle two digits green and last two digits blue. Defaults to 000000 (black)
 @item -vn
 disable video recording
 @item -bt tolerance       

@@ -45,7 +45,10 @@
 #define LINE_BUF_HEIGHT (NB_TAPS * 4)
 
 struct ImgReSampleContext {
-    int iwidth, iheight, owidth, oheight, topBand, bottomBand, leftBand, rightBand;
+    int iwidth, iheight, owidth, oheight;
+    int topBand, bottomBand, leftBand, rightBand;
+    int padtop, padbottom, padleft, padright;
+    int pad_owidth, pad_oheight;
     int h_incr, v_incr;
     int16_t h_filters[NB_PHASES][NB_TAPS] __align8; /* horizontal filters */
     int16_t v_filters[NB_PHASES][NB_TAPS] __align8; /* vertical filters */
@@ -532,6 +535,7 @@ static void component_resample(ImgReSampleContext *s,
                        &s->v_filters[phase_y][0]);
             
         src_y += s->v_incr;
+        
         output += owrap;
     }
 }
@@ -572,13 +576,16 @@ static void build_filter(int16_t *filter, float factor)
 ImgReSampleContext *img_resample_init(int owidth, int oheight,
                                       int iwidth, int iheight)
 {
-	return img_resample_full_init(owidth, oheight, iwidth, iheight, 0, 0, 0, 0);
+    return img_resample_full_init(owidth, oheight, iwidth, iheight, 
+            0, 0, 0, 0, 0, 0, 0, 0);
 }
 
 ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
                                       int iwidth, int iheight,
                                       int topBand, int bottomBand,
-                                      int leftBand, int rightBand)
+        int leftBand, int rightBand,
+        int padtop, int padbottom,
+        int padleft, int padright)
 {
     ImgReSampleContext *s;
 
@@ -593,19 +600,30 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
     s->oheight = oheight;
     s->iwidth = iwidth;
     s->iheight = iheight;
+  
     s->topBand = topBand;
     s->bottomBand = bottomBand;
     s->leftBand = leftBand;
     s->rightBand = rightBand;
     
-    s->h_incr = ((iwidth - leftBand - rightBand) * POS_FRAC) / owidth;
-    s->v_incr = ((iheight - topBand - bottomBand) * POS_FRAC) / oheight;
-    
-    build_filter(&s->h_filters[0][0], (float) owidth  / (float) (iwidth - leftBand - rightBand));
-    build_filter(&s->v_filters[0][0], (float) oheight / (float) (iheight - topBand - bottomBand));
+    s->padtop = padtop;
+    s->padbottom = padbottom;
+    s->padleft = padleft;
+    s->padright = padright;
+
+    s->pad_owidth = owidth - (padleft + padright);
+    s->pad_oheight = oheight - (padtop + padbottom);
+
+    s->h_incr = ((iwidth - leftBand - rightBand) * POS_FRAC) / s->pad_owidth;
+    s->v_incr = ((iheight - topBand - bottomBand) * POS_FRAC) / s->pad_oheight; 
+
+    build_filter(&s->h_filters[0][0], (float) s->pad_owidth  / 
+            (float) (iwidth - leftBand - rightBand));
+    build_filter(&s->v_filters[0][0], (float) s->pad_oheight / 
+            (float) (iheight - topBand - bottomBand));
 
     return s;
- fail:
+fail:
     av_free(s);
     return NULL;
 }
@@ -614,13 +632,20 @@ void img_resample(ImgReSampleContext *s,
                   AVPicture *output, const AVPicture *input)
 {
     int i, shift;
+    uint8_t* optr;
 
-    for(i=0;i<3;i++) {
+    for (i=0;i<3;i++) {
         shift = (i == 0) ? 0 : 1;
-        component_resample(s, output->data[i], output->linesize[i], 
-                           s->owidth >> shift, s->oheight >> shift,
-                           input->data[i] + (input->linesize[i] * (s->topBand >> shift)) + (s->leftBand >> shift),
-                           input->linesize[i], ((s->iwidth - s->leftBand - s->rightBand) >> shift),
+
+        optr = output->data[i] + (((output->linesize[i] * 
+                        s->padtop) + s->padleft) >> shift);
+
+        component_resample(s, optr, output->linesize[i], 
+                s->pad_owidth >> shift, s->pad_oheight >> shift,
+                input->data[i] + (input->linesize[i] * 
+                    (s->topBand >> shift)) + (s->leftBand >> shift),
+                input->linesize[i], ((s->iwidth - s->leftBand - 
+                        s->rightBand) >> shift),
                            (s->iheight - s->topBand - s->bottomBand) >> shift);
     }
 }

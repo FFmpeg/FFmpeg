@@ -72,6 +72,11 @@ static int frame_width  = 160;
 static int frame_height = 128;
 static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_YUV420P;
+static int frame_padtop  = 0;
+static int frame_padbottom = 0;
+static int frame_padleft  = 0;
+static int frame_padright = 0;
+static int padcolor[3] = {16,128,128}; /* default to black */
 static int frame_topBand  = 0;
 static int frame_bottomBand = 0;
 static int frame_leftBand  = 0;
@@ -221,6 +226,12 @@ typedef struct AVOutputStream {
     int video_crop;          /* video_resample and video_crop are mutually exclusive */
     int topBand;             /* cropping area sizes */
     int leftBand;
+    
+    int video_pad;           /* video_resample and video_pad are mutually exclusive */
+    int padtop;              /* padding area sizes */
+    int padbottom;
+    int padleft;
+    int padright;
     
     /* audio only */
     int audio_resample;
@@ -497,6 +508,40 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
 /* we begin to correct av delay at this threshold */
 #define AV_DELAY_MAX 0.100
 
+
+/* Expects img to be yuv420 */
+static void fill_pad_region(AVPicture* img, int height, int width,
+        int padtop, int padbottom, int padleft, int padright, int *color) {
+  
+    int i, y, shift;
+    uint8_t *optr;
+    
+    for (i = 0; i < 3; i++) {
+        shift = (i == 0) ? 0 : 1;
+        
+        if (padtop || padleft) {
+            memset(img->data[i], color[i], (((img->linesize[i] * padtop) + 
+                            padleft) >> shift));
+        }
+
+        if (padleft || padright) {
+            optr = img->data[i] + (img->linesize[i] * (padtop >> shift)) +
+                (img->linesize[i] - (padright >> shift));
+
+            for (y = 0; y < ((height - (padtop + padbottom)) >> shift); y++) {
+                memset(optr, color[i], (padleft + padright) >> shift);
+                optr += img->linesize[i];
+            }
+        }
+      
+        if (padbottom) {
+            optr = img->data[i] + (img->linesize[i] * ((height - padbottom) >> shift));
+            memset(optr, color[i], ((img->linesize[i] * padbottom) >> shift));
+        }
+    }
+}
+
+
 static void do_video_out(AVFormatContext *s, 
                          AVOutputStream *ost, 
                          AVInputStream *ist,
@@ -579,7 +624,8 @@ static void do_video_out(AVFormatContext *s,
         return;
 
     /* convert pixel format if needed */
-    target_pixfmt = ost->video_resample ? PIX_FMT_YUV420P : enc->pix_fmt;
+    target_pixfmt = ost->video_resample || ost->video_pad
+        ? PIX_FMT_YUV420P : enc->pix_fmt;
     if (dec->pix_fmt != target_pixfmt) {
         int size;
 
@@ -601,12 +647,19 @@ static void do_video_out(AVFormatContext *s,
         formatted_picture = (AVPicture *)in_picture;
     }
 
-    /* XXX: resampling could be done before raw format convertion in
+    /* XXX: resampling could be done before raw format conversion in
        some cases to go faster */
     /* XXX: only works for YUV420P */
     if (ost->video_resample) {
         final_picture = &ost->pict_tmp;
         img_resample(ost->img_resample_ctx, final_picture, formatted_picture);
+       
+        if (ost->padtop || ost->padbottom || ost->padleft || ost->padright) {
+            fill_pad_region(final_picture, enc->height, enc->width,
+                    ost->padtop, ost->padbottom, ost->padleft, ost->padright,
+                    padcolor);
+        }
+        
 	if (enc->pix_fmt != PIX_FMT_YUV420P) {
             int size;
 	    
@@ -642,6 +695,51 @@ static void do_video_out(AVFormatContext *s,
         picture_crop_temp.linesize[1] = formatted_picture->linesize[1];
         picture_crop_temp.linesize[2] = formatted_picture->linesize[2];
         final_picture = &picture_crop_temp;
+    } else if (ost->video_pad) {
+        final_picture = &ost->pict_tmp;
+
+        for (i = 0; i < 3; i++) {
+            uint8_t *optr, *iptr;
+            int shift = (i == 0) ? 0 : 1;
+            int y, yheight;
+            
+            /* set offset to start writing image into */
+            optr = final_picture->data[i] + (((final_picture->linesize[i] * 
+                            ost->padtop) + ost->padleft) >> shift);
+            iptr = formatted_picture->data[i];
+
+            yheight = (enc->height - ost->padtop - ost->padbottom) >> shift;
+            for (y = 0; y < yheight; y++) {
+                /* copy unpadded image row into padded image row */
+                memcpy(optr, iptr, formatted_picture->linesize[i]);
+                optr += final_picture->linesize[i];
+                iptr += formatted_picture->linesize[i];
+            }
+        }
+
+        fill_pad_region(final_picture, enc->height, enc->width,
+                ost->padtop, ost->padbottom, ost->padleft, ost->padright,
+                padcolor);
+        
+        if (enc->pix_fmt != PIX_FMT_YUV420P) {
+            int size;
+
+            av_free(buf);
+            /* create temporary picture */
+            size = avpicture_get_size(enc->pix_fmt, enc->width, enc->height);
+            buf = av_malloc(size);
+            if (!buf)
+                return;
+            final_picture = &picture_format_temp;
+            avpicture_fill(final_picture, buf, enc->pix_fmt, enc->width, enc->height);
+
+            if (img_convert(final_picture, enc->pix_fmt, 
+                        &ost->pict_tmp, PIX_FMT_YUV420P, 
+                        enc->width, enc->height) < 0) {
+                fprintf(stderr, "pixel format conversion not handled\n");
+                goto the_end;
+            }
+        }
     } else {
         final_picture = formatted_picture;
     }
@@ -1267,10 +1365,15 @@ static int av_encode(AVFormatContext **output_files,
                     frame_topBand == 0 &&
                     frame_bottomBand == 0 &&
                     frame_leftBand == 0 &&
-                    frame_rightBand == 0)
+                    frame_rightBand == 0 && 
+                    frame_padtop == 0 &&
+                    frame_padbottom == 0 &&
+                    frame_padleft == 0 &&
+                    frame_padright == 0)
                 {
                     ost->video_resample = 0;
                     ost->video_crop = 0;
+                    ost->video_pad = 0;
                 } else if ((codec->width == icodec->width -
                                 (frame_leftBand + frame_rightBand)) &&
                         (codec->height == icodec->height -
@@ -1280,6 +1383,20 @@ static int av_encode(AVFormatContext **output_files,
                     ost->video_crop = 1;
                     ost->topBand = frame_topBand;
                     ost->leftBand = frame_leftBand;
+                } else if ((codec->width == icodec->width + 
+                                (frame_padleft + frame_padright)) &&
+                        (codec->height == icodec->height +
+                                (frame_padtop + frame_padbottom))) {
+                    ost->video_resample = 0;
+                    ost->video_crop = 0;
+                    ost->video_pad = 1;
+                    ost->padtop = frame_padtop;
+                    ost->padleft = frame_padleft;
+                    ost->padbottom = frame_padbottom;
+                    ost->padright = frame_padright;
+                    if( avpicture_alloc( &ost->pict_tmp, PIX_FMT_YUV420P,
+                                codec->width, codec->height ) )
+                        goto fail;
                 } else {
                     ost->video_resample = 1;
                     ost->video_crop = 0; // cropping is handled as part of resample
@@ -1291,7 +1408,15 @@ static int av_encode(AVFormatContext **output_files,
                                       ost->st->codec.width, ost->st->codec.height,
                                       ist->st->codec.width, ist->st->codec.height,
                                       frame_topBand, frame_bottomBand,
-                                      frame_leftBand, frame_rightBand);
+                            frame_leftBand, frame_rightBand, 
+                            frame_padtop, frame_padbottom, 
+                            frame_padleft, frame_padright);
+                    
+                    ost->padtop = frame_padtop;
+                    ost->padleft = frame_padleft;
+                    ost->padbottom = frame_padbottom;
+                    ost->padright = frame_padright;
+                   
                 }
                 ost->encoding_needed = 1;
                 ist->decoding_needed = 1;
@@ -1809,6 +1934,93 @@ static void opt_frame_size(const char *arg)
     }
 }
 
+
+#define SCALEBITS 10
+#define ONE_HALF  (1 << (SCALEBITS - 1))
+#define FIX(x)	  ((int) ((x) * (1<<SCALEBITS) + 0.5))
+
+#define RGB_TO_Y(r, g, b) \
+((FIX(0.29900) * (r) + FIX(0.58700) * (g) + \
+  FIX(0.11400) * (b) + ONE_HALF) >> SCALEBITS)
+
+#define RGB_TO_U(r1, g1, b1, shift)\
+(((- FIX(0.16874) * r1 - FIX(0.33126) * g1 +         \
+     FIX(0.50000) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
+
+#define RGB_TO_V(r1, g1, b1, shift)\
+(((FIX(0.50000) * r1 - FIX(0.41869) * g1 -           \
+   FIX(0.08131) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
+
+static void opt_pad_color(const char *arg) {
+    /* Input is expected to be six hex digits similar to
+       how colors are expressed in html tags (but without the #) */
+    int rgb = strtol(arg, NULL, 16);
+    int r,g,b;
+    
+    r = (rgb >> 16); 
+    g = ((rgb >> 8) & 255);
+    b = (rgb & 255);
+
+    padcolor[0] = RGB_TO_Y(r,g,b);
+    padcolor[1] = RGB_TO_U(r,g,b,0);
+    padcolor[2] = RGB_TO_V(r,g,b,0);
+}
+
+static void opt_frame_pad_top(const char *arg)
+{
+    frame_padtop = atoi(arg); 
+    if (frame_padtop < 0) {
+        fprintf(stderr, "Incorrect top pad size\n");
+        exit(1);
+    }
+    if ((frame_padtop % 2) != 0) {
+        fprintf(stderr, "Top pad size must be a multiple of 2\n");
+        exit(1);
+    }
+}
+
+static void opt_frame_pad_bottom(const char *arg)
+{
+    frame_padbottom = atoi(arg); 
+    if (frame_padbottom < 0) {
+        fprintf(stderr, "Incorrect bottom pad size\n");
+        exit(1);
+    }
+    if ((frame_padbottom % 2) != 0) {
+        fprintf(stderr, "Bottom pad size must be a multiple of 2\n");
+        exit(1);
+    }
+}
+
+
+static void opt_frame_pad_left(const char *arg)
+{
+    frame_padleft = atoi(arg); 
+    if (frame_padleft < 0) {
+        fprintf(stderr, "Incorrect left pad size\n");
+        exit(1);
+    }
+    if ((frame_padleft % 2) != 0) {
+        fprintf(stderr, "Left pad size must be a multiple of 2\n");
+        exit(1);
+    }
+}
+
+
+static void opt_frame_pad_right(const char *arg)
+{
+    frame_padright = atoi(arg); 
+    if (frame_padright < 0) {
+        fprintf(stderr, "Incorrect right pad size\n");
+        exit(1);
+    }
+    if ((frame_padright % 2) != 0) {
+        fprintf(stderr, "Right pad size must be a multiple of 2\n");
+        exit(1);
+    }
+}
+
+
 static void opt_frame_pix_fmt(const char *arg)
 {
     frame_pix_fmt = avcodec_get_pix_fmt(arg);
@@ -2237,8 +2449,8 @@ static void opt_input_file(const char *filename)
     ap->channels = audio_channels;
     ap->frame_rate = frame_rate;
     ap->frame_rate_base = frame_rate_base;
-    ap->width = frame_width;
-    ap->height = frame_height;
+    ap->width = frame_width + frame_padleft + frame_padright;
+    ap->height = frame_height + frame_padtop + frame_padbottom;
     ap->image_format = image_format;
     ap->pix_fmt = frame_pix_fmt;
 
@@ -2454,8 +2666,8 @@ static void opt_output_file(const char *filename)
                 video_enc->frame_rate = frame_rate; 
                 video_enc->frame_rate_base = frame_rate_base; 
                 
-                video_enc->width = frame_width;
-                video_enc->height = frame_height;
+                video_enc->width = frame_width + frame_padright + frame_padleft;
+                video_enc->height = frame_height + frame_padtop + frame_padbottom;
 		video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
 		video_enc->pix_fmt = frame_pix_fmt;
 
@@ -3164,6 +3376,11 @@ const OptionDef options[] = {
     { "cropbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
     { "cropleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_left}, "set left crop band size (in pixels)", "size" },
     { "cropright", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop_right}, "set right crop band size (in pixels)", "size" },
+    { "padtop", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_top}, "set top pad band size (in pixels)", "size" },
+    { "padbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_bottom}, "set bottom pad band size (in pixels)", "size" },
+    { "padleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_left}, "set left pad band size (in pixels)", "size" },
+    { "padright", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_pad_right}, "set right pad band size (in pixels)", "size" },
+    { "padcolor", HAS_ARG | OPT_VIDEO, {(void*)opt_pad_color}, "set color of pad bands (Hex 000000 thru FFFFFF)", "color" },
     { "g", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_gop_size}, "set the group of picture size", "gop_size" },
     { "intra", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_only}, "use only intra frames"},
     { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
@@ -3217,7 +3434,7 @@ const OptionDef options[] = {
     { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
     { "error", HAS_ARG | OPT_EXPERT, {(void*)opt_error_rate}, "error rate", "rate" },
-    { "strict", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_strict}, "how strictly to follow the standarts", "strictness" },
+    { "strict", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_strict}, "how strictly to follow the standards", "strictness" },
     { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality}, 
       "use same video quality as source (implies VBR)" },
     { "pass", HAS_ARG | OPT_VIDEO, {(void*)&opt_pass}, "select the pass number (1 or 2)", "n" },
