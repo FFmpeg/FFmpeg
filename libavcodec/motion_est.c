@@ -1715,9 +1715,9 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
                             s->mb_type[i] |= MB_TYPE_INTRA;
                         }
                     }
-                    xy+=2;
-                    i++;
                 }
+                xy+=2;
+                i++;
             }
         }
     }
