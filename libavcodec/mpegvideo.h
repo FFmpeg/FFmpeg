@@ -79,9 +79,7 @@ typedef struct RateControlContext{
     double pass1_bits;        /* bits outputted by the pass1 code (including complexity init) */
     double pass1_wanted_bits; /* bits which should have been outputed by the pass1 code (including complexity init) */
     double last_qscale;
-    double last_qscale_for[5]; /* last qscale for a specific pict type */
-    double next_non_b_qscale;
-    double next_p_qscale;
+    double last_qscale_for[5]; /* last qscale for a specific pict type, used for max_diff & ipb factor stuff */
     int last_mc_mb_var_sum;
     int last_mb_var_sum;
     UINT64 i_cplx_sum[5];
@@ -89,6 +87,7 @@ typedef struct RateControlContext{
     UINT64 mv_bits_sum[5];
     UINT64 qscale_sum[5];
     int frame_count[5];
+    int last_non_b_pict_type;
 }RateControlContext;
 
 typedef struct ReorderBuffer{
