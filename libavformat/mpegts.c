@@ -1080,10 +1080,10 @@ static int mpegts_read_header(AVFormatContext *s,
     MpegTSContext *ts = s->priv_data;
     ByteIOContext *pb = &s->pb;
     uint8_t buf[1024];
-    int len, sid;
+    int len, sid, i;
     int64_t pos;
     MpegTSService *service;
-    
+
     if (ap) {
         ts->mpeg2ts_raw = ap->mpeg2ts_raw;
         ts->mpeg2ts_compute_pcr = ap->mpeg2ts_compute_pcr;
@@ -1135,21 +1135,23 @@ static int mpegts_read_header(AVFormatContext *s,
 	    }
             
             /* tune to first service found */
-            service = ts->services[0];
-            sid = service->sid;
+            for(i=0; i<ts->nb_services && ts->set_service_ret; i++){
+                service = ts->services[i];
+                sid = service->sid;
 #ifdef DEBUG_SI
-            printf("tuning to '%s'\n", service->name);
+                printf("tuning to '%s'\n", service->name);
 #endif
             
-            /* now find the info for the first service if we found any,
-               otherwise try to filter all PATs */
-            
-            url_fseek(pb, pos, SEEK_SET);
-            mpegts_set_service(ts, sid, set_service_cb, ts);
-            
-            handle_packets(ts, MAX_SCAN_PACKETS);
-            
+                /* now find the info for the first service if we found any,
+                otherwise try to filter all PATs */
+                
+                url_fseek(pb, pos, SEEK_SET);
+                mpegts_set_service(ts, sid, set_service_cb, ts);
+                
+                handle_packets(ts, MAX_SCAN_PACKETS);
+            }
             /* if could not find service, exit */
+            
             if (ts->set_service_ret != 0)
                 return -1;
             
@@ -1324,6 +1326,29 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
     return timestamp;
 }
 
+static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts){
+    MpegTSContext *ts = s->priv_data;
+    uint8_t buf[TS_PACKET_SIZE];
+    int64_t pos;
+
+    if(av_seek_frame_binary(s, stream_index, target_ts) < 0)
+        return -1;
+
+    pos= url_ftell(&s->pb);
+
+    for(;;) {
+        url_fseek(&s->pb, pos, SEEK_SET);
+        if (get_buffer(&s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
+            return -1;
+//        pid = ((buf[1] & 0x1f) << 8) | buf[2];
+        if(buf[1] & 0x40) break;
+        pos += ts->raw_packet_size;
+    }    
+    url_fseek(&s->pb, pos, SEEK_SET);
+
+    return 0;
+}
+
 /**************************************************************/
 /* parsing functions - called from other demuxers such as RTP */
 
@@ -1385,7 +1410,7 @@ AVInputFormat mpegts_demux = {
     mpegts_read_header,
     mpegts_read_packet,
     mpegts_read_close,
-    NULL, //mpegts_read_seek,
+    read_seek,
     mpegts_get_pcr,
     .flags = AVFMT_SHOW_IDS,
 };
