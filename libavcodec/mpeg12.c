@@ -69,7 +69,8 @@ static void put_header(MpegEncContext *s, int header)
 static void mpeg1_encode_sequence_header(MpegEncContext *s)
 {
         unsigned int vbv_buffer_size;
-        unsigned int fps, n, v;
+        unsigned int fps, v;
+        int n;
         UINT64 time_code;
         
         if ((s->picture_number % s->gop_size) == 0) {
