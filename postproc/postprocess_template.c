@@ -2464,7 +2464,30 @@ static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, uint8_t src[]
 						"movq packedYOffset, %%mm2	\n\t"
 						"movq packedYScale, %%mm3	\n\t"
 						"pxor %%mm4, %%mm4	\n\t"
+#ifdef HAVE_MMX2
+#define SCALED_CPY(src1, src2, dst1, dst2)					\
+						"movq " #src1 ", %%mm0	\n\t"\
+						"movq " #src1 ", %%mm5	\n\t"\
+						"movq " #src2 ", %%mm1	\n\t"\
+						"movq " #src2 ", %%mm6	\n\t"\
+						"punpcklbw %%mm0, %%mm0 \n\t"\
+						"punpckhbw %%mm5, %%mm5 \n\t"\
+						"punpcklbw %%mm1, %%mm1 \n\t"\
+						"punpckhbw %%mm6, %%mm6 \n\t"\
+						"pmulhuw %%mm3, %%mm0	\n\t"\
+						"pmulhuw %%mm3, %%mm5	\n\t"\
+						"pmulhuw %%mm3, %%mm1	\n\t"\
+						"pmulhuw %%mm3, %%mm6	\n\t"\
+						"psubw %%mm2, %%mm0	\n\t"\
+						"psubw %%mm2, %%mm5	\n\t"\
+						"psubw %%mm2, %%mm1	\n\t"\
+						"psubw %%mm2, %%mm6	\n\t"\
+						"packuswb %%mm5, %%mm0	\n\t"\
+						"packuswb %%mm6, %%mm1	\n\t"\
+						"movq %%mm0, " #dst1 "	\n\t"\
+						"movq %%mm1, " #dst2 "	\n\t"\
 
+#else //HAVE_MMX2
 #define SCALED_CPY(src1, src2, dst1, dst2)					\
 						"movq " #src1 ", %%mm0	\n\t"\
 						"movq " #src1 ", %%mm5	\n\t"\
@@ -2490,6 +2513,8 @@ static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, uint8_t src[]
 						"packuswb %%mm6, %%mm1	\n\t"\
 						"movq %%mm0, " #dst1 "	\n\t"\
 						"movq %%mm1, " #dst2 "	\n\t"\
+
+#endif //!HAVE_MMX2
 
 SCALED_CPY((%0)       , (%0, %2)      , (%1)       , (%1, %3))
 SCALED_CPY((%0, %2, 2), (%%eax, %2, 2), (%1, %3, 2), (%%ebx, %3, 2))
@@ -2678,13 +2703,19 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 			clipped-= yHistogram[white];
 		}
 
+		scale= (double)(maxAllowedY - minAllowedY) / (double)(white-black);
+
+#ifdef HAVE_MMX2
+		packedYScale= (uint16_t)(scale*256.0 + 0.5);
+		packedYOffset= (((black*packedYScale)>>8) - minAllowedY) & 0xFFFF;
+#else
+		packedYScale= (uint16_t)(scale*1024.0 + 0.5);
 		packedYOffset= (black - minAllowedY) & 0xFFFF;
+#endif
+
 		packedYOffset|= packedYOffset<<32;
 		packedYOffset|= packedYOffset<<16;
 
-		scale= (double)(maxAllowedY - minAllowedY) / (double)(white-black);
-
-		packedYScale= (uint16_t)(scale*1024.0 + 0.5);
 		packedYScale|= packedYScale<<32;
 		packedYScale|= packedYScale<<16;
 	}
