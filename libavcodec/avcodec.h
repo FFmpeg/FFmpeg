@@ -1022,7 +1022,6 @@ typedef struct AVCodecContext {
 #define FF_DTG_AFD_16_9_SP_14_9 14
 #define FF_DTG_AFD_SP_4_3       15
 
-    int me_range;
     /**
      * Maximum motion estimation search range in subpel units.
      * if 0 then no limit
@@ -1030,6 +1029,7 @@ typedef struct AVCodecContext {
      * - encoding: set by user.
      * - decoding: unused.
      */
+    int me_range;
 
 } AVCodecContext;
 
