@@ -447,7 +447,10 @@ uint64_t time= rdtsc();
 #ifdef PRINT_FRAME_TIME
 printf("%Ld\n", rdtsc()-time);
 #endif
-    return (get_bits_count(&s->gb)+7)>>3;
+    if(s->gb.size != buf_size) 
+        return buf_size; //divx5 b frame reorder
+    else 
+        return ((get_bits_count(&s->gb)+7)>>3) + s->bitstream_buffer_size;
 }
 
 AVCodec mpeg4_decoder = {
