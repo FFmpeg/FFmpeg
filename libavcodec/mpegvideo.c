@@ -2571,6 +2571,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         qpel_mc_func (*op_qpix)[16];
         const int linesize= s->current_picture.linesize[0]; //not s->linesize as this woulnd be wrong for field pics
         const int uvlinesize= s->current_picture.linesize[1];
+        const int readable= s->pict_type != B_TYPE || s->encoding || s->avctx->draw_horiz_band;
 
         /* avoid copy if macroblock skipped in last frame too */
         /* skip only during decoding as we might trash the buffers during encoding a bit */
@@ -2606,11 +2607,15 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             dct_linesize = linesize;
             dct_offset = linesize * 8;
         }
-        
-        dest_y=  s->dest[0];
-        dest_cb= s->dest[1];
-        dest_cr= s->dest[2];
-
+        if(readable){
+            dest_y=  s->dest[0];
+            dest_cb= s->dest[1];
+            dest_cr= s->dest[2];
+        }else{
+            dest_y = s->edge_emu_buffer+32; //FIXME cleanup scratchpad pointers
+            dest_cb= s->edge_emu_buffer+48;
+            dest_cr= s->edge_emu_buffer+56;
+        }
         if (!s->mb_intra) {
             /* motion handling */
             /* decoding or more than one mb_type (MC was allready done otherwise) */
@@ -2687,6 +2692,11 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                     s->dsp.idct_put(dest_cr, uvlinesize, block[5]);
                 }
             }
+        }
+        if(!readable){
+            s->dsp.put_pixels_tab[0][0](s->dest[0], dest_y ,   linesize,16);
+            s->dsp.put_pixels_tab[1][0](s->dest[1], dest_cb, uvlinesize, 8);
+            s->dsp.put_pixels_tab[1][0](s->dest[2], dest_cr, uvlinesize, 8);
         }
     }
 }
