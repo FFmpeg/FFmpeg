@@ -214,7 +214,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
         }
     }
     
-    if (s->h263_msmpeg4)
+    if (s->h263_msmpeg4 && s->pict_type==I_TYPE)
         if(msmpeg4_decode_ext_header(s, buf_size) < 0) return -1;
 
     MPV_frame_end(s);

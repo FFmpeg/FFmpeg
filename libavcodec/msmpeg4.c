@@ -21,6 +21,7 @@
 #include "common.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "avcodec.h"
 
 /*
  * You can also call this codec : MPEG4 with a twist ! 
@@ -212,23 +213,14 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
 void msmpeg4_encode_ext_header(MpegEncContext * s)
 {
-    if(s->pict_type == P_TYPE)
-    {
-	return; // P-Frames dont seem to have them and not even a 0 bit
-    }
-    else
-    {
         s->flipflop_rounding=1;
-        s->bitrate= 910;
+        s->bitrate= 910; // FIXME
 
-	put_bits(&s->pb, 1, 1); // ext header indicator
-
-	put_bits(&s->pb, 4, 7); // ?
+        put_bits(&s->pb, 5, s->frame_rate / FRAME_RATE_BASE); //yes 29.97 -> 29
 
 	put_bits(&s->pb, 11, s->bitrate);
 
 	put_bits(&s->pb, 1, s->flipflop_rounding);
-    }
 }
 
 /* predict coded block */
@@ -748,33 +740,23 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
 
 int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
 {
-    int firstBit=0;
-    
     /* the alt_bitstream reader could read over the end so we need to check it */
-    if(get_bits_count(&s->gb) < buf_size*8) firstBit= get_bits1(&s->gb);
-    
-    if(s->pict_type == P_TYPE)
+    if(get_bits_count(&s->gb) + 16 < buf_size*8)
     {
-        if(firstBit) return -1; // havnt seen ext headers in P-Frames yet ;)
+        int fps;
+
+        fps= get_bits(&s->gb, 5);
+        s->bitrate= get_bits(&s->gb, 11);
+        s->flipflop_rounding= get_bits1(&s->gb);
+
+//        printf("fps:%2d bps:%2d roundingType:%1d\n", fps, s->bitrate, s->flipflop_rounding);
     }
     else
     {
-        int unk;
-	if(!firstBit) // no header found
-	{
-	    s->flipflop_rounding= 0;
-	    s->bitrate= 0;
-	    return 0;
-	}
-	
-	unk= get_bits(&s->gb, 4);
-	s->bitrate= get_bits(&s->gb, 11);
-	
-//	printf("%2d %4d ;; %1X\n", unk,s->bitrate, unk);
-    
-	s->flipflop_rounding= get_bits1(&s->gb);
+        s->flipflop_rounding= 0;
+        s->bitrate= 0;
     }
-    
+
     return 0;
 }
 
