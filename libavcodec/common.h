@@ -170,7 +170,7 @@ void init_put_bits(PutBitContext *s,
                    void *opaque,
                    void (*write_data)(void *, UINT8 *, int));
 void put_bits(PutBitContext *s, int n, unsigned int value);
-INT64 get_bit_count(PutBitContext *s);
+INT64 get_bit_count(PutBitContext *s); /* XXX: change function name */
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
 
@@ -252,6 +252,10 @@ static inline void skip_bits1(GetBitContext *s){
     }
 }
 
+static inline int get_bits_count(GetBitContext *s)
+{
+    return (s->buf_ptr - s->buf) * 8 - s->bit_cnt;
+}
 
 void align_get_bits(GetBitContext *s);
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
