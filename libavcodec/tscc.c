@@ -30,7 +30,7 @@
  *  only without padding and with greater pixel sizes,
  *  then this coded picture is packed with ZLib
  *
- * Supports: BGR8,BGR555,BGR24 - only BGR555 tested
+ * Supports: BGR8,BGR555,BGR24 - only BGR8 and BGR555 tested
  *
  */
 
@@ -75,8 +75,10 @@ typedef struct TsccContext {
 static int decode_rle(CamtasiaContext *c)
 {
     unsigned char *src = c->decomp_buf;
-    unsigned char *output = c->pic.data[0];
+    unsigned char *output;
     int p1, p2, line=c->height, pos=0, i;
+    
+    output = c->pic.data[0] + (c->height - 1) * c->pic.linesize[0];
     while(src < c->decomp_buf + c->decomp_size) {
         p1 = *src++;
         if(p1 == 0) { //Escape code
@@ -99,6 +101,10 @@ static int decode_rle(CamtasiaContext *c)
             for(i = 0; i < p2 * (c->bpp / 8); i++) {
                 *output++ = *src++;
             }
+	    // RLE8 copy is actually padded - and runs are not!
+	    if(c->bpp == 8 && (p2 & 1)) {
+		src++;
+	    }
             pos += p2;
         } else { //Run of pixels
             int pix[3]; //original pixel
@@ -185,6 +191,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     len = c->decomp_size;
     if(zret != Z_DATA_ERROR)
         decode_rle(c);
+    
+    /* make the palette available on the way out */
+    if (c->avctx->pix_fmt == PIX_FMT_PAL8) {
+        memcpy(c->pic.data[1], c->avctx->palctrl->palette, AVPALETTE_SIZE);
+        if (c->avctx->palctrl->palette_changed) {
+            c->pic.palette_has_changed = 1;
+            c->avctx->palctrl->palette_changed = 0;
+        }
+    }
+
 #else
     av_log(avctx, AV_LOG_ERROR, "BUG! Zlib support not compiled in frame decoder.\n");
     return -1;
@@ -223,10 +239,8 @@ static int decode_init(AVCodecContext *avctx)
     return 1;
 #endif
     switch(avctx->bits_per_sample){
-    case  8: av_log(avctx, AV_LOG_ERROR, "Camtasia warning: RGB8 is just guessed\n");
-             avctx->pix_fmt = PIX_FMT_PAL8;
-             break;
-    case 16: avctx->pix_fmt = PIX_FMT_RGB555;break;
+    case  8: avctx->pix_fmt = PIX_FMT_PAL8; break;
+    case 16: avctx->pix_fmt = PIX_FMT_RGB555; break;
     case 24: av_log(avctx, AV_LOG_ERROR, "Camtasia warning: RGB24 is just guessed\n");
              avctx->pix_fmt = PIX_FMT_BGR24;
              break;
@@ -234,8 +248,7 @@ static int decode_init(AVCodecContext *avctx)
              return -1;             
     }
     c->bpp = avctx->bits_per_sample;
-    av_log(avctx, AV_LOG_INFO, "bpp=%i    \n\n\n", c->bpp);
-    c->decomp_size = (avctx->width * c->bpp + (avctx->width + 254) / 255 + 2) * avctx->height + 2;//RLE in the best case
+    c->decomp_size = (avctx->width * c->bpp + (avctx->width + 254) / 255 + 2) * avctx->height + 2;//RLE in the 'best' case
 
     /* Allocate decompression buffer */
     if (c->decomp_size) {
