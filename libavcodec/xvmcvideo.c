@@ -1,17 +1,26 @@
+/*
+ * XVideo Motion Compensation
+ * Copyright (c) 2003 Ivan Kalvachev
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
 #include <limits.h>
-
-//X11 include
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/Xatom.h>
-#include <X11/extensions/Xv.h>
-#include <X11/extensions/Xvlib.h>
-#include <X11/extensions/XvMClib.h>
-
-#include "xvmc_render.h"
 
 //avcodec include
 #include "avcodec.h"
@@ -26,6 +35,13 @@
 #endif
 
 #ifdef HAVE_XVMC
+
+//X11 includes are in the xvmc_render.h
+//by replacing it with none-X one
+//XvMC emulation could be performed
+
+#include "xvmc_render.h"
+
 //#include "xvmc_debug.h"
 
 static int calc_cbp(MpegEncContext *s, int blocknum){
@@ -47,8 +63,11 @@ int XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx){
 xvmc_render_state_t * render,* last, * next;
 
     assert(avctx != NULL);
+
     render = (xvmc_render_state_t*)s->current_picture.data[2];
     assert(render != NULL);
+    if( (render == NULL) || (render->magic != MP_XVMC_RENDER_MAGIC) )
+        return -1;//make sure that this is render packet
 
     render->picture_structure = s->picture_structure;
     render->flags = (s->first_field)? 0: XVMC_SECOND_FIELD;
@@ -66,12 +85,15 @@ xvmc_render_state_t * render,* last, * next;
             next = (xvmc_render_state_t*)s->next_picture.data[2];
             assert(next!=NULL);
             assert(next->state & MP_XVMC_STATE_PREDICTION);
+            if(next == NULL) return -1;
+            if(next->magic != MP_XVMC_RENDER_MAGIC) return -1;
             render->p_future_surface = next->p_surface;
             //no return here, going to set forward prediction
         case  P_TYPE:
             last = (xvmc_render_state_t*)s->last_picture.data[2];
             if(last == NULL)// && !s->first_field)
                 last = render;//predict second field from the first
+            if(last->magic != MP_XVMC_RENDER_MAGIC) return -1;
             assert(last->state & MP_XVMC_STATE_PREDICTION);
             render->p_past_surface = last->p_surface;
             return 0;
@@ -126,6 +148,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
     assert(render!=NULL);
     assert(render->magic==MP_XVMC_RENDER_MAGIC);
     assert(render->mv_blocks);
+
     //take the next free macroblock
     mv_block = &render->mv_blocks[render->start_mv_blocks_num + 
                                    render->filled_mv_blocks_num ];
