@@ -1130,6 +1130,8 @@ void h263_encode_mb(MpegEncContext * s,
                 s->misc_bits++;
                 s->last_bits++;
             }
+            s->skip_count++;
+
             return;
         }
         put_bits(&s->pb, 1, 0);	/* mb coded */
@@ -2032,7 +2034,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
         if (level == 128) //FIXME check rv10
             put_bits(&s->pb, 8, 0xff);
         else
-            put_bits(&s->pb, 8, level & 0xff);
+            put_bits(&s->pb, 8, level);
         i = 1;
     } else {
         i = 0;
@@ -2102,7 +2104,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
                 
                 assert(slevel != 0);
 
-                if(slevel < 128 && slevel > -128) 
+                if(level < 128) 
                     put_bits(&s->pb, 8, slevel & 0xff);
                 else{
                     put_bits(&s->pb, 8, 128);
@@ -2110,8 +2112,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
                     put_bits(&s->pb, 6, (slevel>>5)&0x3f);
                 }
               }else{
-                    if(slevel < 64 && slevel > -64) {
-                        /* 7-bit level */
+                if(level < 64) { // 7-bit level
                         put_bits(&s->pb, 1, 0);
                         put_bits(&s->pb, 1, last);
                         put_bits(&s->pb, 6, run);
