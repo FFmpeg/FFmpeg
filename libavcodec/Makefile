@@ -6,7 +6,7 @@ LDFLAGS= -g
 OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
       mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o msmpeg4.o \
-      mpeg12.o h263dec.o rv10.o
+      mpeg12.o h263dec.o rv10.o mpegaudiodec.o
 ASM_OBJS=
 
 # currently using libac3 for ac3 decoding
@@ -14,13 +14,6 @@ ifeq ($(CONFIG_AC3),yes)
 OBJS+= ac3dec.o \
        libac3/bit_allocate.o libac3/bitstream.o libac3/downmix.o \
        libac3/imdct.o  libac3/parse.o
-endif
-
-# currently using mpglib for mpeg audio decoding
-ifeq ($(CONFIG_MPGLIB),yes)
-OBJS+= mpegaudiodec.o \
-       mpglib/layer1.o mpglib/layer2.o mpglib/layer3.o \
-       mpglib/dct64_i386.o mpglib/decode_i386.o  mpglib/tabinit.o
 endif
 
 # i386 mmx specific stuff
