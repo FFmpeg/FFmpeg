@@ -249,8 +249,8 @@ set bottom pad band size (in pixels)
 set left pad band size (in pixels)
 @item -padright size
 set right pad band size (in pixels)
-@item -padcolor color
-set right pad band size (hex). The value for pad color is expressed 
+@item -padcolor (hex color)
+set color of padded bands. The value for pad color is expressed 
 as a six digit hexidecimal number where the first two digits represent red, 
 middle two digits green and last two digits blue. Defaults to 000000 (black)
 @item -vn
