@@ -48,8 +48,8 @@ stddev: 13.42 bytes:7602176
 b3e1696d73071c8f7f0ff4e10c1677ca *./data/out.yuv
 stddev: 19.19 bytes:7602176
 4a516d78139d521847fdba64a1123aea *./data/a-flv.flv
-84300a0d7efb0ad79a035aa1a8bdd07b *./data/out.yuv
-stddev: 12.83 bytes:7602176
+57ea0821ec4377e96647adc22717a4ba *./data/out.yuv
+stddev:  8.19 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2
 116d1290ba1b4eb98fdee52e423417b1 *./data/out.wav
 048b9c3444c788bac6ce5cc3a8f4db00 *./data/a-ac3.rm
