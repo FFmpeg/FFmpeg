@@ -53,6 +53,10 @@ static void dct_unquantize_h263_intra_c(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale);
 static void dct_unquantize_h263_inter_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale);
+static void dct_unquantize_h261_intra_c(MpegEncContext *s, 
+                                  DCTELEM *block, int n, int qscale);
+static void dct_unquantize_h261_inter_c(MpegEncContext *s, 
+                                  DCTELEM *block, int n, int qscale);
 static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w);
 #ifdef CONFIG_ENCODERS
 static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
@@ -215,6 +219,8 @@ int DCT_common_init(MpegEncContext *s)
 {
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
+    s->dct_unquantize_h261_intra = dct_unquantize_h261_intra_c;
+    s->dct_unquantize_h261_inter = dct_unquantize_h261_inter_c;
     s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_c;
     s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_c;
     s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_c;
@@ -1454,6 +1460,9 @@ alloc:
     }else if(s->out_format == FMT_H263){
         s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
         s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
+    }else if(s->out_format == FMT_H261){
+        s->dct_unquantize_intra = s->dct_unquantize_h261_intra;
+        s->dct_unquantize_inter = s->dct_unquantize_h261_inter;
     }else{
         s->dct_unquantize_intra = s->dct_unquantize_mpeg1_intra;
         s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
@@ -2494,6 +2503,12 @@ if(s->quarter_sample)
             uvsrc_x = src_x>>1;
             uvsrc_y = src_y>>1;
         }
+    }else if(s->out_format == FMT_H261){//even chroma mv's are full pel in H261
+        mx = motion_x / 4;
+        my = motion_y / 4;
+        uvdxy = 0;
+        uvsrc_x = s->mb_x*8 + mx;
+        uvsrc_y = s->mb_y*8 + my;
     } else {
         mx = motion_x / 2;
         my = motion_y / 2;
@@ -5779,6 +5794,59 @@ static void dct_unquantize_h263_inter_c(MpegEncContext *s,
             }
             block[i] = level;
         }
+    }
+}
+
+static void dct_unquantize_h261_intra_c(MpegEncContext *s, 
+                                  DCTELEM *block, int n, int qscale)
+{
+    int i, level, odd;
+    int nCoeffs;
+    
+    assert(s->block_last_index[n]>=0);
+    
+    if (n < 4) 
+        block[0] = block[0] * s->y_dc_scale;
+    else
+        block[0] = block[0] * s->c_dc_scale;
+    odd = qscale & 0x1;
+    nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+
+    for(i=1; i<=nCoeffs; i++){
+        level = block[i];
+        if (level){
+            if (level < 0){
+                level = qscale * ((level << 1) - 1) + (~odd);
+            }else{
+                level = qscale * ((level << 1) + 1) - (~odd);
+            }
+        }
+        block[i] = level;
+    }
+}
+
+static void dct_unquantize_h261_inter_c(MpegEncContext *s, 
+                                  DCTELEM *block, int n, int qscale)
+{
+    int i, level, odd;
+    int nCoeffs;
+    
+    assert(s->block_last_index[n]>=0);
+    
+    odd = qscale & 0x1;
+    
+    nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+
+    for(i=0; i<=nCoeffs; i++){
+        level = block[i];
+        if (level){
+            if (level < 0){
+                level = qscale * ((level << 1) - 1) + (~odd);
+            }else{
+                level = qscale * ((level << 1) + 1) - (~odd);
+            }
+        }
+        block[i] = level;
     }
 }
 

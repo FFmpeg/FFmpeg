@@ -84,6 +84,7 @@ void avcodec_register_all(void)
 #ifdef CONFIG_DECODERS
 #ifdef CONFIG_RISKY
     register_avcodec(&h263_decoder);
+    register_avcodec(&h261_decoder);
     register_avcodec(&mpeg4_decoder);
     register_avcodec(&msmpeg4v1_decoder);
     register_avcodec(&msmpeg4v2_decoder);
@@ -213,6 +214,7 @@ PCM_CODEC(CODEC_ID_ADPCM_EA, adpcm_g726);
     /* parsers */ 
     av_register_codec_parser(&mpegvideo_parser);
     av_register_codec_parser(&mpeg4video_parser);
+    av_register_codec_parser(&h261_parser);
     av_register_codec_parser(&h263_parser);
     av_register_codec_parser(&h264_parser);
 

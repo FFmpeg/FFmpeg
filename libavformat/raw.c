@@ -259,6 +259,21 @@ static int h263_probe(AVProbeData *p)
     return 0;
 }
 
+static int h261_probe(AVProbeData *p)
+{
+    int code;
+    const uint8_t *d;
+
+    if (p->buf_size < 6)
+        return 0;
+    d = p->buf;
+    code = (d[0] << 12) | (d[1] << 4) | (d[2] >> 4);
+    if (code == 0x10) {
+        return 50;
+    }
+    return 0;
+}
+
 AVInputFormat ac3_iformat = {
     "ac3",
     "raw ac3",
@@ -284,6 +299,18 @@ AVOutputFormat ac3_oformat = {
     raw_write_trailer,
 };
 #endif //CONFIG_ENCODERS
+
+AVInputFormat h261_iformat = {
+    "h261",
+    "raw h261",
+    0,
+    h261_probe,
+    video_read_header,
+    raw_read_partial_packet,
+    raw_read_close,
+    .extensions = "h261",
+    .value = CODEC_ID_H261,
+};
 
 AVInputFormat h263_iformat = {
     "h263",
@@ -585,6 +612,8 @@ int raw_init(void)
 {
     av_register_input_format(&ac3_iformat);
     av_register_output_format(&ac3_oformat);
+
+    av_register_input_format(&h261_iformat);
 
     av_register_input_format(&h263_iformat);
     av_register_output_format(&h263_oformat);

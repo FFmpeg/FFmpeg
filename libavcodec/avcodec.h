@@ -34,6 +34,7 @@ enum CodecID {
     CODEC_ID_MPEG1VIDEO,
     CODEC_ID_MPEG2VIDEO, /* prefered ID for MPEG Video 1 or 2 decoding */
     CODEC_ID_MPEG2VIDEO_XVMC,
+    CODEC_ID_H261,
     CODEC_ID_H263,
     CODEC_ID_RV10,
     CODEC_ID_RV20,
@@ -1724,6 +1725,7 @@ extern AVCodec zlib_encoder;
 extern AVCodec svq1_encoder;
 
 extern AVCodec h263_decoder;
+extern AVCodec h261_decoder;
 extern AVCodec mpeg4_decoder;
 extern AVCodec msmpeg4v1_decoder;
 extern AVCodec msmpeg4v2_decoder;
@@ -2124,6 +2126,7 @@ void av_parser_close(AVCodecParserContext *s);
 
 extern AVCodecParser mpegvideo_parser;
 extern AVCodecParser mpeg4video_parser;
+extern AVCodecParser h261_parser;
 extern AVCodecParser h263_parser;
 extern AVCodecParser h264_parser;
 extern AVCodecParser mpegaudio_parser;

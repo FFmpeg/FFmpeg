@@ -55,7 +55,7 @@ ASM_OBJS=
 
 # codecs which are patented in some non free countries like the us
 ifeq ($(CONFIG_RISKY),yes)
-OBJS+= h263.o msmpeg4.o h263dec.o svq1.o rv10.o wmadec.o indeo3.o
+OBJS+= h263.o h261.o msmpeg4.o h263dec.o svq1.o rv10.o wmadec.o indeo3.o
 endif
 
 ifeq ($(HAVE_XVMC_ACCEL),yes)

@@ -32,6 +32,7 @@
 
 enum OutputFormat {
     FMT_MPEG1,
+    FMT_H261,
     FMT_H263,
     FMT_MJPEG, 
     FMT_H264,
@@ -702,6 +703,10 @@ typedef struct MpegEncContext {
     void (*dct_unquantize_h263_intra)(struct MpegEncContext *s, 
                            DCTELEM *block/*align 16*/, int n, int qscale);
     void (*dct_unquantize_h263_inter)(struct MpegEncContext *s, 
+                           DCTELEM *block/*align 16*/, int n, int qscale);
+    void (*dct_unquantize_h261_intra)(struct MpegEncContext *s, 
+                           DCTELEM *block/*align 16*/, int n, int qscale);
+    void (*dct_unquantize_h261_inter)(struct MpegEncContext *s, 
                            DCTELEM *block/*align 16*/, int n, int qscale);
     void (*dct_unquantize_intra)(struct MpegEncContext *s, // unquantizer to use (mpeg4 can use both)
                            DCTELEM *block/*align 16*/, int n, int qscale);

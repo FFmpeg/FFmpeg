@@ -2360,6 +2360,36 @@ static void h263_h_loop_filter_c(uint8_t *src, int stride, int qscale){
     }
 }
 
+static void h261_v_loop_filter_c(uint8_t *dest,uint8_t *src, int stride){
+    int i,j,xy,yz;
+    int res;
+    for(i=0; i<8; i++){
+        for(j=1; j<7; j++){
+            xy = j * stride + i;
+            yz = j * 8 + i;
+            res = (int)src[yz-1*8] + ((int)(src[yz+0*8]) * 2) + (int)src[yz+1*8];
+            res +=2;
+            res >>=2;
+            dest[xy] = (uint8_t)res;
+        }
+    }
+}
+
+static void h261_h_loop_filter_c(uint8_t *dest,uint8_t *src, int stride){
+    int i,j,xy,yz;
+    int res;    
+    for(i=1; i<7; i++){
+        for(j=0; j<8; j++){
+            xy = j * stride + i;
+            yz = j * 8 + i;
+            res = (int)src[yz-1] + ((int)(src[yz]) *2) + (int)src[yz+1];
+            res+=2;
+            res>>=2;
+            dest[xy] = (uint8_t)res;
+        }
+    }
+}
+
 static inline int pix_abs16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int s, i;
@@ -3294,6 +3324,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     
     c->h263_h_loop_filter= h263_h_loop_filter_c;
     c->h263_v_loop_filter= h263_v_loop_filter_c;
+    
+    c->h261_h_loop_filter= h261_h_loop_filter_c;
+    c->h261_v_loop_filter= h261_v_loop_filter_c;
     
     c->try_8x8basis= try_8x8basis_c;
     c->add_8x8basis= add_8x8basis_c;
