@@ -7,7 +7,7 @@ cp test.conf data/test.conf
 perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_.asf>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 
-FILES=`perl -n -e 'print \$1, " " if /<stream\\s+(\\S+)>/i' data/test.conf`
+FILES=`perl -n -e 'print \$1, " " if /<stream\\s+(\\S+)>/i' data/test.conf | sort`
 
 rm -f /tmp/feed.ffm
 ../ffserver -d -f data/test.conf 2> /dev/null &

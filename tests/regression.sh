@@ -60,7 +60,9 @@ do_ffmpeg()
     f="$1"
     shift
     echo $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 $*
-    $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp
+    $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
+    grep -v -e ^Stream -e ^Press -e ^Input -e ^Output -e ^frame -e '^  Stream' /tmp/ffmpeg$$ || true
+    rm -f /tmp/ffmpeg$$
     md5sum -b $f >> $logfile
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
