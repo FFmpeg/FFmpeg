@@ -252,7 +252,7 @@ static int gif_image_write_image(ByteIOContext *pb,
 
         gif_put_bits_rev(&p, 9, 0x0100); /* clear code */
 
-        for(i=0;i<GIF_CHUNKS;i++) {
+        for(i=(left<GIF_CHUNKS)?left:GIF_CHUNKS;i;i--) {
             if (pix_fmt == PIX_FMT_RGB24) {
                 v = gif_clut_index(ptr[0], ptr[1], ptr[2]);
                 ptr+=3;
@@ -276,12 +276,10 @@ static int gif_image_write_image(ByteIOContext *pb,
             put_buffer(pb, p.buf, pbBufPtr(&p) - p.buf); /* the actual buffer */
             p.buf_ptr = p.buf; /* dequeue the bytes off the bitstream */
         }
-        if(left<=GIF_CHUNKS) {
-            put_byte(pb, 0x00); /* end of image block */
-        }
-
         left-=GIF_CHUNKS;
     }
+    put_byte(pb, 0x00); /* end of image block */
+    
     return 0;
 }
 
