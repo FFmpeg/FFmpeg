@@ -325,6 +325,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         frame_rate_ext_n = (buf[5] >> 5) & 3;
                         frame_rate_ext_d = (buf[5] & 0x1f);
                         pc->progressive_sequence = buf[1] & (1 << 3);
+                        avctx->has_b_frames= buf[5] >> 7;
 
                         pc->width  |=(horiz_size_ext << 12);
                         pc->height |=( vert_size_ext << 12);
