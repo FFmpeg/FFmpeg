@@ -49,6 +49,8 @@
 #define    INDEX_STARTCODE (0xDD672F23E64EULL + (((uint64_t)('N'<<8) + 'X')<<48)) 
 #define     INFO_STARTCODE (0xAB68B596BA78ULL + (((uint64_t)('N'<<8) + 'I')<<48)) 
 
+#define ID_STRING "nut/multimedia container\0"
+
 #define MAX_DISTANCE (1024*16-1)
 #define MAX_SHORT_DISTANCE (1024*4-1)
 
@@ -84,6 +86,7 @@ typedef struct {
     uint64_t next_startcode;     ///< stores the next startcode if it has alraedy been parsed but the stream isnt seekable
     StreamContext *stream;
     int max_distance;
+    int max_short_distance;
     int rate_num;
     int rate_den;
     int short_startcode;
@@ -510,6 +513,11 @@ static int nut_write_header(AVFormatContext *s)
     
     nut->stream =	
 	av_mallocz(sizeof(StreamContext)*s->nb_streams);
+        
+
+    put_buffer(bc, ID_STRING, strlen(ID_STRING));
+    put_byte(bc, 0);
+    nut->packet_start[2]= url_ftell(bc);
     
     /* main header */
     put_be64(bc, MAIN_STARTCODE);
@@ -517,6 +525,7 @@ static int nut_write_header(AVFormatContext *s)
     put_v(bc, 2); /* version */
     put_v(bc, s->nb_streams);
     put_v(bc, MAX_DISTANCE);
+    put_v(bc, MAX_SHORT_DISTANCE);
     
     put_v(bc, nut->rate_num=1);
     put_v(bc, nut->rate_den=2);
@@ -869,6 +878,7 @@ static int decode_main_header(NUTContext *nut){
     
     nut->stream_count = get_v(bc);
     nut->max_distance = get_v(bc);
+    nut->max_short_distance = get_v(bc);
     nut->rate_num= get_v(bc);
     nut->rate_den= get_v(bc);
     nut->short_startcode= get_v(bc);

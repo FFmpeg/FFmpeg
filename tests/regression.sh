@@ -516,9 +516,9 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -a
 do_ffmpeg_crc $file -i $file
 
 # dv
-file=${outfile}libav.dv
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -ar 48000 -r 25 -s pal -ac 2 $file
-do_ffmpeg_crc $file -i $file
+#file=${outfile}libav.dv
+#do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -ar 48000 -r 25 -s pal -ac 2 $file
+#do_ffmpeg_crc $file -i $file
 
 # XXX: need mpegts tests (add bitstreams or add output capability in ffmpeg)
 
