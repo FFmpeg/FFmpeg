@@ -495,10 +495,6 @@ static int encode_init(AVCodecContext *avctx)
     
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV420P:
-        if(avctx->strict_std_compliance>=0){
-            av_log(avctx, AV_LOG_ERROR, "Warning: YV12-huffyuv is not supported by windows huffyuv use a different colorspace or use (v)strict=-1\n");
-            return -1;
-        }
         s->bitstream_bpp= 12;
         break;
     case PIX_FMT_YUV422P:
@@ -512,21 +508,29 @@ static int encode_init(AVCodecContext *avctx)
     s->decorrelate= s->bitstream_bpp >= 24;
     s->predictor= avctx->prediction_method;
     s->interlaced= avctx->flags&CODEC_FLAG_INTERLACED_ME ? 1 : 0;
-    if(s->interlaced != ( height > 288 )){
-        av_log(avctx, AV_LOG_INFO, "using huffyuv 2.2.0 or newer interlacing flag\n");
-    }
     if(avctx->context_model==1){
         s->context= avctx->context_model;
-        if(avctx->strict_std_compliance>=0){
-            av_log(avctx, AV_LOG_ERROR, "Warning: per-frame huffman tables are not supported by windows huffyuv; use context=0 or use (v)strict=-1\n");
-            return -1;
-        }
         if(s->flags & (CODEC_FLAG_PASS1|CODEC_FLAG_PASS2)){
             av_log(avctx, AV_LOG_ERROR, "context=1 is not compatible with 2 pass huffyuv encoding\n");
             return -1;
         }
-        av_log(avctx, AV_LOG_INFO, "using per-frame huffman tables\n");
     }else s->context= 0;
+    
+    if(avctx->codec->id==CODEC_ID_HUFFYUV){
+        if(avctx->pix_fmt==PIX_FMT_YUV420P){
+            av_log(avctx, AV_LOG_ERROR, "Error: YV12 is not supported by huffyuv; use vcodec=ffvhuff or format=422p\n");
+            return -1;
+        }
+        if(avctx->context_model){
+            av_log(avctx, AV_LOG_ERROR, "Error: per-frame huffman tables are not supported by huffyuv; use vcodec=ffvhuff\n");
+            return -1;
+        }
+        if(s->interlaced != ( height > 288 ))
+            av_log(avctx, AV_LOG_INFO, "using huffyuv 2.2.0 or newer interlacing flag\n");
+    }else if(avctx->strict_std_compliance>=0){
+        av_log(avctx, AV_LOG_ERROR, "This codec is under development; files encoded with it may not be decodeable with future versions!!! Set vstrict=-1 to use it anyway.\n");
+        return -1;
+    }
     
     ((uint8_t*)avctx->extradata)[0]= s->predictor;
     ((uint8_t*)avctx->extradata)[1]= s->bitstream_bpp;
@@ -1172,10 +1176,31 @@ static const AVOption huffyuv_options[] =
     AVOPTION_END()
 };
 
+static const AVOption ffvhuff_options[] =
+{
+    AVOPTION_CODEC_INT("prediction_method", "prediction_method", prediction_method, 0, 2, 0),
+    AVOPTION_CODEC_INT("context_model", "context_model", context_model, 0, 2, 0),
+    AVOPTION_END()
+};
+
+
 AVCodec huffyuv_decoder = {
     "huffyuv",
     CODEC_TYPE_VIDEO,
     CODEC_ID_HUFFYUV,
+    sizeof(HYuvContext),
+    decode_init,
+    NULL,
+    decode_end,
+    decode_frame,
+    CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND,
+    NULL
+};
+
+AVCodec ffvhuff_decoder = {
+    "ffvhuff",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_FFVHUFF,
     sizeof(HYuvContext),
     decode_init,
     NULL,
@@ -1196,6 +1221,17 @@ AVCodec huffyuv_encoder = {
     encode_frame,
     encode_end,
     .options = huffyuv_options,
+};
+
+AVCodec ffvhuff_encoder = {
+    "ffvhuff",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_FFVHUFF,
+    sizeof(HYuvContext),
+    encode_init,
+    encode_frame,
+    encode_end,
+    .options = ffvhuff_options,
 };
 
 #endif //CONFIG_ENCODERS

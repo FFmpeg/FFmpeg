@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4733
+#define LIBAVCODEC_BUILD       4734
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -99,6 +99,7 @@ enum CodecID {
     CODEC_ID_PGM,
     CODEC_ID_PGMYUV,
     CODEC_ID_PAM,
+    CODEC_ID_FFVHUFF,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
@@ -1816,6 +1817,7 @@ extern AVCodec msmpeg4v3_encoder;
 extern AVCodec wmv1_encoder;
 extern AVCodec wmv2_encoder;
 extern AVCodec huffyuv_encoder;
+extern AVCodec ffvhuff_encoder;
 extern AVCodec h264_encoder;
 extern AVCodec asv1_encoder;
 extern AVCodec asv2_encoder;
@@ -1858,6 +1860,7 @@ extern AVCodec mp3_decoder;
 extern AVCodec mace3_decoder;
 extern AVCodec mace6_decoder;
 extern AVCodec huffyuv_decoder;
+extern AVCodec ffvhuff_decoder;
 extern AVCodec oggvorbis_decoder;
 extern AVCodec cyuv_decoder;
 extern AVCodec h264_decoder;

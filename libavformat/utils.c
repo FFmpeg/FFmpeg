@@ -627,6 +627,7 @@ static int is_intra_only(AVCodecContext *enc){
         case CODEC_ID_RAWVIDEO:
         case CODEC_ID_DVVIDEO:
         case CODEC_ID_HUFFYUV:
+        case CODEC_ID_FFVHUFF:
         case CODEC_ID_ASV1:
         case CODEC_ID_ASV2:
         case CODEC_ID_VCR1:

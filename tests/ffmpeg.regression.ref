@@ -55,8 +55,8 @@ stddev:  2.07 PSNR:41.76 bytes:7602176
 554440 ./data/a-odivx.mp4
 e400c9175dd1811cdeee7be5555d33f1 *./data/out.yuv
 stddev:  7.99 PSNR:30.06 bytes:7602176
-08fd4be8dfff31783f83bfc59f8a6cdd *./data/a-huffyuv.avi
-5986168 ./data/a-huffyuv.avi
+b415b4d46c0c693d973dd45b1898de52 *./data/a-huffyuv.avi
+7932708 ./data/a-huffyuv.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
 788092f090eb1b11b78369f83e430fba *./data/a-mpeg4-rc.avi

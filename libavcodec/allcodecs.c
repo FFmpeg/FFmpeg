@@ -83,6 +83,7 @@ void avcodec_register_all(void)
     register_avcodec(&pbm_encoder);
     register_avcodec(&pam_encoder);
     register_avcodec(&huffyuv_encoder);
+    register_avcodec(&ffvhuff_encoder);
     register_avcodec(&asv1_encoder);
     register_avcodec(&asv2_encoder);
     register_avcodec(&ffv1_encoder);
@@ -143,6 +144,7 @@ void avcodec_register_all(void)
     register_avcodec(&mace3_decoder);
     register_avcodec(&mace6_decoder);
     register_avcodec(&huffyuv_decoder);
+    register_avcodec(&ffvhuff_decoder);
     register_avcodec(&ffv1_decoder);
     register_avcodec(&snow_decoder);
     register_avcodec(&cyuv_decoder);

@@ -279,7 +279,7 @@ fi
 if [ -n "$do_huffyuv" ] ; then
 # huffyuv
 file=${outfile}huffyuv.avi
-do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec huffyuv -strict -1 $file
+do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec huffyuv -pix_fmt yuv422p $file
 
 # huffyuv decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo -strict -1 $raw_dst

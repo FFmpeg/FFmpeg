@@ -140,6 +140,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_LJPEG, MKTAG('L', 'J', 'P', 'G') },
     { CODEC_ID_MJPEG, MKTAG('J', 'P', 'G', 'L') }, /* Pegasus lossless JPEG */
     { CODEC_ID_HUFFYUV, MKTAG('H', 'F', 'Y', 'U') },
+    { CODEC_ID_FFVHUFF, MKTAG('F', 'F', 'V', 'H') },
     { CODEC_ID_CYUV, MKTAG('C', 'Y', 'U', 'V') },
     { CODEC_ID_RAWVIDEO, MKTAG('Y', '4', '2', '2') },
     { CODEC_ID_RAWVIDEO, MKTAG('I', '4', '2', '0') },
