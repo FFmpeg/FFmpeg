@@ -73,10 +73,6 @@ static int ogg_write_packet(AVFormatContext *avfcontext,
 
     pts= av_rescale(pts, avctx->sample_rate, AV_TIME_BASE);
 
-    if(!size){
-//        av_log(avfcontext, AV_LOG_DEBUG, "zero packet\n");
-        return 0;
-    }
 //    av_log(avfcontext, AV_LOG_DEBUG, "M%d\n", size);
 
     /* flush header packets so audio starts on a new page */
