@@ -4717,8 +4717,6 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 
             if (cache&0x80000000) {
                 if (cache&0x40000000) {
-                    int ulevel;
-
                     /* third escape */
                     SKIP_CACHE(re, &s->gb, 2);
                     last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
@@ -4744,16 +4742,6 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         SKIP_COUNTER(re, &s->gb, 1+12+1);
                     }
  
-                    if(s->mpeg_quant){
-                        if(intra) ulevel= level*s->qscale*s->intra_matrix[scan_table[1]];
-                        else      ulevel= level*s->qscale*s->inter_matrix[scan_table[0]];
-                    }else
-                        ulevel= level*s->qscale*16;
-                    if(ulevel>1030*16 || ulevel<-1030*16){
-                        av_log(s->avctx, AV_LOG_ERROR, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
-                        return -1;
-                    }
-
 #if 0
                     if(s->error_resilience >= FF_ER_COMPLIANT){
                         const int abs_level= ABS(level);
@@ -4778,6 +4766,16 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 #endif
 		    if (level>0) level= level * qmul + qadd;
                     else         level= level * qmul - qadd;
+
+                    if((unsigned)(level + 2048) > 4095){
+                        if(s->error_resilience > FF_ER_COMPLIANT){
+                            if(level > 2560 || level<-2560){
+                                av_log(s->avctx, AV_LOG_ERROR, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
+                                return -1;
+                            }
+                        }
+                        level= level<0 ? -2048 : 2047;
+                    }
 
                     i+= run + 1;
                     if(last) i+=192;
@@ -6062,7 +6060,7 @@ int flv_h263_decode_picture_header(MpegEncContext *s)
     s->dropable= s->pict_type > P_TYPE;
     if (s->dropable)
         s->pict_type = P_TYPE;
-
+    
     skip_bits1(&s->gb);	/* deblocking flag */
     s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
 
