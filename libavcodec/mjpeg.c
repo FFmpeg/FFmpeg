@@ -855,7 +855,6 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
 
     /* ugly way to get the idct & scantable FIXME */
     memset(&s2, 0, sizeof(MpegEncContext));
-    s2.flags= avctx->flags;
     s2.avctx= avctx;
 //    s2->out_format = FMT_MJPEG;
     s2.width = 8;

@@ -330,7 +330,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 1, 1);
             put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
             put_bits(&s->pb, 6, (uint32_t)((time_code % fps)));
-            put_bits(&s->pb, 1, 0); /* closed gop */
+            put_bits(&s->pb, 1, !!(s->flags & CODEC_FLAG_CLOSED_GOP));
             put_bits(&s->pb, 1, 0); /* broken link */
         }
 }
@@ -1706,6 +1706,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     
     s->mpeg_enc_ctx.avctx= avctx;
     s->mpeg_enc_ctx.flags= avctx->flags;
+    s->mpeg_enc_ctx.flags2= avctx->flags2;
     common_init(&s->mpeg_enc_ctx);
     init_vlcs();
 

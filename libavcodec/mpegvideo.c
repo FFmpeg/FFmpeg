@@ -408,6 +408,7 @@ int MPV_common_init(MpegEncContext *s)
     DCT_common_init(s);
 
     s->flags= s->avctx->flags;
+    s->flags2= s->avctx->flags2;
 
     s->mb_width  = (s->width  + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
@@ -700,6 +701,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->gop_size = avctx->gop_size;
     s->avctx = avctx;
     s->flags= avctx->flags;
+    s->flags2= avctx->flags2;
     s->max_b_frames= avctx->max_b_frames;
     s->codec_id= avctx->codec->id;
     s->luma_elim_threshold  = avctx->luma_elim_threshold;
@@ -786,6 +788,11 @@ int MPV_encode_init(AVCodecContext *avctx)
 
     if((s->flags & CODEC_FLAG_QP_RD) && s->avctx->mb_decision != FF_MB_DECISION_RD){
         av_log(avctx, AV_LOG_ERROR, "QP RD needs mbd=2\n");
+        return -1;
+    }
+    
+    if(s->avctx->scenechange_threshold < 1000000000 && (s->flags & CODEC_FLAG_CLOSED_GOP)){
+        av_log(avctx, AV_LOG_ERROR, "closed gop with scene change detection arent supported yet\n");
         return -1;
     }
     
@@ -1809,12 +1816,19 @@ static void select_input_picture(MpegEncContext *s){
 //static int b_count=0;
 //b_count+= b_frames;
 //av_log(s->avctx, AV_LOG_DEBUG, "b_frames: %d\n", b_count);
-                        
+            if(s->picture_in_gop_number + b_frames >= s->gop_size){
+                if(s->flags & CODEC_FLAG_CLOSED_GOP)
+                    b_frames=0;
+                s->input_picture[b_frames]->pict_type= I_TYPE;
+            }
+            
+            if(   (s->flags & CODEC_FLAG_CLOSED_GOP)
+               && b_frames
+               && s->input_picture[b_frames]->pict_type== I_TYPE)
+                b_frames--;
+
             s->reordered_input_picture[0]= s->input_picture[b_frames];
-            if(   s->picture_in_gop_number + b_frames >= s->gop_size 
-               || s->reordered_input_picture[0]->pict_type== I_TYPE)
-                s->reordered_input_picture[0]->pict_type= I_TYPE;
-            else
+            if(s->reordered_input_picture[0]->pict_type != I_TYPE)
                 s->reordered_input_picture[0]->pict_type= P_TYPE;
             s->reordered_input_picture[0]->coded_picture_number= s->coded_picture_number++;
             for(i=0; i<b_frames; i++){

@@ -255,6 +255,7 @@ typedef struct MpegEncContext {
     int fixed_qscale; ///< fixed qscale if non zero 
     int encoding;     ///< true if we are encoding (vs decoding) 
     int flags;        ///< AVCodecContext.flags (HQ, MV4, ...) 
+    int flags2;       ///< AVCodecContext.flags2
     int max_b_frames; ///< max number of b-frames for encoding 
     int luma_elim_threshold;
     int chroma_elim_threshold;
@@ -469,7 +470,6 @@ typedef struct MpegEncContext {
     void *opaque;              ///< private data for the user
 
     /* bit rate control */
-    int I_frame_bits; //FIXME used in mpeg12 ...
     int64_t wanted_bits;
     int64_t total_bits;
     int frame_bits;                ///< bits used for the current frame 
@@ -619,7 +619,6 @@ typedef struct MpegEncContext {
     GetBitContext gb;
 
     /* Mpeg1 specific */
-    int fake_picture_number; ///< picture number at the bitstream frame rate 
     int gop_picture_number;  ///< index of the first picture of a GOP based on fake_pic_num & mpeg1 specific 
     int last_mv_dir;         ///< last mv_dir, used for b frame encoding 
     int broken_link;         ///< no_output_of_prior_pics_flag

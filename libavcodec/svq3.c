@@ -697,8 +697,10 @@ static int svq3_decode_slice_header (H264Context *h) {
 
     h->next_slice_index = s->gb.index + 8*show_bits (&s->gb, 8*length) + 8*length;
 
-    if (h->next_slice_index > s->gb.size_in_bits)
+    if (h->next_slice_index > s->gb.size_in_bits){
+      av_log(h->s.avctx, AV_LOG_ERROR, "slice after bitstream end\n");
       return -1;
+    }
 
     s->gb.size_in_bits = h->next_slice_index - 8*(length - 1);
     s->gb.index += 8;
@@ -709,8 +711,10 @@ static int svq3_decode_slice_header (H264Context *h) {
     }
   }
 
-  if ((i = svq3_get_ue_golomb (&s->gb)) == INVALID_VLC || i >= 3)
+  if ((i = svq3_get_ue_golomb (&s->gb)) == INVALID_VLC || i >= 3){
+    av_log(h->s.avctx, AV_LOG_ERROR, "illegal slice type %d \n", i);
     return -1;
+  }
 
   h->slice_type = golomb_to_pict_type[i];
 
@@ -766,6 +770,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   *data_size = 0;
 
   s->flags = avctx->flags;
+  s->flags2 = avctx->flags2;
   s->unrestricted_mv = 1;
 
   if (!s->context_initialized) {

@@ -105,6 +105,8 @@ static float video_b_qfactor = 1.25;
 static float video_b_qoffset = 1.25;
 static float video_i_qfactor = -0.8;
 static float video_i_qoffset = 0.0;
+static int video_intra_quant_bias= FF_DEFAULT_QUANT_BIAS;
+static int video_inter_quant_bias= FF_DEFAULT_QUANT_BIAS;
 static int me_method = ME_EPZS;
 static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
@@ -123,6 +125,7 @@ static int use_umv = 0;
 static int use_alt_scan = 0;
 static int use_trell = 0;
 static int use_scan_offset = 0;
+static int closed_gop = 0;
 static int do_deinterlace = 0;
 static int do_interlace_dct = 0;
 static int do_interlace_me = 0;
@@ -137,6 +140,7 @@ static int error_rate = 0;
 static int strict = 0;
 static int top_field_first = -1;
 static int noise_reduction = 0;
+static int sc_threshold = 0;
 static int debug = 0;
 static int debug_mv = 0;
 extern int loop_input; /* currently a hack */
@@ -1458,6 +1462,7 @@ static int av_encode(AVFormatContext **output_files,
             file_table[file_index].eof_reached = 1;
             continue;
         }
+
         if (!pkt.size) {
             stream_no_data = is;
         } else {
@@ -1948,6 +1953,15 @@ static void opt_i_qoffset(const char *arg)
     video_i_qoffset = atof(arg);
 }
 
+static void opt_ibias(const char *arg)
+{
+    video_intra_quant_bias = atoi(arg);
+}
+static void opt_pbias(const char *arg)
+{
+    video_inter_quant_bias = atoi(arg);
+}
+
 static void opt_packet_size(const char *arg)
 {
     packet_size= atoi(arg);
@@ -1971,6 +1985,11 @@ static void opt_top_field_first(const char *arg)
 static void opt_noise_reduction(const char *arg)
 {
     noise_reduction= atoi(arg);
+}
+
+static void opt_sc_threshold(const char *arg)
+{
+    sc_threshold= atoi(arg);
 }
 
 static void opt_audio_bitrate(const char *arg)
@@ -2410,6 +2429,9 @@ static void opt_output_file(const char *filename)
            	if (use_scan_offset) {
                     video_enc->flags |= CODEC_FLAG_SVCD_SCAN_OFFSET;
                 }
+           	if (closed_gop) {
+                    video_enc->flags |= CODEC_FLAG_CLOSED_GOP;
+                }
                 if (b_frames) {
                     video_enc->max_b_frames = b_frames;
                     video_enc->b_frame_strategy = 0;
@@ -2466,11 +2488,14 @@ static void opt_output_file(const char *filename)
                 video_enc->b_quant_factor = video_b_qfactor;
                 video_enc->i_quant_offset = video_i_qoffset;
                 video_enc->b_quant_offset = video_b_qoffset;
+                video_enc->intra_quant_bias = video_intra_quant_bias;
+                video_enc->inter_quant_bias = video_inter_quant_bias;
                 video_enc->dct_algo = dct_algo;
                 video_enc->idct_algo = idct_algo;
                 video_enc->strict_std_compliance = strict;
                 video_enc->error_rate = error_rate;
                 video_enc->noise_reduction= noise_reduction;
+                video_enc->scenechange_threshold= sc_threshold;
                 if(packet_size){
                     video_enc->rtp_mode= 1;
                     video_enc->rtp_payload_size= packet_size;
@@ -3001,6 +3026,8 @@ const OptionDef options[] = {
     { "i_qfactor", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qfactor}, "qp factor between p and i frames", "factor" },
     { "b_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_qoffset}, "qp offset between p and b frames", "offset" },
     { "i_qoffset", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
+    { "ibias", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_ibias}, "intra quant bias", "bias" },
+    { "pbias", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pbias}, "inter quant bias", "bias" },
 //    { "b_strategy", HAS_ARG | OPT_EXPERT, {(void*)opt_b_strategy}, "dynamic b frame selection strategy", "strategy" },
     { "rc_eq", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_eq}, "set rate control equation", "equation" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
@@ -3047,11 +3074,13 @@ const OptionDef options[] = {
     { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
     { "alt", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_alt_scan}, "enable alternate scantable (mpeg2)" },
     { "trell", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_trell}, "enable trellis quantization" },
+    { "cgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&closed_gop}, "closed gop" },
     { "scan_offset", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_scan_offset}, "enable SVCD Scan Offset placeholder" },
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
     { "nr", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_noise_reduction}, "noise reduction", "" },
+    { "sc_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sc_threshold}, "scene change threshold", "threshold" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },

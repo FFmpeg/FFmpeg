@@ -474,8 +474,6 @@ static int rv10_decode_init(AVCodecContext *avctx)
         av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", avctx->sub_id);
     }
 //printf("ver:%X\n", avctx->sub_id);
-    s->flags= avctx->flags;
-
     if (MPV_common_init(s) < 0)
         return -1;
 

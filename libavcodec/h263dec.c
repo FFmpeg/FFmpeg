@@ -393,6 +393,7 @@ uint64_t time= rdtsc();
     printf("bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
 #endif
     s->flags= avctx->flags;
+    s->flags2= avctx->flags2;
 
     *data_size = 0;
 

@@ -4131,6 +4131,7 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_index;
     
     s->flags= avctx->flags;
+    s->flags2= avctx->flags2;
 
     *data_size = 0;
    

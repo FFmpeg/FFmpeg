@@ -789,7 +789,6 @@ static int svq1_decode_init(AVCodecContext *avctx)
     s->codec_id= avctx->codec->id;
     avctx->pix_fmt = PIX_FMT_YUV410P;
     avctx->has_b_frames= 1; // not true, but DP frames and these behave like unidirectional b frames
-    s->flags= avctx->flags;
     if (MPV_common_init(s) < 0) return -1;
 
     init_vlc(&svq1_block_type, 2, 4,
