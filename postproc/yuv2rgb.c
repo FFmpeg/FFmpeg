@@ -232,7 +232,7 @@ const int32_t Inverse_Table_6_9[8][4] = {
 
 void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_gU[256], int table_gV[256], void *table_bU[256]);
 
-yuv2rgb_fun yuv2rgb;
+yuv2rgb_fun yuv2rgb= NULL;
 
 static void (* yuv2rgb_c_internal) (uint8_t *, uint8_t *,
 				    uint8_t *, uint8_t *,
@@ -263,7 +263,7 @@ void * table_bU[256];
 
 void yuv2rgb_init (unsigned bpp, int mode)
 {
-    yuv2rgb = NULL;
+    if(yuv2rgb) return;
 #ifdef CAN_COMPILE_X86_ASM
     if(gCpuCaps.hasMMX2)
     {
