@@ -6054,8 +6054,10 @@ int flv_h263_decode_picture_header(MpegEncContext *s)
     s->height = height;
 
     s->pict_type = I_TYPE + get_bits(&s->gb, 2);
-    if (s->pict_type > P_TYPE)
+    s->dropable= s->pict_type > P_TYPE;
+    if (s->dropable)
         s->pict_type = P_TYPE;
+
     skip_bits1(&s->gb);	/* deblocking flag */
     s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
 

@@ -355,8 +355,9 @@ typedef struct MpegEncContext {
     int adaptive_quant;         ///< use adaptive quantization 
     int dquant;                 ///< qscale difference to prev qscale  
     int pict_type;              ///< I_TYPE, P_TYPE, B_TYPE, ... 
-    int last_pict_type;
+    int last_pict_type; //FIXME removes
     int last_non_b_pict_type;   ///< used for mpeg4 gmc b-frames & ratecontrol 
+    int dropable;
     int frame_rate_index;
     int frame_rate_ext_n;       ///< MPEG-2 specific framerate modificators (numerator)
     int frame_rate_ext_d;       ///< MPEG-2 specific framerate modificators (denominator)

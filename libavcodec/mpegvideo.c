@@ -1338,7 +1338,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     assert(s->last_picture_ptr==NULL || s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3);
 
     /* mark&release old frames */
-    if (s->pict_type != B_TYPE && s->last_picture_ptr && s->last_picture_ptr->data[0]) {
+    if (s->pict_type != B_TYPE && s->last_picture_ptr && s->last_picture_ptr != s->next_picture_ptr && s->last_picture_ptr->data[0]) {
         avctx->release_buffer(avctx, (AVFrame*)s->last_picture_ptr);
 
         /* release forgotten pictures */
@@ -1368,7 +1368,7 @@ alloc:
             pic= (AVFrame*)&s->picture[i];
         }
 
-        pic->reference= s->pict_type != B_TYPE ? 3 : 0;
+        pic->reference= s->pict_type != B_TYPE && !s->dropable ? 3 : 0;
 
         pic->coded_picture_number= s->coded_picture_number++;
         
@@ -1390,8 +1390,14 @@ alloc:
   if(s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3){
     if (s->pict_type != B_TYPE) {
         s->last_picture_ptr= s->next_picture_ptr;
-        s->next_picture_ptr= s->current_picture_ptr;
+        if(!s->dropable)
+            s->next_picture_ptr= s->current_picture_ptr;
     }
+/*    av_log(s->avctx, AV_LOG_DEBUG, "L%p N%p C%p L%p N%p C%p type:%d drop:%d\n", s->last_picture_ptr, s->next_picture_ptr,s->current_picture_ptr,
+        s->last_picture_ptr    ? s->last_picture_ptr->data[0] : NULL, 
+        s->next_picture_ptr    ? s->next_picture_ptr->data[0] : NULL, 
+        s->current_picture_ptr ? s->current_picture_ptr->data[0] : NULL,
+        s->pict_type, s->dropable);*/
     
     if(s->last_picture_ptr) copy_picture(&s->last_picture, s->last_picture_ptr);
     if(s->next_picture_ptr) copy_picture(&s->next_picture, s->next_picture_ptr);
