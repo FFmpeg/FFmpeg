@@ -54,7 +54,7 @@ void av_register_output_format(AVOutputFormat *format)
     format->next = NULL;
 }
 
-static int match_ext(const char *filename, const char *extensions)
+int match_ext(const char *filename, const char *extensions)
 {
     const char *ext, *p;
     char ext1[32], *q;
@@ -335,9 +335,11 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         if (buf_size > 0) {
             url_setbufsize(&ic->pb, buf_size);
         }
-        /* read probe data */
-        pd->buf_size = get_buffer(&ic->pb, buf, PROBE_BUF_SIZE);
-        url_fseek(&ic->pb, 0, SEEK_SET);
+        if (!fmt) {
+            /* read probe data */
+            pd->buf_size = get_buffer(&ic->pb, buf, PROBE_BUF_SIZE);
+            url_fseek(&ic->pb, 0, SEEK_SET);
+        }
     }
     
     /* guess file format */
