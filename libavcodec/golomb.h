@@ -178,6 +178,37 @@ static inline int svq3_get_se_golomb(GetBitContext *gb){
     }
 }
 
+/**
+ * read unsigned golomb rice code.
+ */
+static inline int get_ur_golomb(GetBitContext *gb, int k, int limit, int esc_len){
+    unsigned int buf;
+    int log;
+    
+    OPEN_READER(re, gb);
+    UPDATE_CACHE(re, gb);
+    buf=GET_CACHE(re, gb);
+
+    log= av_log2(buf);
+//printf("buf:%X log:%d\n", buf, log);
+    if(log > 31-limit){
+        buf >>= log - k;
+        buf += (30-log)<<k;
+        LAST_SKIP_BITS(re, gb, 32 + k - log);
+        CLOSE_READER(re, gb);
+    
+        return buf;
+    }else if(log == 31-limit){
+        buf >>= log - esc_len;
+        buf -= 1<<esc_len;
+        LAST_SKIP_BITS(re, gb, esc_len + limit + 1);
+        CLOSE_READER(re, gb);
+    
+        return buf + 1;
+    }else
+        return -1;
+}
+
 #ifdef TRACE
 
 static inline int get_ue(GetBitContext *s, char *file, char *func, int line){
@@ -278,4 +309,23 @@ static inline void set_se_golomb(PutBitContext *pb, int i){
     i^= (i>>31);
 #endif
     set_ue_golomb(pb, i);
+}
+
+/**
+ * write unsigned golomb rice code.
+ */
+static inline void set_ur_golomb(PutBitContext *pb, int i, int k, int limit, int esc_len){
+    int e;
+    
+    assert(i>=0);
+    
+    e= i>>k;
+    if(e<limit){
+        put_bits(pb, e + k + 1, (1<<k) + (i&((1<<k)-1)));
+    }else{
+//    printf("set %08X, %d\n", (1<<esc_len) + i - 1, limit + esc_len + 1); 
+        put_bits(pb, limit + esc_len + 1, (1<<esc_len) + i - 1);
+//        put_bits(pb, 1, limit + 1);
+//        put_bits(pb, i - 1, esc_len);
+    }
 }

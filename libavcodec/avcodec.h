@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4668
-#define LIBAVCODEC_BUILD_STR   "4668"
+#define LIBAVCODEC_BUILD       4669
+#define LIBAVCODEC_BUILD_STR   "4669"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -1127,6 +1127,22 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int global_quality;
+    
+#define FF_CODER_TYPE_VLC   0
+#define FF_CODER_TYPE_AC    1
+    /**
+     * coder type
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int coder_type;
+
+    /**
+     * context model
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int context_model;
 } AVCodecContext;
 
 

@@ -28,74 +28,145 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "cabac.h"
+#include "golomb.h"
 
 #define MAX_PLANES 4
 #define CONTEXT_SIZE 32
 
-#if 0
-#define DEFAULT_QDIFF_COUNT (9)
-
-static const uint8_t default_quant_table[512]={
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3,
- 4,
- 5, 5, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8,
- 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
- 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
- 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
- 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
- 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
- 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
- 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
+static const int8_t quant3[256]={
+ 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
+-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1, 0,
 };
-#else
-#define DEFAULT_QDIFF_COUNT (16)
-
-static const uint8_t default_quant_table[256]={
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
- 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
- 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+static const int8_t quant5[256]={
+ 0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
- 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 6, 7,
-8,
- 9,10,11,11,12,12,12,12,13,13,13,13,13,13,13,13,
-14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,
-15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,
-15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,
-15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,
-15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,
-15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,
-15,15,15,15,15,15,15,15,15,15,15,15,15,15,15,
- };
-#endif
-
-static const int to5[16]={
-0,0,0,0,
-0,0,0,1,
-2,3,4,4,
-4,4,4,4,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-1,-1,-1,
 };
+static const int8_t quant7[256]={
+ 0, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+ 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,
+-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,
+-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,
+-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,
+-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,
+-3,-3,-3,-3,-3,-3,-3,-3,-3,-2,-2,-2,-2,-2,-2,-2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,
+-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-2,-1,-1,
+};
+static const int8_t quant9[256]={
+ 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+ 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,
+-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,
+-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,
+-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,
+-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,
+-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,
+-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-3,-3,-3,-3,
+-3,-3,-3,-3,-3,-3,-3,-3,-3,-3,-2,-2,-2,-2,-1,-1,
+};
+static const int8_t quant11[256]={
+ 0, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4,
+ 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,
+-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,
+-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,
+-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,
+-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,
+-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-4,-4,
+-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,
+-4,-4,-4,-4,-4,-3,-3,-3,-3,-3,-3,-3,-2,-2,-2,-1,
+};
+static const int8_t quant13[256]={
+ 0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4,
+ 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+ 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+ 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,
+-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,
+-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,
+-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,
+-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-6,-5,
+-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,
+-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,-5,
+-4,-4,-4,-4,-4,-4,-4,-4,-4,-3,-3,-3,-3,-2,-2,-1,
+};
+
+static const uint8_t log2_run[32]={
+ 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 
+ 4, 4, 5, 5, 6, 6, 7, 7, 
+ 8, 9,10,11,12,13,14,15,
+};
+
+typedef struct VlcState{
+    int16_t drift;
+    uint16_t error_sum;
+    int8_t bias;
+    uint8_t count;
+} VlcState;
 
 typedef struct PlaneContext{
-    uint8_t quant_table[256];
-    int qdiff_count;
     int context_count;
     uint8_t (*state)[CONTEXT_SIZE];
+    VlcState *vlc_state;
     uint8_t interlace_bit_state[2];
 } PlaneContext;
 
 typedef struct FFV1Context{
     AVCodecContext *avctx;
     CABACContext c;
+    GetBitContext gb;
+    PutBitContext pb;
     int version;
     int width, height;
     int chroma_h_shift, chroma_v_shift;
@@ -103,67 +174,37 @@ typedef struct FFV1Context{
     int picture_number;
     AVFrame picture;
     int plane_count;
+    int ac;                              ///< 1-> CABAC 0-> golomb rice
     PlaneContext plane[MAX_PLANES];
+    int16_t quant_table[5][256];
     
     DSPContext dsp; 
 }FFV1Context;
 
- //1.774215
-static inline int predict(FFV1Context *s, uint8_t *src, int stride, int x, int y){
-    if(x && y){
-//        const int RT= src[+1-stride];
-        const int LT= src[-1-stride];
-        const int  T= src[  -stride];
-        const int L = src[-1       ];
-        uint8_t *cm = cropTbl + MAX_NEG_CROP;    
-        const int gradient= cm[L + T - LT];
+static inline int predict(uint8_t *src, uint8_t *last){
+    const int LT= last[-1];
+    const int  T= last[ 0];
+    const int L =  src[-1];
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;    
+    const int gradient= cm[L + T - LT];
 
-//        return gradient;
-        return mid_pred(L, gradient, T);
-    }else{
-        if(y){
-            return src[  -stride];
-        }else if(x){
-            return src[-1       ];
-        }else{
-            return 128;
-        }
-    }
+    return mid_pred(L, gradient, T);
 }
 
+static inline int get_context(FFV1Context *f, uint8_t *src, uint8_t *last, uint8_t *last2){
+    const int LT= last[-1];
+    const int  T= last[ 0];
+    const int RT= last[ 1];
+    const int L =  src[-1];
 
-#if 0
-static inline void put_symbol(CABACContext, uint8_t *state, int v){
-    put_cabac_ueg(c, state, v, 32, 1, 4 , 32);
+    if(f->quant_table[3][127]){
+        const int TT= last2[0];
+        const int LL=  src[-2];
+        return f->quant_table[0][(L-LT) & 0xFF] + f->quant_table[1][(LT-T) & 0xFF] + f->quant_table[2][(T-RT) & 0xFF]
+              +f->quant_table[3][(LL-L) & 0xFF] + f->quant_table[4][(TT-T) & 0xFF];
+    }else
+        return f->quant_table[0][(L-LT) & 0xFF] + f->quant_table[1][(LT-T) & 0xFF] + f->quant_table[2][(T-RT) & 0xFF];
 }
-
-static inline int get_symbol(CABACContext, uint8_t *state){
-    return get_cabac_ueg(c, state, 32, 1, 4 , 32);
-}
-#elif 0
-static inline void put_symbol(CABACContext *c, uint8_t *state, int v){
-    if(v==0)
-        put_cabac(c, state+0, 1);
-    else{
-        put_cabac(c, state+0, 0);
-        put_cabac(c, state+1, v<0);
-        if(v<0) state += 64;
-        put_cabac_ueg(c, state+2, ABS(v)-1, 32, 0, 4 , 32);
-    }
-}
-
-static inline int get_symbol(CABACContext *c, uint8_t *state){
-    if(get_cabac(c, state+0))
-        return 0;
-    else{
-        int sign= get_cabac(c, state+1);
-        if(sign) 
-            return -1-get_cabac_ueg(c, state+66, 32, 0, 4 , 32);
-        else
-            return  1+get_cabac_ueg(c, state+2 , 32, 0, 4 , 32);
-    }
-}
-#else
 
 /**
  * put 
@@ -214,53 +255,184 @@ static inline int get_symbol(CABACContext *c, uint8_t *state, int is_signed){
             return -128;
     }
 }
+
+static inline void update_vlc_state(VlcState * const state, const int v){
+    int drift= state->drift;
+    int count= state->count;
+    state->error_sum += ABS(v);
+    drift += v;
+
+    if(count == 128){ //FIXME variable
+        count >>= 1;
+        drift >>= 1;
+        state->error_sum >>= 1;
+    }
+    count++;
+
+    if(drift <= -count){
+        if(state->bias > -128) state->bias--;
+        
+        drift += count;
+        if(drift <= -count)
+            drift= -count + 1;
+    }else if(drift > 0){
+        if(state->bias <  127) state->bias++;
+        
+        drift -= count;
+        if(drift > 0) 
+            drift= 0;
+    }
+
+    state->drift= drift;
+    state->count= count;
+}
+
+static inline void put_vlc_symbol(PutBitContext *pb, VlcState * const state, int v){
+    int i, k, code;
+//printf("final: %d ", v);
+    v = (int8_t)(v - state->bias);
+    
+    i= state->count;
+    k=0;
+    while(i < state->error_sum){ //FIXME optimize
+        k++;
+        i += i;
+    }
+#if 0 // JPEG LS
+    if(k==0 && 2*state->drift <= - state->count) code= v ^ (-1);
+    else                                         code= v;
+#else
+     code= v ^ ((2*state->drift + state->count)>>31);
 #endif
+    
+    code = -2*code-1;
+    code^= (code>>31);
+//printf("v:%d/%d bias:%d error:%d drift:%d count:%d k:%d\n", v, code, state->bias, state->error_sum, state->drift, state->count, k);
+    set_ur_golomb(pb, code, k, 8, 8);
+
+    update_vlc_state(state, v);
+}
+
+static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state){
+    int k, i, v, ret;
+
+    i= state->count;
+    k=0;
+    while(i < state->error_sum){ //FIXME optimize
+        k++;
+        i += i;
+    }
+    
+    v= get_ur_golomb(gb, k, 8, 8);
+//printf("v:%d bias:%d error:%d drift:%d count:%d k:%d", v, state->bias, state->error_sum, state->drift, state->count, k);
+    
+    v++;
+    if(v&1) v=  (v>>1);
+    else    v= -(v>>1);
+
+#if 0 // JPEG LS
+    if(k==0 && 2*state->drift <= - state->count) v ^= (-1);
+#else
+     v ^= ((2*state->drift + state->count)>>31);
+#endif
+
+    ret= (int8_t)(v + state->bias);
+    
+    update_vlc_state(state, v);
+//printf("final: %d\n", ret);
+    return ret;
+}
+
+
 
 static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride, int plane_index){
     PlaneContext * const p= &s->plane[plane_index];
     CABACContext * const c= &s->c;
     int x,y;
-    uint8_t pred_diff_buffer[4][w+6];
+    uint8_t pred_diff_buffer[4][w+6]; //FIXME rema,e
     uint8_t *pred_diff[4]= {pred_diff_buffer[0]+3, pred_diff_buffer[1]+3, pred_diff_buffer[2]+3, pred_diff_buffer[3]+3};
-//    uint8_t temp_buf[3*w], *temp= temp_buf + 3*w;
+    int run_index=0;
     
     memset(pred_diff_buffer, 0, sizeof(pred_diff_buffer));
     
     for(y=0; y<h; y++){
         uint8_t *temp= pred_diff[0]; //FIXME try a normal buffer
+        int run_count=0;
+        int run_mode=0;
 
         pred_diff[0]= pred_diff[1];
         pred_diff[1]= pred_diff[2];
         pred_diff[2]= pred_diff[3];
         pred_diff[3]= temp;
+        
+        pred_diff[3][-1]= pred_diff[2][0  ];
+        pred_diff[2][ w]= pred_diff[2][w-1];
 
         for(x=0; x<w; x++){
             uint8_t *temp_src= src + x + stride*y;
-            int diff, context, qdiff;
-             
-            if(p->context_count == 256)
-                context= pred_diff[3+0][x-1] + 16*pred_diff[3-1][x+0];
-            else
-                context=            pred_diff[3+0][x-1] + 16*pred_diff[3-1][x+0] 
-                        + 16*16*to5[pred_diff[3-1][x+1]] + 16*16*5*to5[pred_diff[3-0][x-2]] + 16*16*5*5*to5[pred_diff[3-2][x+0]];
-
-            diff = (int8_t)(temp_src[0] - predict(s, temp_src, stride, x, y));
+            int diff, context;
             
-            qdiff= p->quant_table[128+diff];
+            context= get_context(s, pred_diff[3]+x, pred_diff[2]+x, pred_diff[1]+x);
+            diff= temp_src[0] - predict(pred_diff[3]+x, pred_diff[2]+x);
 
-            put_symbol(c, p->state[context], diff, 1);
+            if(context < 0){
+                context = -context;
+                diff= -diff;
+            }
 
-            pred_diff[3][x]= qdiff;
+            diff= (int8_t)diff;
+
+            if(s->ac)
+                put_symbol(c, p->state[context], diff, 1);
+            else{
+                if(context == 0) run_mode=1;
+                
+                if(run_mode){
+
+                    if(diff){
+                        while(run_count >= 1<<log2_run[run_index]){
+                            run_count -= 1<<log2_run[run_index];
+                            run_index++;
+                            put_bits(&s->pb, 1, 1);
+                        }
+                        
+                        put_bits(&s->pb, 1 + log2_run[run_index], run_count);
+                        if(run_index) run_index--;
+                        run_count=0;
+                        run_mode=0;
+                        if(diff>0) diff--;
+                    }else{
+                        run_count++;
+                    }
+                }
+                
+//                printf("count:%d index:%d, mode:%d, x:%d y:%d pos:%d\n", run_count, run_index, run_mode, x, y, (int)get_bit_count(&s->pb));
+
+                if(run_mode == 0)
+                    put_vlc_symbol(&s->pb, &p->vlc_state[context], diff);
+            }
+
+            pred_diff[3][x]= temp_src[0];
+        }
+        if(run_mode){
+            while(run_count >= 1<<log2_run[run_index]){
+                run_count -= 1<<log2_run[run_index];
+                run_index++;
+                put_bits(&s->pb, 1, 1);
+            }
+
+            if(run_count)
+                put_bits(&s->pb, 1, 1);
         }
     }
 }
 
-static void write_quant_table(CABACContext *c, uint8_t *quant_table){
+static void write_quant_table(CABACContext *c, int16_t *quant_table){
     int last=0;
     int i;
     uint8_t state[CONTEXT_SIZE]={0};
 
-    for(i=1; i<256 ; i++){
+    for(i=1; i<128 ; i++){
         if(quant_table[i] != quant_table[i-1]){
             put_symbol(c, state, i-last-1, 0);
             last= i;
@@ -275,18 +447,15 @@ static void write_header(FFV1Context *f){
     CABACContext * const c= &f->c;
 
     put_symbol(c, state, f->version, 0);
+    put_symbol(c, state, f->avctx->coder_type, 0);
     put_symbol(c, state, 0, 0); //YUV cs type 
     put_cabac(c, state, 1); //chroma planes
         put_symbol(c, state, f->chroma_h_shift, 0);
         put_symbol(c, state, f->chroma_v_shift, 0);
     put_cabac(c, state, 0); //no transparency plane
 
-    for(i=0; i<3; i++){ //FIXME chroma & trasparency decission
-        PlaneContext * const p= &f->plane[i];
-        
-        put_symbol(c, state, av_log2(p->context_count), 0);
-        write_quant_table(c, p->quant_table);
-    }
+    for(i=0; i<5; i++)
+        write_quant_table(c, f->quant_table[i]);
 }
 
 static int common_init(AVCodecContext *avctx){
@@ -314,21 +483,37 @@ static int encode_init(AVCodecContext *avctx)
     common_init(avctx);
  
     s->version=0;
+    s->ac= avctx->coder_type;
     
     s->plane_count=3;
+    for(i=0; i<256; i++){
+        s->quant_table[0][i]=           quant11[i];
+        s->quant_table[1][i]=        11*quant11[i];
+        if(avctx->context_model==0){
+            s->quant_table[2][i]=     11*11*quant11[i];
+            s->quant_table[3][i]=
+            s->quant_table[4][i]=0;
+        }else{
+            s->quant_table[2][i]=     11*11*quant5 [i];
+            s->quant_table[3][i]=   5*11*11*quant5 [i];
+            s->quant_table[4][i]= 5*5*11*11*quant5 [i];
+        }
+    }
 
     for(i=0; i<s->plane_count; i++){
         PlaneContext * const p= &s->plane[i];
-        memcpy(p->quant_table, default_quant_table, sizeof(uint8_t)*256);
-        p->qdiff_count= DEFAULT_QDIFF_COUNT;
-        
-#if 1
-        p->context_count= 256;
-        p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
-#else        
-        p->context_count= 16*16*128 /*5*5*5*/;
-        p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
-#endif
+               
+        if(avctx->context_model==0){
+            p->context_count= (11*11*11+1)/2;
+        }else{        
+            p->context_count= (11*11*5*5*5+1)/2;
+        }
+
+        if(s->ac){
+            if(!p->state) p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
+        }else{
+            if(!p->vlc_state) p->vlc_state= av_malloc(p->context_count*sizeof(VlcState));
+        }
     }
 
     avctx->coded_frame= &s->picture;
@@ -362,8 +547,15 @@ static void clear_state(FFV1Context *f){
         p->interlace_bit_state[1]= 0;
         
         for(j=0; j<p->context_count; j++){
-            memset(p->state[j], 0, sizeof(uint8_t)*CONTEXT_SIZE);
-            p->state[j][7] = 2*62;
+            if(f->ac){
+                memset(p->state[j], 0, sizeof(uint8_t)*CONTEXT_SIZE);
+                p->state[j][7] = 2*62;
+            }else{
+                p->vlc_state[j].drift= 0;
+                p->vlc_state[j].error_sum= 4; //FFMAX((RANGE + 32)/64, 2);
+                p->vlc_state[j].bias= 0;
+                p->vlc_state[j].count= 1;
+            }
         }
     }
 }
@@ -375,6 +567,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     const int width= f->width;
     const int height= f->height;
     AVFrame * const p= &f->picture;
+    int used_count= 0;
 
     if(avctx->strict_std_compliance >= 0){
         printf("this codec is under development, files encoded with it wont be decodeable with future versions!!!\n"
@@ -398,6 +591,12 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         p->key_frame= 0;
     }
 
+    if(!f->ac){
+        used_count += put_cabac_terminate(c, 1);
+//printf("pos=%d\n", used_count);
+        init_put_bits(&f->pb, buf + used_count, buf_size - used_count, NULL, NULL);
+    }
+    
     if(1){
         const int chroma_width = -((-width )>>f->chroma_h_shift);
         const int chroma_height= -((-height)>>f->chroma_v_shift);
@@ -411,7 +610,12 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     
     f->picture_number++;
 
-    return put_cabac_terminate(c, 1);
+    if(f->ac){
+        return put_cabac_terminate(c, 1);
+    }else{
+        flush_put_bits(&f->pb); //nicer padding FIXME
+        return used_count + (get_bit_count(&f->pb)+7)/8;
+    }
 }
 
 static void common_end(FFV1Context *s){
@@ -439,67 +643,109 @@ static void decode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
     int x,y;
     uint8_t pred_diff_buffer[4][w+6];
     uint8_t *pred_diff[4]= {pred_diff_buffer[0]+3, pred_diff_buffer[1]+3, pred_diff_buffer[2]+3, pred_diff_buffer[3]+3};
-//    uint8_t temp_buf[3*w], *temp= temp_buf + 3*w;
+    int run_index=0;
     
     memset(pred_diff_buffer, 0, sizeof(pred_diff_buffer));
     
     for(y=0; y<h; y++){
         uint8_t *temp= pred_diff[0]; //FIXME try a normal buffer
+        int run_count=0;
+        int run_mode=0;
 
         pred_diff[0]= pred_diff[1];
         pred_diff[1]= pred_diff[2];
         pred_diff[2]= pred_diff[3];
         pred_diff[3]= temp;
 
+        pred_diff[3][-1]= pred_diff[2][0  ];
+        pred_diff[2][ w]= pred_diff[2][w-1];
+
         for(x=0; x<w; x++){
             uint8_t *temp_src= src + x + stride*y;
-            int diff, context, qdiff;
+            int diff, context, sign;
              
-            if(p->context_count == 256)
-                context= pred_diff[3+0][x-1] + 16*pred_diff[3-1][x+0];
-            else
-                context=            pred_diff[3+0][x-1] + 16*pred_diff[3-1][x+0] 
-                        + 16*16*to5[pred_diff[3-1][x+1]] + 16*16*5*to5[pred_diff[3-0][x-2]] + 16*16*5*5*to5[pred_diff[3-2][x+0]];
+            context= get_context(s, pred_diff[3] + x, pred_diff[2] + x, pred_diff[1] + x);
+            if(context < 0){
+                context= -context;
+                sign=1;
+            }else
+                sign=0;
+            
 
-            diff= get_symbol(c, p->state[context], 1);
+            if(s->ac)
+                diff= get_symbol(c, p->state[context], 1);
+            else{
+                if(context == 0 && run_mode==0) run_mode=1;
+                
+                if(run_mode){
+                    if(run_count==0 && run_mode==1){
+                        if(get_bits1(&s->gb)){
+                            run_count = 1<<log2_run[run_index];
+                            if(x + run_count <= w) run_index++;
+                        }else{
+                            if(log2_run[run_index]) run_count = get_bits(&s->gb, log2_run[run_index]);
+                            else run_count=0;
+                            if(run_index) run_index--;
+                            run_mode=2;
+                        }
+                    }
+                    run_count--;
+                    if(run_count < 0){
+                        run_mode=0;
+                        run_count=0;
+                        diff= get_vlc_symbol(&s->gb, &p->vlc_state[context]);
+                        if(diff>=0) diff++;
+                    }else
+                        diff=0;
+                }else
+                    diff= get_vlc_symbol(&s->gb, &p->vlc_state[context]);
+                
+//                printf("count:%d index:%d, mode:%d, x:%d y:%d pos:%d\n", run_count, run_index, run_mode, x, y, get_bits_count(&s->gb));
+            }
 
-            temp_src[0] = predict(s, temp_src, stride, x, y) + diff;
+            if(sign) diff= (int8_t)(-diff); //FIXME remove cast
+
+            pred_diff[3][x]=
+            temp_src[0] = predict(pred_diff[3] + x, pred_diff[2] + x) + diff;
             
             assert(diff>= -128 && diff <= 127);
-
-            qdiff= p->quant_table[128+diff];
-
-            pred_diff[3][x]= qdiff;
         }
     }
 }
 
-static int read_quant_table(CABACContext *c, uint8_t *quant_table){
+static int read_quant_table(CABACContext *c, int16_t *quant_table, int scale){
     int v;
     int i=0;
     uint8_t state[CONTEXT_SIZE]={0};
 
-    for(v=0; i<256 ; v++){
+    for(v=0; i<128 ; v++){
         int len= get_symbol(c, state, 0) + 1;
 
-        if(len + i > 256) return -1;
+        if(len + i > 128) return -1;
         
         while(len--){
-            quant_table[i++] = v;
+            quant_table[i] = scale*v;
+            i++;
 //printf("%2d ",v);
 //if(i%16==0) printf("\n");
         }
     }
+
+    for(i=1; i<128; i++){
+        quant_table[256-i]= -quant_table[i];
+    }
+    quant_table[128]= -quant_table[127];
     
-    return v;
+    return 2*v - 1;
 }
 
 static int read_header(FFV1Context *f){
     uint8_t state[CONTEXT_SIZE]={0};
-    int i;
+    int i, context_count;
     CABACContext * const c= &f->c;
     
     f->version= get_symbol(c, state, 0);
+    f->ac= f->avctx->coder_type= get_symbol(c, state, 0);
     get_symbol(c, state, 0); //YUV cs type
     get_cabac(c, state); //no chroma = false
     f->chroma_h_shift= get_symbol(c, state, 0);
@@ -507,15 +753,22 @@ static int read_header(FFV1Context *f){
     get_cabac(c, state); //transparency plane
     f->plane_count= 3;
     
+    context_count=1;
+    for(i=0; i<5; i++){
+        context_count*= read_quant_table(c, f->quant_table[i], context_count);
+    }
+    context_count= (context_count+1)/2;
+    
     for(i=0; i<f->plane_count; i++){
         PlaneContext * const p= &f->plane[i];
 
-        p->context_count= 1<<get_symbol(c, state, 0);
-        p->qdiff_count= read_quant_table(c, p->quant_table);
-        if(p->qdiff_count < 0) return -1;
-        
-        if(!p->state)
-            p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
+        p->context_count= context_count;
+
+        if(f->ac){
+            if(!p->state) p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
+        }else{
+            if(!p->vlc_state) p->vlc_state= av_malloc(p->context_count*sizeof(VlcState));
+        }
     }
     
     return 0;
@@ -523,7 +776,7 @@ static int read_header(FFV1Context *f){
 
 static int decode_init(AVCodecContext *avctx)
 {
-    FFV1Context *s = avctx->priv_data;
+//    FFV1Context *s = avctx->priv_data;
 
     common_init(avctx);
     
@@ -587,6 +840,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     if(avctx->debug&FF_DEBUG_PICT_INFO)
         printf("keyframe:%d\n", p->key_frame);
     
+    if(!f->ac){
+        bytes_read = get_cabac_terminate(c);
+        if(bytes_read ==0) printf("error at end of AC stream\n");
+//printf("pos=%d\n", bytes_read);
+        init_get_bits(&f->gb, buf + bytes_read, buf_size - bytes_read);
+    }
     
     if(1){
         const int chroma_width = -((-width )>>f->chroma_h_shift);
@@ -607,9 +866,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     *data_size = sizeof(AVFrame);
     
-    bytes_read= get_cabac_terminate(c);
-    if(bytes_read ==0) printf("error at end of frame\n");
-    
+    if(f->ac){
+        bytes_read= get_cabac_terminate(c);
+        if(bytes_read ==0) printf("error at end of frame\n");
+    }else{
+        bytes_read+= (get_bits_count(&f->gb)+7)/8;
+    }
+
     return bytes_read;
 }
 
