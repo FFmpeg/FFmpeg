@@ -47,7 +47,7 @@ stddev: 13.42 bytes:7602176
 89ad858355f9b0a92d024c5ba6e369dd *./data/a-asv1.avi
 b3e1696d73071c8f7f0ff4e10c1677ca *./data/out.yuv
 stddev: 19.19 bytes:7602176
-4a516d78139d521847fdba64a1123aea *./data/a-flv.flv
+37a528aa9efc28c5c3cc8191da90e012 *./data/a-flv.flv
 57ea0821ec4377e96647adc22717a4ba *./data/out.yuv
 stddev:  8.19 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2

@@ -51,8 +51,6 @@
 #ifdef CONFIG_ENCODERS
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
                               int n);
-static void h263_flv_encode_block(MpegEncContext * s, DCTELEM * block,
-                                  int n);
 static void h263_encode_motion(MpegEncContext * s, int val, int fcode);
 static void h263p_encode_umotion(MpegEncContext * s, int val);
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block,
@@ -185,7 +183,7 @@ void ff_flv_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb, 16, s->height);
       }
       put_bits(&s->pb, 2, s->pict_type == P_TYPE); /* PictureType */
-      put_bits(&s->pb, 1, 0); /* DeblockingFlag: off */
+      put_bits(&s->pb, 1, 1); /* DeblockingFlag: on */
       put_bits(&s->pb, 5, s->qscale); /* Quantizer */
       put_bits(&s->pb, 1, 0); /* ExtraInformation */
 
