@@ -458,7 +458,7 @@ int av_find_stream_info(AVFormatContext *ic)
     AVCodec *codec;
     AVStream *st;
     AVPacket *pkt;
-    AVPicture picture;
+    AVVideoFrame picture;
     AVPacketList *pktl=NULL, **ppktl;
     short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
     UINT8 *ptr;
@@ -694,6 +694,8 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     st = av_mallocz(sizeof(AVStream));
     if (!st)
         return NULL;
+    avcodec_get_context_defaults(&st->codec);
+
     st->index = s->nb_streams;
     st->id = id;
     s->streams[s->nb_streams++] = st;

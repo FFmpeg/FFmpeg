@@ -1180,9 +1180,11 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 	    get_bits(&s->gb, 8), get_bits(&s->gb, 8));
 	if (get_bits(&s->gb, 8) == 0)
 	{
-	    s->avctx->aspect_ratio_info = FF_ASPECT_EXTENDED;
-	    s->avctx->aspected_width = get_bits(&s->gb, 16);
-	    s->avctx->aspected_height = get_bits(&s->gb, 16);
+	    int x_density = get_bits(&s->gb, 16);
+	    int y_density = get_bits(&s->gb, 16);
+
+            //MN: needs to be checked
+            s->avctx->aspect_ratio= s->width*y_density/((float)s->height*x_density);
 	}
 	else
 	{
@@ -1468,7 +1470,7 @@ eoi_parser:
                         }
                         /* dummy quality */
                         /* XXX: infer it with matrix */
-                    	avctx->quality = 3; 
+//                    	avctx->quality = 3; 
                         goto the_end;
                     }
 		    break;
@@ -1635,7 +1637,7 @@ read_header:
     }
     /* dummy quality */
     /* XXX: infer it with matrix */
-    avctx->quality = 3; 
+//    avctx->quality = 3; 
 
     return buf_ptr - buf;
 }

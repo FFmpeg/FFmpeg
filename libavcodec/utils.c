@@ -86,6 +86,123 @@ void register_avcodec(AVCodec *format)
     format->next = NULL;
 }
 
+void avcodec_get_chroma_sub_sample(int fmt, int *h_shift, int *v_shift){
+    switch(fmt){
+    case PIX_FMT_YUV410P:
+        *h_shift=2;
+        *v_shift=2;
+        break;
+    case PIX_FMT_YUV420P:
+        *h_shift=1;
+        *v_shift=1;
+        break;
+    case PIX_FMT_YUV411P:
+        *h_shift=2;
+        *v_shift=0;
+        break;
+    case PIX_FMT_YUV422P:
+    case PIX_FMT_YUV422:
+        *h_shift=1;
+        *v_shift=0;
+        break;
+    default: //RGB/...
+        *h_shift=0;
+        *v_shift=0;
+        break;
+    }
+}
+
+typedef struct DefaultPicOpaque{
+    int last_pic_num;
+    uint8_t *data[4];
+}DefaultPicOpaque;
+
+int avcodec_default_get_buffer(AVCodecContext *s, AVVideoFrame *pic){
+    int i;
+    const int width = s->width;
+    const int height= s->height;
+    DefaultPicOpaque *opaque;
+
+    if(pic->opaque){
+        opaque= (DefaultPicOpaque *)pic->opaque;
+        for(i=0; i<3; i++)
+            pic->data[i]= opaque->data[i];
+
+//    printf("get_buffer %X coded_pic_num:%d last:%d\n", pic->opaque, pic->coded_picture_number, opaque->last_pic_num);    
+        pic->age= pic->coded_picture_number - opaque->last_pic_num;
+        opaque->last_pic_num= pic->coded_picture_number;
+//printf("age: %d %d %d\n", pic->age, c->picture_number, pic->coded_picture_number);
+    }else{
+        int align, h_chroma_shift, v_chroma_shift;
+        int w, h, pixel_size;
+        
+        avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+        
+        switch(s->pix_fmt){
+        case PIX_FMT_YUV422:
+            pixel_size=2;
+            break;
+        case PIX_FMT_RGB24:
+        case PIX_FMT_BGR24:
+            pixel_size=3;
+            break;
+        case PIX_FMT_BGRA32:
+        case PIX_FMT_RGBA32:
+            pixel_size=4;
+            break;
+        default:
+            pixel_size=1;
+        }
+        
+        if(s->codec_id==CODEC_ID_SVQ1) align=63;
+        else                           align=15;
+    
+        w= (width +align)&~align;
+        h= (height+align)&~align;
+    
+        if(!(s->flags&CODEC_FLAG_EMU_EDGE)){
+            w+= EDGE_WIDTH*2;
+            h+= EDGE_WIDTH*2;
+        }
+        
+        opaque= av_mallocz(sizeof(DefaultPicOpaque));
+        if(opaque==NULL) return -1;
+
+        pic->opaque= opaque;
+        opaque->last_pic_num= -256*256*256*64;
+
+        for(i=0; i<3; i++){
+            int h_shift= i==0 ? 0 : h_chroma_shift;
+            int v_shift= i==0 ? 0 : v_chroma_shift;
+
+            pic->linesize[i]= pixel_size*w>>h_shift;
+
+            pic->base[i]= av_mallocz((pic->linesize[i]*h>>v_shift)+16); //FIXME 16
+            if(pic->base[i]==NULL) return -1;
+
+            memset(pic->base[i], 128, pic->linesize[i]*h>>v_shift);
+        
+            if(s->flags&CODEC_FLAG_EMU_EDGE)
+                pic->data[i] = pic->base[i];
+            else
+                pic->data[i] = pic->base[i] + (pic->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift);
+            
+            opaque->data[i]= pic->data[i];
+        }
+        pic->age= 256*256*256*64;
+    }
+
+    return 0;
+}
+
+void avcodec_default_release_buffer(AVCodecContext *s, AVVideoFrame *pic){
+    int i;
+    
+    for(i=0; i<3; i++)
+        pic->data[i]=NULL;
+//printf("R%X\n", pic->opaque);
+}
+
 void avcodec_get_context_defaults(AVCodecContext *s){
     s->bit_rate= 800*1000;
     s->bit_rate_tolerance= s->bit_rate*10;
@@ -104,6 +221,8 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->frame_rate = 25 * FRAME_RATE_BASE;
     s->gop_size= 50;
     s->me_method= ME_EPZS;
+    s->get_buffer= avcodec_default_get_buffer;
+    s->release_buffer= avcodec_default_release_buffer;
 }
 
 /**
@@ -118,6 +237,16 @@ AVCodecContext *avcodec_alloc_context(void){
     avcodec_get_context_defaults(avctx);
     
     return avctx;
+}
+
+/**
+ * allocates a AVPicture and set it to defaults.
+ * this can be deallocated by simply calling free() 
+ */
+AVVideoFrame *avcodec_alloc_picture(void){
+    AVVideoFrame *pic= av_mallocz(sizeof(AVVideoFrame));
+    
+    return pic;
 }
 
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
@@ -152,7 +281,7 @@ int avcodec_encode_audio(AVCodecContext *avctx, UINT8 *buf, int buf_size,
 }
 
 int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
-                         const AVPicture *pict)
+                         const AVVideoFrame *pict)
 {
     int ret;
 
@@ -167,17 +296,17 @@ int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size,
 /* decode a frame. return -1 if error, otherwise return the number of
    bytes used. If no frame could be decompressed, *got_picture_ptr is
    zero. Otherwise, it is non zero */
-int avcodec_decode_video(AVCodecContext *avctx, AVPicture *picture, 
+int avcodec_decode_video(AVCodecContext *avctx, AVVideoFrame *picture, 
                          int *got_picture_ptr,
                          UINT8 *buf, int buf_size)
 {
     int ret;
-
+    
     ret = avctx->codec->decode(avctx, picture, got_picture_ptr, 
                                buf, buf_size);
 
     emms_c(); //needed to avoid a emms_c() call before every return;
-
+    
     if (*got_picture_ptr)                           
         avctx->frame_number++;
     return ret;

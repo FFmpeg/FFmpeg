@@ -103,6 +103,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 AVStream *st = av_mallocz(sizeof(AVStream));
                 if (!st)
                     goto fail;
+                avcodec_get_context_defaults(&st->codec);
+
                 s->streams[i] = st;
 	    }
             url_fskip(pb, size - 7 * 4);

@@ -134,7 +134,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         int n;
         UINT64 time_code;
         
-        if (s->picture_in_gop_number == 0) {
+        if (s->current_picture.key_frame) {
             /* mpeg1 header repeated every gop */
             put_header(s, SEQ_START_CODE);
             
@@ -1359,7 +1359,6 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     s->mpeg_enc_ctx.picture_number = 0;
     s->repeat_field = 0;
     s->mpeg_enc_ctx.codec_id= avctx->codec->id;
-    avctx->mbskip_table= s->mpeg_enc_ctx.mbskip_table;
     return 0;
 }
 
@@ -1403,9 +1402,6 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     s->pict_type = get_bits(&s->gb, 3);
     dprintf("pict_type=%d number=%d\n", s->pict_type, s->picture_number);
 
-    avctx->pict_type= s->pict_type;
-    avctx->key_frame= s->pict_type == I_TYPE;
-
     skip_bits(&s->gb, 16);
     if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
         s->full_pel[0] = get_bits1(&s->gb);
@@ -1423,6 +1419,8 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
         s->mpeg_f_code[1][0] = f_code;
         s->mpeg_f_code[1][1] = f_code;
     }
+    s->current_picture.pict_type= s->pict_type;
+    s->current_picture.key_frame= s->pict_type == I_TYPE;
     s->y_dc_scale = 8;
     s->c_dc_scale = 8;
     s->first_slice = 1;
@@ -1576,7 +1574,7 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
  *         DECODE_SLICE_EOP if the end of the picture is reached
  */
 static int mpeg_decode_slice(AVCodecContext *avctx, 
-                              AVPicture *pict,
+                              AVVideoFrame *pict,
                               int start_code,
                               UINT8 *buf, int buf_size)
 {
@@ -1677,38 +1675,25 @@ eos: //end of slice
     if (/*s->mb_x == 0 &&*/
         s->mb_y == s->mb_height) {
         /* end of image */
-        UINT8 **picture;
+
+        if(s->mpeg2)
+            s->qscale >>=1;
 
         MPV_frame_end(s);
 
         if (s->pict_type == B_TYPE) {
-            picture = s->current_picture;
-            avctx->quality = s->qscale;
+            *pict= *(AVVideoFrame*)&s->current_picture;
         } else {
+            s->picture_number++;
             /* latency of 1 frame for I and P frames */
             /* XXX: use another variable than picture_number */
-            if (s->picture_number == 0) {
-                picture = NULL;
+            if (s->picture_number == 1) {
+                return DECODE_SLICE_OK;
             } else {
-                picture = s->last_picture;
-                avctx->quality = s->last_qscale;
+                *pict= *(AVVideoFrame*)&s->last_picture;
             }
-            s->last_qscale = s->qscale;
-            s->picture_number++;
         }
-        if(s->mpeg2)
-            avctx->quality>>=1;
-        if (picture) {
-            pict->data[0] = picture[0];
-            pict->data[1] = picture[1];
-            pict->data[2] = picture[2];
-            pict->linesize[0] = s->linesize;
-            pict->linesize[1] = s->uvlinesize;
-            pict->linesize[2] = s->uvlinesize;
-            return DECODE_SLICE_EOP;
-        } else {
-            return DECODE_SLICE_OK;
-        }
+        return DECODE_SLICE_EOP;
     } else {
         return DECODE_SLICE_OK;
     }
@@ -1827,7 +1812,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     Mpeg1Context *s = avctx->priv_data;
     UINT8 *buf_end, *buf_ptr, *buf_start;
     int len, start_code_found, ret, code, start_code, input_size;
-    AVPicture *picture = data;
+    AVVideoFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;
             
     dprintf("fill_buffer\n");
@@ -1837,13 +1822,9 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     /* special case for last picture */
     if (buf_size == 0) {
         if (s2->picture_number > 0) {
-            picture->data[0] = s2->next_picture[0];
-            picture->data[1] = s2->next_picture[1];
-            picture->data[2] = s2->next_picture[2];
-            picture->linesize[0] = s2->linesize;
-            picture->linesize[1] = s2->uvlinesize;
-            picture->linesize[2] = s2->uvlinesize;
-            *data_size = sizeof(AVPicture);
+            *picture= *(AVVideoFrame*)&s2->next_picture;
+
+            *data_size = sizeof(AVVideoFrame);
         }
         return 0;
     }

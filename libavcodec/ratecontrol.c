@@ -41,7 +41,7 @@ void ff_write_pass1_stats(MpegEncContext *s){
     sprintf(s->avctx->stats_out, "in:%d out:%d type:%d q:%f itex:%d ptex:%d mv:%d misc:%d fcode:%d bcode:%d mc-var:%d var:%d icount:%d;\n",
             s->picture_number, s->input_picture_number - s->max_b_frames, s->pict_type, 
             s->frame_qscale, s->i_tex_bits, s->p_tex_bits, s->mv_bits, s->misc_bits, 
-            s->f_code, s->b_code, s->mc_mb_var_sum, s->mb_var_sum, s->i_count);
+            s->f_code, s->b_code, s->current_picture.mc_mb_var_sum, s->current_picture.mb_var_sum, s->i_count);
 }
 
 int ff_rate_control_init(MpegEncContext *s)
@@ -475,11 +475,12 @@ static void adaptive_quantization(MpegEncContext *s, double q){
     float bits_tab[s->mb_num];
     const int qmin= 2; //s->avctx->mb_qmin;
     const int qmax= 31; //s->avctx->mb_qmax;
+    Picture * const pic= &s->current_picture;
     
     for(i=0; i<s->mb_num; i++){
-        float temp_cplx= sqrt(s->mc_mb_var[i]);
-        float spat_cplx= sqrt(s->mb_var[i]);
-        const int lumi= s->mb_mean[i];
+        float temp_cplx= sqrt(pic->mc_mb_var[i]);
+        float spat_cplx= sqrt(pic->mb_var[i]);
+        const int lumi= pic->mb_mean[i];
         float bits, cplx, factor;
         
         if(spat_cplx < q/3) spat_cplx= q/3; //FIXME finetune
@@ -533,8 +534,8 @@ static void adaptive_quantization(MpegEncContext *s, double q){
             newq*= bits_sum/cplx_sum;
         }
 
-        if(i && ABS(s->qscale_table[i-1] - newq)<0.75)
-            intq= s->qscale_table[i-1];
+        if(i && ABS(pic->qscale_table[i-1] - newq)<0.75)
+            intq= pic->qscale_table[i-1];
         else
             intq= (int)(newq + 0.5);
 
@@ -542,7 +543,7 @@ static void adaptive_quantization(MpegEncContext *s, double q){
         else if(intq < qmin) intq= qmin;
 //if(i%s->mb_width==0) printf("\n");
 //printf("%2d%3d ", intq, ff_sqrt(s->mc_mb_var[i]));
-        s->qscale_table[i]= intq;
+        pic->qscale_table[i]= intq;
     }
 }
 
@@ -562,6 +563,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
     double rate_factor;
     int var;
     const int pict_type= s->pict_type;
+    Picture * const pic= &s->current_picture;
     emms_c();
 
     get_qminmax(&qmin, &qmax, s, pict_type);
@@ -588,7 +590,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
     br_compensation= (s->bit_rate_tolerance - diff)/s->bit_rate_tolerance;
     if(br_compensation<=0.0) br_compensation=0.001;
 
-    var= pict_type == I_TYPE ? s->mb_var_sum : s->mc_mb_var_sum;
+    var= pict_type == I_TYPE ? pic->mb_var_sum : pic->mc_mb_var_sum;
     
     if(s->flags&CODEC_FLAG_PASS2){
         if(pict_type!=I_TYPE)
@@ -599,8 +601,8 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
     }else{
         rce->pict_type= 
         rce->new_pict_type= pict_type;
-        rce->mc_mb_var_sum= s->mc_mb_var_sum;
-        rce->mb_var_sum   = s->   mb_var_sum;
+        rce->mc_mb_var_sum= pic->mc_mb_var_sum;
+        rce->mb_var_sum   = pic->   mb_var_sum;
         rce->qscale   = 2;
         rce->f_code   = s->f_code;
         rce->b_code   = s->b_code;
@@ -663,10 +665,8 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
     else if(q>qmax) q=qmax;
         
 //    printf("%f %d %d %d\n", q, picture_number, (int)wanted_bits, (int)s->total_bits);
-    
-//printf("%f %f %f\n", q, br_compensation, short_term_q);
-   
-//printf("q:%d diff:%d comp:%f st_q:%f last_size:%d type:%d\n", qscale, (int)diff, br_compensation, 
+       
+//printf("diff:%d comp:%f st_q:%f last_size:%d type:%d\n", (int)diff, br_compensation, 
 //       short_term_q, s->frame_bits, pict_type);
 //printf("%d %d\n", s->bit_rate, (int)fps);
 
@@ -676,8 +676,16 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
         q= (int)(q + 0.5);
     
     rcc->last_qscale= q;
-    rcc->last_mc_mb_var_sum= s->mc_mb_var_sum;
-    rcc->last_mb_var_sum= s->mb_var_sum;
+    rcc->last_mc_mb_var_sum= pic->mc_mb_var_sum;
+    rcc->last_mb_var_sum= pic->mb_var_sum;
+#if 0
+{
+    static int mvsum=0, texsum=0;
+    mvsum += s->mv_bits;
+    texsum += s->i_tex_bits + s->p_tex_bits;
+    printf("%d %d//\n\n", mvsum, texsum);
+}
+#endif
     return q;
 }
 

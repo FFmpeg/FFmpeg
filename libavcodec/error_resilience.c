@@ -464,7 +464,7 @@ int score_sum=0;
                     s->mb_y= mb_y;
                     for(j=0; j<pred_count; j++){
                         int score=0;
-                        UINT8 *src= s->current_picture[0] + mb_x*16 + mb_y*16*s->linesize;
+                        UINT8 *src= s->current_picture.data[0] + mb_x*16 + mb_y*16*s->linesize;
 
                         s->motion_val[mot_index][0]= s->mv[0][0][0]= mv_predictor[j][0];
                         s->motion_val[mot_index][1]= s->mv[0][0][1]= mv_predictor[j][1];
@@ -556,8 +556,8 @@ static int is_intra_more_likely(MpegEncContext *s){
             if((j%skip_amount) != 0) continue; //skip a few to speed things up
     
             if(s->pict_type==I_TYPE){
-                UINT8 *mb_ptr     = s->current_picture[0] + mb_x*16 + mb_y*16*s->linesize;
-                UINT8 *last_mb_ptr= s->last_picture   [0] + mb_x*16 + mb_y*16*s->linesize;
+                UINT8 *mb_ptr     = s->current_picture.data[0] + mb_x*16 + mb_y*16*s->linesize;
+                UINT8 *last_mb_ptr= s->last_picture.data   [0] + mb_x*16 + mb_y*16*s->linesize;
     
 		is_intra_likely += s->dsp.pix_abs16x16(last_mb_ptr, mb_ptr                    , s->linesize);
                 is_intra_likely -= s->dsp.pix_abs16x16(last_mb_ptr, last_mb_ptr+s->linesize*16, s->linesize);
@@ -802,9 +802,9 @@ void ff_error_resilience(MpegEncContext *s){
             if(s->mb_type[i]&MB_TYPE_INTRA) continue; //intra
 //            if(error&MV_ERROR) continue; //inter data damaged FIXME is this good?
             
-            dest_y = s->current_picture[0] + mb_x*16 + mb_y*16*s->linesize;
-            dest_cb= s->current_picture[1] + mb_x*8  + mb_y*8 *s->uvlinesize;
-            dest_cr= s->current_picture[2] + mb_x*8  + mb_y*8 *s->uvlinesize;
+            dest_y = s->current_picture.data[0] + mb_x*16 + mb_y*16*s->linesize;
+            dest_cb= s->current_picture.data[1] + mb_x*8  + mb_y*8 *s->uvlinesize;
+            dest_cr= s->current_picture.data[2] + mb_x*8  + mb_y*8 *s->uvlinesize;
            
             dc_ptr= &s->dc_val[0][mb_x*2+1 + (mb_y*2+1)*(s->mb_width*2+2)];
             for(n=0; n<4; n++){
@@ -852,9 +852,9 @@ void ff_error_resilience(MpegEncContext *s){
             if(!(s->mb_type[i]&MB_TYPE_INTRA)) continue; //inter
             if(!(error&AC_ERROR)) continue;              //undamaged
             
-            dest_y = s->current_picture[0] + mb_x*16 + mb_y*16*s->linesize;
-            dest_cb= s->current_picture[1] + mb_x*8  + mb_y*8 *s->uvlinesize;
-            dest_cr= s->current_picture[2] + mb_x*8  + mb_y*8 *s->uvlinesize;
+            dest_y = s->current_picture.data[0] + mb_x*16 + mb_y*16*s->linesize;
+            dest_cb= s->current_picture.data[1] + mb_x*8  + mb_y*8 *s->uvlinesize;
+            dest_cr= s->current_picture.data[2] + mb_x*8  + mb_y*8 *s->uvlinesize;
             
             put_dc(s, dest_y, dest_cb, dest_cr, mb_x, mb_y);
         }
@@ -863,14 +863,14 @@ void ff_error_resilience(MpegEncContext *s){
     
     if(s->avctx->error_concealment&FF_EC_DEBLOCK){
         /* filter horizontal block boundaries */
-        h_block_filter(s, s->current_picture[0], s->mb_width*2, s->mb_height*2, s->linesize  , 1);
-        h_block_filter(s, s->current_picture[1], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
-        h_block_filter(s, s->current_picture[2], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
+        h_block_filter(s, s->current_picture.data[0], s->mb_width*2, s->mb_height*2, s->linesize  , 1);
+        h_block_filter(s, s->current_picture.data[1], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
+        h_block_filter(s, s->current_picture.data[2], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
 
         /* filter vertical block boundaries */
-        v_block_filter(s, s->current_picture[0], s->mb_width*2, s->mb_height*2, s->linesize  , 1);
-        v_block_filter(s, s->current_picture[1], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
-        v_block_filter(s, s->current_picture[2], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
+        v_block_filter(s, s->current_picture.data[0], s->mb_width*2, s->mb_height*2, s->linesize  , 1);
+        v_block_filter(s, s->current_picture.data[1], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
+        v_block_filter(s, s->current_picture.data[2], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
     }
 
     /* clean a few tables */

@@ -352,7 +352,7 @@ static int rm_write_video(AVFormatContext *s, UINT8 *buf, int size)
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     StreamInfo *stream = rm->video_stream;
-    int key_frame = stream->enc->key_frame;
+    int key_frame = stream->enc->coded_picture->key_frame;
 
     /* XXX: this is incorrect: should be a parameter */
 
@@ -527,6 +527,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st = av_mallocz(sizeof(AVStream));
             if (!st)
                 goto fail;
+            avcodec_get_context_defaults(&st->codec);
             s->streams[s->nb_streams++] = st;
             st->id = get_be16(pb);
             get_be32(pb); /* max bit rate */

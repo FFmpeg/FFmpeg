@@ -482,6 +482,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st = av_mallocz(sizeof(AVStream));
                 if (!st)
                     return -ENOMEM;
+                avcodec_get_context_defaults(&st->codec);
+
                 if (v & 0x01)
                     st->codec.channels = 2;
                 else

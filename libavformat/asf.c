@@ -556,7 +556,7 @@ static void put_frame_header(AVFormatContext *s, ASFStream *stream, int timestam
     int val;
 
     val = stream->num;
-    if (s->streams[val - 1]->codec.key_frame /* && frag_offset == 0 */)
+    if (s->streams[val - 1]->codec.coded_picture->key_frame /* && frag_offset == 0 */)
         val |= 0x80;
     put_byte(pb, val);
     put_byte(pb, stream->seq);
@@ -793,6 +793,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st = av_mallocz(sizeof(AVStream));
             if (!st)
                 goto fail;
+            avcodec_get_context_defaults(&st->codec);
             s->streams[s->nb_streams] = st;
             asf_st = av_mallocz(sizeof(ASFStream));
             if (!asf_st)

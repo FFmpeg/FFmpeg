@@ -144,6 +144,9 @@ typedef struct AVStream {
     AVFrac pts;
     /* ffmpeg.c private use */
     int stream_copy; /* if TRUE, just copy stream */
+    /* quality, as it has been removed from AVCodecContext and put in AVVideoFrame
+     * MN:dunno if thats the right place, for it */
+    float quality; 
 } AVStream;
 
 #define MAX_STREAMS 20

@@ -143,6 +143,8 @@ static int au_read_header(AVFormatContext *s,
     st = av_malloc(sizeof(AVStream));
     if (!st)
         return -1;
+    avcodec_get_context_defaults(&st->codec);
+
     s->nb_streams = 1;
     s->streams[0] = st;
 

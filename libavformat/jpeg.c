@@ -170,6 +170,8 @@ static int jpeg_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_free(s);
         return -ENOMEM;
     }
+    avcodec_get_context_defaults(&st->codec);
+
     s1->streams[0] = st;
     s->img_number = 0;
 

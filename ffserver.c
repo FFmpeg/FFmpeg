@@ -1955,7 +1955,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                     /* we use the codec indication because it is
                        more accurate than the demux flags */
                     pkt->flags = 0;
-                    if (st->codec.key_frame) 
+                    if (st->codec.coded_picture->key_frame) 
                         pkt->flags |= PKT_FLAG_KEY;
                     return 0;
                 }
@@ -3942,7 +3942,7 @@ int parse_ffconfig(const char *filename)
 	} else if (!strcasecmp(cmd, "AudioQuality")) {
 	    get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                audio_enc.quality = atof(arg) * 1000;
+//                audio_enc.quality = atof(arg) * 1000;
             }
         } else if (!strcasecmp(cmd, "VideoBitRateRange")) {
             if (stream) {

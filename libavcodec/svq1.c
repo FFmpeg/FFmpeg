@@ -1063,7 +1063,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   MpegEncContext *s=avctx->priv_data;
   uint8_t      *current, *previous;
   int		result, i, x, y, width, height;
-  AVPicture *pict = data; 
+  AVVideoFrame *pict = data; 
 
   /* initialize bit buffer */
   init_get_bits(&s->gb,buf,buf_size);
@@ -1084,9 +1084,6 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   }
 
   result = svq1_decode_frame_header (&s->gb, s);
-  
-  if(MPV_frame_start(s, avctx) < 0)
-      return -1;
 
   if (result != 0)
   {
@@ -1097,6 +1094,9 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   }
   
   if(avctx->hurry_up && s->pict_type==B_TYPE) return buf_size;
+
+  if(MPV_frame_start(s, avctx) < 0)
+      return -1;
 
   /* decode y, u and v components */
   for (i=0; i < 3; i++) {
@@ -1112,12 +1112,12 @@ static int svq1_decode_frame(AVCodecContext *avctx,
       linesize= s->uvlinesize;
     }
 
-    current  = s->current_picture[i];
+    current  = s->current_picture.data[i];
 
     if(s->pict_type==B_TYPE){
-        previous = s->next_picture[i];
+        previous = s->next_picture.data[i];
     }else{
-        previous = s->last_picture[i];
+        previous = s->last_picture.data[i];
     }
 
     if (s->pict_type == I_TYPE) {
@@ -1159,12 +1159,14 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 	current += 16*linesize;
       }
     }
-
-    pict->data[i] = s->current_picture[i];
-    pict->linesize[i] = linesize;
   }
+  
+  *pict = *(AVVideoFrame*)&s->current_picture;
 
-  *data_size=sizeof(AVPicture);
+
+  MPV_frame_end(s);
+  
+  *data_size=sizeof(AVVideoFrame);
   return buf_size;
 }
 
@@ -1176,7 +1178,6 @@ static int svq1_decode_init(AVCodecContext *avctx)
     s->width = (avctx->width+3)&~3;
     s->height = (avctx->height+3)&~3;
     s->codec_id= avctx->codec->id;
-    avctx->mbskip_table= s->mbskip_table;
     avctx->pix_fmt = PIX_FMT_YUV410P;
     avctx->has_b_frames= s->has_b_frames=1; // not true, but DP frames and these behave like unidirectional b frames
     s->flags= avctx->flags;

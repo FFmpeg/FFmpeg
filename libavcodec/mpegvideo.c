@@ -46,7 +46,6 @@ void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w)= draw_edg
 static void emulated_edge_mc(MpegEncContext *s, UINT8 *src, int linesize, int block_w, int block_h, 
                                     int src_x, int src_y, int w, int h);
 
-#define EDGE_WIDTH 16
 
 /* enable all paranoid tests for rounding, overflows, etc... */
 //#define PARANOID
@@ -268,10 +267,47 @@ int DCT_common_init(MpegEncContext *s)
     return 0;
 }
 
+/**
+ * allocates various arrays for a Picture structure, except the pixels themself.
+ * The pixels are allocated/set in te get_buffer()
+ */
+static int alloc_picture(MpegEncContext *s, Picture *pic){
+    if (s->encoding) {        
+        CHECKED_ALLOCZ(pic->mb_var   , s->mb_num * sizeof(INT16))
+        CHECKED_ALLOCZ(pic->mc_mb_var, s->mb_num * sizeof(INT16))
+        CHECKED_ALLOCZ(pic->mb_mean  , s->mb_num * sizeof(INT8))
+    }
+
+    CHECKED_ALLOCZ(pic->mbskip_table , s->mb_num * sizeof(UINT8)+1) //the +1 is for the slice end check
+    CHECKED_ALLOCZ(pic->qscale_table , s->mb_num * sizeof(UINT8))
+    pic->qstride= s->mb_width;
+    
+    return 0;
+fail: //for the CHECKED_ALLOCZ macro
+    return -1;
+}
+
+static void free_picture(MpegEncContext *s, Picture *pic){
+    int i;
+    
+    av_freep(&pic->mb_var);
+    av_freep(&pic->mc_mb_var);
+    av_freep(&pic->mb_mean);
+    av_freep(&pic->mbskip_table);
+    av_freep(&pic->qscale_table);
+    
+    if(s->avctx->get_buffer == avcodec_default_get_buffer){
+        for(i=0; i<4; i++){
+            av_freep(&pic->base[i]);
+            pic->data[i]= NULL;
+        }
+        av_freep(&pic->opaque);
+    }
+}
+
 /* init common structure for both encoder and decoder */
 int MPV_common_init(MpegEncContext *s)
 {
-    UINT8 *pict;
     int y_size, c_size, yc_size, i;
 
     dsputil_init(&s->dsp, s->avctx->dsp_mask);
@@ -279,7 +315,7 @@ int MPV_common_init(MpegEncContext *s)
 
     s->flags= s->avctx->flags;
 
-    s->mb_width = (s->width + 15) / 16;
+    s->mb_width  = (s->width  + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
 
     /* set default edge pos, will be overriden in decode_header if needed */
@@ -298,51 +334,12 @@ int MPV_common_init(MpegEncContext *s)
                      + (toupper((s->avctx->fourcc>>16)&0xFF)<<16) 
                      + (toupper((s->avctx->fourcc>>24)&0xFF)<<24);
 
-    if(!(s->flags&CODEC_FLAG_DR1)){
-      s->linesize   = s->mb_width * 16 + 2 * EDGE_WIDTH;
-      s->uvlinesize = s->mb_width * 8  +     EDGE_WIDTH;
-
-      for(i=0;i<3;i++) {
-	int w, h, shift, pict_start;
-	unsigned size;
-
-        w = s->linesize;
-        h = s->mb_height * 16 + 2 * EDGE_WIDTH;
-        shift = (i == 0) ? 0 : 1;
-        size = (s->linesize>>shift) * (h >> shift);
-        pict_start = (s->linesize>>shift) * (EDGE_WIDTH >> shift) + (EDGE_WIDTH >> shift);
-
-        CHECKED_ALLOCZ(pict, size)
-        s->last_picture_base[i] = pict;
-        s->last_picture[i] = pict + pict_start;
-        if(i>0) memset(s->last_picture_base[i], 128, size);
-    
-        CHECKED_ALLOCZ(pict, size)
-        s->next_picture_base[i] = pict;
-        s->next_picture[i] = pict + pict_start;
-        if(i>0) memset(s->next_picture_base[i], 128, size);
-        
-        if (s->has_b_frames || s->codec_id==CODEC_ID_MPEG4) {
-        /* Note the MPEG4 stuff is here cuz of buggy encoders which dont set the low_delay flag but 
-           do low-delay encoding, so we cant allways distinguish b-frame containing streams from low_delay streams */
-            CHECKED_ALLOCZ(pict, size)
-            s->aux_picture_base[i] = pict;
-            s->aux_picture[i] = pict + pict_start;
-            if(i>0) memset(s->aux_picture_base[i], 128, size);
-        }
-      }
-      s->ip_buffer_count= 2;
-    }
-    
     CHECKED_ALLOCZ(s->edge_emu_buffer, (s->width+64)*2*17*2); //(width + edge + align)*interlaced*MBsize*tolerance
-    
+
+    s->avctx->coded_picture= (AVVideoFrame*)&s->current_picture;
+
     if (s->encoding) {
-        int j;
         int mv_table_size= (s->mb_width+2)*(s->mb_height+2);
-        
-        CHECKED_ALLOCZ(s->mb_var   , s->mb_num * sizeof(INT16))
-        CHECKED_ALLOCZ(s->mc_mb_var, s->mb_num * sizeof(INT16))
-        CHECKED_ALLOCZ(s->mb_mean  , s->mb_num * sizeof(INT8))
 
         /* Allocate MV tables */
         CHECKED_ALLOCZ(s->p_mv_table            , mv_table_size * 2 * sizeof(INT16))
@@ -354,27 +351,11 @@ int MPV_common_init(MpegEncContext *s)
         CHECKED_ALLOCZ(s->b_direct_back_mv_table, mv_table_size * 2 * sizeof(INT16))
         CHECKED_ALLOCZ(s->b_direct_mv_table     , mv_table_size * 2 * sizeof(INT16))
 
-        CHECKED_ALLOCZ(s->me_scratchpad,  s->linesize*16*3*sizeof(uint8_t))
+        //FIXME should be linesize instead of s->width*2 but that isnt known before get_buffer()
+        CHECKED_ALLOCZ(s->me_scratchpad,  s->width*2*16*3*sizeof(uint8_t)) 
         
         CHECKED_ALLOCZ(s->me_map      , ME_MAP_SIZE*sizeof(uint32_t))
         CHECKED_ALLOCZ(s->me_score_map, ME_MAP_SIZE*sizeof(uint16_t))
-
-        if(s->max_b_frames){
-            for(j=0; j<REORDER_BUFFER_SIZE; j++){
-                int i;
-                for(i=0;i<3;i++) {
-                    int w, h, shift, size;
-
-                    w = s->linesize;
-                    h = s->mb_height * 16;
-                    shift = (i == 0) ? 0 : 1;
-                    size = (w >> shift) * (h >> shift);
-
-                    CHECKED_ALLOCZ(pict, size);
-                    s->picture_buffer[j][i] = pict;
-                }
-            }
-        }
 
         if(s->codec_id==CODEC_ID_MPEG4){
             CHECKED_ALLOCZ(s->tex_pb_buffer, PB_BUFFER_SIZE);
@@ -434,12 +415,6 @@ int MPV_common_init(MpegEncContext *s)
             s->dc_val[0][i] = 1024;
     }
 
-    CHECKED_ALLOCZ(s->next_qscale_table  , s->mb_num * sizeof(UINT8))
-    CHECKED_ALLOCZ(s->last_qscale_table  , s->mb_num * sizeof(UINT8))
-    CHECKED_ALLOCZ(s->aux_qscale_table   , s->mb_num * sizeof(UINT8))
-    s->qscale_table= s->next_qscale_table;
-    s->avctx->qstride= s->mb_width;
-    
     /* which mb is a intra block */
     CHECKED_ALLOCZ(s->mbintra_table, s->mb_num);
     memset(s->mbintra_table, 1, s->mb_num);
@@ -470,10 +445,13 @@ void MPV_common_end(MpegEncContext *s)
 {
     int i;
 
+    for(i=0; i<MAX_PICTURE_COUNT; i++){
+        if(s->picture[i].data[0]){
+            s->avctx->release_buffer(s->avctx, (AVVideoFrame*)&s->picture[i]);
+        }
+    }
+    
     av_freep(&s->mb_type);
-    av_freep(&s->mb_var);
-    av_freep(&s->mc_mb_var);
-    av_freep(&s->mb_mean);
     av_freep(&s->p_mv_table);
     av_freep(&s->b_forw_mv_table);
     av_freep(&s->b_back_mv_table);
@@ -489,9 +467,6 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->mbintra_table);
     av_freep(&s->cbp_table);
     av_freep(&s->pred_dir_table);
-    av_freep(&s->next_qscale_table);
-    av_freep(&s->last_qscale_table);
-    av_freep(&s->aux_qscale_table);
     av_freep(&s->me_scratchpad);
     av_freep(&s->me_map);
     av_freep(&s->me_score_map);
@@ -507,24 +482,9 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->avctx->stats_out);
     av_freep(&s->ac_stats);
     av_freep(&s->error_status_table);
-    
-    for(i=0;i<3;i++) {
-        int j;
-        if(!(s->flags&CODEC_FLAG_DR1)){
-            av_freep(&s->last_picture_base[i]);
-            av_freep(&s->next_picture_base[i]);
-            av_freep(&s->aux_picture_base[i]);
-        }
-        s->last_picture_base[i]=
-        s->next_picture_base[i]=
-        s->aux_picture_base [i] = NULL;
-        s->last_picture[i]=
-        s->next_picture[i]=
-        s->aux_picture [i] = NULL;
 
-        for(j=0; j<REORDER_BUFFER_SIZE; j++){
-            av_freep(&s->picture_buffer[j][i]);
-        }
+    for(i=0; i<MAX_PICTURE_COUNT; i++){
+        free_picture(s, &s->picture[i]);
     }
     s->context_initialized = 0;
 }
@@ -813,70 +773,70 @@ static void draw_edges_c(UINT8 *buf, int wrap, int width, int height, int w)
 /* generic function for encode/decode called before a frame is coded/decoded */
 int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 {
-    int i;
-    UINT8 *tmp;
+    int i, r;
+    AVVideoFrame *pic;
 
     s->mb_skiped = 0;
-    avctx->mbskip_table= s->mbskip_table;
+    
+    /* mark&release old frames */
+    if (s->pict_type != B_TYPE && s->last_picture.data[0]) {
+        Picture *pic= NULL;
+        for(i=0; i<MAX_PICTURE_COUNT; i++){
+            if(s->picture[i].data[0] == s->last_picture.data[0]){
+//                s->picture[i].reference=0;
+                avctx->release_buffer(avctx, (AVVideoFrame*)&s->picture[i]);
+                break;
+            }    
+        }
+        assert(i<MAX_PICTURE_COUNT);
+
+        /* release forgotten pictures */
+        /* if(mpeg124/h263) */
+        if(!s->encoding){
+            for(i=0; i<MAX_PICTURE_COUNT; i++){
+                if(s->picture[i].data[0] && s->picture[i].data[0] != s->next_picture.data[0] && s->picture[i].reference){
+                    fprintf(stderr, "releasing zombie picture\n");
+                    avctx->release_buffer(avctx, (AVVideoFrame*)&s->picture[i]);                
+                }
+            }
+        }
+    }
+
+    if(!s->encoding){        
+        /* find unused Picture */
+        for(i=0; i<MAX_PICTURE_COUNT; i++){
+            if(s->picture[i].data[0]==NULL) break;
+        }
+        assert(i<MAX_PICTURE_COUNT);
+    
+        pic= (AVVideoFrame*)&s->picture[i];
+        pic->reference= s->pict_type != B_TYPE;
+        pic->coded_picture_number= s->current_picture.coded_picture_number+1;
+        
+        r= avctx->get_buffer(avctx, pic);
+    
+        if(r<0 || (s->linesize && (s->linesize != pic->linesize[0] || s->uvlinesize != pic->linesize[1]))){
+            fprintf(stderr, "get_buffer() failed (stride changed), bye bye\n");
+            return -1;
+        }
+
+        s->linesize  = pic->linesize[0];
+        s->uvlinesize= pic->linesize[1];
+    
+        if(pic->qscale_table==NULL)
+            alloc_picture(s, (Picture*)pic);
+
+        s->current_picture= s->picture[i];
+    }
 
     s->hurry_up= s->avctx->hurry_up;
     s->error_resilience= avctx->error_resilience;
 
-    if(avctx->flags&CODEC_FLAG_DR1){
-        if(avctx->get_buffer_callback(avctx, s->width, s->height, s->pict_type) < 0){
-            fprintf(stderr, "get_buffer() failed\n");
-            return -1;
-        }
-
-        s->linesize  = avctx->dr_stride;
-        s->uvlinesize= avctx->dr_uvstride;
-        s->ip_buffer_count= avctx->dr_ip_buffer_count;
+    if (s->pict_type != B_TYPE) {
+        s->last_picture= s->next_picture;
+        s->next_picture= s->current_picture;
     }
-    avctx->dr_ip_buffer_count= s->ip_buffer_count;
-    
-    if (s->pict_type == B_TYPE) {
-        for(i=0;i<3;i++) {
-            if(avctx->flags&CODEC_FLAG_DR1)
-                s->aux_picture[i]= avctx->dr_buffer[i];
-            
-            //FIXME the following should never be needed, the decoder should drop b frames if no reference is available
-            if(s->next_picture[i]==NULL)
-                s->next_picture[i]= s->aux_picture[i];
-            if(s->last_picture[i]==NULL)
-                s->last_picture[i]= s->next_picture[i];
-
-            s->current_picture[i] = s->aux_picture[i];
-        }
-        s->avctx->display_qscale_table=
-        s->avctx->current_qscale_table= 
-        s->qscale_table= s->aux_qscale_table;
-    } else {
-        for(i=0;i<3;i++) {
-            /* swap next and last */
-            if(avctx->flags&CODEC_FLAG_DR1)
-                tmp= avctx->dr_buffer[i];
-            else
-                tmp = s->last_picture[i];
-
-            s->last_picture[i] = s->next_picture[i];
-            s->next_picture[i] = tmp;
-            s->current_picture[i] = tmp;
-
-            if(s->last_picture[i]==NULL)
-                s->last_picture[i]= s->next_picture[i];
-
-            s->last_dr_opaque= s->next_dr_opaque;
-            s->next_dr_opaque= avctx->dr_opaque_frame;
-
-            if(s->has_b_frames && s->last_dr_opaque && s->codec_id!=CODEC_ID_SVQ1)
-                avctx->dr_opaque_frame= s->last_dr_opaque;
-            else
-                avctx->dr_opaque_frame= s->next_dr_opaque;
-        }
-        s->avctx->current_qscale_table= s->qscale_table      = s->last_qscale_table;
-        s->avctx->display_qscale_table= s->last_qscale_table = s->next_qscale_table;
-        s->next_qscale_table= s->qscale_table;
-    }
+   
     /* set dequantizer, we cant do it during init as it might change for mpeg4
        and we cant do it in the header decode as init isnt called for mpeg4 there yet */
     if(s->out_format == FMT_H263){
@@ -893,14 +853,15 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 /* generic function for encode/decode called after a frame has been coded/decoded */
 void MPV_frame_end(MpegEncContext *s)
 {
-    s->avctx->key_frame   = (s->pict_type == I_TYPE);
-    s->avctx->pict_type   = s->pict_type;
+    int i;
 
     /* draw edge for correct motion prediction if outside */
-    if (s->pict_type != B_TYPE && !s->intra_only && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
-        draw_edges(s->current_picture[0], s->linesize  , s->h_edge_pos   , s->v_edge_pos   , EDGE_WIDTH  );
-        draw_edges(s->current_picture[1], s->uvlinesize, s->h_edge_pos>>1, s->v_edge_pos>>1, EDGE_WIDTH/2);
-        draw_edges(s->current_picture[2], s->uvlinesize, s->h_edge_pos>>1, s->v_edge_pos>>1, EDGE_WIDTH/2);
+    if(s->codec_id!=CODEC_ID_SVQ1){
+        if (s->pict_type != B_TYPE && !s->intra_only && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
+            draw_edges(s->current_picture.data[0], s->linesize  , s->h_edge_pos   , s->v_edge_pos   , EDGE_WIDTH  );
+            draw_edges(s->current_picture.data[1], s->uvlinesize, s->h_edge_pos>>1, s->v_edge_pos>>1, EDGE_WIDTH/2);
+            draw_edges(s->current_picture.data[2], s->uvlinesize, s->h_edge_pos>>1, s->v_edge_pos>>1, EDGE_WIDTH/2);
+        }
     }
     emms_c();
     
@@ -910,84 +871,154 @@ void MPV_frame_end(MpegEncContext *s)
         s->num_available_buffers++;
         if(s->num_available_buffers>2) s->num_available_buffers= 2;
     }
+    
+    s->current_picture.quality= s->qscale; //FIXME get average of qscale_table
+    s->current_picture.pict_type= s->pict_type;
+    s->current_picture.key_frame= s->pict_type == I_TYPE;
+    
+    /* copy back current_picture variables */
+    for(i=0; i<MAX_PICTURE_COUNT; i++){
+        if(s->picture[i].data[0] == s->current_picture.data[0]){
+            s->picture[i]= s->current_picture;
+            break;
+        }    
+    }
+    assert(i<MAX_PICTURE_COUNT);
+
+    /* release non refernce frames */
+    for(i=0; i<MAX_PICTURE_COUNT; i++){
+        if(s->picture[i].data[0] && !s->picture[i].reference)
+            s->avctx->release_buffer(s->avctx, (AVVideoFrame*)&s->picture[i]);
+    }
 }
 
-/* reorder input for encoding */
-void reorder_input(MpegEncContext *s, AVPicture *pict)
-{
-    int i, j, index;
-            
-    if(s->max_b_frames > FF_MAX_B_FRAMES) s->max_b_frames= FF_MAX_B_FRAMES;
+static int load_input_picture(MpegEncContext *s, AVVideoFrame *pic_arg){
+    AVVideoFrame *pic;
+    int i,r;
+    const int encoding_delay= s->max_b_frames;
 
-//        delay= s->max_b_frames+1; (or 0 if no b frames cuz decoder diff)
-
-    for(j=0; j<REORDER_BUFFER_SIZE-1; j++){
-        s->coded_order[j]= s->coded_order[j+1];
+    /* find unused Picture */
+    for(i=0; i<MAX_PICTURE_COUNT; i++){
+        if(s->picture[i].data[0]==NULL) break;
     }
-    s->coded_order[j].picture[0]= s->coded_order[j].picture[1]= s->coded_order[j].picture[2]= NULL; //catch uninitalized buffers
-    s->coded_order[j].pict_type=0;
+    assert(i<MAX_PICTURE_COUNT);
+        
+    pic= (AVVideoFrame*)&s->picture[i];
+    pic->reference= 1;
+    
+//    assert(avctx->get_buffer == default_get_buffer || avctx->get_buffer==NULL);
+    r= s->avctx->get_buffer(s->avctx, pic);
 
-    switch(s->input_pict_type){
-    default: 
-    case I_TYPE:
-    case S_TYPE:
-    case P_TYPE:
-        index= s->max_b_frames - s->b_frames_since_non_b;
-        s->b_frames_since_non_b=0;
-        break;            
-    case B_TYPE:
-        index= s->max_b_frames + 1;
-        s->b_frames_since_non_b++;
-        break;          
+    if(r<0 || (s->linesize && (s->linesize != pic->linesize[0] || s->uvlinesize != pic->linesize[1]))){
+        fprintf(stderr, "get_buffer() failed (stride changed), bye bye\n");
+        return -1;
     }
-//printf("index:%d type:%d strides: %d %d\n", index, s->input_pict_type, pict->linesize[0], s->linesize);
-    if(   (index==0 || (s->flags&CODEC_FLAG_INPUT_PRESERVED))
-       && pict->linesize[0] == s->linesize
-       && pict->linesize[1] == s->uvlinesize
-       && pict->linesize[2] == s->uvlinesize){
-//printf("ptr\n");
-        for(i=0; i<3; i++){
-            s->coded_order[index].picture[i]= pict->data[i];
-        }
+    
+    assert(s->linesize==0   || s->linesize  ==pic->linesize[0]);
+    assert(s->uvlinesize==0 || s->uvlinesize==pic->linesize[1]);
+    assert(pic->linesize[1] == pic->linesize[2]);
+    s->linesize  = pic->linesize[0];
+    s->uvlinesize= pic->linesize[1];
+    
+    if(pic->qscale_table==NULL)
+        alloc_picture(s, (Picture*)pic);
+
+//    assert(s->input_picture[0]==NULL || s->input_picture[0]->data[0]==NULL);
+    
+    if(s->input_picture[encoding_delay])
+        pic->display_picture_number= s->input_picture[encoding_delay]->display_picture_number + 1;
+//printf("dpn2:%d\n", pic->display_picture_number);
+
+    /* shift buffer entries */
+    for(i=1; i<MAX_PICTURE_COUNT /*s->encoding_delay+1*/; i++)
+        s->input_picture[i-1]= s->input_picture[i];
+        
+    s->input_picture[encoding_delay]= (Picture*)pic;
+    pic->pict_type= pic_arg->pict_type;
+    pic->quality= pic_arg->quality;
+    
+    if(   pic->data[0] == pic_arg->data[0] 
+       && pic->data[1] == pic_arg->data[1]
+       && pic->data[2] == pic_arg->data[2]){
+       // empty
     }else{
-//printf("copy\n");
+        int h_chroma_shift, v_chroma_shift;
+        
+        avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+        
         for(i=0; i<3; i++){
-            uint8_t *src = pict->data[i];
-            uint8_t *dest;
-            int src_wrap = pict->linesize[i];
-            int dest_wrap = s->linesize;
-            int w = s->width;
-            int h = s->height;
-
-            if(index==0) dest= s->last_picture[i]+16; //is current_picture indeed but the switch hapens after reordering
-            else         dest= s->picture_buffer[s->picture_buffer_index][i];
-
-            if (i >= 1) {
-                dest_wrap >>= 1;
-                w >>= 1;
-                h >>= 1;
+            int src_stride= pic_arg->linesize[i];
+            int dst_stride= i ? s->uvlinesize : s->linesize;
+            int h_shift= i ? h_chroma_shift : 0;
+            int v_shift= i ? v_chroma_shift : 0;
+            int w= s->width >>h_shift;
+            int h= s->height>>v_shift;
+            uint8_t *src= pic_arg->data[i];
+            uint8_t *dst= pic->data[i] + 16;
+            
+            if(src_stride==dst_stride)
+                memcpy(dst, src, src_stride*h);
+            else{
+                while(h--){
+                    memcpy(dst, src, w);
+                    dst += dst_stride;
+                    src += src_stride;
+                }
             }
-
-            s->coded_order[index].picture[i]= dest;
-            for(j=0;j<h;j++) {
-                memcpy(dest, src, w);
-                dest += dest_wrap;
-                src += src_wrap;
-            }
-        }
-        if(index!=0){
-            s->picture_buffer_index++;
-            if(s->picture_buffer_index >= REORDER_BUFFER_SIZE) s->picture_buffer_index=0;
         }
     }
-    s->coded_order[index].pict_type = s->input_pict_type;
-    s->coded_order[index].qscale    = s->input_qscale;
-    s->coded_order[index].force_type= s->force_input_type;
-    s->coded_order[index].picture_in_gop_number= s->input_picture_in_gop_number;
-    s->coded_order[index].picture_number= s->input_picture_number;
 
-    for(i=0; i<3; i++){
-        s->new_picture[i]= s->coded_order[0].picture[i];
+    return 0;
+}
+
+static void select_input_picture(MpegEncContext *s){
+    int i;
+    const int encoding_delay= s->max_b_frames;
+    int coded_pic_num=0;    
+
+    if(s->reordered_input_picture[0])
+        coded_pic_num= s->reordered_input_picture[0]->coded_picture_number + 1;
+//printf("cpn:%d\n", coded_pic_num);
+    for(i=1; i<MAX_PICTURE_COUNT; i++)
+        s->reordered_input_picture[i-1]= s->reordered_input_picture[i];
+    s->reordered_input_picture[MAX_PICTURE_COUNT-1]= NULL;
+
+    /* set next picture types & ordering */
+    if(s->reordered_input_picture[0]==NULL && s->input_picture[0]){
+        if(/*s->picture_in_gop_number >= s->gop_size ||*/ s->next_picture.data[0]==NULL || s->intra_only){
+            s->reordered_input_picture[0]= s->input_picture[0];
+            s->reordered_input_picture[0]->pict_type= I_TYPE;
+            s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+        }else{
+            s->reordered_input_picture[0]= s->input_picture[s->max_b_frames];
+            if(s->picture_in_gop_number + s->max_b_frames >= s->gop_size)
+                s->reordered_input_picture[0]->pict_type= I_TYPE;
+            else
+                s->reordered_input_picture[0]->pict_type= P_TYPE;
+            s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+            for(i=0; i<s->max_b_frames; i++){
+                coded_pic_num++;
+                s->reordered_input_picture[i+1]= s->input_picture[i];
+                s->reordered_input_picture[i+1]->pict_type= B_TYPE;
+                s->reordered_input_picture[i+1]->coded_picture_number= coded_pic_num;
+            }
+        }
+    }
+    
+    if(s->reordered_input_picture[0]){
+        if(s->reordered_input_picture[0]->pict_type==B_TYPE){
+            s->reordered_input_picture[0]->reference=0;
+        }
+        s->current_picture= *s->reordered_input_picture[0];
+        s->new_picture= s->current_picture;
+        s->new_picture.data[0]+=16;
+        s->new_picture.data[1]+=16;
+        s->new_picture.data[2]+=16;
+    
+        s->picture_number= s->new_picture.display_picture_number;
+//printf("dpn:%d\n", s->picture_number);
+    }else{
+       memset(&s->new_picture, 0, sizeof(Picture));
     }
 }
 
@@ -995,52 +1026,26 @@ int MPV_encode_picture(AVCodecContext *avctx,
                        unsigned char *buf, int buf_size, void *data)
 {
     MpegEncContext *s = avctx->priv_data;
-    AVPicture *pict = data;
-
-    s->input_qscale = avctx->quality;
+    AVVideoFrame *pic_arg = data;
 
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
 
-    if(avctx->force_type){
-        s->input_pict_type=
-        s->force_input_type= avctx->force_type;
-    }else if(s->flags&CODEC_FLAG_PASS2){
-        s->input_pict_type=
-        s->force_input_type= s->rc_context.entry[s->input_picture_number].new_pict_type;
-    }else{
-        s->force_input_type=0;
-        if (!s->intra_only) {
-            /* first picture of GOP is intra */
-            if (s->input_picture_in_gop_number % s->gop_size==0){
-                s->input_pict_type = I_TYPE;
-            }else if(s->max_b_frames==0){
-                s->input_pict_type = P_TYPE;
-            }else{
-                if(s->b_frames_since_non_b < s->max_b_frames) //FIXME more IQ
-                    s->input_pict_type = B_TYPE;
-                else
-                    s->input_pict_type = P_TYPE;
-            }
-        } else {
-            s->input_pict_type = I_TYPE;
-        }
-    }
+    s->picture_in_gop_number++;
 
-    if(s->input_pict_type==I_TYPE)
-        s->input_picture_in_gop_number=0;
+    load_input_picture(s, pic_arg);
     
-    reorder_input(s, pict);
+    select_input_picture(s);
     
     /* output? */
-    if(s->coded_order[0].picture[0]){
+    if(s->new_picture.data[0]){
 
-        s->pict_type= s->coded_order[0].pict_type;
-        if (s->fixed_qscale) /* the ratecontrol needs the last qscale so we dont touch it for CBR */
-            s->qscale= s->coded_order[0].qscale;
-        s->force_type= s->coded_order[0].force_type;
-        s->picture_in_gop_number= s->coded_order[0].picture_in_gop_number;
-        s->picture_number= s->coded_order[0].picture_number;
-
+        s->pict_type= s->new_picture.pict_type;
+        if (s->fixed_qscale){ /* the ratecontrol needs the last qscale so we dont touch it for CBR */
+            s->qscale= (int)(s->new_picture.quality+0.5);
+            assert(s->qscale);
+        }
+//emms_c();
+//printf("qs:%f %f %d\n", s->new_picture.quality, s->current_picture.quality, s->qscale);
         MPV_frame_start(s, avctx);
 
         encode_picture(s, s->picture_number);
@@ -1059,17 +1064,12 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
         if (s->out_format == FMT_MJPEG)
             mjpeg_picture_trailer(s);
-
-        if(!s->fixed_qscale)
-            avctx->quality = s->qscale;
         
         if(s->flags&CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
-    
     }
 
     s->input_picture_number++;
-    s->input_picture_in_gop_number++;
 
     flush_put_bits(&s->pb);
     s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
@@ -1088,14 +1088,16 @@ if(s->max_b_frames==0)
     fprintf(f, "%7d, %7d, %2.4f\n", pbBufPtr(&s->pb) - s->pb.buf, s->qscale, avctx->psnr_y);
 }
 #endif
-
+#if 0
     if (avctx->get_psnr) {
         /* At this point pict->data should have the original frame   */
         /* an s->current_picture should have the coded/decoded frame */
-        get_psnr(pict->data, s->current_picture,
+        get_psnr(pict->data, s->current_picture.data,
                  pict->linesize, s->linesize, avctx);
 //        printf("%f\n", avctx->psnr_y);
     }
+#endif
+
     return pbBufPtr(&s->pb) - s->pb.buf;
 }
 
@@ -1757,7 +1759,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     mb_x = s->mb_x;
     mb_y = s->mb_y;
 
-    s->qscale_table[mb_xy]= s->qscale;
+    s->current_picture.qscale_table[mb_xy]= s->qscale;
 
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
@@ -1823,33 +1825,47 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         op_pixels_func (*op_pix)[4];
         qpel_mc_func (*op_qpix)[16];
 
-        /* avoid copy if macroblock skipped in last frame too 
-           dont touch it for B-frames as they need the skip info from the next p-frame */
+        /* avoid copy if macroblock skipped in last frame too */
         if (s->pict_type != B_TYPE) {
-            UINT8 *mbskip_ptr = &s->mbskip_table[mb_xy];
-            if (s->mb_skiped) {
-                s->mb_skiped = 0;
+            s->current_picture.mbskip_table[mb_xy]= s->mb_skiped;
+        }
 
+        /* skip only during decoding as we might trash the buffers during encoding a bit */
+        if(!s->encoding){
+            UINT8 *mbskip_ptr = &s->mbskip_table[mb_xy];
+            const int age= s->current_picture.age;
+
+            assert(age);
+
+            if (s->mb_skiped) {
+                s->mb_skiped= 0;
+                assert(s->pict_type!=I_TYPE);
+ 
                 (*mbskip_ptr) ++; /* indicate that this time we skiped it */
                 if(*mbskip_ptr >99) *mbskip_ptr= 99;
 
-                /* if previous was skipped too, then nothing to do ! 
-                   skip only during decoding as we might trash the buffers during encoding a bit */
-                if (*mbskip_ptr >= s->ip_buffer_count  && !s->encoding) 
-                    return;
+                /* if previous was skipped too, then nothing to do !  */
+                if (*mbskip_ptr >= age){
+//if(s->pict_type!=B_TYPE && s->mb_x==0) printf("\n");
+//if(s->pict_type!=B_TYPE) printf("%d%d ", *mbskip_ptr, age);
+                    if(s->pict_type!=B_TYPE) return;
+                    if(s->avctx->draw_horiz_band==NULL && *mbskip_ptr > age) return; 
+                    /* we dont draw complete frames here so we cant skip */
+                }
             } else {
                 *mbskip_ptr = 0; /* not skipped */
             }
-        }
+        }else
+            s->mb_skiped= 0;
 
         if(s->pict_type==B_TYPE && s->avctx->draw_horiz_band){
-            dest_y = s->current_picture [0] + mb_x * 16;
-            dest_cb = s->current_picture[1] + mb_x * 8;
-            dest_cr = s->current_picture[2] + mb_x * 8;
+            dest_y  = s->current_picture.data[0] + mb_x * 16;
+            dest_cb = s->current_picture.data[1] + mb_x * 8;
+            dest_cr = s->current_picture.data[2] + mb_x * 8;
         }else{
-            dest_y = s->current_picture [0] + (mb_y * 16* s->linesize  ) + mb_x * 16;
-            dest_cb = s->current_picture[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
-            dest_cr = s->current_picture[2] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
+            dest_y  = s->current_picture.data[0] + (mb_y * 16* s->linesize  ) + mb_x * 16;
+            dest_cb = s->current_picture.data[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
+            dest_cr = s->current_picture.data[2] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
         }
 
         if (s->interlaced_dct) {
@@ -1873,12 +1889,12 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 }
 
                 if (s->mv_dir & MV_DIR_FORWARD) {
-                    MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture, op_pix, op_qpix);
+                    MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.data, op_pix, op_qpix);
 		    op_pix = s->dsp.avg_pixels_tab;
                     op_qpix= s->dsp.avg_qpel_pixels_tab;
                 }
                 if (s->mv_dir & MV_DIR_BACKWARD) {
-                    MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture, op_pix, op_qpix);
+                    MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.data, op_pix, op_qpix);
                 }
             }
 
@@ -2154,13 +2170,13 @@ void ff_draw_horiz_band(MpegEncContext *s){
             offset = y * s->linesize;
 
         if(s->pict_type==B_TYPE || (!s->has_b_frames)){
-            src_ptr[0] = s->current_picture[0] + offset;
-            src_ptr[1] = s->current_picture[1] + (offset >> 2);
-            src_ptr[2] = s->current_picture[2] + (offset >> 2);
+            src_ptr[0] = s->current_picture.data[0] + offset;
+            src_ptr[1] = s->current_picture.data[1] + (offset >> 2);
+            src_ptr[2] = s->current_picture.data[2] + (offset >> 2);
         } else {
-            src_ptr[0] = s->last_picture[0] + offset;
-            src_ptr[1] = s->last_picture[1] + (offset >> 2);
-            src_ptr[2] = s->last_picture[2] + (offset >> 2);
+            src_ptr[0] = s->last_picture.data[0] + offset;
+            src_ptr[1] = s->last_picture.data[1] + (offset >> 2);
+            src_ptr[2] = s->last_picture.data[2] + (offset >> 2);
         }
         emms_c();
 
@@ -2180,7 +2196,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     for(i=0; i<6; i++) skip_dct[i]=0;
     
     if(s->adaptive_quant){
-        s->dquant= s->qscale_table[mb_x + mb_y*s->mb_width] - s->qscale;
+        s->dquant= s->current_picture.qscale_table[mb_x + mb_y*s->mb_width] - s->qscale;
 
         if(s->out_format==FMT_H263){
             if     (s->dquant> 2) s->dquant= 2;
@@ -2206,7 +2222,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         int emu=0;
 
         wrap_y = s->linesize;
-        ptr = s->new_picture[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
+        ptr = s->new_picture.data[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
 
         if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
             emulated_edge_mc(s, ptr, wrap_y, 16, 16, mb_x*16, mb_y*16, s->width, s->height);
@@ -2239,14 +2255,14 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             skip_dct[5]= 1;
         }else{
             int wrap_c = s->uvlinesize;
-            ptr = s->new_picture[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
+            ptr = s->new_picture.data[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
             if(emu){
                 emulated_edge_mc(s, ptr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
                 ptr= s->edge_emu_buffer;
             }
 	    s->dsp.get_pixels(s->block[4], ptr, wrap_c);
 
-            ptr = s->new_picture[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
+            ptr = s->new_picture.data[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
             if(emu){
                 emulated_edge_mc(s, ptr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
                 ptr= s->edge_emu_buffer;
@@ -2261,14 +2277,14 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         int wrap_y, wrap_c;
         int emu=0;
 
-        dest_y  = s->current_picture[0] + (mb_y * 16 * s->linesize       ) + mb_x * 16;
-        dest_cb = s->current_picture[1] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
-        dest_cr = s->current_picture[2] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
+        dest_y  = s->current_picture.data[0] + (mb_y * 16 * s->linesize    ) + mb_x * 16;
+        dest_cb = s->current_picture.data[1] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
+        dest_cr = s->current_picture.data[2] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
         wrap_y = s->linesize;
         wrap_c = s->uvlinesize;
-        ptr_y  = s->new_picture[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
-        ptr_cb = s->new_picture[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
-        ptr_cr = s->new_picture[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
+        ptr_y  = s->new_picture.data[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
+        ptr_cb = s->new_picture.data[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
+        ptr_cr = s->new_picture.data[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
 
         if ((!s->no_rounding) || s->pict_type==B_TYPE){
 	    op_pix = s->dsp.put_pixels_tab;
@@ -2279,12 +2295,12 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         }
 
         if (s->mv_dir & MV_DIR_FORWARD) {
-            MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture, op_pix, op_qpix);
+            MPV_motion(s, dest_y, dest_cb, dest_cr, 0, s->last_picture.data, op_pix, op_qpix);
             op_pix = s->dsp.avg_pixels_tab;
             op_qpix= s->dsp.avg_qpel_pixels_tab;
         }
         if (s->mv_dir & MV_DIR_BACKWARD) {
-            MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture, op_pix, op_qpix);
+            MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture.data, op_pix, op_qpix);
         }
 
         if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
@@ -2330,9 +2346,8 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }
             s->dsp.diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
         }
-
         /* pre quantization */         
-        if(s->mc_mb_var[s->mb_width*mb_y+ mb_x]<2*s->qscale*s->qscale){
+        if(s->current_picture.mc_mb_var[s->mb_width*mb_y+ mb_x]<2*s->qscale*s->qscale){
             //FIXME optimize
 	    if(s->dsp.pix_abs8x8(ptr_y               , dest_y               , wrap_y) < 20*s->qscale) skip_dct[0]= 1;
             if(s->dsp.pix_abs8x8(ptr_y            + 8, dest_y            + 8, wrap_y) < 20*s->qscale) skip_dct[1]= 1;
@@ -2557,8 +2572,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->block_wrap[5]= s->mb_width + 2;
     
     /* Reset the average MB variance */
-    s->mb_var_sum = 0;
-    s->mc_mb_var_sum = 0;
+    s->current_picture.mb_var_sum = 0;
+    s->current_picture.mc_mb_var_sum = 0;
 
     /* we need to initialize some time vars before we can encode b-frames */
     if (s->h263_pred && !s->h263_msmpeg4)
@@ -2604,15 +2619,15 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 for(mb_x=0; mb_x < s->mb_width; mb_x++) {
                     int xx = mb_x * 16;
                     int yy = mb_y * 16;
-                    uint8_t *pix = s->new_picture[0] + (yy * s->linesize) + xx;
+                    uint8_t *pix = s->new_picture.data[0] + (yy * s->linesize) + xx;
                     int varc;
 		    int sum = s->dsp.pix_sum(pix, s->linesize);
     
 		    varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
 
-                    s->mb_var [s->mb_width * mb_y + mb_x] = varc;
-                    s->mb_mean[s->mb_width * mb_y + mb_x] = (sum+128)>>8;
-                    s->mb_var_sum    += varc;
+                    s->current_picture.mb_var [s->mb_width * mb_y + mb_x] = varc;
+                    s->current_picture.mb_mean[s->mb_width * mb_y + mb_x] = (sum+128)>>8;
+                    s->current_picture.mb_var_sum    += varc;
                 }
             }
         }
@@ -2622,13 +2637,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     if(s->scene_change_score > 0 && s->pict_type == P_TYPE){
         s->pict_type= I_TYPE;
         memset(s->mb_type   , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
-        if(s->max_b_frames==0){
-            s->input_pict_type= I_TYPE;
-            s->input_picture_in_gop_number=0;
-        }
-//printf("Scene change detected, encoding as I Frame %d %d\n", s->mb_var_sum, s->mc_mb_var_sum);
+//printf("Scene change detected, encoding as I Frame %d %d\n", s->current_picture.mb_var_sum, s->current_picture.mc_mb_var_sum);
     }
-    
+
     if(s->pict_type==P_TYPE || s->pict_type==S_TYPE) 
         s->f_code= ff_get_best_fcode(s, s->p_mv_table, MB_TYPE_INTER);
         ff_fix_long_p_mvs(s);
@@ -2643,7 +2654,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
     
     if (s->fixed_qscale) 
-        s->frame_qscale = s->avctx->quality;
+        s->frame_qscale = s->current_picture.quality;
     else
         s->frame_qscale = ff_rate_estimate_qscale(s);
 
@@ -2658,7 +2669,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             break;
         }
 
-        s->qscale= s->qscale_table[0];
+        s->qscale= s->current_picture.qscale_table[0];
     }else
         s->qscale= (int)(s->frame_qscale + 0.5);
         
@@ -2673,6 +2684,13 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16, 
                        s->q_intra_matrix16_bias, s->intra_matrix, s->intra_quant_bias, 8, 8);
     }
+    
+    //FIXME var duplication
+    s->current_picture.key_frame= s->pict_type == I_TYPE;
+    s->current_picture.pict_type= s->pict_type;
+
+    if(s->current_picture.key_frame)
+        s->picture_in_gop_number=0;
 
     s->last_bits= get_bit_count(&s->pb);
     switch(s->out_format) {

@@ -33,6 +33,7 @@ typedef struct DVVideoDecodeContext {
     int sampling_411; /* 0 = 420, 1 = 411 */
     int width, height;
     UINT8 *current_picture[3]; /* picture structure */
+    AVVideoFrame picture;
     int linesize[3];
     DCTELEM block[5*6][64] __align8;
     UINT8 dv_zigzag[2][64];
@@ -128,7 +129,7 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
 
     /* XXX: do it only for constant case */
     dv_build_unquantize_tables(s);
-
+    
     return 0;
 }
 
@@ -499,7 +500,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     unsigned size;
     UINT8 *buf_ptr;
     const UINT16 *mb_pos_ptr;
-    AVPicture *picture;
     
     /* parse id */
     init_get_bits(&s->gb, buf, buf_size);
@@ -561,45 +561,20 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     avctx->width = width;
     avctx->height = height;
 
-    if (avctx->flags & CODEC_FLAG_DR1)
-    {
-	s->width = -1;
-	avctx->dr_buffer[0] = avctx->dr_buffer[1] = avctx->dr_buffer[2] = 0;
-	if(avctx->get_buffer_callback(avctx, width, height, I_TYPE) < 0
-	   && avctx->flags & CODEC_FLAG_DR1) {
-	    fprintf(stderr, "get_buffer() failed\n");
-	    return -1;
-	}
+    s->picture.reference= 0;
+    if(avctx->get_buffer(avctx, &s->picture) < 0) {
+        fprintf(stderr, "get_buffer() failed\n");
+        return -1;
     }
 
-    /* (re)alloc picture if needed */
-    if (s->width != width || s->height != height) {
-	if (!(avctx->flags & CODEC_FLAG_DR1))
-	    for(i=0;i<3;i++) {
-		if (avctx->dr_buffer[i] != s->current_picture[i])
-		    av_freep(&s->current_picture[i]);
-		avctx->dr_buffer[i] = 0;
-	    }
-
-        for(i=0;i<3;i++) {
-	    if (avctx->dr_buffer[i]) {
-		s->current_picture[i] = avctx->dr_buffer[i];
-		s->linesize[i] = (i == 0) ? avctx->dr_stride : avctx->dr_uvstride;
-	    } else {
-		size = width * height;
-		s->linesize[i] = width;
-		if (i >= 1) {
-		    size >>= 2;
-		    s->linesize[i] >>= s->sampling_411 ? 2 : 1;
-		}
-		s->current_picture[i] = av_malloc(size);
-	    }
-            if (!s->current_picture[i])
-                return -1;
-        }
-        s->width = width;
-        s->height = height;
+    for(i=0;i<3;i++) {
+        s->current_picture[i] = s->picture.data[i];
+        s->linesize[i] = s->picture.linesize[i];
+        if (!s->current_picture[i])
+            return -1;
     }
+    s->width = width;
+    s->height = height;
 
     /* for each DIF segment */
     buf_ptr = buf;
@@ -620,12 +595,11 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     emms_c();
 
     /* return image */
-    *data_size = sizeof(AVPicture);
-    picture = data;
-    for(i=0;i<3;i++) {
-        picture->data[i] = s->current_picture[i];
-        picture->linesize[i] = s->linesize[i];
-    }
+    *data_size = sizeof(AVVideoFrame);
+    *(AVVideoFrame*)data= s->picture;
+    
+    avctx->release_buffer(avctx, &s->picture);
+    
     return packet_size;
 }
 
@@ -633,10 +607,15 @@ static int dvvideo_decode_end(AVCodecContext *avctx)
 {
     DVVideoDecodeContext *s = avctx->priv_data;
     int i;
+    
+    if(avctx->get_buffer == avcodec_default_get_buffer){
+        for(i=0; i<4; i++){
+            av_freep(&s->picture.base[i]);
+            s->picture.data[i]= NULL;
+        }
+        av_freep(&s->picture.opaque);
+    }
 
-    for(i=0;i<3;i++)
-	if (avctx->dr_buffer[i] != s->current_picture[i])
-        av_freep(&s->current_picture[i]);
     return 0;
 }
 

@@ -199,6 +199,7 @@ static int decode_slice(MpegEncContext *s){
             
             s->mv_dir = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
+//            s->mb_skiped = 0;
 //printf("%d %d %06X\n", ret, get_bits_count(&s->gb), show_bits(&s->gb, 24));
             ret= s->decode_mb(s, s->block);
             
@@ -347,7 +348,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
 {
     MpegEncContext *s = avctx->priv_data;
     int ret,i;
-    AVPicture *pict = data; 
+    AVVideoFrame *pict = data; 
     float new_aspect;
     
 #ifdef PRINT_FRAME_TIME
@@ -357,7 +358,6 @@ uint64_t time= rdtsc();
     printf("*****frame %d size=%d\n", avctx->frame_number, buf_size);
     printf("bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
 #endif
-
     s->flags= avctx->flags;
 
     *data_size = 0;
@@ -523,8 +523,9 @@ retry:
         return -1;
     }
     
-    s->avctx->key_frame   = (s->pict_type == I_TYPE);
-    s->avctx->pict_type   = s->pict_type;
+    // for hurry_up==5
+    s->current_picture.pict_type= s->pict_type;
+    s->current_picture.key_frame= s->pict_type == I_TYPE;
 
     /* skip b frames if we dont have reference frames */
     if(s->num_available_buffers<2 && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
@@ -580,7 +581,9 @@ retry:
     }
 
     if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==I_TYPE)
-        if(msmpeg4_decode_ext_header(s, buf_size) < 0) return -1;
+        if(msmpeg4_decode_ext_header(s, buf_size) < 0){
+            s->error_status_table[s->mb_num-1]= AC_ERROR|DC_ERROR|MV_ERROR;
+        }
     
     /* divx 5.01+ bistream reorder stuff */
     if(s->codec_id==CODEC_ID_MPEG4 && s->bitstream_buffer_size==0 && s->divx_version>=500){
@@ -644,7 +647,7 @@ retry:
     int y= mb_y*16 + 8;
     for(mb_x=0; mb_x<s->mb_width; mb_x++){
       int x= mb_x*16 + 8;
-      uint8_t *ptr= s->last_picture[0];
+      uint8_t *ptr= s->last_picture.data[0];
       int xy= 1 + mb_x*2 + (mb_y*2 + 1)*(s->mb_width*2 + 2);
       int mx= (s->motion_val[xy][0]>>1) + x;
       int my= (s->motion_val[xy][1]>>1) + y;
@@ -669,21 +672,12 @@ retry:
   }
 
 }
-#endif    
+#endif
     if(s->pict_type==B_TYPE || (!s->has_b_frames)){
-        pict->data[0] = s->current_picture[0];
-        pict->data[1] = s->current_picture[1];
-        pict->data[2] = s->current_picture[2];
+        *pict= *(AVVideoFrame*)&s->current_picture;
     } else {
-        pict->data[0] = s->last_picture[0];
-        pict->data[1] = s->last_picture[1];
-        pict->data[2] = s->last_picture[2];
+        *pict= *(AVVideoFrame*)&s->last_picture;
     }
-    pict->linesize[0] = s->linesize;
-    pict->linesize[1] = s->uvlinesize;
-    pict->linesize[2] = s->uvlinesize;
-
-    avctx->quality = s->qscale;
 
     /* Return the Picture timestamp as the frame number */
     /* we substract 1 because it is added on utils.c    */
@@ -692,7 +686,7 @@ retry:
     /* dont output the last pic after seeking 
        note we allready added +1 for the current pix in MPV_frame_end(s) */
     if(s->num_available_buffers>=2 || (!s->has_b_frames))
-        *data_size = sizeof(AVPicture);
+        *data_size = sizeof(AVVideoFrame);
 #ifdef PRINT_FRAME_TIME
 printf("%Ld\n", rdtsc()-time);
 #endif
