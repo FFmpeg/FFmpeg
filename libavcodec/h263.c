@@ -4273,6 +4273,7 @@ int h263_decode_picture_header(MpegEncContext *s)
             dprintf("ufep=1, format: %d\n", format);
             skip_bits(&s->gb,1); /* Custom PCF */
             s->umvplus = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
+            s->unrestricted_mv = s->umvplus;
             skip_bits1(&s->gb); /* Syntax-based Arithmetic Coding (SAC) */
             if (get_bits1(&s->gb) != 0) {
                 s->mv_type = MV_TYPE_8X8; /* Advanced prediction mode */

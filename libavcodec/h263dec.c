@@ -57,6 +57,7 @@ int ff_h263_decode_init(AVCodecContext *avctx)
     s->decode_mb= ff_h263_decode_mb;
     s->low_delay= 1;
     avctx->pix_fmt= PIX_FMT_YUV420P;
+    s->unrestricted_mv= 1;
 
     /* select sub codec */
     switch(avctx->codec->id) {
