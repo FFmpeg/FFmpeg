@@ -1049,6 +1049,11 @@ int MPV_encode_init(AVCodecContext *avctx)
     if(s->avctx->thread_count > 1)
         s->rtp_mode= 1;
 
+    if(!avctx->frame_rate || !avctx->frame_rate_base){
+        av_log(avctx, AV_LOG_ERROR, "framerate not set\n");
+        return -1;
+    }
+        
     i= ff_gcd(avctx->frame_rate, avctx->frame_rate_base);
     if(i > 1){
         av_log(avctx, AV_LOG_INFO, "removing common factors from framerate\n");
