@@ -89,6 +89,8 @@ static int video_bit_rate_tolerance = 4000*1000;
 static int video_qscale = 0;
 static int video_qmin = 2;
 static int video_qmax = 31;
+static int video_mb_qmin = 2;
+static int video_mb_qmax = 31;
 static int video_qdiff = 3;
 static float video_qblur = 0.5;
 static float video_qcomp = 0.5;
@@ -1741,6 +1743,26 @@ void opt_qmax(const char *arg)
     }
 }
 
+void opt_mb_qmin(const char *arg)
+{
+    video_mb_qmin = atoi(arg);
+    if (video_mb_qmin < 0 ||
+        video_mb_qmin > 31) {
+        fprintf(stderr, "qmin must be >= 1 and <= 31\n");
+        exit(1);
+    }
+}
+
+void opt_mb_qmax(const char *arg)
+{
+    video_mb_qmax = atoi(arg);
+    if (video_mb_qmax < 0 ||
+        video_mb_qmax > 31) {
+        fprintf(stderr, "qmax must be >= 1 and <= 31\n");
+        exit(1);
+    }
+}
+
 void opt_qdiff(const char *arg)
 {
     video_qdiff = atoi(arg);
@@ -2165,6 +2187,8 @@ void opt_output_file(const char *filename)
             
                 video_enc->qmin = video_qmin;
                 video_enc->qmax = video_qmax;
+                video_enc->mb_qmin = video_mb_qmin;
+                video_enc->mb_qmax = video_mb_qmax;
                 video_enc->max_qdiff = video_qdiff;
                 video_enc->qblur = video_qblur;
                 video_enc->qcompress = video_qcomp;
@@ -2580,6 +2604,8 @@ const OptionDef options[] = {
     { "qscale", HAS_ARG | OPT_EXPERT, {(void*)opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
     { "qmin", HAS_ARG | OPT_EXPERT, {(void*)opt_qmin}, "min video quantiser scale (VBR)", "q" },
     { "qmax", HAS_ARG | OPT_EXPERT, {(void*)opt_qmax}, "max video quantiser scale (VBR)", "q" },
+    { "mbqmin", HAS_ARG | OPT_EXPERT, {(void*)opt_mb_qmin}, "min macroblock quantiser scale (VBR)", "q" },
+    { "mbqmax", HAS_ARG | OPT_EXPERT, {(void*)opt_mb_qmax}, "max macroblock quantiser scale (VBR)", "q" },
     { "qdiff", HAS_ARG | OPT_EXPERT, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
     { "qblur", HAS_ARG | OPT_EXPERT, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
     { "qcomp", HAS_ARG | OPT_EXPERT, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },

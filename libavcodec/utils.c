@@ -217,6 +217,8 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->bit_rate_tolerance= s->bit_rate*10;
     s->qmin= 2;
     s->qmax= 31;
+    s->mb_qmin= 2;
+    s->mb_qmax= 31;
     s->rc_eq= "tex^qComp";
     s->qcompress= 0.5;
     s->max_qdiff= 3;

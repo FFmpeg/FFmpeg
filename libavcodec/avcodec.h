@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4645
-#define LIBAVCODEC_BUILD_STR   "4645"
+#define LIBAVCODEC_BUILD       4646
+#define LIBAVCODEC_BUILD_STR   "4646"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -828,6 +828,7 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_QP        16
 #define FF_DEBUG_MV        32
 #define FF_DEBUG_VIS_MV    64
+#define FF_DEBUG_SKIP      128
     
     /**
      * error
@@ -835,6 +836,20 @@ typedef struct AVCodecContext {
      * decoding: unused
      */
     uint64_t error[4];
+    
+    /**
+     * minimum MB quantizer
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int mb_qmin;
+
+    /**
+     * maximum MB quantizer
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int mb_qmax;
 } AVCodecContext;
 
 typedef struct AVCodec {
