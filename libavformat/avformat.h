@@ -392,6 +392,9 @@ int roq_init(void);
 /* ipmovie.c */
 int ipmovie_init(void);
 
+/* nut.c */
+int nut_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"

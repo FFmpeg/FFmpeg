@@ -184,6 +184,21 @@ unsigned int codec_get_bmp_tag(int id)
     return codec_get_tag(codec_bmp_tags, id);
 }
 
+unsigned int codec_get_wav_tag(int id)
+{
+    return codec_get_tag(codec_wav_tags, id);
+}
+
+enum CodecID codec_get_bmp_id(unsigned int tag)
+{
+    return codec_get_id(codec_bmp_tags, tag);
+}
+
+enum CodecID codec_get_wav_id(unsigned int tag)
+{
+    return codec_get_id(codec_wav_tags, tag);
+}
+
 /* BITMAPINFOHEADER header */
 void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags, int for_asf)
 {

@@ -78,6 +78,8 @@ void av_register_all(void)
     dv1394_init();
 #endif
 
+    nut_init();
+
     /* image formats */
     av_register_image_format(&pnm_image_format);
     av_register_image_format(&pbm_image_format);
