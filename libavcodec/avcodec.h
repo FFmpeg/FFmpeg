@@ -1524,6 +1524,20 @@ void img_resample(ImgReSampleContext *s,
 
 void img_resample_close(ImgReSampleContext *s);
 
+/**
+ * Allocate memory for a picture.  Call avpicture_free to free it.
+ *
+ * @param picture the picture to be filled in.
+ * @param pix_fmt the format of the picture.
+ * @param width the width of the picture.
+ * @param height the height of the picture.
+ * @return 0 if successful, -1 if not.
+ */
+int avpicture_alloc(AVPicture *picture, int pix_fmt, int width, int height);
+
+/* Free a picture previously allocated by avpicture_alloc. */
+void avpicture_free(AVPicture *picture);
+
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height);
 int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,

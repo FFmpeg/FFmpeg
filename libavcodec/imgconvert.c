@@ -1613,7 +1613,7 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     },
 };
 
-static int avpicture_alloc(AVPicture *picture,
+int avpicture_alloc(AVPicture *picture,
                            int pix_fmt, int width, int height)
 {
     unsigned int size;
@@ -1630,7 +1630,7 @@ static int avpicture_alloc(AVPicture *picture,
     return -1;
 }
 
-static void avpicture_free(AVPicture *picture)
+void avpicture_free(AVPicture *picture)
 {
     av_free(picture->data[0]);
 }
