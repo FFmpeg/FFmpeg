@@ -2048,24 +2048,12 @@ static int decode_video_packet_header(MpegEncContext *s, GetBitContext *gb)
     if(header_extension){
         int time_increment;
         int time_incr=0;
-        printf("header extension not supported\n");
-        return -1;
 
         while (get_bits1(gb) != 0) 
             time_incr++;
 
         check_marker(gb, "before time_increment in video packed header");
         time_increment= get_bits(gb, s->time_increment_bits);
-        if(s->pict_type!=B_TYPE){
-            s->last_time_base= s->time_base;
-            s->time_base+= time_incr;
-            s->time= s->time_base*s->time_increment_resolution + time_increment;
-            s->pp_time= s->time - s->last_non_b_time;
-            s->last_non_b_time= s->time;
-        }else{
-            s->time= (s->last_time_base + time_incr)*s->time_increment_resolution + time_increment;
-            s->bp_time= s->last_non_b_time - s->time;
-        }
         check_marker(gb, "before vop_coding_type in video packed header");
         
         skip_bits(gb, 2); /* vop coding type */
@@ -2076,19 +2064,22 @@ static int decode_video_packet_header(MpegEncContext *s, GetBitContext *gb)
 
             if(s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE && s->num_sprite_warping_points){
                 mpeg4_decode_sprite_trajectory(s);
+                fprintf(stderr, "untested\n");
             }
 
             //FIXME reduced res stuff here
             
             if (s->pict_type != I_TYPE) {
-                s->f_code = get_bits(gb, 3);	/* fcode_for */
-                if(s->f_code==0){
-                    printf("Error, video packet header damaged or not MPEG4 header (f_code=0)\n");
-                    return -1; // makes no sense to continue, as the MV decoding will break very quickly
+                int f_code = get_bits(gb, 3);	/* fcode_for */
+                if(f_code==0){
+                    printf("Error, video packet header damaged (f_code=0)\n");
                 }
             }
             if (s->pict_type == B_TYPE) {
-                s->b_code = get_bits(gb, 3);
+                int b_code = get_bits(gb, 3);
+                if(b_code==0){
+                    printf("Error, video packet header damaged (b_code=0)\n");
+                }
             }       
         }
     }
