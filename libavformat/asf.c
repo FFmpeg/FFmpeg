@@ -295,6 +295,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
                 st->codec.codec_tag = tag1;
 		st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
+                if(tag1 == MKTAG('D', 'V', 'R', ' '))
+                    st->need_parsing = 1;
             }
             pos2 = url_ftell(pb);
             url_fskip(pb, gsize - (pos2 - pos1 + 24));
