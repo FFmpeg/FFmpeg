@@ -19,6 +19,9 @@
  */
 #include "avformat.h"
 
+/* XXX: this is a hack */
+extern int loop_input;
+
 typedef struct {
     int img_first;
     int img_last;
@@ -216,9 +219,9 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     if (!s->is_pipe) {
         /* loop over input */
-/*        if (loop_input && s->img_number > s->img_last) {
+        if (loop_input && s->img_number > s->img_last) {
             s->img_number = s->img_first;
-        }*/
+        }
         if (get_frame_filename(filename, sizeof(filename),
                                s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR_IO;
