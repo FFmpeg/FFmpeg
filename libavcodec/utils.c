@@ -234,6 +234,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->me_method= ME_EPZS;
     s->get_buffer= avcodec_default_get_buffer;
     s->release_buffer= avcodec_default_release_buffer;
+    s->me_subpel_quality=8;
 }
 
 /**

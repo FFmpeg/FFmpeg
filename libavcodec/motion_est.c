@@ -311,6 +311,7 @@ static inline int get_penalty_factor(MpegEncContext *s, int type){
 }
 
 void ff_init_me(MpegEncContext *s){
+    set_cmp(s, s->dsp.me_pre_cmp, s->avctx->me_pre_cmp);
     set_cmp(s, s->dsp.me_cmp, s->avctx->me_cmp);
     set_cmp(s, s->dsp.me_sub_cmp, s->avctx->me_sub_cmp);
     set_cmp(s, s->dsp.mb_cmp, s->avctx->mb_cmp);
@@ -335,6 +336,12 @@ void ff_init_me(MpegEncContext *s){
     }else{
         s->me.motion_search[0]= simple_epzs_motion_search;
         s->me.motion_search[1]= simple_epzs_motion_search4;
+    }
+    
+    if(s->avctx->me_pre_cmp&FF_CMP_CHROMA){
+        s->me.pre_motion_search= simple_chroma_epzs_motion_search;
+    }else{
+        s->me.pre_motion_search= simple_epzs_motion_search;
     }
 }
       
@@ -1037,7 +1044,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
     
     assert(s->quarter_sample==0 || s->quarter_sample==1);
 
-    s->me.penalty_factor    = get_penalty_factor(s, s->avctx->me_cmp);
+    s->me.pre_penalty_factor    = get_penalty_factor(s, s->avctx->me_pre_cmp);
 
     get_limits(s, &range, &xmin, &ymin, &xmax, &ymax, s->f_code);
     rel_xmin= xmin - mb_x*16;
@@ -1072,8 +1079,8 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
         pred_x = P_MEDIAN[0];
         pred_y = P_MEDIAN[1];
     }
-    dmin = s->me.motion_search[0](s, 0, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax, 
-                                  &s->last_picture, s->p_mv_table, (1<<16)>>shift, mv_penalty);
+    dmin = s->me.pre_motion_search(s, 0, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax, 
+                                   &s->last_picture, s->p_mv_table, (1<<16)>>shift, mv_penalty);
 
     s->p_mv_table[xy][0] = mx<<shift;
     s->p_mv_table[xy][1] = my<<shift;

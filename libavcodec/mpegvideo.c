@@ -2786,12 +2786,12 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         else if(s->pict_type!=B_TYPE)
             s->no_rounding ^= 1;          
     }
-
     /* Estimate motion for every MB */
     if(s->pict_type != I_TYPE){
         if(s->pict_type != B_TYPE){
             if((s->avctx->pre_me && s->last_non_b_pict_type==I_TYPE) || s->avctx->pre_me==2){
                 s->me.pre_pass=1;
+                s->me.dia_size= s->avctx->pre_dia_size;
 
                 for(mb_y=s->mb_height-1; mb_y >=0 ; mb_y--) {
                     for(mb_x=s->mb_width-1; mb_x >=0 ; mb_x--) {
@@ -2804,6 +2804,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             }
         }
 
+        s->me.dia_size= s->avctx->dia_size;
         for(mb_y=0; mb_y < s->mb_height; mb_y++) {
             s->block_index[0]= s->block_wrap[0]*(mb_y*2 + 1) - 1;
             s->block_index[1]= s->block_wrap[0]*(mb_y*2 + 1);
@@ -2816,7 +2817,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 s->block_index[1]+=2;
                 s->block_index[2]+=2;
                 s->block_index[3]+=2;
-
+                
                 /* compute motion vector & mb_type and store in context */
                 if(s->pict_type==B_TYPE)
                     ff_estimate_b_frame_motion(s, mb_x, mb_y);

@@ -53,6 +53,11 @@ static const uint64_t mm_bone __attribute__ ((aligned(8))) = 0x0101010101010101U
 static const uint64_t mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001ULL;
 static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002ULL;
 
+static const uint64_t ff_pw_20 __attribute__ ((aligned(8))) = 0x0014001400140014ULL;
+static const uint64_t ff_pw_3  __attribute__ ((aligned(8))) = 0x0003000300030003ULL;
+static const uint64_t ff_pw_16 __attribute__ ((aligned(8))) = 0x0010001000100010ULL;
+static const uint64_t ff_pw_15 __attribute__ ((aligned(8))) = 0x000F000F000F000FULL;
+
 #define JUMPALIGN() __asm __volatile (".balign 8"::)
 #define MOVQ_ZERO(regd)  __asm __volatile ("pxor %%" #regd ", %%" #regd ::)
 
@@ -646,10 +651,698 @@ static int hadamard8_diff_mmx(void *s, uint8_t *src1, uint8_t *src2, int stride)
 
 WARPER88_1616(hadamard8_diff_mmx, hadamard8_diff16_mmx)
 
+#define QPEL_V_LOW(m3,m4,m5,m6, pw_20, pw_3, rnd, in0, in1, in2, in7, out, OP)\
+        "paddw " #m4 ", " #m3 "		\n\t" /* x1 */\
+        "movq " #pw_20 ", %%mm4		\n\t" /* 20 */\
+        "pmullw " #m3 ", %%mm4		\n\t" /* 20x1 */\
+        "movq "#in7", " #m3 "		\n\t" /* d */\
+        "movq "#in0", %%mm5		\n\t" /* D */\
+        "paddw " #m3 ", %%mm5		\n\t" /* x4 */\
+        "psubw %%mm5, %%mm4		\n\t" /* 20x1 - x4 */\
+        "movq "#in1", %%mm5		\n\t" /* C */\
+        "movq "#in2", %%mm6		\n\t" /* B */\
+        "paddw " #m6 ", %%mm5		\n\t" /* x3 */\
+        "paddw " #m5 ", %%mm6		\n\t" /* x2 */\
+        "paddw %%mm6, %%mm6		\n\t" /* 2x2 */\
+        "psubw %%mm6, %%mm5		\n\t" /* -2x2 + x3 */\
+        "pmullw " #pw_3 ", %%mm5	\n\t" /* -6x2 + 3x3 */\
+        "paddw " #rnd ", %%mm4		\n\t" /* x2 */\
+        "paddw %%mm4, %%mm5		\n\t" /* 20x1 - 6x2 + 3x3 - x4 */\
+        "psraw $5, %%mm5		\n\t"\
+        "packuswb %%mm5, %%mm5		\n\t"\
+        OP(%%mm5, out, %%mm7, d)
+
+#define QPEL_BASE(OPNAME, ROUNDER, RND, OP)\
+void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
+    uint64_t temp;\
+\
+    asm volatile(\
+        "pxor %%mm7, %%mm7		\n\t"\
+        "1:				\n\t"\
+        "movq  (%0), %%mm0		\n\t" /* ABCDEFGH */\
+        "movq %%mm0, %%mm1		\n\t" /* ABCDEFGH */\
+        "movq %%mm0, %%mm2		\n\t" /* ABCDEFGH */\
+        "punpcklbw %%mm7, %%mm0		\n\t" /* 0A0B0C0D */\
+        "punpckhbw %%mm7, %%mm1		\n\t" /* 0E0F0G0H */\
+        "pshufw $0x90, %%mm0, %%mm5	\n\t" /* 0A0A0B0C */\
+        "pshufw $0x41, %%mm0, %%mm6	\n\t" /* 0B0A0A0B */\
+        "movq %%mm2, %%mm3		\n\t" /* ABCDEFGH */\
+        "movq %%mm2, %%mm4		\n\t" /* ABCDEFGH */\
+        "psllq $8, %%mm2		\n\t" /* 0ABCDEFG */\
+        "psllq $16, %%mm3		\n\t" /* 00ABCDEF */\
+        "psllq $24, %%mm4		\n\t" /* 000ABCDE */\
+        "punpckhbw %%mm7, %%mm2		\n\t" /* 0D0E0F0G */\
+        "punpckhbw %%mm7, %%mm3		\n\t" /* 0C0D0E0F */\
+        "punpckhbw %%mm7, %%mm4		\n\t" /* 0B0C0D0E */\
+        "paddw %%mm3, %%mm5		\n\t" /* b */\
+        "paddw %%mm2, %%mm6		\n\t" /* c */\
+        "paddw %%mm5, %%mm5		\n\t" /* 2b */\
+        "psubw %%mm5, %%mm6		\n\t" /* c - 2b */\
+        "pshufw $0x06, %%mm0, %%mm5	\n\t" /* 0C0B0A0A */\
+        "pmullw %6, %%mm6		\n\t" /* 3c - 6b */\
+        "paddw %%mm4, %%mm0		\n\t" /* a */\
+        "paddw %%mm1, %%mm5		\n\t" /* d */\
+        "pmullw %5, %%mm0		\n\t" /* 20a */\
+        "psubw %%mm5, %%mm0		\n\t" /* 20a - d */\
+        "paddw %8, %%mm6		\n\t"\
+        "paddw %%mm6, %%mm0		\n\t" /* 20a - 6b + 3c - d */\
+        "psraw $5, %%mm0		\n\t"\
+        "movq %%mm0, %7			\n\t"\
+        /* mm1=EFGH, mm2=DEFG, mm3=CDEF, mm4=BCDE, mm7=0 */\
+        \
+        "movq 5(%0), %%mm0		\n\t" /* FGHIJKLM */\
+        "movq %%mm0, %%mm5		\n\t" /* FGHIJKLM */\
+        "movq %%mm0, %%mm6		\n\t" /* FGHIJKLM */\
+        "psrlq $8, %%mm0		\n\t" /* GHIJKLM0 */\
+        "psrlq $16, %%mm5		\n\t" /* HIJKLM00 */\
+        "punpcklbw %%mm7, %%mm0		\n\t" /* 0G0H0I0J */\
+        "punpcklbw %%mm7, %%mm5		\n\t" /* 0H0I0J0K */\
+        "paddw %%mm0, %%mm2		\n\t" /* b */\
+        "paddw %%mm5, %%mm3		\n\t" /* c */\
+        "paddw %%mm2, %%mm2		\n\t" /* 2b */\
+        "psubw %%mm2, %%mm3		\n\t" /* c - 2b */\
+        "movq %%mm6, %%mm2		\n\t" /* FGHIJKLM */\
+        "psrlq $24, %%mm6		\n\t" /* IJKLM000 */\
+        "punpcklbw %%mm7, %%mm2		\n\t" /* 0F0G0H0I */\
+        "punpcklbw %%mm7, %%mm6		\n\t" /* 0I0J0K0L */\
+        "pmullw %6, %%mm3		\n\t" /* 3c - 6b */\
+        "paddw %%mm2, %%mm1		\n\t" /* a */\
+        "paddw %%mm6, %%mm4		\n\t" /* d */\
+        "pmullw %5, %%mm1		\n\t" /* 20a */\
+        "psubw %%mm4, %%mm3		\n\t" /* - 6b +3c - d */\
+        "paddw %8, %%mm1		\n\t"\
+        "paddw %%mm1, %%mm3		\n\t" /* 20a - 6b +3c - d */\
+        "psraw $5, %%mm3		\n\t"\
+        "movq %7, %%mm1			\n\t"\
+        "packuswb %%mm3, %%mm1		\n\t"\
+        OP(%%mm1, (%1),%%mm4, q)\
+        /* mm0= GHIJ, mm2=FGHI, mm5=HIJK, mm6=IJKL, mm7=0 */\
+        \
+        "movq 9(%0), %%mm1		\n\t" /* JKLMNOPQ */\
+        "movq %%mm1, %%mm4		\n\t" /* JKLMNOPQ */\
+        "movq %%mm1, %%mm3		\n\t" /* JKLMNOPQ */\
+        "psrlq $8, %%mm1		\n\t" /* KLMNOPQ0 */\
+        "psrlq $16, %%mm4		\n\t" /* LMNOPQ00 */\
+        "punpcklbw %%mm7, %%mm1		\n\t" /* 0K0L0M0N */\
+        "punpcklbw %%mm7, %%mm4		\n\t" /* 0L0M0N0O */\
+        "paddw %%mm1, %%mm5		\n\t" /* b */\
+        "paddw %%mm4, %%mm0		\n\t" /* c */\
+        "paddw %%mm5, %%mm5		\n\t" /* 2b */\
+        "psubw %%mm5, %%mm0		\n\t" /* c - 2b */\
+        "movq %%mm3, %%mm5		\n\t" /* JKLMNOPQ */\
+        "psrlq $24, %%mm3		\n\t" /* MNOPQ000 */\
+        "pmullw %6, %%mm0		\n\t" /* 3c - 6b */\
+        "punpcklbw %%mm7, %%mm3		\n\t" /* 0M0N0O0P */\
+        "paddw %%mm3, %%mm2		\n\t" /* d */\
+        "psubw %%mm2, %%mm0		\n\t" /* -6b + 3c - d */\
+        "movq %%mm5, %%mm2		\n\t" /* JKLMNOPQ */\
+        "punpcklbw %%mm7, %%mm2		\n\t" /* 0J0K0L0M */\
+        "punpckhbw %%mm7, %%mm5		\n\t" /* 0N0O0P0Q */\
+        "paddw %%mm2, %%mm6		\n\t" /* a */\
+        "pmullw %5, %%mm6		\n\t" /* 20a */\
+        "paddw %8, %%mm0		\n\t"\
+        "paddw %%mm6, %%mm0		\n\t" /* 20a - 6b + 3c - d */\
+        "psraw $5, %%mm0		\n\t"\
+        /* mm1=KLMN, mm2=JKLM, mm3=MNOP, mm4=LMNO, mm5=NOPQ mm7=0 */\
+        \
+        "paddw %%mm5, %%mm3		\n\t" /* a */\
+        "pshufw $0xF9, %%mm5, %%mm6	\n\t" /* 0O0P0Q0Q */\
+        "paddw %%mm4, %%mm6		\n\t" /* b */\
+        "pshufw $0xBE, %%mm5, %%mm4	\n\t" /* 0P0Q0Q0P */\
+        "pshufw $0x6F, %%mm5, %%mm5	\n\t" /* 0Q0Q0P0O */\
+        "paddw %%mm1, %%mm4		\n\t" /* c */\
+        "paddw %%mm2, %%mm5		\n\t" /* d */\
+        "paddw %%mm6, %%mm6		\n\t" /* 2b */\
+        "psubw %%mm6, %%mm4		\n\t" /* c - 2b */\
+        "pmullw %5, %%mm3		\n\t" /* 20a */\
+        "pmullw %6, %%mm4		\n\t" /* 3c - 6b */\
+        "psubw %%mm5, %%mm3		\n\t" /* -6b + 3c - d */\
+        "paddw %8, %%mm4		\n\t"\
+        "paddw %%mm3, %%mm4		\n\t" /* 20a - 6b + 3c - d */\
+        "psraw $5, %%mm4		\n\t"\
+        "packuswb %%mm4, %%mm0		\n\t"\
+        OP(%%mm0, 8(%1), %%mm4, q)\
+        \
+        "addl %3, %0			\n\t"\
+        "addl %4, %1			\n\t"\
+        "decl %2			\n\t"\
+        " jnz 1b				\n\t"\
+        : "+r"(src), "+r"(dst), "+g"(h)\
+        : "r"(srcStride), "r"(dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(temp), "m"(ROUNDER)\
+    );\
+}\
+\
+static void OPNAME ## mpeg4_qpel16_h_lowpass_3dnow(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
+    int i;\
+    int16_t temp[16];\
+    /* quick HACK, XXX FIXME MUST be optimized */\
+    for(i=0; i<h; i++)\
+    {\
+        temp[ 0]= (src[ 0]+src[ 1])*20 - (src[ 0]+src[ 2])*6 + (src[ 1]+src[ 3])*3 - (src[ 2]+src[ 4]);\
+        temp[ 1]= (src[ 1]+src[ 2])*20 - (src[ 0]+src[ 3])*6 + (src[ 0]+src[ 4])*3 - (src[ 1]+src[ 5]);\
+        temp[ 2]= (src[ 2]+src[ 3])*20 - (src[ 1]+src[ 4])*6 + (src[ 0]+src[ 5])*3 - (src[ 0]+src[ 6]);\
+        temp[ 3]= (src[ 3]+src[ 4])*20 - (src[ 2]+src[ 5])*6 + (src[ 1]+src[ 6])*3 - (src[ 0]+src[ 7]);\
+        temp[ 4]= (src[ 4]+src[ 5])*20 - (src[ 3]+src[ 6])*6 + (src[ 2]+src[ 7])*3 - (src[ 1]+src[ 8]);\
+        temp[ 5]= (src[ 5]+src[ 6])*20 - (src[ 4]+src[ 7])*6 + (src[ 3]+src[ 8])*3 - (src[ 2]+src[ 9]);\
+        temp[ 6]= (src[ 6]+src[ 7])*20 - (src[ 5]+src[ 8])*6 + (src[ 4]+src[ 9])*3 - (src[ 3]+src[10]);\
+        temp[ 7]= (src[ 7]+src[ 8])*20 - (src[ 6]+src[ 9])*6 + (src[ 5]+src[10])*3 - (src[ 4]+src[11]);\
+        temp[ 8]= (src[ 8]+src[ 9])*20 - (src[ 7]+src[10])*6 + (src[ 6]+src[11])*3 - (src[ 5]+src[12]);\
+        temp[ 9]= (src[ 9]+src[10])*20 - (src[ 8]+src[11])*6 + (src[ 7]+src[12])*3 - (src[ 6]+src[13]);\
+        temp[10]= (src[10]+src[11])*20 - (src[ 9]+src[12])*6 + (src[ 8]+src[13])*3 - (src[ 7]+src[14]);\
+        temp[11]= (src[11]+src[12])*20 - (src[10]+src[13])*6 + (src[ 9]+src[14])*3 - (src[ 8]+src[15]);\
+        temp[12]= (src[12]+src[13])*20 - (src[11]+src[14])*6 + (src[10]+src[15])*3 - (src[ 9]+src[16]);\
+        temp[13]= (src[13]+src[14])*20 - (src[12]+src[15])*6 + (src[11]+src[16])*3 - (src[10]+src[16]);\
+        temp[14]= (src[14]+src[15])*20 - (src[13]+src[16])*6 + (src[12]+src[16])*3 - (src[11]+src[15]);\
+        temp[15]= (src[15]+src[16])*20 - (src[14]+src[16])*6 + (src[13]+src[15])*3 - (src[12]+src[14]);\
+        asm volatile(\
+            "movq (%0), %%mm0		\n\t"\
+            "movq 8(%0), %%mm1		\n\t"\
+            "paddw %2, %%mm0		\n\t"\
+            "paddw %2, %%mm1		\n\t"\
+            "psraw $5, %%mm0		\n\t"\
+            "psraw $5, %%mm1		\n\t"\
+            "packuswb %%mm1, %%mm0	\n\t"\
+            OP(%%mm0, (%1), %%mm1, q)\
+            "movq 16(%0), %%mm0		\n\t"\
+            "movq 24(%0), %%mm1		\n\t"\
+            "paddw %2, %%mm0		\n\t"\
+            "paddw %2, %%mm1		\n\t"\
+            "psraw $5, %%mm0		\n\t"\
+            "psraw $5, %%mm1		\n\t"\
+            "packuswb %%mm1, %%mm0	\n\t"\
+            OP(%%mm0, 8(%1), %%mm1, q)\
+            :: "r"(temp), "r"(dst), "m"(ROUNDER)\
+        );\
+        dst+=dstStride;\
+        src+=srcStride;\
+    }\
+}\
+\
+void OPNAME ## mpeg4_qpel16_v_lowpass_mmx(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
+    uint64_t temp[17*4];\
+    uint64_t *temp_ptr= temp;\
+    int count= 17;\
+\
+    /*FIXME unroll */\
+    asm volatile(\
+        "pxor %%mm7, %%mm7		\n\t"\
+        "1:				\n\t"\
+        "movq (%0), %%mm0		\n\t"\
+        "movq (%0), %%mm1		\n\t"\
+        "movq 8(%0), %%mm2		\n\t"\
+        "movq 8(%0), %%mm3		\n\t"\
+        "punpcklbw %%mm7, %%mm0		\n\t"\
+        "punpckhbw %%mm7, %%mm1		\n\t"\
+        "punpcklbw %%mm7, %%mm2		\n\t"\
+        "punpckhbw %%mm7, %%mm3		\n\t"\
+        "movq %%mm0, (%1)		\n\t"\
+        "movq %%mm1, 17*8(%1)		\n\t"\
+        "movq %%mm2, (%1, %4)		\n\t"\
+        "movq %%mm3, (%1, %5)		\n\t"\
+        "addl $8, %1			\n\t"\
+        "addl %3, %0			\n\t"\
+        "decl %2			\n\t"\
+        " jnz 1b			\n\t"\
+        : "+r" (src), "+r" (temp_ptr), "+r"(count)\
+        : "r" (srcStride), "r"(2*8*17), "r"(3*8*17)\
+    );\
+    \
+    temp_ptr= temp;\
+    count=4;\
+    \
+/*FIXME reorder for speed */\
+    asm volatile(\
+        /*"pxor %%mm7, %%mm7		\n\t"*/\
+        "1:				\n\t"\
+        "movq (%0), %%mm0		\n\t"\
+        "movq 8(%0), %%mm1		\n\t"\
+        "movq 16(%0), %%mm2		\n\t"\
+        "movq 24(%0), %%mm3		\n\t"\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7, 16(%0),  8(%0),   (%0), 32(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7,  8(%0),   (%0),   (%0), 40(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7,   (%0),   (%0),  8(%0), 48(%0), (%1), OP)\
+        \
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7,   (%0),  8(%0), 16(%0), 56(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7,  8(%0), 16(%0), 24(%0), 64(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7, 16(%0), 24(%0), 32(%0), 72(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7, 24(%0), 32(%0), 40(%0), 80(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7, 32(%0), 40(%0), 48(%0), 88(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7, 40(%0), 48(%0), 56(%0), 96(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7, 48(%0), 56(%0), 64(%0),104(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7, 56(%0), 64(%0), 72(%0),112(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7, 64(%0), 72(%0), 80(%0),120(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7, 72(%0), 80(%0), 88(%0),128(%0), (%1), OP)\
+        \
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7, 80(%0), 88(%0), 96(%0),128(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"  \
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7, 88(%0), 96(%0),104(%0),120(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7, 96(%0),104(%0),112(%0),112(%0), (%1, %3), OP)\
+        \
+        "addl $136, %0			\n\t"\
+        "addl %8, %1			\n\t"\
+        "decl %2			\n\t"\
+        " jnz 1b			\n\t"\
+         \
+        : "+r"(temp_ptr), "+r"(dst), "+g"(count)\
+        : "r"(dstStride), "r"(2*dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(ROUNDER), "g"(4-14*dstStride)\
+    );\
+}\
+void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
+    uint64_t temp;\
+\
+    asm volatile(\
+        "pxor %%mm7, %%mm7		\n\t"\
+        "1:				\n\t"\
+        "movq  (%0), %%mm0		\n\t" /* ABCDEFGH */\
+        "movq %%mm0, %%mm1		\n\t" /* ABCDEFGH */\
+        "movq %%mm0, %%mm2		\n\t" /* ABCDEFGH */\
+        "punpcklbw %%mm7, %%mm0		\n\t" /* 0A0B0C0D */\
+        "punpckhbw %%mm7, %%mm1		\n\t" /* 0E0F0G0H */\
+        "pshufw $0x90, %%mm0, %%mm5	\n\t" /* 0A0A0B0C */\
+        "pshufw $0x41, %%mm0, %%mm6	\n\t" /* 0B0A0A0B */\
+        "movq %%mm2, %%mm3		\n\t" /* ABCDEFGH */\
+        "movq %%mm2, %%mm4		\n\t" /* ABCDEFGH */\
+        "psllq $8, %%mm2		\n\t" /* 0ABCDEFG */\
+        "psllq $16, %%mm3		\n\t" /* 00ABCDEF */\
+        "psllq $24, %%mm4		\n\t" /* 000ABCDE */\
+        "punpckhbw %%mm7, %%mm2		\n\t" /* 0D0E0F0G */\
+        "punpckhbw %%mm7, %%mm3		\n\t" /* 0C0D0E0F */\
+        "punpckhbw %%mm7, %%mm4		\n\t" /* 0B0C0D0E */\
+        "paddw %%mm3, %%mm5		\n\t" /* b */\
+        "paddw %%mm2, %%mm6		\n\t" /* c */\
+        "paddw %%mm5, %%mm5		\n\t" /* 2b */\
+        "psubw %%mm5, %%mm6		\n\t" /* c - 2b */\
+        "pshufw $0x06, %%mm0, %%mm5	\n\t" /* 0C0B0A0A */\
+        "pmullw %6, %%mm6		\n\t" /* 3c - 6b */\
+        "paddw %%mm4, %%mm0		\n\t" /* a */\
+        "paddw %%mm1, %%mm5		\n\t" /* d */\
+        "pmullw %5, %%mm0		\n\t" /* 20a */\
+        "psubw %%mm5, %%mm0		\n\t" /* 20a - d */\
+        "paddw %8, %%mm6		\n\t"\
+        "paddw %%mm6, %%mm0		\n\t" /* 20a - 6b + 3c - d */\
+        "psraw $5, %%mm0		\n\t"\
+        /* mm1=EFGH, mm2=DEFG, mm3=CDEF, mm4=BCDE, mm7=0 */\
+        \
+        "movd 5(%0), %%mm5		\n\t" /* FGHI */\
+        "punpcklbw %%mm7, %%mm5		\n\t" /* 0F0G0H0I */\
+        "pshufw $0xF9, %%mm5, %%mm6	\n\t" /* 0G0H0I0I */\
+        "paddw %%mm5, %%mm1		\n\t" /* a */\
+        "paddw %%mm6, %%mm2		\n\t" /* b */\
+        "pshufw $0xBE, %%mm5, %%mm6	\n\t" /* 0H0I0I0H */\
+        "pshufw $0x6F, %%mm5, %%mm5	\n\t" /* 0I0I0H0G */\
+        "paddw %%mm6, %%mm3		\n\t" /* c */\
+        "paddw %%mm5, %%mm4		\n\t" /* d */\
+        "paddw %%mm2, %%mm2		\n\t" /* 2b */\
+        "psubw %%mm2, %%mm3		\n\t" /* c - 2b */\
+        "pmullw %5, %%mm1		\n\t" /* 20a */\
+        "pmullw %6, %%mm3		\n\t" /* 3c - 6b */\
+        "psubw %%mm4, %%mm3		\n\t" /* -6b + 3c - d */\
+        "paddw %8, %%mm1		\n\t"\
+        "paddw %%mm1, %%mm3		\n\t" /* 20a - 6b + 3c - d */\
+        "psraw $5, %%mm3		\n\t"\
+        "packuswb %%mm3, %%mm0		\n\t"\
+        OP(%%mm0, (%1), %%mm4, q)\
+        \
+        "addl %3, %0			\n\t"\
+        "addl %4, %1			\n\t"\
+        "decl %2			\n\t"\
+        " jnz 1b				\n\t"\
+        : "+r"(src), "+r"(dst), "+g"(h)\
+        : "r"(srcStride), "r"(dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(temp), "m"(ROUNDER)\
+    );\
+}\
+\
+static void OPNAME ## mpeg4_qpel8_h_lowpass_3dnow(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
+    int i;\
+    int16_t temp[8];\
+    /* quick HACK, XXX FIXME MUST be optimized */\
+    for(i=0; i<h; i++)\
+    {\
+        temp[ 0]= (src[ 0]+src[ 1])*20 - (src[ 0]+src[ 2])*6 + (src[ 1]+src[ 3])*3 - (src[ 2]+src[ 4]);\
+        temp[ 1]= (src[ 1]+src[ 2])*20 - (src[ 0]+src[ 3])*6 + (src[ 0]+src[ 4])*3 - (src[ 1]+src[ 5]);\
+        temp[ 2]= (src[ 2]+src[ 3])*20 - (src[ 1]+src[ 4])*6 + (src[ 0]+src[ 5])*3 - (src[ 0]+src[ 6]);\
+        temp[ 3]= (src[ 3]+src[ 4])*20 - (src[ 2]+src[ 5])*6 + (src[ 1]+src[ 6])*3 - (src[ 0]+src[ 7]);\
+        temp[ 4]= (src[ 4]+src[ 5])*20 - (src[ 3]+src[ 6])*6 + (src[ 2]+src[ 7])*3 - (src[ 1]+src[ 8]);\
+        temp[ 5]= (src[ 5]+src[ 6])*20 - (src[ 4]+src[ 7])*6 + (src[ 3]+src[ 8])*3 - (src[ 2]+src[ 8]);\
+        temp[ 6]= (src[ 6]+src[ 7])*20 - (src[ 5]+src[ 8])*6 + (src[ 4]+src[ 8])*3 - (src[ 3]+src[ 7]);\
+        temp[ 7]= (src[ 7]+src[ 8])*20 - (src[ 6]+src[ 8])*6 + (src[ 5]+src[ 7])*3 - (src[ 4]+src[ 6]);\
+        asm volatile(\
+            "movq (%0), %%mm0		\n\t"\
+            "movq 8(%0), %%mm1		\n\t"\
+            "paddw %2, %%mm0		\n\t"\
+            "paddw %2, %%mm1		\n\t"\
+            "psraw $5, %%mm0		\n\t"\
+            "psraw $5, %%mm1		\n\t"\
+            "packuswb %%mm1, %%mm0	\n\t"\
+            OP(%%mm0, (%1), %%mm1, q)\
+            :: "r"(temp), "r"(dst), "m"(ROUNDER)\
+        );\
+        dst+=dstStride;\
+        src+=srcStride;\
+    }\
+}\
+\
+void OPNAME ## mpeg4_qpel8_v_lowpass_mmx(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
+    uint64_t temp[9*4];\
+    uint64_t *temp_ptr= temp;\
+    int count= 9;\
+\
+    /*FIXME unroll */\
+    asm volatile(\
+        "pxor %%mm7, %%mm7		\n\t"\
+        "1:				\n\t"\
+        "movq (%0), %%mm0		\n\t"\
+        "movq (%0), %%mm1		\n\t"\
+        "punpcklbw %%mm7, %%mm0		\n\t"\
+        "punpckhbw %%mm7, %%mm1		\n\t"\
+        "movq %%mm0, (%1)		\n\t"\
+        "movq %%mm1, 9*8(%1)		\n\t"\
+        "addl $8, %1			\n\t"\
+        "addl %3, %0			\n\t"\
+        "decl %2			\n\t"\
+        " jnz 1b			\n\t"\
+        : "+r" (src), "+r" (temp_ptr), "+r"(count)\
+        : "r" (srcStride)\
+    );\
+    \
+    temp_ptr= temp;\
+    count=2;\
+    \
+/*FIXME reorder for speed */\
+    asm volatile(\
+        /*"pxor %%mm7, %%mm7		\n\t"*/\
+        "1:				\n\t"\
+        "movq (%0), %%mm0		\n\t"\
+        "movq 8(%0), %%mm1		\n\t"\
+        "movq 16(%0), %%mm2		\n\t"\
+        "movq 24(%0), %%mm3		\n\t"\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7, 16(%0),  8(%0),   (%0), 32(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7,  8(%0),   (%0),   (%0), 40(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7,   (%0),   (%0),  8(%0), 48(%0), (%1), OP)\
+        \
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7,   (%0),  8(%0), 16(%0), 56(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"\
+        QPEL_V_LOW(%%mm0, %%mm1, %%mm2, %%mm3, %5, %6, %7,  8(%0), 16(%0), 24(%0), 64(%0), (%1), OP)\
+        \
+        QPEL_V_LOW(%%mm1, %%mm2, %%mm3, %%mm0, %5, %6, %7, 16(%0), 24(%0), 32(%0), 64(%0), (%1, %3), OP)\
+        "addl %4, %1			\n\t"\
+        QPEL_V_LOW(%%mm2, %%mm3, %%mm0, %%mm1, %5, %6, %7, 24(%0), 32(%0), 40(%0), 56(%0), (%1), OP)\
+        QPEL_V_LOW(%%mm3, %%mm0, %%mm1, %%mm2, %5, %6, %7, 32(%0), 40(%0), 48(%0), 48(%0), (%1, %3), OP)\
+                \
+        "addl $72, %0			\n\t"\
+        "addl %8, %1			\n\t"\
+        "decl %2			\n\t"\
+        " jnz 1b			\n\t"\
+         \
+        : "+r"(temp_ptr), "+r"(dst), "+g"(count)\
+        : "r"(dstStride), "r"(2*dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(ROUNDER), "g"(4-6*dstStride)\
+    );\
+}
+
+#define QPEL_OP(OPNAME, ROUNDER, RND, OP, MMX)\
+\
+static void OPNAME ## qpel8_mc00_ ## MMX (UINT8 *dst, UINT8 *src, int stride){\
+    put_pixels8_mmx(dst, src, stride, 8);\
+}\
+\
+static void OPNAME ## qpel8_mc10_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t temp[32];\
+    uint8_t * const half= (uint8_t*)temp;\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(half, src, 8, stride, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, src, half, stride, stride, 8);\
+}\
+\
+static void OPNAME ## qpel8_mc20_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    OPNAME ## mpeg4_qpel8_h_lowpass_ ## MMX(dst, src, stride, stride, 8);\
+}\
+\
+static void OPNAME ## qpel8_mc30_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t temp[32];\
+    uint8_t * const half= (uint8_t*)temp;\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(half, src, 8, stride, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, src+1, half, stride, stride, 8);\
+}\
+\
+static void OPNAME ## qpel8_mc01_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t temp[32];\
+    uint8_t * const half= (uint8_t*)temp;\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(half, src, 8, stride);\
+    OPNAME ## pixels8_l2_mmx(dst, src, half, stride, stride, 8);\
+}\
+\
+static void OPNAME ## qpel8_mc02_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    OPNAME ## mpeg4_qpel8_v_lowpass_mmx(dst, src, stride, stride);\
+}\
+\
+static void OPNAME ## qpel8_mc03_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t temp[32];\
+    uint8_t * const half= (uint8_t*)temp;\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(half, src, 8, stride);\
+    OPNAME ## pixels8_l2_mmx(dst, src+stride, half, stride, stride, 8);\
+}\
+static void OPNAME ## qpel8_mc11_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[8*2 + 8*2 + 18*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*64 + 8;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfV, src, 8, stride);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfHV, halfH, 8, 8);\
+    OPNAME ## pixels8_l4_mmx(dst, src, (uint8_t*)half, stride, 8);\
+}\
+static void OPNAME ## qpel8_mc31_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[8*2 + 8*2 + 18*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*64 + 8;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfV, src+1, 8, stride);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfHV, halfH, 8, 8);\
+    OPNAME ## pixels8_l4_mmx(dst, src+1, (uint8_t*)half, stride, 8);\
+}\
+static void OPNAME ## qpel8_mc13_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[8*2 + 8*2 + 9*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*64;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfV, src, 8, stride);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfHV, halfH, 8, 8);\
+    OPNAME ## pixels8_l4_mmx(dst, src+stride, (uint8_t*)half, stride, 8);\
+}\
+static void OPNAME ## qpel8_mc33_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[8*2 + 8*2 + 9*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*64;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src  , 8, stride, 9);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfV, src+1, 8, stride);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfHV, halfH, 8, 8);\
+    OPNAME ## pixels8_l4_mmx(dst, src+stride+1, (uint8_t*)half, stride, 8);\
+}\
+static void OPNAME ## qpel8_mc21_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[8*2 + 9*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 64;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfHV, halfH, 8, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, halfH, halfHV, stride, 8, 8);\
+}\
+static void OPNAME ## qpel8_mc23_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[8*2 + 9*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 64;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfHV, halfH, 8, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, halfH+8, halfHV, stride, 8, 8);\
+}\
+static void OPNAME ## qpel8_mc12_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[8*2 + 8*2 + 9*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*64;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfV, src, 8, stride);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfHV, halfH, 8, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, halfV, halfHV, stride, 8, 8);\
+}\
+static void OPNAME ## qpel8_mc32_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[8*2 + 8*2 + 9*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*64;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfV, src+1, 8, stride);\
+    put ## RND ## mpeg4_qpel8_v_lowpass_mmx(halfHV, halfH, 8, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, halfV, halfHV, stride, 8, 8);\
+}\
+static void OPNAME ## qpel8_mc22_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[9*2];\
+    uint8_t * const halfH= ((uint8_t*)half);\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
+    OPNAME ## mpeg4_qpel8_v_lowpass_mmx(dst, halfH, stride, 8);\
+}\
+static void OPNAME ## qpel16_mc00_ ## MMX (UINT8 *dst, UINT8 *src, int stride){\
+    put_pixels16_mmx(dst, src, stride, 16);\
+}\
+\
+static void OPNAME ## qpel16_mc10_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t temp[32];\
+    uint8_t * const half= (uint8_t*)temp;\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(half, src, 16, stride, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, src, half, stride, stride, 16);\
+}\
+\
+static void OPNAME ## qpel16_mc20_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    OPNAME ## mpeg4_qpel16_h_lowpass_ ## MMX(dst, src, stride, stride, 16);\
+}\
+\
+static void OPNAME ## qpel16_mc30_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t temp[32];\
+    uint8_t * const half= (uint8_t*)temp;\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(half, src, 16, stride, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, src+1, half, stride, stride, 16);\
+}\
+\
+static void OPNAME ## qpel16_mc01_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t temp[32];\
+    uint8_t * const half= (uint8_t*)temp;\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(half, src, 16, stride);\
+    OPNAME ## pixels16_l2_mmx(dst, src, half, stride, stride, 16);\
+}\
+\
+static void OPNAME ## qpel16_mc02_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    OPNAME ## mpeg4_qpel16_v_lowpass_mmx(dst, src, stride, stride);\
+}\
+\
+static void OPNAME ## qpel16_mc03_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t temp[32];\
+    uint8_t * const half= (uint8_t*)temp;\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(half, src, 16, stride);\
+    OPNAME ## pixels16_l2_mmx(dst, src+stride, half, stride, stride, 16);\
+}\
+static void OPNAME ## qpel16_mc11_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[16*2 + 16*2 + 18*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*256 + 16;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfV, src, 16, stride);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfHV, halfH, 16, 16);\
+    OPNAME ## pixels16_l4_mmx(dst, src, (uint8_t*)half, stride, 16);\
+}\
+static void OPNAME ## qpel16_mc31_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[16*2 + 16*2 + 18*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*256 + 16;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfV, src+1, 16, stride);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfHV, halfH, 16, 16);\
+    OPNAME ## pixels16_l4_mmx(dst, src+1, (uint8_t*)half, stride, 16);\
+}\
+static void OPNAME ## qpel16_mc13_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[16*2 + 16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*256;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfV, src, 16, stride);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfHV, halfH, 16, 16);\
+    OPNAME ## pixels16_l4_mmx(dst, src+stride, (uint8_t*)half, stride, 16);\
+}\
+static void OPNAME ## qpel16_mc33_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[16*2 + 16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*256;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src  , 16, stride, 17);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfV, src+1, 16, stride);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfHV, halfH, 16, 16);\
+    OPNAME ## pixels16_l4_mmx(dst, src+stride+1, (uint8_t*)half, stride, 16);\
+}\
+static void OPNAME ## qpel16_mc21_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 256;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfHV, halfH, 16, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, halfH, halfHV, stride, 16, 16);\
+}\
+static void OPNAME ## qpel16_mc23_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 256;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfHV, halfH, 16, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, halfH+16, halfHV, stride, 16, 16);\
+}\
+static void OPNAME ## qpel16_mc12_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[16*2 + 16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*256;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfV, src, 16, stride);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfHV, halfH, 16, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, halfV, halfHV, stride, 16, 16);\
+}\
+static void OPNAME ## qpel16_mc32_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[16*2 + 16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 2*256;\
+    uint8_t * const halfV= ((uint8_t*)half);\
+    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfV, src+1, 16, stride);\
+    put ## RND ## mpeg4_qpel16_v_lowpass_mmx(halfHV, halfH, 16, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, halfV, halfHV, stride, 16, 16);\
+}\
+static void OPNAME ## qpel16_mc22_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
+    uint64_t half[17*2];\
+    uint8_t * const halfH= ((uint8_t*)half);\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
+    OPNAME ## mpeg4_qpel16_v_lowpass_mmx(dst, halfH, stride, 16);\
+}
+
+
+#define PUT_OP(a,b,temp, size) "mov" #size " " #a ", " #b "	\n\t"
+#define AVG_OP(a,b,temp, size) \
+"mov" #size " " #b ", " #temp "	\n\t"\
+"pavgusb " #temp ", " #a "	\n\t"\
+"mov" #size " " #a ", " #b "	\n\t"
+
+QPEL_BASE(put_       , ff_pw_16, _       , PUT_OP)
+QPEL_BASE(avg_       , ff_pw_16, _       , AVG_OP)
+QPEL_BASE(put_no_rnd_, ff_pw_15, _no_rnd_, PUT_OP)
+QPEL_OP(put_       , ff_pw_16, _       , PUT_OP, 3dnow)
+QPEL_OP(avg_       , ff_pw_16, _       , AVG_OP, 3dnow)
+QPEL_OP(put_no_rnd_, ff_pw_15, _no_rnd_, PUT_OP, 3dnow)
+
+#undef AVG_OP
+#define AVG_OP(a,b,temp, size) \
+"mov" #size " " #b ", " #temp "	\n\t"\
+"pavgb " #temp ", " #a "	\n\t"\
+"mov" #size " " #a ", " #b "	\n\t"
+QPEL_OP(put_       , ff_pw_16, _       , PUT_OP, mmx2)
+QPEL_OP(avg_       , ff_pw_16, _       , AVG_OP, mmx2)
+QPEL_OP(put_no_rnd_, ff_pw_15, _no_rnd_, PUT_OP, mmx2)
+
 #if 0
 static void just_return() { return; }
 #endif
 
+#define SET_QPEL_FUNC(postfix1, postfix2) \
+    c->put_ ## postfix1 = put_ ## postfix2;\
+    c->put_no_rnd_ ## postfix1 = put_no_rnd_ ## postfix2;\
+    c->avg_ ## postfix1 = avg_ ## postfix2;
+    
 void dsputil_init_mmx(DSPContext* c, unsigned mask)
 {
     mm_flags = mm_support();
@@ -724,7 +1417,7 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
         c->avg_no_rnd_pixels_tab[1][1] = avg_no_rnd_pixels8_x2_mmx;
         c->avg_no_rnd_pixels_tab[1][2] = avg_no_rnd_pixels8_y2_mmx;
         c->avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels8_xy2_mmx;
-        
+                
         c->add_bytes= add_bytes_mmx;
         c->diff_bytes= diff_bytes_mmx;
         
@@ -767,6 +1460,38 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
             c->avg_pixels_tab[1][1] = avg_pixels8_x2_mmx2;
             c->avg_pixels_tab[1][2] = avg_pixels8_y2_mmx2;
             c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 0], qpel16_mc00_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 1], qpel16_mc10_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 2], qpel16_mc20_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 3], qpel16_mc30_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 4], qpel16_mc01_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 5], qpel16_mc11_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 6], qpel16_mc21_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 7], qpel16_mc31_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 8], qpel16_mc02_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 9], qpel16_mc12_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][10], qpel16_mc22_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][11], qpel16_mc32_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][12], qpel16_mc03_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][13], qpel16_mc13_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][14], qpel16_mc23_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][15], qpel16_mc33_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 0], qpel8_mc00_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 1], qpel8_mc10_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 2], qpel8_mc20_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 3], qpel8_mc30_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 4], qpel8_mc01_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 5], qpel8_mc11_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 6], qpel8_mc21_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 7], qpel8_mc31_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 8], qpel8_mc02_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 9], qpel8_mc12_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][10], qpel8_mc22_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][11], qpel8_mc32_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][12], qpel8_mc03_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][13], qpel8_mc13_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][14], qpel8_mc23_mmx2)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_mmx2)
         } else if (mm_flags & MM_3DNOW) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_3dnow;
             c->put_pixels_tab[0][2] = put_pixels16_y2_3dnow;
@@ -787,6 +1512,39 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
             c->avg_pixels_tab[1][1] = avg_pixels8_x2_3dnow;
             c->avg_pixels_tab[1][2] = avg_pixels8_y2_3dnow;
             c->avg_pixels_tab[1][3] = avg_pixels8_xy2_3dnow;
+        
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 0], qpel16_mc00_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 1], qpel16_mc10_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 2], qpel16_mc20_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 3], qpel16_mc30_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 4], qpel16_mc01_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 5], qpel16_mc11_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 6], qpel16_mc21_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 7], qpel16_mc31_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 8], qpel16_mc02_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][ 9], qpel16_mc12_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][10], qpel16_mc22_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][11], qpel16_mc32_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][12], qpel16_mc03_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][13], qpel16_mc13_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][14], qpel16_mc23_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[0][15], qpel16_mc33_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 0], qpel8_mc00_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 1], qpel8_mc10_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 2], qpel8_mc20_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 3], qpel8_mc30_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 4], qpel8_mc01_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 5], qpel8_mc11_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 6], qpel8_mc21_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 7], qpel8_mc31_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 8], qpel8_mc02_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][ 9], qpel8_mc12_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][10], qpel8_mc22_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][11], qpel8_mc32_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][12], qpel8_mc03_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][13], qpel8_mc13_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][14], qpel8_mc23_3dnow)
+            SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_3dnow)
         }
     }
 

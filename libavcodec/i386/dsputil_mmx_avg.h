@@ -53,6 +53,38 @@ static void DEF(put_pixels8_x2)(UINT8 *block, const UINT8 *pixels, int line_size
 	:"%eax", "memory");
 }
 
+static void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+{
+    __asm __volatile(
+	"1:				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" (%2), %%mm0		\n\t"
+	PAVGB" 8(%2), %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movq	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" 16(%2), %%mm0		\n\t"
+	PAVGB" 24(%2), %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+        "addl	$32, %2			\n\t"
+	"subl	$4, %0			\n\t"
+	"jnz	1b			\n\t"
+	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
+	:"r"(src1Stride), "r"(dstStride)
+	:"memory");
+}
+
 static void DEF(put_pixels16_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
@@ -91,6 +123,34 @@ static void DEF(put_pixels16_x2)(UINT8 *block, const UINT8 *pixels, int line_siz
 	:"+g"(h), "+S"(pixels), "+D"(block)
 	:"r" (line_size)
 	:"%eax", "memory");
+}
+
+static void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+{
+    __asm __volatile(
+	"1:				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	8(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" (%2), %%mm0		\n\t"
+	PAVGB" 8(%2), %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"movq	%%mm1, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	8(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" 16(%2), %%mm0		\n\t"
+	PAVGB" 24(%2), %%mm1		\n\t"
+	"movq	%%mm0, (%3)		\n\t"
+	"movq	%%mm1, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+        "addl	$32, %2			\n\t"
+	"subl	$2, %0			\n\t"
+	"jnz	1b			\n\t"
+	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
+	:"r"(src1Stride), "r"(dstStride)
+	:"memory");
 }
  
 /* GL: this function does incorrect rounding if overflow */

@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4651
-#define LIBAVCODEC_BUILD_STR   "4651"
+#define LIBAVCODEC_BUILD       4652
+#define LIBAVCODEC_BUILD_STR   "4652"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -909,13 +909,20 @@ typedef struct AVCodecContext {
      * decoding: unused
      */
     int me_pre_cmp;
-    
+
     /**
      * ME pre pass diamond size & shape
      * encoding: set by user.
      * decoding: unused
      */
     int pre_dia_size;
+
+    /**
+     * subpel ME quality
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int me_subpel_quality;
 
 } AVCodecContext;
 
