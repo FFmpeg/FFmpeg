@@ -37,9 +37,7 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
 #ifdef PREFETCH
   __asm __volatile(
     PREFETCH" %0\n\t"
-    PREFETCH" 64%0\n\t"
-    PREFETCHW" %1\n\t"
-    PREFETCHW" 64%1\n\t"::"m"(*s),"m"(*dest):"memory");
+    ::"m"(*s):"memory");
 #endif
   mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
   __asm __volatile("movq %0, %%mm7"::"m"(mask32):"memory");
@@ -47,9 +45,8 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
   {
 #ifdef PREFETCH
     __asm __volatile(
-	PREFETCH" 128%0\n\t"
-	PREFETCHW" 128%1"
-	::"m"(*s),"m"(*dest):"memory");
+	PREFETCH" 32%0\n\t"
+	::"m"(*s):"memory");
 #endif
     __asm __volatile(
 	"movd	%1, %%mm0\n\t"
