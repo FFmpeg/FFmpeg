@@ -420,7 +420,11 @@ int MPV_common_init(MpegEncContext *s)
             s->dc_val[0][i] = 1024;
     }
 
-    CHECKED_ALLOCZ(s->qscale_table  , s->mb_num * sizeof(UINT8))
+    CHECKED_ALLOCZ(s->next_qscale_table  , s->mb_num * sizeof(UINT8))
+    CHECKED_ALLOCZ(s->last_qscale_table  , s->mb_num * sizeof(UINT8))
+    CHECKED_ALLOCZ(s->aux_qscale_table   , s->mb_num * sizeof(UINT8))
+    s->qscale_table= s->next_qscale_table;
+    s->avctx->qstride= s->mb_width;
     
     /* which mb is a intra block */
     CHECKED_ALLOCZ(s->mbintra_table, s->mb_num);
@@ -469,7 +473,9 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->mbintra_table);
     av_freep(&s->cbp_table);
     av_freep(&s->pred_dir_table);
-    av_freep(&s->qscale_table);
+    av_freep(&s->next_qscale_table);
+    av_freep(&s->last_qscale_table);
+    av_freep(&s->aux_qscale_table);
     av_freep(&s->me_scratchpad);
     av_freep(&s->me_map);
     av_freep(&s->me_score_map);
@@ -824,6 +830,9 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
             s->current_picture[i] = s->aux_picture[i];
         }
+        s->avctx->display_qscale_table=
+        s->avctx->current_qscale_table= 
+        s->qscale_table= s->aux_qscale_table;
     } else {
         for(i=0;i<3;i++) {
             /* swap next and last */
@@ -847,6 +856,9 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             else
                 avctx->dr_opaque_frame= s->next_dr_opaque;
         }
+        s->avctx->current_qscale_table= s->qscale_table      = s->last_qscale_table;
+        s->avctx->display_qscale_table= s->last_qscale_table = s->next_qscale_table;
+        s->next_qscale_table= s->qscale_table;
     }
     /* set dequantizer, we cant do it during init as it might change for mpeg4
        and we cant do it in the header decode as init isnt called for mpeg4 there yet */
@@ -1728,14 +1740,6 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     mb_x = s->mb_x;
     mb_y = s->mb_y;
 
-#ifdef FF_POSTPROCESS
-    /* Obsolete. Exists for compatibility with mplayer only. */
-    quant_store[mb_y][mb_x]=s->qscale;
-    //printf("[%02d][%02d] %d\n",mb_x,mb_y,s->qscale);
-#else
-    /* even more obsolete, exists for mplayer xp only */
-    if(s->avctx->quant_store) s->avctx->quant_store[mb_y*s->avctx->qstride+mb_x] = s->qscale;
-#endif
     s->qscale_table[mb_xy]= s->qscale;
 
     /* update DC predictors for P macroblocks */

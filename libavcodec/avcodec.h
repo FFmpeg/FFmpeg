@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4632
-#define LIBAVCODEC_BUILD_STR   "4632"
+#define LIBAVCODEC_BUILD       4633
+#define LIBAVCODEC_BUILD_STR   "4633"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -467,15 +467,17 @@ typedef struct AVCodecContext {
      */
     int error_resilience;
     
-#ifndef MBC
-#define MBC 128
-#define MBR 96
-#endif
-#define QP_TYPE int //FIXME note xxx this might be changed to int8_t
+    /**
+     * obsolete, just here to keep ABI compatible (should be removed perhaps, dunno)
+     */
+    int *quant_store;
 
-    QP_TYPE *quant_store; /* field for communicating with external postprocessing */
-
-    unsigned qstride;
+    /**
+     * QP store stride
+     * encoding: unused
+     * decoding: set by lavc
+     */
+    int qstride;
     
     /**
      * buffer, where the next picture should be decoded into
@@ -735,40 +737,18 @@ typedef struct AVCodecContext {
 #define FF_EC_GUESS_MVS   1
 #define FF_EC_DEBLOCK     2
 
-    //FIXME this should be reordered after kabis API is finished ...
-    //TODO kill kabi
-    /*
-	Note: Below are located reserved fields for further usage
-	It requires for ABI !!!
-	If you'll perform some changes then borrow new space from these fields
-	(void * can be safety replaced with struct * ;)
-	P L E A S E ! ! !
-	Note: use avcodec_alloc_context instead of malloc to allocate this, 
-        otherwise the ABI compatibility will be broken between versions
- 	IMPORTANT: Never change order of already declared fields!!!
+    /**
+     * QP table of the currently decoded frame
+     * encoding; unused
+     * decoding: set by lavc
      */
-     //TODO: remove mess below
-    unsigned long long int
-	    ull_res0,ull_res1,ull_res2,ull_res3,ull_res4,ull_res5,
-	    ull_res6,ull_res7,ull_res8,ull_res9,ull_res10,ull_res11;
-    float
-	    flt_res0,flt_res1,flt_res2,flt_res3,flt_res4,flt_res5,
-	    flt_res6,flt_res7,flt_res8,flt_res9,flt_res10,flt_res11,flt_res12;
-    void
-	    *ptr_res0,*ptr_res1,*ptr_res2,*ptr_res3,*ptr_res4,*ptr_res5,
-            *ptr_res6,*ptr_res7,*ptr_res8,*ptr_res9,*ptr_res10,*ptr_res11,*ptr_res12;
-    unsigned long int
-	    ul_res0,ul_res1,ul_res2,ul_res3,ul_res4,ul_res5,
-	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
-    unsigned short int
-	    us_res0,us_res1,us_res2,us_res3,us_res4,us_res5,
-	    us_res6,us_res7,us_res8,us_res9,us_res10,us_res11,us_res12;
-    unsigned char
-	    uc_res0,uc_res1,uc_res2,uc_res3,uc_res4,uc_res5,
-	    uc_res6,uc_res7,uc_res8,uc_res9,uc_res10,uc_res11,uc_res12;
-    unsigned int
-	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5,ui_res6,ui_res7,ui_res8,ui_res9,
-	    ui_res10,ui_res11,ui_res12,ui_res13,ui_res14,ui_res15,ui_res16;
+     int8_t *current_qscale_table;
+    /**
+     * QP table of the currently displayed frame
+     * encoding; unused
+     * decoding: set by lavc
+     */
+     int8_t *display_qscale_table;
 } AVCodecContext;
 
 typedef struct AVCodec {
@@ -783,23 +763,6 @@ typedef struct AVCodec {
                   UINT8 *buf, int buf_size);
     int capabilities;
     struct AVCodec *next;
-    /*
-	Note: Below are located reserved fields for further usage
-	It requires for ABI !!!
-	If you'll perform some changes then borrow new space from these fields
-	(void * can be safety replaced with struct * ;)
-	P L E A S E ! ! !
-	IMPORTANT: Never change order of already declared fields!!!
-    */
-    unsigned long long int
-	    ull_res0,ull_res1,ull_res2,ull_res3,ull_res4,ull_res5,
-	    ull_res6,ull_res7,ull_res8,ull_res9,ull_res10,ull_res11,ull_res12;
-    float
-	    flt_res0,flt_res1,flt_res2,flt_res3,flt_res4,flt_res5,
-	    flt_res6,flt_res7,flt_res8,flt_res9,flt_res10,flt_res11,flt_res12;
-    void
-	    *ptr_res0,*ptr_res1,*ptr_res2,*ptr_res3,*ptr_res4,*ptr_res5,
-	    *ptr_res6,*ptr_res7,*ptr_res8,*ptr_res9,*ptr_res10,*ptr_res11,*ptr_res12;
 } AVCodec;
 
 /* three components are given, that's all */
@@ -955,10 +918,12 @@ void avcodec_register_all(void);
 
 void avcodec_flush_buffers(AVCodecContext *avctx);
 
-#ifdef FF_POSTPROCESS
-extern int quant_store[MBR+1][MBC+1]; // [Review]
+// deprecated / obsolete stuff, WILL be removed
+#ifndef MBC
+#define MBC 128
+#define MBR 96
 #endif
-
+#define QP_TYPE int
 
 /**
  * Interface for 0.5.0 version

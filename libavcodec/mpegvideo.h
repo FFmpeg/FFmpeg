@@ -187,7 +187,10 @@ typedef struct MpegEncContext {
     UINT8 *mbintra_table;       /* used to avoid setting {ac, dc, cbp}-pred stuff to zero on inter MB decoding */
     UINT8 *cbp_table;           /* used to store cbp, ac_pred for partitioned decoding */
     UINT8 *pred_dir_table;      /* used to store pred_dir for partitioned decoding */
-    INT8 *qscale_table;         /* used to store qscale for partitioned decoding (& postprocessing FIXME export) */
+    INT8 *qscale_table;         /* used to store qscale */
+    INT8 *aux_qscale_table;
+    INT8 *next_qscale_table;
+    INT8 *last_qscale_table;     //FIXME move these into some picture struct (MpegEncContext.aux.qscale_table[])
     UINT8 *edge_emu_buffer;
 
     int input_qscale;           /* qscale prior to reordering of frames */
