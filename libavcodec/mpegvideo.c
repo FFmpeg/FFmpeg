@@ -2924,7 +2924,8 @@ int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size)
         pc->index += *buf_size;
         return -1;
     }
-    
+
+    *buf_size=
     pc->overread_index= pc->index + next;
     
     /* append to buffer */
@@ -2934,7 +2935,6 @@ int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size)
         memcpy(&pc->buffer[pc->index], *buf, next + FF_INPUT_BUFFER_PADDING_SIZE );
         pc->index = 0;
         *buf= pc->buffer;
-        *buf_size= pc->last_index + next;
     }
 
     /* store overread bytes */
