@@ -743,6 +743,17 @@ static void close_connection(HTTPContext *c)
         }
     }
 
+    if (!c->last_packet_sent) {
+        ctx = &c->fmt_ctx;
+        if (ctx->oformat) {
+            /* prepare header */
+            if (url_open_dyn_buf(&ctx->pb) >= 0) {
+                av_write_trailer(ctx);
+                (void) url_close_dyn_buf(&ctx->pb, &c->pb_buffer);
+            }
+        }
+    }
+
     if (c->stream)
         current_bandwidth -= c->stream->bandwidth;
     av_freep(&c->pb_buffer);
