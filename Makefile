@@ -78,7 +78,7 @@ ffplay: ffmpeg$(EXE)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
-videohook:
+videohook: .libs
 	$(MAKE) -C vhook all
 
 install: all $(INSTALLVHOOK)
