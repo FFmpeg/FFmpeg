@@ -3756,7 +3756,15 @@ const OptionDef options[] = {
 
 static void show_banner(void)
 {
-    printf("ffmpeg version " FFMPEG_VERSION ", Copyright (c) 2000-2003 Fabrice Bellard\n");
+    printf("ffmpeg version " FFMPEG_VERSION ", build %d, Copyright (c) 2000-2004 Fabrice Bellard\n",
+        LIBAVCODEC_BUILD);
+    printf("  built on " __DATE__ " " __TIME__);
+#ifdef __GNUC__
+    printf(", using gcc %d.%d.%d\n",
+        __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+#else
+    printf(", using a non-gcc compiler\n");
+#endif
 }
 
 static void show_license(void)
@@ -3841,6 +3849,8 @@ int main(int argc, char **argv)
 
     if (argc <= 1)
         show_help();
+    else
+        show_banner();
     
     /* parse options */
     parse_options(argc, argv, options);
