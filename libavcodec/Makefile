@@ -31,7 +31,7 @@ OBJS+= a52dec.o
 # using builtin liba52 or runtime linked liba52.so.0
 ifneq ($(CONFIG_A52BIN),yes)
 OBJS+= liba52/bit_allocate.o liba52/bitstream.o liba52/downmix.o \
-	liba52/imdct.o  liba52/parse.o
+	liba52/imdct.o  liba52/parse.o liba52/crc.o liba52/resample.o
 endif
 endif
 
