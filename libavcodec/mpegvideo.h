@@ -145,7 +145,7 @@ typedef struct MpegEncContext {
     int avg_mb_var;        /* average MB variance for current frame */
     INT64 wanted_bits;
     INT64 total_bits;
-    
+ 
     /* H.263 specific */
     int gob_number;
     int gob_index;
@@ -311,6 +311,9 @@ static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
 }
 
 void h263_encode_mb(MpegEncContext *s, 
+                    DCTELEM block[6][64],
+                    int motion_x, int motion_y);
+void mpeg4_encode_mb(MpegEncContext *s, 
                     DCTELEM block[6][64],
                     int motion_x, int motion_y);
 void h263_encode_picture_header(MpegEncContext *s, int picture_number);

@@ -552,7 +552,7 @@ static inline void gmc1_motion(MpegEncContext *s,
     int dxy, offset, mx, my, src_x, src_y, height, linesize;
     int motion_x, motion_y;
 
-    if(s->real_sprite_warping_points>1) printf("Oops, thats bad, contact the developers\n");
+    if(s->real_sprite_warping_points>1) printf("more than 1 warp point isnt supported\n");
     motion_x= s->sprite_offset[0][0];
     motion_y= s->sprite_offset[0][1];
     src_x = s->mb_x * 16 + (motion_x >> (s->sprite_warping_accuracy+1));
@@ -1247,6 +1247,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             case FMT_H263:
                 if (s->h263_msmpeg4)
                     msmpeg4_encode_mb(s, s->block, motion_x, motion_y);
+                else if(s->h263_pred)
+                    mpeg4_encode_mb(s, s->block, motion_x, motion_y);
                 else
                     h263_encode_mb(s, s->block, motion_x, motion_y);
                 break;

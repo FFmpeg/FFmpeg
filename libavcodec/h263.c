@@ -28,19 +28,25 @@
 //rounded divison & shift
 #define RDIV(a,b) ((a) > 0 ? ((a)+((b)>>1))/(b) : ((a)-((b)>>1))/(b))
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + (1<<((b)-1)))>>(b) : ((a) + (1<<((b)-1))-1)>>(b))
+#define ABS(a) (((a)>=0)?(a):(-(a)))
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
 			      int n);
 static void h263_encode_motion(MpegEncContext * s, int val);
 static void h263p_encode_umotion(MpegEncContext * s, int val);
 static void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block,
-			       int n);
+			       int n, int dc, UINT8 *scan_table);
 static int h263_decode_motion(MpegEncContext * s, int pred, int fcode);
 static int h263p_decode_umotion(MpegEncContext * s, int pred);
 static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
                              int n, int coded);
 static int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded);
+static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
+static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
+                              int dir);
+
+extern UINT32 inverse[256];
 
 int h263_get_picture_format(int width, int height)
 {
@@ -195,7 +201,191 @@ int h263_encode_gob_header(MpegEncContext * s, int mb_line)
    }
    return 0;
 }
+
+static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int dir[6])
+{
+    int score0=0, score1=0;
+    int i, n;
+
+    for(n=0; n<6; n++){
+        int x, y, wrap;
+        INT16 *ac_val, *ac_val1;
+
+        if (n < 4) {
+            x = 2 * s->mb_x + 1 + (n & 1);
+            y = 2 * s->mb_y + 1 + (n >> 1);
+            wrap = s->mb_width * 2 + 2;
+            ac_val = s->ac_val[0][0];
+        } else {
+            x = s->mb_x + 1;
+            y = s->mb_y + 1;
+            wrap = s->mb_width + 2;
+            ac_val = s->ac_val[n - 4 + 1][0];
+        }
+        ac_val += ((y) * wrap + (x)) * 16;
+        ac_val1= ac_val;
+        if(dir[n]){
+            ac_val-= wrap*16;
+            for(i=1; i<8; i++){
+                const int level= block[n][block_permute_op(i   )];
+                score0+= ABS(level);
+                score1+= ABS(level - ac_val[i+8]);
+                ac_val1[i  ]=    block[n][block_permute_op(i<<3)];
+                ac_val1[i+8]= level;
+            }
+        }else{
+            ac_val-= 16;
+            for(i=1; i<8; i++){
+                const int level= block[n][block_permute_op(i<<3)];
+                score0+= ABS(level);
+                score1+= ABS(level - ac_val[i]);
+                ac_val1[i  ]= level;
+                ac_val1[i+8]=    block[n][block_permute_op(i   )];
+            }
+        }
+    }
+
+    return score0 > score1 ? 1 : 0;    
+}
+
+void mpeg4_encode_mb(MpegEncContext * s,
+		    DCTELEM block[6][64],
+		    int motion_x, int motion_y)
+{
+    int cbpc, cbpy, i, cbp, pred_x, pred_y;
     
+    //    printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
+    if (!s->mb_intra) {
+        /* compute cbp */
+        cbp = 0;
+        for (i = 0; i < 6; i++) {
+        if (s->block_last_index[i] >= 0)
+            cbp |= 1 << (5 - i);
+        }
+        if ((cbp | motion_x | motion_y) == 0) {
+            /* skip macroblock */
+            put_bits(&s->pb, 1, 1);
+            return;
+        }
+        put_bits(&s->pb, 1, 0);	/* mb coded */
+        cbpc = cbp & 3;
+        put_bits(&s->pb,
+                inter_MCBPC_bits[cbpc],
+                inter_MCBPC_code[cbpc]);
+        cbpy = cbp >> 2;
+        cbpy ^= 0xf;
+        put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+
+        /* motion vectors: 16x16 mode only now */
+        h263_pred_motion(s, 0, &pred_x, &pred_y);
+      
+        h263_encode_motion(s, motion_x - pred_x);
+        h263_encode_motion(s, motion_y - pred_y);
+
+        /* encode each block */
+        for (i = 0; i < 6; i++) {
+            mpeg4_encode_block(s, block[i], i, 0, zigzag_direct);
+        }
+    } else {
+        int dc_diff[6];   //dc values with the dc prediction subtracted 
+        int dir[6];  //prediction direction
+        int zigzag_last_index[6];
+        UINT8 *scan_table[6];
+
+        for(i=0; i<6; i++){
+            const int level= block[i][0];
+            UINT16 *dc_ptr;
+
+            dc_diff[i]= level - mpeg4_pred_dc(s, i, &dc_ptr, &dir[i]);
+            if (i < 4) {
+                *dc_ptr = level * s->y_dc_scale;
+            } else {
+                *dc_ptr = level * s->c_dc_scale;
+            }
+        }
+
+        s->ac_pred= decide_ac_pred(s, block, dir);
+
+        if(s->ac_pred){
+            for(i=0; i<6; i++){
+                UINT8 *st;
+                int last_index;
+
+                mpeg4_inv_pred_ac(s, block[i], i, dir[i]);
+                if (dir[i]==0) st = ff_alternate_vertical_scan; /* left */
+                else           st = ff_alternate_horizontal_scan; /* top */
+
+                for(last_index=63; last_index>=0; last_index--) //FIXME optimize
+                    if(block[i][st[last_index]]) break;
+                zigzag_last_index[i]= s->block_last_index[i];
+                s->block_last_index[i]= last_index;
+                scan_table[i]= st;
+            }
+        }else{
+            for(i=0; i<6; i++)
+                scan_table[i]= zigzag_direct;
+        }
+
+        /* compute cbp */
+        cbp = 0;
+        for (i = 0; i < 6; i++) {
+            if (s->block_last_index[i] >= 1)
+                cbp |= 1 << (5 - i);
+        }
+
+        cbpc = cbp & 3;
+        if (s->pict_type == I_TYPE) {
+            put_bits(&s->pb,
+                intra_MCBPC_bits[cbpc],
+                intra_MCBPC_code[cbpc]);
+        } else {
+            put_bits(&s->pb, 1, 0);	/* mb coded */
+            put_bits(&s->pb,
+                inter_MCBPC_bits[cbpc + 4],
+                inter_MCBPC_code[cbpc + 4]);
+        }
+        put_bits(&s->pb, 1, s->ac_pred);
+        cbpy = cbp >> 2;
+        put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+
+        /* encode each block */
+        for (i = 0; i < 6; i++) {
+            mpeg4_encode_block(s, block[i], i, dc_diff[i], scan_table[i]);
+        }
+
+        /* restore ac coeffs & last_index stuff if we messed them up with the prediction */
+        if(s->ac_pred){
+            for(i=0; i<6; i++){
+                int j;    
+                int x, y, wrap;
+                INT16 *ac_val;
+
+                if (i < 4) {
+                    x = 2 * s->mb_x + 1 + (i & 1);
+                    y = 2 * s->mb_y + 1 + (i >> 1);
+                    wrap = s->mb_width * 2 + 2;
+                    ac_val = s->ac_val[0][0];
+                } else {
+                    x = s->mb_x + 1;
+                    y = s->mb_y + 1;
+                    wrap = s->mb_width + 2;
+                    ac_val = s->ac_val[i - 4 + 1][0];
+                }
+                ac_val += ((y) * wrap + (x)) * 16;
+
+                if(dir[i]){
+                    for(j=1; j<8; j++) 
+                        block[i][block_permute_op(j   )]= ac_val[j+8];
+                }else{
+                    for(j=1; j<8; j++) 
+                        block[i][block_permute_op(j<<3)]= ac_val[j  ];
+                }
+                s->block_last_index[i]= zigzag_last_index[i];
+            }
+        }
+    }
+}
+
 void h263_encode_mb(MpegEncContext * s,
 		    DCTELEM block[6][64],
 		    int motion_x, int motion_y)
@@ -268,7 +458,7 @@ void h263_encode_mb(MpegEncContext * s,
     /* encode each block */
     if (s->h263_pred) {
 	for (i = 0; i < 6; i++) {
-	    mpeg4_encode_block(s, block[i], i);
+//	    mpeg4_encode_block(s, block[i], i);
 	}
     } else {
 	for (i = 0; i < 6; i++) {
@@ -276,7 +466,6 @@ void h263_encode_mb(MpegEncContext * s,
 	}
     }
 }
-
 
 void h263_pred_acdc(MpegEncContext * s, INT16 *block, int n)
 {
@@ -666,8 +855,19 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
 void h263_dc_scale(MpegEncContext * s)
 {
+#if 1
+    const static UINT8 y_tab[32]={
+    //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+        0, 8, 8, 8, 8,10,12,14,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,34,36,38,40,42,44,46
+    };
+    const static UINT8 c_tab[32]={
+    //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+        0, 8, 8, 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,20,21,22,23,24,25
+    };
+    s->y_dc_scale = y_tab[s->qscale];
+    s->c_dc_scale = c_tab[s->qscale];
+#else
     int quant;
-
     quant = s->qscale;
     /* luminance */
     if (quant < 5)
@@ -685,17 +885,19 @@ void h263_dc_scale(MpegEncContext * s)
 	s->c_dc_scale = ((quant + 13) / 2);
     else
 	s->c_dc_scale = (quant - 6);
+#endif
 }
 
-static int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr)
+static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, xy, wrap, pred, scale;
     UINT16 *dc_val;
+    int dummy;
 
     /* find prediction */
     if (n < 4) {
 	wrap = s->mb_width * 2 + 2;
-	xy = 2 * s->mb_y + 1 + ((n & 2) >> 1);
+	xy = 2 * s->mb_y + 1 + (n >> 1);
         xy *= wrap;
 	xy += 2 * s->mb_x + 1 + (n & 1);
 	dc_val = s->dc_val[0];
@@ -724,7 +926,16 @@ static int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *di
         *dir_ptr = 0; /* left */
     }
     /* we assume pred is positive */
+#ifdef ARCH_X86
+	asm volatile (
+		"xorl %%edx, %%edx	\n\t"
+		"mul %%ecx		\n\t"
+		: "=d" (pred), "=a"(dummy)
+		: "a" (pred + (scale >> 1)), "c" (inverse[scale])
+	);
+#else
     pred = (pred + (scale >> 1)) / scale;
+#endif
 
     /* prepare address for prediction update */
     *dc_val_ptr = &dc_val[xy];
@@ -741,7 +952,7 @@ void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
     /* find prediction */
     if (n < 4) {
 	x = 2 * s->mb_x + 1 + (n & 1);
-	y = 2 * s->mb_y + 1 + ((n & 2) >> 1);
+	y = 2 * s->mb_y + 1 + (n >> 1);
 	wrap = s->mb_width * 2 + 2;
 	ac_val = s->ac_val[0][0];
     } else {
@@ -775,20 +986,45 @@ void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
         ac_val1[8 + i] = block[block_permute_op(i)];
 }
 
-static inline void mpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr)
+static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
+                              int dir)
 {
-    int size, v, pred;
-    UINT16 *dc_val;
+    int x, y, wrap, i;
+    INT16 *ac_val;
 
-    pred = mpeg4_pred_dc(s, n, &dc_val, dir_ptr);
+    /* find prediction */
     if (n < 4) {
-        *dc_val = level * s->y_dc_scale;
+	x = 2 * s->mb_x + 1 + (n & 1);
+	y = 2 * s->mb_y + 1 + (n >> 1);
+	wrap = s->mb_width * 2 + 2;
+	ac_val = s->ac_val[0][0];
     } else {
-        *dc_val = level * s->c_dc_scale;
+	x = s->mb_x + 1;
+	y = s->mb_y + 1;
+	wrap = s->mb_width + 2;
+	ac_val = s->ac_val[n - 4 + 1][0];
     }
+    ac_val += ((y) * wrap + (x)) * 16;
+ 
+    if (dir == 0) {
+        /* left prediction */
+        ac_val -= 16;
+        for(i=1;i<8;i++) {
+            block[block_permute_op(i*8)] -= ac_val[i];
+        }
+    } else {
+        /* top prediction */
+        ac_val -= 16 * wrap;
+        for(i=1;i<8;i++) {
+            block[block_permute_op(i)] -= ac_val[i + 8];
+        }
+    }
+}
 
-    /* do the prediction */
-    level -= pred;
+
+static inline void mpeg4_encode_dc(MpegEncContext * s, int level, int n)
+{
+    int size, v;
     /* find number of bits */
     size = 0;
     v = abs(level);
@@ -815,15 +1051,15 @@ static inline void mpeg4_encode_dc(MpegEncContext * s, int level, int n, int *di
     }
 }
 
-static void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
+static void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, UINT8 *scan_table)
 {
     int level, run, last, i, j, last_index, last_non_zero, sign, slevel;
-    int code, dc_pred_dir;
+    int code;
     const RLTable *rl;
 
     if (s->mb_intra) {
 	/* mpeg4 based DC predictor */
-	mpeg4_encode_dc(s, block[0], n, &dc_pred_dir);
+	mpeg4_encode_dc(s, intra_dc, n);
 	i = 1;
         rl = &rl_intra;
     } else {
@@ -835,7 +1071,7 @@ static void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n)
     last_index = s->block_last_index[n];
     last_non_zero = i - 1;
     for (; i <= last_index; i++) {
-	j = zigzag_direct[i];
+	j = scan_table[i];
 	level = block[j];
 	if (level) {
 	    run = i - last_non_zero - 1;
@@ -1449,7 +1685,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
 not_coded:    
     if (s->mb_intra && s->h263_aic) {
         h263_pred_acdc(s, block, n);
-        i = 64;
+        i = 63;
     }
     s->block_last_index[n] = i;
     return 0;
@@ -2098,7 +2334,6 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
     }
 
     if(check_marker(&s->gb, "before vop_coded")==0 && s->picture_number==0){
-        int i;
         printf("hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
         for(s->time_increment_bits++ ;s->time_increment_bits<16; s->time_increment_bits++){
             if(get_bits1(&s->gb)) break;
