@@ -3840,6 +3840,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                         const int last_qp= backup_s.qscale;
                         int dquant, dir, qp, dc[6];
                         DCTELEM ac[6][16];
+                        const int mvdir= (best_s.mv_dir&MV_DIR_BACKWARD) ? 1 : 0;
                         
                         assert(backup_s.dquant == 0);
 
@@ -3853,7 +3854,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                         s->mv[1][0][1] = best_s.mv[1][0][1];
                         
                         dir= s->pict_type == B_TYPE ? 2 : 1;
-                        if(last_qp + dir >= s->avctx->qmax) dir= -dir;
+                        if(last_qp + dir > s->avctx->qmax) dir= -dir;
                         for(dquant= dir; dquant<=2 && dquant>=-2; dquant += dir){
                             qp= last_qp + dquant;
                             if(qp < s->avctx->qmin || qp > s->avctx->qmax)
@@ -3867,7 +3868,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                             }
 
                             encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_INTER /* wrong but unused */, pb, pb2, tex_pb, 
-                                         &dmin, &next_block, s->mv[0][0][0], s->mv[0][0][1]);
+                                         &dmin, &next_block, s->mv[mvdir][0][0], s->mv[mvdir][0][1]);
                             if(best_s.qscale != qp){
                                 if(s->mb_intra){
                                     for(i=0; i<6; i++){
