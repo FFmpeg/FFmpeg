@@ -786,14 +786,14 @@ static int handle_connection(HTTPContext *c)
         if (!(c->poll_entry->revents & POLLIN))
             return 0;
         /* read the data */
-        len = read(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
+        len = read(c->fd, c->buffer_ptr, 1);
         if (len < 0) {
             if (errno != EAGAIN && errno != EINTR)
                 return -1;
         } else if (len == 0) {
             return -1;
         } else {
-            /* search for end of request. XXX: not fully correct since garbage could come after the end */
+            /* search for end of request. */
             uint8_t *ptr;
             c->buffer_ptr += len;
             ptr = c->buffer_ptr;
@@ -2973,6 +2973,8 @@ static HTTPContext *find_rtp_session_with_url(const char *url,
     HTTPContext *rtp_c;
     char path1[1024];
     const char *path;
+    char buf[1024];
+    int s;
 
     rtp_c = find_rtp_session(session_id);
     if (!rtp_c)
@@ -2983,9 +2985,16 @@ static HTTPContext *find_rtp_session_with_url(const char *url,
     path = path1;
     if (*path == '/')
         path++;
-    if (strcmp(path, rtp_c->stream->filename) != 0)
-        return NULL;
-    return rtp_c;
+    if(!strcmp(path, rtp_c->stream->filename)) return rtp_c;
+    for(s=0; s<rtp_c->stream->nb_streams; ++s) {
+      snprintf(buf, sizeof(buf), "%s/streamid=%d",
+        rtp_c->stream->filename, s);
+      if(!strncmp(path, buf, sizeof(buf))) {
+    // XXX: Should we reply with RTSP_STATUS_ONLY_AGGREGATE if nb_streams>1?
+        return rtp_c;
+      }
+    }
+    return NULL;
 }
 
 static void rtsp_cmd_play(HTTPContext *c, const char *url, RTSPHeader *h)
