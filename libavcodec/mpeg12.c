@@ -1049,7 +1049,7 @@ static int mpeg1_decode_block(MpegEncContext *s,
             /* escape */
             run = get_bits(&s->gb, 6);
             level = get_bits(&s->gb, 8);
-            level = (level << 24) >> 24;
+            level= (level + ((-1)<<7)) ^ ((-1)<<7); //sign extension
             if (level == -128) {
                 level = get_bits(&s->gb, 8) - 256;
             } else if (level == 0) {
@@ -1128,7 +1128,7 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
             /* escape */
             run = get_bits(&s->gb, 6);
             level = get_bits(&s->gb, 12);
-            level = (level << 20) >> 20;
+            level= (level + ((-1)<<11)) ^ ((-1)<<11); //sign extension
         } else {
             run = rl->table_run[code];
             level = rl->table_level[code];
@@ -1211,7 +1211,7 @@ static int mpeg2_decode_block_intra(MpegEncContext *s,
             /* escape */
             run = get_bits(&s->gb, 6);
             level = get_bits(&s->gb, 12);
-            level = (level << 20) >> 20;
+            level= (level + ((-1)<<11)) ^ ((-1)<<11); //sign extension
         } else {
             run = rl->table_run[code];
             level = rl->table_level[code];

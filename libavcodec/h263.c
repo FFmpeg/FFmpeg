@@ -2900,7 +2900,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             if (s->h263_rv10 && level == -128) {
                 /* XXX: should patch encoder too */
                 level = get_bits(&s->gb, 12);
-                level = (level << 20) >> 20;
+                level= (level + ((-1)<<11)) ^ ((-1)<<11); //sign extension
             }
         } else {
             run = rl->table_run[code];
