@@ -161,7 +161,7 @@ ifeq ($(TARGET_ARCH_SH4),yes)
 OBJS+= sh4/idct_sh4.o sh4/dsputil_sh4.o sh4/dsputil_align.o
 endif
 
-ifeq ($(TARGET_ARCH_SPARC),yes)
+ifeq ($(TARGET_ARCH_SPARC64),yes)
 OBJS+=sparc/dsputil_vis.o
 CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
 endif
