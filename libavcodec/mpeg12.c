@@ -1943,13 +1943,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         MPV_decode_mb(s, s->block);
 
         if (++s->mb_x >= s->mb_width) {
-            if(s->picture_structure==PICT_FRAME){
-                ff_draw_horiz_band(s, 16*s->mb_y, 16);
-            }else{
-                if(!s->first_field){
-                    ff_draw_horiz_band(s, 32*s->mb_y, 32);
-                }
-            }
+            ff_draw_horiz_band(s, 16*s->mb_y, 16);
 
             s->mb_x = 0;
             s->mb_y++;

@@ -2726,10 +2726,25 @@ static int pix_diff_vcmp16x8(uint8_t *s1, uint8_t*s2, int stride){ //FIXME move 
  */
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
     if (s->avctx->draw_horiz_band) {
+        AVFrame *src;
         uint8_t *src_ptr[3];
         int offset[4];
+        
+        if(s->picture_structure != PICT_FRAME){
+            h <<= 1;
+            y <<= 1;
+            if(s->first_field  && !(s->avctx->slice_flags&SLICE_FLAG_ALLOW_FIELD)) return;
+        }
+
         h= FFMIN(h, s->height - y);
 
+        if(s->pict_type==B_TYPE || s->low_delay || (s->avctx->slice_flags&SLICE_FLAG_CODED_ORDER)) 
+            src= (AVFrame*)s->current_picture_ptr;
+        else if(s->last_picture_ptr)
+            src= (AVFrame*)s->last_picture_ptr;
+        else
+            return;
+            
         if(s->pict_type==B_TYPE && s->picture_structure == PICT_FRAME && s->out_format != FMT_H264){
             offset[0]=
             offset[1]=
@@ -2744,8 +2759,8 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
 
         emms_c();
 
-        s->avctx->draw_horiz_band(s->avctx, (AVFrame*)s->current_picture_ptr, offset,
-                               y, s->width, h);
+        s->avctx->draw_horiz_band(s->avctx, src, offset,
+                                  y, s->picture_structure, h);
     }
 }
 

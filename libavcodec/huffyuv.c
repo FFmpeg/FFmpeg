@@ -693,7 +693,7 @@ static void draw_slice(HYuvContext *s, int y){
     offset[3] = 0;
     emms_c();
 
-    s->avctx->draw_horiz_band(s->avctx, &s->picture, offset, y, s->width, h);
+    s->avctx->draw_horiz_band(s->avctx, &s->picture, offset, y, 3, h);
     
     s->last_slice_end= y + h;
 }

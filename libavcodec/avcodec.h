@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4670
-#define LIBAVCODEC_BUILD_STR   "4670"
+#define LIBAVCODEC_BUILD       4671
+#define LIBAVCODEC_BUILD_STR   "4671"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -183,7 +183,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
                                             of only at frame boundaries */
 #define CODEC_FLAG_NORMALIZE_AQP  0x00020000 ///< normalize adaptive quantization 
 #define CODEC_FLAG_INTERLACED_DCT 0x00040000 ///< use interlaced dct 
-#define CODEC_FLAG_LOW_DELAY      0x00080000 ///< force low delay / will fail on b frames 
+#define CODEC_FLAG_LOW_DELAY      0x00080000 ///< force low delay
 #define CODEC_FLAG_ALT_SCAN       0x00100000 ///< use alternate scan 
 #define CODEC_FLAG_TRELLIS_QUANT  0x00200000 ///< use trellis quantization 
 #define CODEC_FLAG_GLOBAL_HEADER  0x00400000 ///< place global headers in extradata instead of every keyframe 
@@ -471,10 +471,14 @@ typedef struct AVCodecContext {
      * before
      * - encoding: unused
      * - decoding: set by user.
+     * @param height the height of the slice
+     * @param y the y position of the slice
+     * @param type 1->top field, 2->bottom field, 3->frame
+     * @param offset offset into the AVFrame.data from which the slice should be read
      */
     void (*draw_horiz_band)(struct AVCodecContext *s,
                             AVFrame *src, int offset[4],
-                            int y, int width, int height);
+                            int y, int type, int height);
 
     /* audio only */
     int sample_rate; ///< samples per sec 
@@ -669,6 +673,7 @@ typedef struct AVCodecContext {
     /**
      * called at the beginning of each frame to get a buffer for it.
      * if pic.reference is set then the frame will be read later by lavc
+     * width and height should be rounded up to the next multiple of 16
      * - encoding: unused
      * - decoding: set by lavc, user can override
      */
@@ -1146,6 +1151,17 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int context_model;
+    
+    /**
+     * slice flags
+     * - encoding: unused
+     * - decoding: set by user.
+     */
+    int slice_flags;
+#define SLICE_FLAG_CODED_ORDER    0x0001 ///< draw_horiz_band() is called in coded order instead of display
+#define SLICE_FLAG_ALLOW_FIELD    0x0002 ///< allow draw_horiz_band() with field slices (MPEG2 field pics)
+#define SLICE_FLAG_ALLOW_PLANE    0x0004 ///< allow draw_horiz_band() with 1 component at a time (SVQ1)
+
 } AVCodecContext;
 
 
