@@ -443,8 +443,6 @@ name and its parameters separated by spaces.
 @section Audio Options
 
 @table @option
-@item -ab bitrate         
-set audio bitrate (in kbit/s)
 @item -ar freq    
 set the audio sampling freq (default = 44100 Hz)
 @item -ab bitrate 
