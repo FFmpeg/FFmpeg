@@ -55,7 +55,7 @@ ffmpeg_g$(EXE): ffmpeg.o $(DEP_LIBS)
               -lavformat -lavcodec $(EXTRALIBS)
 
 ffmpeg$(EXE): ffmpeg_g$(EXE)
-	$(STRIP) -o $@ $<
+	$(STRIP) -o $@ $< ; chmod --reference=$< $@
 
 ffserver$(EXE): ffserver.o $(DEP_LIBS)
 	$(CC) $(LDFLAGS) $(FFSLDFLAGS) \
