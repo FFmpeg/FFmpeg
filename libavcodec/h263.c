@@ -31,11 +31,17 @@
 #include "h263data.h"
 #include "mpeg4data.h"
 
+//#undef NDEBUG
+//#include <assert.h>
+
 //rounded divison & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + (1<<((b)-1)))>>(b) : ((a) + (1<<((b)-1))-1)>>(b))
 
+#if 1
 #define PRINT_MB_TYPE(a) {}
-//#define PRINT_MB_TYPE(a) printf(a)
+#else
+#define PRINT_MB_TYPE(a) printf(a)
+#endif
 
 #define INTRA_MCBPC_VLC_BITS 6
 #define INTER_MCBPC_VLC_BITS 6
@@ -298,6 +304,54 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
     return score0 > score1 ? 1 : 0;    
 }
 
+void ff_clean_mpeg4_qscales(MpegEncContext *s){
+    int i;
+    /* more braindead iso mpeg mess */
+    
+    for(i=1; i<s->mb_num; i++){
+        if(s->qscale_table[i] - s->qscale_table[i-1] >2)
+            s->qscale_table[i]= s->qscale_table[i-1]+2;
+    }
+    for(i=s->mb_num-2; i>=0; i--){
+        if(s->qscale_table[i] - s->qscale_table[i+1] >2)
+            s->qscale_table[i]= s->qscale_table[i+1]+2;
+    }
+    
+    for(i=1; i<s->mb_num; i++){
+        if(s->qscale_table[i] != s->qscale_table[i-1] && (s->mb_type[i]&MB_TYPE_INTER4V)){
+            s->mb_type[i]&= ~MB_TYPE_INTER4V;
+            s->mb_type[i]|= MB_TYPE_INTER;
+        }
+    }
+
+    if(s->pict_type== B_TYPE){
+        int odd=0;
+        /* ok, come on, this isnt funny anymore, theres more code for handling this mpeg4 mess than
+           for the actual adaptive quantization */
+        
+        for(i=0; i<s->mb_num; i++){
+            odd += s->qscale_table[i]&1;
+        }
+        
+        if(2*odd > s->mb_num) odd=1;
+        else                  odd=0;
+        
+        for(i=0; i<s->mb_num; i++){
+            if((s->qscale_table[i]&1) != odd)
+                s->qscale_table[i]++;
+            if(s->qscale_table[i] > 31)
+                s->qscale_table[i]= 31;
+        }            
+    
+        for(i=1; i<s->mb_num; i++){
+            if(s->qscale_table[i] != s->qscale_table[i-1] && (s->mb_type[i]&MB_TYPE_DIRECT)){
+                s->mb_type[i]&= ~MB_TYPE_DIRECT;
+                s->mb_type[i]|= MB_TYPE_BIDIR;
+            }
+        }
+    }
+}
+
 void mpeg4_encode_mb(MpegEncContext * s,
 		    DCTELEM block[6][64],
 		    int motion_x, int motion_y)
@@ -308,6 +362,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
     PutBitContext * const tex_pb = s->data_partitioning && s->pict_type!=B_TYPE ? &s->tex_pb : &s->pb;
     PutBitContext * const dc_pb  = s->data_partitioning && s->pict_type!=I_TYPE ? &s->pb2    : &s->pb;
     const int interleaved_stats= (s->flags&CODEC_FLAG_PASS1) && !s->data_partitioning ? 1 : 0;
+    const int dquant_code[5]= {1,0,9,2,3};
     
     //    printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
     if (!s->mb_intra) {
@@ -328,20 +383,27 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 s->last_mv[1][0][0]= 
                 s->last_mv[1][0][1]= 0;
             }
+            
+            assert(s->dquant>=-2 && s->dquant<=2);
+            assert((s->dquant&1)==0);
+            assert(mb_type>=0);
 
             /* nothing to do if this MB was skiped in the next P Frame */
-            if(s->mbskip_table[s->mb_y * s->mb_width + s->mb_x]){
+            if(s->mbskip_table[s->mb_y * s->mb_width + s->mb_x]){ //FIXME avoid DCT & ...
                 s->skip_count++;
                 s->mv[0][0][0]= 
                 s->mv[0][0][1]= 
                 s->mv[1][0][0]= 
                 s->mv[1][0][1]= 0;
                 s->mv_dir= MV_DIR_FORWARD; //doesnt matter
+                s->qscale -= s->dquant;
                 return;
             }
 
             if ((cbp | motion_x | motion_y | mb_type) ==0) {
                 /* direct MB with MV={0,0} */
+                assert(s->dquant==0);
+                
                 put_bits(&s->pb, 1, 1); /* mb not coded modb1=1 */
 
                 if(interleaved_stats){
@@ -356,8 +418,13 @@ void mpeg4_encode_mb(MpegEncContext * s,
             put_bits(&s->pb, mb_type+1, 1); // this table is so simple that we dont need it :)
             if(cbp) put_bits(&s->pb, 6, cbp);
             
-            if(cbp && mb_type)
-                put_bits(&s->pb, 1, 0); /* no q-scale change */
+            if(cbp && mb_type){
+                if(s->dquant)
+                    put_bits(&s->pb, 2, (s->dquant>>2)+3);
+                else
+                    put_bits(&s->pb, 1, 0);
+            }else
+                s->qscale -= s->dquant;
 
             if(interleaved_stats){
                 bits= get_bit_count(&s->pb);
@@ -421,7 +488,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 s->last_bits=bits;
             }
         }else{ /* s->pict_type==B_TYPE */
-            if ((cbp | motion_x | motion_y) == 0 && s->mv_type==MV_TYPE_16X16) {
+            if ((cbp | motion_x | motion_y | s->dquant) == 0 && s->mv_type==MV_TYPE_16X16) {
                 /* check if the B frames can skip it too, as we must skip it if we skip here 
                    why didnt they just compress the skip-mb bits instead of reusing them ?! */
                 if(s->max_b_frames>0){
@@ -470,12 +537,16 @@ void mpeg4_encode_mb(MpegEncContext * s,
             put_bits(&s->pb, 1, 0);	/* mb coded */
             if(s->mv_type==MV_TYPE_16X16){
                 cbpc = cbp & 3;
+                if(s->dquant) cbpc+= 8;
                 put_bits(&s->pb,
                         inter_MCBPC_bits[cbpc],
                         inter_MCBPC_code[cbpc]);
+
                 cbpy = cbp >> 2;
                 cbpy ^= 0xf;
                 put_bits(pb2, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+                if(s->dquant)
+                    put_bits(pb2, 2, dquant_code[s->dquant+2]);
                     
                 if(interleaved_stats){
                     bits= get_bit_count(&s->pb);
@@ -580,10 +651,12 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
         cbpc = cbp & 3;
         if (s->pict_type == I_TYPE) {
+            if(s->dquant) cbpc+=4;
             put_bits(&s->pb,
                 intra_MCBPC_bits[cbpc],
                 intra_MCBPC_code[cbpc]);
         } else {
+            if(s->dquant) cbpc+=8;
             put_bits(&s->pb, 1, 0);	/* mb coded */
             put_bits(&s->pb,
                 inter_MCBPC_bits[cbpc + 4],
@@ -592,6 +665,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
         put_bits(pb2, 1, s->ac_pred);
         cbpy = cbp >> 2;
         put_bits(pb2, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+        if(s->dquant)
+            put_bits(dc_pb, 2, dquant_code[s->dquant+2]);
 
         if(interleaved_stats){
             bits= get_bit_count(&s->pb);
@@ -963,6 +1038,7 @@ static void h263_encode_motion(MpegEncContext * s, int val, int f_code)
         } else if (val >= l) {
             val -= m;
         }
+        assert(val>=-l && val<l);
 
         if (val >= 0) {
             sign = 0;

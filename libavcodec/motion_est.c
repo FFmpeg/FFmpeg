@@ -1142,6 +1142,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 //printf("%d %d %d %X %X %X\n", s->mb_width, mb_x, mb_y,(int)s, (int)s->mb_var, (int)s->mc_mb_var); fflush(stdout);
     s->mb_var   [s->mb_width * mb_y + mb_x] = varc;
     s->mc_mb_var[s->mb_width * mb_y + mb_x] = vard;
+    s->mb_mean  [s->mb_width * mb_y + mb_x] = (sum+7)>>4;
     s->mb_var_sum    += varc;
     s->mc_mb_var_sum += vard;
 //printf("E%d %d %d %X %X %X\n", s->mb_width, mb_x, mb_y,(int)s, (int)s->mb_var, (int)s->mc_mb_var); fflush(stdout);

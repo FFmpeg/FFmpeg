@@ -53,7 +53,7 @@ typedef struct Predictor{
 
 typedef struct RateControlEntry{
     int pict_type;
-    int qscale;
+    float qscale;
     int mv_bits;
     int i_tex_bits;
     int p_tex_bits;
@@ -188,6 +188,9 @@ typedef struct MpegEncContext {
     int input_pict_type;        /* pict_type prior to reordering of frames */
     int force_type;             /* 0= no force, otherwise I_TYPE, P_TYPE, ... */
     int qscale;                 /* QP */
+    float frame_qscale;         /* qscale from the frame level rc */
+    int adaptive_quant;         /* use adaptive quantization */
+    int dquant;                 /* qscale difference to prev qscale */ 
     int pict_type;              /* I_TYPE, P_TYPE, B_TYPE, ... */
     int last_pict_type;
     int last_non_b_pict_type;   /* used for mpeg4 gmc b-frames & ratecontrol */
@@ -241,13 +244,14 @@ typedef struct MpegEncContext {
 
     int hurry_up;     /* when set to 1 during decoding, b frames will be skiped
                          when set to 2 idct/dequant will be skipped too */
-
+                        
     /* macroblock layer */
     int mb_x, mb_y;
     int mb_incr;
     int mb_intra;
     UINT16 *mb_var;       /* Table for MB variances */
     UINT16 *mc_mb_var;    /* Table for motion compensated MB variances */
+    UINT8 *mb_mean;       /* Table for MB luminance */
     UINT8 *mb_type;       /* Table for MB type */
 #define MB_TYPE_INTRA    0x01
 #define MB_TYPE_INTER    0x02
@@ -582,6 +586,7 @@ void ff_mpeg4_stuffing(PutBitContext * pbc);
 void ff_mpeg4_init_partitions(MpegEncContext *s);
 void ff_mpeg4_merge_partitions(MpegEncContext *s);
 extern inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
+void ff_clean_mpeg4_qscales(MpegEncContext *s);
 
 /* rv10.c */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number);
@@ -611,8 +616,7 @@ void mjpeg_picture_trailer(MpegEncContext *s);
 
 /* rate control */
 int ff_rate_control_init(MpegEncContext *s);
-int ff_rate_estimate_qscale(MpegEncContext *s);
-int ff_rate_estimate_qscale_pass2(MpegEncContext *s);
+float ff_rate_estimate_qscale(MpegEncContext *s);
 void ff_write_pass1_stats(MpegEncContext *s);
 void ff_rate_control_uninit(MpegEncContext *s);
 double ff_eval(char *s, double *const_value, char **const_name,

@@ -207,6 +207,7 @@ int MPV_common_init(MpegEncContext *s)
         
         CHECKED_ALLOCZ(s->mb_var   , s->mb_num * sizeof(INT16))
         CHECKED_ALLOCZ(s->mc_mb_var, s->mb_num * sizeof(INT16))
+        CHECKED_ALLOCZ(s->mb_mean  , s->mb_num * sizeof(INT8))
 
         /* Allocate MV tables */
         CHECKED_ALLOCZ(s->p_mv_table            , mv_table_size * 2 * sizeof(INT16))
@@ -329,6 +330,7 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->mb_type);
     av_freep(&s->mb_var);
     av_freep(&s->mc_mb_var);
+    av_freep(&s->mb_mean);
     av_freep(&s->p_mv_table);
     av_freep(&s->b_forw_mv_table);
     av_freep(&s->b_back_mv_table);
@@ -441,6 +443,12 @@ int MPV_encode_init(AVCodecContext *avctx)
         
     /* Fixed QSCALE */
     s->fixed_qscale = (avctx->flags & CODEC_FLAG_QSCALE);
+    
+    s->adaptive_quant= (   s->avctx->lumi_masking
+                        || s->avctx->temporal_cplx_masking 
+                        || s->avctx->spatial_cplx_masking
+                        || s->avctx->p_masking)
+                       && !s->fixed_qscale;
     
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
@@ -893,7 +901,8 @@ int MPV_encode_picture(AVCodecContext *avctx,
         if (s->out_format == FMT_MJPEG)
             mjpeg_picture_trailer(s);
 
-        avctx->quality = s->qscale;
+        if(!s->fixed_qscale)
+            avctx->quality = s->qscale;
         
         if(s->flags&CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
@@ -1753,6 +1762,24 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         }
 #endif
     for(i=0; i<6; i++) skip_dct[i]=0;
+    
+    if(s->adaptive_quant){
+        s->dquant= s->qscale_table[mb_x + mb_y*s->mb_width] - s->qscale;
+        if(s->codec_id==CODEC_ID_MPEG4){
+            if     (s->dquant> 2) s->dquant= 2;
+            else if(s->dquant<-2) s->dquant=-2;
+        
+            if(!s->mb_intra){
+                assert(s->dquant==0 || s->mv_type!=MV_TYPE_8X8);
+
+                if(s->mv_dir&MV_DIRECT)
+                    s->dquant=0;
+            }
+        }
+        s->qscale+= s->dquant;
+        s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
+        s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
+    }
 
     if (s->mb_intra) {
         UINT8 *ptr;
@@ -2080,6 +2107,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         ff_set_mpeg4_time(s, s->picture_number); 
 
     s->scene_change_score=0;
+    
+    s->qscale= (int)(s->frame_qscale + 0.5); //FIXME qscale / ... stuff for ME ratedistoration
 
     /* Estimate motion for every MB */
     if(s->pict_type != I_TYPE){
@@ -2125,7 +2154,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     sum= (sum+8)>>4;
                     varc = (pix_norm1(pix, s->linesize) - sum*sum + 500 + 128)>>8;
 
-                    s->mb_var[s->mb_width * mb_y + mb_x] = varc;
+                    s->mb_var [s->mb_width * mb_y + mb_x] = varc;
+                    s->mb_mean[s->mb_width * mb_y + mb_x] = (sum+7)>>4;
                     s->mb_var_sum    += varc;
                 }
             }
@@ -2154,12 +2184,19 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         ff_fix_long_b_mvs(s, s->b_bidir_back_mv_table, s->b_code, MB_TYPE_BIDIR);
     }
     
-//printf("f_code %d ///\n", s->f_code);
+    if (s->fixed_qscale) 
+        s->frame_qscale = s->avctx->quality;
+    else
+        s->frame_qscale = ff_rate_estimate_qscale(s);
 
-//    printf("%d %d\n", s->avg_mb_var, s->mc_mb_var);
-    if (!s->fixed_qscale) 
-        s->qscale = ff_rate_estimate_qscale(s);
-
+    if(s->adaptive_quant && s->codec_id==CODEC_ID_MPEG4)
+        ff_clean_mpeg4_qscales(s);
+    
+    if(s->adaptive_quant)
+        s->qscale= s->qscale_table[0];
+    else
+        s->qscale= (int)(s->frame_qscale + 0.5);
+        
     if (s->out_format == FMT_MJPEG) {
         /* for mjpeg, we do include qscale in the matrix */
         s->intra_matrix[0] = ff_mpeg1_default_intra_matrix[0];

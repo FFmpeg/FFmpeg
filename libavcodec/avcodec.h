@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4624
-#define LIBAVCODEC_BUILD_STR   "4624"
+#define LIBAVCODEC_BUILD       4625
+#define LIBAVCODEC_BUILD_STR   "4625"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -123,6 +123,8 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_DR1    0x8000  /* direct renderig type 1 (store internal frames in external buffers) */
 #define CODEC_FLAG_NOT_TRUNCATED  0x00010000 /* input bitstream is not truncated, except before a startcode 
                                                 allows the last part of a frame to be decoded earlier */
+#define CODEC_FLAG_NORMALIZE_AQP  0x00020000 /* normalize adaptive quantization */
+
 /* codec capabilities */
 
 #define CODEC_CAP_DRAW_HORIZ_BAND 0x0001 /* decoder can use draw_horiz_band callback */
@@ -174,8 +176,8 @@ typedef struct AVCodecContext {
      * some codecs need / can use extra-data like huffman tables
      * mjpeg: huffman tables
      * rv10: additional flags
-     * encoding: set/allocated/freed by user.
-     * decoding: set/allocated/freed by lavc. (can be NULL)
+     * encoding: set/allocated/freed by lavc.
+     * decoding: set/allocated/freed by user.
      */
     void *extradata;
     int extradata_size;
@@ -285,8 +287,13 @@ typedef struct AVCodecContext {
     uint8_t *mbskip_table;
     
     /* encoding parameters */
+    /**
+     * quality (between 1 (good) and 31 (bad)) 
+     * encoding: set by user if CODEC_FLAG_QSCALE is set otherwise set by lavc
+     * decoding: set by lavc
+     */
     int quality;      /* quality of the previous encoded frame 
-                         (between 1 (good) and 31 (bad)) 
+                         
                          this is allso used to set the quality in vbr mode
                          and the per frame quality in CODEC_FLAG_TYPE (second pass mode) */
     float qcompress;  /* amount of qscale change between easy & hard scenes (0.0-1.0)*/
@@ -632,6 +639,34 @@ typedef struct AVCodecContext {
      * decoding; set by lavc
      */
     long long int pts;
+    
+    /**
+     * luminance masking (0-> disabled)
+     * encoding: set by user
+     * decoding: unused
+     */
+    float lumi_masking;
+    
+    /**
+     * temporary complexity masking (0-> disabled)
+     * encoding: set by user
+     * decoding: unused
+     */
+    float temporal_cplx_masking;
+    
+    /**
+     * spatial complexity masking (0-> disabled)
+     * encoding: set by user
+     * decoding: unused
+     */
+    float spatial_cplx_masking;
+    
+    /**
+     * p block masking (0-> disabled)
+     * encoding: set by user
+     * decoding: unused
+     */
+    float p_masking;
 
     //FIXME this should be reordered after kabis API is finished ...
     //TODO kill kabi
