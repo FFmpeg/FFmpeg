@@ -318,12 +318,46 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 	uint16_t *d = (uint16_t *)dst;
 	end = s + src_size;
 #ifdef HAVE_MMX
+	mm_end = end - 15;
+#if 1 //is faster only if multiplies are reasonable fast (FIXME figure out on which cpus this is faster, on Athlon its slightly faster)
+	asm volatile(
+		"movq %3, %%mm5			\n\t"
+		"movq %4, %%mm6			\n\t"
+		"movq %5, %%mm7			\n\t"
+		".balign 16			\n\t"
+		"1:				\n\t"
+		PREFETCH" 32(%1)		\n\t"
+		"movd	(%1), %%mm0		\n\t"
+		"movd	4(%1), %%mm3		\n\t"
+		"punpckldq 8(%1), %%mm0		\n\t"
+		"punpckldq 12(%1), %%mm3	\n\t"
+		"movq %%mm0, %%mm1		\n\t"
+		"movq %%mm3, %%mm4		\n\t"
+		"pand %%mm6, %%mm0		\n\t"
+		"pand %%mm6, %%mm3		\n\t"
+		"pmaddwd %%mm7, %%mm0		\n\t"
+		"pmaddwd %%mm7, %%mm3		\n\t"
+		"pand %%mm5, %%mm1		\n\t"
+		"pand %%mm5, %%mm4		\n\t"
+		"por %%mm1, %%mm0		\n\t"	
+		"por %%mm4, %%mm3		\n\t"
+		"psrld $5, %%mm0		\n\t"
+		"pslld $11, %%mm3		\n\t"
+		"por %%mm3, %%mm0		\n\t"
+		MOVNTQ"	%%mm0, (%0)		\n\t"
+		"addl $16, %1			\n\t"
+		"addl $8, %0			\n\t"
+		"cmpl %2, %1			\n\t"
+		" jb 1b				\n\t"
+		: "+r" (d), "+r"(s)
+		: "r" (mm_end), "m" (mask3216g), "m" (mask3216br), "m" (mul3216)
+	);
+#else
 	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
 	__asm __volatile(
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_16mask),"m"(green_16mask));
-	mm_end = end - 15;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -359,6 +393,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 		d += 4;
 		s += 16;
 	}
+#endif
 	__asm __volatile(SFENCE:::"memory");
 	__asm __volatile(EMMS:::"memory");
 #endif
@@ -441,12 +476,46 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 	uint16_t *d = (uint16_t *)dst;
 	end = s + src_size;
 #ifdef HAVE_MMX
+	mm_end = end - 15;
+#if 1 //is faster only if multiplies are reasonable fast (FIXME figure out on which cpus this is faster, on Athlon its slightly faster)
+	asm volatile(
+		"movq %3, %%mm5			\n\t"
+		"movq %4, %%mm6			\n\t"
+		"movq %5, %%mm7			\n\t"
+		".balign 16			\n\t"
+		"1:				\n\t"
+		PREFETCH" 32(%1)		\n\t"
+		"movd	(%1), %%mm0		\n\t"
+		"movd	4(%1), %%mm3		\n\t"
+		"punpckldq 8(%1), %%mm0		\n\t"
+		"punpckldq 12(%1), %%mm3	\n\t"
+		"movq %%mm0, %%mm1		\n\t"
+		"movq %%mm3, %%mm4		\n\t"
+		"pand %%mm6, %%mm0		\n\t"
+		"pand %%mm6, %%mm3		\n\t"
+		"pmaddwd %%mm7, %%mm0		\n\t"
+		"pmaddwd %%mm7, %%mm3		\n\t"
+		"pand %%mm5, %%mm1		\n\t"
+		"pand %%mm5, %%mm4		\n\t"
+		"por %%mm1, %%mm0		\n\t"	
+		"por %%mm4, %%mm3		\n\t"
+		"psrld $6, %%mm0		\n\t"
+		"pslld $10, %%mm3		\n\t"
+		"por %%mm3, %%mm0		\n\t"
+		MOVNTQ"	%%mm0, (%0)		\n\t"
+		"addl $16, %1			\n\t"
+		"addl $8, %0			\n\t"
+		"cmpl %2, %1			\n\t"
+		" jb 1b				\n\t"
+		: "+r" (d), "+r"(s)
+		: "r" (mm_end), "m" (mask3215g), "m" (mask3216br), "m" (mul3215)
+	);
+#else
 	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
 	__asm __volatile(
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_15mask),"m"(green_15mask));
-	mm_end = end - 15;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -482,6 +551,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 		d += 4;
 		s += 16;
 	}
+#endif
 	__asm __volatile(SFENCE:::"memory");
 	__asm __volatile(EMMS:::"memory");
 #endif
