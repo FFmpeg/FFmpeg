@@ -252,6 +252,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* initial frame */
                     ast->scale = get_le32(pb); /* scale */
                     ast->rate = get_le32(pb);
+                    if(!ast->rate)
+                        ast->rate= 1; //wrong but better then 1/0
                     av_set_pts_info(st, 64, ast->scale, ast->rate);
                     ast->start= get_le32(pb); /* start */
                     length = get_le32(pb); /* length, in samples or bytes */
