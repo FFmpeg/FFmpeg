@@ -76,6 +76,7 @@ static int nb_stream_maps;
 
 static AVInputFormat *file_iformat;
 static AVOutputFormat *file_oformat;
+static AVImageFormat *image_format;
 static int frame_width  = 160;
 static int frame_height = 128;
 static int frame_topBand  = 0;
@@ -307,7 +308,7 @@ int read_ffserver_streams(AVFormatContext *s, const char *filename)
     return 0;
 }
 
-#define MAX_AUDIO_PACKET_SIZE 16384
+#define MAX_AUDIO_PACKET_SIZE (128 * 1024)
 
 static void do_audio_out(AVFormatContext *s, 
                          AVOutputStream *ost, 
@@ -1225,6 +1226,10 @@ static int av_encode(AVFormatContext **output_files,
         } else {
             stream_no_data = 0;
         }
+        if (do_hex_dump) {
+            printf("stream #%d, size=%d:\n", pkt.stream_index, pkt.size);
+            av_hex_dump(pkt.data, pkt.size);
+        }
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
         if (pkt.stream_index >= file_table[file_index].nb_streams)
@@ -1233,11 +1238,6 @@ static int av_encode(AVFormatContext **output_files,
         ist = ist_table[ist_index];
         if (ist->discard)
             goto discard_packet;
-
-        if (do_hex_dump) {
-            printf("stream #%d, size=%d:\n", pkt.stream_index, pkt.size);
-            av_hex_dump(pkt.data, pkt.size);
-        }
 
         // printf("read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
 
@@ -1539,8 +1539,29 @@ void show_licence(void)
     exit(1);
 }
 
+void opt_image_format(const char *arg)
+{
+    AVImageFormat *f;
+    
+    for(f = first_image_format; f != NULL; f = f->next) {
+        if (!strcmp(arg, f->name))
+            break;
+    }
+    if (!f) {
+        fprintf(stderr, "Unknown image format: '%s'\n", arg);
+        exit(1);
+    }
+    image_format = f;
+}
+
 void opt_format(const char *arg)
 {
+    /* compatibility stuff for pgmyuv */
+    if (!strcmp(arg, "pgmyuv")) {
+        opt_image_format(arg);
+        arg = "image";
+    }
+
     file_iformat = av_find_input_format(arg);
     file_oformat = guess_format(arg, NULL, NULL);
     if (!file_iformat && !file_oformat) {
@@ -1997,6 +2018,7 @@ void opt_input_file(const char *filename)
     ap->frame_rate = frame_rate;
     ap->width = frame_width;
     ap->height = frame_height;
+    ap->image_format = image_format;
 
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
@@ -2055,6 +2077,7 @@ void opt_input_file(const char *filename)
     nb_input_files++;
     file_iformat = NULL;
     file_oformat = NULL;
+    image_format = NULL;
 }
 
 void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
@@ -2090,6 +2113,7 @@ void opt_output_file(const char *filename)
     AVFormatContext *oc;
     int use_video, use_audio, nb_streams, input_has_video, input_has_audio;
     int codec_id;
+    AVFormatParameters params, *ap = &params;
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -2266,11 +2290,6 @@ void opt_output_file(const char *filename)
                         video_enc->flags |= CODEC_FLAG_PASS2;
                     }
                 }
-            
-                /* XXX: need to find a way to set codec parameters */
-                if (oc->oformat->flags & AVFMT_RGB24) {
-                    video_enc->pix_fmt = PIX_FMT_RGB24;
-                }
             }
             oc->streams[nb_streams] = st;
             nb_streams++;
@@ -2363,9 +2382,18 @@ void opt_output_file(const char *filename)
         }
     }
 
+    memset(ap, 0, sizeof(*ap));
+    ap->image_format = image_format;
+    if (av_set_parameters(oc, ap) < 0) {
+        fprintf(stderr, "%s: Invalid encoding parameters\n",
+                oc->filename);
+        exit(1);
+    }
+
     /* reset some options */
     file_oformat = NULL;
     file_iformat = NULL;
+    image_format = NULL;
     audio_disable = 0;
     video_disable = 0;
     audio_codec_id = CODEC_ID_NONE;
@@ -2497,19 +2525,36 @@ void show_formats(void)
 {
     AVInputFormat *ifmt;
     AVOutputFormat *ofmt;
+    AVImageFormat *image_fmt;
     URLProtocol *up;
     AVCodec *p;
     const char **pp;
 
-    printf("File formats:\n");
-    printf("  Encoding:");
+    printf("Output audio/video file formats:");
     for(ofmt = first_oformat; ofmt != NULL; ofmt = ofmt->next) {
         printf(" %s", ofmt->name);
     }
     printf("\n");
-    printf("  Decoding:");
+
+    printf("Input audio/video file formats:");
     for(ifmt = first_iformat; ifmt != NULL; ifmt = ifmt->next) {
         printf(" %s", ifmt->name);
+    }
+    printf("\n");
+
+    printf("Output image formats:");
+    for(image_fmt = first_image_format; image_fmt != NULL; 
+        image_fmt = image_fmt->next) {
+        if (image_fmt->img_write)
+            printf(" %s", image_fmt->name);
+    }
+    printf("\n");
+
+    printf("Input image formats:");
+    for(image_fmt = first_image_format; image_fmt != NULL; 
+        image_fmt = image_fmt->next) {
+        if (image_fmt->img_read)
+            printf(" %s", image_fmt->name);
     }
     printf("\n");
 
@@ -2596,6 +2641,7 @@ const OptionDef options[] = {
     { "h", 0, {(void*)show_help}, "show help" },
     { "formats", 0, {(void*)show_formats}, "show available formats, codecs, protocols, ..." },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
+    { "img", HAS_ARG, {(void*)opt_image_format}, "force image format", "img_fmt" },
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream" },
