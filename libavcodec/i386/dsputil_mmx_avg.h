@@ -56,17 +56,17 @@ static void DEF(put_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size,
 /* GL: this function does incorrect rounding if overflow */
 static void DEF(put_no_rnd_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
+    MOVQ_BONE(mm6);
     __asm __volatile(
 	"lea (%3, %3), %%eax		\n\t"
-	MOVQ_BONE(%%mm7)
 	"1:				\n\t"
 	"movq (%1), %%mm0		\n\t"
 	"movq (%1, %3), %%mm2		\n\t"
 	"movq 1(%1), %%mm1		\n\t"
 	"movq 1(%1, %3), %%mm3		\n\t"
 	"addl %%eax, %1			\n\t"
-	"psubusb %%mm7, %%mm0		\n\t"
-	"psubusb %%mm7, %%mm2		\n\t"
+	"psubusb %%mm6, %%mm0		\n\t"
+	"psubusb %%mm6, %%mm2		\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm3, %%mm2		\n\t"
 	"movq %%mm0, (%2)		\n\t"
@@ -77,8 +77,8 @@ static void DEF(put_no_rnd_pixels_x2)(UINT8 *block, const UINT8 *pixels, int lin
 	"movq 1(%1, %3), %%mm3		\n\t"
 	"addl %%eax, %2			\n\t"
 	"addl %%eax, %1			\n\t"
-	"psubusb %%mm7, %%mm0		\n\t"
-	"psubusb %%mm7, %%mm2		\n\t"
+	"psubusb %%mm6, %%mm0		\n\t"
+	"psubusb %%mm6, %%mm2		\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm3, %%mm2		\n\t"
 	"movq %%mm0, (%2)		\n\t"
@@ -124,8 +124,8 @@ static void DEF(put_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
 /* GL: this function does incorrect rounding if overflow */
 static void DEF(put_no_rnd_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
+    MOVQ_BONE(mm6);
     __asm __volatile(
-	MOVQ_BONE(%%mm7)
 	"lea (%3, %3), %%eax		\n\t"
 	"movq (%1), %%mm0		\n\t"
 	"subl %3, %2			\n\t"
@@ -133,7 +133,7 @@ static void DEF(put_no_rnd_pixels_y2)(UINT8 *block, const UINT8 *pixels, int lin
 	"movq (%1, %3), %%mm1		\n\t"
 	"movq (%1, %%eax), %%mm2	\n\t"
 	"addl %%eax, %1			\n\t"
-	"psubusb %%mm7, %%mm1		\n\t"
+	"psubusb %%mm6, %%mm1		\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm2, %%mm1		\n\t"
 	"movq %%mm0, (%2, %3)		\n\t"
@@ -142,7 +142,7 @@ static void DEF(put_no_rnd_pixels_y2)(UINT8 *block, const UINT8 *pixels, int lin
 	"movq (%1, %%eax), %%mm0	\n\t"
 	"addl %%eax, %2			\n\t"
 	"addl %%eax, %1			\n\t"
-	"psubusb %%mm7, %%mm1		\n\t"
+	"psubusb %%mm6, %%mm1		\n\t"
 	PAVGB" %%mm1, %%mm2		\n\t"
 	PAVGB" %%mm0, %%mm1		\n\t"
 	"movq %%mm2, (%2, %3)		\n\t"
@@ -256,8 +256,8 @@ static void DEF(avg_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
 // Note this is not correctly rounded, but this function is only used for b frames so it doesnt matter 
 static void DEF(avg_pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
+    MOVQ_BONE(mm6);
     __asm __volatile(
-	MOVQ_BONE(%%mm7)
 	"lea (%3, %3), %%eax		\n\t"
 	"movq (%1), %%mm0		\n\t"
 	PAVGB" 1(%1), %%mm0		\n\t"
@@ -265,7 +265,7 @@ static void DEF(avg_pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size
 	"1:				\n\t"
 	"movq (%1, %%eax), %%mm2	\n\t"
 	"movq (%1, %3), %%mm1		\n\t"
-	"psubusb %%mm7, %%mm2		\n\t"
+	"psubusb %%mm6, %%mm2		\n\t"
 	PAVGB" 1(%1, %3), %%mm1		\n\t"
 	PAVGB" 1(%1, %%eax), %%mm2	\n\t"
 	"addl %%eax, %1			\n\t"

@@ -49,53 +49,51 @@ void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
 
 /* pixel operations */
-static const uint64_t mm_bfe  __attribute__ ((aligned(8))) = 0xfefefefefefefefeULL;
 static const uint64_t mm_bone __attribute__ ((aligned(8))) = 0x0101010101010101ULL;
 static const uint64_t mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001ULL;
 static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002ULL;
-//static const unsigned short mm_wone[4] __attribute__ ((aligned(8))) = { 0x1, 0x1, 0x1, 0x1 };
-//static const unsigned short mm_wtwo[4] __attribute__ ((aligned(8))) = { 0x2, 0x2, 0x2, 0x2 };
 
 #define JUMPALIGN() __asm __volatile (".balign 8"::)
 #define MOVQ_ZERO(regd)  __asm __volatile ("pxor %%" #regd ", %%" #regd ::)
 
+#define MOVQ_WONE(regd) \
+    __asm __volatile ( \
+    "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
+    "psrlw $15, %%" #regd ::)
+
+#define MOVQ_BFE(regd) \
+    __asm __volatile ( \
+    "pcmpeqd %%" #regd ", %%" #regd " \n\t"\
+    "paddb %%" #regd ", %%" #regd " \n\t" ::)
+
 #ifndef PIC
-#define MOVQ_WONE(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(mm_wone))
+#define MOVQ_BONE(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(mm_bone))
 #define MOVQ_WTWO(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(mm_wtwo))
-#define MOVQ_BONE(regd)  "movq "MANGLE(mm_bone)", "#regd" \n\t"
-#define MOVQ_BFE(regd)  "movq "MANGLE(mm_bfe)", "#regd" \n\t"
 #else
 // for shared library it's better to use this way for accessing constants
 // pcmpeqd -> -1
-#define MOVQ_WONE(regd) \
+#define MOVQ_BONE(regd) \
     __asm __volatile ( \
-       "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
-       "psrlw $15, %%" #regd ::)
+    "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
+    "psrlw $15, %%" #regd " \n\t" \
+    "packuswb %%" #regd ", %%" #regd " \n\t" ::)
 
 #define MOVQ_WTWO(regd) \
     __asm __volatile ( \
-       "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
-       "psrlw $15, %%" #regd " \n\t" \
-       "psllw $1, %%" #regd ::)
+    "pcmpeqd %%" #regd ", %%" #regd " \n\t" \
+    "psrlw $15, %%" #regd " \n\t" \
+    "psllw $1, %%" #regd " \n\t"::)
 
-#define MOVQ_BONE(regd) \
-       "pcmpeqd " #regd ", " #regd " \n\t" \
-       "psrlw $15, " #regd " \n\t"\
-       "packuswb " #regd ", " #regd " \n\t"
-
-#define MOVQ_BFE(regd) \
-	"pcmpeqd " #regd ", " #regd " \n\t"\
-	"paddb " #regd ", " #regd " \n\t"
 #endif
 
-// using mm6 as temporary and for the output result
+// using regr as temporary and for the output result
 // first argument is unmodifed and second is trashed
-// mm7 is supposed to contain 0xfefefefefefefefe
+// mm6 is supposed to contain 0xfefefefefefefefe
 #define PAVGB_MMX_NO_RND(rega, regb, regr) \
     "movq " #rega ", " #regr "	\n\t"\
     "pand " #regb ", " #regr "	\n\t"\
     "pxor " #rega ", " #regb "	\n\t"\
-    "pand %%mm7, " #regb "	\n\t"\
+    "pand %%mm6, " #regb "	\n\t"\
     "psrlq $1, " #regb " 	\n\t"\
     "paddb " #regb ", " #regr "	\n\t"
 
@@ -103,7 +101,7 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
     "movq " #rega ", " #regr "	\n\t"\
     "por  " #regb ", " #regr "	\n\t"\
     "pxor " #rega ", " #regb "	\n\t"\
-    "pand %%mm7, " #regb "     	\n\t"\
+    "pand %%mm6, " #regb "     	\n\t"\
     "psrlq $1, " #regb "	\n\t"\
     "psubb " #regb ", " #regr "	\n\t"
 
@@ -114,8 +112,8 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
     "pand " #regd ", " #regp "	\n\t"\
     "pxor " #rega ", " #regb "	\n\t"\
     "pxor " #regc ", " #regd "	\n\t"\
-    "pand %%mm7, " #regb "	\n\t"\
-    "pand %%mm7, " #regd "	\n\t"\
+    "pand %%mm6, " #regb "	\n\t"\
+    "pand %%mm6, " #regd "	\n\t"\
     "psrlq $1, " #regb " 	\n\t"\
     "psrlq $1, " #regd " 	\n\t"\
     "paddb " #regb ", " #regr "	\n\t"\
@@ -128,8 +126,8 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
     "por  " #regd ", " #regp "	\n\t"\
     "pxor " #rega ", " #regb "	\n\t"\
     "pxor " #regc ", " #regd "	\n\t"\
-    "pand %%mm7, " #regb "     	\n\t"\
-    "pand %%mm7, " #regd "     	\n\t"\
+    "pand %%mm6, " #regb "     	\n\t"\
+    "pand %%mm6, " #regd "     	\n\t"\
     "psrlq $1, " #regd "	\n\t"\
     "psrlq $1, " #regb "	\n\t"\
     "psubb " #regb ", " #regr "	\n\t"\
@@ -138,29 +136,25 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
 /***********************************/
 /* MMX no rounding */
 #define DEF(x, y) x ## _no_rnd_ ## y ##_mmx
-
-#define PAVGB(a, b)	PAVGB_MMX_NO_RND(a, b, %%mm6)
-#define PAVGBR(a, b, c)	PAVGB_MMX_NO_RND(a, b, c)
+#define SET_RND  MOVQ_WONE
 #define PAVGBP(a, b, c, d, e, f)	PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
+
 #include "dsputil_mmx_rnd.h"
 
 #undef DEF
-#undef PAVGB
-#undef PAVGBR
+#undef SET_RND
 #undef PAVGBP
 /***********************************/
 /* MMX rounding */
 
 #define DEF(x, y) x ## _ ## y ##_mmx
-
-#define PAVGB(a, b)	PAVGB_MMX(a, b, %%mm6)
-#define PAVGBR(a, b, c)	PAVGB_MMX(a, b, c)
+#define SET_RND  MOVQ_WTWO
 #define PAVGBP(a, b, c, d, e, f)	PAVGBP_MMX(a, b, c, d, e, f)
+
 #include "dsputil_mmx_rnd.h"
 
 #undef DEF
-#undef PAVGB
-#undef PAVGBR
+#undef SET_RND
 #undef PAVGBP
 
 /***********************************/
@@ -371,103 +365,6 @@ static void put_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int
 	);
 }
 
-#if 1
-static void put_pixels_xy2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8 *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels; // 1s
-  MOVQ_ZERO(mm7);
-  MOVQ_WTWO(mm6);
-  JUMPALIGN();
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm0\n\t"
-	"movq	%2, %%mm1\n\t"
-	"movq	1%1, %%mm4\n\t"
-	"movq	1%2, %%mm5\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"movq	%%mm4, %%mm1\n\t"
-	"movq	%%mm5, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpcklbw %%mm7, %%mm5\n\t"
-	"punpckhbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm5, %%mm4\n\t"
-	"paddusw %%mm3, %%mm1\n\t"
-	"paddusw %%mm6, %%mm4\n\t"
-	"paddusw %%mm6, %%mm1\n\t"
-	"paddusw %%mm4, %%mm0\n\t"
-	"paddusw %%mm1, %%mm2\n\t"
-	"psrlw	$2, %%mm0\n\t"
-	"psrlw	$2, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"=m"(*p)
-	:"m"(*pix),
-	 "m"(*(pix+line_size))
-	:"memory");
-   pix += line_size;
-   p += line_size;
-  } while(--h);
-}
-
-static void   put_no_rnd_pixels_xy2_mmx( UINT8  *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  MOVQ_WONE(mm6);
-  JUMPALIGN();
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm0\n\t"
-	"movq	%2, %%mm1\n\t"
-	"movq	1%1, %%mm4\n\t"
-	"movq	1%2, %%mm5\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"movq	%%mm4, %%mm1\n\t"
-	"movq	%%mm5, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpcklbw %%mm7, %%mm5\n\t"
-	"punpckhbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm5, %%mm4\n\t"
-	"paddusw %%mm3, %%mm1\n\t"
-	"paddusw %%mm6, %%mm4\n\t"
-	"paddusw %%mm6, %%mm1\n\t"
-	"paddusw %%mm4, %%mm0\n\t"
-	"paddusw %%mm1, %%mm2\n\t"
-	"psrlw	$2, %%mm0\n\t"
-	"psrlw	$2, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"=m"(*p)
-	:"m"(*pix),
-	 "m"(*(pix+line_size))
-	:"memory");
-   pix += line_size;
-   p +=   line_size;
-  } while(--h);
-}
-#endif
 static void avg_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
   UINT8  *p;
