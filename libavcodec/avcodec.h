@@ -2161,6 +2161,7 @@ extern AVCodecParser mpeg4video_parser;
 extern AVCodecParser h261_parser;
 extern AVCodecParser h263_parser;
 extern AVCodecParser h264_parser;
+extern AVCodecParser mjpeg_parser;
 extern AVCodecParser mpegaudio_parser;
 extern AVCodecParser ac3_parser;
 
