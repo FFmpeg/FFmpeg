@@ -16,21 +16,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include "common.h"
-#include "dsputil.h"
 #include "avcodec.h"
+#include "dsputil.h"
 #include "mpegvideo.h"
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
-#else
-#include <stdlib.h>
 #endif
 
 /* memory alloc */
-void *av_mallocz(int size)
+void *av_malloc(int size)
 {
     void *ptr;
 #if defined ( ARCH_X86 ) && defined ( HAVE_MEMALIGN )
@@ -51,6 +45,24 @@ void *av_mallocz(int size)
         return NULL;
     memset(ptr, 0, size);
     return ptr;
+}
+
+void *av_mallocz(int size)
+{
+    void *ptr;
+    ptr = av_malloc(size);
+    if (!ptr)
+        return NULL;
+    memset(ptr, 0, size);
+    return ptr;
+}
+
+/* NOTE: ptr = NULL is explicetly allowed */
+void av_free(void *ptr)
+{
+    /* XXX: this test should not be needed on most libcs */
+    if (ptr)
+        free(ptr);
 }
 
 /* encoder management */
@@ -80,9 +92,7 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     }
     ret = avctx->codec->init(avctx);
     if (ret < 0) {
-        if (avctx->priv_data)
-            free(avctx->priv_data);
-        avctx->priv_data = NULL;
+        av_freep(&avctx->priv_data);
         return ret;
     }
     return 0;
@@ -144,8 +154,7 @@ int avcodec_close(AVCodecContext *avctx)
 {
     if (avctx->codec->close)
         avctx->codec->close(avctx);
-    free(avctx->priv_data);
-    avctx->priv_data = NULL;
+    av_freep(&avctx->priv_data);
     avctx->codec = NULL;
     return 0;
 }
