@@ -406,6 +406,12 @@ int nut_init(void);
 /* wc3movie.c */
 int wc3_init(void);
 
+/* westwood.c */
+int westwood_init(void);
+
+/* segafilm.c */
+int film_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"

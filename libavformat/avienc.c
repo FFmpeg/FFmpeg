@@ -141,6 +141,15 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_VCR1, MKTAG('V', 'C', 'R', '1') },
     { CODEC_ID_FFV1, MKTAG('F', 'F', 'V', '1') },
     { CODEC_ID_XAN_WC4, MKTAG('X', 'x', 'a', 'n') },
+    { CODEC_ID_MSRLE, MKTAG('m', 'r', 'l', 'e') },
+    { CODEC_ID_MSRLE, MKTAG(0x1, 0x0, 0x0, 0x0) },
+    { CODEC_ID_MSVIDEO1, MKTAG('M', 'S', 'V', 'C') },
+    { CODEC_ID_MSVIDEO1, MKTAG('m', 's', 'v', 'c') },
+    { CODEC_ID_MSVIDEO1, MKTAG('C', 'R', 'A', 'M') },
+    { CODEC_ID_MSVIDEO1, MKTAG('c', 'r', 'a', 'm') },
+    { CODEC_ID_MSVIDEO1, MKTAG('W', 'H', 'A', 'M') },
+    { CODEC_ID_MSVIDEO1, MKTAG('w', 'h', 'a', 'm') },
+    { CODEC_ID_CINEPAK, MKTAG('c', 'v', 'i', 'd') },
     { 0, 0 },
 };
 

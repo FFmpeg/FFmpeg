@@ -1,3 +1,11 @@
+version <next>:
+- Microsoft RLE video decoder
+- Microsoft Video-1 decoder
+- Apple Video (RPZA) decoder
+- Cinepak decoder
+- Sega FILM (CPK) file demuxer
+- Westwood multimedia support (VQA/AUD file demuxer, audio decoder)
+
 version 0.4.8:
 
 - MPEG2 video encoding (Michael)

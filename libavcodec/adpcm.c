@@ -22,7 +22,7 @@
  * @file adpcm.c
  * ADPCM codecs.
  * First version by Francois Revol revol@free.fr
- * Fringe ADPCM codecs (e.g., DK3 and DK4) 
+ * Fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
  *   by Mike Melanson (melanson@pcisys.net)
  *
  * Features and limitations:
@@ -658,6 +658,25 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             *samples++ = c->status[0].predictor - c->status[1].predictor;
         }
         break;
+    case CODEC_ID_ADPCM_IMA_WS:
+        /* no per-block initialization; just start decoding the data */
+        while (src < buf + buf_size) {
+
+            if (st) {
+                *samples++ = adpcm_ima_expand_nibble(&c->status[0], 
+                    (src[0] >> 4) & 0x0F);
+                *samples++ = adpcm_ima_expand_nibble(&c->status[1], 
+                    src[0] & 0x0F);
+            } else {
+                *samples++ = adpcm_ima_expand_nibble(&c->status[0], 
+                    (src[0] >> 4) & 0x0F);
+                *samples++ = adpcm_ima_expand_nibble(&c->status[0], 
+                    src[0] & 0x0F);
+            }
+
+            src++;
+        }
+        break;
     default:
         *data_size = 0;
         return -1;
@@ -692,6 +711,7 @@ ADPCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
+ADPCM_CODEC(CODEC_ID_ADPCM_IMA_WS, adpcm_ima_ws);
 ADPCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
 ADPCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
 

@@ -123,6 +123,10 @@ void avcodec_register_all(void)
     register_avcodec(&roq_decoder);
     register_avcodec(&interplay_video_decoder);
     register_avcodec(&xan_wc3_decoder);
+    register_avcodec(&rpza_decoder);
+    register_avcodec(&cinepak_decoder);
+    register_avcodec(&msrle_decoder);
+    register_avcodec(&msvideo1_decoder);
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif
@@ -163,6 +167,7 @@ PCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
 PCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
 PCM_CODEC(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
 PCM_CODEC(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
+PCM_CODEC(CODEC_ID_ADPCM_IMA_WS, adpcm_ima_ws);
 PCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
 PCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
 

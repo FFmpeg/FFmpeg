@@ -628,6 +628,10 @@ library:
 @tab format used in various Interplay computer games
 @item WC3 Movie        @tab    @tab X
 @tab multimedia format used in Origin's Wing Commander III computer game
+@item Sega FILM/CPK    @tab    @tab X
+@tab used in many Sega Saturn console games
+@item Westwood Studios VQA/AUD  @tab    @tab X
+@tab Multimedia formats used in Westwood Studios games
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -682,6 +686,10 @@ following image formats are supported:
 @item Id RoQ                 @tab     @tab  X @tab used in Quake III, Jedi Knight 2, other computer games
 @item Xan/WC3                @tab     @tab  X @tab used in Wing Commander III .MVE files
 @item Interplay Video        @tab     @tab  X @tab used in Interplay .MVE files
+@item Apple Video            @tab     @tab  X @tab fourcc: rpza
+@item Cinepak                @tab     @tab  X
+@item Microsoft RLE          @tab     @tab  X
+@item Microsoft Video-1      @tab     @tab  X
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -710,6 +718,8 @@ solutions.
 @tab used in some Sega Saturn console games
 @item Duck DK4 IMA ADPCM     @tab      @tab X
 @tab used in some Sega Saturn console games
+@item Westwood Studios IMA ADPCM @tab      @tab X
+@tab used in Westwood Studios games likes Command and Conquer
 @item RA144                  @tab      @tab X
 @tab Real 14400 bit/s codec
 @item RA288                  @tab      @tab X
