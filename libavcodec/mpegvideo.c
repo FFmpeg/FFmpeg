@@ -1161,7 +1161,7 @@ static inline void qpel_motion(MpegEncContext *s,
                                int motion_x, int motion_y, int h)
 {
     UINT8 *ptr;
-    int dxy, offset, mx, my, src_x, src_y, height, v_edge_pos, linesize;
+    int dxy, offset, mx, my, src_x, src_y, height, v_edge_pos, linesize, uvlinesize;
     int emu=0;
 
     dxy = ((motion_y & 3) << 2) | (motion_x & 3);
@@ -1177,6 +1177,7 @@ static inline void qpel_motion(MpegEncContext *s,
     if (src_y == height)
         dxy &= ~12;
     linesize = s->linesize << field_based;
+    uvlinesize = s->uvlinesize << field_based;
     ptr = ref_picture[0] + (src_y * linesize) + src_x + src_offset;
     dest_y += dest_offset;
 //printf("%d %d %d\n", src_x, src_y, dxy);
@@ -1189,21 +1190,33 @@ static inline void qpel_motion(MpegEncContext *s,
             emu=1;
         }
     }
-    qpix_op[0][dxy](dest_y, ptr, linesize);
+    if(!field_based)
+        qpix_op[0][dxy](dest_y, ptr, linesize);
+    else{
+        //damn interlaced mode
+        //FIXME boundary mirroring is not exactly correct here
+        qpix_op[1][dxy](dest_y  , ptr  , linesize);
+        qpix_op[1][dxy](dest_y+8, ptr+8, linesize);
+    }
 
     if(s->flags&CODEC_FLAG_GRAY) return;
 
-    mx= (motion_x>>1) | (motion_x&1);
-    my= (motion_y>>1) | (motion_y&1);
+    if(field_based){
+        mx= motion_x/2;
+        my= motion_y>>1;
+    }else if(s->divx_version){
+        mx= (motion_x>>1)|(motion_x&1);
+        my= (motion_y>>1)|(motion_y&1);
+    }else{
+        mx= motion_x/2;
+        my= motion_y/2;
+    }
+    mx= (mx>>1)|(mx&1);
+    my= (my>>1)|(my&1);
+    dxy= (mx&1) | ((my&1)<<1);
+    mx>>=1;
+    my>>=1;
 
-    dxy = 0;
-    if ((mx & 3) != 0)
-        dxy |= 1;
-    if ((my & 3) != 0)
-        dxy |= 2;
-    mx = mx >> 2;
-    my = my >> 2;
-    
     src_x = s->mb_x * 8 + mx;
     src_y = s->mb_y * (8 >> field_based) + my;
     src_x = clip(src_x, -8, s->width >> 1);
@@ -1213,20 +1226,20 @@ static inline void qpel_motion(MpegEncContext *s,
     if (src_y == (height >> 1))
         dxy &= ~2;
 
-    offset = (src_y * s->uvlinesize) + src_x + (src_offset >> 1);
+    offset = (src_y * uvlinesize) + src_x + (src_offset >> 1);
     ptr = ref_picture[1] + offset;
     if(emu){
-        emulated_edge_mc(s, ptr,  s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, v_edge_pos>>1);
+        emulated_edge_mc(s, ptr,  uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, v_edge_pos>>1);
         ptr= s->edge_emu_buffer;
     }
-    pix_op[1][dxy](dest_cb + (dest_offset >> 1), ptr,  s->uvlinesize, h >> 1);
+    pix_op[1][dxy](dest_cb + (dest_offset >> 1), ptr,  uvlinesize, h >> 1);
     
     ptr = ref_picture[2] + offset;
     if(emu){
-        emulated_edge_mc(s, ptr,  s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, v_edge_pos>>1);
+        emulated_edge_mc(s, ptr,  uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, v_edge_pos>>1);
         ptr= s->edge_emu_buffer;
     }
-    pix_op[1][dxy](dest_cr + (dest_offset >> 1), ptr,  s->uvlinesize, h >> 1);
+    pix_op[1][dxy](dest_cr + (dest_offset >> 1), ptr,  uvlinesize, h >> 1);
 }
 
 
@@ -1262,6 +1275,7 @@ static inline void MPV_motion(MpegEncContext *s,
         }           
         break;
     case MV_TYPE_8X8:
+if(s->quarter_sample){ fprintf(stderr, "qpel4mv"); fflush(stderr);}
         for(i=0;i<4;i++) {
             motion_x = s->mv[dir][i][0];
             motion_y = s->mv[dir][i][1];
@@ -1345,16 +1359,29 @@ static inline void MPV_motion(MpegEncContext *s,
         break;
     case MV_TYPE_FIELD:
         if (s->picture_structure == PICT_FRAME) {
-            /* top field */
-            mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
-                        ref_picture, s->field_select[dir][0] ? s->linesize : 0,
-                        1, pix_op,
-                        s->mv[dir][0][0], s->mv[dir][0][1], 8);
-            /* bottom field */
-            mpeg_motion(s, dest_y, dest_cb, dest_cr, s->linesize,
-                        ref_picture, s->field_select[dir][1] ? s->linesize : 0,
-                        1, pix_op,
-                        s->mv[dir][1][0], s->mv[dir][1][1], 8);
+            if(s->quarter_sample){
+                /* top field */
+                qpel_motion(s, dest_y, dest_cb, dest_cr, 0,
+                            ref_picture, s->field_select[dir][0] ? s->linesize : 0,
+                            1, pix_op, qpix_op,
+                            s->mv[dir][0][0], s->mv[dir][0][1], 8);
+                /* bottom field */
+                qpel_motion(s, dest_y, dest_cb, dest_cr, s->linesize,
+                            ref_picture, s->field_select[dir][1] ? s->linesize : 0,
+                            1, pix_op, qpix_op,
+                            s->mv[dir][1][0], s->mv[dir][1][1], 8);
+            }else{
+                /* top field */       
+                mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
+                            ref_picture, s->field_select[dir][0] ? s->linesize : 0,
+                            1, pix_op,
+                            s->mv[dir][0][0], s->mv[dir][0][1], 8);
+                /* bottom field */
+                mpeg_motion(s, dest_y, dest_cb, dest_cr, s->linesize,
+                            ref_picture, s->field_select[dir][1] ? s->linesize : 0,
+                            1, pix_op,
+                            s->mv[dir][1][0], s->mv[dir][1][1], 8);
+            }
         } else {
             
 
