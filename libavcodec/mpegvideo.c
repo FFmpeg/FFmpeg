@@ -536,6 +536,8 @@ void MPV_decode_defaults(MpegEncContext *s){
  * sets the given MpegEncContext to defaults for encoding.
  * the changed fields will not depend upon the prior state of the MpegEncContext.
  */
+
+#ifdef CONFIG_ENCODERS
 void MPV_encode_defaults(MpegEncContext *s){
     static int done=0;
     
@@ -556,6 +558,7 @@ void MPV_encode_defaults(MpegEncContext *s){
     s->me.mv_penalty= default_mv_penalty;
     s->fcode_tab= default_fcode_tab;
 }
+#endif //CONFIG_ENCODERS
 
 /** 
  * init common structure for both encoder and decoder.
