@@ -1653,7 +1653,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     svq1_encode_plane(s, s->picture.data[0], s->frame_width, s->frame_height, 
         s->picture.linesize[0]);
 //    if (avctx->flags & CODEC_FLAG_GRAY) {
-if (1) {
+    if (avctx->pix_fmt != PIX_FMT_YUV410P) {
         svq1_output_intra_constant_mean(s, s->c_block_width * 2, 
             s->c_block_height * 2, 128);
     } else {
@@ -1666,6 +1666,8 @@ if (1) {
 //    align_put_bits(&s->pb);
     while(put_bits_count(&s->pb) & 31)
         put_bits(&s->pb, 1, 0);
+        
+    flush_put_bits(&s->pb);
 
     return (put_bits_count(&s->pb) / 8);
 }
