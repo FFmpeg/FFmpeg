@@ -490,6 +490,32 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             return size;
           }
         }
+        /* palette changed chunk */
+        if (   d[0] >= '0' && d[0] <= '9'
+            && d[1] >= '0' && d[1] <= '9'
+            && ((d[2] == 'p' && d[3] == 'c'))
+            && n < s->nb_streams && i + size <= avi->movi_end) {
+
+            AVStream *st;
+            int first, clr, flags, k, p;
+
+            st = s->streams[n];
+
+            first = get_byte(pb);
+            clr = get_byte(pb);
+            flags = get_le16(pb);
+            p = 4;
+            for (k = first; k < clr + first; k++) {
+                int r, g, b;
+                r = get_byte(pb);
+                g = get_byte(pb);
+                b = get_byte(pb);
+                    get_byte(pb);
+                st->codec.palctrl->palette[k] = b + (g << 8) + (r << 16);
+            }
+            st->codec.palctrl->palette_changed = 1;
+        }
+
     }
 
     return -1;
