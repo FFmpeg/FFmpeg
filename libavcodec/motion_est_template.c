@@ -855,7 +855,7 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
     int best[2]={0, 0};
     int d, dmin;
     int map_generation;
-    const int penalty_factor= c->penalty_factor;
+    int penalty_factor;
     const int ref_mv_stride= s->mb_stride; //pass as arg  FIXME
     const int ref_mv_xy= s->mb_x + s->mb_y*ref_mv_stride; //add to last_mv beforepassing FIXME
     me_cmp_func cmpf, chroma_cmpf;
@@ -863,8 +863,15 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
     LOAD_COMMON
     LOAD_COMMON2
     
-    cmpf= s->dsp.me_cmp[size];
-    chroma_cmpf= s->dsp.me_cmp[size+1];
+    if(c->pre_pass){
+        penalty_factor= c->pre_penalty_factor;
+        cmpf= s->dsp.me_pre_cmp[size];
+        chroma_cmpf= s->dsp.me_pre_cmp[size+1];
+    }else{
+        penalty_factor= c->penalty_factor;
+        cmpf= s->dsp.me_cmp[size];
+        chroma_cmpf= s->dsp.me_cmp[size+1];
+    }
     
     map_generation= update_map_generation(c);
 
