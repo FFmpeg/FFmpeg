@@ -213,7 +213,7 @@ static int adx_encode_close(AVCodecContext *avctx)
 }
 
 static int adx_encode_frame(AVCodecContext *avctx,
-                unsigned char *frame, int buf_size, const void *data)
+                uint8_t *frame, int buf_size, void *data)
 {
     ADXContext *c = avctx->priv_data;
     const short *samples = data;
@@ -326,7 +326,7 @@ static void dump(unsigned char *buf,size_t len)
 }
 static int adx_decode_frame(AVCodecContext *avctx,
                 void *data, int *data_size,
-                const uint8_t *buf0, int buf_size)
+                uint8_t *buf0, int buf_size)
 {
     ADXContext *c = avctx->priv_data;
     short *samples = data;

@@ -21,9 +21,9 @@
 #include "../dsputil.h"
 
 static const __attribute__ ((aligned(8))) uint64_t round_tab[3]={
-0x0000000000000000,
-0x0001000100010001,
-0x0002000200020002,
+0x0000000000000000ULL,
+0x0001000100010001ULL,
+0x0002000200020002ULL,
 };
 
 static __attribute__ ((aligned(8), unused)) uint64_t bone= 0x0101010101010101LL;
