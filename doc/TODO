@@ -54,3 +54,7 @@ unassigned TODO: (stuff which should/must be done but noone seems to do it)
 ---------------
 - use AVFrame for audio codecs too
 - H264 interlacing
+- rework aviobuf.c buffering strategy and fix url_fskip
+- do audio resampling with bandlimited interpolation:
+  http://ccrma-www.stanford.edu/~jos/resample/resample.html
+- add seeking support to the command line
