@@ -2009,6 +2009,35 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     return 0;
 }
 
+static void mpeg_decode_user_data(AVCodecContext *avctx, 
+                                  const uint8_t *buf, int buf_size)
+{
+    const uint8_t *p;
+    int len, flags;
+    p = buf;
+    len = buf_size;
+
+    /* we parse the DTG active format information */
+    if (len >= 5 &&
+        p[0] == 'D' && p[1] == 'T' && p[2] == 'G' && p[3] == '1') {
+        flags = p[4];
+        p += 5;
+        len -= 5;
+        if (flags & 0x80) {
+            /* skip event id */
+            if (len < 2)
+                return;
+            p += 2;
+            len -= 2;
+        }
+        if (flags & 0x40) {
+            if (len < 1)
+                return;
+            avctx->dtg_active_format = p[0] & 0x0f;
+        }
+    }
+}
+
 /* handle buffering and image synchronisation */
 static int mpeg_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
@@ -2097,6 +2126,10 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                     break;
                 case EXT_START_CODE:
                     mpeg_decode_extension(avctx,
+                                          s->buffer, input_size);
+                    break;
+                case USER_START_CODE:
+                    mpeg_decode_user_data(avctx, 
                                           s->buffer, input_size);
                     break;
                 default:

@@ -16,8 +16,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4656
-#define LIBAVCODEC_BUILD_STR   "4656"
+#define LIBAVCODEC_BUILD       4657
+#define LIBAVCODEC_BUILD_STR   "4657"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -948,6 +948,24 @@ typedef struct AVCodecContext {
      * decoding: set by user, if not set then the native format will always be choosen
      */
     enum PixelFormat (*get_format)(struct AVCodecContext *s, enum PixelFormat * fmt);
+
+    /**
+     * DTG active format information (additionnal aspect ratio
+     * information only used in DVB MPEG2 transport streams). 0 if
+     * not set.
+     * 
+     * encoding: unused.
+     * decoding: set by decoder 
+     */
+    int dtg_active_format;
+#define FF_DTG_AFD_SAME         8
+#define FF_DTG_AFD_4_3          9
+#define FF_DTG_AFD_16_9         10
+#define FF_DTG_AFD_14_9         11
+#define FF_DTG_AFD_4_3_SP_14_9  13
+#define FF_DTG_AFD_16_9_SP_14_9 14
+#define FF_DTG_AFD_SP_4_3       15
+
 } AVCodecContext;
 
 //void avcodec_getopt(AVCodecContext* avctx, const char* str, avc_config_t** config);
