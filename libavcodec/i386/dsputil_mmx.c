@@ -2489,23 +2489,43 @@ static void OPNAME ## h264_qpel8_h_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, i
 static void OPNAME ## h264_qpel8_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dstStride, int srcStride){\
     uint64_t temp[(8+5)*2];\
     uint64_t *temp_ptr= temp;\
-    int h= 8+5;\
+    int h= 4;\
 \
     src -= 2*srcStride;\
-    /*FIXME unroll */\
+    \
     asm volatile(\
         "pxor %%mm7, %%mm7		\n\t"\
         "1:				\n\t"\
         "movq (%0), %%mm0		\n\t"\
-        "movq (%0), %%mm1		\n\t"\
-        "punpcklbw %%mm7, %%mm0		\n\t"\
-        "punpckhbw %%mm7, %%mm1		\n\t"\
-        "movq %%mm0, (%1)		\n\t"\
-        "movq %%mm1, 8(%1)		\n\t"\
-        "addl $16, %1			\n\t"\
+        "movq %%mm0, %%mm1		\n\t"\
         "addl %3, %0			\n\t"\
+        "punpcklbw %%mm7, %%mm0		\n\t"\
+        "movq %%mm0, (%1)		\n\t"\
+        "punpckhbw %%mm7, %%mm1		\n\t"\
+        "movq (%0), %%mm0		\n\t"\
+        "movq %%mm1, 8(%1)		\n\t"\
+        "movq %%mm0, %%mm1		\n\t"\
+        "addl %3, %0			\n\t"\
+        "punpcklbw %%mm7, %%mm0		\n\t"\
+        "movq %%mm0, 16(%1)		\n\t"\
+        "punpckhbw %%mm7, %%mm1		\n\t"\
+        "movq (%0), %%mm0		\n\t"\
+        "movq %%mm1, 24(%1)		\n\t"\
+        "movq %%mm0, %%mm1		\n\t"\
+        "addl %3, %0			\n\t"\
+        "punpcklbw %%mm7, %%mm0		\n\t"\
+        "movq %%mm0, 32(%1)		\n\t"\
+        "punpckhbw %%mm7, %%mm1		\n\t"\
+        "movq %%mm1, 40(%1)		\n\t"\
+        "addl $48, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b			\n\t"\
+        "movq (%0), %%mm0		\n\t"\
+        "movq %%mm0, %%mm1		\n\t"\
+        "punpcklbw %%mm7, %%mm0		\n\t"\
+        "movq %%mm0, (%1)		\n\t"\
+        "punpckhbw %%mm7, %%mm1		\n\t"\
+        "movq %%mm1, 8(%1)		\n\t"\
         : "+a" (src), "+c" (temp_ptr), "+d"(h)\
         : "S" (srcStride)\
         : "memory"\
@@ -2520,28 +2540,22 @@ static void OPNAME ## h264_qpel8_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, i
         "1:				\n\t"\
         "movq 2*16+0(%0), %%mm0		\n\t"\
         "movq 2*16+8(%0), %%mm1		\n\t"\
-        "movq 3*16+0(%0), %%mm2		\n\t"\
-        "movq 3*16+8(%0), %%mm3		\n\t"\
-        "paddw %%mm2, %%mm0		\n\t"\
-        "paddw %%mm3, %%mm1		\n\t"\
+        "paddw 3*16+0(%0), %%mm0	\n\t"\
+        "paddw 3*16+8(%0), %%mm1	\n\t"\
         "psllw $2, %%mm0		\n\t"\
         "psllw $2, %%mm1		\n\t"\
         "movq 1*16+0(%0), %%mm2		\n\t"\
         "movq 1*16+8(%0), %%mm3		\n\t"\
-        "movq 4*16+0(%0), %%mm4		\n\t"\
-        "movq 4*16+8(%0), %%mm5		\n\t"\
-        "paddw %%mm4, %%mm2		\n\t"\
-        "paddw %%mm5, %%mm3		\n\t"\
+        "paddw 4*16+0(%0), %%mm2	\n\t"\
+        "paddw 4*16+8(%0), %%mm3	\n\t"\
         "psubw %%mm2, %%mm0		\n\t"\
         "psubw %%mm3, %%mm1		\n\t"\
         "pmullw %%mm6, %%mm0		\n\t"\
         "pmullw %%mm6, %%mm1		\n\t"\
         "movq 0*16+0(%0), %%mm2		\n\t"\
         "movq 0*16+8(%0), %%mm3		\n\t"\
-        "movq 5*16+0(%0), %%mm4		\n\t"\
-        "movq 5*16+8(%0), %%mm5		\n\t"\
-        "paddw %%mm4, %%mm2		\n\t"\
-        "paddw %%mm5, %%mm3		\n\t"\
+        "paddw 5*16+0(%0), %%mm2	\n\t"\
+        "paddw 5*16+8(%0), %%mm3	\n\t"\
         "paddw %%mm2, %%mm0		\n\t"\
         "paddw %%mm3, %%mm1		\n\t"\
         "paddw %%mm7, %%mm0		\n\t"\
