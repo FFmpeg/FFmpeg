@@ -483,6 +483,7 @@ void avcodec_get_frame_defaults(AVFrame *pic){
     memset(pic, 0, sizeof(AVFrame));
 
     pic->pts= AV_NOPTS_VALUE;
+    pic->key_frame= 1;
 }
 
 /**
