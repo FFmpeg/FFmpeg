@@ -143,6 +143,8 @@ typedef struct MpegEncContext {
     UINT8 *aux_picture[3];       /* aux picture (for B frames only) */
     UINT8 *aux_picture_base[3];  /* real start of the picture */
     UINT8 *current_picture[3];   /* buffer to store the decompressed current picture */
+    void *last_dr_opaque;
+    void *next_dr_opaque;
     int num_available_buffers;   /* is 0 at the start & after seeking, after the first I frame its 1 after next I/P 2 */
     int last_dc[3];              /* last DC values for MPEG1 */
     INT16 *dc_val[3];            /* used for mpeg4 DC prediction, all 3 arrays must be continuous */
@@ -159,6 +161,7 @@ typedef struct MpegEncContext {
     UINT8 *cbp_table;           /* used to store cbp, ac_pred for partitioned decoding */
     UINT8 *pred_dir_table;      /* used to store pred_dir for partitioned decoding */
     INT8 *qscale_table;         /* used to store qscale for partitioned decoding (& postprocessing FIXME export) */
+    UINT8 *edge_emu_buffer;
 
     int input_qscale;           /* qscale prior to reordering of frames */
     int input_pict_type;        /* pict_type prior to reordering of frames */
@@ -447,7 +450,7 @@ typedef struct MpegEncContext {
 int MPV_common_init(MpegEncContext *s);
 void MPV_common_end(MpegEncContext *s);
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
-void MPV_frame_start(MpegEncContext *s);
+void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx);
 void MPV_frame_end(MpegEncContext *s);
 #ifdef HAVE_MMX
 void MPV_common_init_mmx(MpegEncContext *s);

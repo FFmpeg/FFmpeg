@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4615
-#define LIBAVCODEC_BUILD_STR   "4615"
+#define LIBAVCODEC_BUILD       4616
+#define LIBAVCODEC_BUILD_STR   "4616"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -100,12 +100,14 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_PASS1 0x0200  /* use internal 2pass ratecontrol in first  pass mode */
 #define CODEC_FLAG_PASS2 0x0400  /* use internal 2pass ratecontrol in second pass mode */
 #define CODEC_FLAG_EXTERN_HUFF 0x1000 /* use external huffman table (for mjpeg) */
-#define CODEC_FLAG_GRAY  0x2000 /* only decode/encode grayscale */
-
+#define CODEC_FLAG_GRAY  0x2000  /* only decode/encode grayscale */
+#define CODEC_FLAG_EMU_EDGE 0x4000/* dont draw edges */
+#define CODEC_FLAG_DR1    0x8000 /* dr1 */
 /* codec capabilities */
 
 /* decoder can use draw_horiz_band callback */
 #define CODEC_CAP_DRAW_HORIZ_BAND 0x0001
+#define CODEC_CAP_DR1             0x0002 /* direct rendering method 1 */
 
 #define FRAME_RATE_BASE 10000
 
@@ -248,8 +250,16 @@ typedef struct AVCodecContext {
 #define MBC 128
 #define MBR 96
 #endif
-    int *quant_store; /* field for communicating with external postprocessing */
+#define QP_TYPE int //FIXME note xxx this might be changed to int8_t
+
+    QP_TYPE *quant_store; /* field for communicating with external postprocessing */
     unsigned qstride;
+
+    uint8_t *dr_buffer[3];
+    int dr_stride;
+    void *dr_opaque_frame;
+    void (*get_buffer_callback)(struct AVCodecContext *c, int width, int height, int pict_type); 
+
     //FIXME this should be reordered after kabis API is finished ...
     /*
 	Note: Below are located reserved fields for further usage
@@ -267,13 +277,12 @@ typedef struct AVCodecContext {
 	    flt_res6,flt_res7,flt_res8,flt_res9,flt_res10,flt_res11;
     void
 	    *ptr_res0,*ptr_res1,*ptr_res2,*ptr_res3,*ptr_res4,*ptr_res5,
-	    *ptr_res6,*ptr_res7,*ptr_res8,*ptr_res9,*ptr_res10,*ptr_res11;
+	    *ptr_res6;
     unsigned long int
 	    ul_res0,ul_res1,ul_res2,ul_res3,ul_res4,ul_res5,
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
     unsigned int
-	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5,
-	    ui_res6;
+	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5;
     unsigned short int
 	    us_res0,us_res1,us_res2,us_res3,us_res4,us_res5,
 	    us_res6,us_res7,us_res8,us_res9,us_res10,us_res11,us_res12;

@@ -419,7 +419,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     }
 
     if (s->mb_x == 0 && s->mb_y == 0) {
-        MPV_frame_start(s);
+        MPV_frame_start(s, avctx);
     }
 
 #ifdef DEBUG
