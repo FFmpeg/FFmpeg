@@ -915,8 +915,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (st->codec.extradata_size && (st->codec.bits_per_sample <= 8)) {
             st->codec.palctrl = av_mallocz(sizeof(AVPaletteControl));
 #ifdef WORDS_BIGENDIAN
-            for (i = 0; i < FFMIN(st->codec.extradata_size / 4, 256); i++)
-                st->codec.palctrl->palette[i] = bswap_32(st->codec.extradata)[i * 4]);
+            for (i = 0; i < FFMIN(st->codec.extradata_size, AVPALETTE_SIZE)/4; i++)
+                st->codec.palctrl->palette[i] = bswap_32(((uint32_t*)st->codec.extradata)[i]);
 #else
             memcpy(st->codec.palctrl->palette, st->codec.extradata,
                    FFMIN(st->codec.extradata_size, AVPALETTE_SIZE));

@@ -970,13 +970,7 @@ if test "$bigendian" = "yes" ; then
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
 fi
 if test "$emu_fast_int" = "yes" ; then
-#note, we dont try to emulate fast64
-  echo "typedef signed char int_fast8_t;" >> $TMPH
-  echo "typedef signed int  int_fast16_t;" >> $TMPH
-  echo "typedef signed int  int_fast32_t;" >> $TMPH
-  echo "typedef unsigned char uint_fast8_t;" >> $TMPH
-  echo "typedef unsigned int  uint_fast16_t;" >> $TMPH
-  echo "typedef unsigned int  uint_fast32_t;" >> $TMPH
+  echo "#define EMULATE_FAST_INT 1" >> $TMPH
 fi
 if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
