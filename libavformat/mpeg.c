@@ -256,11 +256,11 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     s->is_mpeg2 = (ctx->oformat == &mpeg2vob_mux || ctx->oformat == &mpeg2svcd_mux || ctx->oformat == &mpeg2dvd_mux);
     s->is_dvd = (ctx->oformat == &mpeg2dvd_mux);
     
-    if (s->is_vcd || s->is_svcd)
-        s->packet_size = 2324; /* VCD/SVCD packet size */
+    if(ctx->packet_size)
+        s->packet_size = ctx->packet_size;
     else
         s->packet_size = 2048;
-
+       
     s->vcd_padding_bytes_written = 0;
     s->vcd_padding_bitrate=0;
         
@@ -354,6 +354,16 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         else if (stream->id==VIDEO_ID)
             video_bitrate += codec_rate;
     }
+    
+    if(ctx->mux_rate){
+        s->mux_rate= (ctx->mux_rate + (8 * 50) - 1) / (8 * 50);
+    } else {
+        /* we increase slightly the bitrate to take into account the
+           headers. XXX: compute it exactly */
+        bitrate += bitrate*5/100;
+        bitrate += 10000;
+        s->mux_rate = (bitrate + (8 * 50) - 1) / (8 * 50);
+    }
 
     if (s->is_vcd) {
         double overhead_rate;
@@ -365,7 +375,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
            rate you get a different value because the real pack size is 2324,
            not 2352. But the standard explicitly specifies that the mux_rate
            field in the header must have this value.*/
-        s->mux_rate=2352 * 75 / 50;    /* = 3528*/
+//        s->mux_rate=2352 * 75 / 50;    /* = 3528*/
 
         /* The VCD standard states that the muxed stream must be
            exactly 75 packs / second (the data rate of a single speed cdrom).
@@ -382,13 +392,6 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         
         /* Add padding so that the full bitrate is 2324*75 bytes/sec */
         s->vcd_padding_bitrate = 2324 * 75 * 8 - (bitrate + overhead_rate);
-
-    } else {
-        /* we increase slightly the bitrate to take into account the
-           headers. XXX: compute it exactly */
-        bitrate += bitrate*5/100;
-        bitrate += 10000;
-        s->mux_rate = (bitrate + (8 * 50) - 1) / (8 * 50);
     }
     
     if (s->is_vcd || s->is_mpeg2)
@@ -972,6 +975,7 @@ retry:
     }
 
     if(timestamp_packet){
+//av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f scr:%f stream:%d\n", timestamp_packet->dts/90000.0, timestamp_packet->pts/90000.0, scr/90000.0, best_i);
         es_size= flush_packet(ctx, best_i, timestamp_packet->pts, timestamp_packet->dts, scr, trailer_size);
     }else{
         assert(fifo_size(&stream->fifo, stream->fifo.rptr) == trailer_size);

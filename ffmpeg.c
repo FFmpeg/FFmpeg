@@ -200,6 +200,9 @@ static int audio_disable = 0;
 static int audio_channels = 1;
 static int audio_codec_id = CODEC_ID_NONE;
 
+static int mux_rate= 0;
+static int mux_packet_size= 0;
+
 static int64_t recording_time = 0;
 static int64_t start_time = 0;
 static int64_t rec_timestamp = 0;
@@ -3290,6 +3293,9 @@ static void opt_output_file(const char *filename)
         exit(1);
     }
 
+    oc->packet_size= mux_packet_size;
+    oc->mux_rate= mux_rate;
+
     /* reset some options */
     file_oformat = NULL;
     file_iformat = NULL;
@@ -3649,6 +3655,9 @@ static void opt_target(const char *arg)
 
         audio_bit_rate = 224000;
         audio_sample_rate = 44100;
+        
+        mux_packet_size= 2324;
+        mux_rate= 2352 * 75 * 8;
 
     } else if(!strcmp(arg, "svcd")) {
 
@@ -3667,6 +3676,8 @@ static void opt_target(const char *arg)
 
         audio_bit_rate = 224000;
         audio_sample_rate = 44100;
+
+        mux_packet_size= 2324;
 
     } else if(!strcmp(arg, "dvd")) {
 
@@ -3865,6 +3876,10 @@ const OptionDef options[] = {
     { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_standard}, "set television standard (NTSC, PAL (SECAM))", "standard" },
     { "dv1394", OPT_EXPERT | OPT_GRAB, {(void*)opt_dv1394}, "set DV1394 grab", "" },
     { "ad", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_GRAB, {(void*)opt_audio_device}, "set audio device", "device" },
+ 
+    /* muxer options */   
+    { "muxrate", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&mux_rate}, "set mux rate", "rate" },
+    { "packetsize", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&mux_packet_size}, "set packet size", "size" },
     { NULL, },
 };
 

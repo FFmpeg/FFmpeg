@@ -302,6 +302,9 @@ typedef struct AVFormatContext {
     /* av_seek_frame() support */
     int64_t data_offset; /* offset of the first packet */
     int index_built;
+    
+    int mux_rate;
+    int packet_size;
 } AVFormatContext;
 
 typedef struct AVPacketList {
