@@ -504,7 +504,7 @@ int dct_quantize_altivec(MpegEncContext* s,
         (s->dsp.idct_permutation_type != FF_TRANSPOSE_IDCT_PERM) &&
         (s->dsp.idct_permutation_type != FF_NO_IDCT_PERM))
     {
-        ff_block_permute(data, s->idsp.dct_permutation,
+        ff_block_permute(data, s->dsp.idct_permutation,
                 s->intra_scantable.scantable, lastNonZero);
     }
 
