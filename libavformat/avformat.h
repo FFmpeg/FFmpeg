@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4616
+#define LIBAVFORMAT_BUILD       4617
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -140,6 +140,7 @@ typedef struct AVOutputFormat {
     int flags;
     /* currently only used to set pixel format if not YUV420P */
     int (*set_parameters)(struct AVFormatContext *, AVFormatParameters *);
+    int (*interleave_packet)(struct AVFormatContext *, AVPacket *out, AVPacket *in, int flush);
     /* private fields */
     struct AVOutputFormat *next;
 } AVOutputFormat;

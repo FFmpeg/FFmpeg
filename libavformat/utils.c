@@ -1976,50 +1976,34 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 }
 
 /**
- * Writes a packet to an output media file ensuring correct interleaving. 
- * The packet shall contain one audio or video frame.
- * If the packets are already correctly interleaved the application should
- * call av_write_frame() instead as its slightly faster, its also important
- * to keep in mind that non interlaved input will need huge amounts
- * of memory to interleave with this, so its prefereable to interleave at the
- * demuxer level
- *
- * @param s media file handle
- * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
- * @return < 0 if error, = 0 if OK, 1 if end of stream wanted.
+ * interleave_packet implementation which will interleave per DTS.
  */
-int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
+static int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
     AVPacketList *pktl, **next_point, *this_pktl;
     int stream_count=0;
     int streams[MAX_STREAMS];
-    AVStream *st= s->streams[ pkt->stream_index];
 
-    compute_pkt_fields2(st, pkt);
-    
-    //FIXME/XXX/HACK drop zero sized packets
-    if(st->codec.codec_type == CODEC_TYPE_AUDIO && pkt->size==0)
-        return 0;
+    if(pkt){
+        AVStream *st= s->streams[ pkt->stream_index];
 
-    if(pkt->dts == AV_NOPTS_VALUE)
-        return -1;
-        
-    assert(pkt->destruct != av_destruct_packet); //FIXME
+        assert(pkt->destruct != av_destruct_packet); //FIXME
 
-    this_pktl = av_mallocz(sizeof(AVPacketList));
-    this_pktl->pkt= *pkt;
-    av_dup_packet(&this_pktl->pkt);
+        this_pktl = av_mallocz(sizeof(AVPacketList));
+        this_pktl->pkt= *pkt;
+        av_dup_packet(&this_pktl->pkt);
 
-    next_point = &s->packet_buffer;
-    while(*next_point){
-        AVStream *st2= s->streams[ (*next_point)->pkt.stream_index];
-        int64_t left=  st2->time_base.num * (int64_t)st ->time_base.den;
-        int64_t right= st ->time_base.num * (int64_t)st2->time_base.den;
-        if((*next_point)->pkt.dts * left > pkt->dts * right) //FIXME this can overflow
-            break;
-        next_point= &(*next_point)->next;
+        next_point = &s->packet_buffer;
+        while(*next_point){
+            AVStream *st2= s->streams[ (*next_point)->pkt.stream_index];
+            int64_t left=  st2->time_base.num * (int64_t)st ->time_base.den;
+            int64_t right= st ->time_base.num * (int64_t)st2->time_base.den;
+            if((*next_point)->pkt.dts * left > pkt->dts * right) //FIXME this can overflow
+                break;
+            next_point= &(*next_point)->next;
+        }
+        this_pktl->next= *next_point;
+        *next_point= this_pktl;
     }
-    this_pktl->next= *next_point;
-    *next_point= this_pktl;
     
     memset(streams, 0, sizeof(streams));
     pktl= s->packet_buffer;
@@ -2030,26 +2014,76 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
         streams[ pktl->pkt.stream_index ]++;
         pktl= pktl->next;
     }
-
-    while(s->nb_streams == stream_count){
-        int ret;
-
+    
+    if(s->nb_streams == stream_count || (flush && stream_count)){
         pktl= s->packet_buffer;
-//av_log(s, AV_LOG_DEBUG, "write st:%d dts:%lld\n", pktl->pkt.stream_index, pktl->pkt.dts);
-        truncate_ts(s->streams[pktl->pkt.stream_index], &pktl->pkt);
-        ret= s->oformat->write_packet(s, &pktl->pkt);
+        *out= pktl->pkt;
         
         s->packet_buffer= pktl->next;        
-        if((--streams[ pktl->pkt.stream_index ]) == 0)
-            stream_count--;
-
-        av_free_packet(&pktl->pkt);
         av_freep(&pktl);
+        return 1;
+    }else{
+        av_init_packet(out);
+        return 0;
+    }
+}
+
+/**
+ * Interleaves a AVPacket correctly so it can be muxed.
+ * @param out the interleaved packet will be output here
+ * @param in the input packet
+ * @param flush 1 if no further packets are available as input and all
+ *              remaining packets should be output
+ * @return 1 if a packet was output, 0 if no packet could be output, 
+ *         < 0 if an error occured
+ */
+static int av_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in, int flush){
+    if(s->oformat->interleave_packet)
+        return s->oformat->interleave_packet(s, out, in, flush);
+    else
+        return av_interleave_packet_per_dts(s, out, in, flush);
+}
+
+/**
+ * Writes a packet to an output media file ensuring correct interleaving. 
+ * The packet shall contain one audio or video frame.
+ * If the packets are already correctly interleaved the application should
+ * call av_write_frame() instead as its slightly faster, its also important
+ * to keep in mind that completly non interleaved input will need huge amounts
+ * of memory to interleave with this, so its prefereable to interleave at the
+ * demuxer level
+ *
+ * @param s media file handle
+ * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
+ * @return < 0 if error, = 0 if OK, 1 if end of stream wanted.
+ */
+int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
+    AVStream *st= s->streams[ pkt->stream_index];
+
+    compute_pkt_fields2(st, pkt);
+    
+    //FIXME/XXX/HACK drop zero sized packets
+    if(st->codec.codec_type == CODEC_TYPE_AUDIO && pkt->size==0)
+        return 0;
+    
+    if(pkt->dts == AV_NOPTS_VALUE)
+        return -1;
+
+    for(;;){
+        AVPacket opkt;
+        int ret= av_interleave_packet(s, &opkt, pkt, 0);
+        if(ret<=0) //FIXME cleanup needed for ret<0 ?
+            return ret;
+        
+        truncate_ts(s->streams[opkt.stream_index], &opkt);
+        ret= s->oformat->write_packet(s, &opkt);
+        
+        av_free_packet(&opkt);
+        pkt= NULL;
         
         if(ret<0)
             return ret;
     }
-    return 0;
 }
 
 /**
@@ -2062,21 +2096,21 @@ int av_write_trailer(AVFormatContext *s)
 {
     int ret;
     
-    while(s->packet_buffer){
-        int ret;
-        AVPacketList *pktl= s->packet_buffer;
-
-//av_log(s, AV_LOG_DEBUG, "write_trailer st:%d dts:%lld\n", pktl->pkt.stream_index, pktl->pkt.dts);
-        truncate_ts(s->streams[pktl->pkt.stream_index], &pktl->pkt);
-        ret= s->oformat->write_packet(s, &pktl->pkt);
+    for(;;){
+        AVPacket pkt;
+        ret= av_interleave_packet(s, &pkt, NULL, 1);
+        if(ret<0) //FIXME cleanup needed for ret<0 ?
+            return ret;
+        if(!ret)
+            break;
         
-        s->packet_buffer= pktl->next;        
-
-        av_free_packet(&pktl->pkt);
-        av_freep(&pktl);
+        truncate_ts(s->streams[pkt.stream_index], &pkt);
+        ret= s->oformat->write_packet(s, &pkt);
+        
+        av_free_packet(&pkt);
         
         if(ret<0)
-            return ret;
+            return ret; 
     }
 
     ret = s->oformat->write_trailer(s);
