@@ -2765,115 +2765,114 @@ static void hl_decode_mb(H264Context *h){
                 }
             }
         }
-        goto deblock;
-    }
-    if(IS_INTRA(mb_type)){
-        if(h->deblocking_filter)
-            xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 1);
+    } else {
+        if(IS_INTRA(mb_type)){
+            if(h->deblocking_filter)
+                xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 1);
 
-        if(!(s->flags&CODEC_FLAG_GRAY)){
-            h->pred8x8[ h->chroma_pred_mode ](dest_cb, uvlinesize);
-            h->pred8x8[ h->chroma_pred_mode ](dest_cr, uvlinesize);
+            if(!(s->flags&CODEC_FLAG_GRAY)){
+                h->pred8x8[ h->chroma_pred_mode ](dest_cb, uvlinesize);
+                h->pred8x8[ h->chroma_pred_mode ](dest_cr, uvlinesize);
+            }
+
+            if(IS_INTRA4x4(mb_type)){
+                if(!s->encoding){
+                    for(i=0; i<16; i++){
+                        uint8_t * const ptr= dest_y + h->block_offset[i];
+                        uint8_t *topright;
+                        const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
+                        int tr;
+
+                        if(dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED){
+                            const int topright_avail= (h->topright_samples_available<<i)&0x8000;
+                            assert(mb_y || linesize <= h->block_offset[i]);
+                            if(!topright_avail){
+                                tr= ptr[3 - linesize]*0x01010101;
+                                topright= (uint8_t*) &tr;
+                            }else if(i==5 && h->deblocking_filter){
+                                tr= *(uint32_t*)h->top_border[mb_x+1];
+                                topright= (uint8_t*) &tr;
+                            }else
+                                topright= ptr + 4 - linesize;
+                        }else
+                            topright= NULL;
+
+                        h->pred4x4[ dir ](ptr, topright, linesize);
+                        if(h->non_zero_count_cache[ scan8[i] ]){
+                            if(s->codec_id == CODEC_ID_H264)
+                                s->dsp.h264_idct_add(ptr, h->mb + i*16, linesize);
+                            else
+                                svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
+                        }
+                    }
+                }
+            }else{
+                h->pred16x16[ h->intra16x16_pred_mode ](dest_y , linesize);
+                if(s->codec_id == CODEC_ID_H264)
+                    h264_luma_dc_dequant_idct_c(h->mb, s->qscale);
+                else
+                    svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
+            }
+            if(h->deblocking_filter)
+                xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0);
+        }else if(s->codec_id == CODEC_ID_H264){
+            hl_motion(h, dest_y, dest_cb, dest_cr,
+                      s->dsp.put_h264_qpel_pixels_tab, s->dsp.put_h264_chroma_pixels_tab, 
+                      s->dsp.avg_h264_qpel_pixels_tab, s->dsp.avg_h264_chroma_pixels_tab,
+                      s->dsp.weight_h264_pixels_tab, s->dsp.biweight_h264_pixels_tab);
         }
 
-        if(IS_INTRA4x4(mb_type)){
-            if(!s->encoding){
+
+        if(!IS_INTRA4x4(mb_type)){
+            if(s->codec_id == CODEC_ID_H264){
                 for(i=0; i<16; i++){
-                    uint8_t * const ptr= dest_y + h->block_offset[i];
-                    uint8_t *topright;
-                    const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
-                    int tr;
-
-                    if(dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED){
-                        const int topright_avail= (h->topright_samples_available<<i)&0x8000;
-                        assert(mb_y || linesize <= h->block_offset[i]);
-                        if(!topright_avail){
-                            tr= ptr[3 - linesize]*0x01010101;
-                            topright= (uint8_t*) &tr;
-                        }else if(i==5 && h->deblocking_filter){
-                            tr= *(uint32_t*)h->top_border[mb_x+1];
-                            topright= (uint8_t*) &tr;
-                        }else
-                            topright= ptr + 4 - linesize;
-                    }else
-                        topright= NULL;
-
-                    h->pred4x4[ dir ](ptr, topright, linesize);
-                    if(h->non_zero_count_cache[ scan8[i] ]){
-                        if(s->codec_id == CODEC_ID_H264)
-                            s->dsp.h264_idct_add(ptr, h->mb + i*16, linesize);
-                        else
-                            svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
+                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
+                        uint8_t * const ptr= dest_y + h->block_offset[i];
+                        s->dsp.h264_idct_add(ptr, h->mb + i*16, linesize);
+                    }
+                }
+            }else{
+                for(i=0; i<16; i++){
+                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
+                        uint8_t * const ptr= dest_y + h->block_offset[i];
+                        svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, IS_INTRA(mb_type) ? 1 : 0);
                     }
                 }
             }
-        }else{
-            h->pred16x16[ h->intra16x16_pred_mode ](dest_y , linesize);
-            if(s->codec_id == CODEC_ID_H264)
-                h264_luma_dc_dequant_idct_c(h->mb, s->qscale);
-            else
-                svq3_luma_dc_dequant_idct_c(h->mb, s->qscale);
         }
-        if(h->deblocking_filter)
-            xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0);
-    }else if(s->codec_id == CODEC_ID_H264){
-        hl_motion(h, dest_y, dest_cb, dest_cr,
-                  s->dsp.put_h264_qpel_pixels_tab, s->dsp.put_h264_chroma_pixels_tab, 
-                  s->dsp.avg_h264_qpel_pixels_tab, s->dsp.avg_h264_chroma_pixels_tab,
-                  s->dsp.weight_h264_pixels_tab, s->dsp.biweight_h264_pixels_tab);
-    }
 
-
-    if(!IS_INTRA4x4(mb_type)){
-        if(s->codec_id == CODEC_ID_H264){
-            for(i=0; i<16; i++){
-                if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
-                    uint8_t * const ptr= dest_y + h->block_offset[i];
-                    s->dsp.h264_idct_add(ptr, h->mb + i*16, linesize);
+        if(!(s->flags&CODEC_FLAG_GRAY)){
+            chroma_dc_dequant_idct_c(h->mb + 16*16, h->chroma_qp);
+            chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp);
+            if(s->codec_id == CODEC_ID_H264){
+                for(i=16; i<16+4; i++){
+                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
+                        uint8_t * const ptr= dest_cb + h->block_offset[i];
+                        s->dsp.h264_idct_add(ptr, h->mb + i*16, uvlinesize);
+                    }
                 }
-            }
-        }else{
-            for(i=0; i<16; i++){
-                if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
-                    uint8_t * const ptr= dest_y + h->block_offset[i];
-                    svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, IS_INTRA(mb_type) ? 1 : 0);
+                for(i=20; i<20+4; i++){
+                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
+                        uint8_t * const ptr= dest_cr + h->block_offset[i];
+                        s->dsp.h264_idct_add(ptr, h->mb + i*16, uvlinesize);
+                    }
                 }
-            }
-        }
-    }
-
-    if(!(s->flags&CODEC_FLAG_GRAY)){
-        chroma_dc_dequant_idct_c(h->mb + 16*16, h->chroma_qp);
-        chroma_dc_dequant_idct_c(h->mb + 16*16+4*16, h->chroma_qp);
-        if(s->codec_id == CODEC_ID_H264){
-            for(i=16; i<16+4; i++){
-                if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                    uint8_t * const ptr= dest_cb + h->block_offset[i];
-                    s->dsp.h264_idct_add(ptr, h->mb + i*16, uvlinesize);
+            }else{
+                for(i=16; i<16+4; i++){
+                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
+                        uint8_t * const ptr= dest_cb + h->block_offset[i];
+                        svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
+                    }
                 }
-            }
-            for(i=20; i<20+4; i++){
-                if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                    uint8_t * const ptr= dest_cr + h->block_offset[i];
-                    s->dsp.h264_idct_add(ptr, h->mb + i*16, uvlinesize);
-                }
-            }
-        }else{
-            for(i=16; i<16+4; i++){
-                if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                    uint8_t * const ptr= dest_cb + h->block_offset[i];
-                    svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
-                }
-            }
-            for(i=20; i<20+4; i++){
-                if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                    uint8_t * const ptr= dest_cr + h->block_offset[i];
-                    svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
+                for(i=20; i<20+4; i++){
+                    if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
+                        uint8_t * const ptr= dest_cr + h->block_offset[i];
+                        svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
+                    }
                 }
             }
         }
     }
-deblock:
     if(h->deblocking_filter) {
         backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         fill_caches(h, mb_type, 1); //FIXME dont fill stuff which isnt used by filter_mb
