@@ -788,45 +788,96 @@ FULL_YSCALEYUV2RGB
 //FIXME unroll C loop and dont recalculate UV
 		asm volatile ("\n\t"::: "memory");
 
-		if(dstbpp==32 || dstbpp==24)
+		if(dstbpp==32)
 		{
-			for(i=0;i<dstw;i++){
+			for(i=0; i<dstw-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
 				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
-				dest[0]=clip_table[((Y + yuvtab_40cf[U]) >>13)];
-				dest[1]=clip_table[((Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13)];
-				dest[2]=clip_table[((Y + yuvtab_3343[V]) >>13)];
-				dest+=dstbpp>>3;
+
+				int Cb= yuvtab_40cf[U];
+				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
+				int Cr= yuvtab_3343[V];
+
+				dest[4*i+0]=clip_table[((Y1 + Cb) >>13)];
+				dest[4*i+1]=clip_table[((Y1 + Cg) >>13)];
+				dest[4*i+2]=clip_table[((Y1 + Cr) >>13)];
+
+				dest[4*i+4]=clip_table[((Y2 + Cb) >>13)];
+				dest[4*i+5]=clip_table[((Y2 + Cg) >>13)];
+				dest[4*i+6]=clip_table[((Y2 + Cr) >>13)];
+			}
+		}
+		if(dstbpp==24)
+		{
+			for(i=0; i<dstw-1; i+=2){
+				// vertical linear interpolation && yuv2rgb in a single step:
+				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
+				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+
+				int Cb= yuvtab_40cf[U];
+				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
+				int Cr= yuvtab_3343[V];
+
+				dest[0]=clip_table[((Y1 + Cb) >>13)];
+				dest[1]=clip_table[((Y1 + Cg) >>13)];
+				dest[2]=clip_table[((Y1 + Cr) >>13)];
+
+				dest[3]=clip_table[((Y2 + Cb) >>13)];
+				dest[4]=clip_table[((Y2 + Cg) >>13)];
+				dest[5]=clip_table[((Y2 + Cr) >>13)];
+				dest+=6;
 			}
 		}
 		else if(dstbpp==16)
 		{
-			for(i=0;i<dstw;i++){
+			for(i=0; i<dstw-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
 				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
+				int Cb= yuvtab_40cf[U];
+				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
+				int Cr= yuvtab_3343[V];
+
 				((uint16_t*)dest)[i] =
-					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
-					((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
+					(clip_table[(Y1 + Cb) >>13]>>3) |
+					((clip_table[(Y1 + Cg) >>13]<<3)&0x07E0) |
+					((clip_table[(Y1 + Cr) >>13]<<8)&0xF800);
+
+				((uint16_t*)dest)[i+1] =
+					(clip_table[(Y2 + Cb) >>13]>>3) |
+					((clip_table[(Y2 + Cg) >>13]<<3)&0x07E0) |
+					((clip_table[(Y2 + Cr) >>13]<<8)&0xF800);
 			}
 		}
 		else if(dstbpp==15)
 		{
-			for(i=0;i<dstw;i++){
+			for(i=0; i<dstw-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
+				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
 				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
+				int Cb= yuvtab_40cf[U];
+				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
+				int Cr= yuvtab_3343[V];
+
 				((uint16_t*)dest)[i] =
-					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
-					((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
+					(clip_table[(Y1 + Cb) >>13]>>3) |
+					((clip_table[(Y1 + Cg) >>13]<<2)&0x03E0) |
+					((clip_table[(Y1 + Cr) >>13]<<7)&0x7C00);
+				((uint16_t*)dest)[i+1] =
+					(clip_table[(Y2 + Cb) >>13]>>3) |
+					((clip_table[(Y2 + Cg) >>13]<<2)&0x03E0) |
+					((clip_table[(Y2 + Cr) >>13]<<7)&0x7C00);
 			}
 		}
 #endif
