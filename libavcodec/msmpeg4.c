@@ -410,20 +410,22 @@ void msmpeg4_dc_scale(MpegEncContext * s)
 static int msmpeg4_pred_dc(MpegEncContext * s, int n, 
                            INT16 **dc_val_ptr, int *dir_ptr)
 {
-    int a, b, c, x, y, wrap, pred, scale;
+    int a, b, c, xy, wrap, pred, scale;
     INT16 *dc_val;
 
     /* find prediction */
     if (n < 4) {
-	x = 2 * s->mb_x + 1 + (n & 1);
-	y = 2 * s->mb_y + 1 + ((n & 2) >> 1);
 	wrap = s->mb_width * 2 + 2;
+	xy = 2 * s->mb_y + 1 + ((n & 2) >> 1);
+        xy *= wrap;
+	xy += 2 * s->mb_x + 1 + (n & 1);
 	dc_val = s->dc_val[0];
 	scale = s->y_dc_scale;
     } else {
-	x = s->mb_x + 1;
-	y = s->mb_y + 1;
 	wrap = s->mb_width + 2;
+	xy = s->mb_y + 1;
+        xy *= wrap;
+	xy += s->mb_x + 1;
 	dc_val = s->dc_val[n - 4 + 1];
 	scale = s->c_dc_scale;
     }
@@ -431,9 +433,9 @@ static int msmpeg4_pred_dc(MpegEncContext * s, int n,
     /* B C
      * A X 
      */
-    a = dc_val[(x - 1) + (y) * wrap];
-    b = dc_val[(x - 1) + (y - 1) * wrap];
-    c = dc_val[(x) + (y - 1) * wrap];
+    a = dc_val[xy - 1];
+    b = dc_val[xy - 1 - wrap];
+    c = dc_val[xy - wrap];
 
     /* XXX: the following solution consumes divisions, but it does not
        necessitate to modify mpegvideo.c. The problem comes from the
@@ -484,7 +486,7 @@ static int msmpeg4_pred_dc(MpegEncContext * s, int n,
     }
 
     /* update predictor */
-    *dc_val_ptr = &dc_val[(x) + (y) * wrap];
+    *dc_val_ptr = &dc_val[xy];
     return pred;
 }
 
@@ -776,7 +778,7 @@ int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
     return 0;
 }
 
-void memsetw(short *tab, int val, int n)
+static inline void memsetw(short *tab, int val, int n)
 {
     int i;
     for(i=0;i<n;i++)
@@ -787,7 +789,6 @@ int msmpeg4_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64])
 {
     int cbp, code, i;
-    int pred, val;
     UINT8 *coded_val;
 
     /* special slice handling */
@@ -840,10 +841,8 @@ int msmpeg4_decode_mb(MpegEncContext *s,
         code = get_vlc(&s->gb, &mb_non_intra_vlc);
         if (code < 0)
             return -1;
-        if (code & 0x40)
-            s->mb_intra = 0;
-        else
-            s->mb_intra = 1;
+	//s->mb_intra = (code & 0x40) ? 0 : 1;
+	s->mb_intra = (~code & 0x40) >> 6;
             
         cbp = code & 0x3f;
     } else {
@@ -855,9 +854,9 @@ int msmpeg4_decode_mb(MpegEncContext *s,
         /* predict coded block pattern */
         cbp = 0;
         for(i=0;i<6;i++) {
-            val = ((code >> (5 - i)) & 1);
+            int val = ((code >> (5 - i)) & 1);
             if (i < 4) {
-                pred = coded_block_pred(s, i, &coded_val);
+                int pred = coded_block_pred(s, i, &coded_val);
                 val = val ^ pred;
                 *coded_val = val;
             }
@@ -882,7 +881,10 @@ int msmpeg4_decode_mb(MpegEncContext *s,
 
     for (i = 0; i < 6; i++) {
         if (msmpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1) < 0)
-            return -1;
+	{
+	    fprintf(stderr,"\nIgnoring error while decoding block: %d x %d (%d)\n", s->mb_x, s->mb_y, i);
+	    // return -1;
+	}
     }
     return 0;
 }
@@ -953,7 +955,8 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     run = get_bits(&s->gb, 6);
                     level = get_bits(&s->gb, 8);
                     level = (level << 24) >> 24; /* sign extend */
-                    if(level>0) level= level * qmul + qadd;
+		    //level = level * qmul + (level>0) * qadd - (level<=0) * qadd ;
+		    if (level>0) level= level * qmul + qadd;
                     else        level= level * qmul - qadd;
                 } else {
                     /* second escape */
