@@ -19,7 +19,9 @@
 #include "avcodec.h"
 #include "common.h"
 #include "dsputil.h"
-#include "cabac.h"
+
+#include "rangecoder.h"
+#define MID_STATE 128
 
 #include "mpegvideo.h"
 
@@ -392,7 +394,7 @@ typedef struct SnowContext{
 //    MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independant of MpegEncContext, so this will be removed then (FIXME/XXX)
 
     AVCodecContext *avctx;
-    CABACContext c;
+    RangeCoder c;
     DSPContext dsp;
     AVFrame input_picture;
     AVFrame current_picture;
@@ -443,7 +445,7 @@ static inline int mirror(int v, int m){
     else         return v;
 }
 
-static inline void put_symbol(CABACContext *c, uint8_t *state, int v, int is_signed){
+static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
     int i;
 
     if(v){
@@ -451,82 +453,82 @@ static inline void put_symbol(CABACContext *c, uint8_t *state, int v, int is_sig
         const int e= av_log2(a);
 #if 1
         const int el= FFMIN(e, 10);   
-        put_cabac(c, state+0, 0);
+        put_rac(c, state+0, 0);
 
         for(i=0; i<el; i++){
-            put_cabac(c, state+1+i, 1);  //1..10
+            put_rac(c, state+1+i, 1);  //1..10
         }
         for(; i<e; i++){
-            put_cabac(c, state+1+9, 1);  //1..10
+            put_rac(c, state+1+9, 1);  //1..10
         }
-        put_cabac(c, state+1+FFMIN(i,9), 0);
+        put_rac(c, state+1+FFMIN(i,9), 0);
 
         for(i=e-1; i>=el; i--){
-            put_cabac(c, state+22+9, (a>>i)&1); //22..31
+            put_rac(c, state+22+9, (a>>i)&1); //22..31
         }
         for(; i>=0; i--){
-            put_cabac(c, state+22+i, (a>>i)&1); //22..31
+            put_rac(c, state+22+i, (a>>i)&1); //22..31
         }
 
         if(is_signed)
-            put_cabac(c, state+11 + el, v < 0); //11..21
+            put_rac(c, state+11 + el, v < 0); //11..21
 #else
         
-        put_cabac(c, state+0, 0);
+        put_rac(c, state+0, 0);
         if(e<=9){
             for(i=0; i<e; i++){
-                put_cabac(c, state+1+i, 1);  //1..10
+                put_rac(c, state+1+i, 1);  //1..10
             }
-            put_cabac(c, state+1+i, 0);
+            put_rac(c, state+1+i, 0);
 
             for(i=e-1; i>=0; i--){
-                put_cabac(c, state+22+i, (a>>i)&1); //22..31
+                put_rac(c, state+22+i, (a>>i)&1); //22..31
             }
 
             if(is_signed)
-                put_cabac(c, state+11 + e, v < 0); //11..21
+                put_rac(c, state+11 + e, v < 0); //11..21
         }else{
             for(i=0; i<e; i++){
-                put_cabac(c, state+1+FFMIN(i,9), 1);  //1..10
+                put_rac(c, state+1+FFMIN(i,9), 1);  //1..10
             }
-            put_cabac(c, state+1+FFMIN(i,9), 0);
+            put_rac(c, state+1+FFMIN(i,9), 0);
 
             for(i=e-1; i>=0; i--){
-                put_cabac(c, state+22+FFMIN(i,9), (a>>i)&1); //22..31
+                put_rac(c, state+22+FFMIN(i,9), (a>>i)&1); //22..31
             }
 
             if(is_signed)
-                put_cabac(c, state+11 + FFMIN(e,10), v < 0); //11..21
+                put_rac(c, state+11 + FFMIN(e,10), v < 0); //11..21
         }
 #endif
     }else{
-        put_cabac(c, state+0, 1);
+        put_rac(c, state+0, 1);
     }
 }
 
-static inline int get_symbol(CABACContext *c, uint8_t *state, int is_signed){
-    if(get_cabac(c, state+0))
+static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
+    if(get_rac(c, state+0))
         return 0;
     else{
         int i, e, a;
         e= 0;
-        while(get_cabac(c, state+1 + FFMIN(e,9))){ //1..10
+        while(get_rac(c, state+1 + FFMIN(e,9))){ //1..10
             e++;
         }
 
         a= 1;
         for(i=e-1; i>=0; i--){
-            a += a + get_cabac(c, state+22 + FFMIN(i,9)); //22..31
+            a += a + get_rac(c, state+22 + FFMIN(i,9)); //22..31
         }
 
-        if(is_signed && get_cabac(c, state+11 + FFMIN(e,10))) //11..21
+        if(is_signed && get_rac(c, state+11 + FFMIN(e,10))) //11..21
             return -a;
         else
             return a;
     }
 }
 
-static inline void put_symbol2(CABACContext *c, uint8_t *state, int v, int log2){
+static inline void put_symbol2(RangeCoder *c, uint8_t *state, int v, int log2){
     int i;
     int r= log2>=0 ? 1<<log2 : 1;
 
@@ -534,33 +536,33 @@ static inline void put_symbol2(CABACContext *c, uint8_t *state, int v, int log2)
     assert(log2>=-4);
 
     while(v >= r){
-        put_cabac(c, state+4+log2, 1);
+        put_rac(c, state+4+log2, 1);
         v -= r;
         log2++;
         if(log2>0) r+=r;
     }
-    put_cabac(c, state+4+log2, 0);
+    put_rac(c, state+4+log2, 0);
     
     for(i=log2-1; i>=0; i--){
-        put_cabac(c, state+31-i, (v>>i)&1);
+        put_rac(c, state+31-i, (v>>i)&1);
     }
 }
 
-static inline int get_symbol2(CABACContext *c, uint8_t *state, int log2){
+static inline int get_symbol2(RangeCoder *c, uint8_t *state, int log2){
     int i;
     int r= log2>=0 ? 1<<log2 : 1;
     int v=0;
 
     assert(log2>=-4);
 
-    while(get_cabac(c, state+4+log2)){
+    while(get_rac(c, state+4+log2)){
         v+= r;
         log2++;
         if(log2>0) r+=r;
     }
     
     for(i=log2-1; i>=0; i--){
-        v+= get_cabac(c, state+31-i)<<i;
+        v+= get_rac(c, state+31-i)<<i;
     }
 
     return v;
@@ -1371,7 +1373,7 @@ static void encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTEL
                 if(/*ll|*/l|lt|t|rt|p){
                     int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
 
-                    put_cabac(&s->c, &b->state[0][context], !!v);
+                    put_rac(&s->c, &b->state[0][context], !!v);
                 }else{
                     if(!run){
                         run= runs[run_index++];
@@ -1387,7 +1389,7 @@ static void encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTEL
                     int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
 
                     put_symbol2(&s->c, b->state[context + 2], ABS(v)-1, context-4);
-                    put_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
+                    put_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
                 }
             }
         }
@@ -1460,7 +1462,7 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                 if(/*ll|*/l|lt|t|rt|p){
                     int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
 
-                    v=get_cabac(&s->c, &b->state[0][context]);
+                    v=get_rac(&s->c, &b->state[0][context]);
                 }else{
                     if(!run){
                         run= get_symbol2(&s->c, b->state[1], 3);
@@ -1482,7 +1484,7 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                 if(v){
                     int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
                     v= get_symbol2(&s->c, b->state[context + 2], context-4) + 1;
-                    if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]])){
+                    if(get_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]])){
                         src[x + y*stride]=-(( v*qmul + qadd)>>(QEXPSHIFT));
                         v= -v;
                     }else{
@@ -1522,12 +1524,12 @@ static void reset_contexts(SnowContext *s){
     for(plane_index=0; plane_index<3; plane_index++){
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1:0; orientation<4; orientation++){
-                memset(s->plane[plane_index].band[level][orientation].state, 0, sizeof(s->plane[plane_index].band[level][orientation].state));
+                memset(s->plane[plane_index].band[level][orientation].state, MID_STATE, sizeof(s->plane[plane_index].band[level][orientation].state));
             }
         }
     }
-    memset(s->header_state, 0, sizeof(s->header_state));
-    memset(s->block_state, 0, sizeof(s->block_state));
+    memset(s->header_state, MID_STATE, sizeof(s->header_state));
+    memset(s->block_state, MID_STATE, sizeof(s->block_state));
 }
 
 static int alloc_blocks(SnowContext *s){
@@ -1541,10 +1543,12 @@ static int alloc_blocks(SnowContext *s){
     return 0;
 }
 
-static inline void copy_cabac_state(CABACContext *d, CABACContext *s){
-    PutBitContext bak= d->pb;
+static inline void copy_rac_state(RangeCoder *d, RangeCoder *s){
+    uint8_t *bytestream= d->bytestream;
+    uint8_t *bytestream_start= d->bytestream_start;
     *d= *s;
-    d->pb= bak;
+    d->bytestream= bytestream;
+    d->bytestream_start= bytestream_start;
 }
 
 //near copy & paste from dsputil, FIXME
@@ -1630,8 +1634,9 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     uint8_t i_buffer[1024];
     uint8_t p_state[sizeof(s->block_state)];
     uint8_t i_state[sizeof(s->block_state)];
-    CABACContext pc, ic;
-    PutBitContext pbbak= s->c.pb;
+    RangeCoder pc, ic;
+    uint8_t *pbbak= s->c.bytestream;
+    uint8_t *pbbak_start= s->c.bytestream_start;
     int score, score2, iscore, i_len, p_len, block_s, sum;
     const int w= s->b_width  << s->block_max_depth;
     const int h= s->b_height << s->block_max_depth;
@@ -1761,16 +1766,20 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
                              
   //  subpel search
     pc= s->c;
-    init_put_bits(&pc.pb, p_buffer, sizeof(p_buffer));
+    pc.bytestream_start=
+    pc.bytestream= p_buffer; //FIXME end/start? and at the other stoo
     memcpy(p_state, s->block_state, sizeof(s->block_state));
 
     if(level!=s->block_max_depth)
-        put_cabac(&pc, &p_state[4 + s_context], 1);
-    put_cabac(&pc, &p_state[1 + left->type + top->type], 0);
+        put_rac(&pc, &p_state[4 + s_context], 1);
+    put_rac(&pc, &p_state[1 + left->type + top->type], 0);
     put_symbol(&pc, &p_state[128 + 32*mx_context], mx - pmx, 1);
     put_symbol(&pc, &p_state[128 + 32*my_context], my - pmy, 1);
-    p_len= put_bits_count(&pc.pb);
-    score += (s->lambda2*(p_len + pc.outstanding_count - s->c.outstanding_count))>>FF_LAMBDA_SHIFT;
+    p_len= pc.bytestream - pc.bytestream_start;
+    score += (s->lambda2*(p_len*8
+              + (pc.outstanding_count - s->c.outstanding_count)*8
+              + (-av_log2(pc.range)    + av_log2(s->c.range))
+             ))>>FF_LAMBDA_SHIFT;
 
     block_s= block_w*block_w;
     sum = pix_sum(&current_mb[0][0], stride, block_w);
@@ -1786,16 +1795,20 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
 //    iscore += pix_norm1(&current_mb[2][0], uvstride, block_w>>1) - 2*cr*sum + cr*cr*block_s;
 
     ic= s->c;
-    init_put_bits(&ic.pb, i_buffer, sizeof(i_buffer));
+    ic.bytestream_start=
+    ic.bytestream= i_buffer; //FIXME end/start? and at the other stoo
     memcpy(i_state, s->block_state, sizeof(s->block_state));
     if(level!=s->block_max_depth)
-        put_cabac(&ic, &i_state[4 + s_context], 1);
-    put_cabac(&ic, &i_state[1 + left->type + top->type], 1);
+        put_rac(&ic, &i_state[4 + s_context], 1);
+    put_rac(&ic, &i_state[1 + left->type + top->type], 1);
     put_symbol(&ic, &i_state[32],  l-pl , 1);
     put_symbol(&ic, &i_state[64], cb-pcb, 1);
     put_symbol(&ic, &i_state[96], cr-pcr, 1);
-    i_len= put_bits_count(&ic.pb);
-    iscore += (s->lambda2*(i_len + ic.outstanding_count - s->c.outstanding_count))>>FF_LAMBDA_SHIFT;
+    i_len= ic.bytestream - ic.bytestream_start;
+    iscore += (s->lambda2*(i_len*8
+              + (ic.outstanding_count - s->c.outstanding_count)*8
+              + (-av_log2(ic.range)    + av_log2(s->c.range))
+             ))>>FF_LAMBDA_SHIFT;
 
 //    assert(score==256*256*256*64-1);
     assert(iscore < 255*255*256 + s->lambda2*10);
@@ -1813,7 +1826,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     }
         
     if(level!=s->block_max_depth){
-        put_cabac(&s->c, &s->block_state[4 + s_context], 0);
+        put_rac(&s->c, &s->block_state[4 + s_context], 0);
         score2 = encode_q_branch(s, level+1, 2*x+0, 2*y+0);
         score2+= encode_q_branch(s, level+1, 2*x+1, 2*y+0);
         score2+= encode_q_branch(s, level+1, 2*x+0, 2*y+1);
@@ -1825,18 +1838,18 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     }
     
     if(iscore < score){
-        flush_put_bits(&ic.pb);
-        ff_copy_bits(&pbbak, i_buffer, i_len);
+        memcpy(pbbak, i_buffer, i_len);
         s->c= ic;
-        s->c.pb= pbbak;
+        s->c.bytestream_start= pbbak_start;
+        s->c.bytestream= pbbak + i_len;
         set_blocks(s, level, x, y, l, cb, cr, pmx, pmy, BLOCK_INTRA);
         memcpy(s->block_state, i_state, sizeof(s->block_state));
         return iscore;
     }else{
-        flush_put_bits(&pc.pb);
-        ff_copy_bits(&pbbak, p_buffer, p_len);
+        memcpy(pbbak, p_buffer, p_len);
         s->c= pc;
-        s->c.pb= pbbak;
+        s->c.bytestream_start= pbbak_start;
+        s->c.bytestream= pbbak + p_len;
         set_blocks(s, level, x, y, pl, pcb, pcr, mx, my, 0);
         memcpy(s->block_state, p_state, sizeof(s->block_state));
         return score;
@@ -1866,7 +1879,7 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
         return;
     }
 
-    if(level==s->block_max_depth || get_cabac(&s->c, &s->block_state[4 + s_context])){
+    if(level==s->block_max_depth || get_rac(&s->c, &s->block_state[4 + s_context])){
         int type;
         int l = left->color[0];
         int cb= left->color[1];
@@ -1876,7 +1889,7 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
         int mx_context= av_log2(2*ABS(left->mx - top->mx)) + 0*av_log2(2*ABS(tr->mx - top->mx));
         int my_context= av_log2(2*ABS(left->my - top->my)) + 0*av_log2(2*ABS(tr->my - top->my));
         
-        type= get_cabac(&s->c, &s->block_state[1 + left->type + top->type]) ? BLOCK_INTRA : 0;
+        type= get_rac(&s->c, &s->block_state[1 + left->type + top->type]) ? BLOCK_INTRA : 0;
 
         if(type){
             l += get_symbol(&s->c, &s->block_state[32], 1);
@@ -2371,22 +2384,24 @@ static void correlate(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int 
 
 static void encode_header(SnowContext *s){
     int plane_index, level, orientation;
-    uint8_t kstate[32]={0};    
+    uint8_t kstate[32]; 
+    
+    memset(kstate, MID_STATE, sizeof(kstate));   
 
-    put_cabac(&s->c, kstate, s->keyframe);
+    put_rac(&s->c, kstate, s->keyframe);
     if(s->keyframe || s->always_reset)
         reset_contexts(s);
     if(s->keyframe){
         put_symbol(&s->c, s->header_state, s->version, 0);
-        put_cabac(&s->c, s->header_state, s->always_reset);
+        put_rac(&s->c, s->header_state, s->always_reset);
         put_symbol(&s->c, s->header_state, s->temporal_decomposition_type, 0);
         put_symbol(&s->c, s->header_state, s->temporal_decomposition_count, 0);
         put_symbol(&s->c, s->header_state, s->spatial_decomposition_count, 0);
         put_symbol(&s->c, s->header_state, s->colorspace_type, 0);
         put_symbol(&s->c, s->header_state, s->chroma_h_shift, 0);
         put_symbol(&s->c, s->header_state, s->chroma_v_shift, 0);
-        put_cabac(&s->c, s->header_state, s->spatial_scalability);
-//        put_cabac(&s->c, s->header_state, s->rate_scalability);
+        put_rac(&s->c, s->header_state, s->spatial_scalability);
+//        put_rac(&s->c, s->header_state, s->rate_scalability);
 
         for(plane_index=0; plane_index<2; plane_index++){
             for(level=0; level<s->spatial_decomposition_count; level++){
@@ -2406,9 +2421,11 @@ static void encode_header(SnowContext *s){
 
 static int decode_header(SnowContext *s){
     int plane_index, level, orientation;
-    uint8_t kstate[32]={0};    
+    uint8_t kstate[32];
 
-    s->keyframe= get_cabac(&s->c, kstate);
+    memset(kstate, MID_STATE, sizeof(kstate));   
+
+    s->keyframe= get_rac(&s->c, kstate);
     if(s->keyframe || s->always_reset)
         reset_contexts(s);
     if(s->keyframe){
@@ -2417,15 +2434,15 @@ static int decode_header(SnowContext *s){
             av_log(s->avctx, AV_LOG_ERROR, "version %d not supported", s->version);
             return -1;
         }
-        s->always_reset= get_cabac(&s->c, s->header_state);
+        s->always_reset= get_rac(&s->c, s->header_state);
         s->temporal_decomposition_type= get_symbol(&s->c, s->header_state, 0);
         s->temporal_decomposition_count= get_symbol(&s->c, s->header_state, 0);
         s->spatial_decomposition_count= get_symbol(&s->c, s->header_state, 0);
         s->colorspace_type= get_symbol(&s->c, s->header_state, 0);
         s->chroma_h_shift= get_symbol(&s->c, s->header_state, 0);
         s->chroma_v_shift= get_symbol(&s->c, s->header_state, 0);
-        s->spatial_scalability= get_cabac(&s->c, s->header_state);
-//        s->rate_scalability= get_cabac(&s->c, s->header_state);
+        s->spatial_scalability= get_rac(&s->c, s->header_state);
+//        s->rate_scalability= get_rac(&s->c, s->header_state);
 
         for(plane_index=0; plane_index<3; plane_index++){
             for(level=0; level<s->spatial_decomposition_count; level++){
@@ -2666,14 +2683,14 @@ static int frame_start(SnowContext *s){
 
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     SnowContext *s = avctx->priv_data;
-    CABACContext * const c= &s->c;
+    RangeCoder * const c= &s->c;
     AVFrame *pict = data;
     const int width= s->avctx->width;
     const int height= s->avctx->height;
     int level, orientation, plane_index;
 
-    ff_init_cabac_encoder(c, buf, buf_size);
-    ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
+    ff_init_range_encoder(c, buf, buf_size);
+    ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
     
     s->input_picture = *pict;
 
@@ -2759,8 +2776,8 @@ redo_frame:
         if(   plane_index==0 
            && pict->pict_type == P_TYPE 
            && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
-            ff_init_cabac_encoder(c, buf, buf_size);
-            ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
+            ff_init_range_encoder(c, buf, buf_size);
+            ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
             pict->pict_type= FF_I_TYPE;
             s->keyframe=1;
             reset_contexts(s);
@@ -2831,7 +2848,7 @@ STOP_TIMER("pred-conv")}
 
     emms_c();
     
-    return put_cabac_terminate(c, 1);
+    return ff_rac_terminate(c);
 }
 
 static void common_end(SnowContext *s){
@@ -2877,7 +2894,7 @@ static int decode_init(AVCodecContext *avctx)
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size){
     SnowContext *s = avctx->priv_data;
-    CABACContext * const c= &s->c;
+    RangeCoder * const c= &s->c;
     int bytes_read;
     AVFrame *picture = data;
     int level, orientation, plane_index;
@@ -2887,8 +2904,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     if (buf_size == 0)
         return 0;
 
-    ff_init_cabac_decoder(c, buf, buf_size);
-    ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
+    ff_init_range_decoder(c, buf, buf_size);
+    ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
     s->current_picture.pict_type= FF_I_TYPE; //FIXME I vs. P
     decode_header(s);
@@ -2956,8 +2973,8 @@ else
     
     *data_size = sizeof(AVFrame);
     
-    bytes_read= get_cabac_terminate(c);
-    if(bytes_read ==0) av_log(s->avctx, AV_LOG_ERROR, "error at end of frame\n");
+    bytes_read= c->bytestream - c->bytestream_start;
+    if(bytes_read ==0) av_log(s->avctx, AV_LOG_ERROR, "error at end of frame\n"); //FIXME
 
     return bytes_read;
 }
@@ -3032,7 +3049,7 @@ int main(){
         
     printf("testing AC coder\n");
     memset(s.header_state, 0, sizeof(s.header_state));
-    ff_init_cabac_encoder(&s.c, buffer[0], 256*256);
+    ff_init_range_encoder(&s.c, buffer[0], 256*256);
     ff_init_cabac_states(&s.c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
         
     for(i=-256; i<256; i++){
@@ -3040,10 +3057,10 @@ START_TIMER
         put_symbol(&s.c, s.header_state, i*i*i/3*ABS(i), 1);
 STOP_TIMER("put_symbol")
     }
-    put_cabac_terminate(&s.c, 1);
+    ff_rac_terminate(&s.c);
 
     memset(s.header_state, 0, sizeof(s.header_state));
-    ff_init_cabac_decoder(&s.c, buffer[0], 256*256);
+    ff_init_range_decoder(&s.c, buffer[0], 256*256);
     ff_init_cabac_states(&s.c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
     
     for(i=-256; i<256; i++){
