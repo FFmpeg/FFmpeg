@@ -463,6 +463,8 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src){
     COPY(me.map_generation);
     COPY(pb);
     COPY(dct_error_sum);
+    COPY(dct_count[0]);
+    COPY(dct_count[1]);
 #undef COPY
 }
 
@@ -743,7 +745,6 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->q_inter_matrix16);
     av_freep(&s->input_picture);
     av_freep(&s->reordered_input_picture);
-    av_freep(&s->dct_error_sum);
     av_freep(&s->dct_offset);
 
     if(s->picture){
@@ -3739,7 +3740,7 @@ void ff_mpeg_flush(AVCodecContext *avctx){
 #ifdef CONFIG_ENCODERS
 void ff_copy_bits(PutBitContext *pb, uint8_t *src, int length)
 {
-    const uint16_t *srcw= src;
+    const uint16_t *srcw= (uint16_t*)src;
     int words= length>>4;
     int bits= length&15;
     int i;
