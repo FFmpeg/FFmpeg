@@ -1190,10 +1190,12 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
         img_copy(dst->data[0], dst->linesize[0],
                  src->data[0], src->linesize[0],
                  dst_width, dst_height);
+
         for(i = 1;i <= 2; i++)
-            resize_func(dst->data[1], dst->linesize[1],
-                        src->data[1], src->linesize[1],
+            resize_func(dst->data[i], dst->linesize[i],
+                        src->data[i], src->linesize[i],
                         w, h);
+       return 0;
     }
 
     /* try to use an intermediate format */
