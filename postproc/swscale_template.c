@@ -244,96 +244,84 @@
 		"packuswb %%mm1, %%mm1		\n\t"
 #endif
 
-#define YSCALEYUV2PACKED \
-		"movd %6, %%mm6			\n\t" /*yalpha1*/\
-		"punpcklwd %%mm6, %%mm6		\n\t"\
-		"punpcklwd %%mm6, %%mm6		\n\t"\
-                "psraw $3, %%mm6		\n\t"\
-		"movq %%mm6, 3968(%2)		\n\t"\
-		"movd %7, %%mm5			\n\t" /*uvalpha1*/\
-		"punpcklwd %%mm5, %%mm5		\n\t"\
-		"punpcklwd %%mm5, %%mm5		\n\t"\
-                "psraw $3, %%mm5		\n\t"\
-		"movq %%mm5, 3976(%2)		\n\t"\
-		"xorl %%eax, %%eax		\n\t"\
+#define YSCALEYUV2PACKED(index, c) \
+		"movq "CHR_MMX_FILTER_OFFSET"+8("#c"), %%mm0\n\t"\
+		"movq "LUM_MMX_FILTER_OFFSET"+8("#c"), %%mm1\n\t"\
+		"psraw $3, %%mm0		\n\t"\
+		"psraw $3, %%mm1		\n\t"\
+		"movq %%mm0, "CHR_MMX_FILTER_OFFSET"+8("#c")\n\t"\
+		"movq %%mm1, "LUM_MMX_FILTER_OFFSET"+8("#c")\n\t"\
+		"xorl "#index", "#index"		\n\t"\
 		".balign 16			\n\t"\
 		"1:				\n\t"\
-		"movq (%2, %%eax), %%mm2	\n\t" /* uvbuf0[eax]*/\
-		"movq (%3, %%eax), %%mm3	\n\t" /* uvbuf1[eax]*/\
-		"movq 4096(%2, %%eax), %%mm5	\n\t" /* uvbuf0[eax+2048]*/\
-		"movq 4096(%3, %%eax), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
+		"movq (%2, "#index"), %%mm2	\n\t" /* uvbuf0[eax]*/\
+		"movq (%3, "#index"), %%mm3	\n\t" /* uvbuf1[eax]*/\
+		"movq 4096(%2, "#index"), %%mm5	\n\t" /* uvbuf0[eax+2048]*/\
+		"movq 4096(%3, "#index"), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
 		"psubw %%mm3, %%mm2		\n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
 		"psubw %%mm4, %%mm5		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
-		"movq 3976(%2), %%mm0		\n\t"\
+		"movq "CHR_MMX_FILTER_OFFSET"+8("#c"), %%mm0\n\t"\
 		"pmulhw %%mm0, %%mm2		\n\t" /* (uvbuf0[eax] - uvbuf1[eax])uvalpha1>>16*/\
 		"pmulhw %%mm0, %%mm5		\n\t" /* (uvbuf0[eax+2048] - uvbuf1[eax+2048])uvalpha1>>16*/\
 		"psraw $7, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
 		"psraw $7, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
 		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax]uvalpha1 - uvbuf1[eax](1-uvalpha1)*/\
 		"paddw %%mm5, %%mm4		\n\t" /* uvbuf0[eax+2048]uvalpha1 - uvbuf1[eax+2048](1-uvalpha1)*/\
-		"movq (%0, %%eax, 2), %%mm0	\n\t" /*buf0[eax]*/\
-		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf1[eax]*/\
-		"movq 8(%0, %%eax, 2), %%mm6	\n\t" /*buf0[eax]*/\
-		"movq 8(%1, %%eax, 2), %%mm7	\n\t" /*buf1[eax]*/\
+		"movq (%0, "#index", 2), %%mm0	\n\t" /*buf0[eax]*/\
+		"movq (%1, "#index", 2), %%mm1	\n\t" /*buf1[eax]*/\
+		"movq 8(%0, "#index", 2), %%mm6	\n\t" /*buf0[eax]*/\
+		"movq 8(%1, "#index", 2), %%mm7	\n\t" /*buf1[eax]*/\
 		"psubw %%mm1, %%mm0		\n\t" /* buf0[eax] - buf1[eax]*/\
 		"psubw %%mm7, %%mm6		\n\t" /* buf0[eax] - buf1[eax]*/\
-		"pmulhw 3968(%2), %%mm0		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
-		"pmulhw 3968(%2), %%mm6		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw "LUM_MMX_FILTER_OFFSET"+8("#c"), %%mm0\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw "LUM_MMX_FILTER_OFFSET"+8("#c"), %%mm6\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
 		"psraw $7, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"psraw $7, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"paddw %%mm0, %%mm1		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
 		"paddw %%mm6, %%mm7		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
                 
-#define YSCALEYUV2RGB \
-		"movd %6, %%mm6			\n\t" /*yalpha1*/\
-		"punpcklwd %%mm6, %%mm6		\n\t"\
-		"punpcklwd %%mm6, %%mm6		\n\t"\
-		"movq %%mm6, 3968(%2)		\n\t"\
-		"movd %7, %%mm5			\n\t" /*uvalpha1*/\
-		"punpcklwd %%mm5, %%mm5		\n\t"\
-		"punpcklwd %%mm5, %%mm5		\n\t"\
-		"movq %%mm5, 3976(%2)		\n\t"\
-		"xorl %%eax, %%eax		\n\t"\
+#define YSCALEYUV2RGB(index, c) \
+		"xorl "#index", "#index"	\n\t"\
 		".balign 16			\n\t"\
 		"1:				\n\t"\
-		"movq (%2, %%eax), %%mm2	\n\t" /* uvbuf0[eax]*/\
-		"movq (%3, %%eax), %%mm3	\n\t" /* uvbuf1[eax]*/\
-		"movq 4096(%2, %%eax), %%mm5	\n\t" /* uvbuf0[eax+2048]*/\
-		"movq 4096(%3, %%eax), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
+		"movq (%2, "#index"), %%mm2	\n\t" /* uvbuf0[eax]*/\
+		"movq (%3, "#index"), %%mm3	\n\t" /* uvbuf1[eax]*/\
+		"movq 4096(%2, "#index"), %%mm5\n\t" /* uvbuf0[eax+2048]*/\
+		"movq 4096(%3, "#index"), %%mm4\n\t" /* uvbuf1[eax+2048]*/\
 		"psubw %%mm3, %%mm2		\n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
 		"psubw %%mm4, %%mm5		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
-		"movq 3976(%2), %%mm0		\n\t"\
+		"movq "CHR_MMX_FILTER_OFFSET"+8("#c"), %%mm0\n\t"\
 		"pmulhw %%mm0, %%mm2		\n\t" /* (uvbuf0[eax] - uvbuf1[eax])uvalpha1>>16*/\
 		"pmulhw %%mm0, %%mm5		\n\t" /* (uvbuf0[eax+2048] - uvbuf1[eax+2048])uvalpha1>>16*/\
 		"psraw $4, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
 		"psraw $4, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
 		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax]uvalpha1 - uvbuf1[eax](1-uvalpha1)*/\
 		"paddw %%mm5, %%mm4		\n\t" /* uvbuf0[eax+2048]uvalpha1 - uvbuf1[eax+2048](1-uvalpha1)*/\
-		"psubw "MANGLE(w400)", %%mm3	\n\t" /* (U-128)8*/\
-		"psubw "MANGLE(w400)", %%mm4	\n\t" /* (V-128)8*/\
+		"psubw "U_OFFSET"("#c"), %%mm3	\n\t" /* (U-128)8*/\
+		"psubw "V_OFFSET"("#c"), %%mm4	\n\t" /* (V-128)8*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
 		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
-		"pmulhw "MANGLE(ugCoeff)", %%mm3\n\t"\
-		"pmulhw "MANGLE(vgCoeff)", %%mm4\n\t"\
+		"pmulhw "UG_COEFF"("#c"), %%mm3\n\t"\
+		"pmulhw "VG_COEFF"("#c"), %%mm4\n\t"\
 	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
-		"movq (%0, %%eax, 2), %%mm0	\n\t" /*buf0[eax]*/\
-		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf1[eax]*/\
-		"movq 8(%0, %%eax, 2), %%mm6	\n\t" /*buf0[eax]*/\
-		"movq 8(%1, %%eax, 2), %%mm7	\n\t" /*buf1[eax]*/\
+		"movq (%0, "#index", 2), %%mm0	\n\t" /*buf0[eax]*/\
+		"movq (%1, "#index", 2), %%mm1	\n\t" /*buf1[eax]*/\
+		"movq 8(%0, "#index", 2), %%mm6\n\t" /*buf0[eax]*/\
+		"movq 8(%1, "#index", 2), %%mm7\n\t" /*buf1[eax]*/\
 		"psubw %%mm1, %%mm0		\n\t" /* buf0[eax] - buf1[eax]*/\
 		"psubw %%mm7, %%mm6		\n\t" /* buf0[eax] - buf1[eax]*/\
-		"pmulhw 3968(%2), %%mm0		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
-		"pmulhw 3968(%2), %%mm6		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw "LUM_MMX_FILTER_OFFSET"+8("#c"), %%mm0\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw "LUM_MMX_FILTER_OFFSET"+8("#c"), %%mm6\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
 		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"psraw $4, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"paddw %%mm0, %%mm1		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
 		"paddw %%mm6, %%mm7		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
-		"pmulhw "MANGLE(ubCoeff)", %%mm2\n\t"\
-		"pmulhw "MANGLE(vrCoeff)", %%mm5\n\t"\
-		"psubw "MANGLE(w80)", %%mm1	\n\t" /* 8(Y-16)*/\
-		"psubw "MANGLE(w80)", %%mm7	\n\t" /* 8(Y-16)*/\
-		"pmulhw "MANGLE(yCoeff)", %%mm1	\n\t"\
-		"pmulhw "MANGLE(yCoeff)", %%mm7	\n\t"\
+		"pmulhw "UB_COEFF"("#c"), %%mm2\n\t"\
+		"pmulhw "VR_COEFF"("#c"), %%mm5\n\t"\
+		"psubw "Y_OFFSET"("#c"), %%mm1	\n\t" /* 8(Y-16)*/\
+		"psubw "Y_OFFSET"("#c"), %%mm7	\n\t" /* 8(Y-16)*/\
+		"pmulhw "Y_COEFF"("#c"), %%mm1	\n\t"\
+		"pmulhw "Y_COEFF"("#c"), %%mm7	\n\t"\
 	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
 		"paddw %%mm3, %%mm4		\n\t"\
 		"movq %%mm2, %%mm0		\n\t"\
@@ -488,7 +476,7 @@
 		"packuswb %%mm3, %%mm4		\n\t"\
 		"pxor %%mm7, %%mm7		\n\t"
 
-#define WRITEBGR32 \
+#define WRITEBGR32(dst, dstw, index) \
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
 			"movq %%mm2, %%mm1		\n\t" /* B */\
 			"movq %%mm5, %%mm6		\n\t" /* R */\
@@ -503,16 +491,16 @@
 			"punpcklwd %%mm6, %%mm1		\n\t" /* 0RGB0RGB 2 */\
 			"punpckhwd %%mm6, %%mm3		\n\t" /* 0RGB0RGB 3 */\
 \
-			MOVNTQ(%%mm0, (%4, %%eax, 4))\
-			MOVNTQ(%%mm2, 8(%4, %%eax, 4))\
-			MOVNTQ(%%mm1, 16(%4, %%eax, 4))\
-			MOVNTQ(%%mm3, 24(%4, %%eax, 4))\
+			MOVNTQ(%%mm0, (dst, index, 4))\
+			MOVNTQ(%%mm2, 8(dst, index, 4))\
+			MOVNTQ(%%mm1, 16(dst, index, 4))\
+			MOVNTQ(%%mm3, 24(dst, index, 4))\
 \
-			"addl $8, %%eax			\n\t"\
-			"cmpl %5, %%eax			\n\t"\
+			"addl $8, "#index"		\n\t"\
+			"cmpl "#dstw", "#index"		\n\t"\
 			" jb 1b				\n\t"
 
-#define WRITEBGR16 \
+#define WRITEBGR16(dst, dstw, index) \
 			"pand "MANGLE(bF8)", %%mm2	\n\t" /* B */\
 			"pand "MANGLE(bFC)", %%mm4	\n\t" /* G */\
 			"pand "MANGLE(bF8)", %%mm5	\n\t" /* R */\
@@ -532,14 +520,14 @@
 			"por %%mm3, %%mm2		\n\t"\
 			"por %%mm4, %%mm1		\n\t"\
 \
-			MOVNTQ(%%mm2, (%4, %%eax, 2))\
-			MOVNTQ(%%mm1, 8(%4, %%eax, 2))\
+			MOVNTQ(%%mm2, (dst, index, 2))\
+			MOVNTQ(%%mm1, 8(dst, index, 2))\
 \
-			"addl $8, %%eax			\n\t"\
-			"cmpl %5, %%eax			\n\t"\
+			"addl $8, "#index"		\n\t"\
+			"cmpl "#dstw", "#index"		\n\t"\
 			" jb 1b				\n\t"
 
-#define WRITEBGR15 \
+#define WRITEBGR15(dst, dstw, index) \
 			"pand "MANGLE(bF8)", %%mm2	\n\t" /* B */\
 			"pand "MANGLE(bF8)", %%mm4	\n\t" /* G */\
 			"pand "MANGLE(bF8)", %%mm5	\n\t" /* R */\
@@ -560,14 +548,14 @@
 			"por %%mm3, %%mm2		\n\t"\
 			"por %%mm4, %%mm1		\n\t"\
 \
-			MOVNTQ(%%mm2, (%4, %%eax, 2))\
-			MOVNTQ(%%mm1, 8(%4, %%eax, 2))\
+			MOVNTQ(%%mm2, (dst, index, 2))\
+			MOVNTQ(%%mm1, 8(dst, index, 2))\
 \
-			"addl $8, %%eax			\n\t"\
-			"cmpl %5, %%eax			\n\t"\
+			"addl $8, "#index"		\n\t"\
+			"cmpl "#dstw", "#index"		\n\t"\
 			" jb 1b				\n\t"
 
-#define WRITEBGR24OLD \
+#define WRITEBGR24OLD(dst, dstw, index) \
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
 			"movq %%mm2, %%mm1		\n\t" /* B */\
 			"movq %%mm5, %%mm6		\n\t" /* R */\
@@ -614,16 +602,16 @@
 			"psllq $16, %%mm3		\n\t" /* RGBRGB00 3 */\
 			"por %%mm4, %%mm3		\n\t" /* RGBRGBRG 2.5 */\
 \
-			MOVNTQ(%%mm0, (%%ebx))\
-			MOVNTQ(%%mm2, 8(%%ebx))\
-			MOVNTQ(%%mm3, 16(%%ebx))\
-			"addl $24, %%ebx		\n\t"\
+			MOVNTQ(%%mm0, (dst))\
+			MOVNTQ(%%mm2, 8(dst))\
+			MOVNTQ(%%mm3, 16(dst))\
+			"addl $24, "#dst"		\n\t"\
 \
-			"addl $8, %%eax			\n\t"\
-			"cmpl %5, %%eax			\n\t"\
+			"addl $8, "#index"		\n\t"\
+			"cmpl "#dstw", "#index"		\n\t"\
 			" jb 1b				\n\t"
 
-#define WRITEBGR24MMX \
+#define WRITEBGR24MMX(dst, dstw, index) \
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
 			"movq %%mm2, %%mm1		\n\t" /* B */\
 			"movq %%mm5, %%mm6		\n\t" /* R */\
@@ -657,26 +645,26 @@
 			"movq %%mm2, %%mm6		\n\t" /* 0RGBRGB0 1 */\
 			"psllq $40, %%mm2		\n\t" /* GB000000 1 */\
 			"por %%mm2, %%mm0		\n\t" /* GBRGBRGB 0 */\
-			MOVNTQ(%%mm0, (%%ebx))\
+			MOVNTQ(%%mm0, (dst))\
 \
 			"psrlq $24, %%mm6		\n\t" /* 0000RGBR 1 */\
 			"movq %%mm1, %%mm5		\n\t" /* 0RGBRGB0 2 */\
 			"psllq $24, %%mm1		\n\t" /* BRGB0000 2 */\
 			"por %%mm1, %%mm6		\n\t" /* BRGBRGBR 1 */\
-			MOVNTQ(%%mm6, 8(%%ebx))\
+			MOVNTQ(%%mm6, 8(dst))\
 \
 			"psrlq $40, %%mm5		\n\t" /* 000000RG 2 */\
 			"psllq $8, %%mm3		\n\t" /* RGBRGB00 3 */\
 			"por %%mm3, %%mm5		\n\t" /* RGBRGBRG 2 */\
-			MOVNTQ(%%mm5, 16(%%ebx))\
+			MOVNTQ(%%mm5, 16(dst))\
 \
-			"addl $24, %%ebx		\n\t"\
+			"addl $24, "#dst"		\n\t"\
 \
-			"addl $8, %%eax			\n\t"\
-			"cmpl %5, %%eax			\n\t"\
+			"addl $8, "#index"			\n\t"\
+			"cmpl "#dstw", "#index"			\n\t"\
 			" jb 1b				\n\t"
 
-#define WRITEBGR24MMX2 \
+#define WRITEBGR24MMX2(dst, dstw, index) \
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
 			"movq "MANGLE(M24A)", %%mm0	\n\t"\
 			"movq "MANGLE(M24C)", %%mm7	\n\t"\
@@ -691,7 +679,7 @@
 			"psllq $8, %%mm3		\n\t" /* G2        G1       G0    */\
 			"por %%mm1, %%mm6		\n\t"\
 			"por %%mm3, %%mm6		\n\t"\
-			MOVNTQ(%%mm6, (%%ebx))\
+			MOVNTQ(%%mm6, (dst))\
 \
 			"psrlq $8, %%mm4		\n\t" /* 00 G7 G6 G5  G4 G3 G2 G1 */\
 			"pshufw $0xA5, %%mm2, %%mm1	\n\t" /* B5 B4 B5 B4  B3 B2 B3 B2 */\
@@ -704,7 +692,7 @@
 \
 			"por %%mm1, %%mm3		\n\t" /* B5    G4 B4     G3 B3    */\
 			"por %%mm3, %%mm6		\n\t"\
-			MOVNTQ(%%mm6, 8(%%ebx))\
+			MOVNTQ(%%mm6, 8(dst))\
 \
 			"pshufw $0xFF, %%mm2, %%mm1	\n\t" /* B7 B6 B7 B6  B7 B6 B6 B7 */\
 			"pshufw $0xFA, %%mm4, %%mm3	\n\t" /* 00 G7 00 G7  G6 G5 G6 G5 */\
@@ -716,12 +704,12 @@
 \
 			"por %%mm1, %%mm3		\n\t"\
 			"por %%mm3, %%mm6		\n\t"\
-			MOVNTQ(%%mm6, 16(%%ebx))\
+			MOVNTQ(%%mm6, 16(dst))\
 \
-			"addl $24, %%ebx		\n\t"\
+			"addl $24, "#dst"		\n\t"\
 \
-			"addl $8, %%eax			\n\t"\
-			"cmpl %5, %%eax			\n\t"\
+			"addl $8, "#index"		\n\t"\
+			"cmpl "#dstw", "#index"		\n\t"\
 			" jb 1b				\n\t"
 
 #ifdef HAVE_MMX2
@@ -732,7 +720,7 @@
 #define WRITEBGR24 WRITEBGR24MMX
 #endif
 
-#define WRITEYUY2 \
+#define WRITEYUY2(dst, dstw, index) \
 			"packuswb %%mm3, %%mm3		\n\t"\
 			"packuswb %%mm4, %%mm4		\n\t"\
 			"packuswb %%mm7, %%mm1		\n\t"\
@@ -741,18 +729,17 @@
 			"punpcklbw %%mm3, %%mm1		\n\t"\
 			"punpckhbw %%mm3, %%mm7		\n\t"\
 \
-			MOVNTQ(%%mm1, (%4, %%eax, 2))\
-			MOVNTQ(%%mm7, 8(%4, %%eax, 2))\
+			MOVNTQ(%%mm1, (dst, index, 2))\
+			MOVNTQ(%%mm7, 8(dst, index, 2))\
 \
-			"addl $8, %%eax			\n\t"\
-			"cmpl %5, %%eax			\n\t"\
+			"addl $8, "#index"		\n\t"\
+			"cmpl "#dstw", "#index"		\n\t"\
 			" jb 1b				\n\t"
 
 
 static inline void RENAME(yuv2yuvX)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW,
-				    int32_t * lumMmxFilter, int32_t * chrMmxFilter)
+				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW)
 {
 	int dummy=0;
 #ifdef HAVE_MMX
@@ -862,7 +849,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 		{
 			asm volatile(
 				YSCALEYUV2RGBX
-				WRITEBGR32
+				WRITEBGR32(%4, %5, %%eax)
 
 			:: "r" (&c->redDither), 
 			   "m" (dummy), "m" (dummy), "m" (dummy),
@@ -877,7 +864,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				YSCALEYUV2RGBX
 				"leal (%%eax, %%eax, 2), %%ebx	\n\t" //FIXME optimize
 				"addl %4, %%ebx			\n\t"
-				WRITEBGR24
+				WRITEBGR24(%%ebx, %5, %%eax)
 
 			:: "r" (&c->redDither), 
 			   "m" (dummy), "m" (dummy), "m" (dummy),
@@ -897,7 +884,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR15
+				WRITEBGR15(%4, %5, %%eax)
 
 			:: "r" (&c->redDither), 
 			   "m" (dummy), "m" (dummy), "m" (dummy),
@@ -917,7 +904,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR16
+				WRITEBGR16(%4, %5, %%eax)
 
 			:: "r" (&c->redDither), 
 			   "m" (dummy), "m" (dummy), "m" (dummy),
@@ -936,7 +923,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				"psraw $3, %%mm4		\n\t"
 				"psraw $3, %%mm1		\n\t"
 				"psraw $3, %%mm7		\n\t"
-				WRITEYUY2
+				WRITEYUY2(%4, %5, %%eax)
 
 			:: "r" (&c->redDither), 
 			   "m" (dummy), "m" (dummy), "m" (dummy),
@@ -1183,30 +1170,37 @@ FULL_YSCALEYUV2RGB
 #ifdef HAVE_MMX
 	switch(c->dstFormat)
 	{
+//Note 8280 == DSTW_OFFSET but the preprocessor cant handle that there :(
 	case IMGFMT_BGR32:
 			asm volatile(
-				YSCALEYUV2RGB
-				WRITEBGR32
+				"movl %%esp, "ESP_OFFSET"(%5)		\n\t"
+				"movl %4, %%esp				\n\t"
+				YSCALEYUV2RGB(%%eax, %5)
+				WRITEBGR32(%%esp, 8280(%5), %%eax)
+				"movl "ESP_OFFSET"(%5), %%esp		\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
-			"m" (yalpha1), "m" (uvalpha1)
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
+			"r" (&c->redDither)
 			: "%eax"
 			);
 			return;
 	case IMGFMT_BGR24:
 			asm volatile(
-				"movl %4, %%ebx			\n\t"
-				YSCALEYUV2RGB
-				WRITEBGR24
-
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstW),
-			"m" (yalpha1), "m" (uvalpha1)
-			: "%eax", "%ebx"
+				"movl %%esp, "ESP_OFFSET"(%5)		\n\t"
+				"movl %4, %%esp			\n\t"
+				YSCALEYUV2RGB(%%eax, %5)
+				WRITEBGR24(%%esp, 8280(%5), %%eax)
+				"movl "ESP_OFFSET"(%5), %%esp		\n\t"
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
+			"r" (&c->redDither)
+			: "%eax"
 			);
 			return;
 	case IMGFMT_BGR15:
 			asm volatile(
-				YSCALEYUV2RGB
+				"movl %%esp, "ESP_OFFSET"(%5)		\n\t"
+				"movl %4, %%esp				\n\t"
+				YSCALEYUV2RGB(%%eax, %5)
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1214,16 +1208,19 @@ FULL_YSCALEYUV2RGB
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR15
+				WRITEBGR15(%%esp, 8280(%5), %%eax)
+				"movl "ESP_OFFSET"(%5), %%esp		\n\t"
 
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
-			"m" (yalpha1), "m" (uvalpha1)
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
+			"r" (&c->redDither)
 			: "%eax"
 			);
 			return;
 	case IMGFMT_BGR16:
 			asm volatile(
-				YSCALEYUV2RGB
+				"movl %%esp, "ESP_OFFSET"(%5)		\n\t"
+				"movl %4, %%esp				\n\t"
+				YSCALEYUV2RGB(%%eax, %5)
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
 				"paddusb "MANGLE(b5Dither)", %%mm2\n\t"
@@ -1231,20 +1228,22 @@ FULL_YSCALEYUV2RGB
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR16
-
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
-			"m" (yalpha1), "m" (uvalpha1)
+				WRITEBGR16(%%esp, 8280(%5), %%eax)
+				"movl "ESP_OFFSET"(%5), %%esp		\n\t"
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
+			"r" (&c->redDither)
 			: "%eax"
 			);
 			return;
 	case IMGFMT_YUY2:
 			asm volatile(
-				YSCALEYUV2PACKED
-				WRITEYUY2
-
-			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
-			"m" (yalpha1), "m" (uvalpha1)
+				"movl %%esp, "ESP_OFFSET"(%5)		\n\t"
+				"movl %4, %%esp				\n\t"
+				YSCALEYUV2PACKED(%%eax, %5)
+				WRITEYUY2(%%esp, 8280(%5), %%eax)
+				"movl "ESP_OFFSET"(%5), %%esp		\n\t"
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest),
+			"r" (&c->redDither)
 			: "%eax"
 			);
 			return;
@@ -1283,7 +1282,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 		case IMGFMT_BGR32:
 			asm volatile(
 				YSCALEYUV2RGB1
-				WRITEBGR32
+				WRITEBGR32(%4, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
@@ -1293,7 +1292,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 			asm volatile(
 				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB1
-				WRITEBGR24
+				WRITEBGR24(%%ebx, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
@@ -1308,7 +1307,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 				"paddusb "MANGLE(g5Dither)", %%mm4\n\t"
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
-				WRITEBGR15
+				WRITEBGR15(%4, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
@@ -1324,7 +1323,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR16
+				WRITEBGR16(%4, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
@@ -1333,7 +1332,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 		case IMGFMT_YUY2:
 			asm volatile(
 				YSCALEYUV2PACKED1
-				WRITEYUY2
+				WRITEYUY2(%4, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
@@ -1348,7 +1347,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 		case IMGFMT_BGR32:
 			asm volatile(
 				YSCALEYUV2RGB1b
-				WRITEBGR32
+				WRITEBGR32(%4, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
@@ -1358,7 +1357,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 			asm volatile(
 				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB1b
-				WRITEBGR24
+				WRITEBGR24(%%ebx, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
@@ -1373,7 +1372,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 				"paddusb "MANGLE(g5Dither)", %%mm4\n\t"
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
-				WRITEBGR15
+				WRITEBGR15(%4, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
@@ -1389,7 +1388,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 				"paddusb "MANGLE(r5Dither)", %%mm5\n\t"
 #endif
 
-				WRITEBGR16
+				WRITEBGR16(%4, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
@@ -1398,7 +1397,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *
 		case IMGFMT_YUY2:
 			asm volatile(
 				YSCALEYUV2PACKED1b
-				WRITEYUY2
+				WRITEYUY2(%4, %5, %%eax)
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
@@ -2719,6 +2718,25 @@ i--;
 #endif
 	    if(dstY < dstH-2)
 	    {
+		int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
+		int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
+#ifdef HAVE_MMX
+		int i;
+		for(i=0; i<vLumFilterSize; i++)
+		{
+			lumMmxFilter[4*i+0]= (int32_t)lumSrcPtr[i];
+			lumMmxFilter[4*i+2]= 
+			lumMmxFilter[4*i+3]= 
+				((uint16_t)vLumFilter[dstY*vLumFilterSize + i])*0x10001;
+		}
+		for(i=0; i<vChrFilterSize; i++)
+		{
+			chrMmxFilter[4*i+0]= (int32_t)chrSrcPtr[i];
+			chrMmxFilter[4*i+2]= 
+			chrMmxFilter[4*i+3]= 
+				((uint16_t)vChrFilter[chrDstY*vChrFilterSize + i])*0x10001;
+		}
+#endif
 		if(isPlanarYUV(dstFormat) || isGray(dstFormat)) //YV12 like
 		{
 			const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
@@ -2731,37 +2749,14 @@ i--;
 			}
 			else //General YV12
 			{
-				int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
-				int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-				int i;
-#ifdef HAVE_MMX
-				for(i=0; i<vLumFilterSize; i++)
-				{
-					lumMmxFilter[4*i+0]= (int32_t)lumSrcPtr[i];
-					lumMmxFilter[4*i+2]= 
-					lumMmxFilter[4*i+3]= 
-						((uint16_t)vLumFilter[dstY*vLumFilterSize + i])*0x10001;
-				}
-				for(i=0; i<vChrFilterSize; i++)
-				{
-					chrMmxFilter[4*i+0]= (int32_t)chrSrcPtr[i];
-					chrMmxFilter[4*i+2]= 
-					chrMmxFilter[4*i+3]= 
-						((uint16_t)vChrFilter[chrDstY*vChrFilterSize + i])*0x10001;
-				}
-#endif
 				RENAME(yuv2yuvX)(c,
 					vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
 					vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
-					dest, uDest, vDest, dstW, chrDstW,
-					lumMmxFilter, chrMmxFilter);
+					dest, uDest, vDest, dstW, chrDstW);
 			}
 		}
 		else
 		{
-			int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
-			int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-
 			ASSERT(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
 			ASSERT(chrSrcPtr + vChrFilterSize - 1 < chrPixBuf + vChrBufSize*2);
 			if(vLumFilterSize == 1 && vChrFilterSize == 2) //Unscaled RGB
@@ -2775,29 +2770,11 @@ i--;
 			{
 				int lumAlpha= vLumFilter[2*dstY+1];
 				int chrAlpha= vChrFilter[2*dstY+1];
-
 				RENAME(yuv2packed2)(c, *lumSrcPtr, *(lumSrcPtr+1), *chrSrcPtr, *(chrSrcPtr+1),
 						 dest, dstW, lumAlpha, chrAlpha, dstY);
 			}
 			else //General RGB
 			{
-				int i;
-#ifdef HAVE_MMX
-				for(i=0; i<vLumFilterSize; i++)
-				{
-					lumMmxFilter[4*i+0]= (int32_t)lumSrcPtr[i];
-					lumMmxFilter[4*i+2]= 
-					lumMmxFilter[4*i+3]= 
-						((uint16_t)vLumFilter[dstY*vLumFilterSize + i])*0x10001;
-				}
-				for(i=0; i<vChrFilterSize; i++)
-				{
-					chrMmxFilter[4*i+0]= (int32_t)chrSrcPtr[i];
-					chrMmxFilter[4*i+2]= 
-					chrMmxFilter[4*i+3]= 
-						((uint16_t)vChrFilter[chrDstY*vChrFilterSize + i])*0x10001;
-				}
-#endif
 				RENAME(yuv2packedX)(c,
 					vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
 					vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,

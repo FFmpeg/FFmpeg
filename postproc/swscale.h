@@ -50,7 +50,7 @@
 
 /* this struct should be aligned on at least 32-byte boundary */
 typedef struct SwsContext{
-	int srcW, srcH, dstW, dstH;
+	int srcW, srcH, dstH;
 	int chrSrcW, chrSrcH, chrDstW, chrDstH;
 	int lumXInc, chrXInc;
 	int lumYInc, chrYInc;
@@ -117,6 +117,8 @@ typedef struct SwsContext{
 #define V_OFFSET     "10*8"
 #define LUM_MMX_FILTER_OFFSET "11*8"
 #define CHR_MMX_FILTER_OFFSET "11*8+4*4*256"
+#define DSTW_OFFSET  "11*8+4*4*256*2"
+#define ESP_OFFSET  "11*8+4*4*256*2+4"
                   
 	uint64_t redDither   __attribute__((aligned(8)));
 	uint64_t greenDither __attribute__((aligned(8)));
@@ -132,7 +134,8 @@ typedef struct SwsContext{
 	uint64_t vOffset     __attribute__((aligned(8)));
 	int32_t  lumMmxFilter[4*MAX_FILTER_SIZE];
 	int32_t  chrMmxFilter[4*MAX_FILTER_SIZE];
-	
+	int dstW;
+	int esp;
 } SwsContext;
 //FIXME check init (where 0)
 //FIXME split private & public
