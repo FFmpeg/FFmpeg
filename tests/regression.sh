@@ -4,6 +4,14 @@
 #
 #
 #set -x
+# Even in the 21st century some diffs are not supporting -u.
+diff -u $0 $0 > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  diff_cmd="diff -u"
+else
+  diff_cmd="diff"
+fi
+
 set -e
 
 datadir="./data"
@@ -61,7 +69,7 @@ do_ffmpeg()
     shift
     echo $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 $*
     $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
-    grep -v -e ^Stream -e ^Press -e ^Input -e ^Output -e ^frame -e '^  Stream' /tmp/ffmpeg$$ || true
+    egrep -v "^(Stream|Press|Input|Output|frame|  Stream)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     md5sum -b $f >> $logfile
     if [ $f = $raw_dst ] ; then
@@ -377,7 +385,7 @@ fi
 
 
 
-if diff -u $logfile $reffile ; then
+if $diff_cmd $logfile $reffile ; then
     echo 
     echo Regression test succeeded.
     exit 0

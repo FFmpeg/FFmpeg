@@ -73,4 +73,4 @@ dsptest: dsptest.c $(DSPDEPS)
 
 clean:
 	rm -rf vsynth1 vsynth2 data
-	rm -f asynth1.sw *~ audiogen videogen
+	rm -f asynth1.sw *~ audiogen videogen rotozoom tiny_psnr 

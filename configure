@@ -568,8 +568,7 @@ EOF
 
 freetype2=no
 if test "x$targetos" != "xBeOS" && test "$os2" != "yes"; then
-  which freetype-config > /dev/null
-  if test $? -eq 0; then
+  if test "`which freetype-config`" != ""; then
     if $cc -o $TMPE $TMPC `freetype-config --cflags` `freetype-config --libs`  2> /dev/null ; then
       freetype2=yes
     fi
@@ -862,6 +861,10 @@ fi
 if test "$os2" = "yes" ; then
   echo "#define CONFIG_OS2 1" >> $TMPH
   echo "CONFIG_OS2=yes" >> config.mak
+fi
+
+if test "$TARGET_OS" = "SunOS" ; then
+  echo "#define CONFIG_SUNOS 1" >> $TMPH
 fi
 
 if test "$darwin" = "yes"; then

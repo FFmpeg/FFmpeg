@@ -53,6 +53,12 @@ INSTALLVHOOK=install-vhook
 CLEANVHOOK=clean-vhook
 endif
 
+ifeq ($(TARGET_OS), SunOS)
+TEST=/usr/bin/test
+else
+TEST=test
+endif
+
 OBJS = ffmpeg.o ffserver.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBS = -L./libavformat -lavformat -L./libavcodec -lavcodec
@@ -112,7 +118,7 @@ endif
 
 .libs: lib
 	@test -f .libs || touch .libs
-	@for i in $(DEP_LIBS) ; do if test $$i -nt .libs ; then touch .libs; fi ; done
+	@for i in $(DEP_LIBS) ; do if $(TEST) $$i -nt .libs ; then touch .libs; fi ; done
 
 clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
