@@ -253,6 +253,7 @@ extern AVImageFormat pnm_image_format;
 extern AVImageFormat pbm_image_format;
 extern AVImageFormat pgm_image_format;
 extern AVImageFormat ppm_image_format;
+extern AVImageFormat pam_image_format;
 extern AVImageFormat pgmyuv_image_format;
 extern AVImageFormat yuv_image_format;
 #ifdef CONFIG_ZLIB

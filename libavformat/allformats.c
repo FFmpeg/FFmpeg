@@ -73,6 +73,7 @@ void av_register_all(void)
     av_register_image_format(&pbm_image_format);
     av_register_image_format(&pgm_image_format);
     av_register_image_format(&ppm_image_format);
+    av_register_image_format(&pam_image_format);
     av_register_image_format(&pgmyuv_image_format);
     av_register_image_format(&yuv_image_format);
 #ifdef CONFIG_ZLIB
