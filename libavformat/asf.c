@@ -1062,12 +1062,15 @@ static int asf_get_packet(AVFormatContext *s)
     ASFContext *asf = s->priv_data;
     ByteIOContext *pb = &s->pb;
     uint32_t packet_length, padsize;
-    int rsize = 11;
-    int c = get_byte(pb);
+    int rsize = 9;
+    int c;
+    
+    assert((url_ftell(&s->pb) - s->data_offset) % asf->packet_size == 0);
+    
+    c = get_byte(pb);
     if (c != 0x82) {
         if (!url_feof(pb))
 	    printf("ff asf bad header %x  at:%lld\n", c, url_ftell(pb));
-	return -EIO;
     }
     if ((c & 0x0f) == 2) { // always true for now
 	if (get_le16(pb) != 0) {
@@ -1075,6 +1078,11 @@ static int asf_get_packet(AVFormatContext *s)
 		printf("ff asf bad non zero\n");
 	    return -EIO;
 	}
+        rsize+=2;
+/*    }else{
+        if (!url_feof(pb))
+	    printf("ff asf bad header %x  at:%lld\n", c, url_ftell(pb));
+	return -EIO;*/
     }
 
     asf->packet_flags = get_byte(pb);
