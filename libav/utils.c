@@ -880,55 +880,45 @@ INT64 parse_date(const char *datestr, int duration)
 {
     const char *p;
     INT64 t;
-    int sec;
+    struct tm dt;
+
+    memset(&dt, 0, sizeof(dt));
 
     p = datestr;
     if (!duration) {
-        static const UINT8 months[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-        int year, month, day, i;
-
         if (strlen(p) >= 5 && p[4] == '-') {
-            
-            year = strtol(p, (char **)&p, 10);
+            dt.tm_year = strtol(p, (char **)&p, 10);
             if (*p)
                 p++;
-            month = strtol(p, (char **)&p, 10) - 1;
+            dt.tm_mon = strtol(p, (char **)&p, 10) - 1;
             if (*p)
                 p++;
-            day = strtol(p, (char **)&p, 10) - 1;
+            dt.tm_mday = strtol(p, (char **)&p, 10) - 1;
             if (*p)
                 p++;
-            day += (year - 1970) * 365;
-            /* if >= March, take February of current year into account too */
-            if (month >= 2)
-                year++;
-            for(i=1970;i<year;i++) {
-                if ((i % 100) == 0) {
-                    if ((i % 400) == 0) day++;
-                } else if ((i % 4) == 0) {
-                    day++;
-                }
-            }
-            for(i=0;i<month;i++)
-                day += months[i];
         } else {
-            day = (time(NULL) / (3600 * 24));
+            time_t now = time(0);
+            dt = *localtime(&now);
+            dt.tm_hour = 0;
+            dt.tm_min = 0;
+            dt.tm_sec = 0;
         }
-        t = day * (3600 * 24);
-    } else {
-        t = 0;
     }
     
-    sec = 0;
-    for(;;) {
-        int val;
-        val = strtol(p, (char **)&p, 10);
-        sec = sec * 60 + val;
-        if (*p != ':')
-            break;
+    dt.tm_hour = strtol(p, (char **)&p, 10);
+    if (*p)
         p++;
+    dt.tm_min = strtol(p, (char **)&p, 10);
+    if (*p)
+        p++;
+    dt.tm_sec = strtol(p, (char **)&p, 10);
+
+    if (duration) {
+        t = (INT64) 1000000 * (dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec);
+    } else {
+        t = (INT64) 1000000 * mktime(&dt);
     }
-    t = (t + sec) * 1000000;
+
     if (*p == '.') {
         int val, n;
         p++;
@@ -945,7 +935,7 @@ INT64 parse_date(const char *datestr, int duration)
     return t;
 }
 
-/* syntax: '?tag1=val1&tag2=val2...'. No URL decoding is done. Return
+/* syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done. Return
    1 if found */
 int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
 {
@@ -967,8 +957,12 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
         if (*p == '=') {
             p++;
             while (*p != '&' && *p != '\0') {
-                if ((q - arg) < arg_size - 1)
-                    *q++ = *p;
+                if ((q - arg) < arg_size - 1) {
+                    if (*p == '+')
+                        *q++ = ' ';
+                    else
+                        *q++ = *p;
+                }
                 p++;
             }
             *q = '\0';
