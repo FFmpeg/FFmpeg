@@ -227,6 +227,8 @@ int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
 
 void av_register_input_format(AVInputFormat *format);
 void av_register_output_format(AVOutputFormat *format);
+AVOutputFormat *guess_stream_format(const char *short_name, 
+                                    const char *filename, const char *mime_type);
 AVOutputFormat *guess_format(const char *short_name, 
                              const char *filename, const char *mime_type);
 
