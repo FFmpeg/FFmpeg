@@ -38,10 +38,6 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
 static int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded);
 
-/* This are for H.263+ UMV */
-/* Shouldn't be here */
-static int umvplus = 0;
-static int umvplus_dec = 0;
 
 int h263_get_picture_format(int width, int height)
 {
@@ -102,8 +98,8 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
             put_bits(&s->pb, 3, format);
             
         put_bits(&s->pb,1,0); /* Custom PCF: off */
-        umvplus = (s->pict_type == P_TYPE) && s->unrestricted_mv;
-        put_bits(&s->pb, 1, umvplus); /* Unrestricted Motion Vector */
+        s->umvplus = (s->pict_type == P_TYPE) && s->unrestricted_mv;
+        put_bits(&s->pb, 1, s->umvplus); /* Unrestricted Motion Vector */
         put_bits(&s->pb,1,0); /* SAC: off */
         put_bits(&s->pb,1,0); /* Advanced Prediction Mode: off */
         put_bits(&s->pb,1,0); /* Advanced Intra Coding: off */
@@ -137,7 +133,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         }
         
         /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
-        if (umvplus)
+        if (s->umvplus)
             put_bits(&s->pb,1,1); /* Limited according tables of Annex D */
         put_bits(&s->pb, 5, s->qscale);
     }
@@ -176,7 +172,7 @@ void h263_encode_mb(MpegEncContext * s,
 	   /* motion vectors: 16x16 mode only now */
       h263_pred_motion(s, 0, &pred_x, &pred_y);
       
-      if (!umvplus) {  
+      if (!s->umvplus) {  
          h263_encode_motion(s, motion_x - pred_x);
          h263_encode_motion(s, motion_y - pred_y);
       }
@@ -825,14 +821,14 @@ int h263_decode_mb(MpegEncContext *s,
             /* 16x16 motion prediction */
             s->mv_type = MV_TYPE_16X16;
             h263_pred_motion(s, 0, &pred_x, &pred_y);
-            if (umvplus_dec)
+            if (s->umvplus_dec)
                mx = h263p_decode_umotion(s, pred_x);
             else
                mx = h263_decode_motion(s, pred_x);
             if (mx >= 0xffff)
                 return -1;
             
-            if (umvplus_dec)
+            if (s->umvplus_dec)
                my = h263p_decode_umotion(s, pred_y);
             else    
                my = h263_decode_motion(s, pred_y);
@@ -840,21 +836,21 @@ int h263_decode_mb(MpegEncContext *s,
                 return -1;
             s->mv[0][0][0] = mx;
             s->mv[0][0][1] = my;
-            if (umvplus_dec && (mx - pred_x) == 1 && (my - pred_y) == 1)
+            if (s->umvplus_dec && (mx - pred_x) == 1 && (my - pred_y) == 1)
                skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
                            
         } else {
             s->mv_type = MV_TYPE_8X8;
             for(i=0;i<4;i++) {
                 mot_val = h263_pred_motion(s, i, &pred_x, &pred_y);
-                if (umvplus_dec)
+                if (s->umvplus_dec)
                   mx = h263p_decode_umotion(s, pred_x);
                 else
                   mx = h263_decode_motion(s, pred_x);
                 if (mx >= 0xffff)
                     return -1;
                 
-                if (umvplus_dec)
+                if (s->umvplus_dec)
                   my = h263p_decode_umotion(s, pred_y);
                 else    
                   my = h263_decode_motion(s, pred_y);
@@ -862,7 +858,7 @@ int h263_decode_mb(MpegEncContext *s,
                     return -1;
                 s->mv[0][i][0] = mx;
                 s->mv[0][i][1] = my;
-                if (umvplus_dec && (mx - pred_x) == 1 && (my - pred_y) == 1)
+                if (s->umvplus_dec && (mx - pred_x) == 1 && (my - pred_y) == 1)
                   skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
                 mot_val[0] = mx;
                 mot_val[1] = my;
@@ -1222,7 +1218,7 @@ int h263_decode_picture_header(MpegEncContext *s)
         format = get_bits(&s->gb, 3);
                 
         skip_bits(&s->gb,1); /* Custom PCF */
-        umvplus_dec = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
+        s->umvplus_dec = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
         skip_bits(&s->gb, 10);
         skip_bits(&s->gb, 3); /* Reserved */
         
@@ -1252,7 +1248,7 @@ int h263_decode_picture_header(MpegEncContext *s)
         if ((width == 0) || (height == 0))
             return -1;
             
-        if (umvplus_dec) {
+        if (s->umvplus_dec) {
             skip_bits1(&s->gb); /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
         }
             

@@ -128,7 +128,11 @@ typedef struct MpegEncContext {
     int P_frame_bits;    /* same for P frame */
     INT64 wanted_bits;
     INT64 total_bits;
-
+    
+    /* H.263+ specific */
+    int umvplus;
+    int umvplus_dec;
+    
     /* mpeg4 specific */
     int time_increment_bits;
     int shape;

@@ -196,7 +196,7 @@ int av_grab(AVFormatContext *s)
     UINT8 audio_buf[AUDIO_FIFO_SIZE/2];
     UINT8 audio_buf1[AUDIO_FIFO_SIZE/2];
     UINT8 audio_out[AUDIO_FIFO_SIZE/2];
-    UINT8 video_buffer[128*1024];
+    UINT8 video_buffer[1024*1024];
     char buf[256];
     short *samples;
     URLContext *audio_handle = NULL, *video_handle = NULL;
@@ -764,7 +764,7 @@ static void do_video_out(AVFormatContext *s,
     int n1, n2, nb, i, ret, frame_number;
     AVPicture *picture, *picture2, *pict;
     AVPicture picture_tmp1, picture_tmp2;
-    UINT8 video_buffer[128*1024];
+    UINT8 video_buffer[1024*1024];
     UINT8 *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
 
