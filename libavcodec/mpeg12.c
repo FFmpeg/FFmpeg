@@ -1677,7 +1677,6 @@ eos: //end of slice
 
         MPV_frame_end(s);
 
-        /* XXX: incorrect reported qscale for mpeg2 */
         if (s->pict_type == B_TYPE) {
             picture = s->current_picture;
             avctx->quality = s->qscale;
@@ -1693,6 +1692,8 @@ eos: //end of slice
             s->last_qscale = s->qscale;
             s->picture_number++;
         }
+        if(s->mpeg2)
+            avctx->quality>>=1;
         if (picture) {
             pict->data[0] = picture[0];
             pict->data[1] = picture[1];
