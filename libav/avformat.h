@@ -169,7 +169,6 @@ extern AVOutputFormat *first_oformat;
 /* modules */
 
 /* mpeg.c */
-#define AVF_FLAG_VCD   0x00000001   /* VCD compatible MPEG-PS */
 int mpegps_init(void);
 
 /* mpegts.c */
