@@ -38,6 +38,7 @@ audiogen: audiogen.c
 
 DSPDEPS = $(SRC_PATH)/libavcodec/i386/dsputil_mmx.c \
  $(SRC_PATH)/libavcodec/i386/dsputil_mmx_avg.h \
+ $(SRC_PATH)/libavcodec/i386/dsputil_mmx_rnd.h \
  $(SRC_PATH)/libavcodec/i386/fdct_mmx.c \
  $(SRC_PATH)/libavcodec/i386/idct_mmx.c \
  $(SRC_PATH)/libavcodec/i386/motion_est_mmx.c \
