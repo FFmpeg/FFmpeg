@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4650
-#define LIBAVCODEC_BUILD_STR   "4650"
+#define LIBAVCODEC_BUILD       4651
+#define LIBAVCODEC_BUILD_STR   "4651"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -147,6 +147,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_LOW_DELAY      0x00080000 /* force low delay / will fail on b frames */
 #define CODEC_FLAG_ALT_SCAN       0x00100000 /* use alternate scan */
 #define CODEC_FLAG_TRELLIS_QUANT  0x00200000 /* use trellis quantization */
+#define CODEC_FLAG_GLOBAL_HEADER  0x00400000 /* place global headers in extradata instead of every keyframe */
 
 /* codec capabilities */
 
@@ -894,13 +895,27 @@ typedef struct AVCodecContext {
      * decoding: unused
      */
     int last_predictor_count;
-    
+
     /**
      * pre pass for motion estimation
      * encoding: set by user.
      * decoding: unused
      */
     int pre_me;
+
+    /**
+     * motion estimation pre pass compare function
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int me_pre_cmp;
+    
+    /**
+     * ME pre pass diamond size & shape
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int pre_dia_size;
 
 } AVCodecContext;
 

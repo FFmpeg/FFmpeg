@@ -1727,11 +1727,9 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     int time_div, time_mod;
     
     if(s->pict_type==I_TYPE){
-        if(picture_number - s->last_vo_picture_number >= 300 || picture_number==0){
+        if(!(s->flags&CODEC_FLAG_GLOBAL_HEADER)){
             mpeg4_encode_visual_object_header(s);
             mpeg4_encode_vol_header(s, 0, 0);
-
-            s->last_vo_picture_number= picture_number;
         }
         mpeg4_encode_gop_header(s);
     }
