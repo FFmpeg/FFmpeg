@@ -893,7 +893,6 @@ static void clear_blocks_mmx(DCTELEM *blocks)
 static void just_return() { return; }
 #endif
 
-#ifndef TESTCPU_MAIN
 void dsputil_init_mmx(void)
 {
     mm_flags = mm_support();
@@ -1046,5 +1045,3 @@ void dsputil_set_bit_exact_mmx(void)
         }
     }
 }
-
-#endif
