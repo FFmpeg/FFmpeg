@@ -1213,25 +1213,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                 do_audio_out(os, ost, ist, data_buf, data_size);
                                 break;
                             case CODEC_TYPE_VIDEO:
-                                /* find an audio stream for synchro */
-                                {
-                                    int i;
-                                    AVOutputStream *audio_sync, *ost1;
-                                    audio_sync = NULL;
-                                    for(i=0;i<nb_ostreams;i++) {
-                                        ost1 = ost_table[i];
-                                        if (ost1->file_index == ost->file_index &&
-                                            ost1->st->codec.codec_type == CODEC_TYPE_AUDIO) {
-                                            audio_sync = ost1;
-                                            break;
-                                        }
-                                    }
-
                                     do_video_out(os, ost, ist, &picture, &frame_size);
                                     video_size += frame_size;
                                     if (do_vstats && frame_size)
                                         do_video_stats(os, ost, frame_size);
-                                }
                                 break;
                             default:
                                 av_abort();
