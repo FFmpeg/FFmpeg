@@ -344,6 +344,8 @@ void url_split(char *proto, int proto_size,
                char *path, int path_size,
                const char *url);
 
+int match_ext(const char *filename, const char *extensions);
+
 #endif /* HAVE_AV_CONFIG_H */
 
 #endif /* AVFORMAT_H */
