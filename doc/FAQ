@@ -34,3 +34,8 @@ If the jpegs are named img1.jpg, img2.jpg, img3.jpg,..., use:
 
 The same system is used for the other image formats.
 
+6) FFmpeg does not support codec XYZ. Can you include a Windows DLL
+   loader to support it ?
+
+No ! FFmpeg only supports open source codecs. Windows DLLs are not
+portable, bloated and often slow.
