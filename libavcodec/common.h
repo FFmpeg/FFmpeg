@@ -80,6 +80,47 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
     return get_bits_long(s,n);
 }
 
+static inline unsigned int get_bits1(GetBitContext *s){
+    if(s->bit_cnt>0){
+        /* most common case here */
+        unsigned int val = s->bit_buf >> 31;
+        s->bit_buf <<= 1;
+	s->bit_cnt--;
+#ifdef STATS
+	st_bit_counts[st_current_index]++;
+#endif
+	return val;
+    }
+    return get_bits_long(s,1);
+}
+
+static inline void skip_bits(GetBitContext *s, int n){
+    if(s->bit_cnt>=n){
+        /* most common case here */
+        s->bit_buf <<= n;
+	s->bit_cnt -= n;
+#ifdef STATS
+	st_bit_counts[st_current_index] += n;
+#endif
+    } else {
+	get_bits_long(s,n);
+    }
+}
+
+static inline void skip_bits1(GetBitContext *s){
+    if(s->bit_cnt>0){
+        /* most common case here */
+        s->bit_buf <<= 1;
+	s->bit_cnt--;
+#ifdef STATS
+	st_bit_counts[st_current_index]++;
+#endif
+    } else {
+	get_bits_long(s,1);
+    }
+}
+
+
 void align_get_bits(GetBitContext *s);
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,

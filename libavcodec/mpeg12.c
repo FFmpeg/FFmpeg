@@ -483,8 +483,8 @@ void mpeg1_init_vlc(MpegEncContext *s)
 
 static inline int get_dmv(MpegEncContext *s)
 {
-    if(get_bits(&s->gb, 1)) 
-        return 1 - (get_bits(&s->gb, 1) << 1);
+    if(get_bits1(&s->gb)) 
+        return 1 - (get_bits1(&s->gb) << 1);
     else
         return 0;
 }
@@ -552,8 +552,8 @@ static int mpeg_decode_mb(MpegEncContext *s,
     switch(s->pict_type) {
     default:
     case I_TYPE:
-        if (get_bits(&s->gb, 1) == 0) {
-            if (get_bits(&s->gb, 1) == 0)
+        if (get_bits1(&s->gb) == 0) {
+            if (get_bits1(&s->gb) == 0)
                 return -1;
             mb_type = MB_QUANT | MB_INTRA;
         } else {
@@ -584,7 +584,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
     if (s->picture_structure == PICT_FRAME && 
         !s->frame_pred_frame_dct &&
         (mb_type & (MB_PAT | MB_INTRA))) {
-        s->interlaced_dct = get_bits(&s->gb, 1);
+        s->interlaced_dct = get_bits1(&s->gb);
 #ifdef DEBUG
         if (s->interlaced_dct)
             printf("interlaced_dct\n");
@@ -609,7 +609,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
         if (s->concealment_motion_vectors) {
             /* just parse them */
             if (s->picture_structure != PICT_FRAME) 
-                get_bits(&s->gb, 1); /* field select */
+                skip_bits1(&s->gb); /* field select */
             mpeg_decode_motion(s, s->mpeg_f_code[0][0], 0);
             mpeg_decode_motion(s, s->mpeg_f_code[0][1], 0);
         }
@@ -655,7 +655,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                         /* MT_16X8 */
                         s->mv_type = MV_TYPE_16X8;
                         for(j=0;j<2;j++) {
-                            s->field_select[i][j] = get_bits(&s->gb, 1);
+                            s->field_select[i][j] = get_bits1(&s->gb);
                             for(k=0;k<2;k++) {
                                 val = mpeg_decode_motion(s, s->mpeg_f_code[i][k],
                                                          s->last_mv[i][j][k]);
@@ -669,7 +669,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                     if (s->picture_structure == PICT_FRAME) {
                         s->mv_type = MV_TYPE_FIELD;
                         for(j=0;j<2;j++) {
-                            s->field_select[i][j] = get_bits(&s->gb, 1);
+                            s->field_select[i][j] = get_bits1(&s->gb);
                             val = mpeg_decode_motion(s, s->mpeg_f_code[i][0],
                                                      s->last_mv[i][j][0]);
                             s->last_mv[i][j][0] = val;
@@ -683,7 +683,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                         }
                     } else {
                         s->mv_type = MV_TYPE_16X16;
-                        s->field_select[i][0] = get_bits(&s->gb, 1);
+                        s->field_select[i][0] = get_bits1(&s->gb);
                         for(k=0;k<2;k++) {
                             val = mpeg_decode_motion(s, s->mpeg_f_code[i][k],
                                                      s->last_mv[i][0][k]);
@@ -739,7 +739,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
     }
 
     if ((mb_type & MB_INTRA) && s->concealment_motion_vectors) {
-        get_bits(&s->gb, 1); /* marker */
+        skip_bits1(&s->gb); /* marker */
     }
     
     if (mb_type & MB_PAT) {
@@ -789,7 +789,7 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
     if (code == 0) {
         return pred;
     }
-    sign = get_bits(&s->gb, 1);
+    sign = get_bits1(&s->gb);
     shift = fcode - 1;
     val = (code - 1) << shift;
     if (shift > 0)
@@ -890,7 +890,7 @@ static int mpeg1_decode_block(MpegEncContext *s,
         } else {
             run = rl->table_run[code];
             level = rl->table_level[code];
-            if (get_bits(&s->gb, 1))
+            if (get_bits1(&s->gb))
                 level = -level;
         }
         i += run;
@@ -963,7 +963,7 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
         } else {
             run = rl->table_run[code];
             level = rl->table_level[code];
-            if (get_bits(&s->gb, 1))
+            if (get_bits1(&s->gb))
                 level = -level;
         }
         i += run;
@@ -1036,7 +1036,7 @@ static int mpeg2_decode_block_intra(MpegEncContext *s,
         } else {
             run = rl->table_run[code];
             level = rl->table_level[code];
-            if (get_bits(&s->gb, 1))
+            if (get_bits1(&s->gb))
                 level = -level;
         }
         i += run;
@@ -1121,9 +1121,9 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     ref = get_bits(&s->gb, 10); /* temporal ref */
     s->pict_type = get_bits(&s->gb, 3);
     dprintf("pict_type=%d\n", s->pict_type);
-    get_bits(&s->gb, 16);
+    skip_bits(&s->gb, 16);
     if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
-        s->full_pel[0] = get_bits(&s->gb, 1);
+        s->full_pel[0] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0)
             return -1;
@@ -1131,7 +1131,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
         s->mpeg_f_code[0][1] = f_code;
     }
     if (s->pict_type == B_TYPE) {
-        s->full_pel[1] = get_bits(&s->gb, 1);
+        s->full_pel[1] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0)
             return -1;
@@ -1150,18 +1150,18 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     int bit_rate_ext, vbv_buf_ext, low_delay;
     int frame_rate_ext_n, frame_rate_ext_d;
 
-    get_bits(&s->gb, 8); /* profil and level */
-    get_bits(&s->gb, 1); /* progressive_sequence */
-    get_bits(&s->gb, 2); /* chroma_format */
+    skip_bits(&s->gb, 8); /* profil and level */
+    skip_bits(&s->gb, 1); /* progressive_sequence */
+    skip_bits(&s->gb, 2); /* chroma_format */
     horiz_size_ext = get_bits(&s->gb, 2);
     vert_size_ext = get_bits(&s->gb, 2);
     s->width |= (horiz_size_ext << 12);
     s->height |= (vert_size_ext << 12);
     bit_rate_ext = get_bits(&s->gb, 12);  /* XXX: handle it */
     s->bit_rate = ((s->bit_rate / 400) | (bit_rate_ext << 12)) * 400;
-    get_bits(&s->gb, 1); /* marker */
+    skip_bits1(&s->gb); /* marker */
     vbv_buf_ext = get_bits(&s->gb, 8);
-    low_delay = get_bits(&s->gb, 1);
+    low_delay = get_bits1(&s->gb);
     frame_rate_ext_n = get_bits(&s->gb, 2);
     frame_rate_ext_d = get_bits(&s->gb, 5);
     if (frame_rate_ext_d >= 1)
@@ -1174,27 +1174,27 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
 {
     int i, v;
 
-    if (get_bits(&s->gb, 1)) {
+    if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
             s->intra_matrix[i] = v;
             s->chroma_intra_matrix[i] = v;
         }
     }
-    if (get_bits(&s->gb, 1)) {
+    if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
             s->non_intra_matrix[i] = v;
             s->chroma_non_intra_matrix[i] = v;
         }
     }
-    if (get_bits(&s->gb, 1)) {
+    if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
             s->chroma_intra_matrix[i] = v;
         }
     }
-    if (get_bits(&s->gb, 1)) {
+    if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
             s->chroma_non_intra_matrix[i] = v;
@@ -1211,15 +1211,15 @@ static void mpeg_decode_picture_coding_extension(MpegEncContext *s)
     s->mpeg_f_code[1][1] = get_bits(&s->gb, 4);
     s->intra_dc_precision = get_bits(&s->gb, 2);
     s->picture_structure = get_bits(&s->gb, 2);
-    s->top_field_first = get_bits(&s->gb, 1);
-    s->frame_pred_frame_dct = get_bits(&s->gb, 1);
-    s->concealment_motion_vectors = get_bits(&s->gb, 1);
-    s->q_scale_type = get_bits(&s->gb, 1);
-    s->intra_vlc_format = get_bits(&s->gb, 1);
-    s->alternate_scan = get_bits(&s->gb, 1);
-    s->repeat_first_field = get_bits(&s->gb, 1);
-    s->chroma_420_type = get_bits(&s->gb, 1);
-    s->progressive_frame = get_bits(&s->gb, 1);
+    s->top_field_first = get_bits1(&s->gb);
+    s->frame_pred_frame_dct = get_bits1(&s->gb);
+    s->concealment_motion_vectors = get_bits1(&s->gb);
+    s->q_scale_type = get_bits1(&s->gb);
+    s->intra_vlc_format = get_bits1(&s->gb);
+    s->alternate_scan = get_bits1(&s->gb);
+    s->repeat_first_field = get_bits1(&s->gb);
+    s->chroma_420_type = get_bits1(&s->gb);
+    s->progressive_frame = get_bits1(&s->gb);
     /* composite display not parsed */
     dprintf("dc_preci=%d\n", s->intra_dc_precision);
     dprintf("pict_structure=%d\n", s->picture_structure);
@@ -1285,8 +1285,8 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
 
     s->qscale = get_bits(&s->gb, 5);
     /* extra slice info */
-    while (get_bits(&s->gb, 1) != 0) {
-        get_bits(&s->gb, 8);
+    while (get_bits1(&s->gb) != 0) {
+        skip_bits(&s->gb, 8);
     }
 
     for(;;) {
@@ -1351,12 +1351,12 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 
     width = get_bits(&s->gb, 12);
     height = get_bits(&s->gb, 12);
-    get_bits(&s->gb, 4);
+    skip_bits(&s->gb, 4);
     s->frame_rate_index = get_bits(&s->gb, 4);
     if (s->frame_rate_index == 0)
         return -1;
     s->bit_rate = get_bits(&s->gb, 18) * 400;
-    if (get_bits(&s->gb, 1) == 0) /* marker */
+    if (get_bits1(&s->gb) == 0) /* marker */
         return -1;
     if (width <= 0 || height <= 0 ||
         (width % 2) != 0 || (height % 2) != 0)
@@ -1382,11 +1382,11 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         s1->mpeg_enc_ctx_allocated = 1;
     }
 
-    get_bits(&s->gb, 10); /* vbv_buffer_size */
-    get_bits(&s->gb, 1);
+    skip_bits(&s->gb, 10); /* vbv_buffer_size */
+    skip_bits(&s->gb, 1);
 
     /* get matrix */
-    if (get_bits(&s->gb, 1)) {
+    if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
             s->intra_matrix[i] = v;
@@ -1399,7 +1399,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
             s->chroma_intra_matrix[i] = v;
         }
     }
-    if (get_bits(&s->gb, 1)) {
+    if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
             s->non_intra_matrix[i] = v;

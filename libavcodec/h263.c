@@ -729,7 +729,7 @@ int h263_decode_mb(MpegEncContext *s,
     static UINT8 quant_tab[4] = { -1, -2, 1, 2 };
 
     if (s->pict_type == P_TYPE) {
-        if (get_bits(&s->gb, 1)) {
+        if (get_bits1(&s->gb)) {
             /* skip mb */
             s->mb_intra = 0;
             for(i=0;i<6;i++)
@@ -796,7 +796,7 @@ int h263_decode_mb(MpegEncContext *s,
     } else {
         s->ac_pred = 0;
 	if (s->h263_pred) {
-            s->ac_pred = get_bits(&s->gb, 1);
+            s->ac_pred = get_bits1(&s->gb);
         }
         cbpy = get_vlc(&s->gb, &cbpy_vlc);
         cbp = (cbpc & 3) | (cbpy << 2);
@@ -834,7 +834,7 @@ static int h263_decode_motion(MpegEncContext * s, int pred)
 
     if (code == 0)
         return pred;
-    sign = get_bits(&s->gb, 1);
+    sign = get_bits1(&s->gb);
     shift = s->f_code - 1;
     val = (code - 1) << shift;
     if (shift > 0)
@@ -906,7 +906,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             return -1;
         if (code == rl->n) {
             /* escape */
-            last = get_bits(&s->gb, 1);
+            last = get_bits1(&s->gb);
             run = get_bits(&s->gb, 6);
             level = (INT8)get_bits(&s->gb, 8);
             if (s->h263_rv10 && level == -128) {
@@ -918,7 +918,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             run = rl->table_run[code];
             level = rl->table_level[code];
             last = code >= rl->last;
-            if (get_bits(&s->gb, 1))
+            if (get_bits1(&s->gb))
                 level = -level;
         }
         i += run;
@@ -952,7 +952,7 @@ static int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         if ((level >> (code - 1)) == 0) /* if MSB not set it is negative*/
             level = - (level ^ ((1 << code) - 1));
         if (code > 8)
-            get_bits(&s->gb, 1); /* marker */
+            skip_bits1(&s->gb); /* marker */
     }
 
     pred = mpeg4_pred_dc(s, n, &dc_val, dir_ptr);
@@ -1009,15 +1009,15 @@ static int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             return -1;
         if (code == rl->n) {
             /* escape */
-            if (get_bits(&s->gb, 1) != 0) {
-                if (get_bits(&s->gb, 1) != 0) {
+            if (get_bits1(&s->gb) != 0) {
+                if (get_bits1(&s->gb) != 0) {
                     /* third escape */
-                    last = get_bits(&s->gb, 1);
+                    last = get_bits1(&s->gb);
                     run = get_bits(&s->gb, 6);
-                    get_bits(&s->gb, 1); /* marker */
+                    get_bits1(&s->gb); /* marker */
                     level = get_bits(&s->gb, 12);
                     level = (level << 20) >> 20; /* sign extend */
-                    get_bits(&s->gb, 1); /* marker */
+                    skip_bits1(&s->gb); /* marker */
                 } else {
                     /* second escape */
                     code = get_vlc(&s->gb, &rl->vlc);
@@ -1027,7 +1027,7 @@ static int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     level = rl->table_level[code];
                     last = code >= rl->last;
                     run += rl->max_run[last][level] + 1;
-                    if (get_bits(&s->gb, 1))
+                    if (get_bits1(&s->gb))
                         level = -level;
                 }
             } else {
@@ -1039,14 +1039,14 @@ static int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 level = rl->table_level[code];
                 last = code >= rl->last;
                 level += rl->max_level[last][run];
-                if (get_bits(&s->gb, 1))
+                if (get_bits1(&s->gb))
                     level = -level;
             }
         } else {
             run = rl->table_run[code];
             level = rl->table_level[code];
             last = code >= rl->last;
-            if (get_bits(&s->gb, 1))
+            if (get_bits1(&s->gb))
                 level = -level;
         }
         i += run;
@@ -1077,15 +1077,15 @@ int h263_decode_picture_header(MpegEncContext *s)
     /* picture header */
     if (get_bits(&s->gb, 22) != 0x20)
         return -1;
-    get_bits(&s->gb, 8); /* picture timestamp */
+    skip_bits(&s->gb, 8); /* picture timestamp */
 
-    if (get_bits(&s->gb, 1) != 1)
+    if (get_bits1(&s->gb) != 1)
         return -1;	/* marker */
-    if (get_bits(&s->gb, 1) != 0)
+    if (get_bits1(&s->gb) != 0)
         return -1;	/* h263 id */
-    get_bits(&s->gb, 1);	/* split screen off */
-    get_bits(&s->gb, 1);	/* camera  off */
-    get_bits(&s->gb, 1);	/* freeze picture release off */
+    skip_bits1(&s->gb);	/* split screen off */
+    skip_bits1(&s->gb);	/* camera  off */
+    skip_bits1(&s->gb);	/* freeze picture release off */
 
     format = get_bits(&s->gb, 3);
 
@@ -1097,20 +1097,20 @@ int h263_decode_picture_header(MpegEncContext *s)
         if (!width)
             return -1;
 
-        s->pict_type = I_TYPE + get_bits(&s->gb, 1);
+        s->pict_type = I_TYPE + get_bits1(&s->gb);
 
-        s->unrestricted_mv = get_bits(&s->gb, 1); 
+        s->unrestricted_mv = get_bits1(&s->gb); 
         s->h263_long_vectors = s->unrestricted_mv;
 
-        if (get_bits(&s->gb, 1) != 0)
+        if (get_bits1(&s->gb) != 0)
             return -1;	/* SAC: off */
-        if (get_bits(&s->gb, 1) != 0)
+        if (get_bits1(&s->gb) != 0)
             return -1;	/* advanced prediction mode: off */
-        if (get_bits(&s->gb, 1) != 0)
+        if (get_bits1(&s->gb) != 0)
             return -1;	/* not PB frame */
 
         s->qscale = get_bits(&s->gb, 5);
-        get_bits(&s->gb, 1);	/* Continuous Presence Multipoint mode: off */
+        skip_bits1(&s->gb);	/* Continuous Presence Multipoint mode: off */
     } else {
         s->h263_plus = 1;
         /* H.263v2 */
@@ -1118,24 +1118,24 @@ int h263_decode_picture_header(MpegEncContext *s)
             return -1;
         if (get_bits(&s->gb, 3) != 6) /* custom source format */
             return -1;
-        get_bits(&s->gb, 12);
-        get_bits(&s->gb, 3);
+        skip_bits(&s->gb, 12);
+        skip_bits(&s->gb, 3);
         s->pict_type = get_bits(&s->gb, 3) + 1;
         if (s->pict_type != I_TYPE &&
             s->pict_type != P_TYPE)
             return -1;
-        get_bits(&s->gb, 7);
-        get_bits(&s->gb, 4); /* aspect ratio */
+        skip_bits(&s->gb, 7);
+        skip_bits(&s->gb, 4); /* aspect ratio */
         width = (get_bits(&s->gb, 9) + 1) * 4;
-        get_bits(&s->gb, 1);
+        skip_bits1(&s->gb);
         height = get_bits(&s->gb, 9) * 4;
         if (height == 0)
             return -1;
         s->qscale = get_bits(&s->gb, 5);
     }
     /* PEI */
-    while (get_bits(&s->gb, 1) != 0) {
-        get_bits(&s->gb, 8);
+    while (get_bits1(&s->gb) != 0) {
+        skip_bits(&s->gb, 8);
     }
     s->f_code = 1;
     s->width = width;
@@ -1169,40 +1169,40 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         int time_increment_resolution, width, height;
 
         /* vol header */
-        get_bits(&s->gb, 1); /* random access */
-        get_bits(&s->gb, 8); /* vo_type */
-        get_bits(&s->gb, 1); /* is_ol_id */
-        get_bits(&s->gb, 4); /* vo_ver_id */
-        get_bits(&s->gb, 3); /* vo_priority */
+        skip_bits(&s->gb, 1); /* random access */
+        skip_bits(&s->gb, 8); /* vo_type */
+        skip_bits(&s->gb, 1); /* is_ol_id */
+        skip_bits(&s->gb, 4); /* vo_ver_id */
+        skip_bits(&s->gb, 3); /* vo_priority */
         
-        get_bits(&s->gb, 4); /* aspect_ratio_info */
-        get_bits(&s->gb, 1); /* vol control parameter */
-        get_bits(&s->gb, 2); /* vol shape */
-        get_bits(&s->gb, 1); /* marker */
+        skip_bits(&s->gb, 4); /* aspect_ratio_info */
+        skip_bits(&s->gb, 1); /* vol control parameter */
+        skip_bits(&s->gb, 2); /* vol shape */
+        skip_bits1(&s->gb);   /* marker */
         
         time_increment_resolution = get_bits(&s->gb, 16);
         s->time_increment_bits = log2(time_increment_resolution - 1) + 1;
-        get_bits(&s->gb, 1); /* marker */
+        skip_bits1(&s->gb);   /* marker */
 
-        get_bits(&s->gb, 1); /* vop rate  */
-        get_bits(&s->gb, s->time_increment_bits);
-        get_bits(&s->gb, 1); /* marker */
+        skip_bits1(&s->gb);   /* vop rate  */
+        skip_bits(&s->gb, s->time_increment_bits);
+        skip_bits1(&s->gb);   /* marker */
         
         width = get_bits(&s->gb, 13);
-        get_bits(&s->gb, 1); /* marker */
+        skip_bits1(&s->gb);   /* marker */
         height = get_bits(&s->gb, 13);
-        get_bits(&s->gb, 1); /* marker */
+        skip_bits1(&s->gb);   /* marker */
         
-        get_bits(&s->gb, 1); /* interfaced */
-        get_bits(&s->gb, 1); /* OBMC */
-        get_bits(&s->gb, 2); /* vol_sprite_usage */
-        get_bits(&s->gb, 1); /* not_8_bit */
+        skip_bits1(&s->gb);   /* interfaced */
+        skip_bits1(&s->gb);   /* OBMC */
+        skip_bits(&s->gb, 2); /* vol_sprite_usage */
+        skip_bits1(&s->gb);   /* not_8_bit */
 
-        get_bits(&s->gb, 1); /* vol_quant_type */
-        get_bits(&s->gb, 1); /* vol_quarter_pixel */
-        get_bits(&s->gb, 1); /* complexity_estimation_disabled */
-        get_bits(&s->gb, 1); /* resync_marker_disabled */
-        get_bits(&s->gb, 1); /* data_partioning_enabled */
+        skip_bits1(&s->gb);   /* vol_quant_type */
+        skip_bits1(&s->gb);   /* vol_quarter_pixel */
+        skip_bits1(&s->gb);   /* complexity_estimation_disabled */
+        skip_bits1(&s->gb);   /* resync_marker_disabled */
+        skip_bits1(&s->gb);   /* data_partioning_enabled */
         goto redo;
     } else if (startcode != 0x1b6) {
         goto redo;
@@ -1215,19 +1215,19 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
     
     /* XXX: parse time base */
     time_incr = 0;
-    while (get_bits(&s->gb, 1) != 0) 
+    while (get_bits1(&s->gb) != 0) 
         time_incr++;
 
-    get_bits(&s->gb, 1);	/* marker */
-    get_bits(&s->gb, s->time_increment_bits);
-    get_bits(&s->gb, 1);	/* marker */
+    skip_bits1(&s->gb);   	/* marker */
+    skip_bits(&s->gb, s->time_increment_bits);
+    skip_bits1(&s->gb);   	/* marker */
     /* vop coded */
-    if (get_bits(&s->gb, 1) != 1)
+    if (get_bits1(&s->gb) != 1)
 	return -1; 
     
     if (s->pict_type == P_TYPE) {
         /* rounding type for motion estimation */
-	s->no_rounding = get_bits(&s->gb, 1);
+	s->no_rounding = get_bits1(&s->gb);
     }
         
     if (get_bits(&s->gb, 3) != 0)
@@ -1249,15 +1249,15 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     /* picture header */
     if (get_bits(&s->gb, 22) != 0x20)
         return -1;
-    get_bits(&s->gb, 8); /* picture timestamp */
+    skip_bits(&s->gb, 8); /* picture timestamp */
 
-    if (get_bits(&s->gb, 1) != 1)
+    if (get_bits1(&s->gb) != 1)
         return -1;	/* marker */
-    if (get_bits(&s->gb, 1) != 0)
+    if (get_bits1(&s->gb) != 0)
         return -1;	/* h263 id */
-    get_bits(&s->gb, 1);	/* split screen off */
-    get_bits(&s->gb, 1);	/* camera  off */
-    get_bits(&s->gb, 1);	/* freeze picture release off */
+    skip_bits1(&s->gb);	/* split screen off */
+    skip_bits1(&s->gb);	/* camera  off */
+    skip_bits1(&s->gb);	/* freeze picture release off */
 
     format = get_bits(&s->gb, 3);
     if (format != 7)
@@ -1265,27 +1265,27 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
 
     s->h263_plus = 0;
 
-    s->pict_type = I_TYPE + get_bits(&s->gb, 1);
+    s->pict_type = I_TYPE + get_bits1(&s->gb);
     
-    s->unrestricted_mv = get_bits(&s->gb, 1); 
+    s->unrestricted_mv = get_bits1(&s->gb); 
     s->h263_long_vectors = s->unrestricted_mv;
 
-    if (get_bits(&s->gb, 1) != 0)
+    if (get_bits1(&s->gb) != 0)
         return -1;	/* SAC: off */
-    if (get_bits(&s->gb, 1) != 0)
+    if (get_bits1(&s->gb) != 0)
         return -1;	/* advanced prediction mode: off */
-    if (get_bits(&s->gb, 1) != 0)
+    if (get_bits1(&s->gb) != 0)
         return -1;	/* not PB frame */
 
     /* skip unknown header garbage */
-    get_bits(&s->gb, 41);
+    skip_bits(&s->gb, 41);
 
     s->qscale = get_bits(&s->gb, 5);
-    get_bits(&s->gb, 1);	/* Continuous Presence Multipoint mode: off */
+    skip_bits1(&s->gb);	/* Continuous Presence Multipoint mode: off */
 
     /* PEI */
-    while (get_bits(&s->gb, 1) != 0) {
-        get_bits(&s->gb, 8);
+    while (get_bits1(&s->gb) != 0) {
+        skip_bits(&s->gb, 8);
     }
     s->f_code = 1;
     return 0;

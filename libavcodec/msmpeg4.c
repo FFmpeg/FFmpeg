@@ -601,11 +601,11 @@ int msmpeg4_decode_init_vlc(MpegEncContext *s)
 static int decode012(GetBitContext *gb)
 {
     int n;
-    n = get_bits(gb, 1);
+    n = get_bits1(gb);
     if (n == 0)
         return 0;
     else
-        return get_bits(gb, 1) + 1;
+        return get_bits1(gb) + 1;
 }
 
 int msmpeg4_decode_picture_header(MpegEncContext * s)
@@ -629,17 +629,17 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
         s->rl_chroma_table_index = decode012(&s->gb);
         s->rl_table_index = decode012(&s->gb);
 
-        s->dc_table_index = get_bits(&s->gb, 1);
+        s->dc_table_index = get_bits1(&s->gb);
         s->no_rounding = 1;
     } else {
-        s->use_skip_mb_code = get_bits(&s->gb, 1);
+        s->use_skip_mb_code = get_bits1(&s->gb);
         
         s->rl_table_index = decode012(&s->gb);
         s->rl_chroma_table_index = s->rl_table_index;
 
-        s->dc_table_index = get_bits(&s->gb, 1);
+        s->dc_table_index = get_bits1(&s->gb);
 
-        s->mv_table_index = get_bits(&s->gb, 1);
+        s->mv_table_index = get_bits1(&s->gb);
         s->no_rounding ^= 1;
     }
 #ifdef DEBUG
@@ -685,7 +685,7 @@ int msmpeg4_decode_mb(MpegEncContext *s,
     if (s->pict_type == P_TYPE) {
         set_stat(ST_INTER_MB);
         if (s->use_skip_mb_code) {
-            if (get_bits(&s->gb, 1)) {
+            if (get_bits1(&s->gb)) {
                 /* skip mb */
                 s->mb_intra = 0;
                 for(i=0;i<6;i++)
@@ -739,7 +739,7 @@ int msmpeg4_decode_mb(MpegEncContext *s,
         s->mv[0][0][1] = my;
     } else {
         set_stat(ST_INTRA_MB);
-        s->ac_pred = get_bits(&s->gb, 1);
+        s->ac_pred = get_bits1(&s->gb);
     }
 
     for (i = 0; i < 6; i++) {
@@ -801,10 +801,10 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             return -1;
         if (code == rl->n) {
             /* escape */
-            if (get_bits(&s->gb, 1) == 0) {
-                if (get_bits(&s->gb, 1) == 0) {
+            if (get_bits1(&s->gb) == 0) {
+                if (get_bits1(&s->gb) == 0) {
                     /* third escape */
-                    last = get_bits(&s->gb, 1);
+                    last = get_bits1(&s->gb);
                     run = get_bits(&s->gb, 6);
                     level = get_bits(&s->gb, 8);
                     level = (level << 24) >> 24; /* sign extend */
@@ -817,7 +817,7 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     level = rl->table_level[code];
                     last = code >= rl->last;
                     run += rl->max_run[last][level] + run_diff;
-                    if (get_bits(&s->gb, 1))
+                    if (get_bits1(&s->gb))
                         level = -level;
                 }
             } else {
@@ -829,14 +829,14 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 level = rl->table_level[code];
                 last = code >= rl->last;
                 level += rl->max_level[last][run];
-                if (get_bits(&s->gb, 1))
+                if (get_bits1(&s->gb))
                     level = -level;
             }
         } else {
             run = rl->table_run[code];
             level = rl->table_level[code];
             last = code >= rl->last;
-            if (get_bits(&s->gb, 1))
+            if (get_bits1(&s->gb))
                 level = -level;
         }
         i += run;
@@ -875,10 +875,10 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 
     if (level == DC_MAX) {
         level = get_bits(&s->gb, 8);
-        if (get_bits(&s->gb, 1))
+        if (get_bits1(&s->gb))
             level = -level;
     } else if (level != 0) {
-        if (get_bits(&s->gb, 1))
+        if (get_bits1(&s->gb))
             level = -level;
     }
 
