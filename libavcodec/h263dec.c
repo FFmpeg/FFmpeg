@@ -362,7 +362,12 @@ uint64_t time= rdtsc();
             h = s->height - y;
             if (h > 16)
                 h = 16;
-            offset = y * s->linesize;
+
+            if(s->pict_type==B_TYPE)
+                offset = 0;
+            else
+                offset = y * s->linesize;
+
             if(s->pict_type==B_TYPE || (!s->has_b_frames)){
                 src_ptr[0] = s->current_picture[0] + offset;
                 src_ptr[1] = s->current_picture[1] + (offset >> 2);

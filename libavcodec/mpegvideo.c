@@ -1684,9 +1684,15 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             }
         }
 
-        dest_y = s->current_picture [0] + (mb_y * 16* s->linesize  ) + mb_x * 16;
-        dest_cb = s->current_picture[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
-        dest_cr = s->current_picture[2] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
+        if(s->pict_type==B_TYPE && s->avctx->draw_horiz_band){
+            dest_y = s->current_picture [0] + mb_x * 16;
+            dest_cb = s->current_picture[1] + mb_x * 8;
+            dest_cr = s->current_picture[2] + mb_x * 8;
+        }else{
+            dest_y = s->current_picture [0] + (mb_y * 16* s->linesize  ) + mb_x * 16;
+            dest_cb = s->current_picture[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
+            dest_cr = s->current_picture[2] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
+        }
 
         if (s->interlaced_dct) {
             dct_linesize = s->linesize * 2;
