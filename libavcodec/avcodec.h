@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4610
-#define LIBAVCODEC_BUILD_STR   "4610"
+#define LIBAVCODEC_BUILD       4611
+#define LIBAVCODEC_BUILD_STR   "4611"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -90,6 +90,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_QPEL   0x0010 /* use qpel MC */
 #define CODEC_FLAG_GMC    0x0020 /* use GMC */
 #define CODEC_FLAG_TYPE   0x0040 /* fixed I/P frame type, from avctx->key_frame */
+#define CODEC_FLAG_PART   0x0080 /* use data partitioning */
 /* parent program gurantees that the input for b-frame containing streams is not written to 
    for at least s->max_b_frames+1 frames, if this is not set than the input will be copied */
 #define CODEC_FLAG_INPUT_PRESERVED 0x0100
@@ -188,7 +189,7 @@ typedef struct AVCodecContext {
     void *priv_data;
 
     /* The following data is for RTP friendly coding */
-    /* By now only H.263/H.263+ coder honours this   */
+    /* By now only H.263/H.263+/MPEG4 coder honours this   */
     int rtp_mode;   /* 1 for activate RTP friendly-mode           */
                     /* highers numbers represent more error-prone */
                     /* enviroments, by now just "1" exist         */
@@ -233,6 +234,13 @@ typedef struct AVCodecContext {
     unsigned int codec_tag;  /* codec tag, only used if unknown codec */
     
     int workaround_bugs;       /* workaround bugs in encoders which cannot be detected automatically */
+    int luma_elim_threshold;
+    int chroma_elim_threshold;
+    int strict_std_compliance; /* strictly follow the std (MPEG4, ...) */
+    float b_quant_offset;/* qscale offset between ips and b frames, not implemented yet */
+    int error_resilience;
+
+    //FIXME this should be reordered after kabis API is finished ...
     /*
 	Note: Below are located reserved fields for further usage
 	It requires for ABI !!!
@@ -246,7 +254,7 @@ typedef struct AVCodecContext {
 	    ull_res6,ull_res7,ull_res8,ull_res9,ull_res10,ull_res11,ull_res12;
     float
 	    flt_res0,flt_res1,flt_res2,flt_res3,flt_res4,flt_res5,
-	    flt_res6,flt_res7,flt_res8,flt_res9,flt_res10,flt_res11,flt_res12;
+	    flt_res6,flt_res7,flt_res8,flt_res9,flt_res10,flt_res11;
     void
 	    *ptr_res0,*ptr_res1,*ptr_res2,*ptr_res3,*ptr_res4,*ptr_res5,
 	    *ptr_res6,*ptr_res7,*ptr_res8,*ptr_res9,*ptr_res10,*ptr_res11,*ptr_res12;
@@ -255,7 +263,7 @@ typedef struct AVCodecContext {
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
     unsigned int
 	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5,
-	    ui_res6,ui_res7,ui_res8,ui_res9,ui_res10,ui_res11;
+	    ui_res6,ui_res7;
     unsigned short int
 	    us_res0,us_res1,us_res2,us_res3,us_res4,us_res5,
 	    us_res6,us_res7,us_res8,us_res9,us_res10,us_res11,us_res12;
