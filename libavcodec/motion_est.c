@@ -1,7 +1,7 @@
 /*
  * Motion estimation 
  * Copyright (c) 2000,2001 Fabrice Bellard.
- * Copyright (c) 2002 Michael Niedermayer
+ * Copyright (c) 2002-2003 Michael Niedermayer
  * 
  *
  * This library is free software; you can redistribute it and/or
@@ -313,6 +313,7 @@ static inline int get_penalty_factor(MpegEncContext *s, int type){
     case FF_CMP_DCT:
     case FF_CMP_SATD:
     case FF_CMP_SSE:
+    case FF_CMP_PSNR:
         return s->qscale*8;
     case FF_CMP_BIT:
         return 1;
@@ -1030,7 +1031,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             }
 #endif
         }else{
-            s->scene_change_score+= 20;
+            s->scene_change_score+= s->qscale;
             mb_type|= MB_TYPE_INTRA;
             mx = 0;
             my = 0;

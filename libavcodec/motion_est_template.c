@@ -160,7 +160,7 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
         
     if(s->avctx->me_cmp != s->avctx->me_sub_cmp){
         CMP_HPEL(dmin, 0, 0, mx, my, size);
-        if(mx || my)
+        if(mx || my || size>0)
             dmin += (mv_penalty[2*mx - pred_x] + mv_penalty[2*my - pred_y])*penalty_factor;
     }
         
@@ -290,7 +290,7 @@ static int RENAME(qpel_motion_search)(MpegEncContext * s,
         
     if(s->avctx->me_cmp != s->avctx->me_sub_cmp){
         CMP_QPEL(dmin, 0, 0, mx, my, size);
-        if(mx || my)
+        if(mx || my || size>0)
             dmin += (mv_penalty[4*mx - pred_x] + mv_penalty[4*my - pred_y])*penalty_factor;
     }
         

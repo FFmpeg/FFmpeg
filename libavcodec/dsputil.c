@@ -1894,10 +1894,11 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
                 run++;
         }
         i= scantable[last];
-        
-        assert(level);
-        
+       
         level= temp[i] + 64;
+
+        assert(level - 64);
+        
         if((level&(~127)) == 0){
             bits+= last_length[UNI_AC_ENC_INDEX(run, level)];
         }else

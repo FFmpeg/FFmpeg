@@ -2592,7 +2592,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         s->block_last_index[4]=
         s->block_last_index[5]= 0;
         s->block[4][0]=
-        s->block[5][0]= 128;
+        s->block[5][0]= (1024 + s->c_dc_scale/2)/ s->c_dc_scale;
     }
 
 #ifdef CONFIG_ENCODERS
