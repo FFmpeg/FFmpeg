@@ -116,8 +116,8 @@ Notes:
 #define OPTIONS_ARRAY_SIZE 10
 
 #ifdef HAVE_MMX
-static uint64_t __attribute__((aligned(8))) packedYOffset=	0x0000000000000000LL;
-static uint64_t __attribute__((aligned(8))) packedYScale=	0x0100010001000100LL;
+static volatile uint64_t __attribute__((aligned(8))) packedYOffset=	0x0000000000000000LL;
+static volatile uint64_t __attribute__((aligned(8))) packedYScale=	0x0100010001000100LL;
 static uint64_t __attribute__((aligned(8))) w05=		0x0005000500050005LL;
 static uint64_t __attribute__((aligned(8))) w20=		0x0020002000200020LL;
 static uint64_t __attribute__((aligned(8))) w1400=		0x1400140014001400LL;

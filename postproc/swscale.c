@@ -71,10 +71,10 @@ static uint64_t __attribute__((aligned(8))) bm00001111=0x00000000FFFFFFFFLL;
 static uint64_t __attribute__((aligned(8))) bm00000111=0x0000000000FFFFFFLL;
 static uint64_t __attribute__((aligned(8))) bm11111000=0xFFFFFFFFFF000000LL;
 
-static uint64_t __attribute__((aligned(8))) b5Dither;
-static uint64_t __attribute__((aligned(8))) g5Dither;
-static uint64_t __attribute__((aligned(8))) g6Dither;
-static uint64_t __attribute__((aligned(8))) r5Dither;
+static volatile uint64_t __attribute__((aligned(8))) b5Dither;
+static volatile uint64_t __attribute__((aligned(8))) g5Dither;
+static volatile uint64_t __attribute__((aligned(8))) g6Dither;
+static volatile uint64_t __attribute__((aligned(8))) r5Dither;
 
 static uint64_t __attribute__((aligned(8))) dither4[2]={
 	0x0103010301030103LL,
