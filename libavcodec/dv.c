@@ -564,6 +564,8 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
         }
     }
 
+    emms_c();
+
     /* return image */
     avctx->width = width;
     avctx->height = height;
@@ -581,6 +583,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
         picture->data[i] = s->current_picture[i];
         picture->linesize[i] = s->linesize[i];
     }
+
     return buf_size;
 }
 
