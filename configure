@@ -30,6 +30,7 @@ echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
 echo "  --enable-amr_wb          enable amr_wb float audio codec"
 echo "  --enable-sunmlib         use Sun medialib [default=no]"
 echo "  --enable-pthreads        use pthreads [default=no]"
+echo "  --enable-gpl             allow use of gpl code, the resulting libav* and ffmpeg will be under gpl [default=no]"
 echo ""
 echo "Advanced options (experts only):"
 echo "  --source-path=PATH       path of source code [$source_path]"
@@ -173,6 +174,7 @@ amr_wb="no"
 amr_nb_fixed="no"
 sunmlib="no"
 pthreads="no"
+gpl="no"
 
 # OS specific
 targetos=`uname -s`
@@ -419,8 +421,52 @@ for opt do
   ;;
   --enable-pthreads) pthreads="yes"
   ;;
+  --enable-gpl) gpl="yes"
+  ;;
   esac
 done
+
+if test "$gpl" != "yes"; then
+    if test "$pp" != "no" -o "$shared_pp" != "no"; then
+        echo "The Postprocessing code is under GPL and --enable-gpl is not specified"
+        fail="yes"
+    fi
+
+    if test "$a52" != "no" -o "$a52bin" != "no"; then
+        echo "liba52 is under GPL and --enable-gpl is not specified"
+        fail="yes"
+    fi
+    
+    if test "$faad" != "no" -o "$faadbin" != "no"; then
+        cat > $TMPC << EOF
+            #include <faad.h>
+            int main( void ) { return 0; }
+EOF
+    
+        if $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null ; then
+            cat > $TMPC << EOF
+                #include <faad.h>
+                #ifndef FAAD2_VERSION
+                ok faad1
+                #endif
+                int main( void ) { return 0; }
+EOF
+            if $cc $CFLAGS -o $TMPE $TMPC 2> /dev/null ; then
+                echo "faad2 is under GPL and --enable-gpl is not specified"
+                fail="yes"
+            fi
+        else
+            faad="no"
+            faadbin="no"
+            echo "faad test failed"
+        fi
+    fi
+   
+
+    if test "$fail" == "yes"; then
+        exit 1
+    fi
+fi
 
 # compute mmx state
 if test $mmx = "default"; then
@@ -927,6 +973,11 @@ echo "pthreads support"      $pthreads
 echo "AMR-NB float support"  $amr_nb
 echo "AMR-NB fixed support"  $amr_nb_fixed
 echo "AMR-WB float support"  $amr_wb
+if test "$gpl" = "no" ; then
+echo "License: LGPL"
+else
+echo "License: GPL"
+fi
 
 echo "Creating config.mak and config.h"
 
@@ -1223,6 +1274,11 @@ fi
 if test "$risky" = "yes" ; then
   echo "#define CONFIG_RISKY 1" >> $TMPH
   echo "CONFIG_RISKY=yes" >> config.mak
+fi
+
+if test "$gpl" = "yes" ; then
+  echo "#define CONFIG_GPL 1" >> $TMPH
+  echo "CONFIG_GPL=yes" >> config.mak
 fi
 
 echo "#define restrict $_restrict" >> $TMPH
