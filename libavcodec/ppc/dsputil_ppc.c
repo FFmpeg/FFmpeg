@@ -25,6 +25,9 @@
 #include "dsputil_altivec.h"
 #endif
 
+extern void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
+extern void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
+
 int mm_flags = 0;
 
 int mm_support(void)
@@ -169,7 +172,7 @@ long check_dcbz_effect(void)
   return count;
 }
 
-void dsputil_init_ppc(DSPContext* c, unsigned mask)
+void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
     // Common optimisations whether Altivec or not
 
@@ -215,6 +218,18 @@ void dsputil_init_ppc(DSPContext* c, unsigned mask)
         c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_altivec;
         
 	c->gmc1 = gmc1_altivec;
+
+        if ((avctx->idct_algo == FF_IDCT_AUTO) ||
+                (avctx->idct_algo == FF_IDCT_ALTIVEC))
+        {
+            c->idct_put = idct_put_altivec;
+            c->idct_add = idct_add_altivec;
+#ifndef ALTIVEC_USE_REFERENCE_C_CODE
+            c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
+#else /* ALTIVEC_USE_REFERENCE_C_CODE */
+            c->idct_permutation_type = FF_NO_IDCT_PERM;
+#endif /* ALTIVEC_USE_REFERENCE_C_CODE */
+        }
         
 #ifdef POWERPC_TBL_PERFORMANCE_REPORT
         {

@@ -24,7 +24,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "simple_idct.h"
 
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
@@ -72,18 +71,6 @@ static const uint16_t aanscales[64] = {
     4520 ,  6270,  5906,  5315,  4520,  3552,  2446,  1247
 };
 
-/* Input permutation for the simple_idct_mmx */
-static const uint8_t simple_mmx_permutation[64]={
-	0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D, 
-	0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D, 
-	0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D, 
-	0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F, 
-	0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F, 
-	0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D, 
-	0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F, 
-	0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
-};
-
 static const uint8_t h263_chroma_roundtab[16] = {
 //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15
     0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
@@ -102,9 +89,9 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
 
     for(qscale=qmin; qscale<=qmax; qscale++){
         int i;
-        if (s->fdct == ff_jpeg_fdct_islow) {
+        if (s->dsp.fdct == ff_jpeg_fdct_islow) {
             for(i=0;i<64;i++) {
-                const int j= s->idct_permutation[i];
+                const int j= s->dsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
                 /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
@@ -113,9 +100,9 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
                 qmat[qscale][i] = (int)((uint64_t_C(1) << QMAT_SHIFT) / 
                                 (qscale * quant_matrix[j]));
             }
-        } else if (s->fdct == fdct_ifast) {
+        } else if (s->dsp.fdct == fdct_ifast) {
             for(i=0;i<64;i++) {
-                const int j= s->idct_permutation[i];
+                const int j= s->dsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
                 /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
@@ -126,7 +113,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
             }
         } else {
             for(i=0;i<64;i++) {
-                const int j= s->idct_permutation[i];
+                const int j= s->dsp.idct_permutation[i];
                 /* We can safely suppose that 16 <= quant_matrix[i] <= 255
                    So 16           <= qscale * quant_matrix[i]             <= 7905
                    so (1<<19) / 16 >= (1<<19) / (qscale * quant_matrix[i]) >= (1<<19) / 7905
@@ -163,7 +150,7 @@ void ff_init_scantable(MpegEncContext *s, ScanTable *st, const uint8_t *src_scan
     for(i=0; i<64; i++){
         int j;
         j = src_scantable[i];
-        st->permutated[i] = s->idct_permutation[j];
+        st->permutated[i] = s->dsp.idct_permutation[j];
 #ifdef ARCH_POWERPC
         st->inverse[j] = i;
 #endif
@@ -178,51 +165,16 @@ void ff_init_scantable(MpegEncContext *s, ScanTable *st, const uint8_t *src_scan
     }
 }
 
-/* XXX: those functions should be suppressed ASAP when all IDCTs are
- converted */
-// *FIXME* this is ugly hack using local static
-static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
-static void (*ff_add_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
-static void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    j_rev_dct (block);
-    ff_put_pixels_clamped(block, dest, line_size);
-}
-static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    j_rev_dct (block);
-    ff_add_pixels_clamped(block, dest, line_size);
-}
-
 /* init common dct for both encoder and decoder */
 int DCT_common_init(MpegEncContext *s)
 {
-    int i;
-
-    ff_put_pixels_clamped = s->dsp.put_pixels_clamped;
-    ff_add_pixels_clamped = s->dsp.add_pixels_clamped;
-
     s->dct_unquantize_h263 = dct_unquantize_h263_c;
     s->dct_unquantize_mpeg1 = dct_unquantize_mpeg1_c;
     s->dct_unquantize_mpeg2 = dct_unquantize_mpeg2_c;
+
 #ifdef CONFIG_ENCODERS
     s->dct_quantize= dct_quantize_c;
-
-    if(s->avctx->dct_algo==FF_DCT_FASTINT)
-        s->fdct = fdct_ifast;
-    else
-        s->fdct = ff_jpeg_fdct_islow; //slow/accurate/default
-#endif //CONFIG_ENCODERS
-
-    if(s->avctx->idct_algo==FF_IDCT_INT){
-        s->idct_put= ff_jref_idct_put;
-        s->idct_add= ff_jref_idct_add;
-        s->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
-    }else{ //accurate/default
-        s->idct_put= simple_idct_put;
-        s->idct_add= simple_idct_add;
-        s->idct_permutation_type= FF_NO_IDCT_PERM;
-    }
+#endif
         
 #ifdef HAVE_MMX
     MPV_common_init_mmx(s);
@@ -251,29 +203,6 @@ int DCT_common_init(MpegEncContext *s)
     }
 
 #endif //CONFIG_ENCODERS
-
-    switch(s->idct_permutation_type){
-    case FF_NO_IDCT_PERM:
-        for(i=0; i<64; i++)
-            s->idct_permutation[i]= i;
-        break;
-    case FF_LIBMPEG2_IDCT_PERM:
-        for(i=0; i<64; i++)
-            s->idct_permutation[i]= (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
-        break;
-    case FF_SIMPLE_IDCT_PERM:
-        for(i=0; i<64; i++)
-            s->idct_permutation[i]= simple_mmx_permutation[i];
-        break;
-    case FF_TRANSPOSE_IDCT_PERM:
-        for(i=0; i<64; i++)
-            s->idct_permutation[i]= ((i&7)<<3) | (i>>3);
-        break;
-    default:
-        fprintf(stderr, "Internal error, IDCT permutation not set\n");
-        return -1;
-    }
-
 
     /* load & permutate scantables
        note: only wmv uses differnt ones 
@@ -384,7 +313,7 @@ int MPV_common_init(MpegEncContext *s)
 {
     int y_size, c_size, yc_size, i;
 
-    dsputil_init(&s->dsp, s->avctx->dsp_mask);
+    dsputil_init(&s->dsp, s->avctx);
     DCT_common_init(s);
 
     s->flags= s->avctx->flags;
@@ -768,7 +697,7 @@ int MPV_encode_init(AVCodecContext *avctx)
 
     /* init default q matrix */
     for(i=0;i<64;i++) {
-        int j= s->idct_permutation[i];
+        int j= s->dsp.idct_permutation[i];
 #ifdef CONFIG_RISKY
         if(s->codec_id==CODEC_ID_MPEG4 && s->mpeg_quant){
             s->intra_matrix[j] = ff_mpeg4_default_intra_matrix[i];
@@ -1938,7 +1867,7 @@ static inline void put_dct(MpegEncContext *s,
                            DCTELEM *block, int i, uint8_t *dest, int line_size)
 {
     s->dct_unquantize(s, block, i, s->qscale);
-    s->idct_put (dest, line_size, block);
+    s->dsp.idct_put (dest, line_size, block);
 }
 
 /* add block[] to dest[] */
@@ -1946,7 +1875,7 @@ static inline void add_dct(MpegEncContext *s,
                            DCTELEM *block, int i, uint8_t *dest, int line_size)
 {
     if (s->block_last_index[i] >= 0) {
-        s->idct_add (dest, line_size, block);
+        s->dsp.idct_add (dest, line_size, block);
     }
 }
 
@@ -1956,7 +1885,7 @@ static inline void add_dequant_dct(MpegEncContext *s,
     if (s->block_last_index[i] >= 0) {
         s->dct_unquantize(s, block, i, s->qscale);
 
-        s->idct_add (dest, line_size, block);
+        s->dsp.idct_add (dest, line_size, block);
     }
 }
 
@@ -2193,14 +2122,14 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                     put_dct(s, block[5], 5, dest_cr, s->uvlinesize);
                 }
             }else{
-                s->idct_put(dest_y                 , dct_linesize, block[0]);
-                s->idct_put(dest_y              + 8, dct_linesize, block[1]);
-                s->idct_put(dest_y + dct_offset    , dct_linesize, block[2]);
-                s->idct_put(dest_y + dct_offset + 8, dct_linesize, block[3]);
+                s->dsp.idct_put(dest_y                 , dct_linesize, block[0]);
+                s->dsp.idct_put(dest_y              + 8, dct_linesize, block[1]);
+                s->dsp.idct_put(dest_y + dct_offset    , dct_linesize, block[2]);
+                s->dsp.idct_put(dest_y + dct_offset + 8, dct_linesize, block[3]);
 
                 if(!(s->flags&CODEC_FLAG_GRAY)){
-                    s->idct_put(dest_cb, s->uvlinesize, block[4]);
-                    s->idct_put(dest_cr, s->uvlinesize, block[5]);
+                    s->dsp.idct_put(dest_cb, s->uvlinesize, block[4]);
+                    s->dsp.idct_put(dest_cr, s->uvlinesize, block[5]);
                 }
             }
         }
@@ -3040,7 +2969,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         /* for mjpeg, we do include qscale in the matrix */
         s->intra_matrix[0] = ff_mpeg1_default_intra_matrix[0];
         for(i=1;i<64;i++){
-            int j= s->idct_permutation[i];
+            int j= s->dsp.idct_permutation[i];
 
             s->intra_matrix[j] = CLAMP_TO_8BIT((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
         }
@@ -3549,7 +3478,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     int score_limit=0;
     int left_limit= 0;
         
-    s->fdct (block);
+    s->dsp.fdct (block);
 
     qmul= qscale*16;
     qadd= ((qscale-1)|1)*8;
@@ -3648,7 +3577,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                     unquant_coeff= level*qmul - qadd;
                 }
             }else{ //MPEG1
-                j= s->idct_permutation[ scantable[i + start_i] ]; //FIXME optimize
+                j= s->dsp.idct_permutation[ scantable[i + start_i] ]; //FIXME optimize
                 if(s->mb_intra){
                     if (level < 0) {
                         unquant_coeff = (int)((-level) * qscale * s->intra_matrix[j]) >> 3;
@@ -3760,11 +3689,11 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     i= last_i;
     assert(last_level);
 //FIXME use permutated scantable
-    block[ s->idct_permutation[ scantable[last_non_zero] ] ]= last_level;
+    block[ s->dsp.idct_permutation[ scantable[last_non_zero] ] ]= last_level;
     i -= last_run + 1;
     
     for(;i>0 ; i -= run_tab[i] + 1){
-        const int j= s->idct_permutation[ scantable[i - 1 + start_i] ];
+        const int j= s->dsp.idct_permutation[ scantable[i - 1 + start_i] ];
     
         block[j]= level_tab[i];
         assert(block[j]);
@@ -3784,7 +3713,7 @@ static int dct_quantize_c(MpegEncContext *s,
     int max=0;
     unsigned int threshold1, threshold2;
 
-    s->fdct (block);
+    s->dsp.fdct (block);
 
     if (s->mb_intra) {
         if (!s->h263_aic) {
@@ -3836,8 +3765,8 @@ static int dct_quantize_c(MpegEncContext *s,
     *overflow= s->max_qcoeff < max; //overflow might have happend
     
     /* we need this permutation so that we correct the IDCT, we only permute the !=0 elements */
-    if (s->idct_permutation_type != FF_NO_IDCT_PERM)
-	ff_block_permute(block, s->idct_permutation, scantable, last_non_zero);
+    if (s->dsp.idct_permutation_type != FF_NO_IDCT_PERM)
+	ff_block_permute(block, s->dsp.idct_permutation, scantable, last_non_zero);
 
     return last_non_zero;
 }

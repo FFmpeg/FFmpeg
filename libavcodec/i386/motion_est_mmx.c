@@ -386,7 +386,7 @@ static int pix_abs16x16_xy2_ ## suf(uint8_t *blk2, uint8_t *blk1, int stride)\
 PIX_SAD(mmx)
 PIX_SAD(mmx2)
 
-void dsputil_init_pix_mmx(DSPContext* c, unsigned mask)
+void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     if (mm_flags & MM_MMX) {
         c->pix_abs16x16     = pix_abs16x16_mmx;
@@ -403,27 +403,18 @@ void dsputil_init_pix_mmx(DSPContext* c, unsigned mask)
     }
     if (mm_flags & MM_MMXEXT) {
 	c->pix_abs16x16     = pix_abs16x16_mmx2;
-	c->pix_abs16x16_x2  = pix_abs16x16_x2_mmx2;
-	c->pix_abs16x16_y2  = pix_abs16x16_y2_mmx2;
-	c->pix_abs16x16_xy2 = pix_abs16x16_xy2_mmx2;
 	c->pix_abs8x8     = pix_abs8x8_mmx2;
-	c->pix_abs8x8_x2  = pix_abs8x8_x2_mmx2;
-	c->pix_abs8x8_y2  = pix_abs8x8_y2_mmx2;
-	c->pix_abs8x8_xy2 = pix_abs8x8_xy2_mmx2;
 
 	c->sad[0]= sad16x16_mmx2;
 	c->sad[1]= sad8x8_mmx2;
-    }
-}
-
-void dsputil_set_bit_exact_pix_mmx(DSPContext* c, unsigned mask)
-{
-    if (mm_flags & MM_MMXEXT) {
-	c->pix_abs16x16_x2  = pix_abs16x16_x2_mmx;
-	c->pix_abs16x16_y2  = pix_abs16x16_y2_mmx;
-	c->pix_abs16x16_xy2 = pix_abs16x16_xy2_mmx;
-	c->pix_abs8x8_x2  = pix_abs8x8_x2_mmx;
-	c->pix_abs8x8_y2  = pix_abs8x8_y2_mmx;
-	c->pix_abs8x8_xy2 = pix_abs8x8_xy2_mmx;
+        
+        if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
+            c->pix_abs16x16_x2  = pix_abs16x16_x2_mmx2;
+            c->pix_abs16x16_y2  = pix_abs16x16_y2_mmx2;
+            c->pix_abs16x16_xy2 = pix_abs16x16_xy2_mmx2;
+            c->pix_abs8x8_x2  = pix_abs8x8_x2_mmx2;
+            c->pix_abs8x8_y2  = pix_abs8x8_y2_mmx2;
+            c->pix_abs8x8_xy2 = pix_abs8x8_xy2_mmx2;
+        }
     }
 }

@@ -149,9 +149,21 @@ typedef struct DSPContext {
     /* huffyuv specific */
     void (*add_bytes)(uint8_t *dst/*align 16*/, uint8_t *src/*align 16*/, int w);
     void (*diff_bytes)(uint8_t *dst/*align 16*/, uint8_t *src1/*align 16*/, uint8_t *src2/*align 1*/,int w);
+    
+    /* (I)DCT */
+    void (*fdct)(DCTELEM *block/* align 16*/);
+    void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    uint8_t idct_permutation[64];
+    int idct_permutation_type;
+#define FF_NO_IDCT_PERM 1
+#define FF_LIBMPEG2_IDCT_PERM 2
+#define FF_SIMPLE_IDCT_PERM 3
+#define FF_TRANSPOSE_IDCT_PERM 4
+
 } DSPContext;
 
-void dsputil_init(DSPContext* p, unsigned mask);
+void dsputil_init(DSPContext* p, AVCodecContext *avctx);
 
 /**
  * permute block according to permuatation.
@@ -194,11 +206,8 @@ static inline void emms(void)
 
 #define __align8 __attribute__ ((aligned (8)))
 
-void dsputil_init_mmx(DSPContext* c, unsigned mask);
-void dsputil_set_bit_exact_mmx(DSPContext* c, unsigned mask);
-
-void dsputil_init_pix_mmx(DSPContext* c, unsigned mask);
-void dsputil_set_bit_exact_pix_mmx(DSPContext* c, unsigned mask);
+void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
+void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(ARCH_ARMV4L)
 
@@ -206,20 +215,20 @@ void dsputil_set_bit_exact_pix_mmx(DSPContext* c, unsigned mask);
    line ptimizations */
 #define __align8 __attribute__ ((aligned (4)))
 
-void dsputil_init_armv4l(DSPContext* c, unsigned mask);
+void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(HAVE_MLIB)
 
 /* SPARC/VIS IDCT needs 8-byte aligned DCT blocks */
 #define __align8 __attribute__ ((aligned (8)))
 
-void dsputil_init_mlib(DSPContext* c, unsigned mask);
+void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(ARCH_ALPHA)
 
 #define __align8 __attribute__ ((aligned (8)))
 
-void dsputil_init_alpha(DSPContext* c, unsigned mask);
+void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(ARCH_POWERPC)
 
@@ -233,13 +242,13 @@ extern int mm_flags;
 
 #define __align8 __attribute__ ((aligned (16)))
 
-void dsputil_init_ppc(DSPContext* c, unsigned mask);
+void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(HAVE_MMI)
 
 #define __align8 __attribute__ ((aligned (16)))
 
-void dsputil_init_mmi(DSPContext* c, unsigned mask);
+void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
 
 #else
 

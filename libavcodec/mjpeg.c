@@ -386,7 +386,7 @@ static void jpeg_put_comments(MpegEncContext *s)
     }
 
     /* comment */
-    if(!ff_bit_exact){
+    if(!(s->flags & CODEC_FLAG_BITEXACT)){
         put_marker(p, COM);
         flush_put_bits(p);
         ptr = pbBufPtr(p);
@@ -703,7 +703,7 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    /* ugly way to get the idct & scantable */
+    /* ugly way to get the idct & scantable FIXME */
     memset(&s2, 0, sizeof(MpegEncContext));
     s2.flags= avctx->flags;
     s2.avctx= avctx;
@@ -713,7 +713,7 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     if (MPV_common_init(&s2) < 0)
        return -1;
     s->scantable= s2.intra_scantable;
-    s->idct_put= s2.idct_put;
+    s->idct_put= s2.dsp.idct_put;
     MPV_common_end(&s2);
 
     s->mpeg_enc_ctx_allocated = 0;

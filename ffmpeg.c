@@ -154,6 +154,7 @@ static int do_play = 0;
 static int do_psnr = 0;
 static int do_vstats = 0;
 static int do_pass = 0;
+static int bitexact = 0;
 static char *pass_logfilename = NULL;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
@@ -2075,6 +2076,9 @@ static void opt_input_file(const char *filename)
                 enc->flags|= CODEC_FLAG_TRUNCATED; */
             if(/*enc->codec_id==CODEC_ID_MPEG4 || */enc->codec_id==CODEC_ID_MPEG1VIDEO)
                 enc->flags|= CODEC_FLAG_TRUNCATED;
+            
+            if(bitexact)
+                enc->flags|= CODEC_FLAG_BITEXACT;
 
             if (enc->frame_rate != rfps) {
                 fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
@@ -2219,7 +2223,10 @@ static void opt_output_file(const char *filename)
                     video_enc->flags |= CODEC_FLAG_QSCALE;
                     st->quality = video_qscale;
                 }
-            
+                
+                if(bitexact)
+                    video_enc->flags |= CODEC_FLAG_BITEXACT;
+
                 if (use_hq) {
                     video_enc->flags |= CODEC_FLAG_HQ;
                 }
@@ -2557,7 +2564,7 @@ extern int ffm_nopts;
 
 static void opt_bitexact(void)
 {
-    avcodec_set_bit_exact();
+    bitexact=1;
     /* disable generate of real time pts in ffm (need to be supressed anyway) */
     ffm_nopts = 1;
 }

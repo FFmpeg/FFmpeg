@@ -21,8 +21,8 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "simple_idct.h"
 
-int ff_bit_exact=0;
 
 uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
 uint32_t squareTbl[512];
@@ -97,6 +97,18 @@ const uint32_t inverse[256]={
   18512791,   18433337,   18354562,   18276457,   18199014,   18122225,   18046082,   17970575, 
   17895698,   17821442,   17747799,   17674763,   17602325,   17530479,   17459217,   17388532, 
   17318417,   17248865,   17179870,   17111424,   17043522,   16976156,   16909321,   16843010,
+};
+
+/* Input permutation for the simple_idct_mmx */
+static const uint8_t simple_mmx_permutation[64]={
+	0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D, 
+	0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D, 
+	0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D, 
+	0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F, 
+	0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F, 
+	0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D, 
+	0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F, 
+	0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
 };
 
 static int pix_sum_c(uint8_t * pix, int line_size)
@@ -1787,7 +1799,7 @@ static int dct_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2
     int sum=0, i;
 
     s->dsp.diff_pixels(temp, src1, src2, stride);
-    s->fdct(temp);
+    s->dsp.fdct(temp);
 
     for(i=0; i<64; i++)
         sum+= ABS(temp[i]);
@@ -1887,7 +1899,7 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
         s->dct_unquantize(s, temp, 0, s->qscale);
     }
     
-    s->idct_add(bak, stride, temp);
+    s->dsp.idct_add(bak, stride, temp);
     
     distoration= s->dsp.sse[1](NULL, bak, src1, stride);
 
@@ -1959,7 +1971,20 @@ WARPER88_1616(quant_psnr8x8_c, quant_psnr16x16_c)
 WARPER88_1616(rd8x8_c, rd16x16_c)
 WARPER88_1616(bit8x8_c, bit16x16_c)
 
-void dsputil_init(DSPContext* c, unsigned mask)
+/* XXX: those functions should be suppressed ASAP when all IDCTs are
+ converted */
+static void ff_jref_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    j_rev_dct (block);
+    put_pixels_clamped_c(block, dest, line_size);
+}
+static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    j_rev_dct (block);
+    add_pixels_clamped_c(block, dest, line_size);
+}
+
+void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 {
     static int init_done = 0;
     int i;
@@ -1978,6 +2003,23 @@ void dsputil_init(DSPContext* c, unsigned mask)
 	for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
 
 	init_done = 1;
+    }
+
+#ifdef CONFIG_ENCODERS
+    if(avctx->dct_algo==FF_DCT_FASTINT)
+        c->fdct = fdct_ifast;
+    else
+        c->fdct = ff_jpeg_fdct_islow; //slow/accurate/default
+#endif //CONFIG_ENCODERS
+
+    if(avctx->idct_algo==FF_IDCT_INT){
+        c->idct_put= ff_jref_idct_put;
+        c->idct_add= ff_jref_idct_add;
+        c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+    }else{ //accurate/default
+        c->idct_put= simple_idct_put;
+        c->idct_add= simple_idct_add;
+        c->idct_permutation_type= FF_NO_IDCT_PERM;
     }
 
     c->get_pixels = get_pixels_c;
@@ -2082,37 +2124,43 @@ void dsputil_init(DSPContext* c, unsigned mask)
     c->diff_bytes= diff_bytes_c;
 
 #ifdef HAVE_MMX
-    dsputil_init_mmx(c, mask);
-    if (ff_bit_exact)
-    {
-        /* FIXME - AVCodec context should have flag for bitexact match */
-	/* fprintf(stderr, "\n\n\nff_bit_exact %d\n\n\n\n", ff_bit_exact); */
-	dsputil_set_bit_exact_mmx(c, mask);
-    }
+    dsputil_init_mmx(c, avctx);
 #endif
 #ifdef ARCH_ARMV4L
-    dsputil_init_armv4l(c, mask);
+    dsputil_init_armv4l(c, avctx);
 #endif
 #ifdef HAVE_MLIB
-    dsputil_init_mlib(c, mask);
+    dsputil_init_mlib(c, avctx);
 #endif
 #ifdef ARCH_ALPHA
-    dsputil_init_alpha(c, mask);
+    dsputil_init_alpha(c, avctx);
 #endif
 #ifdef ARCH_POWERPC
-    dsputil_init_ppc(c, mask);
+    dsputil_init_ppc(c, avctx);
 #endif
 #ifdef HAVE_MMI
-    dsputil_init_mmi(c, mask);
+    dsputil_init_mmi(c, avctx);
 #endif
+
+    switch(c->idct_permutation_type){
+    case FF_NO_IDCT_PERM:
+        for(i=0; i<64; i++)
+            c->idct_permutation[i]= i;
+        break;
+    case FF_LIBMPEG2_IDCT_PERM:
+        for(i=0; i<64; i++)
+            c->idct_permutation[i]= (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
+        break;
+    case FF_SIMPLE_IDCT_PERM:
+        for(i=0; i<64; i++)
+            c->idct_permutation[i]= simple_mmx_permutation[i];
+        break;
+    case FF_TRANSPOSE_IDCT_PERM:
+        for(i=0; i<64; i++)
+            c->idct_permutation[i]= ((i&7)<<3) | (i>>3);
+        break;
+    default:
+        fprintf(stderr, "Internal error, IDCT permutation not set\n");
+    }
 }
 
-/* remove any non bit exact operation (testing purpose) */
-void avcodec_set_bit_exact(void)
-{
-    ff_bit_exact=1;
-#ifdef HAVE_MMX
-// FIXME - better set_bit_exact
-//    dsputil_set_bit_exact_mmx();
-#endif
-}

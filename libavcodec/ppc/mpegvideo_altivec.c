@@ -468,7 +468,7 @@ int dct_quantize_altivec(MpegEncContext* s,
         // and handle it using the vector unit if we can.  This is the permute used
         // by the altivec idct, so it is common when using the altivec dct.
 
-        if ((lastNonZero > 0) && (s->idct_permutation_type == FF_TRANSPOSE_IDCT_PERM))
+        if ((lastNonZero > 0) && (s->dsp.idct_permutation_type == FF_TRANSPOSE_IDCT_PERM))
         {
             TRANSPOSE8(data0, data1, data2, data3, data4, data5, data6, data7);
         }
@@ -501,10 +501,10 @@ int dct_quantize_altivec(MpegEncContext* s,
     // We handled the tranpose permutation above and we don't
     // need to permute the "no" permutation case.
     if ((lastNonZero > 0) &&
-        (s->idct_permutation_type != FF_TRANSPOSE_IDCT_PERM) &&
-        (s->idct_permutation_type != FF_NO_IDCT_PERM))
+        (s->dsp.idct_permutation_type != FF_TRANSPOSE_IDCT_PERM) &&
+        (s->dsp.idct_permutation_type != FF_NO_IDCT_PERM))
     {
-        ff_block_permute(data, s->idct_permutation,
+        ff_block_permute(data, s->idsp.dct_permutation,
                 s->intra_scantable.scantable, lastNonZero);
     }
 

@@ -20,6 +20,7 @@
  */
 
 #include "../dsputil.h"
+#include "../simple_idct.h"
 
 int mm_flags; /* multimedia extension flags */
 
@@ -1408,8 +1409,35 @@ static void just_return() { return; }
     c->put_ ## postfix1 = put_ ## postfix2;\
     c->put_no_rnd_ ## postfix1 = put_no_rnd_ ## postfix2;\
     c->avg_ ## postfix1 = avg_ ## postfix2;
+
+/* external functions, from idct_mmx.c */
+void ff_mmx_idct(DCTELEM *block);
+void ff_mmxext_idct(DCTELEM *block);
+
+/* XXX: those functions should be suppressed ASAP when all IDCTs are
+   converted */
+static void ff_libmpeg2mmx_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_mmx_idct (block);
+    put_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_libmpeg2mmx_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_mmx_idct (block);
+    add_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_libmpeg2mmx2_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_mmxext_idct (block);
+    put_pixels_clamped_mmx(block, dest, line_size);
+}
+static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    ff_mmxext_idct (block);
+    add_pixels_clamped_mmx(block, dest, line_size);
+}
     
-void dsputil_init_mmx(DSPContext* c, unsigned mask)
+void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     mm_flags = mm_support();
 #if 0
@@ -1428,6 +1456,27 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
 #endif
 
     if (mm_flags & MM_MMX) {
+        const int dct_algo = avctx->dct_algo;
+        const int idct_algo= avctx->idct_algo;
+
+        if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX)
+            c->fdct = ff_fdct_mmx;
+
+        if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SIMPLEMMX){
+            c->idct_put= ff_simple_idct_put_mmx;
+            c->idct_add= ff_simple_idct_add_mmx;
+            c->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
+        }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
+            if(mm_flags & MM_MMXEXT){
+                c->idct_put= ff_libmpeg2mmx2_idct_put;
+                c->idct_add= ff_libmpeg2mmx2_idct_add;
+            }else{
+                c->idct_put= ff_libmpeg2mmx_idct_put;
+                c->idct_add= ff_libmpeg2mmx_idct_add;
+            }
+            c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+        }
+        
         c->get_pixels = get_pixels_mmx;
         c->diff_pixels = diff_pixels_mmx;
         c->put_pixels_clamped = put_pixels_clamped_mmx;
@@ -1487,23 +1536,26 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
         if (mm_flags & MM_MMXEXT) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
             c->put_pixels_tab[0][2] = put_pixels16_y2_mmx2;
-            c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmx2;
-            c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_mmx2;
 
             c->avg_pixels_tab[0][0] = avg_pixels16_mmx2;
             c->avg_pixels_tab[0][1] = avg_pixels16_x2_mmx2;
             c->avg_pixels_tab[0][2] = avg_pixels16_y2_mmx2;
-            c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx2;
 
             c->put_pixels_tab[1][1] = put_pixels8_x2_mmx2;
             c->put_pixels_tab[1][2] = put_pixels8_y2_mmx2;
-            c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_mmx2;
-            c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_mmx2;
 
             c->avg_pixels_tab[1][0] = avg_pixels8_mmx2;
             c->avg_pixels_tab[1][1] = avg_pixels8_x2_mmx2;
             c->avg_pixels_tab[1][2] = avg_pixels8_y2_mmx2;
-            c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
+
+            if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
+                c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmx2;
+                c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_mmx2;
+                c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_mmx2;
+                c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_mmx2;
+                c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx2;
+                c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx2;
+            }
 
 #if 1
             SET_QPEL_FUNC(qpel_pixels_tab[0][ 0], qpel16_mc00_mmx2)
@@ -1542,23 +1594,26 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
         } else if (mm_flags & MM_3DNOW) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_3dnow;
             c->put_pixels_tab[0][2] = put_pixels16_y2_3dnow;
-            c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_3dnow;
-            c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_3dnow;
 
             c->avg_pixels_tab[0][0] = avg_pixels16_3dnow;
             c->avg_pixels_tab[0][1] = avg_pixels16_x2_3dnow;
             c->avg_pixels_tab[0][2] = avg_pixels16_y2_3dnow;
-            c->avg_pixels_tab[0][3] = avg_pixels16_xy2_3dnow;
 
             c->put_pixels_tab[1][1] = put_pixels8_x2_3dnow;
             c->put_pixels_tab[1][2] = put_pixels8_y2_3dnow;
-            c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_3dnow;
-            c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_3dnow;
 
             c->avg_pixels_tab[1][0] = avg_pixels8_3dnow;
             c->avg_pixels_tab[1][1] = avg_pixels8_x2_3dnow;
             c->avg_pixels_tab[1][2] = avg_pixels8_y2_3dnow;
-            c->avg_pixels_tab[1][3] = avg_pixels8_xy2_3dnow;
+
+            if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
+                c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_3dnow;
+                c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_3dnow;
+                c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_3dnow;
+                c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_3dnow;
+                c->avg_pixels_tab[0][3] = avg_pixels16_xy2_3dnow;
+                c->avg_pixels_tab[1][3] = avg_pixels8_xy2_3dnow;
+            }
 
             SET_QPEL_FUNC(qpel_pixels_tab[0][ 0], qpel16_mc00_3dnow)
             SET_QPEL_FUNC(qpel_pixels_tab[0][ 1], qpel16_mc10_3dnow)
@@ -1594,7 +1649,8 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
             SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_3dnow)
         }
     }
-    dsputil_init_pix_mmx(c, mask);
+        
+    dsputil_init_pix_mmx(c, avctx);
 #if 0
     // for speed testing
     get_pixels = just_return;
@@ -1629,21 +1685,4 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
     //av_fdct = just_return;
     //ff_idct = just_return;
 #endif
-}
-
-/* remove any non bit exact operation (testing purpose). NOTE that
-   this function should be kept as small as possible because it is
-   always difficult to test automatically non bit exact cases. */
-void dsputil_set_bit_exact_mmx(DSPContext* c, unsigned mask)
-{
-    if (mm_flags & MM_MMX) {
-        /* MMX2 & 3DNOW */
-        c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmx;
-        c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_mmx;
-        c->avg_pixels_tab[0][3] = avg_pixels16_xy2_mmx;
-        c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2_mmx;
-        c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_mmx;
-        c->avg_pixels_tab[1][3] = avg_pixels8_xy2_mmx;
-    }
-    dsputil_set_bit_exact_pix_mmx(c, mask);
 }

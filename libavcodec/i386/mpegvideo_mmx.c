@@ -23,7 +23,6 @@
 #include "../dsputil.h"
 #include "../mpegvideo.h"
 #include "../avcodec.h"
-#include "../simple_idct.h"
 
 extern uint8_t zigzag_direct_noperm[64];
 extern uint16_t inv_zigzag_direct16[64];
@@ -499,38 +498,10 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 #define RENAME(a) a ## _MMX2
 #include "mpegvideo_mmx_template.c"
 
-/* external functions, from idct_mmx.c */
-void ff_mmx_idct(DCTELEM *block);
-void ff_mmxext_idct(DCTELEM *block);
-
-/* XXX: those functions should be suppressed ASAP when all IDCTs are
-   converted */
-static void ff_libmpeg2mmx_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_mmx_idct (block);
-    put_pixels_clamped_mmx(block, dest, line_size);
-}
-static void ff_libmpeg2mmx_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_mmx_idct (block);
-    add_pixels_clamped_mmx(block, dest, line_size);
-}
-static void ff_libmpeg2mmx2_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_mmxext_idct (block);
-    put_pixels_clamped_mmx(block, dest, line_size);
-}
-static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
-{
-    ff_mmxext_idct (block);
-    add_pixels_clamped_mmx(block, dest, line_size);
-}
-
 void MPV_common_init_mmx(MpegEncContext *s)
 {
     if (mm_flags & MM_MMX) {
         const int dct_algo = s->avctx->dct_algo;
-        const int idct_algo= s->avctx->idct_algo;
         
         s->dct_unquantize_h263 = dct_unquantize_h263_mmx;
         s->dct_unquantize_mpeg1 = dct_unquantize_mpeg1_mmx;
@@ -539,28 +510,11 @@ void MPV_common_init_mmx(MpegEncContext *s)
         draw_edges = draw_edges_mmx;
 
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
-            s->fdct = ff_fdct_mmx;
-
             if(mm_flags & MM_MMXEXT){
                 s->dct_quantize= dct_quantize_MMX2;
             } else {
                 s->dct_quantize= dct_quantize_MMX;
             }
-        }
-
-        if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SIMPLEMMX){
-            s->idct_put= ff_simple_idct_put_mmx;
-            s->idct_add= ff_simple_idct_add_mmx;
-            s->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
-        }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
-            if(mm_flags & MM_MMXEXT){
-                s->idct_put= ff_libmpeg2mmx2_idct_put;
-                s->idct_add= ff_libmpeg2mmx2_idct_add;
-            }else{
-                s->idct_put= ff_libmpeg2mmx_idct_put;
-                s->idct_add= ff_libmpeg2mmx_idct_add;
-            }
-            s->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
         }
     }
 }

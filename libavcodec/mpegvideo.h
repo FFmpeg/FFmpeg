@@ -346,12 +346,6 @@ typedef struct MpegEncContext {
     ScanTable intra_h_scantable;
     ScanTable intra_v_scantable;
     ScanTable inter_scantable; // if inter == intra then intra should be used to reduce tha cache usage
-    uint8_t idct_permutation[64];
-    int idct_permutation_type;
-#define FF_NO_IDCT_PERM 1
-#define FF_LIBMPEG2_IDCT_PERM 2
-#define FF_SIMPLE_IDCT_PERM 3
-#define FF_TRANSPOSE_IDCT_PERM 4
 
     void *opaque; /* private data for the user */
 
@@ -562,10 +556,6 @@ typedef struct MpegEncContext {
                            DCTELEM *block/*align 16*/, int n, int qscale);
     int (*dct_quantize)(struct MpegEncContext *s, DCTELEM *block/*align 16*/, int n, int qscale, int *overflow);
     int (*fast_dct_quantize)(struct MpegEncContext *s, DCTELEM *block/*align 16*/, int n, int qscale, int *overflow);
-    void (*fdct)(DCTELEM *block/* align 16*/);
-    void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
-    void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
-    //FIXME move above funcs into dspContext perhaps
 } MpegEncContext;
 
 
@@ -609,8 +599,6 @@ char ff_get_pict_type_char(int pict_type);
 int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size);
 
 extern enum PixelFormat ff_yuv420p_list[2];
-
-extern int ff_bit_exact;
 
 static inline void ff_init_block_index(MpegEncContext *s){
     s->block_index[0]= s->block_wrap[0]*(s->mb_y*2 + 1) - 1 + s->mb_x*2;

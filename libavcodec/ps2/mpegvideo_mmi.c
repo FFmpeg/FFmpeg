@@ -22,10 +22,6 @@
 #include "../mpegvideo.h"
 #include "../avcodec.h"
 
-void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
-void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
-
-
 static void dct_unquantize_h263_mmi(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale)
 {
@@ -84,14 +80,6 @@ static void dct_unquantize_h263_mmi(MpegEncContext *s,
 
 void MPV_common_init_mmi(MpegEncContext *s)
 {
-    int i;
-    const int idct_algo= s->avctx->idct_algo;
-       
-    if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_PS2){
-        s->idct_put= ff_mmi_idct_put;
-        s->idct_add= ff_mmi_idct_add;
-        s->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
-    }
     s->dct_unquantize_h263 = dct_unquantize_h263_mmi;
 }
 

@@ -115,12 +115,12 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
     /* XXX: fix it */
     memset(&s2, 0, sizeof(MpegEncContext));
     s2.avctx = avctx;
-    dsputil_init(&s2.dsp, avctx->dsp_mask);
+    dsputil_init(&s2.dsp, avctx);
     if (DCT_common_init(&s2) < 0)
        return -1;
 
-    s->idct_put[0] = s2.idct_put;
-    memcpy(s->idct_permutation, s2.idct_permutation, 64);
+    s->idct_put[0] = s2.dsp.idct_put;
+    memcpy(s->idct_permutation, s2.dsp.idct_permutation, 64);
     memcpy(s->dv_zigzag[0], s2.intra_scantable.permutated, 64);
 
     /* XXX: use MMX also for idct248 */

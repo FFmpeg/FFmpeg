@@ -21,7 +21,33 @@
 
 extern void j_rev_dct_ARM(DCTELEM *data);
 
-void dsputil_init_armv4l(DSPContext* c, unsigned mask)
+/* XXX: local hack */
+static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
+static void (*ff_add_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
+
+/* XXX: those functions should be suppressed ASAP when all IDCTs are
+   converted */
+static void arm_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
-//  ff_idct = j_rev_dct_ARM;
+    j_rev_dct_ARM (block);
+    ff_put_pixels_clamped(block, dest, line_size);
+}
+static void arm_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    j_rev_dct_ARM (block);
+    ff_add_pixels_clamped(block, dest, line_size);
+}
+
+void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
+{
+    const int idct_algo= avctx->idct_algo;
+
+    ff_put_pixels_clamped = c->put_pixels_clamped;
+    ff_add_pixels_clamped = c->add_pixels_clamped;
+
+    if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_ARM){
+        c->idct_put= arm_idct_put;
+        c->idct_add= arm_idct_add;
+        c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;/* FF_NO_IDCT_PERM */
+    }
 }

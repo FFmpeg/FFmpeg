@@ -328,7 +328,7 @@ static int decode_ext_header(Wmv2Context *w){
     code               = get_bits(&gb, 3);
     
     if(code==0) return -1;
-            
+
     s->slice_height = s->mb_height / code;
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
@@ -582,7 +582,7 @@ static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int st
     switch(w->abt_type_table[n]){
     case 0:
         if (s->block_last_index[n] >= 0) {
-            s->idct_add (dst, stride, block1);
+            s->dsp.idct_add (dst, stride, block1);
         }
         break;
     case 1:

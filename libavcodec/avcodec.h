@@ -16,8 +16,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4659
-#define LIBAVCODEC_BUILD_STR   "4659"
+#define LIBAVCODEC_BUILD       4660
+#define LIBAVCODEC_BUILD_STR   "4660"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -159,6 +159,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_ALT_SCAN       0x00100000 /* use alternate scan */
 #define CODEC_FLAG_TRELLIS_QUANT  0x00200000 /* use trellis quantization */
 #define CODEC_FLAG_GLOBAL_HEADER  0x00400000 /* place global headers in extradata instead of every keyframe */
+#define CODEC_FLAG_BITEXACT       0x00800000 /* use only bitexact stuff (except (i)dct) */
 
 /* codec capabilities */
 
@@ -1166,8 +1167,6 @@ unsigned avcodec_version(void);
 /* returns LIBAVCODEC_BUILD constant */
 unsigned avcodec_build(void);
 void avcodec_init(void);
-
-void avcodec_set_bit_exact(void);
 
 void register_avcodec(AVCodec *format);
 AVCodec *avcodec_find_encoder(enum CodecID id);

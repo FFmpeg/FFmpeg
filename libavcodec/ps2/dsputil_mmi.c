@@ -22,6 +22,9 @@
 #include "../dsputil.h"
 #include "mmi.h"
 
+void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
+
 
 static void clear_blocks_mmi(DCTELEM * blocks)
 {
@@ -103,8 +106,10 @@ static void put_pixels16_mmi(uint8_t *block, const uint8_t *pixels, int line_siz
 }
 
 
-void dsputil_init_mmi(DSPContext* c, unsigned mask)
+void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx)
 {
+    const int idct_algo= avctx->idct_algo;
+
     c->clear_blocks = clear_blocks_mmi;
 
     c->put_pixels_tab[1][0] = put_pixels8_mmi;
@@ -114,5 +119,11 @@ void dsputil_init_mmi(DSPContext* c, unsigned mask)
     c->put_no_rnd_pixels_tab[0][0] = put_pixels16_mmi;
 
     c->get_pixels = get_pixels_mmi;
+       
+    if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_PS2){
+        c->idct_put= ff_mmi_idct_put;
+        c->idct_add= ff_mmi_idct_add;
+        c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+    }
 }
 

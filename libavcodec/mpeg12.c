@@ -1653,7 +1653,7 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j= s->idct_permutation[ ff_zigzag_direct[i] ];
+            j= s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
             s->intra_matrix[j] = v;
             s->chroma_intra_matrix[j] = v;
         }
@@ -1661,7 +1661,7 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j= s->idct_permutation[ ff_zigzag_direct[i] ];
+            j= s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
             s->inter_matrix[j] = v;
             s->chroma_inter_matrix[j] = v;
         }
@@ -1669,14 +1669,14 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j= s->idct_permutation[ ff_zigzag_direct[i] ];
+            j= s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
             s->chroma_intra_matrix[j] = v;
         }
     }
     if (get_bits1(&s->gb)) {
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
-            j= s->idct_permutation[ ff_zigzag_direct[i] ];
+            j= s->dsp.idct_permutation[ ff_zigzag_direct[i] ];
             s->chroma_inter_matrix[j] = v;
         }
     }
@@ -1985,7 +1985,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #endif
     } else {
         for(i=0;i<64;i++) {
-            int j= s->idct_permutation[i];
+            int j= s->dsp.idct_permutation[i];
             v = ff_mpeg1_default_intra_matrix[i];
             s->intra_matrix[j] = v;
             s->chroma_intra_matrix[j] = v;
@@ -2006,7 +2006,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #endif
     } else {
         for(i=0;i<64;i++) {
-            int j= s->idct_permutation[i];
+            int j= s->dsp.idct_permutation[i];
             v = ff_mpeg1_default_non_intra_matrix[i];
             s->inter_matrix[j] = v;
             s->chroma_inter_matrix[j] = v;

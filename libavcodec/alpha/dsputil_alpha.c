@@ -20,6 +20,9 @@
 #include "asm.h"
 #include "../dsputil.h"
 
+extern void simple_idct_put_axp(uint8_t *dest, int line_size, DCTELEM *block);
+extern void simple_idct_add_axp(uint8_t *dest, int line_size, DCTELEM *block);
+
 void put_pixels_axp_asm(uint8_t *block, const uint8_t *pixels,
                         int line_size, int h);
 void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,
@@ -295,7 +298,7 @@ static int sad8x8_mvi(void *s, uint8_t *a, uint8_t *b, int stride)
     return pix_abs8x8_mvi(a, b, stride);
 }
 
-void dsputil_init_alpha(DSPContext* c, unsigned mask)
+void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
 {
     c->put_pixels_tab[0][0] = put_pixels16_axp_asm;
     c->put_pixels_tab[0][1] = put_pixels16_x2_axp;
@@ -357,4 +360,7 @@ void dsputil_init_alpha(DSPContext* c, unsigned mask)
 
     put_pixels_clamped_axp_p = c->put_pixels_clamped;
     add_pixels_clamped_axp_p = c->add_pixels_clamped;
+    
+    c->idct_put = simple_idct_put_axp;
+    c->idct_add = simple_idct_add_axp;
 }
