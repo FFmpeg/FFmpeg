@@ -73,6 +73,7 @@ typedef struct VideoState {
     int no_background;
     int abort_request;
     int paused;
+    int last_paused;
     AVFormatContext *ic;
     int dtg_active_format;
 
@@ -1041,6 +1042,14 @@ static void stream_component_close(VideoState *is, int stream_index)
     }
 }
 
+/* since we have only one decoding thread, we can use a global
+   variable instead of a thread local variable */
+static VideoState *global_video_state;
+
+static int decode_interrupt_cb(void)
+{
+    return (global_video_state && global_video_state->abort_request);
+}
 
 /* this thread gets the stream from the disk or the network */
 static int decode_thread(void *arg)
@@ -1054,6 +1063,9 @@ static int decode_thread(void *arg)
     audio_index = -1;
     is->video_stream = -1;
     is->audio_stream = -1;
+
+    global_video_state = is;
+    url_set_interrupt_cb(decode_interrupt_cb);
 
     err = av_open_input_file(&ic, is->filename, NULL, 0, NULL);
     if (err < 0)
@@ -1101,6 +1113,22 @@ static int decode_thread(void *arg)
     for(;;) {
         if (is->abort_request)
             break;
+        if (is->paused != is->last_paused) {
+            is->last_paused = is->paused;
+            if (ic->iformat == &rtsp_demux) {
+                if (is->paused)
+                    rtsp_pause(ic);
+                else
+                    rtsp_resume(ic);
+            }
+        }
+        if (is->paused && ic->iformat == &rtsp_demux) {
+            /* wait 10 ms to avoid trying to get another packet */
+            /* XXX: horrible */
+            SDL_Delay(10);
+            continue;
+        }
+
         /* if the queue are full, no need to read more */
         if (is->audioq.size > MAX_AUDIOQ_SIZE ||
             is->videoq.size > MAX_VIDEOQ_SIZE) {
@@ -1126,6 +1154,9 @@ static int decode_thread(void *arg)
     }
 
  fail:
+    /* disable interrupting */
+    global_video_state = NULL;
+
     /* close each stream */
     if (is->audio_stream >= 0)
         stream_component_close(is, is->audio_stream);
@@ -1134,6 +1165,8 @@ static int decode_thread(void *arg)
 
     av_close_input_file(is->ic);
     is->ic = NULL; /* safety */
+    url_set_interrupt_cb(NULL);
+
     return 0;
 }
 
@@ -1315,6 +1348,12 @@ static void opt_format(const char *arg)
     }
 }
 
+void opt_rtp_tcp(void)
+{
+    /* only tcp protocol */
+    rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_TCP);
+}
+
 const OptionDef options[] = {
     { "h", 0, {(void*)show_help}, "show help" },
     { "x", HAS_ARG, {(void*)opt_width}, "force displayed width", "width" },
@@ -1324,6 +1363,7 @@ const OptionDef options[] = {
     { "nodisp", OPT_BOOL, {(void*)&display_disable}, "disable graphical display" },
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
+    { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },
     { NULL, },
 };
 
