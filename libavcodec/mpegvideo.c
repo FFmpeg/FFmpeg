@@ -24,7 +24,6 @@
  * The simplest mpeg encoder (well, it was the simplest!).
  */ 
  
-#include <ctype.h>
 #include <limits.h>
 #include "avcodec.h"
 #include "dsputil.h"
@@ -3509,6 +3508,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 #endif
     case FMT_MPEG1:
         mpeg1_encode_picture_header(s, picture_number);
+        break;
+    case FMT_H264:
         break;
     }
     bits= get_bit_count(&s->pb);
