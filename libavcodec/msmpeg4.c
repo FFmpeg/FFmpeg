@@ -74,7 +74,7 @@ int frame_count = 0;
 
 #include "msmpeg4data.h"
 
-static UINT8 rl_length[2][NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
+static UINT8 rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 
 #ifdef STATS
 
@@ -234,8 +234,7 @@ void ff_msmpeg4_encode_init(MpegEncContext *s)
                 for(run=0; run<=MAX_RUN; run++){
                     int last;
                     for(last=0; last<2; last++){
-                        rl_length[0][i][level][run][last]= get_size_of_code(s, &rl_table[  i], last, run, level,0);
-                        rl_length[1][i][level][run][last]= get_size_of_code(s, &rl_table[  i], last, run, level,1);
+                        rl_length[i][level][run][last]= get_size_of_code(s, &rl_table[  i], last, run, level, 0);
                     }
                 }
             }
@@ -310,12 +309,12 @@ static void find_best_tables(MpegEncContext * s)
                     int intra_chroma_count= s->ac_stats[1][1][level][run][last];
                     
                     if(s->pict_type==I_TYPE){
-                        size       += intra_luma_count  *rl_length[1][i  ][level][run][last];
-                        chroma_size+= intra_chroma_count*rl_length[1][i+3][level][run][last];
+                        size       += intra_luma_count  *rl_length[i  ][level][run][last];
+                        chroma_size+= intra_chroma_count*rl_length[i+3][level][run][last];
                     }else{
-                        size+=        intra_luma_count  *rl_length[1][i  ][level][run][last]
-                                     +intra_chroma_count*rl_length[1][i+3][level][run][last]
-                                     +inter_count       *rl_length[0][i+3][level][run][last];
+                        size+=        intra_luma_count  *rl_length[i  ][level][run][last]
+                                     +intra_chroma_count*rl_length[i+3][level][run][last]
+                                     +inter_count       *rl_length[i+3][level][run][last];
                     }                   
                 }
                 if(last_size == size+chroma_size) break;
