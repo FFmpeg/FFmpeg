@@ -556,7 +556,6 @@ static void dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
 {
     DynBuffer *d = opaque;
     int new_size, new_allocated_size;
-    uint8_t *new_buffer;
     
     /* reallocate buffer if needed */
     new_size = d->pos + buf_size;

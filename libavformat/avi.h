@@ -1,3 +1,7 @@
+#ifndef FFMPEG_AVI_H
+#define FFMPEG_AVI_H
+
+#include "avcodec.h"
 
 #define AVIF_HASINDEX		0x00000010	// Index at end of file?
 #define AVIF_MUSTUSEINDEX	0x00000020
@@ -27,5 +31,6 @@ extern const CodecTag codec_bmp_tags[];
 extern const CodecTag codec_wav_tags[];
 
 unsigned int codec_get_tag(const CodecTag *tags, int id);
-enum CodecID;
 enum CodecID codec_get_id(const CodecTag *tags, unsigned int tag);
+
+#endif /* FFMPEG_AVI_H */

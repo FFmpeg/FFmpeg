@@ -525,9 +525,9 @@ static int avi_write_idx1(AVFormatContext *s)
     unsigned char tag[5];
 
     if (!url_is_streamed(pb)) {
-	AVIIentry* ie, *tie;
+	AVIIentry* ie = 0, *tie;
 	int entry[MAX_STREAMS];
-	int empty, stream_id;
+	int empty, stream_id = -1;
 
 	idx_chunk = start_tag(pb, "idx1");
 	memset(&entry[0], 0, sizeof(entry));
