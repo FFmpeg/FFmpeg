@@ -22,10 +22,6 @@
 #include "../dsputil.h"
 #include "mmi.h"
 
-/* the provided 'as' in binutils 2.9EE doesn't support
-the EE's mips3 instructions properly */
-#define AS_BUGGY
-
 
 static void clear_blocks_mmi(DCTELEM * blocks)
 {
@@ -49,19 +45,15 @@ static void get_pixels_mmi(DCTELEM *block, const UINT8 *pixels, int line_size)
 {
     int i;
     for(i=0;i<8;i++) {
-#ifdef AS_BUGGY
-        ld3(5, 0, 8);
         asm volatile(
-        "add    %1, %1, %2      \n\t"
-        "pextlb $8, $0, $8      \n\t"
-        "sq     $8, 0(%0)       \n\t" :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
-#else
-        asm volatile(
+        ".set   push            \n\t"
+        ".set   mips3           \n\t"
         "ld     $8, 0(%1)       \n\t"
         "add    %1, %1, %2      \n\t"
         "pextlb $8, $0, $8      \n\t"
-        "sq     $8, 0(%0)       \n\t" :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
-#endif
+        "sq     $8, 0(%0)       \n\t"
+        ".set   pop             \n\t"
+        :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
         block += 8;
     }
 }
@@ -71,20 +63,16 @@ static void put_pixels8_mmi(uint8_t *block, const uint8_t *pixels, int line_size
 {
     int i;
     for(i=0; i<h; i++) {
-#ifdef AS_BUGGY
-        ldr3(5, 0, 8);
-        ldl3(5, 7, 8);
-        asm volatile ( "add $5, $5, $6 \n\t" );
-        sd3(8, 0, 4);
-        asm volatile ( "add $4, $4, $6 \n\t" );
-#else
         asm volatile(
+        ".set   push            \n\t"
+        ".set   mips3           \n\t"
         "ldr    $8, 0(%1)       \n\t"
         "ldl    $8, 7(%1)       \n\t"
         "add    %1, %1, %2      \n\t"
         "sd     $8, 0(%0)       \n\t"
-        "add    %0, %0, %2      \n\t" :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
-#endif
+        "add    %0, %0, %2      \n\t"
+        ".set   pop             \n\t"
+        :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
     }
 }
 
@@ -92,27 +80,25 @@ static void put_pixels8_mmi(uint8_t *block, const uint8_t *pixels, int line_size
 static void put_pixels16_mmi(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
     int i;
-    for(i=0; i<h; i++) {
-#ifdef AS_BUGGY
-        ldr3(5, 0, 8);
-        ldl3(5, 7, 8);
-        ldr3(5, 8, 9);
-        ldl3(5, 15, 9);
-        asm volatile ( "add $5, $5, $6 \n\t" );
-        pcpyld($9, $8, $8);
-        sq($8, 0, $4);
-        asm volatile ( "add $4, $4, $6 \n\t" );
-#else
+    for(i=0; i<(h>>2); i++) {
         asm volatile (
-        "ldr    $8, 0(%1)       \n\t"
-        "ldl    $8, 7(%1)       \n\t"
-        "ldr    $9, 8(%1)       \n\t"
-        "ldl    $9, 15(%1)      \n\t"
-        "add    %1, %1, %2      \n\t"
-        "pcpyld $8, $9, $8      \n\t"
-        "sq     $8, 0(%0)       \n\t"
-        "add    %0, %0, %2      \n\t" :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "$9", "memory" );
-#endif
+        ".set   push            \n\t"
+        ".set   mips3           \n\t"
+#define PUTPIX16 \
+        "ldr    $8, 0(%1)       \n\t" \
+        "ldl    $8, 7(%1)       \n\t" \
+        "ldr    $9, 8(%1)       \n\t" \
+        "ldl    $9, 15(%1)      \n\t" \
+        "add    %1, %1, %2      \n\t" \
+        "pcpyld $8, $9, $8      \n\t" \
+        "sq     $8, 0(%0)       \n\t" \
+        "add    %0, %0, %2      \n\t"
+        PUTPIX16
+        PUTPIX16
+        PUTPIX16
+        PUTPIX16
+        ".set   pop             \n\t"
+        :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "$9", "memory" );
     }
 }
 
