@@ -600,7 +600,7 @@ static void yuv2rgb_c_4  (uint8_t * py_1, uint8_t * py_2,
 			  uint8_t * pu, uint8_t * pv,
 			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
 {
-    int U, V, Y, out;
+    int U, V, Y;
     uint8_t * r, * g, * b;
     uint8_t * dst_1, * dst_2;
 
@@ -692,8 +692,8 @@ static void yuv2rgb_c_1_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 			  uint8_t * pu, uint8_t * pv,
 			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
 {
-    int U, V, Y;
-    uint8_t * r, * g, * b;
+    int Y;
+    uint8_t * g;
     uint8_t * dst_1, * dst_2;
 
     h_size >>= 3;
