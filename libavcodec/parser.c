@@ -187,7 +187,12 @@ int ff_combine_frame(ParseContext *pc, int next, uint8_t **buf, int *buf_size)
     for(; pc->overread>0; pc->overread--){
         pc->buffer[pc->index++]= pc->buffer[pc->overread_index++];
     }
-    
+
+    /* flush remaining if EOF */
+    if(!*buf_size && next == END_NOT_FOUND){
+        next= 0;
+    }
+
     pc->last_index= pc->index;
 
     /* copy into buffer end return */
