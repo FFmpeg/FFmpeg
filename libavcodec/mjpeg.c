@@ -992,13 +992,12 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
                         goto the_end;
                     }
 //		    dprintf("mb: %d %d processed\n", mb_y, mb_x);
-                    ff_idct (s->block);
                     ptr = s->current_picture[c] + 
                         (s->linesize[c] * (v * mb_y + y) * 8) + 
                         (h * mb_x + x) * 8;
                     if (s->interlaced && s->bottom_field)
                         ptr += s->linesize[c] >> 1;
-                    put_pixels_clamped(s->block, ptr, s->linesize[c]);
+                    ff_idct_put(ptr, s->linesize[c], s->block);
                     if (++x == h) {
                         x = 0;
                         y++;
