@@ -2014,16 +2014,16 @@ static void select_input_picture(MpegEncContext *s){
             if(s->flags&CODEC_FLAG_PASS2){
                 for(i=0; i<s->max_b_frames+1; i++){
                     int pict_num= s->input_picture[0]->display_picture_number + i;
-                    int pict_type= s->rc_context.entry[pict_num].new_pict_type;
 
+                    if(pict_num >= s->rc_context.num_entries) 
+                        break;
                     if(!s->input_picture[i]){
-                        if(i>0)
-                            s->rc_context.entry[pict_num-1].new_pict_type = P_TYPE;
+                        s->rc_context.entry[pict_num-1].new_pict_type = P_TYPE;
                         break;
                     }
-                    s->input_picture[i]->pict_type= pict_type;
-                    
-                    if(i + 1 >= s->rc_context.num_entries) break;
+
+                    s->input_picture[i]->pict_type= 
+                        s->rc_context.entry[pict_num].new_pict_type;
                 }
             }
 
