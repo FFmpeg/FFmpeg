@@ -2615,11 +2615,20 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	long long memcpyTime=0, vertTime=0, horizTime=0, sumTime;
 	sumTime= rdtsc();
 #endif
-//mode= 0x7F;
+
+	dcOffset= ppMode->maxDcDiff;
+	dcThreshold= ppMode->maxDcDiff*2 + 1;
+
 #ifdef HAVE_MMX
 	maxTmpNoise[0]= ppMode->maxTmpNoise[0];
 	maxTmpNoise[1]= ppMode->maxTmpNoise[1];
 	maxTmpNoise[2]= ppMode->maxTmpNoise[2];
+	
+	mmxDCOffset= 0x7F - dcOffset;
+	mmxDCThreshold= 0x7F - dcThreshold;
+
+	mmxDCOffset*= 0x0101010101010101LL;
+	mmxDCThreshold*= 0x0101010101010101LL;
 #endif
 
 	if(mode & CUBIC_IPOL_DEINT_FILTER) copyAhead=16;
@@ -2662,8 +2671,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 
 		if(mode & FULL_Y_RANGE)
 		{
-			maxAllowedY=255;
-			minAllowedY=0;
+			ppMode->maxAllowedY=255;
+			ppMode->minAllowedY=0;
 		}
 	}
 
@@ -2703,14 +2712,14 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 			clipped-= yHistogram[white];
 		}
 
-		scale= (double)(maxAllowedY - minAllowedY) / (double)(white-black);
+		scale= (double)(ppMode->maxAllowedY - ppMode->minAllowedY) / (double)(white-black);
 
 #ifdef HAVE_MMX2
 		packedYScale= (uint16_t)(scale*256.0 + 0.5);
-		packedYOffset= (((black*packedYScale)>>8) - minAllowedY) & 0xFFFF;
+		packedYOffset= (((black*packedYScale)>>8) - ppMode->minAllowedY) & 0xFFFF;
 #else
 		packedYScale= (uint16_t)(scale*1024.0 + 0.5);
-		packedYOffset= (black - minAllowedY) & 0xFFFF;
+		packedYOffset= (black - ppMode->minAllowedY) & 0xFFFF;
 #endif
 
 		packedYOffset|= packedYOffset<<32;

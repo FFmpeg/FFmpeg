@@ -47,6 +47,7 @@ c = checked against the other implementations (-vo md5)
 
 /*
 TODO:
+remove global/static vars
 reduce the time wasted on the mem transfer
 implement everything in C at least (done at the moment but ...)
 unroll stuff if instructions depend too much on the prior one
@@ -153,14 +154,11 @@ int hFlatnessThreshold= 56 - 16;
 int vFlatnessThreshold= 56 - 16;
 int deringThreshold= 20;
 
-static int dcOffset= 1;
-static int dcThreshold= 3;
+static int dcOffset;
+static int dcThreshold;
 
 //amount of "black" u r willing to loose to get a brightness corrected picture
 double maxClippedThreshold= 0.01;
-
-int maxAllowedY=234;
-int minAllowedY=16;
 
 static struct PPFilter filters[]=
 {
@@ -672,6 +670,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 					ppMode.minAllowedY= 16;
 					ppMode.maxAllowedY= 234;
 					for(o=0; options[o]!=NULL; o++)
+					{
 						if(  !strcmp(options[o],"fullyrange")
 						   ||!strcmp(options[o],"f"))
 						{
@@ -679,6 +678,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 							ppMode.maxAllowedY= 255;
 							numOfUnknownOptions--;
 						}
+					}
 				}
 				else if(filters[i].mask == TEMP_NOISE_FILTER)
 				{
@@ -704,6 +704,9 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 				else if(filters[i].mask == V_DEBLOCK || filters[i].mask == H_DEBLOCK)
 				{
 					int o;
+					ppMode.maxDcDiff=1;
+//					hFlatnessThreshold= 40;
+//					vFlatnessThreshold= 40;
 
 					for(o=0; options[o]!=NULL && o<2; o++)
 					{
@@ -712,16 +715,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 						if(tail==options[o]) break;
 
 						numOfUnknownOptions--;
-						if(o==0)
-						{
-							dcOffset= val;
-							dcThreshold= 2*val+1;
-							mmxDCOffset= 0x7F - val;
-							mmxDCThreshold= 0x7F - 2*val - 1;
-							
-							mmxDCOffset*= 0x0101010101010101LL;
-							mmxDCThreshold*= 0x0101010101010101LL;
-						}  
+						if(o==0) ppMode.maxDcDiff= val;
 						else hFlatnessThreshold=
 						     vFlatnessThreshold= val;
 					}
@@ -800,6 +794,9 @@ void  postprocess(unsigned char * src[], int src_stride,
 	ppMode.maxTmpNoise[0]= 700;
 	ppMode.maxTmpNoise[1]= 1500;
 	ppMode.maxTmpNoise[2]= 3000;
+	ppMode.maxAllowedY= 234;
+	ppMode.minAllowedY= 16;
+	ppMode.maxDcDiff= 1;
 
 #ifdef HAVE_ODIVX_POSTPROCESS
 // Note: I could make this shit outside of this file, but it would mean one

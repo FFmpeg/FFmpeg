@@ -85,6 +85,8 @@ struct PPMode{
 	int maxAllowedY; // for brihtness correction
 
 	int maxTmpNoise[3]; // for Temporal Noise Reducing filter (Maximal sum of abs differences)
+	
+	int maxDcDiff; // max abs diff between pixels to be considered flat
 };
 
 struct PPFilter{
