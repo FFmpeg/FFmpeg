@@ -2560,6 +2560,53 @@ void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scant
     }
 }
 
+static int zero_cmp(void *s, uint8_t *a, uint8_t *b, int stride, int h){
+    return 0;
+}
+
+void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
+    int i;
+    
+    memset(cmp, 0, sizeof(void*)*5);
+        
+    for(i=0; i<5; i++){
+        switch(type&0xFF){
+        case FF_CMP_SAD:
+            cmp[i]= c->sad[i];
+            break;
+        case FF_CMP_SATD:
+            cmp[i]= c->hadamard8_diff[i];
+            break;
+        case FF_CMP_SSE:
+            cmp[i]= c->sse[i];
+            break;
+        case FF_CMP_DCT:
+            cmp[i]= c->dct_sad[i];
+            break;
+        case FF_CMP_PSNR:
+            cmp[i]= c->quant_psnr[i];
+            break;
+        case FF_CMP_BIT:
+            cmp[i]= c->bit[i];
+            break;
+        case FF_CMP_RD:
+            cmp[i]= c->rd[i];
+            break;
+        case FF_CMP_VSAD:
+            cmp[i]= c->vsad[i];
+            break;
+        case FF_CMP_VSSE:
+            cmp[i]= c->vsse[i];
+            break;
+        case FF_CMP_ZERO:
+            cmp[i]= zero_cmp;
+            break;
+        default:
+            av_log(NULL, AV_LOG_ERROR,"internal error in cmp function selection\n");
+        }
+    }
+}
+
 /**
  * memset(blocks, 0, sizeof(DCTELEM)*6*64)
  */
@@ -2685,17 +2732,19 @@ if(sum>maxi){
     return sum;
 }
 
-static int hadamard8_abs_c(uint8_t *src, int stride, int mean){
+static int hadamard8_intra8x8_c(/*MpegEncContext*/ void *s, uint8_t *src, uint8_t *dummy, int stride, int h){
     int i;
     int temp[64];
     int sum=0;
-//FIXME OOOPS ignore 0 term instead of mean mess
+    
+    assert(h==8);
+    
     for(i=0; i<8; i++){
         //FIXME try pointer walks
-        BUTTERFLY2(temp[8*i+0], temp[8*i+1], src[stride*i+0]-mean,src[stride*i+1]-mean);
-        BUTTERFLY2(temp[8*i+2], temp[8*i+3], src[stride*i+2]-mean,src[stride*i+3]-mean);
-        BUTTERFLY2(temp[8*i+4], temp[8*i+5], src[stride*i+4]-mean,src[stride*i+5]-mean);
-        BUTTERFLY2(temp[8*i+6], temp[8*i+7], src[stride*i+6]-mean,src[stride*i+7]-mean);
+        BUTTERFLY2(temp[8*i+0], temp[8*i+1], src[stride*i+0],src[stride*i+1]);
+        BUTTERFLY2(temp[8*i+2], temp[8*i+3], src[stride*i+2],src[stride*i+3]);
+        BUTTERFLY2(temp[8*i+4], temp[8*i+5], src[stride*i+4],src[stride*i+5]);
+        BUTTERFLY2(temp[8*i+6], temp[8*i+7], src[stride*i+6],src[stride*i+7]);
         
         BUTTERFLY1(temp[8*i+0], temp[8*i+2]);
         BUTTERFLY1(temp[8*i+1], temp[8*i+3]);
@@ -2725,6 +2774,8 @@ static int hadamard8_abs_c(uint8_t *src, int stride, int mean){
             +BUTTERFLYA(temp[8*2+i], temp[8*6+i])
             +BUTTERFLYA(temp[8*3+i], temp[8*7+i]);
     }
+    
+    sum -= ABS(temp[8*0] + temp[8*4]); // -mean
     
     return sum;
 }
@@ -2911,7 +2962,69 @@ static int bit8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, in
     return bits;
 }
 
+static int vsad_intra16_c(/*MpegEncContext*/ void *c, uint8_t *s, uint8_t *dummy, int stride, int h){
+    int score=0;
+    int x,y;
+    
+    for(y=1; y<h; y++){
+        for(x=0; x<16; x+=4){
+            score+= ABS(s[x  ] - s[x  +stride]) + ABS(s[x+1] - s[x+1+stride]) 
+                   +ABS(s[x+2] - s[x+2+stride]) + ABS(s[x+3] - s[x+3+stride]);
+        }
+        s+= stride;
+    }
+    
+    return score;
+}
+
+static int vsad16_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int stride, int h){
+    int score=0;
+    int x,y;
+    
+    for(y=1; y<h; y++){
+        for(x=0; x<16; x++){
+            score+= ABS(s1[x  ] - s2[x ] - s1[x  +stride] + s2[x +stride]);
+        }
+        s1+= stride;
+        s2+= stride;
+    }
+    
+    return score;
+}
+
+#define SQ(a) ((a)*(a))
+static int vsse_intra16_c(/*MpegEncContext*/ void *c, uint8_t *s, uint8_t *dummy, int stride, int h){
+    int score=0;
+    int x,y;
+    
+    for(y=1; y<h; y++){
+        for(x=0; x<16; x+=4){
+            score+= SQ(s[x  ] - s[x  +stride]) + SQ(s[x+1] - s[x+1+stride]) 
+                   +SQ(s[x+2] - s[x+2+stride]) + SQ(s[x+3] - s[x+3+stride]);
+        }
+        s+= stride;
+    }
+    
+    return score;
+}
+
+static int vsse16_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int stride, int h){
+    int score=0;
+    int x,y;
+    
+    for(y=1; y<h; y++){
+        for(x=0; x<16; x++){
+            score+= SQ(s1[x  ] - s2[x ] - s1[x  +stride] + s2[x +stride]);
+        }
+        s1+= stride;
+        s2+= stride;
+    }
+    
+    return score;
+}
+
 WARPER8_16_SQ(hadamard8_diff8x8_c, hadamard8_diff16_c)
+WARPER8_16_SQ(hadamard8_intra8x8_c, hadamard8_intra16_c)
 WARPER8_16_SQ(dct_sad8x8_c, dct_sad16_c)
 WARPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WARPER8_16_SQ(rd8x8_c, rd16_c)
@@ -3095,13 +3208,12 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->put_mspel_pixels_tab[6]= put_mspel8_mc22_c;
     c->put_mspel_pixels_tab[7]= put_mspel8_mc32_c;
         
-    c->hadamard8_abs = hadamard8_abs_c;
-
 #define SET_CMP_FUNC(name) \
     c->name[0]= name ## 16_c;\
     c->name[1]= name ## 8x8_c;
     
     SET_CMP_FUNC(hadamard8_diff)
+    c->hadamard8_diff[4]= hadamard8_intra16_c;
     SET_CMP_FUNC(dct_sad)
     c->sad[0]= pix_abs16_c;
     c->sad[1]= pix_abs8_c;
@@ -3110,6 +3222,10 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     SET_CMP_FUNC(quant_psnr)
     SET_CMP_FUNC(rd)
     SET_CMP_FUNC(bit)
+    c->vsad[0]= vsad16_c;
+    c->vsad[4]= vsad_intra16_c;
+    c->vsse[0]= vsse16_c;
+    c->vsse[4]= vsse_intra16_c;
         
     c->add_bytes= add_bytes_c;
     c->diff_bytes= diff_bytes_c;

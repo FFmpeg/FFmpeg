@@ -111,6 +111,7 @@ static int video_codec_id = CODEC_ID_NONE;
 static int same_quality = 0;
 static int b_frames = 0;
 static int mb_decision = FF_MB_DECISION_SIMPLE;
+static int ildct_cmp = FF_CMP_VSAD;
 static int mb_cmp = FF_CMP_SAD;
 static int sub_cmp = FF_CMP_SAD;
 static int cmp = FF_CMP_SAD;
@@ -1639,7 +1640,7 @@ static void opt_video_bitrate_min(const char *arg)
 
 static void opt_video_buffer_size(const char *arg)
 {
-    video_rc_buffer_size = atoi(arg) * 1024;
+    video_rc_buffer_size = atoi(arg) * 8*1024;
 }
 
 static void opt_video_rc_eq(char *arg)
@@ -1839,6 +1840,11 @@ static void opt_mb_decision(const char *arg)
 static void opt_mb_cmp(const char *arg)
 {
     mb_cmp = atoi(arg);
+}
+
+static void opt_ildct_cmp(const char *arg)
+{
+    ildct_cmp = atoi(arg);
 }
 
 static void opt_sub_cmp(const char *arg)
@@ -2372,6 +2378,7 @@ static void opt_output_file(const char *filename)
 
                 video_enc->mb_decision = mb_decision;
                 video_enc->mb_cmp = mb_cmp;
+                video_enc->ildct_cmp = ildct_cmp;
                 video_enc->me_sub_cmp = sub_cmp;
                 video_enc->me_cmp = cmp;
                 
@@ -3000,7 +3007,7 @@ const OptionDef options[] = {
     { "bt", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
     { "maxrate", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_max}, "set max video bitrate tolerance (in kbit/s)", "bitrate" },
     { "minrate", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate_min}, "set min video bitrate tolerance (in kbit/s)", "bitrate" },
-    { "bufsize", HAS_ARG | OPT_VIDEO, {(void*)opt_video_buffer_size}, "set ratecontrol buffere size (in kbit)", "size" },
+    { "bufsize", HAS_ARG | OPT_VIDEO, {(void*)opt_video_buffer_size}, "set ratecontrol buffere size (in kByte)", "size" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
@@ -3012,6 +3019,7 @@ const OptionDef options[] = {
     { "hq", OPT_BOOL, {(void*)&mb_decision}, "activate high quality settings" },
     { "mbd", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_decision}, "macroblock decision", "mode" },
     { "mbcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_cmp}, "macroblock compare function", "cmp function" },
+    { "ildctcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_ildct_cmp}, "ildct compare function", "cmp function" },
     { "subcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sub_cmp}, "subpel compare function", "cmp function" },
     { "cmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_cmp}, "fullpel compare function", "cmp function" },
     { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (MPEG4)" },

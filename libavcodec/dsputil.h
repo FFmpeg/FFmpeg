@@ -138,21 +138,22 @@ typedef struct DSPContext {
     int (*pix_norm1)(uint8_t * pix, int line_size);
 // 16x16 8x8 4x4 2x2 16x8 8x4 4x2 8x16 4x8 2x4
     
-    me_cmp_func sad[4]; /* identical to pix_absAxA except additional void * */
-    me_cmp_func sse[4];
-    me_cmp_func hadamard8_diff[4];
-    me_cmp_func dct_sad[4];
-    me_cmp_func quant_psnr[4];
-    me_cmp_func bit[4];
-    me_cmp_func rd[4];
-    int (*hadamard8_abs )(uint8_t *src, int stride, int mean);
+    me_cmp_func sad[5]; /* identical to pix_absAxA except additional void * */
+    me_cmp_func sse[5];
+    me_cmp_func hadamard8_diff[5];
+    me_cmp_func dct_sad[5];
+    me_cmp_func quant_psnr[5];
+    me_cmp_func bit[5];
+    me_cmp_func rd[5];
+    me_cmp_func vsad[5];
+    me_cmp_func vsse[5];
 
     me_cmp_func me_pre_cmp[5];
     me_cmp_func me_cmp[5];
     me_cmp_func me_sub_cmp[5];
     me_cmp_func mb_cmp[5];
+    me_cmp_func ildct_cmp[5]; //only width 16 used
 
-    /* maybe create an array for 16/8/4/2 functions */
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
      * this is an array[4][4] of motion compensation funcions for 4 
@@ -292,6 +293,8 @@ void dsputil_init(DSPContext* p, AVCodecContext *avctx);
  * @param last last non zero element in scantable order
  */
 void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scantable, int last);
+
+void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type);
 
 #define	BYTE_VEC32(c)	((c)*0x01010101UL)
 

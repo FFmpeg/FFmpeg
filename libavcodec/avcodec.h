@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4698
+#define LIBAVCODEC_BUILD       4699
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1196,6 +1196,12 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int mb_cmp;
+    /**
+     * interlaced dct compare function
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int ildct_cmp;
 #define FF_CMP_SAD  0
 #define FF_CMP_SSE  1
 #define FF_CMP_SATD 2
@@ -1204,6 +1210,8 @@ typedef struct AVCodecContext {
 #define FF_CMP_BIT  5
 #define FF_CMP_RD   6
 #define FF_CMP_ZERO 7
+#define FF_CMP_VSAD 8
+#define FF_CMP_VSSE 9
 #define FF_CMP_CHROMA 256
     
     /**

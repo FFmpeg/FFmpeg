@@ -973,6 +973,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->progressive_frame= 
     s->progressive_sequence= !(avctx->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME));
     
+    ff_set_cmp(&s->dsp, s->dsp.ildct_cmp, s->avctx->ildct_cmp);
+    
     ff_init_me(s);
 
 #ifdef CONFIG_ENCODERS
@@ -3168,71 +3170,6 @@ static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index
         av_log(s->avctx, AV_LOG_INFO, "warning, cliping %d dct coefficents to %d..%d\n", overflow, minlevel, maxlevel);
 }
 
-#if 0
-static int pix_vcmp16x8(uint8_t *s, int stride){ //FIXME move to dsputil & optimize
-    int score=0;
-    int x,y;
-    
-    for(y=0; y<7; y++){
-        for(x=0; x<16; x+=4){
-            score+= ABS(s[x  ] - s[x  +stride]) + ABS(s[x+1] - s[x+1+stride]) 
-                   +ABS(s[x+2] - s[x+2+stride]) + ABS(s[x+3] - s[x+3+stride]);
-        }
-        s+= stride;
-    }
-    
-    return score;
-}
-
-static int pix_diff_vcmp16x8(uint8_t *s1, uint8_t*s2, int stride){ //FIXME move to dsputil & optimize
-    int score=0;
-    int x,y;
-    
-    for(y=0; y<7; y++){
-        for(x=0; x<16; x++){
-            score+= ABS(s1[x  ] - s2[x ] - s1[x  +stride] + s2[x +stride]);
-        }
-        s1+= stride;
-        s2+= stride;
-    }
-    
-    return score;
-}
-#else
-#define SQ(a) ((a)*(a))
-
-static int pix_vcmp16x8(uint8_t *s, int stride){ //FIXME move to dsputil & optimize
-    int score=0;
-    int x,y;
-    
-    for(y=0; y<7; y++){
-        for(x=0; x<16; x+=4){
-            score+= SQ(s[x  ] - s[x  +stride]) + SQ(s[x+1] - s[x+1+stride]) 
-                   +SQ(s[x+2] - s[x+2+stride]) + SQ(s[x+3] - s[x+3+stride]);
-        }
-        s+= stride;
-    }
-    
-    return score;
-}
-
-static int pix_diff_vcmp16x8(uint8_t *s1, uint8_t*s2, int stride){ //FIXME move to dsputil & optimize
-    int score=0;
-    int x,y;
-    
-    for(y=0; y<7; y++){
-        for(x=0; x<16; x++){
-            score+= SQ(s1[x  ] - s2[x ] - s1[x  +stride] + s2[x +stride]);
-        }
-        s1+= stride;
-        s2+= stride;
-    }
-    
-    return score;
-}
-
-#endif
-
 #endif //CONFIG_ENCODERS
 
 /**
@@ -3352,16 +3289,20 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         if(s->flags&CODEC_FLAG_INTERLACED_DCT){
             int progressive_score, interlaced_score;
 
-            progressive_score= pix_vcmp16x8(ptr, wrap_y  ) + pix_vcmp16x8(ptr + wrap_y*8, wrap_y );
-            interlaced_score = pix_vcmp16x8(ptr, wrap_y*2) + pix_vcmp16x8(ptr + wrap_y  , wrap_y*2);
+            s->interlaced_dct=0;
+            progressive_score= s->dsp.ildct_cmp[4](s, ptr           , NULL, wrap_y, 8) 
+                              +s->dsp.ildct_cmp[4](s, ptr + wrap_y*8, NULL, wrap_y, 8) - 400;
+
+            if(progressive_score > 0){
+                interlaced_score = s->dsp.ildct_cmp[4](s, ptr           , NULL, wrap_y*2, 8) 
+                                  +s->dsp.ildct_cmp[4](s, ptr + wrap_y  , NULL, wrap_y*2, 8);
+                if(progressive_score > interlaced_score){
+                    s->interlaced_dct=1;
             
-            if(progressive_score > interlaced_score + 100){
-                s->interlaced_dct=1;
-            
-                dct_offset= wrap_y;
-                wrap_y<<=1;
-            }else
-                s->interlaced_dct=0;
+                    dct_offset= wrap_y;
+                    wrap_y<<=1;
+                }
+            }
         }
         
 	s->dsp.get_pixels(s->block[0], ptr                 , wrap_y);
@@ -3430,19 +3371,24 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         
         if(s->flags&CODEC_FLAG_INTERLACED_DCT){
             int progressive_score, interlaced_score;
+
+            s->interlaced_dct=0;
+            progressive_score= s->dsp.ildct_cmp[0](s, dest_y           , ptr_y           , wrap_y, 8) 
+                              +s->dsp.ildct_cmp[0](s, dest_y + wrap_y*8, ptr_y + wrap_y*8, wrap_y, 8) - 400;
             
-            progressive_score= pix_diff_vcmp16x8(ptr_y           , dest_y           , wrap_y  ) 
-                             + pix_diff_vcmp16x8(ptr_y + wrap_y*8, dest_y + wrap_y*8, wrap_y  );
-            interlaced_score = pix_diff_vcmp16x8(ptr_y           , dest_y           , wrap_y*2)
-                             + pix_diff_vcmp16x8(ptr_y + wrap_y  , dest_y + wrap_y  , wrap_y*2);
+            if(s->avctx->ildct_cmp == FF_CMP_VSSE) progressive_score -= 400;
+
+            if(progressive_score>0){
+                interlaced_score = s->dsp.ildct_cmp[0](s, dest_y           , ptr_y           , wrap_y*2, 8) 
+                                  +s->dsp.ildct_cmp[0](s, dest_y + wrap_y  , ptr_y + wrap_y  , wrap_y*2, 8);
             
-            if(progressive_score > interlaced_score + 600){
-                s->interlaced_dct=1;
+                if(progressive_score > interlaced_score){
+                    s->interlaced_dct=1;
             
-                dct_offset= wrap_y;
-                wrap_y<<=1;
-            }else
-                s->interlaced_dct=0;
+                    dct_offset= wrap_y;
+                    wrap_y<<=1;
+                }
+            }
         }
         
 	s->dsp.diff_pixels(s->block[0], ptr_y                 , dest_y                 , wrap_y);

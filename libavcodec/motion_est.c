@@ -277,49 +277,6 @@ if((x) >= xmin && 4*(x) + (dx) <= 4*xmax && (y) >= ymin && 4*(y) + (dy) <= 4*yma
 #undef INIT
 #undef CMP__DIRECT
 
-
-static int zero_cmp(void *s, uint8_t *a, uint8_t *b, int stride, int h){
-    return 0;
-}
-
-static void set_cmp(MpegEncContext *s, me_cmp_func *cmp, int type){
-    DSPContext* c= &s->dsp;
-    int i;
-    
-    memset(cmp, 0, sizeof(void*)*5);
-        
-    for(i=0; i<4; i++){
-        switch(type&0xFF){
-        case FF_CMP_SAD:
-            cmp[i]= c->sad[i];
-            break;
-        case FF_CMP_SATD:
-            cmp[i]= c->hadamard8_diff[i];
-            break;
-        case FF_CMP_SSE:
-            cmp[i]= c->sse[i];
-            break;
-        case FF_CMP_DCT:
-            cmp[i]= c->dct_sad[i];
-            break;
-        case FF_CMP_PSNR:
-            cmp[i]= c->quant_psnr[i];
-            break;
-        case FF_CMP_BIT:
-            cmp[i]= c->bit[i];
-            break;
-        case FF_CMP_RD:
-            cmp[i]= c->rd[i];
-            break;
-        case FF_CMP_ZERO:
-            cmp[i]= zero_cmp;
-            break;
-        default:
-            av_log(s->avctx, AV_LOG_ERROR,"internal error in cmp function selection\n");
-        }
-    }
-}
-
 static inline int get_penalty_factor(MpegEncContext *s, int type){
     switch(type&0xFF){
     default:
@@ -340,10 +297,10 @@ static inline int get_penalty_factor(MpegEncContext *s, int type){
 }
 
 void ff_init_me(MpegEncContext *s){
-    set_cmp(s, s->dsp.me_pre_cmp, s->avctx->me_pre_cmp);
-    set_cmp(s, s->dsp.me_cmp, s->avctx->me_cmp);
-    set_cmp(s, s->dsp.me_sub_cmp, s->avctx->me_sub_cmp);
-    set_cmp(s, s->dsp.mb_cmp, s->avctx->mb_cmp);
+    ff_set_cmp(&s->dsp, s->dsp.me_pre_cmp, s->avctx->me_pre_cmp);
+    ff_set_cmp(&s->dsp, s->dsp.me_cmp, s->avctx->me_cmp);
+    ff_set_cmp(&s->dsp, s->dsp.me_sub_cmp, s->avctx->me_sub_cmp);
+    ff_set_cmp(&s->dsp, s->dsp.mb_cmp, s->avctx->mb_cmp);
 
     if(s->flags&CODEC_FLAG_QPEL){
         if(s->avctx->me_sub_cmp&FF_CMP_CHROMA)
@@ -1783,6 +1740,10 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         }
          //FIXME something smarter
         if(dmin>256*256*16) type&= ~CANDIDATE_MB_TYPE_DIRECT; //dont try direct mode if its invalid for this MB
+#if 0        
+        if(s->out_format == FMT_MPEG1)
+            type |= CANDIDATE_MB_TYPE_INTRA;
+#endif
     }
 
     s->mb_type[mb_y*s->mb_stride + mb_x]= type;
