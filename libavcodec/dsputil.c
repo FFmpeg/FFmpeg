@@ -2662,6 +2662,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #ifdef HAVE_MMI
     dsputil_init_mmi(c, avctx);
 #endif
+#ifdef ARCH_SH4
+    dsputil_init_sh4(c,avctx);
+#endif
 
     switch(c->idct_permutation_type){
     case FF_NO_IDCT_PERM:

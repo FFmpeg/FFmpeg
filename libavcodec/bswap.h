@@ -47,6 +47,39 @@ inline static unsigned long long int ByteSwap64(unsigned long long int x)
 }
 #define bswap_64(x) ByteSwap64(x)
 
+#elif defined(ARCH_SH4)
+
+static inline uint16_t ByteSwap16(uint16_t x) {
+	__asm__("swap.b %0,%0":"=r"(x):"0"(x));
+	return x;
+}
+
+static inline uint32_t ByteSwap32(uint32_t x) {
+	__asm__(
+	"swap.b %0,%0\n"
+	"swap.w %0,%0\n"
+	"swap.b %0,%0\n"
+	:"=r"(x):"0"(x));
+	return x;
+}
+
+#define bswap_16(x) ByteSwap16(x)
+#define bswap_32(x) ByteSwap32(x)
+
+inline static uint64_t ByteSwap64(uint64_t x)
+{
+    union { 
+        uint64_t ll;
+        struct {
+           uint32_t l,h;
+        } l;
+    } r;
+    r.l.l = bswap_32 (x);
+    r.l.h = bswap_32 (x>>32);
+    return r.ll;
+}
+#define bswap_64(x) ByteSwap64(x)
+
 #else
 
 #define bswap_16(x) (((x) & 0x00ff) << 8 | ((x) & 0xff00) >> 8)

@@ -352,6 +352,12 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
 
+#elif defined(ARCH_SH4)
+
+#define __align8 __attribute__ ((aligned (8)))
+
+void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
+
 #else
 
 #define __align8

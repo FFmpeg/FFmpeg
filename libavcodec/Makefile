@@ -124,6 +124,11 @@ OBJS += ppc/dsputil_altivec.o ppc/mpegvideo_altivec.o ppc/idct_altivec.o \
         ppc/fft_altivec.o ppc/gmc_altivec.o
 endif
 
+ifeq ($(TARGET_ARCH_SH4),yes)
+OBJS+= sh4/idct_sh4.o sh4/dsputil_sh4.o sh4/dsputil_align.o
+endif
+
+
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
 
@@ -179,6 +184,7 @@ clean:
 	   alpha/*.o alpha/*~ \
 	   ppc/*.o ppc/*~ \
 	   ps2/*.o ps2/*~ \
+	   sh4/*.o sh4/*~ \
 	   liba52/*.o liba52/*~ \
 	   apiexample $(TESTS)
 	$(MAKE) -C libpostproc clean
