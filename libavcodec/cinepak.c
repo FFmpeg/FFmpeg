@@ -57,7 +57,6 @@ typedef struct CinepakContext {
     AVCodecContext *avctx;
     DSPContext dsp;
     AVFrame frame;
-    AVFrame prev_frame;
 
     unsigned char *data;
     int size;
@@ -125,7 +124,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip_t *strip,
     uint8_t         *eod = (data + size);
     uint32_t         flag, mask;
     cvid_codebook_t *codebook;
-    unsigned int     i, j, x, y;
+    unsigned int     x, y;
     uint32_t         iy[4];
     uint32_t         iu[2];
     uint32_t         iv[2];
@@ -249,22 +248,6 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip_t *strip,
                         s->frame.data[2][iv[1] + 1] = codebook->v;
                     }
 
-                }
-            } else {
-                /* copy from the previous frame */
-                for (i = 0; i < 4; i++) {
-                    for (j = 0; j < 4; j++) {
-                        s->frame.data[0][iy[i] + j] =
-                            s->prev_frame.data[0][iy[i] + j];
-                    }
-                }
-                for (i = 0; i < 2; i++) {
-                    for (j = 0; j < 2; j++) {
-                        s->frame.data[1][iu[i] + j] =
-                            s->prev_frame.data[1][iu[i] + j];
-                        s->frame.data[2][iv[i] + j] =
-                            s->prev_frame.data[2][iv[i] + j];
-                    }
                 }
             }
 
@@ -397,7 +380,7 @@ s->palette_video = 0;
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
-    s->frame.data[0] = s->prev_frame.data[0] = NULL;
+    s->frame.data[0] = NULL;
 
     return 0;
 }
@@ -411,18 +394,15 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     s->data = buf;
     s->size = buf_size;
 
-    if (avctx->get_buffer(avctx, &s->frame)) {
-        av_log(avctx, AV_LOG_ERROR, "  Cinepak: get_buffer() failed\n");
+    s->frame.reference = 1;
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
+                            FF_BUFFER_HINTS_REUSABLE;
+    if (avctx->reget_buffer(avctx, &s->frame)) {
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
 
     cinepak_decode(s);
-
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
-
-    /* shuffle frames */
-    s->prev_frame = s->frame;
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
@@ -435,8 +415,8 @@ static int cinepak_decode_end(AVCodecContext *avctx)
 {
     CinepakContext *s = (CinepakContext *)avctx->priv_data;
 
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
 
     return 0;
 }
