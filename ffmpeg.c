@@ -2766,7 +2766,7 @@ static void opt_input_file(const char *filename)
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
-    using_stdin |= !strcmp(filename, "pipe:" ) || 
+    using_stdin |= !strncmp(filename, "pipe:", 5) || 
                    !strcmp( filename, "/dev/stdin" );
 
     /* get default parameters from command line */
