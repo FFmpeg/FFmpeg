@@ -21,7 +21,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#ifdef CONFIG_MMX
+#ifdef HAVE_MMX
 int mm_flags; /* multimedia extension flags */
 #endif
 
@@ -377,7 +377,7 @@ void dsputil_init(void)
     pix_abs16x16_xy2 = pix_abs16x16_xy2_c;
     av_fdct = jpeg_fdct_ifast;
 
-#ifdef CONFIG_MMX
+#ifdef HAVE_MMX
     dsputil_init_mmx();
 #endif
 }

@@ -61,7 +61,7 @@ int pix_abs16x16_x2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 int pix_abs16x16_y2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 int pix_abs16x16_xy2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 
-#ifdef CONFIG_MMX
+#ifdef HAVE_MMX
 
 #define MM_MMX    0x0001 /* standard MMX */
 #define MM_3DNOW  0x0004 /* AMD 3DNOW */

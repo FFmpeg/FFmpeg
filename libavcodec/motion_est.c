@@ -434,7 +434,7 @@ int estimate_motion(MpegEncContext * s,
 	dmin = phods_motion_search(s, &mx, &my, range / 2, xmin, ymin, xmax, ymax);
         break;
     }
-#ifdef CONFIG_MMX
+#ifdef HAVE_MMX
     if (mm_flags & MM_MMX)
         emms();
 #endif

@@ -1,5 +1,5 @@
-include ../config.mk
-CFLAGS= -O2 -Wall -g -I../libavcodec
+include ../config.mak
+CFLAGS= $(OPTFLAGS) -Wall -g -I../libavcodec
 
 OBJS= rm.o mpeg.o asf.o avienc.o jpegenc.o swf.o wav.o raw.o \
 	 avidec.o ffm.o \

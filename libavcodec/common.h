@@ -3,8 +3,8 @@
 
 #include "../config.h"
 
-#ifndef USE_LIBAVCODEC
-// workaround for typedef conflict in MPlayer
+#ifndef __WINE_WINDEF16_H
+/* workaround for typedef conflict in MPlayer (wine typedefs) */
 typedef unsigned short UINT16;
 typedef signed short INT16;
 #endif

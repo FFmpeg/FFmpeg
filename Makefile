@@ -1,11 +1,11 @@
 # Main ffmpeg Makefile
 # (c) 2000, 2001 Gerard Lantau
 #
-include config.mk
+include config.mak
 
-CFLAGS= -O2 -Wall -g -I./libavcodec -I./libav 
+CFLAGS= $(OPTFLAGS) -Wall -g -I./libavcodec -I./libav 
 LDFLAGS= -g 
-ifdef CONFIG_GPROF
+ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
 LDFLAGS+=-p
 endif
@@ -28,7 +28,7 @@ ffserver: ffserver.o libav/libav.a libavcodec/libavcodec.a
 	gcc $(CFLAGS) -c -o $@ $< 
 
 install: all
-	install -s -m 755 $(PROG) $(PREFIX)/bin
+	install -s -m 755 $(PROG) $(prefix)/bin
 
 clean: 
 	make -C libavcodec clean
@@ -36,7 +36,7 @@ clean:
 	rm -f *.o *~ gmon.out TAGS $(PROG) 
 
 distclean: clean
-	rm -f Rules.mk config.h
+	rm -f config.mak config.h
 
 TAGS:
 	etags *.[ch] libav/*.[ch] libavcodec/*.[ch]

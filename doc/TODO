@@ -16,7 +16,11 @@ Planned in next release:
 (DONE) - add RV10 decoding.
 (DONE) - add true pgm support.
 (DONE) - msmpeg4 0x18 fix.
+- add encode and ac3/mpglib disabling option
 - add qscale out.
+- add decode quant optimisation.
+- see black region optimization (Arpi request).
+- check ffmpeg mpeg1 encoding (Happy Camer mail)
 - add format autodetect with content (for example to distinguish
   mpegvideo/mpegmux).
 - add external alloc for libavcodec (avifile request).
