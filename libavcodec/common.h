@@ -836,7 +836,7 @@ static inline int ff_sqrt(int a)
 /**
  * converts fourcc string to int
  */
-static inline int ff_get_fourcc(char *s){
+static inline int ff_get_fourcc(const char *s){
     assert( strlen(s)==4 );
     
     return (s[0]) + (s[1]<<8) + (s[2]<<16) + (s[3]<<24);
