@@ -4652,7 +4652,6 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
     MERGE(dct_count[0]); //note, the other dct vars are not part of the context
     MERGE(dct_count[1]);
     MERGE(mv_bits);
-    MERGE(header_bits);
     MERGE(i_tex_bits);
     MERGE(p_tex_bits);
     MERGE(i_count);
