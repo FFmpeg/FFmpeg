@@ -1528,37 +1528,3 @@ void avcodec_set_bit_exact(void)
 //    dsputil_set_bit_exact_mmx();
 #endif
 }
-
-void get_psnr(UINT8 *orig_image[3], UINT8 *coded_image[3],
-              int orig_linesize[3], int coded_linesize,
-              AVCodecContext *avctx)
-{
-    int quad, diff, x, y;
-    UINT8 *orig, *coded;
-    UINT32 *sq = squareTbl + 256;
-    
-    quad = 0;
-    diff = 0;
-    
-    /* Luminance */
-    orig = orig_image[0];
-    coded = coded_image[0];
-    
-    for (y=0;y<avctx->height;y++) {
-        for (x=0;x<avctx->width;x++) {
-            diff = *(orig + x) - *(coded + x);
-            quad += sq[diff];
-        }
-        orig += orig_linesize[0];
-        coded += coded_linesize;
-    }
-   
-    avctx->psnr_y = (float) quad / (float) (avctx->width * avctx->height);
-    
-    if (avctx->psnr_y) {
-        avctx->psnr_y = (float) (255 * 255) / avctx->psnr_y;
-        avctx->psnr_y = 10 * (float) log10 (avctx->psnr_y); 
-    } else
-        avctx->psnr_y = 99.99;
-}
-

@@ -461,7 +461,7 @@ static int encode_init(AVCodecContext *avctx)
     s->version=2;
     
     avctx->coded_picture= &s->picture;
-    s->picture.pict_type= I_TYPE;
+    s->picture.pict_type= FF_I_TYPE;
     s->picture.key_frame= 1;
     
     switch(avctx->pix_fmt){

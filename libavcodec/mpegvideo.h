@@ -48,6 +48,11 @@ enum OutputFormat {
 #define MAX_RUN    64
 #define MAX_LEVEL  64
 
+#define I_TYPE FF_I_TYPE  // Intra
+#define P_TYPE FF_P_TYPE  // Predicted
+#define B_TYPE FF_B_TYPE  // Bi-dir predicted
+#define S_TYPE FF_S_TYPE  // S(GMC)-VOP MPEG4
+
 typedef struct Predictor{
     double coeff;
     double count;

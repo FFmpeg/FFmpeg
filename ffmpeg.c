@@ -650,6 +650,11 @@ static void do_video_out(AVFormatContext *s,
     av_free(buf1);
 }
 
+static double psnr(double d){
+    if(d==0) return INFINITY;
+    return -10.0*log(d)/log(10);
+}
+
 static void do_video_stats(AVFormatContext *os, AVOutputStream *ost, 
                            int frame_size)
 {
@@ -682,8 +687,8 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         frame_number = ost->frame_number;
         fprintf(fvstats, "frame= %5d q= %2.1f ", frame_number, enc->coded_picture->quality);
-        if (do_psnr)
-            fprintf(fvstats, "PSNR= %6.2f ", enc->psnr_y);
+        if (enc->flags&CODEC_FLAG_PSNR)
+            fprintf(fvstats, "PSNR= %6.2f ", psnr(enc->coded_picture->error[0]/(enc->width*enc->height*255.0*255.0)));
         
         fprintf(fvstats,"f_size= %6d ", frame_size);
         /* compute pts value */
@@ -745,8 +750,8 @@ void print_report(AVFormatContext **output_files,
             frame_number = ost->frame_number;
             sprintf(buf + strlen(buf), "frame=%5d q=%2.1f ",
                     frame_number, enc->coded_picture ? enc->coded_picture->quality : 0);
-            if (do_psnr)
-                sprintf(buf + strlen(buf), "PSNR=%6.2f ", enc->psnr_y);
+            if (enc->flags&CODEC_FLAG_PSNR)
+                sprintf(buf + strlen(buf), "PSNR= %6.2f ", psnr(enc->coded_picture->error[0]/(enc->width*enc->height*255.0*255.0)));
             vid = 1;
         }
         /* compute min output value */
@@ -2161,9 +2166,7 @@ void opt_output_file(const char *filename)
                 }
             
                 if (do_psnr)
-                    video_enc->get_psnr = 1;
-                else
-                    video_enc->get_psnr = 0;
+                    video_enc->flags|= CODEC_FLAG_PSNR;
             
                 video_enc->me_method = me_method;
 

@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4642
-#define LIBAVCODEC_BUILD_STR   "4642"
+#define LIBAVCODEC_BUILD       4643
+#define LIBAVCODEC_BUILD_STR   "4643"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -140,6 +140,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_EXTERN_HUFF 0x1000 /* use external huffman table (for mjpeg) */
 #define CODEC_FLAG_GRAY  0x2000   /* only decode/encode grayscale */
 #define CODEC_FLAG_EMU_EDGE 0x4000/* dont draw edges */
+#define CODEC_FLAG_PSNR           0x8000 /* error[?] variables will be set during encoding */
 #define CODEC_FLAG_TRUNCATED  0x00010000 /* input bitstream might be truncated at a random location instead 
                                             of only at frame boundaries */
 #define CODEC_FLAG_NORMALIZE_AQP  0x00020000 /* normalize adaptive quantization */
@@ -252,12 +253,18 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
      * decoding: set by user\
      */\
     void *opaque;\
+\
+    /**\
+     * error\
+     * encoding: set by lavc if flags&CODEC_FLAG_PSNR\
+     * decoding: unused\
+     */\
+    uint64_t error[4];\
 
-/* FIXME: these should have FF_ */
-#define I_TYPE 1 // Intra
-#define P_TYPE 2 // Predicted
-#define B_TYPE 3 // Bi-dir predicted
-#define S_TYPE 4 // S(GMC)-VOP MPEG4
+#define FF_I_TYPE 1 // Intra
+#define FF_P_TYPE 2 // Predicted
+#define FF_B_TYPE 3 // Bi-dir predicted
+#define FF_S_TYPE 4 // S(GMC)-VOP MPEG4
 
 typedef struct AVVideoFrame {
     FF_COMMON_PICTURE
@@ -464,17 +471,6 @@ typedef struct AVCodecContext {
     /* with a Start Code (it should) H.263 does   */
     void (*rtp_callback)(void *data, int size, int packet_number); 
 
-    /**
-     * if you set get_psnr to 1 then after encoding you will have the 
-     * PSNR on psnr_y/cb/cr
-     * encoding: set by user (1-> on, 0-> off)
-     * decoding: unused
-     */
-    int get_psnr;
-    float psnr_y;
-    float psnr_cb;
-    float psnr_cr;
-    
     /* statistics, used for 2-pass encoding */
     int mv_bits;
     int header_bits;
@@ -826,6 +822,13 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_QP        16
 #define FF_DEBUG_MV        32
 #define FF_DEBUG_VIS_MV    64
+    
+    /**
+     * error
+     * encoding: set by lavc if flags&CODEC_FLAG_PSNR
+     * decoding: unused
+     */
+    uint64_t error[4];
 } AVCodecContext;
 
 typedef struct AVCodec {

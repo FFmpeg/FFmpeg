@@ -985,22 +985,50 @@ static void select_input_picture(MpegEncContext *s){
 
     /* set next picture types & ordering */
     if(s->reordered_input_picture[0]==NULL && s->input_picture[0]){
-        if(/*s->picture_in_gop_number >= s->gop_size ||*/ s->next_picture.data[0]==NULL || s->intra_only){
-            s->reordered_input_picture[0]= s->input_picture[0];
-            s->reordered_input_picture[0]->pict_type= I_TYPE;
-            s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+        if(s->input_picture[0]->pict_type){
+            /* user selected pict_type */
+            if(s->input_picture[0]->pict_type == I_TYPE){
+                s->reordered_input_picture[0]= s->input_picture[0];
+                s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+            }else{
+                int b_frames;
+
+                for(b_frames=0; b_frames<s->max_b_frames+1; b_frames++){
+                    if(s->input_picture[b_frames]->pict_type!=B_TYPE) break;
+                }
+                
+                if(b_frames > s->max_b_frames){
+                    fprintf(stderr, "warning, too many bframes in a row\n");
+                    b_frames = s->max_b_frames;
+                    s->input_picture[b_frames]->pict_type= I_TYPE;
+                }
+                
+                s->reordered_input_picture[0]= s->input_picture[b_frames];
+                s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+                for(i=0; i<b_frames; i++){
+                    coded_pic_num++;
+                    s->reordered_input_picture[i+1]= s->input_picture[i];
+                    s->reordered_input_picture[i+1]->coded_picture_number= coded_pic_num;
+                }    
+            }
         }else{
-            s->reordered_input_picture[0]= s->input_picture[s->max_b_frames];
-            if(s->picture_in_gop_number + s->max_b_frames >= s->gop_size)
+            if(/*s->picture_in_gop_number >= s->gop_size ||*/ s->next_picture.data[0]==NULL || s->intra_only){
+                s->reordered_input_picture[0]= s->input_picture[0];
                 s->reordered_input_picture[0]->pict_type= I_TYPE;
-            else
-                s->reordered_input_picture[0]->pict_type= P_TYPE;
-            s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
-            for(i=0; i<s->max_b_frames; i++){
-                coded_pic_num++;
-                s->reordered_input_picture[i+1]= s->input_picture[i];
-                s->reordered_input_picture[i+1]->pict_type= B_TYPE;
-                s->reordered_input_picture[i+1]->coded_picture_number= coded_pic_num;
+                s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+            }else{
+                s->reordered_input_picture[0]= s->input_picture[s->max_b_frames];
+                if(s->picture_in_gop_number + s->max_b_frames >= s->gop_size)
+                    s->reordered_input_picture[0]->pict_type= I_TYPE;
+                else
+                    s->reordered_input_picture[0]->pict_type= P_TYPE;
+                s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+                for(i=0; i<s->max_b_frames; i++){
+                    coded_pic_num++;
+                    s->reordered_input_picture[i+1]= s->input_picture[i];
+                    s->reordered_input_picture[i+1]->pict_type= B_TYPE;
+                    s->reordered_input_picture[i+1]->coded_picture_number= coded_pic_num;
+                }    
             }
         }
     }
@@ -1027,6 +1055,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
 {
     MpegEncContext *s = avctx->priv_data;
     AVVideoFrame *pic_arg = data;
+    int i;
 
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
 
@@ -1076,28 +1105,11 @@ int MPV_encode_picture(AVCodecContext *avctx,
     
     s->total_bits += s->frame_bits;
     avctx->frame_bits  = s->frame_bits;
-//printf("fcode: %d, type: %d, head: %d, mv: %d, misc: %d, frame: %d, itex: %d, ptex: %d\n", 
-//s->f_code, avctx->key_frame, s->header_bits, s->mv_bits, s->misc_bits, s->frame_bits, s->i_tex_bits, s->p_tex_bits);
-#if 0 //dump some stats to stats.txt for testing/debuging
-if(s->max_b_frames==0)
-{
-    static FILE *f=NULL;
-    if(!f) f= fopen("stats.txt", "wb");
-    get_psnr(pict->data, s->current_picture,
-             pict->linesize, s->linesize, avctx);
-    fprintf(f, "%7d, %7d, %2.4f\n", pbBufPtr(&s->pb) - s->pb.buf, s->qscale, avctx->psnr_y);
-}
-#endif
-#if 0
-    if (avctx->get_psnr) {
-        /* At this point pict->data should have the original frame   */
-        /* an s->current_picture should have the coded/decoded frame */
-        get_psnr(pict->data, s->current_picture.data,
-                 pict->linesize, s->linesize, avctx);
-//        printf("%f\n", avctx->psnr_y);
-    }
-#endif
 
+    for(i=0; i<4; i++){
+        avctx->error[i] += s->current_picture.error[i];
+    }
+    
     return pbBufPtr(&s->pb) - s->pb.buf;
 }
 
@@ -1819,7 +1831,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         }
     }
     
-    if (!(s->encoding && (s->intra_only || s->pict_type==B_TYPE))) {
+    if ((s->flags&CODEC_FLAG_PSNR) || !(s->encoding && (s->intra_only || s->pict_type==B_TYPE))) { //FIXME precalc
         UINT8 *dest_y, *dest_cb, *dest_cr;
         int dct_linesize, dct_offset;
         op_pixels_func (*op_pix)[4];
@@ -2544,6 +2556,22 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
         copy_context_after_encode(best, s, type);
     }
 }
+                
+static inline int sse(MpegEncContext *s, uint8_t *src1, uint8_t *src2, int w, int h, int stride){
+    uint32_t *sq = squareTbl + 256;
+    int acc=0;
+    int x,y;
+    
+    if(w==16 && h==16) 
+        return s->dsp.pix_norm(src1, src2, stride);
+    
+    for(y=0; y<h; y++){
+        for(x=0; x<w; x++){
+            acc+= sq[src1[x + y*stride] - src2[x + y*stride]];
+        } 
+    }
+    return acc;
+}
 
 static void encode_picture(MpegEncContext *s, int picture_number)
 {
@@ -2723,11 +2751,13 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->b_count=0;
     s->skip_count=0;
 
-    /* init last dc values */
-    /* note: quant matrix value (8) is implied here */
-    s->last_dc[0] = 128;
-    s->last_dc[1] = 128;
-    s->last_dc[2] = 128;
+    for(i=0; i<3; i++){
+        /* init last dc values */
+        /* note: quant matrix value (8) is implied here */
+        s->last_dc[i] = 128;
+        
+        s->current_picture.error[i] = 0;
+    }
     s->mb_incr = 1;
     s->last_mv[0][0][0] = 0;
     s->last_mv[0][0][1] = 0;
@@ -2992,6 +3022,30 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             }
 
             MPV_decode_mb(s, s->block);
+            
+            if(s->flags&CODEC_FLAG_PSNR){
+                int w= 16;
+                int h= 16;
+
+                if(s->mb_x*16 + 16 > s->width ) w= s->width - s->mb_x*16;
+                if(s->mb_y*16 + 16 > s->height) h= s->height- s->mb_y*16;
+                
+                s->current_picture.error[0] += sse(
+                    s,
+                    s->new_picture    .data[0] + s->mb_x*16 + s->mb_y*s->linesize*16,
+                    s->current_picture.data[0] + s->mb_x*16 + s->mb_y*s->linesize*16,
+                    w, h, s->linesize);
+                s->current_picture.error[1] += sse(
+                    s,
+                    s->new_picture    .data[1] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
+                    s->current_picture.data[1] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
+                    w>>1, h>>1, s->uvlinesize);
+                s->current_picture.error[2] += sse(
+                    s,
+                    s->new_picture    .data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
+                    s->current_picture.data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
+                    w>>1, h>>1, s->uvlinesize);
+            }
 //printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_width, get_bit_count(&s->pb));
         }
 
