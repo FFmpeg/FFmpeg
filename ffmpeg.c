@@ -2838,59 +2838,101 @@ static void show_formats(void)
     AVOutputFormat *ofmt;
     AVImageFormat *image_fmt;
     URLProtocol *up;
-    AVCodec *p;
-    const char **pp;
+    AVCodec *p, *p2;
+    const char **pp, *last_name;
 
-    printf("Output audio/video file formats:");
-    for(ofmt = first_oformat; ofmt != NULL; ofmt = ofmt->next) {
-        printf(" %s", ofmt->name);
+    printf("File formats:\n");
+    last_name= "000";
+    for(;;){
+        int decode=0;
+        int encode=0;
+        const char *name=NULL;
+
+        for(ofmt = first_oformat; ofmt != NULL; ofmt = ofmt->next) {
+            if((name == NULL || strcmp(ofmt->name, name)<0) &&
+                strcmp(ofmt->name, last_name)>0){
+                name= ofmt->name;
+                encode=1;
+            }
+        }
+        for(ifmt = first_iformat; ifmt != NULL; ifmt = ifmt->next) {
+            if((name == NULL || strcmp(ifmt->name, name)<0) &&
+                strcmp(ifmt->name, last_name)>0){
+                name= ifmt->name;
+                encode=0;
+            }
+            if(name && strcmp(ifmt->name, name)==0)
+                decode=1;
+        }
+        if(name==NULL)
+            break;
+        last_name= name;
+        
+        printf(
+            " %s%s %s\n", 
+            decode ? "D":" ", 
+            encode ? "E":" ", 
+            name);
     }
     printf("\n");
 
-    printf("Input audio/video file formats:");
-    for(ifmt = first_iformat; ifmt != NULL; ifmt = ifmt->next) {
-        printf(" %s", ifmt->name);
-    }
-    printf("\n");
-
-    printf("Output image formats:");
+    printf("Image formats:\n");
     for(image_fmt = first_image_format; image_fmt != NULL; 
         image_fmt = image_fmt->next) {
-        if (image_fmt->img_write)
-            printf(" %s", image_fmt->name);
-    }
-    printf("\n");
-
-    printf("Input image formats:");
-    for(image_fmt = first_image_format; image_fmt != NULL; 
-        image_fmt = image_fmt->next) {
-        if (image_fmt->img_read)
-            printf(" %s", image_fmt->name);
+        printf(
+            " %s%s %s\n",
+            image_fmt->img_read  ? "D":" ",
+            image_fmt->img_write ? "E":" ",
+            image_fmt->name);
     }
     printf("\n");
 
     printf("Codecs:\n");
-    printf("  Encoders:");
-    for(p = first_avcodec; p != NULL; p = p->next) {
-        if (p->encode)
-            printf(" %s", p->name);
+    last_name= "000";
+    for(;;){
+        int decode=0;
+        int encode=0;
+        int cap=0;
+
+        p2=NULL;
+        for(p = first_avcodec; p != NULL; p = p->next) {
+            if((p2==NULL || strcmp(p->name, p2->name)<0) &&
+                strcmp(p->name, last_name)>0){
+                p2= p;
+                decode= encode= cap=0;
+            }
+            if(p2 && strcmp(p->name, p2->name)==0){
+                if(p->decode) decode=1;
+                if(p->encode) encode=1;
+                cap |= p->capabilities;
+            }
+        }
+        if(p2==NULL)
+            break;
+        last_name= p2->name;
+        
+        printf(
+            " %s%s%s%s%s%s %s", 
+            decode ? "D": (/*p2->decoder ? "d":*/" "), 
+            encode ? "E":" ", 
+            p2->type == CODEC_TYPE_AUDIO ? "A":"V",
+            cap & CODEC_CAP_DRAW_HORIZ_BAND ? "S":" ",
+            cap & CODEC_CAP_DR1 ? "D":" ",
+            cap & CODEC_CAP_TRUNCATED ? "T":" ",
+            p2->name);
+       /* if(p2->decoder && decode==0)
+            printf(" use %s for decoding", p2->decoder->name);*/
+        printf("\n");
     }
     printf("\n");
 
-    printf("  Decoders:");
-    for(p = first_avcodec; p != NULL; p = p->next) {
-        if (p->decode)
-            printf(" %s", p->name);
-    }
-    printf("\n");
-
-    printf("Supported file protocols:");
+    printf("Supported file protocols:\n");
     for(up = first_protocol; up != NULL; up = up->next)
         printf(" %s:", up->name);
     printf("\n");
     
-    printf("Frame size, frame rate abbreviations: ntsc pal qntsc qpal sntsc spal film ntsc-film sqcif qcif cif 4cif\n");
-    printf("Motion estimation methods:");
+    printf("Frame size, frame rate abbreviations:\n ntsc pal qntsc qpal sntsc spal film ntsc-film sqcif qcif cif 4cif\n");
+    printf("Motion estimation methods:\n");
     pp = motion_str;
     while (*pp) {
         printf(" %s", *pp);
@@ -2902,7 +2944,13 @@ static void show_formats(void)
             printf("(default)");
         pp++;
     }
-    printf("\n");
+    printf("\n\n");
+    printf(
+"Note, the names of encoders and decoders dont always match, so there are\n"
+"several cases where the above table shows encoder only or decoder only entries\n"
+"even though both encoding and decoding are supported for example, the h263\n"
+"decoder corresponds to the h263 and h263p encoders, for file formats its even\n"
+"worse\n");
     exit(1);
 }
 
