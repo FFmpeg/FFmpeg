@@ -119,6 +119,15 @@ TAGS:
 libavtest test mpeg4 mpeg: ffmpeg$(EXE)
 	$(MAKE) -C tests $@
 
+# tar release (use 'make -k tar' on a checkouted tree)
+FILE=ffmpeg-$(shell cat VERSION)
+
+tar:
+	rm -rf /tmp/$(FILE)
+	cp -r . /tmp/$(FILE)
+	( cd /tmp ; tar zcvf ~/$(FILE).tar.gz $(FILE) --exclude CVS )
+	rm -rf /tmp/$(FILE)
+
 ifneq ($(wildcard .depend),)
 include .depend
 endif
