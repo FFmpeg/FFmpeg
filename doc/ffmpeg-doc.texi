@@ -1047,6 +1047,9 @@ It also helps quite a bit if you tell us what the patch does (for example
 'replaces lrint by lrintf') , and why (for example '*bsd isnt c99 compliant
 and has no lrint()')
 
+We reply to all patches submitted and either apply or reject with some
+explanation why, but sometimes we are quite busy so it can take a week or 2
+
 @section Regression tests
 
 Before submitting a patch (or committing with CVS), you should at least
