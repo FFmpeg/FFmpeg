@@ -1489,7 +1489,6 @@ static int http_parse_request(HTTPContext *c)
         c->wmp_client_id = random() & 0x7fffffff;
 
         q += sprintf(q, "Server: Cougar 4.1.0.3923\r\nCache-Control: no-cache\r\nPragma: client-id=%d\r\nPragma: features=\"broadcast\"\r\n", c->wmp_client_id);
-        mime_type = "application/octet-stream"; 
     }
     q += sprintf(q, "Content-Type: %s\r\n", mime_type);
     q += sprintf(q, "\r\n");

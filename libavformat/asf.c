@@ -1217,7 +1217,7 @@ static AVInputFormat asf_iformat = {
 static AVOutputFormat asf_oformat = {
     "asf",
     "asf format",
-    "application/octet-stream",
+    "video/x-ms-asf",
     "asf,wmv",
     sizeof(ASFContext),
 #ifdef CONFIG_MP3LAME
@@ -1234,7 +1234,7 @@ static AVOutputFormat asf_oformat = {
 static AVOutputFormat asf_stream_oformat = {
     "asf_stream",
     "asf format",
-    "application/octet-stream",
+    "video/x-ms-asf",
     "asf,wmv",
     sizeof(ASFContext),
 #ifdef CONFIG_MP3LAME

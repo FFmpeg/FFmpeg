@@ -628,7 +628,7 @@ static int mpegps_read_close(AVFormatContext *s)
 static AVOutputFormat mpeg1system_mux = {
     "mpeg",
     "MPEG1 System format",
-    "video/x-mpeg",
+    "video/mpeg",
     "mpg,mpeg",
     sizeof(MpegMuxContext),
     CODEC_ID_MP2,
@@ -641,7 +641,7 @@ static AVOutputFormat mpeg1system_mux = {
 static AVOutputFormat mpeg1vcd_mux = {
     "vcd",
     "MPEG1 System format (VCD)",
-    "video/x-mpeg",
+    "video/mpeg",
     NULL,
     sizeof(MpegMuxContext),
     CODEC_ID_MP2,
@@ -654,7 +654,7 @@ static AVOutputFormat mpeg1vcd_mux = {
 static AVOutputFormat mpeg2vob_mux = {
     "vob",
     "MPEG2 PS format (VOB)",
-    "video/x-mpeg",
+    "video/mpeg",
     "vob",
     sizeof(MpegMuxContext),
     CODEC_ID_MP2,

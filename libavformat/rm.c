@@ -756,7 +756,7 @@ static AVInputFormat rm_iformat = {
 static AVOutputFormat rm_oformat = {
     "rm",
     "rm format",
-    "audio/x-pn-realaudio",
+    "application/vnd.rn-realmedia",
     "rm,ra",
     sizeof(RMContext),
     CODEC_ID_AC3,
