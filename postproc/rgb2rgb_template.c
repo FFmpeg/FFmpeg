@@ -5,49 +5,52 @@
  *               Software YUV to YUV convertor
  *               Software YUV to RGB convertor
  *  Written by Nick Kurshev.
- *  palette stuff & yuv stuff by Michael
+ *  palette & yuv & runtime cpu stuff by Michael (michaelni@gmx.at) (under GPL)
  */
-#include <inttypes.h>
-#include "../config.h"
-#include "rgb2rgb.h"
-#include "../mmx_defs.h"
 
-#ifdef HAVE_MMX
-static const uint64_t mask32b  __attribute__((aligned(8))) = 0x000000FF000000FFULL;
-static const uint64_t mask32g  __attribute__((aligned(8))) = 0x0000FF000000FF00ULL;
-static const uint64_t mask32r  __attribute__((aligned(8))) = 0x00FF000000FF0000ULL;
-static const uint64_t mask32   __attribute__((aligned(8))) = 0x00FFFFFF00FFFFFFULL;
-static const uint64_t mask24l  __attribute__((aligned(8))) = 0x0000000000FFFFFFULL;
-static const uint64_t mask24h  __attribute__((aligned(8))) = 0x0000FFFFFF000000ULL;
-static const uint64_t mask24hh  __attribute__((aligned(8))) = 0xffff000000000000ULL;
-static const uint64_t mask24hhh  __attribute__((aligned(8))) = 0xffffffff00000000ULL;
-static const uint64_t mask24hhhh  __attribute__((aligned(8))) = 0xffffffffffff0000ULL;
-static const uint64_t mask15b  __attribute__((aligned(8))) = 0x001F001F001F001FULL; /* 00000000 00011111  xxB */
-static const uint64_t mask15rg __attribute__((aligned(8))) = 0x7FE07FE07FE07FE0ULL; /* 01111111 11100000  RGx */
-static const uint64_t mask15s  __attribute__((aligned(8))) = 0xFFE0FFE0FFE0FFE0ULL;
-static const uint64_t red_16mask  __attribute__((aligned(8))) = 0x0000f8000000f800ULL;
-static const uint64_t green_16mask __attribute__((aligned(8)))= 0x000007e0000007e0ULL;
-static const uint64_t blue_16mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
-static const uint64_t red_15mask  __attribute__((aligned(8))) = 0x00007c000000f800ULL;
-static const uint64_t green_15mask __attribute__((aligned(8)))= 0x000003e0000007e0ULL;
-static const uint64_t blue_15mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
-#if 0
-static volatile uint64_t __attribute__((aligned(8))) b5Dither;
-static volatile uint64_t __attribute__((aligned(8))) g5Dither;
-static volatile uint64_t __attribute__((aligned(8))) g6Dither;
-static volatile uint64_t __attribute__((aligned(8))) r5Dither;
+#undef PREFETCH
+#undef MOVNTQ
+#undef EMMS
+#undef SFENCE
+#undef MMREG_SIZE
+#undef PREFETCHW
+#undef PAVGB
 
-static uint64_t __attribute__((aligned(8))) dither4[2]={
-	0x0103010301030103LL,
-	0x0200020002000200LL,};
-
-static uint64_t __attribute__((aligned(8))) dither8[2]={
-	0x0602060206020602LL,
-	0x0004000400040004LL,};
-#endif
+#ifdef HAVE_SSE2
+#define MMREG_SIZE 16
+#else
+#define MMREG_SIZE 8
 #endif
 
-void rgb24to32(const uint8_t *src,uint8_t *dst,unsigned src_size)
+#ifdef HAVE_3DNOW
+#define PREFETCH  "prefetch"
+#define PREFETCHW "prefetchw"
+#define PAVGB	  "pavgusb"
+#elif defined ( HAVE_MMX2 )
+#define PREFETCH "prefetchnta"
+#define PREFETCHW "prefetcht0"
+#define PAVGB	  "pavgb"
+#else
+#define PREFETCH "/nop"
+#define PREFETCHW "/nop"
+#endif
+
+#ifdef HAVE_3DNOW
+/* On K6 femms is faster of emms. On K7 femms is directly mapped on emms. */
+#define EMMS     "femms"
+#else
+#define EMMS     "emms"
+#endif
+
+#ifdef HAVE_MMX2
+#define MOVNTQ "movntq"
+#define SFENCE "sfence"
+#else
+#define MOVNTQ "movq"
+#define SFENCE "/nop"
+#endif
+
+static inline void RENAME(rgb24to32)(const uint8_t *src,uint8_t *dst,unsigned src_size)
 {
   uint8_t *dest = dst;
   const uint8_t *s = src;
@@ -99,7 +102,7 @@ void rgb24to32(const uint8_t *src,uint8_t *dst,unsigned src_size)
   }
 }
 
-void rgb32to24(const uint8_t *src,uint8_t *dst,unsigned src_size)
+static inline void RENAME(rgb32to24)(const uint8_t *src,uint8_t *dst,unsigned src_size)
 {
   uint8_t *dest = dst;
   const uint8_t *s = src;
@@ -153,7 +156,7 @@ void rgb32to24(const uint8_t *src,uint8_t *dst,unsigned src_size)
 	"por	%%mm3, %%mm1\n\t"
 	"pand	%6, %%mm5\n\t"
 	"por	%%mm5, %%mm4\n\t"
-	
+
 	MOVNTQ"	%%mm0, %0\n\t"
 	MOVNTQ"	%%mm1, 8%0\n\t"
 	MOVNTQ"	%%mm4, 16%0"
@@ -182,7 +185,7 @@ void rgb32to24(const uint8_t *src,uint8_t *dst,unsigned src_size)
  MMX2, 3DNOW optimization by Nick Kurshev
  32bit c version, and and&add trick by Michael Niedermayer
 */
-void rgb15to16(const uint8_t *src,uint8_t *dst,unsigned src_size)
+static inline void RENAME(rgb15to16)(const uint8_t *src,uint8_t *dst,unsigned src_size)
 {
 #ifdef HAVE_MMX
   register const char* s=src+src_size;
@@ -242,38 +245,7 @@ void rgb15to16(const uint8_t *src,uint8_t *dst,unsigned src_size)
 #endif
 }
 
-/**
- * Pallete is assumed to contain bgr32
- */
-void palette8torgb32(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
-{
-	unsigned i;
-	for(i=0; i<num_pixels; i++)
-		((unsigned *)dst)[i] = ((unsigned *)palette)[ src[i] ];
-}
-
-/**
- * Pallete is assumed to contain bgr32
- */
-void palette8torgb24(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
-{
-	unsigned i;
-/*
-	writes 1 byte o much and might cause alignment issues on some architectures?
-	for(i=0; i<num_pixels; i++)
-		((unsigned *)(&dst[i*3])) = ((unsigned *)palette)[ src[i] ];
-*/
-	for(i=0; i<num_pixels; i++)
-	{
-		//FIXME slow?
-		dst[0]= palette[ src[i]*4+0 ];
-		dst[1]= palette[ src[i]*4+1 ];
-		dst[2]= palette[ src[i]*4+2 ];
-		dst+= 3;
-	}
-}
-
-void rgb32to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
+static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 #ifdef HAVE_MMX
 	const uint8_t *s = src;
@@ -344,7 +316,7 @@ void rgb32to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 #endif
 }
 
-void rgb32to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
+static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 #ifdef HAVE_MMX
 	const uint8_t *s = src;
@@ -415,7 +387,7 @@ void rgb32to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 #endif
 }
 
-void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
+static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 #ifdef HAVE_MMX
 	const uint8_t *s = src;
@@ -487,7 +459,7 @@ void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 #endif
 }
 
-void rgb24to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
+static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 #ifdef HAVE_MMX
 	const uint8_t *s = src;
@@ -559,27 +531,7 @@ void rgb24to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 #endif
 }
 
-/**
- * Palette is assumed to contain bgr16, see rgb32to16 to convert the palette
- */
-void palette8torgb16(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
-{
-	unsigned i;
-	for(i=0; i<num_pixels; i++)
-		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
-}
-
-/**
- * Pallete is assumed to contain bgr15, see rgb32to15 to convert the palette
- */
-void palette8torgb15(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
-{
-	unsigned i;
-	for(i=0; i<num_pixels; i++)
-		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
-}
-
-void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 {
 	int num_pixels= src_size >> 2;
 #ifdef HAVE_MMX
@@ -624,7 +576,7 @@ void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
  * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
  * problem for anyone then tell me, and ill fix it)
  */
-void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
+static inline void RENAME(yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
 	unsigned int width, unsigned int height,
 	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
 {
@@ -697,7 +649,7 @@ asm(    EMMS" \n\t"
  * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
  * problem for anyone then tell me, and ill fix it)
  */
-void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
 	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
 {
@@ -821,8 +773,9 @@ asm volatile(   EMMS" \n\t"
  *
  * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
  * problem for anyone then tell me, and ill fix it)
+ * chrominance data is only taken from every secound line others are ignored FIXME write HQ version
  */
-void uyvytoyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
 	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
 {
@@ -942,4 +895,65 @@ asm volatile(   EMMS" \n\t"
 #endif
 }
 
+/**
+ *
+ * height should be a multiple of 2 and width should be a multiple of 2 (if this is a
+ * problem for anyone then tell me, and ill fix it)
+ * chrominance data is only taken from every secound line others are ignored FIXME write HQ version
+ */
+static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+	unsigned int width, unsigned int height,
+	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
+{
+	int y;
+	const int chromWidth= width>>1;
+	for(y=0; y<height; y+=2)
+	{
+		int i;
+		for(i=0; i<chromWidth; i++)
+		{
+			unsigned int b= src[6*i+0];
+			unsigned int g= src[6*i+1];
+			unsigned int r= src[6*i+2];
 
+			unsigned int Y  =  RY*r + GY*g + BY*b + 16;
+			unsigned int V  =  RV*r + GV*g + BV*b + 128;
+			unsigned int U  =  RU*r + GU*g + BU*b + 128;
+
+			udst[i] 	= U;
+			vdst[i] 	= V;
+			ydst[2*i] 	= Y;
+
+			b= src[6*i+3];
+			g= src[6*i+4];
+			r= src[6*i+5];
+
+			Y  =  RY*r + GY*g + BY*b + 16;
+			ydst[2*i+1] 	= Y;
+		}
+		ydst += lumStride;
+		src  += srcStride;
+
+		for(i=0; i<chromWidth; i++)
+		{
+			unsigned int b= src[6*i+0];
+			unsigned int g= src[6*i+1];
+			unsigned int r= src[6*i+2];
+
+			unsigned int Y  =  RY*r + GY*g + BY*b + 16;
+
+			ydst[2*i] 	= Y;
+
+			b= src[6*i+3];
+			g= src[6*i+4];
+			r= src[6*i+5];
+
+			Y  =  RY*r + GY*g + BY*b + 16;
+			ydst[2*i+1] 	= Y;
+		}
+		udst += chromStride;
+		vdst += chromStride;
+		ydst += lumStride;
+		src  += srcStride;
+	}
+}
