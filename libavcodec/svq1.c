@@ -1,22 +1,24 @@
-/* 
+/*
+ * 
  * Copyright (C) 2002 the xine project
+ * Copyright (C) 2002 the ffmpeg project
  * 
- * This file is part of xine, a unix video player.
- * Ported to libavcodec by Nick Kurshev <nickols_k@mail.ru>
- * 
- * xine is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- * 
- * xine is distributed in the hope that it will be useful,
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * This file is part of xine, a unix video player.
+ *
+ * Ported to libavcodec by Nick Kurshev <nickols_k@mail.ru>
  *
  */
 //#define DEBUG_SVQ1
