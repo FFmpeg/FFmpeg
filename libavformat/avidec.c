@@ -325,6 +325,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         st->codec.codec_id = CODEC_ID_XAN_DPCM;
                     break;
                 default:
+                    st->codec.codec_type = CODEC_TYPE_DATA;
+                    st->codec.codec_id= CODEC_ID_NONE;
+                    st->codec.codec_tag= 0;
                     url_fskip(pb, size);
                     break;
                 }
