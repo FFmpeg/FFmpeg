@@ -38,13 +38,15 @@ const CodecTag codec_wav_tags[] = {
 /* returns the size or -1 on error */
 int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 {
-    int tag, bps, blkalign, bytespersec;
+    int bps, blkalign, bytespersec;
     int hdrsize = 18;
 
-    tag = codec_get_tag(codec_wav_tags, enc->codec_id);
-    if (tag == 0)
+    if(!enc->codec_tag)
+       enc->codec_tag = codec_get_tag(codec_wav_tags, enc->codec_id);
+    if(!enc->codec_tag)
         return -1;
-    put_le16(pb, tag);
+
+    put_le16(pb, enc->codec_tag);
     put_le16(pb, enc->channels);
     put_le32(pb, enc->sample_rate);
     if (enc->codec_id == CODEC_ID_PCM_U8 ||

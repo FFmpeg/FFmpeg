@@ -42,15 +42,14 @@ static const CodecTag codec_au_tags[] = {
 /* AUDIO_FILE header */
 static int put_au_header(ByteIOContext *pb, AVCodecContext *enc)
 {
-    int tag;
-
-    tag = codec_get_tag(codec_au_tags, enc->codec_id);
-    if (tag == 0)
+    if(!enc->codec_tag)
+       enc->codec_tag = codec_get_tag(codec_au_tags, enc->codec_id);
+    if(!enc->codec_tag)
         return -1;
     put_tag(pb, ".snd");       /* magic number */
     put_be32(pb, 24);           /* header size */
     put_be32(pb, AU_UNKOWN_SIZE); /* data size */
-    put_be32(pb, (uint32_t)tag);     /* codec ID */
+    put_be32(pb, (uint32_t)enc->codec_tag);     /* codec ID */
     put_be32(pb, enc->sample_rate);
     put_be32(pb, (uint32_t)enc->channels);
     return 0;
