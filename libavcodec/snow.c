@@ -1989,7 +1989,7 @@ STOP_TIMER("mc_block")
 }
 
 #define mca(dx,dy,b_w)\
-static void mc_block_hpel ## dx ## dy(uint8_t *dst, uint8_t *src, int stride, int h){\
+static void mc_block_hpel ## dx ## dy ## b_w(uint8_t *dst, uint8_t *src, int stride, int h){\
     uint8_t tmp[stride*(b_w+5)];\
     assert(h==b_w);\
     mc_block(dst, src-2-2*stride, tmp, stride, b_w, b_w, dx, dy);\
@@ -1999,6 +1999,10 @@ mca( 0, 0,16)
 mca( 8, 0,16)
 mca( 0, 8,16)
 mca( 8, 8,16)
+mca( 0, 0,8)
+mca( 8, 0,8)
+mca( 0, 8,8)
+mca( 8, 8,8)
 
 static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *src, uint8_t *tmp, int stride, int sx, int sy, int b_w, int b_h, BlockNode *block, int plane_index, int w, int h){
     if(block->type){
@@ -2446,7 +2450,10 @@ static int common_init(AVCodecContext *avctx){
 #define mcf(dx,dy)\
     s->dsp.put_qpel_pixels_tab       [0][dy+dx/4]=\
     s->dsp.put_no_rnd_qpel_pixels_tab[0][dy+dx/4]=\
-        s->dsp.put_h264_qpel_pixels_tab[0][dy+dx/4];
+        s->dsp.put_h264_qpel_pixels_tab[0][dy+dx/4];\
+    s->dsp.put_qpel_pixels_tab       [1][dy+dx/4]=\
+    s->dsp.put_no_rnd_qpel_pixels_tab[1][dy+dx/4]=\
+        s->dsp.put_h264_qpel_pixels_tab[1][dy+dx/4];
 
     mcf( 0, 0)
     mcf( 4, 0)
@@ -2468,7 +2475,10 @@ static int common_init(AVCodecContext *avctx){
 #define mcfh(dx,dy)\
     s->dsp.put_pixels_tab       [0][dy/4+dx/8]=\
     s->dsp.put_no_rnd_pixels_tab[0][dy/4+dx/8]=\
-        mc_block_hpel ## dx ## dy;
+        mc_block_hpel ## dx ## dy ## 16;\
+    s->dsp.put_pixels_tab       [1][dy/4+dx/8]=\
+    s->dsp.put_no_rnd_pixels_tab[1][dy/4+dx/8]=\
+        mc_block_hpel ## dx ## dy ## 8;
 
     mcfh(0, 0)
     mcfh(8, 0)
