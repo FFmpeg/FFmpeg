@@ -270,7 +270,7 @@ static int wma_decode_init(AVCodecContext * avctx)
     /* compute MDCT block size */
     if (s->sample_rate <= 16000) {
         s->frame_len_bits = 9;
-    } else if (s->sample_rate <= 32000) {
+    } else if (s->sample_rate <= 32000 && s->version == 1) {
         s->frame_len_bits = 10;
     } else {
         s->frame_len_bits = 11;
