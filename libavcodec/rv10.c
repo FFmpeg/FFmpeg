@@ -387,6 +387,8 @@ static int rv10_decode_init(AVCodecContext *avctx)
                  rv_chrom_code, 2, 2);
         done = 1;
     }
+    
+    avctx->pix_fmt = PIX_FMT_YUV420P;
 
     return 0;
 }
