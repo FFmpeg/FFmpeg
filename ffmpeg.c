@@ -1758,7 +1758,7 @@ static int av_encode(AVFormatContext **output_files,
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
         if (av_write_header(os) < 0) {
-            fprintf(stderr, "Could not write header for output file #%d (incorrect codec paramters ?)\n", i);
+            fprintf(stderr, "Could not write header for output file #%d (incorrect codec parameters ?)\n", i);
             ret = -EINVAL;
             goto fail;
         }
