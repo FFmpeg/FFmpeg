@@ -306,7 +306,7 @@ static const uint8_t chroma_dc_scan[4]={
  (0+1*2)*16, (1+1*2)*16,  //FIXME
 };
 
-#define MB_TYPE_REF0       0x40000000
+#define MB_TYPE_REF0       MB_TYPE_ACPRED //dirty but it fits in 16bit
 #define IS_REF0(a)       ((a)&MB_TYPE_REF0)
 
 typedef struct IMbInfo{
