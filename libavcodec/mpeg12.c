@@ -1945,7 +1945,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                             *data_size = sizeof(AVPicture);
                             goto the_end;
                         }else if(ret<0){
-                            printf("Error while decoding slice\n");
+                            fprintf(stderr,"Error while decoding slice\n");
 			    if(ret==DECODE_SLICE_FATAL_ERROR) return -1;
                         }
                     }
