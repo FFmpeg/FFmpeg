@@ -275,6 +275,8 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             goto fail;
         st->priv_data = stream;
 
+        av_set_pts_info(st, 64, 1, 90000);
+
         switch(st->codec.codec_type) {
         case CODEC_TYPE_AUDIO:
             if (st->codec.codec_id == CODEC_ID_AC3) {
@@ -1017,15 +1019,15 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     if(s->is_svcd) {
         /* offset pts and dts slightly into the future to be able
            to do the compatibility fix below.*/
-        pts = (pts + 2) & ((1LL << 33) - 1);
-        dts = (dts + 2) & ((1LL << 33) - 1);
+        pts += 2;
+        dts += 2;
 
         if (stream->packet_number == 0 && dts == pts)
             /* For the very first packet we want to force the DTS to be included.
                This increases compatibility with lots of DVD players.
                Since the MPEG-2 standard mandates that DTS is only written when
                it is different from PTS we have to move it slightly into the past.*/
-            dts = (dts - 2) & ((1LL << 33) - 1);
+            dts -= 2;
     }
     if(s->is_vcd) {
         /* We have to offset the PTS, so that it is consistent with the SCR.
@@ -1033,13 +1035,13 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
            and the first pack from the other stream, respectively, may also have
            been written before.
            So the real data starts at SCR 36000+3*1200. */
-        pts = (pts + 36000 + 3600) & ((1LL << 33) - 1);
-        dts = (dts + 36000 + 3600) & ((1LL << 33) - 1);
+        pts += 36000 + 3600;
+        dts += 36000 + 3600;
     }else{
-        pts = (pts + PRELOAD) & ((1LL << 33) - 1);
-        dts = (dts + PRELOAD) & ((1LL << 33) - 1);
+        pts += PRELOAD;
+        dts += PRELOAD;
     }
-    
+//av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f flags:%d stream:%d\n", dts/90000.0, pts/90000.0, pkt->flags, pkt->stream_index);
     *stream->next_packet=
     pkt_desc= av_mallocz(sizeof(PacketDesc));
     pkt_desc->pts= pts;
