@@ -469,6 +469,26 @@ for restrict_keyword in restrict __restrict__ __restrict; do
   fi
 done
 
+# test gcc version to see if vector builtins can be used
+# currently only used on i386 for MMX builtins
+cat > $TMPC << EOF
+int main(void) { 
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
+return 0;
+#else
+#error no vector builtins
+#endif
+}
+EOF
+
+builtin_vector=no
+if $cc -o $TMPO $TMPC 2> /dev/null ; then
+  builtin_vector=yes
+  if test "$mmx" = "yes" ; then
+     CFLAGS="$CFLAGS -msse"
+  fi
+fi
+
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
 cat << EOF
 
@@ -522,6 +542,7 @@ echo "CPU              $cpu"
 echo "Big Endian       $bigendian"
 if test $cpu = "x86"; then
 echo "MMX enabled      $mmx"
+echo "Vector Builtins  $builtin_vector"
 fi
 if test $cpu = "mips"; then
 echo "MMI enabled      $mmi"
@@ -582,6 +603,10 @@ fi
 if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
   echo "#define HAVE_MMX 1" >> $TMPH
+fi
+if test "$builtin_vector" = "yes" ; then
+  echo "TARGET_BUILTIN_VECTOR=yes" >> config.mak
+  echo "#define HAVE_BUILTIN_VECTOR 1" >> $TMPH
 fi
 if test "$mmi" = "yes" ; then
   echo "TARGET_MMI=yes" >> config.mak
