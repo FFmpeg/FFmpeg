@@ -811,7 +811,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         st = s->streams[0];
     } else {
         int seq=1;
-
+resync:
         len=sync(s, &timestamp, &flags, &i, &pos);
         if(len<0)
             return AVERROR_IO;
@@ -840,6 +840,11 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(len2 && len2<len)
                 len=len2;
             rm->remaining_len-= len;
+        }
+
+        if(st->discard){
+            url_fskip(pb, len);
+            goto resync;
         }
         
         av_new_packet(pkt, len);

@@ -1533,6 +1533,8 @@ static int mpegps_read_packet(AVFormatContext *s,
     if (codec_id != CODEC_ID_PCM_S16BE)
         st->need_parsing = 1;
  found:
+    if(st->discard)
+        goto skip;
     if (startcode >= 0xa0 && startcode <= 0xbf) {
         int b1, freq;
 
@@ -1555,8 +1557,8 @@ static int mpegps_read_packet(AVFormatContext *s,
     pkt->dts = dts;
     pkt->stream_index = st->index;
 #if 0
-    av_log(s, AV_LOG_DEBUG, "%d: pts=%0.3f dts=%0.3f\n",
-           pkt->stream_index, pkt->pts / 90000.0, pkt->dts / 90000.0);
+    av_log(s, AV_LOG_DEBUG, "%d: pts=%0.3f dts=%0.3f size=%d\n",
+           pkt->stream_index, pkt->pts / 90000.0, pkt->dts / 90000.0, pkt->size);
 #endif
 
     return 0;

@@ -106,6 +106,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         st->codec.frame_rate_base= 1;
         st->codec.frame_rate= 1000;
     }
+    if(st->discard){
+        url_fskip(&s->pb, size);
+        continue;
+    }
     break;
  }
 

@@ -821,7 +821,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 compute_pkt_fields(s, st, NULL, pkt);
                 s->cur_st = NULL;
                 return 0;
-            } else if (s->cur_len > 0) {
+            } else if (s->cur_len > 0 && !st->discard) {
                 len = av_parser_parse(st->parser, &st->codec, &pkt->data, &pkt->size, 
                                       s->cur_ptr, s->cur_len,
                                       s->cur_pkt.pts, s->cur_pkt.dts);

@@ -2364,6 +2364,10 @@ matroska_parse_blockgroup (MatroskaDemuxContext *matroska,
                     av_free(origdata);
                     break;
                 }
+                if(matroska->ctx->streams[ matroska->tracks[track]->stream_index ]->discard){
+                    av_free(origdata);
+                    break;                
+                }
 
                 /* time (relative to cluster time) */
                 time = ((data[0] << 8) | data[1]) * matroska->time_scale;
