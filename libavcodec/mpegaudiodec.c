@@ -400,11 +400,11 @@ static int decode_init(AVCodecContext * avctx)
         }
 
 	/* compute n ^ (4/3) and store it in mantissa/exp format */
-	if (!av_mallocz_static(&table_4_3_exp,
-			       TABLE_4_3_SIZE * sizeof(table_4_3_exp[0])))
+	table_4_3_exp= av_mallocz_static(TABLE_4_3_SIZE * sizeof(table_4_3_exp[0]));
+        if(!table_4_3_exp)
 	    return -1;
-	if (!av_mallocz_static(&table_4_3_value,
-			       TABLE_4_3_SIZE * sizeof(table_4_3_value[0])))
+	table_4_3_value= av_mallocz_static(TABLE_4_3_SIZE * sizeof(table_4_3_value[0]));
+        if(!table_4_3_value)
             return -1;
         
         int_pow_init();

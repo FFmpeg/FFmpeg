@@ -66,41 +66,35 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
 }
 
 
-/* allocation of static arrays - do not use for normal allocation */
 static unsigned int last_static = 0;
-static char*** array_static = NULL;
+static unsigned int allocated_static = 0;
+static void** array_static = NULL;
 static const unsigned int grow_static = 64; // ^2
-void *__av_mallocz_static(void** location, unsigned int size)
-{
-    unsigned int l = (last_static + grow_static) & ~(grow_static - 1);
-    void *ptr = av_mallocz(size);
-    if (!ptr)
-	return NULL;
 
-    if (location)
-    {
-	if (l > last_static)
-	    array_static = av_realloc(array_static, l);
-	array_static[last_static++] = (char**) location;
-	*location = ptr;
+/**
+ * allocation of static arrays - do not use for normal allocation.
+ */
+void *av_mallocz_static(unsigned int size)
+{
+    void *ptr = av_mallocz(size);
+
+    if(ptr){ 
+        array_static =av_fast_realloc(array_static, &allocated_static, last_static+1);
+        array_static[last_static++] = ptr;
     }
+
     return ptr;
 }
-/* free all static arrays and reset pointers to 0 */
+
+/**
+ * free all static arrays and reset pointers to 0.
+ */
 void av_free_static(void)
 {
-    if (array_static)
-    {
-	unsigned i;
-	for (i = 0; i < last_static; i++)
-	{
-	    av_free(*array_static[i]);
-            *array_static[i] = NULL;
-	}
-	av_free(array_static);
-	array_static = 0;
+    while(last_static){
+        av_freep(&array_static[--last_static]);
     }
-    last_static = 0;
+    av_freep(&array_static);
 }
 
 /**

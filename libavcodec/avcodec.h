@@ -2096,8 +2096,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 /* for static data only */
 /* call av_free_static to release all staticaly allocated tables */
 void av_free_static(void);
-void *__av_mallocz_static(void** location, unsigned int size);
-#define av_mallocz_static(p, s) __av_mallocz_static((void **)(p), s)
+void *av_mallocz_static(unsigned int size);
 
 /* add by bero : in adx.c */
 int is_adx(const unsigned char *buf,size_t bufsize);
