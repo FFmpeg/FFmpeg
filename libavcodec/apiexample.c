@@ -98,9 +98,12 @@ void audio_decode_example(const char *outfilename, const char *filename)
     int out_size, size, len;
     FILE *f, *outfile;
     uint8_t *outbuf;
-    uint8_t inbuf[INBUF_SIZE], *inbuf_ptr;
+    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
 
     printf("Audio decoding\n");
+    
+    /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
+    memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     /* find the mpeg audio decoder */
     codec = avcodec_find_decoder(CODEC_ID_MP2);
@@ -297,8 +300,11 @@ void video_decode_example(const char *outfilename, const char *filename)
     int frame, size, got_picture, len;
     FILE *f;
     AVFrame *picture;
-    uint8_t inbuf[INBUF_SIZE], *inbuf_ptr;
+    uint8_t inbuf[INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE], *inbuf_ptr;
     char buf[1024];
+
+    /* set end of buffer to 0 (this ensures that no overreading happens for damaged mpeg streams) */
+    memset(inbuf + INBUF_SIZE, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     printf("Video decoding\n");
 
