@@ -1858,6 +1858,12 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         }
       }else{ //second field
             int i;
+            
+            if(!s->current_picture_ptr){
+                fprintf(stderr, "first field missing\n");
+                return -1;
+            }
+            
             for(i=0; i<4; i++){
                 s->current_picture.data[i] = s->current_picture_ptr->data[i];
                 if(s->picture_structure == PICT_BOTTOM_FIELD){
@@ -2265,6 +2271,8 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         if(avctx->hurry_up && s2->pict_type==B_TYPE) break;
                         /* skip everything if we are in a hurry>=5 */
                         if(avctx->hurry_up>=5) break;
+
+                        if (!s->mpeg_enc_ctx_allocated) break;
 
                         ret = mpeg_decode_slice(avctx, picture,
                                                 start_code, s->buffer, input_size);
