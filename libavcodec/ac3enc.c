@@ -735,6 +735,9 @@ static int compute_bit_allocation(AC3EncodeContext *s,
     /* (fsnoffset[4] + fgaincod[4]) * c */
     frame_bits += 2*4 + 3 + 6 + s->nb_all_channels * (4 + 3);
 
+    /* auxdatae, crcrsv */
+    frame_bits += 2;
+
     /* CRC */
     frame_bits += 16;
 
