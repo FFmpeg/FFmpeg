@@ -391,7 +391,7 @@ static void adjust_write_index(AVFormatContext *s)
     pts = get_pts(s, pos_max);
 
     if (pts - 100000 > pts_start) 
-        return;
+        goto end;
 
     ffm->write_index = FFM_PACKET_SIZE;
 
@@ -424,6 +424,7 @@ static void adjust_write_index(AVFormatContext *s)
     //printf("Adjusted write index from %lld to %lld: pts=%0.6f\n", orig_write_index, ffm->write_index, pts / 1000000.);
     //printf("pts range %0.6f - %0.6f\n", get_pts(s, 0) / 1000000. , get_pts(s, ffm->file_size - 2 * FFM_PACKET_SIZE) / 1000000. );
 
+ end:
     url_fseek(pb, ptr, SEEK_SET);
 }
 
