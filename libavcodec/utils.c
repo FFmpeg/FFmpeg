@@ -820,7 +820,7 @@ static void av_log_default_callback(AVCodecContext* avctx, int level, const char
     if(level>av_log_level)
 	    return;
     if(avctx && print_prefix)
-        fprintf(stderr, "[%s @ %p]", avctx->codec->name, avctx);
+        fprintf(stderr, "[%s @ %p]", avctx->codec ? avctx->codec->name : "?", avctx);
         
     print_prefix= (int)strstr(fmt, "\n");
         
