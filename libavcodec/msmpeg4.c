@@ -226,18 +226,17 @@ void msmpeg4_encode_ext_header(MpegEncContext * s)
 /* predict coded block */
 static inline int coded_block_pred(MpegEncContext * s, int n, UINT8 **coded_block_ptr)
 {
-    int x, y, wrap, pred, a, b, c;
+    int xy, wrap, pred, a, b, c;
 
-    x = 2 * s->mb_x + 1 + (n & 1);
-    y = 2 * s->mb_y + 1 + ((n & 2) >> 1);
-    wrap = s->mb_width * 2 + 2;
+    xy = s->block_index[n];
+    wrap = s->block_wrap[0];
 
     /* B C
      * A X 
      */
-    a = s->coded_block[(x - 1) + (y) * wrap];
-    b = s->coded_block[(x - 1) + (y - 1) * wrap];
-    c = s->coded_block[(x) + (y - 1) * wrap];
+    a = s->coded_block[xy - 1       ];
+    b = s->coded_block[xy - 1 - wrap];
+    c = s->coded_block[xy     - wrap];
     
     if (b == c) {
         pred = a;
@@ -246,7 +245,7 @@ static inline int coded_block_pred(MpegEncContext * s, int n, UINT8 **coded_bloc
     }
     
     /* store value */
-    *coded_block_ptr = &s->coded_block[(x) + (y) * wrap];
+    *coded_block_ptr = &s->coded_block[xy];
 
     return pred;
 }
@@ -402,32 +401,24 @@ void msmpeg4_dc_scale(MpegEncContext * s)
 static int msmpeg4_pred_dc(MpegEncContext * s, int n, 
                            INT16 **dc_val_ptr, int *dir_ptr)
 {
-    int a, b, c, xy, wrap, pred, scale;
+    int a, b, c, wrap, pred, scale;
     INT16 *dc_val;
 
     /* find prediction */
     if (n < 4) {
-	wrap = s->mb_width * 2 + 2;
-	xy = 2 * s->mb_y + 1 + ((n & 2) >> 1);
-        xy *= wrap;
-	xy += 2 * s->mb_x + 1 + (n & 1);
-	dc_val = s->dc_val[0];
 	scale = s->y_dc_scale;
     } else {
-	wrap = s->mb_width + 2;
-	xy = s->mb_y + 1;
-        xy *= wrap;
-	xy += s->mb_x + 1;
-	dc_val = s->dc_val[n - 4 + 1];
 	scale = s->c_dc_scale;
     }
+    wrap = s->block_wrap[n];
+    dc_val= s->dc_val[0] + s->block_index[n];
 
     /* B C
      * A X 
      */
-    a = dc_val[xy - 1];
-    b = dc_val[xy - 1 - wrap];
-    c = dc_val[xy - wrap];
+    a = dc_val[ - 1];
+    b = dc_val[ - 1 - wrap];
+    c = dc_val[ - wrap];
 
     /* XXX: the following solution consumes divisions, but it does not
        necessitate to modify mpegvideo.c. The problem comes from the
@@ -478,7 +469,7 @@ static int msmpeg4_pred_dc(MpegEncContext * s, int n,
     }
 
     /* update predictor */
-    *dc_val_ptr = &dc_val[xy];
+    *dc_val_ptr = &dc_val[0];
     return pred;
 }
 
