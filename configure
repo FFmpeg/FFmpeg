@@ -242,6 +242,17 @@ FFSLDFLAGS=""
 need_inet_aton="yes"
 extralibs="$extralibs -lsocket -lnsl"
 ;;
+NetBSD)
+v4l="no"
+audio_oss="yes"
+dv1394="no"
+make="gmake"
+LDFLAGS="$LDFLAGS -export-dynamic"
+case `uname -r` in
+2.*) extralibs="-lossaudio"
+;;
+esac
+;;
 FreeBSD)
 v4l="no"
 audio_oss="yes"
