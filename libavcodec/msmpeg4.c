@@ -760,68 +760,73 @@ static void init_h263_dc_for_msmpeg4(void)
 /* init all vlc decoding tables */
 int msmpeg4_decode_init_vlc(MpegEncContext *s)
 {
+    static int done = 0;
     int i;
     MVTable *mv;
 
-    for(i=0;i<NB_RL_TABLES;i++) {
-        init_rl(&rl_table[i]);
-        init_vlc_rl(&rl_table[i]);
-    }
-    for(i=0;i<2;i++) {
-        mv = &mv_tables[i];
-        init_vlc(&mv->vlc, 9, mv->n + 1, 
-                 mv->table_mv_bits, 1, 1,
-                 mv->table_mv_code, 2, 2);
-    }
 
-    init_vlc(&dc_lum_vlc[0], 9, 120, 
-             &table0_dc_lum[0][1], 8, 4,
-             &table0_dc_lum[0][0], 8, 4);
-    init_vlc(&dc_chroma_vlc[0], 9, 120, 
-             &table0_dc_chroma[0][1], 8, 4,
-             &table0_dc_chroma[0][0], 8, 4);
-    init_vlc(&dc_lum_vlc[1], 9, 120, 
-             &table1_dc_lum[0][1], 8, 4,
-             &table1_dc_lum[0][0], 8, 4);
-    init_vlc(&dc_chroma_vlc[1], 9, 120, 
-             &table1_dc_chroma[0][1], 8, 4,
-             &table1_dc_chroma[0][0], 8, 4);
-    
-    init_h263_dc_for_msmpeg4();
-    init_vlc(&v2_dc_lum_vlc, 9, 512, 
-             &v2_dc_lum_table[0][1], 8, 4,
-             &v2_dc_lum_table[0][0], 8, 4);
-    init_vlc(&v2_dc_chroma_vlc, 9, 512, 
-             &v2_dc_chroma_table[0][1], 8, 4,
-             &v2_dc_chroma_table[0][0], 8, 4);
-    
-    init_vlc(&cbpy_vlc, 6, 16,
-             &cbpy_tab[0][1], 2, 1,
-             &cbpy_tab[0][0], 2, 1);
-    init_vlc(&v2_intra_cbpc_vlc, 3, 4,
-             &v2_intra_cbpc[0][1], 2, 1,
-             &v2_intra_cbpc[0][0], 2, 1);
-    init_vlc(&v2_mb_type_vlc, 5, 8,
-             &v2_mb_type[0][1], 2, 1,
-             &v2_mb_type[0][0], 2, 1);
-    init_vlc(&v2_mv_vlc, 9, 33,
-             &mvtab[0][1], 2, 1,
-             &mvtab[0][0], 2, 1);
+    if (!done) {
+        done = 1;
 
-    init_vlc(&mb_non_intra_vlc, 9, 128, 
-             &table_mb_non_intra[0][1], 8, 4,
-             &table_mb_non_intra[0][0], 8, 4);
-    init_vlc(&mb_intra_vlc, 9, 64, 
-             &table_mb_intra[0][1], 4, 2,
-             &table_mb_intra[0][0], 4, 2);
+        for(i=0;i<NB_RL_TABLES;i++) {
+            init_rl(&rl_table[i]);
+            init_vlc_rl(&rl_table[i]);
+        }
+        for(i=0;i<2;i++) {
+            mv = &mv_tables[i];
+            init_vlc(&mv->vlc, 9, mv->n + 1, 
+                     mv->table_mv_bits, 1, 1,
+                     mv->table_mv_code, 2, 2);
+        }
+
+        init_vlc(&dc_lum_vlc[0], 9, 120, 
+                 &table0_dc_lum[0][1], 8, 4,
+                 &table0_dc_lum[0][0], 8, 4);
+        init_vlc(&dc_chroma_vlc[0], 9, 120, 
+                 &table0_dc_chroma[0][1], 8, 4,
+                 &table0_dc_chroma[0][0], 8, 4);
+        init_vlc(&dc_lum_vlc[1], 9, 120, 
+                 &table1_dc_lum[0][1], 8, 4,
+                 &table1_dc_lum[0][0], 8, 4);
+        init_vlc(&dc_chroma_vlc[1], 9, 120, 
+                 &table1_dc_chroma[0][1], 8, 4,
+                 &table1_dc_chroma[0][0], 8, 4);
+    
+        init_h263_dc_for_msmpeg4();
+        init_vlc(&v2_dc_lum_vlc, 9, 512, 
+                 &v2_dc_lum_table[0][1], 8, 4,
+                 &v2_dc_lum_table[0][0], 8, 4);
+        init_vlc(&v2_dc_chroma_vlc, 9, 512, 
+                 &v2_dc_chroma_table[0][1], 8, 4,
+                 &v2_dc_chroma_table[0][0], 8, 4);
+    
+        init_vlc(&cbpy_vlc, 6, 16,
+                 &cbpy_tab[0][1], 2, 1,
+                 &cbpy_tab[0][0], 2, 1);
+        init_vlc(&v2_intra_cbpc_vlc, 3, 4,
+                 &v2_intra_cbpc[0][1], 2, 1,
+                 &v2_intra_cbpc[0][0], 2, 1);
+        init_vlc(&v2_mb_type_vlc, 5, 8,
+                 &v2_mb_type[0][1], 2, 1,
+                 &v2_mb_type[0][0], 2, 1);
+        init_vlc(&v2_mv_vlc, 9, 33,
+                 &mvtab[0][1], 2, 1,
+                 &mvtab[0][0], 2, 1);
+
+        init_vlc(&mb_non_intra_vlc, 9, 128, 
+                 &table_mb_non_intra[0][1], 8, 4,
+                 &table_mb_non_intra[0][0], 8, 4);
+        init_vlc(&mb_intra_vlc, 9, 64, 
+                 &table_mb_intra[0][1], 4, 2,
+                 &table_mb_intra[0][0], 4, 2);
         
-    init_vlc(&v1_intra_cbpc_vlc, 6, 8, 
-             intra_MCBPC_bits, 1, 1,
-             intra_MCBPC_code, 1, 1);
-    init_vlc(&v1_inter_cbpc_vlc, 6, 25, 
-             inter_MCBPC_bits, 1, 1,
-             inter_MCBPC_code, 1, 1);
-
+        init_vlc(&v1_intra_cbpc_vlc, 6, 8, 
+                 intra_MCBPC_bits, 1, 1,
+                 intra_MCBPC_code, 1, 1);
+        init_vlc(&v1_inter_cbpc_vlc, 6, 25, 
+                 inter_MCBPC_bits, 1, 1,
+                 inter_MCBPC_code, 1, 1);
+    }
     return 0;
 }
 
