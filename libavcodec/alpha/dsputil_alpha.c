@@ -34,7 +34,7 @@ void get_pixels_mvi(DCTELEM *restrict block,
 void diff_pixels_mvi(DCTELEM *block, const uint8_t *s1, const uint8_t *s2,
                      int stride);
 int pix_abs8x8_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
-int pix_abs16x16_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
+int pix_abs16x16_mvi_asm(uint8_t *pix1, uint8_t *pix2, int line_size);
 int pix_abs16x16_x2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
 int pix_abs16x16_y2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
 int pix_abs16x16_xy2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
@@ -335,7 +335,7 @@ void dsputil_init_alpha(void)
         get_pixels       = get_pixels_mvi;
         diff_pixels      = diff_pixels_mvi;
         pix_abs8x8       = pix_abs8x8_mvi;
-        pix_abs16x16     = pix_abs16x16_mvi;
+        pix_abs16x16     = pix_abs16x16_mvi_asm;
         pix_abs16x16_x2  = pix_abs16x16_x2_mvi;
         pix_abs16x16_y2  = pix_abs16x16_y2_mvi;
         pix_abs16x16_xy2 = pix_abs16x16_xy2_mvi;
