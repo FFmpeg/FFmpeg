@@ -77,7 +77,7 @@ void ff_h261_loop_filter(MpegEncContext *s){
     s->dsp.h261_loop_filter(dest_cr, uvlinesize);
 }
 
-int ff_h261_get_picture_format(int width, int height){
+static int ff_h261_get_picture_format(int width, int height){
     // QCIF
     if (width == 176 && height == 144)
         return 0;
@@ -93,16 +93,10 @@ static void h261_encode_block(H261Context * h, DCTELEM * block,
                               int n);
 static int h261_decode_block(H261Context *h, DCTELEM *block,
                              int n, int coded);
-static int h261_decode_mb(H261Context *h);
-void ff_set_qscale(MpegEncContext * s, int qscale);
 
 void ff_h261_encode_picture_header(MpegEncContext * s, int picture_number){
     H261Context * h = (H261Context *) s;
-    int format, coded_frame_rate, coded_frame_rate_base, temp_ref;
-    int best_clock_code=1;
-    int best_divisor=60;
-    coded_frame_rate= 1800000;
-    coded_frame_rate_base= (1000+best_clock_code)*best_divisor;
+    int format, temp_ref;
 
     align_put_bits(&s->pb);
 
@@ -111,8 +105,8 @@ void ff_h261_encode_picture_header(MpegEncContext * s, int picture_number){
 
     put_bits(&s->pb, 20, 0x10); /* PSC */
 
-    temp_ref= s->picture_number * (int64_t)coded_frame_rate * s->avctx->frame_rate_base / 
-                         (coded_frame_rate_base * (int64_t)s->avctx->frame_rate);
+    temp_ref= s->picture_number * (int64_t)30000 * s->avctx->frame_rate_base / 
+                         (1001 * (int64_t)s->avctx->frame_rate);
     put_bits(&s->pb, 5, temp_ref & 0x1f); /* TemporalReference */
 
     put_bits(&s->pb, 1, 0); /* split screen off */
