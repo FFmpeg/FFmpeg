@@ -392,7 +392,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
             put_le16(pb, 40); /* size */
 
             /* BITMAPINFOHEADER header */
-            put_bmp_header(pb, enc, codec_bmp_tags);
+            put_bmp_header(pb, enc, codec_bmp_tags, 1);
         }
         end_header(pb, hpos);
     }

@@ -60,17 +60,17 @@ CodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263P, MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
-    { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') },
-    { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x') },
-    { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0') },
-    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D') },
-    { CODEC_ID_MPEG4, MKTAG('x', 'v', 'i', 'd') },
-    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 's') },
+    { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X'), invalid_asf: 1 },
+    { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x'), invalid_asf: 1},
+    { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0'), invalid_asf: 1 },
+    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D'), invalid_asf: 1 },
+    { CODEC_ID_MPEG4, MKTAG('x', 'v', 'i', 'd'), invalid_asf: 1 },
+    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 's'), invalid_asf: 1 },
     { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
     { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
     { CODEC_ID_MPEG4, MKTAG('m', '4', 's', '2') },
     { CODEC_ID_MPEG4, MKTAG(0x04, 0, 0, 0) }, /* some broken avi use this */
-    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
+    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3'), invalid_asf: 1 }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') }, 
     { CODEC_ID_MSMPEG4V2, MKTAG('M', 'P', '4', '2') }, 
     { CODEC_ID_MSMPEG4V1, MKTAG('M', 'P', 'G', '4') }, 
@@ -96,6 +96,16 @@ unsigned int codec_get_tag(const CodecTag *tags, int id)
     return 0;
 }
 
+static unsigned int codec_get_asf_tag(const CodecTag *tags, int id)
+{
+    while (tags->id != 0) {
+        if (!tags->invalid_asf && tags->id == id)
+            return tags->tag;
+        tags++;
+    }
+    return 0;
+}
+
 int codec_get_id(const CodecTag *tags, unsigned int tag)
 {
     while (tags->id != 0) {
@@ -112,7 +122,7 @@ unsigned int codec_get_bmp_tag(int id)
 }
 
 /* BITMAPINFOHEADER header */
-void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, CodecTag *tags)
+void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, CodecTag *tags, int for_asf)
 {
     put_le32(pb, 40); /* size */
     put_le32(pb, enc->width);
@@ -120,7 +130,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, CodecTag *tags)
     put_le16(pb, 1); /* planes */
     put_le16(pb, 24); /* depth */
     /* compression type */
-    put_le32(pb, codec_get_tag(tags, enc->codec_id));
+    put_le32(pb, for_asf ? codec_get_asf_tag(tags, enc->codec_id) : codec_get_tag(tags, enc->codec_id));
     put_le32(pb, enc->width * enc->height * 3);
     put_le32(pb, 0);
     put_le32(pb, 0);
@@ -265,7 +275,7 @@ static int avi_write_header(AVFormatContext *s)
         strf = start_tag(pb, "strf");
         switch(stream->codec_type) {
         case CODEC_TYPE_VIDEO:
-	    put_bmp_header(pb, stream, codec_bmp_tags);
+	    put_bmp_header(pb, stream, codec_bmp_tags, 0);
             break;
         case CODEC_TYPE_AUDIO:
             if (put_wav_header(pb, stream) < 0) {
