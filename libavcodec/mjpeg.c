@@ -1052,8 +1052,10 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     case 0x11:
         if(s->rgb){
             s->avctx->pix_fmt = PIX_FMT_RGBA32;
-        }else
+        }else if(s->nb_components==3)
             s->avctx->pix_fmt = PIX_FMT_YUV444P;
+        else
+            s->avctx->pix_fmt = PIX_FMT_GRAY8;
         break;
     case 0x21:
         s->avctx->pix_fmt = PIX_FMT_YUV422P;
@@ -1372,7 +1374,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
 	return -1;
     }
     /* XXX: only interleaved scan accepted */
-    if (nb_components != 3)
+    if (nb_components != s->nb_components)
     {
 	dprintf("decode_sos: components(%d) mismatch\n", nb_components);
         return -1;
