@@ -1589,7 +1589,11 @@ static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int th
     const int last_index= s->block_last_index[n];
 
     if(skip_dc) skip_dc=1;
-    
+    if(threshold<0){
+        skip_dc=0;
+        threshold= -threshold;
+    }
+
     /* are all which we could set to zero are allready zero? */
     if(last_index<=skip_dc - 1) return;
 
