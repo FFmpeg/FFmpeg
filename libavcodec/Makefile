@@ -1,6 +1,12 @@
+#
+# libavcodec Makefile
+# (c) 2000, 2001, 2002 Gerard Lantau
+#
 include ../config.mak
 
-CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H -I. -I..
+VPATH=$(SRC_PATH)/libavcodec
+
+CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)
 LDFLAGS= -g
 
 OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
