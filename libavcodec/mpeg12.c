@@ -2304,6 +2304,9 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                     mpeg_decode_user_data(avctx, 
                                           buf_ptr, input_size);
                     break;
+                case GOP_START_CODE:
+                    s2->first_field=0;
+                    break;
                 default:
                     if (start_code >= SLICE_MIN_START_CODE &&
                         start_code <= SLICE_MAX_START_CODE) {
