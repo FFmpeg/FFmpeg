@@ -2568,6 +2568,7 @@ void sws_freeContext(SwsContext *c){
 	if(c->hChrFilterPos) free(c->hChrFilterPos);
 	c->hChrFilterPos = NULL;
 
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 #ifdef HAVE_SYS_MMAN_H
 	if(c->funnyYCode) munmap(c->funnyYCode, MAX_FUNNY_CODE_SIZE);
 	if(c->funnyUVCode) munmap(c->funnyUVCode, MAX_FUNNY_CODE_SIZE);
@@ -2577,6 +2578,7 @@ void sws_freeContext(SwsContext *c){
 #endif
 	c->funnyYCode=NULL;
 	c->funnyUVCode=NULL;
+#endif
 
 	if(c->lumMmx2Filter) free(c->lumMmx2Filter);
 	c->lumMmx2Filter=NULL;
