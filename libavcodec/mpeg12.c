@@ -1966,8 +1966,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
 
     if (
     	(s1->mpeg_enc_ctx_allocated == 0)|| 
-        avctx->width  != s->width ||
-        avctx->height != s->height||
+        avctx->width  != -((-s->width )>>avctx->lowres) ||
+        avctx->height != -((-s->height)>>avctx->lowres) ||
 //      s1->save_aspect_info != avctx->aspect_ratio_info||
         0)
     {
@@ -1979,8 +1979,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
 	if( (s->width == 0 )||(s->height == 0))
 	    return -2;
 
-        avctx->width = s->width;
-        avctx->height = s->height;
+        avctx->width  = -((-s->width )>>avctx->lowres);
+        avctx->height = -((-s->height)>>avctx->lowres);
         avctx->bit_rate = s->bit_rate;
         s1->save_aspect_info = s->aspect_ratio_info;
 

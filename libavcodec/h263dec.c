@@ -37,8 +37,10 @@ int ff_h263_decode_init(AVCodecContext *avctx)
     s->avctx = avctx;
     s->out_format = FMT_H263;
 
-    s->width = avctx->width;
+    s->width  = avctx->width;
     s->height = avctx->height;
+    avctx->width = -((-s->width )>>avctx->lowres);
+    avctx->height= -((-s->height)>>avctx->lowres);
     s->workaround_bugs= avctx->workaround_bugs;
 
     // set defaults
@@ -637,7 +639,8 @@ retry:
         /* FIXME: By the way H263 decoder is evolving it should have */
         /* an H263EncContext                                         */
     
-    if (   s->width != avctx->width || s->height != avctx->height) {
+    if (   -((-s->width )>>avctx->lowres) != avctx->width 
+        || -((-s->height)>>avctx->lowres) != avctx->height) {
         /* H.263 could change picture size any time */
         ParseContext pc= s->parse_context; //FIXME move these demuxng hack to avformat
         s->parse_context.buffer=0;
@@ -645,8 +648,8 @@ retry:
         s->parse_context= pc;
     }
     if (!s->context_initialized) {
-        avctx->width = s->width;
-        avctx->height = s->height;
+        avctx->width  = -((-s->width)>>avctx->lowres);
+        avctx->height = -((-s->height)>>avctx->lowres);
 
         goto retry;
     }

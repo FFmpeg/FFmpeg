@@ -1720,11 +1720,13 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
         uint8_t *ptr;
         int i;
         int h_chroma_shift, v_chroma_shift;
+        const int width = s->avctx->width;
+        const int height= s->avctx->height;
         s->low_delay=0; //needed to see the vectors without trashing the buffers
 
         avcodec_get_chroma_sub_sample(s->avctx->pix_fmt, &h_chroma_shift, &v_chroma_shift);
         for(i=0; i<3; i++){
-            memcpy(s->visualization_buffer[i], pict->data[i], (i==0) ? pict->linesize[i]*s->height:pict->linesize[i]*s->height >> v_chroma_shift);
+            memcpy(s->visualization_buffer[i], pict->data[i], (i==0) ? pict->linesize[i]*height:pict->linesize[i]*height >> v_chroma_shift);
             pict->data[i]= s->visualization_buffer[i];
         }
         pict->type= FF_BUFFER_TYPE_COPY;
@@ -1764,7 +1766,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                         int xy= mb_x*2 + (i&1) + (mb_y*2 + (i>>1))*s->b8_stride;
                         int mx= (pict->motion_val[direction][xy][0]>>shift) + sx;
                         int my= (pict->motion_val[direction][xy][1]>>shift) + sy;
-                        draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                        draw_arrow(ptr, sx, sy, mx, my, width, height, s->linesize, 100);
                       }
                     }else if(IS_16X8(pict->mb_type[mb_index])){
                       int i;
@@ -1778,7 +1780,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                         if(IS_INTERLACED(pict->mb_type[mb_index]))
                             my*=2;
                         
-                        draw_arrow(ptr, sx, sy, mx+sx, my+sy, s->width, s->height, s->linesize, 100);
+                        draw_arrow(ptr, sx, sy, mx+sx, my+sy, width, height, s->linesize, 100);
                       }
                     }else{
                       int sx= mb_x*16 + 8;
@@ -1786,7 +1788,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                       int xy= mb_x*2 + mb_y*2*s->b8_stride;
                       int mx= (pict->motion_val[direction][xy][0]>>shift) + sx;
                       int my= (pict->motion_val[direction][xy][1]>>shift) + sy;
-                      draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                      draw_arrow(ptr, sx, sy, mx, my, width, height, s->linesize, 100);
                     }
                   }                  
                 }
@@ -3702,7 +3704,7 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
             if(s->first_field  && !(s->avctx->slice_flags&SLICE_FLAG_ALLOW_FIELD)) return;
         }
 
-        h= FFMIN(h, (s->height>>s->avctx->lowres) - y);
+        h= FFMIN(h, s->avctx->height - y);
 
         if(s->pict_type==B_TYPE || s->low_delay || (s->avctx->slice_flags&SLICE_FLAG_CODED_ORDER)) 
             src= (AVFrame*)s->current_picture_ptr;
