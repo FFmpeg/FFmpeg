@@ -79,6 +79,11 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
     /* specific test for image sequences */
     if (!short_name && filename && 
         filename_number_test(filename) >= 0 &&
+        av_guess_image2_codec(filename) != CODEC_ID_NONE) {
+        return guess_format("image2", NULL, NULL);
+    }
+    if (!short_name && filename && 
+        filename_number_test(filename) >= 0 &&
         guess_image_format(filename)) {
         return guess_format("image", NULL, NULL);
     }
@@ -123,6 +128,26 @@ AVOutputFormat *guess_stream_format(const char *short_name, const char *filename
     }
 
     return fmt;
+}
+
+/**
+ * guesses the codec id based upon muxer and filename.
+ */
+enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name, 
+                            const char *filename, const char *mime_type, enum CodecType type){
+    if(type == CODEC_TYPE_VIDEO){
+        enum CodecID codec_id= CODEC_ID_NONE;
+
+        if(!strcmp(fmt->name, "image2")){
+            codec_id= av_guess_image2_codec(filename);
+        }
+        if(codec_id == CODEC_ID_NONE)
+            codec_id= fmt->video_codec;
+        return codec_id;
+    }else if(type == CODEC_TYPE_AUDIO)
+        return fmt->audio_codec;
+    else
+        return CODEC_ID_NONE;
 }
 
 AVInputFormat *av_find_input_format(const char *short_name)
@@ -1740,6 +1765,11 @@ int av_find_stream_info(AVFormatContext *ic)
              st->codec.codec_id == CODEC_ID_VORBIS ||
              st->codec.codec_id == CODEC_ID_MJPEG ||
              st->codec.codec_id == CODEC_ID_PNG ||
+             st->codec.codec_id == CODEC_ID_PAM ||
+             st->codec.codec_id == CODEC_ID_PGM ||
+             st->codec.codec_id == CODEC_ID_PGMYUV ||
+             st->codec.codec_id == CODEC_ID_PBM ||
+             st->codec.codec_id == CODEC_ID_PPM ||
              (st->codec.codec_id == CODEC_ID_MPEG4 && !st->need_parsing)))
             try_decode_frame(st, pkt->data, pkt->size);
         

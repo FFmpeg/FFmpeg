@@ -255,6 +255,9 @@ static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int input_sync;
 
+static int pgmyuv_compatibility_hack=0;
+
+
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
 typedef struct AVOutputStream {
@@ -2015,8 +2018,9 @@ static void opt_format(const char *arg)
 {
     /* compatibility stuff for pgmyuv */
     if (!strcmp(arg, "pgmyuv")) {
+        pgmyuv_compatibility_hack=1;
         opt_image_format(arg);
-        arg = "image";
+        arg = "image2";
     }
 
     file_iformat = av_find_input_format(arg);
@@ -2782,6 +2786,10 @@ static void opt_input_file(const char *filename)
     ap->device  = grab_device;
     ap->channel = video_channel;
     ap->standard = video_standard;
+    ap->video_codec_id = video_codec_id;
+    ap->audio_codec_id = audio_codec_id;
+    if(pgmyuv_compatibility_hack)
+        ap->video_codec_id= CODEC_ID_PGMYUV;
 
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
@@ -3004,7 +3012,7 @@ static void opt_output_file(const char *filename)
                 int i;
                 AVCodec *codec;
             
-                codec_id = file_oformat->video_codec;
+                codec_id = av_guess_codec(file_oformat, NULL, filename, NULL, CODEC_TYPE_VIDEO);
                 if (video_codec_id != CODEC_ID_NONE)
                     codec_id = video_codec_id;
                 
@@ -3253,7 +3261,7 @@ static void opt_output_file(const char *filename)
                 st->stream_copy = 1;
 		audio_enc->channels = audio_channels;
             } else {
-                codec_id = file_oformat->audio_codec;
+                codec_id = av_guess_codec(file_oformat, NULL, filename, NULL, CODEC_TYPE_AUDIO);
                 if (audio_codec_id != CODEC_ID_NONE)
                     codec_id = audio_codec_id;
                 audio_enc->codec_id = codec_id;

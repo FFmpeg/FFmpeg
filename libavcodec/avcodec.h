@@ -154,6 +154,11 @@ enum CodecID {
     CODEC_ID_XVID,
 
     CODEC_ID_PNG,    
+    CODEC_ID_PPM,
+    CODEC_ID_PBM,
+    CODEC_ID_PGM,
+    CODEC_ID_PGMYUV,
+    CODEC_ID_PAM,
 };
 
 /* CODEC_ID_MP3LAME is absolete */
@@ -1798,6 +1803,11 @@ extern AVCodec dvvideo_encoder;
 extern AVCodec mjpeg_encoder;
 extern AVCodec ljpeg_encoder;
 extern AVCodec png_encoder;
+extern AVCodec ppm_encoder;
+extern AVCodec pgm_encoder;
+extern AVCodec pgmyuv_encoder;
+extern AVCodec pbm_encoder;
+extern AVCodec pam_encoder;
 extern AVCodec mpeg4_encoder;
 extern AVCodec msmpeg4v1_encoder;
 extern AVCodec msmpeg4v2_encoder;

@@ -77,6 +77,11 @@ void avcodec_register_all(void)
 #ifdef CONFIG_ZLIB
     register_avcodec(&png_encoder);
 #endif
+    register_avcodec(&ppm_encoder);
+    register_avcodec(&pgm_encoder);
+    register_avcodec(&pgmyuv_encoder);
+    register_avcodec(&pbm_encoder);
+    register_avcodec(&pam_encoder);
     register_avcodec(&huffyuv_encoder);
     register_avcodec(&asv1_encoder);
     register_avcodec(&asv2_encoder);

@@ -38,6 +38,11 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_MJPEG     , "jpg"},
     { CODEC_ID_LJPEG     , "ljpg"},
     { CODEC_ID_PNG       , "png"},
+    { CODEC_ID_PPM       , "ppm"},
+    { CODEC_ID_PGM       , "pgm"},
+    { CODEC_ID_PGMYUV    , "pgmyuv"},
+    { CODEC_ID_PBM       , "pbm"},
+    { CODEC_ID_PAM       , "pam"},
     { CODEC_ID_MPEG1VIDEO, "mpg1-img"},
     { CODEC_ID_MPEG2VIDEO, "mpg2-img"},
     { CODEC_ID_MPEG4     , "mpg4-img"},
@@ -133,6 +138,10 @@ static int image_probe(AVProbeData *p)
         return 0;
 }
 
+enum CodecID av_guess_image2_codec(const char *filename){
+    return av_str2id(img_tags, filename);
+}
+
 static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     VideoData *s = s1->priv_data;
@@ -180,8 +189,16 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                         st->codec.frame_rate_base) / st->codec.frame_rate;
     }
     
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = av_str2id(img_tags, s->path);
+    if(ap->video_codec_id){
+        st->codec.codec_type = CODEC_TYPE_VIDEO;
+        st->codec.codec_id = ap->video_codec_id;
+    }else if(ap->audio_codec_id){
+        st->codec.codec_type = CODEC_TYPE_AUDIO;
+        st->codec.codec_id = ap->audio_codec_id;
+    }else{
+        st->codec.codec_type = CODEC_TYPE_VIDEO;
+        st->codec.codec_id = av_str2id(img_tags, s->path);
+    }
 
     return 0;
  

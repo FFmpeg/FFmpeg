@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4620
+#define LIBAVFORMAT_BUILD       4621
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -115,6 +115,8 @@ typedef struct AVFormatParameters {
                                   mpeg2ts_raw is TRUE */
     int initial_pause:1;       /* do not begin to play the stream
                                   immediately (RTSP only) */
+    enum CodecID video_codec_id;
+    enum CodecID audio_codec_id;
 } AVFormatParameters;
 
 #define AVFMT_NOFILE        0x0001 /* no file should be opened */
@@ -358,6 +360,7 @@ typedef struct AVImageFormat {
 void av_register_image_format(AVImageFormat *img_fmt);
 AVImageFormat *av_probe_image_format(AVProbeData *pd);
 AVImageFormat *guess_image_format(const char *filename);
+enum CodecID av_guess_image2_codec(const char *filename);
 int av_read_image(ByteIOContext *pb, const char *filename,
                   AVImageFormat *fmt,
                   int (*alloc_cb)(void *, AVImageInfo *info), void *opaque);
@@ -521,6 +524,8 @@ AVOutputFormat *guess_stream_format(const char *short_name,
                                     const char *filename, const char *mime_type);
 AVOutputFormat *guess_format(const char *short_name, 
                              const char *filename, const char *mime_type);
+enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name, 
+                            const char *filename, const char *mime_type, enum CodecType type);
 
 void av_hex_dump(FILE *f, uint8_t *buf, int size);
 void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
