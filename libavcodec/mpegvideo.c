@@ -2608,6 +2608,9 @@ if(s->quarter_sample)
         pix_op[s->chroma_x_shift][uvdxy](dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift);
         pix_op[s->chroma_x_shift][uvdxy](dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift);
     }
+    if(s->out_format == FMT_H261){
+        ff_h261_loop_filter(s);
+    }
 }
 
 /* apply one mpeg motion vector to the three components */
@@ -2704,6 +2707,7 @@ static always_inline void mpeg_motion_lowres(MpegEncContext *s,
         pix_op[lowres](dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift, uvsx, uvsy);
         pix_op[lowres](dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift, uvsx, uvsy);
     }
+    //FIXME h261 lowres loop filter
 }
 
 //FIXME move to dsputil, avg variant, 16x16 version

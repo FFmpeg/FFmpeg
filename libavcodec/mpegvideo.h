@@ -863,6 +863,9 @@ extern const int16_t ff_mpeg4_default_non_intra_matrix[64];
 extern const uint8_t ff_h263_chroma_qscale_table[32];
 extern const uint8_t ff_h263_loop_filter_strength[32];
 
+/* h261.c */
+void ff_h261_loop_filter(MpegEncContext *s);
+
 
 /* h263.c, h263dec.c */
 int ff_h263_decode_init(AVCodecContext *avctx);

@@ -57,14 +57,17 @@ typedef struct H261Context{
     int gob_start_code_skipped; // 1 if gob start code is already read before gob header is read
 }H261Context;
 
-void ff_h261_loop_filter(H261Context * h){
-    MpegEncContext * const s = &h->s;
+void ff_h261_loop_filter(MpegEncContext *s){
+    H261Context * h= (H261Context*)s;
     const int linesize  = s->linesize;
     const int uvlinesize= s->uvlinesize;
     uint8_t *dest_y = s->dest[0];
     uint8_t *dest_cb= s->dest[1];
     uint8_t *dest_cr= s->dest[2];
-    
+
+    if(!(IS_FIL (h->mtype)))
+        return;
+
     s->dsp.h261_loop_filter(dest_y                   , linesize);
     s->dsp.h261_loop_filter(dest_y                + 8, linesize);
     s->dsp.h261_loop_filter(dest_y + 8 * linesize    , linesize);
@@ -256,6 +259,7 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2 )
         s->mv[0][0][0] = 0;
         s->mv[0][0][1] = 0;
         s->mb_skiped = 1;
+        h->mtype &= ~MB_TYPE_H261_FIL;
 
         MPV_decode_mb(s, s->block);
     }
@@ -387,10 +391,6 @@ intra:
     }
 
     MPV_decode_mb(s, s->block);
-
-    if(IS_FIL (h->mtype)){
-        ff_h261_loop_filter(h);
-    }
 
     return SLICE_OK;
 }
