@@ -313,6 +313,7 @@ typedef struct MpegEncContext {
     int resync_x_pos;
     int low_delay;                   /* no reordering needed / has no b-frames */
     int vo_type;
+    int vol_control_parameters;      /* does the stream contain the low_delay flag, used to workaround buggy encoders */
 
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;

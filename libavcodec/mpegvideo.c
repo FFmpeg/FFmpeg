@@ -159,7 +159,9 @@ int MPV_common_init(MpegEncContext *s)
         s->next_picture_base[i] = pict;
         s->next_picture[i] = pict + pict_start;
         
-        if (s->has_b_frames) {
+        if (s->has_b_frames || s->codec_id==CODEC_ID_MPEG4) {
+        /* Note the MPEG4 stuff is here cuz of buggy encoders which dont set the low_delay flag but 
+           do low-delay encoding, so we cant allways distinguish b-frame containing streams from low_delay streams */
             pict = av_mallocz(c_size);
             if (pict == NULL) 
                 goto fail;
