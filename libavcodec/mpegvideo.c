@@ -1294,11 +1294,10 @@ static inline void gmc1_motion(MpegEncContext *s,
 
     dest_y+=dest_offset;
     if(s->flags&CODEC_FLAG_EMU_EDGE){
-        if(src_x<0 || src_y<0 || src_x + (motion_x&15) + 16 > s->h_edge_pos
-                              || src_y + (motion_y&15) + 16 > s->v_edge_pos){
+        if(src_x<0 || src_y<0 || src_x + 17 >= s->h_edge_pos
+                              || src_y + 17 >= s->v_edge_pos){
             ff_emulated_edge_mc(s, ptr, linesize, 17, 17, src_x, src_y, s->h_edge_pos, s->v_edge_pos);
             ptr= s->edge_emu_buffer;
-            emu=1;
         }
     }
     
@@ -1333,9 +1332,13 @@ static inline void gmc1_motion(MpegEncContext *s,
 
     offset = (src_y * uvlinesize) + src_x + (src_offset>>1);
     ptr = ref_picture[1] + offset;
-    if(emu){
-        ff_emulated_edge_mc(s, ptr, uvlinesize, 9, 9, src_x, src_y, s->h_edge_pos>>1, s->v_edge_pos>>1);
-        ptr= s->edge_emu_buffer;
+    if(s->flags&CODEC_FLAG_EMU_EDGE){
+        if(src_x<0 || src_y<0 || src_x + 9 >= s->h_edge_pos>>1
+                              || src_y + 9 >= s->v_edge_pos>>1){
+            ff_emulated_edge_mc(s, ptr, uvlinesize, 9, 9, src_x, src_y, s->h_edge_pos>>1, s->v_edge_pos>>1);
+            ptr= s->edge_emu_buffer;
+            emu=1;
+        }
     }
     s->dsp.gmc1(dest_cb + (dest_offset>>1), ptr, uvlinesize, 8, motion_x&15, motion_y&15, 128 - s->no_rounding);
     
