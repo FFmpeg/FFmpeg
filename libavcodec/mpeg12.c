@@ -1791,6 +1791,12 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
     }
 }
 
+static void exchange_uv(AVFrame *f){
+    uint8_t *t= f->data[1];
+    f->data[1]= f->data[2];
+    f->data[2]= t;
+}
+
 #define DECODE_SLICE_FATAL_ERROR -2
 #define DECODE_SLICE_ERROR -1
 #define DECODE_SLICE_OK 0
@@ -1945,7 +1951,13 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         MPV_decode_mb(s, s->block);
 
         if (++s->mb_x >= s->mb_width) {
+            if(s->avctx->codec_tag == ff_get_fourcc("VCR2"))
+                exchange_uv((AVFrame*)s->current_picture_ptr);
+
             ff_draw_horiz_band(s, 16*s->mb_y, 16);
+
+            if(s->avctx->codec_tag == ff_get_fourcc("VCR2"))
+                exchange_uv((AVFrame*)s->current_picture_ptr);
 
             s->mb_x = 0;
             s->mb_y++;
@@ -2033,6 +2045,9 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
                  ff_print_debug_info(s, s->last_picture_ptr);
             }
         }
+        if(s->avctx->codec_tag == ff_get_fourcc("VCR2"))
+            exchange_uv(pict);
+
         return 1;
     } else {
         return 0;
@@ -2164,6 +2179,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s->width = avctx->width;
     s->height = avctx->height;
     avctx->has_b_frames= 0; //true?
+    s->low_delay= 1;
     s->avctx = avctx;
     
     if (MPV_common_init(s) < 0)
