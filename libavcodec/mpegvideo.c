@@ -270,9 +270,9 @@ int MPV_common_init(MpegEncContext *s)
         /* cbp, ac_pred, pred_dir */
         CHECKED_ALLOCZ(s->cbp_table  , s->mb_num * sizeof(UINT8))
         CHECKED_ALLOCZ(s->pred_dir_table, s->mb_num * sizeof(UINT8))
-        
-        CHECKED_ALLOCZ(s->qscale_table  , s->mb_num * sizeof(UINT8))
     }
+    CHECKED_ALLOCZ(s->qscale_table  , s->mb_num * sizeof(UINT8))
+    
     /* default structure is frame */
     s->picture_structure = PICT_FRAME;
     
@@ -1414,8 +1414,10 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     quant_store[mb_y][mb_x]=s->qscale;
     //printf("[%02d][%02d] %d\n",mb_x,mb_y,s->qscale);
 #else
+    /* even more obsolete, exists for mplayer xp only */
     if(s->avctx->quant_store) s->avctx->quant_store[mb_y*s->avctx->qstride+mb_x] = s->qscale;
 #endif
+    s->qscale_table[mb_xy]= s->qscale;
 
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
