@@ -122,7 +122,7 @@ asm volatile(
 		"movd %%mm0, %0					\n\t"
 		: "=r" (numEq)
 		: "r" (src), "r" (stride)
-		: "%ebx"
+		: "%eax", "%ebx"
 		);
 	numEq= (-numEq) &0xFF;
 
