@@ -166,6 +166,7 @@ static int show_status;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
 static int debug = 0;
+static int step = 0;
 
 /* current context */
 static int is_full_screen;
@@ -919,6 +920,9 @@ static int video_thread(void *arg)
             }
         }
         av_free_packet(pkt);
+        if (step) 
+            if (cur_stream)
+                stream_pause(cur_stream);
     }
  the_end:
     av_free(frame);
@@ -1584,6 +1588,17 @@ void toggle_pause(void)
 {
     if (cur_stream)
         stream_pause(cur_stream);
+    step = 0;
+}
+
+void step_to_next_frame(void)
+{
+    if (cur_stream) {
+        if (cur_stream->paused)
+            cur_stream->paused=0;
+        cur_stream->video_current_pts = get_video_clock(cur_stream);
+    }
+    step = 1;
 }
 
 void do_exit(void)
@@ -1626,6 +1641,9 @@ void event_loop(void)
             case SDLK_p:
             case SDLK_SPACE:
                 toggle_pause();
+                break;
+            case SDLK_s: //S: Step to next frame
+                step_to_next_frame();
                 break;
             case SDLK_a:
                 if (cur_stream) 
