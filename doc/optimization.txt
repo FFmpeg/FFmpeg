@@ -1,0 +1,137 @@
+optimization Tips (for libavcodec):
+
+What to optimize:
+if u plan to do non-x86 architecture specific optimiztions (SIMD normally) then
+take a look in the i386/ directory, as most important functions are allready
+optimized for MMX
+
+if u want to do x86 optimizations then u can either try to finetune the stuff in the
+i386 directory or find some other functions in the c source to optimize, but there
+arent many left
+
+Understanding these overoptimized functions:
+as many functions, like the c ones tend to be a bit unreadable currently becouse 
+of optimizations it is difficult to understand them (and write arichtecture 
+specific versions, or optimize the c functions further) it is recommanded to look
+at older CVS versions of the interresting files (just use CVSWEB at 
+(http://cvs.sourceforge.net/cgi-bin/viewcvs.cgi/ffmpeg/ffmpeg/libavcodec/))
+or perhaps look into the other architecture specific versions in i386/, ppc/, 
+alpha/, ...; even if u dont understand the instructions exactly it could help
+understanding the functions & how they can be optimized
+
+NOTE:!!! if u still dont understand some function then ask at our mailing list!!!
+(http://lists.sourceforge.net/lists/listinfo/ffmpeg-devel)
+
+
+
+wtf is that function good for ....:
+the primary purpose of that list is to avoid wasting time to optimize functions
+which are rarely used
+
+put(_no_rnd)_pixels{,_x2,_y2,_xy2}
+	used in motion compensation (en/decoding)
+
+avg_pixels{,_x2,_y2,_xy2}
+	used in motion compensation of B Frames 
+	these are less important then the put*pixels functions
+
+avg_no_rnd_pixels*
+	unused
+
+pix_abs16x16{,_x2,_y2,_xy2}
+	used in motion estimation (encoding) with SAD
+
+pix_abs8x8{,_x2,_y2,_xy2}
+	used in motion estimation (encoding) with SAD of MPEG4 4MV only
+	these are less important then the pix_abs16x16* functions
+
+put_mspel8_mc* / wmv2_mspel8*
+	used only in WMV2
+	it is not recommanded that u waste ur time with these, as WMV2 is a
+	ugly and relativly useless codec
+
+mpeg4_qpel* / *qpel_mc*
+	use in MPEG4 qpel Motion compensation (encoding & decoding)
+	the qpel8 functions are used only for 4mv
+	the avg_* functions are used only for b frames
+	optimizing them should have a significant impact on qpel encoding & decoding
+ 
+qpel{8,16}_mc??_old_c / *pixels{8,16}_l4
+	just used to workaround a bug in old libavcodec encoder
+        dont optimze them
+
+add_bytes/diff_bytes
+	for huffyuv only, optimize if u want a faster ff-huffyuv codec
+
+get_pixels / diff_pixels
+	used for encoding, easy
+        
+clear_blocks
+	easiest, to optimize
+ 
+gmc
+	used for mpeg4 gmc
+        optimizing this should have a significant effect on the gmc decoding speed but
+        its very likely impossible to write in SIMD
+
+pix_sum
+	used for encoding
+        
+hadamard8_diff / sse / sad == pix_norm1 / dct_sad / quant_psnr
+	specific compare functions used in encoding, it depends upon the command line
+        switches which of these are used
+        dont waste ur time with dct_sad & quant_psnr they arent really usefull
+
+put_pixels_clamped / add_pixels_clamped
+	used for en/decoding, easy
+
+idct/fdct
+	idct (encoding & decoding)
+        fdct (encoding)
+	difficult to optimize
+        
+dct_quantize_trellis
+	used for encoding with trellis quantization
+	difficult to optimize 
+
+dct_quantize
+	used for encoding
+        
+dct_unquantize_mpeg1
+	used in mpeg1 en/decoding
+
+dct_unquantize_mpeg2
+	used in mpeg2 en/decoding
+
+dct_unquantize_h263
+	used in mpeg4/h263 en/decoding
+
+FIXME remaining functions?
+btw, most of these are in dsputil.c/.h some are in mpegvideo.c/.h
+
+
+        
+Alignment:
+some instructions on some architectures have strict alignment restrictions,
+for example most SSE/SSE2 inctructios on X86
+the minimum guranteed alignment is writen in the .h files
+for example: 
+    void (*put_pixels_clamped)(const DCTELEM *block/*align 16*/, UINT8 *pixels/*align 8*/, int line_size);
+
+
+
+Links:
+X86 specific:
+http://developer.intel.com/design/pentium4/manuals/248966.htm
+
+The IA-32 Intel Architecture Software Developer's Manual, Volume 2: 
+Instruction Set Reference
+http://developer.intel.com/design/pentium4/manuals/245471.htm
+
+http://www.agner.org/assem/
+
+AMD Athlon Processor x86 Code Optimization Guide:
+http://www.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/22007.pdf
+
+GCC asm links:
+FIXME
