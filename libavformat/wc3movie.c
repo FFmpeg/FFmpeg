@@ -93,7 +93,7 @@ typedef struct Wc3DemuxContext {
 } Wc3DemuxContext;
 
 /* bizarre palette lookup table */
-const unsigned char wc3_pal_lookup[] = {
+static const unsigned char wc3_pal_lookup[] = {
   0x00, 0x03, 0x05, 0x07, 0x09, 0x0B, 0x0D, 0x0E, 
   0x10, 0x12, 0x13, 0x15, 0x16, 0x18, 0x19, 0x1A,
   0x1C, 0x1D, 0x1F, 0x20, 0x21, 0x23, 0x24, 0x25, 
@@ -154,7 +154,7 @@ static int wc3_read_header(AVFormatContext *s,
     int current_palette = 0;
     int bytes_to_read;
     int i;
-    int temp;
+    unsigned char rotate;
 
     /* default context members */
     wc3->width = WC3_DEFAULT_WIDTH;
@@ -225,9 +225,11 @@ static int wc3_read_header(AVFormatContext *s,
             /* transform the current palette in place */
             for (i = current_palette * PALETTE_SIZE;
                  i < (current_palette + 1) * PALETTE_SIZE; i++) {
-                /* rotate each palette component left by 2 */
-                temp = wc3->palettes[i] << 2;
-                wc3->palettes[i] = (temp & 0xFF) | (temp >> 8);
+                /* rotate each palette component left by 2 and use the result
+                 * as an index into the color component table */
+                rotate = ((wc3->palettes[i] << 2) & 0xFF) | 
+                         ((wc3->palettes[i] >> 6) & 0xFF);
+                wc3->palettes[i] = wc3_pal_lookup[rotate];
             }
             current_palette++;
             break;
