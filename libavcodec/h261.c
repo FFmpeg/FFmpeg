@@ -662,9 +662,6 @@ static int h261_decode_frame(AVCodecContext *avctx,
     int ret;
     AVFrame *pict = data;
 
-#ifdef PRINT_FRAME_TIME
-uint64_t time= rdtsc();
-#endif
 #ifdef DEBUG
     printf("*****frame %d size=%d\n", avctx->frame_number, buf_size);
     printf("bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
@@ -674,13 +671,6 @@ uint64_t time= rdtsc();
 
     /* no supplementary picture */
     if (buf_size == 0) {
-        /* special case for last picture */
-        if (s->low_delay==0 && s->next_picture_ptr) {
-            *pict= *(AVFrame*)s->next_picture_ptr;
-            s->next_picture_ptr= NULL;
-
-            *data_size = sizeof(AVFrame);
-        }
 
         return 0;
     }
@@ -697,11 +687,7 @@ uint64_t time= rdtsc();
 
 retry:
 
-    if(s->bitstream_buffer_size && buf_size<20){
-        init_get_bits(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size*8);
-    }else
-        init_get_bits(&s->gb, buf, buf_size*8);
-    s->bitstream_buffer_size=0;
+    init_get_bits(&s->gb, buf, buf_size*8);
 
     if(!s->context_initialized){
         if (MPV_common_init(s) < 0) //we need the idct permutaton for reading a custom matrix
@@ -715,8 +701,6 @@ retry:
     }
 
     ret = h261_decode_picture_header(h);
-
-    if(ret==FRAME_SKIPED) return get_consumed_bytes(s, buf_size);
 
     /* skip if the header was thrashed */
     if (ret < 0){
@@ -776,27 +760,16 @@ retry:
 
 assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
 assert(s->current_picture.pict_type == s->pict_type);
-    if(s->low_delay){
-        *pict= *(AVFrame*)&s->current_picture;
-        ff_print_debug_info(s, pict);
-    }else{
-        *pict= *(AVFrame*)&s->last_picture;
-        if(pict)
-            ff_print_debug_info(s, pict);
-    }
+    *pict= *(AVFrame*)&s->current_picture;
+    ff_print_debug_info(s, pict);
 
     /* Return the Picture timestamp as the frame number */
     /* we substract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 
-    /* dont output the last pic after seeking */
-    if(s->last_picture_ptr || s->low_delay)
-        *data_size = sizeof(AVFrame);
-#ifdef PRINT_FRAME_TIME
-printf("%Ld\n", rdtsc()-time);
-#endif
+    *data_size = sizeof(AVFrame);
 
-return get_consumed_bytes(s, buf_size);
+    return get_consumed_bytes(s, buf_size);
 }
 
 static int h261_decode_end(AVCodecContext *avctx)
