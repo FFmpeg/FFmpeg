@@ -91,6 +91,7 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_SVQ3, MKTAG('S', 'V', 'Q', '3') }, /* Sorenson Video v3 */
     { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') },
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') }, /* OpenDiVX *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
+    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D') },
 /*    { CODEC_ID_, MKTAG('I', 'V', '5', '0') }, *//* Indeo 5.0 */
     { CODEC_ID_H263, MKTAG('h', '2', '6', '3') }, /* H263 */
     { CODEC_ID_H263, MKTAG('s', '2', '6', '3') }, /* H263 ?? works */
@@ -124,6 +125,7 @@ static const CodecTag mov_audio_tags[] = {
     /* The standard for mpeg4 audio is still not normalised AFAIK anyway */
     { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
+    { CODEC_ID_AC3, MKTAG('m', 's', 0x20, 0x00) }, /* Dolby AC-3 */
     { CODEC_ID_NONE, 0 },
 };
 
