@@ -19,7 +19,10 @@ EXE=.exe
 PROG=ffmpeg$(EXE)
 else
 EXT=
-PROG=ffmpeg ffplay ffserver
+PROG=ffmpeg ffplay
+ifeq ($(CONFIG_FFSERVER),yes)
+PROG+=ffserver
+endif
 endif
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)

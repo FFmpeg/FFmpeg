@@ -71,6 +71,7 @@ mpegaudio_hp="yes"
 SHFLAGS=-shared
 netserver="no"
 need_inet_aton="no"
+ffserver="yes"
 LDFLAGS=-Wl,--warn-common
 FFSLDFLAGS=-Wl,-E
 
@@ -274,6 +275,8 @@ for opt do
   --enable-shared) lshared="yes"
   ;;
   --disable-mpegaudio-hp) mpegaudio_hp="no"
+  ;;
+  --disable-ffserver) ffserver="no"
   ;;
   esac
 done
@@ -487,6 +490,7 @@ echo "  --disable-vhook          disable video hooking support"
 echo "  --enable-gprof           enable profiling with gprof [$gprof]"
 echo "  --disable-mpegaudio-hp   faster (but less accurate)"
 echo "                           mpegaudio decoding [default=no]"
+echo "  --disable-ffserver       disable ffserver build"
 echo ""
 echo "NOTE: The object files are build at the place where configure is launched"
 exit 1
@@ -702,6 +706,11 @@ fi
 
 if test "$simpleidct" = "yes" ; then
   echo "#define SIMPLE_IDCT 1" >> $TMPH
+fi
+
+if test "$ffserver" = "yes" ; then
+  echo "#define CONFIG_FFSERVER 1" >> $TMPH
+  echo "CONFIG_FFSERVER=yes" >> config.mak
 fi
 
 echo "#define restrict $_restrict" >> $TMPH
