@@ -216,6 +216,9 @@ int raw_init(void);
 /* ogg.c */
 int ogg_init(void);
 
+/* dv.c */
+int dv_init(void);
+
 /* ffm.c */
 int ffm_init(void);
 

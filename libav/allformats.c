@@ -44,7 +44,8 @@ void av_register_all(void)
     gif_init();
     mov_init();
     jpeg_init();
-
+    dv_init();
+    
 #ifdef CONFIG_VORBIS
     ogg_init();
 #endif

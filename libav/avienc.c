@@ -77,6 +77,7 @@ CodecTag codec_bmp_tags[] = {
     { CODEC_ID_WMV1, MKTAG('W', 'M', 'V', '1') }, 
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 's', 'l') }, 
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 's', 'd') }, 
+    { CODEC_ID_DVVIDEO, MKTAG('D', 'V', 'S', 'D') }, 
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'h', 'd') }, 
     { 0, 0 },
 };
