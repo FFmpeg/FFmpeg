@@ -99,7 +99,7 @@ static void evalPrimary(Parser *p){
     }
     
     /* named constants */
-    for(i=0; p->const_name[i]; i++){
+    for(i=0; p->const_name && p->const_name[i]; i++){
         if(strmatch(p->s, p->const_name[i])){
             push(p, p->const_value[i]);
             p->s+= strlen(p->const_name[i]);
@@ -147,29 +147,25 @@ static void evalPrimary(Parser *p){
 //    else if( strmatch(next, "l1"    ) ) d= 1 + d2*(d - 1);
 //    else if( strmatch(next, "sq01"  ) ) d= (d >= 0.0 && d <=1.0) ? 1.0 : 0.0;
     else{
-        int error=1;
         for(i=0; p->func1_name && p->func1_name[i]; i++){
             if(strmatch(next, p->func1_name[i])){
                 d= p->func1[i](p->opaque, d);
-                error=0;
-                break;
+                goto push_ret;
             }
         }
 
         for(i=0; p->func2_name && p->func2_name[i]; i++){
             if(strmatch(next, p->func2_name[i])){
                 d= p->func2[i](p->opaque, d, d2);
-                error=0;
-                break;
+                goto push_ret;
             }
         }
 
-        if(error){
-            av_log(NULL, AV_LOG_ERROR, "Parser: unknown function in \"%s\"\n", next);
-            return;
-        }
+        av_log(NULL, AV_LOG_ERROR, "Parser: unknown function in \"%s\"\n", next);
+        return;
     }
-    
+
+push_ret:    
     push(p, d);
 }      
        
@@ -183,7 +179,7 @@ static void evalPow(Parser *p){
     }
     
     if(p->s[0]=='('){
-        p->s++;;
+        p->s++;
         evalExpression(p);
 
         if(p->s[0]!=')')
@@ -255,3 +251,20 @@ double ff_eval(char *s, double *const_value, const char **const_name,
     evalExpression(&p);
     return pop(&p);
 }
+
+#ifdef TEST
+#undef printf 
+static double const_values[]={
+    M_PI,
+    M_E,
+    0
+};
+static const char *const_names[]={
+    "PI",
+    "E",
+    0
+};
+main(){
+    printf("%f == 12.7\n", ff_eval("1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)", const_values, const_names, NULL, NULL, NULL, NULL, NULL));
+}
+#endif
