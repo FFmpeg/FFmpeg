@@ -888,7 +888,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		st->codec.height = get_le32(pb);
                 /* not available for asf */
                 get_le16(pb); /* panes */
-                get_le16(pb); /* depth */
+		st->codec.bits_per_sample = get_le16(pb); /* depth */
                 tag1 = get_le32(pb);
 		url_fskip(pb, 20);
 		if (size > 40) {
