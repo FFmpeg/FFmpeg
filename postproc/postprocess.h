@@ -28,24 +28,23 @@
 #define DERING		0x04
 #define LEVEL_FIX	0x08 /* Brightness & Contrast */
 
-#define LUM_V_DEBLOCK	V_DEBLOCK
-#define LUM_H_DEBLOCK	H_DEBLOCK
-#define CHROM_V_DEBLOCK	(V_DEBLOCK<<4)
-#define CHROM_H_DEBLOCK	(H_DEBLOCK<<4)
-#define LUM_DERING	DERING
-#define CHROM_DERING	(DERING<<4)
-#define LUM_LEVEL_FIX	LEVEL_FIX
+#define LUM_V_DEBLOCK	V_DEBLOCK		//   1
+#define LUM_H_DEBLOCK	H_DEBLOCK		//   2
+#define CHROM_V_DEBLOCK	(V_DEBLOCK<<4)		//  16
+#define CHROM_H_DEBLOCK	(H_DEBLOCK<<4)		//  32
+#define LUM_DERING	DERING			//   4
+#define CHROM_DERING	(DERING<<4)		//  64
+#define LUM_LEVEL_FIX	LEVEL_FIX		//   8
 //not supported currently
-#define CHROM_LEVEL_FIX	(LEVEL_FIX<<4)
+#define CHROM_LEVEL_FIX	(LEVEL_FIX<<4)		// 128
 
-// Experimental stuff
-#define RK_FILTER		0x0100
-#define LUM_V_RK_FILTER		RK_FILTER
-#define CHROM_V_RK_FILTER	(RK_FILTER<<4)
+// Experimental vertical filters
+#define V_RK1_FILTER	0x0100			// 256
+#define V_X1_FILTER	0x0200			// 512
 
-#define X1_FILTER		0x0200
-#define LUM_V_X1_FILTER		X1_FILTER
-#define CHROM_V_X1_FILTER	(X1_FILTER<<4)
+// Experimental horizontal filters
+#define H_RK1_FILTER	0x1000			// 4096
+#define H_X1_FILTER	0x2000			// 8192
 
 
 #define TIMEING

@@ -27,8 +27,9 @@ isHorizMinMaxOk		a
 doHorizLowPass		E		a	a*
 doHorizDefFilter	E	ac	ac
 deRing
-RKAlgo1			E		a	a*
-X1			a		E	E*
+Vertical RKAlgo1	E		a	a*
+Vertical X1		a		E	E*
+Horizontal X1		a		E	E*
 
 
 * i dont have a 3dnow CPU -> its untested
@@ -40,7 +41,7 @@ c = checked against the other implementations (-vo md5)
 
 /*
 TODO:
-verify that everything workes as it should
+verify that everything workes as it should (how?)
 reduce the time wasted on the mem transfer
 implement dering
 implement everything in C at least (done at the moment but ...)
@@ -51,6 +52,9 @@ write a faster and higher quality deblocking filter :)
 do something about the speed of the horizontal filters
 make the mainloop more flexible (variable number of blocks at once
 	(the if/else stuff per block is slowing things down)
+compare the quality & speed of all filters
+implement a few simple deinterlacing filters
+split this huge file
 ...
 
 Notes:
@@ -58,7 +62,7 @@ Notes:
 */
 
 /*
-Changelog:
+Changelog: use the CVS log
 0.1.3
 	bugfixes: last 3 lines not brightness/contrast corrected
 		brightness statistics messed up with initial black pic
@@ -99,11 +103,13 @@ static uint64_t bm10000000=	0xFF00000000000000LL;
 static uint64_t bm10000001=	0xFF000000000000FFLL;
 static uint64_t bm11000011=	0xFFFF00000000FFFFLL;
 static uint64_t bm00000011=	0x000000000000FFFFLL;
+static uint64_t bm11111110=	0xFFFFFFFFFFFFFF00LL;
 static uint64_t bm11000000=	0xFFFF000000000000LL;
 static uint64_t bm00011000=	0x000000FFFF000000LL;
 static uint64_t bm00110011=	0x0000FFFF0000FFFFLL;
 static uint64_t bm11001100=	0xFFFF0000FFFF0000LL;
 static uint64_t b00= 		0x0000000000000000LL;
+static uint64_t b01= 		0x0101010101010101LL;
 static uint64_t b02= 		0x0202020202020202LL;
 static uint64_t b0F= 		0x0F0F0F0F0F0F0F0FLL;
 static uint64_t bFF= 		0xFFFFFFFFFFFFFFFFLL;
@@ -544,7 +550,7 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 	x/8 = 1
 	1 12 12 23
  */
-static inline void vertRKFilter(uint8_t *src, int stride, int QP)
+static inline void vertRK1Filter(uint8_t *src, int stride, int QP)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 // FIXME rounding
@@ -638,7 +644,8 @@ static inline void vertRKFilter(uint8_t *src, int stride, int QP)
 
 /**
  * Experimental Filter 1
- * will nor damage linear gradients
+ * will not damage linear gradients
+ * Flat blocks should look like they where passed through the (1,1,2,2,4,2,2,1,1) 9-Tap filter
  * can only smooth blocks at the expected locations (it cant smooth them if they did move)
  * MMX2 version does correct clipping C version doesnt
  */
@@ -675,9 +682,13 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 		"movq %%mm4, %%mm3				\n\t" // d
 		"psubusb pQPb, %%mm4				\n\t"
 		"pcmpeqb %%mm7, %%mm4				\n\t" // d <= QP ? -1 : 0
+		"psubusb b01, %%mm3				\n\t"
 		"pand %%mm4, %%mm3				\n\t" // d <= QP ? d : 0
 
 		PAVGB(%%mm7, %%mm3)				      // d/2
+		"movq %%mm3, %%mm1				\n\t" // d/2
+		PAVGB(%%mm7, %%mm3)				      // d/4
+		PAVGB(%%mm1, %%mm3)				      // 3*d/8
 
 		"movq (%0, %1, 4), %%mm0			\n\t" // line 4
 		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l4-1 : l4
@@ -691,31 +702,31 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 		"pxor %%mm2, %%mm0				\n\t"
 		"movq %%mm0, (%%ebx)				\n\t" // line 5
 
-		PAVGB(%%mm7, %%mm3)				      // d/4
+		PAVGB(%%mm7, %%mm1)				      // d/4
 
 		"movq (%%eax, %1, 2), %%mm0			\n\t" // line 3
 		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l4-1 : l4
-		"psubusb %%mm3, %%mm0				\n\t"
+		"psubusb %%mm1, %%mm0				\n\t"
 		"pxor %%mm2, %%mm0				\n\t"
 		"movq %%mm0, (%%eax, %1, 2)			\n\t" // line 3
 
 		"movq (%%ebx, %1), %%mm0			\n\t" // line 6
 		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l5-1 : l5
-		"paddusb %%mm3, %%mm0				\n\t"
+		"paddusb %%mm1, %%mm0				\n\t"
 		"pxor %%mm2, %%mm0				\n\t"
 		"movq %%mm0, (%%ebx, %1)			\n\t" // line 6
 
-		PAVGB(%%mm7, %%mm3)				      // d/8
+		PAVGB(%%mm7, %%mm1)				      // d/8
 
 		"movq (%%eax, %1), %%mm0			\n\t" // line 2
 		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l2-1 : l2
-		"psubusb %%mm3, %%mm0				\n\t"
+		"psubusb %%mm1, %%mm0				\n\t"
 		"pxor %%mm2, %%mm0				\n\t"
 		"movq %%mm0, (%%eax, %1)			\n\t" // line 2
 
 		"movq (%%ebx, %1, 2), %%mm0			\n\t" // line 7
 		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l7-1 : l7
-		"paddusb %%mm3, %%mm0				\n\t"
+		"paddusb %%mm1, %%mm0				\n\t"
 		"pxor %%mm2, %%mm0				\n\t"
 		"movq %%mm0, (%%ebx, %1, 2)			\n\t" // line 7
 
@@ -739,7 +750,7 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 	{
 		int a= src[l3] - src[l4];
 		int b= src[l4] - src[l5];
-		int c= src[l6] - src[l7];
+		int c= src[l5] - src[l6];
 
 		int d= MAX(ABS(b) - (ABS(a) + ABS(c))/2, 0);
 
@@ -749,8 +760,8 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 
 			src[l2] +=v/8;
 			src[l3] +=v/4;
-			src[l4] +=v/2;
-			src[l5] -=v/2;
+			src[l4] +=3*v/8;
+			src[l5] -=3*v/8;
 			src[l6] -=v/4;
 			src[l7] -=v/8;
 
@@ -786,6 +797,211 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 		src++;
 	}
 */
+#endif
+}
+
+/**
+ * Experimental Filter 1 (Horizontal)
+ * will not damage linear gradients
+ * Flat blocks should look like they where passed through the (1,1,2,2,4,2,2,1,1) 9-Tap filter
+ * can only smooth blocks at the expected locations (it cant smooth them if they did move)
+ * MMX2 version does correct clipping C version doesnt
+ * not identical with the vertical one
+ */
+static inline void horizX1Filter(uint8_t *src, int stride, int QP)
+{
+	int y;
+	static uint64_t *lut= NULL;
+	if(lut==NULL)
+	{
+		int i;
+		lut= (uint64_t*)memalign(8, 256*8);
+		for(i=0; i<256; i++)
+		{
+			int v= i < 128 ? 2*i : 2*(i-256);
+/*
+//Simulate 112242211 9-Tap filter
+			uint64_t a= (v/16) & 0xFF;
+			uint64_t b= (v/8) & 0xFF;
+			uint64_t c= (v/4) & 0xFF;
+			uint64_t d= (3*v/8) & 0xFF;
+*/
+//Simulate piecewise linear interpolation
+			uint64_t a= (v/16) & 0xFF;
+			uint64_t b= (v*3/16) & 0xFF;
+			uint64_t c= (v*5/16) & 0xFF;
+			uint64_t d= (7*v/16) & 0xFF;
+			uint64_t A= (0x100 - a)&0xFF;
+			uint64_t B= (0x100 - b)&0xFF;
+			uint64_t C= (0x100 - c)&0xFF;
+			uint64_t D= (0x100 - c)&0xFF;
+
+			lut[i]   = (a<<56) | (b<<48) | (c<<40) | (d<<32) |
+				(D<<24) | (C<<16) | (B<<8) | (A);
+			//lut[i] = (v<<32) | (v<<24);
+		}
+	}
+
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	asm volatile(
+		"pxor %%mm7, %%mm7				\n\t" // 0
+//		"movq b80, %%mm6				\n\t" // MIN_SIGNED_BYTE
+		"leal (%0, %1), %%eax				\n\t"
+		"leal (%%eax, %1, 4), %%ebx			\n\t"
+
+		"movq b80, %%mm6				\n\t"
+		"movd %2, %%mm5					\n\t" // QP
+		"movq %%mm5, %%mm4				\n\t"
+		"paddusb %%mm5, %%mm5				\n\t" // 2QP
+		"paddusb %%mm5, %%mm4				\n\t" // 3QP
+		"pxor %%mm5, %%mm5				\n\t" // 0
+		"psubb %%mm4, %%mm5				\n\t" // -3QP
+		"por bm11111110, %%mm5				\n\t" // ...,FF,FF,-3QP
+		"psllq $24, %%mm5				\n\t"
+
+//	0	1	2	3	4	5	6	7	8	9
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
+
+#define HX1old(a) \
+		"movd " #a ", %%mm0				\n\t"\
+		"movd 4" #a ", %%mm1				\n\t"\
+		"punpckldq %%mm1, %%mm0				\n\t"\
+		"movq %%mm0, %%mm1				\n\t"\
+		"movq %%mm0, %%mm2				\n\t"\
+		"psrlq $8, %%mm1				\n\t"\
+		"psubusb %%mm1, %%mm2				\n\t"\
+		"psubusb %%mm0, %%mm1				\n\t"\
+		"por %%mm2, %%mm1				\n\t" /* p´x = |px - p(x+1)| */\
+		"pcmpeqb %%mm7, %%mm2				\n\t" /* p´x = sgn[px - p(x+1)] */\
+		"pshufw $0x00, %%mm1, %%mm3			\n\t" /* p´5 = |p1 - p2| */\
+		PAVGB(%%mm1, %%mm3)				      /* p´5 = (|p2-p1| + |p6-p5|)/2 */\
+		"psrlq $16, %%mm3				\n\t" /* p´3 = (|p2-p1| + |p6-p5|)/2 */\
+		"psubusb %%mm3, %%mm1			\n\t" /* |p3-p4|-(|p2-p1| + |p6-p5|)/2 */\
+		"paddb %%mm5, %%mm1				\n\t"\
+		"psubusb %%mm5, %%mm1				\n\t"\
+		PAVGB(%%mm7, %%mm1)\
+		"pxor %%mm2, %%mm1				\n\t"\
+		"psubb %%mm2, %%mm1				\n\t"\
+		"psrlq $24, %%mm1				\n\t"\
+		"movd %%mm1, %%ecx				\n\t"\
+		"paddb %%mm6, %%mm0				\n\t"\
+		"paddsb (%3, %%ecx, 8), %%mm0			\n\t"\
+		"paddb %%mm6, %%mm0				\n\t"\
+		"movq %%mm0, " #a "				\n\t"\
+
+/*
+HX1old((%0))
+HX1old((%%eax))
+HX1old((%%eax, %1))
+HX1old((%%eax, %1, 2))
+HX1old((%0, %1, 4))
+HX1old((%%ebx))
+HX1old((%%ebx, %1))
+HX1old((%%ebx, %1, 2))
+*/
+
+//FIXME add some comments, its unreadable ...
+#define HX1b(a, c, b, d) \
+		"movd " #a ", %%mm0				\n\t"\
+		"movd 4" #a ", %%mm1				\n\t"\
+		"punpckldq %%mm1, %%mm0				\n\t"\
+		"movd " #b ", %%mm4				\n\t"\
+		"movq %%mm0, %%mm1				\n\t"\
+		"movq %%mm0, %%mm2				\n\t"\
+		"psrlq $8, %%mm1				\n\t"\
+		"movd 4" #b ", %%mm3				\n\t"\
+		"psubusb %%mm1, %%mm2				\n\t"\
+		"psubusb %%mm0, %%mm1				\n\t"\
+		"por %%mm2, %%mm1				\n\t" /* p´x = |px - p(x+1)| */\
+		"pcmpeqb %%mm7, %%mm2				\n\t" /* p´x = sgn[px - p(x+1)] */\
+		"punpckldq %%mm3, %%mm4				\n\t"\
+		"movq %%mm1, %%mm3				\n\t"\
+		"psllq $32, %%mm3				\n\t" /* p´5 = |p1 - p2| */\
+		PAVGB(%%mm1, %%mm3)				      /* p´5 = (|p2-p1| + |p6-p5|)/2 */\
+		"paddb %%mm6, %%mm0				\n\t"\
+		"psrlq $16, %%mm3				\n\t" /* p´3 = (|p2-p1| + |p6-p5|)/2 */\
+		"psubusb %%mm3, %%mm1			\n\t" /* |p3-p4|-(|p2-p1| + |p6-p5|)/2 */\
+		"movq %%mm4, %%mm3				\n\t"\
+		"paddb %%mm5, %%mm1				\n\t"\
+		"psubusb %%mm5, %%mm1				\n\t"\
+		"psrlq $8, %%mm3				\n\t"\
+		PAVGB(%%mm7, %%mm1)\
+		"pxor %%mm2, %%mm1				\n\t"\
+		"psubb %%mm2, %%mm1				\n\t"\
+		"movq %%mm4, %%mm2				\n\t"\
+		"psrlq $24, %%mm1				\n\t"\
+		"psubusb %%mm3, %%mm2				\n\t"\
+		"movd %%mm1, %%ecx				\n\t"\
+		"psubusb %%mm4, %%mm3				\n\t"\
+		"paddsb (%3, %%ecx, 8), %%mm0			\n\t"\
+		"por %%mm2, %%mm3				\n\t" /* p´x = |px - p(x+1)| */\
+		"paddb %%mm6, %%mm0				\n\t"\
+		"pcmpeqb %%mm7, %%mm2				\n\t" /* p´x = sgn[px - p(x+1)] */\
+		"movq %%mm3, %%mm1				\n\t"\
+		"psllq $32, %%mm1				\n\t" /* p´5 = |p1 - p2| */\
+		"movq %%mm0, " #a "				\n\t"\
+		PAVGB(%%mm3, %%mm1)				      /* p´5 = (|p2-p1| + |p6-p5|)/2 */\
+		"paddb %%mm6, %%mm4				\n\t"\
+		"psrlq $16, %%mm1				\n\t" /* p´3 = (|p2-p1| + |p6-p5|)/2 */\
+		"psubusb %%mm1, %%mm3			\n\t" /* |p3-p4|-(|p2-p1| + |p6-p5|)/2 */\
+		"paddb %%mm5, %%mm3				\n\t"\
+		"psubusb %%mm5, %%mm3				\n\t"\
+		PAVGB(%%mm7, %%mm3)\
+		"pxor %%mm2, %%mm3				\n\t"\
+		"psubb %%mm2, %%mm3				\n\t"\
+		"psrlq $24, %%mm3				\n\t"\
+		"movd " #c ", %%mm0				\n\t"\
+		"movd 4" #c ", %%mm1				\n\t"\
+		"punpckldq %%mm1, %%mm0				\n\t"\
+		"paddb %%mm6, %%mm0				\n\t"\
+		"paddsb (%3, %%ecx, 8), %%mm0			\n\t"\
+		"paddb %%mm6, %%mm0				\n\t"\
+		"movq %%mm0, " #c "				\n\t"\
+		"movd %%mm3, %%ecx				\n\t"\
+		"movd " #d ", %%mm0				\n\t"\
+		"paddsb (%3, %%ecx, 8), %%mm4			\n\t"\
+		"movd 4" #d ", %%mm1				\n\t"\
+		"paddb %%mm6, %%mm4				\n\t"\
+		"punpckldq %%mm1, %%mm0				\n\t"\
+		"movq %%mm4, " #b "				\n\t"\
+		"paddb %%mm6, %%mm0				\n\t"\
+		"paddsb (%3, %%ecx, 8), %%mm0			\n\t"\
+		"paddb %%mm6, %%mm0				\n\t"\
+		"movq %%mm0, " #d "				\n\t"\
+
+HX1b((%0),(%%eax),(%%eax, %1),(%%eax, %1, 2))
+HX1b((%0, %1, 4),(%%ebx),(%%ebx, %1),(%%ebx, %1, 2))
+
+
+		:
+		: "r" (src), "r" (stride), "r" (QP), "r" (lut)
+		: "%eax", "%ebx", "%ecx"
+	);
+#else
+
+//FIXME (has little in common with the mmx2 version)
+	for(y=0; y<BLOCK_SIZE; y++)
+	{
+		int a= src[1] - src[2];
+		int b= src[3] - src[4];
+		int c= src[5] - src[6];
+
+		int d= MAX(ABS(b) - (ABS(a) + ABS(c))/2, 0);
+
+		if(d < QP)
+		{
+			int v = d * SIGN(-b);
+
+			src[1] +=v/8;
+			src[2] +=v/4;
+			src[3] +=3*v/8;
+			src[4] -=3*v/8;
+			src[5] -=v/4;
+			src[6] -=v/8;
+
+		}
+		src+=stride;
+	}
 #endif
 }
 
@@ -1638,13 +1854,14 @@ void  postprocess(unsigned char * src[], int src_stride,
 	vertical_size   >>= 1;
 	src_stride      >>= 1;
 	dst_stride      >>= 1;
+	mode= ((mode&0xFF)>>4) | (mode&0xFFFFFF00);
 
 	if(1)
 	{
 		postProcess(src[1], src_stride, dst[1], dst_stride,
-			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode >>4);
+			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode);
 		postProcess(src[2], src_stride, dst[2], dst_stride,
-			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode >>4);
+			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode);
 	}
 	else
 	{
@@ -1929,9 +2146,9 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 #endif
 				if(mode & V_DEBLOCK)
 				{
-					if(mode & RK_FILTER)
-						vertRKFilter(vertBlock, stride, QP);
-					else if(mode & X1_FILTER)
+					if(mode & V_RK1_FILTER)
+						vertRK1Filter(vertBlock, stride, QP);
+					else if(mode & V_X1_FILTER)
 						vertX1Filter(vertBlock, stride, QP);
 					else
 					{
@@ -1962,13 +2179,18 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 #endif
 				if(mode & H_DEBLOCK)
 				{
-					if( isHorizDCAndCopy2Temp(dstBlock-4, stride))
-					{
-						if(isHorizMinMaxOk(tempBlock, TEMP_STRIDE, QP))
-							doHorizLowPassAndCopyBack(dstBlock-4, stride, QP);
-					}
+					if(mode & H_X1_FILTER)
+						horizX1Filter(dstBlock-4, stride, QP);
 					else
-						doHorizDefFilterAndCopyBack(dstBlock-4, stride, QP);
+					{
+						if( isHorizDCAndCopy2Temp(dstBlock-4, stride))
+						{
+							if(isHorizMinMaxOk(tempBlock, TEMP_STRIDE, QP))
+								doHorizLowPassAndCopyBack(dstBlock-4, stride, QP);
+						}
+						else
+							doHorizDefFilterAndCopyBack(dstBlock-4, stride, QP);
+					}
 				}
 #ifdef MORE_TIMEING
 				T1= rdtsc();
