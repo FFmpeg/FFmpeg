@@ -1149,7 +1149,11 @@ static int av_encode(AVFormatContext **output_files,
     stream_no_data = 0;
     key = -1;
 
+#ifndef CONFIG_WIN32
     for(; received_sigterm == 0;) {
+#else
+    for(;;) {
+#endif
         int file_index, ist_index;
         AVPacket pkt;
         uint8_t *ptr;
