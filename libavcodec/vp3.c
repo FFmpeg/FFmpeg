@@ -2022,7 +2022,7 @@ static void render_fragments(Vp3DecodeContext *s,
     int motion_x, motion_y;
     int motion_x_limit, motion_y_limit;
     int motion_halfpel_index;
-    unsigned char *motion_source;
+    unsigned int motion_source;
 
     debug_vp3("  vp3: rendering final fragments for %s\n",
         (plane == 0) ? "Y plane" : (plane == 1) ? "U plane" : "V plane");
@@ -2059,12 +2059,12 @@ static void render_fragments(Vp3DecodeContext *s,
 
             /* transform if this block was coded */
             if (s->all_fragments[i].coding_method != MODE_COPY) {
-//            if (s->all_fragments[i].coding_method == MODE_INTRA) {
 
                 /* sort out the motion vector */
-                motion_x = x + s->all_fragments[i].motion_x;
-                motion_y = y + s->all_fragments[i].motion_y;
+                motion_x = s->all_fragments[i].motion_x;
+                motion_y = s->all_fragments[i].motion_y;
                 motion_halfpel_index = s->all_fragments[i].motion_halfpel_index;
+/*
 
                 if (motion_x < 0)
                     motion_x = 0;
@@ -2074,31 +2074,27 @@ static void render_fragments(Vp3DecodeContext *s,
                     motion_x = motion_x_limit;
                 if (motion_y > motion_y_limit)
                     motion_y = motion_y_limit;
+*/
+                motion_source = s->all_fragments[i].first_pixel;
+                motion_source += motion_x;
+                motion_source += (motion_y * stride);
 
                 /* first, take care of copying a block from either the
                  * previous or the golden frame */
                 if ((s->all_fragments[i].coding_method == MODE_USING_GOLDEN) ||
                     (s->all_fragments[i].coding_method == MODE_GOLDEN_MV)) {
 
-                    motion_source = golden_plane;
-                    motion_source += motion_x;
-                    motion_source += (motion_y * -stride);
-
                     s->dsp.put_pixels_tab[1][motion_halfpel_index](
                         output_plane + s->all_fragments[i].first_pixel,
-                        motion_source,
+                        golden_plane + motion_source,
                         stride, 8);
 
                 } else 
                 if (s->all_fragments[i].coding_method != MODE_INTRA) {
 
-                    motion_source = last_plane;
-                    motion_source += motion_x;
-                    motion_source += (motion_y * -stride);
-
                     s->dsp.put_pixels_tab[1][motion_halfpel_index](
                         output_plane + s->all_fragments[i].first_pixel,
-                        motion_source,
+                        last_plane + motion_source,
                         stride, 8);
                 }
 
@@ -2110,7 +2106,6 @@ static void render_fragments(Vp3DecodeContext *s,
                     dequant_block[dequant_index[j]] =
                         s->all_fragments[i].coeffs[j] *
                         dequantizer[j];
-                dequant_block[0] += 1024;
 
                 debug_idct("dequantized block:\n");
                 for (m = 0; m < 8; m++) {
@@ -2121,17 +2116,18 @@ static void render_fragments(Vp3DecodeContext *s,
                 }
                 debug_idct("\n");
 
-                /* invert DCT and place in final output */
+                /* invert DCT and place (or add) in final output */
 
-                if (s->all_fragments[i].coding_method == MODE_INTRA)
+                if (s->all_fragments[i].coding_method == MODE_INTRA) {
+                    dequant_block[0] += 1024;
                     s->dsp.idct_put(
                         output_plane + s->all_fragments[i].first_pixel,
                         stride, dequant_block);
-                else
-//                    s->dsp.idct_add(
-                    s->dsp.idct_put(
+                } else {
+                    s->dsp.idct_add(
                         output_plane + s->all_fragments[i].first_pixel,
                         stride, dequant_block);
+                }
 
                 debug_idct("block after idct_%s():\n",
                     (s->all_fragments[i].coding_method == MODE_INTRA)?
