@@ -457,7 +457,8 @@ retry:
             s->next_p_frame_damaged=0;
     }
 
-    MPV_frame_start(s, avctx);
+    if(MPV_frame_start(s, avctx) < 0)
+        return -1;
 
 #ifdef DEBUG
     printf("qscale=%d\n", s->qscale);

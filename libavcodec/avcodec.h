@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4631
-#define LIBAVCODEC_BUILD_STR   "4631"
+#define LIBAVCODEC_BUILD       4632
+#define LIBAVCODEC_BUILD_STR   "4632"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -503,7 +503,7 @@ typedef struct AVCodecContext {
      * encoding: unused
      * decoding: set by user
      */
-    void (*get_buffer_callback)(struct AVCodecContext *c, int width, int height, int pict_type);
+    int (*get_buffer_callback)(struct AVCodecContext *c, int width, int height, int pict_type);
 
     /**
      * is 1 if the decoded stream contains b frames, 0 otherwise

@@ -416,7 +416,8 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     }
 
     if (s->mb_x == 0 && s->mb_y == 0) {
-        MPV_frame_start(s, avctx);
+        if(MPV_frame_start(s, avctx) < 0)
+            return -1;
     }
 
 #ifdef DEBUG

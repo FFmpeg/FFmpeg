@@ -791,7 +791,7 @@ static void draw_edges_c(UINT8 *buf, int wrap, int width, int height, int w)
 }
 
 /* generic function for encode/decode called before a frame is coded/decoded */
-void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
+int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 {
     int i;
     UINT8 *tmp;
@@ -800,7 +800,10 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     avctx->mbskip_table= s->mbskip_table;
 
     if(avctx->flags&CODEC_FLAG_DR1){
-        avctx->get_buffer_callback(avctx, s->width, s->height, s->pict_type);
+        if(avctx->get_buffer_callback(avctx, s->width, s->height, s->pict_type) < 0){
+            fprintf(stderr, "get_buffer() failed\n");
+            return -1;
+        }
 
         s->linesize  = avctx->dr_stride;
         s->uvlinesize= avctx->dr_uvstride;
@@ -854,6 +857,8 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->dct_unquantize = s->dct_unquantize_h263;
     }else 
         s->dct_unquantize = s->dct_unquantize_mpeg1;
+
+    return 0;
 }
 
 /* generic function for encode/decode called after a frame has been coded/decoded */

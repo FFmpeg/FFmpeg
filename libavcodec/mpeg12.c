@@ -1581,7 +1581,8 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     /* start frame decoding */
     if (s->first_slice) {
         s->first_slice = 0;
-        MPV_frame_start(s, avctx);
+        if(MPV_frame_start(s, avctx) < 0)
+            return -1;
     }
 
     init_get_bits(&s->gb, buf, buf_size);

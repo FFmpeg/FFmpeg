@@ -1085,7 +1085,8 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 
   result = svq1_decode_frame_header (&s->gb, s);
   
-  MPV_frame_start(s, avctx);
+  if(MPV_frame_start(s, avctx) < 0)
+      return -1;
 
   if (result != 0)
   {
