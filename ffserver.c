@@ -125,6 +125,8 @@ typedef struct FFStream {
     /* feed specific */
     int feed_opened;     /* true if someone if writing to feed */
     int is_feed;         /* true if it is a feed */
+    int conns_served;
+    INT64 bytes_served;
     INT64 feed_max_size;      /* maximum storage size */
     INT64 feed_write_index;   /* current write position in feed (it wraps round) */
     INT64 feed_size;          /* current size of feed */
@@ -272,7 +274,7 @@ static int http_server(struct sockaddr_in my_addr)
                 /* need to catch errors */
                 c->poll_entry = poll_entry;
                 poll_entry->fd = fd;
-                poll_entry->events = 0;
+                poll_entry->events = POLLIN;/* Maybe this will work */
                 poll_entry++;
                 break;
             default:
@@ -398,6 +400,8 @@ static int handle_http(HTTPContext *c, long cur_time)
             }
         } else {
             c->buffer_ptr += len;
+            c->stream->bytes_served += len;
+            c->data_count += len;
             if (c->buffer_ptr >= c->buffer_end) {
                 /* if error, exit */
                 if (c->http_error)
@@ -432,7 +436,7 @@ static int handle_http(HTTPContext *c, long cur_time)
         break;
     case HTTPSTATE_WAIT_FEED:
         /* no need to read if no events */
-        if (c->poll_entry->revents & (POLLERR | POLLHUP))
+        if (c->poll_entry->revents & (POLLIN | POLLERR | POLLHUP))
             return -1;
 
         /* nothing to do, we'll be waken up by incoming feed packets */
@@ -647,6 +651,7 @@ static int http_parse_request(HTTPContext *c)
     }
 
     c->stream = stream;
+    stream->conns_served++;
 
     /* XXX: add there authenticate and IP match */
 
@@ -770,79 +775,113 @@ static void compute_stats(HTTPContext *c)
     q += sprintf(q, "<H1>FFServer Status</H1>\n");
     /* format status */
     q += sprintf(q, "<H2>Available Streams</H2>\n");
-    q += sprintf(q, "<TABLE>\n");
-    q += sprintf(q, "<TR><Th>Path<Th>Format<Th>Bit rate (kbits/s)<Th COLSPAN=2>Video<Th COLSPAN=2>Audio<Th align=left>Feed\n");
+    q += sprintf(q, "<TABLE cellspacing=0 cellpadding=4>\n");
+    q += sprintf(q, "<TR><Th valign=top>Path<th align=left>Served<br>Conns<Th><br>kbytes<Th valign=top>Format<Th>Bit rate<br>kbits/s<Th align=left>Video<br>kbits/s<th><br>Codec<Th align=left>Audio<br>kbits/s<th><br>Codec<Th align=left valign=top>Feed\n");
     stream = first_stream;
     while (stream != NULL) {
         char sfilename[1024];
         char *eosf;
 
-        strlcpy(sfilename, stream->filename, sizeof(sfilename) - 1);
-        eosf = sfilename + strlen(sfilename);
-        if (eosf - sfilename >= 4) {
-            if (strcmp(eosf - 4, ".asf") == 0) {
-                strcpy(eosf - 4, ".asx");
-            } else if (strcmp(eosf - 3, ".rm") == 0) {
-                strcpy(eosf - 3, ".ram");
+        if (stream->feed != stream) {
+            strlcpy(sfilename, stream->filename, sizeof(sfilename) - 1);
+            eosf = sfilename + strlen(sfilename);
+            if (eosf - sfilename >= 4) {
+                if (strcmp(eosf - 4, ".asf") == 0) {
+                    strcpy(eosf - 4, ".asx");
+                } else if (strcmp(eosf - 3, ".rm") == 0) {
+                    strcpy(eosf - 3, ".ram");
+                }
             }
-        }
-        
-        q += sprintf(q, "<TR><TD><A HREF=\"/%s\">%s</A> ", 
-                     sfilename, stream->filename);
-        switch(stream->stream_type) {
-        case STREAM_TYPE_LIVE:
-            {
-                int audio_bit_rate = 0;
-                int video_bit_rate = 0;
-                char *audio_codec_name = "";
-                char *video_codec_name = "";
-                char *audio_codec_name_extra = "";
-                char *video_codec_name_extra = "";
+            
+            q += sprintf(q, "<TR><TD><A HREF=\"/%s\">%s</A> ", 
+                         sfilename, stream->filename);
+            q += sprintf(q, "<td align=right> %d <td align=right> %lld",
+                        stream->conns_served, stream->bytes_served / 1000);
+            switch(stream->stream_type) {
+            case STREAM_TYPE_LIVE:
+                {
+                    int audio_bit_rate = 0;
+                    int video_bit_rate = 0;
+                    char *audio_codec_name = "";
+                    char *video_codec_name = "";
+                    char *audio_codec_name_extra = "";
+                    char *video_codec_name_extra = "";
 
-                for(i=0;i<stream->nb_streams;i++) {
-                    AVStream *st = stream->streams[i];
-                    AVCodec *codec = avcodec_find_encoder(st->codec.codec_id);
-                    switch(st->codec.codec_type) {
-                    case CODEC_TYPE_AUDIO:
-                        audio_bit_rate += st->codec.bit_rate;
-                        if (codec) {
-                            if (*audio_codec_name)
-                                audio_codec_name_extra = "...";
-                            audio_codec_name = codec->name;
+                    for(i=0;i<stream->nb_streams;i++) {
+                        AVStream *st = stream->streams[i];
+                        AVCodec *codec = avcodec_find_encoder(st->codec.codec_id);
+                        switch(st->codec.codec_type) {
+                        case CODEC_TYPE_AUDIO:
+                            audio_bit_rate += st->codec.bit_rate;
+                            if (codec) {
+                                if (*audio_codec_name)
+                                    audio_codec_name_extra = "...";
+                                audio_codec_name = codec->name;
+                            }
+                            break;
+                        case CODEC_TYPE_VIDEO:
+                            video_bit_rate += st->codec.bit_rate;
+                            if (codec) {
+                                if (*video_codec_name)
+                                    video_codec_name_extra = "...";
+                                video_codec_name = codec->name;
+                            }
+                            break;
+                        default:
+                            abort();
                         }
-                        break;
-                    case CODEC_TYPE_VIDEO:
-                        video_bit_rate += st->codec.bit_rate;
-                        if (codec) {
-                            if (*video_codec_name)
-                                video_codec_name_extra = "...";
-                            video_codec_name = codec->name;
-                        }
-                        break;
-                    default:
-                        abort();
                     }
+                    q += sprintf(q, "<TD align=center> %s <TD align=right> %d <TD align=right> %d <TD> %s %s <TD align=right> %d <TD> %s %s", 
+                                 stream->fmt->name,
+                                 (audio_bit_rate + video_bit_rate) / 1000,
+                                 video_bit_rate / 1000, video_codec_name, video_codec_name_extra,
+                                 audio_bit_rate / 1000, audio_codec_name, audio_codec_name_extra);
+                    if (stream->feed) {
+                        q += sprintf(q, "<TD>%s", stream->feed->filename);
+                    } else {
+                        q += sprintf(q, "<TD>%s", stream->feed_filename);
+                    }
+                    q += sprintf(q, "\n");
                 }
-                q += sprintf(q, "<TD> %s <TD> %d <TD> %d <TD> %s %s <TD> %d <TD> %s %s", 
-                             stream->fmt->name,
-                             (audio_bit_rate + video_bit_rate) / 1000,
-                             video_bit_rate / 1000, video_codec_name, video_codec_name_extra,
-                             audio_bit_rate / 1000, audio_codec_name, audio_codec_name_extra);
-                if (stream->feed) {
-                    q += sprintf(q, "<TD>%s", stream->feed->filename);
-                } else {
-                    q += sprintf(q, "<TD>%s", stream->feed_filename);
-                }
-                q += sprintf(q, "\n");
+                break;
+            default:
+                q += sprintf(q, "<TD align=center> - <TD align=right> - <TD align=right> - <td><td align=right> - <TD>\n");
+                break;
             }
-            break;
-        default:
-            q += sprintf(q, "<TD> - <TD> - <TD COLSPAN=2> - <TD COLSPAN=2> -\n");
-            break;
         }
         stream = stream->next;
     }
     q += sprintf(q, "</TABLE>\n");
+
+    stream = first_stream;
+    while (stream != NULL) {
+        if (stream->feed == stream) {
+            q += sprintf(q, "<h2>Feed %s</h2>", stream->filename);
+            q += sprintf(q, "<table cellspacing=0 cellpadding=4><tr><th>Stream<th>type<th>kbits/s<th align=left>codec\n");
+
+            for (i = 0; i < stream->nb_streams; i++) {
+                AVStream *st = stream->streams[i];
+                AVCodec *codec = avcodec_find_encoder(st->codec.codec_id);
+                char *type = "unknown";
+
+                switch(st->codec.codec_type) {
+                case CODEC_TYPE_AUDIO:
+                    type = "audio";
+                    break;
+                case CODEC_TYPE_VIDEO:
+                    type = "video";
+                    break;
+                default:
+                    abort();
+                }
+                q += sprintf(q, "<tr><td align=right>%d<td>%s<td align=right>%d<td>%s\n",
+                        i, type, st->codec.bit_rate/1000, codec ? codec->name : "");
+            }
+            q += sprintf(q, "</table>\n");
+
+        }       
+        stream = stream->next;
+    }
     
 #if 0
     {
@@ -887,7 +926,7 @@ static void compute_stats(HTTPContext *c)
     q += sprintf(q, "<TR><TD>#<TD>File<TD>IP<TD>State<TD>Size\n");
     c1 = first_http_ctx;
     i = 0;
-    while (c1 != NULL) {
+    while (c1 != NULL && q < (char *) c->buffer + sizeof(c->buffer) - 2048) {
         i++;
         p = inet_ntoa(c1->from_addr.sin_addr);
         q += sprintf(q, "<TR><TD><B>%d</B><TD>%s%s <TD> %s <TD> %s <TD> %Ld\n", 
@@ -903,7 +942,7 @@ static void compute_stats(HTTPContext *c)
     /* date */
     ti = time(NULL);
     p = ctime(&ti);
-    q += sprintf(q, "<HR>Generated at %s", p);
+    q += sprintf(q, "<HR size=1 noshade>Generated at %s", p);
     q += sprintf(q, "</BODY>\n</HTML>\n");
 
     c->buffer_ptr = c->buffer;
@@ -1088,6 +1127,7 @@ static int http_prepare_data(HTTPContext *c)
                                     c->stream->feed->feed_write_index,
                                     c->stream->feed->feed_size);
             }
+            
             if (av_read_packet(c->fmt_in, &pkt) < 0) {
                 if (c->stream->feed && c->stream->feed->feed_opened) {
                     /* if coming from feed, it means we reached the end of the
@@ -1168,7 +1208,7 @@ static int http_send_data(HTTPContext *c)
         if (ret < 0)
             return -1;
         else if (ret == 0) {
-            break;
+            continue;
         } else {
             /* state change requested */
             return 0;
@@ -1185,6 +1225,7 @@ static int http_send_data(HTTPContext *c)
         } else {
             c->buffer_ptr += len;
             c->data_count += len;
+            c->stream->bytes_served += len;
         }
     }
     return 0;
@@ -1216,8 +1257,25 @@ static int http_start_receive_data(HTTPContext *c)
     
 static int http_receive_data(HTTPContext *c)
 {
-    int len;
     HTTPContext *c1;
+
+    if (c->buffer_end > c->buffer_ptr) {
+        int len;
+
+        len = read(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
+        if (len < 0) {
+            if (errno != EAGAIN && errno != EINTR) {
+                /* error : close connection */
+                goto fail;
+            }
+        } else if (len == 0) {
+            /* end of connection : close it */
+            goto fail;
+        } else {
+            c->buffer_ptr += len;
+            c->data_count += len;
+        }
+    }
 
     if (c->buffer_ptr >= c->buffer_end) {
         FFStream *feed = c->stream;
@@ -1276,19 +1334,6 @@ static int http_receive_data(HTTPContext *c)
         c->buffer_ptr = c->buffer;
     }
 
-    len = read(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
-    if (len < 0) {
-        if (errno != EAGAIN && errno != EINTR) {
-            /* error : close connection */
-            goto fail;
-        }
-    } else if (len == 0) {
-        /* end of connection : close it */
-        goto fail;
-    } else {
-        c->buffer_ptr += len;
-        c->data_count += len;
-    }
     return 0;
  fail:
     c->stream->feed_opened = 0;
