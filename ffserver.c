@@ -95,7 +95,7 @@ typedef struct HTTPContext {
     int last_packet_sent; /* true if last data packet was sent */
     int suppress_log;
     int bandwidth;
-    time_t start_time;
+    long start_time;            /* In milliseconds - this wraps fairly often */
     int wmp_client_id;
     char protocol[16];
     char method[16];
@@ -121,12 +121,16 @@ typedef struct FFStream {
     AVOutputFormat *fmt;
     int nb_streams;
     int prebuffer;      /* Number of millseconds early to start */
-    time_t max_time;
+    long max_time;      /* Number of milliseconds to run */
     int send_on_key;
     AVStream *streams[MAX_STREAMS];
     int feed_streams[MAX_STREAMS]; /* index of streams in the feed */
     char feed_filename[1024]; /* file name of the feed storage, or
                                  input file name for a stream */
+    char author[512];
+    char title[512];
+    char copyright[512];
+    char comment[512];
     pid_t pid;  /* Of ffmpeg process */
     char **child_argv;
     struct FFStream *next;
@@ -154,13 +158,16 @@ FFStream *first_stream; /* contains all streams, including feeds */
 
 static int handle_http(HTTPContext *c, long cur_time);
 static int http_parse_request(HTTPContext *c);
-static int http_send_data(HTTPContext *c);
+static int http_send_data(HTTPContext *c, long cur_time);
 static void compute_stats(HTTPContext *c);
 static int open_input_stream(HTTPContext *c, const char *info);
 static int http_start_receive_data(HTTPContext *c);
 static int http_receive_data(HTTPContext *c);
 
 static const char *my_program_name;
+
+static int ffserver_debug;
+static int no_launch;
 
 int nb_max_connections;
 int nb_connections;
@@ -213,6 +220,9 @@ static void log_connection(HTTPContext *c)
 
 static void start_children(FFStream *feed)
 {
+    if (no_launch)
+        return;
+
     for (; feed; feed = feed->next) {
         if (feed->child_argv) {
             feed->pid = fork();
@@ -227,15 +237,17 @@ static void start_children(FFStream *feed)
                 char *slash;
                 int i;
 
-                for (i = 0; i < 10; i++) {
-                    close(i);
-                }
+                if (!ffserver_debug) {
+                    for (i = 0; i < 10; i++) {
+                        close(i);
+                    }
 
-                i = open("/dev/null", O_RDWR);
-                if (i)
-                    dup2(i, 0);
-                dup2(i, 1);
-                dup2(i, 2);
+                    i = open("/dev/null", O_RDWR);
+                    if (i)
+                        dup2(i, 0);
+                    dup2(i, 1);
+                    dup2(i, 2);
+                }
 
                 pstrcpy(pathname, sizeof(pathname), my_program_name);
 
@@ -404,6 +416,7 @@ static int http_server(struct sockaddr_in my_addr)
                             c->buffer_ptr = c->buffer;
                             c->buffer_end = c->buffer + c->buffer_size;
                             c->timeout = cur_time + REQUEST_TIMEOUT;
+                            c->start_time = cur_time;
                             nb_connections++;
                         }
                     }
@@ -494,7 +507,7 @@ static int handle_http(HTTPContext *c, long cur_time)
         
         if (!(c->poll_entry->revents & POLLOUT))
             return 0;
-        if (http_send_data(c) < 0)
+        if (http_send_data(c, cur_time) < 0)
             return -1;
         break;
     case HTTPSTATE_RECEIVE_DATA:
@@ -1060,6 +1073,17 @@ static int http_parse_request(HTTPContext *c)
     return 0;
 }
 
+static int fmt_bytecount(char *q, INT64 count)
+{
+    static const char *suffix = " kMGTP";
+    const char *s;
+
+    for (s = suffix; count >= 100000 && s[1]; count /= 1000, s++) {
+    }
+
+    return sprintf(q, "%lld%c", count, *s);
+}
+
 static void compute_stats(HTTPContext *c)
 {
     HTTPContext *c1;
@@ -1093,7 +1117,7 @@ static void compute_stats(HTTPContext *c)
     /* format status */
     q += sprintf(q, "<H2>Available Streams</H2>\n");
     q += sprintf(q, "<TABLE cellspacing=0 cellpadding=4>\n");
-    q += sprintf(q, "<TR><Th valign=top>Path<th align=left>Served<br>Conns<Th><br>kbytes<Th valign=top>Format<Th>Bit rate<br>kbits/s<Th align=left>Video<br>kbits/s<th><br>Codec<Th align=left>Audio<br>kbits/s<th><br>Codec<Th align=left valign=top>Feed\n");
+    q += sprintf(q, "<TR><Th valign=top>Path<th align=left>Served<br>Conns<Th><br>bytes<Th valign=top>Format<Th>Bit rate<br>kbits/s<Th align=left>Video<br>kbits/s<th><br>Codec<Th align=left>Audio<br>kbits/s<th><br>Codec<Th align=left valign=top>Feed\n");
     stream = first_stream;
     while (stream != NULL) {
         char sfilename[1024];
@@ -1112,8 +1136,9 @@ static void compute_stats(HTTPContext *c)
             
             q += sprintf(q, "<TR><TD><A HREF=\"/%s\">%s</A> ", 
                          sfilename, stream->filename);
-            q += sprintf(q, "<td align=right> %d <td align=right> %lld",
-                        stream->conns_served, stream->bytes_served / 1000);
+            q += sprintf(q, "<td align=right> %d <td align=right> ",
+                        stream->conns_served);
+            q += fmt_bytecount(q, stream->bytes_served);
             switch(stream->stream_type) {
             case STREAM_TYPE_LIVE:
                 {
@@ -1286,13 +1311,14 @@ static void compute_stats(HTTPContext *c)
 
         i++;
         p = inet_ntoa(c1->from_addr.sin_addr);
-        q += sprintf(q, "<TR><TD><B>%d</B><TD>%s%s <TD> %s <TD> %s <td align=right> %d <TD align=right> %Ld\n", 
+        q += sprintf(q, "<TR><TD><B>%d</B><TD>%s%s <TD> %s <TD> %s <td align=right> %d <TD align=right> ", 
                      i, c1->stream->filename, 
                      c1->state == HTTPSTATE_RECEIVE_DATA ? "(input)" : "",
                      p, 
                      http_state[c1->state],
-                     bitrate / 1000,
-                     c1->data_count);
+                     bitrate / 1000);
+        q += fmt_bytecount(q, c1->data_count);
+        *q++ = '\n';
         c1 = c1->next;
     }
     q += sprintf(q, "</TABLE>\n");
@@ -1388,13 +1414,18 @@ static int open_input_stream(HTTPContext *c, const char *info)
     return 0;
 }
 
-static int http_prepare_data(HTTPContext *c)
+static int http_prepare_data(HTTPContext *c, long cur_time)
 {
     int i;
 
     switch(c->state) {
     case HTTPSTATE_SEND_DATA_HEADER:
         memset(&c->fmt_ctx, 0, sizeof(c->fmt_ctx));
+        pstrcpy(c->fmt_ctx.author, sizeof(c->fmt_ctx.author), c->stream->author);
+        pstrcpy(c->fmt_ctx.comment, sizeof(c->fmt_ctx.comment), c->stream->comment);
+        pstrcpy(c->fmt_ctx.copyright, sizeof(c->fmt_ctx.copyright), c->stream->copyright);
+        pstrcpy(c->fmt_ctx.title, sizeof(c->fmt_ctx.title), c->stream->title);
+
         if (c->stream->feed) {
             /* open output stream by using specified codecs */
             c->fmt_ctx.oformat = c->stream->fmt;
@@ -1504,7 +1535,7 @@ static int http_prepare_data(HTTPContext *c)
             }
 
             if (c->stream->max_time && 
-                c->stream->max_time + c->start_time > time(0)) {
+                c->stream->max_time + c->start_time - cur_time < 0) {
                 /* We have timed out */
                 c->state = HTTPSTATE_SEND_DATA_TRAILER;
             } else if (av_read_packet(c->fmt_in, &pkt) < 0) {
@@ -1591,12 +1622,12 @@ static int http_prepare_data(HTTPContext *c)
 }
 
 /* should convert the format at the same time */
-static int http_send_data(HTTPContext *c)
+static int http_send_data(HTTPContext *c, long cur_time)
 {
     int len, ret;
 
     while (c->buffer_ptr >= c->buffer_end) {
-        ret = http_prepare_data(c);
+        ret = http_prepare_data(c, cur_time);
         if (ret < 0)
             return -1;
         else if (ret == 0) {
@@ -2223,6 +2254,22 @@ int parse_ffconfig(const char *filename)
                             filename, line_num);
                 errors++;
             }
+        } else if (!strcasecmp(cmd, "Author")) {
+            if (stream) {
+                get_arg(stream->author, sizeof(stream->author), &p);
+            }
+        } else if (!strcasecmp(cmd, "Comment")) {
+            if (stream) {
+                get_arg(stream->comment, sizeof(stream->comment), &p);
+            }
+        } else if (!strcasecmp(cmd, "Copyright")) {
+            if (stream) {
+                get_arg(stream->copyright, sizeof(stream->copyright), &p);
+            }
+        } else if (!strcasecmp(cmd, "Title")) {
+            if (stream) {
+                get_arg(stream->title, sizeof(stream->title), &p);
+            }
         } else if (!strcasecmp(cmd, "Preroll")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
@@ -2251,7 +2298,7 @@ int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "MaxTime")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                stream->max_time = atoi(arg);
+                stream->max_time = atoi(arg) * 1000;
             }
         } else if (!strcasecmp(cmd, "AudioBitRate")) {
             get_arg(arg, sizeof(arg), &p);
@@ -2470,7 +2517,7 @@ int main(int argc, char **argv)
     my_program_name = argv[0];
 
     for(;;) {
-        c = getopt_long_only(argc, argv, "Lh?f:", NULL, NULL);
+        c = getopt_long_only(argc, argv, "ndLh?f:", NULL, NULL);
         if (c == -1)
             break;
         switch(c) {
@@ -2481,6 +2528,12 @@ int main(int argc, char **argv)
         case 'h':
             help();
             exit(1);
+        case 'n':
+            no_launch = 1;
+            break;
+        case 'd':
+            ffserver_debug = 1;
+            break;
         case 'f':
             config_filename = optarg;
             break;
