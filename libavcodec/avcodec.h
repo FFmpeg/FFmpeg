@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4706
+#define LIBAVCODEC_BUILD       4707
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1547,7 +1547,7 @@ typedef struct AVCodecContext {
      * the codec may call this to execute several independant things. it will return only after
      * finishing all tasks, the user may replace this with some multithreaded implementation, the
      * default implementation will execute the parts serially
-     * @param count the number of functions this will be identical to thread_count if possible
+     * @param count the number of things to execute
      * - encoding: set by lavc, user can override
      * - decoding: set by lavc, user can override
      */
