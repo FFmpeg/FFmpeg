@@ -42,10 +42,7 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-#define STACK_SIZE 100
-
 typedef struct Parser{
-    double stack[STACK_SIZE];
     int stack_index;
     char *s;
     double *const_value;
@@ -57,25 +54,7 @@ typedef struct Parser{
     void *opaque;
 } Parser;
 
-static void evalExpression(Parser *p);
-
-static void push(Parser *p, double d){
-    if(p->stack_index+1>= STACK_SIZE){
-        av_log(NULL, AV_LOG_ERROR, "stack overflow in the parser\n");
-        return;
-    }
-    p->stack[ p->stack_index++ ]= d;
-//printf("push %f\n", d); fflush(stdout);
-}
-
-static double pop(Parser *p){
-    if(p->stack_index<=0){
-        av_log(NULL, AV_LOG_ERROR, "stack underflow in the parser\n");
-        return NAN;
-    }
-//printf("pop\n"); fflush(stdout);
-    return p->stack[ --p->stack_index ];
-}
+static double evalExpression(Parser *p);
 
 static int strmatch(const char *s, const char *prefix){
     int i;
@@ -85,7 +64,7 @@ static int strmatch(const char *s, const char *prefix){
     return 1;
 }
 
-static void evalPrimary(Parser *p){
+static double evalPrimary(Parser *p){
     double d, d2=NAN;
     char *next= p->s;
     int i;
@@ -93,36 +72,32 @@ static void evalPrimary(Parser *p){
     /* number */
     d= strtod(p->s, &next);
     if(next != p->s){
-        push(p, d);
         p->s= next;
-        return;
+        return d;
     }
     
     /* named constants */
     for(i=0; p->const_name && p->const_name[i]; i++){
         if(strmatch(p->s, p->const_name[i])){
-            push(p, p->const_value[i]);
             p->s+= strlen(p->const_name[i]);
-            return;
+            return p->const_value[i];
         }
     }
     
     p->s= strchr(p->s, '(');
     if(p->s==NULL){
         av_log(NULL, AV_LOG_ERROR, "Parser: missing ( in \"%s\"\n", next);
-        return;
+        return NAN;
     }
     p->s++; // "("
-    evalExpression(p);
-    d= pop(p);
+    d= evalExpression(p);
     if(p->s[0]== ','){
         p->s++; // ","
-        evalExpression(p);
-        d2= pop(p);
+        d2= evalExpression(p);
     }
     if(p->s[0] != ')'){
         av_log(NULL, AV_LOG_ERROR, "Parser: missing ) in \"%s\"\n", next);
-        return;
+        return NAN;
     }
     p->s++; // ")"
     
@@ -144,92 +119,73 @@ static void evalPrimary(Parser *p){
     else if( strmatch(next, "lt"    ) ) d= d > d2 ? 0.0 : 1.0;
     else if( strmatch(next, "lte"    ) ) d= d >= d2 ? 0.0 : 1.0;
     else if( strmatch(next, "eq"    ) ) d= d == d2 ? 1.0 : 0.0;
+    else if( strmatch(next, "("     ) ) d= d;
 //    else if( strmatch(next, "l1"    ) ) d= 1 + d2*(d - 1);
 //    else if( strmatch(next, "sq01"  ) ) d= (d >= 0.0 && d <=1.0) ? 1.0 : 0.0;
     else{
         for(i=0; p->func1_name && p->func1_name[i]; i++){
             if(strmatch(next, p->func1_name[i])){
-                d= p->func1[i](p->opaque, d);
-                goto push_ret;
+                return p->func1[i](p->opaque, d);
             }
         }
 
         for(i=0; p->func2_name && p->func2_name[i]; i++){
             if(strmatch(next, p->func2_name[i])){
-                d= p->func2[i](p->opaque, d, d2);
-                goto push_ret;
+                return p->func2[i](p->opaque, d, d2);
             }
         }
 
         av_log(NULL, AV_LOG_ERROR, "Parser: unknown function in \"%s\"\n", next);
-        return;
+        return NAN;
     }
 
-push_ret:    
-    push(p, d);
+    return d;
 }      
        
-static void evalPow(Parser *p){
-    int neg= 0;
+static double evalPow(Parser *p){
     if(p->s[0]=='+') p->s++;
        
     if(p->s[0]=='-'){ 
-        neg= 1;
         p->s++;
-    }
-    
-    if(p->s[0]=='('){
-        p->s++;
-        evalExpression(p);
-
-        if(p->s[0]!=')')
-            av_log(NULL, AV_LOG_ERROR, "Parser: missing )\n");
-        p->s++;
-    }else{
-        evalPrimary(p);
-    }
-    
-    if(neg) push(p, -pop(p));
+        return -evalPrimary(p);
+    }else
+        return  evalPrimary(p);
 }
 
-static void evalFactor(Parser *p){
-    evalPow(p);
+static double evalFactor(Parser *p){
+    double ret= evalPow(p);
     while(p->s[0]=='^'){
-        double d;
-
         p->s++;
-        evalPow(p);
-        d= pop(p);
-        push(p, pow(pop(p), d));
+        ret= pow(ret, evalPow(p));
     }
+    return ret;
 }
 
-static void evalTerm(Parser *p){
-    evalFactor(p);
+static double evalTerm(Parser *p){
+    double ret= evalFactor(p);
     while(p->s[0]=='*' || p->s[0]=='/'){
-        int inv= p->s[0]=='/';
-        double d;
-
-        p->s++;
-        evalFactor(p);
-        d= pop(p);
-        if(inv) d= 1.0/d;
-        push(p, d * pop(p));
+        if(*p->s++ == '*') ret*= evalFactor(p);
+        else               ret/= evalFactor(p);
     }
+    return ret;
 }
 
-static void evalExpression(Parser *p){
-    evalTerm(p);
-    while(p->s[0]=='+' || p->s[0]=='-'){
-        int sign= p->s[0]=='-';
-        double d;
+static double evalExpression(Parser *p){
+    double ret;
 
-        p->s++;
-        evalTerm(p);
-        d= pop(p);
-        if(sign) d= -d;
-        push(p, d + pop(p));
+    if(p->stack_index <= 0) //protect against stack overflows
+        return NAN;
+    p->stack_index--;
+
+    ret= evalTerm(p);
+    while(p->s[0]=='+' || p->s[0]=='-'){
+        if(*p->s++ == '+') ret+= evalTerm(p);
+        else               ret-= evalTerm(p);
     }
+
+    p->stack_index++;
+
+    return ret;
 }
 
 double ff_eval(char *s, double *const_value, const char **const_name,
@@ -238,7 +194,7 @@ double ff_eval(char *s, double *const_value, const char **const_name,
                void *opaque){
     Parser p;
     
-    p.stack_index=0;
+    p.stack_index=100;
     p.s= s;
     p.const_value= const_value;
     p.const_name = const_name;
@@ -248,8 +204,7 @@ double ff_eval(char *s, double *const_value, const char **const_name,
     p.func2_name = func2_name;
     p.opaque     = opaque;
     
-    evalExpression(&p);
-    return pop(&p);
+    return evalExpression(&p);
 }
 
 #ifdef TEST
