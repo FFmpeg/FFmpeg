@@ -1632,7 +1632,7 @@ static inline int mpeg1_fast_decode_block_inter(MpegEncContext *s, DCTELEM *bloc
         v= SHOW_UBITS(re, &s->gb, 2);
         if (v & 2) {
             LAST_SKIP_BITS(re, &s->gb, 2);
-            level= (3*qscale)>>4;
+            level= (3*qscale)>>1;
             level= (level-1)|1;
             if(v&1)
                 level= -level;
