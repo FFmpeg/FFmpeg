@@ -28,6 +28,7 @@ typedef struct AVIIndex {
 } AVIIndex;
 
 typedef struct {
+    int64_t riff_end;
     int64_t movi_end;
     offset_t movi_list;
     AVIIndex *first, *last;
@@ -45,6 +46,23 @@ static void print_tag(const char *str, unsigned int tag, int size)
 }
 #endif
 
+static int get_riff(AVIContext *avi, ByteIOContext *pb)
+{
+    uint32_t tag; 
+    /* check RIFF header */
+    tag = get_le32(pb);
+
+    if (tag != MKTAG('R', 'I', 'F', 'F'))
+        return -1;
+    avi->riff_end = get_le32(pb);   /* RIFF chunk size */
+    avi->riff_end += url_ftell(pb); /* RIFF chunk end */
+    tag = get_le32(pb);
+    if (tag != MKTAG('A', 'V', 'I', ' ') && tag != MKTAG('A', 'V', 'I', 'X'))
+        return -1;
+    
+    return 0;
+}
+
 static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVIContext *avi = s->priv_data;
@@ -55,14 +73,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i;
     AVStream *st;
 
-    /* check RIFF header */
-    tag = get_le32(pb);
-
-    if (tag != MKTAG('R', 'I', 'F', 'F'))
-        return -1;
-    get_le32(pb); /* file size */
-    tag = get_le32(pb);
-    if (tag != MKTAG('A', 'V', 'I', ' '))
+    if (get_riff(avi, pb) < 0)
         return -1;
 
     /* first list tag */
@@ -230,8 +241,23 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     
     memset(d, -1, sizeof(int)*8);
 
-    for(i=url_ftell(pb); (!url_feof(pb)) && i < avi->movi_end; i++){
+    for(i=url_ftell(pb); !url_feof(pb); i++) {
         int j;
+
+	if (i >= avi->movi_end) { /* Let's see if it's an OpenDML AVI */
+	    uint32_t tag, size, tag2;
+	    url_fskip(pb, avi->riff_end - url_ftell(pb));
+	    if (get_riff(avi, pb) < 0)
+	        return -1;
+	    
+	    tag = get_le32(pb);
+	    size = get_le32(pb);
+	    tag2 = get_le32(pb);
+	    if (tag == MKTAG('L','I','S','T') && tag2 == MKTAG('m','o','v','i'))
+	        avi->movi_end = url_ftell(pb) + size - 4; 
+	    else
+	        return -1;
+	}
 
         for(j=0; j<7; j++)
             d[j]= d[j+1];
