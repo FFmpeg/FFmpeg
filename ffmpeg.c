@@ -1422,16 +1422,17 @@ static int av_encode(AVFormatContext **output_files,
                     ost->padleft = frame_padleft;
                     ost->padbottom = frame_padbottom;
                     ost->padright = frame_padright;
+                    avcodec_get_frame_defaults(&ost->pict_tmp);
                     if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P,
                                 codec->width, codec->height ) )
                         goto fail;
                 } else {
                     ost->video_resample = 1;
                     ost->video_crop = 0; // cropping is handled as part of resample
+                    avcodec_get_frame_defaults(&ost->pict_tmp);
                     if( avpicture_alloc( (AVPicture*)&ost->pict_tmp, PIX_FMT_YUV420P,
                                          codec->width, codec->height ) )
                         goto fail;
-                    avcodec_get_frame_defaults(&ost->pict_tmp);
 
                     ost->img_resample_ctx = img_resample_full_init( 
                                       ost->st->codec.width, ost->st->codec.height,
