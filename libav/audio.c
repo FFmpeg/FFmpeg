@@ -64,7 +64,8 @@ static int audio_open(AudioData *s, int is_output)
     }
 
     /* non blocking mode */
-    fcntl(audio_fd, F_SETFL, O_NONBLOCK);
+    if (!is_output)
+        fcntl(audio_fd, F_SETFL, O_NONBLOCK);
 
     s->frame_size = AUDIO_BLOCK_SIZE;
 #if 0
@@ -177,7 +178,7 @@ static int audio_write_packet(AVFormatContext *s1, int stream_index,
         if (s->buffer_ptr >= AUDIO_BLOCK_SIZE) {
             for(;;) {
                 ret = write(s->fd, s->buffer, AUDIO_BLOCK_SIZE);
-                if (ret != 0)
+                if (ret > 0)
                     break;
                 if (ret < 0 && (errno != EAGAIN && errno != EINTR))
                     return -EIO;
