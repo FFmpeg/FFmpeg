@@ -14,15 +14,18 @@ CFLAGS+=-p
 LDFLAGS+=-p
 endif
 
+MANPAGE=$(SRC_PATH)/doc/ffmpeg.1
 PROG=ffmpeg$(EXESUF)
 PROGTEST=output_example$(EXESUF)
 QTFASTSTART=qt-faststart$(EXESUF)
 
 ifeq ($(CONFIG_FFSERVER),yes)
+MANPAGE+=$(SRC_PATH)/doc/ffserver.1
 PROG+=ffserver$(EXESUF)
 endif
 
 ifeq ($(CONFIG_FFPLAY),yes)
+MANPAGE+=$(SRC_PATH)/doc/ffplay.1
 PROG+=ffplay$(EXESUF)
 endif
 
@@ -126,8 +129,7 @@ install-man:
 ifneq ($(CONFIG_WIN32),yes)
 	if [ -f $(SRC_PATH)/doc/ffmpeg.1 ] ; then \
 	    install -d $(mandir)/man1 ; \
-	    install -m 644 $(SRC_PATH)/doc/ffmpeg.1 $(SRC_PATH)/doc/ffplay.1 \
-                           $(SRC_PATH)/doc/ffserver.1 $(mandir)/man1 ; \
+	    install -m 644 $(MANPAGE) $(mandir)/man1 ; \
 	fi
 endif
 
