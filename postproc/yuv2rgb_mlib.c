@@ -42,8 +42,8 @@ static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* src[], int srcStride[], i
     
     assert(srcStride[1] == srcStride[2]);
  
-    mlib_VideoColorYUV2ARGB420(dst[0], src[0], src[1], src[2], c->dstW,
-			     c->dstH, dstStride[0], srcStride[0], srcStride[1]);
+    mlib_VideoColorYUV2ARGB420(dst[0]+srcSliceY*dstStride[0], src[0], src[1], src[2], c->dstW,
+			     srcSliceH, dstStride[0], srcStride[0], srcStride[1]);
     return srcSliceH;
 }
 
@@ -56,8 +56,8 @@ static int mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* src[], int srcStride[], i
     
     assert(srcStride[1] == srcStride[2]);
  
-    mlib_VideoColorYUV2ABGR420(dst[0], src[0], src[1], src[2], c->dstW,
-			     c->dstH, dstStride[0], srcStride[0], srcStride[1]);
+    mlib_VideoColorYUV2ABGR420(dst[0]+srcSliceY*dstStride[0], src[0], src[1], src[2], c->dstW,
+			     srcSliceH, dstStride[0], srcStride[0], srcStride[1]);
     return srcSliceH;
 }
 
@@ -70,8 +70,8 @@ static int mlib_YUV2RGB420_24(SwsContext *c, uint8_t* src[], int srcStride[], in
     
     assert(srcStride[1] == srcStride[2]);
  
-    mlib_VideoColorYUV2RGB420(dst[0], src[0], src[1], src[2], c->dstW,
-			     c->dstH, dstStride[0], srcStride[0], srcStride[1]);
+    mlib_VideoColorYUV2RGB420(dst[0]+srcSliceY*dstStride[0], src[0], src[1], src[2], c->dstW,
+			     srcSliceH, dstStride[0], srcStride[0], srcStride[1]);
     return srcSliceH;
 }
 
@@ -81,7 +81,7 @@ SwsFunc yuv2rgb_init_mlib(SwsContext *c)
 	switch(c->dstFormat){
 	case IMGFMT_RGB24: return mlib_YUV2RGB420_24;
 	case IMGFMT_RGB32: return mlib_YUV2ARGB420_32;
-	case IMGFMT_BGR32: return mlib_YUV2ARGB420_32;
+	case IMGFMT_BGR32: return mlib_YUV2ABGR420_32;
 	default: return NULL;
 	}
 }
