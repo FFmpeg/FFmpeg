@@ -528,8 +528,12 @@ static inline void idct_col (int16_t * col, int offset)
     movq_r2m (mm3, *(col+offset+4*8));	// save y4
 
     movq_r2m (mm4, *(col+offset+3*8));	// save y3
-}
 
+#undef T1
+#undef T2
+#undef T3
+#undef C4
+}
 
 static int32_t rounder0[] ATTR_ALIGN(8) =
     rounder ((1 << (COL_SHIFT - 1)) - 0.5);
@@ -547,6 +551,8 @@ static int32_t rounder3[] ATTR_ALIGN(8) =
 static int32_t rounder5[] ATTR_ALIGN(8) =
     rounder (-0.441341716183);	/* C3*(-C5/C4+C5-C3)/2 */
 
+#undef COL_SHIFT
+#undef ROW_SHIFT
 
 #define declare_idct(idct,table,idct_row_head,idct_row,idct_row_tail,idct_row_mid)	\
 void idct (int16_t * block)					\
