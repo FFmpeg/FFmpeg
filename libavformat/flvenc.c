@@ -300,7 +300,7 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
             /* copy out mp3 header from ring buffer */
             uint8_t header[4];
             for (c=0; c<4; c++) {
-                header[c] = flv->audio_fifo[(flv->audioInPos+c) % AUDIO_FIFO_SIZE];
+                header[c] = flv->audioFifo[(flv->audioInPos+c) % AUDIO_FIFO_SIZE];
             }
 
             if ( mp3info(header,&mp3FrameSize,&mp3SamplesPerFrame,&mp3SampleRate,&mp3IsMono) ) {
