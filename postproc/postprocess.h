@@ -68,19 +68,20 @@ char *pp_help;
 
 //FIXME decide if this should be exported at all
 typedef struct PPMode{
-	int lumMode; //acivates filters for luminance
-	int chromMode; //acivates filters for chrominance
-	int error; // non zero on error
+	int lumMode; 			// acivates filters for luminance
+	int chromMode; 			// acivates filters for chrominance
+	int error; 			// non zero on error
 
-	int minAllowedY; // for brigtness correction
-	int maxAllowedY; // for brihtness correction
+	int minAllowedY; 		// for brigtness correction
+	int maxAllowedY; 		// for brihtness correction
+	float maxClippedThreshold;	// amount of "black" u r willing to loose to get a brightness corrected picture
 
-	int maxTmpNoise[3]; // for Temporal Noise Reducing filter (Maximal sum of abs differences)
+	int maxTmpNoise[3]; 		// for Temporal Noise Reducing filter (Maximal sum of abs differences)
 
 	int baseDcDiff;
 	int flatnessThreshold;
 
-	int forcedQuant; // quantizer if FORCE_QUANT is used
+	int forcedQuant; 		// quantizer if FORCE_QUANT is used
 } PPMode;
 
 void  pp_postprocess(uint8_t * src[3], int srcStride[3],

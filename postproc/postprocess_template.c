@@ -2711,7 +2711,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 //		printf("\n\n");
 
 		/* we allways get a completly black picture first */
-		maxClipped= (uint64_t)(sum * maxClippedThreshold);
+		maxClipped= (uint64_t)(sum * c.ppMode.maxClippedThreshold);
 
 		clipped= sum;
 		for(black=255; black>0; black--)

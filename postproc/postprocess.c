@@ -47,10 +47,8 @@ c = checked against the other implementations (-vo md5)
 
 /*
 TODO:
-remove global/static vars
 reduce the time wasted on the mem transfer
 unroll stuff if instructions depend too much on the prior one
-we use 8x8 blocks for the horizontal filters, opendivx seems to use 8x4?
 move YScale thing to the end instead of fixing QP
 write a faster and higher quality deblocking filter :)
 make the mainloop more flexible (variable number of blocks at once
@@ -69,7 +67,6 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -104,15 +101,9 @@ static uint64_t __attribute__((aligned(8))) b08= 		0x0808080808080808LL;
 static uint64_t __attribute__((aligned(8))) b80= 		0x8080808080808080LL;
 #endif
 
-extern int divx_quality;
-static int firstTime2 = 0;
+static int verbose= 0;
 
-extern int verbose;
-
-int deringThreshold= 20;
-
-//amount of "black" u r willing to loose to get a brightness corrected picture
-double maxClippedThreshold= 0.01;
+static const int deringThreshold= 20;
 
 struct PPFilter{
 	char *shortName;
@@ -593,11 +584,21 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 	char *p= temp;
 	char *filterDelimiters= ",/";
 	char *optionDelimiters= ":";
-	struct PPMode ppMode= {0,0,0,0,0,{150,200,400}};
+	struct PPMode ppMode;
 	char *filterToken;
 
+	ppMode.lumMode= 0;
+	ppMode.chromMode= 0;
+	ppMode.maxTmpNoise[0]= 700;
+	ppMode.maxTmpNoise[1]= 1500;
+	ppMode.maxTmpNoise[2]= 3000;
+	ppMode.maxAllowedY= 234;
+	ppMode.minAllowedY= 16;
+	ppMode.baseDcDiff= 256/4;
+	ppMode.flatnessThreshold=40;
 	ppMode.flatnessThreshold= 56-16;
-	
+	ppMode.maxClippedThreshold= 0.01;
+
 	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
 	if(verbose>1) printf("pp: %s\n", name);
@@ -705,9 +706,6 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 				{
 					int o;
 					int numOfNoises=0;
-					ppMode.maxTmpNoise[0]= 150;
-					ppMode.maxTmpNoise[1]= 200;
-					ppMode.maxTmpNoise[2]= 400;
 
 					for(o=0; options[o]!=NULL; o++)
 					{
@@ -725,9 +723,6 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 				else if(filters[i].mask == V_DEBLOCK || filters[i].mask == H_DEBLOCK)
 				{
 					int o;
-					ppMode.baseDcDiff=256/4;
-//					hFlatnessThreshold= 40;
-//					vFlatnessThreshold= 40;
 
 					for(o=0; options[o]!=NULL && o<2; o++)
 					{
@@ -818,32 +813,6 @@ void pp_free_context(void *vc){
 	free(c);
 }
 
-//FIXME move this shit away from here
-int readPPOpt(void *conf, char *arg)
-{
-  int val;
-
-  if(arg == NULL)
-    return -2; // ERR_MISSING_PARAM
-  errno = 0;
-  val = (int)strtol(arg,NULL,0);
-  if(errno != 0)
-    return -4;  // What about include cfgparser.h and use ERR_* defines */
-  if(val < 0)
-    return -3; // ERR_OUT_OF_RANGE
-
-  divx_quality = val;
-  firstTime2 = 1;
-
-  return 1;
-}
-  
-void revertPPOpt(void *conf, char* opt) 
-{
-  divx_quality=0;
-}
-
-
 void  pp_postprocess(uint8_t * src[3], int srcStride[3],
                  uint8_t * dst[3], int dstStride[3],
                  int width, int height,
@@ -889,10 +858,9 @@ for(y=0; y<mbHeight; y++){
 		}
 	}
 
-	if(firstTime2 && verbose)
+	if(verbose>2)
 	{
 		printf("using npp filters 0x%X/0x%X\n", mode->lumMode, mode->chromMode);
-		firstTime2=0;
 	}
 
 	postProcess(src[0], srcStride[0], dst[0], dstStride[0],
