@@ -1536,7 +1536,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         s->repeat_field++;
         //fprintf(stderr,"\nRepeating last frame: %d -> %d! pict: %d %d", avctx->frame_number-1, avctx->frame_number,
         //                                                         s2->picture_number, s->repeat_field);
-        *data_size = 1;
+        *data_size = sizeof(AVPicture);
         goto the_end;
     }
         

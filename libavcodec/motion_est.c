@@ -409,6 +409,8 @@ int estimate_motion(MpegEncContext * s,
     if (s->unrestricted_mv) {
         xmin = -16;
         ymin = -16;
+        if (s->h263_plus)
+            range *= 2;
         if(s->avctx==NULL || s->avctx->codec->id!=CODEC_ID_MPEG4){
             xmax = s->mb_width*16;
             ymax = s->mb_height*16;

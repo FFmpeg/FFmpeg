@@ -25,7 +25,7 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <termios.h>
-#include <sys/time.h>
+#include <time.h>
 #include <sys/resource.h>
 #include <ctype.h>
 #endif
@@ -105,6 +105,7 @@ static int do_benchmark = 0;
 static int do_hex_dump = 0;
 static int do_play = 0;
 static int do_psnr = 0;
+static int do_vstats = 0;
 
 typedef struct AVOutputStream {
     int file_index;          /* file index */
@@ -387,7 +388,8 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
 static void do_video_out(AVFormatContext *s, 
                          AVOutputStream *ost, 
                          AVInputStream *ist,
-                         AVPicture *picture1)
+                         AVPicture *picture1,
+                         int *frame_size)
 {
     int n1, n2, nb, i, ret, frame_number;
     AVPicture *picture, *picture2, *pict;
@@ -404,9 +406,9 @@ static void do_video_out(AVFormatContext *s,
     n1 = ((INT64)frame_number * enc->frame_rate) / dec->frame_rate;
     n2 = (((INT64)frame_number + 1) * enc->frame_rate) / dec->frame_rate;
     nb = n2 - n1;
-    if (nb <= 0)
+    if (nb <= 0) 
         return;
-    
+
     /* deinterlace : must be done before any resize */
     if (do_deinterlace) {
         int size;
@@ -476,6 +478,7 @@ static void do_video_out(AVFormatContext *s,
                                        video_buffer, sizeof(video_buffer), 
                                        picture);
             s->format->write_packet(s, ost->index, video_buffer, ret);
+            *frame_size = ret;
         } else {
             write_picture(s, ost->index, picture, enc->pix_fmt, enc->width, enc->height);
         }
@@ -485,6 +488,62 @@ static void do_video_out(AVFormatContext *s,
         free(buf);
     if (buf1)
         free(buf1);
+}
+
+static void do_video_stats(AVOutputStream *ost, 
+                         AVInputStream *ist,
+                         int frame_size)
+{
+    static FILE *fvstats=NULL;
+    static INT64 total_size = 0;
+    struct tm *today;
+    time_t today2;
+    char filename[40];
+    AVCodecContext *enc;
+    int frame_number;
+    INT64 ti;
+    double ti1, bitrate, avg_bitrate;
+    
+    if (!fvstats) {
+        today2 = time(NULL);
+        today = localtime(&today2);
+        sprintf(filename, "vstats_%02d%02d%02d.log", today->tm_hour,
+                                               today->tm_min,
+                                               today->tm_sec);
+        fvstats = fopen(filename,"w");
+        if (!fvstats) {
+            perror("fopen");
+            exit(1);
+        }
+    }
+    
+    ti = MAXINT64;
+    enc = &ost->st->codec;
+    total_size += frame_size;
+    if (enc->codec_type == CODEC_TYPE_VIDEO) {
+        frame_number = ist->frame_number;
+        fprintf(fvstats, "frame= %5d q= %2d ", frame_number, enc->quality);
+        if (do_psnr)
+            fprintf(fvstats, "PSNR= %6.2f ", enc->psnr_y);
+        
+        fprintf(fvstats,"f_size= %6d ", frame_size);
+        /* compute min pts value */
+        if (!ist->discard && ist->pts < ti) {
+            ti = ist->pts;
+        }
+        ti1 = (double)ti / 1000000.0;
+        if (ti1 < 0.01)
+            ti1 = 0.01;
+    
+        bitrate = (double)(frame_size * 8) * enc->frame_rate / FRAME_RATE_BASE / 1000.0;
+        avg_bitrate = (double)(total_size * 8) / ti1 / 1000.0;
+        fprintf(fvstats, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
+            (double)total_size / 1024, ti1, bitrate, avg_bitrate);
+        fprintf(fvstats,"type= %s\n", enc->key_frame == 1 ? "I" : "P");        
+    }
+
+    
+    
 }
 
 static void hex_dump(UINT8 *buf, int size)
@@ -915,6 +974,7 @@ static int av_encode(AVFormatContext **output_files,
             /* transcode raw format, encode packets and output them */
             
             for(i=0;i<nb_ostreams;i++) {
+                int frame_size;
                 ost = ost_table[i];
                 if (ost->source_index == ist_index) {
                     os = output_files[ost->file_index];
@@ -925,7 +985,9 @@ static int av_encode(AVFormatContext **output_files,
                             do_audio_out(os, ost, ist, data_buf, data_size);
                             break;
                         case CODEC_TYPE_VIDEO:
-                            do_video_out(os, ost, ist, &picture);
+                            do_video_out(os, ost, ist, &picture, &frame_size);
+                            if (do_vstats)
+                                do_video_stats(ost, ist, frame_size);
                             break;
                         }
                     } else {
@@ -976,15 +1038,15 @@ static int av_encode(AVFormatContext **output_files,
                 }
 
                 ti1 = (double)ti / 1000000.0;
-                if (ti1 < 0.1)
-                    ti1 = 0.1;
+                if (ti1 < 0.01)
+                    ti1 = 0.01;
                 bitrate = (double)(total_size * 8) / ti1 / 1000.0;
 
                 sprintf(buf + strlen(buf), 
                         "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
                         (double)total_size / 1024, ti1, bitrate);
                 
-                fprintf(stderr, "%s    \r", buf);
+                fprintf(stderr, "%s   \r", buf);
                 fflush(stderr);
             }
         }
@@ -1026,15 +1088,15 @@ static int av_encode(AVFormatContext **output_files,
         }
         
         ti1 = ti / 1000000.0;
-        if (ti1 < 0.1)
-            ti1 = 0.1;
+        if (ti1 < 0.01)
+            ti1 = 0.01;
         bitrate = (double)(total_size * 8) / ti1 / 1000.0;
         
         sprintf(buf + strlen(buf), 
                 "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
                 (double)total_size / 1024, ti1, bitrate);
         
-        fprintf(stderr, "%s    \n", buf);
+        fprintf(stderr, "%s   \n", buf);
     }
     /* close each encoder */
     for(i=0;i<nb_ostreams;i++) {
@@ -2035,7 +2097,8 @@ const OptionDef options[] = {
       "add timings for benchmarking" },
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump}, 
       "dump each input packet" },
-    { "psnr", OPT_BOOL | OPT_EXPERT, {(void*)&do_psnr}, "calculate PSNR of compressed frames" }, 
+    { "psnr", OPT_BOOL | OPT_EXPERT, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
+    { "vstats", OPT_BOOL | OPT_EXPERT, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
 
     { NULL, },
 };
