@@ -748,9 +748,6 @@ static void close_connection(HTTPContext *c)
 
     ctx = &c->fmt_ctx;
 
-    for(i=0; i<ctx->nb_streams; i++) 
-        av_free(ctx->streams[i]) ; 
-
     if (!c->last_packet_sent) {
         if (ctx->oformat) {
             /* prepare header */
@@ -760,6 +757,9 @@ static void close_connection(HTTPContext *c)
             }
         }
     }
+
+    for(i=0; i<ctx->nb_streams; i++) 
+        av_free(ctx->streams[i]) ; 
 
     if (c->stream)
         current_bandwidth -= c->stream->bandwidth;
