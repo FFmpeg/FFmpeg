@@ -1067,6 +1067,8 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref, uint8_t *dec
     return best_score;
 }
 
+#ifdef CONFIG_ENCODERS
+
 static void svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane, unsigned char *ref_plane, unsigned char *decoded_plane,
     int width, int height, int src_stride, int stride)
 {
@@ -1366,6 +1368,8 @@ static int svq1_encode_end(AVCodecContext *avctx)
 
     return 0;
 }
+
+#endif //CONFIG_ENCODERS
 
 AVCodec svq1_decoder = {
     "svq1",
