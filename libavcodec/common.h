@@ -6,9 +6,6 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define FFMPEG_VERSION_INT 0x000406
-#define FFMPEG_VERSION     "0.4.6"
-
 #if defined(WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 #    define CONFIG_WIN32
 #endif

@@ -191,7 +191,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr)
              "\n",
              post ? "POST" : "GET",
              path,
-             FFMPEG_VERSION,
+             LIBAVFORMAT_VERSION,
              hoststr);
     
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)

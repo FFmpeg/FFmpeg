@@ -1667,7 +1667,6 @@ static void mpeg4_encode_visual_object_header(MpegEncContext * s){
 static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_number)
 {
     int vo_ver_id;
-    char buf[255];
 
     if(s->max_b_frames || s->quarter_sample){
         vo_ver_id= 5;
@@ -1754,8 +1753,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
     if(!(s->flags & CODEC_FLAG_BITEXACT)){
         put_bits(&s->pb, 16, 0);
         put_bits(&s->pb, 16, 0x1B2);	/* user_data */
-        sprintf(buf, "FFmpeg%sb%s", FFMPEG_VERSION, LIBAVCODEC_BUILD_STR);
-        put_string(&s->pb, buf);
+	put_string(&s->pb, LIBAVCODEC_IDENT);
         ff_mpeg4_stuffing(&s->pb);
     }
 }
