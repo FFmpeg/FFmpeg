@@ -147,7 +147,17 @@ void img_resample(ImgReSampleContext *s,
 
 void img_resample_close(ImgReSampleContext *s);
 
-int img_convert_to_yuv420(UINT8 *img_out, UINT8 *img, 
+void avpicture_fill(AVPicture *picture, UINT8 *ptr,
+                    int pix_fmt, int width, int height);
+int avpicture_get_size(int pix_fmt, int width, int height);
+
+/* convert among pixel formats */
+int img_convert(AVPicture *dst, int dst_pix_fmt,
+                AVPicture *src, int pix_fmt, 
+                int width, int height);
+
+/* deinterlace a picture */
+int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
                           int pix_fmt, int width, int height);
 
 /* external high level API */
