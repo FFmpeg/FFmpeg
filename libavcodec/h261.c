@@ -150,38 +150,21 @@ static void h261_encode_gob_header(MpegEncContext * s, int mb_line){
 }
 
 void ff_h261_reorder_mb_index(MpegEncContext* s){
+    int index= s->mb_x + s->mb_y*s->mb_width;
+
+    if(index % 33 == 0)
+        h261_encode_gob_header(s,0);
+
     /* for CIF the GOB's are fragmented in the middle of a scanline
        that's why we need to adjust the x and y index of the macroblocks */
     if(ff_h261_get_picture_format(s->width,s->height) == 1){ // CIF
-        if((s->mb_x == 0 && (s->mb_y % 3 == 0) ) || (s->mb_x == 11 && ((s->mb_y -1 )% 3 == 0) ))
-            h261_encode_gob_header(s,0);
-        if(s->mb_x < 11 ){
-            if((s->mb_y % 3) == 1 ){
-                s->mb_x += 0;
-                s->mb_y += 1;
-            }
-            else if( (s->mb_y % 3) == 2 ){
-                s->mb_x += 11;
-                s->mb_y -= 1;
-            }
-        }
-        else{
-            if((s->mb_y % 3) == 1 ){
-                s->mb_x += 0;
-                s->mb_y -= 1;
-            }
-            else if( (s->mb_y % 3) == 0 ){
-                s->mb_x -= 11;
-                s->mb_y += 1;
-            }
-        }
+        s->mb_x =     index % 11 ; index /= 11;
+        s->mb_y =     index %  3 ; index /=  3;
+        s->mb_x+= 11*(index %  2); index /=  2;
+        s->mb_y+=  3*index;
+        
         ff_init_block_index(s);
         ff_update_block_index(s);
-    /* for QCIF we don't need to reorder MB's
-       there the GOB's aren't fragmented in the middle of a scanline */
-    }else if(ff_h261_get_picture_format(s->width,s->height) == 0){ // QCIF
-        if(s->mb_y % 3 == 0 && s->mb_x == 0)
-            h261_encode_gob_header(s,0);
     }
 }
 
