@@ -349,9 +349,9 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 		"pslld $11, %%mm3		\n\t"
 		"por %%mm3, %%mm0		\n\t"
 		MOVNTQ"	%%mm0, (%0)		\n\t"
-		"addl $16, %1			\n\t"
-		"addl $8, %0			\n\t"
-		"cmpl %2, %1			\n\t"
+		"add $16, %1			\n\t"
+		"add $8, %0			\n\t"
+		"cmp %2, %1			\n\t"
 		" jb 1b				\n\t"
 		: "+r" (d), "+r"(s)
 		: "r" (mm_end), "m" (mask3216g), "m" (mask3216br), "m" (mul3216)
@@ -509,9 +509,9 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 		"pslld $10, %%mm3		\n\t"
 		"por %%mm3, %%mm0		\n\t"
 		MOVNTQ"	%%mm0, (%0)		\n\t"
-		"addl $16, %1			\n\t"
-		"addl $8, %0			\n\t"
-		"cmpl %2, %1			\n\t"
+		"add $16, %1			\n\t"
+		"add $8, %0			\n\t"
+		"cmp %2, %1			\n\t"
 		" jb 1b				\n\t"
 		: "+r" (d), "+r"(s)
 		: "r" (mm_end), "m" (mask3215g), "m" (mask3216br), "m" (mul3215)
@@ -1345,11 +1345,11 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsign
 #ifdef HAVE_MMX
 /* TODO: unroll this loop */
 	asm volatile (
-		"xorl %%eax, %%eax		\n\t"
+		"xor %%"REG_a", %%"REG_a"	\n\t"
 		".balign 16			\n\t"
 		"1:				\n\t"
-		PREFETCH" 32(%0, %%eax)		\n\t"
-		"movq (%0, %%eax), %%mm0	\n\t"
+		PREFETCH" 32(%0, %%"REG_a")	\n\t"
+		"movq (%0, %%"REG_a"), %%mm0	\n\t"
 		"movq %%mm0, %%mm1		\n\t"
 		"movq %%mm0, %%mm2		\n\t"
 		"pslld $16, %%mm0		\n\t"
@@ -1359,12 +1359,12 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsign
 		"pand "MANGLE(mask32b)", %%mm1	\n\t"
 		"por %%mm0, %%mm2		\n\t"
 		"por %%mm1, %%mm2		\n\t"
-		MOVNTQ" %%mm2, (%1, %%eax)	\n\t"
-		"addl $8, %%eax			\n\t"
-		"cmpl %2, %%eax			\n\t"
+		MOVNTQ" %%mm2, (%1, %%"REG_a")	\n\t"
+		"add $8, %%"REG_a"		\n\t"
+		"cmp %2, %%"REG_a"		\n\t"
 		" jb 1b				\n\t"
-		:: "r" (src), "r"(dst), "r" (src_size-7)
-		: "%eax"
+		:: "r" (src), "r"(dst), "r" ((long)src_size-7)
+		: "%"REG_a
 	);
 
 	__asm __volatile(SFENCE:::"memory");
@@ -1391,43 +1391,43 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, unsign
 {
 	unsigned i;
 #ifdef HAVE_MMX
-	int mmx_size= 23 - src_size;
+	long mmx_size= 23 - src_size;
 	asm volatile (
 		"movq "MANGLE(mask24r)", %%mm5	\n\t"
 		"movq "MANGLE(mask24g)", %%mm6	\n\t"
 		"movq "MANGLE(mask24b)", %%mm7	\n\t"
 		".balign 16			\n\t"
 		"1:				\n\t"
-		PREFETCH" 32(%1, %%eax)		\n\t"
-		"movq   (%1, %%eax), %%mm0	\n\t" // BGR BGR BG
-		"movq   (%1, %%eax), %%mm1	\n\t" // BGR BGR BG
-		"movq  2(%1, %%eax), %%mm2	\n\t" // R BGR BGR B
+		PREFETCH" 32(%1, %%"REG_a")	\n\t"
+		"movq   (%1, %%"REG_a"), %%mm0	\n\t" // BGR BGR BG
+		"movq   (%1, %%"REG_a"), %%mm1	\n\t" // BGR BGR BG
+		"movq  2(%1, %%"REG_a"), %%mm2	\n\t" // R BGR BGR B
 		"psllq $16, %%mm0		\n\t" // 00 BGR BGR
 		"pand %%mm5, %%mm0		\n\t"
 		"pand %%mm6, %%mm1		\n\t"
 		"pand %%mm7, %%mm2		\n\t"
 		"por %%mm0, %%mm1		\n\t"
 		"por %%mm2, %%mm1		\n\t"                
-		"movq  6(%1, %%eax), %%mm0	\n\t" // BGR BGR BG
-		MOVNTQ" %%mm1,   (%2, %%eax)	\n\t" // RGB RGB RG
-		"movq  8(%1, %%eax), %%mm1	\n\t" // R BGR BGR B
-		"movq 10(%1, %%eax), %%mm2	\n\t" // GR BGR BGR
+		"movq  6(%1, %%"REG_a"), %%mm0	\n\t" // BGR BGR BG
+		MOVNTQ" %%mm1,   (%2, %%"REG_a")\n\t" // RGB RGB RG
+		"movq  8(%1, %%"REG_a"), %%mm1	\n\t" // R BGR BGR B
+		"movq 10(%1, %%"REG_a"), %%mm2	\n\t" // GR BGR BGR
 		"pand %%mm7, %%mm0		\n\t"
 		"pand %%mm5, %%mm1		\n\t"
 		"pand %%mm6, %%mm2		\n\t"
 		"por %%mm0, %%mm1		\n\t"
 		"por %%mm2, %%mm1		\n\t"                
-		"movq 14(%1, %%eax), %%mm0	\n\t" // R BGR BGR B
-		MOVNTQ" %%mm1,  8(%2, %%eax)	\n\t" // B RGB RGB R
-		"movq 16(%1, %%eax), %%mm1	\n\t" // GR BGR BGR
-		"movq 18(%1, %%eax), %%mm2	\n\t" // BGR BGR BG
+		"movq 14(%1, %%"REG_a"), %%mm0	\n\t" // R BGR BGR B
+		MOVNTQ" %%mm1,  8(%2, %%"REG_a")\n\t" // B RGB RGB R
+		"movq 16(%1, %%"REG_a"), %%mm1	\n\t" // GR BGR BGR
+		"movq 18(%1, %%"REG_a"), %%mm2	\n\t" // BGR BGR BG
 		"pand %%mm6, %%mm0		\n\t"
 		"pand %%mm7, %%mm1		\n\t"
 		"pand %%mm5, %%mm2		\n\t"
 		"por %%mm0, %%mm1		\n\t"
 		"por %%mm2, %%mm1		\n\t"                
-		MOVNTQ" %%mm1, 16(%2, %%eax)	\n\t"
-		"addl $24, %%eax		\n\t"
+		MOVNTQ" %%mm1, 16(%2, %%"REG_a")\n\t"
+		"add $24, %%"REG_a"		\n\t"
 		" js 1b				\n\t"
 		: "+a" (mmx_size)
 		: "r" (src-mmx_size), "r"(dst-mmx_size)
@@ -1465,20 +1465,20 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
 #ifdef HAVE_MMX
 //FIXME handle 2 lines a once (fewer prefetch, reuse some chrom, but very likely limited by mem anyway)
 		asm volatile(
-			"xorl %%eax, %%eax		\n\t"
+			"xor %%"REG_a", %%"REG_a"	\n\t"
 			".balign 16			\n\t"
 			"1:				\n\t"
-			PREFETCH" 32(%1, %%eax, 2)	\n\t"
-			PREFETCH" 32(%2, %%eax)		\n\t"
-			PREFETCH" 32(%3, %%eax)		\n\t"
-			"movq (%2, %%eax), %%mm0	\n\t" // U(0)
+			PREFETCH" 32(%1, %%"REG_a", 2)	\n\t"
+			PREFETCH" 32(%2, %%"REG_a")	\n\t"
+			PREFETCH" 32(%3, %%"REG_a")	\n\t"
+			"movq (%2, %%"REG_a"), %%mm0	\n\t" // U(0)
 			"movq %%mm0, %%mm2		\n\t" // U(0)
-			"movq (%3, %%eax), %%mm1	\n\t" // V(0)
+			"movq (%3, %%"REG_a"), %%mm1	\n\t" // V(0)
 			"punpcklbw %%mm1, %%mm0		\n\t" // UVUV UVUV(0)
 			"punpckhbw %%mm1, %%mm2		\n\t" // UVUV UVUV(8)
 
-			"movq (%1, %%eax,2), %%mm3	\n\t" // Y(0)
-			"movq 8(%1, %%eax,2), %%mm5	\n\t" // Y(8)
+			"movq (%1, %%"REG_a",2), %%mm3	\n\t" // Y(0)
+			"movq 8(%1, %%"REG_a",2), %%mm5	\n\t" // Y(8)
 			"movq %%mm3, %%mm4		\n\t" // Y(0)
 			"movq %%mm5, %%mm6		\n\t" // Y(8)
 			"punpcklbw %%mm0, %%mm3		\n\t" // YUYV YUYV(0)
@@ -1486,16 +1486,16 @@ static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *u
 			"punpcklbw %%mm2, %%mm5		\n\t" // YUYV YUYV(8)
 			"punpckhbw %%mm2, %%mm6		\n\t" // YUYV YUYV(12)
 
-			MOVNTQ" %%mm3, (%0, %%eax, 4)	\n\t"
-			MOVNTQ" %%mm4, 8(%0, %%eax, 4)	\n\t"
-			MOVNTQ" %%mm5, 16(%0, %%eax, 4)	\n\t"
-			MOVNTQ" %%mm6, 24(%0, %%eax, 4)	\n\t"
+			MOVNTQ" %%mm3, (%0, %%"REG_a", 4)\n\t"
+			MOVNTQ" %%mm4, 8(%0, %%"REG_a", 4)\n\t"
+			MOVNTQ" %%mm5, 16(%0, %%"REG_a", 4)\n\t"
+			MOVNTQ" %%mm6, 24(%0, %%"REG_a", 4)\n\t"
 
-			"addl $8, %%eax			\n\t"
-			"cmpl %4, %%eax			\n\t"
+			"add $8, %%"REG_a"		\n\t"
+			"cmp %4, %%"REG_a"		\n\t"
 			" jb 1b				\n\t"
-			::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "g" (chromWidth)
-			: "%eax"
+			::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "g" ((long)chromWidth)
+			: "%"REG_a
 		);
 #else
 
@@ -1618,20 +1618,20 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
 #ifdef HAVE_MMX
 //FIXME handle 2 lines a once (fewer prefetch, reuse some chrom, but very likely limited by mem anyway)
 		asm volatile(
-			"xorl %%eax, %%eax		\n\t"
+			"xor %%"REG_a", %%"REG_a"	\n\t"
 			".balign 16			\n\t"
 			"1:				\n\t"
-			PREFETCH" 32(%1, %%eax, 2)	\n\t"
-			PREFETCH" 32(%2, %%eax)		\n\t"
-			PREFETCH" 32(%3, %%eax)		\n\t"
-			"movq (%2, %%eax), %%mm0	\n\t" // U(0)
+			PREFETCH" 32(%1, %%"REG_a", 2)	\n\t"
+			PREFETCH" 32(%2, %%"REG_a")	\n\t"
+			PREFETCH" 32(%3, %%"REG_a")	\n\t"
+			"movq (%2, %%"REG_a"), %%mm0	\n\t" // U(0)
 			"movq %%mm0, %%mm2		\n\t" // U(0)
-			"movq (%3, %%eax), %%mm1	\n\t" // V(0)
+			"movq (%3, %%"REG_a"), %%mm1	\n\t" // V(0)
 			"punpcklbw %%mm1, %%mm0		\n\t" // UVUV UVUV(0)
 			"punpckhbw %%mm1, %%mm2		\n\t" // UVUV UVUV(8)
 
-			"movq (%1, %%eax,2), %%mm3	\n\t" // Y(0)
-			"movq 8(%1, %%eax,2), %%mm5	\n\t" // Y(8)
+			"movq (%1, %%"REG_a",2), %%mm3	\n\t" // Y(0)
+			"movq 8(%1, %%"REG_a",2), %%mm5	\n\t" // Y(8)
 			"movq %%mm0, %%mm4		\n\t" // Y(0)
 			"movq %%mm2, %%mm6		\n\t" // Y(8)
 			"punpcklbw %%mm3, %%mm0		\n\t" // YUYV YUYV(0)
@@ -1639,16 +1639,16 @@ static inline void RENAME(yuvPlanartouyvy)(const uint8_t *ysrc, const uint8_t *u
 			"punpcklbw %%mm5, %%mm2		\n\t" // YUYV YUYV(8)
 			"punpckhbw %%mm5, %%mm6		\n\t" // YUYV YUYV(12)
 
-			MOVNTQ" %%mm0, (%0, %%eax, 4)	\n\t"
-			MOVNTQ" %%mm4, 8(%0, %%eax, 4)	\n\t"
-			MOVNTQ" %%mm2, 16(%0, %%eax, 4)	\n\t"
-			MOVNTQ" %%mm6, 24(%0, %%eax, 4)	\n\t"
+			MOVNTQ" %%mm0, (%0, %%"REG_a", 4)\n\t"
+			MOVNTQ" %%mm4, 8(%0, %%"REG_a", 4)\n\t"
+			MOVNTQ" %%mm2, 16(%0, %%"REG_a", 4)\n\t"
+			MOVNTQ" %%mm6, 24(%0, %%"REG_a", 4)\n\t"
 
-			"addl $8, %%eax			\n\t"
-			"cmpl %4, %%eax			\n\t"
+			"add $8, %%"REG_a"		\n\t"
+			"cmp %4, %%"REG_a"		\n\t"
 			" jb 1b				\n\t"
-			::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "g" (chromWidth)
-			: "%eax"
+			::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "g" ((long)chromWidth)
+			: "%"REG_a
 		);
 #else
 //FIXME adapt the alpha asm code from yv12->yuy2
@@ -1740,14 +1740,14 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 	{
 #ifdef HAVE_MMX
 		asm volatile(
-			"xorl %%eax, %%eax		\n\t"
+			"xor %%"REG_a", %%"REG_a"	\n\t"
 			"pcmpeqw %%mm7, %%mm7		\n\t"
 			"psrlw $8, %%mm7		\n\t" // FF,00,FF,00...
 			".balign 16			\n\t"
 			"1:				\n\t"
-			PREFETCH" 64(%0, %%eax, 4)	\n\t"
-			"movq (%0, %%eax, 4), %%mm0	\n\t" // YUYV YUYV(0)
-			"movq 8(%0, %%eax, 4), %%mm1	\n\t" // YUYV YUYV(4)
+			PREFETCH" 64(%0, %%"REG_a", 4)	\n\t"
+			"movq (%0, %%"REG_a", 4), %%mm0	\n\t" // YUYV YUYV(0)
+			"movq 8(%0, %%"REG_a", 4), %%mm1\n\t" // YUYV YUYV(4)
 			"movq %%mm0, %%mm2		\n\t" // YUYV YUYV(0)
 			"movq %%mm1, %%mm3		\n\t" // YUYV YUYV(4)
 			"psrlw $8, %%mm0		\n\t" // U0V0 U0V0(0)
@@ -1757,10 +1757,10 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 			"packuswb %%mm1, %%mm0		\n\t" // UVUV UVUV(0)
 			"packuswb %%mm3, %%mm2		\n\t" // YYYY YYYY(0)
 
-			MOVNTQ" %%mm2, (%1, %%eax, 2)	\n\t"
+			MOVNTQ" %%mm2, (%1, %%"REG_a", 2)\n\t"
 
-			"movq 16(%0, %%eax, 4), %%mm1	\n\t" // YUYV YUYV(8)
-			"movq 24(%0, %%eax, 4), %%mm2	\n\t" // YUYV YUYV(12)
+			"movq 16(%0, %%"REG_a", 4), %%mm1\n\t" // YUYV YUYV(8)
+			"movq 24(%0, %%"REG_a", 4), %%mm2\n\t" // YUYV YUYV(12)
 			"movq %%mm1, %%mm3		\n\t" // YUYV YUYV(8)
 			"movq %%mm2, %%mm4		\n\t" // YUYV YUYV(12)
 			"psrlw $8, %%mm1		\n\t" // U0V0 U0V0(8)
@@ -1770,7 +1770,7 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 			"packuswb %%mm2, %%mm1		\n\t" // UVUV UVUV(8)
 			"packuswb %%mm4, %%mm3		\n\t" // YYYY YYYY(8)
 
-			MOVNTQ" %%mm3, 8(%1, %%eax, 2)	\n\t"
+			MOVNTQ" %%mm3, 8(%1, %%"REG_a", 2)\n\t"
 
 			"movq %%mm0, %%mm2		\n\t" // UVUV UVUV(0)
 			"movq %%mm1, %%mm3		\n\t" // UVUV UVUV(8)
@@ -1781,28 +1781,28 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 			"packuswb %%mm1, %%mm0		\n\t" // VVVV VVVV(0)
 			"packuswb %%mm3, %%mm2		\n\t" // UUUU UUUU(0)
 
-			MOVNTQ" %%mm0, (%3, %%eax)	\n\t"
-			MOVNTQ" %%mm2, (%2, %%eax)	\n\t"
+			MOVNTQ" %%mm0, (%3, %%"REG_a")	\n\t"
+			MOVNTQ" %%mm2, (%2, %%"REG_a")	\n\t"
 
-			"addl $8, %%eax			\n\t"
-			"cmpl %4, %%eax			\n\t"
+			"add $8, %%"REG_a"		\n\t"
+			"cmp %4, %%"REG_a"		\n\t"
 			" jb 1b				\n\t"
-			::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "g" (chromWidth)
-			: "memory", "%eax"
+			::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "g" ((long)chromWidth)
+			: "memory", "%"REG_a
 		);
 
 		ydst += lumStride;
 		src  += srcStride;
 
 		asm volatile(
-			"xorl %%eax, %%eax		\n\t"
+			"xor %%"REG_a", %%"REG_a"	\n\t"
 			".balign 16			\n\t"
 			"1:				\n\t"
-			PREFETCH" 64(%0, %%eax, 4)	\n\t"
-			"movq (%0, %%eax, 4), %%mm0	\n\t" // YUYV YUYV(0)
-			"movq 8(%0, %%eax, 4), %%mm1	\n\t" // YUYV YUYV(4)
-			"movq 16(%0, %%eax, 4), %%mm2	\n\t" // YUYV YUYV(8)
-			"movq 24(%0, %%eax, 4), %%mm3	\n\t" // YUYV YUYV(12)
+			PREFETCH" 64(%0, %%"REG_a", 4)	\n\t"
+			"movq (%0, %%"REG_a", 4), %%mm0	\n\t" // YUYV YUYV(0)
+			"movq 8(%0, %%"REG_a", 4), %%mm1\n\t" // YUYV YUYV(4)
+			"movq 16(%0, %%"REG_a", 4), %%mm2\n\t" // YUYV YUYV(8)
+			"movq 24(%0, %%"REG_a", 4), %%mm3\n\t" // YUYV YUYV(12)
 			"pand %%mm7, %%mm0		\n\t" // Y0Y0 Y0Y0(0)
 			"pand %%mm7, %%mm1		\n\t" // Y0Y0 Y0Y0(4)
 			"pand %%mm7, %%mm2		\n\t" // Y0Y0 Y0Y0(8)
@@ -1810,15 +1810,15 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
 			"packuswb %%mm1, %%mm0		\n\t" // YYYY YYYY(0)
 			"packuswb %%mm3, %%mm2		\n\t" // YYYY YYYY(8)
 
-			MOVNTQ" %%mm0, (%1, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm2, 8(%1, %%eax, 2)	\n\t"
+			MOVNTQ" %%mm0, (%1, %%"REG_a", 2)\n\t"
+			MOVNTQ" %%mm2, 8(%1, %%"REG_a", 2)\n\t"
 
-			"addl $8, %%eax			\n\t"
-			"cmpl %4, %%eax			\n\t"
+			"add $8, %%"REG_a"		\n\t"
+			"cmp %4, %%"REG_a"		\n\t"
 			" jb 1b				\n\t"
 
-			::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "g" (chromWidth)
-			: "memory", "%eax"
+			::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "g" ((long)chromWidth)
+			: "memory", "%"REG_a
 		);
 #else
 		unsigned i;
@@ -1877,16 +1877,16 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, int srcWid
 
 	for(y=1; y<srcHeight; y++){
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-		const int mmxSize= srcWidth&~15;
+		const long mmxSize= srcWidth&~15;
 		asm volatile(
-			"movl %4, %%eax			\n\t"
+			"mov %4, %%"REG_a"		\n\t"
 			"1:				\n\t"
-			"movq (%0, %%eax), %%mm0	\n\t"
-			"movq (%1, %%eax), %%mm1	\n\t"
-			"movq 1(%0, %%eax), %%mm2	\n\t"
-			"movq 1(%1, %%eax), %%mm3	\n\t"
-			"movq -1(%0, %%eax), %%mm4	\n\t"
-			"movq -1(%1, %%eax), %%mm5	\n\t"
+			"movq (%0, %%"REG_a"), %%mm0	\n\t"
+			"movq (%1, %%"REG_a"), %%mm1	\n\t"
+			"movq 1(%0, %%"REG_a"), %%mm2	\n\t"
+			"movq 1(%1, %%"REG_a"), %%mm3	\n\t"
+			"movq -1(%0, %%"REG_a"), %%mm4	\n\t"
+			"movq -1(%1, %%"REG_a"), %%mm5	\n\t"
 			PAVGB" %%mm0, %%mm5		\n\t"
 			PAVGB" %%mm0, %%mm3		\n\t"
 			PAVGB" %%mm0, %%mm5		\n\t"
@@ -1902,22 +1902,22 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, int srcWid
 			"punpcklbw %%mm2, %%mm4		\n\t"
 			"punpckhbw %%mm2, %%mm6		\n\t"
 #if 1
-			MOVNTQ" %%mm5, (%2, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm7, 8(%2, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm4, (%3, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm6, 8(%3, %%eax, 2)	\n\t"
+			MOVNTQ" %%mm5, (%2, %%"REG_a", 2)\n\t"
+			MOVNTQ" %%mm7, 8(%2, %%"REG_a", 2)\n\t"
+			MOVNTQ" %%mm4, (%3, %%"REG_a", 2)\n\t"
+			MOVNTQ" %%mm6, 8(%3, %%"REG_a", 2)\n\t"
 #else
-			"movq %%mm5, (%2, %%eax, 2)	\n\t"
-			"movq %%mm7, 8(%2, %%eax, 2)	\n\t"
-			"movq %%mm4, (%3, %%eax, 2)	\n\t"
-			"movq %%mm6, 8(%3, %%eax, 2)	\n\t"
+			"movq %%mm5, (%2, %%"REG_a", 2)	\n\t"
+			"movq %%mm7, 8(%2, %%"REG_a", 2)\n\t"
+			"movq %%mm4, (%3, %%"REG_a", 2)	\n\t"
+			"movq %%mm6, 8(%3, %%"REG_a", 2)\n\t"
 #endif
-			"addl $8, %%eax			\n\t"
+			"add $8, %%"REG_a"		\n\t"
 			" js 1b				\n\t"
 			:: "r" (src + mmxSize  ), "r" (src + srcStride + mmxSize  ),
 			   "r" (dst + mmxSize*2), "r" (dst + dstStride + mmxSize*2),
 			   "g" (-mmxSize)
-			: "%eax"
+			: "%"REG_a
 
 		);
 #else
@@ -2107,20 +2107,20 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 		for(i=0; i<2; i++)
 		{
 			asm volatile(
-				"movl %2, %%eax			\n\t"
+				"mov %2, %%"REG_a"		\n\t"
 				"movq "MANGLE(bgr2YCoeff)", %%mm6		\n\t"
 				"movq "MANGLE(w1111)", %%mm5		\n\t"
 				"pxor %%mm7, %%mm7		\n\t"
-				"leal (%%eax, %%eax, 2), %%ebx	\n\t"
+				"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t"
 				".balign 16			\n\t"
 				"1:				\n\t"
-				PREFETCH" 64(%0, %%ebx)		\n\t"
-				"movd (%0, %%ebx), %%mm0	\n\t"
-				"movd 3(%0, %%ebx), %%mm1	\n\t"
+				PREFETCH" 64(%0, %%"REG_b")	\n\t"
+				"movd (%0, %%"REG_b"), %%mm0	\n\t"
+				"movd 3(%0, %%"REG_b"), %%mm1	\n\t"
 				"punpcklbw %%mm7, %%mm0		\n\t"
 				"punpcklbw %%mm7, %%mm1		\n\t"
-				"movd 6(%0, %%ebx), %%mm2	\n\t"
-				"movd 9(%0, %%ebx), %%mm3	\n\t"
+				"movd 6(%0, %%"REG_b"), %%mm2	\n\t"
+				"movd 9(%0, %%"REG_b"), %%mm3	\n\t"
 				"punpcklbw %%mm7, %%mm2		\n\t"
 				"punpcklbw %%mm7, %%mm3		\n\t"
 				"pmaddwd %%mm6, %%mm0		\n\t"
@@ -2140,12 +2140,12 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 				"packssdw %%mm2, %%mm0		\n\t"
 				"psraw $7, %%mm0		\n\t"
 
-				"movd 12(%0, %%ebx), %%mm4	\n\t"
-				"movd 15(%0, %%ebx), %%mm1	\n\t"
+				"movd 12(%0, %%"REG_b"), %%mm4	\n\t"
+				"movd 15(%0, %%"REG_b"), %%mm1	\n\t"
 				"punpcklbw %%mm7, %%mm4		\n\t"
 				"punpcklbw %%mm7, %%mm1		\n\t"
-				"movd 18(%0, %%ebx), %%mm2	\n\t"
-				"movd 21(%0, %%ebx), %%mm3	\n\t"
+				"movd 18(%0, %%"REG_b"), %%mm2	\n\t"
+				"movd 21(%0, %%"REG_b"), %%mm3	\n\t"
 				"punpcklbw %%mm7, %%mm2		\n\t"
 				"punpcklbw %%mm7, %%mm3		\n\t"
 				"pmaddwd %%mm6, %%mm4		\n\t"
@@ -2162,39 +2162,39 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 				"packssdw %%mm3, %%mm2		\n\t"
 				"pmaddwd %%mm5, %%mm4		\n\t"
 				"pmaddwd %%mm5, %%mm2		\n\t"
-				"addl $24, %%ebx		\n\t"
+				"add $24, %%"REG_b"		\n\t"
 				"packssdw %%mm2, %%mm4		\n\t"
 				"psraw $7, %%mm4		\n\t"
 
 				"packuswb %%mm4, %%mm0		\n\t"
 				"paddusb "MANGLE(bgr2YOffset)", %%mm0	\n\t"
 
-				MOVNTQ" %%mm0, (%1, %%eax)	\n\t"
-				"addl $8, %%eax			\n\t"
+				MOVNTQ" %%mm0, (%1, %%"REG_a")	\n\t"
+				"add $8, %%"REG_a"		\n\t"
 				" js 1b				\n\t"
-				: : "r" (src+width*3), "r" (ydst+width), "g" (-width)
-				: "%eax", "%ebx"
+				: : "r" (src+width*3), "r" (ydst+width), "g" ((long)-width)
+				: "%"REG_a, "%"REG_b
 			);
 			ydst += lumStride;
 			src  += srcStride;
 		}
 		src -= srcStride*2;
 		asm volatile(
-			"movl %4, %%eax			\n\t"
+			"mov %4, %%"REG_a"		\n\t"
 			"movq "MANGLE(w1111)", %%mm5		\n\t"
 			"movq "MANGLE(bgr2UCoeff)", %%mm6		\n\t"
 			"pxor %%mm7, %%mm7		\n\t"
-			"leal (%%eax, %%eax, 2), %%ebx	\n\t"
-			"addl %%ebx, %%ebx		\n\t"
+			"lea (%%"REG_a", %%"REG_a", 2), %%"REG_b"\n\t"
+			"add %%"REG_b", %%"REG_b"	\n\t"
 			".balign 16			\n\t"
 			"1:				\n\t"
-			PREFETCH" 64(%0, %%ebx)		\n\t"
-			PREFETCH" 64(%1, %%ebx)		\n\t"
+			PREFETCH" 64(%0, %%"REG_b")	\n\t"
+			PREFETCH" 64(%1, %%"REG_b")	\n\t"
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-			"movq (%0, %%ebx), %%mm0	\n\t"
-			"movq (%1, %%ebx), %%mm1	\n\t"
-			"movq 6(%0, %%ebx), %%mm2	\n\t"
-			"movq 6(%1, %%ebx), %%mm3	\n\t"
+			"movq (%0, %%"REG_b"), %%mm0	\n\t"
+			"movq (%1, %%"REG_b"), %%mm1	\n\t"
+			"movq 6(%0, %%"REG_b"), %%mm2	\n\t"
+			"movq 6(%1, %%"REG_b"), %%mm3	\n\t"
 			PAVGB" %%mm1, %%mm0		\n\t"
 			PAVGB" %%mm3, %%mm2		\n\t"
 			"movq %%mm0, %%mm1		\n\t"
@@ -2206,10 +2206,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"punpcklbw %%mm7, %%mm0		\n\t"
 			"punpcklbw %%mm7, %%mm2		\n\t"
 #else
-			"movd (%0, %%ebx), %%mm0	\n\t"
-			"movd (%1, %%ebx), %%mm1	\n\t"
-			"movd 3(%0, %%ebx), %%mm2	\n\t"
-			"movd 3(%1, %%ebx), %%mm3	\n\t"
+			"movd (%0, %%"REG_b"), %%mm0	\n\t"
+			"movd (%1, %%"REG_b"), %%mm1	\n\t"
+			"movd 3(%0, %%"REG_b"), %%mm2	\n\t"
+			"movd 3(%1, %%"REG_b"), %%mm3	\n\t"
 			"punpcklbw %%mm7, %%mm0		\n\t"
 			"punpcklbw %%mm7, %%mm1		\n\t"
 			"punpcklbw %%mm7, %%mm2		\n\t"
@@ -2217,10 +2217,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"paddw %%mm1, %%mm0		\n\t"
 			"paddw %%mm3, %%mm2		\n\t"
 			"paddw %%mm2, %%mm0		\n\t"
-			"movd 6(%0, %%ebx), %%mm4	\n\t"
-			"movd 6(%1, %%ebx), %%mm1	\n\t"
-			"movd 9(%0, %%ebx), %%mm2	\n\t"
-			"movd 9(%1, %%ebx), %%mm3	\n\t"
+			"movd 6(%0, %%"REG_b"), %%mm4	\n\t"
+			"movd 6(%1, %%"REG_b"), %%mm1	\n\t"
+			"movd 9(%0, %%"REG_b"), %%mm2	\n\t"
+			"movd 9(%1, %%"REG_b"), %%mm3	\n\t"
 			"punpcklbw %%mm7, %%mm4		\n\t"
 			"punpcklbw %%mm7, %%mm1		\n\t"
 			"punpcklbw %%mm7, %%mm2		\n\t"
@@ -2252,10 +2252,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"psraw $7, %%mm0		\n\t"
 
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-			"movq 12(%0, %%ebx), %%mm4	\n\t"
-			"movq 12(%1, %%ebx), %%mm1	\n\t"
-			"movq 18(%0, %%ebx), %%mm2	\n\t"
-			"movq 18(%1, %%ebx), %%mm3	\n\t"
+			"movq 12(%0, %%"REG_b"), %%mm4	\n\t"
+			"movq 12(%1, %%"REG_b"), %%mm1	\n\t"
+			"movq 18(%0, %%"REG_b"), %%mm2	\n\t"
+			"movq 18(%1, %%"REG_b"), %%mm3	\n\t"
 			PAVGB" %%mm1, %%mm4		\n\t"
 			PAVGB" %%mm3, %%mm2		\n\t"
 			"movq %%mm4, %%mm1		\n\t"
@@ -2267,10 +2267,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"punpcklbw %%mm7, %%mm4		\n\t"
 			"punpcklbw %%mm7, %%mm2		\n\t"
 #else
-			"movd 12(%0, %%ebx), %%mm4	\n\t"
-			"movd 12(%1, %%ebx), %%mm1	\n\t"
-			"movd 15(%0, %%ebx), %%mm2	\n\t"
-			"movd 15(%1, %%ebx), %%mm3	\n\t"
+			"movd 12(%0, %%"REG_b"), %%mm4	\n\t"
+			"movd 12(%1, %%"REG_b"), %%mm1	\n\t"
+			"movd 15(%0, %%"REG_b"), %%mm2	\n\t"
+			"movd 15(%1, %%"REG_b"), %%mm3	\n\t"
 			"punpcklbw %%mm7, %%mm4		\n\t"
 			"punpcklbw %%mm7, %%mm1		\n\t"
 			"punpcklbw %%mm7, %%mm2		\n\t"
@@ -2278,10 +2278,10 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"paddw %%mm1, %%mm4		\n\t"
 			"paddw %%mm3, %%mm2		\n\t"
 			"paddw %%mm2, %%mm4		\n\t"
-			"movd 18(%0, %%ebx), %%mm5	\n\t"
-			"movd 18(%1, %%ebx), %%mm1	\n\t"
-			"movd 21(%0, %%ebx), %%mm2	\n\t"
-			"movd 21(%1, %%ebx), %%mm3	\n\t"
+			"movd 18(%0, %%"REG_b"), %%mm5	\n\t"
+			"movd 18(%1, %%"REG_b"), %%mm1	\n\t"
+			"movd 21(%0, %%"REG_b"), %%mm2	\n\t"
+			"movd 21(%1, %%"REG_b"), %%mm3	\n\t"
 			"punpcklbw %%mm7, %%mm5		\n\t"
 			"punpcklbw %%mm7, %%mm1		\n\t"
 			"punpcklbw %%mm7, %%mm2		\n\t"
@@ -2310,7 +2310,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"packssdw %%mm3, %%mm1		\n\t"
 			"pmaddwd %%mm5, %%mm4		\n\t"
 			"pmaddwd %%mm5, %%mm1		\n\t"
-			"addl $24, %%ebx		\n\t"
+			"add $24, %%"REG_b"		\n\t"
 			"packssdw %%mm1, %%mm4		\n\t" // V3 V2 U3 U2
 			"psraw $7, %%mm4		\n\t"
 
@@ -2319,14 +2319,13 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"punpckhdq %%mm4, %%mm1		\n\t"
 			"packsswb %%mm1, %%mm0		\n\t"
 			"paddb "MANGLE(bgr2UVOffset)", %%mm0	\n\t"
-
-			"movd %%mm0, (%2, %%eax)	\n\t"
+			"movd %%mm0, (%2, %%"REG_a")	\n\t"
 			"punpckhdq %%mm0, %%mm0		\n\t"
-			"movd %%mm0, (%3, %%eax)	\n\t"
-			"addl $4, %%eax			\n\t"
+			"movd %%mm0, (%3, %%"REG_a")	\n\t"
+			"add $4, %%"REG_a"		\n\t"
 			" js 1b				\n\t"
-			: : "r" (src+chromWidth*6), "r" (src+srcStride+chromWidth*6), "r" (udst+chromWidth), "r" (vdst+chromWidth), "g" (-chromWidth)
-			: "%eax", "%ebx"
+			: : "r" (src+chromWidth*6), "r" (src+srcStride+chromWidth*6), "r" (udst+chromWidth), "r" (vdst+chromWidth), "g" ((long)-chromWidth)
+			: "%"REG_a, "%"REG_b
 		);
 
 		udst += chromStride;
@@ -2403,48 +2402,48 @@ void RENAME(interleaveBytes)(uint8_t *src1, uint8_t *src2, uint8_t *dest,
 #ifdef HAVE_MMX
 #ifdef HAVE_SSE2
 		asm(
-			"xorl %%eax, %%eax		\n\t"
+			"xor %%"REG_a", %%"REG_a"	\n\t"
 			"1:				\n\t"
-			PREFETCH" 64(%1, %%eax)		\n\t"
-			PREFETCH" 64(%2, %%eax)		\n\t"
-			"movdqa (%1, %%eax), %%xmm0	\n\t"
-			"movdqa (%1, %%eax), %%xmm1	\n\t"
-			"movdqa (%2, %%eax), %%xmm2	\n\t"
+			PREFETCH" 64(%1, %%"REG_a")	\n\t"
+			PREFETCH" 64(%2, %%"REG_a")	\n\t"
+			"movdqa (%1, %%"REG_a"), %%xmm0	\n\t"
+			"movdqa (%1, %%"REG_a"), %%xmm1	\n\t"
+			"movdqa (%2, %%"REG_a"), %%xmm2	\n\t"
 			"punpcklbw %%xmm2, %%xmm0	\n\t"
 			"punpckhbw %%xmm2, %%xmm1	\n\t"
-			"movntdq %%xmm0, (%0, %%eax, 2)	\n\t"
-			"movntdq %%xmm1, 16(%0, %%eax, 2)\n\t"
-			"addl $16, %%eax			\n\t"
-			"cmpl %3, %%eax			\n\t"
+			"movntdq %%xmm0, (%0, %%"REG_a", 2)\n\t"
+			"movntdq %%xmm1, 16(%0, %%"REG_a", 2)\n\t"
+			"add $16, %%"REG_a"		\n\t"
+			"cmp %3, %%"REG_a"		\n\t"
 			" jb 1b				\n\t"
-			::"r"(dest), "r"(src1), "r"(src2), "r" (width-15)
-			: "memory", "%eax"
+			::"r"(dest), "r"(src1), "r"(src2), "r" ((long)width-15)
+			: "memory", "%"REG_a""
 		);
 #else
 		asm(
-			"xorl %%eax, %%eax		\n\t"
+			"xor %%"REG_a", %%"REG_a"	\n\t"
 			"1:				\n\t"
-			PREFETCH" 64(%1, %%eax)		\n\t"
-			PREFETCH" 64(%2, %%eax)		\n\t"
-			"movq (%1, %%eax), %%mm0	\n\t"
-			"movq 8(%1, %%eax), %%mm2	\n\t"
+			PREFETCH" 64(%1, %%"REG_a")	\n\t"
+			PREFETCH" 64(%2, %%"REG_a")	\n\t"
+			"movq (%1, %%"REG_a"), %%mm0	\n\t"
+			"movq 8(%1, %%"REG_a"), %%mm2	\n\t"
 			"movq %%mm0, %%mm1		\n\t"
 			"movq %%mm2, %%mm3		\n\t"
-			"movq (%2, %%eax), %%mm4	\n\t"
-			"movq 8(%2, %%eax), %%mm5	\n\t"
+			"movq (%2, %%"REG_a"), %%mm4	\n\t"
+			"movq 8(%2, %%"REG_a"), %%mm5	\n\t"
 			"punpcklbw %%mm4, %%mm0		\n\t"
 			"punpckhbw %%mm4, %%mm1		\n\t"
 			"punpcklbw %%mm5, %%mm2		\n\t"
 			"punpckhbw %%mm5, %%mm3		\n\t"
-			MOVNTQ" %%mm0, (%0, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm1, 8(%0, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm2, 16(%0, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm3, 24(%0, %%eax, 2)	\n\t"
-			"addl $16, %%eax			\n\t"
-			"cmpl %3, %%eax			\n\t"
+			MOVNTQ" %%mm0, (%0, %%"REG_a", 2)\n\t"
+			MOVNTQ" %%mm1, 8(%0, %%"REG_a", 2)\n\t"
+			MOVNTQ" %%mm2, 16(%0, %%"REG_a", 2)\n\t"
+			MOVNTQ" %%mm3, 24(%0, %%"REG_a", 2)\n\t"
+			"add $16, %%"REG_a"		\n\t"
+			"cmp %3, %%"REG_a"		\n\t"
 			" jb 1b				\n\t"
-			::"r"(dest), "r"(src1), "r"(src2), "r" (width-15)
-			: "memory", "%eax"
+			::"r"(dest), "r"(src1), "r"(src2), "r" ((long)width-15)
+			: "memory", "%"REG_a
 		);
 #endif
 		for(w= (width&(~15)); w < width; w++)
@@ -2582,7 +2581,7 @@ static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2
 			int srcStride1, int srcStride2,
 			int srcStride3, int dstStride)
 {
-    unsigned y,x,w,h;
+    unsigned long y,x,w,h;
     w=width/2; h=height;
     for(y=0;y<h;y++){
 	const uint8_t* yp=src1+srcStride1*y;

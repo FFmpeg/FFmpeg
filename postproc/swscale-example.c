@@ -104,7 +104,7 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 	sws_scale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
 	sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
 
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 	asm volatile ("emms\n\t");
 #endif
 	     
@@ -199,14 +199,14 @@ int main(int argc, char **argv){
 			rgb_data[ x + y*4*W]= random();
 		}
 	}
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 	sws_rgb2rgb_init(SWS_CPU_CAPS_MMX*0);
 #else
 	sws_rgb2rgb_init(0);
 #endif
 	sws_scale(sws, rgb_src, rgb_stride, 0, H   , src, stride);
 
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 	asm volatile ("emms\n\t");
 #endif
 

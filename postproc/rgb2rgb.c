@@ -11,6 +11,7 @@
 #include "../config.h"
 #include "rgb2rgb.h"
 #include "swscale.h"
+#include "../cpudetect.h"
 #include "../mangle.h"
 #include "../bswap.h"
 #include "../libvo/fastmemcpy.h"
@@ -68,7 +69,7 @@ void (*yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint8_t *sr
 			int srcStride1, int srcStride2,
 			int srcStride3, int dstStride);
 
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 static const uint64_t mmx_null  __attribute__((aligned(8))) = 0x0000000000000000ULL;
 static const uint64_t mmx_one   __attribute__((aligned(8))) = 0xFFFFFFFFFFFFFFFFULL;
 static const uint64_t mask32b  attribute_used __attribute__((aligned(8))) = 0x000000FF000000FFULL;
@@ -152,7 +153,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 #define RENAME(a) a ## _C
 #include "rgb2rgb_template.c"
 
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 
 //MMX versions
 #undef RENAME
@@ -181,7 +182,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 #define RENAME(a) a ## _3DNOW
 #include "rgb2rgb_template.c"
 
-#endif //ARCH_X86
+#endif //ARCH_X86 || ARCH_X86_64
 
 /*
  rgb15->rgb16 Original by Strepto/Astral
@@ -191,7 +192,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 */
 
 void sws_rgb2rgb_init(int flags){
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 	if(flags & SWS_CPU_CAPS_MMX2){
 		rgb15to16= rgb15to16_MMX2;
 		rgb15to24= rgb15to24_MMX2;

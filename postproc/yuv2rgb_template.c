@@ -143,7 +143,7 @@ static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* src[], int srcStr
 	uint8_t *_py = src[0] + y*srcStride[0];
 	uint8_t *_pu = src[1] + (y>>1)*srcStride[1];
 	uint8_t *_pv = src[2] + (y>>1)*srcStride[2];
-	int index= -h_size/2;
+	long index= -h_size/2;
 
 	b5Dither= dither8[y&1];
 	g6Dither= dither4[y&1];
@@ -204,8 +204,8 @@ YUV2RGB
 
 		     MOVNTQ " %%mm5, 8 (%1);" /* store pixel 4-7 */
 		     
-		     "addl $16, %1			\n\t"
-		     "addl $4, %0			\n\t"
+		     "add $16, %1			\n\t"
+		     "add $4, %0			\n\t"
 		     " js 1b				\n\t"
 		     
 		     : "+r" (index), "+r" (_image)
@@ -238,7 +238,7 @@ static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* src[], int srcStr
 	uint8_t *_py = src[0] + y*srcStride[0];
 	uint8_t *_pu = src[1] + (y>>1)*srcStride[1];
 	uint8_t *_pv = src[2] + (y>>1)*srcStride[2];
-	int index= -h_size/2;
+	long index= -h_size/2;
 
 	b5Dither= dither8[y&1];
 	g6Dither= dither4[y&1];
@@ -295,8 +295,8 @@ YUV2RGB
 
 		     MOVNTQ " %%mm5, 8 (%1);" /* store pixel 4-7 */
 		     
-		     "addl $16, %1			\n\t"
-		     "addl $4, %0			\n\t"
+		     "add $16, %1			\n\t"
+		     "add $4, %0			\n\t"
 		     " js 1b				\n\t"
 		     : "+r" (index), "+r" (_image)
 		     : "r" (_pu - index), "r" (_pv - index), "r"(&c->redDither), "r" (_py - 2*index)
@@ -326,7 +326,7 @@ static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* src[], int srcStr
 	uint8_t *_py = src[0] + y*srcStride[0];
 	uint8_t *_pu = src[1] + (y>>1)*srcStride[1];
 	uint8_t *_pv = src[2] + (y>>1)*srcStride[2];
-	int index= -h_size/2;
+	long index= -h_size/2;
 
 	    /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
 	       pixels in each iteration */
@@ -440,8 +440,8 @@ YUV2RGB
 			"pxor %%mm4, %%mm4		\n\t"
 #endif
 		     
-		     "addl $24, %1			\n\t"
-		     "addl $4, %0			\n\t"
+		     "add $24, %1			\n\t"
+		     "add $4, %0			\n\t"
 		     " js 1b				\n\t"
 		     
 		     : "+r" (index), "+r" (_image)
@@ -472,7 +472,7 @@ static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* src[], int srcStr
 	uint8_t *_py = src[0] + y*srcStride[0];
 	uint8_t *_pu = src[1] + (y>>1)*srcStride[1];
 	uint8_t *_pv = src[2] + (y>>1)*srcStride[2];
-	int index= -h_size/2;
+	long index= -h_size/2;
 
 	    /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
 	       pixels in each iteration */
@@ -526,8 +526,8 @@ YUV2RGB
 		     "pxor %%mm4, %%mm4;" /* zero mm4 */
 		     "movq 8 (%5, %0, 2), %%mm6;" /* Load 8 Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
 
-		     "addl $32, %1			\n\t"
-		     "addl $4, %0			\n\t"
+		     "add $32, %1			\n\t"
+		     "add $4, %0			\n\t"
 		     " js 1b				\n\t"
 		     
 		     : "+r" (index), "+r" (_image)
