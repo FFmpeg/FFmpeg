@@ -2633,12 +2633,12 @@ static int svq1_decode_frame(AVCodecContext *avctx,
       }
     }
 
+    pict->data[i] = s->current_picture[i];
+    pict->linesize[i] = width;
     /* update backward reference frame */
-    if (!s->hurry_up)
+    if (s->pict_type != SVQ1_FRAME_DROPPABLE)
     {
 	uint8_t *tmp = s->last_picture[i];
-	pict->data[i] = s->current_picture[i];
-	pict->linesize[i] = width;
 	s->last_picture[i] = s->current_picture[i];
 	s->current_picture[i] = tmp;
     }
