@@ -121,7 +121,7 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size){
         return buf_size; 
     }else{
         if(pos==0) pos=1; //avoid infinite loops (i doubt thats needed but ...)
-        if(pos>buf_size) pos=buf_size; // oops ;)
+        if(pos+10>buf_size) pos=buf_size; // oops ;)
 
         return pos;
     }
