@@ -260,7 +260,7 @@ static int fourxm_read_packet(AVFormatContext *s,
         fourcc_tag = LE_32(&header[0]);
         size = LE_32(&header[4]);
         if (url_feof(pb))
-            return -EIO;
+            return AVERROR_IO;
         switch (fourcc_tag) {
 
         case LIST_TAG:
@@ -278,7 +278,7 @@ static int fourxm_read_packet(AVFormatContext *s,
             /* allocate 8 more bytes than 'size' to account for fourcc
              * and size */
             if (av_new_packet(pkt, size + 8))
-                return -EIO;
+                return AVERROR_IO;
             pkt->stream_index = fourxm->video_stream_index;
             pkt->pts = fourxm->video_pts;
             memcpy(pkt->data, header, 8);
@@ -298,7 +298,7 @@ static int fourxm_read_packet(AVFormatContext *s,
 
             if (track_number == fourxm->selected_track) {
                 if (av_new_packet(pkt, size))
-                    return -EIO;
+                    return AVERROR_IO;
                 pkt->stream_index = 
                     fourxm->tracks[fourxm->selected_track].stream_index;
                 pkt->pts = fourxm->audio_pts;

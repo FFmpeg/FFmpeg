@@ -116,7 +116,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     if (hd)
         url_close(hd);
     av_free(s);
-    return -EIO;
+    return AVERROR_IO;
 }
 
 static int http_getc(HTTPContext *s)
@@ -125,7 +125,7 @@ static int http_getc(HTTPContext *s)
     if (s->buf_ptr >= s->buf_end) {
         len = url_read(s->hd, s->buffer, BUFFER_SIZE);
         if (len < 0) {
-            return -EIO;
+            return AVERROR_IO;
         } else if (len == 0) {
             return -1;
         } else {
@@ -194,7 +194,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr)
              hoststr);
     
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
-        return -EIO;
+        return AVERROR_IO;
         
     /* init input buffer */
     s->buf_ptr = s->buffer;
@@ -211,7 +211,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr)
     for(;;) {
         ch = http_getc(s);
         if (ch < 0)
-            return -EIO;
+            return AVERROR_IO;
         if (ch == '\n') {
             /* process line */
             if (q > line && q[-1] == '\r')

@@ -270,7 +270,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (video_fd >= 0)
         close(video_fd);
     av_free(st);
-    return -EIO;
+    return AVERROR_IO;
 }
 
 static int v4l_mm_read_picture(VideoData *s, uint8_t *buf)
@@ -290,7 +290,7 @@ static int v4l_mm_read_picture(VideoData *s, uint8_t *buf)
             av_log(NULL, AV_LOG_ERROR, "Cannot Sync\n");
         else
             perror("VIDIOCMCAPTURE");
-        return -EIO;
+        return AVERROR_IO;
     }
 
     /* This is now the grabbing frame */
@@ -325,7 +325,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     }
 
     if (av_new_packet(pkt, s->frame_size) < 0)
-        return -EIO;
+        return AVERROR_IO;
 
     pkt->pts = curtime & ((1LL << 48) - 1);
 
@@ -336,7 +336,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
         return v4l_mm_read_picture(s, pkt->data);
     } else {
         if (read(s->fd, pkt->data, pkt->size) != pkt->size)
-            return -EIO;
+            return AVERROR_IO;
         return s->frame_size;
     }
 }

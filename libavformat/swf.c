@@ -795,7 +795,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     s->priv_data = swf;
 
     if ((get_be32(pb) & 0xffffff00) != MKBETAG('F', 'W', 'S', 0))
-        return -EIO;
+        return AVERROR_IO;
     get_le32(pb);
     /* skip rectangle size */
     nbits = get_byte(pb) >> 3;
@@ -823,7 +823,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 break;
             }
             av_log(s, AV_LOG_ERROR, "No media found in SWF\n");
-            return -EIO;
+            return AVERROR_IO;
         }
         if ( tag == TAG_VIDEOSTREAM && !vst) {
             swf->ch_id = get_le16(pb);
@@ -877,7 +877,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     break;
                 default:
                     av_free(ast);
-                    return -EIO;
+                    return AVERROR_IO;
                 }
                 ast->codec.codec_type = CODEC_TYPE_AUDIO;
                 ast->codec.codec_id = CODEC_ID_MP3;
@@ -901,7 +901,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
     for(;;) {
         tag = get_swf_tag(pb, &len);
         if (tag < 0) 
-            return -EIO;
+            return AVERROR_IO;
         if (tag == TAG_VIDEOFRAME) {
             for( i=0; i<s->nb_streams; i++ ) {
         	st = s->streams[i];

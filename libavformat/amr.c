@@ -140,7 +140,7 @@ static int amr_read_packet(AVFormatContext *s,
     
         if (url_feof(&s->pb))
         {
-            return -EIO;
+            return AVERROR_IO;
         }
     
         toc=get_byte(&s->pb);
@@ -151,7 +151,7 @@ static int amr_read_packet(AVFormatContext *s,
     
         if (av_new_packet(pkt, size+1))
         {
-            return -EIO;
+            return AVERROR_IO;
         }
         pkt->stream_index = 0;
         
@@ -162,7 +162,7 @@ static int amr_read_packet(AVFormatContext *s,
         if (read != size)
         {
             av_free_packet(pkt);
-            return -EIO;
+            return AVERROR_IO;
         }
     
         return 0;
@@ -176,7 +176,7 @@ static int amr_read_packet(AVFormatContext *s,
     
         if (url_feof(&s->pb))
         {
-            return -EIO;
+            return AVERROR_IO;
         }
     
         toc=get_byte(&s->pb);
@@ -185,7 +185,7 @@ static int amr_read_packet(AVFormatContext *s,
     
         if ( (size==0) || av_new_packet(pkt, size))
         {
-            return -EIO;
+            return AVERROR_IO;
         }
     
         pkt->stream_index = 0;
@@ -196,14 +196,14 @@ static int amr_read_packet(AVFormatContext *s,
         if (read != (size-1))
         {
             av_free_packet(pkt);
-            return -EIO;
+            return AVERROR_IO;
         }
     
         return 0;
     }
     else
     {
-        return -EIO;
+        return AVERROR_IO;
     }
 }
 

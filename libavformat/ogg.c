@@ -176,7 +176,7 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
     buf = ogg_sync_buffer(&context->oy, DECODER_BUFFER_SIZE) ;
 
     if(get_buffer(&avfcontext->pb, buf, DECODER_BUFFER_SIZE) <= 0)
-	return -EIO ;
+	return AVERROR_IO ;
     
     ogg_sync_wrote(&context->oy, DECODER_BUFFER_SIZE) ;   
     ogg_sync_pageout(&context->oy, &og) ;
@@ -213,9 +213,9 @@ static int ogg_read_packet(AVFormatContext *avfcontext, AVPacket *pkt) {
     ogg_packet op ;
 
     if(next_packet(avfcontext, &op)) 
-	return -EIO ;
+	return AVERROR_IO ;
     if(av_new_packet(pkt, op.bytes) < 0)
-	return -EIO ;
+	return AVERROR_IO ;
     pkt->stream_index = 0 ;
     memcpy(pkt->data, op.packet, op.bytes);
     if(avfcontext->streams[0]->codec.sample_rate && op.granulepos!=-1)

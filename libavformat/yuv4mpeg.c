@@ -77,7 +77,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
         *first_pkt = 0;
 	if (yuv4_generate_header(s, buf2) < 0) {
 	    av_log(s, AV_LOG_ERROR, "Error. YUV4MPEG stream header write failed.\n");
-	    return -EIO;
+	    return AVERROR_IO;
 	} else {
 	    put_buffer(pb, buf2, strlen(buf2)); 
 	}
@@ -118,14 +118,14 @@ static int yuv4_write_header(AVFormatContext *s)
     int* first_pkt = s->priv_data;
     
     if (s->nb_streams != 1)
-        return -EIO;
+        return AVERROR_IO;
     
     if (s->streams[0]->codec.pix_fmt == PIX_FMT_YUV411P) {
         av_log(s, AV_LOG_ERROR, "Warning: generating non-standard 4:1:1 YUV stream, some mjpegtools might not work.\n");
     } 
     else if (s->streams[0]->codec.pix_fmt != PIX_FMT_YUV420P) {
         av_log(s, AV_LOG_ERROR, "ERROR: yuv4mpeg only handles 4:2:0, 4:1:1 YUV data. Use -pix_fmt to select one.\n");
-	return -EIO;
+	return AVERROR_IO;
     }
     
     *first_pkt = 1;
@@ -217,13 +217,13 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_abort();
 
     if (av_new_packet(pkt, packet_size) < 0)
-        return -EIO;
+        return AVERROR_IO;
 
     pkt->stream_index = 0;
     ret = get_buffer(&s->pb, pkt->data, pkt->size);
     if (ret != pkt->size) {
         av_free_packet(pkt);
-        return -EIO;
+        return AVERROR_IO;
     } else {
         return 0;
     }

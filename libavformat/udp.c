@@ -64,7 +64,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
 
     /* set the destination address */
     if (resolve_host(&s->dest_addr.sin_addr, hostname) < 0)
-        return -EIO;
+        return AVERROR_IO;
     s->dest_addr.sin_family = AF_INET;
     s->dest_addr.sin_port = htons(port);
     return 0;
@@ -206,7 +206,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         close(udp_fd);
 #endif
     av_free(s);
-    return -EIO;
+    return AVERROR_IO;
 }
 
 static int udp_read(URLContext *h, uint8_t *buf, int size)
@@ -221,7 +221,7 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
                         (struct sockaddr *)&from, &from_len);
         if (len < 0) {
             if (errno != EAGAIN && errno != EINTR)
-                return -EIO;
+                return AVERROR_IO;
         } else {
             break;
         }
@@ -240,7 +240,7 @@ static int udp_write(URLContext *h, uint8_t *buf, int size)
                       sizeof (s->dest_addr));
         if (ret < 0) {
             if (errno != EINTR && errno != EAGAIN)
-                return -EIO;
+                return AVERROR_IO;
         } else {
             break;
         }

@@ -150,7 +150,7 @@ static int wc3_read_header(AVFormatContext *s,
      * the first BRCH tag */
     if ((ret = get_buffer(pb, preamble, WC3_PREAMBLE_SIZE)) != 
         WC3_PREAMBLE_SIZE)
-        return -EIO;
+        return AVERROR_IO;
     fourcc_tag = LE_32(&preamble[0]);
     size = (BE_32(&preamble[4]) + 1) & (~1);
 
@@ -167,7 +167,7 @@ static int wc3_read_header(AVFormatContext *s,
             /* need the number of palettes */
             url_fseek(pb, 8, SEEK_CUR);
             if ((ret = get_buffer(pb, preamble, 4)) != 4)
-                return -EIO;
+                return AVERROR_IO;
             wc3->palette_count = LE_32(&preamble[0]);
             wc3->palettes = av_malloc(wc3->palette_count * PALETTE_SIZE);
             break;
@@ -179,14 +179,14 @@ static int wc3_read_header(AVFormatContext *s,
             else
                 bytes_to_read = 512;
             if ((ret = get_buffer(pb, s->title, bytes_to_read)) != bytes_to_read)
-                return -EIO;
+                return AVERROR_IO;
             break;
 
         case SIZE_TAG:
             /* video resolution override */
             if ((ret = get_buffer(pb, preamble, WC3_PREAMBLE_SIZE)) != 
                 WC3_PREAMBLE_SIZE)
-                return -EIO;
+                return AVERROR_IO;
             wc3->width = LE_32(&preamble[0]);
             wc3->height = LE_32(&preamble[4]);
             break;
@@ -198,7 +198,7 @@ static int wc3_read_header(AVFormatContext *s,
             if ((ret = get_buffer(pb, 
                 &wc3->palettes[current_palette * PALETTE_SIZE], 
                 PALETTE_SIZE)) != PALETTE_SIZE)
-                return -EIO;
+                return AVERROR_IO;
 
             /* transform the current palette in place */
             for (i = current_palette * PALETTE_SIZE;
@@ -222,7 +222,7 @@ static int wc3_read_header(AVFormatContext *s,
 
         if ((ret = get_buffer(pb, preamble, WC3_PREAMBLE_SIZE)) != 
             WC3_PREAMBLE_SIZE)
-            return -EIO;
+            return AVERROR_IO;
         fourcc_tag = LE_32(&preamble[0]);
         /* chunk sizes are 16-bit aligned */
         size = (BE_32(&preamble[4]) + 1) & (~1);
@@ -283,7 +283,7 @@ static int wc3_read_packet(AVFormatContext *s,
         /* get the next chunk preamble */
         if ((ret = get_buffer(pb, preamble, WC3_PREAMBLE_SIZE)) !=
             WC3_PREAMBLE_SIZE)
-            ret = -EIO;
+            ret = AVERROR_IO;
 
         fourcc_tag = LE_32(&preamble[0]);
         /* chunk sizes are 16-bit aligned */
@@ -298,7 +298,7 @@ static int wc3_read_packet(AVFormatContext *s,
         case SHOT_TAG:
             /* load up new palette */
             if ((ret = get_buffer(pb, preamble, 4)) != 4)
-                return -EIO;
+                return AVERROR_IO;
             palette_number = LE_32(&preamble[0]);
             if (palette_number >= wc3->palette_count)
                 return AVERROR_INVALIDDATA;
@@ -315,12 +315,12 @@ static int wc3_read_packet(AVFormatContext *s,
         case VGA__TAG:
             /* send out video chunk */
             if (av_new_packet(pkt, size))
-                ret = -EIO;
+                ret = AVERROR_IO;
             pkt->stream_index = wc3->video_stream_index;
             pkt->pts = wc3->pts;
             ret = get_buffer(pb, pkt->data, size);
             if (ret != size)
-                ret = -EIO;
+                ret = AVERROR_IO;
             packet_read = 1;
             break;
 
@@ -330,7 +330,7 @@ static int wc3_read_packet(AVFormatContext *s,
             url_fseek(pb, size, SEEK_CUR);
 #else
             if ((ret = get_buffer(pb, text, size)) != size)
-                ret = -EIO;
+                ret = AVERROR_IO;
             else {
                 int i = 0;
                 av_log (s, AV_LOG_DEBUG, "Subtitle time!\n");
@@ -346,12 +346,12 @@ static int wc3_read_packet(AVFormatContext *s,
         case AUDI_TAG:
             /* send out audio chunk */
             if (av_new_packet(pkt, size))
-                ret = -EIO;
+                ret = AVERROR_IO;
             pkt->stream_index = wc3->audio_stream_index;
             pkt->pts = wc3->pts;
             ret = get_buffer(pb, pkt->data, size);
             if (ret != size)
-                ret = -EIO;
+                ret = AVERROR_IO;
 
             /* time to advance pts */
             wc3->pts += WC3_FRAME_PTS_INC;

@@ -187,12 +187,12 @@ static int roq_read_packet(AVFormatContext *s,
     while (!packet_read) {
 
         if (url_feof(&s->pb))
-            return -EIO;
+            return AVERROR_IO;
 
         /* get the next chunk preamble */
         if ((ret = get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE)) != 
             RoQ_CHUNK_PREAMBLE_SIZE)
-            return -EIO;
+            return AVERROR_IO;
 
         chunk_type = LE_16(&preamble[0]);
         chunk_size = LE_32(&preamble[2]);
@@ -211,7 +211,7 @@ static int roq_read_packet(AVFormatContext *s,
             url_fseek(pb, codebook_size, SEEK_CUR);
             if (get_buffer(pb, preamble, RoQ_CHUNK_PREAMBLE_SIZE) != 
                 RoQ_CHUNK_PREAMBLE_SIZE)
-                return -EIO;
+                return AVERROR_IO;
             chunk_size = LE_32(&preamble[2]) + RoQ_CHUNK_PREAMBLE_SIZE * 2 + 
                 codebook_size;
 
@@ -220,12 +220,12 @@ static int roq_read_packet(AVFormatContext *s,
 
             /* load up the packet */
             if (av_new_packet(pkt, chunk_size))
-                return -EIO;
+                return AVERROR_IO;
             pkt->stream_index = roq->video_stream_index;
             pkt->pts = roq->video_pts;
             ret = get_buffer(pb, pkt->data, chunk_size);
             if (ret != chunk_size)
-                ret = -EIO;
+                ret = AVERROR_IO;
 
             roq->video_pts += roq->frame_pts_inc;
             packet_read = 1;
@@ -236,7 +236,7 @@ static int roq_read_packet(AVFormatContext *s,
         case RoQ_QUAD_VQ:
             /* load up the packet */
             if (av_new_packet(pkt, chunk_size + RoQ_CHUNK_PREAMBLE_SIZE))
-                return -EIO;
+                return AVERROR_IO;
             /* copy over preamble */
             memcpy(pkt->data, preamble, RoQ_CHUNK_PREAMBLE_SIZE);
 
@@ -255,7 +255,7 @@ static int roq_read_packet(AVFormatContext *s,
             ret = get_buffer(pb, pkt->data + RoQ_CHUNK_PREAMBLE_SIZE,
                 chunk_size);
             if (ret != chunk_size)
-                ret = -EIO;
+                ret = AVERROR_IO;
 
             packet_read = 1;
             break;

@@ -159,9 +159,9 @@ static int au_read_packet(AVFormatContext *s,
     int ret;
 
     if (url_feof(&s->pb))
-        return -EIO;
+        return AVERROR_IO;
     if (av_new_packet(pkt, MAX_SIZE))
-        return -EIO;
+        return AVERROR_IO;
     pkt->stream_index = 0;
 
     ret = get_buffer(&s->pb, pkt->data, pkt->size);

@@ -298,13 +298,13 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     size= MP3_PACKET_SIZE;
 
     if (av_new_packet(pkt, size) < 0)
-        return -EIO;
+        return AVERROR_IO;
 
     pkt->stream_index = 0;
     ret = get_buffer(&s->pb, pkt->data, size);
     if (ret <= 0) {
         av_free_packet(pkt);
-        return -EIO;
+        return AVERROR_IO;
     }
     /* note: we need to modify the packet size here to handle the last
        packet */

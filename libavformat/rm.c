@@ -563,7 +563,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         /* very old .ra format */
         return rm_read_header_old(s, ap);
     } else if (tag != MKTAG('.', 'R', 'M', 'F')) {
-        return -EIO;
+        return AVERROR_IO;
     }
 
     get_be32(pb); /* header size */
@@ -688,7 +688,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(i=0;i<s->nb_streams;i++) {
         av_free(s->streams[i]);
     }
-    return -EIO;
+    return AVERROR_IO;
 }
 
 static int get_num(ByteIOContext *pb, int *len)
@@ -726,18 +726,18 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         len = get_buffer(pb, pkt->data, len);
         if (len <= 0) {
             av_free_packet(pkt);
-            return -EIO;
+            return AVERROR_IO;
         }
         pkt->size = len;
         st = s->streams[0];
     } else {
     redo:
         if (rm->nb_packets == 0)
-            return -EIO;
+            return AVERROR_IO;
         get_be16(pb);
         len = get_be16(pb);
         if (len < 12)
-            return -EIO;
+            return AVERROR_IO;
         num = get_be16(pb);
         timestamp = get_be32(pb);
         get_byte(pb); /* reserved */

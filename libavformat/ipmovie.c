@@ -34,7 +34,7 @@
 
 /* debugging support: #define DEBUG_IPMOVIE as non-zero to see extremely
  * verbose information about the demux process */
-#define DEBUG_IPMOVIE 0
+#define DEBUG_IPMOVIE 1
 
 #if DEBUG_IPMOVIE
 #define debug_ipmovie printf
@@ -543,7 +543,7 @@ static int ipmovie_read_header(AVFormatContext *s,
      * it; if it is the first video chunk, this is a silent file */
     if (get_buffer(pb, chunk_preamble, CHUNK_PREAMBLE_SIZE) !=
         CHUNK_PREAMBLE_SIZE)
-        return -EIO;
+        return AVERROR_IO;
     chunk_type = LE_16(&chunk_preamble[2]);
     url_fseek(pb, -CHUNK_PREAMBLE_SIZE, SEEK_CUR);
 
@@ -600,7 +600,7 @@ static int ipmovie_read_packet(AVFormatContext *s,
     if (ret == CHUNK_BAD)
         ret = AVERROR_INVALIDDATA;
     else if (ret == CHUNK_EOF)
-        ret = -EIO;
+        ret = AVERROR_IO;
     else if (ret == CHUNK_NOMEM)
         ret = AVERROR_NOMEM;
     else

@@ -1164,7 +1164,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         startcode = find_next_start_code(&s->pb, &size, &m->header_state);
     //printf("startcode=%x pos=0x%Lx\n", startcode, url_ftell(&s->pb));
     if (startcode < 0)
-        return -EIO;
+        return AVERROR_IO;
     if (startcode == PACK_START_CODE)
         goto redo;
     if (startcode == SYSTEM_HEADER_START_CODE)
@@ -1284,7 +1284,7 @@ static int mpegps_read_packet(AVFormatContext *s,
                               AVPacket *pkt)
 {
     AVStream *st;
-    int len, startcode, i, type, codec_id;
+    int len, startcode, i, type, codec_id = 0;
     int64_t pts, dts, dummy_pos; //dummy_pos is needed for the index building to work
 
  redo:
@@ -1350,6 +1350,15 @@ static int mpegps_read_packet(AVFormatContext *s,
     av_log(s, AV_LOG_DEBUG, "%d: pts=%0.3f dts=%0.3f\n",
            pkt->stream_index, pkt->pts / 90000.0, pkt->dts / 90000.0);
 #endif
+
+#if 1
+//#ifdef CONFIG_ADX
+    if (codec_id == CODEC_ID_MP2 && is_adx(pkt->data,pkt->size)) {
+printf ("found ADX...\n");
+        st->codec.codec_id = CODEC_ID_ADPCM_ADX;
+    }
+#endif //CONFIG_ADX
+
     return 0;
 }
 

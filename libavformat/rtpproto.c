@@ -168,7 +168,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     if (s->rtcp_hd)
         url_close(s->rtcp_hd);
     av_free(s);
-    return -EIO;
+    return AVERROR_IO;
 }
 
 static int rtp_read(URLContext *h, uint8_t *buf, int size)
@@ -185,7 +185,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
         if (len < 0) {
             if (errno == EAGAIN || errno == EINTR)
                 continue;
-            return -EIO;
+            return AVERROR_IO;
         }
         break;
     }
@@ -208,7 +208,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 if (len < 0) {
                     if (errno == EAGAIN || errno == EINTR)
                         continue;
-                    return -EIO;
+                    return AVERROR_IO;
                 }
                 break;
             }
@@ -220,7 +220,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
                 if (len < 0) {
                     if (errno == EAGAIN || errno == EINTR)
                         continue;
-                    return -EIO;
+                    return AVERROR_IO;
                 }
                 break;
             }

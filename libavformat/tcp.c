@@ -130,7 +130,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     return 0;
 
  fail:
-    ret = -EIO;
+    ret = AVERROR_IO;
  fail1:
     if (fd >= 0)
         close(fd);

@@ -311,7 +311,7 @@ static int wav_read_packet(AVFormatContext *s,
     AVStream *st;
 
     if (url_feof(&s->pb))
-        return -EIO;
+        return AVERROR_IO;
     st = s->streams[0];
 
     size = MAX_SIZE;
@@ -321,7 +321,7 @@ static int wav_read_packet(AVFormatContext *s,
         size = (size / st->codec.block_align) * st->codec.block_align;
     }
     if (av_new_packet(pkt, size))
-        return -EIO;
+        return AVERROR_IO;
     pkt->stream_index = 0;
 
     ret = get_buffer(&s->pb, pkt->data, pkt->size);

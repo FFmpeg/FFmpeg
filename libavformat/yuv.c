@@ -60,7 +60,7 @@ static int yuv_read(ByteIOContext *f,
     url_get_filename(h, fname, sizeof(fname));
 
     if (infer_size(&info->width, &info->height, img_size) < 0) {
-        return -EIO;
+        return AVERROR_IO;
     }
     info->pix_fmt = PIX_FMT_YUV420P;
     
@@ -72,20 +72,20 @@ static int yuv_read(ByteIOContext *f,
     
     p = strrchr(fname, '.');
     if (!p || p[1] != 'Y')
-        return -EIO;
+        return AVERROR_IO;
 
     get_buffer(f, info->pict.data[0], size);
     
     p[1] = 'U';
     if (url_fopen(pb, fname, URL_RDONLY) < 0)
-        return -EIO;
+        return AVERROR_IO;
 
     get_buffer(pb, info->pict.data[1], size / 4);
     url_fclose(pb);
     
     p[1] = 'V';
     if (url_fopen(pb, fname, URL_RDONLY) < 0)
-        return -EIO;
+        return AVERROR_IO;
 
     get_buffer(pb, info->pict.data[2], size / 4);
     url_fclose(pb);
@@ -107,7 +107,7 @@ static int yuv_write(ByteIOContext *pb2, AVImageInfo *info)
 
     p = strrchr(fname, '.');
     if (!p || p[1] != 'Y')
-        return -EIO;
+        return AVERROR_IO;
 
     width = info->width;
     height = info->height;
@@ -122,7 +122,7 @@ static int yuv_write(ByteIOContext *pb2, AVImageInfo *info)
             pb = &pb1;
             p[1] = ext[i];
             if (url_fopen(pb, fname, URL_WRONLY) < 0)
-                return -EIO;
+                return AVERROR_IO;
         } else {
             pb = pb2;
         }

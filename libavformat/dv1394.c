@@ -126,7 +126,7 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
 
 failed:
     close(dv->fd);
-    return -EIO;
+    return AVERROR_IO;
 }
 
 static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
@@ -165,12 +165,12 @@ restart_poll:
             if (errno == EAGAIN || errno == EINTR)
                 goto restart_poll;
             perror("Poll failed");
-            return -EIO;
+            return AVERROR_IO;
         }
 
         if (ioctl(dv->fd, DV1394_GET_STATUS, &s) < 0) {
             perror("Failed to get status");
-            return -EIO;
+            return AVERROR_IO;
         }
 #ifdef DV1394_DEBUG
         fprintf(stderr, "DV1394: status\n"

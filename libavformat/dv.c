@@ -850,11 +850,11 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
     
     if (size < 0) {
         if (get_buffer(&s->pb, c->buf, 4) <= 0) 
-            return -EIO;
+            return AVERROR_IO;
     
         size = dv_frame_profile(c->buf)->frame_size;
         if (get_buffer(&s->pb, c->buf + 4, size - 4) <= 0)
-	    return -EIO;
+	    return AVERROR_IO;
 
 	size = dv_produce_packet(c->dv_demux, pkt, c->buf, size);
     } 

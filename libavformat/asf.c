@@ -434,13 +434,13 @@ static int asf_get_packet(AVFormatContext *s)
 	if (get_le16(pb) != 0) {
             if (!url_feof(pb))
 		av_log(s, AV_LOG_ERROR, "ff asf bad non zero\n");
-	    return -EIO;
+	    return AVERROR_IO;
 	}
         rsize+=2;
 /*    }else{
         if (!url_feof(pb))
 	    printf("ff asf bad header %x  at:%lld\n", c, url_ftell(pb));
-	return -EIO;*/
+	return AVERROR_IO;*/
     }
 
     asf->packet_flags = get_byte(pb);
@@ -490,7 +490,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    ret = asf_get_packet(s);
 	    //printf("READ ASF PACKET  %d   r:%d   c:%d\n", ret, asf->packet_size_left, pc++);
 	    if (ret < 0 || url_feof(pb))
-		return -EIO;
+		return AVERROR_IO;
             asf->packet_time_start = 0;
             continue;
 	}

@@ -119,7 +119,7 @@ static int wsaud_read_header(AVFormatContext *s,
     unsigned char header[AUD_HEADER_SIZE];
 
     if (get_buffer(pb, header, AUD_HEADER_SIZE) != AUD_HEADER_SIZE)
-        return -EIO;
+        return AVERROR_IO;
     wsaud->audio_samplerate = LE_16(&header[0]);
     if (header[11] == 99)
         wsaud->audio_type = CODEC_ID_ADPCM_IMA_WS;
@@ -163,7 +163,7 @@ static int wsaud_read_packet(AVFormatContext *s,
 
     if (get_buffer(pb, preamble, AUD_CHUNK_PREAMBLE_SIZE) !=
         AUD_CHUNK_PREAMBLE_SIZE)
-        return -EIO;
+        return AVERROR_IO;
 
     /* validate the chunk */
     if (LE_32(&preamble[4]) != AUD_CHUNK_SIGNATURE)
@@ -171,13 +171,13 @@ static int wsaud_read_packet(AVFormatContext *s,
 
     chunk_size = LE_16(&preamble[0]);
     if (av_new_packet(pkt, chunk_size))
-        return -EIO;
+        return AVERROR_IO;
     pkt->stream_index = wsaud->audio_stream_index;
     pkt->pts = wsaud->audio_frame_counter;
     pkt->pts /= wsaud->audio_samplerate;
     if ((ret = get_buffer(pb, pkt->data, chunk_size)) != chunk_size) {
         av_free_packet(pkt);
-        ret = -EIO;
+        ret = AVERROR_IO;
     }
 
     /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
@@ -239,7 +239,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     if (get_buffer(pb, st->codec.extradata, VQA_HEADER_SIZE) !=
         VQA_HEADER_SIZE) {
         av_free(st->codec.extradata);
-        return -EIO;
+        return AVERROR_IO;
     }
     st->codec.width = LE_16(&header[6]);
     st->codec.height = LE_16(&header[8]);
@@ -271,7 +271,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     do {
         if (get_buffer(pb, scratch, VQA_PREAMBLE_SIZE) != VQA_PREAMBLE_SIZE) {
             av_free(st->codec.extradata);
-            return -EIO;
+            return AVERROR_IO;
         }
         chunk_tag = BE_32(&scratch[0]);
         chunk_size = BE_32(&scratch[4]);
@@ -314,7 +314,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
     int skip_byte;
 
     if (get_buffer(pb, preamble, VQA_PREAMBLE_SIZE) != VQA_PREAMBLE_SIZE)
-        return -EIO;
+        return AVERROR_IO;
 
     chunk_type = BE_32(&preamble[0]);
     chunk_size = BE_32(&preamble[4]);
@@ -323,11 +323,11 @@ static int wsvqa_read_packet(AVFormatContext *s,
     if ((chunk_type == SND2_TAG) || (chunk_type == VQFR_TAG)) {
 
         if (av_new_packet(pkt, chunk_size))
-            return -EIO;
+            return AVERROR_IO;
         ret = get_buffer(pb, pkt->data, chunk_size);
         if (ret != chunk_size) {
             av_free_packet(pkt);
-            ret = -EIO;
+            ret = AVERROR_IO;
         }
 
         if (chunk_type == SND2_TAG) {

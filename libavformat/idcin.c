@@ -167,7 +167,7 @@ static int idcin_read_header(AVFormatContext *s,
     st->codec.extradata = av_malloc(HUFFMAN_TABLE_SIZE);
     if (get_buffer(pb, st->codec.extradata, HUFFMAN_TABLE_SIZE) !=
         HUFFMAN_TABLE_SIZE)
-        return -EIO;
+        return AVERROR_IO;
     /* save a reference in order to transport the palette */
     st->codec.palctrl = &idcin->palctrl;
 
@@ -224,17 +224,17 @@ static int idcin_read_packet(AVFormatContext *s,
     unsigned char palette_buffer[768];
 
     if (url_feof(&s->pb))
-        return -EIO;
+        return AVERROR_IO;
 
     if (idcin->next_chunk_is_video) {
         command = get_le32(pb);
         if (command == 2) {
-            return -EIO;
+            return AVERROR_IO;
         } else if (command == 1) {
             /* trigger a palette change */
             idcin->palctrl.palette_changed = 1;
             if (get_buffer(pb, palette_buffer, 768) != 768)
-                return -EIO;
+                return AVERROR_IO;
             /* scale the palette as necessary */
             palette_scale = 2;
             for (i = 0; i < 768; i++)
@@ -256,12 +256,12 @@ static int idcin_read_packet(AVFormatContext *s,
         url_fseek(pb, 4, SEEK_CUR);
         chunk_size -= 4;
         if (av_new_packet(pkt, chunk_size))
-            ret = -EIO;
+            ret = AVERROR_IO;
         pkt->stream_index = idcin->video_stream_index;
         pkt->pts = idcin->pts;
         ret = get_buffer(pb, pkt->data, chunk_size);
         if (ret != chunk_size)
-            ret = -EIO;
+            ret = AVERROR_IO;
     } else {
         /* send out the audio chunk */
         if (idcin->current_audio_chunk)
@@ -269,12 +269,12 @@ static int idcin_read_packet(AVFormatContext *s,
         else
             chunk_size = idcin->audio_chunk_size1;
         if (av_new_packet(pkt, chunk_size))
-            return -EIO;
+            return AVERROR_IO;
         pkt->stream_index = idcin->audio_stream_index;
         pkt->pts = idcin->pts;
         ret = get_buffer(&s->pb, pkt->data, chunk_size);
         if (ret != chunk_size)
-            ret = -EIO;
+            ret = AVERROR_IO;
 
         idcin->current_audio_chunk ^= 1;
         idcin->pts += FRAME_PTS_INC;
