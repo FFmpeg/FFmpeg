@@ -21,6 +21,7 @@
 #define I_TYPE 1
 #define P_TYPE 2
 #define B_TYPE 3
+#define S_TYPE 4 //S(GMC)-VOP MPEG4
 
 enum OutputFormat {
     FMT_MPEG1,
@@ -89,6 +90,7 @@ typedef struct MpegEncContext {
     int h263_long_vectors; /* use horrible h263v1 long vector mode */
 
     int f_code; /* resolution */
+    int b_code; /* resolution for B Frames*/
     INT16 *mv_table[2];    /* MV table */
     INT16 (*motion_val)[2]; /* used for MV prediction */
     int full_search;
@@ -157,7 +159,21 @@ typedef struct MpegEncContext {
     int time_increment_bits;
     int shape;
     int vol_sprite_usage;
+    int sprite_width;
+    int sprite_height;
+    int sprite_left;
+    int sprite_top;
+    int sprite_brightness_change;
+    int no_sprite_wraping_points;
     int quant_precision;
+    int quarter_sample;
+    int scalability;
+    int new_pred;
+    int reduced_res_vop;
+    int aspect_ratio_info;
+    int sprite_warping_accuracy;
+    int low_latency_sprite;
+    int data_partioning;
 
     /* RV10 specific */
     int rv10_version; /* RV10 version: 0 or 3 */

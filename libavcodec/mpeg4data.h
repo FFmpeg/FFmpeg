@@ -1,3 +1,15 @@
+// shapes
+#define RECT_SHAPE       0
+#define BIN_SHAPE        1
+#define BIN_ONLY_SHAPE   2
+#define GRAY_SHAPE       3
+
+// aspect_ratio_info
+#define EXTENDET_PAR 15
+
+//vol_sprite_usage / sprite_enable
+#define STATIC_SPRITE 1
+#define GMC_SPRITE 2
 
 /* dc encoding for mpeg4 */
 static const UINT8 DCtab_lum[13][2] =
