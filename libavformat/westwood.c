@@ -33,41 +33,25 @@
 
 #include "avformat.h"
 
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
-                   (((uint8_t*)(x))[2] << 16) | \
-                   (((uint8_t*)(x))[1] << 8) | \
-                    ((uint8_t*)(x))[0])
-#define BE_32(x)  ((((uint8_t*)(x))[0] << 24) | \
-                   (((uint8_t*)(x))[1] << 16) | \
-                   (((uint8_t*)(x))[2] << 8) | \
-                    ((uint8_t*)(x))[3])
-
 #define AUD_HEADER_SIZE 12
 #define AUD_CHUNK_PREAMBLE_SIZE 8
 #define AUD_CHUNK_SIGNATURE 0x0000DEAF
 
-#define FOURCC_TAG( ch0, ch1, ch2, ch3 ) \
-        ( (long)(unsigned char)(ch3) | \
-        ( (long)(unsigned char)(ch2) << 8 ) | \
-        ( (long)(unsigned char)(ch1) << 16 ) | \
-        ( (long)(unsigned char)(ch0) << 24 ) )
-
-#define FORM_TAG FOURCC_TAG('F', 'O', 'R', 'M')
-#define WVQA_TAG FOURCC_TAG('W', 'V', 'Q', 'A')
-#define VQHD_TAG FOURCC_TAG('V', 'Q', 'H', 'D')
-#define FINF_TAG FOURCC_TAG('F', 'I', 'N', 'F')
-#define SND0_TAG FOURCC_TAG('S', 'N', 'D', '0')
-#define SND2_TAG FOURCC_TAG('S', 'N', 'D', '2')
-#define VQFR_TAG FOURCC_TAG('V', 'Q', 'F', 'R')
+#define FORM_TAG MKBETAG('F', 'O', 'R', 'M')
+#define WVQA_TAG MKBETAG('W', 'V', 'Q', 'A')
+#define VQHD_TAG MKBETAG('V', 'Q', 'H', 'D')
+#define FINF_TAG MKBETAG('F', 'I', 'N', 'F')
+#define SND0_TAG MKBETAG('S', 'N', 'D', '0')
+#define SND2_TAG MKBETAG('S', 'N', 'D', '2')
+#define VQFR_TAG MKBETAG('V', 'Q', 'F', 'R')
 
 /* don't know what these tags are for, but acknowledge their existence */
-#define CINF_TAG FOURCC_TAG('C', 'I', 'N', 'F')
-#define CINH_TAG FOURCC_TAG('C', 'I', 'N', 'H')
-#define CIND_TAG FOURCC_TAG('C', 'I', 'N', 'D')
-#define PINF_TAG FOURCC_TAG('P', 'I', 'N', 'F')
-#define PINH_TAG FOURCC_TAG('P', 'I', 'N', 'H')
-#define PIND_TAG FOURCC_TAG('P', 'I', 'N', 'D')
+#define CINF_TAG MKBETAG('C', 'I', 'N', 'F')
+#define CINH_TAG MKBETAG('C', 'I', 'N', 'H')
+#define CIND_TAG MKBETAG('C', 'I', 'N', 'D')
+#define PINF_TAG MKBETAG('P', 'I', 'N', 'F')
+#define PINH_TAG MKBETAG('P', 'I', 'N', 'H')
+#define PIND_TAG MKBETAG('P', 'I', 'N', 'D')
 
 #define VQA_HEADER_SIZE 0x2A
 #define VQA_FRAMERATE 15

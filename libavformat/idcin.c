@@ -68,12 +68,6 @@
 
 #include "avformat.h"
 
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
-                   (((uint8_t*)(x))[2] << 16) | \
-                   (((uint8_t*)(x))[1] << 8) | \
-                    ((uint8_t*)(x))[0])
-
 #define HUFFMAN_TABLE_SIZE (64 * 1024)
 #define FRAME_PTS_INC (90000 / 14)
 

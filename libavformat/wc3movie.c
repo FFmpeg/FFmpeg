@@ -27,38 +27,21 @@
 
 #include "avformat.h"
 
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
-                   (((uint8_t*)(x))[2] << 16) | \
-                   (((uint8_t*)(x))[1] << 8) | \
-                    ((uint8_t*)(x))[0])
-#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
-#define BE_32(x)  ((((uint8_t*)(x))[0] << 24) | \
-                   (((uint8_t*)(x))[1] << 16) | \
-                   (((uint8_t*)(x))[2] << 8) | \
-                    ((uint8_t*)(x))[3])
-
 #define WC3_PREAMBLE_SIZE 8
 
-#define FOURCC_TAG( ch0, ch1, ch2, ch3 ) \
-        ( (long)(unsigned char)(ch0) | \
-        ( (long)(unsigned char)(ch1) << 8 ) | \
-        ( (long)(unsigned char)(ch2) << 16 ) | \
-        ( (long)(unsigned char)(ch3) << 24 ) )
-
-#define FORM_TAG FOURCC_TAG('F', 'O', 'R', 'M')
-#define MOVE_TAG FOURCC_TAG('M', 'O', 'V', 'E')
-#define _PC__TAG FOURCC_TAG('_', 'P', 'C', '_')
-#define SOND_TAG FOURCC_TAG('S', 'O', 'N', 'D')
-#define BNAM_TAG FOURCC_TAG('B', 'N', 'A', 'M')
-#define SIZE_TAG FOURCC_TAG('S', 'I', 'Z', 'E')
-#define PALT_TAG FOURCC_TAG('P', 'A', 'L', 'T')
-#define INDX_TAG FOURCC_TAG('I', 'N', 'D', 'X')
-#define BRCH_TAG FOURCC_TAG('B', 'R', 'C', 'H')
-#define SHOT_TAG FOURCC_TAG('S', 'H', 'O', 'T')
-#define VGA__TAG FOURCC_TAG('V', 'G', 'A', ' ')
-#define TEXT_TAG FOURCC_TAG('T', 'E', 'X', 'T')
-#define AUDI_TAG FOURCC_TAG('A', 'U', 'D', 'I')
+#define FORM_TAG MKTAG('F', 'O', 'R', 'M')
+#define MOVE_TAG MKTAG('M', 'O', 'V', 'E')
+#define _PC__TAG MKTAG('_', 'P', 'C', '_')
+#define SOND_TAG MKTAG('S', 'O', 'N', 'D')
+#define BNAM_TAG MKTAG('B', 'N', 'A', 'M')
+#define SIZE_TAG MKTAG('S', 'I', 'Z', 'E')
+#define PALT_TAG MKTAG('P', 'A', 'L', 'T')
+#define INDX_TAG MKTAG('I', 'N', 'D', 'X')
+#define BRCH_TAG MKTAG('B', 'R', 'C', 'H')
+#define SHOT_TAG MKTAG('S', 'H', 'O', 'T')
+#define VGA__TAG MKTAG('V', 'G', 'A', ' ')
+#define TEXT_TAG MKTAG('T', 'E', 'X', 'T')
+#define AUDI_TAG MKTAG('A', 'U', 'D', 'I')
 
 /* video resolution unless otherwise specified */
 #define WC3_DEFAULT_WIDTH 320

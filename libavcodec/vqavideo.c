@@ -82,26 +82,13 @@
 #define MAX_VECTORS (MAX_CODEBOOK_VECTORS + SOLID_PIXEL_VECTORS)
 #define MAX_CODEBOOK_SIZE (MAX_VECTORS * 4 * 4)
 
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
-#define BE_32(x)  ((((uint8_t*)(x))[0] << 24) | \
-                   (((uint8_t*)(x))[1] << 16) | \
-                   (((uint8_t*)(x))[2] << 8) | \
-                    ((uint8_t*)(x))[3])
-
-#define FOURCC_TAG( ch0, ch1, ch2, ch3 ) \
-        ( (long)(unsigned char)(ch3) | \
-        ( (long)(unsigned char)(ch2) << 8 ) | \
-        ( (long)(unsigned char)(ch1) << 16 ) | \
-        ( (long)(unsigned char)(ch0) << 24 ) )
-
-#define CBF0_TAG FOURCC_TAG('C', 'B', 'F', '0')
-#define CBFZ_TAG FOURCC_TAG('C', 'B', 'F', 'Z')
-#define CBP0_TAG FOURCC_TAG('C', 'B', 'P', '0')
-#define CBPZ_TAG FOURCC_TAG('C', 'B', 'P', 'Z')
-#define CPL0_TAG FOURCC_TAG('C', 'P', 'L', '0')
-#define CPLZ_TAG FOURCC_TAG('C', 'P', 'L', 'Z')
-#define VPTZ_TAG FOURCC_TAG('V', 'P', 'T', 'Z')
+#define CBF0_TAG MKBETAG('C', 'B', 'F', '0')
+#define CBFZ_TAG MKBETAG('C', 'B', 'F', 'Z')
+#define CBP0_TAG MKBETAG('C', 'B', 'P', '0')
+#define CBPZ_TAG MKBETAG('C', 'B', 'P', 'Z')
+#define CPL0_TAG MKBETAG('C', 'P', 'L', '0')
+#define CPLZ_TAG MKBETAG('C', 'P', 'L', 'Z')
+#define VPTZ_TAG MKBETAG('V', 'P', 'T', 'Z')
 
 #define VQA_DEBUG 0
 

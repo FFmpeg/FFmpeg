@@ -26,8 +26,8 @@
  *
  * The QT RLE decoder has seven modes of operation:
  * 1, 2, 4, 8, 16, 24, and 32 bits per pixel. For modes 1, 2, 4, and 8
- * the decoder outputs PAL8 colorspace data. 16-bit data yields RGB24
- * data. 24-bit data is RGB888 and 32-bit data is RGBA32.
+ * the decoder outputs PAL8 colorspace data. 16-bit data yields RGB555
+ * data. 24-bit data is RGB24 and 32-bit data is RGBA32.
  */
 
 #include <stdio.h>
@@ -49,8 +49,6 @@ typedef struct QtrleContext {
     int size;
 
 } QtrleContext;
-
-#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
 
 #define CHECK_STREAM_PTR(n) \
   if ((stream_ptr + n) > s->size) { \

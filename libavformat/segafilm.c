@@ -27,22 +27,10 @@
 
 #include "avformat.h"
 
-#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
-#define BE_32(x)  ((((uint8_t*)(x))[0] << 24) | \
-                   (((uint8_t*)(x))[1] << 16) | \
-                   (((uint8_t*)(x))[2] << 8) | \
-                    ((uint8_t*)(x))[3])
-
-#define FOURCC_TAG( ch0, ch1, ch2, ch3 ) \
-        ( (long)(unsigned char)(ch3) | \
-        ( (long)(unsigned char)(ch2) << 8 ) | \
-        ( (long)(unsigned char)(ch1) << 16 ) | \
-        ( (long)(unsigned char)(ch0) << 24 ) )
-
-#define FILM_TAG FOURCC_TAG('F', 'I', 'L', 'M')
-#define FDSC_TAG FOURCC_TAG('F', 'D', 'S', 'C')
-#define STAB_TAG FOURCC_TAG('S', 'T', 'A', 'B')
-#define CVID_TAG FOURCC_TAG('c', 'v', 'i', 'd')
+#define FILM_TAG MKBETAG('F', 'I', 'L', 'M')
+#define FDSC_TAG MKBETAG('F', 'D', 'S', 'C')
+#define STAB_TAG MKBETAG('S', 'T', 'A', 'B')
+#define CVID_TAG MKBETAG('c', 'v', 'i', 'd')
 
 typedef struct {
   int stream;

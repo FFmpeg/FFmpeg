@@ -39,7 +39,6 @@
 #include "dsputil.h"
 
 #define PALETTE_COUNT 256
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
 #define CHECK_STREAM_PTR(n) \
   if ((stream_ptr + n) > s->size ) { \
     av_log(s->avctx, AV_LOG_ERROR, " MS Video-1 warning: stream_ptr out of bounds (%d >= %d)\n", \

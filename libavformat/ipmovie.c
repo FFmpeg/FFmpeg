@@ -42,13 +42,6 @@
 static inline void debug_ipmovie(const char *format, ...) { }
 #endif
 
-
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
-                   (((uint8_t*)(x))[2] << 16) | \
-                   (((uint8_t*)(x))[1] << 8) | \
-                    ((uint8_t*)(x))[0])
-
 #define IPMOVIE_SIGNATURE "Interplay MVE File\x1A\0"
 #define IPMOVIE_SIGNATURE_SIZE 20
 #define CHUNK_PREAMBLE_SIZE 4

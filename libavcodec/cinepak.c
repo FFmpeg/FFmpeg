@@ -37,12 +37,6 @@
 
 #define PALETTE_COUNT 256
 
-#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
-#define BE_32(x)  ((((uint8_t*)(x))[0] << 24) | \
-                   (((uint8_t*)(x))[1] << 16) | \
-                   (((uint8_t*)(x))[2] << 8) | \
-                    ((uint8_t*)(x))[3])
-
 typedef struct {
     uint8_t  y0, y1, y2, y3;
     uint8_t  u, v;

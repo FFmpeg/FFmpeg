@@ -31,20 +31,8 @@
 
 //#define PRINTSTUFF
 
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
-                   (((uint8_t*)(x))[2] << 16) | \
-                   (((uint8_t*)(x))[1] << 8) | \
-                    ((uint8_t*)(x))[0])
-
-#define FOURCC_TAG( ch0, ch1, ch2, ch3 ) \
-        ( (long)(unsigned char)(ch0) | \
-        ( (long)(unsigned char)(ch1) << 8 ) | \
-        ( (long)(unsigned char)(ch2) << 16 ) | \
-        ( (long)(unsigned char)(ch3) << 24 ) )
-
-#define RIFF_TAG FOURCC_TAG('R', 'I', 'F', 'F')
-#define CDXA_TAG FOURCC_TAG('C', 'D', 'X', 'A')
+#define RIFF_TAG MKTAG('R', 'I', 'F', 'F')
+#define CDXA_TAG MKTAG('C', 'D', 'X', 'A')
 
 #define RAW_CD_SECTOR_SIZE 2352
 #define RAW_CD_SECTOR_DATA_SIZE 2304

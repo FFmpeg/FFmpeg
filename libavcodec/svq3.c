@@ -799,9 +799,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
         break;
       extradata++;
     }
-
-    size = (extradata[4] << 24) | (extradata[5] << 16) |
-      (extradata[6] << 8) | extradata[7];
+    size = BE_32(&extradata[4]);
 
     /* if a match was found, parse the extra data */
     if (!memcmp (extradata, "SEQH", 4)) {

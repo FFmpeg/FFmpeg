@@ -31,12 +31,6 @@
 
 #include "avformat.h"
 
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
-                   (((uint8_t*)(x))[2] << 16) | \
-                   (((uint8_t*)(x))[1] << 8) | \
-                    ((uint8_t*)(x))[0])
-
 #define FLIC_FILE_MAGIC_1 0xAF11
 #define FLIC_FILE_MAGIC_2 0xAF12
 #define FLIC_CHUNK_MAGIC_1 0xF1FA

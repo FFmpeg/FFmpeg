@@ -58,13 +58,6 @@ typedef struct XanContext {
 
 } XanContext;
 
-#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
-                   (((uint8_t*)(x))[2] << 16) | \
-                   (((uint8_t*)(x))[1] << 8) | \
-                    ((uint8_t*)(x))[0])
-
 /* RGB -> YUV conversion stuff */
 #define SCALEFACTOR 65536
 #define CENTERSAMPLE 128

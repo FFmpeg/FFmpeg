@@ -41,8 +41,6 @@
 
 #include "truemotion1data.h"
 
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-
 typedef struct TrueMotion1Context {
     AVCodecContext *avctx;
     AVFrame frame;

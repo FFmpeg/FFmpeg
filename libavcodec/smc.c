@@ -61,11 +61,6 @@ typedef struct SmcContext {
 
 } SmcContext;
 
-#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
-#define BE_32(x)  ((((uint8_t*)(x))[0] << 24) | \
-                   (((uint8_t*)(x))[1] << 16) | \
-                   (((uint8_t*)(x))[2] << 8) | \
-                    ((uint8_t*)(x))[3])
 #define GET_BLOCK_COUNT() \
   (opcode & 0x10) ? (1 + s->buf[stream_ptr++]) : 1 + (opcode & 0x0F);
 

@@ -27,35 +27,22 @@
 
 #include "avformat.h"
 
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
-                   (((uint8_t*)(x))[2] << 16) | \
-                   (((uint8_t*)(x))[1] << 8) | \
-                    ((uint8_t*)(x))[0])
-
-#define FOURCC_TAG( ch0, ch1, ch2, ch3 ) \
-        ( (long)(unsigned char)(ch0) | \
-        ( (long)(unsigned char)(ch1) << 8 ) | \
-        ( (long)(unsigned char)(ch2) << 16 ) | \
-        ( (long)(unsigned char)(ch3) << 24 ) )
-
-#define  RIFF_TAG FOURCC_TAG('R', 'I', 'F', 'F')
-#define _4XMV_TAG FOURCC_TAG('4', 'X', 'M', 'V')
-#define  LIST_TAG FOURCC_TAG('L', 'I', 'S', 'T')
-#define  HEAD_TAG FOURCC_TAG('H', 'E', 'A', 'D')
-#define  TRK__TAG FOURCC_TAG('T', 'R', 'K', '_')
-#define  MOVI_TAG FOURCC_TAG('M', 'O', 'V', 'I')
-#define  VTRK_TAG FOURCC_TAG('V', 'T', 'R', 'K')
-#define  STRK_TAG FOURCC_TAG('S', 'T', 'R', 'K')
-#define  std__TAG FOURCC_TAG('s', 't', 'd', '_')
-#define  name_TAG FOURCC_TAG('n', 'a', 'm', 'e')
-#define  vtrk_TAG FOURCC_TAG('v', 't', 'r', 'k')
-#define  strk_TAG FOURCC_TAG('s', 't', 'r', 'k')
-#define  ifrm_TAG FOURCC_TAG('i', 'f', 'r', 'm')
-#define  pfrm_TAG FOURCC_TAG('p', 'f', 'r', 'm')
-#define  cfrm_TAG FOURCC_TAG('c', 'f', 'r', 'm')
-#define  snd__TAG FOURCC_TAG('s', 'n', 'd', '_')
-#define  _TAG FOURCC_TAG('', '', '', '')
+#define  RIFF_TAG MKTAG('R', 'I', 'F', 'F')
+#define _4XMV_TAG MKTAG('4', 'X', 'M', 'V')
+#define  LIST_TAG MKTAG('L', 'I', 'S', 'T')
+#define  HEAD_TAG MKTAG('H', 'E', 'A', 'D')
+#define  TRK__TAG MKTAG('T', 'R', 'K', '_')
+#define  MOVI_TAG MKTAG('M', 'O', 'V', 'I')
+#define  VTRK_TAG MKTAG('V', 'T', 'R', 'K')
+#define  STRK_TAG MKTAG('S', 'T', 'R', 'K')
+#define  std__TAG MKTAG('s', 't', 'd', '_')
+#define  name_TAG MKTAG('n', 'a', 'm', 'e')
+#define  vtrk_TAG MKTAG('v', 't', 'r', 'k')
+#define  strk_TAG MKTAG('s', 't', 'r', 'k')
+#define  ifrm_TAG MKTAG('i', 'f', 'r', 'm')
+#define  pfrm_TAG MKTAG('p', 'f', 'r', 'm')
+#define  cfrm_TAG MKTAG('c', 'f', 'r', 'm')
+#define  snd__TAG MKTAG('s', 'n', 'd', '_')
 
 #define vtrk_SIZE 0x44
 #define strk_SIZE 0x28
