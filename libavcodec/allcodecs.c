@@ -82,6 +82,7 @@ void avcodec_register_all(void)
     register_avcodec(&svq1_decoder);
     register_avcodec(&wmav1_decoder);
     register_avcodec(&wmav2_decoder);
+    register_avcodec(&indeo3_decoder);
 #endif
     register_avcodec(&mpeg_decoder);
     register_avcodec(&dvvideo_decoder);
