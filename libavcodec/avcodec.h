@@ -15,9 +15,9 @@ extern "C" {
 #include "rational.h"
 #include <sys/types.h> /* size_t */
 
-#define FFMPEG_VERSION_INT     0x000408
-#define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4717
+#define FFMPEG_VERSION_INT     0x000409
+#define FFMPEG_VERSION         "0.4.9-pre1"
+#define LIBAVCODEC_BUILD       4718
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
