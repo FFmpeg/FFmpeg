@@ -116,6 +116,8 @@ typedef struct DSPContext {
     me_cmp_func hadamard8_diff[2];
     me_cmp_func dct_sad[2];
     me_cmp_func quant_psnr[2];
+    me_cmp_func bit[2];
+    me_cmp_func rd[2];
     int (*hadamard8_abs )(uint8_t *src, int stride, int mean);
 
     me_cmp_func me_pre_cmp[11];

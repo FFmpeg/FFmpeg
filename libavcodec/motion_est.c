@@ -286,6 +286,14 @@ static void set_cmp(MpegEncContext *s, me_cmp_func *cmp, int type){
         cmp[0]= c->quant_psnr[0];
         cmp[1]= c->quant_psnr[1];
         break;
+    case FF_CMP_BIT:
+        cmp[0]= c->bit[0];
+        cmp[1]= c->bit[1];
+        break;
+    case FF_CMP_RD:
+        cmp[0]= c->rd[0];
+        cmp[1]= c->rd[1];
+        break;
     case FF_CMP_ZERO:
         for(i=0; i<7; i++){
             cmp[i]= zero_cmp;
@@ -302,11 +310,14 @@ static inline int get_penalty_factor(MpegEncContext *s, int type){
     default:
     case FF_CMP_SAD:
         return s->qscale;
-    case FF_CMP_SSE:
-//        return s->qscale*8;
     case FF_CMP_DCT:
     case FF_CMP_SATD:
+    case FF_CMP_SSE:
         return s->qscale*8;
+    case FF_CMP_BIT:
+        return 1;
+    case FF_CMP_RD:
+        return (s->qscale*s->qscale*105 + 64)>>7;
     }
 }
 

@@ -232,6 +232,8 @@ int DCT_common_init(MpegEncContext *s)
     MPV_common_init_ppc(s);
 #endif
 
+    s->fast_dct_quantize= s->dct_quantize;
+
     if(s->flags&CODEC_FLAG_TRELLIS_QUANT){
         s->dct_quantize= dct_quantize_trellis_c; //move before MPV_common_init_*
     }

@@ -1835,7 +1835,7 @@ static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *s
     
     memcpy(bak, temp, 64*sizeof(DCTELEM));
     
-    s->dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
+    s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
     s->dct_unquantize(s, temp, 0, s->qscale);
     simple_idct(temp); //FIXME 
     
@@ -1845,9 +1845,136 @@ static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *s
     return sum;
 }
 
+static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
+    MpegEncContext * const s= (MpegEncContext *)c;
+    const UINT8 *scantable= s->intra_scantable.permutated;
+    DCTELEM temp[64];
+    uint8_t bak[stride*8];
+    int i, last, run, bits, level, distoration, start_i;
+    const int esc_length= s->ac_esc_length;
+    uint8_t * length;
+    uint8_t * last_length;
+
+    s->mb_intra=0;
+    
+    if (s->mb_intra) {
+        start_i = 1;
+        length     = s->intra_ac_vlc_length;
+        last_length= s->intra_ac_vlc_last_length;
+    } else {
+        start_i = 0;
+        length     = s->inter_ac_vlc_length;
+        last_length= s->inter_ac_vlc_last_length;
+    }
+
+    for(i=0; i<8; i++){
+        ((uint32_t*)(bak + i*stride))[0]= ((uint32_t*)(src2 + i*stride))[0];
+        ((uint32_t*)(bak + i*stride))[1]= ((uint32_t*)(src2 + i*stride))[1];
+    }
+
+    s->dsp.diff_pixels(temp, src1, src2, stride);
+
+    last= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
+    
+    bits=0;
+    if(last>=0){
+        run=0;
+        for(i=start_i; i<last; i++){
+            int j= scantable[i];
+            level= temp[j];
+        
+            if(level){
+                level+=64;
+                if((level&(~127)) == 0){
+                    bits+= length[UNI_AC_ENC_INDEX(run, level)];
+                }else
+                    bits+= esc_length;
+                run=0;
+            }else
+                run++;
+        }
+        i= scantable[last];
+        
+        assert(level);
+        
+        level= temp[i] + 64;
+        if((level&(~127)) == 0){
+            bits+= last_length[UNI_AC_ENC_INDEX(run, level)];
+        }else
+            bits+= esc_length;
+    
+        s->dct_unquantize(s, temp, 0, s->qscale);
+    }
+    
+    s->idct_add(bak, stride, temp);
+    
+    distoration= s->dsp.sse[1](NULL, bak, src1, stride);
+
+    return distoration + ((bits*s->qscale*s->qscale*105 + 64)>>7);
+}
+
+static int bit8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
+    MpegEncContext * const s= (MpegEncContext *)c;
+    const UINT8 *scantable= s->intra_scantable.permutated;
+    DCTELEM temp[64];
+    int i, last, run, bits, level, start_i;
+    const int esc_length= s->ac_esc_length;
+    uint8_t * length;
+    uint8_t * last_length;
+
+    s->mb_intra=0;
+    
+    if (s->mb_intra) {
+        start_i = 1;
+        length     = s->intra_ac_vlc_length;
+        last_length= s->intra_ac_vlc_last_length;
+    } else {
+        start_i = 0;
+        length     = s->inter_ac_vlc_length;
+        last_length= s->inter_ac_vlc_last_length;
+    }
+
+    s->dsp.diff_pixels(temp, src1, src2, stride);
+
+    last= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
+    
+    bits=0;
+    if(last>=0){
+        run=0;
+        for(i=start_i; i<last; i++){
+            int j= scantable[i];
+            level= temp[j];
+        
+            if(level){
+                level+=64;
+                if((level&(~127)) == 0){
+                    bits+= length[UNI_AC_ENC_INDEX(run, level)];
+                }else
+                    bits+= esc_length;
+                run=0;
+            }else
+                run++;
+        }
+        i= scantable[last];
+        
+        assert(level);
+        
+        level= temp[i] + 64;
+        if((level&(~127)) == 0){
+            bits+= last_length[UNI_AC_ENC_INDEX(run, level)];
+        }else
+            bits+= esc_length;
+    }
+
+    return bits;
+}
+
+
 WARPER88_1616(hadamard8_diff_c, hadamard8_diff16_c)
 WARPER88_1616(dct_sad8x8_c, dct_sad16x16_c)
 WARPER88_1616(quant_psnr8x8_c, quant_psnr16x16_c)
+WARPER88_1616(rd8x8_c, rd16x16_c)
+WARPER88_1616(bit8x8_c, bit16x16_c)
 
 void dsputil_init(DSPContext* c, unsigned mask)
 {
@@ -1961,7 +2088,13 @@ void dsputil_init(DSPContext* c, unsigned mask)
     
     c->quant_psnr[0]= quant_psnr16x16_c;
     c->quant_psnr[1]= quant_psnr8x8_c;
-    
+
+    c->rd[0]= rd16x16_c;
+    c->rd[1]= rd8x8_c;
+
+    c->bit[0]= bit16x16_c;
+    c->bit[1]= bit8x8_c;
+        
     c->add_bytes= add_bytes_c;
     c->diff_bytes= diff_bytes_c;
 
