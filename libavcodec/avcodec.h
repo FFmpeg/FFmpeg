@@ -673,6 +673,8 @@ typedef struct AVCodecContext {
      * mjpeg: huffman tables
      * rv10: additional flags
      * mpeg4: global headers (they can be in the bitstream or here)
+     * the allocated memory should be FF_INPUT_BUFFER_PADDING_SIZE bytes larger
+     * then extradata_size to avoid prolems if its read with the bitstream reader
      * - encoding: set/allocated/freed by lavc.
      * - decoding: set/allocated/freed by user.
      */
