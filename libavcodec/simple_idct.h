@@ -18,14 +18,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-void simple_idct_put(UINT8 *dest, int line_size, INT16 *block);
-void simple_idct_add(UINT8 *dest, int line_size, INT16 *block);
-void ff_simple_idct_mmx(short *block);
-void ff_simple_idct_add_mmx(UINT8 *dest, int line_size, INT16 *block);
-void ff_simple_idct_put_mmx(UINT8 *dest, int line_size, INT16 *block);
-void simple_idct(short *block);
+void simple_idct_put(UINT8 *dest, int line_size, DCTELEM *block);
+void simple_idct_add(UINT8 *dest, int line_size, DCTELEM *block);
+void ff_simple_idct_mmx(int16_t *block);
+void ff_simple_idct_add_mmx(UINT8 *dest, int line_size, int16_t *block);
+void ff_simple_idct_put_mmx(UINT8 *dest, int line_size, int16_t *block);
+void simple_idct(DCTELEM *block);
 
-void simple_idct248_put(UINT8 *dest, int line_size, INT16 *block);
+void simple_idct248_put(UINT8 *dest, int line_size, DCTELEM *block);
 
-void simple_idct84_add(UINT8 *dest, int line_size, INT16 *block);
-void simple_idct48_add(UINT8 *dest, int line_size, INT16 *block);
+void simple_idct84_add(UINT8 *dest, int line_size, DCTELEM *block);
+void simple_idct48_add(UINT8 *dest, int line_size, DCTELEM *block);

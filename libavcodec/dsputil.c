@@ -1822,7 +1822,7 @@ static int dct_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2
     return sum;
 }
 
-void simple_idct(INT16 *block); //FIXME
+void simple_idct(DCTELEM *block); //FIXME
 
 static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
     MpegEncContext * const s= (MpegEncContext *)c;

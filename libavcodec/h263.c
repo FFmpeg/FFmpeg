@@ -67,7 +67,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra);
 static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr);
-static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
+static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                               int dir);
 static void mpeg4_decode_sprite_trajectory(MpegEncContext * s);
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
@@ -999,7 +999,7 @@ static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr)
 }
 
 
-void h263_pred_acdc(MpegEncContext * s, INT16 *block, int n)
+void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
 {
     int x, y, wrap, a, c, pred_dc, scale, i;
     INT16 *dc_val, *ac_val, *ac_val1;
@@ -1852,7 +1852,7 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_pt
     return pred;
 }
 
-void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
+void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                    int dir)
 {
     int i;
@@ -1907,7 +1907,7 @@ void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
 
 }
 
-static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
+static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                               int dir)
 {
     int i;

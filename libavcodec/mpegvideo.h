@@ -692,7 +692,7 @@ void h263_encode_picture_header(MpegEncContext *s, int picture_number);
 int h263_encode_gob_header(MpegEncContext * s, int mb_line);
 INT16 *h263_pred_motion(MpegEncContext * s, int block, 
                         int *px, int *py);
-void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n, 
+void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n, 
                    int dir);
 void ff_set_mpeg4_time(MpegEncContext * s, int picture_number);
 void mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);

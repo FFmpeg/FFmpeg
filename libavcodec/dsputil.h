@@ -25,6 +25,7 @@
 //#define DEBUG
 /* dct code */
 typedef short DCTELEM;
+//typedef int DCTELEM;
 
 void fdct_ifast (DCTELEM *data);
 void ff_jpeg_fdct_islow (DCTELEM *data);
@@ -156,7 +157,7 @@ void dsputil_init(DSPContext* p, unsigned mask);
  * permute block according to permuatation.
  * @param last last non zero element in scantable order
  */
-void ff_block_permute(INT16 *block, UINT8 *permutation, const UINT8 *scantable, int last);
+void ff_block_permute(DCTELEM *block, UINT8 *permutation, const UINT8 *scantable, int last);
 
 #define emms_c()
 

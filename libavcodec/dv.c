@@ -157,7 +157,7 @@ static const UINT16 block_sizes[6] = {
 
 /* decode ac coefs */
 static void dv_decode_ac(DVVideoDecodeContext *s, 
-                         BlockInfo *mb, INT16 *block, int last_index)
+                         BlockInfo *mb, DCTELEM *block, int last_index)
 {
     int last_re_index;
     int shift_offset = mb->shift_offset;
