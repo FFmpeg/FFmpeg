@@ -647,32 +647,3 @@ int64_t av_rescale(int64_t a, int b, int c){
 
     return ((h/c)<<32) + l/c;
 }
-
-static int raw_encode_init(AVCodecContext *s)
-{
-    return 0;
-}
-
-static int raw_decode_frame(AVCodecContext *avctx,
-			    void *data, int *data_size,
-			    uint8_t *buf, int buf_size)
-{
-    return -1;
-}
-
-static int raw_encode_frame(AVCodecContext *avctx,
-			    unsigned char *frame, int buf_size, void *data)
-{
-    return -1;
-}
-
-AVCodec rawvideo_codec = {
-    "rawvideo",
-    CODEC_TYPE_VIDEO,
-    CODEC_ID_RAWVIDEO,
-    0,
-    raw_encode_init,
-    raw_encode_frame,
-    NULL,
-    raw_decode_frame,
-};

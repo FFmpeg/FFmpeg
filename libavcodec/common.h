@@ -907,6 +907,10 @@ static inline int ff_get_fourcc(const char *s){
     return (s[0]) + (s[1]<<8) + (s[2]<<16) + (s[3]<<24);
 }
 
+#define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
+#define MKBETAG(a,b,c,d) (d | (c << 8) | (b << 16) | (a << 24))
+
+
 void ff_float2fraction(int *nom_arg, int *denom_arg, double f, int max);
 
 

@@ -386,102 +386,6 @@ static void do_audio_out(AVFormatContext *s,
     }
 }
 
-/* write a picture to a raw mux */
-static void write_picture(AVFormatContext *s, int index, AVPicture *picture, 
-                          int pix_fmt, int w, int h)
-{
-    uint8_t *buf, *src, *dest;
-    int size, j, i;
-
-    /* XXX: not efficient, should add test if we can take
-       directly the AVPicture */
-    switch(pix_fmt) {
-    case PIX_FMT_YUV420P:
-        size = avpicture_get_size(pix_fmt, w, h);
-        buf = av_malloc(size);
-        if (!buf)
-            return;
-        dest = buf;
-        for(i=0;i<3;i++) {
-            if (i == 1) {
-                w >>= 1;
-                h >>= 1;
-            }
-            src = picture->data[i];
-            for(j=0;j<h;j++) {
-                memcpy(dest, src, w);
-                dest += w;
-                src += picture->linesize[i];
-            }
-        }
-        break;
-    case PIX_FMT_YUV422P:
-        size = (w * h) * 2; 
-        buf = av_malloc(size);
-        if (!buf)
-            return;
-        dest = buf;
-        for(i=0;i<3;i++) {
-            if (i == 1) {
-                w >>= 1;
-            }
-            src = picture->data[i];
-            for(j=0;j<h;j++) {
-                memcpy(dest, src, w);
-                dest += w;
-                src += picture->linesize[i];
-            }
-        }
-        break;
-    case PIX_FMT_YUV444P:
-        size = (w * h) * 3; 
-        buf = av_malloc(size);
-        if (!buf)
-            return;
-        dest = buf;
-        for(i=0;i<3;i++) {
-            src = picture->data[i];
-            for(j=0;j<h;j++) {
-                memcpy(dest, src, w);
-                dest += w;
-                src += picture->linesize[i];
-            }
-        }
-        break;
-    case PIX_FMT_YUV422:
-        size = (w * h) * 2; 
-        buf = av_malloc(size);
-        if (!buf)
-            return;
-        dest = buf;
-        src = picture->data[0];
-        for(j=0;j<h;j++) {
-            memcpy(dest, src, w * 2);
-            dest += w * 2;
-            src += picture->linesize[0];
-        }
-        break;
-    case PIX_FMT_RGB24:
-    case PIX_FMT_BGR24:
-        size = (w * h) * 3; 
-        buf = av_malloc(size);
-        if (!buf)
-            return;
-        dest = buf;
-        src = picture->data[0];
-        for(j=0;j<h;j++) {
-            memcpy(dest, src, w * 3);
-            dest += w * 3;
-            src += picture->linesize[0];
-        }
-        break;
-    default:
-        return;
-    }
-    av_write_frame(s, index, buf, size);
-    av_free(buf);
-}
-
 static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void **bufp)
 {
     AVCodecContext *dec;
@@ -657,7 +561,13 @@ static void do_video_out(AVFormatContext *s,
     /* duplicates frame if needed */
     /* XXX: pb because no interleaving */
     for(i=0;i<nb_frames;i++) {
-        if (enc->codec_id != CODEC_ID_RAWVIDEO) {
+        if (s->oformat->flags & AVFMT_RAWPICTURE) {
+            /* raw pictures are written as AVPicture structure to
+               avoid any copies. We support temorarily the older
+               method. */
+            av_write_frame(s, ost->index, 
+                           (uint8_t *)final_picture, sizeof(AVPicture));
+        } else {
             AVFrame big_picture;
             
             memset(&big_picture, 0, sizeof(AVFrame));
@@ -682,17 +592,6 @@ static void do_video_out(AVFormatContext *s,
             /* if two pass, output log */
             if (ost->logfile && enc->stats_out) {
                 fprintf(ost->logfile, "%s", enc->stats_out);
-            }
-        } else {
-            if (s->oformat->flags & AVFMT_RAWPICTURE) {
-                /* raw pictures are written as AVPicture structure to
-                   avoid any copies. We support temorarily the older
-                   method. */
-                av_write_frame(s, ost->index, 
-                               (uint8_t *)final_picture, sizeof(AVPicture));
-            } else {
-                write_picture(s, ost->index, final_picture, enc->pix_fmt, 
-                              enc->width, enc->height);
             }
         }
         ost->frame_number++;
@@ -1311,16 +1210,7 @@ static int av_encode(AVFormatContext **output_files,
                     data_buf = (uint8_t *)samples;
                     break;
                 case CODEC_TYPE_VIDEO:
-                    if (ist->st->codec.codec_id == CODEC_ID_RAWVIDEO) {
-                        int size;
-
-                        size = (ist->st->codec.width * ist->st->codec.height);
-                        avpicture_fill(&picture, ptr, 
-                                     ist->st->codec.pix_fmt,
-                                     ist->st->codec.width,
-                                     ist->st->codec.height);
-                        ret = len;
-                    } else {
+                    {
                         AVFrame big_picture;
 
                         data_size = (ist->st->codec.width * ist->st->codec.height * 3) / 2;

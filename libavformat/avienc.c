@@ -89,6 +89,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_HUFFYUV, MKTAG('h', 'f', 'y', 'u') },
     { CODEC_ID_CYUV, MKTAG('C', 'Y', 'U', 'V') },
     { CODEC_ID_CYUV, MKTAG('c', 'y', 'u', 'v') },
+    { CODEC_ID_RAWVIDEO, MKTAG('Y', '4', '2', '2') },
     { 0, 0 },
 };
 
@@ -249,12 +250,17 @@ static int avi_write_header(AVFormatContext *s)
     
         stream = &s->streams[i]->codec;
 
+        /* FourCC should really be set by the codec itself */
+        if (! stream->codec_tag) {
+            stream->codec_tag = codec_get_bmp_tag(stream->codec_id);
+        }
+
         /* stream generic header */
         strh = start_tag(pb, "strh");
         switch(stream->codec_type) {
         case CODEC_TYPE_VIDEO:
             put_tag(pb, "vids");
-            put_le32(pb, codec_get_bmp_tag(stream->codec_id));
+            put_le32(pb, stream->codec_tag);
             put_le32(pb, 0); /* flags */
             put_le16(pb, 0); /* priority */
             put_le16(pb, 0); /* language */
