@@ -83,7 +83,6 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263P, MKTAG('h', '2', '6', '3') },
     { CODEC_ID_H263P, MKTAG('v', 'i', 'v', '1') },
 
-    { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X'), .invalid_asf = 1 },
     { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x'), .invalid_asf = 1 },
     { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0'), .invalid_asf = 1 },
@@ -152,6 +151,9 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'g', '2') }, 
     { CODEC_ID_MPEG1VIDEO, MKTAG('P', 'I', 'M', '1') }, 
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
+    { CODEC_ID_MJPEG, MKTAG('m', 'j', 'p', 'g') },
+    { CODEC_ID_MJPEG, MKTAG('L', 'J', 'P', 'G') },
+    { CODEC_ID_MJPEG, MKTAG('J', 'P', 'G', 'L') }, /* Pegasus lossless JPEG */
     { CODEC_ID_HUFFYUV, MKTAG('H', 'F', 'Y', 'U') },
     { CODEC_ID_HUFFYUV, MKTAG('h', 'f', 'y', 'u') },
     { CODEC_ID_CYUV, MKTAG('C', 'Y', 'U', 'V') },
