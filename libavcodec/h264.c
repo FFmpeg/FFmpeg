@@ -59,9 +59,6 @@ typedef struct SPS{
     
     int profile_idc;
     int level_idc;
-    int multiple_slice_groups;         ///< more_than_one_slice_group_allowed_flag
-    int arbitrary_slice_order;         ///< arbitrary_slice_order_allowed_flag
-    int redundant_slices;              ///< redundant_slices_allowed_flag
     int log2_max_frame_num;            ///< log2_max_frame_num_minus4 + 4
     int poc_type;                      ///< pic_order_cnt_type
     int log2_max_poc_lsb;              ///< log2_max_pic_order_cnt_lsb_minus4
@@ -70,12 +67,17 @@ typedef struct SPS{
     int offset_for_top_to_bottom_field;
     int poc_cycle_length;              ///< num_ref_frames_in_pic_order_cnt_cycle
     int ref_frame_count;               ///< num_ref_frames
-    int required_frame_num_update_behaviour_flag;
+    int gaps_in_frame_num_allowed_flag;
     int mb_width;                      ///< frame_width_in_mbs_minus1 + 1
     int mb_height;                     ///< frame_height_in_mbs_minus1 + 1
     int frame_mbs_only_flag;
     int mb_aff;                        ///<mb_adaptive_frame_field_flag
     int direct_8x8_inference_flag;
+    int crop;                   ///< frame_cropping_flag
+    int crop_left;              ///< frame_cropping_rect_left_offset
+    int crop_right;             ///< frame_cropping_rect_right_offset
+    int crop_top;               ///< frame_cropping_rect_top_offset
+    int crop_bottom;            ///< frame_cropping_rect_bottom_offset
     int vui_parameters_present_flag;
     int sar_width;
     int sar_height;
@@ -100,11 +102,6 @@ typedef struct PPS{
     int deblocking_filter_parameters_present; ///< deblocking_filter_parameters_present_flag
     int constrained_intra_pred; ///< constrained_intra_pred_flag
     int redundant_pic_cnt_present; ///< redundant_pic_cnt_present_flag
-    int crop;                   ///< frame_cropping_flag
-    int crop_left;              ///< frame_cropping_rect_left_offset
-    int crop_right;             ///< frame_cropping_rect_right_offset
-    int crop_top;               ///< frame_cropping_rect_top_offset
-    int crop_bottom;            ///< frame_cropping_rect_bottom_offset
 }PPS;
 
 /**
@@ -789,7 +786,6 @@ static inline void pred_motion(H264Context * const h, int n, int part_width, int
 
     diagonal_ref= fetch_diagonal_mv(h, &C, index8, list, part_width);
     match_count= (diagonal_ref==ref) + (top_ref==ref) + (left_ref==ref);
-    
     if(match_count > 1){ //most common
         *mx= mid_pred(A[0], B[0], C[0]);
         *my= mid_pred(A[1], B[1], C[1]);
@@ -2876,16 +2872,12 @@ static int decode_slice_header(H264Context *h){
     s->mb_x = first_mb_in_slice % s->mb_width;
     s->mb_y = first_mb_in_slice / s->mb_width; //FIXME AFFW
     
-    s->width = 16*s->mb_width - 2*(h->pps.crop_left + h->pps.crop_right );
+    s->width = 16*s->mb_width - 2*(h->sps.crop_left + h->sps.crop_right );
     if(h->sps.frame_mbs_only_flag)
-        s->height= 16*s->mb_height - 2*(h->pps.crop_top  + h->pps.crop_bottom);
+        s->height= 16*s->mb_height - 2*(h->sps.crop_top  + h->sps.crop_bottom);
     else
-        s->height= 16*s->mb_height - 4*(h->pps.crop_top  + h->pps.crop_bottom); //FIXME recheck
+        s->height= 16*s->mb_height - 4*(h->sps.crop_top  + h->sps.crop_bottom); //FIXME recheck
     
-    if(h->pps.crop_left || h->pps.crop_top){
-        fprintf(stderr, "insane croping not completly supported, this could look slightly wrong ...\n");
-    }
-
     if(s->aspected_height) //FIXME emms at end of slice ?
         new_aspect= h->sps.sar_width*s->width / (float)(s->height*h->sps.sar_height);
     else
@@ -3807,28 +3799,23 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
 
 static inline int decode_seq_parameter_set(H264Context *h){
     MpegEncContext * const s = &h->s;
-    int profile_idc, level_idc, multiple_slice_groups, arbitrary_slice_order, redundant_slices;
+    int profile_idc, level_idc;
     int sps_id, i;
     SPS *sps;
     
     profile_idc= get_bits(&s->gb, 8);
+    get_bits1(&s->gb);   //constraint_set0_flag
+    get_bits1(&s->gb);   //constraint_set1_flag
+    get_bits1(&s->gb);   //constraint_set2_flag
+    get_bits(&s->gb, 5); // reserved
     level_idc= get_bits(&s->gb, 8);
-    multiple_slice_groups= get_bits1(&s->gb);
-    arbitrary_slice_order= get_bits1(&s->gb);
-    redundant_slices= get_bits1(&s->gb);
-    
     sps_id= get_ue_golomb(&s->gb);
     
     sps= &h->sps_buffer[ sps_id ];
-    
     sps->profile_idc= profile_idc;
     sps->level_idc= level_idc;
-    sps->multiple_slice_groups= multiple_slice_groups;
-    sps->arbitrary_slice_order= arbitrary_slice_order;
-    sps->redundant_slices= redundant_slices;
     
     sps->log2_max_frame_num= get_ue_golomb(&s->gb) + 4;
-
     sps->poc_type= get_ue_golomb(&s->gb);
     
     if(sps->poc_type == 0){ //FIXME #define
@@ -3848,7 +3835,7 @@ static inline int decode_seq_parameter_set(H264Context *h){
     }
 
     sps->ref_frame_count= get_ue_golomb(&s->gb);
-    sps->required_frame_num_update_behaviour_flag= get_bits1(&s->gb);
+    sps->gaps_in_frame_num_allowed_flag= get_bits1(&s->gb);
     sps->mb_width= get_ue_golomb(&s->gb) + 1;
     sps->mb_height= get_ue_golomb(&s->gb) + 1;
     sps->frame_mbs_only_flag= get_bits1(&s->gb);
@@ -3859,18 +3846,36 @@ static inline int decode_seq_parameter_set(H264Context *h){
 
     sps->direct_8x8_inference_flag= get_bits1(&s->gb);
 
+    sps->crop= get_bits1(&s->gb);
+    if(sps->crop){
+        sps->crop_left  = get_ue_golomb(&s->gb);
+        sps->crop_right = get_ue_golomb(&s->gb);
+        sps->crop_top   = get_ue_golomb(&s->gb);
+        sps->crop_bottom= get_ue_golomb(&s->gb);
+        if(sps->crop_left || sps->crop_top){
+            fprintf(stderr, "insane croping not completly supported, this could look slightly wrong ...\n");
+        }
+    }else{
+        sps->crop_left  = 
+        sps->crop_right = 
+        sps->crop_top   = 
+        sps->crop_bottom= 0;
+    }
+
     sps->vui_parameters_present_flag= get_bits1(&s->gb);
     if( sps->vui_parameters_present_flag )
         decode_vui_parameters(h, sps);
     
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        printf("sps:%d profile:%d/%d poc:%d ref:%d %dx%d %s %s %s\n", 
+        printf("sps:%d profile:%d/%d poc:%d ref:%d %dx%d %s %s crop:%d/%d/%d/%d %s\n", 
                sps_id, sps->profile_idc, sps->level_idc,
                sps->poc_type,
                sps->ref_frame_count,
                sps->mb_width, sps->mb_height,
                sps->frame_mbs_only_flag ? "FRM" : (sps->mb_aff ? "MB-AFF" : "PIC-AFF"),
                sps->direct_8x8_inference_flag ? "8B8" : "",
+               sps->crop_left, sps->crop_right, 
+               sps->crop_top, sps->crop_bottom, 
                sps->vui_parameters_present_flag ? "VUI" : ""
                );
     }
@@ -3938,21 +3943,9 @@ fprintf(stderr, "FMO not supported\n");
     pps->deblocking_filter_parameters_present= get_bits1(&s->gb);
     pps->constrained_intra_pred= get_bits1(&s->gb);
     pps->redundant_pic_cnt_present = get_bits1(&s->gb);
-    pps->crop= get_bits1(&s->gb);
-    if(pps->crop){
-        pps->crop_left  = get_ue_golomb(&s->gb);
-        pps->crop_right = get_ue_golomb(&s->gb);
-        pps->crop_top   = get_ue_golomb(&s->gb);
-        pps->crop_bottom= get_ue_golomb(&s->gb);
-    }else{
-        pps->crop_left  = 
-        pps->crop_right = 
-        pps->crop_top   = 
-        pps->crop_bottom= 0;
-    }
     
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        printf("pps:%d sps:%d %s slice_groups:%d ref:%d/%d %s qp:%d/%d/%d %s %s %s crop:%d/%d/%d/%d\n", 
+        printf("pps:%d sps:%d %s slice_groups:%d ref:%d/%d %s qp:%d/%d/%d %s %s %s\n", 
                pps_id, pps->sps_id,
                pps->cabac ? "CABAC" : "CAVLC",
                pps->slice_group_count,
@@ -3961,9 +3954,7 @@ fprintf(stderr, "FMO not supported\n");
                pps->init_qp, pps->init_qs, pps->chroma_qp_index_offset,
                pps->deblocking_filter_parameters_present ? "LPAR" : "",
                pps->constrained_intra_pred ? "CONSTR" : "",
-               pps->redundant_pic_cnt_present ? "REDU" : "",
-               pps->crop_left, pps->crop_right, 
-               pps->crop_top, pps->crop_bottom
+               pps->redundant_pic_cnt_present ? "REDU" : ""
                );
     }
     
