@@ -1785,7 +1785,7 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
             else{
                 int val, bit_size, range, code;
 
-                bit_size = s->f_code - 1;
+                bit_size = f_code - 1;
                 range = 1 << bit_size;
 
                 val=mv;

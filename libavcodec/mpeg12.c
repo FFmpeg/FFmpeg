@@ -796,7 +796,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
                 else{
                     int val, bit_size, range, code;
 
-                    bit_size = s->f_code - 1;
+                    bit_size = f_code - 1;
                     range = 1 << bit_size;
 
                     val=mv;
