@@ -199,13 +199,20 @@ static int avi_write_header(AVFormatContext *s)
             video_enc = stream;
     }
     
+/*	allowing audio-only AVI file 
+    
     if (!video_enc) {
         av_free(avi);
         return -1;
     }
+*/    
     nb_frames = 0;
 
+    if(video_enc){
     put_le32(pb, (UINT32)(INT64_C(1000000) * FRAME_RATE_BASE / video_enc->frame_rate));
+    } else {
+	put_le32(pb, 0);
+    }
     put_le32(pb, bitrate / 8); /* XXX: not quite exact */
     put_le32(pb, 0); /* padding */
     put_le32(pb, AVIF_TRUSTCKTYPE | AVIF_HASINDEX | AVIF_ISINTERLEAVED); /* flags */
@@ -214,8 +221,13 @@ static int avi_write_header(AVFormatContext *s)
     put_le32(pb, 0); /* initial frame */
     put_le32(pb, s->nb_streams); /* nb streams */
     put_le32(pb, 1024 * 1024); /* suggested buffer size */
+    if(video_enc){    
     put_le32(pb, video_enc->width);
     put_le32(pb, video_enc->height);
+    } else {
+	put_le32(pb, 0);
+	put_le32(pb, 0);
+    }	
     put_le32(pb, 0); /* reserved */
     put_le32(pb, 0); /* reserved */
     put_le32(pb, 0); /* reserved */
