@@ -54,7 +54,7 @@ extern const uint8_t ff_zigzag_direct[64];
 extern const uint8_t ff_zigzag248_direct[64];
 
 /* pixel operations */
-#define MAX_NEG_CROP 384
+#define MAX_NEG_CROP 1024
 
 /* temporary */
 extern uint32_t squareTbl[512];
