@@ -1,6 +1,6 @@
 #
 # libavformat Makefile
-# (c) 2000, 2001, 2002 Fabrice Bellard
+# (c) 2000-2003 Fabrice Bellard
 #
 include ../config.mak
 
@@ -78,10 +78,10 @@ $(LIB): $(OBJS) $(PPOBJS)
 
 $(SLIB): $(OBJS)
 ifeq ($(CONFIG_WIN32),yes)
-	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS) $(AMREXTRALIBS) $(VPATH)/../libavcodec/avcodec.dll
+	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS) $(VPATH)/../libavcodec/avcodec.dll
 	-lib /machine:i386 /def:$(@:.dll=.def)
 else
-	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS) $(AMREXTRALIBS) 
+	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS)
 endif
 
 depend: $(SRCS)
