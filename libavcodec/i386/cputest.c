@@ -91,7 +91,8 @@ int mm_support(void)
 	if( edx & ( 1 << 23) )
 	  rval |= MM_MMX;
 	if( edx & ( 1 << 24) )
-	  rval |= MM_MMXEXT;	
+	  rval |= MM_MMXEXT;
+	return rval;
     } else if (ebx == 0x69727943 &&
                edx == 0x736e4978 &&
                ecx == 0x64616574) {
