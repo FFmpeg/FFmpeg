@@ -121,7 +121,7 @@ static int mp3info(void *data, int *byteSize, int *samplesPerFrame, int *sampleR
         }
     }
 
-    *byteSize = ( ( ( ( *samplesPerFrame * (bitRate / bitsPerSlot) ) / *sampleRate ) + isPadded ) * bitsPerSlot);
+    *byteSize = ( ( ( ( *samplesPerFrame * (bitRate / bitsPerSlot) ) / *sampleRate ) + isPadded ) );
 
     return 1;
 }
@@ -295,8 +295,15 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
             int mp3SampleRate = 0;
             int mp3IsMono = 0;
             int mp3SamplesPerFrame = 0;
+            int c=0;
 
-            if ( mp3info(&flv->audioFifo[flv->audioInPos],&mp3FrameSize,&mp3SamplesPerFrame,&mp3SampleRate,&mp3IsMono) ) {
+            /* copy out mp3 header from ring buffer */
+            uint8_t header[4];
+            for (c=0; c<4; c++) {
+                header[c] = flv->audio_fifo[(flv->audioInPos+c) % AUDIO_FIFO_SIZE];
+            }
+
+            if ( mp3info(header,&mp3FrameSize,&mp3SamplesPerFrame,&mp3SampleRate,&mp3IsMono) ) {
                 if ( flv->audioSize >= mp3FrameSize ) {
 
                     int soundFormat = 0x22;

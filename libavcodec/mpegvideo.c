@@ -748,7 +748,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     }    
         
     if((s->flags & CODEC_FLAG_4MV) && s->codec_id != CODEC_ID_MPEG4 
-       && s->codec_id != CODEC_ID_H263 && s->codec_id != CODEC_ID_H263P){
+       && s->codec_id != CODEC_ID_H263 && s->codec_id != CODEC_ID_H263P && s->codec_id != CODEC_ID_FLV1){
         av_log(avctx, AV_LOG_ERROR, "4MV not supported by codec\n");
         return -1;
     }
