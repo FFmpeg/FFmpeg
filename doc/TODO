@@ -1,0 +1,19 @@
+ffmpeg TODO list:
+
+- Add ASF format.
+
+- add MJPEG codec.
+
+- fix skip frame bug in mpeg video
+
+- fix G2 audio problem (bad volume in AC3 ?)
+
+- use non zero motion vectors.
+
+- test fifo & master handling
+
+- deny & allow + password.
+
+- Improve psycho acoustic model for AC3 & mpeg audio.
+
+- Improve the bit rate control for video codecs.

@@ -1,0 +1,60 @@
+FFmpeg version 0.9 - (c) 2000 Gerard Lantau.
+
+1) Introduction
+---------------
+
+ffmpeg is a hyper fast realtime audio/video encoder and streaming
+server. It can grab from a standard Video4Linux video source and
+convert it into several file formats based on DCT/motion compensation
+encoding. Sound is compressed in MPEG audio layer 2 or using an AC3
+compatible stream.
+
+What makes ffmpeg interesting ?
+
+- Innovative streaming technology : multiformat, real time encoding,
+  simple configuration.
+
+- Simple and efficient video encoder: outputs MPEG1, H263 and Real
+  Video(tm) compatible bitstreams using the same encoder core.
+
+- Real time encoding (25 fps in 352x288 on a K6 500) using the video4linux API.
+
+- Generates I and P frames, which means it is far better than a MJPEG
+  encoder.
+
+- Hyper fast MPEG audio layer 2 compression (50 times faster than
+  realtime on a K6 500).
+
+- Hyper fast AC3 compatible encoder.
+
+- simple and very small portable C source code, easy to understand and
+  to modify. It be may the smallest decent MPEG encoder :-)
+
+ffmpeg is made of two programs:
+
+* ffmpeg: soft VCR which encodes in real time to several formats.
+
+* ffserver: live broadcast streaming server based on the ffmpeg core
+encoders.
+
+2) Documentation
+----------------
+
+read doc/ffmpeg.txt and doc/ffserver.txt to learn the basic features.
+
+read ffmpeg
+
+3) Licensing:
+------------
+
+* See the file COPYING. ffmpeg is licensed under the GNU General
+  Public License.
+
+* Source code from third parties: The DCT code comes from the Berkeley
+  MPEG decoder and the JPEG encoder. 
+
+* This code should be patent free since it is very simple. I took care
+  to use the same video encoder core for all formats to show that they
+  really ARE THE SAME except for the encoding huffman codes.
+
+Gerard Lantau (glantau@users.sourceforge.net).

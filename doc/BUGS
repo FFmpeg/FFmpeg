@@ -1,0 +1,14 @@
+- Sound is only handled in mono. The fixed psycho acoustic model is
+  very bad, although the quality is surpringly good for such a model !
+
+- the bit rate control is really not correct. 
+
+- Only frame size multiple of 16 are handled.
+
+- If you want a specific format to be added (I am thinking about
+  MJPEG, H261) please tell me. Of course, the format you choose should
+  be based on MPEG to be easily integrated
+
+- ffmpeg can be used to generate streaming audio/video on a
+  server. Please tell me if you are interested.
+
