@@ -66,17 +66,21 @@ extern void (*sub_pixels_tab[4])(DCTELEM *block, const UINT8 *pixels, int line_s
 
 /* motion estimation */
 
-typedef int (*op_pixels_abs_func)(UINT8 *blk1, UINT8 *blk2, int line_size, int h);
+typedef int (*op_pixels_abs_func)(UINT8 *blk1, UINT8 *blk2, int line_size);
 
 extern op_pixels_abs_func pix_abs16x16;
 extern op_pixels_abs_func pix_abs16x16_x2;
 extern op_pixels_abs_func pix_abs16x16_y2;
 extern op_pixels_abs_func pix_abs16x16_xy2;
+extern op_pixels_abs_func pix_abs8x8;
+extern op_pixels_abs_func pix_abs8x8_x2;
+extern op_pixels_abs_func pix_abs8x8_y2;
+extern op_pixels_abs_func pix_abs8x8_xy2;
 
-int pix_abs16x16_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_x2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_y2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_xy2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
+int pix_abs16x16_c(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_x2_c(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_y2_c(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_xy2_c(UINT8 *blk1, UINT8 *blk2, int lx);
 
 static inline int block_permute_op(int j)
 {

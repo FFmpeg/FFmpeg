@@ -469,14 +469,8 @@ void h263_encode_mb(MpegEncContext * s,
     }
 
     /* encode each block */
-    if (s->h263_pred) {
-	for (i = 0; i < 6; i++) {
-//	    mpeg4_encode_block(s, block[i], i);
-	}
-    } else {
-	for (i = 0; i < 6; i++) {
-	    h263_encode_block(s, block[i], i);
-	}
+    for (i = 0; i < 6; i++) {
+        h263_encode_block(s, block[i], i);
     }
 }
 
@@ -778,8 +772,8 @@ void h263_encode_init(MpegEncContext *s)
     s->mv_penalty= mv_penalty; //FIXME exact table for msmpeg4 & h263p
     
     // use fcodes >1 only for mpeg4 & h263 & h263p FIXME
-    if(s->h263_plus)      s->fcode_tab= umv_fcode_tab;
-    else if(s->h263_pred) s->fcode_tab= fcode_tab;
+    if(s->h263_plus) s->fcode_tab= umv_fcode_tab;
+    else if(s->h263_pred && !s->h263_msmpeg4) s->fcode_tab= fcode_tab;
 }
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)

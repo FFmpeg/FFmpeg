@@ -61,9 +61,14 @@ extern int motion_estimation_method;
 #define ME_X1     5
 
 /* encoding support */
+/* note not everything is supported yet */
 
 #define CODEC_FLAG_HQ     0x0001 /* high quality (non real time) encoding */
 #define CODEC_FLAG_QSCALE 0x0002 /* use fixed qscale */
+#define CODEC_FLAG_4MV    0x0004 /* 4 MV per MB allowed */
+#define CODEC_FLAG_B      0x0008 /* use B frames */
+#define CODEC_FLAG_QPEL   0x0010 /* use qpel MC */
+#define CODEC_FLAG_GMC    0x0020 /* use GMC */
 
 /* codec capabilities */
 

@@ -65,7 +65,7 @@ typedef struct MpegEncContext {
     int qmax;         /* max qscale */
     int max_qdiff;    /* max qscale difference between frames */
     int encoding;     /* true if we are encoding (vs decoding) */
-    int hq;           /* set if CODEC_FLAG_HQ is used in AVCodecContext.flags */
+    int flags;        /* AVCodecContext.flags (HQ, MV4, ...) */
     /* the following fields are managed internally by the encoder */
 
     /* bit output */
@@ -141,8 +141,16 @@ typedef struct MpegEncContext {
     int mb_x, mb_y;
     int mb_incr;
     int mb_intra;
-    INT16 *mb_var;      /* Table for MB variances */
-    char *mb_type;    /* Table for MB type */
+    UINT16 *mb_var;    /* Table for MB variances */
+    UINT8 *mb_type;    /* Table for MB type */
+#define MB_TYPE_INTRA    0x01
+#define MB_TYPE_INTER    0x02
+#define MB_TYPE_INTER4V  0x04
+#define MB_TYPE_SKIPED   0x08
+#define MB_TYPE_DIRECT   0x10
+#define MB_TYPE_FORWARD  0x20
+#define MB_TYPE_BACKWAD  0x40
+#define MB_TYPE_BIDIR    0x80
 
     int block_index[6];
     int block_wrap[6];
@@ -295,7 +303,10 @@ typedef struct MpegEncContext {
     UINT8 *ptr_last_mb_line;
     UINT32 mb_line_avgsize;
     
-    DCTELEM block[6][64] __align8;
+    DCTELEM (*block)[64]; /* points to one of the following blocks */
+    DCTELEM intra_block[6][64] __align8;
+    DCTELEM inter_block[6][64] __align8;
+    DCTELEM inter4v_block[6][64] __align8;
     void (*dct_unquantize)(struct MpegEncContext *s, 
                            DCTELEM *block, int n, int qscale);
 } MpegEncContext;
@@ -311,9 +322,8 @@ void MPV_common_init_mmx(MpegEncContext *s);
 
 /* motion_est.c */
 
-int estimate_motion(MpegEncContext *s, 
-                    int mb_x, int mb_y,
-                    int *mx_ptr, int *my_ptr);
+void estimate_motion(MpegEncContext *s, 
+                    int mb_x, int mb_y);
 
 /* mpeg12.c */
 extern INT16 default_intra_matrix[64];

@@ -24,19 +24,34 @@
 
 int mm_flags; /* multimedia extension flags */
 
-int pix_abs16x16_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_sse(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_x2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_y2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_xy2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
+int pix_abs16x16_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_x2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_y2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_xy2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+
+int pix_abs16x16_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_x2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_y2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_xy2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
+
+int pix_abs8x8_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs8x8_x2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs8x8_y2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs8x8_xy2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+
+int pix_abs8x8_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs8x8_x2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs8x8_y2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs8x8_xy2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
+
 
 /* external functions, from idct_mmx.c */
 void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
 
 /* pixel operations */
-static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001;
-static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002;
+static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001LL;
+static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002LL;
 //static const unsigned short mm_wone[4] __attribute__ ((aligned(8))) = { 0x1, 0x1, 0x1, 0x1 };
 //static const unsigned short mm_wtwo[4] __attribute__ ((aligned(8))) = { 0x2, 0x2, 0x2, 0x2 };
 
@@ -1035,10 +1050,14 @@ void dsputil_init_mmx(void)
         put_pixels_clamped = put_pixels_clamped_mmx;
         add_pixels_clamped = add_pixels_clamped_mmx;
         
-        pix_abs16x16 = pix_abs16x16_mmx;
-        pix_abs16x16_x2 = pix_abs16x16_x2_mmx;
-        pix_abs16x16_y2 = pix_abs16x16_y2_mmx;
+        pix_abs16x16     = pix_abs16x16_mmx;
+        pix_abs16x16_x2  = pix_abs16x16_x2_mmx;
+        pix_abs16x16_y2  = pix_abs16x16_y2_mmx;
         pix_abs16x16_xy2 = pix_abs16x16_xy2_mmx;
+        pix_abs8x8    = pix_abs8x8_mmx;
+        pix_abs8x8_x2 = pix_abs8x8_x2_mmx;
+        pix_abs8x8_y2 = pix_abs8x8_y2_mmx;
+        pix_abs8x8_xy2= pix_abs8x8_xy2_mmx;
         av_fdct = fdct_mmx;
 
         put_pixels_tab[0] = put_pixels_mmx;
@@ -1067,10 +1086,16 @@ void dsputil_init_mmx(void)
         sub_pixels_tab[3] = sub_pixels_xy2_mmx;
 
         if (mm_flags & MM_MMXEXT) {
-            pix_abs16x16 = pix_abs16x16_sse;
-        }
-
-        if (mm_flags & MM_SSE) {
+            pix_abs16x16    = pix_abs16x16_mmx2;
+            pix_abs16x16_x2 = pix_abs16x16_x2_mmx2;
+            pix_abs16x16_y2 = pix_abs16x16_y2_mmx2;
+            pix_abs16x16_xy2= pix_abs16x16_xy2_mmx2;
+            
+            pix_abs8x8    = pix_abs8x8_mmx2;
+            pix_abs8x8_x2 = pix_abs8x8_x2_mmx2;
+            pix_abs8x8_y2 = pix_abs8x8_y2_mmx2;
+            pix_abs8x8_xy2= pix_abs8x8_xy2_mmx2;
+            
             put_pixels_tab[1] = put_pixels_x2_sse;
             put_pixels_tab[2] = put_pixels_y2_sse;
             
