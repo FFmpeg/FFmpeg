@@ -3,6 +3,26 @@
 #include "rgb2rgb.h"
 #include "mmx.h"
 
+#ifdef HAVE_3DNOW
+#define PREFETCH "prefetch"
+#define PREFETCHW "prefetchw"
+#elif HAVE_MMX2
+#define PREFETCH "prefetchnta"
+#define PREFETCHW "prefetcht0"
+#endif
+
+#ifdef HAVE_3DNOW
+#define EMMS "femms"
+#else
+#define EMMS "emms"
+#endif
+
+#ifdef HAVE_MMX2
+#define MOVNTQ "movntq"
+#else
+#define MOVNTQ "movq"
+#endif
+
 void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
   uint8_t *dest = dst;
@@ -14,10 +34,23 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
 #endif
   end = s + src_size;
 #ifdef HAVE_MMX
+#ifdef PREFETCH
+  __asm __volatile(
+    PREFETCH" %0\n\t"
+    PREFETCH" 64%0\n\t"
+    PREFETCHW" %1\n\t"
+    PREFETCHW" 64%1\n\t"::"m"(*s),"m"(*dest):"memory");
+#endif
   mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
   __asm __volatile("movq %0, %%mm7"::"m"(mask32):"memory");
   while(s < mm_end)
   {
+#ifdef PREFETCH
+    __asm __volatile(
+	PREFETCH" 128%0\n\t"
+	PREFETCHW" 128%1"
+	::"m"(*s),"m"(*dest):"memory");
+#endif
     __asm __volatile(
 	"movd	%1, %%mm0\n\t"
 	"movd	3%1, %%mm1\n\t"
@@ -27,14 +60,15 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
 	"punpckldq %%mm3, %%mm2\n\t"
 	"pand	%%mm7, %%mm0\n\t"
 	"pand	%%mm7, %%mm2\n\t"
-	"movq	%%mm0, %0\n\t"
-	"movq	%%mm2, 8%0"
+	MOVNTQ"	%%mm0, %0\n\t"
+	MOVNTQ"	%%mm2, 8%0"
 	:"=m"(*dest)
 	:"m"(*s)
 	:"memory");
     dest += 16;
     s += 12;
   }
+  __asm __volatile(EMMS:::"memory");
 #endif
   while(s < end)
   {
