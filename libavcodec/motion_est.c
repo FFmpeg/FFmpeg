@@ -997,6 +997,8 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
         c->stride<<=1;
         c->uvstride<<=1;
         init_interlaced_ref(s, 2);
+        
+        assert(s->flags & CODEC_FLAG_INTERLACED_ME);
 
         if(USES_LIST(mb_type, 0)){
             int field_select0= p->ref_index[0][xy ];
@@ -1050,6 +1052,7 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
         c->stride>>=1;
         c->uvstride>>=1;
     }else if(IS_8X8(mb_type)){
+        assert(s->flags & CODEC_FLAG_4MV);
         cmpf= s->dsp.sse[1];
         chroma_cmpf= s->dsp.sse[1];
         init_mv4_ref(s);
