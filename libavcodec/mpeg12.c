@@ -1260,7 +1260,6 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     int ret;
-    DCTELEM block[6][64];
 
     start_code = (start_code - 1) & 0xff;
     if (start_code >= s->mb_height)
@@ -1288,14 +1287,14 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     }
 
     for(;;) {
-        memset(block, 0, sizeof(block));
-        ret = mpeg_decode_mb(s, block);
+        memset(s->block, 0, sizeof(s->block));
+        ret = mpeg_decode_mb(s, s->block);
         dprintf("ret=%d\n", ret);
         if (ret < 0)
             return -1;
         if (ret == 1)
             break;
-        MPV_decode_mb(s, block);
+        MPV_decode_mb(s, s->block);
     }
     
     /* end of slice reached */

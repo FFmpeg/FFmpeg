@@ -79,7 +79,6 @@ static int h263_decode_frame(AVCodecContext *avctx,
 {
     MpegEncContext *s = avctx->priv_data;
     int ret;
-    DCTELEM block[6][64];
     AVPicture *pict = data; 
 
 #ifdef DEBUG
@@ -131,17 +130,17 @@ static int h263_decode_frame(AVCodecContext *avctx,
                 s->c_dc_scale = 8;
             }
 
-            memset(block, 0, sizeof(block));
+            memset(s->block, 0, sizeof(s->block));
             s->mv_dir = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16; 
             if (s->h263_msmpeg4) {
-                if (msmpeg4_decode_mb(s, block) < 0)
+                if (msmpeg4_decode_mb(s, s->block) < 0)
                     return -1;
             } else {
-                if (h263_decode_mb(s, block) < 0)
+                if (h263_decode_mb(s, s->block) < 0)
                     return -1;
             }
-            MPV_decode_mb(s, block);
+            MPV_decode_mb(s, s->block);
         }
     }
 
