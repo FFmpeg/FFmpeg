@@ -20,9 +20,9 @@ stddev:  8.10 bytes:7602176
 4bf9df20cdeb1aa01115761642b4e80b *./data/a-h263.avi
 545df74e0aa443499600faedd10a7065 *./data/out.yuv
 stddev:  8.18 bytes:7602176
-496df9fe47c457144aac4178c960ad66 *./data/a-h263p.avi
-79649b61321beaaaa6413af8c18e4696 *./data/out.yuv
-stddev:  2.05 bytes:7602176
+920a0a8a0063655d1f34dcaad7857f98 *./data/a-h263p.avi
+0eb167c9dfcbeeecbf3debed8af8f811 *./data/out.yuv
+stddev:  2.08 bytes:7602176
 a8cc41cd5016bbb821e7c2691f5090ea *./data/a-odivx.mp4
 e48114a50ef4cfb4fe2016fa5b34ae4c *./data/out.yuv
 stddev:  8.02 bytes:7602176

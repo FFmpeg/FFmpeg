@@ -190,7 +190,7 @@ fi
 if [ -n "$do_h263p" ] ; then
 # h263p encoding
 file=${outfile}h263p.avi
-do_ffmpeg $file -y -qscale 2 -umv -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263p -ps 300 $file
+do_ffmpeg $file -y -qscale 2 -umv -aiv -aic -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263p -ps 300 $file
 
 # h263p decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
