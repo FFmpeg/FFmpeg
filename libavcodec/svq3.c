@@ -18,17 +18,23 @@
  *
  * How to use this decoder:
  * SVQ3 data is transported within Apple Quicktime files. Quicktime files
- * have stsd atoms to describe media trak properties. Sometimes the stsd
- * atom contains information that the decoder must know in order to function
- * properly. Such is the case with SVQ3. In order to get the best use out
- * of this decoder, the calling app must make the video stsd atom available
+ * have stsd atoms to describe media trak properties. A stsd atom for a
+ * video trak contains 1 or more ImageDescription atoms. These atoms begin
+ * with the 4-byte length of the atom followed by the codec fourcc. Some
+ * decoders need information in this atom to operate correctly. Such
+ * is the case with SVQ3. In order to get the best use out of this decoder,
+ * the calling app must make the SVQ3 ImageDescription atom available
  * via the AVCodecContext's extradata[_size] field:
  *
- * AVCodecContext.extradata = pointer to stsd, first characters are expected
- * to be 's', 't', 's', and 'd', NOT the atom length
- * AVCodecContext.extradata_size = size of stsd atom memory buffer (which 
- * will be the same as the stsd atom size field from the QT file, minus 4
- * bytes since the length is missing.
+ * AVCodecContext.extradata = pointer to ImageDescription, first characters 
+ * are expected to be 'S', 'V', 'Q', and '3', NOT the 4-byte atom length
+ * AVCodecContext.extradata_size = size of ImageDescription atom memory 
+ * buffer (which will be the same as the ImageDescription atom size field 
+ * from the QT file, minus 4 bytes since the length is missing)
+ *
+ * You will know you have these parameters passed correctly when the decoder
+ * correctly decodes this file:
+ *  ftp://ftp.mplayerhq.hu/MPlayer/samples/V-codecs/SVQ3/Vertical400kbit.sorenson3.mov
  *
  */
  
@@ -667,12 +673,12 @@ static int svq3_decode_frame (AVCodecContext *avctx,
 
     alloc_tables (h);
   }
-  if (avctx->extradata && avctx->extradata_size >= 115
-      && !memcmp (avctx->extradata, "stsd", 4)) {
+  if (avctx->extradata && avctx->extradata_size >= 0x63
+      && !memcmp (avctx->extradata, "SVQ3", 4)) {
 
-    uint8_t *stsd = (uint8_t *) avctx->extradata + 114;
+    uint8_t *stsd = (uint8_t *) avctx->extradata + 0x62;
 
-    if ((*stsd >> 5) != 7 || avctx->extradata_size >= 118) {
+    if ((*stsd >> 5) != 7 || avctx->extradata_size >= 0x66) {
 
       if ((*stsd >> 5) == 7) {
 	stsd += 3;	/* skip width, height (12 bits each) */
