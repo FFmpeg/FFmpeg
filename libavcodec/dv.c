@@ -921,6 +921,11 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     DVVideoDecodeContext *s = avctx->priv_data;
     int ds, vs;
     const uint16_t *mb_pos_ptr;
+  
+    *data_size=0;
+    /* special case for last picture */
+    if(buf_size==0)
+        return 0;
     
     s->sys = dv_frame_profile(buf);
     if (!s->sys || buf_size < s->sys->frame_size)
