@@ -356,6 +356,7 @@ static AVInputFormat image_iformat = {
     img_read_packet,
     img_read_close,
     NULL,
+    NULL,
     AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
