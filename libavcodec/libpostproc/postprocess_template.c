@@ -2792,7 +2792,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	const int mbWidth= isColor ? (width+7)>>3 : (width+15)>>4;
 
 #ifdef HAVE_MMX
-	for(i=0; i<32; i++){
+	for(i=0; i<57; i++){
 		int offset= ((i*c.ppMode.baseDcDiff)>>8) + 1;
 		int threshold= offset*2 + 1;
 		c.mmxDcOffset[i]= 0x7F - offset;

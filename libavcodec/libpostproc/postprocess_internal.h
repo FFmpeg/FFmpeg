@@ -134,8 +134,8 @@ typedef struct PPContext{
 	uint64_t __attribute__((aligned(8))) pQPb;
 	uint64_t __attribute__((aligned(8))) pQPb2;
 
-	uint64_t __attribute__((aligned(8))) mmxDcOffset[32];
-	uint64_t __attribute__((aligned(8))) mmxDcThreshold[32];
+	uint64_t __attribute__((aligned(8))) mmxDcOffset[64];
+	uint64_t __attribute__((aligned(8))) mmxDcThreshold[64];
 
 	QP_STORE_T *stdQPTable;       ///< used to fix MPEG2 style qscale
 	QP_STORE_T *nonBQPTable;

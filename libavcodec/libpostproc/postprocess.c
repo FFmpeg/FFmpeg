@@ -943,10 +943,10 @@ for(y=0; y<mbHeight; y++){
 		int i;
 		const int count= mbHeight * QPStride;
 		for(i=0; i<(count>>2); i++){
-			((uint32_t*)c->nonBQPTable)[i] = ((uint32_t*)QP_store)[i] & 0x1F1F1F1F;
+			((uint32_t*)c->nonBQPTable)[i] = ((uint32_t*)QP_store)[i] & 0x3F3F3F3F;
 		}
 		for(i<<=2; i<count; i++){
-			c->nonBQPTable[i] = QP_store[i] & 0x1F;
+			c->nonBQPTable[i] = QP_store[i] & 0x3F;
 		}
 	}
 
