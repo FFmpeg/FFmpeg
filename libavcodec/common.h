@@ -1012,23 +1012,31 @@ static inline int av_log2_16bit(unsigned int v)
     return n;
 }
 
-
 /* median of 3 */
 static inline int mid_pred(int a, int b, int c)
 {
-    int vmin, vmax;
-    vmax = vmin = a;
-    if (b < vmin)
-        vmin = b;
-    else
-	vmax = b;
+#if 0
+    int t= (a-b)&((a-b)>>31);
+    a-=t;
+    b+=t;
+    b-= (b-c)&((b-c)>>31);
+    b+= (a-b)&((a-b)>>31);
 
-    if (c < vmin)
-        vmin = c;
-    else if (c > vmax)
-        vmax = c;
-
-    return a + b + c - vmin - vmax;
+    return b;
+#else
+    if(a>b){
+        if(c>b){
+            if(c>a) b=a;
+            else    b=c;
+        }
+    }else{
+        if(b>c){
+            if(c>a) b=c;
+            else    b=a;
+        }
+    }
+    return b;
+#endif
 }
 
 static inline int clip(int a, int amin, int amax)
