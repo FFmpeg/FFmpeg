@@ -61,6 +61,9 @@ untested special converters
 #else
 #include <stdlib.h>
 #endif
+#ifdef HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "../cpudetect.h"
@@ -1999,6 +2002,15 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 // can't downscale !!!
 		if(c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR))
 		{
+#define MAX_FUNNY_CODE_SIZE 10000
+#ifdef HAVE_SYS_MMAN_H
+			c->funnyYCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+			c->funnyUVCode = (uint8_t*)mmap(NULL, MAX_FUNNY_CODE_SIZE, PROT_EXEC | PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+#else
+			c->funnyYCode = (uint8_t*)memalign(32, MAX_FUNNY_CODE_SIZE);
+			c->funnyUVCode = (uint8_t*)memalign(32, MAX_FUNNY_CODE_SIZE);
+#endif
+
 			c->lumMmx2Filter   = (int16_t*)memalign(8, (dstW        /8+8)*sizeof(int16_t));
 			c->chrMmx2Filter   = (int16_t*)memalign(8, (c->chrDstW  /4+8)*sizeof(int16_t));
 			c->lumMmx2FilterPos= (int32_t*)memalign(8, (dstW      /2/8+8)*sizeof(int32_t));
@@ -2555,6 +2567,16 @@ void sws_freeContext(SwsContext *c){
 	c->hLumFilterPos = NULL;
 	if(c->hChrFilterPos) free(c->hChrFilterPos);
 	c->hChrFilterPos = NULL;
+
+#ifdef HAVE_SYS_MMAN_H
+	if(c->funnyYCode) munmap(c->funnyYCode, MAX_FUNNY_CODE_SIZE);
+	if(c->funnyUVCode) munmap(c->funnyUVCode, MAX_FUNNY_CODE_SIZE);
+#else
+	if(c->funnyYCode) free(c->funnyYCode);
+	if(c->funnyUVCode) free(c->funnyUVCode);
+#endif
+	c->funnyYCode=NULL;
+	c->funnyUVCode=NULL;
 
 	if(c->lumMmx2Filter) free(c->lumMmx2Filter);
 	c->lumMmx2Filter=NULL;
