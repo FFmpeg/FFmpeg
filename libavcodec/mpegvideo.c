@@ -924,10 +924,16 @@ static void emulated_edge_mc(UINT8 *buf, UINT8 *src, int linesize, int block_w, 
     if(src_y>= h){
         src+= (h-1-src_y)*linesize;
         src_y=h-1;
+    }else if(src_y<=-block_h){
+        src+= (1-block_h-src_y)*linesize;
+        src_y=1-block_h;
     }
     if(src_x>= w){
         src+= (w-1-src_x);
         src_x=w-1;
+    }else if(src_x<=-block_w){
+        src+= (1-block_w-src_x);
+        src_x=1-block_w;
     }
 
     start_y= MAX(0, -src_y);
@@ -1067,6 +1073,7 @@ static inline void qpel_motion(MpegEncContext *s,
 {
     UINT8 *ptr;
     int dxy, offset, mx, my, src_x, src_y, height, linesize;
+    int emu=0;
 
     dxy = ((motion_y & 3) << 2) | (motion_x & 3);
     src_x = s->mb_x * 16 + (motion_x >> 2);
@@ -1083,6 +1090,15 @@ static inline void qpel_motion(MpegEncContext *s,
     ptr = ref_picture[0] + (src_y * linesize) + src_x + src_offset;
     dest_y += dest_offset;
 //printf("%d %d %d\n", src_x, src_y, dxy);
+    
+    if(s->flags&CODEC_FLAG_EMU_EDGE){
+        if(src_x<0 || src_y<0 || src_x + (motion_x&3) + 16 > s->width
+                              || src_y + (motion_y&3) + h  > height){
+            emulated_edge_mc(s->edge_emu_buffer, ptr, linesize, 17, h+1, src_x, src_y, s->width, height);
+            ptr= s->edge_emu_buffer;
+            emu=1;
+        }
+    }
     qpix_op[dxy](dest_y                 , ptr                 , linesize, linesize, motion_x&3, motion_y&3);
     qpix_op[dxy](dest_y              + 8, ptr              + 8, linesize, linesize, motion_x&3, motion_y&3);
     qpix_op[dxy](dest_y + linesize*8    , ptr + linesize*8    , linesize, linesize, motion_x&3, motion_y&3);
@@ -1112,8 +1128,17 @@ static inline void qpel_motion(MpegEncContext *s,
 
     offset = (src_y * (linesize >> 1)) + src_x + (src_offset >> 1);
     ptr = ref_picture[1] + offset;
+    if(emu){
+        emulated_edge_mc(s->edge_emu_buffer, ptr, linesize>>1, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        ptr= s->edge_emu_buffer;
+    }
     pix_op[dxy](dest_cb + (dest_offset >> 1), ptr, linesize >> 1, h >> 1);
+    
     ptr = ref_picture[2] + offset;
+    if(emu){
+        emulated_edge_mc(s->edge_emu_buffer, ptr, linesize>>1, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        ptr= s->edge_emu_buffer;
+    }
     pix_op[dxy](dest_cr + (dest_offset >> 1), ptr, linesize >> 1, h >> 1);
 }
 
@@ -1126,6 +1151,7 @@ static inline void MPV_motion(MpegEncContext *s,
     int dxy, offset, mx, my, src_x, src_y, motion_x, motion_y;
     int mb_x, mb_y, i;
     UINT8 *ptr, *dest;
+    int emu=0;
 
     mb_x = s->mb_x;
     mb_y = s->mb_y;
@@ -1175,6 +1201,13 @@ static inline void MPV_motion(MpegEncContext *s,
                 dxy &= ~2;
                     
             ptr = ref_picture[0] + (src_y * s->linesize) + (src_x);
+            if(s->flags&CODEC_FLAG_EMU_EDGE){
+                if(src_x<0 || src_y<0 || src_x + (motion_x&1) + 8 > s->width
+                                      || src_y + (motion_y&1) + 8 > s->height){
+                    emulated_edge_mc(s->edge_emu_buffer, ptr, s->linesize, 9, 9, src_x, src_y, s->width, s->height);
+                    ptr= s->edge_emu_buffer;
+                }
+            }
             dest = dest_y + ((i & 1) * 8) + (i >> 1) * 8 * s->linesize;
             pix_op[dxy](dest, ptr, s->linesize, 8);
         }
@@ -1215,8 +1248,21 @@ static inline void MPV_motion(MpegEncContext *s,
         
         offset = (src_y * (s->linesize >> 1)) + src_x;
         ptr = ref_picture[1] + offset;
+        if(s->flags&CODEC_FLAG_EMU_EDGE){
+                if(src_x<0 || src_y<0 || src_x + (dxy &1) + 8 > s->width >>1
+                                      || src_y + (dxy>>1) + 8 > s->height>>1){
+                    emulated_edge_mc(s->edge_emu_buffer, ptr, s->linesize>>1, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
+                    ptr= s->edge_emu_buffer;
+                    emu=1;
+                }
+            }
         pix_op[dxy](dest_cb, ptr, s->linesize >> 1, 8);
+
         ptr = ref_picture[2] + offset;
+        if(emu){
+            emulated_edge_mc(s->edge_emu_buffer, ptr, s->linesize>>1, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
+            ptr= s->edge_emu_buffer;
+        }
         pix_op[dxy](dest_cr, ptr, s->linesize >> 1, 8);
         break;
     case MV_TYPE_FIELD:
