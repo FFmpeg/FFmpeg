@@ -476,6 +476,9 @@ void MPV_common_end(MpegEncContext *s)
 {
     int i;
 
+    av_freep(&s->parse_context.buffer);
+    s->parse_context.buffer_size=0;
+
     av_freep(&s->mb_type);
     av_freep(&s->p_mv_table_base);
     av_freep(&s->b_forw_mv_table_base);
