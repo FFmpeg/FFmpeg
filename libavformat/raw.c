@@ -102,6 +102,25 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static int raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    int ret, size;
+
+    size = RAW_PACKET_SIZE;
+
+    if (av_new_packet(pkt, size) < 0)
+        return -EIO;
+
+    pkt->stream_index = 0;
+    ret = get_partial_buffer(&s->pb, pkt->data, size);
+    if (ret <= 0) {
+        av_free_packet(pkt);
+        return -EIO;
+    }
+    pkt->size = ret;
+    return ret;
+}
+
 static int raw_read_close(AVFormatContext *s)
 {
     return 0;
@@ -247,7 +266,7 @@ AVInputFormat ac3_iformat = {
     0,
     NULL,
     ac3_read_header,
-    raw_read_packet,
+    raw_read_partial_packet,
     raw_read_close,
     .extensions = "ac3",
 };
@@ -273,7 +292,7 @@ AVInputFormat h263_iformat = {
     0,
     h263_probe,
     video_read_header,
-    raw_read_packet,
+    raw_read_partial_packet,
     raw_read_close,
 //    .extensions = "h263", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_H263,
@@ -300,7 +319,7 @@ AVInputFormat m4v_iformat = {
     0,
     NULL /*mpegvideo_probe*/,
     video_read_header,
-    raw_read_packet,
+    raw_read_partial_packet,
     raw_read_close,
     .extensions = "m4v", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_MPEG4,
@@ -327,7 +346,7 @@ AVInputFormat h264_iformat = {
     0,
     NULL /*mpegvideo_probe*/,
     video_read_header,
-    raw_read_packet,
+    raw_read_partial_packet,
     raw_read_close,
     .extensions = "h26l,h264", //FIXME remove after writing mpeg4_probe
     .value = CODEC_ID_H264,
@@ -354,7 +373,7 @@ AVInputFormat mpegvideo_iformat = {
     0,
     mpegvideo_probe,
     video_read_header,
-    raw_read_packet,
+    raw_read_partial_packet,
     raw_read_close,
     .value = CODEC_ID_MPEG1VIDEO,
 };
@@ -380,7 +399,7 @@ AVInputFormat mjpeg_iformat = {
     0,
     NULL,
     video_read_header,
-    raw_read_packet,
+    raw_read_partial_packet,
     raw_read_close,
     .extensions = "mjpg,mjpeg",
     .value = CODEC_ID_MJPEG,

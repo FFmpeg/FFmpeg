@@ -119,6 +119,7 @@ char *url_fgets(ByteIOContext *s, char *buf, int buf_size);
 void put_flush_packet(ByteIOContext *s);
 
 int get_buffer(ByteIOContext *s, unsigned char *buf, int size);
+int get_partial_buffer(ByteIOContext *s, unsigned char *buf, int size);
 int get_byte(ByteIOContext *s);
 unsigned int get_le32(ByteIOContext *s);
 uint64_t get_le64(ByteIOContext *s);
