@@ -681,7 +681,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
         }
 
         for(y = 0; y < height; y++) {
-            const int modified_predictor= y ? 1 : predictor;
+            const int modified_predictor= y ? predictor : 1;
             uint8_t *ptr = p->data[0] + (linesize * y);
 
             for(i=0; i<3; i++){
@@ -1173,7 +1173,7 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point
         buffer[0][i]= 1 << (s->bits + point_transform - 1);
     }
     for(mb_y = 0; mb_y < s->mb_height; mb_y++) {
-        const int modified_predictor= mb_y ? 1 : predictor;
+        const int modified_predictor= mb_y ? predictor : 1;
         uint8_t *ptr = s->current_picture[0] + (linesize * mb_y);
 
         if (s->interlaced && s->bottom_field)
