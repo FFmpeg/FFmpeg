@@ -185,6 +185,10 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
 //printf("R%X\n", pic->opaque);
 }
 
+enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, enum PixelFormat * fmt){
+    return fmt[0];
+}
+
 void avcodec_get_context_defaults(AVCodecContext *s){
     s->bit_rate= 800*1000;
     s->bit_rate_tolerance= s->bit_rate*10;
@@ -207,6 +211,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->me_method= ME_EPZS;
     s->get_buffer= avcodec_default_get_buffer;
     s->release_buffer= avcodec_default_release_buffer;
+    s->get_format= avcodec_default_get_format;
     s->me_subpel_quality=8;
 }
 

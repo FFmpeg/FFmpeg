@@ -923,6 +923,16 @@ typedef struct AVCodecContext {
      */
     int me_subpel_quality;
 
+    /**
+     * callback to negotiate the pixelFormat
+     * @param fmt is the list of formats which are supported by the codec,
+     * its terminated by -1 as 0 is a valid format, the formats are ordered by quality
+     * the first is allways the native one
+     * @return the choosen format
+     * encoding: unused
+     * decoding: set by user, if not set then the native format will always be choosen
+     */
+    enum PixelFormat (*get_format)(struct AVCodecContext *s, enum PixelFormat * fmt);
 } AVCodecContext;
 
 typedef struct AVCodec {

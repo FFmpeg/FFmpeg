@@ -86,6 +86,8 @@ static const uint8_t h263_chroma_roundtab[16] = {
 static UINT16 (*default_mv_penalty)[MAX_MV*2+1]=NULL;
 static UINT8 default_fcode_tab[MAX_MV*2+1];
 
+enum PixelFormat ff_yuv420p_list[2]= {PIX_FMT_YUV420P, -1};
+
 static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[64], uint16_t (*qmat16_bias)[64],
                            const UINT16 *quant_matrix, int bias, int qmin, int qmax)
 {

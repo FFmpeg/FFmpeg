@@ -597,6 +597,7 @@ void ff_emulated_edge_mc(MpegEncContext *s, UINT8 *src, int linesize, int block_
                                     int src_x, int src_y, int w, int h);
 char ff_get_pict_type_char(int pict_type);
 
+extern enum PixelFormat ff_yuv420p_list[2];
 
 extern int ff_bit_exact;
 
