@@ -209,7 +209,7 @@ static inline int get_context(FFV1Context *f, uint8_t *src, uint8_t *last, uint8
 /**
  * put 
  */
-static inline void put_symbol(CABACContext *c, uint8_t *state, int v, int is_signed){
+static inline void put_symbol(CABACContext *c, uint8_t *state, int v, int is_signed, int max_exp){
     int i;
 
     if(v){
@@ -217,42 +217,46 @@ static inline void put_symbol(CABACContext *c, uint8_t *state, int v, int is_sig
         const int e= av_log2(a);
 
         put_cabac(c, state+0, 0);
-        put_cabac_u(c, state+1, e, 7, 6, 1); //1..7
-        if(e<7){
+        
+        for(i=0; i<e; i++){
+            put_cabac(c, state+1+i, 1);  //1..8
+        }
+
+        if(e<max_exp){
+            put_cabac(c, state+1+i, 0);      //1..8
+
             for(i=e-1; i>=0; i--){
-                static const int offset[7]= {15+0, 15+0, 15+1, 15+3, 15+6, 15+10, 15+11};
-                put_cabac(c, state+offset[e]+i, (a>>i)&1); //15..31
+                put_cabac(c, state+16+e+i, (a>>i)&1); //17..29
             }
             if(is_signed)
-                put_cabac(c, state+8 + e, v < 0); //8..14
+                put_cabac(c, state+9 + e, v < 0); //9..16
         }
     }else{
         put_cabac(c, state+0, 1);
     }
 }
 
-static inline int get_symbol(CABACContext *c, uint8_t *state, int is_signed){
-    int i;
-
+static inline int get_symbol(CABACContext *c, uint8_t *state, int is_signed, int max_exp){
     if(get_cabac(c, state+0))
         return 0;
     else{
-        const int e= get_cabac_u(c, state+1, 7, 6, 1); //1..7
-        
-        if(e<7){
+        int i, e;
+ 
+        for(e=0; e<max_exp; e++){ 
             int a= 1<<e;
 
-            for(i=e-1; i>=0; i--){
-                static const int offset[7]= {15+0, 15+0, 15+1, 15+3, 15+6, 15+10, 15+11};
-                a += get_cabac(c, state+offset[e]+i)<<i; //14..31
-            }
+            if(get_cabac(c, state + 1 + e)==0){ // 1..8
+                for(i=e-1; i>=0; i--){
+                    a += get_cabac(c, state+16+e+i)<<i; //17..29
+                }
 
-            if(is_signed && get_cabac(c, state+8 + e)) //8..14
-                return -a;
-            else
-                return a;
-        }else
-            return -128;
+                if(is_signed && get_cabac(c, state+9 + e)) //9..16
+                    return -a;
+                else
+                    return a;
+            }
+        }
+        return -(1<<e);
     }
 }
 
@@ -382,9 +386,9 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
 
             diff= (int8_t)diff;
 
-            if(s->ac)
-                put_symbol(c, p->state[context], diff, 1);
-            else{
+            if(s->ac){
+                put_symbol(c, p->state[context], diff, 1, 7);
+            }else{
                 if(context == 0) run_mode=1;
                 
                 if(run_mode){
@@ -434,11 +438,11 @@ static void write_quant_table(CABACContext *c, int16_t *quant_table){
 
     for(i=1; i<128 ; i++){
         if(quant_table[i] != quant_table[i-1]){
-            put_symbol(c, state, i-last-1, 0);
+            put_symbol(c, state, i-last-1, 0, 7);
             last= i;
         }
     }
-    put_symbol(c, state, i-last-1, 0);
+    put_symbol(c, state, i-last-1, 0, 7);
 }
 
 static void write_header(FFV1Context *f){
@@ -446,12 +450,12 @@ static void write_header(FFV1Context *f){
     int i;
     CABACContext * const c= &f->c;
 
-    put_symbol(c, state, f->version, 0);
-    put_symbol(c, state, f->avctx->coder_type, 0);
-    put_symbol(c, state, 0, 0); //YUV cs type 
+    put_symbol(c, state, f->version, 0, 7);
+    put_symbol(c, state, f->avctx->coder_type, 0, 7);
+    put_symbol(c, state, 0, 0, 7); //YUV cs type 
     put_cabac(c, state, 1); //chroma planes
-        put_symbol(c, state, f->chroma_h_shift, 0);
-        put_symbol(c, state, f->chroma_v_shift, 0);
+        put_symbol(c, state, f->chroma_h_shift, 0, 7);
+        put_symbol(c, state, f->chroma_v_shift, 0, 7);
     put_cabac(c, state, 0); //no transparency plane
 
     for(i=0; i<5; i++)
@@ -673,7 +677,7 @@ static void decode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
             
 
             if(s->ac)
-                diff= get_symbol(c, p->state[context], 1);
+                diff= get_symbol(c, p->state[context], 1, 7);
             else{
                 if(context == 0 && run_mode==0) run_mode=1;
                 
@@ -719,7 +723,7 @@ static int read_quant_table(CABACContext *c, int16_t *quant_table, int scale){
     uint8_t state[CONTEXT_SIZE]={0};
 
     for(v=0; i<128 ; v++){
-        int len= get_symbol(c, state, 0) + 1;
+        int len= get_symbol(c, state, 0, 7) + 1;
 
         if(len + i > 128) return -1;
         
@@ -744,18 +748,34 @@ static int read_header(FFV1Context *f){
     int i, context_count;
     CABACContext * const c= &f->c;
     
-    f->version= get_symbol(c, state, 0);
-    f->ac= f->avctx->coder_type= get_symbol(c, state, 0);
-    get_symbol(c, state, 0); //YUV cs type
+    f->version= get_symbol(c, state, 0, 7);
+    f->ac= f->avctx->coder_type= get_symbol(c, state, 0, 7);
+    get_symbol(c, state, 0, 7); //YUV cs type
     get_cabac(c, state); //no chroma = false
-    f->chroma_h_shift= get_symbol(c, state, 0);
-    f->chroma_v_shift= get_symbol(c, state, 0);
+    f->chroma_h_shift= get_symbol(c, state, 0, 7);
+    f->chroma_v_shift= get_symbol(c, state, 0, 7);
     get_cabac(c, state); //transparency plane
     f->plane_count= 3;
-    
+
+    switch(16*f->chroma_h_shift + f->chroma_v_shift){
+    case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P; break;
+    case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P; break;
+    case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P; break;
+    case 0x20: f->avctx->pix_fmt= PIX_FMT_YUV411P; break;
+    case 0x33: f->avctx->pix_fmt= PIX_FMT_YUV410P; break;
+    default:
+        fprintf(stderr, "format not supported\n");
+        return -1;
+    }
+//printf("%d %d %d\n", f->chroma_h_shift, f->chroma_v_shift,f->avctx->pix_fmt);
+
     context_count=1;
     for(i=0; i<5; i++){
         context_count*= read_quant_table(c, f->quant_table[i], context_count);
+        if(context_count < 0){
+            printf("read_quant_table error\n");
+            return -1;
+        }
     }
     context_count= (context_count+1)/2;
     
@@ -823,12 +843,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     ff_init_cabac_decoder(c, buf, buf_size);
     ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
 
-    p->reference= 0;
-    if(avctx->get_buffer(avctx, p) < 0){
-        fprintf(stderr, "get_buffer() failed\n");
-        return -1;
-    }
-
     p->pict_type= FF_I_TYPE; //FIXME I vs. P
     if(get_cabac_bypass(c)){
         p->key_frame= 1;
@@ -837,8 +851,15 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     }else{
         p->key_frame= 0;
     }
+
+    p->reference= 0;
+    if(avctx->get_buffer(avctx, p) < 0){
+        fprintf(stderr, "get_buffer() failed\n");
+        return -1;
+    }
+
     if(avctx->debug&FF_DEBUG_PICT_INFO)
-        printf("keyframe:%d\n", p->key_frame);
+        printf("keyframe:%d coder:%d\n", p->key_frame, f->ac);
     
     if(!f->ac){
         bytes_read = get_cabac_terminate(c);
