@@ -171,6 +171,7 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
+    s->frame.reference = 1;
     if (avctx->get_buffer(avctx, &s->frame)) {
         printf ("  MS RLE: get_buffer() failed\n");
         return -1;
@@ -183,8 +184,8 @@ static int msrle_decode_frame(AVCodecContext *avctx,
 
     msrle_decode_pal8(s);
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    if (s->prev_frame.data[0])
+        avctx->release_buffer(avctx, &s->prev_frame);
 
     /* shuffle frames */
     s->prev_frame = s->frame;
