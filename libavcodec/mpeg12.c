@@ -33,6 +33,8 @@
 #define EXT_START_CODE		0x000001b5
 #define USER_START_CODE		0x000001b2
 
+#define ABS(a) ((a)<0 ? -(a) : (a))
+
 static void mpeg1_encode_block(MpegEncContext *s, 
                          DCTELEM *block, 
                          int component);
@@ -196,6 +198,26 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 		mpeg1_max_level[0][i]= rl_mpeg1.max_level[0][i];
 		mpeg1_index_run[0][i]= rl_mpeg1.index_run[0][i];
 	}
+
+	/* build unified dc encoding tables */
+	for(i=-255; i<256; i++)
+	{
+		int adiff, index;
+		int bits, code;
+		int diff=i;
+
+		adiff = ABS(diff);
+		if(diff<0) diff--;
+		index = vlc_dc_table[adiff];
+
+		bits= vlc_dc_lum_bits[index] + index;
+		code= (vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1));
+		mpeg1_lum_dc_uni[i+255]= bits + (code<<8);
+		
+		bits= vlc_dc_chroma_bits[index] + index;
+		code= (vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1));
+		mpeg1_chr_dc_uni[i+255]= bits + (code<<8);
+	}
     }
     mpeg1_encode_sequence_header(s);
 
@@ -333,19 +355,16 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val)
 
 static inline void encode_dc(MpegEncContext *s, int diff, int component)
 {
-    int adiff, index;
-
-    adiff = abs(diff);
-    index = vlc_dc_table[adiff];
     if (component == 0) {
-        put_bits(&s->pb, vlc_dc_lum_bits[index], vlc_dc_lum_code[index]);
+        put_bits(
+	    &s->pb, 
+	    mpeg1_lum_dc_uni[diff+255]&0xFF,
+	    mpeg1_lum_dc_uni[diff+255]>>8);
     } else {
-        put_bits(&s->pb, vlc_dc_chroma_bits[index], vlc_dc_chroma_code[index]);
-    }
-    if (diff > 0) {
-        put_bits(&s->pb, index, (diff & ((1 << index) - 1)));
-    } else if (diff < 0) {
-        put_bits(&s->pb, index, ((diff - 1) & ((1 << index) - 1)));
+        put_bits(
+            &s->pb, 
+	    mpeg1_chr_dc_uni[diff+255]&0xFF,
+	    mpeg1_chr_dc_uni[diff+255]>>8);
     }
 }
 

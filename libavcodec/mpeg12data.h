@@ -61,6 +61,10 @@ const unsigned char vlc_dc_chroma_bits[12] = {
     2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10,
 };
 
+/* simple include everything table for dc, first byte is bits number next 3 are code*/
+static UINT32 mpeg1_lum_dc_uni[512];
+static UINT32 mpeg1_chr_dc_uni[512];
+
 static const UINT16 mpeg1_vlc[113][2] = {
  { 0x3, 2 }, { 0x4, 4 }, { 0x5, 5 }, { 0x6, 7 },
  { 0x26, 8 }, { 0x21, 8 }, { 0xa, 10 }, { 0x1d, 12 },
