@@ -53,6 +53,53 @@ static void DEF(put_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_
 	:"%eax", "memory");
 }
 
+static void DEF(put_pixels4_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+{
+    __asm __volatile(
+	"testl $1, %0			\n\t"
+	    " jz 1f				\n\t"
+	"movd	(%1), %%mm0		\n\t"
+	"movd	(%2), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"addl	$4, %2			\n\t"
+	PAVGB" %%mm1, %%mm0		\n\t"
+	"movd	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"decl	%0			\n\t"
+	"1:				\n\t"
+	"movd	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movd	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" (%2), %%mm0		\n\t"
+	PAVGB" 4(%2), %%mm1		\n\t"
+	"movd	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movd	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movd	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movd	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" 8(%2), %%mm0		\n\t"
+	PAVGB" 12(%2), %%mm1		\n\t"
+	"movd	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movd	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+        "addl	$16, %2			\n\t"
+	"subl	$4, %0			\n\t"
+	"jnz	1b			\n\t"
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+	:"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
+	:"S"(src1Stride), "D"(dstStride)
+	:"memory"); 
+}
+
+
 static void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     __asm __volatile(
@@ -172,6 +219,58 @@ static void DEF(put_no_rnd_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src
 	:"r"(src1Stride), "r"(dstStride)
 	:"memory");*/
 }
+
+static void DEF(avg_pixels4_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+{
+    __asm __volatile(
+	"testl $1, %0			\n\t"
+	    " jz 1f				\n\t"
+	"movd	(%1), %%mm0		\n\t"
+	"movd	(%2), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	"addl	$4, %2			\n\t"
+	PAVGB" %%mm1, %%mm0		\n\t"
+	PAVGB" (%3), %%mm0		\n\t"
+	"movd	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"decl	%0			\n\t"
+	"1:				\n\t"
+	"movd	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movd	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" (%2), %%mm0		\n\t"
+	PAVGB" 4(%2), %%mm1		\n\t"
+	PAVGB" (%3), %%mm0	 	\n\t"
+	"movd	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	PAVGB" (%3), %%mm1	 	\n\t"
+	"movd	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"movd	(%1), %%mm0		\n\t"
+	"addl	%4, %1			\n\t"
+	"movd	(%1), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+	PAVGB" 8(%2), %%mm0		\n\t"
+	PAVGB" 12(%2), %%mm1		\n\t"
+	PAVGB" (%3), %%mm0	 	\n\t"
+	"movd	%%mm0, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	PAVGB" (%3), %%mm1	 	\n\t"
+	"movd	%%mm1, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+        "addl	$16, %2			\n\t"
+	"subl	$4, %0			\n\t"
+	"jnz	1b			\n\t"
+#ifdef PIC //Note "+bm" and "+mb" are buggy too (with gcc 3.2.2 at least) and cant be used
+	:"+m"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#else
+	:"+b"(h), "+a"(src1), "+c"(src2), "+d"(dst)
+#endif
+	:"S"(src1Stride), "D"(dstStride)
+	:"memory"); 
+}
+
 
 static void DEF(avg_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {

@@ -296,6 +296,25 @@ static void DEF(put, pixels8_xy2)(uint8_t *block, const uint8_t *pixels, int lin
 }
 
 // avg_pixels
+static void DEF(avg, pixels4)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    JUMPALIGN();
+    do {
+	__asm __volatile(
+	     "movd  %0, %%mm0		\n\t"
+	     "movd  %1, %%mm1		\n\t"
+	     PAVGB(%%mm0, %%mm1, %%mm2, %%mm6)
+	     "movd  %%mm2, %0		\n\t"
+	     :"+m"(*block)
+	     :"m"(*pixels)
+	     :"memory");
+	pixels += line_size;
+	block += line_size;
+    }
+    while (--h);
+}
+
 // in case more speed is needed - unroling would certainly help
 static void DEF(avg, pixels8)(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
