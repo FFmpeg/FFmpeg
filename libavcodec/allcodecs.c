@@ -54,6 +54,7 @@ void avcodec_register_all(void)
 #ifdef CONFIG_RISKY
     register_avcodec(&h263_encoder);
     register_avcodec(&h263p_encoder);
+    register_avcodec(&flv_encoder);
     register_avcodec(&rv10_encoder);
     register_avcodec(&mpeg4_encoder);
     register_avcodec(&msmpeg4v1_encoder);
@@ -82,6 +83,7 @@ void avcodec_register_all(void)
     register_avcodec(&wmv1_decoder);
     register_avcodec(&wmv2_decoder);
     register_avcodec(&h263i_decoder);
+    register_avcodec(&flv_decoder);
     register_avcodec(&rv10_decoder);
     register_avcodec(&svq1_decoder);
     register_avcodec(&svq3_decoder);
