@@ -269,4 +269,13 @@ void ff_mdct_calc(MDCTContext *s, FFTSample *out,
                const FFTSample *input, FFTSample *tmp);
 void ff_mdct_end(MDCTContext *s);
 
+#if defined(__FreeBSD__) || (__bsdi__)
+/* XXX: add ISOC specific test to avoid specific BSD testing. */
+/* better than nothing implementation. */
+static inline long int lrintf(float x)
+{
+    return (int)(rint(x));
+}
+#endif
+
 #endif
