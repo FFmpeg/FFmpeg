@@ -50,6 +50,8 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static int msmpeg4_decode_motion(MpegEncContext * s, 
                                  int *mx_ptr, int *my_ptr);
 
+extern UINT32 inverse[256];
+
 #ifdef DEBUG
 int intra_count = 0;
 int frame_count = 0;
@@ -438,26 +440,22 @@ static int msmpeg4_pred_dc(MpegEncContext * s, int n,
        fact they decided to store the quantized DC (which would lead
        to problems if Q could vary !) */
 #if defined ARCH_X86 && !defined PIC
-    /* using 16bit divisions as they are large enough and 2x as fast */
     asm volatile(
         "movl %3, %%eax		\n\t"
 	"shrl $1, %%eax		\n\t"
 	"addl %%eax, %2		\n\t"
 	"addl %%eax, %1		\n\t"
 	"addl %0, %%eax		\n\t"
-	"xorl %%edx, %%edx	\n\t"
-        "divw %w3		\n\t"
-	"movzwl %%ax, %0	\n\t"
+	"mull %4		\n\t"
+	"movl %%edx, %0		\n\t"
 	"movl %1, %%eax		\n\t"
-	"xorl %%edx, %%edx	\n\t"
-        "divw %w3		\n\t"
-	"movzwl %%ax, %1	\n\t"
+	"mull %4		\n\t"
+	"movl %%edx, %1		\n\t"
 	"movl %2, %%eax		\n\t"
-	"xorl %%edx, %%edx	\n\t"
-        "divw %w3		\n\t"
-	"movzwl %%ax, %2	\n\t"
-        : "+r" (a), "+r" (b), "+r" (c)
-	: "r" (scale)
+	"mull %4		\n\t"
+	"movl %%edx, %2		\n\t"
+	: "+r" (a), "+r" (b), "+r" (c)
+	: "g" (scale), "r" (inverse[scale])
 	: "%eax", "%edx"
     );
 #else
