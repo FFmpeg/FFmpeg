@@ -677,6 +677,9 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
     uint64_t temp;\
 \
     asm volatile(\
+        "pushl %0			\n\t"\
+        "pushl %1			\n\t"\
+        "pushl %2			\n\t"\
         "pxor %%mm7, %%mm7		\n\t"\
         "1:				\n\t"\
         "movq  (%0), %%mm0		\n\t" /* ABCDEFGH */\
@@ -787,8 +790,11 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
         "addl %4, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b				\n\t"\
-        : "+r"(src), "+r"(dst), "+g"(h)\
-        : "r"(srcStride), "r"(dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(temp), "m"(ROUNDER)\
+        "popl %2			\n\t"\
+        "popl %1			\n\t"\
+        "popl %0			\n\t"\
+        :: "r"(src), "r"(dst), "r"(h),\
+         "r"(srcStride), "r"(dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(temp), "m"(ROUNDER)\
     );\
 }\
 \
@@ -871,8 +877,12 @@ void OPNAME ## mpeg4_qpel16_v_lowpass_mmx(uint8_t *dst, uint8_t *src, int dstStr
     count=4;\
     \
 /*FIXME reorder for speed */\
+/*FIXME remove push/pop gcc 2.95 bug workaround here and in the other 3 lowpass filters */\
     asm volatile(\
         /*"pxor %%mm7, %%mm7		\n\t"*/\
+        "pushl %0			\n\t"\
+        "pushl %1			\n\t"\
+        "pushl %2			\n\t"\
         "1:				\n\t"\
         "movq (%0), %%mm0		\n\t"\
         "movq 8(%0), %%mm1		\n\t"\
@@ -908,15 +918,21 @@ void OPNAME ## mpeg4_qpel16_v_lowpass_mmx(uint8_t *dst, uint8_t *src, int dstStr
         "addl %8, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b			\n\t"\
-         \
-        : "+r"(temp_ptr), "+r"(dst), "+g"(count)\
-        : "r"(dstStride), "r"(2*dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(ROUNDER), "g"(4-14*dstStride)\
+        "popl %2			\n\t"\
+        "popl %1			\n\t"\
+        "popl %0			\n\t"\
+        \
+        :: "r"(temp_ptr), "r"(dst), "r"(count),\
+         "r"(dstStride), "r"(2*dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(ROUNDER), "g"(4-14*dstStride)\
     );\
 }\
 void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){\
     uint64_t temp;\
 \
     asm volatile(\
+        "pushl %0			\n\t"\
+        "pushl %1			\n\t"\
+        "pushl %2			\n\t"\
         "pxor %%mm7, %%mm7		\n\t"\
         "1:				\n\t"\
         "movq  (%0), %%mm0		\n\t" /* ABCDEFGH */\
@@ -973,8 +989,11 @@ void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStr
         "addl %4, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b				\n\t"\
-        : "+r"(src), "+r"(dst), "+g"(h)\
-        : "r"(srcStride), "r"(dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(temp), "m"(ROUNDER)\
+        "popl %2			\n\t"\
+        "popl %1			\n\t"\
+        "popl %0			\n\t"\
+        :: "r"(src), "r"(dst), "r"(h),\
+         "r"(srcStride), "r"(dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(temp), "m"(ROUNDER)\
     );\
 }\
 \
@@ -1036,6 +1055,9 @@ void OPNAME ## mpeg4_qpel8_v_lowpass_mmx(uint8_t *dst, uint8_t *src, int dstStri
     \
 /*FIXME reorder for speed */\
     asm volatile(\
+        "pushl %0			\n\t"\
+        "pushl %1			\n\t"\
+        "pushl %2			\n\t"\
         /*"pxor %%mm7, %%mm7		\n\t"*/\
         "1:				\n\t"\
         "movq (%0), %%mm0		\n\t"\
@@ -1060,9 +1082,12 @@ void OPNAME ## mpeg4_qpel8_v_lowpass_mmx(uint8_t *dst, uint8_t *src, int dstStri
         "addl %8, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b			\n\t"\
+        "popl %2			\n\t"\
+        "popl %1			\n\t"\
+        "popl %0			\n\t"\
          \
-        : "+r"(temp_ptr), "+r"(dst), "+g"(count)\
-        : "r"(dstStride), "r"(2*dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(ROUNDER), "g"(4-6*dstStride)\
+        :: "r"(temp_ptr), "r"(dst), "r"(count),\
+         "r"(dstStride), "r"(2*dstStride), "m"(ff_pw_20), "m"(ff_pw_3), "m"(ROUNDER), "g"(4-6*dstStride)\
     );\
 }
 
