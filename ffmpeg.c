@@ -1519,6 +1519,7 @@ static int av_encode(AVFormatContext **output_files,
                 codec->sample_rate = icodec->sample_rate;
                 codec->channels = icodec->channels;
                 codec->frame_size = icodec->frame_size;
+                codec->block_align= icodec->block_align;
                 break;
             case CODEC_TYPE_VIDEO:
                 codec->frame_rate = icodec->frame_rate;
