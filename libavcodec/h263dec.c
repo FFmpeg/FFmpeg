@@ -76,6 +76,11 @@ static int h263_decode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->msmpeg4_version=4;
         break;
+    case CODEC_ID_WMV2:
+        s->h263_msmpeg4 = 1;
+        s->h263_pred = 1;
+        s->msmpeg4_version=5;
+        break;
     case CODEC_ID_H263I:
         s->h263_intel = 1;
         break;
@@ -91,7 +96,7 @@ static int h263_decode_init(AVCodecContext *avctx)
             return -1;
 
     if (s->h263_msmpeg4)
-        msmpeg4_decode_init_vlc(s);
+        ff_msmpeg4_decode_init(s);
     else
         h263_decode_init_vlc(s);
     
@@ -169,8 +174,10 @@ uint64_t time= rdtsc();
 
     if(ret==FRAME_SKIPED) return 0;
     /* skip if the header was thrashed */
-    if (ret < 0)
+    if (ret < 0){
+        fprintf(stderr, "header damaged\n");
         return -1;
+    }
     /* skip b frames if we dont have reference frames */
     if(s->num_available_buffers<2 && s->pict_type==B_TYPE) return 0;
     /* skip b frames if we are in a hurry */
@@ -216,6 +223,9 @@ uint64_t time= rdtsc();
             s->last_dc[2]= 128;
         }
 
+        s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
+        s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
+
         s->block_index[0]= s->block_wrap[0]*(s->mb_y*2 + 1) - 1;
         s->block_index[1]= s->block_wrap[0]*(s->mb_y*2 + 1);
         s->block_index[2]= s->block_wrap[0]*(s->mb_y*2 + 2) - 1;
@@ -245,6 +255,9 @@ uint64_t time= rdtsc();
                         }
                     }
                     s->qscale= s->next_resync_qscale;
+                    s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
+                    s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
+
                     s->gb= s->next_resync_gb;
                     s->resync_mb_x= s->mb_x; //we know that the marker is here cuz mb_num_left was the distance to it
                     s->resync_mb_y= s->mb_y;
@@ -265,18 +278,6 @@ uint64_t time= rdtsc();
 
             //fprintf(stderr,"\nFrame: %d\tMB: %d",avctx->frame_number, (s->mb_y * s->mb_width) + s->mb_x);
             /* DCT & quantize */
-            if (s->h263_pred && !(s->msmpeg4_version==1 || s->msmpeg4_version==2)) {
-                /* old ffmpeg encoded msmpeg4v3 workaround */
-                if(s->workaround_bugs==1 && s->msmpeg4_version==3) 
-                    ff_old_msmpeg4_dc_scale(s);
-                else
-                    h263_dc_scale(s);                
-            } else {
-                /* default quantization values */
-                s->y_dc_scale = 8;
-                s->c_dc_scale = 8;
-            }
-
             if(s->decoding_error!=DECODING_DESYNC){
                 int last_error= s->decoding_error;
                 clear_blocks(s->block[0]);
@@ -513,6 +514,18 @@ AVCodec wmv1_decoder = {
     "wmv1",
     CODEC_TYPE_VIDEO,
     CODEC_ID_WMV1,
+    sizeof(MpegEncContext),
+    h263_decode_init,
+    NULL,
+    h263_decode_end,
+    h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND,
+};
+
+AVCodec wmv2_decoder = {
+    "wmv2",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_WMV2,
     sizeof(MpegEncContext),
     h263_decode_init,
     NULL,

@@ -50,7 +50,6 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded);
 static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr);
-static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
 static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
                               int dir);
 static void mpeg4_decode_sprite_trajectory(MpegEncContext * s);
@@ -176,6 +175,14 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     }
 
     put_bits(&s->pb, 1, 0);	/* no PEI */
+
+    if(s->h263_aic){
+         s->y_dc_scale_table= 
+         s->c_dc_scale_table= h263_aic_dc_scale_table;
+    }else{
+        s->y_dc_scale_table=
+        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+    }
 }
 
 int h263_encode_gob_header(MpegEncContext * s, int mb_line)
@@ -496,7 +503,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             const int level= block[i][0];
             UINT16 *dc_ptr;
 
-            dc_diff[i]= level - mpeg4_pred_dc(s, i, &dc_ptr, &dir[i]);
+            dc_diff[i]= level - ff_mpeg4_pred_dc(s, i, &dc_ptr, &dir[i]);
             if (i < 4) {
                 *dc_ptr = level * s->y_dc_scale;
             } else {
@@ -1098,9 +1105,12 @@ void h263_encode_init(MpegEncContext *s)
         s->min_qcoeff= -128;
         s->max_qcoeff=  127;
         break;
+        //Note for mpeg4 & h263 the dc-scale table will be set per frame as needed later 
     default: //nothing needed default table allready set in mpegvideo.c
         s->min_qcoeff= -128;
         s->max_qcoeff=  127;
+        s->y_dc_scale_table=
+        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
 
     /* h263 type bias */
@@ -1326,44 +1336,18 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     if (s->pict_type == B_TYPE)
 	put_bits(&s->pb, 3, s->b_code);	/* fcode_back */
     //    printf("****frame %d\n", picture_number);
+
+     s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table; //FIXME add short header support 
+     s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
 }
 
-void h263_dc_scale(MpegEncContext * s)
+static void h263_dc_scale(MpegEncContext * s)
 {
-#if 1
-    const static UINT8 y_tab[32]={
-    //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-        0, 8, 8, 8, 8,10,12,14,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,34,36,38,40,42,44,46
-    };
-    const static UINT8 c_tab[32]={
-    //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
-        0, 8, 8, 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,20,21,22,23,24,25
-    };
-    s->y_dc_scale = y_tab[s->qscale];
-    s->c_dc_scale = c_tab[s->qscale];
-#else
-    int quant;
-    quant = s->qscale;
-    /* luminance */
-    if (quant < 5)
-	s->y_dc_scale = 8;
-    else if (quant > 4 && quant < 9)
-	s->y_dc_scale = (2 * quant);
-    else if (quant > 8 && quant < 25)
-	s->y_dc_scale = (quant + 8);
-    else
-	s->y_dc_scale = (2 * quant - 16);
-    /* chrominance */
-    if (quant < 5)
-	s->c_dc_scale = 8;
-    else if (quant > 4 && quant < 25)
-	s->c_dc_scale = ((quant + 13) / 2);
-    else
-	s->c_dc_scale = (quant - 6);
-#endif
+    s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
+    s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
 }
 
-static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr)
+inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
     UINT16 *dc_val;
@@ -2653,10 +2637,6 @@ intra:
             if (s->ac_pred && s->h263_aic)
                 s->h263_aic_dir = get_bits1(&s->gb);
         }
-        if (s->h263_aic) {
-            s->y_dc_scale = 2 * s->qscale;
-            s->c_dc_scale = 2 * s->qscale;
-        }
         cbpy = get_vlc(&s->gb, &cbpy_vlc);
         if(cbpy<0) return -1;
         cbp = (cbpc & 3) | (cbpy << 2);
@@ -2867,7 +2847,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         }
     }
 
-    pred = mpeg4_pred_dc(s, n, &dc_val, dir_ptr);
+    pred = ff_mpeg4_pred_dc(s, n, &dc_val, dir_ptr);
     level += pred;
     if (level < 0)
         level = 0;
@@ -2956,8 +2936,8 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 #if 1 
                     {
                         const int abs_level= ABS(level);
-                        int run1;
                         if(abs_level<=MAX_LEVEL && run<=MAX_RUN && s->error_resilience>=0){
+                            const int run1= run - rl->max_run[last][abs_level] - 1;
                             if(abs_level <= rl->max_level[last][run]){
                                 fprintf(stderr, "illegal 3. esc, vlc encoding possible\n");
                                 return DECODING_AC_LOST;
@@ -2966,7 +2946,6 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                                 fprintf(stderr, "illegal 3. esc, esc 1 encoding possible\n");
                                 return DECODING_AC_LOST;
                             }
-                            run1 = run - rl->max_run[last][abs_level] - 1;
                             if(run1 >= 0 && abs_level <= rl->max_level[last][run1]){
                                 fprintf(stderr, "illegal 3. esc, esc 2 encoding possible\n");
                                 return DECODING_AC_LOST;
@@ -3185,6 +3164,15 @@ int h263_decode_picture_header(MpegEncContext *s)
         skip_bits(&s->gb, 8);
     }
     s->f_code = 1;
+    
+    if(s->h263_aic){
+         s->y_dc_scale_table= 
+         s->c_dc_scale_table= h263_aic_dc_scale_table;
+    }else{
+        s->y_dc_scale_table=
+        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+    }
+
     return 0;
 }
 
@@ -3626,7 +3614,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 }else{
                     printf("hmm, i havnt seen that version of divx yet, lets assume they fixed these bugs ...\n"
                            "using mpeg4 decoder, if it fails contact the developers (of ffmpeg)\n");
-#endif 
+#endif
                 }
             }
         }
@@ -3759,6 +3747,9 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 
      s->picture_number++; // better than pic number==0 allways ;)
 //printf("done\n");
+
+     s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table; //FIXME add short header support 
+     s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
 
      return 0;
 }

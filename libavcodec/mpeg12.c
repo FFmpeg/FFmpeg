@@ -184,41 +184,14 @@ static void mpeg1_skip_picture(MpegEncContext *s, int pict_num)
     put_bits(&s->pb, 1, 1); 
 }
 
+static void common_init(MpegEncContext *s)
+{
+    s->y_dc_scale_table=
+    s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+}
+
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 {
-    static int done=0;
-
-    if (!done) {
-	int i;
-        done = 1;
-        init_rl(&rl_mpeg1);
-	
-	for(i=0; i<64; i++)
-	{
-		mpeg1_max_level[0][i]= rl_mpeg1.max_level[0][i];
-		mpeg1_index_run[0][i]= rl_mpeg1.index_run[0][i];
-	}
-
-	/* build unified dc encoding tables */
-	for(i=-255; i<256; i++)
-	{
-		int adiff, index;
-		int bits, code;
-		int diff=i;
-
-		adiff = ABS(diff);
-		if(diff<0) diff--;
-		index = vlc_dc_table[adiff];
-
-		bits= vlc_dc_lum_bits[index] + index;
-		code= (vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1));
-		mpeg1_lum_dc_uni[i+255]= bits + (code<<8);
-		
-		bits= vlc_dc_chroma_bits[index] + index;
-		code= (vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1));
-		mpeg1_chr_dc_uni[i+255]= bits + (code<<8);
-	}
-    }
     mpeg1_encode_sequence_header(s);
 
     /* mpeg1 picture header */
@@ -354,14 +327,46 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val)
     }
 }
 
-void mpeg1_encode_init(MpegEncContext *s)
+void ff_mpeg1_encode_init(MpegEncContext *s)
 {
     static int done=0;
+
+    common_init(s);
+
     if(!done){
         int f_code;
         int mv;
+	int i;
 
         done=1;
+        init_rl(&rl_mpeg1);
+	
+	for(i=0; i<64; i++)
+	{
+		mpeg1_max_level[0][i]= rl_mpeg1.max_level[0][i];
+		mpeg1_index_run[0][i]= rl_mpeg1.index_run[0][i];
+	}
+
+	/* build unified dc encoding tables */
+	for(i=-255; i<256; i++)
+	{
+		int adiff, index;
+		int bits, code;
+		int diff=i;
+
+		adiff = ABS(diff);
+		if(diff<0) diff--;
+		index = vlc_dc_table[adiff];
+
+		bits= vlc_dc_lum_bits[index] + index;
+		code= (vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1));
+		mpeg1_lum_dc_uni[i+255]= bits + (code<<8);
+		
+		bits= vlc_dc_chroma_bits[index] + index;
+		code= (vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1));
+		mpeg1_chr_dc_uni[i+255]= bits + (code<<8);
+	}
+
         for(f_code=1; f_code<=MAX_FCODE; f_code++){
             for(mv=-MAX_MV; mv<=MAX_MV; mv++){
                 int len;
@@ -403,7 +408,7 @@ void mpeg1_encode_init(MpegEncContext *s)
     s->intra_quant_bias= 3<<(QUANT_BIAS_SHIFT-3); //(a + x*3/8)/x
     s->inter_quant_bias= 0;
 }
- 
+
 static inline void encode_dc(MpegEncContext *s, int diff, int component)
 {
     if (component == 0) {
@@ -1183,6 +1188,8 @@ typedef struct Mpeg1Context {
 static int mpeg_decode_init(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
+    
+    common_init(&s->mpeg_enc_ctx);
 
     s->header_state = 0xff;
     s->mpeg_enc_ctx_allocated = 0;
