@@ -578,11 +578,11 @@ static int asf_write_packet(AVFormatContext *s, int stream_index,
     stream = &asf->streams[stream_index];
     
     if (codec->codec_type == CODEC_TYPE_AUDIO) {
-        timestamp = (int)ticker_tick(&stream->pts_ticker, codec->frame_number);
+        timestamp = (int)ticker_abs(&stream->pts_ticker, codec->frame_number);
         duration = (codec->frame_number * codec->frame_size * INT64_C(10000000)) / 
             codec->sample_rate;
     } else {
-        timestamp = (int)ticker_tick(&stream->pts_ticker, codec->frame_number);
+        timestamp = (int)ticker_abs(&stream->pts_ticker, codec->frame_number);
         duration = codec->frame_number * 
             ((INT64_C(10000000) * FRAME_RATE_BASE) / codec->frame_rate);
     }

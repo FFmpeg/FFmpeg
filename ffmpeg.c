@@ -1055,7 +1055,7 @@ static int av_encode(AVFormatContext **output_files,
             switch(ist->st->codec.codec_type) {
             case CODEC_TYPE_AUDIO:
                 //ist->pts = (INT64)1000000 * ist->sample_index / ist->st->codec.sample_rate;
-                ist->pts = ticker_tick(&ist->pts_ticker, ist->sample_index);
+                ist->pts = ticker_abs(&ist->pts_ticker, ist->sample_index);
                 ist->sample_index += data_size / (2 * ist->st->codec.channels);
                 ist->pts_increment = (INT64) (data_size / (2 * ist->st->codec.channels)) * 1000000 / ist->st->codec.sample_rate;
                 break;
@@ -1063,7 +1063,7 @@ static int av_encode(AVFormatContext **output_files,
                 ist->frame_number++;
                 //ist->pts = ((INT64)ist->frame_number * 1000000 * FRAME_RATE_BASE) / 
                 //    ist->st->codec.frame_rate;
-                ist->pts = ticker_tick(&ist->pts_ticker, ist->frame_number);
+                ist->pts = ticker_abs(&ist->pts_ticker, ist->frame_number);
                 ist->pts_increment = ((INT64) 1000000 * FRAME_RATE_BASE) / 
                     ist->st->codec.frame_rate;
                 break;
