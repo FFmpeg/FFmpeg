@@ -158,6 +158,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_TRUEMOTION1, MKTAG('D', 'U', 'C', 'K') },
     { CODEC_ID_MSZH, MKTAG('M', 'S', 'Z', 'H') },
     { CODEC_ID_ZLIB, MKTAG('Z', 'L', 'I', 'B') },
+    { CODEC_ID_4XM, MKTAG('4', 'X', 'M', 'V') },
     { 0, 0 },
 };
 
