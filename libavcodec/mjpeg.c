@@ -1530,15 +1530,21 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     
     if (id == ff_get_fourcc("JFIF"))
     {
-	int t_w, t_h;
+	int t_w, t_h, v1, v2;
 	skip_bits(&s->gb, 8); /* the trailing zero-byte */
-        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-            av_log(s->avctx, AV_LOG_INFO, "mjpeg: JFIF header found (version: %x.%x)\n",
-	    get_bits(&s->gb, 8), get_bits(&s->gb, 8));
+	v1= get_bits(&s->gb, 8);
+        v2= get_bits(&s->gb, 8);
         skip_bits(&s->gb, 8);
 
         s->avctx->sample_aspect_ratio.num= get_bits(&s->gb, 16);
         s->avctx->sample_aspect_ratio.den= get_bits(&s->gb, 16);
+
+        if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+            av_log(s->avctx, AV_LOG_INFO, "mjpeg: JFIF header found (version: %x.%x) SAR=%d/%d\n",
+                v1, v2,
+                s->avctx->sample_aspect_ratio.num,
+                s->avctx->sample_aspect_ratio.den
+            );
 
 	t_w = get_bits(&s->gb, 8);
 	t_h = get_bits(&s->gb, 8);
@@ -1636,7 +1642,8 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
 	    else
 		cbuf[i] = 0;
 
-	    av_log(s->avctx, AV_LOG_INFO, "mjpeg comment: '%s'\n", cbuf);
+            if(s->avctx->debug & FF_DEBUG_PICT_INFO)
+                av_log(s->avctx, AV_LOG_INFO, "mjpeg comment: '%s'\n", cbuf);
 
 	    /* buggy avid, it puts EOI only at every 10th frame */
 	    if (!strcmp(cbuf, "AVID"))
