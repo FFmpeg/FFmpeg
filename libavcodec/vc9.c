@@ -1409,7 +1409,7 @@ static int decode_p_mbs(VC9Context *v)
                     }
                     if (!v->ttmbf)
                         v->ttfrm = get_vlc2(&v->gb, v->ttmb_vlc->table,
-                                            VC9_TTMB_VLC_BITS, 12);
+                                            VC9_TTMB_VLC_BITS, 2);
                     //Decode blocks from that mb wrt cbpcy
                 }
                 else //Skipped
@@ -1440,7 +1440,7 @@ static int decode_p_mbs(VC9Context *v)
                             ac_pred = get_bits(&v->gb, 1);
                         if (!v->ttmbf)
                             tt_block = get_vlc2(&v->gb, v->ttmb_vlc->table,
-                                                VC9_TTMB_VLC_BITS, 12);
+                                                VC9_TTMB_VLC_BITS, 2);
             
                         /* TODO: Process blocks wrt cbpcy */
             
