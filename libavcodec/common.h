@@ -197,6 +197,25 @@ inline void dprintf(const char* fmt,...) {}
 #define FFMAX(a,b) ((a) > (b) ? (a) : (b))
 #define FFMIN(a,b) ((a) > (b) ? (b) : (a))
 
+extern const uint32_t inverse[256];
+
+#ifdef ARCH_X86
+#    define FASTDIV(a,b) \
+    ({\
+        int ret,dmy;\
+        asm volatile(\
+            "mull %3"\
+            :"=d"(ret),"=a"(dmy)\
+            :"1"(a),"g"(inverse[b])\
+            );\
+        ret;\
+    })
+#elif defined(CONFIG_FASTDIV)
+#    define FASTDIV(a,b)   ((uint32_t)((((uint64_t)a)*inverse[b])>>32))
+#else
+#    define FASTDIV(a,b)   ((a)/(b))
+#endif
+ 
 #ifdef ARCH_X86
 // avoid +32 for shift optimization (gcc should do that ...)
 static inline  int32_t NEG_SSR32( int32_t a, int8_t s){

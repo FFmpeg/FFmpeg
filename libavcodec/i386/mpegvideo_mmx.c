@@ -26,7 +26,6 @@
 
 extern uint8_t zigzag_direct_noperm[64];
 extern uint16_t inv_zigzag_direct16[64];
-extern uint32_t inverse[256];
 
 static const unsigned long long int mm_wabs __attribute__ ((aligned(8))) = 0xffffffffffffffffULL;
 static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001ULL;

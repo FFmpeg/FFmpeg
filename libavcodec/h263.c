@@ -73,8 +73,6 @@ static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
 static void mpeg4_decode_sprite_trajectory(MpegEncContext * s);
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr, int *dir_ptr);
 
-extern uint32_t inverse[256];
-
 #ifdef CONFIG_ENCODERS
 static uint8_t uni_DCtab_lum_len[512];
 static uint8_t uni_DCtab_chrom_len[512];
@@ -1823,7 +1821,6 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_
 {
     int a, b, c, wrap, pred, scale;
     uint16_t *dc_val;
-    int dummy;
 
     /* find prediction */
     if (n < 4) {
@@ -1859,16 +1856,7 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_
         *dir_ptr = 0; /* left */
     }
     /* we assume pred is positive */
-#ifdef ARCH_X86
-	asm volatile (
-		"xorl %%edx, %%edx	\n\t"
-		"mul %%ecx		\n\t"
-		: "=d" (pred), "=a"(dummy)
-		: "a" (pred + (scale >> 1)), "c" (inverse[scale])
-	);
-#else
-    pred = (pred + (scale >> 1)) / scale;
-#endif
+    pred = FASTDIV((pred + (scale >> 1)), scale);
 
     /* prepare address for prediction update */
     *dc_val_ptr = &dc_val[0];
@@ -3668,8 +3656,8 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 	/* DC coef */
         if(s->partitioned_frame){
             level = s->dc_val[0][ s->block_index[n] ];
-            if(n<4) level= (level + (s->y_dc_scale>>1))/s->y_dc_scale; //FIXME optimizs
-            else    level= (level + (s->c_dc_scale>>1))/s->c_dc_scale;
+            if(n<4) level= FASTDIV((level + (s->y_dc_scale>>1)), s->y_dc_scale);
+            else    level= FASTDIV((level + (s->c_dc_scale>>1)), s->c_dc_scale);
             dc_pred_dir= (s->pred_dir_table[s->mb_x + s->mb_y*s->mb_stride]<<n)&32;
         }else{
             level = mpeg4_decode_dc(s, n, &dc_pred_dir);

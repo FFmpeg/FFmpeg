@@ -78,8 +78,6 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 
-extern uint32_t inverse[256];
-
 
 #ifdef DEBUG
 int intra_count = 0;
@@ -699,7 +697,7 @@ static int get_dc(uint8_t *src, int stride, int scale)
             sum+=src[x + y*stride];
         }
     }
-    return (sum + (scale>>1))/scale;
+    return FASTDIV((sum + (scale>>1)), scale);
 }
 
 /* dir = 0: left, dir = 1: top prediction */
@@ -763,9 +761,9 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
 	b = (b + (8 >> 1)) / 8;
 	c = (c + (8 >> 1)) / 8;
     } else {
-	a = (a + (scale >> 1)) / scale;
-	b = (b + (scale >> 1)) / scale;
-	c = (c + (scale >> 1)) / scale;
+	a = FASTDIV((a + (scale >> 1)), scale);
+	b = FASTDIV((b + (scale >> 1)), scale);
+	c = FASTDIV((c + (scale >> 1)), scale);
     }
 #endif
     /* XXX: WARNING: they did not choose the same test as MPEG4. This
