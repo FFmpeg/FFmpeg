@@ -344,7 +344,7 @@ void print_stats(void);
 
 /* misc math functions */
 
-extern inline int av_log2(unsigned int v)
+static inline int av_log2(unsigned int v)
 {
     int n;
 
