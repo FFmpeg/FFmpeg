@@ -65,6 +65,13 @@ void av_free(void *ptr)
         free(ptr);
 }
 
+/* cannot call it directly because of 'void **' casting is not automatic */
+void __av_freep(void **ptr)
+{
+    av_free(*ptr);
+    *ptr = NULL;
+}
+
 /* encoder management */
 AVCodec *first_avcodec;
 

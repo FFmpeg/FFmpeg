@@ -57,14 +57,6 @@ typedef INT32 int32_t;
 
 #define inline __inline
 
-/*
-  Disable warning messages:
-    warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-    warning C4305: 'argument' : truncation from 'const double' to 'float'
-*/
-#pragma warning( disable : 4244 )
-#pragma warning( disable : 4305 )
-
 #else
 #define INT64_C(c)     (c ## LL)
 #define UINT64_C(c)    (c ## ULL)
@@ -901,7 +893,8 @@ static inline int clip(int a, int amin, int amax)
 void *av_malloc(int size);
 void *av_mallocz(int size);
 void av_free(void *ptr);
-#define av_freep(p) do { av_free(*p); *p = NULL; } while (0)
+void __av_freep(void **ptr);
+#define av_freep(p) __av_freep((void **)(p))
 
 /* math */
 int ff_gcd(int a, int b);
