@@ -136,7 +136,6 @@ int vFlatnessThreshold= 56 - 16;
 double maxClippedThreshold= 0.01;
 
 int maxAllowedY=234;
-//FIXME can never make a movie´s black brighter (anyone needs that?)
 int minAllowedY=16;
 
 static struct PPFilter filters[]=
@@ -2507,13 +2506,13 @@ static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int sr
 #define SCALED_CPY					\
 						"movq (%0), %%mm0	\n\t"\
 						"movq (%0,%2), %%mm1	\n\t"\
-						"psubusb %%mm2, %%mm0	\n\t"\
-						"psubusb %%mm2, %%mm1	\n\t"\
 						"movq %%mm0, %%mm5	\n\t"\
 						"punpcklbw %%mm4, %%mm0 \n\t"\
 						"punpckhbw %%mm4, %%mm5 \n\t"\
-						"psllw $7, %%mm0	\n\t"\
-						"psllw $7, %%mm5	\n\t"\
+						"psubw %%mm2, %%mm0	\n\t"\
+						"psubw %%mm2, %%mm5	\n\t"\
+						"psllw $6, %%mm0	\n\t"\
+						"psllw $6, %%mm5	\n\t"\
 						"pmulhw %%mm3, %%mm0	\n\t"\
 						"pmulhw %%mm3, %%mm5	\n\t"\
 						"packuswb %%mm5, %%mm0	\n\t"\
@@ -2521,8 +2520,10 @@ static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int sr
 						"movq %%mm1, %%mm5	\n\t"\
 						"punpcklbw %%mm4, %%mm1 \n\t"\
 						"punpckhbw %%mm4, %%mm5 \n\t"\
-						"psllw $7, %%mm1	\n\t"\
-						"psllw $7, %%mm5	\n\t"\
+						"psubw %%mm2, %%mm1	\n\t"\
+						"psubw %%mm2, %%mm5	\n\t"\
+						"psllw $6, %%mm1	\n\t"\
+						"psllw $6, %%mm5	\n\t"\
 						"pmulhw %%mm3, %%mm1	\n\t"\
 						"pmulhw %%mm3, %%mm5	\n\t"\
 						"packuswb %%mm5, %%mm1	\n\t"\
@@ -2685,15 +2686,13 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			clipped-= yHistogram[white];
 		}
 
-		// we cant handle negative correctures
-		packedYOffset= MAX(black - minAllowedY, 0);
+		packedYOffset= (black - minAllowedY) & 0xFFFF;
 		packedYOffset|= packedYOffset<<32;
 		packedYOffset|= packedYOffset<<16;
-		packedYOffset|= packedYOffset<<8;
 
 		scale= (double)(maxAllowedY - minAllowedY) / (double)(white-black);
 
-		packedYScale= (uint16_t)(scale*512.0 + 0.5);
+		packedYScale= (uint16_t)(scale*1024.0 + 0.5);
 		packedYScale|= packedYScale<<32;
 		packedYScale|= packedYScale<<16;
 	}
