@@ -51,7 +51,7 @@ static int mpeg2_decode_block_intra(MpegEncContext *s,
                                     int n);
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
 
-static UINT16 mv_penalty[MAX_FCODE][MAX_MV*2+1];
+static UINT16 mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static UINT8 fcode_tab[MAX_MV*2+1];
 
 static void put_header(MpegEncContext *s, int header)

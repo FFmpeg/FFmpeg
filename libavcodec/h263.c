@@ -53,7 +53,7 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s);
 
 extern UINT32 inverse[256];
 
-static UINT16 mv_penalty[MAX_FCODE][MAX_MV*2+1];
+static UINT16 mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static UINT8 fcode_tab[MAX_MV*2+1];
 static UINT8 umv_fcode_tab[MAX_MV*2+1];
 

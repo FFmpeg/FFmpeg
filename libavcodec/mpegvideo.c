@@ -67,7 +67,7 @@ static UINT8 h263_chroma_roundtab[16] = {
     0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
 };
 
-static UINT16 default_mv_penalty[MAX_FCODE][MAX_MV*2+1];
+static UINT16 default_mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static UINT8 default_fcode_tab[MAX_MV*2+1];
 
 /* default motion estimation */
@@ -366,7 +366,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         if(!done){
             int i;
             done=1;
-            memset(default_mv_penalty, 0, sizeof(UINT16)*MAX_FCODE*(2*MAX_MV+1));
+            memset(default_mv_penalty, 0, sizeof(UINT16)*(MAX_FCODE+1)*(2*MAX_MV+1));
             memset(default_fcode_tab , 0, sizeof(UINT8)*(2*MAX_MV+1));
 
             for(i=-16; i<16; i++){
