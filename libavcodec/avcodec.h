@@ -1873,9 +1873,9 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_free_buffers(AVCodecContext *s);
 
-int avcodec_pthread_init(AVCodecContext *s, int thread_count);
-void avcodec_pthread_free(AVCodecContext *s);
-int avcodec_pthread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void **arg, int *ret, int count);
+int avcodec_thread_init(AVCodecContext *s, int thread_count);
+void avcodec_thread_free(AVCodecContext *s);
+int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void **arg, int *ret, int count);
 //FIXME func typedef
 
 /**
