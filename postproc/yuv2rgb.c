@@ -609,6 +609,118 @@ static void yuv2rgb_c_4  (uint8_t * py_1, uint8_t * py_2,
     dst_2 = _dst_2;
 
     while (h_size--) {
+        int acc;
+#define DST1_4(i)					\
+	Y = py_1[2*i];				\
+	acc = r[Y] + g[Y] + b[Y];	\
+	Y = py_1[2*i+1];			\
+        acc |= (r[Y] + g[Y] + b[Y])<<4;\
+	dst_1[i] = acc; 
+
+#define DST2_4(i)					\
+	Y = py_2[2*i];				\
+	acc = r[Y] + g[Y] + b[Y];	\
+	Y = py_2[2*i+1];			\
+	acc |= (r[Y] + g[Y] + b[Y])<<4;\
+	dst_2[i] = acc; 
+	
+        RGB(0);
+	DST1_4(0);
+	DST2_4(0);
+
+	RGB(1);
+	DST2_4(1);
+	DST1_4(1);
+
+	RGB(2);
+	DST1_4(2);
+	DST2_4(2);
+
+	RGB(3);
+	DST2_4(3);
+	DST1_4(3);
+
+	pu += 4;
+	pv += 4;
+	py_1 += 8;
+	py_2 += 8;
+	dst_1 += 4;
+	dst_2 += 4;
+    }
+}
+
+static void yuv2rgb_c_4_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
+			  uint8_t * pu, uint8_t * pv,
+			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
+{
+    int U, V, Y;
+    uint8_t * r, * g, * b;
+    uint8_t * dst_1, * dst_2;
+
+    h_size >>= 3;
+    dst_1 = _dst_1;
+    dst_2 = _dst_2;
+
+    while (h_size--) {
+	const uint8_t *d64= dither_8x8_73[v_pos&7];
+	const uint8_t *d128=dither_8x8_220[v_pos&7];
+        int acc;
+
+#define DST1bpp4(i,o)					\
+	Y = py_1[2*i];				\
+	acc = r[Y+d128[0+o]] + g[Y+d64[0+o]] + b[Y+d128[0+o]];	\
+	Y = py_1[2*i+1];			\
+	acc |= (r[Y+d128[1+o]] + g[Y+d64[1+o]] + b[Y+d128[1+o]])<<4;\
+        dst_1[i]= acc;
+
+#define DST2bpp4(i,o)					\
+	Y = py_2[2*i];				\
+	acc =  r[Y+d128[8+o]] + g[Y+d64[8+o]] + b[Y+d128[8+o]];	\
+	Y = py_2[2*i+1];			\
+	acc |=  (r[Y+d128[9+o]] + g[Y+d64[9+o]] + b[Y+d128[9+o]])<<4;\
+        dst_2[i]= acc;
+
+
+	RGB(0);
+	DST1bpp4(0,0);
+	DST2bpp4(0,0);
+
+	RGB(1);
+	DST2bpp4(1,2);
+	DST1bpp4(1,2);
+
+	RGB(2);
+	DST1bpp4(2,4);
+	DST2bpp4(2,4);
+
+	RGB(3);
+	DST2bpp4(3,6);
+	DST1bpp4(3,6);
+
+	pu += 4;
+	pv += 4;
+	py_1 += 8;
+	py_2 += 8;
+	dst_1 += 4;
+	dst_2 += 4;
+    }
+}
+
+// This is exactly the same code as yuv2rgb_c_32 except for the types of
+// r, g, b, dst_1, dst_2
+static void yuv2rgb_c_4b  (uint8_t * py_1, uint8_t * py_2,
+			  uint8_t * pu, uint8_t * pv,
+			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
+{
+    int U, V, Y;
+    uint8_t * r, * g, * b;
+    uint8_t * dst_1, * dst_2;
+
+    h_size >>= 3;
+    dst_1 = _dst_1;
+    dst_2 = _dst_2;
+
+    while (h_size--) {
 	RGB(0);
 	DST1(0);
 	DST2(0);
@@ -634,7 +746,7 @@ static void yuv2rgb_c_4  (uint8_t * py_1, uint8_t * py_2,
     }
 }
 
-static void yuv2rgb_c_4_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
+static void yuv2rgb_c_4b_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 			  uint8_t * pu, uint8_t * pv,
 			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
 {
@@ -650,13 +762,13 @@ static void yuv2rgb_c_4_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 	const uint8_t *d64= dither_8x8_73[v_pos&7];
 	const uint8_t *d128=dither_8x8_220[v_pos&7];
 
-#define DST1bpp4(i,o)					\
+#define DST1bpp4b(i,o)					\
 	Y = py_1[2*i];				\
 	dst_1[2*i] = r[Y+d128[0+o]] + g[Y+d64[0+o]] + b[Y+d128[0+o]];	\
 	Y = py_1[2*i+1];			\
 	dst_1[2*i+1] = r[Y+d128[1+o]] + g[Y+d64[1+o]] + b[Y+d128[1+o]];
 
-#define DST2bpp4(i,o)					\
+#define DST2bpp4b(i,o)					\
 	Y = py_2[2*i];				\
 	dst_2[2*i] =  r[Y+d128[8+o]] + g[Y+d64[8+o]] + b[Y+d128[8+o]];	\
 	Y = py_2[2*i+1];			\
@@ -664,20 +776,20 @@ static void yuv2rgb_c_4_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 
 
 	RGB(0);
-	DST1bpp4(0,0);
-	DST2bpp4(0,0);
+	DST1bpp4b(0,0);
+	DST2bpp4b(0,0);
 
 	RGB(1);
-	DST2bpp4(1,2);
-	DST1bpp4(1,2);
+	DST2bpp4b(1,2);
+	DST1bpp4b(1,2);
 
 	RGB(2);
-	DST1bpp4(2,4);
-	DST2bpp4(2,4);
+	DST1bpp4b(2,4);
+	DST2bpp4b(2,4);
 
 	RGB(3);
-	DST2bpp4(3,6);
-	DST1bpp4(3,6);
+	DST2bpp4b(3,6);
+	DST1bpp4b(3,6);
 
 	pu += 4;
 	pv += 4;
@@ -879,7 +991,11 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	}
 	break;
     case 4:
-	yuv2rgb_c_internal = yuv2rgb_c_4_ordered_dither; //yuv2rgb_c_4;
+    case 4|128:
+        if(bpp==4)
+	    yuv2rgb_c_internal = yuv2rgb_c_4_ordered_dither; //yuv2rgb_c_4;
+        else
+	    yuv2rgb_c_internal = yuv2rgb_c_4b_ordered_dither; //yuv2rgb_c_4;
 
 	table_start= table_121 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
 

@@ -587,6 +587,17 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 			const uint8_t * const d64= dither_8x8_73 [y&7];\
 			const uint8_t * const d128=dither_8x8_220[y&7];\
 			func(uint8_t)\
+				((uint8_t*)dest)[i]= r[Y1+d128[(i2+0)&7]] + g[Y1+d64[(i2+0)&7]] + b[Y1+d128[(i2+0)&7]];\
+				                 + ((r[Y2+d128[(i2+1)&7]] + g[Y2+d64[(i2+1)&7]] + b[Y2+d128[(i2+1)&7]])<<4);\
+			}\
+		}\
+		break;\
+	case IMGFMT_RG4B:\
+	case IMGFMT_BG4B:\
+		{\
+			const uint8_t * const d64= dither_8x8_73 [y&7];\
+			const uint8_t * const d128=dither_8x8_220[y&7];\
+			func(uint8_t)\
 				((uint8_t*)dest)[i2+0]= r[Y1+d128[(i2+0)&7]] + g[Y1+d64[(i2+0)&7]] + b[Y1+d128[(i2+0)&7]];\
 				((uint8_t*)dest)[i2+1]= r[Y2+d128[(i2+1)&7]] + g[Y2+d64[(i2+1)&7]] + b[Y2+d128[(i2+1)&7]];\
 			}\
@@ -747,6 +758,17 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 		break;
 	case IMGFMT_RGB4:
 	case IMGFMT_BGR4:
+		{
+			const uint8_t * const d64= dither_8x8_73 [y&7];
+			const uint8_t * const d128=dither_8x8_220[y&7];
+			YSCALE_YUV_2_RGBX_C(uint8_t)
+				((uint8_t*)dest)[i]= r[Y1+d128[(i2+0)&7]] + g[Y1+d64[(i2+0)&7]] + b[Y1+d128[(i2+0)&7]];
+				                  +((r[Y2+d128[(i2+1)&7]] + g[Y2+d64[(i2+1)&7]] + b[Y2+d128[(i2+1)&7]])<<4);
+			}
+		}
+		break;
+	case IMGFMT_RG4B:
+	case IMGFMT_BG4B:
 		{
 			const uint8_t * const d64= dither_8x8_73 [y&7];
 			const uint8_t * const d128=dither_8x8_220[y&7];
