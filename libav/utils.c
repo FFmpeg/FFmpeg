@@ -659,8 +659,8 @@ int av_find_stream_info(AVFormatContext *ic)
                     close_codec:
                         st->codec_info_state = CSTATE_FOUND;
                         avcodec_close(&st->codec);
+                        break;
                     }
-                    break;
                 }
                 ptr += ret;
                 size -= ret;
