@@ -683,6 +683,12 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
 #define RENAMEl(a) a ## _mmx2
 #include "mpegvideo_mmx_template.c"
 
+#undef RENAME
+#undef RENAMEl
+#define RENAME(a) a ## _SSE2
+#define RENAMEl(a) a ## _sse2
+#include "mpegvideo_mmx_template.c"
+
 void MPV_common_init_mmx(MpegEncContext *s)
 {
     if (mm_flags & MM_MMX) {
@@ -704,7 +710,9 @@ void MPV_common_init_mmx(MpegEncContext *s)
 	}
 
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
-            if(mm_flags & MM_MMXEXT){
+            if(mm_flags & MM_SSE2){
+                s->dct_quantize= dct_quantize_SSE2;
+            } else if(mm_flags & MM_MMXEXT){
                 s->dct_quantize= dct_quantize_MMX2;
             } else {
                 s->dct_quantize= dct_quantize_MMX;
