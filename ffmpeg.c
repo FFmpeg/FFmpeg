@@ -159,13 +159,12 @@ static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
 
 static char *video_grab_format = "video4linux";
+static char *video_device = NULL;
+
 static char *audio_grab_format = "audio_device";
+static char *audio_device = NULL;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
-
-#if !defined(CONFIG_AUDIO_OSS) && !defined(CONFIG_AUDIO_BEOS)
-const char *audio_device = "none";
-#endif
 
 typedef struct AVOutputStream {
     int file_index;          /* file index */
@@ -2421,12 +2420,14 @@ void prepare_grab(void)
     int has_video, has_audio, i, j;
     AVFormatContext *oc;
     AVFormatContext *ic;
+    AVFormatParameters vp1, *vp = &vp1;
     AVFormatParameters ap1, *ap = &ap1;
-
+    
     /* see if audio/video inputs are needed */
     has_video = 0;
     has_audio = 0;
     memset(ap, 0, sizeof(*ap));
+    memset(vp, 0, sizeof(*vp));
     for(j=0;j<nb_output_files;j++) {
         oc = output_files[j];
         for(i=0;i<oc->nb_streams;i++) {
@@ -2440,12 +2441,12 @@ void prepare_grab(void)
                 has_audio = 1;
                 break;
             case CODEC_TYPE_VIDEO:
-                if (enc->width > ap->width)
-                    ap->width = enc->width;
-                if (enc->height > ap->height)
-                    ap->height = enc->height;
-                if (enc->frame_rate > ap->frame_rate)
-                    ap->frame_rate = enc->frame_rate;
+                if (enc->width > vp->width)
+                    vp->width = enc->width;
+                if (enc->height > vp->height)
+                    vp->height = enc->height;
+                if (enc->frame_rate > vp->frame_rate)
+                    vp->frame_rate = enc->frame_rate;
                 has_video = 1;
                 break;
             default:
@@ -2462,25 +2463,28 @@ void prepare_grab(void)
     if (has_video) {
         AVInputFormat *fmt1;
         fmt1 = av_find_input_format(video_grab_format);
-        if (av_open_input_file(&ic, "", fmt1, 0, ap) < 0) {
+        vp->device = video_device;
+        /* XXX: set DV video channel ? */
+        if (av_open_input_file(&ic, "", fmt1, 0, vp) < 0) {
             fprintf(stderr, "Could not find video grab device\n");
             exit(1);
         }
         /* by now video grab has one stream */
-        ic->streams[0]->r_frame_rate = ap->frame_rate;
+        ic->streams[0]->r_frame_rate = vp->frame_rate;
         input_files[nb_input_files] = ic;
-        dump_format(ic, nb_input_files, video_device, 0);
+        dump_format(ic, nb_input_files, "", 0);
         nb_input_files++;
     }
     if (has_audio) {
         AVInputFormat *fmt1;
         fmt1 = av_find_input_format(audio_grab_format);
+        ap->device = audio_device;
         if (av_open_input_file(&ic, "", fmt1, 0, ap) < 0) {
             fprintf(stderr, "Could not find audio grab device\n");
             exit(1);
         }
         input_files[nb_input_files] = ic;
-        dump_format(ic, nb_input_files, audio_device, 0);
+        dump_format(ic, nb_input_files, "", 0);
         nb_input_files++;
     }
 }
@@ -2488,14 +2492,35 @@ void prepare_grab(void)
 /* open the necessary output devices for playing */
 void prepare_play(void)
 {
-    file_iformat = NULL;
-    file_oformat = guess_format("audio_device", NULL, NULL);
-    if (!file_oformat) {
-        fprintf(stderr, "Could not find audio device\n");
-        exit(1);
-    }
+    int has_video, has_audio;
     
-    opt_output_file(audio_device);
+    check_audio_video_inputs(&has_video, &has_audio);
+        
+    /* manual disable */
+    if (audio_disable) {
+        has_audio = 0;
+    }
+    if (video_disable) {
+        has_video = 0;
+    }
+        
+    if (has_audio) {
+        file_oformat = guess_format("audio_device", NULL, NULL);
+        if (!file_oformat) {
+            fprintf(stderr, "Could not find audio device\n");
+            exit(1);
+        }
+        opt_output_file(audio_device);
+    }
+
+    if (has_video) {
+        file_oformat = guess_format("framebuffer_device", NULL, NULL);
+        if (!file_oformat) {
+            fprintf(stderr, "Could not find framebuffer device\n");
+            exit(1);
+        }
+        opt_output_file("");
+    }
 }
 
 /* same option as mencoder */
@@ -2698,7 +2723,7 @@ const OptionDef options[] = {
     { "minrate", HAS_ARG, {(void*)opt_video_bitrate_min}, "set min video bitrate tolerance (in kbit/s)", "bitrate" },
     { "bufsize", HAS_ARG, {(void*)opt_video_buffer_size}, "set ratecontrol buffere size (in kbit)", "size" },
     { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video grab device", "device" },
-    { "dv1394", OPT_EXPERT, {(void*)opt_dv1394}, "set DV1394 options", "[channel]" },
+    { "dv1394", OPT_EXPERT, {(void*)opt_dv1394}, "set DV1394 grab", "" },
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
