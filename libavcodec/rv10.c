@@ -22,7 +22,7 @@
 
 //#define DEBUG
 
-#define DC_VLC_BITS 9
+#define DC_VLC_BITS 14 //FIXME find a better solution
 
 static const UINT16 rv_lum_code[256] =
 {
@@ -210,6 +210,7 @@ int rv_decode_dc(MpegEncContext *s, int n)
                 get_bits(&s->gb, 9);
                 code = 1;
             } else {
+                fprintf(stderr, "chroma dc error\n");
                 return 0xffff;
             }
         } else {
@@ -261,6 +262,7 @@ static int get_num(GetBitContext *gb)
 static int rv10_decode_picture_header(MpegEncContext *s)
 {
     int mb_count, pb_frame, marker, h, full_frame;
+    int pic_num, unk;
     
     /* skip packet header */
     h = get_bits(&s->gb, 8);
@@ -269,15 +271,17 @@ static int rv10_decode_picture_header(MpegEncContext *s)
         full_frame = 1;
         len = get_num(&s->gb);
         pos = get_num(&s->gb);
+//printf("pos:%d\n",len);
     } else {
         int seq, frame_size, pos;
         full_frame = 0;
         seq = get_bits(&s->gb, 8);
         frame_size = get_num(&s->gb);
         pos = get_num(&s->gb);
+//printf("seq:%d, size:%d, pos:%d\n",seq,frame_size,pos);
     }
     /* picture number */
-    get_bits(&s->gb, 8);
+    pic_num= get_bits(&s->gb, 8);
 
     marker = get_bits(&s->gb, 1);
 
@@ -285,15 +289,18 @@ static int rv10_decode_picture_header(MpegEncContext *s)
         s->pict_type = P_TYPE;
     else
         s->pict_type = I_TYPE;
-
+//printf("h:%d ver:%d\n",h,s->rv10_version);
+if(!marker) printf("marker missing\n");
     pb_frame = get_bits(&s->gb, 1);
 
 #ifdef DEBUG
     printf("pict_type=%d pb_frame=%d\n", s->pict_type, pb_frame);
 #endif
     
-    if (pb_frame)
+    if (pb_frame){
+        fprintf(stderr, "pb frame not supported\n");
         return -1;
+    }
 
     s->qscale = get_bits(&s->gb, 5);
     if(s->qscale==0){
@@ -326,8 +333,9 @@ static int rv10_decode_picture_header(MpegEncContext *s)
         s->mb_y = 0;
         mb_count = s->mb_width * s->mb_height;
     }
-//printf("%d\n", get_bits(&s->gb, 3));
-    get_bits(&s->gb, 3);	/* ignored */
+    unk= get_bits(&s->gb, 3);	/* ignored */
+//printf("%d\n", unk);
+s->h263_long_vectors =  s->mb_num<100; //FIXME check if this is ok (100 i just guessed)
     s->f_code = 1;
     s->unrestricted_mv = 1;
 #if 0
@@ -405,25 +413,19 @@ static int rv10_decode_frame(AVCodecContext *avctx,
 
     mb_count = rv10_decode_picture_header(s);
     if (mb_count < 0) {
-#ifdef DEBUG
-        printf("HEADER ERROR\n");
-#endif
+        fprintf(stderr, "HEADER ERROR\n");
         return -1;
     }
     
     if (s->mb_x >= s->mb_width ||
         s->mb_y >= s->mb_height) {
-#ifdef DEBUG
-        printf("POS ERROR %d %d\n", s->mb_x, s->mb_y);
-#endif
+        fprintf(stderr, "POS ERROR %d %d\n", s->mb_x, s->mb_y);
         return -1;
     }
     mb_pos = s->mb_y * s->mb_width + s->mb_x;
     left = s->mb_width * s->mb_height - mb_pos;
     if (mb_count > left) {
-#ifdef DEBUG
-        printf("COUNT ERROR\n");
-#endif
+        fprintf(stderr, "COUNT ERROR\n");
         return -1;
     }
 
@@ -470,9 +472,7 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         s->mv_dir = MV_DIR_FORWARD;
         s->mv_type = MV_TYPE_16X16; 
         if (h263_decode_mb(s, block) < 0) {
-#ifdef DEBUG
-            printf("ERROR\n");
-#endif
+            fprintf(stderr, "ERROR at MB %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
         MPV_decode_mb(s, block);
