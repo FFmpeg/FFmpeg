@@ -308,7 +308,7 @@ void v_resample16_altivec(UINT8 *dst, int dst_width, UINT8 *src, int wrap,
        we opt for aligned writes, as unaligned writes have a huge overhead.
        To do this, do enough scalar resamples to get dst 16-byte aligned.
     */
-    i = (16-((int)dst) & 0xf) & 0xf;
+    i = (-(int)dst) & 0xf;
     while(i>0) {
         sum = s[0 * wrap] * filter[0] +
         s[1 * wrap] * filter[1] +
