@@ -75,7 +75,7 @@ static int put_pack_header(AVFormatContext *ctx,
 
     put_bits(&pb, 32, PACK_START_CODE);
     if (s->is_mpeg2) {
-        put_bits(&pb, 2, 0x2);
+        put_bits(&pb, 2, 0x1);
     } else {
         put_bits(&pb, 4, 0x2);
     }
