@@ -3336,18 +3336,18 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
             if(s->pict_type==I_TYPE){
                 int i;
 
-                if(show_bits_long(&s->gb, 19)==DC_MARKER){
-                    return mb_num-1;
-                }
-
                 do{
+                    if(show_bits_long(&s->gb, 19)==DC_MARKER){
+                        return mb_num-1;
+                    }
+
                     cbpc = get_vlc2(&s->gb, intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
                     if (cbpc < 0){
                         av_log(s->avctx, AV_LOG_ERROR, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
                         return -1;
                     }
                 }while(cbpc == 8);
-
+                
                 s->cbp_table[xy]= cbpc & 3;
                 s->current_picture.mb_type[xy]= MB_TYPE_INTRA;
                 s->mb_intra = 1;
@@ -3374,7 +3374,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                 int16_t * const mot_val= s->current_picture.motion_val[0][s->block_index[0]];
                 const int stride= s->block_wrap[0]*2;
 
-//              do{ //FIXME
+try_again:
                 bits= show_bits(&s->gb, 17);
                 if(bits==MOTION_MARKER){
                     return mb_num-1;
@@ -3405,7 +3405,8 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                     av_log(s->avctx, AV_LOG_ERROR, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
                     return -1;
                 }
-//              }while(cbpc == 20);
+                if(cbpc == 20)
+                    goto try_again;
 
                 s->cbp_table[xy]= cbpc&(8+3); //8 is dquant
     
@@ -3586,11 +3587,15 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
     s->mb_num_left= mb_num;
         
     if(s->pict_type==I_TYPE){
+        while(show_bits(&s->gb, 9) == 1)
+            skip_bits(&s->gb, 9);
         if(get_bits_long(&s->gb, 19)!=DC_MARKER){
             av_log(s->avctx, AV_LOG_ERROR, "marker missing after first I partition at %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
     }else{
+        while(show_bits(&s->gb, 10) == 1)
+            skip_bits(&s->gb, 10);
         if(get_bits(&s->gb, 17)!=MOTION_MARKER){
             av_log(s->avctx, AV_LOG_ERROR, "marker missing after first P partition at %d %d\n", s->mb_x, s->mb_y);
             return -1;
