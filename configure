@@ -100,6 +100,7 @@ risky="yes"
 small="no"
 amr_nb="no"
 amr_nb_fixed="no"
+sunmlib="no"
 
 # OS specific
 targetos=`uname -s`
@@ -341,6 +342,8 @@ for opt do
   --enable-amr_nb) amr_nb="yes"
   ;;
   --enable-amr_nb-fixed) amr_nb_fixed="yes"
+  ;;
+  --enable-sunmlib) sunmlib="yes"
   ;;
   esac
 done
@@ -754,6 +757,7 @@ echo "  --enable-shared-pp       use libpostproc.so [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
 echo "  --enable-amr_nb          enable amr_nb float audio codec"
 echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
+echo "  --enable-sunmlib         use Sun medialib [default=no]"
 echo ""
 echo "Advanced options (experts only):"
 echo "  --source-path=PATH       path of source code [$source_path]"
@@ -826,6 +830,7 @@ if test "$vhook" = "yes" ; then
 echo "Imlib2 support   $imlib2"
 echo "freetype support $freetype2"
 fi
+echo "Sun medialib support"  $sunmlib
 echo "AMR-NB float support"  $amr_nb
 echo "AMR-NB fixed support"  $amr_nb_fixed
 
@@ -917,6 +922,11 @@ if test "$imlib2" = "yes" ; then
 fi
 if test "$freetype2" = "yes" ; then
   echo "HAVE_FREETYPE2=yes" >> config.mak
+fi
+if test "$sunmlib" = "yes" ; then
+  echo "HAVE_MLIB=yes" >> config.mak
+  echo "#define HAVE_MLIB 1" >> $TMPH
+  extralibs="$extralibs -lmlib"
 fi
 if test "$sdl" = "yes" ; then
   echo "CONFIG_SDL=yes" >> config.mak
