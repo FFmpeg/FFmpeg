@@ -1234,7 +1234,8 @@ static int av_seek_frame_generic(AVFormatContext *s,
  * Seek to the key frame at timestamp.
  * 'timestamp' in 'stream_index'.
  * @param stream_index If stream_index is (-1), a default
- * stream is selected
+ * stream is selected, and timestamp is automatically converted 
+ * from AV_TIME_BASE units to the stream specific time_base.
  * @param timestamp timestamp in AVStream.time_base units
  * @param flags flags which select direction and seeking mode
  * @return >= 0 on success
@@ -1255,6 +1256,7 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
             return -1;
             
         st= s->streams[stream_index];
+       /* timestamp for default must be expressed in AV_TIME_BASE units */
         timestamp = av_rescale(timestamp, st->time_base.den, AV_TIME_BASE * (int64_t)st->time_base.num);
     }
     st= s->streams[stream_index];
