@@ -1104,7 +1104,7 @@ static inline unsigned int bitcopy_n(unsigned int a, int n)
     r = bitcopy_n(v >> (10 - 3), 3);\
     g = bitcopy_n(v >> (5 - 3), 3);\
     b = bitcopy_n(v << 3, 3);\
-    a = bitcopy_n(v >> 15, 7);\
+    a = (-(v >> 15)) & 0xff;\
 }
 
 #define RGBA_OUT(d, r, g, b, a)\
