@@ -163,6 +163,7 @@ static char *audio_grab_format = "audio_device";
 static char *audio_device = NULL;
 
 static int using_stdin = 0;
+static int using_vhook = 0;
 static int verbose = 1;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
@@ -295,6 +296,8 @@ static int read_key(void)
 
 #else
 
+static volatile int received_sigterm = 0;
+
 /* no interactive support */
 static void term_exit(void)
 {
@@ -413,7 +416,7 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
     dec = &ist->st->codec;
 
     /* deinterlace : must be done before any resize */
-    if (do_deinterlace) {
+    if (do_deinterlace || using_vhook) {
         int size;
 
         /* create temporary picture */
@@ -425,12 +428,21 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
         picture2 = &picture_tmp;
         avpicture_fill(picture2, buf, dec->pix_fmt, dec->width, dec->height);
 
-        if (avpicture_deinterlace(picture2, picture, 
+        if (do_deinterlace && avpicture_deinterlace(picture2, picture, 
                                   dec->pix_fmt, dec->width, dec->height) < 0) {
             /* if error, do not deinterlace */
             av_free(buf);
             buf = NULL;
             picture2 = picture;
+        }
+        else {
+            if (img_convert(picture2, dec->pix_fmt, picture, 
+                            dec->pix_fmt, dec->width, dec->height) < 0) {
+                /* if error, do not copy */
+                av_free(buf);
+                buf = NULL;
+                picture2 = picture;
+            }
         }
     } else {
         picture2 = picture;
@@ -1150,11 +1162,7 @@ static int av_encode(AVFormatContext **output_files,
     stream_no_data = 0;
     key = -1;
 
-#ifndef CONFIG_WIN32
     for(; received_sigterm == 0;) {
-#else
-    for(;;) {
-#endif
         int file_index, ist_index;
         AVPacket pkt;
         uint8_t *ptr;
@@ -1914,6 +1922,8 @@ static void add_frame_hooker(const char *arg)
     char *argv[64];
     int i;
     char *args = av_strdup(arg);
+
+    using_vhook = 1;
 
     argv[0] = strtok(args, " ");
     while (argc < 62 && (argv[++argc] = strtok(NULL, " "))) {
