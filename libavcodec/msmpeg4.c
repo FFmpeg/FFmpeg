@@ -549,6 +549,9 @@ void msmpeg4_encode_mb(MpegEncContext * s,
 	if (s->use_skip_mb_code && (cbp | motion_x | motion_y) == 0) {
 	    /* skip macroblock */
 	    put_bits(&s->pb, 1, 1);
+            s->last_bits++;
+	    s->misc_bits++;
+
 	    return;
 	}
         if (s->use_skip_mb_code)
@@ -564,7 +567,9 @@ void msmpeg4_encode_mb(MpegEncContext * s,
             put_bits(&s->pb, 
                      cbpy_tab[coded_cbp>>2][1], 
                      cbpy_tab[coded_cbp>>2][0]);
-                        
+
+            s->misc_bits += get_bits_diff(s);
+
             h263_pred_motion(s, 0, &pred_x, &pred_y);
             msmpeg4v2_encode_motion(s, motion_x - pred_x);
             msmpeg4v2_encode_motion(s, motion_y - pred_y);
@@ -573,11 +578,20 @@ void msmpeg4_encode_mb(MpegEncContext * s,
                      table_mb_non_intra[cbp + 64][1], 
                      table_mb_non_intra[cbp + 64][0]);
 
+            s->misc_bits += get_bits_diff(s);
+
             /* motion vector */
             h263_pred_motion(s, 0, &pred_x, &pred_y);
             msmpeg4_encode_motion(s, motion_x - pred_x, 
                                   motion_y - pred_y);
         }
+
+        s->mv_bits += get_bits_diff(s);
+
+        for (i = 0; i < 6; i++) {
+            msmpeg4_encode_block(s, block[i], i);
+        }
+        s->p_tex_bits += get_bits_diff(s);
     } else {
 	/* compute cbp */
 	cbp = 0;
@@ -633,10 +647,12 @@ void msmpeg4_encode_mb(MpegEncContext * s,
                 put_bits(&s->pb, table_inter_intra[s->h263_aic_dir][1], table_inter_intra[s->h263_aic_dir][0]);
             }
         }
-    }
+        s->misc_bits += get_bits_diff(s);
 
-    for (i = 0; i < 6; i++) {
-        msmpeg4_encode_block(s, block[i], i);
+        for (i = 0; i < 6; i++) {
+            msmpeg4_encode_block(s, block[i], i);
+        }
+        s->i_tex_bits += get_bits_diff(s);
     }
 }
 

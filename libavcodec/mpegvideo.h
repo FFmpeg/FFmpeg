@@ -662,6 +662,14 @@ static inline void ff_update_block_index(MpegEncContext *s){
     s->block_index[5]++;
 }
 
+static inline int get_bits_diff(MpegEncContext *s){
+    const int bits= get_bit_count(&s->pb);
+    const int last= s->last_bits;
+
+    s->last_bits = bits;
+
+    return bits - last;
+}
 
 /* motion_est.c */
 void ff_estimate_p_frame_motion(MpegEncContext * s,

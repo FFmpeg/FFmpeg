@@ -80,16 +80,6 @@ static uint32_t uni_mpeg1_ac_vlc_bits[64*64*2];
 static uint8_t  uni_mpeg1_ac_vlc_len [64*64*2];
 #endif
 
-static inline int get_bits_diff(MpegEncContext *s){
-    int bits,ret;
-    
-    bits= get_bit_count(&s->pb);
-    ret= bits - s->last_bits;
-    s->last_bits=bits;
-    
-    return ret;
-}
-
 static void init_2d_vlc_rl(RLTable *rl)
 {
     int i;

@@ -544,9 +544,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             }
 
             if(interleaved_stats){
-                bits= get_bit_count(&s->pb);
-                s->misc_bits+= bits - s->last_bits;
-                s->last_bits=bits;
+                s->misc_bits+= get_bits_diff(s);
             }
 
             switch(mb_type)
@@ -589,9 +587,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             }
 
             if(interleaved_stats){
-                bits= get_bit_count(&s->pb);
-                s->mv_bits+= bits - s->last_bits;
-                s->last_bits=bits;
+                s->mv_bits+= get_bits_diff(s);
             }
 
             /* encode each block */
@@ -600,9 +596,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             }
 
             if(interleaved_stats){
-                bits= get_bit_count(&s->pb);
-                s->p_tex_bits+= bits - s->last_bits;
-                s->last_bits=bits;
+                s->p_tex_bits+= get_bits_diff(s);
             }
         }else{ /* s->pict_type==B_TYPE */
             if ((cbp | motion_x | motion_y | s->dquant) == 0 && s->mv_type==MV_TYPE_16X16) {
@@ -673,9 +667,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 }
                     
                 if(interleaved_stats){
-                    bits= get_bit_count(&s->pb);
-                    s->misc_bits+= bits - s->last_bits;
-                    s->last_bits=bits;
+                    s->misc_bits+= get_bits_diff(s);
                 }
 
                 /* motion vectors: 16x16 mode */
@@ -698,9 +690,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 }
     
                 if(interleaved_stats){
-                    bits= get_bit_count(&s->pb);
-                    s->misc_bits+= bits - s->last_bits;
-                    s->last_bits=bits;
+                    s->misc_bits+= get_bits_diff(s);
                 }
 
                 for(i=0; i<4; i++){
@@ -713,9 +703,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             }
 
             if(interleaved_stats){ 
-                bits= get_bit_count(&s->pb);
-                s->mv_bits+= bits - s->last_bits;
-                s->last_bits=bits;
+                s->mv_bits+= get_bits_diff(s);
             }
 
             /* encode each block */
@@ -724,9 +712,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             }
 
             if(interleaved_stats){
-                bits= get_bit_count(&s->pb);
-                s->p_tex_bits+= bits - s->last_bits;
-                s->last_bits=bits;
+                s->p_tex_bits+= get_bits_diff(s);
             }
             s->f_count++;
         }
@@ -803,9 +789,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
         }
 
         if(interleaved_stats){
-            bits= get_bit_count(&s->pb);
-            s->misc_bits+= bits - s->last_bits;
-            s->last_bits=bits;
+            s->misc_bits+= get_bits_diff(s);
         }
 
         /* encode each block */
@@ -814,9 +798,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
         }
 
         if(interleaved_stats){
-            bits= get_bit_count(&s->pb);
-            s->i_tex_bits+= bits - s->last_bits;
-            s->last_bits=bits;
+            s->i_tex_bits+= get_bits_diff(s);
         }
         s->i_count++;
 
