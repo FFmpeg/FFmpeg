@@ -3905,7 +3905,6 @@ char ff_get_pict_type_char(int pict_type){
     }
 }
 
-extern const AVOption common_options[2];
 static const AVOption mpeg4_options[] =
 {
     AVOPTION_CODEC_INT("bitrate", "desired video bitrate", bit_rate, 4, 240000000, 800000),
@@ -3925,7 +3924,7 @@ static const AVOption mpeg4_options[] =
 		        flags, CODEC_FLAG_PSNR, 0),
     AVOPTION_CODEC_RCOVERRIDE("rc_override", "ratecontrol override (=startframe,endframe,qscale,quality_factor)",
 			      rc_override),
-    AVOPTION_SUB(common_options),
+    AVOPTION_SUB(avoptions_common),
     AVOPTION_END()
 };
 

@@ -12,13 +12,7 @@
 
 #include "avcodec.h"
 
-#ifdef HAVE_MMX
-extern const AVOption common_options[3 + 5];
-#else
-extern const AVOption common_options[3];
-#endif
-
-const AVOption common_options[] = {
+const AVOption avoptions_common[] = {
     AVOPTION_CODEC_FLAG("bit_exact", "use only bit-exact stuff", flags, CODEC_FLAG_BITEXACT, 0),
     AVOPTION_CODEC_FLAG("mm_force", "force mm flags", dsp_mask, FF_MM_FORCE, 0),
 #ifdef HAVE_MMX
@@ -30,6 +24,21 @@ const AVOption common_options[] = {
 #endif
     AVOPTION_END()
 };
+
+const AVOption avoptions_workaround_bug[] = {
+    AVOPTION_CODEC_FLAG("bug_autodetect", "workaround bug autodetection", workaround_bugs, FF_BUG_AUTODETECT, 1),
+    AVOPTION_CODEC_FLAG("bug_old_msmpeg4", "workaround old msmpeg4 bug", workaround_bugs, FF_BUG_OLD_MSMPEG4, 0),
+    AVOPTION_CODEC_FLAG("bug_xvid_ilace", "workaround XviD interlace bug", workaround_bugs, FF_BUG_XVID_ILACE, 0),
+    AVOPTION_CODEC_FLAG("bug_ump4", "workaround ump4 bug", workaround_bugs, FF_BUG_UMP4, 0),
+    AVOPTION_CODEC_FLAG("bug_no_padding", "workaround padding bug", workaround_bugs, FF_BUG_NO_PADDING, 0),
+    AVOPTION_CODEC_FLAG("bug_ac_vlc", "workaround ac VLC bug", workaround_bugs, FF_BUG_AC_VLC, 0),
+    AVOPTION_CODEC_FLAG("bug_qpel_chroma", "workaround qpel chroma bug", workaround_bugs, FF_BUG_QPEL_CHROMA, 0),
+    AVOPTION_CODEC_FLAG("bug_std_qpel", "workaround std qpel bug", workaround_bugs, FF_BUG_STD_QPEL, 0),
+    AVOPTION_CODEC_FLAG("bug_qpel_chroma2", "workaround qpel chroma2 bug", workaround_bugs, FF_BUG_QPEL_CHROMA2, 0),
+    AVOPTION_CODEC_FLAG("bug_direct_blocksize", "workaround direct blocksize bug", workaround_bugs, FF_BUG_DIRECT_BLOCKSIZE, 0),
+    AVOPTION_END()
+};
+
 
 static int parse_bool(const AVOption *c, char *s, int *var)
 {
@@ -45,7 +54,13 @@ static int parse_bool(const AVOption *c, char *s, int *var)
 	    return -1;
     }
 
-    *var = b;
+    if (c->type == FF_OPT_TYPE_FLAG) {
+	if (b)
+	    *var |= (int)c->min;
+	else
+            *var &= ~(int)c->min;
+    } else
+	*var = b;
     return 0;
 }
 
