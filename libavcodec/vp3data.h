@@ -1,7 +1,8 @@
 #ifndef VP3DATA_H
 #define VP3DATA_H
 
-/* these coefficients dequantize intraframe Y plane coefficients */
+/* these coefficients dequantize intraframe Y plane coefficients
+ * (note: same as JPEG) */
 static int16_t vp31_intra_y_dequant[64] =
 {       16,  11,  10,  16,  24,  40,  51,  61,
         12,  12,  14,  19,  26,  58,  60,  55,
@@ -13,7 +14,8 @@ static int16_t vp31_intra_y_dequant[64] =
         72,  92,  95,  98, 112, 100, 103,  99
 };
 
-/* these coefficients dequantize intraframe C plane coefficients */
+/* these coefficients dequantize intraframe C plane coefficients 
+ * (note: same as JPEG) */
 static int16_t vp31_intra_c_dequant[64] =
 {       17,  18,     24,     47,     99,     99,     99,     99,
         18,  21,     26,     66,     99,     99,     99,     99,
@@ -48,7 +50,7 @@ static int16_t vp31_dc_scale_factor[64] =
   20,  10,  10,  10,  10,  10,  10,  10
 };
 
-static uint32_t vp31_quality_threshold[64] =
+static uint32_t vp31_ac_scale_factor[64] =
 { 500,  450,  400,  370,  340,  310, 285, 265,
   245,  225,  210,  195,  185,  180, 170, 160,
   150,  145,  135,  130,  125,  115, 110, 107,

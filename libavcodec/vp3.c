@@ -1,6 +1,5 @@
 /*
- *
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (C) 2003-2004 the ffmpeg project
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -38,7 +37,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#include "dsputil.h"
 
 #include "vp3data.h"
 
@@ -253,7 +251,7 @@ typedef struct Vp3DecodeContext {
     
     /* tables */
     uint16_t coded_dc_scale_factor[64];
-    uint32_t coded_quality_threshold[64];
+    uint32_t coded_ac_scale_factor[64];
     uint16_t coded_intra_y_dequant[64];
     uint16_t coded_intra_c_dequant[64];
     uint16_t coded_inter_dequant[64];
@@ -305,307 +303,6 @@ typedef struct Vp3DecodeContext {
 
 static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb);
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb);
-
-/************************************************************************
- * VP3 I/DCT
- ************************************************************************/
-
-#define IdctAdjustBeforeShift 8
-#define xC1S7 64277
-#define xC2S6 60547
-#define xC3S5 54491
-#define xC4S4 46341
-#define xC5S3 36410
-#define xC6S2 25080
-#define xC7S1 12785
-
-void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix, 
-    int16_t *output_data)
-{
-    int32_t intermediate_data[64];
-    int32_t *ip = intermediate_data;
-    int16_t *op = output_data;
-
-    int32_t A_, B_, C_, D_, _Ad, _Bd, _Cd, _Dd, E_, F_, G_, H_;
-    int32_t _Ed, _Gd, _Add, _Bdd, _Fd, _Hd;
-    int32_t t1, t2;
-
-    int i, j;
-
-    debug_idct("raw coefficient block:\n");
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            debug_idct(" %5d", input_data[i * 8 + j]);
-        }
-        debug_idct("\n");
-    }
-    debug_idct("\n");
-
-    for (i = 0; i < 64; i++) {
-        j = dezigzag_index[i];
-        intermediate_data[j] = dequant_matrix[i] * input_data[i];
-    }
-
-    debug_idct("dequantized block:\n");
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            debug_idct(" %5d", intermediate_data[i * 8 + j]);
-        }
-        debug_idct("\n");
-    }
-    debug_idct("\n");
-
-    /* Inverse DCT on the rows now */
-    for (i = 0; i < 8; i++) {
-        /* Check for non-zero values */
-        if ( ip[0] | ip[1] | ip[2] | ip[3] | ip[4] | ip[5] | ip[6] | ip[7] ) {
-            t1 = (int32_t)(xC1S7 * ip[1]);
-            t2 = (int32_t)(xC7S1 * ip[7]);
-            t1 >>= 16;
-            t2 >>= 16;
-            A_ = t1 + t2;
-
-            t1 = (int32_t)(xC7S1 * ip[1]);
-            t2 = (int32_t)(xC1S7 * ip[7]);
-            t1 >>= 16;
-            t2 >>= 16;
-            B_ = t1 - t2;
-
-            t1 = (int32_t)(xC3S5 * ip[3]);
-            t2 = (int32_t)(xC5S3 * ip[5]);
-            t1 >>= 16;
-            t2 >>= 16;
-            C_ = t1 + t2;
-
-            t1 = (int32_t)(xC3S5 * ip[5]);
-            t2 = (int32_t)(xC5S3 * ip[3]);
-            t1 >>= 16;
-            t2 >>= 16;
-            D_ = t1 - t2;
-
-
-            t1 = (int32_t)(xC4S4 * (A_ - C_));
-            t1 >>= 16;
-            _Ad = t1;
-
-            t1 = (int32_t)(xC4S4 * (B_ - D_));
-            t1 >>= 16;
-            _Bd = t1;
-
-
-            _Cd = A_ + C_;
-            _Dd = B_ + D_;
-
-            t1 = (int32_t)(xC4S4 * (ip[0] + ip[4]));
-            t1 >>= 16;
-            E_ = t1;
-
-            t1 = (int32_t)(xC4S4 * (ip[0] - ip[4]));
-            t1 >>= 16;
-            F_ = t1;
-
-            t1 = (int32_t)(xC2S6 * ip[2]);
-            t2 = (int32_t)(xC6S2 * ip[6]);
-            t1 >>= 16;
-            t2 >>= 16;
-            G_ = t1 + t2;
-
-            t1 = (int32_t)(xC6S2 * ip[2]);
-            t2 = (int32_t)(xC2S6 * ip[6]);
-            t1 >>= 16;
-            t2 >>= 16;
-            H_ = t1 - t2;
-
-
-            _Ed = E_ - G_;
-            _Gd = E_ + G_;
-
-            _Add = F_ + _Ad;
-            _Bdd = _Bd - H_;
-
-            _Fd = F_ - _Ad;
-            _Hd = _Bd + H_;
-
-            /*  Final sequence of operations over-write original inputs. */
-            ip[0] = (int16_t)((_Gd + _Cd )   >> 0);
-            ip[7] = (int16_t)((_Gd - _Cd )   >> 0);
-
-            ip[1] = (int16_t)((_Add + _Hd )  >> 0);
-            ip[2] = (int16_t)((_Add - _Hd )  >> 0);
-
-            ip[3] = (int16_t)((_Ed + _Dd )   >> 0);
-            ip[4] = (int16_t)((_Ed - _Dd )   >> 0);
-
-            ip[5] = (int16_t)((_Fd + _Bdd )  >> 0);
-            ip[6] = (int16_t)((_Fd - _Bdd )  >> 0);
-
-        }
-
-        ip += 8;            /* next row */
-    }
-
-    ip = intermediate_data;
-
-    for ( i = 0; i < 8; i++) {
-        /* Check for non-zero values (bitwise or faster than ||) */
-        if ( ip[0 * 8] | ip[1 * 8] | ip[2 * 8] | ip[3 * 8] |
-             ip[4 * 8] | ip[5 * 8] | ip[6 * 8] | ip[7 * 8] ) {
-
-            t1 = (int32_t)(xC1S7 * ip[1*8]);
-            t2 = (int32_t)(xC7S1 * ip[7*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            A_ = t1 + t2;
-
-            t1 = (int32_t)(xC7S1 * ip[1*8]);
-            t2 = (int32_t)(xC1S7 * ip[7*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            B_ = t1 - t2;
-
-            t1 = (int32_t)(xC3S5 * ip[3*8]);
-            t2 = (int32_t)(xC5S3 * ip[5*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            C_ = t1 + t2;
-
-            t1 = (int32_t)(xC3S5 * ip[5*8]);
-            t2 = (int32_t)(xC5S3 * ip[3*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            D_ = t1 - t2;
-
-
-            t1 = (int32_t)(xC4S4 * (A_ - C_));
-            t1 >>= 16;
-            _Ad = t1;
-
-            t1 = (int32_t)(xC4S4 * (B_ - D_));
-            t1 >>= 16;
-            _Bd = t1;
-
-
-            _Cd = A_ + C_;
-            _Dd = B_ + D_;
-
-            t1 = (int32_t)(xC4S4 * (ip[0*8] + ip[4*8]));
-            t1 >>= 16;
-            E_ = t1;
-
-            t1 = (int32_t)(xC4S4 * (ip[0*8] - ip[4*8]));
-            t1 >>= 16;
-            F_ = t1;
-
-            t1 = (int32_t)(xC2S6 * ip[2*8]);
-            t2 = (int32_t)(xC6S2 * ip[6*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            G_ = t1 + t2;
-
-            t1 = (int32_t)(xC6S2 * ip[2*8]);
-            t2 = (int32_t)(xC2S6 * ip[6*8]);
-            t1 >>= 16;
-            t2 >>= 16;
-            H_ = t1 - t2;
-
-
-            _Ed = E_ - G_;
-            _Gd = E_ + G_;
-
-            _Add = F_ + _Ad;
-            _Bdd = _Bd - H_;
-
-            _Fd = F_ - _Ad;
-            _Hd = _Bd + H_;
-
-            _Gd += IdctAdjustBeforeShift;
-            _Add += IdctAdjustBeforeShift;
-            _Ed += IdctAdjustBeforeShift;
-            _Fd += IdctAdjustBeforeShift;
-
-            /* Final sequence of operations over-write original inputs. */
-            op[0*8] = (int16_t)((_Gd + _Cd )   >> 4);
-            op[7*8] = (int16_t)((_Gd - _Cd )   >> 4);
-
-            op[1*8] = (int16_t)((_Add + _Hd )  >> 4);
-            op[2*8] = (int16_t)((_Add - _Hd )  >> 4);
-
-            op[3*8] = (int16_t)((_Ed + _Dd )   >> 4);
-            op[4*8] = (int16_t)((_Ed - _Dd )   >> 4);
-
-            op[5*8] = (int16_t)((_Fd + _Bdd )  >> 4);
-            op[6*8] = (int16_t)((_Fd - _Bdd )  >> 4);
-
-        } else {
-
-            op[0*8] = 0;
-            op[7*8] = 0;
-            op[1*8] = 0;
-            op[2*8] = 0;
-            op[3*8] = 0;
-            op[4*8] = 0;
-            op[5*8] = 0;
-            op[6*8] = 0;
-        }
-
-        ip++;            /* next column */
-        op++;
-    }
-}
-
-void vp3_idct_put(int16_t *input_data, int16_t *dequant_matrix, 
-    uint8_t *dest, int stride)
-{
-    int16_t transformed_data[64];
-    int16_t *op;
-    int i, j;
-
-    vp3_idct_c(input_data, dequant_matrix, transformed_data);
-
-    /* place in final output */
-    op = transformed_data;
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            if (*op < -128)
-                *dest = 0;
-            else if (*op > 127)
-                *dest = 255;
-            else
-                *dest = (uint8_t)(*op + 128);
-            op++;
-            dest++;
-        }
-        dest += (stride - 8);
-    }
-}
-
-void vp3_idct_add(int16_t *input_data, int16_t *dequant_matrix, 
-    uint8_t *dest, int stride)
-{
-    int16_t transformed_data[64];
-    int16_t *op;
-    int i, j;
-    int16_t sample;
-
-    vp3_idct_c(input_data, dequant_matrix, transformed_data);
-
-    /* place in final output */
-    op = transformed_data;
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            sample = *dest + *op;
-            if (sample < 0)
-                *dest = 0;
-            else if (sample > 255)
-                *dest = 255;
-            else
-                *dest = (uint8_t)(sample & 0xFF);
-            op++;
-            dest++;
-        }
-        dest += (stride - 8);
-    }
-}
 
 /************************************************************************
  * VP3 specific functions
@@ -1145,7 +842,7 @@ s->all_fragments[i].motion_y = 0xbeef;
 static void init_dequantizer(Vp3DecodeContext *s)
 {
 
-    int quality_scale = s->coded_quality_threshold[s->quality_index];
+    int ac_scale_factor = s->coded_ac_scale_factor[s->quality_index];
     int dc_scale_factor = s->coded_dc_scale_factor[s->quality_index];
     int i, j;
 
@@ -1159,7 +856,7 @@ static void init_dequantizer(Vp3DecodeContext *s)
      *        100
      *
      * where sf = dc_scale_factor for DC quantizer
-     *           or quality_scale for AC quantizer
+     *         or ac_scale_factor for AC quantizer
      *
      * Then, saturate the result to a lower limit of MIN_DEQUANT_VAL.
      */
@@ -1187,17 +884,17 @@ static void init_dequantizer(Vp3DecodeContext *s)
 
         j = zigzag_index[i];
 
-        s->intra_y_dequant[j] = s->coded_intra_y_dequant[i] * quality_scale / 100;
+        s->intra_y_dequant[j] = s->coded_intra_y_dequant[i] * ac_scale_factor / 100;
         if (s->intra_y_dequant[j] < MIN_DEQUANT_VAL)
             s->intra_y_dequant[j] = MIN_DEQUANT_VAL;
         s->intra_y_dequant[j] *= SCALER;
 
-        s->intra_c_dequant[j] = s->coded_intra_c_dequant[i] * quality_scale / 100;
+        s->intra_c_dequant[j] = s->coded_intra_c_dequant[i] * ac_scale_factor / 100;
         if (s->intra_c_dequant[j] < MIN_DEQUANT_VAL)
             s->intra_c_dequant[j] = MIN_DEQUANT_VAL;
         s->intra_c_dequant[j] *= SCALER;
 
-        s->inter_dequant[j] = s->coded_inter_dequant[i] * quality_scale / 100;
+        s->inter_dequant[j] = s->coded_inter_dequant[i] * ac_scale_factor / 100;
         if (s->inter_dequant[j] < MIN_DEQUANT_VAL * 2)
             s->inter_dequant[j] = MIN_DEQUANT_VAL * 2;
         s->inter_dequant[j] *= SCALER;
@@ -2478,11 +2175,15 @@ av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, 
 
                 /* invert DCT and place (or add) in final output */
                 if (s->all_fragments[i].coding_method == MODE_INTRA) {
-                    vp3_idct_put(s->all_fragments[i].coeffs, dequantizer,
+                    s->dsp.vp3_idct_put(s->all_fragments[i].coeffs, 
+                        dequantizer,
+                        s->all_fragments[i].coeff_count,
                         output_plane + s->all_fragments[i].first_pixel,
                         stride);
                 } else {
-                    vp3_idct_add(s->all_fragments[i].coeffs, dequantizer,
+                    s->dsp.vp3_idct_add(s->all_fragments[i].coeffs, 
+                        dequantizer,
+                        s->all_fragments[i].coeff_count,
                         output_plane + s->all_fragments[i].first_pixel,
                         stride);
                 }
@@ -2641,6 +2342,7 @@ static int vp3_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
+    s->dsp.vp3_dsp_init();
 
     /* initialize to an impossible value which will force a recalculation
      * in the first frame decode */
@@ -2700,7 +2402,7 @@ static int vp3_decode_init(AVCodecContext *avctx)
 	for (i = 0; i < 64; i++)
 	    s->coded_dc_scale_factor[i] = vp31_dc_scale_factor[i];
 	for (i = 0; i < 64; i++)
-	    s->coded_quality_threshold[i] = vp31_quality_threshold[i];
+	    s->coded_ac_scale_factor[i] = vp31_ac_scale_factor[i];
 	for (i = 0; i < 64; i++)
 	    s->coded_intra_y_dequant[i] = vp31_intra_y_dequant[i];
 	for (i = 0; i < 64; i++)
@@ -3041,7 +2743,7 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
     
     /* quality threshold table */
     for (i = 0; i < 64; i++)
-	s->coded_quality_threshold[i] = get_bits(&gb, 16);
+	s->coded_ac_scale_factor[i] = get_bits(&gb, 16);
 
     /* dc scale factor table */
     for (i = 0; i < 64; i++)
