@@ -1175,6 +1175,19 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     goto fail_decode;
                 }
             } else {
+                switch(ist->st->codec.codec_type) {
+                case CODEC_TYPE_AUDIO:
+                    ist->next_pts += ((int64_t)AV_TIME_BASE * ist->st->codec.frame_size) / 
+                        (ist->st->codec.sample_rate * ist->st->codec.channels);
+                    break;
+                case CODEC_TYPE_VIDEO:
+                    if (ist->st->codec.frame_rate_base != 0) {
+                        ist->next_pts += ((int64_t)AV_TIME_BASE * 
+                                          ist->st->codec.frame_rate_base) /
+                            ist->st->codec.frame_rate;
+                    }
+                    break;
+                }
                 data_buf = ptr;
                 data_size = len;
                 ret = len;
