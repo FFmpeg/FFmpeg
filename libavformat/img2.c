@@ -248,6 +248,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         av_free_packet(pkt);
         return AVERROR_IO; /* signal EOF */
     } else {
+        pkt->size = ret;
         s->img_count++;
         s->img_number++;
         return 0;
