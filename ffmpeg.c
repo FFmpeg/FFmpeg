@@ -3039,6 +3039,7 @@ static void opt_output_file(const char *filename)
                 audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
             if (audio_stream_copy) {
                 st->stream_copy = 1;
+		audio_enc->channels = audio_channels;
             } else {
                 codec_id = file_oformat->audio_codec;
                 if (audio_codec_id != CODEC_ID_NONE)
@@ -3046,7 +3047,6 @@ static void opt_output_file(const char *filename)
                 audio_enc->codec_id = codec_id;
                 
                 audio_enc->bit_rate = audio_bit_rate;
-                audio_enc->sample_rate = audio_sample_rate;
                 audio_enc->strict_std_compliance = strict;
                 audio_enc->thread_count = thread_count;
                 /* For audio codecs other than AC3 we limit */
@@ -3056,6 +3056,7 @@ static void opt_output_file(const char *filename)
                 } else
                     audio_enc->channels = audio_channels;
             }
+	    audio_enc->sample_rate = audio_sample_rate;
         }
 
         oc->nb_streams = nb_streams;
