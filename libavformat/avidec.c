@@ -88,6 +88,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     unsigned int size, nb_frames;
     int i, n;
     AVStream *st;
+    int xan_video = 0;  /* hack to support Xan A/V */
 
     if (get_riff(avi, pb) < 0)
         return -1;
@@ -274,12 +275,18 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec.codec_type = CODEC_TYPE_VIDEO;
                     st->codec.codec_tag = tag1;
                     st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
+                    if (st->codec.codec_id == CODEC_ID_XAN_WC4)
+                        xan_video = 1;
 //                    url_fskip(pb, size - 5 * 4);
                     break;
                 case CODEC_TYPE_AUDIO:
                     get_wav_header(pb, &st->codec, size);
                     if (size%2) /* 2-aligned (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
                         url_fskip(pb, 1);
+                    /* special case time: To support Xan DPCM, hardcode
+                     * the format if Xxan is the video codec */
+                    if (xan_video)
+                        st->codec.codec_id = CODEC_ID_XAN_DPCM;
                     break;
                 default:
                     url_fskip(pb, size);

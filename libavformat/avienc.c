@@ -143,6 +143,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_ASV2, MKTAG('A', 'S', 'V', '2') },
     { CODEC_ID_VCR1, MKTAG('V', 'C', 'R', '1') },
     { CODEC_ID_FFV1, MKTAG('F', 'F', 'V', '1') },
+    { CODEC_ID_XAN_WC4, MKTAG('X', 'x', 'a', 'n') },
     { 0, 0 },
 };
 
