@@ -618,7 +618,7 @@ int av_find_stream_info(AVFormatContext *ic)
                                 &st->r_frame_rate,
                                 &st->r_frame_rate_base,
                                 (int64_t)st->codec.frame_rate * st->codec_info_nb_real_frames,
-                                st->codec_info_nb_real_frames + (st->codec_info_nb_repeat_frames >> 1),
+                                (st->codec_info_nb_real_frames + (st->codec_info_nb_repeat_frames >> 1)) * st->codec.frame_rate_base,
                                 1<<30);
                             goto close_codec;
                         }
