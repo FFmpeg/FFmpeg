@@ -2409,6 +2409,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
     AVCodecContext *avctx= s->avctx;
     int ret;
     const int field_pic= s->picture_structure != PICT_FRAME;
+    const int lowres= s->avctx->lowres;
 
     s->resync_mb_x=
     s->resync_mb_y= -1;
@@ -2518,9 +2519,9 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
             }
         }
 
-        s->dest[0] += 16;
-        s->dest[1] += 16 >> s->chroma_x_shift;
-        s->dest[2] += 16 >> s->chroma_x_shift;
+        s->dest[0] += 16 >> lowres;
+        s->dest[1] += 16 >> (s->chroma_x_shift + lowres);
+        s->dest[2] += 16 >> (s->chroma_x_shift + lowres);
 
         MPV_decode_mb(s, s->block);
         

@@ -773,15 +773,17 @@ extern enum PixelFormat ff_yuv420p_list[2];
 void ff_init_block_index(MpegEncContext *s);
 
 static inline void ff_update_block_index(MpegEncContext *s){
+    const int block_size= 8>>s->avctx->lowres;
+
     s->block_index[0]+=2;
     s->block_index[1]+=2;
     s->block_index[2]+=2;
     s->block_index[3]+=2;
     s->block_index[4]++;
     s->block_index[5]++;
-    s->dest[0]+= 16;
-    s->dest[1]+= 8;
-    s->dest[2]+= 8;
+    s->dest[0]+= 2*block_size;
+    s->dest[1]+= block_size;
+    s->dest[2]+= block_size;
 }
 
 static inline int get_bits_diff(MpegEncContext *s){

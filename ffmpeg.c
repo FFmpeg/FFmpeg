@@ -188,6 +188,8 @@ static int predictor = 0;
 static int video_profile = FF_PROFILE_UNKNOWN;
 static int video_level = FF_LEVEL_UNKNOWN;
 static int nsse_weight = 8;
+static int subpel_quality= 8;
+static int lowres= 0;
 extern int loop_input; /* currently a hack */
 
 static int gop_size = 12;
@@ -3148,6 +3150,8 @@ static void opt_output_file(const char *filename)
                 video_enc->profile= video_profile;
                 video_enc->level= video_level;
                 video_enc->nsse_weight= nsse_weight;
+                video_enc->me_subpel_quality= subpel_quality;
+                video_enc->lowres= lowres;
 
                 if(packet_size){
                     video_enc->rtp_mode= 1;
@@ -3840,6 +3844,8 @@ const OptionDef options[] = {
     { "vprofile", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_profile}, "profile", "" },
     { "vlevel", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_level}, "level", "" },
     { "nssew", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&nsse_weight}, "weight", "" },
+    { "subq", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&subpel_quality}, "", "" },
+    { "lowres", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&lowres}, "", "" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },

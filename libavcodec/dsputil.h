@@ -42,6 +42,7 @@ void ff_jpeg_fdct_islow (DCTELEM *data);
 void ff_fdct248_islow (DCTELEM *data);
 
 void j_rev_dct (DCTELEM *data);
+void j_rev_dct4 (DCTELEM *data);
 
 void ff_fdct_mmx(DCTELEM *block);
 void ff_fdct_mmx2(DCTELEM *block);

@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4721
+#define LIBAVCODEC_BUILD       4722
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1111,6 +1111,7 @@ typedef struct AVCodecContext {
 #define FF_IDCT_ALTIVEC      8
 #define FF_IDCT_SH4          9
 #define FF_IDCT_SIMPLEARM    10
+#define FF_IDCT_INT4         11
 
     /**
      * slice count.
@@ -1656,6 +1657,13 @@ typedef struct AVCodecContext {
      */
      int level;
 #define FF_LEVEL_UNKNOWN -99
+
+    /**
+     * low resolution decoding. 1-> 1/2 size, 2->1/4 size
+     * - encoding: unused
+     * - decoding: set by user
+     */
+     int lowres;
 } AVCodecContext;
 
 

@@ -446,6 +446,24 @@ static void put_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
     }
 }
 
+static void put_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels,
+				 int line_size)
+{
+    int i;
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    
+    /* read the pixels */
+    for(i=0;i<4;i++) {
+        pixels[0] = cm[block[0]];
+        pixels[1] = cm[block[1]];
+        pixels[2] = cm[block[2]];
+        pixels[3] = cm[block[3]];
+
+        pixels += line_size;
+        block += 8;
+    }
+}
+
 static void put_signed_pixels_clamped_c(const DCTELEM *block, 
                                         uint8_t *restrict pixels,
                                         int line_size)
@@ -483,6 +501,23 @@ static void add_pixels_clamped_c(const DCTELEM *block, uint8_t *restrict pixels,
         pixels[5] = cm[pixels[5] + block[5]];
         pixels[6] = cm[pixels[6] + block[6]];
         pixels[7] = cm[pixels[7] + block[7]];
+        pixels += line_size;
+        block += 8;
+    }
+}
+
+static void add_pixels_clamped4_c(const DCTELEM *block, uint8_t *restrict pixels,
+                          int line_size)
+{
+    int i;
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    
+    /* read the pixels */
+    for(i=0;i<4;i++) {
+        pixels[0] = cm[pixels[0] + block[0]];
+        pixels[1] = cm[pixels[1] + block[1]];
+        pixels[2] = cm[pixels[2] + block[2]];
+        pixels[3] = cm[pixels[3] + block[3]];
         pixels += line_size;
         block += 8;
     }
@@ -3294,6 +3329,17 @@ static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
     add_pixels_clamped_c(block, dest, line_size);
 }
 
+static void ff_jref_idct4_put(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    j_rev_dct4 (block);
+    put_pixels_clamped4_c(block, dest, line_size);
+}
+static void ff_jref_idct4_add(uint8_t *dest, int line_size, DCTELEM *block)
+{
+    j_rev_dct4 (block);
+    add_pixels_clamped4_c(block, dest, line_size);
+}
+
 /* init static data */
 void dsputil_static_init(void)
 {
@@ -3332,16 +3378,23 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     }
 #endif //CONFIG_ENCODERS
 
-    if(avctx->idct_algo==FF_IDCT_INT){
-        c->idct_put= ff_jref_idct_put;
-        c->idct_add= ff_jref_idct_add;
-        c->idct    = j_rev_dct;
-        c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
-    }else{ //accurate/default
-        c->idct_put= simple_idct_put;
-        c->idct_add= simple_idct_add;
-        c->idct    = simple_idct;
+    if(avctx->lowres==1){
+        c->idct_put= ff_jref_idct4_put;
+        c->idct_add= ff_jref_idct4_add;
+        c->idct    = j_rev_dct4;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
+    }else{
+        if(avctx->idct_algo==FF_IDCT_INT){
+            c->idct_put= ff_jref_idct_put;
+            c->idct_add= ff_jref_idct_add;
+            c->idct    = j_rev_dct;
+            c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
+        }else{ //accurate/default
+            c->idct_put= simple_idct_put;
+            c->idct_add= simple_idct_add;
+            c->idct    = simple_idct;
+            c->idct_permutation_type= FF_NO_IDCT_PERM;
+        }
     }
 
     /* VP3 DSP support */
