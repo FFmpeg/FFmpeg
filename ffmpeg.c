@@ -145,6 +145,7 @@ static int use_trell = 0;
 static int use_scan_offset = 0;
 static int use_qpel = 0;
 static int use_qprd = 0;
+static int use_cbprd = 0;
 static int qns = 0;
 static int closed_gop = 0;
 static int do_deinterlace = 0;
@@ -166,7 +167,7 @@ static int debug = 0;
 static int debug_mv = 0;
 static int me_threshold = 0;
 static int mb_threshold = 0;
-static int intra_dc_precision = 0;
+static int intra_dc_precision = 8;
 static int coder = 0;
 static int context = 0;
 static int predictor = 0;
@@ -2869,6 +2870,9 @@ static void opt_output_file(const char *filename)
            	if (use_qprd) {
                     video_enc->flags |= CODEC_FLAG_QP_RD;
                 }
+           	if (use_cbprd) {
+                    video_enc->flags |= CODEC_FLAG_CBP_RD;
+                }
                 if (b_frames) {
                     video_enc->max_b_frames = b_frames;
                     video_enc->b_frame_strategy = 0;
@@ -2934,7 +2938,7 @@ static void opt_output_file(const char *filename)
                 video_enc->idct_algo = idct_algo;
                 video_enc->me_threshold= me_threshold;
                 video_enc->mb_threshold= mb_threshold;
-                video_enc->intra_dc_precision= intra_dc_precision;
+                video_enc->intra_dc_precision= intra_dc_precision - 8;
                 video_enc->strict_std_compliance = strict;
                 video_enc->error_rate = error_rate;
                 video_enc->noise_reduction= noise_reduction;
@@ -3610,6 +3614,7 @@ const OptionDef options[] = {
     { "ssm", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_ss}, "enable Slice Structured mode (h263+)" },
     { "alt", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_alt_scan}, "enable alternate scantable (MPEG2/MPEG4)" },
     { "qprd", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_qprd}, "" },
+    { "cbp", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_cbprd}, "" },
     { "trell", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_trell}, "enable trellis quantization" },
     { "cgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&closed_gop}, "closed gop" },
     { "scan_offset", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_scan_offset}, "enable SVCD Scan Offset placeholder" },
