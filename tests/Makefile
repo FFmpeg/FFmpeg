@@ -17,7 +17,7 @@ LIBAV_REFFILE=$(SRC_PATH)/tests/libav.regression.ref
 all: test libavtest test-server
 
 test-server: vsynth1/0.pgm asynth1.sw
-	@$(SRC_PATH)/tests/server-regression.sh $(SERVER_REFFILE)
+	@$(SRC_PATH)/tests/server-regression.sh $(SERVER_REFFILE) $(SRC_PATH)/tests/test.conf
 
 # fast regression tests for all codecs
 test mpeg4 mpeg: vsynth1/0.pgm vsynth2/0.pgm asynth1.sw tiny_psnr

@@ -10,7 +10,7 @@ fi
 # Make sure that the data directory exists
 mkdir -p data
 
-cp test.conf data/test.conf
+cp "$2" data/test.conf
 perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 perl -e 'chomp($wd = `pwd`); print map { s!data/!!; "<Stream $_.asf>\nFile $wd/data/$_\n</Stream>\n\n" } @ARGV' data/a* >> data/test.conf
 
