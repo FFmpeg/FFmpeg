@@ -596,7 +596,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
                 s->mv_bits+= get_bits_diff(s);
             }
             if(cbp)
-                put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
+                put_bits(&s->pb, mbPatTable[cbp][1], mbPatTable[cbp][0]);
             s->f_count++;
         } else{  
             static const int mb_type_len[4]={0,3,4,2}; //bak,for,bi
@@ -675,7 +675,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
             }
             s->mv_bits += get_bits_diff(s);
             if(cbp)
-                put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
+                put_bits(&s->pb, mbPatTable[cbp][1], mbPatTable[cbp][0]);
         }
         for(i=0;i<6;i++) {
             if (cbp & (1 << (5 - i))) {
@@ -967,7 +967,7 @@ static void init_vlcs()
         init_vlc(&mbincr_vlc, MBINCR_VLC_BITS, 36, 
                  &mbAddrIncrTable[0][1], 2, 1,
                  &mbAddrIncrTable[0][0], 2, 1);
-        init_vlc(&mb_pat_vlc, MB_PAT_VLC_BITS, 63, 
+        init_vlc(&mb_pat_vlc, MB_PAT_VLC_BITS, 64,
                  &mbPatTable[0][1], 2, 1,
                  &mbPatTable[0][0], 2, 1);
         
@@ -1306,11 +1306,10 @@ static int mpeg_decode_mb(MpegEncContext *s,
 
         if (HAS_CBP(mb_type)) {
             cbp = get_vlc2(&s->gb, mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
-            if (cbp < 0){
+            if (cbp < 0 || (cbp == 0) && (s->chroma_format < 2) ){
                 av_log(s->avctx, AV_LOG_ERROR, "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
                 return -1;
             }
-            cbp++;
             if(s->chroma_format == 2){//CHROMA422
                  cbp|= ( get_bits(&s->gb,2) ) << 6;
             }else

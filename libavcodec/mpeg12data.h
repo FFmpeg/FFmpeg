@@ -217,7 +217,8 @@ static const uint8_t mbAddrIncrTable[36][2] = {
     {0x0, 8}, /* end (and 15 more 0 bits should follow) */
 };
 
-static const uint8_t mbPatTable[63][2] = {
+static const uint8_t mbPatTable[64][2] = {
+    {0x1, 9},
     {0xb, 5},
     {0x9, 5},
     {0xd, 6},
