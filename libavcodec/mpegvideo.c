@@ -1052,6 +1052,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         //                    (s->pb.buf_ptr - s->ptr_last_mb_line), s->mb_line_avgsize);
         s->ptr_last_mb_line = s->pb.buf_ptr;
     }
+    
+    if (s->h263_msmpeg4) 
+        msmpeg4_encode_ext_header(s);
+
     //if (s->gob_number)
     //    fprintf(stderr,"\nNumber of GOB: %d", s->gob_number);
 }

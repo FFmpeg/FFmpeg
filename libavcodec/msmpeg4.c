@@ -185,7 +185,12 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb, 1, s->dc_table_index);
 
         put_bits(&s->pb, 1, s->mv_table_index);
-        s->no_rounding ^= 1;
+	
+	if(s->flipflop_rounding){
+	    s->no_rounding ^= 1;
+	}else{
+	    s->no_rounding = 0;
+	}
     }
 
     if (!init_done) {
@@ -201,6 +206,27 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     intra_count = 0;
     printf("*****frame %d:\n", frame_count++);
 #endif
+}
+
+void msmpeg4_encode_ext_header(MpegEncContext * s)
+{
+    if(s->pict_type == P_TYPE)
+    {
+	return; // P-Frames dont seem to have them and not even a 0 bit
+    }
+    else
+    {
+        s->flipflop_rounding=1;
+        s->bitrate= 910;
+
+	put_bits(&s->pb, 1, 1); // ext header indicator
+
+	put_bits(&s->pb, 4, 7); // ?
+
+	put_bits(&s->pb, 11, s->bitrate);
+
+	put_bits(&s->pb, 1, s->flipflop_rounding);
+    }
 }
 
 /* predict coded block */
@@ -654,7 +680,6 @@ static int decode012(GetBitContext *gb)
 int msmpeg4_decode_picture_header(MpegEncContext * s)
 {
     int code;
-static int weirdAl=0;
 
     s->pict_type = get_bits(&s->gb, 2) + 1;
     if (s->pict_type != I_TYPE &&
@@ -696,14 +721,50 @@ static int weirdAl=0;
 		s->rl_chroma_table_index, 
 		s->dc_table_index,
 		s->mv_table_index);*/
-  if(weirdAl)
-	s->no_rounding = 0;
-  else
-	s->no_rounding ^= 1;
+	if(s->flipflop_rounding){
+	    s->no_rounding ^= 1;
+	}else{
+	    s->no_rounding = 0;
+	}
+//	printf("%d", s->no_rounding);
     }
+    
+   
 #ifdef DEBUG
     printf("*****frame %d:\n", frame_count++);
 #endif
+    return 0;
+}
+
+int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
+{
+    int firstBit=0;
+    
+    /* the alt_bitstream reader could read over the end so we need to check it */
+    if(get_bits_count(&s->gb) < buf_size*8) firstBit= get_bits1(&s->gb);
+    
+    if(s->pict_type == P_TYPE)
+    {
+        if(firstBit) return -1; // havnt seen ext headers in P-Frames yet ;)
+    }
+    else
+    {
+        int unk;
+	if(!firstBit) // no header found
+	{
+	    s->flipflop_rounding= 0;
+	    s->bitrate= 0;
+	    return 0;
+	}
+	
+	unk= get_bits(&s->gb, 4);
+	s->bitrate= get_bits(&s->gb, 11);
+	
+//	printf("%2d %4d ;; %1X\n", unk,s->bitrate, unk);
+    
+	s->flipflop_rounding= get_bits1(&s->gb);
+    }
+    
     return 0;
 }
 
