@@ -545,7 +545,7 @@ static double get_audio_clock(VideoState *is)
 static double get_video_clock(VideoState *is)
 {
     double delta;
-    if (is->paused) {
+    if (is->paused) { //FIXME timing gets messed after pause
         delta = 0;
     } else {
         delta = (av_gettime() - is->video_current_pts_time) / 1000000.0;
@@ -1055,6 +1055,7 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, double *pts_pt
             pts = is->audio_clock;
             *pts_ptr = pts;
             n = 2 * is->audio_st->codec.channels;
+printf("%f %d %d %d\n", is->audio_clock, is->audio_st->codec.channels, data_size, is->audio_st->codec.sample_rate);
             is->audio_clock += (double)data_size / 
                 (double)(n * is->audio_st->codec.sample_rate);
 #if defined(DEBUG_SYNC)
@@ -1415,6 +1416,7 @@ static int decode_thread(void *arg)
                 }
                 if (is->video_stream >= 0) {
                     packet_queue_flush(&is->videoq);
+                    avcodec_flush_buffers(&ic->streams[video_index]->codec);
                 }
             }
             is->seek_req = 0;
@@ -1673,6 +1675,8 @@ void event_loop(void)
             do_seek:
                 if (cur_stream) {
                     pos = get_master_clock(cur_stream);
+printf("%f %f %d %d %d %d\n", (float)pos, (float)incr, cur_stream->av_sync_type == AV_SYNC_VIDEO_MASTER, 
+cur_stream->av_sync_type == AV_SYNC_AUDIO_MASTER, cur_stream->video_st, cur_stream->audio_st);
                     pos += incr;
                     stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE));
                 }
