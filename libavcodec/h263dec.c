@@ -401,9 +401,17 @@ uint64_t time= rdtsc();
     s->flags= avctx->flags;
 
     *data_size = 0;
-   
-   /* no supplementary picture */
+
+    /* no supplementary picture */
     if (buf_size == 0) {
+        /* special case for last picture */
+        if (s->low_delay==0 && s->next_picture_ptr) {
+            *pict= *(AVFrame*)s->next_picture_ptr;
+            s->next_picture_ptr= NULL;
+
+            *data_size = sizeof(AVFrame);
+        }
+
         return 0;
     }
 

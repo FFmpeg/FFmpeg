@@ -2231,12 +2231,11 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     *data_size = 0;
 
     /* special case for last picture */
-    if (buf_size == 0) {
-        if (s2->picture_number > 0) {
-            *picture= *(AVFrame*)&s2->next_picture;
+    if (buf_size == 0 && s2->low_delay==0 && s2->next_picture_ptr) {
+        *picture= *(AVFrame*)s2->next_picture_ptr;
+        s2->next_picture_ptr= NULL;
 
-            *data_size = sizeof(AVFrame);
-        }
+        *data_size = sizeof(AVFrame);
         return 0;
     }
 
