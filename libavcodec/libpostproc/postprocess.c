@@ -113,6 +113,10 @@ static uint64_t __attribute__((aligned(8))) b08= 		0x0808080808080808LL;
 static uint64_t __attribute__((aligned(8))) b80= 		0x8080808080808080LL;
 #endif
 
+
+static uint8_t clip_table[3*256];
+static uint8_t * const clip_tab= clip_table + 256;
+
 static int verbose= 0;
 
 static const int deringThreshold= 20;
@@ -133,6 +137,7 @@ static struct PPFilter filters[]=
 	{"ci", "cubicipoldeint",	1, 1, 4, CUBIC_IPOL_DEINT_FILTER},
 	{"md", "mediandeint", 		1, 1, 4, MEDIAN_DEINT_FILTER},
 	{"fd", "ffmpegdeint", 		1, 1, 4, FFMPEG_DEINT_FILTER},
+	{"l5", "lowpass5", 		1, 1, 4, LOWPASS5_DEINT_FILTER},
 	{"tn", "tmpnoise", 		1, 7, 8, TEMP_NOISE_FILTER},
 	{"fq", "forcequant", 		1, 0, 0, FORCE_QUANT},
 	{NULL, NULL,0,0,0,0} //End Marker
@@ -751,15 +756,25 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride){
 		reallocAlign((void **)&c->tempBluredPast[i], 8, 256*((height+7)&(~7))/2 + 17*1024);//FIXME size
 	}
 
-	reallocAlign((void **)&c->deintTemp, 8, width+16);
+	reallocAlign((void **)&c->deintTemp, 8, 2*width+32);
 	reallocAlign((void **)&c->nonBQPTable, 8, mbWidth*mbHeight*sizeof(QP_STORE_T));
 	reallocAlign((void **)&c->forcedQPTable, 8, mbWidth*sizeof(QP_STORE_T));
+}
+
+static void global_init(){
+	int i;
+	memset(clip_table, 0, 256);
+	for(i=256; i<512; i++)
+		clip_table[i]= i;
+	memset(clip_table+512, 0, 256);
 }
 
 pp_context_t *pp_get_context(int width, int height, int cpuCaps){
 	PPContext *c= memalign(32, sizeof(PPContext));
 	int stride= (width+15)&(~15); //assumed / will realloc if needed
         
+	global_init();
+
 	memset(c, 0, sizeof(PPContext));
 	c->cpuCaps= cpuCaps;
 	if(cpuCaps&PP_FORMAT){

@@ -1581,7 +1581,6 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
  * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  * this filter will read lines 3-15 and write 7-13
- * no cliping in C version
  */
 static inline void RENAME(deInterlaceInterpolateCubic)(uint8_t src[], int stride)
 {
@@ -1631,10 +1630,10 @@ DEINT_CUBIC((%%edx, %1), (%0, %1, 8), (%%edx, %1, 4), (%%ecx), (%%ecx, %1, 2))
 	src+= stride*3;
 	for(x=0; x<8; x++)
 	{
-		src[stride*3] = (-src[0]        + 9*src[stride*2] + 9*src[stride*4] - src[stride*6])>>4;
-		src[stride*5] = (-src[stride*2] + 9*src[stride*4] + 9*src[stride*6] - src[stride*8])>>4;
-		src[stride*7] = (-src[stride*4] + 9*src[stride*6] + 9*src[stride*8] - src[stride*10])>>4;
-		src[stride*9] = (-src[stride*6] + 9*src[stride*8] + 9*src[stride*10] - src[stride*12])>>4;
+		src[stride*3] = CLIP((-src[0]        + 9*src[stride*2] + 9*src[stride*4] - src[stride*6])>>4);
+		src[stride*5] = CLIP((-src[stride*2] + 9*src[stride*4] + 9*src[stride*6] - src[stride*8])>>4);
+		src[stride*7] = CLIP((-src[stride*4] + 9*src[stride*6] + 9*src[stride*8] - src[stride*10])>>4);
+		src[stride*9] = CLIP((-src[stride*6] + 9*src[stride*8] + 9*src[stride*10] - src[stride*12])>>4);
 		src++;
 	}
 #endif
@@ -1646,7 +1645,6 @@ DEINT_CUBIC((%%edx, %1), (%0, %1, 8), (%%edx, %1, 4), (%%ecx), (%%ecx, %1, 2))
  * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
  * this filter will read lines 4-13 and write 5-11
- * no cliping in C version
  */
 static inline void RENAME(deInterlaceFF)(uint8_t src[], int stride, uint8_t *tmp)
 {
@@ -1705,14 +1703,114 @@ DEINT_FF((%%edx, %1), (%%edx, %1, 2), (%0, %1, 8), (%%edx, %1, 4))
 		int t1= tmp[x];
 		int t2= src[stride*1];
 
-		src[stride*1]= (-t1 + 4*src[stride*0] + 2*t2 + 4*src[stride*2] - src[stride*3] + 4)>>3;
+		src[stride*1]= CLIP((-t1 + 4*src[stride*0] + 2*t2 + 4*src[stride*2] - src[stride*3] + 4)>>3);
 		t1= src[stride*4];
-		src[stride*3]= (-t2 + 4*src[stride*2] + 2*t1 + 4*src[stride*4] - src[stride*5] + 4)>>3;
+		src[stride*3]= CLIP((-t2 + 4*src[stride*2] + 2*t1 + 4*src[stride*4] - src[stride*5] + 4)>>3);
 		t2= src[stride*6];
-		src[stride*5]= (-t1 + 4*src[stride*4] + 2*t2 + 4*src[stride*6] - src[stride*7] + 4)>>3;
+		src[stride*5]= CLIP((-t1 + 4*src[stride*4] + 2*t2 + 4*src[stride*6] - src[stride*7] + 4)>>3);
 		t1= src[stride*8];
-		src[stride*7]= (-t2 + 4*src[stride*6] + 2*t1 + 4*src[stride*8] - src[stride*9] + 4)>>3;
+		src[stride*7]= CLIP((-t2 + 4*src[stride*6] + 2*t1 + 4*src[stride*8] - src[stride*9] + 4)>>3);
 		tmp[x]= t1;
+
+		src++;
+	}
+#endif
+}
+
+/**
+ * Deinterlaces the given block by filtering every line with a (-1 2 6 2 -1) filter.
+ * will be called for every 8x8 block and can read & write from line 4-15
+ * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
+ * lines 4-12 will be read into the deblocking filter and should be deinterlaced
+ * this filter will read lines 4-13 and write 4-11
+ */
+static inline void RENAME(deInterlaceL5)(uint8_t src[], int stride, uint8_t *tmp, uint8_t *tmp2)
+{
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	src+= stride*4;
+	asm volatile(
+		"leal (%0, %1), %%eax				\n\t"
+		"leal (%%eax, %1, 4), %%edx			\n\t"
+		"pxor %%mm7, %%mm7				\n\t"
+		"movq (%2), %%mm0				\n\t"
+		"movq (%3), %%mm1				\n\t"
+//	0	1	2	3	4	5	6	7	8	9	10
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	edx	edx+%1	edx+2%1	%0+8%1	edx+4%1 ecx
+
+#define DEINT_L5(t1,t2,a,b,c)\
+		"movq " #a ", %%mm2				\n\t"\
+		"movq " #b ", %%mm3				\n\t"\
+		"movq " #c ", %%mm4				\n\t"\
+		PAVGB(t2, %%mm3)					\
+		PAVGB(t1, %%mm4)					\
+		"movq %%mm2, %%mm5				\n\t"\
+		"movq %%mm2, " #t1 "				\n\t"\
+		"punpcklbw %%mm7, %%mm2				\n\t"\
+		"punpckhbw %%mm7, %%mm5				\n\t"\
+		"movq %%mm2, %%mm6				\n\t"\
+		"paddw %%mm2, %%mm2				\n\t"\
+		"paddw %%mm6, %%mm2				\n\t"\
+		"movq %%mm5, %%mm6				\n\t"\
+		"paddw %%mm5, %%mm5				\n\t"\
+		"paddw %%mm6, %%mm5				\n\t"\
+		"movq %%mm3, %%mm6				\n\t"\
+		"punpcklbw %%mm7, %%mm3				\n\t"\
+		"punpckhbw %%mm7, %%mm6				\n\t"\
+		"paddw %%mm3, %%mm3				\n\t"\
+		"paddw %%mm6, %%mm6				\n\t"\
+		"paddw %%mm3, %%mm2				\n\t"\
+		"paddw %%mm6, %%mm5				\n\t"\
+		"movq %%mm4, %%mm6				\n\t"\
+		"punpcklbw %%mm7, %%mm4				\n\t"\
+		"punpckhbw %%mm7, %%mm6				\n\t"\
+		"psubw %%mm4, %%mm2				\n\t"\
+		"psubw %%mm6, %%mm5				\n\t"\
+		"psraw $2, %%mm2				\n\t"\
+		"psraw $2, %%mm5				\n\t"\
+		"packuswb %%mm5, %%mm2				\n\t"\
+		"movq %%mm2, " #a "				\n\t"\
+
+DEINT_L5(%%mm0, %%mm1, (%0)          , (%%eax)       , (%%eax, %1)   )
+DEINT_L5(%%mm1, %%mm0, (%%eax)       , (%%eax, %1)   , (%%eax, %1, 2))
+DEINT_L5(%%mm0, %%mm1, (%%eax, %1)   , (%%eax, %1, 2), (%0, %1, 4)   )
+DEINT_L5(%%mm1, %%mm0, (%%eax, %1, 2), (%0, %1, 4)   , (%%edx)       )
+DEINT_L5(%%mm0, %%mm1, (%0, %1, 4)   , (%%edx)       , (%%edx, %1)   )  
+DEINT_L5(%%mm1, %%mm0, (%%edx)       , (%%edx, %1)   , (%%edx, %1, 2))
+DEINT_L5(%%mm0, %%mm1, (%%edx, %1)   , (%%edx, %1, 2), (%0, %1, 8)   )
+DEINT_L5(%%mm1, %%mm0, (%%edx, %1, 2), (%0, %1, 8)   , (%%edx, %1, 4))
+
+		"movq %%mm0, (%2)				\n\t"
+		"movq %%mm1, (%3)				\n\t"
+		: : "r" (src), "r" (stride), "r"(tmp), "r"(tmp2)
+		: "%eax", "%edx"
+	);
+#else
+	int x;
+	src+= stride*4;
+	for(x=0; x<8; x++)
+	{
+		int t1= tmp[x];
+		int t2= tmp2[x];
+		int t3= src[0];
+
+		src[stride*0]= CLIP((-(t1 + src[stride*2]) + 2*(t2 + src[stride*1]) + 6*t3 + 4)>>3);
+		t1= src[stride*1];
+		src[stride*1]= CLIP((-(t2 + src[stride*3]) + 2*(t3 + src[stride*2]) + 6*t1 + 4)>>3);
+		t2= src[stride*2];
+		src[stride*2]= CLIP((-(t3 + src[stride*4]) + 2*(t1 + src[stride*3]) + 6*t2 + 4)>>3);
+		t3= src[stride*3];
+		src[stride*3]= CLIP((-(t1 + src[stride*5]) + 2*(t2 + src[stride*4]) + 6*t3 + 4)>>3);
+		t1= src[stride*4];
+		src[stride*4]= CLIP((-(t2 + src[stride*6]) + 2*(t3 + src[stride*5]) + 6*t1 + 4)>>3);
+		t2= src[stride*5];
+		src[stride*5]= CLIP((-(t3 + src[stride*7]) + 2*(t1 + src[stride*6]) + 6*t2 + 4)>>3);
+		t3= src[stride*6];
+		src[stride*6]= CLIP((-(t1 + src[stride*8]) + 2*(t2 + src[stride*7]) + 6*t3 + 4)>>3);
+		t1= src[stride*7];
+		src[stride*7]= CLIP((-(t2 + src[stride*9]) + 2*(t3 + src[stride*8]) + 6*t1 + 4)>>3);
+
+		tmp[x]= t3;
+		tmp2[x]= t1;
 
 		src++;
 	}
@@ -2696,7 +2794,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 
 	if(mode & CUBIC_IPOL_DEINT_FILTER) copyAhead=16;
 	else if(   (mode & LINEAR_BLEND_DEINT_FILTER)
-		|| (mode & FFMPEG_DEINT_FILTER)) copyAhead=14;
+		|| (mode & FFMPEG_DEINT_FILTER)
+		|| (mode & LOWPASS5_DEINT_FILTER)) copyAhead=14;
 	else if(   (mode & V_DEBLOCK)
 		|| (mode & LINEAR_IPOL_DEINT_FILTER)
 		|| (mode & MEDIAN_DEINT_FILTER)) copyAhead=13;
@@ -2832,6 +2931,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 				RENAME(deInterlaceInterpolateCubic)(dstBlock, dstStride);
 			else if(mode & FFMPEG_DEINT_FILTER)
 				RENAME(deInterlaceFF)(dstBlock, dstStride, c.deintTemp + x);
+			else if(mode & LOWPASS5_DEINT_FILTER)
+				RENAME(deInterlaceL5)(dstBlock, dstStride, c.deintTemp + x, c.deintTemp + width + x);
 /*			else if(mode & CUBIC_BLEND_DEINT_FILTER)
 				RENAME(deInterlaceBlendCubic)(dstBlock, dstStride);
 */
@@ -2974,6 +3075,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 				RENAME(deInterlaceInterpolateCubic)(dstBlock, dstStride);
 			else if(mode & FFMPEG_DEINT_FILTER)
 				RENAME(deInterlaceFF)(dstBlock, dstStride, c.deintTemp + x);
+			else if(mode & LOWPASS5_DEINT_FILTER)
+				RENAME(deInterlaceL5)(dstBlock, dstStride, c.deintTemp + x, c.deintTemp + width + x);
 /*			else if(mode & CUBIC_BLEND_DEINT_FILTER)
 				RENAME(deInterlaceBlendCubic)(dstBlock, dstStride);
 */

@@ -51,6 +51,7 @@
 #define	CUBIC_IPOL_DEINT_FILTER		0x40000	// 262144
 #define	MEDIAN_DEINT_FILTER		0x80000	// 524288
 #define	FFMPEG_DEINT_FILTER		0x400000
+#define	LOWPASS5_DEINT_FILTER		0x800000
 
 #define TEMP_NOISE_FILTER		0x100000
 #define FORCE_QUANT			0x200000
@@ -61,6 +62,17 @@
 //filters on
 //#define COMPILE_TIME_MODE 0x77
 
+#if 1
+static inline int CLIP(int a){
+	if(a&256) return ((a)>>31)^(-1);
+	else      return a;
+}
+//#define CLIP(a) (((a)&256) ? ((a)>>31)^(-1) : (a))
+#elif 0
+#define CLIP(a) clip_tab[a]
+#else
+#define CLIP(a) (a)
+#endif
 /**
  * Postprocessng filter.
  */
