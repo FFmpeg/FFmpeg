@@ -321,6 +321,8 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         err = AVERROR_NOMEM;
         goto fail;
     }
+    ic->duration = AV_NOPTS_VALUE;
+    ic->start_time = AV_NOPTS_VALUE;
     pstrcpy(ic->filename, sizeof(ic->filename), filename);
     pd->filename = ic->filename;
     pd->buf = buf;
@@ -437,6 +439,295 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         return s->iformat->read_packet(s, pkt);
     }
+}
+
+
+/* return TRUE if the stream has accurate timings for at least one component */
+static int av_has_timings(AVFormatContext *ic)
+{
+    int i;
+    AVStream *st;
+
+    for(i = 0;i < ic->nb_streams; i++) {
+        st = ic->streams[i];
+        if (st->start_time != AV_NOPTS_VALUE &&
+            st->duration != AV_NOPTS_VALUE)
+            return 1;
+    }
+    return 0;
+}
+
+/* estimate the stream timings from the one of each components. Also
+   compute the global bitrate if possible */
+static void av_update_stream_timings(AVFormatContext *ic)
+{
+    int64_t start_time, end_time, end_time1;
+    int i;
+    AVStream *st;
+
+    start_time = MAXINT64;
+    end_time = MININT64;
+    for(i = 0;i < ic->nb_streams; i++) {
+        st = ic->streams[i];
+        if (st->start_time != AV_NOPTS_VALUE) {
+            if (st->start_time < start_time)
+                start_time = st->start_time;
+            if (st->duration != AV_NOPTS_VALUE) {
+                end_time1 = st->start_time + st->duration;
+                if (end_time1 > end_time)
+                    end_time = end_time1;
+            }
+        }
+    }
+    if (start_time != MAXINT64) {
+        ic->start_time = start_time;
+        if (end_time != MAXINT64) {
+            ic->duration = end_time - start_time;
+            if (ic->file_size > 0) {
+                /* compute the bit rate */
+                ic->bit_rate = (double)ic->file_size * 8.0 * AV_TIME_BASE / 
+                    (double)ic->duration;
+            }
+        }
+    }
+
+}
+
+static void fill_all_stream_timings(AVFormatContext *ic)
+{
+    int i;
+    AVStream *st;
+
+    av_update_stream_timings(ic);
+    for(i = 0;i < ic->nb_streams; i++) {
+        st = ic->streams[i];
+        if (st->start_time == AV_NOPTS_VALUE) {
+            st->start_time = ic->start_time;
+            st->duration = ic->duration;
+        }
+    }
+}
+
+static void av_estimate_timings_from_bit_rate(AVFormatContext *ic)
+{
+    int64_t filesize, duration;
+    int bit_rate, i;
+    AVStream *st;
+
+    /* if bit_rate is already set, we believe it */
+    if (ic->bit_rate == 0) {
+        bit_rate = 0;
+        for(i=0;i<ic->nb_streams;i++) {
+            st = ic->streams[i];
+            bit_rate += st->codec.bit_rate;
+        }
+        ic->bit_rate = bit_rate;
+    }
+
+    /* if duration is already set, we believe it */
+    if (ic->duration == AV_NOPTS_VALUE && 
+        ic->bit_rate != 0 && 
+        ic->file_size != 0)  {
+        filesize = ic->file_size;
+        if (filesize > 0) {
+            duration = (int64_t)((8 * AV_TIME_BASE * (double)filesize) / (double)ic->bit_rate);
+            for(i = 0; i < ic->nb_streams; i++) {
+                st = ic->streams[i];
+                if (st->start_time == AV_NOPTS_VALUE ||
+                    st->duration == AV_NOPTS_VALUE) {
+                    st->start_time = 0;
+                    st->duration = duration;
+                }
+            }
+        }
+    }
+}
+
+static void flush_packet_queue(AVFormatContext *s)
+{
+    AVPacketList *pktl;
+
+    for(;;) {
+        pktl = s->packet_buffer;
+        if (!pktl) 
+            break;
+        s->packet_buffer = pktl->next;
+        av_free(pktl);
+    }
+}
+
+#define DURATION_MAX_READ_SIZE 250000
+
+/* only usable for MPEG-PS streams */
+static void av_estimate_timings_from_pts(AVFormatContext *ic)
+{
+    AVPacket pkt1, *pkt = &pkt1;
+    AVStream *st;
+    int read_size, i, ret;
+    int64_t start_time, end_time, end_time1;
+    int64_t filesize, offset, duration;
+    
+    /* we read the first packets to get the first PTS (not fully
+       accurate, but it is enough now) */
+    url_fseek(&ic->pb, 0, SEEK_SET);
+    read_size = 0;
+    for(;;) {
+        if (read_size >= DURATION_MAX_READ_SIZE)
+            break;
+        /* if all info is available, we can stop */
+        for(i = 0;i < ic->nb_streams; i++) {
+            st = ic->streams[i];
+            if (st->start_time == AV_NOPTS_VALUE)
+                break;
+        }
+        if (i == ic->nb_streams)
+            break;
+
+        ret = av_read_packet(ic, pkt);
+        if (ret != 0)
+            break;
+        read_size += pkt->size;
+        st = ic->streams[pkt->stream_index];
+        if (pkt->pts != AV_NOPTS_VALUE) {
+            if (st->start_time == AV_NOPTS_VALUE)
+                st->start_time = (int64_t)((double)pkt->pts * ic->pts_num * (double)AV_TIME_BASE / ic->pts_den);
+         }
+         av_free_packet(pkt);
+     }
+
+    /* we compute the minimum start_time and use it as default */
+    start_time = MAXINT64;
+    for(i = 0; i < ic->nb_streams; i++) {
+        st = ic->streams[i];
+        if (st->start_time != AV_NOPTS_VALUE &&
+            st->start_time < start_time)
+            start_time = st->start_time;
+    }
+    printf("start=%lld\n", start_time);
+    if (start_time != MAXINT64)
+        ic->start_time = start_time;
+    
+    /* estimate the end time (duration) */
+    /* XXX: may need to support wrapping */
+    filesize = ic->file_size;
+    offset = filesize - DURATION_MAX_READ_SIZE;
+    if (offset < 0)
+        offset = 0;
+
+    /* flush packet queue */
+    flush_packet_queue(ic);
+
+    url_fseek(&ic->pb, offset, SEEK_SET);
+    read_size = 0;
+    for(;;) {
+        if (read_size >= DURATION_MAX_READ_SIZE)
+            break;
+        /* if all info is available, we can stop */
+        for(i = 0;i < ic->nb_streams; i++) {
+            st = ic->streams[i];
+            if (st->duration == AV_NOPTS_VALUE)
+                break;
+        }
+        if (i == ic->nb_streams)
+            break;
+        
+        ret = av_read_packet(ic, pkt);
+        if (ret != 0)
+            break;
+        read_size += pkt->size;
+        st = ic->streams[pkt->stream_index];
+        if (pkt->pts != AV_NOPTS_VALUE) {
+            end_time = (int64_t)((double)pkt->pts * ic->pts_num * (double)AV_TIME_BASE / ic->pts_den);
+            duration = end_time - st->start_time;
+            if (duration > 0) {
+                if (st->duration == AV_NOPTS_VALUE ||
+                    st->duration < duration)
+                    st->duration = duration;
+            }
+        }
+        av_free_packet(pkt);
+    }
+    
+    /* estimate total duration */
+    end_time = MININT64;
+    for(i = 0;i < ic->nb_streams; i++) {
+        st = ic->streams[i];
+        if (st->duration != AV_NOPTS_VALUE) {
+            end_time1 = st->start_time + st->duration;
+            if (end_time1 > end_time)
+                end_time = end_time1;
+        }
+    }
+    
+    /* update start_time (new stream may have been created, so we do
+       it at the end */
+    if (ic->start_time != AV_NOPTS_VALUE) {
+        for(i = 0; i < ic->nb_streams; i++) {
+            st = ic->streams[i];
+            if (st->start_time == AV_NOPTS_VALUE)
+                st->start_time = ic->start_time;
+        }
+    }
+
+    if (end_time != MININT64) {
+        /* put dummy values for duration if needed */
+        for(i = 0;i < ic->nb_streams; i++) {
+            st = ic->streams[i];
+            if (st->duration == AV_NOPTS_VALUE && 
+                st->start_time != AV_NOPTS_VALUE)
+                st->duration = end_time - st->start_time;
+        }
+        ic->duration = end_time - ic->start_time;
+    }
+
+    url_fseek(&ic->pb, 0, SEEK_SET);
+}
+
+static void av_estimate_timings(AVFormatContext *ic)
+{
+    URLContext *h;
+    int64_t file_size;
+
+    /* get the file size, if possible */
+    if (ic->iformat->flags & AVFMT_NOFILE) {
+        file_size = 0;
+    } else {
+        h = url_fileno(&ic->pb);
+        file_size = url_filesize(h);
+        if (file_size < 0)
+            file_size = 0;
+    }
+    ic->file_size = file_size;
+
+    if (ic->iformat == &mpegps_demux) {
+        /* get accurate estimate from the PTSes */
+        av_estimate_timings_from_pts(ic);
+    } else if (av_has_timings(ic)) {
+        /* at least one components has timings - we use them for all
+           the components */
+        fill_all_stream_timings(ic);
+    } else {
+        /* less precise: use bit rate info */
+        av_estimate_timings_from_bit_rate(ic);
+    }
+    av_update_stream_timings(ic);
+
+#if 0
+    {
+        int i;
+        AVStream *st;
+        for(i = 0;i < ic->nb_streams; i++) {
+            st = ic->streams[i];
+        printf("%d: start_time: %0.3f duration: %0.3f\n", 
+               i, (double)st->start_time / AV_TIME_BASE, 
+               (double)st->duration / AV_TIME_BASE);
+        }
+        printf("stream: start_time: %0.3f duration: %0.3f bitrate=%d kb/s\n", 
+               (double)ic->start_time / AV_TIME_BASE, 
+               (double)ic->duration / AV_TIME_BASE,
+               ic->bit_rate / 1000);
+    }
+#endif
 }
 
 /* state for codec information */
@@ -662,6 +953,8 @@ int av_find_stream_info(AVFormatContext *ic)
         }
     }
 
+
+    av_estimate_timings(ic);
     return ret;
 }
 
@@ -725,6 +1018,8 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
 
     st->index = s->nb_streams;
     st->id = id;
+    st->start_time = AV_NOPTS_VALUE;
+    st->duration = AV_NOPTS_VALUE;
     s->streams[s->nb_streams++] = st;
     return st;
 }
@@ -874,6 +1169,29 @@ void dump_format(AVFormatContext *ic,
             index, 
             is_output ? ic->oformat->name : ic->iformat->name, 
             is_output ? "to" : "from", url);
+    if (!is_output) {
+        printf("  Duration: ");
+        if (ic->duration != AV_NOPTS_VALUE) {
+            int hours, mins, secs, us;
+            secs = ic->duration / AV_TIME_BASE;
+            us = ic->duration % AV_TIME_BASE;
+            mins = secs / 60;
+            secs %= 60;
+            hours = mins / 60;
+            mins %= 60;
+            printf("%02d:%02d:%02d.%01d", hours, mins, secs, 
+                   (10 * us) / AV_TIME_BASE);
+        } else {
+            printf("N/A");
+        }
+        printf(", bitrate: ");
+        if (ic->bit_rate) {
+            printf("%d kb/s", ic->bit_rate / 1000);
+        } else {
+            printf("N/A");
+        }
+        printf("\n");
+    }
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
         avcodec_string(buf, sizeof(buf), &st->codec, is_output);
