@@ -70,9 +70,9 @@ mp3lame="no"
 vorbis="no"
 faad="no"
 faadbin="no"
-a52="yes"
+a52="no"
 a52bin="no"
-pp="yes"
+pp="no"
 shared_pp="no"
 mingw32="no"
 cygwin="no"
@@ -309,11 +309,11 @@ for opt do
   ;;
   --disable-zlib) zlib="no"
   ;;
-  --disable-a52) a52="no"
+  --enable-a52) a52="yes"
   ;;
   --enable-a52bin) a52bin="yes" ; extralibs="$ldl $extralibs"
   ;;
-  --disable-pp) pp="no"
+  --enable-pp) pp="yes"
   ;;
   --enable-shared-pp) shared_pp="yes"
   ;;
@@ -759,9 +759,9 @@ echo "  --enable-vorbis          enable vorbis support via libvorbisenc [default
 echo "  --enable-faad            enable faad support via libfaad [default=no]"
 echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
 echo "  --enable-mingw32         enable mingw32 native/cross windows compile"
-echo "  --disable-a52            disable GPL'ed A52 support [default=no]"
+echo "  --enable-a52             enable GPL'ed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
-echo "  --disable-pp             disable GPL'ed post processing support [default=no]"
+echo "  --enable-pp              enable GPL'ed post processing support [default=no]"
 echo "  --enable-shared-pp       use libpostproc.so [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
 echo "  --enable-amr_nb          enable amr_nb float audio codec"
