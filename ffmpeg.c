@@ -1717,10 +1717,12 @@ static int av_encode(AVFormatContext **output_files,
         ist = ist_table[i];
 	is = input_files[ist->file_index];
         ist->pts = 0;
-        ist->next_pts = 0;
+        ist->next_pts = ist->st->start_time;
+        if(ist->next_pts == AV_NOPTS_VALUE) 
+            ist->next_pts=0;
         ist->is_start = 1;
     }
-    
+
     /* compute buffer size max (should use a complete heuristic) */
     for(i=0;i<nb_input_files;i++) {
         file_table[i].buffer_size_max = 2048;
@@ -2732,6 +2734,7 @@ static void opt_input_file(const char *filename)
     AVFormatContext *ic;
     AVFormatParameters params, *ap = &params;
     int err, i, ret, rfps, rfps_base;
+    int64_t timestamp;
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -2765,14 +2768,13 @@ static void opt_input_file(const char *filename)
         exit(1);
     }
 
+    timestamp = start_time;
+    /* add the stream start time */
+    if (ic->start_time != AV_NOPTS_VALUE)
+        timestamp += ic->start_time;
+
     /* if seeking requested, we execute it */
     if (start_time != 0) {
-        int64_t timestamp;
-
-        timestamp = start_time;
-        /* add the stream start time */
-        if (ic->start_time != AV_NOPTS_VALUE)
-            timestamp += ic->start_time;
         ret = av_seek_frame(ic, -1, timestamp);
         if (ret < 0) {
             fprintf(stderr, "%s: could not seek to position %0.3f\n", 
@@ -2837,7 +2839,7 @@ static void opt_input_file(const char *filename)
     }
     
     input_files[nb_input_files] = ic;
-    input_files_ts_offset[nb_input_files] = input_ts_offset;
+    input_files_ts_offset[nb_input_files] = input_ts_offset - (copy_ts ? 0 : timestamp);
     /* dump the file content */
     if (verbose >= 0)
         dump_format(ic, nb_input_files, filename, 0);
