@@ -64,7 +64,7 @@ endif
 ifeq ($(TARGET_ARCH_ALPHA),yes)
 OBJS += alpha/dsputil_alpha.o alpha/mpegvideo_alpha.o
 ASM_OBJS += alpha/dsputil_alpha_asm.o
-CFLAGS += -Wa,-mpca56
+CFLAGS += -Wa,-mpca56 -finline-limit=8000 -fforce-addr -freduce-all-givs
 endif
 
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
