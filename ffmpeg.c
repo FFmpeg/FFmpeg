@@ -235,6 +235,7 @@ static int rate_emu = 0;
 
 static char *video_grab_format = "video4linux";
 static char *video_device = NULL;
+static char *grab_device = NULL;
 static int  video_channel = 0;
 static char *video_standard = "ntsc";
 
@@ -2576,6 +2577,11 @@ static void opt_video_device(const char *arg)
     video_device = av_strdup(arg);
 }
 
+static void opt_grab_device(const char *arg)
+{
+    grab_device = av_strdup(arg);
+}
+
 static void opt_video_channel(const char *arg)
 {
     video_channel = strtol(arg, NULL, 0);
@@ -2589,12 +2595,6 @@ static void opt_video_standard(const char *arg)
 static void opt_audio_device(const char *arg)
 {
     audio_device = av_strdup(arg);
-}
-
-static void opt_dv1394(const char *arg)
-{
-    video_grab_format = "dv1394";
-    audio_grab_format = NULL;
 }
 
 static void opt_audio_codec(const char *arg)
@@ -2779,6 +2779,9 @@ static void opt_input_file(const char *filename)
     ap->height = frame_height + frame_padtop + frame_padbottom;
     ap->image_format = image_format;
     ap->pix_fmt = frame_pix_fmt;
+    ap->device  = grab_device;
+    ap->channel = video_channel;
+    ap->standard = video_standard;
 
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
@@ -2877,7 +2880,16 @@ static void opt_input_file(const char *filename)
     file_oformat = NULL;
     image_format = NULL;
 
+    grab_device = NULL;
+    video_channel = 0;
+    
     rate_emu = 0;
+}
+
+static void opt_grab(const char *arg)
+{
+    file_iformat = av_find_input_format(arg);
+    opt_input_file("");
 }
 
 static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
@@ -3927,8 +3939,11 @@ const OptionDef options[] = {
     { "vd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_device}, "set video grab device", "device" },
     { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "set video grab channel (DV1394 only)", "channel" },
     { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_standard}, "set television standard (NTSC, PAL (SECAM))", "standard" },
-    { "dv1394", OPT_EXPERT | OPT_GRAB, {(void*)opt_dv1394}, "set DV1394 grab", "" },
     { "ad", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_GRAB, {(void*)opt_audio_device}, "set audio device", "device" },
+
+    /* G.2 grab options */ 
+    { "grab", HAS_ARG | OPT_EXPERT | OPT_GRAB, {(void*)opt_grab}, "request grabbing using", "format" },
+    { "gd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_grab_device}, "set grab device", "device" },
  
     /* muxer options */   
     { "muxrate", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&mux_rate}, "set mux rate", "rate" },
