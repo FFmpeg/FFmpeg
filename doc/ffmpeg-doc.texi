@@ -173,6 +173,10 @@ overwrite output files
 set the recording time in seconds. @code{hh:mm:ss[.xxx]} syntax is also
 supported.
 
+@item -ss position
+seek to given time position. @code{hh:mm:ss[.xxx]} syntax is also
+supported.
+
 @item -title string       
 set the title
 
