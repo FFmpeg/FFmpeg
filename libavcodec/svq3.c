@@ -43,6 +43,10 @@
  * svq3 decoder.
  */
 
+#define FULLPEL_MODE  1 
+#define HALFPEL_MODE  2 
+#define THIRDPEL_MODE 3
+ 
 /* dual scan (from some older h264 draft)
  o-->o-->o   o
          |  /|
@@ -374,17 +378,13 @@ static void sixpel_mc_put (MpegEncContext *s,
 }
 
 static inline void svq3_mc_dir_part (MpegEncContext *s, int x, int y,
-				     int width, int height, int mx, int my) {
+				     int width, int height, int mx, int my, int dxy) {
   uint8_t *src, *dest;
   int i, emu = 0;
-  const int sx = ((unsigned) (mx + 0x7FFFFFFE)) % 6;
-  const int sy = ((unsigned) (my + 0x7FFFFFFE)) % 6;
-  const int dxy= 6*sy + sx;
 
-  /* decode and clip motion vector to frame border (+16) */
-  mx = x + (mx - sx) / 6;
-  my = y + (my - sy) / 6;
-
+  mx += x;
+  my += y;
+  
   if (mx < 0 || mx >= (s->width  - width  - 1) ||
       my < 0 || my >= (s->height - height - 1)) {
 
@@ -441,17 +441,17 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
   h->topright_samples_available	= 0xFFFF;
 
   if (mb_type == 0) {		/* SKIP */
-    svq3_mc_dir_part (s, 16*s->mb_x, 16*s->mb_y, 16, 16, 0, 0);
+    svq3_mc_dir_part (s, 16*s->mb_x, 16*s->mb_y, 16, 16, 0, 0, 0);
 
     cbp = 0;
     mb_type = MB_TYPE_SKIP;
   } else if (mb_type < 8) {	/* INTER */
     if (h->thirdpel_flag && h->halfpel_flag == !get_bits (&s->gb, 1)) {
-      mode = 3;	/* thirdpel */
+      mode = THIRDPEL_MODE;
     } else if (h->halfpel_flag && h->thirdpel_flag == !get_bits (&s->gb, 1)) {
-      mode = 2;	/* halfpel */
+      mode = HALFPEL_MODE;
     } else {
-      mode = 1;	/* fullpel */
+      mode = FULLPEL_MODE;
     }
 
     /* fill caches */
@@ -496,6 +496,7 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 
     for (i=0; i < 16; i+=part_height) {
       for (j=0; j < 16; j+=part_width) {
+        int dxy;
 	x = 16*s->mb_x + j;
 	y = 16*s->mb_y + i;
 	k = ((j>>2)&1) + ((i>>1)&2) + ((j>>1)&4) + (i&8);
@@ -513,23 +514,38 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 	if (dx == INVALID_VLC || dy == INVALID_VLC) {
 	  return -1;
 	}
-
 	/* compute motion vector */
-	if (mode == 3) {
-	  mx = ((mx + 1) & ~0x1) + 2*dx;
-	  my = ((my + 1) & ~0x1) + 2*dy;
-	} else if (mode == 2) {
-	  mx = (mx + 1) - ((unsigned) (0x7FFFFFFF + mx) % 3) + 3*dx;
-	  my = (my + 1) - ((unsigned) (0x7FFFFFFF + my) % 3) + 3*dy;
-	} else if (mode == 1) {
-	  mx = (mx + 3) - ((unsigned) (0x7FFFFFFB + mx) % 6) + 6*dx;
-	  my = (my + 3) - ((unsigned) (0x7FFFFFFB + my) % 6) + 6*dy;
+	if (mode == THIRDPEL_MODE) {
+          int fx, fy;
+          mx = ((mx + 1)>>1) + dx;
+          my = ((my + 1)>>1) + dy;
+          fx= ((unsigned)(mx + 0x3000))/3 - 0x1000;
+          fy= ((unsigned)(my + 0x3000))/3 - 0x1000;
+          dxy= 2*(mx - 3*fx) + 2*6*(my - 3*fy);
+
+          svq3_mc_dir_part (s, x, y, part_width, part_height, fx, fy, dxy);
+          mx += mx;
+          my += my;
+	} else if (mode == HALFPEL_MODE) {
+	  mx = ((unsigned)(mx + 1 + 0x3000))/3 + dx - 0x1000;
+	  my = ((unsigned)(my + 1 + 0x3000))/3 + dy - 0x1000;
+          dxy= 3*(mx&1) + 6*3*(my&1);
+
+          svq3_mc_dir_part (s, x, y, part_width, part_height, mx>>1, my>>1, dxy);
+          mx *= 3;
+          my *= 3;
+	} else {
+          assert(mode == FULLPEL_MODE);
+	  mx = ((unsigned)(mx + 3 + 0x6000))/6 + dx - 0x1000;
+	  my = ((unsigned)(my + 3 + 0x6000))/6 + dy - 0x1000;
+
+	  svq3_mc_dir_part (s, x, y, part_width, part_height, mx, my, 0);
+          mx *= 6;
+          my *= 6;
 	}
 
-	/* update mv_cache */
+        /* update mv_cache */
         fill_rectangle(h->mv_cache[0][scan8[k]], part_width>>2, part_height>>2, 8, (mx&0xFFFF)+(my<<16), 4);
-
-	svq3_mc_dir_part (s, x, y, part_width, part_height, mx, my);
       }
     }
 
