@@ -42,7 +42,7 @@ cs_test: $(CS_TEST_OBJS)
 	$(CC) $(CS_TEST_OBJS) -o cs_test
 
 postprocess_pic.o: postprocess.c
-	$(CC) -c $(CFLAGS) -fPIC -DPIC -o $@ $<
+	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -o $@ $<
 
 $(SPPLIB): $(SPPOBJS)
 	$(CC) -shared -Wl,-soname,$(SPPLIB).0 \
