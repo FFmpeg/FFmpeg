@@ -1292,7 +1292,7 @@ typedef struct AVCodecContext {
      * - encoding: unused
      * - decoding: set by user, if not set then the native format will always be choosen
      */
-    enum PixelFormat (*get_format)(struct AVCodecContext *s, enum PixelFormat * fmt);
+    enum PixelFormat (*get_format)(struct AVCodecContext *s, const enum PixelFormat * fmt);
 
     /**
      * DTG active format information (additionnal aspect ratio

@@ -1306,7 +1306,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
 
         if (HAS_CBP(mb_type)) {
             cbp = get_vlc2(&s->gb, mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
-            if (cbp < 0 || (cbp == 0) && (s->chroma_format < 2) ){
+            if (cbp < 0 || ((cbp == 0) && (s->chroma_format < 2)) ){
                 av_log(s->avctx, AV_LOG_ERROR, "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
                 return -1;
             }
