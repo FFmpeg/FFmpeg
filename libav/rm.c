@@ -631,6 +631,21 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return -EIO;
 }
 
+static int get_num(ByteIOContext *pb, int *len)
+{
+    int n, n1;
+
+    n = get_be16(pb);
+    (*len)-=2;
+    if (n >= 0x4000) {
+        return n - 0x4000;
+    } else {
+        n1 = get_be16(pb);
+        (*len)-=2;
+        return (n << 16) | n1;
+    }
+}
+
 static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RMContext *rm = s->priv_data;
@@ -666,19 +681,44 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         goto redo;
     }
 
+#if 0 // XXX/FIXME this is done in the codec currently, but should be done here ...
     if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
-        get_byte(pb);
-        get_byte(pb);
-        get_be16(pb);
-        get_be16(pb);
-        get_byte(pb);
-        len -= 7;
-    }
+        int full_frame, h, pic_num;
+ 
+        h= get_byte(pb);
+        if ((h & 0xc0) == 0xc0) {
+            int len2, pos;
+            full_frame = 1;
+            len2= get_num(pb, &len);
+            pos = get_num(pb, &len);
+            //printf("pos:%d\n",len);
+            len -= 2;
+        } else {
+            int seq, frame_size, pos;
+            full_frame = 0;
+            seq = get_byte(pb);
+            frame_size = get_num(pb, &len);
+            pos = get_num(pb, &len);
+            //printf("seq:%d, size:%d, pos:%d\n",seq,frame_size,pos);
+            len -= 3;
+        }
+        /* picture number */
+        pic_num= get_byte(pb);
 
-    
+        av_new_packet(pkt, len+1);
+        pkt->stream_index = i;
+        
+        //XXX/FIXME: is this a good idea?
+        pkt->data[0]= h; //store header, its needed for decoding
+        
+        get_buffer(pb, pkt->data+1, len);
+    }
+#endif
+
     av_new_packet(pkt, len);
     pkt->stream_index = i;
     get_buffer(pb, pkt->data, len);
+
     /* for AC3, needs to swap bytes */
     if (st->codec.codec_id == CODEC_ID_AC3) {
         ptr = pkt->data;

@@ -223,17 +223,9 @@ int rv_decode_dc(MpegEncContext *s, int n)
 /* write RV 1.0 compatible frame header */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 {
-    int full_frame= 1;
+    int full_frame= 0;
 
     align_put_bits(&s->pb);
-    
-    if(full_frame){
-        put_bits(&s->pb, 8, 0xc0);	/* packet header */
-        put_bits(&s->pb, 16, 0x4000);	/* len */
-        put_bits(&s->pb, 16, 0x4000);	/* pos */
-    }
-
-    put_bits(&s->pb, 8, picture_number&0xFF);
     
     put_bits(&s->pb, 1, 1);	/* marker */
 
@@ -276,6 +268,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     int mb_count, pb_frame, marker, h, full_frame;
     int pic_num, unk;
     
+    //XXX/FIXME this should be done in the demuxer not here
     /* skip packet header */
     h = get_bits(&s->gb, 8);
     if ((h & 0xc0) == 0xc0) {
