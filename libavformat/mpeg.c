@@ -21,6 +21,9 @@
 #define MAX_PAYLOAD_SIZE 4096
 //#define DEBUG_SEEK
 
+#undef NDEBUG
+#include <assert.h>
+
 typedef struct {
     uint8_t buffer[MAX_PAYLOAD_SIZE];
     int buffer_ptr;
@@ -902,6 +905,15 @@ static int mpegps_read_pes_header(AVFormatContext *s,
             len -= 3;
         }
     }
+    if(dts != AV_NOPTS_VALUE && ppos){
+        int i;
+        for(i=0; i<s->nb_streams; i++){
+            if(startcode == s->streams[i]->id) {
+                av_add_index_entry(s->streams[i], *ppos, dts, 0 /* FIXME keyframe? */);
+            }
+        }
+    }
+    
     *pstart_code = startcode;
     *ppts = pts;
     *pdts = dts;
@@ -913,10 +925,10 @@ static int mpegps_read_packet(AVFormatContext *s,
 {
     AVStream *st;
     int len, startcode, i, type, codec_id;
-    int64_t pts, dts;
+    int64_t pts, dts, dummy_pos; //dummy_pos is needed for the index building to work
 
  redo:
-    len = mpegps_read_pes_header(s, NULL, &startcode, &pts, &dts, 1);
+    len = mpegps_read_pes_header(s, &dummy_pos, &startcode, &pts, &dts, 1);
     if (len < 0)
         return len;
     
@@ -1022,27 +1034,13 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
     return dts;
 }
 
-static int find_stream_index(AVFormatContext *s)
-{
-    int i;
-    AVStream *st;
-
-    if (s->nb_streams <= 0)
-        return -1;
-    for(i = 0; i < s->nb_streams; i++) {
-        st = s->streams[i];
-        if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
-            return i;
-        }
-    }
-    return 0;
-}
-
 static int mpegps_read_seek(AVFormatContext *s, 
                             int stream_index, int64_t timestamp)
 {
     int64_t pos_min, pos_max, pos;
     int64_t dts_min, dts_max, dts;
+    int index;
+    AVStream *st;
 
     timestamp = (timestamp * 90000) / AV_TIME_BASE;
 
@@ -1052,19 +1050,56 @@ static int mpegps_read_seek(AVFormatContext *s,
 
     /* XXX: find stream_index by looking at the first PES packet found */
     if (stream_index < 0) {
-        stream_index = find_stream_index(s);
+        stream_index = av_find_default_stream_index(s);
         if (stream_index < 0)
             return -1;
     }
-    pos_min = 0;
-    dts_min = mpegps_read_dts(s, stream_index, &pos_min, 1);
-    if (dts_min == AV_NOPTS_VALUE) {
-        /* we can reach this case only if no PTS are present in
-           the whole stream */
-        return -1;
+    
+    dts_max=
+    dts_min= AV_NOPTS_VALUE;
+
+    st= s->streams[stream_index];
+    if(st->index_entries){
+        AVIndexEntry *e;
+
+        index= av_index_search_timestamp(st, timestamp);
+        e= &st->index_entries[index];
+        if(e->timestamp <= timestamp){
+            pos_min= e->pos;
+            dts_min= e->timestamp;
+#ifdef DEBUG_SEEK
+        printf("unsing cached pos_min=0x%llx dts_min=%0.3f\n", 
+               pos_min,dts_min / 90000.0);
+#endif
+        }else{
+            assert(index==0);
+        }
+        index++;
+        if(index < st->nb_index_entries){
+            e= &st->index_entries[index];
+            assert(e->timestamp >= timestamp);
+            pos_max= e->pos;
+            dts_max= e->timestamp;
+#ifdef DEBUG_SEEK
+        printf("unsing cached pos_max=0x%llx dts_max=%0.3f\n", 
+               pos_max,dts_max / 90000.0);
+#endif
+        }
     }
-    pos_max = url_filesize(url_fileno(&s->pb)) - 1;
-    dts_max = mpegps_read_dts(s, stream_index, &pos_max, 0);
+
+    if(dts_min == AV_NOPTS_VALUE){
+        pos_min = 0;
+        dts_min = mpegps_read_dts(s, stream_index, &pos_min, 1);
+        if (dts_min == AV_NOPTS_VALUE) {
+            /* we can reach this case only if no PTS are present in
+               the whole stream */
+            return -1;
+        }
+    }
+    if(dts_max == AV_NOPTS_VALUE){
+        pos_max = url_filesize(url_fileno(&s->pb)) - 1;
+        dts_max = mpegps_read_dts(s, stream_index, &pos_max, 0);
+    }
     
     while (pos_min <= pos_max) {
 #ifdef DEBUG_SEEK

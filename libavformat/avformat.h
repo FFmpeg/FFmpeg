@@ -195,6 +195,9 @@ typedef struct AVIndexEntry {
     int64_t pos;
     int64_t timestamp;
 #define AVINDEX_KEYFRAME 0x0001
+/* the following 2 flags indicate that the next/prev keyframe is known, and scaning for it isnt needed */
+#define AVINDEX_NEXT_KNOWN 0x0002
+#define AVINDEX_PREV_KNOWN 0x0004
     int flags;
 } AVIndexEntry;
 
@@ -543,6 +546,11 @@ void av_close_input_file(AVFormatContext *s);
 AVStream *av_new_stream(AVFormatContext *s, int id);
 void av_set_pts_info(AVFormatContext *s, int pts_wrap_bits,
                      int pts_num, int pts_den);
+
+int av_find_default_stream_index(AVFormatContext *s);
+int av_index_search_timestamp(AVStream *st, int timestamp);
+void av_add_index_entry(AVStream *st,
+                            int64_t pos, int64_t timestamp, int flags);
 
 /* media file output */
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);

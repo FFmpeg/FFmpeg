@@ -18,6 +18,9 @@
  */
 #include "avformat.h"
 
+#undef NDEBUG
+#include <assert.h>
+
 AVInputFormat *first_iformat;
 AVOutputFormat *first_oformat;
 AVImageFormat *first_image_format;
@@ -811,6 +814,22 @@ static void flush_packet_queue(AVFormatContext *s)
 /*******************************************************/
 /* seek support */
 
+int av_find_default_stream_index(AVFormatContext *s)
+{
+    int i;
+    AVStream *st;
+
+    if (s->nb_streams <= 0)
+        return -1;
+    for(i = 0; i < s->nb_streams; i++) {
+        st = s->streams[i];
+        if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
+            return i;
+        }
+    }
+    return 0;
+}
+
 /* flush the frame reader */
 static void av_read_frame_flush(AVFormatContext *s)
 {
@@ -841,22 +860,42 @@ static void av_read_frame_flush(AVFormatContext *s)
     }
 }
 
-static void add_index_entry(AVStream *st,
+/* add a index entry into a sorted list updateing if it is already there */
+void av_add_index_entry(AVStream *st,
                             int64_t pos, int64_t timestamp, int flags)
 {
     AVIndexEntry *entries, *ie;
+    int index;
     
     entries = av_fast_realloc(st->index_entries,
                               &st->index_entries_allocated_size,
                               (st->nb_index_entries + 1) * 
                               sizeof(AVIndexEntry));
-    if (entries) {
-        st->index_entries = entries;
-        ie = &entries[st->nb_index_entries++];
-        ie->pos = pos;
-        ie->timestamp = timestamp;
-        ie->flags = flags;
-    }
+    st->index_entries= entries;
+
+    if(st->nb_index_entries){
+        index= av_index_search_timestamp(st, timestamp);
+        ie= &entries[index];
+
+        if(ie->timestamp != timestamp){
+            if(ie->timestamp < timestamp){
+                index++; //index points to next instead of previous entry, maybe nonexistant
+                ie= &st->index_entries[index];
+            }else
+                assert(index==0);
+                
+            if(index != st->nb_index_entries){
+                assert(index < st->nb_index_entries);
+                memmove(entries + index + 1, entries + index, sizeof(AVIndexEntry)*(st->nb_index_entries - index));
+            }
+            st->nb_index_entries++;
+        }
+    }else
+        ie= &entries[st->nb_index_entries++];
+    
+    ie->pos = pos;
+    ie->timestamp = timestamp;
+    ie->flags = flags;
 }
 
 /* build an index for raw streams using a parser */
@@ -876,7 +915,7 @@ static void av_build_index_raw(AVFormatContext *s)
             break;
         if (pkt->stream_index == 0 && st->parser &&
             (pkt->flags & PKT_FLAG_KEY)) {
-            add_index_entry(st, st->parser->frame_offset, pkt->dts, 
+            av_add_index_entry(st, st->parser->frame_offset, pkt->dts, 
                             AVINDEX_KEYFRAME);
         }
         av_free_packet(pkt);
@@ -899,9 +938,10 @@ static int is_raw_stream(AVFormatContext *s)
 
 /* return the largest index entry whose timestamp is <=
    wanted_timestamp */
-static int index_search_timestamp(AVIndexEntry *entries, 
-                                  int nb_entries, int wanted_timestamp)
+int av_index_search_timestamp(AVStream *st, int wanted_timestamp)
 {
+    AVIndexEntry *entries= st->index_entries;
+    int nb_entries= st->nb_index_entries;
     int a, b, m;
     int64_t timestamp;
 
@@ -910,22 +950,17 @@ static int index_search_timestamp(AVIndexEntry *entries,
     
     a = 0;
     b = nb_entries - 1;
-    while (a <= b) {
-        m = (a + b) >> 1;
+
+    while (a < b) {
+        m = (a + b + 1) >> 1;
         timestamp = entries[m].timestamp;
-        if (timestamp == wanted_timestamp)
-            goto found;
-        else if (timestamp > wanted_timestamp) {
+        if (timestamp > wanted_timestamp) {
             b = m - 1;
         } else {
-            a = m + 1;
+            a = m;
         }
     }
-    m = a;
-    if (m > 0)
-        m--;
- found:
-    return m;
+    return a;
 }
 
 static int av_seek_frame_generic(AVFormatContext *s, 
@@ -947,8 +982,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
     if (stream_index < 0)
         stream_index = 0;
     st = s->streams[stream_index];
-    index = index_search_timestamp(st->index_entries, st->nb_index_entries,
-                                   timestamp);
+    index = av_index_search_timestamp(st, timestamp);
     if (index < 0)
         return -1;
 
