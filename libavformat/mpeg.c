@@ -479,6 +479,8 @@ static int mpegps_read_header(AVFormatContext *s,
 {
     MpegDemuxContext *m = s->priv_data;
     m->header_state = 0xff;
+    s->ctx_flags |= AVFMTCTX_NOHEADER;
+
     /* no need to do more */
     return 0;
 }
@@ -705,7 +707,6 @@ AVInputFormat mpegps_demux = {
     mpegps_read_header,
     mpegps_read_packet,
     mpegps_read_close,
-    .flags = AVFMT_NOHEADER,
 };
 
 int mpegps_init(void)

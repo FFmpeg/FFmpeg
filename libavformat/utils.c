@@ -274,6 +274,56 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
 /************************************************************/
 /* input media file */
 
+/**
+ * open a media file from an IO stream. 'fmt' must be specified.
+ */
+int av_open_input_stream(AVFormatContext **ic_ptr, 
+                         ByteIOContext *pb, const char *filename, 
+                         AVInputFormat *fmt, AVFormatParameters *ap)
+{
+    int err;
+    AVFormatContext *ic;
+
+    ic = av_mallocz(sizeof(AVFormatContext));
+    if (!ic) {
+        err = AVERROR_NOMEM;
+        goto fail;
+    }
+    ic->iformat = fmt;
+    if (pb)
+        ic->pb = *pb;
+    ic->duration = AV_NOPTS_VALUE;
+    ic->start_time = AV_NOPTS_VALUE;
+    pstrcpy(ic->filename, sizeof(ic->filename), filename);
+
+    /* allocate private data */
+    if (fmt->priv_data_size > 0) {
+        ic->priv_data = av_mallocz(fmt->priv_data_size);
+        if (!ic->priv_data) {
+            err = AVERROR_NOMEM;
+            goto fail;
+        }
+    } else {
+        ic->priv_data = NULL;
+    }
+
+    /* default pts settings is MPEG like */
+    av_set_pts_info(ic, 33, 1, 90000);
+
+    err = ic->iformat->read_header(ic, ap);
+    if (err < 0)
+        goto fail;
+    *ic_ptr = ic;
+    return 0;
+ fail:
+    if (ic) {
+        av_freep(&ic->priv_data);
+    }
+    av_free(ic);
+    *ic_ptr = NULL;
+    return err;
+}
+
 #define PROBE_BUF_SIZE 2048
 
 /**
@@ -292,20 +342,15 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        int buf_size,
                        AVFormatParameters *ap)
 {
-    AVFormatContext *ic = NULL;
-    int err, must_open_file;
-    unsigned char buf[PROBE_BUF_SIZE];
+    int err, must_open_file, file_opened;
+    uint8_t buf[PROBE_BUF_SIZE];
     AVProbeData probe_data, *pd = &probe_data;
-
-    ic = av_mallocz(sizeof(AVFormatContext));
-    if (!ic) {
-        err = AVERROR_NOMEM;
-        goto fail;
-    }
-    ic->duration = AV_NOPTS_VALUE;
-    ic->start_time = AV_NOPTS_VALUE;
-    pstrcpy(ic->filename, sizeof(ic->filename), filename);
-    pd->filename = ic->filename;
+    ByteIOContext pb1, *pb = &pb1;
+    
+    file_opened = 0;
+    pd->filename = "";
+    if (filename)
+        pd->filename = filename;
     pd->buf = buf;
     pd->buf_size = 0;
 
@@ -317,27 +362,24 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     /* do not open file if the format does not need it. XXX: specific
        hack needed to handle RTSP/TCP */
     must_open_file = 1;
-    if ((fmt && (fmt->flags & AVFMT_NOFILE)) 
-#ifdef CONFIG_NETWORK
-        || (fmt == &rtp_demux && !strcmp(filename, "null"))
-#endif
-        ) {
+    if (fmt && (fmt->flags & AVFMT_NOFILE)) {
         must_open_file = 0;
     }
 
     if (!fmt || must_open_file) {
         /* if no file needed do not try to open one */
-        if (url_fopen(&ic->pb, filename, URL_RDONLY) < 0) {
+        if (url_fopen(pb, filename, URL_RDONLY) < 0) {
             err = AVERROR_IO;
             goto fail;
         }
+        file_opened = 1;
         if (buf_size > 0) {
-            url_setbufsize(&ic->pb, buf_size);
+            url_setbufsize(pb, buf_size);
         }
         if (!fmt) {
             /* read probe data */
-            pd->buf_size = get_buffer(&ic->pb, buf, PROBE_BUF_SIZE);
-            url_fseek(&ic->pb, 0, SEEK_SET);
+            pd->buf_size = get_buffer(pb, buf, PROBE_BUF_SIZE);
+            url_fseek(pb, 0, SEEK_SET);
         }
     }
     
@@ -349,65 +391,46 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     /* if still no format found, error */
     if (!fmt) {
         err = AVERROR_NOFMT;
-        goto fail1;
+        goto fail;
     }
         
     /* XXX: suppress this hack for redirectors */
 #ifdef CONFIG_NETWORK
     if (fmt == &redir_demux) {
-        err = redir_open(ic_ptr, &ic->pb);
-        url_fclose(&ic->pb);
-        av_free(ic);
+        err = redir_open(ic_ptr, pb);
+        url_fclose(pb);
         return err;
     }
 #endif
 
-    ic->iformat = fmt;
-
     /* check filename in case of an image number is expected */
-    if (ic->iformat->flags & AVFMT_NEEDNUMBER) {
-        if (filename_number_test(ic->filename) < 0) { 
+    if (fmt->flags & AVFMT_NEEDNUMBER) {
+        if (filename_number_test(filename) < 0) { 
             err = AVERROR_NUMEXPECTED;
-            goto fail1;
+            goto fail;
         }
     }
-    
-    /* allocate private data */
-    if (fmt->priv_data_size > 0) {
-        ic->priv_data = av_mallocz(fmt->priv_data_size);
-        if (!ic->priv_data) {
-            err = AVERROR_NOMEM;
-        goto fail1;
-        }
-    } else
-        ic->priv_data = NULL;
-
-    /* default pts settings is MPEG like */
-    av_set_pts_info(ic, 33, 1, 90000);
-
-    err = ic->iformat->read_header(ic, ap);
-    if (err < 0)
-        goto fail1;
-    *ic_ptr = ic;
+    err = av_open_input_stream(ic_ptr, pb, filename, fmt, ap);
+    if (err)
+        goto fail;
     return 0;
- fail1:
-    if (!fmt || must_open_file) {
-        url_fclose(&ic->pb);
-    }
  fail:
-    if (ic) {
-        av_freep(&ic->priv_data);
-    }
-    av_free(ic);
+    if (file_opened)
+        url_fclose(pb);
     *ic_ptr = NULL;
     return err;
+    
 }
 
+/*******************************************************/
+
 /**
- * Read a packet from a media file
+ * Read a packet from a media file. Use it only for low level file
+ * reading. It is almost always better to use av_read_frame().
+ * 
  * @param s media file handle
  * @param pkt is filled 
- * @return 0 if OK. AVERROR_xxx if error.
+ * @return 0 if OK. AVERROR_xxx if error.  
  */
 int av_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -425,6 +448,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 }
 
+/*******************************************************/
 
 /* return TRUE if the stream has accurate timings for at least one component */
 static int av_has_timings(AVFormatContext *ic)
@@ -796,7 +820,7 @@ int av_find_stream_info(AVFormatContext *ic)
             /* NOTE: if the format has no header, then we need to read
                some packets to get most of the streams, so we cannot
                stop here */
-            if (!(ic->iformat->flags & AVFMT_NOHEADER) ||
+            if (!(ic->ctx_flags & AVFMTCTX_NOHEADER) ||
                 read_size >= min_read_size) {
                 /* if we found the info for all the codecs, we can stop */
                 ret = count;
@@ -821,12 +845,12 @@ int av_find_stream_info(AVFormatContext *ic)
         ppktl = &pktl->next;
 
         /* NOTE: a new stream can be added there if no header in file
-           (AVFMT_NOHEADER) */
+           (AVFMTCTX_NOHEADER) */
         pkt = &pktl->pkt;
         if (ic->iformat->read_packet(ic, pkt) < 0) {
             /* EOF or error */
             ret = -1; /* we could not have all the codec parameters before EOF */
-            if ((ic->iformat->flags & AVFMT_NOHEADER) &&
+            if ((ic->ctx_flags & AVFMTCTX_NOHEADER) &&
                 i == ic->nb_streams)
                 ret = 0;
             break;
@@ -950,11 +974,14 @@ int av_find_stream_info(AVFormatContext *ic)
 void av_close_input_file(AVFormatContext *s)
 {
     int i, must_open_file;
+    AVStream *st;
 
     if (s->iformat->read_close)
         s->iformat->read_close(s);
     for(i=0;i<s->nb_streams;i++) {
-        av_free(s->streams[i]);
+        /* free all data in a stream component */
+        st = s->streams[i];
+        av_free(st);
     }
     if (s->packet_buffer) {
         AVPacketList *p, *p1;
@@ -968,11 +995,7 @@ void av_close_input_file(AVFormatContext *s)
         s->packet_buffer = NULL;
     }
     must_open_file = 1;
-    if ((s->iformat->flags & AVFMT_NOFILE)
-#ifdef CONFIG_NETWORK
-        || (s->iformat == &rtp_demux && !strcmp(s->filename, "null"))
-#endif
-        ) {
+    if (s->iformat->flags & AVFMT_NOFILE) {
         must_open_file = 0;
     }
     if (must_open_file) {
@@ -984,12 +1007,12 @@ void av_close_input_file(AVFormatContext *s)
 
 /**
  * Add a new stream to a media file. Can only be called in the
- * read_header function. If the flag AVFMT_NOHEADER is in the format
- * description, then new streams can be added in read_packet too.
+ * read_header function. If the flag AVFMTCTX_NOHEADER is in the
+ * format context, then new streams can be added in read_packet too.
  *
  *
  * @param s media file handle
- * @param id file format dependent stream id
+ * @param id file format dependent stream id 
  */
 AVStream *av_new_stream(AVFormatContext *s, int id)
 {

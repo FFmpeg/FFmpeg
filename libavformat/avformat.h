@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4608
+#define LIBAVFORMAT_BUILD       4609
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -42,6 +42,7 @@ typedef struct AVPacket {
 } AVPacket; 
 #define PKT_FLAG_KEY   0x0001
 
+/* initialize optional fields of a packet */
 static inline void av_init_packet(AVPacket *pkt)
 {
     pkt->pts   = AV_NOPTS_VALUE;
@@ -102,12 +103,14 @@ typedef struct AVFormatParameters {
     int channel; /* used to select dv channel */
     const char *device; /* video4linux, audio or DV device */
     const char *standard; /* tv standard, NTSC, PAL, SECAM */
+    int mpeg2ts_raw:1;  /* force raw MPEG2 transport stream output, if possible */
+    int mpeg2ts_compute_pcr:1; /* compute exact PCR for each transport
+                                  stream packet (only meaningful if
+                                  mpeg2ts_raw is TRUE */
 } AVFormatParameters;
 
 #define AVFMT_NOFILE        0x0001 /* no file should be opened */
 #define AVFMT_NEEDNUMBER    0x0002 /* needs '%d' in filename */ 
-#define AVFMT_NOHEADER      0x0004 /* signal that no header is present
-                                      (streams are added dynamically) */
 #define AVFMT_SHOW_IDS      0x0008 /* show format stream IDs numbers */
 #define AVFMT_RAWPICTURE    0x0020 /* format wants AVPicture structure for
                                       raw picture data */
@@ -150,7 +153,7 @@ typedef struct AVInputFormat {
                        AVFormatParameters *ap);
     /* read one packet and put it in 'pkt'. pts and flags are also
        set. 'av_new_stream' can be called only if the flag
-       AVFMT_NOHEADER is used. */
+       AVFMTCTX_NOHEADER is used. */
     int (*read_packet)(struct AVFormatContext *, AVPacket *pkt);
     /* close the stream. The AVFormatContext and AVStreams are not
        freed by this function */
@@ -158,7 +161,7 @@ typedef struct AVInputFormat {
     /* seek at or before a given pts (given in microsecond). The pts
        origin is defined by the stream */
     int (*read_seek)(struct AVFormatContext *, int64_t pts);
-    /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_NOHEADER */
+    /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER */
     int flags;
     /* if extensions are defined, then no probe is done. You should
        usually not use extension format guessing because it is not
@@ -181,7 +184,7 @@ typedef struct AVStream {
     int codec_info_state;     
     int codec_info_nb_repeat_frames;
     int codec_info_nb_real_frames;
-    /* PTS generation when outputing stream */
+    /* encoding: PTS generation when outputing stream */
     AVFrac pts;
     /* ffmpeg.c private use */
     int stream_copy; /* if TRUE, just copy stream */
@@ -195,6 +198,9 @@ typedef struct AVStream {
        seconds. */
     int64_t duration;
 } AVStream;
+
+#define AVFMTCTX_NOHEADER      0x0001 /* signal that no header is present
+                                         (streams are added dynamically) */
 
 #define MAX_STREAMS 20
 
@@ -218,7 +224,7 @@ typedef struct AVFormatContext {
     int track; /* track number, 0 if none */
     char genre[32]; /* ID3 genre */
 
-    int flags; /* format specific flags */
+    int ctx_flags; /* format specific flags, see AVFMTCTX_xx */
     /* private data for pts handling (do not modify directly) */
     int pts_wrap_bits; /* number of bits in pts (used for wrapping control) */
     int pts_num, pts_den; /* value to convert to seconds */
@@ -448,6 +454,9 @@ void fifo_write(FifoBuffer *f, uint8_t *buf, int size, uint8_t **wptr_ptr);
 /* media file input */
 AVInputFormat *av_find_input_format(const char *short_name);
 AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened);
+int av_open_input_stream(AVFormatContext **ic_ptr, 
+                         ByteIOContext *pb, const char *filename, 
+                         AVInputFormat *fmt, AVFormatParameters *ap);
 int av_open_input_file(AVFormatContext **ic_ptr, const char *filename, 
                        AVInputFormat *fmt,
                        int buf_size,
