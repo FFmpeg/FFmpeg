@@ -110,6 +110,14 @@ void print_error(const char *filename, int err)
     case AVERROR_NOFMT:
         fprintf(stderr, "%s: Unknown format\n", filename);
         break;
+    case AVERROR_IO:
+        fprintf(stderr, "%s: I/O error occured\n"
+	        "Usually that means that input file is truncated and/or corrupted.\n",
+		filename);
+        break;
+    case AVERROR_NOMEM:
+        fprintf(stderr, "%s: memory allocation error occured\n", filename);
+        break;
     default:
         fprintf(stderr, "%s: Error while opening file\n", filename);
         break;
