@@ -628,6 +628,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec_data_size = get_be32(pb);
             codec_pos = url_ftell(pb);
             st->codec.codec_type = CODEC_TYPE_DATA;
+            av_set_pts_info(st, 64, 1, 1000);
 
             v = get_be32(pb);
             if (v == MKTAG(0xfd, 'a', 'r', '.')) {
@@ -724,7 +725,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVStream *st;
     int len, num, timestamp, i, tmp, j;
     uint8_t *ptr;
-    int flags;
+    int flags, res;
 
     if (rm->old_format) {
         /* just read raw bytes */
@@ -748,8 +749,11 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR_IO;
         num = get_be16(pb);
         timestamp = get_be32(pb);
-        get_byte(pb); /* reserved */
+        res= get_byte(pb); /* reserved */
         flags = get_byte(pb); /* flags */
+        
+//        av_log(s, AV_LOG_DEBUG, "%d %d %X %d\n", num, timestamp, flags, res);
+        
         rm->nb_packets--;
         len -= 12;
         
@@ -798,6 +802,22 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_new_packet(pkt, len);
         pkt->stream_index = i;
         get_buffer(pb, pkt->data, len);
+
+#if 0
+        if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
+            if(st->codec.codec_id == CODEC_ID_RV20){
+                int seq= 128*(pkt->data[2]&0x7F) + (pkt->data[3]>>1);
+                av_log(NULL, AV_LOG_DEBUG, "%d %Ld %d\n", timestamp, timestamp*512LL/25, seq);
+
+                seq |= (timestamp&~0x3FFF);
+                if(seq - timestamp >  0x2000) seq -= 0x4000;
+                if(seq - timestamp < -0x2000) seq += 0x4000;
+            }
+        }
+#endif
+        pkt->pts= timestamp;
+        if(flags&2) 
+            pkt->flags |= PKT_FLAG_KEY;
     }
 
     /* for AC3, needs to swap bytes */
