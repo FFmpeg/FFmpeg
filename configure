@@ -102,6 +102,7 @@ SLIBSUF=".so"
 EXESUF=""
 risky="yes"
 amr_nb="no"
+amr_wb="no"
 amr_nb_fixed="no"
 sunmlib="no"
 
@@ -850,6 +851,7 @@ fi
 echo "Sun medialib support"  $sunmlib
 echo "AMR-NB float support"  $amr_nb
 echo "AMR-NB fixed support"  $amr_nb_fixed
+echo "AMR-WB float support"  $amr_wb
 
 echo "Creating config.mak and config.h"
 
@@ -1136,6 +1138,17 @@ if test "$source_path_used" = "yes" ; then
     done
 fi
 echo "SRC_PATH=$source_path" >> config.mak
+
+if test "$amr_wb" = "yes" ; then
+  echo "#define AMR_WB 1" >> $TMPH
+  echo "AMR_WB=yes" >> config.mak
+  echo
+  echo "AMR WB FLOAT NOTICE ! Make sure you have downloaded TS26.204"
+  echo "V5.1.0 from "
+  echo "http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip"
+  echo "and extracted the source to libavcodec/amrwb_float"
+  echo
+fi
 
 if test "$amr_nb" = "yes" ; then
   echo "#define AMR_NB 1" >> $TMPH

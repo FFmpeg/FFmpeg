@@ -95,6 +95,8 @@ enum CodecID {
 
 	/* AMR */
     CODEC_ID_AMR_NB,
+    CODEC_ID_AMR_WB,
+
     /* RealAudio codecs*/
     CODEC_ID_RA_144,
     CODEC_ID_RA_288,
@@ -1403,6 +1405,8 @@ extern AVCodec indeo3_decoder;
 extern AVCodec vp3_decoder;
 extern AVCodec amr_nb_decoder;
 extern AVCodec amr_nb_encoder;
+extern AVCodec amr_wb_encoder;
+extern AVCodec amr_wb_decoder;
 extern AVCodec aac_decoder;
 extern AVCodec mpeg4aac_decoder;
 extern AVCodec asv1_decoder;

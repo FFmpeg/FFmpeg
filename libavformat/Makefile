@@ -21,7 +21,7 @@ ifeq ($(CONFIG_RISKY),yes)
 OBJS+= asf.o
 endif
 
-ifeq ($(AMR_NB),yes)
+ifeq ($(AMR_NB),yes) | ifeq ($(AMR_NB_FIXED),yes) | ifeq ($(AMR_WB),yes)
 OBJS+= amr.o
 endif
 

@@ -31,6 +31,15 @@ CLEANAMR=cleanamrfloat
 endif
 endif
 
+ifeq ($(AMR_WB),yes)
+OBJS+= amr.o amrwb_float/dec_acelp.o amrwb_float/dec_dtx.o amrwb_float/dec_gain.o \
+		amrwb_float/dec_if.o amrwb_float/dec_lpc.o amrwb_float/dec_main.o \
+		amrwb_float/dec_rom.o amrwb_float/dec_util.o amrwb_float/enc_acelp.o \
+		amrwb_float/enc_dtx.o amrwb_float/enc_gain.o amrwb_float/enc_if.o \
+		amrwb_float/enc_lpc.o amrwb_float/enc_main.o amrwb_float/enc_rom.o \
+		amrwb_float/enc_util.o amrwb_float/if_rom.o
+endif
+CLEANAMRWB=cleanamrwbfloat
 ASM_OBJS=
 
 # codecs which are patented in some non free countries like the us
@@ -201,6 +210,9 @@ cleanamr:
 
 cleanamrfloat:
 	rm -f amr_float/*.o
+
+cleanamrwbfloat:
+	$(MAKE) -C amrwb_float -f makefile.gcc clean
 
 # api example program
 apiexample: apiexample.c $(LIB)

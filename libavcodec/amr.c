@@ -17,31 +17,42 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
  /*
-    This code implements amr-nb audio encoder/decoder through external reference
+    This code implements amr-nb and amr-wb audio encoder/decoder through external reference
     code from www.3gpp.org. The licence of the code from 3gpp is unclear so you
     have to download the code separately. Two versions exists: One fixed-point
     and one with floats. For some reason the float-encoder is significant faster
     atleast on a P4 1.5GHz (0.9s instead of 9.9s on a 30s audio clip at MR102).
+    Both float and fixed point is supported for amr-nb, but only float for
+    amr-wb.
     
+    --AMR-NB--
     The fixed-point (TS26.073) can be downloaded from:
-    http://www.3gpp.org/ftp/Specs/latest/Rel-5/26_series/26073-510.zip
+    http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip
     Extract the soure into ffmpeg/libavcodec/amr
-    To use the float version run "./configure" with "--enable-amr-nb-fixed"
+    To use the fixed version run "./configure" with "--enable-amr-nb-fixed"
     
     The float version (default) can be downloaded from:
-    http://www.3gpp.org/ftp/Specs/latest/Rel-5/26_series/26104-510.zip
+    http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip
     Extract the soure into ffmpeg/libavcodec/amr_float
-    
+
     The specification for amr-nb can be found in TS 26.071
     (http://www.3gpp.org/ftp/Specs/html-info/26071.htm) and some other
     info at http://www.3gpp.org/ftp/Specs/html-info/26-series.htm
     
-    In the future support for AMR-WB might also be included here.
-    Reference code exist in TS26.173 and TS 26.204.
+    --AMR-WB--
+    The reference code can be downloaded from:
+    http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip
+    It should be extracted to "libavcodec/amrwb_float". Enable it with
+    "--enable-amr-wb".
+    
+    The specification for amr-wb can be downloaded from:
+    http://www.3gpp.org/ftp/Specs/archive/26_series/26.171/26171-500.zip
+    
+    If someone want to use the fixed point version it can be downloaded
+    from: http://www.3gpp.org/ftp/Specs/archive/26_series/26.173/26173-571.zip
  
  */
-#define DEBUG
-//#define AMR_NB_FIXED
+
 #include "../config.h"
 #include "avcodec.h"
 
@@ -86,7 +97,7 @@ static enum Mode getBitrateMode(int bitrate)
                            
                          };
     int i;
-    for(i=0;i<sizeof(rates);i++)
+    for(i=0;i<8;i++)
     {
         if(rates[i].startrate<=bitrate && rates[i].stoprate>=bitrate)
         {
@@ -148,17 +159,19 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     
     if(avctx->sample_rate!=8000)
     {
-#ifdef DEBUG
-        printf("Only 8000Hz sample rate supported\n");
-#endif
+        if(avctx->debug)
+        {
+            fprintf(stderr, "Only 8000Hz sample rate supported\n");
+        }
         return -1;
     }
 
     if(avctx->channels!=1)
     {
-#ifdef DEBUG
-        printf("Only mono supported\n");
-#endif
+        if(avctx->debug)
+        {
+            fprintf(stderr, "Only mono supported\n");
+        }
         return -1;
     }
 
@@ -167,9 +180,10 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
 
     if(Speech_Encode_Frame_init(&s->enstate, 0, "encoder") || sid_sync_init (&s->sidstate))
     {
-#ifdef DEBUG
-        printf("Speech_Encode_Frame_init error\n");
-#endif
+        if(avctx->debug)
+        {
+            fprintf(stderr, "Speech_Encode_Frame_init error\n");
+        }
         return -1;
     }
 
@@ -343,17 +357,19 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     
     if(avctx->sample_rate!=8000)
     {
-#ifdef DEBUG
-        printf("Only 8000Hz sample rate supported\n");
-#endif
+        if(avctx->debug)
+        {
+            fprintf(stderr, "Only 8000Hz sample rate supported\n");
+        }
         return -1;
     }
 
     if(avctx->channels!=1)
     {
-#ifdef DEBUG
-        printf("Only mono supported\n");
-#endif
+        if(avctx->debug)
+        {
+            fprintf(stderr, "Only mono supported\n");
+        }
         return -1;
     }
 
@@ -363,7 +379,10 @@ static int amr_nb_encode_init(AVCodecContext * avctx)
     s->enstate=Encoder_Interface_init(0);
     if(!s->enstate)
     {
-        printf("Encoder_Interface_init error\n");
+        if(avctx->debug)
+        {
+            fprintf(stderr, "Encoder_Interface_init error\n");
+        }
         return -1;
     }
 
@@ -458,3 +477,176 @@ AVCodec amr_nb_encoder =
     amr_nb_encode_close,
     NULL,
 };
+
+/* -----------AMR wideband ------------*/
+#ifdef AMR_WB
+
+#ifdef _TYPEDEF_H
+//To avoid duplicate typedefs from typdef in amr-nb
+#define typedef_h
+#endif
+
+#include "amrwb_float/enc_if.h"
+#include "amrwb_float/dec_if.h"
+
+/* Common code for fixed and float version*/
+typedef struct AMRWB_bitrates
+{
+    int startrate;
+    int stoprate;
+    int mode;
+    
+} AMRWB_bitrates;
+
+static int getWBBitrateMode(int bitrate)
+{
+    /* Adjusted so that all bitrates can be used from commandline where
+       only a multiple of 1000 can be specified*/
+    AMRWB_bitrates rates[]={ {0,7999,0}, //6.6kHz
+                           {8000,9999,1},//8.85
+                           {10000,13000,2},//12.65
+                           {13001,14999,3},//14.25
+                           {15000,17000,4},//15.85
+                           {17001,18000,5},//18.25
+                           {18001,22000,6},//19.85
+                           {22001,23000,7},//23.05
+                           {23001,24000,8},//23.85
+                           
+                         };
+    int i;
+
+    for(i=0;i<9;i++)
+    {
+        if(rates[i].startrate<=bitrate && rates[i].stoprate>=bitrate)
+        {
+            return(rates[i].mode);
+        }
+    }
+    /*Return highest possible*/
+    return(8);
+}
+
+
+typedef struct AMRWBContext {
+    int frameCount;
+    void *state;
+    int mode;
+    Word16 allow_dtx;
+} AMRWBContext;
+
+static int amr_wb_encode_init(AVCodecContext * avctx)
+{
+    AMRWBContext *s = (AMRWBContext*)avctx->priv_data;
+    s->frameCount=0;
+    
+    if(avctx->sample_rate!=16000)
+    {
+        if(avctx->debug)
+        {
+            fprintf(stderr, "Only 16000Hz sample rate supported\n");
+        }
+        return -1;
+    }
+
+    if(avctx->channels!=1)
+    {
+        if(avctx->debug)
+        {
+            fprintf(stderr, "Only mono supported\n");
+        }
+        return -1;
+    }
+
+    avctx->frame_size=320;
+    avctx->coded_frame= avcodec_alloc_frame();
+
+    s->state = E_IF_init();
+    s->mode=getWBBitrateMode(avctx->bit_rate);
+    s->allow_dtx=0;
+
+    return 0;
+}
+
+static int amr_wb_encode_close(AVCodecContext * avctx)
+{
+    AMRWBContext *s = (AMRWBContext*) avctx->priv_data;
+    E_IF_exit(s->state);
+    av_freep(&avctx->coded_frame);
+    s->frameCount++;
+    return 0;
+}
+
+static int amr_wb_encode_frame(AVCodecContext *avctx,
+			    unsigned char *frame/*out*/, int buf_size, void *data/*in*/)
+{
+    AMRWBContext *s = (AMRWBContext*) avctx->priv_data;
+    int size = E_IF_encode(s->state, s->mode, data, frame, s->allow_dtx);
+    return size;
+}
+
+static int amr_wb_decode_init(AVCodecContext * avctx)
+{
+    AMRWBContext *s = (AMRWBContext *)avctx->priv_data;
+    s->frameCount=0;
+    s->state = D_IF_init();
+    return 0;
+}
+
+extern const UWord8 block_size[];
+
+static int amr_wb_decode_frame(AVCodecContext * avctx,
+            void *data, int *data_size,
+            uint8_t * buf, int buf_size)
+{
+    AMRWBContext *s = (AMRWBContext*)avctx->priv_data;
+
+    uint8_t*amrData=buf;
+    int offset=0;
+    int mode;
+    int packet_size;
+    *data_size=0;
+
+    while(offset<buf_size)
+    {
+        s->frameCount++;
+        mode = (Word16)((amrData[offset] >> 3) & 0x0F);
+        packet_size = block_size[mode];
+        D_IF_decode( s->state, &amrData[offset], data+*data_size, _good_frame);
+    	*data_size+=320*2;
+        offset+=packet_size; 
+    }
+    return buf_size;
+}
+
+static int amr_wb_decode_close(AVCodecContext * avctx)
+{
+    AMRWBContext *s = (AMRWBContext *)avctx->priv_data;
+    D_IF_exit(s->state);
+    return 0;
+}
+
+AVCodec amr_wb_decoder =
+{
+    "amr_wb",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_AMR_WB,
+    sizeof(AMRWBContext),
+    amr_wb_decode_init,
+    NULL,
+    amr_wb_decode_close,
+    amr_wb_decode_frame,
+};
+
+AVCodec amr_wb_encoder =
+{
+    "amr_wb",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_AMR_WB,
+    sizeof(AMRWBContext),
+    amr_wb_encode_init,
+    amr_wb_encode_frame,
+    amr_wb_encode_close,
+    NULL,
+};
+
+#endif //AMR_WB

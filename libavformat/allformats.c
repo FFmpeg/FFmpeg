@@ -57,7 +57,7 @@ void av_register_all(void)
     ipmovie_init();
     wc3_init();
 
-#ifdef AMR_NB
+#if defined(AMR_NB) || defined(AMR_NB_FIXED) || defined(AMR_WB)
     amr_init();
 #endif
     yuv4mpeg_init();

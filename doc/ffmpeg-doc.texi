@@ -716,6 +716,8 @@ solutions.
 @tab Real 28800 bit/s codec
 @item AMR-NB                 @tab X    @tab X
 @tab supported through an external library
+@item AMR-WB                 @tab X    @tab X
+@tab supported through an external library
 @item DV audio               @tab      @tab X
 @item Id RoQ DPCM            @tab      @tab X
 @tab used in Quake III, Jedi Knight 2, other computer games
