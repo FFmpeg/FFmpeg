@@ -278,7 +278,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 put_bits(&s->pb, 1, 0); //esc
                 put_bits(&s->pb, 3, 4); //profile
                 put_bits(&s->pb, 4, 8); //level
-                put_bits(&s->pb, 1, s->progressive_sequence=1);
+                put_bits(&s->pb, 1, s->progressive_sequence);
                 put_bits(&s->pb, 2, 1); //chroma format 4:2:0
                 put_bits(&s->pb, 2, 0); //horizontal size ext
                 put_bits(&s->pb, 2, 0); //vertical size ext
@@ -429,7 +429,8 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     }
 
     put_bits(&s->pb, 1, 0); /* extra bit picture */
-    
+
+    s->frame_pred_frame_dct = 1;
     if(s->codec_id == CODEC_ID_MPEG2VIDEO){
         put_header(s, EXT_START_CODE);
         put_bits(&s->pb, 4, 8); //pic ext
@@ -448,19 +449,35 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         put_bits(&s->pb, 2, s->intra_dc_precision);
         put_bits(&s->pb, 2, s->picture_structure= PICT_FRAME);
         put_bits(&s->pb, 1, s->top_field_first);
-        put_bits(&s->pb, 1, s->frame_pred_frame_dct= 1);
+        /* XXX: optimize the generation of this flag with entropy
+           measures */
+        s->frame_pred_frame_dct = s->progressive_sequence;
+        
+        put_bits(&s->pb, 1, s->frame_pred_frame_dct);
         put_bits(&s->pb, 1, s->concealment_motion_vectors);
         put_bits(&s->pb, 1, s->q_scale_type);
         put_bits(&s->pb, 1, s->intra_vlc_format);
         put_bits(&s->pb, 1, s->alternate_scan);
         put_bits(&s->pb, 1, s->repeat_first_field);
         put_bits(&s->pb, 1, s->chroma_420_type=1);
-        put_bits(&s->pb, 1, s->progressive_frame=1);
+        s->progressive_frame = s->progressive_sequence;
+        put_bits(&s->pb, 1, s->progressive_frame);
         put_bits(&s->pb, 1, 0); //composite_display_flag
     }
     
     s->mb_y=0;
     ff_mpeg1_encode_slice_header(s);
+}
+
+static inline void put_mb_modes(MpegEncContext *s, int n, int bits, 
+                                int has_mv)
+{
+    put_bits(&s->pb, n, bits);
+    if (!s->frame_pred_frame_dct) {
+        if (has_mv) 
+            put_bits(&s->pb, 2, 2); /* motion_type: frame */
+        put_bits(&s->pb, 1, s->interlaced_dct);
+    }
 }
 
 void mpeg1_encode_mb(MpegEncContext *s,
@@ -498,20 +515,20 @@ void mpeg1_encode_mb(MpegEncContext *s,
         
         if (s->pict_type == I_TYPE) {
             if(s->dquant && cbp){
-                put_bits(&s->pb, 2, 1); /* macroblock_type : macroblock_quant = 1 */
+                put_mb_modes(s, 2, 1, 0); /* macroblock_type : macroblock_quant = 1 */
                 put_bits(&s->pb, 5, s->qscale);
             }else{
-                put_bits(&s->pb, 1, 1); /* macroblock_type : macroblock_quant = 0 */
+                put_mb_modes(s, 1, 1, 0); /* macroblock_type : macroblock_quant = 0 */
                 s->qscale -= s->dquant;
             }
             s->misc_bits+= get_bits_diff(s);
             s->i_count++;
         } else if (s->mb_intra) {
             if(s->dquant && cbp){
-                put_bits(&s->pb, 6, 0x01);
+                put_mb_modes(s, 6, 0x01, 0);
                 put_bits(&s->pb, 5, s->qscale);
             }else{
-                put_bits(&s->pb, 5, 0x03);
+                put_mb_modes(s, 5, 0x03, 0);
                 s->qscale -= s->dquant;
             }
             s->misc_bits+= get_bits_diff(s);
@@ -522,19 +539,19 @@ void mpeg1_encode_mb(MpegEncContext *s,
                 if (cbp != 0) {
                     if (motion_x == 0 && motion_y == 0) {
                         if(s->dquant){
-                            put_bits(&s->pb, 5, 1); /* macroblock_pattern & quant */
+                            put_mb_modes(s, 5, 1, 0); /* macroblock_pattern & quant */
                             put_bits(&s->pb, 5, s->qscale);
                         }else{
-                            put_bits(&s->pb, 2, 1); /* macroblock_pattern only */
+                            put_mb_modes(s, 2, 1, 0); /* macroblock_pattern only */
                         }
                         s->misc_bits+= get_bits_diff(s);
                         put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
                     } else {
                         if(s->dquant){
-                            put_bits(&s->pb, 5, 2); /* motion + cbp */
+                            put_mb_modes(s, 5, 2, 1); /* motion + cbp */
                             put_bits(&s->pb, 5, s->qscale);
                         }else{
-                            put_bits(&s->pb, 1, 1); /* motion + cbp */
+                            put_mb_modes(s, 1, 1, 1); /* motion + cbp */
                         }
                         s->misc_bits+= get_bits_diff(s);
                         mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0], s->f_code);    // RAL: f_code parameter added
@@ -544,6 +561,8 @@ void mpeg1_encode_mb(MpegEncContext *s,
                     }
                 } else {
                     put_bits(&s->pb, 3, 1); /* motion only */
+                    if (!s->frame_pred_frame_dct)
+                        put_bits(&s->pb, 2, 2); /* motion_type: frame */
                     mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0], s->f_code);    // RAL: f_code parameter added
                     mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1], s->f_code);    // RAL: f_code parameter added
                     s->qscale -= s->dquant;
@@ -556,13 +575,12 @@ void mpeg1_encode_mb(MpegEncContext *s,
                     {    // With coded bloc pattern
                     if (s->mv_dir == (MV_DIR_FORWARD | MV_DIR_BACKWARD))
                         {    // Bi-directional motion
-                        if (s->dquant)
-                            {    // With QScale
-                            put_bits(&s->pb, 5, 2);
+                        if (s->dquant) {
+                            put_mb_modes(s, 5, 2, 1);
                             put_bits(&s->pb, 5, s->qscale);
-                            }
-                        else    // Without QScale
-                            put_bits(&s->pb, 2, 3);
+                        } else {
+                            put_mb_modes(s, 2, 3, 1);
+                        }
                         s->misc_bits += get_bits_diff(s);
                         mpeg1_encode_motion(s, s->mv[0][0][0] - s->last_mv[0][0][0], s->f_code);
                         mpeg1_encode_motion(s, s->mv[0][0][1] - s->last_mv[0][0][1], s->f_code);
@@ -575,13 +593,12 @@ void mpeg1_encode_mb(MpegEncContext *s,
                         }
                     else if (s->mv_dir == MV_DIR_BACKWARD)
                         {    // Backward motion
-                        if (s->dquant)
-                            {    // With QScale
-                            put_bits(&s->pb, 6, 2);
+                        if (s->dquant) {
+                            put_mb_modes(s, 6, 2, 1);
                             put_bits(&s->pb, 5, s->qscale);
-                            }
-                        else    // Without QScale
-                            put_bits(&s->pb, 3, 3);
+                        } else {
+                            put_mb_modes(s, 3, 3, 1);
+                        }
                         s->misc_bits += get_bits_diff(s);
                         mpeg1_encode_motion(s, motion_x - s->last_mv[1][0][0], s->b_code); 
                         mpeg1_encode_motion(s, motion_y - s->last_mv[1][0][1], s->b_code); 
@@ -591,13 +608,12 @@ void mpeg1_encode_mb(MpegEncContext *s,
                         }
                     else if (s->mv_dir == MV_DIR_FORWARD)
                         {    // Forward motion
-                        if (s->dquant)
-                            {    // With QScale
-                            put_bits(&s->pb, 6, 3);
+                        if (s->dquant) {
+                            put_mb_modes(s, 6, 3, 1);
                             put_bits(&s->pb, 5, s->qscale);
-                            }
-                        else    // Without QScale
-                            put_bits(&s->pb, 4, 3);
+                        } else {
+                            put_mb_modes(s, 4, 3, 1);
+                        }
                         s->misc_bits += get_bits_diff(s);
                         mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0], s->f_code); 
                         mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1], s->f_code); 
@@ -611,6 +627,8 @@ void mpeg1_encode_mb(MpegEncContext *s,
                     if (s->mv_dir == (MV_DIR_FORWARD | MV_DIR_BACKWARD))
                         {    // Bi-directional motion 
                         put_bits(&s->pb, 2, 2); /* backward & forward motion */
+                        if (!s->frame_pred_frame_dct)
+                            put_bits(&s->pb, 2, 2); /* motion_type: frame */
                         mpeg1_encode_motion(s, s->mv[0][0][0] - s->last_mv[0][0][0], s->f_code);
                         mpeg1_encode_motion(s, s->mv[0][0][1] - s->last_mv[0][0][1], s->f_code);
                         mpeg1_encode_motion(s, s->mv[1][0][0] - s->last_mv[1][0][0], s->b_code);
@@ -621,6 +639,8 @@ void mpeg1_encode_mb(MpegEncContext *s,
                     else if (s->mv_dir == MV_DIR_BACKWARD)
                         {    // Backward motion
                         put_bits(&s->pb, 3, 2); /* backward motion only */
+                        if (!s->frame_pred_frame_dct)
+                            put_bits(&s->pb, 2, 2); /* motion_type: frame */
                         mpeg1_encode_motion(s, motion_x - s->last_mv[1][0][0], s->b_code); 
                         mpeg1_encode_motion(s, motion_y - s->last_mv[1][0][1], s->b_code); 
                         s->b_count++;
@@ -628,6 +648,8 @@ void mpeg1_encode_mb(MpegEncContext *s,
                     else if (s->mv_dir == MV_DIR_FORWARD)
                         {    // Forward motion
                         put_bits(&s->pb, 4, 2); /* forward motion only */
+                        if (!s->frame_pred_frame_dct)
+                            put_bits(&s->pb, 2, 2); /* motion_type: frame */
                         mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0], s->f_code); 
                         mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1], s->f_code); 
                         s->f_count++;
