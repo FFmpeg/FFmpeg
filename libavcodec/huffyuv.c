@@ -360,6 +360,7 @@ static int decode_init(AVCodecContext *avctx)
     width= s->width= avctx->width;
     height= s->height= avctx->height;
     avctx->coded_frame= &s->picture;
+    s->interlaced= height > 288;
 
 s->bgr32=1;
     assert(width && height);
@@ -374,7 +375,7 @@ s->bgr32=1;
         s->version=0;
     
     if(s->version==2){
-        int method;
+        int method, interlace;
 
         method= ((uint8_t*)avctx->extradata)[0];
         s->decorrelate= method&64 ? 1 : 0;
@@ -382,6 +383,8 @@ s->bgr32=1;
         s->bitstream_bpp= ((uint8_t*)avctx->extradata)[1];
         if(s->bitstream_bpp==0) 
             s->bitstream_bpp= avctx->bits_per_sample&~7;
+        interlace= (((uint8_t*)avctx->extradata)[2] & 0x30) >> 4;
+        s->interlaced= (interlace==1) ? 1 : (interlace==2) ? 0 : s->interlaced;
         s->context= ((uint8_t*)avctx->extradata)[2] & 0x40 ? 1 : 0;
             
         if(read_huffman_tables(s, ((uint8_t*)avctx->extradata)+4, avctx->extradata_size) < 0)
@@ -415,11 +418,6 @@ s->bgr32=1;
         if(read_old_huffman_tables(s) < 0)
             return -1;
     }
-    
-    if(((uint8_t*)avctx->extradata)[2] & 0x20)
-	s->interlaced= ((uint8_t*)avctx->extradata)[2] & 0x10 ? 1 : 0;
-    else
-	s->interlaced= height > 288;
     
     switch(s->bitstream_bpp){
     case 12:
@@ -534,7 +532,7 @@ static int encode_init(AVCodecContext *avctx)
     
     ((uint8_t*)avctx->extradata)[0]= s->predictor;
     ((uint8_t*)avctx->extradata)[1]= s->bitstream_bpp;
-    ((uint8_t*)avctx->extradata)[2]= 0x20 | (s->interlaced ? 0x10 : 0);
+    ((uint8_t*)avctx->extradata)[2]= s->interlaced ? 0x10 : 0x20;
     if(s->context)
         ((uint8_t*)avctx->extradata)[2]|= 0x40;
     ((uint8_t*)avctx->extradata)[3]= 0;
