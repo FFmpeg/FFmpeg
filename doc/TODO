@@ -5,8 +5,8 @@ ffmpeg TODO list:
 
 Planned in next release:
 
-- fix ffserver.
-- add raw h263 decoding support (see vivo streams)
+- fix ffserver (partially done)
+- add raw h263 decoding support, see vivo streams (partially done)
 - add qscale out.
 - add format autodetect with content (for example to distinguish
   mpegvideo/mpegmux).
@@ -20,9 +20,9 @@ BUGS:
 
 - fix audio/video synchro (including real player synchro bugs)
 
-- Improve the bit rate control for video codecs.
+- Improve the bit rate control for video codecs (done).
 
-- see ov511.o YUV problem (420 instead of 420P).
+- see ov511.o YUV problem (420 instead of 420P) (done?).
 
 - fix file caching pb in windows (add correct headers)
 
@@ -30,7 +30,7 @@ BUGS:
 
 - test/debug audio in flash format
 
-- sort out ASF streaming pbs.
+- sort out ASF streaming pbs (partially done)
 
 - Improve psycho acoustic model for AC3 & mpeg audio.
 
@@ -51,4 +51,4 @@ FEATURES:
 
 - graphical user interface.
 
-- animated gif as output format
+- animated gif as output format (done).
