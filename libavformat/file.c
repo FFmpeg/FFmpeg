@@ -42,7 +42,7 @@ static int file_open(URLContext *h, const char *filename, int flags)
     } else {
         access = O_RDONLY;
     }
-#if defined(CONFIG_WIN32) || defined(CONFIG_OS2)
+#if defined(CONFIG_WIN32) || defined(CONFIG_OS2) || defined(__CYGWIN__)
     access |= O_BINARY;
 #endif
     fd = open(filename, access, 0666);

@@ -2164,44 +2164,48 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         if(s->current_picture.motion_val[0]){ //note motion_val is normally NULL unless we want to extract the MVs
             const int wrap = s->block_wrap[0];
             const int xy = s->mb_x*2 + 1 + (s->mb_y*2 +1)*wrap;
-            int motion_for_x, motion_for_y, motion_back_x, motion_back_y;
+            int motion_for_top_x, motion_for_top_y, motion_back_top_x, motion_back_top_y;
+            int motion_for_bottom_x, motion_for_bottom_y, motion_back_bottom_x, motion_back_bottom_y;
             if (s->mb_intra) {
-                motion_for_x = motion_for_y = motion_back_x = motion_back_y = 0;
+                motion_for_top_x = motion_for_top_y = motion_back_top_x = motion_back_top_y =
+                motion_for_bottom_x = motion_for_bottom_y = motion_back_bottom_x = motion_back_bottom_y = 0;
             }else if (s->mv_type == MV_TYPE_16X16){
-                motion_for_x = s->mv[0][0][0];
-                motion_for_y = s->mv[0][0][1];
-                motion_back_x = s->mv[1][0][0];
-                motion_back_y = s->mv[1][0][1];                
+                motion_for_top_x = motion_for_bottom_x = s->mv[0][0][0];
+                motion_for_top_y = motion_for_bottom_y = s->mv[0][0][1];
+                motion_back_top_x = motion_back_bottom_x = s->mv[1][0][0];
+                motion_back_top_y = motion_back_bottom_y = s->mv[1][0][1];
             } else /*if ((s->mv_type == MV_TYPE_FIELD) || (s->mv_type == MV_TYPE_16X8))*/ {
-                motion_for_x = s->mv[0][0][0] + s->mv[0][1][0];
-                motion_for_y = s->mv[0][0][1] + s->mv[0][1][1];
-                motion_for_x = (motion_for_x>>1) | (motion_for_x&1);
-                motion_back_x = s->mv[1][0][0] + s->mv[1][1][0];
-                motion_back_y = s->mv[1][0][1] + s->mv[1][1][1];
-                motion_back_x = (motion_back_x>>1) | (motion_back_x&1);
+                motion_for_top_x = s->mv[0][0][0];
+                motion_for_top_y = s->mv[0][0][1];
+                motion_for_bottom_x = s->mv[0][1][0];
+                motion_for_bottom_y = s->mv[0][1][1];
+                motion_back_top_x = s->mv[1][0][0];
+                motion_back_top_y = s->mv[1][0][1];
+                motion_back_bottom_x = s->mv[1][1][0];
+                motion_back_bottom_y = s->mv[1][1][1];
             }
 
-            s->current_picture.motion_val[0][xy][0] = motion_for_x;
-            s->current_picture.motion_val[0][xy][1] = motion_for_y;
-            s->current_picture.motion_val[0][xy + 1][0] = motion_for_x;
-            s->current_picture.motion_val[0][xy + 1][1] = motion_for_y;
-            s->current_picture.motion_val[0][xy + wrap][0] = motion_for_x;
-            s->current_picture.motion_val[0][xy + wrap][1] = motion_for_y;
-            s->current_picture.motion_val[0][xy + 1 + wrap][0] = motion_for_x;
-            s->current_picture.motion_val[0][xy + 1 + wrap][1] = motion_for_y;
+            s->current_picture.motion_val[0][xy][0] = motion_for_top_x;
+            s->current_picture.motion_val[0][xy][1] = motion_for_top_y;
+            s->current_picture.motion_val[0][xy + 1][0] = motion_for_top_x;
+            s->current_picture.motion_val[0][xy + 1][1] = motion_for_top_y;
+            s->current_picture.motion_val[0][xy + wrap][0] = motion_for_bottom_x;
+            s->current_picture.motion_val[0][xy + wrap][1] = motion_for_bottom_y;
+            s->current_picture.motion_val[0][xy + 1 + wrap][0] = motion_for_bottom_x;
+            s->current_picture.motion_val[0][xy + 1 + wrap][1] = motion_for_bottom_y;
 
             if(s->pict_type != B_TYPE){
-                motion_back_x = motion_back_y = 0;
+                motion_back_top_x = motion_back_top_y = motion_back_bottom_x = motion_back_bottom_y = 0;
             }
 
-            s->current_picture.motion_val[1][xy][0] = motion_back_x;
-            s->current_picture.motion_val[1][xy][1] = motion_back_y;
-            s->current_picture.motion_val[1][xy + 1][0] = motion_back_x;
-            s->current_picture.motion_val[1][xy + 1][1] = motion_back_y;
-            s->current_picture.motion_val[1][xy + wrap][0] = motion_back_x;
-            s->current_picture.motion_val[1][xy + wrap][1] = motion_back_y;
-            s->current_picture.motion_val[1][xy + 1 + wrap][0] = motion_back_x;
-            s->current_picture.motion_val[1][xy + 1 + wrap][1] = motion_back_y;
+            s->current_picture.motion_val[1][xy][0] = motion_back_top_x;
+            s->current_picture.motion_val[1][xy][1] = motion_back_top_y;
+            s->current_picture.motion_val[1][xy + 1][0] = motion_back_top_x;
+            s->current_picture.motion_val[1][xy + 1][1] = motion_back_top_y;
+            s->current_picture.motion_val[1][xy + wrap][0] = motion_back_bottom_x;
+            s->current_picture.motion_val[1][xy + wrap][1] = motion_back_bottom_y;
+            s->current_picture.motion_val[1][xy + 1 + wrap][0] = motion_back_bottom_x;
+            s->current_picture.motion_val[1][xy + 1 + wrap][1] = motion_back_bottom_y;
         }
 
         s->dest[0] += 16;
