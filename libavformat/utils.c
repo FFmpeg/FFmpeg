@@ -746,6 +746,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             int64_t new_diff= ABS(st->cur_dts - pkt->pts);
             if(old_diff < new_diff && old_diff < (pkt->duration>>3)){
                 pkt->pts += pkt->duration;
+//                av_log(NULL, AV_LOG_DEBUG, "id:%d old:%Ld new:%Ld dur:%d cur:%Ld size:%d\n", pkt->stream_index, old_diff, new_diff, pkt->duration, st->cur_dts, pkt->size);
             }
         }
     
@@ -1742,6 +1743,10 @@ int av_find_stream_info(AVFormatContext *ic)
         for(i=0;i<ic->nb_streams;i++) {
             st = ic->streams[i];
             if (!has_codec_parameters(&st->codec))
+                break;
+            /* variable fps and no guess at the real fps */
+            if(   st->codec.frame_rate >= 1000LL*st->codec.frame_rate_base
+               && best_duration[i]== INT64_MAX)
                 break;
         }
         if (i == ic->nb_streams) {
