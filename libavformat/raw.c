@@ -222,7 +222,11 @@ AVOutputFormat mp2_oformat = {
     "mp2",
     "MPEG audio layer 2",
     "audio/x-mpeg",
+#ifdef CONFIG_MP3LAME
+    "mp2",
+#else
     "mp2,mp3",
+#endif
     0,
     CODEC_ID_MP2,
     0,
@@ -231,6 +235,20 @@ AVOutputFormat mp2_oformat = {
     raw_write_trailer,
 };
 
+#ifdef CONFIG_MP3LAME
+AVOutputFormat mp3_oformat = {
+    "mp3",
+    "MPEG audio layer 3",
+    "audio/x-mpeg",
+    "mp3",
+    0,
+    CODEC_ID_MP3LAME,
+    0,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+};
+#endif
 
 AVInputFormat ac3_iformat = {
     "ac3",
@@ -525,7 +543,9 @@ int raw_init(void)
 {
     av_register_input_format(&mp3_iformat);
     av_register_output_format(&mp2_oformat);
-    
+#ifdef CONFIG_MP3LAME
+    av_register_output_format(&mp3_oformat);
+#endif    
     av_register_input_format(&ac3_iformat);
     av_register_output_format(&ac3_oformat);
 
