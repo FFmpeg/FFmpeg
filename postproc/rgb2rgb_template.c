@@ -758,6 +758,9 @@ void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 			: "memory", "%eax"
 		);
 
+		ydst += lumStride;
+		src  += srcStride;
+
 		asm volatile(
 			"xorl %%eax, %%eax		\n\t"
 			".balign 16			\n\t"
@@ -781,7 +784,7 @@ void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 			"cmpl %4, %%eax			\n\t"
 			" jb 1b				\n\t"
 
-			::"r"(src+srcStride), "r"(ydst+lumStride), "r"(udst), "r"(vdst), "r" (chromWidth)
+			::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "r" (chromWidth)
 			: "memory", "%eax"
 		);
 #else
