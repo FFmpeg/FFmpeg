@@ -214,54 +214,50 @@ static inline int isVertDC(uint8_t src[], int stride){
 	int y;
 	src+= stride*4; // src points to begin of the 8x8 Block
 #ifdef HAVE_MMX
-	asm volatile(
-		"pushl %1\n\t"
+asm volatile(
+		"leal (%1, %2), %%eax				\n\t"
+		"leal (%%eax, %2, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%1	eax	eax+%2	eax+2%2	%1+4%2	ebx	ebx+%2	ebx+2%2	%1+8%2	ebx+4%2
 		"movq b7E, %%mm7					\n\t" // mm7 = 0x7F
 		"movq b7C, %%mm6					\n\t" // mm6 = 0x7D
 		"movq (%1), %%mm0				\n\t"
-		"addl %2, %1					\n\t"
-		"movq (%1), %%mm1				\n\t"
+		"movq (%%eax), %%mm1				\n\t"
 		"psubb %%mm1, %%mm0				\n\t" // mm0 = differnece
 		"paddb %%mm7, %%mm0				\n\t"
 		"pcmpgtb %%mm6, %%mm0				\n\t"
 
-		"addl %2, %1					\n\t"
-		"movq (%1), %%mm2				\n\t"
+		"movq (%%eax,%2), %%mm2				\n\t"
 		"psubb %%mm2, %%mm1				\n\t"
 		"paddb %%mm7, %%mm1				\n\t"
 		"pcmpgtb %%mm6, %%mm1				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 
-		"addl %2, %1					\n\t"
-		"movq (%1), %%mm1				\n\t"
+		"movq (%%eax, %2, 2), %%mm1			\n\t"
 		"psubb %%mm1, %%mm2				\n\t"
 		"paddb %%mm7, %%mm2				\n\t"
 		"pcmpgtb %%mm6, %%mm2				\n\t"
 		"paddb %%mm2, %%mm0				\n\t"
 
-		"addl %2, %1					\n\t"
-		"movq (%1), %%mm2				\n\t"
+		"movq (%1, %2, 4), %%mm2			\n\t"
 		"psubb %%mm2, %%mm1				\n\t"
 		"paddb %%mm7, %%mm1				\n\t"
 		"pcmpgtb %%mm6, %%mm1				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 
-		"addl %2, %1					\n\t"
-		"movq (%1), %%mm1				\n\t"
+		"movq (%%ebx), %%mm1				\n\t"
 		"psubb %%mm1, %%mm2				\n\t"
 		"paddb %%mm7, %%mm2				\n\t"
 		"pcmpgtb %%mm6, %%mm2				\n\t"
 		"paddb %%mm2, %%mm0				\n\t"
 
-		"addl %2, %1					\n\t"
-		"movq (%1), %%mm2				\n\t"
+		"movq (%%ebx, %2), %%mm2			\n\t"
 		"psubb %%mm2, %%mm1				\n\t"
 		"paddb %%mm7, %%mm1				\n\t"
 		"pcmpgtb %%mm6, %%mm1				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 
-		"addl %2, %1					\n\t"
-		"movq (%1), %%mm1				\n\t"
+		"movq (%%ebx, %2, 2), %%mm1			\n\t"
 		"psubb %%mm1, %%mm2				\n\t"
 		"paddb %%mm7, %%mm2				\n\t"
 		"pcmpgtb %%mm6, %%mm2				\n\t"
@@ -277,17 +273,12 @@ static inline int isVertDC(uint8_t src[], int stride){
 		"movq %%mm0, %%mm1				\n\t"
 		"psrlq $32, %%mm0				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
-		"popl %1\n\t"
 		"movd %%mm0, %0					\n\t"
 		: "=r" (numEq)
 		: "r" (src), "r" (stride)
 		);
-//	printf("%d\n", numEq);
-	numEq= (256 - (numEq & 0xFF)) &0xFF;
 
-//	int asmEq= numEq;
-//	numEq=0;
-//	uint8_t *temp= src;
+	numEq= (256 - numEq) &0xFF;
 
 #else
 	for(y=0; y<BLOCK_SIZE-1; y++)
@@ -2491,8 +2482,6 @@ static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int sr
 	{
 #ifdef HAVE_MMX
 					asm volatile(
-						"pushl %0 \n\t"
-						"pushl %1 \n\t"
 						"leal (%2,%2), %%eax	\n\t"
 						"leal (%3,%3), %%ebx	\n\t"
 						"movq packedYOffset, %%mm2	\n\t"
@@ -2534,11 +2523,9 @@ SCALED_CPY
 						"addl %%ebx, %1		\n\t"
 SCALED_CPY
 
-						"popl %1 \n\t"
-						"popl %0 \n\t"
-						: : "r" (src),
-						"r" (dst),
-						"r" (srcStride),
+						: "+r"(src),
+						"+r"(dst)
+						:"r" (srcStride),
 						"r" (dstStride)
 						: "%eax", "%ebx"
 					);
