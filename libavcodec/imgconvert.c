@@ -1294,6 +1294,15 @@ static void deinterlace_line(UINT8 *dst, UINT8 *lum_m4, UINT8 *lum_m3, UINT8 *lu
     }
 #else
 
+    {
+        mmx_t rounder;
+        rounder.uw[0]=4;
+        rounder.uw[1]=4;
+        rounder.uw[2]=4;
+        rounder.uw[3]=4;
+        pxor_r2r(mm7,mm7);
+        movq_m2r(rounder,mm6);
+    }
     for (;size > 3; size-=4) {
         DEINT_LINE_LUM
         lum_m4+=4;
@@ -1328,6 +1337,15 @@ static void deinterlace_line_inplace(UINT8 *lum_m4, UINT8 *lum_m3, UINT8 *lum_m2
     }
 #else
 
+    {
+        mmx_t rounder;
+        rounder.uw[0]=4;
+        rounder.uw[1]=4;
+        rounder.uw[2]=4;
+        rounder.uw[3]=4;
+        pxor_r2r(mm7,mm7);
+        movq_m2r(rounder,mm6);
+    }
     for (;size > 3; size-=4) {
         DEINT_INPLACE_LINE_LUM
         lum_m4+=4;
@@ -1410,19 +1428,6 @@ int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
     if ((width & 3) != 0 || (height & 3) != 0)
         return -1;
 
-#ifdef HAVE_MMX
-    {
-        mmx_t rounder;
-        rounder.uw[0]=4;
-        rounder.uw[1]=4;
-        rounder.uw[2]=4;
-        rounder.uw[3]=4;
-        pxor_r2r(mm7,mm7);
-        movq_m2r(rounder,mm6);
-    }
-#endif
-
-    
     for(i=0;i<3;i++) {
         if (i == 1) {
             switch(pix_fmt) {
