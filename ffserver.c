@@ -113,7 +113,7 @@ typedef struct FFStream {
     enum StreamType stream_type;
     char filename[1024];     /* stream filename */
     struct FFStream *feed;
-    AVFormat *fmt;
+    AVOutputFormat *fmt;
     int nb_streams;
     int prebuffer;      /* Number of millseconds early to start */
     int send_on_key;
@@ -474,7 +474,7 @@ static int http_parse_request(HTTPContext *c)
     }
     *q = '\0';
 
-    strlcpy(c->method, cmd, sizeof(c->method));
+    pstrcpy(c->method, sizeof(c->method), cmd);
 
     if (!strcmp(cmd, "GET"))
         post = 0;
@@ -492,7 +492,7 @@ static int http_parse_request(HTTPContext *c)
     }
     *q = '\0';
 
-    strlcpy(c->url, url, sizeof(c->url));
+    pstrcpy(c->url, sizeof(c->url), url);
 
     while (isspace(*p)) p++;
     q = protocol;
@@ -505,7 +505,7 @@ static int http_parse_request(HTTPContext *c)
     if (strcmp(protocol, "HTTP/1.0") && strcmp(protocol, "HTTP/1.1"))
         return -1;
 
-    strlcpy(c->protocol, protocol, sizeof(c->protocol));
+    pstrcpy(c->protocol, sizeof(c->protocol), protocol);
     
     /* find the filename and the optional info string in the request */
     p = url;
@@ -514,7 +514,7 @@ static int http_parse_request(HTTPContext *c)
     filename = p;
     p = strchr(p, '?');
     if (p) {
-        strlcpy(info, p, sizeof(info));
+        pstrcpy(info, sizeof(info), p);
         *p = '\0';
     } else {
         info[0] = '\0';
@@ -784,7 +784,7 @@ static void compute_stats(HTTPContext *c)
         char *eosf;
 
         if (stream->feed != stream) {
-            strlcpy(sfilename, stream->filename, sizeof(sfilename) - 1);
+            pstrcpy(sfilename, sizeof(sfilename) - 1, stream->filename);
             eosf = sfilename + strlen(sfilename);
             if (eosf - sfilename >= 4) {
                 if (strcmp(eosf - 4, ".asf") == 0) {
@@ -1001,13 +1001,12 @@ static int open_input_stream(HTTPContext *c, const char *info)
         return -1;
 
     /* open stream */
-    s = av_open_input_file(input_filename, NULL, buf_size, NULL);
-    if (!s)
+    if (av_open_input_file(&s, input_filename, NULL, buf_size, NULL) < 0)
         return -1;
     c->fmt_in = s;
 
-    if (c->fmt_in->format->read_seek) {
-        c->fmt_in->format->read_seek(c->fmt_in, stream_pos);
+    if (c->fmt_in->iformat->read_seek) {
+        c->fmt_in->iformat->read_seek(c->fmt_in, stream_pos);
     }
     
     //    printf("stream %s opened pos=%0.6f\n", input_filename, stream_pos / 1000000.0);
@@ -1023,7 +1022,7 @@ static int http_prepare_data(HTTPContext *c)
         memset(&c->fmt_ctx, 0, sizeof(c->fmt_ctx));
         if (c->stream->feed) {
             /* open output stream by using specified codecs */
-            c->fmt_ctx.format = c->stream->fmt;
+            c->fmt_ctx.oformat = c->stream->fmt;
             c->fmt_ctx.nb_streams = c->stream->nb_streams;
             for(i=0;i<c->fmt_ctx.nb_streams;i++) {
                 AVStream *st;
@@ -1040,7 +1039,7 @@ static int http_prepare_data(HTTPContext *c)
             c->got_key_frame = 0;
         } else {
             /* open output stream by using codecs in specified file */
-            c->fmt_ctx.format = c->stream->fmt;
+            c->fmt_ctx.oformat = c->stream->fmt;
             c->fmt_ctx.nb_streams = c->fmt_in->nb_streams;
             for(i=0;i<c->fmt_ctx.nb_streams;i++) {
                 AVStream *st;
@@ -1056,7 +1055,7 @@ static int http_prepare_data(HTTPContext *c)
                       1, c, NULL, http_write_packet, NULL);
         c->fmt_ctx.pb.is_streamed = 1;
         /* prepare header */
-        c->fmt_ctx.format->write_header(&c->fmt_ctx);
+        av_write_header(&c->fmt_ctx);
         c->state = HTTPSTATE_SEND_DATA;
         c->last_packet_sent = 0;
         break;
@@ -1192,7 +1191,7 @@ static int http_prepare_data(HTTPContext *c)
         if (c->last_packet_sent)
             return -1;
         /* prepare header */
-        c->fmt_ctx.format->write_trailer(&c->fmt_ctx);
+        av_write_trailer(&c->fmt_ctx);
         c->last_packet_sent = 1;
         break;
     }
@@ -1312,6 +1311,7 @@ static int http_receive_data(HTTPContext *c)
         } else {
             /* We have a header in our hands that contains useful data */
             AVFormatContext s;
+            AVInputFormat *fmt_in;
             ByteIOContext *pb = &s.pb;
             int i;
 
@@ -1321,7 +1321,12 @@ static int http_receive_data(HTTPContext *c)
             pb->buf_end = c->buffer_end;        /* ?? */
             pb->is_streamed = 1;
 
-            if (feed->fmt->read_header(&s, 0) < 0) {
+            /* use feed output format name to find corresponding input format */
+            fmt_in = av_find_input_format(feed->fmt->name);
+            if (!fmt_in)
+                goto fail;
+
+            if (fmt_in->read_header(&s, 0) < 0) {
                 goto fail;
             }
 
@@ -1330,7 +1335,8 @@ static int http_receive_data(HTTPContext *c)
                 goto fail;
             }
             for (i = 0; i < s.nb_streams; i++) {
-                memcpy(&feed->streams[i]->codec, &s.streams[i]->codec, sizeof(AVCodecContext));
+                memcpy(&feed->streams[i]->codec, 
+                       &s.streams[i]->codec, sizeof(AVCodecContext));
             } 
         }
         c->buffer_ptr = c->buffer;
@@ -1424,15 +1430,16 @@ void build_feed_streams(void)
                         feed->feed_filename);
                 exit(1);
             }
-            s->format = feed->fmt;
+            s->oformat = feed->fmt;
             s->nb_streams = feed->nb_streams;
             for(i=0;i<s->nb_streams;i++) {
                 AVStream *st;
                 st = feed->streams[i];
                 s->streams[i] = st;
             }
-            s->format->write_header(s);
-
+            av_write_header(s);
+            /* XXX: need better api */
+            av_freep(&s->priv_data);
             url_fclose(&s->pb);
         }
         /* get feed size and write index */
