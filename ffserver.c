@@ -429,7 +429,9 @@ static int socket_open_listen(struct sockaddr_in *my_addr)
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &tmp, sizeof(tmp));
 
     if (bind (server_fd, (struct sockaddr *) my_addr, sizeof (*my_addr)) < 0) {
-        perror ("bind");
+        char bindmsg[32];
+        snprintf(bindmsg, sizeof(bindmsg), "bind(port %d)", ntohs(my_addr->sin_port));
+        perror (bindmsg);
         close(server_fd);
         return -1;
     }
