@@ -154,6 +154,18 @@ enum StreamType {
     STREAM_TYPE_REDIRECT,
 };
 
+enum IPAddressAction {
+    IP_ALLOW = 1,
+    IP_DENY,
+};
+
+typedef struct IPAddressACL {
+    struct IPAddressACL *next;
+    enum IPAddressAction action;
+    struct in_addr first;
+    struct in_addr last;
+} IPAddressACL;
+
 /* description of each stream of the ffserver.conf file */
 typedef struct FFStream {
     enum StreamType stream_type;
@@ -161,6 +173,7 @@ typedef struct FFStream {
     struct FFStream *feed;   /* feed we are using (can be null if
                                 coming from file) */
     AVOutputFormat *fmt;
+    IPAddressACL *acl;
     int nb_streams;
     int prebuffer;      /* Number of millseconds early to start */
     long max_time;      /* Number of milliseconds to run */
@@ -957,6 +970,23 @@ static void get_word(char *buf, int buf_size, const char **pp)
     *pp = p;
 }
 
+static int validate_acl(FFStream *stream, HTTPContext *c)
+{
+    enum IPAddressAction last_action = IP_DENY;
+    IPAddressACL *acl;
+    struct in_addr *src = &c->from_addr.sin_addr;
+
+    for (acl = stream->acl; acl; acl = acl->next) {
+        if (src->s_addr >= acl->first.s_addr && src->s_addr <= acl->last.s_addr) {
+            return (acl->action == IP_ALLOW) ? 1 : 0;
+        }
+        last_action = acl->action;
+    }
+
+    /* Nothing matched, so return not the last action */
+    return (last_action == IP_DENY) ? 1 : 0;
+}
+
 /* parse http request and prepare header */
 static int http_parse_request(HTTPContext *c)
 {
@@ -1077,7 +1107,7 @@ static int http_parse_request(HTTPContext *c)
 
     stream = first_stream;
     while (stream != NULL) {
-        if (!strcmp(stream->filename, filename))
+        if (!strcmp(stream->filename, filename) && validate_acl(stream, c))
             break;
         stream = stream->next;
     }
@@ -1342,14 +1372,10 @@ static int http_parse_request(HTTPContext *c)
     q += sprintf(q, "Pragma: no-cache\r\n");
 
     /* for asf, we need extra headers */
-    if (!strcmp(c->stream->fmt->name,"asf")) {
+    if (!strcmp(c->stream->fmt->name,"asf_stream")) {
         /* Need to allocate a client id */
-        static int wmp_session;
 
-        if (!wmp_session)
-            wmp_session = time(0) & 0xffffff;
-
-        c->wmp_client_id = ++wmp_session;
+        c->wmp_client_id = random() & 0x7fffffff;
 
         q += sprintf(q, "Server: Cougar 4.1.0.3923\r\nCache-Control: no-cache\r\nPragma: client-id=%d\r\nPragma: features=\"broadcast\"\r\n", c->wmp_client_id);
         mime_type = "application/octet-stream"; 
@@ -1718,6 +1744,12 @@ static int open_input_stream(HTTPContext *c, const char *info)
     }
     if (input_filename[0] == '\0')
         return -1;
+
+#if 0
+    { time_t when = stream_pos / 1000000;
+    http_log("Stream pos = %lld, time=%s", stream_pos, ctime(&when));
+    }
+#endif
 
     /* open stream */
     if (av_open_input_file(&s, input_filename, NULL, buf_size, NULL) < 0) {
@@ -3447,7 +3479,7 @@ int parse_ffconfig(const char *filename)
                 q = strrchr(stream->filename, '>');
                 if (*q)
                     *q = '\0';
-                stream->fmt = guess_format(NULL, stream->filename, NULL);
+                stream->fmt = guess_stream_format(NULL, stream->filename, NULL);
                 memset(&audio_enc, 0, sizeof(AVCodecContext));
                 memset(&video_enc, 0, sizeof(AVCodecContext));
                 audio_id = CODEC_ID_NONE;
@@ -3485,7 +3517,7 @@ int parse_ffconfig(const char *filename)
                 /* jpeg cannot be used here, so use single frame jpeg */
                 if (!strcmp(arg, "jpeg"))
                     strcpy(arg, "singlejpeg");
-                stream->fmt = guess_format(arg, NULL, NULL);
+                stream->fmt = guess_stream_format(arg, NULL, NULL);
                 if (!stream->fmt) {
                     fprintf(stderr, "%s:%d: Unknown Format: %s\n", 
                             filename, line_num, arg);
@@ -3523,7 +3555,7 @@ int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "Preroll")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                stream->prebuffer = atoi(arg) * 1000;
+                stream->prebuffer = atof(arg) * 1000;
             }
         } else if (!strcasecmp(cmd, "StartSendOnKey")) {
             if (stream) {
@@ -3548,7 +3580,7 @@ int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "MaxTime")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                stream->max_time = atoi(arg) * 1000;
+                stream->max_time = atof(arg) * 1000;
             }
         } else if (!strcasecmp(cmd, "AudioBitRate")) {
             get_arg(arg, sizeof(arg), &p);
@@ -3630,6 +3662,72 @@ int parse_ffconfig(const char *filename)
             video_id = CODEC_ID_NONE;
         } else if (!strcasecmp(cmd, "NoAudio")) {
             audio_id = CODEC_ID_NONE;
+        } else if (!strcasecmp(cmd, "ACL")) {
+            IPAddressACL acl;
+            struct hostent *he;
+
+            get_arg(arg, sizeof(arg), &p);
+            if (strcasecmp(arg, "allow") == 0) {
+                acl.action = IP_ALLOW;
+            } else if (strcasecmp(arg, "deny") == 0) {
+                acl.action = IP_DENY;
+            } else {
+                fprintf(stderr, "%s:%d: ACL action '%s' is not ALLOW or DENY\n",
+                        filename, line_num, arg);
+                errors++;
+            }
+
+            get_arg(arg, sizeof(arg), &p);
+
+            he = gethostbyname(arg);
+            if (!he) {
+                fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
+                        filename, line_num, arg);
+                errors++;
+            } else {
+                /* Only take the first */
+                acl.first = *(struct in_addr *) he->h_addr_list[0];
+                acl.last = acl.first;
+            }
+
+            get_arg(arg, sizeof(arg), &p);
+
+            if (arg[0]) {
+                he = gethostbyname(arg);
+                if (!he) {
+                    fprintf(stderr, "%s:%d: ACL refers to invalid host or ip address '%s'\n",
+                            filename, line_num, arg);
+                    errors++;
+                } else {
+                    /* Only take the first */
+                    acl.last = *(struct in_addr *) he->h_addr_list[0];
+                }
+            }
+
+            if (!errors) {
+                IPAddressACL *nacl = (IPAddressACL *) av_mallocz(sizeof(*nacl));
+                IPAddressACL **naclp = 0;
+
+                *nacl = acl;
+                nacl->next = 0;
+
+                if (stream) {
+                    naclp = &stream->acl;
+                } else if (feed) {
+                    naclp = &feed->acl;
+                } else {
+                    fprintf(stderr, "%s:%d: ACL found not in <stream> or <feed>\n",
+                            filename, line_num);
+                    errors++;
+                }
+
+                if (naclp) {
+                    while (*naclp)
+                        naclp = &(*naclp)->next;
+
+                    *naclp = nacl;
+                }
+            }
         } else if (!strcasecmp(cmd, "RTSPOption")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
@@ -3830,6 +3928,8 @@ int main(int argc, char **argv)
 
     putenv("http_proxy");               /* Kill the http_proxy */
 
+    srandom(gettime_ms() + (getpid() << 16));
+
     /* address on which the server will handle HTTP connections */
     my_http_addr.sin_family = AF_INET;
     my_http_addr.sin_port = htons (8080);
@@ -3875,10 +3975,12 @@ int main(int argc, char **argv)
             setsid();
             chdir("/");
             close(0);
-            close(1);
-            close(2);
             open("/dev/null", O_RDWR);
-            dup(0);
+            if (!strcmp(logfilename, "-")) {
+                close(1);
+                dup(0);
+            }
+            close(2);
             dup(0);
         }
     }
