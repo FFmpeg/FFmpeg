@@ -838,7 +838,7 @@ static int video_thread(void *arg)
     AVPacket pkt1, *pkt = &pkt1;
     unsigned char *ptr;
     int len, len1, got_picture;
-    AVFrame frame;
+    AVFrame *frame= avcodec_alloc_frame();
     int64_t ipts;
     double pts;
 
@@ -853,15 +853,15 @@ static int video_thread(void *arg)
         ipts = pkt->pts;
         ptr = pkt->data;
         if (is->video_st->codec.codec_id == CODEC_ID_RAWVIDEO) {
-            avpicture_fill((AVPicture *)&frame, ptr, 
+            avpicture_fill((AVPicture *)frame, ptr, 
                            is->video_st->codec.pix_fmt,
                            is->video_st->codec.width,
                            is->video_st->codec.height);
             pts = 0;
             if (ipts != AV_NOPTS_VALUE)
                 pts = (double)ipts * is->ic->pts_num / is->ic->pts_den;
-            frame.pict_type = FF_I_TYPE;
-            if (output_picture2(is, &frame, pts) < 0)
+            frame->pict_type = FF_I_TYPE;
+            if (output_picture2(is, frame, pts) < 0)
                 goto the_end;
         } else {
             len = pkt->size;
@@ -872,14 +872,14 @@ static int video_thread(void *arg)
                     ipts = AV_NOPTS_VALUE;
                 }
                 len1 = avcodec_decode_video(&is->video_st->codec, 
-                                            &frame, &got_picture, ptr, len);
+                                            frame, &got_picture, ptr, len);
                 if (len1 < 0)
                     break;
                 if (got_picture) {
                     pts = 0;
                     if (is->ipts != AV_NOPTS_VALUE)
                         pts = (double)is->ipts * is->ic->pts_num / is->ic->pts_den;
-                    if (output_picture2(is, &frame, pts) < 0)
+                    if (output_picture2(is, frame, pts) < 0)
                         goto the_end;
                     is->picture_start = 1;
                 }
@@ -890,6 +890,7 @@ static int video_thread(void *arg)
         av_free_packet(pkt);
     }
  the_end:
+    av_free(frame);
     return 0;
 }
 
