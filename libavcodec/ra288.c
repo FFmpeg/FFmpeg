@@ -47,7 +47,7 @@ static void colmult(float *tgt, float *m1, const float *m2, int n);
 
 
 /* initial decode */
-static void unpack(unsigned short *tgt, unsigned char *src, int len)
+static void unpack(unsigned short *tgt, unsigned char *src, unsigned int len)
 {
   int x,y,z;
   int n,temp;

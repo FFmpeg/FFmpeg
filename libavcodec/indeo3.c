@@ -101,7 +101,8 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s, unsigned char *cur,
 static void iv_alloc_frames(Indeo3DecodeContext *s) 
 {
   int luma_width, luma_height, luma_pixels, chroma_width, chroma_height,
-    chroma_pixels, bufsize, i;
+      chroma_pixels, i;
+  unsigned int bufsize;
 
   luma_width   = (s->width  + 3) & (~3);
   luma_height  = (s->height + 3) & (~3);

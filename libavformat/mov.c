@@ -239,7 +239,7 @@ typedef struct MOVStreamContext {
     long current_sample;
     long left_in_chunk; /* how many samples before next chunk */
     /* specific MPEG4 header which is added at the beginning of the stream */
-    int header_len;
+    unsigned int header_len;
     uint8_t *header_data;
     MOV_esds_t esds;
 } MOVStreamContext;

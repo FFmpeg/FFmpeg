@@ -130,7 +130,7 @@ static void do_voice(int *a1, int *a2)
 
 
 /* do quarter-block output */
-static void do_output_subblock(Real144_internal *glob, int x)
+static void do_output_subblock(Real144_internal *glob, unsigned int x)
 {
   int a,b,c,d,e,f,g;
 

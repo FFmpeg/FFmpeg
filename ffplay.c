@@ -113,7 +113,7 @@ typedef struct VideoState {
     /* samples output by the codec. we reserve more space for avsync
        compensation */
     uint8_t audio_buf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2]; 
-    int audio_buf_size; /* in bytes */
+    unsigned int audio_buf_size; /* in bytes */
     int audio_buf_index; /* in bytes */
     AVPacket audio_pkt;
     uint8_t *audio_pkt_data;

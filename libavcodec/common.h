@@ -391,7 +391,7 @@ typedef struct RL_VLC_ELEM {
 
 /* used to avoid missaligned exceptions on some archs (alpha, ...) */
 #ifdef ARCH_X86
-#    define unaligned32(a) (*(uint32_t*)(a))
+#    define unaligned32(a) (*(const uint32_t*)(a))
 #else
 #    ifdef __GNUC__
 static inline uint32_t unaligned32(const void *v) {
@@ -620,7 +620,7 @@ static inline int unaligned32_be(const void *v)
         (gb)->index= name##_index;\
 
 #   define UPDATE_CACHE(name, gb)\
-        name##_cache= unaligned32_be( ((uint8_t *)(gb)->buffer)+(name##_index>>3) ) << (name##_index&0x07);\
+        name##_cache= unaligned32_be( ((const uint8_t *)(gb)->buffer)+(name##_index>>3) ) << (name##_index&0x07);\
 
 #   define SKIP_CACHE(name, gb, num)\
         name##_cache <<= (num);\
@@ -1253,7 +1253,7 @@ if((y)<(x)){\
 #endif
 
 #ifdef ARCH_X86
-static inline long long rdtsc()
+static inline long long rdtsc(void)
 {
 	long long l;
 	asm volatile(	"rdtsc\n\t"
