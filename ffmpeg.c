@@ -595,7 +595,7 @@ static void do_video_out(AVFormatContext *s,
         double adelta, vdelta, av_delay;
 
         adelta = audio_sync->sync_ipts - ((double)audio_sync->sync_opts * 
-            ost->st->time_base.num / ost->st->time_base.den);
+            audio_sync->st->time_base.num / audio_sync->st->time_base.den);
 
         vdelta = ost->sync_ipts - ((double)ost->sync_opts *
             ost->st->time_base.num / ost->st->time_base.den);
