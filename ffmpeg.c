@@ -3096,7 +3096,7 @@ static void opt_output_file(const char *filename)
             if(video_codec_tag)
                 video_enc->codec_tag= video_codec_tag;
                 
-            if(!strcmp(file_oformat->name, "mp4") || !strcmp(file_oformat->name, "mov") || !strcmp(file_oformat->name, "3gp"))
+            if (file_oformat->flags & AVFMT_GLOBALHEADER) 
                 video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
             if (video_stream_copy) {
                 st->stream_copy = 1;
@@ -3367,7 +3367,7 @@ static void opt_output_file(const char *filename)
             if(audio_codec_tag)
                 audio_enc->codec_tag= audio_codec_tag;
 
-            if(!strcmp(file_oformat->name, "mp4") || !strcmp(file_oformat->name, "mov") || !strcmp(file_oformat->name, "3gp"))
+            if (file_oformat->flags & AVFMT_GLOBALHEADER) 
                 audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
             if (audio_stream_copy) {
                 st->stream_copy = 1;

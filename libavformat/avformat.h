@@ -124,6 +124,7 @@ typedef struct AVFormatParameters {
 #define AVFMT_SHOW_IDS      0x0008 /* show format stream IDs numbers */
 #define AVFMT_RAWPICTURE    0x0020 /* format wants AVPicture structure for
                                       raw picture data */
+#define AVFMT_GLOBALHEADER  0x0040 /* format wants global header */
 
 typedef struct AVOutputFormat {
     const char *name;
@@ -138,7 +139,7 @@ typedef struct AVOutputFormat {
     int (*write_header)(struct AVFormatContext *);
     int (*write_packet)(struct AVFormatContext *, AVPacket *pkt);
     int (*write_trailer)(struct AVFormatContext *);
-    /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER */
+    /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_GLOBALHEADER */
     int flags;
     /* currently only used to set pixel format if not YUV420P */
     int (*set_parameters)(struct AVFormatContext *, AVFormatParameters *);

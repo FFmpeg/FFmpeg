@@ -1497,6 +1497,7 @@ static AVOutputFormat mov_oformat = {
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
+    .flags = AVFMT_GLOBALHEADER,
 };
 
 static AVOutputFormat _3gp_oformat = {
@@ -1510,6 +1511,7 @@ static AVOutputFormat _3gp_oformat = {
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
+    .flags = AVFMT_GLOBALHEADER,
 };
 
 static AVOutputFormat mp4_oformat = {
@@ -1523,6 +1525,7 @@ static AVOutputFormat mp4_oformat = {
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
+    .flags = AVFMT_GLOBALHEADER,
 };
 
 static AVOutputFormat psp_oformat = {
@@ -1536,6 +1539,7 @@ static AVOutputFormat psp_oformat = {
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
+    .flags = AVFMT_GLOBALHEADER,
 };
 
 static AVOutputFormat _3g2_oformat = {
@@ -1549,6 +1553,7 @@ static AVOutputFormat _3g2_oformat = {
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
+    .flags = AVFMT_GLOBALHEADER,
 };
 
 int movenc_init(void)
