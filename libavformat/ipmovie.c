@@ -133,6 +133,12 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
 
     if (s->audio_chunk_offset) {
 
+        /* adjust for PCM audio by skipping chunk header */
+        if (s->audio_type != CODEC_ID_INTERPLAY_DPCM) {
+            s->audio_chunk_offset += 6;
+            s->audio_chunk_size -= 6;
+        }
+
         url_fseek(pb, s->audio_chunk_offset, SEEK_SET);
         s->audio_chunk_offset = 0;
 
@@ -568,8 +574,9 @@ static int ipmovie_read_header(AVFormatContext *s,
     st->codec.sample_rate = ipmovie->audio_sample_rate;
     st->codec.bits_per_sample = ipmovie->audio_bits;
     st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
-        st->codec.bits_per_sample / 
-        (st->codec.codec_id == CODEC_ID_INTERPLAY_DPCM) ? 2 : 1;
+        st->codec.bits_per_sample;
+    if (st->codec.codec_id == CODEC_ID_INTERPLAY_DPCM)
+        st->codec.bit_rate /= 2;
     st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
 
     return 0;
