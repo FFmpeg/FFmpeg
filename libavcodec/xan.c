@@ -274,7 +274,7 @@ static void inline xan_wc3_build_palette(XanContext *s,
             palette16[i] = 
                 ((r >> 3) << 10) |
                 ((g >> 3) <<  5) |
-                ((g >> 3) <<  0);
+                ((b >> 3) <<  0);
         }
         break;
 
@@ -287,7 +287,7 @@ static void inline xan_wc3_build_palette(XanContext *s,
             palette16[i] = 
                 ((r >> 3) << 11) |
                 ((g >> 2) <<  5) |
-                ((g >> 3) <<  0);
+                ((b >> 3) <<  0);
         }
         break;
 
@@ -338,6 +338,15 @@ static void inline xan_wc3_build_palette(XanContext *s,
     }
 }
 
+/* advance current_x variable; reset accounting variables if current_x
+ * moves beyond width */
+#define ADVANCE_CURRENT_X() \
+    current_x++; \
+    if (current_x >= width) { \
+        index += line_inc; \
+        current_x = 0; \
+    }
+
 static void inline xan_wc3_output_pixel_run(XanContext *s, 
     unsigned char *pixel_buffer, int x, int y, int pixel_count)
 {
@@ -371,12 +380,7 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
              * frame of data and the stride needs to be accounted for */
             palette_plane[index++] = *pixel_buffer++;
 
-            current_x++;
-            if (current_x >= width) {
-                /* reset accounting variables */
-                index += line_inc;
-                current_x = 0;
-            }
+            ADVANCE_CURRENT_X();
         }
         break;
 
@@ -392,12 +396,7 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
 
             rgb16_plane[index++] = palette16[*pixel_buffer++];
 
-            current_x++;
-            if (current_x >= width) {
-                /* reset accounting variables */
-                index += line_inc;
-                current_x = 0;
-            }
+            ADVANCE_CURRENT_X();
         }
         break;
 
@@ -415,12 +414,7 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
             rgb_plane[index++] = s->palette[pix * 4 + 1];
             rgb_plane[index++] = s->palette[pix * 4 + 2];
 
-            current_x++;
-            if (current_x >= width) {
-                /* reset accounting variables */
-                index += line_inc;
-                current_x = 0;
-            }
+            ADVANCE_CURRENT_X();
         }
         break;
 
@@ -435,12 +429,7 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
 
             rgb32_plane[index++] = palette32[*pixel_buffer++];
 
-            current_x++;
-            if (current_x >= width) {
-                /* reset accounting variables */
-                index += line_inc;
-                current_x = 0;
-            }
+            ADVANCE_CURRENT_X();
         }
         break;
 
@@ -460,12 +449,7 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
             v_plane[index] = s->palette[pix * 4 + 2];
 
             index++;
-            current_x++;
-            if (current_x >= width) {
-                /* reset accounting variables */
-                index += line_inc;
-                current_x = 0;
-            }
+            ADVANCE_CURRENT_X();
         }
         break;
 
@@ -474,6 +458,20 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
         break;
     }
 }
+
+#define ADVANCE_CURFRAME_X() \
+    curframe_x++; \
+    if (curframe_x >= width) { \
+        curframe_index += line_inc; \
+        curframe_x = 0; \
+    }
+
+#define ADVANCE_PREVFRAME_X() \
+    prevframe_x++; \
+    if (prevframe_x >= width) { \
+        prevframe_index += line_inc; \
+        prevframe_x = 0; \
+    }
 
 static void inline xan_wc3_copy_pixel_run(XanContext *s, 
     int x, int y, int pixel_count, int motion_x, int motion_y)
@@ -506,19 +504,8 @@ static void inline xan_wc3_copy_pixel_run(XanContext *s,
             palette_plane[curframe_index++] = 
                 prev_palette_plane[prevframe_index++];
 
-            curframe_x++;
-            if (curframe_x >= width) {
-                /* reset accounting variables */
-                curframe_index += line_inc;
-                curframe_x = 0;
-            }
-
-            prevframe_x++;
-            if (prevframe_x >= width) {
-                /* reset accounting variables */
-                prevframe_index += line_inc;
-                prevframe_x = 0;
-            }
+            ADVANCE_CURFRAME_X();
+            ADVANCE_PREVFRAME_X();
         }
         break;
 
@@ -537,19 +524,8 @@ static void inline xan_wc3_copy_pixel_run(XanContext *s,
             rgb16_plane[curframe_index++] = 
                 prev_rgb16_plane[prevframe_index++];
 
-            curframe_x++;
-            if (curframe_x >= width) {
-                /* reset accounting variables */
-                curframe_index += line_inc;
-                curframe_x = 0;
-            }
-
-            prevframe_x++;
-            if (prevframe_x >= width) {
-                /* reset accounting variables */
-                prevframe_index += line_inc;
-                prevframe_x = 0;
-            }
+            ADVANCE_CURFRAME_X();
+            ADVANCE_PREVFRAME_X();
         }
         break;
 
@@ -570,19 +546,8 @@ static void inline xan_wc3_copy_pixel_run(XanContext *s,
             rgb_plane[curframe_index++] = prev_rgb_plane[prevframe_index++];
             rgb_plane[curframe_index++] = prev_rgb_plane[prevframe_index++];
 
-            curframe_x++;
-            if (curframe_x >= width) {
-                /* reset accounting variables */
-                curframe_index += line_inc;
-                curframe_x = 0;
-            }
-
-            prevframe_x++;
-            if (prevframe_x >= width) {
-                /* reset accounting variables */
-                prevframe_index += line_inc;
-                prevframe_x = 0;
-            }
+            ADVANCE_CURFRAME_X();
+            ADVANCE_PREVFRAME_X();
         }
         break;
 
@@ -600,19 +565,8 @@ static void inline xan_wc3_copy_pixel_run(XanContext *s,
             rgb32_plane[curframe_index++] = 
                 prev_rgb32_plane[prevframe_index++];
 
-            curframe_x++;
-            if (curframe_x >= width) {
-                /* reset accounting variables */
-                curframe_index += line_inc;
-                curframe_x = 0;
-            }
-
-            prevframe_x++;
-            if (prevframe_x >= width) {
-                /* reset accounting variables */
-                prevframe_index += line_inc;
-                prevframe_x = 0;
-            }
+            ADVANCE_CURFRAME_X();
+            ADVANCE_PREVFRAME_X();
         }
         break;
 
@@ -636,20 +590,9 @@ static void inline xan_wc3_copy_pixel_run(XanContext *s,
             v_plane[curframe_index] = prev_v_plane[prevframe_index];
 
             curframe_index++;
-            curframe_x++;
-            if (curframe_x >= width) {
-                /* reset accounting variables */
-                curframe_index += line_inc;
-                curframe_x = 0;
-            }
-
+            ADVANCE_CURFRAME_X();
             prevframe_index++;
-            prevframe_x++;
-            if (prevframe_x >= width) {
-                /* reset accounting variables */
-                prevframe_index += line_inc;
-                prevframe_x = 0;
-            }
+            ADVANCE_PREVFRAME_X();
         }
         break;
 
