@@ -337,6 +337,7 @@ static void do_audio_out(AVFormatContext *s,
     uint8_t *buftmp;
     static uint8_t *audio_buf = NULL;
     static uint8_t *audio_out = NULL;
+    const int audio_out_size= 4*MAX_AUDIO_PACKET_SIZE;
 
     int size_out, frame_bytes, ret;
     AVCodecContext *enc;
@@ -345,7 +346,7 @@ static void do_audio_out(AVFormatContext *s,
     if (!audio_buf)
         audio_buf = av_malloc(2*MAX_AUDIO_PACKET_SIZE);
     if (!audio_out)
-        audio_out = av_malloc(4*MAX_AUDIO_PACKET_SIZE);
+        audio_out = av_malloc(audio_out_size);
     if (!audio_buf || !audio_out)
         return;               /* Should signal an error ! */
 
@@ -373,7 +374,7 @@ static void do_audio_out(AVFormatContext *s,
         
         while (fifo_read(&ost->fifo, audio_buf, frame_bytes, 
                      &ost->fifo.rptr) == 0) {
-            ret = avcodec_encode_audio(enc, audio_out, sizeof(audio_out), 
+            ret = avcodec_encode_audio(enc, audio_out, audio_out_size, 
                                        (short *)audio_buf);
             av_write_frame(s, ost->index, audio_out, ret);
         }
