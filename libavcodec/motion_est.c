@@ -63,31 +63,6 @@ static int pix_dev(UINT8 * pix, int line_size, int mean)
     return s;
 }
 
-static int pix_norm(UINT8 * pix1, UINT8 * pix2, int line_size)
-{
-    int s, i, j;
-    UINT32 *sq = squareTbl + 256;
-
-    s = 0;
-    for (i = 0; i < 16; i++) {
-	for (j = 0; j < 16; j += 8) {
-	    s += sq[pix1[0] - pix2[0]];
-	    s += sq[pix1[1] - pix2[1]];
-	    s += sq[pix1[2] - pix2[2]];
-	    s += sq[pix1[3] - pix2[3]];
-	    s += sq[pix1[4] - pix2[4]];
-	    s += sq[pix1[5] - pix2[5]];
-	    s += sq[pix1[6] - pix2[6]];
-	    s += sq[pix1[7] - pix2[7]];
-	    pix1 += 8;
-	    pix2 += 8;
-	}
-	pix1 += line_size - 16;
-	pix2 += line_size - 16;
-    }
-    return s;
-}
-
 static inline void no_motion_search(MpegEncContext * s,
 				    int *mx_ptr, int *my_ptr)
 {
@@ -1137,7 +1112,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     
     varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
     // FIXME: MMX OPTIMIZE
-    vard = (pix_norm(pix, ppix, s->linesize)+128)>>8;
+    vard = (s->dsp.pix_norm(pix, ppix, s->linesize)+128)>>8;
 
 //printf("%d %d %d %X %X %X\n", s->mb_width, mb_x, mb_y,(int)s, (int)s->mb_var, (int)s->mc_mb_var); fflush(stdout);
     s->mb_var   [s->mb_width * mb_y + mb_x] = varc;

@@ -98,6 +98,7 @@ typedef struct DSPContext {
     void (*clear_blocks)(DCTELEM *blocks/*align 16*/);
     int (*pix_sum)(UINT8 * pix, int line_size);
     int (*pix_norm1)(UINT8 * pix, int line_size);
+    int (*pix_norm)(UINT8 * pix1, UINT8 * pix2, int line_size);
 
     /* maybe create an array for 16/8 functions */
     op_pixels_func put_pixels_tab[2][4];

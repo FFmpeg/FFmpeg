@@ -137,13 +137,11 @@ int pix_abs16x16_xy2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     vector unsigned char pix1v, pix2v, pix3v, pix2iv, pix3iv;
     vector unsigned short pix2lv, pix2hv, pix2ilv, pix2ihv;
     vector unsigned short pix3lv, pix3hv, pix3ilv, pix3ihv;
-    vector unsigned short avghv, avglv, two, shift_mask;
+    vector unsigned short avghv, avglv, two;
     vector unsigned short t1, t2, t3, t4;
     vector unsigned int sad;
     vector signed int sumdiffs;
 
-    shift_mask = (vector unsigned short) (0x3fff, 0x3fff, 0x3fff, 0x3fff,
-                                          0x3fff, 0x3fff, 0x3fff, 0x3fff);
     zero = vec_splat_u8(0);
     two = vec_splat_u16(2);
     sad = vec_splat_u32(0);
@@ -205,11 +203,8 @@ int pix_abs16x16_xy2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
         t3 = vec_add(pix3hv, pix3ihv);
         t4 = vec_add(pix3lv, pix3ilv);
 
-        avghv = vec_add(vec_add(t1, t3), two);
-        avghv= vec_and(vec_srl(avghv, two), shift_mask);
-
-        avglv = vec_add(vec_add(t2, t4), two);
-        avglv = vec_and(vec_srl(avglv, two), shift_mask);
+        avghv = vec_sr(vec_add(vec_add(t1, t3), two), two);
+        avglv = vec_sr(vec_add(vec_add(t2, t4), two), two);
 
         /* Pack the shorts back into a result */
         avgv = vec_pack(avghv, avglv);
@@ -323,17 +318,10 @@ int pix_norm1_altivec(uint8_t *pix, int line_size)
     int s, i;
     vector unsigned char *tv, zero;
     vector unsigned char pixv;
-    vector unsigned short pixlv, pixhv, zeros;
     vector unsigned int sv;
     vector signed int sum;
-    vector unsigned char perm_stoint_h = (vector unsigned char)
-        (16, 16, 0, 1, 16, 16, 2, 3, 16, 16, 4, 5, 16, 16, 6, 7);
-    
-    vector unsigned char perm_stoint_l = (vector unsigned char)
-        (16, 16, 8, 9, 16, 16, 10, 11, 16, 16, 12, 13, 16, 16, 14, 15);
         
     zero = vec_splat_u8(0);
-    zeros = vec_splat_u16(0);
     sv = vec_splat_u32(0);
     
     s = 0;
@@ -342,14 +330,8 @@ int pix_norm1_altivec(uint8_t *pix, int line_size)
         tv = (vector unsigned char *) pix;
         pixv = vec_perm(tv[0], tv[1], vec_lvsl(0, pix));
 
-        /* Split them into two vectors of shorts */
-        pixhv = (vector unsigned short) vec_mergeh(zero, pixv);
-        pixlv = (vector unsigned short) vec_mergel(zero, pixv);
-
-        
-        /* Square the values and add them to our sum */
-        sv = vec_msum(pixhv, pixhv, sv);
-        sv = vec_msum(pixlv, pixlv, sv);
+        /* Square the values, and add them to our sum */
+        sv = vec_msum(pixv, pixv, sv);
 
         pix += line_size;
     }
@@ -360,6 +342,48 @@ int pix_norm1_altivec(uint8_t *pix, int line_size)
 
     return s;
 }
+
+
+int pix_norm_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
+{
+    int s, i;
+    vector unsigned char *tv, zero;
+    vector unsigned char pix1v, pix2v, t5;
+    vector unsigned int sv;
+    vector signed int sum;
+
+    zero = vec_splat_u8(0);
+    sv = vec_splat_u32(0);
+    s = 0;
+    for (i = 0; i < 16; i++) {
+        /* Read in the potentially unaligned pixels */
+        tv = (vector unsigned char *) pix1;
+        pix1v = vec_perm(tv[0], tv[1], vec_lvsl(0, pix1));
+
+        tv = (vector unsigned char *) pix2;
+        pix2v = vec_perm(tv[0], tv[1], vec_lvsl(0, pix2));
+
+        /*
+           Since we want to use unsigned chars, we can take advantage
+           of the fact that abs(a-b)^2 = (a-b)^2.
+        */
+        
+        /* Calculate a sum of abs differences vector */
+        t5 = vec_sub(vec_max(pix1v, pix2v), vec_min(pix1v, pix2v));
+
+        /* Square the values and add them to our sum */
+        sv = vec_msum(t5, t5, sv);
+        
+        pix1 += line_size;
+        pix2 += line_size;
+    }
+    /* Sum up the four partial sums, and put the result into s */
+    sum = vec_sums((vector signed int) sv, (vector signed int) zero);
+    sum = vec_splat(sum, 3);
+    vec_ste(sum, 0, &s);
+    return s;
+}
+
 
 int pix_sum_altivec(UINT8 * pix, int line_size)
 {

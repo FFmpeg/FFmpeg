@@ -144,6 +144,31 @@ static int pix_norm1_c(UINT8 * pix, int line_size)
 }
 
 
+static int pix_norm_c(UINT8 * pix1, UINT8 * pix2, int line_size)
+{
+    int s, i, j;
+    UINT32 *sq = squareTbl + 256;
+
+    s = 0;
+    for (i = 0; i < 16; i++) {
+        for (j = 0; j < 16; j += 8) {
+            s += sq[pix1[0] - pix2[0]];
+            s += sq[pix1[1] - pix2[1]];
+            s += sq[pix1[2] - pix2[2]];
+            s += sq[pix1[3] - pix2[3]];
+            s += sq[pix1[4] - pix2[4]];
+            s += sq[pix1[5] - pix2[5]];
+            s += sq[pix1[6] - pix2[6]];
+            s += sq[pix1[7] - pix2[7]];
+            pix1 += 8;
+            pix2 += 8;
+        }
+        pix1 += line_size - 16;
+        pix2 += line_size - 16;
+    }
+    return s;
+}
+
 static void get_pixels_c(DCTELEM *restrict block, const UINT8 *pixels, int line_size)
 {
     int i;
@@ -1404,6 +1429,7 @@ void dsputil_init(DSPContext* c, unsigned mask)
     c->clear_blocks = clear_blocks_c;
     c->pix_sum = pix_sum_c;
     c->pix_norm1 = pix_norm1_c;
+    c->pix_norm = pix_norm_c;
 
     /* TODO [0] 16  [1] 8 */
     c->pix_abs16x16     = pix_abs16x16_c;
