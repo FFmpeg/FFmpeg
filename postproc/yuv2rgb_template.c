@@ -136,6 +136,10 @@ static inline void RENAME(yuv420_rgb16) (uint8_t * image, uint8_t * py,
 	uint8_t *_py = py;
 	uint8_t *_pu = pu;
 	uint8_t *_pv = pv;
+	int internal_h_size= h_size;
+	int aligned_h_size= (h_size+7)&~7;
+
+	if(rgb_stride >= aligned_h_size*2) internal_h_size= aligned_h_size;
 
 	b5Dither= dither8[y&1];
 	g6Dither= dither4[y&1];
@@ -150,7 +154,7 @@ static inline void RENAME(yuv420_rgb16) (uint8_t * image, uint8_t * py,
 
 		 : : "r" (_py), "r" (_pu), "r" (_pv));
 
-	for (x = h_size >> 3; --x >= 0; ) {
+	for (x = internal_h_size >> 3; --x >= 0; ) {
 	    /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
 	       pixels in each iteration */
 
@@ -237,6 +241,10 @@ static inline void RENAME(yuv420_rgb15) (uint8_t * image, uint8_t * py,
 	uint8_t *_py = py;
 	uint8_t *_pu = pu;
 	uint8_t *_pv = pv;
+	int internal_h_size= h_size;
+	int aligned_h_size= (h_size+7)&~7;
+
+	if(rgb_stride >= aligned_h_size*2) internal_h_size= aligned_h_size;
 
 	b5Dither= dither8[y&1];
 	g6Dither= dither4[y&1];
@@ -251,7 +259,7 @@ static inline void RENAME(yuv420_rgb15) (uint8_t * image, uint8_t * py,
 
 		 : : "r" (_py), "r" (_pu), "r" (_pv));
 
-	for (x = h_size >> 3; --x >= 0; ) {
+	for (x = internal_h_size >> 3; --x >= 0; ) {
 	    /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
 	       pixels in each iteration */
 
@@ -334,6 +342,10 @@ static inline void RENAME(yuv420_rgb24) (uint8_t * image, uint8_t * py,
 	uint8_t *_py = py;
 	uint8_t *_pu = pu;
 	uint8_t *_pv = pv;
+	int internal_h_size= h_size;
+	int aligned_h_size= (h_size+7)&~7;
+
+	if(rgb_stride >= aligned_h_size*3) internal_h_size= aligned_h_size;
 
 	/* load data for start of next scan line */
 	__asm__ __volatile__ (
@@ -343,7 +355,7 @@ static inline void RENAME(yuv420_rgb24) (uint8_t * image, uint8_t * py,
 
 		 : : "r" (_py), "r" (_pu), "r" (_pv));
 
-	for (x = h_size >> 3; --x >= 0; ) {
+	for (x = internal_h_size >> 3; --x >= 0; ) {
 	    /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
 	       pixels in each iteration */
 
@@ -489,6 +501,10 @@ static inline void RENAME(yuv420_argb32) (uint8_t * image, uint8_t * py,
 	uint8_t *_py = py;
 	uint8_t *_pu = pu;
 	uint8_t *_pv = pv;
+	int internal_h_size= h_size;
+	int aligned_h_size= (h_size+7)&~7;
+
+	if(rgb_stride >= aligned_h_size*4) internal_h_size= aligned_h_size;
 
 	/* load data for start of next scan line */
 	__asm__ __volatile__ 
@@ -499,7 +515,7 @@ static inline void RENAME(yuv420_argb32) (uint8_t * image, uint8_t * py,
 	     : : "r" (_py), "r" (_pu), "r" (_pv)
 	     );
 
-	for (x = h_size >> 3; --x >= 0; ) {
+	for (x = internal_h_size >> 3; --x >= 0; ) {
 	    /* this mmx assembly code deals with SINGLE scan line at a time, it convert 8
 	       pixels in each iteration */
 	    __asm__ __volatile__ (
