@@ -47,6 +47,7 @@ void av_register_all(void)
     mov_init();
     jpeg_init();
     dv_init();
+    fourxm_init();
 
     av_register_output_format(&yuv4mpegpipe_oformat);
     
