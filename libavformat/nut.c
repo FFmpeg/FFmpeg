@@ -217,10 +217,9 @@ static int nut_write_header(AVFormatContext *s)
 	    stream_length = s->streams[i]->duration * (AV_TIME_BASE / 1000);
     }
 
-    put_packetheader(nut, bc, 120);
-    
     /* main header */
     put_be64(bc, MAIN_STARTCODE);
+    put_packetheader(nut, bc, 120);
     put_v(bc, 0); /* version */
     put_v(bc, s->nb_streams);
     put_v(bc, 0); /* file size */
@@ -234,8 +233,8 @@ static int nut_write_header(AVFormatContext *s)
     {
 	codec = &s->streams[i]->codec;
 	
-	put_packetheader(nut, bc, 120);
 	put_be64(bc, STREAM_STARTCODE);
+	put_packetheader(nut, bc, 120);
 	put_v(bc, i /*s->streams[i]->index*/);
 	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
 	if (codec->codec_tag)
@@ -285,9 +284,9 @@ static int nut_write_header(AVFormatContext *s)
 
 #if 0
     /* info header */
+    put_be64(bc, INFO_STARTCODE);
     put_packetheader(nut, bc, 16+strlen(s->author)+strlen(s->title)+
         strlen(s->comment)+strlen(s->copyright)); 
-    put_be64(bc, INFO_STARTCODE);
     if (s->author[0])
     {
         put_v(bc, 5); /* type */
@@ -339,8 +338,6 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     if (enc->codec_type == CODEC_TYPE_VIDEO)
 	key_frame = enc->coded_frame->key_frame;
 
-    put_packetheader(nut, bc, size+(key_frame?8:0)+20);
-
     if (key_frame)
 	put_be64(bc, KEYFRAME_STARTCODE);
     
@@ -352,6 +349,8 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     flags<<=1; flags|=0; //reserved
 
     put_byte(bc, flags);
+
+    put_packetheader(nut, bc, size+20);
     put_v(bc, stream_index);
     put_s(bc, force_pts); /* lsb_timestamp */
     update_packetheader(nut, bc, size);
@@ -374,8 +373,8 @@ static int nut_write_trailer(AVFormatContext *s)
 
     for (i = 0; s->nb_streams; i++)
     {
-	put_packetheader(nut, bc, 64);
 	put_be64(bc, INDEX_STARTCODE);
+	put_packetheader(nut, bc, 64);
 	put_v(bc, s->streams[i]->id);
 	put_v(bc, ...);
 	put_be32(bc, 0); /* FIXME: checksum */
@@ -412,10 +411,10 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int cur_stream, nb_streams;
     
     /* main header */
-    get_packetheader(nut, bc);
     tmp = get_be64(bc);
     if (tmp != MAIN_STARTCODE)
 	fprintf(stderr, "damaged? startcode!=1 (%Ld)\n", tmp);
+    get_packetheader(nut, bc);
     
     tmp = get_v(bc);
     if (tmp != 0)
@@ -436,10 +435,10 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	int class;
 	AVStream *st;
 	
-	get_packetheader(nut, bc);
 	tmp = get_be64(bc);
 	if (tmp != STREAM_STARTCODE)
 	    fprintf(stderr, "damaged? startcode!=1 (%Ld)\n", tmp);
+	get_packetheader(nut, bc);
 	st = av_new_stream(s, get_v(bc));
 	if (!st)
 	    return AVERROR_NOMEM;
@@ -508,7 +507,6 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
     int key_frame = 0;
     uint64_t tmp;
 
-    get_packetheader(nut, bc);
 
     if (url_feof(bc))
 	return -1;
@@ -527,6 +525,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
 	else
 	    fprintf(stderr, "error in zero bit / startcode %LX\n", tmp);
     }
+    get_packetheader(nut, bc);
 #if 0
     if (((tmp & 0x60)>>5) > 3) /* priority <= 3 */
 	fprintf(stderr, "sanity check failed!\n");
@@ -573,7 +572,7 @@ static AVOutputFormat nut_oformat = {
 #elif defined(CONFIG_MP3LAME)
     CODEC_ID_MP3LAME,
 #else
-    CODEC_ID_AC3,
+    CODEC_ID_MP2, /* AC3 needs liba52 decoder */
 #endif
     CODEC_ID_MPEG4,
     nut_write_header,
