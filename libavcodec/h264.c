@@ -582,7 +582,7 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
     if(IS_INTER(mb_type) || (IS_DIRECT(mb_type) && h->direct_spatial_mv_pred)){
         int list;
         for(list=0; list<2; list++){
-            if((!IS_8X8(mb_type)) && !USES_LIST(mb_type, list) && !IS_DIRECT(mb_type) && !for_deblock){
+            if(!USES_LIST(mb_type, list) && !IS_DIRECT(mb_type) && !for_deblock){
                 /*if(!h->mv_cache_clean[list]){
                     memset(h->mv_cache [list],  0, 8*5*2*sizeof(int16_t)); //FIXME clean only input? clean at all?
                     memset(h->ref_cache[list], PART_NOT_AVAILABLE, 8*5*sizeof(int8_t));
@@ -1239,7 +1239,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
 
     for(list=0; list<2; list++){
         int y;
-        if((!IS_8X8(mb_type)) && !USES_LIST(mb_type, list)){
+        if(!USES_LIST(mb_type, list)){
             if(1){ //FIXME skip or never read if mb_type doesnt use it
                 for(y=0; y<4; y++){
                     *(uint64_t*)s->current_picture.motion_val[list][b_xy + 0 + y*h->b_stride]=

@@ -353,8 +353,8 @@ static const PMbInfo p_mb_type_info[5]={
 {MB_TYPE_16x16|MB_TYPE_P0L0             , 1},
 {MB_TYPE_16x8 |MB_TYPE_P0L0|MB_TYPE_P1L0, 2},
 {MB_TYPE_8x16 |MB_TYPE_P0L0|MB_TYPE_P1L0, 2},
-{MB_TYPE_8x8                            , 4},
-{MB_TYPE_8x8  |MB_TYPE_REF0             , 4},
+{MB_TYPE_8x8  |MB_TYPE_P0L0|MB_TYPE_P1L0, 4},
+{MB_TYPE_8x8  |MB_TYPE_P0L0|MB_TYPE_P1L0|MB_TYPE_REF0, 4},
 };
 
 static const PMbInfo p_sub_mb_type_info[4]={
@@ -387,7 +387,7 @@ static const PMbInfo b_mb_type_info[23]={
 {MB_TYPE_8x16 |MB_TYPE_P0L0|MB_TYPE_P0L1             |MB_TYPE_P1L1, 2, },
 {MB_TYPE_16x8 |MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_P1L0|MB_TYPE_P1L1, 2, },
 {MB_TYPE_8x16 |MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_P1L0|MB_TYPE_P1L1, 2, },
-{MB_TYPE_8x8                                                      , 4, },
+{MB_TYPE_8x8  |MB_TYPE_P0L0|MB_TYPE_P0L1|MB_TYPE_P1L0|MB_TYPE_P1L1, 4, },
 };
 
 static const PMbInfo b_sub_mb_type_info[13]={
