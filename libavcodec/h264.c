@@ -2971,6 +2971,10 @@ static int decode_slice_header(H264Context *h){
     //FIXME CABAC stuff
 
     s->qscale = h->pps.init_qp + get_se_golomb(&s->gb); //slice_qp_delta
+    if(s->qscale<0 || s->qscale>51){
+        av_log(s->avctx, AV_LOG_ERROR, "QP %d out of range\n", s->qscale);
+        return -1;
+    }
     //FIXME qscale / qp ... stuff
     if(h->slice_type == SP_TYPE){
         get_bits1(&s->gb); /* sp_for_switch_flag */
@@ -2979,19 +2983,15 @@ static int decode_slice_header(H264Context *h){
         get_se_golomb(&s->gb); /* slice_qs_delta */
     }
 
+    h->disable_deblocking_filter_idc = 0;
+    h->slice_alpha_c0_offset = 0;
+    h->slice_beta_offset = 0;
     if( h->pps.deblocking_filter_parameters_present ) {
         h->disable_deblocking_filter_idc= get_ue_golomb(&s->gb);
         if( h->disable_deblocking_filter_idc  !=  1 ) {
             h->slice_alpha_c0_offset = get_se_golomb(&s->gb) << 1;
             h->slice_beta_offset = get_se_golomb(&s->gb) << 1;
-        } else {
-            h->slice_alpha_c0_offset = 0;
-            h->slice_beta_offset = 0;
         }
-    } else {
-        h->disable_deblocking_filter_idc = 0;
-        h->slice_alpha_c0_offset = 0;
-        h->slice_beta_offset = 0;
     }
 
 #if 0 //FMO
@@ -3624,69 +3624,84 @@ static void filter_mb_edgev( H264Context *h, uint8_t *pix, int stride, int bS[4]
             continue;
         }
 
-        /* 4px edge length */
-        for( d = 0; d < 4; d++ ) {
-            const uint8_t p0 = pix[-1];
-            const uint8_t p1 = pix[-2];
-            const uint8_t p2 = pix[-3];
+        if( bS[i] < 4 ) {
+            const int tc0 = tc0_table[index_a][bS[i] - 1];
+            /* 4px edge length */
+            for( d = 0; d < 4; d++ ) {
+                const int p0 = pix[-1];
+                const int p1 = pix[-2];
+                const int p2 = pix[-3];
+                const int q0 = pix[0];
+                const int q1 = pix[1];
+                const int q2 = pix[2];
 
-            const uint8_t q0 = pix[0];
-            const uint8_t q1 = pix[1];
-            const uint8_t q2 = pix[2];
+                if( ABS( p0 - q0 ) < alpha &&
+                    ABS( p1 - p0 ) < beta &&
+                    ABS( q1 - q0 ) < beta ) {
+                    int tc = tc0;
+                    int i_delta;
 
-            if( abs( p0 - q0 ) >= alpha ||
-                abs( p1 - p0 ) >= beta ||
-                abs( q1 - q0 ) >= beta ) {
+                    if( ABS( p2 - p0 ) < beta ) {
+                        pix[-2] = p1 + clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
+                        tc++;
+                    }
+                    if( ABS( q2 - q0 ) < beta ) {
+                        pix[1] = q1 + clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
+                        tc++;
+                    }
+
+                    i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+                    pix[-1] = clip_uint8( p0 + i_delta );    /* p0' */
+                    pix[0]  = clip_uint8( q0 - i_delta );    /* q0' */
+                }
                 pix += stride;
-                continue;
             }
+        }else{
+            /* 4px edge length */
+            for( d = 0; d < 4; d++ ) {
+                const int p0 = pix[-1];
+                const int p1 = pix[-2];
+                const int p2 = pix[-3];
 
-            if( bS[i] < 4 ) {
-                const int tc0 = tc0_table[index_a][bS[i] - 1];
-                int tc = tc0;
-                int i_delta;
+                const int q0 = pix[0];
+                const int q1 = pix[1];
+                const int q2 = pix[2];
 
-                if( abs( p2 - p0 ) < beta ) {
-                    pix[-2] = p1 + clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
-                    tc++;
+                if( ABS( p0 - q0 ) < alpha &&
+                    ABS( p1 - p0 ) < beta &&
+                    ABS( q1 - q0 ) < beta ) {
+
+                    if(ABS( p0 - q0 ) < (( alpha >> 2 ) + 2 )){
+                        if( ABS( p2 - p0 ) < beta)
+                        {
+                            const int p3 = pix[-4];
+                            /* p0', p1', p2' */
+                            pix[-1] = ( p2 + 2*p1 + 2*p0 + 2*q0 + q1 + 4 ) >> 3;
+                            pix[-2] = ( p2 + p1 + p0 + q0 + 2 ) >> 2;
+                            pix[-3] = ( 2*p3 + 3*p2 + p1 + p0 + q0 + 4 ) >> 3;
+                        } else {
+                            /* p0' */
+                            pix[-1] = ( 2*p1 + p0 + q1 + 2 ) >> 2;
+                        }
+                        if( ABS( q2 - q0 ) < beta)
+                        {
+                            const int q3 = pix[3];
+                            /* q0', q1', q2' */
+                            pix[0] = ( p1 + 2*p0 + 2*q0 + 2*q1 + q2 + 4 ) >> 3;
+                            pix[1] = ( p0 + q0 + q1 + q2 + 2 ) >> 2;
+                            pix[2] = ( 2*q3 + 3*q2 + q1 + q0 + p0 + 4 ) >> 3;
+                        } else {
+                            /* q0' */
+                            pix[0] = ( 2*q1 + q0 + p1 + 2 ) >> 2;
+                        }
+                    }else{
+                        /* p0', q0' */
+                        pix[-1] = ( 2*p1 + p0 + q1 + 2 ) >> 2;
+                        pix[ 0] = ( 2*q1 + q0 + p1 + 2 ) >> 2;
+                    }
                 }
-                if( abs( q2 - q0 ) < beta ) {
-                    pix[1] = q1 + clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
-                    tc++;
-                }
-
-                i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
-                pix[-1] = clip( p0 + i_delta, 0, 255 );    /* p0' */
-                pix[0]  = clip( q0 - i_delta, 0, 255 );    /* q0' */
+                pix += stride;
             }
-            else
-            {
-                const int c  = abs( p0 - q0 ) < (( alpha >> 2 ) + 2 );
-
-                if( abs( p2 - p0 ) < beta && c )
-                {
-                    const uint8_t p3 = pix[-4];
-                    /* p0', p1', p2' */
-                    pix[-1] = ( p2 + 2*p1 + 2*p0 + 2*q0 + q1 + 4 ) >> 3;
-                    pix[-2] = ( p2 + p1 + p0 + q0 + 2 ) >> 2;
-                    pix[-3] = ( 2*p3 + 3*p2 + p1 + p0 + q0 + 4 ) >> 3;
-                } else {
-                    /* p0' */
-                    pix[-1] = ( 2*p1 + p0 + q1 + 2 ) >> 2;
-                }
-                if( abs( q2 - q0 ) < beta && c )
-                {
-                    const uint8_t q3 = pix[3];
-                    /* q0', q1', q2' */
-                    pix[0] = ( p1 + 2*p0 + 2*q0 + 2*q1 + q2 + 4 ) >> 3;
-                    pix[1] = ( p0 + q0 + q1 + q2 + 2 ) >> 2;
-                    pix[2] = ( 2*q3 + 3*q2 + q1 + q0 + p0 + 4 ) >> 3;
-                } else {
-                    /* q0' */
-                    pix[0] = ( 2*q1 + q0 + p1 + 2 ) >> 2;
-                }
-            }
-            pix += stride;
         }
     }
 }
@@ -3702,32 +3717,42 @@ static void filter_mb_edgecv( H264Context *h, uint8_t *pix, int stride, int bS[4
             continue;
         }
 
-        /* 2px edge length (because we use same bS than the one for luma) */
-        for( d = 0; d < 2; d++ )
-        {
-            const uint8_t p0 = pix[-1];
-            const uint8_t p1 = pix[-2];
-            const uint8_t q0 = pix[0];
-            const uint8_t q1 = pix[1];
+        if( bS[i] < 4 ) {
+            const int tc = tc0_table[index_a][bS[i] - 1] + 1;
+            /* 2px edge length (because we use same bS than the one for luma) */
+            for( d = 0; d < 2; d++ ){
+                const int p0 = pix[-1];
+                const int p1 = pix[-2];
+                const int q0 = pix[0];
+                const int q1 = pix[1];
 
-            if( abs( p0 - q0 ) >= alpha ||
-                abs( p1 - p0 ) >= beta ||
-                abs( q1 - q0 ) >= beta ) {
+                if( ABS( p0 - q0 ) < alpha &&
+                    ABS( p1 - p0 ) < beta &&
+                    ABS( q1 - q0 ) < beta ) {
+                    const int i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+
+                    pix[-1] = clip_uint8( p0 + i_delta );    /* p0' */
+                    pix[0]  = clip_uint8( q0 - i_delta );    /* q0' */
+                }
                 pix += stride;
-                continue;
             }
+        }else{
+            /* 2px edge length (because we use same bS than the one for luma) */
+            for( d = 0; d < 2; d++ ){
+                const int p0 = pix[-1];
+                const int p1 = pix[-2];
+                const int q0 = pix[0];
+                const int q1 = pix[1];
 
-            if( bS[i] < 4 ) {
-                const int tc = tc0_table[index_a][bS[i] - 1] + 1;
-                const int i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+                if( ABS( p0 - q0 ) < alpha &&
+                    ABS( p1 - p0 ) < beta &&
+                    ABS( q1 - q0 ) < beta ) {
 
-                pix[-1] = clip( p0 + i_delta, 0, 255 );    /* p0' */
-                pix[0]  = clip( q0 - i_delta, 0, 255 );    /* q0' */
-            } else {
-                pix[-1] = ( 2*p1 + p0 + q1 + 2 ) >> 2;   /* p0' */
-                pix[0]  = ( 2*q1 + q0 + p1 + 2 ) >> 2;   /* q0' */
+                    pix[-1] = ( 2*p1 + p0 + q1 + 2 ) >> 2;   /* p0' */
+                    pix[0]  = ( 2*q1 + q0 + p1 + 2 ) >> 2;   /* q0' */
+                }
+                pix += stride;
             }
-            pix += stride;
         }
     }
 }
@@ -3745,66 +3770,83 @@ static void filter_mb_edgeh( H264Context *h, uint8_t *pix, int stride, int bS[4]
             continue;
         }
 
-        /* 4px edge length */
-        for( d = 0; d < 4; d++ ) {
-            const uint8_t p0 = pix[-1*pix_next];
-            const uint8_t p1 = pix[-2*pix_next];
-            const uint8_t p2 = pix[-3*pix_next];
-            const uint8_t q0 = pix[0];
-            const uint8_t q1 = pix[1*pix_next];
-            const uint8_t q2 = pix[2*pix_next];
+        if( bS[i] < 4 ) {
+            const int tc0 = tc0_table[index_a][bS[i] - 1];
+            /* 4px edge length */
+            for( d = 0; d < 4; d++ ) {
+                const int p0 = pix[-1*pix_next];
+                const int p1 = pix[-2*pix_next];
+                const int p2 = pix[-3*pix_next];
+                const int q0 = pix[0];
+                const int q1 = pix[1*pix_next];
+                const int q2 = pix[2*pix_next];
 
-            if( abs( p0 - q0 ) >= alpha ||
-                abs( p1 - p0 ) >= beta ||
-                abs( q1 - q0 ) >= beta ) {
+                if( ABS( p0 - q0 ) < alpha &&
+                    ABS( p1 - p0 ) < beta &&
+                    ABS( q1 - q0 ) < beta ) {
+
+                    int tc = tc0;
+                    int i_delta;
+
+                    if( ABS( p2 - p0 ) < beta ) {
+                        pix[-2*pix_next] = p1 + clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
+                        tc++;
+                    }
+                    if( ABS( q2 - q0 ) < beta ) {
+                        pix[pix_next] = q1 + clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
+                        tc++;
+                    }
+
+                    i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+                    pix[-pix_next] = clip_uint8( p0 + i_delta );    /* p0' */
+                    pix[0]         = clip_uint8( q0 - i_delta );    /* q0' */
+                }
                 pix++;
-                continue;
             }
+        }else{
+            /* 4px edge length */
+            for( d = 0; d < 4; d++ ) {
+                const int p0 = pix[-1*pix_next];
+                const int p1 = pix[-2*pix_next];
+                const int p2 = pix[-3*pix_next];
+                const int q0 = pix[0];
+                const int q1 = pix[1*pix_next];
+                const int q2 = pix[2*pix_next];
 
-            if( bS[i] < 4 ) {
-                const int tc0 = tc0_table[index_a][bS[i] - 1];
-                int tc = tc0;
-                int i_delta;
+                if( ABS( p0 - q0 ) < alpha &&
+                    ABS( p1 - p0 ) < beta &&
+                    ABS( q1 - q0 ) < beta ) {
 
-                if( abs( p2 - p0 ) < beta ) {
-                    pix[-2*pix_next] = p1 + clip( ( p2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( p1 << 1 ) ) >> 1, -tc0, tc0 );
-                    tc++;
+                    const int p3 = pix[-4*pix_next];
+                    const int q3 = pix[ 3*pix_next];
+
+                    if(ABS( p0 - q0 ) < (( alpha >> 2 ) + 2 )){
+                        if( ABS( p2 - p0 ) < beta) {
+                            /* p0', p1', p2' */
+                            pix[-1*pix_next] = ( p2 + 2*p1 + 2*p0 + 2*q0 + q1 + 4 ) >> 3;
+                            pix[-2*pix_next] = ( p2 + p1 + p0 + q0 + 2 ) >> 2;
+                            pix[-3*pix_next] = ( 2*p3 + 3*p2 + p1 + p0 + q0 + 4 ) >> 3;
+                        } else {
+                            /* p0' */
+                            pix[-1*pix_next] = ( 2*p1 + p0 + q1 + 2 ) >> 2;
+                        }
+                        if( ABS( q2 - q0 ) < beta) {
+                            /* q0', q1', q2' */
+                            pix[0*pix_next] = ( p1 + 2*p0 + 2*q0 + 2*q1 + q2 + 4 ) >> 3;
+                            pix[1*pix_next] = ( p0 + q0 + q1 + q2 + 2 ) >> 2;
+                            pix[2*pix_next] = ( 2*q3 + 3*q2 + q1 + q0 + p0 + 4 ) >> 3;
+                        } else {
+                            /* q0' */
+                            pix[0*pix_next] = ( 2*q1 + q0 + p1 + 2 ) >> 2;
+                        }
+                    }else{
+                        /* p0', q0' */
+                        pix[-1*pix_next] = ( 2*p1 + p0 + q1 + 2 ) >> 2;
+                        pix[ 0*pix_next] = ( 2*q1 + q0 + p1 + 2 ) >> 2;
+                    }
                 }
-                if( abs( q2 - q0 ) < beta ) {
-                    pix[pix_next] = q1 + clip( ( q2 + ( ( p0 + q0 + 1 ) >> 1 ) - ( q1 << 1 ) ) >> 1, -tc0, tc0 );
-                    tc++;
-                }
-
-                i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
-                pix[-pix_next] = clip( p0 + i_delta, 0, 255 );    /* p0' */
-                pix[0]         = clip( q0 - i_delta, 0, 255 );    /* q0' */
+                pix++;
             }
-            else
-            {
-                const uint8_t p3 = pix[-4*pix_next];
-                const uint8_t q3 = pix[ 3*pix_next];
-                const int c  = abs( p0 - q0 ) < (( alpha >> 2 ) + 2 );
-
-                if( abs( p2 - p0 ) < beta && c ) {
-                    /* p0', p1', p2' */
-                    pix[-1*pix_next] = ( p2 + 2*p1 + 2*p0 + 2*q0 + q1 + 4 ) >> 3;
-                    pix[-2*pix_next] = ( p2 + p1 + p0 + q0 + 2 ) >> 2;
-                    pix[-3*pix_next] = ( 2*p3 + 3*p2 + p1 + p0 + q0 + 4 ) >> 3;
-                } else {
-                    /* p0' */
-                    pix[-1*pix_next] = ( 2*p1 + p0 + q1 + 2 ) >> 2;
-                }
-                if( abs( q2 - q0 ) < beta && c ) {
-                    /* q0', q1', q2' */
-                    pix[0*pix_next] = ( p1 + 2*p0 + 2*q0 + 2*q1 + q2 + 4 ) >> 3;
-                    pix[1*pix_next] = ( p0 + q0 + q1 + q2 + 2 ) >> 2;
-                    pix[2*pix_next] = ( 2*q3 + 3*q2 + q1 + q0 + p0 + 4 ) >> 3;
-                } else {
-                    /* q0' */
-                    pix[0*pix_next] = ( 2*q1 + q0 + p1 + 2 ) >> 2;
-                }
-            }
-            pix++;
         }
     }
 }
@@ -3823,33 +3865,43 @@ static void filter_mb_edgech( H264Context *h, uint8_t *pix, int stride, int bS[4
             continue;
         }
 
-        /* 2px edge length (see deblocking_filter_edgecv) */
-        for( d = 0; d < 2; d++ ) {
-            const uint8_t p0 = pix[-1*pix_next];
-            const uint8_t p1 = pix[-2*pix_next];
-            const uint8_t q0 = pix[0];
-            const uint8_t q1 = pix[1*pix_next];
+        if( bS[i] < 4 ) {
+            int tc = tc0_table[index_a][bS[i] - 1] + 1;
+            /* 2px edge length (see deblocking_filter_edgecv) */
+            for( d = 0; d < 2; d++ ) {
+                const int p0 = pix[-1*pix_next];
+                const int p1 = pix[-2*pix_next];
+                const int q0 = pix[0];
+                const int q1 = pix[1*pix_next];
 
-            if( abs( p0 - q0 ) >= alpha ||
-                abs( p1 - p0 ) >= beta ||
-                abs( q1 - q0 ) >= beta ) {
+                if( ABS( p0 - q0 ) < alpha &&
+                    ABS( p1 - p0 ) < beta &&
+                    ABS( q1 - q0 ) < beta ) {
+
+                    int i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+
+                    pix[-pix_next] = clip_uint8( p0 + i_delta );    /* p0' */
+                    pix[0]         = clip_uint8( q0 - i_delta );    /* q0' */
+                }
                 pix++;
-                continue;
             }
+        }else{
+            /* 2px edge length (see deblocking_filter_edgecv) */
+            for( d = 0; d < 2; d++ ) {
+                const int p0 = pix[-1*pix_next];
+                const int p1 = pix[-2*pix_next];
+                const int q0 = pix[0];
+                const int q1 = pix[1*pix_next];
 
-            if( bS[i] < 4 ) {
-                int tc = tc0_table[index_a][bS[i] - 1] + 1;
-                int i_delta = clip( (((q0 - p0 ) << 2) + (p1 - q1) + 4) >> 3, -tc, tc );
+                if( ABS( p0 - q0 ) < alpha &&
+                    ABS( p1 - p0 ) < beta &&
+                    ABS( q1 - q0 ) < beta ) {
 
-                pix[-pix_next] = clip( p0 + i_delta, 0, 255 );    /* p0' */
-                pix[0]         = clip( q0 - i_delta, 0, 255 );    /* q0' */
+                    pix[-pix_next] = ( 2*p1 + p0 + q1 + 2 ) >> 2;   /* p0' */
+                    pix[0]         = ( 2*q1 + q0 + p1 + 2 ) >> 2;   /* q0' */
+                }
+                pix++;
             }
-            else
-            {
-                pix[-pix_next] = ( 2*p1 + p0 + q1 + 2 ) >> 2;   /* p0' */
-                pix[0]         = ( 2*q1 + q0 + p1 + 2 ) >> 2;   /* q0' */
-            }
-            pix++;
         }
     }
 }
@@ -3917,13 +3969,13 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y ) {
                         bS[i] = 2;
                     }
                     else if( h->slice_type == P_TYPE ) {
-                        const int b8_xy = h->mb2b8_xy[mb_xy]+(y/2)*h->b8_stride+(x/2);
-                        const int b8n_xy= h->mb2b8_xy[mbn_xy]+(yn/2)*h->b8_stride+(xn/2);
+                        const int b8_xy = h->mb2b8_xy[mb_xy]+(y>>1)*h->b8_stride+(x>>1);
+                        const int b8n_xy= h->mb2b8_xy[mbn_xy]+(yn>>1)*h->b8_stride+(xn>>1);
                         const int b_xy  = h->mb2b_xy[mb_xy]+y*h->b_stride+x;
                         const int bn_xy = h->mb2b_xy[mbn_xy]+yn*h->b_stride+xn;
                         if( s->current_picture.ref_index[0][b8_xy] != s->current_picture.ref_index[0][b8n_xy] ||
-                            abs( s->current_picture.motion_val[0][b_xy][0] - s->current_picture.motion_val[0][bn_xy][0] ) >= 4 ||
-                            abs( s->current_picture.motion_val[0][b_xy][1] - s->current_picture.motion_val[0][bn_xy][1] ) >= 4 )
+                            ABS( s->current_picture.motion_val[0][b_xy][0] - s->current_picture.motion_val[0][bn_xy][0] ) >= 4 ||
+                            ABS( s->current_picture.motion_val[0][b_xy][1] - s->current_picture.motion_val[0][bn_xy][1] ) >= 4 )
                             bS[i] = 1;
                         else
                             bS[i] = 0;
@@ -3939,7 +3991,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y ) {
             qp = ( s->current_picture.qscale_table[mb_xy] + s->current_picture.qscale_table[mbn_xy] + 1 ) >> 1;
             if( dir == 0 ) {
                 filter_mb_edgev( h, &img_y[4*edge], linesize, bS, qp );
-                if( edge%2 == 0 ) {
+                if( (edge&1) == 0 ) {
                     int chroma_qp = ( get_chroma_qp( h, s->current_picture.qscale_table[mb_xy] ) +
                                       get_chroma_qp( h, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
                     filter_mb_edgecv( h, &img_cb[2*edge], uvlinesize, bS, chroma_qp );
@@ -3947,7 +3999,7 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y ) {
                 }
             } else {
                 filter_mb_edgeh( h, &img_y[4*edge*linesize], linesize, bS, qp );
-                if( edge%2 == 0 ) {
+                if( (edge&1) == 0 ) {
                     int chroma_qp = ( get_chroma_qp( h, s->current_picture.qscale_table[mb_xy] ) +
                                       get_chroma_qp( h, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
                     filter_mb_edgech( h, &img_cb[2*edge*uvlinesize], uvlinesize, bS, chroma_qp );

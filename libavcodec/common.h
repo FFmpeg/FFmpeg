@@ -1163,6 +1163,12 @@ static inline int clip(int a, int amin, int amax)
         return a;
 }
 
+static inline int clip_uint8(int a)
+{
+    if (a&(~255)) return (-a)>>31;
+    else          return a;
+}
+
 /* math */
 extern const uint8_t ff_sqrt_tab[128];
 
