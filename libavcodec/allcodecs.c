@@ -117,6 +117,7 @@ void avcodec_register_all(void)
     register_avcodec(&cyuv_decoder);
     register_avcodec(&h264_decoder);
     register_avcodec(&vp3_decoder);
+    register_avcodec(&theora_decoder);
     register_avcodec(&asv1_decoder);
     register_avcodec(&asv2_decoder);
     register_avcodec(&vcr1_decoder);

@@ -61,6 +61,7 @@ enum CodecID {
     CODEC_ID_H264,
     CODEC_ID_INDEO3,
     CODEC_ID_VP3,
+    CODEC_ID_THEORA,
     CODEC_ID_AAC,
     CODEC_ID_MPEG4AAC,
     CODEC_ID_ASV1,
@@ -1433,6 +1434,7 @@ extern AVCodec cyuv_decoder;
 extern AVCodec h264_decoder;
 extern AVCodec indeo3_decoder;
 extern AVCodec vp3_decoder;
+extern AVCodec theora_decoder;
 extern AVCodec amr_nb_decoder;
 extern AVCodec amr_nb_encoder;
 extern AVCodec amr_wb_encoder;
