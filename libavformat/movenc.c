@@ -257,6 +257,8 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     
     put_be32(pb, 0); /* size */
 
+    tag = track->enc->codec_tag;
+    if (!tag)
     tag = codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
     // if no mac fcc found, try with Microsoft tags
     if (!tag)
@@ -453,6 +455,8 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 
     put_be32(pb, 0); /* size */
 
+    tag = track->enc->codec_tag;
+    if (!tag)
     tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
     // if no mac fcc found, try with Microsoft tags
     if (!tag)
