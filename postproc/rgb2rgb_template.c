@@ -1,4 +1,4 @@
-/* 
+/*
  *
  *  rgb2rgb.c, Software RGB to RGB convertor
  *  Written by Nick Kurshev.
@@ -169,4 +169,61 @@ void rgb15to16(const uint8_t *src,uint8_t *dst,uint32_t src_size)
      *( d1++ )=( x&0x001F )|( ( x&0x7FE0 )<<1 );
    }
 #endif
+}
+
+/**
+ * Pallete is assumed to contain bgr32
+ */
+void palette8torgb32(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
+{
+	int i;
+	for(i=0; i<src_size; i++)
+		((uint32_t *)dst)[i] = ((uint32_t *)palette)[ src[i] ];
+}
+
+void rgb32to16(uint8_t *src, uint8_t *dst, int src_size)
+{
+	int i;
+	for(i=0; i<src_size; i+=4)
+	{
+		const int b= src[i+0];
+		const int g= src[i+1];
+		const int r= src[i+2];
+
+		((uint16_t *)dst)[i]= (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
+	}
+}
+
+void rgb32to15(uint8_t *src, uint8_t *dst, int src_size)
+{
+	int i;
+	for(i=0; i<src_size; i+=4)
+	{
+		const int b= src[i+0];
+		const int g= src[i+1];
+		const int r= src[i+2];
+
+		((uint16_t *)dst)[i]= (b>>3) | ((g&0xF8)<<3) | ((r&0xF8)<<7);
+	}
+}
+
+
+/**
+ * Palette is assumed to contain bgr16, see rgb32to16 to convert the palette
+ */
+void palette8torgb16(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
+{
+	int i;
+	for(i=0; i<src_size; i++)
+		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
+}
+
+/**
+ * Pallete is assumed to contain bgr15, see rgb32to15 to convert the palette
+ */
+void palette8torgb15(uint8_t *src, uint8_t *dst, int src_size, uint8_t *palette)
+{
+	int i;
+	for(i=0; i<src_size; i++)
+		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
 }
