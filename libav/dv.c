@@ -90,7 +90,7 @@ AVInputFormat dv_iformat = {
     dv_read_header,
     dv_read_packet,
     dv_read_close,
-    extensions: "dv",
+    .extensions = "dv",
 };
 
 #if 0
