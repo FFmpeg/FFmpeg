@@ -492,22 +492,23 @@ static uint8_t *read_huffman_tables(FourXContext *f, uint8_t * const buf){
 //        printf("%2X", ptr[j]);
     
     for(j=257; j<512; j++){
-        int smallest[2]= {-1,-1};
+        int min_freq[2]= {256*256, 256*256};
+        int smallest[2]= {0, 0};
         int i;
         for(i=0; i<j; i++){
             if(frequency[i] == 0) continue;
-            if(frequency[i] < frequency[ smallest[1] ]){
-                if(frequency[i] < frequency[ smallest[0] ]){
-                    smallest[1]= smallest[0];
-                    smallest[0]= i;
-                }else
-                    smallest[1]= i;
+            if(frequency[i] < min_freq[1]){
+                if(frequency[i] < min_freq[0]){
+                    min_freq[1]= min_freq[0]; smallest[1]= smallest[0];
+                    min_freq[0]= frequency[i];smallest[0]= i;
+                }else{
+                    min_freq[1]= frequency[i];smallest[1]= i;
+                }
             }
         }
+        if(min_freq[1] == 256*256) break;
         
-        if(smallest[1] == -1) break;
-        
-        frequency[j]= frequency[ smallest[0] ] + frequency[ smallest[1] ];
+        frequency[j]= min_freq[0] + min_freq[1];
         flag[ smallest[0] ]= 0;
         flag[ smallest[1] ]= 1;
         up[ smallest[0] ]= 
@@ -556,7 +557,7 @@ static int decode_i_frame(FourXContext *f, uint8_t *buf, int length){
     init_get_bits(&f->gb, buf + 4, 8*bitstream_size);
 
     prestream_size= length + buf - prestream;
-    
+
     f->bitstream_buffer= av_fast_realloc(f->bitstream_buffer, &f->bitstream_buffer_size, prestream_size + FF_INPUT_BUFFER_PADDING_SIZE);
     f->dsp.bswap_buf((uint32_t*)f->bitstream_buffer, (uint32_t*)prestream, prestream_size/4);
     init_get_bits(&f->pre_gb, f->bitstream_buffer, 8*prestream_size);
