@@ -583,12 +583,6 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
             s->h_max = s->h_count[i];
         if (s->v_count[i] > s->v_max)
             s->v_max = s->v_count[i];
-#if 1
-        /* XXX: only 420 is accepted */
-        if ((i == 0 && (s->h_count[i] != 2 || s->v_count[i] != 2)) ||
-            (i != 0 && (s->h_count[i] != 1 || s->v_count[i] != 1)))
-            return -1;
-#endif
         s->quant_index[i] = get_bits(&s->gb, 8);
         if (s->quant_index[i] >= 4)
             return -1;
@@ -659,7 +653,6 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     val = val * quant_matrix[0] + s->last_dc[component];
     s->last_dc[component] = val;
     block[0] = val;
-
     /* AC coefs */
     ac_vlc = &s->vlcs[1][ac_index];
     i = 1;
@@ -688,6 +681,8 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
             j = zigzag_direct[i];
             block[j] = level * quant_matrix[j];
             i++;
+            if (i >= 64)
+                break;
         }
     }
     return 0;
@@ -727,7 +722,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
         nb_blocks[i] = s->h_count[index] * s->v_count[index];
         h_count[i] = s->h_count[index];
         v_count[i] = s->v_count[index];
-        
+
         dc_index[i] = get_bits(&s->gb, 4);
         if (dc_index[i] >= 4)
             return -1;
@@ -882,7 +877,6 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                 case SOS:
                     mjpeg_decode_sos(s, s->buffer, input_size);
                     if (s->start_code == EOI) {
-                        /* XXX: YUV420 hardcoded */
                         for(i=0;i<3;i++) {
                             picture->data[i] = s->current_picture[i];
                             picture->linesize[i] = s->linesize[i];
@@ -890,7 +884,19 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                         *data_size = sizeof(AVPicture);
                         avctx->height = s->height;
                         avctx->width = s->width;
-                        avctx->pix_fmt = PIX_FMT_YUV420P;
+                        /* XXX: not complete test ! */
+                        switch((s->h_count[0] << 4) | s->v_count[0]) {
+                        case 0x11:
+                            avctx->pix_fmt = PIX_FMT_YUV444P;
+                            break;
+                        case 0x21:
+                            avctx->pix_fmt = PIX_FMT_YUV422P;
+                            break;
+                        default:
+                        case 0x22:
+                            avctx->pix_fmt = PIX_FMT_YUV420P;
+                            break;
+                        }
                         goto the_end;
                     }
                     break;
