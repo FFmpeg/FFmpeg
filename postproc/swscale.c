@@ -1710,7 +1710,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 
 	SwsContext *c;
 	int i;
-	int usesFilter;
+	int usesVFilter, usesHFilter;
 	int unscaled, needsDither;
 	int srcFormat, dstFormat;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
@@ -1779,15 +1779,15 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	c->origSrcFormat= origSrcFormat;
         c->vRounder= 4* 0x0001000100010001ULL;
 
-	usesFilter=0;
-	if(dstFilter->lumV!=NULL && dstFilter->lumV->length>1) usesFilter=1;
-	if(dstFilter->lumH!=NULL && dstFilter->lumH->length>1) usesFilter=1;
-	if(dstFilter->chrV!=NULL && dstFilter->chrV->length>1) usesFilter=1;
-	if(dstFilter->chrH!=NULL && dstFilter->chrH->length>1) usesFilter=1;
-	if(srcFilter->lumV!=NULL && srcFilter->lumV->length>1) usesFilter=1;
-	if(srcFilter->lumH!=NULL && srcFilter->lumH->length>1) usesFilter=1;
-	if(srcFilter->chrV!=NULL && srcFilter->chrV->length>1) usesFilter=1;
-	if(srcFilter->chrH!=NULL && srcFilter->chrH->length>1) usesFilter=1;
+	usesHFilter= usesVFilter= 0;
+	if(dstFilter->lumV!=NULL && dstFilter->lumV->length>1) usesVFilter=1;
+	if(dstFilter->lumH!=NULL && dstFilter->lumH->length>1) usesHFilter=1;
+	if(dstFilter->chrV!=NULL && dstFilter->chrV->length>1) usesVFilter=1;
+	if(dstFilter->chrH!=NULL && dstFilter->chrH->length>1) usesHFilter=1;
+	if(srcFilter->lumV!=NULL && srcFilter->lumV->length>1) usesVFilter=1;
+	if(srcFilter->lumH!=NULL && srcFilter->lumH->length>1) usesHFilter=1;
+	if(srcFilter->chrV!=NULL && srcFilter->chrV->length>1) usesVFilter=1;
+	if(srcFilter->chrH!=NULL && srcFilter->chrH->length>1) usesHFilter=1;
 
 	getSubSampleFactors(&c->chrSrcHSubSample, &c->chrSrcVSubSample, srcFormat);
 	getSubSampleFactors(&c->chrDstHSubSample, &c->chrDstVSubSample, dstFormat);
@@ -1815,7 +1815,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	sws_setColorspaceDetails(c, Inverse_Table_6_9[SWS_CS_DEFAULT], 0, Inverse_Table_6_9[SWS_CS_DEFAULT] /* FIXME*/, 0, 0, 1<<16, 1<<16); 
 
 	/* unscaled special Cases */
-	if(unscaled && !usesFilter)
+	if(unscaled && !usesHFilter && !usesVFilter)
 	{
 		/* yv12_to_nv12 */
 		if(srcFormat == IMGFMT_YV12 && dstFormat == IMGFMT_NV12)
@@ -1887,6 +1887,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			if(flags&SWS_PRINT_INFO)
 				MSG_INFO("SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
 		}
+		if(usesHFilter) c->canMMX2BeUsed=0;
 	}
 	else
 		c->canMMX2BeUsed=0;
