@@ -18,7 +18,7 @@
 
 /*
   supported Input formats: YV12, I420/IYUV, YUY2, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8/Y800, YVU9/IF09
-  supported output formats: YV12, I420/IYUV, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
+  supported output formats: YV12, I420/IYUV, YUY2, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
   {BGR,RGB}{1,4,8,15,16} support dithering
   
   unscaled special converters (YV12=I420=IYUV, Y800=Y8)
@@ -114,7 +114,7 @@ untested special converters
 			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9\
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
-#define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 \
+#define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2\
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P\
 			|| isRGB(x) || isBGR(x)\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
@@ -420,7 +420,8 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 		}
 }
 
-#define YSCALE_YUV_2_RGBX_C(type) \
+
+#define YSCALE_YUV_2_X_C(type) \
 		for(i=0; i<(dstW>>1); i++){\
 			int j;\
 			int Y1=0;\
@@ -454,48 +455,60 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 				else if(U<0) U=0;\
 				if(V>255)    V=255;\
 				else if(V<0) V=0;\
-			}\
+			}
+                        
+#define YSCALE_YUV_2_RGBX_C(type) \
+			YSCALE_YUV_2_X_C(type)\
 			r = c->table_rV[V];\
 			g = c->table_gU[U] + c->table_gV[V];\
 			b = c->table_bU[U];\
 
-#define YSCALE_YUV_2_RGB2_C(type) \
+#define YSCALE_YUV_2_2_C \
 		for(i=0; i<(dstW>>1); i++){\
 			const int i2= 2*i;\
 			int Y1= (buf0[i2  ]*yalpha1+buf1[i2  ]*yalpha)>>19;\
 			int Y2= (buf0[i2+1]*yalpha1+buf1[i2+1]*yalpha)>>19;\
 			int U= (uvbuf0[i     ]*uvalpha1+uvbuf1[i     ]*uvalpha)>>19;\
 			int V= (uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19;\
+
+#define YSCALE_YUV_2_RGB2_C(type) \
+			YSCALE_YUV_2_2_C\
 			type *r, *b, *g;\
 			r = c->table_rV[V];\
 			g = c->table_gU[U] + c->table_gV[V];\
 			b = c->table_bU[U];\
 
-#define YSCALE_YUV_2_RGB1_C(type) \
+#define YSCALE_YUV_2_1_C \
 		for(i=0; i<(dstW>>1); i++){\
 			const int i2= 2*i;\
 			int Y1= buf0[i2  ]>>7;\
 			int Y2= buf0[i2+1]>>7;\
 			int U= (uvbuf1[i     ])>>7;\
 			int V= (uvbuf1[i+2048])>>7;\
+
+#define YSCALE_YUV_2_RGB1_C(type) \
+			YSCALE_YUV_2_1_C\
 			type *r, *b, *g;\
 			r = c->table_rV[V];\
 			g = c->table_gU[U] + c->table_gV[V];\
 			b = c->table_bU[U];\
 
-#define YSCALE_YUV_2_RGB1B_C(type) \
+#define YSCALE_YUV_2_1B_C \
 		for(i=0; i<(dstW>>1); i++){\
 			const int i2= 2*i;\
 			int Y1= buf0[i2  ]>>7;\
 			int Y2= buf0[i2+1]>>7;\
 			int U= (uvbuf0[i     ] + uvbuf1[i     ])>>8;\
 			int V= (uvbuf0[i+2048] + uvbuf1[i+2048])>>8;\
+
+#define YSCALE_YUV_2_RGB1B_C(type) \
+			YSCALE_YUV_2_1B_C\
 			type *r, *b, *g;\
 			r = c->table_rV[V];\
 			g = c->table_gU[U] + c->table_gV[V];\
 			b = c->table_bU[U];\
 
-#define YSCALE_YUV_2_ANYRGB_C(func)\
+#define YSCALE_YUV_2_ANYRGB_C(func, func2)\
 	switch(c->dstFormat)\
 	{\
 	case IMGFMT_BGR32:\
@@ -644,6 +657,14 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 */\
 		}\
 		break;\
+	case IMGFMT_YUY2:\
+		func2\
+			((uint8_t*)dest)[2*i2+0]= Y1;\
+			((uint8_t*)dest)[2*i2+1]= U;\
+			((uint8_t*)dest)[2*i2+2]= Y2;\
+			((uint8_t*)dest)[2*i2+3]= V;\
+		}		\
+		break;\
 	}\
 
 
@@ -769,6 +790,14 @@ static inline void yuv2rgbXinC(SwsContext *c, int16_t *lumFilter, int16_t **lumS
 			}
 		}
 		break;
+	case IMGFMT_YUY2:
+		YSCALE_YUV_2_X_C(void)
+			((uint8_t*)dest)[2*i2+0]= Y1;
+			((uint8_t*)dest)[2*i2+1]= U;
+			((uint8_t*)dest)[2*i2+2]= Y2;
+			((uint8_t*)dest)[2*i2+3]= V;
+		}
+                break;
 	}
 }
 
