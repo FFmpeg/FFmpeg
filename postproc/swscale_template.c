@@ -143,6 +143,7 @@ static int canMMX2BeUsed=0;
 		"punpcklwd %%mm5, %%mm5		\n\t"\
 		"punpcklwd %%mm5, %%mm5		\n\t"\
 		"xorl %%eax, %%eax		\n\t"\
+		".align 16			\n\t"\
 		"1:				\n\t"\
 		"movq (%0, %%eax, 2), %%mm0	\n\t" /*buf0[eax]*/\
 		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf1[eax]*/\
@@ -196,6 +197,7 @@ static int canMMX2BeUsed=0;
 		"punpcklwd %%mm5, %%mm5		\n\t"\
 		"movq %%mm5, asm_uvalpha1	\n\t"\
 		"xorl %%eax, %%eax		\n\t"\
+		".align 16			\n\t"\
 		"1:				\n\t"\
 		"movq (%2, %%eax), %%mm2	\n\t" /* uvbuf0[eax]*/\
 		"movq (%3, %%eax), %%mm3	\n\t" /* uvbuf1[eax]*/\
@@ -260,6 +262,7 @@ static int canMMX2BeUsed=0;
 
 #define YSCALEYUV2RGB1 \
 		"xorl %%eax, %%eax		\n\t"\
+		".align 16			\n\t"\
 		"1:				\n\t"\
 		"movq (%2, %%eax), %%mm3	\n\t" /* uvbuf0[eax]*/\
 		"movq 4096(%2, %%eax), %%mm4	\n\t" /* uvbuf0[eax+2048]*/\
@@ -308,6 +311,7 @@ static int canMMX2BeUsed=0;
 // do vertical chrominance interpolation
 #define YSCALEYUV2RGB1b \
 		"xorl %%eax, %%eax		\n\t"\
+		".align 16			\n\t"\
 		"1:				\n\t"\
 		"movq (%2, %%eax), %%mm2	\n\t" /* uvbuf0[eax]*/\
 		"movq (%3, %%eax), %%mm3	\n\t" /* uvbuf1[eax]*/\
@@ -1306,6 +1310,7 @@ FUNNY_Y_CODE
 		"xorl %%eax, %%eax		\n\t" // i
 		"xorl %%ebx, %%ebx		\n\t" // xx
 		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
+		".align 16			\n\t"
 		"1:				\n\t"
 		"movzbl  (%0, %%ebx), %%edi	\n\t" //src[xx]
 		"movzbl 1(%0, %%ebx), %%esi	\n\t" //src[xx+1]
@@ -1437,6 +1442,7 @@ FUNNYUVCODE
 		"xorl %%eax, %%eax		\n\t" // i
 		"xorl %%ebx, %%ebx		\n\t" // xx
 		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
+		".align 16			\n\t"
 		"1:				\n\t"
 		"movl %0, %%esi			\n\t"
 		"movzbl  (%%esi, %%ebx), %%edi	\n\t" //src[xx]
