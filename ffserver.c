@@ -4061,6 +4061,11 @@ static int parse_ffconfig(const char *filename)
                     errors++;
                 }
             }
+        } else if (!strcasecmp(cmd, "VideoBufferSize")) {
+            if (stream) {
+                get_arg(arg, sizeof(arg), &p);
+                video_enc.rc_buffer_size = atoi(arg) * 1024;
+            }
         } else if (!strcasecmp(cmd, "VideoBitRateTolerance")) {
             if (stream) {
                 get_arg(arg, sizeof(arg), &p);
