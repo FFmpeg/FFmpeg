@@ -148,6 +148,7 @@ static int au_read_header(AVFormatContext *s,
     st->codec.codec_id = codec;
     st->codec.channels = channels;
     st->codec.sample_rate = rate;
+    av_set_pts_info(st, 64, 1, rate);
     return 0;
 }
 

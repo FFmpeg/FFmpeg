@@ -60,6 +60,7 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case CODEC_TYPE_AUDIO:
             st->codec.sample_rate = ap->sample_rate;
             st->codec.channels = ap->channels;
+            av_set_pts_info(st, 64, 1, st->codec.sample_rate);
             break;
         case CODEC_TYPE_VIDEO:
             st->codec.frame_rate      = ap->frame_rate;

@@ -301,7 +301,9 @@ static int wav_read_header(AVFormatContext *s,
 
     get_wav_header(pb, &st->codec, size);
     st->need_parsing = 1;
-    
+
+    av_set_pts_info(st, 64, 1, st->codec.sample_rate);
+
     size = find_tag(pb, MKTAG('d', 'a', 't', 'a'));
     if (size < 0)
         return -1;
