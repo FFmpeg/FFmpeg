@@ -37,7 +37,7 @@ typedef struct FLVContext {
     int audioInPos;
     int audioOutPos;
     int audioSize;
-    int audioRate;
+//    int audioRate;
     int initDelay;
     int soundDelay;
     uint8_t *audioFifo;
@@ -98,31 +98,32 @@ static int mp3info(void *data, int *byteSize, int *samplesPerFrame, int *sampleR
     }
 
     if ( !isPadded ) {
-        printf("Fatal error: mp3 data is not padded!\n");
-        exit(0);
+//        printf("Fatal error: mp3 data is not padded!\n");
+//        exit(0);
     }
 
     *isMono = ((header >>  6) & 0x03) == 0x03;
 
     if ( (header >> 19 ) & 0x01 ) {
+        //MPEG1
         *sampleRate = sSampleRates[0][sampleRateID];
         bitRate = sBitRates[0][layerID][bitRateID] * 1000;
         *samplesPerFrame = sSamplesPerFrame[0][layerID];
-
     } else {
         if ( (header >> 20) & 0x01 ) {
+            //MPEG2
             *sampleRate = sSampleRates[1][sampleRateID];
             bitRate = sBitRates[1][layerID][bitRateID] * 1000;
             *samplesPerFrame = sSamplesPerFrame[1][layerID];
         } else {
+            //MPEG2.5
             *sampleRate = sSampleRates[2][sampleRateID];
             bitRate = sBitRates[1][layerID][bitRateID] * 1000;
             *samplesPerFrame = sSamplesPerFrame[2][layerID];
         }
     }
-
+    
     *byteSize = ( ( ( ( *samplesPerFrame * (bitRate / bitsPerSlot) ) / *sampleRate ) + isPadded ) );
-
     return 1;
 }
 #endif // CONFIG_MP3LAME
@@ -143,7 +144,7 @@ static int flv_write_header(AVFormatContext *s)
     flv->audioInPos = 0;
     flv->audioOutPos = 0;
     flv->audioSize = 0;
-    flv->audioRate = 44100;
+//    flv->audioRate = 44100;
     flv->initDelay = -1;
     flv->soundDelay = 0;
 #endif // CONFIG_MP3LAME
@@ -270,6 +271,7 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
 #ifdef CONFIG_MP3LAME
         if (enc->codec_id == CODEC_ID_MP3 ) {
             int c=0;
+
             for (;c<size;c++) {
                 flv->audioFifo[(flv->audioOutPos+c)%AUDIO_FIFO_SIZE] = buf[c];
             }
@@ -281,13 +283,13 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
                 flv->initDelay = timestamp;
             }
 
-            if ( flv->audioTime == -1 ) {
+//            if ( flv->audioTime == -1 ) {
                 flv->audioTime = timestamp;
 //                flv->audioTime = ( ( ( flv->sampleCount - enc->delay ) * 8000 ) / flv->audioRate ) - flv->initDelay - 250;
 //                if ( flv->audioTime < 0 ) {
 //                    flv->audioTime = 0;
 //                }
-            }
+//            }
         }
         for ( ; flv->audioSize >= 4 ; ) {
 
@@ -310,7 +312,7 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
                     int c=0;
                     FLVFrame *frame = av_malloc(sizeof(FLVFrame));
 
-                    flv->audioRate = mp3SampleRate;
+//                    flv->audioRate = mp3SampleRate;
 
                     switch (mp3SampleRate) {
                         case    44100:
@@ -332,6 +334,7 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
                     frame->type = 8;
                     frame->flags = soundFormat;
                     frame->timestamp = flv->audioTime;
+                    frame->timestamp = (1000*flv->sampleCount + mp3SampleRate/2)/(mp3SampleRate);
                     frame->size = mp3FrameSize;
                     frame->data = av_malloc(mp3FrameSize);
 
@@ -344,15 +347,18 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
                     flv->audioInPos %= AUDIO_FIFO_SIZE;
                     flv->sampleCount += mp3SamplesPerFrame;
 
-                    // Reset audio for next round
-                    flv->audioTime = -1;
+                    flv->audioTime += 1000*mp3SamplesPerFrame/mp3SampleRate;
                     // We got audio! Make sure we set this to the global flags on closure
                     flv->hasAudio = 1;
 
                     InsertSorted(flv,frame);
+//                    av_log(NULL,AV_LOG_DEBUG, "insert sound\n");
+                    continue;
                 }
+//                av_log(NULL,AV_LOG_DEBUG, "insuficent data\n");
                 break;
             }
+            av_log(NULL,AV_LOG_DEBUG, "head trashed\n");
             flv->audioInPos ++;
             flv->audioSize --;
             flv->audioInPos %= AUDIO_FIFO_SIZE;
