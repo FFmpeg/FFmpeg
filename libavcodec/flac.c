@@ -21,6 +21,14 @@
  * @file flac.c
  * FLAC (Free Lossless Audio Codec) decoder
  * @author Alex Beregszaszi
+ *
+ * For more information on the FLAC format, visit:
+ *  http://flac.sourceforge.net/
+ *
+ * This decoder can be used in 1 of 2 ways: Either raw FLAC data can be fed
+ * through, starting from the initial 'fLaC' signature; or by passing the
+ * 34-byte streaminfo structure through avctx->extradata[_size] followed
+ * by data starting with the 0xFFF8 marker.
  */
  
 #include <limits.h>
@@ -33,6 +41,7 @@
 
 #define MAX_CHANNELS 8
 #define MAX_BLOCKSIZE 65535
+#define FLAC_STREAMINFO_SIZE 34
 
 enum decorrelation_type {
     INDEPENDENT,
@@ -144,8 +153,21 @@ static int get_crc8(const uint8_t *buf, int count){
     return crc;
 }
 
+static void metadata_streaminfo(FLACContext *s);
+static void dump_headers(FLACContext *s);
+
 static int flac_decode_init(AVCodecContext * avctx)
 {
+    FLACContext *s = avctx->priv_data;
+    s->avctx = avctx;
+
+    /* initialize based on the demuxer-supplied streamdata header */
+    if (avctx->extradata_size == FLAC_STREAMINFO_SIZE) {
+        init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
+        metadata_streaminfo(s);
+        dump_headers(s);
+    }
+
     return 0;
 }
 
@@ -546,8 +568,6 @@ static int flac_decode_frame(AVCodecContext *avctx,
     int tmp = 0, i, j = 0, input_buf_size;
     int16_t *samples = data, *left, *right;
 
-    s->avctx = avctx;
-    
     if(s->max_framesize == 0){
         s->max_framesize= 8192; // should hopefully be enough for the first header
         s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
