@@ -608,11 +608,19 @@ static int ffm_read_close(AVFormatContext *s)
     return 0;
 }
 
+static int ffm_probe(AVProbeData *p)
+{
+    if (memcmp(p->buf, "FFM", 3) == 0)
+        return AVPROBE_SCORE_MAX + 1;
+
+    return 0;
+}
+
 AVInputFormat ffm_iformat = {
     "ffm",
     "ffm format",
     sizeof(FFMContext) + FFM_PACKET_SIZE,
-    NULL,
+    ffm_probe,
     ffm_read_header,
     ffm_read_packet,
     ffm_read_close,
