@@ -9,7 +9,6 @@
 #include <string.h>
 #include "../config.h"
 #include "swscale.h"
-#include "../mmx_defs.h"
 #include "../cpudetect.h"
 #undef MOVNTQ
 #undef PAVGB

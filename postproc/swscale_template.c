@@ -7,6 +7,34 @@
 
 #undef MOVNTQ
 #undef PAVGB
+#undef PREFETCH
+#undef PREFETCHW
+#undef EMMS
+#undef SFENCE
+
+#ifdef HAVE_3DNOW
+/* On K6 femms is faster of emms. On K7 femms is directly mapped on emms. */
+#define EMMS     "femms"
+#else
+#define EMMS     "emms"
+#endif
+
+#ifdef HAVE_3DNOW
+#define PREFETCH  "prefetch"
+#define PREFETCHW "prefetchw"
+#elif defined ( HAVE_MMX2 )
+#define PREFETCH "prefetchnta"
+#define PREFETCHW "prefetcht0"
+#else
+#define PREFETCH "/nop"
+#define PREFETCHW "/nop"
+#endif
+
+#ifdef HAVE_MMX2
+#define SFENCE "sfence"
+#else
+#define SFENCE "/nop"
+#endif
 
 #ifdef HAVE_MMX2
 #define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
