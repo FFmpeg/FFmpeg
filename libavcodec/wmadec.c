@@ -20,6 +20,15 @@
 /**
  * @file wmadec.c
  * WMA compatible decoder.
+ * This decoder handles Microsoft Windows Media Audio data, versions 1 & 2.
+ * WMA v1 is identified by audio format 0x160 in Microsoft media files 
+ * (ASF/AVI/WAV). WMA v2 is identified by audio format 0x161.
+ *
+ * To use this decoder, a calling application must supply the extra data
+ * bytes provided with the WMA data. These are the extra, codec-specific
+ * bytes at the end of a WAVEFORMATEX data structure. Transmit these bytes 
+ * to the decoder using the extradata[_size] fields in AVCodecContext. There 
+ * should be 4 extra bytes for v1 data and 6 extra bytes for v2 data.
  */
 
 #include "avcodec.h"
