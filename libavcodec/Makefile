@@ -43,6 +43,10 @@ ifeq ($(HAVE_W32THREADS),yes)
 OBJS+= w32thread.o
 endif
 
+ifeq ($(HAVE_BEOSTHREADS),yes)
+OBJS+= beosthread.o
+endif
+
 ifeq ($(AMR_WB),yes)
 OBJS+= amr.o amrwb_float/dec_acelp.o amrwb_float/dec_dtx.o amrwb_float/dec_gain.o \
 		amrwb_float/dec_if.o amrwb_float/dec_lpc.o amrwb_float/dec_main.o \

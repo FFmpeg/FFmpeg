@@ -323,7 +323,7 @@ esac
 # of AltiVec on PowerPC
 TARGET_OS=`( uname -s ) 2>&1`
   case "$TARGET_OS" in
-  Linux|FreeBSD|NetBSD|BSD/OS|OpenBSD|SunOS|QNX|Darwin|GNU)
+  Linux|FreeBSD|NetBSD|BSD/OS|OpenBSD|SunOS|QNX|Darwin|GNU|BeOS)
     ;;
   IRIX*)
     TARGET_OS=IRIX
@@ -1215,6 +1215,7 @@ fi
 if test "$pthreads" = "yes" ; then
   echo "HAVE_PTHREADS=yes" >> config.mak
   echo "#define HAVE_PTHREADS 1" >> $TMPH
+  echo "#define HAVE_THREADS 1" >> $TMPH
   if test $targetos != FreeBSD; then
      extralibs="$extralibs -lpthread"
   fi
@@ -1366,6 +1367,7 @@ if test "$mingw32" = "yes" ; then
   echo "CONFIG_WIN32=yes" >> config.mak
   echo "HAVE_W32THREADS=yes" >> config.mak
   echo "#define HAVE_W32THREADS 1" >> $TMPH
+  echo "#define HAVE_THREADS 1" >> $TMPH
   echo "#ifndef __MINGW32__" >> $TMPH
   echo "#define __MINGW32__ 1" >> $TMPH
   echo "#endif" >> $TMPH
@@ -1378,6 +1380,12 @@ fi
 
 if test "$TARGET_OS" = "SunOS" ; then
   echo "#define CONFIG_SUNOS 1" >> $TMPH
+fi
+
+if test "$TARGET_OS" = "BeOS" ; then
+  echo "HAVE_BEOSTHREADS=yes" >> config.mak
+  echo "#define HAVE_BEOSTHREADS 1" >> $TMPH
+  echo "#define HAVE_THREADS 1" >> $TMPH
 fi
 
 if test "$darwin" = "yes"; then

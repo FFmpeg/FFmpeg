@@ -2555,7 +2555,7 @@ static void opt_me_range(const char *arg)
 static void opt_thread_count(const char *arg)
 {
     thread_count= atoi(arg);
-#if !defined(HAVE_PTHREADS) && !defined(HAVE_W32THREADS)
+#if !defined(HAVE_THREADS)
     if (verbose >= 0)
         fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
 #endif
@@ -2825,7 +2825,7 @@ static void opt_input_file(const char *filename)
     /* update the current parameters so that they match the one of the input stream */
     for(i=0;i<ic->nb_streams;i++) {
         AVCodecContext *enc = &ic->streams[i]->codec;
-#if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
+#if defined(HAVE_THREADS)
         if(thread_count>1)
             avcodec_thread_init(enc, thread_count);
 #endif
@@ -2992,7 +2992,7 @@ static void opt_output_file(const char *filename)
                 fprintf(stderr, "Could not alloc stream\n");
                 exit(1);
             }
-#if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
+#if defined(HAVE_THREADS)
             if(thread_count>1)
                 avcodec_thread_init(&st->codec, thread_count);
 #endif
@@ -3244,7 +3244,7 @@ static void opt_output_file(const char *filename)
                 fprintf(stderr, "Could not alloc stream\n");
                 exit(1);
             }
-#if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
+#if defined(HAVE_THREADS)
             if(thread_count>1)
                 avcodec_thread_init(&st->codec, thread_count);
 #endif

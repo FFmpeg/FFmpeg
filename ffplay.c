@@ -1174,7 +1174,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
-#if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
+#if defined(HAVE_THREADS)
     if(thread_count>1)
         avcodec_thread_init(enc, thread_count);
 #endif
@@ -1809,7 +1809,7 @@ static void opt_vismv(const char *arg)
 static void opt_thread_count(const char *arg)
 {
     thread_count= atoi(arg);
-#if !defined(HAVE_PTHREADS) && !defined(HAVE_W32THREADS)
+#if !defined(HAVE_THREADS)
     fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
 #endif
 }
