@@ -376,6 +376,10 @@ library.
 
 @code{X} means that the encoding (resp. decoding) is supported.
 
+Check at @url{http://www.mplayerhq.hu/~michael/codec-features.html} to
+get a precise comparison of FFmpeg MPEG4 codec compared to the other
+solutions.
+
 @section Audio Codecs
 
 @multitable @columnfractions .4 .1 .1 .1 .7
