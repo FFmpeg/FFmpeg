@@ -928,8 +928,10 @@ static int mpeg_decode_mb(MpegEncContext *s,
     default:
     case I_TYPE:
         if (get_bits1(&s->gb) == 0) {
-            if (get_bits1(&s->gb) == 0)
+            if (get_bits1(&s->gb) == 0){
+                fprintf("invalid mb type in I Frame at %d %d\n", s->mb_x, s->mb_y);
                 return -1;
+            }
             mb_type = MB_TYPE_QUANT | MB_TYPE_INTRA;
         } else {
             mb_type = MB_TYPE_INTRA;
@@ -2148,6 +2150,49 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     return 0;
 }
 
+static int vcr2_init_sequence(AVCodecContext *avctx)
+{
+    Mpeg1Context *s1 = avctx->priv_data;
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
+    int i, v, j;
+    float aspect;
+
+    /* start new mpeg1 context decoding */
+    s->out_format = FMT_MPEG1;
+    if (s1->mpeg_enc_ctx_allocated) {
+        MPV_common_end(s);
+    }
+    s->width = avctx->width;
+    s->height = avctx->height;
+    avctx->has_b_frames= 0; //true?
+    s->avctx = avctx;
+    
+    if (MPV_common_init(s) < 0)
+        return -1;
+    s1->mpeg_enc_ctx_allocated = 1;
+
+    for(i=0;i<64;i++) {
+        int j= s->dsp.idct_permutation[i];
+        v = ff_mpeg1_default_intra_matrix[i];
+        s->intra_matrix[j] = v;
+        s->chroma_intra_matrix[j] = v;
+
+        v = ff_mpeg1_default_non_intra_matrix[i];
+        s->inter_matrix[j] = v;
+        s->chroma_inter_matrix[j] = v;
+    }
+
+    /* we set mpeg2 parameters so that it emulates mpeg1 */
+    s->progressive_sequence = 1;
+    s->progressive_frame = 1;
+    s->picture_structure = PICT_FRAME;
+    s->frame_pred_frame_dct = 1;
+    s->mpeg2 = 1;
+    avctx->sub_id = 2; /* indicates mpeg1 */
+    return 0;
+}
+
+
 static void mpeg_decode_user_data(AVCodecContext *avctx, 
                                   const uint8_t *buf, int buf_size)
 {
@@ -2260,6 +2305,10 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         }
     }
 #endif
+
+    if(s->mpeg_enc_ctx_allocated==0 && avctx->codec_tag == ff_get_fourcc("VCR2"))
+        vcr2_init_sequence(avctx);
+
     for(;;) {
         /* find start next code */
         start_code = find_start_code(&buf_ptr, buf_end);
