@@ -3859,8 +3859,8 @@ static int dct_quantize_c(MpegEncContext *s,
         level = block[j];
         level = level * qmat[j];
 
-//        if(   bias+level >= (1<<(QMAT_SHIFT - 3))
-//           || bias-level >= (1<<(QMAT_SHIFT - 3))){
+//        if(   bias+level >= (1<<QMAT_SHIFT)
+//           || bias-level >= (1<<QMAT_SHIFT)){
         if(((unsigned)(level+threshold1))>threshold2){
             if(level>0){
                 level= (bias + level)>>QMAT_SHIFT;
