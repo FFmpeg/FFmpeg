@@ -52,6 +52,7 @@ lshared="no"
 extralibs="-lm"
 simpleidct="yes"
 bigendian="no"
+vhook="no"
 mpegaudio_hp="yes"
 SHFLAGS=-shared
 
@@ -94,6 +95,26 @@ if test -z "$source_path" -o "$source_path" = "." ; then
     source_path_used="no"
 fi
 
+cat > $TMPC << EOF
+#include <dlfcn.h>
+int main( void ) { return (int) dlopen("foo", 0); }
+EOF
+
+if $cc -o $TMPO $TMPC -ldl 2> /dev/null  ; then
+: vhook=yes
+fi
+
+cat > $TMPC << EOF
+#include <X11/Xlib.h>
+#include <Imlib2.h>
+int main( void ) { return (int) imlib_load_font("foo"); }
+EOF
+
+imlib2=no
+if $cc -o $TMPO $TMPC -lImlib2 2> /dev/null  ; then
+imlib2=yes
+fi
+
 for opt do
   case "$opt" in
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`
@@ -131,6 +152,8 @@ for opt do
   --enable-a52bin) a52bin="yes" ; extralibs="-ldl $extralibs"
   ;;
   --enable-mp3lame) mp3lame="yes"
+  ;;
+  --disable-vhook) vhook="no"
   ;;
   --disable-simple_idct) simpleidct="no"
   ;;
@@ -198,6 +221,17 @@ EOF
 $cc -o $TMPO $TMPC 2> /dev/null || _memalign=no
 fi
 
+cat > $TMPC << EOF
+#define _GNU_SOURCE
+#include <time.h>
+int main( void ) { return *strptime("", "", 0); }
+EOF
+
+strptime=no
+if $cc -o $TMPO $TMPC 2> /dev/null ; then
+  strptime=yes
+fi
+
 if test "$zlib" = "yes"; then
 # check for zlib - mmu_man
 cat > $TMPC << EOF
@@ -257,6 +291,7 @@ echo "  --disable-v4l            disable video4linux grabbing [default=no]"
 echo "  --disable-network        disable network support [default=no]"
 echo "  --disable-zlib           disable zlib [default=no]"
 echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
+# echo "  --disable-vhook          disable video hooking support"
 echo "  --enable-gprof           enable profiling with gprof [$gprof]"
 echo "  --disable-mpegaudio-hp   faster (but less accurate)"
 echo "                           mpegaudio decoding [default=no]"
@@ -277,6 +312,11 @@ echo "zlib enabled     $zlib"
 echo "mp3lame enabled  $mp3lame"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
+# echo "Video hooking    $vhook"
+
+if test "$vhook" = "yes" ; then
+: echo "Imlib2 support   $imlib2"
+fi
 
 echo "Creating config.mak and config.h"
 
@@ -315,6 +355,19 @@ fi
 if test "$gprof" = "yes" ; then
   echo "TARGET_GPROF=yes" >> config.mak
   echo "#define HAVE_GPROF 1" >> $TMPH
+fi
+if test "$strptime" = "yes" ; then
+  echo "#define HAVE_STRPTIME 1" >> $TMPH
+else
+  echo "BUILD_STRPTIME=yes" >> config.mak
+fi
+if test "$imlib2" = "yes" ; then
+  echo "HAVE_IMLIB2=yes" >> config.mak
+fi
+if test "$vhook" = "yes" ; then
+  echo "BUILD_VHOOK=yes" >> config.mak
+  echo "#define HAVE_VHOOK 1" >> $TMPH
+  extralibs="$extralibs -ldl"
 fi
 if test "$lshared" = "yes" ; then
   echo "BUILD_SHARED=yes" >> config.mak
