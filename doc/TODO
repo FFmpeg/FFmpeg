@@ -21,15 +21,13 @@ Michael's TODO list: (unordered) (if anyone wanna help with sth, just ask)
 - finish implementation of WMV2 j-picture
 - H264 codec (after its a standart or at least more stable)
 - slower / better zonal ME
-- better & cleaner b frame ME
 - per MB ratecontrol (so VCD and such do work better)
 - more optimizations
-- more compare functions for ME
 - simper rate control
-- qpel encoding
 - split h263.c
 - mpeg2 encoding (after the ME impovements)
 - mpeg1 b frames (after the ME impovements)
+- better mb decission
 
 Francois' TODO list: (unordered, without any timeframe)
 -------------------
@@ -51,3 +49,7 @@ Philip'a TODO list: (alphabetically ordered) (please help)
 - Make ffm files more resilient to changes in the codec structures so that you
   can play old ffm files.
 
+unassigned TODO: (stuff which should/must be done but noone seems to do it)
+---------------
+- fix avi de(muxer) to handle the global header thing (needed for huffyuv/WMV2/ some M4S2)
+- (try) to fix mpeg1/2 PTS
