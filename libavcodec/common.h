@@ -10,6 +10,7 @@
 
 //#define ALT_BITSTREAM_READER
 //#define ALIGNED_BITSTREAM
+#define FAST_GET_FIRST_VLC
 
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
@@ -244,8 +245,8 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
 	 : "0" (result1), "r" (result2), "c" (index));
 #else
     result1<<= (index&0x1F);
-    result2>>= 32-(index&0x1F);
-    if((index&0x1F)!=0) result1|= result2;
+    result2= (result2>>1) >> (31-(index&0x1F));
+    result1|= result2;
 #endif
     result1>>= 32 - n;
     index+= n;
@@ -282,8 +283,8 @@ static inline unsigned int get_bits1(GetBitContext *s){
 #ifdef ALT_BITSTREAM_READER
     int index= s->index;
     uint8_t result= s->buffer[ index>>3 ];
-    result>>= 7-(index&0x07);
-    result&=1;
+    result<<= (index&0x07);
+    result>>= 8 - 1;
     index++;
     s->index= index;
     
@@ -319,8 +320,8 @@ static inline unsigned int show_bits(GetBitContext *s, int n)
 	 : "0" (result1), "r" (result2), "c" (index));
 #else
     result1<<= (index&0x1F);
-    result2>>= 32-(index&0x1F);
-    if((index&0x1F)!=0) result1|= result2;
+    result2= (result2>>1) >> (31-(index&0x1F));
+    result1|= result2;
 #endif
     result1>>= 32 - n;
     
@@ -394,10 +395,33 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
 void free_vlc(VLC *vlc);
 
 #ifdef ALT_BITSTREAM_READER
-#define SHOW_BITS(s, val, n) val= show_bits(s, n);
-#define FLUSH_BITS(n) skip_bits(s, n); 
-#define SAVE_BITS(s) ;
-#define RESTORE_BITS(s) ;
+#ifdef ALIGNED_BITSTREAM
+#ifdef ARCH_X86
+#define SHOW_BITS(s, val, n) \
+    val= be2me_32( ((uint32_t *)(s)->buffer)[bit_cnt>>5] );\
+    {uint32_t result2= be2me_32( ((uint32_t *)(s)->buffer)[(bit_cnt>>5) + 1] );\
+    asm ("shldl %%cl, %2, %0\n\t"\
+         : "=r" (val)\
+         : "0" (val), "r" (result2), "c" (bit_cnt));\
+    ((uint32_t)val)>>= 32 - n;}
+#else //ARCH_X86
+#define SHOW_BITS(s, val, n) \
+    val= be2me_32( ((uint32_t *)(s)->buffer)[bit_cnt>>5] );\
+    {uint32_t result2= be2me_32( ((uint32_t *)(s)->buffer)[(bit_cnt>>5) + 1] );\
+    val<<= (bit_cnt&0x1F);\
+    result2= (result2>>1) >> (31-(bit_cnt&0x1F));\
+    val|= result2;\
+    ((uint32_t)val)>>= 32 - n;}
+#endif //!ARCH_X86
+#else //ALIGNED_BITSTREAM
+#define SHOW_BITS(s, val, n) \
+    val= be2me_32( unaligned32( ((uint8_t *)(s)->buffer)+(bit_cnt>>3) ) );\
+    val<<= (bit_cnt&0x07);\
+    ((uint32_t)val)>>= 32 - n;
+#endif // !ALIGNED_BITSTREAM
+#define FLUSH_BITS(n) bit_cnt+=n; 
+#define SAVE_BITS(s) bit_cnt= (s)->index;
+#define RESTORE_BITS(s) (s)->index= bit_cnt;
 #else
 
 /* macro to go faster */
@@ -447,8 +471,8 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
     int code, n, nb_bits, index;
     INT16 *table_codes;
     INT8 *table_bits;
-#ifndef ALT_BITSTREAM_READER
     int bit_cnt;
+#ifndef ALT_BITSTREAM_READER
     UINT32 bit_buf;
     UINT8 *buf_ptr;
 #endif
@@ -457,7 +481,8 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
     nb_bits = vlc->bits;
     table_codes = vlc->table_codes;
     table_bits = vlc->table_bits;
-    
+
+#ifdef FAST_GET_FIRST_VLC
     SHOW_BITS(s, index, nb_bits);
     code = table_codes[index];
     n = table_bits[index];
@@ -474,6 +499,7 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
         table_codes = vlc->table_codes + code;
         table_bits = vlc->table_bits + code;
     }
+#endif
     for(;;) {
         SHOW_BITS(s, index, nb_bits);
         code = table_codes[index];
