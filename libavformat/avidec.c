@@ -18,20 +18,9 @@
  */
 #include "avformat.h"
 #include "avi.h"
+#include "dv.h"
 
 //#define DEBUG
-
-static const struct AVI1Handler {
-   enum CodecID vcid;
-   enum CodecID acid;
-   uint32_t tag;
-} AVI1Handlers[] = {
-  { CODEC_ID_DVVIDEO, CODEC_ID_DVAUDIO, MKTAG('d', 'v', 's', 'd') },
-  { CODEC_ID_DVVIDEO, CODEC_ID_DVAUDIO, MKTAG('d', 'v', 'h', 'd') },
-  { CODEC_ID_DVVIDEO, CODEC_ID_DVAUDIO, MKTAG('d', 'v', 's', 'l') },
-  /* This is supposed to be the last one */
-  { CODEC_ID_NONE, CODEC_ID_NONE, 0 },
-};
 
 typedef struct AVIIndex {
     unsigned char tag[4];
@@ -40,14 +29,11 @@ typedef struct AVIIndex {
 } AVIIndex;
 
 typedef struct {
-    int64_t riff_end;
-    int64_t movi_end;
-    int     type;
-    uint8_t *buf;
-    int      buf_size;
-    int      stream_index;
+    int64_t  riff_end;
+    int64_t  movi_end;
     offset_t movi_list;
     AVIIndex *first, *last;
+    void* dv_demux;
 } AVIContext;
 
 #ifdef DEBUG
@@ -97,11 +83,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     stream_index = -1;
     codec_type = -1;
     frame_period = 0;
-    avi->type = 2;
-    avi->buf = av_malloc(1);
-    if (!avi->buf)
-        return -1;
-    avi->buf_size = 1;
     for(;;) {
         if (url_feof(pb))
             goto fail;
@@ -134,7 +115,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    url_fskip(pb, 4 * 4);
             n = get_le32(pb);
             for(i=0;i<n;i++) {
-                st = av_new_stream(s, 0);
+                st = av_new_stream(s, i);
                 if (!st)
                     goto fail;
 	    }
@@ -144,24 +125,36 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             /* stream header */
             stream_index++;
             tag1 = get_le32(pb);
+            handler = get_le32(pb); /* codec tag */
             switch(tag1) {
             case MKTAG('i', 'a', 'v', 's'):
 	    case MKTAG('i', 'v', 'a', 's'):
+                /* 
+	         * After some consideration -- I don't think we 
+	         * have to support anything but DV in a type1 AVIs.
+	         */
 	        if (s->nb_streams != 1)
 		    goto fail;
-		avi->type = 1;
-		avi->stream_index = 0;
+	        
+		if (handler != MKTAG('d', 'v', 's', 'd') &&
+	            handler != MKTAG('d', 'v', 'h', 'd') &&
+		    handler != MKTAG('d', 'v', 's', 'l'))
+	           goto fail;
+
+	        avi->dv_demux = dv_init_demux(s, stream_index, stream_index + 1);
+		if (!avi->dv_demux)
+		    goto fail;
+	        stream_index++;
 	    case MKTAG('v', 'i', 'd', 's'):
                 codec_type = CODEC_TYPE_VIDEO;
 
                 if (stream_index >= s->nb_streams) {
-                    url_fskip(pb, size - 4);
+                    url_fskip(pb, size - 8);
                     break;
                 } 
 
                 st = s->streams[stream_index];
 
-                handler = get_le32(pb); /* codec tag */
                 get_le32(pb); /* flags */
                 get_le16(pb); /* priority */
                 get_le16(pb); /* language */
@@ -186,29 +179,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec.frame_rate_base * AV_TIME_BASE / 
                     st->codec.frame_rate;
                 
-                if (avi->type == 1) {
-                    AVStream *st;
-
-                    st = av_new_stream(s, 0);
-                    if (!st)
-		        goto fail;
-                    
-		    stream_index++;
-		    
-		    for (i=0; AVI1Handlers[i].tag != 0; ++i)
-		       if (AVI1Handlers[i].tag == handler)
-		           break;
-
-		    if (AVI1Handlers[i].tag != 0) {
-		        s->streams[0]->codec.codec_type = CODEC_TYPE_VIDEO;
-                        s->streams[0]->codec.codec_id   = AVI1Handlers[i].vcid;
-		        s->streams[1]->codec.codec_type = CODEC_TYPE_AUDIO;
-                        s->streams[1]->codec.codec_id   = AVI1Handlers[i].acid;
-		    } else {
-		        goto fail;
-                    }
-		}
-		
 		url_fskip(pb, size - 9 * 4);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
@@ -218,12 +188,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     codec_type = CODEC_TYPE_AUDIO;
 
                     if (stream_index >= s->nb_streams) {
-                        url_fskip(pb, size - 4);
+                        url_fskip(pb, size - 8);
                         break;
                     } 
                     st = s->streams[stream_index];
 
-                    get_le32(pb); /* tag */
                     get_le32(pb); /* flags */
                     get_le16(pb); /* priority */
                     get_le16(pb); /* language */
@@ -244,7 +213,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
-            if (stream_index >= s->nb_streams || avi->type == 1) {
+            if (stream_index >= s->nb_streams || avi->dv_demux) {
                 url_fskip(pb, size);
             } else {
                 st = s->streams[stream_index];
@@ -305,7 +274,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* check stream number */
     if (stream_index != s->nb_streams - 1) {
     fail:
-        av_free(avi->buf);
         for(i=0;i<s->nb_streams;i++) {
             av_freep(&s->streams[i]->codec.extradata);
             av_freep(&s->streams[i]);
@@ -316,31 +284,21 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
-static void __destruct_pkt(struct AVPacket *pkt)
-{
-    pkt->data = NULL; pkt->size = 0;
-    return;
-}
-
 static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int n, d[8], size, i;
+    void* dstr;
 
     memset(d, -1, sizeof(int)*8);
-    
-    if (avi->type == 1 && avi->stream_index) {
-        /* duplicate DV packet */
-        av_init_packet(pkt);
-        pkt->data = avi->buf;
-        pkt->size = avi->buf_size;
-        pkt->destruct = __destruct_pkt;
-        pkt->stream_index = avi->stream_index;
-        avi->stream_index = !avi->stream_index;
-        return 0;
+   
+    if (avi->dv_demux) {
+        size = dv_get_packet(avi->dv_demux, pkt);
+	if (size >= 0)
+	    return size;
     }
-
+        
     for(i=url_ftell(pb); !url_feof(pb); i++) {
         int j;
 
@@ -387,26 +345,24 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             && n < s->nb_streams
             && i + size <= avi->movi_end) {
         
-            if (avi->type == 1) {
-                uint8_t *tbuf = av_realloc(avi->buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
-                if (!tbuf)
-                    return -1;
-                avi->buf = tbuf;
-                avi->buf_size = size;
-                av_init_packet(pkt);
-                pkt->data = avi->buf;
-                pkt->size = avi->buf_size;
-                pkt->destruct = __destruct_pkt;
-                avi->stream_index = n;
-            } else {
-                av_new_packet(pkt, size);
-            }
+            av_new_packet(pkt, size);
             get_buffer(pb, pkt->data, size);
-            if (size & 1)
+            if (size & 1) {
                 get_byte(pb);
-            pkt->stream_index = n;
-            pkt->flags |= PKT_FLAG_KEY; // FIXME: We really should read index for that
-            return 0;
+		size++;
+	    }
+	
+	    if (avi->dv_demux) {
+	        dstr = pkt->destruct;
+	        size = dv_produce_packet(avi->dv_demux, pkt,
+		                         pkt->data, pkt->size);
+		pkt->destruct = dstr;
+	    } else {
+                pkt->stream_index = n;
+                pkt->flags |= PKT_FLAG_KEY; // FIXME: We really should read 
+		                            //        index for that
+	    }
+            return size;
         }
     }
     return -1;
@@ -416,13 +372,15 @@ static int avi_read_close(AVFormatContext *s)
 {
     int i;
     AVIContext *avi = s->priv_data;
-    av_free(avi->buf);
 
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
 //        av_free(st->priv_data);
         av_free(st->codec.extradata);
     }
+
+    if (avi->dv_demux)
+        av_free(avi->dv_demux);
 
     return 0;
 }

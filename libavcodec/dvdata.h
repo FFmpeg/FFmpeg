@@ -21,11 +21,34 @@
  * @file dvdata.h
  * Constants for DV codec.
  */
- 
+
+/* 
+ * DVprofile is used to express the differences between various 
+ * DV flavors. For now it's primarily used for differentiating
+ * 525/60 and 625/50, but the plans are to use it for various
+ * DV specs as well (e.g. SMPTE314M vs. IEC 61834).
+ */
+typedef struct DVprofile {
+    int              dsf;                 /* value of the dsf in the DV header */
+    int              frame_size;          /* total size of one frame in bytes */
+    int              difseg_size;         /* number of DIF segments */
+    int              frame_rate;      
+    int              frame_rate_base;
+    int              ltc_divisor;         /* FPS from the LTS standpoint */
+    int              height;              /* picture height in pixels */
+    int              width;               /* picture width in pixels */
+    const uint16_t  *video_place;         /* positions of all DV macro blocks */
+    enum PixelFormat pix_fmt;             /* picture pixel format */
+    
+    int              audio_stride;        /* size of audio_shuffle table */
+    int              audio_min_samples[3];/* min ammount of audio samples */
+                                          /* for 48Khz, 44.1Khz and 32Khz */
+    int              audio_samples_dist[5];/* how many samples are supposed to be */
+                                         /* in each frame in a 5 frames window */
+    const uint16_t (*audio_shuffle)[9];  /* PCM shuffling table */
+} DVprofile;
+
 #define NB_DV_VLC 409
-#define AAUX_AS_OFFSET  (80*6 + 80*16*3 + 3)
-#define AAUX_ASC_OFFSET (80*6 + 80*16*4 + 3)
-#define VAUX_TC61_OFFSET (80*5 + 48 + 5)
 
 static const uint16_t dv_vlc_bits[409] = {
  0x0000, 0x0002, 0x0007, 0x0008, 0x0009, 0x0014, 0x0015, 0x0016,
@@ -283,7 +306,7 @@ static const uint8_t dv_248_areas[64] = {
     1,2,2,3,3,3,3,3,
 };
 
-static uint8_t dv_quant_shifts[22][4] = {
+static const uint8_t dv_quant_shifts[22][4] = {
   { 3,3,4,4 }, 
   { 3,3,4,4 }, 
   { 2,3,3,4 }, 
@@ -1240,7 +1263,7 @@ static const uint16_t dv_place_411[1350] = {
  0x0834, 0x2320, 0x2f44, 0x3810, 0x1658,
 };
 
-static const uint16_t dv_place_audio60[10][9] = {
+static const uint16_t dv_audio_shuffle525[10][9] = {
   {  0, 30, 60, 20, 50, 80, 10, 40, 70 }, /* 1st channel */
   {  6, 36, 66, 26, 56, 86, 16, 46, 76 },
   { 12, 42, 72,  2, 32, 62, 22, 52, 82 },
@@ -1254,7 +1277,7 @@ static const uint16_t dv_place_audio60[10][9] = {
   { 25, 55, 85, 15, 45, 75,  5, 35, 65 },
 };
 
-static const uint16_t dv_place_audio50[12][9] = {
+static const uint16_t dv_audio_shuffle625[12][9] = {
   {   0,  36,  72,  26,  62,  98,  16,  52,  88}, /* 1st channel */
   {   6,  42,  78,  32,  68, 104,  22,  58,  94},
   {  12,  48,  84,   2,  38,  74,  28,  64, 100},
@@ -1271,10 +1294,77 @@ static const uint16_t dv_place_audio50[12][9] = {
 };
 
 static const int dv_audio_frequency[3] = {
-    48000, 44100, 32000, 
+    48000, 44100, 32000,
+};
+    
+static const DVprofile dv_profiles[] = {
+    { .dsf = 0,
+      .frame_size = 120000,        /* IEC 61834, SMPTE-314M - 525/60 (NTSC) */
+      .difseg_size = 10,
+      .frame_rate = 30000,
+      .ltc_divisor = 30,
+      .frame_rate_base = 1001,
+      .height = 480,
+      .width = 720,
+      .video_place = dv_place_411,
+      .pix_fmt = PIX_FMT_YUV411P,
+      .audio_stride = 90,
+      .audio_min_samples = { 1580, 1452, 1053 }, /* for 48, 44.1 and 32Khz */
+      .audio_samples_dist = { 1602, 1601, 1602, 1601, 1602 },
+      .audio_shuffle = dv_audio_shuffle525,
+    }, 
+    { .dsf = 1,
+      .frame_size = 144000,        /* IEC 61834 - 625/50 (PAL) */
+      .difseg_size = 12,
+      .frame_rate = 25,
+      .frame_rate_base = 1,
+      .ltc_divisor = 25,
+      .height = 576,
+      .width = 720,
+      .video_place = dv_place_420,
+      .pix_fmt = PIX_FMT_YUV420P,
+      .audio_stride = 108,
+      .audio_min_samples = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32Khz */
+      .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
+      .audio_shuffle = dv_audio_shuffle625,
+    },
+    { .dsf = 1,
+      .frame_size = 144000,        /* SMPTE-314M - 625/50 (PAL) */
+      .difseg_size = 12,
+      .frame_rate = 25,
+      .frame_rate_base = 1,
+      .ltc_divisor = 25,
+      .height = 576,
+      .width = 720,
+      .video_place = dv_place_411P,
+      .pix_fmt = PIX_FMT_YUV411P,
+      .audio_stride = 108,
+      .audio_min_samples = { 1896, 1742, 1264 }, /* for 48, 44.1 and 32Khz */
+      .audio_samples_dist = { 1920, 1920, 1920, 1920, 1920 },
+      .audio_shuffle = dv_audio_shuffle625,
+     }
 };
 
-static const int dv_audio_min_samples[2][3] = {
-    { 1580, 1452, 1053 }, /* 60 fields */
-    { 1896, 1742, 1264 }, /* 50 fileds */
-};
+static inline const DVprofile* dv_frame_profile(uint8_t* frame)
+{
+    if ((frame[3] & 0x80) == 0) {      /* DSF flag */
+        return &dv_profiles[0];
+    }
+    else if ((frame[5] & 0x07) == 0) { /* APT flag */
+        return &dv_profiles[1];
+    }
+    else 
+        return &dv_profiles[2];
+}
+
+static inline const DVprofile* dv_codec_profile(AVCodecContext* codec)
+{
+    if (codec->width != 720) {
+        return NULL;
+    } 
+    else if (codec->height == 480) {
+        return &dv_profiles[0];
+    } 
+    else 
+        return &dv_profiles[1];
+}

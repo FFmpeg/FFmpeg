@@ -1388,7 +1388,6 @@ extern AVCodec rv10_decoder;
 extern AVCodec svq1_decoder;
 extern AVCodec svq3_decoder;
 extern AVCodec dvvideo_decoder;
-extern AVCodec dvaudio_decoder;
 extern AVCodec wmav1_decoder;
 extern AVCodec wmav2_decoder;
 extern AVCodec mjpeg_decoder;

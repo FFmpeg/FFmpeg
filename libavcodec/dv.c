@@ -25,34 +25,29 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "simple_idct.h"
-
-#define NTSC_FRAME_SIZE 120000
-#define PAL_FRAME_SIZE  144000
-
-#define TEX_VLC_BITS 9
+#include "dvdata.h"
 
 typedef struct DVVideoDecodeContext {
-    AVCodecContext *avctx;
+    const DVprofile* sys;
     GetBitContext gb;
-    VLC *vlc;
-    int sampling_411; /* 0 = 420, 1 = 411 */
-    int width, height;
-    uint8_t *current_picture[3]; /* picture structure */
     AVFrame picture;
-    int linesize[3];
     DCTELEM block[5*6][64] __align8;
+    
+    /* FIXME: the following is extracted from DSP */
     uint8_t dv_zigzag[2][64];
     uint8_t idct_permutation[64];
+    void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
+    void (*fdct)(DCTELEM *block);
+    
     /* XXX: move it to static storage ? */
     uint8_t dv_shift[2][22][64];
     void (*idct_put[2])(uint8_t *dest, int line_size, DCTELEM *block);
 } DVVideoDecodeContext;
 
-#include "dvdata.h"
-
-static VLC dv_vlc;
+#define TEX_VLC_BITS 9
 /* XXX: also include quantization */
 static RL_VLC_ELEM *dv_rl_vlc[1];
+static VLC_TYPE dv_vlc_codes[15][23];
 
 static void dv_build_unquantize_tables(DVVideoDecodeContext *s)
 {
@@ -85,6 +80,7 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
 
     if (!done) {
         int i;
+        VLC dv_vlc;
 
         done = 1;
 
@@ -114,6 +110,12 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
             dv_rl_vlc[0][i].level = level;
             dv_rl_vlc[0][i].run = run;
         }
+
+	memset(dv_vlc_codes, 0xff, sizeof(dv_vlc_codes));
+	for (i = 0; i < NB_DV_VLC - 1; i++) {
+	   if (dv_vlc_run[i] < 15 && dv_vlc_level[i] < 23 && dv_vlc_len[i] < 15)
+	       dv_vlc_codes[dv_vlc_run[i]][dv_vlc_level[i]] = i;
+	}
     }
 
     /* ugly way to get the idct & scantable */
@@ -124,6 +126,9 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
     if (DCT_common_init(&s2) < 0)
        return -1;
 
+    s->get_pixels = s2.dsp.get_pixels;
+    s->fdct = s2.dsp.fdct;
+    
     s->idct_put[0] = s2.dsp.idct_put;
     memcpy(s->idct_permutation, s2.dsp.idct_permutation, 64);
     memcpy(s->dv_zigzag[0], s2.intra_scantable.permutated, 64);
@@ -134,11 +139,11 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
 
     /* XXX: do it only for constant case */
     dv_build_unquantize_tables(s);
-    
+
     return 0;
 }
 
-//#define VLC_DEBUG
+// #define VLC_DEBUG
 
 typedef struct BlockInfo {
     const uint8_t *shift_table;
@@ -450,29 +455,29 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
         v = *mb_pos_ptr++;
         mb_x = v & 0xff;
         mb_y = v >> 8;
-        y_ptr = s->current_picture[0] + (mb_y * s->linesize[0] * 8) + (mb_x * 8);
-        if (s->sampling_411)
-            c_offset = (mb_y * s->linesize[1] * 8) + ((mb_x >> 2) * 8);
+        y_ptr = s->picture.data[0] + (mb_y * s->picture.linesize[0] * 8) + (mb_x * 8);
+        if (s->sys->pix_fmt == PIX_FMT_YUV411P)
+            c_offset = (mb_y * s->picture.linesize[1] * 8) + ((mb_x >> 2) * 8);
         else
-            c_offset = ((mb_y >> 1) * s->linesize[1] * 8) + ((mb_x >> 1) * 8);
+            c_offset = ((mb_y >> 1) * s->picture.linesize[1] * 8) + ((mb_x >> 1) * 8);
         for(j = 0;j < 6; j++) {
             idct_put = s->idct_put[mb->dct_mode];
             if (j < 4) {
-                if (s->sampling_411 && mb_x < (704 / 8)) {
+                if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x < (704 / 8)) {
                     /* NOTE: at end of line, the macroblock is handled as 420 */
-                    idct_put(y_ptr + (j * 8), s->linesize[0], block);
+                    idct_put(y_ptr + (j * 8), s->picture.linesize[0], block);
                 } else {
-                    idct_put(y_ptr + ((j & 1) * 8) + ((j >> 1) * 8 * s->linesize[0]),
-                             s->linesize[0], block);
+                    idct_put(y_ptr + ((j & 1) * 8) + ((j >> 1) * 8 * s->picture.linesize[0]),
+                             s->picture.linesize[0], block);
                 }
             } else {
-                if (s->sampling_411 && mb_x >= (704 / 8)) {
+                if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                     uint8_t pixels[64], *c_ptr, *c_ptr1, *ptr;
                     int y, linesize;
                     /* NOTE: at end of line, the macroblock is handled as 420 */
                     idct_put(pixels, 8, block);
-                    linesize = s->linesize[6 - j];
-                    c_ptr = s->current_picture[6 - j] + c_offset;
+                    linesize = s->picture.linesize[6 - j];
+                    c_ptr = s->picture.data[6 - j] + c_offset;
                     ptr = pixels;
                     for(y = 0;y < 8; y++) {
                         /* convert to 411P */
@@ -486,8 +491,8 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
                     }
                 } else {
                     /* don't ask me why they inverted Cb and Cr ! */
-                    idct_put(s->current_picture[6 - j] + c_offset, 
-                             s->linesize[6 - j], block);
+                    idct_put(s->picture.data[6 - j] + c_offset, 
+                             s->picture.linesize[6 - j], block);
                 }
             }
             block += 64;
@@ -496,7 +501,6 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
     }
 }
 
-
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
    144000 bytes for PAL) */
 static int dvvideo_decode_frame(AVCodecContext *avctx, 
@@ -504,115 +508,35 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
                                  uint8_t *buf, int buf_size)
 {
     DVVideoDecodeContext *s = avctx->priv_data;
-    int sct, dsf, apt, ds, nb_dif_segs, vs, width, height, i, packet_size;
-    uint8_t *buf_ptr;
+    int ds, vs;
     const uint16_t *mb_pos_ptr;
     
-    /* parse id */
-    init_get_bits(&s->gb, buf, buf_size*8);
-    sct = get_bits(&s->gb, 3);
-    if (sct != 0)
-        return -1;
-    skip_bits(&s->gb, 5);
-    get_bits(&s->gb, 4); /* dsn (sequence number */
-    get_bits(&s->gb, 1); /* fsc (channel number) */
-    skip_bits(&s->gb, 3);
-    get_bits(&s->gb, 8); /* dbn (diff block number 0-134) */
+    s->sys = dv_frame_profile(buf);
+    if (!s->sys || buf_size < s->sys->frame_size)
+        return -1; /* NOTE: we only accept several full frames */
 
-    dsf = get_bits(&s->gb, 1); /* 0 = NTSC 1 = PAL */
-    if (get_bits(&s->gb, 1) != 0)
-        return -1;
-    skip_bits(&s->gb, 11);
-    apt = get_bits(&s->gb, 3); /* apt */
-
-    get_bits(&s->gb, 1); /* tf1 */
-    skip_bits(&s->gb, 4);
-    get_bits(&s->gb, 3); /* ap1 */
-
-    get_bits(&s->gb, 1); /* tf2 */
-    skip_bits(&s->gb, 4);
-    get_bits(&s->gb, 3); /* ap2 */
-
-    get_bits(&s->gb, 1); /* tf3 */
-    skip_bits(&s->gb, 4);
-    get_bits(&s->gb, 3); /* ap3 */
-    
-    /* init size */
-    width = 720;
-    if (dsf) {
-        avctx->frame_rate = 25;
-	avctx->frame_rate_base = 1;
-        packet_size = PAL_FRAME_SIZE;
-        height = 576;
-        nb_dif_segs = 12;
-    } else {
-        avctx->frame_rate = 30000;
-	avctx->frame_rate_base = 1001;
-        packet_size = NTSC_FRAME_SIZE;
-        height = 480;
-        nb_dif_segs = 10;
-    }
-    /* NOTE: we only accept several full frames */
-    if (buf_size < packet_size)
-        return -1;
-    
-    /* NTSC[dsf == 0] is always 720x480, 4:1:1
-     *  PAL[dsf == 1] is always 720x576, 4:2:0 for IEC 68134[apt == 0]
-     *  but for the SMPTE 314M[apt == 1] it is 720x576, 4:1:1
-     */
-    s->sampling_411 = !dsf || apt;
-    if (s->sampling_411) {
-        mb_pos_ptr = dsf ? dv_place_411P : dv_place_411;
-        avctx->pix_fmt = PIX_FMT_YUV411P;
-    } else {
-        mb_pos_ptr = dv_place_420;
-        avctx->pix_fmt = PIX_FMT_YUV420P;
-    }
-
-    avctx->width = width;
-    avctx->height = height;
-    
-    /* Once again, this is pretty complicated by the fact that the same
-     * field is used differently by IEC 68134[apt == 0] and 
-     * SMPTE 314M[apt == 1].
-     */
-    if (buf[VAUX_TC61_OFFSET] == 0x61 &&
-        ((apt == 0 && (buf[VAUX_TC61_OFFSET + 2] & 0x07) == 0x07) ||
-	 (apt == 1 && (buf[VAUX_TC61_OFFSET + 2] & 0x07) == 0x02)))
-        avctx->aspect_ratio = 16.0 / 9.0;
-    else
-        avctx->aspect_ratio = 4.0 / 3.0;
-
+	
     if(s->picture.data[0])
         avctx->release_buffer(avctx, &s->picture);
     
-    s->picture.reference= 0;
+    s->picture.reference = 0;
+    avctx->pix_fmt = s->sys->pix_fmt;
     if(avctx->get_buffer(avctx, &s->picture) < 0) {
         fprintf(stderr, "get_buffer() failed\n");
         return -1;
     }
 
-    for(i=0;i<3;i++) {
-        s->current_picture[i] = s->picture.data[i];
-        s->linesize[i] = s->picture.linesize[i];
-        if (!s->current_picture[i])
-            return -1;
-    }
-    s->width = width;
-    s->height = height;
-
     /* for each DIF segment */
-    buf_ptr = buf;
-    for (ds = 0; ds < nb_dif_segs; ds++) {
-        buf_ptr += 6 * 80; /* skip DIF segment header */
+    mb_pos_ptr = s->sys->video_place;
+    for (ds = 0; ds < s->sys->difseg_size; ds++) {
+        buf += 6 * 80; /* skip DIF segment header */
         
         for(vs = 0; vs < 27; vs++) {
-            if ((vs % 3) == 0) {
-                /* skip audio block */
-                buf_ptr += 80;
-            }
-            dv_decode_video_segment(s, buf_ptr, mb_pos_ptr);
-            buf_ptr += 5 * 80;
+            if ((vs % 3) == 0)
+	        buf += 80; /* skip audio block */
+            
+	    dv_decode_video_segment(s, buf, mb_pos_ptr);
+            buf += 5 * 80;
             mb_pos_ptr += 5;
         }
     }
@@ -623,7 +547,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data= s->picture;
     
-    return packet_size;
+    return s->sys->frame_size;
 }
 
 static int dvvideo_decode_end(AVCodecContext *avctx)
@@ -643,160 +567,5 @@ AVCodec dvvideo_decoder = {
     dvvideo_decode_end,
     dvvideo_decode_frame,
     CODEC_CAP_DR1,
-    NULL
-};
-
-typedef struct DVAudioDecodeContext {
-    AVCodecContext *avctx;
-    GetBitContext gb;
-} DVAudioDecodeContext;
-
-static int dvaudio_decode_init(AVCodecContext *avctx)
-{
-    //    DVAudioDecodeContext *s = avctx->priv_data;
-    return 0;
-}
-
-static uint16_t dv_audio_12to16(uint16_t sample)
-{
-    uint16_t shift, result;
-    
-    sample = (sample < 0x800) ? sample : sample | 0xf000;
-    shift = (sample & 0xf00) >> 8;
-
-    if (shift < 0x2 || shift > 0xd) {
-	result = sample;
-    } else if (shift < 0x8) {
-        shift--;
-	result = (sample - (256 * shift)) << shift;
-    } else {
-	shift = 0xe - shift;
-	result = ((sample + ((256 * shift) + 1)) << shift) - 1;
-    }
-
-    return result;
-}
-
-/* NOTE: exactly one frame must be given (120000 bytes for NTSC,
-   144000 bytes for PAL) 
-
-   There's a couple of assumptions being made here:
-         1. By default we silence erroneous (0x8000/16bit 0x800/12bit) 
-	    audio samples. We can pass them upwards when ffmpeg will be ready
-	    to deal with them.
-	 2. We don't do software emphasis.
-	 3. Audio is always returned as 16bit linear samples: 12bit
-	    nonlinear samples are converted into 16bit linear ones.
-*/
-static int dvaudio_decode_frame(AVCodecContext *avctx, 
-                                 void *data, int *data_size,
-                                 uint8_t *buf, int buf_size)
-{
-    DVVideoDecodeContext *s = avctx->priv_data;
-    const uint16_t (*unshuffle)[9];
-    int smpls, freq, quant, sys, stride, difseg, ad, dp, nb_dif_segs, i;
-    uint16_t lc, rc;
-    uint8_t *buf_ptr;
-    
-    /* parse id */
-    init_get_bits(&s->gb, &buf[AAUX_AS_OFFSET], 5*8);
-    i = get_bits(&s->gb, 8);
-    if (i != 0x50) { /* No audio ? */
-	*data_size = 0;
-	return buf_size;
-    }
-    
-    get_bits(&s->gb, 1); /* 0 - locked audio, 1 - unlocked audio */
-    skip_bits(&s->gb, 1);
-    smpls = get_bits(&s->gb, 6); /* samples in this frame - min. samples */
-
-    skip_bits(&s->gb, 8);
-
-    skip_bits(&s->gb, 2);
-    sys = get_bits(&s->gb, 1); /* 0 - 60 fields, 1 = 50 fields */
-    skip_bits(&s->gb, 5);
-
-    get_bits(&s->gb, 1); /* 0 - emphasis on, 1 - emphasis off */
-    get_bits(&s->gb, 1); /* 0 - reserved, 1 - emphasis time constant 50/15us */
-    freq = get_bits(&s->gb, 3); /* 0 - 48KHz, 1 - 44,1kHz, 2 - 32 kHz */
-    quant = get_bits(&s->gb, 3); /* 0 - 16bit linear, 1 - 12bit nonlinear */
-
-    if (quant > 1)
-	return -1; /* Unsupported quantization */
-
-    avctx->sample_rate = dv_audio_frequency[freq];
-    avctx->channels = 2;
-    avctx->bit_rate = avctx->channels * avctx->sample_rate * 16;
-    // What about:
-    // avctx->frame_size =
-   
-    *data_size = (dv_audio_min_samples[sys][freq] + smpls) * 
-	         avctx->channels * 2;
-
-    if (sys) {
-	nb_dif_segs = 12;
-	stride = 108;
-	unshuffle = dv_place_audio50;
-    } else {
-	nb_dif_segs = 10;
-	stride = 90;
-	unshuffle = dv_place_audio60;
-    }
-    
-    /* for each DIF segment */
-    buf_ptr = buf;
-    for (difseg = 0; difseg < nb_dif_segs; difseg++) {
-         buf_ptr += 6 * 80; /* skip DIF segment header */
-         for (ad = 0; ad < 9; ad++) {
-              
-              for (dp = 8; dp < 80; dp+=2) {
-		   if (quant == 0) {  /* 16bit quantization */
-		       i = unshuffle[difseg][ad] + (dp - 8)/2 * stride;
-		       ((short *)data)[i] = (buf_ptr[dp] << 8) | buf_ptr[dp+1]; 
-		       if (((unsigned short *)data)[i] == 0x8000)
-		           ((short *)data)[i] = 0;
-		   } else {           /* 12bit quantization */
-		       if (difseg >= nb_dif_segs/2)
-			   goto out;  /* We're not doing 4ch at this time */
-		       
-		       lc = ((uint16_t)buf_ptr[dp] << 4) | 
-			    ((uint16_t)buf_ptr[dp+2] >> 4);
-		       rc = ((uint16_t)buf_ptr[dp+1] << 4) |
-			    ((uint16_t)buf_ptr[dp+2] & 0x0f);
-		       lc = (lc == 0x800 ? 0 : dv_audio_12to16(lc));
-		       rc = (rc == 0x800 ? 0 : dv_audio_12to16(rc));
-
-		       i = unshuffle[difseg][ad] + (dp - 8)/3 * stride;
-		       ((short *)data)[i] = lc;
-		       i = unshuffle[difseg+nb_dif_segs/2][ad] + (dp - 8)/3 * stride;
-		       ((short *)data)[i] = rc;
-		       ++dp;
-		   }
-	      }
-		
-	    buf_ptr += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
-        }
-    }
-
-out:
-    return buf_size;
-}
-
-static int dvaudio_decode_end(AVCodecContext *avctx)
-{
-    //    DVAudioDecodeContext *s = avctx->priv_data;
-    return 0;
-}
-
-AVCodec dvaudio_decoder = {
-    "dvaudio",
-    CODEC_TYPE_AUDIO,
-    CODEC_ID_DVAUDIO,
-    sizeof(DVAudioDecodeContext),
-    dvaudio_decode_init,
-    NULL,
-    dvaudio_decode_end,
-    dvaudio_decode_frame,
-    0,
     NULL
 };

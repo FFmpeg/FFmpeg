@@ -31,13 +31,11 @@
 #undef DV1394_DEBUG
 
 #include "dv1394.h"
+#include "dv.h"
 
 struct dv1394_data {
     int fd;
     int channel;
-    int width, height;
-    int frame_rate;
-    int frame_size;
     int format;
 
     void *ring; /* Ring buffer */
@@ -45,9 +43,9 @@ struct dv1394_data {
     int avail;  /* Number of frames available for reading */
     int done;   /* Number of completed frames */
 
-    int stream; /* Current stream. 0 - video, 1 - audio */
     int64_t pts;  /* Current timestamp */
-    AVStream *vst, *ast;
+
+    void* dv_demux; /* Generic DV muxing/demuxing context */
 };
 
 /* 
@@ -69,7 +67,6 @@ static int dv1394_reset(struct dv1394_data *dv)
         return -1;
 
     dv->avail  = dv->done = 0;
-    dv->stream = 0;
     return 0;
 }
 
@@ -88,14 +85,9 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
     struct dv1394_data *dv = context->priv_data;
     const char *video_device;
 
-    dv->vst = av_new_stream(context, 0);
-    if (!dv->vst)
-        return -ENOMEM;
-    dv->ast = av_new_stream(context, 1);
-    if (!dv->ast) {
-        av_free(dv->vst);
-        return -ENOMEM;
-    }
+    dv->dv_demux = dv_init_demux(context, 0, 1);
+    if (!dv->dv_demux)
+        goto failed;
 
     if (ap->standard && !strcasecmp(ap->standard, "pal"))
 	dv->format = DV1394_PAL;
@@ -106,17 +98,6 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         dv->channel = ap->channel;
     else
         dv->channel = DV1394_DEFAULT_CHANNEL;
-
-    dv->width = DV1394_WIDTH;
-    if (dv->format == DV1394_NTSC) {
-	dv->height = DV1394_NTSC_HEIGHT;
-        dv->frame_size = DV1394_NTSC_FRAME_SIZE;
-        dv->frame_rate = 30;
-    } else {
-	dv->height = DV1394_PAL_HEIGHT;
-        dv->frame_size = DV1394_PAL_FRAME_SIZE;
-        dv->frame_rate = 25;
-    }
 
     /* Open and initialize DV1394 device */
     video_device = ap->device;
@@ -140,21 +121,6 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         goto failed;
     }
 
-    dv->stream = 0;
-
-    dv->vst->codec.codec_type = CODEC_TYPE_VIDEO;
-    dv->vst->codec.codec_id   = CODEC_ID_DVVIDEO;
-    dv->vst->codec.width      = dv->width;
-    dv->vst->codec.height     = dv->height;
-    dv->vst->codec.frame_rate = dv->frame_rate;
-    dv->vst->codec.frame_rate_base = 1;
-    dv->vst->codec.bit_rate   = 25000000;  /* Consumer DV is 25Mbps */
-
-    dv->ast->codec.codec_type = CODEC_TYPE_AUDIO;
-    dv->ast->codec.codec_id   = CODEC_ID_DVAUDIO;
-    dv->ast->codec.channels   = 2;
-    dv->ast->codec.sample_rate= 48000;
-
     av_set_pts_info(context, 48, 1, 1000000);
 
     if (dv1394_start(dv) < 0)
@@ -164,55 +130,17 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
 
 failed:
     close(dv->fd);
-    av_free(dv->vst);
-    av_free(dv->ast);
     return -EIO;
-}
-
-static void __destruct_pkt(struct AVPacket *pkt)
-{
-    pkt->data = NULL; pkt->size = 0;
-    return;
-}
-
-static inline int __get_frame(struct dv1394_data *dv, AVPacket *pkt)
-{
-    char *ptr = dv->ring + (dv->index * DV1394_PAL_FRAME_SIZE);
-
-    if (dv->stream) {
-        dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
-        dv->done++; dv->avail--;
-    } else {
-        dv->pts = av_gettime() & ((1LL << 48) - 1);
-    }
-
-    dv->format = ((ptr[3] & 0x80) == 0) ? DV1394_NTSC : DV1394_PAL;
-    if (dv->format == DV1394_NTSC) {
-        dv->frame_size = DV1394_NTSC_FRAME_SIZE;
-        dv->vst->codec.height = dv->height = DV1394_NTSC_HEIGHT;
-        dv->vst->codec.frame_rate = dv->frame_rate = 30;
-    } else {
-        dv->frame_size = DV1394_PAL_FRAME_SIZE;
-        dv->vst->codec.height = dv->height = DV1394_PAL_HEIGHT;
-        dv->vst->codec.frame_rate = dv->frame_rate = 25;
-    }
-	
-    av_init_packet(pkt);
-    pkt->destruct = __destruct_pkt;
-    pkt->data     = ptr;
-    pkt->size     = dv->frame_size;
-    pkt->pts      = dv->pts;
-    pkt->stream_index = dv->stream;
-    pkt->flags   |= PKT_FLAG_KEY;
-
-    dv->stream ^= 1;
-
-    return dv->frame_size;
 }
 
 static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
 {
     struct dv1394_data *dv = context->priv_data;
+    int size;
+
+    size = dv_get_packet(dv->dv_demux, pkt);
+    if (size > 0)
+        goto out;
 
     if (!dv->avail) {
         struct dv1394_status s;
@@ -276,7 +204,16 @@ restart_poll:
             dv->done);
 #endif
 
-    return __get_frame(dv, pkt);
+    size = dv_produce_packet(dv->dv_demux, pkt, 
+                             dv->ring + (dv->index * DV1394_PAL_FRAME_SIZE), 
+			     DV1394_PAL_FRAME_SIZE);
+    dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
+    dv->done++; dv->avail--;
+    dv->pts = av_gettime() & ((1LL << 48) - 1);
+    
+out:
+    pkt->pts = dv->pts;
+    return size;
 }
 
 static int dv1394_close(AVFormatContext * context)
@@ -292,6 +229,7 @@ static int dv1394_close(AVFormatContext * context)
         perror("Failed to munmap DV1394 ring buffer");
 
     close(dv->fd);
+    av_free(dv->dv_demux);
 
     return 0;
 }
