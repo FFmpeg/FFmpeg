@@ -2205,8 +2205,8 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
             if(field_pic && !s->first_field)
                 xy += wrap/2;
 
-            for(dir=0; dir<2; dir++){
-                for(i=0; i<2; i++){
+            for(i=0; i<2; i++){
+                for(dir=0; dir<2; dir++){
                     if (s->mb_intra || (dir==1 && s->pict_type != B_TYPE)) {
                         motion_x = motion_y = 0;
                     }else if (s->mv_type == MV_TYPE_16X16){
@@ -2221,8 +2221,8 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
                     s->current_picture.motion_val[dir][xy    ][1] = motion_y;
                     s->current_picture.motion_val[dir][xy + 1][0] = motion_x;
                     s->current_picture.motion_val[dir][xy + 1][1] = motion_y;
-                    xy += wrap;
                 }
+                xy += wrap;
             }
         }
 
