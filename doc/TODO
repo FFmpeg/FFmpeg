@@ -3,18 +3,33 @@ ffmpeg TODO list:
 
 (in approximate decreasing priority order)
 
-Planned in next release:
+Short term glantau's fixes:
+- mpeg audio fix
+- greatly improved mpeg1/2 decode speed
+- regression tests.
+- AV sync fix (new api for demux)
+- RTP streaming support in ffserver
+- mpeg2 transport stream support
+- improved auto guess for formats (api change again in demux)
+- minimal support of video in ffplay
+- fix WORDS_BIGENDIAN issue
+- fix mpeg format tracking + handle frame rate change
 
+Planned in next releases:
+
+- add DV codec/format support
+- fix bugs when stream begins with a P/B frame 
 - fix ffserver (partially done)
 - add raw h263 decoding support, see vivo streams (partially done)
 - add qscale out.
-- add format autodetect with content (for example to distinguish
-  mpegvideo/mpegmux).
 - fix -sameq in grabbing
+- add vivo format support (may need long term prediction support)
+- add raw h263 decoding support
+- add qscale out.
 - find a solution to clear feed1.ffm if format change.
-- new grab architecture : use avformat instead of audio: and video:
-  protocol.
 - fix 0 size picture in AVIs = skip picture
+- rewrite huffyuv (http://www.math.berkeley.edu/~benrg/huffyuv.html)
+- add video cd support (VCD: fixed video bitrate, QSCALE_K to 35 ?)
 
 BUGS:
 
@@ -40,15 +55,9 @@ FEATURES:
 
 - add MPEG4 in mpegmux support.
 
-- add RTP / multicast layer.
-
 - demux streams for CCTV : N streams in one stream. Add option to
   generate multiple streams.
 
 - add disconnect user option in stat.html.
 
 - deny & allow + password in ffserver.
-
-- graphical user interface.
-
-- animated gif as output format (done).
