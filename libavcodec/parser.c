@@ -494,6 +494,8 @@ typedef struct MpegAudioParseContext {
     int frame_size;
     int free_format_frame_size;
     int free_format_next_header;
+    uint32_t header;
+    int header_count;
 } MpegAudioParseContext;
 
 #define MPA_HEADER_SIZE 4
@@ -515,7 +517,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                            const uint8_t *buf, int buf_size)
 {
     MpegAudioParseContext *s = s1->priv_data;
-    int len, ret;
+    int len, ret, sr;
     uint32_t header;
     const uint8_t *buf_ptr;
 
@@ -549,11 +551,13 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
 	    }
 	    if ((s->inbuf_ptr - s->inbuf) >= MPA_HEADER_SIZE) {
             got_header:
+                sr= avctx->sample_rate;
 		header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
 		    (s->inbuf[2] << 8) | s->inbuf[3];
 
                 ret = mpa_decode_header(avctx, header);
                 if (ret < 0) {
+                    s->header_count= -2;
 		    /* no sync found : move by one byte (inefficient, but simple!) */
 		    memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
 		    s->inbuf_ptr--;
@@ -562,7 +566,12 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                        to get a new bitrate */
                     s->free_format_frame_size = 0;
 		} else {
+                    if((header&SAME_HEADER_MASK) != (s->header&SAME_HEADER_MASK) && s->header)
+                        s->header_count= -3;
+                    s->header= header;
+                    s->header_count++;
                     s->frame_size = ret;
+                    
 #if 0
                     /* free format: prepare to compute frame size */
 		    if (decode_header(s, header) == 1) {
@@ -570,6 +579,8 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                     }
 #endif
 		}
+                if(s->header_count <= 0)
+                    avctx->sample_rate= sr; //FIXME ugly
 	    }
         } else 
 #if 0
@@ -642,8 +653,10 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
         //    next_data:
         if (s->frame_size > 0 && 
             (s->inbuf_ptr - s->inbuf) >= s->frame_size) {
-            *poutbuf = s->inbuf;
-            *poutbuf_size = s->inbuf_ptr - s->inbuf;
+            if(s->header_count > 0){
+                *poutbuf = s->inbuf;
+                *poutbuf_size = s->inbuf_ptr - s->inbuf;
+            }
 	    s->inbuf_ptr = s->inbuf;
 	    s->frame_size = 0;
 	    break;
