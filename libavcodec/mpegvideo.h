@@ -932,6 +932,7 @@ int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size);
 /* rv10.c */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number);
 int rv_decode_dc(MpegEncContext *s, int n);
+void rv20_encode_picture_header(MpegEncContext *s, int picture_number);
 
 
 /* msmpeg4.c */

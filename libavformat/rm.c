@@ -230,7 +230,10 @@ static void rv10_write_header(AVFormatContext *ctx,
         } else {
             /* video codec info */
             put_be32(s,34); /* size */
-            put_tag(s,"VIDORV10");
+            if(stream->enc->codec_id == CODEC_ID_RV10)
+                put_tag(s,"VIDORV10");
+            else
+                put_tag(s,"VIDORV20");
             put_be16(s, stream->enc->width);
             put_be16(s, stream->enc->height);
             put_be16(s, (int) stream->frame_rate); /* frames per seconds ? */
@@ -241,7 +244,10 @@ static void rv10_write_header(AVFormatContext *ctx,
             /* Seems to be the codec version: only use basic H263. The next
                versions seems to add a diffential DC coding as in
                MPEG... nothing new under the sun */
-            put_be32(s,0x10000000); 
+            if(stream->enc->codec_id == CODEC_ID_RV10)
+                put_be32(s,0x10000000); 
+            else
+                put_be32(s,0x20103001); 
             //put_be32(s,0x10003000); 
         }
     }

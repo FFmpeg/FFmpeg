@@ -1120,6 +1120,16 @@ int MPV_encode_init(AVCodecContext *avctx)
         avctx->delay=0;
         s->low_delay=1;
         break;
+    case CODEC_ID_RV20:
+        s->out_format = FMT_H263;
+        avctx->delay=0;
+        s->low_delay=1;
+        s->modified_quant=1;
+        s->h263_aic=1;
+        s->h263_plus=1;
+        s->loop_filter=1;
+        s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
+        break;
     case CODEC_ID_MPEG4:
         s->out_format = FMT_H263;
         s->h263_pred = 1;
@@ -4150,6 +4160,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     case CODEC_ID_H263P:
     case CODEC_ID_FLV1:
     case CODEC_ID_RV10:
+    case CODEC_ID_RV20:
         h263_encode_mb(s, s->block, motion_x, motion_y); break;
 #endif
     case CODEC_ID_MJPEG:
@@ -4174,6 +4185,8 @@ void ff_mpeg_flush(AVCodecContext *avctx){
         avctx->release_buffer(avctx, (AVFrame*)&s->picture[i]);
     }
     s->current_picture_ptr = s->last_picture_ptr = s->next_picture_ptr = NULL;
+    
+    s->mb_x= s->mb_y= 0;
     
     s->parse_context.state= -1;
     s->parse_context.frame_start_found= 0;
@@ -5255,6 +5268,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             mpeg4_encode_picture_header(s, picture_number);
         else if (s->codec_id == CODEC_ID_RV10) 
             rv10_encode_picture_header(s, picture_number);
+        else if (s->codec_id == CODEC_ID_RV20) 
+            rv20_encode_picture_header(s, picture_number);
         else if (s->codec_id == CODEC_ID_FLV1)
             ff_flv_encode_picture_header(s, picture_number);
         else
@@ -6373,6 +6388,16 @@ AVCodec rv10_encoder = {
     "rv10",
     CODEC_TYPE_VIDEO,
     CODEC_ID_RV10,
+    sizeof(MpegEncContext),
+    MPV_encode_init,
+    MPV_encode_picture,
+    MPV_encode_end,
+};
+
+AVCodec rv20_encoder = {
+    "rv20",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_RV20,
     sizeof(MpegEncContext),
     MPV_encode_init,
     MPV_encode_picture,

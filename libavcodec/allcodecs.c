@@ -64,6 +64,7 @@ void avcodec_register_all(void)
     register_avcodec(&h263p_encoder);
     register_avcodec(&flv_encoder);
     register_avcodec(&rv10_encoder);
+    register_avcodec(&rv20_encoder);
     register_avcodec(&mpeg4_encoder);
     register_avcodec(&msmpeg4v1_encoder);
     register_avcodec(&msmpeg4v2_encoder);

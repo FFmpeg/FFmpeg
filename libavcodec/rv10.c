@@ -258,6 +258,35 @@ void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
     put_bits(&s->pb, 3, 0);	/* ignored */
 }
 
+void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
+    put_bits(&s->pb, 2, s->pict_type); //I 0 vs. 1 ?
+    put_bits(&s->pb, 1, 0);	/* unknown bit */
+    put_bits(&s->pb, 5, s->qscale);
+        
+    put_bits(&s->pb, 8, picture_number&0xFF); //FIXME wrong, but correct is not known
+    s->mb_x= s->mb_y= 0;
+    ff_h263_encode_mba(s);
+    
+    put_bits(&s->pb, 1, s->no_rounding);
+    
+    assert(s->f_code == 1);
+    assert(s->unrestricted_mv == 1);
+//    assert(s->h263_aic== (s->pict_type == I_TYPE));
+    assert(s->alt_inter_vlc == 0);
+    assert(s->umvplus == 0);
+    assert(s->modified_quant==1);
+    assert(s->loop_filter==1);
+
+    s->h263_aic= s->pict_type == I_TYPE;
+    if(s->h263_aic){
+        s->y_dc_scale_table= 
+        s->c_dc_scale_table= ff_aic_dc_scale_table;
+    }else{
+        s->y_dc_scale_table=
+        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+    }
+}
+
 static int get_num(GetBitContext *gb)
 {
     int n, n1;
