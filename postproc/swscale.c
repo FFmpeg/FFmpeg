@@ -1,9 +1,20 @@
+/*
+    Copyright (C) 2001-2002 Michael Niedermayer <michaelni@gmx.at>
 
-// Software scaling and colorspace conversion routines for MPlayer
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
 
-// Orginal C implementation by A'rpi/ESP-team <arpi@thot.banki.hu>
-// current version mostly by Michael Niedermayer (michaelni@gmx.at)
-// the parts written by michael are under GNU GPL
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
 
 /*
   supported Input formats: YV12 (grayscale soon too)
@@ -469,10 +480,10 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 		flags= SWS_PRINT_INFO;
 		firstTime=0;
 
-		if(src_filter.lumH) free(src_filter.lumH);
-		if(src_filter.lumV) free(src_filter.lumV);
-		if(src_filter.chrH) free(src_filter.chrH);
-		if(src_filter.chrV) free(src_filter.chrV);
+		if(src_filter.lumH) freeVec(src_filter.lumH);
+		if(src_filter.lumV) freeVec(src_filter.lumV);
+		if(src_filter.chrH) freeVec(src_filter.chrH);
+		if(src_filter.chrV) freeVec(src_filter.chrV);
 
 		if(sws_lum_gblur!=0.0){
 			src_filter.lumH= getGaussianVec(sws_lum_gblur, 3.0);
