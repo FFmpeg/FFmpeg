@@ -1,10 +1,20 @@
+/* 
+ *
+ *  rgb2rgb.c, Software RGB to RGB convertor
+ *  Written by Nick Kurshev.
+ */
 #include <inttypes.h>
 #include "../config.h"
 #include "rgb2rgb.h"
-#ifdef HAVE_MMX
-#include "mmx.h"
-#endif
 #include "../mmx_defs.h"
+
+#ifdef HAVE_MMX
+static const uint64_t mask32   __attribute__((aligned(8))) = 0x00FFFFFF00FFFFFFULL;
+static const uint64_t mask24l  __attribute__((aligned(8))) = 0x0000000000FFFFFFULL;
+static const uint64_t mask24h  __attribute__((aligned(8))) = 0x0000FFFFFF000000ULL;
+static const uint64_t mask15b  __attribute__((aligned(8))) = 0x001F001F001F001FULL; /* 00000000 00011111  xxB */
+static const uint64_t mask15rg __attribute__((aligned(8))) = 0x7FE07FE07FE07FE0ULL; /* 01111111 11100000  RGx */
+#endif
 
 void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
@@ -12,19 +22,18 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
   uint8_t *s = src;
   uint8_t *end;
 #ifdef HAVE_MMX
-  const uint64_t mask32 = 0x00FFFFFF00FFFFFFULL;
   uint8_t *mm_end;
 #endif
   end = s + src_size;
 #ifdef HAVE_MMX
-  __asm __volatile(PREFETCH" %0\n\t"::"m"(*s):"memory");
+  __asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
   mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
-  __asm __volatile("movq %0, %%mm7"::"m"(mask32):"memory");
+  __asm __volatile("movq	%0, %%mm7"::"m"(mask32):"memory");
   if(mm_end == end) mm_end -= MMREG_SIZE*2;
   while(s < mm_end)
   {
     __asm __volatile(
-	PREFETCH" 32%1\n\t"
+	PREFETCH"	32%1\n\t"
 	"movd	%1, %%mm0\n\t"
 	"movd	3%1, %%mm1\n\t"
 	"movd	6%1, %%mm2\n\t"
@@ -59,23 +68,21 @@ void rgb32to24(uint8_t *src,uint8_t *dst,uint32_t src_size)
   uint8_t *s = src;
   uint8_t *end;
 #ifdef HAVE_MMX
-  const uint64_t mask24l = 0x0000000000FFFFFFULL;
-  const uint64_t mask24h = 0x0000FFFFFF000000ULL;
   uint8_t *mm_end;
 #endif
   end = s + src_size;
 #ifdef HAVE_MMX
-  __asm __volatile(PREFETCH" %0\n\t"::"m"(*s):"memory");
+  __asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
   mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
   __asm __volatile(
-    "movq %0, %%mm7\n\t"
-    "movq %1, %%mm6\n\t"
-    ::"m"(mask24l),"m"(mask24h):"memory");
+	"movq	%0, %%mm7\n\t"
+	"movq	%1, %%mm6"
+	::"m"(mask24l),"m"(mask24h):"memory");
   if(mm_end == end) mm_end -= MMREG_SIZE*2;
   while(s < mm_end)
   {
     __asm __volatile(
-	PREFETCH" 32%1\n\t"
+	PREFETCH"	32%1\n\t"
 	"movq	%1, %%mm0\n\t"
 	"movq	8%1, %%mm1\n\t"
 	"movq	%%mm0, %%mm2\n\t"
@@ -108,45 +115,47 @@ void rgb32to24(uint8_t *src,uint8_t *dst,uint32_t src_size)
   }
 }
 
-/* TODO: 3DNOW, MMX2 optimization */
-
-/* Original by Strepto/Astral
- ported to gcc & bugfixed : A'rpi */
+/*
+ Original by Strepto/Astral
+ ported to gcc & bugfixed : A'rpi
+ MMX,  3DNOW optimization by Nick Kurshev
+*/
 void rgb15to16(uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
 #ifdef HAVE_MMX
-  static uint64_t mask_b  = 0x001F001F001F001FLL; // 00000000 00011111  xxB
-  static uint64_t mask_rg = 0x7FE07FE07FE07FE0LL; // 01111111 11100000  RGx
   register char* s=src+src_size;
   register char* d=dst+src_size;
   register int offs=-src_size;
-  movq_m2r (mask_b,  mm4);
-  movq_m2r (mask_rg, mm5);
-  while(offs<0){
-    movq_m2r (*(s+offs), mm0);
-    movq_r2r (mm0, mm1);
-
-    movq_m2r (*(s+8+offs), mm2);
-    movq_r2r (mm2, mm3);
-    
-    pand_r2r (mm4, mm0);
-    pand_r2r (mm5, mm1);
-    
-    psllq_i2r(1,mm1);
-    pand_r2r (mm4, mm2);
-
-    pand_r2r (mm5, mm3);
-    por_r2r  (mm1, mm0);
-
-    psllq_i2r(1,mm3);
-    movq_r2m (mm0,*(d+offs));
-
-    por_r2r  (mm3,mm2);
-    movq_r2m (mm2,*(d+8+offs));
-
-    offs+=16;
+  __asm __volatile(PREFETCH"	%0"::"m"(*(s+offs)):"memory");
+  __asm __volatile(
+	"movq	%0, %%mm4\n\t"
+	"movq	%1, %%mm5"
+	::"m"(mask15b), "m"(mask15rg):"memory");
+  while(offs<0)
+  {
+	__asm __volatile(
+		PREFETCH"	32%1\n\t"
+		"movq	%1, %%mm0\n\t"
+		"movq	8%1, %%mm2\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm2, %%mm3\n\t"
+		"pand	%%mm4, %%mm0\n\t"
+		"pand	%%mm5, %%mm1\n\t"
+		"pand	%%mm4, %%mm2\n\t"
+		"pand	%%mm5, %%mm3\n\t"
+		"psllq	$1, %%mm1\n\t"
+		"psllq	$1, %%mm3\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm3, %%mm2\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		MOVNTQ"	%%mm2, 8%0"
+		:"=m"(*(d+offs))
+		:"m"(*(s+offs))
+		:"memory");
+	offs+=16;
   }
-  emms();
+  __asm __volatile(SFENCE:::"memory");
+  __asm __volatile(EMMS:::"memory");
 #else
    uint16_t *s1=( uint16_t * )src;
    uint16_t *d1=( uint16_t * )dst;
