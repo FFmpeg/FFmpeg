@@ -67,7 +67,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
  * allocates a AVCodecContext and set it to defaults.
  * this can be deallocated by simply calling free() 
  */
-AVCodecContext *avcodec_alloc_context(){
+AVCodecContext *avcodec_alloc_context(void){
     AVCodecContext *avctx= av_mallocz(sizeof(AVCodecContext));
     
     if(avctx==NULL) return NULL;

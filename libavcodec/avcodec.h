@@ -878,7 +878,7 @@ AVCodec *avcodec_find_decoder(enum CodecID id);
 AVCodec *avcodec_find_decoder_by_name(const char *name);
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
-AVCodecContext *avcodec_alloc_context();
+AVCodecContext *avcodec_alloc_context(void);
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 int avcodec_decode_audio(AVCodecContext *avctx, INT16 *samples, 
                          int *frame_size_ptr,
