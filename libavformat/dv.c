@@ -550,6 +550,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     if (c->ach == 2 && !c->ast[1]) {
         c->ast[1] = av_new_stream(c->fctx, 0);
 	if (c->ast[1]) {
+            av_set_pts_info(c->ast[1], 64, 1, 30000);
 	    c->ast[1]->codec.codec_type = CODEC_TYPE_AUDIO;
 	    c->ast[1]->codec.codec_id = CODEC_ID_PCM_S16LE;
 	} else
@@ -721,6 +722,9 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     c->ast[0] = av_new_stream(s, 0);
     if (!c->vst || !c->ast[0])
         goto fail;
+    av_set_pts_info(c->vst, 64, 1, 30000);
+    av_set_pts_info(c->ast[0], 64, 1, 30000);
+
     c->fctx = s;
     c->ast[1] = NULL;
     c->ach = 0;
@@ -737,8 +741,6 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     c->ast[0]->codec.codec_id = CODEC_ID_PCM_S16LE;
    
     s->ctx_flags |= AVFMTCTX_NOHEADER; 
-    
-    av_set_pts_info(s, 64, 1, 30000);
     
     return c;
     

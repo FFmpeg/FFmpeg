@@ -768,6 +768,7 @@ static void mpegts_push_data(void *opaque,
                         }
                         st = av_new_stream(pes->stream, pes->pid);
                         if (st) {
+                            av_set_pts_info(st, 60, 1, 27000000);
                             st->priv_data = pes;
                             st->codec.codec_type = codec_type;
                             st->codec.codec_id = codec_id;
@@ -1165,14 +1166,12 @@ static int mpegts_read_header(AVFormatContext *s,
         uint8_t packet[TS_PACKET_SIZE];
         
         /* only read packets */
-
-        s->pts_num = 1;
-        s->pts_den = 27000000;
         
     do_pcr:
         st = av_new_stream(s, 0);
         if (!st)
             goto fail;
+        av_set_pts_info(st, 60, 1, 27000000);
         st->codec.codec_type = CODEC_TYPE_DATA;
         st->codec.codec_id = CODEC_ID_MPEG2TS;
         

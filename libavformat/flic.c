@@ -100,9 +100,7 @@ static int flic_read_header(AVFormatContext *s,
     st->codec.extradata = av_malloc(FLIC_HEADER_SIZE);
     memcpy(st->codec.extradata, header, FLIC_HEADER_SIZE);
 
-    /* set the pts reference (1 pts = 1/90000) */
-    s->pts_num = 1;
-    s->pts_den = 90000;
+    av_set_pts_info(st, 33, 1, 90000);
 
     /* Time to figure out the framerate: If there is a FLIC chunk magic
      * number at offset 0x10, assume this is from the Bullfrog game,

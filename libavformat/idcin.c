@@ -154,6 +154,7 @@ static int idcin_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
+    av_set_pts_info(st, 33, 1, 90000);
     idcin->video_stream_index = st->index;
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = CODEC_ID_IDCIN;
@@ -176,6 +177,7 @@ static int idcin_read_header(AVFormatContext *s,
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR_NOMEM;
+        av_set_pts_info(st, 33, 1, 90000);
         idcin->audio_stream_index = st->index;
         st->codec.codec_type = CODEC_TYPE_AUDIO;
         st->codec.codec_tag = 1;
@@ -204,10 +206,6 @@ static int idcin_read_header(AVFormatContext *s,
 
     idcin->next_chunk_is_video = 1;
     idcin->pts = 0;
-
-    /* set the pts reference (1 pts = 1/90000) */
-    s->pts_num = 1;
-    s->pts_den = 90000;
 
     return 0;
 }

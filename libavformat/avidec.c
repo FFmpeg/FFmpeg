@@ -93,8 +93,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIStream *ast;
     int xan_video = 0;  /* hack to support Xan A/V */
 
-    av_set_pts_info(s, 64, 1, AV_TIME_BASE);
-
     if (get_riff(avi, pb) < 0)
         return -1;
 
@@ -139,6 +137,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st = av_new_stream(s, i);
                 if (!st)
                     goto fail;
+                av_set_pts_info(st, 64, 1, AV_TIME_BASE);
+
                 ast = av_mallocz(sizeof(AVIStream));
                 if (!ast)
                     goto fail;

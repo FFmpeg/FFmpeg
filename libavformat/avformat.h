@@ -214,6 +214,8 @@ typedef struct AVStream {
     int codec_info_nb_frames;
     /* encoding: PTS generation when outputing stream */
     AVFrac pts;
+    AVRational time_base;
+    int pts_wrap_bits; /* number of bits in pts (used for wrapping control) */
     /* ffmpeg.c private use */
     int stream_copy; /* if TRUE, just copy stream */
     /* quality, as it has been removed from AVCodecContext and put in AVVideoFrame
@@ -226,6 +228,14 @@ typedef struct AVStream {
        seconds. */
     int64_t duration;
 
+    /* the following are used for pts/dts unit conversion */
+    int64_t last_pkt_stream_pts;
+    int64_t last_pkt_stream_dts;
+    int64_t last_pkt_pts;
+    int64_t last_pkt_dts;
+    int last_pkt_pts_frac;
+    int last_pkt_dts_frac;
+    
     /* av_read_frame() support */
     int need_parsing;
     struct AVCodecParserContext *parser;
@@ -268,8 +278,6 @@ typedef struct AVFormatContext {
 
     int ctx_flags; /* format specific flags, see AVFMTCTX_xx */
     /* private data for pts handling (do not modify directly) */
-    int pts_wrap_bits; /* number of bits in pts (used for wrapping control) */
-    int pts_num, pts_den; /* value to convert to seconds */
     /* This buffer is only needed when packets were already buffered but
        not decoded, for example to get the codec parameters in mpeg
        streams */
@@ -295,14 +303,6 @@ typedef struct AVFormatContext {
     const uint8_t *cur_ptr;
     int cur_len;
     AVPacket cur_pkt;
-
-    /* the following are used for pts/dts unit conversion */
-    int64_t last_pkt_stream_pts;
-    int64_t last_pkt_stream_dts;
-    int64_t last_pkt_pts;
-    int64_t last_pkt_dts;
-    int last_pkt_pts_frac;
-    int last_pkt_dts_frac;
 
     /* av_seek_frame() support */
     int64_t data_offset; /* offset of the first packet */
@@ -553,7 +553,7 @@ int av_read_play(AVFormatContext *s);
 int av_read_pause(AVFormatContext *s);
 void av_close_input_file(AVFormatContext *s);
 AVStream *av_new_stream(AVFormatContext *s, int id);
-void av_set_pts_info(AVFormatContext *s, int pts_wrap_bits,
+void av_set_pts_info(AVStream *s, int pts_wrap_bits,
                      int pts_num, int pts_den);
 
 int av_find_default_stream_index(AVFormatContext *s);

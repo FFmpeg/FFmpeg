@@ -285,6 +285,8 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     for(n=0;n<s->nb_streams;n++) {
         enc = &s->streams[n]->codec;
 
+        av_set_pts_info(s->streams[n], 32, 1, 1000); /* 32 bit pts in ms */
+
         bit_rate += enc->bit_rate;
     }
 
@@ -468,8 +470,6 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 static int asf_write_header(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
-
-    av_set_pts_info(s, 32, 1, 1000); /* 32 bit pts in ms */
 
     asf->packet_size = PACKET_SIZE;
     asf->nb_packets = 0;

@@ -355,13 +355,6 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         ic->priv_data = NULL;
     }
 
-    /* default pts settings is MPEG like */
-    av_set_pts_info(ic, 33, 1, 90000);
-    ic->last_pkt_pts = AV_NOPTS_VALUE;
-    ic->last_pkt_dts = AV_NOPTS_VALUE;
-    ic->last_pkt_stream_pts = AV_NOPTS_VALUE;
-    ic->last_pkt_stream_dts = AV_NOPTS_VALUE;
-    
     err = ic->iformat->read_header(ic, ap);
     if (err < 0)
         goto fail;
@@ -499,7 +492,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
    wrapping is handled by considering the next PTS/DTS as a delta to
    the previous value. We handle the delta as a fraction to avoid any
    rounding errors. */
-static inline int64_t convert_timestamp_units(AVFormatContext *s,
+static inline int64_t convert_timestamp_units(AVStream *s,
                                         int64_t *plast_pkt_pts,
                                         int *plast_pkt_pts_frac,
                                         int64_t *plast_pkt_stream_pts,
@@ -515,17 +508,18 @@ static inline int64_t convert_timestamp_units(AVFormatContext *s,
             shift = 64 - s->pts_wrap_bits;
             delta_pts = ((stream_pts - *plast_pkt_stream_pts) << shift) >> shift;
             /* XXX: overflow possible but very unlikely as it is a delta */
-            delta_pts = delta_pts * AV_TIME_BASE * s->pts_num;
-            pts = *plast_pkt_pts + (delta_pts / s->pts_den);
-            pts_frac = *plast_pkt_pts_frac + (delta_pts % s->pts_den);
-            if (pts_frac >= s->pts_den) {
-                pts_frac -= s->pts_den;
+            delta_pts = delta_pts * AV_TIME_BASE * s->time_base.num;
+            pts = *plast_pkt_pts + (delta_pts / s->time_base.den);
+            pts_frac = *plast_pkt_pts_frac + (delta_pts % s->time_base.den);
+            if (pts_frac >= s->time_base.den) {
+                pts_frac -= s->time_base.den;
                 pts++;
             }
         } else {
             /* no previous pts, so no wrapping possible */
-            pts = (int64_t)(((double)stream_pts * AV_TIME_BASE * s->pts_num) / 
-                            (double)s->pts_den);
+//            pts = av_rescale(stream_pts, (int64_t)AV_TIME_BASE * s->time_base.num, s->time_base.den);
+            pts = (int64_t)(((double)stream_pts * AV_TIME_BASE * s->time_base.num) / 
+                            (double)s->time_base.den);
             pts_frac = 0;
         }
         *plast_pkt_stream_pts = stream_pts;
@@ -752,15 +746,17 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 /* no more packets: really terminates parsing */
                 return ret;
             }
+            
+            st = s->streams[s->cur_pkt.stream_index];
 
             /* convert the packet time stamp units and handle wrapping */
-            s->cur_pkt.pts = convert_timestamp_units(s, 
-                                               &s->last_pkt_pts, &s->last_pkt_pts_frac,
-                                               &s->last_pkt_stream_pts,
+            s->cur_pkt.pts = convert_timestamp_units(st, 
+                                               &st->last_pkt_pts, &st->last_pkt_pts_frac,
+                                               &st->last_pkt_stream_pts,
                                                s->cur_pkt.pts);
-            s->cur_pkt.dts = convert_timestamp_units(s, 
-                                               &s->last_pkt_dts,  &s->last_pkt_dts_frac,
-                                               &s->last_pkt_stream_dts,
+            s->cur_pkt.dts = convert_timestamp_units(st, 
+                                               &st->last_pkt_dts,  &st->last_pkt_dts_frac,
+                                               &st->last_pkt_stream_dts,
                                                s->cur_pkt.dts);
 #if 0
             if (s->cur_pkt.stream_index == 0) {
@@ -772,14 +768,10 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                            (double)s->cur_pkt.dts / AV_TIME_BASE);
             }
 #endif
-            
-            /* duration field */
-            if (s->cur_pkt.duration != 0) {
-                s->cur_pkt.duration = ((int64_t)s->cur_pkt.duration * AV_TIME_BASE * s->pts_num) / 
-                    s->pts_den;
-            }
 
-            st = s->streams[s->cur_pkt.stream_index];
+            /* duration field */
+            s->cur_pkt.duration = av_rescale(s->cur_pkt.duration, AV_TIME_BASE * (int64_t)st->time_base.num, st->time_base.den);
+
             s->cur_st = st;
             s->cur_ptr = s->cur_pkt.data;
             s->cur_len = s->cur_pkt.size;
@@ -1355,7 +1347,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic)
         st = ic->streams[pkt->stream_index];
         if (pkt->pts != AV_NOPTS_VALUE) {
             if (st->start_time == AV_NOPTS_VALUE)
-                st->start_time = (int64_t)((double)pkt->pts * ic->pts_num * (double)AV_TIME_BASE / ic->pts_den);
+                st->start_time = av_rescale(pkt->pts, st->time_base.num * (int64_t)AV_TIME_BASE, st->time_base.den);
         }
         av_free_packet(pkt);
     }
@@ -1398,7 +1390,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic)
         read_size += pkt->size;
         st = ic->streams[pkt->stream_index];
         if (pkt->pts != AV_NOPTS_VALUE) {
-            end_time = (int64_t)((double)pkt->pts * ic->pts_num * (double)AV_TIME_BASE / ic->pts_den);
+            end_time = av_rescale(pkt->pts, st->time_base.num * (int64_t)AV_TIME_BASE, st->time_base.den);
             duration = end_time - st->start_time;
             if (duration > 0) {
                 if (st->duration == AV_NOPTS_VALUE ||
@@ -1776,6 +1768,14 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     st->id = id;
     st->start_time = AV_NOPTS_VALUE;
     st->duration = AV_NOPTS_VALUE;
+
+    /* default pts settings is MPEG like */
+    av_set_pts_info(st, 33, 1, 90000);
+    st->last_pkt_pts = AV_NOPTS_VALUE;
+    st->last_pkt_dts = AV_NOPTS_VALUE;
+    st->last_pkt_stream_pts = AV_NOPTS_VALUE;
+    st->last_pkt_stream_dts = AV_NOPTS_VALUE;
+
     s->streams[s->nb_streams++] = st;
     return st;
 }
@@ -1814,8 +1814,6 @@ int av_write_header(AVFormatContext *s)
     int ret, i;
     AVStream *st;
 
-    /* default pts settings is MPEG like */
-    av_set_pts_info(s, 33, 1, 90000);
     ret = s->oformat->write_header(s);
     if (ret < 0)
         return ret;
@@ -1827,11 +1825,11 @@ int av_write_header(AVFormatContext *s)
         switch (st->codec.codec_type) {
         case CODEC_TYPE_AUDIO:
             av_frac_init(&st->pts, 0, 0, 
-                         (int64_t)s->pts_num * st->codec.sample_rate);
+                         (int64_t)st->time_base.num * st->codec.sample_rate);
             break;
         case CODEC_TYPE_VIDEO:
             av_frac_init(&st->pts, 0, 0, 
-                         (int64_t)s->pts_num * st->codec.frame_rate);
+                         (int64_t)st->time_base.num * st->codec.frame_rate);
             break;
         default:
             break;
@@ -1858,7 +1856,7 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
     int ret, frame_size;
 
     st = s->streams[stream_index];
-    pts_mask = (1LL << s->pts_wrap_bits) - 1;
+    pts_mask = (1LL << st->pts_wrap_bits) - 1;
 
     /* HACK/FIXME we skip all zero size audio packets so a encoder can pass pts by outputing zero size packets */
     if(st->codec.codec_type==CODEC_TYPE_AUDIO && size==0)
@@ -1878,13 +1876,11 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
         /* HACK/FIXME, we skip the initial 0-size packets as they are most likely equal to the encoder delay,
            but it would be better if we had the real timestamps from the encoder */
         if (frame_size >= 0 && (size || st->pts.num!=st->pts.den>>1 || st->pts.val)) {
-            av_frac_add(&st->pts, 
-                        (int64_t)s->pts_den * frame_size);
+            av_frac_add(&st->pts, (int64_t)st->time_base.den * frame_size);
         }
         break;
     case CODEC_TYPE_VIDEO:
-        av_frac_add(&st->pts, 
-                    (int64_t)s->pts_den * st->codec.frame_rate_base);
+        av_frac_add(&st->pts, (int64_t)st->time_base.den * st->codec.frame_rate_base);
         break;
     default:
         break;
@@ -2375,12 +2371,12 @@ void url_split(char *proto, int proto_size,
  * @param pts_num numerator to convert to seconds (MPEG: 1) 
  * @param pts_den denominator to convert to seconds (MPEG: 90000)
  */
-void av_set_pts_info(AVFormatContext *s, int pts_wrap_bits,
+void av_set_pts_info(AVStream *s, int pts_wrap_bits,
                      int pts_num, int pts_den)
 {
     s->pts_wrap_bits = pts_wrap_bits;
-    s->pts_num = pts_num;
-    s->pts_den = pts_den;
+    s->time_base.num = pts_num;
+    s->time_base.den = pts_den;
 }
 
 /* fraction handling */

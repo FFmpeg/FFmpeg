@@ -129,6 +129,7 @@ static int vmd_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
+    av_set_pts_info(st, 33, 1, 90000);
     vmd->video_stream_index = st->index;
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = CODEC_ID_VMDVIDEO;
@@ -145,6 +146,7 @@ static int vmd_read_header(AVFormatContext *s,
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR_NOMEM;
+        av_set_pts_info(st, 33, 1, 90000);
         vmd->audio_stream_index = st->index;
         st->codec.codec_type = CODEC_TYPE_AUDIO;
         st->codec.codec_id = CODEC_ID_VMDAUDIO;
@@ -242,10 +244,6 @@ static int vmd_read_header(AVFormatContext *s,
     }
 
     av_free(raw_frame_table);
-
-    /* set the pts reference at 1 pts = 1/90000 sec */
-    s->pts_num = 1;
-    s->pts_den = 90000;
 
     vmd->current_frame = 0;
 

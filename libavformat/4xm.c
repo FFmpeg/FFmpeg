@@ -164,6 +164,7 @@ static int fourxm_read_header(AVFormatContext *s,
             st = av_new_stream(s, 0);
             if (!st)
                 return AVERROR_NOMEM;
+            av_set_pts_info(st, 33, 1, 90000);
 
             fourxm->video_stream_index = st->index;
 
@@ -202,6 +203,9 @@ static int fourxm_read_header(AVFormatContext *s,
             if (!st)
                 return AVERROR_NOMEM;
 
+            /* set the pts reference (1 pts = 1/90000) */
+            av_set_pts_info(st, 33, 1, 90000);
+
             fourxm->tracks[current_track].stream_index = st->index;
 
             st->codec.codec_type = CODEC_TYPE_AUDIO;
@@ -231,10 +235,6 @@ static int fourxm_read_header(AVFormatContext *s,
     /* initialize context members */
     fourxm->video_pts = -fourxm->video_pts_inc;  /* first frame will push to 0 */
     fourxm->audio_pts = 0;
-
-    /* set the pts reference (1 pts = 1/90000) */
-    s->pts_num = 1;
-    s->pts_den = 90000;
 
     return 0;
 }

@@ -230,7 +230,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.sample_rate = s->sample_rate;
     st->codec.channels = s->channels;
 
-    av_set_pts_info(s1, 48, 1, 1000000);  /* 48 bits pts in us */
+    av_set_pts_info(st, 48, 1, 1000000);  /* 48 bits pts in us */
     return 0;
 }
 

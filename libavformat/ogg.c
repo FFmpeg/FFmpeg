@@ -36,14 +36,14 @@ static int ogg_write_header(AVFormatContext *avfcontext)
     ogg_packet *op= &context->op;    
     int n, i;
 
-    av_set_pts_info(avfcontext, 60, 1, AV_TIME_BASE);
-
     ogg_stream_init(&context->os, 31415);
     
     for(n = 0 ; n < avfcontext->nb_streams ; n++) {
         AVCodecContext *codec = &avfcontext->streams[n]->codec;
         uint8_t *p= codec->extradata;
         
+        av_set_pts_info(avfcontext->streams[n], 60, 1, AV_TIME_BASE);
+
         for(i=0; i < codec->extradata_size; i+= op->bytes){
             op->bytes = p[i++]<<8;
             op->bytes+= p[i++];
@@ -172,7 +172,6 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
     int i;
      
     avfcontext->ctx_flags |= AVFMTCTX_NOHEADER;
-    av_set_pts_info(avfcontext, 60, 1, AV_TIME_BASE);
      
     ogg_sync_init(&context->oy) ;
     buf = ogg_sync_buffer(&context->oy, DECODER_BUFFER_SIZE) ;
@@ -190,6 +189,7 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
     ast = av_new_stream(avfcontext, 0) ;
     if(!ast)
 	return AVERROR_NOMEM ;
+    av_set_pts_info(ast, 60, 1, AV_TIME_BASE);
 
     codec= &ast->codec;
     codec->codec_type = CODEC_TYPE_AUDIO;

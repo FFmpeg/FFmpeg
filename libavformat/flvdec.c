@@ -48,8 +48,6 @@ static int flv_read_header(AVFormatContext *s,
     
     s->ctx_flags |= AVFMTCTX_NOHEADER; //ok we have a header but theres no fps, codec type, sample_rate, ...
 
-    av_set_pts_info(s, 24, 1, 1000); /* 24 bit pts in ms */
-
     url_fskip(&s->pb, 4);
     flags = get_byte(&s->pb);
 
@@ -103,6 +101,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         st = av_new_stream(s, is_audio);
         if (!st)
             return AVERROR_NOMEM;
+
+        av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
         st->codec.frame_rate_base= 0;
     }
     break;

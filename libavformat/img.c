@@ -236,7 +236,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     } else {
         /* XXX: computing this pts is not necessary as it is done in
            the generic code too */
-        pkt->pts = av_rescale((int64_t)s->img_count * s1->streams[0]->codec.frame_rate_base, s1->pts_den, s1->streams[0]->codec.frame_rate) / s1->pts_num;
+        pkt->pts = av_rescale((int64_t)s->img_count * s1->streams[0]->codec.frame_rate_base, s1->streams[0]->time_base.den, s1->streams[0]->codec.frame_rate) / s1->streams[0]->time_base.num;
         s->img_count++;
         s->img_number++;
         return 0;

@@ -595,10 +595,10 @@ static void do_video_out(AVFormatContext *s,
         double adelta, vdelta, av_delay;
 
         adelta = audio_sync->sync_ipts - ((double)audio_sync->sync_opts * 
-            s->pts_num / s->pts_den);
+            ost->st->time_base.num / ost->st->time_base.den);
 
         vdelta = ost->sync_ipts - ((double)ost->sync_opts *
-            s->pts_num / s->pts_den);
+            ost->st->time_base.num / ost->st->time_base.den);
 
         av_delay = adelta - vdelta;
         if (av_delay < -AV_DELAY_MAX)
@@ -609,7 +609,7 @@ static void do_video_out(AVFormatContext *s,
     } else {
         double vdelta;
 
-        vdelta = (double)(ost->st->pts.val) * s->pts_num / s->pts_den - (ost->sync_ipts - ost->sync_ipts_offset);
+        vdelta = (double)(ost->st->pts.val) * ost->st->time_base.num / ost->st->time_base.den - (ost->sync_ipts - ost->sync_ipts_offset);
         if (vdelta < 100 && vdelta > -100 && ost->sync_ipts_offset) {
             if (vdelta < -AV_DELAY_MAX)
                 nb_frames = 2;
@@ -630,10 +630,10 @@ static void do_video_out(AVFormatContext *s,
         if (audio_sync && verbose >=0) {
             fprintf(stderr, "Input APTS %12.6f, output APTS %12.6f, ",
                     (double) audio_sync->sync_ipts, 
-                    (double) audio_sync->st->pts.val * s->pts_num / s->pts_den);
+                    (double) audio_sync->st->pts.val * st->time_base.num / st->time_base.den);
             fprintf(stderr, "Input VPTS %12.6f, output VPTS %12.6f: %s\n",
                     (double) ost->sync_ipts, 
-                    (double) ost->st->pts.val * s->pts_num / s->pts_den,
+                    (double) ost->st->pts.val * st->time_base.num / st->time_base.den,
                     action[nb_frames]);
         }
     }
@@ -872,7 +872,7 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
         
         fprintf(fvstats,"f_size= %6d ", frame_size);
         /* compute pts value */
-        ti1 = (double)ost->st->pts.val * os->pts_num / os->pts_den;
+        ti1 = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
         if (ti1 < 0.01)
             ti1 = 0.01;
     
@@ -956,7 +956,7 @@ static void print_report(AVFormatContext **output_files,
             vid = 1;
         }
         /* compute min output value */
-        pts = (double)ost->st->pts.val * os->pts_num / os->pts_den;
+        pts = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
         if ((pts < ti1) && (pts > 0))
             ti1 = pts;
     }
@@ -1118,7 +1118,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         printf("%d: got pts=%0.3f %0.3f\n", i, 
                                (double)pkt->pts / AV_TIME_BASE, 
                                ((double)ist->pts / AV_TIME_BASE) - 
-                               ((double)ost->st->pts.val * os->pts_num / os->pts_den));
+                               ((double)ost->st->pts.val * ost->time_base.num / ost->time_base.den));
 #endif
                         /* set the input output pts pairs */
                         ost->sync_ipts = (double)ist->pts / AV_TIME_BASE;
@@ -1165,7 +1165,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             avcodec_get_frame_defaults(&avframe);
                             ost->st->codec.coded_frame= &avframe;
                             avframe.key_frame = pkt->flags & PKT_FLAG_KEY; 
-                            ost->st->pts.val= av_rescale(ist->pts, os->pts_den, os->pts_num*AV_TIME_BASE);
+                            ost->st->pts.val= av_rescale(ist->pts, ost->st->time_base.den, ost->st->time_base.num*AV_TIME_BASE);
 
                             if(ost->st->codec.codec_type == CODEC_TYPE_AUDIO)
                                 audio_size += data_size;
@@ -1637,7 +1637,7 @@ static int av_encode(AVFormatContext **output_files,
             ost = ost_table[i];
             os = output_files[ost->file_index];
             ist = ist_table[ost->source_index];
-            pts = (double)ost->st->pts.val * os->pts_num / os->pts_den;
+            pts = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
             if (!file_table[ist->file_index].eof_reached && 
                 pts < pts_min) {
                 pts_min = pts;
@@ -2729,12 +2729,11 @@ static void opt_output_file(const char *filename)
         if (use_video) {
             AVCodecContext *video_enc;
             
-            st = av_mallocz(sizeof(AVStream));
+            st = av_new_stream(oc, nb_streams++);
             if (!st) {
                 fprintf(stderr, "Could not alloc stream\n");
                 exit(1);
             }
-            avcodec_get_context_defaults(&st->codec);
 #if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
             if(thread_count>1)
                 avcodec_thread_init(&st->codec, thread_count);
@@ -2960,19 +2959,16 @@ static void opt_output_file(const char *filename)
                     }
                 }
             }
-            oc->streams[nb_streams] = st;
-            nb_streams++;
         }
     
         if (use_audio) {
             AVCodecContext *audio_enc;
 
-            st = av_mallocz(sizeof(AVStream));
+            st = av_new_stream(oc, nb_streams++);
             if (!st) {
                 fprintf(stderr, "Could not alloc stream\n");
                 exit(1);
             }
-            avcodec_get_context_defaults(&st->codec);
 #if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
             if(thread_count>1)
                 avcodec_thread_init(&st->codec, thread_count);
@@ -3002,8 +2998,6 @@ static void opt_output_file(const char *filename)
                 } else
                     audio_enc->channels = audio_channels;
             }
-            oc->streams[nb_streams] = st;
-            nb_streams++;
         }
 
         oc->nb_streams = nb_streams;

@@ -134,8 +134,6 @@ static int flv_write_header(AVFormatContext *s)
     FLVContext *flv = s->priv_data;
     int i;
 
-    av_set_pts_info(s, 24, 1, 1000); /* 24 bit pts in ms */
-
     flv->hasAudio = 0;
     flv->hasVideo = 0;
 
@@ -151,6 +149,7 @@ static int flv_write_header(AVFormatContext *s)
     
     for(i=0; i<s->nb_streams; i++){
         AVCodecContext *enc = &s->streams[i]->codec;
+        av_set_pts_info(s->streams[i], 24, 1, 1000); /* 24 bit pts in ms */
         if(enc->codec_tag == 5){
             put_byte(pb,8); // message type
             put_be24(pb,0); // include flags

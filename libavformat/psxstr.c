@@ -135,9 +135,6 @@ static int str_read_header(AVFormatContext *s,
     str->video_channel = -1;
     str->video_chunk = NULL;
 
-    /* set the pts reference (1 pts = 1/90000) */
-    s->pts_num = 1;
-    s->pts_den = 90000;
 
     /* skip over any RIFF header */
     if (get_buffer(pb, sector, RIFF_HEADER_SIZE) != RIFF_HEADER_SIZE)
@@ -178,6 +175,8 @@ static int str_read_header(AVFormatContext *s,
                 st = av_new_stream(s, 0);
                 if (!st)
                     return AVERROR_NOMEM;
+                /* set the pts reference (1 pts = 1/90000) */
+                av_set_pts_info(st, 33, 1, 90000);
 
                 str->channels[channel].video_stream_index = st->index;
 
@@ -206,6 +205,7 @@ static int str_read_header(AVFormatContext *s,
                 st = av_new_stream(s, 0);
                 if (!st)
                     return AVERROR_NOMEM;
+                av_set_pts_info(st, 33, 1, 90000);
 
                 str->channels[channel].audio_stream_index = st->index;
 

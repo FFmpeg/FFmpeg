@@ -805,8 +805,6 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     frame_rate = get_le16(pb);
     get_le16(pb); /* frame count */
     
-    av_set_pts_info(s, 24, 1, 1000); /* 24 bit pts in ms */
-    
     /* The Flash Player converts 8.8 frame rates 
        to milliseconds internally. Do the same to get 
        a correct framerate */
@@ -837,6 +835,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             /* Check for FLV1 */
             if ( get_byte(pb) == SWF_VIDEO_CODEC_FLV1 ) {
                 vst = av_new_stream(s, 0);
+                av_set_pts_info(vst, 24, 1, 1000); /* 24 bit pts in ms */
+    
                 vst->codec.codec_type = CODEC_TYPE_VIDEO;
                 vst->codec.codec_id = CODEC_ID_FLV1;
                 if ( swf->samples_per_frame ) {
@@ -857,6 +857,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le16(pb);
                 }
                 ast = av_new_stream(s, 1);
+                av_set_pts_info(ast, 24, 1, 1000); /* 24 bit pts in ms */
                 if (!ast)
                     return -ENOMEM;
 

@@ -233,6 +233,7 @@ static int wc3_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
+    av_set_pts_info(st, 33, 1, 90000);
     wc3->video_stream_index = st->index;
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = CODEC_ID_XAN_WC3;
@@ -246,6 +247,7 @@ static int wc3_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
+    av_set_pts_info(st, 33, 1, 90000);
     wc3->audio_stream_index = st->index;
     st->codec.codec_type = CODEC_TYPE_AUDIO;
     st->codec.codec_id = CODEC_ID_PCM_S16LE;
@@ -256,10 +258,6 @@ static int wc3_read_header(AVFormatContext *s,
     st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
         st->codec.bits_per_sample;
     st->codec.block_align = WC3_AUDIO_BITS * WC3_AUDIO_CHANNELS;
-
-    /* set the pts reference (1 pts = 1/90000) */
-    s->pts_num = 1;
-    s->pts_den = 90000;
 
     return 0;
 }

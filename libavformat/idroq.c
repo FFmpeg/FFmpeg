@@ -84,10 +84,6 @@ static int roq_read_header(AVFormatContext *s,
     roq->framerate = LE_16(&preamble[6]);
     roq->frame_pts_inc = 90000 / roq->framerate;
 
-    /* set the pts reference (1 pts = 1/90000) */
-    s->pts_num = 1;
-    s->pts_den = 90000;
-
     /* init private context parameters */
     roq->width = roq->height = roq->audio_channels = roq->video_pts = 
     roq->audio_frame_count = 0;
@@ -146,6 +142,8 @@ static int roq_read_header(AVFormatContext *s,
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
+    /* set the pts reference (1 pts = 1/90000) */
+    av_set_pts_info(st, 33, 1, 90000);
     roq->video_stream_index = st->index;
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = CODEC_ID_ROQ;
@@ -157,6 +155,7 @@ static int roq_read_header(AVFormatContext *s,
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR_NOMEM;
+        av_set_pts_info(st, 33, 1, 90000);
         roq->audio_stream_index = st->index;
         st->codec.codec_type = CODEC_TYPE_AUDIO;
         st->codec.codec_id = CODEC_ID_ROQ_DPCM;

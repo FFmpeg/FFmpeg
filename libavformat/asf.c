@@ -148,8 +148,6 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int size, i;
     int64_t gsize;
 
-    av_set_pts_info(s, 32, 1, 1000); /* 32 bit pts in ms */
-
     get_guid(pb, &g);
     if (memcmp(&g, &asf_header, sizeof(GUID)))
         goto fail;
@@ -193,6 +191,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st = av_new_stream(s, 0);
             if (!st)
                 goto fail;
+            av_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
             asf_st = av_mallocz(sizeof(ASFStream));
             if (!asf_st)
                 goto fail;

@@ -511,8 +511,6 @@ static int nut_write_header(AVFormatContext *s)
     nut->stream =	
 	av_mallocz(sizeof(StreamContext)*s->nb_streams);
     
-    av_set_pts_info(s, 60, 1, AV_TIME_BASE);
-    
     /* main header */
     put_be64(bc, MAIN_STARTCODE);
     put_packetheader(nut, bc, 120+5*256, 1);
@@ -572,6 +570,7 @@ static int nut_write_header(AVFormatContext *s)
 	int nom, denom, gcd;
 
 	codec = &s->streams[i]->codec;
+        av_set_pts_info(s->streams[i], 60, 1, AV_TIME_BASE);
 	
 	put_be64(bc, STREAM_STARTCODE);
 	put_packetheader(nut, bc, 120 + codec->extradata_size, 1);
@@ -945,6 +944,8 @@ static int decode_stream_header(NUTContext *nut){
     st = av_new_stream(s, stream_id);
     if (!st)
         return AVERROR_NOMEM;
+    av_set_pts_info(st, 60, 1, AV_TIME_BASE);
+
     class = get_v(bc);
     tmp = get_vb(bc);
     st->codec.codec_tag= tmp;
@@ -1069,8 +1070,6 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     nut->avf= s;
     
-    av_set_pts_info(s, 60, 1, AV_TIME_BASE);
-
     /* main header */
     pos=0;
     for(;;){

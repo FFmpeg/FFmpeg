@@ -131,14 +131,11 @@ static int wsaud_read_header(AVFormatContext *s,
     /* flag 1 indicates 16 bit audio */
     wsaud->audio_bits = (((header[10] & 0x2) >> 1) + 1) * 8;
 
-    /* set the pts reference the same as the sample rate */
-    s->pts_num = 1;
-    s->pts_den = wsaud->audio_samplerate;
-
     /* initialize the audio decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
+    av_set_pts_info(st, 33, 1, wsaud->audio_samplerate);
     st->codec.codec_type = CODEC_TYPE_AUDIO;
     st->codec.codec_id = wsaud->audio_type;
     st->codec.codec_tag = 0;  /* no tag */
@@ -222,14 +219,11 @@ static int wsvqa_read_header(AVFormatContext *s,
     unsigned int chunk_tag;
     unsigned int chunk_size;
 
-    /* set the pts reference (1 pts = 1/90000) */
-    s->pts_num = 1;
-    s->pts_den = 90000;
-
     /* initialize the video decoder stream */
     st = av_new_stream(s, 0);
     if (!st)
         return AVERROR_NOMEM;
+    av_set_pts_info(st, 33, 1, 90000);
     wsvqa->video_stream_index = st->index;
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = CODEC_ID_WS_VQA;
@@ -255,6 +249,7 @@ static int wsvqa_read_header(AVFormatContext *s,
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR_NOMEM;
+        av_set_pts_info(st, 33, 1, 90000);
         st->codec.codec_type = CODEC_TYPE_AUDIO;
         st->codec.codec_id = CODEC_ID_ADPCM_IMA_WS;
         st->codec.codec_tag = 0;  /* no tag */

@@ -2152,8 +2152,6 @@ matroska_read_header (AVFormatContext    *s,
         MatroskaTrack *track;
         AVStream *st;
 
-        av_set_pts_info(s, 24, 1, 1000); /* 24 bit pts in ms */
-
         for (i = 0; i < matroska->num_tracks; i++) {
             track = matroska->tracks[i];
 
@@ -2257,6 +2255,7 @@ matroska_read_header (AVFormatContext    *s,
             st = av_new_stream(s, track->stream_index);
             if (st == NULL)
                 return AVERROR_NOMEM;
+            av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
 
             st->codec.codec_id = codec_id;
 

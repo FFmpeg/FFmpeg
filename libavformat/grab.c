@@ -79,6 +79,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st = av_new_stream(s1, 0);
     if (!st)
         return -ENOMEM;
+    av_set_pts_info(st, 48, 1, 1000000); /* 48 bits pts in us */
 
     s->width = width;
     s->height = height;
@@ -263,8 +264,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.height = height;
     st->codec.frame_rate      = frame_rate;
     st->codec.frame_rate_base = frame_rate_base;
-    
-    av_set_pts_info(s1, 48, 1, 1000000); /* 48 bits pts in us */
 
     return 0;
  fail:
