@@ -24,6 +24,9 @@ DEP_FFMPEG_LIB=
 else
 FFMPEG_LIB=libavcodec/libavcodec.a
 DEP_FFMPEG_LIB=libavcodec/libavcodec.a
+ifeq ($(CONFIG_MP3LAME),yes)
+EXTRALIBS+=-lmp3lame
+endif
 endif
 
 all: lib $(PROG)
