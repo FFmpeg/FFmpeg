@@ -1,6 +1,8 @@
 /*
  * MJPEG encoder and decoder
  * Copyright (c) 2000, 2001 Fabrice Bellard.
+ * Copyright (c) 2003 Alex Beregszaszi
+ * Copyright (c) 2003-2004 Michael Niedermayer
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
