@@ -334,7 +334,7 @@ uint64_t time= rdtsc();
     s->bitstream_buffer_size=0;
 
     if (!s->context_initialized) {
-        if (DCT_common_init(s) < 0) //we need the idct permutaton for reading a custom matrix
+        if (MPV_common_init(s) < 0) //we need the idct permutaton for reading a custom matrix
             return -1;
     }
         
