@@ -346,7 +346,7 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
     int index;
     int current_x;
     int width = s->avctx->width;
-    unsigned char pixel;
+    unsigned char pix;
     unsigned char *palette_plane;
     unsigned char *y_plane;
     unsigned char *u_plane;
@@ -409,11 +409,11 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
         index = y * stride + x * 3;
         current_x = x;
         while(pixel_count--) {
-            pixel = *pixel_buffer++;
+            pix = *pixel_buffer++;
 
-            rgb_plane[index++] = s->palette[pixel * 4 + 0];
-            rgb_plane[index++] = s->palette[pixel * 4 + 1];
-            rgb_plane[index++] = s->palette[pixel * 4 + 2];
+            rgb_plane[index++] = s->palette[pix * 4 + 0];
+            rgb_plane[index++] = s->palette[pix * 4 + 1];
+            rgb_plane[index++] = s->palette[pix * 4 + 2];
 
             current_x++;
             if (current_x >= width) {
@@ -453,11 +453,11 @@ static void inline xan_wc3_output_pixel_run(XanContext *s,
         index = y * stride + x;
         current_x = x;
         while(pixel_count--) {
-            pixel = *pixel_buffer++;
+            pix = *pixel_buffer++;
 
-            y_plane[index] = s->palette[pixel * 4 + 0];
-            u_plane[index] = s->palette[pixel * 4 + 1];
-            v_plane[index] = s->palette[pixel * 4 + 2];
+            y_plane[index] = s->palette[pix * 4 + 0];
+            u_plane[index] = s->palette[pix * 4 + 1];
+            v_plane[index] = s->palette[pix * 4 + 2];
 
             index++;
             current_x++;
