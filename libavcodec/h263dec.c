@@ -609,7 +609,10 @@ retry:
     if (   s->width != avctx->width || s->height != avctx->height 
         || ABS(new_aspect - avctx->aspect_ratio) > 0.001) {
         /* H.263 could change picture size any time */
+        ParseContext pc= s->parse_context; //FIXME move these demuxng hack to avformat
+        s->parse_context.buffer=0;
         MPV_common_end(s);
+        s->parse_context= pc;
     }
     if (!s->context_initialized) {
         avctx->width = s->width;
