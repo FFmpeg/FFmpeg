@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4623
-#define LIBAVCODEC_BUILD_STR   "4623"
+#define LIBAVCODEC_BUILD       4624
+#define LIBAVCODEC_BUILD_STR   "4624"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -100,8 +100,10 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 
 #define FF_MAX_B_FRAMES 4
 
-/* encoding support */
-/* note not everything is supported yet */
+/* encoding support
+   these flags can be passed in AVCodecContext.flags before initing 
+   Note: note not everything is supported yet 
+*/
 
 #define CODEC_FLAG_HQ     0x0001 /* high quality (non real time) encoding */
 #define CODEC_FLAG_QSCALE 0x0002 /* use fixed qscale */
@@ -514,6 +516,7 @@ AVCodec *avcodec_find_decoder(enum CodecID id);
 AVCodec *avcodec_find_decoder_by_name(const char *name);
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
+AVCodecContext *avcodec_alloc_context();
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 int avcodec_decode_audio(AVCodecContext *avctx, INT16 *samples, 
                          int *frame_size_ptr,

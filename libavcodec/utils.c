@@ -49,6 +49,27 @@ void register_avcodec(AVCodec *format)
     format->next = NULL;
 }
 
+void avcodec_get_context_defaults(AVCodecContext *s){
+    s->qmin= 2;
+    s->qmax= 31;
+    s->rc_eq= "tex^qComp";
+    s->qcompress= 0.5;
+}
+
+/**
+ * allocates a AVCodecContext and set it to defaults.
+ * this can be deallocated by simply calling free() 
+ */
+AVCodecContext *avcodec_alloc_context(){
+    AVCodecContext *avctx= av_mallocz(sizeof(AVCodecContext));
+    
+    if(avctx==NULL) return NULL;
+    
+    avcodec_get_context_defaults(avctx);
+    
+    return avctx;
+}
+
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 {
     int ret;
