@@ -443,6 +443,31 @@ AVOutputFormat rawvideo_oformat = {
     raw_write_trailer,
 };
 
+static int null_write_packet(struct AVFormatContext *s, 
+                             int stream_index,
+                             unsigned char *buf, int size, int force_pts)
+{
+    return 0;
+}
+
+AVOutputFormat null_oformat = {
+    "null",
+    "null video format",
+    NULL,
+    NULL,
+    0,
+#ifdef WORDS_BIGENDIAN
+    CODEC_ID_PCM_S16BE,
+#else
+    CODEC_ID_PCM_S16LE,
+#endif
+    CODEC_ID_RAWVIDEO,
+    raw_write_header,
+    null_write_packet,
+    raw_write_trailer,
+    flags: AVFMT_NOFILE | AVFMT_RAWPICTURE,
+};
+
 int raw_init(void)
 {
     av_register_input_format(&mp3_iformat);
@@ -481,5 +506,7 @@ int raw_init(void)
 
     av_register_input_format(&rawvideo_iformat);
     av_register_output_format(&rawvideo_oformat);
+
+    av_register_output_format(&null_oformat);
     return 0;
 }
