@@ -60,7 +60,8 @@ void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size)
 #endif
 }
 
-#ifdef CONFIG_ENCODERS
+//#ifdef CONFIG_ENCODERS
+#if 1
 
 /* return the number of bits output */
 int get_bit_count(PutBitContext *s)
