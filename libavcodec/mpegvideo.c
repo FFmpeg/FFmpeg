@@ -514,9 +514,10 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
 
+    s->force_type= avctx->force_type;
     if (!s->intra_only) {
         /* first picture of GOP is intra */
-        if (s->picture_in_gop_number % s->gop_size==0){
+        if (s->picture_in_gop_number % s->gop_size==0 || s->force_type==I_TYPE){
             s->picture_in_gop_number=0;
             s->pict_type = I_TYPE;
         }else
@@ -1313,7 +1314,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         memset(s->mb_type      , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
     }
 
-    if(s->avg_mb_var < s->mc_mb_var && s->pict_type != B_TYPE){ //FIXME subtract MV bits
+    if(s->avg_mb_var < s->mc_mb_var && s->pict_type != B_TYPE && (!s->force_type)){ //FIXME subtract MV bits
         s->pict_type= I_TYPE;
         s->picture_in_gop_number=0;
         memset(s->mb_type   , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
@@ -1955,7 +1956,7 @@ static int rate_estimate_qscale(MpegEncContext *s)
     double fps;
     INT64 wanted_bits;
     emms_c();
-    
+
     fps= (double)s->frame_rate / FRAME_RATE_BASE;
     wanted_bits= s->bit_rate*(double)s->picture_number/fps;
 

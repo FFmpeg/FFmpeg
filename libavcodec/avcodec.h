@@ -120,6 +120,8 @@ typedef struct AVCodecContext {
     int qmin;         /* min qscale */
     int qmax;         /* max qscale */
     int max_qdiff;    /* max qscale difference between frames */
+    
+    int force_type;   /* 0= no force, otherwise I_TYPE, P_TYPE, ... */
 
     struct AVCodec *codec;
     void *priv_data;
