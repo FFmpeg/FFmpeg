@@ -355,7 +355,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     /* if still no format found, error */
     if (!fmt) {
         err = AVERROR_NOFMT;
-        goto fail;
+        goto fail1;
     }
         
     /* XXX: suppress this hack for redirectors */
@@ -383,7 +383,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         ic->priv_data = av_mallocz(fmt->priv_data_size);
         if (!ic->priv_data) {
             err = AVERROR_NOMEM;
-            goto fail;
+        goto fail1;
         }
     } else
         ic->priv_data = NULL;
@@ -397,7 +397,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     *ic_ptr = ic;
     return 0;
  fail1:
-    if (!(fmt->flags & AVFMT_NOFILE)) {
+    if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
         url_fclose(&ic->pb);
     }
  fail:
