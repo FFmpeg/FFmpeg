@@ -158,7 +158,7 @@ STOP_TIMER("put_cabac_u")
 
     for(i=0; i<SIZE; i++){
 START_TIMER
-        put_cabac_ueg(&c, state, r[i], 0, 3, 0, 1, 2);
+        put_cabac_ueg(&c, state, r[i], 3, 0, 1, 2);
 STOP_TIMER("put_cabac_ueg")
     }    
    

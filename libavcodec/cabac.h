@@ -199,12 +199,16 @@ static inline void put_cabac_u(CABACContext *c, uint8_t * state, int v, int max,
 /**
  * put unary exp golomb k-th order binarization.
  */
-static inline void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int sign, int max, int is_signed, int k, int max_index){
+static inline void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int max, int is_signed, int k, int max_index){
     int i;
     
     if(v==0)
         put_cabac(c, state, 0);
     else{
+        const int sign= v < 0;
+        
+        if(is_signed) v= ABS(v);
+        
         if(v<max){
             for(i=0; i<v; i++){
                 put_cabac(c, state, 1);
