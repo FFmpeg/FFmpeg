@@ -164,7 +164,11 @@ static void select_delta_tables(TrueMotion1Context *s, int delta_table_index)
     }
 }
 
+#ifdef WORDS_BIGENDIAN
+static int make_ydt_entry(int p2, int p1, int16_t *ydt)
+#else
 static int make_ydt_entry(int p1, int p2, int16_t *ydt)
+#endif
 {
     int lo, hi;
     
@@ -175,7 +179,11 @@ static int make_ydt_entry(int p1, int p2, int16_t *ydt)
     return ((lo + (hi << 16)) << 1);
 }
 
+#ifdef WORDS_BIGENDIAN
+static int make_cdt_entry(int p2, int p1, int16_t *cdt)
+#else
 static int make_cdt_entry(int p1, int p2, int16_t *cdt)
+#endif
 {
     int r, b, lo;
     
@@ -438,8 +446,7 @@ static void truemotion1_decode_16bit(TrueMotion1Context *s)
                 case 0:
                     /* if macroblock width is 2, apply C-Y-C-Y; else 
                      * apply C-Y-Y */
-                    if ((s->block_type == BLOCK_2x2) ||
-                        (s->block_type == BLOCK_2x4)) {
+                    if (s->block_width == 2) {
                         APPLY_C_PREDICTOR();
                         APPLY_Y_PREDICTOR();
                         OUTPUT_PIXEL_PAIR();
