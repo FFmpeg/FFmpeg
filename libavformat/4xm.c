@@ -230,7 +230,7 @@ printf (" %cfrm chunk\n", (char)(fourcc_tag >> 24) & 0xFF);
 url_fseek(pb, size, SEEK_CUR);
             break;
         case cfrm_TAG:{
-get_le32(pb);
+int unknown= get_le32(pb);
 int id= get_le32(pb);
 int whole= get_le32(pb);
 static int stats[1000];
