@@ -51,20 +51,20 @@ stddev:  7.99 PSNR:30.06 bytes:7602176
 5986168 ./data/a-huffyuv.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-3fd26e006c383314e731eabfd68d4536 *./data/a-mpeg4-rc.avi
-820960 ./data/a-mpeg4-rc.avi
+788092f090eb1b11b78369f83e430fba *./data/a-mpeg4-rc.avi
+820964 ./data/a-mpeg4-rc.avi
 8458b4ddaca643a3ec1264c1ee2f4986 *./data/out.yuv
 stddev: 10.41 PSNR:27.77 bytes:7602176
 7aab4613f634d23b6c66eec7270baaff *./data/a-mpeg4-adv.avi
 600240 ./data/a-mpeg4-adv.avi
 0b7935cee2070f3b838478cea6dc4b3c *./data/out.yuv
 stddev: 10.25 PSNR:27.90 bytes:7602176
-d1fa3d096b339d68200c67a71e710798 *./data/a-mpeg4-thread.avi
+0000cc8c66f88d0e25ecdd63e85e457a *./data/a-mpeg4-thread.avi
 756550 ./data/a-mpeg4-thread.avi
 7e4e2cf2659aa158f5ffed2be45a9c3d *./data/out.yuv
 stddev: 12.31 PSNR:26.31 bytes:7602176
-8d517c0cf195570f6ac08914ed6c07b8 *./data/a-mpeg4-Q.avi
-899508 ./data/a-mpeg4-Q.avi
+545245d3169814f03dad599cac4b9ada *./data/a-mpeg4-Q.avi
+899514 ./data/a-mpeg4-Q.avi
 cdb77818e108eab89c9ac4bcaf350e19 *./data/out.yuv
 stddev:  5.69 PSNR:33.00 bytes:7602176
 f28aea7181f680687ea9522f0066d18a *./data/a-error-mpeg4-adv.avi

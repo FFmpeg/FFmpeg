@@ -2226,14 +2226,10 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
         put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.den);
     }
 
-    if(s->low_delay){
-        put_bits(&s->pb, 1, 1);		/* vol control parameters= yes */
-        put_bits(&s->pb, 2, 1);		/* chroma format YUV 420/YV12 */
-        put_bits(&s->pb, 1, s->low_delay);
-        put_bits(&s->pb, 1, 0);		/* vbv parameters= no */
-    }else{
-        put_bits(&s->pb, 1, 0);		/* vol control parameters= no */
-    }
+    put_bits(&s->pb, 1, 1);		/* vol control parameters= yes */
+    put_bits(&s->pb, 2, 1);		/* chroma format YUV 420/YV12 */
+    put_bits(&s->pb, 1, s->low_delay);
+    put_bits(&s->pb, 1, 0);		/* vbv parameters= no */
 
     put_bits(&s->pb, 2, RECT_SHAPE);	/* vol shape= rectangle */
     put_bits(&s->pb, 1, 1);		/* marker bit */
