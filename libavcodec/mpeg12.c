@@ -2023,14 +2023,14 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
         MPV_frame_end(s);
 
         if (s->pict_type == B_TYPE || s->low_delay) {
-            *pict= *(AVFrame*)&s->current_picture;
+            *pict= *(AVFrame*)s->current_picture_ptr;
             ff_print_debug_info(s, s->current_picture_ptr);
         } else {
             s->picture_number++;
             /* latency of 1 frame for I and P frames */
             /* XXX: use another variable than picture_number */
             if (s->last_picture_ptr != NULL) {
-                *pict= *(AVFrame*)&s->last_picture;
+                *pict= *(AVFrame*)s->last_picture_ptr;
                  ff_print_debug_info(s, s->last_picture_ptr);
             }
         }
