@@ -3412,13 +3412,20 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         if(!(s->flags&CODEC_FLAG_QP_RD)){
             s->dquant= s->qscale - last_qp;
 
-            if(s->out_format==FMT_H263)
+            if(s->out_format==FMT_H263){
                 s->dquant= clip(s->dquant, -2, 2); //FIXME RD
             
-            if(s->codec_id==CODEC_ID_MPEG4){        
-                if(!s->mb_intra){
-                    if((s->mv_dir&MV_DIRECT) || s->mv_type==MV_TYPE_8X8)
-                        s->dquant=0;
+                if(s->codec_id==CODEC_ID_MPEG4){        
+                    if(!s->mb_intra){
+                        if(s->pict_type == B_TYPE){
+                            if(s->dquant&1) 
+                                s->dquant= (s->dquant/2)*2;
+                            if(s->mv_dir&MV_DIRECT)
+                                s->dquant= 0;
+                        }
+                        if(s->mv_type==MV_TYPE_8X8)
+                            s->dquant=0;
+                    }
                 }
             }
         }
@@ -3969,6 +3976,7 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
             s->mb_var_sum_temp    += varc;
         }
     }
+    return 0;
 }
 
 static void write_slice_end(MpegEncContext *s){
