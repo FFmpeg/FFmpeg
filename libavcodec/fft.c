@@ -51,11 +51,11 @@ int fft_init(FFTContext *s, int nbits, int inverse)
     s->exptab1 = NULL;
 
     /* compute constant table for HAVE_SSE version */
-#if defined(HAVE_MMX) && 0
-    if (mm_flags & MM_SSE) {
+#if defined(HAVE_MMX) && defined(HAVE_BUILTIN_VECTOR)
+    if (mm_support() & MM_SSE) {
         int np, nblocks, np2, l;
         FFTComplex *q;
-
+        
         np = 1 << nbits;
         nblocks = np >> 3;
         np2 = np >> 1;
@@ -78,6 +78,7 @@ int fft_init(FFTContext *s, int nbits, int inverse)
             nblocks = nblocks >> 1;
         } while (nblocks != 0);
         av_freep(&s->exptab);
+        s->fft_calc = fft_calc_sse;
     }
 #endif
 
