@@ -19,6 +19,7 @@ echo "  --enable-vorbis          enable vorbis support via libvorbisenc [default
 echo "  --enable-faad            enable faad support via libfaad [default=no]"
 echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
 echo "  --enable-faac            enable faac support via libfaac [default=no]"
+echo "  --enable-xvid            enable xvid support via xvidcore [default=no]"
 echo "  --enable-mingw32         enable mingw32 native/cross windows compile"
 echo "  --enable-a52             enable GPL'ed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
@@ -142,6 +143,7 @@ vorbis="no"
 faad="no"
 faadbin="no"
 faac="no"
+xvid="no"
 a52="no"
 a52bin="no"
 dts="no"
@@ -399,6 +401,8 @@ for opt do
   ;;
   --enable-faac) faac="yes"
   ;;
+  --enable-xvid) xvid="yes"
+  ;;
   --disable-vhook) vhook="no"
   ;;
   --disable-simple_idct) simpleidct="no"
@@ -446,6 +450,11 @@ if test "$gpl" != "yes"; then
 
     if test "$a52" != "no" -o "$a52bin" != "no"; then
         echo "liba52 is under GPL and --enable-gpl is not specified"
+        fail="yes"
+    fi
+
+    if test "$xvid" != "no"; then
+        echo "libxvidcore is under GPL and --enable-gpl is not specified"
         fail="yes"
     fi
 
@@ -980,6 +989,7 @@ echo "vorbis enabled   $vorbis"
 echo "faad enabled     $faad"
 echo "faadbin enabled  $faadbin"
 echo "faac enabled     $faac"
+echo "xvid enabled     $xvid"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
 echo "dts support      $dts"
@@ -1262,6 +1272,11 @@ fi
 if test "$faac" = "yes" ; then
   echo "#define CONFIG_FAAC 1" >> $TMPH
   echo "CONFIG_FAAC=yes" >> config.mak
+fi
+
+if test "$xvid" = "yes" ; then
+  echo "#define CONFIG_XVID 1" >> $TMPH
+  echo "CONFIG_XVID=yes" >> config.mak
 fi
 
 if test "$mingw32" = "yes" ; then

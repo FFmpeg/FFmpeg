@@ -58,6 +58,10 @@ ifeq ($(CONFIG_FAAC),yes)
 EXTRALIBS+=-lfaac
 endif
 
+ifeq ($(CONFIG_XVID),yes)
+EXTRALIBS+=-lxvidcore
+endif
+
 ifeq ($(BUILD_VHOOK),yes)
 VHOOK=videohook
 INSTALLVHOOK=install-vhook

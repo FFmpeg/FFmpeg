@@ -92,6 +92,11 @@ OBJS+= faac.o
 EXTRALIBS += -lfaac
 endif
 
+ifeq ($(CONFIG_XVID),yes)
+OBJS+= xvidff.o
+EXTRALIBS += -lxvidcore
+endif
+
 ifeq ($(CONFIG_PP),yes)
 ifeq ($(SHARED_PP),yes)
 EXTRALIBS += -lpostproc
