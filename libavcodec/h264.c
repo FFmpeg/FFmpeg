@@ -1272,7 +1272,6 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
             }else{
                 const int ref0 = l1ref0[0] >= 0 ? h->map_col_to_list0[0][l1ref0[0]]
                                                 : h->map_col_to_list0[1][l1ref1[0]];
-                assert(ref0 >= 0);
                 const int dist_scale_factor = h->dist_scale_factor[ref0];
                 const int16_t *mv_col = l1mv0[0];
                 int mv_l0[2];
@@ -1304,7 +1303,6 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                     ref0 = h->map_col_to_list0[0][ref0];
                 else
                     ref0 = h->map_col_to_list0[1][l1ref1[x8 + y8*h->b8_stride]];
-                assert(ref0 >= 0);
                 dist_scale_factor = h->dist_scale_factor[ref0];
     
                 fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, ref0, 1);
