@@ -192,9 +192,9 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             memset(pic->base[i], 128, pic->linesize[i]*h>>v_shift);
         
             if(s->flags&CODEC_FLAG_EMU_EDGE)
-                pic->data[i] = pic->base[i] + 16; //FIXME 16
+                pic->data[i] = pic->base[i];
             else
-                pic->data[i] = pic->base[i] + (pic->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift) + 16; //FIXME 16
+                pic->data[i] = pic->base[i] + (pic->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift);
             
             opaque->data[i]= pic->data[i];
         }
@@ -581,7 +581,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
                                         || s->picture[i].type == FF_BUFFER_TYPE_USER))
             avctx->release_buffer(avctx, (AVFrame*)&s->picture[i]);
 	}
-	s->last_picture.data[0] = s->next_picture.data[0] = NULL;
+	s->last_picture_ptr = s->next_picture_ptr = NULL;
         break;
     default:
         //FIXME

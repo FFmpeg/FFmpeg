@@ -621,7 +621,7 @@ retry:
     s->current_picture.key_frame= s->pict_type == I_TYPE;
 
     /* skip b frames if we dont have reference frames */
-    if(s->last_picture.data[0]==NULL && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
+    if(s->last_picture_ptr==NULL && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
     /* skip everything if we are in a hurry>=5 */
@@ -731,7 +731,7 @@ retry:
 
     MPV_frame_end(s);
 
-    if((avctx->debug&FF_DEBUG_VIS_MV) && s->last_picture.data[0]){
+    if((avctx->debug&FF_DEBUG_VIS_MV) && s->last_picture_ptr){
         const int shift= 1 + s->quarter_sample;
         int mb_y;
         uint8_t *ptr= s->last_picture.data[0];
@@ -789,7 +789,7 @@ retry:
     avctx->frame_number = s->picture_number - 1;
 
     /* dont output the last pic after seeking */
-    if(s->last_picture.data[0] || s->low_delay)
+    if(s->last_picture_ptr || s->low_delay)
         *data_size = sizeof(AVFrame);
 #ifdef PRINT_FRAME_TIME
 printf("%Ld\n", rdtsc()-time);

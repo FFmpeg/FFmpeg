@@ -187,6 +187,12 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_CAP_TRUNCATED       0x0008
 
 #define FF_COMMON_FRAME \
+    /**\
+     * pointer to the picture planes.\
+     * this might be different from the first allocated byte\
+     * - encoding: \
+     * - decoding: \
+     */\
     uint8_t *data[4];\
     int linesize[4];\
     /**\
@@ -306,8 +312,8 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 
 
 #define FF_BUFFER_TYPE_INTERNAL 1
-#define FF_BUFFER_TYPE_USER     2 // Direct rendering buffers
-#define FF_BUFFER_TYPE_SHARED   4 // input frame for encoding(wont be dealloced)
+#define FF_BUFFER_TYPE_USER     2 ///< Direct rendering buffers
+#define FF_BUFFER_TYPE_SHARED   4 ///< buffer from somewher else, dont dealloc
 
 
 #define FF_I_TYPE 1 // Intra

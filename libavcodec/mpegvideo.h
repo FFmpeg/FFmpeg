@@ -238,10 +238,35 @@ typedef struct MpegEncContext {
     Picture picture[MAX_PICTURE_COUNT]; ///< main picture buffer 
     Picture *input_picture[MAX_PICTURE_COUNT]; ///< next pictures on display order for encoding
     Picture *reordered_input_picture[MAX_PICTURE_COUNT]; ///< pointer to the next pictures in codedorder for encoding
-    Picture last_picture;       ///< previous picture 
-    Picture next_picture;       ///< previous picture (for bidir pred) 
-    Picture new_picture;        ///< source picture for encoding 
+    
+    /** 
+     * copy of the previous picture structure.
+     * note, linesize & data, might not match the previous picture (for field pictures)
+     */
+    Picture last_picture;       
+    
+    /** 
+     * copy of the next picture structure.
+     * note, linesize & data, might not match the next picture (for field pictures)
+     */
+    Picture next_picture;
+    
+    /** 
+     * copy of the source picture structure for encoding.
+     * note, linesize & data, might not match the source picture (for field pictures)
+     */
+    Picture new_picture;
+    
+    /** 
+     * copy of the current picture structure.
+     * note, linesize & data, might not match the current picture (for field pictures)
+     */
     Picture current_picture;    ///< buffer to store the decompressed current picture 
+    
+    Picture *last_picture_ptr;     ///< pointer to the previous picture.
+    Picture *next_picture_ptr;     ///< pointer to the next picture (for bidir pred) 
+    Picture *new_picture_ptr;      ///< pointer to the source picture for encoding 
+    Picture *current_picture_ptr;  ///< pointer to the current picture
     int last_dc[3];                ///< last DC values for MPEG1 
     int16_t *dc_val[3];            ///< used for mpeg4 DC prediction, all 3 arrays must be continuous 
     int y_dc_scale, c_dc_scale;

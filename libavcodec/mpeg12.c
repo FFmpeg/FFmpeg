@@ -229,7 +229,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             
             put_bits(&s->pb, 4, s->aspect_ratio_info);
             put_bits(&s->pb, 4, s->frame_rate_index);
-            v = s->bit_rate / 400;
+            v = (s->bit_rate + 399) / 400;
             if (v > 0x3ffff)
                 v = 0x3ffff;
             put_bits(&s->pb, 18, v);
@@ -1803,7 +1803,8 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     memset(s->last_mv, 0, sizeof(s->last_mv));
         
     /* start frame decoding */
-    if (s->first_slice && (s->first_field || s->picture_structure==PICT_FRAME)) {
+    if (s->first_slice) {
+      if(s->first_field || s->picture_structure==PICT_FRAME){
         if(MPV_frame_start(s, avctx) < 0)
             return DECODE_SLICE_FATAL_ERROR;
         /* first check if we must repeat the frame */
@@ -1829,6 +1830,15 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
                  s->intra_dc_precision, s->picture_structure, s->frame_pred_frame_dct, s->concealment_motion_vectors,
                  s->q_scale_type, s->intra_vlc_format, s->repeat_first_field, s->chroma_420_type ? "420" :"");
         }
+      }else{ //second field
+            int i;
+            for(i=0; i<4; i++){
+                s->current_picture.data[i] = s->current_picture_ptr->data[i];
+                if(s->picture_structure == PICT_BOTTOM_FIELD){
+                    s->current_picture.data[i] += s->current_picture_ptr->linesize[i];
+                } 
+            }
+      }
     }
     s->first_slice = 0;
 
@@ -1865,27 +1875,8 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         dprintf("ret=%d\n", ret);
         if (ret < 0)
             return -1;
-//printf("%d %d\n", s->mb_x, s->mb_y);
-        //FIXME this isnt the most beautifull way to solve the problem ...
-        if(s->picture_structure!=PICT_FRAME){
-            if(s->picture_structure == PICT_BOTTOM_FIELD){
-                s->current_picture.data[0] += s->linesize;
-                s->current_picture.data[1] += s->uvlinesize;
-                s->current_picture.data[2] += s->uvlinesize;
-            } 
-            s->linesize *= 2;
-            s->uvlinesize *= 2;
-        }
+        
         MPV_decode_mb(s, s->block);
-        if(s->picture_structure!=PICT_FRAME){
-            s->linesize /= 2;
-            s->uvlinesize /= 2;
-            if(s->picture_structure == PICT_BOTTOM_FIELD){
-                s->current_picture.data[0] -= s->linesize;
-                s->current_picture.data[1] -= s->uvlinesize;
-                s->current_picture.data[2] -= s->uvlinesize;
-            } 
-        }
 
         if (++s->mb_x >= s->mb_width) {
             if(s->picture_structure==PICT_FRAME){
@@ -1945,7 +1936,7 @@ eos: //end of slice
             s->picture_number++;
             /* latency of 1 frame for I and P frames */
             /* XXX: use another variable than picture_number */
-            if (s->last_picture.data[0] == NULL) {
+            if (s->last_picture_ptr == NULL) {
                 return DECODE_SLICE_OK;
             } else {
                 *pict= *(AVFrame*)&s->last_picture;
@@ -2196,7 +2187,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         start_code <= SLICE_MAX_START_CODE) {
                         
                         /* skip b frames if we dont have reference frames */
-                        if(s2->last_picture.data[0]==NULL && s2->pict_type==B_TYPE) break;
+                        if(s2->last_picture_ptr==NULL && s2->pict_type==B_TYPE) break;
                         /* skip b frames if we are in a hurry */
                         if(avctx->hurry_up && s2->pict_type==B_TYPE) break;
                         /* skip everything if we are in a hurry>=5 */
