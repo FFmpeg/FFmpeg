@@ -28,6 +28,10 @@
 #include "avcodec.h"
 #include "faad.h"
 
+#ifndef FAADAPI
+#define FAADAPI
+#endif
+
 /*
  * when CONFIG_FAADBIN is defined the libfaad will be opened at runtime
  */
