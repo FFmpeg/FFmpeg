@@ -39,3 +39,19 @@ static inline int ticker_tick(Ticker *tick, int num)
 #endif
     return n;
 }
+
+static inline INT64 ticker_abs(Ticker *tick, int num)
+{
+    INT64 n = (INT64) num * tick->div;
+    INT64 value = (INT64) num * tick->mod;
+
+    if (value > 0) {
+        n += (value / tick->inrate);
+        value = value % tick->inrate;
+        if (value > 0) {
+            /* value -= tick->inrate; */
+            n++;
+        }
+    }
+    return n;
+}
