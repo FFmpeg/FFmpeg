@@ -124,8 +124,8 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate){
     c->filter_length= ceil(16.0/factor);
     c->filter_bank= av_mallocz(c->filter_length*(PHASE_COUNT+1)*sizeof(short));
     av_build_filter(c->filter_bank, factor, c->filter_length, PHASE_COUNT, 1<<FILTER_SHIFT, 1);
-    c->filter_bank[c->filter_length*PHASE_COUNT + (c->filter_length-1)/2 + 1]= (1<<FILTER_SHIFT)-1;
-    c->filter_bank[c->filter_length*PHASE_COUNT + (c->filter_length-1)/2 + 2]= 1;
+    memcpy(&c->filter_bank[c->filter_length*PHASE_COUNT+1], c->filter_bank, (c->filter_length-1)*sizeof(short));
+    c->filter_bank[c->filter_length*PHASE_COUNT]= c->filter_bank[c->filter_length - 1];
 
     c->src_incr= out_rate;
     c->ideal_dst_incr= c->dst_incr= in_rate * PHASE_COUNT;
