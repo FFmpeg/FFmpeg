@@ -1016,19 +1016,6 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     pts= pkt->pts;
     dts= pkt->dts;
 
-    if(s->is_svcd) {
-        /* offset pts and dts slightly into the future to be able
-           to do the compatibility fix below.*/
-        pts += 2;
-        dts += 2;
-
-        if (stream->packet_number == 0 && dts == pts)
-            /* For the very first packet we want to force the DTS to be included.
-               This increases compatibility with lots of DVD players.
-               Since the MPEG-2 standard mandates that DTS is only written when
-               it is different from PTS we have to move it slightly into the past.*/
-            dts -= 2;
-    }
     if(s->is_vcd) {
         /* We have to offset the PTS, so that it is consistent with the SCR.
            SCR starts at 36000, but the first two packs contain only padding

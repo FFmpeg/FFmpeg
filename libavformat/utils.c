@@ -1979,8 +1979,8 @@ static void compute_pkt_fields2(AVStream *st, AVPacket *pkt){
 static void truncate_ts(AVStream *st, AVPacket *pkt){
     int64_t pts_mask = (2LL << (st->pts_wrap_bits-1)) - 1;
     
-    if(pkt->dts < 0)
-        pkt->dts= 0;  //this happens for low_delay=0 and b frames, FIXME, needs further invstigation about what we should do here
+//    if(pkt->dts < 0)
+//        pkt->dts= 0;  //this happens for low_delay=0 and b frames, FIXME, needs further invstigation about what we should do here
     
     pkt->pts &= pts_mask;
     pkt->dts &= pts_mask;
