@@ -1628,9 +1628,9 @@ static void mpeg4_encode_visual_object_header(MpegEncContext * s){
 
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, VOS_STARTCODE);
-    
+
     put_bits(&s->pb, 8, profile_and_level_indication);
-    
+
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, VISUAL_OBJ_STARTCODE);
     
@@ -1747,8 +1747,10 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     
     if(s->pict_type==I_TYPE){
         if(!(s->flags&CODEC_FLAG_GLOBAL_HEADER)){
-            mpeg4_encode_visual_object_header(s);
-            mpeg4_encode_vol_header(s, 0, 0);
+            if(s->strict_std_compliance < 2) //HACK, the reference sw is buggy
+                mpeg4_encode_visual_object_header(s);
+            if(s->strict_std_compliance < 2 || picture_number==0) //HACK, the reference sw is buggy
+                mpeg4_encode_vol_header(s, 0, 0);
         }
         mpeg4_encode_gop_header(s);
     }
