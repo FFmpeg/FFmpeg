@@ -26,6 +26,10 @@
 
 #include "../avcodec.h"
 
+#undef malloc
+#undef free
+#undef realloc
+
 #ifndef LIBA52_DOUBLE
 typedef float sample_t;
 #else
