@@ -68,9 +68,10 @@ static uint64_t log16(uint64_t a){
     a<<=16;
     
     for(i=19;i>=0;i--){
-        if(a<(exp16_table[i]<<16)) continue;
+        int64_t b= exp16_table[i];
+        if(a<(b<<16)) continue;
         out |= 1<<i;
-        a = ((a<<16) + exp16_table[i]/2)/exp16_table[i];
+        a = ((a/b)<<16) + (((a%b)<<16) + b/2)/b;
     }
     return out;
 }
