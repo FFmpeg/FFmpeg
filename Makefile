@@ -168,10 +168,10 @@ installlib:
 dep:	depend
 
 depend: .depend
-	make -C libavcodec depend
-	make -C libavformat depend
+	$(MAKE) -C libavcodec depend
+	$(MAKE) -C libavformat depend
 ifeq ($(BUILD_VHOOK),yes)
-	make -C vhook depend
+	$(MAKE) -C vhook depend
 endif
 
 .depend: $(SRCS)
