@@ -91,6 +91,19 @@ typedef struct {
 #define DTS_ID   0x8a
 #define LPCM_ID  0xa0
 
+#define STREAM_TYPE_VIDEO_MPEG1     0x01
+#define STREAM_TYPE_VIDEO_MPEG2     0x02
+#define STREAM_TYPE_AUDIO_MPEG1     0x03
+#define STREAM_TYPE_AUDIO_MPEG2     0x04
+#define STREAM_TYPE_PRIVATE_SECTION 0x05
+#define STREAM_TYPE_PRIVATE_DATA    0x06
+#define STREAM_TYPE_AUDIO_AAC       0x0f
+#define STREAM_TYPE_VIDEO_MPEG4     0x10
+#define STREAM_TYPE_VIDEO_H264      0x1b
+
+#define STREAM_TYPE_AUDIO_AC3       0x81
+#define STREAM_TYPE_AUDIO_DTS       0x8a
+
 static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
 
 #ifdef CONFIG_ENCODERS
@@ -1268,6 +1281,7 @@ static int mpegps_probe(AVProbeData *p)
 
 typedef struct MpegDemuxContext {
     int header_state;
+    unsigned char psm_es_type[256];
 } MpegDemuxContext;
 
 static int mpegps_read_header(AVFormatContext *s,
@@ -1358,6 +1372,40 @@ static int find_prev_start_code(ByteIOContext *pb, int *size_ptr)
 }
 #endif
 
+/**
+ * Extracts stream types from a program stream map
+ * According to ISO/IEC 13818-1 ('MPEG-2 Systems') table 2-35
+ * 
+ * @return number of bytes occupied by PSM in the bitstream
+ */
+static long mpegps_psm_parse(MpegDemuxContext *m, ByteIOContext *pb)
+{
+    int psm_length, ps_info_length, es_map_length;
+
+    psm_length = get_be16(pb);
+    get_byte(pb);
+    get_byte(pb);
+    ps_info_length = get_be16(pb);
+
+    /* skip program_stream_info */
+    url_fskip(pb, ps_info_length);
+    es_map_length = get_be16(pb);
+
+    /* at least one es available? */
+    while (es_map_length >= 4){
+        unsigned char type = get_byte(pb);
+        unsigned char es_id = get_byte(pb);
+        uint16_t es_info_length = get_be16(pb);
+        /* remember mapping from stream id to stream type */
+        m->psm_es_type[es_id] = type;
+        /* skip program_stream_info */
+        url_fskip(pb, es_info_length);
+        es_map_length -= 4 + es_info_length;
+    }
+    get_be32(pb); /* crc32 */
+    return 2 + psm_length;
+}
+
 /* read the next PES header. Return its position in ppos 
    (if not NULL), and its start code, pts and dts.
  */
@@ -1389,6 +1437,11 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         url_fskip(&s->pb, len);
         goto redo;
     }
+    if (startcode == PROGRAM_STREAM_MAP) {
+        mpegps_psm_parse(m, &s->pb);
+        goto redo;
+    }
+    
     /* find matching stream */
     if (!((startcode >= 0x1c0 && startcode <= 0x1df) ||
           (startcode >= 0x1e0 && startcode <= 0x1ef) ||
@@ -1463,7 +1516,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
     else if( c!= 0xf )
         goto redo;
 
-    if (startcode == 0x1bd) {
+    if (startcode == PRIVATE_STREAM_1 && !m->psm_es_type[startcode & 0xff]) {
         if (len < 1)
             goto redo;
         startcode = get_byte(&s->pb);
@@ -1496,8 +1549,9 @@ static int mpegps_read_pes_header(AVFormatContext *s,
 static int mpegps_read_packet(AVFormatContext *s,
                               AVPacket *pkt)
 {
+    MpegDemuxContext *m = s->priv_data;
     AVStream *st;
-    int len, startcode, i, type, codec_id = 0;
+    int len, startcode, i, type, codec_id = 0, es_type;
     int64_t pts, dts, dummy_pos; //dummy_pos is needed for the index building to work
 
  redo:
@@ -1511,7 +1565,35 @@ static int mpegps_read_packet(AVFormatContext *s,
         if (st->id == startcode)
             goto found;
     }
-    if (startcode >= 0x1e0 && startcode <= 0x1ef) {
+
+    es_type = m->psm_es_type[startcode & 0xff];
+    if(es_type > 0){
+        if(es_type == STREAM_TYPE_VIDEO_MPEG1){
+            codec_id = CODEC_ID_MPEG2VIDEO;
+            type = CODEC_TYPE_VIDEO;
+        } else if(es_type == STREAM_TYPE_VIDEO_MPEG2){
+            codec_id = CODEC_ID_MPEG2VIDEO;
+            type = CODEC_TYPE_VIDEO;
+        } else if(es_type == STREAM_TYPE_AUDIO_MPEG1 ||
+                  es_type == STREAM_TYPE_AUDIO_MPEG2){
+            codec_id = CODEC_ID_MP3;
+            type = CODEC_TYPE_AUDIO;
+        } else if(es_type == STREAM_TYPE_AUDIO_AAC){
+            codec_id = CODEC_ID_AAC;
+            type = CODEC_TYPE_AUDIO;
+        } else if(es_type == STREAM_TYPE_VIDEO_MPEG4){
+            codec_id = CODEC_ID_MPEG4;
+            type = CODEC_TYPE_VIDEO;
+        } else if(es_type == STREAM_TYPE_VIDEO_H264){
+            codec_id = CODEC_ID_H264;
+            type = CODEC_TYPE_VIDEO;
+        } else if(es_type == STREAM_TYPE_AUDIO_AC3){
+            codec_id = CODEC_ID_AC3;
+            type = CODEC_TYPE_AUDIO;
+        } else {
+            goto skip;
+        }
+    } else if (startcode >= 0x1e0 && startcode <= 0x1ef) {
         type = CODEC_TYPE_VIDEO;
         codec_id = CODEC_ID_MPEG2VIDEO;
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
