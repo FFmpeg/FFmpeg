@@ -444,6 +444,8 @@ int MPV_common_init(MpegEncContext *s)
         CHECKED_ALLOCZ(s->lambda_table, mb_array_size * sizeof(int))
     }
         
+    CHECKED_ALLOCZ(s->picture, MAX_PICTURE_COUNT * sizeof(Picture))
+
     CHECKED_ALLOCZ(s->error_status_table, mb_array_size*sizeof(uint8_t))
     
     if (s->out_format == FMT_H263 || s->encoding) {
@@ -562,6 +564,7 @@ void MPV_common_end(MpegEncContext *s)
     for(i=0; i<MAX_PICTURE_COUNT; i++){
         free_picture(s, &s->picture[i]);
     }
+    av_freep(&s->picture);
     avcodec_default_free_buffers(s->avctx);
     s->context_initialized = 0;
     s->last_picture_ptr=
