@@ -1978,6 +1978,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     if (s->h263_pred && !s->h263_msmpeg4)
         ff_set_mpeg4_time(s, s->picture_number); 
 
+    s->scene_change_score=0;
+
     /* Estimate motion for every MB */
     if(s->pict_type != I_TYPE){
         for(mb_y=0; mb_y < s->mb_height; mb_y++) {
@@ -2009,8 +2011,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         memset(s->p_mv_table   , 0, sizeof(INT16)*(s->mb_width+2)*(s->mb_height+2)*2);
         memset(s->mb_type      , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
     }
-
-    if(s->mb_var_sum < s->mc_mb_var_sum && s->pict_type == P_TYPE){ //FIXME subtract MV bits
+    if(s->scene_change_score > 0 && s->pict_type == P_TYPE){
         s->pict_type= I_TYPE;
         memset(s->mb_type   , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
         if(s->max_b_frames==0){

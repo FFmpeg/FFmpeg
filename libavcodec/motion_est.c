@@ -1183,6 +1183,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     sum= (sum+8)>>4;
     varc = (pix_norm1(pix, s->linesize) - sum*sum + 500 + 128)>>8;
     vard = (pix_norm(pix, ppix, s->linesize)+128)>>8;
+
 //printf("%d %d %d %X %X %X\n", s->mb_width, mb_x, mb_y,(int)s, (int)s->mb_var, (int)s->mc_mb_var); fflush(stdout);
     s->mb_var   [s->mb_width * mb_y + mb_x] = varc;
     s->mc_mb_var[s->mb_width * mb_y + mb_x] = vard;
@@ -1195,6 +1196,11 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 	   varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
 #endif
     if(s->flags&CODEC_FLAG_HQ){
+        if (vard <= 64 || vard < varc)
+            s->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
+        else
+            s->scene_change_score+= 20;
+
         if (vard*2 + 200 > varc)
             mb_type|= MB_TYPE_INTRA;
         if (varc*2 + 200 > vard){
@@ -1221,6 +1227,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             set_p_mv_tables(s, mx, my, 1);
     }else{
         if (vard <= 64 || vard < varc) {
+            s->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
             mb_type|= MB_TYPE_INTER;
             if (s->me_method != ME_ZERO) {
                 if(s->me_method >= ME_EPZS)
@@ -1251,6 +1258,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             }
 #endif
         }else{
+            s->scene_change_score+= 20;
             mb_type|= MB_TYPE_INTRA;
             mx = 0;
             my = 0;

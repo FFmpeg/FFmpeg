@@ -195,6 +195,7 @@ typedef struct MpegEncContext {
     uint16_t *me_score_map;            /* map to store the SADs */
     int me_map_generation;
     int skip_me;                       /* set if ME is skiped for the current MB */
+    int scene_change_score;
     int mv_dir;
 #define MV_DIR_BACKWARD  1
 #define MV_DIR_FORWARD   2
