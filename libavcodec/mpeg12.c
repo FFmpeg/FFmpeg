@@ -1718,7 +1718,7 @@ eos: //end of slice
             s->picture_number++;
             /* latency of 1 frame for I and P frames */
             /* XXX: use another variable than picture_number */
-            if (s->picture_number == 1) {
+            if (s->last_picture.data[0] == NULL) {
                 return DECODE_SLICE_OK;
             } else {
                 *pict= *(AVFrame*)&s->last_picture;
