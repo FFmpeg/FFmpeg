@@ -13,6 +13,7 @@
 //#define ALT_BITSTREAM_READER
 //#define ALIGNED_BITSTREAM
 #define FAST_GET_FIRST_VLC
+//#define DUMP_STREAM // only works with the ALT_BITSTREAM_READER
 
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
@@ -243,7 +244,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #endif
     //    printf("put_bits=%d %x\n", n, value);
     assert(n == 32 || value < (1U << n));
-
+    
     bit_buf = s->bit_buf;
     bit_left = s->bit_left;
 
@@ -469,7 +470,13 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
     result>>= 32 - n;
     index+= n;
     s->index= index;
-    
+#ifdef DUMP_STREAM
+    while(n){
+        printf("%d", (result>>(n-1))&1);
+        n--;
+    }
+    printf(" ");
+#endif
     return result;
 #endif //!ALIGNED_BITSTREAM
 #else //ALT_BITSTREAM_READER
@@ -496,6 +503,9 @@ static inline unsigned int get_bits1(GetBitContext *s){
     index++;
     s->index= index;
     
+#ifdef DUMP_STREAM
+    printf("%d ", result);
+#endif
     return result;
 #else
     if(s->bit_cnt>0){
@@ -593,6 +603,14 @@ static inline int show_aligned_bits(GetBitContext *s, int offset, int n)
 static inline void skip_bits(GetBitContext *s, int n){
 #ifdef ALT_BITSTREAM_READER
     s->index+= n;
+#ifdef DUMP_STREAM
+    {
+        int result;
+        s->index-= n;
+        result= get_bits(s, n);
+    }
+#endif
+
 #else
     if(s->bit_cnt>=n){
         /* most common case here */
@@ -610,6 +628,10 @@ static inline void skip_bits(GetBitContext *s, int n){
 static inline void skip_bits1(GetBitContext *s){
 #ifdef ALT_BITSTREAM_READER
     s->index++;
+#ifdef DUMP_STREAM
+    s->index--;
+    printf("%d ", get_bits1(s));
+#endif
 #else
     if(s->bit_cnt>0){
         /* most common case here */
@@ -735,6 +757,13 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
     if (n > 0) {
         /* most common case (90%)*/
         FLUSH_BITS(n);
+#ifdef DUMP_STREAM
+        {
+            int n= bit_cnt - s->index;
+            skip_bits(s, n);
+            RESTORE_BITS(s);
+        }
+#endif
         RESTORE_BITS(s);
         return code;
     } else if (n == 0) {
@@ -769,6 +798,13 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
             table_bits = vlc->table_bits + code;
         }
     }
+#ifdef DUMP_STREAM
+    {
+        int n= bit_cnt - s->index;
+        skip_bits(s, n);
+        RESTORE_BITS(s);
+    }
+#endif
     RESTORE_BITS(s);
     return code;
 }
