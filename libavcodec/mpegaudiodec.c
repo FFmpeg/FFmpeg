@@ -162,13 +162,9 @@ static VLC huff_quad_vlc[2];
 /* computed from band_size_long */
 static uint16_t band_index_long[9][23];
 /* XXX: free when all decoders are closed */
-#define TABLE_4_3_SIZE (8191 + 16)
+#define TABLE_4_3_SIZE (8191 + 16)*4
 static int8_t  *table_4_3_exp;
-#if FRAC_BITS <= 15
-static uint16_t *table_4_3_value;
-#else
 static uint32_t *table_4_3_value;
-#endif
 /* intensity stereo coef table */
 static int32_t is_table[2][16];
 static int32_t is_table_lsf[2][2][16];
@@ -189,14 +185,6 @@ static int32_t scale_factor_mult2[3][3] = {
     SCALE_GEN(4.0 / 3.0), /* 3 steps */
     SCALE_GEN(4.0 / 5.0), /* 5 steps */
     SCALE_GEN(4.0 / 9.0), /* 9 steps */
-};
-
-/* 2^(n/4) */
-static uint32_t scale_factor_mult3[4] = {
-    FIXR(1.0),
-    FIXR(1.18920711500272106671),
-    FIXR(1.41421356237309504880),
-    FIXR(1.68179283050742908605),
 };
 
 void ff_mpa_synth_init(MPA_INT *window);
@@ -236,32 +224,19 @@ static inline int l2_unscale_group(int steps, int mant, int scale_factor)
 /* compute value^(4/3) * 2^(exponent/4). It normalized to FRAC_BITS */
 static inline int l3_unscale(int value, int exponent)
 {
-#if FRAC_BITS <= 15    
+
     unsigned int m;
-#else
-    uint64_t m;
-#endif
     int e;
 
-    e = table_4_3_exp[value];
-    e += (exponent >> 2);
-    e = FRAC_BITS - e;
-#if FRAC_BITS <= 15    
+    e = table_4_3_exp  [4*value + (exponent&3)];
+    m = table_4_3_value[4*value + (exponent&3)];
+    e -= (exponent >> 2);
+    assert(e>=1);
     if (e > 31)
-#else
-    if (e > 63)
-#endif
         return 0;
-    m = table_4_3_value[value];
-#if FRAC_BITS <= 15    
-    m = (m * scale_factor_mult3[exponent & 3]);
     m = (m + (1 << (e-1))) >> e;
+
     return m;
-#else
-    m = MUL64(m, scale_factor_mult3[exponent & 3]);
-    m = (m + (uint64_t_C(1) << (e-1))) >> e;
-    return m;
-#endif
 }
 
 /* all integer n^(4/3) computation code */
@@ -426,32 +401,17 @@ static int decode_init(AVCodecContext * avctx)
         
         int_pow_init();
         for(i=1;i<TABLE_4_3_SIZE;i++) {
+            double f, fm;
             int e, m;
-            m = int_pow(i, &e);
-#if 0
-            /* test code */
-            {
-                double f, fm;
-                int e1, m1;
-                f = pow((double)i, 4.0 / 3.0);
-                fm = frexp(f, &e1);
-                m1 = FIXR(2 * fm);
-#if FRAC_BITS <= 15
-                if ((unsigned short)m1 != m1) {
-                    m1 = m1 >> 1;
-                    e1++;
-                }
-#endif
-                e1--;
-                if (m != m1 || e != e1) {
-                    printf("%4d: m=%x m1=%x e=%d e1=%d\n",
-                           i, m, m1, e, e1);
-                }
-            }
-#endif
+            f = pow((double)(i/4), 4.0 / 3.0) * pow(2, (i&3)*0.25);
+            fm = frexp(f, &e);
+            m = FIXHR(fm*0.5);
+            e+= FRAC_BITS - 31;
+
             /* normalized to FRAC_BITS */
             table_4_3_value[i] = m;
-            table_4_3_exp[i] = e;
+//            av_log(NULL, AV_LOG_DEBUG, "%d %d %f\n", i, m, pow((double)i, 4.0 / 3.0));
+            table_4_3_exp[i] = -e;
         }
         
         for(i=0;i<7;i++) {
