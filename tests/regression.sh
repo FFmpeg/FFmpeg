@@ -449,13 +449,13 @@ do_ffmpeg_crc $file -i $file
 
 # swf (decode audio only)
 file=${outfile}libav.swf
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec mp2 $file
 do_ffmpeg_crc $file -i $file
 
 # ffm
-file=${outfile}libav.ffm
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
-do_ffmpeg_crc $file -i $file
+#file=${outfile}libav.ffm
+#do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+#do_ffmpeg_crc $file -i $file
 
 # flv
 file=${outfile}libav.flv
@@ -463,9 +463,9 @@ do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $f
 do_ffmpeg_crc $file -i $file
 
 # mov
-#file=${outfile}libav.mov
-#do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
-#do_ffmpeg_crc $file -i $file
+file=${outfile}libav.mov
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec pcm_alaw $file
+do_ffmpeg_crc $file -i $file
 
 # nut
 file=${outfile}libav.nut
