@@ -24,8 +24,8 @@ stddev:  8.18 bytes:7602176
 79649b61321beaaaa6413af8c18e4696 *./data/out.yuv
 stddev:  2.05 bytes:7602176
 a8cc41cd5016bbb821e7c2691f5090ea *./data/a-odivx.mp4
-f890bc8bd9297f6eebeba98e58692ea7 *./data/out.yuv
-stddev:  8.02 bytes:7450624
+e48114a50ef4cfb4fe2016fa5b34ae4c *./data/out.yuv
+stddev:  8.02 bytes:7602176
 5704a082cc5c5970620123ae20566286 *./data/a-huffyuv.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 bytes:7602176
