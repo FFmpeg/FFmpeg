@@ -47,7 +47,7 @@ e47f46468b79641e13bb9609be2db5ca *./data/a-odivx.mp4
 120196 ./data/a-odivx.mp4
 8b7657a7f9fc7298cc016abb466d1d19 *./data/out.yuv
 stddev:  5.34 PSNR:33.56 bytes:7602176
-242a7a18c2793e115007bc163861ef4e *./data/a-huffyuv.avi
+40ddd4437246784a9a7ffa582f99b8d9 *./data/a-huffyuv.avi
 4987020 ./data/a-huffyuv.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176

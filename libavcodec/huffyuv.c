@@ -409,7 +409,10 @@ s->bgr32=1;
             return -1;
     }
     
-    s->interlaced= height > 288;
+    if(((uint8_t*)avctx->extradata)[2] & 0x20)
+	s->interlaced= ((uint8_t*)avctx->extradata)[2] & 0x10 ? 1 : 0;
+    else
+	s->interlaced= height > 288;
     
     switch(s->bitstream_bpp){
     case 12:
@@ -497,10 +500,11 @@ static int encode_init(AVCodecContext *avctx)
     avctx->bits_per_sample= s->bitstream_bpp;
     s->decorrelate= s->bitstream_bpp >= 24;
     s->predictor= avctx->prediction_method;
+    s->interlaced= avctx->flags&CODEC_FLAG_INTERLACED_ME ? 1 : 0;
     
     ((uint8_t*)avctx->extradata)[0]= s->predictor;
     ((uint8_t*)avctx->extradata)[1]= s->bitstream_bpp;
-    ((uint8_t*)avctx->extradata)[2]=
+    ((uint8_t*)avctx->extradata)[2]= 0x20 | (s->interlaced ? 0x10 : 0);
     ((uint8_t*)avctx->extradata)[3]= 0;
     s->avctx->extradata_size= 4;
     
@@ -546,8 +550,6 @@ static int encode_init(AVCodecContext *avctx)
         for(j=0; j<256; j++)
             s->stats[i][j]= 0;
     
-    s->interlaced= height > 288;
-
 //    printf("pred:%d bpp:%d hbpp:%d il:%d\n", s->predictor, s->bitstream_bpp, avctx->bits_per_sample, s->interlaced);
 
     s->picture_number=0;
