@@ -103,16 +103,16 @@ static void put_pixels16_mmi(uint8_t *block, const uint8_t *pixels, int line_siz
 }
 
 
-void dsputil_init_mmi(void)
+void dsputil_init_mmi(DSPContext* c, unsigned mask)
 {
-    clear_blocks = clear_blocks_mmi;
-    
-    put_pixels_tab[1][0] = put_pixels8_mmi;
-    put_no_rnd_pixels_tab[1][0] = put_pixels8_mmi;
-    
-    put_pixels_tab[0][0] = put_pixels16_mmi;
-    put_no_rnd_pixels_tab[0][0] = put_pixels16_mmi;
-    
-    get_pixels = get_pixels_mmi;
+    c->clear_blocks = clear_blocks_mmi;
+
+    c->put_pixels_tab[1][0] = put_pixels8_mmi;
+    c->put_no_rnd_pixels_tab[1][0] = put_pixels8_mmi;
+
+    c->put_pixels_tab[0][0] = put_pixels16_mmi;
+    c->put_no_rnd_pixels_tab[0][0] = put_pixels16_mmi;
+
+    c->get_pixels = get_pixels_mmi;
 }
 
