@@ -61,7 +61,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
 static void h263_encode_motion(MpegEncContext * s, int val, int fcode);
 static void h263p_encode_umotion(MpegEncContext * s, int val);
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block,
-			       int n, int dc, UINT8 *scan_table, 
+			       int n, int dc, uint8_t *scan_table, 
                                PutBitContext *dc_pb, PutBitContext *ac_pb);
 #endif
 
@@ -72,23 +72,23 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
 static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra);
-static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr);
+static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr);
 static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                               int dir);
 static void mpeg4_decode_sprite_trajectory(MpegEncContext * s);
-static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
+static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr, int *dir_ptr);
 
-extern UINT32 inverse[256];
+extern uint32_t inverse[256];
 
-static UINT8 uni_DCtab_lum_len[512];
-static UINT8 uni_DCtab_chrom_len[512];
-static UINT16 uni_DCtab_lum_bits[512];
-static UINT16 uni_DCtab_chrom_bits[512];
+static uint8_t uni_DCtab_lum_len[512];
+static uint8_t uni_DCtab_chrom_len[512];
+static uint16_t uni_DCtab_lum_bits[512];
+static uint16_t uni_DCtab_chrom_bits[512];
 
 #ifdef CONFIG_ENCODERS
-static UINT16 (*mv_penalty)[MAX_MV*2+1]= NULL;
-static UINT8 fcode_tab[MAX_MV*2+1];
-static UINT8 umv_fcode_tab[MAX_MV*2+1];
+static uint16_t (*mv_penalty)[MAX_MV*2+1]= NULL;
+static uint8_t fcode_tab[MAX_MV*2+1];
+static uint8_t umv_fcode_tab[MAX_MV*2+1];
 
 static uint32_t uni_mpeg4_intra_rl_bits[64*64*2*2];
 static uint8_t  uni_mpeg4_intra_rl_len [64*64*2*2];
@@ -161,7 +161,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     s->gob_number = 0;
 
     put_bits(&s->pb, 22, 0x20); /* PSC */
-    put_bits(&s->pb, 8, (((INT64)s->picture_number * 30 * FRAME_RATE_BASE) / 
+    put_bits(&s->pb, 8, (((int64_t)s->picture_number * 30 * FRAME_RATE_BASE) / 
                          s->frame_rate) & 0xff);
 
     put_bits(&s->pb, 1, 1);	/* marker */
@@ -280,7 +280,7 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
     int8_t * const qscale_table= s->current_picture.qscale_table;
 
     for(n=0; n<6; n++){
-        INT16 *ac_val, *ac_val1;
+        int16_t *ac_val, *ac_val1;
 
         ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val1= ac_val;
@@ -728,12 +728,12 @@ void mpeg4_encode_mb(MpegEncContext * s,
         int dc_diff[6];   //dc values with the dc prediction subtracted 
         int dir[6];  //prediction direction
         int zigzag_last_index[6];
-	UINT8 *scan_table[6];
+	uint8_t *scan_table[6];
         int i;
 
         for(i=0; i<6; i++){
             const int level= block[i][0];
-            UINT16 *dc_ptr;
+            uint16_t *dc_ptr;
 
             dc_diff[i]= level - ff_mpeg4_pred_dc(s, i, &dc_ptr, &dir[i]);
             if (i < 4) {
@@ -747,7 +747,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
         if(s->ac_pred){
             for(i=0; i<6; i++){
-                UINT8 *st;
+                uint8_t *st;
                 int last_index;
 
                 mpeg4_inv_pred_ac(s, block[i], i, dir[i]);
@@ -817,7 +817,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
         if(s->ac_pred){
             for(i=0; i<6; i++){
                 int j;    
-                INT16 *ac_val;
+                int16_t *ac_val;
 
                 ac_val = s->ac_val[0][0] + s->block_index[i] * 16;
 
@@ -839,9 +839,9 @@ void h263_encode_mb(MpegEncContext * s,
 		    int motion_x, int motion_y)
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y;
-    INT16 pred_dc;
-    INT16 rec_intradc[6];
-    UINT16 *dc_ptr[6];
+    int16_t pred_dc;
+    int16_t rec_intradc[6];
+    uint16_t *dc_ptr[6];
     const int dquant_code[5]= {1,0,9,2,3};
            
     //printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
@@ -890,7 +890,7 @@ void h263_encode_mb(MpegEncContext * s,
         for(i=0; i<6; i++) {
             /* Predict DC */
             if (s->h263_aic && s->mb_intra) {
-                INT16 level = block[i][0];
+                int16_t level = block[i][0];
             
                 pred_dc = h263_pred_dc(s, i, &dc_ptr[i]);
                 level -= pred_dc;
@@ -965,10 +965,10 @@ void h263_encode_mb(MpegEncContext * s,
 }
 #endif
 
-static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr)
+static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
 {
     int x, y, wrap, a, c, pred_dc, scale;
-    INT16 *dc_val, *ac_val;
+    int16_t *dc_val, *ac_val;
 
     /* find prediction */
     if (n < 4) {
@@ -1014,7 +1014,7 @@ static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr)
 static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
 {
     int x, y, wrap, a, c, pred_dc, scale, i;
-    INT16 *dc_val, *ac_val, *ac_val1;
+    int16_t *dc_val, *ac_val, *ac_val1;
 
     /* find prediction */
     if (n < 4) {
@@ -1095,11 +1095,11 @@ static void h263_pred_acdc(MpegEncContext * s, DCTELEM *block, int n)
         ac_val1[8 + i] = block[s->idct_permutation[i   ]];
 }
 
-INT16 *h263_pred_motion(MpegEncContext * s, int block, 
+int16_t *h263_pred_motion(MpegEncContext * s, int block, 
                         int *px, int *py)
 {
     int xy, wrap;
-    INT16 *A, *B, *C, *mot_val;
+    int16_t *A, *B, *C, *mot_val;
     static const int off[4]= {2, 1, 1, -1};
 
     wrap = s->block_wrap[0];
@@ -1249,7 +1249,7 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
     int mv;
     
     if(mv_penalty==NULL)
-        mv_penalty= av_mallocz( sizeof(UINT16)*(MAX_FCODE+1)*(2*MAX_MV+1) );
+        mv_penalty= av_mallocz( sizeof(uint16_t)*(MAX_FCODE+1)*(2*MAX_MV+1) );
     
     for(f_code=1; f_code<=MAX_FCODE; f_code++){
         for(mv=-MAX_MV; mv<=MAX_MV; mv++){
@@ -1343,7 +1343,7 @@ static void init_uni_dc_tab(void)
 }
 
 #ifdef CONFIG_ENCODERS
-static void init_uni_mpeg4_rl_tab(RLTable *rl, UINT32 *bits_tab, UINT8 *len_tab){
+static void init_uni_mpeg4_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_tab){
     int slevel, run, last;
     
     assert(MAX_LEVEL >= 64);
@@ -1575,7 +1575,7 @@ void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
     if(s->current_picture.pts)
         s->time= (s->current_picture.pts*s->time_increment_resolution + 500*1000)/(1000*1000);
     else
-        s->time= picture_number*(INT64)FRAME_RATE_BASE*s->time_increment_resolution/s->frame_rate;
+        s->time= picture_number*(int64_t)FRAME_RATE_BASE*s->time_increment_resolution/s->frame_rate;
     time_div= s->time/s->time_increment_resolution;
     time_mod= s->time%s->time_increment_resolution;
 
@@ -1821,10 +1821,10 @@ static void change_qscale(MpegEncContext * s, int dquant)
  * @param dir_ptr pointer to an integer where the prediction direction will be stored
  * @return the quantized predicted dc
  */
-static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr)
+static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
-    UINT16 *dc_val;
+    uint16_t *dc_val;
     int dummy;
 
     /* find prediction */
@@ -1887,7 +1887,7 @@ void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                    int dir)
 {
     int i;
-    INT16 *ac_val, *ac_val1;
+    int16_t *ac_val, *ac_val1;
     int8_t * const qscale_table= s->current_picture.qscale_table;
 
     /* find prediction */
@@ -1942,7 +1942,7 @@ static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                               int dir)
 {
     int i;
-    INT16 *ac_val;
+    int16_t *ac_val;
     int8_t * const qscale_table= s->current_picture.qscale_table;
 
     /* find prediction */
@@ -2031,15 +2031,15 @@ static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
  * @param n block index (0-3 are luma, 4-5 are chroma)
  */
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, 
-                               UINT8 *scan_table, PutBitContext *dc_pb, PutBitContext *ac_pb)
+                               uint8_t *scan_table, PutBitContext *dc_pb, PutBitContext *ac_pb)
 {
     int i, last_non_zero;
 #if 0 //variables for the outcommented version
     int code, sign, last;
 #endif
     const RLTable *rl;
-    UINT32 *bits_tab;
-    UINT8 *len_tab;
+    uint32_t *bits_tab;
+    uint8_t *len_tab;
     const int last_index = s->block_last_index[n];
 
     if (s->mb_intra) { //Note gcc (3.2.1 at least) will optimize this away
@@ -2147,11 +2147,11 @@ static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n
 }
 
 static inline int mpeg4_get_block_length(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, 
-                               UINT8 *scan_table)
+                               uint8_t *scan_table)
 {
     int i, last_non_zero;
     const RLTable *rl;
-    UINT8 *len_tab;
+    uint8_t *len_tab;
     const int last_index = s->block_last_index[n];
     int len=0;
 
@@ -2564,14 +2564,14 @@ void ff_mpeg4_clean_buffers(MpegEncContext *s)
 #endif
 
     /* clean AC */
-    memset(s->ac_val[0] + l_xy, 0, (l_wrap*2+1)*16*sizeof(INT16));
-    memset(s->ac_val[1] + c_xy, 0, (c_wrap  +1)*16*sizeof(INT16));
-    memset(s->ac_val[2] + c_xy, 0, (c_wrap  +1)*16*sizeof(INT16));
+    memset(s->ac_val[0] + l_xy, 0, (l_wrap*2+1)*16*sizeof(int16_t));
+    memset(s->ac_val[1] + c_xy, 0, (c_wrap  +1)*16*sizeof(int16_t));
+    memset(s->ac_val[2] + c_xy, 0, (c_wrap  +1)*16*sizeof(int16_t));
 
     /* clean MV */
     // we cant clear the MVs as they might be needed by a b frame
-//    memset(s->motion_val + l_xy, 0, (l_wrap*2+1)*2*sizeof(INT16));
-//    memset(s->motion_val, 0, 2*sizeof(INT16)*(2 + s->mb_width*2)*(2 + s->mb_height*2));
+//    memset(s->motion_val + l_xy, 0, (l_wrap*2+1)*2*sizeof(int16_t));
+//    memset(s->motion_val, 0, 2*sizeof(int16_t)*(2 + s->mb_width*2)*(2 + s->mb_height*2));
     s->last_mv[0][0][0]=
     s->last_mv[0][0][1]=
     s->last_mv[1][0][0]=
@@ -2671,7 +2671,7 @@ static inline int get_amv(MpegEncContext *s, int n){
  */
 static int mpeg4_decode_partition_a(MpegEncContext *s){
     int mb_num;
-    static const INT8 quant_tab[4] = { -1, -2, 1, 2 };
+    static const int8_t quant_tab[4] = { -1, -2, 1, 2 };
     
     /* decode first partition */
     mb_num=0;
@@ -2729,7 +2729,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                 s->error_status_table[xy]= AC_ERROR;
             }else{ /* P/S_TYPE */
                 int mx, my, pred_x, pred_y, bits;
-                INT16 * const mot_val= s->motion_val[s->block_index[0]];
+                int16_t * const mot_val= s->motion_val[s->block_index[0]];
                 const int stride= s->block_wrap[0]*2;
 
                 bits= show_bits(&s->gb, 17);
@@ -2817,7 +2817,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                         PRINT_MB_TYPE("4");
                         s->mb_type[xy]= MB_TYPE_INTER4V;
                         for(i=0;i<4;i++) {
-                            INT16 *mot_val= h263_pred_motion(s, i, &pred_x, &pred_y);
+                            int16_t *mot_val= h263_pred_motion(s, i, &pred_x, &pred_y);
                             mx = h263_decode_motion(s, pred_x, s->f_code);
                             if (mx >= 0xffff)
                                 return -1;
@@ -2845,7 +2845,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
  */
 static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
     int mb_num=0;
-    static const INT8 quant_tab[4] = { -1, -2, 1, 2 };
+    static const int8_t quant_tab[4] = { -1, -2, 1, 2 };
 
     s->mb_x= s->resync_mb_x;
     s->first_slice_line=1;
@@ -3073,8 +3073,8 @@ int ff_h263_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64])
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
-    INT16 *mot_val;
-    static INT8 quant_tab[4] = { -1, -2, 1, 2 };
+    int16_t *mot_val;
+    static int8_t quant_tab[4] = { -1, -2, 1, 2 };
 
     s->error_status_table[s->mb_x + s->mb_y*s->mb_width]= 0;
 
@@ -3216,7 +3216,6 @@ int ff_h263_decode_mb(MpegEncContext *s,
         int modb1; // first bit of modb
         int modb2; // second bit of modb
         int mb_type;
-        int xy;
 
         s->mb_intra = 0; //B-frames never contain intra blocks
         s->mcsel=0;      //     ...               true gmc blocks
@@ -3501,7 +3500,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
 {
     int code, level, i, j, last, run;
     RLTable *rl = &rl_inter;
-    const UINT8 *scan_table;
+    const uint8_t *scan_table;
 
     scan_table = s->intra_scantable.permutated;
     if (s->h263_aic && s->mb_intra) {
@@ -3556,7 +3555,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             /* escape */
             last = get_bits1(&s->gb);
             run = get_bits(&s->gb, 6);
-            level = (INT8)get_bits(&s->gb, 8);
+            level = (int8_t)get_bits(&s->gb, 8);
             if (s->h263_rv10 && level == -128) {
                 /* XXX: should patch encoder too */
                 level = get_bits(&s->gb, 12);
@@ -3598,7 +3597,7 @@ not_coded:
 static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 {
     int level, pred, code;
-    UINT16 *dc_val;
+    uint16_t *dc_val;
 
     if (n < 4) 
         code = get_vlc2(&s->gb, dc_lum.table, DC_VLC_BITS, 1);
@@ -3657,7 +3656,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
     int dc_pred_dir;
     RLTable * rl;
     RL_VLC_ELEM * rl_vlc;
-    const UINT8 * scan_table;
+    const uint8_t * scan_table;
     int qmul, qadd;
 
     if(intra) {

@@ -22,8 +22,8 @@
 #include "../mpegvideo.h"
 #include "../avcodec.h"
 
-void ff_mmi_idct_put(UINT8 *dest, int line_size, DCTELEM *block);
-void ff_mmi_idct_add(UINT8 *dest, int line_size, DCTELEM *block);
+void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
+void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
 
 
 static void dct_unquantize_h263_mmi(MpegEncContext *s, 

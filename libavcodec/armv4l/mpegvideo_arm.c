@@ -23,17 +23,17 @@
 
 extern void j_rev_dct_ARM(DCTELEM *data);
 /* XXX: local hack */
-static void (*ff_put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
-static void (*ff_add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
+static void (*ff_put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
+static void (*ff_add_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
-static void arm_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
+static void arm_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     j_rev_dct_ARM (block);
     ff_put_pixels_clamped(block, dest, line_size);
 }
-static void arm_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+static void arm_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     j_rev_dct_ARM (block);
     ff_add_pixels_clamped(block, dest, line_size);

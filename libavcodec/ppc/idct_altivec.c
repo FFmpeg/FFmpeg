@@ -176,8 +176,8 @@ void idct_put_altivec(uint8_t* dest, int stride, vector_s16_t* block)
 POWERPC_TBL_DECLARE(altivec_idct_put_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
 POWERPC_TBL_START_COUNT(altivec_idct_put_num, 1);
-    void simple_idct_put(UINT8 *dest, int line_size, INT16 *block);
-    simple_idct_put(dest, stride, (INT16*)block);
+    void simple_idct_put(uint8_t *dest, int line_size, int16_t *block);
+    simple_idct_put(dest, stride, (int16_t*)block);
 POWERPC_TBL_STOP_COUNT(altivec_idct_put_num, 1);
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
     vector_u8_t tmp;
@@ -209,8 +209,8 @@ void idct_add_altivec(uint8_t* dest, int stride, vector_s16_t* block)
 POWERPC_TBL_DECLARE(altivec_idct_add_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
 POWERPC_TBL_START_COUNT(altivec_idct_add_num, 1);
-    void simple_idct_add(UINT8 *dest, int line_size, INT16 *block);
-    simple_idct_add(dest, stride, (INT16*)block);
+    void simple_idct_add(uint8_t *dest, int line_size, int16_t *block);
+    simple_idct_add(dest, stride, (int16_t*)block);
 POWERPC_TBL_STOP_COUNT(altivec_idct_add_num, 1);
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
     vector_u8_t tmp;

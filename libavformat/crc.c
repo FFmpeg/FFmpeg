@@ -33,7 +33,7 @@
 #define DO8(buf)  DO4(buf); DO4(buf);
 #define DO16(buf) DO8(buf); DO8(buf);
 
-static UINT32 adler32(UINT32 adler, UINT8 *buf, unsigned int len)
+static uint32_t adler32(uint32_t adler, uint8_t *buf, unsigned int len)
 {
     unsigned long s1 = adler & 0xffff;
     unsigned long s2 = (adler >> 16) & 0xffff;
@@ -58,7 +58,7 @@ static UINT32 adler32(UINT32 adler, UINT8 *buf, unsigned int len)
 }
 
 typedef struct CRCState {
-    UINT32 crcval;
+    uint32_t crcval;
 } CRCState;
 
 static int crc_write_header(struct AVFormatContext *s)

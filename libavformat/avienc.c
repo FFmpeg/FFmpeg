@@ -49,7 +49,7 @@ void end_tag(ByteIOContext *pb, offset_t start)
 
     pos = url_ftell(pb);
     url_fseek(pb, start - 4, SEEK_SET);
-    put_le32(pb, (UINT32)(pos - start));
+    put_le32(pb, (uint32_t)(pos - start));
     url_fseek(pb, pos, SEEK_SET);
 }
 
@@ -211,7 +211,7 @@ static int avi_write_header(AVFormatContext *s)
     nb_frames = 0;
 
     if(video_enc){
-    put_le32(pb, (UINT32)(INT64_C(1000000) * FRAME_RATE_BASE / video_enc->frame_rate));
+    put_le32(pb, (uint32_t)(int64_t_C(1000000) * FRAME_RATE_BASE / video_enc->frame_rate));
     } else {
 	put_le32(pb, 0);
     }
@@ -320,7 +320,7 @@ static int avi_write_header(AVFormatContext *s)
 }
 
 static int avi_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size, int force_pts)
+                            uint8_t *buf, int size, int force_pts)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
@@ -395,7 +395,7 @@ static int avi_write_trailer(AVFormatContext *s)
         /* update file size */
         file_size = url_ftell(pb);
         url_fseek(pb, 4, SEEK_SET);
-        put_le32(pb, (UINT32)(file_size - 8));
+        put_le32(pb, (uint32_t)(file_size - 8));
 
         /* Fill in frame/sample counters */
         nb_frames = 0;

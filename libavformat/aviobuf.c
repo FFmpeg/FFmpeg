@@ -27,8 +27,8 @@ int init_put_byte(ByteIOContext *s,
                   int buffer_size,
                   int write_flag,
                   void *opaque,
-                  int (*read_packet)(void *opaque, UINT8 *buf, int buf_size),
-                  void (*write_packet)(void *opaque, UINT8 *buf, int buf_size),
+                  int (*read_packet)(void *opaque, uint8_t *buf, int buf_size),
+                  void (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int (*seek)(void *opaque, offset_t offset, int whence))
 {
     s->buffer = buffer;
@@ -182,7 +182,7 @@ void put_be64_double(ByteIOContext *s, double val)
 {
     union {
         double d;
-        UINT64 ull;
+        uint64_t ull;
     } u;
     u.d = val;
     put_be64(s, u.ull);
@@ -196,16 +196,16 @@ void put_strz(ByteIOContext *s, const char *str)
         put_byte(s, 0);
 }
 
-void put_le64(ByteIOContext *s, UINT64 val)
+void put_le64(ByteIOContext *s, uint64_t val)
 {
-    put_le32(s, (UINT32)(val & 0xffffffff));
-    put_le32(s, (UINT32)(val >> 32));
+    put_le32(s, (uint32_t)(val & 0xffffffff));
+    put_le32(s, (uint32_t)(val >> 32));
 }
 
-void put_be64(ByteIOContext *s, UINT64 val)
+void put_be64(ByteIOContext *s, uint64_t val)
 {
-    put_be32(s, (UINT32)(val >> 32));
-    put_be32(s, (UINT32)(val & 0xffffffff));
+    put_be32(s, (uint32_t)(val >> 32));
+    put_be32(s, (uint32_t)(val & 0xffffffff));
 }
 
 void put_le16(ByteIOContext *s, unsigned int val)
@@ -320,11 +320,11 @@ unsigned int get_le32(ByteIOContext *s)
     return val;
 }
 
-UINT64 get_le64(ByteIOContext *s)
+uint64_t get_le64(ByteIOContext *s)
 {
-    UINT64 val;
-    val = (UINT64)get_le32(s);
-    val |= (UINT64)get_le32(s) << 32;
+    uint64_t val;
+    val = (uint64_t)get_le32(s);
+    val |= (uint64_t)get_le32(s) << 32;
     return val;
 }
 
@@ -350,7 +350,7 @@ double get_be64_double(ByteIOContext *s)
 {
     union {
         double d;
-        UINT64 ull;
+        uint64_t ull;
     } u;
 
     u.ull = get_be64(s);
@@ -372,29 +372,29 @@ char *get_strz(ByteIOContext *s, char *buf, int maxlen)
     return buf;
 }
 
-UINT64 get_be64(ByteIOContext *s)
+uint64_t get_be64(ByteIOContext *s)
 {
-    UINT64 val;
-    val = (UINT64)get_be32(s) << 32;
-    val |= (UINT64)get_be32(s);
+    uint64_t val;
+    val = (uint64_t)get_be32(s) << 32;
+    val |= (uint64_t)get_be32(s);
     return val;
 }
 
 /* link with avio functions */
 
-static void url_write_packet(void *opaque, UINT8 *buf, int buf_size)
+static void url_write_packet(void *opaque, uint8_t *buf, int buf_size)
 {
     URLContext *h = opaque;
     url_write(h, buf, buf_size);
 }
 
-static int url_read_packet(void *opaque, UINT8 *buf, int buf_size)
+static int url_read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
     URLContext *h = opaque;
     return url_read(h, buf, buf_size);
 }
 
-static int url_seek_packet(void *opaque, INT64 offset, int whence)
+static int url_seek_packet(void *opaque, int64_t offset, int whence)
 {
     URLContext *h = opaque;
     url_seek(h, offset, whence);
@@ -403,7 +403,7 @@ static int url_seek_packet(void *opaque, INT64 offset, int whence)
 
 int url_fdopen(ByteIOContext *s, URLContext *h)
 {
-    UINT8 *buffer;
+    uint8_t *buffer;
     int buffer_size, max_packet_size;
 
     
@@ -431,7 +431,7 @@ int url_fdopen(ByteIOContext *s, URLContext *h)
 /* XXX: must be called before any I/O */
 int url_setbufsize(ByteIOContext *s, int buf_size)
 {
-    UINT8 *buffer;
+    uint8_t *buffer;
     buffer = av_malloc(buf_size);
     if (!buffer)
         return -ENOMEM;
@@ -530,7 +530,7 @@ int url_fget_max_packet_size(ByteIOContext *s)
 }
 
 /* buffer handling */
-int url_open_buf(ByteIOContext *s, UINT8 *buf, int buf_size, int flags)
+int url_open_buf(ByteIOContext *s, uint8_t *buf, int buf_size, int flags)
 {
     return init_put_byte(s, buf, buf_size, 
                          (flags & URL_WRONLY) != 0, NULL, NULL, NULL, NULL);
@@ -547,16 +547,16 @@ int url_close_buf(ByteIOContext *s)
 
 typedef struct DynBuffer {
     int pos, size, allocated_size;
-    UINT8 *buffer;
+    uint8_t *buffer;
     int io_buffer_size;
-    UINT8 io_buffer[1];
+    uint8_t io_buffer[1];
 } DynBuffer;
 
-static void dyn_buf_write(void *opaque, UINT8 *buf, int buf_size)
+static void dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
 {
     DynBuffer *d = opaque;
     int new_size, new_allocated_size;
-    UINT8 *new_buffer;
+    uint8_t *new_buffer;
     
     /* reallocate buffer if needed */
     new_size = d->pos + buf_size;
@@ -583,7 +583,7 @@ static void dyn_buf_write(void *opaque, UINT8 *buf, int buf_size)
         d->size = d->pos;
 }
 
-static void dyn_packet_buf_write(void *opaque, UINT8 *buf, int buf_size)
+static void dyn_packet_buf_write(void *opaque, uint8_t *buf, int buf_size)
 {
     unsigned char buf1[4];
 
@@ -674,7 +674,7 @@ int url_open_dyn_packet_buf(ByteIOContext *s, int max_packet_size)
  * @param pointer to a byte buffer
  * @return the length of the byte buffer
  */
-int url_close_dyn_buf(ByteIOContext *s, UINT8 **pbuffer)
+int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d = s->opaque;
     int size;

@@ -198,10 +198,10 @@ static void avg_pixels8_xy2_mlib (uint8_t * dest, const uint8_t * ref,
 }
 
 
-static void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
+static void (*put_pixels_clamped)(const DCTELEM *block, uint8_t *pixels, int line_size);
 
 
-static void add_pixels_clamped_mlib(const DCTELEM *block, UINT8 *pixels, int line_size)
+static void add_pixels_clamped_mlib(const DCTELEM *block, uint8_t *pixels, int line_size)
 {
     mlib_VideoAddBlock_U8_S16(pixels, (mlib_s16 *)block, line_size);
 }
@@ -209,13 +209,13 @@ static void add_pixels_clamped_mlib(const DCTELEM *block, UINT8 *pixels, int lin
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
-static void ff_idct_put_mlib(UINT8 *dest, int line_size, DCTELEM *data)
+static void ff_idct_put_mlib(uint8_t *dest, int line_size, DCTELEM *data)
 {
     mlib_VideoIDCT8x8_S16_S16 (data, data);
     put_pixels_clamped(data, dest, line_size);
 }
 
-static void ff_idct_add_mlib(UINT8 *dest, int line_size, DCTELEM *data)
+static void ff_idct_add_mlib(uint8_t *dest, int line_size, DCTELEM *data)
 {
     mlib_VideoIDCT8x8_S16_S16 (data, data);
     mlib_VideoAddBlock_U8_S16(dest, (mlib_s16 *)data, line_size);

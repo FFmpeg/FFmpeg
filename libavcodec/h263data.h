@@ -1,11 +1,11 @@
 
 /* intra MCBPC, mb_type = (intra), then (intraq) */
-const UINT8 intra_MCBPC_code[8] = { 1, 1, 2, 3, 1, 1, 2, 3 };
-const UINT8 intra_MCBPC_bits[8] = { 1, 3, 3, 3, 4, 6, 6, 6 };
+const uint8_t intra_MCBPC_code[8] = { 1, 1, 2, 3, 1, 1, 2, 3 };
+const uint8_t intra_MCBPC_bits[8] = { 1, 3, 3, 3, 4, 6, 6, 6 };
 
 /* inter MCBPC, mb_type = (inter), (intra), (interq), (intraq), (inter4v) */
 /* Changed the tables for interq and inter4v+q, following the standard ** Juanjo ** */
-const UINT8 inter_MCBPC_code[25] = { 
+const uint8_t inter_MCBPC_code[25] = { 
     1, 3, 2, 5, 
     3, 4, 3, 3, 
     3, 7, 6, 5,
@@ -14,7 +14,7 @@ const UINT8 inter_MCBPC_code[25] = {
     1, /* Stuffing */
     2, 12, 14, 15,
 };
-const UINT8 inter_MCBPC_bits[25] = { 
+const uint8_t inter_MCBPC_bits[25] = { 
     1, 4, 4, 6, 
     5, 8, 8, 7,
     3, 7, 7, 9,
@@ -25,14 +25,14 @@ const UINT8 inter_MCBPC_bits[25] = {
 };
 
 /* This is the old table 
-static const UINT8 inter_MCBPC_code[20] = { 
+static const uint8_t inter_MCBPC_code[20] = { 
     1, 3, 2, 5, 
     3, 4, 3, 3, 
     0, 1, 2, 3,
     4, 4, 3, 2,
     2, 5, 4, 5,
 };
-static const UINT8 inter_MCBPC_bits[20] = { 
+static const uint8_t inter_MCBPC_bits[20] = { 
     1, 4, 4, 6, 
     5, 8, 8, 7,
     12, 12, 12, 12,
@@ -40,13 +40,13 @@ static const UINT8 inter_MCBPC_bits[20] = {
     3, 7, 7, 8,
 };*/
 
-const UINT8 cbpy_tab[16][2] =
+const uint8_t cbpy_tab[16][2] =
 {
   {3,4}, {5,5}, {4,5}, {9,4}, {3,5}, {7,4}, {2,6}, {11,4},
   {2,5}, {3,6}, {5,4}, {10,4}, {4,4}, {8,4}, {6,4}, {3,2}
 };
 
-const UINT8 mvtab[33][2] =
+const uint8_t mvtab[33][2] =
 {
   {1,1}, {1,2}, {1,3}, {1,4}, {3,6}, {5,7}, {4,7}, {3,7},
   {11,9}, {10,9}, {9,9}, {17,10}, {16,10}, {15,10}, {14,10}, {13,10},
@@ -56,7 +56,7 @@ const UINT8 mvtab[33][2] =
 };
 
 /* third non intra table */
-const UINT16 inter_vlc[103][2] = {
+const uint16_t inter_vlc[103][2] = {
 { 0x2, 2 },{ 0xf, 4 },{ 0x15, 6 },{ 0x17, 7 },
 { 0x1f, 8 },{ 0x25, 9 },{ 0x24, 9 },{ 0x21, 10 },
 { 0x20, 10 },{ 0x7, 11 },{ 0x6, 11 },{ 0x20, 11 },
@@ -85,7 +85,7 @@ const UINT16 inter_vlc[103][2] = {
 { 0x5e, 12 },{ 0x5f, 12 },{ 0x3, 7 },
 };
 
-const INT8 inter_level[102] = {
+const int8_t inter_level[102] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12,  1,  2,  3,  4,
   5,  6,  1,  2,  3,  4,  1,  2,
@@ -101,7 +101,7 @@ const INT8 inter_level[102] = {
   1,  1,  1,  1,  1,  1,
 };
 
-const INT8 inter_run[102] = {
+const int8_t inter_run[102] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  1,  1,  1,  1,
   1,  1,  2,  2,  2,  2,  3,  3,
@@ -125,7 +125,7 @@ static RLTable rl_inter = {
     inter_level,
 };
 
-const UINT16 intra_vlc_aic[103][2] = {
+const uint16_t intra_vlc_aic[103][2] = {
 {  0x2,  2 }, {  0x6,  3 }, {  0xe,  4 }, {  0xc,  5 }, 
 {  0xd,  5 }, { 0x10,  6 }, { 0x11,  6 }, { 0x12,  6 }, 
 { 0x16,  7 }, { 0x1b,  8 }, { 0x20,  9 }, { 0x21,  9 }, 
@@ -154,7 +154,7 @@ const UINT16 intra_vlc_aic[103][2] = {
 { 0x59, 12 }, { 0x5a, 12 }, {  0x3,  7 },
 };
 
-const INT8 intra_run_aic[102] = {
+const int8_t intra_run_aic[102] = {
  0,  0,  0,  0,  0,  0,  0,  0, 
  0,  0,  0,  0,  0,  0,  0,  0, 
  0,  0,  0,  0,  0,  0,  0,  0, 
@@ -170,7 +170,7 @@ const INT8 intra_run_aic[102] = {
 18, 19, 20, 21, 22, 23, 
 };
 
-const INT8 intra_level_aic[102] = {
+const int8_t intra_level_aic[102] = {
  1,  2,  3,  4,  5,  6,  7,  8, 
  9, 10, 11, 12, 13, 14, 15, 16, 
 17, 18, 19, 20, 21, 22, 23, 24, 
@@ -194,7 +194,7 @@ static RLTable rl_intra_aic = {
     intra_level_aic,
 };
 
-static const UINT16 h263_format[8][2] = {
+static const uint16_t h263_format[8][2] = {
     { 0, 0 },
     { 128, 96 },
     { 176, 144 },
@@ -203,7 +203,7 @@ static const UINT16 h263_format[8][2] = {
     { 1408, 1152 },
 };
 
-static UINT8 h263_aic_dc_scale_table[32]={
+static uint8_t h263_aic_dc_scale_table[32]={
 //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
     0, 2, 4, 6, 8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62
 };

@@ -638,7 +638,7 @@ static void decode_bgr_bitstream(HYuvContext *s, int count){
 
 static void draw_slice(HYuvContext *s, int y){
     int h, cy;
-    UINT8 *src_ptr[3];
+    uint8_t *src_ptr[3];
     
     if(s->avctx->draw_horiz_band==NULL) 
         return;

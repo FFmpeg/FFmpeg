@@ -31,7 +31,7 @@ typedef struct {
     AVPacket pkt;
     int frag_offset;
     int timestamp;
-    INT64 duration;
+    int64_t duration;
 
     int ds_span;		/* descrambling  */
     int ds_packet_size;
@@ -42,10 +42,10 @@ typedef struct {
 } ASFStream;
 
 typedef struct {
-    UINT32 v1;
-    UINT16 v2;
-    UINT16 v3;
-    UINT8 v4[8];
+    uint32_t v1;
+    uint16_t v2;
+    uint16_t v3;
+    uint8_t v4[8];
 } GUID;
 
 typedef struct __attribute__((packed)) {
@@ -83,14 +83,14 @@ typedef struct {
     int asfid2avid[128];        /* conversion table from asf ID 2 AVStream ID */
     ASFStream streams[128];	/* it's max number and it's not that big */
     /* non streamed additonnal info */
-    INT64 nb_packets;
-    INT64 duration; /* in 100ns units */
+    int64_t nb_packets;
+    int64_t duration; /* in 100ns units */
     /* packet filling */
     int packet_size_left;
     int packet_timestamp_start;
     int packet_timestamp_end;
     int packet_nb_frames;
-    UINT8 packet_buf[PACKET_SIZE];
+    uint8_t packet_buf[PACKET_SIZE];
     ByteIOContext pb;
     /* only for reading */
     uint64_t data_offset; /* begining of the first data packet */
@@ -199,7 +199,7 @@ static void put_str16(ByteIOContext *s, const char *tag)
 
     put_le16(s,strlen(tag) + 1);
     for(;;) {
-        c = (UINT8)*tag++;
+        c = (uint8_t)*tag++;
         put_le16(s, c);
         if (c == '\0')
             break;
@@ -211,16 +211,16 @@ static void put_str16_nolen(ByteIOContext *s, const char *tag)
     int c;
 
     for(;;) {
-        c = (UINT8)*tag++;
+        c = (uint8_t)*tag++;
         put_le16(s, c);
         if (c == '\0')
             break;
     }
 }
 
-static INT64 put_header(ByteIOContext *pb, const GUID *g)
+static int64_t put_header(ByteIOContext *pb, const GUID *g)
 {
-    INT64 pos;
+    int64_t pos;
 
     pos = url_ftell(pb);
     put_guid(pb, g);
@@ -229,9 +229,9 @@ static INT64 put_header(ByteIOContext *pb, const GUID *g)
 }
 
 /* update header size */
-static void end_header(ByteIOContext *pb, INT64 pos)
+static void end_header(ByteIOContext *pb, int64_t pos)
 {
-    INT64 pos1;
+    int64_t pos1;
 
     pos1 = url_ftell(pb);
     url_fseek(pb, pos + 16, SEEK_SET);
@@ -256,24 +256,24 @@ static void put_chunk(AVFormatContext *s, int type, int payload_length, int flag
 }
 
 /* convert from unix to windows time */
-static INT64 unix_to_file_time(int ti)
+static int64_t unix_to_file_time(int ti)
 {
-    INT64 t;
+    int64_t t;
 
-    t = ti * INT64_C(10000000);
-    t += INT64_C(116444736000000000);
+    t = ti * int64_t_C(10000000);
+    t += int64_t_C(116444736000000000);
     return t;
 }
 
 /* write the header (used two times if non streamed) */
-static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chunk_size)
+static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data_chunk_size)
 {
     ASFContext *asf = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int header_size, n, extra_size, extra_size2, wav_extra_size, file_time;
     int has_title;
     AVCodecContext *enc;
-    INT64 header_offset, cur_pos, hpos;
+    int64_t header_offset, cur_pos, hpos;
     int bit_rate;
 
     has_title = (s->title[0] || s->author[0] || s->copyright[0] || s->comment[0]);
@@ -337,7 +337,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
 
     /* stream headers */
     for(n=0;n<s->nb_streams;n++) {
-        INT64 es_pos;
+        int64_t es_pos;
         //        ASFStream *stream = &asf->streams[n];
 
         enc = &s->streams[n]->codec;
@@ -574,7 +574,7 @@ static void put_frame_header(AVFormatContext *s, ASFStream *stream, int timestam
    crap. They have misread the MPEG Systems spec !
  */
 static void put_frame(AVFormatContext *s, ASFStream *stream, int timestamp,
-                      UINT8 *buf, int payload_size)
+                      uint8_t *buf, int payload_size)
 {
     ASFContext *asf = s->priv_data;
     int frag_pos, frag_len, frag_len1;
@@ -607,22 +607,22 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, int timestamp,
 
 
 static int asf_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size, int timestamp)
+                            uint8_t *buf, int size, int timestamp)
 {
     ASFContext *asf = s->priv_data;
     ASFStream *stream;
-    INT64 duration;
+    int64_t duration;
     AVCodecContext *codec;
 
     codec = &s->streams[stream_index]->codec;
     stream = &asf->streams[stream_index];
 
     if (codec->codec_type == CODEC_TYPE_AUDIO) {
-        duration = (codec->frame_number * codec->frame_size * INT64_C(10000000)) /
+        duration = (codec->frame_number * codec->frame_size * int64_t_C(10000000)) /
             codec->sample_rate;
     } else {
         duration = codec->frame_number *
-            ((INT64_C(10000000) * FRAME_RATE_BASE) / codec->frame_rate);
+            ((int64_t_C(10000000) * FRAME_RATE_BASE) / codec->frame_rate);
     }
     if (duration > asf->duration)
         asf->duration = duration;
@@ -634,7 +634,7 @@ static int asf_write_packet(AVFormatContext *s, int stream_index,
 static int asf_write_trailer(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
-    INT64 file_size;
+    int64_t file_size;
 
     /* flush the current packet */
     if (asf->pb.buf_ptr > asf->pb.buffer)
@@ -746,7 +746,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *st;
     ASFStream *asf_st;
     int size, i;
-    INT64 gsize;
+    int64_t gsize;
 
     av_set_pts_info(s, 32, 1, 1000); /* 32 bit pts in ms */
 
@@ -786,7 +786,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (!memcmp(&g, &stream_header, sizeof(GUID))) {
             int type, total_size;
             unsigned int tag1;
-            INT64 pos1, pos2;
+            int64_t pos1, pos2;
 
             pos1 = url_ftell(pb);
 

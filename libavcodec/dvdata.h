@@ -20,7 +20,7 @@
 #define NB_DV_VLC 409
 #define AAUX_OFFSET (80*6 + 80*16*3 + 3)
 
-static const UINT16 dv_vlc_bits[409] = {
+static const uint16_t dv_vlc_bits[409] = {
  0x0000, 0x0002, 0x0007, 0x0008, 0x0009, 0x0014, 0x0015, 0x0016,
  0x0017, 0x0030, 0x0031, 0x0032, 0x0033, 0x0068, 0x0069, 0x006a,
  0x006b, 0x006c, 0x006d, 0x006e, 0x006f, 0x00e0, 0x00e1, 0x00e2,
@@ -75,7 +75,7 @@ static const UINT16 dv_vlc_bits[409] = {
  0x0006,
 };
 
-static const UINT8 dv_vlc_len[409] = {
+static const uint8_t dv_vlc_len[409] = {
   2,  3,  4,  4,  4,  5,  5,  5,
   5,  6,  6,  6,  6,  7,  7,  7,
   7,  7,  7,  7,  7,  8,  8,  8,
@@ -130,7 +130,7 @@ static const UINT8 dv_vlc_len[409] = {
   4,
 };
 
-static const UINT8 dv_vlc_run[409] = {
+static const uint8_t dv_vlc_run[409] = {
   0,  0,  1,  0,  0,  2,  1,  0,
   0,  3,  4,  0,  0,  5,  6,  2,
   1,  1,  0,  0,  0,  7,  8,  9,
@@ -185,7 +185,7 @@ static const UINT8 dv_vlc_run[409] = {
   0,
 };
 
-static const UINT8 dv_vlc_level[409] = {
+static const uint8_t dv_vlc_level[409] = {
   1,  2,  1,  3,  4,  1,  2,  5,
   6,  1,  1,  7,  8,  1,  1,  2,
   3,  4,  9, 10, 11,  1,  1,  1,
@@ -242,7 +242,7 @@ static const UINT8 dv_vlc_level[409] = {
 
 /* Specific zigzag scan for 248 idct. NOTE that unlike the
    specification, we interleave the fields */
-static const UINT8 dv_248_zigzag[64] = {
+static const uint8_t dv_248_zigzag[64] = {
   0,  8,  1,  9, 16, 24,  2, 10,
  17, 25, 32, 40, 48, 56, 33, 41,
  18, 26,  3, 11,  4, 12, 19, 27,
@@ -254,7 +254,7 @@ static const UINT8 dv_248_zigzag[64] = {
 };
 
 /* unquant tables (not used directly) */
-static const UINT8 dv_88_areas[64] = {
+static const uint8_t dv_88_areas[64] = {
     0,0,0,1,1,1,2,2,
     0,0,1,1,1,2,2,2,
     0,1,1,1,2,2,2,3,
@@ -265,7 +265,7 @@ static const UINT8 dv_88_areas[64] = {
     2,2,3,3,3,3,3,3,
 };
 
-static const UINT8 dv_248_areas[64] = {
+static const uint8_t dv_248_areas[64] = {
     0,0,1,1,1,2,2,3,
     0,0,1,1,2,2,2,3,
     0,1,1,2,2,2,3,3,
@@ -276,7 +276,7 @@ static const UINT8 dv_248_areas[64] = {
     1,2,2,3,3,3,3,3,
 };
 
-static UINT8 dv_quant_shifts[22][4] = {
+static uint8_t dv_quant_shifts[22][4] = {
   { 3,3,4,4 }, 
   { 3,3,4,4 }, 
   { 2,3,3,4 }, 
@@ -301,12 +301,12 @@ static UINT8 dv_quant_shifts[22][4] = {
   { 0,0,0,0 },
 };
 
-static const UINT8 dv_quant_offset[4] = { 6, 3, 0, 1 };
+static const uint8_t dv_quant_offset[4] = { 6, 3, 0, 1 };
 
 /* NOTE: I prefer hardcoding the positionning of dv blocks, it is
    simpler :-) */
 
-static const UINT16 dv_place_420[1620] = {
+static const uint16_t dv_place_420[1620] = {
  0x0c24, 0x2412, 0x3036, 0x0000, 0x1848,
  0x0e24, 0x2612, 0x3236, 0x0200, 0x1a48,
  0x1024, 0x2812, 0x3436, 0x0400, 0x1c48,
@@ -633,7 +633,7 @@ static const UINT16 dv_place_420[1620] = {
  0x0a34, 0x2222, 0x2e46, 0x4610, 0x1658,
 };
 
-static const UINT16 dv_place_411[1350] = {
+static const uint16_t dv_place_411[1350] = {
  0x0c24, 0x2710, 0x3334, 0x0000, 0x1848,
  0x0d24, 0x2810, 0x3434, 0x0100, 0x1948,
  0x0e24, 0x2910, 0x3534, 0x0200, 0x1a48,
@@ -906,7 +906,7 @@ static const UINT16 dv_place_411[1350] = {
  0x0834, 0x2320, 0x2f44, 0x3810, 0x1658,
 };
 
-static const UINT16 dv_place_audio60[10][9] = {
+static const uint16_t dv_place_audio60[10][9] = {
   {  0, 30, 60, 20, 50, 80, 10, 40, 70 }, /* 1st channel */
   {  6, 36, 66, 26, 56, 86, 16, 46, 76 },
   { 12, 42, 72,  2, 32, 62, 22, 52, 82 },
@@ -920,7 +920,7 @@ static const UINT16 dv_place_audio60[10][9] = {
   { 25, 55, 85, 15, 45, 75,  5, 35, 65 },
 };
 
-static const UINT16 dv_place_audio50[12][9] = {
+static const uint16_t dv_place_audio50[12][9] = {
   {   0,  36,  72,  26,  62,  98,  16,  52,  88}, /* 1st channel */
   {   6,  42,  78,  32,  68, 104,  22,  58,  94},
   {  12,  48,  84,   2,  38,  74,  28,  64, 100},

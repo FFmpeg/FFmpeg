@@ -56,7 +56,7 @@ static int cyuv_decode_init(AVCodecContext *avctx)
 
 static int cyuv_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
-                             UINT8 *buf, int buf_size)
+                             uint8_t *buf, int buf_size)
 {
     CyuvDecodeContext *s=avctx->priv_data;
 

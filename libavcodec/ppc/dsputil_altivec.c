@@ -480,7 +480,7 @@ int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
     return s;
 }
 
-int pix_sum_altivec(UINT8 * pix, int line_size)
+int pix_sum_altivec(uint8_t * pix, int line_size)
 {
     const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm, *pixv;
@@ -513,7 +513,7 @@ int pix_sum_altivec(UINT8 * pix, int line_size)
     return s;
 }
 
-void get_pixels_altivec(DCTELEM *restrict block, const UINT8 *pixels, int line_size)
+void get_pixels_altivec(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
 {
     int i;
     vector unsigned char perm, bytes, *pixv;
@@ -539,8 +539,8 @@ void get_pixels_altivec(DCTELEM *restrict block, const UINT8 *pixels, int line_s
     }
 }
 
-void diff_pixels_altivec(DCTELEM *restrict block, const UINT8 *s1,
-        const UINT8 *s2, int stride)
+void diff_pixels_altivec(DCTELEM *restrict block, const uint8_t *s1,
+        const uint8_t *s2, int stride)
 {
     int i;
     vector unsigned char perm, bytes, *pixv;

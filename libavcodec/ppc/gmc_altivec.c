@@ -26,7 +26,7 @@
   altivec-enhanced gmc1. ATM this code assume stride is a multiple of 8,
   to preserve proper dst alignement.
 */
-void gmc1_altivec(UINT8 *dst /* align 8 */, UINT8 *src /* align1 */, int stride, int h, int x16, int y16, int rounder)
+void gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int stride, int h, int x16, int y16, int rounder)
 {
 POWERPC_TBL_DECLARE(altivec_gmc1_num, h == 8);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE

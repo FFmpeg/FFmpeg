@@ -41,7 +41,7 @@ static void clear_blocks_mmi(DCTELEM * blocks)
 }
 
 
-static void get_pixels_mmi(DCTELEM *block, const UINT8 *pixels, int line_size)
+static void get_pixels_mmi(DCTELEM *block, const uint8_t *pixels, int line_size)
 {
     int i;
     for(i=0;i<8;i++) {

@@ -38,7 +38,7 @@ static int raw_write_trailer(struct AVFormatContext *s)
 }
 
 /* raw input */
-static static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVStream *st;
     int id;

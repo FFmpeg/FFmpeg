@@ -107,7 +107,7 @@ static void put_swf_rect(ByteIOContext *pb,
                          int xmin, int xmax, int ymin, int ymax)
 {
     PutBitContext p;
-    UINT8 buf[256];
+    uint8_t buf[256];
     int nbits, mask;
 
     init_put_bits(&p, buf, sizeof(buf), NULL, NULL);
@@ -164,7 +164,7 @@ static void put_swf_matrix(ByteIOContext *pb,
                            int a, int b, int c, int d, int tx, int ty)
 {
     PutBitContext p;
-    UINT8 buf[256];
+    uint8_t buf[256];
 
     init_put_bits(&p, buf, sizeof(buf), NULL, NULL);
     
@@ -193,7 +193,7 @@ static int swf_write_header(AVFormatContext *s)
     ByteIOContext *pb = &s->pb;
     AVCodecContext *enc, *audio_enc, *video_enc;
     PutBitContext p;
-    UINT8 buf1[256];
+    uint8_t buf1[256];
     int i, width, height, rate;
 
     swf = av_malloc(sizeof(SWFContext));
@@ -230,7 +230,7 @@ static int swf_write_header(AVFormatContext *s)
     put_swf_rect(pb, 0, width, 0, height);
     put_le16(pb, (rate * 256) / FRAME_RATE_BASE); /* frame rate */
     swf->duration_pos = url_ftell(pb);
-    put_le16(pb, (UINT16)(DUMMY_DURATION * (INT64)rate / FRAME_RATE_BASE)); /* frame count */
+    put_le16(pb, (uint16_t)(DUMMY_DURATION * (int64_t)rate / FRAME_RATE_BASE)); /* frame count */
     
     /* define a shape with the jpeg inside */
 
@@ -316,7 +316,7 @@ static int swf_write_header(AVFormatContext *s)
 }
 
 static int swf_write_video(AVFormatContext *s, 
-                           AVCodecContext *enc, UINT8 *buf, int size)
+                           AVCodecContext *enc, uint8_t *buf, int size)
 {
     ByteIOContext *pb = &s->pb;
     static int tag_id = 0;
@@ -364,7 +364,7 @@ static int swf_write_video(AVFormatContext *s,
     return 0;
 }
 
-static int swf_write_audio(AVFormatContext *s, UINT8 *buf, int size)
+static int swf_write_audio(AVFormatContext *s, uint8_t *buf, int size)
 {
     ByteIOContext *pb = &s->pb;
 
@@ -378,7 +378,7 @@ static int swf_write_audio(AVFormatContext *s, UINT8 *buf, int size)
 }
 
 static int swf_write_packet(AVFormatContext *s, int stream_index, 
-                           UINT8 *buf, int size, int force_pts)
+                           uint8_t *buf, int size, int force_pts)
 {
     AVCodecContext *codec = &s->streams[stream_index]->codec;
     if (codec->codec_type == CODEC_TYPE_AUDIO)

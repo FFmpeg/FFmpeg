@@ -88,7 +88,7 @@ static int mpegts_read_header(AVFormatContext *s,
     ByteIOContext *pb = &s->pb;
     unsigned char buf[1024];
     int len;
-    INT64 pos;
+    int64_t pos;
 
     /* read the first 1024 bytes to get packet size */
     pos = url_ftell(pb);

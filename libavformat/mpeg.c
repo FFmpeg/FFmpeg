@@ -22,12 +22,12 @@
 #define NB_STREAMS 2
 
 typedef struct {
-    UINT8 buffer[MAX_PAYLOAD_SIZE];
+    uint8_t buffer[MAX_PAYLOAD_SIZE];
     int buffer_ptr;
-    UINT8 id;
+    uint8_t id;
     int max_buffer_size; /* in bytes */
     int packet_number;
-    INT64 start_pts;
+    int64_t start_pts;
 } StreamInfo;
 
 typedef struct {
@@ -66,7 +66,7 @@ extern AVOutputFormat mpeg1vcd_mux;
 extern AVOutputFormat mpeg2vob_mux;
 
 static int put_pack_header(AVFormatContext *ctx, 
-                           UINT8 *buf, INT64 timestamp)
+                           uint8_t *buf, int64_t timestamp)
 {
     MpegMuxContext *s = ctx->priv_data;
     PutBitContext pb;
@@ -79,11 +79,11 @@ static int put_pack_header(AVFormatContext *ctx,
     } else {
         put_bits(&pb, 4, 0x2);
     }
-    put_bits(&pb, 3, (UINT32)((timestamp >> 30) & 0x07));
+    put_bits(&pb, 3, (uint32_t)((timestamp >> 30) & 0x07));
     put_bits(&pb, 1, 1);
-    put_bits(&pb, 15, (UINT32)((timestamp >> 15) & 0x7fff));
+    put_bits(&pb, 15, (uint32_t)((timestamp >> 15) & 0x7fff));
     put_bits(&pb, 1, 1);
-    put_bits(&pb, 15, (UINT32)((timestamp) & 0x7fff));
+    put_bits(&pb, 15, (uint32_t)((timestamp) & 0x7fff));
     put_bits(&pb, 1, 1);
     if (s->is_mpeg2) {
         /* clock extension */
@@ -101,7 +101,7 @@ static int put_pack_header(AVFormatContext *ctx,
     return pbBufPtr(&pb) - pb.buf;
 }
 
-static int put_system_header(AVFormatContext *ctx, UINT8 *buf)
+static int put_system_header(AVFormatContext *ctx, uint8_t *buf)
 {
     MpegMuxContext *s = ctx->priv_data;
     int size, rate_bound, i, private_stream_coded, id;
@@ -254,10 +254,10 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
 {
     MpegMuxContext *s = ctx->priv_data;
     StreamInfo *stream = ctx->streams[stream_index]->priv_data;
-    UINT8 *buf_ptr;
+    uint8_t *buf_ptr;
     int size, payload_size, startcode, id, len, stuffing_size, i, header_len;
-    INT64 timestamp;
-    UINT8 buffer[128];
+    int64_t timestamp;
+    uint8_t buffer[128];
     int last = last_pkt ? 4 : 0;
     
     id = stream->id;
@@ -314,8 +314,8 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
              (0x02 << 4) | 
              (((timestamp >> 30) & 0x07) << 1) | 
              1);
-    put_be16(&ctx->pb, (UINT16)((((timestamp >> 15) & 0x7fff) << 1) | 1));
-    put_be16(&ctx->pb, (UINT16)((((timestamp) & 0x7fff) << 1) | 1));
+    put_be16(&ctx->pb, (uint16_t)((((timestamp >> 15) & 0x7fff) << 1) | 1));
+    put_be16(&ctx->pb, (uint16_t)((((timestamp) & 0x7fff) << 1) | 1));
 
     if (startcode == PRIVATE_STREAM_1) {
         put_byte(&ctx->pb, id);
@@ -347,7 +347,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
 }
 
 static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
-                                 UINT8 *buf, int size, int pts)
+                                 uint8_t *buf, int size, int pts)
 {
     MpegMuxContext *s = ctx->priv_data;
     AVStream *st = ctx->streams[stream_index];
@@ -440,7 +440,7 @@ typedef struct MpegDemuxContext {
 } MpegDemuxContext;
 
 static int find_start_code(ByteIOContext *pb, int *size_ptr, 
-                           UINT32 *header_state)
+                           uint32_t *header_state)
 {
     unsigned int state, v;
     int val, n;
@@ -475,18 +475,18 @@ static int mpegps_read_header(AVFormatContext *s,
     return 0;
 }
 
-static INT64 get_pts(ByteIOContext *pb, int c)
+static int64_t get_pts(ByteIOContext *pb, int c)
 {
-    INT64 pts;
+    int64_t pts;
     int val;
 
     if (c < 0)
         c = get_byte(pb);
-    pts = (INT64)((c >> 1) & 0x07) << 30;
+    pts = (int64_t)((c >> 1) & 0x07) << 30;
     val = get_be16(pb);
-    pts |= (INT64)(val >> 1) << 15;
+    pts |= (int64_t)(val >> 1) << 15;
     val = get_be16(pb);
-    pts |= (INT64)(val >> 1);
+    pts |= (int64_t)(val >> 1);
     return pts;
 }
 
@@ -496,7 +496,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     MpegDemuxContext *m = s->priv_data;
     AVStream *st;
     int len, size, startcode, i, c, flags, header_len, type, codec_id;
-    INT64 pts, dts;
+    int64_t pts, dts;
 
     /* next start code (should be immediately after) */
  redo:

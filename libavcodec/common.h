@@ -72,33 +72,24 @@
 
 /* windows */
 
-typedef unsigned short UINT16;
-typedef signed short INT16;
-typedef unsigned char UINT8;
-typedef unsigned int UINT32;
-typedef unsigned __int64 UINT64;
-typedef signed char INT8;
-typedef signed int INT32;
-typedef signed __int64 INT64;
-
-typedef UINT8 uint8_t;
-typedef INT8 int8_t;
-typedef UINT16 uint16_t;
-typedef INT16 int16_t;
-typedef UINT32 uint32_t;
-typedef INT32 int32_t;
-typedef UINT64 uint64_t;
-typedef INT64 int64_t;
+typedef unsigned short uint16_t;
+typedef signed short int16_t;
+typedef unsigned char uint8_t;
+typedef unsigned int uint32_t;
+typedef unsigned __int64 uint64_t;
+typedef signed char int8_t;
+typedef signed int int32_t;
+typedef signed __int64 int64_t;
 
 #    ifndef __MINGW32__
-#        define INT64_C(c)     (c ## i64)
-#        define UINT64_C(c)    (c ## i64)
+#        define int64_t_C(c)     (c ## i64)
+#        define uint64_t_C(c)    (c ## i64)
 
 #        define inline __inline
 
 #    else
-#        define INT64_C(c)     (c ## LL)
-#        define UINT64_C(c)    (c ## ULL)
+#        define int64_t_C(c)     (c ## LL)
+#        define uint64_t_C(c)    (c ## ULL)
 #    endif /* __MINGW32__ */
 
 #    ifdef _DEBUG
@@ -114,20 +105,11 @@ typedef INT64 int64_t;
 
 #include <inttypes.h>
 
-typedef unsigned char UINT8;
-typedef unsigned short UINT16;
-typedef unsigned int UINT32;
-typedef unsigned long long UINT64;
-typedef signed char INT8;
-typedef signed short INT16;
-typedef signed int INT32;
-typedef signed long long INT64;
-
 #ifdef HAVE_AV_CONFIG_H
 
-#ifndef INT64_C
-#define INT64_C(c)     (c ## LL)
-#define UINT64_C(c)    (c ## ULL)
+#ifndef int64_t_C
+#define int64_t_C(c)     (c ## LL)
+#define uint64_t_C(c)    (c ## ULL)
 #endif
 
 #ifdef USE_FASTMEMCPY
@@ -145,23 +127,10 @@ typedef signed long long INT64;
 
 #    include <inttypes.h>
 
-#    ifndef __WINE_WINDEF16_H
-/* workaround for typedef conflict in MPlayer (wine typedefs) */
-typedef unsigned short UINT16;
-typedef signed short INT16;
-#    endif
-
-typedef unsigned char UINT8;
-typedef unsigned int UINT32;
-typedef unsigned long long UINT64;
-typedef signed char INT8;
-typedef signed int INT32;
-typedef signed long long INT64;
-
 #    ifdef HAVE_AV_CONFIG_H
-#        ifndef INT64_C
-#            define INT64_C(c)     (c ## LL)
-#            define UINT64_C(c)    (c ## ULL)
+#        ifndef int64_t_C
+#            define int64_t_C(c)     (c ## LL)
+#            define uint64_t_C(c)    (c ## ULL)
 #        endif
 
 #        ifdef USE_FASTMEMCPY
@@ -240,26 +209,26 @@ static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
 
 struct PutBitContext;
 
-typedef void (*WriteDataFunc)(void *, UINT8 *, int);
+typedef void (*WriteDataFunc)(void *, uint8_t *, int);
 
 typedef struct PutBitContext {
 #ifdef ALT_BITSTREAM_WRITER
-    UINT8 *buf, *buf_end;
+    uint8_t *buf, *buf_end;
     int index;
 #else
-    UINT32 bit_buf;
+    uint32_t bit_buf;
     int bit_left;
-    UINT8 *buf, *buf_ptr, *buf_end;
+    uint8_t *buf, *buf_ptr, *buf_end;
 #endif
-    INT64 data_out_size; /* in bytes */
+    int64_t data_out_size; /* in bytes */
 } PutBitContext;
 
 void init_put_bits(PutBitContext *s, 
-                   UINT8 *buffer, int buffer_size,
+                   uint8_t *buffer, int buffer_size,
                    void *opaque,
-                   void (*write_data)(void *, UINT8 *, int));
+                   void (*write_data)(void *, uint8_t *, int));
 
-INT64 get_bit_count(PutBitContext *s); /* XXX: change function name */
+int64_t get_bit_count(PutBitContext *s); /* XXX: change function name */
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
 void put_string(PutBitContext * pbc, char *s);
@@ -267,17 +236,17 @@ void put_string(PutBitContext * pbc, char *s);
 /* bit input */
 
 typedef struct GetBitContext {
-    UINT8 *buffer, *buffer_end;
+    uint8_t *buffer, *buffer_end;
 #ifdef ALT_BITSTREAM_READER
     int index;
 #elif defined LIBMPEG2_BITSTREAM_READER
-    UINT8 *buffer_ptr;
-    UINT32 cache;
+    uint8_t *buffer_ptr;
+    uint32_t cache;
     int bit_count;
 #elif defined A32_BITSTREAM_READER
-    UINT32 *buffer_ptr;
-    UINT32 cache0;
-    UINT32 cache1;
+    uint32_t *buffer_ptr;
+    uint32_t cache0;
+    uint32_t cache1;
     int bit_count;
 #endif
     int size_in_bits;
@@ -285,7 +254,7 @@ typedef struct GetBitContext {
 
 static inline int get_bits_count(GetBitContext *s);
 
-#define VLC_TYPE INT16
+#define VLC_TYPE int16_t
 
 typedef struct VLC {
     int bits;
@@ -305,7 +274,7 @@ typedef struct RL_VLC_ELEM {
 
 /* used to avoid missaligned exceptions on some archs (alpha, ...) */
 #ifdef ARCH_X86
-#    define unaligned32(a) (*(UINT32*)(a))
+#    define unaligned32(a) (*(uint32_t*)(a))
 #else
 #    ifdef __GNUC__
 static inline uint32_t unaligned32(const void *v) {
@@ -357,7 +326,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
             s->buf_ptr[3] = bit_buf      ;
         } else
 #endif
-        *(UINT32 *)s->buf_ptr = be2me_32(bit_buf);
+        *(uint32_t *)s->buf_ptr = be2me_32(bit_buf);
         //printf("bitbuf = %08x\n", bit_buf);
         s->buf_ptr+=4;
 	bit_left+=32 - n;
@@ -700,7 +669,7 @@ static inline void skip_bits1(GetBitContext *s){
 }
 
 void init_get_bits(GetBitContext *s,
-                   UINT8 *buffer, int buffer_size);
+                   uint8_t *buffer, int buffer_size);
 
 int check_marker(GetBitContext *s, const char *msg);
 void align_get_bits(GetBitContext *s);

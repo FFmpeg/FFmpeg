@@ -157,18 +157,18 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     char filename[1024];
     int ret;
     ByteIOContext f1, *f;
-    static INT64 first_frame; // BUG -> to context FIXME
+    static int64_t first_frame; // BUG -> to context FIXME
 
     if (emulate_frame_rate) {
         if (!first_frame) {
             first_frame = av_gettime();
         } else {
-            INT64 pts;
-            INT64 nowus;
+            int64_t pts;
+            int64_t nowus;
 
             nowus = av_gettime() - first_frame;
 
-            pts = ((INT64)s->img_number * FRAME_RATE_BASE * 1000000) / (s1->streams[0]->codec.frame_rate);
+            pts = ((int64_t)s->img_number * FRAME_RATE_BASE * 1000000) / (s1->streams[0]->codec.frame_rate);
 
             if (pts > nowus)
                 usleep(pts - nowus);
@@ -201,7 +201,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         av_free_packet(pkt);
         return -EIO; /* signal EOF */
     } else {
-        pkt->pts = ((INT64)s->img_number * s1->pts_den * FRAME_RATE_BASE) / (s1->streams[0]->codec.frame_rate * s1->pts_num);
+        pkt->pts = ((int64_t)s->img_number * s1->pts_den * FRAME_RATE_BASE) / (s1->streams[0]->codec.frame_rate * s1->pts_num);
         s->img_number++;
         return 0;
     }
@@ -265,7 +265,7 @@ static int img_write_header(AVFormatContext *s)
 }
 
 static int img_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size, int force_pts)
+                            uint8_t *buf, int size, int force_pts)
 {
     VideoData *img = s->priv_data;
     AVStream *st = s->streams[stream_index];

@@ -1,10 +1,10 @@
 /* tables taken directly from AC3 spec */
 
 /* possible frequencies */
-const UINT16 ac3_freqs[3] = { 48000, 44100, 32000 };
+const uint16_t ac3_freqs[3] = { 48000, 44100, 32000 };
 
 /* possible bitrates */
-const UINT16 ac3_bitratetab[19] = {
+const uint16_t ac3_bitratetab[19] = {
     32, 40, 48, 56, 64, 80, 96, 112, 128, 
     160, 192, 224, 256, 320, 384, 448, 512, 576, 640 
 };
@@ -12,7 +12,7 @@ const UINT16 ac3_bitratetab[19] = {
 /* AC3 MDCT window */
 
 /* MDCT window */
-const INT16 ac3_window[256] = {
+const int16_t ac3_window[256] = {
     4,    7,   12,   16,   21,   28,   34,   42,
    51,   61,   72,   84,   97,  111,  127,  145,
   164,  184,  207,  231,  257,  285,  315,  347,
@@ -47,9 +47,9 @@ const INT16 ac3_window[256] = {
 32767,32767,32767,32767,32767,32767,32767,32767,  
 };
 
-static UINT8 masktab[253];
+static uint8_t masktab[253];
 
-static const UINT8 latab[260]= {
+static const uint8_t latab[260]= {
 0x0040,0x003f,0x003e,0x003d,0x003c,0x003b,0x003a,0x0039,0x0038,0x0037,
 0x0036,0x0035,0x0034,0x0034,0x0033,0x0032,0x0031,0x0030,0x002f,0x002f,
 0x002e,0x002d,0x002c,0x002c,0x002b,0x002a,0x0029,0x0029,0x0028,0x0027,
@@ -78,7 +78,7 @@ static const UINT8 latab[260]= {
 0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,
 };
 
-static const UINT16 hth[50][3]= {
+static const uint16_t hth[50][3]= {
 { 0x04d0,0x04f0,0x0580 },
 { 0x04d0,0x04f0,0x0580 },
 { 0x0440,0x0460,0x04b0 },
@@ -131,7 +131,7 @@ static const UINT16 hth[50][3]= {
 { 0x0840,0x0840,0x04e0 },
 };
 
-static const UINT8 baptab[64]= {
+static const uint8_t baptab[64]= {
     0, 1, 1, 1, 1, 1, 2, 2, 3, 3, 
     3, 4, 4, 5, 5, 6, 6, 6, 6, 7, 
     7, 7, 7, 8, 8, 8, 8, 9, 9, 9, 
@@ -141,43 +141,43 @@ static const UINT8 baptab[64]= {
     15, 15, 15, 15,
 };
 
-const UINT8 sdecaytab[4]={ 
+const uint8_t sdecaytab[4]={ 
     0x0f, 0x11, 0x13, 0x15,
 };
 
-const UINT8 fdecaytab[4]={ 
+const uint8_t fdecaytab[4]={ 
     0x3f, 0x53, 0x67, 0x7b, 
 };
 
-const UINT16 sgaintab[4]= { 
+const uint16_t sgaintab[4]= { 
     0x540, 0x4d8, 0x478, 0x410,
 };
 
-const UINT16 dbkneetab[4]= { 
+const uint16_t dbkneetab[4]= { 
     0x000, 0x700, 0x900, 0xb00,
 };
 
-const UINT16 floortab[8]= { 
+const uint16_t floortab[8]= { 
     0x2f0, 0x2b0, 0x270, 0x230, 0x1f0, 0x170, 0x0f0, 0xf800,
 };
 
-const UINT16 fgaintab[8]= {
+const uint16_t fgaintab[8]= {
     0x080, 0x100, 0x180, 0x200, 0x280, 0x300, 0x380, 0x400,
 };
 
-static const UINT8 bndsz[50]={
+static const uint8_t bndsz[50]={
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
     1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3, 3, 3, 3, 
     3, 6, 6, 6, 6, 6, 6, 12, 12, 12, 12, 24, 24, 24, 24, 24 
 };
 
-static UINT8 bndtab[51]; 
+static uint8_t bndtab[51]; 
 
 /* fft & mdct sin cos tables */
-static INT16 costab[64];
-static INT16 sintab[64];
-static INT16 fft_rev[512];
-static INT16 xcos1[128];
-static INT16 xsin1[128];
+static int16_t costab[64];
+static int16_t sintab[64];
+static int16_t fft_rev[512];
+static int16_t xcos1[128];
+static int16_t xsin1[128];
 
-static UINT16 crc_table[256];
+static uint16_t crc_table[256];

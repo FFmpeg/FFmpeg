@@ -30,15 +30,15 @@
 #undef TWOMATRIXES
 
 typedef struct MJpegContext {
-    UINT8 huff_size_dc_luminance[12];
-    UINT16 huff_code_dc_luminance[12];
-    UINT8 huff_size_dc_chrominance[12];
-    UINT16 huff_code_dc_chrominance[12];
+    uint8_t huff_size_dc_luminance[12];
+    uint16_t huff_code_dc_luminance[12];
+    uint8_t huff_size_dc_chrominance[12];
+    uint16_t huff_code_dc_chrominance[12];
 
-    UINT8 huff_size_ac_luminance[256];
-    UINT16 huff_code_ac_luminance[256];
-    UINT8 huff_size_ac_chrominance[256];
-    UINT16 huff_code_ac_chrominance[256];
+    uint8_t huff_size_ac_luminance[256];
+    uint16_t huff_code_ac_luminance[256];
+    uint8_t huff_size_ac_chrominance[256];
+    uint16_t huff_code_ac_chrominance[256];
 } MJpegContext;
 
 /* JPEG marker codes */
@@ -152,19 +152,19 @@ static const unsigned char std_chrominance_quant_tbl[64] = {
 
 /* Set up the standard Huffman tables (cf. JPEG standard section K.3) */
 /* IMPORTANT: these are only valid for 8-bit data precision! */
-static const UINT8 bits_dc_luminance[17] =
+static const uint8_t bits_dc_luminance[17] =
 { /* 0-base */ 0, 0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0 };
-static const UINT8 val_dc_luminance[] =
+static const uint8_t val_dc_luminance[] =
 { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 
-static const UINT8 bits_dc_chrominance[17] =
+static const uint8_t bits_dc_chrominance[17] =
 { /* 0-base */ 0, 0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0 };
-static const UINT8 val_dc_chrominance[] =
+static const uint8_t val_dc_chrominance[] =
 { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 
-static const UINT8 bits_ac_luminance[17] =
+static const uint8_t bits_ac_luminance[17] =
 { /* 0-base */ 0, 0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 0x7d };
-static const UINT8 val_ac_luminance[] =
+static const uint8_t val_ac_luminance[] =
 { 0x01, 0x02, 0x03, 0x00, 0x04, 0x11, 0x05, 0x12,
   0x21, 0x31, 0x41, 0x06, 0x13, 0x51, 0x61, 0x07,
   0x22, 0x71, 0x14, 0x32, 0x81, 0x91, 0xa1, 0x08,
@@ -188,10 +188,10 @@ static const UINT8 val_ac_luminance[] =
   0xf9, 0xfa 
 };
 
-static const UINT8 bits_ac_chrominance[17] =
+static const uint8_t bits_ac_chrominance[17] =
 { /* 0-base */ 0, 0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 0x77 };
 
-static const UINT8 val_ac_chrominance[] =
+static const uint8_t val_ac_chrominance[] =
 { 0x00, 0x01, 0x02, 0x03, 0x11, 0x04, 0x05, 0x21,
   0x31, 0x06, 0x12, 0x41, 0x51, 0x07, 0x61, 0x71,
   0x13, 0x22, 0x32, 0x81, 0x08, 0x14, 0x42, 0x91,
@@ -216,8 +216,8 @@ static const UINT8 val_ac_chrominance[] =
 };
 
 /* isn't this function nicer than the one in the libjpeg ? */
-static void build_huffman_codes(UINT8 *huff_size, UINT16 *huff_code,
-                                const UINT8 *bits_table, const UINT8 *val_table)
+static void build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
+                                const uint8_t *bits_table, const uint8_t *val_table)
 {
     int i, j, k,nb, code, sym;
 
@@ -282,7 +282,7 @@ static inline void put_marker(PutBitContext *p, int code)
 
 /* table_class: 0 = DC coef, 1 = AC coefs */
 static int put_huffman_table(MpegEncContext *s, int table_class, int table_id,
-                             const UINT8 *bits_table, const UINT8 *value_table)
+                             const uint8_t *bits_table, const uint8_t *value_table)
 {
     PutBitContext *p = &s->pb;
     int n, i;
@@ -306,7 +306,7 @@ static void jpeg_table_header(MpegEncContext *s)
 {
     PutBitContext *p = &s->pb;
     int i, j, size;
-    UINT8 *ptr;
+    uint8_t *ptr;
 
     /* quant matrixes */
     put_marker(p, DQT);
@@ -349,7 +349,7 @@ static void jpeg_put_comments(MpegEncContext *s)
 {
     PutBitContext *p = &s->pb;
     int size;
-    UINT8 *ptr;
+    uint8_t *ptr;
 
     if (s->aspect_ratio_info)
     {
@@ -541,7 +541,7 @@ void mjpeg_picture_trailer(MpegEncContext *s)
 }
 
 static inline void mjpeg_encode_dc(MpegEncContext *s, int val,
-				   UINT8 *huff_size, UINT16 *huff_code)
+				   uint8_t *huff_size, uint16_t *huff_code)
 {
     int mant, nbits;
 
@@ -572,8 +572,8 @@ static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
     int mant, nbits, code, i, j;
     int component, dc, run, last_index, val;
     MJpegContext *m = s->mjpeg_ctx;
-    UINT8 *huff_size_ac;
-    UINT16 *huff_code_ac;
+    uint8_t *huff_size_ac;
+    uint16_t *huff_code_ac;
     
     /* DC coef */
     component = (n <= 3 ? 0 : n - 4 + 1);
@@ -651,9 +651,9 @@ typedef struct MJpegDecodeContext {
 
     int start_code; /* current start code */
     int buffer_size;
-    UINT8 *buffer;
+    uint8_t *buffer;
 
-    INT16 quant_matrixes[4][64];
+    int16_t quant_matrixes[4][64];
     VLC vlcs[2][4];
 
     int org_width, org_height;  /* size given at codec init */
@@ -669,11 +669,11 @@ typedef struct MJpegDecodeContext {
     int h_max, v_max; /* maximum h and v counts */
     int quant_index[4];   /* quant table index for each component */
     int last_dc[MAX_COMPONENTS]; /* last DEQUANTIZED dc (XXX: am I right to do that ?) */
-    UINT8 *current_picture[MAX_COMPONENTS]; /* picture structure */
+    uint8_t *current_picture[MAX_COMPONENTS]; /* picture structure */
     int linesize[MAX_COMPONENTS];
     DCTELEM block[64] __align8;
     ScanTable scantable;
-    void (*idct_put)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 
     int restart_interval;
     int restart_count;
@@ -684,11 +684,11 @@ typedef struct MJpegDecodeContext {
 
 static int mjpeg_decode_dht(MJpegDecodeContext *s);
 
-static void build_vlc(VLC *vlc, const UINT8 *bits_table, const UINT8 *val_table, 
+static void build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_table, 
                       int nb_codes)
 {
-    UINT8 huff_size[256];
-    UINT16 huff_code[256];
+    uint8_t huff_size[256];
+    uint16_t huff_code[256];
 
     memset(huff_size, 0, sizeof(huff_size));
     build_huffman_codes(huff_size, huff_code, bits_table, val_table);
@@ -776,8 +776,8 @@ static int mjpeg_decode_dqt(MJpegDecodeContext *s)
 static int mjpeg_decode_dht(MJpegDecodeContext *s)
 {
     int len, index, i, class, n, v, code_max;
-    UINT8 bits_table[17];
-    UINT8 val_table[256];
+    uint8_t bits_table[17];
+    uint8_t val_table[256];
     
     len = get_bits(&s->gb, 16) - 2;
 
@@ -928,7 +928,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     int nbits, code, i, j, level;
     int run, val;
     VLC *ac_vlc;
-    INT16 *quant_matrix;
+    int16_t *quant_matrix;
 
     /* DC coef */
     val = mjpeg_decode_dc(s, dc_index);
@@ -1071,7 +1071,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     for(mb_y = 0; mb_y < mb_height; mb_y++) {
         for(mb_x = 0; mb_x < mb_width; mb_x++) {
             for(i=0;i<nb_components;i++) {
-                UINT8 *ptr;
+                uint8_t *ptr;
                 int x, y, c;
                 n = nb_blocks[i];
                 c = comp_index[i];
@@ -1266,7 +1266,7 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
     unsigned int len = get_bits(&s->gb, 16);
     if (len >= 2 && len < 32768) {
 	/* XXX: any better upper bound */
-	UINT8 *cbuf = av_malloc(len - 1);
+	uint8_t *cbuf = av_malloc(len - 1);
 	if (cbuf) {
 	    int i;
 	    for (i = 0; i < len - 2; i++)
@@ -1318,9 +1318,9 @@ static int valid_marker_list[] =
 
 /* return the 8 bit start code value and update the search
    state. Return -1 if no start code found */
-static int find_marker(UINT8 **pbuf_ptr, UINT8 *buf_end)
+static int find_marker(uint8_t **pbuf_ptr, uint8_t *buf_end)
 {
-    UINT8 *buf_ptr;
+    uint8_t *buf_ptr;
     unsigned int v, v2;
     int val;
 #ifdef DEBUG
@@ -1350,10 +1350,10 @@ found:
 
 static int mjpeg_decode_frame(AVCodecContext *avctx, 
                               void *data, int *data_size,
-                              UINT8 *buf, int buf_size)
+                              uint8_t *buf, int buf_size)
 {
     MJpegDecodeContext *s = avctx->priv_data;
-    UINT8 *buf_end, *buf_ptr;
+    uint8_t *buf_end, *buf_ptr;
     int i, start_code;
     AVPicture *picture = data;
 
@@ -1387,12 +1387,12 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		/* unescape buffer of SOS */
 		if (start_code == SOS)
 		{
-		    UINT8 *src = buf_ptr;
-		    UINT8 *dst = s->buffer;
+		    uint8_t *src = buf_ptr;
+		    uint8_t *dst = s->buffer;
 
 		    while (src<buf_end)
 		    {
-			UINT8 x = *(src++);
+			uint8_t x = *(src++);
 
 			*(dst++) = x;
 			if (x == 0xff)
@@ -1527,10 +1527,10 @@ the_end:
 
 static int mjpegb_decode_frame(AVCodecContext *avctx, 
                               void *data, int *data_size,
-                              UINT8 *buf, int buf_size)
+                              uint8_t *buf, int buf_size)
 {
     MJpegDecodeContext *s = avctx->priv_data;
-    UINT8 *buf_end, *buf_ptr;
+    uint8_t *buf_end, *buf_ptr;
     int i;
     AVPicture *picture = data;
     GetBitContext hgb; /* for the header */

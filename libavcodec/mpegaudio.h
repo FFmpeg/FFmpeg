@@ -17,11 +17,11 @@
 
 int l2_select_table(int bitrate, int nb_channels, int freq, int lsf);
 
-extern const UINT16 mpa_bitrate_tab[2][3][15];
-extern const UINT16 mpa_freq_tab[3];
+extern const uint16_t mpa_bitrate_tab[2][3][15];
+extern const uint16_t mpa_freq_tab[3];
 extern const unsigned char *alloc_tables[5];
 extern const double enwindow[512];
 extern const int sblimit_table[5];
 extern const int quant_steps[17];
 extern const int quant_bits[17];
-extern const INT32 mpa_enwindow[257];
+extern const int32_t mpa_enwindow[257];

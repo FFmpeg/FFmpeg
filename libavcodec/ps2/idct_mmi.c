@@ -299,7 +299,7 @@ void ff_mmi_idct(int16_t * block)
 }
 
 
-void ff_mmi_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
+void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     /* $4 = dest, $5 = line_size, $6 = block */
     __asm__ __volatile__("la $24, %0"::"m"(consttable[0]));
@@ -323,7 +323,7 @@ void ff_mmi_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
 }
 
 
-void ff_mmi_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     /* $4 = dest, $5 = line_size, $6 = block */
     __asm__ __volatile__("la $24, %0"::"m"(consttable[0]));

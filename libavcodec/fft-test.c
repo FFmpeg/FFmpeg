@@ -105,11 +105,11 @@ float frandom(void)
     return (float)((random() & 0xffff) - 32768) / 32768.0;
 }
 
-INT64 gettime(void)
+int64_t gettime(void)
 {
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    return (INT64)tv.tv_sec * 1000000 + tv.tv_usec;
+    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 void check_diff(float *tab1, float *tab2, int n)
@@ -233,7 +233,7 @@ int main(int argc, char **argv)
     /* do a speed test */
 
     if (do_speed) {
-        INT64 time_start, duration;
+        int64_t time_start, duration;
         int nb_its;
 
         printf("Speed test...\n");

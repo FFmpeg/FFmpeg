@@ -28,7 +28,7 @@
 #define FLAG_KEY_FRAME       0x01
 
 typedef struct FFMStream {
-    INT64 pts;
+    int64_t pts;
 } FFMStream;
 
 enum {
@@ -40,15 +40,15 @@ typedef struct FFMContext {
     /* only reading mode */
     offset_t write_index, file_size;
     int read_state;
-    UINT8 header[FRAME_HEADER_SIZE];
+    uint8_t header[FRAME_HEADER_SIZE];
 
     /* read and write */
     int first_packet; /* true if first packet, needed to set the discontinuity tag */
     int packet_size;
     int frame_offset;
-    INT64 pts;
-    UINT8 *packet_ptr, *packet_end;
-    UINT8 packet[FFM_PACKET_SIZE];
+    int64_t pts;
+    uint8_t *packet_ptr, *packet_end;
+    uint8_t packet[FFM_PACKET_SIZE];
 } FFMContext;
 
 /* disable pts hack for testing */
@@ -82,8 +82,8 @@ static void flush_packet(AVFormatContext *s)
 
 /* 'first' is true if first data of a frame */
 static void ffm_write_data(AVFormatContext *s,
-                           UINT8 *buf, int size,
-                           INT64 pts, int first)
+                           uint8_t *buf, int size,
+                           int64_t pts, int first)
 {
     FFMContext *ffm = s->priv_data;
     int len;
@@ -214,12 +214,12 @@ static int ffm_write_header(AVFormatContext *s)
 }
 
 static int ffm_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size, int force_pts)
+                            uint8_t *buf, int size, int force_pts)
 {
     AVStream *st = s->streams[stream_index];
     FFMStream *fst = st->priv_data;
-    INT64 pts;
-    UINT8 header[FRAME_HEADER_SIZE];
+    int64_t pts;
+    uint8_t header[FRAME_HEADER_SIZE];
     int duration;
 
     if (st->codec.codec_type == CODEC_TYPE_AUDIO) {
@@ -260,7 +260,7 @@ static int ffm_write_trailer(AVFormatContext *s)
     put_flush_packet(pb);
 
     if (!url_is_streamed(pb)) {
-        INT64 size;
+        int64_t size;
         /* update the write offset */
         size = url_ftell(pb);
         url_fseek(pb, 8, SEEK_SET);
@@ -305,7 +305,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
 
 /* first is true if we read the frame header */
 static int ffm_read_data(AVFormatContext *s,
-                         UINT8 *buf, int size, int first)
+                         uint8_t *buf, int size, int first)
 {
     FFMContext *ffm = s->priv_data;
     ByteIOContext *pb = &s->pb;
@@ -368,7 +368,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ByteIOContext *pb = &s->pb;
     AVCodecContext *codec;
     int i;
-    UINT32 tag;
+    uint32_t tag;
 
     /* header */
     tag = get_le32(pb);
@@ -382,7 +382,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!url_is_streamed(pb)) {
         ffm->file_size = url_filesize(url_fileno(pb));
     } else {
-        ffm->file_size = (UINT64_C(1) << 63) - 1;
+        ffm->file_size = (uint64_t_C(1) << 63) - 1;
     }
 
     s->nb_streams = get_be32(pb);
@@ -411,7 +411,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         /* specific info */
         switch(codec->codec_type) {
         case CODEC_TYPE_VIDEO:
-            codec->frame_rate = ((INT64)get_be32(pb) * FRAME_RATE_BASE) / 1000;
+            codec->frame_rate = ((int64_t)get_be32(pb) * FRAME_RATE_BASE) / 1000;
             codec->width = get_be16(pb);
             codec->height = get_be16(pb);
             codec->gop_size = get_be16(pb);
@@ -539,10 +539,10 @@ static void ffm_seek1(AVFormatContext *s, offset_t pos1)
     url_fseek(pb, pos, SEEK_SET);
 }
 
-static INT64 get_pts(AVFormatContext *s, offset_t pos)
+static int64_t get_pts(AVFormatContext *s, offset_t pos)
 {
     ByteIOContext *pb = &s->pb;
-    INT64 pts;
+    int64_t pts;
 
     ffm_seek1(s, pos);
     url_fskip(pb, 4);
@@ -556,11 +556,11 @@ static INT64 get_pts(AVFormatContext *s, offset_t pos)
 /* seek to a given time in the file. The file read pointer is
    positionned at or before pts. XXX: the following code is quite
    approximative */
-static int ffm_seek(AVFormatContext *s, INT64 wanted_pts)
+static int ffm_seek(AVFormatContext *s, int64_t wanted_pts)
 {
     FFMContext *ffm = s->priv_data;
     offset_t pos_min, pos_max, pos;
-    INT64 pts_min, pts_max, pts;
+    int64_t pts_min, pts_max, pts;
     double pos1;
 
 #ifdef DEBUG_SEEK
@@ -576,7 +576,7 @@ static int ffm_seek(AVFormatContext *s, INT64 wanted_pts)
         /* linear interpolation */
         pos1 = (double)(pos_max - pos_min) * (double)(wanted_pts - pts_min) /
             (double)(pts_max - pts_min);
-        pos = (((INT64)pos1) / FFM_PACKET_SIZE) * FFM_PACKET_SIZE;
+        pos = (((int64_t)pos1) / FFM_PACKET_SIZE) * FFM_PACKET_SIZE;
         if (pos <= pos_min)
             pos = pos_min;
         else if (pos >= pos_max)
@@ -601,7 +601,7 @@ static int ffm_seek(AVFormatContext *s, INT64 wanted_pts)
 
 offset_t ffm_read_write_index(int fd)
 {
-    UINT8 buf[8];
+    uint8_t buf[8];
     offset_t pos;
     int i;
 
@@ -615,7 +615,7 @@ offset_t ffm_read_write_index(int fd)
 
 void ffm_write_write_index(int fd, offset_t pos)
 {
-    UINT8 buf[8];
+    uint8_t buf[8];
     int i;
 
     for(i=0;i<8;i++)

@@ -41,7 +41,7 @@ int Configure(void **ctxp, int argc, char *argv[])
     return 0;
 }
 
-void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, INT64 pts)
+void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, int64_t pts)
 {
     ContextInfo *ci = (ContextInfo *) ctx;
     char *buf = 0;

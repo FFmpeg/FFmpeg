@@ -171,7 +171,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     return -EIO;
 }
 
-static int rtp_read(URLContext *h, UINT8 *buf, int size)
+static int rtp_read(URLContext *h, uint8_t *buf, int size)
 {
     RTPContext *s = h->priv_data;
     struct sockaddr_in from;
@@ -230,7 +230,7 @@ static int rtp_read(URLContext *h, UINT8 *buf, int size)
     return len;
 }
 
-static int rtp_write(URLContext *h, UINT8 *buf, int size)
+static int rtp_write(URLContext *h, uint8_t *buf, int size)
 {
     RTPContext *s = h->priv_data;
     int ret;

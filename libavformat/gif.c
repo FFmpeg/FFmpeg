@@ -212,7 +212,7 @@ static int gif_image_write_header(ByteIOContext *pb,
 }
 
 /* this is maybe slow, but allows for extensions */
-static inline unsigned char gif_clut_index(UINT8 r, UINT8 g, UINT8 b)
+static inline unsigned char gif_clut_index(uint8_t r, uint8_t g, uint8_t b)
 {
     return ((((r)/47)%6)*6*6+(((g)/47)%6)*6+(((b)/47)%6));
 }
@@ -223,7 +223,7 @@ static int gif_image_write_image(ByteIOContext *pb,
                                  uint8_t *buf, int linesize, int pix_fmt)
 {
     PutBitContext p;
-    UINT8 buffer[200]; /* 100 * 9 / 8 = 113 */
+    uint8_t buffer[200]; /* 100 * 9 / 8 = 113 */
     int i, left, w, v;
     uint8_t *ptr;
     /* image block */
@@ -287,8 +287,8 @@ static int gif_image_write_image(ByteIOContext *pb,
 }
 
 typedef struct {
-    INT64 time, file_time;
-    UINT8 buffer[100]; /* data chunks */
+    int64_t time, file_time;
+    uint8_t buffer[100]; /* data chunks */
 } GIFContext;
 
 static int gif_write_header(AVFormatContext *s)
@@ -331,12 +331,12 @@ static int gif_write_header(AVFormatContext *s)
 }
 
 static int gif_write_video(AVFormatContext *s, 
-                           AVCodecContext *enc, UINT8 *buf, int size)
+                           AVCodecContext *enc, uint8_t *buf, int size)
 {
     ByteIOContext *pb = &s->pb;
     GIFContext *gif = s->priv_data;
     int jiffies;
-    INT64 delay;
+    int64_t delay;
 
     /* graphic control extension block */
     put_byte(pb, 0x21);
@@ -366,7 +366,7 @@ static int gif_write_video(AVFormatContext *s,
 }
 
 static int gif_write_packet(AVFormatContext *s, int stream_index, 
-                           UINT8 *buf, int size, int force_pts)
+                           uint8_t *buf, int size, int force_pts)
 {
     AVCodecContext *codec = &s->streams[stream_index]->codec;
     if (codec->codec_type == CODEC_TYPE_AUDIO)

@@ -20,7 +20,7 @@
  */
 #include "avcodec.h"
 
-const UINT8 ff_sqrt_tab[128]={
+const uint8_t ff_sqrt_tab[128]={
         0, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5,
         5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
         8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9,
@@ -39,9 +39,9 @@ const uint8_t ff_log2_tab[256]={
 };
 
 void init_put_bits(PutBitContext *s, 
-                   UINT8 *buffer, int buffer_size,
+                   uint8_t *buffer, int buffer_size,
                    void *opaque,
-                   void (*write_data)(void *, UINT8 *, int))
+                   void (*write_data)(void *, uint8_t *, int))
 {
     s->buf = buffer;
     s->buf_end = s->buf + buffer_size;
@@ -62,12 +62,12 @@ void init_put_bits(PutBitContext *s,
 }
 
 /* return the number of bits output */
-INT64 get_bit_count(PutBitContext *s)
+int64_t get_bit_count(PutBitContext *s)
 {
 #ifdef ALT_BITSTREAM_WRITER
     return s->data_out_size * 8 + s->index;
 #else
-    return (s->buf_ptr - s->buf + s->data_out_size) * 8 + 32 - (INT64)s->bit_left;
+    return (s->buf_ptr - s->buf + s->data_out_size) * 8 + 32 - (int64_t)s->bit_left;
 #endif
 }
 
@@ -110,7 +110,7 @@ void put_string(PutBitContext * pbc, char *s)
 /* bit input functions */
 
 void init_get_bits(GetBitContext *s,
-                   UINT8 *buffer, int bit_size)
+                   uint8_t *buffer, int bit_size)
 {
     const int buffer_size= (bit_size+7)>>3;
 
@@ -160,16 +160,16 @@ int check_marker(GetBitContext *s, const char *msg)
 
 #define GET_DATA(v, table, i, wrap, size) \
 {\
-    const UINT8 *ptr = (const UINT8 *)table + i * wrap;\
+    const uint8_t *ptr = (const uint8_t *)table + i * wrap;\
     switch(size) {\
     case 1:\
-        v = *(const UINT8 *)ptr;\
+        v = *(const uint8_t *)ptr;\
         break;\
     case 2:\
-        v = *(const UINT16 *)ptr;\
+        v = *(const uint16_t *)ptr;\
         break;\
     default:\
-        v = *(const UINT32 *)ptr;\
+        v = *(const uint32_t *)ptr;\
         break;\
     }\
 }
@@ -194,10 +194,10 @@ static int build_table(VLC *vlc, int table_nb_bits,
                        int nb_codes,
                        const void *bits, int bits_wrap, int bits_size,
                        const void *codes, int codes_wrap, int codes_size,
-                       UINT32 code_prefix, int n_prefix)
+                       uint32_t code_prefix, int n_prefix)
 {
     int i, j, k, n, table_size, table_index, nb, n1, index;
-    UINT32 code;
+    uint32_t code;
     VLC_TYPE (*table)[2];
 
     table_size = 1 << table_nb_bits;

@@ -95,7 +95,7 @@ void frame_hook_process(AVPicture *pict, enum PixelFormat pix_fmt, int width, in
 {
     if (first_hook) {
         FrameHookEntry *fhe;
-        INT64 pts = av_gettime();
+        int64_t pts = av_gettime();
 
         for (fhe = first_hook; fhe; fhe = fhe->next) {
             fhe->Process(fhe->ctx, pict, pix_fmt, width, height, pts);

@@ -18,8 +18,8 @@ extern "C" {
 #define AV_NOPTS_VALUE 0
 
 typedef struct AVPacket {
-    INT64 pts; /* presentation time stamp in stream units (set av_set_pts_info) */
-    UINT8 *data;
+    int64_t pts; /* presentation time stamp in stream units (set av_set_pts_info) */
+    uint8_t *data;
     int   size;
     int   stream_index;
     int   flags;
@@ -54,12 +54,12 @@ static inline void av_free_packet(AVPacket *pkt)
 /* the exact value of the fractional number is: 'val + num / den'. num
    is assumed to be such as 0 <= num < den */
 typedef struct AVFrac {
-    INT64 val, num, den; 
+    int64_t val, num, den; 
 } AVFrac;
 
-void av_frac_init(AVFrac *f, INT64 val, INT64 num, INT64 den);
-void av_frac_add(AVFrac *f, INT64 incr);
-void av_frac_set(AVFrac *f, INT64 val);
+void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den);
+void av_frac_add(AVFrac *f, int64_t incr);
+void av_frac_set(AVFrac *f, int64_t val);
 
 /*************************************************/
 /* input/output formats */
@@ -141,7 +141,7 @@ typedef struct AVInputFormat {
     int (*read_close)(struct AVFormatContext *);
     /* seek at or before a given pts (given in microsecond). The pts
        origin is defined by the stream */
-    int (*read_seek)(struct AVFormatContext *, INT64 pts);
+    int (*read_seek)(struct AVFormatContext *, int64_t pts);
     /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_NOHEADER */
     int flags;
     /* if extensions are defined, then no probe is done. You should
@@ -337,20 +337,20 @@ AVOutputFormat *guess_stream_format(const char *short_name,
 AVOutputFormat *guess_format(const char *short_name, 
                              const char *filename, const char *mime_type);
 
-void av_hex_dump(UINT8 *buf, int size);
+void av_hex_dump(uint8_t *buf, int size);
 
 void av_register_all(void);
 
 typedef struct FifoBuffer {
-    UINT8 *buffer;
-    UINT8 *rptr, *wptr, *end;
+    uint8_t *buffer;
+    uint8_t *rptr, *wptr, *end;
 } FifoBuffer;
 
 int fifo_init(FifoBuffer *f, int size);
 void fifo_free(FifoBuffer *f);
-int fifo_size(FifoBuffer *f, UINT8 *rptr);
-int fifo_read(FifoBuffer *f, UINT8 *buf, int buf_size, UINT8 **rptr_ptr);
-void fifo_write(FifoBuffer *f, UINT8 *buf, int size, UINT8 **wptr_ptr);
+int fifo_size(FifoBuffer *f, uint8_t *rptr);
+int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr);
+void fifo_write(FifoBuffer *f, uint8_t *buf, int size, uint8_t **wptr_ptr);
 
 /* media file input */
 AVInputFormat *av_find_input_format(const char *short_name);
@@ -386,9 +386,9 @@ void dump_format(AVFormatContext *ic,
                  const char *url,
                  int is_output);
 int parse_image_size(int *width_ptr, int *height_ptr, const char *str);
-INT64 parse_date(const char *datestr, int duration);
+int64_t parse_date(const char *datestr, int duration);
 
-INT64 av_gettime(void);
+int64_t av_gettime(void);
 
 /* ffm specific for ffserver */
 #define FFM_PACKET_SIZE 4096

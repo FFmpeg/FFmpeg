@@ -90,7 +90,7 @@ const char *http_state[] = {
 #define SYNC_TIMEOUT (10 * 1000)
 
 typedef struct {
-    INT64 count1, count2;
+    int64_t count1, count2;
     long time1, time2;
 } DataRateData;
 
@@ -101,17 +101,17 @@ typedef struct HTTPContext {
     struct sockaddr_in from_addr; /* origin */
     struct pollfd *poll_entry; /* used when polling */
     long timeout;
-    UINT8 *buffer_ptr, *buffer_end;
+    uint8_t *buffer_ptr, *buffer_end;
     int http_error;
     struct HTTPContext *next;
     int got_key_frame; /* stream 0 => 1, stream 1 => 2, stream 2=> 4 */
-    INT64 data_count;
+    int64_t data_count;
     /* feed input */
     int feed_fd;
     /* input format handling */
     AVFormatContext *fmt_in;
     long start_time;            /* In milliseconds - this wraps fairly often */
-    INT64 first_pts;            /* initial pts value */
+    int64_t first_pts;            /* initial pts value */
     int pts_stream_index;       /* stream we choose as clock reference */
     /* output format handling */
     struct FFStream *stream;
@@ -128,12 +128,12 @@ typedef struct HTTPContext {
     char method[16];
     char url[128];
     int buffer_size;
-    UINT8 *buffer;
+    uint8_t *buffer;
     int is_packetized; /* if true, the stream is packetized */
     int packet_stream_index; /* current stream for output in state machine */
     
     /* RTSP state specific */
-    UINT8 *pb_buffer; /* XXX: use that in all the code */
+    uint8_t *pb_buffer; /* XXX: use that in all the code */
     ByteIOContext *pb;
     int seq; /* RTSP sequence number */
 
@@ -207,10 +207,10 @@ typedef struct FFStream {
     int feed_opened;     /* true if someone is writing to the feed */
     int is_feed;         /* true if it is a feed */
     int conns_served;
-    INT64 bytes_served;
-    INT64 feed_max_size;      /* maximum storage size */
-    INT64 feed_write_index;   /* current write position in feed (it wraps round) */
-    INT64 feed_size;          /* current size of feed */
+    int64_t bytes_served;
+    int64_t feed_max_size;      /* maximum storage size */
+    int64_t feed_write_index;   /* current write position in feed (it wraps round) */
+    int64_t feed_size;          /* current size of feed */
     struct FFStream *next_feed;
 } FFStream;
 
@@ -249,7 +249,7 @@ static void rtsp_cmd_pause(HTTPContext *c, const char *url, RTSPHeader *h);
 static void rtsp_cmd_teardown(HTTPContext *c, const char *url, RTSPHeader *h);
 
 /* SDP handling */
-static int prepare_sdp_description(FFStream *stream, UINT8 **pbuffer, 
+static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer, 
                                    struct in_addr my_ip);
 
 /* RTP handling */
@@ -323,7 +323,7 @@ static void log_connection(HTTPContext *c)
              c->protocol, (c->http_error ? c->http_error : 200), c->data_count);
 }
 
-static void update_datarate(DataRateData *drd, INT64 count)
+static void update_datarate(DataRateData *drd, int64_t count)
 {
     if (!drd->time1 && !drd->count1) {
         drd->time1 = drd->time2 = cur_time;
@@ -339,7 +339,7 @@ static void update_datarate(DataRateData *drd, INT64 count)
 }
 
 /* In bytes per second */
-static int compute_datarate(DataRateData *drd, INT64 count)
+static int compute_datarate(DataRateData *drd, int64_t count)
 {
     if (cur_time == drd->time1)
         return 0;
@@ -347,7 +347,7 @@ static int compute_datarate(DataRateData *drd, INT64 count)
     return ((count - drd->count1) * 1000) / (cur_time - drd->time1);
 }
 
-static int get_longterm_datarate(DataRateData *drd, INT64 count)
+static int get_longterm_datarate(DataRateData *drd, int64_t count)
 {
     /* You get the first 3 seconds flat out */
     if (cur_time - drd->time1 < 3000)
@@ -775,7 +775,7 @@ static int handle_connection(HTTPContext *c)
             return -1;
         } else {
             /* search for end of request. XXX: not fully correct since garbage could come after the end */
-            UINT8 *ptr;
+            uint8_t *ptr;
             c->buffer_ptr += len;
             ptr = c->buffer_ptr;
             if ((ptr >= c->buffer + 2 && !memcmp(ptr-2, "\n\n", 2)) ||
@@ -1351,7 +1351,7 @@ static int http_parse_request(HTTPContext *c)
                         break;
                     case REDIR_SDP:
                         {
-                            UINT8 *sdp_data;
+                            uint8_t *sdp_data;
                             int sdp_data_size, len;
                             struct sockaddr_in my_addr;
 
@@ -1529,7 +1529,7 @@ static int http_parse_request(HTTPContext *c)
     return 0;
 }
 
-static void fmt_bytecount(ByteIOContext *pb, INT64 count)
+static void fmt_bytecount(ByteIOContext *pb, int64_t count)
 {
     static const char *suffix = " kMGTP";
     const char *s;
@@ -1837,7 +1837,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
     char input_filename[1024];
     AVFormatContext *s;
     int buf_size, i;
-    INT64 stream_pos;
+    int64_t stream_pos;
 
     /* find file name */
     if (c->stream->feed) {
@@ -1848,9 +1848,9 @@ static int open_input_stream(HTTPContext *c, const char *info)
             stream_pos = parse_date(buf, 0);
         } else if (find_info_tag(buf, sizeof(buf), "buffer", info)) {
             int prebuffer = strtol(buf, 0, 10);
-            stream_pos = av_gettime() - prebuffer * (INT64)1000000;
+            stream_pos = av_gettime() - prebuffer * (int64_t)1000000;
         } else {
-            stream_pos = av_gettime() - c->stream->prebuffer * (INT64)1000;
+            stream_pos = av_gettime() - c->stream->prebuffer * (int64_t)1000;
         }
     } else {
         strcpy(input_filename, c->stream->feed_filename);
@@ -1930,14 +1930,14 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                     if (st->pts.den == 0) {
                         switch(st->codec.codec_type) {
                         case CODEC_TYPE_AUDIO:
-                            st->pts_incr = (INT64)s->pts_den;
+                            st->pts_incr = (int64_t)s->pts_den;
                             av_frac_init(&st->pts, st->pts.val, 0, 
-                                         (INT64)s->pts_num * st->codec.sample_rate);
+                                         (int64_t)s->pts_num * st->codec.sample_rate);
                             break;
                         case CODEC_TYPE_VIDEO:
-                            st->pts_incr = (INT64)s->pts_den * FRAME_RATE_BASE;
+                            st->pts_incr = (int64_t)s->pts_den * FRAME_RATE_BASE;
                             av_frac_init(&st->pts, st->pts.val, 0,
-                                         (INT64)s->pts_num * st->codec.frame_rate);
+                                         (int64_t)s->pts_num * st->codec.frame_rate);
                             break;
                         default:
                             av_abort();
@@ -1998,14 +1998,14 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                 if (st->pts.den == 0) {
                     switch(st->codec.codec_type) {
                     case CODEC_TYPE_AUDIO:
-                        st->pts_incr = (INT64)s->pts_den * st->codec.frame_size;
+                        st->pts_incr = (int64_t)s->pts_den * st->codec.frame_size;
                         av_frac_init(&st->pts, st->pts.val, 0, 
-                                     (INT64)s->pts_num * st->codec.sample_rate);
+                                     (int64_t)s->pts_num * st->codec.sample_rate);
                         break;
                     case CODEC_TYPE_VIDEO:
-                        st->pts_incr = (INT64)s->pts_den * FRAME_RATE_BASE;
+                        st->pts_incr = (int64_t)s->pts_den * FRAME_RATE_BASE;
                         av_frac_init(&st->pts, st->pts.val, 0,
-                                     (INT64)s->pts_num * st->codec.frame_rate);
+                                     (int64_t)s->pts_num * st->codec.frame_rate);
                         break;
                     default:
                         av_abort();
@@ -2023,11 +2023,11 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
 static int compute_send_delay(HTTPContext *c)
 {
-    INT64 cur_pts, delta_pts, next_pts;
+    int64_t cur_pts, delta_pts, next_pts;
     int delay1;
     
     /* compute current pts value from system time */
-    cur_pts = ((INT64)(cur_time - c->start_time) * c->fmt_in->pts_den) / 
+    cur_pts = ((int64_t)(cur_time - c->start_time) * c->fmt_in->pts_den) / 
         (c->fmt_in->pts_num * 1000LL);
     /* compute the delta from the stream we choose as
        main clock (we do that to avoid using explicit
@@ -2328,8 +2328,8 @@ static int http_send_data(HTTPContext *c)
             if (dt < 1)
                 dt = 1;
 
-            if ((c->packet_byte_count + len) * (INT64)1000000 >= 
-                (SHORT_TERM_BANDWIDTH / 8) * (INT64)dt) {
+            if ((c->packet_byte_count + len) * (int64_t)1000000 >= 
+                (SHORT_TERM_BANDWIDTH / 8) * (int64_t)dt) {
                 /* bandwidth overflow : wait at most one tick and retry */
                 c->state = HTTPSTATE_WAIT_SHORT;
                 return 0;
@@ -2620,7 +2620,7 @@ static int rtsp_parse_request(HTTPContext *c)
 
 /* XXX: move that to rtsp.c, but would need to replace FFStream by
    AVFormatContext */
-static int prepare_sdp_description(FFStream *stream, UINT8 **pbuffer, 
+static int prepare_sdp_description(FFStream *stream, uint8_t **pbuffer, 
                                    struct in_addr my_ip)
 {
     ByteIOContext pb1, *pb = &pb1;
@@ -2710,7 +2710,7 @@ static void rtsp_cmd_describe(HTTPContext *c, const char *url)
     FFStream *stream;
     char path1[1024];
     const char *path;
-    UINT8 *content;
+    uint8_t *content;
     int content_length, len;
     struct sockaddr_in my_addr;
     
@@ -3087,7 +3087,7 @@ static int rtp_new_av_stream(HTTPContext *c,
     AVStream *st;
     char *ipaddr;
     URLContext *h;
-    UINT8 *dummy_buf;
+    uint8_t *dummy_buf;
     char buf2[32];
     
     /* now we can open the relevant output stream */
@@ -3240,7 +3240,7 @@ static void extract_mpeg4_header(AVFormatContext *infile)
     int mpeg4_count, i, size;
     AVPacket pkt;
     AVStream *st;
-    const UINT8 *p;
+    const uint8_t *p;
 
     mpeg4_count = 0;
     for(i=0;i<infile->nb_streams;i++) {
@@ -3805,7 +3805,7 @@ static int parse_ffconfig(const char *filename)
                     fsize *= 1024 * 1024 * 1024;
                     break;
                 }
-                feed->feed_max_size = (INT64)fsize;
+                feed->feed_max_size = (int64_t)fsize;
             }
         } else if (!strcasecmp(cmd, "</Feed>")) {
             if (!feed) {
@@ -4251,14 +4251,14 @@ static int parse_ffconfig(const char *filename)
 
 #if 0
 static void write_packet(FFCodec *ffenc,
-                         UINT8 *buf, int size)
+                         uint8_t *buf, int size)
 {
     PacketHeader hdr;
     AVCodecContext *enc = &ffenc->enc;
-    UINT8 *wptr;
+    uint8_t *wptr;
     mk_header(&hdr, enc, size);
     wptr = http_fifo.wptr;
-    fifo_write(&http_fifo, (UINT8 *)&hdr, sizeof(hdr), &wptr);
+    fifo_write(&http_fifo, (uint8_t *)&hdr, sizeof(hdr), &wptr);
     fifo_write(&http_fifo, buf, size, &wptr);
     /* atomic modification of wptr */
     http_fifo.wptr = wptr;

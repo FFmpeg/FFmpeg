@@ -40,7 +40,7 @@
 #define INFINITY HUGE_VAL
 #endif
 
-#define MAXINT64 INT64_C(0x7fffffffffffffff)
+#define MAXINT64 int64_t_C(0x7fffffffffffffff)
 
 typedef struct {
     const char *name;
@@ -142,7 +142,7 @@ static int audio_disable = 0;
 static int audio_channels = 1;
 static int audio_codec_id = CODEC_ID_NONE;
 
-static INT64 recording_time = 0;
+static int64_t recording_time = 0;
 static int file_overwrite = 0;
 static char *str_title = NULL;
 static char *str_author = NULL;
@@ -178,7 +178,7 @@ typedef struct AVOutputStream {
        for A/V sync */
     double sync_ipts;
     double sync_ipts_offset;
-    INT64 sync_opts;
+    int64_t sync_opts;
     /* video only */
     int video_resample;      /* video_resample and video_crop are mutually exclusive */
     AVPicture pict_tmp;      /* temporary image for resampling */
@@ -201,7 +201,7 @@ typedef struct AVInputStream {
     AVStream *st;
     int discard;             /* true if stream data should be discarded */
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
-    INT64 sample_index;      /* current sample */
+    int64_t sample_index;      /* current sample */
     int frame_decoded;       /* true if a video or audio frame has been decoded */
 } AVInputStream;
 
@@ -320,9 +320,9 @@ static void do_audio_out(AVFormatContext *s,
                          AVInputStream *ist,
                          unsigned char *buf, int size)
 {
-    UINT8 *buftmp;
-    UINT8 audio_buf[2*MAX_AUDIO_PACKET_SIZE]; /* XXX: allocate it */
-    UINT8 audio_out[4*MAX_AUDIO_PACKET_SIZE]; /* XXX: allocate it - yep really WMA */
+    uint8_t *buftmp;
+    uint8_t audio_buf[2*MAX_AUDIO_PACKET_SIZE]; /* XXX: allocate it */
+    uint8_t audio_out[4*MAX_AUDIO_PACKET_SIZE]; /* XXX: allocate it - yep really WMA */
     int size_out, frame_bytes, ret;
     AVCodecContext *enc;
 
@@ -376,7 +376,7 @@ static void do_audio_out(AVFormatContext *s,
 static void write_picture(AVFormatContext *s, int index, AVPicture *picture, 
                           int pix_fmt, int w, int h)
 {
-    UINT8 *buf, *src, *dest;
+    uint8_t *buf, *src, *dest;
     int size, j, i;
 
     /* XXX: not efficient, should add test if we can take
@@ -473,7 +473,7 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
     AVCodecContext *dec;
     AVPicture *picture2;
     AVPicture picture_tmp;
-    UINT8 *buf = 0;
+    uint8_t *buf = 0;
 
     dec = &ist->st->codec;
 
@@ -520,8 +520,8 @@ static void do_video_out(AVFormatContext *s,
     int nb_frames, i, ret;
     AVPicture *final_picture, *formatted_picture;
     AVPicture picture_format_temp, picture_crop_temp;
-    static UINT8 *video_buffer;
-    UINT8 *buf = NULL, *buf1 = NULL;
+    static uint8_t *video_buffer;
+    uint8_t *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
 
 #define VIDEO_BUFFER_SIZE (1024*1024)
@@ -675,7 +675,7 @@ static void do_video_out(AVFormatContext *s,
                    avoid any copies. We support temorarily the older
                    method. */
                 av_write_frame(s, ost->index, 
-                               (UINT8 *)final_picture, sizeof(AVPicture));
+                               (uint8_t *)final_picture, sizeof(AVPicture));
             } else {
                 write_picture(s, ost->index, final_picture, enc->pix_fmt, 
                               enc->width, enc->height);
@@ -697,13 +697,13 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
                            int frame_size)
 {
     static FILE *fvstats=NULL;
-    static INT64 total_size = 0;
+    static int64_t total_size = 0;
     char filename[40];
     time_t today2;
     struct tm *today;
     AVCodecContext *enc;
     int frame_number;
-    INT64 ti;
+    int64_t ti;
     double ti1, bitrate, avg_bitrate;
     
     if (!fvstats) {
@@ -749,14 +749,14 @@ static void print_report(AVFormatContext **output_files,
     char buf[1024];
     AVOutputStream *ost;
     AVFormatContext *oc, *os;
-    INT64 total_size;
+    int64_t total_size;
     AVCodecContext *enc;
     int frame_number, vid, i;
     double bitrate, ti1, pts;
-    static INT64 last_time = -1;
+    static int64_t last_time = -1;
     
     if (!is_last_report) {
-        INT64 cur_time;
+        int64_t cur_time;
         /* display the report every 0.5 seconds */
         cur_time = av_gettime();
         if (last_time == -1) {
@@ -1019,7 +1019,7 @@ static int av_encode(AVFormatContext **output_files,
                     ost->topBand = frame_topBand;
                     ost->leftBand = frame_leftBand;
                 } else {
-                    UINT8 *buf;
+                    uint8_t *buf;
                     ost->video_resample = 1;
                     ost->video_crop = 0; // cropping is handled as part of resample
                     buf = av_malloc((codec->width * codec->height * 3) / 2);
@@ -1179,9 +1179,9 @@ static int av_encode(AVFormatContext **output_files,
     for(;;) {
         int file_index, ist_index;
         AVPacket pkt;
-        UINT8 *ptr;
+        uint8_t *ptr;
         int len;
-        UINT8 *data_buf;
+        uint8_t *data_buf;
         int data_size, got_picture;
         AVPicture picture;
         short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
@@ -1252,7 +1252,7 @@ static int av_encode(AVFormatContext **output_files,
         ptr = pkt.data;
         pts_set = 0;
         while (len > 0) {
-            INT64 ipts;
+            int64_t ipts;
 
             ipts = AV_NOPTS_VALUE;
 
@@ -1288,7 +1288,7 @@ static int av_encode(AVFormatContext **output_files,
                         len -= ret;
                         continue;
                     }
-                    data_buf = (UINT8 *)samples;
+                    data_buf = (uint8_t *)samples;
                     break;
                 case CODEC_TYPE_VIDEO:
                     if (ist->st->codec.codec_id == CODEC_ID_RAWVIDEO) {
@@ -1348,7 +1348,7 @@ static int av_encode(AVFormatContext **output_files,
             /* XXX: add mpeg4 too ? */
             if (ist->st->codec.codec_id == CODEC_ID_MPEG1VIDEO) {
                 if (ist->st->codec.pict_type != B_TYPE) {
-                    INT64 tmp;
+                    int64_t tmp;
                     tmp = ist->last_ip_pts;
                     ist->last_ip_pts  = ist->frac_pts.val;
                     ist->frac_pts.val = tmp;
@@ -2539,12 +2539,12 @@ static void opt_pass(const char *pass_str)
 }
 
 #if defined(CONFIG_WIN32) || defined(CONFIG_OS2)
-static INT64 getutime(void)
+static int64_t getutime(void)
 {
   return av_gettime();
 }
 #else
-static INT64 getutime(void)
+static int64_t getutime(void)
 {
     struct rusage rusage;
 
@@ -2770,7 +2770,7 @@ int main(int argc, char **argv)
     int optindex, i;
     const char *opt, *arg;
     const OptionDef *po;
-    INT64 ti;
+    int64_t ti;
 
     av_register_all();
 

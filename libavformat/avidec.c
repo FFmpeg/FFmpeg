@@ -28,7 +28,7 @@ typedef struct AVIIndex {
 } AVIIndex;
 
 typedef struct {
-    INT64 movi_end;
+    int64_t movi_end;
     offset_t movi_list;
     AVIIndex *first, *last;
 } AVIContext;
@@ -49,7 +49,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    UINT32 tag, tag1;
+    uint32_t tag, tag1;
     int codec_type, stream_index, frame_period, bit_rate;
     unsigned int size;
     int i;
@@ -144,7 +144,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec.width = get_le32(pb);
                     st->codec.height = get_le32(pb);
                     if (frame_period)
-                        st->codec.frame_rate = (INT64_C(1000000) * FRAME_RATE_BASE) / frame_period;
+                        st->codec.frame_rate = (int64_t_C(1000000) * FRAME_RATE_BASE) / frame_period;
                     else
                         st->codec.frame_rate = 25 * FRAME_RATE_BASE;
                     get_le16(pb); /* panes */

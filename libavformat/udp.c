@@ -208,7 +208,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     return -EIO;
 }
 
-static int udp_read(URLContext *h, UINT8 *buf, int size)
+static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
     struct sockaddr_in from;
@@ -228,7 +228,7 @@ static int udp_read(URLContext *h, UINT8 *buf, int size)
     return len;
 }
 
-static int udp_write(URLContext *h, UINT8 *buf, int size)
+static int udp_write(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
     int ret;

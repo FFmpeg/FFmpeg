@@ -1083,7 +1083,7 @@ static int svq1_decode_frame_header (bit_buffer_t *bitbuf,MpegEncContext *s) {
 
 static int svq1_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
-                             UINT8 *buf, int buf_size)
+                             uint8_t *buf, int buf_size)
 {
   MpegEncContext *s=avctx->priv_data;
   uint8_t      *current, *previous;

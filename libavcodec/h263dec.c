@@ -299,7 +299,7 @@ static int decode_slice(MpegEncContext *s){
  * finds the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
-static int mpeg4_find_frame_end(MpegEncContext *s, UINT8 *buf, int buf_size){
+static int mpeg4_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
     ParseContext *pc= &s->parse_context;
     int vop_found, i;
     uint32_t state;
@@ -403,7 +403,7 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int 
 
 int ff_h263_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
-                             UINT8 *buf, int buf_size)
+                             uint8_t *buf, int buf_size)
 {
     MpegEncContext *s = avctx->priv_data;
     int ret,i;
@@ -629,7 +629,7 @@ retry:
 #endif
 
     if(s->error_resilience)
-        memset(s->error_status_table, MV_ERROR|AC_ERROR|DC_ERROR|VP_START|AC_END|DC_END|MV_END, s->mb_num*sizeof(UINT8));
+        memset(s->error_status_table, MV_ERROR|AC_ERROR|DC_ERROR|VP_START|AC_END|DC_END|MV_END, s->mb_num*sizeof(uint8_t));
     
     /* decode each macroblock */
     s->block_wrap[0]=

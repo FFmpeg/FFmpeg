@@ -68,7 +68,7 @@ typedef struct {
     int file_limit;
     int debug;
     int min_interval;
-    INT64 next_pts;
+    int64_t next_pts;
     int inset;
     int min_width;
 } ContextInfo;
@@ -193,10 +193,10 @@ static void get_hsv(HSV *hsv, int r, int g, int b)
     return;
 }                                                                               
 
-void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, INT64 pts)
+void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, int64_t pts)
 {
     ContextInfo *ci = (ContextInfo *) ctx;
-    UINT8 *cm = cropTbl + MAX_NEG_CROP;                                         
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;                                         
     int rowsize = picture->linesize[0];
 
     if (pts < ci->next_pts)
@@ -208,7 +208,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     ci->next_pts = pts + 1000000;    
 
     if (pix_fmt == PIX_FMT_YUV420P) {
-        UINT8 *y, *u, *v;
+        uint8_t *y, *u, *v;
         int width2 = width >> 1;
         int inrange = 0;
         int pixcnt;

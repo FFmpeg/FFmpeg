@@ -54,13 +54,13 @@ static const int bitinv32[32] = {
 };
 
 
-static INT16 filter_bank[512];
+static int16_t filter_bank[512];
 
 static int scale_factor_table[64];
 #ifdef USE_FLOATS
 static float scale_factor_inv_table[64];
 #else
-static INT8 scale_factor_shift[64];
+static int8_t scale_factor_shift[64];
 static unsigned short scale_factor_mult[64];
 #endif
 static unsigned char scale_diff_table[128];

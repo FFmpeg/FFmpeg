@@ -193,7 +193,7 @@ static void put_cached_image(ContextInfo *ci, Imlib_Image image, int width, int 
     ci->cache = cache;
 }
 
-void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, INT64 pts)
+void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, int64_t pts)
 {
     ContextInfo *ci = (ContextInfo *) ctx;
     AVPicture picture1;
@@ -211,7 +211,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
     data = imlib_image_get_data();
 
     if (pix_fmt != PIX_FMT_RGBA32) {
-        avpicture_fill(&picture1, (UINT8 *) data, PIX_FMT_RGBA32, width, height);
+        avpicture_fill(&picture1, (uint8_t *) data, PIX_FMT_RGBA32, width, height);
         if (img_convert(&picture1, PIX_FMT_RGBA32, 
                         picture, pix_fmt, width, height) < 0) {
             goto done;

@@ -41,7 +41,7 @@ typedef struct RTSPTransportField {
     int client_port_min, client_port_max; /* RTP ports */
     int server_port_min, server_port_max; /* RTP ports */
     int ttl; /* ttl value */
-    UINT32 destination; /* destination IP address */
+    uint32_t destination; /* destination IP address */
     enum RTSPProtocol protocol;
 } RTSPTransportField;
 
@@ -63,7 +63,7 @@ enum RTSPCallbackAction {
 };
 
 typedef struct RTSPActionServerSetup {
-    UINT32 ipaddr;
+    uint32_t ipaddr;
     char transport_option[512];
 } RTSPActionServerSetup;
 

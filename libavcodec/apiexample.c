@@ -28,7 +28,7 @@ void audio_encode_example(const char *filename)
     FILE *f;
     short *samples;
     float t, tincr;
-    UINT8 *outbuf;
+    uint8_t *outbuf;
 
     printf("Audio encoding\n");
 
@@ -94,8 +94,8 @@ void audio_decode_example(const char *outfilename, const char *filename)
     AVCodecContext *c= NULL;
     int out_size, size, len;
     FILE *f, *outfile;
-    UINT8 *outbuf;
-    UINT8 inbuf[INBUF_SIZE], *inbuf_ptr;
+    uint8_t *outbuf;
+    uint8_t inbuf[INBUF_SIZE], *inbuf_ptr;
 
     printf("Audio decoding\n");
 
@@ -169,7 +169,7 @@ void video_encode_example(const char *filename)
     int i, out_size, size, x, y, outbuf_size;
     FILE *f;
     AVFrame *picture;
-    UINT8 *outbuf, *picture_buf;
+    uint8_t *outbuf, *picture_buf;
 
     printf("Video encoding\n");
 
@@ -283,7 +283,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     int frame, size, got_picture, len;
     FILE *f;
     AVFrame *picture;
-    UINT8 inbuf[INBUF_SIZE], *inbuf_ptr;
+    uint8_t inbuf[INBUF_SIZE], *inbuf_ptr;
     char buf[1024];
 
     printf("Video decoding\n");

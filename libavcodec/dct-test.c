@@ -40,13 +40,13 @@ static const unsigned short aanscales[64] = {
     4520,  6270,  5906,  5315,  4520,  3552,  2446,  1247
 };
 
-UINT8 cropTbl[256 + 2 * MAX_NEG_CROP];
+uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
 
-INT64 gettime(void)
+int64_t gettime(void)
 {
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    return (INT64)tv.tv_sec * 1000000 + tv.tv_usec;
+    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 #define NB_ITS 20000
@@ -86,8 +86,8 @@ void dct_error(const char *name, int is_idct,
 {
     int it, i, scale;
     int err_inf, v;
-    INT64 err2, ti, ti1, it1;
-    INT64 sysErr[64], sysErrMax=0;
+    int64_t err2, ti, ti1, it1;
+    int64_t sysErr[64], sysErrMax=0;
     int maxout=0;
     int blockSumErrMax=0, blockSumErr;
 
@@ -261,10 +261,10 @@ void dct_error(const char *name, int is_idct,
 #endif
 }
 
-static UINT8 img_dest[64] __attribute__ ((aligned (8)));
-static UINT8 img_dest1[64] __attribute__ ((aligned (8)));
+static uint8_t img_dest[64] __attribute__ ((aligned (8)));
+static uint8_t img_dest1[64] __attribute__ ((aligned (8)));
 
-void idct248_ref(UINT8 *dest, int linesize, INT16 *block)
+void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
 {
     static int init;
     static double c8[8][8];
@@ -345,7 +345,7 @@ void idct248_ref(UINT8 *dest, int linesize, INT16 *block)
 }
 
 void idct248_error(const char *name, 
-                    void (*idct248_put)(UINT8 *dest, int line_size, INT16 *block))
+                    void (*idct248_put)(uint8_t *dest, int line_size, int16_t *block))
 {
     int it, i, it1, ti, ti1, err_max, v;
 

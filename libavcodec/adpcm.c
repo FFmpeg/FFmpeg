@@ -329,14 +329,14 @@ static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
 
 static int adpcm_decode_frame(AVCodecContext *avctx,
 			    void *data, int *data_size,
-			    UINT8 *buf, int buf_size)
+			    uint8_t *buf, int buf_size)
 {
     ADPCMContext *c = avctx->priv_data;
     ADPCMChannelStatus *cs;
     int n, m, channel;
     int block_predictor[2];
     short *samples;
-    UINT8 *src;
+    uint8_t *src;
     int st; /* stereo */
 
     samples = data;
@@ -500,7 +500,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         *data_size = 0;
         return -1;
     }
-    *data_size = (UINT8 *)samples - (UINT8 *)data;
+    *data_size = (uint8_t *)samples - (uint8_t *)data;
     return src - buf;
 }
 

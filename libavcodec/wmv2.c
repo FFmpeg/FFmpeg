@@ -192,7 +192,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
     Wmv2Context * const w= (Wmv2Context*)s;
     int cbp, coded_cbp, i;
     int pred_x, pred_y;
-    UINT8 *coded_block;
+    uint8_t *coded_block;
 
     handle_slices(s);
     
@@ -491,7 +491,7 @@ static inline int wmv2_decode_motion(Wmv2Context *w, int *mx_ptr, int *my_ptr){
 static int16_t *wmv2_pred_motion(Wmv2Context *w, int *px, int *py){
     MpegEncContext * const s= &w->s;
     int xy, wrap, diff, type;
-    INT16 *A, *B, *C, *mot_val;
+    int16_t *A, *B, *C, *mot_val;
 
     wrap = s->block_wrap[0];
     xy = s->block_index[0];
@@ -576,8 +576,7 @@ static inline int wmv2_decode_inter_block(Wmv2Context *w, DCTELEM *block, int n,
 static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int stride, int n){
     MpegEncContext * const s= &w->s;
     uint8_t temp[2][64];
-    int i;
-        
+
     switch(w->abt_type_table[n]){
     case 0:
         if (s->block_last_index[n] >= 0) {
@@ -614,12 +613,12 @@ void ff_wmv2_add_mb(MpegEncContext *s, DCTELEM block1[6][64], uint8_t *dest_y, u
 }
 
 void ff_mspel_motion(MpegEncContext *s,
-                               UINT8 *dest_y, UINT8 *dest_cb, UINT8 *dest_cr,
-                               UINT8 **ref_picture, op_pixels_func (*pix_op)[4],
+                               uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+                               uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
                                int motion_x, int motion_y, int h)
 {
     Wmv2Context * const w= (Wmv2Context*)s;
-    UINT8 *ptr;
+    uint8_t *ptr;
     int dxy, offset, mx, my, src_x, src_y, v_edge_pos, linesize, uvlinesize;
     int emu=0;
     
@@ -700,7 +699,7 @@ static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     Wmv2Context * const w= (Wmv2Context*)s;
     int cbp, code, i;
-    UINT8 *coded_val;
+    uint8_t *coded_val;
 
     if(w->j_type) return 0;
     

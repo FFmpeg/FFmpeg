@@ -322,16 +322,16 @@ static int rm_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int rm_write_audio(AVFormatContext *s, UINT8 *buf, int size)
+static int rm_write_audio(AVFormatContext *s, uint8_t *buf, int size)
 {
-    UINT8 *buf1;
+    uint8_t *buf1;
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     StreamInfo *stream = rm->audio_stream;
     int i;
 
     /* XXX: suppress this malloc */
-    buf1= (UINT8*) av_malloc( size * sizeof(UINT8) );
+    buf1= (uint8_t*) av_malloc( size * sizeof(uint8_t) );
     
     write_packet_header(s, stream, size, stream->enc->coded_frame->key_frame);
     
@@ -347,7 +347,7 @@ static int rm_write_audio(AVFormatContext *s, UINT8 *buf, int size)
     return 0;
 }
 
-static int rm_write_video(AVFormatContext *s, UINT8 *buf, int size)
+static int rm_write_video(AVFormatContext *s, uint8_t *buf, int size)
 {
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
@@ -388,7 +388,7 @@ static int rm_write_video(AVFormatContext *s, UINT8 *buf, int size)
 }
 
 static int rm_write_packet(AVFormatContext *s, int stream_index, 
-                           UINT8 *buf, int size, int force_pts)
+                           uint8_t *buf, int size, int force_pts)
 {
     if (s->streams[stream_index]->codec.codec_type == 
         CODEC_TYPE_AUDIO)
@@ -472,7 +472,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ByteIOContext *pb = &s->pb;
     unsigned int tag, v;
     int tag_size, size, codec_data_size, i;
-    INT64 codec_pos;
+    int64_t codec_pos;
     unsigned int h263_hack_version;
     char buf[128];
     int flags = 0;
@@ -650,7 +650,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = &s->pb;
     AVStream *st;
     int len, num, timestamp, i, tmp, j;
-    UINT8 *ptr;
+    uint8_t *ptr;
     int flags;
 
  redo:

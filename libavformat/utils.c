@@ -197,7 +197,7 @@ void fifo_free(FifoBuffer *f)
     av_free(f->buffer);
 }
 
-int fifo_size(FifoBuffer *f, UINT8 *rptr)
+int fifo_size(FifoBuffer *f, uint8_t *rptr)
 {
     int size;
 
@@ -210,9 +210,9 @@ int fifo_size(FifoBuffer *f, UINT8 *rptr)
 }
 
 /* get data from the fifo (return -1 if not enough data) */
-int fifo_read(FifoBuffer *f, UINT8 *buf, int buf_size, UINT8 **rptr_ptr)
+int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr)
 {
-    UINT8 *rptr = *rptr_ptr;
+    uint8_t *rptr = *rptr_ptr;
     int size, len;
 
     if (f->wptr >= rptr) {
@@ -238,10 +238,10 @@ int fifo_read(FifoBuffer *f, UINT8 *buf, int buf_size, UINT8 **rptr_ptr)
     return 0;
 }
 
-void fifo_write(FifoBuffer *f, UINT8 *buf, int size, UINT8 **wptr_ptr)
+void fifo_write(FifoBuffer *f, uint8_t *buf, int size, uint8_t **wptr_ptr)
 {
     int len;
-    UINT8 *wptr;
+    uint8_t *wptr;
     wptr = *wptr_ptr;
     while (size > 0) {
         len = f->end - wptr;
@@ -471,7 +471,7 @@ int av_find_stream_info(AVFormatContext *ic)
     AVFrame picture;
     AVPacketList *pktl=NULL, **ppktl;
     short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
-    UINT8 *ptr;
+    uint8_t *ptr;
     int min_read_size, max_read_size;
 
     /* typical mpeg ts rate is 40 Mbits. DVD rate is about 10
@@ -759,11 +759,11 @@ int av_write_header(AVFormatContext *s)
         switch (st->codec.codec_type) {
         case CODEC_TYPE_AUDIO:
             av_frac_init(&st->pts, 0, 0, 
-                         (INT64)s->pts_num * st->codec.sample_rate);
+                         (int64_t)s->pts_num * st->codec.sample_rate);
             break;
         case CODEC_TYPE_VIDEO:
             av_frac_init(&st->pts, 0, 0, 
-                         (INT64)s->pts_num * st->codec.frame_rate);
+                         (int64_t)s->pts_num * st->codec.frame_rate);
             break;
         default:
             break;
@@ -786,7 +786,7 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
                    int size)
 {
     AVStream *st;
-    INT64 pts_mask;
+    int64_t pts_mask;
     int ret, frame_size;
 
     st = s->streams[stream_index];
@@ -816,11 +816,11 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
             frame_size = st->codec.frame_size;
         }
         av_frac_add(&st->pts, 
-                    (INT64)s->pts_den * frame_size);
+                    (int64_t)s->pts_den * frame_size);
         break;
     case CODEC_TYPE_VIDEO:
         av_frac_add(&st->pts, 
-                    (INT64)s->pts_den * FRAME_RATE_BASE);
+                    (int64_t)s->pts_den * FRAME_RATE_BASE);
         break;
     default:
         break;
@@ -914,16 +914,16 @@ int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
     return 0;
 }
 
-INT64 av_gettime(void)
+int64_t av_gettime(void)
 {
 #ifdef CONFIG_WIN32
     struct _timeb tb;
     _ftime(&tb);
-    return ((INT64)tb.time * INT64_C(1000) + (INT64)tb.millitm) * INT64_C(1000);
+    return ((int64_t)tb.time * int64_t_C(1000) + (int64_t)tb.millitm) * int64_t_C(1000);
 #else
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    return (INT64)tv.tv_sec * 1000000 + tv.tv_usec;
+    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 #endif
 }
 
@@ -955,10 +955,10 @@ static time_t mktimegm(struct tm *tm)
  *  HH[:MM[:SS[.m...]]]
  *  S+[.m...]
  */
-INT64 parse_date(const char *datestr, int duration)
+int64_t parse_date(const char *datestr, int duration)
 {
     const char *p;
-    INT64 t;
+    int64_t t;
     struct tm dt;
     int i;
     static const char *date_fmt[] = {
@@ -1027,7 +1027,7 @@ INT64 parse_date(const char *datestr, int duration)
         if (duration)
             return 0;
         else
-            return now * INT64_C(1000000);
+            return now * int64_t_C(1000000);
     }
 
     if (duration) {
@@ -1167,7 +1167,7 @@ int get_frame_filename(char *buf, int buf_size,
  * @param buf buffer
  * @param size buffer size
  */
-void av_hex_dump(UINT8 *buf, int size)
+void av_hex_dump(uint8_t *buf, int size)
 {
     int len, i, j, c;
 
@@ -1271,7 +1271,7 @@ void av_set_pts_info(AVFormatContext *s, int pts_wrap_bits,
  * @param num must be >= 0
  * @param den must be >= 1 
  */
-void av_frac_init(AVFrac *f, INT64 val, INT64 num, INT64 den)
+void av_frac_init(AVFrac *f, int64_t val, int64_t num, int64_t den)
 {
     num += (den >> 1);
     if (num >= den) {
@@ -1284,7 +1284,7 @@ void av_frac_init(AVFrac *f, INT64 val, INT64 num, INT64 den)
 }
 
 /* set f to (val + 0.5) */
-void av_frac_set(AVFrac *f, INT64 val)
+void av_frac_set(AVFrac *f, int64_t val)
 {
     f->val = val;
     f->num = f->den >> 1;
@@ -1296,9 +1296,9 @@ void av_frac_set(AVFrac *f, INT64 val)
  * @param f fractional number
  * @param incr increment, can be positive or negative
  */
-void av_frac_add(AVFrac *f, INT64 incr)
+void av_frac_add(AVFrac *f, int64_t incr)
 {
-    INT64 num, den;
+    int64_t num, den;
 
     num = f->num + incr;
     den = f->den;

@@ -172,11 +172,11 @@ static inline void idctRowCondDC (DCTELEM * row)
 	row[4] = (a3 - b3) >> ROW_SHIFT;
 }
 
-static inline void idctSparseColPut (UINT8 *dest, int line_size, 
+static inline void idctSparseColPut (uint8_t *dest, int line_size, 
                                      DCTELEM * col)
 {
 	int a0, a1, a2, a3, b0, b1, b2, b3;
-        UINT8 *cm = cropTbl + MAX_NEG_CROP;
+        uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
         /* XXX: I did that only to give same values as previous code */
 	a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4));
@@ -244,11 +244,11 @@ static inline void idctSparseColPut (UINT8 *dest, int line_size,
         dest[0] = cm[(a0 - b0) >> COL_SHIFT];
 }
 
-static inline void idctSparseColAdd (UINT8 *dest, int line_size, 
+static inline void idctSparseColAdd (uint8_t *dest, int line_size, 
                                      DCTELEM * col)
 {
 	int a0, a1, a2, a3, b0, b1, b2, b3;
-        UINT8 *cm = cropTbl + MAX_NEG_CROP;
+        uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
         /* XXX: I did that only to give same values as previous code */
 	a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4));
@@ -379,7 +379,7 @@ static inline void idctSparseCol (DCTELEM * col)
         col[56] = ((a0 - b0) >> COL_SHIFT);
 }
 
-void simple_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
+void simple_idct_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
     for(i=0; i<8; i++)
@@ -389,7 +389,7 @@ void simple_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
         idctSparseColPut(dest + i, line_size, block + i);
 }
 
-void simple_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+void simple_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
     for(i=0; i<8; i++)
@@ -420,10 +420,10 @@ void simple_idct(DCTELEM *block)
    and the butterfly must be multiplied by 0.5 * sqrt(2.0) */
 #define C_SHIFT (4+1+12)
 
-static inline void idct4col(UINT8 *dest, int line_size, const DCTELEM *col)
+static inline void idct4col(uint8_t *dest, int line_size, const DCTELEM *col)
 {
     int c0, c1, c2, c3, a0, a1, a2, a3;
-    const UINT8 *cm = cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
     a0 = col[8*0];
     a1 = col[8*2];
@@ -457,7 +457,7 @@ static inline void idct4col(UINT8 *dest, int line_size, const DCTELEM *col)
 /* XXX: I think a 1.0/sqrt(2) normalization should be needed to
    compensate the extra butterfly stage - I don't have the full DV
    specification */
-void simple_idct248_put(UINT8 *dest, int line_size, DCTELEM *block)
+void simple_idct248_put(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
     DCTELEM *ptr;
@@ -500,10 +500,10 @@ void simple_idct248_put(UINT8 *dest, int line_size, DCTELEM *block)
 #define C2 C_FIX(0.2705980501)
 #define C3 C_FIX(0.5)
 #define C_SHIFT (4+1+12)
-static inline void idct4col_add(UINT8 *dest, int line_size, const DCTELEM *col)
+static inline void idct4col_add(uint8_t *dest, int line_size, const DCTELEM *col)
 {
     int c0, c1, c2, c3, a0, a1, a2, a3;
-    const UINT8 *cm = cropTbl + MAX_NEG_CROP;
+    const uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
     a0 = col[8*0];
     a1 = col[8*1];
@@ -531,7 +531,7 @@ static inline void idct4col_add(UINT8 *dest, int line_size, const DCTELEM *col)
 static inline void idct4row(DCTELEM *row)
 {
     int c0, c1, c2, c3, a0, a1, a2, a3;
-    const UINT8 *cm = cropTbl + MAX_NEG_CROP;
+    //const uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
     a0 = row[0];
     a1 = row[1];
@@ -547,7 +547,7 @@ static inline void idct4row(DCTELEM *row)
     row[3]= (c0 - c1) >> R_SHIFT;
 }
 
-void simple_idct84_add(UINT8 *dest, int line_size, DCTELEM *block)
+void simple_idct84_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
 
@@ -562,7 +562,7 @@ void simple_idct84_add(UINT8 *dest, int line_size, DCTELEM *block)
     }
 }
 
-void simple_idct48_add(UINT8 *dest, int line_size, DCTELEM *block)
+void simple_idct48_add(uint8_t *dest, int line_size, DCTELEM *block)
 {
     int i;
 

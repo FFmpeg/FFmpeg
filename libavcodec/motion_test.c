@@ -9,27 +9,27 @@
 
 #include "i386/mmx.h"
 
-int pix_abs16x16_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_mmx1(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_x2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_x2_mmx1(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_x2_c(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_y2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_y2_mmx1(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_y2_c(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_xy2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_xy2_mmx1(UINT8 *blk1, UINT8 *blk2, int lx);
-int pix_abs16x16_xy2_c(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_x2_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_x2_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_x2_c(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_y2_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_y2_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_y2_c(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_xy2_mmx(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_xy2_mmx1(uint8_t *blk1, uint8_t *blk2, int lx);
+int pix_abs16x16_xy2_c(uint8_t *blk1, uint8_t *blk2, int lx);
 
-typedef int motion_func(UINT8 *blk1, UINT8 *blk2, int lx);
+typedef int motion_func(uint8_t *blk1, uint8_t *blk2, int lx);
 
 #define WIDTH 64
 #define HEIGHT 64
 
-UINT8 img1[WIDTH * HEIGHT];
-UINT8 img2[WIDTH * HEIGHT];
+uint8_t img1[WIDTH * HEIGHT];
+uint8_t img2[WIDTH * HEIGHT];
 
-void fill_random(UINT8 *tab, int size)
+void fill_random(uint8_t *tab, int size)
 {
     int i;
     for(i=0;i<size;i++) {
@@ -48,11 +48,11 @@ void help(void)
     exit(1);
 }
 
-INT64 gettime(void)
+int64_t gettime(void)
 {
     struct timeval tv;
     gettimeofday(&tv,NULL);
-    return (INT64)tv.tv_sec * 1000000 + tv.tv_usec;
+    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
 #define NB_ITS 500
@@ -63,8 +63,8 @@ void test_motion(const char *name,
                  motion_func *test_func, motion_func *ref_func)
 {
     int x, y, d1, d2, it;
-    UINT8 *ptr;
-    INT64 ti;
+    uint8_t *ptr;
+    int64_t ti;
     printf("testing '%s'\n", name);
 
     /* test correctness */

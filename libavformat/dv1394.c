@@ -46,7 +46,7 @@ struct dv1394_data {
     int done;   /* Number of completed frames */
 
     int stream; /* Current stream. 0 - video, 1 - audio */
-    INT64 pts;  /* Current timestamp */
+    int64_t pts;  /* Current timestamp */
 };
 
 static int dv1394_reset(struct dv1394_data *dv)

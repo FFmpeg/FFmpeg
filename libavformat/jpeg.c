@@ -56,8 +56,8 @@ static int jpeg_get_buffer(AVCodecContext *c, AVFrame *picture)
     }
 }
 
-static void img_copy(UINT8 *dst, int dst_wrap, 
-                     UINT8 *src, int src_wrap,
+static void img_copy(uint8_t *dst, int dst_wrap, 
+                     uint8_t *src, int src_wrap,
                      int width, int height)
 {
     for(;height > 0; height--) {

@@ -50,8 +50,8 @@
 
 #define DEFAULT_INTER_INDEX 3
 
-static UINT32 v2_dc_lum_table[512][2];
-static UINT32 v2_dc_chroma_table[512][2];
+static uint32_t v2_dc_lum_table[512][2];
+static uint32_t v2_dc_chroma_table[512][2];
 
 static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n);
 static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
@@ -67,7 +67,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 
-extern UINT32 inverse[256];
+extern uint32_t inverse[256];
 
 
 #ifdef DEBUG
@@ -77,7 +77,7 @@ int frame_count = 0;
 
 #include "msmpeg4data.h"
 
-static UINT8 rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
+static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 
 #ifdef STATS
 
@@ -190,7 +190,7 @@ static void init_mv_table(MVTable *tab)
 {
     int i, x, y;
 
-    tab->table_mv_index = av_malloc(sizeof(UINT16) * 4096);
+    tab->table_mv_index = av_malloc(sizeof(uint16_t) * 4096);
     /* mark all entries as not used */
     for(i=0;i<4096;i++)
         tab->table_mv_index[i] = tab->n;
@@ -434,7 +434,7 @@ void msmpeg4_encode_ext_header(MpegEncContext * s)
 }
 
 /* predict coded block */
-static inline int coded_block_pred(MpegEncContext * s, int n, UINT8 **coded_block_ptr)
+static inline int coded_block_pred(MpegEncContext * s, int n, uint8_t **coded_block_ptr)
 {
     int xy, wrap, pred, a, b, c;
 
@@ -518,7 +518,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
 {
     int cbp, coded_cbp, i;
     int pred_x, pred_y;
-    UINT8 *coded_block;
+    uint8_t *coded_block;
 
     handle_slices(s);
     
@@ -640,7 +640,7 @@ static void ff_old_msmpeg4_dc_scale(MpegEncContext * s)
 }
 
 static inline int msmpeg4v1_pred_dc(MpegEncContext * s, int n, 
-                                    INT32 **dc_val_ptr)
+                                    int32_t **dc_val_ptr)
 {
     int i;
 
@@ -669,10 +669,10 @@ static int get_dc(uint8_t *src, int stride, int scale)
 
 /* dir = 0: left, dir = 1: top prediction */
 static inline int msmpeg4_pred_dc(MpegEncContext * s, int n, 
-                             UINT16 **dc_val_ptr, int *dir_ptr)
+                             uint16_t **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
-    INT16 *dc_val;
+    int16_t *dc_val;
 
     /* find prediction */
     if (n < 4) {
@@ -823,13 +823,13 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
     int pred;
 
     if(s->msmpeg4_version==1){
-        INT32 *dc_val;
+        int32_t *dc_val;
         pred = msmpeg4v1_pred_dc(s, n, &dc_val);
         
         /* update predictor */
         *dc_val= level;
     }else{
-        UINT16 *dc_val;
+        uint16_t *dc_val;
         pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
 
         /* update predictor */
@@ -895,7 +895,7 @@ static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int
     int last_non_zero, sign, slevel;
     int code, run_diff, dc_pred_dir;
     const RLTable *rl;
-    const UINT8 *scantable;
+    const uint8_t *scantable;
 
     if (s->mb_intra) {
         set_stat(ST_DC);
@@ -1544,7 +1544,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int cbp, code, i;
-    UINT8 *coded_val;
+    uint8_t *coded_val;
 
 #ifdef PRINT_MB
 if(s->mb_x==0){
@@ -1939,14 +1939,14 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
     }
 
     if(s->msmpeg4_version==1){
-        INT32 *dc_val;
+        int32_t *dc_val;
         pred = msmpeg4v1_pred_dc(s, n, &dc_val);
         level += pred;
         
         /* update predictor */
         *dc_val= level;
     }else{
-        UINT16 *dc_val;
+        uint16_t *dc_val;
         pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
         level += pred;
 

@@ -97,7 +97,7 @@ static int yuv_write(ByteIOContext *pb2, AVImageInfo *info)
     ByteIOContext pb1, *pb;
     char fname[1024], *p;
     int i, j, width, height;
-    UINT8 *ptr;
+    uint8_t *ptr;
     URLContext *h;
     static const char *ext = "YUV";
     

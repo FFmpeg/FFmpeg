@@ -24,7 +24,7 @@
 
 #define DC_VLC_BITS 14 //FIXME find a better solution
 
-static const UINT16 rv_lum_code[256] =
+static const uint16_t rv_lum_code[256] =
 {
  0x3e7f, 0x0f00, 0x0f01, 0x0f02, 0x0f03, 0x0f04, 0x0f05, 0x0f06,
  0x0f07, 0x0f08, 0x0f09, 0x0f0a, 0x0f0b, 0x0f0c, 0x0f0d, 0x0f0e,
@@ -60,7 +60,7 @@ static const UINT16 rv_lum_code[256] =
  0x0f78, 0x0f79, 0x0f7a, 0x0f7b, 0x0f7c, 0x0f7d, 0x0f7e, 0x0f7f,
 };
 
-static const UINT8 rv_lum_bits[256] = 
+static const uint8_t rv_lum_bits[256] = 
 {
  14, 12, 12, 12, 12, 12, 12, 12,
  12, 12, 12, 12, 12, 12, 12, 12,
@@ -96,7 +96,7 @@ static const UINT8 rv_lum_bits[256] =
  12, 12, 12, 12, 12, 12, 12, 12,
 };
 
-static const UINT16 rv_chrom_code[256] =
+static const uint16_t rv_chrom_code[256] =
 {
  0xfe7f, 0x3f00, 0x3f01, 0x3f02, 0x3f03, 0x3f04, 0x3f05, 0x3f06,
  0x3f07, 0x3f08, 0x3f09, 0x3f0a, 0x3f0b, 0x3f0c, 0x3f0d, 0x3f0e,
@@ -132,7 +132,7 @@ static const UINT16 rv_chrom_code[256] =
  0x3f78, 0x3f79, 0x3f7a, 0x3f7b, 0x3f7c, 0x3f7d, 0x3f7e, 0x3f7f,
 };
 
-static const UINT8 rv_chrom_bits[256] =
+static const uint8_t rv_chrom_bits[256] =
 {
  16, 14, 14, 14, 14, 14, 14, 14,
  14, 14, 14, 14, 14, 14, 14, 14,
@@ -182,14 +182,14 @@ int rv_decode_dc(MpegEncContext *s, int n)
                if they had thought about it !!! */
             code = get_bits(&s->gb, 7);
             if (code == 0x7c) {
-                code = (INT8)(get_bits(&s->gb, 7) + 1);
+                code = (int8_t)(get_bits(&s->gb, 7) + 1);
             } else if (code == 0x7d) {
                 code = -128 + get_bits(&s->gb, 7);
             } else if (code == 0x7e) {
                 if (get_bits(&s->gb, 1) == 0)
-                    code = (INT8)(get_bits(&s->gb, 8) + 1);
+                    code = (int8_t)(get_bits(&s->gb, 8) + 1);
                 else
-                    code = (INT8)(get_bits(&s->gb, 8));
+                    code = (int8_t)(get_bits(&s->gb, 8));
             } else if (code == 0x7f) {
                 get_bits(&s->gb, 11);
                 code = 1;
@@ -203,7 +203,7 @@ int rv_decode_dc(MpegEncContext *s, int n)
         if (code < 0) {
             code = get_bits(&s->gb, 9);
             if (code == 0x1fc) {
-                code = (INT8)(get_bits(&s->gb, 7) + 1);
+                code = (int8_t)(get_bits(&s->gb, 7) + 1);
             } else if (code == 0x1fd) {
                 code = -128 + get_bits(&s->gb, 7);
             } else if (code == 0x1fe) {
@@ -390,7 +390,7 @@ static int rv10_decode_end(AVCodecContext *avctx)
 }
 
 static int rv10_decode_packet(AVCodecContext *avctx, 
-                             UINT8 *buf, int buf_size)
+                             uint8_t *buf, int buf_size)
 {
     MpegEncContext *s = avctx->priv_data;
     int i, mb_count, mb_pos, left;
@@ -468,7 +468,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
 
 static int rv10_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
-                             UINT8 *buf, int buf_size)
+                             uint8_t *buf, int buf_size)
 {
     MpegEncContext *s = avctx->priv_data;
     int i;

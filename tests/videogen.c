@@ -8,14 +8,14 @@
 #define SCALEBITS 8
 #define ONE_HALF  (1 << (SCALEBITS - 1))
 #define FIX(x)		((int) ((x) * (1L<<SCALEBITS) + 0.5))
-typedef unsigned char UINT8;
+typedef unsigned char uint8_t;
 
-static void rgb24_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
-                              UINT8 *src, int width, int height)
+static void rgb24_to_yuv420p(uint8_t *lum, uint8_t *cb, uint8_t *cr,
+                              uint8_t *src, int width, int height)
 {
     int wrap, wrap3, x, y;
     int r, g, b, r1, g1, b1;
-    UINT8 *p;
+    uint8_t *p;
 
     wrap = width;
     wrap3 = width * 3;

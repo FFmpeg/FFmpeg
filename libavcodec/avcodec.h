@@ -393,7 +393,7 @@ typedef struct AVCodecContext {
      * decoding: set by user.
      */
     void (*draw_horiz_band)(struct AVCodecContext *s,
-                            UINT8 **src_ptr, int linesize,
+                            uint8_t **src_ptr, int linesize,
                             int y, int width, int height);
 
     /* audio only */
@@ -992,10 +992,10 @@ typedef struct AVCodec {
     int id;
     int priv_data_size;
     int (*init)(AVCodecContext *);
-    int (*encode)(AVCodecContext *, UINT8 *buf, int buf_size, void *data);
+    int (*encode)(AVCodecContext *, uint8_t *buf, int buf_size, void *data);
     int (*close)(AVCodecContext *);
     int (*decode)(AVCodecContext *, void *outdata, int *outdata_size,
-                  UINT8 *buf, int buf_size);
+                  uint8_t *buf, int buf_size);
     int capabilities;
     const AVOption *options;
     struct AVCodec *next;
@@ -1006,7 +1006,7 @@ typedef struct AVCodec {
  * the last component is alpha
  */
 typedef struct AVPicture {
-    UINT8 *data[4];
+    uint8_t *data[4];
     int linesize[4];
 } AVPicture;
 
@@ -1110,7 +1110,7 @@ void img_resample(ImgReSampleContext *s,
 
 void img_resample_close(ImgReSampleContext *s);
 
-int avpicture_fill(AVPicture *picture, UINT8 *ptr,
+int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height);
 int avpicture_get_size(int pix_fmt, int width, int height);
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
@@ -1152,18 +1152,18 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
 
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
-int avcodec_decode_audio(AVCodecContext *avctx, INT16 *samples, 
+int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples, 
                          int *frame_size_ptr,
-                         UINT8 *buf, int buf_size);
+                         uint8_t *buf, int buf_size);
 int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture, 
                          int *got_picture_ptr,
-                         UINT8 *buf, int buf_size);
-int avcodec_parse_frame(AVCodecContext *avctx, UINT8 **pdata, 
+                         uint8_t *buf, int buf_size);
+int avcodec_parse_frame(AVCodecContext *avctx, uint8_t **pdata, 
                         int *data_size_ptr,
-                        UINT8 *buf, int buf_size);
-int avcodec_encode_audio(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
+                        uint8_t *buf, int buf_size);
+int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
                          const short *samples);
-int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
+int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
                          const AVFrame *pict);
 
 int avcodec_close(AVCodecContext *avctx);

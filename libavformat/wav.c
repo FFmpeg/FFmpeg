@@ -171,7 +171,7 @@ static int wav_write_header(AVFormatContext *s)
 }
 
 static int wav_write_packet(AVFormatContext *s, int stream_index_ptr,
-                           UINT8 *buf, int size, int force_pts)
+                           uint8_t *buf, int size, int force_pts)
 {
     ByteIOContext *pb = &s->pb;
     put_buffer(pb, buf, size);
@@ -190,7 +190,7 @@ static int wav_write_trailer(AVFormatContext *s)
         /* update file size */
         file_size = url_ftell(pb);
         url_fseek(pb, 4, SEEK_SET);
-        put_le32(pb, (UINT32)(file_size - 8));
+        put_le32(pb, (uint32_t)(file_size - 8));
         url_fseek(pb, file_size, SEEK_SET);
 
         put_flush_packet(pb);
@@ -200,7 +200,7 @@ static int wav_write_trailer(AVFormatContext *s)
 
 /* return the size of the found tag */
 /* XXX: > 2GB ? */
-static int find_tag(ByteIOContext *pb, UINT32 tag1)
+static int find_tag(ByteIOContext *pb, uint32_t tag1)
 {
     unsigned int tag;
     int size;

@@ -34,12 +34,12 @@ extern int sad8x8_altivec(void *s, uint8_t *a, uint8_t *b, int stride);
 extern int pix_norm1_altivec(uint8_t *pix, int line_size);
 extern int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size);
 extern int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size);
-extern int pix_sum_altivec(UINT8 * pix, int line_size);
-extern void diff_pixels_altivec(DCTELEM* block, const UINT8* s1, const UINT8* s2, int stride);
-extern void get_pixels_altivec(DCTELEM* block, const UINT8 * pixels, int line_size);
+extern int pix_sum_altivec(uint8_t * pix, int line_size);
+extern void diff_pixels_altivec(DCTELEM* block, const uint8_t* s1, const uint8_t* s2, int stride);
+extern void get_pixels_altivec(DCTELEM* block, const uint8_t * pixels, int line_size);
 
 extern void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w);
-extern void put_pixels_clamped_altivec(const DCTELEM *block, UINT8 *restrict pixels, int line_size);
+extern void put_pixels_clamped_altivec(const DCTELEM *block, uint8_t *restrict pixels, int line_size);
 extern void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 extern void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 extern void avg_pixels8_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h);
@@ -48,7 +48,7 @@ extern void put_no_rnd_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels
 extern void put_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h);
 extern void put_no_rnd_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h);
 
-extern void gmc1_altivec(UINT8 *dst, UINT8 *src, int stride, int h, int x16, int y16, int rounder);
+extern void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h, int x16, int y16, int rounder);
 
 extern int has_altivec(void);
 

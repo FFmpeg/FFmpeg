@@ -23,7 +23,7 @@
    quantization stage) */
 #define FRAC_BITS 15
 #define WFRAC_BITS  14
-#define MUL(a,b) (((INT64)(a) * (INT64)(b)) >> FRAC_BITS)
+#define MUL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
 #define FIX(a)   ((int)((a) * (1 << FRAC_BITS)))
 
 #define SAMPLES_BUF_SIZE 4096
@@ -36,7 +36,7 @@ typedef struct MpegAudioContext {
     int bitrate_index; /* bit rate */
     int freq_index;
     int frame_size; /* frame size, in bits, without padding */
-    INT64 nb_samples; /* total number of samples encoded */
+    int64_t nb_samples; /* total number of samples encoded */
     /* padding computation */
     int frame_frac, frame_frac_incr, do_padding;
     short samples_buf[MPA_MAX_CHANNELS][SAMPLES_BUF_SIZE]; /* buffer for filter */

@@ -92,7 +92,7 @@ typedef DCTELEM DCTBLOCK[DCTSIZE2];
 #define PASS1_BITS  1		/* lose a little precision to avoid overflow */
 #endif
 
-#define ONE	((INT32) 1)
+#define ONE	((int32_t) 1)
 
 #define CONST_SCALE (ONE << CONST_BITS)
 
@@ -103,16 +103,16 @@ typedef DCTELEM DCTBLOCK[DCTSIZE2];
  */
 
 /* Actually FIX is no longer used, we precomputed them all */
-#define FIX(x)	((INT32) ((x) * CONST_SCALE + 0.5)) 
+#define FIX(x)	((int32_t) ((x) * CONST_SCALE + 0.5)) 
 
-/* Descale and correctly round an INT32 value that's scaled by N bits.
+/* Descale and correctly round an int32_t value that's scaled by N bits.
  * We assume RIGHT_SHIFT rounds towards minus infinity, so adding
  * the fudge factor is correct for either sign of X.
  */
 
 #define DESCALE(x,n)  RIGHT_SHIFT((x) + (ONE << ((n)-1)), n)
 
-/* Multiply an INT32 variable by an INT32 constant to yield an INT32 result.
+/* Multiply an int32_t variable by an int32_t constant to yield an int32_t result.
  * For 8-bit samples with the recommended scaling, all the variable
  * and constant values involved are no more than 16 bits wide, so a
  * 16x16->32 bit multiply can be used instead of a full 32x32 multiply;
@@ -125,10 +125,10 @@ typedef DCTELEM DCTBLOCK[DCTSIZE2];
 
 #ifdef EIGHT_BIT_SAMPLES
 #ifdef SHORTxSHORT_32		/* may work if 'int' is 32 bits */
-#define MULTIPLY(var,const)  (((INT16) (var)) * ((INT16) (const)))
+#define MULTIPLY(var,const)  (((int16_t) (var)) * ((int16_t) (const)))
 #endif
 #ifdef SHORTxLCONST_32		/* known to work with Microsoft C 6.0 */
-#define MULTIPLY(var,const)  (((INT16) (var)) * ((INT32) (const)))
+#define MULTIPLY(var,const)  (((int16_t) (var)) * ((int32_t) (const)))
 #endif
 #endif
 
@@ -172,10 +172,10 @@ ones here or successive P-frames will drift too much with Reference frame coding
 
 void j_rev_dct(DCTBLOCK data)
 {
-  INT32 tmp0, tmp1, tmp2, tmp3;
-  INT32 tmp10, tmp11, tmp12, tmp13;
-  INT32 z1, z2, z3, z4, z5;
-  INT32 d0, d1, d2, d3, d4, d5, d6, d7;
+  int32_t tmp0, tmp1, tmp2, tmp3;
+  int32_t tmp10, tmp11, tmp12, tmp13;
+  int32_t z1, z2, z3, z4, z5;
+  int32_t d0, d1, d2, d3, d4, d5, d6, d7;
   register DCTELEM *dataptr;
   int rowctr;
    

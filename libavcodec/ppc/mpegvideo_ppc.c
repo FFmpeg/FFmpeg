@@ -30,8 +30,8 @@ extern int dct_quantize_altivec(MpegEncContext *s,
 extern void dct_unquantize_h263_altivec(MpegEncContext *s,
                                         DCTELEM *block, int n, int qscale);
 
-extern void idct_put_altivec(UINT8 *dest, int line_size, INT16 *block);
-extern void idct_add_altivec(UINT8 *dest, int line_size, INT16 *block);
+extern void idct_put_altivec(uint8_t *dest, int line_size, int16_t *block);
+extern void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 
 
 void MPV_common_init_ppc(MpegEncContext *s)

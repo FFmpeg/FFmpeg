@@ -34,19 +34,19 @@
 #define VOP_STARTCODE        0x1B6
 
 /* dc encoding for mpeg4 */
-const UINT8 DCtab_lum[13][2] =
+const uint8_t DCtab_lum[13][2] =
 {
     {3,3}, {3,2}, {2,2}, {2,3}, {1,3}, {1,4}, {1,5}, {1,6}, {1,7},
     {1,8}, {1,9}, {1,10}, {1,11},
 }; 
 
-const UINT8 DCtab_chrom[13][2] =
+const uint8_t DCtab_chrom[13][2] =
 {
     {3,2}, {2,2}, {1,2}, {1,3}, {1,4}, {1,5}, {1,6}, {1,7}, {1,8},
     {1,9}, {1,10}, {1,11}, {1,12},
 }; 
 
-const UINT16 intra_vlc[103][2] = {
+const uint16_t intra_vlc[103][2] = {
 { 0x2, 2 },
 { 0x6, 3 },{ 0xf, 4 },{ 0xd, 5 },{ 0xc, 5 },
 { 0x15, 6 },{ 0x13, 6 },{ 0x12, 6 },{ 0x17, 7 },
@@ -76,7 +76,7 @@ const UINT16 intra_vlc[103][2] = {
 { 0x5f, 12 },{ 0x3, 7 },
 };
 
-const INT8 intra_level[102] = {
+const int8_t intra_level[102] = {
   1,  2,  3,  4,  5,  6,  7,  8,
   9, 10, 11, 12, 13, 14, 15, 16,
  17, 18, 19, 20, 21, 22, 23, 24,
@@ -92,7 +92,7 @@ const INT8 intra_level[102] = {
   1,  1,  1,  1,  1,  1,
 };
 
-const INT8 intra_run[102] = {
+const int8_t intra_run[102] = {
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,
@@ -116,17 +116,17 @@ static RLTable rl_intra = {
     intra_level,
 };
 
-static const UINT16 sprite_trajectory_tab[15][2] = {
+static const uint16_t sprite_trajectory_tab[15][2] = {
  {0x00, 2}, {0x02, 3},  {0x03, 3},  {0x04, 3}, {0x05, 3}, {0x06, 3},
  {0x0E, 4}, {0x1E, 5},  {0x3E, 6},  {0x7E, 7}, {0xFE, 8}, 
  {0x1FE, 9},{0x3FE, 10},{0x7FE, 11},{0xFFE, 12},
 };
 
-static const UINT8 mb_type_b_tab[4][2] = {
+static const uint8_t mb_type_b_tab[4][2] = {
  {1, 1}, {1, 2}, {1, 3}, {1, 4},
 };
 
-static const UINT16 pixel_aspect[16][2]={
+static const uint16_t pixel_aspect[16][2]={
  {0, 0},
  {1, 1},
  {12, 11},
@@ -146,7 +146,7 @@ static const UINT16 pixel_aspect[16][2]={
 };
 
 /* these matrixes will be permuted for the idct */
-const INT16 ff_mpeg4_default_intra_matrix[64] = {
+const int16_t ff_mpeg4_default_intra_matrix[64] = {
   8, 17, 18, 19, 21, 23, 25, 27,
  17, 18, 19, 21, 23, 25, 27, 28,
  20, 21, 22, 23, 24, 26, 28, 30,
@@ -157,7 +157,7 @@ const INT16 ff_mpeg4_default_intra_matrix[64] = {
  27, 28, 30, 32, 35, 38, 41, 45, 
 };
 
-const INT16 ff_mpeg4_default_non_intra_matrix[64] = {
+const int16_t ff_mpeg4_default_non_intra_matrix[64] = {
  16, 17, 18, 19, 20, 21, 22, 23,
  17, 18, 19, 20, 21, 22, 23, 24,
  18, 19, 20, 21, 22, 23, 24, 25,
@@ -168,15 +168,15 @@ const INT16 ff_mpeg4_default_non_intra_matrix[64] = {
  23, 24, 25, 27, 28, 30, 31, 33,
 };
 
-UINT8 ff_mpeg4_y_dc_scale_table[32]={
+uint8_t ff_mpeg4_y_dc_scale_table[32]={
 //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
     0, 8, 8, 8, 8,10,12,14,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,34,36,38,40,42,44,46
 };
-UINT8 ff_mpeg4_c_dc_scale_table[32]={
+uint8_t ff_mpeg4_c_dc_scale_table[32]={
 //  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
     0, 8, 8, 8, 8, 9, 9,10,10,11,11,12,12,13,13,14,14,15,15,16,16,17,17,18,18,19,20,21,22,23,24,25
 };
 
-const UINT16 ff_mpeg4_resync_prefix[8]={
+const uint16_t ff_mpeg4_resync_prefix[8]={
     0x7F00, 0x7E00, 0x7C00, 0x7800, 0x7000, 0x6000, 0x4000, 0x0000
 };

@@ -285,7 +285,7 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     return 0;
 }
 
-int avcodec_encode_audio(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
+int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
                          const short *samples)
 {
     int ret;
@@ -295,7 +295,7 @@ int avcodec_encode_audio(AVCodecContext *avctx, UINT8 *buf, int buf_size,
     return ret;
 }
 
-int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
+int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
                          const AVFrame *pict)
 {
     int ret;
@@ -313,7 +313,7 @@ int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size,
    zero. Otherwise, it is non zero */
 int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture, 
                          int *got_picture_ptr,
-                         UINT8 *buf, int buf_size)
+                         uint8_t *buf, int buf_size)
 {
     int ret;
     
@@ -331,9 +331,9 @@ int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
    *number of bytes used. If no frame could be decompressed,
    *frame_size_ptr is zero. Otherwise, it is the decompressed frame
    *size in BYTES. */
-int avcodec_decode_audio(AVCodecContext *avctx, INT16 *samples, 
+int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples, 
                          int *frame_size_ptr,
-                         UINT8 *buf, int buf_size)
+                         uint8_t *buf, int buf_size)
 {
     int ret;
 
@@ -589,7 +589,7 @@ static int raw_encode_init(AVCodecContext *s)
 
 static int raw_decode_frame(AVCodecContext *avctx,
 			    void *data, int *data_size,
-			    UINT8 *buf, int buf_size)
+			    uint8_t *buf, int buf_size)
 {
     return -1;
 }

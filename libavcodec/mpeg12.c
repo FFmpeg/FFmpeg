@@ -67,8 +67,8 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
 
 #ifdef CONFIG_ENCODERS
-static UINT16 mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
-static UINT8 fcode_tab[MAX_MV*2+1];
+static uint16_t mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
+static uint8_t fcode_tab[MAX_MV*2+1];
 
 static uint32_t uni_mpeg1_ac_vlc_bits[64*64*2];
 static uint8_t  uni_mpeg1_ac_vlc_len [64*64*2];
@@ -182,7 +182,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         unsigned int vbv_buffer_size;
         unsigned int fps, v;
         int n, i;
-        UINT64 time_code;
+        uint64_t time_code;
         float best_aspect_error= 1E10;
         float aspect_ratio= s->avctx->aspect_ratio;
         
@@ -242,13 +242,13 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
             fps = frame_rate_tab[s->frame_rate_index];
-            time_code = (INT64)s->fake_picture_number * FRAME_RATE_BASE;
+            time_code = (int64_t)s->fake_picture_number * FRAME_RATE_BASE;
             s->gop_picture_number = s->fake_picture_number;
-            put_bits(&s->pb, 5, (UINT32)((time_code / (fps * 3600)) % 24));
-            put_bits(&s->pb, 6, (UINT32)((time_code / (fps * 60)) % 60));
+            put_bits(&s->pb, 5, (uint32_t)((time_code / (fps * 3600)) % 24));
+            put_bits(&s->pb, 6, (uint32_t)((time_code / (fps * 60)) % 60));
             put_bits(&s->pb, 1, 1);
-            put_bits(&s->pb, 6, (UINT32)((time_code / fps) % 60));
-            put_bits(&s->pb, 6, (UINT32)((time_code % fps) / FRAME_RATE_BASE));
+            put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
+            put_bits(&s->pb, 6, (uint32_t)((time_code % fps) / FRAME_RATE_BASE));
             put_bits(&s->pb, 1, 1); /* closed gop */
             put_bits(&s->pb, 1, 0); /* broken link */
         }
@@ -257,7 +257,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* insert empty P pictures to slow down to the desired
                frame rate. Each fake pictures takes about 20 bytes */
             fps = frame_rate_tab[s->frame_rate_index];
-            n = (((INT64)s->picture_number * fps) / s->frame_rate) - 1;
+            n = (((int64_t)s->picture_number * fps) / s->frame_rate) - 1;
             while (s->fake_picture_number < n) {
                 mpeg1_skip_picture(s, s->fake_picture_number - 
                                    s->gop_picture_number); 
@@ -737,7 +737,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
            it is handled slightly differently */
         level = block[0];
         if (abs(level) == 1) {
-                code = ((UINT32)level >> 31); /* the sign bit */
+                code = ((uint32_t)level >> 31); /* the sign bit */
                 put_bits(&s->pb, 2, code | 0x02);
                 i = 1;
         } else {
@@ -1208,8 +1208,8 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
     int level, dc, diff, i, j, run;
     int component;
     RLTable *rl = &rl_mpeg1;
-    UINT8 * const scantable= s->intra_scantable.permutated;
-    const UINT16 *quant_matrix= s->intra_matrix;
+    uint8_t * const scantable= s->intra_scantable.permutated;
+    const uint16_t *quant_matrix= s->intra_matrix;
     const int qscale= s->qscale;
 
     /* DC coef */
@@ -1280,8 +1280,8 @@ static inline int mpeg1_decode_block_inter(MpegEncContext *s,
 {
     int level, i, j, run;
     RLTable *rl = &rl_mpeg1;
-    UINT8 * const scantable= s->intra_scantable.permutated;
-    const UINT16 *quant_matrix= s->inter_matrix;
+    uint8_t * const scantable= s->intra_scantable.permutated;
+    const uint16_t *quant_matrix= s->inter_matrix;
     const int qscale= s->qscale;
 
     {
@@ -1358,8 +1358,8 @@ static inline int mpeg2_decode_block_non_intra(MpegEncContext *s,
 {
     int level, i, j, run;
     RLTable *rl = &rl_mpeg1;
-    UINT8 * const scantable= s->intra_scantable.permutated;
-    const UINT16 *quant_matrix;
+    uint8_t * const scantable= s->intra_scantable.permutated;
+    const uint16_t *quant_matrix;
     const int qscale= s->qscale;
     int mismatch;
 
@@ -1438,8 +1438,8 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     int level, dc, diff, i, j, run;
     int component;
     RLTable *rl;
-    UINT8 * const scantable= s->intra_scantable.permutated;
-    const UINT16 *quant_matrix;
+    uint8_t * const scantable= s->intra_scantable.permutated;
+    const uint16_t *quant_matrix;
     const int qscale= s->qscale;
     int mismatch;
 
@@ -1516,10 +1516,10 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
 
 typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
-    UINT32 header_state;
+    uint32_t header_state;
     int start_code; /* current start code */
-    UINT8 buffer[PICTURE_BUFFER_SIZE]; 
-    UINT8 *buf_ptr;
+    uint8_t buffer[PICTURE_BUFFER_SIZE]; 
+    uint8_t *buf_ptr;
     int buffer_size;
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
     int repeat_field; /* true if we must repeat the field */
@@ -1546,10 +1546,10 @@ static int mpeg_decode_init(AVCodecContext *avctx)
 
 /* return the 8 bit start code value and update the search
    state. Return -1 if no start code found */
-static int find_start_code(UINT8 **pbuf_ptr, UINT8 *buf_end, 
-                           UINT32 *header_state)
+static int find_start_code(uint8_t **pbuf_ptr, uint8_t *buf_end, 
+                           uint32_t *header_state)
 {
-    UINT8 *buf_ptr;
+    uint8_t *buf_ptr;
     unsigned int state, v;
     int val;
 
@@ -1572,7 +1572,7 @@ static int find_start_code(UINT8 **pbuf_ptr, UINT8 *buf_end,
 }
 
 static int mpeg1_decode_picture(AVCodecContext *avctx, 
-                                UINT8 *buf, int buf_size)
+                                uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
@@ -1724,7 +1724,7 @@ static void mpeg_decode_picture_coding_extension(MpegEncContext *s)
 }
 
 static void mpeg_decode_extension(AVCodecContext *avctx, 
-                                  UINT8 *buf, int buf_size)
+                                  uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
@@ -1764,7 +1764,7 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
 static int mpeg_decode_slice(AVCodecContext *avctx, 
                               AVFrame *pict,
                               int start_code,
-                              UINT8 *buf, int buf_size)
+                              uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
@@ -1897,7 +1897,7 @@ eos: //end of slice
 }
 
 static int mpeg1_decode_sequence(AVCodecContext *avctx, 
-                                 UINT8 *buf, int buf_size)
+                                 uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
@@ -2010,10 +2010,10 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 /* handle buffering and image synchronisation */
 static int mpeg_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
-                             UINT8 *buf, int buf_size)
+                             uint8_t *buf, int buf_size)
 {
     Mpeg1Context *s = avctx->priv_data;
-    UINT8 *buf_end, *buf_ptr, *buf_start;
+    uint8_t *buf_end, *buf_ptr, *buf_start;
     int len, start_code_found, ret, code, start_code, input_size;
     AVFrame *picture = data;
     MpegEncContext *s2 = &s->mpeg_enc_ctx;

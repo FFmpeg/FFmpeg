@@ -100,7 +100,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     return -EIO;
 }
 
-static int tcp_read(URLContext *h, UINT8 *buf, int size)
+static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
     int size1, len;
@@ -130,7 +130,7 @@ static int tcp_read(URLContext *h, UINT8 *buf, int size)
     return size1 - size;
 }
 
-static int tcp_write(URLContext *h, UINT8 *buf, int size)
+static int tcp_write(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
     int ret, size1;

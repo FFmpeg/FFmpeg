@@ -41,9 +41,9 @@
 struct ImgReSampleContext {
     int iwidth, iheight, owidth, oheight, topBand, bottomBand, leftBand, rightBand;
     int h_incr, v_incr;
-    INT16 h_filters[NB_PHASES][NB_TAPS] __align8; /* horizontal filters */
-    INT16 v_filters[NB_PHASES][NB_TAPS] __align8; /* vertical filters */
-    UINT8 *line_buf;
+    int16_t h_filters[NB_PHASES][NB_TAPS] __align8; /* horizontal filters */
+    int16_t v_filters[NB_PHASES][NB_TAPS] __align8; /* vertical filters */
+    uint8_t *line_buf;
 };
 
 static inline int get_phase(int pos)
@@ -52,12 +52,12 @@ static inline int get_phase(int pos)
 }
 
 /* This function must be optimized */
-static void h_resample_fast(UINT8 *dst, int dst_width, UINT8 *src, int src_width,
-                            int src_start, int src_incr, INT16 *filters)
+static void h_resample_fast(uint8_t *dst, int dst_width, uint8_t *src, int src_width,
+                            int src_start, int src_incr, int16_t *filters)
 {
     int src_pos, phase, sum, i;
-    UINT8 *s;
-    INT16 *filter;
+    uint8_t *s;
+    int16_t *filter;
 
     src_pos = src_start;
     for(i=0;i<dst_width;i++) {
@@ -95,11 +95,11 @@ static void h_resample_fast(UINT8 *dst, int dst_width, UINT8 *src, int src_width
 }
 
 /* This function must be optimized */
-static void v_resample(UINT8 *dst, int dst_width, UINT8 *src, int wrap, 
-                       INT16 *filter)
+static void v_resample(uint8_t *dst, int dst_width, uint8_t *src, int wrap, 
+                       int16_t *filter)
 {
     int sum, i;
-    UINT8 *s;
+    uint8_t *s;
 
     s = src;
     for(i=0;i<dst_width;i++) {
@@ -111,7 +111,7 @@ static void v_resample(UINT8 *dst, int dst_width, UINT8 *src, int wrap,
 #else
         {
             int j;
-            UINT8 *s1 = s;
+            uint8_t *s1 = s;
 
             sum = 0;
             for(j=0;j<NB_TAPS;j++) {
@@ -154,12 +154,12 @@ static void v_resample(UINT8 *dst, int dst_width, UINT8 *src, int wrap,
 #define DUMP(reg) movq_r2m(reg, tmp); printf(#reg "=%016Lx\n", tmp.uq);
 
 /* XXX: do four pixels at a time */
-static void h_resample_fast4_mmx(UINT8 *dst, int dst_width, UINT8 *src, int src_width,
-                                 int src_start, int src_incr, INT16 *filters)
+static void h_resample_fast4_mmx(uint8_t *dst, int dst_width, uint8_t *src, int src_width,
+                                 int src_start, int src_incr, int16_t *filters)
 {
     int src_pos, phase;
-    UINT8 *s;
-    INT16 *filter;
+    uint8_t *s;
+    int16_t *filter;
     mmx_t tmp;
     
     src_pos = src_start;
@@ -198,11 +198,11 @@ static void h_resample_fast4_mmx(UINT8 *dst, int dst_width, UINT8 *src, int src_
     emms();
 }
 
-static void v_resample4_mmx(UINT8 *dst, int dst_width, UINT8 *src, int wrap, 
-                            INT16 *filter)
+static void v_resample4_mmx(uint8_t *dst, int dst_width, uint8_t *src, int wrap, 
+                            int16_t *filter)
 {
     int sum, i, v;
-    UINT8 *s;
+    uint8_t *s;
     mmx_t tmp;
     mmx_t coefs[4];
     
@@ -239,7 +239,7 @@ static void v_resample4_mmx(UINT8 *dst, int dst_width, UINT8 *src, int wrap,
         packuswb_r2r(mm7, mm0);
         movq_r2m(mm0, tmp);
 
-        *(UINT32 *)dst = tmp.ud[0];
+        *(uint32_t *)dst = tmp.ud[0];
         dst += 4;
         s += 4;
         dst_width -= 4;
@@ -274,8 +274,8 @@ typedef	union {
     signed short s[8];
 } vec_ss_t;
 
-void v_resample16_altivec(UINT8 *dst, int dst_width, UINT8 *src, int wrap,
-                            INT16 *filter)
+void v_resample16_altivec(uint8_t *dst, int dst_width, uint8_t *src, int wrap,
+                            int16_t *filter)
 {
     int sum, i;
     uint8_t *s;
@@ -391,12 +391,12 @@ void v_resample16_altivec(UINT8 *dst, int dst_width, UINT8 *src, int wrap,
 #endif
 
 /* slow version to handle limit cases. Does not need optimisation */
-static void h_resample_slow(UINT8 *dst, int dst_width, UINT8 *src, int src_width,
-                            int src_start, int src_incr, INT16 *filters)
+static void h_resample_slow(uint8_t *dst, int dst_width, uint8_t *src, int src_width,
+                            int src_start, int src_incr, int16_t *filters)
 {
     int src_pos, phase, sum, j, v, i;
-    UINT8 *s, *src_end;
-    INT16 *filter;
+    uint8_t *s, *src_end;
+    int16_t *filter;
 
     src_end = src + src_width;
     src_pos = src_start;
@@ -426,8 +426,8 @@ static void h_resample_slow(UINT8 *dst, int dst_width, UINT8 *src, int src_width
     }
 }
 
-static void h_resample(UINT8 *dst, int dst_width, UINT8 *src, int src_width,
-                       int src_start, int src_incr, INT16 *filters)
+static void h_resample(uint8_t *dst, int dst_width, uint8_t *src, int src_width,
+                       int src_start, int src_incr, int16_t *filters)
 {
     int n, src_end;
 
@@ -463,11 +463,11 @@ static void h_resample(UINT8 *dst, int dst_width, UINT8 *src, int src_width,
 }
 
 static void component_resample(ImgReSampleContext *s, 
-                               UINT8 *output, int owrap, int owidth, int oheight,
-                               UINT8 *input, int iwrap, int iwidth, int iheight)
+                               uint8_t *output, int owrap, int owidth, int oheight,
+                               uint8_t *input, int iwrap, int iwidth, int iheight)
 {
     int src_y, src_y1, last_src_y, ring_y, phase_y, y1, y;
-    UINT8 *new_line, *src_line;
+    uint8_t *new_line, *src_line;
 
     last_src_y = - FCENTER - 1;
     /* position of the bottom of the filter in the source image */
@@ -528,7 +528,7 @@ static void component_resample(ImgReSampleContext *s,
 
 /* XXX: the following filter is quite naive, but it seems to suffice
    for 4 taps */
-static void build_filter(INT16 *filter, float factor)
+static void build_filter(int16_t *filter, float factor)
 {
     int ph, i, v;
     float x, y, tab[NB_TAPS], norm, mult;
@@ -641,15 +641,15 @@ void av_free(void *ptr)
 /* input */
 #define XSIZE 256
 #define YSIZE 256
-UINT8 img[XSIZE * YSIZE];
+uint8_t img[XSIZE * YSIZE];
 
 /* output */
 #define XSIZE1 512
 #define YSIZE1 512
-UINT8 img1[XSIZE1 * YSIZE1];
-UINT8 img2[XSIZE1 * YSIZE1];
+uint8_t img1[XSIZE1 * YSIZE1];
+uint8_t img2[XSIZE1 * YSIZE1];
 
-void save_pgm(const char *filename, UINT8 *img, int xsize, int ysize)
+void save_pgm(const char *filename, uint8_t *img, int xsize, int ysize)
 {
     FILE *f;
     f=fopen(filename,"w");
@@ -658,7 +658,7 @@ void save_pgm(const char *filename, UINT8 *img, int xsize, int ysize)
     fclose(f);
 }
 
-static void dump_filter(INT16 *filter)
+static void dump_filter(int16_t *filter)
 {
     int i, ph;
 

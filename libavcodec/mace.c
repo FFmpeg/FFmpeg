@@ -24,11 +24,11 @@
  * libavcodec api, context stuff, interlaced stereo out).
  */
 
-static const UINT16 MACEtab1[] = { 0xfff3, 0x0008, 0x004c, 0x00de, 0x00de, 0x004c, 0x0008, 0xfff3 };
+static const uint16_t MACEtab1[] = { 0xfff3, 0x0008, 0x004c, 0x00de, 0x00de, 0x004c, 0x0008, 0xfff3 };
 
-static const UINT16 MACEtab3[] = { 0xffee, 0x008c, 0x008c, 0xffee };
+static const uint16_t MACEtab3[] = { 0xffee, 0x008c, 0x008c, 0xffee };
 
-static const UINT16 MACEtab2[][8] = {
+static const uint16_t MACEtab2[][8] = {
     { 0x0025, 0x0074, 0x00CE, 0x014A, 0xFEB5, 0xFF31, 0xFF8B, 0xFFDA },
     { 0x0027, 0x0079, 0x00D8, 0x015A, 0xFEA5, 0xFF27, 0xFF86, 0xFFD8 },
     { 0x0029, 0x007F, 0x00E1, 0x0169, 0xFE96, 0xFF1E, 0xFF80, 0xFFD6 },
@@ -159,7 +159,7 @@ static const UINT16 MACEtab2[][8] = {
     { 0x25A7, 0x741F, 0x7FFF, 0x7FFF, 0x8000, 0x8000, 0x8BE0, 0xDA58 },
 };
 
-static const UINT16 MACEtab4[][8] = {
+static const uint16_t MACEtab4[][8] = {
     { 0x0040, 0x00D8, 0xFF27, 0xFFBF, 0, 0, 0, 0 },  { 0x0043, 0x00E2, 0xFF1D, 0xFFBC, 0, 0, 0, 0 },
     { 0x0046, 0x00EC, 0xFF13, 0xFFB9, 0, 0, 0, 0 },  { 0x004A, 0x00F6, 0xFF09, 0xFFB5, 0, 0, 0, 0 },
     { 0x004D, 0x0101, 0xFEFE, 0xFFB2, 0, 0, 0, 0 },  { 0x0050, 0x010C, 0xFEF3, 0xFFAF, 0, 0, 0, 0 },
@@ -234,9 +234,9 @@ typedef struct MACEContext {
 
 /* /// "chomp3()" */
 static void chomp3(MACEContext *ctx,
-            UINT8 val,
-            const UINT16 tab1[],
-            const UINT16 tab2[][8])
+            uint8_t val,
+            const uint16_t tab1[],
+            const uint16_t tab2[][8])
 {
   short current;
 
@@ -253,13 +253,13 @@ static void chomp3(MACEContext *ctx,
 
 /* /// "Exp1to3()" */
 static void Exp1to3(MACEContext *ctx,
-             UINT8 *inBuffer,
+             uint8_t *inBuffer,
              void *outBuffer,
-             UINT32 cnt,
-             UINT32 numChannels,
-             UINT32 whichChannel)
+             uint32_t cnt,
+             uint32_t numChannels,
+             uint32_t whichChannel)
 {
-   UINT8 pkt;
+   uint8_t pkt;
 
 /*
    if (inState) {
@@ -298,9 +298,9 @@ static void Exp1to3(MACEContext *ctx,
 
 /* /// "chomp6()" */
 static void chomp6(MACEContext *ctx,
-            UINT8 val,
-            const UINT16 tab1[],
-            const UINT16 tab2[][8])
+            uint8_t val,
+            const uint16_t tab1[],
+            const uint16_t tab2[][8])
 {
   short current;
 
@@ -335,13 +335,13 @@ static void chomp6(MACEContext *ctx,
 
 /* /// "Exp1to6()" */
 static void Exp1to6(MACEContext *ctx,
-             UINT8 *inBuffer,
+             uint8_t *inBuffer,
              void *outBuffer,
-             UINT32 cnt,
-             UINT32 numChannels,
-             UINT32 whichChannel)
+             uint32_t cnt,
+             uint32_t numChannels,
+             uint32_t whichChannel)
 {
-   UINT8 pkt;
+   uint8_t pkt;
 
 /*
    if (inState) {
@@ -389,7 +389,7 @@ static int mace_decode_init(AVCodecContext * avctx)
 
 static int mace_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
-                            UINT8 *buf, int buf_size)
+                            uint8_t *buf, int buf_size)
 {
     short *samples;
     MACEContext *c = avctx->priv_data;

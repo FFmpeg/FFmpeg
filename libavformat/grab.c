@@ -31,11 +31,11 @@ typedef struct {
     int use_mmap;
     int width, height;
     int frame_rate;
-    INT64 time_frame;
+    int64_t time_frame;
     int frame_size;
     struct video_capability video_cap;
     struct video_audio audio_saved;
-    UINT8 *video_buf;
+    uint8_t *video_buf;
     struct video_mbuf gb_buffers;
     struct video_mmap gb_buf;
     int gb_frame;
@@ -45,8 +45,8 @@ typedef struct {
     int aiw_enabled;
     int deint;
     int halfw;
-    UINT8 *src_mem;
-    UINT8 *lum_m4_mem;
+    uint8_t *src_mem;
+    uint8_t *lum_m4_mem;
 } VideoData;
 
 static int aiw_init(VideoData *s);
@@ -252,9 +252,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     return -EIO;
 }
 
-static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
+static int v4l_mm_read_picture(VideoData *s, uint8_t *buf)
 {
-    UINT8 *ptr;
+    uint8_t *ptr;
 
     /* Setup to capture the next frame */
     s->gb_buf.frame = (s->gb_frame + 1) % s->gb_buffers.frames;
@@ -281,9 +281,9 @@ static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
 static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     VideoData *s = s1->priv_data;
-    INT64 curtime, delay;
+    int64_t curtime, delay;
     struct timespec ts;
-    INT64 per_frame = (INT64_C(1000000) * FRAME_RATE_BASE) / s->frame_rate;
+    int64_t per_frame = (int64_t_C(1000000) * FRAME_RATE_BASE) / s->frame_rate;
 
     /* Calculate the time of the next frame */
     s->time_frame += per_frame;
@@ -617,13 +617,13 @@ static int aiw_init(VideoData *s)
 /* Read two fields separately. */
 static int aiw_read_picture(VideoData *s, uint8_t *data)
 {
-    UINT8 *ptr, *lum, *cb, *cr;
+    uint8_t *ptr, *lum, *cb, *cr;
     int h;
 #ifndef HAVE_MMX
     int sum;
 #endif
-    UINT8* src = s->src_mem;
-    UINT8 *ptrend = &src[s->width*2];
+    uint8_t* src = s->src_mem;
+    uint8_t *ptrend = &src[s->width*2];
     lum=data;
     cb=&lum[s->width*s->height];
     cr=&cb[(s->width*s->height)/4];
@@ -715,7 +715,7 @@ static int aiw_read_picture(VideoData *s, uint8_t *data)
             read(s->fd,src,s->width*4);
         }
     } else {
-        UINT8 *lum_m1, *lum_m2, *lum_m3, *lum_m4;
+        uint8_t *lum_m1, *lum_m2, *lum_m3, *lum_m4;
 #ifdef HAVE_MMX
         mmx_t rounder;
         rounder.uw[0]=4;
@@ -725,7 +725,7 @@ static int aiw_read_picture(VideoData *s, uint8_t *data)
         movq_m2r(rounder,mm6);
         pxor_r2r(mm7,mm7);
 #else
-        UINT8 *cm = cropTbl + MAX_NEG_CROP;
+        uint8_t *cm = cropTbl + MAX_NEG_CROP;
 #endif
 
         /* read two fields and deinterlace them */

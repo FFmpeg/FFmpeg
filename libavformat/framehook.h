@@ -13,7 +13,7 @@ typedef FrameHookConfigure *FrameHookConfigureFn;
 extern FrameHookConfigure Configure;
 
 /* Function must be called 'Process' */
-typedef void (FrameHookProcess)(void *ctx, struct AVPicture *pict, enum PixelFormat pix_fmt, int width, int height, INT64 pts);
+typedef void (FrameHookProcess)(void *ctx, struct AVPicture *pict, enum PixelFormat pix_fmt, int width, int height, int64_t pts);
 typedef FrameHookProcess *FrameHookProcessFn;
 extern FrameHookProcess Process;
 

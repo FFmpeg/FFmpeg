@@ -161,7 +161,7 @@ static int pnm_write(ByteIOContext *pb, AVImageInfo *info)
 {
     int i, h, h1, c, n, linesize;
     char buf[100];
-    UINT8 *ptr, *ptr1, *ptr2;
+    uint8_t *ptr, *ptr1, *ptr2;
 
     h = info->height;
     h1 = h;

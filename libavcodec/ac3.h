@@ -38,19 +38,19 @@ typedef struct AC3BitAllocParameters {
     int cplfleak, cplsleak;
 } AC3BitAllocParameters;
 
-extern const UINT16 ac3_freqs[3];
-extern const UINT16 ac3_bitratetab[19];
-extern const INT16 ac3_window[256];
-extern const UINT8 sdecaytab[4];
-extern const UINT8 fdecaytab[4];
-extern const UINT16 sgaintab[4];
-extern const UINT16 dbkneetab[4];
-extern const UINT16 floortab[8];
-extern const UINT16 fgaintab[8];
+extern const uint16_t ac3_freqs[3];
+extern const uint16_t ac3_bitratetab[19];
+extern const int16_t ac3_window[256];
+extern const uint8_t sdecaytab[4];
+extern const uint8_t fdecaytab[4];
+extern const uint16_t sgaintab[4];
+extern const uint16_t dbkneetab[4];
+extern const uint16_t floortab[8];
+extern const uint16_t fgaintab[8];
 
 void ac3_common_init(void);
-void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, UINT8 *bap,
-                                   INT8 *exp, int start, int end,
+void ac3_parametric_bit_allocation(AC3BitAllocParameters *s, uint8_t *bap,
+                                   int8_t *exp, int start, int end,
                                    int snroffset, int fgain, int is_lfe,
                                    int deltbae,int deltnseg, 
-                                   UINT8 *deltoffst, UINT8 *deltlen, UINT8 *deltba);
+                                   uint8_t *deltoffst, uint8_t *deltlen, uint8_t *deltba);

@@ -20,8 +20,8 @@
 
 typedef struct {
     /* fractional resampling */
-    UINT32 incr; /* fractional increment */
-    UINT32 frac;
+    uint32_t incr; /* fractional increment */
+    uint32_t frac;
     int last_sample;
     /* integer down sample */
     int iratio;  /* integer divison ratio */

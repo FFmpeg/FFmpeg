@@ -387,7 +387,7 @@ void ff_init_me(MpegEncContext *s){
     }
 }
       
-static int pix_dev(UINT8 * pix, int line_size, int mean)
+static int pix_dev(uint8_t * pix, int line_size, int mean)
 {
     int s, i, j;
 
@@ -422,7 +422,7 @@ static int full_motion_search(MpegEncContext * s,
 {
     int x1, y1, x2, y2, xx, yy, x, y;
     int mx, my, dmin, d;
-    UINT8 *pix;
+    uint8_t *pix;
 
     xx = 16 * s->mb_x;
     yy = 16 * s->mb_y;
@@ -476,7 +476,7 @@ static int log_motion_search(MpegEncContext * s,
 {
     int x1, y1, x2, y2, xx, yy, x, y;
     int mx, my, dmin, d;
-    UINT8 *pix;
+    uint8_t *pix;
 
     xx = s->mb_x << 4;
     yy = s->mb_y << 4;
@@ -552,7 +552,7 @@ static int phods_motion_search(MpegEncContext * s,
 {
     int x1, y1, x2, y2, xx, yy, x, y, lastx, d;
     int mx, my, dminx, dminy;
-    UINT8 *pix;
+    uint8_t *pix;
 
     xx = s->mb_x << 4;
     yy = s->mb_y << 4;
@@ -657,7 +657,7 @@ static inline int sad_hpel_motion_search(MpegEncContext * s,
     uint32_t *score_map= s->me.score_map;
     const int penalty_factor= s->me.sub_penalty_factor;
     int mx, my, xx, yy, dminh;
-    UINT8 *pix, *ptr;
+    uint8_t *pix, *ptr;
     op_pixels_abs_func pix_abs_x2;
     op_pixels_abs_func pix_abs_y2;
     op_pixels_abs_func pix_abs_xy2;
@@ -964,7 +964,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
 void ff_estimate_p_frame_motion(MpegEncContext * s,
                                 int mb_x, int mb_y)
 {
-    UINT8 *pix, *ppix;
+    uint8_t *pix, *ppix;
     int sum, varc, vard, mx, my, range, dmin, xx, yy;
     int xmin, ymin, xmax, ymax;
     int rel_xmin, rel_ymin, rel_xmax, rel_ymax;
@@ -1302,7 +1302,7 @@ static inline int check_bidir_mv(MpegEncContext * s,
     //FIXME optimize?
     //FIXME move into template?
     //FIXME better f_code prediction (max mv & distance)
-    UINT16 *mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
+    uint16_t *mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
     uint8_t *dest_y = s->me.scratchpad;
     uint8_t *ptr;
     int dxy;
@@ -1535,7 +1535,7 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
     if(s->me_method>=ME_EPZS){
         int score[8];
         int i, y;
-        UINT8 * fcode_tab= s->fcode_tab;
+        uint8_t * fcode_tab= s->fcode_tab;
         int best_fcode=-1;
         int best_score=-10000000;
 
@@ -1584,7 +1584,7 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
 {
     const int f_code= s->f_code;
     int y;
-    UINT8 * fcode_tab= s->fcode_tab;
+    uint8_t * fcode_tab= s->fcode_tab;
 //int clip=0;
 //int noclip=0;
     /* clip / convert to intra 16x16 type MVs */
@@ -1648,7 +1648,7 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
 void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, int type)
 {
     int y;
-    UINT8 * fcode_tab= s->fcode_tab;
+    uint8_t * fcode_tab= s->fcode_tab;
 
     // RAL: 8 in MPEG-1, 16 in MPEG-4
     int range = (((s->codec_id == CODEC_ID_MPEG1VIDEO) ? 8 : 16) << f_code);
