@@ -1,6 +1,9 @@
 #ifndef __BSWAP_H__
 #define __BSWAP_H__
 
+/* It's need for ffmpeg. Else where will be defined ARCH_X86?*/
+#include "config.h"
+
 #ifdef HAVE_BYTESWAP_H
 #include <byteswap.h>
 #else
