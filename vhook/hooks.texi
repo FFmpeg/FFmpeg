@@ -1,0 +1,49 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle Video Hook Documentation
+@titlepage
+@sp 7
+@center @titlefont{Video Hook Documentation}
+@sp 3
+@end titlepage
+
+
+@chapter Introduction
+
+
+The video hook functionality is designed (mostly) for live video. It allows
+the video to be modified or examined between the decoder and the encoder.
+
+Any number of hook modules can be placed inline, and they are run in the
+order that they were specified on the ffmpeg command line.
+
+Three modules are provided and are described below. They are all intended to
+be used as a base for your own modules. 
+
+Modules are loaded using the -vhook option to ffmpeg. The value of this parameter
+is a space seperated list of arguments. The first is the module name, and the rest
+are passed as arguments to the Configure function of the module.
+
+@section null.c
+
+This does nothing. Actually it converts the input image to RGB24 and then converts
+it back again. This is meant as a sample that you can use to test your setup.
+
+@section fish.c
+
+This implements a 'fish detector'. Essentially it converts the image into HSV
+space and tests whether more than a certain percentage of the pixels fall into
+a specific HSV cuboid. If so, then the image is saved into a file for processing
+by other bits of code.
+
+Why use HSV? It turns out that HSV cuboids represent a more compact range of
+colors than would an RGB cuboid.
+
+@section imlib2.c
+
+This allows a caption to be placed onto each frame. It supports inserting the
+time and date. By using the imlib functions, it would be easy to add your own
+graphical logo, add a frame/border, etc.
+
+
+@bye
