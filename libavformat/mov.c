@@ -995,6 +995,32 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 size-=(16);
                 url_fskip(pb, size); /* The mp4s atom also contians a esds atom that we can skip*/
             }
+            else if( st->codec.codec_tag == MKTAG( 'm', 'p', '4', 'a' ))
+            {
+                /* Handle mp4 audio tag */
+                get_be32(pb); /* version */
+                get_be32(pb);
+                st->codec.channels = get_be16(pb); /* channels */
+                st->codec.bits_per_sample = get_be16(pb); /* bits per sample */
+                get_be32(pb);
+                st->codec.sample_rate = get_be16(pb); /* sample rate, not always correct */
+                get_be16(pb);
+                c->mp4=1;
+                MOV_atom_t a = { format, url_ftell(pb), size - (20 + 20 + 8) };
+                mov_read_default(c, pb, a);
+                /* Get correct sample rate from extradata */
+                if(st->codec.extradata_size) {
+                   const int samplerate_table[] = {
+                     96000, 88200, 64000, 48000, 44100, 32000, 
+                     24000, 22050, 16000, 12000, 11025, 8000,
+                     7350, 0, 0, 0
+                   };
+                   unsigned char *px = st->codec.extradata;
+                   // 5 bits objectTypeIndex, 4 bits sampleRateIndex, 4 bits channels
+                   int samplerate_index = ((px[0] & 7) << 1) + ((px[1] >> 7) & 1);
+                   st->codec.sample_rate = samplerate_table[samplerate_index];
+                }
+            }
 	    else if(size>=(16+20))
 	    {//16 bytes read, reading atleast 20 more
 #ifdef DEBUG
