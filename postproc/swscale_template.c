@@ -59,32 +59,35 @@
 #define MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
 #endif
 
-#define YSCALEYUV2YV12X(x) \
+#define YSCALEYUV2YV12X(x, offset) \
 			"xorl %%eax, %%eax		\n\t"\
 			"pxor %%mm3, %%mm3		\n\t"\
 			"pxor %%mm4, %%mm4		\n\t"\
-			"movl %0, %%edx			\n\t"\
+			"leal " offset "(%0), %%edx	\n\t"\
+			"movl (%%edx), %%esi		\n\t"\
 			".balign 16			\n\t" /* FIXME Unroll? */\
 			"1:				\n\t"\
-			"movl (%1, %%edx, 4), %%esi	\n\t"\
-			"movq (%2, %%edx, 8), %%mm0	\n\t" /* filterCoeff */\
+			"movq 8(%%edx), %%mm0		\n\t" /* filterCoeff */\
 			"movq " #x "(%%esi, %%eax, 2), %%mm2	\n\t" /* srcData */\
 			"movq 8+" #x "(%%esi, %%eax, 2), %%mm5	\n\t" /* srcData */\
+			"addl $16, %%edx		\n\t"\
+			"movl (%%edx), %%esi		\n\t"\
+			"testl %%esi, %%esi		\n\t"\
 			"pmulhw %%mm0, %%mm2		\n\t"\
 			"pmulhw %%mm0, %%mm5		\n\t"\
 			"paddw %%mm2, %%mm3		\n\t"\
 			"paddw %%mm5, %%mm4		\n\t"\
-			"addl $1, %%edx			\n\t"\
 			" jnz 1b			\n\t"\
 			"psraw $3, %%mm3		\n\t"\
 			"psraw $3, %%mm4		\n\t"\
 			"packuswb %%mm4, %%mm3		\n\t"\
-			MOVNTQ(%%mm3, (%3, %%eax))\
+			MOVNTQ(%%mm3, (%1, %%eax))\
 			"addl $8, %%eax			\n\t"\
-			"cmpl %4, %%eax			\n\t"\
+			"cmpl %2, %%eax			\n\t"\
 			"pxor %%mm3, %%mm3		\n\t"\
 			"pxor %%mm4, %%mm4		\n\t"\
-			"movl %0, %%edx			\n\t"\
+			"leal " offset "(%0), %%edx	\n\t"\
+			"movl (%%edx), %%esi		\n\t"\
 			"jb 1b				\n\t"
 
 #define YSCALEYUV2YV121 \
@@ -110,57 +113,60 @@
 #define YSCALEYUV2PACKEDX \
 		"xorl %%eax, %%eax		\n\t"\
 		".balign 16			\n\t"\
+		"nop				\n\t"\
 		"1:				\n\t"\
-		"movl %1, %%edx			\n\t" /* -chrFilterSize */\
-		"movl %3, %%ebx			\n\t" /* chrMmxFilter+chrFilterSize */\
-		"movl %7, %%ecx			\n\t" /* chrSrc+chrFilterSize */\
+		"leal "CHR_MMX_FILTER_OFFSET"(%0), %%edx	\n\t"\
+		"movl (%%edx), %%esi		\n\t"\
 		"pxor %%mm3, %%mm3		\n\t"\
 		"pxor %%mm4, %%mm4		\n\t"\
+		".balign 16			\n\t"\
 		"2:				\n\t"\
-		"movl (%%ecx, %%edx, 4), %%esi	\n\t"\
-		"movq (%%ebx, %%edx, 8), %%mm0	\n\t" /* filterCoeff */\
+		"movq 8(%%edx), %%mm0		\n\t" /* filterCoeff */\
 		"movq (%%esi, %%eax), %%mm2	\n\t" /* UsrcData */\
 		"movq 4096(%%esi, %%eax), %%mm5	\n\t" /* VsrcData */\
+		"addl $16, %%edx		\n\t"\
+		"movl (%%edx), %%esi		\n\t"\
 		"pmulhw %%mm0, %%mm2		\n\t"\
 		"pmulhw %%mm0, %%mm5		\n\t"\
 		"paddw %%mm2, %%mm3		\n\t"\
 		"paddw %%mm5, %%mm4		\n\t"\
-		"addl $1, %%edx			\n\t"\
+		"testl %%esi, %%esi		\n\t"\
 		" jnz 2b			\n\t"\
 \
-		"movl %0, %%edx			\n\t" /* -lumFilterSize */\
-		"movl %2, %%ebx			\n\t" /* lumMmxFilter+lumFilterSize */\
-		"movl %6, %%ecx			\n\t" /* lumSrc+lumFilterSize */\
+		"leal "LUM_MMX_FILTER_OFFSET"(%0), %%edx	\n\t"\
+		"movl (%%edx), %%esi		\n\t"\
 		"pxor %%mm1, %%mm1		\n\t"\
 		"pxor %%mm7, %%mm7		\n\t"\
+		".balign 16			\n\t"\
 		"2:				\n\t"\
-		"movl (%%ecx, %%edx, 4), %%esi	\n\t"\
-		"movq (%%ebx, %%edx, 8), %%mm0	\n\t" /* filterCoeff */\
+		"movq 8(%%edx), %%mm0		\n\t" /* filterCoeff */\
 		"movq (%%esi, %%eax, 2), %%mm2	\n\t" /* Y1srcData */\
 		"movq 8(%%esi, %%eax, 2), %%mm5	\n\t" /* Y2srcData */\
+		"addl $16, %%edx		\n\t"\
+		"movl (%%edx), %%esi		\n\t"\
 		"pmulhw %%mm0, %%mm2		\n\t"\
 		"pmulhw %%mm0, %%mm5		\n\t"\
 		"paddw %%mm2, %%mm1		\n\t"\
 		"paddw %%mm5, %%mm7		\n\t"\
-		"addl $1, %%edx			\n\t"\
+		"testl %%esi, %%esi		\n\t"\
 		" jnz 2b			\n\t"\
 
 
 #define YSCALEYUV2RGBX \
 		YSCALEYUV2PACKEDX\
-		"psubw "MANGLE(w400)", %%mm3	\n\t" /* (U-128)8*/\
-		"psubw "MANGLE(w400)", %%mm4	\n\t" /* (V-128)8*/\
+		"psubw "U_OFFSET"(%0), %%mm3	\n\t" /* (U-128)8*/\
+		"psubw "V_OFFSET"(%0), %%mm4	\n\t" /* (V-128)8*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
 		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
-		"pmulhw "MANGLE(ugCoeff)", %%mm3\n\t"\
-		"pmulhw "MANGLE(vgCoeff)", %%mm4\n\t"\
+		"pmulhw "UG_COEFF"(%0), %%mm3	\n\t"\
+		"pmulhw "VG_COEFF"(%0), %%mm4	\n\t"\
 	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
-		"pmulhw "MANGLE(ubCoeff)", %%mm2\n\t"\
-		"pmulhw "MANGLE(vrCoeff)", %%mm5\n\t"\
-		"psubw "MANGLE(w80)", %%mm1	\n\t" /* 8(Y-16)*/\
-		"psubw "MANGLE(w80)", %%mm7	\n\t" /* 8(Y-16)*/\
-		"pmulhw "MANGLE(yCoeff)", %%mm1	\n\t"\
-		"pmulhw "MANGLE(yCoeff)", %%mm7	\n\t"\
+		"pmulhw "UB_COEFF"(%0), %%mm2	\n\t"\
+		"pmulhw "VR_COEFF"(%0), %%mm5	\n\t"\
+		"psubw "Y_OFFSET"(%0), %%mm1	\n\t" /* 8(Y-16)*/\
+		"psubw "Y_OFFSET"(%0), %%mm7	\n\t" /* 8(Y-16)*/\
+		"pmulhw "Y_COEFF"(%0), %%mm1	\n\t"\
+		"pmulhw "Y_COEFF"(%0), %%mm7	\n\t"\
 	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
 		"paddw %%mm3, %%mm4		\n\t"\
 		"movq %%mm2, %%mm0		\n\t"\
@@ -183,7 +189,7 @@
 		"packuswb %%mm6, %%mm5		\n\t"\
 		"packuswb %%mm3, %%mm4		\n\t"\
 		"pxor %%mm7, %%mm7		\n\t"
-
+#if 0
 #define FULL_YSCALEYUV2RGB \
 		"pxor %%mm7, %%mm7		\n\t"\
 		"movd %6, %%mm6			\n\t" /*yalpha1*/\
@@ -236,6 +242,7 @@
 		"paddw %%mm2, %%mm1		\n\t" /* G*/\
 \
 		"packuswb %%mm1, %%mm1		\n\t"
+#endif
 
 #define YSCALEYUV2PACKED \
 		"movd %6, %%mm6			\n\t" /*yalpha1*/\
@@ -742,33 +749,34 @@
 			" jb 1b				\n\t"
 
 
-static inline void RENAME(yuv2yuvX)(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+static inline void RENAME(yuv2yuvX)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
 				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW,
-				    int16_t * lumMmxFilter, int16_t * chrMmxFilter)
+				    int32_t * lumMmxFilter, int32_t * chrMmxFilter)
 {
+	int dummy=0;
 #ifdef HAVE_MMX
 	if(uDest != NULL)
 	{
 		asm volatile(
-				YSCALEYUV2YV12X(0)
-				:: "m" (-chrFilterSize), "r" (chrSrc+chrFilterSize),
-				"r" (chrMmxFilter+chrFilterSize*4), "r" (uDest), "m" (chrDstW)
+				YSCALEYUV2YV12X(0, CHR_MMX_FILTER_OFFSET)
+				:: "r" (&c->redDither),
+				"r" (uDest), "m" (chrDstW)
 				: "%eax", "%edx", "%esi"
 			);
 
 		asm volatile(
-				YSCALEYUV2YV12X(4096)
-				:: "m" (-chrFilterSize), "r" (chrSrc+chrFilterSize),
-				"r" (chrMmxFilter+chrFilterSize*4), "r" (vDest), "m" (chrDstW)
+				YSCALEYUV2YV12X(4096, CHR_MMX_FILTER_OFFSET)
+				:: "r" (&c->redDither),
+				"r" (vDest), "m" (chrDstW)
 				: "%eax", "%edx", "%esi"
 			);
 	}
 
 	asm volatile(
-			YSCALEYUV2YV12X(0)
-			:: "m" (-lumFilterSize), "r" (lumSrc+lumFilterSize),
-			   "r" (lumMmxFilter+lumFilterSize*4), "r" (dest), "m" (dstW)
+			YSCALEYUV2YV12X(0, LUM_MMX_FILTER_OFFSET)
+			:: "r" (&c->redDither),
+			   "r" (dest), "m" (dstW)
 			: "%eax", "%edx", "%esi"
 		);
 #else
@@ -844,8 +852,9 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
  */
 static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-			    uint8_t *dest, int dstW, int16_t * lumMmxFilter, int16_t * chrMmxFilter, int dstY)
+			    uint8_t *dest, int dstW, int dstY)
 {
+	int dummy=0;
 	switch(c->dstFormat)
 	{
 #ifdef HAVE_MMX
@@ -855,11 +864,10 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				YSCALEYUV2RGBX
 				WRITEBGR32
 
-			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
-			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
-			   "r" (dest), "m" (dstW),
-			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
-			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			:: "r" (&c->redDither), 
+			   "m" (dummy), "m" (dummy), "m" (dummy),
+			   "r" (dest), "m" (dstW)
+			: "%eax", "%edx", "%esi"
 			);
 		}
 		break;
@@ -871,11 +879,10 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				"addl %4, %%ebx			\n\t"
 				WRITEBGR24
 
-			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
-			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
-			   "r" (dest), "m" (dstW),
-			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
-			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			:: "r" (&c->redDither), 
+			   "m" (dummy), "m" (dummy), "m" (dummy),
+			   "r" (dest), "m" (dstW)
+			: "%eax", "%ebx", "%edx", "%esi" //FIXME ebx
 			);
 		}
 		break;
@@ -892,11 +899,10 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 
 				WRITEBGR15
 
-			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
-			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
-			   "r" (dest), "m" (dstW),
-			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
-			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			:: "r" (&c->redDither), 
+			   "m" (dummy), "m" (dummy), "m" (dummy),
+			   "r" (dest), "m" (dstW)
+			: "%eax", "%edx", "%esi"
 			);
 		}
 		break;
@@ -913,11 +919,10 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 
 				WRITEBGR16
 
-			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
-			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
-			   "r" (dest), "m" (dstW),
-			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
-			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			:: "r" (&c->redDither), 
+			   "m" (dummy), "m" (dummy), "m" (dummy),
+			   "r" (dest), "m" (dstW)
+			: "%eax", "%edx", "%esi"
 			);
 		}
 		break;
@@ -933,11 +938,10 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 				"psraw $3, %%mm7		\n\t"
 				WRITEYUY2
 
-			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
-			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
-			   "r" (dest), "m" (dstW),
-			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
-			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			:: "r" (&c->redDither), 
+			   "m" (dummy), "m" (dummy), "m" (dummy),
+			   "r" (dest), "m" (dstW)
+			: "%eax", "%edx", "%esi"
 			);
 		}
 		break;
@@ -2528,8 +2532,8 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	int16_t *vChrFilter= c->vChrFilter;
 	int16_t *hLumFilter= c->hLumFilter;
 	int16_t *hChrFilter= c->hChrFilter;
-	int16_t *lumMmxFilter= c->lumMmxFilter;
-	int16_t *chrMmxFilter= c->chrMmxFilter;
+	int32_t *lumMmxFilter= c->lumMmxFilter;
+	int32_t *chrMmxFilter= c->chrMmxFilter;
 	const int vLumFilterSize= c->vLumFilterSize;
 	const int vChrFilterSize= c->vChrFilterSize;
 	const int hLumFilterSize= c->hLumFilterSize;
@@ -2729,11 +2733,28 @@ i--;
 			{
 				int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
 				int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-				RENAME(yuv2yuvX)(
+				int i;
+#ifdef HAVE_MMX
+				for(i=0; i<vLumFilterSize; i++)
+				{
+					lumMmxFilter[4*i+0]= (int32_t)lumSrcPtr[i];
+					lumMmxFilter[4*i+2]= 
+					lumMmxFilter[4*i+3]= 
+						((uint16_t)vLumFilter[dstY*vLumFilterSize + i])*0x10001;
+				}
+				for(i=0; i<vChrFilterSize; i++)
+				{
+					chrMmxFilter[4*i+0]= (int32_t)chrSrcPtr[i];
+					chrMmxFilter[4*i+2]= 
+					chrMmxFilter[4*i+3]= 
+						((uint16_t)vChrFilter[chrDstY*vChrFilterSize + i])*0x10001;
+				}
+#endif
+				RENAME(yuv2yuvX)(c,
 					vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
 					vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
 					dest, uDest, vDest, dstW, chrDstW,
-					lumMmxFilter+dstY*vLumFilterSize*4, chrMmxFilter+chrDstY*vChrFilterSize*4);
+					lumMmxFilter, chrMmxFilter);
 			}
 		}
 		else
@@ -2760,11 +2781,27 @@ i--;
 			}
 			else //General RGB
 			{
+				int i;
+#ifdef HAVE_MMX
+				for(i=0; i<vLumFilterSize; i++)
+				{
+					lumMmxFilter[4*i+0]= (int32_t)lumSrcPtr[i];
+					lumMmxFilter[4*i+2]= 
+					lumMmxFilter[4*i+3]= 
+						((uint16_t)vLumFilter[dstY*vLumFilterSize + i])*0x10001;
+				}
+				for(i=0; i<vChrFilterSize; i++)
+				{
+					chrMmxFilter[4*i+0]= (int32_t)chrSrcPtr[i];
+					chrMmxFilter[4*i+2]= 
+					chrMmxFilter[4*i+3]= 
+						((uint16_t)vChrFilter[chrDstY*vChrFilterSize + i])*0x10001;
+				}
+#endif
 				RENAME(yuv2packedX)(c,
 					vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
 					vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
-					dest, dstW,
-					lumMmxFilter+dstY*vLumFilterSize*4, chrMmxFilter+dstY*vChrFilterSize*4, dstY);
+					dest, dstW, dstY);
 			}
 		}
             }

@@ -44,6 +44,7 @@
 #define SWS_FULL_CHR_H_INP	0x4000
 #define SWS_DIRECT_BGR		0x8000
 
+#define MAX_FILTER_SIZE 256
 
 #define SWS_MAX_REDUCE_CUTOFF 0.002
 
@@ -70,9 +71,6 @@ typedef struct SwsContext{
 	int16_t *vChrFilter;
 	int16_t *vChrFilterPos;
 
-// Contain simply the values from v(Lum|Chr)Filter just nicely packed for mmx
-	int16_t  *lumMmxFilter;
-	int16_t  *chrMmxFilter;
 	uint8_t formatConvBuffer[4000]; //FIXME dynamic alloc, but we have to change alot of code for this to be usefull
 
 	int hLumFilterSize;
@@ -105,8 +103,40 @@ typedef struct SwsContext{
 
 	void (*swScale)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]);
+
+#define RED_DITHER   "0*8"
+#define GREEN_DITHER "1*8"
+#define BLUE_DITHER  "2*8"
+#define Y_COEFF      "3*8"
+#define VR_COEFF     "4*8"
+#define UB_COEFF     "5*8"
+#define VG_COEFF     "6*8"
+#define UG_COEFF     "7*8"
+#define Y_OFFSET     "8*8"
+#define U_OFFSET     "9*8"
+#define V_OFFSET     "10*8"
+#define LUM_MMX_FILTER_OFFSET "11*8"
+#define CHR_MMX_FILTER_OFFSET "11*8+4*4*256"
+                  
+	uint64_t redDither   __attribute__((aligned(8)));
+	uint64_t greenDither __attribute__((aligned(8)));
+	uint64_t blueDither  __attribute__((aligned(8)));
+
+	uint64_t yCoeff      __attribute__((aligned(8)));
+	uint64_t vrCoeff     __attribute__((aligned(8)));
+	uint64_t ubCoeff     __attribute__((aligned(8)));
+	uint64_t vgCoeff     __attribute__((aligned(8)));
+	uint64_t ugCoeff     __attribute__((aligned(8)));
+	uint64_t yOffset     __attribute__((aligned(8)));
+	uint64_t uOffset     __attribute__((aligned(8)));
+	uint64_t vOffset     __attribute__((aligned(8)));
+	int32_t  lumMmxFilter[4*MAX_FILTER_SIZE];
+	int32_t  chrMmxFilter[4*MAX_FILTER_SIZE];
+	
 } SwsContext;
 //FIXME check init (where 0)
+//FIXME split private & public
+
 
 // when used for filters they must have an odd number of elements
 // coeffs cannot be shared between vectors

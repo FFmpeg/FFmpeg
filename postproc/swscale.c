@@ -2019,6 +2019,15 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	c->dstFormat= dstFormat;
 	c->srcFormat= srcFormat;
 
+	c->yCoeff=    0x2568256825682568LL;
+	c->vrCoeff=   0x3343334333433343LL;
+	c->ubCoeff=   0x40cf40cf40cf40cfLL;
+	c->vgCoeff=   0xE5E2E5E2E5E2E5E2LL;
+	c->ugCoeff=   0xF36EF36EF36EF36ELL;
+	c->yOffset=   0x0080008000800080LL;
+	c->uOffset=   0x0400040004000400LL;
+	c->vOffset=   0x0400040004000400LL;
+
 	usesFilter=0;
 	if(dstFilter->lumV!=NULL && dstFilter->lumV->length>1) usesFilter=1;
 	if(dstFilter->lumH!=NULL && dstFilter->lumH->length>1) usesFilter=1;
@@ -2260,19 +2269,6 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	for(i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, 8000);
 
 	ASSERT(c->chrDstH <= dstH)
-
-	// pack filter data for mmx code
-	if(cpuCaps.hasMMX)
-	{
-		c->lumMmxFilter= (int16_t*)memalign(8, c->vLumFilterSize*      dstH*4*sizeof(int16_t));
-		c->chrMmxFilter= (int16_t*)memalign(8, c->vChrFilterSize*c->chrDstH*4*sizeof(int16_t));
-		for(i=0; i<c->vLumFilterSize*dstH; i++)
-			c->lumMmxFilter[4*i]=c->lumMmxFilter[4*i+1]=c->lumMmxFilter[4*i+2]=c->lumMmxFilter[4*i+3]=
-				c->vLumFilter[i];
-		for(i=0; i<c->vChrFilterSize*c->chrDstH; i++)
-			c->chrMmxFilter[4*i]=c->chrMmxFilter[4*i+1]=c->chrMmxFilter[4*i+2]=c->chrMmxFilter[4*i+3]=
-				c->vChrFilter[i];
-	}
 
 	if(flags&SWS_PRINT_INFO)
 	{
@@ -2667,11 +2663,6 @@ void freeSwsContext(SwsContext *c){
 	c->hLumFilterPos = NULL;
 	if(c->hChrFilterPos) free(c->hChrFilterPos);
 	c->hChrFilterPos = NULL;
-
-	if(c->lumMmxFilter) free(c->lumMmxFilter);
-	c->lumMmxFilter = NULL;
-	if(c->chrMmxFilter) free(c->chrMmxFilter);
-	c->chrMmxFilter = NULL;
 
 	if(c->lumMmx2Filter) free(c->lumMmx2Filter);
 	c->lumMmx2Filter=NULL;
