@@ -318,6 +318,11 @@ static int decode_init(AVCodecContext * avctx)
     static int init=0;
     int i, j, k;
 
+    if(avctx->antialias_algo == FF_AA_INT)
+        s->compute_antialias= compute_antialias_integer;
+    else
+        s->compute_antialias= compute_antialias_float;
+
     if (!init && !avctx->parse_only) {
         /* scale factors table for layer 1/2 */
         for(i=0;i<64;i++) {
@@ -463,10 +468,6 @@ static int decode_init(AVCodecContext * avctx)
             }
         }
 
-        if(avctx->antialias_algo == FF_AA_INT)
-            s->compute_antialias= compute_antialias_integer;
-        else
-            s->compute_antialias= compute_antialias_float;
         for(i=0;i<8;i++) {
             float ci, cs, ca;
             ci = ci_table[i];
