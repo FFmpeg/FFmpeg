@@ -78,6 +78,7 @@ static int video_qscale = 0;
 static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
 static int same_quality = 0;
+static int do_deinterlace = 0;
 
 static int gop_size = 12;
 static int intra_only = 0;
@@ -449,26 +450,24 @@ int av_grab(AVFormatContext *s)
         }
 
         if (use_video) {
-            AVPicture *picture1;
-            AVPicture picture;
-            UINT8 *pict_buffer;
+            AVPicture *picture1, *picture2, *picture;
+            AVPicture picture_tmp0, picture_tmp1;
 
             ret = url_read(video_handle, picture_in_buf, picture_size);
             if (ret < 0)
                 break;
+            
+            picture2 = &picture_tmp0;
+            avpicture_fill(picture2, picture_in_buf, pix_fmt, width, height);
+
             if (pix_fmt != PIX_FMT_YUV420P) {
-                pict_buffer = picture_420p;
-                img_convert_to_yuv420(pict_buffer, picture_in_buf, pix_fmt, width, height);
+                picture = &picture_tmp1;
+                img_convert(picture, PIX_FMT_YUV420P,
+                            picture2, pix_fmt, 
+                            width, height);
             } else {
-                pict_buffer = picture_in_buf;
+                picture = picture2;
             }
-            /* build a picture storage */
-            picture.data[0] = pict_buffer;
-            picture.data[1] = picture.data[0] + width * height;
-            picture.data[2] = picture.data[1] + (width * height) / 4;
-            picture.linesize[0] = width;
-            picture.linesize[1] = width / 2;
-            picture.linesize[2] = width / 2;
             
             for(i=0;i<s->nb_streams;i++) {
                 ost = ost_table[i];
@@ -485,9 +484,9 @@ int av_grab(AVFormatContext *s)
                         if (ost->video_resample) {
                             picture1 = &ost->pict_tmp;
                             img_resample(ost->img_resample_ctx, 
-                                         picture1, &picture);
+                                         picture1, picture);
                         } else {
-                            picture1 = &picture;
+                            picture1 = picture;
                         }
                         ret = avcodec_encode_video(enc, video_buffer, 
                                                    sizeof(video_buffer), 
@@ -662,26 +661,89 @@ static void do_audio_out(AVFormatContext *s,
 }
 
 /* write a picture to a raw mux */
-static void write_picture(AVFormatContext *s, int index, AVPicture *picture, int w, int h)
+static void write_picture(AVFormatContext *s, int index, AVPicture *picture, 
+                          int pix_fmt, int w, int h)
 {
     UINT8 *buf, *src, *dest;
     int size, j, i;
+
+    size = avpicture_get_size(pix_fmt, w, h);
+    buf = malloc(size);
+    if (!buf)
+        return;
+
     /* XXX: not efficient, should add test if we can take
        directly the AVPicture */
-    size = (w * h) * 3 / 2; 
-    buf = malloc(size);
-    dest = buf;
-    for(i=0;i<3;i++) {
-        if (i == 1) {
-            w >>= 1;
-            h >>= 1;
+    switch(pix_fmt) {
+    case PIX_FMT_YUV420P:
+        dest = buf;
+        for(i=0;i<3;i++) {
+            if (i == 1) {
+                w >>= 1;
+                h >>= 1;
+            }
+            src = picture->data[i];
+            for(j=0;j<h;j++) {
+                memcpy(dest, src, w);
+                dest += w;
+                src += picture->linesize[i];
+            }
         }
-        src = picture->data[i];
+        break;
+    case PIX_FMT_YUV422P:
+        size = (w * h) * 2; 
+        buf = malloc(size);
+        dest = buf;
+        for(i=0;i<3;i++) {
+            if (i == 1) {
+                w >>= 1;
+            }
+            src = picture->data[i];
+            for(j=0;j<h;j++) {
+                memcpy(dest, src, w);
+                dest += w;
+                src += picture->linesize[i];
+            }
+        }
+        break;
+    case PIX_FMT_YUV444P:
+        size = (w * h) * 3; 
+        buf = malloc(size);
+        dest = buf;
+        for(i=0;i<3;i++) {
+            src = picture->data[i];
+            for(j=0;j<h;j++) {
+                memcpy(dest, src, w);
+                dest += w;
+                src += picture->linesize[i];
+            }
+        }
+        break;
+    case PIX_FMT_YUV422:
+        size = (w * h) * 2; 
+        buf = malloc(size);
+        dest = buf;
+        src = picture->data[0];
         for(j=0;j<h;j++) {
-            memcpy(dest, src, w);
-            dest += w;
-            src += picture->linesize[i];
+            memcpy(dest, src, w * 2);
+            dest += w * 2;
+            src += picture->linesize[0];
         }
+        break;
+    case PIX_FMT_RGB24:
+    case PIX_FMT_BGR24:
+        size = (w * h) * 3; 
+        buf = malloc(size);
+        dest = buf;
+        src = picture->data[0];
+        for(j=0;j<h;j++) {
+            memcpy(dest, src, w * 3);
+            dest += w * 3;
+            src += picture->linesize[0];
+        }
+        break;
+    default:
+        return;
     }
     s->format->write_packet(s, index, buf, size);
     free(buf);
@@ -691,23 +753,75 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture, int
 static void do_video_out(AVFormatContext *s, 
                          AVOutputStream *ost, 
                          AVInputStream *ist,
-                         AVPicture *pict)
+                         AVPicture *picture1)
 {
     int n1, n2, nb, i, ret, frame_number;
-    AVPicture *picture;
+    AVPicture *picture, *picture2, *pict;
+    AVPicture picture_tmp1, picture_tmp2;
     UINT8 video_buffer[128*1024];
-    AVCodecContext *enc;
+    UINT8 *buf = NULL, *buf1 = NULL;
+    AVCodecContext *enc, *dec;
 
     enc = &ost->st->codec;
+    dec = &ist->st->codec;
 
     frame_number = ist->frame_number;
     /* first drop frame if needed */
-    n1 = ((INT64)frame_number * enc->frame_rate) / ist->st->codec.frame_rate;
-    n2 = (((INT64)frame_number + 1) * enc->frame_rate) / ist->st->codec.frame_rate;
+    n1 = ((INT64)frame_number * enc->frame_rate) / dec->frame_rate;
+    n2 = (((INT64)frame_number + 1) * enc->frame_rate) / dec->frame_rate;
     nb = n2 - n1;
     if (nb <= 0)
         return;
     
+    /* deinterlace : must be done before any resize */
+    if (do_deinterlace) {
+        int size;
+
+        /* create temporary picture */
+        size = avpicture_get_size(dec->pix_fmt, dec->width, dec->height);
+        buf1 = malloc(size);
+        if (!buf1)
+            return;
+        
+        picture2 = &picture_tmp2;
+        avpicture_fill(picture2, buf1, dec->pix_fmt, dec->width, dec->height);
+
+        if (avpicture_deinterlace(picture2, picture1, 
+                                  dec->pix_fmt, dec->width, dec->height) < 0) {
+            /* if error, do not deinterlace */
+            free(buf1);
+            buf1 = NULL;
+            picture2 = picture1;
+        }
+    } else {
+        picture2 = picture1;
+    }
+
+    /* convert pixel format if needed */
+    if (enc->pix_fmt != dec->pix_fmt) {
+        int size;
+
+        /* create temporary picture */
+        size = avpicture_get_size(enc->pix_fmt, dec->width, dec->height);
+        buf = malloc(size);
+        if (!buf)
+            return;
+        pict = &picture_tmp1;
+        avpicture_fill(pict, buf, enc->pix_fmt, dec->width, dec->height);
+        
+        if (img_convert(pict, enc->pix_fmt, 
+                        picture2, dec->pix_fmt, 
+                        dec->width, dec->height) < 0) {
+            fprintf(stderr, "pixel format conversion not handled\n");
+            goto the_end;
+        }
+    } else {
+        pict = picture2;
+    }
+
+    /* XXX: resampling could be done before raw format convertion in
+       some cases to go faster */
+    /* XXX: only works for YUV420P */
     if (ost->video_resample) {
         picture = &ost->pict_tmp;
         img_resample(ost->img_resample_ctx, picture, pict);
@@ -722,16 +836,21 @@ static void do_video_out(AVFormatContext *s,
             /* handles sameq here. This is not correct because it may
                not be a global option */
             if (same_quality) {
-                ost->st->codec.quality = ist->st->codec.quality;
+                enc->quality = dec->quality;
             }
-            ret = avcodec_encode_video(&ost->st->codec, 
+            ret = avcodec_encode_video(enc, 
                                        video_buffer, sizeof(video_buffer), 
                                        picture);
             s->format->write_packet(s, ost->index, video_buffer, ret);
         } else {
-            write_picture(s, ost->index, picture, enc->width, enc->height);
+            write_picture(s, ost->index, picture, enc->pix_fmt, enc->width, enc->height);
         }
     }
+    the_end:
+    if (buf)
+        free(buf);
+    if (buf1)
+        free(buf1);
 }
 
 //#define HEX_DUMP
@@ -1101,13 +1220,10 @@ static int av_encode(AVFormatContext **output_files,
                     if (ist->st->codec.codec_id == CODEC_ID_RAWVIDEO) {
                         int size;
                         size = (ist->st->codec.width * ist->st->codec.height);
-                        
-                        picture.data[0] = ptr;
-                        picture.data[1] = picture.data[0] + size;
-                        picture.data[2] = picture.data[1] + size / 4;
-                        picture.linesize[0] = ist->st->codec.width;
-                        picture.linesize[1] = ist->st->codec.width / 2;
-                        picture.linesize[2] = ist->st->codec.width / 2;
+                        avpicture_fill(&picture, ptr, 
+                                     ist->st->codec.pix_fmt,
+                                     ist->st->codec.width,
+                                     ist->st->codec.height);
                         ret = len;
                     } else {
                         data_size = (ist->st->codec.width * ist->st->codec.height * 3) / 2;
@@ -1800,6 +1916,11 @@ void opt_output_file(const char *filename)
                 video_enc->flags |= CODEC_FLAG_QSCALE;
                 video_enc->quality = video_qscale;
             }
+            /* XXX: need to find a way to set codec parameters */
+            if (oc->format == &ppm_format ||
+                oc->format == &ppmpipe_format) {
+                video_enc->pix_fmt = PIX_FMT_RGB24;
+            }
 
             oc->streams[nb_streams] = st;
             nb_streams++;
@@ -2013,6 +2134,8 @@ const OptionDef options[] = {
     { "an", OPT_BOOL, {int_arg: &audio_disable}, "disable audio" },
     { "ad", HAS_ARG | OPT_EXPERT, {opt_audio_device}, "set audio device", "device" },
     { "acodec", HAS_ARG | OPT_EXPERT, {opt_audio_codec}, "force audio codec", "codec" },
+    { "deinterlace", OPT_BOOL | OPT_EXPERT, {int_arg: &do_deinterlace}, 
+      "deinterlace pictures" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {int_arg: &do_benchmark}, 
       "add timings for benchmarking" },
 
