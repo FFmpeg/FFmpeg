@@ -861,8 +861,8 @@ static void av_read_frame_flush(AVFormatContext *s)
 }
 
 /* add a index entry into a sorted list updateing if it is already there */
-void av_add_index_entry(AVStream *st,
-                            int64_t pos, int64_t timestamp, int flags)
+int av_add_index_entry(AVStream *st,
+                            int64_t pos, int64_t timestamp, int distance, int flags)
 {
     AVIndexEntry *entries, *ie;
     int index;
@@ -890,12 +890,17 @@ void av_add_index_entry(AVStream *st,
             }
             st->nb_index_entries++;
         }
-    }else
-        ie= &entries[st->nb_index_entries++];
+    }else{
+        index= st->nb_index_entries++;
+        ie= &entries[index];
+    }
     
     ie->pos = pos;
     ie->timestamp = timestamp;
+    ie->min_distance= distance;
     ie->flags = flags;
+    
+    return index;
 }
 
 /* build an index for raw streams using a parser */
@@ -916,7 +921,7 @@ static void av_build_index_raw(AVFormatContext *s)
         if (pkt->stream_index == 0 && st->parser &&
             (pkt->flags & PKT_FLAG_KEY)) {
             av_add_index_entry(st, st->parser->frame_offset, pkt->dts, 
-                            AVINDEX_KEYFRAME);
+                            0, AVINDEX_KEYFRAME);
         }
         av_free_packet(pkt);
     }

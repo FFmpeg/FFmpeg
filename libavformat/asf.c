@@ -1355,11 +1355,17 @@ static int64_t asf_read_pts(AVFormatContext *s, int64_t *ppos, int stream_index)
     ASFStream *asf_st;
     int64_t pts;
     int64_t pos= *ppos;
+    int i;
+    int64_t start_pos[s->nb_streams];
+    
+    for(i=0; i<s->nb_streams; i++){
+        start_pos[i]= pos;
+    }
 
 //printf("asf_read_pts\n");
     url_fseek(&s->pb, pos*asf->packet_size + s->data_offset, SEEK_SET);
     asf_reset_header(s);
-    do{
+    for(;;){
         if (av_read_frame(s, pkt) < 0){
             printf("seek failed\n");
     	    return AV_NOPTS_VALUE;
@@ -1367,11 +1373,23 @@ static int64_t asf_read_pts(AVFormatContext *s, int64_t *ppos, int stream_index)
         pts= pkt->pts;
 
         av_free_packet(pkt);
-    }while(pkt->stream_index != stream_index || !(pkt->flags&PKT_FLAG_KEY));
-    asf_st= s->streams[stream_index]->priv_data;
+        if(pkt->flags&PKT_FLAG_KEY){
+            i= pkt->stream_index;
 
-    assert((asf_st->packet_pos - s->data_offset) % asf->packet_size == 0);
-    *ppos= (asf_st->packet_pos - s->data_offset) / asf->packet_size;
+            asf_st= s->streams[i]->priv_data;
+
+            assert((asf_st->packet_pos - s->data_offset) % asf->packet_size == 0);
+            pos= (asf_st->packet_pos - s->data_offset) / asf->packet_size;
+
+            av_add_index_entry(s->streams[i], pos, pts, pos - start_pos[i] + 1, AVINDEX_KEYFRAME);
+            start_pos[i]= pos + 1;
+            
+            if(pkt->stream_index == stream_index)
+               break;
+        }
+    }
+
+    *ppos= pos;
 //printf("found keyframe at %Ld stream %d stamp:%Ld\n", *ppos, stream_index, pts);
 
     return pts;
@@ -1380,33 +1398,70 @@ static int64_t asf_read_pts(AVFormatContext *s, int64_t *ppos, int stream_index)
 static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
 {
     ASFContext *asf = s->priv_data;
+    AVStream *st;
     int64_t pos;
     int64_t pos_min, pos_max, pts_min, pts_max, cur_pts, pos_limit;
-
+    
     if (stream_index == -1)
         stream_index= av_find_default_stream_index(s);
     
     if (asf->packet_size <= 0)
         return -1;
 
-    pos_min = 0;
-    pts_min = asf_read_pts(s, &pos_min, stream_index);
-    if (pts_min == AV_NOPTS_VALUE) return -1;
-   
-    pos_max = (url_filesize(url_fileno(&s->pb)) - 1 - s->data_offset) / asf->packet_size; //FIXME wrong
-    pts_max = pts_min + s->duration;
-    pos_limit= pos_max;
+    pts_max=
+    pts_min= AV_NOPTS_VALUE;
+    pos_max= pos_limit= -1; // gcc thinks its uninitalized
+
+    st= s->streams[stream_index];
+    if(st->index_entries){
+        AVIndexEntry *e;
+        int index;
+
+        index= av_index_search_timestamp(st, pts);
+        e= &st->index_entries[index];
+        if(e->timestamp <= pts){
+            pos_min= e->pos;
+            pts_min= e->timestamp;
+#ifdef DEBUG_SEEK
+        printf("unsing cached pos_min=0x%llx dts_min=%0.3f\n", 
+               pos_min,pts_min / 90000.0);
+#endif
+        }else{
+            assert(index==0);
+        }
+        index++;
+        if(index < st->nb_index_entries){
+            e= &st->index_entries[index];
+            assert(e->timestamp >= pts);
+            pos_max= e->pos;
+            pts_max= e->timestamp;
+            pos_limit= pos_max - e->min_distance;
+#ifdef DEBUG_SEEK
+        printf("unsing cached pos_max=0x%llx dts_max=%0.3f\n", 
+               pos_max,pts_max / 90000.0);
+#endif
+        }
+    }
+
+    if(pts_min == AV_NOPTS_VALUE){
+        pos_min = 0;
+        pts_min = asf_read_pts(s, &pos_min, stream_index);
+        if (pts_min == AV_NOPTS_VALUE) return -1;
+    }
+    if(pts_max == AV_NOPTS_VALUE){
+        pos_max = (url_filesize(url_fileno(&s->pb)) - 1 - s->data_offset) / asf->packet_size; //FIXME wrong
+        pts_max = s->duration; //FIXME wrong
+        pos_limit= pos_max;
+    } 
 
     while (pos_min < pos_limit) {
         int64_t start_pos;
-
         assert(pos_limit <= pos_max);
 
         // interpolate position (better than dichotomy)
         pos = (int64_t)((double)(pos_limit - pos_min) *
                         (double)(pts - pts_min) /
                         (double)(pts_max - pts_min)) + pos_min;
-        pos/= asf->packet_size;
         if(pos <= pos_min)
             pos= pos_min + 1;
         else if(pos > pos_limit)
@@ -1415,8 +1470,11 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
 
         // read the next timestamp 
     	cur_pts = asf_read_pts(s, &pos, stream_index);    
-
+#ifdef DEBUG_SEEK
+printf("%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%Ld\n", pos_min, pos, pos_max, pts_min, cur_pts, pts_max, pts, pos_limit, start_pos);
+#endif
         if (cur_pts == AV_NOPTS_VALUE) {
+            printf("NOPTS\n");
             return -1;
         } else if (pts < cur_pts) {
             pos_limit = start_pos - 1;
