@@ -270,7 +270,8 @@ static int wma_decode_init(AVCodecContext * avctx)
     /* compute MDCT block size */
     if (s->sample_rate <= 16000) {
         s->frame_len_bits = 9;
-    } else if (s->sample_rate <= 32000 && s->version == 1) {
+    } else if (s->sample_rate <= 22050 || 
+               (s->sample_rate <= 32000 && s->version == 1)) {
         s->frame_len_bits = 10;
     } else {
         s->frame_len_bits = 11;
@@ -472,7 +473,7 @@ static int wma_decode_init(AVCodecContext * avctx)
 
     /* init MDCT */
     for(i = 0; i < s->nb_block_sizes; i++)
-        mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 1);
+        ff_mdct_init(&s->mdct_ctx[i], s->frame_len_bits - i + 1, 1);
     
     /* init MDCT windows : simple sinus window */
     for(i = 0; i < s->nb_block_sizes; i++) {
@@ -1116,8 +1117,8 @@ static int wma_decode_block(WMADecodeContext *s)
 
             n = s->block_len;
             n4 = s->block_len / 2;
-            imdct_calc(&s->mdct_ctx[bsize], 
-                       output, s->coefs[ch], s->mdct_tmp);
+            ff_imdct_calc(&s->mdct_ctx[bsize], 
+                          output, s->coefs[ch], s->mdct_tmp);
 
             /* XXX: optimize all that by build the window and
                multipying/adding at the same time */
@@ -1295,7 +1296,7 @@ static int wma_decode_end(AVCodecContext *avctx)
     int i;
 
     for(i = 0; i < s->nb_block_sizes; i++)
-        mdct_end(&s->mdct_ctx[i]);
+        ff_mdct_end(&s->mdct_ctx[i]);
     for(i = 0; i < s->nb_block_sizes; i++)
         av_free(s->windows[i]);
 
