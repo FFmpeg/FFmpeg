@@ -342,7 +342,7 @@ static int init_pass2(MpegEncContext *s)
             q= 1/((1/avg_quantizer[pict_type] - 1/short_term_q)*s->qcompress + 1/short_term_q);
             if     (q<qmin) q=qmin;
             else if(q>qmax) q=qmax;
-printf("lq:%f, sq:%f t:%f q:%f\n", avg_quantizer[rce->pict_type], short_term_q, bits_left, q);
+//printf("lq:%f, sq:%f t:%f q:%f\n", avg_quantizer[rce->pict_type], short_term_q, bits_left, q);
             rce->new_qscale= q;
         }
 
