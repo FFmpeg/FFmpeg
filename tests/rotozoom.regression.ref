@@ -107,8 +107,8 @@ d847c144e7b72027531047ea4c441cbf *./data/a-flv.flv
 131771 ./data/a-flv.flv
 e61cd1e7c5a292d396ae90f4d2fb3db7 *./data/out.yuv
 stddev:  5.33 PSNR:33.57 bytes:7602176
-0db09835ebc3d22f166f30879f3ccc38 *./data/a-ffv1.avi
-3524824 ./data/a-ffv1.avi
+9de6fde85d9ec1d533b0bdd07703067c *./data/a-ffv1.avi
+3524768 ./data/a-ffv1.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
 656c246a70e0fb8961c20eb51c87c233 *./data/a-svq1.mov
