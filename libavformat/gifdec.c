@@ -18,6 +18,8 @@
  */
 #include "avformat.h"
 
+int gif_write(ByteIOContext *pb, AVImageInfo *info);
+
 //#define DEBUG
 
 #define MAXBITS		12
@@ -35,8 +37,8 @@ typedef struct GifState {
     int background_color_index;
     int transparent_color_index;
     int color_resolution;
-    int image_count;
     uint8_t *image_buf;
+    int image_linesize;
     /* after the frame is displayed, the disposal method is used */
     int gce_disposal;
     /* delay during which the frame is shown */
@@ -81,15 +83,59 @@ static const uint16_t mask[17] =
     0x0FFF, 0x1FFF, 0x3FFF, 0x7FFF, 0xFFFF
 };
 
-static int gif_probe(AVProbeData * pd)
+/* Probe gif video format or gif image format. The current heuristic
+   supposes the gif87a is always a single image. For gif89a, we
+   consider it as a video only if a GCE extension is present in the
+   first kilobyte. */
+static int gif_video_probe(AVProbeData * pd)
+{
+    const uint8_t *p, *p_end;
+    int bits_per_pixel, has_global_palette, ext_code, ext_len;
+    
+    if (pd->buf_size < 24 ||
+	memcmp(pd->buf, gif89a_sig, 6) != 0)
+        return 0;
+    p_end = pd->buf + pd->buf_size;
+    p = pd->buf + 6;
+    bits_per_pixel = (p[4] & 0x07) + 1;
+    has_global_palette = (p[4] & 0x80);
+    p += 7;
+    if (has_global_palette)
+        p += (1 << bits_per_pixel) * 3;
+    for(;;) {
+        if (p >= p_end)
+            return 0;
+        if (*p != '!')
+            break;
+        p++;
+        if (p >= p_end)
+            return 0;
+        ext_code = *p++;
+        /* if GCE extension found: it is likely to be an animation */
+        if (ext_code == 0xf9)
+            return AVPROBE_SCORE_MAX;
+        for(;;) {
+            if (p >= p_end)
+                return 0;
+            ext_len = *p++;
+            if (ext_len == 0)
+                break;
+            p += ext_len;
+        }
+    }
+    return 0;
+}
+
+static int gif_image_probe(AVProbeData * pd)
 {
     if (pd->buf_size >= 24 &&
 	(memcmp(pd->buf, gif87a_sig, 6) == 0 ||
 	 memcmp(pd->buf, gif89a_sig, 6) == 0))
-	return AVPROBE_SCORE_MAX;
+	return AVPROBE_SCORE_MAX - 1;
     else
 	return 0;
 }
+
 
 static void GLZWDecodeInit(GifState * s, int csize)
 {
@@ -224,13 +270,12 @@ static int GLZWDecode(GifState * s, uint8_t * buf, int len)
     return len - l;
 }
 
-static int gif_read_image(AVFormatContext * s1, AVPacket * pkt)
+static int gif_read_image(GifState *s)
 {
-    GifState *s = s1->priv_data;
+    ByteIOContext *f = s->f;
     int left, top, width, height, bits_per_pixel, code_size, flags;
-    int is_interleaved, has_local_palette, y, x, linesize;
-    ByteIOContext *f = &s1->pb;
-    uint8_t *ptr, *line, *d, *spal, *palette, *sptr;
+    int is_interleaved, has_local_palette, y, x, pass, y1, linesize;
+    uint8_t *ptr, *line, *d, *spal, *palette, *sptr, *ptr1;
 
     left = get_le16(f);
     top = get_le16(f);
@@ -251,23 +296,10 @@ static int gif_read_image(AVFormatContext * s1, AVPacket * pkt)
         palette = s->global_palette;
     }
     
-    /* allocate local image (XXX: horrible, needs API change) */
-    if (s->image_count == 0) {
-        /* modify screen width/height if invalid */
-        if (left + width > s->screen_width)
-            s->screen_width = left + width;
-        if (top + height > s->screen_height)
-            s->screen_width = top + height;
-        s->image_buf = av_malloc(s->screen_width * s->screen_height * 3);
-        if (!s->image_buf)
-            return -ENOMEM;
-    } else {
-        /* verify that all the image is inside the screen dimensions */
-        if (left + width > s->screen_width ||
-            top + height > s->screen_height)
-            return -EINVAL;
-    }
-    s->image_count++;
+    /* verify that all the image is inside the screen dimensions */
+    if (left + width > s->screen_width ||
+        top + height > s->screen_height)
+        return -EINVAL;
 
     line = av_malloc(width);
     if (!line)
@@ -279,8 +311,11 @@ static int gif_read_image(AVFormatContext * s1, AVPacket * pkt)
     GLZWDecodeInit(s, code_size);
 
     /* read all the image and transcode it to RGB24 (horrible) */
-    linesize = s->screen_width * 3;
-    ptr = s->image_buf + top * linesize + (left * 3);
+    linesize = s->image_linesize;
+    ptr1 = s->image_buf + top * linesize + (left * 3);
+    ptr = ptr1;
+    pass = 0;
+    y1 = 0;
     for (y = 0; y < height; y++) {
 	GLZWDecode(s, line, width);
         d = ptr;
@@ -293,29 +328,51 @@ static int gif_read_image(AVFormatContext * s1, AVPacket * pkt)
             d += 3;
             sptr++;
         }
-	ptr += linesize;
+        if (is_interleaved) {
+            switch(pass) {
+            default:
+            case 0:
+            case 1:
+                y1 += 8;
+                ptr += linesize * 8;
+                if (y1 >= height) {
+                    y1 = 4;
+                    if (pass == 0) 
+                        ptr = ptr1 + linesize * 4;
+                    else
+                        ptr = ptr1 + linesize * 2;
+                    pass++;
+                }
+                break;
+            case 2:
+                y1 += 4;
+                ptr += linesize * 4;
+                if (y1 >= height) {
+                    y1 = 1;
+                    ptr = ptr1 + linesize;
+                    pass++;
+                }
+                break;
+            case 3:
+                y1 += 2;
+                ptr += linesize * 2;
+                break;
+            }
+        } else {
+            ptr += linesize;
+        }
     }
     av_free(line);
     
     /* read the garbage data until end marker is found */
     while (!s->eob_reached)
         GetCode(s);
-
-    /* output image */
-    /* XXX: avoid copying */
-    if (av_new_packet(pkt, s->screen_width * s->screen_height * 3)) {
-        av_free(line);
-	return -EIO;
-    }
-    pkt->stream_index = 0;
-    memcpy(pkt->data, s->image_buf, s->screen_width * s->screen_height * 3);
     return 0;
 }
 
-static int gif_read_extension(AVFormatContext * s1)
+static int gif_read_extension(GifState *s)
 {
-    GifState *s = s1->priv_data;
-    ByteIOContext *f = &s1->pb;
+    ByteIOContext *f = s->f;
     int ext_code, ext_len, i, gce_flags, gce_transparent_index;
 
     /* extension */
@@ -359,12 +416,9 @@ static int gif_read_extension(AVFormatContext * s1)
     return 0;
 }
 
-static int gif_read_header(AVFormatContext * s1,
-			   AVFormatParameters * ap)
+static int gif_read_header1(GifState *s)
 {
-    GifState *s = s1->priv_data;
-    ByteIOContext *f = &s1->pb;
-    AVStream *st;
+    ByteIOContext *f = s->f;
     uint8_t sig[6];
     int ret, v, n;
     int has_global_palette;
@@ -396,6 +450,60 @@ static int gif_read_header(AVFormatContext * s1,
 	n = 1 << s->bits_per_pixel;
 	get_buffer(f, s->global_palette, n * 3);
     }
+    return 0;
+}
+
+static int gif_parse_next_image(GifState *s)
+{
+    ByteIOContext *f = s->f;
+    int ret, code;
+
+    for (;;) {
+	code = url_fgetc(f);
+#ifdef DEBUG
+	printf("gif: code=%02x '%c'\n", code, code);
+#endif
+	switch (code) {
+	case ',':
+	    if (gif_read_image(s) < 0)
+		return -EIO;
+	    ret = 0;
+	    goto the_end;
+	case ';':
+	    /* end of image */
+	    ret = -EIO;
+	    goto the_end;
+	case '!':
+            if (gif_read_extension(s) < 0)
+                return -EIO;
+	    break;
+	case EOF:
+	default:
+	    /* error or errneous EOF */
+	    ret = -EIO;
+	    goto the_end;
+	}
+    }
+  the_end:
+    return ret;
+}
+
+static int gif_read_header(AVFormatContext * s1,
+			   AVFormatParameters * ap)
+{
+    GifState *s = s1->priv_data;
+    ByteIOContext *f = &s1->pb;
+    AVStream *st;
+
+    s->f = f;
+    if (gif_read_header1(s) < 0)
+        return -1;
+    
+    /* allocate image buffer */
+    s->image_linesize = s->screen_width * 3;
+    s->image_buf = av_malloc(s->screen_height * s->image_linesize);
+    if (!s->image_buf)
+        return -ENOMEM;
     /* now we are ready: build format streams */
     st = av_new_stream(s1, 0);
     if (!st)
@@ -414,37 +522,20 @@ static int gif_read_header(AVFormatContext * s1,
 static int gif_read_packet(AVFormatContext * s1,
 			   AVPacket * pkt)
 {
-    ByteIOContext *f = &s1->pb;
-    int ret, code;
+    GifState *s = s1->priv_data;
+    int ret;
 
-    for (;;) {
-	code = url_fgetc(f);
-#ifdef DEBUG
-	printf("gif: code=%02x '%c'\n", code, code);
-#endif
-	switch (code) {
-	case ',':
-	    if (gif_read_image(s1, pkt) < 0)
-		return -EIO;
-	    ret = 0;
-	    goto the_end;
-	case ';':
-	    /* end of image */
-	    ret = -EIO;
-	    goto the_end;
-	case '!':
-            if (gif_read_extension(s1) < 0)
-                return -EIO;
-	    break;
-	case EOF:
-	default:
-	    /* error or errneous EOF */
-	    ret = -EIO;
-	    goto the_end;
-	}
+    ret = gif_parse_next_image(s);
+    if (ret < 0)
+        return ret;
+
+    /* XXX: avoid copying */
+    if (av_new_packet(pkt, s->screen_width * s->screen_height * 3)) {
+	return -EIO;
     }
-  the_end:
-    return ret;
+    pkt->stream_index = 0;
+    memcpy(pkt->data, s->image_buf, s->screen_width * s->screen_height * 3);
+    return 0;
 }
 
 static int gif_read_close(AVFormatContext *s1)
@@ -454,13 +545,48 @@ static int gif_read_close(AVFormatContext *s1)
     return 0;
 }
 
+/* read gif as image */
+static int gif_read(ByteIOContext *f, 
+                    int (*alloc_cb)(void *opaque, AVImageInfo *info), void *opaque)
+{
+    GifState s1, *s = &s1;
+    AVImageInfo info1, *info = &info1;
+    int ret;
+
+    memset(s, 0, sizeof(GifState));
+    s->f = f;
+    if (gif_read_header1(s) < 0)
+        return -1;
+    info->width = s->screen_width;
+    info->height = s->screen_height;
+    info->pix_fmt = PIX_FMT_RGB24;
+    ret = alloc_cb(opaque, info);
+    if (ret)
+        return ret;
+    s->image_buf = info->pict.data[0];
+    s->image_linesize = info->pict.linesize[0];
+    
+    if (gif_parse_next_image(s) < 0)
+        return -1;
+    return 0;
+}
+
 AVInputFormat gif_iformat =
 {
     "gif",
     "gif format",
     sizeof(GifState),
-    gif_probe,
+    gif_video_probe,
     gif_read_header,
     gif_read_packet,
     gif_read_close,
+};
+
+AVImageFormat gif_image_format = {
+    "gif",
+    "gif",
+    gif_image_probe,
+    gif_read,
+    (1 << PIX_FMT_RGB24),
+    gif_write,
 };
