@@ -63,25 +63,18 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     int fd_max, ret;
     struct timeval tv;
     socklen_t optlen;
+    char proto[1024],path[1024],tmp[1024];  // PETR: protocol and path strings
+
+    url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
+      &port, path, sizeof(path), uri);  // PETR: use url_split
+    if (strcmp(proto,"tcp")) goto fail; // PETR: check protocol
+    if ((q = strchr(hostname,'@'))) { strcpy(tmp,q+1); strcpy(hostname,tmp); } // PETR: take only the part after '@' for tcp protocol
     
     s = av_malloc(sizeof(TCPContext));
     if (!s)
         return -ENOMEM;
     h->priv_data = s;
-    p = uri;
-    if (!strstart(p, "tcp://", &p))
-        goto fail;
-    q = hostname;
-    while (*p != ':' && *p != '/' && *p != '\0') {
-        if ((q - hostname) < sizeof(hostname) - 1)
-            *q++ = *p;
-        p++;
-    }
-    *q = '\0';
-    if (*p != ':')
-        goto fail;
-    p++;
-    port = strtoul(p, (char **)&p, 10);
+    
     if (port <= 0 || port >= 65536)
         goto fail;
     

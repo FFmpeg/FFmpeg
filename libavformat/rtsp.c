@@ -339,7 +339,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
             rtsp_st = st->priv_data;
             
             /* XXX: may need to add full url resolution */
-            url_split(proto, sizeof(proto), NULL, 0, NULL, NULL, 0, p);
+            url_split(proto, sizeof(proto), NULL, 0, NULL, 0, NULL, NULL, 0, p);
             if (proto[0] == '\0') {
                 /* relative control URL */
                 pstrcat(rtsp_st->control_url, sizeof(rtsp_st->control_url), "/");
@@ -723,7 +723,7 @@ static int rtsp_read_header(AVFormatContext *s,
     AVStream *st;
 
     /* extract hostname and port */
-    url_split(NULL, 0,
+    url_split(NULL, 0, NULL, 0,
               host, sizeof(host), &port, path, sizeof(path), s->filename);
     if (port < 0)
         port = RTSP_DEFAULT_PORT;

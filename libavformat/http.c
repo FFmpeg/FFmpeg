@@ -46,8 +46,10 @@ typedef struct {
     char location[URL_SIZE];
 } HTTPContext;
 
-static int http_connect(URLContext *h, const char *path, const char *hoststr);
+static int http_connect(URLContext *h, const char *path, const char *hoststr,
+                        const char *auth);
 static int http_write(URLContext *h, uint8_t *buf, int size);
+static char *b64_encode( unsigned char *src );
 
 
 /* return non zero if error */
@@ -55,6 +57,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
 {
     const char *path, *proxy_path;
     char hostname[1024], hoststr[1024];
+    char auth[1024];
     char path1[1024];
     char buf[1024];
     int port, use_proxy, err;
@@ -76,7 +79,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     /* fill the dest addr */
  redo:
     /* needed in any case to build the host string */
-    url_split(NULL, 0, hostname, sizeof(hostname), &port, 
+    url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port, 
               path1, sizeof(path1), uri);
     if (port > 0) {
         snprintf(hoststr, sizeof(hoststr), "%s:%d", hostname, port);
@@ -85,7 +88,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     }
 
     if (use_proxy) {
-        url_split(NULL, 0, hostname, sizeof(hostname), &port, 
+        url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port, 
                   NULL, 0, proxy_path);
         path = uri;
     } else {
@@ -103,7 +106,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
         goto fail;
 
     s->hd = hd;
-    if (http_connect(h, path, hoststr) < 0)
+    if (http_connect(h, path, hoststr, auth) < 0)
         goto fail;
     if (s->http_code == 303 && s->location[0] != '\0') {
         /* url moved, get next */
@@ -172,7 +175,8 @@ static int process_line(HTTPContext *s, char *line, int line_count)
     return 1;
 }
 
-static int http_connect(URLContext *h, const char *path, const char *hoststr)
+static int http_connect(URLContext *h, const char *path, const char *hoststr,
+                        const char *auth)
 {
     HTTPContext *s = h->priv_data;
     int post, err, ch;
@@ -187,11 +191,13 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr)
              "User-Agent: %s\r\n"
              "Accept: */*\r\n"
              "Host: %s\r\n"
+             "Authorization: Basic %s\r\n"
              "\r\n",
              post ? "POST" : "GET",
              path,
              LIBAVFORMAT_IDENT,
-             hoststr);
+             hoststr,
+             b64_encode(auth));
     
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
         return AVERROR_IO;
@@ -276,4 +282,47 @@ URLProtocol http_protocol = {
     NULL, /* seek */
     http_close,
 };
+
+/*****************************************************************************
+ * b64_encode: stolen from VLC's http.c
+ *****************************************************************************/
+                                                                                
+static char *b64_encode( unsigned char *src )
+{
+    static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+                                                                                
+    char *dst = av_malloc( strlen( src ) * 4 / 3 + 12 );
+    char *ret = dst;
+    unsigned i_bits = 0;
+    unsigned i_shift = 0;
+                                                                                
+    for( ;; )
+    {
+        if( *src )
+        {
+            i_bits = ( i_bits << 8 )|( *src++ );
+            i_shift += 8;
+        }
+        else if( i_shift > 0 )
+        {
+           i_bits <<= 6 - i_shift;
+           i_shift = 6;
+        }
+        else
+        {
+            *dst++ = '=';
+            break;
+        }
+                                                                                
+        while( i_shift >= 6 )
+        {
+            i_shift -= 6;
+            *dst++ = b64[(i_bits >> i_shift)&0x3f];
+        }
+    }
+                                                                                
+    *dst++ = '\0';
+                                                                                
+    return ret;
+}
 

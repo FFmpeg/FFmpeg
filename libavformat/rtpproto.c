@@ -57,7 +57,7 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
     char buf[1024];
     char path[1024];
     
-    url_split(NULL, 0, hostname, sizeof(hostname), &port, 
+    url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, 
               path, sizeof(path), uri);
 
     snprintf(buf, sizeof(buf), "udp://%s:%d%s", hostname, port, path);
@@ -122,7 +122,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         return -ENOMEM;
     h->priv_data = s;
     
-    url_split(NULL, 0, hostname, sizeof(hostname), &port, 
+    url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, 
               path, sizeof(path), uri);
     /* extract parameters */
     is_multicast = 0;

@@ -2499,6 +2499,7 @@ void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload)
 }
 
 void url_split(char *proto, int proto_size,
+               char *authorization, int authorization_size,
                char *hostname, int hostname_size,
                int *port_ptr,
                char *path, int path_size,
@@ -2519,6 +2520,8 @@ void url_split(char *proto, int proto_size,
     }
     if (proto_size > 0)
         *q = '\0';
+    if (authorization_size > 0)
+        authorization[0] = '\0';
     if (*p == '\0') {
         if (proto_size > 0)
             proto[0] = '\0';
@@ -2526,15 +2529,32 @@ void url_split(char *proto, int proto_size,
             hostname[0] = '\0';
         p = url;
     } else {
+        char *at,*slash; // PETR: position of '@' character and '/' character
+
         p++;
         if (*p == '/')
             p++;
         if (*p == '/')
             p++;
-        q = hostname;
-        while (*p != ':' && *p != '/' && *p != '?' && *p != '\0') {
-            if ((q - hostname) < hostname_size - 1)
+        at = strchr(p,'@'); // PETR: get the position of '@'
+        slash = strchr(p,'/');  // PETR: get position of '/' - end of hostname
+        if (at && slash && at > slash) at = NULL; // PETR: not interested in '@' behind '/'
+
+        q = at ? authorization : hostname;  // PETR: if '@' exists starting with auth.
+
+         while ((at || *p != ':') && *p != '/' && *p != '?' && *p != '\0') { // PETR:
+            if (*p == '@') {    // PETR: passed '@'
+              if (authorization_size > 0)
+                  *q = '\0';
+              q = hostname;
+              at = NULL;
+            } else if (!at) {   // PETR: hostname
+              if ((q - hostname) < hostname_size - 1)
+                  *q++ = *p;
+            } else {
+              if ((q - authorization) < authorization_size - 1)
                 *q++ = *p;
+            }
             p++;
         }
         if (hostname_size > 0)

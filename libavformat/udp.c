@@ -60,7 +60,7 @@ int udp_set_remote_url(URLContext *h, const char *uri)
     char hostname[256];
     int port;
     
-    url_split(NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
+    url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
 
     /* set the destination address */
     if (resolve_host(&s->dest_addr.sin_addr, hostname) < 0)
@@ -132,7 +132,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     }
 
     /* fill the dest addr */
-    url_split(NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
+    url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &port, NULL, 0, uri);
     
     /* XXX: fix url_split */
     if (hostname[0] == '\0' || hostname[0] == '?') {
