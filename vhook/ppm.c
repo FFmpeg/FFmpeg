@@ -24,6 +24,7 @@
 #include <sys/wait.h>
 #include <ctype.h>
 #include "framehook.h"
+#include "avformat.h"
 
 /** Bi-directional pipe structure.
 */

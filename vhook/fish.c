@@ -44,6 +44,7 @@
 
 #include "framehook.h"
 #include "dsputil.h"
+#include "avformat.h"
 
 #define SCALEBITS 10
 #define ONE_HALF  (1 << (SCALEBITS - 1))
@@ -337,7 +338,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                     FILE *f;
                     char fname[256];
 
-                    snprintf(fname, sizeof(fname), "%s/fishimg%ld_%lld.ppm", ci->dir, time(0), pts);
+                    snprintf(fname, sizeof(fname), "%s/fishimg%ld_%lld.ppm", ci->dir, (long)(av_gettime() / 1000000), pts);
                     f = fopen(fname, "w");
                     if (f) {
                         fprintf(f, "P6 %d %d 255\n", width, height);
