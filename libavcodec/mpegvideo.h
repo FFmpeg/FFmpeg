@@ -58,8 +58,9 @@ typedef struct MpegEncContext {
     int context_initialized;
     int picture_number;
     int fake_picture_number; /* picture number at the bitstream frame rate */
-    int gop_picture_number; /* index of the first picture of a GOP */
+    int gop_picture_number;  /* index of the first picture of a GOP */
     int mb_width, mb_height;
+    int mb_num;                /* number of MBs of a picture */
     int linesize;              /* line size, in bytes, may be different from width */
     UINT8 *new_picture[3];     /* picture to be compressed */
     UINT8 *last_picture[3];    /* previous picture */
@@ -136,6 +137,7 @@ typedef struct MpegEncContext {
     /* bit rate control */
     int I_frame_bits;    /* wanted number of bits per I frame */
     int P_frame_bits;    /* same for P frame */
+    int avg_mb_var;        /* average MB variance for current frame */
     INT64 wanted_bits;
     INT64 total_bits;
     

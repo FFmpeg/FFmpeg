@@ -115,6 +115,7 @@ int MPV_common_init(MpegEncContext *s)
 #endif
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
+    s->mb_num = s->mb_width * s->mb_height;
     s->linesize = s->mb_width * 16 + 2 * EDGE_WIDTH;
 
     for(i=0;i<3;i++) {
@@ -149,7 +150,7 @@ int MPV_common_init(MpegEncContext *s)
     
     if (s->encoding) {
         /* Allocate MB type table */
-        s->mb_type = malloc(s->mb_width * s->mb_height * sizeof(char));
+        s->mb_type = malloc(s->mb_num * sizeof(char));
         if (s->mb_type == NULL) {
             perror("malloc");
             goto fail;
@@ -157,8 +158,8 @@ int MPV_common_init(MpegEncContext *s)
     
         /* Allocate MV table */
         /* By now we just have one MV per MB */
-        s->mv_table[0] = malloc(s->mb_width * s->mb_height * sizeof(INT16));
-        s->mv_table[1] = malloc(s->mb_width * s->mb_height * sizeof(INT16));
+        s->mv_table[0] = malloc(s->mb_num * sizeof(INT16));
+        s->mv_table[1] = malloc(s->mb_num * sizeof(INT16));
         if (s->mv_table[1] == NULL || s->mv_table[0] == NULL) {
             perror("malloc");
             goto fail;
@@ -204,17 +205,17 @@ int MPV_common_init(MpegEncContext *s)
             goto fail;
 
         /* which mb is a intra block */
-        s->mbintra_table = av_mallocz(s->mb_width * s->mb_height);
+        s->mbintra_table = av_mallocz(s->mb_num);
         if (!s->mbintra_table)
             goto fail;
-        memset(s->mbintra_table, 1, s->mb_width * s->mb_height);
+        memset(s->mbintra_table, 1, s->mb_num);
     }
     /* default structure is frame */
     s->picture_structure = PICT_FRAME;
 
     /* init macroblock skip table */
     if (!s->encoding) {
-        s->mbskip_table = av_mallocz(s->mb_width * s->mb_height);
+        s->mbskip_table = av_mallocz(s->mb_num);
         if (!s->mbskip_table)
             goto fail;
     }
@@ -960,22 +961,12 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         else
             s->gob_index = 4;
     }
-        
+    
+    /* Reset the average MB variance */
+    s->avg_mb_var = 0;
+    
+    /* Estimate motion for every MB */
     for(mb_y=0; mb_y < s->mb_height; mb_y++) {
-        /* Put GOB header based on RTP MTU */
-        /* TODO: Put all this stuff in a separate generic function */
-        if (s->rtp_mode) {
-            if (!mb_y) {
-                s->ptr_lastgob = s->pb.buf;
-                s->ptr_last_mb_line = s->pb.buf;
-            } else if (s->out_format == FMT_H263 && !s->h263_pred && !s->h263_msmpeg4 && !(mb_y % s->gob_index)) {
-                last_gob = h263_encode_gob_header(s, mb_y);
-                if (last_gob) {
-                    s->first_gob_line = 1;
-                }
-            }
-        }
-        
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
             s->mb_x = mb_x;
             s->mb_y = mb_y;
@@ -995,7 +986,25 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->mv_table[0][mb_y * s->mb_width + mb_x] = motion_x;
             s->mv_table[1][mb_y * s->mb_width + mb_x] = motion_y;
         }
-                    
+    }
+    
+    s->avg_mb_var = s->avg_mb_var / s->mb_num;        
+    
+    for(mb_y=0; mb_y < s->mb_height; mb_y++) {
+        /* Put GOB header based on RTP MTU */
+        /* TODO: Put all this stuff in a separate generic function */
+        if (s->rtp_mode) {
+            if (!mb_y) {
+                s->ptr_lastgob = s->pb.buf;
+                s->ptr_last_mb_line = s->pb.buf;
+            } else if (s->out_format == FMT_H263 && !s->h263_pred && !s->h263_msmpeg4 && !(mb_y % s->gob_index)) {
+                last_gob = h263_encode_gob_header(s, mb_y);
+                if (last_gob) {
+                    s->first_gob_line = 1;
+                }
+            }
+        }
+        
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
 
             s->mb_x = mb_x;

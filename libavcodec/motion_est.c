@@ -400,7 +400,7 @@ int estimate_motion(MpegEncContext * s,
     UINT8 *pix, *ppix;
     int sum, varc, vard, mx, my, range, dmin, xx, yy;
     int xmin, ymin, xmax, ymax;
-
+    
     range = 8 * (1 << (s->f_code - 1));
     /* XXX: temporary kludge to avoid overflow for msmpeg4 */
     if (s->out_format == FMT_H263 && !s->h263_msmpeg4)
@@ -458,9 +458,12 @@ int estimate_motion(MpegEncContext * s,
     vard = vard >> 8;
     sum = sum >> 8;
     varc = (varc >> 8) - (sum * sum);
+    
+    s->avg_mb_var += varc;
+     
 #if 0
-    printf("varc=%d (sum=%d) vard=%d mx=%d my=%d\n",
-	   varc, sum, vard, mx - xx, my - yy);
+    printf("varc=%4d avg_var=%4d (sum=%4d) vard=%4d mx=%2d my=%2d\n",
+	   varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
 #endif
     if (vard <= 64 || vard < varc) {
         if (s->full_search != ME_ZERO) {
