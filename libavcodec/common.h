@@ -200,6 +200,8 @@ typedef struct GetBitContext {
     int size;
 } GetBitContext;
 
+static inline int get_bits_count(GetBitContext *s);
+
 typedef struct VLC {
     int bits;
     INT16 *table_codes;
@@ -548,6 +550,43 @@ static inline unsigned int show_bits(GetBitContext *s, int n)
         return val;
     }
     return show_bits_long(s,n);
+#endif //!ALT_BITSTREAM_READER
+}
+
+static inline int show_aligned_bits(GetBitContext *s, int offset, int n)
+{
+#ifdef ALT_BITSTREAM_READER
+#ifdef ALIGNED_BITSTREAM
+    int index= (s->index + offset + 7)&(~7);
+    uint32_t result1= be2me_32( ((uint32_t *)s->buffer)[index>>5] );
+    uint32_t result2= be2me_32( ((uint32_t *)s->buffer)[(index>>5) + 1] );
+#ifdef ARCH_X86
+    asm ("shldl %%cl, %2, %0\n\t"
+         : "=r" (result1)
+	 : "0" (result1), "r" (result2), "c" (index));
+#else
+    result1<<= (index&0x1F);
+    result2= (result2>>1) >> (31-(index&0x1F));
+    result1|= result2;
+#endif
+    result1>>= 32 - n;
+    
+    return result1;
+#else //ALIGNED_BITSTREAM
+    int index= (s->index + offset + 7)>>3;
+    uint32_t result= be2me_32( unaligned32( ((uint8_t *)s->buffer)+index ) );
+
+    result>>= 32 - n;
+    
+    return result;
+#endif //!ALIGNED_BITSTREAM
+#else //ALT_BITSTREAM_READER
+    int index= (get_bits_count(s) + offset + 7)>>3;
+    uint32_t result= be2me_32( unaligned32( ((uint8_t *)s->buf)+index ) );
+
+    result>>= 32 - n;
+//printf(" %X %X %d \n", (int)(((uint8_t *)s->buf)+index ), (int)s->buf_ptr, s->bit_cnt);    
+    return result;
 #endif //!ALT_BITSTREAM_READER
 }
 

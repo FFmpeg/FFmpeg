@@ -230,6 +230,8 @@ typedef struct MpegEncContext {
     int sprite_warping_accuracy;
     int low_latency_sprite;
     int data_partioning;
+    int resync_marker;
+    int resync_x_pos;
 
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;
@@ -253,7 +255,7 @@ typedef struct MpegEncContext {
     int dc_table_index;
     int use_skip_mb_code;
     int slice_height;      /* in macroblocks */
-    int first_slice_line;  
+    int first_slice_line;  /* used in mpeg4 too to handle resync markers */
     int flipflop_rounding;
     int bitrate;
     /* decompression specific */

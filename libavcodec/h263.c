@@ -31,6 +31,8 @@
 #define RDIV(a,b) ((a) > 0 ? ((a)+((b)>>1))/(b) : ((a)-((b)>>1))/(b))
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + (1<<((b)-1)))>>(b) : ((a) + (1<<((b)-1))-1)>>(b))
 #define ABS(a) (((a)>=0)?(a):(-(a)))
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
 			      int n);
@@ -47,6 +49,8 @@ static int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
 static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
                               int dir);
+static void mpeg4_decode_sprite_trajectory(MpegEncContext * s);
+
 extern UINT32 inverse[256];
 
 static UINT16 mv_penalty[MAX_FCODE][MAX_MV*2+1];
@@ -1262,12 +1266,162 @@ int h263_decode_gob_header(MpegEncContext *s)
             
 }
 
+static inline void memsetw(short *tab, int val, int n)
+{
+    int i;
+    for(i=0;i<n;i++)
+        tab[i] = val;
+}
+
+static int mpeg4_resync(MpegEncContext *s)
+{
+    int state, v, bits;
+    int mb_num_bits= av_log2(s->mb_num - 1) + 1;
+    int header_extension=0, mb_num;
+    int c_wrap, c_xy, l_wrap, l_xy;
+//printf("resync at %d %d\n", s->mb_x, s->mb_y);
+//printf("%X\n", show_bits(&s->gb, 24));
+
+    if( get_bits_count(&s->gb) > s->gb.size*8-32)
+        return 0;
+
+    align_get_bits(&s->gb);
+    state = 0xff;
+    for(;;) {
+        v = get_bits(&s->gb, 8);
+//printf("%X ", v);
+        state = ((state << 8) | v) & 0xffff;
+        if (state == 0) break;
+        if( get_bits_count(&s->gb) > s->gb.size*8-32){
+            printf("resync failed\n");
+            return -1;
+        }
+    }
+//printf("%X\n", show_bits(&s->gb, 24));
+    bits=0;
+    while(!get_bits1(&s->gb) && bits<30) bits++;
+    if(s->pict_type == P_TYPE && bits != s->f_code-1)
+        printf("marker does not match f_code\n");
+    //FIXME check bits for B-framess
+//printf("%X\n", show_bits(&s->gb, 24));
+
+    if(s->shape != RECT_SHAPE){
+        header_extension= get_bits1(&s->gb);
+        //FIXME more stuff here
+    }
+
+    mb_num= get_bits(&s->gb, mb_num_bits);
+    if(mb_num != s->mb_x + s->mb_y*s->mb_width){
+        printf("MB-num change not supported %d %d\n", mb_num, s->mb_x + s->mb_y*s->mb_width);
+//        s->mb_x= mb_num % s->mb_width;
+//        s->mb_y= mb_num / s->mb_width;
+        //FIXME many vars are wrong now
+    } 
+
+    if(s->shape != BIN_ONLY_SHAPE){
+        s->qscale= get_bits(&s->gb, 5);
+        h263_dc_scale(s);
+    }
+
+    if(s->shape == RECT_SHAPE){
+        header_extension= get_bits1(&s->gb);
+    }
+    if(header_extension){
+        int time_incr=0;
+        printf("header extension not really supported\n");
+        while (get_bits1(&s->gb) != 0) 
+            time_incr++;
+
+        check_marker(&s->gb, "before time_increment in video packed header");
+        s->time_increment= get_bits(&s->gb, s->time_increment_bits);
+        if(s->pict_type!=B_TYPE){
+            s->time_base+= time_incr;
+            s->last_non_b_time[1]= s->last_non_b_time[0];
+            s->last_non_b_time[0]= s->time_base*s->time_increment_resolution + s->time_increment;
+        }else{
+            s->time= (s->last_non_b_time[1]/s->time_increment_resolution + time_incr)*s->time_increment_resolution;
+            s->time+= s->time_increment;
+        }
+        check_marker(&s->gb, "before vop_coding_type in video packed header");
+        
+        skip_bits(&s->gb, 2); /* vop coding type */
+        //FIXME not rect stuff here
+
+        if(s->shape != BIN_ONLY_SHAPE){
+            skip_bits(&s->gb, 3); /* intra dc vlc threshold */
+
+            if(s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE && s->num_sprite_warping_points){
+                mpeg4_decode_sprite_trajectory(s);
+            }
+
+            //FIXME reduced res stuff here
+            
+            if (s->pict_type != I_TYPE) {
+                s->f_code = get_bits(&s->gb, 3);	/* fcode_for */
+                if(s->f_code==0){
+                    printf("Error, video packet header damaged or not MPEG4 header (f_code=0)\n");
+                    return -1; // makes no sense to continue, as the MV decoding will break very quickly
+                }
+            }
+            if (s->pict_type == B_TYPE) {
+                s->b_code = get_bits(&s->gb, 3);
+            }       
+        }
+
+    }
+    //FIXME new-pred stuff
+
+    l_wrap= s->block_wrap[0];
+    l_xy= s->mb_y*l_wrap*2;
+    c_wrap= s->block_wrap[4];
+    c_xy= s->mb_y*c_wrap;
+
+    /* clean DC */
+    memsetw(s->dc_val[0] + l_xy, 1024, l_wrap*3);
+    memsetw(s->dc_val[1] + c_xy, 1024, c_wrap*2);
+    memsetw(s->dc_val[2] + c_xy, 1024, c_wrap*2);
+
+    /* clean AC */
+    memset(s->ac_val[0] + l_xy, 0, l_wrap*3*16*sizeof(INT16));
+    memset(s->ac_val[1] + c_xy, 0, c_wrap*2*16*sizeof(INT16));
+    memset(s->ac_val[2] + c_xy, 0, c_wrap*2*16*sizeof(INT16));
+
+    /* clean MV */
+    memset(s->motion_val + l_xy, 0, l_wrap*3*2*sizeof(INT16));
+//    memset(s->motion_val, 0, 2*sizeof(INT16)*(2 + s->mb_width*2)*(2 + s->mb_height*2));
+    s->resync_x_pos= s->mb_x;
+    s->first_slice_line=1;
+
+    return 0;
+}
+
 int h263_decode_mb(MpegEncContext *s,
                    DCTELEM block[6][64])
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     INT16 *mot_val;
     static INT8 quant_tab[4] = { -1, -2, 1, 2 };
+
+    if(s->resync_marker){
+        if(   s->resync_x_pos == s->mb_x+1
+           || s->resync_x_pos == s->mb_x){
+            /* f*ck mpeg4
+               this is here so we dont need to slowdown h263_pred_motion with it */
+            if(s->resync_x_pos == s->mb_x+1 && s->mb_x==0){
+                int xy= s->block_index[0] - s->block_wrap[0];
+                s->motion_val[xy][0]= s->motion_val[xy+2][0];
+                s->motion_val[xy][1]= s->motion_val[xy+2][1];
+            }
+
+            s->first_slice_line=0; 
+            s->resync_x_pos=0; // isnt needed but for cleanness sake ;)
+        }
+
+        if(show_aligned_bits(&s->gb, 1, 16) == 0){
+            if( mpeg4_resync(s) < 0 ) return -1;
+            
+        }
+    }
 
     if (s->pict_type == P_TYPE || s->pict_type==S_TYPE) {
         if (get_bits1(&s->gb)) {
@@ -1322,6 +1476,7 @@ int h263_decode_mb(MpegEncContext *s,
                 s->qscale = 1;
             else if (s->qscale > 31)
                 s->qscale = 31;
+            h263_dc_scale(s);
         }
         s->mv_dir = MV_DIR_FORWARD;
         if ((cbpc & 16) == 0) {
@@ -1441,6 +1596,7 @@ int h263_decode_mb(MpegEncContext *s,
                         s->qscale = 1;
                     else if (s->qscale > 31)
                         s->qscale = 31;
+                    h263_dc_scale(s);
                 }
             }
         }else{
@@ -1526,6 +1682,7 @@ intra:
                 s->qscale = 1;
             else if (s->qscale > 31)
                 s->qscale = 31;
+            h263_dc_scale(s);
         }
     }
 
@@ -2250,6 +2407,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             if (get_bits1(&s->gb) == 1) {   /* not_8_bit */
                 s->quant_precision = get_bits(&s->gb, 4); /* quant_precision */
                 if(get_bits(&s->gb, 4)!=8) printf("N-bit not supported\n"); /* bits_per_pixel */
+                if(s->quant_precision!=5) printf("quant precission %d\n", s->quant_precision);
             } else {
                 s->quant_precision = 5;
             }
@@ -2261,11 +2419,9 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             else s->quarter_sample=0;
 
             if(!get_bits1(&s->gb)) printf("Complexity estimation not supported\n");
-#if 0
-            if(get_bits1(&s->gb)) printf("resync disable\n");
-#else
-            skip_bits1(&s->gb);   /* resync_marker_disabled */
-#endif
+
+            s->resync_marker= !get_bits1(&s->gb); /* resync_marker_disabled */
+
             s->data_partioning= get_bits1(&s->gb);
             if(s->data_partioning){
                 printf("data partitioning not supported\n");
@@ -2387,7 +2543,9 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 //FIXME complexity estimation stuff
      
      if (s->shape != BIN_ONLY_SHAPE) {
-         skip_bits(&s->gb, 3); /* intra dc VLC threshold */
+         int t;
+         t=get_bits(&s->gb, 3); /* intra dc VLC threshold */
+//printf("threshold %d\n", t);
          //FIXME interlaced specific bits
      }
 
