@@ -21,11 +21,11 @@
 isVertDC		Ec	Ec
 isVertMinMaxOk		Ec	Ec
 doVertLowPass		E		e	e
-doVertDefFilter		Ec	Ec	Ec
+doVertDefFilter		Ec	Ec	e	e
 isHorizDC		Ec	Ec
 isHorizMinMaxOk		a	E
 doHorizLowPass		E		e	e
-doHorizDefFilter	Ec	Ec	Ec
+doHorizDefFilter	Ec	Ec	e	e
 deRing			E		e	e*
 Vertical RKAlgo1	E		a	a
 Horizontal RKAlgo1			a	a
@@ -63,8 +63,6 @@ optimize c versions
 try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 smart blur
 ...
-
-Notes:
 */
 
 //Changelog: use the CVS log
@@ -80,6 +78,7 @@ Notes:
 //#undef HAVE_MMX2
 //#define HAVE_3DNOW
 //#undef HAVE_MMX
+//#define DEBUG_BRIGHTNESS
 #include "postprocess.h"
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
@@ -1067,10 +1066,299 @@ HX1b((%0, %1, 4),(%%ebx),(%%ebx, %1),(%%ebx, %1, 2))
 
 static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 {
-#ifdef HAVE_MMX
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+/*
+	uint8_t tmp[16];
+	const int l1= stride;
+	const int l2= stride + l1;
+	const int l3= stride + l2;
+	const int l4= (int)tmp - (int)src - stride*3;
+	const int l5= (int)tmp - (int)src - stride*3 + 8;
+	const int l6= stride*3 + l3;
+	const int l7= stride + l6;
+	const int l8= stride + l7;
+
+	memcpy(tmp, src+stride*7, 8);
+	memcpy(tmp+8, src+stride*8, 8);
+*/
 	src+= stride*4;
-	//FIXME try pmul for *5 stuff
-//	src[0]=0;
+	asm volatile(
+
+#if 0 //sligtly more accurate and slightly slower
+		"pxor %%mm7, %%mm7				\n\t" // 0
+		"leal (%0, %1), %%eax				\n\t"
+		"leal (%%eax, %1, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7
+//	%0	%0+%1	%0+2%1	eax+2%1	%0+4%1	eax+4%1	ebx+%1	ebx+2%1
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1
+
+
+		"movq (%0, %1, 2), %%mm0			\n\t" // l2
+		"movq (%0), %%mm1				\n\t" // l0
+		"movq %%mm0, %%mm2				\n\t" // l2
+		PAVGB(%%mm7, %%mm0)				      // ~l2/2
+		PAVGB(%%mm1, %%mm0)				      // ~(l2 + 2l0)/4
+		PAVGB(%%mm2, %%mm0)				      // ~(5l2 + 2l0)/8
+
+		"movq (%%eax), %%mm1				\n\t" // l1
+		"movq (%%eax, %1, 2), %%mm3			\n\t" // l3
+		"movq %%mm1, %%mm4				\n\t" // l1
+		PAVGB(%%mm7, %%mm1)				      // ~l1/2
+		PAVGB(%%mm3, %%mm1)				      // ~(l1 + 2l3)/4
+		PAVGB(%%mm4, %%mm1)				      // ~(5l1 + 2l3)/8
+
+		"movq %%mm0, %%mm4				\n\t" // ~(5l2 + 2l0)/8
+		"psubusb %%mm1, %%mm0				\n\t"
+		"psubusb %%mm4, %%mm1				\n\t"
+		"por %%mm0, %%mm1				\n\t" // ~|2l0 - 5l1 + 5l2 - 2l3|/8
+// mm1= |lenergy|, mm2= l2, mm3= l3, mm7=0
+
+		"movq (%0, %1, 4), %%mm0			\n\t" // l4
+		"movq %%mm0, %%mm4				\n\t" // l4
+		PAVGB(%%mm7, %%mm0)				      // ~l4/2
+		PAVGB(%%mm2, %%mm0)				      // ~(l4 + 2l2)/4
+		PAVGB(%%mm4, %%mm0)				      // ~(5l4 + 2l2)/8
+
+		"movq (%%ebx), %%mm2				\n\t" // l5
+		"movq %%mm3, %%mm5				\n\t" // l3
+		PAVGB(%%mm7, %%mm3)				      // ~l3/2
+		PAVGB(%%mm2, %%mm3)				      // ~(l3 + 2l5)/4
+		PAVGB(%%mm5, %%mm3)				      // ~(5l3 + 2l5)/8
+
+		"movq %%mm0, %%mm6				\n\t" // ~(5l4 + 2l2)/8
+		"psubusb %%mm3, %%mm0				\n\t"
+		"psubusb %%mm6, %%mm3				\n\t"
+		"por %%mm0, %%mm3				\n\t" // ~|2l2 - 5l3 + 5l4 - 2l5|/8
+		"pcmpeqb %%mm7, %%mm0				\n\t" // SIGN(2l2 - 5l3 + 5l4 - 2l5)
+// mm0= SIGN(menergy), mm1= |lenergy|, mm2= l5, mm3= |menergy|, mm4=l4, mm5= l3, mm7=0
+
+		"movq (%%ebx, %1), %%mm6			\n\t" // l6
+		"movq %%mm6, %%mm5				\n\t" // l6
+		PAVGB(%%mm7, %%mm6)				      // ~l6/2
+		PAVGB(%%mm4, %%mm6)				      // ~(l6 + 2l4)/4
+		PAVGB(%%mm5, %%mm6)				      // ~(5l6 + 2l4)/8
+
+		"movq (%%ebx, %1, 2), %%mm5			\n\t" // l7
+		"movq %%mm2, %%mm4				\n\t" // l5
+		PAVGB(%%mm7, %%mm2)				      // ~l5/2
+		PAVGB(%%mm5, %%mm2)				      // ~(l5 + 2l7)/4
+		PAVGB(%%mm4, %%mm2)				      // ~(5l5 + 2l7)/8
+
+		"movq %%mm6, %%mm4				\n\t" // ~(5l6 + 2l4)/8
+		"psubusb %%mm2, %%mm6				\n\t"
+		"psubusb %%mm4, %%mm2				\n\t"
+		"por %%mm6, %%mm2				\n\t" // ~|2l4 - 5l5 + 5l6 - 2l7|/8
+// mm0= SIGN(menergy), mm1= |lenergy|/8, mm2= |renergy|/8, mm3= |menergy|/8, mm7=0
+
+
+		PMINUB(%%mm2, %%mm1, %%mm4)			      // MIN(|lenergy|,|renergy|)/8
+		"movq pQPb, %%mm4				\n\t" // QP //FIXME QP+1 ?
+		"paddusb b01, %%mm4				\n\t"
+		"pcmpgtb %%mm3, %%mm4				\n\t" // |menergy|/8 < QP
+		"psubusb %%mm1, %%mm3				\n\t" // d=|menergy|/8-MIN(|lenergy|,|renergy|)/8
+		"pand %%mm4, %%mm3				\n\t"
+
+		"movq %%mm3, %%mm1				\n\t"
+//		"psubusb b01, %%mm3				\n\t"
+		PAVGB(%%mm7, %%mm3)
+		PAVGB(%%mm7, %%mm3)
+		"paddusb %%mm1, %%mm3				\n\t"
+//		"paddusb b01, %%mm3				\n\t"
+
+		"movq (%%eax, %1, 2), %%mm6			\n\t" //l3
+		"movq (%0, %1, 4), %%mm5			\n\t" //l4
+		"movq (%0, %1, 4), %%mm4			\n\t" //l4
+		"psubusb %%mm6, %%mm5				\n\t"
+		"psubusb %%mm4, %%mm6				\n\t"
+		"por %%mm6, %%mm5				\n\t" // |l3-l4|
+		"pcmpeqb %%mm7, %%mm6				\n\t" // SIGN(l3-l4)
+		"pxor %%mm6, %%mm0				\n\t"
+		"pand %%mm0, %%mm3				\n\t"
+		PMINUB(%%mm5, %%mm3, %%mm0)
+
+		"psubusb b01, %%mm3				\n\t"
+		PAVGB(%%mm7, %%mm3)
+
+		"movq (%%eax, %1, 2), %%mm0			\n\t"
+		"movq (%0, %1, 4), %%mm2			\n\t"
+		"pxor %%mm6, %%mm0				\n\t"
+		"pxor %%mm6, %%mm2				\n\t"
+		"psubb %%mm3, %%mm0				\n\t"
+		"paddb %%mm3, %%mm2				\n\t"
+		"pxor %%mm6, %%mm0				\n\t"
+		"pxor %%mm6, %%mm2				\n\t"
+		"movq %%mm0, (%%eax, %1, 2)			\n\t"
+		"movq %%mm2, (%0, %1, 4)			\n\t"
+#endif
+
+		"leal (%0, %1), %%eax				\n\t"
+		"pcmpeqb %%mm6, %%mm6				\n\t" // -1
+//	0	1	2	3	4	5	6	7
+//	%0	%0+%1	%0+2%1	eax+2%1	%0+4%1	eax+4%1	ebx+%1	ebx+2%1
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1
+
+
+		"movq (%%eax, %1, 2), %%mm1			\n\t" // l3
+		"movq (%0, %1, 4), %%mm0			\n\t" // l4
+		"pxor %%mm6, %%mm1				\n\t" // -l3-1
+		PAVGB(%%mm1, %%mm0)				      // -q+128 = (l4-l3+256)/2
+// mm1=-l3-1, mm0=128-q
+
+		"movq (%%eax, %1, 4), %%mm2			\n\t" // l5
+		"movq (%%eax, %1), %%mm3			\n\t" // l2
+		"pxor %%mm6, %%mm2				\n\t" // -l5-1
+		"movq %%mm2, %%mm5				\n\t" // -l5-1
+		"movq b80, %%mm4				\n\t" // 128
+		"leal (%%eax, %1, 4), %%ebx			\n\t"
+		PAVGB(%%mm3, %%mm2)				      // (l2-l5+256)/2
+		PAVGB(%%mm0, %%mm4)				      // ~(l4-l3)/4 + 128
+		PAVGB(%%mm2, %%mm4)				      // ~(l2-l5)/4 +(l4-l3)/8 + 128
+		PAVGB(%%mm0, %%mm4)				      // ~(l2-l5)/8 +5(l4-l3)/16 + 128
+// mm1=-l3-1, mm0=128-q, mm3=l2, mm4=menergy/16 + 128, mm5= -l5-1
+
+		"movq (%%eax), %%mm2				\n\t" // l1
+		"pxor %%mm6, %%mm2				\n\t" // -l1-1
+		PAVGB(%%mm3, %%mm2)				      // (l2-l1+256)/2
+		PAVGB((%0), %%mm1)				      // (l0-l3+256)/2
+		"movq b80, %%mm3				\n\t" // 128
+		PAVGB(%%mm2, %%mm3)				      // ~(l2-l1)/4 + 128
+		PAVGB(%%mm1, %%mm3)				      // ~(l0-l3)/4 +(l2-l1)/8 + 128
+		PAVGB(%%mm2, %%mm3)				      // ~(l0-l3)/8 +5(l2-l1)/16 + 128
+// mm0=128-q, mm3=lenergy/16 + 128, mm4= menergy/16 + 128, mm5= -l5-1
+
+		PAVGB((%%ebx, %1), %%mm5)			      // (l6-l5+256)/2
+		"movq (%%ebx, %1, 2), %%mm1			\n\t" // l7
+		"pxor %%mm6, %%mm1				\n\t" // -l7-1
+		PAVGB((%0, %1, 4), %%mm1)			      // (l4-l7+256)/2
+		"movq b80, %%mm2				\n\t" // 128
+		PAVGB(%%mm5, %%mm2)				      // ~(l6-l5)/4 + 128
+		PAVGB(%%mm1, %%mm2)				      // ~(l4-l7)/4 +(l6-l5)/8 + 128
+		PAVGB(%%mm5, %%mm2)				      // ~(l4-l7)/8 +5(l6-l5)/16 + 128
+// mm0=128-q, mm2=renergy/16 + 128, mm3=lenergy/16 + 128, mm4= menergy/16 + 128
+
+		"movq b00, %%mm1				\n\t" // 0
+		"movq b00, %%mm5				\n\t" // 0
+		"psubb %%mm2, %%mm1				\n\t" // 128 - renergy/16
+		"psubb %%mm3, %%mm5				\n\t" // 128 - lenergy/16
+		PMAXUB(%%mm1, %%mm2)				      // 128 + |renergy/16|
+ 		PMAXUB(%%mm5, %%mm3)				      // 128 + |lenergy/16|
+		PMINUB(%%mm2, %%mm3, %%mm1)			      // 128 + MIN(|lenergy|,|renergy|)/16
+
+// mm0=128-q, mm3=128 + MIN(|lenergy|,|renergy|)/16, mm4= menergy/16 + 128
+
+		"movq b00, %%mm7				\n\t" // 0
+		"movq pQPb, %%mm2				\n\t" // QP
+		PAVGB(%%mm6, %%mm2)				      // 128 + QP/2
+		"psubb %%mm6, %%mm2				\n\t"
+
+		"movq %%mm4, %%mm1				\n\t"
+		"pcmpgtb %%mm7, %%mm1				\n\t" // SIGN(menergy)
+		"pxor %%mm1, %%mm4				\n\t"
+		"psubb %%mm1, %%mm4				\n\t" // 128 + |menergy|/16
+		"pcmpgtb %%mm4, %%mm2				\n\t" // |menergy|/16 < QP/2
+		"psubusb %%mm3, %%mm4				\n\t" //d=|menergy|/16 - MIN(|lenergy|,|renergy|)/16
+// mm0=128-q, mm1= SIGN(menergy), mm2= |menergy|/16 < QP/2, mm4= d/16
+
+		"movq %%mm4, %%mm3				\n\t" // d
+		"psubusb b01, %%mm4				\n\t"
+		PAVGB(%%mm7, %%mm4)				      // d/32
+		PAVGB(%%mm7, %%mm4)				      // (d + 32)/64
+		"paddb %%mm3, %%mm4				\n\t" // 5d/64
+		"pand %%mm2, %%mm4				\n\t"
+
+		"movq b80, %%mm5				\n\t" // 128
+		"psubb %%mm0, %%mm5				\n\t" // q
+		"paddsb %%mm6, %%mm5				\n\t" // fix bad rounding
+		"pcmpgtb %%mm5, %%mm7				\n\t" // SIGN(q)
+		"pxor %%mm7, %%mm5				\n\t"
+
+		PMINUB(%%mm5, %%mm4, %%mm3)			      // MIN(|q|, 5d/64)
+		"pxor %%mm1, %%mm7				\n\t" // SIGN(d*q)
+
+		"pand %%mm7, %%mm4				\n\t"
+		"movq (%%eax, %1, 2), %%mm0			\n\t"
+		"movq (%0, %1, 4), %%mm2			\n\t"
+		"pxor %%mm1, %%mm0				\n\t"
+		"pxor %%mm1, %%mm2				\n\t"
+		"paddb %%mm4, %%mm0				\n\t"
+		"psubb %%mm4, %%mm2				\n\t"
+		"pxor %%mm1, %%mm0				\n\t"
+		"pxor %%mm1, %%mm2				\n\t"
+		"movq %%mm0, (%%eax, %1, 2)			\n\t"
+		"movq %%mm2, (%0, %1, 4)			\n\t"
+
+		:
+		: "r" (src), "r" (stride)
+		: "%eax", "%ebx"
+	);
+
+/*
+	{
+	int x;
+	src-= stride;
+	for(x=0; x<BLOCK_SIZE; x++)
+	{
+		const int middleEnergy= 5*(src[l5] - src[l4]) + 2*(src[l3] - src[l6]);
+		if(ABS(middleEnergy)< 8*QP)
+		{
+			const int q=(src[l4] - src[l5])/2;
+			const int leftEnergy=  5*(src[l3] - src[l2]) + 2*(src[l1] - src[l4]);
+			const int rightEnergy= 5*(src[l7] - src[l6]) + 2*(src[l5] - src[l8]);
+
+			int d= ABS(middleEnergy) - MIN( ABS(leftEnergy), ABS(rightEnergy) );
+			d= MAX(d, 0);
+
+			d= (5*d + 32) >> 6;
+			d*= SIGN(-middleEnergy);
+
+			if(q>0)
+			{
+				d= d<0 ? 0 : d;
+				d= d>q ? q : d;
+			}
+			else
+			{
+				d= d>0 ? 0 : d;
+				d= d<q ? q : d;
+			}
+
+        		src[l4]-= d;
+	        	src[l5]+= d;
+		}
+		src++;
+	}
+src-=8;
+	for(x=0; x<8; x++)
+	{
+		int y;
+		for(y=4; y<6; y++)
+		{
+			int d= src[x+y*stride] - tmp[x+(y-4)*8];
+			int ad= ABS(d);
+			static int max=0;
+			static int sum=0;
+			static int num=0;
+			static int bias=0;
+
+			if(max<ad) max=ad;
+			sum+= ad>3 ? 1 : 0;
+			if(ad>3)
+			{
+				src[0] = src[7] = src[stride*7] = src[(stride+1)*7]=255;
+			}
+			if(y==4) bias+=d;
+			num++;
+			if(num%1000000 == 0)
+			{
+				printf(" %d %d %d %d\n", num, sum, max, bias);
+			}
+		}
+	}
+}
+*/
+#elif defined (HAVE_MMX)
+	src+= stride*4;
+
 	asm volatile(
 		"pxor %%mm7, %%mm7				\n\t"
 		"leal (%0, %1), %%eax				\n\t"
@@ -3961,7 +4249,17 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			uint8_t *dstBlock= &(dst[y*dstStride]);
 			memcpy(dstBlock, tempDst + dstStride, dstStride*(height-y) );
 		}
-	}
+/*
+		for(x=0; x<width; x+=32)
+		{
+			int i;
+			i+=	+ dstBlock[x + 7*dstStride] + dstBlock[x + 8*dstStride]
+				+ dstBlock[x + 9*dstStride] + dstBlock[x +10*dstStride]
+				+ dstBlock[x +11*dstStride] + dstBlock[x +12*dstStride]
+				+ dstBlock[x +13*dstStride] + dstBlock[x +14*dstStride]
+				+ dstBlock[x +15*dstStride];
+		}
+*/	}
 #ifdef HAVE_3DNOW
 	asm volatile("femms");
 #elif defined (HAVE_MMX)
@@ -3977,4 +4275,31 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			(int)(sumTime/1000), (int)((sumTime-memcpyTime-vertTime-horizTime)/1000)
 			, black, white);
 #endif
+#ifdef DEBUG_BRIGHTNESS
+	if(!isColor)
+	{
+		int max=1;
+		int i;
+		for(i=0; i<256; i++)
+			if(yHistogram[i] > max) max=yHistogram[i];
+
+		for(i=1; i<256; i++)
+		{
+			int x;
+			int start=yHistogram[i-1]/(max/256+1);
+			int end=yHistogram[i]/(max/256+1);
+			int inc= end > start ? 1 : -1;
+			for(x=start; x!=end+inc; x+=inc)
+				dst[ i*dstStride + x]+=128;
+		}
+
+		for(i=0; i<100; i+=2)
+		{
+			dst[ (white)*dstStride + i]+=128;
+			dst[ (black)*dstStride + i]+=128;
+		}
+
+	}
+#endif
+
 }
