@@ -378,7 +378,8 @@ static int avi_write_header(AVFormatContext *s)
     put_tag(pb, "odml");
     put_tag(pb, "dmlh");
     put_le32(pb, 248);
-    url_fskip(pb, 248);
+    for (i = 0; i < 248; i+= 4)
+        put_le32(pb, 0);
     end_tag(pb, avi->odml_list);
 
     end_tag(pb, list1);
