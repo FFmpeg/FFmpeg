@@ -61,6 +61,14 @@
 #define SND2_TAG FOURCC_TAG('S', 'N', 'D', '2')
 #define VQFR_TAG FOURCC_TAG('V', 'Q', 'F', 'R')
 
+/* don't know what these tags are for, but acknowledge their existence */
+#define CINF_TAG FOURCC_TAG('C', 'I', 'N', 'F')
+#define CINH_TAG FOURCC_TAG('C', 'I', 'N', 'H')
+#define CIND_TAG FOURCC_TAG('C', 'I', 'N', 'D')
+#define PINF_TAG FOURCC_TAG('P', 'I', 'N', 'F')
+#define PINH_TAG FOURCC_TAG('P', 'I', 'N', 'H')
+#define PIND_TAG FOURCC_TAG('P', 'I', 'N', 'D')
+
 #define VQA_HEADER_SIZE 0x2A
 #define VQA_FRAMERATE 15
 #define VQA_VIDEO_PTS_INC (90000 / VQA_FRAMERATE)
@@ -227,6 +235,8 @@ static int wsvqa_read_header(AVFormatContext *s,
     AVStream *st;
     unsigned char *header;
     unsigned char scratch[VQA_PREAMBLE_SIZE];
+    unsigned int chunk_tag;
+    unsigned int chunk_size;
 
     /* set the pts reference (1 pts = 1/90000) */
     s->pts_num = 1;
@@ -256,31 +266,58 @@ static int wsvqa_read_header(AVFormatContext *s,
     st->codec.width = LE_16(&header[6]);
     st->codec.height = LE_16(&header[8]);
 
-    /* initialize the audio decoder stream */
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR_NOMEM;
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = CODEC_ID_ADPCM_IMA_WS;
-    st->codec.codec_tag = 0;  /* no tag */
-    st->codec.sample_rate = LE_16(&header[24]);
-    st->codec.channels = header[26];
-    st->codec.bits_per_sample = 16;
-    st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
-        st->codec.bits_per_sample / 4;
-    st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
+    /* initialize the audio decoder stream is sample rate is non-zero */
+    if (LE_16(&header[24])) {
+        st = av_new_stream(s, 0);
+        if (!st)
+            return AVERROR_NOMEM;
+        st->codec.codec_type = CODEC_TYPE_AUDIO;
+        st->codec.codec_id = CODEC_ID_ADPCM_IMA_WS;
+        st->codec.codec_tag = 0;  /* no tag */
+        st->codec.sample_rate = LE_16(&header[24]);
+        st->codec.channels = header[26];
+        st->codec.bits_per_sample = 16;
+        st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
+            st->codec.bits_per_sample / 4;
+        st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
 
-    wsvqa->audio_stream_index = st->index;
-    wsvqa->audio_samplerate = st->codec.sample_rate;
-    wsvqa->audio_channels = st->codec.channels;
-    wsvqa->audio_frame_counter = 0;
-
-    /* skip the useless FINF chunk index */
-    if (get_buffer(pb, scratch, VQA_PREAMBLE_SIZE) != VQA_PREAMBLE_SIZE) {
-        av_free(st->codec.extradata);
-        return -EIO;
+        wsvqa->audio_stream_index = st->index;
+        wsvqa->audio_samplerate = st->codec.sample_rate;
+        wsvqa->audio_channels = st->codec.channels;
+        wsvqa->audio_frame_counter = 0;
     }
-    url_fseek(pb, BE_32(&scratch[4]), SEEK_CUR);
+
+    /* there are 0 or more chunks before the FINF chunk; iterate until
+     * FINF has been skipped and the file will be ready to be demuxed */
+    do {
+        if (get_buffer(pb, scratch, VQA_PREAMBLE_SIZE) != VQA_PREAMBLE_SIZE) {
+            av_free(st->codec.extradata);
+            return -EIO;
+        }
+        chunk_tag = BE_32(&scratch[0]);
+        chunk_size = BE_32(&scratch[4]);
+
+        /* catch any unknown header tags, for curiousity */
+        switch (chunk_tag) {
+        case CINF_TAG:
+        case CINH_TAG:
+        case CIND_TAG:
+        case PINF_TAG:
+        case PINH_TAG:
+        case PIND_TAG:
+        case FINF_TAG:
+            break;
+
+        default:
+            printf (" note: unknown chunk seen (%c%c%c%c)\n",
+                scratch[0], scratch[1],
+                scratch[2], scratch[3]);
+            break;
+        }
+
+        url_fseek(pb, chunk_size, SEEK_CUR);
+    } while (chunk_tag != FINF_TAG);
+
     wsvqa->video_pts = wsvqa->audio_frame_counter = 0;
 
     return 0;
