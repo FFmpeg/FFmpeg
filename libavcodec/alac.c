@@ -36,20 +36,21 @@
 
 
 #include "avcodec.h"
+#include "bitstream.h"
 
 #define ALAC_EXTRADATA_SIZE 36
 
-struct alac_file {
-    unsigned char *input_buffer;
-    int input_buffer_index;
-    int input_buffer_size;
-    int input_buffer_bitaccumulator; /* used so we can do arbitary
-                                        bit reads */
+typedef struct {
+
+    AVCodecContext *avctx;
+    GetBitContext gb;
+    /* init to 0; first frame decode should initialize from extradata and
+     * set this to 1 */
+    int context_initialized;
 
     int samplesize;
     int numchannels;
     int bytespersample;
-
 
     /* buffers */
     int32_t *predicterror_buffer_a;
@@ -57,7 +58,6 @@ struct alac_file {
 
     int32_t *outputsamples_buffer_a;
     int32_t *outputsamples_buffer_b;
-
 
     /* stuff from setinfo */
     uint32_t setinfo_max_samples_per_frame; /* 0x1000 = 4096 */    /* max samples per frame? */
@@ -72,21 +72,10 @@ struct alac_file {
     uint32_t setinfo_86; /* 0x00069fe4 */
     uint32_t setinfo_8a_rate; /* 0x0000ac44 */
     /* end setinfo stuff */
-};
 
-typedef struct alac_file alac_file;
-
-typedef struct {
-
-    AVCodecContext *avctx;
-    /* init to 0; first frame decode should initialize from extradata and
-     * set this to 1 */
-    int context_initialized;
-
-    alac_file *alac;
 } ALACContext;
 
-static void allocate_buffers(alac_file *alac)
+static void allocate_buffers(ALACContext *alac)
 {
     alac->predicterror_buffer_a = av_malloc(alac->setinfo_max_samples_per_frame * 4);
     alac->predicterror_buffer_b = av_malloc(alac->setinfo_max_samples_per_frame * 4);
@@ -95,9 +84,9 @@ static void allocate_buffers(alac_file *alac)
     alac->outputsamples_buffer_b = av_malloc(alac->setinfo_max_samples_per_frame * 4);
 }
 
-void alac_set_info(alac_file *alac, char *inputbuffer)
+void alac_set_info(ALACContext *alac)
 {
-    unsigned char *ptr = inputbuffer;
+    unsigned char *ptr = alac->avctx->extradata;
 
     ptr += 4; /* size */
     ptr += 4; /* alac */
@@ -123,96 +112,6 @@ void alac_set_info(alac_file *alac, char *inputbuffer)
     allocate_buffers(alac);
 }
 
-/* stream reading */
-
-/* supports reading 1 to 16 bits, in big endian format */
-static uint32_t readbits_16(alac_file *alac, int bits)
-{
-    uint32_t result;
-    int new_accumulator;
-
-    if (alac->input_buffer_index + 2 >= alac->input_buffer_size) {
-        av_log(NULL, AV_LOG_ERROR, "alac: input buffer went out of bounds (%d >= %d)\n",
-            alac->input_buffer_index + 2, alac->input_buffer_size);
-    }
-    result = (alac->input_buffer[alac->input_buffer_index + 0] << 16) |
-             (alac->input_buffer[alac->input_buffer_index + 1] << 8) |
-             (alac->input_buffer[alac->input_buffer_index + 2]);
-
-    /* shift left by the number of bits we've already read,
-     * so that the top 'n' bits of the 24 bits we read will
-     * be the return bits */
-    result = result << alac->input_buffer_bitaccumulator;
-
-    result = result & 0x00ffffff;
-
-    /* and then only want the top 'n' bits from that, where
-     * n is 'bits' */
-    result = result >> (24 - bits);
-
-    new_accumulator = (alac->input_buffer_bitaccumulator + bits);
-
-    /* increase the buffer pointer if we've read over n bytes. */
-    alac->input_buffer_index += (new_accumulator >> 3);
-
-    /* and the remainder goes back into the bit accumulator */
-    alac->input_buffer_bitaccumulator = (new_accumulator & 7);
-
-    return result;
-}
-
-/* supports reading 1 to 32 bits, in big endian format */
-static uint32_t readbits(alac_file *alac, int bits)
-{
-    int32_t result = 0;
-
-    if (bits > 16) {
-        bits -= 16;
-        result = readbits_16(alac, 16) << bits;
-    }
-
-    result |= readbits_16(alac, bits);
-
-    return result;
-}
-
-/* reads a single bit */
-static int readbit(alac_file *alac)
-{
-    int result;
-    int new_accumulator;
-
-    if (alac->input_buffer_index >= alac->input_buffer_size) {
-        av_log(NULL, AV_LOG_ERROR, "alac: input buffer went out of bounds (%d >= %d)\n",
-            alac->input_buffer_index + 2, alac->input_buffer_size);
-    }
-
-    result = alac->input_buffer[alac->input_buffer_index];
-
-    result = result << alac->input_buffer_bitaccumulator;
-
-    result = result >> 7 & 1;
-
-    new_accumulator = (alac->input_buffer_bitaccumulator + 1);
-
-    alac->input_buffer_index += (new_accumulator / 8);
-
-    alac->input_buffer_bitaccumulator = (new_accumulator % 8);
-
-    return result;
-}
-
-static void unreadbits(alac_file *alac, int bits)
-{
-    int new_accumulator = (alac->input_buffer_bitaccumulator - bits);
-
-    alac->input_buffer_index += (new_accumulator >> 3);
-
-    alac->input_buffer_bitaccumulator = (new_accumulator & 7);
-    if (alac->input_buffer_bitaccumulator < 0)
-        alac->input_buffer_bitaccumulator *= -1;
-}
-
 /* hideously inefficient. could use a bitmask search,
  * alternatively bsr on x86,
  */
@@ -226,7 +125,7 @@ static int count_leading_zeros(int32_t input)
     return i;
 }
 
-void bastardized_rice_decompress(alac_file *alac,
+void bastardized_rice_decompress(ALACContext *alac,
                                  int32_t *output_buffer,
                                  int output_size,
                                  int readsamplesize, /* arg_10 */
@@ -246,7 +145,7 @@ void bastardized_rice_decompress(alac_file *alac,
         int32_t final_val;
 
         /* read x - number of 1s before 0 represent the rice */
-        while (x <= 8 && readbit(alac)) {
+        while (x <= 8 && get_bits1(&alac->gb)) {
             x++;
         }
 
@@ -255,7 +154,7 @@ void bastardized_rice_decompress(alac_file *alac,
           /* use alternative encoding */
             int32_t value;
 
-            value = readbits(alac, readsamplesize);
+            value = get_bits(&alac->gb, readsamplesize);
 
             /* mask value to readsamplesize size */
             if (readsamplesize != 32)
@@ -276,15 +175,17 @@ void bastardized_rice_decompress(alac_file *alac,
                 k = rice_kmodifier;
 
             if (k != 1) {
-                extrabits = readbits(alac, k);
+                extrabits = show_bits(&alac->gb, k);
 
                 /* multiply x by 2^k - 1, as part of their strange algorithm */
                 x = (x << k) - x;
 
                 if (extrabits > 1) {
                     x += extrabits - 1;
-                } else 
-                    unreadbits(alac, 1);
+                    get_bits(&alac->gb, k);
+                } else {
+                    get_bits(&alac->gb, k - 1);
+                }
             }
         }
 
@@ -310,12 +211,12 @@ void bastardized_rice_decompress(alac_file *alac,
             sign_modifier = 1;
 
             x = 0;
-            while (x <= 8 && readbit(alac)) {
+            while (x <= 8 && get_bits1(&alac->gb)) {
                 x++;
             }
 
             if (x > 8) {
-                block_size = readbits(alac, 16);
+                block_size = get_bits(&alac->gb, 16);
                 block_size &= 0xffff;
             } else {
                 int k;
@@ -323,7 +224,7 @@ void bastardized_rice_decompress(alac_file *alac,
 
                 k = count_leading_zeros(history) + ((history + 16) >> 6 /* / 64 */) - 24;
 
-                extrabits = readbits(alac, k);
+                extrabits = show_bits(&alac->gb, k);
 
                 block_size = (((1 << k) - 1) & rice_kmodifier_mask) * x
                            + extrabits - 1;
@@ -331,7 +232,9 @@ void bastardized_rice_decompress(alac_file *alac,
                 if (extrabits < 2) {
                     x = 1 - extrabits;
                     block_size += x;
-                    unreadbits(alac, 1);
+                    get_bits(&alac->gb, k - 1);
+                } else {
+                    get_bits(&alac->gb, k);
                 }
             }
 
@@ -529,8 +432,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
                              void *outbuffer, int *outputsize,
                              uint8_t *inbuffer, int input_buffer_size)
 {
-    ALACContext *s = avctx->priv_data;
-    alac_file *alac = s->alac;
+    ALACContext *alac = avctx->priv_data;
 
     int channels;
     int32_t outputsamples;
@@ -540,25 +442,21 @@ static int alac_decode_frame(AVCodecContext *avctx,
         return input_buffer_size;
 
     /* initialize from the extradata */
-    if (!s->context_initialized) {
-        if (s->avctx->extradata_size != ALAC_EXTRADATA_SIZE) {
+    if (!alac->context_initialized) {
+        if (alac->avctx->extradata_size != ALAC_EXTRADATA_SIZE) {
             av_log(NULL, AV_LOG_ERROR, "alac: expected %d extradata bytes\n", 
                 ALAC_EXTRADATA_SIZE);
             return input_buffer_size;
         }
-        alac_set_info(s->alac, s->avctx->extradata);
-        s->context_initialized = 1;
+        alac_set_info(alac);
+        alac->context_initialized = 1;
     }
 
     outputsamples = alac->setinfo_max_samples_per_frame;
 
-    /* setup the stream */
-    alac->input_buffer = inbuffer;
-    alac->input_buffer_index = 0;
-    alac->input_buffer_size = input_buffer_size;
-    alac->input_buffer_bitaccumulator = 0;
+    init_get_bits(&alac->gb, inbuffer, input_buffer_size * 8);
 
-    channels = readbits(alac, 3);
+    channels = get_bits(&alac->gb, 3);
 
     *outputsize = outputsamples * alac->bytespersample;
 
@@ -575,20 +473,20 @@ static int alac_decode_frame(AVCodecContext *avctx,
         /* 2^result = something to do with output waiting.
          * perhaps matters if we read > 1 frame in a pass?
          */
-        readbits(alac, 4);
+        get_bits(&alac->gb, 4);
 
-        readbits(alac, 12); /* unknown, skip 12 bits */
+        get_bits(&alac->gb, 12); /* unknown, skip 12 bits */
 
-        hassize = readbits(alac, 1); /* the output sample size is stored soon */
+        hassize = get_bits(&alac->gb, 1); /* the output sample size is stored soon */
 
-        wasted_bytes = readbits(alac, 2); /* unknown ? */
+        wasted_bytes = get_bits(&alac->gb, 2); /* unknown ? */
 
-        isnotcompressed = readbits(alac, 1); /* whether the frame is compressed */
+        isnotcompressed = get_bits(&alac->gb, 1); /* whether the frame is compressed */
 
         if (hassize) {
             /* now read the number of samples,
              * as a 32bit integer */
-            outputsamples = readbits(alac, 32);
+            outputsamples = get_bits(&alac->gb, 32);
             *outputsize = outputsamples * alac->bytespersample;
         }
 
@@ -604,18 +502,18 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
             /* skip 16 bits, not sure what they are. seem to be used in
              * two channel case */
-            readbits(alac, 8);
-            readbits(alac, 8);
+            get_bits(&alac->gb, 8);
+            get_bits(&alac->gb, 8);
 
-            prediction_type = readbits(alac, 4);
-            prediction_quantitization = readbits(alac, 4);
+            prediction_type = get_bits(&alac->gb, 4);
+            prediction_quantitization = get_bits(&alac->gb, 4);
 
-            ricemodifier = readbits(alac, 3);
-            predictor_coef_num = readbits(alac, 5);
+            ricemodifier = get_bits(&alac->gb, 3);
+            predictor_coef_num = get_bits(&alac->gb, 5);
 
             /* read the predictor table */
             for (i = 0; i < predictor_coef_num; i++) {
-                predictor_coef_table[i] = (int16_t)readbits(alac, 16);
+                predictor_coef_table[i] = (int16_t)get_bits(&alac->gb, 16);
             }
 
             if (wasted_bytes) {
@@ -658,7 +556,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
             if (readsamplesize <= 16) {
                 int i;
                 for (i = 0; i < outputsamples; i++) {
-                    int32_t audiobits = readbits(alac, readsamplesize);
+                    int32_t audiobits = get_bits(&alac->gb, readsamplesize);
 
                     audiobits = SIGN_EXTENDED32(audiobits, readsamplesize);
 
@@ -669,13 +567,13 @@ static int alac_decode_frame(AVCodecContext *avctx,
                 for (i = 0; i < outputsamples; i++) {
                     int32_t audiobits;
 
-                    audiobits = readbits(alac, 16);
+                    audiobits = get_bits(&alac->gb, 16);
                     /* special case of sign extension..
                      * as we'll be ORing the low 16bits into this */
                     audiobits = audiobits << 16;
                     audiobits = audiobits >> (32 - readsamplesize);
 
-                    audiobits |= readbits(alac, readsamplesize - 16);
+                    audiobits |= get_bits(&alac->gb, readsamplesize - 16);
 
                     alac->outputsamples_buffer_a[i] = audiobits;
                 }
@@ -716,20 +614,20 @@ static int alac_decode_frame(AVCodecContext *avctx,
         /* 2^result = something to do with output waiting.
          * perhaps matters if we read > 1 frame in a pass?
          */
-        readbits(alac, 4);
+        get_bits(&alac->gb, 4);
 
-        readbits(alac, 12); /* unknown, skip 12 bits */
+        get_bits(&alac->gb, 12); /* unknown, skip 12 bits */
 
-        hassize = readbits(alac, 1); /* the output sample size is stored soon */
+        hassize = get_bits(&alac->gb, 1); /* the output sample size is stored soon */
 
-        wasted_bytes = readbits(alac, 2); /* unknown ? */
+        wasted_bytes = get_bits(&alac->gb, 2); /* unknown ? */
 
-        isnotcompressed = readbits(alac, 1); /* whether the frame is compressed */
+        isnotcompressed = get_bits(&alac->gb, 1); /* whether the frame is compressed */
 
         if (hassize) {
             /* now read the number of samples,
              * as a 32bit integer */
-            outputsamples = readbits(alac, 32);
+            outputsamples = get_bits(&alac->gb, 32);
             *outputsize = outputsamples * alac->bytespersample;
         }
 
@@ -751,31 +649,31 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
             int i;
 
-            interlacing_shift = readbits(alac, 8);
-            interlacing_leftweight = readbits(alac, 8);
+            interlacing_shift = get_bits(&alac->gb, 8);
+            interlacing_leftweight = get_bits(&alac->gb, 8);
 
             /******** channel 1 ***********/
-            prediction_type_a = readbits(alac, 4);
-            prediction_quantitization_a = readbits(alac, 4);
+            prediction_type_a = get_bits(&alac->gb, 4);
+            prediction_quantitization_a = get_bits(&alac->gb, 4);
 
-            ricemodifier_a = readbits(alac, 3);
-            predictor_coef_num_a = readbits(alac, 5);
+            ricemodifier_a = get_bits(&alac->gb, 3);
+            predictor_coef_num_a = get_bits(&alac->gb, 5);
 
             /* read the predictor table */
             for (i = 0; i < predictor_coef_num_a; i++) {
-                predictor_coef_table_a[i] = (int16_t)readbits(alac, 16);
+                predictor_coef_table_a[i] = (int16_t)get_bits(&alac->gb, 16);
             }
 
             /******** channel 2 *********/
-            prediction_type_b = readbits(alac, 4);
-            prediction_quantitization_b = readbits(alac, 4);
+            prediction_type_b = get_bits(&alac->gb, 4);
+            prediction_quantitization_b = get_bits(&alac->gb, 4);
 
-            ricemodifier_b = readbits(alac, 3);
-            predictor_coef_num_b = readbits(alac, 5);
+            ricemodifier_b = get_bits(&alac->gb, 3);
+            predictor_coef_num_b = get_bits(&alac->gb, 5);
 
             /* read the predictor table */
             for (i = 0; i < predictor_coef_num_b; i++) {
-                predictor_coef_table_b[i] = (int16_t)readbits(alac, 16);
+                predictor_coef_table_b[i] = (int16_t)get_bits(&alac->gb, 16);
             }
 
             /*********************/
@@ -837,8 +735,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
                 for (i = 0; i < outputsamples; i++) {
                     int32_t audiobits_a, audiobits_b;
 
-                    audiobits_a = readbits(alac, alac->setinfo_sample_size);
-                    audiobits_b = readbits(alac, alac->setinfo_sample_size);
+                    audiobits_a = get_bits(&alac->gb, alac->setinfo_sample_size);
+                    audiobits_b = get_bits(&alac->gb, alac->setinfo_sample_size);
 
                     audiobits_a = SIGN_EXTENDED32(audiobits_a, alac->setinfo_sample_size);
                     audiobits_b = SIGN_EXTENDED32(audiobits_b, alac->setinfo_sample_size);
@@ -851,15 +749,15 @@ static int alac_decode_frame(AVCodecContext *avctx,
                 for (i = 0; i < outputsamples; i++) {
                     int32_t audiobits_a, audiobits_b;
 
-                    audiobits_a = readbits(alac, 16);
+                    audiobits_a = get_bits(&alac->gb, 16);
                     audiobits_a = audiobits_a << 16;
                     audiobits_a = audiobits_a >> (32 - alac->setinfo_sample_size);
-                    audiobits_a |= readbits(alac, alac->setinfo_sample_size - 16);
+                    audiobits_a |= get_bits(&alac->gb, alac->setinfo_sample_size - 16);
 
-                    audiobits_b = readbits(alac, 16);
+                    audiobits_b = get_bits(&alac->gb, 16);
                     audiobits_b = audiobits_b << 16;
                     audiobits_b = audiobits_b >> (32 - alac->setinfo_sample_size);
-                    audiobits_b |= readbits(alac, alac->setinfo_sample_size - 16);
+                    audiobits_b |= get_bits(&alac->gb, alac->setinfo_sample_size - 16);
 
                     alac->outputsamples_buffer_a[i] = audiobits_a;
                     alac->outputsamples_buffer_b[i] = audiobits_b;
@@ -899,28 +797,26 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
 static int alac_decode_init(AVCodecContext * avctx)
 {
-    ALACContext *s = avctx->priv_data;
-    s->avctx = avctx;
-    s->context_initialized = 0;
+    ALACContext *alac = avctx->priv_data;
+    alac->avctx = avctx;
+    alac->context_initialized = 0;
 
-    s->alac = av_malloc(sizeof(alac_file));
-
-    s->alac->samplesize = s->avctx->bits_per_sample;
-    s->alac->numchannels = s->avctx->channels;
-    s->alac->bytespersample = (s->alac->samplesize / 8) * s->alac->numchannels;
+    alac->samplesize = alac->avctx->bits_per_sample;
+    alac->numchannels = alac->avctx->channels;
+    alac->bytespersample = (alac->samplesize / 8) * alac->numchannels;
 
     return 0;
 }
 
 static int alac_decode_close(AVCodecContext *avctx)
 {
-    ALACContext *s = avctx->priv_data;
+    ALACContext *alac = avctx->priv_data;
 
-    av_free(s->alac->predicterror_buffer_a);
-    av_free(s->alac->predicterror_buffer_b);
+    av_free(alac->predicterror_buffer_a);
+    av_free(alac->predicterror_buffer_b);
 
-    av_free(s->alac->outputsamples_buffer_a);
-    av_free(s->alac->outputsamples_buffer_b);
+    av_free(alac->outputsamples_buffer_a);
+    av_free(alac->outputsamples_buffer_b);
 
     return 0;
 }
