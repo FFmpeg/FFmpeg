@@ -34,6 +34,45 @@ static void put_be24(ByteIOContext *pb, int value)
     put_byte(pb, (value>> 0) & 0xFF );
 }
 
+static int get_audio_flags(AVCodecContext *enc){
+    int flags = 0x02;
+
+    switch (enc->sample_rate) {
+        case    44100:
+            flags |= 0x0C;
+            break;
+        case    22050:
+            flags |= 0x08;
+            break;
+        case    11025:
+            flags |= 0x04;
+            break;
+        case     8000: //nellymoser only
+        case     5512: //not mp3
+            flags |= 0x00;
+            break;
+        default:
+            return -1;
+    }
+
+    if (enc->channels > 1) {
+        flags |= 0x01;
+    }
+    
+    switch(enc->codec_id){
+    case CODEC_ID_MP3:
+        flags |= 0x20;
+        break;
+    case 0:
+        flags |= enc->codec_tag<<4;
+        break;
+    default:
+        return -1;
+    }
+    
+    return flags;
+}
+
 static int flv_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
@@ -60,6 +99,8 @@ static int flv_write_header(AVFormatContext *s)
             put_be32(pb,11); // size
             flv->reserved=5;
         }
+        if(enc->codec_type == CODEC_TYPE_AUDIO && get_audio_flags(enc)<0)
+            return -1;
     }
 
     return 0;
@@ -99,41 +140,8 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         flv->hasVideo = 1;
     } else {
         assert(enc->codec_type == CODEC_TYPE_AUDIO);
-        flags = 0x02;
-
-        switch (enc->sample_rate) {
-            case    44100:
-                flags |= 0x0C;
-                break;
-            case    22050:
-                flags |= 0x08;
-                break;
-            case    11025:
-                flags |= 0x04;
-                break;
-            case     8000: //nellymoser only
-            case     5512: //not mp3
-                flags |= 0x00;
-                break;
-            default:
-                assert(0);
-        }
-
-        if (enc->channels > 1) {
-            flags |= 0x01;
-        }
+        flags = get_audio_flags(enc);
         
-        switch(enc->codec_id){
-        case CODEC_ID_MP3:
-            flags |= 0x20;
-            break;
-        case 0:
-            flags |= enc->codec_tag<<4;
-            break;
-        default:
-            assert(0);
-        }
-
         assert(size);
 
         put_byte(pb, 8);
