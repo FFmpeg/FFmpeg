@@ -92,7 +92,7 @@ typedef struct WMADecodeContext {
     int16_t coefs1[MAX_CHANNELS][BLOCK_MAX_SIZE];
     float coefs[MAX_CHANNELS][BLOCK_MAX_SIZE] __attribute__((aligned(16)));
     MDCTContext mdct_ctx[BLOCK_NB_SIZES];
-    float *windows[BLOCK_NB_SIZES] __attribute__((aligned(16)));
+    float *windows[BLOCK_NB_SIZES];
     FFTSample mdct_tmp[BLOCK_MAX_SIZE] __attribute__((aligned(16))); /* temporary storage for imdct */
     /* output buffer for one frame and the last for IMDCT windowing */
     float frame_out[MAX_CHANNELS][BLOCK_MAX_SIZE * 2] __attribute__((aligned(16)));
@@ -212,8 +212,8 @@ static void init_coef_vlc(VLC *vlc,
 
     init_vlc(vlc, 9, n, table_bits, 1, 1, table_codes, 4, 4);
 
-    run_table = malloc(n * sizeof(uint16_t));
-    level_table = malloc(n * sizeof(uint16_t));
+    run_table = av_malloc(n * sizeof(uint16_t));
+    level_table = av_malloc(n * sizeof(uint16_t));
     p = levels_table;
     i = 2;
     level = 1;

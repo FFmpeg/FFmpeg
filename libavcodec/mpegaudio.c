@@ -770,6 +770,7 @@ int MPA_encode_frame(AVCodecContext *avctx,
 static int MPA_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
+    return 0;
 }
 
 AVCodec mp2_encoder = {

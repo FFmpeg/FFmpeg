@@ -33,6 +33,32 @@ void *av_mallocz(unsigned int size)
     return ptr;
 }
 
+char *av_strdup(const char *s)
+{
+    char *ptr;
+    int len;
+    len = strlen(s) + 1;
+    ptr = av_malloc(len);
+    if (!ptr)
+        return NULL;
+    memcpy(ptr, s, len);
+    return ptr;
+}
+
+/**
+ * realloc which does nothing if the block is large enough
+ */
+void *av_fast_realloc(void *ptr, int *size, int min_size)
+{
+    if(min_size < *size) 
+        return ptr;
+    
+    *size= min_size + 10*1024;
+
+    return av_realloc(ptr, *size);
+}
+
+
 /* allocation of static arrays - do not use for normal allocation */
 static unsigned int last_static = 0;
 static char*** array_static = NULL;
@@ -47,7 +73,7 @@ void *__av_mallocz_static(void** location, unsigned int size)
     if (location)
     {
 	if (l > last_static)
-	    array_static = realloc(array_static, l);
+	    array_static = av_realloc(array_static, l);
 	array_static[last_static++] = (char**) location;
 	*location = ptr;
     }
@@ -61,10 +87,10 @@ void av_free_static()
 	unsigned i;
 	for (i = 0; i < last_static; i++)
 	{
-	    free(*array_static[i]);
+	    av_free(*array_static[i]);
             *array_static[i] = NULL;
 	}
-	free(array_static);
+	av_free(array_static);
 	array_static = 0;
     }
     last_static = 0;

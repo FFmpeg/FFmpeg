@@ -751,8 +751,8 @@ static int init_pass2(MpegEncContext *s)
     }
 //printf("%lld %lld %lld %lld\n", available_bits[I_TYPE], available_bits[P_TYPE], available_bits[B_TYPE], all_available_bits);
         
-    qscale= malloc(sizeof(double)*rcc->num_entries);
-    blured_qscale= malloc(sizeof(double)*rcc->num_entries);
+    qscale= av_malloc(sizeof(double)*rcc->num_entries);
+    blured_qscale= av_malloc(sizeof(double)*rcc->num_entries);
 
     for(step=256*256; step>0.0000001; step*=0.5){
         expected_bits=0;
@@ -809,8 +809,8 @@ static int init_pass2(MpegEncContext *s)
 //        printf("%f %d %f\n", expected_bits, (int)all_available_bits, rate_factor);
         if(expected_bits > all_available_bits) rate_factor-= step;
     }
-    free(qscale);
-    free(blured_qscale);
+    av_free(qscale);
+    av_free(blured_qscale);
 
     if(abs(expected_bits/all_available_bits - 1.0) > 0.01 ){
         fprintf(stderr, "Error: 2pass curve failed to converge\n");

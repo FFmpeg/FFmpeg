@@ -1233,7 +1233,9 @@ int avcodec(void* handle, avc_cmd_t cmd, void* pin, void* pout);
 /* memory */
 void *av_malloc(unsigned int size);
 void *av_mallocz(unsigned int size);
+void *av_realloc(void *ptr, unsigned int size);
 void av_free(void *ptr);
+char *av_strdup(const char *s);
 void __av_freep(void **ptr);
 #define av_freep(p) __av_freep((void **)(p))
 void *av_fast_realloc(void *ptr, int *size, int min_size);

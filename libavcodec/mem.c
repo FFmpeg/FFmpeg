@@ -17,6 +17,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avcodec.h"
+
+/* here we can use OS dependant allocation functions */
+#undef malloc
+#undef free
+#undef realloc
+
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -25,12 +31,14 @@
    memory allocator. You do not need to suppress this file because the
    linker will do it automatically */
 
-/* memory alloc */
+/** 
+ * Memory allocation of size byte with alignment suitable for all
+ * memory accesses (including vectors if available on the
+ * CPU). av_malloc(0) must return a non NULL pointer.
+ */
 void *av_malloc(unsigned int size)
 {
     void *ptr;
-    
-//    if(size==0) return NULL;
     
 #if defined (HAVE_MEMALIGN)
     ptr = memalign(16,size);
@@ -63,23 +71,17 @@ void *av_malloc(unsigned int size)
 #else
     ptr = malloc(size);
 #endif
-    if (!ptr)
-        return NULL;
-//fprintf(stderr, "%X %d\n", (int)ptr, size);
-    /* NOTE: this memset should not be present */
-    memset(ptr, 0, size);
     return ptr;
 }
 
 /**
- * realloc which does nothing if the block is large enogh
+ * av_realloc semantics (same as glibc): if ptr is NULL and size > 0,
+ * identical to malloc(size). If size is zero, it is identical to
+ * free(ptr) and NULL is returned.  
  */
-void *av_fast_realloc(void *ptr, int *size, int min_size){
-    if(min_size < *size) return ptr;
-    
-    *size= min_size + 10*1024;
-
-    return realloc(ptr, *size);
+void *av_realloc(void *ptr, unsigned int size)
+{
+    return realloc(ptr, size);
 }
 
 /* NOTE: ptr = NULL is explicetly allowed */

@@ -1071,7 +1071,7 @@ static int avpicture_alloc(AVPicture *picture,
 
 static void avpicture_free(AVPicture *picture)
 {
-    free(picture->data[0]);
+    av_free(picture->data[0]);
 }
 
 /* XXX: always use linesize. Return -1 if not supported */
