@@ -1077,6 +1077,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     }else{
         flush_put_bits(&s->pb);
         s->dsp.bswap_buf((uint32_t*)buf, (uint32_t*)buf, size);
+        avctx->stats_out[0] = '\0';
     }
     
     s->picture_number++;
