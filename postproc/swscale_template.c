@@ -717,14 +717,17 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
 		: "%eax"
 	);
 #else
-	//FIXME Optimize (just quickly writen not opti..)
-	//FIXME replace MINMAX with LUTs
 	int i;
 	for(i=0; i<dstW; i++)
 	{
 		int val= lumSrc[i]>>7;
+		
+		if(val&256){
+			if(val<0) val=0;
+			else      val=255;
+		}
 
-		dest[i]= MIN(MAX(val>>19, 0), 255);
+		dest[i]= val;
 	}
 
 	if(uDest != NULL)
@@ -733,8 +736,15 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
 			int u=chrSrc[i]>>7;
 			int v=chrSrc[i + 2048]>>7;
 
-			uDest[i]= MIN(MAX(u>>19, 0), 255);
-			vDest[i]= MIN(MAX(v>>19, 0), 255);
+			if((u|v)&256){
+				if(u<0)         u=0;
+				else if (u>255) u=255;
+				if(v<0)         v=0;
+				else if (v>255) v=255;
+			}
+
+			uDest[i]= u;
+			vDest[i]= v;
 		}
 #endif
 }
@@ -2575,6 +2585,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	const int lumXInc= c->lumXInc;
 	const int chrXInc= c->chrXInc;
 	const int dstFormat= c->dstFormat;
+	const int srcFormat= c->srcFormat;
 	const int flags= c->flags;
 	const int canMMX2BeUsed= c->canMMX2BeUsed;
 	int16_t *vLumFilterPos= c->vLumFilterPos;
@@ -2609,7 +2620,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	int dstStride[3];
 	uint8_t *src[3];
 	uint8_t *dst[3];
-	
+
 	if(c->srcFormat == IMGFMT_I420){
 		src[0]= srcParam[0];
 		src[1]= srcParam[2];
@@ -2626,7 +2637,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		srcStride[1]= srcStrideParam[1];
 		srcStride[2]= srcStrideParam[2];
 	}
-	else if(isPacked(c->srcFormat) || isBGR(c->srcFormat) || isRGB(c->srcFormat)){
+	else if(isPacked(c->srcFormat)){
 		src[0]=
 		src[1]=
 		src[2]= srcParam[0];
@@ -2729,7 +2740,9 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < ((srcSliceH+1)>>1))
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
 				//FIXME replace parameters through context struct (some at least)
-				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
+
+				if(!(isGray(srcFormat) || isGray(dstFormat)))
+					RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
 						flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
 						funnyUVCode, c->srcFormat, formatConvBuffer, 
 						c->chrMmx2Filter, c->chrMmx2FilterPos);
@@ -2768,7 +2781,9 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 				ASSERT(chrBufIndex < 2*vChrBufSize)
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < ((srcSliceH+1)>>1))
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
-				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
+
+				if(!(isGray(srcFormat) || isGray(dstFormat)))
+					RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
 						flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
 						funnyUVCode, c->srcFormat, formatConvBuffer, 
 						c->chrMmx2Filter, c->chrMmx2FilterPos);
@@ -2788,9 +2803,9 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 #endif
 	    if(dstY < dstH-2)
 	    {
-		if(isPlanarYUV(dstFormat)) //YV12 like
+		if(isPlanarYUV(dstFormat) || isGray(dstFormat)) //YV12 like
 		{
-			if(dstY&1) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
+			if((dstY&1) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
 			if(vLumFilterSize == 1 && vChrFilterSize == 1) // Unscaled YV12
 			{
 				int16_t *lumBuf = lumPixBuf[0];
