@@ -426,6 +426,7 @@ static inline void emms(void)
 }
 
 #define __align8 __attribute__ ((aligned (8)))
+#define STRIDE_ALIGN 8
 
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
@@ -435,6 +436,7 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 /* This is to use 4 bytes read to the IDCT pointers for some 'zero'
    line optimizations */
 #define __align8 __attribute__ ((aligned (4)))
+#define STRIDE_ALIGN 4
 
 void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx);
 
@@ -442,6 +444,7 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx);
 
 /* SPARC/VIS IDCT needs 8-byte aligned DCT blocks */
 #define __align8 __attribute__ ((aligned (8)))
+#define STRIDE_ALIGN 8
 
 void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx);
 
@@ -449,11 +452,13 @@ void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx);
 
 /* SPARC/VIS IDCT needs 8-byte aligned DCT blocks */
 #define __align8 __attribute__ ((aligned (8)))
+#define STRIDE_ALIGN 8
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(ARCH_ALPHA)
 
 #define __align8 __attribute__ ((aligned (8)))
+#define STRIDE_ALIGN 8
 
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 
@@ -470,24 +475,28 @@ extern int mm_flags;
 #endif
 
 #define __align8 __attribute__ ((aligned (16)))
+#define STRIDE_ALIGN 16
 
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(HAVE_MMI)
 
 #define __align8 __attribute__ ((aligned (16)))
+#define STRIDE_ALIGN 16
 
 void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx);
 
 #elif defined(ARCH_SH4)
 
 #define __align8 __attribute__ ((aligned (8)))
+#define STRIDE_ALIGN 8
 
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 
 #else
 
-#define __align8
+#define __align8 __attribute__ ((aligned (8)))
+#define STRIDE_ALIGN 8
 
 #endif
 
