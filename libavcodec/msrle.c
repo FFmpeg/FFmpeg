@@ -177,7 +177,8 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     }
 
     /* grossly inefficient, but...oh well */
-    memcpy(s->frame.data[0], s->prev_frame.data[0], 
+    if (s->prev_frame.data[0] != NULL)
+	memcpy(s->frame.data[0], s->prev_frame.data[0], 
         s->frame.linesize[0] * s->avctx->height);
 
     msrle_decode_pal8(s);
