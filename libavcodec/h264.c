@@ -298,6 +298,8 @@ typedef struct H264Context{
     uint16_t     *cbp_table;
     uint8_t     *chroma_pred_mode_table;
     int         last_qscale_diff;
+    int16_t     (*mvd_table[2])[2];
+    int16_t     mvd_cache[2][5*8][2];
 
 }H264Context;
 
@@ -628,9 +630,52 @@ static inline void fill_caches(H264Context *h, int mb_type){
             *(uint32_t*)h->mv_cache [list][scan8[13]+1]= //FIXME remove past 3 (init somewher else)
             *(uint32_t*)h->mv_cache [list][scan8[4 ]]=
             *(uint32_t*)h->mv_cache [list][scan8[12]]= 0;
+
+            if( h->pps.cabac ) {
+                /* XXX beurk, Load mvd */
+                if(IS_INTER(topleft_type)){
+                    const int b_xy = h->mb2b_xy[topleft_xy] + 3 + 3*h->b_stride;
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] - 1 - 1*8]= *(uint32_t*)h->mvd_table[list][b_xy];
+                }else{
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] - 1 - 1*8]= 0;
+                }
+
+                if(IS_INTER(top_type)){
+                    const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] + 0 - 1*8]= *(uint32_t*)h->mvd_table[list][b_xy + 0];
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] + 1 - 1*8]= *(uint32_t*)h->mvd_table[list][b_xy + 1];
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] + 2 - 1*8]= *(uint32_t*)h->mvd_table[list][b_xy + 2];
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] + 3 - 1*8]= *(uint32_t*)h->mvd_table[list][b_xy + 3];
+                }else{
+                    *(uint32_t*)h->mvd_cache [list][scan8[0] + 0 - 1*8]= 
+                    *(uint32_t*)h->mvd_cache [list][scan8[0] + 1 - 1*8]= 
+                    *(uint32_t*)h->mvd_cache [list][scan8[0] + 2 - 1*8]= 
+                    *(uint32_t*)h->mvd_cache [list][scan8[0] + 3 - 1*8]= 0;
+                }
+                if(IS_INTER(left_type[0])){
+                    const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] - 1 + 0*8]= *(uint32_t*)h->mvd_table[list][b_xy + h->b_stride*left_block[0]];
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] - 1 + 1*8]= *(uint32_t*)h->mvd_table[list][b_xy + h->b_stride*left_block[1]];
+                }else{
+                    *(uint32_t*)h->mvd_cache [list][scan8[0] - 1 + 0*8]=
+                    *(uint32_t*)h->mvd_cache [list][scan8[0] - 1 + 1*8]= 0;
+                }
+                if(IS_INTER(left_type[1])){
+                    const int b_xy= h->mb2b_xy[left_xy[1]] + 3;
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] - 1 + 2*8]= *(uint32_t*)h->mvd_table[list][b_xy + h->b_stride*left_block[2]];
+                    *(uint32_t*)h->mvd_cache[list][scan8[0] - 1 + 3*8]= *(uint32_t*)h->mvd_table[list][b_xy + h->b_stride*left_block[3]];
+                }else{
+                    *(uint32_t*)h->mvd_cache [list][scan8[0] - 1 + 2*8]=
+                    *(uint32_t*)h->mvd_cache [list][scan8[0] - 1 + 3*8]= 0;
+                }
+                *(uint32_t*)h->mvd_cache [list][scan8[5 ]+1]=
+                *(uint32_t*)h->mvd_cache [list][scan8[7 ]+1]=
+                *(uint32_t*)h->mvd_cache [list][scan8[13]+1]= //FIXME remove past 3 (init somewher else)
+                *(uint32_t*)h->mvd_cache [list][scan8[4 ]]=
+                *(uint32_t*)h->mvd_cache [list][scan8[12]]= 0;
+            }
         }
 //FIXME
-
     }
 #endif
 }
@@ -938,6 +983,13 @@ static inline void write_back_motion(H264Context *h, int mb_type){
                     *(uint64_t*)s->current_picture.motion_val[list][b_xy + 0 + y*h->b_stride]=
                     *(uint64_t*)s->current_picture.motion_val[list][b_xy + 2 + y*h->b_stride]= 0;
                 }
+                if( h->pps.cabac ) {
+                    /* FIXME needed ? */
+                    for(y=0; y<4; y++){
+                        *(uint64_t*)h->mvd_table[list][b_xy + 0 + y*h->b_stride]=
+                        *(uint64_t*)h->mvd_table[list][b_xy + 2 + y*h->b_stride]= 0;
+                    }
+                }
                 for(y=0; y<2; y++){
                     *(uint16_t*)s->current_picture.motion_val[list][b8_xy + y*h->b8_stride]= (LIST_NOT_USED&0xFF)*0x0101;
                 }
@@ -948,6 +1000,12 @@ static inline void write_back_motion(H264Context *h, int mb_type){
         for(y=0; y<4; y++){
             *(uint64_t*)s->current_picture.motion_val[list][b_xy + 0 + y*h->b_stride]= *(uint64_t*)h->mv_cache[list][scan8[0]+0 + 8*y];
             *(uint64_t*)s->current_picture.motion_val[list][b_xy + 2 + y*h->b_stride]= *(uint64_t*)h->mv_cache[list][scan8[0]+2 + 8*y];
+        }
+        if( h->pps.cabac ) {
+            for(y=0; y<4; y++){
+                *(uint64_t*)h->mvd_table[list][b_xy + 0 + y*h->b_stride]= *(uint64_t*)h->mvd_cache[list][scan8[0]+0 + 8*y];
+                *(uint64_t*)h->mvd_table[list][b_xy + 2 + y*h->b_stride]= *(uint64_t*)h->mvd_cache[list][scan8[0]+2 + 8*y];
+            }
         }
         for(y=0; y<2; y++){
             s->current_picture.ref_index[list][b8_xy + 0 + y*h->b8_stride]= h->ref_cache[list][scan8[0]+0 + 16*y];
@@ -2110,6 +2168,8 @@ static void free_tables(H264Context *h){
     av_freep(&h->intra4x4_pred_mode);
     av_freep(&h->chroma_pred_mode_table);
     av_freep(&h->cbp_table);
+    av_freep(&h->mvd_table[0]);
+    av_freep(&h->mvd_table[1]);
     av_freep(&h->non_zero_count);
     av_freep(&h->slice_table_base);
     av_freep(&h->top_border);
@@ -2137,6 +2197,8 @@ static int alloc_tables(H264Context *h){
     if( h->pps.cabac ) {
         CHECKED_ALLOCZ(h->chroma_pred_mode_table, big_mb_num * sizeof(uint8_t))
         CHECKED_ALLOCZ(h->cbp_table, big_mb_num * sizeof(uint16_t))
+        CHECKED_ALLOCZ(h->mvd_table[0], 32*big_mb_num * sizeof(uint16_t));
+        CHECKED_ALLOCZ(h->mvd_table[1], 32*big_mb_num * sizeof(uint16_t));
     }
 
     memset(h->slice_table_base, -1, big_mb_num  * sizeof(uint8_t));
@@ -3759,9 +3821,9 @@ static int decode_cabac_mb_type( H264Context *h ) {
                     return 3; /* P_8x8; */
             } else {
                 if( get_cabac( &h->cabac, &h->cabac_state[17] ) == 0 )
-                    return 1; /* P_L0_D16x8; */
-                else
                     return 2; /* P_L0_D8x16; */
+                else
+                    return 1; /* P_L0_D16x8; */
             }
         } else {
             int mb_type;
@@ -3976,6 +4038,75 @@ static int decode_cabac_mb_dqp( H264Context *h) {
     else
         return -(val + 1)/2;
 }
+static int decode_cabac_mb_sub_type( H264Context *h ) {
+    if( get_cabac( &h->cabac, &h->cabac_state[21] ) )
+        return 0;   /* 8x8 */
+    if( !get_cabac( &h->cabac, &h->cabac_state[22] ) )
+        return 1;   /* 8x4 */
+    if( get_cabac( &h->cabac, &h->cabac_state[23] ) )
+        return 2;   /* 4x8 */
+    return 3;       /* 4x4 */
+}
+
+static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
+    int refa = h->ref_cache[list][scan8[n] - 1];
+    int refb = h->ref_cache[list][scan8[n] - 8];
+    int ref  = 0;
+    int ctx  = 0;
+
+    if( refa > 0 )
+        ctx++;
+    if( refb > 0 )
+        ctx += 2;
+
+    while( get_cabac( &h->cabac, &h->cabac_state[54+ctx] ) ) {
+        ref++;
+        if( ctx < 4 )
+            ctx = 4;
+        else
+            ctx = 5;
+    }
+    return ref;
+}
+
+static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
+    int amvd = abs( h->mvd_cache[list][scan8[n] - 1][l] ) +
+               abs( h->mvd_cache[list][scan8[n] - 8][l] );
+    int ctxbase = (l == 0) ? 40 : 47;
+    int ctx;
+    int mvd = 0;
+
+    if( amvd < 3 )
+        ctx = 0;
+    else if( amvd > 32 )
+        ctx = 2;
+    else
+        ctx = 1;
+
+    while( mvd < 9 && get_cabac( &h->cabac, &h->cabac_state[ctxbase+ctx] ) ) {
+        mvd++;
+        if( ctx < 3 )
+            ctx = 3;
+        else if( ctx < 6 )
+            ctx++;
+    }
+
+    if( mvd >= 9 ) {
+        int k = 3;
+        while( get_cabac_bypass( &h->cabac ) ) {
+            mvd += 1 << k;
+            k++;
+        }
+        while( k-- ) {
+            if( get_cabac_bypass( &h->cabac ) )
+                mvd += 1 << k;
+        }
+    }
+    if( mvd != 0 && get_cabac_bypass( &h->cabac ) )
+        return -mvd;
+    return mvd;
+}
+
 
 static int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
     MpegEncContext * const s = &h->s;
@@ -4254,6 +4385,7 @@ static int decode_mb_cabac(H264Context *h) {
             fill_caches(h, mb_type); //FIXME check what is needed and what not ...
             pred_pskip_motion(h, &mx, &my);
             fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);
+            fill_rectangle(  h->mvd_cache[0][scan8[0]], 4, 4, 8, pack16to32(0,0), 4);
             fill_rectangle(  h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mx,my), 4);
             write_back_motion(h, mb_type);
 
@@ -4275,14 +4407,11 @@ static int decode_mb_cabac(H264Context *h) {
         av_log( h->s.avctx, AV_LOG_ERROR, "decode_cabac_mb_type failed\n" );
         return -1;
     }
-    //av_log( s->avctx, AV_LOG_ERROR, "mb_type=%d\n", mb_type );
 
     if( h->slice_type == P_TYPE ) {
         if( mb_type < 5) {
             partition_count= p_mb_type_info[mb_type].partition_count;
             mb_type=         p_mb_type_info[mb_type].type;
-            av_log( h->s.avctx, AV_LOG_ERROR, "gni P-type not yet supported\n" );
-            return -1;
         } else {
             mb_type -= 5;
             goto decode_intra_mb;
@@ -4333,11 +4462,166 @@ decode_intra_mb:
         h->chroma_pred_mode= check_intra_pred_mode( h, h->chroma_pred_mode );
         if( h->chroma_pred_mode < 0 ) return -1;
     } else if( partition_count == 4 ) {
-        /* TODO */
-        return -1;
+        int i, j, sub_partition_count[4], list, ref[2][4];
+
+        /* Only P-frame */
+        for( i = 0; i < 4; i++ ) {
+            h->sub_mb_type[i] = decode_cabac_mb_sub_type( h );
+            sub_partition_count[i]= p_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
+            h->sub_mb_type[i]=      p_sub_mb_type_info[ h->sub_mb_type[i] ].type;
+        }
+
+        for( list = 0; list < 2; list++ ) {
+            if( h->ref_count[list] > 0 ) {
+                for( i = 0; i < 4; i++ ) {
+                    if(IS_DIR(h->sub_mb_type[i], 0, list) && !IS_DIRECT(h->sub_mb_type[i])){
+                        if( h->ref_count[list] > 1 )
+                            ref[list][i] = decode_cabac_mb_ref( h, list, 4*i );
+                        else
+                            ref[list][i] = 0;
+                    } else {
+                        ref[list][i] = -1;
+                    }
+                    h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ]=
+                    h->ref_cache[list][ scan8[4*i]+8 ]=h->ref_cache[list][ scan8[4*i]+9 ]= ref[list][i];
+                }
+            }
+        }
+
+        for(list=0; list<2; list++){
+
+            for(i=0; i<4; i++){
+                //h->ref_cache[list][ scan8[4*i]   ]=h->ref_cache[list][ scan8[4*i]+1 ]=
+                //h->ref_cache[list][ scan8[4*i]+8 ]=h->ref_cache[list][ scan8[4*i]+9 ]= ref[list][i];
+
+                if(IS_DIR(h->sub_mb_type[i], 0, list) && !IS_DIRECT(h->sub_mb_type[i])){
+                    const int sub_mb_type= h->sub_mb_type[i];
+                    const int block_width= (sub_mb_type & (MB_TYPE_16x16|MB_TYPE_16x8)) ? 2 : 1;
+                    for(j=0; j<sub_partition_count[i]; j++){
+                        int mpx, mpy;
+                        int mx, my;
+                        const int index= 4*i + block_width*j;
+                        int16_t (* mv_cache)[2]= &h->mv_cache[list][ scan8[index] ];
+                        int16_t (* mvd_cache)[2]= &h->mvd_cache[list][ scan8[index] ];
+                        pred_motion(h, index, block_width, list, h->ref_cache[list][ scan8[index] ], &mpx, &mpy);
+
+                        mx = mpx + decode_cabac_mb_mvd( h, list, index, 0 );
+                        my = mpy + decode_cabac_mb_mvd( h, list, index, 1 );
+                        tprintf("final mv:%d %d\n", mx, my);
+
+                        if(IS_SUB_8X8(sub_mb_type)){
+                            mv_cache[ 0 ][0]= mv_cache[ 1 ][0]=
+                            mv_cache[ 8 ][0]= mv_cache[ 9 ][0]= mx;
+                            mv_cache[ 0 ][1]= mv_cache[ 1 ][1]=
+                            mv_cache[ 8 ][1]= mv_cache[ 9 ][1]= my;
+
+                            mvd_cache[ 0 ][0]= mvd_cache[ 1 ][0]=
+                            mvd_cache[ 8 ][0]= mvd_cache[ 9 ][0]= mx - mpx;
+                            mvd_cache[ 0 ][1]= mvd_cache[ 1 ][1]=
+                            mvd_cache[ 8 ][1]= mvd_cache[ 9 ][1]= my - mpy;
+                        }else if(IS_SUB_8X4(sub_mb_type)){
+                            mv_cache[ 0 ][0]= mv_cache[ 1 ][0]= mx;
+                            mv_cache[ 0 ][1]= mv_cache[ 1 ][1]= my;
+
+                            mvd_cache[ 0 ][0]= mvd_cache[ 1 ][0]= mx- mpx;
+                            mvd_cache[ 0 ][1]= mvd_cache[ 1 ][1]= my - mpy;
+                        }else if(IS_SUB_4X8(sub_mb_type)){
+                            mv_cache[ 0 ][0]= mv_cache[ 8 ][0]= mx;
+                            mv_cache[ 0 ][1]= mv_cache[ 8 ][1]= my;
+
+                            mvd_cache[ 0 ][0]= mvd_cache[ 8 ][0]= mx - mpx;
+                            mvd_cache[ 0 ][1]= mvd_cache[ 8 ][1]= my - mpy;
+                        }else{
+                            assert(IS_SUB_4X4(sub_mb_type));
+                            mv_cache[ 0 ][0]= mx;
+                            mv_cache[ 0 ][1]= my;
+
+                            mvd_cache[ 0 ][0]= mx - mpx;
+                            mvd_cache[ 0 ][1]= my - mpy;
+                        }
+                    }
+                }else{
+                    uint32_t *p= (uint32_t *)&h->mv_cache[list][ scan8[4*i] ][0];
+                    uint32_t *pd= (uint32_t *)&h->mvd_cache[list][ scan8[4*i] ][0];
+                    p[0] = p[1] = p[8] = p[9] = 0;
+                    pd[0]= pd[1]= pd[8]= pd[9]= 0;
+                }
+            }
+        }
     } else if( !IS_DIRECT(mb_type) ) {
-        /* TODO */
-        return -1;
+        int list, mx, my, i, mpx, mpy;
+        if(IS_16X16(mb_type)){
+            for(list=0; list<2; list++){
+                if(IS_DIR(mb_type, 0, list)){
+                    if(h->ref_count[list] > 0 ){
+                        const int ref = h->ref_count[list] > 1 ? decode_cabac_mb_ref( h, list, 0 ) : 0;
+                        fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, ref, 1);
+                    }
+                }
+            }
+            for(list=0; list<2; list++){
+                if(IS_DIR(mb_type, 0, list)){
+                    pred_motion(h, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mpx, &mpy);
+
+                    mx = mpx + decode_cabac_mb_mvd( h, list, 0, 0 );
+                    my = mpy + decode_cabac_mb_mvd( h, list, 0, 1 );
+                    tprintf("final mv:%d %d\n", mx, my);
+
+                    fill_rectangle(h->mvd_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx-mpx,my-mpy), 4);
+                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
+                }
+            }
+        }
+        else if(IS_16X8(mb_type)){
+            for(list=0; list<2; list++){
+                if(h->ref_count[list]>0){
+                    for(i=0; i<2; i++){
+                        if(IS_DIR(mb_type, i, list)){
+                            const int ref= h->ref_count[list] > 1 ? decode_cabac_mb_ref( h, list, 8*i ) : 0;
+                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, ref, 1);
+                        }
+                    }
+                }
+            }
+            for(list=0; list<2; list++){
+                for(i=0; i<2; i++){
+                    if(IS_DIR(mb_type, i, list)){
+                        pred_16x8_motion(h, 8*i, list, h->ref_cache[list][scan8[0] + 16*i], &mpx, &mpy);
+                        mx = mpx + decode_cabac_mb_mvd( h, list, 8*i, 0 );
+                        my = mpy + decode_cabac_mb_mvd( h, list, 8*i, 1 );
+                        tprintf("final mv:%d %d\n", mx, my);
+
+                        fill_rectangle(h->mvd_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx-mpx,my-mpy), 4);
+                        fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx,my), 4);
+                    }
+                }
+            }
+        }else{
+            assert(IS_8X16(mb_type));
+            for(list=0; list<2; list++){
+                if(h->ref_count[list]>0){
+                    for(i=0; i<2; i++){
+                        if(IS_DIR(mb_type, i, list)){ //FIXME optimize
+                            const int ref= h->ref_count[list] > 1 ? decode_cabac_mb_ref( h, list, 4*i ) : 0;
+                            fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, ref, 1);
+                        }
+                    }
+                }
+            }
+            for(list=0; list<2; list++){
+                for(i=0; i<2; i++){
+                    if(IS_DIR(mb_type, i, list)){
+                        pred_8x16_motion(h, i*4, list, h->ref_cache[list][ scan8[0] + 2*i ], &mpx, &mpy);
+                        mx = mpx + decode_cabac_mb_mvd( h, list, 4*i, 0 );
+                        my = mpy + decode_cabac_mb_mvd( h, list, 4*i, 1 );
+
+                        tprintf("final mv:%d %d\n", mx, my);
+                        fill_rectangle(h->mvd_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx-mpx,my-mpy), 4);
+                        fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx,my), 4);
+                    }
+                }
+            }
+        }
     }
 
    if( IS_INTER( mb_type ) )
@@ -4348,7 +4632,6 @@ decode_intra_mb:
         cbp |= decode_cabac_mb_cbp_chroma( h ) << 4;
     }
 
-    //av_log( NULL, AV_LOG_ERROR, "cbp=%d\n", cbp );
     h->cbp_table[mb_xy] = cbp;
 
     if( cbp || IS_INTRA16x16( mb_type ) ) {
