@@ -455,6 +455,18 @@ typedef struct MJpegDecodeContext {
     UINT8 buffer[PICTURE_BUFFER_SIZE]; 
 } MJpegDecodeContext;
 
+static void build_vlc(VLC *vlc, const UINT8 *bits_table, const UINT8 *val_table, 
+                      int nb_codes)
+{
+    UINT8 huff_size[256];
+    UINT16 huff_code[256];
+
+    memset(huff_size, 0, sizeof(huff_size));
+    build_huffman_codes(huff_size, huff_code, bits_table, val_table);
+    
+    init_vlc(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2);
+}
+
 static int mjpeg_decode_init(AVCodecContext *avctx)
 {
     MJpegDecodeContext *s = avctx->priv_data;
@@ -465,6 +477,11 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
                                                  account FF 00 case */
     s->start_code = -1;
     s->buf_ptr = s->buffer;
+
+    build_vlc(&s->vlcs[0][0], bits_dc_luminance, val_dc_luminance, 12);
+    build_vlc(&s->vlcs[0][1], bits_dc_chrominance, val_dc_chrominance, 12);
+    build_vlc(&s->vlcs[1][0], bits_ac_luminance, val_ac_luminance, 251);
+    build_vlc(&s->vlcs[1][1], bits_ac_chrominance, val_ac_chrominance, 251);
     return 0;
 }
 
@@ -501,8 +518,6 @@ static int mjpeg_decode_dht(MJpegDecodeContext *s,
     int len, index, i, class, n, v, code_max;
     UINT8 bits_table[17];
     UINT8 val_table[256];
-    UINT8 huff_size[256];
-    UINT16 huff_code[256];
     
     init_get_bits(&s->gb, buf, buf_size);
 
@@ -536,17 +551,11 @@ static int mjpeg_decode_dht(MJpegDecodeContext *s,
         }
         len -= n;
 
-        /* now build size/code table */
-        memset(huff_size, 0, sizeof(huff_size));
-        build_huffman_codes(huff_size, huff_code, bits_table, val_table);
-        
         /* build VLC and flush previous vlc if present */
         free_vlc(&s->vlcs[class][index]);
         dprintf("class=%d index=%d nb_codes=%d\n",
                class, index, code_max + 1);
-        init_vlc(&s->vlcs[class][index], 9, code_max + 1,
-                 huff_size, 1, 1,
-                 huff_code, 2, 2);
+        build_vlc(&s->vlcs[class][index], bits_table, val_table, code_max + 1);
     }
     return 0;
 }
