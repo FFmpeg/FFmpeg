@@ -183,13 +183,6 @@ int MPV_common_init(MpegEncContext *s)
     /* default structure is frame */
     s->picture_structure = PICT_FRAME;
 
-    /* init default q matrix (only for mpeg and mjpeg) */
-    for(i=0;i<64;i++) {
-        s->intra_matrix[i] = default_intra_matrix[i];
-        s->chroma_intra_matrix[i] = default_intra_matrix[i];
-        s->non_intra_matrix[i] = default_non_intra_matrix[i];
-        s->chroma_non_intra_matrix[i] = default_non_intra_matrix[i];
-    }
     /* init macroblock skip table */
     if (!s->encoding) {
         s->mbskip_table = av_mallocz(s->mb_width * s->mb_height);
@@ -248,6 +241,7 @@ void MPV_common_end(MpegEncContext *s)
 int MPV_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
+    int i;
 
     s->bit_rate = avctx->bit_rate;
     s->frame_rate = avctx->frame_rate;
@@ -312,6 +306,12 @@ int MPV_encode_init(AVCodecContext *avctx)
     if (MPV_common_init(s) < 0)
         return -1;
     
+    /* init default q matrix */
+    for(i=0;i<64;i++) {
+        s->intra_matrix[i] = default_intra_matrix[i];
+        s->non_intra_matrix[i] = default_non_intra_matrix[i];
+    }
+
     /* rate control init */
     rate_control_init(s);
 
