@@ -2397,8 +2397,10 @@ static int decode_frame(AVCodecContext * avctx,
 	    if (len > buf_size)
 		len = buf_size;
             if (len == 0) {
-                /* frame too long: resync */
+		/* frame too long: resync */
                 s->frame_size = 0;
+		memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
+		s->inbuf_ptr--;
             } else {
                 UINT8 *p, *pend;
                 UINT32 header1;
