@@ -92,6 +92,7 @@ typedef struct HTTPContext {
     int suppress_log;
     int bandwidth;
     time_t start_time;
+    int wmp_client_id;
     char protocol[16];
     char method[16];
     char url[128];
@@ -195,8 +196,9 @@ static void log_connection(HTTPContext *c)
     p = buf2 + strlen(p) - 1;
     if (*p == '\n')
         *p = '\0';
-    http_log("%s - - [%s] \"%s %s %s\" %d %lld\n", 
-             buf1, buf2, c->method, c->url, c->protocol, (c->http_error ? c->http_error : 200), c->data_count);
+    http_log("%s - - [%s] \"%s %s %s\" %d %lld %s\n", 
+             buf1, buf2, c->method, c->url, c->protocol, (c->http_error ? c->http_error : 200), c->data_count,
+             c->stream ? c->stream->filename : "");
 }
 
 /* main loop of the http server */
@@ -446,6 +448,136 @@ static int handle_http(HTTPContext *c, long cur_time)
     return 0;
 }
 
+static int extract_rates(char *rates, int ratelen, const char *request)
+{
+    const char *p;
+
+    for (p = request; *p && *p != '\r' && *p != '\n'; ) {
+        if (strncasecmp(p, "Pragma:", 7) == 0) {
+            const char *q = p + 7;
+
+            while (*q && *q != '\n' && isspace(*q))
+                q++;
+
+            if (strncasecmp(q, "stream-switch-entry=", 20) == 0) {
+                int stream_no;
+                int rate_no;
+
+                q += 20;
+
+                memset(rates, 0, ratelen);
+
+                while (1) {
+                    while (*q && *q != '\n' && *q != ':')
+                        q++;
+
+                    if (sscanf(q, ":%d:%d", &stream_no, &rate_no) != 2) {
+                        break;
+                    }
+                    stream_no--;
+                    if (stream_no < ratelen && stream_no >= 0) {
+                        rates[stream_no] = rate_no;
+                    }
+
+                    while (*q && *q != '\n' && !isspace(*q))
+                        q++;
+                }
+
+                return 1;
+            }
+        }
+        p = strchr(p, '\n');
+        if (!p)
+            break;
+
+        p++;
+    }
+
+    return 0;
+}
+
+static FFStream *find_optimal_stream(FFStream *req, char *rates)
+{
+    int i;
+    FFStream *rover;
+    int req_bitrate = 0;
+    int want_bitrate = 0;
+    FFStream *best = 0;
+    int best_bitrate;
+
+    for (i = 0; i < req->nb_streams; i++) {
+        AVCodecContext *codec = &req->streams[i]->codec;
+
+        req_bitrate += codec->bit_rate;
+
+        switch(rates[i]) {
+            case 0:
+                want_bitrate += codec->bit_rate;
+                break;
+            case 1:
+                want_bitrate += codec->bit_rate / 2;
+                break;
+            case 2:
+                break;
+        }
+    }
+
+    best_bitrate = req_bitrate;
+    if (best_bitrate <= want_bitrate)
+        return 0;       /* We are OK */
+
+    /* Now we have the actual rates that we can use. Now find the stream that uses most of it! */
+
+    for (rover = first_stream; rover; rover = rover->next) {
+        if (rover->feed != req->feed ||
+            rover->fmt != req->fmt ||
+            rover->nb_streams != req->nb_streams ||
+            rover == req) {
+            continue;
+        }
+
+        /* Now see if the codecs all match */
+
+        for (i = 0; i < req->nb_streams; i++) {
+            AVCodecContext *codec = &req->streams[i]->codec;
+            AVCodecContext *rovercodec = &rover->streams[i]->codec;
+
+            if (rovercodec->codec_id != codec->codec_id ||
+                rovercodec->sample_rate != codec->sample_rate) {
+                /* Does the video width and height have to match?? */
+                break;
+            }
+        }
+
+        if (i == req->nb_streams) {
+            /* The rovercodec is another possible stream */
+            int rover_bitrate = 0;
+
+            for (i = 0; i < req->nb_streams; i++) {
+                AVCodecContext *codec = &rover->streams[i]->codec;
+
+                rover_bitrate += codec->bit_rate;
+            }
+
+            /* We want to choose the largest rover_bitrate <= want_bitrate, or the smallest
+             * rover_bitrate if none <= want_bitrate
+             */
+            if (rover_bitrate <= want_bitrate) {
+                if (best_bitrate > want_bitrate || rover_bitrate > best_bitrate) {
+                    best_bitrate = rover_bitrate;
+                    best = rover;
+                }
+            } else {
+                if (rover_bitrate < best_bitrate) {
+                    best_bitrate = rover_bitrate;
+                    best = rover;
+                }
+            }
+        }
+    }
+
+    return best;
+}
 
 /* parse http request and prepare header */
 static int http_parse_request(HTTPContext *c)
@@ -462,6 +594,7 @@ static int http_parse_request(HTTPContext *c)
     const char *mime_type;
     FFStream *stream;
     int i;
+    char ratebuf[32];
 
     p = c->buffer;
     q = cmd;
@@ -543,6 +676,15 @@ static int http_parse_request(HTTPContext *c)
     if (stream == NULL) {
         sprintf(msg, "File '%s' not found", url);
         goto send_error;
+    }
+
+    /* If this is WMP, get the rate information */
+    if (extract_rates(ratebuf, sizeof(ratebuf), c->buffer)) {
+        FFStream *optimal;
+
+        optimal = find_optimal_stream(stream, ratebuf);
+        if (optimal)
+            stream = optimal;
     }
 
     if (post == 0 && stream->stream_type == STREAM_TYPE_LIVE) {
@@ -661,11 +803,15 @@ static int http_parse_request(HTTPContext *c)
              * as it might come in handy one day
              */
             char *logline = 0;
+            int client_id = 0;
             
             for (p = c->buffer; *p && *p != '\r' && *p != '\n'; ) {
                 if (strncasecmp(p, "Pragma: log-line=", 17) == 0) {
                     logline = p;
                     break;
+                }
+                if (strncasecmp(p, "Pragma: client-id=", 18) == 0) {
+                    client_id = strtol(p + 18, 0, 10);
                 }
                 p = strchr(p, '\n');
                 if (!p)
@@ -686,6 +832,29 @@ static int http_parse_request(HTTPContext *c)
                     c->suppress_log = 1;
                 }
             }
+
+#ifdef DEBUG
+            fprintf(stderr, "\nGot request:\n%s\n", c->buffer);
+#endif
+
+            if (client_id && extract_rates(ratebuf, sizeof(ratebuf), c->buffer)) {
+                HTTPContext *wmpc;
+
+                /* Now we have to find the client_id */
+                for (wmpc = first_http_ctx; wmpc; wmpc = wmpc->next) {
+                    if (wmpc->wmp_client_id == client_id)
+                        break;
+                }
+
+                if (wmpc) {
+                    FFStream *optimal;
+                    optimal = find_optimal_stream(wmpc->stream, ratebuf);
+                    if (optimal) {
+                        fprintf(stderr, "Would like to switch stream from %s to %s\n",
+                                wmpc->stream->filename, optimal->filename);
+                    }
+                }
+            }
             
             sprintf(msg, "POST command not handled");
             goto send_error;
@@ -698,6 +867,12 @@ static int http_parse_request(HTTPContext *c)
         c->state = HTTPSTATE_RECEIVE_DATA;
         return 0;
     }
+
+#ifdef DEBUG
+    if (strcmp(stream->filename + strlen(stream->filename) - 4, ".asf") == 0) {
+        fprintf(stderr, "\nGot request:\n%s\n", c->buffer);
+    }
+#endif
 
     if (c->stream->stream_type == STREAM_TYPE_STATUS)
         goto send_stats;
@@ -718,7 +893,15 @@ static int http_parse_request(HTTPContext *c)
 
     /* for asf, we need extra headers */
     if (!strcmp(c->stream->fmt->name,"asf")) {
-        q += sprintf(q, "Server: Cougar 4.1.0.3923\r\nCache-Control: no-cache\r\nPragma: client-id=1234\r\nPragma: features=\"broadcast\"\r\n");
+        /* Need to allocate a client id */
+        static int wmp_session;
+
+        if (!wmp_session)
+            wmp_session = time(0) & 0xffffff;
+
+        c->wmp_client_id = ++wmp_session;
+
+        q += sprintf(q, "Server: Cougar 4.1.0.3923\r\nCache-Control: no-cache\r\nPragma: client-id=%d\r\nPragma: features=\"broadcast\"\r\n", c->wmp_client_id);
         /* mime_type = "application/octet-stream"; */
         /* video/x-ms-asf seems better -- netscape doesn't crash any more! */
         mime_type = "video/x-ms-asf";
