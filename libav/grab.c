@@ -306,6 +306,10 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 static int grab_read_close(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
+
+    if (s->use_mmap)
+        munmap(video_buf, gb_buffers.size);
+
     /* restore audio settings */
     ioctl(s->fd, VIDIOCSAUDIO, &audio_saved);
 
