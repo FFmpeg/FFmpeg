@@ -69,7 +69,6 @@ void av_register_all(void)
     westwood_init();
     film_init();
     idcin_init();
-    vmd_init();
 
 #if defined(AMR_NB) || defined(AMR_NB_FIXED) || defined(AMR_WB)
     amr_init();
