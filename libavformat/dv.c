@@ -22,15 +22,17 @@
 #define PAL_FRAME_SIZE  144000
 
 typedef struct DVDemuxContext {
-    int is_audio;
+    int       is_audio;
+    uint8_t   buf[PAL_FRAME_SIZE];
+    int       size;
 } DVDemuxContext;
 
 /* raw input */
 static int dv_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
-    AVStream *vst;
-    //    AVStream *ast;
+    AVStream *vst, *ast;
+    DVDemuxContext *c = s->priv_data;
 
     vst = av_new_stream(s, 0);
     if (!vst)
@@ -38,42 +40,46 @@ static int dv_read_header(AVFormatContext *s,
     vst->codec.codec_type = CODEC_TYPE_VIDEO;
     vst->codec.codec_id = CODEC_ID_DVVIDEO;
 
-#if 0
+
     ast = av_new_stream(s, 1);
     if (!ast)
         return AVERROR_NOMEM;
 
     ast->codec.codec_type = CODEC_TYPE_AUDIO;
     ast->codec.codec_id = CODEC_ID_DVAUDIO;
-#endif
+    ast->codec.channels = 2;
+    c->is_audio = 0;
+
     return 0;
 }
 
 /* XXX: build fake audio stream when DV audio decoder will be finished */
 static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, size, dsf;
-    uint8_t buf[4];
+    int ret, dsf;
+    DVDemuxContext *c = s->priv_data;
     
-    ret = get_buffer(&s->pb, buf, 4);
-    if (ret <= 0) 
-        return -EIO;
-    dsf = buf[3] & 0x80;
-    if (!dsf)
-        size = NTSC_FRAME_SIZE;
-    else
-        size = PAL_FRAME_SIZE;
+    if (!c->is_audio) {
+        ret = get_buffer(&s->pb, c->buf, 4);
+        if (ret <= 0) 
+            return -EIO;
+        dsf = c->buf[3] & 0x80;
+        if (!dsf)
+            c->size = NTSC_FRAME_SIZE;
+        else
+            c->size = PAL_FRAME_SIZE;
+	
+	ret = get_buffer(&s->pb, c->buf + 4, c->size - 4);
+	if (ret <= 0)
+	    return -EIO;
+    }
     
-    if (av_new_packet(pkt, size) < 0)
+    if (av_new_packet(pkt, c->size) < 0)
         return -EIO;
 
-    pkt->stream_index = 0;
-    memcpy(pkt->data, buf, 4);
-    ret = get_buffer(&s->pb, pkt->data + 4, size - 4);
-    if (ret <= 0) {
-        av_free_packet(pkt);
-        return -EIO;
-    }
+    pkt->stream_index = c->is_audio;
+    c->is_audio = !c->is_audio;
+    memcpy(pkt->data, c->buf, c->size);
     return ret;
 }
 

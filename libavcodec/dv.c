@@ -634,7 +634,6 @@ AVCodec dvvideo_decoder = {
 typedef struct DVAudioDecodeContext {
     AVCodecContext *avctx;
     GetBitContext gb;
-
 } DVAudioDecodeContext;
 
 static int dvaudio_decode_init(AVCodecContext *avctx)
@@ -643,13 +642,126 @@ static int dvaudio_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static UINT16 dv_audio_12to16(UINT16 sample)
+{
+    UINT16 shift, result;
+    
+    sample = (sample < 0x800) ? sample : sample | 0xf000;
+    shift = (sample & 0xf00) >> 8;
+
+    if (shift < 0x2 || shift > 0xd) {
+	result = sample;
+    } else if (shift < 0x8) {
+        shift--;
+	result = (sample - (256 * shift)) << shift;
+    } else {
+	shift = 0xe - shift;
+	result = ((sample + ((256 * shift) + 1)) << shift) - 1;
+    }
+
+    return result;
+}
+
 /* NOTE: exactly one frame must be given (120000 bytes for NTSC,
-   144000 bytes for PAL) */
+   144000 bytes for PAL) 
+
+   There's a couple of assumptions being made here:
+         1. We don't do any kind of audio error correction. It means,
+	    that erroneous samples 0x8000 are being passed upwards.
+            Do we need to silence erroneous samples ? Average them ?
+	 2. We don't do software emphasis.
+	 3. We are not checking for 'speed' argument being valid.
+	 4. Audio is always returned as 16bit linear samples: 12bit
+	    nonlinear samples are converted into 16bit linear ones.
+*/
 static int dvaudio_decode_frame(AVCodecContext *avctx, 
                                  void *data, int *data_size,
                                  UINT8 *buf, int buf_size)
 {
-    //    DVAudioDecodeContext *s = avctx->priv_data;
+    DVVideoDecodeContext *s = avctx->priv_data;
+    const UINT16 (*unshuffle)[9];
+    int smpls, freq, quant, sys, stride, difseg, ad, dp, nb_dif_segs, i;
+    UINT16 lc, rc;
+    UINT8 *buf_ptr;
+    
+    /* parse id */
+    init_get_bits(&s->gb, &buf[AAUX_OFFSET], 5*8);
+    i = get_bits(&s->gb, 8);
+    if (i != 0x50) { /* No audio ? */
+	*data_size = 0;
+	return buf_size;
+    }
+    
+    get_bits(&s->gb, 1); /* 0 - locked audio, 1 - unlocked audio */
+    skip_bits(&s->gb, 1);
+    smpls = get_bits(&s->gb, 6); /* samples in this frame - min. samples */
+
+    skip_bits(&s->gb, 8);
+
+    skip_bits(&s->gb, 2);
+    sys = get_bits(&s->gb, 1); /* 0 - 60 fields, 1 = 50 fields */
+    skip_bits(&s->gb, 5);
+
+    get_bits(&s->gb, 1); /* 0 - emphasis on, 1 - emphasis off */
+    get_bits(&s->gb, 1); /* 0 - reserved, 1 - emphasis time constant 50/15us */
+    freq = get_bits(&s->gb, 3); /* 0 - 48KHz, 1 - 44,1kHz, 2 - 32 kHz */
+    quant = get_bits(&s->gb, 3); /* 0 - 16bit linear, 1 - 12bit nonlinear */
+
+    if (quant > 1)
+	return -1; /* Unsupported quantization */
+
+    avctx->sample_rate = dv_audio_frequency[freq];
+    // What about:
+    // avctx->bit_rate = 
+    // avctx->frame_size =
+   
+    *data_size = (dv_audio_min_samples[sys][freq] + smpls) * 
+	         avctx->channels * 2;
+
+    if (sys) {
+	nb_dif_segs = 12;
+	stride = 108;
+	unshuffle = dv_place_audio50;
+    } else {
+	nb_dif_segs = 10;
+	stride = 90;
+	unshuffle = dv_place_audio60;
+    }
+    
+    /* for each DIF segment */
+    buf_ptr = buf;
+    for (difseg = 0; difseg < nb_dif_segs; difseg++) {
+         buf_ptr += 6 * 80; /* skip DIF segment header */
+         for (ad = 0; ad < 9; ad++) {
+              
+              for (dp = 8; dp < 80; dp+=2) {
+		   if (quant == 0) {  /* 16bit quantization */
+		       i = unshuffle[difseg][ad] + (dp - 8)/2 * stride;
+		       ((short *)data)[i] = (buf_ptr[dp] << 8) | buf_ptr[dp+1]; 
+		   } else {           /* 12bit quantization */
+		       if (difseg >= nb_dif_segs/2)
+			   goto out;  /* We're not doing 4ch at this time */
+		       
+		       lc = ((UINT16)buf_ptr[dp] << 4) | 
+			    ((UINT16)buf_ptr[dp+2] >> 4);
+		       rc = ((UINT16)buf_ptr[dp+1] << 4) |
+			    ((UINT16)buf_ptr[dp+2] & 0x0f);
+		       lc = dv_audio_12to16(lc);
+		       rc = dv_audio_12to16(rc);
+
+		       i = unshuffle[difseg][ad] + (dp - 8)/3 * stride;
+		       ((short *)data)[i] = lc;
+		       i = unshuffle[difseg+nb_dif_segs/2][ad] + (dp - 8)/3 * stride;
+		       ((short *)data)[i] = rc;
+		       ++dp;
+		   }
+	      }
+		
+	    buf_ptr += 16 * 80; /* 15 Video DIFs + 1 Audio DIF */
+        }
+    }
+
+out:
     return buf_size;
 }
 

@@ -72,7 +72,7 @@ void avcodec_register_all(void)
     register_avcodec(&rv10_decoder);
     register_avcodec(&svq1_decoder);
     register_avcodec(&dvvideo_decoder);
-    //    register_avcodec(&dvaudio_decoder);
+    register_avcodec(&dvaudio_decoder);
     register_avcodec(&mjpeg_decoder);
     register_avcodec(&mjpegb_decoder);
     register_avcodec(&mp2_decoder);
