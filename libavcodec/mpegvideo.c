@@ -1520,6 +1520,9 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                               direction = 1;
                               break;
                     }
+                    if(!USES_LIST(pict->mb_type[mb_index], direction))
+                        continue;
+
                     if(IS_8X8(pict->mb_type[mb_index])){
                       int i;
                       for(i=0; i<4; i++){
