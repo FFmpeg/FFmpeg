@@ -190,6 +190,10 @@ void dsputil_init_alpha(DSPContext* c, unsigned mask);
 
 #elif defined(ARCH_POWERPC)
 
+#define MM_ALTIVEC    0x0001 /* standard AltiVec */
+
+extern int mm_flags;
+
 #define __align8 __attribute__ ((aligned (16)))
 
 void dsputil_init_ppc(DSPContext* c, unsigned mask);
