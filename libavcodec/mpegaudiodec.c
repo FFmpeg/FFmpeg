@@ -2314,6 +2314,7 @@ static int decode_frame(AVCodecContext * avctx,
                         avctx->sample_rate = s->sample_rate;
                         avctx->channels = s->nb_channels;
 			avctx->bit_rate = s->bit_rate;
+			avctx->frame_size = s->frame_size;
                     }
 		}
 	    }

@@ -44,7 +44,7 @@ typedef struct AVFormat {
     int (*write_header)(struct AVFormatContext *);
     int (*write_packet)(struct AVFormatContext *, 
                         int stream_index,
-                        unsigned char *buf, int size);
+                        unsigned char *buf, int size, int force_pts);
     int (*write_trailer)(struct AVFormatContext *);
 
     /* optional input support */
@@ -187,7 +187,7 @@ AVFormatContext *av_open_input_file(const char *filename,
 int av_read_packet(AVFormatContext *s, AVPacket *pkt);
 void av_close_input_file(AVFormatContext *s);
 
-int av_write_packet(AVFormatContext *s, AVPacket *pkt);
+int av_write_packet(AVFormatContext *s, AVPacket *pkt, int force_pts);
 
 void dump_format(AVFormatContext *ic,
                  int index, 

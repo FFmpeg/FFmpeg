@@ -32,8 +32,8 @@ static int mpjpeg_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int mpjpeg_write_packet(AVFormatContext *s, 
-                               int stream_index, UINT8 *buf, int size)
+static int mpjpeg_write_packet(AVFormatContext *s, int stream_index, 
+                               UINT8 *buf, int size, int force_pts)
 {
     UINT8 buf1[256];
 
@@ -74,7 +74,7 @@ static int single_jpeg_write_header(AVFormatContext *s)
 }
 
 static int single_jpeg_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size)
+                            UINT8 *buf, int size, int force_pts)
 {
     put_buffer(&s->pb, buf, size);
     put_flush_packet(&s->pb);
@@ -120,7 +120,7 @@ static int jpeg_write_header(AVFormatContext *s1)
 }
 
 static int jpeg_write_packet(AVFormatContext *s1, int stream_index,
-                            UINT8 *buf, int size)
+                            UINT8 *buf, int size, int force_pts)
 {
     JpegContext *s = s1->priv_data;
     char filename[1024];

@@ -389,7 +389,7 @@ static int rm_write_video(AVFormatContext *s, UINT8 *buf, int size)
 }
 
 static int rm_write_packet(AVFormatContext *s, int stream_index, 
-                           UINT8 *buf, int size)
+                           UINT8 *buf, int size, int force_pts)
 {
     if (s->streams[stream_index]->codec.codec_type == 
         CODEC_TYPE_AUDIO)

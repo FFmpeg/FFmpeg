@@ -882,7 +882,7 @@ static int http_prepare_data(HTTPContext *c)
                     }
                 } else {
 		send_it:
-                    if (av_write_packet(&c->fmt_ctx, &pkt))
+                    if (av_write_packet(&c->fmt_ctx, &pkt, 0))
 			c->state = HTTPSTATE_SEND_DATA_TRAILER;
                 }
                 

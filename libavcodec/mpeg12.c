@@ -1403,6 +1403,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
 
     for(;;) {
         clear_blocks(s->block[0]);
+        emms_c();
         ret = mpeg_decode_mb(s, s->block);
         dprintf("ret=%d\n", ret);
         if (ret < 0)

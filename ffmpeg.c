@@ -274,7 +274,7 @@ static void do_audio_out(AVFormatContext *s,
                      &ost->fifo.rptr) == 0) {
             ret = avcodec_encode_audio(enc, audio_out, sizeof(audio_out), 
                                        (short *)audio_buf);
-            s->format->write_packet(s, ost->index, audio_out, ret);
+            s->format->write_packet(s, ost->index, audio_out, ret, 0);
         }
     } else {
         /* output a pcm frame */
@@ -291,7 +291,7 @@ static void do_audio_out(AVFormatContext *s,
         }
         ret = avcodec_encode_audio(enc, audio_out, size_out, 
                                    (short *)buftmp);
-        s->format->write_packet(s, ost->index, audio_out, ret);
+        s->format->write_packet(s, ost->index, audio_out, ret, 0);
     }
 }
 
@@ -387,7 +387,7 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
     default:
         return;
     }
-    s->format->write_packet(s, index, buf, size);
+    s->format->write_packet(s, index, buf, size, 0);
     free(buf);
 }
 
@@ -484,7 +484,7 @@ static void do_video_out(AVFormatContext *s,
             ret = avcodec_encode_video(enc, 
                                        video_buffer, sizeof(video_buffer), 
                                        picture);
-            s->format->write_packet(s, ost->index, video_buffer, ret);
+            s->format->write_packet(s, ost->index, video_buffer, ret, 0);
             *frame_size = ret;
         } else {
             write_picture(s, ost->index, picture, enc->pix_fmt, enc->width, enc->height);
@@ -728,6 +728,11 @@ static int av_encode(AVFormatContext **output_files,
                 codec->sample_rate == icodec->sample_rate &&
                 codec->channels == icodec->channels) {
                 /* no reencoding */
+                /* use the same frame size */
+                codec->frame_size = icodec->frame_size;
+                //codec->frame_size = 8*icodec->sample_rate*icodec->frame_size/
+                //                    icodec->bit_rate;
+                //fprintf(stderr,"\nFrame size: %d", codec->frame_size);
             } else {
                 if (fifo_init(&ost->fifo, 2 * MAX_AUDIO_PACKET_SIZE))
                     goto fail;
@@ -999,7 +1004,8 @@ static int av_encode(AVFormatContext **output_files,
                         }
                     } else {
                         /* no reencoding needed : output the packet directly */
-                        os->format->write_packet(os, ost->index, data_buf, data_size);
+                        /* force the input stream PTS */
+                        os->format->write_packet(os, ost->index, data_buf, data_size, pkt.pts);
                     }
                 }
             }

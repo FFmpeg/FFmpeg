@@ -524,7 +524,7 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, int timestamp,
 
 
 static int asf_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size)
+                            UINT8 *buf, int size, int force_pts)
 {
     ASFContext *asf = s->priv_data;
     int timestamp;

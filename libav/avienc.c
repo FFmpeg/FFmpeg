@@ -277,7 +277,7 @@ static int avi_write_header(AVFormatContext *s)
 }
 
 static int avi_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size)
+                            UINT8 *buf, int size, int force_pts)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;

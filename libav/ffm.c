@@ -195,7 +195,7 @@ static int ffm_write_header(AVFormatContext *s)
 }
 
 static int ffm_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size)
+                            UINT8 *buf, int size, int force_pts)
 {
     AVStream *st = s->streams[stream_index];
     FFMStream *fst = st->priv_data;

@@ -515,7 +515,7 @@ static int img_write_header(AVFormatContext *s)
 }
 
 static int img_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size)
+                            UINT8 *buf, int size, int force_pts)
 {
     VideoData *img = s->priv_data;
     AVStream *st = s->streams[stream_index];

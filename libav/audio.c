@@ -161,7 +161,7 @@ static int audio_write_header(AVFormatContext *s1)
 }
 
 static int audio_write_packet(AVFormatContext *s1, int stream_index,
-                              UINT8 *buf, int size)
+                              UINT8 *buf, int size, int force_pts)
 {
     AudioData *s = s1->priv_data;
     int len, ret;

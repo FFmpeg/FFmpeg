@@ -375,10 +375,10 @@ void av_close_input_file(AVFormatContext *s)
 }
 
 
-int av_write_packet(AVFormatContext *s, AVPacket *pkt)
+int av_write_packet(AVFormatContext *s, AVPacket *pkt, int force_pts)
 {
     /* XXX: currently, an emulation because internal API must change */
-    return s->format->write_packet(s, pkt->stream_index, pkt->data, pkt->size);
+    return s->format->write_packet(s, pkt->stream_index, pkt->data, pkt->size, force_pts);
 }
 
 /* "user interface" functions */

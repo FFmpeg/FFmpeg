@@ -321,18 +321,21 @@ static void flush_packet(AVFormatContext *ctx, int stream_index)
     stream->start_pts = -1;
 }
 
-static int mpeg_mux_write_packet(AVFormatContext *ctx, 
-                                 int stream_index, UINT8 *buf, int size)
+static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
+                                 UINT8 *buf, int size, int force_pts)
 {
     MpegMuxContext *s = ctx->priv_data;
     AVStream *st = ctx->streams[stream_index];
     StreamInfo *stream = st->priv_data;
     int len;
-
+    
     while (size > 0) {
         /* set pts */
-        if (stream->start_pts == -1)
+        if (stream->start_pts == -1) {
+            if (force_pts)
+                stream->pts = force_pts;
             stream->start_pts = stream->pts;
+        }
         len = s->packet_data_max_size - stream->buffer_ptr;
         if (len > size)
             len = size;
@@ -714,6 +717,8 @@ static int mpeg_mux_read_packet(AVFormatContext *s,
     goto redo;
  found:
     av_new_packet(pkt, len);
+    //printf("\nRead Packet ID: %x PTS: %f Size: %d", startcode,
+    //       (float)pts/90000, len);
     get_buffer(&s->pb, pkt->data, pkt->size);
     pkt->pts = pts;
     pkt->stream_index = i;
