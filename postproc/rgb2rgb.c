@@ -16,6 +16,9 @@
 static const uint64_t mask32   __attribute__((aligned(8))) = 0x00FFFFFF00FFFFFFULL;
 static const uint64_t mask24l  __attribute__((aligned(8))) = 0x0000000000FFFFFFULL;
 static const uint64_t mask24h  __attribute__((aligned(8))) = 0x0000FFFFFF000000ULL;
+static const uint64_t mask24hh  __attribute__((aligned(8))) = 0xffff000000000000ULL;
+static const uint64_t mask24hhh  __attribute__((aligned(8))) = 0xffffffff00000000ULL;
+static const uint64_t mask24hhhh  __attribute__((aligned(8))) = 0xffffffffffff0000ULL;
 static const uint64_t mask15b  __attribute__((aligned(8))) = 0x001F001F001F001FULL; /* 00000000 00011111  xxB */
 static const uint64_t mask15rg __attribute__((aligned(8))) = 0x7FE07FE07FE07FE0ULL; /* 01111111 11100000  RGx */
 static const uint64_t mask15s  __attribute__((aligned(8))) = 0xFFE0FFE0FFE0FFE0ULL;
@@ -90,34 +93,59 @@ void rgb32to24(const uint8_t *src,uint8_t *dst,unsigned src_size)
   end = s + src_size;
 #ifdef HAVE_MMX
   __asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
-  mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
-  __asm __volatile(
-	"movq	%0, %%mm7\n\t"
-	"movq	%1, %%mm6"
-	::"m"(mask24l),"m"(mask24h):"memory");
+  mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*4))*(MMREG_SIZE*4));
   while(s < mm_end)
   {
     __asm __volatile(
 	PREFETCH"	32%1\n\t"
 	"movq	%1, %%mm0\n\t"
 	"movq	8%1, %%mm1\n\t"
+	"movq	16%1, %%mm4\n\t"
+	"movq	24%1, %%mm5\n\t"
 	"movq	%%mm0, %%mm2\n\t"
 	"movq	%%mm1, %%mm3\n\t"
+	"movq	%%mm4, %%mm6\n\t"
+	"movq	%%mm5, %%mm7\n\t"
 	"psrlq	$8, %%mm2\n\t"
 	"psrlq	$8, %%mm3\n\t"
-	"pand	%%mm7, %%mm0\n\t"
-	"pand	%%mm7, %%mm1\n\t"
-	"pand	%%mm6, %%mm2\n\t"
-	"pand	%%mm6, %%mm3\n\t"
+	"psrlq	$8, %%mm6\n\t"
+	"psrlq	$8, %%mm7\n\t"
+	"pand	%2, %%mm0\n\t"
+	"pand	%2, %%mm1\n\t"
+	"pand	%2, %%mm4\n\t"
+	"pand	%2, %%mm5\n\t"
+	"pand	%3, %%mm2\n\t"
+	"pand	%3, %%mm3\n\t"
+	"pand	%3, %%mm6\n\t"
+	"pand	%3, %%mm7\n\t"
 	"por	%%mm2, %%mm0\n\t"
 	"por	%%mm3, %%mm1\n\t"
+	"por	%%mm6, %%mm4\n\t"
+	"por	%%mm7, %%mm5\n\t"
+
+	"movq	%%mm1, %%mm2\n\t"
+	"movq	%%mm4, %%mm3\n\t"
+	"psllq	$48, %%mm2\n\t"
+	"psllq	$32, %%mm3\n\t"
+	"pand	%4, %%mm2\n\t"
+	"pand	%5, %%mm3\n\t"
+	"por	%%mm2, %%mm0\n\t"
+	"psrlq	$16, %%mm1\n\t"
+	"psrlq	$32, %%mm4\n\t"
+	"psllq	$16, %%mm5\n\t"
+	"por	%%mm3, %%mm1\n\t"
+	"pand	%6, %%mm5\n\t"
+	"por	%%mm5, %%mm4\n\t"
+	
 	MOVNTQ"	%%mm0, %0\n\t"
-	MOVNTQ"	%%mm1, 6%0"
+	MOVNTQ"	%%mm1, 8%0\n\t"
+	MOVNTQ"	%%mm4, 16%0"
 	:"=m"(*dest)
-	:"m"(*s)
+	:"m"(*s),"m"(mask24l),
+	 "m"(mask24h),"m"(mask24hh),"m"(mask24hhh),"m"(mask24hhhh)
 	:"memory");
-    dest += 12;
-    s += 16;
+    dest += 24;
+    s += 32;
   }
   __asm __volatile(SFENCE:::"memory");
   __asm __volatile(EMMS:::"memory");
