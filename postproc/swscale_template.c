@@ -1584,11 +1584,11 @@ static inline void RENAME(bgr32ToY)(uint8_t *dst, uint8_t *src, int width)
 	int i;
 	for(i=0; i<width; i++)
 	{
-		int b= src[i*4+0];
-		int g= src[i*4+1];
-		int r= src[i*4+2];
+		int b=  ((uint32_t*)src)[i]&0xFF;
+		int g= (((uint32_t*)src)[i]>>8)&0xFF;
+		int r=  ((uint32_t*)src)[i]>>16;
 
-		dst[i]= ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
+		dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
 	}
 #endif
 }
@@ -1600,9 +1600,15 @@ static inline void RENAME(bgr32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 	int i;
 	for(i=0; i<width; i++)
 	{
-		int b= src1[8*i + 0] + src1[8*i + 4] + src2[8*i + 0] + src2[8*i + 4];
-		int g= src1[8*i + 1] + src1[8*i + 5] + src2[8*i + 1] + src2[8*i + 5];
-		int r= src1[8*i + 2] + src1[8*i + 6] + src2[8*i + 2] + src2[8*i + 6];
+		const int a= ((uint32_t*)src1)[2*i+0];
+		const int e= ((uint32_t*)src1)[2*i+1];
+		const int c= ((uint32_t*)src2)[2*i+0];
+		const int d= ((uint32_t*)src2)[2*i+1];
+		const int l= (a&0xFF00FF) + (e&0xFF00FF) + (c&0xFF00FF) + (d&0xFF00FF);
+		const int h= (a&0x00FF00) + (e&0x00FF00) + (c&0x00FF00) + (d&0x00FF00);
+ 		const int b=  l&0x3FF;
+		const int g=  h>>8;
+		const int r=  l>>16;
 
 		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
 		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
@@ -1690,7 +1696,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, int width)
 		int g= src[i*3+1];
 		int r= src[i*3+2];
 
-		dst[i]= ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
+		dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT)
 	}
 #endif
 }
@@ -1866,7 +1872,7 @@ static inline void RENAME(bgr16ToY)(uint8_t *dst, uint8_t *src, int width)
 	int i;
 	for(i=0; i<width; i++)
 	{
-		int d= src[i*2] + (src[i*2+1]<<8);
+		int d= ((uint16_t*)src)[i];
 		int b= d&0x1F;
 		int g= (d>>5)&0x3F;
 		int r= (d>>11)&0x1F;
@@ -1880,9 +1886,8 @@ static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 	int i;
 	for(i=0; i<width; i++)
 	{
-#if 1
-		int d0= le2me_32( ((uint32_t*)src1)[i] );
-		int d1= le2me_32( ((uint32_t*)src2)[i] );
+		int d0= ((uint32_t*)src1)[i];
+		int d1= ((uint32_t*)src2)[i];
 		
 		int dl= (d0&0x07E0F81F) + (d1&0x07E0F81F);
 		int dh= ((d0>>5)&0x07C0F83F) + ((d1>>5)&0x07C0F83F);
@@ -1893,31 +1898,6 @@ static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		int b= d&0x7F;
 		int r= (d>>11)&0x7F;
 		int g= d>>21;
-#else
-		int d0= src1[i*4] + (src1[i*4+1]<<8);
-		int b0= d0&0x1F;
-		int g0= (d0>>5)&0x3F;
-		int r0= (d0>>11)&0x1F;
-
-		int d1= src1[i*4+2] + (src1[i*4+3]<<8);
-		int b1= d1&0x1F;
-		int g1= (d1>>5)&0x3F;
-		int r1= (d1>>11)&0x1F;
-
-		int d2= src2[i*4] + (src2[i*4+1]<<8);
-		int b2= d2&0x1F;
-		int g2= (d2>>5)&0x3F;
-		int r2= (d2>>11)&0x1F;
-
-		int d3= src2[i*4+2] + (src2[i*4+3]<<8);
-		int b3= d3&0x1F;
-		int g3= (d3>>5)&0x3F;
-		int r3= (d3>>11)&0x1F;
-
-		int b= b0 + b1 + b2 + b3;
-		int g= g0 + g1 + g2 + g3;
-		int r= r0 + r1 + r2 + r3;
-#endif
 		dstU[i]= ((2*RU*r + GU*g + 2*BU*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
 		dstV[i]= ((2*RV*r + GV*g + 2*BV*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
 	}
@@ -1928,7 +1908,7 @@ static inline void RENAME(bgr15ToY)(uint8_t *dst, uint8_t *src, int width)
 	int i;
 	for(i=0; i<width; i++)
 	{
-		int d= src[i*2] + (src[i*2+1]<<8);
+		int d= ((uint16_t*)src)[i];
 		int b= d&0x1F;
 		int g= (d>>5)&0x1F;
 		int r= (d>>10)&0x1F;
@@ -1942,9 +1922,8 @@ static inline void RENAME(bgr15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 	int i;
 	for(i=0; i<width; i++)
 	{
-#if 1
-		int d0= le2me_32( ((uint32_t*)src1)[i] );
-		int d1= le2me_32( ((uint32_t*)src2)[i] );
+		int d0= ((uint32_t*)src1)[i];
+		int d1= ((uint32_t*)src2)[i];
 		
 		int dl= (d0&0x03E07C1F) + (d1&0x03E07C1F);
 		int dh= ((d0>>5)&0x03E0F81F) + ((d1>>5)&0x03E0F81F);
@@ -1955,31 +1934,6 @@ static inline void RENAME(bgr15ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		int b= d&0x7F;
 		int r= (d>>10)&0x7F;
 		int g= d>>21;
-#else
-		int d0= src1[i*4] + (src1[i*4+1]<<8);
-		int b0= d0&0x1F;
-		int g0= (d0>>5)&0x1F;
-		int r0= (d0>>10)&0x1F;
-
-		int d1= src1[i*4+2] + (src1[i*4+3]<<8);
-		int b1= d1&0x1F;
-		int g1= (d1>>5)&0x1F;
-		int r1= (d1>>10)&0x1F;
-
-		int d2= src2[i*4] + (src2[i*4+1]<<8);
-		int b2= d2&0x1F;
-		int g2= (d2>>5)&0x1F;
-		int r2= (d2>>10)&0x1F;
-
-		int d3= src2[i*4+2] + (src2[i*4+3]<<8);
-		int b3= d3&0x1F;
-		int g3= (d3>>5)&0x1F;
-		int r3= (d3>>10)&0x1F;
-
-		int b= b0 + b1 + b2 + b3;
-		int g= g0 + g1 + g2 + g3;
-		int r= r0 + r1 + r2 + r3;
-#endif
 		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2-3)) + 128;
 		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2-3)) + 128;
 	}
@@ -1991,11 +1945,11 @@ static inline void RENAME(rgb32ToY)(uint8_t *dst, uint8_t *src, int width)
 	int i;
 	for(i=0; i<width; i++)
 	{
-		int r= src[i*4+0];
-		int g= src[i*4+1];
-		int b= src[i*4+2];
+		int r=  ((uint32_t*)src)[i]&0xFF;
+		int g= (((uint32_t*)src)[i]>>8)&0xFF;
+		int b=  ((uint32_t*)src)[i]>>16;
 
-		dst[i]= ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
+		dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
 	}
 }
 
@@ -2004,9 +1958,15 @@ static inline void RENAME(rgb32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 	int i;
 	for(i=0; i<width; i++)
 	{
-		int r= src1[8*i + 0] + src1[8*i + 4] + src2[8*i + 0] + src2[8*i + 4];
-		int g= src1[8*i + 1] + src1[8*i + 5] + src2[8*i + 1] + src2[8*i + 5];
-		int b= src1[8*i + 2] + src1[8*i + 6] + src2[8*i + 2] + src2[8*i + 6];
+		const int a= ((uint32_t*)src1)[2*i+0];
+		const int e= ((uint32_t*)src1)[2*i+1];
+		const int c= ((uint32_t*)src2)[2*i+0];
+		const int d= ((uint32_t*)src2)[2*i+1];
+		const int l= (a&0xFF00FF) + (e&0xFF00FF) + (c&0xFF00FF) + (d&0xFF00FF);
+		const int h= (a&0x00FF00) + (e&0x00FF00) + (c&0x00FF00) + (d&0x00FF00);
+ 		const int r=  l&0x3FF;
+		const int g=  h>>8;
+		const int b=  l>>16;
 
 		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
 		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
@@ -2022,7 +1982,7 @@ static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, int width)
 		int g= src[i*3+1];
 		int b= src[i*3+2];
 
-		dst[i]= ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
+		dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)) )>>RGB2YUV_SHIFT);
 	}
 }
 
