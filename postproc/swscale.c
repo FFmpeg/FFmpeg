@@ -69,10 +69,13 @@ Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
 TODO
 more intelligent missalignment avoidance for the horizontal scaler
-dither in C
 change the distance of the u & v buffer
 write special vertical cubic upscale version
 Optimize C code (yv12 / minmax)
+add support for packed pixel yuv input & output
+add support for Y8 input & output
+add BGR4 output support
+add BGR32 / BGR24 input support
 */
 
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
@@ -600,6 +603,7 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 		case 1: flags|= SWS_BILINEAR; break;
 		case 2: flags|= SWS_BICUBIC; break;
 		case 3: flags|= SWS_X; break;
+		case 4: flags|= SWS_POINT; break;
 		default:flags|= SWS_BILINEAR; break;
 	}
 
@@ -638,6 +642,23 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 			(*filterPos)[i]=i;
 		}
 
+	}
+	else if(flags&SWS_POINT) // lame looking point sampling mode
+	{
+		int i;
+		int xDstInSrc;
+		filterSize= 1;
+		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
+		
+		xDstInSrc= xInc/2 - 0x8000;
+		for(i=0; i<dstW; i++)
+		{
+			int xx= (xDstInSrc>>16) - (filterSize>>1) + 1;
+
+			(*filterPos)[i]= xx;
+			filter[i]= 1.0;
+			xDstInSrc+= xInc;
+		}
 	}
 	else if(xInc <= (1<<16) || (flags&SWS_FAST_BILINEAR)) // upscale
 	{
@@ -1203,6 +1224,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			fprintf(stderr, "\nSwScaler: BILINEAR scaler ");
 		else if(flags&SWS_BICUBIC)
 			fprintf(stderr, "\nSwScaler: BICUBIC scaler ");
+		else if(flags&SWS_POINT)
+			fprintf(stderr, "\nSwScaler: POINT scaler ");
 		else
 			fprintf(stderr, "\nSwScaler: ehh flags invalid?! ");
 
@@ -1430,7 +1453,7 @@ static SwsVector *diffVec(SwsVector *a, SwsVector *b){
 static SwsVector *getShiftedVec(SwsVector *a, int shift){
 	int length= a->length + ABS(shift)*2;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
-	int i, j;
+	int i;
 	SwsVector *vec= malloc(sizeof(SwsVector));
 
 	vec->coeff= coeff;
