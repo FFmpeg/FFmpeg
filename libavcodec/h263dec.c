@@ -107,6 +107,10 @@ static int h263_decode_frame(AVCodecContext *avctx,
     if (ret < 0)
         return -1;
 
+    /* make sure we start with an I-Frame */
+    if (!s->slice_height && (s->pict_type != I_TYPE))
+        return -1;
+
     MPV_frame_start(s);
 
 #ifdef DEBUG
