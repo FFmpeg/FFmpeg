@@ -386,14 +386,13 @@ static void prodsum(float *tgt, float *src, int len, int n)
   }
 }
 
-void * decode_block(AVCodecContext * avctx, unsigned char *in, signed short int *out)
+void * decode_block(AVCodecContext * avctx, unsigned char *in, signed short int *out,unsigned len)
 {
   int x,y;
   Real288_internal *glob=avctx->priv_data;
-  int cfs=((short*)(avctx->extradata))[3]; /* coded frame size 38 */
-  unsigned short int buffer[cfs];
+  unsigned short int buffer[len];
 
-  unpack(buffer,in,cfs);
+  unpack(buffer,in,len);
   for (x=0;x<32;x++)
   {
     glob->phasep=(glob->phase=x&7)*5;
@@ -417,30 +416,25 @@ static int ra288_decode_frame(AVCodecContext * avctx,
 //((short*)(avctx->extradata))[3]; /* coded frame size */
 //((short*)(avctx->extradata))[4]; /* codec's data length  */
 //((short*)(avctx->extradata))[5...] /* codec's data */
-    int z,bret;
+    int bret;
     void *datao;
     int w=avctx->block_align; /* 228 */
     int h=((short*)(avctx->extradata))[1]; /* 12 */
     int cfs=((short*)(avctx->extradata))[3]; /* coded frame size 38 */
     int i,j;
-    unsigned char tb[h*w], *ptb;
     if(buf_size<w*h)
     {
 	fprintf(stderr,"ffra288: Error! Input buffer is too small [%d<%d]\n",buf_size,w*h);
 	return 0;
     }
     datao = data;
-    ptb = buf;
-    /* Phase 0: deinterleave */
-    for (j = 0; j < h; j++)
-	for (i = 0; i < h/2; i++)
+    bret = 0;
+    for (j = 0; j < h/2; j++)
+	for (i = 0; i < h; i++)
     {
-	    memcpy(&tb[i*2*w+j*cfs],ptb,cfs);
-	    ptb += cfs;
+	    data=decode_block(avctx,&buf[j*cfs+cfs*i*h/2],(signed short *)data,cfs);
+	    bret += cfs;
     }
-    /* Phase 1: decode */
-    bret = ptb-buf;
-    for(z=0;z<bret;z+=cfs) data=decode_block(avctx,&tb[z],(signed short *)data);
     *data_size = data - datao;
     return bret;
   }
