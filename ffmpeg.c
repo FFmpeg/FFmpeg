@@ -26,6 +26,8 @@
 #include <string.h>
 #include <sys/poll.h>
 #include <termios.h>
+#include <sys/time.h>
+#include <sys/resource.h>
 #include <ctype.h>
 
 #include "avformat.h"
@@ -91,6 +93,7 @@ static char *str_title = NULL;
 static char *str_author = NULL;
 static char *str_copyright = NULL;
 static char *str_comment = NULL;
+static int do_benchmark = 0;
 
 typedef struct AVOutputStream {
     int file_index;          /* file index */
@@ -1880,6 +1883,14 @@ void opt_output_file(const char *filename)
     video_codec_id = CODEC_ID_NONE;
 }
 
+INT64 getutime(void)
+{
+    struct rusage rusage;
+
+    getrusage(RUSAGE_SELF, &rusage);
+    return (rusage.ru_utime.tv_sec * 1000000LL) + rusage.ru_utime.tv_usec;
+}
+
 void show_formats(void)
 {
     AVFormat *f;
@@ -2002,6 +2013,8 @@ const OptionDef options[] = {
     { "an", OPT_BOOL, {int_arg: &audio_disable}, "disable audio" },
     { "ad", HAS_ARG | OPT_EXPERT, {opt_audio_device}, "set audio device", "device" },
     { "acodec", HAS_ARG | OPT_EXPERT, {opt_audio_codec}, "force audio codec", "codec" },
+    { "benchmark", OPT_BOOL | OPT_EXPERT, {int_arg: &do_benchmark}, 
+      "add timings for benchmarking" },
 
     { NULL, },
 };
@@ -2057,12 +2070,19 @@ int main(int argc, char **argv)
         }
         av_grab(output_files[0]);
     } else {
+        INT64 ti;
+
         if (nb_output_files <= 0) {
             fprintf(stderr, "Must supply at least one output file\n");
             exit(1);
         }
+        ti = getutime();
         av_encode(output_files, nb_output_files, input_files, nb_input_files, 
                   stream_maps, nb_stream_maps);
+        ti = getutime() - ti;
+        if (do_benchmark) {
+            printf("bench: utime=%0.3fs\n", ti / 1000000.0);
+        }
     }
 
     /* close files */
