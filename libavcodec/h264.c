@@ -582,7 +582,7 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
     if(IS_INTER(mb_type) || (IS_DIRECT(mb_type) && h->direct_spatial_mv_pred)){
         int list;
         for(list=0; list<2; list++){
-            if((!IS_8X8(mb_type)) && !USES_LIST(mb_type, list) && !IS_DIRECT(mb_type)){
+            if((!IS_8X8(mb_type)) && !USES_LIST(mb_type, list) && !IS_DIRECT(mb_type) && !for_deblock){
                 /*if(!h->mv_cache_clean[list]){
                     memset(h->mv_cache [list],  0, 8*5*2*sizeof(int16_t)); //FIXME clean only input? clean at all?
                     memset(h->ref_cache[list], PART_NOT_AVAILABLE, 8*5*sizeof(int8_t));
@@ -4188,7 +4188,8 @@ decode_intra_mb:
                     if(IS_DIR(mb_type, 0, list)){
                         const int val= get_te0_golomb(&s->gb, h->ref_count[list]);
                         fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, val, 1);
-                    }
+                    }else
+                        fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, (LIST_NOT_USED&0xFF), 1);
                 }
             }
             for(list=0; list<2; list++){
@@ -4199,7 +4200,8 @@ decode_intra_mb:
                     tprintf("final mv:%d %d\n", mx, my);
 
                     fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
-                }
+                }else
+                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, 0, 4);
             }
         }
         else if(IS_16X8(mb_type)){
@@ -4209,7 +4211,7 @@ decode_intra_mb:
                         if(IS_DIR(mb_type, i, list)){
                             const int val= get_te0_golomb(&s->gb, h->ref_count[list]);
                             fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, val, 1);
-                        }else // needed only for mixed refs (e.g. B_L0_L1_16x8)
+                        }else
                             fill_rectangle(&h->ref_cache[list][ scan8[0] + 16*i ], 4, 2, 8, (LIST_NOT_USED&0xFF), 1);
                     }
                 }
@@ -4235,7 +4237,7 @@ decode_intra_mb:
                         if(IS_DIR(mb_type, i, list)){ //FIXME optimize
                             const int val= get_te0_golomb(&s->gb, h->ref_count[list]);
                             fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, val, 1);
-                        }else // needed only for mixed refs
+                        }else
                             fill_rectangle(&h->ref_cache[list][ scan8[0] + 2*i ], 2, 4, 8, (LIST_NOT_USED&0xFF), 1);
                     }
                 }
@@ -5135,7 +5137,8 @@ decode_intra_mb:
                         const int ref = h->ref_count[list] > 1 ? decode_cabac_mb_ref( h, list, 0 ) : 0;
                         fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, ref, 1);
                     }
-                }
+                }else
+                    fill_rectangle(&h->ref_cache[list][ scan8[0] ], 4, 4, 8, (uint8_t)LIST_NOT_USED, 1);
             }
             for(list=0; list<2; list++){
                 if(IS_DIR(mb_type, 0, list)){
@@ -5147,7 +5150,8 @@ decode_intra_mb:
 
                     fill_rectangle(h->mvd_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx-mpx,my-mpy), 4);
                     fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, pack16to32(mx,my), 4);
-                }
+                }else
+                    fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, 0, 4);
             }
         }
         else if(IS_16X8(mb_type)){
@@ -5172,7 +5176,7 @@ decode_intra_mb:
 
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx-mpx,my-mpy), 4);
                         fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, pack16to32(mx,my), 4);
-                    }else{ // needed only for mixed refs
+                    }else{
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 16*i ], 4, 2, 8, 0, 4);
                         fill_rectangle(h-> mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, 0, 4);
                     }
@@ -5201,7 +5205,7 @@ decode_intra_mb:
                         tprintf("final mv:%d %d\n", mx, my);
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx-mpx,my-mpy), 4);
                         fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, pack16to32(mx,my), 4);
-                    }else{ // needed only for mixed refs
+                    }else{
                         fill_rectangle(h->mvd_cache[list][ scan8[0] + 2*i ], 2, 4, 8, 0, 4);
                         fill_rectangle(h-> mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, 0, 4);
                     }
@@ -5652,16 +5656,21 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
                         h->non_zero_count_cache[bn_idx] != 0 ) {
                         bS[i] = 2;
                     }
-                    else if( h->slice_type == P_TYPE ) {
-                        if( h->ref_cache[0][b_idx] != h->ref_cache[0][bn_idx] ||
-                            ABS( h->mv_cache[0][b_idx][0] - h->mv_cache[0][bn_idx][0] ) >= 4 ||
-                            ABS( h->mv_cache[0][b_idx][1] - h->mv_cache[0][bn_idx][1] ) >= 4 )
-                            bS[i] = 1;
-                        else
-                            bS[i] = 0;
-                    } else {
-                        /* FIXME Add support for B frame */
-                        return;
+                    else
+                    {
+                        /* FIXME: A given frame may occupy more than one position in
+                         * the reference list. So we should compare the frame numbers,
+                         * not the indices in the ref list. */
+                        int l;
+                        bS[i] = 0;
+                        for( l = 0; l < 1 + (h->slice_type == B_TYPE); l++ ) {
+                            if( h->ref_cache[l][b_idx] != h->ref_cache[l][bn_idx] ||
+                                ABS( h->mv_cache[l][b_idx][0] - h->mv_cache[l][bn_idx][0] ) >= 4 ||
+                                ABS( h->mv_cache[l][b_idx][1] - h->mv_cache[l][bn_idx][1] ) >= 4 ) {
+                                bS[i] = 1;
+                                break;
+                            }
+                        }
                     }
                 }
 
