@@ -131,7 +131,7 @@ static inline float floorf(float f) {
 
 /* windows */
 
-#    ifndef __MINGW32__
+#    if !defined(__MINGW32__) && !defined(__CYGWIN__)
 #        define int64_t_C(c)     (c ## i64)
 #        define uint64_t_C(c)    (c ## i64)
 
