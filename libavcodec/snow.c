@@ -1849,181 +1849,6 @@ static void encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTEL
     }
 }
 
-static void encode_subband_dzr(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
-    const int level= b->level;
-    const int w= b->width;
-    const int h= b->height;
-    int x, y;
-
-    if(1){
-        int run[16]={0};
-        int runs[16][w*h]; //FIXME do something about the size
-        int run_index[16]={0};
-        int positions[2][w];
-        int distances[2][w];
-        int dist_count=0;
-        int i;
-                
-        for(y=0; y<h; y++){
-            int *     pos = positions[ y&1];
-            int *last_pos = positions[(y&1)^1];
-            int *     dist= distances[ y&1];
-            int *last_dist= distances[(y&1)^1];
-            int dist_index=0;
-            int last_dist_index=0;
-            
-            for(x=0; x<w; x++){
-                int p=0, l=0, lt=0, t=0, rt=0;
-                int v= src[x + y*stride];
-
-                if(y){
-                    t= src[x + (y-1)*stride];
-                    if(x){
-                        lt= src[x - 1 + (y-1)*stride];
-                    }
-                    if(x + 1 < w){
-                        rt= src[x + 1 + (y-1)*stride];
-                    }
-                }
-                if(x){
-                    l= src[x - 1 + y*stride];
-                }
-                if(parent){
-                    int px= x>>1;
-                    int py= y>>1;
-                    if(px<b->parent->width && py<b->parent->height) 
-                        p= parent[px + py*2*stride];
-                }
-                if(last_dist_index < dist_count && last_pos[last_dist_index] == x){
-                    if(dist_index==0 || x - pos[dist_index-1] > dist[dist_index-1] - last_dist[last_dist_index]){
-                        pos[dist_index]= x;
-                        dist[dist_index++]= last_dist[last_dist_index];
-                    }
-                    last_dist_index++;
-                }
-                
-                if(!(l|lt|t|rt|p)){
-                    int cur_dist=w>>1;
-                    int run_class;
-                    
-                    if(last_dist_index < dist_count) 
-                        cur_dist= last_pos[last_dist_index] - x + y - last_dist[last_dist_index];
-                    if(dist_index)
-                        cur_dist= FFMIN(cur_dist, x - pos[dist_index-1] + y - dist[dist_index-1]);
-                    assert(cur_dist>=2);
-                    run_class= av_log2(cur_dist+62);
-                    
-                    if(v){
-                        runs[run_class][run_index[run_class]++]= run[run_class];
-                        run[run_class]=0;
-                    }else{
-                        run[run_class]++;
-                    }
-                }
-                if(v){
-                    while(dist_index && x - pos[dist_index-1] <= y - dist[dist_index-1])
-                        dist_index--;
-                    pos[dist_index]= x;
-                    dist[dist_index++]= y;
-                }
-            }
-            dist_count= dist_index;
-        }
-        for(i=0; i<12; i++){
-            runs[i][run_index[i]++]= run[i];
-            run_index[i]=0;
-            run[i]=0;
-        }
-        
-        dist_count=0;
-        
-        for(y=0; y<h; y++){
-            int *     pos = positions[ y&1];
-            int *last_pos = positions[(y&1)^1];
-            int *     dist= distances[ y&1];
-            int *last_dist= distances[(y&1)^1];
-            int dist_index=0;
-            int last_dist_index=0;
-            
-            for(x=0; x<w; x++){
-                int p=0, l=0, lt=0, t=0, rt=0;
-                int v= src[x + y*stride];
-
-                if(y){
-                    t= src[x + (y-1)*stride];
-                    if(x){
-                        lt= src[x - 1 + (y-1)*stride];
-                    }
-                    if(x + 1 < w){
-                        rt= src[x + 1 + (y-1)*stride];
-                    }
-                }
-                if(x){
-                    l= src[x - 1 + y*stride];
-                }
-                if(parent){
-                    int px= x>>1;
-                    int py= y>>1;
-                    if(px<b->parent->width && py<b->parent->height) 
-                        p= parent[px + py*2*stride];
-                }
-                if(last_dist_index < dist_count && last_pos[last_dist_index] == x){
-                    if(dist_index==0 || x - pos[dist_index-1] > dist[dist_index-1] - last_dist[last_dist_index]){
-                        pos[dist_index]= x;
-                        dist[dist_index++]= last_dist[last_dist_index];
-                    }
-                    last_dist_index++;
-                }
-                if(l|lt|t|rt|p){
-                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
-
-                    put_cabac(&s->c, &b->state[0][context], !!v);
-                }else{
-                    int cur_dist=w>>1;
-                    int run_class;
-                    
-                    if(last_dist_index < dist_count) 
-                        cur_dist= last_pos[last_dist_index] - x + y - last_dist[last_dist_index];
-                    if(dist_index)
-                        cur_dist= FFMIN(cur_dist, x - pos[dist_index-1] + y - dist[dist_index-1]);
-                    assert(cur_dist>=2);
-                    assert(!dist_index || (pos[dist_index-1] >= 0 && pos[dist_index-1] <w));
-                    assert(last_dist_index >= dist_count || (last_pos[last_dist_index] >= 0 && last_pos[last_dist_index] <w));
-                    assert(!dist_index || dist[dist_index-1] <= y);
-                    assert(last_dist_index >= dist_count || last_dist[last_dist_index] < y);
-                    assert(cur_dist <= y + FFMAX(x, w-x-1));
-                    run_class= av_log2(cur_dist+62);
-
-                    if(!run_index[run_class]){
-                        run[run_class]= runs[run_class][run_index[run_class]++];
-                        put_symbol(&s->c, b->state[run_class+1], run[run_class], 0);
-                    }
-                    if(!run[run_class]){
-                        run[run_class]= runs[run_class][run_index[run_class]++];
-                        put_symbol(&s->c, b->state[run_class+1], run[run_class], 0);
-                        assert(v);
-                    }else{
-                        run[run_class]--;
-                        assert(!v);
-                    }
-                }
-                if(v){
-                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
-
-                    put_symbol(&s->c, b->state[context + 16], ABS(v)-1, 0);
-                    put_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
-
-                    while(dist_index && x - pos[dist_index-1] <= y - dist[dist_index-1])
-                        dist_index--;
-                    pos[dist_index]= x;
-                    dist[dist_index++]= y;
-                }
-            }
-            dist_count= dist_index;
-        }
-    }
-}
-
 static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){    
 //    encode_subband_qtree(s, b, src, parent, stride, orientation);
 //    encode_subband_z0run(s, b, src, parent, stride, orientation);
@@ -2123,88 +1948,6 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
         }
     }
     return;    
-#endif
-#if 0
-    int tree[10][w*h]; //FIXME space waste ...
-    int treedim[10][2];
-    int lev;
-    const int max_level= av_log2(2*FFMAX(w,h)-1);
-    int w2=w, h2=h;
-    memset(tree, 0, sizeof(tree));
-    
-//    assert(w%2==0 && h%2==0);
-
-    for(lev=max_level; lev>=0; lev--){
-        treedim[lev][0]= w2;
-        treedim[lev][1]= h2;
-        w2= (w2+1)>>1;
-        h2= (h2+1)>>1;
-    }    
-    
-    for(lev=0; lev<=max_level; lev++){
-        w2= treedim[lev][0];
-        h2= treedim[lev][1];
-        for(y=0; y<h2; y++){
-            for(x=0; x<w2; x++){
-                int l= 0, t=0;
-                int context;
-                if(lev && !tree[lev-1][x/2 + y/2*w])
-                    continue;
-
-                if(x) l= tree[lev][x - 1 + y*w];
-                if(y) t= tree[lev][x + (y-1)*w];
-
-                context= lev + 8*(!!l) + 16*(!!t);
-                tree[lev][x + y*w]= get_cabac(&s->c, &b->state[98][context]);
-            }
-        }
-    }
-    if(1){
-        for(y=0; y<b->height; y++)
-            memset(&src[y*stride], 0, b->width*sizeof(DWTELEM));
-
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                int v, p=0;
-                int /*ll=0, */l=0, lt=0, t=0, rt=0;
-
-                if(y){
-                    t= src[x + (y-1)*stride];
-                    if(x){
-                        lt= src[x - 1 + (y-1)*stride];
-                    }
-                    if(x + 1 < w){
-                        rt= src[x + 1 + (y-1)*stride];
-                    }
-                }
-                if(x){
-                    l= src[x - 1 + y*stride];
-                    /*if(x > 1){
-                        if(orientation==1) ll= src[y + (x-2)*stride];
-                        else               ll= src[x - 2 + y*stride];
-                    }*/
-                }
-                if(parent){
-                    int px= x>>1;
-                    int py= y>>1;
-                    if(px<b->parent->width && py<b->parent->height) 
-                        p= parent[px + py*2*stride];
-                }
-                if(tree[max_level][x + y*w]){
-                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
-                    v= get_symbol(&s->c, b->state[context + 2], 0) + 1;
-                    if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]]))
-                        v= -v;
-                    src[x + y*stride]= v;
-                }
-            }
-        }
-        if(level+1 == s->spatial_decomposition_count){
-            STOP_TIMER("decode_subband")
-        }
-        
-        return;
-    }
 #endif
     if(1){
         int run;
@@ -2770,7 +2513,7 @@ static int common_init(AVCodecContext *avctx){
         }
         s->plane[plane_index].width = w;
         s->plane[plane_index].height= h;
-av_log(NULL, AV_LOG_DEBUG, "%d %d\n", w, h);
+//av_log(NULL, AV_LOG_DEBUG, "%d %d\n", w, h);
         for(level=s->spatial_decomposition_count-1; level>=0; level--){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
                 SubBand *b= &s->plane[plane_index].band[level][orientation];
@@ -3127,31 +2870,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         int bits= put_bits_count(&s->c.pb);
 
         //FIXME optimize
-#if QPRED
-        memset(s->pred_buffer, 0, sizeof(DWTELEM)*w*h);
-        predict_plane(s, s->pred_buffer, plane_index, 1);
-        spatial_dwt(s, s->pred_buffer, w, h, w);
-        for(level=0; level<s->spatial_decomposition_count; level++){
-            for(orientation=level ? 1 : 0; orientation<4; orientation++){
-                SubBand *b= &p->band[level][orientation];
-                int delta= ((int)s->pred_buffer - (int)s->spatial_dwt_buffer)/sizeof(DWTELEM);
-                
-                quantize  (s, b, b->buf + delta, b->stride, s->qbias);
-                dequantize(s, b, b->buf + delta, b->stride);
-            }
-        }
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                s->spatial_dwt_buffer[y*w + x]= pict->data[plane_index][y*pict->linesize[plane_index] + x]<<8;
-            }
-        }
-        spatial_dwt(s, s->spatial_dwt_buffer, w, h, w);
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                s->spatial_dwt_buffer[y*w + x]-= s->pred_buffer[y*w + x];
-            }
-        }
-#else
      if(pict->data[plane_index]) //FIXME gray hack
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
@@ -3160,7 +2878,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         }
         predict_plane(s, s->spatial_dwt_buffer, plane_index, 0);
         spatial_dwt(s, s->spatial_dwt_buffer, w, h, w);
-#endif
  
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1 : 0; orientation<4; orientation++){
@@ -3185,17 +2902,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             }
         }
         
-#if QPRED
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                s->spatial_dwt_buffer[y*w + x]+= s->pred_buffer[y*w + x];
-            }
-        }
-        spatial_idwt(s, s->spatial_dwt_buffer, w, h, w);
-#else
         spatial_idwt(s, s->spatial_dwt_buffer, w, h, w);
         predict_plane(s, s->spatial_dwt_buffer, plane_index, 1);
-#endif
         //FIXME optimize
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
@@ -3332,29 +3040,8 @@ if(!(s->avctx->debug&1024))
             }
         }
 
-#if QPRED
-        memset(s->pred_buffer, 0, sizeof(DWTELEM)*w*h);
-        predict_plane(s, s->pred_buffer, plane_index, 1);
-        spatial_dwt(s, s->pred_buffer, w, h, w);
-        for(level=0; level<s->spatial_decomposition_count; level++){
-            for(orientation=level ? 1 : 0; orientation<4; orientation++){
-                SubBand *b= &p->band[level][orientation];
-                int delta= ((int)s->pred_buffer - (int)s->spatial_dwt_buffer)/sizeof(DWTELEM);
-                
-                quantize  (s, b, b->buf + delta, b->stride, s->qbias);
-                dequantize(s, b, b->buf + delta, b->stride);
-            }
-        }
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                s->spatial_dwt_buffer[y*w + x]+= s->pred_buffer[y*w + x];
-            }
-        }
-        spatial_idwt(s, s->spatial_dwt_buffer, w, h, w);
-#else
         spatial_idwt(s, s->spatial_dwt_buffer, w, h, w);
         predict_plane(s, s->spatial_dwt_buffer, plane_index, 1);
-#endif
 
         //FIXME optimize
         for(y=0; y<h; y++){
