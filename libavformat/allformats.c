@@ -45,9 +45,7 @@ void av_register_all(void)
     raw_init();
     mp3_init();
     rm_init();
-#ifdef CONFIG_RISKY
     asf_init();
-#endif
 #ifdef CONFIG_ENCODERS
     avienc_init();
 #endif //CONFIG_ENCODERS

@@ -57,7 +57,6 @@ void avcodec_register_all(void)
 #endif
     register_avcodec(&mpeg1video_encoder);
 //    register_avcodec(&h264_encoder);
-#ifdef CONFIG_RISKY
     register_avcodec(&mpeg2video_encoder);
     register_avcodec(&h261_encoder);
     register_avcodec(&h263_encoder);
@@ -72,7 +71,6 @@ void avcodec_register_all(void)
     register_avcodec(&wmv1_encoder);
     register_avcodec(&wmv2_encoder);
     register_avcodec(&svq1_encoder);
-#endif
     register_avcodec(&mjpeg_encoder);
     register_avcodec(&ljpeg_encoder);
 #ifdef CONFIG_ZLIB
@@ -99,7 +97,6 @@ void avcodec_register_all(void)
 
     /* decoders */
 #ifdef CONFIG_DECODERS
-#ifdef CONFIG_RISKY
     register_avcodec(&h263_decoder);
     register_avcodec(&h261_decoder);
     register_avcodec(&mpeg4_decoder);
@@ -127,7 +124,6 @@ void avcodec_register_all(void)
 #ifdef CONFIG_FAAD
     register_avcodec(&aac_decoder);
     register_avcodec(&mpeg4aac_decoder);
-#endif
 #endif
     register_avcodec(&mpeg1video_decoder);
     register_avcodec(&mpeg2video_decoder);

@@ -3145,8 +3145,6 @@ AVCodec mpeg1video_encoder = {
     .capabilities= CODEC_CAP_DELAY,
 };
 
-#ifdef CONFIG_RISKY
-
 AVCodec mpeg2video_encoder = {
     "mpeg2video",
     CODEC_TYPE_VIDEO,
@@ -3158,7 +3156,6 @@ AVCodec mpeg2video_encoder = {
     .supported_framerates= frame_rate_tab+1,
     .capabilities= CODEC_CAP_DELAY,
 };
-#endif
 #endif
 
 #ifdef HAVE_XVMC

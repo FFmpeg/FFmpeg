@@ -63,7 +63,6 @@ echo "  --disable-mpegaudio-hp   faster (but less accurate)"
 echo "                           mpegaudio decoding [default=no]"
 echo "  --disable-ffserver       disable ffserver build"
 echo "  --disable-ffplay         disable ffplay build"
-echo "  --disable-risky          disables patent encumbered codecs"
 echo "  --enable-small           optimize for size instead of speed"
 echo "  --enable-memalign-hack   emulate memalign, interferes with memory debuggers"
 echo "  --disable-strip          disable stripping of executables and shared libraries"
@@ -188,7 +187,6 @@ LIBSUF=".a"
 SLIBPREF="lib"
 SLIBSUF=".so"
 EXESUF=""
-risky="yes"
 amr_nb="no"
 amr_wb="no"
 amr_nb_fixed="no"
@@ -441,8 +439,6 @@ for opt do
   --disable-ffserver) ffserver="no"
   ;;
   --disable-ffplay) ffplay="no"
-  ;;
-  --disable-risky) risky="no"
   ;;
   --enable-small) optimize="small"
   ;;
@@ -1062,7 +1058,6 @@ echo "SDL support      $sdl"
 if test $sdl_too_old = "yes"; then
 echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support"
 fi
-echo "risky / patent encumbered codecs $risky"
 
 if test "$vhook" = "yes" ; then
 echo "Imlib2 support   $imlib2"
@@ -1433,11 +1428,6 @@ fi
 
 if test "$ffplay" = "yes" ; then
   echo "CONFIG_FFPLAY=yes" >> config.mak
-fi
-
-if test "$risky" = "yes" ; then
-  echo "#define CONFIG_RISKY 1" >> $TMPH
-  echo "CONFIG_RISKY=yes" >> config.mak
 fi
 
 if test "$gpl" = "yes" ; then
