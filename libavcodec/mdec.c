@@ -197,7 +197,7 @@ static int decode_frame(AVCodecContext *avctx,
     a->qscale=  get_bits(&a->gb, 16);
     a->version= get_bits(&a->gb, 16);
     
-    printf("qscale:%d (0x%X), version:%d (0x%X)\n", a->qscale, a->qscale, a->version, a->version);
+//    printf("qscale:%d (0x%X), version:%d (0x%X)\n", a->qscale, a->qscale, a->version, a->version);
     
     for(a->mb_x=0; a->mb_x<a->mb_width; a->mb_x++){
         for(a->mb_y=0; a->mb_y<a->mb_height; a->mb_y++){
