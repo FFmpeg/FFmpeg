@@ -15,6 +15,8 @@ if [ "$1" = "mpeg4" ] ; then
     do_mpeg4=y
 elif [ "$1" = "mpeg" ] ; then
     do_mpeg=y
+elif [ "$1" = "ac3" ] ; then
+    do_ac3=y
 elif [ "$1" = "libavtest" ] ; then
     do_libav=y
     logfile="$datadir/libav.regression"
@@ -252,20 +254,30 @@ file=${outfile}libav.mjpeg
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
 do_ffmpeg_crc $file -i $file
 
+# pbmpipe
+file=${outfile}libav.pbm
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f imagepipe $file
+do_ffmpeg_crc $file -f imagepipe -i $file
+
 # pgmpipe
-file=${outfile}libav.pgmpipe
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f pgmpipe $file
-do_ffmpeg_crc $file -f pgmpipe -i $file
+file=${outfile}libav.pgm
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f imagepipe $file
+do_ffmpeg_crc $file -f imagepipe -i $file
 
 # ppmpipe
-file=${outfile}libav.ppmpipe
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f ppmpipe $file
-do_ffmpeg_crc $file -f ppmpipe -i $file
+file=${outfile}libav.ppm
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f imagepipe $file
+do_ffmpeg_crc $file -f imagepipe -i $file
 
 # gif
 file=${outfile}libav.gif
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f ppmpipe $file
-#do_ffmpeg_crc $file -f ppmpipe -i $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
+#do_ffmpeg_crc $file -i $file
+
+# yuv4mpeg
+file=${outfile}libav.yuv4mpeg
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
+#do_ffmpeg_crc $file -i $file
 
 ####################
 # image formats
