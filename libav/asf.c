@@ -237,7 +237,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
     INT64 header_offset, cur_pos, hpos;
     int bit_rate;
 
-    has_title = (s->title[0] != '\0');
+    has_title = (s->title[0] || s->author[0] || s->copyright[0] || s->comment[0]);
 
     bit_rate = 0;
     for(n=0;n<s->nb_streams;n++) {
@@ -372,10 +372,13 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
     put_guid(pb, &codec_comment1_header);
     put_le32(pb, s->nb_streams);
     for(n=0;n<s->nb_streams;n++) {
+        AVCodec *p;
+
         enc = &s->streams[n]->codec;
+        p = avcodec_find_encoder(enc->codec_id);
 
         put_le16(pb, asf->streams[n].num);
-        put_str16(pb, enc->codec_name);
+        put_str16(pb, p ? p->name : enc->codec_name);
         put_le16(pb, 0); /* no parameters */
         /* id */
         if (enc->codec_type == CODEC_TYPE_AUDIO) {
@@ -1017,7 +1020,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int asf_read_close(AVFormatContext *s)
 {
-    ASFContext *asf = s->priv_data;
+    //ASFContext *asf = s->priv_data;
     int i;
 
     for(i=0;i<s->nb_streams;i++) {
