@@ -403,10 +403,8 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 #endif
 	while(s < end)
 	{
-		// FIXME on bigendian
-		const int src= *s; s += 4;
-		*d++ = ((src&0xFF)>>3) + ((src&0xFC00)>>5) + ((src&0xF80000)>>8);
-//		*d++ = ((src>>3)&0x1F) + ((src>>5)&0x7E0) + ((src>>8)&0xF800);
+		register int rgb = *(uint32_t*)s; s += 4;
+		*d++ = ((rgb&0xFF)>>3) + ((rgb&0xFC00)>>5) + ((rgb&0xF80000)>>8);
 	}
 }
 
