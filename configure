@@ -5,13 +5,13 @@ TMPO="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
 TMPS="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
 TMPH="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
-if [ ! -z "$TMPDIR" ]; then
+if test ! -z "$TMPDIR" ; then
 	TMPC="${TMPDIR}/${TMPC}"
 	TMPCPP="${TMPDIR}/${TMPCPP}"
 	TMPO="${TMPDIR}/${TMPO}"
 	TMPS="${TMPDIR}/${TMPS}"
 	TMPH="${TMPDIR}/${TMPH}"
-elif [ ! -z "$TEMPDIR" ]; then
+elif test ! -z "$TEMPDIR" ; then
 	TMPC="${TEMPDIR}/${TMPC}"
 	TMPCPP="${TEMPDIR}/${TMPCPP}"
 	TMPO="${TEMPDIR}/${TMPO}"
@@ -50,6 +50,7 @@ esac
 gprof="no"
 grab="yes"
 mp3lame="no"
+a52bin="no"
 win32="no"
 extralibs="-lm"
 
@@ -72,7 +73,7 @@ fi ;;
 *) ;;
 esac
 
-if [ "$1" = "-h" -o "$1" = "--help" ] ; then
+if test "$1" = "-h" -o "$1" = "--help" ; then
 cat << EOF
 
 Usage: configure [options]
@@ -86,9 +87,10 @@ echo "  --cpu=CPU               force cpu to CPU  [$cpu]"
 echo "  --disable-mmx           disable mmx usage"
 echo "  --enable-gprof          enable profiling with gprof [$gprof]"
 echo "  --disable-grab          disable audio/video grabbing code"
-echo "  --enable-simple_idct    use simple IDCT routines"
-echo "  --enable-mp3lame        enable mp3 encoding via libmp3lame"
+echo "  --enable-simple_idct    use simple IDCT routines [default=no]"
+echo "  --enable-mp3lame        enable mp3 encoding via libmp3lame [default=no]"
 echo "  --enable-win32          enable win32 cross compile"
+echo "  --enable-a52bin         open liba52.so.0 at runtime [default=no]"
 echo "  --enable-shared         build shared libraries [default=no]"
 exit 1
 fi
@@ -108,6 +110,8 @@ for opt do
   ;;
   --disable-grab) grab="no"
   ;;
+  --enable-a52bin) a52bin="yes" ; extralibs="-ldl $extralibs"
+  ;;
   --enable-mp3lame) mp3lame="yes"
   ;;
   --enable-simple_idct) simpleidct="yes"
@@ -124,7 +128,7 @@ if test -z "$CFLAGS"; then
     CFLAGS="-O2"
 fi
 
-if [ "$win32" = "yes" ] ; then
+if test "$win32" = "yes" ; then
     cross_prefix="i386-mingw32msvc-"
     cc="${cross_prefix}gcc"
     ar="${cross_prefix}ar"
@@ -163,6 +167,7 @@ echo "MMX enabled      $mmx"
 echo "gprof enabled    $gprof"
 echo "grab enabled     $grab"
 echo "mp3lame enabled  $mp3lame"
+echo "a52 dlopened     $a52bin"
 
 echo "Creating config.mak and config.h"
 
@@ -174,27 +179,27 @@ echo "MAKE=make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "OPTFLAGS=$CFLAGS" >> config.mak
-if [ "$cpu" = "x86" ] ; then
+if test "$cpu" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH
 fi
-if [ "$cpu" = "armv4l" ]; then
+if test "$cpu" = "armv4l" ; then
   echo "TARGET_ARCH_ARMV4L=yes" >> config.mak
   echo "#define ARCH_ARMV4L 1" >> $TMPH
 fi
-if [ "$cpu" = "alpha" ]; then
+if test "$cpu" = "alpha" ; then
   echo "TARGET_ARCH_ALPHA=yes" >> config.mak
   echo "#define ARCH_ALPHA 1" >> $TMPH
 fi
-if [ "$mmx" = "yes" ] ; then
+if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
   echo "#define HAVE_MMX 1" >> $TMPH
 fi
-if [ "$gprof" = "yes" ] ; then
+if test "$gprof" = "yes" ; then
   echo "TARGET_GPROF=yes" >> config.mak
   echo "#define HAVE_GPROF 1" >> $TMPH
 fi
-if [ "$lshared" = "yes" ] ; then
+if test "$lshared" = "yes" ; then
   echo "BUILD_SHARED=yes" >> config.mak
 else
   echo "BUILD_SHARED=no" >> config.mak
@@ -216,34 +221,41 @@ echo "CONFIG_DECODERS=yes" >> config.mak
 echo "#define CONFIG_AC3 1" >> $TMPH
 echo "CONFIG_AC3=yes" >> config.mak
 
-if [ "$grab" = "yes" ] ; then
+if test "$a52bin" = "yes" ; then
+  echo "#define CONFIG_A52BIN 1" >> $TMPH
+  echo "CONFIG_A52BIN=yes" >> config.mak
+else
+  echo "CONFIG_A52BIN=no" >> config.mak
+fi
+
+if test "$grab" = "yes" ; then
   echo "#define CONFIG_GRAB 1" >> $TMPH
   echo "CONFIG_GRAB=yes" >> config.mak
 fi
 
-if [ "$mp3lame" = "yes" ] ; then
+if test "$mp3lame" = "yes" ; then
   echo "#define CONFIG_MP3LAME 1" >> $TMPH
   echo "CONFIG_MP3LAME=yes" >> config.mak
 fi
 
-if [ "$win32" = "yes" ] ; then
+if test "$win32" = "yes" ; then
   echo "#define CONFIG_WIN32 1" >> $TMPH
   echo "CONFIG_WIN32=yes" >> config.mak
 fi
 
-if [ "$_malloc_h" = "yes" ]; then
+if test "$_malloc_h" = "yes" ; then
   echo "#define HAVE_MALLOC_H 1" >> $TMPH
 else
   echo "#undef  HAVE_MALLOC_H" >> $TMPH
 fi
 
-if [ "$_memalign" = "yes" ]; then
+if test "$_memalign" = "yes" ; then
   echo "#define HAVE_MEMALIGN 1" >> $TMPH
 else
   echo "#undef  HAVE_MEMALIGN" >> $TMPH
 fi
 
-if [ "$simpleidct" = "yes" ]; then
+if test "$simpleidct" = "yes" ; then
   echo "#define SIMPLE_IDCT 1" >> $TMPH
 fi
 

@@ -29,6 +29,9 @@ EXTRALIBS+=-lmp3lame
 endif
 endif
 
+OBJS = ffmpeg.o ffserver.o
+SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
+
 all: lib $(PROG)
 
 lib:
@@ -52,6 +55,11 @@ install: all
 	install -s -m 755 $(PROG) $(prefix)/bin
 	ln -sf ffmpeg $(prefix)/bin/ffplay 
 
+dep:	depend
+
+depend:
+	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
+
 clean: 
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libav clean
@@ -63,3 +71,7 @@ distclean: clean
 
 TAGS:
 	etags *.[ch] libav/*.[ch] libavcodec/*.[ch]
+
+ifneq ($(wildcard .depend),)
+include .depend
+endif

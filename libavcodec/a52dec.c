@@ -19,7 +19,7 @@
 #include "avcodec.h"
 #include "liba52/a52.h"
 
-#ifdef LIBAVCODEC_A52BIN
+#ifdef CONFIG_A52BIN
 #include <dlfcn.h>
 static const char* liba52name = "liba52.so.0";
 #endif
@@ -62,7 +62,7 @@ typedef struct AC3DecodeState {
 
 } AC3DecodeState;
 
-#ifdef LIBAVCODEC_A52BIN
+#ifdef CONFIG_A52BIN
 static void* dlsymm(void* handle, const char* symbol)
 {
     void* f = dlsym(handle, symbol);
@@ -76,7 +76,7 @@ static int a52_decode_init(AVCodecContext *avctx)
 {
     AC3DecodeState *s = avctx->priv_data;
 
-#ifdef LIBAVCODEC_A52BIN
+#ifdef CONFIG_A52BIN
     s->handle = dlopen(liba52name, RTLD_LAZY);
     if (!s->handle)
     {
@@ -95,7 +95,6 @@ static int a52_decode_init(AVCodecContext *avctx)
 	dlclose(s->handle);
         return -1;
     }
-    printf("INITIALIZED\n");
 #else
     /* static linked version */
     s->handle = 0;
@@ -233,7 +232,7 @@ static int a52_decode_end(AVCodecContext *avctx)
 {
     AC3DecodeState *s = avctx->priv_data;
     s->a52_free(s->state);
-#ifdef LIBAVCODEC_A52BIN
+#ifdef CONFIG_A52BIN
     dlclose(s->handle);
 #endif
     return 0;

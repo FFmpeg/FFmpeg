@@ -10,11 +10,15 @@ OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
       ratecontrol.o
 ASM_OBJS=
 
-# currently using libac3 for ac3 decoding
+# currently using liba52 for ac3 decoding
 ifeq ($(CONFIG_AC3),yes)
-OBJS+= ac3dec.o \
-       libac3/bit_allocate.o libac3/bitstream.o libac3/downmix.o \
-       libac3/imdct.o  libac3/parse.o
+OBJS+= a52dec.o
+endif
+
+# using builtin liba52 or runtime linked liba52.so.0
+ifeq ($(CONFIG_A52BIN),no)
+OBJS+= liba52/bit_allocate.o liba52/bitstream.o liba52/downmix.o \
+	liba52/imdct.o  liba52/parse.o
 endif
 
 ifeq ($(CONFIG_MP3LAME),yes)
@@ -30,7 +34,7 @@ endif
 ifeq ($(TARGET_MMX),yes)
 OBJS += i386/fdct_mmx.o i386/cputest.o \
 	i386/dsputil_mmx.o i386/mpegvideo_mmx.o \
-        i386/idct_mmx.o i386/motion_est_mmx.o \
+	i386/idct_mmx.o i386/motion_est_mmx.o \
 	i386/simple_idct_mmx.o
 endif
 
@@ -91,8 +95,8 @@ clean:
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \
-           libac3/*.o libac3/*~ \
-           apiexample $(TESTS)
+	   liba52/*.o liba52/*~ \
+	   apiexample $(TESTS)
 
 distclean: clean
 	rm -f Makefile.bak .depend
