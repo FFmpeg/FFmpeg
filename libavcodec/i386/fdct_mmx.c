@@ -47,13 +47,13 @@ static const int16_t ocos_4_16[4] ATTR_ALIGN(8) = {
     23170, 23170, 23170, 23170,	//cos * (2<<15) + 0.5
 };
 
-static const long long fdct_one_corr ATTR_ALIGN(8) = 0x0001000100010001LL;
+static const int64_t fdct_one_corr ATTR_ALIGN(8) = 0x0001000100010001LL;
 
-static const long fdct_r_row[2] ATTR_ALIGN(8) = {RND_FRW_ROW, RND_FRW_ROW };
+static const int32_t fdct_r_row[2] ATTR_ALIGN(8) = {RND_FRW_ROW, RND_FRW_ROW };
 
 struct 
 {
- const long fdct_r_row_sse2[4] ATTR_ALIGN(16);
+ const int32_t fdct_r_row_sse2[4] ATTR_ALIGN(16);
 } fdct_r_row_sse2 ATTR_ALIGN(16)=
 {{
  RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW

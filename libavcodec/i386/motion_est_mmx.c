@@ -20,6 +20,7 @@
  * mostly by Michael Niedermayer <michaelni@gmx.at>
  */
 #include "../dsputil.h"
+#include "mmx.h"
 
 static const __attribute__ ((aligned(8))) uint64_t round_tab[3]={
 0x0000000000000000ULL,
@@ -31,19 +32,19 @@ static attribute_used __attribute__ ((aligned(8))) uint64_t bone= 0x010101010101
 
 static inline void sad8_1_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {
-    int len= -(stride*h);
+    long len= -(stride*h);
     asm volatile(
         ".balign 16			\n\t"
         "1:				\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq (%2, %%eax), %%mm2	\n\t"
-        "movq (%2, %%eax), %%mm4	\n\t"
-        "addl %3, %%eax			\n\t"
+        "movq (%1, %%"REG_a"), %%mm0	\n\t"
+        "movq (%2, %%"REG_a"), %%mm2	\n\t"
+        "movq (%2, %%"REG_a"), %%mm4	\n\t"
+        "add %3, %%"REG_a"		\n\t"
         "psubusb %%mm0, %%mm2		\n\t"
         "psubusb %%mm4, %%mm0		\n\t"
-        "movq (%1, %%eax), %%mm1	\n\t"
-        "movq (%2, %%eax), %%mm3	\n\t"
-        "movq (%2, %%eax), %%mm5	\n\t"
+        "movq (%1, %%"REG_a"), %%mm1	\n\t"
+        "movq (%2, %%"REG_a"), %%mm3	\n\t"
+        "movq (%2, %%"REG_a"), %%mm5	\n\t"
         "psubusb %%mm1, %%mm3		\n\t"
         "psubusb %%mm5, %%mm1		\n\t"
         "por %%mm2, %%mm0		\n\t"
@@ -58,116 +59,116 @@ static inline void sad8_1_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
         "paddw %%mm3, %%mm2		\n\t"
         "paddw %%mm2, %%mm0		\n\t"
         "paddw %%mm0, %%mm6		\n\t"
-        "addl %3, %%eax			\n\t"
+        "add %3, %%"REG_a"		\n\t"
         " js 1b				\n\t"
         : "+a" (len)
-        : "r" (blk1 - len), "r" (blk2 - len), "r" (stride)
+        : "r" (blk1 - len), "r" (blk2 - len), "r" ((long)stride)
     );
 }
 
 static inline void sad8_1_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {
-    int len= -(stride*h);
+    long len= -(stride*h);
     asm volatile(
         ".balign 16			\n\t"
         "1:				\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq (%2, %%eax), %%mm2	\n\t"
+        "movq (%1, %%"REG_a"), %%mm0	\n\t"
+        "movq (%2, %%"REG_a"), %%mm2	\n\t"
         "psadbw %%mm2, %%mm0		\n\t"
-        "addl %3, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm1	\n\t"
-        "movq (%2, %%eax), %%mm3	\n\t"
+        "add %3, %%"REG_a"		\n\t"
+        "movq (%1, %%"REG_a"), %%mm1	\n\t"
+        "movq (%2, %%"REG_a"), %%mm3	\n\t"
         "psadbw %%mm1, %%mm3		\n\t"
         "paddw %%mm3, %%mm0		\n\t"
         "paddw %%mm0, %%mm6		\n\t"
-        "addl %3, %%eax			\n\t"
+        "add %3, %%"REG_a"		\n\t"
         " js 1b				\n\t"
         : "+a" (len)
-        : "r" (blk1 - len), "r" (blk2 - len), "r" (stride)
+        : "r" (blk1 - len), "r" (blk2 - len), "r" ((long)stride)
     );
 }
 
 static inline void sad8_2_mmx2(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2, int stride, int h)
 {
-    int len= -(stride*h);
+    long len= -(stride*h);
     asm volatile(
         ".balign 16			\n\t"
         "1:				\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq (%2, %%eax), %%mm2	\n\t"
+        "movq (%1, %%"REG_a"), %%mm0	\n\t"
+        "movq (%2, %%"REG_a"), %%mm2	\n\t"
         "pavgb %%mm2, %%mm0		\n\t"
-        "movq (%3, %%eax), %%mm2	\n\t"
+        "movq (%3, %%"REG_a"), %%mm2	\n\t"
         "psadbw %%mm2, %%mm0		\n\t"
-        "addl %4, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm1	\n\t"
-        "movq (%2, %%eax), %%mm3	\n\t"
+        "add %4, %%"REG_a"		\n\t"
+        "movq (%1, %%"REG_a"), %%mm1	\n\t"
+        "movq (%2, %%"REG_a"), %%mm3	\n\t"
         "pavgb %%mm1, %%mm3		\n\t"
-        "movq (%3, %%eax), %%mm1	\n\t"
+        "movq (%3, %%"REG_a"), %%mm1	\n\t"
         "psadbw %%mm1, %%mm3		\n\t"
         "paddw %%mm3, %%mm0		\n\t"
         "paddw %%mm0, %%mm6		\n\t"
-        "addl %4, %%eax			\n\t"
+        "add %4, %%"REG_a"		\n\t"
         " js 1b				\n\t"
         : "+a" (len)
-        : "r" (blk1a - len), "r" (blk1b -len), "r" (blk2 - len), "r" (stride)
+        : "r" (blk1a - len), "r" (blk1b -len), "r" (blk2 - len), "r" ((long)stride)
     );
 }
 
 static inline void sad8_4_mmx2(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 { //FIXME reuse src
-    int len= -(stride*h);
+    long len= -(stride*h);
     asm volatile(
         ".balign 16			\n\t"
         "movq "MANGLE(bone)", %%mm5	\n\t"
         "1:				\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq (%2, %%eax), %%mm2	\n\t"
-        "movq 1(%1, %%eax), %%mm1	\n\t"
-        "movq 1(%2, %%eax), %%mm3	\n\t"
+        "movq (%1, %%"REG_a"), %%mm0	\n\t"
+        "movq (%2, %%"REG_a"), %%mm2	\n\t"
+        "movq 1(%1, %%"REG_a"), %%mm1	\n\t"
+        "movq 1(%2, %%"REG_a"), %%mm3	\n\t"
         "pavgb %%mm2, %%mm0		\n\t"
         "pavgb %%mm1, %%mm3		\n\t"
         "psubusb %%mm5, %%mm3		\n\t"
         "pavgb %%mm3, %%mm0		\n\t"
-        "movq (%3, %%eax), %%mm2	\n\t"
+        "movq (%3, %%"REG_a"), %%mm2	\n\t"
         "psadbw %%mm2, %%mm0		\n\t"
-        "addl %4, %%eax			\n\t"
-        "movq (%1, %%eax), %%mm1	\n\t"
-        "movq (%2, %%eax), %%mm3	\n\t"
-        "movq 1(%1, %%eax), %%mm2	\n\t"
-        "movq 1(%2, %%eax), %%mm4	\n\t"
+        "add %4, %%"REG_a"		\n\t"
+        "movq (%1, %%"REG_a"), %%mm1	\n\t"
+        "movq (%2, %%"REG_a"), %%mm3	\n\t"
+        "movq 1(%1, %%"REG_a"), %%mm2	\n\t"
+        "movq 1(%2, %%"REG_a"), %%mm4	\n\t"
         "pavgb %%mm3, %%mm1		\n\t"
         "pavgb %%mm4, %%mm2		\n\t"
         "psubusb %%mm5, %%mm2		\n\t"
         "pavgb %%mm1, %%mm2		\n\t"
-        "movq (%3, %%eax), %%mm1	\n\t"
+        "movq (%3, %%"REG_a"), %%mm1	\n\t"
         "psadbw %%mm1, %%mm2		\n\t"
         "paddw %%mm2, %%mm0		\n\t"
         "paddw %%mm0, %%mm6		\n\t"
-        "addl %4, %%eax			\n\t"
+        "add %4, %%"REG_a"		\n\t"
         " js 1b				\n\t"
         : "+a" (len)
-        : "r" (blk1 - len), "r" (blk1 - len + stride), "r" (blk2 - len), "r" (stride)
+        : "r" (blk1 - len), "r" (blk1 - len + stride), "r" (blk2 - len), "r" ((long)stride)
     );
 }
 
 static inline void sad8_2_mmx(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2, int stride, int h)
 {
-    int len= -(stride*h);
+    long len= -(stride*h);
     asm volatile(
         ".balign 16			\n\t"
         "1:				\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq (%2, %%eax), %%mm1	\n\t"
-        "movq (%1, %%eax), %%mm2	\n\t"
-        "movq (%2, %%eax), %%mm3	\n\t"
+        "movq (%1, %%"REG_a"), %%mm0	\n\t"
+        "movq (%2, %%"REG_a"), %%mm1	\n\t"
+        "movq (%1, %%"REG_a"), %%mm2	\n\t"
+        "movq (%2, %%"REG_a"), %%mm3	\n\t"
         "punpcklbw %%mm7, %%mm0		\n\t"
         "punpcklbw %%mm7, %%mm1		\n\t"
         "punpckhbw %%mm7, %%mm2		\n\t"
         "punpckhbw %%mm7, %%mm3		\n\t"
         "paddw %%mm0, %%mm1		\n\t"
         "paddw %%mm2, %%mm3		\n\t"
-        "movq (%3, %%eax), %%mm4	\n\t"
-        "movq (%3, %%eax), %%mm2	\n\t"
+        "movq (%3, %%"REG_a"), %%mm4	\n\t"
+        "movq (%3, %%"REG_a"), %%mm2	\n\t"
         "paddw %%mm5, %%mm1		\n\t"
         "paddw %%mm5, %%mm3		\n\t"
         "psrlw $1, %%mm1		\n\t"
@@ -181,21 +182,21 @@ static inline void sad8_2_mmx(uint8_t *blk1a, uint8_t *blk1b, uint8_t *blk2, int
         "punpckhbw %%mm7, %%mm1		\n\t"
         "paddw %%mm1, %%mm0		\n\t"
         "paddw %%mm0, %%mm6		\n\t"
-        "addl %4, %%eax			\n\t"
+        "add %4, %%"REG_a"		\n\t"
         " js 1b				\n\t"
         : "+a" (len)
-        : "r" (blk1a - len), "r" (blk1b -len), "r" (blk2 - len), "r" (stride)
+        : "r" (blk1a - len), "r" (blk1b -len), "r" (blk2 - len), "r" ((long)stride)
     );
 }
 
 static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {
-    int len= -(stride*h);
+    long len= -(stride*h);
     asm volatile(
         ".balign 16			\n\t"
         "1:				\n\t"
-        "movq (%1, %%eax), %%mm0	\n\t"
-        "movq (%2, %%eax), %%mm1	\n\t"
+        "movq (%1, %%"REG_a"), %%mm0	\n\t"
+        "movq (%2, %%"REG_a"), %%mm1	\n\t"
         "movq %%mm0, %%mm4		\n\t"
         "movq %%mm1, %%mm2		\n\t"
         "punpcklbw %%mm7, %%mm0		\n\t"
@@ -204,8 +205,8 @@ static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
         "punpckhbw %%mm7, %%mm2		\n\t"
         "paddw %%mm1, %%mm0		\n\t"
         "paddw %%mm2, %%mm4		\n\t"
-        "movq 1(%1, %%eax), %%mm2	\n\t"
-        "movq 1(%2, %%eax), %%mm3	\n\t"
+        "movq 1(%1, %%"REG_a"), %%mm2	\n\t"
+        "movq 1(%2, %%"REG_a"), %%mm3	\n\t"
         "movq %%mm2, %%mm1		\n\t"
         "punpcklbw %%mm7, %%mm2		\n\t"
         "punpckhbw %%mm7, %%mm1		\n\t"
@@ -216,8 +217,8 @@ static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
         "punpckhbw %%mm7, %%mm4		\n\t"
         "paddw %%mm3, %%mm2		\n\t"
         "paddw %%mm4, %%mm1		\n\t"
-        "movq (%3, %%eax), %%mm3	\n\t"
-        "movq (%3, %%eax), %%mm4	\n\t"
+        "movq (%3, %%"REG_a"), %%mm3	\n\t"
+        "movq (%3, %%"REG_a"), %%mm4	\n\t"
         "paddw %%mm5, %%mm2		\n\t"
         "paddw %%mm5, %%mm1		\n\t"
         "psrlw $2, %%mm2		\n\t"
@@ -231,10 +232,10 @@ static inline void sad8_4_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
         "punpckhbw %%mm7, %%mm2		\n\t"
         "paddw %%mm2, %%mm0		\n\t"
         "paddw %%mm0, %%mm6		\n\t"
-        "addl %4, %%eax			\n\t"
+        "add %4, %%"REG_a"		\n\t"
         " js 1b				\n\t"
         : "+a" (len)
-        : "r" (blk1 - len), "r" (blk1 -len + stride), "r" (blk2 - len), "r" (stride)
+        : "r" (blk1 - len), "r" (blk1 -len + stride), "r" (blk2 - len), "r" ((long)stride)
     );
 }
 

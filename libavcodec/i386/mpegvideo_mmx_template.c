@@ -36,7 +36,8 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
                             DCTELEM *block, int n,
                             int qscale, int *overflow)
 {
-    int level=0, last_non_zero_p1, q; //=0 is cuz gcc says uninitalized ...
+    long last_non_zero_p1;
+    int level=0, q; //=0 is cuz gcc says uninitalized ...
     const uint16_t *qmat, *bias;
     __align8 int16_t temp_block[64];
     
@@ -90,18 +91,18 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     if(s->out_format == FMT_H263 && s->mpeg_quant==0){
     
         asm volatile(
-            "movd %%eax, %%mm3			\n\t" // last_non_zero_p1
+            "movd %%"REG_a", %%mm3		\n\t" // last_non_zero_p1
             SPREADW(%%mm3)
             "pxor %%mm7, %%mm7			\n\t" // 0
             "pxor %%mm4, %%mm4			\n\t" // 0
             "movq (%2), %%mm5			\n\t" // qmat[0]
             "pxor %%mm6, %%mm6			\n\t"
             "psubw (%3), %%mm6			\n\t" // -bias[0]
-            "movl $-128, %%eax			\n\t"
+            "mov $-128, %%"REG_a"		\n\t"
             ".balign 16				\n\t"
             "1:					\n\t"
             "pxor %%mm1, %%mm1			\n\t" // 0
-            "movq (%1, %%eax), %%mm0		\n\t" // block[i]
+            "movq (%1, %%"REG_a"), %%mm0	\n\t" // block[i]
             "pcmpgtw %%mm0, %%mm1		\n\t" // block[i] <= 0 ? 0xFF : 0x00
             "pxor %%mm1, %%mm0			\n\t" 
             "psubw %%mm1, %%mm0			\n\t" // ABS(block[i])
@@ -110,13 +111,13 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
             "por %%mm0, %%mm4			\n\t" 
             "pxor %%mm1, %%mm0			\n\t" 
             "psubw %%mm1, %%mm0			\n\t" // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
-            "movq %%mm0, (%5, %%eax)		\n\t"
+            "movq %%mm0, (%5, %%"REG_a")	\n\t"
             "pcmpeqw %%mm7, %%mm0		\n\t" // out==0 ? 0xFF : 0x00
-            "movq (%4, %%eax), %%mm1		\n\t" 
-            "movq %%mm7, (%1, %%eax)		\n\t" // 0
+            "movq (%4, %%"REG_a"), %%mm1	\n\t" 
+            "movq %%mm7, (%1, %%"REG_a")	\n\t" // 0
             "pandn %%mm1, %%mm0			\n\t"
 	    PMAXW(%%mm0, %%mm3)
-            "addl $8, %%eax			\n\t"
+            "add $8, %%"REG_a"			\n\t"
             " js 1b				\n\t"
             "movq %%mm3, %%mm0			\n\t"
             "psrlq $32, %%mm3			\n\t"
@@ -124,8 +125,8 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
             "movq %%mm3, %%mm0			\n\t"
             "psrlq $16, %%mm3			\n\t"
 	    PMAXW(%%mm0, %%mm3)
-            "movd %%mm3, %%eax			\n\t"
-            "movzbl %%al, %%eax			\n\t" // last_non_zero_p1
+            "movd %%mm3, %%"REG_a"		\n\t"
+            "movzb %%al, %%"REG_a"		\n\t" // last_non_zero_p1
 	    : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat), "r" (bias),
               "r" (inv_zigzag_direct16+64), "r" (temp_block+64)
@@ -142,32 +143,32 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         );
     }else{ // FMT_H263
         asm volatile(
-            "movd %%eax, %%mm3			\n\t" // last_non_zero_p1
+            "movd %%"REG_a", %%mm3		\n\t" // last_non_zero_p1
             SPREADW(%%mm3)
             "pxor %%mm7, %%mm7			\n\t" // 0
             "pxor %%mm4, %%mm4			\n\t" // 0
-            "movl $-128, %%eax			\n\t"
+            "mov $-128, %%"REG_a"		\n\t"
             ".balign 16				\n\t"
             "1:					\n\t"
             "pxor %%mm1, %%mm1			\n\t" // 0
-            "movq (%1, %%eax), %%mm0		\n\t" // block[i]
+            "movq (%1, %%"REG_a"), %%mm0	\n\t" // block[i]
             "pcmpgtw %%mm0, %%mm1		\n\t" // block[i] <= 0 ? 0xFF : 0x00
             "pxor %%mm1, %%mm0			\n\t" 
             "psubw %%mm1, %%mm0			\n\t" // ABS(block[i])
-            "movq (%3, %%eax), %%mm6		\n\t" // bias[0]
+            "movq (%3, %%"REG_a"), %%mm6	\n\t" // bias[0]
             "paddusw %%mm6, %%mm0		\n\t" // ABS(block[i]) + bias[0]
-            "movq (%2, %%eax), %%mm5		\n\t" // qmat[i]
+            "movq (%2, %%"REG_a"), %%mm5		\n\t" // qmat[i]
             "pmulhw %%mm5, %%mm0		\n\t" // (ABS(block[i])*qmat[0] + bias[0]*qmat[0])>>16
             "por %%mm0, %%mm4			\n\t" 
             "pxor %%mm1, %%mm0			\n\t" 
             "psubw %%mm1, %%mm0			\n\t" // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
-            "movq %%mm0, (%5, %%eax)		\n\t"
+            "movq %%mm0, (%5, %%"REG_a")	\n\t"
             "pcmpeqw %%mm7, %%mm0		\n\t" // out==0 ? 0xFF : 0x00
-            "movq (%4, %%eax), %%mm1		\n\t" 
-            "movq %%mm7, (%1, %%eax)		\n\t" // 0
+            "movq (%4, %%"REG_a"), %%mm1		\n\t" 
+            "movq %%mm7, (%1, %%"REG_a")		\n\t" // 0
             "pandn %%mm1, %%mm0			\n\t"
 	    PMAXW(%%mm0, %%mm3)
-            "addl $8, %%eax			\n\t"
+            "add $8, %%"REG_a"			\n\t"
             " js 1b				\n\t"
             "movq %%mm3, %%mm0			\n\t"
             "psrlq $32, %%mm3			\n\t"
@@ -175,8 +176,8 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
             "movq %%mm3, %%mm0			\n\t"
             "psrlq $16, %%mm3			\n\t"
 	    PMAXW(%%mm0, %%mm3)
-            "movd %%mm3, %%eax			\n\t"
-            "movzbl %%al, %%eax			\n\t" // last_non_zero_p1
+            "movd %%mm3, %%"REG_a"		\n\t"
+            "movzb %%al, %%"REG_a"		\n\t" // last_non_zero_p1
 	    : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat+64), "r" (bias+64),
               "r" (inv_zigzag_direct16+64), "r" (temp_block+64)

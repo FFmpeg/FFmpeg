@@ -5,6 +5,12 @@
 #ifndef AVCODEC_I386MMX_H
 #define AVCODEC_I386MMX_H
 
+#ifdef ARCH_X86_64
+#  define REG_a "rax"
+#else
+#  define REG_a "eax"
+#endif
+
 /*
  * The type of an value that fits in an MMX register (note that long
  * long constant values MUST be suffixed by LL and unsigned long long

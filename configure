@@ -106,6 +106,14 @@ case "$cpu" in
   i386|i486|i586|i686|i86pc|BePC)
     cpu="x86"
   ;;
+  x86_64)
+    if [ "`$cc -dumpmachine | grep x86_64 | cut -d- -f1`" = "x86_64" -a \
+         -z "`echo $CFLAGS | grep -- -m32`"  ]; then
+      cpu="x86_64"
+    else
+      cpu="x86"
+    fi
+  ;;
   # armv4l is a subset of armv5tel
   armv4l|armv5tel)
     cpu="armv4l"
@@ -500,7 +508,7 @@ fi
 
 # compute mmx state
 if test $mmx = "default"; then
-    if test $cpu = "x86"; then
+    if test $cpu = "x86" -o $cpu = "x86_64"; then
         mmx="yes"
     else
         mmx="no"
@@ -827,6 +835,7 @@ done
 # test gcc version to see if vector builtins can be used
 # currently only used on i386 for MMX builtins
 cat > $TMPC << EOF
+#include <xmmintrin.h>
 int main(void) { 
 #if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 2)
 return 0;
@@ -985,7 +994,7 @@ echo "CPU              $cpu ($tune)"
 echo "Big Endian       $bigendian"
 echo "inttypes.h       $inttypes"
 echo "broken inttypes.h $emu_fast_int"
-if test $cpu = "x86"; then
+if test $cpu = "x86" -o $cpu = "x86_64"; then
 echo "MMX enabled      $mmx"
 echo "Vector Builtins  $builtin_vector"
 fi
@@ -1074,6 +1083,9 @@ echo "TARGET_OS=$TARGET_OS" >> config.mak
 if test "$cpu" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH
+elif test "$cpu" = "x86_64" ; then
+  echo "TARGET_ARCH_X86_64=yes" >> config.mak
+  echo "#define ARCH_X86_64 1" >> $TMPH
 elif test "$cpu" = "armv4l" ; then
   echo "TARGET_ARCH_ARMV4L=yes" >> config.mak
   echo "#define ARCH_ARMV4L 1" >> $TMPH

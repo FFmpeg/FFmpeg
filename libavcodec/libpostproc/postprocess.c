@@ -119,7 +119,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #    define always_inline inline
 #endif
 
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 static uint64_t __attribute__((aligned(8))) attribute_used w05=		0x0005000500050005LL;
 static uint64_t __attribute__((aligned(8))) attribute_used w04=		0x0004000400040004LL;
 static uint64_t __attribute__((aligned(8))) attribute_used w20=		0x0020002000200020LL;
@@ -172,7 +172,7 @@ static char *replaceTable[]=
 };
 
 
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 static inline void prefetchnta(void *p)
 {
 	asm volatile(	"prefetchnta (%0)\n\t"
@@ -597,7 +597,7 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 #endif //HAVE_ALTIVEC
 #endif //ARCH_POWERPC
 
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 
 #if (defined (HAVE_MMX) && !defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
 #define COMPILE_MMX
@@ -616,13 +616,11 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
 #undef HAVE_ALTIVEC
-#undef ARCH_X86
 
 #ifdef COMPILE_C
 #undef HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
-#undef ARCH_X86
 #define RENAME(a) a ## _C
 #include "postprocess_template.c"
 #endif
@@ -643,7 +641,6 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 #define HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
-#define ARCH_X86
 #define RENAME(a) a ## _MMX
 #include "postprocess_template.c"
 #endif
@@ -654,7 +651,6 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 #define HAVE_MMX
 #define HAVE_MMX2
 #undef HAVE_3DNOW
-#define ARCH_X86
 #define RENAME(a) a ## _MMX2
 #include "postprocess_template.c"
 #endif
@@ -665,7 +661,6 @@ static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPC
 #define HAVE_MMX
 #undef HAVE_MMX2
 #define HAVE_3DNOW
-#define ARCH_X86
 #define RENAME(a) a ## _3DNow
 #include "postprocess_template.c"
 #endif
@@ -683,7 +678,7 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 	// difference wouldnt be messureable here but its much better because
 	// someone might exchange the cpu whithout restarting mplayer ;)
 #ifdef RUNTIME_CPUDETECT
-#ifdef ARCH_X86
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
 	// ordered per speed fasterst first
 	if(c->cpuCaps & PP_CPU_CAPS_MMX2)
 		postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);

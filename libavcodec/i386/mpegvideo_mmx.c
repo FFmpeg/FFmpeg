@@ -23,6 +23,7 @@
 #include "../dsputil.h"
 #include "../mpegvideo.h"
 #include "../avcodec.h"
+#include "mmx.h"
 
 extern uint8_t zigzag_direct_noperm[64];
 extern uint16_t inv_zigzag_direct16[64];
@@ -34,7 +35,7 @@ static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x000
 static void dct_unquantize_h263_intra_mmx(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
-    int level, qmul, qadd, nCoeffs;
+    long level, qmul, qadd, nCoeffs;
 
     qmul = qscale << 1;
 
@@ -97,7 +98,7 @@ asm volatile(
 		"movq %%mm0, (%0, %3)		\n\t"
 		"movq %%mm1, 8(%0, %3)		\n\t"
 
-		"addl $16, %3			\n\t"
+		"add $16, %3			\n\t"
 		"jng 1b				\n\t"
 		::"r" (block+nCoeffs), "g"(qmul), "g" (qadd), "r" (2*(-nCoeffs))
 		: "memory"
@@ -109,7 +110,7 @@ asm volatile(
 static void dct_unquantize_h263_inter_mmx(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
-    int qmul, qadd, nCoeffs;
+    long qmul, qadd, nCoeffs;
 
     qmul = qscale << 1;
     qadd = (qscale - 1) | 1;
@@ -160,7 +161,7 @@ asm volatile(
 		"movq %%mm0, (%0, %3)		\n\t"
 		"movq %%mm1, 8(%0, %3)		\n\t"
 
-		"addl $16, %3			\n\t"
+		"add $16, %3			\n\t"
 		"jng 1b				\n\t"
 		::"r" (block+nCoeffs), "g"(qmul), "g" (qadd), "r" (2*(-nCoeffs))
 		: "memory"
@@ -200,7 +201,7 @@ asm volatile(
 static void dct_unquantize_mpeg1_intra_mmx(MpegEncContext *s,
                                      DCTELEM *block, int n, int qscale)
 {
-    int nCoeffs;
+    long nCoeffs;
     const uint16_t *quant_matrix;
     int block0;
 
@@ -220,13 +221,13 @@ asm volatile(
 		"movd %2, %%mm6			\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
-                "movl %3, %%eax			\n\t"
+		"mov %3, %%"REG_a"		\n\t"
 		".balign 16\n\t"
 		"1:				\n\t"
-		"movq (%0, %%eax), %%mm0	\n\t"
-		"movq 8(%0, %%eax), %%mm1	\n\t"
-		"movq (%1, %%eax), %%mm4	\n\t"
-		"movq 8(%1, %%eax), %%mm5	\n\t"
+		"movq (%0, %%"REG_a"), %%mm0	\n\t"
+		"movq 8(%0, %%"REG_a"), %%mm1	\n\t"
+		"movq (%1, %%"REG_a"), %%mm4	\n\t"
+		"movq 8(%1, %%"REG_a"), %%mm5	\n\t"
 		"pmullw %%mm6, %%mm4		\n\t" // q=qscale*quant_matrix[i]
 		"pmullw %%mm6, %%mm5		\n\t" // q=qscale*quant_matrix[i]
 		"pxor %%mm2, %%mm2		\n\t"
@@ -241,8 +242,8 @@ asm volatile(
 		"pmullw %%mm5, %%mm1		\n\t" // abs(block[i])*q
 		"pxor %%mm4, %%mm4		\n\t"
 		"pxor %%mm5, %%mm5		\n\t" // FIXME slow
-		"pcmpeqw (%0, %%eax), %%mm4	\n\t" // block[i] == 0 ? -1 : 0
-		"pcmpeqw 8(%0, %%eax), %%mm5	\n\t" // block[i] == 0 ? -1 : 0
+		"pcmpeqw (%0, %%"REG_a"), %%mm4	\n\t" // block[i] == 0 ? -1 : 0
+		"pcmpeqw 8(%0, %%"REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
 		"psraw $3, %%mm0		\n\t"
 		"psraw $3, %%mm1		\n\t"
 		"psubw %%mm7, %%mm0		\n\t"
@@ -255,13 +256,13 @@ asm volatile(
 		"psubw %%mm3, %%mm1		\n\t"
 		"pandn %%mm0, %%mm4		\n\t"
 		"pandn %%mm1, %%mm5		\n\t"
-		"movq %%mm4, (%0, %%eax)	\n\t"
-		"movq %%mm5, 8(%0, %%eax)	\n\t"
+		"movq %%mm4, (%0, %%"REG_a")	\n\t"
+		"movq %%mm5, 8(%0, %%"REG_a")	\n\t"
 
-		"addl $16, %%eax		\n\t"
+		"add $16, %%"REG_a"		\n\t"
 		"js 1b				\n\t"
 		::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "g" (-2*nCoeffs)
-		: "%eax", "memory"
+		: "%"REG_a, "memory"
 	);    
     block[0]= block0;
 }
@@ -269,7 +270,7 @@ asm volatile(
 static void dct_unquantize_mpeg1_inter_mmx(MpegEncContext *s,
                                      DCTELEM *block, int n, int qscale)
 {
-    int nCoeffs;
+    long nCoeffs;
     const uint16_t *quant_matrix;
 
     assert(s->block_last_index[n]>=0);
@@ -283,13 +284,13 @@ asm volatile(
 		"movd %2, %%mm6			\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
-                "movl %3, %%eax			\n\t"
+		"mov %3, %%"REG_a"		\n\t"
 		".balign 16\n\t"
 		"1:				\n\t"
-		"movq (%0, %%eax), %%mm0	\n\t"
-		"movq 8(%0, %%eax), %%mm1	\n\t"
-		"movq (%1, %%eax), %%mm4	\n\t"
-		"movq 8(%1, %%eax), %%mm5	\n\t"
+		"movq (%0, %%"REG_a"), %%mm0	\n\t"
+		"movq 8(%0, %%"REG_a"), %%mm1	\n\t"
+		"movq (%1, %%"REG_a"), %%mm4	\n\t"
+		"movq 8(%1, %%"REG_a"), %%mm5	\n\t"
 		"pmullw %%mm6, %%mm4		\n\t" // q=qscale*quant_matrix[i]
 		"pmullw %%mm6, %%mm5		\n\t" // q=qscale*quant_matrix[i]
 		"pxor %%mm2, %%mm2		\n\t"
@@ -308,8 +309,8 @@ asm volatile(
 		"pmullw %%mm5, %%mm1		\n\t" // (abs(block[i])*2 + 1)*q
 		"pxor %%mm4, %%mm4		\n\t"
 		"pxor %%mm5, %%mm5		\n\t" // FIXME slow
-		"pcmpeqw (%0, %%eax), %%mm4	\n\t" // block[i] == 0 ? -1 : 0
-		"pcmpeqw 8(%0, %%eax), %%mm5	\n\t" // block[i] == 0 ? -1 : 0
+		"pcmpeqw (%0, %%"REG_a"), %%mm4	\n\t" // block[i] == 0 ? -1 : 0
+		"pcmpeqw 8(%0, %%"REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
 		"psraw $4, %%mm0		\n\t"
 		"psraw $4, %%mm1		\n\t"
 		"psubw %%mm7, %%mm0		\n\t"
@@ -322,20 +323,20 @@ asm volatile(
 		"psubw %%mm3, %%mm1		\n\t"
 		"pandn %%mm0, %%mm4		\n\t"
 		"pandn %%mm1, %%mm5		\n\t"
-		"movq %%mm4, (%0, %%eax)	\n\t"
-		"movq %%mm5, 8(%0, %%eax)	\n\t"
+		"movq %%mm4, (%0, %%"REG_a")	\n\t"
+		"movq %%mm5, 8(%0, %%"REG_a")	\n\t"
 
-		"addl $16, %%eax		\n\t"
+		"add $16, %%"REG_a"		\n\t"
 		"js 1b				\n\t"
 		::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "g" (-2*nCoeffs)
-		: "%eax", "memory"
+		: "%"REG_a, "memory"
 	);
 }
 
 static void dct_unquantize_mpeg2_intra_mmx(MpegEncContext *s,
                                      DCTELEM *block, int n, int qscale)
 {
-    int nCoeffs;
+    long nCoeffs;
     const uint16_t *quant_matrix;
     int block0;
     
@@ -355,13 +356,13 @@ asm volatile(
 		"movd %2, %%mm6			\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
-                "movl %3, %%eax			\n\t"
+		"mov %3, %%"REG_a"		\n\t"
 		".balign 16\n\t"
 		"1:				\n\t"
-		"movq (%0, %%eax), %%mm0	\n\t"
-		"movq 8(%0, %%eax), %%mm1	\n\t"
-		"movq (%1, %%eax), %%mm4	\n\t"
-		"movq 8(%1, %%eax), %%mm5	\n\t"
+		"movq (%0, %%"REG_a"), %%mm0	\n\t"
+		"movq 8(%0, %%"REG_a"), %%mm1	\n\t"
+		"movq (%1, %%"REG_a"), %%mm4	\n\t"
+		"movq 8(%1, %%"REG_a"), %%mm5	\n\t"
 		"pmullw %%mm6, %%mm4		\n\t" // q=qscale*quant_matrix[i]
 		"pmullw %%mm6, %%mm5		\n\t" // q=qscale*quant_matrix[i]
 		"pxor %%mm2, %%mm2		\n\t"
@@ -376,8 +377,8 @@ asm volatile(
 		"pmullw %%mm5, %%mm1		\n\t" // abs(block[i])*q
 		"pxor %%mm4, %%mm4		\n\t"
 		"pxor %%mm5, %%mm5		\n\t" // FIXME slow
-		"pcmpeqw (%0, %%eax), %%mm4	\n\t" // block[i] == 0 ? -1 : 0
-		"pcmpeqw 8(%0, %%eax), %%mm5	\n\t" // block[i] == 0 ? -1 : 0
+		"pcmpeqw (%0, %%"REG_a"), %%mm4	\n\t" // block[i] == 0 ? -1 : 0
+		"pcmpeqw 8(%0, %%"REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
 		"psraw $3, %%mm0		\n\t"
 		"psraw $3, %%mm1		\n\t"
 		"pxor %%mm2, %%mm0		\n\t"
@@ -386,13 +387,13 @@ asm volatile(
 		"psubw %%mm3, %%mm1		\n\t"
 		"pandn %%mm0, %%mm4		\n\t"
 		"pandn %%mm1, %%mm5		\n\t"
-		"movq %%mm4, (%0, %%eax)	\n\t"
-		"movq %%mm5, 8(%0, %%eax)	\n\t"
+		"movq %%mm4, (%0, %%"REG_a")	\n\t"
+		"movq %%mm5, 8(%0, %%"REG_a")	\n\t"
 
-		"addl $16, %%eax		\n\t"
+		"add $16, %%"REG_a"		\n\t"
 		"jng 1b				\n\t"
 		::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "g" (-2*nCoeffs)
-		: "%eax", "memory"
+		: "%"REG_a, "memory"
 	);    
     block[0]= block0;
         //Note, we dont do mismatch control for intra as errors cannot accumulate
@@ -401,7 +402,7 @@ asm volatile(
 static void dct_unquantize_mpeg2_inter_mmx(MpegEncContext *s,
                                      DCTELEM *block, int n, int qscale)
 {
-    int nCoeffs;
+    long nCoeffs;
     const uint16_t *quant_matrix;
     
     assert(s->block_last_index[n]>=0);
@@ -416,13 +417,13 @@ asm volatile(
 		"movd %2, %%mm6			\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
 		"packssdw %%mm6, %%mm6		\n\t"
-                "movl %3, %%eax			\n\t"
+		"mov %3, %%"REG_a"		\n\t"
 		".balign 16\n\t"
 		"1:				\n\t"
-		"movq (%0, %%eax), %%mm0	\n\t"
-		"movq 8(%0, %%eax), %%mm1	\n\t"
-		"movq (%1, %%eax), %%mm4	\n\t"
-		"movq 8(%1, %%eax), %%mm5	\n\t"
+		"movq (%0, %%"REG_a"), %%mm0	\n\t"
+		"movq 8(%0, %%"REG_a"), %%mm1	\n\t"
+		"movq (%1, %%"REG_a"), %%mm4	\n\t"
+		"movq 8(%1, %%"REG_a"), %%mm5	\n\t"
 		"pmullw %%mm6, %%mm4		\n\t" // q=qscale*quant_matrix[i]
 		"pmullw %%mm6, %%mm5		\n\t" // q=qscale*quant_matrix[i]
 		"pxor %%mm2, %%mm2		\n\t"
@@ -441,8 +442,8 @@ asm volatile(
 		"paddw %%mm5, %%mm1		\n\t" // (abs(block[i])*2 + 1)*q
 		"pxor %%mm4, %%mm4		\n\t"
 		"pxor %%mm5, %%mm5		\n\t" // FIXME slow
-		"pcmpeqw (%0, %%eax), %%mm4	\n\t" // block[i] == 0 ? -1 : 0
-		"pcmpeqw 8(%0, %%eax), %%mm5	\n\t" // block[i] == 0 ? -1 : 0
+		"pcmpeqw (%0, %%"REG_a"), %%mm4	\n\t" // block[i] == 0 ? -1 : 0
+		"pcmpeqw 8(%0, %%"REG_a"), %%mm5\n\t" // block[i] == 0 ? -1 : 0
 		"psrlw $4, %%mm0		\n\t"
 		"psrlw $4, %%mm1		\n\t"
 		"pxor %%mm2, %%mm0		\n\t"
@@ -453,10 +454,10 @@ asm volatile(
 		"pandn %%mm1, %%mm5		\n\t"
                 "pxor %%mm4, %%mm7		\n\t"
                 "pxor %%mm5, %%mm7		\n\t"
-		"movq %%mm4, (%0, %%eax)	\n\t"
-		"movq %%mm5, 8(%0, %%eax)	\n\t"
+		"movq %%mm4, (%0, %%"REG_a")	\n\t"
+		"movq %%mm5, 8(%0, %%"REG_a")	\n\t"
 
-		"addl $16, %%eax		\n\t"
+		"add $16, %%"REG_a"		\n\t"
 		"jng 1b				\n\t"
                 "movd 124(%0, %3), %%mm0	\n\t"
                 "movq %%mm7, %%mm6		\n\t"
@@ -471,7 +472,7 @@ asm volatile(
                 "movd %%mm0, 124(%0, %3)	\n\t"
                 
 		::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "r" (-2*nCoeffs)
-		: "%eax", "memory"
+		: "%"REG_a, "memory"
 	);
 }
 
@@ -499,11 +500,11 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 		"punpckhwd %%mm1, %%mm1		\n\t"
 		"punpckhdq %%mm1, %%mm1		\n\t"
 		"movq %%mm1, (%0, %2)		\n\t"
-		"addl %1, %0			\n\t"
-		"cmpl %3, %0			\n\t"
+		"add %1, %0			\n\t"
+		"cmp %3, %0			\n\t"
 		" jb 1b				\n\t"
 		: "+r" (ptr)
-		: "r" (wrap), "r" (width), "r" (ptr + wrap*height)
+		: "r" ((long)wrap), "r" ((long)width), "r" (ptr + wrap*height)
 	);
     }
     else
@@ -522,11 +523,11 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 		"punpckhdq %%mm1, %%mm1		\n\t"
 		"movq %%mm1, (%0, %2)		\n\t"
 		"movq %%mm1, 8(%0, %2)		\n\t"
-		"addl %1, %0			\n\t"
-		"cmpl %3, %0			\n\t"
+		"add %1, %0			\n\t"
+		"cmp %3, %0			\n\t"
 		" jb 1b				\n\t"		
 		: "+r" (ptr)
-		: "r" (wrap), "r" (width), "r" (ptr + wrap*height)
+		: "r" ((long)wrap), "r" ((long)width), "r" (ptr + wrap*height)
 	);
     }
     
@@ -540,11 +541,11 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 		"movq %%mm0, (%0, %2)		\n\t"
 		"movq %%mm0, (%0, %2, 2)	\n\t"
 		"movq %%mm0, (%0, %3)		\n\t"
-		"addl $8, %0			\n\t"
-		"cmpl %4, %0			\n\t"
+		"add $8, %0			\n\t"
+		"cmp %4, %0			\n\t"
 		" jb 1b				\n\t"
 		: "+r" (ptr)
-		: "r" ((int)buf - (int)ptr - w), "r" (-wrap), "r" (-wrap*3), "r" (ptr+width+2*w)
+		: "r" ((long)buf - (long)ptr - w), "r" ((long)-wrap), "r" ((long)-wrap*3), "r" (ptr+width+2*w)
 	);
 	ptr= last_line + (i + 1) * wrap - w;
 	asm volatile(
@@ -554,11 +555,11 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 		"movq %%mm0, (%0, %2)		\n\t"
 		"movq %%mm0, (%0, %2, 2)	\n\t"
 		"movq %%mm0, (%0, %3)		\n\t"
-		"addl $8, %0			\n\t"
-		"cmpl %4, %0			\n\t"
+		"add $8, %0			\n\t"
+		"cmp %4, %0			\n\t"
 		" jb 1b				\n\t"
 		: "+r" (ptr)
-		: "r" ((int)last_line - (int)ptr - w), "r" (wrap), "r" (wrap*3), "r" (ptr+width+2*w)
+		: "r" ((long)last_line - (long)ptr - w), "r" ((long)wrap), "r" ((long)wrap*3), "r" (ptr+width+2*w)
 	);
     }
 }
@@ -607,10 +608,10 @@ static void  denoise_dct_mmx(MpegEncContext *s, DCTELEM *block){
         "movq %%mm2, 8(%1)		\n\t"
         "movq %%mm5, 16(%1)		\n\t"
         "movq %%mm3, 24(%1)		\n\t"
-        "addl $16, %0			\n\t"
-        "addl $32, %1			\n\t"
-        "addl $16, %2			\n\t"
-        "cmpl %3, %0			\n\t"
+        "add $16, %0			\n\t"
+        "add $32, %1			\n\t"
+        "add $16, %2			\n\t"
+        "cmp %3, %0			\n\t"
             " jb 1b			\n\t"
         : "+r" (block), "+r" (sum), "+r" (offset)
         : "r"(block+64)
@@ -661,10 +662,10 @@ static void  denoise_dct_sse2(MpegEncContext *s, DCTELEM *block){
         "movdqa %%xmm6, 16(%1)		\n\t"
         "movdqa %%xmm5, 32(%1)		\n\t"
         "movdqa %%xmm0, 48(%1)		\n\t"
-        "addl $32, %0			\n\t"
-        "addl $64, %1			\n\t"
-        "addl $32, %2			\n\t"
-        "cmpl %3, %0			\n\t"
+        "add $32, %0			\n\t"
+        "add $64, %1			\n\t"
+        "add $32, %2			\n\t"
+        "cmp %3, %0			\n\t"
             " jb 1b			\n\t"
         : "+r" (block), "+r" (sum), "+r" (offset)
         : "r"(block+64)

@@ -10,17 +10,23 @@
 #include <byteswap.h>
 #else
 
-#ifdef ARCH_X86
-static inline unsigned short ByteSwap16(unsigned short x)
+#ifdef ARCH_X86_64
+#  define LEGACY_REGS "=Q"
+#else
+#  define LEGACY_REGS "=q"
+#endif
+
+#if defined(ARCH_X86) || defined(ARCH_X86_64)
+static inline uint16_t ByteSwap16(uint16_t x)
 {
   __asm("xchgb %b0,%h0"	:
-        "=q" (x)	:
+        LEGACY_REGS (x)	:
         "0" (x));
     return x;
 }
 #define bswap_16(x) ByteSwap16(x)
 
-static inline unsigned int ByteSwap32(unsigned int x)
+static inline uint32_t ByteSwap32(uint32_t x)
 {
 #if __CPU__ > 386
  __asm("bswap	%0":
@@ -29,21 +35,28 @@ static inline unsigned int ByteSwap32(unsigned int x)
  __asm("xchgb	%b0,%h0\n"
       "	rorl	$16,%0\n"
       "	xchgb	%b0,%h0":
-      "=q" (x)		:
+      LEGACY_REGS (x)		:
 #endif
       "0" (x));
   return x;
 }
 #define bswap_32(x) ByteSwap32(x)
 
-static inline unsigned long long int ByteSwap64(unsigned long long int x)
+static inline uint64_t ByteSwap64(uint64_t x)
 {
+#ifdef ARCH_X86_64
+  __asm("bswap	%0":
+        "=r" (x)     :
+        "0" (x));
+  return x;
+#else
   register union { __extension__ uint64_t __ll;
           uint32_t __l[2]; } __x;
   asm("xchgl	%0,%1":
       "=r"(__x.__l[0]),"=r"(__x.__l[1]):
-      "0"(bswap_32((unsigned long)x)),"1"(bswap_32((unsigned long)(x>>32))));
+      "0"(bswap_32((uint32_t)x)),"1"(bswap_32((uint32_t)(x>>32))));
   return __x.__ll;
+#endif
 }
 #define bswap_64(x) ByteSwap64(x)
 
