@@ -5657,6 +5657,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             break;
         case NAL_FILTER_DATA:
             break;
+	default:
+	    av_log(avctx, AV_LOG_ERROR, "Unknown NAL code: %d\n", h->nal_unit_type);
         }        
 
         //FIXME move after where irt is set
