@@ -168,10 +168,8 @@ typedef struct PutBitContext {
     int index;
 #else
     UINT32 bit_buf;
-    int bit_cnt;
+    int bit_left;
     UINT8 *buf, *buf_ptr, *buf_end;
-    void *opaque;
-    WriteDataFunc write_data;
 #endif
     INT64 data_out_size; /* in bytes */
 } PutBitContext;
@@ -181,18 +179,11 @@ void init_put_bits(PutBitContext *s,
                    void *opaque,
                    void (*write_data)(void *, UINT8 *, int));
 
-#ifndef ALT_BITSTREAM_WRITER
-void put_bits(PutBitContext *s, int n, unsigned int value);
-#endif
-
 INT64 get_bit_count(PutBitContext *s); /* XXX: change function name */
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
 
 /* jpeg specific put_bits */
-#ifndef ALT_BITSTREAM_WRITER
-void jput_bits(PutBitContext *s, int n, unsigned int value);
-#endif
 void jflush_put_bits(PutBitContext *s);
 
 /* bit input */
@@ -237,6 +228,42 @@ static inline uint32_t unaligned32(const void *v) {
 }
 #endif
 #endif //!ARCH_X86
+
+#ifndef ALT_BITSTREAM_WRITER
+static inline void put_bits(PutBitContext *s, int n, unsigned int value)
+{
+    unsigned int bit_buf;
+    int bit_left;
+
+#ifdef STATS
+    st_out_bit_counts[st_current_index] += n;
+#endif
+    //    printf("put_bits=%d %x\n", n, value);
+    assert(n == 32 || value < (1U << n));
+
+    bit_buf = s->bit_buf;
+    bit_left = s->bit_left;
+
+    //    printf("n=%d value=%x cnt=%d buf=%x\n", n, value, bit_cnt, bit_buf);
+    /* XXX: optimize */
+    if (n < bit_left) {
+        bit_buf = (bit_buf<<n) | value;
+        bit_left-=n;
+    } else {
+	bit_buf<<=bit_left;
+        bit_buf |= value >> (n - bit_left);
+        *(UINT32 *)s->buf_ptr = be2me_32(bit_buf);
+        //printf("bitbuf = %08x\n", bit_buf);
+        s->buf_ptr+=4;
+	bit_left+=32 - n;
+        bit_buf = value;
+    }
+
+    s->bit_buf = bit_buf;
+    s->bit_left = bit_left;
+}
+#endif
+
 
 #ifdef ALT_BITSTREAM_WRITER
 static inline void put_bits(PutBitContext *s, int n, unsigned int value)
@@ -303,6 +330,45 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #endif //!ALIGNED_BITSTREAM_WRITER
 }
 #endif
+
+#ifndef ALT_BITSTREAM_WRITER
+/* for jpeg : escape 0xff with 0x00 after it */
+static inline void jput_bits(PutBitContext *s, int n, unsigned int value)
+{
+    unsigned int bit_buf, b;
+    int bit_left, i;
+    
+    assert(n == 32 || value < (1U << n));
+
+    bit_buf = s->bit_buf;
+    bit_left = s->bit_left;
+
+    //printf("n=%d value=%x cnt=%d buf=%x\n", n, value, bit_cnt, bit_buf);
+    /* XXX: optimize */
+    if (n < bit_left) {
+        bit_buf = (bit_buf<<n) | value;
+        bit_left-=n;
+    } else {
+	bit_buf<<=bit_left;
+        bit_buf |= value >> (n - bit_left);
+        /* handle escape */
+        for(i=0;i<4;i++) {
+            b = (bit_buf >> 24);
+            *(s->buf_ptr++) = b;
+            if (b == 0xff)
+                *(s->buf_ptr++) = 0;
+            bit_buf <<= 8;
+        }
+
+	bit_left+= 32 - n;
+        bit_buf = value;
+    }
+    
+    s->bit_buf = bit_buf;
+    s->bit_left = bit_left;
+}
+#endif
+
 
 #ifdef ALT_BITSTREAM_WRITER
 static inline void jput_bits(PutBitContext *s, int n, int value)

@@ -36,6 +36,7 @@
 #include <ctype.h>
 #include <signal.h>
 
+#include "bswap.h" // needed for the bitstream writer in common.h which is included in avformat.h
 #include "avformat.h"
 
 /* maximum number of simultaneous HTTP connections */

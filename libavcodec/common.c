@@ -29,74 +29,20 @@ void init_put_bits(PutBitContext *s,
     s->buf = buffer;
     s->buf_end = s->buf + buffer_size;
     s->data_out_size = 0;
-#ifdef ALT_BITSTREAM_WRITER
-    s->index=0;
-    ((uint32_t*)(s->buf))[0]=0;
-//    memset(buffer, 0, buffer_size);
     if(write_data!=NULL) 
     {
     	fprintf(stderr, "write Data callback is not supported\n");
     }
+#ifdef ALT_BITSTREAM_WRITER
+    s->index=0;
+    ((uint32_t*)(s->buf))[0]=0;
+//    memset(buffer, 0, buffer_size);
 #else
-    s->write_data = write_data;
-    s->opaque = opaque;
     s->buf_ptr = s->buf;
-    s->bit_cnt=0;
+    s->bit_left=32;
     s->bit_buf=0;
 #endif
 }
-
-#ifndef ALT_BITSTREAM_WRITER
-static void flush_buffer(PutBitContext *s)
-{
-    int size;
-    if (s->write_data) {
-        size = s->buf_ptr - s->buf;
-        if (size > 0)
-            s->write_data(s->opaque, s->buf, size);
-        s->buf_ptr = s->buf;
-        s->data_out_size += size;
-    }
-}
-
-void put_bits(PutBitContext *s, int n, unsigned int value)
-{
-    unsigned int bit_buf;
-    int bit_cnt;
-
-#ifdef STATS
-    st_out_bit_counts[st_current_index] += n;
-#endif
-    //    printf("put_bits=%d %x\n", n, value);
-    assert(n == 32 || value < (1U << n));
-
-    bit_buf = s->bit_buf;
-    bit_cnt = s->bit_cnt;
-
-    //    printf("n=%d value=%x cnt=%d buf=%x\n", n, value, bit_cnt, bit_buf);
-    /* XXX: optimize */
-    if (n < (32-bit_cnt)) {
-        bit_buf |= value << (32 - n - bit_cnt);
-        bit_cnt+=n;
-    } else {
-        bit_buf |= value >> (n + bit_cnt - 32);
-        *(UINT32 *)s->buf_ptr = be2me_32(bit_buf);
-        //printf("bitbuf = %08x\n", bit_buf);
-        s->buf_ptr+=4;
-        if (s->buf_ptr >= s->buf_end)
-            flush_buffer(s);
-        bit_cnt=bit_cnt + n - 32;
-        if (bit_cnt == 0) {
-            bit_buf = 0;
-        } else {
-            bit_buf = value << (32 - bit_cnt);
-        }
-    }
-    
-    s->bit_buf = bit_buf;
-    s->bit_cnt = bit_cnt;
-}
-#endif
 
 /* return the number of bits output */
 INT64 get_bit_count(PutBitContext *s)
@@ -104,7 +50,7 @@ INT64 get_bit_count(PutBitContext *s)
 #ifdef ALT_BITSTREAM_WRITER
     return s->data_out_size * 8 + s->index;
 #else
-    return (s->buf_ptr - s->buf + s->data_out_size) * 8 + (INT64)s->bit_cnt;
+    return (s->buf_ptr - s->buf + s->data_out_size) * 8 + 32 - (INT64)s->bit_left;
 #endif
 }
 
@@ -113,7 +59,7 @@ void align_put_bits(PutBitContext *s)
 #ifdef ALT_BITSTREAM_WRITER
     put_bits(s,(  - s->index) & 7,0);
 #else
-    put_bits(s,(8 - s->bit_cnt) & 7,0);
+    put_bits(s,s->bit_left & 7,0);
 #endif
 }
 
@@ -123,79 +69,35 @@ void flush_put_bits(PutBitContext *s)
 #ifdef ALT_BITSTREAM_WRITER
     align_put_bits(s);
 #else
-    while (s->bit_cnt > 0) {
+    s->bit_buf<<= s->bit_left;
+    while (s->bit_left < 32) {
         /* XXX: should test end of buffer */
         *s->buf_ptr++=s->bit_buf >> 24;
         s->bit_buf<<=8;
-        s->bit_cnt-=8;
+        s->bit_left+=8;
     }
-    flush_buffer(s);
-    s->bit_cnt=0;
+    s->bit_left=32;
     s->bit_buf=0;
 #endif
 }
-
-#ifndef ALT_BITSTREAM_WRITER
-/* for jpeg : escape 0xff with 0x00 after it */
-void jput_bits(PutBitContext *s, int n, unsigned int value)
-{
-    unsigned int bit_buf, b;
-    int bit_cnt, i;
-    
-    assert(n == 32 || value < (1U << n));
-
-    bit_buf = s->bit_buf;
-    bit_cnt = s->bit_cnt;
-
-    //printf("n=%d value=%x cnt=%d buf=%x\n", n, value, bit_cnt, bit_buf);
-    /* XXX: optimize */
-    if (n < (32-bit_cnt)) {
-        bit_buf |= value << (32 - n - bit_cnt);
-        bit_cnt+=n;
-    } else {
-        bit_buf |= value >> (n + bit_cnt - 32);
-        /* handle escape */
-        for(i=0;i<4;i++) {
-            b = (bit_buf >> 24);
-            *(s->buf_ptr++) = b;
-            if (b == 0xff)
-                *(s->buf_ptr++) = 0;
-            bit_buf <<= 8;
-        }
-        /* we flush the buffer sooner to handle worst case */
-        if (s->buf_ptr >= (s->buf_end - 8))
-            flush_buffer(s);
-
-        bit_cnt=bit_cnt + n - 32;
-        if (bit_cnt == 0) {
-            bit_buf = 0;
-        } else {
-            bit_buf = value << (32 - bit_cnt);
-        }
-    }
-    
-    s->bit_buf = bit_buf;
-    s->bit_cnt = bit_cnt;
-}
-#endif
 
 /* pad the end of the output stream with zeros */
 #ifndef ALT_BITSTREAM_WRITER
 void jflush_put_bits(PutBitContext *s)
 {
     unsigned int b;
-    s->bit_buf |= ~1U >> s->bit_cnt; /* set all the unused bits to one */
+    s->bit_buf<<= s->bit_left;
+    s->bit_buf |= ~1U >> (32 - s->bit_left); /* set all the unused bits to one */
 
-    while (s->bit_cnt > 0) {
+    while (s->bit_left < 32) {
         b = s->bit_buf >> 24;
         *s->buf_ptr++ = b;
         if (b == 0xff)
             *s->buf_ptr++ = 0;
         s->bit_buf<<=8;
-        s->bit_cnt-=8;
+        s->bit_left+=8;
     }
-    flush_buffer(s);
-    s->bit_cnt=0;
+    s->bit_left=32;
     s->bit_buf=0;
 }
 #else
