@@ -4658,9 +4658,8 @@ static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_sl
     
     if(intra_slice){
         MpegEncContext * const s = &h->s;
-        const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
-        const int mba_xy = mb_xy - 1;
-        const int mbb_xy = mb_xy - s->mb_stride;
+        const int mba_xy = h->left_mb_xy[0];
+        const int mbb_xy = h->top_mb_xy;
         int ctx=0;
         if( h->slice_table[mba_xy] == h->slice_num && !IS_INTRA4x4( s->current_picture.mb_type[mba_xy] ) )
             ctx++;
@@ -4717,9 +4716,8 @@ static int decode_cabac_mb_type( H264Context *h ) {
             return decode_cabac_intra_mb_type(h, 17, 0) + 5;
         }
     } else if( h->slice_type == B_TYPE ) {
-        const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
-        const int mba_xy = mb_xy - 1;
-        const int mbb_xy = mb_xy - s->mb_stride;
+        const int mba_xy = h->left_mb_xy[0];
+        const int mbb_xy = h->top_mb_xy;
         int ctx = 0;
         int bits;
 
@@ -5152,6 +5150,32 @@ static int inline decode_cabac_residual( H264Context *h, DCTELEM *block, int cat
     return 0;
 }
 
+void inline compute_mb_neighboors(H264Context *h)
+{
+    MpegEncContext * const s = &h->s;
+    const int mb_xy  = s->mb_x + s->mb_y*s->mb_stride;
+    h->top_mb_xy     = mb_xy - s->mb_stride;
+    h->left_mb_xy[0] = mb_xy - 1;
+    if(h->mb_aff_frame){
+        const int pair_xy          = s->mb_x     + (s->mb_y & ~1)*s->mb_stride;
+        const int top_pair_xy      = pair_xy     - s->mb_stride;
+        const int top_mb_frame_flag      = !IS_INTERLACED(s->current_picture.mb_type[top_pair_xy]);
+        const int left_mb_frame_flag = !IS_INTERLACED(s->current_picture.mb_type[pair_xy-1]);
+        const int curr_mb_frame_flag = !h->mb_field_decoding_flag;
+        const int bottom = (s->mb_y & 1);
+        if (bottom
+                ? !curr_mb_frame_flag // bottom macroblock
+                : (!curr_mb_frame_flag && !top_mb_frame_flag) // top macroblock
+                ) {
+            h->top_mb_xy -= s->mb_stride;
+        }
+        if (left_mb_frame_flag != curr_mb_frame_flag) {
+            h->left_mb_xy[0] = pair_xy - 1;
+        }
+    }
+    return;
+}
+
 /**
  * decodes a macroblock
  * @returns 0 if ok, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
@@ -5185,6 +5209,7 @@ static int decode_mb_cabac(H264Context *h) {
 
     h->prev_mb_skiped = 0;
 
+    compute_mb_neighboors(h);
     if( ( mb_type = decode_cabac_mb_type( h ) ) < 0 ) {
         av_log( h->s.avctx, AV_LOG_ERROR, "decode_cabac_mb_type failed\n" );
         return -1;
