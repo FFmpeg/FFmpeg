@@ -388,6 +388,10 @@ static int rv20_decode_picture_header(MpegEncContext *s)
 //            return -1;
         }
         seq= get_bits(&s->gb, 15);
+        if (s->avctx->sub_id == 0x20201002 && get_bits(&s->gb, 1)){
+            av_log(s->avctx, AV_LOG_ERROR, "unknown bit4 set\n");
+//            return -1;
+        }
         mb_pos= get_bits(&s->gb, av_log2(s->mb_num-1)+1);
         s->mb_x= mb_pos % s->mb_width;
         s->mb_y= mb_pos / s->mb_width;
@@ -395,7 +399,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         seq= get_bits(&s->gb, 8)*128;
         mb_pos= ff_h263_decode_mba(s);
     }
-//printf("%d\n", seq);
+//av_log(s->avctx, AV_LOG_DEBUG, "%d\n", seq);
     seq |= s->time &~0x7FFF;
     if(seq - s->time >  0x4000) seq -= 0x8000;
     if(seq - s->time < -0x4000) seq += 0x8000;
@@ -414,7 +418,10 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         }
     }
 //    printf("%d %d %d %d %d\n", seq, (int)s->time, (int)s->last_non_b_time, s->pp_time, s->pb_time);
-
+/*for(i=0; i<32; i++){
+    av_log(s->avctx, AV_LOG_DEBUG, "%d", get_bits1(&s->gb));
+}
+av_log(s->avctx, AV_LOG_DEBUG, "\n");*/
     s->no_rounding= get_bits1(&s->gb);
     
     s->f_code = 1;
@@ -478,6 +485,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
         s->low_delay=1;
         break;
     case 0x20200002:
+    case 0x20201002:
     case 0x30202002:
     case 0x30203002:
         s->low_delay=0;
