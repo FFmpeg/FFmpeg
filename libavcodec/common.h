@@ -1045,11 +1045,8 @@ static inline int ff_sqrt(int a)
  */
 static inline int ff_get_fourcc(const char *s){
     assert( strlen(s)==4 );
-#ifndef WORDS_BIGENDIAN
+
     return (s[0]) + (s[1]<<8) + (s[2]<<16) + (s[3]<<24);
-#else
-    return (s[3]) + (s[2]<<8) + (s[1]<<16) + (s[0]<<24);
-#endif
 }
 
 #define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
