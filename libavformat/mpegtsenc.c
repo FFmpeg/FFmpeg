@@ -185,6 +185,7 @@ int mpegts_write_section1(MpegTSSection *s, int tid, int id,
 
 /* a PES packet header is generated every DEFAULT_PES_HEADER_FREQ packets */
 #define DEFAULT_PES_HEADER_FREQ 16
+#define DEFAULT_PES_PAYLOAD_SIZE ((DEFAULT_PES_HEADER_FREQ - 1) * 184 + 170)
 
 /* we retransmit the SI info at this rate */
 #define SDT_RETRANS_TIME 500
@@ -193,9 +194,9 @@ int mpegts_write_section1(MpegTSSection *s, int tid, int id,
 typedef struct MpegTSWriteStream {
     int pid; /* stream associated pid */
     int cc;
-    int packet_index;
-    int pes_packet_count;
-    uint8_t packet[TS_PACKET_SIZE];
+    int payload_index;
+    int64_t payload_pts;
+    uint8_t payload[DEFAULT_PES_PAYLOAD_SIZE];
 } MpegTSWriteStream;
 
 typedef struct MpegTSService {
@@ -398,6 +399,7 @@ static int mpegts_write_header(AVFormatContext *s)
             goto fail;
         st->priv_data = ts_st;
         ts_st->pid = DEFAULT_START_PID + i;
+        ts_st->payload_pts = AV_NOPTS_VALUE;
         /* update PCR pid if needed */
         if (st->codec.codec_type == CODEC_TYPE_VIDEO && 
             service->pcr_pid == 0x1fff)
@@ -453,82 +455,110 @@ static void retransmit_si_info(AVFormatContext *s)
     }
 }
 
+/* NOTE: pes_data contains all the PES packet */
+static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
+                             const uint8_t *payload, int payload_size,
+                             int64_t pts)
+{
+    MpegTSWriteStream *ts_st = st->priv_data;
+    uint8_t buf[TS_PACKET_SIZE];
+    uint8_t *q;
+    int val, is_start, len, ts_len, header_len;
+
+    is_start = 1;
+    while (payload_size > 0) {
+        retransmit_si_info(s);
+
+        /* prepare packet header */
+        q = buf;
+        *q++ = 0x47;
+        val = (ts_st->pid >> 8);
+        if (is_start)
+            val |= 0x40;
+        *q++ = val;
+        *q++ = ts_st->pid;
+        *q++ = 0x10 | ts_st->cc;
+        ts_st->cc = (ts_st->cc + 1) & 0xf;
+        if (is_start) {
+            /* write PES header */
+            *q++ = 0x00;
+            *q++ = 0x00;
+            *q++ = 0x01;
+            if (st->codec.codec_type == CODEC_TYPE_VIDEO)
+                *q++ = 0xe0;
+            else
+                *q++ = 0xc0;
+            if (pts != AV_NOPTS_VALUE)
+                header_len = 8;
+            else
+                header_len = 3;
+            len = payload_size + header_len;
+            *q++ = len >> 8;
+            *q++ = len;
+            *q++ = 0x80;
+            if (pts != AV_NOPTS_VALUE) {
+                *q++ = 0x80; /* PTS only */
+                *q++ = 0x05; /* header len */
+                val = (0x02 << 4) | 
+                    (((pts >> 30) & 0x07) << 1) | 1;
+                *q++ = val;
+                val = (((pts >> 15) & 0x7fff) << 1) | 1;
+                *q++ = val >> 8;
+                *q++ = val;
+                val = (((pts) & 0x7fff) << 1) | 1;
+                *q++ = val >> 8;
+                *q++ = val;
+            } else {
+                *q++ = 0x00;
+                *q++ = 0x00;
+            }
+            is_start = 0;
+        }
+        /* write header */
+        ts_len = q - buf;
+        put_buffer(&s->pb, buf, ts_len);
+        /* write data */
+        len = TS_PACKET_SIZE - ts_len;
+        if (len > payload_size)
+            len = payload_size;
+        put_buffer(&s->pb, payload, len);
+        payload += len;
+        payload_size -= len;
+        ts_len += len;
+        /* stuffing */
+        len = TS_PACKET_SIZE - ts_len;
+        if (len > 0) {
+            memset(buf, 0xff, len);
+            put_buffer(&s->pb, buf, len);
+        }
+    }
+    put_flush_packet(&s->pb);
+}
+
 static int mpegts_write_packet(AVFormatContext *s, int stream_index,
                                const uint8_t *buf, int size, int64_t pts1)
 {
     AVStream *st = s->streams[stream_index];
     MpegTSWriteStream *ts_st = st->priv_data;
-    uint8_t *q;
-    int val, write_pts, is_start, len;
-    int64_t pts;
+    int len;
 
     while (size > 0) {
-        if (ts_st->packet_index == 0) {
-            retransmit_si_info(s);
-
-            /* new PES header ? */
-            is_start = 0;
-            if (++ts_st->pes_packet_count == DEFAULT_PES_HEADER_FREQ) {
-                ts_st->pes_packet_count = 0;
-                is_start = 1;
-            }
-            /* prepare packet header */
-            q = ts_st->packet;
-            *q++ = 0x47;
-            val = (ts_st->pid >> 8);
-            if (is_start)
-                val |= 0x40;
-            *q++ = val;
-            *q++ = ts_st->pid;
-            *q++ = 0x10 | ts_st->cc;
-            ts_st->cc = (ts_st->cc + 1) & 0xf;
-            if (is_start) {
-                /* write PES header */
-                *q++ = 0x00;
-                *q++ = 0x00;
-                *q++ = 0x01;
-                if (st->codec.codec_type == CODEC_TYPE_VIDEO)
-                    *q++ = 0xe0;
-                else
-                    *q++ = 0xc0;
-                *q++ = 0; /* unbounded size */
-                *q++ = 0;
-                *q++ = 0x80;
-                write_pts = 0; /* XXX: enable it */
-                if (write_pts) {
-                    *q++ = 0x80; /* PTS only */
-                    *q++ = 0x05; /* header len */
-                    pts = pts1;
-                    val = (0x02 << 4) | 
-                        (((pts >> 30) & 0x07) << 1) | 1;
-                    *q++ = val;
-                    val = (((pts >> 15) & 0x7fff) << 1) | 1;
-                    *q++ = val >> 8;
-                    *q++ = val;
-                    val = (((pts) & 0x7fff) << 1) | 1;
-                    *q++ = val >> 8;
-                    *q++ = val;
-                } else {
-                    *q++ = 0x00;
-                    *q++ = 0x00;
-                }
-            }
-            ts_st->packet_index = q - ts_st->packet;
-        }
-        len = TS_PACKET_SIZE - ts_st->packet_index;
-        if (len == 0) {
-            put_buffer(&s->pb, ts_st->packet, TS_PACKET_SIZE);
-            ts_st->packet_index = 0;
-        } else {
-            if (len > size)
-                len = size;
-            memcpy(ts_st->packet + ts_st->packet_index, buf, len);
-            size -= len;
-            buf += len;
-            ts_st->packet_index += len;
+        len = DEFAULT_PES_PAYLOAD_SIZE - ts_st->payload_index;
+        if (len > size)
+            len = size;
+        memcpy(ts_st->payload + ts_st->payload_index, buf, len);
+        buf += len;
+        size -= len;
+        ts_st->payload_index += len;
+        if (ts_st->payload_pts == AV_NOPTS_VALUE)
+            ts_st->payload_pts = pts1;
+        if (ts_st->payload_index >= DEFAULT_PES_PAYLOAD_SIZE) {
+            mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
+                             ts_st->payload_pts);
+            ts_st->payload_pts = AV_NOPTS_VALUE;
+            ts_st->payload_index = 0;
         }
     }
-    put_flush_packet(&s->pb);
     return 0;
 }
 
@@ -544,11 +574,9 @@ static int mpegts_write_end(AVFormatContext *s)
     for(i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
         ts_st = st->priv_data;
-        if (ts_st->packet_index != 0) {
-            /* put a known value at the end */
-            memset(ts_st->packet + ts_st->packet_index, 0xff,
-                   TS_PACKET_SIZE - ts_st->packet_index);
-            put_buffer(&s->pb, ts_st->packet, TS_PACKET_SIZE);
+        if (ts_st->payload_index > 0) {
+            mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
+                             ts_st->payload_pts);
         }
     }
     put_flush_packet(&s->pb);
@@ -575,7 +603,7 @@ AVOutputFormat mpegts_mux = {
     "ts",
     sizeof(MpegTSWrite),
     CODEC_ID_MP2,
-    CODEC_ID_MPEG1VIDEO,
+    CODEC_ID_MPEG2VIDEO,
     mpegts_write_header,
     mpegts_write_packet,
     mpegts_write_end,
