@@ -741,7 +741,7 @@ following image formats are supported:
 @item On2 VP3                @tab     @tab  X @tab still experimental
 @item Theora                 @tab     @tab  X @tab still experimental
 @item Intel Indeo 3          @tab     @tab  X @tab only works on i386 right now
-@item FLV                    @tab  X  @tab  X @tab Flash H263 variant
+@item FLV                    @tab  X  @tab  X @tab Sorenson H.263 used in Flash
 @item ATI VCR1               @tab     @tab  X @tab fourcc: VCR1
 @item ATI VCR2               @tab     @tab  X @tab fourcc: VCR2
 @item Cirrus Logic AccuPak   @tab     @tab  X @tab fourcc: CLJR
