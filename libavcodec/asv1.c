@@ -409,11 +409,6 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p= (AVFrame*)&a->picture;
     int mb_x, mb_y;
 
-    /* special case for last picture */
-    if (buf_size == 0) {
-        return 0;
-    }
-
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 

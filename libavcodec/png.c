@@ -479,11 +479,6 @@ static int decode_frame(AVCodecContext *avctx,
     uint32_t tag, length;
     int ret, crc;
 
-    /* special case for last picture */
-    if (buf_size == 0) {
-        return 0;
-    }
-    
     s->bytestream_start=
     s->bytestream= buf;
     s->bytestream_end= buf + buf_size;

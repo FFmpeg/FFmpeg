@@ -1705,7 +1705,7 @@ AVCodec vc9_decoder = {
     NULL,
     vc9_decode_end,
     vc9_decode_frame,
-    0,
+    CODEC_CAP_DELAY,
     NULL
 };
 
@@ -1718,6 +1718,6 @@ AVCodec wmv3_decoder = {
     NULL,
     vc9_decode_end,
     vc9_decode_frame,
-    0,
+    CODEC_CAP_DELAY,
     NULL
 };

@@ -1004,5 +1004,5 @@ AVCodec svq3_decoder = {
     NULL,
     decode_end,
     svq3_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_DELAY,
 };

@@ -165,11 +165,6 @@ static int pnm_decode_frame(AVCodecContext *avctx,
     int i, n, linesize, h;
     unsigned char *ptr;
 
-    /* special case for last picture */
-    if (buf_size == 0) {
-        return 0;
-    }
-    
     s->bytestream_start=
     s->bytestream= buf;
     s->bytestream_end= buf + buf_size;

@@ -48,12 +48,6 @@ static int decode_frame(AVCodecContext *avctx,
     int stride;
     uint32_t val;
     int y0, y1, y2, y3, c0, c1;
-        
-    
-    /* special case for last picture */
-    if (buf_size == 0) {
-        return 0;
-    }
 
     if(p->data[0])
         avctx->release_buffer(avctx, p);

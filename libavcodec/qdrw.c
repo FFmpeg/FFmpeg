@@ -42,11 +42,6 @@ static int decode_frame(AVCodecContext *avctx,
     int colors;
     int i;
     
-    /* special case for last picture */
-    if (buf_size == 0) {
-        return 0;
-    }
-
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 

@@ -587,13 +587,17 @@ int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
     *got_picture_ptr= 0;
     if((avctx->coded_width||avctx->coded_height) && avcodec_check_dimensions(avctx,avctx->coded_width,avctx->coded_height))
         return -1;
-    ret = avctx->codec->decode(avctx, picture, got_picture_ptr, 
-                               buf, buf_size);
+    if((avctx->codec->capabilities & CODEC_CAP_DELAY) || buf_size){
+        ret = avctx->codec->decode(avctx, picture, got_picture_ptr, 
+                                buf, buf_size);
 
-    emms_c(); //needed to avoid a emms_c() call before every return;
+        emms_c(); //needed to avoid a emms_c() call before every return;
     
-    if (*got_picture_ptr)                           
-        avctx->frame_number++;
+        if (*got_picture_ptr)                           
+            avctx->frame_number++;
+    }else
+        ret= 0;
+
     return ret;
 }
 

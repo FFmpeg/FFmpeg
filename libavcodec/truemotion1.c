@@ -873,10 +873,6 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
-    /* no supplementary picture */
-    if (buf_size == 0)
-        return 0;
-
     if (truemotion1_decode_header(s) == -1)
         return -1;
 

@@ -770,10 +770,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     AVFrame *picture = data;
 
-    /* no supplementary picture */
-    if (buf_size == 0)
-        return 0;
-        
     s->bitstream_buffer= av_fast_realloc(s->bitstream_buffer, &s->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
     s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer, (uint32_t*)buf, buf_size/4);

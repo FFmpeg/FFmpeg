@@ -925,11 +925,6 @@ static int h261_decode_frame(AVCodecContext *avctx,
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
 
-    /* no supplementary picture */
-    if (buf_size == 0) {
-        return 0;
-    }
-    
     h->gob_start_code_skipped=0;
 
 retry:

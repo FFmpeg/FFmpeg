@@ -1826,10 +1826,6 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
     int start_code;
     AVFrame *picture = data;
 
-    /* no supplementary picture */
-    if (buf_size == 0)
-        return 0;
-
     buf_ptr = buf;
     buf_end = buf + buf_size;
     while (buf_ptr < buf_end) {
@@ -2002,10 +1998,6 @@ static int mjpegb_decode_frame(AVCodecContext *avctx,
     uint32_t dqt_offs, dht_offs, sof_offs, sos_offs, second_field_offs;
     uint32_t field_size, sod_offs;
 
-    /* no supplementary picture */
-    if (buf_size == 0)
-        return 0;
-
     buf_ptr = buf;
     buf_end = buf + buf_size;
     
@@ -2114,10 +2106,6 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     const int qscale = 5;
     uint8_t *buf_ptr, *buf_end, *recoded;
     int i = 0, j = 0;
-
-    /* no supplementary picture */
-    if (buf_size == 0)
-        return 0;
 
     if (!avctx->width || !avctx->height)
 	return -1;

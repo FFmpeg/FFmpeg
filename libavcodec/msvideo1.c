@@ -302,10 +302,6 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
 {
     Msvideo1Context *s = (Msvideo1Context *)avctx->priv_data;
 
-    /* no supplementary picture */
-    if (buf_size == 0)
-        return 0;
-
     s->buf = buf;
     s->size = buf_size;
 

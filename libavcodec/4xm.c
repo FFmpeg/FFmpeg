@@ -605,11 +605,6 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p, temp;
     int i, frame_4cc, frame_size;
 
-    /* special case for last picture */
-    if (buf_size == 0) {
-        return 0;
-    }
-
     frame_4cc= get32(buf);
     if(buf_size != get32(buf+4)+8){
         av_log(f->avctx, AV_LOG_ERROR, "size missmatch %d %d\n", buf_size, get32(buf+4));

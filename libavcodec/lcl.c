@@ -214,10 +214,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 #endif
     unsigned int len = buf_size;
 
-	/* no supplementary picture */
-	if (buf_size == 0)
-		return 0;
-
 	if(c->pic.data[0])
 		avctx->release_buffer(avctx, &c->pic);
 

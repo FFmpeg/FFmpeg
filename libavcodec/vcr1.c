@@ -45,11 +45,6 @@ static int decode_frame(AVCodecContext *avctx,
     uint8_t *bytestream= buf;
     int i, x, y;
 
-    /* special case for last picture */
-    if (buf_size == 0) {
-        return 0;
-    }
-
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 

@@ -254,10 +254,6 @@ static int msrle_decode_frame(AVCodecContext *avctx,
 {
     MsrleContext *s = (MsrleContext *)avctx->priv_data;
 
-    /* no supplementary picture */
-    if (buf_size == 0)
-        return 0;
-
     s->buf = buf;
     s->size = buf_size;
 
