@@ -378,7 +378,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
     
 #ifdef DEBUG_SI
     printf("PMT:\n");
-    av_hex_dump((uint8_t *)section, section_len);
+    av_hex_dump(stdout, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
     p = section;
@@ -453,7 +453,7 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
 
 #ifdef DEBUG_SI
     printf("PAT:\n");
-    av_hex_dump((uint8_t *)section, section_len);
+    av_hex_dump(stdout, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
     p = section;
@@ -502,7 +502,7 @@ static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
 
 #ifdef DEBUG_SI
     printf("PAT:\n");
-    av_hex_dump((uint8_t *)section, section_len);
+    av_hex_dump(stdout, (uint8_t *)section, section_len);
 #endif
     p_end = section + section_len - 4;
     p = section;
@@ -563,7 +563,7 @@ static void sdt_cb(void *opaque, const uint8_t *section, int section_len)
 
 #ifdef DEBUG_SI
     printf("SDT:\n");
-    av_hex_dump((uint8_t *)section, section_len);
+    av_hex_dump(stdout, (uint8_t *)section, section_len);
 #endif
 
     p_end = section + section_len - 4;
@@ -1126,8 +1126,12 @@ static int mpegts_read_header(AVFormatContext *s,
                 handle_packets(ts, MAX_SCAN_PACKETS);
             }
             
-            if (ts->nb_services <= 0)
-                return -1;
+            if (ts->nb_services <= 0) {
+		/* raw transport stream */
+		ts->auto_guess = 1;
+		s->ctx_flags |= AVFMTCTX_NOHEADER;
+		goto do_pcr;
+	    }
             
             /* tune to first service found */
             service = ts->services[0];
@@ -1165,6 +1169,7 @@ static int mpegts_read_header(AVFormatContext *s,
         s->pts_num = 1;
         s->pts_den = 27000000;
         
+    do_pcr:
         st = av_new_stream(s, 0);
         if (!st)
             goto fail;

@@ -2344,6 +2344,8 @@ static void check_audio_video_inputs(int *has_video_ptr, int *has_audio_ptr)
             case CODEC_TYPE_VIDEO:
                 has_video = 1;
                 break;
+            case CODEC_TYPE_DATA:
+                break;
             default:
                 av_abort();
             }
