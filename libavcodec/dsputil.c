@@ -32,6 +32,8 @@ void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*gmc1)(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder);
 void (*clear_blocks)(DCTELEM *blocks);
+int (*pix_sum)(UINT8 * pix, int line_size);
+int (*pix_norm1)(UINT8 * pix, int line_size);
 
 op_pixels_abs_func pix_abs16x16;
 op_pixels_abs_func pix_abs16x16_x2;
@@ -159,6 +161,52 @@ static void build_zigzag_end(void)
     }
 }
 
+int pix_sum_c(UINT8 * pix, int line_size)
+{
+    int s, i, j;
+
+    s = 0;
+    for (i = 0; i < 16; i++) {
+	for (j = 0; j < 16; j += 8) {
+	    s += pix[0];
+	    s += pix[1];
+	    s += pix[2];
+	    s += pix[3];
+	    s += pix[4];
+	    s += pix[5];
+	    s += pix[6];
+	    s += pix[7];
+	    pix += 8;
+	}
+	pix += line_size - 16;
+    }
+    return s;
+}
+
+int pix_norm1_c(UINT8 * pix, int line_size)
+{
+    int s, i, j;
+    UINT32 *sq = squareTbl + 256;
+
+    s = 0;
+    for (i = 0; i < 16; i++) {
+	for (j = 0; j < 16; j += 8) {
+	    s += sq[pix[0]];
+	    s += sq[pix[1]];
+	    s += sq[pix[2]];
+	    s += sq[pix[3]];
+	    s += sq[pix[4]];
+	    s += sq[pix[5]];
+	    s += sq[pix[6]];
+	    s += sq[pix[7]];
+	    pix += 8;
+	}
+	pix += line_size - 16;
+    }
+    return s;
+}
+
+
 void get_pixels_c(DCTELEM *restrict block, const UINT8 *pixels, int line_size)
 {
     int i;
@@ -241,7 +289,6 @@ void add_pixels_clamped_c(const DCTELEM *block, UINT8 *restrict pixels,
         block += 8;
     }
 }
-
 #if 0
 
 #define PIXOP2(OPNAME, OP) \
@@ -569,7 +616,6 @@ void (*OPNAME ## _no_rnd_pixels_tab[4])(uint8_t *block, const uint8_t *pixels, i
 };
 #define op_avg(a, b) a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEUL)>>1) )
 #endif
-
 #define op_put(a, b) a = b
 
 PIXOP2(avg, op_avg)
@@ -684,8 +730,11 @@ void (*OPNAME ## _pixels_tab[4])(BTYPE *block, const UINT8 *pixels, int line_siz
 
 #define op_avg(a, b) a = avg2(a, b)
 #define op_sub(a, b) a -= b
+#define op_put(a, b) a = b
 
 PIXOP(DCTELEM, sub, op_sub, 8)
+PIXOP(uint8_t, avg, op_avg, line_size)
+PIXOP(uint8_t, put, op_put, line_size)
 
 /* not rounding primitives */
 #undef avg2
@@ -693,6 +742,8 @@ PIXOP(DCTELEM, sub, op_sub, 8)
 #define avg2(a,b) ((a+b)>>1)
 #define avg4(a,b,c,d) ((a+b+c+d+1)>>2)
 
+PIXOP(uint8_t, avg_no_rnd, op_avg, line_size)
+PIXOP(uint8_t, put_no_rnd, op_put, line_size)
 /* motion estimation */
 
 #undef avg2
@@ -1261,6 +1312,8 @@ void dsputil_init(void)
     add_pixels_clamped = add_pixels_clamped_c;
     gmc1= gmc1_c;
     clear_blocks= clear_blocks_c;
+    pix_sum= pix_sum_c;
+    pix_norm1= pix_norm1_c;
 
     pix_abs16x16     = pix_abs16x16_c;
     pix_abs16x16_x2  = pix_abs16x16_x2_c;

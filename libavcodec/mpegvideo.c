@@ -226,6 +226,8 @@ int MPV_common_init(MpegEncContext *s)
             CHECKED_ALLOCZ(s->tex_pb_buffer, PB_BUFFER_SIZE);
             CHECKED_ALLOCZ(   s->pb2_buffer, PB_BUFFER_SIZE);
         }
+        
+        CHECKED_ALLOCZ(s->avctx->stats_out, 256);
     }
     
     if (s->out_format == FMT_H263 || s->encoding) {
@@ -328,7 +330,8 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->pb2_buffer);
     av_freep(&s->edge_emu_buffer);
     av_freep(&s->non_b_mv4_table);
-
+    av_freep(&s->avctx->stats_out);
+    
     for(i=0;i<3;i++) {
         int j;
         if(!(s->flags&CODEC_FLAG_DR1)){
@@ -377,13 +380,10 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->max_qdiff= avctx->max_qdiff;
     s->qcompress= avctx->qcompress;
     s->qblur= avctx->qblur;
-    s->b_quant_factor= avctx->b_quant_factor;
-    s->b_quant_offset= avctx->b_quant_offset;
     s->avctx = avctx;
     s->aspect_ratio_info= avctx->aspect_ratio_info;
     s->flags= avctx->flags;
     s->max_b_frames= avctx->max_b_frames;
-    s->rc_strategy= avctx->rc_strategy;
     s->b_frame_strategy= avctx->b_frame_strategy;
     s->codec_id= avctx->codec->id;
     s->luma_elim_threshold  = avctx->luma_elim_threshold;
@@ -678,7 +678,6 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 avctx->dr_opaque_frame= s->next_dr_opaque;
         }
     }
-
     /* set dequantizer, we cant do it during init as it might change for mpeg4
        and we cant do it in the header decode as init isnt called for mpeg4 there yet */
     if(s->out_format == FMT_H263){
@@ -703,10 +702,9 @@ void MPV_frame_end(MpegEncContext *s)
     }
     emms_c();
     
+    s->last_pict_type    = s->pict_type;
     if(s->pict_type!=B_TYPE){
         s->last_non_b_pict_type= s->pict_type;
-        s->last_non_b_qscale= s->qscale;
-        s->last_non_b_mc_mb_var= s->mc_mb_var_sum;
         s->num_available_buffers++;
         if(s->num_available_buffers>2) s->num_available_buffers= 2;
     }
@@ -873,13 +871,21 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     flush_put_bits(&s->pb);
     s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
-    if(s->pict_type==B_TYPE) s->pb_frame_bits+= s->frame_bits;
-    else                     s->pb_frame_bits= s->frame_bits;
-
+    
     s->total_bits += s->frame_bits;
     avctx->frame_bits  = s->frame_bits;
 //printf("fcode: %d, type: %d, head: %d, mv: %d, misc: %d, frame: %d, itex: %d, ptex: %d\n", 
 //s->f_code, avctx->key_frame, s->header_bits, s->mv_bits, s->misc_bits, s->frame_bits, s->i_tex_bits, s->p_tex_bits);
+#if 0 //dump some stats to stats.txt for testing/debuging
+if(s->max_b_frames==0)
+{
+    static FILE *f=NULL;
+    if(!f) f= fopen("stats.txt", "wb");
+    get_psnr(pict->data, s->current_picture,
+             pict->linesize, s->linesize, avctx);
+    fprintf(f, "%7d, %7d, %2.4f\n", pbBufPtr(&s->pb) - s->pb.buf, s->qscale, avctx->psnr_y);
+}
+#endif
 
     if (avctx->get_psnr) {
         /* At this point pict->data should have the original frame   */
@@ -2010,6 +2016,25 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         memset(s->motion_val[0], 0, sizeof(INT16)*(s->mb_width*2 + 2)*(s->mb_height*2 + 2)*2);
         memset(s->p_mv_table   , 0, sizeof(INT16)*(s->mb_width+2)*(s->mb_height+2)*2);
         memset(s->mb_type      , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
+        
+        if(!s->fixed_qscale){
+            /* finding spatial complexity for I-frame rate control */
+            for(mb_y=0; mb_y < s->mb_height; mb_y++) {
+                for(mb_x=0; mb_x < s->mb_width; mb_x++) {
+                    int xx = mb_x * 16;
+                    int yy = mb_y * 16;
+                    uint8_t *pix = s->new_picture[0] + (yy * s->linesize) + xx;
+                    int varc;
+                    int sum = pix_sum(pix, s->linesize);
+    
+                    sum= (sum+8)>>4;
+                    varc = (pix_norm1(pix, s->linesize) - sum*sum + 500 + 128)>>8;
+
+                    s->mb_var[s->mb_width * mb_y + mb_x] = varc;
+                    s->mb_var_sum    += varc;
+                }
+            }
+        }
     }
     if(s->scene_change_score > 0 && s->pict_type == P_TYPE){
         s->pict_type= I_TYPE;
@@ -2018,7 +2043,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->input_pict_type= I_TYPE;
             s->input_picture_in_gop_number=0;
         }
-//printf("Scene change detected, encoding as I Frame\n");
+//printf("Scene change detected, encoding as I Frame %d %d\n", s->mb_var_sum, s->mc_mb_var_sum);
     }
     
     if(s->pict_type==P_TYPE || s->pict_type==S_TYPE) 
@@ -2037,9 +2062,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 //printf("f_code %d ///\n", s->f_code);
 
 //    printf("%d %d\n", s->avg_mb_var, s->mc_mb_var);
-    if(s->flags&CODEC_FLAG_PASS2)
-        s->qscale = ff_rate_estimate_qscale_pass2(s);
-    else if (!s->fixed_qscale) 
+    if (!s->fixed_qscale) 
         s->qscale = ff_rate_estimate_qscale(s);
 
     if (s->out_format == FMT_MJPEG) {
@@ -2675,7 +2698,7 @@ void ff_conceal_past_errors(MpegEncContext *s, int unknown_pos)
     int i, intra_count=0, inter_count=0;
     int intra_conceal= s->msmpeg4_version ? 50 : 50; //FIXME finetune
     int inter_conceal= s->msmpeg4_version ? 50 : 50;
-    
+
     // for last block
     if(mb_x>=s->mb_width)  mb_x= s->mb_width -1;
     if(mb_y>=s->mb_height) mb_y= s->mb_height-1;

@@ -80,14 +80,28 @@ static AVOutputFormat *file_oformat;
 static int frame_width  = 160;
 static int frame_height = 128;
 static int frame_rate = 25 * FRAME_RATE_BASE;
-static int video_bit_rate = 200000;
-static int video_bit_rate_tolerance = 200000;
+static int video_bit_rate = 200*1000;
+static int video_bit_rate_tolerance = 4000*1000;
 static int video_qscale = 0;
-static int video_qmin = 3;
-static int video_qmax = 15;
+static int video_qmin = 2;
+static int video_qmax = 31;
 static int video_qdiff = 3;
 static float video_qblur = 0.5;
 static float video_qcomp = 0.5;
+static float video_rc_qsquish=1.0;
+static float video_rc_qmod_amp=0;
+static int video_rc_qmod_freq=0;
+static char *video_rc_override_string=NULL;
+static char *video_rc_eq="tex^qComp";
+static int video_rc_buffer_size=0;
+static float video_rc_buffer_aggressivity=1.0;
+static int video_rc_max_rate=0;
+static int video_rc_min_rate=0;
+static float video_rc_initial_cplx=0;
+static float video_b_qfactor = 1.25;
+static float video_b_qoffset = 1.25;
+static float video_i_qfactor = 0.8;
+static float video_i_qoffset = 0.0;
 static int me_method = 0;
 static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
@@ -1334,6 +1348,22 @@ void opt_video_bitrate_tolerance(const char *arg)
     video_bit_rate_tolerance = atoi(arg) * 1000;
 }
 
+void opt_video_bitrate_max(const char *arg)
+{
+    video_rc_max_rate = atoi(arg) * 1000;
+}
+
+void opt_video_bitrate_min(const char *arg)
+{
+    video_rc_min_rate = atoi(arg) * 1000;
+}
+
+void opt_video_rc_eq(char *arg)
+{
+    video_rc_eq = arg;
+}
+
+
 void opt_workaround_bugs(const char *arg)
 {
     workaround_bugs = atoi(arg);
@@ -1754,6 +1784,14 @@ void opt_output_file(const char *filename)
             video_enc->max_qdiff = video_qdiff;
             video_enc->qblur = video_qblur;
             video_enc->qcompress = video_qcomp;
+            video_enc->rc_eq = video_rc_eq;
+            video_enc->rc_max_rate = video_rc_max_rate;
+            video_enc->rc_min_rate = video_rc_min_rate;
+            video_enc->rc_buffer_size = video_rc_buffer_size;
+            video_enc->i_quant_factor = video_i_qfactor;
+            video_enc->b_quant_factor = video_b_qfactor;
+            video_enc->i_quant_offset = video_i_qoffset;
+            video_enc->b_quant_offset = video_b_qoffset;
             
             if (do_psnr)
                 video_enc->get_psnr = 1;
@@ -2097,7 +2135,10 @@ const OptionDef options[] = {
     { "qdiff", HAS_ARG | OPT_EXPERT, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
     { "qblur", HAS_ARG | OPT_EXPERT, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
     { "qcomp", HAS_ARG | OPT_EXPERT, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },
+    { "rc_eq", HAS_ARG | OPT_EXPERT, {(void*)opt_video_rc_eq}, "", "equation" },
     { "bt", HAS_ARG, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
+    { "maxrate", HAS_ARG, {(void*)opt_video_bitrate_max}, "set max video bitrate tolerance (in kbit/s)", "bitrate" },
+    { "minrate", HAS_ARG, {(void*)opt_video_bitrate_min}, "set min video bitrate tolerance (in kbit/s)", "bitrate" },
     { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video grab device", "device" },
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 

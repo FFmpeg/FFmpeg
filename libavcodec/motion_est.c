@@ -41,28 +41,6 @@
 #define P_MV1 P[9]
 
 
-static int pix_sum(UINT8 * pix, int line_size)
-{
-    int s, i, j;
-
-    s = 0;
-    for (i = 0; i < 16; i++) {
-	for (j = 0; j < 16; j += 8) {
-	    s += pix[0];
-	    s += pix[1];
-	    s += pix[2];
-	    s += pix[3];
-	    s += pix[4];
-	    s += pix[5];
-	    s += pix[6];
-	    s += pix[7];
-	    pix += 8;
-	}
-	pix += line_size - 16;
-    }
-    return s;
-}
-
 static int pix_dev(UINT8 * pix, int line_size, int mean)
 {
     int s, i, j;
@@ -78,29 +56,6 @@ static int pix_dev(UINT8 * pix, int line_size, int mean)
 	    s += ABS(pix[5]-mean);
 	    s += ABS(pix[6]-mean);
 	    s += ABS(pix[7]-mean);
-	    pix += 8;
-	}
-	pix += line_size - 16;
-    }
-    return s;
-}
-
-static int pix_norm1(UINT8 * pix, int line_size)
-{
-    int s, i, j;
-    UINT32 *sq = squareTbl + 256;
-
-    s = 0;
-    for (i = 0; i < 16; i++) {
-	for (j = 0; j < 16; j += 8) {
-	    s += sq[pix[0]];
-	    s += sq[pix[1]];
-	    s += sq[pix[2]];
-	    s += sq[pix[3]];
-	    s += sq[pix[4]];
-	    s += sq[pix[5]];
-	    s += sq[pix[6]];
-	    s += sq[pix[7]];
 	    pix += 8;
 	}
 	pix += line_size - 16;
@@ -1578,9 +1533,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
 
     fbmin= bidir_refine(s, mb_x, mb_y);
 
-    if(s->flags&CODEC_FLAG_HQ){
-        type= MB_TYPE_FORWARD | MB_TYPE_BACKWARD | MB_TYPE_BIDIR | MB_TYPE_DIRECT;
-    }else{
+    {
         int score= dmin;
         type=MB_TYPE_DIRECT;
         
@@ -1596,9 +1549,15 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
             score=fbmin;
             type= MB_TYPE_BIDIR;
         }
+        score= (score*score)>>8;
         s->mc_mb_var_sum += score;
-        s->mc_mb_var[mb_y*s->mb_width + mb_x] = score;
+        s->mc_mb_var[mb_y*s->mb_width + mb_x] = score; //FIXME use SSD
     }
+
+    if(s->flags&CODEC_FLAG_HQ){
+        type= MB_TYPE_FORWARD | MB_TYPE_BACKWARD | MB_TYPE_BIDIR | MB_TYPE_DIRECT; //FIXME something smarter
+    }
+
 /*
 {
 static int count=0;
