@@ -181,7 +181,7 @@ int MPV_common_init(MpegEncContext *s)
         memset(s->motion_val, 0, size * 2 * sizeof(INT16));
     }
 
-    if (s->h263_pred) {
+    if (s->h263_pred || s->h263_plus) {
         int y_size, c_size, i, size;
         
         /* dc values */
@@ -1062,10 +1062,20 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 sub_pixels_2(s->block[5], ptr, s->linesize >> 1, dxy);
             }
             emms_c();
-            //if (s->avg_mb_var)
-            //    printf("\nqscale=%2d dquant=%2d var=%4d avgvar=%4d", s->qscale,
-            //        s->qscale*(s->mb_var[s->mb_width*mb_y+mb_x]/s->avg_mb_var),
-            //        s->mb_var[s->mb_width*mb_y+mb_x], s->avg_mb_var);
+            
+#if 0
+            {
+                float adap_parm;
+                
+                adap_parm = ((s->avg_mb_var << 1) + s->mb_var[s->mb_width*mb_y+mb_x] + 1.0) /
+                            ((s->mb_var[s->mb_width*mb_y+mb_x] << 1) + s->avg_mb_var + 1.0);
+            
+                printf("\ntype=%c qscale=%2d adap=%0.2f dquant=%4.2f var=%4d avgvar=%4d", 
+                        (s->mb_type[s->mb_width*mb_y+mb_x] > 0) ? 'I' : 'P', 
+                        s->qscale, adap_parm, s->qscale*adap_parm,
+                        s->mb_var[s->mb_width*mb_y+mb_x], s->avg_mb_var);
+            }
+#endif
             /* DCT & quantize */
             if (s->h263_msmpeg4) {
                 msmpeg4_dc_scale(s);
@@ -1331,7 +1341,10 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
     }
 
     qmul = s->qscale << 1;
-    qadd = (s->qscale - 1) | 1;
+    if (s->h263_aic && s->mb_intra)
+        qadd = 0;
+    else
+        qadd = (s->qscale - 1) | 1;
 
     for(;i<nCoeffs;i++) {
         level = block[i];
@@ -1407,12 +1420,13 @@ static int rate_estimate_qscale(MpegEncContext *s)
         q = 31;
     qscale = (int)(q + 0.5);
 #if defined(DEBUG)
-    printf("%d: total=%0.0f br=%0.1f diff=%d qest=%0.1f\n", 
+    printf("\n%d: total=%0.0f wanted=%0.0f br=%0.1f diff=%d qest=%2.1f\n", 
            s->picture_number, 
            (double)total_bits, 
+           (double)s->wanted_bits,
            (float)s->frame_rate / FRAME_RATE_BASE * 
            total_bits / s->picture_number, 
-           diff, q);
+           (int)diff, q);
 #endif
     return qscale;
 }

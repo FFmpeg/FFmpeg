@@ -146,10 +146,12 @@ typedef struct MpegEncContext {
     int gob_number;
     int gob_index;
     int first_gob_line;
-    
+        
     /* H.263+ specific */
     int umvplus;
     int umvplus_dec;
+    int h263_aic; /* Advanded INTRA Coding (AIC) */
+    int h263_aic_dir; /* AIC direction: 0 = left, 1 = top */
     
     /* mpeg4 specific */
     int time_increment_bits;

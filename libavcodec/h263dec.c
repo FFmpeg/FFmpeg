@@ -156,6 +156,9 @@ static int h263_decode_frame(AVCodecContext *avctx,
                 msmpeg4_dc_scale(s);
             } else if (s->h263_pred) {
                 h263_dc_scale(s);
+            } else if (s->h263_aic) {
+                s->y_dc_scale = s->qscale;
+                s->c_dc_scale = s->qscale;                
             } else {
                 /* default quantization values */
                 s->y_dc_scale = 8;

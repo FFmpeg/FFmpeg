@@ -83,7 +83,10 @@ static void dct_unquantize_h263_mmx(MpegEncContext *s,
     int i, level, qmul, qadd, nCoeffs;
     
     qmul = s->qscale << 1;
-    qadd = (s->qscale - 1) | 1;
+    if (s->h263_aic && s->mb_intra)
+        qadd = 0;
+    else
+        qadd = (s->qscale - 1) | 1;
 
     if (s->mb_intra) {
         if (n < 4)
