@@ -259,7 +259,7 @@ void mjpeg_picture_header(MpegEncContext *s)
 {
     put_marker(&s->pb, SOI);
 
-    jpeg_table_header(s);
+    if (s->mjpeg_write_tables) jpeg_table_header(s);
 
     put_marker(&s->pb, SOF0);
 
@@ -271,20 +271,20 @@ void mjpeg_picture_header(MpegEncContext *s)
     
     /* Y component */
     put_bits(&s->pb, 8, 1); /* component number */
-    put_bits(&s->pb, 4, 2); /* H factor */
-    put_bits(&s->pb, 4, 2); /* V factor */
+    put_bits(&s->pb, 4, s->mjpeg_hsample[0]); /* H factor */
+    put_bits(&s->pb, 4, s->mjpeg_vsample[0]); /* V factor */
     put_bits(&s->pb, 8, 0); /* select matrix */
     
     /* Cb component */
     put_bits(&s->pb, 8, 2); /* component number */
-    put_bits(&s->pb, 4, 1); /* H factor */
-    put_bits(&s->pb, 4, 1); /* V factor */
+    put_bits(&s->pb, 4, s->mjpeg_hsample[1]); /* H factor */
+    put_bits(&s->pb, 4, s->mjpeg_vsample[1]); /* V factor */
     put_bits(&s->pb, 8, 0); /* select matrix */
 
     /* Cr component */
     put_bits(&s->pb, 8, 3); /* component number */
-    put_bits(&s->pb, 4, 1); /* H factor */
-    put_bits(&s->pb, 4, 1); /* V factor */
+    put_bits(&s->pb, 4, s->mjpeg_hsample[2]); /* H factor */
+    put_bits(&s->pb, 4, s->mjpeg_vsample[2]); /* V factor */
     put_bits(&s->pb, 8, 0); /* select matrix */
 
     /* scan header */
