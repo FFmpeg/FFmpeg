@@ -116,13 +116,13 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
 	}
 #endif
 
+  // force calculation of the horizontal interpolation of the first line
+  s_last_ypos=-99;
+  s_last_y1pos=-99;
+
   if(y==0){
       s_srcypos= s_yinc/2 - 0x8000;
       s_ypos=0;
-
-      // force calculation of the horizontal interpolation of the first line
-      s_last_ypos=-99;
-      s_last_y1pos=-99;
 #ifdef HAVE_MMX2
 // cant downscale !!!
 	if((old_s_xinc != s_xinc || old_dstw!=dstw) && canMMX2BeUsed)
