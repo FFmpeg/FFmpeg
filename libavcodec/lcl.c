@@ -567,13 +567,20 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         av_log(avctx, AV_LOG_ERROR, "Deflate reset error: %d\n", zret);
         return -1;
     }
-    c->zstream.next_in = p->data[0];
-    c->zstream.avail_in = c->decomp_size;
     c->zstream.next_out = c->comp_buf;
     c->zstream.avail_out = c->max_comp_size;
 
+    for(i = avctx->height - 1; i >= 0; i--) {
+        c->zstream.next_in = p->data[0]+p->linesize[0]*i;
+        c->zstream.avail_in = avctx->width*3;
+        zret = deflate(&(c->zstream), Z_NO_FLUSH);
+        if (zret != Z_OK) {
+    	    av_log(avctx, AV_LOG_ERROR, "Deflate error: %d\n", zret);
+    	    return -1;
+        }
+    }
     zret = deflate(&(c->zstream), Z_FINISH);
-    if ((zret != Z_OK) && (zret != Z_STREAM_END)) {
+    if (zret != Z_STREAM_END) {
         av_log(avctx, AV_LOG_ERROR, "Deflate error: %d\n", zret);
         return -1;
     }
@@ -785,7 +792,7 @@ static int encode_init(AVCodecContext *avctx)
     ((uint8_t*)avctx->extradata)[4]= c->imgtype;
     ((uint8_t*)avctx->extradata)[5]= c->compression;
     ((uint8_t*)avctx->extradata)[6]= c->flags;
-    ((uint8_t*)avctx->extradata)[7]= 0;
+    ((uint8_t*)avctx->extradata)[7]= CODEC_ZLIB;
     c->avctx->extradata_size= 8;
     
     c->zstream.zalloc = Z_NULL;
