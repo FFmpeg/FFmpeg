@@ -2993,29 +2993,29 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 //printf("Scene change detected, encoding as I Frame %d %d\n", s->current_picture.mb_var_sum, s->current_picture.mc_mb_var_sum);
     }
 
-    if(s->pict_type==P_TYPE || s->pict_type==S_TYPE) {
-        s->f_code= ff_get_best_fcode(s, s->p_mv_table, MB_TYPE_INTER);
+    if(s->codec_id != CODEC_ID_H263P){ //FIXME use umvplus or something
+        if(s->pict_type==P_TYPE || s->pict_type==S_TYPE) {
+            s->f_code= ff_get_best_fcode(s, s->p_mv_table, MB_TYPE_INTER);
         
-        // RAL: Next call moved into that bloc
-        ff_fix_long_p_mvs(s);
-    }
+            ff_fix_long_p_mvs(s);
+        }
 
-    // RAL: All this bloc changed
-    if(s->pict_type==B_TYPE){
-        int a, b;
+        if(s->pict_type==B_TYPE){
+            int a, b;
 
-        a = ff_get_best_fcode(s, s->b_forw_mv_table, MB_TYPE_FORWARD);
-        b = ff_get_best_fcode(s, s->b_bidir_forw_mv_table, MB_TYPE_BIDIR);
-        s->f_code = FFMAX(a, b);
+            a = ff_get_best_fcode(s, s->b_forw_mv_table, MB_TYPE_FORWARD);
+            b = ff_get_best_fcode(s, s->b_bidir_forw_mv_table, MB_TYPE_BIDIR);
+            s->f_code = FFMAX(a, b);
 
-        a = ff_get_best_fcode(s, s->b_back_mv_table, MB_TYPE_BACKWARD);
-        b = ff_get_best_fcode(s, s->b_bidir_back_mv_table, MB_TYPE_BIDIR);
-        s->b_code = FFMAX(a, b);
+            a = ff_get_best_fcode(s, s->b_back_mv_table, MB_TYPE_BACKWARD);
+            b = ff_get_best_fcode(s, s->b_bidir_back_mv_table, MB_TYPE_BIDIR);
+            s->b_code = FFMAX(a, b);
 
-        ff_fix_long_b_mvs(s, s->b_forw_mv_table, s->f_code, MB_TYPE_FORWARD);
-        ff_fix_long_b_mvs(s, s->b_back_mv_table, s->b_code, MB_TYPE_BACKWARD);
-        ff_fix_long_b_mvs(s, s->b_bidir_forw_mv_table, s->f_code, MB_TYPE_BIDIR);
-        ff_fix_long_b_mvs(s, s->b_bidir_back_mv_table, s->b_code, MB_TYPE_BIDIR);
+            ff_fix_long_b_mvs(s, s->b_forw_mv_table, s->f_code, MB_TYPE_FORWARD);
+            ff_fix_long_b_mvs(s, s->b_back_mv_table, s->b_code, MB_TYPE_BACKWARD);
+            ff_fix_long_b_mvs(s, s->b_bidir_forw_mv_table, s->f_code, MB_TYPE_BIDIR);
+            ff_fix_long_b_mvs(s, s->b_bidir_back_mv_table, s->b_code, MB_TYPE_BIDIR);
+        }
     }
     
     if (s->fixed_qscale) 

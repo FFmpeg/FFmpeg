@@ -791,18 +791,18 @@ static inline void set_p_mv_tables(MpegEncContext * s, int mx, int my, int mv4)
     }
 }
 
-static inline void get_limits(MpegEncContext *s, int *range, int *xmin, int *ymin, int *xmax, int *ymax, int f_code)
+/**
+ * get fullpel ME search limits.
+ * @param range the approximate search range for the old ME code, unused for EPZS and newer
+ */
+static inline void get_limits(MpegEncContext *s, int *range, int *xmin, int *ymin, int *xmax, int *ymax)
 {
-    *range = 8 * (1 << (f_code - 1));
-    /* XXX: temporary kludge to avoid overflow for msmpeg4 */
-    if (s->out_format == FMT_H263 && !s->h263_msmpeg4)
-	*range *= 2;
+    if(s->avctx->me_range) *range= s->avctx->me_range >> 1;
+    else                   *range= 16;
 
     if (s->unrestricted_mv) {
         *xmin = -16;
         *ymin = -16;
-        if (s->h263_plus)
-            *range *= 2;
         if(s->avctx->codec->id!=CODEC_ID_MPEG4){
             *xmax = s->mb_width*16;
             *ymax = s->mb_height*16;
@@ -816,6 +816,8 @@ static inline void get_limits(MpegEncContext *s, int *range, int *xmin, int *ymi
         *xmax = s->mb_width*16 - 16;
         *ymax = s->mb_height*16 - 16;
     }
+    
+    //FIXME try to limit x/y min/max if me_range is set
 }
 
 static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xmax, int ymax, int mx, int my, int shift)
@@ -982,7 +984,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     s->me.sub_penalty_factor= get_penalty_factor(s, s->avctx->me_sub_cmp);
     s->me.mb_penalty_factor = get_penalty_factor(s, s->avctx->mb_cmp);
 
-    get_limits(s, &range, &xmin, &ymin, &xmax, &ymax, s->f_code);
+    get_limits(s, &range, &xmin, &ymin, &xmax, &ymax);
     rel_xmin= xmin - mb_x*16;
     rel_xmax= xmax - mb_x*16;
     rel_ymin= ymin - mb_y*16;
@@ -1151,7 +1153,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
 
     s->me.pre_penalty_factor    = get_penalty_factor(s, s->avctx->me_pre_cmp);
 
-    get_limits(s, &range, &xmin, &ymin, &xmax, &ymax, s->f_code);
+    get_limits(s, &range, &xmin, &ymin, &xmax, &ymax);
     rel_xmin= xmin - mb_x*16;
     rel_xmax= xmax - mb_x*16;
     rel_ymin= ymin - mb_y*16;
@@ -1212,7 +1214,7 @@ static int ff_estimate_motion_b(MpegEncContext * s,
     s->me.sub_penalty_factor= get_penalty_factor(s, s->avctx->me_sub_cmp);
     s->me.mb_penalty_factor = get_penalty_factor(s, s->avctx->mb_cmp);
 
-    get_limits(s, &range, &xmin, &ymin, &xmax, &ymax, f_code);
+    get_limits(s, &range, &xmin, &ymin, &xmax, &ymax);
     rel_xmin= xmin - mb_x*16;
     rel_xmax= xmax - mb_x*16;
     rel_ymin= ymin - mb_y*16;
@@ -1583,10 +1585,14 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
 void ff_fix_long_p_mvs(MpegEncContext * s)
 {
     const int f_code= s->f_code;
-    int y;
-    uint8_t * fcode_tab= s->fcode_tab;
-//int clip=0;
-//int noclip=0;
+    int y, range;
+
+    range = (((s->codec_id == CODEC_ID_MPEG1VIDEO) ? 8 : 16) << f_code);
+    
+    if(s->msmpeg4_version) range= 16;
+    
+    if(s->avctx->me_range && range > s->avctx->me_range) range= s->avctx->me_range;
+    
     /* clip / convert to intra 16x16 type MVs */
     for(y=0; y<s->mb_height; y++){
         int x;
@@ -1594,10 +1600,8 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
         int i= y*s->mb_width;
         for(x=0; x<s->mb_width; x++){
             if(s->mb_type[i]&MB_TYPE_INTER){
-                if(   fcode_tab[s->p_mv_table[xy][0] + MAX_MV] > f_code
-                   || fcode_tab[s->p_mv_table[xy][0] + MAX_MV] == 0
-                   || fcode_tab[s->p_mv_table[xy][1] + MAX_MV] > f_code
-                   || fcode_tab[s->p_mv_table[xy][1] + MAX_MV] == 0 ){
+                if(   s->p_mv_table[xy][0] >=range || s->p_mv_table[xy][0] <-range
+                   || s->p_mv_table[xy][1] >=range || s->p_mv_table[xy][1] <-range){
                     s->mb_type[i] &= ~MB_TYPE_INTER;
                     s->mb_type[i] |= MB_TYPE_INTRA;
                     s->p_mv_table[xy][0] = 0;
@@ -1629,10 +1633,8 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
                         int mx= s->motion_val[ xy + off ][0];
                         int my= s->motion_val[ xy + off ][1];
 
-                        if(   fcode_tab[mx + MAX_MV] > f_code
-                           || fcode_tab[mx + MAX_MV] == 0
-                           || fcode_tab[my + MAX_MV] > f_code
-                           || fcode_tab[my + MAX_MV] == 0 ){
+                        if(   mx >=range || mx <-range
+                           || my >=range || my <-range){
                             s->mb_type[i] &= ~MB_TYPE_INTER4V;
                             s->mb_type[i] |= MB_TYPE_INTRA;
                         }
@@ -1648,34 +1650,30 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
 void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, int type)
 {
     int y;
-    uint8_t * fcode_tab= s->fcode_tab;
 
     // RAL: 8 in MPEG-1, 16 in MPEG-4
     int range = (((s->codec_id == CODEC_ID_MPEG1VIDEO) ? 8 : 16) << f_code);
+    
+    if(s->avctx->me_range && range > s->avctx->me_range) range= s->avctx->me_range;
 
     /* clip / convert to intra 16x16 type MVs */
     for(y=0; y<s->mb_height; y++){
         int x;
         int xy= (y+1)* (s->mb_width+2)+1;
         int i= y*s->mb_width;
-        for(x=0; x<s->mb_width; x++)
-            {
-            if (s->mb_type[i] & type)    // RAL: "type" test added...
-                {
-                if (fcode_tab[mv_table[xy][0] + MAX_MV] > f_code || fcode_tab[mv_table[xy][0] + MAX_MV] == 0)
-                    {
-                    if(mv_table[xy][0]>0) 
-                        mv_table[xy][0]=  range-1;
-                    else
-                        mv_table[xy][0]= -range;
+        for(x=0; x<s->mb_width; x++){
+            if (s->mb_type[i] & type){    // RAL: "type" test added...
+                if(   mv_table[xy][0] >=range || mv_table[xy][0] <-range
+                   || mv_table[xy][1] >=range || mv_table[xy][1] <-range){
+
+                    if(s->codec_id == CODEC_ID_MPEG1VIDEO && 0){
+                    }else{
+                        if     (mv_table[xy][0] > range-1) mv_table[xy][0]=  range-1;
+                        else if(mv_table[xy][0] < -range ) mv_table[xy][0]= -range;
+                        if     (mv_table[xy][1] > range-1) mv_table[xy][1]=  range-1;
+                        else if(mv_table[xy][1] < -range ) mv_table[xy][1]= -range;
                     }
-                if (fcode_tab[mv_table[xy][1] + MAX_MV] > f_code || fcode_tab[mv_table[xy][1] + MAX_MV] == 0)
-                    {
-                    if(mv_table[xy][1]>0) 
-                        mv_table[xy][1]=  range-1;
-                    else                  
-                        mv_table[xy][1]= -range;
-            }
+                }
             }
             xy++;
             i++;

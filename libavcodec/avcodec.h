@@ -16,8 +16,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4658
-#define LIBAVCODEC_BUILD_STR   "4658"
+#define LIBAVCODEC_BUILD       4659
+#define LIBAVCODEC_BUILD_STR   "4659"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -970,6 +970,15 @@ typedef struct AVCodecContext {
 #define FF_DTG_AFD_4_3_SP_14_9  13
 #define FF_DTG_AFD_16_9_SP_14_9 14
 #define FF_DTG_AFD_SP_4_3       15
+
+    int me_range;
+    /**
+     * Maximum motion estimation search range in subpel units.
+     * if 0 then no limit
+     * 
+     * encoding: set by user.
+     * decoding: unused.
+     */
 
 } AVCodecContext;
 
