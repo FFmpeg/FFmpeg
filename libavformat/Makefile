@@ -34,6 +34,10 @@ ifeq ($(BUILD_STRPTIME),yes)
 OBJS+= strptime.o
 endif
 
+ifeq ($(BUILD_LOCALTIME_R),yes)
+OBJS+= localtime_r.o
+endif
+
 ifeq ($(CONFIG_VIDEO4LINUX),yes)
 OBJS+= grab.o
 endif

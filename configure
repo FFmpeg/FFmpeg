@@ -574,6 +574,16 @@ if $cc -o $TMPE $TMPC 2> /dev/null ; then
   strptime=yes
 fi
 
+cat > $TMPC << EOF
+#include <time.h>
+int main( void ) { localtime_r(NULL, NULL); }
+EOF
+
+localtime_r=no
+if $cc -o $TMPE $TMPC 2> /dev/null ; then
+  localtime_r=yes
+fi
+
 if test "$zlib" = "yes"; then
 # check for zlib - mmu_man
 cat > $TMPC << EOF
@@ -919,6 +929,11 @@ if test "$strptime" = "yes" ; then
   echo "#define HAVE_STRPTIME 1" >> $TMPH
 else
   echo "BUILD_STRPTIME=yes" >> config.mak
+fi
+if test "$localtime_r" = "yes" ; then
+  echo "#define HAVE_LOCALTIME_R 1" >> $TMPH
+else
+  echo "BUILD_LOCALTIME_R=yes" >> config.mak
 fi
 if test "$imlib2" = "yes" ; then
   echo "HAVE_IMLIB2=yes" >> config.mak

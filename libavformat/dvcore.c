@@ -21,6 +21,7 @@
  */
 #include "avformat.h"
 #include "dvcore.h"
+#include "localtime_r.h"
 
 /*
  * The reason why the following three big ugly looking tables are

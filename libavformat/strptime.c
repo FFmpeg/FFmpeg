@@ -37,6 +37,7 @@
 #endif
 
 #include "strptime.h"
+#include "localtime_r.h"
 
 #ifndef __P
 # if defined (__GNUC__) || (defined (__STDC__) && __STDC__)
@@ -45,28 +46,6 @@
 #  define __P(args) ()
 # endif  /* GCC.  */
 #endif  /* Not __P.  */
-
-#if ! HAVE_LOCALTIME_R && ! defined localtime_r
-# ifdef _LIBC
-#  define localtime_r __localtime_r
-# else
-/* Approximate localtime_r as best we can in its absence.  */
-#  define localtime_r my_localtime_r
-static struct tm *localtime_r __P ((const time_t *, struct tm *));
-static struct tm *
-localtime_r (t, tp)
-     const time_t *t;
-     struct tm *tp;
-{
-  struct tm *l = localtime (t);
-  if (! l)
-    return 0;
-  *tp = *l;
-  return tp;
-}
-# endif /* ! _LIBC */
-#endif /* ! HAVE_LOCALTIME_R && ! defined (localtime_r) */
-
 
 #define match_char(ch1, ch2) if (ch1 != ch2) return NULL
 #if defined __GNUC__ && __GNUC__ >= 2
