@@ -4115,7 +4115,7 @@ static int decode_cabac_b_mb_sub_type( H264Context *h ) {
     if( !get_cabac( &h->cabac, &h->cabac_state[36] ) )
         return 0;   /* B_Direct_8x8 */
     if( !get_cabac( &h->cabac, &h->cabac_state[37] ) )
-        return 1 + get_cabac( &h->cabac, &h->cabac_state[38] ); /* B_L0_8x8, B_L1_8x8 */
+        return 1 + get_cabac( &h->cabac, &h->cabac_state[39] ); /* B_L0_8x8, B_L1_8x8 */
     type = 3;
     if( get_cabac( &h->cabac, &h->cabac_state[38] ) ) {
         if( get_cabac( &h->cabac, &h->cabac_state[39] ) )
