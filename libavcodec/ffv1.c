@@ -889,7 +889,7 @@ static int read_header(FFV1Context *f){
         case 0x10: f->avctx->pix_fmt= PIX_FMT_YUV422P; break;
         case 0x11: f->avctx->pix_fmt= PIX_FMT_YUV420P; break;
         case 0x20: f->avctx->pix_fmt= PIX_FMT_YUV411P; break;
-        case 0x33: f->avctx->pix_fmt= PIX_FMT_YUV410P; break;
+        case 0x22: f->avctx->pix_fmt= PIX_FMT_YUV410P; break;
         default:
             av_log(f->avctx, AV_LOG_ERROR, "format not supported\n");
             return -1;
