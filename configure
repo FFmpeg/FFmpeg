@@ -114,6 +114,7 @@ CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic"
 SHFLAGS="-dynamiclib"
 extralibs=""
 darwin="yes"
+strip="strip -x"
 ;;
 CYGWIN*)
 v4l="no"
@@ -145,7 +146,7 @@ int main( void ) { return (int) dlopen("foo", 0); }
 EOF
 
 if $cc -o $TMPO $TMPC -ldl 2> /dev/null  ; then
-: vhook=yes
+vhook=yes
 fi
 
 cat > $TMPC << EOF
@@ -421,7 +422,7 @@ echo "  --disable-v4l            disable video4linux grabbing [default=no]"
 echo "  --disable-network        disable network support [default=no]"
 echo "  --disable-zlib           disable zlib [default=no]"
 echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
-# echo "  --disable-vhook          disable video hooking support"
+echo "  --disable-vhook          disable video hooking support"
 echo "  --enable-gprof           enable profiling with gprof [$gprof]"
 echo "  --disable-mpegaudio-hp   faster (but less accurate)"
 echo "                           mpegaudio decoding [default=no]"
@@ -451,10 +452,10 @@ echo "mp3lame enabled  $mp3lame"
 echo "vorbis enabled   $vorbis"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
-# echo "Video hooking    $vhook"
+echo "Video hooking    $vhook"
 
 if test "$vhook" = "yes" ; then
-: echo "Imlib2 support   $imlib2"
+echo "Imlib2 support   $imlib2"
 fi
 
 echo "Creating config.mak and config.h"

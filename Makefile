@@ -48,7 +48,9 @@ ifeq ($(BUILD_VHOOK),yes)
 VHOOK=videohook
 INSTALLVHOOK=install-vhook
 CLEANVHOOK=clean-vhook
+ifneq ($(CONFIG_DARWIN),yes)
 LDFLAGS += -rdynamic
+endif
 endif
 
 OBJS = ffmpeg.o ffserver.o
