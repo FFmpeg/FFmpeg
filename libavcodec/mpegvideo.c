@@ -1571,7 +1571,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     emms_c(); //FIXME remove
 }
 
-static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int threshold, int skip_dc)
+static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int threshold)
 {
     static const char tab[64]=
         {3,2,2,1,1,1,1,1,
@@ -1587,12 +1587,13 @@ static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int th
     int i;
     DCTELEM *block= s->block[n];
     const int last_index= s->block_last_index[n];
+    int skip_dc;
 
-    if(skip_dc) skip_dc=1;
     if(threshold<0){
         skip_dc=0;
         threshold= -threshold;
-    }
+    }else
+        skip_dc=1;
 
     /* are all which we could set to zero are allready zero? */
     if(last_index<=skip_dc - 1) return;
@@ -1811,10 +1812,10 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         }
         if(s->luma_elim_threshold && !s->mb_intra)
             for(i=0; i<4; i++)
-                dct_single_coeff_elimination(s, i, s->luma_elim_threshold, 0);
+                dct_single_coeff_elimination(s, i, s->luma_elim_threshold);
         if(s->chroma_elim_threshold && !s->mb_intra)
             for(i=4; i<6; i++)
-                dct_single_coeff_elimination(s, i, s->chroma_elim_threshold, 1);
+                dct_single_coeff_elimination(s, i, s->chroma_elim_threshold);
     }
 
     if((s->flags&CODEC_FLAG_GRAY) && s->mb_intra){
