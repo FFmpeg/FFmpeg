@@ -395,7 +395,7 @@ static int pnm_probe(AVProbeData *pd)
         p[0] == 'P' &&
         p[1] >= '4' && p[1] <= '6' &&
         p[2] == '\n')
-        return AVPROBE_SCORE_MAX;
+        return AVPROBE_SCORE_MAX - 1; /* to permit pgmyuv probe */
     else
         return 0;
 }
@@ -468,7 +468,7 @@ AVImageFormat pam_image_format = {
 
 AVImageFormat pgmyuv_image_format = {
     "pgmyuv",
-    NULL,
+    "pgmyuv",
     pgmyuv_probe,
     pgmyuv_read,
     (1 << PIX_FMT_YUV420P),
