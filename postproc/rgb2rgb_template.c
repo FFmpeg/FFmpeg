@@ -63,13 +63,13 @@ static inline void RENAME(rgb24to32)(const uint8_t *src,uint8_t *dst,unsigned sr
   const uint8_t *s = src;
   const uint8_t *end;
 #ifdef HAVE_MMX
-  uint8_t *mm_end;
+  const uint8_t *mm_end;
 #endif
   end = s + src_size;
 #ifdef HAVE_MMX
   __asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
+  mm_end = end - 23;
   __asm __volatile("movq	%0, %%mm7"::"m"(mask32):"memory");
-  mm_end = (uint8_t*)((((unsigned long)end)/24)*24);
   while(s < mm_end)
   {
     __asm __volatile(
@@ -114,12 +114,12 @@ static inline void RENAME(rgb32to24)(const uint8_t *src,uint8_t *dst,unsigned sr
   const uint8_t *s = src;
   const uint8_t *end;
 #ifdef HAVE_MMX
-  uint8_t *mm_end;
+  const uint8_t *mm_end;
 #endif
   end = s + src_size;
 #ifdef HAVE_MMX
   __asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
-  mm_end = (uint8_t*)((((unsigned long)end)/32)*32);
+  mm_end = end - 31;
   while(s < mm_end)
   {
     __asm __volatile(
@@ -196,12 +196,12 @@ static inline void RENAME(rgb15to16)(const uint8_t *src,uint8_t *dst,unsigned sr
   register const uint8_t* s=src;
   register uint8_t* d=dst;
   register const uint8_t *end;
-  uint8_t *mm_end;
+  const uint8_t *mm_end;
   end = s + src_size;
 #ifdef HAVE_MMX
   __asm __volatile(PREFETCH"	%0"::"m"(*s));
   __asm __volatile("movq	%0, %%mm4"::"m"(mask15s));
-  mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+  mm_end = end - 15;
   while(s<mm_end)
   {
 	__asm __volatile(
@@ -225,7 +225,7 @@ static inline void RENAME(rgb15to16)(const uint8_t *src,uint8_t *dst,unsigned sr
   __asm __volatile(SFENCE:::"memory");
   __asm __volatile(EMMS:::"memory");
 #endif
-    mm_end = (uint8_t*)((((unsigned long)end)/4)*4);
+    mm_end = end - 3;
     while(s < mm_end)
     {
 	register unsigned x= *((uint32_t *)s);
@@ -266,7 +266,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_16mask),"m"(green_16mask));
-	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	mm_end = end - 15;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -330,7 +330,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_15mask),"m"(green_15mask));
-	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	mm_end = end - 15;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -394,7 +394,7 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, unsigned 
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_16mask),"m"(green_16mask));
-	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	mm_end = end - 11;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -457,7 +457,7 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, unsigned 
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_15mask),"m"(green_15mask));
-	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	mm_end = end - 11;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -539,7 +539,7 @@ static inline void RENAME(rgb15to24)(const uint8_t *src, uint8_t *dst, unsigned 
 	end = s + src_size/2;
 #ifdef HAVE_MMX
 	__asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
-	mm_end = (uint16_t*)((((unsigned long)end)/8)*8);
+	mm_end = end - 7;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -681,7 +681,7 @@ static inline void RENAME(rgb16to24)(const uint8_t *src, uint8_t *dst, unsigned 
 	end = s + src_size/2;
 #ifdef HAVE_MMX
 	__asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
-	mm_end = (uint16_t*)((((unsigned long)end)/8)*8);
+	mm_end = end - 7;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -823,7 +823,7 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, unsigned 
 #ifdef HAVE_MMX
 	__asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
 	__asm __volatile("pxor	%%mm7,%%mm7\n\t":::"memory");
-	mm_end = (uint16_t*)((((unsigned long)end)/4)*4);
+	mm_end = end - 3;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -888,7 +888,7 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, unsigned 
 #ifdef HAVE_MMX
 	__asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
 	__asm __volatile("pxor	%%mm7,%%mm7\n\t":::"memory");
-	mm_end = (uint16_t*)((((unsigned long)end)/4)*4);
+	mm_end = end - 3;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -964,7 +964,7 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsign
 		"addl $8, %%eax			\n\t"
 		"cmpl %2, %%eax			\n\t"
 		" jb 1b				\n\t"
-		:: "r" (src), "r"(dst), "r" (src_size)
+		:: "r" (src), "r"(dst), "r" (src_size-7)
 		: "%eax"
 	);
 
