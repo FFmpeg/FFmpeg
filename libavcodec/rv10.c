@@ -429,28 +429,21 @@ static int rv20_decode_picture_header(MpegEncContext *s)
     }
         
     if(s->avctx->has_b_frames){
-        int f1=9;
-        int f2=9;
-        int f3=9;
+        int f=9;
+        int v= s->avctx->extradata_size >= 4 ? ((uint8_t*)s->avctx->extradata)[1] : 0;
 
         if (get_bits(&s->gb, 1)){
             av_log(s->avctx, AV_LOG_ERROR, "unknown bit3 set\n");
 //            return -1;
         }
         seq= get_bits(&s->gb, 14)<<1;
-        
-        if(s->avctx->extradata_size >= 4 && ((uint8_t*)s->avctx->extradata)[1]&1){
-            f1= get_bits(&s->gb, 1);
-        }
-        if(s->avctx->extradata_size >= 4 && ((uint8_t*)s->avctx->extradata)[1]&2){
-            f2= get_bits(&s->gb, 1);
-        }
-        if(s->avctx->extradata_size >= 4 && ((uint8_t*)s->avctx->extradata)[1]&4){
-            f3= get_bits(&s->gb, 2);
+
+        if(v>1){
+            f= get_bits(&s->gb, av_log2(v-1)+1);
         }
         
         if(s->avctx->debug & FF_DEBUG_PICT_INFO){
-            av_log(s->avctx, AV_LOG_DEBUG, "F %d %d %d\n", f1,f2,f3);            
+            av_log(s->avctx, AV_LOG_DEBUG, "F %d\n", f);
         }
 
         mb_pos= get_bits(&s->gb, av_log2(s->mb_num-1)+1);
