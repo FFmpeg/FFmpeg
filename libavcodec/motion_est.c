@@ -238,6 +238,13 @@ static inline int get_penalty_factor(MpegEncContext *s, int type){
     }
 }
 
+static int zero_cmp(void *s, uint8_t *a, uint8_t *b, int stride, int h){
+    return 0;
+}
+
+static void zero_hpel(uint8_t *a, const uint8_t *b, int stride, int h){
+}
+
 void ff_init_me(MpegEncContext *s){
     MotionEstContext * const c= &s->me;
     c->avctx= s->avctx;
@@ -266,10 +273,11 @@ void ff_init_me(MpegEncContext *s){
             c->sub_motion_search= sad_hpel_motion_search; // 2050 vs. 2450 cycles
         else
             c->sub_motion_search= hpel_motion_search;
-        c->hpel_avg= s->dsp.avg_pixels_tab;
-        if(s->no_rounding) c->hpel_put= s->dsp.put_no_rnd_pixels_tab;
-        else               c->hpel_put= s->dsp.put_pixels_tab;
     }
+    c->hpel_avg= s->dsp.avg_pixels_tab;
+    if(s->no_rounding) c->hpel_put= s->dsp.put_no_rnd_pixels_tab;
+    else               c->hpel_put= s->dsp.put_pixels_tab;
+
     if(s->linesize){
         c->stride  = s->linesize; 
         c->uvstride= s->uvlinesize;
@@ -277,6 +285,16 @@ void ff_init_me(MpegEncContext *s){
         c->stride  = 16*s->mb_width + 32;
         c->uvstride=  8*s->mb_width + 16;
     }
+
+    // 8x8 fullpel search would need a 4x4 chroma compare, which we dont have yet, and even if we had the motion estimation code doesnt expect it
+    if((c->avctx->me_cmp&FF_CMP_CHROMA) && !s->dsp.me_cmp[2]){
+        s->dsp.me_cmp[2]= zero_cmp;
+    }
+    if((c->avctx->me_sub_cmp&FF_CMP_CHROMA) && !s->dsp.me_sub_cmp[2]){
+        s->dsp.me_sub_cmp[2]= zero_cmp;
+    }
+    c->hpel_put[2][0]= c->hpel_put[2][1]=
+    c->hpel_put[2][2]= c->hpel_put[2][3]= zero_hpel;
 
     c->temp= c->scratchpad;
 }

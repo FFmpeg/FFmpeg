@@ -204,7 +204,7 @@ typedef struct DSPContext {
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    op_pixels_func put_no_rnd_pixels_tab[2][4];
+    op_pixels_func put_no_rnd_pixels_tab[4][4];
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
@@ -216,7 +216,7 @@ typedef struct DSPContext {
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
      */
-    op_pixels_func avg_no_rnd_pixels_tab[2][4];
+    op_pixels_func avg_no_rnd_pixels_tab[4][4];
     
     void (*put_no_rnd_pixels_l2[2])(uint8_t *block/*align width (8 or 16)*/, const uint8_t *a/*align 1*/, const uint8_t *b/*align 1*/, int line_size, int h);
     
