@@ -47,7 +47,7 @@
 /* debugging support */
 #define DEBUG_INTERPLAY 0
 #if DEBUG_INTERPLAY
-#define debug_interplay printf
+#define debug_interplay(x,...) av_log(NULL, AV_LOG_DEBUG, x, __VA_ARGS__)
 #else
 static inline void debug_interplay(const char *format, ...) { }
 #endif
