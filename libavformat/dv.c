@@ -908,7 +908,7 @@ static AVOutputFormat dv_oformat = {
     dv_write_trailer,
 };
 
-int dv_init(void)
+int ff_dv_init(void)
 {
     av_register_input_format(&dv_iformat);
     av_register_output_format(&dv_oformat);

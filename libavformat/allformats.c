@@ -45,7 +45,7 @@ void av_register_all(void)
     avienc_init();
 #endif //CONFIG_ENCODERS
     avidec_init();
-    wav_init();
+    ff_wav_init();
     swf_init();
     au_init();
 #ifdef CONFIG_ENCODERS
@@ -56,7 +56,7 @@ void av_register_all(void)
     movenc_init();
     jpeg_init();
 #endif //CONFIG_ENCODERS
-    dv_init();
+    ff_dv_init();
     fourxm_init();
 #ifdef CONFIG_ENCODERS
     flvenc_init();

@@ -425,7 +425,7 @@ int au_init(void);
 int amr_init(void);
 
 /* wav.c */
-int wav_init(void);
+int ff_wav_init(void);
 
 /* raw.c */
 int pcm_read_seek(AVFormatContext *s, 
@@ -442,7 +442,7 @@ int yuv4mpeg_init(void);
 int ogg_init(void);
 
 /* dv.c */
-int dv_init(void);
+int ff_dv_init(void);
 
 /* ffm.c */
 int ffm_init(void);

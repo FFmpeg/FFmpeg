@@ -376,7 +376,7 @@ static AVOutputFormat wav_oformat = {
 };
 #endif //CONFIG_ENCODERS
 
-int wav_init(void)
+int ff_wav_init(void)
 {
     av_register_input_format(&wav_iformat);
 #ifdef CONFIG_ENCODERS
