@@ -16,41 +16,42 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
-#include <semaphore.h>
-#include <pthread.h>
-
 //#define DEBUG
 
 #include "avcodec.h"
 #include "common.h"
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <process.h>
 
 typedef struct ThreadContext{
     AVCodecContext *avctx;
-    pthread_t thread;
-    sem_t work_sem;
-    sem_t done_sem;
+    HANDLE thread;
+    HANDLE work_sem;
+    HANDLE done_sem;
     int (*func)(AVCodecContext *c, void *arg);
     void *arg;
     int ret;
 }ThreadContext;
 
-static void * thread_func(void *v){
+
+static unsigned __stdcall thread_func(void *v){
     ThreadContext *c= v;
 
     for(;;){
 //printf("thread_func %X enter wait\n", (int)v); fflush(stdout);
-        sem_wait(&c->work_sem);
+        WaitForSingleObject(c->work_sem, INFINITE);
 //printf("thread_func %X after wait (func=%X)\n", (int)v, (int)c->func); fflush(stdout);
         if(c->func)
             c->ret= c->func(c->avctx, c->arg);
         else
-            return NULL;
+            return 0;
 //printf("thread_func %X signal complete\n", (int)v); fflush(stdout);
-        sem_post(&c->done_sem);
+        ReleaseSemaphore(c->done_sem, 1, 0);
     }
     
-    return NULL;
+    return 0;
 }
 
 /**
@@ -62,16 +63,12 @@ void avcodec_thread_free(AVCodecContext *s){
     int i;
 
     for(i=0; i<s->thread_count; i++){
-        int val;
         
-        sem_getvalue(&c[i].work_sem, &val); assert(val == 0);
-        sem_getvalue(&c[i].done_sem, &val); assert(val == 0);
-
         c[i].func= NULL;
-        sem_post(&c[i].work_sem);
-        pthread_join(c[i].thread, NULL);
-        sem_destroy(&c[i].work_sem);
-        sem_destroy(&c[i].done_sem);
+        ReleaseSemaphore(c[i].work_sem, 1, 0);
+        WaitForSingleObject(c[i].thread, INFINITE);
+        if(c[i].work_sem) CloseHandle(c[i].work_sem);
+        if(c[i].done_sem) CloseHandle(c[i].done_sem);
     }
 
     av_freep(&s->thread_opaque);
@@ -79,7 +76,7 @@ void avcodec_thread_free(AVCodecContext *s){
 
 int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void **arg, int *ret, int count){
     ThreadContext *c= s->thread_opaque;
-    int i, val;
+    int i;
     
     assert(s == c->avctx);
     assert(count <= s->thread_count);
@@ -87,19 +84,14 @@ int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, vo
     /* note, we can be certain that this is not called with the same AVCodecContext by different threads at the same time */
 
     for(i=0; i<count; i++){
-        sem_getvalue(&c[i].work_sem, &val); assert(val == 0);
-        sem_getvalue(&c[i].done_sem, &val); assert(val == 0);
-        
         c[i].arg= arg[i];
         c[i].func= func;
         c[i].ret= 12345;
-        sem_post(&c[i].work_sem);
+
+        ReleaseSemaphore(c[i].work_sem, 1, 0);
     }
     for(i=0; i<count; i++){
-        sem_wait(&c[i].done_sem);
-
-        sem_getvalue(&c[i].work_sem, &val); assert(val == 0);
-        sem_getvalue(&c[i].done_sem, &val); assert(val == 0);
+        WaitForSingleObject(c[i].done_sem, INFINITE);
         
         c[i].func= NULL;
         if(ret) ret[i]= c[i].ret;
@@ -110,6 +102,7 @@ int avcodec_thread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, vo
 int avcodec_thread_init(AVCodecContext *s, int thread_count){
     int i;
     ThreadContext *c;
+    uint32_t threadid;
 
     s->thread_count= thread_count;
 
@@ -120,13 +113,15 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count){
     for(i=0; i<thread_count; i++){
 //printf("init semaphors %d\n", i); fflush(stdout);
         c[i].avctx= s;
-        if(sem_init(&c[i].work_sem, 0, 0))
+
+        if(!(c[i].work_sem = CreateSemaphore(NULL, 0, s->thread_count, NULL)))
             goto fail;
-        if(sem_init(&c[i].done_sem, 0, 0))
+        if(!(c[i].done_sem = CreateSemaphore(NULL, 0, s->thread_count, NULL)))
             goto fail;
+
 //printf("create thread %d\n", i); fflush(stdout);
-        if(pthread_create(&c[i].thread, NULL, thread_func, &c[i]))
-            goto fail;
+        c[i].thread = (HANDLE)_beginthreadex(NULL, 0, thread_func, &c[i], 0, &threadid );
+        if( !c[i].thread ) goto fail;
     }
 //printf("init done\n"); fflush(stdout);
     

@@ -707,7 +707,7 @@ if (zlibVersion() != ZLIB_VERSION)
 return 0;
 }
 EOF
-$cc -o $TMPE $TMPC -lz 2> /dev/null || zlib="no"
+$cc $CFLAGS -o $TMPE $TMPC -lz 2> /dev/null || zlib="no"
 # $TMPE 2> /dev/null > /dev/null || zlib="no"
 # XXX: more tests needed - runtime test
 fi
@@ -1165,6 +1165,8 @@ fi
 if test "$mingw32" = "yes" ; then
   echo "#define CONFIG_WIN32 1" >> $TMPH
   echo "CONFIG_WIN32=yes" >> config.mak
+  echo "HAVE_W32THREADS=yes" >> config.mak
+  echo "#define HAVE_W32THREADS 1" >> $TMPH
   echo "#ifndef __MINGW32__" >> $TMPH
   echo "#define __MINGW32__ 1" >> $TMPH
   echo "#endif" >> $TMPH

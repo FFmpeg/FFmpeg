@@ -2036,7 +2036,7 @@ static void opt_sc_threshold(const char *arg)
 static void opt_thread_count(const char *arg)
 {
     thread_count= atoi(arg);
-#ifndef HAVE_PTHREADS
+#if !defined(HAVE_PTHREADS) && !defined(HAVE_W32THREADS)
     fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
 #endif
 }
@@ -2399,9 +2399,9 @@ static void opt_output_file(const char *filename)
                 exit(1);
             }
             avcodec_get_context_defaults(&st->codec);
-#ifdef HAVE_PTHREADS
+#if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
             if(thread_count>1)
-                avcodec_pthread_init(&st->codec, thread_count);
+                avcodec_thread_init(&st->codec, thread_count);
 #endif
 
             video_enc = &st->codec;
@@ -2590,9 +2590,9 @@ static void opt_output_file(const char *filename)
                 exit(1);
             }
             avcodec_get_context_defaults(&st->codec);
-#ifdef HAVE_PTHREADS
+#if defined(HAVE_PTHREADS) || defined(HAVE_W32THREADS)
             if(thread_count>1)
-                avcodec_pthread_init(&st->codec, thread_count);
+                avcodec_thread_init(&st->codec, thread_count);
 #endif
 
             audio_enc = &st->codec;
