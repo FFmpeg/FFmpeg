@@ -430,6 +430,14 @@ typedef struct SnowContext{
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independant of MpegEncContext, so this will be removed then (FIXME/XXX)
 }SnowContext;
 
+typedef struct {
+    DWTELEM *b0;
+    DWTELEM *b1;
+    DWTELEM *b2;
+    DWTELEM *b3;
+    int y;
+} dwt_compose_t;
+
 #ifdef	__sgi
 // Avoid a name clash on SGI IRIX
 #undef	qexp
@@ -1166,14 +1174,18 @@ static void vertical_compose53iL0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int wid
     }
 }
 
-static void spatial_compose53i(DWTELEM *buffer, int width, int height, int stride){
-    int y;
-    DWTELEM *b0= buffer + mirror(-1-1, height-1)*stride;
-    DWTELEM *b1= buffer + mirror(-1  , height-1)*stride;
-  
-    for(y=-1; y<=height; y+=2){
-        DWTELEM *b2= buffer + mirror(y+1, height-1)*stride;
-        DWTELEM *b3= buffer + mirror(y+2, height-1)*stride;
+static void spatial_compose53i_init(dwt_compose_t *cs, DWTELEM *buffer, int height, int stride){
+    cs->b0 = buffer + mirror(-1-1, height-1)*stride;
+    cs->b1 = buffer + mirror(-1  , height-1)*stride;
+    cs->y = -1;
+}
+
+static void spatial_compose53i_dy(dwt_compose_t *cs, DWTELEM *buffer, int width, int height, int stride){
+    int y= cs->y;
+    DWTELEM *b0= cs->b0;
+    DWTELEM *b1= cs->b1;
+    DWTELEM *b2= buffer + mirror(y+1, height-1)*stride;
+    DWTELEM *b3= buffer + mirror(y+2, height-1)*stride;
 
 {START_TIMER
         if(b1 <= b3) vertical_compose53iL0(b1, b2, b3, width);
@@ -1185,9 +1197,16 @@ STOP_TIMER("vertical_compose53i*")}
         if(b0 <= b2) horizontal_compose53i(b1, width);
 STOP_TIMER("horizontal_compose53i")}
 
-        b0=b2;
-        b1=b3;
-    }
+    cs->b0 = b2;
+    cs->b1 = b3;
+    cs->y += 2;
+}
+
+static void spatial_compose53i(DWTELEM *buffer, int width, int height, int stride){
+    dwt_compose_t cs;
+    spatial_compose53i_init(&cs, buffer, height, stride);
+    while(cs.y <= height)
+        spatial_compose53i_dy(&cs, buffer, width, height, stride);
 }   
 
  
@@ -1240,16 +1259,22 @@ static void vertical_compose97iL1(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int wid
     }
 }
 
-static void spatial_compose97i(DWTELEM *buffer, int width, int height, int stride){
-    int y;
-    DWTELEM *b0= buffer + mirror(-3-1, height-1)*stride;
-    DWTELEM *b1= buffer + mirror(-3  , height-1)*stride;
-    DWTELEM *b2= buffer + mirror(-3+1, height-1)*stride;
-    DWTELEM *b3= buffer + mirror(-3+2, height-1)*stride;
+static void spatial_compose97i_init(dwt_compose_t *cs, DWTELEM *buffer, int height, int stride){
+    cs->b0 = buffer + mirror(-3-1, height-1)*stride;
+    cs->b1 = buffer + mirror(-3  , height-1)*stride;
+    cs->b2 = buffer + mirror(-3+1, height-1)*stride;
+    cs->b3 = buffer + mirror(-3+2, height-1)*stride;
+    cs->y = -3;
+}
 
-    for(y=-3; y<=height; y+=2){
-        DWTELEM *b4= buffer + mirror(y+3, height-1)*stride;
-        DWTELEM *b5= buffer + mirror(y+4, height-1)*stride;
+static void spatial_compose97i_dy(dwt_compose_t *cs, DWTELEM *buffer, int width, int height, int stride){
+    int y = cs->y;
+    DWTELEM *b0= cs->b0;
+    DWTELEM *b1= cs->b1;
+    DWTELEM *b2= cs->b2;
+    DWTELEM *b3= cs->b3;
+    DWTELEM *b4= buffer + mirror(y+3, height-1)*stride;
+    DWTELEM *b5= buffer + mirror(y+4, height-1)*stride;
 
         if(stride == width && y+4 < height && 0){ 
             int x;
@@ -1272,23 +1297,62 @@ STOP_TIMER("vertical_compose97i")}}
         if(b0 <= b2) horizontal_compose97i(b1, width);
 if(width>400 && b0 <= b2){
 STOP_TIMER("horizontal_compose97i")}}
-        
-        b0=b2;
-        b1=b3;
-        b2=b4;
-        b3=b5;
+
+    cs->b0=b2;
+    cs->b1=b3;
+    cs->b2=b4;
+    cs->b3=b5;
+    cs->y += 2;
+}
+
+static void spatial_compose97i(DWTELEM *buffer, int width, int height, int stride){
+    dwt_compose_t cs;
+    spatial_compose97i_init(&cs, buffer, height, stride);
+    while(cs.y <= height)
+        spatial_compose97i_dy(&cs, buffer, width, height, stride);
+}
+
+void ff_spatial_idwt_init(dwt_compose_t *cs, DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
+    int level;
+    for(level=decomposition_count-1; level>=0; level--){
+        switch(type){
+        case 0: spatial_compose97i_init(cs+level, buffer, height>>level, stride<<level); break;
+        case 1: spatial_compose53i_init(cs+level, buffer, height>>level, stride<<level); break;
+        /* not slicified yet */
+        case 2: spatial_composeX(buffer, width>>level, height>>level, stride<<level); break;
+        }
+    }
+}
+
+void ff_spatial_idwt_slice(dwt_compose_t *cs, DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count, int y){
+    const int support = type==1 ? 3 : 5;
+    int level;
+    if(type==2) return;
+
+    for(level=decomposition_count-1; level>=0; level--){
+        while(cs[level].y <= FFMIN((y>>level)+support, height>>level)){
+            switch(type){
+            case 0: spatial_compose97i_dy(cs+level, buffer, width>>level, height>>level, stride<<level);
+                    break;
+            case 1: spatial_compose53i_dy(cs+level, buffer, width>>level, height>>level, stride<<level);
+                    break;
+            case 2: break;
+            }
+        }
     }
 }
 
 void ff_spatial_idwt(DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
-    int level;
-
-    for(level=decomposition_count-1; level>=0; level--){
-        switch(type){
-        case 0: spatial_compose97i(buffer, width>>level, height>>level, stride<<level); break;
-        case 1: spatial_compose53i(buffer, width>>level, height>>level, stride<<level); break;
-        case 2: spatial_composeX  (buffer, width>>level, height>>level, stride<<level); break;
-        }
+    if(type==2){
+        int level;
+        for(level=decomposition_count-1; level>=0; level--)
+            spatial_composeX  (buffer, width>>level, height>>level, stride<<level);
+    }else{
+        dwt_compose_t cs[MAX_DECOMPOSITIONS];
+        int y;
+        ff_spatial_idwt_init(cs, buffer, width, height, stride, type, decomposition_count);
+        for(y=0; y<height; y+=4)
+            ff_spatial_idwt_slice(cs, buffer, width, height, stride, type, decomposition_count, y);
     }
 }
 
@@ -2199,11 +2263,11 @@ assert(src_stride > 7*MB_SIZE);
 #endif
 }
 
-static always_inline void predict_plane(SnowContext *s, DWTELEM *buf, int plane_index, int add){
+static always_inline void predict_slice(SnowContext *s, DWTELEM *buf, int plane_index, int add, int mb_y){
     Plane *p= &s->plane[plane_index];
     const int mb_w= s->b_width  << s->block_max_depth;
     const int mb_h= s->b_height << s->block_max_depth;
-    int x, y, mb_x, mb_y;
+    int x, y, mb_x;
     int block_size = MB_SIZE >> s->block_max_depth;
     int block_w    = plane_index ? block_size/2 : block_size;
     const uint8_t *obmc  = plane_index ? obmc_tab[s->block_max_depth+1] : obmc_tab[s->block_max_depth];
@@ -2216,8 +2280,11 @@ static always_inline void predict_plane(SnowContext *s, DWTELEM *buf, int plane_
     START_TIMER
     
     if(s->keyframe || (s->avctx->debug&512)){
+        if(mb_y==mb_h)
+            return;
+
         if(add){
-            for(y=0; y<h; y++){
+            for(y=block_w*mb_y; y<block_w*(mb_y+1); y++){
                 for(x=0; x<w; x++){
                     int v= buf[x + y*w] + (128<<FRAC_BITS) + (1<<(FRAC_BITS-1));
                     v >>= FRAC_BITS;
@@ -2226,7 +2293,7 @@ static always_inline void predict_plane(SnowContext *s, DWTELEM *buf, int plane_
                 }
             }
         }else{
-            for(y=0; y<h; y++){
+            for(y=block_w*mb_y; y<block_w*(mb_y+1); y++){
                 for(x=0; x<w; x++){
                     buf[x + y*w]-= 128<<FRAC_BITS;
                 }
@@ -2236,7 +2303,6 @@ static always_inline void predict_plane(SnowContext *s, DWTELEM *buf, int plane_
         return;
     }
     
-    for(mb_y=0; mb_y<=mb_h; mb_y++){
         for(mb_x=0; mb_x<=mb_w; mb_x++){
             START_TIMER
 
@@ -2251,9 +2317,15 @@ static always_inline void predict_plane(SnowContext *s, DWTELEM *buf, int plane_
             
             STOP_TIMER("add_yblock")
         }
-    }
     
-    STOP_TIMER("predict_plane")
+    STOP_TIMER("predict_slice")
+}
+
+static always_inline void predict_plane(SnowContext *s, DWTELEM *buf, int plane_index, int add){
+    const int mb_h= s->b_height << s->block_max_depth;
+    int mb_y;
+    for(mb_y=0; mb_y<=mb_h; mb_y++)
+        predict_slice(s, buf, plane_index, add, mb_y);
 }
 
 static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int bias){
@@ -2956,17 +3028,31 @@ if(s->avctx->debug&2048){
             }
         }
 
-        ff_spatial_idwt(s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
+{START_TIMER
+    const int mb_h= s->b_height << s->block_max_depth;
+    const int block_size = MB_SIZE >> s->block_max_depth;
+    const int block_w    = plane_index ? block_size/2 : block_size;
+    int mb_y;
+    dwt_compose_t cs[MAX_DECOMPOSITIONS];
+    int yd=0, yq=0;
+
+    ff_spatial_idwt_init(cs, s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count);
+    for(mb_y=0; mb_y<=mb_h; mb_y++){
+        const int slice_h = block_w*(mb_y+1);
+        for(; yd<slice_h; yd+=4)
+            ff_spatial_idwt_slice(cs, s->spatial_dwt_buffer, w, h, w, s->spatial_decomposition_type, s->spatial_decomposition_count, yd);
+
         if(s->qlog == LOSSLESS_QLOG){
-            for(y=0; y<h; y++){
+            for(; yq<slice_h && yq<h; yq++){
                 for(x=0; x<w; x++){
-                    s->spatial_dwt_buffer[y*w + x]<<=FRAC_BITS;
+                    s->spatial_dwt_buffer[yq*w + x]<<=FRAC_BITS;
                 }
             }
         }
-{START_TIMER
-        predict_plane(s, s->spatial_dwt_buffer, plane_index, 1);
-STOP_TIMER("predict_plane conv2")}
+
+        predict_slice(s, s->spatial_dwt_buffer, plane_index, 1, mb_y);
+    }
+STOP_TIMER("idwt + predict_slices")}
     }
             
     emms_c();
