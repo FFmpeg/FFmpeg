@@ -136,6 +136,8 @@ static VLC vc9_bfraction_vlc;
 static VLC vc9_imode_vlc;
 #define VC9_NORM2_VLC_BITS 3
 static VLC vc9_norm2_vlc;
+#define VC9_NORM6_VLC_BITS 9
+static VLC vc9_norm6_vlc;
 /* Could be optimized, one table only needs 8 bits */
 #define VC9_TTMB_VLC_BITS 12
 static VLC vc9_ttmb_vlc[3];
@@ -281,6 +283,18 @@ static int init_common(VC9Context *v)
     v->ac_pred_plane = v->over_flags_plane = NULL;
     v->hrd_rate = v->hrd_buffer = NULL;
 #endif
+#if 0 // spec -> actual tables converter
+    for(i=0; i<64; i++){
+        int code= (vc9_norm6_spec[i][1] << vc9_norm6_spec[i][4]) + vc9_norm6_spec[i][3];
+        av_log(NULL, AV_LOG_DEBUG, "0x%03X, ", code);
+        if(i%16==15) av_log(NULL, AV_LOG_DEBUG, "\n");
+    }
+    for(i=0; i<64; i++){
+        int code= vc9_norm6_spec[i][2] + vc9_norm6_spec[i][4];
+        av_log(NULL, AV_LOG_DEBUG, "%2d, ", code);
+        if(i%16==15) av_log(NULL, AV_LOG_DEBUG, "\n");
+    }
+#endif
     if(!done)
     {
         done = 1;
@@ -290,6 +304,9 @@ static int init_common(VC9Context *v)
         INIT_VLC(&vc9_norm2_vlc, VC9_NORM2_VLC_BITS, 4,
                  vc9_norm2_bits, 1, 1,
                  vc9_norm2_codes, 1, 1, 1);
+        INIT_VLC(&vc9_norm6_vlc, VC9_NORM6_VLC_BITS, 64,
+                 vc9_norm6_bits, 1, 1,
+                 vc9_norm6_codes, 2, 2, 1);
         INIT_VLC(&vc9_cbpcy_i_vlc, VC9_CBPCY_I_VLC_BITS, 64,
                  vc9_cbpcy_i_bits, 1, 1,
                  vc9_cbpcy_i_codes, 2, 2, 1);
@@ -712,6 +729,7 @@ static void decode_rowskip(uint8_t* plane, int width, int height, int stride, VC
     }
 }
 
+//FIXME optimize
 static void decode_colskip(uint8_t* plane, int width, int height, int stride, VC9Context *v){
     int x, y;
 
@@ -730,7 +748,7 @@ static void decode_colskip(uint8_t* plane, int width, int height, int stride, VC
 //FIXME is this supposed to set elements to 0/FF or 0/1?
 static int bitplane_decoding(uint8_t* plane, int width, int height, VC9Context *v)
 {
-    int imode, x, y, i, code, use_vertical_tile;
+    int imode, x, y, i, code, use_vertical_tile, tile_w, tile_h;
     uint8_t invert, *planep = plane;
     int stride= width;
 
@@ -763,18 +781,39 @@ static int bitplane_decoding(uint8_t* plane, int width, int height, VC9Context *
     case IMODE_DIFF6:
     case IMODE_NORM6:
         use_vertical_tile= height%3==0 && width%3!=0;
-        if(use_vertical_tile){
-        }else{
+        tile_w= use_vertical_tile ? 2 : 3;
+        tile_h= use_vertical_tile ? 3 : 2;
+
+        for(y= height%tile_h; y<height; y+=tile_h){
+            for(x= width%tile_w; x<width; x+=tile_w){
+                code = get_vlc2(&v->gb, vc9_norm6_vlc.table, VC9_NORM6_VLC_BITS, 2);
+                //FIXME following is a pure guess and probably wrong
+                planep[x     + 0*stride]= (code>>0)&1;
+                planep[x + 1 + 0*stride]= (code>>1)&1;
+                if(use_vertical_tile){
+                    planep[x + 0 + 1*stride]= (code>>2)&1;
+                    planep[x + 1 + 1*stride]= (code>>3)&1;
+                    planep[x + 0 + 2*stride]= (code>>4)&1;
+                    planep[x + 1 + 2*stride]= (code>>5)&1;
+                }else{
+                    planep[x + 2 + 0*stride]= (code>>2)&1;
+                    planep[x + 0 + 1*stride]= (code>>3)&1;
+                    planep[x + 1 + 1*stride]= (code>>4)&1;
+                    planep[x + 2 + 1*stride]= (code>>5)&1;
+                }
+            }
         }
-        
-        av_log(v->avctx, AV_LOG_ERROR, "Imode using Norm-6 isn't supported\n");
-        return -1;
+
+        x= width % tile_w;
+        decode_colskip(plane  ,         x, height         , stride, v);
+        decode_rowskip(plane+x, width - x, height % tile_h, stride, v);
+
         break;
     case IMODE_ROWSKIP:
         decode_rowskip(plane, width, height, stride, v);
         break;
     case IMODE_COLSKIP: //Teh ugly
-        decode_rowskip(plane, width, height, stride, v);
+        decode_colskip(plane, width, height, stride, v);
         break;
     default: break;
     }
