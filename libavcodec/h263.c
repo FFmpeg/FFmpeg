@@ -686,8 +686,8 @@ void h263_encode_init(MpegEncContext *s)
     }
     s->mv_penalty= mv_penalty;
     
-    // use fcodes >1 only for mpeg4 FIXME
-    if(!s->h263_msmpeg4 && s->h263_pred) s->fcode_tab= fcode_tab;
+    // use fcodes >1 only for mpeg4&h263 FIXME
+    if(!s->h263_msmpeg4) s->fcode_tab= fcode_tab;
 }
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
