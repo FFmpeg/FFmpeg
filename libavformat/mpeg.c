@@ -346,7 +346,7 @@ static int get_packet_payload_size(AVFormatContext *ctx, int stream_index,
     if (s->is_mpeg2)
         buf_index += 3;
     if (pts != AV_NOPTS_VALUE) {
-        if (dts != AV_NOPTS_VALUE)
+        if (dts != pts)
             buf_index += 5 + 5;
         else
             buf_index += 5;
@@ -410,7 +410,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
         header_len = 0;
     }
     if (pts != AV_NOPTS_VALUE) {
-        if (dts != AV_NOPTS_VALUE)
+        if (dts != pts)
             header_len += 5 + 5;
         else
             header_len += 5;
@@ -444,7 +444,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
         put_byte(&ctx->pb, 0x80); /* mpeg2 id */
 
         if (pts != AV_NOPTS_VALUE) {
-            if (dts != AV_NOPTS_VALUE) {
+            if (dts != pts) {
                 put_byte(&ctx->pb, 0xc0); /* flags */
                 put_byte(&ctx->pb, header_len - 3);
                 put_timestamp(&ctx->pb, 0x03, pts);
@@ -460,7 +460,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
         }
     } else {
         if (pts != AV_NOPTS_VALUE) {
-            if (dts != AV_NOPTS_VALUE) {
+            if (dts != pts) {
                 put_timestamp(&ctx->pb, 0x03, pts);
                 put_timestamp(&ctx->pb, 0x01, dts);
             } else {
@@ -497,14 +497,61 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
     stream->frame_start_offset = 0;
 }
 
+/* XXX: move that to upper layer */
+/* XXX: we assume that there are always 'max_b_frames' between
+   reference frames. A better solution would be to use the AVFrame pts
+   field */
+static void compute_pts_dts(AVStream *st, int64_t *ppts, int64_t *pdts, 
+                            int64_t timestamp)
+{
+    int frame_delay;
+    int64_t pts, dts;
+
+    if (st->codec.codec_type == CODEC_TYPE_VIDEO && 
+        st->codec.max_b_frames != 0) {
+        frame_delay = (st->codec.frame_rate_base * 90000LL) / 
+            st->codec.frame_rate;
+        if (timestamp == 0) {
+            /* specific case for first frame : DTS just before */
+            pts = timestamp;
+            dts = timestamp - frame_delay;
+        } else {
+            timestamp -= frame_delay;
+            if (st->codec.coded_frame->pict_type == FF_B_TYPE) {
+                /* B frames has identical pts/dts */
+                pts = timestamp;
+                dts = timestamp;
+            } else {
+                /* a reference frame has a pts equal to the dts of the
+                   _next_ one */
+                dts = timestamp;
+                pts = timestamp + (st->codec.max_b_frames + 1) * frame_delay;
+            }
+        }
+#if 1
+        printf("pts=%0.3f dts=%0.3f pict_type=%c\n", 
+               pts / 90000.0, dts / 90000.0, 
+               av_get_pict_type_char(st->codec.coded_frame->pict_type));
+#endif
+    } else {
+        pts = timestamp;
+        dts = timestamp;
+    }
+    *ppts = pts & ((1LL << 33) - 1);
+    *pdts = dts & ((1LL << 33) - 1);
+}
+
 static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
-                                 const uint8_t *buf, int size, int64_t pts)
+                                 const uint8_t *buf, int size, 
+                                 int64_t timestamp)
 {
     MpegMuxContext *s = ctx->priv_data;
     AVStream *st = ctx->streams[stream_index];
     StreamInfo *stream = st->priv_data;
-    int64_t dts, new_start_pts, new_start_dts;
+    int64_t pts, dts, new_start_pts, new_start_dts;
     int len, avail_size;
+
+    compute_pts_dts(st, &pts, &dts, timestamp);
 
     /* XXX: system clock should be computed precisely, especially for
        CBR case. The current mode gives at least something coherent */
@@ -512,13 +559,13 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
         s->last_scr = pts;
     
 #if 0
-    printf("%d: pts=%0.3f scr=%0.3f\n", 
-           stream_index, pts / 90000.0, s->last_scr / 90000.0);
+    printf("%d: pts=%0.3f dts=%0.3f scr=%0.3f\n", 
+           stream_index, 
+           pts / 90000.0, 
+           dts / 90000.0, 
+           s->last_scr / 90000.0);
 #endif
     
-    /* XXX: currently no way to pass dts, will change soon */
-    dts = AV_NOPTS_VALUE;
-
     /* we assume here that pts != AV_NOPTS_VALUE */
     new_start_pts = stream->start_pts;
     new_start_dts = stream->start_dts;
