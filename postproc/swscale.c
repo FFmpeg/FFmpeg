@@ -1275,36 +1275,26 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		char *dither= "";
 #endif
 		if(flags&SWS_FAST_BILINEAR)
-			fprintf(stderr, "\nSwScaler: FAST_BILINEAR scaler ");
+			fprintf(stderr, "\nSwScaler: FAST_BILINEAR scaler, ");
 		else if(flags&SWS_BILINEAR)
-			fprintf(stderr, "\nSwScaler: BILINEAR scaler ");
+			fprintf(stderr, "\nSwScaler: BILINEAR scaler, ");
 		else if(flags&SWS_BICUBIC)
-			fprintf(stderr, "\nSwScaler: BICUBIC scaler ");
+			fprintf(stderr, "\nSwScaler: BICUBIC scaler, ");
 		else if(flags&SWS_X)
-			fprintf(stderr, "\nSwScaler: Experimental scaler ");
+			fprintf(stderr, "\nSwScaler: Experimental scaler, ");
 		else if(flags&SWS_POINT)
-			fprintf(stderr, "\nSwScaler: Nearest Neighbor / POINT scaler ");
+			fprintf(stderr, "\nSwScaler: Nearest Neighbor / POINT scaler, ");
 		else if(flags&SWS_AREA)
-			fprintf(stderr, "\nSwScaler: Area Averageing scaler ");
+			fprintf(stderr, "\nSwScaler: Area Averageing scaler, ");
 		else
 			fprintf(stderr, "\nSwScaler: ehh flags invalid?! ");
 
-		if(dstFormat==IMGFMT_BGR15)
-			fprintf(stderr, "with%s BGR15 output ", dither);
-		else if(dstFormat==IMGFMT_BGR16)
-			fprintf(stderr, "with%s BGR16 output ", dither);
-		else if(dstFormat==IMGFMT_BGR24)
-			fprintf(stderr, "with BGR24 output ");
-		else if(dstFormat==IMGFMT_BGR32)
-			fprintf(stderr, "with BGR32 output ");
-		else if(dstFormat==IMGFMT_YV12)
-			fprintf(stderr, "with YV12 output ");
-		else if(dstFormat==IMGFMT_I420)
-			fprintf(stderr, "with I420 output ");
-		else if(dstFormat==IMGFMT_IYUV)
-			fprintf(stderr, "with IYUV output ");
+		if(dstFormat==IMGFMT_BGR15 || dstFormat==IMGFMT_BGR16)
+			fprintf(stderr, "from %s to%s %s ", 
+				vo_format_name(srcFormat), dither, vo_format_name(dstFormat));
 		else
-			fprintf(stderr, "without output ");
+			fprintf(stderr, "from %s to %s ", 
+				vo_format_name(srcFormat), vo_format_name(dstFormat));
 
 		if(cpuCaps.hasMMX2)
 			fprintf(stderr, "using MMX2\n");
