@@ -9,6 +9,7 @@
 #endif
 
 //#define ALT_BITSTREAM_WRITER
+//#define ALIGNED_BITSTREAM_WRITER
 //#define ALT_BITSTREAM_READER
 //#define ALIGNED_BITSTREAM
 #define FAST_GET_FIRST_VLC
@@ -238,8 +239,40 @@ static inline uint32_t unaligned32(const void *v) {
 #endif //!ARCH_X86
 
 #ifdef ALT_BITSTREAM_WRITER
-static inline void put_bits(PutBitContext *s, int n, int value)
+static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 {
+#ifdef ALIGNED_BITSTREAM_WRITER
+#ifdef ARCH_X86
+    asm volatile(
+	"movl %0, %%ecx			\n\t"
+	"xorl %%eax, %%eax		\n\t"
+	"shrdl %%cl, %1, %%eax		\n\t"
+	"shrl %%cl, %1			\n\t"
+	"movl %0, %%ecx			\n\t"
+	"shrl $3, %%ecx			\n\t"
+	"andl $0xFFFFFFFC, %%ecx	\n\t"
+	"bswapl %1			\n\t"
+	"orl %1, (%2, %%ecx)		\n\t"
+	"bswapl %%eax			\n\t"
+	"addl %3, %0			\n\t"
+	"movl %%eax, 4(%2, %%ecx)	\n\t"
+	: "=&r" (s->index), "=&r" (value)
+	: "r" (s->buf), "r" (n), "0" (s->index), "1" (value<<(-n))
+	: "%eax", "%ecx"
+    );
+#else
+    int index= s->index;
+    uint32_t *ptr= ((uint32_t *)s->buf)+(index>>5);
+    
+    value<<= 32-n; 
+    
+    ptr[0] |= be2me_32(value>>(index&31));
+    ptr[1]  = be2me_32(value<<(32-(index&31)));
+//if(n>24) printf("%d %d\n", n, value);
+    index+= n;
+    s->index= index;
+#endif
+#else //ALIGNED_BITSTREAM_WRITER
 #ifdef ARCH_X86
     asm volatile(
 	"movl $7, %%ecx			\n\t"
@@ -267,6 +300,7 @@ static inline void put_bits(PutBitContext *s, int n, int value)
     index+= n;
     s->index= index;
 #endif
+#endif //!ALIGNED_BITSTREAM_WRITER
 }
 #endif
 
