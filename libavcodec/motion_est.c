@@ -846,7 +846,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
             uint8_t *dest_y = s->me.scratchpad + offset;
 
             if(s->quarter_sample){
-                uint8_t *ref= ref_data[0] + (mx4>>2) + (my4>>2)*stride + offset;
+                uint8_t *ref= ref_data[0] + (mx4>>2) + (my4>>2)*stride;
                 dxy = ((my4 & 3) << 2) | (mx4 & 3);
 
                 if(s->no_rounding)
@@ -854,7 +854,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
                 else
                     s->dsp.put_qpel_pixels_tab       [1][dxy](dest_y   , ref    , stride);
             }else{
-                uint8_t *ref= ref_data[0] + (mx4>>1) + (my4>>1)*stride + offset;
+                uint8_t *ref= ref_data[0] + (mx4>>1) + (my4>>1)*stride;
                 dxy = ((my4 & 1) << 1) | (mx4 & 1);
 
                 if(s->no_rounding)
