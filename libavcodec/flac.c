@@ -753,7 +753,6 @@ static int flac_decode_close(AVCodecContext *avctx)
 }
 
 static void flac_flush(AVCodecContext *avctx){
-    int i;
     FLACContext *s = avctx->priv_data;
 
     s->bitstream_size=

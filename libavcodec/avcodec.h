@@ -1895,6 +1895,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
 
 void avcodec_get_context_defaults(AVCodecContext *s);
 AVCodecContext *avcodec_alloc_context(void);
+void avcodec_get_frame_defaults(AVFrame *pic);
 AVFrame *avcodec_alloc_frame(void);
 
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);

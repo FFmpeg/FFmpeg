@@ -242,7 +242,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
 {
         unsigned int vbv_buffer_size;
         unsigned int fps, v;
-        int n, i;
+        int i;
         uint64_t time_code;
         float best_aspect_error= 1E10;
         float aspect_ratio= av_q2d(s->avctx->sample_aspect_ratio);
@@ -954,7 +954,7 @@ static VLC mb_ptype_vlc;
 static VLC mb_btype_vlc;
 static VLC mb_pat_vlc;
 
-static void init_vlcs()
+static void init_vlcs(void)
 {
     static int done = 0;
 
@@ -2821,7 +2821,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         input_size = buf_end - buf_ptr;
 
         if(avctx->debug & FF_DEBUG_STARTCODE){
-            av_log(avctx, AV_LOG_DEBUG, "%3X at %d left %d\n", start_code, buf_ptr-buf, input_size);
+            av_log(avctx, AV_LOG_DEBUG, "%3X at %zd left %d\n", start_code, buf_ptr-buf, input_size);
         }
 
                 /* prepare data for next start code */

@@ -927,7 +927,7 @@ ebml_read_header (MatroskaDemuxContext *matroska,
                     return res;
                 if (num > sizeof(uint32_t)) {
                     av_log(matroska->ctx, AV_LOG_ERROR,
-                           "IDs of size %llu (> %d) not supported\n",
+                           "IDs of size %llu (> %zu) not supported\n",
 			    num, sizeof(uint32_t));
                     return AVERROR_INVALIDDATA;
                 }

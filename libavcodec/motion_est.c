@@ -774,10 +774,6 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
     int same=1;
     const int stride= s->linesize;
     const int uvstride= s->uvlinesize;
-    const int xmin= s->me.xmin;
-    const int ymin= s->me.ymin;
-    const int xmax= s->me.xmax;
-    const int ymax= s->me.ymax;
 
     for(block=0; block<4; block++){
         int mx4, my4;

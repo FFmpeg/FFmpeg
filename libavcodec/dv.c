@@ -113,7 +113,7 @@ static int dvvideo_init(AVCodecContext *avctx)
 	    return -ENOMEM;
 	}
 	for (i=0; i<12*27; i++)
-	    (int)dv_anchor[i] = i;
+	    dv_anchor[i] = (void*)(size_t)i;
 	
         /* NOTE: as a trick, we use the fact the no codes are unused
            to accelerate the parsing of partial codes */
@@ -896,7 +896,7 @@ static inline void dv_encode_video_segment(DVVideoContext *s,
 static int dv_decode_mt(AVCodecContext *avctx, void* sl)
 {
     DVVideoContext *s = avctx->priv_data;
-    int slice = (int)sl;
+    int slice = (size_t)sl;
     dv_decode_video_segment(s, &s->buf[((slice/27)*6+(slice/3)+slice*5+7)*80],
 	                    &s->sys->video_place[slice*5]);
     return 0;
@@ -905,7 +905,7 @@ static int dv_decode_mt(AVCodecContext *avctx, void* sl)
 static int dv_encode_mt(AVCodecContext *avctx, void* sl)
 {
     DVVideoContext *s = avctx->priv_data;
-    int slice = (int)sl;
+    int slice = (size_t)sl;
     dv_encode_video_segment(s, &s->buf[((slice/27)*6+(slice/3)+slice*5+7)*80],
 	                    &s->sys->video_place[slice*5]);
     return 0;

@@ -3382,7 +3382,6 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     int dct_offset   = s->linesize*8; //default for progressive frames
     uint8_t *ptr_y, *ptr_cb, *ptr_cr;
     int wrap_y, wrap_c;
-    int emu=0;
     
     for(i=0; i<6; i++) skip_dct[i]=0;
     
@@ -4580,7 +4579,6 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
 
 static void encode_picture(MpegEncContext *s, int picture_number)
 {
-    int mb_x, mb_y;
     int i, j;
     int bits;
 
@@ -5141,7 +5139,6 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
     int prev_run=0;
     int prev_level=0;
     int qmul, qadd, start_i, last_non_zero, i, dc;
-    const int esc_length= s->ac_esc_length;
     uint8_t * length;
     uint8_t * last_length;
     int lambda;
@@ -5249,7 +5246,6 @@ STOP_TIMER("init rem[]")
 #endif
     for(;;){
         int best_score=s->dsp.try_8x8basis(rem, weight, basis[0], 0);
-        int nochange_score= best_score;
         int best_coeff=0;
         int best_change=0;
         int run2, best_unquant_change, analyze_gradient;

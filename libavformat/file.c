@@ -50,26 +50,26 @@ static int file_open(URLContext *h, const char *filename, int flags)
     fd = open(filename, access, 0666);
     if (fd < 0)
         return -ENOENT;
-    h->priv_data = (void *)fd;
+    h->priv_data = (void *)(size_t)fd;
     return 0;
 }
 
 static int file_read(URLContext *h, unsigned char *buf, int size)
 {
-    int fd = (int)h->priv_data;
+    int fd = (size_t)h->priv_data;
     return read(fd, buf, size);
 }
 
 static int file_write(URLContext *h, unsigned char *buf, int size)
 {
-    int fd = (int)h->priv_data;
+    int fd = (size_t)h->priv_data;
     return write(fd, buf, size);
 }
 
 /* XXX: use llseek */
 static offset_t file_seek(URLContext *h, offset_t pos, int whence)
 {
-    int fd = (int)h->priv_data;
+    int fd = (size_t)h->priv_data;
 #ifdef CONFIG_WIN32
     return _lseeki64(fd, pos, whence);
 #else
@@ -79,7 +79,7 @@ static offset_t file_seek(URLContext *h, offset_t pos, int whence)
 
 static int file_close(URLContext *h)
 {
-    int fd = (int)h->priv_data;
+    int fd = (size_t)h->priv_data;
     return close(fd);
 }
 
@@ -106,19 +106,19 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
 #if defined(CONFIG_WIN32) || defined(CONFIG_OS2) || defined(__CYGWIN__)
     setmode(fd, O_BINARY);
 #endif
-    h->priv_data = (void *)fd;
+    h->priv_data = (void *)(size_t)fd;
     return 0;
 }
 
 static int pipe_read(URLContext *h, unsigned char *buf, int size)
 {
-    int fd = (int)h->priv_data;
+    int fd = (size_t)h->priv_data;
     return read(fd, buf, size);
 }
 
 static int pipe_write(URLContext *h, unsigned char *buf, int size)
 {
-    int fd = (int)h->priv_data;
+    int fd = (size_t)h->priv_data;
     return write(fd, buf, size);
 }
 

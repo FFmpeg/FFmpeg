@@ -855,7 +855,7 @@ if test "$sdl" = "no" ; then
 fi
 
 if test "$debug" = "yes"; then
-	CFLAGS="$CFLAGS -g"
+	CFLAGS="-g $CFLAGS"
 fi
 
 if test "$optimize" = "small"; then
@@ -868,7 +868,7 @@ if test "$optimize" = "yes"; then
 	CFLAGS="$CFLAGS -O5"
 	LDFLAGS="$LDFLAGS -O5"
     else
-	CFLAGS="$CFLAGS -O3"
+	CFLAGS="-O3 $CFLAGS"
     fi
 fi
 

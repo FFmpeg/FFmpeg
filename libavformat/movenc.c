@@ -917,7 +917,7 @@ static int mov_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int Timestamp() {
+static int Timestamp(void) {
     return 1067949799U+(24107*86400); //its the modification time of this line :)
 }
 

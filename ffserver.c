@@ -1468,7 +1468,7 @@ static int http_parse_request(HTTPContext *c)
                 if (eol) {
                     if (eol[-1] == '\r')
                         eol--;
-                    http_log("%.*s\n", eol - logline, logline);
+                    http_log("%.*s\n", (int) (eol - logline), logline);
                     c->suppress_log = 1;
                 }
             }
