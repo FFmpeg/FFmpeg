@@ -1,14 +1,14 @@
 ffmpeg regression test
-012eb1df53ff058bc57f47e2cb874499  ./data/a-mpeg1.mpg
-9eba9a89fc5cb1174ba10bd8ff5d4e3c  ./data/out.yuv
-cb91e4a7c5b7822a2987f36e69964403  ./data/a-msmpeg4.avi
-c41fd27651747a87f15a8d01182d7b47  ./data/out.yuv
-c45b13880a150a8c26fb462eaff5a328  ./data/a-h263.avi
-4d77d1d14da7301385f6d04475a51514  ./data/out.yuv
-a291b9bdb947a9f96138c60c0f28b32c  ./data/a-odivx.avi
-66eb9a9eb4cde9cb5b92e488ce33ce5e  ./data/out.yuv
-74d1a30e68d4a742c070be92081e0593  ./data/a-mjpeg.avi
-6551ec4dea416fa3e8f3538d206f236f  ./data/out.yuv
+6c8b6ee8dd9c34f58908fe501d7dbe1e  ./data/a-mpeg1.mpg
+59a66b108e8bbd3867c4ee27f4bbe2ca  ./data/out.yuv
+297793ed0fd5793182a92e63ffd764af  ./data/a-msmpeg4.avi
+951aa2df4ef4c1eeee3ccc8904de8e48  ./data/out.yuv
+abe11239875a32f00fa2910828bba4fb  ./data/a-h263.avi
+c1f6c8ee7a24d8345deddf1a24ca3756  ./data/out.yuv
+19e3dec27e59e62abb588d3d6fccabb5  ./data/a-odivx.avi
+145c98a175e760f8ba1997edf15b2964  ./data/out.yuv
+f6cce3af628f2bd11e67d864b59bff87  ./data/a-mjpeg.avi
+278033451d7a6bfeb8339abbe4228499  ./data/out.yuv
 21f8ff9f1daacd9133683bb4ea0f50a4  ./data/a-mp2.mp2
 116d1290ba1b4eb98fdee52e423417b1  ./data/out.wav
 048b9c3444c788bac6ce5cc3a8f4db00  ./data/a-ac3.rm

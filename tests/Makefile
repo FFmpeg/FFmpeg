@@ -6,7 +6,13 @@ include ../config.mak
 
 VPATH=$(SRC_PATH)/tests
 CFLAGS=-O2 -Wall -g
+
+ifeq ($(TARGET_MMX),yes)
+REFFILE=$(SRC_PATH)/tests/ffmpeg.regression.ref.mmx
+else
 REFFILE=$(SRC_PATH)/tests/ffmpeg.regression.ref
+endif
+
 LIBAV_REFFILE=$(SRC_PATH)/tests/libav.regression.ref
 
 all: test
