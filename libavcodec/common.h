@@ -1,7 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#define FFMPEG_VERSION "0.4.5"
+#define FFMPEG_VERSION_INT 0x000405
+#define FFMPEG_VERSION     "0.4.5"
 
 #ifdef WIN32
 #define CONFIG_WIN32
@@ -297,7 +298,7 @@ void print_stats(void);
 
 /* misc math functions */
 
-extern inline int log2(unsigned int v)
+extern inline int av_log2(unsigned int v)
 {
     int n;
 
