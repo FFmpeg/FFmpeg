@@ -1282,7 +1282,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
         s->last_bitoffset = pos & 7;
         pos >>= 3;
         len = buf_size - pos;
-        if (len > MAX_CODED_SUPERFRAME_SIZE) {
+        if (len > MAX_CODED_SUPERFRAME_SIZE || len < 0) {
             return -1;
         }
         s->last_superframe_len = len;
