@@ -381,7 +381,9 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 extern int mm_flags;
 
 #if defined(HAVE_ALTIVEC) && !defined(CONFIG_DARWIN)
+#define pixel altivec_pixel
 #include <altivec.h>
+#undef pixel
 #endif
 
 #define __align8 __attribute__ ((aligned (16)))
