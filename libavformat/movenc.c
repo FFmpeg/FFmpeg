@@ -30,6 +30,8 @@
 #define MODE_MP4 0
 #define MODE_MOV 1
 #define MODE_3GP 2
+#define MODE_PSP 3 // example working PSP command line: 
+// ffmpeg -i testinput.avi  -f psp -r 14.985 -s 320x240 -b 768 -ar 24000 -ab 32 M4V00001.MP4
 
 typedef struct MOVIentry {
     unsigned int flags, pos, size;
@@ -57,7 +59,7 @@ typedef struct MOVIndex {
     MOVIentry** cluster;
 } MOVTrack;
 
-typedef struct {
+typedef struct MOVContext {
     int     mode;
     long    time;
     int     nb_streams;
@@ -395,6 +397,28 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
 {
     int decoderSpecificInfoLen = track->vosLen ? descrLength(track->vosLen):0;
     int pos = url_ftell(pb);
+    void *vosDataBackup=track->vosData;
+    int vosLenBackup=track->vosLen;
+    
+    // we should be able to have these passed in, via vosData, then we wouldn't need to attack this routine at all
+    static const char PSPAACData[]={0x13,0x10};
+    static const char PSPMP4Data[]={0x00,0x00,0x01,0xB0,0x03,0x00,0x00,0x01,0xB5,0x09,0x00,0x00,0x01,0x00,0x00,0x00,0x01,0x20,0x00,0x84,0x5D,0x4C,0x28,0x50,0x20,0xF0,0xA3,0x1F };
+    
+    
+    if (track->mode == MODE_PSP)  // fails on psp if this is not here
+    {
+        if (track->enc->codec_id == CODEC_ID_AAC)
+        {
+            track->vosLen = 2;
+            track->vosData = PSPAACData;
+        }
+
+        if (track->enc->codec_id == CODEC_ID_MPEG4)
+        {
+            track->vosLen = 28;
+            track->vosData = PSPMP4Data;
+        }
+    }
 
     put_be32(pb, 0);               // size
     put_tag(pb, "esds");
@@ -423,8 +447,8 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     put_be16(pb, 0x0dd2);          // Buffersize DB
 
     // TODO: find real values for these
-    put_be32(pb, 0x0002e918);     // maxbitrate
-    put_be32(pb, 0x00017e6b);     // avg bitrate
+    put_be32(pb, track->enc->bit_rate);     // maxbitrate
+    put_be32(pb, track->enc->bit_rate);     // avg bitrate
 
     if (track->vosLen)
     {
@@ -432,6 +456,9 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
         putDescr(pb, 0x05, track->vosLen);
         put_buffer(pb, track->vosData, track->vosLen);
     }
+
+    track->vosData = vosDataBackup;
+    track->vosLen = vosLenBackup;
 
     // SL descriptor
     putDescr(pb, 0x06, 1);
@@ -711,13 +738,55 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack* track)
     return 0x5c;
 }
 
+// This box seems important for the psp playback ... without it the movie seems to hang
+static int mov_write_edts_tag(ByteIOContext *pb, MOVTrack *track)
+{
+    int64_t maxTrackLenTemp;
+    put_be32(pb, 0x24); /* size  */
+    put_tag(pb, "edts");
+    put_be32(pb, 0x1c); /* size  */
+    put_tag(pb, "elst");
+    put_be32(pb, 0x0);
+    put_be32(pb, 0x1);
+
+    maxTrackLenTemp = ((int64_t)globalTimescale*(int64_t)track->trackDuration)/(int64_t)track->timescale;
+    put_be32(pb, (long)maxTrackLenTemp); /* duration   ... doesn't seem to effect psp */
+
+    put_be32(pb, 0x0);
+    put_be32(pb, 0x00010000);
+    return 0x24;
+}
+
+// goes at the end of each track!  ... Critical for PSP playback ("Incompatible data" without it)
+static int mov_write_uuid_tag_psp(ByteIOContext *pb, MOVTrack *mov)
+{
+    put_be32(pb, 0x34); /* size ... reports as 28 in mp4box! */
+    put_tag(pb, "uuid");
+    put_tag(pb, "USMT");
+    put_be32(pb, 0x21d24fce);
+    put_be32(pb, 0xbb88695c);
+    put_be32(pb, 0xfac9c740);
+    put_be32(pb, 0x1c);     // another size here!
+    put_tag(pb, "MTDT");
+    put_be32(pb, 0x00010012);
+    put_be32(pb, 0x0a);
+    put_be32(pb, 0x55c40000);
+    put_be32(pb, 0x1);
+    put_be32(pb, 0x0);
+    return 0x34;
+}
+
 static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack* track)
 {
     int pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
     put_tag(pb, "trak");
     mov_write_tkhd_tag(pb, track);
+    if (track->mode == MODE_PSP) 
+        mov_write_edts_tag(pb, track);  // PSP Movies require edts box
     mov_write_mdia_tag(pb, track);
+    if (track->mode == MODE_PSP) 
+        mov_write_uuid_tag_psp(pb,track);  // PSP Movies require this uuid box
     return updateSize(pb, pos);
 }
 
@@ -1139,6 +1208,8 @@ int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 
     if ( mov->mode == MODE_3GP )
         put_tag(pb, "3gp4");
+    else if ( mov->mode == MODE_PSP )
+        put_tag(pb, "MSNV");
     else
         put_tag(pb, "isom");
 
@@ -1146,10 +1217,68 @@ int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 
     if ( mov->mode == MODE_3GP )
         put_tag(pb, "3gp4");
+    else if ( mov->mode == MODE_PSP )
+        put_tag(pb, "MSNV");
     else
         put_tag(pb, "mp41");
 
     return 0x14;
+}
+
+int mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
+{
+    MOVContext *mov = s->priv_data;
+    int AudioRate = s->streams[1]->codec.sample_rate;
+    int FrameRate = ((s->streams[0]->codec.frame_rate) * (0x10000))/ (s->streams[0]->codec.frame_rate_base);
+ 
+    //printf("audiorate = %d\n",AudioRate);
+    //printf("framerate = %d / %d = 0x%x\n",s->streams[0]->codec.frame_rate,s->streams[0]->codec.frame_rate_base,FrameRate);
+
+    put_be32(pb, 0x94 ); /* size */
+    put_tag(pb, "uuid");
+    put_tag(pb, "PROF");
+
+    put_be32(pb, 0x21d24fce ); /* 96 bit UUID */
+    put_be32(pb, 0xbb88695c );
+    put_be32(pb, 0xfac9c740 );
+
+    put_be32(pb, 0x0 );  /* ? */
+    put_be32(pb, 0x3 );  /* 3 sections ? */
+
+    put_be32(pb, 0x14 ); /* size */
+    put_tag(pb, "FPRF");
+    put_be32(pb, 0x0 );  /* ? */
+    put_be32(pb, 0x0 );  /* ? */
+    put_be32(pb, 0x0 );  /* ? */
+
+    put_be32(pb, 0x2c );  /* size */
+    put_tag(pb, "APRF");   /* audio */
+    put_be32(pb, 0x0 );
+    put_be32(pb, 0x2 );
+    put_tag(pb, "mp4a");
+    put_be32(pb, 0x20f );
+    put_be32(pb, 0x0 );
+    put_be32(pb, 0x40 );
+    put_be32(pb, 0x40 );
+    put_be32(pb, AudioRate ); //24000   ... audio rate?
+    put_be32(pb, 0x2 );
+
+    put_be32(pb, 0x34 );  /* size */
+    put_tag(pb, "VPRF");   /* video */
+    put_be32(pb, 0x0 );
+    put_be32(pb, 0x1 );
+    put_tag(pb, "mp4v");
+    put_be32(pb, 0x103 );
+    put_be32(pb, 0x0 );
+    put_be32(pb, 0xc0 );
+    put_be32(pb, 0xc0 );
+    put_be32(pb, FrameRate);  // was 0xefc29   
+    put_be32(pb, FrameRate );  // was 0xefc29
+    put_be16(pb, s->streams[0]->codec.width);
+    put_be16(pb, s->streams[0]->codec.height);
+    put_be32(pb, 0x010001 );
+
+    return 0x94;
 }
 
 static int mov_write_header(AVFormatContext *s)
@@ -1184,9 +1313,12 @@ static int mov_write_header(AVFormatContext *s)
     if (s->oformat != NULL) {
         if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
         else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
+        else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
 
-        if ( mov->mode == MODE_3GP || mov->mode == MODE_MP4 )
+        if ( mov->mode == MODE_3GP || mov->mode == MODE_MP4 || mov->mode == MODE_PSP )
             mov_write_ftyp_tag(pb,s);
+        if ( mov->mode == MODE_PSP )
+            mov_write_uuidprof_tag(pb,s);
     }
 
     for (i=0; i<MAX_STREAMS; i++) {
@@ -1360,10 +1492,24 @@ static AVOutputFormat mp4_oformat = {
     mov_write_trailer,
 };
 
+static AVOutputFormat psp_oformat = {
+    "psp",
+    "psp mp4 format",
+    NULL,
+    "mp4,psp",
+    sizeof(MOVContext),
+    CODEC_ID_AAC,
+    CODEC_ID_MPEG4,
+    mov_write_header,
+    mov_write_packet,
+    mov_write_trailer,
+};
+
 int movenc_init(void)
 {
     av_register_output_format(&mov_oformat);
     av_register_output_format(&_3gp_oformat);
     av_register_output_format(&mp4_oformat);
+    av_register_output_format(&psp_oformat);
     return 0;
 }
