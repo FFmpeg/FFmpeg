@@ -20,6 +20,7 @@
 
 #define TESTCPU_MAIN
 #include "dsputil.h"
+//#include "../libavcodec/dsputil.c"
 #include "../libavcodec/i386/cputest.c"
 #include "../libavcodec/i386/dsputil_mmx.c"
 #undef TESTCPU_MAIN
@@ -31,22 +32,51 @@
  *
  * currently only for i386 - FIXME
  */
+
+#define PIX_FUNC_C(a) \
+    { #a "_c", a ## _c, 0 }, \
+    { #a "_mmx", a ## _mmx, MM_MMX }, \
+    { #a "_mmx2", a ## _mmx2, MM_MMXEXT | PAD }
+
+#define PIX_FUNC(a) \
+    { #a "_mmx", a ## _mmx, MM_MMX }, \
+    { #a "_3dnow", a ## _3dnow, MM_3DNOW }, \
+    { #a "_mmx2", a ## _mmx2, MM_MMXEXT | PAD }
+
+#define PIX_FUNC_MMX(a) \
+    { #a "_mmx", a ## _mmx, MM_MMX | PAD }
+
+/*
+    PIX_FUNC_C(pix_abs16x16),
+    PIX_FUNC_C(pix_abs16x16_x2),
+    PIX_FUNC_C(pix_abs16x16_y2),
+    PIX_FUNC_C(pix_abs16x16_xy2),
+    PIX_FUNC_C(pix_abs8x8),
+    PIX_FUNC_C(pix_abs8x8_x2),
+    PIX_FUNC_C(pix_abs8x8_y2),
+    PIX_FUNC_C(pix_abs8x8_xy2),
+*/
+
 static const struct pix_func {
     char* name;
     op_pixels_func func;
     int mm_flags;
 } pix_func[] = {
-    { "put_pixels_x2_mmx", put_pixels_y2_mmx, MM_MMX },
-    { "put_pixels_x2_3dnow", put_pixels_y2_3dnow, MM_3DNOW },
-    { "put_pixels_x2_mmx2", put_pixels_y2_mmx2, MM_MMXEXT | PAD },
 
-    { "put_no_rnd_pixels_x2_mmx", put_no_rnd_pixels_x2_mmx, MM_MMX },
-    { "put_no_rnd_pixels_x2_3dnow", put_no_rnd_pixels_x2_3dnow, MM_3DNOW },
-    { "put_no_rnd_pixels_x2_mmx2", put_no_rnd_pixels_x2_mmx2, MM_MMXEXT | PAD },
+    PIX_FUNC_MMX(put_pixels),
+    PIX_FUNC_MMX(put_pixels_x2),
+    PIX_FUNC_MMX(put_pixels_y2),
+    PIX_FUNC_MMX(put_pixels_xy2),
 
-    { "put_pixels_y2_mmx", put_pixels_y2_mmx, MM_MMX },
-    { "put_pixels_y2_3dnow", put_pixels_y2_3dnow, MM_3DNOW },
-    { "put_pixels_y2_mmx2", put_pixels_y2_mmx2, MM_MMXEXT | PAD },
+    PIX_FUNC(put_no_rnd_pixels_x2),
+    PIX_FUNC(put_no_rnd_pixels_y2),
+    PIX_FUNC_MMX(put_no_rnd_pixels_xy2),
+
+    PIX_FUNC(avg_pixels),
+    PIX_FUNC(avg_pixels_x2),
+    PIX_FUNC(avg_pixels_y2),
+    PIX_FUNC(avg_pixels_xy2),
+
     { 0, 0 }
 };
 
@@ -65,6 +95,8 @@ static test_speed(int step)
     const int linesize = 720;
     char empty[32768];
     char* bu =(char*)(((long)empty + 32) & ~0xf);
+
+    int sum = 0;
 
     while (pix->name)
     {
@@ -88,10 +120,13 @@ static test_speed(int step)
 	te = rdtsc();
         emms();
 	printf("% 9d\n", (int)(te - ts));
+        sum += (te - ts) / 100000;
 	if (pix->mm_flags & PAD)
             puts("");
         pix++;
     }
+
+    printf("Total sum: %d\n", sum);
 }
 
 int main(int argc, char* argv[])
