@@ -1271,7 +1271,7 @@ static int av_encode(AVFormatContext **output_files,
                 } else {
                     ost->video_resample = 1;
                     ost->video_crop = 0; // cropping is handled as part of resample
-                    if( avpicture_alloc( &ost->pict_tmp, codec->pix_fmt,
+                    if( avpicture_alloc( &ost->pict_tmp, PIX_FMT_YUV420P,
                                          codec->width, codec->height ) )
                         goto fail;
 
