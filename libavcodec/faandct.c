@@ -70,15 +70,12 @@ B6*B0, B6*B1, B6*B2, B6*B3, B6*B4, B6*B5, B6*B6, B6*B7,
 B7*B0, B7*B1, B7*B2, B7*B3, B7*B4, B7*B5, B7*B6, B7*B7,
 };
 
-void ff_faandct(DCTELEM * data)
+static always_inline void row_fdct(FLOAT temp[64], DCTELEM * data)
 {
     FLOAT tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     FLOAT tmp10, tmp11, tmp12, tmp13;
     FLOAT z1, z2, z3, z4, z5, z11, z13;
-    FLOAT temp[64];
     int i;
-
-    emms_c();
 
     for (i=0; i<8*8; i+=8) {
         tmp0= data[0 + i] + data[7 + i];
@@ -118,7 +115,20 @@ void ff_faandct(DCTELEM * data)
         temp[3 + i]= z13 - z2;
         temp[1 + i]= z11 + z4;
         temp[7 + i]= z11 - z4;
-    }
+    }    
+}
+
+void ff_faandct(DCTELEM * data)
+{
+    FLOAT tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    FLOAT tmp10, tmp11, tmp12, tmp13;
+    FLOAT z1, z2, z3, z4, z5, z11, z13;
+    FLOAT temp[64];
+    int i;
+
+    emms_c();
+
+    row_fdct(temp, data);
 
     for (i=0; i<8; i++) {
         tmp0= temp[8*0 + i] + temp[8*7 + i];
@@ -165,51 +175,13 @@ void ff_faandct248(DCTELEM * data)
 {
     FLOAT tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     FLOAT tmp10, tmp11, tmp12, tmp13;
-    FLOAT z1, z2, z3, z4, z5, z11, z13;
+    FLOAT z1;
     FLOAT temp[64];
     int i;
 
     emms_c();
 
-    for (i=0; i<8*8; i+=8) {
-        tmp0= data[0 + i] + data[7 + i];
-        tmp7= data[0 + i] - data[7 + i];
-        tmp1= data[1 + i] + data[6 + i];
-        tmp6= data[1 + i] - data[6 + i];
-        tmp2= data[2 + i] + data[5 + i];
-        tmp5= data[2 + i] - data[5 + i];
-        tmp3= data[3 + i] + data[4 + i];
-        tmp4= data[3 + i] - data[4 + i];
-        
-        tmp10= tmp0 + tmp3;
-        tmp13= tmp0 - tmp3;
-        tmp11= tmp1 + tmp2;
-        tmp12= tmp1 - tmp2;
-        
-        temp[0 + i]= tmp10 + tmp11;
-        temp[4 + i]= tmp10 - tmp11;
-        
-        z1= (tmp12 + tmp13)*A1;
-        temp[2 + i]= tmp13 + z1;
-        temp[6 + i]= tmp13 - z1;
-        
-        tmp10= tmp4 + tmp5;
-        tmp11= tmp5 + tmp6;
-        tmp12= tmp6 + tmp7;
-
-        z5= (tmp10 - tmp12) * A5;
-        z2= tmp10*A2 + z5;
-        z4= tmp12*A4 + z5;
-        z3= tmp11*A1;
-
-        z11= tmp7 + z3;
-        z13= tmp7 - z3;
-
-        temp[5 + i]= z13 + z2;
-        temp[3 + i]= z13 - z2;
-        temp[1 + i]= z11 + z4;
-        temp[7 + i]= z11 - z4;
-    }
+    row_fdct(temp, data);
 
     for (i=0; i<8; i++) {
         tmp0 = temp[8*0 + i] + temp[8*1 + i];
