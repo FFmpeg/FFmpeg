@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4703
+#define LIBAVCODEC_BUILD       4704
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -25,6 +25,9 @@ extern "C" {
 #define AV_STRINGIFY(s)	AV_TOSTRING(s)
 #define AV_TOSTRING(s) #s
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" AV_STRINGIFY(LIBAVCODEC_BUILD)
+
+#define AV_NOPTS_VALUE INT64_MIN
+#define AV_TIME_BASE 1000000
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -372,8 +375,8 @@ typedef struct AVPanScan{
     int pict_type;\
 \
     /**\
-     * presentation timestamp in micro seconds (time when frame should be shown to user)\
-     * if 0 then the frame_rate will be used as reference\
+     * presentation timestamp in AV_TIME_BASE (=micro seconds currently) (time when frame should be shown to user)\
+     * if AV_NOPTS_VALUE then the frame_rate will be used as reference\
      * - encoding: MUST be set by user\
      * - decoding: set by lavc\
      */\

@@ -2156,8 +2156,8 @@ void ff_mpeg4_stuffing(PutBitContext * pbc)
 void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
     int time_div, time_mod;
 
-    assert(s->current_picture_ptr->pts);
-    s->time= (s->current_picture_ptr->pts*s->time_increment_resolution + 500*1000)/(1000*1000);
+    assert(s->current_picture_ptr->pts != AV_NOPTS_VALUE);
+    s->time= (s->current_picture_ptr->pts*s->time_increment_resolution + AV_TIME_BASE/2)/AV_TIME_BASE;
 
     time_div= s->time/s->time_increment_resolution;
     time_mod= s->time%s->time_increment_resolution;
@@ -2179,11 +2179,10 @@ static void mpeg4_encode_gop_header(MpegEncContext * s){
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, GOP_STARTCODE);
     
-    if(s->current_picture_ptr->pts && s->reordered_input_picture[1]){
-        time= FFMIN(s->reordered_input_picture[1]->pts, s->current_picture_ptr->pts);
-        time= (time*s->time_increment_resolution + 500*1000)/(1000*1000);
-    }else
-        time= av_rescale(s->current_picture_ptr->coded_picture_number*(int64_t)s->avctx->frame_rate_base, s->time_increment_resolution, s->avctx->frame_rate);
+    time= s->current_picture_ptr->pts;
+    if(s->reordered_input_picture[1])
+        time= FFMIN(time, s->reordered_input_picture[1]->pts);
+    time= (time*s->time_increment_resolution + AV_TIME_BASE/2)/AV_TIME_BASE;
 
     seconds= time/s->time_increment_resolution;
     minutes= seconds/60; seconds %= 60;
@@ -5709,9 +5708,9 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
                            - ROUNDED_DIV(s->last_non_b_time - s->pp_time, s->t_frame))*2;
     }
     
-    s->current_picture_ptr->pts= s->time*1000LL*1000LL / s->time_increment_resolution;
+    s->current_picture_ptr->pts= s->time*(int64_t)AV_TIME_BASE / s->time_increment_resolution;
     if(s->avctx->debug&FF_DEBUG_PTS)
-        av_log(s->avctx, AV_LOG_DEBUG, "MPEG4 PTS: %f\n", s->current_picture_ptr->pts/(1000.0*1000.0));
+        av_log(s->avctx, AV_LOG_DEBUG, "MPEG4 PTS: %f\n", s->current_picture_ptr->pts/(float)AV_TIME_BASE);
     
     check_marker(gb, "before vop_coded");
     

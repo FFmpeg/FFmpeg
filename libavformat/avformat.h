@@ -27,9 +27,6 @@ extern "C" {
 #define MININT64 int64_t_C(0x8000000000000000)
 #endif
 
-#define AV_NOPTS_VALUE MININT64
-#define AV_TIME_BASE 1000000
-
 typedef struct AVPacket {
     int64_t pts; /* presentation time stamp in AV_TIME_BASE units (or
                     pts_den units in muxers or demuxers) */

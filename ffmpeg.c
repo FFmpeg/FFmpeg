@@ -650,7 +650,7 @@ static void do_video_out(AVFormatContext *s,
         } else {
             AVFrame big_picture;
             
-            memset(&big_picture, 0, sizeof(AVFrame));
+            avcodec_get_frame_defaults(&big_picture);
             *(AVPicture*)&big_picture= *final_picture;
             /* better than nothing: use input picture interlaced
                settings */
@@ -851,7 +851,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVFrame picture;
     short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
     void *buffer_to_free;
-        
+    
     if (pkt && pkt->pts != AV_NOPTS_VALUE) {
         ist->pts = pkt->pts;
     } else {
@@ -896,7 +896,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
             case CODEC_TYPE_VIDEO:
                     data_size = (ist->st->codec.width * ist->st->codec.height * 3) / 2;
                     /* XXX: allocate picture correctly */
-                    memset(&picture, 0, sizeof(picture));
+                    avcodec_get_frame_defaults(&picture);
+
                     ret = avcodec_decode_video(&ist->st->codec, 
                                                &picture, &got_picture, ptr, len);
                     ist->st->quality= picture.quality;
@@ -1009,7 +1010,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             /* no reencoding needed : output the packet directly */
                             /* force the input stream PTS */
                         
-                            memset(&avframe, 0, sizeof(AVFrame));
+                            avcodec_get_frame_defaults(&avframe);
                             ost->st->codec.coded_frame= &avframe;
                             avframe.key_frame = pkt->flags & PKT_FLAG_KEY; 
                         

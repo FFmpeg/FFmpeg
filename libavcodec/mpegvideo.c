@@ -1850,14 +1850,14 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
     copy_picture_attributes(pic, pic_arg);
     
     pic->display_picture_number= s->input_picture_number++;
-    if(pic->pts){ 
+    if(pic->pts != AV_NOPTS_VALUE){ 
         s->user_specified_pts= pic->pts;
     }else{
         if(s->user_specified_pts){
-            pic->pts= s->user_specified_pts + 1000ULL*1000ULL*s->avctx->frame_rate_base / s->avctx->frame_rate;
-            av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=0 trying to guess (%Ld)\n", pic->pts);
+            pic->pts= s->user_specified_pts + AV_TIME_BASE*(int64_t)s->avctx->frame_rate_base / s->avctx->frame_rate;
+            av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=? trying to guess (%Ld)\n", pic->pts);
         }else{
-            pic->pts= av_rescale(pic->display_picture_number*(int64_t)s->avctx->frame_rate_base, 1000*1000, s->avctx->frame_rate);
+            pic->pts= av_rescale(pic->display_picture_number*(int64_t)s->avctx->frame_rate_base, AV_TIME_BASE, s->avctx->frame_rate);
         }
     }
   }

@@ -339,6 +339,8 @@ enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, enum Pixel
 }
 
 void avcodec_get_context_defaults(AVCodecContext *s){
+    memset(s, 0, sizeof(AVCodecContext));
+
     s->bit_rate= 800*1000;
     s->bit_rate_tolerance= s->bit_rate*10;
     s->qmin= 2;
@@ -381,7 +383,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
  * this can be deallocated by simply calling free() 
  */
 AVCodecContext *avcodec_alloc_context(void){
-    AVCodecContext *avctx= av_mallocz(sizeof(AVCodecContext));
+    AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
     
     if(avctx==NULL) return NULL;
     
@@ -390,12 +392,22 @@ AVCodecContext *avcodec_alloc_context(void){
     return avctx;
 }
 
+void avcodec_get_frame_defaults(AVFrame *pic){
+    memset(pic, 0, sizeof(AVFrame));
+
+    pic->pts= AV_NOPTS_VALUE;
+}
+
 /**
  * allocates a AVPFrame and set it to defaults.
  * this can be deallocated by simply calling free() 
  */
 AVFrame *avcodec_alloc_frame(void){
-    AVFrame *pic= av_mallocz(sizeof(AVFrame));
+    AVFrame *pic= av_malloc(sizeof(AVFrame));
+    
+    if(pic==NULL) return NULL;
+    
+    avcodec_get_frame_defaults(pic);
     
     return pic;
 }
