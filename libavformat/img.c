@@ -20,10 +20,16 @@
 #include "avformat.h"
 #include "os_support.h"
 
+/* XXX: this is a hack */
+int loop_input = 0;
+
 typedef struct {
     int width;
     int height;
+    int img_first;
+    int img_last;
     int img_number;
+    int img_count;
     int img_size;
     AVImageFormat *img_fmt;
     int pix_fmt;
@@ -121,7 +127,8 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     strcpy(s->path, s1->filename);
     s->img_number = 0;
-
+    s->img_count = 0;
+    
     /* find format */
     if (s1->iformat->flags & AVFMT_NOFILE)
         s->is_pipe = 0;
@@ -139,6 +146,8 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (!s->is_pipe) {
         if (find_image_range(&first_index, &last_index, s->path) < 0)
             goto fail;
+        s->img_first = first_index;
+        s->img_last = last_index;
         s->img_number = first_index;
         /* compute duration */
         st->start_time = 0;
@@ -198,6 +207,10 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     ByteIOContext f1, *f;
 
     if (!s->is_pipe) {
+        /* loop over input */
+        if (loop_input && s->img_number > s->img_last) {
+            s->img_number = s->img_first;
+        }
         if (get_frame_filename(filename, sizeof(filename),
                                s->path, s->img_number) < 0)
             return -EIO;
@@ -223,7 +236,10 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         av_free_packet(pkt);
         return -EIO; /* signal EOF */
     } else {
-        pkt->pts = av_rescale((int64_t)s->img_number * s1->streams[0]->codec.frame_rate_base, s1->pts_den, s1->streams[0]->codec.frame_rate) / s1->pts_num;
+        /* XXX: computing this pts is not necessary as it is done in
+           the generic code too */
+        pkt->pts = av_rescale((int64_t)s->img_count * s1->streams[0]->codec.frame_rate_base, s1->pts_den, s1->streams[0]->codec.frame_rate) / s1->pts_num;
+        s->img_count++;
         s->img_number++;
         return 0;
     }

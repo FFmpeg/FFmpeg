@@ -606,7 +606,6 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic)
             st->start_time < start_time)
             start_time = st->start_time;
     }
-    fprintf(stderr, "start=%lld\n", start_time);
     if (start_time != MAXINT64)
         ic->start_time = start_time;
     
@@ -1504,12 +1503,6 @@ int get_frame_filename(char *buf, int buf_size,
                     nd = nd * 10 + *p++ - '0';
                 }
                 c = *p++;
-                if (c == '*' && nd > 0) {
-                    // The nd field is actually the modulus
-                    number = number % nd;
-                    c = *p++;
-                    nd = 0;
-                }
             } while (isdigit(c));
 
             switch(c) {
