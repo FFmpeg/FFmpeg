@@ -719,7 +719,7 @@ following image formats are supported:
 @item Asus v2                @tab  X  @tab  X @tab fourcc: ASV2
 @item Creative YUV           @tab     @tab  X @tab fourcc: CYUV
 @item H.264                  @tab     @tab  X
-@item Sorenson Video 1       @tab     @tab  X @tab fourcc: SVQ1
+@item Sorenson Video 1       @tab  X  @tab  X @tab fourcc: SVQ1
 @item Sorenson Video 3       @tab     @tab  X @tab fourcc: SVQ3
 @item On2 VP3                @tab     @tab  X @tab still experimental
 @item Theora                 @tab     @tab  X @tab still experimental

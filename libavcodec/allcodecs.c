@@ -66,6 +66,7 @@ void avcodec_register_all(void)
     register_avcodec(&msmpeg4v3_encoder);
     register_avcodec(&wmv1_encoder);
     register_avcodec(&wmv2_encoder);
+    register_avcodec(&svq1_encoder);
 #endif
     register_avcodec(&mjpeg_encoder);
     register_avcodec(&ljpeg_encoder);

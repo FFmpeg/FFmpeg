@@ -1719,6 +1719,7 @@ extern AVCodec vcr1_encoder;
 extern AVCodec ffv1_encoder;
 extern AVCodec mdec_encoder;
 extern AVCodec zlib_encoder;
+extern AVCodec svq1_encoder;
 
 extern AVCodec h263_decoder;
 extern AVCodec mpeg4_decoder;
