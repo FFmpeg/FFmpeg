@@ -1440,7 +1440,7 @@ typedef struct AVPicture {
  * between and demuxer and a decoder.
  */
 #define AVPALETTE_SIZE 1024
-#define AVPALETT_COUNT 256
+#define AVPALETTE_COUNT 256
 typedef struct AVPaletteControl {
 
     /* demuxer sets this to 1 to indicate the palette has changed;
