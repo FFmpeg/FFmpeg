@@ -591,12 +591,9 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 h263_hack_version = get_be32(pb);
                 switch(h263_hack_version) {
                 case 0x10000000:
-                    st->codec.sub_id = 0;
-                    st->codec.codec_id = CODEC_ID_RV10;
-                    break;
                 case 0x10003000:
                 case 0x10003001:
-                    st->codec.sub_id = 3;
+                    st->codec.sub_id = h263_hack_version;
                     st->codec.codec_id = CODEC_ID_RV10;
                     break;
                 default:
@@ -681,7 +678,6 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         goto redo;
     }
 
-#if 0 // XXX/FIXME this is done in the codec currently, but should be done here ...
     if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
         int full_frame, h, pic_num;
  
@@ -705,15 +701,11 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* picture number */
         pic_num= get_byte(pb);
 
-        av_new_packet(pkt, len+1);
-        pkt->stream_index = i;
-        
-        //XXX/FIXME: is this a good idea?
-        pkt->data[0]= h; //store header, its needed for decoding
-        
-        get_buffer(pb, pkt->data+1, len);
+        //XXX/FIXME/HACK, demuxer should be fixed to send complete frames ...
+        if(st->codec.slice_offset==NULL) st->codec.slice_offset= (int*)malloc(sizeof(int));
+        st->codec.slice_count= full_frame; 
+        st->codec.slice_offset[0]= 0;
     }
-#endif
 
     av_new_packet(pkt, len);
     pkt->stream_index = i;

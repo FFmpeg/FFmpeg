@@ -265,36 +265,17 @@ static int get_num(GetBitContext *gb)
 /* read RV 1.0 compatible frame header */
 static int rv10_decode_picture_header(MpegEncContext *s)
 {
-    int mb_count, pb_frame, marker, h, full_frame;
-    int pic_num, unk;
+    int mb_count, pb_frame, marker, full_frame, unk;
     
-    //XXX/FIXME this should be done in the demuxer not here
-    /* skip packet header */
-    h = get_bits(&s->gb, 8);
-    if ((h & 0xc0) == 0xc0) {
-        int len, pos;
-        full_frame = 1;
-        len = get_num(&s->gb);
-        pos = get_num(&s->gb);
-//printf("pos:%d\n",len);
-    } else {
-        int seq, frame_size, pos;
-        full_frame = 0;
-        seq = get_bits(&s->gb, 8);
-        frame_size = get_num(&s->gb);
-        pos = get_num(&s->gb);
-//printf("seq:%d, size:%d, pos:%d\n",seq,frame_size,pos);
-    }
-    /* picture number */
-    pic_num= get_bits(&s->gb, 8);
-
+    full_frame= s->avctx->slice_count==1;
+//printf("ff:%d\n", full_frame);
     marker = get_bits(&s->gb, 1);
 
     if (get_bits(&s->gb, 1))
         s->pict_type = P_TYPE;
     else
         s->pict_type = I_TYPE;
-//printf("h:%d ver:%d\n",h,s->rv10_version);
+//printf("h:%X ver:%d\n",h,s->rv10_version);
     if(!marker) printf("marker missing\n");
     pb_frame = get_bits(&s->gb, 1);
 
@@ -329,7 +310,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     }
     /* if multiple packets per frame are sent, the position at which
        to display the macro blocks is coded here */
-    if (!full_frame) {
+    if ((!full_frame) || show_bits(&s->gb, 12)==0) {
         s->mb_x = get_bits(&s->gb, 6);	/* mb_x */
         s->mb_y = get_bits(&s->gb, 6);	/* mb_y */
         mb_count = get_bits(&s->gb, 12);
@@ -358,28 +339,23 @@ static int rv10_decode_init(AVCodecContext *avctx)
     s->height = avctx->height;
 
     s->h263_rv10 = 1;
-    if(avctx->extradata_size >= 8){
-        switch(((uint32_t*)avctx->extradata)[1]){
-        case 0x10000000:
-            s->rv10_version= 0;
-            s->h263_long_vectors=0;
-            break;
-        case 0x10003000:
-            s->rv10_version= 3;
-            s->h263_long_vectors=1;
-            break;
-        case 0x10003001:
-            s->rv10_version= 3;
-            s->h263_long_vectors=0;
-            break;
-        default:
-            fprintf(stderr, "unknown header %X\n", ((uint32_t*)avctx->extradata)[1]);
-        }
-    }else{
-    //  for backward compatibility 
-        s->rv10_version= avctx->sub_id;
+    switch(avctx->sub_id){
+    case 0x10000000:
+        s->rv10_version= 0;
+        s->h263_long_vectors=0;
+        break;
+    case 0x10003000:
+        s->rv10_version= 3;
+        s->h263_long_vectors=1;
+        break;
+    case 0x10003001:
+        s->rv10_version= 3;
+        s->h263_long_vectors=0;
+        break;
+    default:
+        fprintf(stderr, "unknown header %X\n", avctx->sub_id);
     }
-    
+//printf("ver:%X\n", avctx->sub_id);
     s->flags= avctx->flags;
 
     if (MPV_common_init(s) < 0)
@@ -412,27 +388,15 @@ static int rv10_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static int rv10_decode_frame(AVCodecContext *avctx, 
-                             void *data, int *data_size,
+static int rv10_decode_packet(AVCodecContext *avctx, 
                              UINT8 *buf, int buf_size)
 {
     MpegEncContext *s = avctx->priv_data;
     int i, mb_count, mb_pos, left;
     DCTELEM block[6][64];
-    AVPicture *pict = data; 
-
-#ifdef DEBUG
-    printf("*****frame %d size=%d\n", avctx->frame_number, buf_size);
-#endif
-
-    /* no supplementary picture */
-    if (buf_size == 0) {
-        *data_size = 0;
-        return 0;
-    }
 
     init_get_bits(&s->gb, buf, buf_size);
-
+    
     mb_count = rv10_decode_picture_header(s);
     if (mb_count < 0) {
         fprintf(stderr, "HEADER ERROR\n");
@@ -510,8 +474,46 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if (s->mb_x == 0 &&
-        s->mb_y == s->mb_height) {
+    return buf_size;
+}
+
+static int rv10_decode_frame(AVCodecContext *avctx, 
+                             void *data, int *data_size,
+                             UINT8 *buf, int buf_size)
+{
+    MpegEncContext *s = avctx->priv_data;
+    int i;
+    AVPicture *pict = data; 
+
+#ifdef DEBUG
+    printf("*****frame %d size=%d\n", avctx->frame_number, buf_size);
+#endif
+
+    /* no supplementary picture */
+    if (buf_size == 0) {
+        *data_size = 0;
+        return 0;
+    }
+    
+    if(avctx->slice_count){
+        for(i=0; i<avctx->slice_count; i++){
+            int offset= avctx->slice_offset[i];
+            int size;
+            
+            if(i+1 == avctx->slice_count)
+                size= buf_size - offset;
+            else
+                size= avctx->slice_offset[i+1] - offset;
+
+            if( rv10_decode_packet(avctx, buf+offset, size) < 0 )
+                return -1;
+        }
+    }else{
+        if( rv10_decode_packet(avctx, buf, buf_size) < 0 )
+            return -1;
+    }
+
+    if(s->mb_y>=s->mb_height){
         MPV_frame_end(s);
         
         pict->data[0] = s->current_picture[0];
@@ -520,12 +522,13 @@ static int rv10_decode_frame(AVCodecContext *avctx,
         pict->linesize[0] = s->linesize;
         pict->linesize[1] = s->uvlinesize;
         pict->linesize[2] = s->uvlinesize;
-        
+    
         avctx->quality = s->qscale;
         *data_size = sizeof(AVPicture);
-    } else {
+    }else{
         *data_size = 0;
     }
+
     return buf_size;
 }
 

@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4629
-#define LIBAVCODEC_BUILD_STR   "4629"
+#define LIBAVCODEC_BUILD       4630
+#define LIBAVCODEC_BUILD_STR   "4630"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -698,6 +698,19 @@ typedef struct AVCodecContext {
 #define FF_IDCT_PS2          5
 #define FF_IDCT_MLIB         6
 #define FF_IDCT_ARM          7
+
+    /**
+     * slice count
+     * encoding: set by lavc
+     * decoding: set by user (or 0)
+     */
+    int slice_count;
+    /**
+     * slice offsets in the frame in bytes
+     * encoding: set/allocated by lavc
+     * decoding: set/allocated by user (or NULL)
+     */
+    int *slice_offset;
 
     //FIXME this should be reordered after kabis API is finished ...
     //TODO kill kabi
