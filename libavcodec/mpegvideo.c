@@ -2338,8 +2338,8 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             if(s->dsp.pix_abs8x8(ptr_y            + 8, dest_y            + 8, wrap_y) < 20*s->qscale) skip_dct[1]= 1;
             if(s->dsp.pix_abs8x8(ptr_y +dct_offset   , dest_y +dct_offset   , wrap_y) < 20*s->qscale) skip_dct[2]= 1;
             if(s->dsp.pix_abs8x8(ptr_y +dct_offset+ 8, dest_y +dct_offset+ 8, wrap_y) < 20*s->qscale) skip_dct[3]= 1;
-            if(s->dsp.pix_abs8x8(ptr_cb              , dest_cb              , wrap_y) < 20*s->qscale) skip_dct[4]= 1;
-            if(s->dsp.pix_abs8x8(ptr_cr              , dest_cr              , wrap_y) < 20*s->qscale) skip_dct[5]= 1;
+            if(s->dsp.pix_abs8x8(ptr_cb              , dest_cb              , wrap_c) < 20*s->qscale) skip_dct[4]= 1;
+            if(s->dsp.pix_abs8x8(ptr_cr              , dest_cr              , wrap_c) < 20*s->qscale) skip_dct[5]= 1;
 #if 0
 {
  static int stat[7];
