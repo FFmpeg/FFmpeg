@@ -752,6 +752,7 @@ following image formats are supported:
 @item VMD Video              @tab     @tab  X @tab used in Sierra VMD files
 @item MSZH                   @tab     @tab  X @tab Part of LCL
 @item ZLIB                   @tab  X  @tab  X @tab Part of LCL, encoder experimental
+@item TechSmith Camtasia     @tab     @tab  X @tab fourcc: TSCC
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.

@@ -1,3 +1,6 @@
+version <next>
+- TechSmith Camtasia (TSCC) video decoder
+
 version 0.4.9-pre1:
 
 - DV encoder, DV muxer

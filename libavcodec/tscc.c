@@ -1,0 +1,293 @@
+/*
+ * TechSmith Camtasia decoder
+ * Copyright (c) 2004 Konstantin Shishkov
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ */
+
+/**
+ * @file tscc.c
+ * TechSmith Camtasia decoder
+ *
+ * Fourcc: TSCC
+ *
+ * Codec is very simple:
+ *  it codes picture (picture difference, really)
+ *  with algorithm almost identical to Windows RLE8,
+ *  only without padding and with greater pixel sizes,
+ *  then this coded picture is packed with ZLib
+ *
+ * Supports: BGR8,BGR555,BGR24 - only BGR555 tested
+ *
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "common.h"
+#include "avcodec.h"
+
+#ifdef CONFIG_ZLIB
+#include <zlib.h>
+#endif
+
+
+/*
+ * Decoder context
+ */
+typedef struct TsccContext {
+
+    AVCodecContext *avctx;
+    AVFrame pic;
+
+    // Bits per pixel
+    int bpp;
+    // Decompressed data size
+    unsigned int decomp_size;
+    // Decompression buffer
+    unsigned char* decomp_buf;
+    int height;
+#ifdef CONFIG_ZLIB
+    z_stream zstream;
+#endif
+} CamtasiaContext;
+
+/*
+ *
+ * Decode RLE - almost identical to Windows BMP RLE8
+ *              and enhanced to bigger color depths
+ *
+ */
+ 
+static int decode_rle(CamtasiaContext *c)
+{
+    unsigned char *src = c->decomp_buf;
+    unsigned char *output = c->pic.data[0];
+    int p1, p2, line=c->height, pos=0, i;
+    while(src < c->decomp_buf + c->decomp_size) {
+        p1 = *src++;
+        if(p1 == 0) { //Escape code
+            p2 = *src++;
+            if(p2 == 0) { //End-of-line
+                output = c->pic.data[0] + (--line) * c->pic.linesize[0];
+                pos = 0;
+                continue;
+            } else if(p2 == 1) { //End-of-picture
+                return 0;
+            } else if(p2 == 2) { //Skip
+                p1 = *src++;
+                p2 = *src++;
+                line -= p2;
+                pos += p1;
+                output = c->pic.data[0] + line * c->pic.linesize[0] + pos * (c->bpp / 8);
+                continue;
+            }
+            // Copy data
+            for(i = 0; i < p2 * (c->bpp / 8); i++) {
+                *output++ = *src++;
+            }
+            pos += p2;
+        } else { //Run of pixels
+            int pix[3]; //original pixel
+            switch(c->bpp){
+            case  8: pix[0] = *src++;
+                     break;
+            case 16: pix[0] = *src++;
+                     pix[1] = *src++;
+                     break;
+            case 24: pix[0] = *src++;
+                     pix[1] = *src++;
+                     pix[2] = *src++;
+                     break;
+            }
+            for(i = 0; i < p1; i++) {
+                switch(c->bpp){
+                case  8: *output++ = pix[0];
+                         break;
+                case 16: *output++ = pix[0];
+                         *output++ = pix[1];
+                         break;
+                case 24: *output++ = pix[0];
+                         *output++ = pix[1];
+                         *output++ = pix[2];
+                         break;
+                }
+            }
+            pos += p1;
+        }
+    }
+    
+    av_log(c->avctx, AV_LOG_ERROR, "Camtasia warning: no End-of-picture code\n");        
+    return 1;
+}
+
+/*
+ *
+ * Decode a frame
+ *
+ */
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size)
+{
+    CamtasiaContext * const c = (CamtasiaContext *)avctx->priv_data;
+    unsigned char *encoded = (unsigned char *)buf;
+    unsigned char *outptr;
+#ifdef CONFIG_ZLIB
+    int zret; // Zlib return code
+#endif
+    int len = buf_size;
+
+    /* no supplementary picture */
+    if (buf_size == 0)
+        return 0;
+
+    if(c->pic.data[0])
+            avctx->release_buffer(avctx, &c->pic);
+
+    c->pic.reference = 1;
+    c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
+    if(avctx->get_buffer(avctx, &c->pic) < 0){
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return -1;
+    }
+
+    outptr = c->pic.data[0]; // Output image pointer
+
+#ifdef CONFIG_ZLIB
+    zret = inflateReset(&(c->zstream));
+    if (zret != Z_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", zret);
+        return -1;
+    }
+    c->zstream.next_in = encoded;
+    c->zstream.avail_in = len;
+    c->zstream.next_out = c->decomp_buf;
+    c->zstream.avail_out = c->decomp_size;
+    zret = inflate(&(c->zstream), Z_FINISH);
+    // Z_DATA_ERROR means empty picture
+    if ((zret != Z_OK) && (zret != Z_STREAM_END) && (zret != Z_DATA_ERROR)) {
+        av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", zret);
+        return -1;
+    }
+    encoded = c->decomp_buf;
+    len = c->decomp_size;
+    if(zret != Z_DATA_ERROR)
+        decode_rle(c);
+#else
+    av_log(avctx, AV_LOG_ERROR, "BUG! Zlib support not compiled in frame decoder.\n");
+    return -1;
+#endif
+
+    *data_size = sizeof(AVFrame);
+    *(AVFrame*)data = c->pic;
+
+    /* always report that the buffer was completely consumed */
+    return buf_size;
+}
+
+
+
+/*
+ *
+ * Init tscc decoder
+ *
+ */
+static int decode_init(AVCodecContext *avctx)
+{
+    CamtasiaContext * const c = (CamtasiaContext *)avctx->priv_data;
+    int zret; // Zlib return code
+
+    c->avctx = avctx;
+    avctx->has_b_frames = 0;
+
+    c->pic.data[0] = NULL;
+    c->height = avctx->height;
+
+#ifdef CONFIG_ZLIB
+    // Needed if zlib unused or init aborted before inflateInit
+    memset(&(c->zstream), 0, sizeof(z_stream)); 
+#else
+    av_log(avctx, AV_LOG_ERROR, "Zlib support not compiled.\n");
+    return 1;
+#endif
+    switch(avctx->bits_per_sample){
+    case  8: av_log(avctx, AV_LOG_ERROR, "Camtasia warning: RGB8 is just guessed\n");
+             avctx->pix_fmt = PIX_FMT_PAL8;
+             break;
+    case 16: avctx->pix_fmt = PIX_FMT_RGB555;break;
+    case 24: av_log(avctx, AV_LOG_ERROR, "Camtasia warning: RGB24 is just guessed\n");
+             avctx->pix_fmt = PIX_FMT_BGR24;
+             break;
+    default: av_log(avctx, AV_LOG_ERROR, "Camtasia error: unknown depth %i bpp\n", avctx->bits_per_sample);
+             return -1;             
+    }
+    c->bpp = avctx->bits_per_sample;
+    av_log(avctx, AV_LOG_INFO, "bpp=%i    \n\n\n", c->bpp);
+    c->decomp_size = (avctx->width * c->bpp + (avctx->width + 254) / 255 + 2) * avctx->height + 2;//RLE in the best case
+
+    /* Allocate decompression buffer */
+    if (c->decomp_size) {
+        if ((c->decomp_buf = av_malloc(c->decomp_size)) == NULL) {
+            av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
+            return 1;
+        }
+    }
+  
+#ifdef CONFIG_ZLIB
+    c->zstream.zalloc = Z_NULL;
+    c->zstream.zfree = Z_NULL;
+    c->zstream.opaque = Z_NULL;
+    zret = inflateInit(&(c->zstream));
+    if (zret != Z_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
+        return 1;
+    }
+#endif
+
+    return 0;
+}
+
+
+
+/*
+ *
+ * Uninit tscc decoder
+ *
+ */
+static int decode_end(AVCodecContext *avctx)
+{
+    CamtasiaContext * const c = (CamtasiaContext *)avctx->priv_data;
+
+    if (c->pic.data[0])
+        avctx->release_buffer(avctx, &c->pic);
+#ifdef CONFIG_ZLIB
+    inflateEnd(&(c->zstream));
+#endif
+
+    return 0;
+}
+
+AVCodec tscc_decoder = {
+        "camtasia",
+        CODEC_TYPE_VIDEO,
+        CODEC_ID_TSCC,
+        sizeof(CamtasiaContext),
+        decode_init,
+        NULL,
+        decode_end,
+        decode_frame,
+        CODEC_CAP_DR1,
+};
+
