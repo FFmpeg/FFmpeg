@@ -44,7 +44,7 @@ endif
 endif
 
 ifeq ($(CONFIG_VORBIS),yes)
-EXTRALIBS+=-logg -lvorbis -lvorbisenc
+EXTRALIBS+=-lvorbis -lvorbisenc -logg
 endif
 
 ifeq ($(CONFIG_FAAD),yes)
