@@ -659,4 +659,83 @@ void simple_idct(INT16 *block)
 
 #endif
 
-#undef COL_SHIFT
+/* 2x4x8 idct */
+
+#define CN_SHIFT 12
+#define C_FIX(x) ((int)((x) * (1 << CN_SHIFT) + 0.5))
+#define C0 C_FIX(0.7071067811)
+#define C1 C_FIX(0.9238795324)
+#define C2 C_FIX(0.3826834324)
+
+/* row idct is multiple by 16 * sqrt(2.0), col idct4 is multiplied by
+   sqrt(2). An extra division by two is needed for the first butterfly
+   stage */
+#define C_SHIFT (4+1+12+1)
+
+static inline void idct4col(UINT8 *dest, int line_size, const INT16 *col)
+{
+    int c0, c1, c2, c3, a0, a1, a2, a3;
+    const UINT8 *cm = cropTbl + MAX_NEG_CROP;
+
+    a0 = col[8*0];
+    a1 = col[8*2];
+    a2 = col[8*4];
+    a3 = col[8*6];
+    c0 = (a0 + a2) * C0 + (1 << (C_SHIFT - 1)) + (128 << C_SHIFT);
+    c2 = (a0 - a2) * C0 + (1 << (C_SHIFT - 1)) + (128 << C_SHIFT);
+    c1 = a1 * C1 + a3 * C2;
+    c3 = a1 * C2 - a3 * C1;
+    dest[0] = cm[(c0 + c1) >> C_SHIFT];
+    dest += line_size;
+    dest[0] = cm[(c2 + c3) >> C_SHIFT];
+    dest += line_size;
+    dest[0] = cm[(c2 - c3) >> C_SHIFT];
+    dest += line_size;
+    dest[0] = cm[(c0 - c1) >> C_SHIFT];
+}
+
+#define BF(k) \
+{\
+    int a0, a1;\
+    a0 = ptr[k];\
+    a1 = ptr[8 + k];\
+    ptr[k] = a0 + a1;\
+    ptr[8 + k] = a0 - a1;\
+}
+
+/* only used by DV codec. The input must be interlaced. 128 is added
+   to the pixels before clamping to avoid systematic error
+   (1024*sqrt(2)) offset would be needed otherwise. */
+/* XXX: I think a 1.0/sqrt(2) normalization should be needed to
+   compensate the extra butterfly stage - I don't have the full DV
+   specification */
+void simple_idct248_put(UINT8 *dest, int line_size, INT16 *block)
+{
+    int i;
+    INT16 *ptr;
+    
+    /* butterfly */
+    ptr = block;
+    for(i=0;i<4;i++) {
+        BF(0);
+        BF(1);
+        BF(2);
+        BF(3);
+        BF(4);
+        BF(5);
+        BF(6);
+        BF(7);
+        ptr += 2 * 8;
+    }
+
+    /* IDCT8 on each line */
+    for(i=0; i<8; i++) {
+        idctRowCondDC(block + i*8);
+    }
+
+    /* IDCT4 and store */
+    for(i=0;i<8;i++) {
+        idct4col(dest + i, 2 * line_size, block + i);
+        idct4col(dest + line_size + i, 2 * line_size, block + 8 + i);
+    }
+}

@@ -24,3 +24,5 @@ void ff_simple_idct_mmx(short *block);
 void ff_simple_idct_add_mmx(UINT8 *dest, int line_size, INT16 *block);
 void ff_simple_idct_put_mmx(UINT8 *dest, int line_size, INT16 *block);
 void simple_idct(short *block);
+
+void simple_idct248_put(UINT8 *dest, int line_size, INT16 *block);
