@@ -31,14 +31,14 @@ int allwaysIpol=0;
 //#define ASSERT(x) if(!(x)) { printf("ASSERT " #x " failed\n"); *((int*)0)=0; }
 #define ASSERT(x) ;
 
-
+extern int verbose; // defined in mplayer.c
 /*
 NOTES
 
 known BUGS with known cause (no bugreports please!, but patches are welcome :) )
-horizontal MMX2 scaler reads 1-7 samples too much (might cause a sig11)
+horizontal fast_bilinear MMX2 scaler reads 1-7 samples too much (might cause a sig11)
 
-Supported output formats BGR15 BGR16 BGR24 BGR32, YV12
+Supported output formats BGR15 BGR16 BGR24 BGR32 YV12
 BGR15 & BGR16 MMX verions support dithering
 Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
@@ -49,6 +49,7 @@ change the distance of the u & v buffer
 Move static / global vars into a struct so multiple scalers can be used
 write special vertical cubic upscale version
 Optimize C code (yv12 / minmax)
+dstStride[3]
 */
 
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
@@ -183,6 +184,203 @@ void in_asm_used_var_warning_killer()
 }
 #endif
 
+static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW)
+{
+	//FIXME Optimize (just quickly writen not opti..)
+	int i;
+	for(i=0; i<dstW; i++)
+	{
+		int val=0;
+		int j;
+		for(j=0; j<lumFilterSize; j++)
+			val += lumSrc[j][i] * lumFilter[j];
+
+		dest[i]= MIN(MAX(val>>19, 0), 255);
+	}
+
+	if(uDest != NULL)
+		for(i=0; i<(dstW>>1); i++)
+		{
+			int u=0;
+			int v=0;
+			int j;
+			for(j=0; j<lumFilterSize; j++)
+			{
+				u += chrSrc[j][i] * chrFilter[j];
+				v += chrSrc[j][i + 2048] * chrFilter[j];
+			}
+
+			uDest[i]= MIN(MAX(u>>19, 0), 255);
+			vDest[i]= MIN(MAX(v>>19, 0), 255);
+		}
+}
+
+static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+				    uint8_t *dest, int dstW, int dstbpp)
+{
+	if(dstbpp==32)
+	{
+		int i;
+		for(i=0; i<(dstW>>1); i++){
+			int j;
+			int Y1=0;
+			int Y2=0;
+			int U=0;
+			int V=0;
+			int Cb, Cr, Cg;
+			for(j=0; j<lumFilterSize; j++)
+			{
+				Y1 += lumSrc[j][2*i] * lumFilter[j];
+				Y2 += lumSrc[j][2*i+1] * lumFilter[j];
+			}
+			for(j=0; j<chrFilterSize; j++)
+			{
+				U += chrSrc[j][i] * chrFilter[j];
+				V += chrSrc[j][i+2048] * chrFilter[j];
+			}
+			Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
+			Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
+			U >>= 19;
+			V >>= 19;
+
+			Cb= clip_yuvtab_40cf[U+ 256];
+			Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
+			Cr= clip_yuvtab_3343[V+ 256];
+
+			dest[8*i+0]=clip_table[((Y1 + Cb) >>13)];
+			dest[8*i+1]=clip_table[((Y1 + Cg) >>13)];
+			dest[8*i+2]=clip_table[((Y1 + Cr) >>13)];
+
+			dest[8*i+4]=clip_table[((Y2 + Cb) >>13)];
+			dest[8*i+5]=clip_table[((Y2 + Cg) >>13)];
+			dest[8*i+6]=clip_table[((Y2 + Cr) >>13)];
+		}
+	}
+	else if(dstbpp==24)
+	{
+		int i;
+		for(i=0; i<(dstW>>1); i++){
+			int j;
+			int Y1=0;
+			int Y2=0;
+			int U=0;
+			int V=0;
+			int Cb, Cr, Cg;
+			for(j=0; j<lumFilterSize; j++)
+			{
+				Y1 += lumSrc[j][2*i] * lumFilter[j];
+				Y2 += lumSrc[j][2*i+1] * lumFilter[j];
+			}
+			for(j=0; j<chrFilterSize; j++)
+			{
+				U += chrSrc[j][i] * chrFilter[j];
+				V += chrSrc[j][i+2048] * chrFilter[j];
+			}
+			Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
+			Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
+			U >>= 19;
+			V >>= 19;
+
+			Cb= clip_yuvtab_40cf[U+ 256];
+			Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
+			Cr= clip_yuvtab_3343[V+ 256];
+
+			dest[0]=clip_table[((Y1 + Cb) >>13)];
+			dest[1]=clip_table[((Y1 + Cg) >>13)];
+			dest[2]=clip_table[((Y1 + Cr) >>13)];
+
+			dest[3]=clip_table[((Y2 + Cb) >>13)];
+			dest[4]=clip_table[((Y2 + Cg) >>13)];
+			dest[5]=clip_table[((Y2 + Cr) >>13)];
+			dest+=6;
+		}
+	}
+	else if(dstbpp==16)
+	{
+		int i;
+		for(i=0; i<(dstW>>1); i++){
+			int j;
+			int Y1=0;
+			int Y2=0;
+			int U=0;
+			int V=0;
+			int Cb, Cr, Cg;
+			for(j=0; j<lumFilterSize; j++)
+			{
+				Y1 += lumSrc[j][2*i] * lumFilter[j];
+				Y2 += lumSrc[j][2*i+1] * lumFilter[j];
+			}
+			for(j=0; j<chrFilterSize; j++)
+			{
+				U += chrSrc[j][i] * chrFilter[j];
+				V += chrSrc[j][i+2048] * chrFilter[j];
+			}
+			Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
+			Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
+			U >>= 19;
+			V >>= 19;
+
+			Cb= clip_yuvtab_40cf[U+ 256];
+			Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
+			Cr= clip_yuvtab_3343[V+ 256];
+
+			((uint16_t*)dest)[2*i] =
+				clip_table16b[(Y1 + Cb) >>13] |
+				clip_table16g[(Y1 + Cg) >>13] |
+				clip_table16r[(Y1 + Cr) >>13];
+
+			((uint16_t*)dest)[2*i+1] =
+				clip_table16b[(Y2 + Cb) >>13] |
+				clip_table16g[(Y2 + Cg) >>13] |
+				clip_table16r[(Y2 + Cr) >>13];
+		}
+	}
+	else if(dstbpp==15)
+	{
+		int i;
+		for(i=0; i<(dstW>>1); i++){
+			int j;
+			int Y1=0;
+			int Y2=0;
+			int U=0;
+			int V=0;
+			int Cb, Cr, Cg;
+			for(j=0; j<lumFilterSize; j++)
+			{
+				Y1 += lumSrc[j][2*i] * lumFilter[j];
+				Y2 += lumSrc[j][2*i+1] * lumFilter[j];
+			}
+			for(j=0; j<chrFilterSize; j++)
+			{
+				U += chrSrc[j][i] * chrFilter[j];
+				V += chrSrc[j][i+2048] * chrFilter[j];
+			}
+			Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
+			Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
+			U >>= 19;
+			V >>= 19;
+
+			Cb= clip_yuvtab_40cf[U+ 256];
+			Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
+			Cr= clip_yuvtab_3343[V+ 256];
+
+			((uint16_t*)dest)[2*i] =
+				clip_table15b[(Y1 + Cb) >>13] |
+				clip_table15g[(Y1 + Cg) >>13] |
+				clip_table15r[(Y1 + Cr) >>13];
+
+			((uint16_t*)dest)[2*i+1] =
+				clip_table15b[(Y2 + Cb) >>13] |
+				clip_table15g[(Y2 + Cg) >>13] |
+				clip_table15r[(Y2 + Cr) >>13];
+		}
+	}
+}
+
+
 //Note: we have C, X86, MMX, MMX2, 3DNOW version therse no 3DNOW+MMX2 one
 //Plain C versions
 #if !defined (HAVE_MMX) || defined (RUNTIME_CPUDETECT)
@@ -270,7 +468,6 @@ void in_asm_used_var_warning_killer()
 
 // *** bilinear scaling and yuv->rgb or yuv->yuv conversion of yv12 slices:
 // *** Note: it's called multiple times while decoding a frame, first time y==0
-// *** Designed to upscale, but may work for downscale too.
 // switching the cpu type during a sliced drawing can have bad effects, like sig11
 void SwScale_YV12slice(unsigned char* srcptr[],int stride[], int srcSliceY ,
 			     int srcSliceH, uint8_t* dstptr[], int dststride, int dstbpp,

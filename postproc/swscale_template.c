@@ -672,33 +672,9 @@ static inline void RENAME(yuv2yuvX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 			: "%eax", "%edx", "%esi"
 		);
 #else
-	//FIXME Optimize (just quickly writen not opti..)
-	int i;
-	for(i=0; i<dstW; i++)
-	{
-		int val=0;
-		int j;
-		for(j=0; j<lumFilterSize; j++)
-			val += lumSrc[j][i] * lumFilter[j];
-
-		dest[i]= MIN(MAX(val>>19, 0), 255);
-	}
-
-	if(uDest != NULL)
-		for(i=0; i<(dstW>>1); i++)
-		{
-			int u=0;
-			int v=0;
-			int j;
-			for(j=0; j<lumFilterSize; j++)
-			{
-				u += chrSrc[j][i] * chrFilter[j];
-				v += chrSrc[j][i + 2048] * chrFilter[j];
-			}
-
-			uDest[i]= MIN(MAX(u>>19, 0), 255);
-			vDest[i]= MIN(MAX(v>>19, 0), 255);
-		}
+yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
+	    chrFilter, chrSrc, chrFilterSize,
+	    dest, uDest, vDest, dstW);
 #endif
 }
 
@@ -836,163 +812,10 @@ static inline void RENAME(yuv2rgbX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 			);
 		}
 #else
-		if(dstbpp==32)
-		{
-			int i;
-			for(i=0; i<(dstW>>1); i++){
-				int j;
-				int Y1=0;
-				int Y2=0;
-				int U=0;
-				int V=0;
-				int Cb, Cr, Cg;
-				for(j=0; j<lumFilterSize; j++)
-				{
-					Y1 += lumSrc[j][2*i] * lumFilter[j];
-					Y2 += lumSrc[j][2*i+1] * lumFilter[j];
-				}
-				for(j=0; j<chrFilterSize; j++)
-				{
-					U += chrSrc[j][i] * chrFilter[j];
-					V += chrSrc[j][i+2048] * chrFilter[j];
-				}
-				Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
-				Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
-				U >>= 19;
-				V >>= 19;
+yuv2rgbXinC(lumFilter, lumSrc, lumFilterSize,
+	    chrFilter, chrSrc, chrFilterSize,
+	    dest, dstW, dstbpp);
 
-				Cb= clip_yuvtab_40cf[U+ 256];
-				Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
-				Cr= clip_yuvtab_3343[V+ 256];
-
-				dest[8*i+0]=clip_table[((Y1 + Cb) >>13)];
-				dest[8*i+1]=clip_table[((Y1 + Cg) >>13)];
-				dest[8*i+2]=clip_table[((Y1 + Cr) >>13)];
-
-				dest[8*i+4]=clip_table[((Y2 + Cb) >>13)];
-				dest[8*i+5]=clip_table[((Y2 + Cg) >>13)];
-				dest[8*i+6]=clip_table[((Y2 + Cr) >>13)];
-			}
-		}
-		else if(dstbpp==24)
-		{
-			int i;
-			for(i=0; i<(dstW>>1); i++){
-				int j;
-				int Y1=0;
-				int Y2=0;
-				int U=0;
-				int V=0;
-				int Cb, Cr, Cg;
-				for(j=0; j<lumFilterSize; j++)
-				{
-					Y1 += lumSrc[j][2*i] * lumFilter[j];
-					Y2 += lumSrc[j][2*i+1] * lumFilter[j];
-				}
-				for(j=0; j<chrFilterSize; j++)
-				{
-					U += chrSrc[j][i] * chrFilter[j];
-					V += chrSrc[j][i+2048] * chrFilter[j];
-				}
-				Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
-				Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
-				U >>= 19;
-				V >>= 19;
-
-				Cb= clip_yuvtab_40cf[U+ 256];
-				Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
-				Cr= clip_yuvtab_3343[V+ 256];
-
-				dest[0]=clip_table[((Y1 + Cb) >>13)];
-				dest[1]=clip_table[((Y1 + Cg) >>13)];
-				dest[2]=clip_table[((Y1 + Cr) >>13)];
-
-				dest[3]=clip_table[((Y2 + Cb) >>13)];
-				dest[4]=clip_table[((Y2 + Cg) >>13)];
-				dest[5]=clip_table[((Y2 + Cr) >>13)];
-				dest+=6;
-			}
-		}
-		else if(dstbpp==16)
-		{
-			int i;
-			for(i=0; i<(dstW>>1); i++){
-				int j;
-				int Y1=0;
-				int Y2=0;
-				int U=0;
-				int V=0;
-				int Cb, Cr, Cg;
-				for(j=0; j<lumFilterSize; j++)
-				{
-					Y1 += lumSrc[j][2*i] * lumFilter[j];
-					Y2 += lumSrc[j][2*i+1] * lumFilter[j];
-				}
-				for(j=0; j<chrFilterSize; j++)
-				{
-					U += chrSrc[j][i] * chrFilter[j];
-					V += chrSrc[j][i+2048] * chrFilter[j];
-				}
-				Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
-				Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
-				U >>= 19;
-				V >>= 19;
-
-				Cb= clip_yuvtab_40cf[U+ 256];
-				Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
-				Cr= clip_yuvtab_3343[V+ 256];
-
-				((uint16_t*)dest)[2*i] =
-					clip_table16b[(Y1 + Cb) >>13] |
-					clip_table16g[(Y1 + Cg) >>13] |
-					clip_table16r[(Y1 + Cr) >>13];
-
-				((uint16_t*)dest)[2*i+1] =
-					clip_table16b[(Y2 + Cb) >>13] |
-					clip_table16g[(Y2 + Cg) >>13] |
-					clip_table16r[(Y2 + Cr) >>13];
-			}
-		}
-		else if(dstbpp==15)
-		{
-			int i;
-			for(i=0; i<(dstW>>1); i++){
-				int j;
-				int Y1=0;
-				int Y2=0;
-				int U=0;
-				int V=0;
-				int Cb, Cr, Cg;
-				for(j=0; j<lumFilterSize; j++)
-				{
-					Y1 += lumSrc[j][2*i] * lumFilter[j];
-					Y2 += lumSrc[j][2*i+1] * lumFilter[j];
-				}
-				for(j=0; j<chrFilterSize; j++)
-				{
-					U += chrSrc[j][i] * chrFilter[j];
-					V += chrSrc[j][i+2048] * chrFilter[j];
-				}
-				Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
-				Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
-				U >>= 19;
-				V >>= 19;
-
-				Cb= clip_yuvtab_40cf[U+ 256];
-				Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
-				Cr= clip_yuvtab_3343[V+ 256];
-
-				((uint16_t*)dest)[2*i] =
-					clip_table15b[(Y1 + Cb) >>13] |
-					clip_table15g[(Y1 + Cg) >>13] |
-					clip_table15r[(Y1 + Cr) >>13];
-
-				((uint16_t*)dest)[2*i+1] =
-					clip_table15b[(Y2 + Cb) >>13] |
-					clip_table15g[(Y2 + Cg) >>13] |
-					clip_table15r[(Y2 + Cr) >>13];
-			}
-		}
 #endif
 	} //!FULL_UV_IPOL
 }
@@ -1373,7 +1196,6 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			    uint8_t *dest, int dstW, int uvalpha, int dstbpp)
 {
 	int uvalpha1=uvalpha^4095;
-	const int yalpha=0;
 	const int yalpha1=0;
 
 	if(fullUVIpol || allwaysIpol)
@@ -1636,7 +1458,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 			"movd %%mm0, (%4, %%ebp)	\n\t"
 			"addl $4, %%ebp			\n\t"
 			" jnc 1b			\n\t"
-			
+
 			"popl %%ebp			\n\t"
 			: "+a" (counter)
 			: "c" (filter), "d" (filterPos), "S" (src), "D" (dst)
@@ -1764,7 +1586,12 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
       // *** horizontal scale Y line to temp buffer
 static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, int srcW, int xInc)
 {
+#ifdef HAVE_MMX
+	// use the new MMX scaler if th mmx2 cant be used (its faster than the x86asm one)
+    if(sws_flags != SWS_FAST_BILINEAR || (!canMMX2BeUsed))
+#else
     if(sws_flags != SWS_FAST_BILINEAR)
+#endif
     {
     	RENAME(hScale)(dst, dstWidth, src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize);
     }
@@ -1885,7 +1712,12 @@ FUNNY_Y_CODE
 inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth,
 				uint8_t *src1, uint8_t *src2, int srcW, int xInc)
 {
+#ifdef HAVE_MMX
+	// use the new MMX scaler if th mmx2 cant be used (its faster than the x86asm one)
+    if(sws_flags != SWS_FAST_BILINEAR || (!canMMX2BeUsed))
+#else
     if(sws_flags != SWS_FAST_BILINEAR)
+#endif
     {
     	RENAME(hScale)(dst     , dstWidth, src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
     	RENAME(hScale)(dst+2048, dstWidth, src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
@@ -2026,12 +1858,13 @@ FUNNYUVCODE
    }
 }
 
-static inline void RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *filterSize, int xInc,
+static inline void RENAME(initFilter)(int16_t *dstFilter, int16_t *filterPos, int *filterSize, int xInc,
 				      int srcW, int dstW, int filterAlign, int one)
 {
 	int i;
+	double filter[8000];
 #ifdef HAVE_MMX
-	asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions) 
+	asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
 #endif
 
 	if(ABS(xInc - 0x10000) <10) // unscaled
@@ -2066,14 +1899,13 @@ static inline void RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 			if(sws_flags == SWS_BICUBIC)
 			{
 				double d= ABS(((xx+1)<<16) - xDstInSrc)/(double)(1<<16);
-//				int coeff;
-				int y1,y2,y3,y4;
+				double y1,y2,y3,y4;
 				double A= -0.75;
 					// Equation is from VirtualDub
-		y1 = (int)floor(0.5 + (        +     A*d -       2.0*A*d*d +       A*d*d*d) * 16384.0);
-		y2 = (int)floor(0.5 + (+ 1.0             -     (A+3.0)*d*d + (A+2.0)*d*d*d) * 16384.0);
-		y3 = (int)floor(0.5 + (        -     A*d + (2.0*A+3.0)*d*d - (A+2.0)*d*d*d) * 16384.0);
-		y4 = (int)floor(0.5 + (                  +           A*d*d -       A*d*d*d) * 16384.0);
+				y1 = (        +     A*d -       2.0*A*d*d +       A*d*d*d);
+				y2 = (+ 1.0             -     (A+3.0)*d*d + (A+2.0)*d*d*d);
+				y3 = (        -     A*d + (2.0*A+3.0)*d*d - (A+2.0)*d*d*d);
+				y4 = (                  +           A*d*d -       A*d*d*d);
 
 //				printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
 				filter[i*(*filterSize) + 0]= y1;
@@ -2087,8 +1919,7 @@ static inline void RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 				for(j=0; j<*filterSize; j++)
 				{
 					double d= ABS((xx<<16) - xDstInSrc)/(double)(1<<16);
-					int coeff;
-					coeff= (int)(0.5 + (1.0 - d)*(1<<14));
+					double coeff= 1.0 - d;
 					if(coeff<0) coeff=0;
 	//				printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
 					filter[i*(*filterSize) + j]= coeff;
@@ -2116,24 +1947,22 @@ static inline void RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 			for(j=0; j<*filterSize; j++)
 			{
 				double d= ABS((xx<<16) - xDstInSrc)/(double)xInc;
-				int coeff;
+				double coeff;
 				if(sws_flags == SWS_BICUBIC)
 				{
 					double A= -0.75;
 //					d*=2;
 					// Equation is from VirtualDub
 					if(d<1.0)
-						coeff = (int)floor(0.5 + (1.0 - (A+3.0)*d*d
-						        + (A+2.0)*d*d*d) * (1<<14));
+						coeff = (1.0 - (A+3.0)*d*d + (A+2.0)*d*d*d);
 					else if(d<2.0)
-						coeff = (int)floor(0.5 + (-4.0*A + 8.0*A*d
-						        - 5.0*A*d*d + A*d*d*d) * (1<<14));
+						coeff = (-4.0*A + 8.0*A*d - 5.0*A*d*d + A*d*d*d);
 					else
-						coeff=0;
+						coeff=0.0;
 				}
 				else
 				{
-					coeff= (int)(0.5 + (1.0 - d)*(1<<14));
+					coeff= 1.0 - d;
 					if(coeff<0) coeff=0;
 				}
 //				if(filterAlign==1) printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
@@ -2160,17 +1989,17 @@ static inline void RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 			filterPos[i]= 0;
 		}
 
-		if(filterPos[i] + *filterSize > srcW)
+		if(filterPos[i] + (*filterSize) > srcW)
 		{
-			int shift= filterPos[i] + *filterSize - srcW;
+			int shift= filterPos[i] + (*filterSize) - srcW;
 			// Move filter coeffs right to compensate for filterPos
-			for(j=*filterSize-2; j>=0; j--)
+			for(j=(*filterSize)-2; j>=0; j--)
 			{
-				int right= MIN(j + shift, *filterSize-1);
+				int right= MIN(j + shift, (*filterSize)-1);
 				filter[i*(*filterSize) +right] += filter[i*(*filterSize) +j];
 				filter[i*(*filterSize) +j]=0;
 			}
-			filterPos[i]= srcW - *filterSize;
+			filterPos[i]= srcW - (*filterSize);
 		}
 	}
 
@@ -2190,7 +2019,7 @@ static inline void RENAME(initFilter)(int16_t *filter, int16_t *filterPos, int *
 		scale/= sum;
 		for(j=0; j<*filterSize; j++)
 		{
-			filter[i*(*filterSize) + j]= (int)(filter[i*(*filterSize) + j]*scale);
+			dstFilter[i*(*filterSize) + j]= (int)(filter[i*(*filterSize) + j]*scale);
 		}
 	}
 }
@@ -2339,16 +2168,28 @@ static int chrBufIndex=0;
 
 static int firstTime=1;
 
-int widthAlign= dstbpp==12 ? 16 : 8;
-if(((dstW + widthAlign-1)&(~(widthAlign-1))) > dststride)
+const int widthAlign= dstbpp==12 ? 16 : 8;
+const int bytespp= (dstbpp+1)/8; //(12->1, 15&16->2, 24->3, 32->4)
+const int over= dstbpp==12 ? 	  (((dstW+15)&(~15))) - dststride
+				: (((dstW+7)&(~7)))*bytespp - dststride;
+if(dststride%widthAlign !=0 )
 {
-	dstW&= ~(widthAlign-1);
 	if(firstTime)
 		fprintf(stderr, "SwScaler: Warning: dstStride is not a multiple of %d!\n"
-				"SwScaler: ->lowering width to compensate, new width=%d\n"
-				"SwScaler: ->cannot do aligned memory acesses anymore\n",
-				widthAlign, dstW);
+				"SwScaler:          ->cannot do aligned memory acesses anymore\n",
+				widthAlign);
 }
+
+if(over>0)
+{
+	if(firstTime)
+		fprintf(stderr, "SwScaler: Warning: output width is not a multiple of 8 (16 for YV12)\n"
+				"SwScaler:          and dststride is not large enough to handle %d extra bytes\n"
+				"SwScaler:          ->using unoptimized C version for last line(s)\n",
+				over);
+}
+
+
 
 //printf("%d %d %d %d\n", srcW, srcH, dstW, dstH);
 //printf("%d %d %d %d\n", lumXInc, lumYInc, srcSliceY, srcSliceH);
@@ -2357,9 +2198,11 @@ if(((dstW + widthAlign-1)&(~(widthAlign-1))) > dststride)
 canMMX2BeUsed= (lumXInc <= 0x10000 && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
 if(!canMMX2BeUsed && lumXInc <= 0x10000 && (srcW&15)==0 && sws_flags==SWS_FAST_BILINEAR)
 {
-	if(firstTime) //FIXME only if verbose ?
+	if(firstTime)
 		fprintf(stderr, "SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
 }
+#else
+canMMX2BeUsed=0; // should be 0 anyway but ...
 #endif
 
 if(firstTime)
@@ -2398,7 +2241,7 @@ if(firstTime)
 #elif defined (HAVE_MMX)
 		fprintf(stderr, "using MMX\n");
 #elif defined (ARCH_X86)
-		fprintf(stderr, "using X86 ASM2\n");
+		fprintf(stderr, "using X86 ASM\n");
 #else
 		fprintf(stderr, "using C\n");
 #endif
@@ -2413,13 +2256,15 @@ if(firstTime)
 if(sws_flags==SWS_FAST_BILINEAR)
 {
 	if(canMMX2BeUsed) 	lumXInc+= 20;
+#ifndef HAVE_MMX //we dont use the x86asm scaler if mmx is available
 	else			lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
+#endif
 }
 
 if(fullUVIpol && !(dstbpp==12)) 	chrXInc= lumXInc>>1, chrDstW= dstW;
-else					chrXInc= lumXInc,    chrDstW= dstW>>1;
+else					chrXInc= lumXInc,    chrDstW= (dstW+1)>>1;
 
-if(dstbpp==12)	chrYInc= lumYInc,    chrDstH= dstH>>1;
+if(dstbpp==12)	chrYInc= lumYInc,    chrDstH= (dstH+1)>>1;
 else		chrYInc= lumYInc>>1, chrDstH= dstH;
 
   // force calculation of the horizontal interpolation of the first line
@@ -2440,13 +2285,10 @@ else		chrYInc= lumYInc>>1, chrDstH= dstH;
 #endif
 		oldDstW= dstW; oldSrcW= srcW; oldFlags= sws_flags;
 
-		if(sws_flags != SWS_FAST_BILINEAR)
-		{
-			RENAME(initFilter)(hLumFilter, hLumFilterPos, &hLumFilterSize, lumXInc,
-					   srcW   , dstW   , filterAlign, 1<<14);
-			RENAME(initFilter)(hChrFilter, hChrFilterPos, &hChrFilterSize, chrXInc,
-					   srcW>>1, chrDstW, filterAlign, 1<<14);
-		}
+		RENAME(initFilter)(hLumFilter, hLumFilterPos, &hLumFilterSize, lumXInc,
+				srcW   , dstW   , filterAlign, 1<<14);
+		RENAME(initFilter)(hChrFilter, hChrFilterPos, &hChrFilterSize, chrXInc,
+				(srcW+1)>>1, chrDstW, filterAlign, 1<<14);
 
 #ifdef HAVE_MMX2
 // cant downscale !!!
@@ -2470,7 +2312,7 @@ else		chrYInc= lumYInc>>1, chrDstH= dstH;
 		RENAME(initFilter)(vLumFilter, vLumFilterPos, &vLumFilterSize, lumYInc,
 				srcH   , dstH,    1, (1<<12)-4);
 		RENAME(initFilter)(vChrFilter, vChrFilterPos, &vChrFilterSize, chrYInc,
-				srcH>>1, chrDstH, 1, (1<<12)-4);
+				(srcH+1)>>1, chrDstH, 1, (1<<12)-4);
 
 		// Calculate Buffer Sizes so that they wont run out while handling these damn slices
 		vLumBufSize= vLumFilterSize; vChrBufSize= vChrFilterSize;
@@ -2507,6 +2349,74 @@ else		chrYInc= lumYInc>>1, chrDstH= dstH;
 			chrMmxFilter[4*i]=chrMmxFilter[4*i+1]=chrMmxFilter[4*i+2]=chrMmxFilter[4*i+3]=
 				vChrFilter[i];
 #endif
+	}
+
+	if(firstTime && verbose)
+	{
+#ifdef HAVE_MMX2
+		int mmx2=1;
+#else
+		int mmx2=0;
+#endif
+#ifdef HAVE_MMX
+		int mmx=1;
+#else
+		int mmx=0;
+#endif
+
+#ifdef HAVE_MMX
+		if(canMMX2BeUsed && sws_flags==SWS_FAST_BILINEAR)
+			printf("SwScaler: using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
+		else
+		{
+			if(hLumFilterSize==4)
+				printf("SwScaler: using 4-tap MMX scaler for horizontal luminance scaling\n");
+			else if(hLumFilterSize==8)
+				printf("SwScaler: using 8-tap MMX scaler for horizontal luminance scaling\n");
+			else
+				printf("SwScaler: using n-tap MMX scaler for horizontal luminance scaling\n");
+
+			if(hChrFilterSize==4)
+				printf("SwScaler: using 4-tap MMX scaler for horizontal chrominance scaling\n");
+			else if(hChrFilterSize==8)
+				printf("SwScaler: using 8-tap MMX scaler for horizontal chrominance scaling\n");
+			else
+				printf("SwScaler: using n-tap MMX scaler for horizontal chrominance scaling\n");
+		}
+#elif defined (ARCH_X86)
+		printf("SwScaler: using X86-Asm scaler for horizontal scaling\n");
+#else
+		if(sws_flags==SWS_FAST_BILINEAR)
+			printf("SwScaler: using FAST_BILINEAR C scaler for horizontal scaling\n");
+		else
+			printf("SwScaler: using C scaler for horizontal scaling\n");
+#endif
+
+		if(dstbpp==12)
+		{
+			if(vLumFilterSize==1)
+				printf("SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12)\n", mmx ? "MMX" : "C");
+			else
+				printf("SwScaler: using n-tap %s scaler for vertical scaling (YV12)\n", mmx ? "MMX" : "C");
+		}
+		else
+		{
+			if(vLumFilterSize==1 && vChrFilterSize==2)
+				printf("SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
+				       "SwScaler:       2-tap scaler for vertical chrominance scaling (BGR)\n", mmx ? "MMX" : "C");
+			else if(vLumFilterSize==2 && vChrFilterSize==2)
+				printf("SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", mmx ? "MMX" : "C");
+			else
+				printf("SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", mmx ? "MMX" : "C");
+		}
+
+		if(dstbpp==24)
+			printf("SwScaler: using %s YV12->BGR24 Converter\n",
+				mmx2 ? "MMX2" : (mmx ? "MMX" : "C"));
+		else
+			printf("SwScaler: using %s YV12->BGR%d Converter\n", mmx ? "MMX" : "C", dstbpp);
+
+		printf("SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
 	}
 
 	lastInLumBuf= -1;
@@ -2557,7 +2467,7 @@ else		chrYInc= lumYInc>>1, chrDstH= dstH;
 				ASSERT(chrBufIndex < 2*vChrBufSize)
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < (srcSliceH>>1))
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
-				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, srcW>>1, chrXInc);
+				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc);
 				lastInChrBuf++;
 			}
 			//wrap buf index around to stay inside the ring buffer
@@ -2590,7 +2500,7 @@ else		chrYInc= lumYInc>>1, chrDstH= dstH;
 				ASSERT(chrBufIndex < 2*vChrBufSize)
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < (srcSliceH>>1))
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
-				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, srcW>>1, chrXInc);
+				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc);
 				lastInChrBuf++;
 			}
 			//wrap buf index around to stay inside the ring buffer
@@ -2605,7 +2515,8 @@ else		chrYInc= lumYInc>>1, chrDstH= dstH;
 		g5Dither= dither8[dstY&1];
 		r5Dither= dither8[(dstY+1)&1];
 #endif
-
+	    if(dstY < dstH-2 || over<=0)
+	    {
 		if(dstbpp==12) //YV12
 		{
 			if(dstY&1) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
@@ -2657,6 +2568,29 @@ else		chrYInc= lumYInc>>1, chrDstH= dstH;
 					lumMmxFilter+dstY*vLumFilterSize*4, chrMmxFilter+dstY*vChrFilterSize*4);
 			}
 		}
+            }
+	    else // hmm looks like we cant use MMX here without overwriting this arrays tail
+	    {
+		int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
+		int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
+		if(dstbpp==12) //YV12
+		{
+			if(dstY&1) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
+			yuv2yuvXinC(
+				vLumFilter+dstY*vLumFilterSize     , lumSrcPtr, vLumFilterSize,
+				vChrFilter+(dstY>>1)*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+				dest, uDest, vDest, dstW);
+		}
+		else
+		{
+			ASSERT(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
+			ASSERT(chrSrcPtr + vChrFilterSize - 1 < chrPixBuf + vChrBufSize*2);
+			yuv2rgbXinC(
+				vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
+				vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+				dest, dstW, dstbpp);
+		}
+	    }
 	}
 
 #ifdef HAVE_MMX
