@@ -49,8 +49,8 @@
 //Deinterlacing Filters
 #define	LINEAR_IPOL_DEINT_FILTER	0x10000	// 65536
 #define	LINEAR_BLEND_DEINT_FILTER	0x20000	// 131072
-//#define	CUBIC_BLEND_DEINT_FILTER	0x8000	// (not implemented yet)
-#define	CUBIC_IPOL_DEINT_FILTER		0x40000	// 262144 (not implemented yet)
+#define	CUBIC_BLEND_DEINT_FILTER	0x8000	// (not implemented yet)
+#define	CUBIC_IPOL_DEINT_FILTER		0x40000	// 262144
 #define	MEDIAN_DEINT_FILTER		0x80000	// 524288
 
 

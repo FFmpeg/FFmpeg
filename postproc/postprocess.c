@@ -30,14 +30,15 @@ deRing
 Vertical RKAlgo1	E		a	a
 Vertical X1		a		E	E
 Horizontal X1		a		E	E
-LinIpolDeinterlace	a		E	E*
-LinBlendDeinterlace	a		E	E*
+LinIpolDeinterlace	e		E	E*
+CubicIpolDeinterlace	a		e	e*
+LinBlendDeinterlace	e		E	E*
 MedianDeinterlace	 	Ec	Ec
 
 
 * i dont have a 3dnow CPU -> its untested
 E = Exact implementation
-e = allmost exact implementation
+e = allmost exact implementation (slightly different rounding,...)
 a = alternative / approximate impl
 c = checked against the other implementations (-vo md5)
 */
@@ -62,7 +63,6 @@ noise reduction filters
 ...
 
 Notes:
-
 
 */
 
@@ -178,12 +178,12 @@ static inline void prefetcht2(void *p)
 
 //FIXME? |255-0| = 1 (shouldnt be a problem ...)
 /**
- * Check if the middle 8x8 Block in the given 8x10 block is flat
+ * Check if the middle 8x8 Block in the given 8x16 block is flat
  */
 static inline int isVertDC(uint8_t src[], int stride){
 	int numEq= 0;
 	int y;
-	src+= stride; // src points to begin of the 8x8 Block
+	src+= stride*4; // src points to begin of the 8x8 Block
 #ifdef HAVE_MMX
 	asm volatile(
 		"pushl %1\n\t"
@@ -295,6 +295,7 @@ static inline int isVertMinMaxOk(uint8_t src[], int stride, int QP)
 {
 #ifdef HAVE_MMX
 	int isOk;
+	src+= stride*3;
 	asm volatile(
 //		"int $3 \n\t"
 		"movq (%1, %2), %%mm0				\n\t"
@@ -320,6 +321,7 @@ static inline int isVertMinMaxOk(uint8_t src[], int stride, int QP)
 
 	int isOk2= 1;
 	int x;
+	src+= stride*3;
 	for(x=0; x<BLOCK_SIZE; x++)
 	{
 		if(abs((int)src[x + stride] - (int)src[x + (stride<<3)]) > 2*QP) isOk2=0;
@@ -343,19 +345,16 @@ static inline int isVertMinMaxOk(uint8_t src[], int stride, int QP)
 }
 
 /**
- * Do a vertical low pass filter on the 8x10 block (only write to the 8x8 block in the middle)
+ * Do a vertical low pass filter on the 8x16 block (only write to the 8x8 block in the middle)
  * using the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16
  */
 static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 {
-//	QP= 64;
-
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-//#ifdef HAVE_MMX2
+	src+= stride*3;
 	asm volatile(	//"movv %0 %1 %2\n\t"
 		"pushl %0 \n\t"
 		"movq pQPb, %%mm0				\n\t"  // QP,..., QP
-//		"movq bFF  , %%mm0				\n\t"  // QP,..., QP
 
 		"movq (%0), %%mm6				\n\t"
 		"movq (%0, %1), %%mm5				\n\t"
@@ -395,20 +394,7 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 		// 6 4 2 2 1 1
 		// 6 4 4 2
 		// 6 8 2
-/*
-		"movq %%mm6, %%mm2				\n\t" //1
-		"movq %%mm6, %%mm3				\n\t" //1
-		"paddusb b02, %%mm3 				\n\t"
-		"psrlw $2, %%mm3				\n\t" //1	/4
-		"pand b3F, %%mm3				\n\t"
-		"psubb %%mm3, %%mm2				\n\t"
-		"movq (%0, %1), %%mm0				\n\t" //  1
-		"movq %%mm0, %%mm1				\n\t" //  1
-		"paddusb b02, %%mm0				\n\t"
-		"psrlw $2, %%mm0				\n\t" //  1	/4
-		"pand b3F, %%mm0				\n\t"
-		"paddusb %%mm2, %%mm0				\n\t" //3 1	/4
-*/
+
 		"movq (%0, %1), %%mm0				\n\t" //  1
 		"movq %%mm0, %%mm1				\n\t" //  1
 		PAVGB(%%mm6, %%mm0)				      //1 1	/2
@@ -470,7 +456,6 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 		"movq (%%eax, %1, 2), %%mm6			\n\t" //      1
 		PAVGB(%%mm6, %%mm1)				      //  11  4  2	/8
 		PAVGB(%%mm0, %%mm1)				      //  11224222	/16
-//		"pxor %%mm1, %%mm1 \n\t"
 		"movq %%mm1, (%%eax, %1, 2)			\n\t" //      X
 		// mm2=3(112) mm3=6(11) mm4=5 mm5=4(11) mm6=6 mm7=9
 		PAVGB((%%ebx), %%mm2)				      //   112 4	/8
@@ -478,7 +463,6 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 		PAVGB(%%mm0, %%mm6)				      //      1 1	/2
 		PAVGB(%%mm7, %%mm6)				      //      1 12	/4
 		PAVGB(%%mm2, %%mm6)				      //   1122424	/4
-//		"pxor %%mm6, %%mm6 \n\t"
 		"movq %%mm6, (%%ebx)				\n\t" //       X
 		// mm0=8 mm3=6(11) mm4=5 mm5=4(11) mm7=9
 		PAVGB(%%mm7, %%mm5)				      //    11   2	/4
@@ -486,8 +470,6 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 
 		PAVGB(%%mm3, %%mm0)				      //      112	/4
 		PAVGB(%%mm0, %%mm5)				      //    112246	/16
-//		"pxor %%mm5, %%mm5 \n\t"
-//		"movq pQPb, %%mm5 \n\t"
 		"movq %%mm5, (%%eax, %1, 4)			\n\t" //        X
 		"popl %0\n\t"
 
@@ -506,6 +488,7 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 	const int l8= stride + l7;
 	const int l9= stride + l8;
 	int x;
+	src+= stride*3;
 	for(x=0; x<BLOCK_SIZE; x++)
 	{
 		const int first= ABS(src[0] - src[l1]) < QP ? src[0] : src[l1];
@@ -551,6 +534,7 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 static inline void vertRK1Filter(uint8_t *src, int stride, int QP)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	src+= stride*3;
 // FIXME rounding
 	asm volatile(
 		"pxor %%mm7, %%mm7				\n\t" // 0
@@ -622,6 +606,7 @@ static inline void vertRK1Filter(uint8_t *src, int stride, int QP)
 	const int l8= stride + l7;
 	const int l9= stride + l8;
 	int x;
+	src+= stride*3;
 	for(x=0; x<BLOCK_SIZE; x++)
 	{
 		if(ABS(src[l4]-src[l5]) < QP + QP/4)
@@ -650,6 +635,8 @@ static inline void vertRK1Filter(uint8_t *src, int stride, int QP)
 static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	src+= stride*3;
+
 	asm volatile(
 		"pxor %%mm7, %%mm7				\n\t" // 0
 //		"movq b80, %%mm6				\n\t" // MIN_SIGNED_BYTE
@@ -744,6 +731,8 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 	const int l8= stride + l7;
 	const int l9= stride + l8;
 	int x;
+
+	src+= stride*3;
 	for(x=0; x<BLOCK_SIZE; x++)
 	{
 		int a= src[l3] - src[l4];
@@ -1007,7 +996,7 @@ HX1b((%0, %1, 4),(%%ebx),(%%ebx, %1),(%%ebx, %1, 2))
 static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 {
 #ifdef HAVE_MMX
-	src+= stride;
+	src+= stride*4;
 	//FIXME try pmul for *5 stuff
 //	src[0]=0;
 	asm volatile(
@@ -1154,7 +1143,6 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 		"psubw %%mm7, %%mm5				\n\t" // |2H2 - 5H3 + 5H4 - 2H5|
 // 100 opcodes
 		"movd %2, %%mm2					\n\t" // QP
-//"pcmpeqb %%mm2, %%mm2\n\t"
 		"punpcklwd %%mm2, %%mm2				\n\t"
 		"punpcklwd %%mm2, %%mm2				\n\t"
 		"psllw $3, %%mm2				\n\t" // 8QP
@@ -1232,7 +1220,6 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 		"movq %%mm0, (%%eax, %1, 2) 			\n\t"
 		"movq (%0, %1, 4), %%mm0			\n\t"
 		"psubb %%mm4, %%mm0				\n\t"
-//		"pxor %%mm0, %%mm0 \n\t"
 		"movq %%mm0, (%0, %1, 4) 			\n\t"
 
 		:
@@ -1250,6 +1237,7 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 	const int l8= stride + l7;
 //	const int l9= stride + l8;
 	int x;
+	src+= stride*3;
 	for(x=0; x<BLOCK_SIZE; x++)
 	{
 		const int middleEnergy= 5*(src[l5] - src[l4]) + 2*(src[l3] - src[l6]);
@@ -1881,7 +1869,7 @@ FIND_MIN_MAX(%%ebx, %1, 2)
 
 /**
  * Deinterlaces the given block
- * will be called for every 8x8 block, except the last row, and can read & write into an 8x16 block
+ * will be called for every 8x8 block, and can read & write into an 8x16 block
  */
 static inline void deInterlaceInterpolateLinear(uint8_t src[], int stride)
 {
@@ -1894,16 +1882,16 @@ static inline void deInterlaceInterpolateLinear(uint8_t src[], int stride)
 
 		"movq (%0), %%mm0				\n\t"
 		"movq (%%eax, %1), %%mm1			\n\t"
-		PAVGB(%%mm1, %%mm0)\
+		PAVGB(%%mm1, %%mm0)
 		"movq %%mm0, (%%eax)				\n\t"
 		"movq (%0, %1, 4), %%mm0			\n\t"
-		PAVGB(%%mm0, %%mm1)\
+		PAVGB(%%mm0, %%mm1)
 		"movq %%mm1, (%%eax, %1, 2)			\n\t"
 		"movq (%%ebx, %1), %%mm1			\n\t"
-		PAVGB(%%mm1, %%mm0)\
+		PAVGB(%%mm1, %%mm0)
 		"movq %%mm0, (%%ebx)				\n\t"
 		"movq (%0, %1, 8), %%mm0			\n\t"
-		PAVGB(%%mm0, %%mm1)\
+		PAVGB(%%mm0, %%mm1)
 		"movq %%mm1, (%%ebx, %1, 2)			\n\t"
 
 		: : "r" (src), "r" (stride)
@@ -1924,41 +1912,59 @@ static inline void deInterlaceInterpolateLinear(uint8_t src[], int stride)
 
 /**
  * Deinterlaces the given block
- * will be called for every 8x8 block, in the last row, and can read & write into an 8x8 block
+ * will be called for every 8x8 block, and can read & write into an 8x16 block
+ * no cliping in C version
  */
-static inline void deInterlaceInterpolateLinearLastRow(uint8_t src[], int stride)
+static inline void deInterlaceInterpolateCubic(uint8_t src[], int stride)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	asm volatile(
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
-//	0	1	2	3	4	5	6	7	8	9
-//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
+		"leal (%%ebx, %1, 4), %%ecx			\n\t"
+		"addl %1, %%ecx					\n\t"
+		"pxor %%mm7, %%mm7				\n\t"
+//	0	1	2	3	4	5	6	7	8	9	10
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1 ecx
 
-		"movq (%0), %%mm0				\n\t"
-		"movq (%%eax, %1), %%mm1			\n\t"
-		PAVGB(%%mm1, %%mm0)\
-		"movq %%mm0, (%%eax)				\n\t"
-		"movq (%0, %1, 4), %%mm0			\n\t"
-		PAVGB(%%mm0, %%mm1)\
-		"movq %%mm1, (%%eax, %1, 2)			\n\t"
-		"movq (%%ebx, %1), %%mm1			\n\t"
-		PAVGB(%%mm1, %%mm0)\
-		"movq %%mm0, (%%ebx)				\n\t"
-		"movq %%mm1, (%%ebx, %1, 2)			\n\t"
+#define DEINT_CUBIC(a,b,c,d,e)\
+		"movq " #a ", %%mm0				\n\t"\
+		"movq " #b ", %%mm1				\n\t"\
+		"movq " #d ", %%mm2				\n\t"\
+		"movq " #e ", %%mm3				\n\t"\
+		PAVGB(%%mm2, %%mm1)					/* (b+d) /2 */\
+		PAVGB(%%mm3, %%mm0)					/* a(a+e) /2 */\
+		"movq %%mm0, %%mm2				\n\t"\
+		"punpcklbw %%mm7, %%mm0				\n\t"\
+		"punpckhbw %%mm7, %%mm2				\n\t"\
+		"movq %%mm1, %%mm3				\n\t"\
+		"punpcklbw %%mm7, %%mm1				\n\t"\
+		"punpckhbw %%mm7, %%mm3				\n\t"\
+		"psubw %%mm1, %%mm0				\n\t"	/* L(a+e - (b+d))/2 */\
+		"psubw %%mm3, %%mm2				\n\t"	/* H(a+e - (b+d))/2 */\
+		"psraw $3, %%mm0				\n\t"	/* L(a+e - (b+d))/16 */\
+		"psraw $3, %%mm2				\n\t"	/* H(a+e - (b+d))/16 */\
+		"psubw %%mm0, %%mm1				\n\t"	/* L(9b + 9d - a - e)/16 */\
+		"psubw %%mm2, %%mm3				\n\t"	/* H(9b + 9d - a - e)/16 */\
+		"packuswb %%mm3, %%mm1				\n\t"\
+		"movq %%mm1, " #c "				\n\t"
 
+DEINT_CUBIC((%0), (%%eax, %1), (%%eax, %1, 2), (%0, %1, 4), (%%ebx, %1))
+DEINT_CUBIC((%%eax, %1), (%0, %1, 4), (%%ebx), (%%ebx, %1), (%0, %1, 8))
+DEINT_CUBIC((%0, %1, 4), (%%ebx, %1), (%%ebx, %1, 2), (%0, %1, 8), (%%ecx))
+DEINT_CUBIC((%%ebx, %1), (%0, %1, 8), (%%ebx, %1, 4), (%%ecx), (%%ecx, %1, 2))
 
 		: : "r" (src), "r" (stride)
-		: "%eax", "%ebx"
+		: "%eax", "%ebx", "ecx"
 	);
 #else
 	int x;
 	for(x=0; x<8; x++)
 	{
-		src[stride]   = (src[0]        + src[stride*2])>>1;
-		src[stride*3] = (src[stride*2] + src[stride*4])>>1;
-		src[stride*5] = (src[stride*4] + src[stride*6])>>1;
-		src[stride*7] = src[stride*6];
+		src[stride*3] = (-src[0]        + 9*src[stride*2] + 9*src[stride*4] - src[stride*6])>>4;
+		src[stride*5] = (-src[stride*2] + 9*src[stride*4] + 9*src[stride*6] - src[stride*8])>>4;
+		src[stride*7] = (-src[stride*4] + 9*src[stride*6] + 9*src[stride*8] - src[stride*10])>>4;
+		src[stride*9] = (-src[stride*6] + 9*src[stride*8] + 9*src[stride*10] - src[stride*12])>>4;
 		src++;
 	}
 #endif
@@ -1966,7 +1972,7 @@ static inline void deInterlaceInterpolateLinearLastRow(uint8_t src[], int stride
 
 /**
  * Deinterlaces the given block
- * will be called for every 8x8 block, except the last row, and can read & write into an 8x16 block
+ * will be called for every 8x8 block, and can read & write into an 8x16 block
  * will shift the image up by 1 line (FIXME if this is a problem)
  */
 static inline void deInterlaceBlendLinear(uint8_t src[], int stride)
@@ -2029,70 +2035,6 @@ static inline void deInterlaceBlendLinear(uint8_t src[], int stride)
 		src[stride*5] = (src[stride*5] + 2*src[stride*6] + src[stride*7])>>2;
 		src[stride*6] = (src[stride*6] + 2*src[stride*7] + src[stride*8])>>2;
 		src[stride*7] = (src[stride*7] + 2*src[stride*8] + src[stride*9])>>2;
-		src++;
-	}
-#endif
-}
-
-/**
- * Deinterlaces the given block
- * will be called for every 8x8 block, in the last row, and can read & write into an 8x8 block
- * will shift the image up by 1 line (FIXME if this is a problem)
- */
-static inline void deInterlaceBlendLinearLastRow(uint8_t src[], int stride)
-{
-#if defined (HAVE_MMSX2) || defined (HAVE_3DNOW)
-	asm volatile(
-		"leal (%0, %1), %%eax				\n\t"
-		"leal (%%eax, %1, 4), %%ebx			\n\t"
-//	0	1	2	3	4	5	6	7	8	9
-//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
-
-		"movq (%0), %%mm0				\n\t" // L0
-		"movq (%%eax, %1), %%mm1			\n\t" // L2
-		PAVGB(%%mm1, %%mm0)				      // L0+L2
-		"movq (%%eax), %%mm2				\n\t" // L1
-		PAVGB(%%mm2, %%mm0)
-		"movq %%mm0, (%0)				\n\t"
-		"movq (%%eax, %1, 2), %%mm0			\n\t" // L3
-		PAVGB(%%mm0, %%mm2)				      // L1+L3
-		PAVGB(%%mm1, %%mm2)				      // 2L2 + L1 + L3
-		"movq %%mm2, (%%eax)				\n\t"
-		"movq (%0, %1, 4), %%mm2			\n\t" // L4
-		PAVGB(%%mm2, %%mm1)				      // L2+L4
-		PAVGB(%%mm0, %%mm1)				      // 2L3 + L2 + L4
-		"movq %%mm1, (%%eax, %1)			\n\t"
-		"movq (%%ebx), %%mm1				\n\t" // L5
-		PAVGB(%%mm1, %%mm0)				      // L3+L5
-		PAVGB(%%mm2, %%mm0)				      // 2L4 + L3 + L5
-		"movq %%mm0, (%%eax, %1, 2)			\n\t"
-		"movq (%%ebx, %1), %%mm0			\n\t" // L6
-		PAVGB(%%mm0, %%mm2)				      // L4+L6
-		PAVGB(%%mm1, %%mm2)				      // 2L5 + L4 + L6
-		"movq %%mm2, (%0, %1, 4)			\n\t"
-		"movq (%%ebx, %1, 2), %%mm2			\n\t" // L7
-		PAVGB(%%mm2, %%mm1)				      // L5+L7
-		PAVGB(%%mm0, %%mm1)				      // 2L6 + L5 + L7
-		"movq %%mm1, (%%ebx)				\n\t"
-		PAVGB(%%mm2, %%mm0)				      // L7 + L8
-		"movq %%mm0, (%%ebx, %1)			\n\t"
-		"movq %%mm0, (%%ebx, %1, 2)			\n\t"
-
-		: : "r" (src), "r" (stride)
-		: "%eax", "%ebx"
-	);
-#else
-	int x;
-	for(x=0; x<8; x++)
-	{
-		src[0       ] = (src[0       ] + 2*src[stride  ] + src[stride*2])>>2;
-		src[stride  ] = (src[stride  ] + 2*src[stride*2] + src[stride*3])>>2;
-		src[stride*2] = (src[stride*2] + 2*src[stride*3] + src[stride*4])>>2;
-		src[stride*3] = (src[stride*3] + 2*src[stride*4] + src[stride*5])>>2;
-		src[stride*4] = (src[stride*4] + 2*src[stride*5] + src[stride*6])>>2;
-		src[stride*5] = (src[stride*5] + 2*src[stride*6] + src[stride*7])>>2;
-		src[stride*6] = (src[stride*6] +   src[stride*7])>>1;
-		src[stride*7] = src[stride*6];
 		src++;
 	}
 #endif
@@ -2208,91 +2150,6 @@ MEDIAN((%%ebx, %1), (%%ebx, %1, 2), (%0, %1, 8))
 		src[stride*5] = (src[stride*5] + 2*src[stride*6] + src[stride*7])>>2;
 		src[stride*6] = (src[stride*6] + 2*src[stride*7] + src[stride*8])>>2;
 		src[stride*7] = (src[stride*7] + 2*src[stride*8] + src[stride*9])>>2;
-		src++;
-	}
-#endif
-}
-
-/**
- * Deinterlaces the given block
- * will be called for every 8x8 block, in the last row, and can read & write into an 8x8 block
- */
-static inline void deInterlaceMedianLastRow(uint8_t src[], int stride)
-{
-#ifdef HAVE_MMX
-#ifdef HAVE_MMX2
-	asm volatile(
-		"leal (%0, %1), %%eax				\n\t"
-		"leal (%%eax, %1, 4), %%ebx			\n\t"
-//	0	1	2	3	4	5	6	7	8	9
-//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
-
-		"movq (%0), %%mm0				\n\t" //
-		"movq (%%eax, %1), %%mm2			\n\t" //
-		"movq (%%eax), %%mm1				\n\t" //
-		"movq %%mm0, %%mm3				\n\t"
-		"pmaxub %%mm1, %%mm0				\n\t" //
-		"pminub %%mm3, %%mm1				\n\t" //
-		"pmaxub %%mm2, %%mm1				\n\t" //
-		"pminub %%mm1, %%mm0				\n\t"
-		"movq %%mm0, (%%eax)				\n\t"
-
-		"movq (%0, %1, 4), %%mm0			\n\t" //
-		"movq (%%eax, %1, 2), %%mm1			\n\t" //
-		"movq %%mm2, %%mm3				\n\t"
-		"pmaxub %%mm1, %%mm2				\n\t" //
-		"pminub %%mm3, %%mm1				\n\t" //
-		"pmaxub %%mm0, %%mm1				\n\t" //
-		"pminub %%mm1, %%mm2				\n\t"
-		"movq %%mm2, (%%eax, %1, 2)			\n\t"
-
-		"movq (%%ebx), %%mm2				\n\t" //
-		"movq (%%ebx, %1), %%mm1			\n\t" //
-		"movq %%mm2, %%mm3				\n\t"
-		"pmaxub %%mm0, %%mm2				\n\t" //
-		"pminub %%mm3, %%mm0				\n\t" //
-		"pmaxub %%mm1, %%mm0				\n\t" //
-		"pminub %%mm0, %%mm2				\n\t"
-		"movq %%mm2, (%%ebx)				\n\t"
-
-		"movq %%mm1, (%%ebx, %1, 2)			\n\t"
-
-		: : "r" (src), "r" (stride)
-		: "%eax", "%ebx"
-	);
-#else //MMX & no MMX2
-asm volatile(
-		"leal (%0, %1), %%eax				\n\t"
-		"leal (%%eax, %1, 4), %%ebx			\n\t"
-//	0	1	2	3	4	5	6	7	8	9
-//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
-		"pxor %%mm7, %%mm7				\n\t"
-
-MEDIAN((%0), (%%eax), (%%eax, %1))
-MEDIAN((%%eax, %1), (%%eax, %1, 2), (%0, %1, 4))
-MEDIAN((%0, %1, 4), (%%ebx), (%%ebx, %1))
-
-		"movq (%%ebx, %1), %%mm0			\n\t"
-		"movq %%mm0, (%%ebx, %1, 2)			\n\t"
-
-		: : "r" (src), "r" (stride)
-		: "%eax", "%ebx"
-	);
-
-#endif //MMX
-#else
-	//FIXME
-	int x;
-	for(x=0; x<8; x++)
-	{
-		src[0       ] = (src[0       ] + 2*src[stride  ] + src[stride*2])>>2;
-		src[stride  ] = (src[stride  ] + 2*src[stride*2] + src[stride*3])>>2;
-		src[stride*2] = (src[stride*2] + 2*src[stride*3] + src[stride*4])>>2;
-		src[stride*3] = (src[stride*3] + 2*src[stride*4] + src[stride*5])>>2;
-		src[stride*4] = (src[stride*4] + 2*src[stride*5] + src[stride*6])>>2;
-		src[stride*5] = (src[stride*5] + 2*src[stride*6] + src[stride*7])>>2;
-		src[stride*6] = (src[stride*6] +   src[stride*7])>>1;
-		src[stride*7] = src[stride*6];
 		src++;
 	}
 #endif
@@ -2537,10 +2394,20 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	static uint64_t *yHistogram= NULL;
 	int black=0, white=255; // blackest black and whitest white in the picture
 
+	/* Temporary buffers for handling the last row(s) */
+	static uint8_t *tempDst= NULL;
+	static uint8_t *tempSrc= NULL;
+
 #ifdef TIMING
 	long long T0, T1, memcpyTime=0, vertTime=0, horizTime=0, sumTime, diffTime=0;
 	sumTime= rdtsc();
 #endif
+
+	if(tempDst==NULL)
+	{
+		tempDst= (uint8_t*)memalign(8, 1024*24);
+		tempSrc= (uint8_t*)memalign(8, 1024*24);
+	}
 
 	if(!yHistogram)
 	{
@@ -2569,7 +2436,6 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 //		printf("\n\n");
 
 		/* we allways get a completly black picture first */
-
 		maxClipped= (uint64_t)(sum * maxClippedThreshold);
 
 		clipped= sum;
@@ -2604,16 +2470,40 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		packedYOffset= 0;
 	}
 
+	/* copy first row of 8x8 blocks */
 	for(x=0; x<width; x+=BLOCK_SIZE)
 		blockCopy(dst + x, dstStride, src + x, srcStride, 8, mode & LEVEL_FIX);
 
-	for(y=0; y<height-7; y+=BLOCK_SIZE)
+	for(y=0; y<height; y+=BLOCK_SIZE)
 	{
 		//1% speedup if these are here instead of the inner loop
 		uint8_t *srcBlock= &(src[y*srcStride]);
 		uint8_t *dstBlock= &(dst[y*dstStride]);
-		uint8_t *vertSrcBlock= &(srcBlock[srcStride*3]); // Blocks are 10x8 -> *3 to start
-		uint8_t *vertBlock= &(dstBlock[dstStride*3]);
+
+		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards, if not
+		   than use a temporary buffer */
+		if(y+15 >= height)
+		{
+			/* copy from line 5 to 12 of src, these will e copied with
+			   blockcopy to dst later */
+			memcpy(tempSrc + srcStride*5, srcBlock + srcStride*5,
+				srcStride*MAX(height-y-5, 0) );
+
+			/* duplicate last line to fill the void upto line 12 */
+			if(y+12 >= height)
+			{
+				int i;
+				for(i=height-y; i<=12; i++)
+					memcpy(tempSrc + srcStride*i,
+						src + srcStride*(height-1), srcStride);
+			}
+
+
+			/* copy up to 5 lines of dst */
+			memcpy(tempDst, dstBlock, dstStride*MIN(height-y, 5) );
+			dstBlock= tempDst;
+			srcBlock= tempSrc;
+		}
 
 		// finish 1 block before the next otherwise we´ll might have a problem
 		// with the L1 Cache of the P4 ... or only a few blocks at a time or soemthing
@@ -2625,53 +2515,54 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				QPs[(y>>4)*QPStride + (x>>4)];
 			if(!isColor && (mode & LEVEL_FIX)) QP= (QP* (packedYScale &0xFFFF))>>8;
 #ifdef HAVE_MMX
-		asm volatile(
-			"movd %0, %%mm7					\n\t"
-			"packuswb %%mm7, %%mm7				\n\t" // 0, 0, 0, QP, 0, 0, 0, QP
-			"packuswb %%mm7, %%mm7				\n\t" // 0,QP, 0, QP, 0,QP, 0, QP
-			"packuswb %%mm7, %%mm7				\n\t" // QP,..., QP
-			"movq %%mm7, pQPb				\n\t"
-			: : "r" (QP)
-		);
+			asm volatile(
+				"movd %0, %%mm7					\n\t"
+				"packuswb %%mm7, %%mm7				\n\t" // 0, 0, 0, QP, 0, 0, 0, QP
+				"packuswb %%mm7, %%mm7				\n\t" // 0,QP, 0, QP, 0,QP, 0, QP
+				"packuswb %%mm7, %%mm7				\n\t" // QP,..., QP
+				"movq %%mm7, pQPb				\n\t"
+				: : "r" (QP)
+			);
 #endif
 
-
-			if(y + 12 < height)
-			{
 #ifdef MORE_TIMING
-				T0= rdtsc();
+			T0= rdtsc();
 #endif
 
 #ifdef HAVE_MMX2
-				prefetchnta(vertSrcBlock + (((x>>3)&3) + 2)*srcStride + 32);
-				prefetchnta(vertSrcBlock + (((x>>3)&3) + 6)*srcStride + 32);
-				prefetcht0(vertBlock + (((x>>3)&3) + 2)*dstStride + 32);
-				prefetcht0(vertBlock + (((x>>3)&3) + 6)*dstStride + 32);
+			prefetchnta(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
+			prefetchnta(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
+			prefetcht0(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
+			prefetcht0(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
 #elif defined(HAVE_3DNOW)
 //FIXME check if this is faster on an 3dnow chip or if its faster without the prefetch or ...
-/*				prefetch(vertSrcBlock + (((x>>3)&3) + 2)*srcStride + 32);
-				prefetch(vertSrcBlock + (((x>>3)&3) + 6)*srcStride + 32);
-				prefetchw(vertBlock + (((x>>3)&3) + 2)*dstStride + 32);
-				prefetchw(vertBlock + (((x>>3)&3) + 6)*dstStride + 32);
+/*			prefetch(srcBlock + (((x>>3)&3) + 5)*srcStride + 32);
+			prefetch(srcBlock + (((x>>3)&3) + 9)*srcStride + 32);
+			prefetchw(dstBlock + (((x>>3)&3) + 5)*dstStride + 32);
+			prefetchw(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
 */
 #endif
-				if(!isColor) yHistogram[ srcBlock[0] ]++;
 
-				blockCopy(vertBlock + dstStride*2, dstStride,
-					vertSrcBlock + srcStride*2, srcStride, 8, mode & LEVEL_FIX);
+			if(!isColor) yHistogram[ srcBlock[srcStride*5] ]++;
 
-				if(mode & LINEAR_IPOL_DEINT_FILTER)
-					deInterlaceInterpolateLinear(dstBlock, dstStride);
-				else if(mode & LINEAR_BLEND_DEINT_FILTER)
-					deInterlaceBlendLinear(dstBlock, dstStride);
-				else if(mode & MEDIAN_DEINT_FILTER)
-					deInterlaceMedian(dstBlock, dstStride);
-/*				else if(mode & CUBIC_IPOL_DEINT_FILTER)
-					deInterlaceInterpolateCubic(dstBlock, dstStride);
-				else if(mode & CUBIC_BLEND_DEINT_FILTER)
-					deInterlaceBlendCubic(dstBlock, dstStride);
+			blockCopy(dstBlock + dstStride*5, dstStride,
+				srcBlock + srcStride*5, srcStride, 8, mode & LEVEL_FIX);
+
+			if(mode & LINEAR_IPOL_DEINT_FILTER)
+				deInterlaceInterpolateLinear(dstBlock, dstStride);
+			else if(mode & LINEAR_BLEND_DEINT_FILTER)
+				deInterlaceBlendLinear(dstBlock, dstStride);
+			else if(mode & MEDIAN_DEINT_FILTER)
+				deInterlaceMedian(dstBlock, dstStride);
+			else if(mode & CUBIC_IPOL_DEINT_FILTER)
+				deInterlaceInterpolateCubic(dstBlock, dstStride);
+/*			else if(mode & CUBIC_BLEND_DEINT_FILTER)
+				deInterlaceBlendCubic(dstBlock, dstStride);
 */
 
+			/* only deblock if we have 2 blocks */
+			if(y + 8 < height)
+			{
 #ifdef MORE_TIMING
 				T1= rdtsc();
 				memcpyTime+= T1-T0;
@@ -2680,18 +2571,18 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				if(mode & V_DEBLOCK)
 				{
 					if(mode & V_RK1_FILTER)
-						vertRK1Filter(vertBlock, stride, QP);
+						vertRK1Filter(dstBlock, stride, QP);
 					else if(mode & V_X1_FILTER)
-						vertX1Filter(vertBlock, stride, QP);
+						vertX1Filter(dstBlock, stride, QP);
 					else
 					{
-						if( isVertDC(vertBlock, stride))
+						if( isVertDC(dstBlock, stride))
 						{
-							if(isVertMinMaxOk(vertBlock, stride, QP))
-								doVertLowPass(vertBlock, stride, QP);
+							if(isVertMinMaxOk(dstBlock, stride, QP))
+								doVertLowPass(dstBlock, stride, QP);
 						}
 						else
-							doVertDefFilter(vertBlock, stride, QP);
+							doVertDefFilter(dstBlock, stride, QP);
 					}
 				}
 #ifdef MORE_TIMING
@@ -2700,24 +2591,8 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				T0=T1;
 #endif
 			}
-			else
-			{
-				blockCopy(vertBlock + dstStride*1, dstStride,
-					vertSrcBlock + srcStride*1, srcStride, 4, mode & LEVEL_FIX);
 
-				if(mode & LINEAR_IPOL_DEINT_FILTER)
-					deInterlaceInterpolateLinearLastRow(dstBlock, dstStride);
-				else if(mode & LINEAR_BLEND_DEINT_FILTER)
-					deInterlaceBlendLinearLastRow(dstBlock, dstStride);
-				else if(mode & MEDIAN_DEINT_FILTER)
-					deInterlaceMedianLastRow(dstBlock, dstStride);
-/*				else if(mode & CUBIC_IPOL_DEINT_FILTER)
-					deInterlaceInterpolateCubicLastRow(dstBlock, dstStride);
-				else if(mode & CUBIC_BLEND_DEINT_FILTER)
-					deInterlaceBlendCubicLastRow(dstBlock, dstStride);
-*/
-			}
-
+			/* check if we have a previous block to deblock it with dstBlock */
 			if(x - 8 >= 0 && x<width)
 			{
 #ifdef MORE_TIMING
@@ -2749,11 +2624,15 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				dering(dstBlock - stride*9 + width-9, stride, QP);
 			//FIXME dering filter will not be applied to last block (bottom right)
 
-
 			dstBlock+=8;
 			srcBlock+=8;
-			vertBlock+=8;
-			vertSrcBlock+=8;
+		}
+
+		/* did we use a tmp buffer */
+		if(y+15 > height)
+		{
+			uint8_t *dstBlock= &(dst[y*dstStride]);
+			memcpy(dstBlock, tempDst, dstStride*(height-y) );
 		}
 	}
 #ifdef HAVE_3DNOW
@@ -2772,5 +2651,3 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			, black, white);
 #endif
 }
-
-
