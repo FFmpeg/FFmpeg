@@ -769,6 +769,7 @@ following image formats are supported:
 @item TechSmith Camtasia     @tab     @tab  X @tab fourcc: TSCC
 @item IBM Ultimotion         @tab     @tab  X @tab fourcc: ULTI
 @item Miro VideoXL           @tab     @tab  X @tab fourcc: VIXL
+@item QPEG                   @tab     @tab  X @tab fourccs: QPEG, Q1.0, Q1.1
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.

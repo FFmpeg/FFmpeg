@@ -21,7 +21,7 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       msvideo1.o vqavideo.o idcinvideo.o adx.o rational.o faandct.o 8bps.o \
       smc.o parser.o flicvideo.o truemotion1.o vmdav.o lcl.o qtrle.o g726.o \
       flac.o vp3dsp.o integer.o snow.o tscc.o sonic.o ulti.o h264idct.o \
-      qdrw.o xl.o rangecoder.o png.o pnm.o
+      qdrw.o xl.o rangecoder.o png.o pnm.o qpeg.o
 
 ifeq ($(AMR_NB),yes)
 ifeq ($(AMR_NB_FIXED),yes)

@@ -7,6 +7,7 @@ version <next>
 - Electronic Arts Multimedia (WVE/UV2/etc.) file demuxer
 - Miro VideoXL (VIXL) video decoder
 - H.261 video encoder
+- QPEG video decoder
 
 version 0.4.9-pre1:
 

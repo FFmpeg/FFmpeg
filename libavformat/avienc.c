@@ -170,6 +170,9 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_TSCC, MKTAG('t', 's', 'c', 'c') },
     { CODEC_ID_ULTI, MKTAG('U', 'L', 'T', 'I') },
     { CODEC_ID_VIXL, MKTAG('V', 'I', 'X', 'L') },
+    { CODEC_ID_QPEG, MKTAG('Q', 'P', 'E', 'G') },
+    { CODEC_ID_QPEG, MKTAG('Q', '1', '.', '0') },
+    { CODEC_ID_QPEG, MKTAG('Q', '1', '.', '1') },
     { CODEC_ID_RAWVIDEO, 0 },
     { 0, 0 },
 };
