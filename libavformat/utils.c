@@ -932,7 +932,8 @@ int av_add_index_entry(AVStream *st,
     }else{
         ie= &entries[index];
         if(ie->timestamp != timestamp){
-            assert(ie->timestamp > timestamp);
+            if(ie->timestamp <= timestamp)
+                return -1;
             memmove(entries + index + 1, entries + index, sizeof(AVIndexEntry)*(st->nb_index_entries - index));
             st->nb_index_entries++;
         }else if(ie->pos == pos && distance < ie->min_distance) //dont reduce the distance
