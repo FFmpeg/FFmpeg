@@ -1,5 +1,7 @@
 Upcoming version 0.4.7:
 
+- RealAudio 1.0 (14_4) and 2.0 (28_8) native decoders. Author unknown, code from a mplayerhq
+  (originally from public domain player for Amiga at http://www.honeypot.net/audio)
 - Current version now also compiles with older GCC (Fabrice)
 - 4X multimedia playback system including 4xm file demuxer (Mike
   Melanson), and 4X video and audio codecs (Michael)
