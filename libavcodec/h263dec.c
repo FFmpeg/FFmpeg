@@ -144,6 +144,8 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size){
 }
 
 static int decode_slice(MpegEncContext *s){
+    const int workaround_bugs= s->workaround_bugs;
+
     s->last_resync_gb= s->gb;
     s->first_slice_line= 1;
         
@@ -257,7 +259,9 @@ static int decode_slice(MpegEncContext *s){
         const int bits_count= get_bits_count(&s->gb);
         const int bits_left = s->gb.size*8 - bits_count;
         
-        if(bits_left==0 || bits_left>8){
+        if(bits_left==0){
+            s->padding_bug_score+=16;
+        }else if(bits_left>8){
             s->padding_bug_score++;
         } else if(bits_left != 1){
             int v= show_bits(&s->gb, 8);
@@ -267,7 +271,7 @@ static int decode_slice(MpegEncContext *s){
                 s->padding_bug_score--;
             else
                 s->padding_bug_score++;            
-        }
+        }                          
         
         if(s->padding_bug_score > -2)
             s->workaround_bugs |=  FF_BUG_NO_PADDING;
@@ -276,7 +280,7 @@ static int decode_slice(MpegEncContext *s){
     }
 
     // handle formats which dont have unique end markers
-    if(s->msmpeg4_version || (s->workaround_bugs&FF_BUG_NO_PADDING)){ //FIXME perhaps solve this more cleanly
+    if(s->msmpeg4_version || (workaround_bugs&FF_BUG_NO_PADDING)){ //FIXME perhaps solve this more cleanly
         int left= s->gb.size*8 - get_bits_count(&s->gb);
         int max_extra=7;
         
@@ -285,9 +289,9 @@ static int decode_slice(MpegEncContext *s){
             max_extra+= 17;
         
         /* buggy padding but the frame should still end approximately at the bitstream end */
-        if((s->workaround_bugs&FF_BUG_NO_PADDING) && s->error_resilience>=3)
+        if((workaround_bugs&FF_BUG_NO_PADDING) && s->error_resilience>=3)
             max_extra+= 48;
-        else if((s->workaround_bugs&FF_BUG_NO_PADDING))
+        else if((workaround_bugs&FF_BUG_NO_PADDING))
             max_extra+= 256*256*256*64;
         
         if(left>max_extra){
