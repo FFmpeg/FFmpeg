@@ -326,6 +326,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->intra_quant_bias= FF_DEFAULT_QUANT_BIAS;
     s->inter_quant_bias= FF_DEFAULT_QUANT_BIAS;
     s->palctrl = NULL;
+    s->cr_available = 0;
 }
 
 /**

@@ -16,7 +16,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4690
+#define LIBAVCODEC_BUILD       4691
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -275,6 +275,10 @@ static const __attribute__((unused)) int Motion_Est_QTab[] =
    used */
 #define CODEC_CAP_PARSE_ONLY      0x0004
 #define CODEC_CAP_TRUNCATED       0x0008
+/*
+ * Codec can use conditional replenishment if available.
+ */
+#define CODEC_CAP_CR              0x0010
 
 /**
  * Pan Scan area.
@@ -460,6 +464,13 @@ typedef struct AVPanScan{
      * - decoding: set by lavc (default 0)\
      */\
     int palette_has_changed;\
+    \
+    /**\
+     * Codec suggestion on buffer type if != 0\
+     * - encoding: unused\
+     * - decoding: set by lavc (before get_buffer() call))\
+     */\
+    int buffer_hints;\
 
 #define FF_QSCALE_TYPE_MPEG1	0
 #define FF_QSCALE_TYPE_MPEG2	1
@@ -476,6 +487,11 @@ typedef struct AVPanScan{
 #define FF_S_TYPE 4 // S(GMC)-VOP MPEG4
 #define FF_SI_TYPE 5
 #define FF_SP_TYPE 6
+
+#define FF_BUFFER_HINTS_VALID    0x01 // Buffer hints value is meaningful (if 0 ignore)
+#define FF_BUFFER_HINTS_READABLE 0x02 // Codec will read from buffer
+#define FF_BUFFER_HINTS_PRESERVE 0x04 // User must not alter buffer content
+#define FF_BUFFER_HINTS_REUSABLE 0x08 // Codec will reuse the buffer (update)
 
 /**
  * Audio Video Frame.
@@ -1365,6 +1381,13 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int noise_reduction;
+    
+    /**
+     * Conditional replenishment support
+     * - encoding: unused
+     * - decoding: set by user, if 1 user can allocate reusable buffers
+     */
+    int cr_available;
     
 } AVCodecContext;
 
