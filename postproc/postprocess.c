@@ -580,13 +580,6 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 
 	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
-	if(!strcmp("help", name))
-	{
-		printf("%s", help);
-		ppMode.error++;
-		return ppMode;
-	}
-	
 	if(verbose) printf("%s\n", name);
 
 	for(;;){
@@ -768,6 +761,13 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 int readPPOpt(void *conf, char *arg)
 {
 	int quality;
+	
+	if(!strcmp("help", arg))
+	{
+		printf("%s", help);
+		exit(1);
+	}
+	
 	for(quality=0; quality<GET_PP_QUALITY_MAX+1; quality++)
 	{
 		gPPMode[quality]= getPPModeByNameAndQuality(arg, quality);
