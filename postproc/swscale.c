@@ -1399,7 +1399,7 @@ static int old_s_xinc= -1;
 
 int srcWidth= (dstw*s_xinc + 0x8000)>>16;
 int dstUVw= fullUVIpol ? dstw : dstw/2;
-
+int i;
 
 #ifdef HAVE_MMX2
 canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0 && (srcWidth&15)==0) ? 1 : 0;
@@ -1422,6 +1422,17 @@ else					s_xinc2= s_xinc;
 	s_last_y1pos=-99;
 	s_srcypos= s_yinc/2 - 0x8000;
 	s_ypos=0;
+
+	// clean the buffers so that no green stuff is drawen if the width is not sane (%8=0)
+	for(i=dstw-2; i<dstw+20; i++)
+	{
+		pix_buf_uv[0][i] = pix_buf_uv[1][i]
+		= pix_buf_uv[0][2048+i] = pix_buf_uv[1][2048+i] = 128;
+		pix_buf_uv[0][i/2] = pix_buf_uv[1][i/2]
+		= pix_buf_uv[0][2048+i/2] = pix_buf_uv[1][2048+i/2] = 128;
+		pix_buf_y[0][i]= pix_buf_y[1][i]= 0;
+	}
+
 #ifdef HAVE_MMX2
 // cant downscale !!!
 	if((old_s_xinc != s_xinc || old_dstw!=dstw) && canMMX2BeUsed)
