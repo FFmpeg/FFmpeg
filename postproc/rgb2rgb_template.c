@@ -364,20 +364,9 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 #endif
 	while(s < end)
 	{
-#ifndef WORDS_BIGENDIAN
-		const int b= *s++;
-		const int g= *s++;
-		const int r= *s++;
-#else
-		const int a= *s++; /*skip*/
-		const int r= *s++;
-		const int g= *s++;
-		const int b= *s++;
-#endif		
-		*d++ = (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
-#ifndef WORDS_BIGENDIAN
-		s++;
-#endif
+		const int src= *((uint32_t*)s)++;
+		*d++ = ((src&0xFF)>>3) + ((src&0xFC00)>>5) + ((src&0xF80000)>>8);
+//		*d++ = ((src>>3)&0x1F) + ((src>>5)&0x7E0) + ((src>>8)&0xF800);
 	}
 }
 
@@ -437,11 +426,8 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, unsign
 #endif
 	while(s < end)
 	{
-		const int r= *s++;
-		const int g= *s++;
-		const int b= *s++;
-		*d++ = (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
-		s++;
+		const int src= *((uint32_t*)s)++;
+		*d++ = ((src&0xF8)<<8) + ((src&0xFC00)>>5) + ((src&0xF80000)>>19);
 	}
 }
 
@@ -501,11 +487,8 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 #endif
 	while(s < end)
 	{
-		const int b= *s++;
-		const int g= *s++;
-		const int r= *s++;
-		*d++ = (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
-		s++;
+		const int src= *((uint32_t*)s)++;
+		*d++ = ((src&0xFF)>>3) + ((src&0xF800)>>6) + ((src&0xF80000)>>9);
 	}
 }
 
@@ -565,11 +548,8 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, unsign
 #endif
 	while(s < end)
 	{
-		const int r= *s++;
-		const int g= *s++;
-		const int b= *s++;
-		*d++ = (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
-		s++;
+		const int src= *((uint32_t*)s)++;
+		*d++ = ((src&0xF8)<<7) + ((src&0xF800)>>6) + ((src&0xF80000)>>19);
 	}
 }
 
@@ -1187,12 +1167,18 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, unsigned 
 #endif
 	while(s < end)
 	{
+#if 0 //slightly slower on athlon
+		int bgr= *s++;
+		*((uint32_t*)d)++ = ((bgr&0x1F)<<3) + ((bgr&0x3E0)<<6) + ((bgr&0x7C00)<<9);
+#else
+//FIXME this is very likely wrong for bigendian (and the following converters too)
 		register uint16_t bgr;
 		bgr = *s++;
 		*d++ = (bgr&0x1F)<<3;
 		*d++ = (bgr&0x3E0)>>2;
 		*d++ = (bgr&0x7C00)>>7;
 		*d++ = 0;
+#endif
 	}
 }
 
