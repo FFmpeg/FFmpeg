@@ -38,6 +38,7 @@ const CodecTag codec_wav_tags[] = {
     { CODEC_ID_VORBIS, ('V'<<8)+'o' }, //HACK/FIXME, does vorbis in WAV/AVI have an (in)official id?
     { CODEC_ID_SONIC, 0x2048 },
     { CODEC_ID_SONIC_LS, 0x2048 },
+    { CODEC_ID_ADPCM_CT, 0x200 },
     { 0, 0 },
 };
 

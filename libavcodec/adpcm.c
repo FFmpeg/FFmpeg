@@ -103,6 +103,11 @@ static int ea_adpcm_table[] = {
     3, 4, 7, 8, 10, 11, 0, -1, -3, -4
 };
 
+static int ct_adpcm_table[8] = {
+    0x00E6, 0x00E6, 0x00E6, 0x00E6,
+    0x0133, 0x0199, 0x0200, 0x0266
+};
+
 /* end of tables */
 
 typedef struct ADPCMChannelStatus {
@@ -361,6 +366,9 @@ static int adpcm_decode_init(AVCodecContext * avctx)
     c->status[0].step = c->status[1].step = 0;
 
     switch(avctx->codec->id) {
+    case CODEC_ID_ADPCM_CT:
+	c->status[0].step = c->status[1].step = 511;
+	break;
     default:
         break;
     }
@@ -408,6 +416,37 @@ static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
     c->idelta = (AdaptationTable[(int)nibble] * c->idelta) >> 8;
     if (c->idelta < 16) c->idelta = 16;
 
+    return (short)predictor;
+}
+
+static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
+{
+    int predictor;
+    int sign, delta, diff;
+    int new_step;
+
+    sign = nibble & 8;
+    delta = nibble & 7;
+    /* perform direct multiplication instead of series of jumps proposed by
+     * the reference ADPCM implementation since modern CPUs can do the mults
+     * quickly enough */
+    diff = ((2 * delta + 1) * c->step) >> 3;
+    predictor = c->predictor;
+    /* predictor update is not so trivial: predictor is multiplied on 254/256 before updating */
+    if(sign)
+	predictor = ((predictor * 254) >> 8) - diff;
+    else
+    	predictor = ((predictor * 254) >> 8) + diff;
+    /* calculate new step and clamp it to range 511..32767 */
+    new_step = (ct_adpcm_table[nibble & 7] * c->step) >> 8;
+    c->step = new_step;
+    if(c->step < 511)
+	c->step = 511;
+    if(c->step > 32767)
+	c->step = 32767;
+
+    CLAMP_TO_SHORT(predictor);
+    c->predictor = predictor;
     return (short)predictor;
 }
 
@@ -840,6 +879,22 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src++;
         }
         break;
+    case CODEC_ID_ADPCM_CT:
+	while (src < buf + buf_size) {
+            if (st) {
+                *samples++ = adpcm_ct_expand_nibble(&c->status[0], 
+                    (src[0] >> 4) & 0x0F);
+                *samples++ = adpcm_ct_expand_nibble(&c->status[1], 
+                    src[0] & 0x0F);
+            } else {
+                *samples++ = adpcm_ct_expand_nibble(&c->status[0], 
+                    (src[0] >> 4) & 0x0F);
+                *samples++ = adpcm_ct_expand_nibble(&c->status[0], 
+                    src[0] & 0x0F);
+            }
+	    src++;
+        }
+        break;
     default:
         return -1;
     }
@@ -895,5 +950,6 @@ ADPCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
 ADPCM_CODEC(CODEC_ID_ADPCM_XA, adpcm_xa);
 ADPCM_CODEC(CODEC_ID_ADPCM_ADX, adpcm_adx);
 ADPCM_CODEC(CODEC_ID_ADPCM_EA, adpcm_ea);
+ADPCM_CODEC(CODEC_ID_ADPCM_CT, adpcm_ct);
 
 #undef ADPCM_CODEC

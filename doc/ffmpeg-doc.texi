@@ -805,6 +805,7 @@ solutions.
 @tab used in Sega Dreamcast games
 @item Electronic Arts ADPCM  @tab      @tab X
 @tab used in various EA titles
+@item Creative ADPCM         @tab      @tab X
 @item RA144                  @tab      @tab X
 @tab Real 14400 bit/s codec
 @item RA288                  @tab      @tab X

@@ -3,6 +3,7 @@ version <next>
 - IBM Ultimotion (ULTI) video decoder
 - Sierra Online audio file demuxer and decoder
 - Apple QuickDraw (qdrw) video decoder
+- Creative ADPCM audio decoder
 
 version 0.4.9-pre1:
 
