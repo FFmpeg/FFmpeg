@@ -899,15 +899,6 @@ static int video_thread(void *arg)
         if (pkt->dts != AV_NOPTS_VALUE)
             pts = (double)pkt->dts / AV_TIME_BASE;
 
-        if (is->video_st->codec.codec_id == CODEC_ID_RAWVIDEO) {
-            avpicture_fill((AVPicture *)frame, pkt->data, 
-                           is->video_st->codec.pix_fmt,
-                           is->video_st->codec.width,
-                           is->video_st->codec.height);
-            frame->pict_type = FF_I_TYPE;
-            if (output_picture2(is, frame, pts) < 0)
-                goto the_end;
-        } else {
             len1 = avcodec_decode_video(&is->video_st->codec, 
                                         frame, &got_picture, 
                                         pkt->data, pkt->size);
@@ -917,7 +908,6 @@ static int video_thread(void *arg)
                 if (output_picture2(is, frame, pts) < 0)
                     goto the_end;
             }
-        }
         av_free_packet(pkt);
         if (step) 
             if (cur_stream)
