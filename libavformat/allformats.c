@@ -51,6 +51,7 @@ void av_register_all(void)
     fourxm_init();
     flvenc_init();
     flvdec_init();
+    str_init();
 
 #ifdef AMR_NB
     amr_init();

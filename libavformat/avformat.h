@@ -380,6 +380,9 @@ int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
 /* 4xm.c */
 int fourxm_init(void);
 
+/* psxstr.c */
+int str_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"
