@@ -85,6 +85,10 @@ static uint64_t __attribute__((aligned(8))) b15Mask=   0x001F001F001F001FLL;
 static uint64_t __attribute__((aligned(8))) g15Mask=   0x03E003E003E003E0LL;
 static uint64_t __attribute__((aligned(8))) r15Mask=   0x7C007C007C007C00LL;
 
+static uint64_t __attribute__((aligned(8))) M24A=   0x00FF0000FF0000FFLL;
+static uint64_t __attribute__((aligned(8))) M24B=   0xFF0000FF0000FF00LL;
+static uint64_t __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000LL;
+
 static uint64_t __attribute__((aligned(8))) temp0;
 static uint64_t __attribute__((aligned(8))) asm_yalpha1;
 static uint64_t __attribute__((aligned(8))) asm_uvalpha1;
@@ -426,8 +430,7 @@ static int canMMX2BeUsed=0;
 			"cmpl %5, %%eax			\n\t"\
 			" jb 1b				\n\t"
 
-// FIXME find a faster way to shuffle it to BGR24
-#define WRITEBGR24 \
+#define WRITEBGR24OLD \
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
 			"movq %%mm2, %%mm1		\n\t" /* B */\
 			"movq %%mm5, %%mm6		\n\t" /* R */\
@@ -483,12 +486,120 @@ static int canMMX2BeUsed=0;
 			"cmpl %5, %%eax			\n\t"\
 			" jb 1b				\n\t"
 
+#define WRITEBGR24MMX \
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
+			"movq %%mm2, %%mm1		\n\t" /* B */\
+			"movq %%mm5, %%mm6		\n\t" /* R */\
+			"punpcklbw %%mm4, %%mm2		\n\t" /* GBGBGBGB 0 */\
+			"punpcklbw %%mm7, %%mm5		\n\t" /* 0R0R0R0R 0 */\
+			"punpckhbw %%mm4, %%mm1		\n\t" /* GBGBGBGB 2 */\
+			"punpckhbw %%mm7, %%mm6		\n\t" /* 0R0R0R0R 2 */\
+			"movq %%mm2, %%mm0		\n\t" /* GBGBGBGB 0 */\
+			"movq %%mm1, %%mm3		\n\t" /* GBGBGBGB 2 */\
+			"punpcklwd %%mm5, %%mm0		\n\t" /* 0RGB0RGB 0 */\
+			"punpckhwd %%mm5, %%mm2		\n\t" /* 0RGB0RGB 1 */\
+			"punpcklwd %%mm6, %%mm1		\n\t" /* 0RGB0RGB 2 */\
+			"punpckhwd %%mm6, %%mm3		\n\t" /* 0RGB0RGB 3 */\
+\
+			"movq %%mm0, %%mm4		\n\t" /* 0RGB0RGB 0 */\
+			"movq %%mm2, %%mm6		\n\t" /* 0RGB0RGB 1 */\
+			"movq %%mm1, %%mm5		\n\t" /* 0RGB0RGB 2 */\
+			"movq %%mm3, %%mm7		\n\t" /* 0RGB0RGB 3 */\
+\
+			"psllq $40, %%mm0		\n\t" /* RGB00000 0 */\
+			"psllq $40, %%mm2		\n\t" /* RGB00000 1 */\
+			"psllq $40, %%mm1		\n\t" /* RGB00000 2 */\
+			"psllq $40, %%mm3		\n\t" /* RGB00000 3 */\
+\
+			"punpckhdq %%mm4, %%mm0		\n\t" /* 0RGBRGB0 0 */\
+			"punpckhdq %%mm6, %%mm2		\n\t" /* 0RGBRGB0 1 */\
+			"punpckhdq %%mm5, %%mm1		\n\t" /* 0RGBRGB0 2 */\
+			"punpckhdq %%mm7, %%mm3		\n\t" /* 0RGBRGB0 3 */\
+\
+			"psrlq $8, %%mm0		\n\t" /* 00RGBRGB 0 */\
+			"movq %%mm2, %%mm6		\n\t" /* 0RGBRGB0 1 */\
+			"psllq $40, %%mm2		\n\t" /* GB000000 1 */\
+			"por %%mm2, %%mm0		\n\t" /* GBRGBRGB 0 */\
+			MOVNTQ(%%mm0, (%%ebx))\
+\
+			"psrlq $24, %%mm6		\n\t" /* 0000RGBR 1 */\
+			"movq %%mm1, %%mm5		\n\t" /* 0RGBRGB0 2 */\
+			"psllq $24, %%mm1		\n\t" /* BRGB0000 2 */\
+			"por %%mm1, %%mm6		\n\t" /* BRGBRGBR 1 */\
+			MOVNTQ(%%mm6, 8(%%ebx))\
+\
+			"psrlq $40, %%mm5		\n\t" /* 000000RG 2 */\
+			"psllq $8, %%mm3		\n\t" /* RGBRGB00 3 */\
+			"por %%mm3, %%mm5		\n\t" /* RGBRGBRG 2 */\
+			MOVNTQ(%%mm5, 16(%%ebx))\
+\
+			"addl $24, %%ebx		\n\t"\
+\
+			"addl $8, %%eax			\n\t"\
+			"cmpl %5, %%eax			\n\t"\
+			" jb 1b				\n\t"
+
+#define WRITEBGR24MMX2 \
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
+			"movq M24A, %%mm0		\n\t"\
+			"movq M24C, %%mm7		\n\t"\
+			"pshufw $0x50, %%mm2, %%mm1	\n\t" /* B3 B2 B3 B2  B1 B0 B1 B0 */\
+			"pshufw $0x50, %%mm4, %%mm3	\n\t" /* G3 G2 G3 G2  G1 G0 G1 G0 */\
+			"pshufw $0x00, %%mm5, %%mm6	\n\t" /* R1 R0 R1 R0  R1 R0 R1 R0 */\
+\
+			"pand %%mm0, %%mm1		\n\t" /*    B2        B1       B0 */\
+			"pand %%mm0, %%mm3		\n\t" /*    G2        G1       G0 */\
+			"pand %%mm7, %%mm6		\n\t" /*       R1        R0       */\
+\
+			"psllq $8, %%mm3		\n\t" /* G2        G1       G0    */\
+			"por %%mm1, %%mm6		\n\t"\
+			"por %%mm3, %%mm6		\n\t"\
+			MOVNTQ(%%mm6, (%%ebx))\
+\
+			"psrlq $8, %%mm4		\n\t" /* 00 G7 G6 G5  G4 G3 G2 G1 */\
+			"pshufw $0xA5, %%mm2, %%mm1	\n\t" /* B5 B4 B5 B4  B3 B2 B3 B2 */\
+			"pshufw $0x55, %%mm4, %%mm3	\n\t" /* G4 G3 G4 G3  G4 G3 G4 G3 */\
+			"pshufw $0xA5, %%mm5, %%mm6	\n\t" /* R5 R4 R5 R4  R3 R2 R3 R2 */\
+\
+			"pand M24B, %%mm1		\n\t" /* B5       B4        B3    */\
+			"pand %%mm7, %%mm3		\n\t" /*       G4        G3       */\
+			"pand %%mm0, %%mm6		\n\t" /*    R4        R3       R2 */\
+\
+			"por %%mm1, %%mm3		\n\t" /* B5    G4 B4     G3 B3    */\
+			"por %%mm3, %%mm6		\n\t"\
+			MOVNTQ(%%mm6, 8(%%ebx))\
+\
+			"pshufw $0xFF, %%mm2, %%mm1	\n\t" /* B7 B6 B7 B6  B7 B6 B6 B7 */\
+			"pshufw $0xFA, %%mm4, %%mm3	\n\t" /* 00 G7 00 G7  G6 G5 G6 G5 */\
+			"pshufw $0xFA, %%mm5, %%mm6	\n\t" /* R7 R6 R7 R6  R5 R4 R5 R4 */\
+\
+			"pand %%mm7, %%mm1		\n\t" /*       B7        B6       */\
+			"pand %%mm0, %%mm3		\n\t" /*    G7        G6       G5 */\
+			"pand M24B, %%mm6		\n\t" /* R7       R6        R5    */\
+\
+			"por %%mm1, %%mm3		\n\t"\
+			"por %%mm3, %%mm6		\n\t"\
+			MOVNTQ(%%mm6, 16(%%ebx))\
+\
+			"addl $24, %%ebx		\n\t"\
+\
+			"addl $8, %%eax			\n\t"\
+			"cmpl %5, %%eax			\n\t"\
+			" jb 1b				\n\t"
+
+#ifdef HAVE_MMX2
+#define WRITEBGR24 WRITEBGR24MMX2
+#else
+#define WRITEBGR24 WRITEBGR24MMX
+#endif
+
 #ifdef HAVE_MMX
 void in_asm_used_var_warning_killer()
 {
  int i= yCoeff+vrCoeff+ubCoeff+vgCoeff+ugCoeff+bF8+bFC+w400+w80+w10+
  bm00001111+bm00000111+bm11111000+b16Dither+b16Dither1+b16Dither2+g16Dither+g16Dither1+
- g16Dither2+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+temp0+asm_yalpha1+ asm_uvalpha1;
+ g16Dither2+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+temp0+asm_yalpha1+ asm_uvalpha1+
+ M24A+M24B+M24C;
  if(i) i=0;
 }
 #endif
