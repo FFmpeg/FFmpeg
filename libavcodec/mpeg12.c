@@ -821,7 +821,7 @@ static void init_vlcs(MpegEncContext *s)
         init_vlc(&mv_vlc, MV_VLC_BITS, 17, 
                  &mbMotionVectorTable[0][1], 2, 1,
                  &mbMotionVectorTable[0][0], 2, 1);
-        init_vlc(&mbincr_vlc, MBINCR_VLC_BITS, 35, 
+        init_vlc(&mbincr_vlc, MBINCR_VLC_BITS, 36, 
                  &mbAddrIncrTable[0][1], 2, 1,
                  &mbAddrIncrTable[0][0], 2, 1);
         init_vlc(&mb_pat_vlc, MB_PAT_VLC_BITS, 63, 
@@ -1959,16 +1959,18 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
             for(;;) {
                 int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
                 if (code < 0){
-                    align_get_bits(&s->gb);
-                    if(s->mb_skip_run != 0 || show_bits(&s->gb, 24) != 1){
-                        fprintf(stderr, "slice end missmatch\n");
-                        return -1;
-                    }
-                    goto eos; /* error = end of slice */
+                    fprintf(stderr, "mb incr damaged\n");
+                    return -1;
                 }
                 if (code >= 33) {
                     if (code == 33) {
                         s->mb_skip_run += 33;
+                    }else if(code == 35){
+                        if(s->mb_skip_run != 0 || show_bits(&s->gb, 15) != 0){
+                            fprintf(stderr, "slice missmatch\n");
+                            return -1;
+                        }
+                        goto eos; /* end of slice */
                     }
                     /* otherwise, stuffing, nothing to do */
                 } else {

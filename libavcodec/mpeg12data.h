@@ -185,7 +185,7 @@ static RLTable rl_mpeg2 = {
     mpeg1_level,
 };
 
-static const uint8_t mbAddrIncrTable[35][2] = {
+static const uint8_t mbAddrIncrTable[36][2] = {
     {0x1, 1},
     {0x3, 3},
     {0x2, 3},
@@ -221,6 +221,7 @@ static const uint8_t mbAddrIncrTable[35][2] = {
     {0x18, 11},
     {0x8, 11}, /* escape */
     {0xf, 11}, /* stuffing */
+    {0x0, 8}, /* end (and 15 more 0 bits should follow) */
 };
 
 static const uint8_t mbPatTable[63][2] = {
