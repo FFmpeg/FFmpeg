@@ -109,9 +109,10 @@ static uint8_t default_fcode_tab[MAX_MV*2+1];
 enum PixelFormat ff_yuv420p_list[2]= {PIX_FMT_YUV420P, -1};
 
 static void convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][64],
-                           const uint16_t *quant_matrix, int bias, int qmin, int qmax)
+                           const uint16_t *quant_matrix, int bias, int qmin, int qmax, int intra)
 {
     int qscale;
+    int shift=0;
 
     for(qscale=qmin; qscale<=qmax; qscale++){
         int i;
@@ -161,6 +162,15 @@ static void convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[
                 qmat16[qscale][1][i]= ROUNDED_DIV(bias<<(16-QUANT_BIAS_SHIFT), qmat16[qscale][0][i]);
             }
         }
+        
+        for(i=intra; i<64; i++){
+            while(((8191LL * qmat[qscale][i]) >> shift) > INT_MAX){ 
+                shift++;
+            }
+        }
+    }
+    if(shift){
+        av_log(NULL, AV_LOG_INFO, "Warning, QMAT_SHIFT is larger then %d, overflows possible\n", QMAT_SHIFT - shift);
     }
 }
 
@@ -1246,9 +1256,9 @@ int MPV_encode_init(AVCodecContext *avctx)
     /* for mjpeg, we do include qscale in the matrix */
     if (s->out_format != FMT_MJPEG) {
         convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16, 
-                       s->intra_matrix, s->intra_quant_bias, 1, 31);
+                       s->intra_matrix, s->intra_quant_bias, avctx->qmin, 31, 1);
         convert_matrix(&s->dsp, s->q_inter_matrix, s->q_inter_matrix16, 
-                       s->inter_matrix, s->inter_quant_bias, 1, 31);
+                       s->inter_matrix, s->inter_quant_bias, avctx->qmin, 31, 0);
     }
 
     if(ff_rate_control_init(s) < 0)
@@ -5290,7 +5300,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->intra_matrix[j] = CLAMP_TO_8BIT((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
         }
         convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16, 
-                       s->intra_matrix, s->intra_quant_bias, 8, 8);
+                       s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
     }
     
