@@ -2708,6 +2708,111 @@ void opt_intra_matrix(const char *arg)
     parse_matrix_coeffs(intra_matrix, arg);
 }
 
+static void opt_target(const char *arg)
+{
+    int norm = -1;
+
+    if(!strncmp(arg, "pal-", 4)) {
+        norm = 0;
+        arg += 4;
+    } else if(!strncmp(arg, "ntsc-", 5)) {
+        norm = 1;
+        arg += 5;
+    } else {
+        int fr;
+        /* Calculate FR via float to avoid int overflow */
+        fr = (int)(frame_rate * 1000.0 / frame_rate_base);
+        if(fr == 25000) {
+            norm = 0;
+        } else if((fr == 29970) || (fr == 23976)) {
+            norm = 1;
+        } else {
+            /* Try to determine PAL/NTSC by peeking in the input files */
+            if(nb_input_files) {
+                int i, j;
+                for(j = 0; j < nb_input_files; j++) {
+                    for(i = 0; i < input_files[j]->nb_streams; i++) {
+                        AVCodecContext *c = &input_files[j]->streams[i]->codec;
+                        if(c->codec_type != CODEC_TYPE_VIDEO)
+                            continue;
+                        fr = c->frame_rate * 1000 / c->frame_rate_base;
+                        if(fr == 25000) {
+                            norm = 0;
+                            break;
+                        } else if((fr == 29970) || (fr == 23976)) {
+                            norm = 1;
+                            break;
+                        }
+                    }
+                    if(norm >= 0)
+                        break;
+                }
+            }
+        }
+        if(verbose && norm >= 0)
+            printf("Assuming %s for target.\n", norm ? "NTSC" : "PAL");
+    }
+
+    if(norm < 0) {
+        fprintf(stderr, "Could not determine norm (PAL/NTSC) for target.\n");
+        fprintf(stderr, "Please prefix target with \"pal-\" or \"ntsc-\",\n");
+        fprintf(stderr, "or set a framerate with \"-r xxx\".\n");
+        exit(1);
+    }
+
+    if(!strcmp(arg, "vcd")) {
+
+        opt_video_codec("mpeg1video");
+        opt_audio_codec("mp2");
+        opt_format("vcd");
+
+        opt_frame_size(norm ? "352x240" : "352x288");
+
+        video_bit_rate = 1150000;
+        video_rc_max_rate = 1150000;
+        video_rc_min_rate = 1150000;
+
+        audio_bit_rate = 224000;
+        audio_sample_rate = 44100;
+
+    } else if(!strcmp(arg, "svcd")) {
+
+        opt_video_codec("mpeg2video");
+        opt_audio_codec("mp2");
+        opt_format("vcd");
+
+        opt_frame_size(norm ? "480x480" : "480x576");
+        opt_gop_size(norm ? "18" : "15");
+
+        video_bit_rate = 2040000;
+        video_rc_max_rate = 2516000;
+        video_rc_min_rate = 1145000;
+
+        audio_bit_rate = 224000;
+        audio_sample_rate = 44100;
+
+    } else if(!strcmp(arg, "dvd")) {
+
+        opt_video_codec("mpeg2video");
+        opt_audio_codec("ac3");
+        opt_format("vob");
+
+        opt_frame_size(norm ? "720x480" : "720x576");
+        opt_gop_size(norm ? "18" : "15");
+
+        video_bit_rate = 6000000;
+        video_rc_max_rate = 9000000;
+        video_rc_min_rate = 1500000;
+
+        audio_bit_rate = 448000;
+        audio_sample_rate = 48000;
+
+    } else {
+        fprintf(stderr, "Unknown target: %s\n", arg);
+        exit(1);
+    }
+}
+
 const OptionDef options[] = {
     /* main options */
     { "L", 0, {(void*)show_license}, "show license" },
@@ -2733,6 +2838,7 @@ const OptionDef options[] = {
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
     { "loop", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "control amount of logging", "verbose" },
+    { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\" or \"dvd\")", "type" },
 
     /* video options */
     { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
