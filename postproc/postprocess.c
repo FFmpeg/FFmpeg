@@ -1978,16 +1978,19 @@ FIND_MIN_MAX((%0, %1, 8))
 		"movq " #lx ", " #t1 "				\n\t" /* src[-1] */\
 		PAVGB(t0, lx)				              /* (src[-1] + src[+1])/2 */\
 		PAVGB(sx, lx)				      /* (src[-1] + 2src[0] + src[+1])/4 */\
-		"psubusb temp0, " #t1 "				\n\t"\
-		"psubusb temp0, " #t0 "				\n\t"\
-		"psubusb temp0, " #sx "				\n\t"\
-		"pcmpeqb b00, " #t1 "				\n\t" /* src[-1] > a ? 0 : -1*/\
-		"pcmpeqb b00, " #t0 "				\n\t" /* src[+1] > a ? 0 : -1*/\
-		"pcmpeqb b00, " #sx "				\n\t" /* src[0]  > a ? 0 : -1*/\
+		PAVGB(lx, pplx)					     \
+		"movq " #lx ", temp1				\n\t"\
+		"movq temp0, " #lx "				\n\t"\
+		"psubusb " #lx ", " #t1 "				\n\t"\
+		"psubusb " #lx ", " #t0 "				\n\t"\
+		"psubusb " #lx ", " #sx "				\n\t"\
+		"movq b00, " #lx "				\n\t"\
+		"pcmpeqb " #lx ", " #t1 "				\n\t" /* src[-1] > a ? 0 : -1*/\
+		"pcmpeqb " #lx ", " #t0 "				\n\t" /* src[+1] > a ? 0 : -1*/\
+		"pcmpeqb " #lx ", " #sx "				\n\t" /* src[0]  > a ? 0 : -1*/\
 		"paddb " #t1 ", " #t0 "				\n\t"\
 		"paddb " #t0 ", " #sx "				\n\t"\
 \
-		PAVGB(lx, pplx)					     \
 		PAVGB(plx, pplx)				      /* filtered */\
 		"movq " #dst ", " #t0 "				\n\t" /* dst */\
 		"movq " #t0 ", " #t1 "				\n\t" /* dst */\
@@ -1999,11 +2002,12 @@ FIND_MIN_MAX((%0, %1, 8))
 		"paddb " #psx ", " #ppsx "			\n\t"\
 	"#paddb b02, " #ppsx "				\n\t"\
 		"pand b08, " #ppsx "				\n\t"\
-		"pcmpeqb b00, " #ppsx "				\n\t"\
+		"pcmpeqb " #lx ", " #ppsx "				\n\t"\
 		"pand " #ppsx ", " #pplx "			\n\t"\
 		"pandn " #dst ", " #ppsx "			\n\t"\
 		"por " #pplx ", " #ppsx "				\n\t"\
-		"movq " #ppsx ", " #dst "			\n\t"
+		"movq " #ppsx ", " #dst "			\n\t"\
+		"movq temp1, " #lx "				\n\t"
 
 /*
 0000000
