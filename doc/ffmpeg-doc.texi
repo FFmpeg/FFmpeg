@@ -153,12 +153,16 @@ specified for the inputs.
 @table @option
 @item -L
 show license
+
 @item -h
 show help
+
 @item -formats
 show available formats, codecs, protocols, ...
+
 @item -f fmt              
 force format
+
 @item -i filename         
 input file name
 
@@ -181,22 +185,55 @@ set the copyright
 @item -comment string     
 set the comment
 
+@item -hq                 
+activate high quality settings
+
 @end table
 
 @section Video Options
 
 @table @option
-@item -s size             
-set frame size                       [160x128]
-@item -r fps           
-set frame rate                       [25]
 @item -b bitrate
-set the video bitrate in kbit/s      [200]
+set the video bitrate in kbit/s (default = 200 kb/s)
+@item -r fps           
+set frame rate (default = 25)
+@item -s size             
+set frame size. The format is @samp{WxH}. (default 160x128)
+The following abbreviations are regognized:
+@table @sampe
+@item sqcif
+128x96
+@item qcif
+176x144
+@item cif
+352x288
+@item 4cif
+704x576
+@end table
+
+@item -aspect aspect
+set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)
+@item -croptop size
+set top crop band size (in pixels)
+@item -cropbottom size
+set bottom crop band size (in pixels)
+@item -cropleft size
+set left crop band size (in pixels)
+@item -cropright size
+set right crop band size (in pixels)
 @item -vn
-disable video recording              [no]
+disable video recording
 @item -bt tolerance       
 set video bitrate tolerance (in kbit/s)
-@item -sameq              
+@item -maxrate bitrate
+set max video bitrate tolerance (in kbit/s)
+@item -minrate bitrate
+set min video bitrate tolerance (in kbit/s)
+@item -bufsize size
+set ratecontrol buffere size (in kbit)
+@item -vcodec codec       
+force video codec
+@item -sameq
 use same video quality as source (implies VBR)
 
 @item -pass n  
@@ -207,26 +244,9 @@ select two pass log file name
 
 @end table
 
-@section Audio Options
+@section Advanced Video Options
 
 @table @option
-@item -ab bitrate         
-set audio bitrate (in kbit/s)
-@item -ar freq    
- set the audio sampling freq          [44100]
-@item -ab bitrate 
- set the audio bitrate in kbit/s      [64]
-@item -ac channels
- set the number of audio channels     [1]
-@item -an     
- disable audio recording              [no]
-@end table
-
-@section Advanced options
-
-@table @option
-@item -map file:stream    
-set input stream mapping
 @item -g gop_size         
 set the group of picture size
 @item -intra              
@@ -243,33 +263,245 @@ max difference between the quantiser scale (VBR)
 video quantiser scale blur (VBR)
 @item -qcomp compression  
 video quantiser scale compression (VBR)
-@item -vd device          
-set video device
-@item -vcodec codec       
-force video codec
-@item -me method          
-set motion estimation method
-@item -bf frames          
+
+@item -rc_init_cplx complexity
+initial complexity for 1-pass encoding
+@item -b_qfactor factor
+qp factor between p and b frames
+@item -i_qfactor factor
+qp factor between p and i frames
+@item -b_qoffset offset
+qp offset between p and b frames
+@item -i_qoffset offset
+qp offset between p and i frames
+@item -rc_eq equation
+set rate control equation (@pxref{FFmpeg formula evaluator})
+@item -rc_override override_string
+rate control override for specific internals
+@item -me method
+set motion estimation method. Available methods are (from lower to best quality):
+@table @samp
+@item zero
+Try just (0, 0) vector.
+@item phods
+@item log
+@item x1
+@item epzs
+(default method)
+@item full
+exhaustive search (slow and marginally better than epzs)
+@end table
+
+@item -dct_algo algo
+set dct algo
+@table @samp
+@item 0
+FF_DCT_AUTO (default)
+@item 1
+FF_DCT_FASTINT
+@item 2
+FF_DCT_INT
+@item 3
+FF_DCT_MMX
+@item 4
+FF_DCT_MLIB
+@item 5
+FF_DCT_ALTIVEC
+@end table
+
+@item -idct_algo algo
+set idct algo
+@table @samp
+@item 0
+FF_IDCT_AUTO (default)
+@item 1
+FF_IDCT_INT          
+@item 2
+FF_IDCT_SIMPLE       
+@item 3
+FF_IDCT_SIMPLEMMX    
+@item 4
+FF_IDCT_LIBMPEG2MMX  
+@item 5
+FF_IDCT_PS2          
+@item 6
+FF_IDCT_MLIB         
+@item 7
+FF_IDCT_ARM          
+@item 8
+FF_IDCT_ALTIVEC      
+@item 9
+FF_IDCT_SH4          
+@item 10
+FF_IDCT_SIMPLEARM    
+@end table
+
+@item -er n
+set error resilience to 'n'
+@table @samp
+@item 1 
+FF_ER_CAREFULL
+@item 2
+FF_ER_COMPLIANT (default)
+@item 3
+FF_ER_AGGRESSIVE
+@item 4
+FF_ER_VERY_AGGRESSIVE
+@end table
+
+@item -ec n
+set error concealment to n
+@table @samp
+@item 1
+FF_EC_GUESS_MVS
+@item 2
+FF_EC_DEBLOCK
+@end table
+
+@item -bf frames
 use 'frames' B frames (only MPEG-4)
-@item -hq                 
-activate high quality settings
-@item -4mv                
+@item -mbd mode
+macroblock decision
+@table @samp
+@item 0
+FF_MB_DECISION_SIMPLE: use mb_cmp (cannot change it yet in ffmpeg)
+@item 1
+FF_MB_DECISION_BITS: chooses the one which needs the fewest bits
+@item 2
+FF_MB_DECISION_RD: rate distoration
+@end table
+
+@item -4mv
 use four motion vector by macroblock (only MPEG-4)
-@item -ad device          
-set audio device
+@item -part
+use data partitioning (only MPEG-4)
+@item -bug param
+workaround not auto detected encoder bugs
+@item -strict strictness
+how strictly to follow the standarts
+
+@item -deinterlace
+deinterlace pictures
+@item -psnr
+calculate PSNR of compressed frames
+@item -vstats
+dump video coding statistics to file
+@item -vhook module
+insert video processing @var{module}. @var{module} contains the module
+name and its parameters separated by spaces.
+@item -aic
+enable Advanced intra coding (h263+)
+@item -umv
+enable Unlimited Motion Vector (h263+)
+@end table
+
+@section Audio Options
+
+@table @option
+@item -ab bitrate         
+set audio bitrate (in kbit/s)
+@item -ar freq    
+ set the audio sampling freq (default = 44100 Hz)
+@item -ab bitrate 
+ set the audio bitrate in kbit/s (default = 64)
+@item -ac channels
+ set the number of audio channels (default = 1)
+@item -an     
+ disable audio recording
 @item -acodec codec       
 force audio codec
-@item -deinterlace        
-deinterlace pictures
+@end table
+
+@section Audio/Video grab options
+
+@table @option
+@item -vd device
+set video grab device (e.g. @file{/dev/video0})
+@item -vc channel
+set video grab channel (DV1394 only)
+@item -tvstd standard
+set television standard (NTSC, PAL (SECAM))
+@item -dv1394
+set DV1394 grab
+@item -ad device
+set audio device (e.g. @file{/dev/dsp})
+@end table
+
+@section Advanced options
+
+@table @option
+@item -map file:stream    
+set input stream mapping
+@item -debug
+print specific debug info
 @item -benchmark          
 add timings for benchmarking
 @item -hex                
 dump each input packet
-@item -psnr               
-calculate PSNR of compressed frames
-@item -vstats             
-dump video coding statistics to file
+@item -bitexact
+only use bit exact algorithms (for codec testing)
+@item -ps size
+set packet size in bits
 @end table
+
+@node FFmpeg formula evaluator
+@section FFmpeg formula evaluator
+
+When evaluating a rate control string, FFmpeg uses an internal formula
+evaluator. 
+
+The following binary operators are available: @code{+}, @code{-},
+@code{*}, @code{/}, @code{^}.
+
+The following unary operators are available: @code{+}, @code{-},
+@code{(...)}.
+
+The following functions are available:
+@table @var
+@item sinh(x)
+@item cosh(x)
+@item tanh(x)
+@item sin(x)
+@item cos(x)
+@item tan(x)
+@item exp(x)
+@item log(x)
+@item squish(x)
+@item gauss(x)
+@item abs(x)
+@item max(x, y)
+@item min(x, y)
+@item gt(x, y)
+@item lt(x, y)
+@item eq(x, y)
+@item bits2qp(bits)
+@item qp2bits(qp)
+@end table
+
+The following constants are available:
+@table @var
+@item PI
+@item E
+@item iTex
+@item pTex
+@item tex
+@item mv
+@item fCode
+@item iCount
+@item mcVar
+@item var
+@item isI
+@item isP
+@item isB
+@item avgQP
+@item qComp
+@item avgIITex
+@item avgPITex
+@item avgPPTex
+@item avgBPTex
+@item avgTex
+@end table
+
 @c man end
 
 @ignore
