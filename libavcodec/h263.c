@@ -1456,8 +1456,10 @@ static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
     c = dc_val[(x) + (y - 1) * wrap];
     
     /* No prediction outside GOB boundary */
-    if (s->first_slice_line && ((n < 2) || (n > 3)))
-        c = 1024;
+    if(s->first_slice_line && n!=3){
+        if(n!=2) c= 1024;
+        if(n!=1 && s->mb_x == s->resync_mb_x) a= 1024;
+    }
     pred_dc = 1024;
     /* just DC prediction */
     if (a != 1024 && c != 1024)
@@ -5117,11 +5119,15 @@ int h263_decode_picture_header(MpegEncContext *s)
         s->qscale = get_bits(&s->gb, 5);
     }
 
+    s->mb_width = (s->width  + 15) / 16;
+    s->mb_height = (s->height  + 15) / 16;
+    s->mb_num = s->mb_width * s->mb_height;
+
     /* PEI */
     while (get_bits1(&s->gb) != 0) {
         skip_bits(&s->gb, 8);
     }
-    
+
     if(s->h263_slice_structured){
         if (get_bits1(&s->gb) != 1) {
             av_log(s->avctx, AV_LOG_ERROR, "SEPB1 marker missing\n");
