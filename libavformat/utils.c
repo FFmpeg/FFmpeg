@@ -232,6 +232,9 @@ void fifo_free(FifoBuffer *f)
 int fifo_size(FifoBuffer *f, uint8_t *rptr)
 {
     int size;
+    
+    if(!rptr)
+        rptr= f->rptr;
 
     if (f->wptr >= rptr) {
         size = f->wptr - rptr;
@@ -244,8 +247,12 @@ int fifo_size(FifoBuffer *f, uint8_t *rptr)
 /* get data from the fifo (return -1 if not enough data) */
 int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr)
 {
-    uint8_t *rptr = *rptr_ptr;
+    uint8_t *rptr;
     int size, len;
+
+    if(!rptr_ptr)
+        rptr_ptr= &f->rptr;
+    rptr = *rptr_ptr;
 
     if (f->wptr >= rptr) {
         size = f->wptr - rptr;
@@ -270,11 +277,34 @@ int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr)
     return 0;
 }
 
+void fifo_realloc(FifoBuffer *f, int new_size){
+    int old_size= f->end - f->buffer;
+    
+    if(old_size < new_size){
+        uint8_t *old= f->buffer;
+
+        f->buffer= av_realloc(f->buffer, new_size);
+
+        f->rptr += f->buffer - old;
+        f->wptr += f->buffer - old;
+
+        if(f->wptr < f->rptr){
+            memmove(f->rptr + new_size - old_size, f->rptr, f->buffer + old_size - f->rptr);
+            f->rptr += new_size - old_size;
+        }
+        f->end= f->buffer + new_size;
+    }
+}
+
 void fifo_write(FifoBuffer *f, uint8_t *buf, int size, uint8_t **wptr_ptr)
 {
     int len;
     uint8_t *wptr;
+
+    if(!wptr_ptr)
+        wptr_ptr= &f->wptr;
     wptr = *wptr_ptr;
+
     while (size > 0) {
         len = f->end - wptr;
         if (len > size)

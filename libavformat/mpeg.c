@@ -391,7 +391,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         default:
             return -1;
         }
-        fifo_init(&stream->fifo, 2*stream->max_buffer_size + 100*MAX_PAYLOAD_SIZE); //FIXME think about the size maybe dynamically realloc
+        fifo_init(&stream->fifo, 16);
         stream->next_packet= &stream->premux_packet;
     }
     bitrate = 0;
@@ -1172,11 +1172,6 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         stream->predecode_packet= pkt_desc;
     stream->next_packet= &pkt_desc->next;
 
-    if(stream->fifo.end - stream->fifo.buffer - fifo_size(&stream->fifo, stream->fifo.rptr) < size){
-        av_log(ctx, AV_LOG_ERROR, "fifo overflow\n");
-        return -1;
-    }
-
     if (s->is_dvd){
         if (is_iframe) {
             stream->fifo_iframe_ptr = stream->fifo.wptr;
@@ -1186,6 +1181,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         }
     }
 
+    fifo_realloc(&stream->fifo, fifo_size(&stream->fifo, NULL) + size + 1);
     fifo_write(&stream->fifo, buf, size, &stream->fifo.wptr);
 
     for(;;){
