@@ -33,10 +33,10 @@ lib:
 	$(MAKE) -C libav all
 
 ffmpeg$(EXE): ffmpeg.o libav/libav.a $(DEP_FFMPEG_LIB)
-	$(CC) $(LDFLAGS) -lm -o $@ $^ $(FFMPEG_LIB)
+	$(CC) $(LDFLAGS) $(EXTRALIBS) -o $@ $^ $(FFMPEG_LIB)
 
 ffserver$(EXE): ffserver.o libav/libav.a $(DEP_FFMPEG_LIB)
-	$(CC) $(LDFLAGS) -lm -o $@ $^ $(FFMPEG_LIB)
+	$(CC) $(LDFLAGS) $(EXTRALIBS) -o $@ $^ $(FFMPEG_LIB)
 
 ffplay: ffmpeg$(EXE)
 	ln -sf $< $@

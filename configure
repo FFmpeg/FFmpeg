@@ -27,7 +27,7 @@ cc="gcc"
 ar="ar"
 cpu=`uname -m`
 case "$cpu" in
-  i386|i486|i586|i686|i86pc)
+  i386|i486|i586|i686|i86pc|BePC)
     cpu="x86"
     mmx="yes"
   ;;
@@ -46,6 +46,26 @@ esac
 gprof="no"
 grab="yes"
 win32="no"
+extralibs="-lm"
+
+# OS specific
+targetos=`uname -s`
+case $targetos in
+BeOS)
+prefix="/boot/home/config"
+# helps building libavcodec
+grab="no"
+CFLAGS="-O2 -DPIC"
+# no need for libm, but the inet stuff
+# Check for BONE
+if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
+extralibs="-lbind -lsocket"
+else
+echo "Not sure building for net_server will succeed... good luck."
+extralibs="-lsocket"
+fi ;;
+*) ;;
+esac
 
 if [ "$1" = "-h" -o "$1" = "--help" ] ; then
 cat << EOF
@@ -167,6 +187,7 @@ if [ "$lshared" = "yes" ] ; then
 else
   echo "BUILD_SHARED=no" >> config.mak
 fi
+echo "EXTRALIBS=$extralibs" >> config.mak
 echo -n "VERSION=" >>config.mak
 head VERSION >>config.mak
 echo "" >>config.mak

@@ -1801,6 +1801,7 @@ void prepare_grab(void)
 /* open the necessary output devices for playing */
 void prepare_play(void)
 {
+#ifndef __BEOS__
     file_format = guess_format("audio_device", NULL, NULL);
     if (!file_format) {
         fprintf(stderr, "Could not find audio device\n");
@@ -1808,6 +1809,7 @@ void prepare_play(void)
     }
     
     opt_output_file(audio_device);
+#endif
 }
 
 
