@@ -634,10 +634,16 @@ static int flac_decode_frame(AVCodecContext *avctx,
             if(metadata_size){
                 switch(metadata_type)
                 {
-                case METADATA_TYPE_STREAMINFO:
+                case METADATA_TYPE_STREAMINFO:{
+                    int bits_count= get_bits_count(&s->gb);
+
                     metadata_streaminfo(s);
+                    buf= &s->bitstream[s->bitstream_index];
+                    init_get_bits(&s->gb, buf, buf_size*8);
+                    skip_bits(&s->gb, bits_count);
+
                     dump_headers(s);
-                    break;
+                    break;}
                 default:
                     for(i=0; i<metadata_size; i++)
                         skip_bits(&s->gb, 8);
