@@ -23,6 +23,7 @@ endif
 
 ifeq ($(CONFIG_MP3LAME),yes)
 OBJS += mp3lameaudio.o
+EXTRALIBS += -lmp3lame
 endif
 
 ifeq ($(TARGET_GPROF),yes)
@@ -74,7 +75,7 @@ $(LIB): $(OBJS) $(ASM_OBJS)
 
 $(SLIB): $(OBJS) $(ASM_OBJS)
 	rm -f $@
-	$(CC) -shared -o $@ $(OBJS) $(ASM_OBJS)
+	$(CC) -shared -o $@ $(OBJS) $(ASM_OBJS) $(EXTRALIBS)
 	ln -sf $@ libffmpeg.so
 dsputil.o: dsputil.c dsputil.h
 
