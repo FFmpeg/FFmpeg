@@ -411,27 +411,32 @@ static int amr_nb_decode_frame(AVCodecContext * avctx,
     AMRContext *s = (AMRContext*)avctx->priv_data;
 
     uint8_t*amrData=buf;
-    int offset=0;
     static short block_size[16]={ 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
     enum Mode dec_mode;
     int packet_size;
 
-    //printf("amr_decode_frame data_size=%i buf=0x%X buf_size=%d frameCount=%d!!\n",*data_size,buf,buf_size,s->frameCount);
-
-    while(offset<buf_size)
-    {
-    	dec_mode = (amrData[offset] >> 3) & 0x000F;
-    	packet_size = block_size[dec_mode];
+    /* av_log(NULL,AV_LOG_DEBUG,"amr_decode_frame buf=%p buf_size=%d frameCount=%d!!\n",buf,buf_size,s->frameCount); */
     
-        s->frameCount++;
-        //printf("offset=%d, packet_size=%d amrData= 0x%X %X %X %X\n",offset,packet_size,amrData[offset],amrData[offset+1],amrData[offset+2],amrData[offset+3]);
-    	/* call decoder */
-    	Decoder_Interface_Decode(s->decState, &amrData[offset], data+*data_size, 0);
-    	*data_size+=160*2;
-   
-        offset+=packet_size+1; 
+    if(buf_size==0) {
+        /* nothing to do */
+        return 0;
     }
-    return buf_size;
+
+    dec_mode = (buf[0] >> 3) & 0x000F;
+    packet_size = block_size[dec_mode]+1;
+
+    if(packet_size > buf_size) {
+        av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n", buf_size, packet_size);
+        return -1;
+    }
+    
+    s->frameCount++;
+    /* av_log(NULL,AV_LOG_DEBUG,"packet_size=%d amrData= 0x%X %X %X %X\n",packet_size,amrData[0],amrData[1],amrData[2],amrData[3]); */
+    /* call decoder */
+    Decoder_Interface_Decode(s->decState, amrData, data, 0);
+    *data_size=160*2;
+   
+    return packet_size;
 }
 
 static int amr_nb_encode_frame(AVCodecContext *avctx,
@@ -445,6 +450,7 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
         data, 
         frame, 
         0);
+    av_log(NULL,AV_LOG_DEBUG,"amr_nb_encode_frame encoded %u bytes, bitrate %u, first byte was %#02x\n",written, s->enc_bitrate, frame[0] );
 
     return written;
 }
@@ -598,20 +604,26 @@ static int amr_wb_decode_frame(AVCodecContext * avctx,
     AMRWBContext *s = (AMRWBContext*)avctx->priv_data;
 
     uint8_t*amrData=buf;
-    int offset=0;
     int mode;
     int packet_size;
 
-    while(offset<buf_size)
-    {
-        s->frameCount++;
-        mode = (Word16)((amrData[offset] >> 3) & 0x0F);
-        packet_size = block_size[mode];
-        D_IF_decode( s->state, &amrData[offset], data+*data_size, _good_frame);
-    	*data_size+=320*2;
-        offset+=packet_size; 
+    if(buf_size==0) {
+        /* nothing to do */
+        return 0;
     }
-    return buf_size;
+
+    mode = (amrData[0] >> 3) & 0x000F;
+    packet_size = block_size[mode];
+
+    if(packet_size > buf_size) {
+        av_log(avctx, AV_LOG_ERROR, "amr frame too short (%u, should be %u)\n", buf_size, packet_size+1);
+        return -1;
+    }
+    
+    s->frameCount++;
+    D_IF_decode( s->state, amrData, data, _good_frame);
+    *data_size=320*2;
+    return packet_size;
 }
 
 static int amr_wb_decode_close(AVCodecContext * avctx)
