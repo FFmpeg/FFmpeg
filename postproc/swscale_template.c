@@ -2238,7 +2238,8 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
 static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, int srcW, int xInc,
 				   int flags, int canMMX2BeUsed, int16_t *hLumFilter,
 				   int16_t *hLumFilterPos, int hLumFilterSize, void *funnyYCode, 
-				   int srcFormat, uint8_t *formatConvBuffer)
+				   int srcFormat, uint8_t *formatConvBuffer, int16_t *mmx2Filter,
+				   int32_t *mmx2FilterPos)
 {
     if(srcFormat==IMGFMT_YUY2)
     {
@@ -2294,35 +2295,21 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
 	{
 		asm volatile(
 			"pxor %%mm7, %%mm7		\n\t"
-			"pxor %%mm2, %%mm2		\n\t" // 2*xalpha
-			"movd %5, %%mm6			\n\t" // xInc&0xFFFF
-			"punpcklwd %%mm6, %%mm6		\n\t"
-			"punpcklwd %%mm6, %%mm6		\n\t"
-			"movq %%mm6, %%mm2		\n\t"
-			"psllq $16, %%mm2		\n\t"
-			"paddw %%mm6, %%mm2		\n\t"
-			"psllq $16, %%mm2		\n\t"
-			"paddw %%mm6, %%mm2		\n\t"
-			"psllq $16, %%mm2		\n\t" //0,t,2t,3t		t=xInc&0xFF
-			"movq %%mm2, %%mm4		\n\t"
-			"movd %4, %%mm6			\n\t" //(xInc*4)&0xFFFF
-			"punpcklwd %%mm6, %%mm6		\n\t"
-			"punpcklwd %%mm6, %%mm6		\n\t"
+			"movl %0, %%ecx			\n\t"
+			"movl %1, %%edi			\n\t"
+			"movl %2, %%edx			\n\t"
+			"movl %3, %%ebx			\n\t"
 			"xorl %%eax, %%eax		\n\t" // i
-			"movl %0, %%esi			\n\t" // src
-			"movl %1, %%edi			\n\t" // buf1
-			"movl %3, %%edx			\n\t" // (xInc*4)>>16
-			"xorl %%ecx, %%ecx		\n\t"
-			"xorl %%ebx, %%ebx		\n\t"
-			"movw %4, %%bx			\n\t" // (xInc*4)&0xFFFF
+			PREFETCH" (%%ecx)		\n\t"
+			PREFETCH" 32(%%ecx)		\n\t"
+			PREFETCH" 64(%%ecx)		\n\t"
 
 #define FUNNY_Y_CODE \
-			PREFETCH" 1024(%%esi)		\n\t"\
-			PREFETCH" 1056(%%esi)		\n\t"\
-			PREFETCH" 1088(%%esi)		\n\t"\
-			"call *%6			\n\t"\
-			"movq %%mm4, %%mm2		\n\t"\
-			"xorl %%ecx, %%ecx		\n\t"
+			"movl (%%ebx), %%esi		\n\t"\
+			"call *%4			\n\t"\
+			"addl (%%ebx, %%eax), %%ecx	\n\t"\
+			"addl %%eax, %%edi		\n\t"\
+			"xorl %%eax, %%eax		\n\t"\
 
 FUNNY_Y_CODE
 FUNNY_Y_CODE
@@ -2333,8 +2320,8 @@ FUNNY_Y_CODE
 FUNNY_Y_CODE
 FUNNY_Y_CODE
 
-			:: "m" (src), "m" (dst), "m" (dstWidth), "m" ((xInc*4)>>16),
-			"m" ((xInc*4)&0xFFFF), "m" (xInc&0xFFFF), "m" (funnyYCode)
+			:: "m" (src), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
+			"m" (funnyYCode)
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
 		);
 		for(i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) dst[i] = src[srcW-1]*128;
@@ -2402,7 +2389,8 @@ FUNNY_Y_CODE
 inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, uint8_t *src2,
 				   int srcW, int xInc, int flags, int canMMX2BeUsed, int16_t *hChrFilter,
 				   int16_t *hChrFilterPos, int hChrFilterSize, void *funnyUVCode,
-				   int srcFormat, uint8_t *formatConvBuffer)
+				   int srcFormat, uint8_t *formatConvBuffer, int16_t *mmx2Filter,
+				   int32_t *mmx2FilterPos)
 {
     if(srcFormat==IMGFMT_YUY2)
     {
@@ -2469,65 +2457,44 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, u
 	if(canMMX2BeUsed)
 	{
 		asm volatile(
-		"pxor %%mm7, %%mm7		\n\t"
-		"pxor %%mm2, %%mm2		\n\t" // 2*xalpha
-		"movd %5, %%mm6			\n\t" // xInc&0xFFFF
-		"punpcklwd %%mm6, %%mm6		\n\t"
-		"punpcklwd %%mm6, %%mm6		\n\t"
-		"movq %%mm6, %%mm2		\n\t"
-		"psllq $16, %%mm2		\n\t"
-		"paddw %%mm6, %%mm2		\n\t"
-		"psllq $16, %%mm2		\n\t"
-		"paddw %%mm6, %%mm2		\n\t"
-		"psllq $16, %%mm2		\n\t" //0,t,2t,3t		t=xInc&0xFFFF
-		"movq %%mm2, %%mm4		\n\t"
-		"movd %4, %%mm6			\n\t" //(xInc*4)&0xFFFF
-		"punpcklwd %%mm6, %%mm6		\n\t"
-		"punpcklwd %%mm6, %%mm6		\n\t"
-		"xorl %%eax, %%eax		\n\t" // i
-		"movl %0, %%esi			\n\t" // src
-		"movl %1, %%edi			\n\t" // buf1
-		"movl %3, %%edx			\n\t" // (xInc*4)>>16
-		"xorl %%ecx, %%ecx		\n\t"
-		"xorl %%ebx, %%ebx		\n\t"
-		"movw %4, %%bx			\n\t" // (xInc*4)&0xFFFF
+			"pxor %%mm7, %%mm7		\n\t"
+			"movl %0, %%ecx			\n\t"
+			"movl %1, %%edi			\n\t"
+			"movl %2, %%edx			\n\t"
+			"movl %3, %%ebx			\n\t"
+			"xorl %%eax, %%eax		\n\t" // i
+			PREFETCH" (%%ecx)		\n\t"
+			PREFETCH" 32(%%ecx)		\n\t"
+			PREFETCH" 64(%%ecx)		\n\t"
 
-#define FUNNYUVCODE \
-			PREFETCH" 1024(%%esi)		\n\t"\
-			PREFETCH" 1056(%%esi)		\n\t"\
-			PREFETCH" 1088(%%esi)		\n\t"\
-			"call *%7			\n\t"\
-			"movq %%mm4, %%mm2	\n\t"\
-			"xorl %%ecx, %%ecx		\n\t"
+#define FUNNY_UV_CODE \
+			"movl (%%ebx), %%esi		\n\t"\
+			"call *%4			\n\t"\
+			"addl (%%ebx, %%eax), %%ecx	\n\t"\
+			"addl %%eax, %%edi		\n\t"\
+			"xorl %%eax, %%eax		\n\t"\
 
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
+FUNNY_UV_CODE
+FUNNY_UV_CODE
+FUNNY_UV_CODE
+FUNNY_UV_CODE
+			"xorl %%eax, %%eax		\n\t" // i
+			"movl %5, %%ecx			\n\t" // src
+			"movl %1, %%edi			\n\t" // buf1
+			"addl $4096, %%edi		\n\t"
+			PREFETCH" (%%ecx)		\n\t"
+			PREFETCH" 32(%%ecx)		\n\t"
+			PREFETCH" 64(%%ecx)		\n\t"
 
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-		"xorl %%eax, %%eax		\n\t" // i
-		"movl %6, %%esi			\n\t" // src
-		"movl %1, %%edi			\n\t" // buf1
-		"addl $4096, %%edi		\n\t"
+FUNNY_UV_CODE
+FUNNY_UV_CODE
+FUNNY_UV_CODE
+FUNNY_UV_CODE
 
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-FUNNYUVCODE
-
-		:: "m" (src1), "m" (dst), "m" (dstWidth), "m" ((xInc*4)>>16),
-		  "m" ((xInc*4)&0xFFFF), "m" (xInc&0xFFFF), "m" (src2), "m" (funnyUVCode)
-		: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
-	);
+			:: "m" (src1), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
+			"m" (funnyUVCode), "m" (src2)
+			: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
+		);
 		for(i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--)
 		{
 //			printf("%d %d %d\n", dstWidth, i, srcW);
@@ -2749,7 +2716,8 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 //				printf("%d %d\n", lumBufIndex, vLumBufSize);
 				RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
 						flags, canMMX2BeUsed, hLumFilter, hLumFilterPos, hLumFilterSize,
-						funnyYCode, c->srcFormat, formatConvBuffer);
+						funnyYCode, c->srcFormat, formatConvBuffer, 
+						c->lumMmx2Filter, c->lumMmx2FilterPos);
 				lastInLumBuf++;
 			}
 			while(lastInChrBuf < lastChrSrcY)
@@ -2763,7 +2731,8 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 				//FIXME replace parameters through context struct (some at least)
 				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
 						flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
-						funnyUVCode, c->srcFormat, formatConvBuffer);
+						funnyUVCode, c->srcFormat, formatConvBuffer, 
+						c->chrMmx2Filter, c->chrMmx2FilterPos);
 				lastInChrBuf++;
 			}
 			//wrap buf index around to stay inside the ring buffer
@@ -2787,7 +2756,8 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 				ASSERT(lastInLumBuf + 1 - srcSliceY >= 0)
 				RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
 						flags, canMMX2BeUsed, hLumFilter, hLumFilterPos, hLumFilterSize,
-						funnyYCode, c->srcFormat, formatConvBuffer);
+						funnyYCode, c->srcFormat, formatConvBuffer, 
+						c->lumMmx2Filter, c->lumMmx2FilterPos);
 				lastInLumBuf++;
 			}
 			while(lastInChrBuf+1 < ((srcSliceY + srcSliceH)>>1))
@@ -2800,7 +2770,8 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
 				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
 						flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
-						funnyUVCode, c->srcFormat, formatConvBuffer);
+						funnyUVCode, c->srcFormat, formatConvBuffer, 
+						c->chrMmx2Filter, c->chrMmx2FilterPos);
 				lastInChrBuf++;
 			}
 			//wrap buf index around to stay inside the ring buffer

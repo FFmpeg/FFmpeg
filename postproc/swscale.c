@@ -117,10 +117,6 @@ untested special converters
 extern int verbose; // defined in mplayer.c
 /*
 NOTES
-
-known BUGS with known cause (no bugreports please!, but patches are welcome :) )
-horizontal fast_bilinear MMX2 scaler reads 1-7 samples too much (might cause a sig11)
-
 Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
 TODO
@@ -1020,12 +1016,17 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 }
 
 #ifdef ARCH_X86
-static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode)
+static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *filter, int32_t *filterPos, int numSplits)
 {
-	uint8_t *fragment;
-	int imm8OfPShufW1;
-	int imm8OfPShufW2;
-	int fragmentLength;
+	uint8_t *fragmentA;
+	int imm8OfPShufW1A;
+	int imm8OfPShufW2A;
+	int fragmentLengthA;
+	uint8_t *fragmentB;
+	int imm8OfPShufW1B;
+	int imm8OfPShufW2B;
+	int fragmentLengthB;
+	int fragmentPos;
 
 	int xpos, i;
 
@@ -1037,22 +1038,18 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode)
 		"jmp 9f				\n\t"
 	// Begin
 		"0:				\n\t"
-		"movq (%%esi), %%mm0		\n\t" //FIXME Alignment
-		"movq %%mm0, %%mm1		\n\t"
-		"psrlq $8, %%mm0		\n\t"
-		"punpcklbw %%mm7, %%mm1	\n\t"
-		"movq %%mm2, %%mm3		\n\t"
-		"punpcklbw %%mm7, %%mm0	\n\t"
-		"addw %%bx, %%cx		\n\t" //2*xalpha += (4*lumXInc)&0xFFFF
+		"movq (%%edx, %%eax), %%mm3	\n\t" 
+		"movd (%%ecx, %%esi), %%mm0	\n\t" 
+		"movd 1(%%ecx, %%esi), %%mm1	\n\t"
+		"punpcklbw %%mm7, %%mm1		\n\t"
+		"punpcklbw %%mm7, %%mm0		\n\t"
 		"pshufw $0xFF, %%mm1, %%mm1	\n\t"
 		"1:				\n\t"
-		"adcl %%edx, %%esi		\n\t" //xx+= (4*lumXInc)>>16 + carry
 		"pshufw $0xFF, %%mm0, %%mm0	\n\t"
 		"2:				\n\t"
-		"psrlw $9, %%mm3		\n\t"
 		"psubw %%mm1, %%mm0		\n\t"
+		"movl 8(%%ebx, %%eax), %%esi	\n\t"
 		"pmullw %%mm3, %%mm0		\n\t"
-		"paddw %%mm6, %%mm2		\n\t" // 2*alpha += xpos&0xFFFF
 		"psllw $7, %%mm1		\n\t"
 		"paddw %%mm1, %%mm0		\n\t"
 
@@ -1071,13 +1068,54 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode)
 		"subl %0, %2			\n\t"
 		"leal 9b, %3			\n\t"
 		"subl %0, %3			\n\t"
-		:"=r" (fragment), "=r" (imm8OfPShufW1), "=r" (imm8OfPShufW2),
-		"=r" (fragmentLength)
+
+
+		:"=r" (fragmentA), "=r" (imm8OfPShufW1A), "=r" (imm8OfPShufW2A),
+		"=r" (fragmentLengthA)
+	);
+
+	asm volatile(
+		"jmp 9f				\n\t"
+	// Begin
+		"0:				\n\t"
+		"movq (%%edx, %%eax), %%mm3	\n\t" 
+		"movd (%%ecx, %%esi), %%mm0	\n\t" 
+		"punpcklbw %%mm7, %%mm0		\n\t"
+		"pshufw $0xFF, %%mm0, %%mm1	\n\t"
+		"1:				\n\t"
+		"pshufw $0xFF, %%mm0, %%mm0	\n\t"
+		"2:				\n\t"
+		"psubw %%mm1, %%mm0		\n\t"
+		"movl 8(%%ebx, %%eax), %%esi	\n\t"
+		"pmullw %%mm3, %%mm0		\n\t"
+		"psllw $7, %%mm1		\n\t"
+		"paddw %%mm1, %%mm0		\n\t"
+
+		"movq %%mm0, (%%edi, %%eax)	\n\t"
+
+		"addl $8, %%eax			\n\t"
+	// End
+		"9:				\n\t"
+//		"int $3\n\t"
+		"leal 0b, %0			\n\t"
+		"leal 1b, %1			\n\t"
+		"leal 2b, %2			\n\t"
+		"decl %1			\n\t"
+		"decl %2			\n\t"
+		"subl %0, %1			\n\t"
+		"subl %0, %2			\n\t"
+		"leal 9b, %3			\n\t"
+		"subl %0, %3			\n\t"
+
+
+		:"=r" (fragmentB), "=r" (imm8OfPShufW1B), "=r" (imm8OfPShufW2B),
+		"=r" (fragmentLengthB)
 	);
 
 	xpos= 0; //lumXInc/2 - 0x8000; // difference between pixel centers
-
-	for(i=0; i<dstW/8; i++)
+	fragmentPos=0;
+	
+	for(i=0; i<dstW/numSplits; i++)
 	{
 		int xx=xpos>>16;
 
@@ -1088,20 +1126,65 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode)
 			int c=((xpos+xInc*2)>>16) - xx;
 			int d=((xpos+xInc*3)>>16) - xx;
 
-			memcpy(funnyCode + fragmentLength*i/4, fragment, fragmentLength);
+			filter[i  ] = (( xpos         & 0xFFFF) ^ 0xFFFF)>>9;
+			filter[i+1] = (((xpos+xInc  ) & 0xFFFF) ^ 0xFFFF)>>9;
+			filter[i+2] = (((xpos+xInc*2) & 0xFFFF) ^ 0xFFFF)>>9;
+			filter[i+3] = (((xpos+xInc*3) & 0xFFFF) ^ 0xFFFF)>>9;
+			filterPos[i/2]= xx;
 
-			funnyCode[fragmentLength*i/4 + imm8OfPShufW1]=
-			funnyCode[fragmentLength*i/4 + imm8OfPShufW2]=
-				a | (b<<2) | (c<<4) | (d<<6);
+			if(d+1<4)
+			{
+				int maxShift= 3-(d+1);
+				int shift=0;
 
-			// if we dont need to read 8 bytes than dont :), reduces the chance of
-			// crossing a cache line
-			if(d<3) funnyCode[fragmentLength*i/4 + 1]= 0x6E;
+				memcpy(funnyCode + fragmentPos, fragmentB, fragmentLengthB);
 
-			funnyCode[fragmentLength*(i+4)/4]= RET;
+				funnyCode[fragmentPos + imm8OfPShufW1B]=
+					(a+1) | ((b+1)<<2) | ((c+1)<<4) | ((d+1)<<6);
+				funnyCode[fragmentPos + imm8OfPShufW2B]=
+					a | (b<<2) | (c<<4) | (d<<6);
+
+				if(i+3>=dstW) shift=maxShift; //avoid overread
+				else if((filterPos[i/2]&3) <= maxShift) shift=filterPos[i/2]&3; //Align
+
+				if(shift && i>=shift)
+				{
+					funnyCode[fragmentPos + imm8OfPShufW1B]+= 0x55*shift;
+					funnyCode[fragmentPos + imm8OfPShufW2B]+= 0x55*shift;
+					filterPos[i/2]-=shift;
+				}
+
+				fragmentPos+= fragmentLengthB;
+			}
+			else
+			{
+				int maxShift= 3-d;
+				int shift=0;
+
+				memcpy(funnyCode + fragmentPos, fragmentA, fragmentLengthA);
+
+				funnyCode[fragmentPos + imm8OfPShufW1A]=
+				funnyCode[fragmentPos + imm8OfPShufW2A]=
+					a | (b<<2) | (c<<4) | (d<<6);
+
+				if(i+4>=dstW) shift=maxShift; //avoid overread
+				else if((filterPos[i/2]&3) <= maxShift) shift=filterPos[i/2]&3; //partial align
+
+				if(shift && i>=shift)
+				{
+					funnyCode[fragmentPos + imm8OfPShufW1A]+= 0x55*shift;
+					funnyCode[fragmentPos + imm8OfPShufW2A]+= 0x55*shift;
+					filterPos[i/2]-=shift;
+				}
+
+				fragmentPos+= fragmentLengthA;
+			}
+
+			funnyCode[fragmentPos]= RET;
 		}
 		xpos+=xInc;
 	}
+	filterPos[i/2]= xpos>>16; // needed to jump to the next part
 }
 #endif // ARCH_X86
 
@@ -1565,8 +1648,13 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 // cant downscale !!!
 		if(c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR))
 		{
-			initMMX2HScaler(      dstW, c->lumXInc, c->funnyYCode);
-			initMMX2HScaler(c->chrDstW, c->chrXInc, c->funnyUVCode);
+			c->lumMmx2Filter   = (int16_t*)memalign(8, (dstW        /8+8)*sizeof(int16_t));
+			c->chrMmx2Filter   = (int16_t*)memalign(8, (c->chrDstW  /4+8)*sizeof(int16_t));
+			c->lumMmx2FilterPos= (int32_t*)memalign(8, (dstW      /2/8+8)*sizeof(int32_t));
+			c->chrMmx2FilterPos= (int32_t*)memalign(8, (c->chrDstW/2/4+8)*sizeof(int32_t));
+
+			initMMX2HScaler(      dstW, c->lumXInc, c->funnyYCode , c->lumMmx2Filter, c->lumMmx2FilterPos, 8);
+			initMMX2HScaler(c->chrDstW, c->chrXInc, c->funnyUVCode, c->chrMmx2Filter, c->chrMmx2FilterPos, 4);
 		}
 #endif
 	} // Init Horizontal stuff
@@ -2013,6 +2101,15 @@ void freeSwsContext(SwsContext *c){
 	c->lumMmxFilter = NULL;
 	if(c->chrMmxFilter) free(c->chrMmxFilter);
 	c->chrMmxFilter = NULL;
+
+	if(c->lumMmx2Filter) free(c->lumMmx2Filter);
+	c->lumMmx2Filter=NULL;
+	if(c->chrMmx2Filter) free(c->chrMmx2Filter);
+	c->chrMmx2Filter=NULL;
+	if(c->lumMmx2FilterPos) free(c->lumMmx2FilterPos);
+	c->lumMmx2FilterPos=NULL;
+	if(c->chrMmx2FilterPos) free(c->chrMmx2FilterPos);
+	c->chrMmx2FilterPos=NULL;
 
 	free(c);
 }

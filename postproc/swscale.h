@@ -69,6 +69,10 @@ typedef struct SwsContext{
 
 	uint8_t __attribute__((aligned(32))) funnyYCode[10000];
 	uint8_t __attribute__((aligned(32))) funnyUVCode[10000];
+	int32_t *lumMmx2FilterPos;
+	int32_t *chrMmx2FilterPos;
+	int16_t *lumMmx2Filter;
+	int16_t *chrMmx2Filter;
 
 	int canMMX2BeUsed;
 
