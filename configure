@@ -867,7 +867,7 @@ EOF
 
 freetype2=no
 if test "x$targetos" != "xBeOS" && test "$os2" != "yes"; then
-  if test "`which freetype-config`" != ""; then
+  if freetype-config --version >/dev/null 2>&1 ; then
     if $cc -o $TMPE $TMPC `freetype-config --cflags` `freetype-config --libs`  > /dev/null 2>&1 ; then
       freetype2=yes
     fi
@@ -885,12 +885,14 @@ EOF
 
 sdl_too_old=no
 sdl=no
+if sdl-config --version >/dev/null 2>&1 ; then
 if $cc -o $TMPE `sdl-config --cflags` $TMPC `sdl-config --libs`  > /dev/null 2>&1  ; then
 _sdlversion=`sdl-config --version | sed 's/[^0-9]//g'`
 if test "$_sdlversion" -lt 121 ; then
 sdl_too_old=yes
 else
 sdl=yes
+fi
 fi
 fi
 
