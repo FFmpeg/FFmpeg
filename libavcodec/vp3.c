@@ -1287,7 +1287,7 @@ static void unpack_modes(Vp3DecodeContext *s, GetBitContext *gb)
         if (scheme == 0) {
             debug_modes("    custom mode alphabet ahead:\n");
             for (i = 0; i < 8; i++)
-                ModeAlphabet[0][i] = get_bits(gb, 3);
+                ModeAlphabet[scheme][get_bits(gb, 3)] = i;
         }
 
         for (i = 0; i < 8; i++)
@@ -1662,11 +1662,11 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
         plane_split, s->coded_fragment_list_index, residual_eob_run);
 
-    /* fetch the level 1 AC table indices */
+    /* fetch the AC table indices */
     ac_y_table = get_bits(gb, 4);
     ac_c_table = get_bits(gb, 4);
 
-    /* unpack the level 1 AC coefficients (coeffs 1-5) */
+    /* unpack the group 1 AC coefficients (coeffs 1-5) */
     for (i = 1; i <= 5; i++) {
 
         debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
@@ -1680,7 +1680,7 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
             plane_split, s->coded_fragment_list_index, residual_eob_run);
     }
 
-    /* unpack the level 2 AC coefficients (coeffs 6-14) */
+    /* unpack the group 2 AC coefficients (coeffs 6-14) */
     for (i = 6; i <= 14; i++) {
 
         debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
@@ -1694,7 +1694,7 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
             plane_split, s->coded_fragment_list_index, residual_eob_run);
     }
 
-    /* unpack the level 3 AC coefficients (coeffs 15-27) */
+    /* unpack the group 3 AC coefficients (coeffs 15-27) */
     for (i = 15; i <= 27; i++) {
 
         debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
@@ -1708,7 +1708,7 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
             plane_split, s->coded_fragment_list_index, residual_eob_run);
     }
 
-    /* unpack the level 4 AC coefficients (coeffs 28-63) */
+    /* unpack the group 4 AC coefficients (coeffs 28-63) */
     for (i = 28; i <= 63; i++) {
 
         debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
@@ -1731,7 +1731,6 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
 #define COMPATIBLE_FRAME(x) \
   (compatible_frame[s->all_fragments[x].coding_method] == current_frame_type)
 #define FRAME_CODED(x) (s->all_fragments[x].coding_method != MODE_COPY)
-#define HIGHBITDUPPED(X) (((signed short) X)  >> 15)
 static inline int iabs (int x) { return ((x < 0) ? -x : x); }
 
 static void reverse_dc_prediction(Vp3DecodeContext *s,
@@ -2020,7 +2019,7 @@ static void render_fragments(Vp3DecodeContext *s,
     unsigned char *golden_plane;
     int stride;
     int motion_x, motion_y;
-    int motion_x_limit, motion_y_limit;
+    int upper_motion_limit, lower_motion_limit;
     int motion_halfpel_index;
     unsigned int motion_source;
 
@@ -2034,22 +2033,25 @@ static void render_fragments(Vp3DecodeContext *s,
         last_plane = s->last_frame.data[0];
         golden_plane = s->golden_frame.data[0];
         stride = -s->current_frame.linesize[0];
+        upper_motion_limit = 7 * s->current_frame.linesize[0];
+        lower_motion_limit = height * s->current_frame.linesize[0] + width - 8;
     } else if (plane == 1) {
         dequantizer = s->intra_c_dequant;
         output_plane = s->current_frame.data[1];
         last_plane = s->last_frame.data[1];
         golden_plane = s->golden_frame.data[1];
         stride = -s->current_frame.linesize[1];
+        upper_motion_limit = 7 * s->current_frame.linesize[1];
+        lower_motion_limit = height * s->current_frame.linesize[1] + width - 8;
     } else {
         dequantizer = s->intra_c_dequant;
         output_plane = s->current_frame.data[2];
         last_plane = s->last_frame.data[2];
         golden_plane = s->golden_frame.data[2];
         stride = -s->current_frame.linesize[2];
+        upper_motion_limit = 7 * s->current_frame.linesize[2];
+        lower_motion_limit = height * s->current_frame.linesize[2] + width - 8;
     }
-
-    motion_x_limit = width - 8;
-    motion_y_limit = height - 8;
 
     /* for each fragment row... */
     for (y = 0; y < height; y += 8) {
@@ -2064,20 +2066,18 @@ static void render_fragments(Vp3DecodeContext *s,
                 motion_x = s->all_fragments[i].motion_x;
                 motion_y = s->all_fragments[i].motion_y;
                 motion_halfpel_index = s->all_fragments[i].motion_halfpel_index;
-/*
 
-                if (motion_x < 0)
-                    motion_x = 0;
-                if (motion_y < 0)
-                    motion_y = 0;
-                if (motion_x > motion_x_limit)
-                    motion_x = motion_x_limit;
-                if (motion_y > motion_y_limit)
-                    motion_y = motion_y_limit;
-*/
                 motion_source = s->all_fragments[i].first_pixel;
                 motion_source += motion_x;
                 motion_source += (motion_y * stride);
+
+                /* if the are any problems with a motion vector, refuse
+                 * to render the block */
+                if ((motion_source < upper_motion_limit) ||
+                    (motion_source > lower_motion_limit)) {
+//                    printf ("  vp3: help! motion source (%d) out of range (%d..%d)\n",
+//                        motion_source, upper_motion_limit, lower_motion_limit);
+                }
 
                 /* first, take care of copying a block from either the
                  * previous or the golden frame */
@@ -2270,22 +2270,22 @@ static int vp3_decode_init(AVCodecContext *avctx)
             &dc_bias[i][0][1], 4, 2,
             &dc_bias[i][0][0], 4, 2);
 
-        /* level 1 AC histograms */
+        /* group 1 AC histograms */
         init_vlc(&s->ac_vlc_1[i], 5, 32,
             &ac_bias_0[i][0][1], 4, 2,
             &ac_bias_0[i][0][0], 4, 2);
 
-        /* level 2 AC histograms */
+        /* group 2 AC histograms */
         init_vlc(&s->ac_vlc_2[i], 5, 32,
             &ac_bias_1[i][0][1], 4, 2,
             &ac_bias_1[i][0][0], 4, 2);
 
-        /* level 3 AC histograms */
+        /* group 3 AC histograms */
         init_vlc(&s->ac_vlc_3[i], 5, 32,
             &ac_bias_2[i][0][1], 4, 2,
             &ac_bias_2[i][0][0], 4, 2);
 
-        /* level 4 AC histograms */
+        /* group 4 AC histograms */
         init_vlc(&s->ac_vlc_4[i], 5, 32,
             &ac_bias_3[i][0][1], 4, 2,
             &ac_bias_3[i][0][0], 4, 2);
