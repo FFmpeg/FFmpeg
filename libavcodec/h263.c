@@ -2760,8 +2760,6 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                     if(dc_pred_dir) dir|=1;
                 }
                 s->pred_dir_table[xy]= dir;
-                
-                s->error_status_table[xy]= AC_ERROR;
             }else{ /* P/S_TYPE */
                 int mx, my, pred_x, pred_y, bits;
                 int16_t * const mot_val= s->motion_val[s->block_index[0]];
@@ -2790,8 +2788,6 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
 
                     if(s->mbintra_table[xy])
                         ff_clean_intra_table_entries(s);
-
-                    s->error_status_table[xy]= AC_ERROR;
                     continue;
                 }
                 cbpc = get_vlc2(&s->gb, inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
@@ -2815,7 +2811,6 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                     mot_val[0+stride]= mot_val[2+stride]= 0;
                     mot_val[1       ]= mot_val[3       ]=
                     mot_val[1+stride]= mot_val[3+stride]= 0;
-                    s->error_status_table[xy]= DC_ERROR|AC_ERROR;
                 }else{
                     if(s->mbintra_table[xy])
                         ff_clean_intra_table_entries(s);
@@ -2864,7 +2859,6 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                             mot_val[1] = my;
                         }
                     }
-                    s->error_status_table[xy]= AC_ERROR;
                 }
             }
         }
@@ -2933,7 +2927,6 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
                     s->cbp_table[xy]&= 3; //remove dquant
                     s->cbp_table[xy]|= cbpy<<2;
                     s->pred_dir_table[xy]= dir | (ac_pred<<7);
-                    s->error_status_table[xy]&= ~DC_ERROR;
                 }else if(s->mb_type[xy]&MB_TYPE_SKIPED){
                     s->current_picture.qscale_table[xy]= s->qscale;
                     s->cbp_table[xy]= 0;
@@ -2968,13 +2961,18 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
 int ff_mpeg4_decode_partitions(MpegEncContext *s)
 {
     int mb_num;
+    const int part_a_error= s->pict_type==I_TYPE ? (DC_ERROR|MV_ERROR) : MV_ERROR;
+    const int part_a_end  = s->pict_type==I_TYPE ? (DC_END  |MV_END)   : MV_END;
     
     mb_num= mpeg4_decode_partition_a(s);    
-    if(mb_num<0)
+    if(mb_num<0){
+        ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, part_a_error);
         return -1;
+    }
     
     if(s->resync_mb_x + s->resync_mb_y*s->mb_width + mb_num > s->mb_num){
         fprintf(stderr, "slice below monitor ...\n");
+        ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, part_a_error);
         return -1;
     }
 
@@ -2984,21 +2982,23 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
         if(get_bits(&s->gb, 19)!=DC_MARKER){
             fprintf(stderr, "marker missing after first I partition at %d %d\n", s->mb_x, s->mb_y);
             return -1;
-        }else
-            s->error_status_table[s->mb_x + s->mb_y*s->mb_width-1]|= MV_END|DC_END;
+        }
     }else{
         if(get_bits(&s->gb, 17)!=MOTION_MARKER){
             fprintf(stderr, "marker missing after first P partition at %d %d\n", s->mb_x, s->mb_y);
             return -1;
-        }else
-            s->error_status_table[s->mb_x + s->mb_y*s->mb_width-1]|= MV_END;
+        }
     }
+    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, part_a_end);
     
     if( mpeg4_decode_partition_b(s, mb_num) < 0){
+        if(s->pict_type==P_TYPE)
+            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, DC_ERROR);
         return -1;
+    }else{
+        if(s->pict_type==P_TYPE)
+            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, DC_END);
     }
-    
-    s->error_status_table[s->mb_x + s->mb_y*s->mb_width-1]|= DC_END;
 
     return 0;        
 }
@@ -3071,8 +3071,6 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
         }
     }
 
-    s->error_status_table[xy]&= ~AC_ERROR;
-
     /* per-MB end of slice check */
 
     if(--s->mb_num_left <= 0){
@@ -3095,8 +3093,6 @@ int ff_h263_decode_mb(MpegEncContext *s,
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     int16_t *mot_val;
     static int8_t quant_tab[4] = { -1, -2, 1, 2 };
-
-    s->error_status_table[s->mb_x + s->mb_y*s->mb_width]= 0;
 
     if(s->mb_x==0) PRINT_MB_TYPE("\n");
 

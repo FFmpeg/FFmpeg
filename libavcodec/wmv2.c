@@ -710,8 +710,6 @@ static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     if(w->j_type) return 0;
     
-    s->error_status_table[s->mb_x + s->mb_y*s->mb_width]= 0;
-    
     if (s->pict_type == P_TYPE) {
         if(s->mb_type[s->mb_y * s->mb_width + s->mb_x]&MB_TYPE_SKIPED){
             /* skip mb */

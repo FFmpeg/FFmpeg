@@ -629,16 +629,19 @@ void MPV_common_init_armv4l(MpegEncContext *s);
 void MPV_common_init_ppc(MpegEncContext *s);
 #endif
 extern void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w);
-void ff_conceal_past_errors(MpegEncContext *s, int conceal_all);
 void ff_copy_bits(PutBitContext *pb, uint8_t *src, int length);
 void ff_clean_intra_table_entries(MpegEncContext *s);
 void ff_init_scantable(MpegEncContext *s, ScanTable *st, const uint8_t *src_scantable);
-void ff_error_resilience(MpegEncContext *s);
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_emulated_edge_mc(MpegEncContext *s, uint8_t *src, int linesize, int block_w, int block_h, 
                                     int src_x, int src_y, int w, int h);
 char ff_get_pict_type_char(int pict_type);
 int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size);
+
+void ff_er_frame_start(MpegEncContext *s);
+void ff_er_frame_end(MpegEncContext *s);
+void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int endy, int status);
+
 
 extern enum PixelFormat ff_yuv420p_list[2];
 

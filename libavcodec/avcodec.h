@@ -909,6 +909,7 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_SKIP      0x00000080
 #define FF_DEBUG_STARTCODE 0x00000100
 #define FF_DEBUG_PTS       0x00000200
+#define FF_DEBUG_ER        0x00000400
     
     /**
      * error.

@@ -144,6 +144,7 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size){
 }
 
 static int decode_slice(MpegEncContext *s){
+    const int part_mask= s->partitioned_frame ? (AC_END|AC_ERROR) : 0x7F;
     s->last_resync_gb= s->gb;
     s->first_slice_line= 1;
         
@@ -174,8 +175,8 @@ static int decode_slice(MpegEncContext *s){
         /* per-row end of slice checks */
         if(s->msmpeg4_version){
             if(s->resync_mb_y + s->slice_height == s->mb_y){
-                const int xy= s->mb_x + s->mb_y*s->mb_width;
-                s->error_status_table[xy-1]|= AC_END|DC_END|MV_END;
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_END|DC_END|MV_END);
+
                 return 0;
             }
         }
@@ -211,9 +212,7 @@ static int decode_slice(MpegEncContext *s){
                 const int xy= s->mb_x + s->mb_y*s->mb_width;
                 if(ret==SLICE_END){
 //printf("%d %d %d %06X\n", s->mb_x, s->mb_y, s->gb.size*8 - get_bits_count(&s->gb), show_bits(&s->gb, 24));
-                    s->error_status_table[xy]|= AC_END;
-                    if(!s->partitioned_frame)
-                        s->error_status_table[xy]|= MV_END|DC_END;
+                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
 
                     s->padding_bug_score--;
                         
@@ -225,12 +224,11 @@ static int decode_slice(MpegEncContext *s){
                     return 0; 
                 }else if(ret==SLICE_NOEND){
                     fprintf(stderr,"Slice mismatch at MB: %d\n", xy);
+                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x+1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
                     return -1;
                 }
                 fprintf(stderr,"Error at MB: %d\n", xy);
-                s->error_status_table[xy]|= AC_ERROR;
-                if(!s->partitioned_frame)
-                    s->error_status_table[xy]|= DC_ERROR|MV_ERROR;
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
     
                 return -1;
             }
@@ -290,7 +288,7 @@ static int decode_slice(MpegEncContext *s){
         else if(left<0){
             fprintf(stderr, "overreading %d bits\n", -left);
         }else
-            s->error_status_table[s->mb_num-1]|= AC_END|MV_END|DC_END;
+            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_END|DC_END|MV_END);
         
         return 0;
     }
@@ -298,6 +296,9 @@ static int decode_slice(MpegEncContext *s){
     fprintf(stderr, "slice end not reached but screenspace end (%d left %06X)\n", 
             s->gb.size_in_bits - get_bits_count(&s->gb),
             show_bits(&s->gb, 24));
+            
+    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+
     return -1;
 }
 
@@ -596,7 +597,6 @@ retry:
         || ABS(new_aspect - avctx->aspect_ratio) > 0.001) {
         /* H.263 could change picture size any time */
         MPV_common_end(s);
-        s->context_initialized=0;
     }
     if (!s->context_initialized) {
         avctx->width = s->width;
@@ -641,8 +641,7 @@ retry:
     printf("qscale=%d\n", s->qscale);
 #endif
 
-    if(s->error_resilience)
-        memset(s->error_status_table, MV_ERROR|AC_ERROR|DC_ERROR|VP_START|AC_END|DC_END|MV_END, s->mb_num*sizeof(uint8_t));
+    ff_er_frame_start(s);
     
     /* decode each macroblock */
     s->block_wrap[0]=
@@ -655,7 +654,6 @@ retry:
     s->mb_y=0;
     
     decode_slice(s);
-    s->error_status_table[0]|= VP_START;
     while(s->mb_y<s->mb_height && s->gb.size_in_bits - get_bits_count(&s->gb)>16){
         if(s->msmpeg4_version){
             if(s->mb_x!=0 || (s->mb_y%s->slice_height)!=0)
@@ -669,8 +667,6 @@ retry:
             ff_mpeg4_clean_buffers(s);
 
         decode_slice(s);
-
-        s->error_status_table[s->resync_mb_x + s->resync_mb_y*s->mb_width]|= VP_START;
     }
 
     if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==I_TYPE)
@@ -699,35 +695,7 @@ retry:
         }
     }
 
-    if(s->error_resilience){
-        int error=0, num_end_markers=0;
-        for(i=0; i<s->mb_num; i++){
-            int status= s->error_status_table[i];
-#if 0
-            if(i%s->mb_width == 0) printf("\n");
-            printf("%2X ", status); 
-#endif
-            if(status==0) continue;
-
-            if(status&(DC_ERROR|AC_ERROR|MV_ERROR))
-                error=1;
-            if(status&VP_START){
-                if(num_end_markers) 
-                    error=1;
-                num_end_markers=3;
-            }
-            if(status&AC_END)
-                num_end_markers--;
-            if(status&DC_END)
-                num_end_markers--;
-            if(status&MV_END)
-                num_end_markers--;
-        }
-        if(num_end_markers || error){
-            fprintf(stderr, "concealing errors\n");
-            ff_error_resilience(s);
-        }
-    }
+    ff_er_frame_end(s);
 
     MPV_frame_end(s);
 

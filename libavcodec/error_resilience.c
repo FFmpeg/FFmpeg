@@ -26,6 +26,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "common.h"
 
 /**
  * replaces the current MB with a flat dc only version.
@@ -580,12 +581,91 @@ static int is_intra_more_likely(MpegEncContext *s){
     return is_intra_likely > 0;    
 }
 
-void ff_error_resilience(MpegEncContext *s){
+void ff_er_frame_start(MpegEncContext *s){
+    if(!s->error_resilience) return;
+
+    memset(s->error_status_table, MV_ERROR|AC_ERROR|DC_ERROR|VP_START|AC_END|DC_END|MV_END, s->mb_num*sizeof(uint8_t));
+}
+
+/**
+ * adds a slice.
+ * @param endx x component of the last macroblock, can be -1 for the last of the previous line
+ * @param status the status at the end (MV_END, AC_ERROR, ...), it is assumed that no earlier end or
+ *               error of the same type occured
+ */
+void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int endy, int status){
+    const int start_xy= clip(startx + starty * s->mb_width, 0, s->mb_num-1);
+    const int end_xy  = clip(endx   + endy   * s->mb_width, 0, s->mb_num);
+    const int mb_count= end_xy - start_xy;
+    int mask= -1;
+    
+    if(!s->error_resilience) return;
+
+    mask &= ~VP_START;
+    if(status & (AC_ERROR|AC_END)) mask &= ~(AC_ERROR|AC_END);
+    if(status & (DC_ERROR|DC_END)) mask &= ~(DC_ERROR|DC_END);
+    if(status & (MV_ERROR|MV_END)) mask &= ~(MV_ERROR|MV_END);    
+
+    if(mask == ~0x7F){
+        memset(&s->error_status_table[start_xy], 0, mb_count * sizeof(uint8_t));
+    }else{
+        int i;
+        for(i=start_xy; i<end_xy; i++){
+            s->error_status_table[i] &= mask;
+        }
+    }
+
+    s->error_status_table[start_xy] |= VP_START;
+    
+    if(end_xy < s->mb_num){
+        s->error_status_table[end_xy] &= mask;
+        s->error_status_table[end_xy] |= status;
+    }
+}
+
+void ff_er_frame_end(MpegEncContext *s){
     int i, mb_x, mb_y, error, error_type;
     int distance;
     int threshold_part[4]= {100,100,100};
     int threshold= 50;
     int is_intra_likely;
+    int num_end_markers=0;
+    
+    if(!s->error_resilience) return;
+
+    error=0;
+    for(i=0; i<s->mb_num; i++){
+        int status= s->error_status_table[i];
+        
+        if(status==0) continue;
+
+        if(status&(DC_ERROR|AC_ERROR|MV_ERROR))
+            error=1;
+        if(status&VP_START){
+            if(num_end_markers) 
+                error=1;
+            num_end_markers=3;
+        }
+        if(status&AC_END)
+            num_end_markers--;
+        if(status&DC_END)
+            num_end_markers--;
+        if(status&MV_END)
+            num_end_markers--;
+    }
+    if(num_end_markers==0 && error==0)
+        return;
+
+    fprintf(stderr, "concealing errors\n");
+
+    if(s->avctx->debug&FF_DEBUG_ER){    
+        for(i=0; i<s->mb_num; i++){
+            int status= s->error_status_table[i];
+            
+            if(i%s->mb_width == 0) printf("\n");
+            printf("%2X ", status); 
+        }
+    }
     
 #if 1
     /* handle overlapping slices */

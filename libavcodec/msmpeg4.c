@@ -1486,8 +1486,6 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int cbp, code, i;
     
-    s->error_status_table[s->mb_x + s->mb_y*s->mb_width]= 0;
-    
     if (s->pict_type == P_TYPE) {
         if (s->use_skip_mb_code) {
             if (get_bits1(&s->gb)) {
@@ -1581,8 +1579,6 @@ if(s->mb_x==0){
 }
 #endif
 
-    s->error_status_table[s->mb_x + s->mb_y*s->mb_width]= 0;
-    
     if (s->pict_type == P_TYPE) {
         set_stat(ST_INTER_MB);
         if (s->use_skip_mb_code) {
