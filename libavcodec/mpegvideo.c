@@ -2101,7 +2101,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
         }
 
         /* update mpeg1/2 vbv_delay for CBR */    
-        if(s->avctx->rc_max_rate && s->avctx->rc_min_rate == s->avctx->rc_max_rate){
+        if(s->avctx->rc_max_rate && s->avctx->rc_min_rate == s->avctx->rc_max_rate && s->out_format == FMT_MPEG1){
             int vbv_delay;
 
             assert(s->repeat_first_field==0);
