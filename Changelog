@@ -15,8 +15,12 @@ version 0.4.5:
 - fixed opendivx bugs with newer versions (added VOL header decoding).
 - added support for mplayer interface.
 - added macroblock skip optimization.
-- added MJPEG decoder (still lacking some jpeg features).
+- added MJPEG decoder.
 - added mmx/mmxext idct from libmpeg2.
+- added pgmyuvpipe, ppm, and ppm_pipe formats (original patch by Celer
+  <celer@shell.scrypt.net>).
+- added pixel format convertion layer (e.g. for MJPEG or PPM).
+- added deinterlacing option.
 
 version 0.4.4:
 
