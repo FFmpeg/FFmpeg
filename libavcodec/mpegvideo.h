@@ -858,6 +858,8 @@ int intel_h263_decode_picture_header(MpegEncContext *s);
 int flv_h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64]);
+int ff_mpeg4_decode_mb(MpegEncContext *s,
+                      DCTELEM block[6][64]);
 int h263_get_picture_format(int width, int height);
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
 void ff_mpeg4_clean_buffers(MpegEncContext *s);

@@ -55,6 +55,7 @@ int ff_h263_decode_init(AVCodecContext *avctx)
         s->unrestricted_mv= 0;
         break;
     case CODEC_ID_MPEG4:
+        s->decode_mb= ff_mpeg4_decode_mb;
         s->time_increment_bits = 4; /* default value for broken headers */
         s->h263_pred = 1;
         s->low_delay = 0; //default, might be overriden in the vol header during header parsing
@@ -160,7 +161,7 @@ static int decode_slice(MpegEncContext *s){
         s->first_slice_line=1;
         s->mb_x= s->resync_mb_x;
         s->mb_y= s->resync_mb_y;
-        s->qscale= qscale;
+        s->chroma_qscale= s->qscale= qscale;
         s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
         s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
     }
