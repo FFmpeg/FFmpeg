@@ -1,6 +1,6 @@
 /*
  * Sun mediaLib optimized DSP utils
- * Copyright (c) 2001 Juergen Keil.
+ * Copyright (c) 2001 Gerard Lantau.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
