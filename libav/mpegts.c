@@ -294,7 +294,7 @@ static int mpegts_read_close(AVFormatContext *s)
     MpegTSContext *ts = s->priv_data;
     int i;
     for(i=0;i<NB_PID_MAX;i++)
-        av_freep(ts->pids[i]);
+        av_free(ts->pids[i]);
     return 0;
 }
 
