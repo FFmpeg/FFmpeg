@@ -22,13 +22,6 @@
  *
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "config.h"
-#include "video_out.h"
-#include "yuv2rgb.h"
-
 #include <mlib_types.h>
 #include <mlib_status.h>
 #include <mlib_sys.h>
