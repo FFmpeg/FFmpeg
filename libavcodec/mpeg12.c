@@ -959,12 +959,16 @@ static int mpeg_decode_mb(MpegEncContext *s,
             /* just parse them */
             if (s->picture_structure != PICT_FRAME) 
                 skip_bits1(&s->gb); /* field select */
-            mpeg_decode_motion(s, s->mpeg_f_code[0][0], 0);
-            mpeg_decode_motion(s, s->mpeg_f_code[0][1], 0);
+            
+            s->mv[0][0][0]= s->last_mv[0][0][0]= s->last_mv[0][1][0] = 
+                mpeg_decode_motion(s, s->mpeg_f_code[0][0], s->last_mv[0][0][0]);
+            s->mv[0][0][1]= s->last_mv[0][0][1]= s->last_mv[0][1][1] = 
+                mpeg_decode_motion(s, s->mpeg_f_code[0][1], s->last_mv[0][0][1]);
+
             skip_bits1(&s->gb); /* marker */
-        }
+        }else
+            memset(s->last_mv, 0, sizeof(s->last_mv)); /* reset mv prediction */
         s->mb_intra = 1;
-        memset(s->last_mv, 0, sizeof(s->last_mv)); /* reset mv prediction */
 
         if (s->mpeg2) {
             for(i=0;i<6;i++) {
