@@ -263,7 +263,7 @@ static inline int get_bits_count(GetBitContext *s);
 
 typedef struct VLC {
     int bits;
-    VLC_TYPE (*table)[2]; // code, bits
+    VLC_TYPE (*table)[2]; ///< code, bits
     int table_size, table_allocated;
 } VLC;
 
