@@ -1016,14 +1016,11 @@ static inline int get_dmv(MpegEncContext *s)
 static inline int get_qscale(MpegEncContext *s)
 {
     int qscale = get_bits(&s->gb, 5);
-    if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
-        if (s->q_scale_type) {
-            return non_linear_qscale[qscale];
-        } else {
-            return qscale << 1;
-        }
+    if (s->q_scale_type) {
+        return non_linear_qscale[qscale];
+    } else {
+        return qscale << 1;
     }
-    return qscale;
 }
 
 /* motion type (for mpeg2) */
@@ -1453,7 +1450,7 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
             } else if(level != 0) {
                 i += run;
                 j = scantable[i];
-                level= (level*qscale*quant_matrix[j])>>3;
+                level= (level*qscale*quant_matrix[j])>>4;
                 level= (level-1)|1;
                 level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
                 LAST_SKIP_BITS(re, &s->gb, 1);
@@ -1471,11 +1468,11 @@ static inline int mpeg1_decode_block_intra(MpegEncContext *s,
                 j = scantable[i];
                 if(level<0){
                     level= -level;
-                    level= (level*qscale*quant_matrix[j])>>3;
+                    level= (level*qscale*quant_matrix[j])>>4;
                     level= (level-1)|1;
                     level= -level;
                 }else{
-                    level= (level*qscale*quant_matrix[j])>>3;
+                    level= (level*qscale*quant_matrix[j])>>4;
                     level= (level-1)|1;
                 }
             }
@@ -1511,7 +1508,7 @@ static inline int mpeg1_decode_block_inter(MpegEncContext *s,
         v= SHOW_UBITS(re, &s->gb, 2);
         if (v & 2) {
             LAST_SKIP_BITS(re, &s->gb, 2);
-            level= (3*qscale*quant_matrix[0])>>4;
+            level= (3*qscale*quant_matrix[0])>>5;
             level= (level-1)|1;
             if(v&1)
                 level= -level;
@@ -1529,7 +1526,7 @@ static inline int mpeg1_decode_block_inter(MpegEncContext *s,
             } else if(level != 0) {
                 i += run;
                 j = scantable[i];
-                level= ((level*2+1)*qscale*quant_matrix[j])>>4;
+                level= ((level*2+1)*qscale*quant_matrix[j])>>5;
                 level= (level-1)|1;
                 level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
                 LAST_SKIP_BITS(re, &s->gb, 1);
@@ -1547,11 +1544,11 @@ static inline int mpeg1_decode_block_inter(MpegEncContext *s,
                 j = scantable[i];
                 if(level<0){
                     level= -level;
-                    level= ((level*2+1)*qscale*quant_matrix[j])>>4;
+                    level= ((level*2+1)*qscale*quant_matrix[j])>>5;
                     level= (level-1)|1;
                     level= -level;
                 }else{
-                    level= ((level*2+1)*qscale*quant_matrix[j])>>4;
+                    level= ((level*2+1)*qscale*quant_matrix[j])>>5;
                     level= (level-1)|1;
                 }
             }
@@ -2313,10 +2310,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
     if (/*s->mb_y<<field_pic == s->mb_height &&*/ !s->first_field) {
         /* end of image */
 
-        if(s->codec_id == CODEC_ID_MPEG2VIDEO){
-            s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_MPEG2;
-        }else
-            s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_MPEG1;
+        s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_MPEG2;
 
         ff_er_frame_end(s);
 
