@@ -19,7 +19,6 @@
 #include "avformat.h"
 
 #define MAX_PAYLOAD_SIZE 4096
-#define NB_STREAMS 2
 //#define DEBUG_SEEK
 
 typedef struct {
@@ -29,6 +28,7 @@ typedef struct {
     int max_buffer_size; /* in bytes */
     int packet_number;
     int64_t start_pts;
+    int64_t start_dts;
 } StreamInfo;
 
 typedef struct {
@@ -43,6 +43,9 @@ typedef struct {
     int video_bound;
     int is_mpeg2;
     int is_vcd;
+    int scr_stream_index; /* stream from which the system clock is
+                             computed (VBR case) */
+    int64_t last_scr; /* current system clock */
 } MpegMuxContext;
 
 #define PACK_START_CODE             ((unsigned int)0x000001ba)
@@ -181,11 +184,14 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         
     /* startcode(4) + length(2) + flags(1) */
     s->packet_data_max_size = s->packet_size - 7;
+    if (s->is_mpeg2)
+        s->packet_data_max_size -= 2;
     s->audio_bound = 0;
     s->video_bound = 0;
     mpa_id = AUDIO_ID;
     ac3_id = 0x80;
     mpv_id = VIDEO_ID;
+    s->scr_stream_index = -1;
     for(i=0;i<ctx->nb_streams;i++) {
         st = ctx->streams[i];
         stream = av_mallocz(sizeof(StreamInfo));
@@ -203,6 +209,9 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             s->audio_bound++;
             break;
         case CODEC_TYPE_VIDEO:
+            /* by default, video is used for the SCR computation */
+            if (s->scr_stream_index == -1)
+                s->scr_stream_index = i;
             stream->id = mpv_id++;
             stream->max_buffer_size = 46 * 1024; 
             s->video_bound++;
@@ -211,6 +220,9 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             av_abort();
         }
     }
+    /* if no SCR, use first stream (audio) */
+    if (s->scr_stream_index == -1)
+        s->scr_stream_index = 0;
 
     /* we increase slightly the bitrate to take into account the
        headers. XXX: compute it exactly */
@@ -245,8 +257,10 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         stream = ctx->streams[i]->priv_data;
         stream->buffer_ptr = 0;
         stream->packet_number = 0;
-        stream->start_pts = -1;
+        stream->start_pts = AV_NOPTS_VALUE;
+        stream->start_dts = AV_NOPTS_VALUE;
     }
+    s->last_scr = 0;
     return 0;
  fail:
     for(i=0;i<ctx->nb_streams;i++) {
@@ -255,28 +269,37 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     return -ENOMEM;
 }
 
+static inline void put_timestamp(ByteIOContext *pb, int id, int64_t timestamp)
+{
+    put_byte(pb, 
+             (id << 4) | 
+             (((timestamp >> 30) & 0x07) << 1) | 
+             1);
+    put_be16(pb, (uint16_t)((((timestamp >> 15) & 0x7fff) << 1) | 1));
+    put_be16(pb, (uint16_t)((((timestamp) & 0x7fff) << 1) | 1));
+}
+
 /* flush the packet on stream stream_index */
-static void flush_packet(AVFormatContext *ctx, int stream_index)
+static void flush_packet(AVFormatContext *ctx, int stream_index, 
+                         int64_t pts, int64_t dts, int64_t scr)
 {
     MpegMuxContext *s = ctx->priv_data;
     StreamInfo *stream = ctx->streams[stream_index]->priv_data;
     uint8_t *buf_ptr;
     int size, payload_size, startcode, id, len, stuffing_size, i, header_len;
-    int64_t timestamp;
     uint8_t buffer[128];
     
     id = stream->id;
-    timestamp = stream->start_pts;
-
+    
 #if 0
     printf("packet ID=%2x PTS=%0.3f\n", 
-           id, timestamp / 90000.0);
+           id, pts / 90000.0);
 #endif
 
     buf_ptr = buffer;
     if (((s->packet_number % s->pack_header_freq) == 0)) {
         /* output pack and systems header if needed */
-        size = put_pack_header(ctx, buf_ptr, timestamp);
+        size = put_pack_header(ctx, buf_ptr, scr);
         buf_ptr += size;
         if ((s->packet_number % s->system_header_freq) == 0) {
             size = put_system_header(ctx, buf_ptr);
@@ -288,10 +311,20 @@ static void flush_packet(AVFormatContext *ctx, int stream_index)
 
     /* packet header */
     if (s->is_mpeg2) {
-        header_len = 8;
+        header_len = 3;
     } else {
-        header_len = 5;
+        header_len = 0;
     }
+    if (pts != AV_NOPTS_VALUE) {
+        if (dts != AV_NOPTS_VALUE)
+            header_len += 5 + 5;
+        else
+            header_len += 5;
+    } else {
+        if (!s->is_mpeg2)
+            header_len++;
+    }
+
     payload_size = s->packet_size - (size + 6 + header_len);
     if (id < 0xc0) {
         startcode = PRIVATE_STREAM_1;
@@ -312,15 +345,34 @@ static void flush_packet(AVFormatContext *ctx, int stream_index)
 
     if (s->is_mpeg2) {
         put_byte(&ctx->pb, 0x80); /* mpeg2 id */
-        put_byte(&ctx->pb, 0x80); /* flags */
-        put_byte(&ctx->pb, 0x05); /* header len (only pts is included) */
+
+        if (pts != AV_NOPTS_VALUE) {
+            if (dts != AV_NOPTS_VALUE) {
+                put_byte(&ctx->pb, 0xc0); /* flags */
+                put_byte(&ctx->pb, header_len - 3);
+                put_timestamp(&ctx->pb, 0x03, pts);
+                put_timestamp(&ctx->pb, 0x01, dts);
+            } else {
+                put_byte(&ctx->pb, 0x80); /* flags */
+                put_byte(&ctx->pb, header_len - 3);
+                put_timestamp(&ctx->pb, 0x02, pts);
+            }
+        } else {
+            put_byte(&ctx->pb, 0x00); /* flags */
+            put_byte(&ctx->pb, header_len - 3);
+        }
+    } else {
+        if (pts != AV_NOPTS_VALUE) {
+            if (dts != AV_NOPTS_VALUE) {
+                put_timestamp(&ctx->pb, 0x03, pts);
+                put_timestamp(&ctx->pb, 0x01, dts);
+            } else {
+                put_timestamp(&ctx->pb, 0x02, pts);
+            }
+        } else {
+            put_byte(&ctx->pb, 0x0f);
+        }
     }
-    put_byte(&ctx->pb, 
-             (0x02 << 4) | 
-             (((timestamp >> 30) & 0x07) << 1) | 
-             1);
-    put_be16(&ctx->pb, (uint16_t)((((timestamp >> 15) & 0x7fff) << 1) | 1));
-    put_be16(&ctx->pb, (uint16_t)((((timestamp) & 0x7fff) << 1) | 1));
 
     if (startcode == PRIVATE_STREAM_1) {
         put_byte(&ctx->pb, id);
@@ -345,7 +397,6 @@ static void flush_packet(AVFormatContext *ctx, int stream_index)
 
     s->packet_number++;
     stream->packet_number++;
-    stream->start_pts = -1;
 }
 
 static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
@@ -354,13 +405,28 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
     MpegMuxContext *s = ctx->priv_data;
     AVStream *st = ctx->streams[stream_index];
     StreamInfo *stream = st->priv_data;
+    int64_t dts;
     int len;
+
+    /* XXX: system clock should be computed precisely, especially for
+       CBR case. The current mode gives at least something coherent */
+    if (stream_index == s->scr_stream_index)
+        s->last_scr = pts;
     
+#if 0
+    printf("%d: pts=%0.3f scr=%0.3f\n", 
+           stream_index, pts / 90000.0, s->last_scr / 90000.0);
+#endif
+    
+    /* XXX: currently no way to pass dts, will change soon */
+    dts = AV_NOPTS_VALUE;
+
+    /* we assume here that pts != AV_NOPTS_VALUE */
+    if (stream->start_pts == AV_NOPTS_VALUE) {
+        stream->start_pts = pts;
+        stream->start_dts = dts;
+    }
     while (size > 0) {
-        /* set pts */
-        if (stream->start_pts == -1) {
-            stream->start_pts = pts;
-        }
         len = s->packet_data_max_size - stream->buffer_ptr;
         if (len > size)
             len = size;
@@ -370,9 +436,12 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
         size -= len;
         while (stream->buffer_ptr >= s->packet_data_max_size) {
             /* output the packet */
-            if (stream->start_pts == -1)
-                stream->start_pts = pts;
-            flush_packet(ctx, stream_index);
+            flush_packet(ctx, stream_index,
+                         stream->start_pts, stream->start_dts, s->last_scr);
+            /* Make sure only the FIRST pes packet for this frame has
+               a timestamp */
+            stream->start_pts = AV_NOPTS_VALUE;
+            stream->start_dts = AV_NOPTS_VALUE;
         }
     }
     return 0;
@@ -380,14 +449,15 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
 
 static int mpeg_mux_end(AVFormatContext *ctx)
 {
+    MpegMuxContext *s = ctx->priv_data;
     StreamInfo *stream;
     int i;
 
     /* flush each packet */
     for(i=0;i<ctx->nb_streams;i++) {
         stream = ctx->streams[i]->priv_data;
-        if (stream->buffer_ptr > 0) {
-            flush_packet(ctx, i);
+        while (stream->buffer_ptr > 0) {
+            flush_packet(ctx, i, AV_NOPTS_VALUE, AV_NOPTS_VALUE, s->last_scr);
         }
     }
 
@@ -676,7 +746,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     len = mpegps_read_pes_header(s, NULL, &startcode, &pts, &dts, 1);
     if (len < 0)
         return len;
-
+    
     /* now find stream */
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
@@ -728,12 +798,14 @@ static int mpegps_read_packet(AVFormatContext *s,
         st->codec.bit_rate = st->codec.channels * st->codec.sample_rate * 2;
     }
     av_new_packet(pkt, len);
-    //printf("\nRead Packet ID: %x PTS: %f Size: %d", startcode,
-    //       (float)pts/90000, len);
     get_buffer(&s->pb, pkt->data, pkt->size);
     pkt->pts = pts;
     pkt->dts = dts;
     pkt->stream_index = st->index;
+#if 0
+    printf("%d: pts=%0.3f dts=%0.3f\n",
+           pkt->stream_index, pkt->pts / 90000.0, pkt->dts / 90000.0);
+#endif
     return 0;
 }
 
