@@ -6,7 +6,9 @@
 #set -x
 set -e
 
-logfile="/tmp/ffmpeg.regression"
+datadir="./data"
+
+logfile="$datadir/ffmpeg.regression"
 
 # tests to do
 if [ "$1" = "mpeg4" ] ; then
@@ -15,7 +17,7 @@ elif [ "$1" = "mpeg" ] ; then
     do_mpeg=y
 elif [ "$1" = "libavtest" ] ; then
     do_libav=y
-    logfile="/tmp/libav.regression"
+    logfile="$datadir/libav.regression"
 else
     do_mpeg=y
     do_msmpeg4=y
@@ -30,33 +32,36 @@ fi
 
 # various files
 ffmpeg="../ffmpeg"
-outfile="/tmp/a-"
+outfile="$datadir/a-"
 reffile="$2"
-benchfile="/tmp/ffmpeg.bench"
+benchfile="$datadir/ffmpeg.bench"
 raw_src="vsynth1/%d.pgm"
-raw_dst="/tmp/out.yuv"
+raw_dst="$datadir/out.yuv"
 pcm_src="asynth1.sw"
-pcm_dst="/tmp/out.wav"
+pcm_dst="$datadir/out.wav"
+
+# create the data directory if it does not exists
+mkdir -p $datadir
 
 function do_ffmpeg ()
 {
     f="$1"
     shift
     echo $ffmpeg -bitexact $*
-    $ffmpeg -bitexact -benchmark $* > /tmp/bench.tmp
+    $ffmpeg -bitexact -benchmark $* > $datadir/bench.tmp
     md5sum $f >> $logfile
-    expr match "`cat /tmp/bench.tmp`" '.*utime=\(.*s\)' > /tmp/bench2.tmp
-    echo `cat /tmp/bench2.tmp` $f >> $benchfile
+    expr match "`cat $datadir/bench.tmp`" '.*utime=\(.*s\)' > $datadir/bench2.tmp
+    echo `cat $datadir/bench2.tmp` $f >> $benchfile
 }
 
 function do_ffmpeg_crc ()
 {
     f="$1"
     shift
-    echo $ffmpeg -y -bitexact $* -f crc /tmp/ffmpeg.crc
-    $ffmpeg -y -bitexact $* -f crc /tmp/ffmpeg.crc
+    echo $ffmpeg -y -bitexact $* -f crc $datadir/ffmpeg.crc
+    $ffmpeg -y -bitexact $* -f crc $datadir/ffmpeg.crc
     echo -n "$f " >> $logfile
-    cat /tmp/ffmpeg.crc >> $logfile
+    cat $datadir/ffmpeg.crc >> $logfile
 }
 
 echo "ffmpeg regression test" > $logfile

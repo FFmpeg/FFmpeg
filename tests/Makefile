@@ -53,5 +53,5 @@ dsptest: dsptest.c $(DSPDEPS)
 	$(CC) -O4 -fomit-frame-pointer -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavcodec/i386 -I$(SRC_PATH)/libavcodec/ -o $@ $< -lm
 
 clean:
-	rm -rf vsynth1
+	rm -rf vsynth1 data
 	rm -f asynth1.sw *~ audiogen videogen
