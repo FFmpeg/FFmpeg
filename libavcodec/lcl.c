@@ -797,10 +797,6 @@ static int encode_init(AVCodecContext *avctx)
         return 1;
     }
 
-    if ((strlen(zlibVersion()) > 4) && (zlibVersion()[0] >= '1') && (zlibVersion()[2] >= '2')&&
-        (zlibVersion()[4] >= '0'))
-        c->max_comp_size = deflateBound(&(c->zstream), c->decomp_size);
-    else
         /* Conservative upper bound taken from zlib v1.2.1 source */
         c->max_comp_size = c->decomp_size + ((c->decomp_size + 7) >> 3) +
                            ((c->decomp_size + 63) >> 6) + 11;
