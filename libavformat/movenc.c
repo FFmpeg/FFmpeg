@@ -278,8 +278,8 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     /* TODO: Currently hard-coded to 16-bit, there doesn't seem
                  to be a good way to get number of bits of audio */
     put_be16(pb, 0x10); /* Reserved */
-    put_be16(pb, 0xfffe); /* compression ID (= 0) */
-    put_be16(pb, 0xac); /* packet size (= 0) */
+    put_be16(pb, 0); /* compression ID (= 0) */
+    put_be16(pb, 0); /* packet size (= 0) */
     put_be16(pb, track->timescale); /* Time scale */
     put_be16(pb, 0); /* Reserved */
 
@@ -453,17 +453,18 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
     put_be16(pb, track->enc->height); /* Video height */
     put_be32(pb, 0x00480000); /* Reserved */
     put_be32(pb, 0x00480000); /* Reserved */
+    put_be32(pb, 0); /* Data size (= 0) */
+    put_be16(pb, 1); /* Frame count (= 1) */
+    
     put_be32(pb, 0); /* Reserved */
     put_be32(pb, 0); /* Reserved */
     put_be32(pb, 0); /* Reserved */
     put_be32(pb, 0); /* Reserved */
     put_be32(pb, 0); /* Reserved */
     put_be32(pb, 0); /* Reserved */
-
-    put_be16(pb, 0); /* Reserved */
     put_be32(pb, 0); /* Reserved */
     put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
+    
     put_be16(pb, 0x18); /* Reserved */
     put_be16(pb, 0xffff); /* Reserved */
     if(track->enc->codec_id == CODEC_ID_MPEG4)
@@ -562,6 +563,39 @@ static int mov_write_vmhd_tag(ByteIOContext *pb)
     return 0x14;
 }
 
+static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
+{
+    char *descr, *hdlr, *hdlr_type;
+    int pos = url_ftell(pb);
+    
+    if (!track) { /* no media --> data handler */
+	hdlr = "dhlr";
+	hdlr_type = "url ";
+	descr = "DataHandler";
+    } else {
+	hdlr = (track->mode == MODE_MOV) ? "mhlr" : "\0\0\0\0";
+	if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
+	    hdlr_type = "vide";
+	    descr = "VideoHandler";
+	} else {
+	    hdlr_type = "soun";
+	    descr = "SoundHandler";
+	}
+    }
+    
+    put_be32(pb, 0); /* size */
+    put_tag(pb, "hdlr");
+    put_be32(pb, 0); /* Version & flags */
+    put_tag(pb, hdlr); /* handler */
+    put_tag(pb, hdlr_type); /* handler type */
+    put_be32(pb ,0); /* reserved */
+    put_be32(pb ,0); /* reserved */
+    put_be32(pb ,0); /* reserved */
+    put_byte(pb, strlen(descr)); /* string counter */
+    put_buffer(pb, descr, strlen(descr)); /* handler description */
+    return updateSize(pb, pos);
+}
+
 static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack* track)
 {
     int pos = url_ftell(pb);
@@ -571,35 +605,10 @@ static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack* track)
         mov_write_vmhd_tag(pb);
     else
         mov_write_smhd_tag(pb);
+    if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
+        mov_write_hdlr_tag(pb, NULL);
     mov_write_dinf_tag(pb);
     mov_write_stbl_tag(pb, track);
-    return updateSize(pb, pos);
-}
-
-static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
-{
-    char *str;
-    int pos = url_ftell(pb);
-    put_be32(pb, 0); /* size */
-    put_tag(pb, "hdlr");
-    put_be32(pb, 0); /* Version & flags */
-    if (track->mode == MODE_MOV)
-        put_tag(pb, "mhlr"); /* handler */
-    else
-	put_be32(pb, 0); /* reserved */
-    if(track->enc->codec_type == CODEC_TYPE_VIDEO)
-        put_tag(pb, "vide"); /* handler type */
-    else
-        put_tag(pb, "soun"); /* handler type */
-    put_be32(pb ,0); /* reserved */
-    put_be32(pb ,0); /* reserved */
-    put_be32(pb ,0); /* reserved */
-    if(track->enc->codec_type == CODEC_TYPE_VIDEO)
-        str = "VideoHandler";
-    else
-        str = "SoundHandler";
-    put_byte(pb, strlen(str)); /* string counter */
-    put_buffer(pb, str, strlen(str));
     return updateSize(pb, pos);
 }
 
@@ -961,6 +970,9 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
         else if(enc->codec_id == CODEC_ID_PCM_ALAW) {
             samplesInChunk = size/enc->channels;
         }
+	else if(enc->codec_id == CODEC_ID_PCM_S16BE || enc->codec_id == CODEC_ID_PCM_S16LE) {
+	    samplesInChunk = size/(2*enc->channels);
+        }	    
         else {
             samplesInChunk = 1;
         }
