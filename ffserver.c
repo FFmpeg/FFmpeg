@@ -600,7 +600,9 @@ static int http_server(void)
            second to handle timeouts */
         do {
             ret = poll(poll_table, poll_entry - poll_table, delay);
-        } while (ret == -1);
+            if (ret < 0 && errno != EAGAIN && errno != EINTR)
+                return -1;
+        } while (ret <= 0);
         
         cur_time = gettime_ms();
 

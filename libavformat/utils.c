@@ -428,7 +428,13 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         if (!fmt) {
             /* read probe data */
             pd->buf_size = get_buffer(pb, buf, PROBE_BUF_SIZE);
-            url_fseek(pb, 0, SEEK_SET);
+            if (url_fseek(pb, 0, SEEK_SET) == (offset_t)-EPIPE) {
+                url_fclose(pb);
+                if (url_fopen(pb, filename, URL_RDONLY) < 0) {
+                    err = AVERROR_IO;
+                    goto fail;
+                }
+            }
         }
     }
     

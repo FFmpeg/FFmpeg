@@ -150,6 +150,7 @@ static int ffm_write_header(AVFormatContext *s)
         fst = av_mallocz(sizeof(FFMStream));
         if (!fst)
             goto fail;
+        av_set_pts_info(st, 64, 1, 1000000);
         st->priv_data = fst;
 
         codec = &st->codec;
