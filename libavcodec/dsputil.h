@@ -381,6 +381,8 @@ static inline uint32_t no_rnd_avg32(uint32_t a, uint32_t b)
    one or more MultiMedia extension */
 int mm_support(void);
 
+#define __align16 __attribute__ ((aligned (16)))
+
 #if defined(HAVE_MMX)
 
 #undef emms_c
@@ -409,7 +411,6 @@ static inline void emms(void)
 }
 
 #define __align8 __attribute__ ((aligned (8)))
-#define __align16 __attribute__ ((aligned (16)))
 
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
@@ -417,7 +418,7 @@ void dsputil_init_pix_mmx(DSPContext* c, AVCodecContext *avctx);
 #elif defined(ARCH_ARMV4L)
 
 /* This is to use 4 bytes read to the IDCT pointers for some 'zero'
-   line ptimizations */
+   line optimizations */
 #define __align8 __attribute__ ((aligned (4)))
 
 void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx);
