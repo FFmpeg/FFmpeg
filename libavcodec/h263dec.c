@@ -56,8 +56,9 @@ static int h263_decode_init(AVCodecContext *avctx)
     }
 
     /* for h263, we allocate the images after having read the header */
-    if (MPV_common_init(s) < 0)
-        return -1;
+    if (avctx->codec->id != CODEC_ID_H263)
+        if (MPV_common_init(s) < 0)
+            return -1;
 
     /* XXX: suppress this matrix init, only needed because using mpeg1
        dequantize in mmx case */
@@ -92,7 +93,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
     printf("*****frame %d size=%d\n", avctx->frame_number, buf_size);
     printf("bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
 #endif
-
+    
     /* no supplementary picture */
     if (buf_size == 0) {
         *data_size = 0;
@@ -110,6 +111,16 @@ static int h263_decode_frame(AVCodecContext *avctx,
         ret = intel_h263_decode_picture_header(s);
     } else {
         ret = h263_decode_picture_header(s);
+        /* After H263 header decode we have the height, width,     */
+        /* and other parameters. So then we could init the picture */
+        if (s->width != avctx->width || s->height != avctx->height) {
+            avctx->width = s->width;
+            avctx->height = s->height;
+            /* FIXME: By the way H263 decoder is evolving it should have */
+            /* an H263EncContext                                         */
+            if (MPV_common_init(s) < 0)
+                return -1;
+        }
     }
     if (ret < 0)
         return -1;
@@ -126,6 +137,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
 #ifdef DEBUG
             printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
 #endif
+            //fprintf(stderr,"\nFrame: %d\tMB: %d",avctx->frame_number, (s->mb_y * s->mb_width) + s->mb_x);
             /* DCT & quantize */
             if (s->h263_msmpeg4) {
                 msmpeg4_dc_scale(s);

@@ -38,7 +38,6 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
 static int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded);
 
-
 int h263_get_picture_format(int width, int height)
 {
     int format;
@@ -777,9 +776,35 @@ int h263_decode_mb(MpegEncContext *s,
                    DCTELEM block[6][64])
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
+    unsigned int val;
     INT16 *mot_val;
     static INT8 quant_tab[4] = { -1, -2, 1, 2 };
-
+        
+    /* Check for GOB Start Code */
+    val = show_bits(&s->gb, 16);
+    
+    if (val == 0) {
+        /* We have a GBSC probably with GSTUFF */
+#ifdef DEBUG
+        unsigned int gn, gfid;
+#endif
+        //skip_bits(&s->gb, 16); /* Drop the zeros */
+        while (get_bits1(&s->gb) == 0); /* Seek the '1' bit */
+#ifdef DEBUG
+        fprintf(stderr,"\nGOB Start Code at MB %d\n", 
+            (s->mb_y * s->mb_width) + s->mb_x);
+        gn = get_bits(&s->gb, 5); /* GN */
+        gfid = get_bits(&s->gb, 2); /* GFID */
+#else
+        skip_bits(&s->gb, 5); /* GN */
+        skip_bits(&s->gb, 2); /* GFID */
+#endif        
+        s->qscale = get_bits(&s->gb, 5); /* GQUANT */
+#ifdef DEBUG
+        fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", gn, gfid, s->qscale);
+#endif
+    }
+    
     if (s->pict_type == P_TYPE) {
         if (get_bits1(&s->gb)) {
             /* skip mb */
@@ -794,8 +819,10 @@ int h263_decode_mb(MpegEncContext *s,
             return 0;
         }
         cbpc = get_vlc(&s->gb, &inter_MCBPC_vlc);
+        //fprintf(stderr, "\tCBPC: %d", cbpc);
         if (cbpc < 0)
             return -1;
+        
         dquant = cbpc & 8;
         s->mb_intra = ((cbpc & 4) != 0);
     } else {
@@ -866,7 +893,7 @@ int h263_decode_mb(MpegEncContext *s,
         }
     } else {
         s->ac_pred = 0;
-	if (s->h263_pred) {
+	    if (s->h263_pred) {
             s->ac_pred = get_bits1(&s->gb);
         }
         cbpy = get_vlc(&s->gb, &cbpy_vlc);
@@ -1261,6 +1288,7 @@ int h263_decode_picture_header(MpegEncContext *s)
     s->f_code = 1;
     s->width = width;
     s->height = height;
+    
     return 0;
 }
 
@@ -1462,3 +1490,4 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     s->f_code = 1;
     return 0;
 }
+

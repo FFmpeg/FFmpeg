@@ -196,6 +196,7 @@ void init_get_bits(GetBitContext *s,
                    UINT8 *buffer, int buffer_size);
 
 unsigned int get_bits_long(GetBitContext *s, int n);
+unsigned int show_bits_long(GetBitContext *s, int n);
 
 static inline unsigned int get_bits(GetBitContext *s, int n){
     if(s->bit_cnt>=n){
@@ -223,6 +224,19 @@ static inline unsigned int get_bits1(GetBitContext *s){
 	return val;
     }
     return get_bits_long(s,1);
+}
+
+/* This function is identical to get_bits(), the only */
+/* diference is that it doesn't touch the buffer      */
+/* it is usefull to see the buffer.                   */
+static inline unsigned int show_bits(GetBitContext *s, int n)
+{
+    if(s->bit_cnt>=n) {
+        /* most common case here */
+        unsigned int val = s->bit_buf >> (32 - n);
+        return val;
+    }
+    return show_bits_long(s,n);
 }
 
 static inline void skip_bits(GetBitContext *s, int n){

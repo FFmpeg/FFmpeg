@@ -250,6 +250,52 @@ void align_get_bits(GetBitContext *s)
         get_bits(s, n);
     }
 }
+/* This function is identical to get_bits_long(), the */
+/* only diference is that it doesn't touch the buffer */
+/* it is usefull to see the buffer.                   */
+
+unsigned int show_bits_long(GetBitContext *s, int n)
+{
+    unsigned int val;
+    int bit_cnt;
+    unsigned int bit_buf;
+	UINT8 *buf_ptr;
+	
+    bit_buf = s->bit_buf;
+    bit_cnt = s->bit_cnt - n;
+
+    val = bit_buf >> (32 - n);
+    buf_ptr = s->buf_ptr;
+    buf_ptr += 4;
+
+    /* handle common case: we can read everything */
+    if (buf_ptr <= s->buf_end) {
+#ifdef ARCH_X86
+        bit_buf = bswap_32(*((unsigned long*)(&buf_ptr[-4])));
+#else
+        bit_buf = (buf_ptr[-4] << 24) |
+            (buf_ptr[-3] << 16) |
+            (buf_ptr[-2] << 8) |
+            (buf_ptr[-1]);	    
+#endif
+    } else {
+        buf_ptr -= 4;
+        bit_buf = 0;
+        if (buf_ptr < s->buf_end)
+            bit_buf |= *buf_ptr++ << 24;
+        if (buf_ptr < s->buf_end)
+            bit_buf |= *buf_ptr++ << 16;
+        if (buf_ptr < s->buf_end)
+            bit_buf |= *buf_ptr++ << 8;
+        if (buf_ptr < s->buf_end)
+            bit_buf |= *buf_ptr++;
+    }
+    val |= bit_buf >> (32 + bit_cnt);
+    bit_buf <<= - bit_cnt;
+    bit_cnt += 32;
+    
+    return val;
+}
 
 /* VLC decoding */
 
