@@ -470,11 +470,11 @@ void mjpeg_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 8, 0); /* Ah/Al (not used) */
 }
 
-static void escape_FF(MpegEncContext *s)
+static void escape_FF(MpegEncContext *s, int start)
 {
-    int size= get_bit_count(&s->pb) - s->header_bits;
+    int size= get_bit_count(&s->pb) - start*8;
     int i, ff_count;
-    uint8_t *buf= s->pb.buf + (s->header_bits>>3);
+    uint8_t *buf= s->pb.buf + start;
     int align= (-(int)(buf))&3;
     
     assert((size&7) == 0);
@@ -533,7 +533,9 @@ void mjpeg_picture_trailer(MpegEncContext *s)
     put_bits(&s->pb, pad,0xFF>>(8-pad));
     flush_put_bits(&s->pb);
 
-    escape_FF(s);
+    assert((s->header_bits&7)==0);
+    
+    escape_FF(s, s->header_bits>>3);
 
     put_marker(&s->pb, EOI);
 }
