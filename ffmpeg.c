@@ -111,6 +111,9 @@ static int video_codec_id = CODEC_ID_NONE;
 static int same_quality = 0;
 static int b_frames = 0;
 static int mb_decision = FF_MB_DECISION_SIMPLE;
+static int mb_cmp = FF_CMP_SAD;
+static int sub_cmp = FF_CMP_SAD;
+static int cmp = FF_CMP_SAD;
 static int use_4mv = 0;
 static int use_obmc = 0;
 static int use_aic = 0;
@@ -1762,6 +1765,21 @@ static void opt_mb_decision(const char *arg)
     mb_decision = atoi(arg);
 }
 
+static void opt_mb_cmp(const char *arg)
+{
+    mb_cmp = atoi(arg);
+}
+
+static void opt_sub_cmp(const char *arg)
+{
+    sub_cmp = atoi(arg);
+}
+
+static void opt_cmp(const char *arg)
+{
+    cmp = atoi(arg);
+}
+
 static void opt_qscale(const char *arg)
 {
     video_qscale = atof(arg);
@@ -2271,6 +2289,9 @@ static void opt_output_file(const char *filename)
                     video_enc->flags |= CODEC_FLAG_BITEXACT;
 
                 video_enc->mb_decision = mb_decision;
+                video_enc->mb_cmp = mb_cmp;
+                video_enc->me_sub_cmp = sub_cmp;
+                video_enc->me_cmp = cmp;
                 
                 if (use_umv) {
                     video_enc->flags |= CODEC_FLAG_H263P_UMV;
@@ -2893,6 +2914,9 @@ const OptionDef options[] = {
     { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames", "frames" },
     { "hq", OPT_BOOL, {(void*)&mb_decision}, "activate high quality settings" },
     { "mbd", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_decision}, "macroblock decision", "mode" },
+    { "mbcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_cmp}, "macroblock compare function", "cmp function" },
+    { "subcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sub_cmp}, "subpel compare function", "cmp function" },
+    { "cmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_cmp}, "fullpel compare function", "cmp function" },
     { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (MPEG4)" },
     { "obmc", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_obmc}, "use overlapped block motion compensation (h263+)" },
     { "part", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_part}, "use data partitioning (MPEG4)" },
