@@ -393,19 +393,19 @@ static void just_return() { return; }
 void dsputil_init_mmx(void)
 {
     mm_flags = mm_support();
-#if 1
-    printf("libavcodec: CPU flags:");
+#if 0
+    fprintf(stderr, "libavcodec: CPU flags:");
     if (mm_flags & MM_MMX)
-        printf(" mmx");
+        fprintf(stderr, " mmx");
     if (mm_flags & MM_MMXEXT)
-        printf(" mmxext");
+        fprintf(stderr, " mmxext");
     if (mm_flags & MM_3DNOW)
-        printf(" 3dnow");
+        fprintf(stderr, " 3dnow");
     if (mm_flags & MM_SSE)
-        printf(" sse");
+        fprintf(stderr, " sse");
     if (mm_flags & MM_SSE2)
-        printf(" sse2");
-    printf("\n");
+        fprintf(stderr, " sse2");
+    fprintf(stderr, "\n");
 #endif
 
     if (mm_flags & MM_MMX) {
