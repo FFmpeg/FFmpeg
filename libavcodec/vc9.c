@@ -147,7 +147,7 @@ static VLC vc9_cbpcy_i_vlc;
 static VLC vc9_cbpcy_p_vlc[4];
 #define VC9_4MV_BLOCK_PATTERN_VLC_BITS 6
 static VLC vc9_4mv_block_pattern_vlc[4];
-#define VC9_LUMA_DC_VLC_BITS 26
+#define VC9_LUMA_DC_VLC_BITS 9
 static VLC vc9_luma_dc_vlc[2];
 
 typedef struct VC9Context{
@@ -310,7 +310,7 @@ static int init_common(VC9Context *v)
             INIT_VLC(&vc9_mv_diff_vlc[i], VC9_MV_DIFF_VLC_BITS, 73,
                      vc9_mv_diff_bits[i], 1, 1,
                      vc9_mv_diff_codes[i], 2, 2, 1);
-            INIT_VLC(&vc9_luma_dc_vlc[i], VC9_LUMA_DC_VLC_BITS, 26,
+            INIT_VLC(&vc9_luma_dc_vlc[i], VC9_LUMA_DC_VLC_BITS, 120,
                      vc9_luma_dc_bits[i], 1, 1,
                      vc9_luma_dc_codes[i], 4, 4, 1);
             INIT_VLC(&vc9_ttmb_vlc[i], VC9_TTMB_VLC_BITS, 16,
@@ -331,16 +331,14 @@ static int decode_hrd(VC9Context *v, GetBitContext *gb)
 
     if (v->hrd_rate || num != v->hrd_num_leaky_buckets)
     {
-        av_free(v->hrd_rate);
-        v->hrd_rate = NULL;
+        av_freep(&v->hrd_rate);
     }
     if (!v->hrd_rate) v->hrd_rate = av_malloc(num);
     if (!v->hrd_rate) return -1;
 
     if (v->hrd_buffer || num != v->hrd_num_leaky_buckets)
     {
-        av_free(v->hrd_buffer);
-        v->hrd_buffer = NULL;
+        av_freep(&v->hrd_buffer);
     }
     if (!v->hrd_buffer) v->hrd_buffer = av_malloc(num);
     if (!v->hrd_buffer) return -1;
@@ -1687,12 +1685,12 @@ static int vc9_decode_end(AVCodecContext *avctx)
     VC9Context *v = avctx->priv_data;
 
 #if HAS_ADVANCED_PROFILE
-    if (v->hrd_rate) av_free(v->hrd_rate);
-    if (v->hrd_buffer) av_free(v->hrd_buffer);
+    av_freep(&v->hrd_rate);
+    av_freep(&v->hrd_buffer);
 #endif
-    if (v->mv_type_mb_plane) av_free(v->mv_type_mb_plane);
-    if (v->skip_mb_plane) av_free(v->skip_mb_plane);
-    if (v->direct_mb_plane) av_free(v->direct_mb_plane);
+    av_freep(&v->mv_type_mb_plane);
+    av_freep(&v->skip_mb_plane);
+    av_freep(&v->direct_mb_plane);
     return 0;
 }
 
