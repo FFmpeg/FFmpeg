@@ -1107,18 +1107,20 @@ int main(int argc, char* argv[])
     volatile int v;
     int i;
     const int linesize = 720;
-    char bu[32768];
+    char empty[32768];
     uint64_t te, ts = rdtsc();
-    char* im = bu;
+    char* im, *bu = empty;
     op_pixels_func fc = put_pixels_y2_mmx2;
+    bu += 32;
+    bu =(char*)(((long)bu) & ~0xf); // 16 bytes alignment
+    im = bu;
     for(i=0; i<1000000; i++){
 	fc(im, im + 1000, linesize, 16);
-	im += 16; //
+	im += 4; //
 	if (im > bu + 10000)
             im = bu;
     }
     te = rdtsc();
     printf("CPU Ticks: %7d\n", (int)(te - ts));
-    fflush(stdout);
 }
 #endif
