@@ -25,10 +25,11 @@ else
     do_msmpeg4v2=y
     do_msmpeg4=y
     do_wmv1=y
+    do_wmv2=y
     do_h263=y
     do_h263p=y
     do_mpeg4=y
-#    do_huffyuv=y
+    do_huffyuv=y
     do_mjpeg=y
     do_rv10=y
     do_mp2=y
@@ -117,6 +118,16 @@ file=${outfile}wmv1.avi
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec wmv1 $file
 
 # wmv1 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_wmv2" ] ; then
+# wmv2 encoding
+file=${outfile}wmv2.avi
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec wmv2 $file
+
+# wmv2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
