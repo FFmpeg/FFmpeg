@@ -109,6 +109,7 @@ void avcodec_register_all(void)
     register_avcodec(&tscc_decoder);
     register_avcodec(&ulti_decoder);
     register_avcodec(&qdraw_decoder);
+    register_avcodec(&xl_decoder);
 #ifdef CONFIG_FAAD
     register_avcodec(&aac_decoder);
     register_avcodec(&mpeg4aac_decoder);

@@ -5,6 +5,7 @@ version <next>
 - Apple QuickDraw (qdrw) video decoder
 - Creative ADPCM audio decoder
 - Electronic Arts Multimedia (WVE/UV2/etc.) file demuxer
+- Miro VideoXL (VIXL) video decoder
 
 version 0.4.9-pre1:
 
