@@ -131,11 +131,11 @@ uint64_t time= rdtsc();
         return 0;
     }
 
-    if(s->bitstream_buffer_size){ //divx 5.01+ frame reorder
+    if(s->bitstream_buffer_size && buf_size<20){ //divx 5.01+ frame reorder
         init_get_bits(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size);
-        s->bitstream_buffer_size=0;
     }else
         init_get_bits(&s->gb, buf, buf_size);
+    s->bitstream_buffer_size=0;
 
     /* let's go :-) */
     if (s->h263_msmpeg4) {
