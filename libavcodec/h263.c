@@ -3504,7 +3504,9 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 return -1;
             }
         }else{
-            s->low_delay=0;
+            // set low delay flag only once so the smart? low delay detection wont be overriden
+            if(s->picture_number==0)
+                s->low_delay=0;
         }
 
         s->shape = get_bits(&s->gb, 2); /* vol shape */
