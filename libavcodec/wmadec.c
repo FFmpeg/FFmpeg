@@ -1187,6 +1187,11 @@ static int wma_decode_superframe(AVCodecContext *avctx,
     
     tprintf("***decode_superframe:\n");
 
+    if(buf_size==0){
+        s->last_superframe_len = 0;
+        return 0;
+    }
+    
     samples = data;
 
     init_get_bits(&s->gb, buf, buf_size*8);
