@@ -730,7 +730,7 @@ static int nsv_read_close(AVFormatContext *s)
 static int nsv_probe(AVProbeData *p)
 {
     int i;
-    PRINT(("nsv_probe(), buf_size %d\n", p->buf_size));
+//    PRINT(("nsv_probe(), buf_size %d\n", p->buf_size));
     /* check file header */
     if (p->buf_size <= 32)
         return 0;
