@@ -19,12 +19,15 @@
  * mostly by Michael Niedermayer <michaelni@gmx.at>
  */
 #include "../dsputil.h"
+#include "../mangle.h"
 
 static const __attribute__ ((aligned(8))) UINT64 round_tab[3]={
 0x0000000000000000,
 0x0001000100010001,
 0x0002000200020002,
 };
+
+static __attribute__ ((aligned(8))) uint64_t bone= 0x0101010101010101LL;
 
 static inline void sad8_mmx(UINT8 *blk1, UINT8 *blk2, int stride, int h)
 {
@@ -115,6 +118,7 @@ static inline void sad8_4_mmx2(UINT8 *blk1, UINT8 *blk2, int stride, int h)
     int len= -(stride<<h);
     asm volatile(
         ".balign 16			\n\t"
+        "movq "MANGLE(bone)", %%mm5	\n\t"
         "1:				\n\t" 
         "movq (%1, %%eax), %%mm0	\n\t"
         "movq (%2, %%eax), %%mm2	\n\t"
@@ -122,6 +126,7 @@ static inline void sad8_4_mmx2(UINT8 *blk1, UINT8 *blk2, int stride, int h)
         "movq 1(%2, %%eax), %%mm3	\n\t"
         "pavgb %%mm2, %%mm0		\n\t"
         "pavgb %%mm1, %%mm3		\n\t"
+        "psubusb %%mm5, %%mm3		\n\t"
         "pavgb %%mm3, %%mm0		\n\t"
         "movq (%3, %%eax), %%mm2	\n\t"
         "psadbw %%mm2, %%mm0		\n\t"
@@ -132,6 +137,7 @@ static inline void sad8_4_mmx2(UINT8 *blk1, UINT8 *blk2, int stride, int h)
         "movq 1(%2, %%eax), %%mm4	\n\t"
         "pavgb %%mm3, %%mm1		\n\t"
         "pavgb %%mm4, %%mm2		\n\t"
+        "psubusb %%mm5, %%mm2		\n\t"
         "pavgb %%mm1, %%mm2		\n\t"
         "movq (%3, %%eax), %%mm1	\n\t"
         "psadbw %%mm1, %%mm2		\n\t"
