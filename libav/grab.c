@@ -240,6 +240,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.height = height;
     st->codec.frame_rate = frame_rate;
 
+    av_set_pts_info(s1, 48, 1, 1000000); /* 48 bits pts in us */
+
     return 0;
  fail:
     if (video_fd >= 0)
@@ -279,7 +281,6 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     VideoData *s = s1->priv_data;
     INT64 curtime, delay;
     struct timespec ts;
-    int first;
     INT64 per_frame = (INT64_C(1000000) * FRAME_RATE_BASE) / s->frame_rate;
     int dropped = 0;
 
@@ -287,7 +288,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     s->time_frame += per_frame;
 
     /* wait based on the frame rate */
-    for(first = 1;; first = 0) {
+    for(;;) {
         curtime = av_gettime();
         delay = s->time_frame - curtime;
         if (delay <= 0) {
@@ -305,6 +306,8 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     if (av_new_packet(pkt, s->frame_size) < 0)
         return -EIO;
+
+    pkt->pts = curtime & ((1LL << 48) - 1);
 
     if (dropped)
         pkt->flags |= PKT_FLAG_DROPPED_FRAME;

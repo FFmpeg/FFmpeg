@@ -220,21 +220,25 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (ret < 0) {
         av_free(st);
         return -EIO;
-    } else {
-        /* take real parameters */
-        st->codec.codec_type = CODEC_TYPE_AUDIO;
-        st->codec.codec_id = s->codec_id;
-        st->codec.sample_rate = s->sample_rate;
-        st->codec.channels = s->channels;
-        return 0;
     }
+
+    /* take real parameters */
+    st->codec.codec_type = CODEC_TYPE_AUDIO;
+    st->codec.codec_id = s->codec_id;
+    st->codec.sample_rate = s->sample_rate;
+    st->codec.channels = s->channels;
+
+    av_set_pts_info(s1, 48, 1, 1000000);  /* 48 bits pts in us */
+    return 0;
 }
 
 static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     AudioData *s = s1->priv_data;
-    int ret;
-
+    int ret, bdelay;
+    int64_t cur_time;
+    struct audio_buf_info abufi;
+    
     if (av_new_packet(pkt, s->frame_size) < 0)
         return -EIO;
     for(;;) {
@@ -252,6 +256,19 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
     }
     pkt->size = ret;
+
+    /* compute pts of the start of the packet */
+    cur_time = av_gettime();
+    bdelay = ret;
+    if (ioctl(s->fd, SNDCTL_DSP_GETISPACE, &abufi) == 0) {
+        bdelay += abufi.bytes;
+    }
+    /* substract time represented by the number of bytes in the audio fifo */
+    cur_time -= (bdelay * 1000000LL) / (s->sample_rate * s->channels);
+
+    /* convert to wanted units */
+    pkt->pts = cur_time & ((1LL << 48) - 1);
+
     if (s->flip_left && s->channels == 2) {
         int i;
         short *p = (short *) pkt->data;
