@@ -153,6 +153,9 @@ int MPV_common_init(MpegEncContext *s)
 #ifdef ARCH_ALPHA
     MPV_common_init_axp(s);
 #endif
+#ifdef HAVE_MLIB
+    MPV_common_init_mlib(s);
+#endif
 
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;

@@ -18,6 +18,7 @@
  */
 
 #include "../dsputil.h"
+#include "../mpegvideo.h"
 
 #include <mlib_types.h>
 #include <mlib_status.h>
@@ -125,7 +126,6 @@ void ff_fdct_mlib(DCTELEM *data)
 
 void dsputil_init_mlib(void)
 {
-    av_fdct = ff_fdct_mlib;
     ff_idct = ff_idct_mlib;
 
     put_pixels_tab[0] = put_pixels_mlib;
@@ -141,4 +141,11 @@ void dsputil_init_mlib(void)
     put_no_rnd_pixels_tab[0] = put_pixels_mlib;
     
     add_pixels_clamped = add_pixels_clamped_mlib;
+}
+
+void MPV_common_init_mlib(MpegEncContext *s)
+{
+    if(s->avctx->dct_algo==FF_DCT_AUTO || s->avctx->dct_algo==FF_DCT_MLIB){
+	s->fdct = ff_fdct_mlib;
+    }
 }

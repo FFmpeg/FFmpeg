@@ -310,10 +310,11 @@ typedef struct AVCodecContext {
     int aspected_height;
 
     int dct_algo;
-#define FF_DCT_AUTO 0
+#define FF_DCT_AUTO    0
 #define FF_DCT_FASTINT 1
-#define FF_DCT_INT 2
-#define FF_DCT_MMX 3
+#define FF_DCT_INT     2
+#define FF_DCT_MMX     3
+#define FF_DCT_MLIB    4
 
     //FIXME this should be reordered after kabis API is finished ...
     //TODO kill kabi
