@@ -2642,10 +2642,18 @@ static int encode_init(AVCodecContext *avctx)
 
 static int frame_start(SnowContext *s){
    AVFrame tmp;
+   int w= s->avctx->width; //FIXME round up to x16 ?
+   int h= s->avctx->height;
 
    if(s->keyframe)
         reset_contexts(s);
  
+    if(s->current_picture.data[0]){
+        draw_edges(s->current_picture.data[0], s->current_picture.linesize[0], w   , h   , EDGE_WIDTH  );
+        draw_edges(s->current_picture.data[1], s->current_picture.linesize[1], w>>1, h>>1, EDGE_WIDTH/2);
+        draw_edges(s->current_picture.data[2], s->current_picture.linesize[2], w>>1, h>>1, EDGE_WIDTH/2);
+    }
+
     tmp= s->last_picture;
     s->last_picture= s->current_picture;
     s->current_picture= tmp;
