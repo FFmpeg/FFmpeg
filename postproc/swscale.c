@@ -34,6 +34,8 @@ Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 TODO
 more intelligent missalignment avoidance for the horizontal scaler
 bicubic scaler
+dither in C
+change the distance of the u & v buffer
 */
 
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
@@ -518,7 +520,7 @@ static inline void yuv2yuv(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uin
 
 	if(uvalpha != -1)
 	{
-		for(i=0; i<dstw/2; i++)
+		for(i=0; i<(dstw>>1); i++)
 		{
 			((uint8_t*)uDest)[i] = (uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19;
 			((uint8_t*)vDest)[i] = (uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19;
@@ -800,8 +802,8 @@ FULL_YSCALEYUV2RGB
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
 				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
-				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+				int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
+				int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
 
 				int Cb= yuvtab_40cf[U];
 				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
@@ -822,8 +824,8 @@ FULL_YSCALEYUV2RGB
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
 				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
-				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+				int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
+				int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
 
 				int Cb= yuvtab_40cf[U];
 				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
@@ -845,8 +847,8 @@ FULL_YSCALEYUV2RGB
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
 				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
-				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+				int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
+				int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
 
 				int Cb= yuvtab_40cf[U];
 				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
@@ -869,8 +871,8 @@ FULL_YSCALEYUV2RGB
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
 				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
-				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+				int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
+				int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
 
 				int Cb= yuvtab_40cf[U];
 				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
@@ -1030,8 +1032,8 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
 			int Y2=yuvtab_2568[buf0[i+1]>>7];
-			int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-			int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+			int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
+			int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
 
 			int Cb= yuvtab_40cf[U];
 			int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
@@ -1052,8 +1054,8 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
 			int Y2=yuvtab_2568[buf0[i+1]>>7];
-			int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-			int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+			int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
+			int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
 
 			int Cb= yuvtab_40cf[U];
 			int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
@@ -1075,8 +1077,8 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
 			int Y2=yuvtab_2568[buf0[i+1]>>7];
-			int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-			int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+			int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
+			int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
 
 			int Cb= yuvtab_40cf[U];
 			int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
@@ -1099,8 +1101,8 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
 			int Y2=yuvtab_2568[buf0[i+1]>>7];
-			int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-			int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+			int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
+			int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
 
 			int Cb= yuvtab_40cf[U];
 			int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
