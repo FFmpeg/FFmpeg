@@ -21,7 +21,7 @@
 #include "framehook.h"
 #include "avformat.h"
 
-#ifdef HAVE_VHOOK
+#ifdef CONFIG_HAVE_DLFCN
 #include <dlfcn.h>
 #endif
 
@@ -30,6 +30,7 @@ typedef struct _FrameHookEntry {
     struct _FrameHookEntry *next;
     FrameHookConfigureFn Configure;
     FrameHookProcessFn Process;
+    FrameHookReleaseFn Release;
     void *ctx;
 } FrameHookEntry;
 
@@ -59,6 +60,7 @@ int frame_hook_add(int argc, char *argv[])
 
     fhe->Configure = dlsym(loaded, "Configure");
     fhe->Process = dlsym(loaded, "Process");
+    fhe->Release = dlsym(loaded, "Release");    /* Optional */
 
     if (!fhe->Process) {
         fprintf(stderr, "Failed to find Process entrypoint in %s\n", argv[0]);
@@ -99,4 +101,19 @@ void frame_hook_process(AVPicture *pict, enum PixelFormat pix_fmt, int width, in
             fhe->Process(fhe->ctx, pict, pix_fmt, width, height, pts);
         }
     }
+}
+
+void frame_hook_release()
+{
+    FrameHookEntry *fhe;
+    FrameHookEntry *fhenext;
+
+    for (fhe = first_hook; fhe; fhe = fhenext) {
+        fhenext = fhe->next;
+        if (fhe->Release)
+            fhe->Release(fhe->ctx);
+        av_free(fhe);
+    }
+
+    first_hook = NULL;
 }

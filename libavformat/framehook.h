@@ -8,12 +8,22 @@
 #include "avcodec.h"
 
 /* Function must be called 'Configure' */
-typedef int (*FrameHookConfigureFn)(void **ctxp, int argc, char *argv[]);
+typedef int (FrameHookConfigure)(void **ctxp, int argc, char *argv[]);
+typedef FrameHookConfigure *FrameHookConfigureFn;
+extern FrameHookConfigure Configure;
 
 /* Function must be called 'Process' */
-typedef void (*FrameHookProcessFn)(void *ctx, struct AVPicture *pict, enum PixelFormat pix_fmt, int width, int height, INT64 pts);
+typedef void (FrameHookProcess)(void *ctx, struct AVPicture *pict, enum PixelFormat pix_fmt, int width, int height, INT64 pts);
+typedef FrameHookProcess *FrameHookProcessFn;
+extern FrameHookProcess Process;
+
+/* Function must be called 'Release' */
+typedef void (FrameHookRelease)(void *ctx);
+typedef FrameHookRelease *FrameHookReleaseFn;
+extern FrameHookRelease Release;
 
 extern int frame_hook_add(int argc, char *argv[]);
 extern void frame_hook_process(struct AVPicture *pict, enum PixelFormat pix_fmt, int width, int height);
+extern void frame_hook_release();
 
 #endif
