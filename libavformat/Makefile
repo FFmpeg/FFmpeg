@@ -125,7 +125,7 @@ install:
 endif
 
 installlib: all install-headers
-	install -m 644 $(LIB) $(prefix)/lib
+	install -m 644 $(LIB) "$(prefix)/lib"
 
 install-headers:
 	mkdir -p "$(prefix)/include/ffmpeg"
