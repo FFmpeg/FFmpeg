@@ -199,6 +199,7 @@ static int video_profile = FF_PROFILE_UNKNOWN;
 static int video_level = FF_LEVEL_UNKNOWN;
 static int nsse_weight = 8;
 static int subpel_quality= 8;
+static int me_penalty_compensation= 256;
 static int lowres= 0;
 static int frame_skip_threshold= 0;
 static int frame_skip_factor= 0;
@@ -3324,6 +3325,7 @@ static void opt_output_file(const char *filename)
                 video_enc->level= video_level;
                 video_enc->nsse_weight= nsse_weight;
                 video_enc->me_subpel_quality= subpel_quality;
+                video_enc->me_penalty_compensation= me_penalty_compensation;
                 video_enc->frame_skip_threshold= frame_skip_threshold;
                 video_enc->frame_skip_factor= frame_skip_factor;
                 video_enc->frame_skip_exp= frame_skip_exp;
@@ -4079,6 +4081,7 @@ const OptionDef options[] = {
     { "vlevel", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_level}, "level", "" },
     { "nssew", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&nsse_weight}, "weight", "" },
     { "subq", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&subpel_quality}, "", "" },
+    { "mepc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&me_penalty_compensation}, "motion estimation bitrate penalty compensation", "factor (1.0 = 256)" },
     { "lowres", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&lowres}, "", "" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "skip_threshold", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_threshold}, "frame skip threshold", "threshold" },
