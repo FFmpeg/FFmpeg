@@ -1195,7 +1195,7 @@ static int log2_tab(INT16 *tab, int n)
     for(i=0;i<n;i++) {
         v |= abs(tab[i]);
     }
-    return log2(v);
+    return av_log2(v);
 }
 
 static void lshift_tab(INT16 *tab, int n, int lshift)
@@ -1307,7 +1307,7 @@ int AC3_encode_frame(AVCodecContext *avctx,
                 if (v == 0)
                     e = 24;
                 else {
-                    e = 23 - log2(v) + exp_samples[i][ch];
+                    e = 23 - av_log2(v) + exp_samples[i][ch];
                     if (e >= 24) {
                         e = 24;
                         mdct_coef[i][ch][j] = 0;
