@@ -82,7 +82,7 @@ tests: apiexample cpuid_test $(TESTS)
 
 $(LIB): $(OBJS)
 	rm -f $@
-	$(AR) rc $@ $(OBJS)
+	$(AR) rcs $@ $(OBJS)
 
 $(SLIB): $(OBJS)
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
@@ -127,7 +127,7 @@ imgresample-test: imgresample.c
 
 dct-test: dct-test.o jfdctfst.o i386/fdct_mmx.o \
           fdctref.o jrevdct.o i386/idct_mmx.o
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ -lm
 
 motion-test: motion_test.o $(LIB)
 	$(CC) -o $@ $^

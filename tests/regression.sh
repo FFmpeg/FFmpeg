@@ -50,7 +50,7 @@ function do_ffmpeg ()
     echo $ffmpeg -bitexact $*
     $ffmpeg -bitexact -benchmark $* > $datadir/bench.tmp
     md5sum $f >> $logfile
-    expr match "`cat $datadir/bench.tmp`" '.*utime=\(.*s\)' > $datadir/bench2.tmp
+    expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
     echo `cat $datadir/bench2.tmp` $f >> $benchfile
 }
 

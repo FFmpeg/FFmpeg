@@ -35,6 +35,9 @@ case "$cpu" in
   alpha)
     cpu="alpha"
   ;;
+  "Power Macintosh")
+    cpu="powerpc"
+  ;;
   *)
     cpu="unknown"
   ;;
@@ -80,6 +83,14 @@ v4l="no"
 audio_oss="yes"
 extralibs="-lpoll -lgnugetopt -lm"
 make="gmake"
+;;
+Darwin)
+v4l="no"
+audio_oss="no"
+CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer"
+SHFLAGS=-dynamic
+extralibs=""
+darwin=yes
 ;;
 *) ;;
 esac
@@ -440,6 +451,11 @@ fi
 if test "$win32" = "yes" ; then
   echo "#define CONFIG_WIN32 1" >> $TMPH
   echo "CONFIG_WIN32=yes" >> config.mak
+fi
+
+if test "$darwin" = "yes"; then
+  echo "#define CONFIG_DARWIN 1"  >> $TMPH
+  echo "CONFIG_DARWIN=yes" >> config.mak
 fi
 
 if test "$_malloc_h" = "yes" ; then
