@@ -120,7 +120,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 #endif
             if (tag1 == MKTAG('m', 'o', 'v', 'i')) {
                 avi->movi_list = url_ftell(pb) - 4;
-                avi->movi_end = avi->movi_list + size;
+                if(size) avi->movi_end = avi->movi_list + size;
+                else     avi->movi_end = url_filesize(url_fileno(pb));
 #ifdef DEBUG
                 printf("movi end=%Lx\n", avi->movi_end);
 #endif
@@ -443,7 +444,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 //                pkt->dts += ast->start;
                 if(ast->sample_size)
                     pkt->dts /= ast->sample_size;
-//av_log(NULL, AV_LOG_DEBUG, "dts:%Ld offset:%d %d/%d %d st:%d size:%d\n", pkt->dts, ast->frame_offset, ast->scale, ast->rate, AV_TIME_BASE, n, size);
+//av_log(NULL, AV_LOG_DEBUG, "dts:%Ld offset:%d %d/%d smpl_siz:%d base:%d st:%d size:%d\n", pkt->dts, ast->frame_offset, ast->scale, ast->rate, ast->sample_size, AV_TIME_BASE, n, size);
                 pkt->stream_index = n;
                 /* FIXME: We really should read index for that */
                 if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
