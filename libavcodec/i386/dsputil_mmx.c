@@ -107,17 +107,47 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
     "psrlq $1, " #regb "	\n\t"\
     "psubb " #regb ", " #regr "	\n\t"
 
+#define PAVGBP_MMX_NO_RND(rega, regb, regr,  regc, regd, regp) \
+    "movq " #rega ", " #regr "	\n\t"\
+    "movq " #regc ", " #regp "	\n\t"\
+    "pand " #regb ", " #regr "	\n\t"\
+    "pand " #regd ", " #regp "	\n\t"\
+    "pxor " #rega ", " #regb "	\n\t"\
+    "pxor " #regc ", " #regd "	\n\t"\
+    "pand %%mm7, " #regb "	\n\t"\
+    "pand %%mm7, " #regd "	\n\t"\
+    "psrlq $1, " #regb " 	\n\t"\
+    "psrlq $1, " #regd " 	\n\t"\
+    "paddb " #regb ", " #regr "	\n\t"\
+    "paddb " #regd ", " #regp "	\n\t"
+
+#define PAVGBP_MMX(rega, regb, regr, regc, regd, regp) \
+    "movq " #rega ", " #regr "	\n\t"\
+    "movq " #regc ", " #regp "	\n\t"\
+    "por  " #regb ", " #regr "	\n\t"\
+    "por  " #regd ", " #regp "	\n\t"\
+    "pxor " #rega ", " #regb "	\n\t"\
+    "pxor " #regc ", " #regd "	\n\t"\
+    "pand %%mm7, " #regb "     	\n\t"\
+    "pand %%mm7, " #regd "     	\n\t"\
+    "psrlq $1, " #regd "	\n\t"\
+    "psrlq $1, " #regb "	\n\t"\
+    "psubb " #regb ", " #regr "	\n\t"\
+    "psubb " #regd ", " #regp "	\n\t"
+
 /***********************************/
 /* MMX no rounding */
 #define DEF(x, y) x ## _no_rnd_ ## y ##_mmx
 
 #define PAVGB(a, b)	PAVGB_MMX_NO_RND(a, b, %%mm6)
 #define PAVGBR(a, b, c)	PAVGB_MMX_NO_RND(a, b, c)
+#define PAVGBP(a, b, c, d, e, f)	PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
 #include "dsputil_mmx_rnd.h"
 
 #undef DEF
 #undef PAVGB
 #undef PAVGBR
+#undef PAVGBP
 /***********************************/
 /* MMX rounding */
 
@@ -125,11 +155,13 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
 
 #define PAVGB(a, b)	PAVGB_MMX(a, b, %%mm6)
 #define PAVGBR(a, b, c)	PAVGB_MMX(a, b, c)
+#define PAVGBP(a, b, c, d, e, f)	PAVGBP_MMX(a, b, c, d, e, f)
 #include "dsputil_mmx_rnd.h"
 
 #undef DEF
 #undef PAVGB
 #undef PAVGBR
+#undef PAVGBP
 
 /***********************************/
 /* 3Dnow specific */
@@ -339,7 +371,7 @@ static void put_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int
 	);
 }
 
-#if 0
+#if 1
 static void put_pixels_xy2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
   UINT8 *p;
