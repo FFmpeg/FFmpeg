@@ -719,7 +719,8 @@ following image formats are supported:
 @item Sunplus MJPEG          @tab     @tab  X @tab fourcc: SP5X
 @item DV                     @tab  X  @tab  X 
 @item Huff YUV               @tab  X  @tab  X
-@item FFmpeg Video 1         @tab  X  @tab  X @tab Lossless codec (fourcc: FFV1)
+@item FFmpeg Video 1         @tab  X  @tab  X @tab Experimental lossless codec (fourcc: FFV1)
+@item FFmpeg Snow            @tab  X  @tab  X @tab Experimental wavelet codec (fourcc: SNOW)
 @item Asus v1                @tab  X  @tab  X @tab fourcc: ASV1
 @item Asus v2                @tab  X  @tab  X @tab fourcc: ASV2
 @item Creative YUV           @tab     @tab  X @tab fourcc: CYUV
@@ -813,6 +814,8 @@ solutions.
 @item Apple MACE 3           @tab      @tab X
 @item Apple MACE 6           @tab      @tab X
 @item FLAC                   @tab      @tab X
+@item FFmpeg Sonic           @tab X    @tab X
+@tab Experimental lossy/lossless codec
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
