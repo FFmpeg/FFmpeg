@@ -2872,7 +2872,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
 #ifdef CONFIG_RISKY
     /* we need to initialize some time vars before we can encode b-frames */
-    if (s->h263_pred && !s->h263_msmpeg4)
+    // RAL: Condition added for MPEG1VIDEO
+    if (s->codec_id == CODEC_ID_MPEG1VIDEO || (s->h263_pred && !s->h263_msmpeg4))
         ff_set_mpeg4_time(s, s->picture_number); 
 #endif
         
@@ -2965,12 +2966,24 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 //printf("Scene change detected, encoding as I Frame %d %d\n", s->current_picture.mb_var_sum, s->current_picture.mc_mb_var_sum);
     }
 
-    if(s->pict_type==P_TYPE || s->pict_type==S_TYPE) 
+    if(s->pict_type==P_TYPE || s->pict_type==S_TYPE) {
         s->f_code= ff_get_best_fcode(s, s->p_mv_table, MB_TYPE_INTER);
+        
+        // RAL: Next call moved into that bloc
         ff_fix_long_p_mvs(s);
+    }
+
+    // RAL: All this bloc changed
     if(s->pict_type==B_TYPE){
-        s->f_code= ff_get_best_fcode(s, s->b_forw_mv_table, MB_TYPE_FORWARD);
-        s->b_code= ff_get_best_fcode(s, s->b_back_mv_table, MB_TYPE_BACKWARD);
+        int a, b;
+
+        a = ff_get_best_fcode(s, s->b_forw_mv_table, MB_TYPE_FORWARD);
+        b = ff_get_best_fcode(s, s->b_bidir_forw_mv_table, MB_TYPE_BIDIR);
+        s->f_code = FFMAX(a, b);
+
+        a = ff_get_best_fcode(s, s->b_back_mv_table, MB_TYPE_BACKWARD);
+        b = ff_get_best_fcode(s, s->b_bidir_back_mv_table, MB_TYPE_BIDIR);
+        s->b_code = FFMAX(a, b);
 
         ff_fix_long_b_mvs(s, s->b_forw_mv_table, s->f_code, MB_TYPE_FORWARD);
         ff_fix_long_b_mvs(s, s->b_back_mv_table, s->b_code, MB_TYPE_BACKWARD);
@@ -3064,6 +3077,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->mb_incr = 1;
     s->last_mv[0][0][0] = 0;
     s->last_mv[0][0][1] = 0;
+    s->last_mv[1][0][0] = 0;
+    s->last_mv[1][0][1] = 0;
+     
+    s->last_mv_dir = 0;
 
 #ifdef CONFIG_RISKY
     if (s->codec_id==CODEC_ID_H263 || s->codec_id==CODEC_ID_H263P)
@@ -3227,7 +3244,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                                  &dmin, &next_block, mx, my);
                 }
                 if(mb_type&MB_TYPE_INTRA){
-                    s->mv_dir = MV_DIR_FORWARD;
+                    s->mv_dir = 0;
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_intra= 1;
                     s->mv[0][0][0] = 0;
@@ -3348,7 +3365,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 
                 switch(mb_type){
                 case MB_TYPE_INTRA:
-                    s->mv_dir = MV_DIR_FORWARD;
+                    s->mv_dir = 0;
                     s->mb_intra= 1;
                     motion_x= s->mv[0][0][0] = 0;
                     motion_y= s->mv[0][0][1] = 0;
@@ -3405,8 +3422,13 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     motion_x=motion_y=0; //gcc warning fix
                     printf("illegal MB type\n");
                 }
+
                 encode_mb(s, motion_x, motion_y);
+
+                // RAL: Update last macrobloc type
+                s->last_mv_dir = s->mv_dir;
             }
+
             /* clean the MV table in IPS frames for direct mode in B frames */
             if(s->mb_intra /* && I,P,S_TYPE */){
                 s->p_mv_table[xy][0]=0;

@@ -50,7 +50,7 @@
 static void mpeg1_encode_block(MpegEncContext *s, 
                          DCTELEM *block, 
                          int component);
-static void mpeg1_encode_motion(MpegEncContext *s, int val);
+static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code);    // RAL: f_code parameter added
 static void mpeg1_skip_picture(MpegEncContext *s, int pict_num);
 static inline int mpeg1_decode_block_inter(MpegEncContext *s, 
                               DCTELEM *block, 
@@ -332,18 +332,27 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     /* mpeg1 picture header */
     put_header(s, PICTURE_START_CODE);
     /* temporal reference */
-    put_bits(&s->pb, 10, (s->fake_picture_number - 
+
+    // RAL: s->picture_number instead of s->fake_picture_number
+    put_bits(&s->pb, 10, (s->picture_number - 
                           s->gop_picture_number) & 0x3ff); 
     s->fake_picture_number++;
     
     put_bits(&s->pb, 3, s->pict_type);
     put_bits(&s->pb, 16, 0xffff); /* non constant bit rate */
     
-    if (s->pict_type == P_TYPE) {
+    // RAL: Forward f_code also needed for B frames
+    if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
         put_bits(&s->pb, 1, 0); /* half pel coordinates */
         put_bits(&s->pb, 3, s->f_code); /* forward_f_code */
     }
     
+    // RAL: Backward f_code necessary for B frames
+    if (s->pict_type == B_TYPE) {
+        put_bits(&s->pb, 1, 0); /* half pel coordinates */
+        put_bits(&s->pb, 3, s->b_code); /* backward_f_code */
+        }
+
     put_bits(&s->pb, 1, 0); /* extra bit picture */
     
     /* only one slice */
@@ -368,10 +377,11 @@ void mpeg1_encode_mb(MpegEncContext *s,
             cbp |= 1 << (5 - i);
     }
 
-    /* skip macroblock, except if first or last macroblock of a slice */
-    if ((cbp | motion_x | motion_y) == 0 &&
-        (!((mb_x | mb_y) == 0 ||
-           (mb_x == s->mb_width - 1 && mb_y == s->mb_height - 1)))) {
+    // RAL: Skipped macroblocks for B frames...
+    if (cbp == 0 && (!((mb_x | mb_y) == 0 || (mb_x == s->mb_width - 1 && mb_y == s->mb_height - 1))) && 
+        ((s->pict_type == P_TYPE && (motion_x | motion_y) == 0) ||
+        (s->pict_type == B_TYPE && s->mv_dir == s->last_mv_dir && (((s->mv_dir & MV_DIR_FORWARD) ? ((s->mv[0][0][0] - s->last_mv[0][0][0])|(s->mv[0][0][1] - s->last_mv[0][0][1])) : 0) |
+        ((s->mv_dir & MV_DIR_BACKWARD) ? ((s->mv[1][0][0] - s->last_mv[1][0][0])|(s->mv[1][0][1] - s->last_mv[1][0][1])) : 0)) == 0))) {
         s->mb_incr++;
         s->qscale -= s->dquant;
         s->skip_count++;
@@ -398,18 +408,19 @@ void mpeg1_encode_mb(MpegEncContext *s,
             }
             s->misc_bits+= get_bits_diff(s);
             s->i_count++;
-        } else {
-            if (s->mb_intra) {
-                if(s->dquant && cbp){
-                    put_bits(&s->pb, 6, 0x01);
-                    put_bits(&s->pb, 5, s->qscale);
-                }else{
-                    put_bits(&s->pb, 5, 0x03);
-                    s->qscale -= s->dquant;
-                }
-                s->misc_bits+= get_bits_diff(s);
-                s->i_count++;
-            } else {
+        } else if (s->mb_intra) {
+            if(s->dquant && cbp){
+                put_bits(&s->pb, 6, 0x01);
+                put_bits(&s->pb, 5, s->qscale);
+            }else{
+                put_bits(&s->pb, 5, 0x03);
+                s->qscale -= s->dquant;
+            }
+            s->misc_bits+= get_bits_diff(s);
+            s->i_count++;
+            s->last_mv[0][0][0] = 
+            s->last_mv[0][0][1] = 0;
+        } else if (s->pict_type == P_TYPE) { 
                 if (cbp != 0) {
                     if (motion_x == 0 && motion_y == 0) {
                         if(s->dquant){
@@ -428,21 +439,106 @@ void mpeg1_encode_mb(MpegEncContext *s,
                             put_bits(&s->pb, 1, 1); /* motion + cbp */
                         }
                         s->misc_bits+= get_bits_diff(s);
-                        mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0]); 
-                        mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1]); 
+                        mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0], s->f_code);    // RAL: f_code parameter added
+                        mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1], s->f_code);    // RAL: f_code parameter added
                         s->mv_bits+= get_bits_diff(s);
                         put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
                     }
                 } else {
                     put_bits(&s->pb, 3, 1); /* motion only */
-                    mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0]); 
-                    mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1]); 
+                    mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0], s->f_code);    // RAL: f_code parameter added
+                    mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1], s->f_code);    // RAL: f_code parameter added
                     s->qscale -= s->dquant;
                     s->mv_bits+= get_bits_diff(s);
                 }
                 s->f_count++;
+        } else
+            {    // RAL: All the following bloc added for B frames:
+                if (cbp != 0)
+                    {    // With coded bloc pattern
+                    if (s->mv_dir == (MV_DIR_FORWARD | MV_DIR_BACKWARD))
+                        {    // Bi-directional motion
+                        if (s->dquant)
+                            {    // With QScale
+                            put_bits(&s->pb, 5, 2);
+                            put_bits(&s->pb, 5, s->qscale);
+                            }
+                        else    // Without QScale
+                            put_bits(&s->pb, 2, 3);
+                        s->misc_bits += get_bits_diff(s);
+                        mpeg1_encode_motion(s, s->mv[0][0][0] - s->last_mv[0][0][0], s->f_code);
+                        mpeg1_encode_motion(s, s->mv[0][0][1] - s->last_mv[0][0][1], s->f_code);
+                        mpeg1_encode_motion(s, s->mv[1][0][0] - s->last_mv[1][0][0], s->b_code);
+                        mpeg1_encode_motion(s, s->mv[1][0][1] - s->last_mv[1][0][1], s->b_code);
+                        s->b_count++;
+                        s->f_count++;
+                        s->mv_bits += get_bits_diff(s);
+                        put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
+                        }
+                    else if (s->mv_dir == MV_DIR_BACKWARD)
+                        {    // Backward motion
+                        if (s->dquant)
+                            {    // With QScale
+                            put_bits(&s->pb, 6, 2);
+                            put_bits(&s->pb, 5, s->qscale);
+                            }
+                        else    // Without QScale
+                            put_bits(&s->pb, 3, 3);
+                        s->misc_bits += get_bits_diff(s);
+                        mpeg1_encode_motion(s, motion_x - s->last_mv[1][0][0], s->b_code); 
+                        mpeg1_encode_motion(s, motion_y - s->last_mv[1][0][1], s->b_code); 
+                        s->b_count++;
+                        s->mv_bits += get_bits_diff(s);
+                        put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
+                        }
+                    else if (s->mv_dir == MV_DIR_FORWARD)
+                        {    // Forward motion
+                        if (s->dquant)
+                            {    // With QScale
+                            put_bits(&s->pb, 6, 3);
+                            put_bits(&s->pb, 5, s->qscale);
+                            }
+                        else    // Without QScale
+                            put_bits(&s->pb, 4, 3);
+                        s->misc_bits += get_bits_diff(s);
+                        mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0], s->f_code); 
+                        mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1], s->f_code); 
+                        s->f_count++;
+                        s->mv_bits += get_bits_diff(s);
+                        put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
+                        }
+                    }
+                else
+                    {    // No coded bloc pattern
+                    if (s->mv_dir == (MV_DIR_FORWARD | MV_DIR_BACKWARD))
+                        {    // Bi-directional motion
+                        put_bits(&s->pb, 2, 2); /* backward & forward motion */
+                        mpeg1_encode_motion(s, s->mv[0][0][0] - s->last_mv[0][0][0], s->f_code);
+                        mpeg1_encode_motion(s, s->mv[0][0][1] - s->last_mv[0][0][1], s->f_code);
+                        mpeg1_encode_motion(s, s->mv[1][0][0] - s->last_mv[1][0][0], s->b_code);
+                        mpeg1_encode_motion(s, s->mv[1][0][1] - s->last_mv[1][0][1], s->b_code);
+                        s->b_count++;
+                        s->f_count++;
+                        }
+                    else if (s->mv_dir == MV_DIR_BACKWARD)
+                        {    // Backward motion
+                        put_bits(&s->pb, 3, 2); /* backward motion only */
+                        mpeg1_encode_motion(s, motion_x - s->last_mv[1][0][0], s->b_code); 
+                        mpeg1_encode_motion(s, motion_y - s->last_mv[1][0][1], s->b_code); 
+                        s->b_count++;
+                        }
+                    else if (s->mv_dir == MV_DIR_FORWARD)
+                        {    // Forward motion
+                        put_bits(&s->pb, 4, 2); /* forward motion only */
+                        mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0], s->f_code); 
+                        mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1], s->f_code); 
+                        s->f_count++;
+                        }
+                    s->qscale -= s->dquant;
+                    s->mv_bits += get_bits_diff(s);
+                    }
+            // End of bloc from RAL
             }
-        }
         for(i=0;i<6;i++) {
             if (cbp & (1 << (5 - i))) {
                 mpeg1_encode_block(s, block[i], i);
@@ -454,11 +550,22 @@ void mpeg1_encode_mb(MpegEncContext *s,
         else
             s->p_tex_bits+= get_bits_diff(s);
     }
-    s->last_mv[0][0][0] = motion_x;
-    s->last_mv[0][0][1] = motion_y;
+
+    // RAL: By this:
+    if (s->mv_dir & MV_DIR_FORWARD)
+        {
+        s->last_mv[0][0][0]= s->mv[0][0][0];
+        s->last_mv[0][0][1]= s->mv[0][0][1];
+        }
+    if (s->mv_dir & MV_DIR_BACKWARD)
+        {
+        s->last_mv[1][0][0]= s->mv[1][0][0];
+        s->last_mv[1][0][1]= s->mv[1][0][1];
+        }
 }
 
-static void mpeg1_encode_motion(MpegEncContext *s, int val)
+// RAL: Parameter added: f_or_b_code
+static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
 {
     int code, bit_size, l, m, bits, range, sign;
 
@@ -469,7 +576,7 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val)
                  mbMotionVectorTable[0][1], 
                  mbMotionVectorTable[0][0]); 
     } else {
-        bit_size = s->f_code - 1;
+        bit_size = f_or_b_code - 1;
         range = 1 << bit_size;
         /* modulo encoding */
         l = 16 * range;
@@ -492,9 +599,13 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val)
             bits = val & (range - 1);
             sign = 1;
         }
+
+        assert(code > 0 && code <= 16);
+
         put_bits(&s->pb,
                  mbMotionVectorTable[code][1], 
                  mbMotionVectorTable[code][0]); 
+
         put_bits(&s->pb, 1, sign);
         if (bit_size > 0) {
             put_bits(&s->pb, bit_size, bits);

@@ -2234,10 +2234,6 @@ void opt_output_file(const char *filename)
                
             
                 if (b_frames) {
-                    if (codec_id != CODEC_ID_MPEG4) {
-                        fprintf(stderr, "\nB frames encoding only supported by MPEG-4.\n");
-                        exit(1);
-                    }
                     video_enc->max_b_frames = b_frames;
                     video_enc->b_frame_strategy = 0;
                     video_enc->b_quant_factor = 2.0;
@@ -2775,7 +2771,7 @@ int main(int argc, char **argv)
     const char *opt, *arg;
     const OptionDef *po;
     INT64 ti;
-    
+
     av_register_all();
 
     /* detect if invoked as player */

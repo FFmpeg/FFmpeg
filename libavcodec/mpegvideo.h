@@ -508,6 +508,7 @@ typedef struct MpegEncContext {
     /* Mpeg1 specific */
     int fake_picture_number; /* picture number at the bitstream frame rate */
     int gop_picture_number;  /* index of the first picture of a GOP based on fake_pic_num & mpeg1 specific */
+    int last_mv_dir;         /* last mv_dir, used for b frame encoding */
     
     /* MPEG2 specific - I wish I had not to support this mess. */
     int progressive_sequence;
