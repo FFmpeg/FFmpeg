@@ -159,6 +159,7 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
         h_align= 16;
         break;
     case PIX_FMT_YUV411P:
+    case PIX_FMT_UYVY411:
         w_align=32;
         h_align=8;
         break;

@@ -63,6 +63,10 @@ ifeq ($(CONFIG_XVID),yes)
 EXTRALIBS+=-lxvidcore
 endif
 
+ifeq ($(CONFIG_DC1394),yes)
+EXTRALIBS+=-ldc1394_control -lraw1394
+endif
+
 ifeq ($(BUILD_VHOOK),yes)
 VHOOK=videohook
 INSTALLVHOOK=install-vhook

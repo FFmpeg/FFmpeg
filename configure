@@ -32,6 +32,7 @@ echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
 echo "  --enable-amr_wb          enable amr_wb float audio codec"
 echo "  --enable-sunmlib         use Sun medialib [default=no]"
 echo "  --enable-pthreads        use pthreads [default=no]"
+echo "  --enable-dc1394          enable IIDC-1394 grabbing using libdc1394 and libraw1394 [default=no]"
 echo "  --enable-gpl             allow use of gpl code, the resulting libav* and ffmpeg will be under gpl [default=no]"
 echo ""
 echo "Advanced options (experts only):"
@@ -145,6 +146,7 @@ v4l="yes"
 audio_oss="yes"
 audio_beos="no"
 dv1394="yes"
+dc1394="no"
 network="yes"
 zlib="yes"
 mp3lame="no"
@@ -418,6 +420,8 @@ for opt do
   ;;
   --enable-xvid) xvid="yes"
   ;;
+  --enable-dc1394) dc1394="yes"
+  ;;
   --disable-vhook) vhook="no"
   ;;
   --disable-simple_idct) simpleidct="no"
@@ -686,6 +690,7 @@ if test "$mingw32" = "yes" ; then
     v4l="no"
     audio_oss="no"
     dv1394="no"
+    dc1394="no"
     ffserver="no"
     network="no"
     LIBPREF=""
@@ -1259,6 +1264,11 @@ fi
 if test "$dv1394" = "yes" ; then
   echo "#define CONFIG_DV1394 1" >> $TMPH
   echo "CONFIG_DV1394=yes" >> config.mak
+fi
+
+if test "$dc1394" = "yes" ; then
+  echo "#define CONFIG_DC1394 1" >> $TMPH
+  echo "CONFIG_DC1394=yes" >> config.mak
 fi
 
 if test "$dlopen" = "yes" ; then

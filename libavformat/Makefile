@@ -47,6 +47,10 @@ ifeq ($(CONFIG_DV1394),yes)
 OBJS+= dv1394.o
 endif
 
+ifeq ($(CONFIG_DC1394),yes)
+OBJS+= dc1394.o
+endif
+
 ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS+= audio.o 
 endif

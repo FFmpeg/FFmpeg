@@ -102,6 +102,10 @@ void av_register_all(void)
     dv1394_init();
 #endif
 
+#ifdef CONFIG_DC1394
+    dc1394_init();
+#endif
+
     nut_init();
     matroska_init();
     sol_init();
