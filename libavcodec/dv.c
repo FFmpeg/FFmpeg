@@ -485,8 +485,9 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
                 }
             } else {
                 if (s->sys->pix_fmt == PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
-                    uint64_t aligned_pixels[64/8], *c_ptr, *c_ptr1, *ptr;
+                    uint64_t aligned_pixels[64/8];
                     uint8_t *pixels= (uint8_t*)aligned_pixels;
+		    uint8_t *c_ptr, *c_ptr1, *ptr;
                     int y, linesize;
                     /* NOTE: at end of line, the macroblock is handled as 420 */
                     idct_put(pixels, 8, block);
