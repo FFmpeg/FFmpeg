@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4735
+#define LIBAVCODEC_BUILD       4736
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1293,6 +1293,7 @@ typedef struct AVCodecContext {
 #define FF_CMP_NSSE 10
 #define FF_CMP_W53  11
 #define FF_CMP_W97  12
+#define FF_CMP_DCTMAX 13
 #define FF_CMP_CHROMA 256
     
     /**
@@ -1703,6 +1704,20 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int frame_skip_factor;
+
+    /**
+     * frame skip exponent
+     * - encoding: set by user
+     * - decoding: unused
+     */
+    int frame_skip_exp;
+
+    /**
+     * frame skip comparission function
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int frame_skip_cmp;
 } AVCodecContext;
 
 

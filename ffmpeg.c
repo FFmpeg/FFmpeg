@@ -195,6 +195,8 @@ static int subpel_quality= 8;
 static int lowres= 0;
 static int frame_skip_threshold= 0;
 static int frame_skip_factor= 0;
+static int frame_skip_exp= 0;
+static int frame_skip_cmp= FF_CMP_DCTMAX;
 extern int loop_input; /* currently a hack */
 
 static int gop_size = 12;
@@ -3227,6 +3229,8 @@ static void opt_output_file(const char *filename)
                 video_enc->me_subpel_quality= subpel_quality;
                 video_enc->frame_skip_threshold= frame_skip_threshold;
                 video_enc->frame_skip_factor= frame_skip_factor;
+                video_enc->frame_skip_exp= frame_skip_exp;
+                video_enc->frame_skip_cmp= frame_skip_cmp;
 
                 if(packet_size){
                     video_enc->rtp_mode= 1;
@@ -3955,6 +3959,8 @@ const OptionDef options[] = {
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "skip_threshold", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_threshold}, "frame skip threshold", "threshold" },
     { "skip_factor", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_factor}, "frame skip factor", "factor" },
+    { "skip_exp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_exp}, "frame skip exponent", "exponent" },
+    { "skip_cmp", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&frame_skip_cmp}, "frame skip compare function", "compare function" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },

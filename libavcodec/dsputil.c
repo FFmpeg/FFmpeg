@@ -2891,6 +2891,9 @@ void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
         case FF_CMP_DCT:
             cmp[i]= c->dct_sad[i];
             break;
+        case FF_CMP_DCTMAX:
+            cmp[i]= c->dct_max[i];
+            break;
         case FF_CMP_PSNR:
             cmp[i]= c->quant_psnr[i];
             break;
@@ -3110,6 +3113,23 @@ static int dct_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2
 
     for(i=0; i<64; i++)
         sum+= ABS(temp[i]);
+        
+    return sum;
+}
+
+static int dct_max8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride, int h){
+    MpegEncContext * const s= (MpegEncContext *)c;
+    uint64_t __align8 aligned_temp[sizeof(DCTELEM)*64/8];
+    DCTELEM * const temp= (DCTELEM*)aligned_temp;
+    int sum=0, i;
+    
+    assert(h==8);
+
+    s->dsp.diff_pixels(temp, src1, src2, stride);
+    s->dsp.fdct(temp);
+
+    for(i=0; i<64; i++)
+        sum= FFMAX(sum, ABS(temp[i]));
         
     return sum;
 }
@@ -3343,6 +3363,7 @@ static int vsse16_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int st
 WARPER8_16_SQ(hadamard8_diff8x8_c, hadamard8_diff16_c)
 WARPER8_16_SQ(hadamard8_intra8x8_c, hadamard8_intra16_c)
 WARPER8_16_SQ(dct_sad8x8_c, dct_sad16_c)
+WARPER8_16_SQ(dct_max8x8_c, dct_max16_c)
 WARPER8_16_SQ(quant_psnr8x8_c, quant_psnr16_c)
 WARPER8_16_SQ(rd8x8_c, rd16_c)
 WARPER8_16_SQ(bit8x8_c, bit16_c)
@@ -3599,6 +3620,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     SET_CMP_FUNC(hadamard8_diff)
     c->hadamard8_diff[4]= hadamard8_intra16_c;
     SET_CMP_FUNC(dct_sad)
+    SET_CMP_FUNC(dct_max)
     c->sad[0]= pix_abs16_c;
     c->sad[1]= pix_abs8_c;
     c->sse[0]= sse16_c;

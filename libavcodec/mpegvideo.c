@@ -1205,6 +1205,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->quant_precision=5;
     
     ff_set_cmp(&s->dsp, s->dsp.ildct_cmp, s->avctx->ildct_cmp);
+    ff_set_cmp(&s->dsp, s->dsp.frame_skip_cmp, s->avctx->frame_skip_cmp);
     
 #ifdef CONFIG_ENCODERS
 #ifdef CONFIG_RISKY
@@ -2018,40 +2019,35 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
     return 0;
 }
 
-static inline int block_max(DCTELEM *block){
-    int i, max;
-    
-    max=0;
-    for(i=0; i<64; i++){
-        int v= ABS(block[i]);
-        if(v>max) max= v;
-    }
-    return max;
-}
-
 static int skip_check(MpegEncContext *s, Picture *p, Picture *ref){
     int x, y, plane;
     int score=0;
+    int64_t score64=0;
+    int64_t threshold;
 
     for(plane=0; plane<3; plane++){
         const int stride= p->linesize[plane];
         const int bw= plane ? 1 : 2;
         for(y=0; y<s->mb_height*bw; y++){
             for(x=0; x<s->mb_width*bw; x++){
-                int v;
+                int v= s->dsp.frame_skip_cmp[1](s, p->data[plane] + 8*(x + y*stride), ref->data[plane] + 8*(x + y*stride), stride, 8);
                 
-                s->dsp.diff_pixels(s->block[0], p->data[plane] + 8*(x + y*stride), ref->data[plane] + 8*(x + y*stride), stride);
-                v= block_max(s->block[0]);
-                
-                if(v>score) 
-                    score=v;
+                switch(s->avctx->frame_skip_exp){
+                    case 0: score= FFMAX(score, v); break;
+                    case 1: score+= ABS(v);break;
+                    case 2: score+= v*v;break;
+                    case 3: score64+= ABS(v*v*(int64_t)v);break;
+                    case 4: score64+= v*v*(int64_t)(v*v);break;
+                }
             }
         }
     }
+    
+    if(score) score64= score;
 
-    if(score < s->avctx->frame_skip_threshold)
+    if(score64 < s->avctx->frame_skip_threshold)
         return 1;
-    if(score < ((s->avctx->frame_skip_factor * s->lambda)>>8))
+    if(score64 < ((s->avctx->frame_skip_factor * (int64_t)s->lambda)>>8))
         return 1;
     return 0;
 }

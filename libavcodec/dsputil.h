@@ -172,12 +172,14 @@ typedef struct DSPContext {
     me_cmp_func nsse[5];
     me_cmp_func w53[5];
     me_cmp_func w97[5];
+    me_cmp_func dct_max[5];
 
     me_cmp_func me_pre_cmp[5];
     me_cmp_func me_cmp[5];
     me_cmp_func me_sub_cmp[5];
     me_cmp_func mb_cmp[5];
     me_cmp_func ildct_cmp[5]; //only width 16 used
+    me_cmp_func frame_skip_cmp[5]; //only width 8 used
 
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
