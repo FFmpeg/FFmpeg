@@ -75,6 +75,7 @@ typedef struct MpegEncContext {
     int mb_skiped;              /* MUST BE SET only during DECODING */
     UINT8 *mbskip_table;        /* used to avoid copy if macroblock
                                    skipped (for black regions for example) */
+    UINT8 *mbintra_table;            /* used to kill a few memsets */
 
     int qscale;
     int pict_type;

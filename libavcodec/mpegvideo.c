@@ -180,6 +180,12 @@ int MPV_common_init(MpegEncContext *s)
         s->coded_block = av_mallocz(y_size);
         if (!s->coded_block)
             goto fail;
+
+        /* which mb is a intra block */
+        s->mbintra_table = av_mallocz(y_size/4);
+        if (!s->mbintra_table)
+            goto fail;
+        memset(s->mbintra_table, 1, y_size/4);
     }
     /* default structure is frame */
     s->picture_structure = PICT_FRAME;
@@ -202,6 +208,8 @@ int MPV_common_init(MpegEncContext *s)
         free(s->ac_val[0]);
     if (s->coded_block)
         free(s->coded_block);
+    if (s->mbintra_table)
+        free(s->mbintra_table);
     if (s->mbskip_table)
         free(s->mbskip_table);
     for(i=0;i<3;i++) {
@@ -226,6 +234,7 @@ void MPV_common_end(MpegEncContext *s)
         free(s->dc_val[0]);
         free(s->ac_val[0]);
         free(s->coded_block);
+        free(s->mbintra_table);
     }
     if (s->mbskip_table)
         free(s->mbskip_table);
@@ -697,11 +706,16 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
         if (s->h263_pred) {
+          if(s->mbintra_table[mb_x + mb_y*s->mb_width])
+          {
             int wrap, x, y, v;
+            s->mbintra_table[mb_x + mb_y*s->mb_width]=0;
+  
             wrap = 2 * s->mb_width + 2;
             v = 1024;
             x = 2 * mb_x + 1;
             y = 2 * mb_y + 1;
+            
             s->dc_val[0][(x) + (y) * wrap] = v;
             s->dc_val[0][(x + 1) + (y) * wrap] = v;
             s->dc_val[0][(x) + (y + 1) * wrap] = v;
@@ -726,13 +740,16 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             /* ac pred */
             memset(s->ac_val[1][(x) + (y) * wrap], 0, 16 * sizeof(INT16));
             memset(s->ac_val[2][(x) + (y) * wrap], 0, 16 * sizeof(INT16));
+          }
         } else {
             s->last_dc[0] = 128 << s->intra_dc_precision;
             s->last_dc[1] = 128 << s->intra_dc_precision;
             s->last_dc[2] = 128 << s->intra_dc_precision;
         }
     }
-    
+    else
+        s->mbintra_table[mb_x + mb_y*s->mb_width]=1;
+
     /* update motion predictor */
     if (s->out_format == FMT_H263) {
         int x, y, wrap;
