@@ -92,6 +92,8 @@ int mm_support(void)
 	  rval |= MM_MMX;
 	if( edx & ( 1 << 24) )
 	  rval |= MM_MMXEXT;
+        if(rval==0)
+            goto inteltest;
 	return rval;
     } else if (ebx == 0x69727943 &&
                edx == 0x736e4978 &&
@@ -135,7 +137,7 @@ int main ( void )
 {
   int mm_flags;
   mm_flags = mm_support();
-  printf("mm_support = 0x%08u\n",mm_flags);
+  printf("mm_support = 0x%08X\n",mm_flags);
   return 0;
 }
 #endif
