@@ -34,7 +34,7 @@
 int64_t av_gettime(void)
 {
 #ifdef CONFIG_WIN32
-    struct _timeb tb;
+    struct timeb tb;
     _ftime(&tb);
     return ((int64_t)tb.time * int64_t_C(1000) + (int64_t)tb.millitm) * int64_t_C(1000);
 #else

@@ -210,7 +210,7 @@ static inline float floorf(float f) {
 #    include <assert.h>
 
 /* dprintf macros */
-#    if defined(CONFIG_WIN32) && !defined(__MINGW32__)
+#    if defined(CONFIG_WIN32) && !defined(__MINGW32__) && !defined(__CYGWIN__)
 
 inline void dprintf(const char* fmt,...) {}
 

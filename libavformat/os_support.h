@@ -11,7 +11,6 @@
  */
 
 #ifdef __MINGW32__
-#  undef DATADIR /* clashes with /usr/include/w32api/objidl.h */
 __declspec(dllimport) void __stdcall Sleep(unsigned long dwMilliseconds);
 // #  include <windows.h>
 #  define usleep(t)    Sleep((t) / 1000)
