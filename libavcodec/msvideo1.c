@@ -25,8 +25,8 @@
  *   http://www.pcisys.net/~melanson/codecs/
  *
  * This decoder outputs either PAL8 or RGB555 data, depending on the
- * whether a RGB palette was passed through via extradata; if the extradata
- * is present, then the data is PAL8; RGB555 otherwise.
+ * whether a RGB palette was passed through palctrl;
+ * if it's present, then the data is PAL8; RGB555 otherwise.
  */
 
 #include <stdio.h>
@@ -66,34 +66,18 @@ typedef struct Msvideo1Context {
     int size;
 
     int mode_8bit;  /* if it's not 8-bit, it's 16-bit */
-    unsigned char palette[PALETTE_COUNT * 4];
 
 } Msvideo1Context;
 
 static int msvideo1_decode_init(AVCodecContext *avctx)
 {
     Msvideo1Context *s = (Msvideo1Context *)avctx->priv_data;
-    int i;
-    unsigned char r, g, b;
-    unsigned char *raw_palette;
-    unsigned int *palette32;
 
     s->avctx = avctx;
 
-    /* figure out the colorspace based on the presence of a palette in
-     * extradata */
-    if (s->avctx->extradata_size) {
+    /* figure out the colorspace based on the presence of a palette */
+    if (s->avctx->palctrl) {
         s->mode_8bit = 1;
-        /* load up the palette */
-        palette32 = (unsigned int *)s->palette;
-        raw_palette = (unsigned char *)s->avctx->extradata;
-        for (i = 0; i < s->avctx->extradata_size / 4; i++) {
-            b = *raw_palette++;
-            g = *raw_palette++;
-            r = *raw_palette++;
-            raw_palette++;
-            palette32[i] = (r << 16) | (g << 8) | (b);
-        }
         avctx->pix_fmt = PIX_FMT_PAL8;
     } else {
         s->mode_8bit = 0;
@@ -207,8 +191,13 @@ static void msvideo1_decode_8bit(Msvideo1Context *s)
     }
 
     /* make the palette available on the way out */
-    if (s->avctx->pix_fmt == PIX_FMT_PAL8)
-        memcpy(s->frame.data[1], s->palette, PALETTE_COUNT * 4);
+    if (s->avctx->pix_fmt == PIX_FMT_PAL8) {
+        memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
+        if (s->avctx->palctrl->palette_changed) {
+            s->frame.palette_has_changed = 1;
+            s->avctx->palctrl->palette_changed = 0;
+        }
+    }
 }
 
 static void msvideo1_decode_16bit(Msvideo1Context *s)
@@ -336,6 +325,11 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
         printf ("  MS Video-1 Video: get_buffer() failed\n");
         return -1;
     }
+
+    if (s->prev_frame.data[0] &&(s->frame.linesize[0] != s->prev_frame.linesize[0]))
+        printf ("  MS Video-1: Buffer linesize changed: current %u, previous %u.\n"
+                "              Expect wrong image and/or crash!\n",
+                s->frame.linesize[0], s->prev_frame.linesize[0]);
 
     if (s->mode_8bit)
         msvideo1_decode_8bit(s);

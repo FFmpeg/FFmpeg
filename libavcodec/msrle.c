@@ -26,7 +26,7 @@
  * The MS RLE decoder outputs PAL8 colorspace data.
  *
  * Note that this decoder expects the palette colors from the end of the
- * BITMAPINFO header passed through extradata.
+ * BITMAPINFO header passed through palctrl.
  */
 
 #include <stdio.h>
@@ -46,7 +46,6 @@ typedef struct MsrleContext {
     unsigned char *buf;
     int size;
 
-    unsigned int palette[256];
 } MsrleContext;
 
 #define FETCH_NEXT_STREAM_BYTE() \
@@ -130,7 +129,11 @@ static void msrle_decode_pal8(MsrleContext *s)
     }
 
     /* make the palette available */
-    memcpy(s->frame.data[1], s->palette, 256 * 4);
+    memcpy(s->frame.data[1], s->avctx->palctrl->palette, AVPALETTE_SIZE);
+    if (s->avctx->palctrl->palette_changed) {
+        s->frame.palette_has_changed = 1;
+        s->avctx->palctrl->palette_changed = 0;
+    }
 
     /* one last sanity check on the way out */
     if (stream_ptr < s->size)
@@ -141,23 +144,12 @@ static void msrle_decode_pal8(MsrleContext *s)
 static int msrle_decode_init(AVCodecContext *avctx)
 {
     MsrleContext *s = (MsrleContext *)avctx->priv_data;
-    int i, j;
-    unsigned char *palette;
 
     s->avctx = avctx;
 
     avctx->pix_fmt = PIX_FMT_PAL8;
     avctx->has_b_frames = 0;
     s->frame.data[0] = s->prev_frame.data[0] = NULL;
-
-    /* convert palette */
-    palette = (unsigned char *)s->avctx->extradata;
-    memset (s->palette, 0, 256 * 4);
-    for (i = 0, j = 0; i < s->avctx->extradata_size / 4; i++, j += 4)
-        s->palette[i] = 
-            (palette[j + 2] << 16) |
-            (palette[j + 1] <<  8) |
-            (palette[j + 0] <<  0);
 
     return 0;
 }
@@ -176,6 +168,11 @@ static int msrle_decode_frame(AVCodecContext *avctx,
         printf ("  MS RLE: get_buffer() failed\n");
         return -1;
     }
+
+    if (s->prev_frame.data[0] && (s->frame.linesize[0] != s->prev_frame.linesize[0]))
+        printf ("  MS RLE: Buffer linesize changed: current %u, previous %u.\n"
+                "          Expect wrong image and/or crash!\n",
+                s->frame.linesize[0], s->prev_frame.linesize[0]);
 
     /* grossly inefficient, but...oh well */
     if (s->prev_frame.data[0] != NULL)
