@@ -48,12 +48,14 @@
   }
 
 #define COPY_PREV_BLOCK() \
+  if (!s->avctx->cr_available) {\
     pixel_ptr = block_ptr; \
     for (pixel_y = 0; pixel_y < 4; pixel_y++) { \
         for (pixel_x = 0; pixel_x < 4; pixel_x++, pixel_ptr++) \
             pixels[pixel_ptr] = prev_pixels[pixel_ptr]; \
         pixel_ptr -= row_dec; \
-    }
+    } \
+  }
 
 typedef struct Msvideo1Context {
 
@@ -318,9 +320,19 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
 {
     Msvideo1Context *s = (Msvideo1Context *)avctx->priv_data;
 
+	/* no supplementary picture */
+	if (buf_size == 0)
+		return 0;
+
     s->buf = buf;
     s->size = buf_size;
 
+	s->frame.reference = 1;
+	s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE;
+    if (avctx->cr_available)
+        s->frame.buffer_hints |= FF_BUFFER_HINTS_REUSABLE;
+    else
+        s->frame.buffer_hints |= FF_BUFFER_HINTS_READABLE;
     if (avctx->get_buffer(avctx, &s->frame)) {
         av_log(s->avctx, AV_LOG_ERROR, "  MS Video-1 Video: get_buffer() failed\n");
         return -1;
@@ -340,6 +352,7 @@ static int msvideo1_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->prev_frame);
 
     /* shuffle frames */
+  if (!avctx->cr_available)
     s->prev_frame = s->frame;
 
     *data_size = sizeof(AVFrame);
@@ -368,5 +381,5 @@ AVCodec msvideo1_decoder = {
     NULL,
     msvideo1_decode_end,
     msvideo1_decode_frame,
-    CODEC_CAP_DR1,
+    CODEC_CAP_DR1 | CODEC_CAP_CR,
 };

@@ -140,6 +140,7 @@ static void rpza_decode_stream(RpzaContext *s)
         /* Skip blocks */
         case 0x80:
             while (n_blocks--) {
+              if (!s->avctx->cr_available) {
                 block_ptr = row_ptr + pixel_ptr;
                 for (pixel_y = 0; pixel_y < 4; pixel_y++) {
                     for (pixel_x = 0; pixel_x < 4; pixel_x++){
@@ -148,7 +149,8 @@ static void rpza_decode_stream(RpzaContext *s)
                     }
                     block_ptr += row_inc;
                 }
-                ADVANCE_BLOCK();
+              }
+              ADVANCE_BLOCK();
             }
             break;
 
@@ -264,14 +266,28 @@ static int rpza_decode_frame(AVCodecContext *avctx,
 {
     RpzaContext *s = (RpzaContext *)avctx->priv_data;
 
+	/* no supplementary picture */
+	if (buf_size == 0)
+		return 0;
+
     s->buf = buf;
     s->size = buf_size;
 
     s->frame.reference = 1;
+	s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE;
+    if (avctx->cr_available)
+        s->frame.buffer_hints |= FF_BUFFER_HINTS_REUSABLE;
+    else
+        s->frame.buffer_hints |= FF_BUFFER_HINTS_READABLE;
     if (avctx->get_buffer(avctx, &s->frame)) {
         av_log(avctx, AV_LOG_ERROR, "  RPZA Video: get_buffer() failed\n");
         return -1;
     }
+
+    if (s->prev_frame.data[0] &&(s->frame.linesize[0] != s->prev_frame.linesize[0]))
+        av_log(avctx, AV_LOG_ERROR, "Buffer linesize changed: current %u, previous %u.\n"
+                "Expect wrong image and/or crash!\n",
+                s->frame.linesize[0], s->prev_frame.linesize[0]);
 
     rpza_decode_stream(s);
 
@@ -279,6 +295,7 @@ static int rpza_decode_frame(AVCodecContext *avctx,
         avctx->release_buffer(avctx, &s->prev_frame);
 
     /* shuffle frames */
+  if (!avctx->cr_available)
     s->prev_frame = s->frame;
 
     *data_size = sizeof(AVFrame);
@@ -307,5 +324,5 @@ AVCodec rpza_decoder = {
     NULL,
     rpza_decode_end,
     rpza_decode_frame,
-    CODEC_CAP_DR1,
+    CODEC_CAP_DR1 | CODEC_CAP_CR,
 };
