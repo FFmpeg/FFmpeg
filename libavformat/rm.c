@@ -40,6 +40,8 @@ typedef struct {
     int data_pos; /* position of the data after the header */
     int nb_packets;
     int old_format;
+    int current_stream;
+    int remaining_len;
 } RMContext;
 
 #ifdef CONFIG_ENCODERS
@@ -723,7 +725,8 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
-    int len, num, timestamp, i, tmp, j;
+    int num, i, len, tmp, j;
+    int64_t timestamp;
     uint8_t *ptr;
     int flags, res;
 
@@ -741,6 +744,12 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         st = s->streams[0];
     } else {
     redo:
+      if(rm->remaining_len){
+        num= rm->current_stream;
+        len= rm->remaining_len;
+        timestamp = AV_NOPTS_VALUE;
+        flags= 0;
+      }else{
         if (rm->nb_packets == 0)
             return AVERROR_IO;
         get_be16(pb);
@@ -756,6 +765,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         
         rm->nb_packets--;
         len -= 12;
+      }
         
         st = NULL;
         for(i=0;i<s->nb_streams;i++) {
@@ -770,28 +780,29 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         
         if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
-            int full_frame, h, pic_num;
-            
-            h= get_byte(pb);
-            if ((h & 0xc0) == 0xc0) {
-                int len2, pos;
-                full_frame = 1;
-                len2= get_num(pb, &len);
+            int h, pic_num, len2, pos;
+
+            h= get_byte(pb); len--;
+            if(!(h & 0x40)){
+                int seq = get_byte(pb);
+                len--;
+            }
+
+            if((h & 0xc0) == 0x40){
+                len2= pos= 0;
+            }else{
+                len2 = get_num(pb, &len);
                 pos = get_num(pb, &len);
-                //printf("pos:%d\n",len);
-                len -= 2;
-            } else {
-                int seq, frame_size, pos;
-                full_frame = 0;
-                seq = get_byte(pb);
-                frame_size = get_num(pb, &len);
-                pos = get_num(pb, &len);
-                //printf("seq:%d, size:%d, pos:%d\n",seq,frame_size,pos);
-                len -= 3;
             }
             /* picture number */
-            pic_num= get_byte(pb);
-//            av_log(NULL, AV_LOG_DEBUG, "%X %d\n", h, pic_num);
+            pic_num= get_byte(pb); len--;
+            rm->remaining_len= len;
+            rm->current_stream= st->id;
+
+//            av_log(NULL, AV_LOG_DEBUG, "%X len:%d pos:%d len2:%d pic_num:%d\n",h, len, pos, len2, pic_num);
+            if(len2 && len2<len)
+                len=len2;
+            rm->remaining_len-= len;
         }
         
         av_new_packet(pkt, len);
