@@ -732,63 +732,53 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *codes, int codes_wrap, int codes_size);
 void free_vlc(VLC *vlc);
 
+//note table will be trashed (pointer increased)
+#define GET_VLC(code, name, gb, table, bits, max_depth)\
+{\
+    int n, index, nb_bits;\
+\
+    index= SHOW_UBITS(name, gb, bits);\
+    code = table[index][0];\
+    n    = table[index][1];\
+\
+    if(max_depth > 1 && n < 0){\
+        LAST_SKIP_BITS(name, gb, bits)\
+        UPDATE_CACHE(name, gb)\
+\
+        nb_bits = -n;\
+        table += code;\
+\
+        index= SHOW_UBITS(name, gb, nb_bits);\
+        code = table[index][0];\
+        n    = table[index][1];\
+        if(max_depth > 2 && n < 0){\
+            LAST_SKIP_BITS(name, gb, nb_bits)\
+            UPDATE_CACHE(name, gb)\
+\
+            nb_bits = -n;\
+            table += code;\
+\
+            index= SHOW_UBITS(name, gb, nb_bits);\
+            code = table[index][0];\
+            n    = table[index][1];\
+        }\
+    }\
+    SKIP_BITS(name, gb, n)\
+}
+
 static inline int get_vlc(GetBitContext *s, VLC *vlc)
 {
-    int code, n, nb_bits, index;
-    VLC_TYPE (*table)[2];
+    int code;
+    VLC_TYPE (*table)[2]= vlc->table;
+    
     OPEN_READER(re, s)
-
     UPDATE_CACHE(re, s)
 
-    nb_bits = vlc->bits;
-    table = vlc->table;
+    GET_VLC(code, re, s, table, vlc->bits, 3)    
 
-#ifdef FAST_GET_FIRST_VLC
-    index= SHOW_UBITS(re, s, nb_bits);
-    code = table[index][0];
-    n = table[index][1];
-    if (n > 0) {
-        /* most common case (90%)*/
-        LAST_SKIP_BITS(re, s, n)
-        CLOSE_READER(re, s)
-        return code;
-    } else if (n == 0) {
-        return -1;
-    } else {
-        LAST_SKIP_BITS(re, s, nb_bits)
-        UPDATE_CACHE(re, s) //this isnt needed but its faster if its here
-
-        nb_bits = -n;
-        table = vlc->table + code;
-    }
-#endif
-    for(;;) {
-        index= SHOW_UBITS(re, s, nb_bits);
-        code = table[index][0];
-        n = table[index][1];
-        if (n > 0) {
-            /* most common case */
-            SKIP_BITS(re, s, n)
-#ifdef STATS
-            st_bit_counts[st_current_index] += n;
-#endif
-            break;
-        } else if (n == 0) {
-            return -1;
-        } else {
-            LAST_SKIP_BITS(re, s, nb_bits)
-            UPDATE_CACHE(re, s)
-#ifdef STATS
-            st_bit_counts[st_current_index] += nb_bits;
-#endif
-            nb_bits = -n;
-            table = vlc->table + code;
-        }
-    }
     CLOSE_READER(re, s)
     return code;
 }
-
 
 /* define it to include statistics code (useful only for optimizing
    codec efficiency */
