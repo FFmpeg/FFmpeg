@@ -1533,6 +1533,8 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 	int y;
 	for(y=0; y<BLOCK_SIZE; y++)
 	{
+		const int middleEnergy= 5*(src[4] - src[5]) + 2*(src[2] - src[5]);
+
 		dst[0] = src[0];
 		dst[1] = src[1];
 		dst[2] = src[2];
@@ -1542,7 +1544,6 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 		dst[6] = src[6];
 		dst[7] = src[7];
 
-		const int middleEnergy= 5*(src[4] - src[5]) + 2*(src[2] - src[5]);
 		if(ABS(middleEnergy) < 8*QP)
 		{
 			const int q=(src[3] - src[4])/2;
