@@ -675,10 +675,24 @@ retry:
 
 }
 #endif
+
     if(s->pict_type==B_TYPE || s->low_delay){
         *pict= *(AVFrame*)&s->current_picture;
     } else {
         *pict= *(AVFrame*)&s->last_picture;
+    }
+
+    if(avctx->debug&FF_DEBUG_QP){
+        int8_t *qtab= pict->qscale_table;
+        int x,y;
+        
+        for(y=0; y<s->mb_height; y++){
+            for(x=0; x<s->mb_width; x++){
+                printf("%2d ", qtab[x + y*s->mb_width]);
+            }
+            printf("\n");
+        }
+        printf("\n");
     }
 
     /* Return the Picture timestamp as the frame number */
