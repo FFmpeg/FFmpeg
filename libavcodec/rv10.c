@@ -388,7 +388,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
 //            return -1;
         }
         seq= get_bits(&s->gb, 15);
-        if (s->avctx->sub_id == 0x20201002 && get_bits(&s->gb, 1)){
+        if (s->avctx->sub_id == 0x20201002 && 0 && get_bits(&s->gb, 1)){
             av_log(s->avctx, AV_LOG_ERROR, "unknown bit4 set\n");
 //            return -1;
         }
