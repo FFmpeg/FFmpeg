@@ -420,6 +420,44 @@ static void clear_blocks_mmx(DCTELEM *blocks)
         );
 }
 
+static int pix_sum16_mmx(UINT8 * pix, int line_size){
+    const int h=16;
+    int sum;
+    int index= -line_size*h;
+
+    __asm __volatile(
+                "pxor %%mm7, %%mm7		\n\t"
+                "pxor %%mm6, %%mm6		\n\t"
+                "1:				\n\t"
+                "movq (%2, %1), %%mm0		\n\t"
+                "movq (%2, %1), %%mm1		\n\t"
+                "movq 8(%2, %1), %%mm2		\n\t"
+                "movq 8(%2, %1), %%mm3		\n\t"
+                "punpcklbw %%mm7, %%mm0		\n\t"
+                "punpckhbw %%mm7, %%mm1		\n\t"
+                "punpcklbw %%mm7, %%mm2		\n\t"
+                "punpckhbw %%mm7, %%mm3		\n\t"
+                "paddw %%mm0, %%mm1		\n\t"
+                "paddw %%mm2, %%mm3		\n\t"
+                "paddw %%mm1, %%mm3		\n\t"
+                "paddw %%mm3, %%mm6		\n\t"
+                "addl %3, %1			\n\t"
+                " js 1b				\n\t"
+                "movq %%mm6, %%mm5		\n\t"
+                "psrlq $32, %%mm6		\n\t"
+                "paddw %%mm5, %%mm6		\n\t"
+                "movq %%mm6, %%mm5		\n\t"
+                "psrlq $16, %%mm6		\n\t"
+                "paddw %%mm5, %%mm6		\n\t"
+                "movd %%mm6, %0			\n\t"
+                "andl $0xFFFF, %0		\n\t"
+                : "=&r" (sum), "+r" (index)
+                : "r" (pix - index), "r" (line_size)
+        );
+
+        return sum;
+}
+
 #if 0
 static void just_return() { return; }
 #endif
@@ -448,6 +486,7 @@ void dsputil_init_mmx(void)
         put_pixels_clamped = put_pixels_clamped_mmx;
         add_pixels_clamped = add_pixels_clamped_mmx;
         clear_blocks= clear_blocks_mmx;
+        pix_sum= pix_sum16_mmx;
 
         pix_abs16x16     = pix_abs16x16_mmx;
         pix_abs16x16_x2  = pix_abs16x16_x2_mmx;
