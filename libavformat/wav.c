@@ -132,7 +132,7 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size)
     }else
         codec->bits_per_sample = get_le16(pb);
     codec->codec_id = wav_codec_get_id(id, codec->bits_per_sample);
-
+    
     if (size > 16) {  /* We're obviously dealing with WAVEFORMATEX */
 	codec->extradata_size = get_le16(pb);
 	if (codec->extradata_size > 0) {
@@ -285,6 +285,7 @@ static int wav_read_header(AVFormatContext *s,
         return AVERROR_NOMEM;
 
     get_wav_header(pb, &st->codec, size);
+    st->need_parsing = 1;
     
     size = find_tag(pb, MKTAG('d', 'a', 't', 'a'));
     if (size < 0)
@@ -297,11 +298,20 @@ static int wav_read_header(AVFormatContext *s,
 static int wav_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
-    int ret;
+    int ret, size;
+    AVStream *st;
 
     if (url_feof(&s->pb))
         return -EIO;
-    if (av_new_packet(pkt, MAX_SIZE))
+    st = s->streams[0];
+
+    size = MAX_SIZE;
+    if (st->codec.block_align > 1) {
+        if (size < st->codec.block_align)
+            size = st->codec.block_align;
+        size = (size / st->codec.block_align) * st->codec.block_align;
+    }
+    if (av_new_packet(pkt, size))
         return -EIO;
     pkt->stream_index = 0;
 
@@ -319,6 +329,25 @@ static int wav_read_close(AVFormatContext *s)
     return 0;
 }
 
+static int wav_read_seek(AVFormatContext *s, 
+                         int stream_index, int64_t timestamp)
+{
+    AVStream *st;
+
+    st = s->streams[0];
+    switch(st->codec.codec_id) {
+    case CODEC_ID_MP2:
+    case CODEC_ID_MP3:
+    case CODEC_ID_AC3:
+        /* use generic seeking with dynamically generated indexes */
+        return -1;
+    default:
+        break;
+    }
+    return pcm_read_seek(s, stream_index, timestamp);
+}
+
+
 static AVInputFormat wav_iformat = {
     "wav",
     "wav format",
@@ -327,6 +356,7 @@ static AVInputFormat wav_iformat = {
     wav_read_header,
     wav_read_packet,
     wav_read_close,
+    wav_read_seek,
 };
 
 #ifdef CONFIG_ENCODERS
