@@ -5,43 +5,8 @@
 // current version mostly by Michael Niedermayer (michaelni@gmx.at)
 // the parts written by michael are under GNU GPL
 
-#include <inttypes.h>
-#include <string.h>
-#include "../config.h"
-#include "swscale.h"
-#include "../mmx_defs.h"
 #undef MOVNTQ
 #undef PAVGB
-
-//#undef HAVE_MMX2
-//#undef HAVE_MMX
-//#undef ARCH_X86
-#define DITHER1XBPP
-int fullUVIpol=0;
-//disables the unscaled height version
-int allwaysIpol=0;
-
-#define RET 0xC3 //near return opcode
-/*
-NOTES
-
-known BUGS with known cause (no bugreports please!, but patches are welcome :) )
-horizontal MMX2 scaler reads 1-7 samples too much (might cause a sig11)
-
-Supported output formats BGR15 BGR16 BGR24 BGR32
-BGR15 & BGR16 MMX verions support dithering
-Special versions: fast Y 1:1 scaling (no interpolation in y direction)
-
-TODO
-more intelligent missalignment avoidance for the horizontal scaler
-bicubic scaler
-dither in C
-change the distance of the u & v buffer
-*/
-
-#define ABS(a) ((a) > 0 ? (a) : (-(a)))
-#define MIN(a,b) ((a) > (b) ? (b) : (a))
-#define MAX(a,b) ((a) < (b) ? (b) : (a))
 
 #ifdef HAVE_MMX2
 #define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
@@ -54,85 +19,6 @@ change the distance of the u & v buffer
 #else
 #define MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
 #endif
-
-
-#ifdef HAVE_MMX
-static uint64_t __attribute__((aligned(8))) yCoeff=    0x2568256825682568LL;
-static uint64_t __attribute__((aligned(8))) vrCoeff=   0x3343334333433343LL;
-static uint64_t __attribute__((aligned(8))) ubCoeff=   0x40cf40cf40cf40cfLL;
-static uint64_t __attribute__((aligned(8))) vgCoeff=   0xE5E2E5E2E5E2E5E2LL;
-static uint64_t __attribute__((aligned(8))) ugCoeff=   0xF36EF36EF36EF36ELL;
-static uint64_t __attribute__((aligned(8))) bF8=       0xF8F8F8F8F8F8F8F8LL;
-static uint64_t __attribute__((aligned(8))) bFC=       0xFCFCFCFCFCFCFCFCLL;
-static uint64_t __attribute__((aligned(8))) w400=      0x0400040004000400LL;
-static uint64_t __attribute__((aligned(8))) w80=       0x0080008000800080LL;
-static uint64_t __attribute__((aligned(8))) w10=       0x0010001000100010LL;
-static uint64_t __attribute__((aligned(8))) bm00001111=0x00000000FFFFFFFFLL;
-static uint64_t __attribute__((aligned(8))) bm00000111=0x0000000000FFFFFFLL;
-static uint64_t __attribute__((aligned(8))) bm11111000=0xFFFFFFFFFF000000LL;
-
-static volatile uint64_t __attribute__((aligned(8))) b5Dither;
-static volatile uint64_t __attribute__((aligned(8))) g5Dither;
-static volatile uint64_t __attribute__((aligned(8))) g6Dither;
-static volatile uint64_t __attribute__((aligned(8))) r5Dither;
-
-static uint64_t __attribute__((aligned(8))) dither4[2]={
-	0x0103010301030103LL,
-	0x0200020002000200LL,};
-
-static uint64_t __attribute__((aligned(8))) dither8[2]={
-	0x0602060206020602LL,
-	0x0004000400040004LL,};
-
-static uint64_t __attribute__((aligned(8))) b16Mask=   0x001F001F001F001FLL;
-static uint64_t __attribute__((aligned(8))) g16Mask=   0x07E007E007E007E0LL;
-static uint64_t __attribute__((aligned(8))) r16Mask=   0xF800F800F800F800LL;
-static uint64_t __attribute__((aligned(8))) b15Mask=   0x001F001F001F001FLL;
-static uint64_t __attribute__((aligned(8))) g15Mask=   0x03E003E003E003E0LL;
-static uint64_t __attribute__((aligned(8))) r15Mask=   0x7C007C007C007C00LL;
-
-static uint64_t __attribute__((aligned(8))) M24A=   0x00FF0000FF0000FFLL;
-static uint64_t __attribute__((aligned(8))) M24B=   0xFF0000FF0000FF00LL;
-static uint64_t __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000LL;
-
-static uint64_t __attribute__((aligned(8))) temp0;
-static uint64_t __attribute__((aligned(8))) asm_yalpha1;
-static uint64_t __attribute__((aligned(8))) asm_uvalpha1;
-#endif
-
-// temporary storage for 4 yuv lines:
-// 16bit for now (mmx likes it more compact)
-#ifdef HAVE_MMX
-static uint16_t __attribute__((aligned(8))) pix_buf_y[4][2048];
-static uint16_t __attribute__((aligned(8))) pix_buf_uv[2][2048*2];
-#else
-static uint16_t pix_buf_y[4][2048];
-static uint16_t pix_buf_uv[2][2048*2];
-#endif
-
-// clipping helper table for C implementations:
-static unsigned char clip_table[768];
-
-static unsigned short clip_table16b[768];
-static unsigned short clip_table16g[768];
-static unsigned short clip_table16r[768];
-static unsigned short clip_table15b[768];
-static unsigned short clip_table15g[768];
-static unsigned short clip_table15r[768];
-
-// yuv->rgb conversion tables:
-static    int yuvtab_2568[256];
-static    int yuvtab_3343[256];
-static    int yuvtab_0c92[256];
-static    int yuvtab_1a1e[256];
-static    int yuvtab_40cf[256];
-
-#ifdef HAVE_MMX2
-static uint8_t funnyYCode[10000];
-static uint8_t funnyUVCode[10000];
-#endif
-
-static int canMMX2BeUsed=0;
 
 #define FULL_YSCALEYUV2RGB \
 		"pxor %%mm7, %%mm7		\n\t"\
@@ -598,29 +484,23 @@ static int canMMX2BeUsed=0;
 			" jb 1b				\n\t"
 
 #ifdef HAVE_MMX2
+#undef WRITEBGR24
 #define WRITEBGR24 WRITEBGR24MMX2
 #else
+#undef WRITEBGR24
 #define WRITEBGR24 WRITEBGR24MMX
 #endif
 
-#ifdef HAVE_MMX
-void in_asm_used_var_warning_killer()
-{
- int i= yCoeff+vrCoeff+ubCoeff+vgCoeff+ugCoeff+bF8+bFC+w400+w80+w10+
- bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+temp0+asm_yalpha1+ asm_uvalpha1+
- M24A+M24B+M24C;
- if(i) i=0;
-}
-#endif
-
-static inline void yuv2yuv(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
+static inline void RENAME(yuv2yuv)(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
 			   uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstw, int yalpha, int uvalpha)
 {
 	int yalpha1=yalpha^4095;
 	int uvalpha1=uvalpha^4095;
 	int i;
 
+#ifdef ARCH_X86
 	asm volatile ("\n\t"::: "memory");
+#endif
 
 	for(i=0;i<dstw;i++)
 	{
@@ -640,7 +520,7 @@ static inline void yuv2yuv(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uin
 /**
  * vertical scale YV12 to RGB
  */
-static inline void yuv2rgbX(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
+static inline void RENAME(yuv2rgbX)(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
 			    uint8_t *dest, int dstw, int yalpha, int uvalpha, int dstbpp)
 {
 	int yalpha1=yalpha^4095;
@@ -1012,7 +892,7 @@ FULL_YSCALEYUV2RGB
 /**
  * YV12 to RGB without scaling or interpolating
  */
-static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
+static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
 			    uint8_t *dest, int dstw, int yalpha, int uvalpha, int dstbpp)
 {
 	int uvalpha1=uvalpha^4095;
@@ -1022,7 +902,7 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 
 	if(fullUVIpol || allwaysIpol)
 	{
-		yuv2rgbX(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
+		RENAME(yuv2rgbX)(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
 		return;
 	}
 	if( yalpha > 2048 ) buf0 = buf1;
@@ -1247,7 +1127,7 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 }
 
 
-static inline void hyscale(uint16_t *dst, int dstWidth, uint8_t *src, int srcWidth, int xInc)
+static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, int srcWidth, int xInc)
 {
       // *** horizontal scale Y line to temp buffer
 #ifdef ARCH_X86
@@ -1361,7 +1241,7 @@ FUNNY_Y_CODE
 #endif
 }
 
-inline static void hcscale(uint16_t *dst, int dstWidth,
+inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth,
 				uint8_t *src1, uint8_t *src2, int srcWidth, int xInc)
 {
 #ifdef ARCH_X86
@@ -1496,13 +1376,7 @@ FUNNYUVCODE
 #endif
 }
 
-
-// *** bilinear scaling and yuv->rgb or yuv->yuv conversion of yv12 slices:
-// *** Note: it's called multiple times while decoding a frame, first time y==0
-// *** Designed to upscale, but may work for downscale too.
-// s_xinc = (src_width << 16) / dst_width
-// s_yinc = (src_height << 16) / dst_height
-void SwScale_YV12slice(unsigned char* srcptr[],int stride[], int y, int h,
+static void RENAME(SwScale_YV12slice)(unsigned char* srcptr[],int stride[], int y, int h,
 			     uint8_t* dstptr[], int dststride, int dstw, int dstbpp,
 			     unsigned int s_xinc,unsigned int s_yinc){
 
@@ -1735,7 +1609,7 @@ else					s_xinc2= s_xinc;
 			if(y0-1 < y) 	src=srcptr[0]+(0     )*stride[0];
 			else		src=srcptr[0]+(y0-y-1)*stride[0];
 
-			hyscale(buf0, dstw, src, srcWidth, s_xinc);
+			RENAME(hyscale)(buf0, dstw, src, srcWidth, s_xinc);
 		}
 		// check if second line is after any available src lines
 		if(y0-y >= h)	src=srcptr[0]+(h-1)*stride[0];
@@ -1743,7 +1617,7 @@ else					s_xinc2= s_xinc;
 
 		// the min() is required to avoid reuseing lines which where not available
 		s_last_ypos= MIN(y0, y+h-1);
-		hyscale(buf1, dstw, src, srcWidth, s_xinc);
+		RENAME(hyscale)(buf1, dstw, src, srcWidth, s_xinc);
 	}
 //	printf("%d %d %d %d\n", y, y1, s_last_y1pos, h);
       // *** horizontal scale U and V lines to temp buffer
@@ -1762,7 +1636,7 @@ else					s_xinc2= s_xinc;
 				src1= srcptr[1]+(y1-y/2-1)*stride[1];
 				src2= srcptr[2]+(y1-y/2-1)*stride[2];
 			}
-			hcscale(uvbuf0, dstUVw, src1, src2, srcWidth, s_xinc2);
+			RENAME(hcscale)(uvbuf0, dstUVw, src1, src2, srcWidth, s_xinc2);
 		}
 
 		// check if second line is after any available src lines
@@ -1774,7 +1648,7 @@ else					s_xinc2= s_xinc;
 			src1= srcptr[1]+(y1-y/2)*stride[1];
 			src2= srcptr[2]+(y1-y/2)*stride[2];
 		}
-		hcscale(uvbuf1, dstUVw, src1, src2, srcWidth, s_xinc2);
+		RENAME(hcscale)(uvbuf1, dstUVw, src1, src2, srcWidth, s_xinc2);
 
 		// the min() is required to avoid reuseing lines which where not available
 		s_last_y1pos= MIN(y1, y/2+h/2-1);
@@ -1787,43 +1661,15 @@ else					s_xinc2= s_xinc;
 #endif
 
 	if(dstbpp==12) //YV12
-		yuv2yuv(buf0, buf1, uvbuf0, uvbuf1, dest, uDest, vDest, dstw, yalpha, uvalpha);
+		RENAME(yuv2yuv)(buf0, buf1, uvbuf0, uvbuf1, dest, uDest, vDest, dstw, yalpha, uvalpha);
 	else if(ABS(s_yinc - 0x10000) < 10)
-		yuv2rgb1(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
+		RENAME(yuv2rgb1)(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
 	else
-		yuv2rgbX(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
+		RENAME(yuv2rgbX)(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
   }
 
 #ifdef HAVE_MMX
 	__asm __volatile(SFENCE:::"memory");
 	__asm __volatile(EMMS:::"memory");
 #endif
-}
-
-
-void SwScale_Init(){
-    // generating tables:
-    int i;
-    for(i=0;i<256;i++){
-        clip_table[i]=0;
-        clip_table[i+256]=i;
-        clip_table[i+512]=255;
-	yuvtab_2568[i]=(0x2568*(i-16))+(256<<13);
-	yuvtab_3343[i]=0x3343*(i-128);
-	yuvtab_0c92[i]=-0x0c92*(i-128);
-	yuvtab_1a1e[i]=-0x1a1e*(i-128);
-	yuvtab_40cf[i]=0x40cf*(i-128);
-    }
-
-    for(i=0; i<768; i++)
-    {
-    	int v= clip_table[i];
-	clip_table16b[i]= v>>3;
-	clip_table16g[i]= (v<<3)&0x07E0;
-	clip_table16r[i]= (v<<8)&0xF800;
-	clip_table15b[i]= v>>3;
-	clip_table15g[i]= (v<<2)&0x03E0;
-	clip_table15r[i]= (v<<7)&0x7C00;
-    }
-
 }
