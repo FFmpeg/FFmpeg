@@ -624,7 +624,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     int size= pkt->size;
 
 //    av_log(s, AV_LOG_DEBUG, "%lld %d %d\n", pkt->dts, avi->packet_count[stream_index], stream_index);
-    while(enc->codec_type == CODEC_TYPE_VIDEO && pkt->dts != AV_NOPTS_VALUE && pkt->dts > avi->packet_count[stream_index]){
+    while(enc->block_align==0 && pkt->dts != AV_NOPTS_VALUE && pkt->dts > avi->packet_count[stream_index]){
         AVPacket empty_packet;
 
         av_init_packet(&empty_packet);
