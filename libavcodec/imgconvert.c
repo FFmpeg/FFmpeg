@@ -242,18 +242,18 @@ static void yuv422_to_yuv420p(AVPicture *dst, AVPicture *src,
    
     for(y=0;y<height;y+=2) {
         for(x=0;x<width;x+=2) {
-            lum[0] = p[0];
-            cb[0] = p[1];
-            lum[1] = p[2];
-            cr[0] = p[3];
+            cb[0] = p[0];
+            lum[0] = p[1];
+            cr[0] = p[2];
+            lum[1] = p[3];
             p += 4;
             lum += 2;
             cb++;
             cr++;
         }
         for(x=0;x<width;x+=2) {
-            lum[0] = p[0];
-            lum[1] = p[2];
+            lum[0] = p[1];
+            lum[1] = p[3];
             p += 4;
             lum += 2;
         }
