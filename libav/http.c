@@ -65,7 +65,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     h->priv_data = s;
 
     proxy_path = getenv("http_proxy");
-    use_proxy = (proxy_path != NULL) && !getenv("no_proxy");
+    use_proxy = (proxy_path != NULL) && !getenv("no_proxy") && (strncmp(proxy_path, "http://", 7) == 0);
 
     /* fill the dest addr */
  redo:
