@@ -34,6 +34,7 @@
 #include <sys/select.h>
 #include <stdlib.h>
 #endif
+#undef time //needed because HAVE_AV_CONFIG_H is defined on top
 #include <time.h>
 
 #include "cmdutils.h"
