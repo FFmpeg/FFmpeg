@@ -112,6 +112,18 @@ extern const struct AVOption avoptions_workaround_bug[11];
 #   endif /* other OS */
 #endif /* HAVE_INTTYPES_H */
 
+#ifndef INT16_MIN
+#define INT16_MIN       (-0x7fff-1)
+#endif
+
+#ifndef INT16_MAX
+#define INT16_MAX       0x7fff
+#endif
+
+#ifndef INT64_MIN
+#define INT64_MIN       (-0x7fffffffffffffffLL-1)
+#endif
+
 #ifndef INT64_MAX
 #define INT64_MAX int64_t_C(9223372036854775807)
 #endif
