@@ -638,14 +638,9 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, unsign
 	}
 }
 
-/**
- *
- * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
- * problem for anyone then tell me, and ill fix it)
- */
-static inline void RENAME(yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
+static inline void RENAME(yuvPlanartoyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
 	unsigned int width, unsigned int height,
-	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
+	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride, int vertLumPerChroma)
 {
 	int y;
 	const int chromWidth= width>>1;
@@ -696,7 +691,7 @@ static inline void RENAME(yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, 
 			dst[4*i+3] = vsrc[i];
 		}
 #endif
-		if(y&1)
+		if((y&(vertLumPerChroma-1))==(vertLumPerChroma-1) )
 		{
 			usrc += chromStride;
 			vsrc += chromStride;
@@ -709,6 +704,30 @@ asm(    EMMS" \n\t"
         SFENCE" \n\t"
         :::"memory");
 #endif
+}
+
+/**
+ *
+ * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
+ * problem for anyone then tell me, and ill fix it)
+ */
+static inline void RENAME(yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
+	unsigned int width, unsigned int height,
+	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
+{
+	//FIXME interpolate chroma
+	RENAME(yuvPlanartoyuy2)(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride, 2);
+}
+
+/**
+ *
+ * width should be a multiple of 16
+ */
+static inline void RENAME(yuv422ptoyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
+	unsigned int width, unsigned int height,
+	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
+{
+	RENAME(yuvPlanartoyuy2)(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride, 1);
 }
 
 /**

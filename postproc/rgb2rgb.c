@@ -362,6 +362,29 @@ void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, u
 
 /**
  *
+ * width should be a multiple of 16
+ */
+void yuv422ptoyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
+	unsigned int width, unsigned int height,
+	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		yuv422ptoyuy2_MMX2(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
+	else if(gCpuCaps.has3DNow)
+		yuv422ptoyuy2_3DNow(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
+	else if(gCpuCaps.hasMMX)
+		yuv422ptoyuy2_MMX(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
+	else
+		yuv422ptoyuy2_C(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
+#else
+		yuv422ptoyuy2_C(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
+#endif
+}
+
+/**
+ *
  * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
  * problem for anyone then tell me, and ill fix it)
  */
