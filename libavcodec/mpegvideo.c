@@ -181,7 +181,7 @@ int MPV_common_init(MpegEncContext *s)
       s->ip_buffer_count= 2;
     }
     
-    CHECKED_ALLOCZ(s->edge_emu_buffer, (s->width+32)*2*17);
+    CHECKED_ALLOCZ(s->edge_emu_buffer, (s->width+64)*2*17*2); //(width + edge + align)*interlaced*MBsize*tolerance
     
     if (s->encoding) {
         int j;
