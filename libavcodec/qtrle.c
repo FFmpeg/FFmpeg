@@ -54,14 +54,14 @@ typedef struct QtrleContext {
 
 #define CHECK_STREAM_PTR(n) \
   if ((stream_ptr + n) > s->size) { \
-    printf ("QT RLE problem: stream_ptr out of bounds (%d >= %d)\n", \
+    av_log (s->avctx, AV_LOG_INFO, "Problem: stream_ptr out of bounds (%d >= %d)\n", \
       stream_ptr + n, s->size); \
     return; \
   }
 
 #define CHECK_PIXEL_PTR(n) \
   if (pixel_ptr + n > pixel_limit) { \
-    printf ("QT RLE problem: pixel_ptr >= pixel_limit (%d >= %d)\n", \
+    av_log (s->avctx, AV_LOG_INFO, "Problem: pixel_ptr >= pixel_limit (%d >= %d)\n", \
       pixel_ptr + n, pixel_limit); \
     return; \
   } \
@@ -428,7 +428,7 @@ static int qtrle_decode_init(AVCodecContext *avctx)
         break;
 
     default:
-        printf ("QT RLE: Unsupported colorspace: %d bits/sample?\n",
+        av_log (avctx, AV_LOG_ERROR, "Unsupported colorspace: %d bits/sample?\n",
             avctx->bits_per_sample);
         break;
     }
@@ -457,7 +457,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                             FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
     if (avctx->reget_buffer(avctx, &s->frame)) {
-        printf ("reget_buffer() failed\n");
+        av_log (s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
 
@@ -501,7 +501,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
         break;
 
     default:
-        printf ("QT RLE: Unsupported colorspace: %d bits/sample?\n",
+        av_log (s->avctx, AV_LOG_ERROR, "Unsupported colorspace: %d bits/sample?\n",
             avctx->bits_per_sample);
         break;
     }
