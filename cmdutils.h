@@ -12,10 +12,12 @@ typedef struct {
 #define OPT_AUDIO  0x0020
 #define OPT_GRAB   0x0040
 #define OPT_INT    0x0080
+#define OPT_FLOAT  0x0080
     union {
         void (*func_arg)(const char *);
         int *int_arg;
         char **str_arg;
+        float *float_arg;
     } u;
     const char *help;
     const char *argname;
