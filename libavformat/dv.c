@@ -741,11 +741,11 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     c->vst->codec.codec_type = CODEC_TYPE_VIDEO;
     c->vst->codec.codec_id = CODEC_ID_DVVIDEO;
     c->vst->codec.bit_rate = 25000000;
+    c->vst->start_time = 0;
     
     c->ast[0]->codec.codec_type = CODEC_TYPE_AUDIO;
     c->ast[0]->codec.codec_id = CODEC_ID_PCM_S16LE;
-   
-    s->ctx_flags |= AVFMTCTX_NOHEADER; 
+    c->ast[0]->start_time = 0;
     
     return c;
     
@@ -849,9 +849,18 @@ static int dv_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
     RawDVContext *c = s->priv_data;
+    const DVprofile* sys;
     c->dv_demux = dv_init_demux(s);
+    if (!c->dv_demux)
+        return -1;
    
-    return c->dv_demux ? 0 : -1;
+    if (get_buffer(&s->pb, c->buf, 4) <= 0 || url_fseek(&s->pb, -4, SEEK_CUR) < 0)
+        return AVERROR_IO;
+
+    sys = dv_frame_profile(c->buf);
+    s->bit_rate = av_rescale(sys->frame_size * 8, sys->frame_rate, sys->frame_rate_base);
+   
+    return 0;
 }
 
 
