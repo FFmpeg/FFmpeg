@@ -133,18 +133,27 @@ const char *avcodec_get_pix_fmt_name(int pix_fmt)
 int avpicture_fill(AVPicture *picture, UINT8 *ptr,
                    int pix_fmt, int width, int height)
 {
-    int size;
-
+    int size, w2, h2, size2;
+    PixFmtInfo *pinfo;
+    
+    pinfo = &pix_fmt_info[pix_fmt];
     size = width * height;
     switch(pix_fmt) {
     case PIX_FMT_YUV420P:
+    case PIX_FMT_YUV422P:
+    case PIX_FMT_YUV444P:
+    case PIX_FMT_YUV410P:
+    case PIX_FMT_YUV411P:
+        w2 = (width + (1 << pinfo->x_chroma_shift) - 1) >> pinfo->x_chroma_shift;
+        h2 = (height + (1 << pinfo->y_chroma_shift) - 1) >> pinfo->y_chroma_shift;
+        size2 = w2 * h2;
         picture->data[0] = ptr;
         picture->data[1] = picture->data[0] + size;
-        picture->data[2] = picture->data[1] + size / 4;
+        picture->data[2] = picture->data[1] + size2;
         picture->linesize[0] = width;
-        picture->linesize[1] = width / 2;
-        picture->linesize[2] = width / 2;
-        return (size * 3) / 2;
+        picture->linesize[1] = w2;
+        picture->linesize[2] = w2;
+        return size + 2 * size2;
     case PIX_FMT_RGB24:
     case PIX_FMT_BGR24:
         picture->data[0] = ptr;
@@ -152,44 +161,12 @@ int avpicture_fill(AVPicture *picture, UINT8 *ptr,
         picture->data[2] = NULL;
         picture->linesize[0] = width * 3;
         return size * 3;
-    case PIX_FMT_YUV422P:
-        picture->data[0] = ptr;
-        picture->data[1] = picture->data[0] + size;
-        picture->data[2] = picture->data[1] + size / 2;
-        picture->linesize[0] = width;
-        picture->linesize[1] = width / 2;
-        picture->linesize[2] = width / 2;
-        return (size * 2);
-    case PIX_FMT_YUV444P:
-        picture->data[0] = ptr;
-        picture->data[1] = picture->data[0] + size;
-        picture->data[2] = picture->data[1] + size;
-        picture->linesize[0] = width;
-        picture->linesize[1] = width;
-        picture->linesize[2] = width;
-        return size * 3;
     case PIX_FMT_RGBA32:
         picture->data[0] = ptr;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
         picture->linesize[0] = width * 4;
         return size * 4;
-    case PIX_FMT_YUV410P:
-        picture->data[0] = ptr;
-        picture->data[1] = picture->data[0] + size;
-        picture->data[2] = picture->data[1] + size / 16;
-        picture->linesize[0] = width;
-        picture->linesize[1] = width / 4;
-        picture->linesize[2] = width / 4;
-        return size + (size / 8);
-    case PIX_FMT_YUV411P:
-        picture->data[0] = ptr;
-        picture->data[1] = picture->data[0] + size;
-        picture->data[2] = picture->data[1] + size / 4;
-        picture->linesize[0] = width;
-        picture->linesize[1] = width / 4;
-        picture->linesize[2] = width / 4;
-        return size + (size / 2);
     case PIX_FMT_RGB555:
     case PIX_FMT_RGB565:
     case PIX_FMT_YUV422:
@@ -424,12 +401,12 @@ static void yuv420p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
     y1_ptr = src->data[0];                                              \
     cb_ptr = src->data[1];                                              \
     cr_ptr = src->data[2];                                              \
-    width2 = width >> 1;                                                \
-    for(;height > 0; height -= 2) {                                     \
+    width2 = (width + 1) >> 1;                                          \
+    for(;height >= 2; height -= 2) {                                    \
         d1 = d;                                                         \
         d2 = d + dst->linesize[0];                                      \
         y2_ptr = y1_ptr + src->linesize[0];                             \
-        for(w = width2; w > 0; w --) {                                  \
+        for(w = width; w >= 2; w -= 2) {                                \
             cb = cb_ptr[0] - 128;                                       \
             cr = cr_ptr[0] - 128;                                       \
             r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
@@ -457,10 +434,71 @@ static void yuv420p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
             cb_ptr++;                                                   \
             cr_ptr++;                                                   \
         }                                                               \
+        /* handle odd width */                                          \
+        if (w) {                                                        \
+            cb = cb_ptr[0] - 128;                                       \
+            cr = cr_ptr[0] - 128;                                       \
+            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
+            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
+            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
+                                                                        \
+            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            RGB_OUT(d1, r, g, b);                                       \
+                                                                        \
+            YUV_TO_RGB2(r, g, b, y2_ptr[0]);                            \
+            RGB_OUT(d2, r, g, b);                                       \
+            d1 += BPP;                                                  \
+            d2 += BPP;                                                  \
+            y1_ptr++;                                                   \
+            y2_ptr++;                                                   \
+            cb_ptr++;                                                   \
+            cr_ptr++;                                                   \
+        }                                                               \
         d += 2 * dst->linesize[0];                                      \
         y1_ptr += 2 * src->linesize[0] - width;                         \
         cb_ptr += src->linesize[1] - width2;                            \
         cr_ptr += src->linesize[2] - width2;                            \
+    }                                                                   \
+    /* handle odd height */                                             \
+    if (height) {                                                       \
+        d1 = d;                                                         \
+        for(w = width; w >= 2; w -= 2) {                                \
+            cb = cb_ptr[0] - 128;                                       \
+            cr = cr_ptr[0] - 128;                                       \
+            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
+            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
+            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
+                                                                        \
+            /* output 2 pixels */                                       \
+            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            RGB_OUT(d1, r, g, b);                                       \
+                                                                        \
+            YUV_TO_RGB2(r, g, b, y1_ptr[1]);                            \
+            RGB_OUT(d1 + BPP, r, g, b);                                 \
+                                                                        \
+            d1 += 2 * BPP;                                              \
+                                                                        \
+            y1_ptr += 2;                                                \
+            cb_ptr++;                                                   \
+            cr_ptr++;                                                   \
+        }                                                               \
+        /* handle width */                                              \
+        if (w) {                                                        \
+            cb = cb_ptr[0] - 128;                                       \
+            cr = cr_ptr[0] - 128;                                       \
+            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
+            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
+            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
+                                                                        \
+            /* output 2 pixels */                                       \
+            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            RGB_OUT(d1, r, g, b);                                       \
+            d1 += BPP;                                                  \
+                                                                        \
+            y1_ptr++;                                                   \
+            cb_ptr++;                                                   \
+            cr_ptr++;                                                   \
+        }                                                               \
     }                                                                   \
 }                                                                       \
                                                                         \
@@ -477,10 +515,10 @@ static void yuv422p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
     y1_ptr = src->data[0];                                              \
     cb_ptr = src->data[1];                                              \
     cr_ptr = src->data[2];                                              \
-    width2 = width >> 1;                                                \
+    width2 = (width + 1) >> 1;                                          \
     for(;height > 0; height --) {                                       \
         d1 = d;                                                         \
-        for(w = width2; w > 0; w --) {                                  \
+        for(w = width; w >= 2; w -= 2) {                                \
             cb = cb_ptr[0] - 128;                                       \
             cr = cr_ptr[0] - 128;                                       \
             r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
@@ -489,14 +527,31 @@ static void yuv422p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
                                                                         \
             /* output 2 pixels */                                       \
             YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
-            RGB_OUT(d, r, g, b);                                        \
+            RGB_OUT(d1, r, g, b);                                       \
                                                                         \
             YUV_TO_RGB2(r, g, b, y1_ptr[1]);                            \
-            RGB_OUT(d + BPP, r, g, b);                                  \
+            RGB_OUT(d1 + BPP, r, g, b);                                 \
                                                                         \
-            d += 2 * BPP;                                               \
+            d1 += 2 * BPP;                                              \
                                                                         \
             y1_ptr += 2;                                                \
+            cb_ptr++;                                                   \
+            cr_ptr++;                                                   \
+        }                                                               \
+        /* handle width */                                              \
+        if (w) {                                                        \
+            cb = cb_ptr[0] - 128;                                       \
+            cr = cr_ptr[0] - 128;                                       \
+            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
+            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
+            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
+                                                                        \
+            /* output 2 pixels */                                       \
+            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            RGB_OUT(d1, r, g, b);                                       \
+            d1 += BPP;                                                  \
+                                                                        \
+            y1_ptr++;                                                   \
             cb_ptr++;                                                   \
             cr_ptr++;                                                   \
         }                                                               \
