@@ -106,7 +106,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, 
                     int has_extra_data)
 {
-    int id, bps, size;
+    int id, bps;
 
     id = get_le16(pb);
     codec->codec_type = CODEC_TYPE_AUDIO;
@@ -119,11 +119,10 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec,
     bps = get_le16(pb); /* bits per sample */
     codec->codec_id = wav_codec_get_id(id, bps);
     if (has_extra_data) {
-        size = get_le16(pb);
-        if (size > 0) {
-            codec->extradata = av_mallocz(size);
-            get_buffer(pb, codec->extradata, size);
-            codec->extradata_size = size;
+	codec->extradata_size = get_le16(pb);
+	if (codec->extradata_size > 0) {
+            codec->extradata = av_mallocz(codec->extradata_size);
+            get_buffer(pb, codec->extradata, codec->extradata_size);
         }
     }
 }
