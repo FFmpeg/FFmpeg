@@ -856,7 +856,7 @@ static void synth_filter(MPADecodeContext *s1,
 {
     int32_t tmp[32];
     register MPA_INT *synth_buf;
-    const register MPA_INT *w, *w2, *p;
+    register const MPA_INT *w, *w2, *p;
     int j, offset, v;
     int16_t *samples2;
 #if FRAC_BITS <= 15
