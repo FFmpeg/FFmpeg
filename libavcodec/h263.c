@@ -288,6 +288,15 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 
     put_bits(&s->pb, 1, 0);	/* no PEI */
 
+    if(s->h263_slice_structured){
+        put_bits(&s->pb, 1, 1);
+        
+        assert(s->mb_x == 0 && s->mb_y == 0);
+        ff_h263_encode_mba(s);
+
+        put_bits(&s->pb, 1, 1);
+    }
+
     if(s->h263_aic){
          s->y_dc_scale_table= 
          s->c_dc_scale_table= ff_aic_dc_scale_table;
@@ -2814,7 +2823,7 @@ int ff_h263_decode_mba(MpegEncContext *s)
     int i, mb_pos;
 
     for(i=0; i<6; i++){
-        if(s->mb_num < ff_mba_max[i]) break;
+        if(s->mb_num-1 <= ff_mba_max[i]) break;
     }
     mb_pos= get_bits(&s->gb, ff_mba_length[i]);
     s->mb_x= mb_pos % s->mb_width;
@@ -2828,7 +2837,7 @@ void ff_h263_encode_mba(MpegEncContext *s)
     int i, mb_pos;
 
     for(i=0; i<6; i++){
-        if(s->mb_num < ff_mba_max[i]) break;
+        if(s->mb_num-1 <= ff_mba_max[i]) break;
     }
     mb_pos= s->mb_x + s->mb_width*s->mb_y;
     put_bits(&s->pb, ff_mba_length[i], mb_pos);
@@ -3135,6 +3144,7 @@ int ff_h263_resync(MpegEncContext *s){
         align_get_bits(&s->gb);
     }
 
+//printf("checking next 16 %X\n", show_bits(&s->gb, 24));
     if(show_bits(&s->gb, 16)==0){
         if(s->codec_id==CODEC_ID_MPEG4)
             ret= mpeg4_decode_video_packet_header(s);
@@ -3146,6 +3156,7 @@ int ff_h263_resync(MpegEncContext *s){
     //ok, its not where its supposed to be ...
     s->gb= s->last_resync_gb;
     align_get_bits(&s->gb);
+printf("align %X\n", show_bits(&s->gb, 24));
     left= s->gb.size_in_bits - get_bits_count(&s->gb);
     
     for(;left>16+1+5+5; left-=8){ 
@@ -3163,7 +3174,7 @@ int ff_h263_resync(MpegEncContext *s){
         }
         skip_bits(&s->gb, 8);
     }
-    
+printf("no resync\n");
     return -1;
 }
 
@@ -4962,9 +4973,24 @@ int h263_decode_picture_header(MpegEncContext *s)
             
         s->qscale = get_bits(&s->gb, 5);
     }
+
     /* PEI */
     while (get_bits1(&s->gb) != 0) {
         skip_bits(&s->gb, 8);
+    }
+    
+    if(s->h263_slice_structured){
+        if (get_bits1(&s->gb) != 1) {
+            av_log(s->avctx, AV_LOG_ERROR, "SEPB1 marker missing\n");
+            return -1;
+        }
+
+        ff_h263_decode_mba(s);
+
+        if (get_bits1(&s->gb) != 1) {
+            av_log(s->avctx, AV_LOG_ERROR, "SEPB2 marker missing\n");
+            return -1;
+        }
     }
     s->f_code = 1;
     
