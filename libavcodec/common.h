@@ -752,6 +752,14 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
     return code;
 }
 
+/**
+ * parses a vlc code, faster then get_vlc()
+ * @param bits is the number of bits which will be read at once, must be 
+ *             identical to nb_bits in init_vlc()
+ * @param max_depth is the number of times bits bits must be readed to completly
+ *                  read the longest vlc code 
+ *                  = (max_vlc_length + bits - 1) / bits
+ */
 static always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
                                   int bits, int max_depth)
 {
