@@ -18,19 +18,24 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
+#include <errno.h>
+#ifndef CONFIG_WIN32
+#include "config.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#include <errno.h>
 #include <sys/time.h>
-#include <string.h>
 #include <sys/poll.h>
 #include <termios.h>
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <ctype.h>
+#endif
 
 #include "avformat.h"
+
+#define MAXINT64 INT64_C(0x7fffffffffffffff)
 
 typedef struct {
     const char *name;
@@ -134,6 +139,8 @@ typedef struct AVInputFile {
     int buffer_size_max;  /* buffer size at which we consider we can stop
                              buffering */
 } AVInputFile;
+
+#ifndef CONFIG_WIN32
 
 /* init terminal so that we can grab keys */
 static struct termios oldtty;
@@ -593,6 +600,8 @@ int av_grab(AVFormatContext *s)
     goto fail1;
 }
 
+#endif /* CONFIG_WIN32 */
+
 int read_ffserver_streams(AVFormatContext *s, const char *filename)
 {
     int i;
@@ -892,13 +901,17 @@ static int av_encode(AVFormatContext **output_files,
                      int nb_input_files,
                      AVStreamMap *stream_maps, int nb_stream_maps)
 {
-    int ret, i, j, k, n, nb_istreams, nb_ostreams = 0;
+    int ret, i, j, k, n, nb_istreams = 0, nb_ostreams = 0;
     AVFormatContext *is, *os;
     AVCodecContext *codec, *icodec;
     AVOutputStream *ost, **ost_table = NULL;
     AVInputStream *ist, **ist_table = NULL;
     INT64 min_pts, start_time;
-    AVInputFile file_table[nb_input_files];
+    AVInputFile *file_table;
+
+    file_table= (AVInputFile*) malloc(nb_input_files * sizeof(AVInputFile));
+    if (!file_table)
+        goto fail;
 
     memset(file_table, 0, sizeof(file_table));
     
@@ -913,7 +926,7 @@ static int av_encode(AVFormatContext **output_files,
 
     ist_table = av_mallocz(nb_istreams * sizeof(AVInputStream *));
     if (!ist_table)
-        return -ENOMEM;
+        goto fail;
     
     for(i=0;i<nb_istreams;i++) {
         ist = av_mallocz(sizeof(AVInputStream));
@@ -1153,7 +1166,7 @@ static int av_encode(AVFormatContext **output_files,
         /* select the input file with the smallest pts */
     redo:
         file_index = -1;
-        min_pts = (1ULL << 63) - 1;
+        min_pts = MAXINT64;
         for(i=0;i<nb_istreams;i++) {
             ist = ist_table[i];
             if (!ist->discard && !file_table[ist->file_index].eof_reached && ist->pts < min_pts) {
@@ -1310,7 +1323,7 @@ static int av_encode(AVFormatContext **output_files,
                 total_size = url_ftell(&oc->pb);
                 
                 buf[0] = '\0';
-                ti = (1ULL << 63) - 1;
+                ti = MAXINT64;
                 vid = 0;
                 for(i=0;i<nb_ostreams;i++) {
                     ost = ost_table[i];
@@ -1328,13 +1341,14 @@ static int av_encode(AVFormatContext **output_files,
                     }
                 }
 
-                ti1 = ti / 1000000.0;
+                ti1 = (double)ti / 1000000.0;
                 if (ti1 < 0.1)
                     ti1 = 0.1;
                 bitrate = (double)(total_size * 8) / ti1 / 1000.0;
 
-                sprintf(buf + strlen(buf), "size=%8LdkB time=%0.1f bitrate=%6.1fkbits/s", 
-                        total_size / 1024, ti1, bitrate);
+                sprintf(buf + strlen(buf), 
+                        "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
+                        (double)total_size / 1024, ti1, bitrate);
                 
                 fprintf(stderr, "%s    \r", buf);
                 fflush(stderr);
@@ -1356,7 +1370,7 @@ static int av_encode(AVFormatContext **output_files,
         total_size = url_ftell(&oc->pb);
         
         buf[0] = '\0';
-        ti = (1ULL << 63) - 1;
+        ti = MAXINT64;
         vid = 0;
         for(i=0;i<nb_ostreams;i++) {
             ost = ost_table[i];
@@ -1379,8 +1393,9 @@ static int av_encode(AVFormatContext **output_files,
             ti1 = 0.1;
         bitrate = (double)(total_size * 8) / ti1 / 1000.0;
         
-        sprintf(buf + strlen(buf), "size=%8LdkB time=%0.1f bitrate=%6.1fkbits/s", 
-                total_size / 1024, ti1, bitrate);
+        sprintf(buf + strlen(buf), 
+                "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
+                (double)total_size / 1024, ti1, bitrate);
         
         fprintf(stderr, "%s    \n", buf);
     }
@@ -1410,6 +1425,8 @@ static int av_encode(AVFormatContext **output_files,
     
     ret = 0;
  fail1:
+    free(file_table);
+
     if (ist_table) {
         for(i=0;i<nb_istreams;i++) {
             ist = ist_table[i];
@@ -1550,6 +1567,7 @@ void opt_audio_channels(const char *arg)
     audio_channels = atoi(arg);
 }
 
+#ifdef CONFIG_GRAB
 void opt_video_device(const char *arg)
 {
     v4l_device = strdup(arg);
@@ -1559,6 +1577,7 @@ void opt_audio_device(const char *arg)
 {
     audio_device = strdup(arg);
 }
+#endif
 
 void opt_audio_codec(const char *arg)
 {
@@ -2004,6 +2023,7 @@ void opt_output_file(const char *filename)
     video_codec_id = CODEC_ID_NONE;
 }
 
+#ifndef CONFIG_WIN32
 INT64 getutime(void)
 {
     struct rusage rusage;
@@ -2011,6 +2031,12 @@ INT64 getutime(void)
     getrusage(RUSAGE_SELF, &rusage);
     return (rusage.ru_utime.tv_sec * 1000000LL) + rusage.ru_utime.tv_usec;
 }
+#else
+INT64 getutime(void)
+{
+  return gettime();
+}
+#endif
 
 void show_formats(void)
 {
@@ -2101,42 +2127,46 @@ void show_help(void)
 }
 
 const OptionDef options[] = {
-    { "L", 0, {show_licence}, "show license" },
-    { "h", 0, {show_help}, "show help" },
-    { "formats", 0, {show_formats}, "show available formats, codecs, protocols, ..." },
-    { "f", HAS_ARG, {opt_format}, "force format", "fmt" },
-    { "i", HAS_ARG, {opt_input_file}, "input file name", "filename" },
-    { "y", OPT_BOOL, {int_arg:&file_overwrite}, "overwrite output files" },
-    { "map", HAS_ARG | OPT_EXPERT, {opt_map}, "set input stream mapping", "file:stream" },
-    { "t", HAS_ARG, {opt_recording_time}, "set the recording time", "duration" },
-    { "title", HAS_ARG | OPT_STRING, {str_arg: &str_title}, "set the title", "string" },
-    { "author", HAS_ARG | OPT_STRING, {str_arg: &str_author}, "set the author", "string" },
-    { "copyright", HAS_ARG | OPT_STRING, {str_arg: &str_copyright}, "set the copyright", "string" },
-    { "comment", HAS_ARG | OPT_STRING, {str_arg: &str_comment}, "set the comment", "string" },
+    { "L", 0, {(void*)show_licence}, "show license" },
+    { "h", 0, {(void*)show_help}, "show help" },
+    { "formats", 0, {(void*)show_formats}, "show available formats, codecs, protocols, ..." },
+    { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
+    { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
+    { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
+    { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream" },
+    { "t", HAS_ARG, {(void*)opt_recording_time}, "set the recording time", "duration" },
+    { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
+    { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
+    { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
+    { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
     /* video options */
-    { "b", HAS_ARG, {opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
-    { "r", HAS_ARG, {opt_frame_rate}, "set frame rate (in Hz)", "rate" },
-    { "s", HAS_ARG, {opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
-    { "g", HAS_ARG | OPT_EXPERT, {opt_gop_size}, "set the group of picture size", "gop_size" },
-    { "intra", OPT_BOOL | OPT_EXPERT, {int_arg: &intra_only}, "use only intra frames"},
-    { "vn", OPT_BOOL, {int_arg: &video_disable}, "disable video" },
-    { "qscale", HAS_ARG | OPT_EXPERT, {opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
-    { "vd", HAS_ARG | OPT_EXPERT, {opt_video_device}, "set video device", "device" },
-    { "vcodec", HAS_ARG | OPT_EXPERT, {opt_video_codec}, "force video codec", "codec" },
-    { "me", HAS_ARG | OPT_EXPERT, {opt_motion_estimation}, "set motion estimation method", 
+    { "b", HAS_ARG, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
+    { "r", HAS_ARG, {(void*)opt_frame_rate}, "set frame rate (in Hz)", "rate" },
+    { "s", HAS_ARG, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
+    { "g", HAS_ARG | OPT_EXPERT, {(void*)opt_gop_size}, "set the group of picture size", "gop_size" },
+    { "intra", OPT_BOOL | OPT_EXPERT, {(void*)&intra_only}, "use only intra frames"},
+    { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
+    { "qscale", HAS_ARG | OPT_EXPERT, {(void*)opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
+#ifdef CONFIG_GRAB
+    { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video device", "device" },
+#endif
+    { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec", "codec" },
+    { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
-    { "sameq", OPT_BOOL, {int_arg: &same_quality}, 
+    { "sameq", OPT_BOOL, {(void*)&same_quality}, 
       "use same video quality as source (implies VBR)" },
     /* audio options */
-    { "ab", HAS_ARG, {opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
-    { "ar", HAS_ARG, {opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
-    { "ac", HAS_ARG, {opt_audio_channels}, "set number of audio channels", "channels" },
-    { "an", OPT_BOOL, {int_arg: &audio_disable}, "disable audio" },
-    { "ad", HAS_ARG | OPT_EXPERT, {opt_audio_device}, "set audio device", "device" },
-    { "acodec", HAS_ARG | OPT_EXPERT, {opt_audio_codec}, "force audio codec", "codec" },
-    { "deinterlace", OPT_BOOL | OPT_EXPERT, {int_arg: &do_deinterlace}, 
+    { "ab", HAS_ARG, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
+    { "ar", HAS_ARG, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
+    { "ac", HAS_ARG, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
+    { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
+#ifdef CONFIG_GRAB
+    { "ad", HAS_ARG | OPT_EXPERT, {(void*)opt_audio_device}, "set audio device", "device" },
+#endif
+    { "acodec", HAS_ARG | OPT_EXPERT, {(void*)opt_audio_codec}, "force audio codec", "codec" },
+    { "deinterlace", OPT_BOOL | OPT_EXPERT, {(void*)&do_deinterlace}, 
       "deinterlace pictures" },
-    { "benchmark", OPT_BOOL | OPT_EXPERT, {int_arg: &do_benchmark}, 
+    { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark}, 
       "add timings for benchmarking" },
 
     { NULL, },
@@ -2187,11 +2217,15 @@ int main(int argc, char **argv)
 
 
     if (nb_input_files == 0) {
+#ifdef CONFIG_GRAB
         if (nb_output_files != 1) {
             fprintf(stderr, "Only one output file supported when grabbing\n");
             exit(1);
         }
         av_grab(output_files[0]);
+#else
+        fprintf(stderr, "Must supply at least one input file\n");
+#endif
     } else {
         INT64 ti;
 
