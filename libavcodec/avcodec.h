@@ -1846,6 +1846,7 @@ extern AVCodec ac3_decoder;
 /* resample.c */
 
 struct ReSampleContext;
+struct AVResampleContext;
 
 typedef struct ReSampleContext ReSampleContext;
 
@@ -1853,6 +1854,9 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
                                      int output_rate, int input_rate);
 int audio_resample(ReSampleContext *s, short *output, short *input, int nb_samples);
 void audio_resample_close(ReSampleContext *s);
+
+struct AVResampleContext *av_resample_init(int out_rate, int in_rate);
+int av_resample(struct AVResampleContext *c, short *dst, short *src, int *consumed, int src_size, int dst_size, int update_ctx);
 
 /* YUV420 format is assumed ! */
 

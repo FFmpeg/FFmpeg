@@ -55,6 +55,8 @@ struct ImgReSampleContext {
     uint8_t *line_buf;
 };
 
+void av_build_filter(int16_t *filter, double factor, int tap_count, int phase_count, int scale, int type);
+
 static inline int get_phase(int pos)
 {
     return ((pos) >> (POS_FRAC_BITS - PHASE_BITS)) & ((1 << PHASE_BITS) - 1);
@@ -540,48 +542,6 @@ static void component_resample(ImgReSampleContext *s,
     }
 }
 
-/* XXX: the following filter is quite naive, but it seems to suffice
-   for 4 taps */
-static void build_filter(int16_t *filter, float factor)
-{
-    int ph, i, v;
-    float x, y, tab[NB_TAPS], norm, mult, target;
-
-    /* if upsampling, only need to interpolate, no filter */
-    if (factor > 1.0)
-        factor = 1.0;
-
-    for(ph=0;ph<NB_PHASES;ph++) {
-        norm = 0;
-        for(i=0;i<NB_TAPS;i++) {
-#if 1
-            const float d= -0.5; //first order derivative = -0.5
-            x = fabs(((float)(i - FCENTER) - (float)ph / NB_PHASES) * factor);
-            if(x<1.0) y= 1 - 3*x*x + 2*x*x*x + d*(            -x*x + x*x*x);
-            else      y=                       d*(-4 + 8*x - 5*x*x + x*x*x);
-#else
-            x = M_PI * ((float)(i - FCENTER) - (float)ph / NB_PHASES) * factor;
-            if (x == 0)
-                y = 1.0;
-            else
-                y = sin(x) / x;
-#endif
-            tab[i] = y;
-            norm += y;
-        }
-
-        /* normalize so that an uniform color remains the same */
-        target= 1 << FILTER_BITS;
-        for(i=0;i<NB_TAPS;i++) {
-            mult = target / norm;
-            v = lrintf(tab[i] * mult);
-            filter[ph * NB_TAPS + i] = v;
-            norm -= tab[i];
-            target -= v;
-        }
-    }
-}
-
 ImgReSampleContext *img_resample_init(int owidth, int oheight,
                                       int iwidth, int iheight)
 {
@@ -626,10 +586,10 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
     s->h_incr = ((iwidth - leftBand - rightBand) * POS_FRAC) / s->pad_owidth;
     s->v_incr = ((iheight - topBand - bottomBand) * POS_FRAC) / s->pad_oheight; 
 
-    build_filter(&s->h_filters[0][0], (float) s->pad_owidth  / 
-            (float) (iwidth - leftBand - rightBand));
-    build_filter(&s->v_filters[0][0], (float) s->pad_oheight / 
-            (float) (iheight - topBand - bottomBand));
+    av_build_filter(&s->h_filters[0][0], (float) s->pad_owidth  / 
+            (float) (iwidth - leftBand - rightBand), NB_TAPS, NB_PHASES, 1<<FILTER_BITS, 0);
+    av_build_filter(&s->v_filters[0][0], (float) s->pad_oheight / 
+            (float) (iheight - topBand - bottomBand), NB_TAPS, NB_PHASES, 1<<FILTER_BITS, 0);
 
     return s;
 fail:
