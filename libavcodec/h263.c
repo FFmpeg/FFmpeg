@@ -2643,14 +2643,12 @@ int h263_decode_mb(MpegEncContext *s,
         case 0: /* direct */
             mx = h263_decode_motion(s, 0, 1);
             my = h263_decode_motion(s, 0, 1);
-            PRINT_MB_TYPE("S");
         case 4: /* direct with mx=my=0 */
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
             xy= s->block_index[0];
             time_pp= s->pp_time;
             time_pb= time_pp - s->bp_time;
 //if(time_pp>3000 )printf("%d %d  ", time_pp, time_pb);
-            //FIXME 4MV
             //FIXME avoid divides
             s->mv[0][0][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
             s->mv[0][0][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
@@ -2658,11 +2656,26 @@ int h263_decode_mb(MpegEncContext *s,
                                 : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp + mx;
             s->mv[1][0][1] = my ? s->mv[0][0][1] - s->motion_val[xy][1] 
                                 : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp + my;
+            if(s->non_b_mv4_table[xy]){
+                int i;
+                s->mv_type = MV_TYPE_8X8;
+                for(i=1; i<4; i++){
+                    xy= s->block_index[i];
+                    s->mv[0][i][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
+                    s->mv[0][i][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
+                    s->mv[1][i][0] = mx ? s->mv[0][i][0] - s->motion_val[xy][0]
+                                        : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp + mx;
+                    s->mv[1][i][1] = my ? s->mv[0][i][1] - s->motion_val[xy][1] 
+                                        : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp + my;
+                }
+                PRINT_MB_TYPE("4");
+            }else{
+                PRINT_MB_TYPE(mb_type==4 ? "D" : "S");
+            }
 /*            s->mv[0][0][0] = 
             s->mv[0][0][1] = 
             s->mv[1][0][0] = 
             s->mv[1][0][1] = 1000;*/
-            if(mb_type==4) PRINT_MB_TYPE("D");
             break;
         case 1: 
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;

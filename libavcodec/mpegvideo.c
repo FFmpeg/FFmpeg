@@ -236,6 +236,9 @@ int MPV_common_init(MpegEncContext *s)
         /* MV prediction */
         size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
         CHECKED_ALLOCZ(s->motion_val, size * 2 * sizeof(INT16));
+        
+        /* 4mv direct mode decoding table */
+        CHECKED_ALLOCZ(s->non_b_mv4_table, size * sizeof(UINT8))
     }
 
     if (s->h263_pred || s->h263_plus) {
@@ -324,7 +327,8 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->tex_pb_buffer);
     av_freep(&s->pb2_buffer);
     av_freep(&s->edge_emu_buffer);
-    
+    av_freep(&s->non_b_mv4_table);
+
     for(i=0;i<3;i++) {
         int j;
         if(!(s->flags&CODEC_FLAG_DR1)){
@@ -1453,6 +1457,9 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->motion_val[xy + wrap][1] = motion_y;
             s->motion_val[xy + 1 + wrap][0] = motion_x;
             s->motion_val[xy + 1 + wrap][1] = motion_y;
+            s->non_b_mv4_table[xy]=0;
+        } else { /* 8X8 */
+            s->non_b_mv4_table[xy]=1;
         }
     }
     

@@ -362,6 +362,7 @@ typedef struct MpegEncContext {
     uint8_t *tex_pb_buffer;          
     uint8_t *pb2_buffer;
     int mpeg_quant;
+    INT8 *non_b_mv4_table;
 
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;
