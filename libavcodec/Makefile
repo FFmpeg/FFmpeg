@@ -10,7 +10,8 @@ VPATH=$(SRC_PATH)/libavcodec
 CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H -I..
 LDFLAGS= -g
 
-OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
+OBJS= common.o utils.o mem.o allcodecs.o \
+      mpegvideo.o h263.o jrevdct.o jfdctfst.o \
       mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o msmpeg4.o \
       mpeg12.o h263dec.o rv10.o mpegaudiodec.o pcm.o simple_idct.o \
@@ -131,7 +132,6 @@ motion-test: motion_test.o $(LIB)
 	$(CC) -o $@ $^
 
 install: all
-#	install -m 644 $(LIB) $(prefix)/lib
 ifeq ($(BUILD_SHARED),yes)
 	install -s -m 755 $(SLIB) $(prefix)/lib/libavcodec-$(VERSION).so
 	ln -sf $(prefix)/lib/libavcodec-$(VERSION).so $(prefix)/lib/libavcodec.so
@@ -140,6 +140,13 @@ ifeq ($(BUILD_SHARED),yes)
 	install -m 644 avcodec.h $(prefix)/include/ffmpeg/avcodec.h
 	install -m 644 common.h $(prefix)/include/ffmpeg/common.h
 endif
+
+installlib: all
+	install -m 644 $(LIB) $(prefix)/lib
+	mkdir -p $(prefix)/include/ffmpeg
+	install -m 644 $(SRC_PATH)/libavcodec/avcodec.h $(SRC_PATH)/libavcodec/common.h \
+                $(prefix)/include/ffmpeg
+
 #
 # include dependency files if they exist
 #
