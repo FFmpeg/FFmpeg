@@ -65,6 +65,8 @@ extralibs="-lm"
 simpleidct="yes"
 bigendian="no"
 vhook="no"
+dlfcn="no"
+dlopen="no"
 mpegaudio_hp="yes"
 SHFLAGS=-shared
 netserver="no"
@@ -181,12 +183,32 @@ ldl=-ldl
 
 if $cc -o $TMPO $TMPC -ldl 2> /dev/null  ; then
 vhook=yes
+dlfcn=yes
+dlopen=yes
 fi
 
 if $cc -o $TMPO $TMPC 2> /dev/null  ; then
 vhook=yes
+dlfcn=yes
+dlopen=yes
 ldl=""
 fi
+
+cat > $TMPC << EOF
+int main( void ) { return (int) dlopen("foo", 0); }
+EOF
+
+if $cc -o $TMPO $TMPC -ldl 2> /dev/null  ; then
+vhook=yes
+dlopen=yes
+fi
+
+if $cc -o $TMPO $TMPC 2> /dev/null  ; then
+vhook=yes
+dlopen=yes
+ldl=""
+fi
+
 
 cat > $TMPC << EOF
 #include <X11/Xlib.h>
@@ -602,6 +624,14 @@ fi
 if test "$v4l" = "yes" ; then
   echo "#define CONFIG_VIDEO4LINUX 1" >> $TMPH
   echo "CONFIG_VIDEO4LINUX=yes" >> config.mak
+fi
+
+if test "$dlopen" = "yes" ; then
+  echo "#define CONFIG_HAVE_DLOPEN 1" >> $TMPH
+fi
+
+if test "$dlfcn" = "yes" ; then
+  echo "#define CONFIG_HAVE_DLFCN 1" >> $TMPH
 fi
 
 if test "$audio_oss" = "yes" ; then
