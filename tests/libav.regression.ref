@@ -43,8 +43,8 @@ c39dd19b88f9e0f03a318b51c37edb61 *./data/b-libav.yuv4mpeg
 3801810 ./data/b-libav.yuv4mpeg
 ./data/b-libav%d.pgm CRC=84c09106
 ./data/b-libav%d.ppm CRC=25c06ecf
-4b7690747c49e4e8e910359768e4a77e *./data/b-libav.wav
-  89134 ./data/b-libav.wav
+b0a8c8063d81921db5d7c8f50a1cc454 *./data/b-libav.wav
+89132 ./data/b-libav.wav
 ./data/b-libav.wav CRC=2a09519c
 e2a6d6fae17394dfe87cb5bb8ae11837 *./data/b-libav.al
   44544 ./data/b-libav.al

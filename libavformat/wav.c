@@ -107,7 +107,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         put_le16(pb, 2); /* wav_extra_size */
         hdrsize += 2;
         put_le16(pb, ((enc->block_align - 4 * enc->channels) / (4 * enc->channels)) * 8 + 1); /* wSamplesPerBlock */
-    } else {
+    } else if(enc->extradata_size){
         put_le16(pb, enc->extradata_size);
         put_buffer(pb, enc->extradata, enc->extradata_size);
         hdrsize += enc->extradata_size;
@@ -115,6 +115,8 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
             hdrsize++;
             put_byte(pb, 0);
         }
+    } else {
+        hdrsize -= 2;
     }
 
     return hdrsize;
