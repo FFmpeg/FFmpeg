@@ -32,6 +32,7 @@ typedef struct {
     int width, height;
     int frame_rate;
     INT64 time_frame;
+    INT64 time_frame_start;
     int frame_size;
     struct video_capability video_cap;
     struct video_audio audio_saved;
@@ -239,6 +240,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.width = width;
     st->codec.height = height;
     st->codec.frame_rate = frame_rate;
+    
+    s->time_frame_start = s->time_frame;
 
     av_set_pts_info(s1, 48, 1, 1000000); /* 48 bits pts in us */
 
@@ -311,6 +314,10 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     if (dropped)
         pkt->flags |= PKT_FLAG_DROPPED_FRAME;
+
+    pkt->pts = (s->time_frame - s->time_frame_start) * s1->pts_den / ((INT64)s1->pts_num * 1000000);
+
+    //printf("setting pkt->pts=%lld (time_frame=%lld)\n", pkt->pts, s->time_frame);
 
     /* read one frame */
     if (s->aiw_enabled) {
