@@ -623,7 +623,11 @@ retry:
     fprintf(f, "%d %d %f\n", buf_size, s->qscale, buf_size*(double)s->qscale);
 }
 #endif
-       
+    
+    if(s->codec_id == CODEC_ID_MPEG4 && s->xvid_build && avctx->idct_algo == FF_IDCT_AUTO && (mm_flags & MM_MMX) && !(s->flags&CODEC_FLAG_BITEXACT)){
+        avctx->idct_algo= FF_IDCT_LIBMPEG2MMX;
+        avctx->width= 0; // force reinit
+    }
         /* After H263 & mpeg4 header decode we have the height, width,*/
         /* and other parameters. So then we could init the picture   */
         /* FIXME: By the way H263 decoder is evolving it should have */
