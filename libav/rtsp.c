@@ -47,6 +47,10 @@ int rtsp_abort_req = 0;
    changing this variable */
 int rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_TCP) | (1 << RTSP_PROTOCOL_RTP_UDP) | (1 << RTSP_PROTOCOL_RTP_UDP_MULTICAST);
 
+/* if non zero, then set a range for RTP ports */
+int rtsp_rtp_port_min = 0;
+int rtsp_rtp_port_max = 0;
+
 FFRTSPCallback *ff_rtsp_callback = NULL;
 
 static int rtsp_probe(AVProbeData *p)
@@ -486,8 +490,8 @@ static int rtsp_read_header(AVFormatContext *s,
     /* XXX: we assume the same server is used for the control of each
        RTSP stream */
     for(i=0;i<s->nb_streams;i++) {
-        AVInputFormat *fmt;
         char transport[2048];
+        AVInputFormat *fmt;
 
         st = s->streams[i];
         rtsp_st = st->priv_data;
@@ -497,12 +501,27 @@ static int rtsp_read_header(AVFormatContext *s,
 
         /* RTP/UDP */
         if (protocol_mask & (1 << RTSP_PROTOCOL_RTP_UDP)) {
-            fmt = &rtp_demux;
-            if (av_open_input_file(&rtsp_st->ic, "rtp://", fmt, 0, NULL) < 0) {
-                err = AVERROR_INVALIDDATA;
-                goto fail;
+            char buf[256];
+            int j;
+
+            /* first try in specified port range */
+            if (rtsp_rtp_port_min != 0) {
+                for(j=rtsp_rtp_port_min;j<=rtsp_rtp_port_max;j++) {
+                    snprintf(buf, sizeof(buf), "rtp://?localport=%d", j);
+                    if (!av_open_input_file(&rtsp_st->ic, buf, 
+                                            &rtp_demux, 0, NULL))
+                        goto rtp_opened;
+                }
             }
-            
+
+            /* then try on any port */
+            if (av_open_input_file(&rtsp_st->ic, "rtp://", 
+                                       &rtp_demux, 0, NULL) < 0) {
+                    err = AVERROR_INVALIDDATA;
+                    goto fail;
+            }
+
+        rtp_opened:
             port = rtp_get_local_port(url_fileno(&rtsp_st->ic->pb));
             if (transport[0] != '\0')
                 pstrcat(transport, sizeof(transport), ",");

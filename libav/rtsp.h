@@ -79,6 +79,8 @@ void rtsp_parse_line(RTSPHeader *reply, const char *buf);
 
 extern int rtsp_abort_req;
 extern int rtsp_default_protocols;
+extern int rtsp_rtp_port_min;
+extern int rtsp_rtp_port_max;
 extern FFRTSPCallback *ff_rtsp_callback;
 
 #endif /* RTSP_H */
