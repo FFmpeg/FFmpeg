@@ -103,6 +103,7 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') },
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') }, /* OpenDiVX *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
     { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D') },
+    { CODEC_ID_MPEG4, MKTAG('3', 'I', 'V', '2') }, /* experimental: 3IVX files before ivx D4 4.5.1 */
 /*    { CODEC_ID_, MKTAG('I', 'V', '5', '0') }, *//* Indeo 5.0 */
     { CODEC_ID_H263, MKTAG('h', '2', '6', '3') }, /* H263 */
     { CODEC_ID_H263, MKTAG('s', '2', '6', '3') }, /* H263 ?? works */
