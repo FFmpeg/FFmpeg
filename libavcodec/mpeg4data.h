@@ -4,8 +4,13 @@
 #define BIN_ONLY_SHAPE   2
 #define GRAY_SHAPE       3
 
-#define SIMPLE_VO_TYPE 1
-#define CORE_VO_TYPE   3
+#define SIMPLE_VO_TYPE             1
+#define CORE_VO_TYPE               3
+#define MAIN_VO_TYPE               4
+#define NBIT_VO_TYPE               5
+#define ARTS_VO_TYPE               10
+#define ACE_VO_TYPE                12
+#define ADV_SIMPLE_VO_TYPE         17
 
 // aspect_ratio_info
 #define EXTENDED_PAR 15

@@ -1522,7 +1522,11 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     int vo_ver_id=1; //must be 2 if we want GMC or q-pel
     char buf[255];
 
-    s->vo_type= s->has_b_frames ? CORE_VO_TYPE : SIMPLE_VO_TYPE;
+    if(s->max_b_frames){
+        s->vo_type= ADV_SIMPLE_VO_TYPE;
+    }else{
+        s->vo_type= SIMPLE_VO_TYPE;
+    }
 
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, 0x100);        /* video obj */
