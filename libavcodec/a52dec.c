@@ -98,12 +98,12 @@ static int a52_decode_init(AVCodecContext *avctx)
 #else
     /* static linked version */
     s->handle = 0;
-    s->a52_init = a52_init;
-    s->a52_samples = a52_samples;
-    s->a52_syncinfo = a52_syncinfo;
-    s->a52_frame = a52_frame;
-    s->a52_block = a52_block;
-    s->a52_free = a52_free;
+    s->a52_init = ff_a52_init;
+    s->a52_samples = ff_a52_samples;
+    s->a52_syncinfo = ff_a52_syncinfo;
+    s->a52_frame = ff_a52_frame;
+    s->a52_block = ff_a52_block;
+    s->a52_free = ff_a52_free;
 #endif
     s->state = s->a52_init(0); /* later use CPU flags */
     s->samples = s->a52_samples(s->state);
