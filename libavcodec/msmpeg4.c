@@ -1859,7 +1859,8 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         if (i > 62){
             i-= 192;
             if(i&(~63)){
-                if((i+192 == 64 && level/qmul==-1) || s->error_resilience<0){
+                const int left= s->gb.size*8 - get_bits_count(&s->gb);
+                if(((i+192 == 64 && level/qmul==-1) || s->error_resilience<0) && left>=0){
                     fprintf(stderr, "ignoring overflow at %d %d\n", s->mb_x, s->mb_y);
                     break;
                 }else{
