@@ -678,16 +678,16 @@ static void do_video_out(AVFormatContext *s,
         if (vdelta < -1.1)
             nb_frames = 0;
         else if (vdelta > 1.1)
-            nb_frames = 2;
+            nb_frames = lrintf(vdelta - 1.1 + 0.5);
 //fprintf(stderr, "vdelta:%f, ost->sync_opts:%lld, ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, ost->sync_ipts, nb_frames);
         if (nb_frames == 0){
             ++nb_frames_drop;
             if (verbose>2)
                 fprintf(stderr, "*** drop!\n");
-        }else if (nb_frames == 2) {
-            ++nb_frames_dup;
+        }else if (nb_frames > 1) {
+            nb_frames_dup += nb_frames;
             if (verbose>2)
-                fprintf(stderr, "*** dup!\n");
+                fprintf(stderr, "*** %d dup!\n", nb_frames-1);
         }
     }else
         ost->sync_opts= lrintf(ost->sync_ipts * enc->frame_rate / enc->frame_rate_base);
