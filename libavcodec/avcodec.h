@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4664
-#define LIBAVCODEC_BUILD_STR   "4664"
+#define LIBAVCODEC_BUILD       4665
+#define LIBAVCODEC_BUILD_STR   "4665"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -93,6 +93,9 @@ enum PixelFormat {
     PIX_FMT_MONOWHITE, ///< 0 is white 
     PIX_FMT_MONOBLACK, ///< 0 is black 
     PIX_FMT_PAL8,      ///< 8 bit with RGBA palette 
+    PIX_FMT_YUVJ420P,  ///< YUV full scale (jpeg)
+    PIX_FMT_YUVJ422P,  ///< YUV full scale (jpeg)
+    PIX_FMT_YUVJ444P,  ///< YUV full scale (jpeg)
     PIX_FMT_NB,
 };
 
@@ -1260,6 +1263,18 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
 int avpicture_get_size(int pix_fmt, int width, int height);
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
 const char *avcodec_get_pix_fmt_name(int pix_fmt);
+
+#define FF_LOSS_RESOLUTION  0x0001 /* loss due to resolution change */
+#define FF_LOSS_DEPTH       0x0002 /* loss due to color depth change */
+#define FF_LOSS_COLORSPACE  0x0004 /* loss due to color space conversion */
+#define FF_LOSS_ALPHA       0x0008 /* loss of alpha bits */
+#define FF_LOSS_COLORQUANT  0x0010 /* loss due to color quantization */
+#define FF_LOSS_CHROMA      0x0020 /* loss of chroma (e.g. rgb to gray conversion) */
+
+int avcodec_get_pix_fmt_loss(int dst_pix_fmt, int src_pix_fmt,
+                             int has_alpha);
+int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
+                              int has_alpha, int *loss_ptr);
 
 /* convert among pixel formats */
 int img_convert(AVPicture *dst, int dst_pix_fmt,
