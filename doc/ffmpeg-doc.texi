@@ -470,6 +470,40 @@ features only found in GCC 3.2.
 
 @section Windows
 
+@subsection Native Windows compilation
+
+@itemize
+@item Install the current versions of MSYS and MinGW from
+@url{http://www.mingw.org/}. You can find detailed installation
+instructions in the download section and the FAQ.
+
+@item Extract the current version of ffmpeg (the latest release version or the current CVS snapshot whichever is recommended).
+ 
+@item Start the MSYS shell (file @file{msys.bat}).
+
+@item Change to the FFMPEG directory and create the libavcodec.a and libavformat.a libraries, following the instructions of how to compile ffmpeg (file @file{INSTALL}).
+ 
+@end itemize
+
+@subsection How to create a single Windows DLL from libavcodec and libavformat
+ 
+Read @url{http://ffmpeg.org/win32.html}.
+
+@subsection Cross compilation for Windows with Linux
+
+You must use the MinGW cross compilation tools available at
+@url{http://www.mingw.org/}.
+
+Then configure ffmpeg with the following options:
+@example
+./configure --enable-mingw32 --cross-prefix=i386-mingw32msvc-
+@end example
+(you can change the cross-prefix according to the prefix choosen for the
+MinGW tools).
+
+Then you can easily test ffmpeg with wine
+(@url{http://www.winehq.com/}).
+
 @section MacOS X
 
 @section BeOS
