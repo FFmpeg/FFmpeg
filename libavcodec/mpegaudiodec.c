@@ -864,7 +864,7 @@ void ff_mpa_synth_init(MPA_INT *window)
    32 samples. */
 /* XXX: optimize by avoiding ring buffer usage */
 void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
-			 MPA_INT *window,
+			 MPA_INT *window, int *dither_state,
                          int16_t *samples, int incr, 
                          int32_t sb_samples[SBLIMIT])
 {
@@ -903,7 +903,7 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
     w = window;
     w2 = window + 31;
 
-    sum = s1->dither_state;
+    sum = *dither_state;
     p = synth_buf + 16;
     SUM8(sum, +=, w, p);
     p = synth_buf + 48;
@@ -933,7 +933,7 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
     p = synth_buf + 32;
     SUM8(sum, -=, w + 32, p);
     *samples = round_sample(&sum);
-    s1->dither_state= sum;
+    *dither_state= sum;
 
     offset = (offset - 32) & 511;
     *synth_buf_offset = offset;
@@ -2494,7 +2494,7 @@ static int mp_decode_frame(MPADecodeContext *s,
         samples_ptr = samples + ch;
         for(i=0;i<nb_frames;i++) {
             ff_mpa_synth_filter(s->synth_buf[ch], &(s->synth_buf_offset[ch]),
-			 window,
+			 window, &s->dither_state,
 			 samples_ptr, s->nb_channels,
                          s->sb_samples[ch][i]);
             samples_ptr += 32 * s->nb_channels;
