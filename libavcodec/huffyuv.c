@@ -1,7 +1,7 @@
 /*
  * huffyuv codec for libavcodec
  *
- * Copyright (c) 2002 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (c) 2002-2003 Michael Niedermayer <michaelni@gmx.at>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -461,8 +461,6 @@ static int encode_init(AVCodecContext *avctx)
     s->version=2;
     
     avctx->coded_frame= &s->picture;
-    s->picture.pict_type= FF_I_TYPE;
-    s->picture.key_frame= 1;
     
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV420P:
@@ -933,6 +931,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
     
     *p = *pict;
+    p->pict_type= FF_I_TYPE;
+    p->key_frame= 1;
     
     if(avctx->pix_fmt == PIX_FMT_YUV422P || avctx->pix_fmt == PIX_FMT_YUV420P){
         int lefty, leftu, leftv, y, cy;
