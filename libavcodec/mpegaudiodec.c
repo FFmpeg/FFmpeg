@@ -2268,11 +2268,13 @@ static int decode_frame(AVCodecContext * avctx,
 	    len = HEADER_SIZE - len;
 	    if (len > buf_size)
 		len = buf_size;
+	    else if (len > 0) {
 	    memcpy(s->inbuf_ptr, buf_ptr, len);
 	    buf_ptr += len;
-	    s->inbuf_ptr += len;
 	    buf_size -= len;
-	    if ((s->inbuf_ptr - s->inbuf) == HEADER_SIZE) {
+		s->inbuf_ptr += len;
+	    }
+	    if ((s->inbuf_ptr - s->inbuf) >= HEADER_SIZE) {
             got_header:
 		header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
 		    (s->inbuf[2] << 8) | s->inbuf[3];
