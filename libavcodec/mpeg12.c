@@ -1582,7 +1582,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     if (s->first_slice) {
         s->first_slice = 0;
         if(MPV_frame_start(s, avctx) < 0)
-            return -1;
+            return -2;
     }
 
     init_get_bits(&s->gb, buf, buf_size);
@@ -1928,8 +1928,9 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                             }         
                             *data_size = sizeof(AVPicture);
                             goto the_end;
-                        }else if(ret==-1){
+                        }else if(ret<0){
                             printf("Error while decoding slice\n");
+			    if(ret<-1) return -1;
                         }
                     }
                     break;
