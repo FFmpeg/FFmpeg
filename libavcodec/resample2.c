@@ -159,6 +159,18 @@ void av_resample_close(AVResampleContext *c){
     av_freep(&c);
 }
 
+/**
+ * Compensates samplerate/timestamp drift. The compensation is done by changing
+ * the resampler parameters, so no audible clicks or similar distortions ocur
+ * @param compensation_distance distance in output samples over which the compensation should be performed
+ * @param sample_delta number of output samples which should be output less
+ *
+ * example: av_resample_compensate(c, 10, 500)
+ * here instead of 510 samples only 500 samples would be output
+ *
+ * note, due to rounding the actual compensation might be slightly different, 
+ * especially if the compensation_distance is large and the in_rate used during init is small
+ */
 void av_resample_compensate(AVResampleContext *c, int sample_delta, int compensation_distance){
 //    sample_delta += (c->ideal_dst_incr - c->dst_incr)*(int64_t)c->compensation_distance / c->ideal_dst_incr;
     c->compensation_distance= compensation_distance;
