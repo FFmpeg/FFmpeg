@@ -17,7 +17,7 @@
 
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
-#include "../config.h"
+#include "config.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -114,7 +114,7 @@ typedef signed long long INT64;
 #define UINT64_C(c)    (c ## ULL)
 #endif
 
-#include "../bswap.h"
+#include "bswap.h"
 
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
