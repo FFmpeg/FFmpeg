@@ -14,7 +14,7 @@ PPOBJS=
 # mux and demuxes
 OBJS+=mpeg.o mpegts.o ffm.o crc.o img.o raw.o rm.o \
       avienc.o avidec.o wav.o swf.o au.o gif.o mov.o mpjpeg.o dv.o \
-      yuv4mpeg.o
+      yuv4mpeg.o 4xm.o
 
 ifeq ($(CONFIG_RISKY),yes)
 OBJS+= asf.o
