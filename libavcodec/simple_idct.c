@@ -663,14 +663,12 @@ void simple_idct(INT16 *block)
 
 #define CN_SHIFT 12
 #define C_FIX(x) ((int)((x) * (1 << CN_SHIFT) + 0.5))
-#define C0 C_FIX(0.7071067811)
-#define C1 C_FIX(0.9238795324)
-#define C2 C_FIX(0.3826834324)
+#define C1 C_FIX(0.6532814824)
+#define C2 C_FIX(0.2705980501)
 
-/* row idct is multiple by 16 * sqrt(2.0), col idct4 is multiplied by
-   sqrt(2). An extra division by two is needed for the first butterfly
-   stage */
-#define C_SHIFT (4+1+12+1)
+/* row idct is multiple by 16 * sqrt(2.0), col idct4 is normalized,
+   and the butterfly must be multiplied by 0.5 * sqrt(2.0) */
+#define C_SHIFT (4+1+12)
 
 static inline void idct4col(UINT8 *dest, int line_size, const INT16 *col)
 {
@@ -681,8 +679,8 @@ static inline void idct4col(UINT8 *dest, int line_size, const INT16 *col)
     a1 = col[8*2];
     a2 = col[8*4];
     a3 = col[8*6];
-    c0 = (a0 + a2) * C0 + (1 << (C_SHIFT - 1)) + (128 << C_SHIFT);
-    c2 = (a0 - a2) * C0 + (1 << (C_SHIFT - 1)) + (128 << C_SHIFT);
+    c0 = ((a0 + a2) << (CN_SHIFT - 1)) + (1 << (C_SHIFT - 1));
+    c2 = ((a0 - a2) << (CN_SHIFT - 1)) + (1 << (C_SHIFT - 1));
     c1 = a1 * C1 + a3 * C2;
     c3 = a1 * C2 - a3 * C1;
     dest[0] = cm[(c0 + c1) >> C_SHIFT];

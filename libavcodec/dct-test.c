@@ -299,10 +299,11 @@ void idct248_ref(UINT8 *dest, int linesize, INT16 *block)
     }
 
     /* butterfly */
+    s = 0.5 * sqrt(2.0);
     for(i=0;i<4;i++) {
         for(j=0;j<8;j++) {
-            block1[8*(2*i)+j] = (block[8*(2*i)+j] + block[8*(2*i+1)+j]) * 0.5;
-            block1[8*(2*i+1)+j] = (block[8*(2*i)+j] - block[8*(2*i+1)+j]) * 0.5;
+            block1[8*(2*i)+j] = (block[8*(2*i)+j] + block[8*(2*i+1)+j]) * s;
+            block1[8*(2*i+1)+j] = (block[8*(2*i)+j] - block[8*(2*i+1)+j]) * s;
         }
     }
 
@@ -336,7 +337,7 @@ void idct248_ref(UINT8 *dest, int linesize, INT16 *block)
     /* clamp and store the result */
     for(i=0;i<8;i++) {
         for(j=0;j<8;j++) {
-            v = block3[8*i+j] + 128.0;
+            v = block3[8*i+j];
             if (v < 0)
                 v = 0;
             else if (v > 255)
@@ -357,13 +358,27 @@ void idct248_error(const char *name,
        important here) */
     err_max = 0;
     for(it=0;it<NB_ITS;it++) {
-        for(i=0;i<64;i++)
-            block1[i] = (random() % 512) - 256;
         
+        /* XXX: use forward transform to generate values */
+        for(i=0;i<64;i++)
+            block1[i] = (random() % 256) - 128;
+        block1[0] += 1024;
+
         for(i=0; i<64; i++)
             block[i]= block1[i];
         idct248_ref(img_dest1, 8, block);
         
+        for(i=0; i<64; i++)
+            block[i]= block1[i];
+        idct248_put(img_dest, 8, block);
+        
+        for(i=0;i<64;i++) {
+            v = abs((int)img_dest[i] - (int)img_dest1[i]);
+            if (v == 255)
+                printf("%d %d\n", img_dest[i], img_dest1[i]);
+            if (v > err_max)
+                err_max = v;
+        }
 #if 0
         printf("ref=\n");
         for(i=0;i<8;i++) {
@@ -373,13 +388,7 @@ void idct248_error(const char *name,
             }
             printf("\n");
         }
-#endif
         
-        for(i=0; i<64; i++)
-            block[i]= block1[i];
-        idct248_put(img_dest, 8, block);
-        
-#if 0
         printf("out=\n");
         for(i=0;i<8;i++) {
             int j;
@@ -389,11 +398,6 @@ void idct248_error(const char *name,
             printf("\n");
         }
 #endif
-        for(i=0;i<64;i++) {
-            v = abs(img_dest[i] - img_dest1[i]);
-            if (v > err_max)
-                err_max = v;
-        }
     }
     printf("%s %s: err_inf=%d\n",
            1 ? "IDCT248" : "DCT248",
