@@ -30,9 +30,9 @@ version 0.4.6pre1:
 - added DV video decoder
 - preliminary RTP/RTSP support in ffserver and libavformat
 - H.263+ AIC decoding/encoding support. (Juanjo)
-- VCD MPEG-PS mode.
-- PSNR stuff.
-- Simple stats output.
+- VCD MPEG-PS mode. (Juanjo)
+- PSNR stuff. (Juanjo)
+- Simple stats output. (Juanjo)
 
 version 0.4.5:
 
