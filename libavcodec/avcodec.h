@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4600
-#define LIBAVCODEC_BUILD_STR   "4600"
+#define LIBAVCODEC_BUILD       4601
+#define LIBAVCODEC_BUILD_STR   "4601"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -90,7 +90,9 @@ static const int Motion_Est_QTab[] = { 1, 4, 3, 6, 5, 2 };
 #define CODEC_FLAG_TYPE   0x0040 /* fixed I/P frame type, from avctx->key_frame */
 /* parent program gurantees that the input for b-frame containing streams is not written to 
    for at least s->max_b_frames+1 frames, if this is not set than the input will be copied */
-#define CODEC_FLAG_INPUT_PRESERVED 0x0100 
+#define CODEC_FLAG_INPUT_PRESERVED 0x0100
+#define CODEC_FLAG_PASS1 0x0200  /* use internal 2pass ratecontrol in first  pass mode */
+#define CODEC_FLAG_PASS2 0x0400  /* use internal 2pass ratecontrol in second pass mode */
 
 /* codec capabilities */
 
@@ -139,13 +141,18 @@ typedef struct AVCodecContext {
     int key_frame;    /* true if the previous compressed frame was 
                          a key frame (intra, or seekable) */
     int quality;      /* quality of the previous encoded frame 
-                         (between 1 (good) and 31 (bad)) */
+                         (between 1 (good) and 31 (bad)) 
+                         this is allso used to set the quality in vbr mode
+                         and the per frame quality in CODEC_FLAG_TYPE (second pass mode) */
     float qcompress;  /* amount of qscale change between easy & hard scenes (0.0-1.0)*/
     float qblur;      /* amount of qscale smoothing over time (0.0-1.0) */
     int qmin;         /* min qscale */
     int qmax;         /* max qscale */
     int max_qdiff;    /* max qscale difference between frames */
     int max_b_frames; /* maximum b frames, the output will be delayed by max_b_frames+1 relative to the input */
+    float b_quant_factor;/* qscale factor between ips and b frames */
+    int rc_strategy;
+    int b_frame_strategy;
 
     struct AVCodec *codec;
     void *priv_data;

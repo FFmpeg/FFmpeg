@@ -31,8 +31,6 @@
 #endif
 
 static void encode_picture(MpegEncContext *s, int picture_number);
-static void rate_control_init(MpegEncContext *s);
-static int rate_estimate_qscale(MpegEncContext *s);
 static void dct_unquantize_mpeg1_c(MpegEncContext *s, 
                                    DCTELEM *block, int n, int qscale);
 static void dct_unquantize_mpeg2_c(MpegEncContext *s,
@@ -377,10 +375,13 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->max_qdiff= avctx->max_qdiff;
     s->qcompress= avctx->qcompress;
     s->qblur= avctx->qblur;
+    s->b_quant_factor= avctx->b_quant_factor;
     s->avctx = avctx;
     s->aspect_ratio_info= avctx->aspect_ratio_info;
     s->flags= avctx->flags;
     s->max_b_frames= avctx->max_b_frames;
+    s->rc_strategy= avctx->rc_strategy;
+    s->b_frame_strategy= avctx->b_frame_strategy;
     
     if (s->gop_size <= 1) {
         s->intra_only = 1;
@@ -510,8 +511,8 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->non_intra_matrix[i] = default_non_intra_matrix[i];
     }
 
-    /* rate control init */
-    rate_control_init(s);
+    if(ff_rate_control_init(s) < 0)
+        return -1;
 
     s->picture_number = 0;
     s->picture_in_gop_number = 0;
@@ -530,6 +531,9 @@ int MPV_encode_end(AVCodecContext *avctx)
 #ifdef STATS
     print_stats();
 #endif
+
+    ff_rate_control_uninit(s);
+
     MPV_common_end(s);
     if (s->out_format == FMT_MJPEG)
         mjpeg_close(s);
@@ -577,7 +581,6 @@ void MPV_frame_start(MpegEncContext *s)
             s->current_picture[i] = s->aux_picture[i];
         }
     } else {
-        s->last_non_b_pict_type= s->pict_type;
         for(i=0;i<3;i++) {
             /* swap next and last */
             tmp = s->last_picture[i];
@@ -605,6 +608,12 @@ void MPV_frame_end(MpegEncContext *s)
       }
     }
     emms_c();
+    
+    if(s->pict_type!=B_TYPE){
+        s->last_non_b_pict_type= s->pict_type;
+        s->last_non_b_qscale= s->qscale;
+        s->last_non_b_mc_mb_var= s->mc_mb_var;
+    }
 }
 
 /* reorder input for encoding */
@@ -695,25 +704,34 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
 
-    s->force_input_type= (avctx->flags&CODEC_FLAG_TYPE) ?
-	(avctx->key_frame ? I_TYPE : P_TYPE) : 0;
-    if (!s->intra_only) {
-        /* first picture of GOP is intra */
-        if (s->input_picture_in_gop_number % s->gop_size==0 || s->force_input_type==I_TYPE){
-            s->input_picture_in_gop_number=0;
-            s->input_pict_type = I_TYPE;
-        }else if(s->max_b_frames==0){
-            s->input_pict_type = P_TYPE;
-        }else{
-            if(s->b_frames_since_non_b < s->max_b_frames) //FIXME more IQ
-                s->input_pict_type = B_TYPE;
-            else
+    if(avctx->flags&CODEC_FLAG_TYPE){
+        s->input_pict_type=
+        s->force_input_type= avctx->key_frame ? I_TYPE : P_TYPE;
+    }else if(s->flags&CODEC_FLAG_PASS2){
+        s->input_pict_type=
+        s->force_input_type= s->rc_context.entry[s->input_picture_number].new_pict_type;
+    }else{
+        s->force_input_type=0;
+        if (!s->intra_only) {
+            /* first picture of GOP is intra */
+            if (s->input_picture_in_gop_number % s->gop_size==0){
+                s->input_pict_type = I_TYPE;
+            }else if(s->max_b_frames==0){
                 s->input_pict_type = P_TYPE;
+            }else{
+                if(s->b_frames_since_non_b < s->max_b_frames) //FIXME more IQ
+                    s->input_pict_type = B_TYPE;
+                else
+                    s->input_pict_type = P_TYPE;
+            }
+        } else {
+            s->input_pict_type = I_TYPE;
         }
-    } else {
-        s->input_pict_type = I_TYPE;
     }
 
+    if(s->input_pict_type==I_TYPE)
+        s->input_picture_in_gop_number=0;
+    
     reorder_input(s, pict);
     
     /* output? */
@@ -745,14 +763,19 @@ int MPV_encode_picture(AVCodecContext *avctx,
             mjpeg_picture_trailer(s);
 
         avctx->quality = s->qscale;
+        
+        if(s->flags&CODEC_FLAG_PASS1)
+            ff_write_pass1_stats(s);
     }
 
     s->input_picture_number++;
     s->input_picture_in_gop_number++;
 
     flush_put_bits(&s->pb);
-    s->last_frame_bits= s->frame_bits;
     s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
+    if(s->pict_type==B_TYPE) s->pb_frame_bits+= s->frame_bits;
+    else                     s->pb_frame_bits= s->frame_bits;
+
     s->total_bits += s->frame_bits;
     avctx->frame_bits  = s->frame_bits;
 //printf("fcode: %d, type: %d, head: %d, mv: %d, misc: %d, frame: %d, itex: %d, ptex: %d\n", 
@@ -1425,7 +1448,7 @@ static void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int
     d->p_count= s->p_count;
     d->skip_count= s->skip_count;
     d->misc_bits= s->misc_bits;
-    d->last_bits= s->last_bits;
+    d->last_bits= 0;
 
     d->mb_skiped= s->mb_skiped;
 }
@@ -1449,7 +1472,6 @@ static void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int 
     d->p_count= s->p_count;
     d->skip_count= s->skip_count;
     d->misc_bits= s->misc_bits;
-    d->last_bits= s->last_bits;
 
     d->mb_intra= s->mb_intra;
     d->mb_skiped= s->mb_skiped;
@@ -1479,7 +1501,6 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->block_wrap[4]=
     s->block_wrap[5]= s->mb_width + 2;
     
-    s->last_mc_mb_var = s->mc_mb_var;
     /* Reset the average MB variance */
     s->avg_mb_var = 0;
     s->mc_mb_var = 0;
@@ -1524,12 +1545,13 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         memset(s->mb_type      , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
     }
 
-    if(s->avg_mb_var < s->mc_mb_var && s->pict_type != B_TYPE && (!s->force_type) && s->max_b_frames==0){ //FIXME subtract MV bits
-        // FIXME b-frames & scene change detection
-        s->input_pict_type= I_TYPE;
+    if(s->avg_mb_var < s->mc_mb_var && s->pict_type == P_TYPE){ //FIXME subtract MV bits
         s->pict_type= I_TYPE;
-        s->input_picture_in_gop_number=0;
         memset(s->mb_type   , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
+        if(s->max_b_frames==0){
+            s->input_pict_type= I_TYPE;
+            s->input_picture_in_gop_number=0;
+        }
 //printf("Scene change detected, encoding as I Frame\n");
     }
     
@@ -1550,8 +1572,11 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
 //    printf("%d %d\n", s->avg_mb_var, s->mc_mb_var);
 
-    if (!s->fixed_qscale) 
-        s->qscale = rate_estimate_qscale(s);
+    if(s->flags&CODEC_FLAG_PASS2)
+        s->qscale = ff_rate_estimate_qscale_pass2(s);
+    else if (!s->fixed_qscale) 
+        s->qscale = ff_rate_estimate_qscale(s);
+
 
     /* precompute matrix */
     if (s->out_format == FMT_MJPEG) {
@@ -1667,6 +1692,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s->mv[0][0][1] = s->p_mv_table[xy][1];
                     init_put_bits(&s->pb, bit_buf[1], 3000, NULL, NULL);
                     s->block= s->blocks[next_block];
+                    s->last_bits= 0; //done in copy_context_before_encode but we skip that here
 
                     encode_mb(s, s->mv[0][0][0], s->mv[0][0][1]);
                     d= get_bit_count(&s->pb);
@@ -1810,6 +1836,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 copy_context_after_encode(s, &best_s, -1);
                 copy_bits(&pb, bit_buf[best], dmin);
                 s->pb= pb;
+                s->last_bits= get_bit_count(&s->pb);
             } else {
                 int motion_x, motion_y;
                 s->mv_type=MV_TYPE_16X16;
@@ -2188,132 +2215,6 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
             block[i] = level;
         }
     }
-}
-
-/* rate control */
-
-static void rate_control_init(MpegEncContext *s)
-{
-    emms_c();
-
-    //initial values, they dont really matter as they will be totally different within a few frames
-    s->i_pred.coeff= s->p_pred.coeff= 7.0;
-    s->i_pred.count= s->p_pred.count= 1.0;
-    
-    s->i_pred.decay= s->p_pred.decay= 0.4;
-    
-    // use more bits at the beginning, otherwise high motion at the begin will look like shit
-    s->qsum=100;
-    s->qcount=100;
-
-    s->short_term_qsum=0.001;
-    s->short_term_qcount=0.001;
-}
-
-static double predict(Predictor *p, double q, double var)
-{
-    return p->coeff*var / (q*p->count);
-}
-
-static void update_predictor(Predictor *p, double q, double var, double size)
-{
-    double new_coeff= size*q / (var + 1);
-    if(var<1000) return;
-/*{
-int pred= predict(p, q, var);
-int error= abs(pred-size);
-static double sum=0;
-static int count=0;
-if(count>5) sum+=error;
-count++;
-if(256*256*256*64%count==0){
-    printf("%d %f %f\n", count, sum/count, p->coeff);
-}
-}*/
-    p->count*= p->decay;
-    p->coeff*= p->decay;
-    p->count++;
-    p->coeff+= new_coeff;
-}
-
-static int rate_estimate_qscale(MpegEncContext *s)
-{
-    int qmin= s->qmin;
-    int qmax= s->qmax;
-    int rate_q=5;
-    float q;
-    int qscale;
-    float br_compensation;
-    double diff;
-    double short_term_q;
-    double long_term_q;
-    int last_qscale= s->qscale;
-    double fps;
-    INT64 wanted_bits;
-    emms_c();
-
-    fps= (double)s->frame_rate / FRAME_RATE_BASE;
-    wanted_bits= s->bit_rate*(double)s->picture_number/fps;
-
-    
-    if(s->picture_number>2){
-        /* update predictors */
-        if(s->last_pict_type == I_TYPE){
-        //FIXME
-        }else{ //P Frame
-//printf("%d %d %d %f\n", s->qscale, s->last_mc_mb_var, s->frame_bits, s->p_pred.coeff);
-            update_predictor(&s->p_pred, s->qscale, s->last_mc_mb_var, s->frame_bits);
-        }
-    }
-
-    if(s->pict_type == I_TYPE){
-        //FIXME
-        rate_q= s->qsum/s->qcount;
-    }else{ //P Frame
-        int i;
-        int diff, best_diff=1000000000;
-        for(i=1; i<=31; i++){
-            diff= predict(&s->p_pred, i, s->mc_mb_var) - (double)s->bit_rate/fps;
-            if(diff<0) diff= -diff;
-            if(diff<best_diff){
-                best_diff= diff;
-                rate_q= i;
-            }
-        }
-    }
-
-    s->short_term_qsum*=s->qblur;
-    s->short_term_qcount*=s->qblur;
-
-    s->short_term_qsum+= rate_q;
-    s->short_term_qcount++;
-    short_term_q= s->short_term_qsum/s->short_term_qcount;
-    
-    long_term_q= s->qsum/s->qcount*(s->total_bits+1)/(wanted_bits+1); //+1 to avoid nan & 0
-
-//    q= (long_term_q - short_term_q)*s->qcompress + short_term_q;
-    q= 1/((1/long_term_q - 1/short_term_q)*s->qcompress + 1/short_term_q);
-
-    diff= s->total_bits - wanted_bits;
-    br_compensation= (s->bit_rate_tolerance - diff)/s->bit_rate_tolerance;
-    if(br_compensation<=0.0) br_compensation=0.001;
-    q/=br_compensation;
-
-    qscale= (int)(q + 0.5);
-    if     (qscale<qmin) qscale=qmin;
-    else if(qscale>qmax) qscale=qmax;
-    
-    if     (qscale<last_qscale-s->max_qdiff) qscale=last_qscale-s->max_qdiff;
-    else if(qscale>last_qscale+s->max_qdiff) qscale=last_qscale+s->max_qdiff;
-
-    s->qsum+= qscale;
-    s->qcount++;
-
-    s->last_pict_type= s->pict_type;
-//printf("q:%d diff:%d comp:%f rate_q:%d st_q:%f fvar:%d last_size:%d\n", qscale, (int)diff, br_compensation, 
-//       rate_q, short_term_q, s->mc_mb_var, s->frame_bits);
-//printf("%d %d\n", s->bit_rate, (int)fps);
-    return qscale;
 }
 
 AVCodec mpeg1video_encoder = {

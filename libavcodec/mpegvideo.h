@@ -44,6 +44,24 @@ typedef struct Predictor{
     double decay;
 } Predictor;
 
+typedef struct RateControlEntry{
+    int pict_type;
+    int qscale;
+    int mv_bits;
+    int i_tex_bits;
+    int p_tex_bits;
+    int misc_bits;
+    uint64_t expected_bits;
+    int new_pict_type;
+    float new_qscale;
+}RateControlEntry;
+
+typedef struct RateControlContext{
+    FILE *stats_file;
+    int num_entries;
+    RateControlEntry *entry;
+}RateControlContext;
+
 typedef struct ReorderBuffer{
     UINT8 *picture[3];
     int pict_type;
@@ -78,6 +96,9 @@ typedef struct MpegEncContext {
     int flags;        /* AVCodecContext.flags (HQ, MV4, ...) */
     int force_input_type;/* 0= no force, otherwise I_TYPE, P_TYPE, ... */
     int max_b_frames; /* max number of b-frames for encoding */
+    float b_quant_factor;/* qscale factor between ips and b frames */
+    int rc_strategy;
+    int b_frame_strategy;
     /* the following fields are managed internally by the encoder */
 
     /* bit output */
@@ -121,9 +142,9 @@ typedef struct MpegEncContext {
     int input_pict_type;        /* pict_type prior to reordering of frames */
     int force_type;             /* 0= no force, otherwise I_TYPE, P_TYPE, ... */
     int qscale;                 /* QP */
+    int last_non_b_qscale;	/* QP of last non b frame used for b frame qscale*/
     int pict_type;              /* I_TYPE, P_TYPE, B_TYPE, ... */
-    int last_non_b_pict_type;   /* used for mpeg4 gmc b-frames */
-    int last_pict_type;         /* used for bit rate stuff (needs that to update the right predictor) */
+    int last_non_b_pict_type;   /* used for mpeg4 gmc b-frames & ratecontrol */
     int frame_rate_index;
     /* motion compensation */
     int unrestricted_mv;
@@ -195,7 +216,7 @@ typedef struct MpegEncContext {
     int q_intra_matrix[64];
     int q_non_intra_matrix[64];
     /* identical to the above but for MMX & these are not permutated */
-    UINT16 __align8 q_intra_matrix16[64] ;
+    UINT16 __align8 q_intra_matrix16[64];
     UINT16 __align8 q_non_intra_matrix16[64];
     int block_last_index[6];  /* last non zero coefficient in block */
 
@@ -204,18 +225,19 @@ typedef struct MpegEncContext {
     /* bit rate control */
     int I_frame_bits; //FIXME used in mpeg12 ...
     int avg_mb_var;        /* average MB variance for current frame */
-    int mc_mb_var;     /* motion compensated MB variance for current frame */
-    int last_mc_mb_var;     /* motion compensated MB variance for last frame */
+    int mc_mb_var;         /* motion compensated MB variance for current frame */
+    int last_non_b_mc_mb_var;/* motion compensated MB variance for last non b frame */
     INT64 wanted_bits;
     INT64 total_bits;
-    int frame_bits;      /* bits used for the current frame */
-    int last_frame_bits; /* bits used for the last frame */
+    int frame_bits;        /* bits used for the current frame */
+    int pb_frame_bits;     /* bits of the last b...bp group */
     Predictor i_pred;
     Predictor p_pred;
     double qsum;         /* sum of qscales */
     double qcount;       /* count of qscales */
     double short_term_qsum;   /* sum of recent qscales */
     double short_term_qcount; /* count of recent qscales */
+    RateControlContext rc_context;
 
     /* statistics, used for 2-pass encoding */
     int mv_bits;
@@ -459,3 +481,14 @@ void mjpeg_encode_mb(MpegEncContext *s,
                      DCTELEM block[6][64]);
 void mjpeg_picture_header(MpegEncContext *s);
 void mjpeg_picture_trailer(MpegEncContext *s);
+
+/* rate control */
+int ff_rate_control_init(MpegEncContext *s);
+int ff_rate_estimate_qscale(MpegEncContext *s);
+int ff_rate_estimate_qscale_pass2(MpegEncContext *s);
+void ff_write_pass1_stats(MpegEncContext *s);
+void ff_rate_control_uninit(MpegEncContext *s);
+
+
+
+
