@@ -13,6 +13,7 @@ struct URLContext {
     int is_streamed;  /* true if streamed (no seek possible), default = false */
     int max_packet_size;  /* if non zero, the stream is packetized with this max packet size */
     void *priv_data;
+    char filename[1]; /* specified filename */
 };
 
 typedef struct URLContext URLContext;
@@ -35,6 +36,8 @@ int url_close(URLContext *h);
 int url_exist(const char *filename);
 offset_t url_filesize(URLContext *h);
 int url_get_max_packet_size(URLContext *h);
+void url_get_filename(URLContext *h, char *buf, int buf_size);
+
 /* not implemented */
 int url_poll(URLPollEntry *poll_table, int n, int timeout);
 

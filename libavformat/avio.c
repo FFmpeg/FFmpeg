@@ -61,11 +61,12 @@ int url_open(URLContext **puc, const char *filename, int flags)
     err = -ENOENT;
     goto fail;
  found:
-    uc = av_malloc(sizeof(URLContext));
+    uc = av_malloc(sizeof(URLContext) + strlen(filename));
     if (!uc) {
         err = -ENOMEM;
         goto fail;
     }
+    strcpy(uc->filename, filename);
     uc->prot = up;
     uc->flags = flags;
     uc->is_streamed = 0; /* default = not streamed */
@@ -153,4 +154,9 @@ offset_t url_filesize(URLContext *h)
 int url_get_max_packet_size(URLContext *h)
 {
     return h->max_packet_size;
+}
+
+void url_get_filename(URLContext *h, char *buf, int buf_size)
+{
+    pstrcpy(buf, buf_size, h->filename);
 }
