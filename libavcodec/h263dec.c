@@ -327,6 +327,8 @@ uint64_t time= rdtsc();
         return 0;
     }
 
+retry:
+    
     if(s->bitstream_buffer_size && buf_size<20){ //divx 5.01+ frame reorder
         init_get_bits(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size);
     }else
@@ -431,8 +433,7 @@ uint64_t time= rdtsc();
 	    avctx->aspected_height = s->aspected_height;
 	}
 
-        if (MPV_common_init(s) < 0)
-            return -1;
+        goto retry;
     }
 
     if((s->codec_id==CODEC_ID_H263 || s->codec_id==CODEC_ID_H263P))

@@ -1283,8 +1283,9 @@ if(s->quarter_sample)
     if(s->flags&CODEC_FLAG_EMU_EDGE){
         if(src_x<0 || src_y<0 || src_x + (motion_x&1) + 16 > s->h_edge_pos
                               || src_y + (motion_y&1) + h  > v_edge_pos){
-            emulated_edge_mc(s, ptr, linesize, 17, h+1, src_x, src_y, s->h_edge_pos, v_edge_pos);
-            ptr= s->edge_emu_buffer;
+            emulated_edge_mc(s, ptr - src_offset, s->linesize, 17, 17+field_based, 
+                             src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
+            ptr= s->edge_emu_buffer + src_offset;
             emu=1;
         }
     }
@@ -1319,15 +1320,17 @@ if(s->quarter_sample)
     offset = (src_y * uvlinesize) + src_x + (src_offset >> 1);
     ptr = ref_picture[1] + offset;
     if(emu){
-        emulated_edge_mc(s, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, v_edge_pos>>1);
-        ptr= s->edge_emu_buffer;
+        emulated_edge_mc(s, ptr - (src_offset >> 1), s->uvlinesize, 9, 9+field_based, 
+                         src_x, src_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+        ptr= s->edge_emu_buffer + (src_offset >> 1);
     }
     pix_op[1][dxy](dest_cb + (dest_offset >> 1), ptr, uvlinesize, h >> 1);
 
     ptr = ref_picture[2] + offset;
     if(emu){
-        emulated_edge_mc(s, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, v_edge_pos>>1);
-        ptr= s->edge_emu_buffer;
+        emulated_edge_mc(s, ptr - (src_offset >> 1), s->uvlinesize, 9, 9+field_based, 
+                         src_x, src_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+        ptr= s->edge_emu_buffer + (src_offset >> 1);
     }
     pix_op[1][dxy](dest_cr + (dest_offset >> 1), ptr, uvlinesize, h >> 1);
 }
@@ -1365,8 +1368,9 @@ static inline void qpel_motion(MpegEncContext *s,
     if(s->flags&CODEC_FLAG_EMU_EDGE){
         if(src_x<0 || src_y<0 || src_x + (motion_x&3) + 16 > s->h_edge_pos
                               || src_y + (motion_y&3) + h  > v_edge_pos){
-            emulated_edge_mc(s, ptr, linesize, 17, h+1, src_x, src_y, s->h_edge_pos, v_edge_pos);
-            ptr= s->edge_emu_buffer;
+            emulated_edge_mc(s, ptr - src_offset, s->linesize, 17, 17+field_based, 
+                             src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
+            ptr= s->edge_emu_buffer + src_offset;
             emu=1;
         }
     }
@@ -1409,15 +1413,17 @@ static inline void qpel_motion(MpegEncContext *s,
     offset = (src_y * uvlinesize) + src_x + (src_offset >> 1);
     ptr = ref_picture[1] + offset;
     if(emu){
-        emulated_edge_mc(s, ptr,  uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, v_edge_pos>>1);
-        ptr= s->edge_emu_buffer;
+        emulated_edge_mc(s, ptr - (src_offset >> 1), s->uvlinesize, 9, 9 + field_based, 
+                         src_x, src_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+        ptr= s->edge_emu_buffer + (src_offset >> 1);
     }
     pix_op[1][dxy](dest_cb + (dest_offset >> 1), ptr,  uvlinesize, h >> 1);
     
     ptr = ref_picture[2] + offset;
     if(emu){
-        emulated_edge_mc(s, ptr,  uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, v_edge_pos>>1);
-        ptr= s->edge_emu_buffer;
+        emulated_edge_mc(s, ptr - (src_offset >> 1), s->uvlinesize, 9, 9 + field_based, 
+                         src_x, src_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+        ptr= s->edge_emu_buffer + (src_offset >> 1);
     }
     pix_op[1][dxy](dest_cr + (dest_offset >> 1), ptr,  uvlinesize, h >> 1);
 }
