@@ -27,15 +27,19 @@
 #include <string.h>
 #include <unistd.h>
 
-#define ALT_BITSTREAM_READER
-#define ALIGNED_BITSTREAM
 #include "common.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "bswap.h"
 #define bit_buffer_t GetBitContext
-#define get_bit_cache(buf) (show_bits(buf,24)<<8)
+
+static inline unsigned int get_bit_cache(GetBitContext *s){
+    OPEN_READER(re, s)
+    UPDATE_CACHE(re, s)
+    return GET_CACHE(re, s);
+//    CLOSE_READER(re, s)
+}
 
 /* variable length (bit) code */
 typedef struct vlc_code_s {
