@@ -4,7 +4,7 @@
  */
 
 /* intra picture macro block coded block pattern */
-static const uint16_t table_mb_intra[64][2] = {
+const uint16_t ff_msmp4_mb_i_table[64][2] = {
 { 0x1, 1 },{ 0x17, 6 },{ 0x9, 5 },{ 0x5, 5 },
 { 0x6, 5 },{ 0x47, 9 },{ 0x20, 7 },{ 0x10, 7 },
 { 0x2, 5 },{ 0x7c, 9 },{ 0x3a, 7 },{ 0x1d, 7 },

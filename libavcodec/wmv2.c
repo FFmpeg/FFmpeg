@@ -244,7 +244,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
         if (s->pict_type == I_TYPE) {
             set_stat(ST_INTRA_MB);
             put_bits(&s->pb, 
-                     table_mb_intra[coded_cbp][1], table_mb_intra[coded_cbp][0]);
+                     ff_msmp4_mb_i_table[coded_cbp][1], ff_msmp4_mb_i_table[coded_cbp][0]);
         } else {
             put_bits(&s->pb, 
                      wmv2_inter_table[w->cbp_table_index][cbp][1], 
@@ -734,7 +734,7 @@ static int wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         cbp = code & 0x3f;
     } else {
         s->mb_intra = 1;
-        code = get_vlc2(&s->gb, mb_intra_vlc.table, MB_INTRA_VLC_BITS, 2);
+        code = get_vlc2(&s->gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
         if (code < 0){
             av_log(s->avctx, AV_LOG_ERROR, "II-cbp illegal at %d %d\n", s->mb_x, s->mb_y);
             return -1;
