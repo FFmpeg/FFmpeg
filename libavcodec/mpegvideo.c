@@ -4102,7 +4102,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                     }
         
                     if (s->avctx->rtp_callback)
-                        s->avctx->rtp_callback(s->ptr_lastgob, current_packet_size, 0);
+                        s->avctx->rtp_callback(s->avctx, s->ptr_lastgob, current_packet_size, 0);
                     
                     switch(s->codec_id){
                     case CODEC_ID_MPEG4:
@@ -4543,7 +4543,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
         pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
         /* Call the RTP callback to send the last GOB */
         emms_c();
-        s->avctx->rtp_callback(s->ptr_lastgob, pdif, 0);
+        s->avctx->rtp_callback(s->avctx, s->ptr_lastgob, pdif, 0);
     }
 
     return 0;
