@@ -96,6 +96,9 @@ void avcodec_register_all(void)
 #endif
 #endif
     register_avcodec(&mpeg_decoder);
+#ifdef HAVE_XVMC
+    register_avcodec(&mpeg_xvmc_decoder);
+#endif
     register_avcodec(&dvvideo_decoder);
     register_avcodec(&dvaudio_decoder);
     register_avcodec(&mjpeg_decoder);

@@ -52,6 +52,12 @@ static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, 
 static int dct_quantize_trellis_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 #endif //CONFIG_ENCODERS
 
+#ifdef HAVE_XVMC
+extern int  XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx);
+extern void XVMC_field_end(MpegEncContext *s);
+extern void XVMC_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
+#endif
+
 void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w)= draw_edges_c;
 
 
@@ -1028,6 +1034,10 @@ alloc:
     }else 
         s->dct_unquantize = s->dct_unquantize_mpeg1;
 
+#ifdef HAVE_XVMC
+    if(s->avctx->xvmc_acceleration)
+        return XVMC_field_start(s, avctx);
+#endif
     return 0;
 }
 
@@ -1036,6 +1046,12 @@ void MPV_frame_end(MpegEncContext *s)
 {
     int i;
     /* draw edge for correct motion prediction if outside */
+#ifdef HAVE_XVMC
+//just to make sure that all data is rendered.
+    if(s->avctx->xvmc_acceleration){
+        XVMC_field_end(s);
+    }else
+#endif
     if(s->codec_id!=CODEC_ID_SVQ1 && s->codec_id != CODEC_ID_MPEG1VIDEO){
         if (s->pict_type != B_TYPE && !s->intra_only && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
             draw_edges(s->current_picture.data[0], s->linesize  , s->h_edge_pos   , s->v_edge_pos   , EDGE_WIDTH  );
@@ -2382,6 +2398,12 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int mb_x, mb_y;
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
+#ifdef HAVE_XVMC
+    if(s->avctx->xvmc_acceleration){
+        XVMC_decode_mb(s,block);
+        return;
+    }
+#endif
 
     mb_x = s->mb_x;
     mb_y = s->mb_y;

@@ -67,6 +67,11 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
                                     int n);
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
 
+#ifdef HAVE_XVMC
+extern int XVMC_field_start(MpegEncContext *s, AVCodecContext *avctx);
+extern int XVMC_field_end(MpegEncContext *s);
+#endif
+
 #ifdef CONFIG_ENCODERS
 static uint8_t (*mv_penalty)[MAX_MV*2+1]= NULL;
 static uint8_t fcode_tab[MAX_MV*2+1];
@@ -1875,7 +1880,13 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
                 } 
             }
       }
-    }
+#ifdef HAVE_XVMC
+// MPV_frame_start will call this function too,
+// but we need to call it on every field
+      if(s->avctx->xvmc_acceleration)
+         XVMC_field_start(s,avctx);
+#endif
+    }//fi(s->first_slice)
     s->first_slice = 0;
 
     init_get_bits(&s->gb, *buf, buf_size*8);
@@ -2020,6 +2031,10 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
     if (!s1->mpeg_enc_ctx_allocated)
         return 0;
 
+#ifdef HAVE_XVMC
+    if(s->avctx->xvmc_acceleration)
+        XVMC_field_end(s);
+#endif
     /* end of slice reached */
     if (/*s->mb_y<<field_pic == s->mb_height &&*/ !s->first_field) {
         /* end of image */
@@ -2103,6 +2118,11 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
             );
         avctx->bit_rate = s->bit_rate;
         
+        //get_format() or set_video(width,height,aspect,pix_fmt);
+        //until then pix_fmt may be changed right after codec init
+        if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT )
+            avctx->idct_algo = FF_IDCT_SIMPLE;
+
         if (MPV_common_init(s) < 0)
             return -1;
         s1->mpeg_enc_ctx_allocated = 1;
@@ -2181,6 +2201,11 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     avctx->has_b_frames= 0; //true?
     s->low_delay= 1;
     s->avctx = avctx;
+
+    //get_format() or set_video(width,height,aspect,pix_fmt);
+    //until then pix_fmt may be changed right after codec init
+    if( avctx->pix_fmt == PIX_FMT_XVMC_MPEG2_IDCT )
+        avctx->idct_algo = FF_IDCT_SIMPLE;
     
     if (MPV_common_init(s) < 0)
         return -1;
@@ -2414,3 +2439,35 @@ AVCodec mpeg_decoder = {
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
     .flush= ff_mpeg_flush,
 };
+
+#ifdef HAVE_XVMC
+static int mpeg_mc_decode_init(AVCodecContext *avctx){
+    Mpeg1Context *s;
+
+    if( !(avctx->slice_flags & SLICE_FLAG_CODED_ORDER) )
+        return -1;
+    if( !(avctx->slice_flags & SLICE_FLAG_ALLOW_FIELD) )
+        dprintf("mpeg12.c: XvMC decoder will work better if SLICE_FLAG_ALLOW_FIELD is set\n");
+
+    mpeg_decode_init(avctx);
+    s = avctx->priv_data;
+
+    avctx->pix_fmt = PIX_FMT_XVMC_MPEG2_IDCT;
+    avctx->xvmc_acceleration = 1;
+
+    return 0;
+}
+
+AVCodec mpeg_xvmc_decoder = {
+    "mpegvideo_xvmc",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MPEG2VIDEO_XVMC,
+    sizeof(Mpeg1Context),
+    mpeg_mc_decode_init,
+    NULL,
+    mpeg_decode_end,
+    mpeg_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
+};
+
+#endif

@@ -14,7 +14,7 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       mpegvideo.o jrevdct.o jfdctfst.o jfdctint.o\
       mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o \
-      mpeg12.o mpegaudiodec.o pcm.o simple_idct.o \
+      mpeg12.o xvmcvideo.o mpegaudiodec.o pcm.o simple_idct.o \
       ratecontrol.o adpcm.o eval.o dv.o error_resilience.o \
       fft.o mdct.o mace.o huffyuv.o cyuv.o opts.o raw.o h264.o golomb.o \
       vp3.o asv1.o 4xm.o cabac.o ffv1.o ra144.o ra288.o vcr1.o
