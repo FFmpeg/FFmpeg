@@ -4758,41 +4758,28 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     for(i=0; i<=last_non_zero - start_i; i++){
         int level_index, run, j;
-        const int dct_coeff= block[ scantable[i + start_i] ];
+        const int dct_coeff= ABS(block[ scantable[i + start_i] ]);
         const int zero_distoration= dct_coeff*dct_coeff;
         int best_score=256*256*256*120;
 
         for(level_index=0; level_index < coeff_count[i]; level_index++){
             int distoration;
             int level= coeff[level_index][i];
+            const int alevel= ABS(level);
             int unquant_coeff;
             
             assert(level);
 
             if(s->out_format == FMT_H263){
-                if(level>0){
-                    unquant_coeff= level*qmul + qadd;
-                }else{
-                    unquant_coeff= level*qmul - qadd;
-                }
+                unquant_coeff= alevel*qmul + qadd;
             }else{ //MPEG1
                 j= s->dsp.idct_permutation[ scantable[i + start_i] ]; //FIXME optimize
                 if(s->mb_intra){
-                    if (level < 0) {
-                        unquant_coeff = (int)((-level) * qscale * s->intra_matrix[j]) >> 3;
-                        unquant_coeff = -((unquant_coeff - 1) | 1);
-                    } else {
-                        unquant_coeff = (int)(  level  * qscale * s->intra_matrix[j]) >> 3;
+                        unquant_coeff = (int)(  alevel  * qscale * s->intra_matrix[j]) >> 3;
                         unquant_coeff =   (unquant_coeff - 1) | 1;
-                    }
                 }else{
-                    if (level < 0) {
-                        unquant_coeff = ((((-level) << 1) + 1) * qscale * ((int) s->inter_matrix[j])) >> 4;
-                        unquant_coeff = -((unquant_coeff - 1) | 1);
-                    } else {
-                        unquant_coeff = (((  level  << 1) + 1) * qscale * ((int) s->inter_matrix[j])) >> 4;
+                        unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) s->inter_matrix[j])) >> 4;
                         unquant_coeff =   (unquant_coeff - 1) | 1;
-                    }
                 }
                 unquant_coeff<<= 3;
             }
@@ -4880,7 +4867,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     s->coded_score[n] = last_score;
     
-    dc= block[0];
+    dc= ABS(block[0]);
     last_non_zero= last_i - 1 + start_i;
     memset(block + start_i, 0, (64-start_i)*sizeof(DCTELEM));
     
@@ -4893,32 +4880,22 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         
         for(i=0; i<coeff_count[0]; i++){
             int level= coeff[i][0];
-            int unquant_coeff, score, distoration;
+            int alevel= ABS(level);
+            int unquant_coeff, score, distortion;
 
             if(s->out_format == FMT_H263){
-                if(level>0){
-                    unquant_coeff= (level*qmul + qadd)>>3;
-                }else{
-                    unquant_coeff= (level*qmul - qadd)>>3;
-                }
+                    unquant_coeff= (alevel*qmul + qadd)>>3;
             }else{ //MPEG1
-                    if (level < 0) {
-                        unquant_coeff = ((((-level) << 1) + 1) * qscale * ((int) s->inter_matrix[0])) >> 4;
-                        unquant_coeff = -((unquant_coeff - 1) | 1);
-                    } else {
-                        unquant_coeff = (((  level  << 1) + 1) * qscale * ((int) s->inter_matrix[0])) >> 4;
-                        unquant_coeff =   (unquant_coeff - 1) | 1;
-                    }
+                    unquant_coeff = (((  alevel  << 1) + 1) * qscale * ((int) s->inter_matrix[0])) >> 4;
+                    unquant_coeff =   (unquant_coeff - 1) | 1;
             }
             unquant_coeff = (unquant_coeff + 4) >> 3;
             unquant_coeff<<= 3 + 3;
 
-            distoration= (unquant_coeff - dc) * (unquant_coeff - dc);
+            distortion= (unquant_coeff - dc) * (unquant_coeff - dc);
             level+=64;
-            if((level&(~127)) == 0)
-                score= distoration + last_length[UNI_AC_ENC_INDEX(0, level)]*lambda;
-            else
-                score= distoration + esc_length*lambda;
+            if((level&(~127)) == 0) score= distortion + last_length[UNI_AC_ENC_INDEX(0, level)]*lambda;
+            else                    score= distortion + esc_length*lambda;
 
             if(score < best_score){
                 best_score= score;
