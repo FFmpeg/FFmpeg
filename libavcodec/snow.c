@@ -2422,7 +2422,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     s->keyframe=avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
     pict->pict_type= s->keyframe ? FF_I_TYPE : FF_P_TYPE;
     
-    s->qlog= rint(QROOT*log2(pict->quality / (float)FF_QP2LAMBDA));
+    s->qlog= rint(QROOT*log(pict->quality / (float)FF_QP2LAMBDA)/log(2));
     //<64 >60
     s->qlog += 61;
 
