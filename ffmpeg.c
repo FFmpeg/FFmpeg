@@ -1121,18 +1121,20 @@ static int av_encode(AVFormatContext **output_files,
         ist = ist_table[i];
 	is = input_files[ist->file_index];
         ist->pts = 0;
-        switch (ist->st->codec.codec_type) {
-        case CODEC_TYPE_AUDIO:
-	    av_frac_init(&ist->next_pts, 
-	                 0, 0, is->pts_num * ist->st->codec.sample_rate);
-            break;
-        case CODEC_TYPE_VIDEO:
-            av_frac_init(&ist->next_pts, 
-	                 0, 0, is->pts_num * ist->st->codec.frame_rate);
-            break;
-        default:
-            break;
-	}
+        if (ist->decoding_needed) {
+            switch (ist->st->codec.codec_type) {
+            case CODEC_TYPE_AUDIO:
+                av_frac_init(&ist->next_pts, 
+                             0, 0, is->pts_num * ist->st->codec.sample_rate);
+                break;
+            case CODEC_TYPE_VIDEO:
+                av_frac_init(&ist->next_pts, 
+                             0, 0, is->pts_num * ist->st->codec.frame_rate);
+                break;
+            default:
+                break;
+            }
+        }
     }
     
     /* compute buffer size max (should use a complete heuristic) */
