@@ -5117,7 +5117,7 @@ static int decode_slice(H264Context *h){
         ff_init_cabac_states( &h->cabac, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64 );
         ff_init_cabac_decoder( &h->cabac,
                                s->gb.buffer + get_bits_count(&s->gb)/8,
-                               ( s->gb.size_in_bits - get_bits_count(&s->gb) ) );
+                               ( s->gb.size_in_bits - get_bits_count(&s->gb) + 7)/8);
         /* calculate pre-state */
         for( i= 0; i < 399; i++ ) {
             int pre;
@@ -5149,7 +5149,7 @@ static int decode_slice(H264Context *h){
                 s->mb_y--;
             }
 
-            if( ret < 0 ) {
+            if( ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 1) {
                 av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
                 return -1;

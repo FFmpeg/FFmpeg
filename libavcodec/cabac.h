@@ -39,6 +39,7 @@ typedef struct CABACContext{
     uint8_t mps_state[2*64];      ///< transIdxMPS
     const uint8_t *bytestream_start;
     const uint8_t *bytestream;
+    const uint8_t *bytestream_end;
     int bits_left;                ///<
     PutBitContext pb;
 }CABACContext;
@@ -253,7 +254,9 @@ static inline void renorm_cabac_decoder(CABACContext *c){
         c->range+= c->range;
         c->low+= c->low;
         if(--c->bits_left == 0){
-            c->low+= *c->bytestream++;
+            if(c->bytestream < c->bytestream_end)
+                c->low+= *c->bytestream;
+            c->bytestream++;
             c->bits_left= 8;
         }
     }
@@ -298,7 +301,9 @@ static inline int get_cabac_bypass(CABACContext *c){
     c->low += c->low;
 
     if(--c->bits_left == 0){
-        c->low+= *c->bytestream++;
+        if(c->bytestream < c->bytestream_end)
+            c->low+= *c->bytestream;
+        c->bytestream++;
         c->bits_left= 8;
     }
     
