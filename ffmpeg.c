@@ -301,7 +301,7 @@ static void do_audio_out(AVFormatContext *s,
 {
     UINT8 *buftmp;
     UINT8 audio_buf[2*MAX_AUDIO_PACKET_SIZE]; /* XXX: allocate it */
-    UINT8 audio_out[MAX_AUDIO_PACKET_SIZE]; /* XXX: allocate it */
+    UINT8 audio_out[4*MAX_AUDIO_PACKET_SIZE]; /* XXX: allocate it - yep really WMA */
     int size_out, frame_bytes, ret;
     AVCodecContext *enc;
 
@@ -346,7 +346,7 @@ static void do_audio_out(AVFormatContext *s,
             break;
         }
         ret = avcodec_encode_audio(enc, audio_out, size_out, 
-                                   (short *)buftmp);
+				   (short *)buftmp);
         av_write_frame(s, ost->index, audio_out, ret);
     }
 }
