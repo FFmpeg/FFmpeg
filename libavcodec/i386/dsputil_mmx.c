@@ -49,6 +49,7 @@ void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
 
 /* pixel operations */
+static const uint64_t mm_bfe  __attribute__ ((aligned(8))) = 0xfefefefefefefefeULL;
 static const uint64_t mm_bone __attribute__ ((aligned(8))) = 0x0101010101010101ULL;
 static const uint64_t mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001ULL;
 static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002ULL;
@@ -62,6 +63,7 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
 #define MOVQ_WONE(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(mm_wone))
 #define MOVQ_WTWO(regd)  __asm __volatile ("movq %0, %%" #regd " \n\t" ::"m"(mm_wtwo))
 #define MOVQ_BONE(regd)  "movq "MANGLE(mm_bone)", "#regd" \n\t"
+#define MOVQ_BFE(regd)  "movq "MANGLE(mm_bfe)", "#regd" \n\t"
 #else
 // for shared library it's better to use this way for accessing constants
 // pcmpeqd -> -1
@@ -80,7 +82,30 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
        "pcmpeqd " #regd ", " #regd " \n\t" \
        "psrlw $15, " #regd " \n\t"\
        "packuswb " #regd ", " #regd " \n\t"
+
+#define MOVQ_BFE(regd) \
+	"pcmpeqd " #regd ", " #regd " \n\t"\
+	"paddb " #regd ", " #regd " \n\t"
 #endif
+
+// using mm6 as temporary and for the output result
+// first argument is unmodifed and second is trashed
+// mm7 is supposed to contain 0xfefefefefefefefe
+#define PAVG_MMX_NO_RND(rega, regb) \
+    "movq " #rega ", %%mm6	\n\t"\
+    "pand " #regb ", %%mm6	\n\t"\
+    "pxor " #rega ", " #regb "	\n\t"\
+    "pand %%mm7, " #regb "	\n\t"\
+    "psrlq $1, " #regb " 	\n\t"\
+    "paddb " #regb ", %%mm6	\n\t"
+
+#define PAVG_MMX(rega, regb) \
+    "movq " #rega ", %%mm6	\n\t"\
+    "por  " #regb ", %%mm6	\n\t"\
+    "pxor " #rega ", " #regb "	\n\t"\
+    "pand %%mm7, " #regb "     	\n\t"\
+    "psrlq $1, " #regb "	\n\t"\
+    "psubb " #regb ", %%mm6 	\n\t"
 
 
 /***********************************/
@@ -291,8 +316,12 @@ static void put_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int
 	);
 }
 
+// will have to be check if it's better to have bigger
+// unrolled code also on Celerons - for now  yes
+#define LONG_UNROLL 1
 static void put_pixels_x2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
+#if 0
   UINT8 *p;
   const UINT8 *pix;
   p = block;
@@ -301,7 +330,7 @@ static void put_pixels_x2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, 
   MOVQ_WONE(mm4);
   JUMPALIGN();
   do {
-    __asm __volatile(
+      __asm __volatile(
 	"movq	%1, %%mm0\n\t"
 	"movq	1%1, %%mm1\n\t"
 	"movq	%%mm0, %%mm2\n\t"
@@ -320,13 +349,50 @@ static void put_pixels_x2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, 
 	"movq	%%mm0, %0\n\t"
 	:"=m"(*p)
 	:"m"(*pix)
-	:"memory");
+		       :"memory");
    pix += line_size; p += line_size;
   } while (--h);
+#else
+  __asm __volatile(
+  	MOVQ_BFE(%%mm7)
+	"lea (%3, %3), %%eax	\n\t"
+	".balign 8     		\n\t"
+	"1:			\n\t"
+	"movq (%1), %%mm0	\n\t"
+	"movq (%1, %3), %%mm2	\n\t"
+	"movq 1(%1), %%mm1	\n\t"
+	"movq 1(%1, %3), %%mm3	\n\t"
+	PAVG_MMX(%%mm0, %%mm1)
+	"movq %%mm6, (%2)	\n\t"
+	PAVG_MMX(%%mm2, %%mm3)
+	"movq %%mm6, (%2, %3)	\n\t"
+	"addl %%eax, %1		\n\t"
+	"addl %%eax, %2		\n\t"
+#if LONG_UNROLL
+	"movq (%1), %%mm0	\n\t"
+	"movq (%1, %3), %%mm2	\n\t"
+	"movq 1(%1), %%mm1	\n\t"
+	"movq 1(%1, %3), %%mm3	\n\t"
+	PAVG_MMX(%%mm0, %%mm1)
+	"movq %%mm6, (%2)	\n\t"
+	PAVG_MMX(%%mm2, %%mm3)
+	"movq %%mm6, (%2, %3)	\n\t"
+	"addl %%eax, %1		\n\t"
+	"addl %%eax, %2		\n\t"
+	"subl $4, %0		\n\t"
+#else
+	"subl $2, %0		\n\t"
+#endif
+	"jnz 1b			\n\t"
+	:"+g"(h), "+S"(pixels), "+D"(block)
+	:"r"(line_size)
+	:"eax", "memory");
+#endif
 }
 
 static void put_pixels_y2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
+#if 0
   UINT8 *p;
   const UINT8 *pix;
   p = block;
@@ -359,6 +425,41 @@ static void put_pixels_y2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, 
    pix += line_size;
    p += line_size;
   } while (--h);
+#else
+  __asm __volatile(
+  	MOVQ_BFE(%%mm7)
+	"lea (%3, %3), %%eax	\n\t"
+	"movq (%1), %%mm0	\n\t"
+	".balign 8     		\n\t"
+	"1:			\n\t"
+	"movq (%1, %3), %%mm1	\n\t"
+	"movq (%1, %%eax),%%mm2	\n\t"
+	PAVG_MMX(%%mm1, %%mm0)
+	"movq %%mm6, (%2)	\n\t"
+	PAVG_MMX(%%mm2, %%mm1)
+	"movq %%mm6, (%2, %3)	\n\t"
+	"addl %%eax, %1		\n\t"
+	"addl %%eax, %2		\n\t"
+#ifdef LONG_UNROLL
+	"movq (%1, %3), %%mm1	\n\t"
+	"movq (%1, %%eax),%%mm0	\n\t"
+	PAVG_MMX(%%mm1, %%mm2)
+	"movq %%mm6, (%2)	\n\t"
+	PAVG_MMX(%%mm0, %%mm1)
+	"movq %%mm6, (%2, %3)	\n\t"
+	"addl %%eax, %1		\n\t"
+	"addl %%eax, %2		\n\t"
+	"subl $4, %0		\n\t"
+#else
+	"subl $2, %0		\n\t"
+#endif
+	"jnz 1b			\n\t"
+	:"+g"(h), "+S"(pixels), "+D"(block)
+	:"r"(line_size)
+	:"eax", "memory");
+#endif
+
+
 }
 
 static void put_pixels_xy2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
