@@ -1023,7 +1023,7 @@ static int mjpeg_decode_dri(MJpegDecodeContext *s,
     if (get_bits(&s->gb, 16) != 4)
 	return -1;
     s->restart_interval = get_bits(&s->gb, 16);
-    printf("restart interval: %d\n", s->restart_interval);
+    dprintf("restart interval: %d\n", s->restart_interval);
 
     return 0;
 }
