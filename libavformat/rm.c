@@ -373,13 +373,13 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int 
     } else {
         put_byte(pb, 0x01); 
     }
-    put_be16(pb, 0x4000 | (size)); /* total frame size */
-    put_be16(pb, 0x4000 | (size));              /* offset from the start or the end */
+    put_be16(pb, 0x4000 + (size)); /* total frame size */
+    put_be16(pb, 0x4000 + (size));              /* offset from the start or the end */
 #else
     /* full frame */
     write_packet_header(s, size + 6);
     put_byte(pb, 0xc0); 
-    put_be16(pb, 0x4000 | size); /* total frame size */
+    put_be16(pb, 0x4000 + size); /* total frame size */
     put_be16(pb, 0x4000 + packet_number * 126); /* position in stream */
 #endif
     put_byte(pb, stream->nb_frames & 0xff); 
