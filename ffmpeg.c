@@ -2900,7 +2900,7 @@ static void opt_target(const char *arg)
 
         video_bit_rate = 2040000;
         video_rc_max_rate = 2516000;
-        video_rc_min_rate = 1145000;
+        video_rc_min_rate = 0; //1145000;
         video_rc_buffer_size = 224*1024*8;
 
         audio_bit_rate = 224000;
@@ -2917,7 +2917,7 @@ static void opt_target(const char *arg)
 
         video_bit_rate = 6000000;
         video_rc_max_rate = 9000000;
-        video_rc_min_rate = 1500000;
+        video_rc_min_rate = 0; //1500000;
         video_rc_buffer_size = 224*1024*8;
 
         audio_bit_rate = 448000;
