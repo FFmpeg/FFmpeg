@@ -494,33 +494,35 @@ static inline int get_symbol(CABACContext *c, uint8_t *state, int is_signed){
 
 static inline void put_symbol2(CABACContext *c, uint8_t *state, int v, int log2){
     int i;
-    int e= av_log2(v<<1);
+    int r= log2>=0 ? 1<<log2 : 1;
 
     assert(v>=0);
-    if(v==0) assert(e==0);
-    
-    while(e > log2){
-        put_cabac(c, state+log2, 1);
-        v -= 1<<log2;
-        assert(v>=0);
-        e= av_log2(v<<1);
+    assert(log2>=-4);
+
+    while(v >= r){
+        put_cabac(c, state+4+log2, 1);
+        v -= r;
         log2++;
+        if(log2>0) r+=r;
     }
-    put_cabac(c, state+log2, 0);
+    put_cabac(c, state+4+log2, 0);
     
     for(i=log2-1; i>=0; i--){
         put_cabac(c, state+31-i, (v>>i)&1);
     }
-    assert(!((v>>i)&1));
 }
 
 static inline int get_symbol2(CABACContext *c, uint8_t *state, int log2){
     int i;
+    int r= log2>=0 ? 1<<log2 : 1;
     int v=0;
 
-    while(get_cabac(c, state+log2)){
-        v+= 1<<log2;
+    assert(log2>=-4);
+
+    while(get_cabac(c, state+4+log2)){
+        v+= r;
         log2++;
+        if(log2>0) r+=r;
     }
     
     for(i=log2-1; i>=0; i--){
@@ -1839,7 +1841,7 @@ static void encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTEL
                 if(v){
                     int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
 
-                    put_symbol(&s->c, b->state[context + 2], ABS(v)-1, 0);
+                    put_symbol2(&s->c, b->state[context + 2], ABS(v)-1, context-4);
                     put_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
                 }
             }
@@ -2255,7 +2257,7 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                 }
                 if(v){
                     int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
-                    v= get_symbol(&s->c, b->state[context + 2], 0) + 1;
+                    v= get_symbol2(&s->c, b->state[context + 2], context-4) + 1;
                     if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]]))
                         v= -v;
                     src[x + y*stride]= v;
