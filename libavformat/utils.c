@@ -603,7 +603,7 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic)
             st->start_time < start_time)
             start_time = st->start_time;
     }
-    printf("start=%lld\n", start_time);
+    fprintf(stderr, "start=%lld\n", start_time);
     if (start_time != MAXINT64)
         ic->start_time = start_time;
     
@@ -1173,7 +1173,7 @@ void dump_format(AVFormatContext *ic,
             is_output ? ic->oformat->name : ic->iformat->name, 
             is_output ? "to" : "from", url);
     if (!is_output) {
-        printf("  Duration: ");
+        fprintf(stderr, "  Duration: ");
         if (ic->duration != AV_NOPTS_VALUE) {
             int hours, mins, secs, us;
             secs = ic->duration / AV_TIME_BASE;
@@ -1182,18 +1182,18 @@ void dump_format(AVFormatContext *ic,
             secs %= 60;
             hours = mins / 60;
             mins %= 60;
-            printf("%02d:%02d:%02d.%01d", hours, mins, secs, 
+            fprintf(stderr, "%02d:%02d:%02d.%01d", hours, mins, secs, 
                    (10 * us) / AV_TIME_BASE);
         } else {
-            printf("N/A");
+            fprintf(stderr, "N/A");
         }
-        printf(", bitrate: ");
+        fprintf(stderr, ", bitrate: ");
         if (ic->bit_rate) {
-            printf("%d kb/s", ic->bit_rate / 1000);
+            fprintf(stderr,"%d kb/s", ic->bit_rate / 1000);
         } else {
-            printf("N/A");
+            fprintf(stderr, "N/A");
         }
-        printf("\n");
+        fprintf(stderr, "\n");
     }
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
