@@ -1340,9 +1340,15 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsign
 	unsigned num_pixels = src_size >> 2;
 	for(i=0; i<num_pixels; i++)
 	{
-		dst[4*i + 0] = src[4*i + 2];
-		dst[4*i + 1] = src[4*i + 1];
-		dst[4*i + 2] = src[4*i + 0];
+#ifdef WORDS_BIGENDIAN  
+	  dst[4*i + 1] = src[4*i + 3];
+	  dst[4*i + 2] = src[4*i + 2];
+	  dst[4*i + 3] = src[4*i + 1];
+#else
+	  dst[4*i + 0] = src[4*i + 2];
+	  dst[4*i + 1] = src[4*i + 1];
+	  dst[4*i + 2] = src[4*i + 0];
+#endif
 	}
 #endif
 }
