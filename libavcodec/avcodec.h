@@ -1874,6 +1874,7 @@ void audio_resample_close(ReSampleContext *s);
 struct AVResampleContext *av_resample_init(int out_rate, int in_rate);
 int av_resample(struct AVResampleContext *c, short *dst, short *src, int *consumed, int src_size, int dst_size, int update_ctx);
 void av_resample_compensate(struct AVResampleContext *c, int sample_delta, int compensation_distance);
+void av_resample_close(struct AVResampleContext *c);
 
 /* YUV420 format is assumed ! */
 
