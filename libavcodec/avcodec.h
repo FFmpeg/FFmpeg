@@ -84,6 +84,7 @@ enum CodecID {
     CODEC_ID_MSVIDEO1,
     CODEC_ID_IDCIN,
     CODEC_ID_8BPS,
+    CODEC_ID_SMC,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1568,6 +1569,7 @@ extern AVCodec msvideo1_decoder;
 extern AVCodec vqa_decoder;
 extern AVCodec idcin_decoder;
 extern AVCodec eightbps_decoder;
+extern AVCodec smc_decoder;
 extern AVCodec ra_144_decoder;
 extern AVCodec ra_288_decoder;
 extern AVCodec roq_dpcm_decoder;

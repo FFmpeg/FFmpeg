@@ -18,7 +18,8 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       fft.o mdct.o mace.o huffyuv.o cyuv.o opts.o raw.o h264.o golomb.o \
       vp3.o asv1.o 4xm.o cabac.o ffv1.o ra144.o ra288.o vcr1.o cljr.o \
       roqvideo.o dpcm.o interplayvideo.o xan.o rpza.o cinepak.o msrle.o \
-      msvideo1.o vqavideo.o idcinvideo.o adx.o rational.o faandct.o 8bps.o
+      msvideo1.o vqavideo.o idcinvideo.o adx.o rational.o faandct.o 8bps.o \
+      smc.o
 
 ifeq ($(AMR_NB),yes)
 ifeq ($(AMR_NB_FIXED),yes)
