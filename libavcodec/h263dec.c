@@ -425,9 +425,10 @@ uint64_t time= rdtsc();
             return buf_size;
     }
 
+    
 retry:
     
-    if(s->bitstream_buffer_size && buf_size<20){ //divx 5.01+ frame reorder
+    if(s->bitstream_buffer_size && (s->divx_packed || buf_size<20)){ //divx 5.01+/xvid frame reorder
         init_get_bits(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size*8);
     }else
         init_get_bits(&s->gb, buf, buf_size*8);
@@ -678,21 +679,26 @@ retry:
     /* divx 5.01+ bistream reorder stuff */
     if(s->codec_id==CODEC_ID_MPEG4 && s->bitstream_buffer_size==0 && s->divx_packed){
         int current_pos= get_bits_count(&s->gb)>>3;
+        int startcode_found=0;
 
         if(   buf_size - current_pos > 5 
            && buf_size - current_pos < BITSTREAM_BUFFER_SIZE){
             int i;
-            int startcode_found=0;
             for(i=current_pos; i<buf_size-3; i++){
                 if(buf[i]==0 && buf[i+1]==0 && buf[i+2]==1 && buf[i+3]==0xB6){
                     startcode_found=1;
                     break;
                 }
             }
-            if(startcode_found){
-                memcpy(s->bitstream_buffer, buf + current_pos, buf_size - current_pos);
-                s->bitstream_buffer_size= buf_size - current_pos;
-            }
+        }
+        if(s->gb.buffer == s->bitstream_buffer && buf_size>20){ //xvid style
+            startcode_found=1;
+            current_pos=0;
+        }
+
+        if(startcode_found){
+            memcpy(s->bitstream_buffer, buf + current_pos, buf_size - current_pos);
+            s->bitstream_buffer_size= buf_size - current_pos;
         }
     }
 
