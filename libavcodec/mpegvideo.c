@@ -1110,13 +1110,16 @@ static inline void put_dct(MpegEncContext *s,
 static inline void add_dct(MpegEncContext *s, 
                            DCTELEM *block, int i, UINT8 *dest, int line_size)
 {
-    /* skip dequant / idct if we are really late ;) */
-    if(s->hurry_up>1) return;
-
     if (s->block_last_index[i] >= 0) {
-        if (!s->mpeg2)
-            if(s->encoding || (!s->h263_msmpeg4))
-                s->dct_unquantize(s, block, i, s->qscale);
+        ff_idct_add (dest, line_size, block);
+    }
+}
+
+static inline void add_dequant_dct(MpegEncContext *s, 
+                           DCTELEM *block, int i, UINT8 *dest, int line_size)
+{
+    if (s->block_last_index[i] >= 0) {
+        s->dct_unquantize(s, block, i, s->qscale);
 
         ff_idct_add (dest, line_size, block);
     }
@@ -1168,9 +1171,7 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int mb_x, mb_y;
-    int dct_linesize, dct_offset;
-    op_pixels_func *op_pix;
-    qpel_mc_func *op_qpix;
+    const int mb_xy = s->mb_y * s->mb_width + s->mb_x;
 
     mb_x = s->mb_x;
     mb_y = s->mb_y;
@@ -1186,7 +1187,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
         if (s->h263_pred || s->h263_aic) {
-            if(s->mbintra_table[mb_x + mb_y*s->mb_width])
+            if(s->mbintra_table[mb_xy])
                 ff_clean_intra_table_entries(s);
         } else {
             s->last_dc[0] =
@@ -1195,15 +1196,14 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         }
     }
     else if (s->h263_pred || s->h263_aic)
-        s->mbintra_table[mb_x + mb_y*s->mb_width]=1;
+        s->mbintra_table[mb_xy]=1;
 
     /* update motion predictor, not for B-frames as they need the motion_val from the last P/S-Frame */
-    if (s->out_format == FMT_H263) { //FIXME move into h263.c if possible, format specific stuff shouldnt be here
-      if(s->pict_type!=B_TYPE){
-        int xy, wrap, motion_x, motion_y;
+    if (s->out_format == FMT_H263 && s->pict_type!=B_TYPE) { //FIXME move into h263.c if possible, format specific stuff shouldnt be here
+        int motion_x, motion_y;
         
-        wrap = 2 * s->mb_width + 2;
-        xy = 2 * mb_x + 1 + (2 * mb_y + 1) * wrap;
+        const int wrap = s->block_wrap[0];
+        const int xy = s->block_index[0];
         if (s->mb_intra) {
             motion_x = 0;
             motion_y = 0;
@@ -1222,17 +1222,18 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->motion_val[xy + 1 + wrap][0] = motion_x;
             s->motion_val[xy + 1 + wrap][1] = motion_y;
         }
-      }
     }
     
     if (!(s->encoding && (s->intra_only || s->pict_type==B_TYPE))) {
         UINT8 *dest_y, *dest_cb, *dest_cr;
-        UINT8 *mbskip_ptr;
+        int dct_linesize, dct_offset;
+        op_pixels_func *op_pix;
+        qpel_mc_func *op_qpix;
 
         /* avoid copy if macroblock skipped in last frame too 
            dont touch it for B-frames as they need the skip info from the next p-frame */
         if (s->pict_type != B_TYPE) {
-            mbskip_ptr = &s->mbskip_table[s->mb_y * s->mb_width + s->mb_x];
+            UINT8 *mbskip_ptr = &s->mbskip_table[mb_xy];
             if (s->mb_skiped) {
                 s->mb_skiped = 0;
                 /* if previous was skipped too, then nothing to do ! 
@@ -1258,10 +1259,9 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         }
 
         if (!s->mb_intra) {
-            const int xy= s->mb_y * s->mb_width + s->mb_x;
             /* motion handling */
             /* decoding or more than one mb_type (MC was allready done otherwise) */
-            if((!s->encoding) || (s->mb_type[xy]&(s->mb_type[xy]-1))){
+            if((!s->encoding) || (s->mb_type[mb_xy]&(s->mb_type[mb_xy]-1))){
                 if ((!s->no_rounding) || s->pict_type==B_TYPE){                
                     op_pix = put_pixels_tab;
                     op_qpix= qpel_mc_rnd_tab;
@@ -1282,14 +1282,27 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 }
             }
 
-            /* add dct residue */
-            add_dct(s, block[0], 0, dest_y, dct_linesize);
-            add_dct(s, block[1], 1, dest_y + 8, dct_linesize);
-            add_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
-            add_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
+            /* skip dequant / idct if we are really late ;) */
+            if(s->hurry_up>1) goto the_end;
 
-            add_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
-            add_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+            /* add dct residue */
+            if(!s->mpeg2 && (s->encoding || (!s->h263_msmpeg4))){
+                add_dequant_dct(s, block[0], 0, dest_y, dct_linesize);
+                add_dequant_dct(s, block[1], 1, dest_y + 8, dct_linesize);
+                add_dequant_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
+                add_dequant_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
+
+                add_dequant_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
+                add_dequant_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+            } else {
+                add_dct(s, block[0], 0, dest_y, dct_linesize);
+                add_dct(s, block[1], 1, dest_y + 8, dct_linesize);
+                add_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
+                add_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
+
+                add_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
+                add_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+            }
         } else {
             /* dct only in intra block */
             put_dct(s, block[0], 0, dest_y, dct_linesize);
