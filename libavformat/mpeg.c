@@ -1026,21 +1026,18 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 
 static int mpegps_probe(AVProbeData *p)
 {
-    int code, c, i;
+    int i;
+    int size= FFMIN(20, p->buf_size);
+    uint32_t code=0xFF;
 
-    code = 0xff;
     /* we search the first start code. If it is a packet start code,
        then we decide it is mpeg ps. We do not send highest value to
        give a chance to mpegts */
     /* NOTE: the search range was restricted to avoid too many false
        detections */
 
-    if (p->buf_size < 6)
-        return 0;
-
-    for (i = 0; i < 20; i++) {
-        c = p->buf[i];
-        code = (code << 8) | c;
+    for (i = 0; i < size; i++) {
+        code = (code << 8) | p->buf[i];
         if ((code & 0xffffff00) == 0x100) {
             if (code == PACK_START_CODE ||
                 code == SYSTEM_HEADER_START_CODE ||
