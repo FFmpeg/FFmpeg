@@ -1,6 +1,7 @@
 /*
  * exp golomb vlc stuff
  * Copyright (c) 2003 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (c) 2004 Alex Beregszaszi
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,7 +23,7 @@
  * @file golomb.h
  * @brief 
  *     exp golomb vlc stuff
- * @author Michael Niedermayer <michaelni@gmx.at>
+ * @author Michael Niedermayer <michaelni@gmx.at> and Alex Beregszaszi
  */
 
 #define INVALID_VLC           0x80000000
@@ -260,11 +261,35 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit, int 
 }
 
 /**
- * read unsigned golomb rice code (flac).
+ * read signed golomb rice code (ffv1).
+ */
+static inline int get_sr_golomb_ffv1(GetBitContext *gb, int k, int limit, int esc_len){
+    int v= get_ur_golomb(gb, k, limit, esc_len);
+    
+    v++;
+    if (v&1) return v>>1;
+    else return -(v>>1);
+    
+//    return (v>>1) ^ -(v&1);
+}
+/**
+
+ * read signed golomb rice code (flac).
  */
 static inline int get_sr_golomb_flac(GetBitContext *gb, int k, int limit, int esc_len){
     int v= get_ur_golomb_jpegls(gb, k, limit, esc_len);
     return (v>>1) ^ -(v&1);
+}
+
+/**
+ * read signed golomb rice code (sonic).
+ */
+static inline int get_sr_golomb_sonic(GetBitContext *gb, int k, int limit, int esc_len){
+    int v= get_ur_golomb(gb, k, limit, esc_len);
+    
+    v++;
+    if (v&1) return -(v>>1);
+    else return v>>1;
 }
 
 #ifdef TRACE
@@ -278,7 +303,7 @@ static inline int get_ue(GetBitContext *s, char *file, char *func, int line){
     
     print_bin(bits, len);
     
-    printf("%5d %2d %3d ue  @%5d in %s %s:%d\n", bits, len, i, pos, file, func, line);
+    av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d ue  @%5d in %s %s:%d\n", bits, len, i, pos, file, func, line);
     
     return i;
 }
@@ -292,7 +317,7 @@ static inline int get_se(GetBitContext *s, char *file, char *func, int line){
     
     print_bin(bits, len);
     
-    printf("%5d %2d %3d se  @%5d in %s %s:%d\n", bits, len, i, pos, file, func, line);
+    av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d se  @%5d in %s %s:%d\n", bits, len, i, pos, file, func, line);
     
     return i;
 }
@@ -306,7 +331,7 @@ static inline int get_te(GetBitContext *s, int r, char *file, char *func, int li
     
     print_bin(bits, len);
     
-    printf("%5d %2d %3d te  @%5d in %s %s:%d\n", bits, len, i, pos, file, func, line);
+    av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d te  @%5d in %s %s:%d\n", bits, len, i, pos, file, func, line);
     
     return i;
 }
@@ -402,4 +427,40 @@ static inline void set_ur_golomb_jpegls(PutBitContext *pb, int i, int k, int lim
         put_bits(pb, limit  , 1);
         put_bits(pb, esc_len, i - 1);
     }
+}
+
+/**
+ * write signed golomb rice code (ffv1).
+ */
+static inline void set_sr_golomb_ffv1(PutBitContext *pb, int i, int k, int limit, int esc_len){
+    int v;
+
+    v = -2*i-1;
+    v ^= (v>>31);
+
+    set_ur_golomb(pb, v, k, limit, esc_len);
+}
+
+/**
+ * write signed golomb rice code (flac).
+ */
+static inline void set_sr_golomb_flac(PutBitContext *pb, int i, int k, int limit, int esc_len){
+    int v;
+
+    v = -2*i-1;
+    v ^= (v>>31);
+
+    set_ur_golomb_jpegls(pb, v, k, limit, esc_len);
+}
+
+/**
+ * write signed golomb rice code (sonic).
+ */
+static inline void set_sr_golomb_sonic(PutBitContext *pb, int i, int k, int limit, int esc_len){
+    int v;
+
+    v = 2*i-1;
+    if (v<0) v ^= -1;
+
+    set_ur_golomb(pb, v, k, limit, esc_len);
 }
