@@ -3268,23 +3268,26 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     unsigned int threshold1, threshold2;
     int bias=0;
     int run_tab[65];
-    int last_run[65];
     int level_tab[65];
-    int last_level[65];
     int score_tab[65];
-    int last_score[65];
-    int coeff[4][64];
+    int last_run=0;
+    int last_level=0;
+    int last_score= 0;
+    int last_i= 0;
+    int coeff[3][64];
     int coeff_count[64];
-    int lambda, qmul, qadd, start_i, best_i, best_score, last_non_zero, i;
+    int lambda, qmul, qadd, start_i, last_non_zero, i;
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
     uint8_t * last_length;
+    int score_limit=0;
+    int left_limit= 0;
         
     s->fdct (block);
 
     qmul= qscale*16;
     qadd= ((qscale-1)|1)*8;
-    
+
     if (s->mb_intra) {
         int q;
         if (!s->h263_aic) {
@@ -3318,7 +3321,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     threshold1= (1<<QMAT_SHIFT) - bias - 1;
     threshold2= (threshold1<<1);
-//printf("%d %d %d\n", qmat[1], QMAT_SHIFT, qscale);
+
     for(i=start_i; i<64; i++) {
         const int j = scantable[i];
         const int k= i-start_i;
@@ -3332,24 +3335,18 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                 level= (bias + level)>>QMAT_SHIFT;
                 coeff[0][k]= level;
                 coeff[1][k]= level-1;
-                coeff[2][k]= level-2;
-                coeff[3][k]= level-3;
-                coeff_count[k]= FFMIN(level, 4);
+//                coeff[2][k]= level-2;
             }else{
                 level= (bias - level)>>QMAT_SHIFT;
                 coeff[0][k]= -level;
                 coeff[1][k]= -level+1;
-                coeff[2][k]= -level+2;
-                coeff[3][k]= -level+3;
-                coeff_count[k]= FFMIN(level, 4);
+//                coeff[2][k]= -level+2;
             }
+            coeff_count[k]= FFMIN(level, 2);
             max |=level;
             last_non_zero = i;
         }else{
-            if(level < 0)
-                coeff[0][k]= -1;
-            else
-                coeff[0][k]= 1;
+            coeff[0][k]= (level>>31)|1;
             coeff_count[k]= 1;
         }
     }
@@ -3363,17 +3360,14 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     lambda= (qscale*qscale*64*82 + 50)/100; //FIXME finetune
         
-    score_tab[0]=
-    last_score[0]= 0;
-//printf("qscale:%d\n", qscale);
+    score_tab[0]= 0;
     for(i=0; i<=last_non_zero - start_i; i++){
         int level_index, run, j;
         const int dct_coeff= block[ scantable[i + start_i] ];
         const int zero_distoration= dct_coeff*dct_coeff;
-        int best_score=256*256*256*120, best_last_score= 256*256*256*120;
-        
-//printf("%2d %5d ", i, dct_coeff);
+        int best_score=256*256*256*120;
 
+        last_score += zero_distoration;
         for(level_index=0; level_index < coeff_count[i]; level_index++){
             int distoration;
             int level= coeff[level_index][i];
@@ -3388,12 +3382,11 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                     unquant_coeff= level*qmul - qadd;
                 }
             } //FIXME else
-//printf("(%d %d) ", level, unquant_coeff);
+
             distoration= (unquant_coeff - dct_coeff) * (unquant_coeff - dct_coeff);
-            
             level+=64;
             if((level&(~127)) == 0){
-                for(run=0; run<=i; run++){
+                for(run=0; run<=i - left_limit; run++){
                     int score= distoration + length[UNI_ENC_INDEX(run, level)]*lambda;
                     score += score_tab[i-run];
                     
@@ -3406,20 +3399,20 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                 }
 
                 if(s->out_format == FMT_H263){
-                    for(run=0; run<=i; run++){
+                    for(run=0; run<=i - left_limit; run++){
                         int score= distoration + last_length[UNI_ENC_INDEX(run, level)]*lambda;
                         score += score_tab[i-run];
-                        if(score < best_last_score){
-                            best_last_score= 
-                            last_score[i+1]= score;
-                            last_run[i+1]= run;
-                            last_level[i+1]= level-64;
+                        if(score < last_score){
+                            last_score= score;
+                            last_run= run;
+                            last_level= level-64;
+                            last_i= i+1;
                         }
                     }
                 }
             }else{
                 distoration += esc_length*lambda;
-                for(run=0; run<=i; run++){
+                for(run=0; run<=i - left_limit; run++){
                     int score= distoration + score_tab[i-run];
                     
                     if(score < best_score){
@@ -3431,68 +3424,57 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                 }
 
                 if(s->out_format == FMT_H263){
-                    for(run=0; run<=i; run++){
+                    for(run=0; run<=i - left_limit; run++){
                         int score= distoration + score_tab[i-run];
-                        if(score < best_last_score){
-                            best_last_score= 
-                            last_score[i+1]= score;
-                            last_run[i+1]= run;
-                            last_level[i+1]= level-64;
+                        if(score < last_score){
+                            last_score= score;
+                            last_run= run;
+                            last_level= level-64;
+                            last_i= i+1;
                         }
                     }
                 }
             }
         }
 
-        for(j=0; j<=i; j++){
+        for(j=left_limit; j<=i; j++){
             score_tab[j] += zero_distoration;
-//            printf("%6d ", score_tab[j]);
         }
-//        printf("%6d ", score_tab[j]);
-
-//        printf("last: ");
-        if(s->out_format == FMT_H263){
-            for(j=0; j<=i; j++){
-                last_score[j] += zero_distoration;
-//                printf("%6d ", last_score[j]);
-            }
-//            printf("%6d ", last_score[j]);
-        }
-//        printf("\n");
+        score_limit+= zero_distoration;
+        if(score_tab[i+1] < score_limit)
+            score_limit= score_tab[i+1];
+        
+        //Note: there is a vlc code in mpeg4 which is 1 bit shorter then another one with a shorter run and the same level
+        while(score_tab[ left_limit ] > score_limit + lambda) left_limit++;
     }
-    
+
+        //FIXME add some cbp penalty
+
     if(s->out_format != FMT_H263){
+        last_score= 256*256*256*120;
         for(i=0; i<=last_non_zero - start_i + 1; i++){
-            last_score[i]= score_tab[i];
-            if(i) last_score[i] += lambda*2; //FIXME exacter?
-            last_run[i]= run_tab[i];
-            last_level[i]= level_tab[i];
-        }
-    }
-
-    //FIXME add some cbp penalty
-    best_i= 0;
-    best_score= 256*256*256*120;
-    for(i=0; i<=last_non_zero - start_i + 1; i++){
-        int score= last_score[i];
-        if(score < best_score){
-            best_score= score;
-            best_i= i;
+            int score= score_tab[i];
+            if(score < last_score){
+                last_score= score;
+                if(i) last_score += lambda*2; //FIXME exacter?
+                last_i= i;
+                last_level= level_tab[i];
+                last_run= run_tab[i];
+            }
         }
     }
     
-    last_non_zero= best_i - 1 + start_i;
+    last_non_zero= last_i - 1 + start_i;
     memset(block + start_i, 0, (64-start_i)*sizeof(DCTELEM));
     
     if(last_non_zero < start_i)
         return last_non_zero;
     
-    i= best_i;
-//printf("%d %d %d %d %d\n", last_level[i], i, start_i, last_non_zero, best_score);
-    assert(last_level[i]);
+    i= last_i;
+    assert(last_level);
 //FIXME use permutated scantable
-    block[ s->idct_permutation[ scantable[last_non_zero] ] ]= last_level[i];
-    i -= last_run[i] + 1;
+    block[ s->idct_permutation[ scantable[last_non_zero] ] ]= last_level;
+    i -= last_run + 1;
     
     for(;i>0 ; i -= run_tab[i] + 1){
         const int j= s->idct_permutation[ scantable[i - 1 + start_i] ];
