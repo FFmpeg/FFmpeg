@@ -2996,13 +2996,12 @@ void ff_mpeg4_init_partitions(MpegEncContext *s)
     uint8_t *start= pbBufPtr(&s->pb);
     uint8_t *end= s->pb.buf_end;
     int size= end - start;
-    int pb_size = size/3;
-    int pb2_size= size/3;
-    int tex_size= size - pb_size - pb2_size;
+    int pb_size = (size/3)&(~1);
+    int tex_size= size - 2*pb_size;
     
     set_put_bits_buffer_size(&s->pb, pb_size);
     init_put_bits(&s->tex_pb, start + pb_size           , tex_size);
-    init_put_bits(&s->pb2   , start + pb_size + tex_size, pb2_size);
+    init_put_bits(&s->pb2   , start + pb_size + tex_size, pb_size);
 }
 
 void ff_mpeg4_merge_partitions(MpegEncContext *s)
