@@ -209,7 +209,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 get_le32(pb); /* start */
                 nb_frames = get_le32(pb);
                 st->start_time = 0;
-                st->duration = nb_frames;
+                st->duration = av_rescale(nb_frames,
+                    st->codec.frame_rate_base * AV_TIME_BASE,
+                    st->codec.frame_rate);
 		url_fskip(pb, size - 9 * 4);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
@@ -239,7 +241,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     ast->sample_size = get_le32(pb); /* sample ssize */
 //av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d\n", ast->scale, ast->rate, ast->sample_size, ast->start);
                     st->start_time = 0;
-                    st->duration = length;
+                    if (ast->rate != 0)
+                        st->duration = (int64_t)length * AV_TIME_BASE / ast->rate;
                     url_fskip(pb, size - 12 * 4);
                 }
                 break;
