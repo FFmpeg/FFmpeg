@@ -448,16 +448,37 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
         for(j = 0;j < 6; j++) {
             idct_put = s->idct_put[mb->dct_mode];
             if (j < 4) {
-                if (s->sampling_411) {
+                if (s->sampling_411 && mb_x < (704 / 8)) {
+                    /* NOTE: at end of line, the macroblock is handled as 420 */
                     idct_put(y_ptr + (j * 8), s->linesize[0], block);
                 } else {
                     idct_put(y_ptr + ((j & 1) * 8) + ((j >> 1) * 8 * s->linesize[0]),
                              s->linesize[0], block);
                 }
             } else {
-                /* don't ask me why they inverted Cb and Cr ! */
-                idct_put(s->current_picture[6 - j] + c_offset, 
-                         s->linesize[6 - j], block);
+                if (s->sampling_411 && mb_x >= (704 / 8)) {
+                    uint8_t pixels[64], *c_ptr, *c_ptr1, *ptr;
+                    int y, linesize;
+                    /* NOTE: at end of line, the macroblock is handled as 420 */
+                    idct_put(pixels, 8, block);
+                    linesize = s->linesize[6 - j];
+                    c_ptr = s->current_picture[6 - j] + c_offset;
+                    ptr = pixels;
+                    for(y = 0;y < 8; y++) {
+                        /* convert to 411P */
+                        c_ptr1 = c_ptr + linesize;
+                        c_ptr1[0] = c_ptr[0] = (ptr[0] + ptr[1]) >> 1;
+                        c_ptr1[1] = c_ptr[1] = (ptr[2] + ptr[3]) >> 1;
+                        c_ptr1[2] = c_ptr[2] = (ptr[4] + ptr[5]) >> 1;
+                        c_ptr1[3] = c_ptr[3] = (ptr[6] + ptr[7]) >> 1;
+                        c_ptr += linesize * 2;
+                        ptr += 8;
+                    }
+                } else {
+                    /* don't ask me why they inverted Cb and Cr ! */
+                    idct_put(s->current_picture[6 - j] + c_offset, 
+                             s->linesize[6 - j], block);
+                }
             }
             block += 64;
             mb++;
