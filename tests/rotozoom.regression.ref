@@ -1,8 +1,8 @@
 ffmpeg regression test
-1738d12380be0d8aa20d08e178349299 *./data/a-mpeg1.mpg
+6dce999b1f02a94dfd6d6222caf06ff1 *./data/a-mpeg1.mpg
 0cf790edd0f4c5cf993c2d59211b9de2 *./data/out.yuv
 stddev:  4.91 bytes:7299072
-55cedcf0fb67e18718d6ed88da7784a4 *./data/a-mpeg2.vob
+bbb41fb21c836cff975442e583702216 *./data/a-mpeg2.vob
 f5436b327c38b66eb95f3428aff790f1 *./data/out.yuv
 stddev:  4.94 bytes:7450624
 14db391f167b52b21a983157b410affc *./data/a-msmpeg4v2.avi
@@ -35,7 +35,7 @@ stddev:  4.32 bytes:7145472
 aeb300900461bdf9e0321934aa6dcc93 *./data/a-mpeg4-adv.avi
 e465df12f2c8a6492a6ec0b1bddc1d0d *./data/out.yuv
 stddev:  4.97 bytes:7602176
-a7ab3fba8d7cd004b4809b5fe04e37d0 *./data/a-mpeg1b.mpg
+fc873784878d9588e748c1494df606be *./data/a-mpeg1b.mpg
 c9b8f923d91d6a574b0673e05fd2d6bd *./data/out.yuv
 stddev:  4.61 bytes:6993920
 e9218a1db885fe0262e88f9df630307d *./data/a-mjpeg.avi

@@ -227,18 +227,25 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             
             put_bits(&s->pb, 4, s->aspect_ratio_info);
             put_bits(&s->pb, 4, s->frame_rate_index);
-            v = (s->bit_rate + 399) / 400;
-            if (v > 0x3ffff && s->codec_id == CODEC_ID_MPEG1VIDEO)
-                v = 0x3ffff;
-            put_bits(&s->pb, 18, v & 0x3FFFF);
-            put_bits(&s->pb, 1, 1); /* marker */
+            
+            if(s->avctx->rc_max_rate){
+                v = (s->avctx->rc_max_rate + 399) / 400;
+                if (v > 0x3ffff && s->codec_id == CODEC_ID_MPEG1VIDEO)
+                    v = 0x3ffff;
+            }else{
+                v= 0x3FFFF;
+            }
 
             if(s->avctx->rc_buffer_size)
                 vbv_buffer_size = s->avctx->rc_buffer_size;
             else
                 /* VBV calculation: Scaled so that a VCD has the proper VBV size of 40 kilobytes */
-                vbv_buffer_size = (( 20 * s->bit_rate) / (1151929 / 2)) * 8 * 1024;	 
-            put_bits(&s->pb, 10, ((vbv_buffer_size + 16383) / 16384) & 0x3FF); 
+                vbv_buffer_size = (( 20 * s->bit_rate) / (1151929 / 2)) * 8 * 1024;
+            vbv_buffer_size= (vbv_buffer_size + 16383) / 16384;
+
+            put_bits(&s->pb, 18, v & 0x3FFFF);
+            put_bits(&s->pb, 1, 1); /* marker */
+            put_bits(&s->pb, 10, vbv_buffer_size & 0x3FF); 
             put_bits(&s->pb, 1, 1); /* constrained parameter flag */
             
             ff_write_quant_matrix(&s->pb, s->avctx->intra_matrix);
