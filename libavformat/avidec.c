@@ -296,9 +296,17 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     int n, d[8], size, i;
 
     memset(d, -1, sizeof(int)*8);
-
-    if (avi->type == 1 && avi->stream_index)
-        goto pkt_init;
+    
+    if (avi->type == 1 && avi->stream_index) {
+        /* duplicate DV packet */
+        av_init_packet(pkt);
+        pkt->data = avi->buf;
+        pkt->size = avi->buf_size;
+        pkt->destruct = __destruct_pkt;
+        pkt->stream_index = avi->stream_index;
+        avi->stream_index = !avi->stream_index;
+        return 0;
+    }
 
     for(i=url_ftell(pb); !url_feof(pb); i++) {
         int j;
@@ -346,31 +354,29 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             && n < s->nb_streams
             && i + size <= avi->movi_end) {
         
-	    uint8_t *tbuf = av_realloc(avi->buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
-	    if (!tbuf)
-		return -1;
-	    avi->buf = tbuf;
-            avi->buf_size = size;
-	    get_buffer(pb, avi->buf, size);
-	    if (size & 1)
-	        get_byte(pb);
-	    if (avi->type != 1)
-	        avi->stream_index = n;
-	    goto pkt_init;
+            if (avi->type == 1) {
+                uint8_t *tbuf = av_realloc(avi->buf, size + FF_INPUT_BUFFER_PADDING_SIZE);
+                if (!tbuf)
+                    return -1;
+                avi->buf = tbuf;
+                avi->buf_size = size;
+                av_init_packet(pkt);
+                pkt->data = avi->buf;
+                pkt->size = avi->buf_size;
+                pkt->destruct = __destruct_pkt;
+                avi->stream_index = n;
+            } else {
+                av_new_packet(pkt, size);
+            }
+            get_buffer(pb, pkt->data, size);
+            if (size & 1)
+                get_byte(pb);
+            pkt->stream_index = n;
+            pkt->flags |= PKT_FLAG_KEY; // FIXME: We really should read index for that
+            return 0;
         }
     }
-    
     return -1;
-
-pkt_init:
-    av_init_packet(pkt);
-    pkt->data = avi->buf;
-    pkt->size = avi->buf_size;
-    pkt->destruct = __destruct_pkt;
-    pkt->stream_index = avi->stream_index;
-    pkt->flags |= PKT_FLAG_KEY; // FIXME: We really should read index for that
-    avi->stream_index = !avi->stream_index;
-    return 0;
 }
 
 static int avi_read_close(AVFormatContext *s)
