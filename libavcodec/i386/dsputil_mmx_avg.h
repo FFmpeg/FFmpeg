@@ -21,6 +21,8 @@
  * mostly rewritten by Michael Niedermayer <michaelni@gmx.at>
  */
  
+/* XXX: we use explicit registers to avoid a gcc 2.95.2 register asm
+   clobber bug */
 static void DEF(put_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
@@ -48,11 +50,12 @@ static void DEF(put_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size,
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-        :"r"(pixels), "r"(pixels+line_size), "r" (block), "r" (block+line_size),
-         "r"(line_size<<1)
+        :"b"(pixels), "c"(pixels+line_size), "d" (block), "S" (block+line_size),
+        "D"(line_size<<1)
 	:"%eax", "memory");
 }
  
+/* GL: this function does incorrect rounding if overflow */
 static void DEF(put_no_rnd_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
@@ -85,8 +88,8 @@ static void DEF(put_no_rnd_pixels_x2)(UINT8 *block, const UINT8 *pixels, int lin
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-        :"r"(pixels), "r"(pixels+line_size), "r" (block), "r" (block+line_size),
-         "r"(line_size<<1)
+        :"b"(pixels), "c"(pixels+line_size), "d" (block), "S" (block+line_size),
+        "D"(line_size<<1)
 	:"%eax", "memory");
 }
 
@@ -114,11 +117,12 @@ static void DEF(put_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-	:"r"(pixels), "r"(pixels+line_size), "r"(pixels+line_size*2), "r" (block), 
-         "r" (block+line_size), "g"(line_size<<1)
+	:"b"(pixels), "c"(pixels+line_size), "d"(pixels+line_size*2), "S" (block), 
+         "D" (block+line_size), "g"(line_size<<1)
 	:"%eax",  "memory");
 }
 
+/* GL: this function does incorrect rounding if overflow */
 static void DEF(put_no_rnd_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
@@ -146,8 +150,8 @@ static void DEF(put_no_rnd_pixels_y2)(UINT8 *block, const UINT8 *pixels, int lin
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-	:"r"(pixels), "r"(pixels+line_size), "r"(pixels+line_size*2), "r" (block), 
-         "r" (block+line_size), "g"(line_size<<1)
+	:"b"(pixels), "c"(pixels+line_size), "d"(pixels+line_size*2), "S" (block), 
+         "D" (block+line_size), "g"(line_size<<1)
 	:"%eax",  "memory");
 }
 
@@ -178,8 +182,8 @@ static void DEF(avg_pixels)(UINT8 *block, const UINT8 *pixels, int line_size, in
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-        :"r"(pixels), "r"(pixels+line_size), "r" (block), "r" (block+line_size),
-         "r"(line_size<<1)
+        :"b"(pixels), "c"(pixels+line_size), "d" (block), "S" (block+line_size),
+         "D"(line_size<<1)
 	:"%eax", "memory");
 }
 
@@ -218,8 +222,8 @@ static void DEF(avg_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size,
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-        :"r"(pixels), "r"(pixels+line_size), "r" (block), "r" (block+line_size),
-         "r"(line_size<<1)
+        :"b"(pixels), "c"(pixels+line_size), "d" (block), "S" (block+line_size),
+         "D"(line_size<<1)
 	:"%eax", "memory");
 }
 
@@ -255,8 +259,8 @@ static void DEF(avg_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-	:"r"(pixels), "r"(pixels+line_size), "r"(pixels+line_size*2), "r" (block), 
-         "r" (block+line_size), "g"(line_size<<1)
+	:"b"(pixels), "c"(pixels+line_size), "d"(pixels+line_size*2), "S" (block), 
+         "D" (block+line_size), "g"(line_size<<1)
 	:"%eax",  "memory");
 }
 
@@ -305,8 +309,8 @@ static void DEF(avg_pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-	:"r"(pixels), "r"(pixels+line_size), "r"(pixels+line_size*2), "r" (block), 
-         "r" (block+line_size), "g"(line_size<<1)
+	:"b"(pixels), "c"(pixels+line_size), "d"(pixels+line_size*2), "S" (block), 
+         "D" (block+line_size), "g"(line_size<<1)
 	:"%eax",  "memory");
 }
 
