@@ -199,26 +199,26 @@ void init_get_bits(GetBitContext *s,
 }
 
 /* n must be >= 1 and <= 32 */
-unsigned int get_bits(GetBitContext *s, int n)
+/* also true: n > s->bit_cnt */
+unsigned int get_bits_long(GetBitContext *s, int n)
 {
     unsigned int val;
     int bit_cnt;
     unsigned int bit_buf;
-    UINT8 *buf_ptr;
 
 #ifdef STATS
     st_bit_counts[st_current_index] += n;
 #endif
 
-    bit_cnt = s->bit_cnt;
     bit_buf = s->bit_buf;
+    bit_cnt = s->bit_cnt - n;
     
-    bit_cnt -= n;
-    if (bit_cnt >= 0) {
-        /* most common case here */
-        val = bit_buf >> (32 - n);
-        bit_buf <<= n; 
-    } else {
+//    if (bit_cnt >= 0) {
+//        val = bit_buf >> (32 - n);
+//        bit_buf <<= n; 
+//    } else 
+    {
+	UINT8 *buf_ptr;
         val = bit_buf >> (32 - n);
         buf_ptr = s->buf_ptr;
         buf_ptr += 4;

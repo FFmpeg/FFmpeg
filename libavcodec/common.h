@@ -25,9 +25,9 @@ struct PutBitContext;
 typedef void (*WriteDataFunc)(void *, UINT8 *, int);
 
 typedef struct PutBitContext {
-    UINT8 *buf, *buf_ptr, *buf_end;
-    int bit_cnt;
     UINT32 bit_buf;
+    int bit_cnt;
+    UINT8 *buf, *buf_ptr, *buf_end;
     long long data_out_size; /* in bytes */
     void *opaque;
     WriteDataFunc write_data;
@@ -49,9 +49,9 @@ void jflush_put_bits(PutBitContext *s);
 /* bit input */
 
 typedef struct GetBitContext {
-    UINT8 *buf, *buf_ptr, *buf_end;
-    int bit_cnt;
     UINT32 bit_buf;
+    int bit_cnt;
+    UINT8 *buf, *buf_ptr, *buf_end;
 } GetBitContext;
 
 typedef struct VLC {
@@ -64,7 +64,22 @@ typedef struct VLC {
 void init_get_bits(GetBitContext *s, 
                    UINT8 *buffer, int buffer_size);
 
-unsigned int get_bits(GetBitContext *s, int n);
+unsigned int get_bits_long(GetBitContext *s, int n);
+
+static inline unsigned int get_bits(GetBitContext *s, int n){
+    if(s->bit_cnt>=n){
+        /* most common case here */
+        unsigned int val = s->bit_buf >> (32 - n);
+        s->bit_buf <<= n;
+	s->bit_cnt -= n;
+#ifdef STATS
+	st_bit_counts[st_current_index] += n;
+#endif
+	return val;
+    }
+    return get_bits_long(s,n);
+}
+
 void align_get_bits(GetBitContext *s);
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
