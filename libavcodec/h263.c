@@ -2282,7 +2282,7 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     }
     put_bits(&s->pb, 3, 0);	/* intra dc VLC threshold */
     if(!s->progressive_sequence){
-         put_bits(&s->pb, 1, s->top_field_first);
+         put_bits(&s->pb, 1, s->current_picture_ptr->top_field_first);
          put_bits(&s->pb, 1, s->alternate_scan);
     }
     //FIXME sprite stuff
@@ -5252,7 +5252,8 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
             }
         }
         
-        s->progressive_sequence= get_bits1(gb)^1;
+        s->progressive_sequence= 
+        s->progressive_frame= get_bits1(gb)^1;
         if(!get_bits1(gb) && (s->avctx->debug & FF_DEBUG_PICT_INFO)) 
             av_log(s->avctx, AV_LOG_INFO, "MPEG4 OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
         if (vo_ver_id == 1) {

@@ -401,7 +401,9 @@ int MPV_common_init(MpegEncContext *s)
 
     s->y_dc_scale_table=
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
-    s->chroma_qscale_table= ff_default_chroma_qscale_table;    
+    s->chroma_qscale_table= ff_default_chroma_qscale_table;
+    s->progressive_sequence= 
+    s->progressive_frame= 1;
     
     y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
     c_size = (s->mb_width + 2) * (s->mb_height + 2);
@@ -1152,7 +1154,7 @@ alloc:
 
         s->current_picture_ptr= (Picture*)pic;
         s->current_picture_ptr->top_field_first= s->top_field_first; //FIXME use only the vars from current_pic
-        s->current_picture_ptr->interlaced_frame= !s->progressive_frame;
+        s->current_picture_ptr->interlaced_frame= !s->progressive_frame && !s->progressive_sequence;
     }
 
     s->current_picture_ptr->pict_type= s->pict_type;
