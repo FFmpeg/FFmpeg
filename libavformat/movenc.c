@@ -282,7 +282,16 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
     /* TODO: Currently hard-coded to 16-bit, there doesn't seem
                  to be a good way to get number of bits of audio */
     put_be16(pb, 0x10); /* Reserved */
-    put_be16(pb, 0); /* compression ID (= 0) */
+
+    if(track->enc->codec_id == CODEC_ID_AAC ||
+       track->enc->codec_id == CODEC_ID_MP3)
+    {
+        put_be16(pb, 0xfffe); /* compression ID (vbr)*/
+    }
+    else
+    {
+        put_be16(pb, 0); /* compression ID (= 0) */
+    }
     put_be16(pb, 0); /* packet size (= 0) */
     put_be16(pb, track->timescale); /* Time scale */
     put_be16(pb, 0); /* Reserved */
