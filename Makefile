@@ -15,8 +15,8 @@ PROG= ffmpeg ffserver
 all: lib $(PROG)
 
 lib:
-	make -C libavcodec all
-	make -C libav all
+	$(MAKE) -C libavcodec all
+	$(MAKE) -C libav all
 
 ffmpeg: ffmpeg.o libav/libav.a libavcodec/libavcodec.a
 	gcc $(LDFLAGS) -o $@ $^ -lm
@@ -31,8 +31,8 @@ install: all
 	install -s -m 755 $(PROG) $(prefix)/bin
 
 clean: 
-	make -C libavcodec clean
-	make -C libav clean
+	$(MAKE) -C libavcodec clean
+	$(MAKE) -C libav clean
 	rm -f *.o *~ gmon.out TAGS $(PROG) 
 
 distclean: clean

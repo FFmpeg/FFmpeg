@@ -68,6 +68,7 @@ if test -z "$CFLAGS"; then
 fi
 
 echo "prefix=$prefix" >> config.mak
+echo "MAKE=make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "OPTFLAGS=$CFLAGS" >> config.mak
