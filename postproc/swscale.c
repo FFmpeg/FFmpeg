@@ -254,9 +254,9 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
 	// points to the dst Pixels center in the source (0 is the center of pixel 0,0 in src)
     int srcuvpos= s_srcypos + s_yinc/2 - 0x8000;
     int y1=(srcuvpos + 0x1FFFF)>>17; // first chrominance source line number below the dst line
-    int yalpha=(s_srcypos&0xFFFF)>>7;
+    int yalpha=((s_srcypos-1)&0xFFFF)>>7;
     int yalpha1=yalpha^511;
-    int uvalpha=(srcuvpos&0x1FFFF)>>8;
+    int uvalpha=((srcuvpos-1)&0x1FFFF)>>8;
     int uvalpha1=uvalpha^511;
     uint16_t *buf0=pix_buf_y[y0&1];		// top line of the interpolated slice
     uint16_t *buf1=pix_buf_y[((y0+1)&1)];	// bottom line of the interpolated slice
