@@ -116,7 +116,6 @@ static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
 {
     MpegTSSectionFilter *tss = &tss1->u.section_filter;
     int len;
-    unsigned int crc;
     
     if (is_start) {
         memcpy(tss->section_buf, buf, buf_size);
@@ -142,14 +141,10 @@ static void write_section_data(AVFormatContext *s, MpegTSFilter *tss1,
     }
 
     if (tss->section_h_size != -1 && tss->section_index >= tss->section_h_size) {
-        if (tss->check_crc) {
-            crc = mpegts_crc32(tss->section_buf, tss->section_h_size);
-            if (crc != 0)
-                goto invalid_crc;
-        }
-        tss->section_cb(tss->opaque, tss->section_buf, tss->section_h_size);
-    invalid_crc:
         tss->end_of_section_reached = 1;
+        if (!tss->check_crc ||
+            mpegts_crc32(tss->section_buf, tss->section_h_size) == 0)
+            tss->section_cb(tss->opaque, tss->section_buf, tss->section_h_size);
     }
 }
 
@@ -926,9 +921,12 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
             if (p + len > p_end)
                 return;
             if (len && cc_ok) {
-                /* write remaning section bytes */
+                /* write remaining section bytes */
                 write_section_data(s, tss, 
                                    p, len, 0);
+                /* check whether filter has been closed */
+                if (!ts->pids[pid])
+                    return;
             }
             p += len;
             if (p < p_end) {
