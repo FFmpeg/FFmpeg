@@ -48,6 +48,18 @@
 #define WFRAC_BITS  14   /* fractional bits for window */
 #endif
 
+#if defined(USE_HIGHPRECISION) && defined(CONFIG_AUDIO_NONSHORT)
+typedef int32_t OUT_INT;
+#define OUT_MAX INT32_MAX
+#define OUT_MIN INT32_MIN
+#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 31)
+#else
+typedef int16_t OUT_INT;
+#define OUT_MAX INT16_MAX
+#define OUT_MIN INT16_MIN
+#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 15)
+#endif
+
 #define FRAC_ONE    (1 << FRAC_BITS)
 
 #define MULL(a,b) (((int64_t)(a) * (int64_t)(b)) >> FRAC_BITS)
@@ -324,6 +336,12 @@ static int decode_init(AVCodecContext * avctx)
     static int init=0;
     int i, j, k;
 
+#if defined(USE_HIGHPRECISION) && defined(CONFIG_AUDIO_NONSHORT)
+    avctx->sample_fmt= SAMPLE_FMT_S32;
+#else
+    avctx->sample_fmt= SAMPLE_FMT_S16;
+#endif    
+    
     if(avctx->antialias_algo == FF_AA_INT)
         s->compute_antialias= compute_antialias_integer;
     else
@@ -748,8 +766,6 @@ static void dct32(int32_t *out, int32_t *tab)
     out[31] = tab[31];
 }
 
-#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 15)
-
 #if FRAC_BITS <= 15
 
 static inline int round_sample(int *sum)
@@ -757,10 +773,10 @@ static inline int round_sample(int *sum)
     int sum1;
     sum1 = (*sum) >> OUT_SHIFT;
     *sum &= (1<<OUT_SHIFT)-1;
-    if (sum1 < -32768)
-        sum1 = -32768;
-    else if (sum1 > 32767)
-        sum1 = 32767;
+    if (sum1 < OUT_MIN)
+        sum1 = OUT_MIN;
+    else if (sum1 > OUT_MAX)
+        sum1 = OUT_MAX;
     return sum1;
 }
 
@@ -791,10 +807,10 @@ static inline int round_sample(int64_t *sum)
     int sum1;
     sum1 = (int)((*sum) >> OUT_SHIFT);
     *sum &= (1<<OUT_SHIFT)-1;
-    if (sum1 < -32768)
-        sum1 = -32768;
-    else if (sum1 > 32767)
-        sum1 = 32767;
+    if (sum1 < OUT_MIN)
+        sum1 = OUT_MIN;
+    else if (sum1 > OUT_MAX)
+        sum1 = OUT_MAX;
     return sum1;
 }
 
@@ -867,14 +883,14 @@ void ff_mpa_synth_init(MPA_INT *window)
 /* XXX: optimize by avoiding ring buffer usage */
 void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
 			 MPA_INT *window, int *dither_state,
-                         int16_t *samples, int incr, 
+                         OUT_INT *samples, int incr, 
                          int32_t sb_samples[SBLIMIT])
 {
     int32_t tmp[32];
     register MPA_INT *synth_buf;
     register const MPA_INT *w, *w2, *p;
     int j, offset, v;
-    int16_t *samples2;
+    OUT_INT *samples2;
 #if FRAC_BITS <= 15
     int sum, sum2;
 #else
@@ -2455,10 +2471,10 @@ static int mp_decode_layer3(MPADecodeContext *s)
 }
 
 static int mp_decode_frame(MPADecodeContext *s, 
-                           short *samples)
+                           OUT_INT *samples)
 {
     int i, nb_frames, ch;
-    short *samples_ptr;
+    OUT_INT *samples_ptr;
 
     init_get_bits(&s->gb, s->inbuf + HEADER_SIZE, 
                   (s->inbuf_ptr - s->inbuf - HEADER_SIZE)*8);
@@ -2505,7 +2521,7 @@ static int mp_decode_frame(MPADecodeContext *s,
 #ifdef DEBUG
     s->frame_count++;        
 #endif
-    return nb_frames * 32 * sizeof(short) * s->nb_channels;
+    return nb_frames * 32 * sizeof(OUT_INT) * s->nb_channels;
 }
 
 static int decode_frame(AVCodecContext * avctx,
@@ -2516,7 +2532,7 @@ static int decode_frame(AVCodecContext * avctx,
     uint32_t header;
     uint8_t *buf_ptr;
     int len, out_size;
-    short *out_samples = data;
+    OUT_INT *out_samples = data;
 
     buf_ptr = buf;
     while (buf_size > 0) {
@@ -2674,7 +2690,7 @@ static int decode_frame_adu(AVCodecContext * avctx,
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
     int len, out_size;
-    short *out_samples = data;
+    OUT_INT *out_samples = data;
 
     len = buf_size;
 

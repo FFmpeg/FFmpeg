@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4738
+#define LIBAVCODEC_BUILD       4739
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -224,6 +224,9 @@ enum PixelFormat {
 /* currently unused, may be used if 24/32 bits samples ever supported */
 enum SampleFormat {
     SAMPLE_FMT_S16 = 0,         ///< signed 16 bits 
+    SAMPLE_FMT_S32,             ///< signed 32 bits 
+    SAMPLE_FMT_FLT,             ///< float
+    SAMPLE_FMT_DBL,             ///< double
 };
 
 /* in bytes */
@@ -734,10 +737,7 @@ typedef struct AVCodecContext {
 
     /**
      * pixel format, see PIX_FMT_xxx.
-     * - encoding: FIXME: used by ffmpeg to decide whether an pix_fmt
-     *                    conversion is in order. This only works for
-     *                    codecs with one supported pix_fmt, we should
-     *                    do something for a generic case as well.
+     * - encoding: set by user.
      * - decoding: set by lavc.
      */
     enum PixelFormat pix_fmt;
@@ -769,7 +769,13 @@ typedef struct AVCodecContext {
     /* audio only */
     int sample_rate; ///< samples per sec 
     int channels;
-    int sample_fmt;  ///< sample format, currenly unused 
+
+    /**
+     * audio sample format.
+     * - encoding: set by user.
+     * - decoding: set by lavc.
+     */
+    enum SampleFormat sample_fmt;  ///< sample format, currenly unused 
 
     /* the following data should not be initialized */
     int frame_size;     ///< in samples, initialized when calling 'init' 
