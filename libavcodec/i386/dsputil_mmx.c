@@ -22,6 +22,7 @@
 
 #include "../dsputil.h"
 #include "../simple_idct.h"
+#include "../mpegvideo.h"
 #include "mmx.h"
 
 //#undef NDEBUG
@@ -710,6 +711,49 @@ static int pix_norm1_mmx(uint8_t *pix, int line_size) {
     return tmp;
 }
 
+static int sse8_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
+    int tmp;
+  asm volatile (
+      "movl %4,%%ecx\n"
+      "pxor %%mm0,%%mm0\n"	/* mm0 = 0 */
+      "pxor %%mm7,%%mm7\n"	/* mm7 holds the sum */
+      "1:\n"
+      "movq (%0),%%mm1\n"	/* mm1 = pix1[0-7] */
+      "movq (%1),%%mm2\n"	/* mm2 = pix2[0-7] */
+
+      "movq %%mm1,%%mm5\n"
+      "psubusb %%mm2,%%mm1\n"
+      "psubusb %%mm5,%%mm2\n"
+
+      "por %%mm1,%%mm2\n"
+
+      "movq %%mm2,%%mm1\n"
+
+      "punpckhbw %%mm0,%%mm2\n"
+      "punpcklbw %%mm0,%%mm1\n"	/* mm1 now spread over (mm1,mm2) */
+
+      "pmaddwd %%mm2,%%mm2\n"
+      "pmaddwd %%mm1,%%mm1\n"
+
+      "addl %3,%0\n"
+      "addl %3,%1\n"
+
+      "paddd %%mm2,%%mm1\n"
+      "paddd %%mm1,%%mm7\n"
+
+      "decl %%ecx\n"
+      "jnz 1b\n"
+
+      "movq %%mm7,%%mm1\n"
+      "psrlq $32, %%mm7\n"	/* shift hi dword to lo */
+      "paddd %%mm7,%%mm1\n"
+      "movd %%mm1,%2\n"
+      : "+r" (pix1), "+r" (pix2), "=r"(tmp) 
+      : "r" (line_size) , "m" (h)
+      : "%ecx");
+    return tmp;
+}
+
 static int sse16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
     int tmp;
   asm volatile (
@@ -768,6 +812,261 @@ static int sse16_mmx(void *v, uint8_t * pix1, uint8_t * pix2, int line_size, int
       : "r" (line_size) , "m" (h)
       : "%ecx");
     return tmp;
+}
+
+static int hf_noise8_mmx(uint8_t * pix1, int line_size, int h) {
+    int tmp;
+  asm volatile (
+      "movl %3,%%ecx\n"
+      "pxor %%mm7,%%mm7\n"
+      "pxor %%mm6,%%mm6\n"
+      
+      "movq (%0),%%mm0\n"
+      "movq %%mm0, %%mm1\n"
+      "psllq $8, %%mm0\n"
+      "psrlq $8, %%mm1\n"
+      "psrlq $8, %%mm0\n"
+      "movq %%mm0, %%mm2\n"
+      "movq %%mm1, %%mm3\n"
+      "punpcklbw %%mm7,%%mm0\n"
+      "punpcklbw %%mm7,%%mm1\n"
+      "punpckhbw %%mm7,%%mm2\n"
+      "punpckhbw %%mm7,%%mm3\n"
+      "psubw %%mm1, %%mm0\n"
+      "psubw %%mm3, %%mm2\n"
+      
+      "addl %2,%0\n"
+      
+      "movq (%0),%%mm4\n"
+      "movq %%mm4, %%mm1\n"
+      "psllq $8, %%mm4\n"
+      "psrlq $8, %%mm1\n"
+      "psrlq $8, %%mm4\n"
+      "movq %%mm4, %%mm5\n"
+      "movq %%mm1, %%mm3\n"
+      "punpcklbw %%mm7,%%mm4\n"
+      "punpcklbw %%mm7,%%mm1\n"
+      "punpckhbw %%mm7,%%mm5\n"
+      "punpckhbw %%mm7,%%mm3\n"
+      "psubw %%mm1, %%mm4\n"
+      "psubw %%mm3, %%mm5\n"
+      "psubw %%mm4, %%mm0\n"
+      "psubw %%mm5, %%mm2\n"
+      "pxor %%mm3, %%mm3\n"
+      "pxor %%mm1, %%mm1\n"
+      "pcmpgtw %%mm0, %%mm3\n\t"
+      "pcmpgtw %%mm2, %%mm1\n\t"
+      "pxor %%mm3, %%mm0\n"
+      "pxor %%mm1, %%mm2\n"
+      "psubw %%mm3, %%mm0\n" 
+      "psubw %%mm1, %%mm2\n"
+      "paddw %%mm0, %%mm2\n"
+      "paddw %%mm2, %%mm6\n"
+
+      "addl %2,%0\n"
+      "1:\n"
+  
+      "movq (%0),%%mm0\n"
+      "movq %%mm0, %%mm1\n"
+      "psllq $8, %%mm0\n"
+      "psrlq $8, %%mm1\n"
+      "psrlq $8, %%mm0\n"
+      "movq %%mm0, %%mm2\n"
+      "movq %%mm1, %%mm3\n"
+      "punpcklbw %%mm7,%%mm0\n"
+      "punpcklbw %%mm7,%%mm1\n"
+      "punpckhbw %%mm7,%%mm2\n"
+      "punpckhbw %%mm7,%%mm3\n"
+      "psubw %%mm1, %%mm0\n"
+      "psubw %%mm3, %%mm2\n"
+      "psubw %%mm0, %%mm4\n"
+      "psubw %%mm2, %%mm5\n"
+      "pxor %%mm3, %%mm3\n"
+      "pxor %%mm1, %%mm1\n"
+      "pcmpgtw %%mm4, %%mm3\n\t"
+      "pcmpgtw %%mm5, %%mm1\n\t"
+      "pxor %%mm3, %%mm4\n"
+      "pxor %%mm1, %%mm5\n"
+      "psubw %%mm3, %%mm4\n" 
+      "psubw %%mm1, %%mm5\n"
+      "paddw %%mm4, %%mm5\n"
+      "paddw %%mm5, %%mm6\n"
+      
+      "addl %2,%0\n"
+      
+      "movq (%0),%%mm4\n"
+      "movq %%mm4, %%mm1\n"
+      "psllq $8, %%mm4\n"
+      "psrlq $8, %%mm1\n"
+      "psrlq $8, %%mm4\n"
+      "movq %%mm4, %%mm5\n"
+      "movq %%mm1, %%mm3\n"
+      "punpcklbw %%mm7,%%mm4\n"
+      "punpcklbw %%mm7,%%mm1\n"
+      "punpckhbw %%mm7,%%mm5\n"
+      "punpckhbw %%mm7,%%mm3\n"
+      "psubw %%mm1, %%mm4\n"
+      "psubw %%mm3, %%mm5\n"
+      "psubw %%mm4, %%mm0\n"
+      "psubw %%mm5, %%mm2\n"
+      "pxor %%mm3, %%mm3\n"
+      "pxor %%mm1, %%mm1\n"
+      "pcmpgtw %%mm0, %%mm3\n\t"
+      "pcmpgtw %%mm2, %%mm1\n\t"
+      "pxor %%mm3, %%mm0\n"
+      "pxor %%mm1, %%mm2\n"
+      "psubw %%mm3, %%mm0\n" 
+      "psubw %%mm1, %%mm2\n"
+      "paddw %%mm0, %%mm2\n"
+      "paddw %%mm2, %%mm6\n"
+
+      "addl %2,%0\n"
+      "subl $2, %%ecx\n"
+      " jnz 1b\n"
+
+      "movq %%mm6, %%mm0\n"
+      "punpcklwd %%mm7,%%mm0\n"
+      "punpckhwd %%mm7,%%mm6\n"
+      "paddd %%mm0, %%mm6\n"
+      
+      "movq %%mm6,%%mm0\n"
+      "psrlq $32, %%mm6\n"
+      "paddd %%mm6,%%mm0\n"
+      "movd %%mm0,%1\n"
+      : "+r" (pix1), "=r"(tmp) 
+      : "r" (line_size) , "g" (h-2)
+      : "%ecx");
+      return tmp;
+}
+
+static int hf_noise16_mmx(uint8_t * pix1, int line_size, int h) {
+    int tmp;
+    uint8_t * pix= pix1;
+  asm volatile (
+      "movl %3,%%ecx\n"
+      "pxor %%mm7,%%mm7\n"
+      "pxor %%mm6,%%mm6\n"
+      
+      "movq (%0),%%mm0\n"
+      "movq 1(%0),%%mm1\n"
+      "movq %%mm0, %%mm2\n"
+      "movq %%mm1, %%mm3\n"
+      "punpcklbw %%mm7,%%mm0\n"
+      "punpcklbw %%mm7,%%mm1\n"
+      "punpckhbw %%mm7,%%mm2\n"
+      "punpckhbw %%mm7,%%mm3\n"
+      "psubw %%mm1, %%mm0\n"
+      "psubw %%mm3, %%mm2\n"
+      
+      "addl %2,%0\n"
+      
+      "movq (%0),%%mm4\n"
+      "movq 1(%0),%%mm1\n"
+      "movq %%mm4, %%mm5\n"
+      "movq %%mm1, %%mm3\n"
+      "punpcklbw %%mm7,%%mm4\n"
+      "punpcklbw %%mm7,%%mm1\n"
+      "punpckhbw %%mm7,%%mm5\n"
+      "punpckhbw %%mm7,%%mm3\n"
+      "psubw %%mm1, %%mm4\n"
+      "psubw %%mm3, %%mm5\n"
+      "psubw %%mm4, %%mm0\n"
+      "psubw %%mm5, %%mm2\n"
+      "pxor %%mm3, %%mm3\n"
+      "pxor %%mm1, %%mm1\n"
+      "pcmpgtw %%mm0, %%mm3\n\t"
+      "pcmpgtw %%mm2, %%mm1\n\t"
+      "pxor %%mm3, %%mm0\n"
+      "pxor %%mm1, %%mm2\n"
+      "psubw %%mm3, %%mm0\n" 
+      "psubw %%mm1, %%mm2\n"
+      "paddw %%mm0, %%mm2\n"
+      "paddw %%mm2, %%mm6\n"
+
+      "addl %2,%0\n"
+      "1:\n"
+  
+      "movq (%0),%%mm0\n"
+      "movq 1(%0),%%mm1\n"
+      "movq %%mm0, %%mm2\n"
+      "movq %%mm1, %%mm3\n"
+      "punpcklbw %%mm7,%%mm0\n"
+      "punpcklbw %%mm7,%%mm1\n"
+      "punpckhbw %%mm7,%%mm2\n"
+      "punpckhbw %%mm7,%%mm3\n"
+      "psubw %%mm1, %%mm0\n"
+      "psubw %%mm3, %%mm2\n"
+      "psubw %%mm0, %%mm4\n"
+      "psubw %%mm2, %%mm5\n"
+      "pxor %%mm3, %%mm3\n"
+      "pxor %%mm1, %%mm1\n"
+      "pcmpgtw %%mm4, %%mm3\n\t"
+      "pcmpgtw %%mm5, %%mm1\n\t"
+      "pxor %%mm3, %%mm4\n"
+      "pxor %%mm1, %%mm5\n"
+      "psubw %%mm3, %%mm4\n"
+      "psubw %%mm1, %%mm5\n"
+      "paddw %%mm4, %%mm5\n"
+      "paddw %%mm5, %%mm6\n"
+      
+      "addl %2,%0\n"
+      
+      "movq (%0),%%mm4\n"
+      "movq 1(%0),%%mm1\n"
+      "movq %%mm4, %%mm5\n"
+      "movq %%mm1, %%mm3\n"
+      "punpcklbw %%mm7,%%mm4\n"
+      "punpcklbw %%mm7,%%mm1\n"
+      "punpckhbw %%mm7,%%mm5\n"
+      "punpckhbw %%mm7,%%mm3\n"
+      "psubw %%mm1, %%mm4\n"
+      "psubw %%mm3, %%mm5\n"
+      "psubw %%mm4, %%mm0\n"
+      "psubw %%mm5, %%mm2\n"
+      "pxor %%mm3, %%mm3\n"
+      "pxor %%mm1, %%mm1\n"
+      "pcmpgtw %%mm0, %%mm3\n\t"
+      "pcmpgtw %%mm2, %%mm1\n\t"
+      "pxor %%mm3, %%mm0\n"
+      "pxor %%mm1, %%mm2\n"
+      "psubw %%mm3, %%mm0\n" 
+      "psubw %%mm1, %%mm2\n"
+      "paddw %%mm0, %%mm2\n"
+      "paddw %%mm2, %%mm6\n"
+
+      "addl %2,%0\n"
+      "subl $2, %%ecx\n"
+      " jnz 1b\n"
+
+      "movq %%mm6, %%mm0\n"
+      "punpcklwd %%mm7,%%mm0\n"
+      "punpckhwd %%mm7,%%mm6\n"
+      "paddd %%mm0, %%mm6\n"
+      
+      "movq %%mm6,%%mm0\n"
+      "psrlq $32, %%mm6\n"
+      "paddd %%mm6,%%mm0\n"
+      "movd %%mm0,%1\n"
+      : "+r" (pix1), "=r"(tmp) 
+      : "r" (line_size) , "g" (h-2)
+      : "%ecx");
+      return tmp + hf_noise8_mmx(pix+8, line_size, h);
+}
+
+static int nsse16_mmx(MpegEncContext *c, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
+    int score1= sse16_mmx(c, pix1, pix2, line_size, h);
+    int score2= hf_noise16_mmx(pix1, line_size, h) - hf_noise16_mmx(pix2, line_size, h);
+
+    if(c) return score1 + ABS(score2)*c->avctx->nsse_weight;
+    else  return score1 + ABS(score2)*8;
+}
+
+static int nsse8_mmx(MpegEncContext *c, uint8_t * pix1, uint8_t * pix2, int line_size, int h) {
+    int score1= sse8_mmx(c, pix1, pix2, line_size, h);
+    int score2= hf_noise8_mmx(pix1, line_size, h) - hf_noise8_mmx(pix2, line_size, h);
+
+    if(c) return score1 + ABS(score2)*c->avctx->nsse_weight;
+    else  return score1 + ABS(score2)*8;
 }
 
 static int vsad_intra16_mmx(void *v, uint8_t * pix, uint8_t * dummy, int line_size, int h) {
@@ -2235,8 +2534,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         
 	c->pix_norm1 = pix_norm1_mmx;
 	c->sse[0] = sse16_mmx;
+  	c->sse[1] = sse8_mmx;
         c->vsad[4]= vsad_intra16_mmx;
 
+	c->nsse[0] = nsse16_mmx;
+	c->nsse[1] = nsse8_mmx;
         if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
             c->vsad[0] = vsad16_mmx;
         }
