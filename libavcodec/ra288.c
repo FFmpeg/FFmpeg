@@ -24,7 +24,7 @@ typedef struct {
 	float	output[40];
 	float	pr1[36];
 	float	pr2[10];
-	int		phase, phasep;
+	int	phase, phasep;
 
 	float st1a[111],st1b[37],st1[37];
 	float st2a[38],st2b[11],st2[11];
@@ -231,12 +231,12 @@ static void unpack(unsigned short *tgt, unsigned char *src, int len)
 {
   int x,y,z;
   int n,temp;
-  int buffer[38];
+  int buffer[len];
 
   for (x=0;x<len;tgt[x++]=0)
     buffer[x]=9+(x&1);
 
-  for (x=y=z=0;x<38;x++) {
+  for (x=y=z=0;x<len/*was 38*/;x++) {
     n=buffer[y]-z;
     temp=src[x];
     if (n<8) temp&=255>>(8-n);
@@ -386,69 +386,69 @@ static void prodsum(float *tgt, float *src, int len, int n)
   }
 }
 
-#ifndef max
-#define max(a,b) ((a)>(b)?(a):(b))
-#endif
+void * decode_block(AVCodecContext * avctx, unsigned char *in, signed short int *out)
+{
+  int x,y;
+  Real288_internal *glob=avctx->priv_data;
+  int cfs=((short*)(avctx->extradata))[3]; /* coded frame size 38 */
+  unsigned short int buffer[cfs];
+
+  unpack(buffer,in,cfs);
+  for (x=0;x<32;x++)
+  {
+    glob->phasep=(glob->phase=x&7)*5;
+    decode(glob,buffer[x]);
+    for (y=0;y<5;*(out++)=8*glob->output[glob->phasep+(y++)]);
+    if (glob->phase==3) update(glob);
+  }
+  return out;
+}
 
 /* Decode a block (celp) */
 static int ra288_decode_frame(AVCodecContext * avctx,
             void *data, int *data_size,
             uint8_t * buf, int buf_size)
 {
-  int x,y,z,bret;
-  unsigned short int buffer[buf_size];
-  unsigned char b[buf_size],*bp;
-  void *datao;
-  Real288_internal *glob=avctx->priv_data;
-  if(avctx->extradata_size>=6) 
+  if(avctx->extradata_size>=6)
   {
-    int w=avctx->block_align;
-    int h=((short*)(avctx->extradata))[1];
-    int cfs=((short*)(avctx->extradata))[3]; /* coded frame size */
+//((short*)(avctx->extradata))[0]; /* subpacket size */
+//((short*)(avctx->extradata))[1]; /* subpacket height */
+//((short*)(avctx->extradata))[2]; /* subpacket flavour */
+//((short*)(avctx->extradata))[3]; /* coded frame size */
+//((short*)(avctx->extradata))[4]; /* codec's data length  */
+//((short*)(avctx->extradata))[5...] /* codec's data */
+    int z,bret;
+    void *datao;
+    int w=avctx->block_align; /* 228 */
+    int h=((short*)(avctx->extradata))[1]; /* 12 */
+    int cfs=((short*)(avctx->extradata))[3]; /* coded frame size 38 */
     int i,j;
+    unsigned char tb[h*w], *ptb;
     if(buf_size<w*h)
     {
-	fprintf(stderr,"ffra288: warning! Context was not interleaved [%d<%d]\n",buf_size,w*h);
-	goto no_interleave;
+	fprintf(stderr,"ffra288: Error! Input buffer is too small [%d<%d]\n",buf_size,w*h);
+	return 0;
     }
-    bp = buf;
+    datao = data;
+    ptb = buf;
+    /* Phase 0: deinterleave */
     for (j = 0; j < h; j++)
 	for (i = 0; i < h/2; i++)
-	{
-	    memcpy(&b[i*2*w+j*cfs], bp, cfs);
-	    bp += cfs;
-	    if(bp-buf>buf_size)
-	    {
-		fprintf(stderr,"ffra288: warning! Context was partly interleaved [%d<%d]\n",buf_size,w*h);
-		break;
-	    }
-	}
-    bret=bp-buf;
-    bp = b;
+    {
+	    memcpy(&tb[i*2*w+j*cfs],ptb,cfs);
+	    ptb += cfs;
+    }
+    /* Phase 1: decode */
+    bret = ptb-buf;
+    for(z=0;z<bret;z+=cfs) { decode_block(avctx,&tb[z],(signed short *)data); data += 320; }
+    *data_size = data - datao;
+    return bret;
   }
   else
-  { 
-    fprintf(stderr,"ffra288: warning! Context was not interleaved [%d<%d]\n",avctx->extradata_size,6);
-    no_interleave:
-    bret=buf_size;
-    bp = buf; 
-  }
-  datao = data;
-  z=0;
-  while(z<bret)
   {
-    unpack(buffer,&bp[z],32);
-    for (x=0;x<32;x++)
-    {
-	glob->phasep=(glob->phase=x&7)*5;
-	decode(glob,buffer[x]);
-	for (y=0;y<5;*(((int16_t *)data)++)=8*glob->output[glob->phasep+(y++)]);
-	if (glob->phase==3) update(glob);
-    }
-    z+=32;
+    fprintf(stderr,"ffra288: Error: need extra data!!!\n");
+    return 0;
   }
-  *data_size = data - datao;
-  return bret;
 }
 
 AVCodec ra_288_decoder =
