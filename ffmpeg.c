@@ -242,6 +242,7 @@ static int video_stream_copy = 0;
 static int video_sync_method= 1;
 static int audio_sync_method= 0;
 static int copy_ts= 0;
+static int opt_shortest = 0; //
 
 static int rate_emu = 0;
 
@@ -1891,7 +1892,7 @@ static int av_encode(AVFormatContext **output_files,
         is = input_files[file_index];
         if (av_read_frame(is, &pkt) < 0) {
             file_table[file_index].eof_reached = 1;
-            continue;
+            if (opt_shortest) break; else continue; //
         }
 
         if (!pkt.size) {
@@ -3935,6 +3936,7 @@ const OptionDef options[] = {
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
+    { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
 
     /* video options */
     { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
