@@ -79,6 +79,7 @@ typedef struct {
     int lru_size[MAX_SIZE_LRU];
     int initial_pts_predictor[MAX_PTS_LRU];
     int initial_size_predictor[MAX_SIZE_LRU];
+    int64_t last_sync_pos;                    ///<pos of last 1/2 type frame
 } StreamContext;
 
 typedef struct {
@@ -280,12 +281,25 @@ static int get_str(ByteIOContext *bc, char *string, int maxlen){
         return 0;
 }
 
+static uint64_t get_vb(ByteIOContext *bc){
+    uint64_t val=0;
+    int i= get_v(bc);
+    
+    if(i>8)
+        return UINT64_MAX;
+    
+    while(i--)
+        val = (val<<8) + get_byte(bc);
+    
+    return val;
+}
+
 static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int prefix_length, int calculate_checksum)
 {
     int64_t start, size, last_size;
     start= url_ftell(bc) - prefix_length;
 
-    if(start != nut->packet_start + nut->written_packet_size){
+    if(nut->written_packet_size >= 0 && start != nut->packet_start + nut->written_packet_size){
         av_log(nut->avf, AV_LOG_ERROR, "get_packetheader called at weird position\n");
         if(prefix_length<8)
             return -1;
@@ -295,7 +309,7 @@ static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int prefix_lengt
 
     size= get_v(bc);
     last_size= get_v(bc);
-    if(nut->written_packet_size != last_size){
+    if(nut->written_packet_size >= 0 && nut->written_packet_size != last_size){
         av_log(nut->avf, AV_LOG_ERROR, "packet size missmatch %d != %lld at %lld\n", nut->written_packet_size, last_size, start);
         if(prefix_length<8)
             return -1;
@@ -319,11 +333,9 @@ static int check_checksum(ByteIOContext *bc){
 static int get_length(uint64_t val){
     int i;
 
-    for (i=7; ; i+=7)
-	if ((val>>i) == 0)
-	    return i;
+    for (i=7; val>>i; i+=7);
 
-    return 7; //not reached
+    return i;
 }
 
 static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
@@ -345,15 +357,21 @@ static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
             return state;
         }
     }
-    av_log(NULL, AV_LOG_DEBUG, "searched until %lld\n", url_ftell(bc));
+
     return 0;
 }
 
-static int find_startcode(ByteIOContext *bc, uint64_t code, int64_t pos){
+/**
+ * find the given startcode.
+ * @param code the startcode
+ * @param pos the start position of the search, or -1 if the current position
+ * @returns the position of the startcode or -1 if not found
+ */
+static int64_t find_startcode(ByteIOContext *bc, uint64_t code, int64_t pos){
     for(;;){
         uint64_t startcode= find_any_startcode(bc, pos);
         if(startcode == code)
-            return 0;
+            return url_ftell(bc) - 8;
         else if(startcode == 0)
             return -1;
         pos=-1;
@@ -361,7 +379,7 @@ static int find_startcode(ByteIOContext *bc, uint64_t code, int64_t pos){
 }
 
 #ifdef CONFIG_ENCODERS
-static int put_v(ByteIOContext *bc, uint64_t val)
+static void put_v(ByteIOContext *bc, uint64_t val)
 {
     int i;
 
@@ -373,17 +391,26 @@ static int put_v(ByteIOContext *bc, uint64_t val)
     }
 
     put_byte(bc, val&0x7f);
-
-    return 0;
 }
 
-static int put_str(ByteIOContext *bc, const char *string){
+/**
+ * stores a string as vb.
+ */
+static void put_str(ByteIOContext *bc, const char *string){
     int len= strlen(string);
     
     put_v(bc, len);
     put_buffer(bc, string, len);
+}
+
+static void put_vb(ByteIOContext *bc, uint64_t val){
+    int i;
     
-    return 0;
+    for (i=8; val>>i; i+=8);
+
+    put_v(bc, i>>3);
+    for(i-=8; i>=0; i-=8)
+        put_byte(bc, (val>>i)&0xFF);
 }
 
 static int put_packetheader(NUTContext *nut, ByteIOContext *bc, int max_size, int calculate_checksum)
@@ -492,17 +519,17 @@ static int nut_write_header(AVFormatContext *s)
 	put_v(bc, i /*s->streams[i]->index*/);
 	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
 	if (codec->codec_tag)
-	    put_v(bc, codec->codec_tag);
+	    put_vb(bc, codec->codec_tag);
 	else if (codec->codec_type == CODEC_TYPE_VIDEO)
 	{
-	    put_v(bc, codec_get_bmp_tag(codec->codec_id));
+	    put_vb(bc, codec_get_bmp_tag(codec->codec_id));
 	}
 	else if (codec->codec_type == CODEC_TYPE_AUDIO)
 	{
-	    put_v(bc, codec_get_wav_tag(codec->codec_id));
+	    put_vb(bc, codec_get_wav_tag(codec->codec_id));
 	}
         else
-            put_v(bc, 0);
+            put_vb(bc, 0);
 
 	if (codec->codec_type == CODEC_TYPE_VIDEO)
 	{
@@ -524,7 +551,7 @@ static int nut_write_header(AVFormatContext *s)
         nut->stream[i].rate_den= denom;
 
 	put_v(bc, codec->bit_rate);
-	put_v(bc, 0); /* no language code */
+	put_vb(bc, 0); /* no language code */
 	put_v(bc, nom);
 	put_v(bc, denom);
         if(nom / denom < 1000)
@@ -875,7 +902,7 @@ static int decode_stream_header(NUTContext *nut){
     if (!st)
         return AVERROR_NOMEM;
     class = get_v(bc);
-    tmp = get_v(bc);
+    tmp = get_vb(bc);
     switch(class)
     {
         case 0:
@@ -895,7 +922,7 @@ static int decode_stream_header(NUTContext *nut){
             return -1;
     }
     s->bit_rate += get_v(bc);
-    get_v(bc); /* language code */
+    get_vb(bc); /* language code */
     nom = get_v(bc);
     denom = get_v(bc);
     nut->stream[stream_id].msb_timestamp_shift = get_v(bc);
@@ -1004,11 +1031,11 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* main header */
     pos=0;
     for(;;){
-        if (find_startcode(bc, MAIN_STARTCODE, pos)<0){
+        pos= find_startcode(bc, MAIN_STARTCODE, pos)+1;
+        if (pos<0){
             av_log(s, AV_LOG_ERROR, "no main startcode found\n");
             return -1;
         }
-        pos= url_ftell(bc);
         if(decode_main_header(nut) >= 0)
             break;
     }
@@ -1021,11 +1048,11 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* stream headers */
     pos=0;
     for(inited_stream_count=0; inited_stream_count < nut->stream_count;){
-        if (find_startcode(bc, STREAM_STARTCODE, pos)<0){
+        pos= find_startcode(bc, STREAM_STARTCODE, pos)+1;
+        if (pos<0){
             av_log(s, AV_LOG_ERROR, "not all stream headers found\n");
             return -1;
         }
-        pos= url_ftell(bc);
         if(decode_stream_header(nut) >= 0)
             inited_stream_count++;
     }
@@ -1060,7 +1087,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code, int fram
     int key_frame = 0;
     int64_t pts = 0;
     const int prefix_len= frame_type == 2 ? 8+1 : 1;
-    const int64_t frame_start= url_ftell(bc) + prefix_len;
+    const int64_t frame_start= url_ftell(bc) - prefix_len;
 
     flags= nut->frame_code[frame_code].flags;
     size_mul= nut->frame_code[frame_code].size_mul;
@@ -1097,6 +1124,16 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code, int fram
     if(flags & FLAG_PTS){
         if(flags & FLAG_FULL_PTS){
             pts= get_v(bc);
+            if(frame_type && key_frame){
+                av_add_index_entry(
+                    s->streams[stream_id], 
+                    frame_start, 
+                    pts, 
+                    frame_start - nut->stream[stream_id].last_sync_pos,
+                    AVINDEX_KEYFRAME);
+                nut->stream[stream_id].last_sync_pos= frame_start;
+                assert(nut->packet_start == frame_start);
+            }
         }else{
             int64_t mask = (1<<stream->msb_timestamp_shift)-1;
             int64_t delta= stream->last_pts - mask/2;
@@ -1138,11 +1175,11 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
-    int size, frame_code=0;
-    int frame_type= 0;
+    int size, i, frame_code=0;
     int64_t pos;
 
     for(;;){
+        int frame_type= 0;
         uint64_t tmp= nut->next_startcode;
         nut->next_startcode=0;
 
@@ -1153,15 +1190,11 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
             frame_code = get_byte(bc);
             if(frame_code == 'N'){
                 tmp= frame_code;
-                tmp<<=8 ; tmp |= get_byte(bc);
-                tmp<<=16; tmp |= get_be16(bc);
-                tmp<<=32; tmp |= get_be32(bc);
+                for(i=1; i<8; i++)
+                    tmp = (tmp<<8) + get_byte(bc);
             }
         }
         switch(tmp){
-        case KEYFRAME_STARTCODE:
-            frame_type = 2;
-            break;
         case MAIN_STARTCODE:
         case STREAM_STARTCODE:
         case INDEX_STARTCODE:
@@ -1172,12 +1205,14 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
             if(decode_info_header(nut)<0)
                 goto resync;
             break;
+        case KEYFRAME_STARTCODE:
+            frame_type = 2;
+            frame_code = get_byte(bc);
         case 0:
             if(decode_frame(nut, pkt, frame_code, frame_type)>=0)
                 return 0;
         default:
 resync:
-            frame_type = 0;
 av_log(s, AV_LOG_DEBUG, "syncing from %lld\n", nut->packet_start+1);
             tmp= find_any_startcode(bc, nut->packet_start+1);
             if(tmp==0)
@@ -1209,10 +1244,269 @@ av_log(s, AV_LOG_DEBUG, "steping back to %lld next %d\n", pos, size);
             }
             url_fseek(bc, pos, SEEK_SET);
             
-            nut->written_packet_size= size;
-            nut->packet_start= pos - size;
+            nut->written_packet_size= -1;
         }
     }
+}
+
+static int64_t read_timestamp(AVFormatContext *s, int stream_index, int64_t *pos_arg, int64_t pos_limit){
+    NUTContext *nut = s->priv_data;
+    ByteIOContext *bc = &s->pb;
+    int64_t pos, pts;
+    uint64_t code;
+    int frame_code,step, flags, stream_id, i;
+av_log(s, AV_LOG_DEBUG, "read_timestamp(X,%d,%lld,%lld)\n", stream_index, *pos_arg, pos_limit);
+
+    if(*pos_arg < 0)
+        return AV_NOPTS_VALUE;
+
+    // find a previous startcode, FIXME use forward search and follow backward pointers if undamaged stream
+    pos= *pos_arg;
+    step= FFMIN(16*1024, pos);
+    do{
+        pos-= step;
+        code= find_any_startcode(bc, pos);
+
+        if(code && url_ftell(bc) - 8 < *pos_arg)
+            break;
+        step= FFMIN(2*step, pos);
+    }while(step);
+
+    if(!code) //nothing found, not even after pos_arg
+        return AV_NOPTS_VALUE;
+
+    url_fseek(bc, -8, SEEK_CUR);
+    for(i=0; i<s->nb_streams; i++)
+        nut->stream[i].last_sync_pos= url_ftell(bc);
+        
+    for(;;){
+        int64_t pos= url_ftell(bc);
+        uint64_t tmp=0;
+        int prefix_len=1;
+        
+        if(pos > pos_limit)
+            return AV_NOPTS_VALUE;
+
+        frame_code = get_byte(bc);
+        if(frame_code == 'N'){
+            tmp= frame_code;
+            for(i=1; i<8; i++)
+                tmp = (tmp<<8) + get_byte(bc);
+        }
+//av_log(s, AV_LOG_DEBUG, "before switch %llX at=%lld\n", tmp, pos);
+
+        switch(tmp){
+        case MAIN_STARTCODE:
+        case STREAM_STARTCODE:
+        case INDEX_STARTCODE:
+        case INFO_STARTCODE:
+            nut->written_packet_size= -1;
+            get_packetheader(nut, bc, 8, 0);
+            url_fseek(bc, nut->written_packet_size + nut->packet_start, SEEK_SET);
+            break;
+        case KEYFRAME_STARTCODE:
+            nut->written_packet_size= -1;
+            prefix_len+=8;
+            frame_code = get_byte(bc);
+        case 0:
+            flags= nut->frame_code[frame_code].flags;
+            stream_id= nut->frame_code[frame_code].stream_id_plus1 - 1;
+
+            if(get_packetheader(nut, bc, prefix_len, 0) < 0)
+                goto resync;
+
+            if(!(flags & FLAG_FRAME_TYPE) || !(flags & FLAG_PTS) || !(flags & FLAG_FULL_PTS))
+                goto resync;
+
+            if(stream_id==-1)
+                stream_id= get_v(bc);
+            if(stream_id >= s->nb_streams)
+                goto resync;
+                
+            pts= get_v(bc);
+    
+            if(flags & FLAG_KEY_FRAME){
+                av_add_index_entry(
+                    s->streams[stream_id], 
+                    pos, 
+                    pts, 
+                    pos - nut->stream[stream_id].last_sync_pos,
+                    AVINDEX_KEYFRAME);
+                nut->stream[stream_id].last_sync_pos= pos;
+            }
+            if(stream_id != stream_index || !(flags & FLAG_KEY_FRAME) || nut->packet_start < *pos_arg){
+                url_fseek(bc, nut->written_packet_size + nut->packet_start, SEEK_SET);
+                break;
+            }
+ 
+            *pos_arg= nut->packet_start;
+            assert(nut->packet_start == pos);
+            return pts;
+        default:
+resync:
+av_log(s, AV_LOG_DEBUG, "syncing from %lld\n", nut->packet_start+1);
+            if(!find_any_startcode(bc, nut->packet_start+1))
+                return AV_NOPTS_VALUE;
+
+            url_fseek(bc, -8, SEEK_CUR);
+        }
+    }
+    return AV_NOPTS_VALUE;
+}
+
+#define DEBUG_SEEK
+static int nut_read_seek(AVFormatContext *s, int stream_index, int64_t target_ts){
+    NUTContext *nut = s->priv_data;
+    StreamContext *stream;
+    int64_t pos_min, pos_max, pos, pos_limit;
+    int64_t ts_min, ts_max, ts;
+    int index, no_change,i;
+    AVStream *st;
+
+    if (stream_index < 0) {
+        stream_index = av_find_default_stream_index(s);
+        if (stream_index < 0)
+            return -1;
+    }
+    stream= &nut->stream[stream_index];
+    target_ts= (av_rescale(target_ts, stream->rate_num, stream->rate_den) + AV_TIME_BASE/2) / AV_TIME_BASE;
+
+#ifdef DEBUG_SEEK
+    av_log(s, AV_LOG_DEBUG, "read_seek: %d %lld\n", stream_index, target_ts);
+#endif
+
+    ts_max=
+    ts_min= AV_NOPTS_VALUE;
+    pos_limit= -1; //gcc falsely says it may be uninitalized
+
+    st= s->streams[stream_index];
+    if(st->index_entries){
+        AVIndexEntry *e;
+
+        index= av_index_search_timestamp(st, target_ts);
+        e= &st->index_entries[index];
+
+        if(e->timestamp <= target_ts || e->pos == e->min_distance){
+            pos_min= e->pos;
+            ts_min= e->timestamp;
+#ifdef DEBUG_SEEK
+        av_log(s, AV_LOG_DEBUG, "unsing cached pos_min=0x%llx dts_min=%lld\n", 
+               pos_min,ts_min);
+#endif
+        }else{
+            assert(index==0);
+        }
+        index++;
+        if(index < st->nb_index_entries){
+            e= &st->index_entries[index];
+            assert(e->timestamp >= target_ts);
+            pos_max= e->pos;
+            ts_max= e->timestamp;
+            pos_limit= pos_max - e->min_distance;
+#ifdef DEBUG_SEEK
+        av_log(s, AV_LOG_DEBUG, "unsing cached pos_max=0x%llx pos_limit=0x%llx dts_max=%lld\n", 
+               pos_max,pos_limit, ts_max);
+#endif
+        }
+    }
+
+    if(ts_min == AV_NOPTS_VALUE){
+        pos_min = 0;
+        ts_min = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
+        if (ts_min == AV_NOPTS_VALUE)
+            return -1;
+    }
+
+    if(ts_max == AV_NOPTS_VALUE){
+        int step= 1024;
+        pos_max = url_filesize(url_fileno(&s->pb)) - 1;
+        do{
+            pos_max -= step;
+            ts_max = read_timestamp(s, stream_index, &pos_max, pos_max + step);
+            step += step;
+        }while(ts_max == AV_NOPTS_VALUE && pos_max >= step);
+        if (ts_max == AV_NOPTS_VALUE)
+            return -1;
+        
+        for(;;){
+            int64_t tmp_pos= pos_max + 1;
+            int64_t tmp_ts= read_timestamp(s, stream_index, &tmp_pos, INT64_MAX);
+            if(tmp_ts == AV_NOPTS_VALUE)
+                break;
+            ts_max= tmp_ts;
+            pos_max= tmp_pos;
+        }
+        pos_limit= pos_max;
+    }
+
+    no_change=0;
+    while (pos_min < pos_limit) {
+#ifdef DEBUG_SEEK
+        av_log(s, AV_LOG_DEBUG, "pos_min=0x%llx pos_max=0x%llx dts_min=%lld dts_max=%lld\n", 
+               pos_min, pos_max,
+               ts_min, ts_max);
+#endif
+        int64_t start_pos;
+        assert(pos_limit <= pos_max);
+
+        if(no_change==0){
+            int64_t approximate_keyframe_distance= pos_max - pos_limit;
+            // interpolate position (better than dichotomy)
+            pos = (int64_t)((double)(pos_max - pos_min) *
+                            (double)(target_ts - ts_min) /
+                            (double)(ts_max - ts_min)) + pos_min - approximate_keyframe_distance;
+        }else if(no_change==1){
+            // bisection, if interpolation failed to change min or max pos last time
+            pos = (pos_min + pos_limit)>>1;
+        }else{
+            // linear search if bisection failed, can only happen if there are very few or no keframes between min/max
+            pos=pos_min;
+        }
+        if(pos <= pos_min)
+            pos= pos_min + 1;
+        else if(pos > pos_limit)
+            pos= pos_limit;
+        start_pos= pos;
+
+        ts = read_timestamp(s, stream_index, &pos, INT64_MAX); //may pass pos_limit instead of -1
+        if(pos == pos_max)
+            no_change++;
+        else
+            no_change=0;
+#ifdef DEBUG_SEEK
+av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%Ld noc:%d\n", pos_min, pos, pos_max, ts_min, ts, ts_max, target_ts, pos_limit, start_pos, no_change);
+#endif
+        assert(ts != AV_NOPTS_VALUE);
+        if (target_ts < ts) {
+            pos_limit = start_pos - 1;
+            pos_max = pos;
+            ts_max = ts;
+        } else {
+            pos_min = pos;
+            ts_min = ts;
+            /* check if we are lucky */
+            if (target_ts == ts)
+                break;
+        }
+    }
+    
+    pos = pos_min;
+#ifdef DEBUG_SEEK
+    pos_min = pos;
+    ts_min = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
+    pos_min++;
+    ts_max = read_timestamp(s, stream_index, &pos_min, INT64_MAX);
+    av_log(s, AV_LOG_DEBUG, "pos=0x%llx %lld<=%lld<=%lld\n", 
+           pos, ts_min, target_ts, ts_max);
+#endif
+    /* do the seek */
+    url_fseek(&s->pb, pos, SEEK_SET);
+
+    nut->written_packet_size= -1;
+    for(i=0; i<s->nb_streams; i++)
+        nut->stream[i].last_sync_pos= pos;
+
+    return 0;
 }
 
 static int nut_read_close(AVFormatContext *s)
@@ -1236,7 +1530,7 @@ static AVInputFormat nut_iformat = {
     nut_read_header,
     nut_read_packet,
     nut_read_close,
-//    nut_read_seek,
+    nut_read_seek,
     .extensions = "nut",
 };
 
