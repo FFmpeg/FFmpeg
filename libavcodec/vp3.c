@@ -288,6 +288,7 @@ typedef struct Vp3DecodeContext {
     int last_coded_c_fragment;
 
     uint8_t edge_emu_buffer[9*2048]; //FIXME dynamic alloc
+    uint8_t qscale_table[2048]; //FIXME dynamic alloc (width+15)/16
 } Vp3DecodeContext;
 
 /************************************************************************
@@ -1186,6 +1187,8 @@ static void init_dequantizer(Vp3DecodeContext *s)
             s->inter_dequant[j] = MIN_DEQUANT_VAL * 2;
         s->inter_dequant[j] *= SCALER;
     }
+    
+    memset(s->qscale_table, (FFMAX(s->intra_y_dequant[1], s->intra_c_dequant[1])+8)/16, 512); //FIXME finetune
 
     /* print debug information as requested */
     debug_dequantizers("intra Y dequantizers:\n");
@@ -2403,29 +2406,22 @@ static void render_fragments(Vp3DecodeContext *s,
                     int src_x, src_y;
                     motion_x = s->all_fragments[i].motion_x;
                     motion_y = s->all_fragments[i].motion_y;
+                    if(plane){
+                        motion_x= (motion_x>>1) | (motion_x&1);
+                        motion_y= (motion_y>>1) | (motion_y&1);
+                    }
+
                     src_x= (motion_x>>1) + x;
                     src_y= (motion_y>>1) + y;
 if ((motion_x == 0xbeef) || (motion_y == 0xbeef))
 printf (" help! got beefy vector! (%X, %X)\n", motion_x, motion_y);
 
-                    if (motion_x >= 0) {
-                        motion_halfpel_index = motion_x & 0x01;
-                        motion_source += (motion_x >> 1);
-                    } else  {
-                        motion_x = -motion_x;
-                        motion_halfpel_index = motion_x & 0x01;
-                        motion_source -= ((motion_x + 1) >> 1);
-                    }
+                    motion_halfpel_index = motion_x & 0x01;
+                    motion_source += (motion_x >> 1);
 
 //                    motion_y = -motion_y;
-                    if (motion_y >= 0) {
-                        motion_halfpel_index |= (motion_y & 0x01) << 1;
-                        motion_source += ((motion_y >> 1) * stride);
-                    } else  {
-                        motion_y = -motion_y;
-                        motion_halfpel_index |= (motion_y & 0x01) << 1;
-                        motion_source -= (((motion_y + 1) >> 1) * stride);
-                    }
+                    motion_halfpel_index |= (motion_y & 0x01) << 1;
+                    motion_source += ((motion_y >> 1) * stride);
 
                     if(src_x<0 || src_y<0 || src_x + 9 >= width || src_y + 9 >= height){
                         uint8_t *temp= s->edge_emu_buffer;
@@ -2734,6 +2730,9 @@ static int vp3_decode_frame(AVCodecContext *avctx,
             return -1;
         }
     }
+
+    s->current_frame.qscale_table= s->qscale_table; //FIXME allocate individual tables per AVFrame
+    s->current_frame.qstride= 0;
 
     init_frame(s, &gb);
 
