@@ -561,11 +561,12 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     avctx->width = width;
     avctx->height = height;
 
-    if (avctx->flags & CODEC_FLAG_DR1 && avctx->get_buffer_callback)
+    if (avctx->flags & CODEC_FLAG_DR1)
     {
 	s->width = -1;
 	avctx->dr_buffer[0] = avctx->dr_buffer[1] = avctx->dr_buffer[2] = 0;
-	if(avctx->get_buffer_callback(avctx, width, height, I_TYPE) < 0){
+	if(avctx->get_buffer_callback(avctx, width, height, I_TYPE) < 0
+	   && avctx->flags & CODEC_FLAG_DR1) {
 	    fprintf(stderr, "get_buffer() failed\n");
 	    return -1;
 	}
