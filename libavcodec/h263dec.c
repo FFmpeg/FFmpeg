@@ -651,7 +651,7 @@ retry:
     s->current_picture.key_frame= s->pict_type == I_TYPE;
 
     /* skip b frames if we dont have reference frames */
-    if(s->last_picture_ptr==NULL && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
+    if(s->last_picture_ptr==NULL && (s->pict_type==B_TYPE || s->dropable)) return get_consumed_bytes(s, buf_size);
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
     /* skip everything if we are in a hurry>=5 */
