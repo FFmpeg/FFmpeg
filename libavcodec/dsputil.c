@@ -2587,6 +2587,54 @@ static int pix_abs8_xy2_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, 
     return s;
 }
 
+static int nsse16_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int stride, int h){
+    int score1=0;
+    int score2=0;
+    int x,y;
+    
+    for(y=0; y<h; y++){
+        for(x=0; x<16; x++){
+            score1+= (s1[x  ] - s2[x ])*(s1[x  ] - s2[x ]);
+        }
+        if(y+1<h){
+            for(x=0; x<15; x++){
+                score2+= ABS(  s1[x  ] - s1[x  +stride]
+                             - s1[x+1] + s1[x+1+stride])
+                        -ABS(  s2[x  ] - s2[x  +stride]
+                             - s2[x+1] + s2[x+1+stride]);
+            }
+        }
+        s1+= stride;
+        s2+= stride;
+    }
+    
+    return score1 + ABS(score2)*8;
+}
+
+static int nsse8_c(/*MpegEncContext*/ void *c, uint8_t *s1, uint8_t *s2, int stride, int h){
+    int score1=0;
+    int score2=0;
+    int x,y;
+    
+    for(y=0; y<h; y++){
+        for(x=0; x<8; x++){
+            score1+= (s1[x  ] - s2[x ])*(s1[x  ] - s2[x ]);
+        }
+        if(y+1<h){
+            for(x=0; x<7; x++){
+                score2+= ABS(  s1[x  ] - s1[x  +stride]
+                             - s1[x+1] + s1[x+1+stride])
+                        -ABS(  s2[x  ] - s2[x  +stride]
+                             - s2[x+1] + s2[x+1+stride]);
+            }
+        }
+        s1+= stride;
+        s2+= stride;
+    }
+    
+    return score1 + ABS(score2)*8;
+}
+
 static int try_8x8basis_c(int16_t rem[64], int16_t weight[64], int16_t basis[64], int scale){
     int i;
     unsigned int sum=0;
@@ -2679,6 +2727,9 @@ void ff_set_cmp(DSPContext* c, me_cmp_func *cmp, int type){
             break;
         case FF_CMP_ZERO:
             cmp[i]= zero_cmp;
+            break;
+        case FF_CMP_NSSE:
+            cmp[i]= c->nsse[i];
             break;
         default:
             av_log(NULL, AV_LOG_ERROR,"internal error in cmp function selection\n");
@@ -3313,6 +3364,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vsad[4]= vsad_intra16_c;
     c->vsse[0]= vsse16_c;
     c->vsse[4]= vsse_intra16_c;
+    c->nsse[0]= nsse16_c;
+    c->nsse[1]= nsse8_c;
         
     c->add_bytes= add_bytes_c;
     c->diff_bytes= diff_bytes_c;

@@ -915,8 +915,8 @@ typedef struct AVCodecContext {
     void (*release_buffer)(struct AVCodecContext *c, AVFrame *pic);
 
     /**
-     * is 1 if the decoded stream contains b frames, 0 otherwise.
-     * - encoding: unused
+     * if 1 the stream has a 1 frame delay during decoding.
+     * - encoding: set by lavc
      * - decoding: set by lavc
      */
     int has_b_frames;
@@ -1251,6 +1251,7 @@ typedef struct AVCodecContext {
 #define FF_CMP_ZERO 7
 #define FF_CMP_VSAD 8
 #define FF_CMP_VSSE 9
+#define FF_CMP_NSSE 10
 #define FF_CMP_CHROMA 256
     
     /**

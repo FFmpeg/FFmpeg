@@ -162,6 +162,7 @@ typedef struct DSPContext {
     me_cmp_func rd[5];
     me_cmp_func vsad[5];
     me_cmp_func vsse[5];
+    me_cmp_func nsse[5];
 
     me_cmp_func me_pre_cmp[5];
     me_cmp_func me_cmp[5];
