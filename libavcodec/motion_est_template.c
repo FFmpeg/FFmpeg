@@ -323,15 +323,16 @@ static int qpel_motion_search(MpegEncContext * s,
 
             for(ny= -3; ny <= 3; ny++){
                 for(nx= -3; nx <= 3; nx++){
-                    const int t2= nx*nx*(tr + tl - 2*t) + 4*nx*(tr-tl) + 32*t;
-                    const int c2= nx*nx*( r +  l - 2*c) + 4*nx*( r- l) + 32*c;
-                    const int b2= nx*nx*(br + bl - 2*b) + 4*nx*(br-bl) + 32*b;
-                    int score= ny*ny*(b2 + t2 - 2*c2) + 4*ny*(b2 - t2) + 32*c2;
+                    //FIXME this could overflow (unlikely though)
+                    const int64_t t2= nx*nx*(tr + tl - 2*t) + 4*nx*(tr-tl) + 32*t;
+                    const int64_t c2= nx*nx*( r +  l - 2*c) + 4*nx*( r- l) + 32*c;
+                    const int64_t b2= nx*nx*(br + bl - 2*b) + 4*nx*(br-bl) + 32*b;
+                    int score= (ny*ny*(b2 + t2 - 2*c2) + 4*ny*(b2 - t2) + 32*c2 + 512)>>10;
                     int i;
                     
                     if((nx&3)==0 && (ny&3)==0) continue;
                     
-                    score += 1024*(mv_penalty[4*mx + nx - pred_x] + mv_penalty[4*my + ny - pred_y])*penalty_factor;
+                    score += (mv_penalty[4*mx + nx - pred_x] + mv_penalty[4*my + ny - pred_y])*penalty_factor;
                     
 //                    if(nx&1) score-=1024*c->penalty_factor;
 //                    if(ny&1) score-=1024*c->penalty_factor;
@@ -350,6 +351,7 @@ static int qpel_motion_search(MpegEncContext * s,
             }
         }else{
             int tl;
+            //FIXME this could overflow (unlikely though)
             const int cx = 4*(r - l);
             const int cx2= r + l - 2*c; 
             const int cy = 4*(b - t);
@@ -372,6 +374,7 @@ static int qpel_motion_search(MpegEncContext * s,
             
             for(ny= -3; ny <= 3; ny++){
                 for(nx= -3; nx <= 3; nx++){
+                    //FIXME this could overflow (unlikely though)
                     int score= ny*nx*cxy + nx*nx*cx2 + ny*ny*cy2 + nx*cx + ny*cy + 32*c; //FIXME factor
                     int i;
                     
