@@ -22,64 +22,86 @@
 
 void simple_idct_axp(DCTELEM *block);
 
-static void put_pixels_clamped_axp(const DCTELEM *block, UINT8 *pixels, 
-				   int line_size)
+void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,
+				int line_size);
+void add_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels, 
+				int line_size);
+
+#if 0
+/* These functions were the base for the optimized assembler routines,
+   and remain here for documentation purposes.  */
+static void put_pixels_clamped_mvi(const DCTELEM *block, uint8_t *pixels, 
+                                   int line_size)
 {
     int i = 8;
+    uint64_t clampmask = zap(-1, 0xaa); /* 0x00ff00ff00ff00ff */
 
     ASM_ACCEPT_MVI;
 
     do {
-	UINT64 shorts;
+        uint64_t shorts0, shorts1;
 
-	shorts = ldq(block);
-	shorts = maxsw4(shorts, 0);
-	shorts = minsw4(shorts, WORD_VEC(0x00ff));
-	stl(pkwb(shorts), pixels);
+        shorts0 = ldq(block);
+        shorts0 = maxsw4(shorts0, 0);
+        shorts0 = minsw4(shorts0, clampmask);
+        stl(pkwb(shorts0), pixels);
 
-	shorts = ldq(block + 4);
-	shorts = maxsw4(shorts, 0);
-	shorts = minsw4(shorts, WORD_VEC(0x00ff));
-	stl(pkwb(shorts), pixels + 4);
+        shorts1 = ldq(block + 4);
+        shorts1 = maxsw4(shorts1, 0);
+        shorts1 = minsw4(shorts1, clampmask);
+        stl(pkwb(shorts1), pixels + 4);
 
-	pixels += line_size;
-	block += 8;
+        pixels += line_size;
+        block += 8;
     } while (--i);
 }
 
-static void add_pixels_clamped_axp(const DCTELEM *block, UINT8 *pixels, 
-				   int line_size)
+void add_pixels_clamped_mvi(const DCTELEM *block, uint8_t *pixels, 
+                            int line_size)
 {
-    int i = 8;
+    int h = 8;
+    /* Keep this function a leaf function by generating the constants
+       manually (mainly for the hack value ;-).  */
+    uint64_t clampmask = zap(-1, 0xaa); /* 0x00ff00ff00ff00ff */
+    uint64_t signmask  = zap(-1, 0x33);
+    signmask ^= signmask >> 1;  /* 0x8000800080008000 */
 
     ASM_ACCEPT_MVI;
 
     do {
-	UINT64 shorts; 
+        uint64_t shorts0, pix0, signs0;
+        uint64_t shorts1, pix1, signs1;
 
-	shorts = ldq(block);
-	shorts &= ~WORD_VEC(0x8000); /* clear highest bit to avoid overflow */
-	shorts += unpkbw(ldl(pixels));
-	shorts &= ~WORD_VEC(0x8000); /* hibit would be set for e. g. -2 + 3 */
-	shorts = minuw4(shorts, WORD_VEC(0x4000)); /* set neg. to 0x4000 */
-	shorts &= ~WORD_VEC(0x4000); /* ...and zap them */
-	shorts = minsw4(shorts, WORD_VEC(0x00ff)); /* clamp to 255 */
-	stl(pkwb(shorts), pixels);
+        shorts0 = ldq(block);
+        shorts1 = ldq(block + 4);
 
-	/* next 4 */
-	shorts = ldq(block + 4);
-	shorts &= ~WORD_VEC(0x8000);
-	shorts += unpkbw(ldl(pixels + 4));
-	shorts &= ~WORD_VEC(0x8000);
-	shorts = minuw4(shorts, WORD_VEC(0x4000));
-	shorts &= ~WORD_VEC(0x4000);
-	shorts = minsw4(shorts, WORD_VEC(0x00ff));
-	stl(pkwb(shorts), pixels + 4);
+        pix0    = unpkbw(ldl(pixels));
+        /* Signed subword add (MMX paddw).  */
+        signs0  = shorts0 & signmask;
+        shorts0 &= ~signmask;
+        shorts0 += pix0;
+        shorts0 ^= signs0;
+        /* Clamp. */
+        shorts0 = maxsw4(shorts0, 0);
+        shorts0 = minsw4(shorts0, clampmask);   
 
-	pixels += line_size;
-	block += 8;
-    } while (--i);
+        /* Next 4.  */
+        pix1    = unpkbw(ldl(pixels + 4));
+        signs1  = shorts1 & signmask;
+        shorts1 &= ~signmask;
+        shorts1 += pix1;
+        shorts1 ^= signs1;
+        shorts1 = maxsw4(shorts1, 0);
+        shorts1 = minsw4(shorts1, clampmask);
+
+        stl(pkwb(shorts0), pixels);
+        stl(pkwb(shorts1), pixels + 4);
+
+        pixels += line_size;
+        block += 8;
+    } while (--h);
 }
+#endif
 
 /* Average 8 unsigned bytes in parallel: (b1 + b2) >> 1
    Since the immediate result could be greater than 255, we do the
@@ -222,7 +244,7 @@ void dsputil_init_alpha(void)
 
     /* amask clears all bits that correspond to present features.  */
     if (amask(AMASK_MVI) == 0) {
-	put_pixels_clamped = put_pixels_clamped_axp;
-	add_pixels_clamped = add_pixels_clamped_axp;
+        put_pixels_clamped = put_pixels_clamped_mvi_asm;
+        add_pixels_clamped = add_pixels_clamped_mvi_asm;
     }
 }

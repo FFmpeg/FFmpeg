@@ -63,10 +63,11 @@ endif
 # alpha specific stuff
 ifeq ($(TARGET_ARCH_ALPHA),yes)
 OBJS += alpha/dsputil_alpha.o alpha/mpegvideo_alpha.o
+ASM_OBJS += alpha/dsputil_alpha_asm.o
 CFLAGS += -Wa,-mpca56
 endif
 
-SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
+SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
 
 LIB= libavcodec.a
