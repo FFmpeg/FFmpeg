@@ -501,6 +501,7 @@ static void adaptive_quantization(MpegEncContext *s, double q){
     const float temp_cplx_masking= s->avctx->temporal_cplx_masking;
     const float spatial_cplx_masking = s->avctx->spatial_cplx_masking;
     const float p_masking = s->avctx->p_masking;
+    const float border_masking = s->avctx->border_masking;
     float bits_sum= 0.0;
     float cplx_sum= 0.0;
     float cplx_tab[s->mb_num];
@@ -508,6 +509,8 @@ static void adaptive_quantization(MpegEncContext *s, double q){
     const int qmin= s->avctx->lmin;
     const int qmax= s->avctx->lmax;
     Picture * const pic= &s->current_picture;
+    const int mb_width = s->mb_width;
+    const int mb_height = s->mb_height;
     
     for(i=0; i<s->mb_num; i++){
         const int mb_xy= s->mb_index2xy[i];
@@ -515,6 +518,10 @@ static void adaptive_quantization(MpegEncContext *s, double q){
         float spat_cplx= sqrt(pic->mb_var[mb_xy]);
         const int lumi= pic->mb_mean[mb_xy];
         float bits, cplx, factor;
+        int mb_x = mb_xy % s->mb_stride;
+        int mb_y = mb_xy / s->mb_stride;
+        int mb_distance;
+        float mb_factor = 0.0;
 #if 0        
         if(spat_cplx < q/3) spat_cplx= q/3; //FIXME finetune
         if(temp_cplx < q/3) temp_cplx= q/3; //FIXME finetune
@@ -535,6 +542,23 @@ static void adaptive_quantization(MpegEncContext *s, double q){
             factor*= (1.0 - (lumi-128)*(lumi-128)*lumi_masking);
         else
             factor*= (1.0 - (lumi-128)*(lumi-128)*dark_masking);
+
+        if(mb_x < mb_width/5){
+            mb_distance = mb_width/5 - mb_x;
+            mb_factor = (float)mb_distance / (float)(mb_width/5);
+        }else if(mb_x > 4*mb_width/5){
+            mb_distance = mb_x - 4*mb_width/5;
+            mb_factor = (float)mb_distance / (float)(mb_width/5);
+        }
+        if(mb_y < mb_height/5){
+            mb_distance = mb_height/5 - mb_y;
+            mb_factor = FFMAX(mb_factor, (float)mb_distance / (float)(mb_height/5));
+        }else if(mb_y > 4*mb_height/5){
+            mb_distance = mb_y - 4*mb_height/5;
+            mb_factor = FFMAX(mb_factor, (float)mb_distance / (float)(mb_height/5));
+        }
+
+        factor*= 1.0 - border_masking*mb_factor;
         
         if(factor<0.00001) factor= 0.00001;
         

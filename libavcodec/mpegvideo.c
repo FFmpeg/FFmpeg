@@ -949,6 +949,7 @@ int MPV_encode_init(AVCodecContext *avctx)
                         || s->avctx->temporal_cplx_masking 
                         || s->avctx->spatial_cplx_masking
                         || s->avctx->p_masking
+                        || s->avctx->border_masking
                         || (s->flags&CODEC_FLAG_QP_RD))
                        && !s->fixed_qscale;
     
