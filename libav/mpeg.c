@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
-#include "tick.h"
 
 #define MAX_PAYLOAD_SIZE 4096
 #define NB_STREAMS 2
@@ -28,8 +27,6 @@ typedef struct {
     UINT8 id;
     int max_buffer_size; /* in bytes */
     int packet_number;
-    INT64 pts;
-    Ticker pts_ticker;
     INT64 start_pts;
 } StreamInfo;
 
@@ -77,17 +74,29 @@ static int put_pack_header(AVFormatContext *ctx,
     init_put_bits(&pb, buf, 128, NULL, NULL);
 
     put_bits(&pb, 32, PACK_START_CODE);
-    put_bits(&pb, 4, 0x2);
+    if (s->is_mpeg2) {
+        put_bits(&pb, 2, 0x2);
+    } else {
+        put_bits(&pb, 4, 0x2);
+    }
     put_bits(&pb, 3, (UINT32)((timestamp >> 30) & 0x07));
     put_bits(&pb, 1, 1);
     put_bits(&pb, 15, (UINT32)((timestamp >> 15) & 0x7fff));
     put_bits(&pb, 1, 1);
     put_bits(&pb, 15, (UINT32)((timestamp) & 0x7fff));
     put_bits(&pb, 1, 1);
+    if (s->is_mpeg2) {
+        /* clock extension */
+        put_bits(&pb, 9, 0);
+        put_bits(&pb, 1, 1);
+    }
     put_bits(&pb, 1, 1);
     put_bits(&pb, 22, s->mux_rate);
     put_bits(&pb, 1, 1);
-
+    if (s->is_mpeg2) {
+        put_bits(&pb, 5, 0x1f); /* reserved */
+        put_bits(&pb, 3, 0); /* stuffing length */
+    }
     flush_put_bits(&pb);
     return pbBufPtr(&pb) - pb.buf;
 }
@@ -217,36 +226,20 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         /* every 2 seconds */
         s->pack_header_freq = 2 * bitrate / s->packet_size / 8;
     
-    if (s->is_vcd)
+    if (s->is_mpeg2)
+        /* every 200 packets. Need to look at the spec.  */
+        s->system_header_freq = s->pack_header_freq * 40;
+    else if (s->is_vcd)
         /* every 40 packets, this is my invention */
         s->system_header_freq = s->pack_header_freq * 40;
     else
-        /* every 10 seconds */
         s->system_header_freq = s->pack_header_freq * 5;
-    
     
     for(i=0;i<ctx->nb_streams;i++) {
         stream = ctx->streams[i]->priv_data;
         stream->buffer_ptr = 0;
         stream->packet_number = 0;
-        stream->pts = 0;
         stream->start_pts = -1;
-
-        st = ctx->streams[i];
-        switch (st->codec.codec_type) {
-        case CODEC_TYPE_AUDIO:
-            ticker_init(&stream->pts_ticker,
-                        st->codec.sample_rate,
-                        90000 * st->codec.frame_size);
-            break;
-        case CODEC_TYPE_VIDEO:
-            ticker_init(&stream->pts_ticker,
-                        st->codec.frame_rate,
-                        90000 * FRAME_RATE_BASE);
-            break;
-        default:
-            av_abort();
-        }
     }
     return 0;
  fail:
@@ -354,7 +347,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
 }
 
 static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
-                                 UINT8 *buf, int size, int force_pts)
+                                 UINT8 *buf, int size, int pts)
 {
     MpegMuxContext *s = ctx->priv_data;
     AVStream *st = ctx->streams[stream_index];
@@ -364,9 +357,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
     while (size > 0) {
         /* set pts */
         if (stream->start_pts == -1) {
-            if (force_pts)
-                stream->pts = force_pts;
-            stream->start_pts = stream->pts;
+            stream->start_pts = pts;
         }
         len = s->packet_data_max_size - stream->buffer_ptr;
         if (len > size)
@@ -378,16 +369,10 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
         while (stream->buffer_ptr >= s->packet_data_max_size) {
             /* output the packet */
             if (stream->start_pts == -1)
-                stream->start_pts = stream->pts;
+                stream->start_pts = pts;
             flush_packet(ctx, stream_index, 0);
         }
     }
-
-    stream->pts += ticker_tick(&stream->pts_ticker, 1);
-    //if (st->codec.codec_type == CODEC_TYPE_VIDEO)
-    //    fprintf(stderr,"\nVideo PTS: %6lld", stream->pts);
-    //else
-    //    fprintf(stderr,"\nAudio PTS: %6lld", stream->pts);
     return 0;
 }
 
@@ -510,7 +495,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     int len, size, startcode, i, c, flags, header_len, type, codec_id;
     INT64 pts, dts;
 
-    /* next start code (should be immediately after */
+    /* next start code (should be immediately after) */
  redo:
     m->header_state = 0xff;
     size = MAX_SYNC_SIZE;
@@ -536,8 +521,8 @@ static int mpegps_read_packet(AVFormatContext *s,
         goto redo;
 
     len = get_be16(&s->pb);
-    pts = 0;
-    dts = 0;
+    pts = AV_NOPTS_VALUE;
+    dts = AV_NOPTS_VALUE;
     /* stuffing */
     for(;;) {
         c = get_byte(&s->pb);
@@ -555,7 +540,6 @@ static int mpegps_read_packet(AVFormatContext *s,
     if ((c & 0xf0) == 0x20) {
         pts = get_pts(&s->pb, c);
         len -= 4;
-        dts = pts;
     } else if ((c & 0xf0) == 0x30) {
         pts = get_pts(&s->pb, c);
         dts = get_pts(&s->pb, -1);
@@ -573,7 +557,6 @@ static int mpegps_read_packet(AVFormatContext *s,
             goto redo;
         if ((flags & 0xc0) == 0x80) {
             pts = get_pts(&s->pb, -1);
-            dts = pts;
             header_len -= 5;
             len -= 5;
         } if ((flags & 0xc0) == 0xc0) {
