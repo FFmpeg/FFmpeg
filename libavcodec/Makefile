@@ -35,6 +35,15 @@ OBJS+= liba52/bit_allocate.o liba52/bitstream.o liba52/downmix.o \
 endif
 endif
 
+ifeq ($(CONFIG_PP),yes)
+ifeq ($(SHARED_PP),yes)
+EXTRALIBS += -lpostproc
+else
+# LIBS += libpostproc/libpostproc.a ... should be fixed
+OBJS += libpostproc/postprocess.o
+endif
+endif
+
 ifeq ($(CONFIG_MP3LAME),yes)
 OBJS += mp3lameaudio.o
 EXTRALIBS += -lmp3lame
@@ -124,6 +133,9 @@ $(SLIB): $(OBJS)
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
 
 dsputil.o: dsputil.c dsputil.h
+
+libpostproc/libpostproc.a:
+	$(MAKE) -C libpostproc
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 

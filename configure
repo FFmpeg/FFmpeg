@@ -60,6 +60,8 @@ mp3lame="no"
 vorbis="no"
 a52="yes"
 a52bin="no"
+pp="yes"
+shared_pp="no"
 win32="no"
 mingw32="no"
 cygwin="no"
@@ -280,6 +282,10 @@ for opt do
   --disable-a52) a52="no"
   ;;
   --enable-a52bin) a52bin="yes" ; extralibs="$ldl $extralibs"
+  ;;
+  --disable-pp) pp="no"
+  ;;
+  --enable-shared-pp) shared_pp="yes"
   ;;
   --enable-mp3lame) mp3lame="yes"
   ;;
@@ -578,6 +584,8 @@ echo "  --enable-win32           enable win32 cross compile"
 echo "  --enable-mingw32         enable mingw32 native windows compile"
 echo "  --disable-a52            disable GPL'ed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
+echo "  --disable-pp             disable GPL'ed post processing support [default=no]"
+echo "  --enable-shared-pp       use libpostproc.so [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
 echo ""
 echo "Advanced options (experts only):"
@@ -631,6 +639,8 @@ echo "mp3lame enabled  $mp3lame"
 echo "vorbis enabled   $vorbis"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
+echo "pp support       $pp"
+echo "shared pp        $shared_pp"
 echo "Video hooking    $vhook"
 echo "risky / patent encumbered codecs $risky"
 
@@ -751,6 +761,17 @@ if test "$a52" = "yes" ; then
   if test "$a52bin" = "yes" ; then
     echo "#define CONFIG_A52BIN 1" >> $TMPH
     echo "CONFIG_A52BIN=yes" >> config.mak
+  fi
+fi
+
+# PP
+if test "$pp" = "yes" ; then
+  echo "#define CONFIG_PP 1" >> $TMPH
+  echo "CONFIG_PP=yes" >> config.mak
+
+  if test "$shared_pp" = "yes" ; then
+    echo "#define SHARED_PP 1" >> $TMPH
+    echo "SHARED_PP=yes" >> config.mak
   fi
 fi
 

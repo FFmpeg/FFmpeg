@@ -75,12 +75,13 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 //#undef HAVE_MMX
 //#undef ARCH_X86
 //#define DEBUG_BRIGHTNESS
-#ifndef PIC
-#include "../libvo/fastmemcpy.h"
+#ifdef USE_FASTMEMCPY
+#include "libvo/fastmemcpy.h"
 #endif
 #include "postprocess.h"
 #include "postprocess_internal.h"
-#include "mangle.h"
+
+#include "mangle.h" //FIXME should be supressed
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 #define MAX(a,b) ((a) < (b) ? (b) : (a))

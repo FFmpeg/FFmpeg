@@ -2,16 +2,9 @@
 include ../config.mak
 
 SWSLIB = libswscale.a
-ifeq ($(SHARED_PP),yes)
-SPPLIB = libpostproc.so
-SPPVERSION = 0.0.1
-endif
-PPLIB = libpostproc.a
 
 SWSSRCS=swscale.c rgb2rgb.c yuv2rgb.c
 SWSOBJS=$(SWSSRCS:.c=.o)
-PPOBJS=postprocess.o
-SPPOBJS=postprocess_pic.o
 CS_TEST_OBJS=cs_test.o rgb2rgb.o ../cpudetect.o ../mp_msg.o ../libvo/aclib.o
 
 CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
@@ -24,7 +17,7 @@ CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 .c.o:
 	$(CC) -c $(CFLAGS) -I.. -o $@ $<
 
-all:    $(SWSLIB) $(PPLIB) $(SPPLIB)
+all:    $(SWSLIB)
 
 $(SWSLIB):     $(SWSOBJS)
 	$(AR) r $(SWSLIB) $(SWSOBJS)
@@ -42,29 +35,6 @@ depend:
 
 cs_test: $(CS_TEST_OBJS)
 	$(CC) $(CS_TEST_OBJS) -o cs_test
-
-ifeq ($(SHARED_PP),yes)
-postprocess_pic.o: postprocess.c
-	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -I.. -o $@ $<
-
-$(SPPLIB): $(SPPOBJS)
-	$(CC) -shared -Wl,-soname,$(SPPLIB).0 \
-	-o $(SPPLIB) $(SPPOBJS)
-endif
-
-$(PPLIB): $(PPOBJS)
-	$(AR) r $(PPLIB) $(PPOBJS)
-
-install: all
-ifeq ($(SHARED_PP),yes)
-	install -d $(prefix)/lib
-	install -s -m 755 $(SPPLIB) $(prefix)/lib/$(SPPLIB).$(SPPVERSION)
-	ln -sf $(SPPLIB).$(SPPVERSION) $(prefix)/lib/$(SPPLIB)
-	ldconfig || true
-	mkdir -p $(prefix)/include/postproc
-	install -m 644 postprocess.h $(prefix)/include/postproc/postprocess.h
-endif
-
 
 #
 # include dependency files if they exist
