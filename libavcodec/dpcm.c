@@ -24,6 +24,7 @@
  * Xan DPCM decoder by Mario Brito (mbrito@student.dei.uc.pt)
  * for more information on the specific data formats, visit:
  *   http://www.pcisys.net/~melanson/codecs/simpleaudio.html
+ * SOL DPCMs implemented by Konstantin Shishkov
  *
  * Note about using the Xan DPCM decoder: Xan DPCM is used in AVI files
  * found in the Wing Commander IV computer game. These AVI files contain
@@ -39,6 +40,8 @@
 typedef struct DPCMContext {
     int channels;
     short roq_square_array[256];
+    long sample[2];//for SOL_DPCM
+    int *sol_table;//for SOL_DPCM
 } DPCMContext;
 
 #define SATURATE_S16(x)  if (x < -32768) x = -32768; \
@@ -81,6 +84,32 @@ static int interplay_delta_table[] = {
 
 };
 
+static int sol_table_old[16] =
+    { 0x0,  0x1,  0x2 , 0x3,  0x6,  0xA,  0xF, 0x15,
+    -0x15, -0xF, -0xA, -0x6, -0x3, -0x2, -0x1, 0x0};
+
+static int sol_table_new[16] =
+    { 0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF,  0x15,
+      0x0, -0x1, -0x2, -0x3, -0x6, -0xA, -0xF, -0x15};
+    
+static int sol_table_16[128] = {
+    0x000, 0x008, 0x010, 0x020, 0x030, 0x040, 0x050, 0x060, 0x070, 0x080,
+    0x090, 0x0A0, 0x0B0, 0x0C0, 0x0D0, 0x0E0, 0x0F0, 0x100, 0x110, 0x120,
+    0x130, 0x140, 0x150, 0x160, 0x170, 0x180, 0x190, 0x1A0, 0x1B0, 0x1C0,
+    0x1D0, 0x1E0, 0x1F0, 0x200, 0x208, 0x210, 0x218, 0x220, 0x228, 0x230,
+    0x238, 0x240, 0x248, 0x250, 0x258, 0x260, 0x268, 0x270, 0x278, 0x280,
+    0x288, 0x290, 0x298, 0x2A0, 0x2A8, 0x2B0, 0x2B8, 0x2C0, 0x2C8, 0x2D0,
+    0x2D8, 0x2E0, 0x2E8, 0x2F0, 0x2F8, 0x300, 0x308, 0x310, 0x318, 0x320,
+    0x328, 0x330, 0x338, 0x340, 0x348, 0x350, 0x358, 0x360, 0x368, 0x370,
+    0x378, 0x380, 0x388, 0x390, 0x398, 0x3A0, 0x3A8, 0x3B0, 0x3B8, 0x3C0,
+    0x3C8, 0x3D0, 0x3D8, 0x3E0, 0x3E8, 0x3F0, 0x3F8, 0x400, 0x440, 0x480,
+    0x4C0, 0x500, 0x540, 0x580, 0x5C0, 0x600, 0x640, 0x680, 0x6C0, 0x700,
+    0x740, 0x780, 0x7C0, 0x800, 0x900, 0xA00, 0xB00, 0xC00, 0xD00, 0xE00,
+    0xF00, 0x1000, 0x1400, 0x1800, 0x1C00, 0x2000, 0x3000, 0x4000
+};
+
+
+
 static int dpcm_decode_init(AVCodecContext *avctx)
 {
     DPCMContext *s = avctx->priv_data;
@@ -88,6 +117,7 @@ static int dpcm_decode_init(AVCodecContext *avctx)
     short square;
 
     s->channels = avctx->channels;
+    s->sample[0] = s->sample[1] = 0;
 
     switch(avctx->codec->id) {
 
@@ -100,6 +130,26 @@ static int dpcm_decode_init(AVCodecContext *avctx)
         }
         break;
 
+        
+    case CODEC_ID_SOL_DPCM:
+        switch(avctx->codec_tag){
+        case 1:
+            s->sol_table=sol_table_old;
+            s->sample[0] = s->sample[1] = 0x80;
+            break;
+        case 2:
+            s->sol_table=sol_table_new;
+            s->sample[0] = s->sample[1] = 0x80;
+            break;
+        case 3:
+            s->sol_table=sol_table_16;
+            break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Unknown SOL subcodec\n");
+            return -1;
+        }
+        break;
+     
     default:
         break;
     }
@@ -203,6 +253,35 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             channel_number ^= s->channels - 1;
         }
         break;
+    case CODEC_ID_SOL_DPCM:
+        in = 0;
+        if (avctx->codec_tag != 3) {
+            while (in < buf_size) {
+                int n1, n2;
+                n1 = (buf[in] >> 4) & 0xF;
+                n2 = buf[in++] & 0xF;
+                s->sample[0] += s->sol_table[n1];
+                 if (s->sample[0] < 0) s->sample[0] = 0;
+                if (s->sample[0] > 255) s->sample[0] = 255;
+                output_samples[out++] = (s->sample[0] - 128) << 8;
+                s->sample[s->channels - 1] += s->sol_table[n2];
+                if (s->sample[s->channels - 1] < 0) s->sample[s->channels - 1] = 0;
+                if (s->sample[s->channels - 1] > 255) s->sample[s->channels - 1] = 255;
+                output_samples[out++] = (s->sample[s->channels - 1] - 128) << 8;
+            }
+        } else {
+            while (in < buf_size) {
+                int n;
+                n = buf[in++];
+                if (n & 0x80) s->sample[channel_number] -= s->sol_table[n & 0x7F];
+                else s->sample[channel_number] += s->sol_table[n & 0x7F];
+                SATURATE_S16(s->sample[channel_number]);
+                output_samples[out++] = s->sample[channel_number];
+                /* toggle channel */
+                channel_number ^= s->channels - 1;
+            }
+        }
+        break;
     }
 
     *data_size = out * sizeof(short);
@@ -235,6 +314,17 @@ AVCodec xan_dpcm_decoder = {
     "xan_dpcm",
     CODEC_TYPE_AUDIO,
     CODEC_ID_XAN_DPCM,
+    sizeof(DPCMContext),
+    dpcm_decode_init,
+    NULL,
+    NULL,
+    dpcm_decode_frame,
+};
+
+AVCodec sol_dpcm_decoder = {
+    "sol_dpcm",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_SOL_DPCM,
     sizeof(DPCMContext),
     dpcm_decode_init,
     NULL,

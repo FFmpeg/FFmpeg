@@ -103,6 +103,7 @@ enum CodecID {
     CODEC_ID_SNOW,
     CODEC_ID_TSCC,
     CODEC_ID_ULTI,
+    CODEC_ID_QDRAW,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -140,6 +141,7 @@ enum CodecID {
     CODEC_ID_ROQ_DPCM,
     CODEC_ID_INTERPLAY_DPCM,
     CODEC_ID_XAN_DPCM,
+    CODEC_ID_SOL_DPCM,
     
     CODEC_ID_FLAC,
     
@@ -1878,11 +1880,13 @@ extern AVCodec ra_288_decoder;
 extern AVCodec roq_dpcm_decoder;
 extern AVCodec interplay_dpcm_decoder;
 extern AVCodec xan_dpcm_decoder;
+extern AVCodec sol_dpcm_decoder;
 extern AVCodec sonic_decoder;
 extern AVCodec qtrle_decoder;
 extern AVCodec flac_decoder;
 extern AVCodec tscc_decoder;
 extern AVCodec ulti_decoder;
+extern AVCodec qdraw_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

@@ -487,6 +487,9 @@ int vmd_init(void);
 /* matroska.c */
 int matroska_init(void);
 
+/* sol.c */
+int sol_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"

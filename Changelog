@@ -1,6 +1,8 @@
 version <next>
 - TechSmith Camtasia (TSCC) video decoder
 - IBM Ultimotion (ULTI) video decoder
+- Sierra Online audio file demuxer and decoder
+- Apple QuickDraw (qdrw) video decoder
 
 version 0.4.9-pre1:
 
