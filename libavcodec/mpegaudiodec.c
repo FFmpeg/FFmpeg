@@ -69,6 +69,12 @@ typedef int16_t OUT_INT;
 #define FIXR(a)   ((int)((a) * FRAC_ONE + 0.5))
 #define FRAC_RND(a) (((a) + (FRAC_ONE/2)) >> FRAC_BITS)
 
+#define FIXHR(a) ((int)((a) * (1LL<<32) + 0.5))
+//#define MULH(a,b) (((int64_t)(a) * (int64_t)(b))>>32) //gcc 3.4 creates an incredibly bloated mess out of this
+static always_inline int MULH(int a, int b){
+    return ((int64_t)(a) * (int64_t)(b))>>32;
+}
+
 #if FRAC_BITS <= 15
 typedef int16_t MPA_INT;
 #else
@@ -493,24 +499,33 @@ static int decode_init(AVCodecContext * avctx)
             csa_table_float[i][2] = ca + cs;
             csa_table_float[i][3] = ca - cs; 
 //            printf("%d %d %d %d\n", FIX(cs), FIX(cs-1), FIX(ca), FIX(cs)-FIX(ca));
+//            av_log(NULL, AV_LOG_DEBUG,"%f %f %f %f\n", cs, ca, ca+cs, ca-cs);
         }
 
         /* compute mdct windows */
         for(i=0;i<36;i++) {
-            int v;
-            v = FIXR(sin(M_PI * (i + 0.5) / 36.0));
-            mdct_win[0][i] = v;
-            mdct_win[1][i] = v;
-            mdct_win[3][i] = v;
-        }
-        for(i=0;i<6;i++) {
-            mdct_win[1][18 + i] = FIXR(1.0);
-            mdct_win[1][24 + i] = FIXR(sin(M_PI * ((i + 6) + 0.5) / 12.0));
-            mdct_win[1][30 + i] = FIXR(0.0);
-
-            mdct_win[3][i] = FIXR(0.0);
-            mdct_win[3][6 + i] = FIXR(sin(M_PI * (i + 0.5) / 12.0));
-            mdct_win[3][12 + i] = FIXR(1.0);
+            for(j=0; j<4; j++){
+                double d;
+                if(j==2) continue;
+                
+                d= sin(M_PI * (i + 0.5) / 36.0);
+                if(j==1){
+                    if     (i>=30) d= 0;
+                    else if(i>=24) d= sin(M_PI * (i - 18 + 0.5) / 12.0);
+                    else if(i>=18) d= 1;
+                }else if(j==3){
+                    if     (i<  6) d= 0;
+                    else if(i< 12) d= sin(M_PI * (i -  6 + 0.5) / 12.0);
+                    else if(i< 18) d= 1;
+                }
+                //merge last stage of imdct into the window coefficients
+                if     (i/9 == 0) d*= 0.5 / cos(M_PI*(2*(     i) +19)/72);
+                else if(i/9 == 1) d*= 0.5 / cos(M_PI*(2*(17 - i) +19)/72);
+                else if(i/9 == 2) d*= 0.5 / cos(M_PI*(2*(     i) +19)/72);
+                else              d*=-0.5 / cos(M_PI*(2*(17 - i) +19)/72);
+                mdct_win[j][i] = FIXHR((d / (1<<5)));
+//                av_log(NULL, AV_LOG_DEBUG, "%2d %d %f\n", i,j,d / (1<<5));
+            }
         }
 
         for(i=0;i<12;i++)
@@ -1011,14 +1026,15 @@ static void imdct12(int *out, int *in)
 #undef C11
 
 /* cos(pi*i/18) */
-#define C1 FIXR(0.98480775301220805936)
-#define C2 FIXR(0.93969262078590838405)
-#define C3 FIXR(0.86602540378443864676)
-#define C4 FIXR(0.76604444311897803520)
-#define C5 FIXR(0.64278760968653932632)
-#define C6 FIXR(0.5)
-#define C7 FIXR(0.34202014332566873304)
-#define C8 FIXR(0.17364817766693034885)
+#define C1 FIXHR(0.98480775301220805936/2)
+#define C2 FIXHR(0.93969262078590838405/2)
+#define C3 FIXHR(0.86602540378443864676/2)
+#define C4 FIXHR(0.76604444311897803520/2)
+#define C5 FIXHR(0.64278760968653932632/2)
+#define C6 FIXHR(0.5/2)
+#define C7 FIXHR(0.34202014332566873304/2)
+#define C8 FIXHR(0.17364817766693034885/2)
+
 
 /* 0.5 / cos(pi*(2*i+1)/36) */
 static const int icos36[9] = {
@@ -1032,37 +1048,11 @@ static const int icos36[9] = {
     FIXR(1.93185165257813657349),
     FIXR(5.73685662283492756461),
 };
-
-static const int icos72[18] = {
-    /* 0.5 / cos(pi*(2*i+19)/72) */
-    FIXR(0.74009361646113053152),
-    FIXR(0.82133981585229078570),
-    FIXR(0.93057949835178895673),
-    FIXR(1.08284028510010010928),
-    FIXR(1.30656296487637652785),
-    FIXR(1.66275476171152078719),
-    FIXR(2.31011315767264929558),
-    FIXR(3.83064878777019433457),
-    FIXR(11.46279281302667383546),
-
-    /* 0.5 / cos(pi*(2*(i + 18) +19)/72) */
-    FIXR(-0.67817085245462840086),
-    FIXR(-0.63023620700513223342),
-    FIXR(-0.59284452371708034528),
-    FIXR(-0.56369097343317117734),
-    FIXR(-0.54119610014619698439),
-    FIXR(-0.52426456257040533932),
-    FIXR(-0.51213975715725461845),
-    FIXR(-0.50431448029007636036),
-    FIXR(-0.50047634258165998492),
-};
-
 /* using Lee like decomposition followed by hand coded 9 points DCT */
-static void imdct36(int *out, int *in)
+static void imdct36(int *out, int *buf, int *in, int *win)
 {
     int i, j, t0, t1, t2, t3, s0, s1, s2, s3;
     int tmp[18], *tmp1, *in1;
-    int64_t in3_3, in6_6;
 
     for(i=17;i>=1;i--)
         in[i] += in[i-1];
@@ -1072,30 +1062,61 @@ static void imdct36(int *out, int *in)
     for(j=0;j<2;j++) {
         tmp1 = tmp + j;
         in1 = in + j;
+#if 0
+//more accurate but slower
+        int64_t t0, t1, t2, t3;
+        t2 = in1[2*4] + in1[2*8] - in1[2*2];
+        
+        t3 = (in1[2*0] + (int64_t)(in1[2*6]>>1))<<32;
+        t1 = in1[2*0] - in1[2*6];
+        tmp1[ 6] = t1 - (t2>>1);
+        tmp1[16] = t1 + t2;
 
-        in3_3 = MUL64(in1[2*3], C3);
-        in6_6 = MUL64(in1[2*6], C6);
+        t0 = MUL64(2*(in1[2*2] + in1[2*4]),    C2);
+        t1 = MUL64(   in1[2*4] - in1[2*8] , -2*C8);
+        t2 = MUL64(2*(in1[2*2] + in1[2*8]),   -C4);
+        
+        tmp1[10] = (t3 - t0 - t2) >> 32;
+        tmp1[ 2] = (t3 + t0 + t1) >> 32;
+        tmp1[14] = (t3 + t2 - t1) >> 32;
+        
+        tmp1[ 4] = MULH(2*(in1[2*5] + in1[2*7] - in1[2*1]), -C3);
+        t2 = MUL64(2*(in1[2*1] + in1[2*5]),    C1);
+        t3 = MUL64(   in1[2*5] - in1[2*7] , -2*C7);
+        t0 = MUL64(2*in1[2*3], C3);
 
-        tmp1[0] = FRAC_RND(MUL64(in1[2*1], C1) + in3_3 + 
-                           MUL64(in1[2*5], C5) + MUL64(in1[2*7], C7));
-        tmp1[2] = in1[2*0] + FRAC_RND(MUL64(in1[2*2], C2) + 
-                                      MUL64(in1[2*4], C4) + in6_6 + 
-                                      MUL64(in1[2*8], C8));
-        tmp1[4] = FRAC_RND(MUL64(in1[2*1] - in1[2*5] - in1[2*7], C3));
-        tmp1[6] = FRAC_RND(MUL64(in1[2*2] - in1[2*4] - in1[2*8], C6)) - 
-            in1[2*6] + in1[2*0];
-        tmp1[8] = FRAC_RND(MUL64(in1[2*1], C5) - in3_3 - 
-                           MUL64(in1[2*5], C7) + MUL64(in1[2*7], C1));
-        tmp1[10] = in1[2*0] + FRAC_RND(MUL64(-in1[2*2], C8) - 
-                                       MUL64(in1[2*4], C2) + in6_6 + 
-                                       MUL64(in1[2*8], C4));
-        tmp1[12] = FRAC_RND(MUL64(in1[2*1], C7) - in3_3 + 
-                            MUL64(in1[2*5], C1) - 
-                            MUL64(in1[2*7], C5));
-        tmp1[14] = in1[2*0] + FRAC_RND(MUL64(-in1[2*2], C4) + 
-                                       MUL64(in1[2*4], C8) + in6_6 - 
-                                       MUL64(in1[2*8], C2));
-        tmp1[16] = in1[2*0] - in1[2*2] + in1[2*4] - in1[2*6] + in1[2*8];
+        t1 = MUL64(2*(in1[2*1] + in1[2*7]),   -C5);
+
+        tmp1[ 0] = (t2 + t3 + t0) >> 32;
+        tmp1[12] = (t2 + t1 - t0) >> 32;
+        tmp1[ 8] = (t3 - t1 - t0) >> 32;
+#else
+        t2 = in1[2*4] + in1[2*8] - in1[2*2];
+        
+        t3 = in1[2*0] + (in1[2*6]>>1);
+        t1 = in1[2*0] - in1[2*6];
+        tmp1[ 6] = t1 - (t2>>1);
+        tmp1[16] = t1 + t2;
+
+        t0 = MULH(2*(in1[2*2] + in1[2*4]),    C2);
+        t1 = MULH(   in1[2*4] - in1[2*8] , -2*C8);
+        t2 = MULH(2*(in1[2*2] + in1[2*8]),   -C4);
+        
+        tmp1[10] = t3 - t0 - t2;
+        tmp1[ 2] = t3 + t0 + t1;
+        tmp1[14] = t3 + t2 - t1;
+        
+        tmp1[ 4] = MULH(2*(in1[2*5] + in1[2*7] - in1[2*1]), -C3);
+        t2 = MULH(2*(in1[2*1] + in1[2*5]),    C1);
+        t3 = MULH(   in1[2*5] - in1[2*7] , -2*C7);
+        t0 = MULH(2*in1[2*3], C3);
+
+        t1 = MULH(2*(in1[2*1] + in1[2*7]),   -C5);
+
+        tmp1[ 0] = t2 + t3 + t0;
+        tmp1[12] = t2 + t1 - t0;
+        tmp1[ 8] = t3 - t1 - t0;
+#endif
     }
 
     i = 0;
@@ -1110,30 +1131,30 @@ static void imdct36(int *out, int *in)
         s1 = MULL(t3 + t2, icos36[j]);
         s3 = MULL(t3 - t2, icos36[8 - j]);
         
-        t0 = MULL(s0 + s1, icos72[9 + 8 - j]);
-        t1 = MULL(s0 - s1, icos72[8 - j]);
-        out[18 + 9 + j] = t0;
-        out[18 + 8 - j] = t0;
-        out[9 + j] = -t1;
-        out[8 - j] = t1;
+        t0 = (s0 + s1) << 5;
+        t1 = (s0 - s1) << 5;
+        out[(9 + j)*SBLIMIT] = -MULH(t1, win[9 + j]) + buf[9 + j];
+        out[(8 - j)*SBLIMIT] =  MULH(t1, win[8 - j]) + buf[8 - j];
+        buf[9 + j] = MULH(t0, win[18 + 9 + j]);
+        buf[8 - j] = MULH(t0, win[18 + 8 - j]);
         
-        t0 = MULL(s2 + s3, icos72[9+j]);
-        t1 = MULL(s2 - s3, icos72[j]);
-        out[18 + 9 + (8 - j)] = t0;
-        out[18 + j] = t0;
-        out[9 + (8 - j)] = -t1;
-        out[j] = t1;
+        t0 = (s2 + s3) << 5;
+        t1 = (s2 - s3) << 5;
+        out[(9 + 8 - j)*SBLIMIT] = -MULH(t1, win[9 + 8 - j]) + buf[9 + 8 - j];
+        out[(        j)*SBLIMIT] =  MULH(t1, win[        j]) + buf[        j];
+        buf[9 + 8 - j] = MULH(t0, win[18 + 9 + 8 - j]);
+        buf[      + j] = MULH(t0, win[18         + j]);
         i += 4;
     }
 
     s0 = tmp[16];
     s1 = MULL(tmp[17], icos36[4]);
-    t0 = MULL(s0 + s1, icos72[9 + 4]);
-    t1 = MULL(s0 - s1, icos72[4]);
-    out[18 + 9 + 4] = t0;
-    out[18 + 8 - 4] = t0;
-    out[9 + 4] = -t1;
-    out[8 - 4] = t1;
+    t0 = (s0 + s1) << 5;
+    t1 = (s0 - s1) << 5;
+    out[(9 + 4)*SBLIMIT] = -MULH(t1, win[9 + 4]) + buf[9 + 4];
+    out[(8 - 4)*SBLIMIT] =  MULH(t1, win[8 - 4]) + buf[8 - 4];
+    buf[9 + 4] = MULH(t0, win[18 + 9 + 4]);
+    buf[8 - 4] = MULH(t0, win[18 + 8 - 4]);
 }
 
 /* header decoding. MUST check the header before because no
@@ -2064,7 +2085,6 @@ static void compute_imdct(MPADecodeContext *s,
     buf = mdct_buf;
     ptr = g->sb_hybrid;
     for(j=0;j<mdct_long_end;j++) {
-        imdct36(out, ptr);
         /* apply window & overlap with previous buffer */
         out_ptr = sb_samples + j;
         /* select window */
@@ -2074,11 +2094,8 @@ static void compute_imdct(MPADecodeContext *s,
             win1 = mdct_win[g->block_type];
         /* select frequency inversion */
         win = win1 + ((4 * 36) & -(j & 1));
-        for(i=0;i<18;i++) {
-            *out_ptr = MULL(out[i], win[i]) + buf[i];
-            buf[i] = MULL(out[i + 18], win[i + 18]);
-            out_ptr += SBLIMIT;
-        }
+        imdct36(out_ptr, buf, ptr, win);
+        out_ptr += 18*SBLIMIT;
         ptr += 18;
         buf += 18;
     }
