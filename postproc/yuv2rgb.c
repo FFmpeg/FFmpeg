@@ -607,6 +607,14 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
 	if(t) return t;
     }
 #endif
+#ifdef HAVE_ALTIVEC
+    if (c->flags & SWS_CPU_CAPS_ALTIVEC)
+    {
+	SwsFunc t = yuv2rgb_init_altivec(c);
+	if(t) return t;
+    }
+#endif
+
     MSG_WARN("No accelerated colorspace conversion found\n");
 
     switch(c->dstFormat){

@@ -28,6 +28,10 @@
 #define srcByte 0x55
 #define dstByte 0xBB
 
+#ifdef __APPLE_CC__
+#define memalign(x,y) malloc(y)
+#endif
+
 static int get_sws_cpuflags()
 {
     return (gCpuCaps.hasMMX ? SWS_CPU_CAPS_MMX : 0) |

@@ -132,6 +132,19 @@ typedef struct SwsContext{
 	int dstW;
 	int esp;
 	uint64_t vRounder     __attribute__((aligned(8)));
+
+#ifdef HAVE_ALTIVEC
+
+  vector signed short   CY;
+  vector signed short   CRV;
+  vector signed short   CBU;
+  vector signed short   CGU;
+  vector signed short   CGV;
+  vector signed short   OY;
+  vector unsigned short CSHIFT;
+
+#endif
+
 } SwsContext;
 //FIXME check init (where 0)
 

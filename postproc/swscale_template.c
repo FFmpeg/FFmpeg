@@ -943,9 +943,15 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_
 		break;
 #endif
 	default:
+#ifdef HAVE_ALTIVEC
+		altivec_yuv2packedX (c, lumFilter, lumSrc, lumFilterSize,
+			    chrFilter, chrSrc, chrFilterSize,
+			    dest, dstW, dstY);
+#else
 		yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
 			    chrFilter, chrSrc, chrFilterSize,
 			    dest, dstW, dstY);
+#endif
 		break;
 	}
 }
