@@ -399,6 +399,31 @@ static void grow22(UINT8 *dst, int dst_wrap,
     }
 }
 
+/* 1x2 -> 2x1. width and height are given for the source picture */
+static void conv411(UINT8 *dst, int dst_wrap, 
+                    UINT8 *src, int src_wrap,
+                    int width, int height)
+{
+    int w, c;
+    UINT8 *s1, *s2, *d;
+
+    for(;height > 0; height -= 2) {
+        s1 = src;
+        s2 = src + src_wrap;
+        d = dst;
+        for(w = width;w > 0; w--) {
+            c = (s1[0] + s2[0]) >> 1;
+            d[0] = c;
+            d[1] = c;
+            s1++;
+            s2++;
+            d += 2;
+        }
+        src += src_wrap * 2;
+        dst += dst_wrap;
+    }
+}
+
 static void img_copy(UINT8 *dst, int dst_wrap, 
                      UINT8 *src, int src_wrap,
                      int width, int height)
@@ -628,6 +653,17 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     } else if (dst_pix_fmt == PIX_FMT_YUV420P) {
         
         switch(pix_fmt) {
+        case PIX_FMT_YUV411P:
+            img_copy(dst->data[0], dst->linesize[0],
+                     src->data[0], src->linesize[0],
+                     width, height);
+            conv411(dst->data[1], dst->linesize[1],
+                    src->data[1], src->linesize[1],
+                    width / 4, height);
+            conv411(dst->data[2], dst->linesize[2],
+                    src->data[2], src->linesize[2],
+                    width / 4, height);
+            break;
         case PIX_FMT_YUV410P:
             img_copy(dst->data[0], dst->linesize[0],
                      src->data[0], src->linesize[0],
