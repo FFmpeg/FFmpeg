@@ -236,7 +236,7 @@ static int nut_write_header(AVFormatContext *s)
 	
 	put_packetheader(nut, bc, 120);
 	put_be64(bc, STREAM_STARTCODE);
-	put_v(bc, s->streams[i]->index);
+	put_v(bc, i /*s->streams[i]->index*/);
 	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
 	if (codec->codec_tag)
 	    put_b(bc, &codec->codec_tag, 4);
@@ -310,7 +310,9 @@ static int nut_write_header(AVFormatContext *s)
     }
     /* encoder */
     put_v(bc, 9); /* type */
-    put_b(bc, LIBAVFORMAT_IDENT, strlen(LIBAVFORMAT_IDENT));
+    put_b(bc, LIBAVFORMAT_IDENT "\0", strlen(LIBAVFORMAT_IDENT));
+    
+    put_v(bc, 0); /* eof info */
 
     put_be32(bc, 0); /* FIXME: checksum */
     update_packetheader(nut, bc, 0);
@@ -351,7 +353,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
 
     put_byte(bc, flags);
     put_v(bc, stream_index);
-    put_s(bc, 0); /* lsb_timestamp */
+    put_s(bc, force_pts); /* lsb_timestamp */
     update_packetheader(nut, bc, size);
     
     put_buffer(bc, buf, size);
@@ -571,7 +573,7 @@ static AVOutputFormat nut_oformat = {
 #elif defined(CONFIG_MP3LAME)
     CODEC_ID_MP3LAME,
 #else
-    CODEC_ID_MP2,
+    CODEC_ID_AC3,
 #endif
     CODEC_ID_MPEG4,
     nut_write_header,
