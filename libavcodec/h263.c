@@ -3144,7 +3144,6 @@ int ff_h263_resync(MpegEncContext *s){
         align_get_bits(&s->gb);
     }
 
-//printf("checking next 16 %X\n", show_bits(&s->gb, 24));
     if(show_bits(&s->gb, 16)==0){
         if(s->codec_id==CODEC_ID_MPEG4)
             ret= mpeg4_decode_video_packet_header(s);
@@ -3156,7 +3155,6 @@ int ff_h263_resync(MpegEncContext *s){
     //ok, its not where its supposed to be ...
     s->gb= s->last_resync_gb;
     align_get_bits(&s->gb);
-printf("align %X\n", show_bits(&s->gb, 24));
     left= s->gb.size_in_bits - get_bits_count(&s->gb);
     
     for(;left>16+1+5+5; left-=8){ 
@@ -3174,7 +3172,7 @@ printf("align %X\n", show_bits(&s->gb, 24));
         }
         skip_bits(&s->gb, 8);
     }
-printf("no resync\n");
+    
     return -1;
 }
 
