@@ -305,6 +305,9 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 {
     int ret;
 
+    if(avctx->codec)
+        return -1;
+
     avctx->codec = codec;
     avctx->codec_id = codec->id;
     avctx->frame_number = 0;
