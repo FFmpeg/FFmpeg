@@ -16,26 +16,11 @@
 
 #define BITS_INV_ACC	5	// 4 or 5 for IEEE
 #define SHIFT_INV_ROW	(16 - BITS_INV_ACC)
-#define SHIFT_INV_COL   (BITS_INV_ACC)	//(1 + BITS_INV_ACC)  no, FP15 is used
-
-#define Rounder_0	0
-#define Rounder_1	16
-#define Rounder_2	32
-#define Rounder_3	48
-#define Rounder_4	64
-#define Rounder_5	80
-#define Rounder_6	96
-#define Rounder_7	112
+#define SHIFT_INV_COL   (1 + BITS_INV_ACC)
 
 // assume SHIFT_INV_ROW == 11
 static int roundertable[8][4] align16 = {
-    {65535, 65535, 65535, 65535},
-    { 1023,  1023,  1023,  1023},
-    { 1023,  1023,  1023,  1023},
-    { 1023,  1023,  1023,  1023},
-    {    0,     0,     0,     0},
-    { 1023,  1023,  1023,  1023},
-    { 1023,  1023,  1023,  1023},
+    { 0x103ff, 0x103ff, 0x103ff, 0x103ff },
     { 1023,  1023,  1023,  1023}
 };
 
@@ -97,7 +82,7 @@ static short coltable[7][8] align16 = {
 #define	noprevh(rt, rd)
 
 
-#define DCT_8_INV_ROW1(rowoff, taboff, rounder, outreg) { \
+#define DCT_8_INV_ROW1(rowoff, taboff, rnd, outreg) { \
 \
 	lq($4, rowoff, $16);	/* r16 = x7  x6  x5  x4  x3  x2  x1  x0 */ \
 	lq($24, 0+taboff, $17);	/* r17 = w19 w17 w3  w1  w18 w16 w2  w0 */ \
@@ -114,7 +99,6 @@ static short coltable[7][8] align16 = {
 	paddw($18, $21, $18);	/* r18 = (--)(--)(b1)(a1) */ \
 	pcpyud($19, $19, $21);	\
 	phmadh($20, $16, $20);	/* r12 = (b3'')(a3'')(b3')(a3') */ \
-	lq($7, rounder, $22);	/* r22 = rounder */ \
 	paddw($19, $21, $19);	/* r19 = (--)(--)(b2)(a2) */ \
 	pextlw($19, $17, $16);	/* r16 = (b2)(b0)(a2)(a0) */ \
 	pcpyud($20, $20, $21);	\
@@ -122,7 +106,7 @@ static short coltable[7][8] align16 = {
 	pextlw($20, $18, $17);	/* r17 = (b3)(b1)(a3)(a1) */ \
 	pextlw($17, $16, $20);	/* r20 = (a3)(a2)(a1)(a0)" */ \
 	pextuw($17, $16, $21);	/* r21 = (b3)(b2)(b1)(b0) */ \
-	paddw($20, $22, $20);	/* r20 = (a3)(a2)(a1)(a0) */\
+	paddw($20, rnd, $20);	/* r20 = (a3)(a2)(a1)(a0) */\
 	paddw($20, $21, $17);	/* r17 = ()()()(a0+b0) */ \
 	psubw($20, $21, $18);	/* r18 = ()()()(a0-b0) */ \
 	psraw($17, SHIFT_INV_ROW, $17); /* r17 = (y3 y2 y1 y0) */ \
@@ -173,8 +157,8 @@ static short coltable[7][8] align16 = {
 \
 	paddw($16, $20, $2);	/* y0  a0+b0 */		\
 	psubw($16, $20, $16);	/* y7  a0-b0 */		\
-	psraw($2, SHIFT_INV_COL+16, $2);		\
-	psraw($16, SHIFT_INV_COL+16, $16);		\
+	psraw($2, SHIFT_INV_COL+15, $2);		\
+	psraw($16, SHIFT_INV_COL+15, $16);		\
 	ppach($0, $2, $2);				\
 	ppach($0, $16, $16);				\
 	revop($2, $2);					\
@@ -184,8 +168,8 @@ static short coltable[7][8] align16 = {
 \
 	paddw($17, $21, $3);	/* y1  a1+b1 */		\
 	psubw($17, $21, $17);	/* y6  a1-b1 */		\
-	psraw($3, SHIFT_INV_COL+16, $3);		\
-	psraw($17, SHIFT_INV_COL+16, $17);		\
+	psraw($3, SHIFT_INV_COL+15, $3);		\
+	psraw($17, SHIFT_INV_COL+15, $17);		\
 	ppach($0, $3, $3);				\
 	ppach($0, $17, $17);			\
 	revop($3, $3);				\
@@ -195,8 +179,8 @@ static short coltable[7][8] align16 = {
 \
 	paddw($18, $22, $2);	/* y2  a2+b2 */	\
 	psubw($18, $22, $18);	/* y5  a2-b2 */	\
-	psraw($2, SHIFT_INV_COL+16, $2);	\
-	psraw($18, SHIFT_INV_COL+16, $18);	\
+	psraw($2, SHIFT_INV_COL+15, $2);	\
+	psraw($18, SHIFT_INV_COL+15, $18);	\
 	ppach($0, $2, $2);			\
 	ppach($0, $18, $18);			\
 	revop($2, $2);				\
@@ -206,8 +190,8 @@ static short coltable[7][8] align16 = {
 \
 	paddw($19, $23, $3);	/* y3  a3+b3 */	\
 	psubw($19, $23, $19);	/* y4  a3-b3 */	\
-	psraw($3, SHIFT_INV_COL+16, $3);	\
-	psraw($19, SHIFT_INV_COL+16, $19);	\
+	psraw($3, SHIFT_INV_COL+15, $3);	\
+	psraw($19, SHIFT_INV_COL+15, $19);	\
 	ppach($0, $3, $3);			\
 	ppach($0, $19, $19);			\
 	revop($3, $3);				\
@@ -220,16 +204,18 @@ static short coltable[7][8] align16 = {
 void ff_mmi_idct(int16_t * block)
 {
     /* $4 = block */
-    __asm__ __volatile__("la $24, %0"::"m"(rowtable[0][0]));
     __asm__ __volatile__("la $7, %0"::"m"(roundertable[0][0]));
-    DCT_8_INV_ROW1(0, TAB_i_04, Rounder_0, $8);
-    DCT_8_INV_ROW1(16, TAB_i_17, Rounder_1, $9);
-    DCT_8_INV_ROW1(32, TAB_i_26, Rounder_2, $10);
-    DCT_8_INV_ROW1(48, TAB_i_35, Rounder_3, $11);
-    DCT_8_INV_ROW1(64, TAB_i_04, Rounder_4, $12);
-    DCT_8_INV_ROW1(80, TAB_i_35, Rounder_5, $13);
-    DCT_8_INV_ROW1(96, TAB_i_26, Rounder_6, $14);
-    DCT_8_INV_ROW1(112, TAB_i_17, Rounder_7, $15);
+    __asm__ __volatile__("la $24, %0"::"m"(rowtable[0][0]));
+    lq($7, 0, $6);
+    lq($7, 16, $7);
+    DCT_8_INV_ROW1(0, TAB_i_04, $6, $8);
+    DCT_8_INV_ROW1(16, TAB_i_17, $7, $9);
+    DCT_8_INV_ROW1(32, TAB_i_26, $7, $10);
+    DCT_8_INV_ROW1(48, TAB_i_35, $7, $11);
+    DCT_8_INV_ROW1(64, TAB_i_04, $7, $12);
+    DCT_8_INV_ROW1(80, TAB_i_35, $7, $13);
+    DCT_8_INV_ROW1(96, TAB_i_26, $7, $14);
+    DCT_8_INV_ROW1(112, TAB_i_17, $7, $15);
 
     __asm__ __volatile__("la $24, %0"::"m"(coltable[0][0]));
     DCT_8_INV_COL4(pextlh, 0, noprevh);
@@ -237,5 +223,6 @@ void ff_mmi_idct(int16_t * block)
 
     //let savedtemp regs be saved
     __asm__ __volatile__(" ":::"$16", "$17", "$18", "$19", "$20", "$21",
-			 "$22", "$23");
+			 "$22", "$23", "$6", "$7");
 }
+
