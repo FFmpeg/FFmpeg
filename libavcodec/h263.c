@@ -2321,7 +2321,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
         if(s->shape != BIN_ONLY_SHAPE){
             skip_bits(&s->gb, 3); /* intra dc vlc threshold */
 //FIXME dont just ignore everything
-            if(s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE && s->num_sprite_warping_points){
+            if(s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE){
                 mpeg4_decode_sprite_trajectory(s);
                 fprintf(stderr, "untested\n");
             }
@@ -4485,9 +4485,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
      }
  
      if(s->pict_type == S_TYPE && (s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE)){
-         if(s->num_sprite_warping_points){
-             mpeg4_decode_sprite_trajectory(s);
-         }
+         mpeg4_decode_sprite_trajectory(s);
          if(s->sprite_brightness_change) printf("sprite_brightness_change not supported\n");
          if(s->vol_sprite_usage==STATIC_SPRITE) printf("static sprite not supported\n");
      }
