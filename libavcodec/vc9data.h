@@ -7,7 +7,7 @@
 #define VC9DATA_H
 
 /* Set a method for reading VLC in NORM6 bitplane decoding */
-#define VLC_NORM6_METH0D    2
+#define TILE_VLC_METHOD    1
 
 /* bfraction is fractional, we scale to the GCD 3*5*7*8 = 840 */
 const int16_t vc9_bfraction_lut[23] = {
@@ -74,7 +74,7 @@ static const uint8_t vc9_norm2_bits[4] = {
   1, 3, 3, 2
 };
 
-#if VLC_NORM6_METH0D == 1
+#if TILE_VLC_METHOD == 1
 static const uint16_t vc9_norm6_codes[64] = {
 0x001, 0x002, 0x003, 0x000, 0x004, 0x001, 0x002, 0x047, 0x005, 0x003, 0x004, 0x04B, 0x005, 0x04D, 0x04E, 0x30E, 
 0x006, 0x006, 0x007, 0x053, 0x008, 0x055, 0x056, 0x30D, 0x009, 0x059, 0x05A, 0x30C, 0x05C, 0x30B, 0x30A, 0x037, 

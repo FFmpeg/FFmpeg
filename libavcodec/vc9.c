@@ -33,6 +33,9 @@
 #include "mpegvideo.h"
 #include "vc9data.h"
 
+#undef NDEBUG
+#include <assert.h>
+
 extern const uint32_t ff_table0_dc_lum[120][2], ff_table1_dc_lum[120][2];
 extern const uint32_t ff_table0_dc_chroma[120][2], ff_table1_dc_chroma[120][2];
 extern VLC ff_msmp4_dc_luma_vlc[2], ff_msmp4_dc_chroma_vlc[2];
@@ -139,7 +142,7 @@ static VLC vc9_norm6_vlc;
 #endif
 #if TILE_VLC_METHOD == 2
 #define VC9_NORM6_FIRST_BITS 8
-#define VC9_NORM6_SECOND 8
+#define VC9_NORM6_SECOND_BITS 8
 static VLC vc9_norm6_first, vc9_norm6_second;
 #endif
 /* Could be optimized, one table only needs 8 bits */
