@@ -24,6 +24,7 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include <math.h>
 
 #ifndef M_PI
@@ -201,6 +202,10 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
         /* just for testing, we also add B frames */
         c->max_b_frames = 2;
     }
+    // some formats want stream headers to be seperate
+    if(!strcmp(oc->oformat->name, "mp4") || !strcmp(oc->oformat->name, "mov") || !strcmp(oc->oformat->name, "3gp"))
+        c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+    
     return st;
 }
 
