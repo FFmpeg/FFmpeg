@@ -332,8 +332,8 @@ void avcodec_register_all(void);
 
 #ifdef FF_POSTPROCESS
 #ifndef MBC
-#define MBC 48
-#define MBR 36
+#define MBC 128
+#define MBR 96
 #endif
 extern int quant_store[MBR+1][MBC+1]; // [Review]
 #endif
