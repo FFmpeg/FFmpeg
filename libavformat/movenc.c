@@ -799,6 +799,7 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
     }
 
     /* Encoder */
+    if(!(mov->tracks[0].enc->flags & CODEC_FLAG_BITEXACT))
     {
         int pos = url_ftell(pb);
         put_be32(pb, 0); /* size */

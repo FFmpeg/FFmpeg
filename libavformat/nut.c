@@ -613,8 +613,10 @@ static int nut_write_header(AVFormatContext *s)
         put_str(bc, s->copyright);
     }
     /* encoder */
-    put_v(bc, 13); /* type */
-    put_str(bc, LIBAVFORMAT_IDENT);
+    if(!(s->streams[0]->codec.flags & CODEC_FLAG_BITEXACT)){
+        put_v(bc, 13); /* type */
+        put_str(bc, LIBAVFORMAT_IDENT);
+    }
     
     put_v(bc, 0); /* eof info */
     update_packetheader(nut, bc, 0, 1);
