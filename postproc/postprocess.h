@@ -67,6 +67,12 @@
 //#define TIMING
 //#define MORE_TIMING
 
+//use if u want a faster postprocessing code
+//cant differentiate between chroma & luma filters (both on or both off)
+//obviosly the -pp option at the commandline has no effect except turning the here selected
+//filters on
+//#define COMPILE_TIME_MODE 0x77
+
 #define QP_STORE_T int
 
 struct PPMode{

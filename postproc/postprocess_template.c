@@ -2553,8 +2553,11 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	QP_STORE_T QPs[], int QPStride, int isColor, struct PPMode *ppMode)
 {
 	int x,y;
+#ifdef COMPILE_TIME_MODE
+	const int mode= COMPILE_TIME_MODE;
+#else
 	const int mode= isColor ? ppMode->chromMode : ppMode->lumMode;
-
+#endif
 	/* we need 64bit here otherwise we´ll going to have a problem
 	   after watching a black picture for 5 hours*/
 	static uint64_t *yHistogram= NULL;
