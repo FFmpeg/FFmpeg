@@ -80,7 +80,7 @@ static int ac3_decode_frame(AVCodecContext *avctx,
     int sample_rate, bit_rate;
     short *out_samples = data;
     float level;
-    static int ac3_channels[8] = {
+    static const int ac3_channels[8] = {
 	2, 1, 2, 3, 3, 4, 4, 5
     };
 
@@ -104,27 +104,27 @@ static int ac3_decode_frame(AVCodecContext *avctx,
                     memcpy(s->inbuf, s->inbuf + 1, HEADER_SIZE - 1);
                     s->inbuf_ptr--;
                 } else {
-                    s->frame_size = len;
+		    s->frame_size = len;
                     /* update codec info */
                     avctx->sample_rate = sample_rate;
                     s->channels = ac3_channels[s->flags & 7];
                     if (s->flags & AC3_LFE)
-			            s->channels++;
-			        if (avctx->channels == 0)
-			            /* No specific number of channel requested */
-			            avctx->channels = s->channels;
-			        else if (s->channels < avctx->channels) {
-			            fprintf(stderr, "libav: AC3 Source channels are less than specified: output to %d channels..\n", s->channels);
-			            avctx->channels = s->channels;
-		            }
-		            avctx->bit_rate = bit_rate;
+			s->channels++;
+		    if (avctx->channels == 0)
+			/* No specific number of channel requested */
+			avctx->channels = s->channels;
+		    else if (s->channels < avctx->channels) {
+			fprintf(stderr, "ac3dec: AC3 Source channels are less than specified: output to %d channels.. (frmsize: %d)\n", s->channels, len);
+			avctx->channels = s->channels;
+		    }
+		    avctx->bit_rate = bit_rate;
                 }
             }
         } else if (len < s->frame_size) {
             len = s->frame_size - len;
             if (len > buf_size)
                 len = buf_size;
-            
+
             memcpy(s->inbuf_ptr, buf_ptr, len);
             buf_ptr += len;
             s->inbuf_ptr += len;
