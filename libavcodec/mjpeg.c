@@ -1283,7 +1283,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 
 		    while (src<buf_end)
 		    {
-			unsigned char *x = *(src++);
+			unsigned char x = *(src++);
 			
 			*(dst++) = x;
 			if (x == 0xff)
