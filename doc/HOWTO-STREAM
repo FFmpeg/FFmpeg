@@ -2,7 +2,7 @@ The FFserver streaming HOWTO
 ----------------------------
 
 Philip Gladstone <philip-ffserver@gladstonefamily.net>
-Last updated: May 8, 2002
+Last updated: May 10, 2002
 
 0. What is this HOWTO about?
 
@@ -77,6 +77,14 @@ Yes, they do.
 
 Yes, it does. Who knows why?
 
+* WMP 6.4 behaves differently to WMP 7.
+
+Yes, it does. Any thoughts on this would be gratefully received. These
+differences extend to embedding WMP into a web page. [There are two
+different object ids that you can use, one of them -- the old one -- cannot
+play very well, and the new one works well (both on the same system). However, 
+I suspect that the new one is not available unless you have installed WMP 7].
+
 6. What else can it do?
 
 There seems to be a bunch of code that allows you to replay previous
@@ -89,6 +97,14 @@ there are a bunch more parameters that you cannot control. Post a message
 to the mailing list if there are some 'must have' parameters. Look in the
 ffserver.conf for a list of the currently available controls.
 
+It will automatically generate the .ASX or .RAM files that are often used
+in browsers. These files are actually redirections to the underlying .ASF
+or .RM file. The reason for this is that the browser often fetches the
+entire file before starting up the external viewer. The redirection files
+are very small and can be transferred quickly. [The stream itself is
+often 'infinite' and thus the browser tries to download it and never 
+finishes.]
+
 7. Tips
 
 * When you connect to a live stream, most players (WMP, RA etc) want to
@@ -100,3 +116,12 @@ cured by adding a '?buffer=5' to the end of the URL. This says that the
 stream should start 5 seconds in the past -- and so the first 5 seconds 
 of the stream is sent as fast as the network will allow. It will then
 slow down to real time. This noticeably improves the startup experience.
+
+You can also add a 'Preroll 15' statement into the ffserver.conf that will
+add the 15 second prebuffering on all requests that do not otherwise
+specify a time. In addition, ffserver will skip frames until a key_frame
+is found. This further reduces the startup delay by not transferring data
+that will be discarded.
+
+* You may want to adjust the MaxBandwidth in the ffserver.conf to limit
+the amount of bandwidth consumed by live streams.
