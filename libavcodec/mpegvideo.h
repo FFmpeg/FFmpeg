@@ -309,7 +309,11 @@ typedef struct MpegEncContext {
     DCTELEM intra_block[6][64] __align8;
     DCTELEM inter_block[6][64] __align8;
     DCTELEM inter4v_block[6][64] __align8;
-    void (*dct_unquantize)(struct MpegEncContext *s, 
+    void (*dct_unquantize_mpeg)(struct MpegEncContext *s, 
+                           DCTELEM *block, int n, int qscale);
+    void (*dct_unquantize_h263)(struct MpegEncContext *s, 
+                           DCTELEM *block, int n, int qscale);
+    void (*dct_unquantize)(struct MpegEncContext *s, // unquantizer to use (mpeg4 can use both)
                            DCTELEM *block, int n, int qscale);
 } MpegEncContext;
 

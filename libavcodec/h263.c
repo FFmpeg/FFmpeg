@@ -624,17 +624,14 @@ static void h263_encode_motion(MpegEncContext * s, int val)
         }
 
         if (val >= 0) {
-            val--;
-            code = (val >> bit_size) + 1;
-            bits = val & (range - 1);
             sign = 0;
         } else {
             val = -val;
-            val--;
-            code = (val >> bit_size) + 1;
-            bits = val & (range - 1);
             sign = 1;
         }
+        val--;
+        code = (val >> bit_size) + 1;
+        bits = val & (range - 1);
 
         put_bits(&s->pb, mvtab[code][1] + 1, (mvtab[code][0] << 1) | sign); 
         if (bit_size > 0) {
@@ -728,7 +725,7 @@ static void init_uni_dc_tab()
 {
     int level, uni_code, uni_len;
 
-    for(level=-255; level<256; level++){
+    for(level=-256; level<256; level++){
         int size, v, l;
         /* find number of bits */
         size = 0;
@@ -2509,7 +2506,57 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             }
             
             // FIXME a bunch of grayscale shape things
-            if(get_bits1(&s->gb)) printf("Quant-Type not supported\n");  /* vol_quant_type */ //FIXME
+
+            if(get_bits1(&s->gb)){ /* vol_quant_type */
+                int i, j, v;
+                /* load default matrixes */
+                for(i=0; i<64; i++){
+                    v= ff_mpeg4_default_intra_matrix[i];
+                    s->intra_matrix[i]= v;
+                    s->chroma_intra_matrix[i]= v;
+                    
+                    v= ff_mpeg4_default_non_intra_matrix[i];
+                    s->non_intra_matrix[i]= v;
+                    s->chroma_non_intra_matrix[i]= v;
+                }
+
+                /* load custom intra matrix */
+                if(get_bits1(&s->gb)){
+                    for(i=0; i<64; i++){
+                        v= get_bits(&s->gb, 8);
+                        if(v==0) break;
+
+                        j= zigzag_direct[i];
+                        s->intra_matrix[j]= v;
+                        s->chroma_intra_matrix[j]= v;
+                    }
+                }
+
+                /* load custom non intra matrix */
+                if(get_bits1(&s->gb)){
+                    for(i=0; i<64; i++){
+                        v= get_bits(&s->gb, 8);
+                        if(v==0) break;
+
+                        j= zigzag_direct[i];
+                        s->non_intra_matrix[j]= v;
+                        s->chroma_non_intra_matrix[j]= v;
+                    }
+
+                    /* replicate last value */
+                    for(; i<64; i++){
+                        j= zigzag_direct[i];
+                        s->non_intra_matrix[j]= v;
+                        s->chroma_non_intra_matrix[j]= v;
+                    }
+                }
+
+                s->dct_unquantize= s->dct_unquantize_mpeg;
+
+                // FIXME a bunch of grayscale shape things
+            }else
+                s->dct_unquantize= s->dct_unquantize_h263;
+
             if(vo_ver_id != 1)
                  s->quarter_sample= get_bits1(&s->gb);
             else s->quarter_sample=0;

@@ -440,11 +440,9 @@ void unused_var_warning_killer(){
 void MPV_common_init_mmx(MpegEncContext *s)
 {
     if (mm_flags & MM_MMX) {
-        if (s->out_format == FMT_H263)
-        	s->dct_unquantize = dct_unquantize_h263_mmx;
-	else
-        	s->dct_unquantize = dct_unquantize_mpeg1_mmx;
-	
+       	s->dct_unquantize_h263 = dct_unquantize_h263_mmx;
+       	s->dct_unquantize_mpeg = dct_unquantize_mpeg1_mmx;
+
 	draw_edges = draw_edges_mmx;
 
 	if(mm_flags & MM_MMXEXT){

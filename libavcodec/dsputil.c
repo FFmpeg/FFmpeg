@@ -47,6 +47,8 @@ UINT32 squareTbl[512];
 
 extern UINT16 default_intra_matrix[64];
 extern UINT16 default_non_intra_matrix[64];
+extern UINT16 ff_mpeg4_default_intra_matrix[64];
+extern UINT16 ff_mpeg4_default_non_intra_matrix[64];
 
 UINT8 zigzag_direct[64] = {
     0, 1, 8, 16, 9, 2, 3, 10,
@@ -953,6 +955,8 @@ void dsputil_init(void)
         }
         block_permute(default_intra_matrix);
         block_permute(default_non_intra_matrix);
+        block_permute(ff_mpeg4_default_intra_matrix);
+        block_permute(ff_mpeg4_default_non_intra_matrix);
     }
     
     build_zigzag_end();

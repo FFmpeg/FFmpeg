@@ -110,14 +110,18 @@ int MPV_common_init(MpegEncContext *s)
     int c_size, i;
     UINT8 *pict;
 
-    if (s->out_format == FMT_H263) 
-        s->dct_unquantize = dct_unquantize_h263_c;
-    else
-        s->dct_unquantize = dct_unquantize_mpeg1_c;
+    s->dct_unquantize_h263 = dct_unquantize_h263_c;
+    s->dct_unquantize_mpeg = dct_unquantize_mpeg1_c;
         
 #ifdef HAVE_MMX
     MPV_common_init_mmx(s);
 #endif
+    //setup default unquantizers (mpeg4 might change it later)
+    if(s->out_format == FMT_H263)
+        s->dct_unquantize = s->dct_unquantize_h263;
+    else
+        s->dct_unquantize = s->dct_unquantize_mpeg;
+    
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
     s->mb_num = s->mb_width * s->mb_height;
