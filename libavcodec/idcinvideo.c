@@ -24,7 +24,12 @@
  * For more information about the Id CIN format, visit:
  *   http://www.csse.monash.edu.au/~timf/
  *
- * This video decoder outputs PAL8 colorspace data.
+ * This video decoder outputs PAL8 colorspace data. Interacting with this
+ * decoder is a little involved. During initialization, the demuxer must
+ * transmit the 65536-byte Huffman table(s) to the decoder via extradata.
+ * Then, whenever a palette change is encountered while demuxing the file,
+ * the demuxer must use the same extradata space to transmit an
+ * AVPaletteControl structure.
  *
  * Id CIN video is purely Huffman-coded, intraframe-only codec. It achieves
  * a little more compression by exploiting the fact that adjacent pixels
