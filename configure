@@ -1093,7 +1093,7 @@ fi
 if test "$pthreads" = "yes" ; then
   echo "HAVE_PTHREADS=yes" >> config.mak
   echo "#define HAVE_PTHREADS 1" >> $TMPH
-  if $targetos != FreeBSD; then
+  if test $targetos != FreeBSD; then
      extralibs="$extralibs -lpthread"
   fi
 fi
