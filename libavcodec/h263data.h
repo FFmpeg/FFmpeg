@@ -5,45 +5,29 @@
 
 
 /* intra MCBPC, mb_type = (intra), then (intraq) */
-const uint8_t intra_MCBPC_code[8] = { 1, 1, 2, 3, 1, 1, 2, 3 };
-const uint8_t intra_MCBPC_bits[8] = { 1, 3, 3, 3, 4, 6, 6, 6 };
+const uint8_t intra_MCBPC_code[9] = { 1, 1, 2, 3, 1, 1, 2, 3, 1 };
+const uint8_t intra_MCBPC_bits[9] = { 1, 3, 3, 3, 4, 6, 6, 6, 9 };
 
 /* inter MCBPC, mb_type = (inter), (intra), (interq), (intraq), (inter4v) */
 /* Changed the tables for interq and inter4v+q, following the standard ** Juanjo ** */
-const uint8_t inter_MCBPC_code[25] = { 
+const uint8_t inter_MCBPC_code[28] = { 
     1, 3, 2, 5, 
     3, 4, 3, 3, 
     3, 7, 6, 5,
     4, 4, 3, 2,
     2, 5, 4, 5,
-    1, /* Stuffing */
+    1, 0, 0, 0, /* Stuffing */
     2, 12, 14, 15,
 };
-const uint8_t inter_MCBPC_bits[25] = { 
-    1, 4, 4, 6, 
-    5, 8, 8, 7,
-    3, 7, 7, 9,
-    6, 9, 9, 9,
-    3, 7, 7, 8,
-    9, /* Stuffing */
-    11, 13, 13, 13,
+const uint8_t inter_MCBPC_bits[28] = { 
+    1, 4, 4, 6, /* inter  */
+    5, 8, 8, 7, /* intra  */
+    3, 7, 7, 9, /* interQ */
+    6, 9, 9, 9, /* intraQ */
+    3, 7, 7, 8, /* inter4 */
+    9, 0, 0, 0, /* Stuffing */
+    11, 13, 13, 13,/* inter4Q*/
 };
-
-/* This is the old table 
-static const uint8_t inter_MCBPC_code[20] = { 
-    1, 3, 2, 5, 
-    3, 4, 3, 3, 
-    0, 1, 2, 3,
-    4, 4, 3, 2,
-    2, 5, 4, 5,
-};
-static const uint8_t inter_MCBPC_bits[20] = { 
-    1, 4, 4, 6, 
-    5, 8, 8, 7,
-    12, 12, 12, 12,
-    6, 9, 9, 9,
-    3, 7, 7, 8,
-};*/
 
 const uint8_t cbpy_tab[16][2] =
 {

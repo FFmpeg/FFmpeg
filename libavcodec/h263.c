@@ -40,7 +40,7 @@
 //#include <assert.h>
 
 #define INTRA_MCBPC_VLC_BITS 6
-#define INTER_MCBPC_VLC_BITS 6
+#define INTER_MCBPC_VLC_BITS 7
 #define CBPY_VLC_BITS 6
 #define MV_VLC_BITS 9
 #define DC_VLC_BITS 9
@@ -2428,10 +2428,10 @@ void h263_decode_init_vlc(MpegEncContext *s)
     if (!done) {
         done = 1;
 
-        init_vlc(&intra_MCBPC_vlc, INTRA_MCBPC_VLC_BITS, 8, 
+        init_vlc(&intra_MCBPC_vlc, INTRA_MCBPC_VLC_BITS, 9, 
                  intra_MCBPC_bits, 1, 1,
                  intra_MCBPC_code, 1, 1);
-        init_vlc(&inter_MCBPC_vlc, INTER_MCBPC_VLC_BITS, 25, 
+        init_vlc(&inter_MCBPC_vlc, INTER_MCBPC_VLC_BITS, 28, 
                  inter_MCBPC_bits, 1, 1,
                  inter_MCBPC_code, 1, 1);
         init_vlc(&cbpy_vlc, CBPY_VLC_BITS, 16,
@@ -2871,12 +2871,14 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                     return mb_num-1;
                 }
 
-                cbpc = get_vlc2(&s->gb, intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 1);
-                if (cbpc < 0){
+                do{
+                    cbpc = get_vlc2(&s->gb, intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
+                    if (cbpc < 0){
+                        fprintf(stderr, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
+                        return -1;
+                    }
+                }while(cbpc == 8);
 
-                    fprintf(stderr, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
-                    return -1;
-                }
                 s->cbp_table[xy]= cbpc & 3;
                 s->current_picture.mb_type[xy]= MB_TYPE_INTRA;
                 s->mb_intra = 1;
@@ -2903,6 +2905,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                 int16_t * const mot_val= s->motion_val[s->block_index[0]];
                 const int stride= s->block_wrap[0]*2;
 
+              do{
                 bits= show_bits(&s->gb, 17);
                 if(bits==MOTION_MARKER){
                     return mb_num-1;
@@ -2927,15 +2930,14 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                         ff_clean_intra_table_entries(s);
                     continue;
                 }
+
                 cbpc = get_vlc2(&s->gb, inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
                 if (cbpc < 0){
                     fprintf(stderr, "cbpc corrupted at %d %d\n", s->mb_x, s->mb_y);
                     return -1;
                 }
-                if (cbpc > 20)
-                    cbpc+=3;
-                else if (cbpc == 20)
-                    fprintf(stderr, "Stuffing !");
+              }while(cbpc == 20);
+
                 s->cbp_table[xy]= cbpc&(8+3); //8 is dquant
     
                 s->mb_intra = ((cbpc & 4) != 0);
@@ -3234,6 +3236,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
     const int xy= s->mb_x + s->mb_y * s->mb_stride;
 
     if (s->pict_type == P_TYPE || s->pict_type==S_TYPE) {
+      do{
         if (get_bits1(&s->gb)) {
             /* skip mb */
             s->mb_intra = 0;
@@ -3259,12 +3262,11 @@ int ff_h263_decode_mb(MpegEncContext *s,
         }
         cbpc = get_vlc2(&s->gb, inter_MCBPC_vlc.table, INTER_MCBPC_VLC_BITS, 2);
         //fprintf(stderr, "\tCBPC: %d", cbpc);
-        if (cbpc < 0)
+        if (cbpc < 0){
+            fprintf(stderr, "cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
             return -1;
-        if (cbpc > 20)
-            cbpc+=3;
-        else if (cbpc == 20)
-            fprintf(stderr, "Stuffing !");
+        }
+      }while(cbpc == 20);
         
         dquant = cbpc & 8;
         s->mb_intra = ((cbpc & 4) != 0);
@@ -3501,9 +3503,14 @@ int ff_h263_decode_mb(MpegEncContext *s,
         }
         s->current_picture.mb_type[xy]= mb_type;
     } else { /* I-Frame */
-        cbpc = get_vlc2(&s->gb, intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 1);
-        if (cbpc < 0)
-            return -1;
+        do{
+            cbpc = get_vlc2(&s->gb, intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
+            if (cbpc < 0){
+                fprintf(stderr, "I cbpc damaged at %d %d\n", s->mb_x, s->mb_y);
+                return -1;
+            }
+        }while(cbpc == 8);
+
         dquant = cbpc & 4;
         s->mb_intra = 1;
 intra:
@@ -3520,7 +3527,10 @@ intra:
             s->ac_pred = 0;
         
         cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
-        if(cbpy<0) return -1;
+        if(cbpy<0){
+            fprintf(stderr, "I cbpy damaged at %d %d\n", s->mb_x, s->mb_y);
+            return -1;
+        }
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
             change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
