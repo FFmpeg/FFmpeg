@@ -715,6 +715,12 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   int		result, i, x, y, width, height;
   AVFrame *pict = data; 
 
+  *data_size=0;
+  
+  if(buf==NULL && buf_size==0){
+      return 0;
+  }
+  
   /* initialize bit buffer */
   init_get_bits(&s->gb,buf,buf_size*8);
 
