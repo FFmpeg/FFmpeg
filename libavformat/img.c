@@ -329,6 +329,7 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
     info.width = width;
     info.height = height;
     info.pix_fmt = st->codec.pix_fmt;
+    info.interleaved = 0;    /* FIXME: there should be a way to set it right */
     info.pict = *picture;
     ret = av_write_image(pb, img->img_fmt, &info);
     if (!img->is_pipe) {
