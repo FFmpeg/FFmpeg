@@ -141,7 +141,7 @@ POWERPC_PERF_START_COUNT(powerpc_clear_blocks_dcbz32, 1);
       ((unsigned long*)blocks)[3] = 0L;
       i += 16;
     }
-    for ( ; i < sizeof(DCTELEM)*6*64 ; i += 32) {
+    for ( ; i < sizeof(DCTELEM)*6*64-31 ; i += 32) {
 #ifndef __MWERKS__
       asm volatile("dcbz %0,%1" : : "b" (blocks), "r" (i) : "memory");
 #else
@@ -255,9 +255,9 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     break;
   }
 
+#ifdef HAVE_ALTIVEC
   dsputil_h264_init_ppc(c, avctx);
   
-#ifdef HAVE_ALTIVEC
     if (has_altivec()) {
         mm_flags |= MM_ALTIVEC;
         
