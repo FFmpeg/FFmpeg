@@ -232,6 +232,8 @@ typedef struct MOVStreamContext {
     int64_t *chunk_offsets;
     int stts_count;
     Time2Sample *stts_data;
+    int ctts_count;
+    Time2Sample *ctts_data;
     int edit_count;             /* number of 'edit' (elst atom) */
     long sample_to_chunk_sz;
     MOV_sample_to_chunk_tbl *sample_to_chunk;
@@ -239,6 +241,8 @@ typedef struct MOVStreamContext {
     int sample_to_time_index;	 
     long sample_to_time_sample;	 
     uint64_t sample_to_time_time;    
+    int sample_to_ctime_index;
+    int sample_to_ctime_sample;
     long sample_size;
     long sample_count;
     long *sample_sizes;
@@ -1338,6 +1342,33 @@ av_log(NULL, AV_LOG_DEBUG, "track[%i].stts.entries = %i\n", c->fc->nb_streams-1,
     return 0;
 }
 
+static int mov_read_ctts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+//    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    unsigned int i, entries;
+
+    print_atom("ctts", atom);
+
+    get_byte(pb); /* version */
+    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+    entries = get_be32(pb);
+    if(entries >= UINT_MAX / sizeof(Time2Sample))
+        return -1;
+
+    c->streams[c->fc->nb_streams-1]->ctts_count = entries;
+    c->streams[c->fc->nb_streams-1]->ctts_data = av_malloc(entries * sizeof(Time2Sample));
+
+// #ifdef DEBUG
+av_log(NULL, AV_LOG_DEBUG, "track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
+// #endif
+    for(i=0; i<entries; i++) {
+        c->streams[c->fc->nb_streams - 1]->ctts_data[i].count= get_be32(pb);
+        c->streams[c->fc->nb_streams - 1]->ctts_data[i].duration= get_be32(pb);
+    }
+    return 0;
+}
+
 static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st;
@@ -1520,7 +1551,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'c', 'o', '6', '4' ), mov_read_stco },
 { MKTAG( 'c', 'p', 'r', 't' ), mov_read_default },
 { MKTAG( 'c', 'r', 'h', 'd' ), mov_read_default },
-{ MKTAG( 'c', 't', 't', 's' ), mov_read_leaf }, /* composition time to sample */
+{ MKTAG( 'c', 't', 't', 's' ), mov_read_ctts }, /* composition time to sample */
 { MKTAG( 'd', 'i', 'n', 'f' ), mov_read_default }, /* data information */
 { MKTAG( 'd', 'p', 'n', 'd' ), mov_read_leaf },
 { MKTAG( 'd', 'r', 'e', 'f' ), mov_read_leaf },
@@ -1597,13 +1628,14 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 static void mov_free_stream_context(MOVStreamContext *sc)
 {
     if(sc) {
-        av_free(sc->chunk_offsets);
-        av_free(sc->sample_to_chunk);
-        av_free(sc->sample_sizes);
-        av_free(sc->keyframes);
-        av_free(sc->header_data);
-        av_free(sc->stts_data);        
-        av_free(sc);
+        av_freep(&sc->chunk_offsets);
+        av_freep(&sc->sample_to_chunk);
+        av_freep(&sc->sample_sizes);
+        av_freep(&sc->keyframes);
+        av_freep(&sc->header_data);
+        av_freep(&sc->stts_data);        
+        av_freep(&sc->ctts_data);        
+        av_freep(&sc);
     }
 }
 
@@ -1922,7 +1954,7 @@ readchunk:
     /* find the corresponding dts */	 
     if (sc && sc->sample_to_time_index < sc->stts_count && pkt) {	 
       unsigned int count;
-      uint64_t dts;
+      uint64_t dts, pts;
       unsigned int duration = sc->stts_data[sc->sample_to_time_index].duration;
       count = sc->stts_data[sc->sample_to_time_index].count;
       if ((sc->sample_to_time_sample + count) < sc->current_sample) {	 
@@ -1932,22 +1964,36 @@ readchunk:
         duration = sc->stts_data[sc->sample_to_time_index].duration;
       }	 
       dts = sc->sample_to_time_time + (sc->current_sample-1 - sc->sample_to_time_sample) * (int64_t)duration;
-      dts = av_rescale( dts, 	 
-                        (int64_t)s->streams[sc->ffindex]->time_base.den, 	 
-                        (int64_t)sc->time_scale * (int64_t)s->streams[sc->ffindex]->time_base.num );	 
-      pkt->dts = dts;
-      //do not set pts=dts because u think it might be equal!!!!!!!!
-#ifdef DEBUG 	 
-/*    av_log(NULL, AV_LOG_DEBUG, "stream #%d smp #%ld dts = %ld (smp:%ld time:%ld idx:%ld ent:%d count:%ld dur:%ld)\n"	 
-      , pkt->stream_index, sc->current_sample-1, (long)pkt->dts	 
-      , (long)sc->sample_to_time_sample	 
-      , (long)sc->sample_to_time_time	 
-      , (long)sc->sample_to_time_index	 
-      , (long)sc->stts_count	 
-      , count	 
-      , duration);*/	 
-#endif        	 
-    } 
+        /* find the corresponding pts */
+        if (sc->sample_to_ctime_index < sc->ctts_count) {
+            int duration = sc->ctts_data[sc->sample_to_ctime_index].duration;
+            int count = sc->ctts_data[sc->sample_to_ctime_index].count;
+
+            if ((sc->sample_to_ctime_sample + count) < sc->current_sample) {
+                sc->sample_to_ctime_sample += count;
+                sc->sample_to_ctime_index ++;
+                duration = sc->ctts_data[sc->sample_to_ctime_index].duration;
+            }
+            pts = dts + duration;
+        }else
+            pts = dts;
+        pkt->pts = av_rescale( pts,
+                         (int64_t)s->streams[sc->ffindex]->time_base.den,
+                         (int64_t)sc->time_scale * (int64_t)s->streams[sc->ffindex]->time_base.num );
+        pkt->dts = av_rescale( dts,
+                         (int64_t)s->streams[sc->ffindex]->time_base.den,
+                         (int64_t)sc->time_scale * (int64_t)s->streams[sc->ffindex]->time_base.num );
+#ifdef DEBUG
+    av_log(NULL, AV_LOG_DEBUG, "stream #%d smp #%ld dts = %lld pts = %lld (smp:%ld time:%lld idx:%d ent:%d count:%d dur:%d)\n"
+      , pkt->stream_index, sc->current_sample-1, pkt->dts, pkt->pts
+      , sc->sample_to_time_sample
+      , sc->sample_to_time_time
+      , sc->sample_to_time_index
+      , sc->stts_count
+      , count
+      , duration);
+#endif
+    }
 
     return 0;
 }
@@ -2160,7 +2206,17 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
             }	 
             sample += count;	 
             start_time += count * duration;	 
-        }        
+        }
+        sample = 0;
+        for (msc->sample_to_ctime_index = 0; msc->sample_to_ctime_index < msc->ctts_count; msc->sample_to_ctime_index++) {
+            count = msc->ctts_data[msc->sample_to_ctime_index].count;
+            duration = msc->ctts_data[msc->sample_to_ctime_index].duration;
+            if ((sample + count - 1) > msc->current_sample) {
+                msc->sample_to_ctime_sample = sample;
+                break;
+            }
+            sample += count;
+        }       
 #ifdef DEBUG        
         av_log(s, AV_LOG_DEBUG, "Next Sample for stream #%i is #%i @%i\n", i, msc->current_sample + 1, msc->sample_to_chunk_index + 1);
 #endif        
