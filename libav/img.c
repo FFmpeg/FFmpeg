@@ -32,11 +32,17 @@ extern AVInputFormat pgmyuvpipe_iformat;
 extern AVOutputFormat pgmyuvpipe_oformat;
 extern AVInputFormat ppmpipe_iformat;
 extern AVOutputFormat ppmpipe_oformat;
+extern AVOutputFormat yuv4mpegpipe_oformat;
 
 #define IMGFMT_YUV     1
 #define IMGFMT_PGMYUV  2
 #define IMGFMT_PGM     3
 #define IMGFMT_PPM     4
+#define IMGFMT_YUV4MPEG     5
+
+#define Y4M_MAGIC "YUV4MPEG2"
+#define Y4M_FRAME_MAGIC "FRAME"
+#define Y4M_LINE_MAX 256
 
 typedef struct {
     int width;
@@ -45,6 +51,7 @@ typedef struct {
     int img_size;
     int img_fmt;
     int is_pipe;
+    int header_written;
     char path[1024];
 } VideoData;
 
@@ -350,6 +357,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         }
         break;
     }
+    
 
     if (!s->is_pipe) {
         url_fclose(f);
@@ -482,6 +490,63 @@ static int yuv_save(AVPicture *picture, int width, int height, const char *filen
     return 0;
 }
 
+static int yuv4mpeg_save(AVPicture *picture, int width, int height, ByteIOContext *pb, int need_stream_header, 
+                        int is_yuv, int raten, int rated, int aspectn, int aspectd) 
+{
+    int i, n, m;
+    char buf[Y4M_LINE_MAX+1], buf1[20];
+    UINT8 *ptr, *ptr1, *ptr2;
+    
+    /* construct stream header, if this is the first frame */
+    if(need_stream_header) {
+        n = snprintf(buf, sizeof(buf), "%s W%d H%d F%d:%d I%s A%d:%d\n",
+                Y4M_MAGIC,
+                width,
+                height,
+                raten, rated,
+                "p",			/* ffmpeg seems to only output progressive video */
+                aspectn, aspectd);
+        if (n < 0) {
+            fprintf(stderr, "Error. YUV4MPEG stream header write failed.\n");
+        } else {
+            fprintf(stderr, "YUV4MPEG stream header written. FPS is %d\n", raten);
+            put_buffer(pb, buf, strlen(buf));
+        }
+    }
+    
+    /* construct frame header */
+    m = snprintf(buf1, sizeof(buf1), "%s \n", Y4M_FRAME_MAGIC);
+    if (m < 0) {
+        fprintf(stderr, "Error. YUV4MPEG frame header write failed.\n");
+    } else {
+        /* fprintf(stderr, "YUV4MPEG frame header written.\n"); */
+        put_buffer(pb, buf1, strlen(buf1));
+    }
+    
+    ptr = picture->data[0];
+    for(i=0;i<height;i++) {
+        put_buffer(pb, ptr, width);
+        ptr += picture->linesize[0];
+    }
+
+    if (is_yuv) {
+        height >>= 1;
+        width >>= 1;
+        ptr1 = picture->data[1];
+        ptr2 = picture->data[2];
+        for(i=0;i<height;i++) {		/* Cb */
+            put_buffer(pb, ptr1, width);
+            ptr1 += picture->linesize[1];
+        }
+         for(i=0;i<height;i++) {	/* Cr */
+            put_buffer(pb, ptr2, width);
+            ptr2 += picture->linesize[2];
+         }
+    }
+    put_flush_packet(pb);
+    return 0;
+}
+
 static int img_write_header(AVFormatContext *s)
 {
     VideoData *img = s->priv_data;
@@ -506,6 +571,9 @@ static int img_write_header(AVFormatContext *s)
     } else if (s->oformat == &ppmpipe_oformat ||
                s->oformat == &ppm_oformat) {
         img->img_fmt = IMGFMT_PPM;
+    } else if (s->oformat == &yuv4mpegpipe_oformat) {
+        img->img_fmt = IMGFMT_YUV4MPEG;
+        img->header_written = 0;    
     } else {
         goto fail;
     }
@@ -522,11 +590,64 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
     AVStream *st = s->streams[stream_index];
     ByteIOContext pb1, *pb;
     AVPicture picture;
-    int width, height, ret, size1;
+    int width, height, need_stream_header, ret, size1, raten, rated, aspectn, aspectd, fps, fps1;
     char filename[1024];
 
     width = st->codec.width;
     height = st->codec.height;
+    
+    if (img->img_number == 1) {
+        need_stream_header = 1;
+    } else {
+        need_stream_header = 0;
+    }
+    
+    fps = st->codec.frame_rate;
+    fps1 = (((float)fps / FRAME_RATE_BASE) * 1000);
+   
+   /* Sorry about this messy code, but mpeg2enc is very picky about
+    * the framerates it accepts. */
+    switch(fps1) {
+    case 23976:
+        raten = 24000; /* turn the framerate into a ratio */
+        rated = 1001;
+        break;
+    case 29970:
+        raten = 30000;
+        rated = 1001;
+        break;
+    case 25000:
+        raten = 25;
+        rated = 1;
+        break;
+    case 30000:
+        raten = 30;
+        rated = 1;
+        break;
+    case 24000:
+        raten = 24;
+        rated = 1;
+        break;
+    case 50000:
+        raten = 50;
+        rated = 1;
+        break;
+    case 59940:
+        raten = 60000;
+        rated = 1001;
+        break;
+    case 60000:
+        raten = 60;
+        rated = 1;
+        break;
+    default:
+        raten = fps1; /* this setting should work, but often doesn't */
+        rated = 1000;
+        break;
+    }
+    
+    aspectn = 1;
+    aspectd = 1;	/* ffmpeg always uses a 1:1 aspect ratio */
 
     switch(st->codec.pix_fmt) {
     case PIX_FMT_YUV420P:
@@ -579,6 +700,10 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
         break;
     case IMGFMT_PPM:
         ret = ppm_save(&picture, width, height, pb);
+        break;
+    case IMGFMT_YUV4MPEG:
+         ret = yuv4mpeg_save(&picture, width, height, pb,
+         need_stream_header, 1, raten, rated, aspectn, aspectd);
         break;
     }
     if (!img->is_pipe) {
@@ -776,6 +901,20 @@ AVOutputFormat ppmpipe_oformat = {
 };
 
 
+AVOutputFormat yuv4mpegpipe_oformat = {
+    "yuv4mpegpipe",
+    "YUV4MPEG pipe format",
+    "",
+    "yuv4mpeg",
+    sizeof(VideoData),
+    CODEC_ID_NONE,
+    CODEC_ID_RAWVIDEO,
+    img_write_header,
+    img_write_packet,
+    img_write_trailer,
+};
+
+
 int img_init(void)
 {
     av_register_input_format(&pgm_iformat);
@@ -798,5 +937,8 @@ int img_init(void)
 
     av_register_input_format(&ppmpipe_iformat);
     av_register_output_format(&ppmpipe_oformat);
+       
+    av_register_output_format(&yuv4mpegpipe_oformat);
+    
     return 0;
 }
