@@ -1,20 +1,20 @@
 /*
  * FFmpeg main 
- * Copyright (c) 2000, 2001, 2002 Gerard Lantau
+ * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #define HAVE_AV_CONFIG_H
 #include "avformat.h"
@@ -26,10 +26,10 @@
 #include <sys/ioctl.h>
 #include <sys/time.h>
 #include <termios.h>
-#include <time.h>
 #include <sys/resource.h>
-#include <ctype.h>
 #endif
+#include <time.h>
+#include <ctype.h>
 
 
 #define MAXINT64 INT64_C(0x7fffffffffffffff)
@@ -113,6 +113,13 @@ static int do_play = 0;
 static int do_psnr = 0;
 static int do_vstats = 0;
 static int mpeg_vcd = 0;
+
+#ifndef CONFIG_AUDIO_OSS
+const char *audio_device = "none";
+#endif
+#ifndef CONFIG_VIDEO4LINUX
+const char *v4l_device = "none";
+#endif
 
 typedef struct AVOutputStream {
     int file_index;          /* file index */
@@ -517,9 +524,9 @@ static void do_video_stats(AVOutputStream *ost,
 {
     static FILE *fvstats=NULL;
     static INT64 total_size = 0;
-    struct tm *today;
-    time_t today2;
     char filename[40];
+    time_t today2;
+    struct tm *today;
     AVCodecContext *enc;
     int frame_number;
     INT64 ti;
@@ -902,11 +909,13 @@ static int av_encode(AVFormatContext **output_files,
         /* if none, if is finished */
         if (file_index < 0) {
             if (stream_no_data) {
+#ifndef CONFIG_WIN32
                 struct timespec ts;
 
                 ts.tv_sec = 0;
                 ts.tv_nsec = 1000 * 1000 * 10;
                 nanosleep(&ts, 0);
+#endif
                 stream_no_data = 0;
                 continue;
             }
@@ -929,12 +938,11 @@ static int av_encode(AVFormatContext **output_files,
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
         if (pkt.stream_index >= file_table[file_index].nb_streams)
-            continue;
+            goto discard_packet;
         ist_index = file_table[file_index].ist_index + pkt.stream_index;
         ist = ist_table[ist_index];
-        if (ist->discard) {
-            continue;
-        }
+        if (ist->discard)
+            goto discard_packet;
 
         if (pkt.flags & PKT_FLAG_DROPPED_FRAME)
             ist->frame_number++;
@@ -1079,6 +1087,7 @@ static int av_encode(AVFormatContext **output_files,
                 }
             }
         }
+    discard_packet:
         av_free_packet(&pkt);
         
         /* dump report by using the first video and audio streams */
@@ -1219,6 +1228,8 @@ static int av_encode(AVFormatContext **output_files,
         for(i=0;i<nb_ostreams;i++) {
             ost = ost_table[i];
             if (ost) {
+                fifo_free(&ost->fifo); /* works even if fifo is not
+                                          initialized but set to zero */
                 av_free(ost->pict_tmp.data[0]);
                 if (ost->video_resample)
                     img_resample_close(ost->img_resample_ctx);
@@ -1261,20 +1272,20 @@ void show_licence(void)
 {
     printf(
     "ffmpeg version " FFMPEG_VERSION "\n"
-    "Copyright (c) 2000, 2001, 2002 Gerard Lantau\n"
-    "This program is free software; you can redistribute it and/or modify\n"
-    "it under the terms of the GNU General Public License as published by\n"
-    "the Free Software Foundation; either version 2 of the License, or\n"
-    "(at your option) any later version.\n"
+    "Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n"
+    "This library is free software; you can redistribute it and/or\n"
+    "modify it under the terms of the GNU Lesser General Public\n"
+    "License as published by the Free Software Foundation; either\n"
+    "version 2 of the License, or (at your option) any later version.\n"
     "\n"
-    "This program is distributed in the hope that it will be useful,\n"
+    "This library is distributed in the hope that it will be useful,\n"
     "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-    "GNU General Public License for more details.\n"
+    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n"
+    "Lesser General Public License for more details.\n"
     "\n"
-    "You should have received a copy of the GNU General Public License\n"
-    "along with this program; if not, write to the Free Software\n"
-    "Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.\n"
+    "You should have received a copy of the GNU Lesser General Public\n"
+    "License along with this library; if not, write to the Free Software\n"
+    "Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\n"
     );
     exit(1);
 }
@@ -1399,7 +1410,6 @@ void opt_audio_channels(const char *arg)
     audio_channels = atoi(arg);
 }
 
-#ifdef CONFIG_GRAB
 void opt_video_device(const char *arg)
 {
     v4l_device = strdup(arg);
@@ -1409,7 +1419,6 @@ void opt_audio_device(const char *arg)
 {
     audio_device = strdup(arg);
 }
-#endif
 
 void opt_audio_codec(const char *arg)
 {
@@ -1562,6 +1571,8 @@ void opt_input_file(const char *filename)
                     i, (float)enc->frame_rate / FRAME_RATE_BASE,
                     (float)rfps / FRAME_RATE_BASE);
             }
+            /* update the current frame rate to match the stream frame rate */
+            frame_rate = rfps;
             break;
         default:
             abort();
@@ -1823,8 +1834,6 @@ void opt_output_file(const char *filename)
     video_codec_id = CODEC_ID_NONE;
 }
 
-#ifdef CONFIG_GRAB
-
 /* prepare dummy protocols for grab */
 void prepare_grab(void)
 {
@@ -1873,7 +1882,7 @@ void prepare_grab(void)
         AVInputFormat *fmt1;
         fmt1 = av_find_input_format("video_grab_device");
         if (av_open_input_file(&ic, "", fmt1, 0, ap) < 0) {
-            fprintf(stderr, "Could not open video grab device\n");
+            fprintf(stderr, "Could not find video grab device\n");
             exit(1);
         }
         /* by now video grab has one stream */
@@ -1886,7 +1895,7 @@ void prepare_grab(void)
         AVInputFormat *fmt1;
         fmt1 = av_find_input_format("audio_device");
         if (av_open_input_file(&ic, "", fmt1, 0, ap) < 0) {
-            fprintf(stderr, "Could not open audio grab device\n");
+            fprintf(stderr, "Could not find audio grab device\n");
             exit(1);
         }
         input_files[nb_input_files] = ic;
@@ -1895,22 +1904,12 @@ void prepare_grab(void)
     }
 }
 
-#else
-
-void prepare_grab(void)
-{
-    fprintf(stderr, "Must supply at least one input file\n");
-    exit(1);
-}
-
-#endif
-
 /* open the necessary output devices for playing */
 void prepare_play(void)
 {
-    AVOutputFormat *ofmt;
-    ofmt = guess_format("audio_device", NULL, NULL);
-    if (!ofmt) {
+    file_iformat = NULL;
+    file_oformat = guess_format("audio_device", NULL, NULL);
+    if (!file_oformat) {
         fprintf(stderr, "Could not find audio device\n");
         exit(1);
     }
@@ -2008,7 +2007,7 @@ void show_help(void)
     
     prog = do_play ? "ffplay" : "ffmpeg";
 
-    printf("%s version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Gerard Lantau\n", 
+    printf("%s version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n",
            prog);
     
     if (!do_play) {
@@ -2069,9 +2068,7 @@ const OptionDef options[] = {
     { "qblur", HAS_ARG | OPT_EXPERT, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
     { "qcomp", HAS_ARG | OPT_EXPERT, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },
     { "bt", HAS_ARG, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
-#ifdef CONFIG_GRAB
-    { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video device", "device" },
-#endif
+    { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video grab device", "device" },
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
@@ -2085,9 +2082,7 @@ const OptionDef options[] = {
     { "ar", HAS_ARG, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
     { "ac", HAS_ARG, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
     { "an", OPT_BOOL, {(void*)&audio_disable}, "disable audio" },
-#ifdef CONFIG_GRAB
     { "ad", HAS_ARG | OPT_EXPERT, {(void*)opt_audio_device}, "set audio device", "device" },
-#endif
     { "acodec", HAS_ARG | OPT_EXPERT, {(void*)opt_audio_codec}, "force audio codec", "codec" },
     { "deinterlace", OPT_BOOL | OPT_EXPERT, {(void*)&do_deinterlace}, 
       "deinterlace pictures" },
