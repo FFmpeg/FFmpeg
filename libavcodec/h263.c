@@ -1860,8 +1860,10 @@ static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, 
                                UINT8 *scan_table, PutBitContext *dc_pb, PutBitContext *ac_pb)
 {
-    int last, i, last_non_zero, sign;
-    int code;
+    int i, last_non_zero;
+#if 0 //variables for the outcommented version
+    int code, sign, last;
+#endif
     const RLTable *rl;
     UINT32 *bits_tab;
     UINT8 *len_tab;
@@ -4250,13 +4252,20 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
 
         if (s->scalability) {
             GetBitContext bak= *gb;
-            int dummy= s->hierachy_type= get_bits1(gb);
-            int ref_layer_id= get_bits(gb, 4);
-            int ref_layer_sampling_dir= get_bits1(gb);
-            int h_sampling_factor_n= get_bits(gb, 5);
-            int h_sampling_factor_m= get_bits(gb, 5);
-            int v_sampling_factor_n= get_bits(gb, 5);
-            int v_sampling_factor_m= get_bits(gb, 5);
+            int ref_layer_id;
+            int ref_layer_sampling_dir;
+            int h_sampling_factor_n;
+            int h_sampling_factor_m;
+            int v_sampling_factor_n;
+            int v_sampling_factor_m;
+            
+            s->hierachy_type= get_bits1(gb);
+            ref_layer_id= get_bits(gb, 4);
+            ref_layer_sampling_dir= get_bits1(gb);
+            h_sampling_factor_n= get_bits(gb, 5);
+            h_sampling_factor_m= get_bits(gb, 5);
+            v_sampling_factor_n= get_bits(gb, 5);
+            v_sampling_factor_m= get_bits(gb, 5);
             s->enhancement_type= get_bits1(gb);
             
             if(   h_sampling_factor_n==0 || h_sampling_factor_m==0 

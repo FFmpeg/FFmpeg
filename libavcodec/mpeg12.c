@@ -698,7 +698,7 @@ static inline int get_qscale(MpegEncContext *s)
 static int mpeg_decode_mb(MpegEncContext *s,
                           DCTELEM block[6][64])
 {
-    int i, j, k, cbp, val, code, mb_type, motion_type;
+    int i, j, k, cbp, val, mb_type, motion_type;
     
     dprintf("decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
 

@@ -1512,7 +1512,7 @@ void clear_blocks_c(DCTELEM *blocks)
 
 void dsputil_init(void)
 {
-    int i, j;
+    int i;
 
     for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
     for(i=0;i<MAX_NEG_CROP;i++) {
