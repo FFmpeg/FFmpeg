@@ -1084,8 +1084,10 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	for(i=0; i<dstW; i++)
 	{
 		int j;
+		double error=0;
 		double sum=0;
 		double scale= one;
+
 		for(j=0; j<filterSize; j++)
 		{
 			sum+= filter[i*filterSize + j];
@@ -1093,7 +1095,10 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		scale/= sum;
 		for(j=0; j<*outFilterSize; j++)
 		{
-			(*outFilter)[i*(*outFilterSize) + j]= (int)(filter[i*filterSize + j]*scale + 0.5);
+			double v= filter[i*filterSize + j]*scale + error;
+			int intV= floor(v + 0.5);
+			(*outFilter)[i*(*outFilterSize) + j]= intV;
+			error = v - intV;
 		}
 	}
 	
