@@ -23,7 +23,6 @@
 
 typedef struct Mp3AudioContext {
 	lame_global_flags *gfp;
-	int first_frame;
 	int stereo;
 } Mp3AudioContext;
 
@@ -35,7 +34,6 @@ static int MP3lame_encode_init(AVCodecContext *avctx)
 	if (avctx->channels > 2)
 		return -1;
 
-	s->first_frame = 1;
 	s->stereo = avctx->channels > 1 ? 1 : 0;
 
 	if ((s->gfp = lame_init()) == NULL)
@@ -77,9 +75,6 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
 			frame, buf_size);
 	}
 
-	/* lame 3.91 outputs the first frame as garbage */
-	if (s->first_frame)
-		s->first_frame = num = 0;
 	return num;
 }
 
