@@ -237,6 +237,9 @@ static int encode_frame(AVCodecContext *avctx,
     default:
         return -1;
     }
+    avctx->key_frame = 1;
+    avctx->frame_size = (dst - frame) / (sample_size * avctx->channels);
+
     return dst - frame;
 }
 
