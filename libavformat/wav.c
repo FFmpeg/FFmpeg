@@ -109,6 +109,10 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         put_le16(pb, enc->extradata_size);
         put_buffer(pb, enc->extradata, enc->extradata_size);
         hdrsize += enc->extradata_size;
+        if(hdrsize&1){
+            hdrsize++;
+            put_byte(pb, 0);
+        }
     }
 
     return hdrsize;
