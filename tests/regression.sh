@@ -46,6 +46,7 @@ else
     do_mpeg4adv=y
     do_mpeg1b=y
     do_asv1=y
+    do_flv=y
 fi
 
 
@@ -265,6 +266,16 @@ do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 fi
 
 ###################################
+if [ -n "$do_flv" ] ; then
+# flv encoding
+file=${outfile}flv.flv
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec flv $file
+
+# flv decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
 if [ -n "$do_mp2" ] ; then
 # mp2 encoding
 file=${outfile}mp2.mp2
@@ -318,6 +329,11 @@ do_ffmpeg_crc $file -i $file
 
 # ffm
 file=${outfile}libav.ffm
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+do_ffmpeg_crc $file -i $file
+
+# flv
+file=${outfile}libav.flv
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
 do_ffmpeg_crc $file -i $file
 
