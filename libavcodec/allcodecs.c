@@ -140,6 +140,8 @@ void avcodec_register_all(void)
     register_avcodec(&smc_decoder);
     register_avcodec(&flic_decoder);
     register_avcodec(&truemotion1_decoder);
+    register_avcodec(&vmdvideo_decoder);
+    register_avcodec(&vmdaudio_decoder);
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif

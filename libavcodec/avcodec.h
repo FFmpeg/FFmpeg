@@ -89,6 +89,8 @@ enum CodecID {
     CODEC_ID_SMC,
     CODEC_ID_FLIC,
     CODEC_ID_TRUEMOTION1,
+    CODEC_ID_VMDVIDEO,
+    CODEC_ID_VMDAUDIO,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1662,6 +1664,8 @@ extern AVCodec idcin_decoder;
 extern AVCodec eightbps_decoder;
 extern AVCodec smc_decoder;
 extern AVCodec flic_decoder;
+extern AVCodec vmdvideo_decoder;
+extern AVCodec vmdaudio_decoder;
 extern AVCodec truemotion1_decoder;
 extern AVCodec ra_144_decoder;
 extern AVCodec ra_288_decoder;
