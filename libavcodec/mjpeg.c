@@ -1392,7 +1392,6 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 
     if (id == ff_get_fourcc("LJIF")){
         printf("Pegasus lossless jpeg header found\n");
-        int i;
 	skip_bits(&s->gb, 16); /* version ? */
 	skip_bits(&s->gb, 16); /* unknwon always 0? */
 	skip_bits(&s->gb, 16); /* unknwon always 0? */
