@@ -2,6 +2,8 @@
  * mmx.h
  * Copyright (C) 1997-2001 H. Dietz and R. Fisher
  */
+#ifndef AVCODEC_I386MMX_H
+#define AVCODEC_I386MMX_H
 
 /*
  * The type of an value that fits in an MMX register (note that long
@@ -237,3 +239,5 @@ typedef	union {
 #define	pshufw_r2r(regs,regd,imm)	mmx_r2ri(pshufw, regs, regd, imm)
 
 #define	sfence() __asm__ __volatile__ ("sfence\n\t")
+
+#endif /* AVCODEC_I386MMX_H */
