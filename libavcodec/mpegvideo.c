@@ -228,7 +228,7 @@ int DCT_common_init(MpegEncContext *s)
     MPV_common_init_mmi(s);
 #endif
 #ifdef ARCH_ARMV4L
-    MPV_common_init_armv4l();
+    MPV_common_init_armv4l(s);
 #endif
 #ifdef ARCH_POWERPC
     MPV_common_init_ppc(s);

@@ -551,6 +551,9 @@ void MPV_common_init_mlib(MpegEncContext *s);
 #ifdef HAVE_MMI
 void MPV_common_init_mmi(MpegEncContext *s);
 #endif
+#ifdef ARCH_ARMV4L
+    MPV_common_init_armv4l(MpegEncContext *s);
+#endif
 #ifdef ARCH_POWERPC
 void MPV_common_init_ppc(MpegEncContext *s);
 #endif
