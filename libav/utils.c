@@ -774,7 +774,7 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
         if (st->codec.frame_size <= 1) {
             frame_size = size / st->codec.channels;
             /* specific hack for pcm codecs because no frame size is provided */
-            switch(st->codec.codec->id) {
+            switch(st->codec.codec_id) {
             case CODEC_ID_PCM_S16LE:
             case CODEC_ID_PCM_S16BE:
             case CODEC_ID_PCM_U16LE:
