@@ -251,10 +251,10 @@ static int decode_slice(MpegEncContext *s){
         
         if(bits_left==0 || bits_left>8){
             s->padding_bug_score++;
-        } else {
+        } else if(bits_left != 1){
             int v= show_bits(&s->gb, 8);
             v|= 0x7F >> (7-(bits_count&7));
-                
+
             if(v==0x7F)
                 s->padding_bug_score--;
             else
