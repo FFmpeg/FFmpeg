@@ -201,7 +201,8 @@ static int bitexact = 0;
 static char *pass_logfilename = NULL;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
-static int sync_method= 1;
+static int video_sync_method= 1;
+static int audio_sync_method= 0;
 static int copy_ts= 0;
 
 static int rate_emu = 0;
@@ -432,6 +433,22 @@ static void do_audio_out(AVFormatContext *s,
 
     
     enc = &ost->st->codec;
+    
+    if(audio_sync_method){
+        double delta = ost->sync_ipts * enc->sample_rate - ost->sync_opts 
+                - fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2);
+        //FIXME resample delay
+        if(fabs(delta) > 50){
+            int comp= clip(delta, -audio_sync_method, audio_sync_method);
+            assert(ost->audio_resample);
+            if(verbose > 2)
+                fprintf(stderr, "compensating audio timestamp drift:%f compensation:%d in:%d\n", delta, comp, enc->sample_rate);
+//            fprintf(stderr, "drift:%f len:%d opts:%lld ipts:%lld fifo:%d\n", delta, len/4, ost->sync_opts, (int64_t)(ost->sync_ipts * enc->sample_rate), fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2));
+            av_resample_compensate(*(struct AVResampleContext**)ost->resample, delta, enc->sample_rate);
+        }
+    }else
+        ost->sync_opts= lrintf(ost->sync_ipts * enc->sample_rate)
+                        - fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2); //FIXME wrong
 
     if (ost->audio_resample) {
         buftmp = audio_buf;
@@ -467,10 +484,15 @@ static void do_audio_out(AVFormatContext *s,
                 pkt.pts= enc->coded_frame->pts;
             pkt.flags |= PKT_FLAG_KEY;
             av_interleaved_write_frame(s, &pkt);
+            
+            ost->sync_opts += enc->frame_size;
         }
     } else {
         AVPacket pkt;
         av_init_packet(&pkt);
+
+        ost->sync_opts += size_out / enc->channels;
+
         /* output a pcm frame */
         /* XXX: change encoding codec API to avoid this ? */
         switch(enc->codec->id) {
@@ -588,7 +610,7 @@ static void do_video_out(AVFormatContext *s,
                          AVOutputStream *ost, 
                          AVInputStream *ist,
                          AVFrame *in_picture,
-                         int *frame_size, AVOutputStream *audio_sync)
+                         int *frame_size)
 {
     int nb_frames, i, ret;
     AVFrame *final_picture, *formatted_picture;
@@ -610,7 +632,7 @@ static void do_video_out(AVFormatContext *s,
 
     *frame_size = 0;
 
-    if(sync_method){
+    if(video_sync_method){
         double vdelta;
         vdelta = ost->sync_ipts * enc->frame_rate / enc->frame_rate_base - ost->sync_opts;
         //FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
@@ -1018,11 +1040,11 @@ static int output_packet(AVInputStream *ist, int ist_index,
     AVFrame picture;
     short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
     void *buffer_to_free;
-    
+//fprintf(stderr, "output_packet %d, dts:%lld\n", pkt->stream_index, pkt->dts);
     if (pkt && pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
         ist->next_pts = ist->pts = pkt->dts;
     } else {
-        ist->pts = ist->next_pts;
+        assert(ist->pts == ist->next_pts);
     }
 
     if (pkt == NULL) {
@@ -1134,7 +1156,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         printf("%d: got pts=%0.3f %0.3f\n", i, 
                                (double)pkt->pts / AV_TIME_BASE, 
                                ((double)ist->pts / AV_TIME_BASE) - 
-                               ((double)ost->st->pts.val * ost->time_base.num / ost->time_base.den));
+                               ((double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den));
 #endif
                         /* set the input output pts pairs */
                         ost->sync_ipts = (double)(ist->pts + input_files_ts_offset[ist->file_index])/ AV_TIME_BASE;
@@ -1159,7 +1181,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                         }
                                     }
 
-                                    do_video_out(os, ost, ist, &picture, &frame_size, audio_sync);
+                                    do_video_out(os, ost, ist, &picture, &frame_size);
                                     video_size += frame_size;
                                     if (do_vstats && frame_size)
                                         do_video_stats(os, ost, frame_size);
@@ -1460,27 +1482,20 @@ static int av_encode(AVFormatContext **output_files,
                             ost->audio_resample = 0;
                         else {
                             ost->audio_resample = 1;
-                            ost->resample = audio_resample_init(codec->channels, icodec->channels,
-                                                        codec->sample_rate, 
-                                                        icodec->sample_rate);
-			    if(!ost->resample)
-			      {
-				printf("Can't resample.  Aborting.\n");
-				av_abort();
-			      }
                         }
-                        /* Request specific number of channels */
-                        icodec->channels = codec->channels;
                     } else {
                         ost->audio_resample = 1; 
-                        ost->resample = audio_resample_init(codec->channels, icodec->channels,
-                                                        codec->sample_rate, 
-                                                        icodec->sample_rate);
-			if(!ost->resample)
-			  {
-			    printf("Can't resample.  Aborting.\n");
-			    av_abort();
-			  }
+                    }
+                }
+                if(audio_sync_method)
+                    ost->audio_resample = 1;
+
+                if(ost->audio_resample){
+                    ost->resample = audio_resample_init(codec->channels, icodec->channels,
+                                                    codec->sample_rate, icodec->sample_rate);
+                    if(!ost->resample){
+                        printf("Can't resample.  Aborting.\n");
+                        av_abort();
                     }
                 }
                 ist->decoding_needed = 1;
@@ -2008,11 +2023,6 @@ static void opt_verbose(const char *arg)
 {
     verbose = atoi(arg);
     av_log_set_level(atoi(arg));
-}
-
-static void opt_sync_method(const char *arg)
-{
-    sync_method = atoi(arg);
 }
 
 static void opt_frame_rate(const char *arg)
@@ -3626,7 +3636,8 @@ const OptionDef options[] = {
     { "v", HAS_ARG, {(void*)opt_verbose}, "control amount of logging", "verbose" },
     { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\" or \"dvd\")", "type" },
     { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
-    { "sync", HAS_ARG | OPT_EXPERT, {(void*)opt_sync_method}, "sync method", "" },
+    { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
+    { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
 
     /* video options */
