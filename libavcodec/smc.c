@@ -125,7 +125,7 @@ static void smc_decode_stream(SmcContext *s)
             chunk_size, s->size);
 
     chunk_size = s->size;
-    total_blocks = (s->avctx->width * s->avctx->height) / (4 * 4);
+    total_blocks = ((s->avctx->width + 3) / 4) * ((s->avctx->height + 3) / 4);
 
     /* traverse through the blocks */
     while (total_blocks) {
