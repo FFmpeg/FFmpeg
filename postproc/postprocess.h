@@ -54,7 +54,6 @@
 #define TEMP_NOISE_FILTER		0x100000
 #define FORCE_QUANT			0x200000
 
-
 #define GET_PP_QUALITY_MAX 6
 
 //use if u want a faster postprocessing code
@@ -76,8 +75,8 @@ typedef struct PPMode{
 	int maxAllowedY; // for brihtness correction
 
 	int maxTmpNoise[3]; // for Temporal Noise Reducing filter (Maximal sum of abs differences)
-	
-	int maxDcDiff; // max abs diff between pixels to be considered flat
+
+	int baseDcDiff;
 	int flatnessThreshold;
 
 	int forcedQuant; // quantizer if FORCE_QUANT is used
@@ -87,7 +86,7 @@ void  postprocess(uint8_t * src[3], int srcStride[3],
                  uint8_t * dst[3], int dstStride[3],
                  int horizontalSize, int verticalSize,
                  QP_STORE_T *QP_store,  int QP_stride,
-		 PPMode *mode, void *ppContext);
+		 PPMode *mode, void *ppContext, int pict_type);
 
 // name is the stuff after "-pp" on the command line
 PPMode getPPModeByNameAndQuality(char *name, int quality);

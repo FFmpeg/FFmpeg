@@ -56,8 +56,9 @@ asm volatile(
 		"leal (%1, %2), %%eax				\n\t"
 //	0	1	2	3	4	5	6	7	8	9
 //	%1	eax	eax+%2	eax+2%2	%1+4%2	ecx	ecx+%2	ecx+2%2	%1+8%2	ecx+4%2
-		"movq %3, %%mm7					\n\t" // mm7 = 0x7F
-		"movq %4, %%mm6					\n\t" // mm6 = 0x7D
+		"movq %3, %%mm7					\n\t" 
+		"movq %4, %%mm6					\n\t" 
+
 		"movq (%1), %%mm0				\n\t"
 		"movq (%%eax), %%mm1				\n\t"
 		"psubb %%mm1, %%mm0				\n\t" // mm0 = differnece
@@ -119,7 +120,7 @@ asm volatile(
 #endif
 		"movd %%mm0, %0					\n\t"
 		: "=r" (numEq)
-		: "r" (src), "r" (stride), "m" (c->mmxDcOffset), "m" (c->mmxDcThreshold)
+		: "r" (src), "r" (stride), "m" (c->mmxDcOffset[c->nonBQP]),  "m" (c->mmxDcThreshold[c->nonBQP])
 		: "%eax"
 		);
 	numEq= (-numEq) &0xFF;
@@ -150,6 +151,7 @@ static inline int RENAME(isVertMinMaxOk)(uint8_t src[], int stride, PPContext *c
 		);
 	return isOk==0;
 #else
+#if 1
 	int x;
 	const int QP= c->QP;
 	src+= stride*3;
@@ -159,6 +161,24 @@ static inline int RENAME(isVertMinMaxOk)(uint8_t src[], int stride, PPContext *c
 	}
 
 	return 1;
+#else
+	int x;
+	const int QP= c->QP;
+	src+= stride*4;
+	for(x=0; x<BLOCK_SIZE; x++)
+	{
+		int min=255;
+		int max=0;
+		int y;
+		for(y=0; y<8; y++){
+			int v= src[x + y*stride];
+			if(v>max) max=v;
+			if(v<min) min=v;
+		}
+		if(max-min > 2*QP) return 0;
+	}
+	return 1;
+#endif
 #endif
 }
 
@@ -2639,22 +2659,23 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	int black=0, white=255; // blackest black and whitest white in the picture
 	int QPCorrecture= 256*256;
 
-	int copyAhead;
+	int copyAhead, i;
 
 	//FIXME remove
 	uint64_t * const yHistogram= c.yHistogram;
 	uint8_t * const tempSrc= c.tempSrc;
 	uint8_t * const tempDst= c.tempDst;
-
-	c.dcOffset= c.ppMode.maxDcDiff;
-	c.dcThreshold= c.ppMode.maxDcDiff*2 + 1;
+	const int mbWidth= isColor ? (width+7)>>3 : (width+15)>>4;
 
 #ifdef HAVE_MMX
-	c.mmxDcOffset= 0x7F - c.dcOffset;
-	c.mmxDcThreshold= 0x7F - c.dcThreshold;
-
-	c.mmxDcOffset*= 0x0101010101010101LL;
-	c.mmxDcThreshold*= 0x0101010101010101LL;
+	for(i=0; i<32; i++){
+		int offset= ((i*c.ppMode.baseDcDiff)>>8) + 1;
+		int threshold= offset*2 + 1;
+		c.mmxDcOffset[i]= 0x7F - offset;
+		c.mmxDcThreshold[i]= 0x7F - threshold;
+		c.mmxDcOffset[i]*= 0x0101010101010101LL;
+		c.mmxDcThreshold[i]*= 0x0101010101010101LL;
+	}
 #endif
 
 	if(mode & CUBIC_IPOL_DEINT_FILTER) copyAhead=16;
@@ -2814,11 +2835,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 		uint8_t *tempBlock1= c.tempBlocks;
 		uint8_t *tempBlock2= c.tempBlocks + 8;
 #endif
-#ifdef ARCH_X86
 		int *QPptr= isColor ? &QPs[(y>>3)*QPStride] :&QPs[(y>>4)*QPStride];
-		int QPDelta= isColor ? (-1) : 1<<31;
-		int QPFrac= 1<<30;
-#endif
+		int *nonBQPptr= isColor ? &c.nonBQPTable[(y>>3)*mbWidth] :&c.nonBQPTable[(y>>4)*mbWidth];
 		int QP=0;
 		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
 		   if not than use a temporary buffer */
@@ -2855,28 +2873,19 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 #ifdef HAVE_MMX
 			uint8_t *tmpXchg;
 #endif
-#ifdef ARCH_X86
-			QP= *QPptr;
-			asm volatile(
-				"addl %2, %1		\n\t"
-				"sbbl %%eax, %%eax	\n\t"
-				"shll $2, %%eax		\n\t"
-				"subl %%eax, %0		\n\t"
-				: "+r" (QPptr), "+m" (QPFrac)
-				: "r" (QPDelta)
-				: "%eax"
-			);
-#else
-			QP= isColor ?
-                                QPs[(y>>3)*QPStride + (x>>3)]:
-                                QPs[(y>>4)*QPStride + (x>>4)];
-#endif
-			if(!isColor)
+			if(isColor)
 			{
+				QP= QPptr[x>>3];
+				c.nonBQP= nonBQPptr[x>>3];
+			}
+			else
+			{
+				QP= QPptr[x>>4];
 				QP= (QP* QPCorrecture + 256*128)>>16;
+				c.nonBQP= nonBQPptr[x>>4];
+				c.nonBQP= (c.nonBQP* QPCorrecture + 256*128)>>16;
 				yHistogram[ srcBlock[srcStride*12 + 4] ]++;
 			}
-//printf("%d ", QP);
 			c.QP= QP;
 #ifdef HAVE_MMX
 			asm volatile(

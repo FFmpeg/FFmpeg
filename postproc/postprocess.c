@@ -59,7 +59,6 @@ compare the quality & speed of all filters
 split this huge file
 optimize c versions
 try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
-put fastmemcpy back
 ...
 */
 
@@ -149,13 +148,14 @@ typedef struct PPContext{
 
 	uint64_t __attribute__((aligned(8))) pQPb;
 	uint64_t __attribute__((aligned(8))) pQPb2;
-	
-	uint64_t __attribute__((aligned(8))) mmxDcOffset;
-	uint64_t __attribute__((aligned(8))) mmxDcThreshold;
 
+	uint64_t __attribute__((aligned(8))) mmxDcOffset[32];
+	uint64_t __attribute__((aligned(8))) mmxDcThreshold[32];
+	
+	QP_STORE_T *nonBQPTable;
+	
 	int QP;
-	int dcOffset;
-	int dcThreshold;
+	int nonBQP;
 
 	int frameNum;
 
@@ -247,8 +247,8 @@ static inline int isHorizDC(uint8_t src[], int stride, PPContext *c)
 {
 	int numEq= 0;
 	int y;
-	const int dcOffset= c->dcOffset;
-	const int dcThreshold= c->dcThreshold;
+	const int dcOffset= ((c->QP*c->ppMode.baseDcDiff)>>8) + 1;
+	const int dcThreshold= dcOffset*2 + 1;
 	for(y=0; y<BLOCK_SIZE; y++)
 	{
 		if(((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold) numEq++;
@@ -269,8 +269,8 @@ static inline int isHorizDC(uint8_t src[], int stride, PPContext *c)
 static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c){
 	int numEq= 0;
 	int y;
-	const int dcOffset= c->dcOffset;
-	const int dcThreshold= c->dcThreshold;
+	const int dcOffset= ((c->QP*c->ppMode.baseDcDiff)>>8) + 1;
+	const int dcThreshold= dcOffset*2 + 1;
 	src+= stride*4; // src points to begin of the 8x8 Block
 	for(y=0; y<BLOCK_SIZE-1; y++)
 	{
@@ -725,7 +725,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 				else if(filters[i].mask == V_DEBLOCK || filters[i].mask == H_DEBLOCK)
 				{
 					int o;
-					ppMode.maxDcDiff=1;
+					ppMode.baseDcDiff=256/4;
 //					hFlatnessThreshold= 40;
 //					vFlatnessThreshold= 40;
 
@@ -736,7 +736,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 						if(tail==options[o]) break;
 
 						numOfUnknownOptions--;
-						if(o==0) ppMode.maxDcDiff= val;
+						if(o==0) ppMode.baseDcDiff= val;
 						else ppMode.flatnessThreshold= val;
 					}
 				}
@@ -768,6 +768,8 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 void *getPPContext(int width, int height){
 	PPContext *c= memalign(32, sizeof(PPContext));
 	int i;
+	int mbWidth = (width+15)>>4;
+	int mbHeight= (height+15)>>4;
 
 	c->tempBlocks= (uint8_t*)memalign(8, 2*16*8);
 	c->yHistogram= (uint64_t*)memalign(8, 256*sizeof(uint64_t));
@@ -789,6 +791,8 @@ void *getPPContext(int width, int height){
 	c->tempDstBlock= (uint8_t*)memalign(8, 1024*24);
 	c->tempSrcBlock= (uint8_t*)memalign(8, 1024*24);
 	c->deintTemp= (uint8_t*)memalign(8, width+16);
+	c->nonBQPTable= (QP_STORE_T*)memalign(8, mbWidth*mbHeight*sizeof(QP_STORE_T));
+	memset(c->nonBQPTable, 0, mbWidth*mbHeight*sizeof(QP_STORE_T));
 
 	c->frameNum=-1;
 
@@ -809,6 +813,7 @@ void freePPContext(void *vc){
 	free(c->tempDstBlock);
 	free(c->tempSrcBlock);
 	free(c->deintTemp);
+	free(c->nonBQPTable);
 	
 	free(c);
 }
@@ -841,12 +846,14 @@ void revertPPOpt(void *conf, char* opt)
 
 void  postprocess(uint8_t * src[3], int srcStride[3],
                  uint8_t * dst[3], int dstStride[3],
-                 int horizontalSize, int verticalSize,
+                 int width, int height,
                  QP_STORE_T *QP_store,  int QPStride,
-		 PPMode *mode,  void *c)
+		 PPMode *mode,  void *vc, int pict_type)
 {
-
+	int mbWidth = (width+15)>>4;
+	int mbHeight= (height+15)>>4;
 	QP_STORE_T quantArray[2048/8];
+	PPContext *c = (PPContext*)vc;
 
 	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)) 
 	{
@@ -858,6 +865,29 @@ void  postprocess(uint8_t * src[3], int srcStride[3],
 		else
 			for(i=0; i<2048/8; i++) quantArray[i]= 1;
 	}
+if(0){
+int x,y;
+for(y=0; y<mbHeight; y++){
+	for(x=0; x<mbWidth; x++){
+		printf("%2d ", QP_store[x + y*QPStride]);
+	}
+	printf("\n");
+}
+	printf("\n");
+}
+//printf("pict_type:%d\n", pict_type);
+	if(pict_type!=3)
+	{
+		int x,y;
+		for(y=0; y<mbHeight; y++){
+			for(x=0; x<mbWidth; x++){
+				int qscale= QP_store[x + y*QPStride];
+				if(qscale&~31)
+				    qscale=31;
+				c->nonBQPTable[y*mbWidth + x]= qscale;
+			}
+		}
+	}
 
 	if(firstTime2 && verbose)
 	{
@@ -866,30 +896,30 @@ void  postprocess(uint8_t * src[3], int srcStride[3],
 	}
 
 	postProcess(src[0], srcStride[0], dst[0], dstStride[0],
-		horizontalSize, verticalSize, QP_store, QPStride, 0, mode, c);
+		width, height, QP_store, QPStride, 0, mode, c);
 
-	horizontalSize = (horizontalSize+1)>> 1;
-	verticalSize   = (verticalSize+1)>>1;
+	width  = (width +1)>>1;
+	height = (height+1)>>1;
 
 	if(mode->chromMode)
 	{
 		postProcess(src[1], srcStride[1], dst[1], dstStride[1],
-			horizontalSize, verticalSize, QP_store, QPStride, 1, mode, c);
+			width, height, QP_store, QPStride, 1, mode, c);
 		postProcess(src[2], srcStride[2], dst[2], dstStride[2],
-			horizontalSize, verticalSize, QP_store, QPStride, 2, mode, c);
+			width, height, QP_store, QPStride, 2, mode, c);
 	}
 	else if(srcStride[1] == dstStride[1] && srcStride[2] == dstStride[2])
 	{
-		memcpy(dst[1], src[1], srcStride[1]*verticalSize);
-		memcpy(dst[2], src[2], srcStride[2]*verticalSize);
+		memcpy(dst[1], src[1], srcStride[1]*height);
+		memcpy(dst[2], src[2], srcStride[2]*height);
 	}
 	else
 	{
 		int y;
-		for(y=0; y<verticalSize; y++)
+		for(y=0; y<height; y++)
 		{
-			memcpy(&(dst[1][y*dstStride[1]]), &(src[1][y*srcStride[1]]), horizontalSize);
-			memcpy(&(dst[2][y*dstStride[2]]), &(src[2][y*srcStride[2]]), horizontalSize);
+			memcpy(&(dst[1][y*dstStride[1]]), &(src[1][y*srcStride[1]]), width);
+			memcpy(&(dst[2][y*dstStride[2]]), &(src[2][y*srcStride[2]]), width);
 		}
 	}
 }
