@@ -26,7 +26,7 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * MMX/MMX2 Template stuff from Michael Niedermayer (michaelni@gmx.at) (needed for fast movntq support)
- * 8bpp support by Michael Niedermayer (michaelni@gmx.at)
+ * 1,4,8bpp support by Michael Niedermayer (michaelni@gmx.at)
  */
 
 #include <stdio.h>
@@ -87,18 +87,15 @@ uint64_t __attribute__((aligned(8))) dither8[2]={
 	0x0602060206020602LL,
 	0x0004000400040004LL,};
 
-uint8_t  __attribute__((aligned(8))) dither_4x4_32[4][8]={
-	{ 0,16, 6,22, 0,16, 6,22},
-	{28, 8,24,14,28, 8,24,14},
-	{ 4,20, 2,18, 4,20, 2,18},
-	{26,12,30,10,26,12,30,10},
-};
-
-uint8_t  __attribute__((aligned(8))) dither_4x4_64[4][8]={
-	{ 8,40, 4,36, 8,40, 4,36,},
-	{52,24,60,20,52,24,60,20,},
-	{00,32,12,44,00,32,12,44,},
-	{56,16,48,28,56,16,48,28,},
+uint8_t  __attribute__((aligned(8))) dither_8x8_32[8][8]={
+{ 17,   9,  23,  15,  16,   8,  22,  14, },
+{  5,  29,   3,  27,   4,  28,   2,  26, },
+{ 21,  13,  19,  11,  20,  12,  18,  10, },
+{  0,  24,   6,  30,   1,  25,   7,  31, },
+{ 16,   8,  22,  14,  17,   9,  23,  15, },
+{  4,  28,   2,  26,   5,  29,   3,  27, },
+{ 20,  12,  18,  10,  21,  13,  19,  11, },
+{  1,  25,   7,  31,   0,  24,   6,  30, },
 };
 
 uint8_t  __attribute__((aligned(8))) dither_8x8_64[8][8]={
@@ -174,7 +171,7 @@ static void yuv2rgb_c (void * dst, uint8_t * py,
 		       int rgb_stride, int y_stride, int uv_stride)
 {
     v_size >>= 1;
-
+    
     while (v_size--) {
 	yuv2rgb_c_internal (py, py + y_stride, pu, pv, dst, dst + rgb_stride,
 			    h_size, v_size<<1);
@@ -483,48 +480,36 @@ static void yuv2rgb_c_8_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
     dst_2 = _dst_2;
 
     while (h_size--) {
-	uint8_t *d32= dither_4x4_32[v_pos&3];
-	uint8_t *d64= dither_4x4_64[v_pos&3];
-
-#define DST1a(i)					\
+	uint8_t *d32= dither_8x8_32[v_pos&7];
+	uint8_t *d64= dither_8x8_64[v_pos&7];
+#define DST1bpp8(i,o)					\
 	Y = py_1[2*i];				\
-	dst_1[2*i] = r[Y+d32[0]] + g[Y+d32[0]] + b[Y+d64[0]];	\
+	dst_1[2*i] = r[Y+d32[0+o]] + g[Y+d32[0+o]] + b[Y+d64[0+o]];	\
 	Y = py_1[2*i+1];			\
-	dst_1[2*i+1] = r[Y+d32[1]] + g[Y+d32[1]] + b[Y+d64[1]];
+	dst_1[2*i+1] = r[Y+d32[1+o]] + g[Y+d32[1+o]] + b[Y+d64[1+o]];
 
-#define DST2a(i)					\
+#define DST2bpp8(i,o)					\
 	Y = py_2[2*i];				\
-	dst_2[2*i] =  r[Y+d32[8]] + g[Y+d32[8]] + b[Y+d64[8]];	\
+	dst_2[2*i] =  r[Y+d32[8+o]] + g[Y+d32[8+o]] + b[Y+d64[8+o]];	\
 	Y = py_2[2*i+1];			\
-	dst_2[2*i+1] =  r[Y+d32[9]] + g[Y+d32[9]] + b[Y+d64[9]];
+	dst_2[2*i+1] =  r[Y+d32[9+o]] + g[Y+d32[9+o]] + b[Y+d64[9+o]];
 
-#define DST1b(i)					\
-	Y = py_1[2*i];				\
-	dst_1[2*i] = r[Y+d32[2]] + g[Y+d32[2]] + b[Y+d64[2]];	\
-	Y = py_1[2*i+1];			\
-	dst_1[2*i+1] = r[Y+d32[3]] + g[Y+d32[3]] + b[Y+d64[3]];
-
-#define DST2b(i)					\
-	Y = py_2[2*i];				\
-	dst_2[2*i] =  r[Y+d32[10]] + g[Y+d32[10]] + b[Y+d64[10]];	\
-	Y = py_2[2*i+1];			\
-	dst_2[2*i+1] =  r[Y+d32[11]] + g[Y+d32[11]] + b[Y+d64[11]];
 
 	RGB(0);
-	DST1a(0);
-	DST2a(0);
+	DST1bpp8(0,0);
+	DST2bpp8(0,0);
 
 	RGB(1);
-	DST2b(1);
-	DST1b(1);
+	DST2bpp8(1,2);
+	DST1bpp8(1,2);
 
 	RGB(2);
-	DST1a(2);
-	DST2a(2);
+	DST1bpp8(2,4);
+	DST2bpp8(2,4);
 
 	RGB(3);
-	DST2b(3);
-	DST1b(3);
+	DST2bpp8(3,6);
+	DST1bpp8(3,6);
 
 	pu += 4;
 	pv += 4;
@@ -627,6 +612,59 @@ static void yuv2rgb_c_4_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 	py_2 += 8;
 	dst_1 += 8;
 	dst_2 += 8;
+    }
+}
+
+static void yuv2rgb_c_1_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
+			  uint8_t * pu, uint8_t * pv,
+			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
+{
+    int U, V, Y;
+    uint8_t * r, * g, * b;
+    uint8_t * dst_1, * dst_2;
+
+    h_size >>= 3;
+    dst_1 = _dst_1;
+    dst_2 = _dst_2;
+    g= table_gU[128] + table_gV[128];
+
+    while (h_size--) {
+	uint8_t *d128=dither_8x8_128[v_pos&7];
+	char out_1=0, out_2=0;
+
+#define DST1bpp1(i,o)					\
+	Y = py_1[2*i];				\
+	out_1+= out_1 + g[Y+d128[0+o]];	\
+	Y = py_1[2*i+1];			\
+	out_1+= out_1 + g[Y+d128[1+o]];
+
+#define DST2bpp1(i,o)					\
+	Y = py_2[2*i];				\
+	out_2+= out_2 + g[Y+d128[8+o]];	\
+	Y = py_2[2*i+1];			\
+	out_2+= out_2 + g[Y+d128[9+o]];
+
+	DST1bpp1(0,0);
+	DST2bpp1(0,0);
+
+	DST2bpp1(1,2);
+	DST1bpp1(1,2);
+
+	DST1bpp1(2,4);
+	DST2bpp1(2,4);
+
+	DST2bpp1(3,6);
+	DST1bpp1(3,6);
+	
+	dst_1[0]= out_1;
+	dst_2[0]= out_2;
+
+	pu += 4;
+	pv += 4;
+	py_1 += 8;
+	py_2 += 8;
+	dst_1 ++;
+	dst_2 ++;
     }
 }
 
@@ -802,6 +840,23 @@ static void yuv2rgb_c_init (int bpp, int mode)
 		j <<= 3;
 
 	    ((uint8_t *)table_b)[i] = j;
+	}
+	break;
+
+    case 1:
+	yuv2rgb_c_internal = yuv2rgb_c_1_ordered_dither;
+
+	table_1 = malloc ((132*2 + 256) * sizeof (uint8_t));
+
+	entry_size = sizeof (uint8_t);
+	table_g = table_1 + 132;
+	table_r = table_b = NULL;
+
+	for (i = -132; i < 256+132; i++) {
+	    int j = (table_Y[i+384] - 64) >> 7;
+	    if(j<0) j=0;
+
+	    ((uint8_t *)table_g)[i] = j;
 	}
 	break;
 
