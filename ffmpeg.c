@@ -2881,14 +2881,13 @@ static void opt_input_file(const char *filename)
             if(me_threshold)
                 enc->debug |= FF_DEBUG_MV;
 
-            assert(enc->frame_rate_base == rfps_base); // should be true for now
-            if (enc->frame_rate != rfps) { 
+            if (enc->frame_rate != rfps || enc->frame_rate_base != rfps_base) { 
 
                 if (verbose >= 0)
-                    fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
-                            i, (float)enc->frame_rate / enc->frame_rate_base,
+                    fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f (%d/%d) -> %2.2f (%d/%d)\n",
+                            i, (float)enc->frame_rate / enc->frame_rate_base, enc->frame_rate, enc->frame_rate_base,
 
-                    (float)rfps / rfps_base);
+                    (float)rfps / rfps_base, rfps, rfps_base);
             }
             /* update the current frame rate to match the stream frame rate */
             frame_rate      = rfps;

@@ -1726,7 +1726,14 @@ int av_find_stream_info(AVFormatContext *ic)
     AVStream *st;
     AVPacket pkt1, *pkt;
     AVPacketList *pktl=NULL, **ppktl;
+    int64_t last_dts[MAX_STREAMS];
+    int64_t best_duration[MAX_STREAMS];
 
+    for(i=0;i<MAX_STREAMS;i++){
+        last_dts[i]= AV_NOPTS_VALUE;
+        best_duration[i]= INT64_MAX;
+    }
+    
     count = 0;
     read_size = 0;
     ppktl = &ic->packet_buffer;
@@ -1792,6 +1799,15 @@ int av_find_stream_info(AVFormatContext *ic)
         if (pkt->duration != 0)
             st->codec_info_nb_frames++;
 
+        if(st->codec.codec_type == CODEC_TYPE_VIDEO){
+            int64_t last= last_dts[pkt->stream_index];
+            
+            if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && last < pkt->dts && 
+               best_duration[pkt->stream_index] > pkt->dts - last){
+                best_duration[pkt->stream_index] = pkt->dts - last;
+            }
+            last_dts[pkt->stream_index]= pkt->dts;
+        }
         /* if still no information, we try to open the codec and to
            decompress the frame. We try to avoid that in most cases as
            it takes longer and uses more memory. For MPEG4, we need to
@@ -1823,6 +1839,13 @@ int av_find_stream_info(AVFormatContext *ic)
         if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
             if(st->codec.codec_id == CODEC_ID_RAWVIDEO && !st->codec.codec_tag && !st->codec.bits_per_sample)
                 st->codec.codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec.pix_fmt);
+
+            if(best_duration[i] < INT64_MAX && st->codec.frame_rate_base*1000 <= st->codec.frame_rate){
+                st->r_frame_rate= st->codec.frame_rate;
+                st->r_frame_rate_base= av_rescale(best_duration[i], st->codec.frame_rate, AV_TIME_BASE);
+                av_reduce(&st->r_frame_rate, &st->r_frame_rate_base, st->r_frame_rate, st->r_frame_rate_base, 1<<15);
+            }
+
             /* set real frame rate info */
             /* compute the real frame rate for telecine */
             if ((st->codec.codec_id == CODEC_ID_MPEG1VIDEO ||

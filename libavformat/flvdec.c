@@ -103,7 +103,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR_NOMEM;
 
         av_set_pts_info(st, 24, 1, 1000); /* 24 bit pts in ms */
-        st->codec.frame_rate_base= 0;
+        st->codec.frame_rate_base= 1;
+        st->codec.frame_rate= 1000;
     }
     break;
  }
@@ -123,19 +124,12 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
     }else{
-        if(st->codec.frame_rate_base == 0){
             st->codec.codec_type = CODEC_TYPE_VIDEO;
-            //guess the frame rate
-            if(pts){
-                st->codec.frame_rate_base=1;
-                st->codec.frame_rate= (1000 + pts/2)/pts;
-            }
             switch(flags & 0xF){
             case 2: st->codec.codec_id = CODEC_ID_FLV1; break;
             default:
                 st->codec.codec_tag= flags & 0xF;
             }
-        }
     }
 
     if (av_new_packet(pkt, size) < 0)
