@@ -678,8 +678,6 @@ int MPV_encode_init(AVCodecContext *avctx)
                         || (s->flags&CODEC_FLAG_QP_RD))
                        && !s->fixed_qscale;
     
-    s->progressive_sequence= !(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
-    
     s->obmc= (s->flags & CODEC_FLAG_OBMC);
     s->loop_filter= (s->flags & CODEC_FLAG_LOOP_FILTER);
 
@@ -802,8 +800,6 @@ int MPV_encode_init(AVCodecContext *avctx)
 	s->loop_filter= (avctx->flags & CODEC_FLAG_LOOP_FILTER) ? 1:0;
 	s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
         s->h263_slice_structured= (s->flags & CODEC_FLAG_H263P_SLICE_STRUCT) ? 1:0;
-        if(s->modified_quant)
-            s->chroma_qscale_table= ff_h263_chroma_qscale_table;
 
 	/* /Fx */
         /* These are just to be sure */
@@ -910,6 +906,11 @@ int MPV_encode_init(AVCodecContext *avctx)
     /* init */
     if (MPV_common_init(s) < 0)
         return -1;
+
+    if(s->modified_quant)
+        s->chroma_qscale_table= ff_h263_chroma_qscale_table;
+    s->progressive_frame= 
+    s->progressive_sequence= !(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
     
     ff_init_me(s);
 
