@@ -88,24 +88,24 @@ enum CodecType {
  * Pixel format.
  */
 enum PixelFormat {
-    PIX_FMT_YUV420P,
-    PIX_FMT_YUV422,
-    PIX_FMT_RGB24,     ///< 3 bytes, R is first 
-    PIX_FMT_BGR24,     ///< 3 bytes, B is first 
-    PIX_FMT_YUV422P,
-    PIX_FMT_YUV444P,
+    PIX_FMT_YUV420P,   ///< Planar YUV 4:2:0 (1 Cr & Cb sample per 2x2 Y samples)
+    PIX_FMT_YUV422,    
+    PIX_FMT_RGB24,     ///< Packed pixel, 3 bytes per pixel, RGBRGB...
+    PIX_FMT_BGR24,     ///< Packed pixel, 3 bytes per pixel, BGRBGR...
+    PIX_FMT_YUV422P,   ///< Planar YUV 4:2:2 (1 Cr & Cb sample per 2x1 Y samples)
+    PIX_FMT_YUV444P,   ///< Planar YUV 4:4:4 (1 Cr & Cb sample per 1x1 Y samples)
     PIX_FMT_RGBA32,    ///< always stored in cpu endianness 
-    PIX_FMT_YUV410P,
-    PIX_FMT_YUV411P,
+    PIX_FMT_YUV410P,   ///< Planar YUV 4:1:0 (1 Cr & Cb sample per 4x4 Y samples)
+    PIX_FMT_YUV411P,   ///< Planar YUV 4:1:1 (1 Cr & Cb sample per 4x1 Y samples)
     PIX_FMT_RGB565,    ///< always stored in cpu endianness 
     PIX_FMT_RGB555,    ///< always stored in cpu endianness, most significant bit to 1 
     PIX_FMT_GRAY8,
     PIX_FMT_MONOWHITE, ///< 0 is white 
     PIX_FMT_MONOBLACK, ///< 0 is black 
     PIX_FMT_PAL8,      ///< 8 bit with RGBA palette 
-    PIX_FMT_YUVJ420P,  ///< YUV full scale (jpeg)
-    PIX_FMT_YUVJ422P,  ///< YUV full scale (jpeg)
-    PIX_FMT_YUVJ444P,  ///< YUV full scale (jpeg)
+    PIX_FMT_YUVJ420P,  ///< Planar YUV 4:2:0 full scale (jpeg)
+    PIX_FMT_YUVJ422P,  ///< Planar YUV 4:2:2 full scale (jpeg)
+    PIX_FMT_YUVJ444P,  ///< Planar YUV 4:4:4 full scale (jpeg)
     PIX_FMT_NB,
 };
 
@@ -1194,7 +1194,7 @@ typedef struct AVCodec {
  */
 typedef struct AVPicture {
     uint8_t *data[4];
-    int linesize[4];
+    int linesize[4];       ///< number of bytes per line
 } AVPicture;
 
 extern AVCodec ac3_encoder;
