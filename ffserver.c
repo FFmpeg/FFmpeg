@@ -63,7 +63,8 @@ const char *http_state[] = {
     "WAIT_FEED",
 };
 
-#define IOBUFFER_MAX_SIZE 16384
+#define IOBUFFER_MAX_SIZE 32768
+#define PACKET_MAX_SIZE 16384
 
 /* coef for exponential mean for bitrate estimation in statistics */
 #define AVG_COEF 0.9
@@ -79,7 +80,6 @@ typedef struct HTTPContext {
     struct sockaddr_in from_addr; /* origin */
     struct pollfd *poll_entry; /* used when polling */
     long timeout;
-    UINT8 buffer[IOBUFFER_MAX_SIZE];
     UINT8 *buffer_ptr, *buffer_end;
     int http_error;
     struct HTTPContext *next;
@@ -93,6 +93,8 @@ typedef struct HTTPContext {
     struct FFStream *stream;
     AVFormatContext fmt_ctx;
     int last_packet_sent; /* true if last data packet was sent */
+    UINT8 buffer[IOBUFFER_MAX_SIZE];
+    UINT8 pbuffer[PACKET_MAX_SIZE];
 } HTTPContext;
 
 /* each generated stream is described here */
@@ -528,13 +530,14 @@ static int http_parse_request(HTTPContext *c)
     mime_type = c->stream->fmt->mime_type;
     if (!mime_type)
         mime_type = "application/x-octet_stream";
-    q += sprintf(q, "Content-type: %s\r\n", mime_type);
     q += sprintf(q, "Pragma: no-cache\r\n");
 
     /* for asf, we need extra headers */
     if (!strcmp(c->stream->fmt->name,"asf")) {
-        q += sprintf(q, "Pragma: features=broadcast\r\n");
+        q += sprintf(q, "Server: Cougar 4.1.0.3923\r\nCache-Control: no-cache\r\nPragma: client-id=1234\r\nPragma: features=\"broadcast\"\r\n");
+        mime_type = "application/octet-stream";
     }
+    q += sprintf(q, "Content-Type: %s\r\n", mime_type);
     q += sprintf(q, "\r\n");
     
     /* prepare output buffer */
@@ -606,6 +609,8 @@ static void compute_stats(HTTPContext *c)
                     case CODEC_TYPE_VIDEO:
                         video_bit_rate += st->codec.bit_rate;
                         break;
+                    default:
+                        abort();
                     }
                 }
                 q += sprintf(q, "<TD> %s <TD> %d <TD> %d <TD> %d", 
@@ -696,11 +701,15 @@ static void http_write_packet(void *opaque,
                               unsigned char *buf, int size)
 {
     HTTPContext *c = opaque;
-    if (size > IOBUFFER_MAX_SIZE)
+
+    if (c->buffer_ptr == c->buffer_end || !c->buffer_ptr)
+        c->buffer_ptr = c->buffer_end = c->buffer;
+
+    if (c->buffer_end - c->buffer + size > IOBUFFER_MAX_SIZE)
         abort();
-    memcpy(c->buffer, buf, size);
-    c->buffer_ptr = c->buffer;
-    c->buffer_end = c->buffer + size;
+
+    memcpy(c->buffer_end, buf, size);
+    c->buffer_end += size;
 }
 
 static int open_input_stream(HTTPContext *c, const char *info)
@@ -718,6 +727,9 @@ static int open_input_stream(HTTPContext *c, const char *info)
         /* compute position (absolute time) */
         if (find_info_tag(buf, sizeof(buf), "date", info)) {
             stream_pos = parse_date(buf, 0);
+        } else if (find_info_tag(buf, sizeof(buf), "buffer", info)) {
+            int prebuffer = strtol(buf, 0, 10);
+            stream_pos = gettime() - prebuffer * 1000000;
         } else {
             stream_pos = gettime();
         }
@@ -763,7 +775,11 @@ static int http_prepare_data(HTTPContext *c)
                 AVStream *st;
                 st = av_mallocz(sizeof(AVStream));
                 c->fmt_ctx.streams[i] = st;
-                memcpy(st, c->stream->streams[i], sizeof(AVStream));
+                if (c->stream->feed == c->stream)
+                    memcpy(st, c->stream->streams[i], sizeof(AVStream));
+                else
+                    memcpy(st, c->stream->feed->streams[c->stream->feed_streams[i]], sizeof(AVStream));
+
                 st->codec.frame_number = 0; /* XXX: should be done in
                                                AVStream, not in codec */
                 c->got_key_frame[i] = 0;
@@ -782,7 +798,7 @@ static int http_prepare_data(HTTPContext *c)
                 c->got_key_frame[i] = 0;
             }
         }
-        init_put_byte(&c->fmt_ctx.pb, c->buffer, IOBUFFER_MAX_SIZE,
+        init_put_byte(&c->fmt_ctx.pb, c->pbuffer, PACKET_MAX_SIZE,
                       1, c, NULL, http_write_packet, NULL);
         c->fmt_ctx.pb.is_streamed = 1;
         /* prepare header */
@@ -881,9 +897,24 @@ static int http_prepare_data(HTTPContext *c)
                         }
                     }
                 } else {
-		send_it:
+                    AVCodecContext *codec;
+                send_it:
+                    /* Fudge here */
+                    codec = &c->fmt_ctx.streams[pkt.stream_index]->codec;
+
+                    codec->key_frame = ((pkt.flags & PKT_FLAG_KEY) != 0);
+
+#ifdef PJSG
+                    if (codec->codec_type == CODEC_TYPE_AUDIO) {
+                        codec->frame_size = (codec->sample_rate * pkt.duration + 500000) / 1000000;
+                        /* printf("Calculated size %d, from sr %d, duration %d\n", codec->frame_size, codec->sample_rate, pkt.duration); */
+                    }
+#endif
+
                     if (av_write_packet(&c->fmt_ctx, &pkt, 0))
-			c->state = HTTPSTATE_SEND_DATA_TRAILER;
+                        c->state = HTTPSTATE_SEND_DATA_TRAILER;
+
+                    codec->frame_number++;
                 }
                 
                 av_free_packet(&pkt);
@@ -920,15 +951,17 @@ static int http_send_data(HTTPContext *c)
         }
     }
 
-    len = write(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
-    if (len < 0) {
-        if (errno != EAGAIN && errno != EINTR) {
-            /* error : close connection */
-            return -1;
+    if (c->buffer_end > c->buffer_ptr) {
+        len = write(c->fd, c->buffer_ptr, c->buffer_end - c->buffer_ptr);
+        if (len < 0) {
+            if (errno != EAGAIN && errno != EINTR) {
+                /* error : close connection */
+                return -1;
+            }
+        } else {
+            c->buffer_ptr += len;
+            c->data_count += len;
         }
-    } else {
-        c->buffer_ptr += len;
-        c->data_count += len;
     }
     return 0;
 }
@@ -963,10 +996,10 @@ static int http_receive_data(HTTPContext *c)
     HTTPContext *c1;
 
     if (c->buffer_ptr >= c->buffer_end) {
+        FFStream *feed = c->stream;
         /* a packet has been received : write it in the store, except
            if header */
         if (c->data_count > FFM_PACKET_SIZE) {
-            FFStream *feed = c->stream;
             
             //            printf("writing pos=0x%Lx size=0x%Lx\n", feed->feed_write_index, feed->feed_size);
             /* XXX: use llseek or url_seek */
@@ -992,6 +1025,29 @@ static int http_receive_data(HTTPContext *c)
                     c1->state = HTTPSTATE_SEND_DATA;
                 }
             }
+        } else {
+            /* We have a header in our hands that contains useful data */
+            AVFormatContext s;
+            ByteIOContext *pb = &s.pb;
+            int i;
+
+            memset(&s, 0, sizeof(s));
+
+            url_open_buf(pb, c->buffer, c->buffer_end - c->buffer, URL_RDONLY);
+            pb->buf_end = c->buffer_end;        /* ?? */
+            pb->is_streamed = 1;
+
+            if (feed->fmt->read_header(&s, 0) < 0) {
+                goto fail;
+            }
+
+            /* Now we have the actual streams */
+            if (s.nb_streams != feed->nb_streams) {
+                goto fail;
+            }
+            for (i = 0; i < s.nb_streams; i++) {
+                memcpy(&feed->streams[i]->codec, &s.streams[i]->codec, sizeof(AVCodecContext));
+            } 
         }
         c->buffer_ptr = c->buffer;
     }
@@ -1028,7 +1084,8 @@ int add_av_stream(FFStream *feed,
     for(i=0;i<feed->nb_streams;i++) {
         st = feed->streams[i];
         av1 = &st->codec;
-        if (av1->codec == av->codec &&
+        if (av1->codec_id == av->codec_id &&
+            av1->codec_type == av->codec_type &&
             av1->bit_rate == av->bit_rate) {
 
             switch(av->codec_type) {
@@ -1044,6 +1101,8 @@ int add_av_stream(FFStream *feed,
                     av1->gop_size == av->gop_size)
                     goto found;
                 break;
+            default:
+                abort();
             }
         }
     }
@@ -1187,6 +1246,8 @@ void add_codec(FFStream *stream, AVCodecContext *av)
         av->max_qdiff= 3;
 
         break;
+    default:
+        abort();
     }
 
     st = av_mallocz(sizeof(AVStream));
@@ -1194,6 +1255,40 @@ void add_codec(FFStream *stream, AVCodecContext *av)
         return;
     stream->streams[stream->nb_streams++] = st;
     memcpy(&st->codec, av, sizeof(AVCodecContext));
+}
+
+int opt_audio_codec(const char *arg)
+{
+    AVCodec *p;
+
+    p = first_avcodec;
+    while (p) {
+        if (!strcmp(p->name, arg) && p->type == CODEC_TYPE_AUDIO)
+            break;
+        p = p->next;
+    }
+    if (p == NULL) {
+        return CODEC_ID_NONE;
+    }
+
+    return p->id;
+}
+
+int opt_video_codec(const char *arg)
+{
+    AVCodec *p;
+
+    p = first_avcodec;
+    while (p) {
+        if (!strcmp(p->name, arg) && p->type == CODEC_TYPE_VIDEO)
+            break;
+        p = p->next;
+    }
+    if (p == NULL) {
+        return CODEC_ID_NONE;
+    }
+
+    return p->id;
 }
 
 int parse_ffconfig(const char *filename)
@@ -1319,6 +1414,9 @@ int parse_ffconfig(const char *filename)
                 fprintf(stderr, "%s:%d: No corresponding <Feed> for </Feed>\n",
                         filename, line_num);
                 errors++;
+            } else {
+                /* Make sure that we start out clean */
+                unlink(feed->feed_filename);
             }
             feed = NULL;
         } else if (!strcasecmp(cmd, "<Stream")) {
@@ -1385,6 +1483,22 @@ int parse_ffconfig(const char *filename)
             if (stream->fmt) {
                 audio_id = stream->fmt->audio_codec;
                 video_id = stream->fmt->video_codec;
+            }
+        } else if (!strcasecmp(cmd, "AudioCodec")) {
+            get_arg(arg, sizeof(arg), &p);
+            audio_id = opt_audio_codec(arg);
+            if (audio_id == CODEC_ID_NONE) {
+                fprintf(stderr, "%s:%d: Unknown AudioCodec: %s\n", 
+                        filename, line_num, arg);
+                errors++;
+            }
+        } else if (!strcasecmp(cmd, "VideoCodec")) {
+            get_arg(arg, sizeof(arg), &p);
+            video_id = opt_video_codec(arg);
+            if (video_id == CODEC_ID_NONE) {
+                fprintf(stderr, "%s:%d: Unknown VideoCodec: %s\n", 
+                        filename, line_num, arg);
+                errors++;
             }
         } else if (!strcasecmp(cmd, "AudioBitRate")) {
             get_arg(arg, sizeof(arg), &p);
