@@ -116,6 +116,7 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_SMC, MKTAG('s', 'm', 'c', ' ') }, /* Apple Graphics (SMC) */
     { CODEC_ID_QTRLE, MKTAG('r', 'l', 'e', ' ') }, /* Apple Animation (RLE) */
     { CODEC_ID_QDRAW, MKTAG('q', 'd', 'r', 'w') }, /* QuickDraw */
+    { CODEC_ID_H264, MKTAG('a', 'v', 'c', '1') }, /* AVC-1/H.264 */
     { CODEC_ID_NONE, 0 },
 };
 
@@ -686,6 +687,23 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 	strcpy(st->codec.extradata, "SVQ3"); // fake
 	get_buffer(pb, st->codec.extradata + 0x5a, atom.size);
 	//av_log(NULL, AV_LOG_DEBUG, "Reading SMI %Ld  %s\n", atom.size, (char*)st->codec.extradata + 0x5a);
+    } else
+	url_fskip(pb, atom.size);
+
+    return 0;
+}
+
+static int mov_read_avcC(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+
+    av_free(st->codec.extradata);
+
+    st->codec.extradata_size = atom.size;
+    st->codec.extradata = (uint8_t*) av_mallocz(st->codec.extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
+
+    if (st->codec.extradata) {
+	get_buffer(pb, st->codec.extradata, atom.size);
     } else
 	url_fskip(pb, atom.size);
 
@@ -1481,7 +1499,8 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 's', 'd', 'h', 'd' ), mov_read_default },
 { MKTAG( 's', 'k', 'i', 'p' ), mov_read_leaf },
 { MKTAG( 's', 'm', 'h', 'd' ), mov_read_leaf }, /* sound media info header */
-{ MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorrenson extension ??? */
+{ MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorenson extension ??? */
+{ MKTAG( 'a', 'v', 'c', 'C' ), mov_read_avcC }, 
 { MKTAG( 's', 't', 'b', 'l' ), mov_read_default },
 { MKTAG( 's', 't', 'c', 'o' ), mov_read_stco },
 { MKTAG( 's', 't', 'd', 'p' ), mov_read_default },
