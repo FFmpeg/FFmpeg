@@ -2036,6 +2036,9 @@ static void opt_sc_threshold(const char *arg)
 static void opt_thread_count(const char *arg)
 {
     thread_count= atoi(arg);
+#ifndef HAVE_PTHREADS
+    fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
+#endif
 }
 
 static void opt_audio_bitrate(const char *arg)
