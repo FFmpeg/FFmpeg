@@ -96,6 +96,7 @@ void av_register_all(void)
 #endif
 
     nut_init();
+    matroska_init();
 
 #ifdef CONFIG_ENCODERS
     /* image formats */

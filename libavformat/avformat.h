@@ -483,6 +483,9 @@ int flic_init(void);
 /* sierravmd.c */
 int vmd_init(void);
 
+/* matroska.c */
+int matroska_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"
