@@ -56,7 +56,6 @@
 #ifdef CONFIG_ENCODERS
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
                               int n);
-static void h263_encode_motion(MpegEncContext * s, int val, int fcode);
 static void h263p_encode_umotion(MpegEncContext * s, int val);
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block,
                                int n, int dc, uint8_t *scan_table, 
@@ -851,23 +850,23 @@ void mpeg4_encode_mb(MpegEncContext * s,
 
             if(mb_type == 0){
                 assert(s->mv_dir & MV_DIRECT);
-                h263_encode_motion(s, motion_x, 1);
-                h263_encode_motion(s, motion_y, 1);                
+                ff_h263_encode_motion(s, motion_x, 1);
+                ff_h263_encode_motion(s, motion_y, 1);                
                 s->b_count++;
                 s->f_count++;
             }else{
                 assert(mb_type > 0 && mb_type < 4);
                 if(s->mv_type != MV_TYPE_FIELD){
                     if(s->mv_dir & MV_DIR_FORWARD){
-                        h263_encode_motion(s, s->mv[0][0][0] - s->last_mv[0][0][0], s->f_code);
-                        h263_encode_motion(s, s->mv[0][0][1] - s->last_mv[0][0][1], s->f_code);
+                        ff_h263_encode_motion(s, s->mv[0][0][0] - s->last_mv[0][0][0], s->f_code);
+                        ff_h263_encode_motion(s, s->mv[0][0][1] - s->last_mv[0][0][1], s->f_code);
                         s->last_mv[0][0][0]= s->last_mv[0][1][0]= s->mv[0][0][0];
                         s->last_mv[0][0][1]= s->last_mv[0][1][1]= s->mv[0][0][1];
                         s->f_count++;
                     }
                     if(s->mv_dir & MV_DIR_BACKWARD){
-                        h263_encode_motion(s, s->mv[1][0][0] - s->last_mv[1][0][0], s->b_code);
-                        h263_encode_motion(s, s->mv[1][0][1] - s->last_mv[1][0][1], s->b_code);
+                        ff_h263_encode_motion(s, s->mv[1][0][0] - s->last_mv[1][0][0], s->b_code);
+                        ff_h263_encode_motion(s, s->mv[1][0][1] - s->last_mv[1][0][1], s->b_code);
                         s->last_mv[1][0][0]= s->last_mv[1][1][0]= s->mv[1][0][0];
                         s->last_mv[1][0][1]= s->last_mv[1][1][1]= s->mv[1][0][1];
                         s->b_count++;
@@ -883,8 +882,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     }
                     if(s->mv_dir & MV_DIR_FORWARD){
                         for(i=0; i<2; i++){
-                            h263_encode_motion(s, s->mv[0][i][0] - s->last_mv[0][i][0]  , s->f_code);
-                            h263_encode_motion(s, s->mv[0][i][1] - s->last_mv[0][i][1]/2, s->f_code);
+                            ff_h263_encode_motion(s, s->mv[0][i][0] - s->last_mv[0][i][0]  , s->f_code);
+                            ff_h263_encode_motion(s, s->mv[0][i][1] - s->last_mv[0][i][1]/2, s->f_code);
                             s->last_mv[0][i][0]= s->mv[0][i][0];
                             s->last_mv[0][i][1]= s->mv[0][i][1]*2;
                         }
@@ -892,8 +891,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     }
                     if(s->mv_dir & MV_DIR_BACKWARD){
                         for(i=0; i<2; i++){
-                            h263_encode_motion(s, s->mv[1][i][0] - s->last_mv[1][i][0]  , s->b_code);
-                            h263_encode_motion(s, s->mv[1][i][1] - s->last_mv[1][i][1]/2, s->b_code);
+                            ff_h263_encode_motion(s, s->mv[1][i][0] - s->last_mv[1][i][0]  , s->b_code);
+                            ff_h263_encode_motion(s, s->mv[1][i][1] - s->last_mv[1][i][1]/2, s->b_code);
                             s->last_mv[1][i][0]= s->mv[1][i][0];
                             s->last_mv[1][i][1]= s->mv[1][i][1]*2;
                         }
@@ -993,8 +992,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 /* motion vectors: 16x16 mode */
                 h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
             
-                h263_encode_motion(s, motion_x - pred_x, s->f_code);
-                h263_encode_motion(s, motion_y - pred_y, s->f_code);
+                ff_h263_encode_motion(s, motion_x - pred_x, s->f_code);
+                ff_h263_encode_motion(s, motion_y - pred_y, s->f_code);
             }else if(s->mv_type==MV_TYPE_FIELD){
                 if(s->dquant) cbpc+= 8;
                 put_bits(&s->pb,
@@ -1021,10 +1020,10 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 put_bits(&s->pb, 1, s->field_select[0][0]);
                 put_bits(&s->pb, 1, s->field_select[0][1]);
             
-                h263_encode_motion(s, s->mv[0][0][0] - pred_x, s->f_code);
-                h263_encode_motion(s, s->mv[0][0][1] - pred_y, s->f_code);
-                h263_encode_motion(s, s->mv[0][1][0] - pred_x, s->f_code);
-                h263_encode_motion(s, s->mv[0][1][1] - pred_y, s->f_code);
+                ff_h263_encode_motion(s, s->mv[0][0][0] - pred_x, s->f_code);
+                ff_h263_encode_motion(s, s->mv[0][0][1] - pred_y, s->f_code);
+                ff_h263_encode_motion(s, s->mv[0][1][0] - pred_x, s->f_code);
+                ff_h263_encode_motion(s, s->mv[0][1][1] - pred_y, s->f_code);
             }else{
                 assert(s->mv_type==MV_TYPE_8X8);
                 put_bits(&s->pb,
@@ -1045,8 +1044,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     /* motion vectors: 8x8 mode*/
                     h263_pred_motion(s, i, 0, &pred_x, &pred_y);
 
-                    h263_encode_motion(s, s->current_picture.motion_val[0][ s->block_index[i] ][0] - pred_x, s->f_code);
-                    h263_encode_motion(s, s->current_picture.motion_val[0][ s->block_index[i] ][1] - pred_y, s->f_code);
+                    ff_h263_encode_motion(s, s->current_picture.motion_val[0][ s->block_index[i] ][0] - pred_x, s->f_code);
+                    ff_h263_encode_motion(s, s->current_picture.motion_val[0][ s->block_index[i] ][1] - pred_y, s->f_code);
                 }
             }
 
@@ -1186,8 +1185,8 @@ void h263_encode_mb(MpegEncContext * s,
             h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
             
             if (!s->umvplus) {  
-                h263_encode_motion(s, motion_x - pred_x, 1);
-                h263_encode_motion(s, motion_y - pred_y, 1);
+                ff_h263_encode_motion(s, motion_x - pred_x, 1);
+                ff_h263_encode_motion(s, motion_y - pred_y, 1);
             }
             else {
                 h263p_encode_umotion(s, motion_x - pred_x);
@@ -1215,8 +1214,8 @@ void h263_encode_mb(MpegEncContext * s,
                 motion_x= s->current_picture.motion_val[0][ s->block_index[i] ][0];
                 motion_y= s->current_picture.motion_val[0][ s->block_index[i] ][1];
                 if (!s->umvplus) {  
-                    h263_encode_motion(s, motion_x - pred_x, 1);
-                    h263_encode_motion(s, motion_y - pred_y, 1);
+                    ff_h263_encode_motion(s, motion_x - pred_x, 1);
+                    ff_h263_encode_motion(s, motion_y - pred_y, 1);
                 }
                 else {
                     h263p_encode_umotion(s, motion_x - pred_x);
@@ -1619,7 +1618,7 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block, int dir,
 }
 
 #ifdef CONFIG_ENCODERS
-static void h263_encode_motion(MpegEncContext * s, int val, int f_code)
+void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code)
 {
     int range, l, bit_size, sign, code, bits;
 

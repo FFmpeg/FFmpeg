@@ -8,28 +8,6 @@ static const uint8_t svq1_block_type_vlc[4][2] = {
     
 };
 
-/* values in this table range from -32..32; adjust retrieved value by -32 */
-static const uint8_t svq1_motion_component_vlc[65][2] = {
- /* { code, length } */
-    { 0x5, 13 },  { 0x7, 13 },  { 0x5, 12 },  { 0x7, 12 },
-    { 0x9, 12 },  { 0xB, 12 },  { 0xD, 12 },  { 0xF, 12 },
-    { 0x9, 11 },  { 0xB, 11 },  { 0xD, 11 },  { 0xF, 11 },
-    { 0x11, 11 },  { 0x13, 11 },  { 0x15, 11 },  { 0x17, 11 },
-    { 0x19, 11 },  { 0x1B, 11 },  { 0x1D, 11 },  { 0x1F, 11 },
-    { 0x21, 11 },  { 0x23, 11 },  { 0x13, 10 },  { 0x15, 10 },
-    { 0x17, 10 },  { 0x7, 8 },  { 0x9, 8 },  { 0xB, 8 },
-    { 0x7, 7 },  { 0x3, 5 },  { 0x3, 4 },  { 0x3, 3 },
-    { 0x1, 1 },  { 0x2, 3 },  { 0x2, 4 },  { 0x2, 5 },
-    { 0x6, 7 },  { 0xA, 8 },  { 0x8, 8 },  { 0x6, 8 },
-    { 0x16, 10 },  { 0x14, 10 },  { 0x12, 10 },  { 0x22, 11 },
-    { 0x20, 11 },  { 0x1E, 11 },  { 0x1C, 11 },  { 0x1A, 11 },
-    { 0x18, 11 },  { 0x16, 11 },  { 0x14, 11 },  { 0x12, 11 },
-    { 0x10, 11 },  { 0xE, 11 },  { 0xC, 11 },  { 0xA, 11 },
-    { 0x8, 11 },  { 0xE, 12 },  { 0xC, 12 },  { 0xA, 12 },
-    { 0x8, 12 },  { 0x6, 12 },  { 0x4, 12 },  { 0x6, 13 },
-    { 0x4, 13 }  
-};
-
 /* values in this table range from -1..6; adjust retrieved value by -1 */
 static const uint8_t svq1_intra_multistage_vlc[6][8][2] = {
  /* { code, length } */
