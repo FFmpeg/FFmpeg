@@ -27,6 +27,11 @@
 #ifdef CONFIG_DARWIN
 #include <sys/sysctl.h>
 #else /* CONFIG_DARWIN */
+#ifdef __AMIGAOS4__
+#include <exec/exec.h>
+#include <interfaces/exec.h>
+#include <proto/exec.h>
+#else /* __AMIGAOS4__ */
 #include <signal.h>
 #include <setjmp.h>
 
@@ -44,6 +49,7 @@ static void sigill_handler (int sig)
     siglongjmp (jmpbuf, 1);
 }
 #endif /* CONFIG_DARWIN */
+#endif /* __AMIGAOS4__ */
 
 int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
@@ -1616,6 +1622,15 @@ POWERPC_PERF_STOP_COUNT(altivec_hadamard8_diff16_num, 1);
 
 int has_altivec(void)
 {
+#ifdef __AMIGAOS4__
+	ULONG result = 0;
+	extern struct ExecIFace *IExec;
+
+	IExec->GetCPUInfoTags(GCIT_VectorUnit, &result, TAG_DONE);
+	if (result == VECTORTYPE_ALTIVEC) return 1;
+	return 0;
+#else /* __AMIGAOS4__ */
+
 #ifdef CONFIG_DARWIN
     int sels[2] = {CTL_HW, HW_VECTORUNIT};
     int has_vu = 0;
@@ -1646,6 +1661,7 @@ int has_altivec(void)
     }
 #endif /* CONFIG_DARWIN */
     return 0;
+#endif /* __AMIGAOS4__ */
 }
 
 /* next one assumes that ((line_size % 8) == 0) */
