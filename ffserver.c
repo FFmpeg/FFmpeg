@@ -534,7 +534,6 @@ static int http_server(void)
 
     first_http_ctx = NULL;
     nb_connections = 0;
-    first_http_ctx = NULL;
 
     start_multicast();
 
@@ -681,8 +680,6 @@ static void new_connection(int server_fd, int is_rtsp)
     if (!c)
         goto fail;
     
-    c->next = first_http_ctx;
-    first_http_ctx = c;
     c->fd = fd;
     c->poll_entry = NULL;
     c->from_addr = from_addr;
@@ -690,6 +687,9 @@ static void new_connection(int server_fd, int is_rtsp)
     c->buffer = av_malloc(c->buffer_size);
     if (!c->buffer)
         goto fail;
+
+    c->next = first_http_ctx;
+    first_http_ctx = c;
     nb_connections++;
     
     start_wait_request(c, is_rtsp);
