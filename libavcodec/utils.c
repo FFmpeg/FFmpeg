@@ -157,8 +157,9 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         int w, h, pixel_size;
         
         avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
-        
         switch(s->pix_fmt){
+        case PIX_FMT_RGB555:
+        case PIX_FMT_RGB565:
         case PIX_FMT_YUV422:
             pixel_size=2;
             break;
