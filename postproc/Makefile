@@ -37,7 +37,7 @@ cs_test: $(CS_TEST_OBJS)
 	$(CC) $(CS_TEST_OBJS) -o cs_test
 
 swscale-example: swscale-example.o $(SWSLIB)
-	$(CC) swscale-example.o $(SWSLIB) ../cpudetect.o  ../libmpcodecs/img_format.o -lm -o swscale-example -W -Wall
+	$(CC) swscale-example.o $(SWSLIB) ../libmpcodecs/img_format.o -lm -o swscale-example -W -Wall
 #
 # include dependency files if they exist
 #

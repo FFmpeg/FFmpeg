@@ -241,17 +241,6 @@ static inline void RENAME(rgb15to16)(const uint8_t *src,uint8_t *dst,unsigned sr
     }
 }
 
-static inline void RENAME(bgr24torgb24)(const uint8_t *src, uint8_t *dst, unsigned src_size)
-{
-	unsigned j,i,num_pixels=src_size/3;
-	for(i=0,j=0; j<num_pixels; i+=3,j+=3)
-	{
-		dst[j+0] = src[i+2];
-		dst[j+1] = src[i+1];
-		dst[j+2] = src[i+0];
-	}
-}
-
 static inline void RENAME(rgb16to15)(const uint8_t *src,uint8_t *dst,unsigned src_size)
 {
   register const uint8_t* s=src;

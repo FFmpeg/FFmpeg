@@ -40,7 +40,6 @@
 #include "rgb2rgb.h"
 #include "swscale.h"
 #include "swscale_internal.h"
-#include "../cpudetect.h"
 #include "../mangle.h"
 #include "../mp_msg.h"
 #include "../libvo/img_format.h" //FIXME try to reduce dependency of such stuff
@@ -586,7 +585,7 @@ EPILOG(1)
 SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
 {
 #ifdef ARCH_X86
-    if(gCpuCaps.hasMMX2){
+    if(c->flags & SWS_CPU_CAPS_MMX2){
 	switch(c->dstFormat){
 	case IMGFMT_BGR32: return yuv420_rgb32_MMX2;
 	case IMGFMT_BGR24: return yuv420_rgb24_MMX2;
@@ -594,7 +593,7 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
 	case IMGFMT_BGR15: return yuv420_rgb15_MMX2;
 	}
     }
-    if(gCpuCaps.hasMMX){
+    if(c->flags & SWS_CPU_CAPS_MMX){
 	switch(c->dstFormat){
 	case IMGFMT_BGR32: return yuv420_rgb32_MMX;
 	case IMGFMT_BGR24: return yuv420_rgb24_MMX;

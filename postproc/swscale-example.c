@@ -194,7 +194,7 @@ int main(int argc, char **argv){
 			rgb_data[ x + y*4*W]= random();
 		}
 	}
-
+	sws_rgb2rgb_init(SWS_CPU_CAPS_MMX*0);
 	sws_scale(sws, rgb_src, rgb_stride, 0, H   , src, stride);
 asm volatile ("emms\n\t");
 	selfTest(src,  stride, W, H);

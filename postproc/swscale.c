@@ -1712,6 +1712,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 #endif
 #endif
 	if(clip_table[512] != 255) globalInit();
+	if(rgb15to16 == NULL) sws_rgb2rgb_init(flags);
 
 	/* avoid dupplicate Formats, so we dont need to check to much */
 	srcFormat = remove_dup_fourcc(origSrcFormat);
