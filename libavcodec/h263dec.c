@@ -205,12 +205,12 @@ static int decode_slice(MpegEncContext *s){
 //            s->mb_skiped = 0;
 //printf("%d %d %06X\n", ret, get_bits_count(&s->gb), show_bits(&s->gb, 24));
             ret= s->decode_mb(s, s->block);
-            
-            MPV_decode_mb(s, s->block);
 
             if(ret<0){
                 const int xy= s->mb_x + s->mb_y*s->mb_stride;
                 if(ret==SLICE_END){
+                    MPV_decode_mb(s, s->block);
+
 //printf("%d %d %d %06X\n", s->mb_x, s->mb_y, s->gb.size*8 - get_bits_count(&s->gb), show_bits(&s->gb, 24));
                     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
 
@@ -232,6 +232,8 @@ static int decode_slice(MpegEncContext *s){
     
                 return -1;
             }
+
+            MPV_decode_mb(s, s->block);
         }
         
         ff_draw_horiz_band(s, s->mb_y*16, 16);
