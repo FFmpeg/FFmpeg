@@ -111,10 +111,9 @@ typedef signed long long INT64;
 
 #endif /* !CONFIG_WIN32 */
 
+#include "bswap.h"
 
 #ifdef HAVE_AV_CONFIG_H
-
-#include "bswap.h"
 
 #if defined(__MINGW32__) || defined(__CYGWIN__) || \
     defined(__OS2__) || defined (__OpenBSD__)
