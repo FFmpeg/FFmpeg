@@ -28,6 +28,10 @@ ifeq ($(CONFIG_VIDEO4LINUX),yes)
 OBJS+= grab.o
 endif
 
+ifeq ($(CONFIG_DV1394),yes)
+OBJS+= dv1394.o
+endif
+
 ifeq ($(CONFIG_AUDIO_OSS),yes)
 OBJS+= audio.o 
 endif

@@ -21,6 +21,8 @@
 /* If you do not call this function, then you can select exactly which
    formats you want to support */
 
+char *video_device = "none";
+
 /**
  * Initialize libavcodec and register all the codecs and formats.
  */
@@ -60,6 +62,10 @@ void av_register_all(void)
 #endif
 #if defined(CONFIG_AUDIO_OSS) || defined(CONFIG_AUDIO_BEOS)
     audio_init();
+#endif
+
+#ifdef CONFIG_DV1394
+    dv1394_init();
 #endif
 
     /* image formats */

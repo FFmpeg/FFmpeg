@@ -53,8 +53,6 @@ static int aiw_init(VideoData *s);
 static int aiw_read_picture(VideoData *s, uint8_t *data);
 static int aiw_close(VideoData *s);
 
-const char *v4l_device = "/dev/video";
-
 static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     VideoData *s = s1->priv_data;
@@ -80,9 +78,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->height = height;
     s->frame_rate = frame_rate;
 
-    video_fd = open(v4l_device, O_RDWR);
+    video_fd = open(video_device, O_RDWR);
     if (video_fd < 0) {
-        perror(v4l_device);
+        perror(video_device);
         goto fail;
     }
     
@@ -339,7 +337,7 @@ static int grab_read_close(AVFormatContext *s1)
 }
 
 static AVInputFormat video_grab_device_format = {
-    "video_grab_device",
+    "video4linux",
     "video grab",
     sizeof(VideoData),
     NULL,

@@ -158,13 +158,13 @@ static char *pass_logfilename = NULL;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
 
+static char *video_grab_format = "video4linux";
+static char *audio_grab_format = "audio_device";
+
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
 #if !defined(CONFIG_AUDIO_OSS) && !defined(CONFIG_AUDIO_BEOS)
 const char *audio_device = "none";
-#endif
-#ifndef CONFIG_VIDEO4LINUX
-const char *v4l_device = "none";
 #endif
 
 typedef struct AVOutputStream {
@@ -1870,12 +1870,18 @@ void opt_audio_channels(const char *arg)
 
 void opt_video_device(const char *arg)
 {
-    v4l_device = strdup(arg);
+    video_device = strdup(arg);
 }
 
 void opt_audio_device(const char *arg)
 {
     audio_device = strdup(arg);
+}
+
+void opt_dv1394(const char *arg)
+{
+    video_grab_format = "dv1394";
+    audio_grab_format = "none";
 }
 
 void opt_audio_codec(const char *arg)
@@ -2455,7 +2461,7 @@ void prepare_grab(void)
     
     if (has_video) {
         AVInputFormat *fmt1;
-        fmt1 = av_find_input_format("video_grab_device");
+        fmt1 = av_find_input_format(video_grab_format);
         if (av_open_input_file(&ic, "", fmt1, 0, ap) < 0) {
             fprintf(stderr, "Could not find video grab device\n");
             exit(1);
@@ -2463,12 +2469,12 @@ void prepare_grab(void)
         /* by now video grab has one stream */
         ic->streams[0]->r_frame_rate = ap->frame_rate;
         input_files[nb_input_files] = ic;
-        dump_format(ic, nb_input_files, v4l_device, 0);
+        dump_format(ic, nb_input_files, video_device, 0);
         nb_input_files++;
     }
     if (has_audio) {
         AVInputFormat *fmt1;
-        fmt1 = av_find_input_format("audio_device");
+        fmt1 = av_find_input_format(audio_grab_format);
         if (av_open_input_file(&ic, "", fmt1, 0, ap) < 0) {
             fprintf(stderr, "Could not find audio grab device\n");
             exit(1);
@@ -2692,6 +2698,7 @@ const OptionDef options[] = {
     { "minrate", HAS_ARG, {(void*)opt_video_bitrate_min}, "set min video bitrate tolerance (in kbit/s)", "bitrate" },
     { "bufsize", HAS_ARG, {(void*)opt_video_buffer_size}, "set ratecontrol buffere size (in kbit)", "size" },
     { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video grab device", "device" },
+    { "dv1394", OPT_EXPERT, {(void*)opt_dv1394}, "set DV1394 options", "[channel]" },
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
