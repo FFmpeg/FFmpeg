@@ -1317,13 +1317,21 @@ static void http_write_packet(void *opaque,
         c->buffer_ptr = c->buffer_end = c->buffer;
 
     if (c->buffer_end - c->buffer + size > c->buffer_size) {
-        UINT8 *new_buffer = av_malloc(c->buffer_size * 2);
+        int new_buffer_size = c->buffer_size * 2;
+        UINT8 *new_buffer;
+
+        if (new_buffer_size <= c->buffer_end - c->buffer + size) {
+            new_buffer_size = c->buffer_end - c->buffer + size + c->buffer_size;
+        }
+
+        new_buffer = av_malloc(new_buffer_size);
         if (new_buffer) {
             memcpy(new_buffer, c->buffer, c->buffer_end - c->buffer);
             c->buffer_end += (new_buffer - c->buffer);
             c->buffer_ptr += (new_buffer - c->buffer);
             av_free(c->buffer);
             c->buffer = new_buffer;
+            c->buffer_size = new_buffer_size;
         } else {
             av_abort();
         }
