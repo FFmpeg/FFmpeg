@@ -2381,15 +2381,8 @@ static inline void mpeg_motion(MpegEncContext *s,
                                uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
                                int motion_x, int motion_y, int h)
 {
-    uint8_t *ptr;
-    int dxy, offset, mx, my, src_x, src_y, height, v_edge_pos, uvlinesize;
-    int emu=0;
-    
-    if(bottom_field){ //FIXME use this for field pix too instead of the obnoxious hack which changes picture.data
-        dest_y += s->linesize;
-        dest_cb+= s->uvlinesize;
-        dest_cr+= s->uvlinesize;
-    }
+    uint8_t *ptr_y, *ptr_cb, *ptr_cr;
+    int dxy, uvdxy, mx, my, src_x, src_y, uvsrc_x, uvsrc_y, v_edge_pos, uvlinesize, linesize;
     
 #if 0    
 if(s->quarter_sample)
@@ -2399,65 +2392,64 @@ if(s->quarter_sample)
 }
 #endif
 
-    height = s->height >> field_based;
     v_edge_pos = s->v_edge_pos >> field_based;
+    linesize   = s->current_picture.linesize[0] << field_based;
     uvlinesize = s->current_picture.linesize[1] << field_based;
 
-    emu= hpel_motion(s, 
-                dest_y, ref_picture[0], field_based, field_select,
-                s->mb_x * 16, s->mb_y * (16 >> field_based),
-                s->width, height, s->current_picture.linesize[0] << field_based,
-                s->h_edge_pos, v_edge_pos,
-                16, h, pix_op[0],
-                motion_x, motion_y);
-
-
-    if(s->flags&CODEC_FLAG_GRAY) return;
+    dxy = ((motion_y & 1) << 1) | (motion_x & 1);
+    src_x = s->mb_x* 16               + (motion_x >> 1);
+    src_y = s->mb_y*(16>>field_based) + (motion_y >> 1);
 
     if (s->out_format == FMT_H263) {
-        dxy = 0;
-        if ((motion_x & 3) != 0)
-            dxy |= 1;
-        if ((motion_y & 3) != 0)
-            dxy |= 2;
-        mx = motion_x >> 2;
-        my = motion_y >> 2;
+        uvdxy = dxy | (motion_y & 2) | ((motion_x & 2) >> 1);
+        uvsrc_x = src_x>>1;
+        uvsrc_y = src_y>>1;
     } else {
         mx = motion_x / 2;
         my = motion_y / 2;
-        dxy = ((my & 1) << 1) | (mx & 1);
-        mx >>= 1;
-        my >>= 1;
+        uvdxy = ((my & 1) << 1) | (mx & 1);
+        uvsrc_x = s->mb_x* 8               + (mx >> 1);
+        uvsrc_y = s->mb_y*(8>>field_based) + (my >> 1);
     }
-    
-    src_x = s->mb_x * 8 + mx;
-    src_y = s->mb_y * (8 >> field_based) + my;
-    src_x = clip(src_x, -8, s->width >> 1);
-    if (src_x == (s->width >> 1))
-        dxy &= ~1;
-    src_y = clip(src_y, -8, height >> 1);
-    if (src_y == (height >> 1))
-        dxy &= ~2;
-    offset = (src_y * uvlinesize) + src_x;
-    ptr = ref_picture[1] + offset;
-    if(emu){
-        ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9+field_based, 
-                         src_x, src_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
-        ptr= s->edge_emu_buffer;
-    }
-    if(field_select)
-        ptr+= s->uvlinesize;
-    pix_op[1][dxy](dest_cb, ptr, uvlinesize, h >> 1);
 
-    ptr = ref_picture[2] + offset;
-    if(emu){
-        ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9+field_based, 
-                         src_x, src_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
-        ptr= s->edge_emu_buffer;
+    ptr_y  = ref_picture[0] + src_y * linesize + src_x;
+    ptr_cb = ref_picture[1] + uvsrc_y * uvlinesize + uvsrc_x;
+    ptr_cr = ref_picture[2] + uvsrc_y * uvlinesize + uvsrc_x;
+
+    if(   (unsigned)src_x > s->h_edge_pos - (motion_x&1) - 16
+       || (unsigned)src_y >    v_edge_pos - (motion_y&1) - h){
+            ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, s->linesize, 17, 17+field_based,
+                             src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
+            ptr_y = s->edge_emu_buffer;
+            if(!(s->flags&CODEC_FLAG_GRAY)){
+                uint8_t *uvbuf= s->edge_emu_buffer+17*s->linesize;
+                ff_emulated_edge_mc(uvbuf  , ptr_cb, s->uvlinesize, 9, 9+field_based, 
+                                 uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+                ff_emulated_edge_mc(uvbuf+16, ptr_cr, s->uvlinesize, 9, 9+field_based, 
+                                 uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+                ptr_cb= uvbuf;
+                ptr_cr= uvbuf+16;
+            }
     }
-    if(field_select)
-        ptr+= s->uvlinesize;
-    pix_op[1][dxy](dest_cr, ptr, uvlinesize, h >> 1);
+
+    if(bottom_field){ //FIXME use this for field pix too instead of the obnoxious hack which changes picture.data
+        dest_y += s->linesize;
+        dest_cb+= s->uvlinesize;
+        dest_cr+= s->uvlinesize;
+    }
+
+    if(field_select){
+        ptr_y += s->linesize;
+        ptr_cb+= s->uvlinesize;
+        ptr_cr+= s->uvlinesize;
+    }
+
+    pix_op[0][dxy](dest_y, ptr_y, linesize, h);
+    
+    if(!(s->flags&CODEC_FLAG_GRAY)){
+        pix_op[1][uvdxy](dest_cb, ptr_cb, uvlinesize, h >> 1);
+        pix_op[1][uvdxy](dest_cr, ptr_cr, uvlinesize, h >> 1);
+    }
 }
 //FIXME move to dsputil, avg variant, 16x16 version
 static inline void put_obmc(uint8_t *dst, uint8_t *src[5], int stride){
@@ -2548,54 +2540,17 @@ static inline void qpel_motion(MpegEncContext *s,
                                qpel_mc_func (*qpix_op)[16],
                                int motion_x, int motion_y, int h)
 {
-    uint8_t *ptr;
-    int dxy, offset, mx, my, src_x, src_y, height, v_edge_pos, linesize, uvlinesize;
-    int emu=0;
-
-    if(bottom_field){
-        dest_y += s->linesize;
-        dest_cb+= s->uvlinesize;
-        dest_cr+= s->uvlinesize;
-    }
+    uint8_t *ptr_y, *ptr_cb, *ptr_cr;
+    int dxy, uvdxy, mx, my, src_x, src_y, uvsrc_x, uvsrc_y, v_edge_pos, linesize, uvlinesize;
 
     dxy = ((motion_y & 3) << 2) | (motion_x & 3);
-    src_x = s->mb_x * 16 + (motion_x >> 2);
+    src_x = s->mb_x *  16                 + (motion_x >> 2);
     src_y = s->mb_y * (16 >> field_based) + (motion_y >> 2);
 
-    height = s->height >> field_based;
     v_edge_pos = s->v_edge_pos >> field_based;
-    src_x = clip(src_x, -16, s->width);
-    if (src_x == s->width)
-        dxy &= ~3;
-    src_y = clip(src_y, -16, height);
-    if (src_y == height)
-        dxy &= ~12;
     linesize = s->linesize << field_based;
     uvlinesize = s->uvlinesize << field_based;
-    ptr = ref_picture[0] + (src_y * linesize) + src_x;
     
-    if(s->flags&CODEC_FLAG_EMU_EDGE){
-        if(   (unsigned)src_x > s->h_edge_pos - (motion_x&3) - 16 
-           || (unsigned)src_y >    v_edge_pos - (motion_y&3) - h  ){
-            ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->linesize, 17, 17+field_based, 
-                             src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
-            ptr= s->edge_emu_buffer;
-            emu=1;
-        }
-    }
-    if(!field_based)
-        qpix_op[0][dxy](dest_y, ptr, linesize);
-    else{
-        if(field_select)
-            ptr += s->linesize;
-        //damn interlaced mode
-        //FIXME boundary mirroring is not exactly correct here
-        qpix_op[1][dxy](dest_y  , ptr  , linesize);
-        qpix_op[1][dxy](dest_y+8, ptr+8, linesize);
-    }
-
-    if(s->flags&CODEC_FLAG_GRAY) return;
-
     if(field_based){
         mx= motion_x/2;
         my= motion_y>>1;
@@ -2613,39 +2568,56 @@ static inline void qpel_motion(MpegEncContext *s,
     mx= (mx>>1)|(mx&1);
     my= (my>>1)|(my&1);
 
-    dxy= (mx&1) | ((my&1)<<1);
+    uvdxy= (mx&1) | ((my&1)<<1);
     mx>>=1;
     my>>=1;
 
-    src_x = s->mb_x * 8 + mx;
-    src_y = s->mb_y * (8 >> field_based) + my;
-    src_x = clip(src_x, -8, s->width >> 1);
-    if (src_x == (s->width >> 1))
-        dxy &= ~1;
-    src_y = clip(src_y, -8, height >> 1);
-    if (src_y == (height >> 1))
-        dxy &= ~2;
+    uvsrc_x = s->mb_x *  8                 + mx;
+    uvsrc_y = s->mb_y * (8 >> field_based) + my;
 
-    offset = (src_y * uvlinesize) + src_x;
-    ptr = ref_picture[1] + offset;
-    if(emu){
-        ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9 + field_based, 
-                         src_x, src_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
-        ptr= s->edge_emu_buffer;
+    ptr_y  = ref_picture[0] +   src_y *   linesize +   src_x;
+    ptr_cb = ref_picture[1] + uvsrc_y * uvlinesize + uvsrc_x;
+    ptr_cr = ref_picture[2] + uvsrc_y * uvlinesize + uvsrc_x;
+
+    if(   (unsigned)src_x > s->h_edge_pos - (motion_x&3) - 16 
+       || (unsigned)src_y >    v_edge_pos - (motion_y&3) - h  ){
+        ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, s->linesize, 17, 17+field_based, 
+                         src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
+        ptr_y= s->edge_emu_buffer;
+        if(!(s->flags&CODEC_FLAG_GRAY)){
+            uint8_t *uvbuf= s->edge_emu_buffer + 17*s->linesize;
+            ff_emulated_edge_mc(uvbuf, ptr_cb, s->uvlinesize, 9, 9 + field_based, 
+                             uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+            ff_emulated_edge_mc(uvbuf + 16, ptr_cr, s->uvlinesize, 9, 9 + field_based, 
+                             uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
+            ptr_cb= uvbuf;
+            ptr_cr= uvbuf + 16;
+        }
     }
-    if(field_select)
-        ptr += s->uvlinesize;
-    pix_op[1][dxy](dest_cb, ptr, uvlinesize, h >> 1);
-    
-    ptr = ref_picture[2] + offset;
-    if(emu){
-        ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9 + field_based, 
-                         src_x, src_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
-        ptr= s->edge_emu_buffer;
+
+    if(!field_based)
+        qpix_op[0][dxy](dest_y, ptr_y, linesize);
+    else{
+        if(bottom_field){
+            dest_y += s->linesize;
+            dest_cb+= s->uvlinesize;
+            dest_cr+= s->uvlinesize;
+        }
+
+        if(field_select){
+            ptr_y  += s->linesize;
+            ptr_cb += s->uvlinesize;
+            ptr_cr += s->uvlinesize;
+        }
+        //damn interlaced mode
+        //FIXME boundary mirroring is not exactly correct here
+        qpix_op[1][dxy](dest_y  , ptr_y  , linesize);
+        qpix_op[1][dxy](dest_y+8, ptr_y+8, linesize);
     }
-    if(field_select)
-        ptr += s->uvlinesize;
-    pix_op[1][dxy](dest_cr, ptr, uvlinesize, h >> 1);
+    if(!(s->flags&CODEC_FLAG_GRAY)){
+        pix_op[1][uvdxy](dest_cr, ptr_cr, uvlinesize, h >> 1);
+        pix_op[1][uvdxy](dest_cb, ptr_cb, uvlinesize, h >> 1);
+    }
 }
 
 inline int ff_h263_round_chroma(int x){
