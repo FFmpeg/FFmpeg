@@ -757,14 +757,14 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
     return pts;
 }
 
-static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
+static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int flags)
 {
     ASFContext *asf = s->priv_data;
     
     if (asf->packet_size <= 0)
         return -1;
 
-    if(av_seek_frame_binary(s, stream_index, pts)<0)
+    if(av_seek_frame_binary(s, stream_index, pts, flags)<0)
         return -1;
 
     asf_reset_header(s);

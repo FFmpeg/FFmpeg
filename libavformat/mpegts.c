@@ -1331,12 +1331,12 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
     return timestamp;
 }
 
-static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts){
+static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, int flags){
     MpegTSContext *ts = s->priv_data;
     uint8_t buf[TS_PACKET_SIZE];
     int64_t pos;
 
-    if(av_seek_frame_binary(s, stream_index, target_ts) < 0)
+    if(av_seek_frame_binary(s, stream_index, target_ts, flags) < 0)
         return -1;
 
     pos= url_ftell(&s->pb);

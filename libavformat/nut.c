@@ -1373,11 +1373,11 @@ av_log(s, AV_LOG_DEBUG, "syncing from %lld\n", nut->packet_start[2]+1);
     return AV_NOPTS_VALUE;
 }
 
-static int nut_read_seek(AVFormatContext *s, int stream_index, int64_t target_ts){
+static int nut_read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, int flags){
 //    NUTContext *nut = s->priv_data;
     int64_t pos;
 
-    if(av_seek_frame_binary(s, stream_index, target_ts) < 0)
+    if(av_seek_frame_binary(s, stream_index, target_ts, flags) < 0)
         return -1;
 
     pos= url_ftell(&s->pb);

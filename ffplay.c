@@ -92,6 +92,7 @@ typedef struct VideoState {
     int paused;
     int last_paused;
     int seek_req;
+    int seek_flags;
     int64_t seek_pos;
     AVFormatContext *ic;
     int dtg_active_format;
@@ -589,10 +590,11 @@ static double get_master_clock(VideoState *is)
 }
 
 /* seek in the stream */
-static void stream_seek(VideoState *is, int64_t pos)
+static void stream_seek(VideoState *is, int64_t pos, int rel)
 {
     is->seek_pos = pos;
     is->seek_req = 1;
+    is->seek_flags = rel < 0 ? AVSEEK_FLAG_BACKWARD : 0;
 }
 
 /* pause or resume the video */
@@ -1335,7 +1337,7 @@ static int decode_thread(void *arg)
         /* add the stream start time */
         if (ic->start_time != AV_NOPTS_VALUE)
             timestamp += ic->start_time;
-        ret = av_seek_frame(ic, -1, timestamp);
+        ret = av_seek_frame(ic, -1, timestamp, AVSEEK_FLAG_BACKWARD);
         if (ret < 0) {
             fprintf(stderr, "%s: could not seek to position %0.3f\n", 
                     is->filename, (double)timestamp / AV_TIME_BASE);
@@ -1412,7 +1414,7 @@ static int decode_thread(void *arg)
 #endif
         if (is->seek_req) {
             /* XXX: must lock decoder threads */
-            ret = av_seek_frame(is->ic, -1, is->seek_pos);
+            ret = av_seek_frame(is->ic, -1, is->seek_pos, is->seek_flags);
             if (ret < 0) {
                 fprintf(stderr, "%s: error while seeking\n", is->ic->filename);
             }else{
@@ -1682,7 +1684,7 @@ void event_loop(void)
                 if (cur_stream) {
                     pos = get_master_clock(cur_stream);
                     pos += incr;
-                    stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE));
+                    stream_seek(cur_stream, (int64_t)(pos * AV_TIME_BASE), incr);
                 }
                 break;
             default:
@@ -1704,7 +1706,7 @@ void event_loop(void)
 		ss = (ns%60);
 		fprintf(stderr, "Seek to %2.0f%% (%2d:%02d:%02d) of total duration (%2d:%02d:%02d)       \n", frac*100,
 			hh, mm, ss, thh, tmm, tss);
-		stream_seek(cur_stream, (int64_t)(cur_stream->ic->start_time+frac*cur_stream->ic->duration));
+		stream_seek(cur_stream, (int64_t)(cur_stream->ic->start_time+frac*cur_stream->ic->duration), 0);
 	    }
 	    break;
         case SDL_VIDEORESIZE:

@@ -907,31 +907,22 @@ int av_add_index_entry(AVStream *st,
                               sizeof(AVIndexEntry));
     st->index_entries= entries;
 
-    if(st->nb_index_entries){
-        index= av_index_search_timestamp(st, timestamp);
-        ie= &entries[index];
+    index= av_index_search_timestamp(st, timestamp, 0);
 
-        if(ie->timestamp != timestamp){
-            if(ie->timestamp < timestamp){
-                index++; //index points to next instead of previous entry, maybe nonexistant
-                ie= &st->index_entries[index];
-            }else
-                assert(index==0);
-                
-            if(index != st->nb_index_entries){
-                assert(index < st->nb_index_entries);
-                memmove(entries + index + 1, entries + index, sizeof(AVIndexEntry)*(st->nb_index_entries - index));
-            }
-            st->nb_index_entries++;
-        }else{
-            if(ie->pos == pos && distance < ie->min_distance) //dont reduce the distance
-                distance= ie->min_distance;
-        }
-    }else{
+    if(index<0){
         index= st->nb_index_entries++;
         ie= &entries[index];
+        assert(index==0 || ie[-1].timestamp < timestamp);
+    }else{
+        ie= &entries[index];
+        if(ie->timestamp != timestamp){
+            assert(ie->timestamp > timestamp);
+            memmove(entries + index + 1, entries + index, sizeof(AVIndexEntry)*(st->nb_index_entries - index));
+            st->nb_index_entries++;
+        }else if(ie->pos == pos && distance < ie->min_distance) //dont reduce the distance
+            distance= ie->min_distance;
     }
-    
+
     ie->pos = pos;
     ie->timestamp = timestamp;
     ie->min_distance= distance;
@@ -979,31 +970,36 @@ static int is_raw_stream(AVFormatContext *s)
     return 1;
 }
 
-/* return the largest index entry whose timestamp is <=
-   wanted_timestamp */
-int av_index_search_timestamp(AVStream *st, int wanted_timestamp)
+/**
+ * gets the index for a specific timestamp.
+ * @param backward if non zero then the returned index will correspond to 
+ *                 the timestamp which is <= the requested one, if backward is 0 
+ *                 then it will be >=
+ * @return < 0 if no such timestamp could be found
+ */
+int av_index_search_timestamp(AVStream *st, int wanted_timestamp, int backward)
 {
     AVIndexEntry *entries= st->index_entries;
     int nb_entries= st->nb_index_entries;
     int a, b, m;
     int64_t timestamp;
 
-    if (nb_entries <= 0)
-        return -1;
-    
-    a = 0;
-    b = nb_entries - 1;
+    a = - 1;
+    b = nb_entries;
 
-    while (a < b) {
-        m = (a + b + 1) >> 1;
+    while (b - a > 1) {
+        m = (a + b) >> 1;
         timestamp = entries[m].timestamp;
-        if (timestamp > wanted_timestamp) {
-            b = m - 1;
-        } else {
+        if(timestamp >= wanted_timestamp)
+            b = m;
+        if(timestamp <= wanted_timestamp)
             a = m;
-        }
     }
-    return a;
+    m= backward ? a : b;
+
+    if(m == nb_entries) 
+        return -1;
+    return  m;
 }
 
 #define DEBUG_SEEK
@@ -1014,7 +1010,7 @@ int av_index_search_timestamp(AVStream *st, int wanted_timestamp)
  * @param target_ts target timestamp in the time base of the given stream
  * @param stream_index stream number
  */
-int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts){
+int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts, int flags){
     AVInputFormat *avif= s->iformat;
     int64_t pos_min, pos_max, pos, pos_limit;
     int64_t ts_min, ts_max, ts;
@@ -1037,7 +1033,8 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     if(st->index_entries){
         AVIndexEntry *e;
 
-        index= av_index_search_timestamp(st, target_ts);
+        index= av_index_search_timestamp(st, target_ts, 1);
+        index= FFMAX(index, 0);
         e= &st->index_entries[index];
 
         if(e->timestamp <= target_ts || e->pos == e->min_distance){
@@ -1105,9 +1102,8 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
         if(no_change==0){
             int64_t approximate_keyframe_distance= pos_max - pos_limit;
             // interpolate position (better than dichotomy)
-            pos = (int64_t)((double)(pos_max - pos_min) *
-                            (double)(target_ts - ts_min) /
-                            (double)(ts_max - ts_min)) + pos_min - approximate_keyframe_distance;
+            pos = av_rescale(target_ts - ts_min, pos_max - pos_min, ts_max - ts_min)
+                + pos_min - approximate_keyframe_distance;
         }else if(no_change==1){
             // bisection, if interpolation failed to change min or max pos last time
             pos = (pos_min + pos_limit)>>1;
@@ -1130,20 +1126,19 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
 av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%Ld noc:%d\n", pos_min, pos, pos_max, ts_min, ts, ts_max, target_ts, pos_limit, start_pos, no_change);
 #endif
         assert(ts != AV_NOPTS_VALUE);
-        if (target_ts < ts) {
+        if (target_ts <= ts) {
             pos_limit = start_pos - 1;
             pos_max = pos;
             ts_max = ts;
-        } else {
+        }
+        if (target_ts >= ts) {
             pos_min = pos;
             ts_min = ts;
-            /* check if we are lucky */
-            if (target_ts == ts)
-                break;
         }
     }
     
-    pos = pos_min;
+    pos = (flags & AVSEEK_FLAG_BACKWARD) ? pos_min : pos_max;
+    ts  = (flags & AVSEEK_FLAG_BACKWARD) ?  ts_min :  ts_max;
 #ifdef DEBUG_SEEK
     pos_min = pos;
     ts_min = avif->read_timestamp(s, stream_index, &pos_min, INT64_MAX);
@@ -1155,18 +1150,51 @@ av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%L
     /* do the seek */
     url_fseek(&s->pb, pos, SEEK_SET);
 
-    ts= av_rescale(ts_min, AV_TIME_BASE*(int64_t)st->time_base.num, st->time_base.den);
     for(i = 0; i < s->nb_streams; i++) {
-        st = s->streams[i];
+        AVStream *st2 = s->streams[i];
 
-        st->cur_dts = av_rescale(ts, st->time_base.den, AV_TIME_BASE*(int64_t)st->time_base.num);
+        st->cur_dts = av_rescale(ts, 
+                                 st2->time_base.den * (int64_t)st ->time_base.num,
+                                 st ->time_base.den * (int64_t)st2->time_base.num);
     }
 
     return 0;
 }
 
+static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos, int flags){
+    AVInputFormat *avif= s->iformat;
+    int64_t pos_min, pos_max;
+#if 0
+    AVStream *st;
+
+    if (stream_index < 0)
+        return -1;
+
+    st= s->streams[stream_index];
+#endif
+
+    pos_min = s->data_offset;
+    pos_max = url_filesize(url_fileno(&s->pb)) - 1;
+
+    if     (pos < pos_min) pos= pos_min;
+    else if(pos > pos_max) pos= pos_max;
+
+    url_fseek(&s->pb, pos, SEEK_SET);
+
+#if 0
+    for(i = 0; i < s->nb_streams; i++) {
+        st2 = s->streams[i];
+
+        st->cur_dts = av_rescale(ie->timestamp, 
+                                 st2->time_base.den * (int64_t)st ->time_base.num,
+                                 st ->time_base.den * (int64_t)st2->time_base.num);
+    }
+#endif
+    return 0;
+}
+
 static int av_seek_frame_generic(AVFormatContext *s, 
-                                 int stream_index, int64_t timestamp)
+                                 int stream_index, int64_t timestamp, int flags)
 {
     int index, i;
     AVStream *st;
@@ -1182,7 +1210,7 @@ static int av_seek_frame_generic(AVFormatContext *s,
     }
 
     st = s->streams[stream_index];
-    index = av_index_search_timestamp(st, timestamp);
+    index = av_index_search_timestamp(st, timestamp, flags & AVSEEK_FLAG_BACKWARD);
     if (index < 0)
         return -1;
 
@@ -1190,44 +1218,50 @@ static int av_seek_frame_generic(AVFormatContext *s,
     ie = &st->index_entries[index];
     av_read_frame_flush(s);
     url_fseek(&s->pb, ie->pos, SEEK_SET);
-    
-    timestamp= av_rescale(ie->timestamp, AV_TIME_BASE*(int64_t)st->time_base.num, st->time_base.den);
-    for(i = 0; i < s->nb_streams; i++) {
-        st = s->streams[i];
 
-        st->cur_dts = av_rescale(timestamp, st->time_base.den, AV_TIME_BASE*(int64_t)st->time_base.num);
+    for(i = 0; i < s->nb_streams; i++) {
+        AVStream *st2 = s->streams[i];
+
+        st->cur_dts = av_rescale(ie->timestamp, 
+                                 st2->time_base.den * (int64_t)st ->time_base.num,
+                                 st ->time_base.den * (int64_t)st2->time_base.num);
     }
 
     return 0;
 }
 
 /**
- * Seek to the key frame just before the frame at timestamp
+ * Seek to the key frame at timestamp.
  * 'timestamp' in 'stream_index'.
  * @param stream_index If stream_index is (-1), a default
  * stream is selected
- * @param timestamp timestamp in AV_TIME_BASE units
+ * @param timestamp timestamp in AVStream.time_base units
+ * @param flags flags which select direction and seeking mode
  * @return >= 0 on success
  */
-int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp)
+int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
     int ret;
     AVStream *st;
     
     av_read_frame_flush(s);
     
+    if(flags & AVSEEK_FLAG_BYTE)
+        return av_seek_frame_byte(s, stream_index, timestamp, flags);
+    
     if(stream_index < 0){
         stream_index= av_find_default_stream_index(s);
         if(stream_index < 0)
             return -1;
+            
+        st= s->streams[stream_index];
+        timestamp = av_rescale(timestamp, st->time_base.den, AV_TIME_BASE * (int64_t)st->time_base.num);
     }
     st= s->streams[stream_index];
 
-    timestamp = av_rescale(timestamp, st->time_base.den, AV_TIME_BASE * (int64_t)st->time_base.num);
-
     /* first, we try the format specific seek */
     if (s->iformat->read_seek)
-        ret = s->iformat->read_seek(s, stream_index, timestamp);
+        ret = s->iformat->read_seek(s, stream_index, timestamp, flags);
     else
         ret = -1;
     if (ret >= 0) {
@@ -1235,9 +1269,9 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp)
     }
 
     if(s->iformat->read_timestamp)
-        return av_seek_frame_binary(s, stream_index, timestamp);
+        return av_seek_frame_binary(s, stream_index, timestamp, flags);
     else
-        return av_seek_frame_generic(s, stream_index, timestamp);
+        return av_seek_frame_generic(s, stream_index, timestamp, flags);
 }
 
 /*******************************************************/

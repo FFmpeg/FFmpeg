@@ -2777,7 +2777,7 @@ static void opt_input_file(const char *filename)
 
     /* if seeking requested, we execute it */
     if (start_time != 0) {
-        ret = av_seek_frame(ic, -1, timestamp);
+        ret = av_seek_frame(ic, -1, timestamp, AVSEEK_FLAG_BACKWARD);
         if (ret < 0) {
             fprintf(stderr, "%s: could not seek to position %0.3f\n", 
                     filename, (double)timestamp / AV_TIME_BASE);
