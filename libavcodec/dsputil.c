@@ -71,6 +71,21 @@ UINT8 ff_alternate_vertical_scan[64] = {
     38, 46, 54, 62, 39, 47, 55, 63,
 };
 
+
+static UINT8 simple_mmx_permutation[64]={
+	0x00, 0x08, 0x01, 0x09, 0x04, 0x0C, 0x05, 0x0D,
+	0x10, 0x18, 0x11, 0x19, 0x14, 0x1C, 0x15, 0x1D,
+	0x02, 0x0A, 0x03, 0x0B, 0x06, 0x0E, 0x07, 0x0F,
+	0x12, 0x1A, 0x13, 0x1B, 0x16, 0x1E, 0x17, 0x1F,
+	0x20, 0x28, 0x21, 0x29, 0x24, 0x2C, 0x25, 0x2D,
+	0x30, 0x38, 0x31, 0x39, 0x34, 0x3C, 0x35, 0x3D,
+	0x22, 0x2A, 0x23, 0x2B, 0x26, 0x2E, 0x27, 0x2F,
+	0x32, 0x3A, 0x33, 0x3B, 0x36, 0x3E, 0x37, 0x3F,
+};
+
+UINT8 permutation[64];
+//UINT8 invPermutation[64];
+
 void get_pixels_c(DCTELEM *block, const UINT8 *pixels, int line_size)
 {
     DCTELEM *p;
@@ -390,24 +405,16 @@ int pix_abs16x16_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size, int h)
 /* permute block according so that it corresponds to the MMX idct
    order */
 #ifdef SIMPLE_IDCT
+ /* general permutation, but perhaps slightly slower */
 void block_permute(INT16 *block)
 {
 	int i;
 	INT16 temp[64];
 
-//	for(i=0; i<64; i++) temp[i] = block[ block_permute_op(i) ];
 	for(i=0; i<64; i++) temp[ block_permute_op(i) ] = block[i];
 
 	for(i=0; i<64; i++) block[i] = temp[i];
-/*
-	for(i=0; i<64; i++)
-	{
-		if((i&7)==0) printf("\n");
-		printf("%2d ", block[i]);
-	}
-*/
 }
-
 #else
 
 void block_permute(INT16 *block)
@@ -479,6 +486,15 @@ void dsputil_init(void)
 #ifdef SIMPLE_IDCT
     if(ff_idct == simple_idct) use_permuted_idct=0;
 #endif
+
+    if(use_permuted_idct)
+#ifdef SIMPLE_IDCT
+        for(i=0; i<64; i++) permutation[i]= simple_mmx_permutation[i];
+#else
+        for(i=0; i<64; i++) permutation[i]= (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
+#endif
+    else
+        for(i=0; i<64; i++) permutation[i]=i;
 
     if (use_permuted_idct) {
         /* permute for IDCT */
