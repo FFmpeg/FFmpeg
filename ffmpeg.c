@@ -582,7 +582,7 @@ static void fill_pad_region(AVPicture* img, int height, int width,
     }
 }
 
-static uint8_t *video_buffer= NULL; //FIXME rename, its used for audio too at the end
+static uint8_t *bit_buffer= NULL;
 
 static void do_video_out(AVFormatContext *s, 
                          AVOutputStream *ost, 
@@ -632,11 +632,6 @@ static void do_video_out(AVFormatContext *s,
         ost->sync_opts= lrintf(ost->sync_ipts * enc->frame_rate / enc->frame_rate_base);
 
     if (nb_frames <= 0) 
-        return;
-
-    if (!video_buffer)
-        video_buffer = av_malloc(VIDEO_BUFFER_SIZE);
-    if (!video_buffer)
         return;
 
     /* convert pixel format if needed */
@@ -816,11 +811,11 @@ static void do_video_out(AVFormatContext *s,
             big_picture.pts= av_rescale(ost->sync_opts, AV_TIME_BASE*(int64_t)enc->frame_rate_base, enc->frame_rate);
 //av_log(NULL, AV_LOG_DEBUG, "%lld -> encoder\n", ost->sync_opts);
             ret = avcodec_encode_video(enc, 
-                                       video_buffer, VIDEO_BUFFER_SIZE,
+                                       bit_buffer, VIDEO_BUFFER_SIZE,
                                        &big_picture);
             //enc->frame_number = enc->real_pict_num;
             if(ret){
-                pkt.data= video_buffer;
+                pkt.data= bit_buffer;
                 pkt.size= ret;
                 if(enc->coded_frame)
                     pkt.pts= enc->coded_frame->pts;
@@ -1228,12 +1223,12 @@ static int output_packet(AVInputStream *ist, int ist_index,
  
                         switch(ost->st->codec.codec_type) {
                         case CODEC_TYPE_AUDIO:        
-                            ret = avcodec_encode_audio(enc, video_buffer, VIDEO_BUFFER_SIZE, NULL);
+                            ret = avcodec_encode_audio(enc, bit_buffer, VIDEO_BUFFER_SIZE, NULL);
                             audio_size += ret;
                             pkt.flags |= PKT_FLAG_KEY;
                             break;
                         case CODEC_TYPE_VIDEO:
-                            ret = avcodec_encode_video(enc, video_buffer, VIDEO_BUFFER_SIZE, NULL);
+                            ret = avcodec_encode_video(enc, bit_buffer, VIDEO_BUFFER_SIZE, NULL);
                             video_size += ret;
                             if(enc->coded_frame && enc->coded_frame->key_frame)
                                 pkt.flags |= PKT_FLAG_KEY;
@@ -1247,7 +1242,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             
                         if(ret<=0)
                             break;
-                        pkt.data= video_buffer;
+                        pkt.data= bit_buffer;
                         pkt.size= ret;
                         if(enc->coded_frame)
                             pkt.pts= enc->coded_frame->pts;
@@ -1286,6 +1281,11 @@ static int av_encode(AVFormatContext **output_files,
     if (!file_table)
         goto fail;
 
+    if (!bit_buffer)
+        bit_buffer = av_malloc(VIDEO_BUFFER_SIZE);
+    if (!bit_buffer)
+        goto fail;
+        
     /* input stream init */
     j = 0;
     for(i=0;i<nb_input_files;i++) {
