@@ -88,6 +88,8 @@ static int video_bit_rate_tolerance = 4000*1000;
 static float video_qscale = 0;
 static int video_qmin = 2;
 static int video_qmax = 31;
+static int video_lmin = 2*FF_QP2LAMBDA;
+static int video_lmax = 31*FF_QP2LAMBDA;
 static int video_mb_qmin = 2;
 static int video_mb_qmax = 31;
 static int video_qdiff = 3;
@@ -2197,6 +2199,16 @@ static void opt_qscale(const char *arg)
     }
 }
 
+static void opt_lmax(const char *arg)
+{
+    video_lmax = atof(arg)*FF_QP2LAMBDA;
+}
+
+static void opt_lmin(const char *arg)
+{
+    video_lmin = atof(arg)*FF_QP2LAMBDA;
+}
+
 static void opt_qmin(const char *arg)
 {
     video_qmin = atoi(arg);
@@ -2829,6 +2841,8 @@ static void opt_output_file(const char *filename)
                 }
                 video_enc->qmin = video_qmin;
                 video_enc->qmax = video_qmax;
+                video_enc->lmin = video_lmin;
+                video_enc->lmax = video_lmax;
                 video_enc->mb_qmin = video_mb_qmin;
                 video_enc->mb_qmax = video_mb_qmax;
                 video_enc->max_qdiff = video_qdiff;
@@ -3475,6 +3489,8 @@ const OptionDef options[] = {
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
     { "qmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qmin}, "min video quantiser scale (VBR)", "q" },
     { "qmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qmax}, "max video quantiser scale (VBR)", "q" },
+    { "lmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lmin}, "min video lagrange factor (VBR)", "lambda" },
+    { "lmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lmax}, "max video lagrange factor (VBR)", "lambda" },
     { "mbqmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_qmin}, "min macroblock quantiser scale (VBR)", "q" },
     { "mbqmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_qmax}, "max macroblock quantiser scale (VBR)", "q" },
     { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
