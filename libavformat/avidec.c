@@ -38,6 +38,7 @@ typedef struct AVIStream {
     int scale;
     int rate;    
     int sample_size; /* audio only data */
+    int start;
     
     int new_frame_offset; /* temporary storage (used during seek) */
     int cum_len; /* temporary storage (used during seek) */
@@ -232,11 +233,12 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* initial frame */
                     ast->scale = get_le32(pb); /* scale */
                     ast->rate = get_le32(pb);
-                    get_le32(pb); /* start */
+                    ast->start= get_le32(pb); /* start */
                     length = get_le32(pb); /* length, in samples or bytes */
                     get_le32(pb); /* buffer size */
                     get_le32(pb); /* quality */
                     ast->sample_size = get_le32(pb); /* sample ssize */
+//av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d\n", ast->scale, ast->rate, ast->sample_size, ast->start);
                     st->start_time = 0;
                     if (ast->rate != 0)
                         st->duration = (int64_t)length * AV_TIME_BASE / ast->rate;
@@ -419,10 +421,10 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                 ast = st->priv_data;
 
                 /* XXX: how to handle B frames in avi ? */
-                if(st->codec.codec_type == CODEC_TYPE_VIDEO)
+                if(ast->sample_size)
+                    pkt->pts = ((int64_t)ast->frame_offset * ast->scale* AV_TIME_BASE) / (ast->rate * ast->sample_size);
+                else
                     pkt->pts = ((int64_t)ast->frame_offset * ast->scale* AV_TIME_BASE) / ast->rate;
-                else //FIXME this is proably not correct for all weird avis
-                    pkt->pts = ((int64_t)ast->frame_offset * ast->scale* AV_TIME_BASE) / (ast->rate * st->codec.block_align);
 //printf("%Ld %d %d %d %d\n", pkt->pts, ast->frame_offset, ast->scale,  AV_TIME_BASE,  ast->rate);
                 pkt->stream_index = n;
                 /* FIXME: We really should read index for that */
@@ -435,11 +437,13 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                            are key frames */
                         pkt->flags |= PKT_FLAG_KEY;
                     }
-                    ast->frame_offset++;
                 } else {
-                    ast->frame_offset += pkt->size;
                     pkt->flags |= PKT_FLAG_KEY; 
                 }
+                if(ast->sample_size)
+                    ast->frame_offset += pkt->size;
+                else
+                    ast->frame_offset++;
 	    }
             return size;
         }
@@ -634,7 +638,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
             if ((j  + 1) < ast->nb_index_entries)
                 j++;
             /* extract the current frame number */
-            if (st->codec.codec_type == CODEC_TYPE_VIDEO)           
+            if (ast->sample_size==0)
                 ast->new_frame_offset = j;
             else
                 ast->new_frame_offset = ast->index_entries[j].cum_len;
