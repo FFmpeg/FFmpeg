@@ -26,6 +26,10 @@
 #include <stdio.h>
 #include <math.h>
 
+#ifndef M_PI
+#define M_PI 3.1415926535897931
+#endif
+
 #include "avformat.h"
 
 /* 5 seconds stream duration */
