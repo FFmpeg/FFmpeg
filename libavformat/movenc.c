@@ -20,7 +20,6 @@
 #include "avformat.h"
 #include "avi.h"
 #include "avio.h"
-#include <time.h>
 
 #undef NDEBUG
 #include <assert.h>
@@ -780,9 +779,7 @@ static int mov_write_header(AVFormatContext *s)
 }
 
 static int Timestamp() {
-    time_t ltime;
-    time ( &ltime );
-    return ltime+(24107*86400);
+    return 1067949799U+(24107*86400); //its the modification time of this line :)
 }
 
 static int mov_write_packet(AVFormatContext *s, int stream_index,
