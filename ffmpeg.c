@@ -2567,8 +2567,14 @@ int main(int argc, char **argv)
 
     /* close files */
     for(i=0;i<nb_output_files;i++) {
-        if (!(output_files[i]->oformat->flags & AVFMT_NOFILE)) 
-            url_fclose(&output_files[i]->pb);
+        /* maybe av_close_output_file ??? */
+        AVFormatContext *s = output_files[i];
+	int j;
+        if (!(s->oformat->flags & AVFMT_NOFILE))
+	    url_fclose(&s->pb);
+	for(j=0;j<s->nb_streams;j++)
+	    av_free(s->streams[j]);
+        av_free(s);
     }
     for(i=0;i<nb_input_files;i++)
         av_close_input_file(input_files[i]);
