@@ -3998,6 +3998,30 @@ char ff_get_pict_type_char(int pict_type){
     }
 }
 
+extern const AVOption common_options[2];
+static const AVOption mpeg4_options[] =
+{
+    AVOPTION_CODEC_INT("bitrate", "desired video bitrate", bit_rate, 4, 240000000, 800000),
+    AVOPTION_CODEC_FLAG("vhq", "very high quality", flags, CODEC_FLAG_HQ, 0),
+    AVOPTION_CODEC_INT("ratetol", "number of bits the bitstream is allowed to diverge from the reference"
+		       "the reference can be CBR (for CBR pass1) or VBR (for pass2)",
+		       bit_rate_tolerance, 4, 240000000, 8000),
+    AVOPTION_CODEC_INT("qmin", "minimum quantizer", qmin, 1, 31, 2),
+    AVOPTION_CODEC_INT("qmax", "maximum quantizer", qmax, 1, 31, 31),
+    AVOPTION_CODEC_STRING("rc_eq", "rate control equation",
+			  rc_eq, "tex^qComp,option1,options2", 0),
+    AVOPTION_CODEC_INT("rc_minrate", "rate control minimum bitrate",
+		       rc_min_rate, 4, 24000000, 0),
+    AVOPTION_CODEC_INT("rc_maxrate", "rate control maximum bitrate",
+		       rc_max_rate, 4, 24000000, 0),
+    AVOPTION_CODEC_FLAG("psnr", "calculate PSNR of compressed frames",
+		        flags, CODEC_FLAG_PSNR, 0),
+    AVOPTION_CODEC_RCOVERRIDE("rc_override", "ratecontrol override (=startframe,endframe,qscale,quality_factor)",
+			      rc_override),
+    AVOPTION_SUB(common_options),
+    AVOPTION_END()
+};
+
 AVCodec mpeg1video_encoder = {
     "mpeg1video",
     CODEC_TYPE_VIDEO,
@@ -4048,6 +4072,7 @@ AVCodec mpeg4_encoder = {
     MPV_encode_init,
     MPV_encode_picture,
     MPV_encode_end,
+    .options = mpeg4_options,
 };
 
 AVCodec msmpeg4v1_encoder = {

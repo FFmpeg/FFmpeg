@@ -50,9 +50,9 @@ static AVCodec* avcodec_find_by_fcc(uint32_t fcc)
     return NULL;
 }
 
-static private_handle_t* create_handle()
+static private_handle_t* create_handle(void)
 {
-    private_handle_t* t = malloc(sizeof(private_handle_t));
+    private_handle_t* t = av_malloc(sizeof(private_handle_t));
     if (!t)
 	return NULL;
     memset(t, 0, sizeof(*t));
@@ -82,7 +82,7 @@ static void destroy_handle(private_handle_t* handle)
 	{
 	    avcodec_close(&handle->avcontext);
 	}
-	free(handle);
+	av_free(handle);
 
         // count referencies
     }
@@ -96,13 +96,13 @@ int avcodec(void* handle, avc_cmd_t cmd, void* pin, void* pout)
     case AVC_OPEN_BY_NAME:
 	{
             // pin  char* codec name
-	    private_handle_t* handle = create_handle();
-	    (private_handle_t**)pout = handle;
-	    if (!handle)
+	    private_handle_t* h = create_handle();
+	    (private_handle_t**)pout = h;
+	    if (!h)
 		return -ENOMEM;
-	    if (!handle->avcodec)
+	    if (!h->avcodec)
 	    {
-		destroy_handle(handle);
+		destroy_handle(h);
 		(private_handle_t**)pout = NULL;
 		return -1;// better error
 	    }
@@ -111,14 +111,14 @@ int avcodec(void* handle, avc_cmd_t cmd, void* pin, void* pout)
     case AVC_OPEN_BY_CODEC_ID:
 	{
             // pin  uint32_t codec fourcc
-	    private_handle_t* handle = create_handle();
-	    (private_handle_t**)pout = handle;
-	    if (!handle)
+	    private_handle_t* h = create_handle();
+	    (private_handle_t**)pout = h;
+	    if (!h)
 		return -ENOMEM;
 
-	    if (!handle->avcodec)
+	    if (!h->avcodec)
 	    {
-		destroy_handle(handle);
+		destroy_handle(h);
 		(private_handle_t**)pout = NULL;
 		return -1;// better error
 	    }
@@ -127,14 +127,14 @@ int avcodec(void* handle, avc_cmd_t cmd, void* pin, void* pout)
     case AVC_OPEN_BY_FOURCC:
 	{
             // pin  uint32_t codec fourcc
-	    private_handle_t* handle = create_handle();
-	    (private_handle_t**)pout = handle;
-	    if (!handle)
+	    private_handle_t* h = create_handle();
+	    (private_handle_t**)pout = h;
+	    if (!h)
 		return -ENOMEM;
-	    handle->avcodec = avcodec_find_by_fcc((uint32_t) pin);
-	    if (!handle->avcodec)
+	    h->avcodec = avcodec_find_by_fcc((uint32_t) pin);
+	    if (!h->avcodec)
 	    {
-		destroy_handle(handle);
+		destroy_handle(h);
 		(private_handle_t**)pout = NULL;
 		return -1;// better error
 	    }
