@@ -231,6 +231,9 @@ typedef struct MOVStreamContext {
     long sample_to_chunk_sz;
     MOV_sample_to_chunk_tbl *sample_to_chunk;
     long sample_to_chunk_index;
+    int sample_to_time_index;	 
+    long sample_to_time_sample;	 
+    uint64_t sample_to_time_time;    
     long sample_size;
     long sample_count;
     long *sample_sizes;
@@ -1895,6 +1898,40 @@ readchunk:
 #endif
 
     mov->next_chunk_offset = offset + size;
+    
+    /* find the corresponding dts */	 
+    if (sc && sc->sample_to_time_index < sc->stts_count && pkt) {	 
+      uint32_t count;	 
+      uint64_t dts;	 
+      uint32_t duration = (uint32_t)(sc->stts_data[sc->sample_to_time_index]&0xffff);	 
+      count = (uint32_t)(sc->stts_data[sc->sample_to_time_index]>>32);	 
+      if ((sc->sample_to_time_sample + count) < sc->current_sample) {	 
+        sc->sample_to_time_sample += count;	 
+        sc->sample_to_time_time   += count*duration;	 
+        sc->sample_to_time_index ++;	 
+        duration = (uint32_t)(sc->stts_data[sc->sample_to_time_index]&0xffff);	 
+      }	 
+      dts = sc->sample_to_time_time + (sc->current_sample-1 - sc->sample_to_time_sample) * duration;	 
+      dts = av_rescale( dts, 	 
+                        (int64_t)s->streams[sc->ffindex]->time_base.den, 	 
+                        (int64_t)sc->time_scale * (int64_t)s->streams[sc->ffindex]->time_base.num );	 
+      pkt->dts = dts;	 
+      // audio pts = dts, true for video only in low_latency mode (FIXME a good way to know if we are in a low latency stream ?)	 
+      if (s->streams[sc->ffindex]->codec.codec_type == CODEC_TYPE_AUDIO)	 
+        pkt->pts = dts;	 
+      else 	 
+        pkt->pts = AV_NOPTS_VALUE;	 
+#ifdef DEBUG 	 
+/*    av_log(NULL, AV_LOG_DEBUG, "stream #%d smp #%ld dts = %ld (smp:%ld time:%ld idx:%ld ent:%d count:%ld dur:%ld)\n"	 
+      , pkt->stream_index, sc->current_sample-1, (long)pkt->dts	 
+      , (long)sc->sample_to_time_sample	 
+      , (long)sc->sample_to_time_time	 
+      , (long)sc->sample_to_time_index	 
+      , (long)sc->stts_count	 
+      , count	 
+      , duration);*/	 
+#endif        	 
+    } 
 
     return 0;
 }
@@ -1919,6 +1956,9 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     int64_t sample_file_offset;
     int32_t first_chunk_sample;
     int32_t sample_to_chunk_idx;
+    int sample_to_time_index;	 
+    long sample_to_time_sample = 0;	 
+    uint64_t sample_to_time_time = 0;      
     int mov_idx;
 
     // Find the corresponding mov stream
@@ -1957,12 +1997,17 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 //av_log(s, AV_LOG_DEBUG, "> sample_time %lli \n", (long)sample_time);                
 //av_log(s, AV_LOG_DEBUG, "> count=%i duration=%i\n", count, duration);        
         if ((start_time + count*duration) > sample_time) {
+            sample_to_time_time = start_time;	 
+            sample_to_time_index = i;	 
+            sample_to_time_sample = sample;         
             sample += (sample_time - start_time) / duration;
             break;
         }
         sample += count;
         start_time += count * duration;
     }   
+    sample_to_time_time = start_time;	 
+    sample_to_time_index = i;       
     /* NOTE: despite what qt doc say, the dt value (Display Time in qt vocabulary) computed with the stts atom
        is a decoding time stamp (dts) not a presentation time stamp. And as usual dts != pts for stream with b frames */
 
@@ -1989,6 +2034,8 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
          // av_log(s, AV_LOG_DEBUG, "a=%i (%i) b=%i (%i) m=%i (%i) stream #%i\n", a, sc->keyframes[a], b, sc->keyframes[b], m, sc->keyframes[m], mov_idx);
 #endif
         }
+        // for low latency prob: always use the previous keyframe, just uncomment the next line
+        // if (a) a--;
         seek_sample = sc->keyframes[a];
     }
     else
@@ -2084,6 +2131,20 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         }
         msc->current_sample += (msc->next_chunk - (msc->sample_to_chunk[msc->sample_to_chunk_index].first - 1)) * sc->sample_to_chunk[msc->sample_to_chunk_index].count;
         msc->left_in_chunk = msc->sample_to_chunk[msc->sample_to_chunk_index].count - 1;
+        // Find corresponding position in stts (used later to compute dts)	 
+        sample = 0;	 
+        start_time = 0;	 
+        for (msc->sample_to_time_index = 0; msc->sample_to_time_index < msc->stts_count; msc->sample_to_time_index++) {	 
+            count = (uint32_t)(msc->stts_data[msc->sample_to_time_index]>>32);	 
+            duration = (uint32_t)(msc->stts_data[msc->sample_to_time_index]&0xffff);	 
+            if ((sample + count - 1) > msc->current_sample) {	 
+                msc->sample_to_time_time = start_time;	 
+                msc->sample_to_time_sample = sample;	 
+                break;	 
+            }	 
+            sample += count;	 
+            start_time += count * duration;	 
+        }        
 #ifdef DEBUG        
         av_log(s, AV_LOG_DEBUG, "Next Sample for stream #%i is #%i @%i\n", i, msc->current_sample + 1, msc->sample_to_chunk_index + 1);
 #endif        
