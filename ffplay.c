@@ -1715,7 +1715,7 @@ int main(int argc, char **argv)
     flags |= SDL_INIT_EVENTTHREAD; /* Not supported on win32 */
 #endif
     if (SDL_Init (flags)) {
-        fprintf(stderr, "Could not initialize SDL - exiting\n");
+        fprintf(stderr, "Could not initialize SDL - %s\n", SDL_GetError());
         exit(1);
     }
 
