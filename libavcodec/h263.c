@@ -4304,6 +4304,8 @@ int h263_decode_picture_header(MpegEncContext *s)
         /* MPPTYPE */
         s->pict_type = get_bits(&s->gb, 3) + I_TYPE;
         dprintf("pict_type: %d\n", s->pict_type);
+	if (s->pict_type == 8 && s->avctx->codec_tag == ff_get_fourcc("ZYGO"))
+	    s->pict_type = I_TYPE;
         if (s->pict_type != I_TYPE &&
             s->pict_type != P_TYPE)
             return -1;
