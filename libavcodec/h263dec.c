@@ -162,7 +162,27 @@ static int h263_decode_frame(AVCodecContext *avctx,
                 s->c_dc_scale = 8;
             }
 
+#ifdef HAVE_MMX
+            if (mm_flags & MM_MMX) {
+                asm volatile(
+			"pxor %%mm7, %%mm7		\n\t"
+			"movl $-128*6, %%eax		\n\t"
+			"1:				\n\t"
+			"movq %%mm7, (%0, %%eax)	\n\t"
+			"movq %%mm7, 8(%0, %%eax)	\n\t"
+			"movq %%mm7, 16(%0, %%eax)	\n\t"
+			"movq %%mm7, 24(%0, %%eax)	\n\t"
+			"addl $32, %%eax		\n\t"
+			" js 1b				\n\t"
+			: : "r" (((int)s->block)+128*6)
+			: "%eax"
+                );
+            }else{
+                memset(s->block, 0, sizeof(s->block));
+            }
+#else
             memset(s->block, 0, sizeof(s->block));
+#endif
             s->mv_dir = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16; 
             if (s->h263_msmpeg4) {
