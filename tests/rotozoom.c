@@ -5,7 +5,31 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
+#include <inttypes.h>
+
+#define FIXP (1<<16)
+#define MY_PI 205887 //(M_PI*FIX)
+
+static int64_t int_pow(int64_t a, int p){
+    int64_t v= FIXP;
+
+    for(; p; p--){
+        v*= a;
+        v/= FIXP;
+    }
+
+    return v;
+}
+
+static int64_t int_sin(int64_t a){
+    if(a<0) a= MY_PI-a; // 0..inf
+    a %= 2*MY_PI;       // 0..2PI
+
+    if(a>=MY_PI*3/2) a -= 2*MY_PI;  // -PI/2 .. 3PI/2
+    if(a>=MY_PI/2  ) a = MY_PI - a; // -PI/2 ..  PI/2
+   
+    return a - int_pow(a, 3)/6 + int_pow(a, 5)/120 - int_pow(a, 7)/5040;
+}
 
 #define SCALEBITS 8
 #define ONE_HALF  (1 << (SCALEBITS - 1))
@@ -78,7 +102,7 @@ static void rgb24_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
 /* cif format */
 #define DEFAULT_WIDTH   352
 #define DEFAULT_HEIGHT  288
-#define DEFAULT_NB_PICT 360
+#define DEFAULT_NB_PICT 50
 
 void pgmyuv_save(const char *filename, int w, int h,
                  unsigned char *rgb_tab)
@@ -160,69 +184,51 @@ void gen_image(int num, int w, int h)
 
   for (j=0;j<h;j++) {
 
-    x = xprime + xi;
+    x = xprime + xi + FIXP*w/2;
     xprime += s;
 
-    y = yprime + yi;
+    y = yprime + yi + FIXP*h/2;
     yprime += c;
       
     for ( i=0 ; i<w ; i++ ) {
       x += c;
       y -= s;
-      dep = ((x>>8)&255) + (y&(255<<8));
+      dep = ((x>>16)&255) + (((y>>16)&255)<<8);
       put_pixel(i, j, tab_r[dep], tab_g[dep], tab_b[dep]);
     }
   }
   teta = (teta+1) % 360;
 }
 
+#define W 256
+#define H 256
+
 void init_demo() {
   int i,j;
-  double h;
-  double radian;
-  char line[3 * 128];
+  int h;
+  int radian;
+  char line[3 * W];
 
   FILE *fichier;
 
-
-  fichier = fopen("rotozoom-ffmpeg.pnm","r");
+  fichier = fopen("lena.pnm","r");
   fread(line, 1, 15, fichier);
-  for (i=0;i<128;i++) {
-    fread(line,1,3*128,fichier);
-    for (j=0;j<128;j++) {
-	  tab_r[256*i+j] = line[3*j    ];
-	  tab_g[256*i+j] = line[3*j + 1];
-	  tab_b[256*i+j] = line[3*j + 2];
+  for (i=0;i<H;i++) {
+    fread(line,1,3*W,fichier);
+    for (j=0;j<W;j++) {
+	  tab_r[W*i+j] = line[3*j    ];
+	  tab_g[W*i+j] = line[3*j + 1];
+	  tab_b[W*i+j] = line[3*j + 2];
     }
-	memcpy(tab_r + 257*128 + i*256, tab_r + i*256, 128);
-	memcpy(tab_g + 257*128 + i*256, tab_g + i*256, 128);
-	memcpy(tab_b + 257*128 + i*256, tab_b + i*256, 128);
   }
   fclose(fichier);
-
-  fichier = fopen("rotozoom-tux.pnm","r");
-  fread(line, 1, 15, fichier);
-  for (i=0;i<128;i++) {
-    fread(line,1,3*128,fichier);
-    for (j=0;j<128;j++) {
-	  tab_r[128 + 256*i+j] = line[3*j    ];
-	  tab_g[128 + 256*i+j] = line[3*j + 1];
-	  tab_b[128 + 256*i+j] = line[3*j + 2];
-    }
-	memcpy(tab_r + 256*128 + i*256, tab_r + 128 + i*256, 128);
-	memcpy(tab_g + 256*128 + i*256, tab_g + 128 + i*256, 128);
-	memcpy(tab_b + 256*128 + i*256, tab_b + 128 + i*256, 128);
-  }
-  fclose(fichier);
-
-
 
   /* tables sin/cos */
   for (i=0;i<360;i++) {
-    radian = 2*i*M_PI/360;
-    h = 2 + cos (radian);      
-    h_cos[i] = 256 * ( h * cos (radian) );
-    h_sin[i] = 256 * ( h * sin (radian) );
+    radian = 2*i*MY_PI/360;
+    h = 2*FIXP + int_sin (radian);
+    h_cos[i] = ( h * int_sin (radian + MY_PI/2) )/2/FIXP;
+    h_sin[i] = ( h * int_sin (radian          ) )/2/FIXP;
   }
 }
 
@@ -248,7 +254,7 @@ int main(int argc, char **argv)
     init_demo();
 
     for(i=0;i<DEFAULT_NB_PICT;i++) {
-        snprintf(buf, sizeof(buf), "%s%03d.pgm", argv[1], i);
+        snprintf(buf, sizeof(buf), "%s%d.pgm", argv[1], i);
         gen_image(i, w, h);
         pgmyuv_save(buf, w, h, rgb_tab);
     }

@@ -7,7 +7,8 @@ include ../config.mak
 VPATH=$(SRC_PATH)/tests
 CFLAGS=-O2 -Wall -g
 
-REFFILE=$(SRC_PATH)/tests/ffmpeg.regression.ref
+REFFILE1=$(SRC_PATH)/tests/ffmpeg.regression.ref
+REFFILE2=$(SRC_PATH)/tests/rotozoom.regression.ref
 
 SERVER_REFFILE=$(SRC_PATH)/tests/ffserver.regression.ref
 
@@ -19,12 +20,13 @@ test-server: vsynth1/0.pgm asynth1.sw
 	@$(SRC_PATH)/tests/server-regression.sh $(SERVER_REFFILE)
 
 # fast regression tests for all codecs
-test mpeg4 mpeg: vsynth1/0.pgm asynth1.sw tiny_psnr
-	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE) || true
+test mpeg4 mpeg: vsynth1/0.pgm vsynth2/0.pgm asynth1.sw tiny_psnr
+	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE1) vsynth1 || true
+	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE2) vsynth2 || true
 
 # fast regression for libav formats
 libavtest: vsynth1/0.pgm asynth1.sw
-	@$(SRC_PATH)/tests/regression.sh $@ $(LIBAV_REFFILE)
+	@$(SRC_PATH)/tests/regression.sh $@ $(LIBAV_REFFILE) vsynth1
 
 # video generation
 
@@ -32,7 +34,14 @@ vsynth1/0.pgm: videogen
 	@mkdir -p vsynth1
 	./videogen 'vsynth1/'
 
+vsynth2/0.pgm: rotozoom
+	@mkdir -p vsynth2
+	./rotozoom 'vsynth2/'
+
 videogen: videogen.c
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
+
+rotozoom: rotozoom.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
 # audio generation
@@ -63,5 +72,5 @@ dsptest: dsptest.c $(DSPDEPS)
 	$(CC) -O4 -fomit-frame-pointer -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavcodec/i386 -I$(SRC_PATH)/libavcodec/ -o $@ $< -lm
 
 clean:
-	rm -rf vsynth1 data
+	rm -rf vsynth1 vsynth2 data
 	rm -f asynth1.sw *~ audiogen videogen

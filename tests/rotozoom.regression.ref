@@ -1,0 +1,46 @@
+ffmpeg regression test
+53ffeab95141e6a70f76a5da8d399502 *./data/a-mpeg1.mpg
+5eb64d914bcfde923841775b59aa8824 *./data/out.yuv
+stddev:  5.79 bytes:7299072
+5010ba12d570da1b67cf8228cf57ae64 *./data/a-msmpeg4v2.avi
+4e770952654358c3f433f62076a3699c *./data/out.yuv
+stddev:  6.34 bytes:7602176
+3d86f471d5ead1a28d16e872df9e925d *./data/a-msmpeg4.avi
+eca94a909c3efb47d5ae17a3531415b5 *./data/out.yuv
+stddev:  6.34 bytes:7602176
+0a595c1cf463ed333da18fe8fa35c574 *./data/a-wmv1.avi
+d5af5d26b85d04996a254bc0e0da16ab *./data/out.yuv
+stddev:  6.33 bytes:7602176
+ccf667747ae00dc3749186879b79a512 *./data/a-wmv2.avi
+d5af5d26b85d04996a254bc0e0da16ab *./data/out.yuv
+stddev:  6.33 bytes:7602176
+06de9fb1fc7835586cc021766b01efe0 *./data/a-h263.avi
+a5c270fa5eff8be3ba37c29a2ab23b3a *./data/out.yuv
+stddev:  6.42 bytes:7602176
+0a0e7bbe5f29bd62b6a78353b8af398c *./data/a-h263p.avi
+90a76e3af35aa6353748b80a23d71682 *./data/out.yuv
+stddev:  2.09 bytes:7602176
+8f0b6b12b267a52d9387dea6c13c03a0 *./data/a-odivx.avi
+54462ec0c0c490fcc9f241b4db316b72 *./data/out.yuv
+stddev:  6.33 bytes:7602176
+7098bda9d5040fb546c4f09c0c4b2c10 *./data/a-huffyuv.avi
+fcf7324a82f7c8f82938e183fb3d9160 *./data/out.yuv
+stddev:  0.00 bytes:7602176
+2380e8af936ace954ae4f6f9b28834e4 *./data/a-mpeg4-rc.avi
+c42afeb9a193ff621fe7817625b1ac26 *./data/out.yuv
+stddev:  7.08 bytes:7145472
+a903c3f843d46148c921753e0329c53a *./data/a-mpeg4-adv.avi
+97c59508e0ff00a2c85a236816d27ac1 *./data/out.yuv
+stddev:  5.93 bytes:7602176
+4268e97a03ed85d23d4811a7801bcd34 *./data/a-mpeg1b.mpg
+69a02eaf41614c89cc143346e17e9312 *./data/out.yuv
+stddev:  4.87 bytes:6842368
+68330608354aa4bade1dad5d78965f7c *./data/a-mjpeg.avi
+5d8d78dda9b7fed66a9867c481790bee *./data/out.yuv
+stddev:  5.77 bytes:7602176
+8d05d59683f7803ae2ddf214b29f09b1 *./data/a-rv10.rm
+b5654603df11d5a3ac77db9274d11e6f *./data/out.yuv
+stddev: 13.18 bytes:7602176
+21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2
+116d1290ba1b4eb98fdee52e423417b1 *./data/out.wav
+048b9c3444c788bac6ce5cc3a8f4db00 *./data/a-ac3.rm
