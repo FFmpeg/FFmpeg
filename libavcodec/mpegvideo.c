@@ -3738,13 +3738,13 @@ void ff_copy_bits(PutBitContext *pb, uint8_t *src, int length)
 
     if(length==0) return;
     
-//    if(put_bits_count(pb)&7){ //FIXME
+    if(put_bits_count(pb)&7){
         for(i=0; i<words; i++) put_bits(pb, 16, be2me_16(((uint16_t*)src)[i]));
-/*    }else{
+    }else{
         flush_put_bits(pb);
         memcpy(pbBufPtr(pb), src, 2*words);
         skip_put_bytes(pb, 2*words);
-    }*/
+    }
         
     put_bits(pb, bits, be2me_16(((uint16_t*)src)[words])>>(16-bits));
 }
