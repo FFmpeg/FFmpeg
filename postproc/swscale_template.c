@@ -107,7 +107,7 @@
 			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
 */
-#define YSCALEYUV2RGBX \
+#define YSCALEYUV2PACKEDX \
 		"xorl %%eax, %%eax		\n\t"\
 		".balign 16			\n\t"\
 		"1:				\n\t"\
@@ -144,7 +144,10 @@
 		"paddw %%mm5, %%mm7		\n\t"\
 		"addl $1, %%edx			\n\t"\
 		" jnz 2b			\n\t"\
-\
+
+
+#define YSCALEYUV2RGBX \
+		YSCALEYUV2PACKEDX\
 		"psubw "MANGLE(w400)", %%mm3	\n\t" /* (U-128)8*/\
 		"psubw "MANGLE(w400)", %%mm4	\n\t" /* (V-128)8*/\
 		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
@@ -234,6 +237,46 @@
 \
 		"packuswb %%mm1, %%mm1		\n\t"
 
+#define YSCALEYUV2PACKED \
+		"movd %6, %%mm6			\n\t" /*yalpha1*/\
+		"punpcklwd %%mm6, %%mm6		\n\t"\
+		"punpcklwd %%mm6, %%mm6		\n\t"\
+                "psraw $3, %%mm6		\n\t"\
+		"movq %%mm6, 3968(%2)		\n\t"\
+		"movd %7, %%mm5			\n\t" /*uvalpha1*/\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+                "psraw $3, %%mm5		\n\t"\
+		"movq %%mm5, 3976(%2)		\n\t"\
+		"xorl %%eax, %%eax		\n\t"\
+		".balign 16			\n\t"\
+		"1:				\n\t"\
+		"movq (%2, %%eax), %%mm2	\n\t" /* uvbuf0[eax]*/\
+		"movq (%3, %%eax), %%mm3	\n\t" /* uvbuf1[eax]*/\
+		"movq 4096(%2, %%eax), %%mm5	\n\t" /* uvbuf0[eax+2048]*/\
+		"movq 4096(%3, %%eax), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
+		"psubw %%mm3, %%mm2		\n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
+		"psubw %%mm4, %%mm5		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
+		"movq 3976(%2), %%mm0		\n\t"\
+		"pmulhw %%mm0, %%mm2		\n\t" /* (uvbuf0[eax] - uvbuf1[eax])uvalpha1>>16*/\
+		"pmulhw %%mm0, %%mm5		\n\t" /* (uvbuf0[eax+2048] - uvbuf1[eax+2048])uvalpha1>>16*/\
+		"psraw $7, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
+		"psraw $7, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
+		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax]uvalpha1 - uvbuf1[eax](1-uvalpha1)*/\
+		"paddw %%mm5, %%mm4		\n\t" /* uvbuf0[eax+2048]uvalpha1 - uvbuf1[eax+2048](1-uvalpha1)*/\
+		"movq (%0, %%eax, 2), %%mm0	\n\t" /*buf0[eax]*/\
+		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf1[eax]*/\
+		"movq 8(%0, %%eax, 2), %%mm6	\n\t" /*buf0[eax]*/\
+		"movq 8(%1, %%eax, 2), %%mm7	\n\t" /*buf1[eax]*/\
+		"psubw %%mm1, %%mm0		\n\t" /* buf0[eax] - buf1[eax]*/\
+		"psubw %%mm7, %%mm6		\n\t" /* buf0[eax] - buf1[eax]*/\
+		"pmulhw 3968(%2), %%mm0		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw 3968(%2), %%mm6		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"psraw $7, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
+		"psraw $7, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
+		"paddw %%mm0, %%mm1		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
+		"paddw %%mm6, %%mm7		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
+                
 #define YSCALEYUV2RGB \
 		"movd %6, %%mm6			\n\t" /*yalpha1*/\
 		"punpcklwd %%mm6, %%mm6		\n\t"\
@@ -306,7 +349,20 @@
 		"packuswb %%mm6, %%mm5		\n\t"\
 		"packuswb %%mm3, %%mm4		\n\t"\
 		"pxor %%mm7, %%mm7		\n\t"
-
+                
+#define YSCALEYUV2PACKED1 \
+		"xorl %%eax, %%eax		\n\t"\
+		".balign 16			\n\t"\
+		"1:				\n\t"\
+		"movq (%2, %%eax), %%mm3	\n\t" /* uvbuf0[eax]*/\
+		"movq 4096(%2, %%eax), %%mm4	\n\t" /* uvbuf0[eax+2048]*/\
+		"psraw $7, %%mm3		\n\t" \
+		"psraw $7, %%mm4		\n\t" \
+		"movq (%0, %%eax, 2), %%mm1	\n\t" /*buf0[eax]*/\
+		"movq 8(%0, %%eax, 2), %%mm7	\n\t" /*buf0[eax]*/\
+		"psraw $7, %%mm1		\n\t" \
+		"psraw $7, %%mm7		\n\t" \
+                
 #define YSCALEYUV2RGB1 \
 		"xorl %%eax, %%eax		\n\t"\
 		".balign 16			\n\t"\
@@ -355,6 +411,23 @@
 		"packuswb %%mm3, %%mm4		\n\t"\
 		"pxor %%mm7, %%mm7		\n\t"
 
+#define YSCALEYUV2PACKED1b \
+		"xorl %%eax, %%eax		\n\t"\
+		".balign 16			\n\t"\
+		"1:				\n\t"\
+		"movq (%2, %%eax), %%mm2	\n\t" /* uvbuf0[eax]*/\
+		"movq (%3, %%eax), %%mm3	\n\t" /* uvbuf1[eax]*/\
+		"movq 4096(%2, %%eax), %%mm5	\n\t" /* uvbuf0[eax+2048]*/\
+		"movq 4096(%3, %%eax), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
+		"paddw %%mm2, %%mm3		\n\t" /* uvbuf0[eax] + uvbuf1[eax]*/\
+		"paddw %%mm5, %%mm4		\n\t" /* uvbuf0[eax+2048] + uvbuf1[eax+2048]*/\
+		"psrlw $8, %%mm3		\n\t" \
+		"psrlw $8, %%mm4		\n\t" \
+		"movq (%0, %%eax, 2), %%mm1	\n\t" /*buf0[eax]*/\
+		"movq 8(%0, %%eax, 2), %%mm7	\n\t" /*buf0[eax]*/\
+		"psraw $7, %%mm1		\n\t" \
+		"psraw $7, %%mm7		\n\t" 
+                
 // do vertical chrominance interpolation
 #define YSCALEYUV2RGB1b \
 		"xorl %%eax, %%eax		\n\t"\
@@ -652,6 +725,23 @@
 #define WRITEBGR24 WRITEBGR24MMX
 #endif
 
+#define WRITEYUY2 \
+			"packuswb %%mm3, %%mm3		\n\t"\
+			"packuswb %%mm4, %%mm4		\n\t"\
+			"packuswb %%mm7, %%mm1		\n\t"\
+			"punpcklbw %%mm4, %%mm3		\n\t"\
+			"movq %%mm1, %%mm7		\n\t"\
+			"punpcklbw %%mm3, %%mm1		\n\t"\
+			"punpckhbw %%mm3, %%mm7		\n\t"\
+\
+			MOVNTQ(%%mm1, (%4, %%eax, 2))\
+			MOVNTQ(%%mm7, 8(%4, %%eax, 2))\
+\
+			"addl $8, %%eax			\n\t"\
+			"cmpl %5, %%eax			\n\t"\
+			" jb 1b				\n\t"
+
+
 static inline void RENAME(yuv2yuvX)(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
 				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW,
@@ -752,7 +842,7 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
 /**
  * vertical scale YV12 to RGB
  */
-static inline void RENAME(yuv2rgbX)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+static inline void RENAME(yuv2packedX)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
 			    uint8_t *dest, int dstW, int16_t * lumMmxFilter, int16_t * chrMmxFilter, int dstY)
 {
@@ -831,9 +921,29 @@ static inline void RENAME(yuv2rgbX)(SwsContext *c, int16_t *lumFilter, int16_t *
 			);
 		}
 		break;
+	case IMGFMT_YUY2:
+		{
+			asm volatile(
+				YSCALEYUV2PACKEDX
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+
+				"psraw $3, %%mm3		\n\t"
+				"psraw $3, %%mm4		\n\t"
+				"psraw $3, %%mm1		\n\t"
+				"psraw $3, %%mm7		\n\t"
+				WRITEYUY2
+
+			:: "m" (-lumFilterSize), "m" (-chrFilterSize),
+			   "m" (lumMmxFilter+lumFilterSize*4), "m" (chrMmxFilter+chrFilterSize*4),
+			   "r" (dest), "m" (dstW),
+			   "m" (lumSrc+lumFilterSize), "m" (chrSrc+chrFilterSize)
+			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
+			);
+		}
+		break;
 #endif
 	default:
-		yuv2rgbXinC(c, lumFilter, lumSrc, lumFilterSize,
+		yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
 			    chrFilter, chrSrc, chrFilterSize,
 			    dest, dstW, dstY);
 		break;
@@ -843,7 +953,7 @@ static inline void RENAME(yuv2rgbX)(SwsContext *c, int16_t *lumFilter, int16_t *
 /**
  * vertical bilinear scale YV12 to RGB
  */
-static inline void RENAME(yuv2rgb2)(SwsContext *c, uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
+static inline void RENAME(yuv2packed2)(SwsContext *c, uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
 			    uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
 {
 	int yalpha1=yalpha^4095;
@@ -1124,16 +1234,26 @@ FULL_YSCALEYUV2RGB
 			: "%eax"
 			);
 			return;
+	case IMGFMT_YUY2:
+			asm volatile(
+				YSCALEYUV2PACKED
+				WRITEYUY2
+
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+			return;
 	default: break;
 	}
 #endif //HAVE_MMX
-YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_2_C)
+YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C)
 }
 
 /**
  * YV12 to RGB without scaling or interpolating
  */
-static inline void RENAME(yuv2rgb1)(SwsContext *c, uint16_t *buf0, uint16_t *uvbuf0, uint16_t *uvbuf1,
+static inline void RENAME(yuv2packed1)(SwsContext *c, uint16_t *buf0, uint16_t *uvbuf0, uint16_t *uvbuf1,
 			    uint8_t *dest, int dstW, int uvalpha, int dstFormat, int flags, int y)
 {
 	int uvalpha1=uvalpha^4095;
@@ -1145,7 +1265,7 @@ static inline void RENAME(yuv2rgb1)(SwsContext *c, uint16_t *buf0, uint16_t *uvb
 
 	if(flags&SWS_FULL_CHR_H_INT)
 	{
-		RENAME(yuv2rgb2)(c, buf0, buf0, uvbuf0, uvbuf1, dest, dstW, 0, uvalpha, y);
+		RENAME(yuv2packed2)(c, buf0, buf0, uvbuf0, uvbuf1, dest, dstW, 0, uvalpha, y);
 		return;
 	}
 
@@ -1199,6 +1319,15 @@ static inline void RENAME(yuv2rgb1)(SwsContext *c, uint16_t *buf0, uint16_t *uvb
 #endif
 
 				WRITEBGR16
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+			return;
+		case IMGFMT_YUY2:
+			asm volatile(
+				YSCALEYUV2PACKED1
+				WRITEYUY2
 			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
@@ -1260,14 +1389,23 @@ static inline void RENAME(yuv2rgb1)(SwsContext *c, uint16_t *buf0, uint16_t *uvb
 			: "%eax"
 			);
 			return;
+		case IMGFMT_YUY2:
+			asm volatile(
+				YSCALEYUV2PACKED1b
+				WRITEYUY2
+			:: "r" (buf0), "r" (buf0), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstW),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+			return;
 		}
 	}
 #endif
 	if( uvalpha < 2048 )
 	{
-		YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_1_C)
+		YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C)
 	}else{
-		YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C, YSCALE_YUV_2_1B_C)
+		YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C, YSCALE_YUV_2_PACKED1B_C)
 	}
 }
 
@@ -2533,7 +2671,7 @@ i--;
 			{
 				int chrAlpha= vChrFilter[2*dstY+1];
 
-				RENAME(yuv2rgb1)(c, *lumSrcPtr, *chrSrcPtr, *(chrSrcPtr+1),
+				RENAME(yuv2packed1)(c, *lumSrcPtr, *chrSrcPtr, *(chrSrcPtr+1),
 						 dest, dstW, chrAlpha, dstFormat, flags, dstY);
 			}
 			else if(vLumFilterSize == 2 && vChrFilterSize == 2) //BiLinear Upscale RGB
@@ -2541,12 +2679,12 @@ i--;
 				int lumAlpha= vLumFilter[2*dstY+1];
 				int chrAlpha= vChrFilter[2*dstY+1];
 
-				RENAME(yuv2rgb2)(c, *lumSrcPtr, *(lumSrcPtr+1), *chrSrcPtr, *(chrSrcPtr+1),
+				RENAME(yuv2packed2)(c, *lumSrcPtr, *(lumSrcPtr+1), *chrSrcPtr, *(chrSrcPtr+1),
 						 dest, dstW, lumAlpha, chrAlpha, dstY);
 			}
 			else //General RGB
 			{
-				RENAME(yuv2rgbX)(c,
+				RENAME(yuv2packedX)(c,
 					vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
 					vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
 					dest, dstW,
@@ -2571,7 +2709,7 @@ i--;
 		{
 			ASSERT(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
 			ASSERT(chrSrcPtr + vChrFilterSize - 1 < chrPixBuf + vChrBufSize*2);
-			yuv2rgbXinC(c, 
+			yuv2packedXinC(c, 
 				vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
 				vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
 				dest, dstW, dstY);
