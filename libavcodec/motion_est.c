@@ -1002,7 +1002,10 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
         c->stride<<=1;
         c->uvstride<<=1;
         
-        assert(s->flags & CODEC_FLAG_INTERLACED_ME);
+        if(!(s->flags & CODEC_FLAG_INTERLACED_ME)){
+            av_log(s->avctx, AV_LOG_ERROR, "Interlaced macroblock selected but interlaced motion estimation disabled\n");
+            return -1;
+        }
 
         if(USES_LIST(mb_type, 0)){
             int field_select0= p->ref_index[0][xy ];
@@ -1060,7 +1063,10 @@ static inline int check_input_motion(MpegEncContext * s, int mb_x, int mb_y, int
         c->stride>>=1;
         c->uvstride>>=1;
     }else if(IS_8X8(mb_type)){
-        assert(s->flags & CODEC_FLAG_4MV);
+        if(!(s->flags & CODEC_FLAG_4MV)){
+            av_log(s->avctx, AV_LOG_ERROR, "4MV macroblock selected but 4MV encoding disabled\n");
+            return -1;
+        }
         cmpf= s->dsp.sse[1];
         chroma_cmpf= s->dsp.sse[1];
         init_mv4_ref(s);
