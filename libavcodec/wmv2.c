@@ -650,7 +650,7 @@ void ff_mspel_motion(MpegEncContext *s,
     if(s->flags&CODEC_FLAG_EMU_EDGE){
         if(src_x<1 || src_y<1 || src_x + 17  >= s->h_edge_pos
                               || src_y + h+1 >= v_edge_pos){
-            ff_emulated_edge_mc(s->emu_edge_buffer, ptr - 1 - s->linesize, s->linesize, 19, 19, 
+            ff_emulated_edge_mc(s->edge_emu_buffer, ptr - 1 - s->linesize, s->linesize, 19, 19, 
                              src_x-1, src_y-1, s->h_edge_pos, s->v_edge_pos);
             ptr= s->edge_emu_buffer + 1 + s->linesize;
             emu=1;
