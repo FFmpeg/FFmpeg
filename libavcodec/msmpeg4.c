@@ -1313,13 +1313,14 @@ return -1;
             break;
         }
         s->no_rounding = 1;
-/*	printf("qscale:%d rlc:%d rl:%d dc:%d mbrl:%d slice:%d   \n", 
+        if(s->avctx->debug&FF_DEBUG_PICT_INFO)
+	    printf("qscale:%d rlc:%d rl:%d dc:%d mbrl:%d slice:%d   \n", 
 		s->qscale,
 		s->rl_chroma_table_index,
 		s->rl_table_index, 
 		s->dc_table_index,
                 s->per_mb_rl_table,
-                s->slice_height);*/
+                s->slice_height);
     } else {
         switch(s->msmpeg4_version){
         case 1:
@@ -1359,14 +1360,17 @@ return -1;
             s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE);
             break;
         }
-/*	printf("skip:%d rl:%d rlc:%d dc:%d mv:%d mbrl:%d qp:%d   \n", 
+        
+        if(s->avctx->debug&FF_DEBUG_PICT_INFO)
+	    printf("skip:%d rl:%d rlc:%d dc:%d mv:%d mbrl:%d qp:%d   \n", 
 		s->use_skip_mb_code, 
 		s->rl_table_index, 
 		s->rl_chroma_table_index, 
 		s->dc_table_index,
 		s->mv_table_index,
                 s->per_mb_rl_table,
-                s->qscale);*/
+                s->qscale);
+
 	if(s->flipflop_rounding){
 	    s->no_rounding ^= 1;
 	}else{
