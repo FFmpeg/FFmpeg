@@ -2359,6 +2359,7 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 		);
 //printf("%d\n", test);
 #else
+{
 	int y;
 	int d=0;
 	int sysd=0;
@@ -2459,6 +2460,7 @@ Switch between
 			}
 		}
 	}
+}
 #endif
 }
 
