@@ -98,7 +98,7 @@ do_ffmpeg()
     shift
     echo $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 $*
     $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
-    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration)" /tmp/ffmpeg$$ || true
+    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     do_md5sum $f >> $logfile
     if [ $f = $raw_dst ] ; then
@@ -116,7 +116,7 @@ do_ffmpeg_crc()
     shift
     echo $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 $* -f crc $datadir/ffmpeg.crc
     $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 $* -f crc $datadir/ffmpeg.crc > /tmp/ffmpeg$$ 2>&1
-    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration)" /tmp/ffmpeg$$ || true
+    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:|ffmpeg version|  configuration|  built)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$ 
     echo "$f `cat $datadir/ffmpeg.crc`" >> $logfile
 }
@@ -127,7 +127,7 @@ do_ffmpeg_nocheck()
     shift
     echo $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 $*
     $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
-    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration)" /tmp/ffmpeg$$ || true
+    egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration|video:)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
     echo `cat $datadir/bench2.tmp` $f >> $benchfile
