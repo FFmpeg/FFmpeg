@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * MMI optimization by Leon van Stuivenberg <leonvs@iae.nl>
+ * clear_blocks_mmi() by BroadQ
  */
 
 #include "../dsputil.h"
@@ -28,19 +29,21 @@ void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
 
 static void clear_blocks_mmi(DCTELEM * blocks)
 {
-    int i;
-    for (i = 0; i < 6; i++) {
         asm volatile(
-        "sq     $0, 0(%0)       \n\t"
-        "sq     $0, 16(%0)      \n\t"
-        "sq     $0, 32(%0)      \n\t"
-        "sq     $0, 48(%0)      \n\t"
-        "sq     $0, 64(%0)      \n\t"
-        "sq     $0, 80(%0)      \n\t"
-        "sq     $0, 96(%0)      \n\t"
-        "sq     $0, 112(%0)     \n\t" :: "r" (blocks) : "memory" );
-        blocks += 64;
-    }
+        ".set noreorder    \n"
+        "addiu $9, %0, 768 \n"
+        "nop               \n"
+        "1:                \n"
+        "sq $0, 0(%0)      \n"
+        "move $8, %0       \n"
+        "addi %0, %0, 64   \n"
+        "sq $0, 16($8)     \n"
+        "slt $10, %0, $9   \n"
+        "sq $0, 32($8)     \n"
+        "bnez $10, 1b      \n"
+        "sq $0, 48($8)     \n"
+        ".set reorder      \n"
+        : "+r" (blocks) ::  "$8", "$9", "memory" );
 }
 
 
