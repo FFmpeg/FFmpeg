@@ -169,7 +169,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_CAP_PARSE_ONLY      0x0004
 #define CODEC_CAP_TRUNCATED       0x0008
 
-#define FRAME_RATE_BASE 10000
+#define FRAME_RATE_BASE 10010
 
 #define FF_COMMON_FRAME \
     uint8_t *data[4];\

@@ -386,14 +386,14 @@ static const uint8_t mbMotionVectorTable[17][2] = {
 
 static const int frame_rate_tab[9] = {
     0, 
-    (int)(23.976 * FRAME_RATE_BASE), 
-    (int)(24 * FRAME_RATE_BASE), 
-    (int)(25 * FRAME_RATE_BASE), 
-    (int)(29.97 * FRAME_RATE_BASE), 
-    (int)(30 * FRAME_RATE_BASE), 
-    (int)(50 * FRAME_RATE_BASE), 
-    (int)(59.94 * FRAME_RATE_BASE), 
-    (int)(60 * FRAME_RATE_BASE), 
+    24000 * FRAME_RATE_BASE / 1001,
+    24000 * FRAME_RATE_BASE / 1000,
+    25000 * FRAME_RATE_BASE / 1000,
+    30000 * FRAME_RATE_BASE / 1001,
+    30000 * FRAME_RATE_BASE / 1000,
+    50000 * FRAME_RATE_BASE / 1000,
+    60000 * FRAME_RATE_BASE / 1001,
+    60000 * FRAME_RATE_BASE / 1000,
 };
 
 static const uint8_t non_linear_qscale[32] = {
