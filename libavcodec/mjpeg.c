@@ -1338,8 +1338,8 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s){
                     }
 //		    dprintf("mb: %d %d processed\n", mb_y, mb_x);
                     ptr = s->picture.data[c] + 
-                        (s->linesize[c] * (v * mb_y + y) * 8) + 
-                        (h * mb_x + x) * 8;
+                        (((s->linesize[c] * (v * mb_y + y) * 8) + 
+                        (h * mb_x + x) * 8) >> s->avctx->lowres);
                     if (s->interlaced && s->bottom_field)
                         ptr += s->linesize[c] >> 1;
 //av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d %d %d %d %d \n", mb_x, mb_y, x, y, c, s->bottom_field, (v * mb_y + y) * 8, (h * mb_x + x) * 8);
