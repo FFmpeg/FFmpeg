@@ -1,4 +1,5 @@
-version <next>:
+version 0.4.9-pre1:
+
 - DV encoder, DV muxer
 - Microsoft RLE video decoder
 - Microsoft Video-1 decoder
@@ -14,7 +15,70 @@ version <next>:
 - RealVideo 2.0 (RV20) decoder
 - Duck TrueMotion v1 (DUCK) video decoder
 - Sierra VMD demuxer and video decoder
+- MSZH and ZLIB decoder support
 - SVQ1 video encoder
+- AMR-WB support
+- PPC optimisations
+- rate distortion optimal cbp support
+- rate distorted optimal ac prediction for mpeg4
+- rate distorted optimal lambda->qp support
+- AAC encoding with libfaac
+- Sunplus JPEG codec (SP5X) support
+- use lagrange multipler instead of qp for ratecontrol
+- theora/VP3 decoding support
+- XA and ADX ADPCM codecs
+- export mpeg2 active display area / pan scan
+- Add support for configuring with IBM XLC
+- floating point AAN DCT
+- initial support for zygovideo (not complete)
+- rgb ffv1 support
+- new audio/video parser API
+- av_log() system
+- av_read_frame() and av_seek_frame() support
+- missing last frame fixes
+- seek by mouse in ffplay
+- noise reduction of dct coefficients
+- h263 OBMC & 4MV support
+- h263 alternative inter vlc support
+- h263 loop filter
+- h263 slice structured mode
+- interlaced DCT support for MPEG2 encoding
+- stuffing to stay above min_bitrate
+- mb type & qp vissualization
+- frame stepping for ffplay
+- interlaced motion estimation
+- alternate scantable support
+- SVCD scan offset support
+- closed gop support
+- SSE2 fdct
+- quantizer noise shaping
+- G.726 ADPCM audio codec
+- MS ADPCM encoding
+- multithreaded/SMP motion estimation
+- multithreaded/SMP encoding for MPEG1/MPEG2/MPEG4/H263
+- multithreaded/SMP decoding for MPEG2
+- FLAC decoder
+- Metrowerks CodeWarrior suppport
+- h263+ custom pcf support
+- nicer output for 'ffmpeg -formats'
+- matroska demuxer
+- SGI image format, encoding and decoding
+- h264 loop filter support
+- h264 CABAC support
+- nicer looking arrows for the motion vector vissualization
+- improved VCD support
+- audio timestamp drift compensation
+- mpeg2 YUV 422/444 support
+- polyphase kaiser windowed sinc and blackman nuttall windowed sinc audio resample
+- better image scaling
+- h261 support
+- correctly interleave packets during encoding
+- VIS optimized motion compensation
+- intra_dc_precission>0 encoding support
+- support reuse of motion vectors/mb types/field select values of the source video
+- more accurate deblock filter
+- padding support
+- many optimizations and bugfixes
 
 version 0.4.8:
 
