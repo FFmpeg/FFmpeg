@@ -407,7 +407,7 @@ static void ff_idct_add_mlib(uint8_t *dest, int line_size, DCTELEM *data)
     mlib_VideoAddBlock_U8_S16(dest, (mlib_s16 *)data, line_size);
 }
 
-static void ff_idct_mlib(uint8_t *dest, int line_size, DCTELEM *data)
+static void ff_idct_mlib(DCTELEM *data)
 {
     mlib_VideoIDCT8x8_S16_S16 (data, data);
 }
