@@ -50,7 +50,7 @@
  * http://www.geocities.com/xhelmboyx/quicktime/formats/qtm-layout.txt
  * Apple:
  *  http://developer.apple.com/documentation/QuickTime/QTFF/
- *  http://developer.apple.com/documentation/QuickTime/PDF/QTFileFormat.pdf
+ *  http://developer.apple.com/documentation/QuickTime/QTFF/qtff.pdf
  * QuickTime is a trademark of Apple (AFAIK :))
  */
 
