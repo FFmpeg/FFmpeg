@@ -787,16 +787,16 @@ static inline void set_p_mv_tables(MpegEncContext * s, int mx, int my, int mv4)
     if(mv4){
         int mot_xy= s->block_index[0];
 
-        s->motion_val[mot_xy  ][0]= mx;
-        s->motion_val[mot_xy  ][1]= my;
-        s->motion_val[mot_xy+1][0]= mx;
-        s->motion_val[mot_xy+1][1]= my;
+        s->current_picture.motion_val[0][mot_xy  ][0]= mx;
+        s->current_picture.motion_val[0][mot_xy  ][1]= my;
+        s->current_picture.motion_val[0][mot_xy+1][0]= mx;
+        s->current_picture.motion_val[0][mot_xy+1][1]= my;
 
         mot_xy += s->block_wrap[0];
-        s->motion_val[mot_xy  ][0]= mx;
-        s->motion_val[mot_xy  ][1]= my;
-        s->motion_val[mot_xy+1][0]= mx;
-        s->motion_val[mot_xy+1][1]= my;
+        s->current_picture.motion_val[0][mot_xy  ][0]= mx;
+        s->current_picture.motion_val[0][mot_xy  ][1]= my;
+        s->current_picture.motion_val[0][mot_xy+1][0]= mx;
+        s->current_picture.motion_val[0][mot_xy+1][1]= my;
     }
 }
 
@@ -852,8 +852,8 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
         const int rel_ymin4= ymin - block_y*8;
         const int rel_ymax4= ymax - block_y*8 + 8;
 #endif
-        P_LEFT[0] = s->motion_val[mot_xy - 1][0];
-        P_LEFT[1] = s->motion_val[mot_xy - 1][1];
+        P_LEFT[0] = s->current_picture.motion_val[0][mot_xy - 1][0];
+        P_LEFT[1] = s->current_picture.motion_val[0][mot_xy - 1][1];
 
         if(P_LEFT[0]       > (rel_xmax4<<shift)) P_LEFT[0]       = (rel_xmax4<<shift);
 
@@ -862,10 +862,10 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
             pred_x4= P_LEFT[0];
             pred_y4= P_LEFT[1];
         } else {
-            P_TOP[0]      = s->motion_val[mot_xy - mot_stride             ][0];
-            P_TOP[1]      = s->motion_val[mot_xy - mot_stride             ][1];
-            P_TOPRIGHT[0] = s->motion_val[mot_xy - mot_stride + off[block]][0];
-            P_TOPRIGHT[1] = s->motion_val[mot_xy - mot_stride + off[block]][1];
+            P_TOP[0]      = s->current_picture.motion_val[0][mot_xy - mot_stride             ][0];
+            P_TOP[1]      = s->current_picture.motion_val[0][mot_xy - mot_stride             ][1];
+            P_TOPRIGHT[0] = s->current_picture.motion_val[0][mot_xy - mot_stride + off[block]][0];
+            P_TOPRIGHT[1] = s->current_picture.motion_val[0][mot_xy - mot_stride + off[block]][1];
             if(P_TOP[1]      > (rel_ymax4<<shift)) P_TOP[1]     = (rel_ymax4<<shift);
             if(P_TOPRIGHT[0] < (rel_xmin4<<shift)) P_TOPRIGHT[0]= (rel_xmin4<<shift);
             if(P_TOPRIGHT[0] > (rel_xmax4<<shift)) P_TOPRIGHT[0]= (rel_xmax4<<shift);
@@ -927,8 +927,8 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
             my4_sum+= my4;
         }
             
-        s->motion_val[ s->block_index[block] ][0]= mx4;
-        s->motion_val[ s->block_index[block] ][1]= my4;
+        s->current_picture.motion_val[0][ s->block_index[block] ][0]= mx4;
+        s->current_picture.motion_val[0][ s->block_index[block] ][1]= my4;
 
         if(mx4 != mx || my4 != my) same=0;
     }
@@ -1030,16 +1030,16 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             const int mot_stride = s->block_wrap[0];
             const int mot_xy = s->block_index[0];
 
-            P_LEFT[0]       = s->motion_val[mot_xy - 1][0];
-            P_LEFT[1]       = s->motion_val[mot_xy - 1][1];
+            P_LEFT[0]       = s->current_picture.motion_val[0][mot_xy - 1][0];
+            P_LEFT[1]       = s->current_picture.motion_val[0][mot_xy - 1][1];
 
             if(P_LEFT[0]       > (rel_xmax<<shift)) P_LEFT[0]       = (rel_xmax<<shift);
 
             if(mb_y) {
-                P_TOP[0]      = s->motion_val[mot_xy - mot_stride    ][0];
-                P_TOP[1]      = s->motion_val[mot_xy - mot_stride    ][1];
-                P_TOPRIGHT[0] = s->motion_val[mot_xy - mot_stride + 2][0];
-                P_TOPRIGHT[1] = s->motion_val[mot_xy - mot_stride + 2][1];
+                P_TOP[0]      = s->current_picture.motion_val[0][mot_xy - mot_stride    ][0];
+                P_TOP[1]      = s->current_picture.motion_val[0][mot_xy - mot_stride    ][1];
+                P_TOPRIGHT[0] = s->current_picture.motion_val[0][mot_xy - mot_stride + 2][0];
+                P_TOPRIGHT[1] = s->current_picture.motion_val[0][mot_xy - mot_stride + 2][1];
                 if(P_TOP[1]      > (rel_ymax<<shift)) P_TOP[1]     = (rel_ymax<<shift);
                 if(P_TOPRIGHT[0] < (rel_xmin<<shift)) P_TOPRIGHT[0]= (rel_xmin<<shift);
                 if(P_TOPRIGHT[1] > (rel_ymax<<shift)) P_TOPRIGHT[1]= (rel_ymax<<shift);
@@ -1476,8 +1476,8 @@ static inline int direct_search(MpegEncContext * s,
         int index= s->block_index[i];
         int min, max;
     
-        s->me.co_located_mv[i][0]= s->motion_val[index][0];
-        s->me.co_located_mv[i][1]= s->motion_val[index][1];
+        s->me.co_located_mv[i][0]= s->next_picture.motion_val[0][index][0];
+        s->me.co_located_mv[i][1]= s->next_picture.motion_val[0][index][1];
         s->me.direct_basis_mv[i][0]= s->me.co_located_mv[i][0]*time_pb/time_pp + ((i& 1)<<(shift+3));
         s->me.direct_basis_mv[i][1]= s->me.co_located_mv[i][1]*time_pb/time_pp + ((i>>1)<<(shift+3));
 //        s->me.direct_basis_mv[1][i][0]= s->me.co_located_mv[i][0]*(time_pb - time_pp)/time_pp + ((i &1)<<(shift+3);
@@ -1694,8 +1694,8 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
                     int block;
                     for(block=0; block<4; block++){
                         int off= (block& 1) + (block>>1)*wrap;
-                        int mx= s->motion_val[ xy + off ][0];
-                        int my= s->motion_val[ xy + off ][1];
+                        int mx= s->current_picture.motion_val[0][ xy + off ][0];
+                        int my= s->current_picture.motion_val[0][ xy + off ][1];
 
                         if(   mx >=range || mx <-range
                            || my >=range || my <-range){

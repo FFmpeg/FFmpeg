@@ -316,9 +316,9 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
                 pic->motion_val[i]= pic->motion_val_base[i]+1;
                 CHECKED_ALLOCZ(pic->ref_index[i] , b8_array_size * sizeof(uint8_t))
             }
-        }else if(s->out_format == FMT_H263){
+        }else if(s->out_format == FMT_H263 || s->encoding || (s->avctx->debug&(FF_DEBUG_VIS_MV|FF_DEBUG_MV))){
             for(i=0; i<2; i++){
-                CHECKED_ALLOCZ(pic->motion_val_base[i], 2 * (b8_array_size+1) * sizeof(uint16_t))
+                CHECKED_ALLOCZ(pic->motion_val_base[i], 2 * (b8_array_size+1) * sizeof(uint16_t)*2) //FIXME
                 pic->motion_val[i]= pic->motion_val_base[i]+1;
             }
         }
@@ -489,14 +489,6 @@ int MPV_common_init(MpegEncContext *s)
 
     CHECKED_ALLOCZ(s->error_status_table, mb_array_size*sizeof(uint8_t))
     
-    if (s->out_format == FMT_H263 || s->encoding || (s->avctx->debug&FF_DEBUG_VIS_MV)) {
-        int size;
-
-        /* MV prediction */
-        size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
-        CHECKED_ALLOCZ(s->motion_val, size * 2 * sizeof(int16_t));
-    }
-
     if(s->codec_id==CODEC_ID_MPEG4){
         /* interlaced direct mode decoding tables */
         CHECKED_ALLOCZ(s->field_mv_table, mb_array_size*2*2 * sizeof(int16_t))
@@ -581,7 +573,6 @@ void MPV_common_end(MpegEncContext *s)
     s->b_bidir_back_mv_table= NULL;
     s->b_direct_mv_table= NULL;
     
-    av_freep(&s->motion_val);
     av_freep(&s->dc_val[0]);
     av_freep(&s->ac_val[0]);
     av_freep(&s->coded_block);
@@ -1417,8 +1408,8 @@ void ff_print_debug_info(MpegEncContext *s, Picture *pict){
             av_log(s->avctx, AV_LOG_DEBUG, "\n");
         }
     }
-    
-    if((s->avctx->debug&FF_DEBUG_VIS_MV) && s->motion_val){
+
+    if((s->avctx->debug&FF_DEBUG_VIS_MV) && pict->motion_val){
         const int shift= 1 + s->quarter_sample;
         int mb_y;
         uint8_t *ptr= pict->data[0];
@@ -1428,32 +1419,32 @@ void ff_print_debug_info(MpegEncContext *s, Picture *pict){
             int mb_x;
             for(mb_x=0; mb_x<s->mb_width; mb_x++){
                 const int mb_index= mb_x + mb_y*s->mb_stride;
-                if(IS_8X8(s->current_picture.mb_type[mb_index])){
+                if(IS_8X8(pict->mb_type[mb_index])){
                     int i;
                     for(i=0; i<4; i++){
                         int sx= mb_x*16 + 4 + 8*(i&1);
                         int sy= mb_y*16 + 4 + 8*(i>>1);
                         int xy= 1 + mb_x*2 + (i&1) + (mb_y*2 + 1 + (i>>1))*(s->mb_width*2 + 2);
-                        int mx= (s->motion_val[xy][0]>>shift) + sx;
-                        int my= (s->motion_val[xy][1]>>shift) + sy;
+                        int mx= (pict->motion_val[0][xy][0]>>shift) + sx;
+                        int my= (pict->motion_val[0][xy][1]>>shift) + sy;
                         draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
                     }
-                }else if(IS_16X8(s->current_picture.mb_type[mb_index])){
+                }else if(IS_16X8(pict->mb_type[mb_index])){
                     int i;
                     for(i=0; i<2; i++){
                         int sx=mb_x*16 + 8;
                         int sy=mb_y*16 + 4 + 8*i;
                         int xy=1 + mb_x*2 + (mb_y*2 + 1 + i)*(s->mb_width*2 + 2);
-                        int mx=(s->motion_val[xy][0]>>shift) + sx;
-                        int my=(s->motion_val[xy][1]>>shift) + sy;
+                        int mx=(pict->motion_val[0][xy][0]>>shift) + sx;
+                        int my=(pict->motion_val[0][xy][1]>>shift) + sy;
                         draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
                     }
                 }else{
                     int sx= mb_x*16 + 8;
                     int sy= mb_y*16 + 8;
                     int xy= 1 + mb_x*2 + (mb_y*2 + 1)*(s->mb_width*2 + 2);
-                    int mx= (s->motion_val[xy][0]>>shift) + sx;
-                    int my= (s->motion_val[xy][1]>>shift) + sy;
+                    int mx= (pict->motion_val[0][xy][0]>>shift) + sx;
+                    int my= (pict->motion_val[0][xy][1]>>shift) + sy;
                     draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
                 }
                 s->mbskip_table[mb_index]=0;
@@ -2383,30 +2374,30 @@ static inline void MPV_motion(MpegEncContext *s,
 
         assert(!s->mb_skiped);
                 
-        memcpy(mv_cache[1][1], s->motion_val[mot_xy           ], sizeof(int16_t)*4);
-        memcpy(mv_cache[2][1], s->motion_val[mot_xy+mot_stride], sizeof(int16_t)*4);
-        memcpy(mv_cache[3][1], s->motion_val[mot_xy+mot_stride], sizeof(int16_t)*4);
+        memcpy(mv_cache[1][1], s->current_picture.motion_val[0][mot_xy           ], sizeof(int16_t)*4);
+        memcpy(mv_cache[2][1], s->current_picture.motion_val[0][mot_xy+mot_stride], sizeof(int16_t)*4);
+        memcpy(mv_cache[3][1], s->current_picture.motion_val[0][mot_xy+mot_stride], sizeof(int16_t)*4);
 
         if(mb_y==0 || IS_INTRA(s->current_picture.mb_type[xy-s->mb_stride])){
             memcpy(mv_cache[0][1], mv_cache[1][1], sizeof(int16_t)*4);
         }else{
-            memcpy(mv_cache[0][1], s->motion_val[mot_xy-mot_stride], sizeof(int16_t)*4);
+            memcpy(mv_cache[0][1], s->current_picture.motion_val[0][mot_xy-mot_stride], sizeof(int16_t)*4);
         }
 
         if(mb_x==0 || IS_INTRA(s->current_picture.mb_type[xy-1])){
             *(int32_t*)mv_cache[1][0]= *(int32_t*)mv_cache[1][1];
             *(int32_t*)mv_cache[2][0]= *(int32_t*)mv_cache[2][1];
         }else{
-            *(int32_t*)mv_cache[1][0]= *(int32_t*)s->motion_val[mot_xy-1];
-            *(int32_t*)mv_cache[2][0]= *(int32_t*)s->motion_val[mot_xy-1+mot_stride];
+            *(int32_t*)mv_cache[1][0]= *(int32_t*)s->current_picture.motion_val[0][mot_xy-1];
+            *(int32_t*)mv_cache[2][0]= *(int32_t*)s->current_picture.motion_val[0][mot_xy-1+mot_stride];
         }
 
         if(mb_x+1>=s->mb_width || IS_INTRA(s->current_picture.mb_type[xy+1])){
             *(int32_t*)mv_cache[1][3]= *(int32_t*)mv_cache[1][2];
             *(int32_t*)mv_cache[2][3]= *(int32_t*)mv_cache[2][2];
         }else{
-            *(int32_t*)mv_cache[1][3]= *(int32_t*)s->motion_val[mot_xy+2];
-            *(int32_t*)mv_cache[2][3]= *(int32_t*)s->motion_val[mot_xy+2+mot_stride];
+            *(int32_t*)mv_cache[1][3]= *(int32_t*)s->current_picture.motion_val[0][mot_xy+2];
+            *(int32_t*)mv_cache[2][3]= *(int32_t*)s->current_picture.motion_val[0][mot_xy+2+mot_stride];
         }
         
         mx = 0;
@@ -3694,7 +3685,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }else /* if(s->pict_type == I_TYPE) */{
         /* I-Frame */
         //FIXME do we need to zero them?
-        memset(s->motion_val[0], 0, sizeof(int16_t)*(s->mb_width*2 + 2)*(s->mb_height*2 + 2)*2);
+        memset(s->current_picture.motion_val[0][0], 0, sizeof(int16_t)*(s->mb_width*2 + 2)*(s->mb_height*2 + 2)*2);
         memset(s->p_mv_table   , 0, sizeof(int16_t)*(s->mb_stride)*s->mb_height*2);
         memset(s->mb_type      , MB_TYPE_INTRA, sizeof(uint8_t)*s->mb_stride*s->mb_height);
         
@@ -3998,8 +3989,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s->mv_type = MV_TYPE_8X8;
                     s->mb_intra= 0;
                     for(i=0; i<4; i++){
-                        s->mv[0][i][0] = s->motion_val[s->block_index[i]][0];
-                        s->mv[0][i][1] = s->motion_val[s->block_index[i]][1];
+                        s->mv[0][i][0] = s->current_picture.motion_val[0][s->block_index[i]][0];
+                        s->mv[0][i][1] = s->current_picture.motion_val[0][s->block_index[i]][1];
                     }
                     encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_INTER4V, pb, pb2, tex_pb, 
                                  &dmin, &next_block, 0, 0);
@@ -4170,8 +4161,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s->mv_type = MV_TYPE_8X8;
                     s->mb_intra= 0;
                     for(i=0; i<4; i++){
-                        s->mv[0][i][0] = s->motion_val[s->block_index[i]][0];
-                        s->mv[0][i][1] = s->motion_val[s->block_index[i]][1];
+                        s->mv[0][i][0] = s->current_picture.motion_val[0][s->block_index[i]][0];
+                        s->mv[0][i][1] = s->current_picture.motion_val[0][s->block_index[i]][1];
                     }
                     motion_x= motion_y= 0;
                     break;

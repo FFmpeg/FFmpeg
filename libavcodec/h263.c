@@ -526,12 +526,12 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
         s->mv_type = MV_TYPE_8X8;
         for(i=0; i<4; i++){
             xy= s->block_index[i];
-            s->mv[0][i][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
-            s->mv[0][i][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
-            s->mv[1][i][0] = mx ? s->mv[0][i][0] - s->motion_val[xy][0]
-                                : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp;
-            s->mv[1][i][1] = my ? s->mv[0][i][1] - s->motion_val[xy][1] 
-                                : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp;
+            s->mv[0][i][0] = s->next_picture.motion_val[0][xy][0]*time_pb/time_pp + mx;
+            s->mv[0][i][1] = s->next_picture.motion_val[0][xy][1]*time_pb/time_pp + my;
+            s->mv[1][i][0] = mx ? s->mv[0][i][0] - s->next_picture.motion_val[0][xy][0]
+                                : s->next_picture.motion_val[0][xy][0]*(time_pb - time_pp)/time_pp;
+            s->mv[1][i][1] = my ? s->mv[0][i][1] - s->next_picture.motion_val[0][xy][1] 
+                                : s->next_picture.motion_val[0][xy][1]*(time_pb - time_pp)/time_pp;
         }
         return MB_TYPE_DIRECT2 | MB_TYPE_8x8 | MB_TYPE_L0L1;
     } else if(IS_INTERLACED(colocated_mb_type)){
@@ -553,12 +553,12 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
         }
         return MB_TYPE_DIRECT2 | MB_TYPE_16x8 | MB_TYPE_L0L1 | MB_TYPE_INTERLACED;
     }else{
-        s->mv[0][0][0] = s->mv[0][1][0] = s->mv[0][2][0] = s->mv[0][3][0] = s->motion_val[xy][0]*time_pb/time_pp + mx;
-        s->mv[0][0][1] = s->mv[0][1][1] = s->mv[0][2][1] = s->mv[0][3][1] = s->motion_val[xy][1]*time_pb/time_pp + my;
-        s->mv[1][0][0] = s->mv[1][1][0] = s->mv[1][2][0] = s->mv[1][3][0] = mx ? s->mv[0][0][0] - s->motion_val[xy][0]
-                            : s->motion_val[xy][0]*(time_pb - time_pp)/time_pp;
-        s->mv[1][0][1] = s->mv[1][1][1] = s->mv[1][2][1] = s->mv[1][3][1] = my ? s->mv[0][0][1] - s->motion_val[xy][1] 
-                            : s->motion_val[xy][1]*(time_pb - time_pp)/time_pp;
+        s->mv[0][0][0] = s->mv[0][1][0] = s->mv[0][2][0] = s->mv[0][3][0] = s->next_picture.motion_val[0][xy][0]*time_pb/time_pp + mx;
+        s->mv[0][0][1] = s->mv[0][1][1] = s->mv[0][2][1] = s->mv[0][3][1] = s->next_picture.motion_val[0][xy][1]*time_pb/time_pp + my;
+        s->mv[1][0][0] = s->mv[1][1][0] = s->mv[1][2][0] = s->mv[1][3][0] = mx ? s->mv[0][0][0] - s->next_picture.motion_val[0][xy][0]
+                            : s->next_picture.motion_val[0][xy][0]*(time_pb - time_pp)/time_pp;
+        s->mv[1][0][1] = s->mv[1][1][1] = s->mv[1][2][1] = s->mv[1][3][1] = my ? s->mv[0][0][1] - s->next_picture.motion_val[0][xy][1] 
+                            : s->next_picture.motion_val[0][xy][1]*(time_pb - time_pp)/time_pp;
         if((s->avctx->workaround_bugs & FF_BUG_DIRECT_BLOCKSIZE) || !s->quarter_sample)
             s->mv_type= MV_TYPE_16X16;
         else
@@ -596,14 +596,14 @@ void ff_h263_update_motion_val(MpegEncContext * s){
         }
         
         /* no update if 8X8 because it has been done during parsing */
-        s->motion_val[xy][0] = motion_x;
-        s->motion_val[xy][1] = motion_y;
-        s->motion_val[xy + 1][0] = motion_x;
-        s->motion_val[xy + 1][1] = motion_y;
-        s->motion_val[xy + wrap][0] = motion_x;
-        s->motion_val[xy + wrap][1] = motion_y;
-        s->motion_val[xy + 1 + wrap][0] = motion_x;
-        s->motion_val[xy + 1 + wrap][1] = motion_y;
+        s->current_picture.motion_val[0][xy][0] = motion_x;
+        s->current_picture.motion_val[0][xy][1] = motion_y;
+        s->current_picture.motion_val[0][xy + 1][0] = motion_x;
+        s->current_picture.motion_val[0][xy + 1][1] = motion_y;
+        s->current_picture.motion_val[0][xy + wrap][0] = motion_x;
+        s->current_picture.motion_val[0][xy + wrap][1] = motion_y;
+        s->current_picture.motion_val[0][xy + 1 + wrap][0] = motion_x;
+        s->current_picture.motion_val[0][xy + 1 + wrap][1] = motion_y;
     }
 
     if(s->encoding){ //FIXME encoding MUST be cleaned up
@@ -951,8 +951,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     /* motion vectors: 8x8 mode*/
                     h263_pred_motion(s, i, &pred_x, &pred_y);
 
-                    h263_encode_motion(s, s->motion_val[ s->block_index[i] ][0] - pred_x, s->f_code);
-                    h263_encode_motion(s, s->motion_val[ s->block_index[i] ][1] - pred_y, s->f_code);
+                    h263_encode_motion(s, s->current_picture.motion_val[0][ s->block_index[i] ][0] - pred_x, s->f_code);
+                    h263_encode_motion(s, s->current_picture.motion_val[0][ s->block_index[i] ][1] - pred_y, s->f_code);
                 }
             }
 
@@ -1124,8 +1124,8 @@ void h263_encode_mb(MpegEncContext * s,
                 /* motion vectors: 8x8 mode*/
                 h263_pred_motion(s, i, &pred_x, &pred_y);
 
-                motion_x= s->motion_val[ s->block_index[i] ][0];
-                motion_y= s->motion_val[ s->block_index[i] ][1];
+                motion_x= s->current_picture.motion_val[0][ s->block_index[i] ][0];
+                motion_y= s->current_picture.motion_val[0][ s->block_index[i] ][1];
                 if (!s->umvplus) {  
                     h263_encode_motion(s, motion_x - pred_x, 1);
                     h263_encode_motion(s, motion_y - pred_y, 1);
@@ -1480,9 +1480,9 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block,
     wrap = s->block_wrap[0];
     xy = s->block_index[block];
 
-    mot_val = s->motion_val[xy];
+    mot_val = s->current_picture.motion_val[0][xy];
 
-    A = s->motion_val[xy - 1];
+    A = s->current_picture.motion_val[0][xy - 1];
     /* special case for first (slice) line */
     if (s->first_slice_line && block<3) {
         // we cant just change some MVs to simulate that as we need them for the B frames (and ME)
@@ -1491,7 +1491,7 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block,
             if(s->mb_x  == s->resync_mb_x){ //rare
                 *px= *py = 0;
             }else if(s->mb_x + 1 == s->resync_mb_x && s->h263_pred){ //rare
-                C = s->motion_val[xy + off[block] - wrap];
+                C = s->current_picture.motion_val[0][xy + off[block] - wrap];
                 if(s->mb_x==0){
                     *px = C[0];
                     *py = C[1];
@@ -1505,7 +1505,7 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block,
             }
         }else if(block==1){
             if(s->mb_x + 1 == s->resync_mb_x && s->h263_pred){ //rare
-                C = s->motion_val[xy + off[block] - wrap];
+                C = s->current_picture.motion_val[0][xy + off[block] - wrap];
                 *px = mid_pred(A[0], 0, C[0]);
                 *py = mid_pred(A[1], 0, C[1]);
             }else{
@@ -1513,8 +1513,8 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block,
                 *py = A[1];
             }
         }else{ /* block==2*/
-            B = s->motion_val[xy - wrap];
-            C = s->motion_val[xy + off[block] - wrap];
+            B = s->current_picture.motion_val[0][xy - wrap];
+            C = s->current_picture.motion_val[0][xy + off[block] - wrap];
             if(s->mb_x == s->resync_mb_x) //rare
                 A[0]=A[1]=0;
     
@@ -1522,8 +1522,8 @@ int16_t *h263_pred_motion(MpegEncContext * s, int block,
             *py = mid_pred(A[1], B[1], C[1]);
         }
     } else {
-        B = s->motion_val[xy - wrap];
-        C = s->motion_val[xy + off[block] - wrap];
+        B = s->current_picture.motion_val[0][xy - wrap];
+        C = s->current_picture.motion_val[0][xy + off[block] - wrap];
         *px = mid_pred(A[0], B[0], C[0]);
         *py = mid_pred(A[1], B[1], C[1]);
     }
@@ -1541,7 +1541,7 @@ int16_t *h263_pred_motion2(MpegEncContext * s, int block, int dir,
     wrap = s->b8_stride;
     xy = s->mb_x + s->mb_y * wrap;
 
-    mot_val = s->current_picture.motion_val[dir] + xy;
+    mot_val = s->current_picture.motion_val[0][dir] + xy;
 
     A = mot_val[ - 1];
     /* special case for first (slice) line */
@@ -3271,7 +3271,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                 s->pred_dir_table[xy]= dir;
             }else{ /* P/S_TYPE */
                 int mx, my, pred_x, pred_y, bits;
-                int16_t * const mot_val= s->motion_val[s->block_index[0]];
+                int16_t * const mot_val= s->current_picture.motion_val[0][s->block_index[0]];
                 const int stride= s->block_wrap[0]*2;
 
 //              do{ //FIXME
@@ -3529,8 +3529,8 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
     if (s->pict_type == P_TYPE || s->pict_type==S_TYPE) {
         int i;
         for(i=0; i<4; i++){
-            s->mv[0][i][0] = s->motion_val[ s->block_index[i] ][0];
-            s->mv[0][i][1] = s->motion_val[ s->block_index[i] ][1];
+            s->mv[0][i][0] = s->current_picture.motion_val[0][ s->block_index[i] ][0];
+            s->mv[0][i][1] = s->current_picture.motion_val[0][ s->block_index[i] ][1];
         }
         s->mb_intra = IS_INTRA(mb_type);
 
@@ -3616,7 +3616,7 @@ static void preview_obmc(MpegEncContext *s){
     do{
         if (get_bits1(&s->gb)) {
             /* skip mb */
-            mot_val = s->motion_val[ s->block_index[0] ];
+            mot_val = s->current_picture.motion_val[0][ s->block_index[0] ];
             mot_val[0       ]= mot_val[2       ]= 
             mot_val[0+stride]= mot_val[2+stride]= 0;
             mot_val[1       ]= mot_val[3       ]=
