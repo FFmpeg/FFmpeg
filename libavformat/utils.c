@@ -2034,7 +2034,7 @@ int av_write_header(AVFormatContext *s)
 }
 
 //FIXME merge with compute_pkt_fields
-static void compute_pkt_fields2(AVStream *st, AVPacket *pkt){
+static int compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     int b_frames = FFMAX(st->codec.has_b_frames, st->codec.max_b_frames);
     int num, den, frame_size;
 
@@ -2079,6 +2079,15 @@ static void compute_pkt_fields2(AVStream *st, AVPacket *pkt){
             pkt->dts= pkt->pts;
     }
     
+    if(st->cur_dts && st->cur_dts != AV_NOPTS_VALUE && st->cur_dts >= pkt->dts){
+        av_log(NULL, AV_LOG_ERROR, "error, non monotone timestamps %Ld >= %Ld\n", st->cur_dts, pkt->dts);
+        return -1;
+    }
+    if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts < pkt->dts){
+        av_log(NULL, AV_LOG_ERROR, "error, pts < dts\n");
+        return -1;
+    }
+
 //    av_log(NULL, AV_LOG_DEBUG, "av_write_frame: pts2:%lld dts2:%lld\n", pkt->pts, pkt->dts);
     st->cur_dts= pkt->dts;
     st->pts.val= pkt->dts;
@@ -2100,6 +2109,7 @@ static void compute_pkt_fields2(AVStream *st, AVPacket *pkt){
     default:
         break;
     }
+    return 0;
 }
 
 static void truncate_ts(AVStream *st, AVPacket *pkt){
@@ -2124,7 +2134,9 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
 
-    compute_pkt_fields2(s->streams[pkt->stream_index], pkt);
+    ret=compute_pkt_fields2(s->streams[pkt->stream_index], pkt);
+    if(ret<0)
+        return ret;
     
     truncate_ts(s->streams[pkt->stream_index], pkt);
 
@@ -2219,7 +2231,8 @@ static int av_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in,
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
     AVStream *st= s->streams[ pkt->stream_index];
 
-    compute_pkt_fields2(st, pkt);
+    if(compute_pkt_fields2(st, pkt) < 0)
+        return -1;
     
     //FIXME/XXX/HACK drop zero sized packets
     if(st->codec.codec_type == CODEC_TYPE_AUDIO && pkt->size==0)
