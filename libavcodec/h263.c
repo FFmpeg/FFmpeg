@@ -5991,7 +5991,7 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
         startcode = ((startcode << 8) | v) & 0xffffffff;
         
         if(get_bits_count(gb) >= gb->size_in_bits){
-            if(gb->size_in_bits==8 && s->divx_version){
+            if(gb->size_in_bits==8 && (s->divx_version || s->xvid_build)){
                 av_log(s->avctx, AV_LOG_ERROR, "frame skip %d\n", gb->size_in_bits);
                 return FRAME_SKIPED; //divx bug
             }else
