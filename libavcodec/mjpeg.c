@@ -16,8 +16,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Support for external huffman table and various fixes (AVID workaround) by
- *                                    Alex Beregszaszi <alex@naxine.org>
+ * Support for external huffman table, various fixes (AVID workaround),
+ * aspecting and various markers support
+ *                                  by Alex Beregszaszi <alex@naxine.org>
  */
 //#define DEBUG
 #include "avcodec.h"
@@ -354,18 +355,39 @@ static void jpeg_put_comments(MpegEncContext *s)
     int size;
     UINT8 *ptr;
 
-#if 0
+    if (s->aspect_ratio_info)
+    {
     /* JFIF header */
     put_marker(p, APP0);
     put_bits(p, 16, 16);
     put_string(p, "JFIF"); /* this puts the trailing zero-byte too */
-    put_bits(p, 16, 0x101);
+    put_bits(p, 16, 0x0201); /* v 1.02 */
     put_bits(p, 8, 0); /* units type: 0 - aspect ratio */
-    put_bits(p, 16, 1); /* aspect: 1:1 */
-    put_bits(p, 16, 1);
+    switch(s->aspect_ratio_info)
+    {
+	case FF_ASPECT_4_3_625:
+	case FF_ASPECT_4_3_525:
+	    put_bits(p, 16, 4); 
+	    put_bits(p, 16, 3);
+	    break;
+	case FF_ASPECT_16_9_625:
+	case FF_ASPECT_16_9_525:
+	    put_bits(p, 16, 16); 
+	    put_bits(p, 16, 9);
+	    break;
+	case FF_ASPECT_EXTENDED:
+	    put_bits(p, 16, s->aspected_width);
+	    put_bits(p, 16, s->aspected_height);
+	    break;
+	case FF_ASPECT_SQUARE:
+	default:
+	    put_bits(p, 16, 1); /* aspect: 1:1 */
+	    put_bits(p, 16, 1);
+	    break;
+    }
     put_bits(p, 8, 0); /* thumbnail width */
     put_bits(p, 8, 0); /* thumbnail height */
-#endif
+    }
 
     /* comment */
     put_marker(p, COM);
@@ -1084,6 +1106,19 @@ static int mjpeg_decode_app(MJpegDecodeContext *s,
 	skip_bits(&s->gb, 8); /* the trailing zero-byte */
 	printf("mjpeg: JFIF header found (version: %x.%x)\n",
 	    get_bits(&s->gb, 8), get_bits(&s->gb, 8));
+	if (get_bits(&s->gb, 8) == 0)
+	{
+	    s->avctx->aspect_ratio_info = FF_ASPECT_EXTENDED;
+	    s->avctx->aspected_width = get_bits(&s->gb, 16);
+	    s->avctx->aspected_height = get_bits(&s->gb, 16);
+	}
+	else
+	{
+	    skip_bits(&s->gb, 16);
+	    skip_bits(&s->gb, 16);
+	}
+	skip_bits(&s->gb, 8);
+	skip_bits(&s->gb, 8);
 	goto out;
     }
     
