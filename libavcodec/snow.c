@@ -1347,7 +1347,7 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELE
         put_symbol2(&s->c, b->state[1], run, 3);
         
         for(y=0; y<h; y++){
-            if(&s->c.bytestream_end - &s->c.bytestream < w*40){
+            if(s->c.bytestream_end - s->c.bytestream < w*40){
                 av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
                 return -1;
             }
@@ -1923,7 +1923,7 @@ static void encode_blocks(SnowContext *s){
     int h= s->b_height;
 
     for(y=0; y<h; y++){
-        if(&s->c.bytestream_end - &s->c.bytestream < w*MB_SIZE*MB_SIZE*3){ //FIXME nicer limit
+        if(s->c.bytestream_end - s->c.bytestream < w*MB_SIZE*MB_SIZE*3){ //FIXME nicer limit
             av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
             return;
         }
