@@ -78,7 +78,7 @@ static int mpegts_probe(AVProbeData *p)
     size = get_packet_size(p->buf, p->buf_size);
     if (size < 0)
         return 0;
-    return AVPROBE_SCORE_MAX;
+    return AVPROBE_SCORE_MAX - 1;
 }
 
 static int mpegts_read_header(AVFormatContext *s,
