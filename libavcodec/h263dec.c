@@ -238,7 +238,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
 
     MPV_frame_end(s);
     
-    if(s->pict_type==B_TYPE){
+    if(s->pict_type==B_TYPE || (!s->has_b_frames)){
         pict->data[0] = s->current_picture[0];
         pict->data[1] = s->current_picture[1];
         pict->data[2] = s->current_picture[2];
