@@ -506,8 +506,8 @@ static void adaptive_quantization(MpegEncContext *s, double q){
     float cplx_sum= 0.0;
     float cplx_tab[s->mb_num];
     float bits_tab[s->mb_num];
-    const int qmin= s->avctx->lmin;
-    const int qmax= s->avctx->lmax;
+    const int qmin= s->avctx->mb_lmin;
+    const int qmax= s->avctx->mb_lmax;
     Picture * const pic= &s->current_picture;
     const int mb_width = s->mb_width;
     const int mb_height = s->mb_height;

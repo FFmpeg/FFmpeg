@@ -106,8 +106,8 @@ static int video_qmin = 2;
 static int video_qmax = 31;
 static int video_lmin = 2*FF_QP2LAMBDA;
 static int video_lmax = 31*FF_QP2LAMBDA;
-static int video_mb_qmin = 2;
-static int video_mb_qmax = 31;
+static int video_mb_lmin = 2*FF_QP2LAMBDA;
+static int video_mb_lmax = 31*FF_QP2LAMBDA;
 static int video_qdiff = 3;
 static int video_lelim = 0;
 static int video_celim = 0;
@@ -2490,7 +2490,7 @@ static void opt_lmin(const char *arg)
 static void opt_qmin(const char *arg)
 {
     video_qmin = atoi(arg);
-    if (video_qmin < 0 ||
+    if (video_qmin < 1 ||
         video_qmin > 31) {
         fprintf(stderr, "qmin must be >= 1 and <= 31\n");
         exit(1);
@@ -2500,29 +2500,29 @@ static void opt_qmin(const char *arg)
 static void opt_qmax(const char *arg)
 {
     video_qmax = atoi(arg);
-    if (video_qmax < 0 ||
+    if (video_qmax < 1 ||
         video_qmax > 31) {
         fprintf(stderr, "qmax must be >= 1 and <= 31\n");
         exit(1);
     }
 }
 
-static void opt_mb_qmin(const char *arg)
+static void opt_mb_lmin(const char *arg)
 {
-    video_mb_qmin = atoi(arg);
-    if (video_mb_qmin < 0 ||
-        video_mb_qmin > 31) {
-        fprintf(stderr, "qmin must be >= 1 and <= 31\n");
+    video_mb_lmin = atof(arg)*FF_QP2LAMBDA;
+    if (video_mb_lmin < 1 ||
+        video_mb_lmin > FF_LAMBDA_MAX) {
+        fprintf(stderr, "mblmin must be >= 1 and <= %d\n", FF_LAMBDA_MAX / FF_QP2LAMBDA);
         exit(1);
     }
 }
 
-static void opt_mb_qmax(const char *arg)
+static void opt_mb_lmax(const char *arg)
 {
-    video_mb_qmax = atoi(arg);
-    if (video_mb_qmax < 0 ||
-        video_mb_qmax > 31) {
-        fprintf(stderr, "qmax must be >= 1 and <= 31\n");
+    video_mb_lmax = atof(arg)*FF_QP2LAMBDA;
+    if (video_mb_lmax < 1 ||
+        video_mb_lmax > FF_LAMBDA_MAX) {
+        fprintf(stderr, "mblmax must be >= 1 and <= %d\n", FF_LAMBDA_MAX / FF_QP2LAMBDA);
         exit(1);
     }
 }
@@ -3227,8 +3227,8 @@ static void opt_output_file(const char *filename)
                 video_enc->rc_qsquish = video_qsquish;
                 video_enc->luma_elim_threshold = video_lelim;
                 video_enc->chroma_elim_threshold = video_celim;
-                video_enc->mb_qmin = video_mb_qmin;
-                video_enc->mb_qmax = video_mb_qmax;
+                video_enc->mb_lmin = video_mb_lmin;
+                video_enc->mb_lmax = video_mb_lmax;
                 video_enc->max_qdiff = video_qdiff;
                 video_enc->qblur = video_qblur;
                 video_enc->qcompress = video_qcomp;
@@ -3947,8 +3947,8 @@ const OptionDef options[] = {
     { "qmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qmax}, "max video quantiser scale (VBR)", "q" },
     { "lmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lmin}, "min video lagrange factor (VBR)", "lambda" },
     { "lmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lmax}, "max video lagrange factor (VBR)", "lambda" },
-    { "mbqmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_qmin}, "min macroblock quantiser scale (VBR)", "q" },
-    { "mbqmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_qmax}, "max macroblock quantiser scale (VBR)", "q" },
+    { "mblmin", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_lmin}, "min macroblock quantiser scale (VBR)", "q" },
+    { "mblmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_lmax}, "max macroblock quantiser scale (VBR)", "q" },
     { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
     { "qblur", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
     { "qsquish", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qsquish}, "how to keep quantiser between qmin and qmax (0 = clip, 1 = use differentiable function)", "squish" },

@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4741
+#define LIBAVCODEC_BUILD       4742
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1276,14 +1276,14 @@ typedef struct AVCodecContext {
     
     /**
      * minimum MB quantizer.
-     * - encoding: set by user.
+     * - encoding: unused
      * - decoding: unused
      */
     int mb_qmin;
 
     /**
      * maximum MB quantizer.
-     * - encoding: set by user.
+     * - encoding: unused
      * - decoding: unused
      */
     int mb_qmax;
@@ -1758,6 +1758,20 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     float border_masking;
+
+    /**
+     * minimum MB lagrange multipler.
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int mb_lmin;
+
+    /**
+     * maximum MB lagrange multipler.
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int mb_lmax;
 } AVCodecContext;
 
 
