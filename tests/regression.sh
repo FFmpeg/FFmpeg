@@ -44,6 +44,7 @@ else
     do_msmpeg4=y
     do_wmv1=y
     do_wmv2=y
+    do_h261=y
     do_h263=y
     do_h263p=y
     do_mpeg4=y
@@ -220,6 +221,16 @@ file=${outfile}wmv2.avi
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec wmv2 $file
 
 # wmv2 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_h261" ] ; then
+# h261 encoding
+file=${outfile}h261.avi
+do_ffmpeg $file -y -qscale 11 -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h261 $file
+
+# h261 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
