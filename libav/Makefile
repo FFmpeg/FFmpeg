@@ -1,7 +1,10 @@
+#
+# libavformat Makefile
+# (c) 2000, 2001, 2002 Fabrice Bellard
+#
 include ../config.mak
 
 VPATH=$(SRC_PATH)/libav
-PWD=$(shell pwd)
 
 CFLAGS= $(OPTFLAGS) -Wall -g -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H
 
@@ -13,15 +16,19 @@ OBJS+=mpeg.o mpegts.o ffm.o crc.o img.o raw.o rm.o asf.o \
 # file I/O
 OBJS+= avio.o aviobuf.o file.o 
 
-ifeq ($(CONFIG_GRAB),yes)
-OBJS+= grab.o audio.o 
+ifeq ($(CONFIG_VIDEO4LINUX),yes)
+OBJS+= grab.o
 endif
 
-ifneq ($(CONFIG_WIN32),yes)
+ifeq ($(CONFIG_AUDIO_OSS),yes)
+OBJS+= audio.o 
+endif
+
+ifeq ($(CONFIG_NETWORK),yes)
 OBJS+= udp.o http.o
 endif
 
-LIB= libav.a
+LIB= libavformat.a
 
 all: $(LIB)
 
@@ -34,4 +41,3 @@ $(LIB): $(OBJS)
 
 clean: 
 	rm -f *.o *~ *.a 
-
