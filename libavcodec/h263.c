@@ -2704,7 +2704,7 @@ static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
     if (sign)
         val = -val;
     val += pred;
-    
+
     /* modulo decoding */
     if (!s->h263_long_vectors) {
         l = (1 << (f_code - 1)) * 32;
@@ -2966,7 +2966,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                                 fprintf(stderr, "illegal 3. esc, esc 1 encoding possible\n");
                                 return DECODING_AC_LOST;
                             }
-                            if(abs_level <= rl->max_level[last][run1]){
+                            if(run1 >= 0 && abs_level <= rl->max_level[last][run1]){
                                 fprintf(stderr, "illegal 3. esc, esc 2 encoding possible\n");
                                 return DECODING_AC_LOST;
                             }
