@@ -2651,9 +2651,9 @@ static inline void MPV_motion(MpegEncContext *s,
 
 /* put block[] to dest[] */
 static inline void put_dct(MpegEncContext *s, 
-                           DCTELEM *block, int i, uint8_t *dest, int line_size)
+                           DCTELEM *block, int i, uint8_t *dest, int line_size, int qscale)
 {
-    s->dct_unquantize(s, block, i, s->qscale);
+    s->dct_unquantize(s, block, i, qscale);
     s->dsp.idct_put (dest, line_size, block);
 }
 
@@ -2857,14 +2857,14 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         } else {
             /* dct only in intra block */
             if(s->encoding || !(s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO)){
-                put_dct(s, block[0], 0, dest_y, dct_linesize);
-                put_dct(s, block[1], 1, dest_y + 8, dct_linesize);
-                put_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
-                put_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
+                put_dct(s, block[0], 0, dest_y, dct_linesize, s->qscale);
+                put_dct(s, block[1], 1, dest_y + 8, dct_linesize, s->qscale);
+                put_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize, s->qscale);
+                put_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize, s->qscale);
 
                 if(!(s->flags&CODEC_FLAG_GRAY)){
-                    put_dct(s, block[4], 4, dest_cb, uvlinesize);
-                    put_dct(s, block[5], 5, dest_cr, uvlinesize);
+                    put_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
+                    put_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
                 }
             }else{
                 s->dsp.idct_put(dest_y                 , dct_linesize, block[0]);

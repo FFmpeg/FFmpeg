@@ -147,7 +147,7 @@ static int decode_slice(MpegEncContext *s){
     s->resync_mb_y= s->mb_y;
 
     s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-    s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
+    s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
     
     if(s->partitioned_frame){
         const int qscale= s->qscale;

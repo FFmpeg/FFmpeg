@@ -368,7 +368,7 @@ return -1;
         code = get_bits(&s->gb, 7);
         av_log(s->avctx, AV_LOG_ERROR, "I7:%X/\n", code);
     }
-    s->qscale = get_bits(&s->gb, 5);
+    s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
     if(s->qscale < 0)
        return -1;
        

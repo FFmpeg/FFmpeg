@@ -1258,7 +1258,7 @@ return -1;
     if(!had_i) return -1;
 }
 #endif
-    s->qscale = get_bits(&s->gb, 5);
+    s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
     if(s->qscale==0){
         av_log(s->avctx, AV_LOG_ERROR, "invalid qscale\n");
         return -1;
