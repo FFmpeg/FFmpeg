@@ -62,7 +62,7 @@ static UINT8 fcode_tab[MAX_MV*2+1];
 
 static void init_2d_vlc_rl(RLTable *rl)
 {
-    int i, q;
+    int i;
     
     init_vlc(&rl->vlc, TEX_VLC_BITS, rl->n + 2, 
              &rl->table_vlc[0][1], 4, 2,

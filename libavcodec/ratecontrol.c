@@ -279,7 +279,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         "avgTex",
         NULL
     };
-    double (*func1[])(void *, double)={
+    static double (*func1[])(void *, double)={
         bits2qp,
         qp2bits,
         NULL

@@ -1399,7 +1399,7 @@ static inline int direct_search(MpegEncContext * s,
     int mx, my, mx2, my2;
     uint8_t *ref_picture= s->me_scratchpad - (mb_x - 1 + (mb_y - 1)*s->linesize)*16;
     int16_t (*mv_table)[2]= s->b_direct_mv_table;
-    uint16_t *mv_penalty= s->mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
+/*    uint16_t *mv_penalty= s->mv_penalty[s->f_code] + MAX_MV; */ // f_code of the prev frame
 
     /* thanks to iso-mpeg the rounding is different for the zero vector, so we need to handle that ... */
     motion_fx= (motion_px*time_pb)/time_pp;

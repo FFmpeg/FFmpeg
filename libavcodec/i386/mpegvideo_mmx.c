@@ -195,7 +195,7 @@ static void dct_unquantize_mpeg1_mmx(MpegEncContext *s,
     const UINT16 *quant_matrix;
     
     if(s->alternate_scan) nCoeffs= 64;
-    else nCoeffs= nCoeffs= zigzag_end[ s->block_last_index[n] ];
+    else nCoeffs= zigzag_end[ s->block_last_index[n] ];
 
     if (s->mb_intra) {
         int block0;
@@ -321,7 +321,7 @@ static void dct_unquantize_mpeg2_mmx(MpegEncContext *s,
     const UINT16 *quant_matrix;
     
     if(s->alternate_scan) nCoeffs= 64;
-    else nCoeffs= nCoeffs= zigzag_end[ s->block_last_index[n] ];
+    else nCoeffs= zigzag_end[ s->block_last_index[n] ];
 
     if (s->mb_intra) {
         int block0;
