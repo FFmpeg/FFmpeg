@@ -216,53 +216,57 @@ void palette8torgb24(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 
 void rgb32to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
-	unsigned i,num_pixels=src_size/4;
-	for(i=0; i<num_pixels; i+=4)
+	unsigned j,i,num_pixels=src_size/4;
+	uint16_t *d = (uint16_t *)dst;
+	for(i=0,j=0; j<num_pixels; i+=4,j++)
 	{
 		const int b= src[i+0];
 		const int g= src[i+1];
 		const int r= src[i+2];
 
-		((uint16_t *)dst)[i]= (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
+		d[j]= (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
 	}
 }
 
 void rgb32to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
-	unsigned i,num_pixels=src_size/4;
-	for(i=0; i<num_pixels; i+=4)
+	unsigned j,i,num_pixels=src_size/4;
+	uint16_t *d = (uint16_t *)dst;
+	for(i=0,j=0; j<num_pixels; i+=4,j++)
 	{
 		const int b= src[i+0];
 		const int g= src[i+1];
 		const int r= src[i+2];
 
-		((uint16_t *)dst)[i]= (b>>3) | ((g&0xF8)<<3) | ((r&0xF8)<<7);
+		d[j]= (b>>3) | ((g&0xF8)<<3) | ((r&0xF8)<<7);
 	}
 }
 
 void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
-	unsigned i,num_pixels=src_size/3;
-	for(i=0; i<num_pixels; i+=3)
+	unsigned j,i,num_pixels=src_size/3;
+	uint16_t *d = (uint16_t *)dst;
+	for(i=0,j=0; j<num_pixels; i+=3,j++)
 	{
 		const int b= src[i+0];
 		const int g= src[i+1];
 		const int r= src[i+2];
 
-		((uint16_t *)dst)[i]= (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
+		d[j]= (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
 	}
 }
 
 void rgb24to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
-	unsigned i,num_pixels=src_size/3;
-	for(i=0; i<num_pixels; i+=3)
+	unsigned j,i,num_pixels=src_size/3;
+	uint16_t *d = (uint16_t *)dst;
+	for(i=0,j=0; j<num_pixels; i+=3,j++)
 	{
 		const int b= src[i+0];
 		const int g= src[i+1];
 		const int r= src[i+2];
 
-		((uint16_t *)dst)[i]= (b>>3) | ((g&0xF8)<<3) | ((r&0xF8)<<7);
+		d[j]= (b>>3) | ((g&0xF8)<<3) | ((r&0xF8)<<7);
 	}
 }
 
