@@ -151,6 +151,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->size = ret;
     pkt->pts = pts;
     pkt->stream_index = st->index;
+    
+    if (!is_audio && ((flags >> 4)==1))
+	pkt->flags |= PKT_FLAG_KEY;
+    
     return ret;
 }
 
