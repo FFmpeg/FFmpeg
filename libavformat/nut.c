@@ -25,7 +25,6 @@
 
 /*
  * TODO:
- * - seeking
  * - index writing
  * - index packet reading support
 */
@@ -59,7 +58,6 @@
 #define FLAG_PTS            16
 #define FLAG_FULL_PTS        4
 #define FLAG_KEY_FRAME      32
-#define FLAG_PRED_KEY_FRAME 64
 
 typedef struct {
     uint8_t flags;
@@ -478,7 +476,6 @@ static int nut_write_header(AVFormatContext *s)
     put_packetheader(nut, bc, 120+5*256, 1);
     put_v(bc, 1); /* version */
     put_v(bc, s->nb_streams);
-    put_v(bc, 3);
     
     build_frame_code(s);
     assert(nut->frame_code['N'].flags == 1);
@@ -671,7 +668,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     frame_code= -1;
     for(i=0; i<256; i++){
         int stream_id_plus1= nut->frame_code[i].stream_id_plus1;
-        int fc_key_frame= stream->last_key_frame;
+        int fc_key_frame;
         int length=0;
         size_mul= nut->frame_code[i].size_mul;
         size_lsb= nut->frame_code[i].size_lsb;
@@ -680,12 +677,8 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
         if(stream_id_plus1 == 0) length+= get_length(stream_index);
         else if(stream_id_plus1 - 1 != stream_index)
             continue;
-        if(flags & FLAG_PRED_KEY_FRAME){
-            if(flags & FLAG_KEY_FRAME)
-                fc_key_frame= !fc_key_frame;
-        }else{
-            fc_key_frame= !!(flags & FLAG_KEY_FRAME);
-        }
+        fc_key_frame= !!(flags & FLAG_KEY_FRAME);
+
         assert(key_frame==0 || key_frame==1);
         if(fc_key_frame != key_frame)
             continue;
@@ -832,7 +825,6 @@ static int decode_main_header(NUTContext *nut){
     }
     
     nut->stream_count = get_v(bc);
-    get_v(bc); //checksum threshold
 
     for(i=0; i<256;){
         int tmp_flags = get_v(bc);
@@ -847,10 +839,6 @@ static int decode_main_header(NUTContext *nut){
         }
 
         if((tmp_flags & FLAG_FRAME_TYPE) && tmp_flags != 1){
-            if(tmp_flags & FLAG_PRED_KEY_FRAME){
-                av_log(s, AV_LOG_ERROR, "keyframe prediction in non 0 frame type\n");
-                return -1;
-            }
             if(!(tmp_flags & FLAG_PTS) || !(tmp_flags & FLAG_FULL_PTS) ){
                 av_log(s, AV_LOG_ERROR, "no full pts in non 0 frame type\n");
                 return -1;
@@ -1112,14 +1100,7 @@ static int decode_frame(NUTContext *nut, AVPacket *pkt, int frame_code, int fram
 
 //    av_log(s, AV_LOG_DEBUG, "ft:%d ppts:%d %d %d\n", frame_type, stream->lru_pts_delta[0], stream->lru_pts_delta[1], stream->lru_pts_delta[2]);
     
-    if(flags & FLAG_PRED_KEY_FRAME){
-        if(flags & FLAG_KEY_FRAME)
-            key_frame= !stream->last_key_frame;
-        else
-            key_frame= stream->last_key_frame;
-    }else{
-        key_frame= !!(flags & FLAG_KEY_FRAME);
-    }
+    key_frame= !!(flags & FLAG_KEY_FRAME);
 
     if(flags & FLAG_PTS){
         if(flags & FLAG_FULL_PTS){
