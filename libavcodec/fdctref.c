@@ -29,8 +29,6 @@
 
 #include <math.h>
 
-// #include "config.h"
-
 #ifndef PI
 # ifdef M_PI
 #  define PI M_PI
