@@ -4328,6 +4328,8 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
         skip_bits(gb, 8);
     }
     buf[255]=0;
+    
+    /* divx detection */
     e=sscanf(buf, "DivX%dBuild%d", &ver, &build);
     if(e!=2)
         e=sscanf(buf, "DivX%db%d", &ver, &build);
@@ -4336,11 +4338,10 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
         s->divx_build= build;
         if(s->picture_number==0){
             printf("This file was encoded with DivX%d Build%d\n", ver, build);
-            if(ver==500 && build==413){
-                printf("WARNING: this version of DivX is not MPEG4 compatible, trying to workaround these bugs...\n");
-            }
         }
     }
+    
+    /* ffmpeg detection */
     e=sscanf(buf, "FFmpeg%d.%d.%db%d", &ver, &ver2, &ver3, &build);
     if(e!=4)
         e=sscanf(buf, "FFmpeg v%d.%d.%d / libavcodec build: %d", &ver, &ver2, &ver3, &build); 
@@ -4356,6 +4357,15 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
         if(s->picture_number==0)
             printf("This file was encoded with libavcodec build %d\n", build);
     }
+    
+    /* xvid detection */
+    e=sscanf(buf, "XviD%d", &build);
+    if(e==1){
+        s->xvid_build= build;
+        if(s->picture_number==0)
+            printf("This file was encoded with XviD build %d\n", build);
+    }
+
 //printf("User Data: %s\n", buf);
     return 0;
 }

@@ -376,6 +376,13 @@ uint64_t time= rdtsc();
         if(s->divx_version){
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
         }
+
+        if(s->avctx->fourcc == ff_get_fourcc("XVID") && s->xvid_build==0)
+            s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
+        
+        if(s->xvid_build && s->xvid_build<=1)
+            s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
+
 //printf("padding_bug_score: %d\n", s->padding_bug_score);
 #if 0
         if(s->divx_version==500)

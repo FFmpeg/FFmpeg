@@ -413,6 +413,8 @@ typedef struct MpegEncContext {
     UINT8 *bitstream_buffer; //Divx 5.01 puts several frames in a single one, this is used to reorder them
     int bitstream_buffer_size;
     
+    int xvid_build;
+    
     /* lavc specific stuff, used to workaround bugs in libavcodec */
     int ffmpeg_version;
     int lavc_build;
