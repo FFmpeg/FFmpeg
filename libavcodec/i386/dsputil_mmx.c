@@ -30,8 +30,10 @@ int pix_abs16x16_y2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 int pix_abs16x16_xy2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 
 /* pixel operations */
-static const unsigned short mm_wone[4] __attribute__ ((aligned(8))) = { 0x1, 0x1, 0x1, 0x1 };
-static const unsigned short mm_wtwo[4] __attribute__ ((aligned(8))) = { 0x2, 0x2, 0x2, 0x2 };
+static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001;
+static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002;
+//static const unsigned short mm_wone[4] __attribute__ ((aligned(8))) = { 0x1, 0x1, 0x1, 0x1 };
+//static const unsigned short mm_wtwo[4] __attribute__ ((aligned(8))) = { 0x2, 0x2, 0x2, 0x2 };
 
 /***********************************/
 /* 3Dnow specific */
@@ -215,7 +217,7 @@ static void put_pixels_x2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, 
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm4\n\t"
-	::"m"(mm_wone[0]):"memory");
+	::"m"(mm_wone):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm0\n\t"
@@ -250,7 +252,7 @@ static void put_pixels_y2_mmx(UINT8 *block, const UINT8 *pixels, int line_size, 
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm4\n\t"
-	::"m"(mm_wone[0]):"memory");
+	::"m"(mm_wone):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm0\n\t"
@@ -287,7 +289,7 @@ static void put_pixels_xy2_mmx(UINT8 *block, const UINT8 *pixels, int line_size,
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm6\n\t"
-	::"m"(mm_wtwo[0]):"memory");
+	::"m"(mm_wtwo):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm0\n\t"
@@ -399,7 +401,7 @@ static void   put_no_rnd_pixels_xy2_mmx( UINT8  *block, const UINT8 *pixels, int
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm6\n\t"
-	::"m"(mm_wone[0]):"memory");
+	::"m"(mm_wone):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm0\n\t"
@@ -448,7 +450,7 @@ static void avg_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm6\n\t"
-	::"m"(mm_wone[0]):"memory");
+	::"m"(mm_wone):"memory");
   do {
     __asm __volatile(
 	"movq	%0, %%mm0\n\t"
@@ -485,7 +487,7 @@ static void   avg_pixels_x2_mmx( UINT8  *block, const UINT8 *pixels, int line_si
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm6\n\t"
-	::"m"(mm_wone[0]):"memory");
+	::"m"(mm_wone):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm1\n\t"
@@ -531,7 +533,7 @@ static void   avg_pixels_y2_mmx( UINT8  *block, const UINT8 *pixels, int line_si
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm6\n\t"
-	::"m"(mm_wone[0]):"memory");
+	::"m"(mm_wone):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm1\n\t"
@@ -577,7 +579,7 @@ static void   avg_pixels_xy2_mmx( UINT8  *block, const UINT8 *pixels, int line_s
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm6\n\t"
-	::"m"(mm_wtwo[0]):"memory");
+	::"m"(mm_wtwo):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm0\n\t"
@@ -621,7 +623,7 @@ static void   avg_pixels_xy2_mmx( UINT8  *block, const UINT8 *pixels, int line_s
 	"movq	%%mm0, %0\n\t"
 	:"=m"(*p)
 	:"m"(*pix),
-	 "m"(*(pix+line_size)), "m"(mm_wone[0])
+	 "m"(*(pix+line_size)), "m"(mm_wone)
 	:"memory");
    pix += line_size;
    p +=   line_size ;
@@ -748,7 +750,7 @@ static void   avg_no_rnd_pixels_xy2_mmx( UINT8  *block, const UINT8 *pixels, int
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm6\n\t"
-	::"m"(mm_wone[0]):"memory");
+	::"m"(mm_wone):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm0\n\t"
@@ -832,7 +834,7 @@ static void sub_pixels_x2_mmx( DCTELEM  *block, const UINT8 *pixels, int line_si
   __asm __volatile(
       "pxor	%%mm7, %%mm7\n\t"
       "movq	%0, %%mm6"
-      ::"m"(mm_wone[0]):"memory");
+      ::"m"(mm_wone):"memory");
   do {
     __asm __volatile(
 	"movq	%0, %%mm0\n\t"
@@ -872,7 +874,7 @@ static void sub_pixels_y2_mmx( DCTELEM  *block, const UINT8 *pixels, int line_si
   __asm __volatile(
       "pxor	%%mm7, %%mm7\n\t"
       "movq	%0, %%mm6"
-      ::"m"(mm_wone[0]):"memory");
+      ::"m"(mm_wone):"memory");
   do {
     __asm __volatile(
 	"movq	%0, %%mm0\n\t"
@@ -912,7 +914,7 @@ static void   sub_pixels_xy2_mmx( DCTELEM  *block, const UINT8 *pixels, int line
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm6\n\t"
-	::"m"(mm_wtwo[0]):"memory");
+	::"m"(mm_wtwo):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm0\n\t"

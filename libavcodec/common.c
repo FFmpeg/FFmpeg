@@ -29,6 +29,8 @@
 #define NDEBUG
 #include <assert.h>
 
+#include "../bswap.h"
+
 void init_put_bits(PutBitContext *s, 
                    UINT8 *buffer, int buffer_size,
                    void *opaque,
@@ -222,10 +224,14 @@ unsigned int get_bits(GetBitContext *s, int n)
         buf_ptr += 4;
         /* handle common case: we can read everything */
         if (buf_ptr <= s->buf_end) {
-            bit_buf = (buf_ptr[-4] << 24) |
-                (buf_ptr[-3] << 16) |
+#if ARCH_X86
+	    bit_buf = bswap_32(*((unsigned long*)(&buf_ptr[-4])));
+#else
+	    bit_buf = (buf_ptr[-4] << 24) |
+		(buf_ptr[-3] << 16) |
                 (buf_ptr[-2] << 8) |
-                (buf_ptr[-1]);
+                (buf_ptr[-1]);	    
+#endif
         } else {
             buf_ptr -= 4;
             bit_buf = 0;

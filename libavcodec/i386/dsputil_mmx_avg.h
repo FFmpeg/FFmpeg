@@ -243,7 +243,7 @@ static void DEF(avg_pixels_xy2)( UINT8  *block, const UINT8 *pixels, int line_si
   __asm __volatile(
 	"pxor	%%mm7, %%mm7\n\t"
 	"movq	%0, %%mm6\n\t"
-	::"m"(mm_wtwo[0]):"memory");
+	::"m"(mm_wtwo):"memory");
   do {
     __asm __volatile(
 	"movq	%1, %%mm0\n\t"

@@ -24,6 +24,15 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 
+#include "../config.h"
+
+#ifdef ARCH_X86
+#include "i386/mpegvideo.c"
+#endif
+#ifndef DCT_UNQUANTIZE
+#define DCT_UNQUANTIZE(a,b,c,d) dct_unquantize(a,b,c,d)
+#endif
+
 #define EDGE_WIDTH 16
 
 /* enable all paranoid tests for rounding, overflows, etc... */
@@ -89,6 +98,9 @@ int MPV_common_init(MpegEncContext *s)
     int c_size, i;
     UINT8 *pict;
 
+#if defined ( HAVE_MMX ) && defined ( BIN_PORTABILITY )
+    MPV_common_init_mmx();
+#endif
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
     s->linesize = s->mb_width * 16 + 2 * EDGE_WIDTH;
@@ -345,8 +357,8 @@ static void draw_edges(UINT8 *buf, int wrap, int width, int height, int w)
     }
 }
 
-
 /* generic function for encode/decode called before a frame is coded/decoded */
+#ifndef ARCH_X86
 void MPV_frame_start(MpegEncContext *s)
 {
     int i;
@@ -366,7 +378,7 @@ void MPV_frame_start(MpegEncContext *s)
         }
     }
 }
-
+#endif
 /* generic function for encode/decode called after a frame has been coded/decoded */
 void MPV_frame_end(MpegEncContext *s)
 {
@@ -621,7 +633,7 @@ static inline void put_dct(MpegEncContext *s,
                            DCTELEM *block, int i, UINT8 *dest, int line_size)
 {
     if (!s->mpeg2)
-        dct_unquantize(s, block, i, s->qscale);
+        DCT_UNQUANTIZE(s, block, i, s->qscale);
     j_rev_dct (block);
     put_pixels_clamped(block, dest, line_size);
 }
@@ -632,7 +644,7 @@ static inline void add_dct(MpegEncContext *s,
 {
     if (s->block_last_index[i] >= 0) {
         if (!s->mpeg2)
-            dct_unquantize(s, block, i, s->qscale);
+            DCT_UNQUANTIZE(s, block, i, s->qscale);
         j_rev_dct (block);
         add_pixels_clamped(block, dest, line_size);
     }
@@ -1109,6 +1121,7 @@ static int dct_quantize_mmx(MpegEncContext *s,
     return last_non_zero;
 }
 
+#ifndef HAVE_DCT_UNQUANTIZE
 static void dct_unquantize(MpegEncContext *s, 
                            DCTELEM *block, int n, int qscale)
 {
@@ -1172,7 +1185,7 @@ static void dct_unquantize(MpegEncContext *s,
         }
     }
 }
-                         
+#endif                         
 
 /* rate control */
 
