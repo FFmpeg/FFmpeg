@@ -30,10 +30,11 @@ video on the fly with a high quality polyphase filter.
   ffmpeg /tmp/out.mpg 
 @end example
 
-  Note that you must activate the right video source and channel
-  before launching ffmpeg. You can use any TV viewer such as xawtv by
-  Gerd Knorr which I find very good. You must also set correctly the
-  audio recording levels with a standard mixer.
+  Note that you must activate the right video source and channel before
+  launching ffmpeg. You can use any TV viewer such as xawtv
+  (@url{http://bytesex.org/xawtv/}) by Gerd Knorr which I find very
+  good. You must also set correctly the audio recording levels with a
+  standard mixer.
 
 @section Video and Audio file format conversion
 
@@ -491,11 +492,6 @@ option). I cannot read other diffs :-)
 
 Run the regression tests before submitting a patch so that you can
 verify that there are no big problems.
-
-Except if your patch is really big and adds an important feature, by
-submitting it to me, you accept implicitly to put it under my
-copyright. I prefer to do this to avoid potential problems if
-licensing of ffmpeg changes.
 
 Patches should be posted as base64 encoded attachments (or any other
 encoding which ensures that the patch wont be trashed during 
