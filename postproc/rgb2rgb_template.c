@@ -13,6 +13,9 @@
 #include "../mmx_defs.h"
 
 #ifdef HAVE_MMX
+static const uint64_t mask32b  __attribute__((aligned(8))) = 0x000000FF000000FFULL;
+static const uint64_t mask32g  __attribute__((aligned(8))) = 0x0000FF000000FF00ULL;
+static const uint64_t mask32r  __attribute__((aligned(8))) = 0x00FF000000FF0000ULL;
 static const uint64_t mask32   __attribute__((aligned(8))) = 0x00FFFFFF00FFFFFFULL;
 static const uint64_t mask24l  __attribute__((aligned(8))) = 0x0000000000FFFFFFULL;
 static const uint64_t mask24h  __attribute__((aligned(8))) = 0x0000FFFFFF000000ULL;
@@ -28,6 +31,20 @@ static const uint64_t blue_16mask __attribute__((aligned(8))) = 0x0000001f000000
 static const uint64_t red_15mask  __attribute__((aligned(8))) = 0x00007c000000f800ULL;
 static const uint64_t green_15mask __attribute__((aligned(8)))= 0x000003e0000007e0ULL;
 static const uint64_t blue_15mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
+#if 0
+static volatile uint64_t __attribute__((aligned(8))) b5Dither;
+static volatile uint64_t __attribute__((aligned(8))) g5Dither;
+static volatile uint64_t __attribute__((aligned(8))) g6Dither;
+static volatile uint64_t __attribute__((aligned(8))) r5Dither;
+
+static uint64_t __attribute__((aligned(8))) dither4[2]={
+	0x0103010301030103LL,
+	0x0200020002000200LL,};
+
+static uint64_t __attribute__((aligned(8))) dither8[2]={
+	0x0602060206020602LL,
+	0x0004000400040004LL,};
+#endif
 #endif
 
 void rgb24to32(const uint8_t *src,uint8_t *dst,unsigned src_size)
@@ -561,6 +578,43 @@ void palette8torgb15(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 	for(i=0; i<num_pixels; i++)
 		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
 }
+
+void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	int num_pixels= src_size >> 2;
+#ifdef HAVE_MMX
+	asm volatile (
+		"xorl %%eax, %%eax		\n\t"
+		"1:				\n\t"
+		PREFETCH" 32(%0, %%eax)		\n\t"
+		"movq (%0, %%eax), %%mm0	\n\t"
+		"movq %%mm0, %%mm1		\n\t"
+		"movq %%mm0, %%mm2		\n\t"
+		"pslld $16, %%mm0		\n\t"
+		"psrld $16, %%mm1		\n\t"
+		"pand mask32r, %%mm0		\n\t"
+		"pand mask32g, %%mm2		\n\t"
+		"pand mask32b, %%mm1		\n\t"
+		"por %%mm0, %%mm2		\n\t"
+		"por %%mm1, %%mm2		\n\t"
+		MOVNTQ" %%mm2, (%1, %%eax)	\n\t"
+		"addl $2, %%eax			\n\t"
+		"cmpl %2, %%eax			\n\t"
+		" jb 1b				\n\t"
+		:: "r" (src), "r"(dst), "r" (num_pixels)
+		: "%eax"
+	);
+#else
+	int i;
+	for(i=0; i<num_pixels; i++)
+	{
+		dst[4*i + 0] = src[4*i + 2];
+		dst[4*i + 1] = src[4*i + 1];
+		dst[4*i + 2] = src[4*i + 0];
+	}
+#endif
+}
+
 /**
  *
  * height should be a multiple of 2 and width should be a multiple of 16 (if this is a
