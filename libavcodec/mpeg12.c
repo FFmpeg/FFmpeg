@@ -1655,6 +1655,7 @@ typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
     int repeat_field; /* true if we must repeat the field */
+    AVPanScan pan_scan; /** some temporary storage for the panscan */
 } Mpeg1Context;
 
 static int mpeg_decode_init(AVCodecContext *avctx)
@@ -1781,6 +1782,53 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
         printf("profile: %d, level: %d \n", profile, level);
 }
 
+static void mpeg_decode_sequence_display_extension(Mpeg1Context *s1)
+{
+    MpegEncContext *s= &s1->mpeg_enc_ctx;
+    int color_description, w, h;
+
+    skip_bits(&s->gb, 3); /* video format */
+    color_description= get_bits1(&s->gb);
+    if(color_description){
+        skip_bits(&s->gb, 8); /* color primaries */
+        skip_bits(&s->gb, 8); /* transfer_characteristics */
+        skip_bits(&s->gb, 8); /* matrix_coefficients */
+    }
+    w= get_bits(&s->gb, 14);
+    skip_bits(&s->gb, 1); //marker
+    h= get_bits(&s->gb, 14);
+    skip_bits(&s->gb, 1); //marker
+    
+    s1->pan_scan.width= 16*w;
+    s1->pan_scan.height=16*h;
+
+    if(mpeg2_aspect[s->aspect_ratio_info] < 0.0)
+        s->avctx->aspect_ratio*= (s->width * h)/(float)(s->height * w);
+    
+    if(s->avctx->debug & FF_DEBUG_PICT_INFO)
+        printf("sde w:%d, h:%d\n", w, h);
+}
+
+static void mpeg_decode_picture_display_extension(Mpeg1Context *s1)
+{
+    MpegEncContext *s= &s1->mpeg_enc_ctx;
+    int i;
+
+    for(i=0; i<1; i++){ //FIXME count
+        s1->pan_scan.position[i][0]= get_sbits(&s->gb, 16);
+        skip_bits(&s->gb, 1); //marker
+        s1->pan_scan.position[i][1]= get_sbits(&s->gb, 16);
+        skip_bits(&s->gb, 1); //marker
+    }
+   
+    if(s->avctx->debug & FF_DEBUG_PICT_INFO)
+        printf("pde (%d,%d) (%d,%d) (%d,%d)\n", 
+            s1->pan_scan.position[0][0], s1->pan_scan.position[0][1], 
+            s1->pan_scan.position[1][0], s1->pan_scan.position[1][1], 
+            s1->pan_scan.position[2][0], s1->pan_scan.position[2][1]
+        );
+}
+
 static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
 {
     int i, v, j;
@@ -1881,15 +1929,18 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
     ext_type = get_bits(&s->gb, 4);
     switch(ext_type) {
     case 0x1:
-        /* sequence ext */
         mpeg_decode_sequence_extension(s);
         break;
+    case 0x2:
+        mpeg_decode_sequence_display_extension(s1);
+        break;
     case 0x3:
-        /* quant matrix extension */
         mpeg_decode_quant_matrix_extension(s);
         break;
+    case 0x7:
+        mpeg_decode_picture_display_extension(s1);
+        break;
     case 0x8:
-        /* picture extension */
         mpeg_decode_picture_coding_extension(s);
         break;
     }
@@ -1953,6 +2004,9 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
                 s->current_picture_ptr->repeat_pict = 1;
             }
         }         
+
+        *s->current_picture_ptr->pan_scan= s1->pan_scan;
+
         //printf("%d\n", s->current_picture_ptr->repeat_pict);
 
         if(s->avctx->debug&FF_DEBUG_PICT_INFO){

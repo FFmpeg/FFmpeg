@@ -302,6 +302,7 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
             }
         }
         pic->qstride= s->mb_stride;
+        CHECKED_ALLOCZ(pic->pan_scan , 1 * sizeof(AVPanScan))
     }
 
     //it might be nicer if the application would keep track of these but it would require a API change
@@ -332,6 +333,7 @@ static void free_picture(MpegEncContext *s, Picture *pic){
     av_freep(&pic->mbskip_table);
     av_freep(&pic->qscale_table);
     av_freep(&pic->mb_type_base);
+    av_freep(&pic->pan_scan);
     pic->mb_type= NULL;
     for(i=0; i<2; i++){
         av_freep(&pic->motion_val[i]);

@@ -15,7 +15,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4684
+#define LIBAVCODEC_BUILD       4685
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -271,6 +271,34 @@ static const __attribute__((unused)) int Motion_Est_QTab[] =
 #define CODEC_CAP_PARSE_ONLY      0x0004
 #define CODEC_CAP_TRUNCATED       0x0008
 
+/**
+ * Pan Scan area.
+ * this specifies the area which should be displayed. Note there may be multiple such areas for one frame
+ */
+typedef struct AVPanScan{
+    /**
+     * id.
+     * - encoding: set by user.
+     * - decoding: set by lavc
+     */
+    int id;
+
+    /**
+     * width and height in 1/16 pel
+     * - encoding: set by user.
+     * - decoding: set by lavc
+     */
+    int width;
+    int height;
+
+    /**
+     * position of the top left corner in 1/16 pel for up to 3 fields/frames.
+     * - encoding: set by user.
+     * - decoding: set by lavc
+     */
+    int16_t position[3][2];
+}AVPanScan;
+
 #define FF_COMMON_FRAME \
     /**\
      * pointer to the picture planes.\
@@ -413,6 +441,14 @@ static const __attribute__((unused)) int Motion_Est_QTab[] =
      * - decoding: set by lavc (default 0)\
      */\
     int bottom_field_first;\
+    \
+    /**\
+     * Pan scan.\
+     * - encoding: set by user\
+     * - decoding: set by lavc\
+     */\
+    AVPanScan *pan_scan;\
+    
 
 #define FF_QSCALE_TYPE_MPEG1	0
 #define FF_QSCALE_TYPE_MPEG2	1
@@ -1303,6 +1339,7 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int lmax;
+    
 } AVCodecContext;
 
 
