@@ -46,6 +46,7 @@ else
     do_rv10=y
     do_mp2=y
     do_ac3=y
+    do_g726=y
     do_rc=y
     do_mpeg4adv=y
     do_mpeg4nr=y
@@ -363,6 +364,16 @@ do_ffmpeg $file -y -ab 128 -ac 2 -f s16le  -i $pcm_src -vn $file
 
 # ac3 decoding
 #do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst 
+fi
+
+###################################
+if [ -n "$do_g726" ] ; then
+# g726 encoding
+file=${outfile}g726.wav
+do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -ab 32 -ac 1 -ar 8000 -acodec g726 $file 
+
+# g726 decoding
+do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst 
 fi
 
 ###################################
