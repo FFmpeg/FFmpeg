@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avcodec.h"
+#include "mpegvideo.h" //only for ParseContext
 
 typedef struct PNMContext {
     uint8_t *bytestream;
@@ -65,25 +66,9 @@ static int common_init(AVCodecContext *avctx){
     return 0;
 }
 
-static int pnm_decode_frame(AVCodecContext *avctx, 
-                        void *data, int *data_size,
-                        uint8_t *buf, int buf_size)
-{
-    PNMContext * const s = avctx->priv_data;
-    AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&s->picture;
-    int i, n, linesize, h;
+static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
     char buf1[32];
-    unsigned char *ptr;
-
-    /* special case for last picture */
-    if (buf_size == 0) {
-        return 0;
-    }
-    
-    s->bytestream_start=
-    s->bytestream= buf;
-    s->bytestream_end= buf + buf_size;
+    int h;
 
     pnm_get(s, buf1, sizeof(buf1));
     if (!strcmp(buf1, "P4")) {
@@ -120,6 +105,30 @@ static int pnm_decode_frame(AVCodecContext *avctx,
         h /= 3;
         avctx->height = h;
     }
+    return 0;
+}
+
+static int pnm_decode_frame(AVCodecContext *avctx, 
+                        void *data, int *data_size,
+                        uint8_t *buf, int buf_size)
+{
+    PNMContext * const s = avctx->priv_data;
+    AVFrame *picture = data;
+    AVFrame * const p= (AVFrame*)&s->picture;
+    int i, n, linesize, h;
+    unsigned char *ptr;
+
+    /* special case for last picture */
+    if (buf_size == 0) {
+        return 0;
+    }
+    
+    s->bytestream_start=
+    s->bytestream= buf;
+    s->bytestream_end= buf + buf_size;
+    
+    if(pnm_decode_header(avctx, s) < 0)
+        return h;
     
     if(p->data[0])
         avctx->release_buffer(avctx, p);
@@ -491,6 +500,75 @@ static int pam_probe(AVProbeData *pd)
         return 0;
 }
 #endif
+
+static int pnm_parse(AVCodecParserContext *s,
+                           AVCodecContext *avctx,
+                           uint8_t **poutbuf, int *poutbuf_size, 
+                           const uint8_t *buf, int buf_size)
+{
+    ParseContext *pc = s->priv_data;
+    PNMContext pnmctx;
+    int next;
+
+    for(; pc->overread>0; pc->overread--){
+        pc->buffer[pc->index++]= pc->buffer[pc->overread_index++];
+    }
+retry:
+    if(pc->index){
+        pnmctx.bytestream_start=
+        pnmctx.bytestream= pc->buffer;
+        pnmctx.bytestream_end= pc->buffer + pc->index;
+    }else{
+        pnmctx.bytestream_start=
+        pnmctx.bytestream= buf;
+        pnmctx.bytestream_end= buf + buf_size;
+    }
+    if(pnm_decode_header(avctx, &pnmctx) < 0){
+        if(pnmctx.bytestream < pnmctx.bytestream_end){
+            if(pc->index){
+                pc->index=0;
+            }else{
+                buf++;
+                buf_size--;
+            }
+            goto retry;
+        }
+#if 0
+        if(pc->index && pc->index*2 + FF_INPUT_BUFFER_PADDING_SIZE < pc->buffer_size && buf_size > pc->index){
+            memcpy(pc->buffer + pc->index, buf, pc->index);
+            pc->index += pc->index;
+            buf += pc->index;
+            buf_size -= pc->index;
+            goto retry;
+        }
+#endif
+        next= END_NOT_FOUND;
+    }else{
+        next= pnmctx.bytestream - pnmctx.bytestream_start 
+            + avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+        if(pnmctx.bytestream_start!=buf)
+            next-= pc->index;
+        if(next > buf_size)
+            next= END_NOT_FOUND;
+    }
+    
+    if(ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size)<0){
+        *poutbuf = NULL;
+        *poutbuf_size = 0;
+        return buf_size;
+    }
+    *poutbuf = (uint8_t *)buf;
+    *poutbuf_size = buf_size;
+    return next;
+}
+
+AVCodecParser pnm_parser = {
+    { CODEC_ID_PGM, CODEC_ID_PGMYUV, CODEC_ID_PPM, CODEC_ID_PBM},
+    sizeof(ParseContext),
+    NULL,
+    pnm_parse,
+    ff_parse_close,
+};
 
 AVCodec pgm_encoder = {
     "pgm",

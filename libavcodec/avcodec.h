@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4730
+#define LIBAVCODEC_BUILD       4731
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -2152,7 +2152,7 @@ typedef struct AVCodecParserContext {
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
-    int codec_ids[3]; /* several codec IDs are permitted */
+    int codec_ids[5]; /* several codec IDs are permitted */
     int priv_data_size;
     int (*parser_init)(AVCodecParserContext *s);
     int (*parser_parse)(AVCodecParserContext *s, 
@@ -2180,6 +2180,7 @@ extern AVCodecParser h261_parser;
 extern AVCodecParser h263_parser;
 extern AVCodecParser h264_parser;
 extern AVCodecParser mjpeg_parser;
+extern AVCodecParser pnm_parser;
 extern AVCodecParser mpegaudio_parser;
 extern AVCodecParser ac3_parser;
 

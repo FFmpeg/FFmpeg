@@ -247,6 +247,7 @@ PCM_CODEC(CODEC_ID_ADPCM_CT, adpcm_ct);
     av_register_codec_parser(&h263_parser);
     av_register_codec_parser(&h264_parser);
     av_register_codec_parser(&mjpeg_parser);
+    av_register_codec_parser(&pnm_parser);
 
     av_register_codec_parser(&mpegaudio_parser);
 #ifdef CONFIG_AC3

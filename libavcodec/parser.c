@@ -38,7 +38,9 @@ AVCodecParserContext *av_parser_init(int codec_id)
     for(parser = av_first_parser; parser != NULL; parser = parser->next) {
         if (parser->codec_ids[0] == codec_id ||
             parser->codec_ids[1] == codec_id ||
-            parser->codec_ids[2] == codec_id)
+            parser->codec_ids[2] == codec_id ||
+            parser->codec_ids[3] == codec_id ||
+            parser->codec_ids[4] == codec_id)
             goto found;
     }
     return NULL;
