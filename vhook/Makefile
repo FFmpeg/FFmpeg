@@ -15,9 +15,9 @@ endif
 
 all: $(HOOKS) 
 
-SRCS := $(OBJS:.o=.c)
+SRCS := $(HOOKS:.so=.c)
 
-.depend: $(SRCS)
+depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 install:
