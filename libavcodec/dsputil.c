@@ -1341,6 +1341,9 @@ void dsputil_init(void)
     dsputil_init_alpha();
     use_permuted_idct = 0;
 #endif
+#ifdef ARCH_POWERPC
+    dsputil_init_altivec();
+#endif
 
 #ifdef SIMPLE_IDCT
     if (ff_idct == NULL) {

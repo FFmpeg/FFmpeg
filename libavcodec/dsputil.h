@@ -163,6 +163,13 @@ void dsputil_init_mlib(void);
 
 void dsputil_init_alpha(void);
 
+#elif defined(ARCH_POWERPC)
+
+#define emms_c()
+#define __align8 __attribute__ ((aligned (16)))
+
+void dsputil_init_altivec(void);
+
 #else
 
 #define emms_c()

@@ -67,6 +67,11 @@ ASM_OBJS += alpha/dsputil_alpha_asm.o
 CFLAGS += -Wa,-mpca56 -finline-limit=8000 -fforce-addr -freduce-all-givs
 endif
 
+ifeq ($(TARGET_ARCH_POWERPC),yes)
+CFLAGS += -faltivec
+OBJS += ppc/dsputil_altivec.o
+endif
+
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
 
@@ -106,6 +111,7 @@ clean:
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \
+	   ppc/*.o ppc/*~ \
 	   liba52/*.o liba52/*~ \
 	   apiexample $(TESTS)
 
