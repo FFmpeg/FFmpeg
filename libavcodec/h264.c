@@ -2886,32 +2886,17 @@ static int fill_default_ref_list(H264Context *h){
             // find the largest poc
             for(list=0; list<2; list++){
                 int index = 0;
-                int swap_first_L1 = 0;
+                int j= -99;
+                int step= list ? -1 : 1;
 
-                if (0 == list) {
-                    for(i=smallest_poc_greater_than_current-1; i>=0 && index < h->ref_count[list]; i--) {
-                        if(sorted_short_ref[i].reference != 3) continue;
-                        h->default_ref_list[list][index  ]= sorted_short_ref[i];
-                        h->default_ref_list[list][index++].pic_id= sorted_short_ref[i].frame_num;
+                for(i=0; i<h->short_ref_count && index < h->ref_count[list]; i++, j+=step) {
+                    while(j<0 || j>= h->short_ref_count){
+                        step = -step;
+                        j= smallest_poc_greater_than_current + (step>>1);
                     }
-                    for(i=smallest_poc_greater_than_current; i<h->short_ref_count && index < h->ref_count[list]; i++) {
-                        if(sorted_short_ref[i].reference != 3) continue;
-                        h->default_ref_list[list][index  ]= sorted_short_ref[i];
-                        h->default_ref_list[list][index++].pic_id= sorted_short_ref[i].frame_num;
-                    }
-                } else {
-                    for(i=smallest_poc_greater_than_current; i<h->short_ref_count && index < h->ref_count[list]; i++) {
-                        if(sorted_short_ref[i].reference != 3) continue;
-                        swap_first_L1 |= 1;
-                        h->default_ref_list[list][index  ]= sorted_short_ref[i];
-                        h->default_ref_list[list][index++].pic_id= sorted_short_ref[i].frame_num;
-                    }
-                    for(i=smallest_poc_greater_than_current-1; i>=0 && index < h->ref_count[list]; i--) {
-                        if(sorted_short_ref[i].reference != 3) continue;
-                        swap_first_L1 |= 2;
-                        h->default_ref_list[list][index  ]= sorted_short_ref[i];
-                        h->default_ref_list[list][index++].pic_id= sorted_short_ref[i].frame_num;
-                    }
+                    if(sorted_short_ref[j].reference != 3) continue;
+                    h->default_ref_list[list][index  ]= sorted_short_ref[j];
+                    h->default_ref_list[list][index++].pic_id= sorted_short_ref[j].frame_num;
                 }
 
                 for(i = 0; i < 16 && index < h->ref_count[ list ]; i++){
@@ -2922,7 +2907,7 @@ static int fill_default_ref_list(H264Context *h){
                     h->default_ref_list[ list ][index++].pic_id= i;;
                 }
                 
-                if(list && (3 == swap_first_L1) && (1 < index)){
+                if(list && (smallest_poc_greater_than_current<=0 || smallest_poc_greater_than_current>=h->short_ref_count) && (1 < index)){
                     // swap the two first elements of L1 when
                     // L0 and L1 are identical
                     Picture temp= h->default_ref_list[1][0];
