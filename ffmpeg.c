@@ -114,10 +114,8 @@ static int same_quality = 0;
 static int b_frames = 0;
 static int mb_decision = FF_MB_DECISION_SIMPLE;
 static int use_4mv = 0;
-/* Fx */
 static int use_aic = 0;
 static int use_umv = 0;
-/* /Fx */
 static int do_deinterlace = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
 static int error_resilience = 2;
@@ -128,6 +126,7 @@ static int use_part = 0;
 static int packet_size = 0;
 static int strict = 0;
 static int debug = 0;
+extern int loop_input; /* currently a hack */
 
 static int gop_size = 12;
 static int intra_only = 0;
@@ -2205,14 +2204,12 @@ static void opt_output_file(const char *filename)
 
                 video_enc->mb_decision = mb_decision;
                 
-           	/* Fx */ 
                 if (use_umv) {
                     video_enc->flags |= CODEC_FLAG_H263P_UMV;
                 }
            	if (use_aic) {
                     video_enc->flags |= CODEC_FLAG_H263P_AIC;
                 }
-           	/* /Fx */ 
                 if (use_4mv) {
                     video_enc->mb_decision = FF_MB_DECISION_BITS; //FIXME remove
                     video_enc->flags |= CODEC_FLAG_4MV;
@@ -2618,12 +2615,12 @@ const OptionDef options[] = {
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump}, 
       "dump each input packet" },
     { "bitexact", OPT_EXPERT, {(void*)opt_bitexact}, "only use bit exact algorithms (for codec testing)" }, 
-
+    { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
+    { "loop", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
 
     /* video options */
     { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
     { "r", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
-    { "re", OPT_BOOL|OPT_EXPERT | OPT_VIDEO, {(void*)&rate_emu}, "read input at native frame rate" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format", "format" },
@@ -2678,10 +2675,8 @@ const OptionDef options[] = {
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
-    /* Fx */
     { "aic", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aic}, "enable Advanced intra coding (h263+)" },
     { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
-    /* /Fx */
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
