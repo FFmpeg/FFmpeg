@@ -3866,8 +3866,15 @@ int ff_h263_decode_mb(MpegEncContext *s,
             }
         }
 
+        /* decode each block */
+        for (i = 0; i < 6; i++) {
+            if (h263_decode_block(s, block[i], i, cbp&32) < 0)
+                return -1;
+            cbp+=cbp;
+        }
+
         if(s->obmc){
-            if(s->pict_type == P_TYPE && s->mb_x+1<s->mb_width)
+            if(s->pict_type == P_TYPE && s->mb_x+1<s->mb_width && s->mb_num_left != 1)
                 preview_obmc(s);
         }
     } else if(s->pict_type==B_TYPE) {
@@ -3957,6 +3964,13 @@ int ff_h263_decode_mb(MpegEncContext *s,
         }
           
         s->current_picture.mb_type[xy]= mb_type;
+
+        /* decode each block */
+        for (i = 0; i < 6; i++) {
+            if (h263_decode_block(s, block[i], i, cbp&32) < 0)
+                return -1;
+            cbp+=cbp;
+        }
     } else { /* I-Frame */
         do{
             cbpc = get_vlc2(&s->gb, intra_MCBPC_vlc.table, INTRA_MCBPC_VLC_BITS, 2);
@@ -3989,13 +4003,13 @@ intra:
         if (dquant) {
             h263_decode_dquant(s);
         }
-    }
 
-    /* decode each block */
-    for (i = 0; i < 6; i++) {
-        if (h263_decode_block(s, block[i], i, cbp&32) < 0)
-            return -1;
-        cbp+=cbp;
+        /* decode each block */
+        for (i = 0; i < 6; i++) {
+            if (h263_decode_block(s, block[i], i, cbp&32) < 0)
+                return -1;
+            cbp+=cbp;
+        }
     }
 end:
 
