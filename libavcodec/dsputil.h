@@ -2,7 +2,6 @@
 #define DSPUTIL_H
 
 #include "common.h"
-#include <inttypes.h>
 
 /* dct code */
 typedef short DCTELEM;
@@ -75,7 +74,7 @@ static inline int block_permute_op(int j)
 
 void block_permute(INT16 *block);
 
-#ifdef HAVE_MMX
+#if defined(HAVE_MMX)
 
 #define MM_MMX    0x0001 /* standard MMX */
 #define MM_3DNOW  0x0004 /* AMD 3DNOW */
@@ -101,6 +100,16 @@ static inline void emms(void)
 #define __align8 __attribute__ ((aligned (8)))
 
 void dsputil_init_mmx(void);
+
+#elif defined(ARCH_ARMV4L)
+
+#define emms_c()
+
+/* This is to use 4 bytes read to the IDCT pointers for some 'zero'
+   line ptimizations */
+#define __align8 __attribute__ ((aligned (4)))
+
+void dsputil_init_armv4l(void);   
 
 #else
 

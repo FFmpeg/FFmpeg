@@ -31,6 +31,12 @@ OBJS += i386/fdctdata.o i386/cputest.o \
         i386/idct_mmx.o
 endif
 
+# armv4l specific stuff
+ifeq ($(TARGET_ARCH_ARMV4L),yes)
+ASM_OBJS += armv4l/jrevdct_arm.o
+OBJS += armv4l/dsputil_arm.o
+endif
+
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 
 LIB= libavcodec.a
@@ -48,6 +54,9 @@ dsputil.o: dsputil.c dsputil.h
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
+%.o: %.S
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 %.o: %.s
 	nasm -f elf -o $@ $<
 
@@ -59,6 +68,7 @@ depend:
 
 clean: 
 	rm -f *.o *~ *.a i386/*.o i386/*~ \
+	   armv4l/*.o armv4l/*~ \
            libac3/*.o libac3/*~ \
            mpglib/*.o mpglib/*~ \
            apiexample $(TESTS)

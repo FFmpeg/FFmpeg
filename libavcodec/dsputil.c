@@ -450,4 +450,7 @@ void dsputil_init(void)
 #ifdef HAVE_MMX
     dsputil_init_mmx();
 #endif
+#ifdef ARCH_ARMV4L
+    dsputil_init_armv4l();
+#endif
 }
