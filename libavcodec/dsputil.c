@@ -2287,7 +2287,7 @@ static void h263_v_loop_filter_c(uint8_t *src, int stride, int qscale){
         src[x-1*stride] = p1;
         src[x+0*stride] = p2;
 
-        ad1= ABS(d1);
+        ad1= ABS(d1)>>1;
         
         d2= clip((p0-p3)/4, -ad1, ad1);
         
