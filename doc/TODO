@@ -14,7 +14,6 @@ Planned in next release:
 - find a solution to clear feed1.ffm if format change.
 - new grab architecture : use avformat instead of audio: and video:
   protocol.
-- correct PTS handling to sync audio and video.
 - fix 0 size picture in AVIs = skip picture
 
 BUGS:

@@ -17,6 +17,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #include "avformat.h"
+#include "tick.h"
 
 #define MAX_PAYLOAD_SIZE 4096
 #define NB_STREAMS 2
@@ -27,7 +28,8 @@ typedef struct {
     UINT8 id;
     int max_buffer_size; /* in bytes */
     int packet_number;
-    float pts;
+    INT64 pts;
+    Ticker pts_ticker;
     INT64 start_pts;
 } StreamInfo;
 
@@ -211,6 +213,20 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         stream->packet_number = 0;
         stream->pts = 0;
         stream->start_pts = -1;
+
+        st = ctx->streams[i];
+        switch (st->codec.codec_type) {
+        case CODEC_TYPE_AUDIO:
+            ticker_init(&stream->pts_ticker,
+                        st->codec.sample_rate,
+                        90000 * st->codec.frame_size);
+            break;
+        case CODEC_TYPE_VIDEO:
+            ticker_init(&stream->pts_ticker,
+                        st->codec.frame_rate,
+                        90000 * FRAME_RATE_BASE);
+            break;
+        }
     }
     return 0;
  fail:
@@ -316,7 +332,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx,
     while (size > 0) {
         /* set pts */
         if (stream->start_pts == -1)
-            stream->start_pts = stream->pts * 90000.0;
+            stream->start_pts = stream->pts;
         len = s->packet_data_max_size - stream->buffer_ptr;
         if (len > size)
             len = size;
@@ -327,16 +343,12 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx,
         while (stream->buffer_ptr >= s->packet_data_max_size) {
             /* output the packet */
             if (stream->start_pts == -1)
-                stream->start_pts = stream->pts * 90000.0;
+                stream->start_pts = stream->pts;
             flush_packet(ctx, stream_index);
         }
     }
 
-    if (st->codec.codec_type == CODEC_TYPE_AUDIO) {
-        stream->pts += (float)st->codec.frame_size / st->codec.sample_rate;
-    } else {
-        stream->pts += FRAME_RATE_BASE / (float)st->codec.frame_rate;
-    }
+    stream->pts += ticker_tick(&stream->pts_ticker, 1);
     return 0;
 }
 

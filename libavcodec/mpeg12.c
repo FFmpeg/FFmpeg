@@ -129,7 +129,6 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             }
 
         }
-        s->fake_picture_number++;
 }
 
 
@@ -226,6 +225,7 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     /* temporal reference */
     put_bits(&s->pb, 10, (s->fake_picture_number - 
                           s->gop_picture_number) & 0x3ff); 
+    s->fake_picture_number++;
     
     put_bits(&s->pb, 3, s->pict_type);
     put_bits(&s->pb, 16, 0xffff); /* non constant bit rate */

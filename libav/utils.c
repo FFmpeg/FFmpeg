@@ -17,6 +17,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #include "avformat.h"
+#include "tick.h"
 #ifndef CONFIG_WIN32
 #include <unistd.h>
 #include <fcntl.h>
@@ -615,4 +616,31 @@ int get_frame_filename(char *buf, int buf_size,
     return -1;
 }
 
+static int gcd(INT64 a, INT64 b)
+{
+    INT64 c;
 
+    while (1) {
+        c = a % b;
+        if (c == 0)
+            return b;
+        a = b;
+        b = c;
+    }
+}
+
+void ticker_init(Ticker *tick, INT64 inrate, INT64 outrate)
+{
+    int g;
+
+    g = gcd(inrate, outrate);
+    inrate /= g;
+    outrate /= g;
+
+    tick->value = -outrate/2;
+
+    tick->inrate = inrate;
+    tick->outrate = outrate;
+    tick->div = tick->outrate / tick->inrate;
+    tick->mod = tick->outrate % tick->inrate;
+}
