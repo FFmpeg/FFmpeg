@@ -619,7 +619,7 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     unsigned char tag[5];
     unsigned int flags=0;
     const int stream_index= pkt->stream_index;
-    AVCodecContext *enc= &s->streams[stream_index]->codec;;
+    AVCodecContext *enc= &s->streams[stream_index]->codec;
     int size= pkt->size;
 
 //    av_log(s, AV_LOG_DEBUG, "%lld %d %d\n", pkt->dts, avi->packet_count[stream_index], stream_index);
