@@ -267,15 +267,11 @@ static int wav_read_header(AVFormatContext *s,
 static int wav_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
-    int packet_size, n, ret;
+    int ret;
 
     if (url_feof(&s->pb))
         return -EIO;
-    packet_size = url_get_packet_size(&s->pb);
-    n = MAX_SIZE / packet_size;
-    if (n <= 0)
-        return n = 1;
-    if (av_new_packet(pkt, n * packet_size))
+    if (av_new_packet(pkt, MAX_SIZE))
         return -EIO;
     pkt->stream_index = 0;
 

@@ -159,17 +159,13 @@ static int au_read_header(AVFormatContext *s,
 #define MAX_SIZE 4096
 
 static int au_read_packet(AVFormatContext *s,
-                           AVPacket *pkt)
+                          AVPacket *pkt)
 {
-    int packet_size, n, ret;
+    int ret;
 
     if (url_feof(&s->pb))
         return -EIO;
-    packet_size = url_get_packet_size(&s->pb);
-    n = MAX_SIZE / packet_size;
-    if (n <= 0)
-        return n = 1;
-    if (av_new_packet(pkt, n * packet_size))
+    if (av_new_packet(pkt, MAX_SIZE))
         return -EIO;
     pkt->stream_index = 0;
 
@@ -179,7 +175,7 @@ static int au_read_packet(AVFormatContext *s,
     /* note: we need to modify the packet size here to handle the last
        packet */
     pkt->size = ret;
-    return ret;
+    return 0;
 }
 
 static int au_read_close(AVFormatContext *s)
