@@ -137,6 +137,7 @@ typedef struct PPContext{
 	uint64_t __attribute__((aligned(8))) mmxDcOffset[32];
 	uint64_t __attribute__((aligned(8))) mmxDcThreshold[32];
 
+	QP_STORE_T *stdQPTable;       ///< used to fix MPEG2 style qscale
 	QP_STORE_T *nonBQPTable;
 	QP_STORE_T *forcedQPTable;
 
@@ -147,11 +148,13 @@ typedef struct PPContext{
 	
 	int cpuCaps;
         
-	int stride; ///<size of some buffers (needed to realloc them if needed)
+	int qpStride; ///<size of qp buffers (needed to realloc them if needed)
+	int stride;   ///<size of some buffers (needed to realloc them if needed)
         
 	int hChromaSubSample;
 	int vChromaSubSample;
 
 	PPMode ppMode;
 } PPContext;
+
 

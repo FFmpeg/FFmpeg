@@ -2001,8 +2001,11 @@ eos: //end of slice
     if (s->mb_y<<field_pic == s->mb_height && !s->first_field) {
         /* end of image */
 
-        if(s->mpeg2)
-            s->qscale >>=1;
+        if(s->mpeg2){
+            s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_MPEG2;
+        }else
+            s->current_picture_ptr->qscale_type= FF_QSCALE_TYPE_MPEG1;
+
         ff_er_frame_end(s);
 
         MPV_frame_end(s);

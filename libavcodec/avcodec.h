@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4663
-#define LIBAVCODEC_BUILD_STR   "4663"
+#define LIBAVCODEC_BUILD       4664
+#define LIBAVCODEC_BUILD_STR   "4664"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -314,8 +314,15 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
      * - encoding: unused\
      * - decoding: set by lavc\
      */\
-    int repeat_pict;
+    int repeat_pict;\
+    \
+    /**\
+     * \
+     */\
+    int qscale_type;\
 
+#define FF_QSCALE_TYPE_MPEG1	0
+#define FF_QSCALE_TYPE_MPEG2	1
 
 #define FF_BUFFER_TYPE_INTERNAL 1
 #define FF_BUFFER_TYPE_USER     2 ///< Direct rendering buffers

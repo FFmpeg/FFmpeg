@@ -2993,7 +2993,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 		uint8_t *tempBlock2= c.tempBlocks + 8;
 #endif
 		int8_t *QPptr= &QPs[(y>>qpVShift)*QPStride];
-		int8_t *nonBQPptr= &c.nonBQPTable[(y>>qpVShift)*mbWidth];
+		int8_t *nonBQPptr= &c.nonBQPTable[(y>>qpVShift)*QPStride];
 		int QP=0;
 		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
 		   if not than use a temporary buffer */

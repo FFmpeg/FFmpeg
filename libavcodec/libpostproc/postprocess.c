@@ -199,8 +199,9 @@ static inline int isHorizDC(uint8_t src[], int stride, PPContext *c)
 {
 	int numEq= 0;
 	int y;
-	const int dcOffset= ((c->QP*c->ppMode.baseDcDiff)>>8) + 1;
+	const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
 	const int dcThreshold= dcOffset*2 + 1;
+
 	for(y=0; y<BLOCK_SIZE; y++)
 	{
 		if(((unsigned)(src[0] - src[1] + dcOffset)) < dcThreshold) numEq++;
@@ -221,8 +222,9 @@ static inline int isHorizDC(uint8_t src[], int stride, PPContext *c)
 static inline int isVertDC_C(uint8_t src[], int stride, PPContext *c){
 	int numEq= 0;
 	int y;
-	const int dcOffset= ((c->QP*c->ppMode.baseDcDiff)>>8) + 1;
+	const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
 	const int dcThreshold= dcOffset*2 + 1;
+
 	src+= stride*4; // src points to begin of the 8x8 Block
 	for(y=0; y<BLOCK_SIZE-1; y++)
 	{
@@ -735,12 +737,13 @@ static void reallocAlign(void **p, int alignment, int size){
 	memset(*p, 0, size);
 }
 
-static void reallocBuffers(PPContext *c, int width, int height, int stride){
+static void reallocBuffers(PPContext *c, int width, int height, int stride, int qpStride){
 	int mbWidth = (width+15)>>4;
 	int mbHeight= (height+15)>>4;
 	int i;
 
 	c->stride= stride;
+	c->qpStride= qpStride;
 
 	reallocAlign((void **)&c->tempDst, 8, stride*24);
 	reallocAlign((void **)&c->tempSrc, 8, stride*24);
@@ -757,7 +760,8 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride){
 	}
 
 	reallocAlign((void **)&c->deintTemp, 8, 2*width+32);
-	reallocAlign((void **)&c->nonBQPTable, 8, mbWidth*mbHeight*sizeof(QP_STORE_T));
+	reallocAlign((void **)&c->nonBQPTable, 8, qpStride*mbHeight*sizeof(QP_STORE_T));
+	reallocAlign((void **)&c->stdQPTable, 8, qpStride*mbHeight*sizeof(QP_STORE_T));
 	reallocAlign((void **)&c->forcedQPTable, 8, mbWidth*sizeof(QP_STORE_T));
 }
 
@@ -772,6 +776,7 @@ static void global_init(){
 pp_context_t *pp_get_context(int width, int height, int cpuCaps){
 	PPContext *c= memalign(32, sizeof(PPContext));
 	int stride= (width+15)&(~15); //assumed / will realloc if needed
+	int qpStride= (width+15)/16 + 2; //assumed / will realloc if needed
         
 	global_init();
 
@@ -785,7 +790,7 @@ pp_context_t *pp_get_context(int width, int height, int cpuCaps){
 		c->vChromaSubSample= 1;
 	}
 
-	reallocBuffers(c, width, height, stride);
+	reallocBuffers(c, width, height, stride, qpStride);
         
 	c->frameNum=-1;
 
@@ -804,6 +809,7 @@ void pp_free_context(void *vc){
 	free(c->tempDst);
 	free(c->tempSrc);
 	free(c->deintTemp);
+	free(c->stdQPTable);
 	free(c->nonBQPTable);
 	free(c->forcedQPTable);
         
@@ -823,9 +829,11 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
 	PPMode *mode = (PPMode*)vm;
 	PPContext *c = (PPContext*)vc;
         int minStride= MAX(srcStride[0], dstStride[0]);
-	
-	if(c->stride < minStride)
-		reallocBuffers(c, width, height, minStride);
+
+	if(c->stride < minStride || c->qpStride < QPStride)
+		reallocBuffers(c, width, height, 
+				MAX(minStride, c->stride), 
+				MAX(c->qpStride, QPStride));
 
 	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)) 
 	{
@@ -837,6 +845,20 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
 		else
 			for(i=0; i<mbWidth; i++) QP_store[i]= 1;
 	}
+//printf("pict_type:%d\n", pict_type);
+
+	if(pict_type & PP_PICT_TYPE_QP2){
+		int i;
+		const int count= mbHeight * QPStride;
+		for(i=0; i<(count>>2); i++){
+			((uint32_t*)c->stdQPTable)[i] = (((uint32_t*)QP_store)[i]>>1) & 0x7F7F7F7F;
+		}
+		for(i<<=2; i<count; i++){
+			c->stdQPTable[i] = QP_store[i]>>1;
+		}
+                QP_store= c->stdQPTable;
+	}
+
 if(0){
 int x,y;
 for(y=0; y<mbHeight; y++){
@@ -847,18 +869,16 @@ for(y=0; y<mbHeight; y++){
 }
 	printf("\n");
 }
-//printf("pict_type:%d\n", pict_type);
 
-	if(pict_type!=3)
+	if((pict_type&7)!=3)
 	{
-		int x,y;
-		for(y=0; y<mbHeight; y++){
-			for(x=0; x<mbWidth; x++){
-				int qscale= QP_store[x + y*QPStride];
-				if(qscale&~31)
-				    qscale=31;
-				c->nonBQPTable[y*mbWidth + x]= qscale;
-			}
+		int i;
+		const int count= mbHeight * QPStride;
+		for(i=0; i<(count>>2); i++){
+			((uint32_t*)c->nonBQPTable)[i] = ((uint32_t*)QP_store)[i] & 0x1F1F1F1F;
+		}
+		for(i<<=2; i<count; i++){
+			c->nonBQPTable[i] = QP_store[i] & 0x1F;
 		}
 	}
 
