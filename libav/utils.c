@@ -147,7 +147,8 @@ AVInputFormat *av_find_input_format(const char *short_name)
  */
 int av_new_packet(AVPacket *pkt, int size)
 {
-    pkt->data = av_malloc(size);
+    int64_t* p;
+    pkt->data = av_malloc(size + 9);
     if (!pkt->data)
         return AVERROR_NOMEM;
     pkt->size = size;
@@ -155,6 +156,8 @@ int av_new_packet(AVPacket *pkt, int size)
     pkt->pts = AV_NOPTS_VALUE;
     pkt->stream_index = 0;
     pkt->flags = 0;
+    p = (int64_t*)&pkt->data[size];
+    *p = 0;
     return 0;
 }
 
