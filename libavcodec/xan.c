@@ -265,17 +265,6 @@ static void inline xan_wc3_build_palette(XanContext *s,
 
     switch (s->avctx->pix_fmt) {
 
-    case PIX_FMT_PAL8:
-        for (i = 0; i < PALETTE_COUNT; i++) {
-            r = *palette_data++;
-            g = *palette_data++;
-            b = *palette_data++;
-            s->palette[i * 4 + 0] = b;
-            s->palette[i * 4 + 1] = g;
-            s->palette[i * 4 + 2] = r;
-        }
-        break;
-
     case PIX_FMT_RGB555:
         palette16 = (unsigned short *)s->palette;
         for (i = 0; i < PALETTE_COUNT; i++) {
@@ -321,6 +310,7 @@ static void inline xan_wc3_build_palette(XanContext *s,
         }
         break;
 
+    case PIX_FMT_PAL8:
     case PIX_FMT_RGBA32:
         palette32 = (unsigned int *)s->palette;
         for (i = 0; i < PALETTE_COUNT; i++) {
