@@ -120,6 +120,11 @@ to cvs".
 
 try '-f image -img jpeg test%d.jpg'
 
+@section i cant change the framerate
+
+some codecs, like mpeg1/2 only allow a small number of fixed framerates, 
+choose a different codec with -vcodec
+
 @chapter Development
 
 @section Are there examples of use of the FFmpeg libraries libavcodec and libavformat ?
