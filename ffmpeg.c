@@ -1756,6 +1756,8 @@ static int av_encode(AVFormatContext **output_files,
         ist->next_pts = ist->st->start_time;
         if(ist->next_pts == AV_NOPTS_VALUE) 
             ist->next_pts=0;
+        if(input_files_ts_offset[ist->file_index])
+            ist->next_pts= AV_NOPTS_VALUE;
         ist->is_start = 1;
     }
 
@@ -1897,7 +1899,7 @@ static int av_encode(AVFormatContext **output_files,
             goto discard_packet;
 
 //        fprintf(stderr, "next:%lld dts:%lld off:%lld %d\n", ist->next_pts, pkt.dts, input_files_ts_offset[ist->file_index], ist->st->codec.codec_type);
-        if (pkt.dts != AV_NOPTS_VALUE) {
+        if (pkt.dts != AV_NOPTS_VALUE && ist->next_pts != AV_NOPTS_VALUE) {
             int64_t delta= pkt.dts - ist->next_pts;
             if(ABS(delta) > 10LL*AV_TIME_BASE && !copy_ts){
                 input_files_ts_offset[ist->file_index]-= delta;
