@@ -45,6 +45,11 @@ submitting it to me, you accept implicitely to put it under my
 copyright. I prefer to do this to avoid potential problems if
 licensing of ffmpeg changes.
 
+Patches should be posted as base64 encoded attachments (or any other
+encoding which ensures that the patch wont be trashed during 
+transmission) to the ffmpeg-devel mailinglist, see 
+http://lists.sourceforge.net/lists/listinfo/ffmpeg-devel
+
 5) Regression tests
 -------------------
 
