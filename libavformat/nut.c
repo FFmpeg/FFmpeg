@@ -38,6 +38,7 @@
 
 #include "avformat.h"
 #include "mpegaudio.h"
+#include "avi.h"
 
 //from /dev/random
 
@@ -85,21 +86,17 @@ static int64_t get_s(ByteIOContext *bc)
         return (v>>1);
 }
 
-static int get_b(ByteIOContext *bc, char *data, int maxlen)
+static int get_b(ByteIOContext *bc)
 {
-    int i, len;
+    int i, len, val;
     
     len = get_v(bc);
-    for (i = 0; i < len && i < maxlen; i++)
-	data[i] = get_byte(bc);
-    if (i < len)
-    {
-	len = i;
-	for (i = 0; i < len; i++)
-	    get_byte(bc);
+    val = 0;
+    for (i = 0; i < len; i++) {
+        if (i < 4)
+            val |= get_byte(bc) << (i * 8);
     }
-
-    return 0;
+    return val;
 }
 
 static int get_packetheader(NUTContext *nut, ByteIOContext *bc)
@@ -164,6 +161,13 @@ static int put_b(ByteIOContext *bc, char *data, int len)
     for (i = 0; i < len; i++)
 	put_byte(bc, data[i]);
 
+    return 0;
+}
+
+static int put_bi(ByteIOContext *bc, int val)
+{
+    put_v(bc, 4);
+    put_le32(bc, val);
     return 0;
 }
 
@@ -238,20 +242,16 @@ static int nut_write_header(AVFormatContext *s)
 	put_v(bc, i /*s->streams[i]->index*/);
 	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
 	if (codec->codec_tag)
-	    put_b(bc, &codec->codec_tag, 4);
+	    put_bi(bc, codec->codec_tag);
 	else if (codec->codec_type == CODEC_TYPE_VIDEO)
 	{
 	    int tmp = codec_get_bmp_tag(codec->codec_id);
-	    put_b(bc, &tmp, 4);
-//	    put_v(bc, 4); /* len */
-//	    put_be32(bc, codec_get_bmp_tag(codec->codec_id));
+	    put_bi(bc, tmp);
 	}
 	else if (codec->codec_type == CODEC_TYPE_AUDIO)
 	{
 	    int tmp = codec_get_wav_tag(codec->codec_id);
-	    put_b(bc, &tmp, 4);
-//	    put_v(bc, 4); /* len */
-//	    put_be32(bc, codec_get_wav_tag(codec->codec_id));
+	    put_bi(bc, tmp);
 	}
 	put_v(bc, codec->bit_rate);
 	put_v(bc, 0); /* no language code */
@@ -278,6 +278,8 @@ static int nut_write_header(AVFormatContext *s)
 		put_v(bc, 0); /* csp type -- unknown */
 		put_be32(bc, 0); /* FIXME: checksum */
 		break;
+            default:
+                break;
 	}
         update_packetheader(nut, bc, 0);
     }
@@ -328,7 +330,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
     int key_frame = 0;
-    int flags, size2;
+    int flags;
     AVCodecContext *enc;
 
     if (stream_index > s->nb_streams)
@@ -364,7 +366,6 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
 
 static int nut_write_trailer(AVFormatContext *s)
 {
-    NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
 #if 0
     int i;
@@ -447,18 +448,14 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	{
 	    case 0:
 		st->codec.codec_type = CODEC_TYPE_VIDEO;
-//		get_v(bc);
-//		tmp = get_be32(bc);
-		get_b(bc, (char*)&tmp, 4);
+		tmp = get_b(bc);
 		st->codec.codec_id = codec_get_bmp_id(tmp);
 		if (st->codec.codec_id == CODEC_ID_NONE)
 		    fprintf(stderr, "Unknown codec?!\n");
 		break;
 	    case 32:
 		st->codec.codec_type = CODEC_TYPE_AUDIO;
-//		tmp = get_v(bc);
-//		tmp = get_be32(bc);
-		get_b(bc, (char*)&tmp, 4);
+		tmp = get_b(bc);
 		st->codec.codec_id = codec_get_wav_id(tmp);
 		if (st->codec.codec_id == CODEC_ID_NONE)
 		    fprintf(stderr, "Unknown codec?!\n");
