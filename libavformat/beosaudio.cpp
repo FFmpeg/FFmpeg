@@ -33,6 +33,7 @@ extern "C" {
 
 #ifdef HAVE_BSOUNDRECORDER
 #include <SoundRecorder.h>
+using namespace BPrivate::Media::Experimental;
 #endif
 
 /* enable performance checks */
@@ -42,7 +43,6 @@ extern "C" {
 //#define LATENCY_CHECK
 
 #define AUDIO_BLOCK_SIZE 4096
-//#define AUDIO_BLOCK_SIZE 2048
 #define AUDIO_BLOCK_COUNT 8
 
 #define AUDIO_BUFFER_SIZE (AUDIO_BLOCK_SIZE*AUDIO_BLOCK_COUNT)
@@ -60,7 +60,6 @@ typedef struct {
     int input_index;
     sem_id output_sem;
     int output_index;
-    int queued;
     BSoundPlayer *player;
 #ifdef HAVE_BSOUNDRECORDER
     BSoundRecorder *recorder;
@@ -196,7 +195,6 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
         return -EIO; /* not for now */
 #endif
     s->input_sem = create_sem(AUDIO_BUFFER_SIZE, "ffmpeg_ringbuffer_input");
-//    s->input_sem = create_sem(AUDIO_BLOCK_SIZE, "ffmpeg_ringbuffer_input");
     if (s->input_sem < B_OK)
         return -EIO;
     s->output_sem = create_sem(0, "ffmpeg_ringbuffer_output");
@@ -206,7 +204,6 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
     }
     s->input_index = 0;
     s->output_index = 0;
-    s->queued = 0;
     create_bapp_if_needed();
     s->frame_size = AUDIO_BLOCK_SIZE;
     /* bump up the priority (avoid realtime though) */
