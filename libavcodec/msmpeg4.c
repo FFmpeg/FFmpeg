@@ -45,6 +45,9 @@
 #define MB_NON_INTRA_VLC_BITS 9
 #define MB_INTRA_VLC_BITS 9
 
+#define II_BITRATE 128*1024
+#define MBAC_BITRATE 50*1024
+
 static UINT32 v2_dc_lum_table[512][2];
 static UINT32 v2_dc_chroma_table[512][2];
 
@@ -360,7 +363,7 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     s->mv_table_index = 1; /* only if P frame */
     s->use_skip_mb_code = 1; /* only if P frame */
     s->per_mb_rl_table = 0;
-    s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=128 && s->pict_type==P_TYPE);
+    s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==P_TYPE);
 
     if (s->pict_type == I_TYPE) {
         s->no_rounding = 1;
@@ -369,7 +372,7 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
         
         if(s->msmpeg4_version==4){
             msmpeg4_encode_ext_header(s);
-            if(s->bit_rate>50)
+            if(s->bit_rate>MBAC_BITRATE)
                 put_bits(&s->pb, 1, s->per_mb_rl_table);
         }
 
@@ -384,7 +387,7 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     } else {
         put_bits(&s->pb, 1, s->use_skip_mb_code);
         
-        if(s->msmpeg4_version==4 && s->bit_rate>50)
+        if(s->msmpeg4_version==4 && s->bit_rate>MBAC_BITRATE)
             put_bits(&s->pb, 1, s->per_mb_rl_table);
 
         if(s->msmpeg4_version>2){
@@ -416,7 +419,7 @@ void msmpeg4_encode_ext_header(MpegEncContext * s)
 {
         put_bits(&s->pb, 5, s->frame_rate / FRAME_RATE_BASE); //yes 29.97 -> 29
 
-        put_bits(&s->pb, 11, MIN(s->bit_rate, 2047));
+        put_bits(&s->pb, 11, MIN(s->bit_rate/1024, 2047));
 
         if(s->msmpeg4_version<3)
             s->flipflop_rounding=0;
@@ -624,6 +627,10 @@ void msmpeg4_encode_mb(MpegEncContext * s,
             }
             set_stat(ST_INTRA_MB);
             put_bits(&s->pb, 1, 0);	/* no AC prediction yet */
+            if(s->inter_intra_pred){
+                s->h263_aic_dir=0;
+                put_bits(&s->pb, table_inter_intra[s->h263_aic_dir][1], table_inter_intra[s->h263_aic_dir][0]);
+            }
         }
     }
 
@@ -1247,8 +1254,8 @@ return -1;
         case 4:
             msmpeg4_decode_ext_header(s, (2+5+5+17+7)/8);
 
-            if(s->bit_rate > 50) s->per_mb_rl_table= get_bits1(&s->gb);
-            else                 s->per_mb_rl_table= 0;
+            if(s->bit_rate > MBAC_BITRATE) s->per_mb_rl_table= get_bits1(&s->gb);
+            else                           s->per_mb_rl_table= 0;
             
             if(!s->per_mb_rl_table){
                 s->rl_chroma_table_index = decode012(&s->gb);
@@ -1292,8 +1299,8 @@ return -1;
         case 4:
             s->use_skip_mb_code = get_bits1(&s->gb);
 
-            if(s->bit_rate > 50) s->per_mb_rl_table= get_bits1(&s->gb);
-            else                 s->per_mb_rl_table= 0;
+            if(s->bit_rate > MBAC_BITRATE) s->per_mb_rl_table= get_bits1(&s->gb);
+            else                           s->per_mb_rl_table= 0;
 
             if(!s->per_mb_rl_table){
                 s->rl_table_index = decode012(&s->gb);
@@ -1303,7 +1310,7 @@ return -1;
             s->dc_table_index = get_bits1(&s->gb);
 
             s->mv_table_index = get_bits1(&s->gb);
-            s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=128);
+            s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE);
             break;
         }
 /*	printf("skip:%d rl:%d rlc:%d dc:%d mv:%d mbrl:%d qp:%d   \n", 
@@ -1340,13 +1347,13 @@ int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
         int fps;
 
         fps= get_bits(&s->gb, 5);
-        s->bit_rate= get_bits(&s->gb, 11);
+        s->bit_rate= get_bits(&s->gb, 11)*1024;
         if(s->msmpeg4_version>=3)
             s->flipflop_rounding= get_bits1(&s->gb);
         else
             s->flipflop_rounding= 0;
 
-//        printf("fps:%2d bps:%2d roundingType:%1d\n", fps, s->bit_rate, s->flipflop_rounding);
+//        printf("fps:%2d bps:%2d roundingType:%1d\n", fps, s->bit_rate/1024, s->flipflop_rounding);
     }
     else if(left<length+8)
     {
@@ -1743,12 +1750,13 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                                     ll++;
                                     SKIP_BITS(re, &s->gb, 1);
                                 }
-                                SKIP_BITS(re, &s->gb, 1);
+                                if(ll<8) SKIP_BITS(re, &s->gb, 1);
                             }
 
                             s->esc3_level_length= ll;
                             s->esc3_run_length= SHOW_UBITS(re, &s->gb, 2) + 3; SKIP_BITS(re, &s->gb, 2);
 //printf("level length:%d, run length: %d\n", ll, s->esc3_run_length);
+                            UPDATE_CACHE(re, &s->gb);
                         }
                         run=   SHOW_UBITS(re, &s->gb, s->esc3_run_length); 
                         SKIP_BITS(re, &s->gb, s->esc3_run_length);
