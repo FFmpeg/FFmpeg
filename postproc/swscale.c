@@ -440,6 +440,31 @@ static int canMMX2BeUsed=0;
 			" jb 1b				\n\t"
 
 
+static inline void yuv2yuv(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
+			   uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstw, int yalpha, int uvalpha)
+{
+	int yalpha1=yalpha^4095;
+	int uvalpha1=uvalpha^4095;
+	int i;
+
+	for(i=0;i<dstw;i++)
+	{
+		((uint8_t*)dest)[0] = (buf0[i]*yalpha1+buf1[i]*yalpha)>>19;
+		dest++;
+	}
+
+	if(uvalpha != -1)
+	{
+		for(i=0; i<dstw/2; i++)
+		{
+			((uint8_t*)uDest)[0] = (uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19;
+			((uint8_t*)vDest)[0] = (uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19;
+			uDest++;
+			vDest++;
+		}
+	}
+}
+
 /**
  * vertical scale YV12 to RGB
  */
@@ -1126,13 +1151,13 @@ FUNNYUVCODE
 }
 
 
-// *** bilinear scaling and yuv->rgb conversion of yv12 slices:
+// *** bilinear scaling and yuv->rgb or yuv->yuv conversion of yv12 slices:
 // *** Note: it's called multiple times while decoding a frame, first time y==0
 // *** Designed to upscale, but may work for downscale too.
 // s_xinc = (src_width << 16) / dst_width
 // s_yinc = (src_height << 16) / dst_height
-void SwScale_YV12slice_brg24(unsigned char* srcptr[],int stride[], int y, int h,
-			     unsigned char* dstptr, int dststride, int dstw, int dstbpp,
+void SwScale_YV12slice(unsigned char* srcptr[],int stride[], int y, int h,
+			     uint8_t* dstptr[], int dststride, int dstw, int dstbpp,
 			     unsigned int s_xinc,unsigned int s_yinc){
 
 // scaling factors:
@@ -1172,8 +1197,8 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0 && (srcWidth&15)==0) ? 1 : 0;
 if(canMMX2BeUsed) 	s_xinc+= 20;
 else			s_xinc = ((srcWidth-2)<<16)/(dstw-2) - 20;
 
-if(fullUVIpol) 	s_xinc2= s_xinc>>1;
-else		s_xinc2= s_xinc;
+if(fullUVIpol && !dstbpp==12) 	s_xinc2= s_xinc>>1;
+else				s_xinc2= s_xinc;
   // force calculation of the horizontal interpolation of the first line
 
   if(y==0){
@@ -1318,10 +1343,14 @@ else		s_xinc2= s_xinc;
   } // reset counters
 
   while(1){
-    unsigned char *dest=dstptr+dststride*s_ypos;
+    unsigned char *dest =dstptr[0]+dststride*s_ypos;
+    unsigned char *uDest=dstptr[1]+(dststride>>1)*(s_ypos>>1);
+    unsigned char *vDest=dstptr[2]+(dststride>>1)*(s_ypos>>1);
+
     int y0=(s_srcypos + 0xFFFF)>>16;  // first luminance source line number below the dst line
 	// points to the dst Pixels center in the source (0 is the center of pixel 0,0 in src)
-    int srcuvpos= s_srcypos + s_yinc/2 - 0x8000;
+    int srcuvpos= dstbpp==12 ?	s_srcypos + s_yinc/2 - 0x8000 :
+    				s_srcypos - 0x8000;
     int y1=(srcuvpos + 0x1FFFF)>>17; // first chrominance source line number below the dst line
     int yalpha=((s_srcypos-1)&0xFFFF)>>4;
     int uvalpha=((srcuvpos-1)&0x1FFFF)>>5;
@@ -1333,18 +1362,7 @@ else		s_xinc2= s_xinc;
 
     if(y0>=y+h) break; // FIXME wrong, skips last lines, but they are dupliactes anyway
 
-    // if this is after the last line than use only the last src line
- /*   if(y0>=y+h)
-    {
-	buf1= buf0;
-	s_last_ypos=y0;
-    }
-    if(y1>=(y+h)/2)
-    {
-	uvbuf1= uvbuf0;
-	s_last_y1pos=y1;
-    }
-*/
+    if((y0&1) && dstbpp==12) uvalpha=-1; // there is no alpha if there is no line
 
     s_ypos++; s_srcypos+=s_yinc;
 
@@ -1404,8 +1422,9 @@ else		s_xinc2= s_xinc;
 		s_last_y1pos= MIN(y1, y/2+h/2-1);
 	}
 
-
-	if(ABS(s_yinc - 0x10000) < 10)
+	if(dstbpp==12) //YV12
+		yuv2yuv(buf0, buf1, uvbuf0, uvbuf1, dest, uDest, vDest, dstw, yalpha, uvalpha);
+	else if(ABS(s_yinc - 0x10000) < 10)
 		yuv2rgb1(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
 	else
 		yuv2rgbX(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
