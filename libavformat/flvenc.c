@@ -26,6 +26,7 @@
 typedef struct FLVFrame {
     int type;
     int timestamp;
+    int reserved;
     int flags;
     uint8_t *data;
     int size;
@@ -38,6 +39,7 @@ typedef struct FLVContext {
     int initDelay;
     int64_t sampleCount;
     int64_t frameCount;
+    int reserved;
     FLVFrame *frames;
 } FLVContext;
 
@@ -119,10 +121,18 @@ static int mp3info(void *data, int *byteSize, int *samplesPerFrame, int *sampleR
 }
 #endif // CONFIG_MP3LAME
 
+static void put_be24(ByteIOContext *pb, int value)
+{
+    put_byte(pb, (value>>16) & 0xFF );
+    put_byte(pb, (value>> 8) & 0xFF );
+    put_byte(pb, (value>> 0) & 0xFF );
+}
+
 static int flv_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
     FLVContext *flv = s->priv_data;
+    int i;
 
     av_set_pts_info(s, 24, 1, 1000); /* 24 bit pts in ms */
 
@@ -138,15 +148,20 @@ static int flv_write_header(AVFormatContext *s)
     put_byte(pb,0); // delayed write
     put_be32(pb,9);
     put_be32(pb,0);
+    
+    for(i=0; i<s->nb_streams; i++){
+        AVCodecContext *enc = &s->streams[i]->codec;
+        if(enc->codec_tag == 5){
+            put_byte(pb,8); // message type
+            put_be24(pb,0); // include flags
+            put_be24(pb,0); // time stamp
+            put_be32(pb,0); // reserved
+            put_be32(pb,11); // size
+            flv->reserved=5;
+        }
+    }
 
     return 0;
-}
-
-static void put_be24(ByteIOContext *pb, int value)
-{
-    put_byte(pb, (value>>16) & 0xFF );
-    put_byte(pb, (value>> 8) & 0xFF );
-    put_byte(pb, (value>> 0) & 0xFF );
 }
 
 static void InsertSorted(FLVContext *flv, FLVFrame *frame)
@@ -157,7 +172,7 @@ static void InsertSorted(FLVContext *flv, FLVFrame *frame)
         FLVFrame *trav = flv->frames;
         FLVFrame *prev = 0;
         for (;trav;) {
-            if ( trav->timestamp >= frame->timestamp ) {
+            if ( trav->timestamp > frame->timestamp) {
                 frame->next = trav;
                 if ( prev ) {
                     prev->next = frame;
@@ -177,10 +192,11 @@ static void InsertSorted(FLVContext *flv, FLVFrame *frame)
 
 static void DumpFrame(ByteIOContext *pb, FLVFrame *frame)
 {
+//av_log(NULL, AV_LOG_DEBUG, "T%02X S%d T%d R%d F%02X ... R%08X\n", frame->type, frame->size+1, frame->timestamp, 0, frame->flags, frame->size+1+11);
     put_byte(pb,frame->type); // message type
     put_be24(pb,frame->size+1); // include flags
     put_be24(pb,frame->timestamp); // time stamp
-    put_be32(pb,0); // reserved
+    put_be32(pb,frame->reserved); // reserved
     put_byte(pb,frame->flags);
     put_buffer(pb, frame->data, frame->size);
     put_be32(pb,frame->size+1+11); // reserved
@@ -236,6 +252,7 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
     frame->size = size;
     frame->data = av_malloc(size);
     frame->timestamp = timestamp;
+    frame->reserved= flv->reserved;
     memcpy(frame->data,buf,size);
     
 //    av_log(s, AV_LOG_DEBUG, "type:%d pts: %lld size:%d\n", enc->codec_type, timestamp, size);
