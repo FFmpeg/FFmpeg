@@ -1538,6 +1538,8 @@ static int av_encode(AVFormatContext **output_files,
             codec->codec_type = icodec->codec_type;
             if(!codec->codec_tag) codec->codec_tag = icodec->codec_tag;
             codec->bit_rate = icodec->bit_rate;
+            codec->extradata= icodec->extradata;
+            codec->extradata_size= icodec->extradata_size;
             switch(codec->codec_type) {
             case CODEC_TYPE_AUDIO:
                 codec->sample_rate = icodec->sample_rate;
