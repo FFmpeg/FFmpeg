@@ -36,6 +36,7 @@
 typedef short DCTELEM;
 
 void fdct_ifast (DCTELEM *data);
+void fdct_ifast248 (DCTELEM *data);
 void ff_jpeg_fdct_islow (DCTELEM *data);
 void ff_fdct248_islow (DCTELEM *data);
 

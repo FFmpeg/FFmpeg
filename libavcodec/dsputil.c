@@ -2884,11 +2884,11 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #ifdef CONFIG_ENCODERS
     if(avctx->dct_algo==FF_DCT_FASTINT) {
         c->fdct = fdct_ifast;
-	c->fdct248 = ff_fdct248_islow; // FIXME: need an optimized version
+	c->fdct248 = fdct_ifast248;
     } 
     else if(avctx->dct_algo==FF_DCT_FAAN) {
         c->fdct = ff_faandct;
-	c->fdct248 = ff_fdct248_islow; // FIXME: need an optimized version
+	c->fdct248 = ff_faandct248; 
     } 
     else {
         c->fdct = ff_jpeg_fdct_islow; //slow/accurate/default
