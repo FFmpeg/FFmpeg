@@ -231,6 +231,9 @@ static inline int l3_unscale(int value, int exponent)
 #if FRAC_BITS <= 15    
     if (e > 31)
         e = 31;
+#else
+    if (e > 63)
+        e = 63;
 #endif
     m = table_4_3_value[value];
 #if FRAC_BITS <= 15    
@@ -2137,11 +2140,11 @@ void sample_dump(int fnum, int32_t *tab, int n)
     
     if (fnum == 0) {
         static int pos = 0;
-        printf("pos=%d\n", pos);
+        av_log(NULL, AV_LOG_DEBUG, "pos=%d\n", pos);
         for(i=0;i<n;i++) {
-            printf(" %0.4f", (double)tab[i] / FRAC_ONE);
+            av_log(NULL, AV_LOG_DEBUG, " %0.4f", (double)tab[i] / FRAC_ONE);
             if ((i % 18) == 17)
-                printf("\n");
+                av_log(NULL, AV_LOG_DEBUG, "\n");
         }
         pos += n;
     }
