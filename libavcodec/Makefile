@@ -171,8 +171,8 @@ ifeq ($(BUILD_SHARED),yes)
 	ln -sf libavcodec-$(VERSION).so $(prefix)/lib/libavcodec.so
 	ldconfig || true
 	mkdir -p $(prefix)/include/ffmpeg
-	install -m 644 avcodec.h $(prefix)/include/ffmpeg/avcodec.h
-	install -m 644 common.h $(prefix)/include/ffmpeg/common.h
+	install -m 644 $(VPATH)/avcodec.h $(prefix)/include/ffmpeg/avcodec.h
+	install -m 644 $(VPATH)/common.h $(prefix)/include/ffmpeg/common.h
 endif
 
 installlib: all
