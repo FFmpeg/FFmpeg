@@ -82,6 +82,7 @@ CodecTag codec_bmp_tags[] = {
     { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'g', '1') }, 
     { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'g', '2') }, 
     { CODEC_ID_MPEG1VIDEO, MKTAG('P', 'I', 'M', '1') }, 
+    { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
     { 0, 0 },
 };
 
