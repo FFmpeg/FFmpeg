@@ -46,8 +46,9 @@ static const IdStrMap img_tags[] = {
 
 static enum CodecID av_str2id(const IdStrMap *tags, const char *str)
 {
-    while(*str && *str!='.') str++;
-    if(*str) str++;
+    str= strrchr(str, '.');
+    if(!str) return CODEC_ID_NONE;
+    str++;
 
     while (tags->id) {
         int i;
