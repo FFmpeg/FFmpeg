@@ -2603,22 +2603,19 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				memcpyTime+= T1-T0;
 				T0=T1;
 #endif
-				if(mode & V_DEBLOCK)
+				if(mode & V_RK1_FILTER)
+					vertRK1Filter(dstBlock, stride, QP);
+				else if(mode & V_X1_FILTER)
+					vertX1Filter(dstBlock, stride, QP);
+				else if(mode & V_DEBLOCK)
 				{
-					if(mode & V_RK1_FILTER)
-						vertRK1Filter(dstBlock, stride, QP);
-					else if(mode & V_X1_FILTER)
-						vertX1Filter(dstBlock, stride, QP);
-					else
+					if( isVertDC(dstBlock, stride))
 					{
-						if( isVertDC(dstBlock, stride))
-						{
-							if(isVertMinMaxOk(dstBlock, stride, QP))
-								doVertLowPass(dstBlock, stride, QP);
-						}
-						else
-							doVertDefFilter(dstBlock, stride, QP);
+						if(isVertMinMaxOk(dstBlock, stride, QP))
+							doVertLowPass(dstBlock, stride, QP);
 					}
+					else
+						doVertDefFilter(dstBlock, stride, QP);
 				}
 #ifdef MORE_TIMING
 				T1= rdtsc();
@@ -2633,20 +2630,17 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 #ifdef MORE_TIMING
 				T0= rdtsc();
 #endif
-				if(mode & H_DEBLOCK)
+				if(mode & H_X1_FILTER)
+					horizX1Filter(dstBlock-4, stride, QP);
+				else if(mode & H_DEBLOCK)
 				{
-					if(mode & H_X1_FILTER)
-						horizX1Filter(dstBlock-4, stride, QP);
-					else
+					if( isHorizDCAndCopy2Temp(dstBlock-4, stride))
 					{
-						if( isHorizDCAndCopy2Temp(dstBlock-4, stride))
-						{
-							if(isHorizMinMaxOk(tempBlock, TEMP_STRIDE, QP))
-								doHorizLowPassAndCopyBack(dstBlock-4, stride, QP);
-						}
-						else
-							doHorizDefFilterAndCopyBack(dstBlock-4, stride, QP);
+						if(isHorizMinMaxOk(tempBlock, TEMP_STRIDE, QP))
+							doHorizLowPassAndCopyBack(dstBlock-4, stride, QP);
 					}
+					else
+						doHorizDefFilterAndCopyBack(dstBlock-4, stride, QP);
 				}
 #ifdef MORE_TIMING
 				T1= rdtsc();
