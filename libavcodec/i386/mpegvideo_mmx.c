@@ -495,6 +495,7 @@ static void draw_edges_mmx(uint8_t *buf, int wrap, int width, int height, int w)
 
 #define HAVE_MMX2
 #undef RENAME
+#undef RENAMEl
 #define RENAME(a) a ## _MMX2
 #define RENAMEl(a) a ## _mmx2
 #include "mpegvideo_mmx_template.c"

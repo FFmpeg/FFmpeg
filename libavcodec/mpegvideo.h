@@ -468,6 +468,11 @@ typedef struct MpegEncContext {
     ScanTable intra_h_scantable;
     ScanTable intra_v_scantable;
     ScanTable inter_scantable; ///< if inter == intra then intra should be used to reduce tha cache usage
+    
+    /* noise reduction */
+    int (*dct_error_sum)[64];
+    int dct_count[2];
+    uint16_t (*dct_offset)[64];
 
     void *opaque;              ///< private data for the user
 
@@ -719,6 +724,7 @@ void ff_mpeg_flush(AVCodecContext *avctx);
 void ff_print_debug_info(MpegEncContext *s, Picture *pict);
 void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix);
 int ff_find_unused_picture(MpegEncContext *s, int shared);
+void ff_denoise_dct(MpegEncContext *s, DCTELEM *block);
 
 void ff_er_frame_start(MpegEncContext *s);
 void ff_er_frame_end(MpegEncContext *s);

@@ -458,6 +458,11 @@ int MPV_common_init(MpegEncContext *s)
         CHECKED_ALLOCZ(s->q_inter_matrix16, 64*32*2 * sizeof(uint16_t))
         CHECKED_ALLOCZ(s->input_picture, MAX_PICTURE_COUNT * sizeof(Picture*))
         CHECKED_ALLOCZ(s->reordered_input_picture, MAX_PICTURE_COUNT * sizeof(Picture*))
+        
+        if(s->avctx->noise_reduction){
+            CHECKED_ALLOCZ(s->dct_error_sum, 2 * 64 * sizeof(int))
+            CHECKED_ALLOCZ(s->dct_offset, 2 * 64 * sizeof(uint16_t))
+        }
     }
     CHECKED_ALLOCZ(s->blocks, 64*6*2 * sizeof(DCTELEM))
         
@@ -588,6 +593,8 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->blocks);
     av_freep(&s->input_picture);
     av_freep(&s->reordered_input_picture);
+    av_freep(&s->dct_error_sum);
+    av_freep(&s->dct_offset);
 
     if(s->picture){
         for(i=0; i<MAX_PICTURE_COUNT; i++){
@@ -1034,6 +1041,23 @@ int ff_find_unused_picture(MpegEncContext *s, int shared){
     return -1;
 }
 
+static void update_noise_reduction(MpegEncContext *s){
+    int intra, i;
+
+    for(intra=0; intra<2; intra++){
+        if(s->dct_count[intra] > (1<<16)){
+            for(i=0; i<64; i++){
+                s->dct_error_sum[intra][i] >>=1;
+            }
+            s->dct_count[intra] >>= 1;
+        }
+        
+        for(i=0; i<64; i++){
+            s->dct_offset[intra][i]= (s->avctx->noise_reduction * s->dct_count[intra] + s->dct_error_sum[intra][i]/2) / (s->dct_error_sum[intra][i]+1);
+        }
+    }
+}
+
 /**
  * generic function for encode/decode called after coding/decoding the header and before a frame is coded/decoded
  */
@@ -1136,6 +1160,12 @@ alloc:
     else 
         s->dct_unquantize = s->dct_unquantize_mpeg1;
 
+    if(s->dct_error_sum){
+        assert(s->avctx->noise_reduction && s->encoding);
+
+        update_noise_reduction(s);
+    }
+        
 #ifdef HAVE_XVMC
     if(s->avctx->xvmc_acceleration)
         return XVMC_field_start(s, avctx);
@@ -4042,6 +4072,28 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
 }
 
+void ff_denoise_dct(MpegEncContext *s, DCTELEM *block){
+    const int intra= s->mb_intra;
+    int i;
+
+    for(i=0; i<64; i++){
+        int level= block[i];
+
+        if(level){
+            if(level>0){
+                s->dct_error_sum[intra][i] += level;
+                level -= s->dct_offset[intra][i];
+                if(level<0) level=0;
+            }else{
+                s->dct_error_sum[intra][i] -= level;
+                level += s->dct_offset[intra][i];
+                if(level>0) level=0;
+            }
+            block[i]= level;
+        }
+    }
+}
+
 static int dct_quantize_trellis_c(MpegEncContext *s, 
                         DCTELEM *block, int n,
                         int qscale, int *overflow){
@@ -4070,7 +4122,10 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     const int patch_table= s->out_format == FMT_MPEG1 && !s->mb_intra;
         
     s->dsp.fdct (block);
-
+    
+    if(s->dct_error_sum)
+        ff_denoise_dct(s, block);
+    
     qmul= qscale*16;
     qadd= ((qscale-1)|1)*8;
 
@@ -4361,6 +4416,9 @@ static int dct_quantize_c(MpegEncContext *s,
     unsigned int threshold1, threshold2;
 
     s->dsp.fdct (block);
+
+    if(s->dct_error_sum)
+        ff_denoise_dct(s, block);
 
     if (s->mb_intra) {
         if (!s->h263_aic) {

@@ -45,6 +45,9 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     //s->fdct (block);
     RENAMEl(ff_fdct) (block); //cant be anything else ...
 
+    if(s->dct_error_sum)
+        ff_denoise_dct(s, block);
+
     if (s->mb_intra) {
         int dummy;
         if (n < 4)

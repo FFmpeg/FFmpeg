@@ -16,7 +16,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4689
+#define LIBAVCODEC_BUILD       4690
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1358,6 +1358,13 @@ typedef struct AVCodecContext {
      * - decoding: set by user.
      */
     struct AVPaletteControl *palctrl;
+
+    /**
+     * noise reduction strength
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int noise_reduction;
     
 } AVCodecContext;
 
