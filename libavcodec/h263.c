@@ -18,18 +18,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "common.h"
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"
 #include "h263data.h"
 #include "mpeg4data.h"
-
-#define NDEBUG
-#include <assert.h>
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
 			      int n);
@@ -1166,43 +1160,66 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
     }
 
     if (startcode == 0x120) {
-        int time_increment_resolution, width, height;
+        int time_increment_resolution, width, height, vo_ver_id;
 
         /* vol header */
         skip_bits(&s->gb, 1); /* random access */
         skip_bits(&s->gb, 8); /* vo_type */
-        skip_bits(&s->gb, 1); /* is_ol_id */
-        skip_bits(&s->gb, 4); /* vo_ver_id */
-        skip_bits(&s->gb, 3); /* vo_priority */
+        if (get_bits1(&s->gb) != 0) { /* is_ol_id */
+            vo_ver_id = get_bits(&s->gb, 4); /* vo_ver_id */
+            skip_bits(&s->gb, 3); /* vo_priority */
+        } else {
+            vo_ver_id = 1;
+        }
         
         skip_bits(&s->gb, 4); /* aspect_ratio_info */
-        skip_bits(&s->gb, 1); /* vol control parameter */
-        skip_bits(&s->gb, 2); /* vol shape */
+        skip_bits1(&s->gb); /* vol control parameter */
+        s->shape = get_bits(&s->gb, 2); /* vol shape */
         skip_bits1(&s->gb);   /* marker */
         
         time_increment_resolution = get_bits(&s->gb, 16);
         s->time_increment_bits = log2(time_increment_resolution - 1) + 1;
+        if (s->time_increment_bits < 1)
+            s->time_increment_bits = 1;
         skip_bits1(&s->gb);   /* marker */
 
-        skip_bits1(&s->gb);   /* vop rate  */
-        skip_bits(&s->gb, s->time_increment_bits);
-        skip_bits1(&s->gb);   /* marker */
-        
-        width = get_bits(&s->gb, 13);
-        skip_bits1(&s->gb);   /* marker */
-        height = get_bits(&s->gb, 13);
-        skip_bits1(&s->gb);   /* marker */
-        
-        skip_bits1(&s->gb);   /* interfaced */
-        skip_bits1(&s->gb);   /* OBMC */
-        skip_bits(&s->gb, 2); /* vol_sprite_usage */
-        skip_bits1(&s->gb);   /* not_8_bit */
+        if (get_bits1(&s->gb) != 0) {   /* fixed_vop_rate  */
+            skip_bits(&s->gb, s->time_increment_bits);
+        }
 
-        skip_bits1(&s->gb);   /* vol_quant_type */
-        skip_bits1(&s->gb);   /* vol_quarter_pixel */
-        skip_bits1(&s->gb);   /* complexity_estimation_disabled */
-        skip_bits1(&s->gb);   /* resync_marker_disabled */
-        skip_bits1(&s->gb);   /* data_partioning_enabled */
+        if (s->shape != 2) {
+            if (s->shape == 0) {
+                skip_bits1(&s->gb);   /* marker */
+                width = get_bits(&s->gb, 13);
+                skip_bits1(&s->gb);   /* marker */
+                height = get_bits(&s->gb, 13);
+                skip_bits1(&s->gb);   /* marker */
+            }
+            
+            skip_bits1(&s->gb);   /* interlaced */
+            skip_bits1(&s->gb);   /* OBMC */
+            if (vo_ver_id == 1) {
+                s->vol_sprite_usage = get_bits1(&s->gb); /* vol_sprite_usage */
+            } else {
+                s->vol_sprite_usage = get_bits(&s->gb, 2); /* vol_sprite_usage */
+            }
+            if (get_bits1(&s->gb) == 1) {   /* not_8_bit */
+                s->quant_precision = get_bits(&s->gb, 4); /* quant_precision */
+                skip_bits(&s->gb, 4); /* bits_per_pixel */
+            } else {
+                s->quant_precision = 5;
+            }
+            
+            skip_bits1(&s->gb);   /* vol_quant_type */
+            skip_bits1(&s->gb);   /* vol_quarter_pixel */
+            skip_bits1(&s->gb);   /* complexity_estimation_disabled */
+            skip_bits1(&s->gb);   /* resync_marker_disabled */
+            skip_bits1(&s->gb);   /* data_partioning_enabled */
+            if (get_bits1(&s->gb) != 0) { /* scalability */
+                printf("bad scalability!!!\n");
+                return -1;
+            }
+        }
         goto redo;
     } else if (startcode != 0x1b6) {
         goto redo;
@@ -1223,22 +1240,50 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
     skip_bits1(&s->gb);   	/* marker */
     /* vop coded */
     if (get_bits1(&s->gb) != 1)
-	return -1; 
+        goto redo;
     
-    if (s->pict_type == P_TYPE) {
+    if (s->shape != 2 && s->pict_type == P_TYPE) {
         /* rounding type for motion estimation */
 	s->no_rounding = get_bits1(&s->gb);
+    } else {
+	s->no_rounding = 0;
     }
-        
-    if (get_bits(&s->gb, 3) != 0)
-	return -1; /* intra dc VLC threshold */
+    
+     if (s->shape != 0) {
+         if (s->vol_sprite_usage != 1 || s->pict_type != I_TYPE) {
+             int width, height, hor_spat_ref, ver_spat_ref;
+ 
+             width = get_bits(&s->gb, 13);
+             skip_bits1(&s->gb);   /* marker */
+             height = get_bits(&s->gb, 13);
+             skip_bits1(&s->gb);   /* marker */
+             hor_spat_ref = get_bits(&s->gb, 13); /* hor_spat_ref */
+             skip_bits1(&s->gb);   /* marker */
+             ver_spat_ref = get_bits(&s->gb, 13); /* ver_spat_ref */
+         }
+         skip_bits1(&s->gb); /* change_CR_disable */
+ 
+         if (get_bits1(&s->gb) != 0) {
+             skip_bits(&s->gb, 8); /* constant_alpha_value */
+         }
+     }
 
-    s->qscale = get_bits(&s->gb, 5);
-
-    if (s->pict_type != I_TYPE) {
-	s->f_code = get_bits(&s->gb, 3);	/* fcode_for */
-    }
-    return 0;
+     if (s->shape != 2) {
+         skip_bits(&s->gb, 3); /* intra dc VLC threshold */
+  
+         /* note: we do not use quant_precision to avoid problem if no
+            MPEG4 vol header as it is found on some old opendivx
+            movies */
+         s->qscale = get_bits(&s->gb, 5);
+  
+         if (s->pict_type != I_TYPE) {
+             s->f_code = get_bits(&s->gb, 3);	/* fcode_for */
+         }
+         if (s->shape && (s->pict_type != I_TYPE)) {
+             skip_bits1(&s->gb); // vop shape coding type
+         }
+     }
+     return 0;
 }
 
 /* don't understand why they choose a different header ! */
