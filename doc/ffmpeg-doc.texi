@@ -351,6 +351,8 @@ library:
 @item Raw MPEG4 video  @tab  X @tab  X 
 @item DV               @tab  @tab X
 @tab Only the video track is decoded.
+@item 4xm              @tab    @tab X
+@tab 4X Technologies format, used in some games
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -382,10 +384,18 @@ following image formats are supported:
 @item MSMPEG4 V2             @tab  X  @tab  X
 @item MSMPEG4 V3             @tab  X  @tab  X @tab Also known as DIVX3
 @item WMV7                   @tab  X  @tab  X
+@item WMV8                   @tab  X  @tab  X @tab Not completely working
 @item H263(+)                @tab  X  @tab  X @tab Also known as Real Video 1.0
 @item MJPEG                  @tab  X  @tab  X 
 @item DV                     @tab     @tab  X 
 @item Huff YUV               @tab  X  @tab  X
+@item Asus v1                @tab  X  @tab  X @tab fourcc: ASV1
+@item Creative YUV           @tab     @tab  X @tab fourcc: CYUV
+@item H.264                  @tab     @tab  X
+@item Sorenson Video 1       @tab     @tab  X @tab fourcc: SVQ1
+@item Sorenson Video 3       @tab     @tab  X @tab fourcc: SVQ3
+@item On2 VP3                @tab     @tab  X @tab still experimental
+@item Intel Indeo 3          @tab     @tab  X @tab only works on i386 right now
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -406,7 +416,8 @@ solutions.
 @item Vorbis                 @tab  X   @tab  X
 @tab supported through the external library libvorbis.
 @item WMA V1/V2              @tab      @tab X
-
+@item Microsoft ADPCM        @tab X    @tab X
+@item IMA ADPCM              @tab X    @tab X
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
