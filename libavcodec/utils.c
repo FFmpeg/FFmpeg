@@ -71,12 +71,17 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 
     avctx->codec = codec;
     avctx->frame_number = 0;
-    avctx->priv_data = av_mallocz(codec->priv_data_size);
-    if (!avctx->priv_data) 
-        return -ENOMEM;
+    if (codec->priv_data_size > 0) {
+        avctx->priv_data = av_mallocz(codec->priv_data_size);
+        if (!avctx->priv_data) 
+            return -ENOMEM;
+    } else {
+        avctx->priv_data = NULL;
+    }
     ret = avctx->codec->init(avctx);
     if (ret < 0) {
-        free(avctx->priv_data);
+        if (avctx->priv_data)
+            free(avctx->priv_data);
         avctx->priv_data = NULL;
         return ret;
     }
