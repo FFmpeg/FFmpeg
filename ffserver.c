@@ -1238,12 +1238,13 @@ void add_codec(FFStream *stream, AVCodecContext *av)
             av->width = 160;
             av->height = 128;
         }
-        av->bit_rate_tolerance= 128000;
-        av->qmin= 5;
-        av->qmax= 31;
-        av->qcompress= 0.5;
-        av->qblur= 0.5;
-        av->max_qdiff= 3;
+        /* Bitrate tolerance is less for streaming */
+        av->bit_rate_tolerance = av->bit_rate / 4;
+        av->qmin = 3;
+        av->qmax = 31;
+        av->qcompress = 0.5;
+        av->qblur = 0.5;
+        av->max_qdiff = 3;
 
         break;
     default:
