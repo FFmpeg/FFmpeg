@@ -302,9 +302,9 @@ install: all install-headers
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIB) "$(prefix)"
 else
-	install -d $(prefix)/lib
-	install $(INSTALLSTRIP) -m 755 $(SLIB) $(prefix)/lib/libavcodec-$(VERSION).so
-	ln -sf libavcodec-$(VERSION).so $(prefix)/lib/libavcodec.so
+	install -d $(libdir)
+	install $(INSTALLSTRIP) -m 755 $(SLIB) $(libdir)/libavcodec-$(VERSION).so
+	ln -sf libavcodec-$(VERSION).so $(libdir)/libavcodec.so
 	ldconfig || true
 endif
 ifeq ($(CONFIG_PP),yes)
@@ -315,7 +315,7 @@ install:
 endif
 
 installlib: all install-headers
-	install -m 644 $(LIB) "$(prefix)/lib"
+	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:
 	mkdir -p "$(prefix)/include/ffmpeg"

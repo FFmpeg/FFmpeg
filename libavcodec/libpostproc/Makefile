@@ -54,9 +54,9 @@ ifeq ($(SHARED_PP),yes)
 ifeq ($(CONFIG_WIN32),yes)
        install $(INSTALLSTRIP) -m 755 $(SPPLIB) "$(prefix)"
 else
-	install -d $(prefix)/lib
-	install $(INSTALLSTRIP) -m 755 $(SPPLIB) $(prefix)/lib/$(SPPLIB).$(SPPVERSION)
-	ln -sf $(SPPLIB).$(SPPVERSION) $(prefix)/lib/$(SPPLIB)
+	install -d $(libdir)
+	install $(INSTALLSTRIP) -m 755 $(SPPLIB) $(libdir)/$(SPPLIB).$(SPPVERSION)
+	ln -sf $(SPPLIB).$(SPPVERSION) $(libdir)/$(SPPLIB)
 	ldconfig || true
 endif
 endif

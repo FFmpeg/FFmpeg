@@ -26,8 +26,8 @@ depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 install:
-	install -d "$(prefix)/lib/vhook"
-	install -m 755 $(HOOKS) "$(prefix)/lib/vhook"
+	install -d "$(libdir)/vhook"
+	install -m 755 $(HOOKS) "$(libdir)/vhook"
 
 imlib2.so: imlib2.o
 	$(CC) -g -o $@ $(SHFLAGS) $< -lImlib2

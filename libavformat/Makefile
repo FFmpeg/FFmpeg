@@ -108,9 +108,9 @@ install: all install-headers
 ifeq ($(CONFIG_WIN32),yes)
 	install $(INSTALLSTRIP) -m 755 $(SLIB) "$(prefix)"
 else
-	install -d $(prefix)/lib
-	install $(INSTALLSTRIP) -m 755 $(SLIB) $(prefix)/lib/libavformat-$(VERSION).so
-	ln -sf libavformat-$(VERSION).so $(prefix)/lib/libavformat.so
+	install -d $(libdir)
+	install $(INSTALLSTRIP) -m 755 $(SLIB) $(libdir)/libavformat-$(VERSION).so
+	ln -sf libavformat-$(VERSION).so $(libdir)/libavformat.so
 	ldconfig || true
 endif
 else
@@ -118,7 +118,7 @@ install:
 endif
 
 installlib: all install-headers
-	install -m 644 $(LIB) "$(prefix)/lib"
+	install -m 644 $(LIB) "$(libdir)"
 
 install-headers:
 	mkdir -p "$(prefix)/include/ffmpeg"
