@@ -4832,13 +4832,13 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
 
     check_marker(gb, "before time_increment");
     
-    if(s->picture_number==0 && (show_bits(gb, s->time_increment_bits+1)&1)==0){
+    if(s->time_increment_bits==0){
         printf("hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
-        
 
         for(s->time_increment_bits=1 ;s->time_increment_bits<16; s->time_increment_bits++){
             if(show_bits(gb, s->time_increment_bits+1)&1) break;
         }
+
         printf("my guess is %d bits ;)\n",s->time_increment_bits);
     }
     
@@ -5070,7 +5070,8 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
 
         switch(startcode){
         case 0x120:
-            decode_vol_header(s, gb);
+            if(decode_vol_header(s, gb) < 0) 
+                return -1;
             break;
         case USER_DATA_STARTCODE:
             decode_user_data(s, gb);

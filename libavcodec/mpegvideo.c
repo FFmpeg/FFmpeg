@@ -951,7 +951,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     assert(s->last_picture_ptr==NULL || s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3);
 
     /* mark&release old frames */
-    if (s->pict_type != B_TYPE && s->last_picture_ptr) {
+    if (s->pict_type != B_TYPE && s->last_picture_ptr && s->last_picture_ptr->data[0]) {
         avctx->release_buffer(avctx, (AVFrame*)s->last_picture_ptr);
 
         /* release forgotten pictures */

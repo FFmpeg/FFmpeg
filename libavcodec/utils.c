@@ -220,6 +220,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
     InternalBuffer *buf, *last, temp;
 
     assert(pic->type==FF_BUFFER_TYPE_INTERNAL);
+    assert(s->internal_buffer_count);
 
     for(i=0; i<s->internal_buffer_count; i++){ //just 3-5 checks so is not worth to optimize
         buf= &((InternalBuffer*)s->internal_buffer)[i];
