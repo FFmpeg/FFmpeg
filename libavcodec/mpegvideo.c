@@ -273,8 +273,10 @@ int MPV_encode_init(AVCodecContext *avctx)
             return -1;
         break;
     case CODEC_ID_H263:
-        if (h263_get_picture_format(s->width, s->height) == 7)
+        if (h263_get_picture_format(s->width, s->height) == 7){
+	    printf("Input picture size isn't suitable for h263 codec! try h263+\n");
             return -1;
+	}
         s->out_format = FMT_H263;
         break;
     case CODEC_ID_H263P:
