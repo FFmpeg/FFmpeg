@@ -1129,7 +1129,7 @@ if(256*256*256*64%(tcount+tskip_count)==0){\
 #define CHECKED_ALLOCZ(p, size)\
 {\
     p= av_mallocz(size);\
-    if(p==NULL){\
+    if(p==NULL && (size)!=0){\
         perror("malloc");\
         goto fail;\
     }\
