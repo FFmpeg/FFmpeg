@@ -43,8 +43,14 @@ EXTRALIBS+=-lmp3lame
 endif
 endif
 
-ifeq ($(CONFIG_VORBIS),yes)
-EXTRALIBS+=-lvorbis -lvorbisenc -logg
+ifeq ($(CONFIG_LIBOGG),yes)
+EXTRALIBS+= -logg 
+ifeq ($(CONFIG_LIBVORBIS),yes)
+EXTRALIBS+= -lvorbis -lvorbisenc
+endif
+ifeq ($(CONFIG_LIBTHEORA),yes)
+EXTRALIBS+= -ltheora
+endif
 endif
 
 ifeq ($(CONFIG_FAAD),yes)

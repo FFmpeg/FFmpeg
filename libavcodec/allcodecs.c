@@ -45,9 +45,13 @@ void avcodec_register_all(void)
 #ifdef CONFIG_MP3LAME
     register_avcodec(&mp3lame_encoder);
 #endif
-#ifdef CONFIG_VORBIS
+#ifdef CONFIG_LIBVORBIS
     register_avcodec(&oggvorbis_encoder);
     register_avcodec(&oggvorbis_decoder);
+#endif
+#ifdef CONFIG_LIBTHEORA
+    register_avcodec(&oggtheora_encoder);
+    register_avcodec(&oggtheora_decoder);
 #endif
 #ifdef CONFIG_FAAC
     register_avcodec(&faac_encoder);

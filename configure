@@ -15,7 +15,9 @@ echo "  --help                   print this message"
 echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
 echo "  --mandir=DIR             man documentation in DIR [PREFIX/man]"
 echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]"
-echo "  --enable-vorbis          enable vorbis support via libvorbisenc [default=no]"
+echo "  --enable-ogg             enable ogg support via libogg [default=no]"
+echo "  --enable-vorbis          enable vorbis support via libvorbis [default=no]"
+echo "  --enable-theora          enable theora support via libtheora [default=no]"
 echo "  --enable-faad            enable faad support via libfaad [default=no]"
 echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
 echo "  --enable-faac            enable faac support via libfaac [default=no]"
@@ -149,7 +151,9 @@ dc1394="no"
 network="yes"
 zlib="yes"
 mp3lame="no"
+ogg="no"
 vorbis="no"
+theora="no"
 faad="no"
 faadbin="no"
 faac="no"
@@ -410,7 +414,11 @@ for opt do
   ;;
   --enable-mp3lame) mp3lame="yes"
   ;;
+  --enable-ogg) ogg="yes"
+  ;;
   --enable-vorbis) vorbis="yes"
+  ;;
+  --enable-theora) theora="yes"
   ;;
   --enable-faad) faad="yes"
   ;;
@@ -460,6 +468,22 @@ for opt do
   ;;
   esac
 done
+
+if test "$theora" = "yes" ; then
+    if test "$ogg" = "no" ; then
+        echo "Ogg must be enabled to enable Theora"     
+        fail="yes"
+        theora="no"
+    fi
+fi
+
+if test "$vorbis" = "yes" ; then
+    if test "$ogg" = "no" ; then
+        echo "Ogg must be enabled to enable Vorbis"
+        fail="yes"
+        vorbis="no"
+    fi
+fi
 
 if test "$gpl" != "yes"; then
     if test "$pp" != "no" -o "$shared_pp" != "no"; then
@@ -1040,7 +1064,9 @@ fi
 echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
 echo "mp3lame enabled  $mp3lame"
+echo "ogg enabled      $ogg"
 echo "vorbis enabled   $vorbis"
+echo "theora enabled   $theora"
 echo "faad enabled     $faad"
 echo "faadbin enabled  $faadbin"
 echo "faac enabled     $faac"
@@ -1335,9 +1361,19 @@ if test "$mp3lame" = "yes" ; then
   echo "CONFIG_MP3LAME=yes" >> config.mak
 fi
 
+if test "$ogg" = "yes" ; then
+  echo "#define CONFIG_LIBOGG 1" >> $TMPH
+  echo "CONFIG_LIBOGG=yes" >> config.mak
+fi
+
 if test "$vorbis" = "yes" ; then
-  echo "#define CONFIG_VORBIS 1" >> $TMPH
-  echo "CONFIG_VORBIS=yes" >> config.mak
+  echo "#define CONFIG_LIBVORBIS 1" >> $TMPH
+  echo "CONFIG_LIBVORBIS=yes" >> config.mak
+fi
+
+if test "$theora" = "yes" ; then
+  echo "#define CONFIG_LIBTHEORA 1" >> $TMPH
+  echo "CONFIG_LIBTHEORA=yes" >> config.mak
 fi
 
 if test "$faad" = "yes" ; then

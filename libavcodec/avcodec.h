@@ -165,6 +165,8 @@ enum CodecID {
     CODEC_ID_MP3ADU,
     CODEC_ID_MP3ON4,
     
+    CODEC_ID_OGGTHEORA= 0x16000, 
+    
     CODEC_ID_MPEG2TS= 0x20000, /* _FAKE_ codec to indicate a raw MPEG2 transport
                          stream (only used by libavformat) */
 };
@@ -1877,6 +1879,7 @@ extern AVCodec ac3_encoder;
 extern AVCodec mp2_encoder;
 extern AVCodec mp3lame_encoder;
 extern AVCodec oggvorbis_encoder;
+extern AVCodec oggtheora_encoder;
 extern AVCodec faac_encoder;
 extern AVCodec xvid_encoder;
 extern AVCodec mpeg1video_encoder;
@@ -1954,6 +1957,7 @@ extern AVCodec mace6_decoder;
 extern AVCodec huffyuv_decoder;
 extern AVCodec ffvhuff_decoder;
 extern AVCodec oggvorbis_decoder;
+extern AVCodec oggtheora_decoder;
 extern AVCodec cyuv_decoder;
 extern AVCodec h264_decoder;
 extern AVCodec indeo3_decoder;

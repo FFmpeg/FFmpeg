@@ -67,7 +67,7 @@ OBJS+= barpainet.o
 endif
 endif
 
-ifeq ($(CONFIG_VORBIS),yes)
+ifeq ($(CONFIG_LIBOGG),yes)
 OBJS+= ogg.o
 endif
 

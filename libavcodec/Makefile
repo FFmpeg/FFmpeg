@@ -118,9 +118,16 @@ OBJS += mp3lameaudio.o
 EXTRALIBS += -lmp3lame
 endif
 
-ifeq ($(CONFIG_VORBIS),yes)
+ifeq ($(CONFIG_LIBOGG),yes)
+EXTRALIBS += -logg
+ifeq ($(CONFIG_LIBVORBIS),yes)
 OBJS += oggvorbis.o
 EXTRALIBS += -lvorbis -lvorbisenc
+endif
+ifeq ($(CONFIG_LIBTHEORA), yes)
+OBJS += oggtheora.o
+EXTRALIBS += -ltheora
+endif
 endif
 
 ifeq ($(TARGET_GPROF),yes)

@@ -82,7 +82,7 @@ void av_register_all(void)
 #endif
     yuv4mpeg_init();
     
-#ifdef CONFIG_VORBIS
+#ifdef CONFIG_LIBOGG
     ogg_init();
 #endif
 
