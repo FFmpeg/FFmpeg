@@ -63,12 +63,22 @@ AVCodecParserContext *av_parser_init(int codec_id)
     return s;
 }
 
+/* NOTE: buf_size == 0 is used to signal EOF so that the last frame
+   can be returned if necessary */
 int av_parser_parse(AVCodecParserContext *s, 
                     AVCodecContext *avctx,
                     uint8_t **poutbuf, int *poutbuf_size, 
                     const uint8_t *buf, int buf_size)
 {
     int index;
+    uint8_t dummy_buf[FF_INPUT_BUFFER_PADDING_SIZE];
+    
+    if (buf_size == 0) {
+        /* padding is always necessary even if EOF, so we add it here */
+        memset(dummy_buf, 0, sizeof(dummy_buf));
+        buf = dummy_buf;
+    }
+
     /* WARNING: the returned index can be negative */
     index = s->parser->parser_parse(s, avctx, poutbuf, poutbuf_size, buf, buf_size);
     /* update the file pointer */
@@ -201,6 +211,9 @@ static int mpeg1_find_frame_end(ParseContext1 *pc, const uint8_t *buf, int buf_s
     }
     
     if(pc->frame_start_found){
+        /* EOF considered as end of frame */
+        if (buf_size == 0)
+            return 0;
         for(; i<buf_size; i++){
             state= (state<<8) | buf[i];
             if((state&0xFFFFFF00) == 0x100){
@@ -418,14 +431,17 @@ static int mpeg4_find_frame_end(ParseContext1 *pc,
     }
 
     if(vop_found){    
-      for(; i<buf_size; i++){
-        state= (state<<8) | buf[i];
-        if((state&0xFFFFFF00) == 0x100){
-            pc->frame_start_found=0;
-            pc->state=-1; 
-            return i-3;
+        /* EOF considered as end of frame */
+        if (buf_size == 0)
+            return 0;
+        for(; i<buf_size; i++){
+            state= (state<<8) | buf[i];
+            if((state&0xFFFFFF00) == 0x100){
+                pc->frame_start_found=0;
+                pc->state=-1; 
+                return i-3;
+            }
         }
-      }
     }
     pc->frame_start_found= vop_found;
     pc->state= state;
