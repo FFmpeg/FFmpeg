@@ -482,9 +482,9 @@ static void start_multicast(void)
                 dest_addr.sin_port = htons(stream->multicast_port + 
                                            2 * stream_index);
                 if (rtp_new_av_stream(rtp_c, stream_index, &dest_addr) < 0) {
-                    fprintf(stderr, "Could not open input stream %d for stream '%s'\n", 
-                            stream_index, stream->filename);
-                    continue;
+                    fprintf(stderr, "Could not open output stream '%s/streamid=%d'\n", 
+                            stream->filename, stream_index);
+                    exit(1);
                 }
             }
 
@@ -2605,7 +2605,7 @@ static int prepare_sdp_description(FFStream *stream, UINT8 **pbuffer,
                                    struct in_addr my_ip)
 {
     ByteIOContext pb1, *pb = &pb1;
-    int i, payload_type, port;
+    int i, payload_type, port, private_payload_type, j;
     const char *ipstr, *title, *mediatype;
     AVStream *st;
     
@@ -2627,6 +2627,7 @@ static int prepare_sdp_description(FFStream *stream, UINT8 **pbuffer,
         url_fprintf(pb, "c=IN IP4 %s\n", inet_ntoa(stream->multicast_ip));
     }
     /* for each stream, we output the necessary info */
+    private_payload_type = 96;
     for(i = 0; i < stream->nb_streams; i++) {
         st = stream->streams[i];
         switch(st->codec.codec_type) {
@@ -2643,6 +2644,8 @@ static int prepare_sdp_description(FFStream *stream, UINT8 **pbuffer,
         /* NOTE: the port indication is not correct in case of
            unicast. It is not an issue because RTSP gives it */
         payload_type = rtp_get_payload_type(&st->codec);
+        if (payload_type < 0)
+            payload_type = private_payload_type++;
         if (stream->is_multicast) {
             port = stream->multicast_port + 2 * i;
         } else {
@@ -2650,9 +2653,37 @@ static int prepare_sdp_description(FFStream *stream, UINT8 **pbuffer,
         }
         url_fprintf(pb, "m=%s %d RTP/AVP %d\n", 
                     mediatype, port, payload_type);
+        if (payload_type >= 96) {
+            /* for private payload type, we need to give more info */
+            switch(st->codec.codec_id) {
+            case CODEC_ID_MPEG4:
+                {
+                    uint8_t *data;
+                    url_fprintf(pb, "a=rtpmap:%d MP4V-ES/%d\n", 
+                                payload_type, 90000);
+                    /* we must also add the mpeg4 header */
+                    data = st->codec.extradata;
+                    if (data) {
+                        url_fprintf(pb, "a=fmtp:%d config=");
+                        for(j=0;j<st->codec.extradata_size;j++) {
+                            url_fprintf(pb, "%02x", data[j]);
+                        }
+                        url_fprintf(pb, "\n");
+                    }
+                }
+                break;
+            default:
+                /* XXX: add other codecs ? */
+                goto fail;
+            }
+        }
         url_fprintf(pb, "a=control:streamid=%d\n", i);
     }
     return url_close_dyn_buf(pb, pbuffer);
+ fail:
+    url_close_dyn_buf(pb, pbuffer);
+    av_free(*pbuffer);
+    return -1;
 }
 
 static void rtsp_cmd_describe(HTTPContext *c, const char *url)
@@ -3183,6 +3214,54 @@ void remove_stream(FFStream *stream)
     }
 }
 
+/* specific mpeg4 handling : we extract the raw parameters */
+void extract_mpeg4_header(AVFormatContext *infile)
+{
+    int mpeg4_count, i, size;
+    AVPacket pkt;
+    AVStream *st;
+    const UINT8 *p;
+
+    mpeg4_count = 0;
+    for(i=0;i<infile->nb_streams;i++) {
+        st = infile->streams[i];
+        if (st->codec.codec_id == CODEC_ID_MPEG4 &&
+            st->codec.extradata == NULL) {
+            mpeg4_count++;
+        }
+    }
+    if (!mpeg4_count)
+        return;
+
+    printf("MPEG4 without extra data: trying to find header\n");
+    while (mpeg4_count > 0) {
+        if (av_read_packet(infile, &pkt) < 0)
+            break;
+        st = infile->streams[pkt.stream_index];
+        if (st->codec.codec_id == CODEC_ID_MPEG4 &&
+            st->codec.extradata == NULL) {
+            /* fill extradata with the header */
+            /* XXX: we make hard suppositions here ! */
+            p = pkt.data;
+            while (p < pkt.data + pkt.size - 4) {
+                /* stop when vop header is found */
+                if (p[0] == 0x00 && p[1] == 0x00 && 
+                    p[2] == 0x01 && p[3] == 0xb6) {
+                    size = p - pkt.data;
+                    //                    av_hex_dump(pkt.data, size);
+                    st->codec.extradata = av_malloc(size);
+                    st->codec.extradata_size = size;
+                    memcpy(st->codec.extradata, pkt.data, size);
+                    break;
+                }
+                p++;
+            }
+            mpeg4_count--;
+        }
+        av_free_packet(&pkt);
+    }
+}
+
 /* compute the needed AVStream for each file */
 void build_file_streams(void)
 {
@@ -3213,6 +3292,8 @@ void build_file_streams(void)
                     av_close_input_file(infile);
                     goto fail;
                 }
+                extract_mpeg4_header(infile);
+
                 for(i=0;i<infile->nb_streams;i++) {
                     add_av_stream1(stream, &infile->streams[i]->codec);
                 }
