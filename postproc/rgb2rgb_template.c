@@ -238,7 +238,7 @@ void rgb32to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 		const int g= src[i+1];
 		const int r= src[i+2];
 
-		d[j]= (b>>3) | ((g&0xF8)<<3) | ((r&0xF8)<<7);
+		d[j]= (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
 	}
 }
 
@@ -266,7 +266,7 @@ void rgb24to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 		const int g= src[i+1];
 		const int r= src[i+2];
 
-		d[j]= (b>>3) | ((g&0xF8)<<3) | ((r&0xF8)<<7);
+		d[j]= (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
 	}
 }
 
