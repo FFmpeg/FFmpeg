@@ -199,6 +199,7 @@ const char *pix_fmt_str[] = {
     "bgr24",
     "yuv422p",
     "yuv444p",
+    "yuv410p"
 };
     
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)

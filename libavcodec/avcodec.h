@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4614
-#define LIBAVCODEC_BUILD_STR   "4614"
+#define LIBAVCODEC_BUILD       4615
+#define LIBAVCODEC_BUILD_STR   "4615"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -26,6 +26,7 @@ enum CodecID {
     CODEC_ID_WMV2,
     CODEC_ID_H263P,
     CODEC_ID_H263I,
+    CODEC_ID_SVQ1,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -53,6 +54,7 @@ enum PixelFormat {
     PIX_FMT_BGR24,
     PIX_FMT_YUV422P,
     PIX_FMT_YUV444P,
+    PIX_FMT_YUV410P
 };
 
 /* currently unused, may be used if 24/32 bits samples ever supported */
@@ -342,6 +344,7 @@ extern AVCodec wmv2_decoder;
 extern AVCodec mpeg_decoder;
 extern AVCodec h263i_decoder;
 extern AVCodec rv10_decoder;
+extern AVCodec svq1_decoder;
 extern AVCodec mjpeg_decoder;
 extern AVCodec mp2_decoder;
 extern AVCodec mp3_decoder;

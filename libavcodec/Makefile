@@ -14,7 +14,7 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       mpegvideo.o h263.o jrevdct.o jfdctfst.o \
       mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o msmpeg4.o \
-      mpeg12.o h263dec.o rv10.o mpegaudiodec.o pcm.o simple_idct.o \
+      mpeg12.o h263dec.o svq1.o rv10.o mpegaudiodec.o pcm.o simple_idct.o \
       ratecontrol.o
 ASM_OBJS=
 
