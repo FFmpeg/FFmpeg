@@ -151,6 +151,13 @@ typedef struct H264Context{
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
 
+    /**
+      * Used to parse AVC variant of h264
+      */
+    int is_avc; ///< this flag is != 0 if codec is avc1
+    int got_avcC; ///< flag used to parse avcC data only once
+    int nal_length_size; ///< Number of bytes used for nal length (1, 2 or 4)
+
     int chroma_qp; //QPc
 
     int prev_mb_skiped; //FIXME remove (IMHO not used)
@@ -2264,6 +2271,17 @@ static int decode_init(AVCodecContext *avctx){
 
     decode_init_vlc(h);
     
+    if(avctx->codec_tag != 0x31637661) // avc1
+        h->is_avc = 0;
+    else {
+        if((avctx->extradata_size == 0) || (avctx->extradata == NULL)) {
+            av_log(avctx, AV_LOG_ERROR, "AVC codec requires avcC data\n");
+            return -1;
+        }
+        h->is_avc = 1;
+        h->got_avcC = 0;
+    }
+
     return 0;
 }
 
@@ -5601,7 +5619,14 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         int dst_length;
         int bit_length;
         uint8_t *ptr;
+        int i, nalsize = 0;
         
+      if(h->is_avc) {
+        if(buf_index >= buf_size) break;
+        nalsize = 0;
+        for(i = 0; i < h->nal_length_size; i++)
+            nalsize = (nalsize << 8) | buf[buf_index++];
+      } else {
         // start code prefix search
         for(; buf_index + 3 < buf_size; buf_index++){
             // this should allways succeed in the first iteration
@@ -5612,6 +5637,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
         if(buf_index+3 >= buf_size) break;
         
         buf_index+=3;
+      }  
         
         ptr= decode_nal(h, buf + buf_index, &dst_length, &consumed, buf_size - buf_index);
         if(ptr[dst_length - 1] == 0) dst_length--;
@@ -5621,6 +5647,9 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
             av_log(h->s.avctx, AV_LOG_DEBUG, "NAL %d at %d length %d\n", h->nal_unit_type, buf_index, dst_length);
         }
         
+        if (h->is_avc && (nalsize != consumed))
+            av_log(h->s.avctx, AV_LOG_ERROR, "AVC: Consumed only %d bytes instead of %d\n", consumed, nalsize);
+
         buf_index += consumed;
 
         if( s->hurry_up == 1 && h->nal_ref_idc  == 0 )
@@ -5750,7 +5779,48 @@ static int decode_frame(AVCodecContext *avctx,
 //printf("next:%d buf_size:%d last_index:%d\n", next, buf_size, s->parse_context.last_index);
     }
 
-    if(s->avctx->extradata_size && s->picture_number==0){
+    if(h->is_avc && !h->got_avcC) {
+        int i, cnt, nalsize;
+        unsigned char *p = avctx->extradata;
+        if(avctx->extradata_size < 7) {
+            av_log(avctx, AV_LOG_ERROR, "avcC too short\n");
+            return -1;
+        }
+        if(*p != 1) {
+            av_log(avctx, AV_LOG_ERROR, "Unknown avcC version %d\n", *p);
+            return -1;
+        }
+        /* sps and pps in the avcC always have length coded with 2 bytes,
+           so put a fake nal_length_size = 2 while parsing them */
+        h->nal_length_size = 2;
+        // Decode sps from avcC
+        cnt = *(p+5) & 0x1f; // Number of sps
+        p += 6;
+        for (i = 0; i < cnt; i++) {
+            nalsize = BE_16(p) + 2;
+            if(decode_nal_units(h, p, nalsize) != nalsize) {
+                av_log(avctx, AV_LOG_ERROR, "Decoding sps %d from avcC failed\n", i);
+                return -1;
+            }
+            p += nalsize;
+        }        
+        // Decode pps from avcC
+        cnt = *(p++); // Number of pps
+        for (i = 0; i < cnt; i++) {
+            nalsize = BE_16(p) + 2;
+            if(decode_nal_units(h, p, nalsize)  != nalsize) {
+                av_log(avctx, AV_LOG_ERROR, "Decoding pps %d from avcC failed\n", i);
+                return -1;
+            }
+            p += nalsize;
+        }        
+        // Now store right nal length size, that will be use to parse all other nals
+        h->nal_length_size = ((*(((char*)(avctx->extradata))+4))&0x03)+1;
+        // Do not reparse avcC
+        h->got_avcC = 1;
+    }
+
+    if(!h->is_avc && s->avctx->extradata_size && s->picture_number==0){
         if(0 < decode_nal_units(h, s->avctx->extradata, s->avctx->extradata_size) ) 
             return -1;
     }
