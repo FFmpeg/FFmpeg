@@ -501,10 +501,14 @@ static int sonic_encode_init(AVCodecContext *avctx)
     int i, version = 0;
 
     if (avctx->channels > MAX_CHANNELS)
+    {
+	av_log(avctx, AV_LOG_ERROR, "Only mono and stereo streams are supported by now\n");
         return -1; /* only stereo or mono for now */
+    }
 
     if (avctx->channels == 2)
 	s->mid_side = 1;
+
     if (avctx->codec->id == CODEC_ID_SONIC_LS)
     {
 	s->lossless = 1;
@@ -627,10 +631,12 @@ static int sonic_encode_frame(AVCodecContext *avctx,
     // short -> internal
     for (i = 0; i < s->frame_size; i++)
     {
-	if (samples[i] < 0)
-	    s->int_samples[i] = samples[i]+32768;
-	else
-	    s->int_samples[i] = samples[i]-32768;
+//	if (samples[i] < 0)
+//	    s->int_samples[i] = samples[i]+32768;
+//	else
+//	    s->int_samples[i] = samples[i]-32768;
+	s->int_samples[i] = samples[i];
+//	av_log(NULL, AV_LOG_INFO, "%d\n", s->int_samples[i]);
     }
 
     if (!s->lossless)
