@@ -9,7 +9,7 @@ static const uint8_t svq1_block_type_vlc[4][2] = {
 };
 
 /* values in this table range from -32..32; adjust retrieved value by -32 */
-static const uint16_t svq1_motion_component_vlc[65][2] = {
+static const uint8_t svq1_motion_component_vlc[65][2] = {
  /* { code, length } */
     { 0x5, 13 },  { 0x7, 13 },  { 0x5, 12 },  { 0x7, 12 },
     { 0x9, 12 },  { 0xB, 12 },  { 0xD, 12 },  { 0xF, 12 },
