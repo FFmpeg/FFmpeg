@@ -1,12 +1,13 @@
 
 #define AC3_FRAME_SIZE (6*256)
 #define AC3_MAX_CODED_FRAME_SIZE 3840 /* in bytes */
-#define AC3_MAX_CHANNELS 2 /* we handle at most two channels, although
-                              AC3 allows 6 channels */
+#define AC3_MAX_CHANNELS 6
 
 typedef struct AC3EncodeContext {
     PutBitContext pb;
     int nb_channels;
+    int nb_all_channels;
+    int lfe_channel;
     int bit_rate;
     int sample_rate;
     int bsid;
@@ -16,6 +17,7 @@ typedef struct AC3EncodeContext {
     int frmsizecod;
     int fscod; /* frequency */
     int acmod;
+    int lfe;
     int bsmod;
     short last_samples[AC3_MAX_CHANNELS][256];
     int chbwcod[AC3_MAX_CHANNELS];

@@ -201,6 +201,9 @@ AVFormat ac3_format = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+    raw_read_header,
+    raw_read_packet,
+    raw_read_close,
 };
 
 AVFormat h263_format = {

@@ -26,6 +26,7 @@ typedef struct AC3DecodeState {
     UINT8 *inbuf_ptr;
     int frame_size;
     int flags;
+    int channels;
     ac3_state_t state;
 } AC3DecodeState;
 
@@ -52,24 +53,16 @@ static inline int blah (int32_t i)
 	return i - 0x43c00000;
 }
 
-static inline void float_to_int (float * _f, INT16 * s16) 
+static inline void float_to_int (float * _f, INT16 * s16, int nchannels)
 {
-    int i;
+    int i, j, c;
     int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
 
+    j = 0;
+    nchannels *= 256;
     for (i = 0; i < 256; i++) {
-	s16[2*i] = blah (f[i]);
-	s16[2*i+1] = blah (f[i+256]);
-    }
-}
-
-static inline void float_to_int_mono (float * _f, INT16 * s16) 
-{
-    int i;
-    int32_t * f = (int32_t *) _f;	// XXX assumes IEEE float format
-
-    for (i = 0; i < 256; i++) {
-	s16[i] = blah (f[i]);
+	for (c = 0; c < nchannels; c += 256)
+	    s16[j++] = blah (f[i + c]);
     }
 }
 
@@ -87,6 +80,9 @@ static int ac3_decode_frame(AVCodecContext *avctx,
     int sample_rate, bit_rate;
     short *out_samples = data;
     float level;
+    static int ac3_channels[8] = {
+	2, 1, 2, 3, 3, 4, 4, 5
+    };
 
     *data_size = 0;
     buf_ptr = buf;
@@ -111,10 +107,13 @@ static int ac3_decode_frame(AVCodecContext *avctx,
                     s->frame_size = len;
                     /* update codec info */
                     avctx->sample_rate = sample_rate;
-                    if ((s->flags & AC3_CHANNEL_MASK) == AC3_MONO)
-                        avctx->channels = 1;
-                    else
-                        avctx->channels = 2;
+                    s->channels = ac3_channels[s->flags & 7];
+		    if (s->flags & AC3_LFE)
+			s->channels++;
+		    if (s->channels < avctx->channels) {
+			fprintf(stderr, "Source channels are less than specified: output to %d channels..\n", s->channels);
+			avctx->channels = s->channels;
+		    }
                     avctx->bit_rate = bit_rate;
                 }
             }
@@ -128,11 +127,14 @@ static int ac3_decode_frame(AVCodecContext *avctx,
             s->inbuf_ptr += len;
             buf_size -= len;
         } else {
+#if 0
             if (avctx->channels == 1)
                 flags = AC3_MONO;
             else
                 flags = AC3_STEREO;
-
+#else
+	    flags = s->flags;
+#endif
             flags |= AC3_ADJUST_LEVEL;
             level = 1;
             if (ac3_frame (&s->state, s->inbuf, &flags, &level, 384)) {
@@ -144,10 +146,7 @@ static int ac3_decode_frame(AVCodecContext *avctx,
             for (i = 0; i < 6; i++) {
                 if (ac3_block (&s->state))
                     goto fail;
-                if (avctx->channels == 1)
-                    float_to_int_mono (*samples, out_samples + i * 256);
-                else
-                    float_to_int (*samples, out_samples + i * 512);
+		float_to_int (*samples, out_samples + i * 256 * avctx->channels, avctx->channels);
             }
             s->inbuf_ptr = s->inbuf;
             s->frame_size = 0;
