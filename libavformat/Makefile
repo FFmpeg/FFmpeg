@@ -94,7 +94,7 @@ $(LIB): $(OBJS) $(PPOBJS)
 
 $(SLIB): $(OBJS)
 ifeq ($(CONFIG_WIN32),yes)
-	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS) $(VPATH)/../libavcodec/avcodec.dll
+	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
 	-lib /machine:i386 /def:$(@:.dll=.def)
 else
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(PPOBJS) $(AVCLIBS) $(EXTRALIBS)
