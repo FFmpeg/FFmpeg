@@ -251,13 +251,20 @@ static int nut_write_header(AVFormatContext *s)
 	{
 	    int tmp = codec_get_bmp_tag(codec->codec_id);
 	    put_bi(bc, tmp);
-	    nom = codec->frame_rate;
-	    denom = codec->frame_rate_base;
 	}
 	else if (codec->codec_type == CODEC_TYPE_AUDIO)
 	{
 	    int tmp = codec_get_wav_tag(codec->codec_id);
 	    put_bi(bc, tmp);
+	}
+
+	if (codec->codec_type == CODEC_TYPE_VIDEO)
+	{
+	    nom = codec->frame_rate;
+	    denom = codec->frame_rate_base;
+	}
+	else
+	{
 	    nom = codec->sample_rate/8;
 	    denom = 8;
 	}
