@@ -1782,7 +1782,8 @@ static int hadamard8_abs_c(uint8_t *src, int stride, int mean){
 
 static int dct_sad8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
     MpegEncContext * const s= (MpegEncContext *)c;
-    DCTELEM temp[64];
+    uint64_t __align8 aligned_temp[sizeof(DCTELEM)*64/8];
+    DCTELEM * const temp= (DCTELEM*)aligned_temp;
     int sum=0, i;
 
     s->dsp.diff_pixels(temp, src1, src2, stride);
@@ -1798,7 +1799,9 @@ void simple_idct(DCTELEM *block); //FIXME
 
 static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
     MpegEncContext * const s= (MpegEncContext *)c;
-    DCTELEM temp[64], bak[64];
+    uint64_t __align8 aligned_temp[sizeof(DCTELEM)*64*2/8];
+    DCTELEM * const temp= (DCTELEM*)aligned_temp;
+    DCTELEM * const bak = ((DCTELEM*)aligned_temp)+64;
     int sum=0, i;
 
     s->mb_intra=0;
@@ -1820,8 +1823,10 @@ static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *s
 static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
     MpegEncContext * const s= (MpegEncContext *)c;
     const UINT8 *scantable= s->intra_scantable.permutated;
-    DCTELEM temp[64];
-    uint8_t bak[stride*8];
+    uint64_t __align8 aligned_temp[sizeof(DCTELEM)*64/8];
+    uint64_t __align8 aligned_bak[stride];
+    DCTELEM * const temp= (DCTELEM*)aligned_temp;
+    uint8_t * const bak= (uint8_t*)aligned_bak;
     int i, last, run, bits, level, distoration, start_i;
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
@@ -1892,7 +1897,8 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
 static int bit8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
     MpegEncContext * const s= (MpegEncContext *)c;
     const UINT8 *scantable= s->intra_scantable.permutated;
-    DCTELEM temp[64];
+    uint64_t __align8 aligned_temp[sizeof(DCTELEM)*64/8];
+    DCTELEM * const temp= (DCTELEM*)aligned_temp;
     int i, last, run, bits, level, start_i;
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
