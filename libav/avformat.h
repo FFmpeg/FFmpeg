@@ -115,6 +115,7 @@ extern AVFormat avi_format;
 /* jpegenc.c */
 extern AVFormat mpjpeg_format;
 extern AVFormat jpeg_format;
+extern AVFormat single_jpeg_format;
 
 /* swfenc.c */
 extern AVFormat swf_format;
@@ -137,6 +138,7 @@ extern AVFormat mp2_format;
 extern AVFormat ac3_format;
 extern AVFormat h263_format;
 extern AVFormat mpeg1video_format;
+extern AVFormat mjpeg_format;
 extern AVFormat pcm_format;
 extern AVFormat rawvideo_format;
 
