@@ -48,7 +48,7 @@ static void init_mono_resample(ReSampleChannelContext *s, float ratio)
     if (s->iratio == 0)
         s->iratio = 1;
     s->incr = (int)((ratio / s->iratio) * FRAC);
-    s->frac = 0;
+    s->frac = FRAC;
     s->last_sample = 0;
     s->icount = s->iratio;
     s->isum = 0;
