@@ -392,13 +392,19 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     // RAL: Forward f_code also needed for B frames
     if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
         put_bits(&s->pb, 1, 0); /* half pel coordinates */
-        put_bits(&s->pb, 3, s->f_code); /* forward_f_code */
+        if(s->codec_id == CODEC_ID_MPEG1VIDEO)
+            put_bits(&s->pb, 3, s->f_code); /* forward_f_code */
+        else
+            put_bits(&s->pb, 3, 7); /* forward_f_code */
     }
     
     // RAL: Backward f_code necessary for B frames
     if (s->pict_type == B_TYPE) {
         put_bits(&s->pb, 1, 0); /* half pel coordinates */
-        put_bits(&s->pb, 3, s->b_code); /* backward_f_code */
+        if(s->codec_id == CODEC_ID_MPEG1VIDEO)
+            put_bits(&s->pb, 3, s->b_code); /* backward_f_code */
+        else
+            put_bits(&s->pb, 3, 7); /* backward_f_code */
     }
 
     put_bits(&s->pb, 1, 0); /* extra bit picture */
@@ -406,10 +412,18 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     if(s->codec_id == CODEC_ID_MPEG2VIDEO){
         put_header(s, EXT_START_CODE);
         put_bits(&s->pb, 4, 8); //pic ext
-        put_bits(&s->pb, 4, s->f_code);
-        put_bits(&s->pb, 4, s->f_code);
-        put_bits(&s->pb, 4, s->b_code);
-        put_bits(&s->pb, 4, s->b_code);
+        if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
+            put_bits(&s->pb, 4, s->f_code);
+            put_bits(&s->pb, 4, s->f_code);
+        }else{
+            put_bits(&s->pb, 8, 255);
+        }
+        if (s->pict_type == B_TYPE) {
+            put_bits(&s->pb, 4, s->b_code);
+            put_bits(&s->pb, 4, s->b_code);
+        }else{
+            put_bits(&s->pb, 8, 255);
+        }
         put_bits(&s->pb, 2, s->intra_dc_precision);
         put_bits(&s->pb, 2, s->picture_structure= PICT_FRAME);
         put_bits(&s->pb, 1, s->top_field_first);
