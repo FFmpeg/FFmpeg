@@ -20,6 +20,7 @@
 
 #define MAX_PAYLOAD_SIZE 4096
 #define NB_STREAMS 2
+//#define DEBUG_SEEK
 
 typedef struct {
     uint8_t buffer[MAX_PAYLOAD_SIZE];
@@ -447,8 +448,34 @@ typedef struct MpegDemuxContext {
     int header_state;
 } MpegDemuxContext;
 
-static int find_start_code(ByteIOContext *pb, int *size_ptr, 
-                           uint32_t *header_state)
+static int mpegps_read_header(AVFormatContext *s,
+                              AVFormatParameters *ap)
+{
+    MpegDemuxContext *m = s->priv_data;
+    m->header_state = 0xff;
+    s->ctx_flags |= AVFMTCTX_NOHEADER;
+
+    /* no need to do more */
+    return 0;
+}
+
+static int64_t get_pts(ByteIOContext *pb, int c)
+{
+    int64_t pts;
+    int val;
+
+    if (c < 0)
+        c = get_byte(pb);
+    pts = (int64_t)((c >> 1) & 0x07) << 30;
+    val = get_be16(pb);
+    pts |= (int64_t)(val >> 1) << 15;
+    val = get_be16(pb);
+    pts |= (int64_t)(val >> 1);
+    return pts;
+}
+
+static int find_next_start_code(ByteIOContext *pb, int *size_ptr, 
+                                uint32_t *header_state)
 {
     unsigned int state, v;
     int val, n;
@@ -474,45 +501,64 @@ static int find_start_code(ByteIOContext *pb, int *size_ptr,
     return val;
 }
 
-static int mpegps_read_header(AVFormatContext *s,
-                                  AVFormatParameters *ap)
+/* XXX: optimize */
+static int find_prev_start_code(ByteIOContext *pb, int *size_ptr)
 {
-    MpegDemuxContext *m = s->priv_data;
-    m->header_state = 0xff;
-    s->ctx_flags |= AVFMTCTX_NOHEADER;
+    int64_t pos, pos_start;
+    int max_size, start_code;
 
-    /* no need to do more */
-    return 0;
+    max_size = *size_ptr;
+    pos_start = url_ftell(pb);
+
+    /* in order to go faster, we fill the buffer */
+    pos = pos_start - 16386;
+    if (pos < 0)
+        pos = 0;
+    url_fseek(pb, pos, SEEK_SET);
+    get_byte(pb);
+
+    pos = pos_start;
+    for(;;) {
+        pos--;
+        if (pos < 0 || (pos_start - pos) >= max_size) {
+            start_code = -1;
+            goto the_end;
+        }
+        url_fseek(pb, pos, SEEK_SET);
+        start_code = get_be32(pb);
+        if ((start_code & 0xffffff00) == 0x100)
+            break;
+    }
+ the_end:
+    *size_ptr = pos_start - pos;
+    return start_code;
 }
 
-static int64_t get_pts(ByteIOContext *pb, int c)
-{
-    int64_t pts;
-    int val;
-
-    if (c < 0)
-        c = get_byte(pb);
-    pts = (int64_t)((c >> 1) & 0x07) << 30;
-    val = get_be16(pb);
-    pts |= (int64_t)(val >> 1) << 15;
-    val = get_be16(pb);
-    pts |= (int64_t)(val >> 1);
-    return pts;
-}
-
-static int mpegps_read_packet(AVFormatContext *s,
-                                  AVPacket *pkt)
+/* read the next (or previous) PES header. Return its position in ppos 
+   (if not NULL), and its start code, pts and dts.
+ */
+static int mpegps_read_pes_header(AVFormatContext *s,
+                                  int64_t *ppos, int *pstart_code, 
+                                  int64_t *ppts, int64_t *pdts, int find_next)
 {
     MpegDemuxContext *m = s->priv_data;
-    AVStream *st;
-    int len, size, startcode, i, c, flags, header_len, type, codec_id;
-    int64_t pts, dts;
+    int len, size, startcode, c, flags, header_len;
+    int64_t pts, dts, last_pos;
 
-    /* next start code (should be immediately after) */
+    last_pos = -1;
  redo:
-    m->header_state = 0xff;
-    size = MAX_SYNC_SIZE;
-    startcode = find_start_code(&s->pb, &size, &m->header_state);
+    if (find_next) {
+        /* next start code (should be immediately after) */
+        m->header_state = 0xff;
+        size = MAX_SYNC_SIZE;
+        startcode = find_next_start_code(&s->pb, &size, &m->header_state);
+    } else {
+        if (last_pos >= 0)
+            url_fseek(&s->pb, last_pos, SEEK_SET);
+        size = MAX_SYNC_SIZE;
+        startcode = find_prev_start_code(&s->pb, &size);
+        last_pos = url_ftell(&s->pb) - 4;
+    }
     //printf("startcode=%x pos=0x%Lx\n", startcode, url_ftell(&s->pb));
     if (startcode < 0)
         return -EIO;
@@ -532,12 +578,16 @@ static int mpegps_read_packet(AVFormatContext *s,
           (startcode >= 0x1e0 && startcode <= 0x1ef) ||
           (startcode == 0x1bd)))
         goto redo;
-
+    if (ppos) {
+        *ppos = url_ftell(&s->pb) - 4;
+    }
     len = get_be16(&s->pb);
     pts = AV_NOPTS_VALUE;
     dts = AV_NOPTS_VALUE;
     /* stuffing */
     for(;;) {
+        if (len < 1)
+            goto redo;
         c = get_byte(&s->pb);
         len--;
         /* XXX: for mpeg1, should test only bit 7 */
@@ -546,22 +596,28 @@ static int mpegps_read_packet(AVFormatContext *s,
     }
     if ((c & 0xc0) == 0x40) {
         /* buffer scale & size */
+        if (len < 2)
+            goto redo;
         get_byte(&s->pb);
         c = get_byte(&s->pb);
         len -= 2;
     }
     if ((c & 0xf0) == 0x20) {
-        pts = get_pts(&s->pb, c);
+        if (len < 4)
+            goto redo;
+        dts = pts = get_pts(&s->pb, c);
         len -= 4;
     } else if ((c & 0xf0) == 0x30) {
+        if (len < 9)
+            goto redo;
         pts = get_pts(&s->pb, c);
         dts = get_pts(&s->pb, -1);
         len -= 9;
     } else if ((c & 0xc0) == 0x80) {
         /* mpeg 2 PES */
         if ((c & 0x30) != 0) {
-            fprintf(stderr, "Encrypted multiplex not handled\n");
-            return -EIO;
+            /* Encrypted multiplex not handled */
+            goto redo;
         }
         flags = get_byte(&s->pb);
         header_len = get_byte(&s->pb);
@@ -569,12 +625,16 @@ static int mpegps_read_packet(AVFormatContext *s,
         if (header_len > len)
             goto redo;
         if ((flags & 0xc0) == 0x80) {
-            pts = get_pts(&s->pb, -1);
+            dts = pts = get_pts(&s->pb, -1);
+            if (header_len < 5)
+                goto redo;
             header_len -= 5;
             len -= 5;
         } if ((flags & 0xc0) == 0xc0) {
             pts = get_pts(&s->pb, -1);
             dts = get_pts(&s->pb, -1);
+            if (header_len < 10)
+                goto redo;
             header_len -= 10;
             len -= 10;
         }
@@ -585,16 +645,37 @@ static int mpegps_read_packet(AVFormatContext *s,
         }
     }
     if (startcode == 0x1bd) {
+        if (len < 1)
+            goto redo;
         startcode = get_byte(&s->pb);
         len--;
         if (startcode >= 0x80 && startcode <= 0xbf) {
             /* audio: skip header */
+            if (len < 3)
+                goto redo;
             get_byte(&s->pb);
             get_byte(&s->pb);
             get_byte(&s->pb);
             len -= 3;
         }
     }
+    *pstart_code = startcode;
+    *ppts = pts;
+    *pdts = dts;
+    return len;
+}
+
+static int mpegps_read_packet(AVFormatContext *s,
+                              AVPacket *pkt)
+{
+    AVStream *st;
+    int len, startcode, i, type, codec_id;
+    int64_t pts, dts;
+
+ redo:
+    len = mpegps_read_pes_header(s, NULL, &startcode, &pts, &dts, 1);
+    if (len < 0)
+        return len;
 
     /* now find stream */
     for(i=0;i<s->nb_streams;i++) {
@@ -626,6 +707,8 @@ static int mpegps_read_packet(AVFormatContext *s,
         goto skip;
     st->codec.codec_type = type;
     st->codec.codec_id = codec_id;
+    if (codec_id != CODEC_ID_PCM_S16BE)
+        st->need_parsing = 1;
  found:
     if (startcode >= 0xa0 && startcode <= 0xbf) {
         int b1, freq;
@@ -649,12 +732,159 @@ static int mpegps_read_packet(AVFormatContext *s,
     //       (float)pts/90000, len);
     get_buffer(&s->pb, pkt->data, pkt->size);
     pkt->pts = pts;
+    pkt->dts = dts;
     pkt->stream_index = st->index;
     return 0;
 }
 
 static int mpegps_read_close(AVFormatContext *s)
 {
+    return 0;
+}
+
+static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index, 
+                               int64_t *ppos, int find_next)
+{
+    int len, startcode;
+    int64_t pos, pts, dts;
+
+    pos = *ppos;
+#ifdef DEBUG_SEEK
+    printf("read_dts: pos=0x%llx next=%d -> ", pos, find_next);
+#endif
+    url_fseek(&s->pb, pos, SEEK_SET);
+    for(;;) {
+        len = mpegps_read_pes_header(s, &pos, &startcode, &pts, &dts, find_next);
+        if (len < 0) {
+#ifdef DEBUG_SEEK
+            printf("none (ret=%d)\n", len);
+#endif
+            return AV_NOPTS_VALUE;
+        }
+        if (startcode == s->streams[stream_index]->id && 
+            dts != AV_NOPTS_VALUE) {
+            break;
+        }
+        if (find_next) {
+            url_fskip(&s->pb, len);
+        } else {
+            url_fseek(&s->pb, pos, SEEK_SET);
+        }
+    }
+#ifdef DEBUG_SEEK
+    printf("pos=0x%llx dts=0x%llx %0.3f\n", pos, dts, dts / 90000.0);
+#endif
+    *ppos = pos;
+    return dts;
+}
+
+static int find_stream_index(AVFormatContext *s)
+{
+    int i;
+    AVStream *st;
+
+    if (s->nb_streams <= 0)
+        return -1;
+    for(i = 0; i < s->nb_streams; i++) {
+        st = s->streams[i];
+        if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+static int mpegps_read_seek(AVFormatContext *s, 
+                            int stream_index, int64_t timestamp)
+{
+    int64_t pos_min, pos_max, pos;
+    int64_t dts_min, dts_max, dts;
+
+    timestamp = (timestamp * 90000) / AV_TIME_BASE;
+
+#ifdef DEBUG_SEEK
+    printf("read_seek: %d %0.3f\n", stream_index, timestamp / 90000.0);
+#endif
+
+    /* XXX: find stream_index by looking at the first PES packet found */
+    if (stream_index < 0) {
+        stream_index = find_stream_index(s);
+        if (stream_index < 0)
+            return -1;
+    }
+    pos_min = 0;
+    dts_min = mpegps_read_dts(s, stream_index, &pos_min, 1);
+    if (dts_min == AV_NOPTS_VALUE) {
+        /* we can reach this case only if no PTS are present in
+           the whole stream */
+        return -1;
+    }
+    pos_max = url_filesize(url_fileno(&s->pb)) - 1;
+    dts_max = mpegps_read_dts(s, stream_index, &pos_max, 0);
+    
+    while (pos_min <= pos_max) {
+#ifdef DEBUG_SEEK
+        printf("pos_min=0x%llx pos_max=0x%llx dts_min=%0.3f dts_max=%0.3f\n", 
+               pos_min, pos_max,
+               dts_min / 90000.0, dts_max / 90000.0);
+#endif
+        if (timestamp <= dts_min) {
+            pos = pos_min;
+            goto found;
+        } else if (timestamp >= dts_max) {
+            pos = pos_max;
+            goto found;
+        } else {
+            /* interpolate position (better than dichotomy) */
+            pos = (int64_t)((double)(pos_max - pos_min) * 
+                            (double)(timestamp - dts_min) /
+                            (double)(dts_max - dts_min)) + pos_min;
+        }
+#ifdef DEBUG_SEEK
+        printf("pos=0x%llx\n", pos);
+#endif
+        /* read the next timestamp */
+        dts = mpegps_read_dts(s, stream_index, &pos, 1);
+        /* check if we are lucky */
+        if (dts == AV_NOPTS_VALUE) {
+            /* should never happen */
+            pos = pos_min;
+            goto found;
+        } else if (timestamp == dts) {
+            goto found;
+        } else if (timestamp < dts) {
+            pos_max = pos;
+            dts_max = mpegps_read_dts(s, stream_index, &pos_max, 0);
+            if (dts_max == AV_NOPTS_VALUE) {
+                /* should never happen */
+                break;
+            } else if (timestamp >= dts_max) {
+                pos = pos_max;
+                goto found;
+            }
+        } else {
+            pos_min = pos + 1;
+            dts_min = mpegps_read_dts(s, stream_index, &pos_min, 1);
+            if (dts_min == AV_NOPTS_VALUE) {
+                /* should never happen */
+                goto found;
+            } else if (timestamp <= dts_min) {
+                goto found;
+            }
+        }
+    }
+    pos = pos_min;
+ found:
+#ifdef DEBUG_SEEK
+    pos_min = pos;
+    dts_min = mpegps_read_dts(s, stream_index, &pos_min, 1);
+    pos_min++;
+    dts_max = mpegps_read_dts(s, stream_index, &pos_min, 1);
+    printf("pos=0x%llx %0.3f<=%0.3f<=%0.3f\n", 
+           pos, dts_min / 90000.0, timestamp / 90000.0, dts_max / 90000.0);
+#endif
+    /* do the seek */
+    url_fseek(&s->pb, pos, SEEK_SET);
     return 0;
 }
 
@@ -707,6 +937,7 @@ AVInputFormat mpegps_demux = {
     mpegps_read_header,
     mpegps_read_packet,
     mpegps_read_close,
+    mpegps_read_seek,
 };
 
 int mpegps_init(void)
