@@ -28,7 +28,7 @@
  * - checksumming
  * - seeking
  * - index writing
- * - info and index packet reading support
+ * - index packet reading support
  * - startcode searching for broken streams
 */
 
@@ -93,6 +93,26 @@ typedef struct {
     FrameCode frame_code[256];
     StreamContext *stream;
 } NUTContext;
+
+static char *info_table[][2]={
+	{NULL			,  NULL }, // end
+	{NULL			,  NULL },
+	{NULL			, "UTF8"},
+	{NULL			, "v"},
+	{NULL			, "s"},
+	{"StreamId"		, "v"},
+	{"SegmentId"		, "v"},
+	{"StartTimestamp"	, "v"},
+	{"EndTimestamp"		, "v"},
+	{"Author"		, "UTF8"},
+	{"Titel"		, "UTF8"},
+	{"Description"		, "UTF8"},
+	{"Copyright"		, "UTF8"},
+	{"Encoder"		, "UTF8"},
+	{"Keyword"		, "UTF8"},
+	{"Cover"		, "JPEG"},
+	{"Cover"		, "PNG"},
+};
 
 static void update_lru(int *lru, int current, int count){
     int i;
@@ -245,30 +265,23 @@ static uint64_t get_v(ByteIOContext *bc)
     return -1;
 }
 
-static int get_b(ByteIOContext *bc, char *data, int maxlen)
-{
-    int i, len;
+static int get_str(ByteIOContext *bc, char *string, int maxlen){
+    int len= get_v(bc);
     
-    len = get_v(bc);
-    for (i = 0; i < len && i < maxlen; i++)
-	data[i] = get_byte(bc);
-    /* skip remaining bytes */
-    url_fskip(bc, len-i);
+    if(len && maxlen)
+        get_buffer(bc, string, FFMIN(len, maxlen));
+    while(len > maxlen){
+        get_byte(bc);
+        len--;
+    }
 
-    return 0;
-}
-
-static int get_bi(ByteIOContext *bc)
-{
-   int i, len, val = 0;
+    if(maxlen)
+        string[FFMIN(len, maxlen-1)]= 0;
     
-    len = get_v(bc);
-    for (i = 0; i < len && i <= 4; i++)
-        val |= get_byte(bc) << (i * 8);
-    /* skip remaining bytes */
-    url_fskip(bc, len-i);
-
-    return val;
+    if(maxlen == len)
+        return -1;
+    else
+        return 0;
 }
 
 static int get_packetheader(NUTContext *nut, ByteIOContext *bc, int prefix_length)
@@ -330,21 +343,12 @@ static int put_v(ByteIOContext *bc, uint64_t val)
     return 0;
 }
 
-static int put_b(ByteIOContext *bc, char *data, int len)
-{
-    int i;
+static int put_str(ByteIOContext *bc, const char *string){
+    int len= strlen(string);
     
     put_v(bc, len);
-    for (i = 0; i < len; i++)
-	put_byte(bc, data[i]);
-
-    return 0;
-}
-
-static int put_bi(ByteIOContext *bc, int val)
-{
-    put_v(bc, 4);
-    put_le32(bc, val);
+    put_buffer(bc, string, len);
+    
     return 0;
 }
 
@@ -447,17 +451,17 @@ static int nut_write_header(AVFormatContext *s)
 	put_v(bc, i /*s->streams[i]->index*/);
 	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
 	if (codec->codec_tag)
-	    put_bi(bc, codec->codec_tag);
+	    put_v(bc, codec->codec_tag);
 	else if (codec->codec_type == CODEC_TYPE_VIDEO)
 	{
-	    int tmp = codec_get_bmp_tag(codec->codec_id);
-	    put_bi(bc, tmp);
+	    put_v(bc, codec_get_bmp_tag(codec->codec_id));
 	}
 	else if (codec->codec_type == CODEC_TYPE_AUDIO)
 	{
-	    int tmp = codec_get_wav_tag(codec->codec_id);
-	    put_bi(bc, tmp);
+	    put_v(bc, codec_get_wav_tag(codec->codec_id));
 	}
+        else
+            put_v(bc, 0);
 
 	if (codec->codec_type == CODEC_TYPE_VIDEO)
 	{
@@ -520,40 +524,38 @@ static int nut_write_header(AVFormatContext *s)
         update_packetheader(nut, bc, 0);
     }
 
-#if 0
     /* info header */
     put_be64(bc, INFO_STARTCODE);
-    put_packetheader(nut, bc, 16+strlen(s->author)+strlen(s->title)+
-        strlen(s->comment)+strlen(s->copyright)); 
+    put_packetheader(nut, bc, 30+strlen(s->author)+strlen(s->title)+
+        strlen(s->comment)+strlen(s->copyright)+strlen(LIBAVFORMAT_IDENT)); 
     if (s->author[0])
     {
-        put_v(bc, 5); /* type */
-        put_b(bc, s->author, strlen(s->author));
+        put_v(bc, 9); /* type */
+        put_str(bc, s->author);
     }
     if (s->title[0])
     {
-        put_v(bc, 6); /* type */
-        put_b(bc, s->title, strlen(s->title));
+        put_v(bc, 10); /* type */
+        put_str(bc, s->title);
     }
     if (s->comment[0])
     {
-        put_v(bc, 7); /* type */
-        put_b(bc, s->comment, strlen(s->comment));
+        put_v(bc, 11); /* type */
+        put_str(bc, s->comment);
     }
     if (s->copyright[0])
     {
-        put_v(bc, 8); /* type */
-        put_b(bc, s->copyright, strlen(s->copyright));
+        put_v(bc, 12); /* type */
+        put_str(bc, s->copyright);
     }
     /* encoder */
-    put_v(bc, 9); /* type */
-    put_b(bc, LIBAVFORMAT_IDENT "\0", strlen(LIBAVFORMAT_IDENT));
+    put_v(bc, 13); /* type */
+    put_str(bc, LIBAVFORMAT_IDENT);
     
     put_v(bc, 0); /* eof info */
 
     put_be32(bc, 0); /* FIXME: checksum */
     update_packetheader(nut, bc, 0);
-#endif
         
     put_flush_packet(bc);
     
@@ -839,7 +841,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	if (!st)
 	    return AVERROR_NOMEM;
 	class = get_v(bc);
-	tmp = get_bi(bc);
+	tmp = get_v(bc);
 	switch(class)
 	{
 	    case 0:
@@ -859,7 +861,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		return -1;
 	}
 	s->bit_rate += get_v(bc);
-	get_b(bc, NULL, 0); /* language code */
+	get_v(bc); /* language code */
 	nom = get_v(bc);
 	denom = get_v(bc);
 	nut->stream[cur_stream].msb_timestamp_shift = get_v(bc);
@@ -896,7 +898,54 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
         get_be32(bc); /* checksum */
         nut->stream[cur_stream].rate_num= nom;
         nut->stream[cur_stream].rate_den= denom;
-    }    
+    }
+        
+    tmp = get_be64(bc);
+    if (tmp == INFO_STARTCODE){
+	get_packetheader(nut, bc, 8);
+    
+        for(;;){
+            int id= get_v(bc);
+            char *name, *type, custom_name[256], custom_type[256];
+
+            if(!id)
+                break;
+            else if(id >= sizeof(info_table)/sizeof(info_table[0])){
+                av_log(s, AV_LOG_ERROR, "info id is too large %d %d\n", id, sizeof(info_table)/sizeof(info_table[0]));
+                return -1;
+            }
+
+            type= info_table[id][1];
+            name= info_table[id][0];
+//av_log(s, AV_LOG_DEBUG, "%d %s %s\n", id, type, name);
+
+            if(!type){
+                get_str(bc, custom_type, sizeof(custom_type));
+                type= custom_type;
+            }
+            if(!name){
+                get_str(bc, custom_name, sizeof(custom_name));
+                name= custom_name;
+            }
+            
+            if(!strcmp(type, "v")){
+                int value= get_v(bc);
+            }else{
+                if(!strcmp(name, "Author"))
+                    get_str(bc, s->author, sizeof(s->author));
+                else if(!strcmp(name, "Title"))
+                    get_str(bc, s->title, sizeof(s->title));
+                else if(!strcmp(name, "Copyright"))
+                    get_str(bc, s->copyright, sizeof(s->copyright));
+                else if(!strcmp(name, "Description"))
+                    get_str(bc, s->comment, sizeof(s->comment));
+                else
+                    get_str(bc, NULL, 0);
+            }
+        }
+        get_be32(bc); /* checksum */
+    }else
+        url_fseek(bc, -8, SEEK_CUR);
     
     return 0;
 }
