@@ -27,6 +27,7 @@ echo "  --enable-shared-pp       use libpostproc.so [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
 echo "  --enable-amr_nb          enable amr_nb float audio codec"
 echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
+echo "  --enable-amr_wb          enable amr_wb float audio codec"
 echo "  --enable-sunmlib         use Sun medialib [default=no]"
 echo ""
 echo "Advanced options (experts only):"
@@ -409,6 +410,8 @@ for opt do
   ;;
   --enable-amr_nb-fixed) amr_nb_fixed="yes"
   ;;
+  --enable-amr_wb) amr_wb="yes"
+  ;; 
   --enable-sunmlib) sunmlib="yes"
   ;;
   esac
