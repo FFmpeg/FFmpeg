@@ -370,9 +370,9 @@ for opt do
   ;;
   --make=*) make=`echo $opt | cut -d '=' -f 2`
   ;;
-  --extra-cflags=*) CFLAGS="${opt#--extra-cflags=}"
+  --extra-cflags=*) CFLAGS="$CFLAGS ${opt#--extra-cflags=}"
   ;;
-  --extra-ldflags=*) LDFLAGS=${opt#--extra-ldflags=}
+  --extra-ldflags=*) LDFLAGS="$LDFLAGS ${opt#--extra-ldflags=}"
   ;;
   --extra-libs=*) extralibs=${opt#--extra-libs=}
   ;;
