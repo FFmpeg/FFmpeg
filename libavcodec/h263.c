@@ -2259,8 +2259,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 
             s->scalability= get_bits1(&s->gb);
             if (s->scalability) {
-                printf("bad scalability!!!\n");
-                return -1;
+                printf("scalability not supported\n");
             }
         }
 //printf("end Data %X %d\n", show_bits(&s->gb, 32), get_bits_count(&s->gb)&0x7);
