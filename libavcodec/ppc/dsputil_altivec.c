@@ -343,48 +343,6 @@ int pix_norm1_altivec(uint8_t *pix, int line_size)
     return s;
 }
 
-
-int pix_norm_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
-{
-    int s, i;
-    vector unsigned char *tv, zero;
-    vector unsigned char pix1v, pix2v, t5;
-    vector unsigned int sv;
-    vector signed int sum;
-
-    zero = vec_splat_u8(0);
-    sv = vec_splat_u32(0);
-    s = 0;
-    for (i = 0; i < 16; i++) {
-        /* Read in the potentially unaligned pixels */
-        tv = (vector unsigned char *) pix1;
-        pix1v = vec_perm(tv[0], tv[1], vec_lvsl(0, pix1));
-
-        tv = (vector unsigned char *) pix2;
-        pix2v = vec_perm(tv[0], tv[1], vec_lvsl(0, pix2));
-
-        /*
-           Since we want to use unsigned chars, we can take advantage
-           of the fact that abs(a-b)^2 = (a-b)^2.
-        */
-        
-        /* Calculate a sum of abs differences vector */
-        t5 = vec_sub(vec_max(pix1v, pix2v), vec_min(pix1v, pix2v));
-
-        /* Square the values and add them to our sum */
-        sv = vec_msum(t5, t5, sv);
-        
-        pix1 += line_size;
-        pix2 += line_size;
-    }
-    /* Sum up the four partial sums, and put the result into s */
-    sum = vec_sums((vector signed int) sv, (vector signed int) zero);
-    sum = vec_splat(sum, 3);
-    vec_ste(sum, 0, &s);
-    return s;
-}
-
-
 int pix_sum_altivec(UINT8 * pix, int line_size)
 {
 

@@ -42,7 +42,6 @@ void dsputil_init_ppc(DSPContext* c, unsigned mask)
         c->pix_abs16x16 = pix_abs16x16_altivec;
         c->pix_abs8x8 = pix_abs8x8_altivec;
         c->pix_norm1 = pix_norm1_altivec;
-        c->pix_norm = pix_norm_altivec;
         c->pix_sum = pix_sum_altivec;
         c->diff_pixels = diff_pixels_altivec;
         c->get_pixels = get_pixels_altivec;
