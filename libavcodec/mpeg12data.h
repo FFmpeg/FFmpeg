@@ -354,28 +354,24 @@ static const uint8_t mbMotionVectorTable[17][2] = {
 { 0xc, 10 },
 };
 
-#define MPEG1_FRAME_RATE_BASE 1001
-
-static const int frame_rate_tab[16] = {
-        0,        
-    24000,
-    24024,
-    25025,
-    30000,
-    30030,
-    50050,
-    60000,
-    60060,
+static const AVRational frame_rate_tab[] = {
+    {    0,    0},
+    {24000, 1001},
+    {   24,    1},
+    {   25,    1},
+    {30000, 1001},
+    {   30,    1},
+    {   50,    1},
+    {60000, 1001},
+    {   60,    1},
   // Xing's 15fps: (9)
-    15015,
+    {   15,    1},
   // libmpeg3's "Unofficial economy rates": (10-13)
-     5005,
-    10010,
-    12012,
-    15015,
-  // random, just to avoid segfault !never encode these
-    25025,
-    25025,
+    {    5,    1},
+    {   10,    1},
+    {   12,    1},
+    {   15,    1},
+    {    0,    0},
 };
 
 static const uint8_t non_linear_qscale[32] = {

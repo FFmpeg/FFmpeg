@@ -195,9 +195,11 @@ static int find_frame_rate_index(MpegEncContext *s){
     int64_t d;
 
     for(i=1;i<14;i++) {
+        int64_t n0= 1001LL/frame_rate_tab[i].den*frame_rate_tab[i].num*s->avctx->frame_rate_base;
+        int64_t n1= 1001LL*s->avctx->frame_rate;
         if(s->avctx->strict_std_compliance >= 0 && i>=9) break;
-         
-        d = ABS(MPEG1_FRAME_RATE_BASE*(int64_t)s->avctx->frame_rate - frame_rate_tab[i]*(int64_t)s->avctx->frame_rate_base);
+
+        d = ABS(n0 - n1);
         if(d < dmin){
             dmin=d;
             s->frame_rate_index= i;
@@ -249,6 +251,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         if(aspect_ratio==0.0) aspect_ratio= 1.0; //pixel aspect 1:1 (VGA)
         
         if (s->current_picture.key_frame) {
+            AVRational framerate= frame_rate_tab[s->frame_rate_index];
+
             /* mpeg1 header repeated every gop */
             put_header(s, SEQ_START_CODE);
  
@@ -295,8 +299,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             constraint_parameter_flag= 
                 s->width <= 768 && s->height <= 576 && 
                 s->mb_width * s->mb_height <= 396 &&
-                s->mb_width * s->mb_height * frame_rate_tab[s->frame_rate_index] <= MPEG1_FRAME_RATE_BASE*396*25 &&
-                frame_rate_tab[s->frame_rate_index] <= MPEG1_FRAME_RATE_BASE*30 &&
+                s->mb_width * s->mb_height * framerate.num <= framerate.den*396*25 &&
+                framerate.num <= framerate.den*30 &&
                 vbv_buffer_size <= 20 &&
                 v <= 1856000/400 &&
                 s->codec_id == CODEC_ID_MPEG1VIDEO;
@@ -328,7 +332,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 1, 0); /* do drop frame */
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
-            fps = (frame_rate_tab[s->frame_rate_index] + MPEG1_FRAME_RATE_BASE/2)/ MPEG1_FRAME_RATE_BASE;
+            fps = (framerate.num + framerate.den/2)/ framerate.den;
             time_code = s->current_picture_ptr->coded_picture_number;
 
             s->gop_picture_number = time_code;
@@ -1821,8 +1825,8 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     av_reduce(
         &s->avctx->frame_rate, 
         &s->avctx->frame_rate_base, 
-        frame_rate_tab[s->frame_rate_index] * (frame_rate_ext_n+1),
-        MPEG1_FRAME_RATE_BASE * (frame_rate_ext_d+1),
+        frame_rate_tab[s->frame_rate_index].num * (frame_rate_ext_n+1),
+        frame_rate_tab[s->frame_rate_index].den * (frame_rate_ext_d+1),
         1<<30);
 
     dprintf("sequence extension\n");
@@ -2366,7 +2370,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     avctx->sample_aspect_ratio= av_d2q(aspect, 255);
 
     s->frame_rate_index = get_bits(&s->gb, 4);
-    if (s->frame_rate_index == 0)
+    if (s->frame_rate_index == 0 || s->frame_rate_index > 13)
         return -1;
     s->bit_rate = get_bits(&s->gb, 18) * 400;
     if (get_bits1(&s->gb) == 0) /* marker */
@@ -2386,13 +2390,8 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         avctx->has_b_frames= 1;
         avctx->width = width;
         avctx->height = height;
-        av_reduce(
-            &avctx->frame_rate, 
-            &avctx->frame_rate_base,
-            frame_rate_tab[s->frame_rate_index],
-            MPEG1_FRAME_RATE_BASE, //FIXME store in allready reduced form 
-            1<<30
-            );
+        avctx->frame_rate     = frame_rate_tab[s->frame_rate_index].num;
+        avctx->frame_rate_base= frame_rate_tab[s->frame_rate_index].den;
         avctx->bit_rate = s->bit_rate;
         
         if(avctx->xvmc_acceleration){
@@ -2818,6 +2817,7 @@ AVCodec mpeg1video_encoder = {
     encode_init,
     MPV_encode_picture,
     MPV_encode_end,
+    .supported_framerates= frame_rate_tab+1,
 };
 
 #ifdef CONFIG_RISKY
@@ -2830,6 +2830,7 @@ AVCodec mpeg2video_encoder = {
     encode_init,
     MPV_encode_picture,
     MPV_encode_end,
+    .supported_framerates= frame_rate_tab+1,
 };
 #endif
 #endif

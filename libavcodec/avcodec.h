@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4705
+#define LIBAVCODEC_BUILD       4706
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1605,6 +1605,7 @@ typedef struct AVCodec {
     const AVOption *options;
     struct AVCodec *next;
     void (*flush)(AVCodecContext *);
+    AVRational *supported_framerates; ///array of supported framerates, or NULL if any, array is terminated by {0,0}
 } AVCodec;
 
 /**
