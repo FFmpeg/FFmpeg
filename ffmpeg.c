@@ -784,7 +784,7 @@ static void do_video_out(AVFormatContext *s,
                 if(top_field_first == -1)
                     big_picture.top_field_first = in_picture->top_field_first;
                 else
-                    big_picture.top_field_first = 1;
+                    big_picture.top_field_first = top_field_first;
             }
 
             /* handles sameq here. This is not correct because it may
