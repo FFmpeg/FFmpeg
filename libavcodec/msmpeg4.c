@@ -1409,7 +1409,8 @@ int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
     else if(left<length+8)
     {
         s->flipflop_rounding= 0;
-        printf("ext header missing, %d left\n", left);
+        if(s->msmpeg4_version != 2)
+            printf("ext header missing, %d left\n", left);
     }
     else
     {
