@@ -738,7 +738,7 @@ AVOutputFormat asf_oformat = {
     "asf",
     "asf format",
     "video/x-ms-asf",
-    "asf,wmv",
+    "asf,wmv,wma",
     sizeof(ASFContext),
 #ifdef CONFIG_MP3LAME
     CODEC_ID_MP3,
@@ -755,7 +755,7 @@ AVOutputFormat asf_stream_oformat = {
     "asf_stream",
     "asf format",
     "video/x-ms-asf",
-    "asf,wmv",
+    "asf,wmv,wma",
     sizeof(ASFContext),
 #ifdef CONFIG_MP3LAME
     CODEC_ID_MP3,
