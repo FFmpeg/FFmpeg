@@ -413,6 +413,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     must_open_file = 1;
     if (fmt && (fmt->flags & AVFMT_NOFILE)) {
         must_open_file = 0;
+        pb= NULL; //FIXME this or memset(pb, 0, sizeof(ByteIOContext)); otherwise its uninitalized
     }
 
     if (!fmt || must_open_file) {
@@ -679,7 +680,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     pkt->duration = av_rescale(pkt->duration, AV_TIME_BASE * (int64_t)st->time_base.num, st->time_base.den);
 }
 
-static void av_destruct_packet_nofree(AVPacket *pkt)
+void av_destruct_packet_nofree(AVPacket *pkt)
 {
     pkt->data = NULL; pkt->size = 0;
 }

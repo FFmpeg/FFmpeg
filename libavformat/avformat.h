@@ -42,6 +42,8 @@ typedef struct AVPacket {
 } AVPacket; 
 #define PKT_FLAG_KEY   0x0001
 
+void av_destruct_packet_nofree(AVPacket *pkt);
+
 /* initialize optional fields of a packet */
 static inline void av_init_packet(AVPacket *pkt)
 {
@@ -50,6 +52,7 @@ static inline void av_init_packet(AVPacket *pkt)
     pkt->duration = 0;
     pkt->flags = 0;
     pkt->stream_index = 0;
+    pkt->destruct= av_destruct_packet_nofree;
 }
 
 int av_new_packet(AVPacket *pkt, int size);
