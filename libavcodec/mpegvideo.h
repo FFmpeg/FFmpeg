@@ -544,14 +544,14 @@ typedef struct MpegEncContext {
 #define SLICE_NOEND     -3 //no end marker or error found but mb count exceeded
     
     void (*dct_unquantize_mpeg1)(struct MpegEncContext *s, 
-                           DCTELEM *block, int n, int qscale);
+                           DCTELEM *block/*align 16*/, int n, int qscale);
     void (*dct_unquantize_mpeg2)(struct MpegEncContext *s, 
-                           DCTELEM *block, int n, int qscale);
+                           DCTELEM *block/*align 16*/, int n, int qscale);
     void (*dct_unquantize_h263)(struct MpegEncContext *s, 
-                           DCTELEM *block, int n, int qscale);
+                           DCTELEM *block/*align 16*/, int n, int qscale);
     void (*dct_unquantize)(struct MpegEncContext *s, // unquantizer to use (mpeg4 can use both)
-                           DCTELEM *block, int n, int qscale);
-    int (*dct_quantize)(struct MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
+                           DCTELEM *block/*align 16*/, int n, int qscale);
+    int (*dct_quantize)(struct MpegEncContext *s, DCTELEM *block/*align 16*/, int n, int qscale, int *overflow);
     void (*fdct)(DCTELEM *block/* align 16*/);
     void (*idct_put)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
     void (*idct_add)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
