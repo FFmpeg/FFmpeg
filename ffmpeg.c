@@ -986,7 +986,7 @@ static void print_report(AVFormatContext **output_files,
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int output_packet(AVInputStream *ist, int ist_index,
                          AVOutputStream **ost_table, int nb_ostreams,
-                         AVPacket *pkt)
+                         const AVPacket *pkt)
 {
     AVFormatContext *os;
     AVOutputStream *ost;
@@ -1036,8 +1036,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     continue;
                 }
                 data_buf = (uint8_t *)samples;
-                ist->next_pts += ((int64_t)AV_TIME_BASE * data_size) / 
-                    (2 * ist->st->codec.channels);
+                ist->next_pts += ((int64_t)AV_TIME_BASE/2 * data_size) / 
+                    (ist->st->codec.sample_rate * ist->st->codec.channels);
                 break;
             case CODEC_TYPE_VIDEO:
                     data_size = (ist->st->codec.width * ist->st->codec.height * 3) / 2;
