@@ -245,6 +245,9 @@ typedef struct DSPContext {
     void (*sub_hfyu_median_prediction)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w, int *left, int *left_top);
     void (*bswap_buf)(uint32_t *dst, uint32_t *src, int w);
     
+    void (*h263_v_loop_filter)(uint8_t *src, int stride, int qscale);
+    void (*h263_h_loop_filter)(uint8_t *src, int stride, int qscale);
+
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);
     void (*fdct248)(DCTELEM *block/* align 16*/);

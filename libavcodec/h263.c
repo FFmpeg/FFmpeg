@@ -237,17 +237,16 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
             put_bits(&s->pb, 3, format);
             
         put_bits(&s->pb,1,0); /* Custom PCF: off */
-        s->umvplus = s->unrestricted_mv;
         put_bits(&s->pb, 1, s->umvplus); /* Unrestricted Motion Vector */
         put_bits(&s->pb,1,0); /* SAC: off */
         put_bits(&s->pb,1,s->obmc); /* Advanced Prediction Mode */
         put_bits(&s->pb,1,s->h263_aic); /* Advanced Intra Coding */
-        put_bits(&s->pb,1,0); /* Deblocking Filter: off */
+        put_bits(&s->pb,1,s->loop_filter); /* Deblocking Filter */
         put_bits(&s->pb,1,0); /* Slice Structured: off */
         put_bits(&s->pb,1,0); /* Reference Picture Selection: off */
         put_bits(&s->pb,1,0); /* Independent Segment Decoding: off */
         put_bits(&s->pb,1,s->alt_inter_vlc); /* Alternative Inter VLC */
-        put_bits(&s->pb,1,0); /* Modified Quantization: off */
+        put_bits(&s->pb,1,s->modified_quant); /* Modified Quantization: */
         put_bits(&s->pb,1,1); /* "1" to prevent start code emulation */
         put_bits(&s->pb,3,0); /* Reserved */
 		
@@ -279,6 +278,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
         if (s->umvplus)
 //            put_bits(&s->pb,1,1); /* Limited according tables of Annex D */
+//FIXME check actual requested range
             put_bits(&s->pb,2,1); /* unlimited */
 
         put_bits(&s->pb, 5, s->qscale);
@@ -1234,6 +1234,93 @@ void h263_encode_mb(MpegEncContext * s,
 }
 #endif
 
+int ff_h263_loop_filter(MpegEncContext * s){
+    int qp_c;
+    const int linesize  = s->linesize;
+    const int uvlinesize= s->uvlinesize;
+    const int xy = s->mb_y * s->mb_stride + s->mb_x;
+    uint8_t *dest_y = s->dest[0];
+    uint8_t *dest_cb= s->dest[1];
+    uint8_t *dest_cr= s->dest[2];
+    
+//    if(s->pict_type==B_TYPE && !s->readable) return;
+
+    /*
+       Diag Top
+       Left Center
+    */
+    if(!IS_SKIP(s->current_picture.mb_type[xy])){
+        qp_c= s->qscale;
+        s->dsp.h263_v_loop_filter(dest_y+8*linesize  , linesize, qp_c);
+        s->dsp.h263_v_loop_filter(dest_y+8*linesize+8, linesize, qp_c);
+    }else
+        qp_c= 0;
+
+    if(s->mb_y){
+        int qp_dt, qp_t, qp_tc;
+
+        if(IS_SKIP(s->current_picture.mb_type[xy-s->mb_stride]))
+            qp_t=0;
+        else 
+            qp_t= s->current_picture.qscale_table[xy-s->mb_stride];
+
+        if(qp_c) 
+            qp_tc= qp_c;
+        else
+            qp_tc= qp_t;
+            
+        if(qp_tc){
+            const int chroma_qp= s->chroma_qscale_table[qp_tc];
+            s->dsp.h263_v_loop_filter(dest_y  ,   linesize, qp_tc);
+            s->dsp.h263_v_loop_filter(dest_y+8,   linesize, qp_tc);
+        
+            s->dsp.h263_v_loop_filter(dest_cb , uvlinesize, chroma_qp);
+            s->dsp.h263_v_loop_filter(dest_cr , uvlinesize, chroma_qp);
+        }
+        
+        if(qp_t)
+            s->dsp.h263_h_loop_filter(dest_y-8*linesize+8  ,   linesize, qp_t);
+        
+        if(s->mb_x){
+            if(qp_t || IS_SKIP(s->current_picture.mb_type[xy-1-s->mb_stride]))
+                qp_dt= qp_t;
+            else
+                qp_dt= s->current_picture.qscale_table[xy-1-s->mb_stride];
+            
+            if(qp_dt){
+                const int chroma_qp= s->chroma_qscale_table[qp_dt];
+                s->dsp.h263_h_loop_filter(dest_y -8*linesize  ,   linesize, qp_dt);
+                s->dsp.h263_h_loop_filter(dest_cb-8*uvlinesize, uvlinesize, chroma_qp);
+                s->dsp.h263_h_loop_filter(dest_cb-8*uvlinesize, uvlinesize, chroma_qp);
+            }
+        }
+    }
+
+    if(qp_c){
+        s->dsp.h263_h_loop_filter(dest_y +8,   linesize, qp_c);
+        if(s->mb_y + 1 == s->mb_height)
+            s->dsp.h263_h_loop_filter(dest_y+8*linesize+8,   linesize, qp_c);
+    }
+    
+    if(s->mb_x){
+        int qp_lc;
+        if(qp_c || IS_SKIP(s->current_picture.mb_type[xy-1]))
+            qp_lc= qp_c;
+        else
+            qp_lc= s->current_picture.qscale_table[xy-1];
+        
+        if(qp_lc){
+            s->dsp.h263_h_loop_filter(dest_y,   linesize, qp_lc);
+            if(s->mb_y + 1 == s->mb_height){
+                const int chroma_qp= s->chroma_qscale_table[qp_lc];
+                s->dsp.h263_h_loop_filter(dest_y +8*  linesize,   linesize, qp_lc);
+                s->dsp.h263_h_loop_filter(dest_cb             , uvlinesize, chroma_qp);
+                s->dsp.h263_h_loop_filter(dest_cr             , uvlinesize, chroma_qp);
+            }
+        }
+    }
+}
+
 static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr)
 {
     int x, y, wrap, a, c, pred_dc, scale;
@@ -2162,9 +2249,11 @@ static void change_qscale(MpegEncContext * s, int dquant)
         s->qscale = 1;
     else if (s->qscale > 31)
         s->qscale = 31;
+        
+    s->chroma_qscale= s->chroma_qscale_table[s->qscale];
 
     s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-    s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
+    s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
 }
 
 /**
@@ -2657,6 +2746,8 @@ static int h263_decode_gob_header(MpegEncContext *s)
     s->qscale = get_bits(&s->gb, 5); /* GQUANT */
     if(s->qscale==0) 
         return -1;
+    s->chroma_qscale= s->chroma_qscale_table[s->qscale];
+
     s->mb_x= 0;
     s->mb_y= s->gob_index* s->gob_number;
     if(s->mb_y >= s->mb_height) 
@@ -2820,7 +2911,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
     if(s->shape != BIN_ONLY_SHAPE){
         int qscale= get_bits(&s->gb, s->quant_precision); 
         if(qscale)
-            s->qscale= qscale;
+            s->chroma_qscale=s->qscale= qscale;
     }
 
     if(s->shape == RECT_SHAPE){
@@ -3302,9 +3393,9 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
     cbp = s->cbp_table[xy];
 
     if(s->current_picture.qscale_table[xy] != s->qscale){
-        s->qscale= s->current_picture.qscale_table[xy];
+        s->chroma_qscale=s->qscale= s->current_picture.qscale_table[xy];
         s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-        s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
+        s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
     }
     
     if (s->pict_type == P_TYPE || s->pict_type==S_TYPE) {
@@ -3495,7 +3586,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
                 s->mcsel=0;
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
-                s->mb_skiped = !s->obmc;
+                s->mb_skiped = !(s->obmc | s->loop_filter);
             }
             goto end;
         }
@@ -4440,7 +4531,7 @@ int h263_decode_picture_header(MpegEncContext *s)
             av_log(s->avctx, AV_LOG_ERROR, "H263 PB frame not supported\n");
             return -1;	/* not PB frame */
         }
-        s->qscale = get_bits(&s->gb, 5);
+        s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
         skip_bits1(&s->gb);	/* Continuous Presence Multipoint mode: off */
 
         s->width = width;
@@ -4459,14 +4550,14 @@ int h263_decode_picture_header(MpegEncContext *s)
             dprintf("ufep=1, format: %d\n", format);
             skip_bits(&s->gb,1); /* Custom PCF */
             s->umvplus = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
-            skip_bits1(&s->gb); /* Syntax-based Arithmetic Coding (SAC) */
-            s->obmc= get_bits1(&s->gb); /* Advanced prediction mode */
-            s->unrestricted_mv = s->umvplus || s->obmc;
-            s->h263_aic = get_bits1(&s->gb); /* Advanced Intra Coding (AIC) */
-	    
             if (get_bits1(&s->gb) != 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "Deblocking Filter not supported\n");
+                av_log(s->avctx, AV_LOG_ERROR, "Syntax-based Arithmetic Coding (SAC) not supported\n");
             }
+            s->obmc= get_bits1(&s->gb); /* Advanced prediction mode */
+            s->h263_aic = get_bits1(&s->gb); /* Advanced Intra Coding (AIC) */
+            s->loop_filter= get_bits1(&s->gb);
+            s->unrestricted_mv = s->umvplus || s->obmc || s->loop_filter;
+            
             if (get_bits1(&s->gb) != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Slice Structured not supported\n");
             }
@@ -4478,6 +4569,8 @@ int h263_decode_picture_header(MpegEncContext *s)
             }
             s->alt_inter_vlc= get_bits1(&s->gb);
             s->modified_quant= get_bits1(&s->gb);
+            if(s->modified_quant)
+                s->chroma_qscale_table= ff_h263_chroma_qscale_table;
             
             skip_bits(&s->gb, 1); /* Prevent start code emulation */
 
@@ -4539,6 +4632,7 @@ int h263_decode_picture_header(MpegEncContext *s)
         }
             
         s->qscale = get_bits(&s->gb, 5);
+        s->chroma_qscale= s->chroma_qscale_table[s->qscale];
     }
     /* PEI */
     while (get_bits1(&s->gb) != 0) {
@@ -4555,7 +4649,7 @@ int h263_decode_picture_header(MpegEncContext *s)
     }
 
      if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s%s\n", 
+         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s%s%s\n", 
          s->qscale, av_get_pict_type_char(s->pict_type),
          s->gb.size_in_bits, 1-s->no_rounding,
          s->obmc ? " AP" : "",
@@ -4564,7 +4658,8 @@ int h263_decode_picture_header(MpegEncContext *s)
          s->h263_plus ? " +" : "",
          s->h263_aic ? " AIC" : "",
          s->alt_inter_vlc ? " AIV" : "",
-         s->modified_quant ? " MQ" : ""
+         s->modified_quant ? " MQ" : "",
+         s->loop_filter ? " LOOP" : ""
          ); 
      }
 #if 1
@@ -4895,7 +4990,7 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
         
         s->progressive_sequence= get_bits1(gb)^1;
         if(!get_bits1(gb) && (s->avctx->debug & FF_DEBUG_PICT_INFO)) 
-            av_log(s->avctx, AV_LOG_ERROR, "OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
+            av_log(s->avctx, AV_LOG_INFO, "MPEG4 OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
         if (vo_ver_id == 1) {
             s->vol_sprite_usage = get_bits1(gb); /* vol_sprite_usage */
         } else {
@@ -5251,7 +5346,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
      }
 
      if (s->shape != BIN_ONLY_SHAPE) {
-         s->qscale = get_bits(gb, s->quant_precision);
+         s->chroma_qscale= s->qscale = get_bits(gb, s->quant_precision);
          if(s->qscale==0){
              av_log(s->avctx, AV_LOG_ERROR, "Error, header damaged or not MPEG4 header (qscale=0)\n");
              return -1; // makes no sense to continue, as there is nothing left from the image then
@@ -5445,7 +5540,7 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     /* skip unknown header garbage */
     skip_bits(&s->gb, 41);
 
-    s->qscale = get_bits(&s->gb, 5);
+    s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
     skip_bits1(&s->gb);	/* Continuous Presence Multipoint mode: off */
 
     /* PEI */
@@ -5519,7 +5614,7 @@ int flv_h263_decode_picture_header(MpegEncContext *s)
     if (s->pict_type > P_TYPE)
         s->pict_type = P_TYPE;
     skip_bits1(&s->gb);	/* deblocking flag */
-    s->qscale = get_bits(&s->gb, 5);
+    s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
 
     s->h263_plus = 0;
 

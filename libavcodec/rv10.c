@@ -382,7 +382,8 @@ static int rv20_decode_picture_header(MpegEncContext *s)
 //    s->alt_inter_vlc=1;
 //    s->obmc=1;
 //    s->umvplus=1;
-//    s->modified_quant=1;
+    s->modified_quant=1;
+    s->loop_filter=1;
     
     if(s->avctx->debug & FF_DEBUG_PICT_INFO){
             av_log(s->avctx, AV_LOG_INFO, "num:%5d x:%2d y:%2d type:%d qscale:%2d rnd:%d\n", 
@@ -522,9 +523,14 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
+
+    if(s->modified_quant)
+        s->chroma_qscale_table= ff_h263_chroma_qscale_table;
+        
+    s->chroma_qscale= s->chroma_qscale_table[ s->qscale ];
     s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-    s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
-    
+    s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
+
     s->rv10_first_dc_coded[0] = 0;
     s->rv10_first_dc_coded[1] = 0;
     s->rv10_first_dc_coded[2] = 0;
@@ -555,6 +561,9 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         }
         ff_h263_update_motion_val(s);
         MPV_decode_mb(s, s->block);
+        if(s->loop_filter)
+            ff_h263_loop_filter(s);
+
         if (++s->mb_x == s->mb_width) {
             s->mb_x = 0;
             s->mb_y++;

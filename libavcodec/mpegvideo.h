@@ -337,6 +337,7 @@ typedef struct MpegEncContext {
     int y_dc_scale, c_dc_scale;
     uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table 
     uint8_t *c_dc_scale_table;     ///< qscale -> c_dc_scale table 
+    const uint8_t *chroma_qscale_table;  ///< qscale -> chroma_qscale (h263)
     uint8_t *coded_block;          ///< used for coded block pattern prediction (msmpeg4v3, wmv1)
     int16_t (*ac_val[3])[16];      ///< used for for mpeg4 AC prediction, all 3 arrays must be continuous 
     int ac_pred;
@@ -352,6 +353,7 @@ typedef struct MpegEncContext {
     uint8_t *edge_emu_buffer;     ///< points into the middle of allocated_edge_emu_buffer  
 
     int qscale;                 ///< QP 
+    int chroma_qscale;          ///< chroma QP 
     int lambda;                 ///< lagrange multipler used in rate distortion
     int lambda2;                ///< (lambda*lambda) >> FF_LAMBDA_SHIFT 
     int *lambda_table;
@@ -526,6 +528,7 @@ typedef struct MpegEncContext {
     int h263_aic_dir;               ///< AIC direction: 0 = left, 1 = top 
     int alt_inter_vlc;              ///< alternative inter vlc
     int modified_quant;
+    int loop_filter;
     
     /* mpeg4 specific */
     int time_increment_resolution;
@@ -819,6 +822,8 @@ extern const int16_t ff_mpeg4_default_intra_matrix[64];
 extern const int16_t ff_mpeg4_default_non_intra_matrix[64];
 extern const uint16_t ff_mba_max[6];
 extern const uint8_t ff_mba_length[6];
+extern const uint8_t ff_h263_chroma_qscale_table[32];
+extern const uint8_t ff_h263_loop_filter_strength[32];
 
 int ff_h263_decode_init(AVCodecContext *avctx);
 int ff_h263_decode_frame(AVCodecContext *avctx, 
@@ -846,6 +851,7 @@ int h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_gob_header(MpegEncContext *s);
 int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb);
 void ff_h263_update_motion_val(MpegEncContext * s);
+int ff_h263_loop_filter(MpegEncContext * s);
 
 
 int intel_h263_decode_picture_header(MpegEncContext *s);

@@ -88,6 +88,11 @@ static const uint8_t h263_chroma_roundtab[16] = {
     0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
 };
 
+static const uint8_t ff_default_chroma_qscale_table[32]={
+//  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+    0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31
+};
+
 #ifdef CONFIG_ENCODERS
 static uint8_t (*default_mv_penalty)[MAX_MV*2+1]=NULL;
 static uint8_t default_fcode_tab[MAX_MV*2+1];
@@ -384,6 +389,10 @@ int MPV_common_init(MpegEncContext *s)
     s->block_wrap[4]=
     s->block_wrap[5]= s->mb_width + 2;
 
+    s->y_dc_scale_table=
+    s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+    s->chroma_qscale_table= ff_default_chroma_qscale_table;    
+    
     y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
     c_size = (s->mb_width + 2) * (s->mb_height + 2);
     yc_size = y_size + 2 * c_size;
@@ -668,8 +677,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     
     s->progressive_sequence= !(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
     
-    s->obmc=    (s->codec_id == CODEC_ID_H263 || s->codec_id == CODEC_ID_H263P) 
-             && (s->flags & CODEC_FLAG_4MV);
+    s->obmc= (s->flags & CODEC_FLAG_OBMC);
+    s->loop_filter= (s->flags & CODEC_FLAG_LOOP_FILTER);
 
     if((s->flags & CODEC_FLAG_4MV) && s->codec_id != CODEC_ID_MPEG4 
        && s->codec_id != CODEC_ID_H263 && s->codec_id != CODEC_ID_H263P){
@@ -679,6 +688,11 @@ int MPV_encode_init(AVCodecContext *avctx)
     
     if(s->obmc && s->avctx->mb_decision != FF_MB_DECISION_SIMPLE){
         av_log(avctx, AV_LOG_ERROR, "OBMC is only supported with simple mb decission\n");
+        return -1;
+    }
+    
+    if(s->obmc && s->codec_id != CODEC_ID_H263 && s->codec_id != CODEC_ID_H263P){
+        av_log(avctx, AV_LOG_ERROR, "OBMC is only supported with H263(+)\n");
         return -1;
     }
     
@@ -770,6 +784,7 @@ int MPV_encode_init(AVCodecContext *avctx)
             return -1;
         }
         s->out_format = FMT_H263;
+	s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
         avctx->delay=0;
         s->low_delay=1;
         break;
@@ -777,12 +792,18 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_H263;
         s->h263_plus = 1;
 	/* Fx */
-	s->unrestricted_mv=(avctx->flags & CODEC_FLAG_H263P_UMV) ? 1:0;
+        s->umvplus = (avctx->flags & CODEC_FLAG_H263P_UMV) ? 1:0;
 	s->h263_aic= (avctx->flags & CODEC_FLAG_H263P_AIC) ? 1:0;
+	s->modified_quant= s->h263_aic;
 	s->alt_inter_vlc= (avctx->flags & CODEC_FLAG_H263P_AIV) ? 1:0;
+	s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
+	s->loop_filter= (avctx->flags & CODEC_FLAG_LOOP_FILTER) ? 1:0;
+	s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
+        if(s->modified_quant)
+            s->chroma_qscale_table= ff_h263_chroma_qscale_table;
+
 	/* /Fx */
         /* These are just to be sure */
-        s->umvplus = 1;
         avctx->delay=0;
         s->low_delay=1;
         break;
@@ -876,8 +897,6 @@ int MPV_encode_init(AVCodecContext *avctx)
     }
     s->me.mv_penalty= default_mv_penalty;
     s->fcode_tab= default_fcode_tab;
-    s->y_dc_scale_table=
-    s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
  
     /* dont use mv_penalty table for crap MV as it would be confused */
     //FIXME remove after fixing / removing old ME
@@ -2648,10 +2667,10 @@ static inline void add_dct(MpegEncContext *s,
 }
 
 static inline void add_dequant_dct(MpegEncContext *s, 
-                           DCTELEM *block, int i, uint8_t *dest, int line_size)
+                           DCTELEM *block, int i, uint8_t *dest, int line_size, int qscale)
 {
     if (s->block_last_index[i] >= 0) {
-        s->dct_unquantize(s, block, i, s->qscale);
+        s->dct_unquantize(s, block, i, qscale);
 
         s->dsp.idct_add (dest, line_size, block);
     }
@@ -2810,14 +2829,14 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             /* add dct residue */
             if(s->encoding || !(   s->h263_msmpeg4 || s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO
                                 || (s->codec_id==CODEC_ID_MPEG4 && !s->mpeg_quant))){
-                add_dequant_dct(s, block[0], 0, dest_y, dct_linesize);
-                add_dequant_dct(s, block[1], 1, dest_y + 8, dct_linesize);
-                add_dequant_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
-                add_dequant_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
+                add_dequant_dct(s, block[0], 0, dest_y, dct_linesize, s->qscale);
+                add_dequant_dct(s, block[1], 1, dest_y + 8, dct_linesize, s->qscale);
+                add_dequant_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize, s->qscale);
+                add_dequant_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize, s->qscale);
 
                 if(!(s->flags&CODEC_FLAG_GRAY)){
-                    add_dequant_dct(s, block[4], 4, dest_cb, uvlinesize);
-                    add_dequant_dct(s, block[5], 5, dest_cr, uvlinesize);
+                    add_dequant_dct(s, block[4], 4, dest_cb, uvlinesize, s->chroma_qscale);
+                    add_dequant_dct(s, block[5], 5, dest_cr, uvlinesize, s->chroma_qscale);
                 }
             } else if(s->codec_id != CODEC_ID_WMV2){
                 add_dct(s, block[0], 0, dest_y, dct_linesize);
@@ -3105,8 +3124,9 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }
         }
         s->qscale= last_qp + s->dquant;
+        s->chroma_qscale= s->chroma_qscale_table[ s->qscale ];
         s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-        s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
+        s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
     }
 
     if (s->mb_intra) {
@@ -3844,8 +3864,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         s->mb_x=0;
         s->mb_y= mb_y;
 
+        s->chroma_qscale= s->chroma_qscale_table[ s->qscale ];
         s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-        s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
+        s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
         ff_init_block_index(s);
         
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
@@ -4208,6 +4229,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s, s->new_picture    .data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
                     s->dest[2], w>>1, h>>1, s->uvlinesize);
             }
+            if(s->loop_filter)
+                ff_h263_loop_filter(s);
 //printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_stride, get_bit_count(&s->pb));
         }
     }

@@ -2126,6 +2126,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
 	s->dsp.clear_blocks(s->block[0]);
 
         ret = mpeg_decode_mb(s, s->block);
+        s->chroma_qscale= s->qscale;
 
         dprintf("ret=%d\n", ret);
         if (ret < 0)
