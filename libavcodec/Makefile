@@ -91,7 +91,7 @@ depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
 clean: 
-	rm -f *.o *~ $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
+	rm -f *.o *~ .depend $(LIB) $(SLIB) *.so i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
 	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \

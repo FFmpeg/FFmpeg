@@ -63,7 +63,7 @@ depend:
 clean: 
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libav clean
-	rm -f *.o *~ gmon.out TAGS $(PROG) 
+	rm -f *.o *~ .depend gmon.out TAGS $(PROG) 
 
 distclean: clean
 	$(MAKE) -C libavcodec distclean
