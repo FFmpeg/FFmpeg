@@ -627,6 +627,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_str8(pb, buf, sizeof(buf)); /* mimetype */
             codec_data_size = get_be32(pb);
             codec_pos = url_ftell(pb);
+            st->codec.codec_type = CODEC_TYPE_DATA;
 
             v = get_be32(pb);
             if (v == MKTAG(0xfd, 'a', 'r', '.')) {
@@ -636,9 +637,10 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 if (get_le32(pb) != MKTAG('V', 'I', 'D', 'O')) {
                 fail1:
                     av_log(&st->codec, AV_LOG_ERROR, "Unsupported video codec\n");
-                    goto fail;
+                    goto skip;
                 }
                 st->codec.codec_tag = get_le32(pb);
+//                av_log(NULL, AV_LOG_DEBUG, "%X %X\n", st->codec.codec_tag, MKTAG('R', 'V', '2', '0'));
                 if (   st->codec.codec_tag != MKTAG('R', 'V', '1', '0')
                     && st->codec.codec_tag != MKTAG('R', 'V', '2', '0'))
                     goto fail1;
@@ -659,6 +661,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 else
                     st->codec.codec_id = CODEC_ID_RV20;
             }
+skip:
             /* skip codec info */
             size = url_ftell(pb) - codec_pos;
             url_fskip(pb, codec_data_size - size);
