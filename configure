@@ -167,10 +167,13 @@ darwin="yes"
 strip="strip -x"
 LDFLAGS="-d"
 FFSLDFLAGS=-Wl,-bind_at_load
-gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f4-)"
+gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
 case "$gcc_version" in
 *2.95*) 
 CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer"
+;;
+*3.3*) 
+CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic -force_cpusubtype_ALL"
 ;;
 *) 
 CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic"
@@ -382,14 +385,14 @@ if test $tune != "generic"; then
 	    fi
 	    TUNECPU=ppc604
 	;;
-	G3|75*|ppc75*|PowerPC75*)
+	G3|g3|75*|ppc75*|PowerPC75*)
 	    CFLAGS="$CFLAGS -mcpu=750 -mtune=750"
 	    if test $altivec = "yes"; then
 		echo "WARNING: tuning for PPC75x but altivec enabled !";
 	    fi
 	    TUNECPU=ppc750
 	;;
-	G4|745*|ppc745*|PowerPC745*)
+	G4|g4|745*|ppc745*|PowerPC745*)
 	    CFLAGS="$CFLAGS -mcpu=7450 -mtune=7450"
 	    if test $altivec = "no"; then
 		echo "WARNING: tuning for PPC745x but altivec disabled !";
@@ -403,7 +406,7 @@ if test $tune != "generic"; then
 	    fi
 	    TUNECPU=ppc7400
 	;;
-	G5|970|ppc970|PowerPC970|power4*|Power4*)
+	G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
 	    CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc64 -force_cpusubtype_ALL "
 	    if test $altivec = "no"; then
 		echo "WARNING: tuning for PPC970 but altivec disabled !";
