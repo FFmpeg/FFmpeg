@@ -483,7 +483,7 @@ static void do_video_out(AVFormatContext *s,
     int nb_frames, i, ret;
     AVPicture *final_picture, *formatted_picture;
     AVPicture picture_format_temp, picture_crop_temp;
-    static uint8_t *video_buffer;
+    static uint8_t *video_buffer= NULL;
     uint8_t *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
     enum PixelFormat target_pixfmt;
