@@ -1431,8 +1431,9 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
 static void mpeg_decode_sequence_extension(MpegEncContext *s)
 {
     int horiz_size_ext, vert_size_ext;
-    int bit_rate_ext, vbv_buf_ext, low_delay;
+    int bit_rate_ext, vbv_buf_ext;
     int frame_rate_ext_n, frame_rate_ext_d;
+    float aspect;
 
     skip_bits(&s->gb, 8); /* profil and level */
     s->progressive_sequence = get_bits1(&s->gb); /* progressive_sequence */
@@ -1445,7 +1446,7 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     s->bit_rate = ((s->bit_rate / 400) | (bit_rate_ext << 12)) * 400;
     skip_bits1(&s->gb); /* marker */
     vbv_buf_ext = get_bits(&s->gb, 8);
-    low_delay = get_bits1(&s->gb);
+    s->low_delay = get_bits1(&s->gb);
     frame_rate_ext_n = get_bits(&s->gb, 2);
     frame_rate_ext_d = get_bits(&s->gb, 5);
     if (frame_rate_ext_d >= 1)
@@ -1453,6 +1454,10 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     dprintf("sequence extension\n");
     s->mpeg2 = 1;
     s->avctx->sub_id = 2; /* indicates mpeg2 found */
+
+    aspect= mpeg2_aspect[s->aspect_ratio_info];
+    if(aspect>0.0)      s->avctx->aspect_ratio= s->width/(aspect*s->height);
+    else if(aspect<0.0) s->avctx->aspect_ratio= -1.0/aspect;
 }
 
 static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
@@ -1706,12 +1711,18 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     int width, height, i, v, j;
+    float aspect;
 
     init_get_bits(&s->gb, buf, buf_size);
 
     width = get_bits(&s->gb, 12);
     height = get_bits(&s->gb, 12);
-    skip_bits(&s->gb, 4);
+    s->aspect_ratio_info= get_bits(&s->gb, 4);
+    if(!s->mpeg2){
+        aspect= mpeg1_aspect[s->aspect_ratio_info];
+        if(aspect!=0.0) avctx->aspect_ratio= width/(aspect*height);
+    }
+
     s->frame_rate_index = get_bits(&s->gb, 4);
     if (s->frame_rate_index == 0)
         return -1;
@@ -1896,15 +1907,16 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                                           s->buffer, input_size);
                     break;
                 default:
-                    /* skip b frames if we dont have reference frames */
-                    if(s2->last_picture.data[0]==NULL && s2->pict_type==B_TYPE) break;
-                    /* skip b frames if we are in a hurry */
-                    if(avctx->hurry_up && s2->pict_type==B_TYPE) break;
-                    /* skip everything if we are in a hurry>=5 */
-                    if(avctx->hurry_up>=5) break;
-
                     if (start_code >= SLICE_MIN_START_CODE &&
                         start_code <= SLICE_MAX_START_CODE) {
+                        
+                        /* skip b frames if we dont have reference frames */
+                        if(s2->last_picture.data[0]==NULL && s2->pict_type==B_TYPE) break;
+                        /* skip b frames if we are in a hurry */
+                        if(avctx->hurry_up && s2->pict_type==B_TYPE) break;
+                        /* skip everything if we are in a hurry>=5 */
+                        if(avctx->hurry_up>=5) break;
+
                         ret = mpeg_decode_slice(avctx, picture,
                                                 start_code, s->buffer, input_size);
                         if (ret == DECODE_SLICE_EOP) {
