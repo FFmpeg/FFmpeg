@@ -39,7 +39,7 @@ enum CodecType {
 };
 
 enum PixelFormat {
-    //PIX_FMT_ANY,
+    PIX_FMT_ANY = -1,
     PIX_FMT_YUV420P,
     PIX_FMT_YUV422,
     PIX_FMT_RGB24,
