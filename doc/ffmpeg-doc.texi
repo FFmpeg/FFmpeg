@@ -701,6 +701,7 @@ following image formats are supported:
 @item Microsoft Video-1      @tab     @tab  X
 @item Westwood VQA           @tab     @tab  X
 @item Id Cinematic Video     @tab     @tab  X @tab used in Quake II
+@item Planar RGB             @tab     @tab  X @tab fourcc: 8BPS
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.

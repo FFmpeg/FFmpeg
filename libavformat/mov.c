@@ -101,6 +101,7 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_VP3, MKTAG('V', 'P', '3', '1') }, /* On2 VP3 */
     { CODEC_ID_RPZA, MKTAG('r', 'p', 'z', 'a') }, /* Apple Video (RPZA) */
     { CODEC_ID_CINEPAK, MKTAG('c', 'v', 'i', 'd') }, /* Cinepak */
+    { CODEC_ID_8BPS, MKTAG('8', 'B', 'P', 'S') }, /* Planar RGB (8BPS) */
     { CODEC_ID_NONE, 0 },
 };
 
