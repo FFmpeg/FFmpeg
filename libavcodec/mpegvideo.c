@@ -1995,7 +1995,7 @@ static int rate_estimate_qscale(MpegEncContext *s)
     s->short_term_qcount++;
     short_term_q= s->short_term_qsum/s->short_term_qcount;
     
-    long_term_q= s->qsum/s->qcount*s->total_bits/wanted_bits;
+    long_term_q= s->qsum/s->qcount*(s->total_bits+1)/(wanted_bits+1); //+1 to avoid nan & 0
 
 //    q= (long_term_q - short_term_q)*s->qcompress + short_term_q;
     q= 1/((1/long_term_q - 1/short_term_q)*s->qcompress + 1/short_term_q);
@@ -2016,8 +2016,8 @@ static int rate_estimate_qscale(MpegEncContext *s)
     s->qcount++;
 
     s->last_pict_type= s->pict_type;
-//printf("q:%d diff:%d comp:%f rate_q:%d st_q:%d fvar:%d last_size:%d\n", qscale, (int)diff, br_compensation, 
-//       rate_q, (int)short_term_q, s->mc_mb_var, s->frame_bits);
+//printf("q:%d diff:%d comp:%f rate_q:%d st_q:%f fvar:%d last_size:%d\n", qscale, (int)diff, br_compensation, 
+//       rate_q, short_term_q, s->mc_mb_var, s->frame_bits);
 //printf("%d %d\n", s->bit_rate, (int)fps);
     return qscale;
 #else
