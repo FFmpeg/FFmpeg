@@ -224,16 +224,24 @@ static inline uint64_t avg4(uint64_t l1, uint64_t l2, uint64_t l3, uint64_t l4)
         } while (--h);                                                      \
     } while (0)
 
-#define MAKE_OP(OPNAME, SUFF, OPKIND, STORE)                            \
-static void OPNAME ## _pixels ## SUFF ## _axp                           \
-        (uint8_t *restrict block, const uint8_t *restrict pixels,       \
-         int line_size, int h)                                          \
-{                                                                       \
-    if ((size_t) pixels & 0x7) {                                        \
-        OPKIND(uldq, STORE);                                            \
-    } else {                                                            \
-        OPKIND(ldq, STORE);                                             \
-    }                                                                   \
+#define MAKE_OP(OPNAME, SUFF, OPKIND, STORE)                                \
+static void OPNAME ## _pixels ## SUFF ## _axp                               \
+        (uint8_t *restrict block, const uint8_t *restrict pixels,           \
+         int line_size, int h)                                              \
+{                                                                           \
+    if ((size_t) pixels & 0x7) {                                            \
+        OPKIND(uldq, STORE);                                                \
+    } else {                                                                \
+        OPKIND(ldq, STORE);                                                 \
+    }                                                                       \
+}                                                                           \
+                                                                            \
+static void OPNAME ## _pixels16 ## SUFF ## _axp                             \
+        (uint8_t *restrict block, const uint8_t *restrict pixels,           \
+         int line_size, int h)                                              \
+{                                                                           \
+    OPNAME ## _pixels ## SUFF ## _axp(block,     pixels,     line_size, h); \
+    OPNAME ## _pixels ## SUFF ## _axp(block + 8, pixels + 8, line_size, h); \
 }
 
 #define PIXOP(OPNAME, STORE)                    \
@@ -268,8 +276,35 @@ PIXOP(put_no_rnd, STORE);
 #define STORE(l, b) stq(AVG2(l, ldq(b)), b);
 PIXOP(avg_no_rnd, STORE);
 
+void put_pixels16_axp_asm(uint8_t *block, const uint8_t *pixels,
+                          int line_size, int h)
+{
+    put_pixels_axp_asm(block,     pixels,     line_size, h);
+    put_pixels_axp_asm(block + 8, pixels + 8, line_size, h);
+}
+
 void dsputil_init_alpha(void)
 {
+    put_pixels_tab[0][0] = put_pixels16_axp_asm;
+    put_pixels_tab[0][1] = put_pixels16_x2_axp;
+    put_pixels_tab[0][2] = put_pixels16_y2_axp;
+    put_pixels_tab[0][3] = put_pixels16_xy2_axp;
+
+    put_no_rnd_pixels_tab[0][0] = put_pixels16_axp_asm;
+    put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_axp;
+    put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2_axp;
+    put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2_axp;
+
+    avg_pixels_tab[0][0] = avg_pixels16_axp;
+    avg_pixels_tab[0][1] = avg_pixels16_x2_axp;
+    avg_pixels_tab[0][2] = avg_pixels16_y2_axp;
+    avg_pixels_tab[0][3] = avg_pixels16_xy2_axp;
+
+    avg_no_rnd_pixels_tab[0][0] = avg_no_rnd_pixels16_axp;
+    avg_no_rnd_pixels_tab[0][1] = avg_no_rnd_pixels16_x2_axp;
+    avg_no_rnd_pixels_tab[0][2] = avg_no_rnd_pixels16_y2_axp;
+    avg_no_rnd_pixels_tab[0][3] = avg_no_rnd_pixels16_xy2_axp;
+
     put_pixels_tab[1][0] = put_pixels_axp_asm;
     put_pixels_tab[1][1] = put_pixels_x2_axp;
     put_pixels_tab[1][2] = put_pixels_y2_axp;
