@@ -32,7 +32,7 @@ Vertical X1		a		E	E
 Horizontal X1		a		E	E
 LinIpolDeinterlace	a		E	E*
 LinBlendDeinterlace	a		E	E*
-MedianDeinterlace	a		E
+MedianDeinterlace	 	Ec	Ec
 
 
 * i dont have a 3dnow CPU -> its untested
@@ -56,37 +56,17 @@ do something about the speed of the horizontal filters
 make the mainloop more flexible (variable number of blocks at once
 	(the if/else stuff per block is slowing things down)
 compare the quality & speed of all filters
-implement a few simple deinterlacing filters
 split this huge file
 fix warnings (unused vars, ...)
+noise reduction filters
 ...
 
 Notes:
 
+
 */
 
-/*
-Changelog: use the CVS log
-rewrote the horizontal lowpass filter to fix a bug which caused a blocky look
-added deinterlace filters (linear interpolate, linear blend, median)
-minor cleanups (removed some outcommented stuff)
-0.1.3
-	bugfixes: last 3 lines not brightness/contrast corrected
-		brightness statistics messed up with initial black pic
-	changed initial values of the brightness statistics
-	C++ -> C conversation
-	QP range question solved (very likely 1<=QP<=32 according to arpi)
-	new experimental vertical deblocking filter
-	RK filter has 3dNow support now (untested)
-0.1.2
-	fixed a bug in the horizontal default filter
-	3dnow version of the Horizontal & Vertical Lowpass filters
-	mmx version of the Horizontal Default filter
-	mmx2 & C versions of a simple filter described in a paper from ramkishor & karandikar
-	added mode flags & quality2mode function
-0.1.1
-*/
-
+//Changelog: use the CVS log
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -154,7 +134,7 @@ int maxAllowedY=255;
 //FIXME can never make a movie´s black brighter (anyone needs that?)
 int minAllowedY=0;
 
-#ifdef TIMEING
+#ifdef TIMING
 static inline long long rdtsc()
 {
 	long long l;
@@ -364,7 +344,7 @@ static inline int isVertMinMaxOk(uint8_t src[], int stride, int QP)
 
 /**
  * Do a vertical low pass filter on the 8x10 block (only write to the 8x8 block in the middle)
- * useing the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16
+ * using the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16
  */
 static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 {
@@ -1583,8 +1563,8 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 
 /**
  * Do a horizontal low pass filter on the 10x8 block (dst points to middle 8x8 Block)
- * useing the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16 (C version)
- * useing the 7-Tap Filter   (2,2,2,4,2,2,2)/16 (MMX2/3DNOW version)
+ * using the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16 (C version)
+ * using the 7-Tap Filter   (2,2,2,4,2,2,2)/16 (MMX2/3DNOW version)
  */
 static inline void doHorizLowPassAndCopyBack(uint8_t dst[], int stride, int QP)
 {
@@ -2124,7 +2104,8 @@ static inline void deInterlaceBlendLinearLastRow(uint8_t src[], int stride)
  */
 static inline void deInterlaceMedian(uint8_t src[], int stride)
 {
-#if defined (HAVE_MMX2)
+#ifdef HAVE_MMX
+#ifdef HAVE_MMX2
 	asm volatile(
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
@@ -2172,6 +2153,48 @@ static inline void deInterlaceMedian(uint8_t src[], int stride)
 		: : "r" (src), "r" (stride)
 		: "%eax", "%ebx"
 	);
+
+#else // MMX without MMX2
+	asm volatile(
+		"leal (%0, %1), %%eax				\n\t"
+		"leal (%%eax, %1, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
+		"pxor %%mm7, %%mm7				\n\t"
+
+#define MEDIAN(a,b,c)\
+		"movq " #a ", %%mm0				\n\t"\
+		"movq " #b ", %%mm2				\n\t"\
+		"movq " #c ", %%mm1				\n\t"\
+		"movq %%mm0, %%mm3				\n\t"\
+		"movq %%mm1, %%mm4				\n\t"\
+		"movq %%mm2, %%mm5				\n\t"\
+		"psubusb %%mm1, %%mm3				\n\t"\
+		"psubusb %%mm2, %%mm4				\n\t"\
+		"psubusb %%mm0, %%mm5				\n\t"\
+		"pcmpeqb %%mm7, %%mm3				\n\t"\
+		"pcmpeqb %%mm7, %%mm4				\n\t"\
+		"pcmpeqb %%mm7, %%mm5				\n\t"\
+		"movq %%mm3, %%mm6				\n\t"\
+		"pxor %%mm4, %%mm3				\n\t"\
+		"pxor %%mm5, %%mm4				\n\t"\
+		"pxor %%mm6, %%mm5				\n\t"\
+		"por %%mm3, %%mm1				\n\t"\
+		"por %%mm4, %%mm2				\n\t"\
+		"por %%mm5, %%mm0				\n\t"\
+		"pand %%mm2, %%mm0				\n\t"\
+		"pand %%mm1, %%mm0				\n\t"\
+		"movq %%mm0, " #b "				\n\t"
+
+MEDIAN((%0), (%%eax), (%%eax, %1))
+MEDIAN((%%eax, %1), (%%eax, %1, 2), (%0, %1, 4))
+MEDIAN((%0, %1, 4), (%%ebx), (%%ebx, %1))
+MEDIAN((%%ebx, %1), (%%ebx, %1, 2), (%0, %1, 8))
+
+		: : "r" (src), "r" (stride)
+		: "%eax", "%ebx"
+	);
+#endif // MMX
 #else
 	//FIXME
 	int x;
@@ -2193,11 +2216,11 @@ static inline void deInterlaceMedian(uint8_t src[], int stride)
 /**
  * Deinterlaces the given block
  * will be called for every 8x8 block, in the last row, and can read & write into an 8x8 block
- * will shift the image up by 1 line (FIXME if this is a problem)
  */
 static inline void deInterlaceMedianLastRow(uint8_t src[], int stride)
 {
-#if defined (HAVE_MMX2)
+#ifdef HAVE_MMX
+#ifdef HAVE_MMX2
 	asm volatile(
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
@@ -2237,6 +2260,26 @@ static inline void deInterlaceMedianLastRow(uint8_t src[], int stride)
 		: : "r" (src), "r" (stride)
 		: "%eax", "%ebx"
 	);
+#else //MMX & no MMX2
+asm volatile(
+		"leal (%0, %1), %%eax				\n\t"
+		"leal (%%eax, %1, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
+		"pxor %%mm7, %%mm7				\n\t"
+
+MEDIAN((%0), (%%eax), (%%eax, %1))
+MEDIAN((%%eax, %1), (%%eax, %1, 2), (%0, %1, 4))
+MEDIAN((%0, %1, 4), (%%ebx), (%%ebx, %1))
+
+		"movq (%%ebx, %1), %%mm0			\n\t"
+		"movq %%mm0, (%%ebx, %1, 2)			\n\t"
+
+		: : "r" (src), "r" (stride)
+		: "%eax", "%ebx"
+	);
+
+#endif //MMX
 #else
 	//FIXME
 	int x;
@@ -2255,7 +2298,6 @@ static inline void deInterlaceMedianLastRow(uint8_t src[], int stride)
 #endif
 }
 
-
 #ifdef HAVE_ODIVX_POSTPROCESS
 #include "../opendivx/postprocess.h"
 int use_old_pp=0;
@@ -2266,8 +2308,6 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 
 /**
  * ...
- * the mode value is interpreted as a quality value if its negative, its range is then (-1 ... -63)
- * -63 is best quality -1 is worst
  */
 void  postprocess(unsigned char * src[], int src_stride,
                  unsigned char * dst[], int dst_stride,
@@ -2284,9 +2324,6 @@ void  postprocess(unsigned char * src[], int src_stride,
 	    return;
 	}
 #endif
-
-	// I'm calling this from dec_video.c:video_set_postprocess()
-	// if(mode<0) mode= getModeForQuality(-mode);
 
 /*
 	long long T= rdtsc();
@@ -2500,7 +2537,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	static uint64_t *yHistogram= NULL;
 	int black=0, white=255; // blackest black and whitest white in the picture
 
-#ifdef TIMEING
+#ifdef TIMING
 	long long T0, T1, memcpyTime=0, vertTime=0, horizTime=0, sumTime, diffTime=0;
 	sumTime= rdtsc();
 #endif
@@ -2601,7 +2638,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 
 			if(y + 12 < height)
 			{
-#ifdef MORE_TIMEING
+#ifdef MORE_TIMING
 				T0= rdtsc();
 #endif
 
@@ -2635,7 +2672,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 					deInterlaceBlendCubic(dstBlock, dstStride);
 */
 
-#ifdef MORE_TIMEING
+#ifdef MORE_TIMING
 				T1= rdtsc();
 				memcpyTime+= T1-T0;
 				T0=T1;
@@ -2657,7 +2694,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 							doVertDefFilter(vertBlock, stride, QP);
 					}
 				}
-#ifdef MORE_TIMEING
+#ifdef MORE_TIMING
 				T1= rdtsc();
 				vertTime+= T1-T0;
 				T0=T1;
@@ -2683,7 +2720,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 
 			if(x - 8 >= 0 && x<width)
 			{
-#ifdef MORE_TIMEING
+#ifdef MORE_TIMING
 				T0= rdtsc();
 #endif
 				if(mode & H_DEBLOCK)
@@ -2701,7 +2738,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 							doHorizDefFilterAndCopyBack(dstBlock-4, stride, QP);
 					}
 				}
-#ifdef MORE_TIMEING
+#ifdef MORE_TIMING
 				T1= rdtsc();
 				horizTime+= T1-T0;
 				T0=T1;
@@ -2725,7 +2762,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	asm volatile("emms");
 #endif
 
-#ifdef TIMEING
+#ifdef TIMING
 	// FIXME diff is mostly the time spent for rdtsc (should subtract that but ...)
 	sumTime= rdtsc() - sumTime;
 	if(!isColor)

@@ -47,18 +47,17 @@
 #define H_X1_FILTER	0x2000			// 8192
 
 //Deinterlacing Filters
-#define DEINTERLACE_FILTER_MASK		0xF0000
 #define	LINEAR_IPOL_DEINT_FILTER	0x10000	// 65536
 #define	LINEAR_BLEND_DEINT_FILTER	0x20000	// 131072
-#define	CUBIC_BLEND_DEINT_FILTER	0x30000	// 196608 (not implemented yet)
+//#define	CUBIC_BLEND_DEINT_FILTER	0x8000	// (not implemented yet)
 #define	CUBIC_IPOL_DEINT_FILTER		0x40000	// 262144 (not implemented yet)
-#define	MEDIAN_DEINT_FILTER		0x80000	// 524288 
+#define	MEDIAN_DEINT_FILTER		0x80000	// 524288
 
 
 #define GET_PP_QUALITY_MAX 6
 
-//#define TIMEING
-//#define MORE_TIMEING
+//#define TIMING
+//#define MORE_TIMING
 
 #define QP_STORE_T int
 
