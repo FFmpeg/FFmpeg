@@ -41,3 +41,13 @@ Francois' TODO list: (unordered, without any timeframe)
 - publish my BeOS libposix on BeBits so I can officially support ffserver :)
 - check the whole code for thread-safety (global and init stuff)
 
+Philip'a TODO list: (alphabetically ordered) (please help)
+------------------
+- Add a multi-ffm filetype so that feeds can be recorded into multiple files rather
+  than one big file. 
+- Authenticated users support -- where the authentication is in the URL
+- Change ASF files so that the embedded timestamp in the frames is right rather
+  than being an offset from the start of the stream
+- Make ffm files more resilient to changes in the codec structures so that you
+  can play old ffm files.
+
