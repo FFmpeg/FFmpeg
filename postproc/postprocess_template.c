@@ -2750,12 +2750,14 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 		ppMode.error += numOfUnknownOptions;
 	}
 
+#ifdef HAVE_ODIVX_POSTPROCESS
 	if(ppMode.lumMode & H_DEBLOCK) ppMode.oldMode |= PP_DEBLOCK_Y_H;
 	if(ppMode.lumMode & V_DEBLOCK) ppMode.oldMode |= PP_DEBLOCK_Y_V;
 	if(ppMode.chromMode & H_DEBLOCK) ppMode.oldMode |= PP_DEBLOCK_C_H;
 	if(ppMode.chromMode & V_DEBLOCK) ppMode.oldMode |= PP_DEBLOCK_C_V;
 	if(ppMode.lumMode & DERING) ppMode.oldMode |= PP_DERING_Y;
 	if(ppMode.chromMode & DERING) ppMode.oldMode |= PP_DERING_C;
+#endif
 
 	return ppMode;
 }
@@ -2781,6 +2783,12 @@ void  postprocess(unsigned char * src[], int src_stride,
 
 	return;
 */
+	static QP_STORE_T zeroArray[2048/8];
+	if(QP_store==NULL)
+	{
+		QP_store= zeroArray;
+		QP_stride= 0;
+	}
 
 #ifdef HAVE_ODIVX_POSTPROCESS
 // Note: I could make this shit outside of this file, but it would mean one
@@ -2822,6 +2830,13 @@ void  postprocess2(unsigned char * src[], int src_stride,
                  QP_STORE_T *QP_store,  int QP_stride,
 		 struct PPMode *mode)
 {
+
+	static QP_STORE_T zeroArray[2048/8];
+	if(QP_store==NULL)
+	{
+		QP_store= zeroArray;
+		QP_stride= 0;
+	}
 
 #ifdef HAVE_ODIVX_POSTPROCESS
 // Note: I could make this shit outside of this file, but it would mean one
