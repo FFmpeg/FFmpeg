@@ -4432,7 +4432,8 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
             level = get_bits(&s->gb, 8);
             if((level&0x7F) == 0){
                 av_log(s->avctx, AV_LOG_ERROR, "illegal dc %d at %d %d\n", level, s->mb_x, s->mb_y);
-                return -1;
+                if(s->error_resilience >= FF_ER_COMPLIANT)
+                    return -1;
             }
             if (level == 255)
                 level = 128;
