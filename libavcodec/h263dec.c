@@ -193,6 +193,11 @@ uint64_t time= rdtsc();
         avctx->width = s->width;
         avctx->height = s->height;
         avctx->aspect_ratio_info= s->aspect_ratio_info;
+	if (s->aspect_ratio_info == FF_ASPECT_EXTENDED)
+	{
+	    avctx->aspected_width = s->aspected_width;
+	    avctx->aspected_height = s->aspected_height;
+	}
         if (MPV_common_init(s) < 0)
             return -1;
     }
