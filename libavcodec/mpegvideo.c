@@ -277,7 +277,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     case CODEC_ID_H263P:
         s->out_format = FMT_H263;
         s->h263_plus = 1;
-        /* XXX: not unrectricted mv yet */
+        s->unrestricted_mv = 1;
         break;
     case CODEC_ID_RV10:
         s->out_format = FMT_H263;
