@@ -3296,7 +3296,7 @@ void add_codec(FFStream *stream, AVCodecContext *av)
         if (!av->rc_eq)
             av->rc_eq = "tex^qComp";
         if (!av->i_quant_factor)
-            av->i_quant_factor = 0.8;
+            av->i_quant_factor = -0.8;
         if (!av->b_quant_factor)
             av->b_quant_factor = 1.25;
         if (!av->b_quant_offset)

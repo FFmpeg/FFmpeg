@@ -59,7 +59,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->max_qdiff= 3;
     s->b_quant_factor=1.25;
     s->b_quant_offset=1.25;
-    s->i_quant_factor=0.8;
+    s->i_quant_factor=-0.8;
     s->i_quant_offset=0.0;
 }
 
