@@ -51,6 +51,12 @@ typedef struct AVStreamMap {
     int stream_index;
 } AVStreamMap;
 
+/** select an input file for an output file */
+typedef struct AVMetaDataMap {
+    int out_file;
+    int in_file;
+} AVMetaDataMap;
+
 extern const OptionDef options[];
 
 static void show_help(void);
@@ -67,6 +73,9 @@ static int nb_output_files = 0;
 
 static AVStreamMap stream_maps[MAX_FILES];
 static int nb_stream_maps;
+
+static AVMetaDataMap meta_data_maps[MAX_FILES];
+static int nb_meta_data_maps;
 
 static AVInputFormat *file_iformat;
 static AVOutputFormat *file_oformat;
@@ -1714,6 +1723,37 @@ static int av_encode(AVFormatContext **output_files,
         file_table[i].buffer_size_max = 2048;
     }
 
+    /* set meta data information from input file if required */
+    for (i=0;i<nb_meta_data_maps;i++) {
+        AVFormatContext *out_file;
+        AVFormatContext *in_file;
+
+        int out_file_index = meta_data_maps[i].out_file;
+        int in_file_index = meta_data_maps[i].in_file;
+        if ( out_file_index < 0 || out_file_index >= nb_output_files ) {
+            fprintf(stderr, "Invalid output file index %d map_meta_data(%d,%d)\n", out_file_index, out_file_index, in_file_index);
+            ret = -EINVAL;
+            goto fail;
+        }
+        if ( in_file_index < 0 || in_file_index >= nb_input_files ) {
+            fprintf(stderr, "Invalid input file index %d map_meta_data(%d,%d)\n", in_file_index, out_file_index, in_file_index);
+            ret = -EINVAL;
+            goto fail;
+        }		
+		 
+        out_file = output_files[out_file_index];
+        in_file = input_files[in_file_index];
+
+        strcpy(out_file->title, in_file->title);
+        strcpy(out_file->author, in_file->author);
+        strcpy(out_file->copyright, in_file->copyright);
+        strcpy(out_file->comment, in_file->comment);
+        strcpy(out_file->album, in_file->album);
+        out_file->year = in_file->year;
+        out_file->track = in_file->track;
+        strcpy(out_file->genre, in_file->genre);
+    }
+	
     /* open files and write file headers */
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
@@ -2645,6 +2685,21 @@ static void opt_map(const char *arg)
         p++;
 
     m->stream_index = strtol(p, (char **)&p, 0);
+}
+
+static void opt_map_meta_data(const char *arg)
+{
+    AVMetaDataMap *m;
+    const char *p;
+	
+    p = arg;
+    m = &meta_data_maps[nb_meta_data_maps++];
+
+    m->out_file = strtol(arg, (char **)&p, 0);
+    if (*p)
+        p++;
+
+    m->in_file = strtol(p, (char **)&p, 0);
 }
 
 static void opt_recording_time(const char *arg)
@@ -3647,6 +3702,7 @@ const OptionDef options[] = {
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream" },
+    { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "set meta data information of outfile from infile", "outfile:infile" },
     { "t", HAS_ARG, {(void*)opt_recording_time}, "set the recording time", "duration" },
     { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "itsoffset", HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
