@@ -515,8 +515,8 @@ char *pp_help=
 "			c	chrom		chrominance filtring enabled\n"
 "			y	nochrom		chrominance filtring disabled\n"
 "hb	hdeblock	(2 Threshold)		horizontal deblocking filter\n"
-"	1. difference factor: default=64, higher -> more deblocking\n"
-"	2. flatness threshold: default=40, lower -> more deblocking\n"
+"	1. difference factor: default=32, higher -> more deblocking\n"
+"	2. flatness threshold: default=39, lower -> more deblocking\n"
 "			the h & v deblocking filters share these\n"
 "			so u cant set different thresholds for h / v\n"
 "vb	vdeblock	(2 Threshold)		vertical deblocking filter\n"
@@ -555,8 +555,8 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 	ppMode->maxTmpNoise[2]= 3000;
 	ppMode->maxAllowedY= 234;
 	ppMode->minAllowedY= 16;
-	ppMode->baseDcDiff= 256/4;
-	ppMode->flatnessThreshold= 56-16;
+	ppMode->baseDcDiff= 256/8;
+	ppMode->flatnessThreshold= 56-16-1;
 	ppMode->maxClippedThreshold= 0.01;
 	ppMode->error=0;
 
