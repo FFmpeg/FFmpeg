@@ -164,7 +164,7 @@ void video_encode_example(const char *filename)
     AVCodecContext *c= NULL;
     int i, out_size, size, x, y, outbuf_size;
     FILE *f;
-    AVPicture picture;
+    AVVideoFrame *picture;
     UINT8 *outbuf, *picture_buf;
 
     printf("Video encoding\n");
@@ -177,6 +177,7 @@ void video_encode_example(const char *filename)
     }
 
     c= avcodec_alloc_context();
+    picture= avcodec_alloc_picture();
     
     /* put sample parameters */
     c->bit_rate = 400000;
@@ -207,12 +208,12 @@ void video_encode_example(const char *filename)
     size = c->width * c->height;
     picture_buf = malloc((size * 3) / 2); /* size for YUV 420 */
     
-    picture.data[0] = picture_buf;
-    picture.data[1] = picture.data[0] + size;
-    picture.data[2] = picture.data[1] + size / 4;
-    picture.linesize[0] = c->width;
-    picture.linesize[1] = c->width / 2;
-    picture.linesize[2] = c->width / 2;
+    picture->data[0] = picture_buf;
+    picture->data[1] = picture->data[0] + size;
+    picture->data[2] = picture->data[1] + size / 4;
+    picture->linesize[0] = c->width;
+    picture->linesize[1] = c->width / 2;
+    picture->linesize[2] = c->width / 2;
 
     /* encode 1 second of video */
     for(i=0;i<25;i++) {
@@ -222,20 +223,20 @@ void video_encode_example(const char *filename)
         /* Y */
         for(y=0;y<c->height;y++) {
             for(x=0;x<c->width;x++) {
-                picture.data[0][y * picture.linesize[0] + x] = x + y + i * 3;
+                picture->data[0][y * picture->linesize[0] + x] = x + y + i * 3;
             }
         }
 
         /* Cb and Cr */
         for(y=0;y<c->height/2;y++) {
             for(x=0;x<c->width/2;x++) {
-                picture.data[1][y * picture.linesize[1] + x] = 128 + y + i * 2;
-                picture.data[2][y * picture.linesize[2] + x] = 64 + x + i * 5;
+                picture->data[1][y * picture->linesize[1] + x] = 128 + y + i * 2;
+                picture->data[2][y * picture->linesize[2] + x] = 64 + x + i * 5;
             }
         }
 
         /* encode the image */
-        out_size = avcodec_encode_video(c, outbuf, outbuf_size, &picture);
+        out_size = avcodec_encode_video(c, outbuf, outbuf_size, picture);
         fwrite(outbuf, 1, out_size, f);
     }
 
@@ -251,6 +252,7 @@ void video_encode_example(const char *filename)
 
     avcodec_close(c);
     free(c);
+    free(picture);
     printf("\n");
 }
 
@@ -276,7 +278,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     AVCodecContext *c= NULL;
     int frame, size, got_picture, len;
     FILE *f;
-    AVPicture picture;
+    AVVideoFrame *picture;
     UINT8 inbuf[INBUF_SIZE], *inbuf_ptr;
     char buf[1024];
 
@@ -290,6 +292,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     }
 
     c= avcodec_alloc_context();
+    picture= avcodec_alloc_picture();
 
     if(codec->capabilities&CODEC_CAP_TRUNCATED)
         c->flags|= CODEC_FLAG_TRUNCATED; /* we dont send complete frames */
@@ -335,7 +338,7 @@ void video_decode_example(const char *outfilename, const char *filename)
            feed decoder and see if it could decode a frame */
         inbuf_ptr = inbuf;
         while (size > 0) {
-            len = avcodec_decode_video(c, &picture, &got_picture, 
+            len = avcodec_decode_video(c, picture, &got_picture, 
                                        inbuf_ptr, size);
             if (len < 0) {
                 fprintf(stderr, "Error while decoding frame %d\n", frame);
@@ -348,7 +351,7 @@ void video_decode_example(const char *outfilename, const char *filename)
                 /* the picture is allocated by the decoder. no need to
                    free it */
                 snprintf(buf, sizeof(buf), outfilename, frame);
-                pgm_save(picture.data[0], picture.linesize[0], 
+                pgm_save(picture->data[0], picture->linesize[0], 
                          c->width, c->height, buf);
                 frame++;
             }
@@ -360,7 +363,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     /* some codecs, such as MPEG, transmit the I and P frame with a
        latency of one frame. You must do the following to have a
        chance to get the last frame of the video */
-    len = avcodec_decode_video(c, &picture, &got_picture, 
+    len = avcodec_decode_video(c, picture, &got_picture, 
                                NULL, 0);
     if (got_picture) {
         printf("saving frame %3d\r", frame);
@@ -369,7 +372,7 @@ void video_decode_example(const char *outfilename, const char *filename)
         /* the picture is allocated by the decoder. no need to
            free it */
         snprintf(buf, sizeof(buf), outfilename, frame);
-        pgm_save(picture.data[0], picture.linesize[0], 
+        pgm_save(picture->data[0], picture->linesize[0], 
                  c->width, c->height, buf);
         frame++;
     }
@@ -378,6 +381,7 @@ void video_decode_example(const char *outfilename, const char *filename)
 
     avcodec_close(c);
     free(c);
+    free(picture);
     printf("\n");
 }
 
