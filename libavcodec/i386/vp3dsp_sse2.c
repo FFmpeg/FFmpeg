@@ -799,7 +799,6 @@ static unsigned short __align16 SSE2_idct_data[7 * 8] =
 void vp3_dsp_init_sse2(void)
 {
     /* nop */
-av_log(NULL, AV_LOG_INFO, "Hey! SSE2!\n");
 }
 
 
