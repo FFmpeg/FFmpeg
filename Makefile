@@ -25,6 +25,7 @@ endif
 endif
 
 PROG=ffmpeg$(EXE)
+PROGTEST=output_example$(EXE)
 
 ifeq ($(CONFIG_FFSERVER),yes)
 PROG+=ffserver$(EXE)
@@ -75,7 +76,7 @@ OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBS = -L./libavformat -lavformat -L./libavcodec -lavcodec
 
-all: lib $(PROG) $(VHOOK)
+all: lib $(PROG) $(PROGTEST) $(VHOOK)
 
 lib: $(AMRLIBS)
 	$(MAKE) -C libavcodec all
@@ -97,6 +98,9 @@ ffplay_g$(EXE): ffplay.o cmdutils.o .libs
 ffplay$(EXE): ffplay_g$(EXE)
 	cp -p $< $@
 	$(STRIP) $@
+
+output_example$(EXE): output_example.o .libs
+	$(CC) $(LDFLAGS) -o $@ output_example.o $(FFLIBS) $(EXTRALIBS)
 
 ffplay.o: ffplay.c
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) -c -o $@ $< 
