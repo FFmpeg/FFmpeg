@@ -716,7 +716,8 @@ assert(s->current_picture.pict_type == s->pict_type);
         ff_print_debug_info(s, pict);
     } else {
         *pict= *(AVFrame*)&s->last_picture;
-        ff_print_debug_info(s, pict);
+        if(pict)
+            ff_print_debug_info(s, pict);
     }
 
     /* Return the Picture timestamp as the frame number */
