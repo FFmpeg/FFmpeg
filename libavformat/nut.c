@@ -891,6 +891,7 @@ static int decode_stream_header(NUTContext *nut){
         return AVERROR_NOMEM;
     class = get_v(bc);
     tmp = get_vb(bc);
+    st->codec.codec_tag= tmp;
     switch(class)
     {
         case 0:
