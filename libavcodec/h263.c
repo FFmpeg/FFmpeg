@@ -2564,8 +2564,13 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         }
         state = ((state << 8) | v) & 0xffffff;
         if( get_bits_count(&s->gb) > s->gb.size*8-32){
-            printf("no VOP startcode found\n");
-            return -1;
+            if(s->gb.size>50){
+                printf("no VOP startcode found, frame size was=%d\n", s->gb.size);
+                return -1;
+            }else{
+                printf("frame skip\n");
+                return FRAME_SKIPED;
+            }
         }
     }
 //printf("startcode %X %d\n", startcode, get_bits_count(&s->gb));
@@ -2763,16 +2768,20 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         }
         buf[255]=0;
         e=sscanf(buf, "DivX%dBuild%d", &ver, &build);
+        if(e!=2)
+            e=sscanf(buf, "DivX%db%d", &ver, &build);
         if(e==2){
             s->divx_version= ver;
             s->divx_build= build;
             if(s->picture_number==0){
                 printf("This file was encoded with DivX%d Build%d\n", ver, build);
-                if(ver==500 && build==413){ //most likely all version are indeed totally buggy but i dunno for sure ...
+                if(ver==500 && build==413){
                     printf("WARNING: this version of DivX is not MPEG4 compatible, trying to workaround these bugs...\n");
+#if 0
                 }else{
                     printf("hmm, i havnt seen that version of divx yet, lets assume they fixed these bugs ...\n"
                            "using mpeg4 decoder, if it fails contact the developers (of ffmpeg)\n");
+#endif 
                 }
             }
         }
@@ -2887,6 +2896,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
          }
      }
      s->picture_number++; // better than pic number==0 allways ;)
+//printf("done\n");
      return 0;
 }
 

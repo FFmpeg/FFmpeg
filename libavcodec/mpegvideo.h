@@ -23,6 +23,8 @@
 #define B_TYPE 3
 #define S_TYPE 4 //S(GMC)-VOP MPEG4
 
+#define FRAME_SKIPED 100 // return value for header parsers if frame is not coded
+
 enum OutputFormat {
     FMT_MPEG1,
     FMT_H263,
@@ -298,7 +300,10 @@ typedef struct MpegEncContext {
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;
     int divx_build;
-
+#define BITSTREAM_BUFFER_SIZE 1024*256
+    uint8_t *bitstream_buffer; //Divx 5.01 puts several frames in a single one, this is used to reorder them
+    int bitstream_buffer_size;
+    
     /* RV10 specific */
     int rv10_version; /* RV10 version: 0 or 3 */
     int rv10_first_dc_coded[3];

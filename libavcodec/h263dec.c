@@ -119,7 +119,10 @@ static int h263_decode_frame(AVCodecContext *avctx,
         return 0;
     }
 
-    init_get_bits(&s->gb, buf, buf_size);
+    if(s->bitstream_buffer_size) //divx 5.01+ frame reorder
+        init_get_bits(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size);
+    else
+        init_get_bits(&s->gb, buf, buf_size);
 
     /* let's go :-) */
     if (s->h263_msmpeg4) {
@@ -131,6 +134,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
     } else {
         ret = h263_decode_picture_header(s);
     }
+    if(ret==FRAME_SKIPED) return 0;
 
         /* After H263 & mpeg4 header decode we have the height, width,*/
         /* and other parameters. So then we could init the picture   */
@@ -241,7 +245,18 @@ static int h263_decode_frame(AVCodecContext *avctx,
     
     if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==I_TYPE)
         if(msmpeg4_decode_ext_header(s, buf_size) < 0) return -1;
-
+    
+    /* divx 5.01+ bistream reorder stuff */
+    if(s->h263_pred && s->bitstream_buffer_size==0){
+        int current_pos= get_bits_count(&s->gb)/8;
+        if(   buf_size - current_pos > 5 
+           && buf_size - current_pos < BITSTREAM_BUFFER_SIZE){
+            memcpy(s->bitstream_buffer, buf + current_pos, buf_size - current_pos);
+            s->bitstream_buffer_size= buf_size - current_pos;
+        }
+    }else
+        s->bitstream_buffer_size=0;
+  
     MPV_frame_end(s);
     
     if(s->pict_type==B_TYPE || (!s->has_b_frames)){

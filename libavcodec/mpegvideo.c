@@ -292,6 +292,11 @@ int MPV_common_init(MpegEncContext *s)
         if (!s->mbintra_table)
             goto fail;
         memset(s->mbintra_table, 1, s->mb_num);
+        
+        /* divx501 bitstream reorder buffer */
+        s->bitstream_buffer= av_mallocz(BITSTREAM_BUFFER_SIZE);
+        if (!s->bitstream_buffer)
+            goto fail;
     }
     /* default structure is frame */
     s->picture_structure = PICT_FRAME;
@@ -340,6 +345,7 @@ void MPV_common_end(MpegEncContext *s)
     CHECK_FREE(s->me_scratchpad);
 
     CHECK_FREE(s->mbskip_table);
+    CHECK_FREE(s->bitstream_buffer);
     for(i=0;i<3;i++) {
         int j;
         CHECK_FREE(s->last_picture_base[i]);
