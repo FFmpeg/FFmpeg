@@ -325,8 +325,7 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
         i = 1;
     } else if((block[0]==1 || block[0] == -1) && (s->block_last_index[n] > -1)){
         //special case
-        put_bits(&s->pb,1,1);
-        put_bits(&s->pb,1,block[0]>0 ? 0 : 1 );
+        put_bits(&s->pb,2,block[0]>0 ? 2 : 3 );
         i = 1;
     } else {
         i = 0;
@@ -354,12 +353,7 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
             if (code == rl->n) {
                 put_bits(&s->pb, 6, run);
                 assert(slevel != 0);
-                if(slevel < -127){
-                    slevel = -127;
-                }
-                else if(slevel > 127){
-                    slevel = 127;
-                }
+                assert(level <= 127);
                 put_bits(&s->pb, 8, slevel & 0xff);
             } else {
                 put_bits(&s->pb, 1, sign);
@@ -742,7 +736,7 @@ static int h261_decode_block(H261Context * h, DCTELEM * block,
             /* escape */
             // The remaining combinations of (run, level) are encoded with a 20-bit word consisting of 6 bits escape, 6 bits run and 8 bits level.
             run = get_bits(&s->gb, 6);
-            level = (int8_t)get_bits(&s->gb, 8);
+            level = get_sbits(&s->gb, 8);
         }else if(code == 0){
             break;
         }else{
