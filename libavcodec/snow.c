@@ -374,6 +374,7 @@ typedef struct SubBand{
     int height;
     int qlog;                                   ///< log(qscale)/log[2^(1/6)]
     DWTELEM *buf;
+    int16_t *x;
     struct SubBand *parent;
     uint8_t state[/*7*2*/ 7 + 512][32];
 }SubBand;
@@ -1990,7 +1991,12 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
 #endif
     if(1){
         int run;
-                
+        int index=0;
+        int prev_index=-1;
+        int prev2_index=0;
+        int parent_index= 0;
+        int prev_parent_index= 0;
+        
         for(y=0; y<b->height; y++)
             memset(&src[y*stride], 0, b->width*sizeof(DWTELEM));
 
@@ -2021,6 +2027,10 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                     int py= y>>1;
                     if(px<b->parent->width && py<b->parent->height) 
                         p= parent[px + py*2*stride];
+
+                    if(x>>1 > b->parent->x[parent_index]){
+                        parent_index++;
+                    }
                 }
                 if(/*ll|*/l|lt|t|rt|p){
                     int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
@@ -2029,19 +2039,20 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                 }else{
                     if(!run){
                         run= get_symbol2(&s->c, b->state[1], 3);
-                        //FIXME optimize this here
-                        //FIXME try to store a more naive run
                         v=1;
                     }else{
-                        int py= y>>1;
                         run--;
                         v=0;
 
-                        if(y && parent && py < b->parent->height){
-                            while(run && x+2<w && !src[x + 2 + (y-1)*stride] && !parent[((x+1)>>1) + py*2*stride]){
-                                x++;
-                                run--;
-                            }
+                        if(y && parent){
+                            int max_run;
+                            while(b->x[prev_index] < x)
+                                prev_index++;
+
+                            max_run= FFMIN(run, b->x[prev_index] - x - 2);
+                            max_run= FFMIN(max_run, 2*b->parent->x[parent_index] - x - 1);
+                            x+= max_run;
+                            run-= max_run;
                         }
                     }
                 }
@@ -2051,9 +2062,25 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                     if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]]))
                         v= -v;
                     src[x + y*stride]= v;
+                    b->x[index++]=x;
+                }
+            }
+            b->x[index++]= w+1; //end marker
+            prev_index= prev2_index;
+            prev2_index= index;
+            
+            if(parent){
+                while(b->parent->x[parent_index] != b->parent->width+1)
+                    parent_index++;
+                parent_index++;
+                if(y&1){
+                    prev_parent_index= parent_index;
+                }else{
+                    parent_index= prev_parent_index;
                 }
             }
         }
+        b->x[index++]= w+1; //end marker
         if(w > 200 /*level+1 == s->spatial_decomposition_count*/){
             STOP_TIMER("decode_subband")
         }
@@ -2874,6 +2901,7 @@ static int init_subband(SubBand *b, int w, int h, int stride){
     b->height= h;
     b->stride= stride;
     b->buf= av_mallocz(b->stride * b->height*sizeof(DWTELEM));
+    b->x= av_mallocz(((b->width+1) * b->height+1)*sizeof(int16_t));
     return 0;
 }
 
@@ -2961,6 +2989,7 @@ static int common_init(AVCodecContext *avctx){
                 
                 if(level)
                     b->parent= &s->plane[plane_index].band[level-1][orientation];
+                b->x= av_mallocz(((b->width+1) * b->height+1)*sizeof(int16_t));
             }
             w= (w+1)>>1;
             h= (h+1)>>1;
@@ -3266,6 +3295,8 @@ redo_frame:
 }
 
 static void common_end(SnowContext *s){
+    int plane_index, level, orientation;
+
     av_freep(&s->spatial_dwt_buffer);
 
     av_freep(&s->m.me.scratchpad);    
@@ -3273,6 +3304,16 @@ static void common_end(SnowContext *s){
     av_freep(&s->m.me.score_map);
  
     av_freep(&s->block);
+
+    for(plane_index=0; plane_index<3; plane_index++){    
+        for(level=s->spatial_decomposition_count-1; level>=0; level--){
+            for(orientation=level ? 1 : 0; orientation<4; orientation++){
+                SubBand *b= &s->plane[plane_index].band[level][orientation];
+                
+                av_freep(&b->x);
+            }
+        }
+    }
 }
 
 static int encode_end(AVCodecContext *avctx)
