@@ -2149,6 +2149,10 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 skip_bits1(&s->gb);   /* marker */
                 height = get_bits(&s->gb, 13);
                 skip_bits1(&s->gb);   /* marker */
+                if(width && height){ /* they should be non zero but who knows ... */
+                    s->width = width;
+                    s->height = height;
+                }
             }
             
             if(get_bits1(&s->gb)) printf("interlaced not supported\n");   /* interlaced */
