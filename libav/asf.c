@@ -870,9 +870,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 tag1 = get_le32(pb);
 		url_fskip(pb, 20);
 		if (size > 40) {
-		    st->extra_data_size = size - 40;
-		    st->extra_data = av_mallocz(st->extra_data_size);
-		    get_buffer(pb, st->extra_data, st->extra_data_size);
+		    st->codec.extradata_size = size - 40;
+		    st->codec.extradata = av_mallocz(st->codec.extradata_size);
+		    get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
 		}
                 st->codec.codec_tag = tag1;
 		st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
@@ -944,10 +944,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
  fail:
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
-	if (st) {
+	if (st)
 	    av_free(st->priv_data);
-	    av_free(st->extra_data);
-	}
         av_free(st);
     }
     //av_free(asf);
@@ -1130,7 +1128,6 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    av_new_packet(&asf_st->pkt, asf->packet_obj_size);
 	    asf_st->seq = asf->packet_seq;
 	    asf_st->pkt.pts = asf->packet_frag_timestamp - asf->hdr.preroll;
-            asf_st->pkt.pts *= 1000; // us
 	    asf_st->pkt.stream_index = asf->stream_index;
 	    if (asf->packet_key_frame)
 		asf_st->pkt.flags |= PKT_FLAG_KEY;
@@ -1188,7 +1185,6 @@ static int asf_read_close(AVFormatContext *s)
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
         av_free(st->priv_data);
-        av_free(st->extra_data);
     }
     //av_free(asf);
     return 0;

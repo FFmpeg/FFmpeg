@@ -136,8 +136,6 @@ typedef struct AVStream {
     AVCodecContext codec; /* codec context */
     int r_frame_rate;     /* real frame rate of the stream */
     uint64_t time_length; /* real length of the stream in miliseconds */
-    void* extra_data;     /* some extra data - i.e. longer WAVEFORMATEX */
-    int extra_data_size;  /* size of extra data chunk */
     void *priv_data;
     /* internal data used in av_find_stream_info() */
     int codec_info_state;     
