@@ -98,6 +98,7 @@ enum CodecID {
     CODEC_ID_MSZH,
     CODEC_ID_ZLIB,
     CODEC_ID_QTRLE,
+    CODEC_ID_SNOW,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1749,6 +1750,7 @@ extern AVCodec asv1_encoder;
 extern AVCodec asv2_encoder;
 extern AVCodec vcr1_encoder;
 extern AVCodec ffv1_encoder;
+extern AVCodec snow_encoder;
 extern AVCodec mdec_encoder;
 extern AVCodec zlib_encoder;
 extern AVCodec svq1_encoder;
@@ -1799,6 +1801,7 @@ extern AVCodec asv2_decoder;
 extern AVCodec vcr1_decoder;
 extern AVCodec cljr_decoder;
 extern AVCodec ffv1_decoder;
+extern AVCodec snow_decoder;
 extern AVCodec fourxm_decoder;
 extern AVCodec mdec_decoder;
 extern AVCodec roq_decoder;

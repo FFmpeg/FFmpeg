@@ -77,6 +77,7 @@ void avcodec_register_all(void)
     register_avcodec(&asv1_encoder);
     register_avcodec(&asv2_encoder);
     register_avcodec(&ffv1_encoder);
+    register_avcodec(&snow_encoder);
     register_avcodec(&zlib_encoder);
     register_avcodec(&dvvideo_encoder);
 #endif /* CONFIG_ENCODERS */
@@ -124,6 +125,7 @@ void avcodec_register_all(void)
     register_avcodec(&mace6_decoder);
     register_avcodec(&huffyuv_decoder);
     register_avcodec(&ffv1_decoder);
+    register_avcodec(&snow_decoder);
     register_avcodec(&cyuv_decoder);
     register_avcodec(&h264_decoder);
     register_avcodec(&vp3_decoder);
