@@ -2250,8 +2250,8 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
     s->resync_mb_x=
     s->resync_mb_y= -1;
 
-    if (mb_y >= s->mb_height){
-        av_log(s->avctx, AV_LOG_ERROR, "slice below image (%d >= %d)\n", s->mb_y, s->mb_height);
+    if (mb_y<<field_pic >= s->mb_height){
+        av_log(s->avctx, AV_LOG_ERROR, "slice below image (%d >= %d)\n", mb_y, s->mb_height);
         return -1;
     }
     
