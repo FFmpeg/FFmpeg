@@ -42,7 +42,19 @@ static int jpeg_get_buffer(AVCodecContext *c, AVFrame *picture)
 
     info->width = c->width;
     info->height = c->height;
-    info->pix_fmt = c->pix_fmt;
+    switch(c->pix_fmt) {
+    case PIX_FMT_YUV420P:
+        info->pix_fmt = PIX_FMT_YUVJ420P;
+        break;
+    case PIX_FMT_YUV422P:
+        info->pix_fmt = PIX_FMT_YUVJ422P;
+        break;
+    case PIX_FMT_YUV444P:
+        info->pix_fmt = PIX_FMT_YUVJ444P;
+        break;
+    default:
+        return -1;
+    }
     ret = jctx->alloc_cb(jctx->opaque, info);
     if (ret) {
         jctx->ret_code = ret;
@@ -164,7 +176,20 @@ static int jpeg_write(ByteIOContext *pb, AVImageInfo *info)
         goto fail2;
     c->width = info->width;
     c->height = info->height;
-    c->pix_fmt = info->pix_fmt;
+    /* XXX: currently move that to the codec ? */
+    switch(info->pix_fmt) {
+    case PIX_FMT_YUVJ420P:
+        c->pix_fmt = PIX_FMT_YUV420P;
+        break;
+    case PIX_FMT_YUVJ422P:
+        c->pix_fmt = PIX_FMT_YUV422P;
+        break;
+    case PIX_FMT_YUVJ444P:
+        c->pix_fmt = PIX_FMT_YUV444P;
+        break;
+    default:
+        goto fail1;
+    }
     for(i=0;i<3;i++) {
         picture->data[i] = info->pict.data[i];
         picture->linesize[i] = info->pict.linesize[i];
@@ -202,6 +227,6 @@ AVImageFormat jpeg_image_format = {
     "jpg,jpeg",
     jpeg_probe,
     jpeg_read,
-    (1 << PIX_FMT_YUV420P) | (1 << PIX_FMT_YUV422P) | (1 << PIX_FMT_YUV444P),
+    (1 << PIX_FMT_YUVJ420P) | (1 << PIX_FMT_YUVJ422P) | (1 << PIX_FMT_YUVJ444P),
     jpeg_write,
 };
