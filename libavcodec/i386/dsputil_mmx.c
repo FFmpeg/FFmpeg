@@ -1440,6 +1440,12 @@ static void ff_libmpeg2mmx2_idct_add(uint8_t *dest, int line_size, DCTELEM *bloc
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     mm_flags = mm_support();
+
+    if (avctx->dsp_mask && FF_MM_FORCE)
+	mm_flags |= (avctx->dsp_mask & 0xffff);
+    else
+        mm_flags &= (avctx->dsp_mask & 0xffff);
+
 #if 0
     fprintf(stderr, "libavcodec: CPU flags:");
     if (mm_flags & MM_MMX)
