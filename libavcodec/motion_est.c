@@ -809,13 +809,8 @@ static inline void get_limits(MpegEncContext *s, int *range, int *xmin, int *ymi
     if (s->unrestricted_mv) {
         *xmin = -16;
         *ymin = -16;
-        if(s->avctx->codec->id!=CODEC_ID_MPEG4){
-            *xmax = s->mb_width*16;
-            *ymax = s->mb_height*16;
-        }else {
-            *xmax = s->width;
-            *ymax = s->height;
-        }
+        *xmax = s->mb_width*16;
+        *ymax = s->mb_height*16;
     } else {
         *xmin = 0;
         *ymin = 0;
