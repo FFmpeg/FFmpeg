@@ -16,7 +16,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4688
+#define LIBAVCODEC_BUILD       4689
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1439,7 +1439,8 @@ typedef struct AVPicture {
  * This structure defines a method for communicating palette changes
  * between and demuxer and a decoder.
  */
-#define AVPALETTE_SIZE 256
+#define AVPALETTE_SIZE 1024
+#define AVPALETT_COUNT 256
 typedef struct AVPaletteControl {
 
     /* demuxer sets this to 1 to indicate the palette has changed;
@@ -1450,7 +1451,7 @@ typedef struct AVPaletteControl {
      * the individual palette components should be on a 8-bit scale; if
      * the palette data comes from a IBM VGA native format, the component
      * data is probably 6 bits in size and needs to be scaled */
-    unsigned int palette[AVPALETTE_SIZE];
+    unsigned int palette[AVPALETTE_COUNT];
 
 } AVPaletteControl;
 
