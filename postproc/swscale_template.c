@@ -116,9 +116,10 @@ static    int yuvtab_0c92[256];
 static    int yuvtab_1a1e[256];
 static    int yuvtab_40cf[256];
 
-
+#ifdef HAVE_MMX2
 static uint8_t funnyYCode[10000];
 static uint8_t funnyUVCode[10000];
+#endif
 
 static int canMMX2BeUsed=0;
 
@@ -481,6 +482,15 @@ static int canMMX2BeUsed=0;
 			"cmpl %5, %%eax			\n\t"\
 			" jb 1b				\n\t"
 
+#ifdef HAVE_MMX
+void in_asm_used_var_warning_killer()
+{
+ int i= yCoeff+vrCoeff+ubCoeff+vgCoeff+ugCoeff+bF8+bFC+w400+w80+w10+
+ bm00001111+bm00000111+bm11111000+b16Dither+b16Dither1+b16Dither2+g16Dither+g16Dither1+
+ g16Dither2+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+temp0+asm_yalpha1+ asm_uvalpha1;
+ if(i) i=0;
+}
+#endif
 
 static inline void yuv2yuv(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
 			   uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstw, int yalpha, int uvalpha)
@@ -514,7 +524,6 @@ static inline void yuv2rgbX(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 {
 	int yalpha1=yalpha^4095;
 	int uvalpha1=uvalpha^4095;
-	int i;
 
 	if(fullUVIpol)
 	{
@@ -669,6 +678,7 @@ FULL_YSCALEYUV2RGB
 
 		if(dstbpp==32 || dstbpp==24)
 		{
+			int i;
 			for(i=0;i<dstw;i++){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -682,6 +692,7 @@ FULL_YSCALEYUV2RGB
 		}
 		else if(dstbpp==16)
 		{
+			int i;
 			for(i=0;i<dstw;i++){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -696,6 +707,7 @@ FULL_YSCALEYUV2RGB
 		}
 		else if(dstbpp==15)
 		{
+			int i;
 			for(i=0;i<dstw;i++){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -776,6 +788,7 @@ FULL_YSCALEYUV2RGB
 
 		if(dstbpp==32)
 		{
+			int i;
 			for(i=0; i<dstw-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -798,6 +811,7 @@ FULL_YSCALEYUV2RGB
 		}
 		if(dstbpp==24)
 		{
+			int i;
 			for(i=0; i<dstw-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -821,6 +835,7 @@ FULL_YSCALEYUV2RGB
 		}
 		else if(dstbpp==16)
 		{
+			int i;
 			for(i=0; i<dstw-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -845,6 +860,7 @@ FULL_YSCALEYUV2RGB
 		}
 		else if(dstbpp==15)
 		{
+			int i;
 			for(i=0; i<dstw-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -877,9 +893,11 @@ FULL_YSCALEYUV2RGB
 static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
 			    uint8_t *dest, int dstw, int yalpha, int uvalpha, int dstbpp)
 {
-	int yalpha1=yalpha^4095;
 	int uvalpha1=uvalpha^4095;
-	int i;
+#ifdef HAVE_MMX
+	int yalpha1=yalpha^4095;
+#endif
+
 	if(fullUVIpol || allwaysIpol)
 	{
 		yuv2rgbX(buf0, buf1, uvbuf0, uvbuf1, dest, dstw, yalpha, uvalpha, dstbpp);
@@ -1006,6 +1024,7 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 
 	if(dstbpp==32)
 	{
+		int i;
 		for(i=0; i<dstw-1; i+=2){
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
@@ -1028,6 +1047,7 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 	}
 	if(dstbpp==24)
 	{
+		int i;
 		for(i=0; i<dstw-1; i+=2){
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
@@ -1051,6 +1071,7 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 	}
 	else if(dstbpp==16)
 	{
+		int i;
 		for(i=0; i<dstw-1; i+=2){
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
@@ -1075,6 +1096,7 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 	}
 	else if(dstbpp==15)
 	{
+		int i;
 		for(i=0; i<dstw-1; i+=2){
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
@@ -1103,11 +1125,10 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 
 static inline void hyscale(uint16_t *dst, int dstWidth, uint8_t *src, int srcWidth, int xInc)
 {
-	int i;
-      unsigned int xpos=0;
       // *** horizontal scale Y line to temp buffer
 #ifdef ARCH_X86
 #ifdef HAVE_MMX2
+	int i;
 	if(canMMX2BeUsed)
 	{
 		asm volatile(
@@ -1203,22 +1224,24 @@ FUNNY_Y_CODE
 	} //if MMX2 cant be used
 #endif
 #else
-      for(i=0;i<dstWidth;i++){
-	register unsigned int xx=xpos>>16;
-        register unsigned int xalpha=(xpos&0xFFFF)>>9;
-	dst[i]= (src[xx]<<7) + (src[xx+1] - src[xx])*xalpha;
-	xpos+=xInc;
-      }
+	int i;
+	unsigned int xpos=0;
+	for(i=0;i<dstWidth;i++)
+	{
+		register unsigned int xx=xpos>>16;
+		register unsigned int xalpha=(xpos&0xFFFF)>>9;
+		dst[i]= (src[xx]<<7) + (src[xx+1] - src[xx])*xalpha;
+		xpos+=xInc;
+	}
 #endif
 }
 
 inline static void hcscale(uint16_t *dst, int dstWidth,
 				uint8_t *src1, uint8_t *src2, int srcWidth, int xInc)
 {
-	int xpos=0;
-	int i;
 #ifdef ARCH_X86
 #ifdef HAVE_MMX2
+	int i;
 	if(canMMX2BeUsed)
 	{
 		asm volatile(
@@ -1330,17 +1353,20 @@ FUNNYUVCODE
 	} //if MMX2 cant be used
 #endif
 #else
-      for(i=0;i<dstWidth;i++){
-	  register unsigned int xx=xpos>>16;
-          register unsigned int xalpha=(xpos&0xFFFF)>>9;
-	  dst[i]=(src1[xx]*(xalpha^127)+src1[xx+1]*xalpha);
-	  dst[i+2048]=(src2[xx]*(xalpha^127)+src2[xx+1]*xalpha);
+	int i;
+	unsigned int xpos=0;
+	for(i=0;i<dstWidth;i++)
+	{
+		register unsigned int xx=xpos>>16;
+		register unsigned int xalpha=(xpos&0xFFFF)>>9;
+		dst[i]=(src1[xx]*(xalpha^127)+src1[xx+1]*xalpha);
+		dst[i+2048]=(src2[xx]*(xalpha^127)+src2[xx+1]*xalpha);
 /* slower
 	  dst[i]= (src1[xx]<<7) + (src1[xx+1] - src1[xx])*xalpha;
 	  dst[i+2048]=(src2[xx]<<7) + (src2[xx+1] - src2[xx])*xalpha;
 */
-	  xpos+=xInc;
-      }
+		xpos+=xInc;
+	}
 #endif
 }
 
@@ -1366,8 +1392,6 @@ static int s_ypos;
 // last horzontally interpolated lines, used to avoid unnecessary calculations
 static int s_last_ypos;
 static int s_last_y1pos;
-
-static int static_dstw;
 
 #ifdef HAVE_MMX2
 // used to detect a horizontal size change
@@ -1420,12 +1444,10 @@ else					s_xinc2= s_xinc;
 		int imm8OfPShufW2;
 		int fragmentLength;
 
-		int xpos, xx, xalpha, i;
+		int xpos, i;
 
 		old_s_xinc= s_xinc;
 		old_dstw= dstw;
-
-		static_dstw= dstw;
 
 		// create an optimized horizontal scaling routine
 
@@ -1563,7 +1585,6 @@ else					s_xinc2= s_xinc;
     uint16_t *buf1=pix_buf_y[((y0+1)&1)];	// bottom line of the interpolated slice
     uint16_t *uvbuf0=pix_buf_uv[y1&1];		// top line of the interpolated slice
     uint16_t *uvbuf1=pix_buf_uv[(y1+1)&1];	// bottom line of the interpolated slice
-    int i;
 
     if(y0>=y+h) break; // FIXME wrong, skips last lines, but they are dupliactes anyway
 
