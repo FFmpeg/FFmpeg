@@ -99,10 +99,12 @@ void put_string(PutBitContext * pbc, char *s)
 /* bit input functions */
 
 void init_get_bits(GetBitContext *s,
-                   UINT8 *buffer, int buffer_size)
+                   UINT8 *buffer, int bit_size)
 {
+    const int buffer_size= (bit_size+7)>>3;
+
     s->buffer= buffer;
-    s->size= buffer_size;
+    s->size_in_bits= bit_size;
     s->buffer_end= buffer + buffer_size;
 #ifdef ALT_BITSTREAM_READER
     s->index=0;

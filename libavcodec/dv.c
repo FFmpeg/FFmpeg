@@ -195,7 +195,7 @@ static void dv_decode_ac(DVVideoDecodeContext *s,
                v, partial_bit_count, (mb->partial_bit_buffer << l));
 #endif
         /* try to read the codeword */
-        init_get_bits(&gb1, buf, 4);
+        init_get_bits(&gb1, buf, 4*8);
         {
             OPEN_READER(re1, &gb1);
             UPDATE_CACHE(re1, &gb1);
@@ -333,7 +333,7 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
         block = block1;
         for(j = 0;j < 6; j++) {
             /* NOTE: size is not important here */
-            init_get_bits(&s->gb, buf_ptr, 14);
+            init_get_bits(&s->gb, buf_ptr, 14*8);
             
             /* get the dc */
             dc = get_bits(&s->gb, 9);
@@ -382,7 +382,7 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
 #endif
         block = block1;
         mb = mb1;
-        init_get_bits(&s->gb, mb_bit_buffer, 80);
+        init_get_bits(&s->gb, mb_bit_buffer, 80*8);
         for(j = 0;j < 6; j++) {
             if (!mb->eob_reached && s->gb.index < mb_bit_count) {
                 dv_decode_ac(s, mb, block, mb_bit_count);
@@ -421,7 +421,7 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
 #endif
     block = &s->block[0][0];
     mb = mb_data;
-    init_get_bits(&s->gb, vs_bit_buffer, 5 * 80);
+    init_get_bits(&s->gb, vs_bit_buffer, 5 * 80*8);
     for(mb_index = 0; mb_index < 5; mb_index++) {
         for(j = 0;j < 6; j++) {
             if (!mb->eob_reached) {
@@ -501,7 +501,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     const UINT16 *mb_pos_ptr;
     
     /* parse id */
-    init_get_bits(&s->gb, buf, buf_size);
+    init_get_bits(&s->gb, buf, buf_size*8);
     sct = get_bits(&s->gb, 3);
     if (sct != 0)
         return -1;

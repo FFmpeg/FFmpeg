@@ -395,7 +395,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     MpegEncContext *s = avctx->priv_data;
     int i, mb_count, mb_pos, left;
 
-    init_get_bits(&s->gb, buf, buf_size);
+    init_get_bits(&s->gb, buf, buf_size*8);
     
     mb_count = rv10_decode_picture_header(s);
     if (mb_count < 0) {

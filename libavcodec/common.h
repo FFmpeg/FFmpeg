@@ -261,7 +261,7 @@ typedef struct GetBitContext {
     UINT32 cache1;
     int bit_count;
 #endif
-    int size;
+    int size_in_bits;
 } GetBitContext;
 
 static inline int get_bits_count(GetBitContext *s);
@@ -690,6 +690,12 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *codes, int codes_wrap, int codes_size);
 void free_vlc(VLC *vlc);
 
+/**
+ *
+ * if the vlc code is invalid and max_depth=1 than no bits will be removed
+ * if the vlc code is invalid and max_depth>1 than the number of bits removed
+ * is undefined
+ */
 #define GET_VLC(code, name, gb, table, bits, max_depth)\
 {\
     int n, index, nb_bits;\

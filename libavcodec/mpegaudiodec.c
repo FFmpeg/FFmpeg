@@ -1460,7 +1460,7 @@ static void seek_to_maindata(MPADecodeContext *s, long backstep)
     memcpy(ptr, s->inbuf1[s->inbuf_index ^ 1] + 
            BACKSTEP_SIZE + s->old_frame_size - backstep, backstep);
     /* init get bits again */
-    init_get_bits(&s->gb, ptr, s->frame_size + backstep);
+    init_get_bits(&s->gb, ptr, (s->frame_size + backstep)*8);
 
     /* prepare next buffer */
     s->inbuf_index ^= 1;
@@ -2280,7 +2280,7 @@ static int mp_decode_frame(MPADecodeContext *s,
     short *samples_ptr;
 
     init_get_bits(&s->gb, s->inbuf + HEADER_SIZE, 
-                  s->inbuf_ptr - s->inbuf - HEADER_SIZE);
+                  (s->inbuf_ptr - s->inbuf - HEADER_SIZE)*8);
     
     /* skip error protection field */
     if (s->error_protection)

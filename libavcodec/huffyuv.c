@@ -271,7 +271,7 @@ static int read_huffman_tables(HYuvContext *s, uint8_t *src, int length){
     GetBitContext gb;
     int i;
     
-    init_get_bits(&gb, src, length);
+    init_get_bits(&gb, src, length*8);
     
     for(i=0; i<3; i++){
         read_len_table(s->len[i], &gb);
@@ -295,9 +295,9 @@ static int read_old_huffman_tables(HYuvContext *s){
     GetBitContext gb;
     int i;
 
-    init_get_bits(&gb, classic_shift_luma, sizeof(classic_shift_luma));
+    init_get_bits(&gb, classic_shift_luma, sizeof(classic_shift_luma)*8);
     read_len_table(s->len[0], &gb);
-    init_get_bits(&gb, classic_shift_chroma, sizeof(classic_shift_chroma));
+    init_get_bits(&gb, classic_shift_chroma, sizeof(classic_shift_chroma)*8);
     read_len_table(s->len[1], &gb);
     
     for(i=0; i<256; i++) s->bits[0][i] = classic_add_luma  [i];
@@ -680,7 +680,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     bswap_buf((uint32_t*)s->bitstream_buffer, (uint32_t*)buf, buf_size/4);
     
-    init_get_bits(&s->gb, s->bitstream_buffer, buf_size);
+    init_get_bits(&s->gb, s->bitstream_buffer, buf_size*8);
 
     p->reference= 0;
     if(avctx->get_buffer(avctx, p) < 0){

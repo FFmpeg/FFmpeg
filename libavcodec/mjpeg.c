@@ -735,7 +735,7 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     if (avctx->flags & CODEC_FLAG_EXTERN_HUFF)
     {
 	printf("mjpeg: using external huffman table\n");
-	init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size);
+	init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
 	mjpeg_decode_dht(s);
 	/* should check for error - but dunno */
     }
@@ -1404,13 +1404,13 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 				break;
 			}
 		    }
-		    init_get_bits(&s->gb, s->buffer, dst - s->buffer);
+		    init_get_bits(&s->gb, s->buffer, (dst - s->buffer)*8);
 		    
 		    dprintf("escaping removed %d bytes\n",
 			(buf_end - buf_ptr) - (dst - s->buffer));
 		}
 		else
-		    init_get_bits(&s->gb, buf_ptr, buf_end - buf_ptr);
+		    init_get_bits(&s->gb, buf_ptr, (buf_end - buf_ptr)*8);
 		
 		s->start_code = start_code;
 
@@ -1548,7 +1548,7 @@ read_header:
     /* reset on every SOI */
     s->restart_interval = 0;
 
-    init_get_bits(&hgb, buf_ptr, /*buf_size*/buf_end - buf_ptr);
+    init_get_bits(&hgb, buf_ptr, /*buf_size*/(buf_end - buf_ptr)*8);
 
     skip_bits(&hgb, 32); /* reserved zeros */
     
@@ -1570,7 +1570,7 @@ read_header:
     dprintf("dqt offs: 0x%x\n", dqt_offs);
     if (dqt_offs)
     {
-	init_get_bits(&s->gb, buf+dqt_offs, buf_end - (buf+dqt_offs));
+	init_get_bits(&s->gb, buf+dqt_offs, (buf_end - (buf+dqt_offs))*8);
 	s->start_code = DQT;
 	mjpeg_decode_dqt(s);
     }
@@ -1579,7 +1579,7 @@ read_header:
     dprintf("dht offs: 0x%x\n", dht_offs);
     if (dht_offs)
     {
-	init_get_bits(&s->gb, buf+dht_offs, buf_end - (buf+dht_offs));
+	init_get_bits(&s->gb, buf+dht_offs, (buf_end - (buf+dht_offs))*8);
 	s->start_code = DHT;
 	mjpeg_decode_dht(s);
     }
@@ -1588,7 +1588,7 @@ read_header:
     dprintf("sof offs: 0x%x\n", sof_offs);
     if (sof_offs)
     {
-	init_get_bits(&s->gb, buf+sof_offs, buf_end - (buf+sof_offs));
+	init_get_bits(&s->gb, buf+sof_offs, (buf_end - (buf+sof_offs))*8);
 	s->start_code = SOF0;
 	if (mjpeg_decode_sof0(s) < 0)
 	    return -1;
@@ -1598,8 +1598,8 @@ read_header:
     dprintf("sos offs: 0x%x\n", sos_offs);
     if (sos_offs)
     {
-//	init_get_bits(&s->gb, buf+sos_offs, buf_end - (buf+sos_offs));
-	init_get_bits(&s->gb, buf+sos_offs, field_size);
+//	init_get_bits(&s->gb, buf+sos_offs, (buf_end - (buf+sos_offs))*8);
+	init_get_bits(&s->gb, buf+sos_offs, field_size*8);
 	s->start_code = SOS;
 	mjpeg_decode_sos(s);
     }

@@ -2335,7 +2335,7 @@ static int h263_decode_gob_header(MpegEncContext *s)
 
         /* We have a GBSC probably with GSTUFF */
     skip_bits(&s->gb, 16); /* Drop the zeros */
-    left= s->gb.size*8 - get_bits_count(&s->gb);
+    left= s->gb.size_in_bits - get_bits_count(&s->gb);
     //MN: we must check the bits left or we might end in a infinite loop (or segfault)
     for(;left>13; left--){
         if(get_bits1(&s->gb)) break; /* Seek the '1' bit */
@@ -2435,7 +2435,7 @@ static inline int mpeg4_is_resync(MpegEncContext *s){
         return 0;
     }
 
-    if(bits_count + 8 >= s->gb.size*8){
+    if(bits_count + 8 >= s->gb.size_in_bits){
         int v= show_bits(&s->gb, 8);
         v|= 0x7F >> (7-(bits_count&7));
                 
@@ -2472,7 +2472,7 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
     int header_extension=0, mb_num, len;
     
     /* is there enough space left for a video packet + header */
-    if( get_bits_count(&s->gb) > s->gb.size*8-20) return -1;
+    if( get_bits_count(&s->gb) > s->gb.size_in_bits-20) return -1;
 
     for(len=0; len<32; len++){
         if(get_bits1(&s->gb)) break;
@@ -2604,7 +2604,7 @@ int ff_h263_resync(MpegEncContext *s){
     //ok, its not where its supposed to be ...
     s->gb= s->last_resync_gb;
     align_get_bits(&s->gb);
-    left= s->gb.size*8 - get_bits_count(&s->gb);
+    left= s->gb.size_in_bits - get_bits_count(&s->gb);
     
     for(;left>16+1+5+5; left-=8){ 
         if(show_bits(&s->gb, 16)==0){
@@ -3058,7 +3058,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
     /* per-MB end of slice check */
 
     if(--s->mb_num_left <= 0){
-//printf("%06X %d\n", show_bits(&s->gb, 24), s->gb.size*8 - get_bits_count(&s->gb));
+//printf("%06X %d\n", show_bits(&s->gb, 24), s->gb.size_in_bits - get_bits_count(&s->gb));
         if(mpeg4_is_resync(s))
             return SLICE_END;
         else
@@ -3422,8 +3422,8 @@ end:
     }else{
         int v= show_bits(&s->gb, 16);
     
-        if(get_bits_count(&s->gb) + 16 > s->gb.size*8){
-            v>>= get_bits_count(&s->gb) + 16 - s->gb.size*8;
+        if(get_bits_count(&s->gb) + 16 > s->gb.size_in_bits){
+            v>>= get_bits_count(&s->gb) + 16 - s->gb.size_in_bits;
         }
 
         if(v==0)
@@ -4688,7 +4688,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              printf("qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d\n", 
                  s->qscale, s->f_code, s->b_code, 
                  s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
-                 gb->size,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
+                 gb->size_in_bits,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
                  s->quarter_sample ? "q" : "h", s->data_partitioning, s->resync_marker, s->num_sprite_warping_points,
                  s->sprite_warping_accuracy); 
          }
@@ -4743,9 +4743,9 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
         v = get_bits(gb, 8);
         startcode = ((startcode << 8) | v) & 0xffffffff;
         
-        if(get_bits_count(gb) >= gb->size*8){
-            if(gb->size==1 && s->divx_version){
-                printf("frame skip %d\n", gb->size);
+        if(get_bits_count(gb) >= gb->size_in_bits){
+            if(gb->size_in_bits==8 && s->divx_version){
+                printf("frame skip %d\n", gb->size_in_bits);
                 return FRAME_SKIPED; //divx bug
             }else
                 return -1; //end of stream

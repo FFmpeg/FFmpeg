@@ -249,13 +249,13 @@ static int decode_slice(MpegEncContext *s){
     /* try to detect the padding bug */
     if(      s->codec_id==CODEC_ID_MPEG4
        &&   (s->workaround_bugs&FF_BUG_AUTODETECT) 
-       &&    s->gb.size*8 - get_bits_count(&s->gb) >=0
-       &&    s->gb.size*8 - get_bits_count(&s->gb) < 48
+       &&    s->gb.size_in_bits - get_bits_count(&s->gb) >=0
+       &&    s->gb.size_in_bits - get_bits_count(&s->gb) < 48
 //       &&   !s->resync_marker
        &&   !s->data_partitioning){
         
         const int bits_count= get_bits_count(&s->gb);
-        const int bits_left = s->gb.size*8 - bits_count;
+        const int bits_left = s->gb.size_in_bits - bits_count;
         
         if(bits_left==0){
             s->padding_bug_score+=16;
@@ -274,7 +274,7 @@ static int decode_slice(MpegEncContext *s){
 
     // handle formats which dont have unique end markers
     if(s->msmpeg4_version || (s->workaround_bugs&FF_BUG_NO_PADDING)){ //FIXME perhaps solve this more cleanly
-        int left= s->gb.size*8 - get_bits_count(&s->gb);
+        int left= s->gb.size_in_bits - get_bits_count(&s->gb);
         int max_extra=7;
         
         /* no markers in M$ crap */
@@ -299,7 +299,7 @@ static int decode_slice(MpegEncContext *s){
     }
 
     fprintf(stderr, "slice end not reached but screenspace end (%d left %06X)\n", 
-            s->gb.size*8 - get_bits_count(&s->gb),
+            s->gb.size_in_bits - get_bits_count(&s->gb),
             show_bits(&s->gb, 24));
     return -1;
 }
@@ -441,9 +441,9 @@ uint64_t time= rdtsc();
 retry:
     
     if(s->bitstream_buffer_size && buf_size<20){ //divx 5.01+ frame reorder
-        init_get_bits(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size);
+        init_get_bits(&s->gb, s->bitstream_buffer, s->bitstream_buffer_size*8);
     }else
-        init_get_bits(&s->gb, buf, buf_size);
+        init_get_bits(&s->gb, buf, buf_size*8);
     s->bitstream_buffer_size=0;
 
     if (!s->context_initialized) {
@@ -460,7 +460,7 @@ retry:
         if(s->avctx->extradata_size && s->picture_number==0){
             GetBitContext gb;
             
-            init_get_bits(&gb, s->avctx->extradata, s->avctx->extradata_size);
+            init_get_bits(&gb, s->avctx->extradata, s->avctx->extradata_size*8);
             ret = ff_mpeg4_decode_picture_header(s, &gb);
         }
         ret = ff_mpeg4_decode_picture_header(s, &s->gb);
@@ -632,7 +632,7 @@ retry:
     
     decode_slice(s);
     s->error_status_table[0]|= VP_START;
-    while(s->mb_y<s->mb_height && s->gb.size*8 - get_bits_count(&s->gb)>16){
+    while(s->mb_y<s->mb_height && s->gb.size_in_bits - get_bits_count(&s->gb)>16){
         if(s->msmpeg4_version){
             if(s->mb_x!=0 || (s->mb_y%s->slice_height)!=0)
                 break;

@@ -1467,7 +1467,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     int ref, f_code;
 
-    init_get_bits(&s->gb, buf, buf_size);
+    init_get_bits(&s->gb, buf, buf_size*8);
 
     ref = get_bits(&s->gb, 10); /* temporal ref */
     s->pict_type = get_bits(&s->gb, 3);
@@ -1619,7 +1619,7 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     int ext_type;
 
-    init_get_bits(&s->gb, buf, buf_size);
+    init_get_bits(&s->gb, buf, buf_size*8);
     
     ext_type = get_bits(&s->gb, 4);
     switch(ext_type) {
@@ -1684,7 +1684,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         }
     }
 
-    init_get_bits(&s->gb, buf, buf_size);
+    init_get_bits(&s->gb, buf, buf_size*8);
 
     s->qscale = get_qscale(s);
     /* extra slice info */
@@ -1793,7 +1793,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     int width, height, i, v, j;
     float aspect;
 
-    init_get_bits(&s->gb, buf, buf_size);
+    init_get_bits(&s->gb, buf, buf_size*8);
 
     width = get_bits(&s->gb, 12);
     height = get_bits(&s->gb, 12);

@@ -1226,7 +1226,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
 
     samples = data;
 
-    init_get_bits(&s->gb, buf, buf_size);
+    init_get_bits(&s->gb, buf, buf_size*8);
     
     if (s->use_bit_reservoir) {
         /* read super frame header */
@@ -1252,7 +1252,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
             }
             
             /* XXX: bit_offset bits into last frame */
-            init_get_bits(&s->gb, s->last_superframe, MAX_CODED_SUPERFRAME_SIZE);
+            init_get_bits(&s->gb, s->last_superframe, MAX_CODED_SUPERFRAME_SIZE*8);
             /* skip unused bits */
             if (s->last_bitoffset > 0)
                 skip_bits(&s->gb, s->last_bitoffset);
@@ -1265,7 +1265,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
 
         /* read each frame starting from bit_offset */
         pos = bit_offset + 4 + 4 + s->byte_offset_bits + 3;
-        init_get_bits(&s->gb, buf + (pos >> 3), MAX_CODED_SUPERFRAME_SIZE - (pos >> 3));
+        init_get_bits(&s->gb, buf + (pos >> 3), (MAX_CODED_SUPERFRAME_SIZE - (pos >> 3))*8);
         len = pos & 7;
         if (len > 0)
             skip_bits(&s->gb, len);
