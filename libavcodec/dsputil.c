@@ -1294,11 +1294,12 @@ void dsputil_init(void)
         ff_idct_put = simple_idct_put;
         ff_idct_add = simple_idct_add;
         use_permuted_idct=0;
-    } else {
+    }
+#endif
+    if(ff_idct != NULL) {
         ff_idct_put = gen_idct_put;
         ff_idct_add = gen_idct_add;
     }
-#endif
 
     if(use_permuted_idct)
 #ifdef SIMPLE_IDCT
