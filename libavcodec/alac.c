@@ -97,7 +97,7 @@ static void allocate_buffers(alac_file *alac)
 
 void alac_set_info(alac_file *alac, char *inputbuffer)
 {
-  char *ptr = inputbuffer;
+    unsigned char *ptr = inputbuffer;
 
     ptr += 4; /* size */
     ptr += 4; /* alac */
@@ -134,7 +134,7 @@ static uint32_t readbits_16(alac_file *alac, int bits)
     if (alac->input_buffer_index + 2 >= alac->input_buffer_size) {
         av_log(NULL, AV_LOG_INFO, "alac: input buffer went out of bounds (%d >= %d)\n",
             alac->input_buffer_index + 2, alac->input_buffer_size);
-        exit (0);
+//        exit (0);
     }
     result = (alac->input_buffer[alac->input_buffer_index + 0] << 16) |
              (alac->input_buffer[alac->input_buffer_index + 1] << 8) |
@@ -186,7 +186,7 @@ static int readbit(alac_file *alac)
     if (alac->input_buffer_index >= alac->input_buffer_size) {
         av_log(NULL, AV_LOG_INFO, "alac: input buffer went out of bounds (%d >= %d)\n",
             alac->input_buffer_index + 2, alac->input_buffer_size);
-        exit (0);
+//        exit (0);
     }
 
     result = alac->input_buffer[alac->input_buffer_index];
@@ -488,8 +488,8 @@ void deinterlace_16(int32_t *buffer_a, int32_t *buffer_b,
                     int16_t *buffer_out,
                     int numchannels, int numsamples,
                     uint8_t interlacing_shift,
-                    uint8_t interlacing_leftweight) {
-
+                    uint8_t interlacing_leftweight)
+{
     int i;
     if (numsamples <= 0) return;
 
@@ -546,10 +546,10 @@ void deinterlace_16(int32_t *buffer_a, int32_t *buffer_b,
 int decode_frame(ALACContext *s, alac_file *alac,
                   unsigned char *inbuffer,
                   int input_buffer_size,
-                  void *outbuffer, int *outputsize){
-
+                  void *outbuffer, int *outputsize)
+{
     int channels;
-    int32_t outputsamples = alac->setinfo_max_samples_per_frame;
+    int32_t outputsamples;
 
     /* initialize from the extradata */
     if (!s->context_initialized) {
@@ -561,7 +561,8 @@ int decode_frame(ALACContext *s, alac_file *alac,
         alac_set_info(s->alac, s->avctx->extradata);
         s->context_initialized = 1;
     }
-    
+
+    outputsamples = alac->setinfo_max_samples_per_frame;
 
     /* setup the stream */
     alac->input_buffer = inbuffer;
