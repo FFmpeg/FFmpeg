@@ -2590,11 +2590,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     int varc;
                     int sum = pix_sum(pix, s->linesize);
     
-                    sum= (sum+8)>>4;
-                    varc = (pix_norm1(pix, s->linesize) - sum*sum + 500 + 128)>>8;
+                    varc = (pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
 
                     s->mb_var [s->mb_width * mb_y + mb_x] = varc;
-                    s->mb_mean[s->mb_width * mb_y + mb_x] = (sum+7)>>4;
+                    s->mb_mean[s->mb_width * mb_y + mb_x] = (sum+128)>>8;
                     s->mb_var_sum    += varc;
                 }
             }
