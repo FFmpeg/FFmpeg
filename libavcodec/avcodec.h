@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4619
-#define LIBAVCODEC_BUILD_STR   "4619"
+#define LIBAVCODEC_BUILD       4620
+#define LIBAVCODEC_BUILD_STR   "4620"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -81,6 +81,13 @@ enum Motion_Est_ID {
     ME_EPZS,
     ME_X1
 };
+
+typedef struct RcOverride{
+    int start_frame;
+    int end_frame;
+    int qscale; // if this is 0 then quality_factor will be used instead
+    float quality_factor;
+} RcOverride;
 
 /* only for ME compatiblity with old apps */
 extern int motion_estimation_method;
@@ -194,8 +201,8 @@ typedef struct AVCodecContext {
     int qmax;         /* max qscale */
     int max_qdiff;    /* max qscale difference between frames */
     int max_b_frames; /* maximum b frames, the output will be delayed by max_b_frames+1 relative to the input */
-    float b_quant_factor;/* qscale factor between ips and b frames */
-    int rc_strategy;
+    float b_quant_factor;/* qscale factor between ps and b frames */
+    int rc_strategy;  /* obsolete FIXME remove */
     int b_frame_strategy;
 
     int hurry_up;     /* when set to 1 during decoding, b frames will be skiped
@@ -274,13 +281,31 @@ typedef struct AVCodecContext {
     int dr_uvstride;
     int dr_ip_buffer_count;
     int block_align; /* currently only for adpcm codec in wav/avi */
-
+    
     int parse_only; /* decoding only: if true, only parsing is done
                        (function avcodec_parse_frame()). The frame
                        data is returned. Only MPEG codecs support this now. */
+    
     int mpeg_quant; /* 0-> h263 quant 1-> mpeg quant */
+    
+    char *stats_out; /* encoding statistics output buffer */
+    char *stats_in;  /* encoding statistics input buffer (concatenated stuff from stats_out of pass1 should be placed here)*/
+    float rc_qsquish;
+    float rc_qmod_amp;
+    int rc_qmod_freq;
+    RcOverride *rc_override;
+    int rc_override_count;
+    char *rc_eq;
+    int rc_max_rate;
+    int rc_min_rate;
+    int rc_buffer_size;
+    float rc_buffer_aggressivity;
+    float i_quant_factor;/* qscale factor between i and p frames */
+    float i_quant_offset;/* qscale offset between i and p frames */
+    float rc_initial_cplx;
 
     //FIXME this should be reordered after kabis API is finished ...
+    //TODO kill kabi
     /*
 	Note: Below are located reserved fields for further usage
 	It requires for ABI !!!
@@ -294,10 +319,10 @@ typedef struct AVCodecContext {
 	    ull_res6,ull_res7,ull_res8,ull_res9,ull_res10,ull_res11,ull_res12;
     float
 	    flt_res0,flt_res1,flt_res2,flt_res3,flt_res4,flt_res5,
-	    flt_res6,flt_res7,flt_res8,flt_res9,flt_res10,flt_res11;
+	    flt_res6,flt_res7,flt_res8,flt_res9,flt_res10,flt_res11,flt_res12;
     void
 	    *ptr_res0,*ptr_res1,*ptr_res2,*ptr_res3,*ptr_res4,*ptr_res5,
-	    *ptr_res6;
+            *ptr_res6,*ptr_res7,*ptr_res8,*ptr_res9,*ptr_res10,*ptr_res11,*ptr_res12;
     unsigned long int
 	    ul_res0,ul_res1,ul_res2,ul_res3,ul_res4,ul_res5,
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
@@ -307,6 +332,9 @@ typedef struct AVCodecContext {
     unsigned char
 	    uc_res0,uc_res1,uc_res2,uc_res3,uc_res4,uc_res5,
 	    uc_res6,uc_res7,uc_res8,uc_res9,uc_res10,uc_res11,uc_res12;
+    unsigned int
+	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5,ui_res6,ui_res7,ui_res8,ui_res9,
+	    ui_res10,ui_res11,ui_res12,ui_res13,ui_res14,ui_res15,ui_res16,ui_res17,ui_res18,ui_res19;
 } AVCodecContext;
 
 typedef struct AVCodec {
