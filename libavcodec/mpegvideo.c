@@ -80,11 +80,11 @@ static UINT8 default_fcode_tab[MAX_MV*2+1];
 int motion_estimation_method = ME_EPZS;
 
 static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[64], uint16_t (*qmat16_bias)[64],
-                           const UINT16 *quant_matrix, int bias)
+                           const UINT16 *quant_matrix, int bias, int qmin, int qmax)
 {
     int qscale;
 
-    for(qscale=1; qscale<32; qscale++){
+    for(qscale=qmin; qscale<=qmax; qscale++){
         int i;
         if (s->fdct == ff_jpeg_fdct_islow) {
             for(i=0;i<64;i++) {
@@ -680,9 +680,9 @@ int MPV_encode_init(AVCodecContext *avctx)
     /* for mjpeg, we do include qscale in the matrix */
     if (s->out_format != FMT_MJPEG) {
         convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16, s->q_intra_matrix16_bias, 
-                       s->intra_matrix, s->intra_quant_bias);
+                       s->intra_matrix, s->intra_quant_bias, 1, 31);
         convert_matrix(s, s->q_inter_matrix, s->q_inter_matrix16, s->q_inter_matrix16_bias, 
-                       s->inter_matrix, s->inter_quant_bias);
+                       s->inter_matrix, s->inter_quant_bias, 1, 31);
     }
 
     if(ff_rate_control_init(s) < 0)
@@ -2462,7 +2462,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->intra_matrix[j] = CLAMP_TO_8BIT((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
         }
         convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16, 
-                       s->q_intra_matrix16_bias, s->intra_matrix, s->intra_quant_bias);
+                       s->q_intra_matrix16_bias, s->intra_matrix, s->intra_quant_bias, 8, 8);
     }
 
     s->last_bits= get_bit_count(&s->pb);
