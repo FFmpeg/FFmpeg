@@ -512,7 +512,7 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
         get_be32(pb); /* ??? */
         get_be32(pb); /* ??? */
         sub_packet_h= get_be16(pb); /* 1 */ 
-        get_be16(pb); /* frame size */
+        st->codec.block_align= get_be16(pb); /* frame size */
         get_be16(pb); /* sub packet size */
         get_be16(pb); /* ??? */
         st->codec.sample_rate = get_be16(pb);
