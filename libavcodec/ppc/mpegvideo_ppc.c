@@ -36,7 +36,7 @@ extern void idct_add_altivec(uint8_t *dest, int line_size, int16_t *block);
 
 void MPV_common_init_ppc(MpegEncContext *s)
 {
-#if HAVE_ALTIVEC
+#ifdef HAVE_ALTIVEC
     if (has_altivec())
     {
         if ((s->avctx->idct_algo == FF_IDCT_AUTO) ||

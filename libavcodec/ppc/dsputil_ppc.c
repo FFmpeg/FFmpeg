@@ -33,7 +33,7 @@ int mm_flags = 0;
 int mm_support(void)
 {
     int result = 0;
-#if HAVE_ALTIVEC
+#ifdef HAVE_ALTIVEC
     if (has_altivec()) {
         result |= MM_ALTIVEC;
     }
@@ -233,7 +233,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
     break;
   }
   
-#if HAVE_ALTIVEC
+#ifdef HAVE_ALTIVEC
     if (has_altivec()) {
         mm_flags |= MM_ALTIVEC;
         
