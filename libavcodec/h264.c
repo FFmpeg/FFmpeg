@@ -4118,8 +4118,7 @@ static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
     int amvd = abs( h->mvd_cache[list][scan8[n] - 1][l] ) +
                abs( h->mvd_cache[list][scan8[n] - 8][l] );
     int ctxbase = (l == 0) ? 40 : 47;
-    int ctx;
-    int mvd = 0;
+    int ctx, mvd;
 
     if( amvd < 3 )
         ctx = 0;
@@ -4128,11 +4127,14 @@ static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
     else
         ctx = 1;
 
+    if(!get_cabac(&h->cabac, &h->cabac_state[ctxbase+ctx]))
+        return 0;
+
+    mvd= 1;
+    ctx= 3;
     while( mvd < 9 && get_cabac( &h->cabac, &h->cabac_state[ctxbase+ctx] ) ) {
         mvd++;
-        if( ctx < 3 )
-            ctx = 3;
-        else if( ctx < 6 )
+        if( ctx < 6 )
             ctx++;
     }
 
@@ -4147,11 +4149,9 @@ static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
                 mvd += 1 << k;
         }
     }
-    if( mvd != 0 && get_cabac_bypass( &h->cabac ) )
-        return -mvd;
-    return mvd;
+    if( get_cabac_bypass( &h->cabac ) )  return -mvd;
+    else                                 return  mvd;
 }
-
 
 static int inline get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
     int nza, nzb;
