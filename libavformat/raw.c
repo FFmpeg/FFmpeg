@@ -65,6 +65,7 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec.frame_rate_base = ap->frame_rate_base;
             st->codec.width = ap->width;
             st->codec.height = ap->height;
+	    st->codec.pix_fmt = ap->pix_fmt;
             break;
         default:
             return -1;
@@ -455,21 +456,9 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     width = st->codec.width;
     height = st->codec.height;
 
-    switch(st->codec.pix_fmt) {
-    case PIX_FMT_YUV420P:
-        packet_size = (width * height * 3) / 2;
-        break;
-    case PIX_FMT_YUV422:
-        packet_size = (width * height * 2);
-        break;
-    case PIX_FMT_BGR24:
-    case PIX_FMT_RGB24:
-        packet_size = (width * height * 3);
-        break;
-    default:
+    packet_size = avpicture_get_size(st->codec.pix_fmt, width, height);
+    if (packet_size < 0)
         av_abort();
-        break;
-    }
 
     if (av_new_packet(pkt, packet_size) < 0)
         return -EIO;

@@ -1244,7 +1244,8 @@ PCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
 #undef PCM_CODEC
 
 /* dummy raw video codec */
-extern AVCodec rawvideo_codec;
+extern AVCodec rawvideo_encoder;
+extern AVCodec rawvideo_decoder;
 
 /* the following codecs use external GPL libs */
 extern AVCodec ac3_decoder;
@@ -1281,9 +1282,12 @@ void img_resample_close(ImgReSampleContext *s);
 
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height);
+int avpicture_layout(AVPicture* src, int pix_fmt, int width, int height,
+                     unsigned char *dest, int dest_size);
 int avpicture_get_size(int pix_fmt, int width, int height);
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
 const char *avcodec_get_pix_fmt_name(int pix_fmt);
+enum PixelFormat avcodec_get_pix_fmt(const char* name);
 
 #define FF_LOSS_RESOLUTION  0x0001 /* loss due to resolution change */
 #define FF_LOSS_DEPTH       0x0002 /* loss due to color depth change */

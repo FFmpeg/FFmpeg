@@ -224,6 +224,16 @@ const char *avcodec_get_pix_fmt_name(int pix_fmt)
         return pix_fmt_info[pix_fmt].name;
 }
 
+enum PixelFormat avcodec_get_pix_fmt(const char* name)
+{
+    int i; 
+    
+    for (i=0; i < PIX_FMT_NB; i++)
+         if (!strcmp(pix_fmt_info[i].name, name))
+	     break;
+    return i;
+}
+
 /* Picture field are filled with 'ptr' addresses. Also return size */
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height)
@@ -301,6 +311,47 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
         picture->data[3] = NULL;
         return -1;
     }
+}
+
+int avpicture_layout(AVPicture* src, int pix_fmt, int width, int height,
+                     unsigned char *dest, int dest_size)
+{
+    PixFmtInfo* pf = &pix_fmt_info[pix_fmt];
+    int i, j, w, h, data_planes;
+    unsigned char* s; 
+    int size = avpicture_get_size(pix_fmt, width, height);
+
+    if (size > dest_size)
+        return -1;
+
+    if (pf->pixel_type == FF_PIXEL_PACKED) {
+        if (pix_fmt == PIX_FMT_YUV422 || pix_fmt == PIX_FMT_RGB565 ||
+	    pix_fmt == PIX_FMT_RGB555)
+	  w = width * 2;
+	else
+	  w = width * (pf->depth * pf->nb_channels / 8);
+	data_planes = 1;
+	h = height;
+    } else {
+        data_planes = pf->nb_channels;
+	w = width;
+	h = height;
+    }
+    
+    for (i=0; i<data_planes; i++) {
+         if (i == 1) {
+	     w = width >> pf->x_chroma_shift;
+	     h = height >> pf->y_chroma_shift;
+	 }
+         s = src->data[i];
+	 for(j=0; j<h; j++) {
+	     memcpy(dest, s, w);
+	     dest += w;
+	     s += src->linesize[i];
+	 }
+    }
+
+    return size;
 }
 
 int avpicture_get_size(int pix_fmt, int width, int height)

@@ -65,7 +65,8 @@ void avcodec_register_all(void)
     register_avcodec(&mjpeg_encoder);
     register_avcodec(&huffyuv_encoder);
 #endif /* CONFIG_ENCODERS */
-    register_avcodec(&rawvideo_codec);
+    register_avcodec(&rawvideo_encoder);
+    register_avcodec(&rawvideo_decoder);
 
     /* decoders */
 #ifdef CONFIG_DECODERS

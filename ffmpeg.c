@@ -89,6 +89,7 @@ static AVImageFormat *image_format;
 static int frame_width  = 160;
 static int frame_height = 128;
 static float frame_aspect_ratio = 0;
+static enum PixelFormat frame_pix_fmt = PIX_FMT_YUV420P;
 static int frame_topBand  = 0;
 static int frame_bottomBand = 0;
 static int frame_leftBand  = 0;
@@ -1706,6 +1707,11 @@ static void opt_frame_size(const char *arg)
     }
 }
 
+static void opt_frame_pix_fmt(const char *arg)
+{
+    frame_pix_fmt = avcodec_get_pix_fmt(arg);
+}
+
 static void opt_frame_aspect_ratio(const char *arg)
 {
     int x = 0, y = 0;
@@ -2032,6 +2038,7 @@ static void opt_input_file(const char *filename)
     ap->width = frame_width;
     ap->height = frame_height;
     ap->image_format = image_format;
+    ap->pix_fmt = frame_pix_fmt;
 
     /* open the input file with generic libav function */
     err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
@@ -2061,6 +2068,7 @@ static void opt_input_file(const char *filename)
             frame_height = enc->height;
             frame_width = enc->width;
 	    frame_aspect_ratio = enc->aspect_ratio;
+	    frame_pix_fmt = enc->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate;
             rfps_base = ic->streams[i]->r_frame_rate_base;
             enc->workaround_bugs = workaround_bugs;
@@ -2218,6 +2226,7 @@ static void opt_output_file(const char *filename)
                 video_enc->width = frame_width;
                 video_enc->height = frame_height;
 		video_enc->aspect_ratio = frame_aspect_ratio;
+		video_enc->pix_fmt = frame_pix_fmt;
 
                 if (!intra_only)
                     video_enc->gop_size = gop_size;
@@ -2722,6 +2731,7 @@ const OptionDef options[] = {
     { "re", OPT_BOOL|OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate" },
     { "s", HAS_ARG, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
+    { "pix_fmt", HAS_ARG | OPT_EXPERT, {(void*)opt_frame_pix_fmt}, "set pixel format", "format" },
     { "croptop", HAS_ARG, {(void*)opt_frame_crop_top}, "set top crop band size (in pixels)", "size" },
     { "cropbottom", HAS_ARG, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
     { "cropleft", HAS_ARG, {(void*)opt_frame_crop_left}, "set left crop band size (in pixels)", "size" },
