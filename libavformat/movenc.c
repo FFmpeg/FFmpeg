@@ -1227,9 +1227,8 @@ int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
     return 0x14;
 }
 
-int mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
+static void mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
 {
-    MOVContext *mov = s->priv_data;
     int AudioRate = s->streams[1]->codec.sample_rate;
     int FrameRate = ((s->streams[0]->codec.frame_rate) * (0x10000))/ (s->streams[0]->codec.frame_rate_base);
  
@@ -1279,8 +1278,6 @@ int mov_write_uuidprof_tag(ByteIOContext *pb, AVFormatContext *s)
     put_be16(pb, s->streams[0]->codec.width);
     put_be16(pb, s->streams[0]->codec.height);
     put_be32(pb, 0x010001 );
-
-    return 0x94;
 }
 
 static int mov_write_header(AVFormatContext *s)
@@ -1319,8 +1316,13 @@ static int mov_write_header(AVFormatContext *s)
 
         if ( mov->mode == MODE_3GP || mov->mode == MODE_MP4 || mov->mode == MODE_PSP )
             mov_write_ftyp_tag(pb,s);
-        if ( mov->mode == MODE_PSP )
+        if ( mov->mode == MODE_PSP ) {
+            if ( s->nb_streams != 2 ) {
+                av_log(s, AV_LOG_ERROR, "PSP mode need one video and one audio stream\n");
+                return -1;
+            }
             mov_write_uuidprof_tag(pb,s);
+        }
     }
 
     for (i=0; i<MAX_STREAMS; i++) {
