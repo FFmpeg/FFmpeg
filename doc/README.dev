@@ -26,3 +26,13 @@ tolerated. TAB size is 4. The identation is the one specified by
 Main priority in ffmpeg is simplicity and small code size (=less
 bugs).
 
+4) Submitting patches
+---------------------
+
+When you submit your patch, try to send a unified diff (diff '-u'
+option). I cannot read other diffs :-)
+
+Except if your patch is really big and adds an important feature, by
+submitting it to me, you accept implicitely to put it under my
+copyright. I prefer to do this to avoid potential problems if
+licensing of ffmpeg changes.
