@@ -90,7 +90,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
 static int image_probe(AVProbeData *p)
 {
     if (filename_number_test(p->filename) >= 0 && guess_image_format(p->filename))
-        return AVPROBE_SCORE_MAX;
+        return AVPROBE_SCORE_MAX-1;
     else
         return 0;
 }
