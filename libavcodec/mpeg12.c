@@ -1050,7 +1050,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                           DCTELEM block[12][64])
 {
     int i, j, k, cbp, val, mb_type, motion_type;
-    const int mb_block_count = 4 + (1<< s->chroma_format)
+    const int mb_block_count = 4 + (1<< s->chroma_format);
 
     dprintf("decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
 
@@ -2718,7 +2718,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #ifdef DEBUG
         dprintf("intra matrix present\n");
         for(i=0;i<64;i++)
-            dprintf(" %d", s->intra_matrix[s->dsp.idct_permutation[i]);
+            dprintf(" %d", s->intra_matrix[s->dsp.idct_permutation[i]]);
         printf("\n");
 #endif
     } else {
@@ -2743,7 +2743,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #ifdef DEBUG
         dprintf("non intra matrix present\n");
         for(i=0;i<64;i++)
-            dprintf(" %d", s->inter_matrix[s->dsp.idct_permutation[i]);
+            dprintf(" %d", s->inter_matrix[s->dsp.idct_permutation[i]]);
         printf("\n");
 #endif
     } else {
