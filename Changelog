@@ -9,6 +9,7 @@ version <next>
 - H.261 video encoder
 - QPEG video decoder
 - Nullsoft Video (NSV) file demuxer
+- Shorten audio decoder
 
 version 0.4.9-pre1:
 
