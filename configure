@@ -265,7 +265,7 @@ SHFLAGS="-dynamiclib"
 extralibs=""
 darwin="yes"
 strip="strip -x"
-LDFLAGS="-Wl,-d"
+LDFLAGS="-Wl,-d,-search_paths_first"
 FFSLDFLAGS=-Wl,-bind_at_load
 ;;
 MINGW32*)
