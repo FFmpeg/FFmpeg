@@ -2186,10 +2186,10 @@ static int alloc_tables(H264Context *h){
     CHECKED_ALLOCZ(h->non_zero_count    , big_mb_num * 16 * sizeof(uint8_t))
     CHECKED_ALLOCZ(h->slice_table_base  , big_mb_num * sizeof(uint8_t))
     CHECKED_ALLOCZ(h->top_border       , s->mb_width * (16+8+8) * sizeof(uint8_t))
+    CHECKED_ALLOCZ(h->cbp_table, big_mb_num * sizeof(uint16_t))
 
     if( h->pps.cabac ) {
         CHECKED_ALLOCZ(h->chroma_pred_mode_table, big_mb_num * sizeof(uint8_t))
-        CHECKED_ALLOCZ(h->cbp_table, big_mb_num * sizeof(uint16_t))
         CHECKED_ALLOCZ(h->mvd_table[0], 32*big_mb_num * sizeof(uint16_t));
         CHECKED_ALLOCZ(h->mvd_table[1], 32*big_mb_num * sizeof(uint16_t));
     }
