@@ -3,10 +3,14 @@ include ../config.mak
 
 LIBNAME = libpostproc.a
 
-SRCS=postprocess.c swscale.c rgb2rgb.c
+SRCS=postprocess.c swscale.c rgb2rgb.c yuv2rgb.c
 OBJS=$(SRCS:.c=.o)
 
-CFLAGS  = $(OPTFLAGS) -I. -I.. -Wall
+ifeq ($(TARGET_ARCH_X86),yes)
+SRCS += yuv2rgb_mmx.c
+endif
+
+CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. -Wall
 # -I/usr/X11R6/include/
 
 .SUFFIXES: .c .o

@@ -1,6 +1,9 @@
 /*
  *
  *  rgb2rgb.c, Software RGB to RGB convertor
+ *  pluralize by Software PAL8 to RGB convertor
+ *               Software YUV to YUV convertor
+ *               Software YUV to RGB convertor
  *  Written by Nick Kurshev.
  *  palette stuff & yuv stuff by Michael
  */
