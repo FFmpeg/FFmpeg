@@ -2699,10 +2699,10 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         debug_vp3(", keyframe\n");
         /* skip the other 2 header bytes for now */
         skip_bits(&gb, 16);
-
         if (s->last_frame.data[0] == s->golden_frame.data[0]) {
             if (s->golden_frame.data[0])
                 avctx->release_buffer(avctx, &s->golden_frame);
+            s->last_frame= s->golden_frame; /* ensure that we catch any access to this released frame */
         } else {
             if (s->golden_frame.data[0])
                 avctx->release_buffer(avctx, &s->golden_frame);
@@ -2710,7 +2710,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
                 avctx->release_buffer(avctx, &s->last_frame);
         }
 
-        s->golden_frame.reference = 0;
+        s->golden_frame.reference = 3;
         if(avctx->get_buffer(avctx, &s->golden_frame) < 0) {
             printf("vp3: get_buffer() failed\n");
             return -1;
@@ -2728,7 +2728,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         debug_vp3("\n");
 
         /* allocate a new current frame */
-        s->current_frame.reference = 0;
+        s->current_frame.reference = 3;
         if(avctx->get_buffer(avctx, &s->current_frame) < 0) {
             printf("vp3: get_buffer() failed\n");
             return -1;
@@ -2789,6 +2789,7 @@ if (!s->keyframe) {
 
     /* shuffle frames (last = current) */
     memcpy(&s->last_frame, &s->current_frame, sizeof(AVFrame));
+    s->current_frame.data[0]= NULL; /* ensure that we catch any access to this released frame */
 
     return buf_size;
 }
@@ -2806,9 +2807,9 @@ static int vp3_decode_end(AVCodecContext *avctx)
     av_free(s->superblock_macroblocks);
     av_free(s->macroblock_fragments);
     av_free(s->macroblock_coding);
-
+    
     /* release all frames */
-    if (s->golden_frame.data[0])
+    if (s->golden_frame.data[0] && s->golden_frame.data[0] != s->last_frame.data[0])
         avctx->release_buffer(avctx, &s->golden_frame);
     if (s->last_frame.data[0])
         avctx->release_buffer(avctx, &s->last_frame);
