@@ -139,6 +139,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_CYUV, MKTAG('C', 'Y', 'U', 'V') },
     { CODEC_ID_CYUV, MKTAG('c', 'y', 'u', 'v') },
     { CODEC_ID_RAWVIDEO, MKTAG('Y', '4', '2', '2') },
+    { CODEC_ID_RAWVIDEO, MKTAG('I', '4', '2', '0') },
     { 0, 0 },
 };
 

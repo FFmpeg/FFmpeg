@@ -32,6 +32,7 @@ typedef struct PixleFormatTag {
 
 const PixelFormatTag pixelFormatTags[] = {
     { PIX_FMT_YUV422, MKTAG('Y', '4', '2', '2') },
+    { PIX_FMT_YUV420P, MKTAG('I', '4', '2', '0') },
     { -1, 0 },
 };
 
