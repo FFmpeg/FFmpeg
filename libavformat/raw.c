@@ -208,6 +208,22 @@ static int mpegvideo_probe(AVProbeData *p)
     return 0;
 }
 
+static int h263_probe(AVProbeData *p)
+{
+    int code;
+    const uint8_t *d;
+
+    if (p->buf_size < 6)
+        return 0;
+    d = p->buf;
+    code = (d[0] << 14) | (d[1] << 6) | (d[2] >> 2);
+    if (code == 0x20) {
+        return 50;
+    }
+    return 0;
+}
+
+
 AVInputFormat mp3_iformat = {
     "mp3",
     "MPEG audio",
@@ -273,6 +289,18 @@ AVOutputFormat ac3_oformat = {
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
+};
+
+AVInputFormat h263_iformat = {
+    "h263",
+    "raw h263",
+    0,
+    h263_probe,
+    video_read_header,
+    raw_read_packet,
+    raw_read_close,
+//    .extensions = "h263", //FIXME remove after writing mpeg4_probe
+    .value = CODEC_ID_H263,
 };
 
 AVOutputFormat h263_oformat = {
@@ -538,6 +566,7 @@ int raw_init(void)
     av_register_input_format(&ac3_iformat);
     av_register_output_format(&ac3_oformat);
 
+    av_register_input_format(&h263_iformat);
     av_register_output_format(&h263_oformat);
     
     av_register_input_format(&m4v_iformat);

@@ -341,6 +341,42 @@ static int mpeg4_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
     return END_NOT_FOUND;
 }
 
+static int h263_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
+    ParseContext *pc= &s->parse_context;
+    int vop_found, i;
+    uint32_t state;
+    
+    vop_found= pc->frame_start_found;
+    state= pc->state;
+    
+    i=0;
+    if(!vop_found){
+        for(i=0; i<buf_size; i++){
+            state= (state<<8) | buf[i];
+            if(state>>(32-22) == 0x20){
+                i++;
+                vop_found=1;
+                break;
+            }
+        }
+    }
+
+    if(vop_found){    
+      for(; i<buf_size; i++){
+        state= (state<<8) | buf[i];
+        if(state>>(32-22) == 0x20){
+            pc->frame_start_found=0;
+            pc->state=-1; 
+            return i-3;
+        }
+      }
+    }
+    pc->frame_start_found= vop_found;
+    pc->state= state;
+    
+    return END_NOT_FOUND;
+}
+
 /**
  * draws an line from (ex, ey) -> (sx, sy).
  * @param w width of the image
@@ -440,6 +476,8 @@ uint64_t time= rdtsc();
         
         if(s->codec_id==CODEC_ID_MPEG4){
             next= mpeg4_find_frame_end(s, buf, buf_size);
+        }else if(s->codec_id==CODEC_ID_H263){
+            next= h263_find_frame_end(s, buf, buf_size);
         }else{
             fprintf(stderr, "this codec doesnt support truncated bitstreams\n");
             return -1;
@@ -753,6 +791,7 @@ retry:
 #ifdef PRINT_FRAME_TIME
 printf("%Ld\n", rdtsc()-time);
 #endif
+
     return get_consumed_bytes(s, buf_size);
 }
 
@@ -784,7 +823,7 @@ AVCodec h263_decoder = {
     NULL,
     ff_h263_decode_end,
     ff_h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
 };
 
 AVCodec msmpeg4v1_decoder = {

@@ -3902,10 +3902,21 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 /* most is hardcoded. should extend to handle all h263 streams */
 int h263_decode_picture_header(MpegEncContext *s)
 {
-    int format, width, height;
+    int format, width, height, i;
+    uint32_t startcode;
+    
+    align_get_bits(&s->gb);
 
-    /* picture start code */
-    if (get_bits_long(&s->gb, 22) != 0x20) {
+    startcode= get_bits(&s->gb, 22-8);
+
+    for(i= s->gb.size_in_bits - get_bits_count(&s->gb); i>0; i--) {
+        startcode = ((startcode << 8) | get_bits(&s->gb, 8)) & 0x003FFFFF;
+        
+        if(startcode == 0x20)
+            break;
+    }
+        
+    if (startcode != 0x20) {
         fprintf(stderr, "Bad picture start code\n");
         return -1;
     }
@@ -3988,15 +3999,26 @@ int h263_decode_picture_header(MpegEncContext *s)
                 s->h263_aic = 1;
             }
 	    
-            skip_bits(&s->gb, 7);
-            /* these are the 7 bits: (in order of appearence  */
-            /* Deblocking Filter */
-            /* Slice Structured */
-            /* Reference Picture Selection */
-            /* Independent Segment Decoding */
-            /* Alternative Inter VLC */
-            /* Modified Quantization */
-            /* Prevent start code emulation */
+            if (get_bits1(&s->gb) != 0) {
+                fprintf(stderr, "Deblocking Filter not supported\n");
+            }
+            if (get_bits1(&s->gb) != 0) {
+                fprintf(stderr, "Slice Structured not supported\n");
+            }
+            if (get_bits1(&s->gb) != 0) {
+                fprintf(stderr, "Reference Picture Selection not supported\n");
+            }
+            if (get_bits1(&s->gb) != 0) {
+                fprintf(stderr, "Independent Segment Decoding not supported\n");
+            }
+            if (get_bits1(&s->gb) != 0) {
+                fprintf(stderr, "Alternative Inter VLC not supported\n");
+            }
+            if (get_bits1(&s->gb) != 0) {
+                fprintf(stderr, "Modified Quantization not supported\n");
+            }
+            
+            skip_bits(&s->gb, 1); /* Prevent start code emulation */
 
             skip_bits(&s->gb, 3); /* Reserved */
         } else if (ufep != 0) {
@@ -4072,6 +4094,18 @@ int h263_decode_picture_header(MpegEncContext *s)
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
 
+     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
+         printf("qp:%d %c size:%d rnd:%d %s %s %s %s\n", 
+         s->qscale, av_get_pict_type_char(s->pict_type),
+         s->gb.size_in_bits, 1-s->no_rounding,
+         s->mv_type == MV_TYPE_8X8 ? "ADV" : "",
+         s->umvplus ? "UMV" : "",
+         s->h263_long_vectors ? "LONG" : "",
+         s->h263_plus ? "+" : ""
+         ); 
+     }
+
+    
     return 0;
 }
 
