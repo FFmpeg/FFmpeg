@@ -5,6 +5,8 @@ version 0.4.6:
 - recoded dct and motion vector search with gcc (no longer depends on
   nasm).
 - fix quantization bug in AC3 encoder.
+- added PCM codecs and format. Corrected wav/avi/asf pcm issues.
+- added prototype ffplay program.
 - added GOB header parsing on H.263/H.263+ decoder. (Juanjo)
 - bug fix on MCBPC tables of H.263. (Juanjo)
 - bug fix on DC coefficients of H.263. (Juanjo)
@@ -14,6 +16,7 @@ version 0.4.6:
 - preliminary RTP "friendly" mode for H.263/H.263+ coding. (Juanjo)
 - added GOB header for H.263/H.263+ coding on RTP mode. (Juanjo)
 - now H.263 picture size is returned on the first decoded frame. (Juanjo)
+- added first regression tests
 
 version 0.4.5:
 
