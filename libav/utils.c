@@ -124,6 +124,18 @@ void nstrcpy(char *buf, int buf_size, const char *str)
     *q = '\0';
 }
 
+void strlcpy(char *dst, const char *src, int len)
+{
+    int slen = strlen(src) + 1;
+
+    if (slen <= len) {
+        memcpy(dst, src, slen);
+    } else {
+        memcpy(dst, src, len - 1);
+        dst[len - 1] = 0;
+    }
+}
+
 void register_all(void)
 {
     avcodec_init();
@@ -561,6 +573,7 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
             return 1;
         if (*p != '&')
             break;
+        p++;
     }
     return 0;
 }
