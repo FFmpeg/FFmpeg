@@ -1061,8 +1061,12 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
             }
             else if( st->codec.codec_tag == MKTAG( 'm', 'p', '4', 'a' ))
             {
+                MOV_atom_t a;
+                int mp4_version;
+
                 /* Handle mp4 audio tag */
-                get_be32(pb); /* version */
+                mp4_version=get_be16(pb);/*version*/
+                get_be16(pb); /*revesion*/
                 get_be32(pb);
                 st->codec.channels = get_be16(pb); /* channels */
                 st->codec.bits_per_sample = get_be16(pb); /* bits per sample */
@@ -1070,10 +1074,19 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                 st->codec.sample_rate = get_be16(pb); /* sample rate, not always correct */
                 get_be16(pb);
                 c->mp4=1;
-		{
-                MOV_atom_t a = { format, url_ftell(pb), size - (20 + 20 + 8) };
+                
+                if(mp4_version==1)
+                {
+                    url_fskip(pb,16);
+                    a.size=size-(16+20+16);
+                }
+                else
+                    a.size=size-(16+20);
+
+                a.offset=url_ftell(pb);
+                                
                 mov_read_default(c, pb, a);
-		}
+
                 /* Get correct sample rate from extradata */
                 if(st->codec.extradata_size) {
                    const int samplerate_table[] = {
