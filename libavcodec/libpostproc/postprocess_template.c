@@ -3366,8 +3366,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 
 	//FIXME remove
 	uint64_t * const yHistogram= c.yHistogram;
-	uint8_t * const tempSrc= c.tempSrc;
-	uint8_t * const tempDst= c.tempDst;
+	uint8_t * const tempSrc= srcStride > 0 ? c.tempSrc : c.tempSrc - 23*srcStride;
+	uint8_t * const tempDst= dstStride > 0 ? c.tempDst : c.tempDst - 23*dstStride;
 	//const int mbWidth= isColor ? (width+7)>>3 : (width+15)>>4;
 
 #ifdef HAVE_MMX
@@ -3529,8 +3529,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 			dstBlock+=8;
 			srcBlock+=8;
 		}
-		if(width==dstStride)
-			memcpy(dst, tempDst + 9*dstStride, copyAhead*dstStride);
+		if(width==ABS(dstStride))
+			linecpy(dst, tempDst + 9*dstStride, copyAhead, dstStride);
 		else
 		{
 			int i;
@@ -3552,7 +3552,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 		uint8_t *tempBlock2= c.tempBlocks + 8;
 #endif
 		int8_t *QPptr= &QPs[(y>>qpVShift)*QPStride];
-		int8_t *nonBQPptr= &c.nonBQPTable[(y>>qpVShift)*QPStride];
+		int8_t *nonBQPptr= &c.nonBQPTable[(y>>qpVShift)*ABS(QPStride)];
 		int QP=0;
 		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
 		   if not than use a temporary buffer */
@@ -3561,19 +3561,19 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 			int i;
 			/* copy from line (copyAhead) to (copyAhead+7) of src, these will be copied with
 			   blockcopy to dst later */
-			memcpy(tempSrc + srcStride*copyAhead, srcBlock + srcStride*copyAhead,
-				srcStride*MAX(height-y-copyAhead, 0) );
+			linecpy(tempSrc + srcStride*copyAhead, srcBlock + srcStride*copyAhead,
+				MAX(height-y-copyAhead, 0), srcStride);
 
 			/* duplicate last line of src to fill the void upto line (copyAhead+7) */
 			for(i=MAX(height-y, 8); i<copyAhead+8; i++)
-				memcpy(tempSrc + srcStride*i, src + srcStride*(height-1), srcStride);
+				memcpy(tempSrc + srcStride*i, src + srcStride*(height-1), ABS(srcStride));
 
 			/* copy up to (copyAhead+1) lines of dst (line -1 to (copyAhead-1))*/
-			memcpy(tempDst, dstBlock - dstStride, dstStride*MIN(height-y+1, copyAhead+1) );
+			linecpy(tempDst, dstBlock - dstStride, MIN(height-y+1, copyAhead+1), dstStride);
 
 			/* duplicate last line of dst to fill the void upto line (copyAhead) */
 			for(i=height-y+1; i<=copyAhead; i++)
-				memcpy(tempDst + dstStride*i, dst + dstStride*(height-1), dstStride);
+				memcpy(tempDst + dstStride*i, dst + dstStride*(height-1), ABS(dstStride));
 
 			dstBlock= tempDst + dstStride;
 			srcBlock= tempSrc;
@@ -3785,8 +3785,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 		if(y+15 >= height)
 		{
 			uint8_t *dstBlock= &(dst[y*dstStride]);
-			if(width==dstStride)
-				memcpy(dstBlock, tempDst + dstStride, dstStride*(height-y));
+			if(width==ABS(dstStride))
+				linecpy(dstBlock, tempDst + dstStride, height-y, dstStride);
 			else
 			{
 				int i;
