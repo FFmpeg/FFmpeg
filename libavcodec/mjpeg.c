@@ -20,7 +20,7 @@
  * aspecting and new decode_frame mechanism
  *                                  by Alex Beregszaszi <alex@naxine.org>
  */
-#define DEBUG
+//#define DEBUG
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
