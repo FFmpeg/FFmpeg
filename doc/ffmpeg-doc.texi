@@ -896,7 +896,7 @@ can be generated automatically.
 
 @section Submitting patches
 
-When you submit your patch, try to send a unified diff (diff '-u'
+When you submit your patch, try to send a unified diff (diff '-up'
 option). I cannot read other diffs :-)
 
 Run the regression tests before submitting a patch so that you can
