@@ -2401,18 +2401,23 @@ static void hl_decode_mb(H264Context *h){
             if(!s->encoding){
                 for(i=0; i<16; i++){
                     uint8_t * const ptr= dest_y + h->block_offset[i];
-                    uint8_t *topright= ptr + 4 - linesize;
-                    const int topright_avail= (h->topright_samples_available<<i)&0x8000;
+                    uint8_t *topright;
                     const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
                     int tr;
 
-                    if(!topright_avail){
-                        tr= ptr[3 - linesize]*0x01010101;
-                        topright= (uint8_t*) &tr;
-                    }else if(i==5 && h->deblocking_filter){
-                        tr= *(uint32_t*)h->top_border[mb_x+1];
-                        topright= (uint8_t*) &tr;
-                    }
+                    if(dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED){
+                        const int topright_avail= (h->topright_samples_available<<i)&0x8000;
+                        assert(mb_y || linesize <= h->block_offset[i]);
+                        if(!topright_avail){
+                            tr= ptr[3 - linesize]*0x01010101;
+                            topright= (uint8_t*) &tr;
+                        }else if(i==5 && h->deblocking_filter){
+                            tr= *(uint32_t*)h->top_border[mb_x+1];
+                            topright= (uint8_t*) &tr;
+                        }else
+                            topright= ptr + 4 - linesize;
+                    }else
+                        topright= NULL;
 
                     h->pred4x4[ dir ](ptr, topright, linesize);
                     if(h->non_zero_count_cache[ scan8[i] ]){
