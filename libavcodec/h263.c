@@ -276,16 +276,15 @@ void h263_encode_mb(MpegEncContext * s,
 static inline int mid_pred(int a, int b, int c)
 {
     int vmin, vmax;
-    vmin = a;
+    vmax = vmin = a;
     if (b < vmin)
         vmin = b;
+    else
+	vmax = b;
+
     if (c < vmin)
         vmin = c;
-
-    vmax = a;
-    if (b > vmax)
-        vmax = b;
-    if (c > vmax)
+    else if (c > vmax)
         vmax = c;
 
     return a + b + c - vmin - vmax;
@@ -294,38 +293,39 @@ static inline int mid_pred(int a, int b, int c)
 INT16 *h263_pred_motion(MpegEncContext * s, int block, 
                         int *px, int *py)
 {
-    int x, y, wrap;
+    int xy, y, wrap;
     INT16 *A, *B, *C, *mot_val;
 
-    x = 2 * s->mb_x + 1 + (block & 1);
-    y = 2 * s->mb_y + 1 + ((block >> 1) & 1);
     wrap = 2 * s->mb_width + 2;
+    y = xy = 2 * s->mb_y + 1 + ((block >> 1) & 1); // y
+    xy *= wrap; // y * wrap
+    xy += 2 * s->mb_x + 1 + (block & 1); // x + y * wrap
 
-    mot_val = s->motion_val[(x) + (y) * wrap];
+    mot_val = s->motion_val[xy];
 
     /* special case for first line */
     if (y == 1 || s->first_slice_line || s->first_gob_line) {
-        A = s->motion_val[(x-1) + (y) * wrap];
+        A = s->motion_val[xy - 1];
         *px = A[0];
         *py = A[1];
     } else {
         switch(block) {
         default:
         case 0:
-            A = s->motion_val[(x-1) + (y) * wrap];
-            B = s->motion_val[(x) + (y-1) * wrap];
-            C = s->motion_val[(x+2) + (y-1) * wrap];
+            A = s->motion_val[xy - 1];
+            B = s->motion_val[xy - wrap];
+            C = s->motion_val[xy + 2 - wrap];
             break;
         case 1:
         case 2:
-            A = s->motion_val[(x-1) + (y) * wrap];
-            B = s->motion_val[(x) + (y-1) * wrap];
-            C = s->motion_val[(x+1) + (y-1) * wrap];
+            A = s->motion_val[xy - 1];
+            B = s->motion_val[xy - wrap];
+            C = s->motion_val[xy + 1 - wrap];
             break;
         case 3:
-            A = s->motion_val[(x-1) + (y) * wrap];
-            B = s->motion_val[(x-1) + (y-1) * wrap];
-            C = s->motion_val[(x) + (y-1) * wrap];
+            A = s->motion_val[xy - 1];
+            B = s->motion_val[xy - 1 - wrap];
+            C = s->motion_val[xy - wrap];
             break;
         }
         *px = mid_pred(A[0], B[0], C[0]);
@@ -538,20 +538,22 @@ void h263_dc_scale(MpegEncContext * s)
 
 static int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr)
 {
-    int a, b, c, x, y, wrap, pred, scale;
+    int a, b, c, xy, wrap, pred, scale;
     UINT16 *dc_val;
 
     /* find prediction */
     if (n < 4) {
-	x = 2 * s->mb_x + 1 + (n & 1);
-	y = 2 * s->mb_y + 1 + ((n & 2) >> 1);
 	wrap = s->mb_width * 2 + 2;
+	xy = 2 * s->mb_y + 1 + ((n & 2) >> 1);
+        xy *= wrap;
+	xy += 2 * s->mb_x + 1 + (n & 1);
 	dc_val = s->dc_val[0];
 	scale = s->y_dc_scale;
     } else {
-	x = s->mb_x + 1;
-	y = s->mb_y + 1;
 	wrap = s->mb_width + 2;
+	xy = s->mb_y + 1;
+	xy *= wrap;
+	xy += s->mb_x + 1;
 	dc_val = s->dc_val[n - 4 + 1];
 	scale = s->c_dc_scale;
     }
@@ -559,9 +561,9 @@ static int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *di
     /* B C
      * A X 
      */
-    a = dc_val[(x - 1) + (y) * wrap];
-    b = dc_val[(x - 1) + (y - 1) * wrap];
-    c = dc_val[(x) + (y - 1) * wrap];
+    a = dc_val[xy - 1];
+    b = dc_val[xy - 1 - wrap];
+    c = dc_val[xy - wrap];
 
     if (abs(a - b) < abs(b - c)) {
 	pred = c;
@@ -574,7 +576,7 @@ static int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *di
     pred = (pred + (scale >> 1)) / scale;
 
     /* prepare address for prediction update */
-    *dc_val_ptr = &dc_val[(x) + (y) * wrap];
+    *dc_val_ptr = &dc_val[xy];
 
     return pred;
 }
