@@ -82,6 +82,10 @@ typedef struct SPS{
     int crop_bottom;            ///< frame_cropping_rect_bottom_offset
     int vui_parameters_present_flag;
     AVRational sar;
+    int timing_info_present_flag;
+    uint32_t num_units_in_tick;
+    uint32_t time_scale;
+    int fixed_frame_rate_flag;
     short offset_for_ref_frame[256]; //FIXME dyn aloc?
 }SPS;
 
@@ -3042,6 +3046,11 @@ static int decode_slice_header(H264Context *h){
         s->avctx->width = s->width;
         s->avctx->height = s->height;
         s->avctx->sample_aspect_ratio= h->sps.sar;
+
+        if(h->sps.timing_info_present_flag && h->sps.fixed_frame_rate_flag){
+            s->avctx->frame_rate = h->sps.time_scale;
+            s->avctx->frame_rate_base = h->sps.num_units_in_tick;
+        }
     }
 
     if(first_mb_in_slice == 0){
@@ -5302,6 +5311,33 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         sps->sar.den= 0;
     }
 //            s->avctx->aspect_ratio= sar_width*s->width / (float)(s->height*sar_height);
+
+    if(get_bits1(&s->gb)){      /* overscan_info_present_flag */
+        get_bits1(&s->gb);      /* overscan_appropriate_flag */
+    }
+
+    if(get_bits1(&s->gb)){      /* video_signal_type_present_flag */
+        get_bits(&s->gb, 3);    /* video_format */
+        get_bits1(&s->gb);      /* video_full_range_flag */
+        if(get_bits1(&s->gb)){  /* colour_description_present_flag */
+            get_bits(&s->gb, 8); /* colour_primaries */
+            get_bits(&s->gb, 8); /* transfer_characteristics */
+            get_bits(&s->gb, 8); /* matrix_coefficients */
+        }
+    }
+
+    if(get_bits1(&s->gb)){      /* chroma_location_info_present_flag */
+        get_ue_golomb(&s->gb);  /* chroma_sample_location_type_top_field */
+        get_ue_golomb(&s->gb);  /* chroma_sample_location_type_bottom_field */
+    }
+
+    sps->timing_info_present_flag = get_bits1(&s->gb);
+    if(sps->timing_info_present_flag){
+        sps->num_units_in_tick = get_bits_long(&s->gb, 32);
+        sps->time_scale = get_bits_long(&s->gb, 32);
+        sps->fixed_frame_rate_flag = get_bits1(&s->gb);
+    }
+
 #if 0
 | overscan_info_present_flag                        |0  |u(1)    |
 | if( overscan_info_present_flag )                  |   |        |
