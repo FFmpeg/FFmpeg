@@ -981,7 +981,7 @@ the @samp{inline} keyword;
 @item
 designated struct initializers (@samp{struct s x = @{ .i = 17 @};})
 @item
-compound literals (@samp{x = (struct s) { 17, 23 @};})
+compound literals (@samp{x = (struct s) @{ 17, 23 @};})
 @end itemize
 
 These features are supported by all compilers we care about, so we won't
@@ -1017,9 +1017,9 @@ above it explaining what the function does, even if its just one sentance.
 All Structures and their member variables should be documented too.
 @example
 /**
- * @file mpeg.c
+ * @@file mpeg.c
  * mpeg codec.
- * @author ...
+ * @@author ...
  */
 
 /**
@@ -1027,19 +1027,19 @@ All Structures and their member variables should be documented too.
  * more text ...
  * ...
  */
-typedef struct Foobar{
+typedef struct Foobar@{
     int var1; /**< var1 description */
     int var2; ///< var2 description
     /** var3 description */
     int var3;
-} Foobar;
+@} Foobar;
 
 /**
  * Summary sentance.
  * more text ...
  * ...
- * @param my_parameter description of my_parameter
- * @return return value description
+ * @@param my_parameter description of my_parameter
+ * @@return return value description
  */
 int myfunc(int my_parameter)
 ...
@@ -1091,7 +1091,7 @@ please use av_log() instead.
    indentation changes (try to avoid this), separate them strictly from real
    changes.
 
-   NOTE: If you had to put if(){ .. } over a large (> 5 lines) chunk of code,
+   NOTE: If you had to put if()@{ .. @} over a large (> 5 lines) chunk of code,
    then either do NOT change the indentation of the inner part within (don't 
    move it to the right)! or do so in a seperate commit
 @item
@@ -1124,7 +1124,7 @@ please use av_log() instead.
 
     Never revert changes made a long time ago or buggy code. Fix it in the
     normal way instead.
-@end itemize
+@end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
 
