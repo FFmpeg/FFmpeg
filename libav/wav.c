@@ -33,7 +33,7 @@ CodecTag codec_wav_tags[] = {
 /* WAVEFORMATEX header */
 int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 {
-    int tag, bps;
+    int tag, bps, blkalign, bytespersec;
 
     tag = codec_get_tag(codec_wav_tags, enc->codec_id);
     if (tag == 0)
@@ -41,18 +41,39 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le16(pb, tag); 
     put_le16(pb, enc->channels);
     put_le32(pb, enc->sample_rate);
-    put_le32(pb, enc->bit_rate / 8);
-    put_le16(pb, 1); /* block align */
     if (enc->codec_id == CODEC_ID_PCM_U8 ||
         enc->codec_id == CODEC_ID_PCM_ALAW ||
         enc->codec_id == CODEC_ID_PCM_MULAW) {
         bps = 8;
+    } else if (enc->codec_id == CODEC_ID_MP2) {
+        bps = 0;
     } else {
         bps = 16;
     }
-    put_le16(pb, bps); /* bits per sample */
     
-    put_le16(pb, 0); /* wav_extra_size */
+    if (enc->codec_id == CODEC_ID_MP2)
+        blkalign = 1;
+    else
+        blkalign = enc->channels*bps >> 3;
+    if (enc->codec_id == CODEC_ID_PCM_U8 ||
+        enc->codec_id == CODEC_ID_PCM_S16LE) {
+        bytespersec = enc->sample_rate * blkalign;
+    } else {
+        bytespersec = enc->bit_rate / 8;
+    }
+    put_le32(pb, bytespersec); /* bytes per second */
+    put_le16(pb, blkalign); /* block align */
+    put_le16(pb, bps); /* bits per sample */
+    if (enc->codec_id == CODEC_ID_MP2) {
+        put_le16(pb, 12); /* wav_extra_size */
+        put_le16(pb, 1); /* wID */
+        put_le32(pb, 2); /* fdwFlags */
+        put_le16(pb, 1152); /* nBlockSize */
+        put_le16(pb, 1); /* nFramesPerBlock */
+        put_le16(pb, 1393); /* nCodecDelay */
+    } else
+        put_le16(pb, 0); /* wav_extra_size */
+
     return 0;
 }
 
