@@ -50,6 +50,7 @@ void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w)= draw_edg
 
 //#define DEBUG
 
+
 /* for jpeg fast DCT */
 #define CONST_BITS 14
 
@@ -72,10 +73,10 @@ static UINT8 h263_chroma_roundtab[16] = {
 static UINT16 default_mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static UINT8 default_fcode_tab[MAX_MV*2+1];
 
-/* default motion estimation */
-int motion_estimation_method = ME_LOG;
-
 extern UINT8 zigzag_end[64];
+
+/* default motion estimation */
+int motion_estimation_method = ME_EPZS;
 
 static void convert_matrix(int *qmat, UINT16 *qmat16, const UINT16 *quant_matrix, int qscale)
 {
@@ -315,7 +316,12 @@ int MPV_encode_init(AVCodecContext *avctx)
     }
     
     /* ME algorithm */
-    s->me_method = avctx->me_method;
+    if (avctx->me_method == 0)
+        /* For compatibility */
+        s->me_method = motion_estimation_method;
+    else
+        s->me_method = avctx->me_method;
+        
     /* Fixed QSCALE */
     s->fixed_qscale = (avctx->flags & CODEC_FLAG_QSCALE);
     
@@ -415,7 +421,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         mpeg1_encode_init(s);
 
     /* dont use mv_penalty table for crap MV as it would be confused */
-    if (s->me_method < 0) s->mv_penalty = default_mv_penalty;
+    if (s->me_method < 5) s->mv_penalty = default_mv_penalty;
 
     s->encoding = 1;
 
@@ -1346,7 +1352,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
 
     /* find best f_code for ME which do unlimited searches */
-    if(s->pict_type == P_TYPE && s->me_method >= 0){
+    if(s->pict_type == P_TYPE && s->me_method >= 5){
         int mv_num[8];
         int i;
         int loose=0;

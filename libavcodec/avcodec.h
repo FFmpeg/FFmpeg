@@ -58,13 +58,16 @@ enum SampleFormat {
 
 /* motion estimation type, EPZS by default */
 enum Motion_Est_ID {
-    ME_ZERO = -4,
+    ME_ZERO = 1,
     ME_FULL,
     ME_LOG,
     ME_PHODS,
     ME_EPZS,
     ME_X1
 };
+
+/* only for ME compatiblity with old apps */
+extern int motion_estimation_method;
 
 /* ME algos sorted by quality */
 static const int Motion_Est_QTab[] = { -4, -1, -2, 1, 0, -3 };

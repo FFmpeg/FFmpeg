@@ -82,7 +82,7 @@ static int video_qmax = 15;
 static int video_qdiff = 3;
 static float video_qblur = 0.5;
 static float video_qcomp = 0.5;
-static int motion_estimation_method = 0;
+static int me_method = 0;
 static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
 static int same_quality = 0;
@@ -1388,7 +1388,7 @@ void opt_motion_estimation(const char *arg)
             break;
         p++;
     }
-    motion_estimation_method = (p - motion_str) - 4;
+    me_method = (p - motion_str) + 1;
 }
 
 void opt_video_codec(const char *arg)
@@ -1784,7 +1784,7 @@ void opt_output_file(const char *filename)
             else
                 video_enc->get_psnr = 0;
             
-            video_enc->me_method = motion_estimation_method;
+            video_enc->me_method = me_method;
             
             /* XXX: need to find a way to set codec parameters */
             if (oc->format == &ppm_format ||
@@ -2038,11 +2038,11 @@ void show_formats(void)
     pp = motion_str;
     while (*pp) {
         printf(" %s", *pp);
-        if ((pp - motion_str - 4) == ME_ZERO) 
+        if ((pp - motion_str + 1) == ME_ZERO) 
             printf("(fastest)");
-        else if ((pp - motion_str - 4) == ME_FULL) 
+        else if ((pp - motion_str + 1) == ME_FULL) 
             printf("(slowest)");
-        else if ((pp - motion_str - 4) == ME_EPZS) 
+        else if ((pp - motion_str + 1) == ME_EPZS) 
             printf("(default)");
         pp++;
     }
