@@ -18,6 +18,7 @@
  */
 #include "avformat.h"
 #include "tick.h"
+#include <ctype.h>
 #ifndef CONFIG_WIN32
 #include <unistd.h>
 #include <fcntl.h>
@@ -28,6 +29,10 @@
 #include <sys/timeb.h>
 #endif
 #include <time.h>
+
+#ifndef HAVE_STRPTIME
+#include "strptime.h"
+#endif
 
 AVInputFormat *first_iformat;
 AVOutputFormat *first_oformat;
@@ -102,6 +107,25 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
     }
     return fmt_found;
 }   
+
+AVOutputFormat *guess_stream_format(const char *short_name, const char *filename, 
+                             const char *mime_type)
+{
+    AVOutputFormat *fmt = guess_format(short_name, filename, mime_type);
+
+    if (fmt) {
+        AVOutputFormat *stream_fmt;
+        char stream_format_name[64];
+
+        snprintf(stream_format_name, sizeof(stream_format_name), "%s_stream", fmt->name);
+        stream_fmt = guess_format(stream_format_name, NULL, NULL);
+
+        if (stream_fmt)
+            fmt = stream_fmt;
+    }
+
+    return fmt;
+}
 
 AVInputFormat *av_find_input_format(const char *short_name)
 {
@@ -786,60 +810,116 @@ INT64 av_gettime(void)
 #endif
 }
 
-/* syntax: [YYYY-MM-DD ][[HH:]MM:]SS[.m...] . Return the date in micro seconds since 1970 */
+static time_t mktimegm(struct tm *tm)
+{
+    time_t t;
+
+    int y = tm->tm_year + 1900, m = tm->tm_mon + 1, d = tm->tm_mday;
+
+    if (m < 3) {
+        m += 12;
+        y--;
+    }
+
+    t = 86400 * 
+        (d + (153 * m - 457) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 719469);
+
+    t += 3600 * tm->tm_hour + 60 * tm->tm_min + tm->tm_sec;
+
+    return t;
+}
+
+/* syntax:
+ *  [YYYY-MM-DD]{T| }HH[:MM[:SS[.m...]]][Z] . 
+ *  [YYYYMMDD]{T| }HH[MM[SS[.m...]]][Z] . 
+ * Time is localtime unless Z is suffixed to the end. In this case GMT
+ * Return the date in micro seconds since 1970 */
 INT64 parse_date(const char *datestr, int duration)
 {
     const char *p;
     INT64 t;
     struct tm dt;
+    int i;
+    static const char *date_fmt[] = {
+        "%Y-%m-%d",
+        "%Y%m%d",
+    };
+    static const char *time_fmt[] = {
+        "%H:%M:%S",
+        "%H%M%S",
+    };
+    const char *q;
+    int is_utc;
+    char lastch;
+    time_t now = time(0);
+
+    lastch = datestr[strlen(datestr)-1];
+
+    is_utc = (lastch == 'z' || lastch == 'Z');
 
     memset(&dt, 0, sizeof(dt));
 
     p = datestr;
+    q = 0;
+
     if (!duration) {
-        if (strlen(p) >= 5 && p[4] == '-') {
-            dt.tm_year = strtol(p, (char **)&p, 10);
-            if (*p)
-                p++;
-            dt.tm_mon = strtol(p, (char **)&p, 10) - 1;
-            if (*p)
-                p++;
-            dt.tm_mday = strtol(p, (char **)&p, 10) - 1;
-            if (*p)
-                p++;
+        for (i = 0; i < sizeof(date_fmt) / sizeof(date_fmt[0]); i++) {
+            q = strptime(p, date_fmt[i], &dt);
+            if (q) {
+                break;
+            }
+        }
+
+        if (!q) {
+            if (is_utc) {
+                dt = *gmtime(&now);
+            } else {
+                dt = *localtime(&now);
+            }
+            dt.tm_hour = dt.tm_min = dt.tm_sec = 0;
         } else {
-            time_t now = time(0);
-            dt = *localtime(&now);
-            dt.tm_hour = 0;
-            dt.tm_min = 0;
-            dt.tm_sec = 0;
+            p = q;
+        }
+
+        if (*p == 'T' || *p == 't' || *p == ' ')
+            p++;
+    }
+
+    for (i = 0; i < sizeof(time_fmt) / sizeof(time_fmt[0]); i++) {
+        q = strptime(p, time_fmt[i], &dt);
+        if (q) {
+            break;
         }
     }
-    
-    dt.tm_hour = strtol(p, (char **)&p, 10);
-    if (*p)
-        p++;
-    dt.tm_min = strtol(p, (char **)&p, 10);
-    if (*p)
-        p++;
-    dt.tm_sec = strtol(p, (char **)&p, 10);
 
-    if (duration) {
-        t = (INT64) 1000000 * (dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec);
-    } else {
-        t = (INT64) 1000000 * mktime(&dt);
+    /* Now we have all the fields that we can get */
+    if (!q) {
+        if (duration)
+            return 0;
+        else
+            return now * INT64_C(1000000);
     }
 
-    if (*p == '.') {
+    if (duration) {
+        t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
+    } else {
+        dt.tm_isdst = -1;       /* unknown */
+        if (is_utc) {
+            t = mktimegm(&dt);
+        } else {
+            t = mktime(&dt);
+        }
+    }
+
+    t *= 1000000;
+
+    if (*q == '.') {
         int val, n;
-        p++;
-        n = strlen(p);
-        if (n > 6)
-            n = 6;
-        val = strtol(p, NULL, 10);
-        while (n < 6) {
-            val = val * 10;
-            n++;
+        q++;
+        for (val = 0, n = 100000; n >= 1; n /= 10, q++) {
+            if (!isdigit(*q)) 
+                break;
+            val += n * (*q - '0');
         }
         t += val;
     }
