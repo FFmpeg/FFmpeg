@@ -2239,7 +2239,7 @@ static void opt_output_file(const char *filename)
                 
                 video_enc->width = frame_width;
                 video_enc->height = frame_height;
-		video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 30000);
+		video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
 		video_enc->pix_fmt = frame_pix_fmt;
 
                 if (!intra_only)
