@@ -749,7 +749,7 @@ solutions.
 @item Vorbis                 @tab  X   @tab  X
 @tab supported through the external library libvorbis
 @item WMA V1/V2              @tab      @tab X
-@item Microsoft ADPCM        @tab      @tab X
+@item Microsoft ADPCM        @tab X    @tab X
 @item MS IMA ADPCM           @tab X    @tab X
 @item QT IMA ADPCM           @tab      @tab X
 @item 4X IMA ADPCM           @tab      @tab X
