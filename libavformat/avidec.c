@@ -21,18 +21,33 @@
 #include "dv.h"
 
 //#define DEBUG
+//#define DEBUG_SEEK
 
-typedef struct AVIIndex {
-    unsigned char tag[4];
-    unsigned int flags, pos, len;
-    struct AVIIndex *next;
-} AVIIndex;
+typedef struct AVIIndexEntry {
+    unsigned int flags;
+    unsigned int pos;
+    unsigned int cum_len; /* sum of all lengths before this packet */
+} AVIIndexEntry;
+
+typedef struct AVIStream {
+    AVIIndexEntry *index_entries;
+    int nb_index_entries;
+    int index_entries_allocated_size;
+    int frame_offset; /* current frame (video) or byte (audio) counter
+                         (used to compute the pts) */
+    int scale;
+    int rate;    
+    int sample_size; /* audio only data */
+    
+    int new_frame_offset; /* temporary storage (used during seek) */
+    int cum_len; /* temporary storage (used during seek) */
+} AVIStream;
 
 typedef struct {
     int64_t  riff_end;
     int64_t  movi_end;
     offset_t movi_list;
-    AVIIndex *first, *last;
+    int index_loaded;
     DVDemuxContext* dv_demux;
 } AVIContext;
 
@@ -74,7 +89,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     unsigned int size, nb_frames;
     int i, n;
     AVStream *st;
+    AVIStream *ast;
     int xan_video = 0;  /* hack to support Xan A/V */
+
+    av_set_pts_info(s, 64, 1, AV_TIME_BASE);
 
     if (get_riff(avi, pb) < 0)
         return -1;
@@ -100,7 +118,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             print_tag("list", tag1, 0);
 #endif
             if (tag1 == MKTAG('m', 'o', 'v', 'i')) {
-                avi->movi_end = url_ftell(pb) + size - 4;
+                avi->movi_list = url_ftell(pb) - 4;
+                avi->movi_end = avi->movi_list + size;
 #ifdef DEBUG
                 printf("movi end=%Lx\n", avi->movi_end);
 #endif
@@ -115,9 +134,14 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    url_fskip(pb, 4 * 4);
             n = get_le32(pb);
             for(i=0;i<n;i++) {
+                AVIStream *ast;
                 st = av_new_stream(s, i);
                 if (!st)
                     goto fail;
+                ast = av_mallocz(sizeof(AVIStream));
+                if (!ast)
+                    goto fail;
+                st->priv_data = ast;
 	    }
             url_fskip(pb, size - 7 * 4);
             break;
@@ -159,7 +183,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 } 
 
                 st = s->streams[stream_index];
-
+                ast = st->priv_data;
+                
                 get_le32(pb); /* flags */
                 get_le16(pb); /* priority */
                 get_le16(pb); /* language */
@@ -168,27 +193,28 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 rate = get_le32(pb); /* rate */
 
                 if(scale && rate){
-                    st->codec.frame_rate = rate;
-                    st->codec.frame_rate_base = scale;
                 }else if(frame_period){
-                    st->codec.frame_rate = 1000000;
-                    st->codec.frame_rate_base = frame_period;
+                    rate = 1000000;
+                    scale = frame_period;
                 }else{
-                    st->codec.frame_rate = 25;
-                    st->codec.frame_rate_base = 1;
+                    rate = 25;
+                    scale = 1;
                 }
+                ast->rate = rate;
+                ast->scale = scale;
+                st->codec.frame_rate = rate;
+                st->codec.frame_rate_base = scale;
                 get_le32(pb); /* start */
                 nb_frames = get_le32(pb);
                 st->start_time = 0;
                 st->duration = (double)nb_frames * 
                     st->codec.frame_rate_base * AV_TIME_BASE / 
                     st->codec.frame_rate;
-                
 		url_fskip(pb, size - 9 * 4);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
                 {
-                    unsigned int length, rate;
+                    unsigned int length;
 
                     codec_type = CODEC_TYPE_AUDIO;
 
@@ -197,19 +223,23 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         break;
                     } 
                     st = s->streams[stream_index];
-
+                    ast = st->priv_data;
+                    
                     get_le32(pb); /* flags */
                     get_le16(pb); /* priority */
                     get_le16(pb); /* language */
                     get_le32(pb); /* initial frame */
-                    get_le32(pb); /* scale */
-                    rate = get_le32(pb);
+                    ast->scale = get_le32(pb); /* scale */
+                    ast->rate = get_le32(pb);
                     get_le32(pb); /* start */
                     length = get_le32(pb); /* length, in samples or bytes */
+                    get_le32(pb); /* buffer size */
+                    get_le32(pb); /* quality */
+                    ast->sample_size = get_le32(pb); /* sample ssize */
                     st->start_time = 0;
-                    if (rate != 0)
-                        st->duration = (int64_t)length * AV_TIME_BASE / rate;
-                    url_fskip(pb, size - 9 * 4);
+                    if (ast->rate != 0)
+                        st->duration = (int64_t)length * AV_TIME_BASE / ast->rate;
+                    url_fskip(pb, size - 12 * 4);
                 }
                 break;
             default:
@@ -274,6 +304,9 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         url_fskip(pb, 1);
                     /* special case time: To support Xan DPCM, hardcode
                      * the format if Xxan is the video codec */
+                    st->need_parsing = 1;
+                    /* force parsing as several audio frames can be in
+                       one packet */
                     if (xan_video)
                         st->codec.codec_id = CODEC_ID_XAN_DPCM;
                     break;
@@ -377,15 +410,244 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 	        size = dv_produce_packet(avi->dv_demux, pkt,
 		                         pkt->data, pkt->size);
 		pkt->destruct = dstr;
+                pkt->flags |= PKT_FLAG_KEY;
 	    } else {
+                AVStream *st;
+                AVIStream *ast;
+                st = s->streams[n];
+                ast = st->priv_data;
+
+                /* XXX: how to handle B frames in avi ? */
+                pkt->pts = ((int64_t)ast->frame_offset * ast->scale* AV_TIME_BASE) / ast->rate;
                 pkt->stream_index = n;
-                pkt->flags |= PKT_FLAG_KEY; // FIXME: We really should read 
-		                            //        index for that
+                /* FIXME: We really should read index for that */
+                if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
+                    if (ast->frame_offset < ast->nb_index_entries) {
+                        if (ast->index_entries[ast->frame_offset].flags & AVIIF_INDEX)
+                            pkt->flags |= PKT_FLAG_KEY; 
+                    } else {
+                        /* if no index, better to say that all frames
+                           are key frames */
+                        pkt->flags |= PKT_FLAG_KEY;
+                    }
+                    ast->frame_offset++;
+                } else {
+                    ast->frame_offset += pkt->size;
+                    pkt->flags |= PKT_FLAG_KEY; 
+                }
 	    }
             return size;
         }
     }
     return -1;
+}
+
+/* XXX: we make the implicit supposition that the position are sorted
+   for each stream */
+static int avi_read_idx1(AVFormatContext *s, int size)
+{
+    ByteIOContext *pb = &s->pb;
+    int nb_index_entries, i;
+    AVStream *st;
+    AVIStream *ast;
+    AVIIndexEntry *ie, *entries;
+    unsigned int index, tag, flags, pos, len;
+    
+    nb_index_entries = size / 16;
+    if (nb_index_entries <= 0)
+        return -1;
+
+    /* read the entries and sort them in each stream component */
+    for(i = 0; i < nb_index_entries; i++) {
+        tag = get_le32(pb);
+        flags = get_le32(pb);
+        pos = get_le32(pb);
+        len = get_le32(pb);
+#if defined(DEBUG_SEEK) && 0
+        printf("%d: tag=0x%x flags=0x%x pos=0x%x len=%d\n", 
+               i, tag, flags, pos, len);
+#endif
+        index = ((tag & 0xff) - '0') * 10;
+        index += ((tag >> 8) & 0xff) - '0';
+        if (index >= s->nb_streams)
+            continue;
+        st = s->streams[index];
+        ast = st->priv_data;
+        
+        entries = av_fast_realloc(ast->index_entries,
+                                  &ast->index_entries_allocated_size,
+                                  (ast->nb_index_entries + 1) * 
+                                  sizeof(AVIIndexEntry));
+        if (entries) {
+            ast->index_entries = entries;
+            ie = &entries[ast->nb_index_entries++];
+            ie->flags = flags;
+            ie->pos = pos;
+            ie->cum_len = ast->cum_len;
+            ast->cum_len += len;
+        }
+    }
+    return 0;
+}
+
+static int avi_load_index(AVFormatContext *s)
+{
+    AVIContext *avi = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+    uint32_t tag, size;
+
+    url_fseek(pb, avi->movi_end, SEEK_SET);
+#ifdef DEBUG_SEEK
+    printf("movi_end=0x%llx\n", avi->movi_end);
+#endif
+    for(;;) {
+        if (url_feof(pb))
+            break;
+        tag = get_le32(pb);
+        size = get_le32(pb);
+#ifdef DEBUG_SEEK
+        printf("tag=%c%c%c%c size=0x%x\n",
+               tag & 0xff,
+               (tag >> 8) & 0xff,
+               (tag >> 16) & 0xff,
+               (tag >> 24) & 0xff,
+               size);
+#endif
+        switch(tag) {
+        case MKTAG('i', 'd', 'x', '1'):
+            if (avi_read_idx1(s, size) < 0)
+                goto skip;
+            else
+                goto the_end;
+            break;
+        default:
+        skip:
+            size += (size & 1);
+            url_fskip(pb, size);
+            break;
+        }
+    }
+ the_end:
+    return 0;
+}
+
+/* return the index entry whose position is immediately >= 'wanted_pos' */
+static int locate_frame_in_index(AVIIndexEntry *entries, 
+                                 int nb_entries, int wanted_pos)
+{
+    int a, b, m, pos;
+    
+    a = 0;
+    b = nb_entries - 1;
+    while (a <= b) {
+        m = (a + b) >> 1;
+        pos = entries[m].pos;
+        if (pos == wanted_pos)
+            goto found;
+        else if (pos > wanted_pos) {
+            b = m - 1;
+        } else {
+            a = m + 1;
+        }
+    }
+    m = a;
+    if (m > 0)
+        m--;
+ found:
+    return m;
+}
+
+static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp)
+{
+    AVIContext *avi = s->priv_data;
+    AVStream *st;
+    AVIStream *ast;
+    int frame_number, i;
+    int64_t pos;
+
+    if (!avi->index_loaded) {
+        /* we only load the index on demand */
+        avi_load_index(s);
+        avi->index_loaded = 1;
+    }
+    if (stream_index < 0) {
+        for(i = 0; i < s->nb_streams; i++) {
+            st = s->streams[i];
+            if (st->codec.codec_type == CODEC_TYPE_VIDEO)
+                goto found;
+        }
+        return -1;
+    found:
+        stream_index = i;
+    }
+
+    st = s->streams[stream_index];
+    if (st->codec.codec_type != CODEC_TYPE_VIDEO)
+        return -1;
+    ast = st->priv_data;
+    /* compute the frame number */
+    frame_number = (timestamp * ast->rate) /
+        (ast->scale * (int64_t)AV_TIME_BASE);
+#ifdef DEBUG_SEEK
+    printf("timestamp=%0.3f nb_indexes=%d frame_number=%d\n", 
+           (double)timestamp / AV_TIME_BASE,
+           ast->nb_index_entries, frame_number);
+#endif
+    /* find a closest key frame before */
+    if (frame_number >= ast->nb_index_entries)
+        return -1;
+    while (frame_number >= 0 &&
+           !(ast->index_entries[frame_number].flags & AVIIF_INDEX))
+        frame_number--;
+    if (frame_number < 0)
+        return -1;
+    ast->new_frame_offset = frame_number;
+
+    /* find the position */
+    pos = ast->index_entries[frame_number].pos;
+
+#ifdef DEBUG_SEEK
+    printf("key_frame_number=%d pos=0x%llx\n", 
+           frame_number, pos);
+#endif
+    
+    /* update the frame counters for all the other stream by looking
+       at the positions just after the one found */
+    for(i = 0; i < s->nb_streams; i++) {
+        int j;
+        if (i != stream_index) {
+            st = s->streams[i];
+            ast = st->priv_data;
+            if (ast->nb_index_entries <= 0)
+                return -1;
+            j = locate_frame_in_index(ast->index_entries,
+                                      ast->nb_index_entries,
+                                      pos);
+            /* get next frame */
+            if ((j  + 1) < ast->nb_index_entries)
+                j++;
+            /* extract the current frame number */
+            if (st->codec.codec_type == CODEC_TYPE_VIDEO)           
+                ast->new_frame_offset = j;
+            else
+                ast->new_frame_offset = ast->index_entries[j].cum_len;
+        }
+    }
+    
+    /* everything is OK now. We can update the frame offsets */
+    for(i = 0; i < s->nb_streams; i++) {
+        st = s->streams[i];
+        ast = st->priv_data;
+        ast->frame_offset = ast->new_frame_offset;
+#ifdef DEBUG_SEEK
+        printf("%d: frame_offset=%d\n", i, 
+               ast->frame_offset);
+#endif
+    }
+    /* do the seek */
+    pos += avi->movi_list;
+    url_fseek(&s->pb, pos, SEEK_SET);
+    return 0;
 }
 
 static int avi_read_close(AVFormatContext *s)
@@ -395,7 +657,9 @@ static int avi_read_close(AVFormatContext *s)
 
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
-//        av_free(st->priv_data);
+        AVIStream *ast = st->priv_data;
+        av_free(ast->index_entries);
+        av_free(ast);
         av_free(st->codec.extradata);
         av_free(st->codec.palctrl);
     }
@@ -428,6 +692,7 @@ static AVInputFormat avi_iformat = {
     avi_read_header,
     avi_read_packet,
     avi_read_close,
+    avi_read_seek,
 };
 
 int avidec_init(void)
