@@ -80,7 +80,12 @@ $(LIB): $(OBJS) $(PPOBJS)
 	$(RANLIB) $@
 
 $(SLIB): $(OBJS)
-	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS) $(AMREXTRALIBS)
+ifeq ($(TARGET_MINGW32),yes)
+	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS) $(AMREXTRALIBS) $(VPATH)/../libavcodec/avcodec.dll
+	-lib /machine:i386 /def:$(@:.dll=.def)
+else
+	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS) $(AMREXTRALIBS) 
+endif
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend

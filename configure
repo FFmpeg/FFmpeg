@@ -191,6 +191,10 @@ dv1394="no"
 ffserver="no"
 network="no"
 mingw32="yes"
+LIBPREF=""
+LIBSUF=".lib"
+SLIBPREF=""
+SLIBSUF=".dll"
 ;;
 CYGWIN*)
 v4l="no"
@@ -884,6 +888,9 @@ if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
   echo "#define HAVE_MMX 1" >> $TMPH
   echo "#define __CPU__ 586" >> $TMPH
+fi
+if test "$mingw32" = "yes" ; then
+  echo "TARGET_MINGW32=yes" >> config.mak
 fi
 if test "$builtin_vector" = "yes" ; then
   echo "TARGET_BUILTIN_VECTOR=yes" >> config.mak
