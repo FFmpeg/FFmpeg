@@ -222,7 +222,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 	int i;
 	for(i=0; i<dstW; i++)
 	{
-		int val=0;
+		int val=1<<18;
 		int j;
 		for(j=0; j<lumFilterSize; j++)
 			val += lumSrc[j][i] * lumFilter[j];
@@ -233,8 +233,8 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 	if(uDest != NULL)
 		for(i=0; i<chrDstW; i++)
 		{
-			int u=0;
-			int v=0;
+			int u=1<<18;
+			int v=1<<18;
 			int j;
 			for(j=0; j<chrFilterSize; j++)
 			{
@@ -251,10 +251,10 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 #define YSCALE_YUV_2_PACKEDX_C(type) \
 		for(i=0; i<(dstW>>1); i++){\
 			int j;\
-			int Y1=0;\
-			int Y2=0;\
-			int U=0;\
-			int V=0;\
+			int Y1=1<<18;\
+			int Y2=1<<18;\
+			int U=1<<18;\
+			int V=1<<18;\
 			type *r, *b, *g;\
 			const int i2= 2*i;\
 			\
@@ -621,8 +621,8 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			int acc=0;
 			for(i=0; i<dstW-1; i+=2){
 				int j;
-				int Y1=0;
-				int Y2=0;
+				int Y1=1<<18;
+				int Y2=1<<18;
 
 				for(j=0; j<lumFilterSize; j++)
 				{
@@ -1093,7 +1093,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		scale/= sum;
 		for(j=0; j<*outFilterSize; j++)
 		{
-			(*outFilter)[i*(*outFilterSize) + j]= (int)(filter[i*filterSize + j]*scale);
+			(*outFilter)[i*(*outFilterSize) + j]= (int)(filter[i*filterSize + j]*scale + 0.5);
 		}
 	}
 	
@@ -1772,6 +1772,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	c->srcFormat= srcFormat;
 	c->origDstFormat= origDstFormat;
 	c->origSrcFormat= origSrcFormat;
+        c->vRounder= 4* 0x0001000100010001ULL;
 
 	usesFilter=0;
 	if(dstFilter->lumV!=NULL && dstFilter->lumV->length>1) usesFilter=1;

@@ -61,8 +61,8 @@
 
 #define YSCALEYUV2YV12X(x, offset) \
 			"xorl %%eax, %%eax		\n\t"\
-			"pxor %%mm3, %%mm3		\n\t"\
-			"pxor %%mm4, %%mm4		\n\t"\
+			"movq "VROUNDER_OFFSET"(%0), %%mm3\n\t"\
+			"movq %%mm3, %%mm4		\n\t"\
 			"leal " offset "(%0), %%edx	\n\t"\
 			"movl (%%edx), %%esi		\n\t"\
 			".balign 16			\n\t" /* FIXME Unroll? */\
@@ -84,8 +84,8 @@
 			MOVNTQ(%%mm3, (%1, %%eax))\
 			"addl $8, %%eax			\n\t"\
 			"cmpl %2, %%eax			\n\t"\
-			"pxor %%mm3, %%mm3		\n\t"\
-			"pxor %%mm4, %%mm4		\n\t"\
+			"movq "VROUNDER_OFFSET"(%0), %%mm3\n\t"\
+			"movq %%mm3, %%mm4		\n\t"\
 			"leal " offset "(%0), %%edx	\n\t"\
 			"movl (%%edx), %%esi		\n\t"\
 			"jb 1b				\n\t"
@@ -117,8 +117,8 @@
 		"1:				\n\t"\
 		"leal "CHR_MMX_FILTER_OFFSET"(%0), %%edx	\n\t"\
 		"movl (%%edx), %%esi		\n\t"\
-		"pxor %%mm3, %%mm3		\n\t"\
-		"pxor %%mm4, %%mm4		\n\t"\
+		"movq "VROUNDER_OFFSET"(%0), %%mm3\n\t"\
+		"movq %%mm3, %%mm4		\n\t"\
 		".balign 16			\n\t"\
 		"2:				\n\t"\
 		"movq 8(%%edx), %%mm0		\n\t" /* filterCoeff */\
@@ -135,8 +135,8 @@
 \
 		"leal "LUM_MMX_FILTER_OFFSET"(%0), %%edx	\n\t"\
 		"movl (%%edx), %%esi		\n\t"\
-		"pxor %%mm1, %%mm1		\n\t"\
-		"pxor %%mm7, %%mm7		\n\t"\
+		"movq "VROUNDER_OFFSET"(%0), %%mm1\n\t"\
+		"movq %%mm1, %%mm7		\n\t"\
 		".balign 16			\n\t"\
 		"2:				\n\t"\
 		"movq 8(%%edx), %%mm0		\n\t" /* filterCoeff */\
@@ -2611,6 +2611,8 @@ i--;
 		const int lastLumSrcY= firstLumSrcY + vLumFilterSize -1; // Last line needed as input
 		const int lastChrSrcY= firstChrSrcY + vChrFilterSize -1; // Last line needed as input
 
+//printf("dstY:%d dstH:%d firstLumSrcY:%d lastInLumBuf:%d vLumBufSize: %d vChrBufSize: %d slice: %d %d vLumFilterSize: %d firstChrSrcY: %d vChrFilterSize: %d c->chrSrcVSubSample: %d\n",
+// dstY, dstH, firstLumSrcY, lastInLumBuf, vLumBufSize, vChrBufSize, srcSliceY, srcSliceH, vLumFilterSize, firstChrSrcY, vChrFilterSize,  c->chrSrcVSubSample);
 		//handle holes (FAST_BILINEAR & weird filters)
 		if(firstLumSrcY > lastInLumBuf) lastInLumBuf= firstLumSrcY-1;
 		if(firstChrSrcY > lastInChrBuf) lastInChrBuf= firstChrSrcY-1;
