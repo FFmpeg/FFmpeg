@@ -84,10 +84,7 @@ int raw_read_packet(AVFormatContext *s,
     int ret, size;
     AVStream *st = s->streams[0];
     
-    if(st->codec.codec_id == CODEC_ID_MPEG4)
-        size= 1024*1024; //cant handle partial frames
-    else
-        size= RAW_PACKET_SIZE;
+    size= RAW_PACKET_SIZE;
 
     if (av_new_packet(pkt, size) < 0)
         return -EIO;
