@@ -2,8 +2,10 @@
 include ../config.mak
 
 SWSLIB = libswscale.a
+ifeq ($(SHARED_PP),yes)
 SPPLIB = libpostproc.so
 SPPVERSION = 0.0.1
+endif
 PPLIB = libpostproc.a
 
 SWSSRCS=swscale.c rgb2rgb.c yuv2rgb.c
@@ -41,13 +43,15 @@ depend:
 cs_test: $(CS_TEST_OBJS)
 	$(CC) $(CS_TEST_OBJS) -o cs_test
 
+ifeq ($(SHARED_PP),yes)
 postprocess_pic.o: postprocess.c
 	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -o $@ $<
 
 $(SPPLIB): $(SPPOBJS)
 	$(CC) -shared -Wl,-soname,$(SPPLIB).0 \
 	-o $(SPPLIB) $(SPPOBJS)
-
+endif
+	
 $(PPLIB): $(PPOBJS)
 	$(AR) r $(PPLIB) $(PPOBJS)
 
