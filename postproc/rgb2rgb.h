@@ -34,6 +34,10 @@ extern void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_
 	unsigned int width, unsigned int height,
 	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride);
 
+extern void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
+			    int width, int height, int src1Stride, int src2Stride, int dstStride);
+	
+
 #define MODE_RGB  0x1
 #define MODE_BGR  0x2
 
