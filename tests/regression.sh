@@ -24,6 +24,7 @@ if [ "$1" = "mpeg4" ] ; then
     do_mpeg4=y
 elif [ "$1" = "mpeg" ] ; then
     do_mpeg=y
+    do_mpeg2=y
 elif [ "$1" = "ac3" ] ; then
     do_ac3=y
 elif [ "$1" = "libavtest" ] ; then
@@ -73,6 +74,13 @@ raw_dst="$datadir/out.yuv"
 raw_ref="$datadir/ref.yuv"
 pcm_src="asynth1.sw"
 pcm_dst="$datadir/out.wav"
+if [ X"`echo | md5sum 2> /dev/null`" != X ]; then
+    do_md5sum() { md5sum -b $1; }
+elif [ -x /sbin/md5 ]; then
+    do_md5sum() { /sbin/md5 -r $1 | sed 's# \**\./# *./#'; }
+else
+    do_md5sum() { echo No md5sum program found; }
+fi
 
 # create the data directory if it does not exists
 mkdir -p $datadir
@@ -85,7 +93,7 @@ do_ffmpeg()
     $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream|  Duration)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
-    md5sum -b $f >> $logfile
+    do_md5sum $f >> $logfile
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
     fi
