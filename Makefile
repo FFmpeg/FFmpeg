@@ -6,7 +6,7 @@ include config.mak
 
 VPATH=$(SRC_PATH)
 
-CFLAGS= $(OPTFLAGS) -Wall -g -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libav
+CFLAGS= $(OPTFLAGS) -Wall -g -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libav -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 LDFLAGS= -g
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
