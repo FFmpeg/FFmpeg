@@ -2149,6 +2149,12 @@ static int encode_init(AVCodecContext *avctx)
     int i;
     int level, orientation, plane_index;
 
+    if(avctx->strict_std_compliance >= 0){
+        av_log(avctx, AV_LOG_ERROR, "this codec is under development, files encoded with it wont be decodeable with future versions!!!\n"
+               "use vstrict=-1 to use it anyway\n");
+        return -1;
+    }
+ 
     common_init(avctx);
  
     s->version=0;
@@ -2217,12 +2223,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     int used_count= 0;
     int log2_threshold, level, orientation, plane_index, i;
 
-    if(avctx->strict_std_compliance >= 0){
-        av_log(avctx, AV_LOG_ERROR, "this codec is under development, files encoded with it wont be decodeable with future versions!!!\n"
-               "use vstrict=-1 to use it anyway\n");
-        return -1;
-    }
-        
     ff_init_cabac_encoder(c, buf, buf_size);
     ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
     
