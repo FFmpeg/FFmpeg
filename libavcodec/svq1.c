@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  * This file is part of xine, a unix video player.
  *
+ * Ported to mplayer by Arpi <arpi@thot.banki.hu>
  * Ported to libavcodec by Nick Kurshev <nickols_k@mail.ru>
  *
  */
