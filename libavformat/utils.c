@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
-#include <ctype.h>
 #ifdef CONFIG_WIN32
 #define strcasecmp _stricmp
 #include <sys/types.h>

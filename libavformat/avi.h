@@ -32,5 +32,9 @@ extern const CodecTag codec_wav_tags[];
 
 unsigned int codec_get_tag(const CodecTag *tags, int id);
 enum CodecID codec_get_id(const CodecTag *tags, unsigned int tag);
+unsigned int codec_get_bmp_tag(int id);
+unsigned int codec_get_wav_tag(int id);
+enum CodecID codec_get_bmp_id(unsigned int tag);
+enum CodecID codec_get_wav_id(unsigned int tag);
 
 #endif /* FFMPEG_AVI_H */

@@ -22,7 +22,6 @@
 #include <sys/time.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
-#include <ctype.h>
 #ifndef __BEOS__
 # include <arpa/inet.h>
 #else
