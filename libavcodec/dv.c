@@ -476,12 +476,12 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
                     ptr = pixels;
                     for(y = 0;y < 8; y++) {
                         /* convert to 411P */
-                        c_ptr1 = c_ptr + linesize;
-                        c_ptr1[0] = c_ptr[0] = (ptr[0] + ptr[1]) >> 1;
-                        c_ptr1[1] = c_ptr[1] = (ptr[2] + ptr[3]) >> 1;
-                        c_ptr1[2] = c_ptr[2] = (ptr[4] + ptr[5]) >> 1;
-                        c_ptr1[3] = c_ptr[3] = (ptr[6] + ptr[7]) >> 1;
-                        c_ptr += linesize * 2;
+                        c_ptr1 = c_ptr + 8*linesize;
+                        c_ptr[0]= ptr[0]; c_ptr1[0]= ptr[4];
+                        c_ptr[1]= ptr[1]; c_ptr1[1]= ptr[5];
+                        c_ptr[2]= ptr[2]; c_ptr1[2]= ptr[6];
+                        c_ptr[3]= ptr[3]; c_ptr1[3]= ptr[7];
+                        c_ptr += linesize;
                         ptr += 8;
                     }
                 } else {
