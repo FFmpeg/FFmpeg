@@ -16,7 +16,7 @@ OBJS+=mpeg.o mpegts.o mpegtsenc.o ffm.o crc.o img.o img2.o raw.o rm.o \
       avienc.o avidec.o wav.o swf.o au.o gif.o mov.o mpjpeg.o dv.o \
       yuv4mpeg.o 4xm.o flvenc.o flvdec.o movenc.o psxstr.o idroq.o ipmovie.o \
       nut.o wc3movie.o mp3.o westwood.o segafilm.o idcin.o flic.o \
-      sierravmd.o matroska.o sol.o electronicarts.o
+      sierravmd.o matroska.o sol.o electronicarts.o nsvdec.o
 
 ifeq ($(CONFIG_RISKY),yes)
 OBJS+= asf.o
@@ -81,6 +81,11 @@ endif
 LIB= $(LIBPREF)avformat$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 SLIB= $(SLIBPREF)avformat$(SLIBSUF)
+endif
+
+EXTRALIBS+=-lavcodec -L../libavcodec
+ifeq ($(CONFIG_MP3LAME),yes)
+EXTRALIBS+=-lmp3lame
 endif
 
 SRCS := $(OBJS:.o=.c) $(PPOBJS:.o=.cpp)

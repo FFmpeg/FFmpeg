@@ -110,6 +110,7 @@ void av_register_all(void)
     matroska_init();
     sol_init();
     ea_init();
+    nsvdec_init();
 
 #ifdef CONFIG_ENCODERS
     /* image formats */
