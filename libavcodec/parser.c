@@ -114,8 +114,10 @@ typedef struct ParseContext1{
     int frame_rate;
     int progressive_sequence;
     int width, height;
+
     /* XXX: suppress that, needed by MPEG4 */
     MpegEncContext *enc;
+    int first_picture;
 } ParseContext1;
 
 /**
@@ -439,21 +441,31 @@ static int av_mpeg4_decode_header(AVCodecParserContext *s1,
     int ret;
 
     s->avctx = avctx;
+    s->current_picture_ptr = &s->current_picture;
+
+    if (avctx->extradata_size && pc->first_picture){
+        init_get_bits(gb, avctx->extradata, avctx->extradata_size*8);
+        ret = ff_mpeg4_decode_picture_header(s, gb);
+    }
+
     init_get_bits(gb, buf, 8 * buf_size);
     ret = ff_mpeg4_decode_picture_header(s, gb);
     if (s->width) {
         avctx->width = s->width;
         avctx->height = s->height;
     }
+    pc->first_picture = 0;
     return ret;
 }
 
 int mpeg4video_parse_init(AVCodecParserContext *s)
 {
     ParseContext1 *pc = s->priv_data;
+
     pc->enc = av_mallocz(sizeof(MpegEncContext));
     if (!pc->enc)
         return -1;
+    pc->first_picture = 1;
     return 0;
 }
 
