@@ -268,14 +268,16 @@ void ff_init_me(MpegEncContext *s){
     }
 
     // 8x8 fullpel search would need a 4x4 chroma compare, which we dont have yet, and even if we had the motion estimation code doesnt expect it
-    if((c->avctx->me_cmp&FF_CMP_CHROMA) && !s->dsp.me_cmp[2]){
-        s->dsp.me_cmp[2]= zero_cmp;
+    if(s->codec_id != CODEC_ID_SNOW){
+        if((c->avctx->me_cmp&FF_CMP_CHROMA) && !s->dsp.me_cmp[2]){
+            s->dsp.me_cmp[2]= zero_cmp;
+        }
+        if((c->avctx->me_sub_cmp&FF_CMP_CHROMA) && !s->dsp.me_sub_cmp[2]){
+            s->dsp.me_sub_cmp[2]= zero_cmp;
+        }
+        c->hpel_put[2][0]= c->hpel_put[2][1]=
+        c->hpel_put[2][2]= c->hpel_put[2][3]= zero_hpel;
     }
-    if((c->avctx->me_sub_cmp&FF_CMP_CHROMA) && !s->dsp.me_sub_cmp[2]){
-        s->dsp.me_sub_cmp[2]= zero_cmp;
-    }
-    c->hpel_put[2][0]= c->hpel_put[2][1]=
-    c->hpel_put[2][2]= c->hpel_put[2][3]= zero_hpel;
 
     c->temp= c->scratchpad;
 }
@@ -1313,7 +1315,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
         dmin= c->sub_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
         if(c->avctx->me_sub_cmp != c->avctx->mb_cmp && !c->skip)
-            dmin= get_mb_score(s, mx, my, 0, 0);
+            dmin= ff_get_mb_score(s, mx, my, 0, 0, 0, 16, 1);
 
         if((s->flags&CODEC_FLAG_4MV)
            && !c->skip && varc>50 && vard>10){
@@ -1529,7 +1531,7 @@ static int ff_estimate_motion_b(MpegEncContext * s,
     dmin= c->sub_motion_search(s, &mx, &my, dmin, 0, ref_index, 0, 16);
                                    
     if(c->avctx->me_sub_cmp != c->avctx->mb_cmp && !c->skip)
-        dmin= get_mb_score(s, mx, my, 0, ref_index);
+        dmin= ff_get_mb_score(s, mx, my, 0, ref_index, 0, 16, 1);
 
 //printf("%d %d %d %d//", s->mb_x, s->mb_y, mx, my);
 //    s->mb_type[mb_y*s->mb_width + mb_x]= mb_type;
@@ -1719,7 +1721,7 @@ static inline int direct_search(MpegEncContext * s, int mb_x, int mb_y)
         dmin = hpel_motion_search(s, &mx, &my, dmin, 0, 0, 0, 16);
     
     if(c->avctx->me_sub_cmp != c->avctx->mb_cmp && !c->skip)
-        dmin= get_mb_score(s, mx, my, 0, 0);
+        dmin= ff_get_mb_score(s, mx, my, 0, 0, 0, 16, 1);
     
     get_limits(s, 16*mb_x, 16*mb_y); //restore c->?min/max, maybe not needed
 
