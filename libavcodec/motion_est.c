@@ -28,6 +28,7 @@
  
 #include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -1494,20 +1495,27 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
     int fmin, bmin, dmin, fbmin;
     int type=0;
     
-    dmin= direct_search(s, mb_x, mb_y);
+    s->me.skip=0;
+    if (s->codec_id == CODEC_ID_MPEG4)
+        dmin= direct_search(s, mb_x, mb_y);
+    else
+        dmin= INT_MAX;
 
+    s->me.skip=0;
     fmin= ff_estimate_motion_b(s, mb_x, mb_y, s->b_forw_mv_table, &s->last_picture, s->f_code) + 3*penalty_factor;
+    
+    s->me.skip=0;
     bmin= ff_estimate_motion_b(s, mb_x, mb_y, s->b_back_mv_table, &s->next_picture, s->b_code) + 2*penalty_factor;
 //printf(" %d %d ", s->b_forw_mv_table[xy][0], s->b_forw_mv_table[xy][1]);
 
+    s->me.skip=0;
     fbmin= bidir_refine(s, mb_x, mb_y) + penalty_factor;
 //printf("%d %d %d %d\n", dmin, fmin, bmin, fbmin);
     {
         int score= fmin;
         type = MB_TYPE_FORWARD;
         
-        // RAL: No MB_TYPE_DIRECT in MPEG-1 video (only MPEG-4)
-        if (s->codec_id == CODEC_ID_MPEG4 && dmin <= score){
+        if (dmin <= score){
             score = dmin;
             type = MB_TYPE_DIRECT;
         }
