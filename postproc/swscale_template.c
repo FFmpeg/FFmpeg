@@ -752,18 +752,14 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
 /**
  * vertical scale YV12 to RGB
  */
-static inline void RENAME(yuv2rgbX)(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+static inline void RENAME(yuv2rgbX)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-			    uint8_t *dest, int dstW, int dstFormat, int16_t * lumMmxFilter, int16_t * chrMmxFilter)
+			    uint8_t *dest, int dstW, int16_t * lumMmxFilter, int16_t * chrMmxFilter, int dstY)
 {
-/*	if(flags&SWS_FULL_UV_IPOL)
-	{
-//FIXME
-	}//FULL_UV_IPOL
-	else*/
+	switch(c->dstFormat)
 	{
 #ifdef HAVE_MMX
-		if(dstFormat == IMGFMT_BGR32) //FIXME untested
+	case IMGFMT_BGR32:
 		{
 			asm volatile(
 				YSCALEYUV2RGBX
@@ -776,7 +772,8 @@ static inline void RENAME(yuv2rgbX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
 			);
 		}
-		else if(dstFormat == IMGFMT_BGR24) //FIXME untested
+		break;
+	case IMGFMT_BGR24:
 		{
 			asm volatile(
 				YSCALEYUV2RGBX
@@ -791,7 +788,8 @@ static inline void RENAME(yuv2rgbX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
 			);
 		}
-		else if(dstFormat==IMGFMT_BGR15)
+		break;
+	case IMGFMT_BGR15:
 		{
 			asm volatile(
 				YSCALEYUV2RGBX
@@ -811,7 +809,8 @@ static inline void RENAME(yuv2rgbX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
 			);
 		}
-		else if(dstFormat==IMGFMT_BGR16)
+		break;
+	case IMGFMT_BGR16:
 		{
 			asm volatile(
 				YSCALEYUV2RGBX
@@ -831,31 +830,33 @@ static inline void RENAME(yuv2rgbX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi"
 			);
 		}
-#else
-yuv2rgbXinC(lumFilter, lumSrc, lumFilterSize,
-	    chrFilter, chrSrc, chrFilterSize,
-	    dest, dstW, dstFormat);
-
+		break;
 #endif
-	} //!FULL_UV_IPOL
+	default:
+		yuv2rgbXinC(c, lumFilter, lumSrc, lumFilterSize,
+			    chrFilter, chrSrc, chrFilterSize,
+			    dest, dstW, dstY);
+		break;
+	}
 }
-
 
 /**
  * vertical bilinear scale YV12 to RGB
  */
-static inline void RENAME(yuv2rgb2)(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
-			    uint8_t *dest, int dstW, int yalpha, int uvalpha, int dstFormat, int flags)
+static inline void RENAME(yuv2rgb2)(SwsContext *c, uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uint16_t *uvbuf1,
+			    uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
 {
 	int yalpha1=yalpha^4095;
 	int uvalpha1=uvalpha^4095;
+	int i;
 
+#if 0 //isnt used
 	if(flags&SWS_FULL_CHR_H_INT)
 	{
-
-#ifdef HAVE_MMX
-		if(dstFormat==IMGFMT_BGR32)
+		switch(dstFormat)
 		{
+#ifdef HAVE_MMX
+		case IMGFMT_BGR32:
 			asm volatile(
 
 
@@ -879,9 +880,8 @@ FULL_YSCALEYUV2RGB
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR24)
-		{
+			break;
+		case IMGFMT_BGR24:
 			asm volatile(
 
 FULL_YSCALEYUV2RGB
@@ -929,9 +929,8 @@ FULL_YSCALEYUV2RGB
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR15)
-		{
+			break;
+		case IMGFMT_BGR15:
 			asm volatile(
 
 FULL_YSCALEYUV2RGB
@@ -963,9 +962,8 @@ FULL_YSCALEYUV2RGB
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR16)
-		{
+			break;
+		case IMGFMT_BGR16:
 			asm volatile(
 
 FULL_YSCALEYUV2RGB
@@ -997,8 +995,12 @@ FULL_YSCALEYUV2RGB
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-#else
+		break;
+#endif
+		case IMGFMT_RGB32:
+#ifndef HAVE_MMX
+		case IMGFMT_BGR32:
+#endif
 		if(dstFormat==IMGFMT_BGR32)
 		{
 			int i;
@@ -1060,13 +1062,14 @@ FULL_YSCALEYUV2RGB
 					clip_table15r[(Y + yuvtab_3343[V]) >>13];
 			}
 		}
-#endif
 	}//FULL_UV_IPOL
 	else
 	{
+#endif // if 0
 #ifdef HAVE_MMX
-		if(dstFormat==IMGFMT_BGR32)
-		{
+	switch(c->dstFormat)
+	{
+	case IMGFMT_BGR32:
 			asm volatile(
 				YSCALEYUV2RGB
 				WRITEBGR32
@@ -1075,9 +1078,8 @@ FULL_YSCALEYUV2RGB
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR24)
-		{
+			return;
+	case IMGFMT_BGR24:
 			asm volatile(
 				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB
@@ -1087,9 +1089,8 @@ FULL_YSCALEYUV2RGB
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR15)
-		{
+			return;
+	case IMGFMT_BGR15:
 			asm volatile(
 				YSCALEYUV2RGB
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1105,9 +1106,8 @@ FULL_YSCALEYUV2RGB
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR16)
-		{
+			return;
+	case IMGFMT_BGR16:
 			asm volatile(
 				YSCALEYUV2RGB
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1123,176 +1123,38 @@ FULL_YSCALEYUV2RGB
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-#else
-		if(dstFormat==IMGFMT_BGR32)
-		{
-			int i;
-#ifdef WORDS_BIGENDIAN
-			dest++;
-#endif
-			for(i=0; i<dstW-1; i+=2){
-				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
-				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
-				int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
-				int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
-
-				int Cb= yuvtab_40cf[U];
-				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
-				int Cr= yuvtab_3343[V];
-
-				dest[4*i+0]=clip_table[((Y1 + Cb) >>13)];
-				dest[4*i+1]=clip_table[((Y1 + Cg) >>13)];
-				dest[4*i+2]=clip_table[((Y1 + Cr) >>13)];
-
-				dest[4*i+4]=clip_table[((Y2 + Cb) >>13)];
-				dest[4*i+5]=clip_table[((Y2 + Cg) >>13)];
-				dest[4*i+6]=clip_table[((Y2 + Cr) >>13)];
-			}
-		}
-		else if(dstFormat==IMGFMT_BGR24)
-		{
-			int i;
-			for(i=0; i<dstW-1; i+=2){
-				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
-				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
-				int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
-				int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
-
-				int Cb= yuvtab_40cf[U];
-				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
-				int Cr= yuvtab_3343[V];
-
-				dest[0]=clip_table[((Y1 + Cb) >>13)];
-				dest[1]=clip_table[((Y1 + Cg) >>13)];
-				dest[2]=clip_table[((Y1 + Cr) >>13)];
-
-				dest[3]=clip_table[((Y2 + Cb) >>13)];
-				dest[4]=clip_table[((Y2 + Cg) >>13)];
-				dest[5]=clip_table[((Y2 + Cr) >>13)];
-				dest+=6;
-			}
-		}
-		else if(dstFormat==IMGFMT_BGR16)
-		{
-			int i;
-#ifdef DITHER1XBPP
-			static int ditherb1=1<<14;
-			static int ditherg1=1<<13;
-			static int ditherr1=2<<14;
-			static int ditherb2=3<<14;
-			static int ditherg2=3<<13;
-			static int ditherr2=0<<14;
-
-			ditherb1 ^= (1^2)<<14;
-			ditherg1 ^= (1^2)<<13;
-			ditherr1 ^= (1^2)<<14;
-			ditherb2 ^= (3^0)<<14;
-			ditherg2 ^= (3^0)<<13;
-			ditherr2 ^= (3^0)<<14;
-#else
-			const int ditherb1=0;
-			const int ditherg1=0;
-			const int ditherr1=0;
-			const int ditherb2=0;
-			const int ditherg2=0;
-			const int ditherr2=0;
-#endif
-			for(i=0; i<dstW-1; i+=2){
-				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
-				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
-				int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
-				int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
-
-				int Cb= yuvtab_40cf[U];
-				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
-				int Cr= yuvtab_3343[V];
-
-				((uint16_t*)dest)[i] =
-					clip_table16b[(Y1 + Cb + ditherb1) >>13] |
-					clip_table16g[(Y1 + Cg + ditherg1) >>13] |
-					clip_table16r[(Y1 + Cr + ditherr1) >>13];
-
-				((uint16_t*)dest)[i+1] =
-					clip_table16b[(Y2 + Cb + ditherb2) >>13] |
-					clip_table16g[(Y2 + Cg + ditherg2) >>13] |
-					clip_table16r[(Y2 + Cr + ditherr2) >>13];
-			}
-		}
-		else if(dstFormat==IMGFMT_BGR15)
-		{
-			int i;
-#ifdef DITHER1XBPP
-			static int ditherb1=1<<14;
-			static int ditherg1=1<<14;
-			static int ditherr1=2<<14;
-			static int ditherb2=3<<14;
-			static int ditherg2=3<<14;
-			static int ditherr2=0<<14;
-
-			ditherb1 ^= (1^2)<<14;
-			ditherg1 ^= (1^2)<<14;
-			ditherr1 ^= (1^2)<<14;
-			ditherb2 ^= (3^0)<<14;
-			ditherg2 ^= (3^0)<<14;
-			ditherr2 ^= (3^0)<<14;
-#else
-			const int ditherb1=0;
-			const int ditherg1=0;
-			const int ditherr1=0;
-			const int ditherb2=0;
-			const int ditherg2=0;
-			const int ditherr2=0;
-#endif
-			for(i=0; i<dstW-1; i+=2){
-				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
-				int Y2=yuvtab_2568[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19)];
-				int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
-				int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
-
-				int Cb= yuvtab_40cf[U];
-				int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
-				int Cr= yuvtab_3343[V];
-
-				((uint16_t*)dest)[i] =
-					clip_table15b[(Y1 + Cb + ditherb1) >>13] |
-					clip_table15g[(Y1 + Cg + ditherg1) >>13] |
-					clip_table15r[(Y1 + Cr + ditherr1) >>13];
-
-				((uint16_t*)dest)[i+1] =
-					clip_table15b[(Y2 + Cb + ditherb2) >>13] |
-					clip_table15g[(Y2 + Cg + ditherg2) >>13] |
-					clip_table15r[(Y2 + Cr + ditherr2) >>13];
-			}
-		}
-#endif
-	} //!FULL_UV_IPOL
+			return;
+	default: break;
+	}
+#endif //HAVE_MMX
+YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C)
 }
 
 /**
  * YV12 to RGB without scaling or interpolating
  */
-static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *uvbuf1,
-			    uint8_t *dest, int dstW, int uvalpha, int dstFormat, int flags)
+static inline void RENAME(yuv2rgb1)(SwsContext *c, uint16_t *buf0, uint16_t *uvbuf0, uint16_t *uvbuf1,
+			    uint8_t *dest, int dstW, int uvalpha, int dstFormat, int flags, int y)
 {
 	int uvalpha1=uvalpha^4095;
 	const int yalpha1=0;
+	int i;
+	
+	uint16_t *buf1= buf0; //FIXME needed for the rgb1/bgr1
+	const int yalpha= 4096; //FIXME ...
 
 	if(flags&SWS_FULL_CHR_H_INT)
 	{
-		RENAME(yuv2rgb2)(buf0, buf0, uvbuf0, uvbuf1, dest, dstW, 0, uvalpha, dstFormat, flags);
+		RENAME(yuv2rgb2)(c, buf0, buf0, uvbuf0, uvbuf1, dest, dstW, 0, uvalpha, y);
 		return;
 	}
 
 #ifdef HAVE_MMX
 	if( uvalpha < 2048 ) // note this is not correct (shifts chrominance by 0.5 pixels) but its a bit faster
 	{
-		if(dstFormat==IMGFMT_BGR32)
+		switch(dstFormat)
 		{
+		case IMGFMT_BGR32:
 			asm volatile(
 				YSCALEYUV2RGB1
 				WRITEBGR32
@@ -1300,9 +1162,8 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR24)
-		{
+			return;
+		case IMGFMT_BGR24:
 			asm volatile(
 				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB1
@@ -1311,9 +1172,8 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR15)
-		{
+			return;
+		case IMGFMT_BGR15:
 			asm volatile(
 				YSCALEYUV2RGB1
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1327,9 +1187,8 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR16)
-		{
+			return;
+		case IMGFMT_BGR16:
 			asm volatile(
 				YSCALEYUV2RGB1
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1344,12 +1203,14 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
+			return;
 		}
 	}
 	else
 	{
-		if(dstFormat==IMGFMT_BGR32)
+		switch(dstFormat)
 		{
+		case IMGFMT_BGR32:
 			asm volatile(
 				YSCALEYUV2RGB1b
 				WRITEBGR32
@@ -1357,9 +1218,8 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR24)
-		{
+			return;
+		case IMGFMT_BGR24:
 			asm volatile(
 				"movl %4, %%ebx			\n\t"
 				YSCALEYUV2RGB1b
@@ -1368,9 +1228,8 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax", "%ebx"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR15)
-		{
+			return;
+		case IMGFMT_BGR15:
 			asm volatile(
 				YSCALEYUV2RGB1b
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1384,9 +1243,8 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-		else if(dstFormat==IMGFMT_BGR16)
-		{
+			return;
+		case IMGFMT_BGR16:
 			asm volatile(
 				YSCALEYUV2RGB1b
 		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
@@ -1401,156 +1259,16 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			"m" (yalpha1), "m" (uvalpha1)
 			: "%eax"
 			);
-		}
-	}
-#else
-//FIXME write 2 versions (for even & odd lines)
-
-	if(dstFormat==IMGFMT_BGR32)
-	{
-		int i;
-#ifdef WORDS_BIGENDIAN
-		dest++;
-#endif
-		for(i=0; i<dstW-1; i+=2){
-			// vertical linear interpolation && yuv2rgb in a single step:
-			int Y1=yuvtab_2568[buf0[i]>>7];
-			int Y2=yuvtab_2568[buf0[i+1]>>7];
-			int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
-			int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
-
-			int Cb= yuvtab_40cf[U];
-			int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
-			int Cr= yuvtab_3343[V];
-
-			dest[4*i+0]=clip_table[((Y1 + Cb) >>13)];
-			dest[4*i+1]=clip_table[((Y1 + Cg) >>13)];
-			dest[4*i+2]=clip_table[((Y1 + Cr) >>13)];
-
-			dest[4*i+4]=clip_table[((Y2 + Cb) >>13)];
-			dest[4*i+5]=clip_table[((Y2 + Cg) >>13)];
-			dest[4*i+6]=clip_table[((Y2 + Cr) >>13)];
-		}
-	}
-	else if(dstFormat==IMGFMT_BGR24)
-	{
-		int i;
-		for(i=0; i<dstW-1; i+=2){
-			// vertical linear interpolation && yuv2rgb in a single step:
-			int Y1=yuvtab_2568[buf0[i]>>7];
-			int Y2=yuvtab_2568[buf0[i+1]>>7];
-			int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
-			int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
-
-			int Cb= yuvtab_40cf[U];
-			int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
-			int Cr= yuvtab_3343[V];
-
-			dest[0]=clip_table[((Y1 + Cb) >>13)];
-			dest[1]=clip_table[((Y1 + Cg) >>13)];
-			dest[2]=clip_table[((Y1 + Cr) >>13)];
-
-			dest[3]=clip_table[((Y2 + Cb) >>13)];
-			dest[4]=clip_table[((Y2 + Cg) >>13)];
-			dest[5]=clip_table[((Y2 + Cr) >>13)];
-			dest+=6;
-		}
-	}
-	else if(dstFormat==IMGFMT_BGR16)
-	{
-		int i;
-#ifdef DITHER1XBPP
-		static int ditherb1=1<<14;
-		static int ditherg1=1<<13;
-		static int ditherr1=2<<14;
-		static int ditherb2=3<<14;
-		static int ditherg2=3<<13;
-		static int ditherr2=0<<14;
-
-		ditherb1 ^= (1^2)<<14;
-		ditherg1 ^= (1^2)<<13;
-		ditherr1 ^= (1^2)<<14;
-		ditherb2 ^= (3^0)<<14;
-		ditherg2 ^= (3^0)<<13;
-		ditherr2 ^= (3^0)<<14;
-#else
-		const int ditherb1=0;
-		const int ditherg1=0;
-		const int ditherr1=0;
-		const int ditherb2=0;
-		const int ditherg2=0;
-		const int ditherr2=0;
-#endif
-		for(i=0; i<dstW-1; i+=2){
-			// vertical linear interpolation && yuv2rgb in a single step:
-			int Y1=yuvtab_2568[buf0[i]>>7];
-			int Y2=yuvtab_2568[buf0[i+1]>>7];
-			int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
-			int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
-
-			int Cb= yuvtab_40cf[U];
-			int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
-			int Cr= yuvtab_3343[V];
-
-			((uint16_t*)dest)[i] =
-				clip_table16b[(Y1 + Cb + ditherb1) >>13] |
-				clip_table16g[(Y1 + Cg + ditherg1) >>13] |
-				clip_table16r[(Y1 + Cr + ditherr1) >>13];
-
-			((uint16_t*)dest)[i+1] =
-				clip_table16b[(Y2 + Cb + ditherb2) >>13] |
-				clip_table16g[(Y2 + Cg + ditherg2) >>13] |
-				clip_table16r[(Y2 + Cr + ditherr2) >>13];
-		}
-	}
-	else if(dstFormat==IMGFMT_BGR15)
-	{
-		int i;
-#ifdef DITHER1XBPP
-		static int ditherb1=1<<14;
-		static int ditherg1=1<<14;
-		static int ditherr1=2<<14;
-		static int ditherb2=3<<14;
-		static int ditherg2=3<<14;
-		static int ditherr2=0<<14;
-
-		ditherb1 ^= (1^2)<<14;
-		ditherg1 ^= (1^2)<<14;
-		ditherr1 ^= (1^2)<<14;
-		ditherb2 ^= (3^0)<<14;
-		ditherg2 ^= (3^0)<<14;
-		ditherr2 ^= (3^0)<<14;
-#else
-		const int ditherb1=0;
-		const int ditherg1=0;
-		const int ditherr1=0;
-		const int ditherb2=0;
-		const int ditherg2=0;
-		const int ditherr2=0;
-#endif
-		for(i=0; i<dstW-1; i+=2){
-			// vertical linear interpolation && yuv2rgb in a single step:
-			int Y1=yuvtab_2568[buf0[i]>>7];
-			int Y2=yuvtab_2568[buf0[i+1]>>7];
-			int U=((uvbuf0[i>>1]*uvalpha1+uvbuf1[i>>1]*uvalpha)>>19);
-			int V=((uvbuf0[(i>>1)+2048]*uvalpha1+uvbuf1[(i>>1)+2048]*uvalpha)>>19);
-
-			int Cb= yuvtab_40cf[U];
-			int Cg= yuvtab_1a1e[V] + yuvtab_0c92[U];
-			int Cr= yuvtab_3343[V];
-
-			((uint16_t*)dest)[i] =
-				clip_table15b[(Y1 + Cb + ditherb1) >>13] |
-				clip_table15g[(Y1 + Cg + ditherg1) >>13] |
-				clip_table15r[(Y1 + Cr + ditherr1) >>13];
-
-			((uint16_t*)dest)[i+1] =
-				clip_table15b[(Y2 + Cb + ditherb2) >>13] |
-				clip_table15g[(Y2 + Cg + ditherg2) >>13] |
-				clip_table15r[(Y2 + Cr + ditherr2) >>13];
+			return;
 		}
 	}
 #endif
+	if( uvalpha < 2048 )
+	{
+		YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C)
+	}else{
+		YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C)
+	}
 }
 
 //FIXME yuy2* can read upto 7 samples to much
@@ -2814,24 +2532,24 @@ i--;
 			{
 				int chrAlpha= vChrFilter[2*dstY+1];
 
-				RENAME(yuv2rgb1)(*lumSrcPtr, *chrSrcPtr, *(chrSrcPtr+1),
-						 dest, dstW, chrAlpha, dstFormat, flags);
+				RENAME(yuv2rgb1)(c, *lumSrcPtr, *chrSrcPtr, *(chrSrcPtr+1),
+						 dest, dstW, chrAlpha, dstFormat, flags, dstY);
 			}
 			else if(vLumFilterSize == 2 && vChrFilterSize == 2) //BiLinear Upscale RGB
 			{
 				int lumAlpha= vLumFilter[2*dstY+1];
 				int chrAlpha= vChrFilter[2*dstY+1];
 
-				RENAME(yuv2rgb2)(*lumSrcPtr, *(lumSrcPtr+1), *chrSrcPtr, *(chrSrcPtr+1),
-						 dest, dstW, lumAlpha, chrAlpha, dstFormat, flags);
+				RENAME(yuv2rgb2)(c, *lumSrcPtr, *(lumSrcPtr+1), *chrSrcPtr, *(chrSrcPtr+1),
+						 dest, dstW, lumAlpha, chrAlpha, dstY);
 			}
 			else //General RGB
 			{
-				RENAME(yuv2rgbX)(
+				RENAME(yuv2rgbX)(c,
 					vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
 					vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
-					dest, dstW, dstFormat,
-					lumMmxFilter+dstY*vLumFilterSize*4, chrMmxFilter+dstY*vChrFilterSize*4);
+					dest, dstW,
+					lumMmxFilter+dstY*vLumFilterSize*4, chrMmxFilter+dstY*vChrFilterSize*4, dstY);
 			}
 		}
             }
@@ -2851,10 +2569,10 @@ i--;
 		{
 			ASSERT(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
 			ASSERT(chrSrcPtr + vChrFilterSize - 1 < chrPixBuf + vChrBufSize*2);
-			yuv2rgbXinC(
+			yuv2rgbXinC(c, 
 				vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
 				vChrFilter+dstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
-				dest, dstW, dstFormat);
+				dest, dstW, dstY);
 		}
 	    }
 	}

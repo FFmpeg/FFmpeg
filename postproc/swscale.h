@@ -88,6 +88,11 @@ typedef struct SwsContext{
 	int chrBufIndex;
 	int dstY;
 	int flags;
+	void * yuvTable;
+	void * table_rV[256];
+	void * table_gU[256];
+	int    table_gV[256];
+	void * table_bU[256];
 
 	void (*swScale)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]);

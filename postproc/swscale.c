@@ -18,7 +18,7 @@
 
 /*
   supported Input formats: YV12, I420/IYUV, YUY2, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8/Y800, YVU9/IF09
-  supported output formats: YV12, I420/IYUV, BGR15, BGR16, BGR24, BGR32, Y8/Y800, YVU9/IF09
+  supported output formats: YV12, I420/IYUV, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
   BGR15/16 support dithering
   
   unscaled special converters
@@ -103,15 +103,15 @@ untested special converters
 #define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YVU9)
 #define isYUV(x)       ((x)==IMGFMT_YUY2 || isPlanarYUV(x))
 #define isGray(x)      ((x)==IMGFMT_Y800)
+#define isRGB(x)       (((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
+#define isBGR(x)       (((x)&IMGFMT_BGR_MASK)==IMGFMT_BGR)
 #define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
 			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
 #define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 \
-			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
+			|| isRGB(x) || isBGR(x)\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
-#define isRGB(x)       (((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
-#define isBGR(x)       (((x)&IMGFMT_BGR_MASK)==IMGFMT_BGR)
 #define isPacked(x)    ((x)==IMGFMT_YUY2 || isRGB(x) || isBGR(x))
 
 #define RGB2YUV_SHIFT 16
@@ -208,26 +208,6 @@ static const uint64_t w1111       __attribute__((aligned(8))) = 0x00010001000100
 // clipping helper table for C implementations:
 static unsigned char clip_table[768];
 
-static unsigned short clip_table16b[768];
-static unsigned short clip_table16g[768];
-static unsigned short clip_table16r[768];
-static unsigned short clip_table15b[768];
-static unsigned short clip_table15g[768];
-static unsigned short clip_table15r[768];
-
-// yuv->rgb conversion tables:
-static    int yuvtab_2568[256];
-static    int yuvtab_3343[256];
-static    int yuvtab_0c92[256];
-static    int yuvtab_1a1e[256];
-static    int yuvtab_40cf[256];
-// Needed for cubic scaler to catch overflows
-static    int clip_yuvtab_2568[768];
-static    int clip_yuvtab_3343[768];
-static    int clip_yuvtab_0c92[768];
-static    int clip_yuvtab_1a1e[768];
-static    int clip_yuvtab_40cf[768];
-
 //global sws_flags from the command line
 int sws_flags=2;
 
@@ -250,7 +230,13 @@ void (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int srcSli
 
 static SwsVector *getConvVec(SwsVector *a, SwsVector *b);
 static inline void orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]);
+void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_gU[256], int table_gV[256], void *table_bU[256]);
 
+extern const uint8_t dither_2x2_4[2][8];
+extern const uint8_t dither_2x2_8[2][8];
+extern const uint8_t dither_8x8_32[8][8];
+extern const uint8_t dither_8x8_73[8][8];
+extern const uint8_t dither_8x8_220[8][8];
 
 #ifdef CAN_COMPILE_X86_ASM
 void in_asm_used_var_warning_killer()
@@ -414,213 +400,355 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 		}
 }
 
-static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+#define YSCALE_YUV_2_RGBX_C(type) \
+		for(i=0; i<(dstW>>1); i++){\
+			int j;\
+			int Y1=0;\
+			int Y2=0;\
+			int U=0;\
+			int V=0;\
+			type *r, *b, *g;\
+			const int i2= 2*i;\
+			\
+			for(j=0; j<lumFilterSize; j++)\
+			{\
+				Y1 += lumSrc[j][i2] * lumFilter[j];\
+				Y2 += lumSrc[j][i2+1] * lumFilter[j];\
+			}\
+			for(j=0; j<chrFilterSize; j++)\
+			{\
+				U += chrSrc[j][i] * chrFilter[j];\
+				V += chrSrc[j][i+2048] * chrFilter[j];\
+			}\
+			Y1>>=19;\
+			Y2>>=19;\
+			U >>=19;\
+			V >>=19;\
+			if((Y1|Y2|U|V)&256)\
+			{\
+				if(Y1>255)   Y1=255;\
+				else if(Y1<0)Y1=0;\
+				if(Y2>255)   Y2=255;\
+				else if(Y2<0)Y2=0;\
+				if(U>255)    U=255;\
+				else if(U<0) U=0;\
+				if(V>255)    V=255;\
+				else if(V<0) V=0;\
+			}\
+			r = c->table_rV[V];\
+			g = c->table_gU[U] + c->table_gV[V];\
+			b = c->table_bU[U];\
+
+#define YSCALE_YUV_2_RGB2_C(type) \
+		for(i=0; i<(dstW>>1); i++){\
+			const int i2= 2*i;\
+			int Y1= (buf0[i2  ]*yalpha1+buf1[i2  ]*yalpha)>>19;\
+			int Y2= (buf0[i2+1]*yalpha1+buf1[i2+1]*yalpha)>>19;\
+			int U= (uvbuf0[i     ]*uvalpha1+uvbuf1[i     ]*uvalpha)>>19;\
+			int V= (uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19;\
+			type *r, *b, *g;\
+			r = c->table_rV[V];\
+			g = c->table_gU[U] + c->table_gV[V];\
+			b = c->table_bU[U];\
+
+#define YSCALE_YUV_2_RGB1_C(type) \
+		for(i=0; i<(dstW>>1); i++){\
+			const int i2= 2*i;\
+			int Y1= buf0[i2  ]>>7;\
+			int Y2= buf0[i2+1]>>7;\
+			int U= (uvbuf1[i     ])>>7;\
+			int V= (uvbuf1[i+2048])>>7;\
+			type *r, *b, *g;\
+			r = c->table_rV[V];\
+			g = c->table_gU[U] + c->table_gV[V];\
+			b = c->table_bU[U];\
+
+#define YSCALE_YUV_2_RGB1B_C(type) \
+		for(i=0; i<(dstW>>1); i++){\
+			const int i2= 2*i;\
+			int Y1= buf0[i2  ]>>7;\
+			int Y2= buf0[i2+1]>>7;\
+			int U= (uvbuf0[i     ] + uvbuf1[i     ])>>8;\
+			int V= (uvbuf0[i+2048] + uvbuf1[i+2048])>>8;\
+			type *r, *b, *g;\
+			r = c->table_rV[V];\
+			g = c->table_gU[U] + c->table_gV[V];\
+			b = c->table_bU[U];\
+
+#define YSCALE_YUV_2_ANYRGB_C(func)\
+	switch(c->dstFormat)\
+	{\
+	case IMGFMT_BGR32:\
+	case IMGFMT_RGB32:\
+		func(uint32_t)\
+			((uint32_t*)dest)[i2+0]= r[Y1] + g[Y1] + b[Y1];\
+			((uint32_t*)dest)[i2+1]= r[Y2] + g[Y2] + b[Y2];\
+		}		\
+		break;\
+	case IMGFMT_RGB24:\
+		func(uint8_t)\
+			((uint8_t*)dest)[0]= r[Y1];\
+			((uint8_t*)dest)[1]= g[Y1];\
+			((uint8_t*)dest)[2]= b[Y1];\
+			((uint8_t*)dest)[3]= r[Y2];\
+			((uint8_t*)dest)[4]= g[Y2];\
+			((uint8_t*)dest)[5]= b[Y2];\
+			((uint8_t*)dest)+=6;\
+		}\
+		break;\
+	case IMGFMT_BGR24:\
+		func(uint8_t)\
+			((uint8_t*)dest)[0]= b[Y1];\
+			((uint8_t*)dest)[1]= g[Y1];\
+			((uint8_t*)dest)[2]= r[Y1];\
+			((uint8_t*)dest)[3]= b[Y2];\
+			((uint8_t*)dest)[4]= g[Y2];\
+			((uint8_t*)dest)[5]= r[Y2];\
+			((uint8_t*)dest)+=6;\
+		}\
+		break;\
+	case IMGFMT_RGB16:\
+	case IMGFMT_BGR16:\
+		{\
+			const int dr1= dither_2x2_8[y&1    ][0];\
+			const int dg1= dither_2x2_4[y&1    ][0];\
+			const int db1= dither_2x2_8[(y&1)^1][0];\
+			const int dr2= dither_2x2_8[y&1    ][1];\
+			const int dg2= dither_2x2_4[y&1    ][1];\
+			const int db2= dither_2x2_8[(y&1)^1][1];\
+			func(uint16_t)\
+				((uint16_t*)dest)[i2+0]= r[Y1+dr1] + g[Y1+dg1] + b[Y1+db1];\
+				((uint16_t*)dest)[i2+1]= r[Y2+dr2] + g[Y2+dg2] + b[Y2+db2];\
+			}\
+		}\
+		break;\
+	case IMGFMT_RGB15:\
+	case IMGFMT_BGR15:\
+		{\
+			const int dr1= dither_2x2_8[y&1    ][0];\
+			const int dg1= dither_2x2_8[y&1    ][1];\
+			const int db1= dither_2x2_8[(y&1)^1][0];\
+			const int dr2= dither_2x2_8[y&1    ][1];\
+			const int dg2= dither_2x2_8[y&1    ][0];\
+			const int db2= dither_2x2_8[(y&1)^1][1];\
+			func(uint16_t)\
+				((uint16_t*)dest)[i2+0]= r[Y1+dr1] + g[Y1+dg1] + b[Y1+db1];\
+				((uint16_t*)dest)[i2+1]= r[Y2+dr2] + g[Y2+dg2] + b[Y2+db2];\
+			}\
+		}\
+		break;\
+	case IMGFMT_RGB8:\
+	case IMGFMT_BGR8:\
+		{\
+			const uint8_t * const d64= dither_8x8_73[y&7];\
+			const uint8_t * const d32= dither_8x8_32[y&7];\
+			func(uint8_t)\
+				((uint8_t*)dest)[i2+0]= r[Y1+d32[(i2+0)&7]] + g[Y1+d32[(i2+0)&7]] + b[Y1+d64[(i2+0)&7]];\
+				((uint8_t*)dest)[i2+1]= r[Y2+d32[(i2+1)&7]] + g[Y2+d32[(i2+1)&7]] + b[Y2+d64[(i2+1)&7]];\
+			}\
+		}\
+		break;\
+	case IMGFMT_RGB4:\
+	case IMGFMT_BGR4:\
+		{\
+			const uint8_t * const d64= dither_8x8_73 [y&7];\
+			const uint8_t * const d128=dither_8x8_220[y&7];\
+			func(uint8_t)\
+				((uint8_t*)dest)[i2+0]= r[Y1+d128[(i2+0)&7]] + g[Y1+d64[(i2+0)&7]] + b[Y1+d128[(i2+0)&7]];\
+				((uint8_t*)dest)[i2+1]= r[Y2+d128[(i2+1)&7]] + g[Y2+d64[(i2+1)&7]] + b[Y2+d128[(i2+1)&7]];\
+			}\
+		}\
+		break;\
+	case IMGFMT_RGB1:\
+	case IMGFMT_BGR1:\
+		{\
+			const uint8_t * const d128=dither_8x8_220[y&7];\
+			uint8_t *g= c->table_gU[128] + c->table_gV[128];\
+			for(i=0; i<dstW-7; i+=8){\
+				int acc;\
+				acc =       g[((buf0[i  ]*yalpha1+buf1[i  ]*yalpha)>>19) + d128[0]];\
+				acc+= acc + g[((buf0[i+1]*yalpha1+buf1[i+1]*yalpha)>>19) + d128[1]];\
+				acc+= acc + g[((buf0[i+2]*yalpha1+buf1[i+2]*yalpha)>>19) + d128[2]];\
+				acc+= acc + g[((buf0[i+3]*yalpha1+buf1[i+3]*yalpha)>>19) + d128[3]];\
+				acc+= acc + g[((buf0[i+4]*yalpha1+buf1[i+4]*yalpha)>>19) + d128[4]];\
+				acc+= acc + g[((buf0[i+5]*yalpha1+buf1[i+5]*yalpha)>>19) + d128[5]];\
+				acc+= acc + g[((buf0[i+6]*yalpha1+buf1[i+6]*yalpha)>>19) + d128[6]];\
+				acc+= acc + g[((buf0[i+7]*yalpha1+buf1[i+7]*yalpha)>>19) + d128[7]];\
+				((uint8_t*)dest)[0]= acc;\
+				((uint8_t*)dest)++;\
+			}\
+\
+/*\
+((uint8_t*)dest)-= dstW>>4;\
+{\
+			int acc=0;\
+			int left=0;\
+			static int top[1024];\
+			static int last_new[1024][1024];\
+			static int last_in3[1024][1024];\
+			static int drift[1024][1024];\
+			int topLeft=0;\
+			int shift=0;\
+			int count=0;\
+			const uint8_t * const d128=dither_8x8_220[y&7];\
+			int error_new=0;\
+			int error_in3=0;\
+			int f=0;\
+			\
+			for(i=dstW>>1; i<dstW; i++){\
+				int in= ((buf0[i  ]*yalpha1+buf1[i  ]*yalpha)>>19);\
+				int in2 = (76309 * (in - 16) + 32768) >> 16;\
+				int in3 = (in2 < 0) ? 0 : ((in2 > 255) ? 255 : in2);\
+				int old= (left*7 + topLeft + top[i]*5 + top[i+1]*3)/20 + in3\
+					+ (last_new[y][i] - in3)*f/256;\
+				int new= old> 128 ? 255 : 0;\
+\
+				error_new+= ABS(last_new[y][i] - new);\
+				error_in3+= ABS(last_in3[y][i] - in3);\
+				f= error_new - error_in3*4;\
+				if(f<0) f=0;\
+				if(f>256) f=256;\
+\
+				topLeft= top[i];\
+				left= top[i]= old - new;\
+				last_new[y][i]= new;\
+				last_in3[y][i]= in3;\
+\
+				acc+= acc + (new&1);\
+				if((i&7)==6){\
+					((uint8_t*)dest)[0]= acc;\
+					((uint8_t*)dest)++;\
+				}\
+			}\
+}\
+*/\
+		}\
+		break;\
+	}\
+
+
+static inline void yuv2rgbXinC(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-				    uint8_t *dest, int dstW, int dstFormat)
+				    uint8_t *dest, int dstW, int y)
 {
-	if(dstFormat==IMGFMT_BGR32)
+	int i;
+	switch(c->dstFormat)
 	{
-		int i;
-#ifdef WORDS_BIGENDIAN
-	dest++;
-#endif
-		for(i=0; i<(dstW>>1); i++){
-			int j;
-			int Y1=0;
-			int Y2=0;
-			int U=0;
-			int V=0;
-			int Cb, Cr, Cg;
-			for(j=0; j<lumFilterSize; j++)
-			{
-				Y1 += lumSrc[j][2*i] * lumFilter[j];
-				Y2 += lumSrc[j][2*i+1] * lumFilter[j];
-			}
-			for(j=0; j<chrFilterSize; j++)
-			{
-				U += chrSrc[j][i] * chrFilter[j];
-				V += chrSrc[j][i+2048] * chrFilter[j];
-			}
-			Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
-			Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
-			U >>= 19;
-			V >>= 19;
-
-			Cb= clip_yuvtab_40cf[U+ 256];
-			Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
-			Cr= clip_yuvtab_3343[V+ 256];
-
-			dest[8*i+0]=clip_table[((Y1 + Cb) >>13)];
-			dest[8*i+1]=clip_table[((Y1 + Cg) >>13)];
-			dest[8*i+2]=clip_table[((Y1 + Cr) >>13)];
-
-			dest[8*i+4]=clip_table[((Y2 + Cb) >>13)];
-			dest[8*i+5]=clip_table[((Y2 + Cg) >>13)];
-			dest[8*i+6]=clip_table[((Y2 + Cr) >>13)];
+	case IMGFMT_RGB32:
+	case IMGFMT_BGR32:
+		YSCALE_YUV_2_RGBX_C(uint32_t)
+			((uint32_t*)dest)[i2+0]= r[Y1] + g[Y1] + b[Y1];
+			((uint32_t*)dest)[i2+1]= r[Y2] + g[Y2] + b[Y2];
 		}
-	}
-	else if(dstFormat==IMGFMT_BGR24)
-	{
-		int i;
-		for(i=0; i<(dstW>>1); i++){
-			int j;
-			int Y1=0;
-			int Y2=0;
-			int U=0;
-			int V=0;
-			int Cb, Cr, Cg;
-			for(j=0; j<lumFilterSize; j++)
-			{
-				Y1 += lumSrc[j][2*i] * lumFilter[j];
-				Y2 += lumSrc[j][2*i+1] * lumFilter[j];
-			}
-			for(j=0; j<chrFilterSize; j++)
-			{
-				U += chrSrc[j][i] * chrFilter[j];
-				V += chrSrc[j][i+2048] * chrFilter[j];
-			}
-			Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
-			Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
-			U >>= 19;
-			V >>= 19;
-
-			Cb= clip_yuvtab_40cf[U+ 256];
-			Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
-			Cr= clip_yuvtab_3343[V+ 256];
-
-			dest[0]=clip_table[((Y1 + Cb) >>13)];
-			dest[1]=clip_table[((Y1 + Cg) >>13)];
-			dest[2]=clip_table[((Y1 + Cr) >>13)];
-
-			dest[3]=clip_table[((Y2 + Cb) >>13)];
-			dest[4]=clip_table[((Y2 + Cg) >>13)];
-			dest[5]=clip_table[((Y2 + Cr) >>13)];
-			dest+=6;
+		break;
+	case IMGFMT_RGB24:
+		YSCALE_YUV_2_RGBX_C(uint8_t)
+			((uint8_t*)dest)[0]= r[Y1];
+			((uint8_t*)dest)[1]= g[Y1];
+			((uint8_t*)dest)[2]= b[Y1];
+			((uint8_t*)dest)[3]= r[Y2];
+			((uint8_t*)dest)[4]= g[Y2];
+			((uint8_t*)dest)[5]= b[Y2];
+			((uint8_t*)dest)+=6;
 		}
-	}
-	else if(dstFormat==IMGFMT_BGR16)
-	{
-		int i;
-#ifdef DITHER1XBPP
-		static int ditherb1=1<<14;
-		static int ditherg1=1<<13;
-		static int ditherr1=2<<14;
-		static int ditherb2=3<<14;
-		static int ditherg2=3<<13;
-		static int ditherr2=0<<14;
-
-		ditherb1 ^= (1^2)<<14;
-		ditherg1 ^= (1^2)<<13;
-		ditherr1 ^= (1^2)<<14;
-		ditherb2 ^= (3^0)<<14;
-		ditherg2 ^= (3^0)<<13;
-		ditherr2 ^= (3^0)<<14;
-#else
-		const int ditherb1=0;
-		const int ditherg1=0;
-		const int ditherr1=0;
-		const int ditherb2=0;
-		const int ditherg2=0;
-		const int ditherr2=0;
-#endif
-		for(i=0; i<(dstW>>1); i++){
-			int j;
-			int Y1=0;
-			int Y2=0;
-			int U=0;
-			int V=0;
-			int Cb, Cr, Cg;
-			for(j=0; j<lumFilterSize; j++)
-			{
-				Y1 += lumSrc[j][2*i] * lumFilter[j];
-				Y2 += lumSrc[j][2*i+1] * lumFilter[j];
-			}
-			for(j=0; j<chrFilterSize; j++)
-			{
-				U += chrSrc[j][i] * chrFilter[j];
-				V += chrSrc[j][i+2048] * chrFilter[j];
-			}
-			Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
-			Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
-			U >>= 19;
-			V >>= 19;
-
-			Cb= clip_yuvtab_40cf[U+ 256];
-			Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
-			Cr= clip_yuvtab_3343[V+ 256];
-
-			((uint16_t*)dest)[2*i] =
-				clip_table16b[(Y1 + Cb + ditherb1) >>13] |
-				clip_table16g[(Y1 + Cg + ditherg1) >>13] |
-				clip_table16r[(Y1 + Cr + ditherr1) >>13];
-
-			((uint16_t*)dest)[2*i+1] =
-				clip_table16b[(Y2 + Cb + ditherb2) >>13] |
-				clip_table16g[(Y2 + Cg + ditherg2) >>13] |
-				clip_table16r[(Y2 + Cr + ditherr2) >>13];
+		break;
+	case IMGFMT_BGR24:
+		YSCALE_YUV_2_RGBX_C(uint8_t)
+			((uint8_t*)dest)[0]= b[Y1];
+			((uint8_t*)dest)[1]= g[Y1];
+			((uint8_t*)dest)[2]= r[Y1];
+			((uint8_t*)dest)[3]= b[Y2];
+			((uint8_t*)dest)[4]= g[Y2];
+			((uint8_t*)dest)[5]= r[Y2];
+			((uint8_t*)dest)+=6;
 		}
-	}
-	else if(dstFormat==IMGFMT_BGR15)
-	{
-		int i;
-#ifdef DITHER1XBPP
-		static int ditherb1=1<<14;
-		static int ditherg1=1<<14;
-		static int ditherr1=2<<14;
-		static int ditherb2=3<<14;
-		static int ditherg2=3<<14;
-		static int ditherr2=0<<14;
-
-		ditherb1 ^= (1^2)<<14;
-		ditherg1 ^= (1^2)<<14;
-		ditherr1 ^= (1^2)<<14;
-		ditherb2 ^= (3^0)<<14;
-		ditherg2 ^= (3^0)<<14;
-		ditherr2 ^= (3^0)<<14;
-#else
-		const int ditherb1=0;
-		const int ditherg1=0;
-		const int ditherr1=0;
-		const int ditherb2=0;
-		const int ditherg2=0;
-		const int ditherr2=0;
-#endif
-		for(i=0; i<(dstW>>1); i++){
-			int j;
-			int Y1=0;
-			int Y2=0;
-			int U=0;
-			int V=0;
-			int Cb, Cr, Cg;
-			for(j=0; j<lumFilterSize; j++)
-			{
-				Y1 += lumSrc[j][2*i] * lumFilter[j];
-				Y2 += lumSrc[j][2*i+1] * lumFilter[j];
+		break;
+	case IMGFMT_RGB16:
+	case IMGFMT_BGR16:
+		{
+			const int dr1= dither_2x2_8[y&1    ][0];
+			const int dg1= dither_2x2_4[y&1    ][0];
+			const int db1= dither_2x2_8[(y&1)^1][0];
+			const int dr2= dither_2x2_8[y&1    ][1];
+			const int dg2= dither_2x2_4[y&1    ][1];
+			const int db2= dither_2x2_8[(y&1)^1][1];
+			YSCALE_YUV_2_RGBX_C(uint16_t)
+				((uint16_t*)dest)[i2+0]= r[Y1+dr1] + g[Y1+dg1] + b[Y1+db1];
+				((uint16_t*)dest)[i2+1]= r[Y2+dr2] + g[Y2+dg2] + b[Y2+db2];
 			}
-			for(j=0; j<chrFilterSize; j++)
-			{
-				U += chrSrc[j][i] * chrFilter[j];
-				V += chrSrc[j][i+2048] * chrFilter[j];
-			}
-			Y1= clip_yuvtab_2568[ (Y1>>19) + 256 ];
-			Y2= clip_yuvtab_2568[ (Y2>>19) + 256 ];
-			U >>= 19;
-			V >>= 19;
-
-			Cb= clip_yuvtab_40cf[U+ 256];
-			Cg= clip_yuvtab_1a1e[V+ 256] + yuvtab_0c92[U+ 256];
-			Cr= clip_yuvtab_3343[V+ 256];
-
-			((uint16_t*)dest)[2*i] =
-				clip_table15b[(Y1 + Cb + ditherb1) >>13] |
-				clip_table15g[(Y1 + Cg + ditherg1) >>13] |
-				clip_table15r[(Y1 + Cr + ditherr1) >>13];
-
-			((uint16_t*)dest)[2*i+1] =
-				clip_table15b[(Y2 + Cb + ditherb2) >>13] |
-				clip_table15g[(Y2 + Cg + ditherg2) >>13] |
-				clip_table15r[(Y2 + Cr + ditherr2) >>13];
 		}
+		break;
+	case IMGFMT_RGB15:
+	case IMGFMT_BGR15:
+		{
+			const int dr1= dither_2x2_8[y&1    ][0];
+			const int dg1= dither_2x2_8[y&1    ][1];
+			const int db1= dither_2x2_8[(y&1)^1][0];
+			const int dr2= dither_2x2_8[y&1    ][1];
+			const int dg2= dither_2x2_8[y&1    ][0];
+			const int db2= dither_2x2_8[(y&1)^1][1];
+			YSCALE_YUV_2_RGBX_C(uint16_t)
+				((uint16_t*)dest)[i2+0]= r[Y1+dr1] + g[Y1+dg1] + b[Y1+db1];
+				((uint16_t*)dest)[i2+1]= r[Y2+dr2] + g[Y2+dg2] + b[Y2+db2];
+			}
+		}
+		break;
+	case IMGFMT_RGB8:
+	case IMGFMT_BGR8:
+		{
+			const uint8_t * const d64= dither_8x8_73[y&7];
+			const uint8_t * const d32= dither_8x8_32[y&7];
+			YSCALE_YUV_2_RGBX_C(uint8_t)
+				((uint8_t*)dest)[i2+0]= r[Y1+d32[(i2+0)&7]] + g[Y1+d32[(i2+0)&7]] + b[Y1+d64[(i2+0)&7]];
+				((uint8_t*)dest)[i2+1]= r[Y2+d32[(i2+1)&7]] + g[Y2+d32[(i2+1)&7]] + b[Y2+d64[(i2+1)&7]];
+			}
+		}
+		break;
+	case IMGFMT_RGB4:
+	case IMGFMT_BGR4:
+		{
+			const uint8_t * const d64= dither_8x8_73 [y&7];
+			const uint8_t * const d128=dither_8x8_220[y&7];
+			YSCALE_YUV_2_RGBX_C(uint8_t)
+				((uint8_t*)dest)[i2+0]= r[Y1+d128[(i2+0)&7]] + g[Y1+d64[(i2+0)&7]] + b[Y1+d128[(i2+0)&7]];
+				((uint8_t*)dest)[i2+1]= r[Y2+d128[(i2+1)&7]] + g[Y2+d64[(i2+1)&7]] + b[Y2+d128[(i2+1)&7]];
+			}
+		}
+		break;
+	case IMGFMT_RGB1:
+	case IMGFMT_BGR1:
+		{
+			const uint8_t * const d128=dither_8x8_220[y&7];
+			uint8_t *g= c->table_gU[128] + c->table_gV[128];
+			int acc=0;
+			for(i=0; i<dstW-1; i+=2){
+				int j;
+				int Y1=0;
+				int Y2=0;
+
+				for(j=0; j<lumFilterSize; j++)
+				{
+					Y1 += lumSrc[j][i] * lumFilter[j];
+					Y2 += lumSrc[j][i+1] * lumFilter[j];
+				}
+				Y1>>=19;
+				Y2>>=19;
+				if((Y1|Y2)&256)
+				{
+					if(Y1>255)   Y1=255;
+					else if(Y1<0)Y1=0;
+					if(Y2>255)   Y2=255;
+					else if(Y2<0)Y2=0;
+				}
+				acc+= acc + g[Y1+d128[(i+0)&7]];
+				acc+= acc + g[Y2+d128[(i+1)&7]];
+				if((i&7)==6){
+					((uint8_t*)dest)[0]= acc;
+					((uint8_t*)dest)++;
+				}
+			}
+		}
+		break;
 	}
 }
 
@@ -1330,22 +1458,6 @@ static void globalInit(){
     for(i=0; i<768; i++){
 	int c= MIN(MAX(i-256, 0), 255);
 	clip_table[i]=c;
-	yuvtab_2568[c]= clip_yuvtab_2568[i]=(0x2568*(c-16))+(256<<13);
-	yuvtab_3343[c]= clip_yuvtab_3343[i]=0x3343*(c-128);
-	yuvtab_0c92[c]= clip_yuvtab_0c92[i]=-0x0c92*(c-128);
-	yuvtab_1a1e[c]= clip_yuvtab_1a1e[i]=-0x1a1e*(c-128);
-	yuvtab_40cf[c]= clip_yuvtab_40cf[i]=0x40cf*(c-128);
-    }
-
-    for(i=0; i<768; i++)
-    {
-	int v= clip_table[i];
-	clip_table16b[i]=  v>>3;
-	clip_table16g[i]= (v<<3)&0x07E0;
-	clip_table16r[i]= (v<<8)&0xF800;
-	clip_table15b[i]=  v>>3;
-	clip_table15g[i]= (v<<2)&0x03E0;
-	clip_table15r[i]= (v<<7)&0x7C00;
     }
 
 cpuCaps= gCpuCaps;
@@ -1887,16 +1999,12 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	c->chrSrcH= -((-srcH) >> c->chrSrcVSubSample);
 	c->chrDstW= -((-dstW) >> c->chrDstHSubSample);
 	c->chrDstH= -((-dstH) >> c->chrDstVSubSample);
-/*	printf("%d %d %d %d / %d %d %d %d //\n", 
-	c->chrSrcW,
-c->chrSrcH,
-c->chrDstW,
-c->chrDstH,
-srcW,
-srcH,
-dstW,
-dstH);*/
 	
+	if(isBGR(dstFormat))
+		c->yuvTable= yuv2rgb_c_init(dstFormat & 0xFF, MODE_RGB, c->table_rV, c->table_gU, c->table_gV, c->table_bU);
+	if(isRGB(dstFormat))
+		c->yuvTable= yuv2rgb_c_init(dstFormat & 0xFF, MODE_BGR, c->table_rV, c->table_gU, c->table_gV, c->table_bU);
+
 	/* unscaled special Cases */
 	if(unscaled && !usesFilter)
 	{
@@ -1924,6 +2032,7 @@ dstH);*/
 		if((srcFormat==IMGFMT_YV12 || srcFormat==IMGFMT_I420) && isBGR(dstFormat))
 		{
 			// FIXME multiple yuv2rgb converters wont work that way cuz that thing is full of globals&statics
+			//FIXME rgb vs. bgr ? 
 #ifdef WORDS_BIGENDIAN
 			if(dstFormat==IMGFMT_BGR32)
 				yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_BGR);
@@ -2613,6 +2722,8 @@ void freeSwsContext(SwsContext *c){
 	c->lumMmx2FilterPos=NULL;
 	if(c->chrMmx2FilterPos) free(c->chrMmx2FilterPos);
 	c->chrMmx2FilterPos=NULL;
+	if(c->yuvTable) free(c->yuvTable);
+	c->yuvTable=NULL;
 
 	free(c);
 }
