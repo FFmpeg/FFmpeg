@@ -895,7 +895,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 		       );
 #endif
 
-               st->time_length=0;//Not possible to get from this info, must count number of AMR frames
+               st->duration = AV_NOPTS_VALUE;//Not possible to get from this info, must count number of AMR frames
                st->codec.sample_rate=8000;
                st->codec.channels=1;
                st->codec.bits_per_sample=16;
@@ -1153,7 +1153,8 @@ static int mov_read_trak(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     sc->sample_to_chunk_index = -1;
     st->priv_data = sc;
     st->codec.codec_type = CODEC_TYPE_MOV_OTHER;
-    st->time_length = (c->duration * 1000) / c->time_scale; // time in miliseconds
+    st->start_time = 0; /* XXX: check */
+    st->duration = (c->duration * (int64_t)AV_TIME_BASE) / c->time_scale;
     c->streams[c->fc->nb_streams-1] = sc;
 
     return mov_read_default(c, pb, atom);
@@ -1182,7 +1183,8 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     get_be32(pb); /* modification time */
     st->id = (int)get_be32(pb); /* track id (NOT 0 !)*/
     get_be32(pb); /* reserved */
-    st->time_length = get_be32(pb) * 1000 / c->time_scale; /* duration */
+    st->start_time = 0; /* check */
+    st->duration = (get_be32(pb) * (int64_t)AV_TIME_BASE) / c->time_scale; /* duration */
     get_be32(pb); /* reserved */
     get_be32(pb); /* reserved */
 
