@@ -62,9 +62,11 @@
 //filters on
 //#define COMPILE_TIME_MODE 0x77
 
-#define QP_STORE_T int
+#define QP_STORE_T int8_t
 
-char *pp_help;
+typedef void pp_context;
+
+extern char *pp_help;
 
 //FIXME decide if this should be exported at all
 typedef struct PPMode{
@@ -88,13 +90,13 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
                  uint8_t * dst[3], int dstStride[3],
                  int horizontalSize, int verticalSize,
                  QP_STORE_T *QP_store,  int QP_stride,
-		 PPMode *mode, void *ppContext, int pict_type);
+		 PPMode *mode, pp_context *ppContext, int pict_type);
 
 // name is the stuff after "-pp" on the command line
 PPMode pp_get_mode_by_name_and_quality(char *name, int quality);
 
-void *pp_get_context(int width, int height);
-void pp_free_context(void *ppContext);
+pp_context *pp_get_context(int width, int height);
+void pp_free_context(pp_context *ppContext);
 
 int pp_init(int cpuCaps);
 #define PP_CPU_CAPS_MMX   0x80000000

@@ -2835,8 +2835,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 		uint8_t *tempBlock1= c.tempBlocks;
 		uint8_t *tempBlock2= c.tempBlocks + 8;
 #endif
-		int *QPptr= isColor ? &QPs[(y>>3)*QPStride] :&QPs[(y>>4)*QPStride];
-		int *nonBQPptr= isColor ? &c.nonBQPTable[(y>>3)*mbWidth] :&c.nonBQPTable[(y>>4)*mbWidth];
+		int8_t *QPptr= isColor ? &QPs[(y>>3)*QPStride] :&QPs[(y>>4)*QPStride];
+		int8_t *nonBQPptr= isColor ? &c.nonBQPTable[(y>>3)*mbWidth] :&c.nonBQPTable[(y>>4)*mbWidth];
 		int QP=0;
 		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
 		   if not than use a temporary buffer */

@@ -535,7 +535,7 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 
 /* -pp Command line Help
 */
-char *postproc_help=
+char *pp_help=
 "-npp <filterName>[:<option>[:<option>...]][,[-]<filterName>[:<option>...]]...\n"
 "long form example:\n"
 "-npp vdeblock:autoq,hdeblock:autoq,linblenddeint	-npp default,-vdeblock\n"
