@@ -40,6 +40,14 @@
 #include "avformat.h"
 #include "mpegaudio.h"
 
+//from /dev/random
+
+#define     MAIN_STARTCODE (0xF9526A6200000000ULL + ('N'<<24) + ('U'<<16) + ('T'<<8) + 'M')
+#define   STREAM_STARTCODE (0xD667773F00000000ULL + ('N'<<24) + ('U'<<16) + ('T'<<8) + 'S')
+#define KEYFRAME_STARTCODE (0xCB86308700000000ULL + ('N'<<24) + ('U'<<16) + ('T'<<8) + 'K')
+#define    INDEX_STARTCODE (0xEBFCDE0E00000000ULL + ('N'<<24) + ('U'<<16) + ('T'<<8) + 'X')
+#define     INFO_STARTCODE (0xA37B643500000000ULL + ('N'<<24) + ('U'<<16) + ('T'<<8) + 'I')
+
 typedef struct {
     int curr_frame_start;
     int last_frame_size;
@@ -135,8 +143,9 @@ static int put_v(ByteIOContext *bc, uint64_t val)
 	if ((val>>i) == 0)
 	    break;
 
-    for (i-=7; i>0; i-=8)
+    for (i-=7; i>0; i-=7){
 	put_byte(bc, 0x80 | (val>>i));
+    }
 
     put_byte(bc, val&0x7f);
 
@@ -209,13 +218,13 @@ static int nut_write_header(AVFormatContext *s)
     put_packetheader(nut, bc, 16); /* FIXME: estimation */
     
     /* main header */
-    put_le64(bc, 1); /* FIXME: unique startcode */
+    put_be64(bc, MAIN_STARTCODE);
     put_v(bc, 0); /* version */
     put_v(bc, s->nb_streams);
     put_v(bc, 0); /* file size */
     put_v(bc, stream_length); /* len in msec */
     put_padding(nut, bc);
-    put_le32(bc, 0); /* FIXME: checksum */
+    put_be32(bc, 0); /* FIXME: checksum */
     
     /* stream headers */
     for (i = 0; i < s->nb_streams; i++)
@@ -223,24 +232,24 @@ static int nut_write_header(AVFormatContext *s)
 	codec = &s->streams[i]->codec;
 	
 	put_packetheader(nut, bc, 64); /* FIXME: estimation */
-	put_le64(bc, 1); /* FIXME: unique startcode */
+	put_be64(bc, STREAM_STARTCODE);
 	put_v(bc, s->streams[i]->index);
 	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
 	if (codec->codec_tag)
-	    put_b(bc, codec->codec_tag, 4);
+	    put_b(bc, &codec->codec_tag, 4);
 	else if (codec->codec_type == CODEC_TYPE_VIDEO)
 	{
 	    int tmp = codec_get_bmp_tag(codec->codec_id);
 	    put_b(bc, &tmp, 4);
 //	    put_v(bc, 4); /* len */
-//	    put_le32(bc, codec_get_bmp_tag(codec->codec_id));
+//	    put_be32(bc, codec_get_bmp_tag(codec->codec_id));
 	}
 	else if (codec->codec_type == CODEC_TYPE_AUDIO)
 	{
 	    int tmp = codec_get_wav_tag(codec->codec_id);
 	    put_b(bc, &tmp, 4);
 //	    put_v(bc, 4); /* len */
-//	    put_le32(bc, codec_get_wav_tag(codec->codec_id));
+//	    put_be32(bc, codec_get_wav_tag(codec->codec_id));
 	}
 	put_v(bc, codec->bit_rate);
 	put_v(bc, 0); /* no language code */
@@ -258,7 +267,7 @@ static int nut_write_header(AVFormatContext *s)
 		put_v(bc, codec->sample_rate / (double)(codec->frame_rate_base / codec->frame_rate));
 		put_v(bc, codec->channels);
 		put_padding(nut, bc);
-		put_le32(bc, 0); /* FIXME: checksum */
+		put_be32(bc, 0); /* FIXME: checksum */
 		break;
 	    case CODEC_TYPE_VIDEO:
 		put_v(bc, codec->width);
@@ -267,7 +276,7 @@ static int nut_write_header(AVFormatContext *s)
 		put_v(bc, 0); /* aspected h */
 		put_v(bc, 0); /* csp type -- unknown */
 		put_padding(nut, bc);
-		put_le32(bc, 0); /* FIXME: checksum */
+		put_be32(bc, 0); /* FIXME: checksum */
 		break;
 	}
     }
@@ -276,7 +285,7 @@ static int nut_write_header(AVFormatContext *s)
     /* info header */
     put_packetheader(nut, bc, 16+strlen(s->author)+strlen(s->title)+
         strlen(s->comment)+strlen(s->copyright)); /* FIXME: estimation */
-    put_le64(bc, 1); /* FIXME: unique startcode */
+    put_be64(bc, INFO_STARTCODE);
     if (s->author[0])
     {
         put_v(bc, 5); /* type */
@@ -302,7 +311,7 @@ static int nut_write_header(AVFormatContext *s)
     put_b(bc, LIBAVFORMAT_IDENT, strlen(LIBAVFORMAT_IDENT));
 
     put_padding(nut, bc);
-    put_le32(bc, 0); /* FIXME: checksum */
+    put_be32(bc, 0); /* FIXME: checksum */
 #endif
         
     put_flush_packet(bc);
@@ -316,6 +325,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
     int key_frame = 0;
+    int flags, size2;
     AVCodecContext *enc;
 
     if (stream_index > s->nb_streams)
@@ -328,8 +338,16 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     put_packetheader(nut, bc, size+(key_frame?16:8)+4); /* FIXME: estimation */
 
     if (key_frame)
-	put_le64(bc, 1); /* FIXME: unique startcode */
-    put_byte(bc, (key_frame ? 1<<5 : 0) + (1 << 1)); /* flags */
+	put_be64(bc, KEYFRAME_STARTCODE);
+    
+    flags=0;
+    flags<<=2; flags|=1; //priority
+    flags<<=1; flags|=0; //checksum
+    flags<<=1; flags|=0; //msb_timestamp_flag
+    flags<<=2; flags|=1; //subpacket_type
+    flags<<=1; flags|=0; //reserved
+
+    put_byte(bc, flags);
     put_v(bc, stream_index);
     put_s(bc, 0); /* lsb_timestamp */
     
@@ -354,11 +372,11 @@ static int nut_write_trailer(AVFormatContext *s)
     for (i = 0; s->nb_streams; i++)
     {
 	put_packetheader(nut, bc, 64); /* FIXME: estimation */
-	put_le64(bc, 1); /* FIXME: unique startcode */
+	put_be64(bc, INDEX_STARTCODE);
 	put_v(bc, s->streams[i]->id);
 	put_v(bc, ...);
 	put_padding(nut, bc);
-	put_le32(bc, 0); /* FIXME: checksum */
+	put_be32(bc, 0); /* FIXME: checksum */
     }
 #endif
 
@@ -369,25 +387,36 @@ static int nut_write_trailer(AVFormatContext *s)
 
 static int nut_probe(AVProbeData *p)
 {
-    return AVPROBE_SCORE_MAX;
+    int i;
+    uint64_t code;
+
+    code = 0xff;
+    for (i = 0; i < p->buf_size; i++) {
+        int c = p->buf[i];
+        code = (code << 8) | c;
+        code &= 0xFFFFFFFFFFFFFFFFULL;
+        if (code == MAIN_STARTCODE)
+            return AVPROBE_SCORE_MAX;
+    }
+    return 0;
 }
 
 static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
-    int tmp;
+    uint64_t tmp;
     int cur_stream, nb_streams;
     
     /* main header */
     get_packetheader(nut, bc);
-    tmp = get_le64(bc);
-    if (tmp != 1)
-	fprintf(stderr, "damaged? startcode!=1 (%d)\n", tmp);
+    tmp = get_be64(bc);
+    if (tmp != MAIN_STARTCODE)
+	fprintf(stderr, "damaged? startcode!=1 (%Ld)\n", tmp);
     
     tmp = get_v(bc);
     if (tmp != 0)
-	fprintf(stderr, "bad version (%d)\n", tmp);
+	fprintf(stderr, "bad version (%Ld)\n", tmp);
     
     nb_streams = get_v(bc);
     
@@ -395,7 +424,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     s->duration = get_v(bc) / (AV_TIME_BASE / 1000);
 
     get_padding(nut, bc);
-    get_le32(bc); /* checkusm */
+    get_be32(bc); /* checkusm */
     
     s->bit_rate = 0;
     
@@ -406,9 +435,9 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	AVStream *st;
 	
 	get_packetheader(nut, bc);
-	tmp = get_le64(bc);
-	if (tmp != 1)
-	    fprintf(stderr, "damaged? startcode!=1 (%d)\n", tmp);
+	tmp = get_be64(bc);
+	if (tmp != STREAM_STARTCODE)
+	    fprintf(stderr, "damaged? startcode!=1 (%Ld)\n", tmp);
 	st = av_new_stream(s, get_v(bc));
 	if (!st)
 	    return AVERROR_NOMEM;
@@ -418,8 +447,8 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    case 0:
 		st->codec.codec_type = CODEC_TYPE_VIDEO;
 //		get_v(bc);
-//		tmp = get_le32(bc);
-		get_b(bc, &tmp, 4);
+//		tmp = get_be32(bc);
+		get_b(bc, (char*)&tmp, 4);
 		st->codec.codec_id = codec_get_bmp_id(tmp);
 		if (st->codec.codec_id == CODEC_ID_NONE)
 		    fprintf(stderr, "Unknown codec?!\n");
@@ -427,8 +456,8 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    case 32:
 		st->codec.codec_type = CODEC_TYPE_AUDIO;
 //		tmp = get_v(bc);
-//		tmp = get_le32(bc);
-		get_b(bc, &tmp, 4);
+//		tmp = get_be32(bc);
+		get_b(bc, (char*)&tmp, 4);
 		st->codec.codec_id = codec_get_wav_id(tmp);
 		if (st->codec.codec_id == CODEC_ID_NONE)
 		    fprintf(stderr, "Unknown codec?!\n");
@@ -475,8 +504,9 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
-    int tmp, id, timestamp, size;
+    int id, timestamp, size;
     int key_frame = 0;
+    uint64_t tmp;
 
     get_packetheader(nut, bc);
 
@@ -484,24 +514,28 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
 	return -1;
     
     tmp = get_byte(bc);
-    if ((tmp & 0x7f) == 1) /* zero bit set? */
+    if (tmp & 0x80) /* zero bit set? */
     {
-	tmp = get_le32(bc)+get_le16(bc)+get_byte(bc);
-	if (!tmp)
+	tmp<<=8 ; tmp |= get_byte(bc);
+	tmp<<=16; tmp |= get_be16(bc);
+	tmp<<=32; tmp |= get_be32(bc);
+	if (tmp == KEYFRAME_STARTCODE)
 	{
 	    key_frame = 1;
 	    tmp = get_byte(bc); /* flags */
 	}
 	else
-	    fprintf(stderr, "error in zero bit / startcode\n");
+	    fprintf(stderr, "error in zero bit / startcode %LX\n", tmp);
     }
-    if ((tmp & 0x9f) > 3) /* priority <= 3 */
+#if 0
+    if (((tmp & 0x60)>>5) > 3) /* priority <= 3 */
 	fprintf(stderr, "sanity check failed!\n");
+#endif
     id = get_v(bc);
     timestamp = get_s(bc);
     
     size = (nut->curr_frame_size - (url_ftell(bc)-nut->curr_frame_start));
-    dprintf("flags: 0x%x, timestamp: %d, packet size: %d\n", tmp, timestamp, size);
+    dprintf("flags: 0x%Lx, timestamp: %d, packet size: %d\n", tmp, timestamp, size);
     
     if (size < 0)
 	return -1;
