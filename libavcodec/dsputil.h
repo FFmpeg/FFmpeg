@@ -197,6 +197,9 @@ static inline void emms(void)
 void dsputil_init_mmx(DSPContext* c, unsigned mask);
 void dsputil_set_bit_exact_mmx(DSPContext* c, unsigned mask);
 
+void dsputil_init_pix_mmx(DSPContext* c, unsigned mask);
+void dsputil_set_bit_exact_pix_mmx(DSPContext* c, unsigned mask);
+
 #elif defined(ARCH_ARMV4L)
 
 /* This is to use 4 bytes read to the IDCT pointers for some 'zero'

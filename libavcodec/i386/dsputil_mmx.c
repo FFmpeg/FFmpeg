@@ -22,8 +22,6 @@
 #include "../dsputil.h"
 
 int mm_flags; /* multimedia extension flags */
-/* FIXME use them in static form */
-void dsputil_init_pix_mmx(DSPContext* c, unsigned mask);
 
 /* pixel operations */
 static const uint64_t mm_bone __attribute__ ((aligned(8))) = 0x0101010101010101ULL;

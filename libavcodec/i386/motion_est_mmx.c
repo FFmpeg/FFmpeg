@@ -20,9 +20,6 @@
  */
 #include "../dsputil.h"
 
-void dsputil_init_pix_mmx(DSPContext* c, unsigned mask);
-void dsputil_set_bit_exact_pix_mmx(DSPContext* c, unsigned mask);
-
 static const __attribute__ ((aligned(8))) uint64_t round_tab[3]={
 0x0000000000000000,
 0x0001000100010001,
