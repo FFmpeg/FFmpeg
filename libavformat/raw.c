@@ -466,6 +466,21 @@ AVOutputFormat mpeg1video_oformat = {
 };
 #endif //CONFIG_ENCODERS
 
+#ifdef CONFIG_ENCODERS
+AVOutputFormat mpeg2video_oformat = {
+    "mpeg2video",
+    "MPEG2 video",
+    NULL,
+    "m2v",
+    0,
+    0,
+    CODEC_ID_MPEG2VIDEO,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+};
+#endif //CONFIG_ENCODERS
+
 AVInputFormat mjpeg_iformat = {
     "mjpeg",
     "MJPEG video",
@@ -676,6 +691,8 @@ int raw_init(void)
 
     av_register_input_format(&mpegvideo_iformat);
     av_register_output_format(&mpeg1video_oformat);
+
+    av_register_output_format(&mpeg2video_oformat);
 
     av_register_input_format(&mjpeg_iformat);
     av_register_output_format(&mjpeg_oformat);
