@@ -87,18 +87,40 @@ uint64_t __attribute__((aligned(8))) dither8[2]={
 	0x0602060206020602LL,
 	0x0004000400040004LL,};
 
-uint8_t  __attribute__((aligned(8))) dither32[4][8]={
+uint8_t  __attribute__((aligned(8))) dither_4x4_32[4][8]={
 	{ 0,16, 6,22, 0,16, 6,22},
 	{28, 8,24,14,28, 8,24,14},
 	{ 4,20, 2,18, 4,20, 2,18},
 	{26,12,30,10,26,12,30,10},
 };
 
-uint8_t  __attribute__((aligned(8))) dither64[4][8]={
+uint8_t  __attribute__((aligned(8))) dither_4x4_64[4][8]={
 	{ 8,40, 4,36, 8,40, 4,36,},
 	{52,24,60,20,52,24,60,20,},
 	{00,32,12,44,00,32,12,44,},
 	{56,16,48,28,56,16,48,28,},
+};
+
+uint8_t  __attribute__((aligned(8))) dither_8x8_64[8][8]={
+{  0,  48,  12,  60,   3,  51,  15,  63, },
+{ 32,  16,  44,  28,  35,  19,  47,  31, },
+{  8,  56,   4,  52,  11,  59,   7,  55, },
+{ 40,  24,  36,  20,  43,  27,  39,  23, },
+{  2,  50,  14,  62,   1,  49,  13,  61, },
+{ 34,  18,  46,  30,  33,  17,  45,  29, },
+{ 10,  58,   6,  54,   9,  57,   5,  53, },
+{ 42,  26,  38,  22,  41,  25,  37,  21, },
+};
+
+uint8_t  __attribute__((aligned(8))) dither_8x8_128[8][8]={
+{ 68,  36,  92,  60,  66,  34,  90,  58, },
+{ 20, 116,  12, 108,  18, 114,  10, 106, },
+{ 84,  52,  76,  44,  82,  50,  74,  42, },
+{  0,  96,  24, 120,   6, 102,  30, 126, },
+{ 64,  32,  88,  56,  70,  38,  94,  62, },
+{ 16, 112,   8, 104,  22, 118,  14, 110, },
+{ 80,  48,  72,  40,  86,  54,  78,  46, },
+{  4, 100,  28, 124,   2,  98,  26, 122, },
 };
 
 #undef HAVE_MMX
@@ -447,7 +469,6 @@ static void yuv2rgb_c_8  (uint8_t * py_1, uint8_t * py_2,
     }
 }
 
-// This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
 static void yuv2rgb_c_8_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 			  uint8_t * pu, uint8_t * pv,
@@ -462,8 +483,8 @@ static void yuv2rgb_c_8_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
     dst_2 = _dst_2;
 
     while (h_size--) {
-	uint8_t *d32= dither32[v_pos&3];
-	uint8_t *d64= dither64[v_pos&3];
+	uint8_t *d32= dither_4x4_32[v_pos&3];
+	uint8_t *d64= dither_4x4_64[v_pos&3];
 
 #define DST1a(i)					\
 	Y = py_1[2*i];				\
@@ -514,6 +535,102 @@ static void yuv2rgb_c_8_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
     }
 }
 
+
+// This is exactly the same code as yuv2rgb_c_32 except for the types of
+// r, g, b, dst_1, dst_2
+static void yuv2rgb_c_4  (uint8_t * py_1, uint8_t * py_2,
+			  uint8_t * pu, uint8_t * pv,
+			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
+{
+    int U, V, Y, out;
+    uint8_t * r, * g, * b;
+    uint8_t * dst_1, * dst_2;
+
+    h_size >>= 3;
+    dst_1 = _dst_1;
+    dst_2 = _dst_2;
+
+    while (h_size--) {
+	RGB(0);
+	DST1(0);
+	DST2(0);
+
+	RGB(1);
+	DST2(1);
+	DST1(1);
+
+	RGB(2);
+	DST1(2);
+	DST2(2);
+
+	RGB(3);
+	DST2(3);
+	DST1(3);
+
+	pu += 4;
+	pv += 4;
+	py_1 += 8;
+	py_2 += 8;
+	dst_1 += 8;
+	dst_2 += 8;
+    }
+}
+
+static void yuv2rgb_c_4_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
+			  uint8_t * pu, uint8_t * pv,
+			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
+{
+    int U, V, Y;
+    uint8_t * r, * g, * b;
+    uint8_t * dst_1, * dst_2;
+
+    h_size >>= 3;
+    dst_1 = _dst_1;
+    dst_2 = _dst_2;
+
+    while (h_size--) {
+	uint8_t *d64= dither_8x8_64 [v_pos&7];
+	uint8_t *d128=dither_8x8_128[v_pos&7];
+
+#define DST1bpp4(i,o)					\
+	Y = py_1[2*i];				\
+	dst_1[2*i] = r[Y+d128[0+o]] + g[Y+d64[0+o]] + b[Y+d128[0+o]];	\
+	Y = py_1[2*i+1];			\
+	dst_1[2*i+1] = r[Y+d128[1+o]] + g[Y+d64[1+o]] + b[Y+d128[1+o]];
+
+#define DST2bpp4(i,o)					\
+	Y = py_2[2*i];				\
+	dst_2[2*i] =  r[Y+d128[8+o]] + g[Y+d64[8+o]] + b[Y+d128[8+o]];	\
+	Y = py_2[2*i+1];			\
+	dst_2[2*i+1] =  r[Y+d128[9+o]] + g[Y+d64[9+o]] + b[Y+d128[9+o]];
+
+
+	RGB(0);
+	DST1bpp4(0,0);
+	DST2bpp4(0,0);
+
+	RGB(1);
+	DST2bpp4(1,2);
+	DST1bpp4(1,2);
+
+	RGB(2);
+	DST1bpp4(2,4);
+	DST2bpp4(2,4);
+
+	RGB(3);
+	DST2bpp4(3,6);
+	DST1bpp4(3,6);
+
+	pu += 4;
+	pv += 4;
+	py_1 += 8;
+	py_2 += 8;
+	dst_1 += 8;
+	dst_2 += 8;
+    }
+}
+
+
 static int div_round (int dividend, int divisor)
 {
     if (dividend > 0)
@@ -530,6 +647,8 @@ static void yuv2rgb_c_init (int bpp, int mode)
     uint16_t *table_16 = 0;
     uint8_t *table_8 = 0;
     uint8_t *table_332 = 0;
+    uint8_t *table_121 = 0;
+    uint8_t *table_1 = 0;
     int entry_size = 0;
     void *table_r = 0, *table_g = 0, *table_b = 0;
 
@@ -623,7 +742,8 @@ static void yuv2rgb_c_init (int bpp, int mode)
 	table_g = table_332 + 197 + 2*682;
 
 	for (i = -197; i < 256+197; i++) {
-	    int j = table_Y[i+384] >> 5;
+	    int j = (table_Y[i+384] - 16) >> 5;
+	    if(j<0) j=0;
 
 	    if (mode == MODE_RGB)
 		j <<= 5;
@@ -631,7 +751,8 @@ static void yuv2rgb_c_init (int bpp, int mode)
 	    ((uint8_t *)table_r)[i] = j;
 	}
 	for (i = -132; i < 256+132; i++) {
-	    int j = table_Y[i+384] >> 5;
+	    int j = (table_Y[i+384] - 16) >> 5;
+	    if(j<0) j=0;
 
 	    if (mode == MODE_BGR)
 		j <<= 1;
@@ -639,10 +760,46 @@ static void yuv2rgb_c_init (int bpp, int mode)
 	    ((uint8_t *)table_g)[i] = j << 2;
 	}
 	for (i = -232; i < 256+232; i++) {
-	    int j = table_Y[i+384] >> 6;
+	    int j = (table_Y[i+384] - 32) >> 6;
+	    if(j<0) j=0;
 
 	    if (mode == MODE_BGR)
 		j <<= 6;
+
+	    ((uint8_t *)table_b)[i] = j;
+	}
+	break;
+    case 4:
+	yuv2rgb_c_internal = yuv2rgb_c_4_ordered_dither; //yuv2rgb_c_4;
+
+	table_121 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
+
+	entry_size = sizeof (uint8_t);
+	table_r = table_121 + 197;
+	table_b = table_121 + 197 + 685;
+	table_g = table_121 + 197 + 2*682;
+
+	for (i = -197; i < 256+197; i++) {
+	    int j = (table_Y[i+384] - 64) >> 7;
+	    if(j<0) j=0;
+
+	    if (mode == MODE_RGB)
+		j <<= 3;
+
+	    ((uint8_t *)table_r)[i] = j;
+	}
+	for (i = -132; i < 256+132; i++) {
+	    int j = (table_Y[i+384] - 32) >> 6;
+	    if(j<0) j=0;
+
+	    ((uint8_t *)table_g)[i] = j << 1;
+	}
+	for (i = -232; i < 256+232; i++) {
+	    int j =(table_Y[i+384] - 64) >> 7;
+	    if(j<0) j=0;
+
+	    if (mode == MODE_BGR)
+		j <<= 3;
 
 	    ((uint8_t *)table_b)[i] = j;
 	}
