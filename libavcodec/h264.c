@@ -198,6 +198,9 @@ typedef struct H264Context{
     int halfpel_flag;
     int thirdpel_flag;
 
+    int unknown_svq3_flag;
+    int next_slice_index;
+
     SPS sps_buffer[MAX_SPS_COUNT];
     SPS sps; ///< current sps
     

@@ -1038,6 +1038,103 @@ static inline void put_tpel_pixels_mc22_c(uint8_t *dst, const uint8_t *src, int 
       dst += stride;
     }
 }
+
+static inline void avg_tpel_pixels_mc00_c(uint8_t *dst, const uint8_t *src, int stride, int width, int height){
+    switch(width){
+    case 2: avg_pixels2_c (dst, src, stride, height); break;
+    case 4: avg_pixels4_c (dst, src, stride, height); break;
+    case 8: avg_pixels8_c (dst, src, stride, height); break;
+    case 16:avg_pixels16_c(dst, src, stride, height); break;
+    }
+}
+
+static inline void avg_tpel_pixels_mc10_c(uint8_t *dst, const uint8_t *src, int stride, int width, int height){
+    int i,j;
+    for (i=0; i < height; i++) {
+      for (j=0; j < width; j++) {
+	dst[j] = (dst[j] + ((683*(2*src[j] + src[j+1] + 1)) >> 11) + 1) >> 1;
+      }
+      src += stride;
+      dst += stride;
+    }
+}
+
+static inline void avg_tpel_pixels_mc20_c(uint8_t *dst, const uint8_t *src, int stride, int width, int height){
+    int i,j;
+    for (i=0; i < height; i++) {
+      for (j=0; j < width; j++) {
+	dst[j] = (dst[j] + ((683*(src[j] + 2*src[j+1] + 1)) >> 11) + 1) >> 1;
+      }
+      src += stride;
+      dst += stride;
+    }
+}
+    
+static inline void avg_tpel_pixels_mc01_c(uint8_t *dst, const uint8_t *src, int stride, int width, int height){
+    int i,j;
+    for (i=0; i < height; i++) {
+      for (j=0; j < width; j++) {
+	dst[j] = (dst[j] + ((683*(2*src[j] + src[j+stride] + 1)) >> 11) + 1) >> 1;
+      }
+      src += stride;
+      dst += stride;
+    }
+}
+    
+static inline void avg_tpel_pixels_mc11_c(uint8_t *dst, const uint8_t *src, int stride, int width, int height){
+    int i,j;
+    for (i=0; i < height; i++) {
+      for (j=0; j < width; j++) {
+	dst[j] = (dst[j] + ((2731*(4*src[j] + 3*src[j+1] + 3*src[j+stride] + 2*src[j+stride+1] + 6)) >> 15) + 1) >> 1;
+      }
+      src += stride;
+      dst += stride;
+    }
+}
+
+static inline void avg_tpel_pixels_mc12_c(uint8_t *dst, const uint8_t *src, int stride, int width, int height){
+    int i,j;
+    for (i=0; i < height; i++) {
+      for (j=0; j < width; j++) {
+	dst[j] = (dst[j] + ((2731*(3*src[j] + 4*src[j+1] + 2*src[j+stride] + 3*src[j+stride+1] + 6)) >> 15) + 1) >> 1;
+      }
+      src += stride;
+      dst += stride;
+    }
+}
+
+static inline void avg_tpel_pixels_mc02_c(uint8_t *dst, const uint8_t *src, int stride, int width, int height){
+    int i,j;
+    for (i=0; i < height; i++) {
+      for (j=0; j < width; j++) {
+	dst[j] = (dst[j] + ((683*(src[j] + 2*src[j+stride] + 1)) >> 11) + 1) >> 1;
+      }
+      src += stride;
+      dst += stride;
+    }
+}
+
+static inline void avg_tpel_pixels_mc21_c(uint8_t *dst, const uint8_t *src, int stride, int width, int height){
+    int i,j;
+    for (i=0; i < height; i++) {
+      for (j=0; j < width; j++) {
+	dst[j] = (dst[j] + ((2731*(3*src[j] + 2*src[j+1] + 4*src[j+stride] + 3*src[j+stride+1] + 6)) >> 15) + 1) >> 1;
+      }
+      src += stride;
+      dst += stride;
+    }
+}
+
+static inline void avg_tpel_pixels_mc22_c(uint8_t *dst, const uint8_t *src, int stride, int width, int height){
+    int i,j;
+    for (i=0; i < height; i++) {
+      for (j=0; j < width; j++) {
+	dst[j] = (dst[j] + ((2731*(2*src[j] + 3*src[j+1] + 3*src[j+stride] + 4*src[j+stride+1] + 6)) >> 15) + 1) >> 1;
+      }
+      src += stride;
+      dst += stride;
+    }
+}
 #if 0
 #define TPEL_WIDTH(width)\
 static void put_tpel_pixels ## width ## _mc00_c(uint8_t *dst, const uint8_t *src, int stride, int height){\
@@ -2809,6 +2906,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     dspfunc(avg_no_rnd, 0, 16);
     dspfunc(avg, 1, 8);
     dspfunc(avg_no_rnd, 1, 8);
+    dspfunc(avg, 2, 4);
+    dspfunc(avg, 3, 2);
 #undef dspfunc
 
     c->put_tpel_pixels_tab[ 0] = put_tpel_pixels_mc00_c;
@@ -2820,6 +2919,16 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->put_tpel_pixels_tab[ 8] = put_tpel_pixels_mc02_c;
     c->put_tpel_pixels_tab[ 9] = put_tpel_pixels_mc12_c;
     c->put_tpel_pixels_tab[10] = put_tpel_pixels_mc22_c;
+
+    c->avg_tpel_pixels_tab[ 0] = avg_tpel_pixels_mc00_c;
+    c->avg_tpel_pixels_tab[ 1] = avg_tpel_pixels_mc10_c;
+    c->avg_tpel_pixels_tab[ 2] = avg_tpel_pixels_mc20_c;
+    c->avg_tpel_pixels_tab[ 4] = avg_tpel_pixels_mc01_c;
+    c->avg_tpel_pixels_tab[ 5] = avg_tpel_pixels_mc11_c;
+    c->avg_tpel_pixels_tab[ 6] = avg_tpel_pixels_mc21_c;
+    c->avg_tpel_pixels_tab[ 8] = avg_tpel_pixels_mc02_c;
+    c->avg_tpel_pixels_tab[ 9] = avg_tpel_pixels_mc12_c;
+    c->avg_tpel_pixels_tab[10] = avg_tpel_pixels_mc22_c;
 
 #define dspfunc(PFX, IDX, NUM) \
     c->PFX ## _pixels_tab[IDX][ 0] = PFX ## NUM ## _mc00_c; \
