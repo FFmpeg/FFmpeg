@@ -61,6 +61,9 @@ untested special converters
 #else
 #include <stdlib.h>
 #endif
+#ifdef HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "../cpudetect.h"
