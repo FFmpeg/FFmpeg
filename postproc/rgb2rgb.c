@@ -85,6 +85,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
 #undef ARCH_X86
+#undef HAVE_SSE2
 #define RENAME(a) a ## _C
 #include "rgb2rgb_template.c"
 
@@ -95,6 +96,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 #define HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
+#undef HAVE_SSE2
 #define ARCH_X86
 #define RENAME(a) a ## _MMX
 #include "rgb2rgb_template.c"
@@ -104,6 +106,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 #define HAVE_MMX
 #define HAVE_MMX2
 #undef HAVE_3DNOW
+#undef HAVE_SSE2
 #define ARCH_X86
 #define RENAME(a) a ## _MMX2
 #include "rgb2rgb_template.c"
@@ -113,6 +116,7 @@ static uint64_t __attribute__((aligned(8))) dither8[2]={
 #define HAVE_MMX
 #undef HAVE_MMX2
 #define HAVE_3DNOW
+#undef HAVE_SSE2
 #define ARCH_X86
 #define RENAME(a) a ## _3DNow
 #include "rgb2rgb_template.c"
