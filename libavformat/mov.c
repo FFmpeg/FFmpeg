@@ -1676,7 +1676,13 @@ again:
         for(i=0; i<(sc->sample_to_chunk_sz); i++) {
             if( (sc->sample_to_chunk[i].first)<=(sc->next_chunk) && (sc->sample_size>0) )
             {
-                foundsize=sc->sample_to_chunk[i].count*sc->sample_size;
+		// I can't figure out why for PCM audio sample_size is always 1
+		// (it should actually be channels*bits_per_second/8) but it is.
+		AVCodecContext* cod = &s->streams[sc->ffindex]->codec;
+                if (sc->sample_size == 1 && (cod->codec_id == CODEC_ID_PCM_S16BE || cod->codec_id == CODEC_ID_PCM_S16LE))
+		    foundsize=(sc->sample_to_chunk[i].count*cod->channels*cod->bits_per_sample)/8;
+		else
+		    foundsize=sc->sample_to_chunk[i].count*sc->sample_size;
             }
 #ifdef DEBUG
             /*printf("sample_to_chunk first=%ld count=%ld, id=%ld\n", sc->sample_to_chunk[i].first, sc->sample_to_chunk[i].count, sc->sample_to_chunk[i].id);*/
