@@ -21,15 +21,11 @@
  * @file sierravmd.c
  * Sierra VMD file demuxer
  * by Vladimir "VAG" Gneushev (vagsoft at mail.ru)
+ * for more information on the Sierra VMD file format, visit:
+ *   http://www.pcisys.net/~melanson/codecs/
  */
 
 #include "avformat.h"
-
-#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
-#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
-                   (((uint8_t*)(x))[2] << 16) | \
-                   (((uint8_t*)(x))[1] << 8) | \
-                    ((uint8_t*)(x))[0])
 
 #define VMD_HEADER_SIZE 0x0330
 #define BYTES_PER_FRAME_RECORD 16
@@ -56,6 +52,11 @@ typedef struct VmdDemuxContext {
     vmd_frame_t *frame_table;
     unsigned int current_frame;
 
+    int sample_rate;
+    int64_t audio_sample_counter;
+    int audio_frame_divisor;
+    int audio_block_align;
+
     unsigned char vmd_header[VMD_HEADER_SIZE];
 } VmdDemuxContext;
 
@@ -73,6 +74,32 @@ static int vmd_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX / 2;
 }
 
+/* This is a support function to determine the duration, in sample
+ * frames, of a particular audio chunk, taking into account silent
+ * encodings. */
+static int vmd_calculate_audio_duration(unsigned char *audio_chunk,
+    int audio_chunk_size, int block_align)
+{
+    unsigned char *p = audio_chunk + 16;
+    unsigned char *p_end = audio_chunk + audio_chunk_size;
+    int total_samples = 0;
+    unsigned int sound_flags;
+
+    if (audio_chunk_size < 16)
+        return 0;
+
+    sound_flags = LE_32(p);
+    p += 4;
+    while (p < p_end) {
+        total_samples += block_align;
+        if ((sound_flags & 0x01) == 0)
+            p += block_align;
+        sound_flags >>= 1;
+    }
+
+    return total_samples;
+}
+
 static int vmd_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
@@ -85,14 +112,18 @@ static int vmd_read_header(AVFormatContext *s,
     unsigned char *current_frame_record;
     offset_t current_offset;
     int i;
-    int sample_rate;
     unsigned int total_frames;
-int video_frame_count = 0;
+    int64_t video_pts_inc;
+    int64_t current_video_pts = 0;
 
     /* fetch the main header, including the 2 header length bytes */
     url_fseek(pb, 0, SEEK_SET);
     if (get_buffer(pb, vmd->vmd_header, VMD_HEADER_SIZE) != VMD_HEADER_SIZE)
         return -EIO;
+
+    vmd->audio_sample_counter = 0;
+    vmd->audio_frame_divisor = 1;
+    vmd->audio_block_align = 1;
 
     /* start up the decoders */
     st = av_new_stream(s, 0);
@@ -109,8 +140,8 @@ int video_frame_count = 0;
     memcpy(st->codec.extradata, vmd->vmd_header, VMD_HEADER_SIZE);
 
     /* if sample rate is 0, assume no audio */
-    sample_rate = LE_16(&vmd->vmd_header[804]);
-    if (sample_rate) {
+    vmd->sample_rate = LE_16(&vmd->vmd_header[804]);
+    if (vmd->sample_rate) {
         st = av_new_stream(s, 0);
         if (!st)
             return AVERROR_NOMEM;
@@ -119,15 +150,28 @@ int video_frame_count = 0;
         st->codec.codec_id = CODEC_ID_VMDAUDIO;
         st->codec.codec_tag = 0;  /* no codec tag */
         st->codec.channels = (vmd->vmd_header[811] & 0x80) ? 2 : 1;
-        st->codec.sample_rate = sample_rate;
-        st->codec.bit_rate = st->codec.sample_rate * 
-            st->codec.bits_per_sample * st->codec.channels;
-        st->codec.block_align = LE_16(&vmd->vmd_header[806]);
+        st->codec.sample_rate = vmd->sample_rate;
+        st->codec.block_align = vmd->audio_block_align = 
+            LE_16(&vmd->vmd_header[806]);
         if (st->codec.block_align & 0x8000) {
             st->codec.bits_per_sample = 16;
             st->codec.block_align = -(st->codec.block_align - 0x10000);
         } else
-            st->codec.bits_per_sample = 8;
+            st->codec.bits_per_sample = 16;
+//            st->codec.bits_per_sample = 8;
+        st->codec.bit_rate = st->codec.sample_rate * 
+            st->codec.bits_per_sample * st->codec.channels;
+
+        /* for calculating pts */
+        vmd->audio_frame_divisor = st->codec.bits_per_sample / 8 / 
+            st->codec.channels;
+
+        video_pts_inc = 90000;
+        video_pts_inc *= st->codec.block_align;
+        video_pts_inc /= st->codec.sample_rate;
+    } else {
+        /* if no audio, assume 10 frames/second */
+        video_pts_inc = 90000 / 10;
     }
 
     /* skip over the offset table and load the table of contents; don't 
@@ -184,12 +228,14 @@ int video_frame_count = 0;
         memcpy(vmd->frame_table[i].frame_record, current_frame_record,
             BYTES_PER_FRAME_RECORD);
 
-if (current_frame_record[0] == 0x02) {
-  /* assume 15 fps for now */
-  vmd->frame_table[i].pts = video_frame_count++;
-  vmd->frame_table[i].pts *= 90000;
-  vmd->frame_table[i].pts /= 15;
-}
+        /* figure out the pts for this frame */
+        if (current_frame_record[0] == 0x02) {
+            vmd->frame_table[i].pts = current_video_pts;
+            current_video_pts += video_pts_inc;
+        } else if (current_frame_record[0] == 0x01) {
+            /* figure out the pts during the dispatch phase */
+            vmd->frame_table[i].pts = 0;
+        }
 
         current_frame_record += BYTES_PER_FRAME_RECORD;
         i++;
@@ -227,10 +273,26 @@ static int vmd_read_packet(AVFormatContext *s,
     ret = get_buffer(pb, pkt->data + BYTES_PER_FRAME_RECORD, 
         frame->frame_size);
 
-    if (ret != frame->frame_size)
+    if (ret != frame->frame_size) {
+        av_free_packet(pkt);
         ret = -EIO;
+    }
     pkt->stream_index = frame->stream_index;
-    pkt->pts = frame->pts;
+    if (frame->frame_record[0] == 0x02)
+        pkt->pts = frame->pts;
+    else {
+        pkt->pts = vmd->audio_sample_counter;
+        pkt->pts *= 90000;
+        pkt->pts /= vmd->sample_rate;
+//        pkt->pts /= vmd->audio_frame_divisor;
+        vmd->audio_sample_counter += vmd_calculate_audio_duration(
+            pkt->data, pkt->size, vmd->audio_block_align);
+
+    }
+printf (" dispatching %s frame with %d bytes and pts %lld (%0.1f sec)\n",
+  (frame->frame_record[0] == 0x02) ? "video" : "audio",
+  frame->frame_size + BYTES_PER_FRAME_RECORD,
+  pkt->pts, (float)(pkt->pts / 90000.0));
 
     vmd->current_frame++;
 
