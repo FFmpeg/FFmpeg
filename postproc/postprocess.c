@@ -27,6 +27,9 @@ isHorizMinMaxOk		a
 doHorizLowPass		E		a	a*
 doHorizDefFilter	E	ac	ac
 deRing
+RKAlgo1			E		a	a*
+X1			a		E	E*
+
 
 * i dont have a 3dnow CPU -> its untested
 E = Exact implementation
@@ -41,11 +44,13 @@ verify that everything workes as it should
 reduce the time wasted on the mem transfer
 implement dering
 implement everything in C at least (done at the moment but ...)
-figure range of QP out (assuming <256 for now)
 unroll stuff if instructions depend too much on the prior one
 we use 8x8 blocks for the horizontal filters, opendivx seems to use 8x4?
 move YScale thing to the end instead of fixing QP
 write a faster and higher quality deblocking filter :)
+do something about the speed of the horizontal filters
+make the mainloop more flexible (variable number of blocks at once
+	(the if/else stuff per block is slowing things down)
 ...
 
 Notes:
@@ -54,6 +59,14 @@ Notes:
 
 /*
 Changelog:
+0.1.3
+	bugfixes: last 3 lines not brightness/contrast corrected
+		brightness statistics messed up with initial black pic
+	changed initial values of the brightness statistics
+	C++ -> C conversation
+	QP range question solved (very likely 1<=QP<=32 according to arpi)
+	new experimental vertical deblocking filter
+	RK filter has 3dNow support now (untested)
 0.1.2
 	fixed a bug in the horizontal default filter
 	3dnow version of the Horizontal & Vertical Lowpass filters
@@ -66,6 +79,7 @@ Changelog:
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "../config.h"
 //#undef HAVE_MMX2
 //#define HAVE_3DNOW
@@ -160,9 +174,10 @@ static inline void prefetcht2(void *p)
 /**
  * Check if the middle 8x8 Block in the given 8x10 block is flat
  */
-static inline bool isVertDC(uint8_t src[], int stride){
+static inline int isVertDC(uint8_t src[], int stride){
 //	return true;
 	int numEq= 0;
+	int y;
 	src+= stride; // src points to begin of the 8x8 Block
 #ifdef HAVE_MMX
 	asm volatile(
@@ -242,7 +257,7 @@ static inline bool isVertDC(uint8_t src[], int stride){
 //	uint8_t *temp= src;
 
 #else
-	for(int y=0; y<BLOCK_SIZE-1; y++)
+	for(y=0; y<BLOCK_SIZE-1; y++)
 	{
 		if(((src[0] - src[0+stride] + 1)&0xFFFF) < 3) numEq++;
 		if(((src[1] - src[1+stride] + 1)&0xFFFF) < 3) numEq++;
@@ -268,10 +283,11 @@ static inline bool isVertDC(uint8_t src[], int stride){
 		}
 	}
 */
-	return numEq > vFlatnessThreshold;
+//	for(int i=0; i<numEq/8; i++) src[i]=255;
+	return (numEq > vFlatnessThreshold) ? 1 : 0;
 }
 
-static inline bool isVertMinMaxOk(uint8_t src[], int stride, int QP)
+static inline int isVertMinMaxOk(uint8_t src[], int stride, int QP)
 {
 #ifdef HAVE_MMX
 	int isOk;
@@ -295,13 +311,14 @@ static inline bool isVertMinMaxOk(uint8_t src[], int stride, int QP)
 		: "=r" (isOk)
 		: "r" (src), "r" (stride)
 		);
-	return isOk;
+	return isOk ? 1 : 0;
 #else
 
-	int isOk2= true;
-	for(int x=0; x<BLOCK_SIZE; x++)
+	int isOk2= 1;
+	int x;
+	for(x=0; x<BLOCK_SIZE; x++)
 	{
-		if(abs((int)src[x + stride] - (int)src[x + (stride<<3)]) > 2*QP) isOk2=false;
+		if(abs((int)src[x + stride] - (int)src[x + (stride<<3)]) > 2*QP) isOk2=0;
 	}
 /*	if(isOk && !isOk2 || !isOk && isOk2)
 	{
@@ -484,8 +501,8 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 	const int l7= stride + l6;
 	const int l8= stride + l7;
 	const int l9= stride + l8;
-
-	for(int x=0; x<BLOCK_SIZE; x++)
+	int x;
+	for(x=0; x<BLOCK_SIZE; x++)
 	{
 		const int first= ABS(src[0] - src[l1]) < QP ? src[0] : src[l1];
 		const int last= ABS(src[l8] - src[l9]) < QP ? src[l9] : src[l8];
@@ -529,7 +546,7 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
  */
 static inline void vertRKFilter(uint8_t *src, int stride, int QP)
 {
-#ifdef HAVE_MMX2
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 // FIXME rounding
 	asm volatile(
 		"pxor %%mm7, %%mm7				\n\t" // 0
@@ -549,7 +566,7 @@ static inline void vertRKFilter(uint8_t *src, int stride, int QP)
 		"movq %%mm2, %%mm4				\n\t" // line 4
 		"pcmpeqb %%mm5, %%mm5				\n\t" // -1
 		"pxor %%mm2, %%mm5				\n\t" // -line 4 - 1
-		"pavgb %%mm3, %%mm5				\n\t"
+		PAVGB(%%mm3, %%mm5)
 		"paddb %%mm6, %%mm5				\n\t" // (l5-l4)/2
 		"psubusb %%mm3, %%mm4				\n\t"
 		"psubusb %%mm2, %%mm3				\n\t"
@@ -600,16 +617,18 @@ static inline void vertRKFilter(uint8_t *src, int stride, int QP)
 	const int l7= stride + l6;
 	const int l8= stride + l7;
 	const int l9= stride + l8;
-	for(int x=0; x<BLOCK_SIZE; x++)
+	int x;
+	for(x=0; x<BLOCK_SIZE; x++)
 	{
 		if(ABS(src[l4]-src[l5]) < QP + QP/4)
 		{
-			int x = src[l5] - src[l4];
+			int v = (src[l5] - src[l4]);
 
-			src[l3] +=x/8;
-			src[l4] +=x/2;
-			src[l5] -=x/2;
-			src[l6] -=x/8;
+			src[l3] +=v/8;
+			src[l4] +=v/2;
+			src[l5] -=v/2;
+			src[l6] -=v/8;
+
 		}
 		src++;
 	}
@@ -619,18 +638,126 @@ static inline void vertRKFilter(uint8_t *src, int stride, int QP)
 
 /**
  * Experimental Filter 1
+ * will nor damage linear gradients
+ * can only smooth blocks at the expected locations (it cant smooth them if they did move)
+ * MMX2 version does correct clipping C version doesnt
  */
 static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 {
-#ifdef HAVE_MMX2X
-// FIXME
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	asm volatile(
+		"pxor %%mm7, %%mm7				\n\t" // 0
+//		"movq b80, %%mm6				\n\t" // MIN_SIGNED_BYTE
+		"leal (%0, %1), %%eax				\n\t"
+		"leal (%%eax, %1, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
+		"movq (%%eax, %1, 2), %%mm0			\n\t" // line 3
+		"movq (%0, %1, 4), %%mm1			\n\t" // line 4
+		"movq %%mm1, %%mm2				\n\t" // line 4
+		"psubusb %%mm0, %%mm1				\n\t"
+		"psubusb %%mm2, %%mm0				\n\t"
+		"por %%mm1, %%mm0				\n\t" // |l2 - l3|
+		"movq (%%ebx), %%mm3				\n\t" // line 5
+		"movq (%%ebx, %1), %%mm4				\n\t" // line 6
+		"movq %%mm3, %%mm5				\n\t" // line 5
+		"psubusb %%mm4, %%mm3				\n\t"
+		"psubusb %%mm5, %%mm4				\n\t"
+		"por %%mm4, %%mm3				\n\t" // |l5 - l6|
+		PAVGB(%%mm3, %%mm0)				      // (|l2 - l3| + |l5 - l6|)/2
+		"movq %%mm2, %%mm1				\n\t" // line 4
+		"psubusb %%mm5, %%mm2				\n\t"
+		"movq %%mm2, %%mm4				\n\t"
+		"pcmpeqb %%mm7, %%mm2				\n\t" // (l4 - l5) <= 0 ? -1 : 0
+		"psubusb %%mm1, %%mm5				\n\t"
+		"por %%mm5, %%mm4				\n\t" // |l4 - l5|
+		"psubusb %%mm0, %%mm4		\n\t" //d = MAX(0, |l4-l5| - (|l2-l3| + |l5-l6|)/2)
+		"movq %%mm4, %%mm3				\n\t" // d
+		"psubusb pQPb, %%mm4				\n\t"
+		"pcmpeqb %%mm7, %%mm4				\n\t" // d <= QP ? -1 : 0
+		"pand %%mm4, %%mm3				\n\t" // d <= QP ? d : 0
+
+		PAVGB(%%mm7, %%mm3)				      // d/2
+
+		"movq (%0, %1, 4), %%mm0			\n\t" // line 4
+		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l4-1 : l4
+		"psubusb %%mm3, %%mm0				\n\t"
+		"pxor %%mm2, %%mm0				\n\t"
+		"movq %%mm0, (%0, %1, 4)			\n\t" // line 4
+
+		"movq (%%ebx), %%mm0				\n\t" // line 5
+		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l5-1 : l5
+		"paddusb %%mm3, %%mm0				\n\t"
+		"pxor %%mm2, %%mm0				\n\t"
+		"movq %%mm0, (%%ebx)				\n\t" // line 5
+
+		PAVGB(%%mm7, %%mm3)				      // d/4
+
+		"movq (%%eax, %1, 2), %%mm0			\n\t" // line 3
+		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l4-1 : l4
+		"psubusb %%mm3, %%mm0				\n\t"
+		"pxor %%mm2, %%mm0				\n\t"
+		"movq %%mm0, (%%eax, %1, 2)			\n\t" // line 3
+
+		"movq (%%ebx, %1), %%mm0			\n\t" // line 6
+		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l5-1 : l5
+		"paddusb %%mm3, %%mm0				\n\t"
+		"pxor %%mm2, %%mm0				\n\t"
+		"movq %%mm0, (%%ebx, %1)			\n\t" // line 6
+
+		PAVGB(%%mm7, %%mm3)				      // d/8
+
+		"movq (%%eax, %1), %%mm0			\n\t" // line 2
+		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l2-1 : l2
+		"psubusb %%mm3, %%mm0				\n\t"
+		"pxor %%mm2, %%mm0				\n\t"
+		"movq %%mm0, (%%eax, %1)			\n\t" // line 2
+
+		"movq (%%ebx, %1, 2), %%mm0			\n\t" // line 7
+		"pxor %%mm2, %%mm0				\n\t" //(l4 - l5) <= 0 ? -l7-1 : l7
+		"paddusb %%mm3, %%mm0				\n\t"
+		"pxor %%mm2, %%mm0				\n\t"
+		"movq %%mm0, (%%ebx, %1, 2)			\n\t" // line 7
 
 		:
 		: "r" (src), "r" (stride)
 		: "%eax", "%ebx"
 	);
 #else
+
+ 	const int l1= stride;
+	const int l2= stride + l1;
+	const int l3= stride + l2;
+	const int l4= stride + l3;
+	const int l5= stride + l4;
+	const int l6= stride + l5;
+	const int l7= stride + l6;
+	const int l8= stride + l7;
+	const int l9= stride + l8;
+	int x;
+	for(x=0; x<BLOCK_SIZE; x++)
+	{
+		int a= src[l3] - src[l4];
+		int b= src[l4] - src[l5];
+		int c= src[l6] - src[l7];
+
+		int d= MAX(ABS(b) - (ABS(a) + ABS(c))/2, 0);
+
+		if(d < QP)
+		{
+			int v = d * SIGN(-b);
+
+			src[l2] +=v/8;
+			src[l3] +=v/4;
+			src[l4] +=v/2;
+			src[l5] -=v/2;
+			src[l6] -=v/4;
+			src[l7] -=v/8;
+
+		}
+		src++;
+	}
+	/*
  	const int l1= stride;
 	const int l2= stride + l1;
 	const int l3= stride + l2;
@@ -658,7 +785,7 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 		}
 		src++;
 	}
-
+*/
 #endif
 }
 
@@ -908,8 +1035,8 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 	const int l7= stride + l6;
 	const int l8= stride + l7;
 //	const int l9= stride + l8;
-
-	for(int x=0; x<BLOCK_SIZE; x++)
+	int x;
+	for(x=0; x<BLOCK_SIZE; x++)
 	{
 		const int middleEnergy= 5*(src[l5] - src[l4]) + 2*(src[l3] - src[l6]);
 		if(ABS(middleEnergy) < 8*QP)
@@ -947,7 +1074,7 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 /**
  * Check if the given 8x8 Block is mostly "flat" and copy the unaliged data into tempBlock.
  */
-static inline bool isHorizDCAndCopy2Temp(uint8_t src[], int stride)
+static inline int isHorizDCAndCopy2Temp(uint8_t src[], int stride)
 {
 //	src++;
 	int numEq= 0;
@@ -1007,7 +1134,8 @@ asm volatile (
 //	printf("%d\n", numEq);
 	numEq= (256 - (numEq & 0xFF)) &0xFF;
 #else
-	for(int y=0; y<BLOCK_SIZE; y++)
+	int y;
+	for(y=0; y<BLOCK_SIZE; y++)
 	{
 		if(((src[0] - src[1] + 1) & 0xFFFF) < 3) numEq++;
 		if(((src[1] - src[2] + 1) & 0xFFFF) < 3) numEq++;
@@ -1044,7 +1172,7 @@ asm volatile (
 	return numEq > hFlatnessThreshold;
 }
 
-static inline bool isHorizMinMaxOk(uint8_t src[], int stride, int QP)
+static inline int isHorizMinMaxOk(uint8_t src[], int stride, int QP)
 {
 #ifdef MMX_FIXME
 FIXME
@@ -1071,9 +1199,9 @@ FIXME
 		);
 	return isOk;
 #else
-	if(abs(src[0] - src[7]) > 2*QP) return false;
+	if(abs(src[0] - src[7]) > 2*QP) return 0;
 
-	return true;
+	return 1;
 #endif
 }
 
@@ -1173,7 +1301,8 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 #else
 	uint8_t *src= tempBlock;
 
-	for(int y=0; y<BLOCK_SIZE; y++)
+	int y;
+	for(y=0; y<BLOCK_SIZE; y++)
 	{
 		dst[0] = src[0];
 		dst[1] = src[1];
@@ -1375,7 +1504,8 @@ Implemented	Exact 7-Tap
 
 #else
 	uint8_t *temp= tempBlock;
-	for(int y=0; y<BLOCK_SIZE; y++)
+	int y;
+	for(y=0; y<BLOCK_SIZE; y++)
 	{
 		const int first= ABS(dst[-1] - dst[0]) < QP ? dst[-1] : dst[0];
 		const int last= ABS(dst[8] - dst[7]) < QP ? dst[8] : dst[7];
@@ -1502,7 +1632,7 @@ void  postprocess(unsigned char * src[], int src_stride,
 	return;
 */
 	postProcess(src[0], src_stride, dst[0], dst_stride,
-		horizontal_size, vertical_size, QP_store, QP_stride, false, mode);
+		horizontal_size, vertical_size, QP_store, QP_stride, 0, mode);
 
 	horizontal_size >>= 1;
 	vertical_size   >>= 1;
@@ -1512,9 +1642,9 @@ void  postprocess(unsigned char * src[], int src_stride,
 	if(1)
 	{
 		postProcess(src[1], src_stride, dst[1], dst_stride,
-			horizontal_size, vertical_size, QP_store, QP_stride, true, mode >>4);
+			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode >>4);
 		postProcess(src[2], src_stride, dst[2], dst_stride,
-			horizontal_size, vertical_size, QP_store, QP_stride, true, mode >>4);
+			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode >>4);
 	}
 	else
 	{
@@ -1543,25 +1673,25 @@ int getModeForQuality(int quality){
 
 /**
  * Copies a block from src to dst and fixes the blacklevel
+ * numLines must be a multiple of 4
+ * levelFix == 0 -> dont touch the brighness & contrast
  */
-static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int srcStride)
+static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int srcStride,
+	int numLines, int levelFix)
 {
+	int i;
+	if(levelFix)
+	{
 #ifdef HAVE_MMX
 					asm volatile(
+						"movl %4, %%eax \n\t"
+						"movl %%eax, temp0\n\t"
 						"pushl %0 \n\t"
 						"pushl %1 \n\t"
 						"leal (%2,%2), %%eax	\n\t"
 						"leal (%3,%3), %%ebx	\n\t"
 						"movq packedYOffset, %%mm2	\n\t"
 						"movq packedYScale, %%mm3	\n\t"
-
-#define SIMPLE_CPY					\
-						"movq (%0), %%mm0	\n\t"\
-						"movq (%0,%2), %%mm1	\n\t"\
-						"psubusb %%mm2, %%mm0	\n\t"\
-						"psubusb %%mm2, %%mm1	\n\t"\
-						"movq %%mm0, (%1)	\n\t"\
-						"movq %%mm1, (%1, %3)	\n\t"\
 
 #define SCALED_CPY					\
 						"movq (%0), %%mm0	\n\t"\
@@ -1585,33 +1715,75 @@ static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int sr
 						"packuswb %%mm5, %%mm4	\n\t"\
 						"movq %%mm4, (%1, %3)	\n\t"\
 
+						"1:			\n\t"
+SCALED_CPY
+						"addl %%eax, %0		\n\t"
+						"addl %%ebx, %1		\n\t"
+SCALED_CPY
+						"addl %%eax, %0		\n\t"
+						"addl %%ebx, %1		\n\t"
+						"decl temp0		\n\t"
+						"jnz 1b			\n\t"
 
-#define CPY SCALED_CPY
-//#define CPY SIMPLE_CPY
-//				"prefetchnta 8(%0)\n\t"
-CPY
-						"addl %%eax, %0		\n\t"
-						"addl %%ebx, %1		\n\t"
-CPY
-						"addl %%eax, %0		\n\t"
-						"addl %%ebx, %1		\n\t"
-CPY
-						"addl %%eax, %0		\n\t"
-						"addl %%ebx, %1		\n\t"
-CPY
 						"popl %1 \n\t"
 						"popl %0 \n\t"
 						: : "r" (src),
 						"r" (dst),
 						"r" (srcStride),
-						"r" (dstStride)
+						"r" (dstStride),
+						"m" (numLines>>2)
 						: "%eax", "%ebx"
 					);
 #else
-				for(int i=0; i<BLOCK_SIZE; i++) // last 10x8 Block is copied allready so +2
+				for(i=0; i<numLines; i++)
 					memcpy(	&(dst[dstStride*i]),
 						&(src[srcStride*i]), BLOCK_SIZE);
 #endif
+	}
+	else
+	{
+#ifdef HAVE_MMX
+					asm volatile(
+						"movl %4, %%eax \n\t"
+						"movl %%eax, temp0\n\t"
+						"pushl %0 \n\t"
+						"pushl %1 \n\t"
+						"leal (%2,%2), %%eax	\n\t"
+						"leal (%3,%3), %%ebx	\n\t"
+						"movq packedYOffset, %%mm2	\n\t"
+						"movq packedYScale, %%mm3	\n\t"
+
+#define SIMPLE_CPY					\
+						"movq (%0), %%mm0	\n\t"\
+						"movq (%0,%2), %%mm1	\n\t"\
+						"movq %%mm0, (%1)	\n\t"\
+						"movq %%mm1, (%1, %3)	\n\t"\
+
+						"1:			\n\t"
+SIMPLE_CPY
+						"addl %%eax, %0		\n\t"
+						"addl %%ebx, %1		\n\t"
+SIMPLE_CPY
+						"addl %%eax, %0		\n\t"
+						"addl %%ebx, %1		\n\t"
+						"decl temp0		\n\t"
+						"jnz 1b			\n\t"
+
+						"popl %1 \n\t"
+						"popl %0 \n\t"
+						: : "r" (src),
+						"r" (dst),
+						"r" (srcStride),
+						"r" (dstStride),
+						"m" (numLines>>2)
+						: "%eax", "%ebx"
+					);
+#else
+				for(i=0; i<numLines; i++)
+					memcpy(	&(dst[dstStride*i]),
+						&(src[srcStride*i]), BLOCK_SIZE);
+#endif
+	}
 }
 
 
@@ -1619,33 +1791,50 @@ CPY
  * Filters array of bytes (Y or U or V values)
  */
 void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, bool isColor, int mode)
+	QP_STORE_T QPs[], int QPStride, int isColor, int mode)
 {
+	int x,y;
+	/* we need 64bit here otherwise we´ll going to have a problem
+	   after watching a black picture for 5 hours*/
+	static uint64_t *yHistogram= NULL;
+	int black=0, white=255; // blackest black and whitest white in the picture
 
 #ifdef TIMEING
 	long long T0, T1, memcpyTime=0, vertTime=0, horizTime=0, sumTime, diffTime=0;
 	sumTime= rdtsc();
 #endif
 
-	/* we need 64bit here otherwise we´ll going to have a problem
-	   after watching a black picture for 5 hours*/
-	static uint64_t *yHistogram= NULL;
 	if(!yHistogram)
 	{
-		yHistogram= new uint64_t[256];
-		for(int i=0; i<256; i++) yHistogram[i]= width*height/64/256;
+		int i;
+		yHistogram= (uint64_t*)malloc(8*256);
+		for(i=0; i<256; i++) yHistogram[i]= width*height/64*15/256;
 	}
 
-	int black=0, white=255; // blackest black and whitest white in the picture
 	if(!isColor)
 	{
 		uint64_t sum= 0;
-		for(int i=0; i<256; i++)
+		int i;
+		static int framenum= -1;
+		uint64_t maxClipped;
+		uint64_t clipped;
+		double scale;
+
+		framenum++;
+		if(framenum == 1) yHistogram[0]= width*height/64*15/256;
+
+		for(i=0; i<256; i++)
+		{
 			sum+= yHistogram[i];
+//			printf("%d ", yHistogram[i]);
+		}
+//		printf("\n\n");
 
-		uint64_t maxClipped= (uint64_t)(sum * maxClippedThreshold);
+		/* we allways get a completly black picture first */
 
-		uint64_t clipped= sum;
+		maxClipped= (uint64_t)(sum * maxClippedThreshold);
+
+		clipped= sum;
 		for(black=255; black>0; black--)
 		{
 			if(clipped < maxClipped) break;
@@ -1665,9 +1854,9 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 		packedYOffset|= packedYOffset<<16;
 		packedYOffset|= packedYOffset<<8;
 
-		double scale= (double)(maxAllowedY - minAllowedY) / (double)(white-black);
+		scale= (double)(maxAllowedY - minAllowedY) / (double)(white-black);
 
-		packedYScale= uint16_t(scale*256.0 + 0.5);
+		packedYScale= (uint16_t)(scale*256.0 + 0.5);
 		packedYScale|= packedYScale<<32;
 		packedYScale|= packedYScale<<16;
 	}
@@ -1677,10 +1866,10 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 		packedYOffset= 0;
 	}
 
-	for(int x=0; x<width; x+=BLOCK_SIZE)
-		blockCopy(dst + x, dstStride, src + x, srcStride);
+	for(x=0; x<width; x+=BLOCK_SIZE)
+		blockCopy(dst + x, dstStride, src + x, srcStride, 8, mode & LEVEL_FIX);
 
-	for(int y=0; y<height; y+=BLOCK_SIZE)
+	for(y=0; y<height; y+=BLOCK_SIZE)
 	{
 		//1% speedup if these are here instead of the inner loop
 		uint8_t *srcBlock= &(src[y*srcStride]);
@@ -1690,8 +1879,9 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 
 		// finish 1 block before the next otherwise we´ll might have a problem
 		// with the L1 Cache of the P4 ... or only a few blocks at a time or soemthing
-		for(int x=0; x<width; x+=BLOCK_SIZE)
+		for(x=0; x<width; x+=BLOCK_SIZE)
 		{
+			const int stride= dstStride;
 			int QP= isColor ?
 				QPs[(y>>3)*QPStride + (x>>3)]:
 				(QPs[(y>>4)*QPStride + (x>>4)] * (packedYScale &0xFFFF))>>8;
@@ -1707,7 +1897,6 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 #endif
 
 
-			const int stride= dstStride;
 			if(y + 12 < height)
 			{
 #ifdef MORE_TIMEING
@@ -1730,7 +1919,7 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 				if(!isColor) yHistogram[ srcBlock[0] ]++;
 
 				blockCopy(vertBlock + dstStride*2, dstStride,
-					vertSrcBlock + srcStride*2, srcStride);
+					vertSrcBlock + srcStride*2, srcStride, 8, mode & LEVEL_FIX);
 
 
 #ifdef MORE_TIMEING
@@ -1742,7 +1931,7 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 				{
 					if(mode & RK_FILTER)
 						vertRKFilter(vertBlock, stride, QP);
-					else if(0)
+					else if(mode & X1_FILTER)
 						vertX1Filter(vertBlock, stride, QP);
 					else
 					{
@@ -1762,12 +1951,9 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 #endif
 			}
 			else
-			{
-				for(int i=2; i<BLOCK_SIZE/2+1; i++) // last 10x8 Block is copied allready so +2
-					memcpy(	&(vertBlock[dstStride*i]),
-						&(vertSrcBlock[srcStride*i]), BLOCK_SIZE);
+				blockCopy(vertBlock + dstStride*1, dstStride,
+					vertSrcBlock + srcStride*1, srcStride, 4, mode & LEVEL_FIX);
 
-			}
 
 			if(x - 8 >= 0 && x<width)
 			{
@@ -1813,8 +1999,8 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 	sumTime= rdtsc() - sumTime;
 	if(!isColor)
 		printf("cpy:%4dk, vert:%4dk, horiz:%4dk, sum:%4dk, diff:%4dk, color: %d/%d    \r",
-			int(memcpyTime/1000), int(vertTime/1000), int(horizTime/1000),
-			int(sumTime/1000), int((sumTime-memcpyTime-vertTime-horizTime)/1000)
+			(int)(memcpyTime/1000), (int)(vertTime/1000), (int)(horizTime/1000),
+			(int)(sumTime/1000), (int)((sumTime-memcpyTime-vertTime-horizTime)/1000)
 			, black, white);
 #endif
 }

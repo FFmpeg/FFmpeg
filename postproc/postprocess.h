@@ -26,6 +26,7 @@
 #define V_DEBLOCK	0x01
 #define H_DEBLOCK	0x02
 #define DERING		0x04
+#define LEVEL_FIX	0x08 /* Brightness & Contrast */
 
 #define LUM_V_DEBLOCK	V_DEBLOCK
 #define LUM_H_DEBLOCK	H_DEBLOCK
@@ -33,11 +34,18 @@
 #define CHROM_H_DEBLOCK	(H_DEBLOCK<<4)
 #define LUM_DERING	DERING
 #define CHROM_DERING	(DERING<<4)
+#define LUM_LEVEL_FIX	LEVEL_FIX
+//not supported currently
+#define CHROM_LEVEL_FIX	(LEVEL_FIX<<4)
 
 // Experimental stuff
 #define RK_FILTER		0x0100
 #define LUM_V_RK_FILTER		RK_FILTER
 #define CHROM_V_RK_FILTER	(RK_FILTER<<4)
+
+#define X1_FILTER		0x0200
+#define LUM_V_X1_FILTER		X1_FILTER
+#define CHROM_V_X1_FILTER	(X1_FILTER<<4)
 
 
 #define TIMEING
@@ -60,7 +68,7 @@
 //#include <inttypes.h>
 
 void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, bool isColor, int mode);
+	QP_STORE_T QPs[], int QPStride, int isColor, int mode);
 #endif
 
 #ifdef __cplusplus
