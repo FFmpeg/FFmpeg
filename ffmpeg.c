@@ -695,7 +695,7 @@ static void do_video_out(AVFormatContext *s,
         if (vdelta < -1.1)
             nb_frames = 0;
         else if (vdelta > 1.1)
-            nb_frames = lrintf(vdelta - 1.1 + 0.5);
+            nb_frames = lrintf(vdelta);
 //fprintf(stderr, "vdelta:%f, ost->sync_opts:%lld, ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, ost->sync_ipts, nb_frames);
         if (nb_frames == 0){
             ++nb_frames_drop;
