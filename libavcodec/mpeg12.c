@@ -2340,7 +2340,9 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
 #endif
 
 	s->dsp.clear_blocks(s->block[0]);
-
+        if(!s->chroma_y_shift){
+            s->dsp.clear_blocks(s->block[6]);
+        }
         ret = mpeg_decode_mb(s, s->block);
         s->chroma_qscale= s->qscale;
 
@@ -2379,8 +2381,8 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
         }
 
         s->dest[0] += 16;
-        s->dest[1] += 8;
-        s->dest[2] += 8;
+        s->dest[1] += 16 >> s->chroma_x_shift;
+        s->dest[2] += 16 >> s->chroma_x_shift;
 
         MPV_decode_mb(s, s->block);
         

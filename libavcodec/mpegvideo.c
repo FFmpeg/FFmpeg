@@ -445,7 +445,7 @@ static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base){
     s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*17;
 
      //FIXME should be linesize instead of s->width*2 but that isnt known before get_buffer()
-    CHECKED_ALLOCZ(s->me.scratchpad,  (s->width+64)*2*16*2*sizeof(uint8_t)) 
+    CHECKED_ALLOCZ(s->me.scratchpad,  (s->width+64)*4*16*2*sizeof(uint8_t)) 
     s->rd_scratchpad=   s->me.scratchpad;
     s->b_scratchpad=    s->me.scratchpad;
     s->obmc_scratchpad= s->me.scratchpad + 16;
@@ -620,6 +620,10 @@ int MPV_common_init(MpegEncContext *s)
     s->b4_stride = s->mb_width*4 + 1;
     mb_array_size= s->mb_height * s->mb_stride;
     mv_table_size= (s->mb_height+2) * s->mb_stride + 1;
+
+    /* set chroma shifts */
+    avcodec_get_chroma_sub_sample(s->avctx->pix_fmt,&(s->chroma_x_shift),
+                                                    &(s->chroma_y_shift) );
 
     /* set default edge pos, will be overriden in decode_header if needed */
     s->h_edge_pos= s->mb_width*16;
@@ -2476,7 +2480,7 @@ static inline int hpel_motion(MpegEncContext *s,
 }
 
 /* apply one mpeg motion vector to the three components */
-static inline void mpeg_motion(MpegEncContext *s,
+static always_inline void mpeg_motion(MpegEncContext *s,
                                uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                                int field_based, int bottom_field, int field_select,
                                uint8_t **ref_picture, op_pixels_func (*pix_op)[4],
@@ -2499,7 +2503,7 @@ if(s->quarter_sample)
 
     dxy = ((motion_y & 1) << 1) | (motion_x & 1);
     src_x = s->mb_x* 16               + (motion_x >> 1);
-    src_y = s->mb_y*(16>>field_based) + (motion_y >> 1);
+    src_y =(s->mb_y<<(4-field_based)) + (motion_y >> 1);
 
     if (s->out_format == FMT_H263) {
         if((s->workaround_bugs & FF_BUG_HPEL_CHROMA) && field_based){
@@ -2507,7 +2511,7 @@ if(s->quarter_sample)
             my = motion_y >>1;
             uvdxy = ((my & 1) << 1) | (mx & 1);
             uvsrc_x = s->mb_x* 8               + (mx >> 1);
-            uvsrc_y = s->mb_y*(8>>field_based) + (my >> 1);
+            uvsrc_y = (s->mb_y<<(3-field_based)) + (my >> 1);
         }else{
             uvdxy = dxy | (motion_y & 2) | ((motion_x & 2) >> 1);
             uvsrc_x = src_x>>1;
@@ -2520,11 +2524,26 @@ if(s->quarter_sample)
         uvsrc_x = s->mb_x*8 + mx;
         uvsrc_y = s->mb_y*8 + my;
     } else {
-        mx = motion_x / 2;
-        my = motion_y / 2;
-        uvdxy = ((my & 1) << 1) | (mx & 1);
-        uvsrc_x = s->mb_x* 8               + (mx >> 1);
-        uvsrc_y = s->mb_y*(8>>field_based) + (my >> 1);
+        if(s->chroma_y_shift){
+            mx = motion_x / 2;
+            my = motion_y / 2;
+            uvdxy = ((my & 1) << 1) | (mx & 1);
+            uvsrc_x = s->mb_x* 8               + (mx >> 1);
+            uvsrc_y = (s->mb_y<<(3-field_based)) + (my >> 1);
+        } else {
+            if(s->chroma_x_shift){
+            //Chroma422
+                mx = motion_x / 2;
+                uvdxy = ((motion_y & 1) << 1) | (mx & 1);
+                uvsrc_x = s->mb_x* 8           + (mx >> 1);
+                uvsrc_y = src_y;
+            } else {
+            //Chroma444
+                uvdxy = dxy;
+                uvsrc_x = src_x;
+                uvsrc_y = src_y;
+            }
+        }
     }
 
     ptr_y  = ref_picture[0] + src_y * linesize + src_x;
@@ -2533,6 +2552,11 @@ if(s->quarter_sample)
 
     if(   (unsigned)src_x > s->h_edge_pos - (motion_x&1) - 16
        || (unsigned)src_y >    v_edge_pos - (motion_y&1) - h){
+            if(s->codec_id == CODEC_ID_MPEG2VIDEO ||
+               s->codec_id == CODEC_ID_MPEG1VIDEO){
+                av_log(s->avctx,AV_LOG_DEBUG,"MPEG motion vector out of boundary\n");
+                return ;
+            }
             ff_emulated_edge_mc(s->edge_emu_buffer, ptr_y, s->linesize, 17, 17+field_based,
                              src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
             ptr_y = s->edge_emu_buffer;
@@ -2562,8 +2586,8 @@ if(s->quarter_sample)
     pix_op[0][dxy](dest_y, ptr_y, linesize, h);
     
     if(!(s->flags&CODEC_FLAG_GRAY)){
-        pix_op[1][uvdxy](dest_cb, ptr_cb, uvlinesize, h >> 1);
-        pix_op[1][uvdxy](dest_cr, ptr_cr, uvlinesize, h >> 1);
+        pix_op[s->chroma_x_shift][uvdxy](dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift);
+        pix_op[s->chroma_x_shift][uvdxy](dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift);
     }
 }
 //FIXME move to dsputil, avg variant, 16x16 version
@@ -3007,8 +3031,8 @@ static inline void MPV_motion(MpegEncContext *s,
                         s->mv[dir][i][0], s->mv[dir][i][1] + 16*i, 8);
                 
             dest_y += 16*s->linesize;
-            dest_cb+=  8*s->uvlinesize;
-            dest_cr+=  8*s->uvlinesize;
+            dest_cb+= (16>>s->chroma_y_shift)*s->uvlinesize;
+            dest_cr+= (16>>s->chroma_y_shift)*s->uvlinesize;
         }        
         break;
     case MV_TYPE_DMV:
@@ -3115,7 +3139,7 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
    s->mv       : motion vector
    s->interlaced_dct : true if interlaced dct used (mpeg2)
  */
-void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
+void MPV_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
 {
     int mb_x, mb_y;
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
@@ -3190,13 +3214,9 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             }
         }
 
-        if (s->interlaced_dct) {
-            dct_linesize = linesize * 2;
-            dct_offset = linesize;
-        } else {
-            dct_linesize = linesize;
-            dct_offset = linesize * 8;
-        }
+        dct_linesize = linesize << s->interlaced_dct;
+        dct_offset =(s->interlaced_dct)? linesize : linesize*8;
+
         if(readable){
             dest_y=  s->dest[0];
             dest_cb= s->dest[1];
@@ -3204,7 +3224,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         }else{
             dest_y = s->b_scratchpad;
             dest_cb= s->b_scratchpad+16*linesize;
-            dest_cr= s->b_scratchpad+16*linesize+8;
+            dest_cr= s->b_scratchpad+32*linesize;
         }
         if (!s->mb_intra) {
             /* motion handling */
@@ -3250,10 +3270,27 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 add_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
                 if(!(s->flags&CODEC_FLAG_GRAY)){
-                    add_dct(s, block[4], 4, dest_cb, uvlinesize);
-                    add_dct(s, block[5], 5, dest_cr, uvlinesize);
-                }
-            } 
+                    if(s->chroma_y_shift){//Chroma420
+                        add_dct(s, block[4], 4, dest_cb, uvlinesize);
+                        add_dct(s, block[5], 5, dest_cr, uvlinesize);
+                    }else{
+                        //chroma422
+                        dct_linesize = uvlinesize << s->interlaced_dct;
+                        dct_offset =(s->interlaced_dct)? uvlinesize : uvlinesize*8;
+
+                        add_dct(s, block[4], 4, dest_cb, dct_linesize);
+                        add_dct(s, block[5], 5, dest_cr, dct_linesize);
+                        add_dct(s, block[6], 6, dest_cb+dct_offset, dct_linesize);
+                        add_dct(s, block[7], 7, dest_cr+dct_offset, dct_linesize);
+                        if(!s->chroma_x_shift){//Chroma444
+                            add_dct(s, block[8], 8, dest_cb+8, dct_linesize);
+                            add_dct(s, block[9], 9, dest_cr+8, dct_linesize);
+                            add_dct(s, block[10], 10, dest_cb+8+dct_offset, dct_linesize);
+                            add_dct(s, block[11], 11, dest_cr+8+dct_offset, dct_linesize);
+                        }
+                    }
+                }//fi gray
+            }
 #ifdef CONFIG_RISKY
             else{
                 ff_wmv2_add_mb(s, block, dest_y, dest_cb, dest_cr);
@@ -3278,15 +3315,32 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 s->dsp.idct_put(dest_y + dct_offset + 8, dct_linesize, block[3]);
 
                 if(!(s->flags&CODEC_FLAG_GRAY)){
-                    s->dsp.idct_put(dest_cb, uvlinesize, block[4]);
-                    s->dsp.idct_put(dest_cr, uvlinesize, block[5]);
-                }
+                    if(s->chroma_y_shift){
+                        s->dsp.idct_put(dest_cb, uvlinesize, block[4]);
+                        s->dsp.idct_put(dest_cr, uvlinesize, block[5]);
+                    }else{
+
+                        dct_linesize = uvlinesize << s->interlaced_dct;
+                        dct_offset =(s->interlaced_dct)? uvlinesize : uvlinesize*8;
+
+                        s->dsp.idct_put(dest_cb,              dct_linesize, block[4]);
+                        s->dsp.idct_put(dest_cr,              dct_linesize, block[5]);
+                        s->dsp.idct_put(dest_cb + dct_offset, dct_linesize, block[6]);
+                        s->dsp.idct_put(dest_cr + dct_offset, dct_linesize, block[7]);
+                        if(!s->chroma_x_shift){//Chroma444
+                            s->dsp.idct_put(dest_cb + 8,              dct_linesize, block[8]);
+                            s->dsp.idct_put(dest_cr + 8,              dct_linesize, block[9]);
+                            s->dsp.idct_put(dest_cb + 8 + dct_offset, dct_linesize, block[10]);
+                            s->dsp.idct_put(dest_cr + 8 + dct_offset, dct_linesize, block[11]);
+                        }
+                    }
+                }//gray
             }
         }
         if(!readable){
             s->dsp.put_pixels_tab[0][0](s->dest[0], dest_y ,   linesize,16);
-            s->dsp.put_pixels_tab[1][0](s->dest[1], dest_cb, uvlinesize, 8);
-            s->dsp.put_pixels_tab[1][0](s->dest[2], dest_cr, uvlinesize, 8);
+            s->dsp.put_pixels_tab[s->chroma_x_shift][0](s->dest[1], dest_cb, uvlinesize,16 >> s->chroma_y_shift);
+            s->dsp.put_pixels_tab[s->chroma_x_shift][0](s->dest[2], dest_cr, uvlinesize,16 >> s->chroma_y_shift);
         }
     }
 }
@@ -3407,7 +3461,7 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
         }else{
             offset[0]= y * s->linesize;;
             offset[1]= 
-            offset[2]= (y>>1) * s->uvlinesize;;
+            offset[2]= (y >> s->chroma_y_shift) * s->uvlinesize;
             offset[3]= 0;
         }
 
@@ -3428,16 +3482,18 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     s->block_index[3]= s->b8_stride*(s->mb_y*2 + 1) - 1 + s->mb_x*2;
     s->block_index[4]= s->mb_stride*(s->mb_y + 1)                + s->b8_stride*s->mb_height*2 + s->mb_x - 1;
     s->block_index[5]= s->mb_stride*(s->mb_y + s->mb_height + 2) + s->b8_stride*s->mb_height*2 + s->mb_x - 1;
+    //block_index is not used by mpeg2, so it is not affected by chroma_format
+
+    s->dest[0] = s->current_picture.data[0] + (s->mb_x - 1)*16;
+    s->dest[1] = s->current_picture.data[1] + (s->mb_x - 1)*(16 >> s->chroma_x_shift);
+    s->dest[2] = s->current_picture.data[2] + (s->mb_x - 1)*(16 >> s->chroma_x_shift);
     
-    if(s->pict_type==B_TYPE && s->avctx->draw_horiz_band && s->picture_structure==PICT_FRAME){
-        s->dest[0] = s->current_picture.data[0] + s->mb_x * 16 - 16;
-        s->dest[1] = s->current_picture.data[1] + s->mb_x * 8 - 8;
-        s->dest[2] = s->current_picture.data[2] + s->mb_x * 8 - 8;
-    }else{
-        s->dest[0] = s->current_picture.data[0] + (s->mb_y * 16* linesize  ) + s->mb_x * 16 - 16;
-        s->dest[1] = s->current_picture.data[1] + (s->mb_y * 8 * uvlinesize) + s->mb_x * 8 - 8;
-        s->dest[2] = s->current_picture.data[2] + (s->mb_y * 8 * uvlinesize) + s->mb_x * 8 - 8;
-    }    
+    if(!(s->pict_type==B_TYPE && s->avctx->draw_horiz_band && s->picture_structure==PICT_FRAME))
+    {
+        s->dest[0] += s->mb_y *   linesize * 16;
+        s->dest[1] += s->mb_y * uvlinesize * (16 >> s->chroma_y_shift);
+        s->dest[2] += s->mb_y * uvlinesize * (16 >> s->chroma_y_shift);
+    }
 }
 
 #ifdef CONFIG_ENCODERS
