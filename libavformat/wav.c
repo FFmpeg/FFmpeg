@@ -201,6 +201,8 @@ static int wav_write_header(AVFormatContext *s)
     }
     end_tag(pb, fmt);
 
+    av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec.sample_rate);
+
     /* data header */
     wav->data = start_tag(pb, "data");
     
