@@ -106,8 +106,8 @@ int main(int argc,char* argv[]){
         return -1;
     }
     
-    f[0]= fopen(argv[1], "r");
-    f[1]= fopen(argv[2], "r");
+    f[0]= fopen(argv[1], "rb");
+    f[1]= fopen(argv[2], "rb");
 
     for(i=0;;){
         if( fread(buf[0], SIZE, 1, f[0]) != 1) break;
