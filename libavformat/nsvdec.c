@@ -233,7 +233,7 @@ static int nsv_resync(AVFormatContext *s)
 {
     NSVContext *nsv = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    uint32 v = 0;
+    uint32_t v = 0;
     int i;
     
     PRINT(("%s(), offset = %Ld, state = %d\n", __FUNCTION__, url_ftell(pb), nsv->state));
@@ -541,13 +541,13 @@ static int nsv_read_chunk(AVFormatContext *s, int fill_header)
     AVStream *st[2] = {NULL, NULL};
     NSVStream *nst;
     AVPacket *pkt;
-    uint32 v = 0;
+    uint32_t v = 0;
     int i, err = 0;
-    uint8 auxcount; /* number of aux metadata, also 4 bits of vsize */
-    uint32 vsize;
-    uint16 asize;
-    uint16 auxsize;
-    uint32 auxtag;
+    uint8_t auxcount; /* number of aux metadata, also 4 bits of vsize */
+    uint32_t vsize;
+    uint16_t asize;
+    uint16_t auxsize;
+    uint32_t auxtag;
     
     PRINT(("%s(%d)\n", __FUNCTION__, fill_header));
     
@@ -586,7 +586,7 @@ null_chunk_retry:
               ((auxtag >> 24) & 0x0ff),
               auxsize));
         url_fskip(pb, auxsize);
-        vsize -= auxsize + sizeof(uint16) + sizeof(uint32); /* that's becoming braindead */
+        vsize -= auxsize + sizeof(uint16_t) + sizeof(uint32_t); /* that's becoming braindead */
     }
     
     if (url_feof(pb))
