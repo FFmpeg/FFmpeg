@@ -151,6 +151,8 @@ inline void dprintf(const char* fmt,...) {}
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
 #define ABS(a) ((a) >= 0 ? (a) : (-(a)))
+#define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) > (b) ? (b) : (a))
 
 /* bit output */
 
@@ -419,7 +421,6 @@ static inline void jput_bits(PutBitContext *s, int n, int value)
     s->index= index;
  }
 #endif
-
 
 static inline uint8_t* pbBufPtr(PutBitContext *s)
 {
@@ -896,6 +897,40 @@ void __av_freep(void **ptr);
 
 /* math */
 int ff_gcd(int a, int b);
+
+static inline int ff_sqrt(int a)
+{
+    int ret=0;
+    int s;
+    int ret_sq=0;
+
+    for(s=15; s>=0; s--){
+        int b= ret_sq + (1<<(s*2)) + (ret<<s)*2;
+        if(b<=a){
+            ret_sq=b;
+            ret+= 1<<s;
+        }
+    }
+    return ret;
+}
+#if __CPU__ >= 686 && !defined(RUNTIME_CPUDETECT)
+#define COPY3_IF_LT(x,y,a,b,c,d)\
+asm volatile (\
+    "cmpl %0, %3	\n\t"\
+    "cmovl %3, %0	\n\t"\
+    "cmovl %4, %1	\n\t"\
+    "cmovl %5, %2	\n\t"\
+    : "+r" (x), "+r" (a), "+r" (c)\
+    : "r" (y), "r" (b), "r" (d)\
+);
+#else
+#define COPY3_IF_LT(x,y,a,b,c,d)\
+if((y)<(x)){\
+     (x)=(y);\
+     (a)=(b);\
+     (c)=(d);\
+}
+#endif
 
 #define CLAMP_TO_8BIT(d) ((d > 0xff) ? 0xff : (d < 0) ? 0 : d)
 
