@@ -3477,24 +3477,31 @@ static int decode_slice_header(H264Context *h){
     int first_mb_in_slice, pps_id;
     int num_ref_idx_active_override_flag;
     static const uint8_t slice_type_map[5]= {P_TYPE, B_TYPE, I_TYPE, SP_TYPE, SI_TYPE};
+    int slice_type;
+    int default_ref_list_done = 0;
 
     s->current_picture.reference= h->nal_ref_idc != 0;
 
     first_mb_in_slice= get_ue_golomb(&s->gb);
 
-    h->slice_type= get_ue_golomb(&s->gb);
-    if(h->slice_type > 9){
+    slice_type= get_ue_golomb(&s->gb);
+    if(slice_type > 9){
         av_log(h->s.avctx, AV_LOG_ERROR, "slice type too large (%d) at %d %d\n", h->slice_type, s->mb_x, s->mb_y);
         return -1;
     }
-    if(h->slice_type > 4){
-        h->slice_type -= 5;
+    if(slice_type > 4){
+        slice_type -= 5;
         h->slice_type_fixed=1;
     }else
         h->slice_type_fixed=0;
     
-    h->slice_type= slice_type_map[ h->slice_type ];
-    
+    slice_type= slice_type_map[ slice_type ];
+    if (slice_type == I_TYPE
+        || (h->slice_num != 0 && slice_type == h->slice_type) ) {
+        default_ref_list_done = 1;
+    }
+    h->slice_type= slice_type;
+
     s->pict_type= h->slice_type; // to make a few old func happy, its wrong though
         
     pps_id= get_ue_golomb(&s->gb);
@@ -3623,7 +3630,7 @@ static int decode_slice_header(H264Context *h){
         }
     }
 
-    if(h->slice_num == 0){
+    if(!default_ref_list_done){
         fill_default_ref_list(h);
     }
 
@@ -4342,10 +4349,12 @@ static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_sl
     if(intra_slice){
         MpegEncContext * const s = &h->s;
         const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+        const int mba_xy = mb_xy - 1;
+        const int mbb_xy = mb_xy - s->mb_stride;
         int ctx=0;
-        if( s->mb_x > 0 && !IS_INTRA4x4( s->current_picture.mb_type[mb_xy-1] ) )
+        if( h->slice_table[mba_xy] == h->slice_num && !IS_INTRA4x4( s->current_picture.mb_type[mba_xy] ) )
             ctx++;
-        if( s->mb_y > 0 && !IS_INTRA4x4( s->current_picture.mb_type[mb_xy-s->mb_stride] ) )
+        if( h->slice_table[mbb_xy] == h->slice_num && !IS_INTRA4x4( s->current_picture.mb_type[mbb_xy] ) )
             ctx++;
         if( get_cabac( &h->cabac, &state[ctx] ) == 0 )
             return 0;   /* I4x4 */
@@ -4399,14 +4408,16 @@ static int decode_cabac_mb_type( H264Context *h ) {
         }
     } else if( h->slice_type == B_TYPE ) {
         const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
+        const int mba_xy = mb_xy - 1;
+        const int mbb_xy = mb_xy - s->mb_stride;
         int ctx = 0;
         int bits;
 
-        if( s->mb_x > 0 && !IS_SKIP( s->current_picture.mb_type[mb_xy-1] )
-                      && !IS_DIRECT( s->current_picture.mb_type[mb_xy-1] ) )
+        if( h->slice_table[mba_xy] == h->slice_num && !IS_SKIP( s->current_picture.mb_type[mba_xy] )
+                      && !IS_DIRECT( s->current_picture.mb_type[mba_xy] ) )
             ctx++;
-        if( s->mb_y > 0 && !IS_SKIP( s->current_picture.mb_type[mb_xy-s->mb_stride] )
-                      && !IS_DIRECT( s->current_picture.mb_type[mb_xy-s->mb_stride] ) )
+        if( h->slice_table[mbb_xy] == h->slice_num && !IS_SKIP( s->current_picture.mb_type[mbb_xy] )
+                      && !IS_DIRECT( s->current_picture.mb_type[mbb_xy] ) )
             ctx++;
 
         if( !get_cabac( &h->cabac, &h->cabac_state[27+ctx] ) )
@@ -4444,9 +4455,9 @@ static int decode_cabac_mb_skip( H264Context *h) {
     const int mbb_xy = mb_xy - s->mb_stride;
     int ctx = 0;
 
-    if( s->mb_x > 0 && !IS_SKIP( s->current_picture.mb_type[mba_xy] ) )
+    if( h->slice_table[mba_xy] == h->slice_num && !IS_SKIP( s->current_picture.mb_type[mba_xy] ))
         ctx++;
-    if( s->mb_y > 0 && !IS_SKIP( s->current_picture.mb_type[mbb_xy] ) )
+    if( h->slice_table[mbb_xy] == h->slice_num && !IS_SKIP( s->current_picture.mb_type[mbb_xy] ))
         ctx++;
 
     if( h->slice_type == P_TYPE || h->slice_type == SP_TYPE)
@@ -4482,10 +4493,10 @@ static int decode_cabac_mb_chroma_pre_mode( H264Context *h) {
     int ctx = 0;
 
     /* No need to test for IS_INTRA4x4 and IS_INTRA16x16, as we set chroma_pred_mode_table to 0 */
-    if( s->mb_x > 0 && h->chroma_pred_mode_table[mba_xy] != 0 )
+    if( h->slice_table[mba_xy] == h->slice_num && h->chroma_pred_mode_table[mba_xy] != 0 )
         ctx++;
 
-    if( s->mb_y > 0 && h->chroma_pred_mode_table[mbb_xy] != 0 )
+    if( h->slice_table[mbb_xy] == h->slice_num && h->chroma_pred_mode_table[mbb_xy] != 0 )
         ctx++;
 
     if( get_cabac( &h->cabac, &h->cabac_state[64+ctx] ) == 0 )
@@ -4532,13 +4543,21 @@ static int decode_cabac_mb_cbp_luma( H264Context *h) {
 
         if( x > 0 )
             mba_xy = mb_xy;
-        else if( s->mb_x > 0 )
+        else if( s->mb_x > 0 ) {
             mba_xy = mb_xy - 1;
+            if (h->slice_table[mba_xy] != h->slice_num) {
+                mba_xy = -1;
+            }
+        }
 
         if( y > 0 )
             mbb_xy = mb_xy;
-        else if( s->mb_y > 0 )
+        else if( s->mb_y > 0 ) {
             mbb_xy = mb_xy - s->mb_stride;
+            if (h->slice_table[mbb_xy] != h->slice_num) {
+                mbb_xy = -1;
+            }
+        }
 
         /* No need to test for skip as we put 0 for skip block */
         if( mba_xy >= 0 ) {
@@ -4589,7 +4608,7 @@ static int decode_cabac_mb_dqp( H264Context *h) {
     else
         mbn_xy = s->mb_width - 1 + (s->mb_y-1)*s->mb_stride;
 
-    if( mbn_xy >= 0 && h->last_qscale_diff != 0 && ( IS_INTRA16x16(s->current_picture.mb_type[mbn_xy] ) || (h->cbp_table[mbn_xy]&0x3f) ) )
+    if( h->last_qscale_diff != 0 && ( IS_INTRA16x16(s->current_picture.mb_type[mbn_xy] ) || (h->cbp_table[mbn_xy]&0x3f) ) )
         ctx++;
 
     while( get_cabac( &h->cabac, &h->cabac_state[60 + ctx] ) ) {
