@@ -487,7 +487,7 @@ static int encode_init(AVCodecContext *avctx)
     s->version=0;
     s->ac= avctx->coder_type;
     
-    s->plane_count=3;
+    s->plane_count=2;
     for(i=0; i<256; i++){
         s->quant_table[0][i]=           quant11[i];
         s->quant_table[1][i]=        11*quant11[i];
@@ -606,7 +606,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         encode_plane(f, p->data[0], width, height, p->linesize[0], 0);
 
         encode_plane(f, p->data[1], chroma_width, chroma_height, p->linesize[1], 1);
-        encode_plane(f, p->data[2], chroma_width, chroma_height, p->linesize[2], 2);
+        encode_plane(f, p->data[2], chroma_width, chroma_height, p->linesize[2], 1);
     }
     emms_c();
     
@@ -751,7 +751,7 @@ static int read_header(FFV1Context *f){
     f->chroma_h_shift= get_symbol(c, state, 0, 7);
     f->chroma_v_shift= get_symbol(c, state, 0, 7);
     get_cabac(c, state); //transparency plane
-    f->plane_count= 3;
+    f->plane_count= 2;
 
     switch(16*f->chroma_h_shift + f->chroma_v_shift){
     case 0x00: f->avctx->pix_fmt= PIX_FMT_YUV444P; break;
@@ -870,7 +870,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
         decode_plane(f, p->data[0], width, height, p->linesize[0], 0);
         
         decode_plane(f, p->data[1], chroma_width, chroma_height, p->linesize[1], 1);
-        decode_plane(f, p->data[2], chroma_width, chroma_height, p->linesize[2], 2);
+        decode_plane(f, p->data[2], chroma_width, chroma_height, p->linesize[2], 1);
     }
         
     emms_c();
