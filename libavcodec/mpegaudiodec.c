@@ -507,7 +507,7 @@ static int decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-/* tab[i][j] = 1.0 / (2.0 * cos(pi*(2*k+1) / 2^(6 - j))) */;
+/* tab[i][j] = 1.0 / (2.0 * cos(pi*(2*k+1) / 2^(6 - j))) */
 
 /* cos(i*pi/64) */
 

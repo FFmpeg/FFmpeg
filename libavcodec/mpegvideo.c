@@ -291,7 +291,7 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         r= s->avctx->get_buffer(s->avctx, (AVFrame*)pic);
         
         if(r<0 || !pic->age || !pic->type || !pic->data[0]){
-            fprintf(stderr, "get_buffer() failed (%d %d %d %X)\n", r, pic->age, pic->type, (int)pic->data[0]);
+            fprintf(stderr, "get_buffer() failed (%d %d %d %p)\n", r, pic->age, pic->type, pic->data[0]);
             return -1;
         }
 

@@ -43,70 +43,70 @@ typedef struct PixFmtInfo {
 static PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     /* YUV formats */
     [PIX_FMT_YUV420P] = {
-        name: "yuv420p",
-        nb_components: 3, is_yuv: 1,
-        x_chroma_shift: 1, y_chroma_shift: 1, 
+        .name = "yuv420p",
+        .nb_components = 3, .is_yuv = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 1, 
     },
     [PIX_FMT_YUV422P] = {
-        name: "yuv422p",
-        nb_components: 3, is_yuv: 1,
-        x_chroma_shift: 1, y_chroma_shift: 0, 
+        .name = "yuv422p",
+        .nb_components = 3, .is_yuv = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 0, 
     },
     [PIX_FMT_YUV444P] = {
-        name: "yuv444p",
-        nb_components: 3, is_yuv: 1,
-        x_chroma_shift: 0, y_chroma_shift: 0, 
+        .name = "yuv444p",
+        .nb_components = 3, .is_yuv = 1,
+        .x_chroma_shift = 0, .y_chroma_shift = 0, 
     },
     [PIX_FMT_YUV422] = {
-        name: "yuv422",
-        nb_components: 1, is_yuv: 1, is_packed: 1,
-        x_chroma_shift: 1, y_chroma_shift: 0,
+        .name = "yuv422",
+        .nb_components = 1, .is_yuv = 1, .is_packed = 1,
+        .x_chroma_shift = 1, .y_chroma_shift = 0,
     },
     [PIX_FMT_YUV410P] = {
-        name: "yuv410p",
-        nb_components: 3, is_yuv: 1,
-        x_chroma_shift: 2, y_chroma_shift: 2,
+        .name = "yuv410p",
+        .nb_components = 3, .is_yuv = 1,
+        .x_chroma_shift = 2, .y_chroma_shift = 2,
     },
     [PIX_FMT_YUV411P] = {
-        name: "yuv411p",
-        nb_components: 3, is_yuv: 1,
-        x_chroma_shift: 2, y_chroma_shift: 0,
+        .name = "yuv411p",
+        .nb_components = 3, .is_yuv = 1,
+        .x_chroma_shift = 2, .y_chroma_shift = 0,
     },
 
     /* RGB formats */
     [PIX_FMT_RGB24] = {
-        name: "rgb24",
-        nb_components: 1, is_packed: 1,
+        .name = "rgb24",
+        .nb_components = 1, .is_packed = 1,
     },
     [PIX_FMT_BGR24] = {
-        name: "bgr24",
-        nb_components: 1, is_packed: 1,
+        .name = "bgr24",
+        .nb_components = 1, .is_packed = 1,
     },
     [PIX_FMT_RGBA32] = {
-        name: "rgba32",
-        nb_components: 1, is_packed: 1, is_alpha: 1,
+        .name = "rgba32",
+        .nb_components = 1, .is_packed = 1, .is_alpha = 1,
     },
     [PIX_FMT_RGB565] = {
-        name: "rgb565",
-        nb_components: 1, is_packed: 1,
+        .name = "rgb565",
+        .nb_components = 1, .is_packed = 1,
     },
     [PIX_FMT_RGB555] = {
-        name: "rgb555",
-        nb_components: 1, is_packed: 1, is_alpha : 1,
+        .name = "rgb555",
+        .nb_components = 1, .is_packed = 1, .is_alpha = 1,
     },
 
     /* gray / mono formats */
     [PIX_FMT_GRAY8] = {
-        name: "gray",
-        nb_components: 1, is_gray: 1,
+        .name = "gray",
+        .nb_components = 1, .is_gray = 1,
     },
     [PIX_FMT_MONOWHITE] = {
-        name: "monow",
-        nb_components: 1, is_packed: 1, is_gray: 1,
+        .name = "monow",
+        .nb_components = 1, .is_packed = 1, .is_gray = 1,
     },
     [PIX_FMT_MONOBLACK] = {
-        name: "monob",
-        nb_components: 1, is_packed: 1, is_gray: 1,
+        .name = "monob",
+        .nb_components = 1, .is_packed = 1, .is_gray = 1,
     },
 };
 
@@ -938,97 +938,97 @@ typedef struct ConvertEntry {
 static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     [PIX_FMT_YUV420P] = {
         [PIX_FMT_RGB555] = { 
-            convert: yuv420p_to_rgb555
+            .convert = yuv420p_to_rgb555
         },
         [PIX_FMT_RGB565] = { 
-            convert: yuv420p_to_rgb565
+            .convert = yuv420p_to_rgb565
         },
         [PIX_FMT_BGR24] = { 
-            convert: yuv420p_to_bgr24
+            .convert = yuv420p_to_bgr24
         },
         [PIX_FMT_RGB24] = { 
-            convert: yuv420p_to_rgb24
+            .convert = yuv420p_to_rgb24
         },
         [PIX_FMT_RGBA32] = { 
-            convert: yuv420p_to_rgba32
+            .convert = yuv420p_to_rgba32
         },
     },
     [PIX_FMT_YUV422P] = {
         [PIX_FMT_RGB555] = { 
-            convert: yuv422p_to_rgb555
+            .convert = yuv422p_to_rgb555
         },
         [PIX_FMT_RGB565] = { 
-            convert: yuv422p_to_rgb565
+            .convert = yuv422p_to_rgb565
         },
         [PIX_FMT_BGR24] = { 
-            convert: yuv422p_to_bgr24
+            .convert = yuv422p_to_bgr24
         },
         [PIX_FMT_RGB24] = { 
-            convert: yuv422p_to_rgb24
+            .convert = yuv422p_to_rgb24
         },
         [PIX_FMT_RGBA32] = { 
-            convert: yuv422p_to_rgba32
+            .convert = yuv422p_to_rgba32
         },
     },
     [PIX_FMT_YUV422] = { 
         [PIX_FMT_YUV420P] = { 
-            convert: yuv422_to_yuv420p,
+            .convert = yuv422_to_yuv420p,
         },
     },
 
     [PIX_FMT_RGB24] = {
         [PIX_FMT_YUV420P] = { 
-            convert: rgb24_to_yuv420p
+            .convert = rgb24_to_yuv420p
         },
         [PIX_FMT_RGB565] = { 
-            convert: rgb24_to_rgb565
+            .convert = rgb24_to_rgb565
         },
         [PIX_FMT_RGB555] = { 
-            convert: rgb24_to_rgb555
+            .convert = rgb24_to_rgb555
         },
         [PIX_FMT_GRAY8] = { 
-            convert: rgb24_to_gray
+            .convert = rgb24_to_gray
         },
     },
     [PIX_FMT_RGBA32] = {
         [PIX_FMT_YUV420P] = { 
-            convert: rgba32_to_yuv420p
+            .convert = rgba32_to_yuv420p
         },
     },
     [PIX_FMT_BGR24] = {
         [PIX_FMT_YUV420P] = { 
-            convert: bgr24_to_yuv420p
+            .convert = bgr24_to_yuv420p
         },
     },
     [PIX_FMT_RGB555] = {
         [PIX_FMT_YUV420P] = { 
-            convert: rgb555_to_yuv420p
+            .convert = rgb555_to_yuv420p
         },
     },
     [PIX_FMT_RGB565] = {
         [PIX_FMT_YUV420P] = { 
-            convert: rgb565_to_yuv420p
+            .convert = rgb565_to_yuv420p
         },
     },
     [PIX_FMT_GRAY8] = {
         [PIX_FMT_RGB24] = { 
-            convert: gray_to_rgb24
+            .convert = gray_to_rgb24
         },
         [PIX_FMT_MONOWHITE] = { 
-            convert: gray_to_monowhite
+            .convert = gray_to_monowhite
         },
         [PIX_FMT_MONOBLACK] = { 
-            convert: gray_to_monoblack
+            .convert = gray_to_monoblack
         },
     },
     [PIX_FMT_MONOWHITE] = {
         [PIX_FMT_GRAY8] = { 
-            convert: monowhite_to_gray
+            .convert = monowhite_to_gray
         },
     },
     [PIX_FMT_MONOBLACK] = {
         [PIX_FMT_GRAY8] = { 
-            convert: monoblack_to_gray
+            .convert = monoblack_to_gray
         },
     },
 };

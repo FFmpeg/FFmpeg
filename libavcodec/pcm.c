@@ -363,7 +363,7 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     NULL,                                       \
     pcm_decode_frame,                           \
-};
+}
 
 PCM_CODEC(CODEC_ID_PCM_S16LE, pcm_s16le);
 PCM_CODEC(CODEC_ID_PCM_S16BE, pcm_s16be);

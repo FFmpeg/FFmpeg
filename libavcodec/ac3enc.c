@@ -1452,6 +1452,7 @@ static int AC3_encode_frame(AVCodecContext *avctx,
 static int AC3_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
+    return 0;
 }
 
 #if 0

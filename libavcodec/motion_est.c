@@ -302,7 +302,7 @@ static void set_cmp(MpegEncContext *s, me_cmp_func *cmp, int type){
     default:
         fprintf(stderr,"internal error in cmp function selection\n");
     }
-};
+}
 
 static inline int get_penalty_factor(MpegEncContext *s, int type){
     switch(type&0xFF){
