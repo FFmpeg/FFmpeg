@@ -80,8 +80,11 @@ static int find_image_range(int *pfirst_index, int *plast_index,
 
     /* find the first image */
     for(first_index = 0; first_index < 5; first_index++) {
-        if (get_frame_filename(buf, sizeof(buf), path, first_index) < 0)
-            goto fail;
+        if (get_frame_filename(buf, sizeof(buf), path, first_index) < 0){
+            *pfirst_index = 
+            *plast_index = 1;
+            return 0;
+        }
         if (url_exist(buf))
             break;
     }
@@ -132,8 +135,6 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     VideoData *s = s1->priv_data;
     int first_index, last_index;
-    char buf[1024];
-    ByteIOContext pb1, *f = &pb1;
     AVStream *st;
 
     s1->ctx_flags |= AVFMTCTX_NOHEADER;
@@ -173,18 +174,6 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->duration = ((int64_t)AV_TIME_BASE * 
                         (last_index - first_index + 1) * 
                         st->codec.frame_rate_base) / st->codec.frame_rate;
-        if (get_frame_filename(buf, sizeof(buf), s->path, s->img_number) < 0)
-            goto fail;
-        if (url_fopen(f, buf, URL_RDONLY) < 0)
-            goto fail;
-    } else {
-        f = &s1->pb;
-    }
-    
-    if (!s->is_pipe) {
-        url_fclose(f);
-    } else {
-        url_fseek(f, 0, SEEK_SET);
     }
     
     st->codec.codec_type = CODEC_TYPE_VIDEO;
@@ -192,8 +181,6 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     return 0;
  
-    if (!s->is_pipe)
-        url_fclose(f);
  fail:
     av_free(s);
     return AVERROR_IO;
@@ -212,7 +199,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
             s->img_number = s->img_first;
         }*/
         if (get_frame_filename(filename, sizeof(filename),
-                               s->path, s->img_number) < 0)
+                               s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR_IO;
         f = &f1;
         if (url_fopen(f, filename, URL_RDONLY) < 0)
@@ -278,7 +265,7 @@ static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!img->is_pipe) {
         if (get_frame_filename(filename, sizeof(filename), 
-                               img->path, img->img_number) < 0)
+                               img->path, img->img_number) < 0 && img->img_number>1)
             return AVERROR_IO;
         pb = &pb1;
         if (url_fopen(pb, filename, URL_WRONLY) < 0)
@@ -314,7 +301,7 @@ static AVInputFormat image2_iformat = {
     img_read_close,
     NULL,
     NULL,
-    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    AVFMT_NOFILE,
 };
 
 static AVInputFormat image2pipe_iformat = {
@@ -342,7 +329,7 @@ static AVOutputFormat image2_oformat = {
     img_write_header,
     img_write_packet,
     img_write_trailer,
-    AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    AVFMT_NOFILE,
 };
 
 static AVOutputFormat image2pipe_oformat = {
