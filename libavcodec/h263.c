@@ -3662,9 +3662,9 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
                 last = get_bits1(&s->gb);
                 run = get_bits(&s->gb, 6);
                 if(is11){
-                    level = (int8_t)get_sbits(&s->gb, 11);
+                    level = get_sbits(&s->gb, 11);
                 } else {
-                    level = (int8_t)get_sbits(&s->gb, 7);
+                    level = get_sbits(&s->gb, 7);
                 }
             } else {
                 last = get_bits1(&s->gb);
