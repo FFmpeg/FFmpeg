@@ -4234,7 +4234,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             s->mb_skiped=0;
             s->dquant=0; //only for QP_RD
 
-            if(mb_type & (mb_type-1) || (s->flags & CODEC_FLAG_QP_RD)){ // more than 1 MB type possible
+            if(mb_type & (mb_type-1) || (s->flags & CODEC_FLAG_QP_RD)){ // more than 1 MB type possible or CODEC_FLAG_QP_RD
                 int next_block=0;
                 int pb_bits_count, pb2_bits_count, tex_pb_bits_count;
 
