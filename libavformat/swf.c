@@ -53,12 +53,8 @@
 #define VIDEO_ID 0
 #define SHAPE_ID  1
 
-typedef struct SWFFrame_s {
-    void *data;
-    int size;
-    struct SWFFrame_s *prev;
-    struct SWFFrame_s *next;
-} SWFFrame;
+#undef NDEBUG
+#include <assert.h>
 
 typedef struct {
 
@@ -68,7 +64,6 @@ typedef struct {
     int samples_per_frame;
     int sound_samples;
     int video_samples;
-    int skip_samples;
     int swf_frame_number;
     int video_frame_number;
     int ms_per_frame;
@@ -82,9 +77,6 @@ typedef struct {
 
     int video_type;
     int audio_type;
-    
-    SWFFrame *frame_head;
-    SWFFrame *frame_tail;
 } SWFContext;
 
 static const int sSampleRates[3][4] = {
@@ -323,13 +315,10 @@ static int swf_write_header(AVFormatContext *s)
     swf->audio_out_pos = 0;
     swf->audio_size = 0;
     swf->audio_fifo = av_malloc(AUDIO_FIFO_SIZE);
-    swf->frame_head = 0;
-    swf->frame_tail = 0;
     swf->sound_samples = 0;
     swf->video_samples = 0;
     swf->swf_frame_number = 0;
     swf->video_frame_number = 0;
-    swf->skip_samples = 0;
 
     video_enc = NULL;
     audio_enc = NULL;
@@ -482,20 +471,6 @@ static int swf_write_video(AVFormatContext *s,
         av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
     }
 
-    /* Store video data in queue */
-    if ( enc->codec_type == CODEC_TYPE_VIDEO ) {
-        SWFFrame *new_frame = av_malloc(sizeof(SWFFrame));
-        new_frame->prev = 0;
-        new_frame->next = swf->frame_head;
-        new_frame->data = av_malloc(size);
-        new_frame->size = size;
-        memcpy(new_frame->data,buf,size);
-        swf->frame_head = new_frame;
-        if ( swf->frame_tail == 0 ) {
-            swf->frame_tail = new_frame;
-        }
-    }
-    
     if ( swf->audio_type ) {
         /* Prescan audio data for this swf frame */
 retry_swf_audio_packet:
@@ -534,18 +509,8 @@ retry_swf_audio_packet:
         if ( ( swf->sound_samples + outSamples + swf->samples_per_frame ) < swf->video_samples ) {
             return 0;
         }
-
-        /* compute audio/video drift */
-        if ( enc->codec_type == CODEC_TYPE_VIDEO ) {
-            swf->skip_samples = (int)( ( (double)(swf->swf_frame_number) * (double)enc->frame_rate_base * 44100. ) / (double)(enc->frame_rate) );
-            swf->skip_samples -=  swf->video_samples;
-        }
     }
 
-    /* check if we need to insert a padding frame */
-    if (swf->skip_samples <= ( swf->samples_per_frame / 2 ) ) {
-        /* no, it is time for a real frame, check if one is available */
-        if ( swf->frame_tail ) {
             if ( swf->video_type == CODEC_ID_FLV1 ) {
                 if ( swf->video_frame_number == 0 ) {
                     /* create a new video object */
@@ -581,16 +546,12 @@ retry_swf_audio_packet:
                     put_swf_end_tag(s);
                 }
     
-                // write out pending frames
-                for (; ( enc->frame_number - swf->video_frame_number ) > 0;) {
                     /* set video frame data */
                     put_swf_tag(s, TAG_VIDEOFRAME | TAG_LONG);
                     put_le16(pb, VIDEO_ID); 
                     put_le16(pb, swf->video_frame_number++ );
-                    put_buffer(pb, swf->frame_tail->data, swf->frame_tail->size);
+                    put_buffer(pb, buf, size);
                     put_swf_end_tag(s);
-                }
-
             } else if ( swf->video_type == CODEC_ID_MJPEG ) {
                 if (swf->swf_frame_number > 0) {
                     /* remove the shape */
@@ -615,7 +576,7 @@ retry_swf_audio_packet:
                 put_byte(pb, 0xff);
                 put_byte(pb, 0xd9);
                 /* write the jpeg image */
-                put_buffer(pb, swf->frame_tail->data, swf->frame_tail->size);
+                put_buffer(pb, buf, size);
         
                 put_swf_end_tag(s);
         
@@ -630,19 +591,7 @@ retry_swf_audio_packet:
                 /* invalid codec */
             }
     
-            av_free(swf->frame_tail->data);
-            swf->frame_tail = swf->frame_tail->prev;
-            if ( swf->frame_tail ) {
-                if ( swf->frame_tail->next ) {
-                    av_free(swf->frame_tail->next);
-                }
-                swf->frame_tail->next = 0;
-            } else {
-                swf->frame_head = 0;
-            }
             swf->swf_frame_number ++;
-        }
-    }
 
     swf->video_samples += swf->samples_per_frame;
 
