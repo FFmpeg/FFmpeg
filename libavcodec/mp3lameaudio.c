@@ -50,7 +50,9 @@ static int MP3lame_encode_init(AVCodecContext *avctx)
 		goto err_close;
 
 	avctx->frame_size = MPA_FRAME_SIZE;
-	avctx->key_frame = 1;
+    
+        avctx->coded_frame= avcodec_alloc_frame();
+        avctx->coded_frame->key_frame= 1;
 
 	return 0;
 
@@ -81,6 +83,8 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
 int MP3lame_encode_close(AVCodecContext *avctx)
 {
 	Mp3AudioContext *s = avctx->priv_data;
+    
+        av_freep(&avctx->coded_frame);
 
 	lame_close(s->gfp);
 	return 0;
