@@ -107,6 +107,10 @@ stddev:  8.09 PSNR:29.96 bytes:7602176
 2653690 ./data/a-ffv1.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
+4f19ea77c558be4773e81f6753bf0312 *./data/a-svq1.mov
+1985787 ./data/a-svq1.mov
+63ce98457dad973db89ed87ac2cb9392 *./data/out.yuv
+stddev: 10.83 PSNR:27.43 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2
   95712 ./data/a-mp2.mp2
 624d9789f3ac193bbae4af3bd8cb02b7 *./data/out.wav

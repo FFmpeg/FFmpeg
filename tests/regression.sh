@@ -66,6 +66,7 @@ else
     do_flv=y
     do_ffv1=y
     do_error=y
+    do_svq1=y
 fi
 
 
@@ -399,6 +400,16 @@ file=${outfile}ffv1.avi
 do_ffmpeg $file -y -strict -1 -f pgmyuv -i $raw_src -an -vcodec ffv1 $file
 
 # ffv1 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_svq1" ] ; then
+# svq1 encoding
+file=${outfile}svq1.mov
+do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec svq1 -pix_fmt yuv410p $file
+
+# svq1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
