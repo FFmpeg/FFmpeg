@@ -120,6 +120,9 @@ int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size,
     int ret;
 
     ret = avctx->codec->encode(avctx, buf, buf_size, (void *)pict);
+    
+    emms_c(); //needed to avoid a emms_c() call before every return;
+
     avctx->frame_number++;
     return ret;
 }
@@ -135,6 +138,9 @@ int avcodec_decode_video(AVCodecContext *avctx, AVPicture *picture,
 
     ret = avctx->codec->decode(avctx, picture, got_picture_ptr, 
                                buf, buf_size);
+
+    emms_c(); //needed to avoid a emms_c() call before every return;
+
     if (*got_picture_ptr)                           
         avctx->frame_number++;
     return ret;

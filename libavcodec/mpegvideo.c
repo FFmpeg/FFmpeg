@@ -1819,7 +1819,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 /* if previous was skipped too, then nothing to do ! 
                    skip only during decoding as we might trash the buffers during encoding a bit */
                 if (*mbskip_ptr >= s->ip_buffer_count  && !s->encoding) 
-                    goto the_end;
+                    return;
             } else {
                 *mbskip_ptr = 0; /* not skipped */
             }
@@ -1866,7 +1866,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             }
 
             /* skip dequant / idct if we are really late ;) */
-            if(s->hurry_up>1) goto the_end;
+            if(s->hurry_up>1) return;
 
             /* add dct residue */
             if(s->encoding || !(   s->mpeg2 || s->h263_msmpeg4 || s->codec_id==CODEC_ID_MPEG1VIDEO 
@@ -1916,8 +1916,6 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             }
         }
     }
- the_end:
-    emms_c(); //FIXME remove
 }
 
 static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int threshold)
@@ -2574,7 +2572,6 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 //                s->mb_type[mb_y*s->mb_width + mb_x]=MB_TYPE_INTER;
             }
         }
-        emms_c();
     }else /* if(s->pict_type == I_TYPE) */{
         /* I-Frame */
         //FIXME do we need to zero them?
@@ -2601,6 +2598,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             }
         }
     }
+    emms_c();
+
     if(s->scene_change_score > 0 && s->pict_type == P_TYPE){
         s->pict_type= I_TYPE;
         memset(s->mb_type   , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
