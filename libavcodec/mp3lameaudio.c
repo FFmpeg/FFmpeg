@@ -42,6 +42,7 @@ static int MP3lame_encode_init(AVCodecContext *avctx)
 	if ((s->gfp = lame_init()) == NULL)
 		goto err;
 	lame_set_in_samplerate(s->gfp, avctx->sample_rate);
+	lame_set_out_samplerate(s->gfp, avctx->sample_rate);
 	lame_set_num_channels(s->gfp, avctx->channels);
 	/* lame 3.91 dies on quality != 5 */
 	lame_set_quality(s->gfp, 5);
