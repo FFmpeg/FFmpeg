@@ -1079,10 +1079,13 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		else if(flags&SWS_AREA)		sizeFactor= 1.0; //downscale only, for upscale it is bilinear
 		else if(flags&SWS_GAUSS)	sizeFactor= 8.0;   // infinite ;)
 		else if(flags&SWS_LANCZOS)	sizeFactor= param ? 2.0*param : 6.0;
-		else if(flags&SWS_SINC)		sizeFactor= 100.0; // infinite ;)
+		else if(flags&SWS_SINC)		sizeFactor= 20.0; // infinite ;)
 		else if(flags&SWS_SPLINE)	sizeFactor= 20.0;  // infinite ;)
 		else if(flags&SWS_BILINEAR)	sizeFactor= 2.0;
-		else ASSERT(0)
+		else {
+			sizeFactor= 0.0; //GCC warning killer
+			ASSERT(0)
+		}
 		
 		if(xInc1 <= 1.0)	filterSizeInSrc= sizeFactor; // upscale
 		else			filterSizeInSrc= sizeFactor*srcW / (double)dstW;
@@ -1164,7 +1167,10 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 					double p=-2.196152422706632;
 					coeff = getSplineCoeff(1.0, 0.0, p, -p-1.0, d);
 				}
-				else ASSERT(0)
+				else {
+					coeff= 0.0; //GCC warning killer
+					ASSERT(0)
+				}
 
 				filter[i*filterSize + j]= coeff;
 				xx++;
@@ -1318,7 +1324,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 			sum+= filter[i*filterSize + j];
 		}
 		scale/= sum;
-		for(j=0; j<filterSize; j++)
+		for(j=0; j<*outFilterSize; j++)
 		{
 			(*outFilter)[i*(*outFilterSize) + j]= (int)(filter[i*filterSize + j]*scale);
 		}

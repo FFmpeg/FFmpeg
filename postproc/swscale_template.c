@@ -112,8 +112,8 @@
 		".balign 16			\n\t"\
 		"1:				\n\t"\
 		"movl %1, %%edx			\n\t" /* -chrFilterSize */\
-		"movl %3, %%ebx			\n\t" /* chrMmxFilter+lumFilterSize */\
-		"movl %7, %%ecx			\n\t" /* chrSrc+lumFilterSize */\
+		"movl %3, %%ebx			\n\t" /* chrMmxFilter+chrFilterSize */\
+		"movl %7, %%ecx			\n\t" /* chrSrc+chrFilterSize */\
 		"pxor %%mm3, %%mm3		\n\t"\
 		"pxor %%mm4, %%mm4		\n\t"\
 		"2:				\n\t"\
