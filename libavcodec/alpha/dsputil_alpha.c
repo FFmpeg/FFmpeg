@@ -26,6 +26,9 @@ static void put_pixels_clamped_axp(const DCTELEM *block, UINT8 *pixels,
 				   int line_size)
 {
     int i = 8;
+
+    ASM_ACCEPT_MVI;
+
     do {
 	UINT64 shorts;
 
@@ -48,6 +51,9 @@ static void add_pixels_clamped_axp(const DCTELEM *block, UINT8 *pixels,
 				   int line_size)
 {
     int i = 8;
+
+    ASM_ACCEPT_MVI;
+
     do {
 	UINT64 shorts; 
 
@@ -216,7 +222,6 @@ void dsputil_init_alpha(void)
 
     /* amask clears all bits that correspond to present features.  */
     if (amask(AMASK_MVI) == 0) {
-	fprintf(stderr, "MVI extension detected\n");
 	put_pixels_clamped = put_pixels_clamped_axp;
 	add_pixels_clamped = add_pixels_clamped_axp;
     }

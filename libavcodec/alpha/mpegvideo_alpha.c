@@ -28,6 +28,9 @@ static void dct_unquantize_h263_axp(MpegEncContext *s,
 {
     int i, level;
     UINT64 qmul, qadd;
+
+    ASM_ACCEPT_MVI;
+    
     if (s->mb_intra) {
         if (n < 4) 
             block[0] = block[0] * s->y_dc_scale;
