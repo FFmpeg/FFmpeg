@@ -1183,15 +1183,11 @@ static inline int mpeg2_decode_block_non_intra(MpegEncContext *s,
 {
     int level, i, j, run;
     RLTable *rl = &rl_mpeg1;
-    UINT8 * scantable;
+    UINT8 * const scantable= s->intra_scantable.permutated;
     const UINT16 *quant_matrix;
     const int qscale= s->qscale;
     int mismatch;
 
-    if (s->alternate_scan)
-        scantable = s->intra_v_scantable.permutated;
-    else
-        scantable = s->intra_scantable.permutated;
     mismatch = 1;
 
     {
@@ -1267,15 +1263,10 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
     int level, dc, diff, i, j, run;
     int component;
     RLTable *rl;
-    UINT8 * scantable;
+    UINT8 * const scantable= s->intra_scantable.permutated;
     const UINT16 *quant_matrix;
     const int qscale= s->qscale;
     int mismatch;
-
-    if (s->alternate_scan)
-        scantable = s->intra_v_scantable.permutated;
-    else
-        scantable = s->intra_scantable.permutated;
 
     /* DC coef */
     if (n < 4){
@@ -1524,6 +1515,19 @@ static void mpeg_decode_picture_coding_extension(MpegEncContext *s)
     s->repeat_first_field = get_bits1(&s->gb);
     s->chroma_420_type = get_bits1(&s->gb);
     s->progressive_frame = get_bits1(&s->gb);
+    
+    if(s->alternate_scan){
+        ff_init_scantable(s, &s->inter_scantable  , ff_alternate_vertical_scan);
+        ff_init_scantable(s, &s->intra_scantable  , ff_alternate_vertical_scan);
+        ff_init_scantable(s, &s->intra_h_scantable, ff_alternate_vertical_scan);
+        ff_init_scantable(s, &s->intra_v_scantable, ff_alternate_vertical_scan);
+    }else{
+        ff_init_scantable(s, &s->inter_scantable  , ff_zigzag_direct);
+        ff_init_scantable(s, &s->intra_scantable  , ff_zigzag_direct);
+        ff_init_scantable(s, &s->intra_h_scantable, ff_alternate_horizontal_scan);
+        ff_init_scantable(s, &s->intra_v_scantable, ff_alternate_vertical_scan);
+    }
+    
     /* composite display not parsed */
     dprintf("intra_dc_precision=%d\n", s->intra_dc_precision);
     dprintf("picture_structure=%d\n", s->picture_structure);
