@@ -160,7 +160,8 @@ static const int8_t quant13[256]={
 -4,-4,-4,-4,-4,-4,-4,-4,-4,-3,-3,-3,-3,-2,-2,-1,
 };
 
-#define OBMC_MAX 64
+#define LOG2_OBMC_MAX 6
+#define OBMC_MAX (1<<(LOG2_OBMC_MAX))
 #if 0 //64*cubic
 static const uint8_t obmc32[1024]={
  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -2031,7 +2032,7 @@ static always_inline int same_block(BlockNode *a, BlockNode *b){
 }
 
 //FIXME name clenup (b_w, block_w, b_width stuff)
-static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *src, uint8_t *obmc, int src_x, int src_y, int b_w, int b_h, int w, int h, int dst_stride, int src_stride, int obmc_stride, int b_x, int b_y, int add, int plane_index){
+static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *dst8, uint8_t *src, uint8_t *obmc, int src_x, int src_y, int b_w, int b_h, int w, int h, int dst_stride, int src_stride, int obmc_stride, int b_x, int b_y, int add, int plane_index){
     const int b_width = s->b_width  << s->block_max_depth;
     const int b_height= s->b_height << s->block_max_depth;
     const int b_stride= b_width;
@@ -2077,6 +2078,7 @@ static always_inline void add_yblock(SnowContext *s, DWTELEM *dst, uint8_t *src,
 
 assert(src_stride > 7*MB_SIZE);
     dst += src_x + src_y*dst_stride;
+    dst8+= src_x + src_y*src_stride;
 //    src += src_x + src_y*src_stride;
 
     block[0]= tmp+3*MB_SIZE;
@@ -2153,14 +2155,20 @@ assert(src_stride > 7*MB_SIZE);
                     +obmc2[x] * block[2][x + y*src_stride]
                     +obmc3[x] * block[1][x + y*src_stride]
                     +obmc4[x] * block[0][x + y*src_stride];
-                    
-            v *= 256/OBMC_MAX;
+            
+            v <<= 8 - LOG2_OBMC_MAX;
             if(FRAC_BITS != 8){
                 v += 1<<(7 - FRAC_BITS);
                 v >>= 8 - FRAC_BITS;
             }
-            if(add) dst[x + y*dst_stride] += v;
-            else    dst[x + y*dst_stride] -= v;
+            if(add){
+                v += dst[x + y*dst_stride];
+                v = (v + (1<<(FRAC_BITS-1))) >> FRAC_BITS;
+                if(v&(~255)) v= ~(v>>31);
+                dst8[x + y*src_stride] = v;
+            }else{
+                dst[x + y*dst_stride] -= v;
+            }
         }
     }
 #endif
@@ -2175,17 +2183,28 @@ static always_inline void predict_plane(SnowContext *s, DWTELEM *buf, int plane_
     int block_w    = plane_index ? block_size/2 : block_size;
     const uint8_t *obmc  = plane_index ? obmc_tab[s->block_max_depth+1] : obmc_tab[s->block_max_depth];
     int obmc_stride= plane_index ? block_size : 2*block_size;
-    int ref_stride= s->last_picture.linesize[plane_index];
+    int ref_stride= s->current_picture.linesize[plane_index];
     uint8_t *ref  = s->last_picture.data[plane_index];
+    uint8_t *dst8= s->current_picture.data[plane_index];
     int w= p->width;
     int h= p->height;
     START_TIMER
     
     if(s->keyframe || (s->avctx->debug&512)){
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                if(add) buf[x + y*w]+= 128<<FRAC_BITS;
-                else    buf[x + y*w]-= 128<<FRAC_BITS;
+        if(add){
+            for(y=0; y<h; y++){
+                for(x=0; x<w; x++){
+                    int v= buf[x + y*w] + (128<<FRAC_BITS) + (1<<(FRAC_BITS-1));
+                    v >>= FRAC_BITS;
+                    if(v&(~255)) v= ~(v>>31);
+                    dst8[x + y*ref_stride]= v;
+                }
+            }
+        }else{
+            for(y=0; y<h; y++){
+                for(x=0; x<w; x++){
+                    buf[x + y*w]-= 128<<FRAC_BITS;
+                }
             }
         }
 
@@ -2196,7 +2215,7 @@ static always_inline void predict_plane(SnowContext *s, DWTELEM *buf, int plane_
         for(mb_x=0; mb_x<=mb_w; mb_x++){
             START_TIMER
 
-            add_yblock(s, buf, ref, obmc, 
+            add_yblock(s, buf, dst8, ref, obmc, 
                        block_w*mb_x - block_w/2,
                        block_w*mb_y - block_w/2,
                        block_w, block_w,
@@ -2791,15 +2810,9 @@ redo_frame:
                 }
             }
         }
+{START_TIMER
         predict_plane(s, s->spatial_dwt_buffer, plane_index, 1);
-        //FIXME optimize
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                int v= (s->spatial_dwt_buffer[y*w + x]+(1<<(FRAC_BITS-1)))>>FRAC_BITS;
-                if(v&(~255)) v= ~(v>>31);
-                s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x]= v;
-            }
-        }
+STOP_TIMER("pred-conv")}
         if(s->avctx->flags&CODEC_FLAG_PSNR){
             int64_t error= 0;
             
@@ -2902,8 +2915,7 @@ if(s->avctx->debug&2048){
 
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
-                int v= (s->spatial_dwt_buffer[y*w + x]+(1<<(FRAC_BITS-1)))>>FRAC_BITS;
-                if(v&(~255)) v= ~(v>>31);
+                int v= s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x];
                 s->mconly_picture.data[plane_index][y*s->mconly_picture.linesize[plane_index] + x]= v;
             }
         }
@@ -2929,16 +2941,9 @@ if(s->avctx->debug&2048){
                 }
             }
         }
+{START_TIMER
         predict_plane(s, s->spatial_dwt_buffer, plane_index, 1);
-
-        //FIXME optimize
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                int v= (s->spatial_dwt_buffer[y*w + x]+(1<<(FRAC_BITS-1)))>>FRAC_BITS;
-                if(v&(~255)) v= ~(v>>31);
-                s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x]= v;
-            }
-        }
+STOP_TIMER("predict_plane conv2")}
     }
             
     emms_c();
