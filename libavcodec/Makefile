@@ -125,15 +125,15 @@ EXTRALIBS += -lmp3lame
 endif
 
 ifeq ($(CONFIG_LIBOGG),yes)
-EXTRALIBS += -logg
 ifeq ($(CONFIG_LIBVORBIS),yes)
 OBJS += oggvorbis.o
-EXTRALIBS += -lvorbis -lvorbisenc
+EXTRALIBS += -lvorbisenc -lvorbis
 endif
 ifeq ($(CONFIG_LIBTHEORA), yes)
 OBJS += oggtheora.o
 EXTRALIBS += -ltheora
 endif
+EXTRALIBS += -logg
 endif
 
 ifeq ($(TARGET_GPROF),yes)

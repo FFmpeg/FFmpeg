@@ -44,13 +44,13 @@ endif
 endif
 
 ifeq ($(CONFIG_LIBOGG),yes)
-EXTRALIBS+= -logg 
 ifeq ($(CONFIG_LIBVORBIS),yes)
-EXTRALIBS+= -lvorbis -lvorbisenc
+EXTRALIBS+= -lvorbisenc -lvorbis
 endif
 ifeq ($(CONFIG_LIBTHEORA),yes)
 EXTRALIBS+= -ltheora
 endif
+EXTRALIBS+= -logg
 endif
 
 ifeq ($(CONFIG_FAAD),yes)
