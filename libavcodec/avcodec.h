@@ -180,6 +180,7 @@ typedef struct AVCodecContext {
      * some codecs need / can use extra-data like huffman tables
      * mjpeg: huffman tables
      * rv10: additional flags
+     * mpeg4: global headers (they can be in the bitstream or here)
      * encoding: set/allocated/freed by lavc.
      * decoding: set/allocated/freed by user.
      */

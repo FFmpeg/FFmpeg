@@ -4040,320 +4040,290 @@ printf("%d %d\n", s->sprite_delta[1][1][1], a<<s->sprite_shift[1][1]);*/
 //printf("%d %d %d %d\n", d[0][0], d[0][1], s->sprite_offset[0][0], s->sprite_offset[0][1]);
 }
 
-/* decode mpeg4 VOP header */
-int mpeg4_decode_picture_header(MpegEncContext * s)
-{
-    int time_incr, startcode, state, v;
-    int time_increment;
+static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
+    int width, height, vo_ver_id;
 
- redo:
-    /* search next start code */
-    align_get_bits(&s->gb);
-    state = 0xff;
-    for(;;) {
-        v = get_bits(&s->gb, 8);
-        if (state == 0x000001) {
-            state = ((state << 8) | v) & 0xffffff;
-            startcode = state;
-            break;
-        }
-        state = ((state << 8) | v) & 0xffffff;
-        if( get_bits_count(&s->gb) > s->gb.size*8-32){
-            if(s->gb.size>50){
-                printf("no VOP startcode found, frame size was=%d\n", s->gb.size);
-                return -1;
-            }else{
-                printf("frame skip\n");
-                return FRAME_SKIPED;
-            }
-        }
+    /* vol header */
+    skip_bits(gb, 1); /* random access */
+    s->vo_type= get_bits(gb, 8);
+    if (get_bits1(gb) != 0) { /* is_ol_id */
+        vo_ver_id = get_bits(gb, 4); /* vo_ver_id */
+        skip_bits(gb, 3); /* vo_priority */
+    } else {
+        vo_ver_id = 1;
     }
-//printf("startcode %X %d\n", startcode, get_bits_count(&s->gb));
-    if (startcode == 0x120) { // Video Object Layer
-        int width, height, vo_ver_id;
-
-        /* vol header */
-        skip_bits(&s->gb, 1); /* random access */
-        s->vo_type= get_bits(&s->gb, 8);
-        if (get_bits1(&s->gb) != 0) { /* is_ol_id */
-            vo_ver_id = get_bits(&s->gb, 4); /* vo_ver_id */
-            skip_bits(&s->gb, 3); /* vo_priority */
-        } else {
-            vo_ver_id = 1;
-        }
 //printf("vo type:%d\n",s->vo_type);
-        s->aspect_ratio_info= get_bits(&s->gb, 4);
-	if(s->aspect_ratio_info == FF_ASPECT_EXTENDED){	    
-	    s->aspected_width = get_bits(&s->gb, 8); // par_width
-	    s->aspected_height = get_bits(&s->gb, 8); // par_height
-        }
+    s->aspect_ratio_info= get_bits(gb, 4);
+    if(s->aspect_ratio_info == FF_ASPECT_EXTENDED){	    
+        s->aspected_width = get_bits(gb, 8); // par_width
+        s->aspected_height = get_bits(gb, 8); // par_height
+    }
 
-        if ((s->vol_control_parameters=get_bits1(&s->gb))) { /* vol control parameter */
-            int chroma_format= get_bits(&s->gb, 2);
-            if(chroma_format!=1){
-                printf("illegal chroma format\n");
+    if ((s->vol_control_parameters=get_bits1(gb))) { /* vol control parameter */
+        int chroma_format= get_bits(gb, 2);
+        if(chroma_format!=1){
+            printf("illegal chroma format\n");
+        }
+        s->low_delay= get_bits1(gb);
+        if(get_bits1(gb)){ /* vbv parameters */
+            get_bits(gb, 15);	/* first_half_bitrate */
+            skip_bits1(gb);	/* marker */
+            get_bits(gb, 15);	/* latter_half_bitrate */
+            skip_bits1(gb);	/* marker */
+            get_bits(gb, 15);	/* first_half_vbv_buffer_size */
+            skip_bits1(gb);	/* marker */
+            get_bits(gb, 3);	/* latter_half_vbv_buffer_size */
+            get_bits(gb, 11);	/* first_half_vbv_occupancy */
+            skip_bits1(gb);	/* marker */
+            get_bits(gb, 15);	/* latter_half_vbv_occupancy */
+            skip_bits1(gb);	/* marker */               
+        }
+    }else{
+        // set low delay flag only once so the smart? low delay detection wont be overriden
+        if(s->picture_number==0)
+            s->low_delay=0;
+    }
+
+    s->shape = get_bits(gb, 2); /* vol shape */
+    if(s->shape != RECT_SHAPE) printf("only rectangular vol supported\n");
+    if(s->shape == GRAY_SHAPE && vo_ver_id != 1){
+        printf("Gray shape not supported\n");
+        skip_bits(gb, 4);  //video_object_layer_shape_extension
+    }
+
+    skip_bits1(gb);   /* marker */
+    
+    s->time_increment_resolution = get_bits(gb, 16);
+    
+    s->time_increment_bits = av_log2(s->time_increment_resolution - 1) + 1;
+    if (s->time_increment_bits < 1)
+        s->time_increment_bits = 1;
+    skip_bits1(gb);   /* marker */
+
+    if (get_bits1(gb) != 0) {   /* fixed_vop_rate  */
+        skip_bits(gb, s->time_increment_bits);
+    }
+
+    if (s->shape != BIN_ONLY_SHAPE) {
+        if (s->shape == RECT_SHAPE) {
+            skip_bits1(gb);   /* marker */
+            width = get_bits(gb, 13);
+            skip_bits1(gb);   /* marker */
+            height = get_bits(gb, 13);
+            skip_bits1(gb);   /* marker */
+            if(width && height){ /* they should be non zero but who knows ... */
+                s->width = width;
+                s->height = height;
+//                printf("width/height: %d %d\n", width, height);
             }
-            s->low_delay= get_bits1(&s->gb);
-            if(get_bits1(&s->gb)){ /* vbv parameters */
-                get_bits(&s->gb, 15);	/* first_half_bitrate */
-                skip_bits1(&s->gb);	/* marker */
-                get_bits(&s->gb, 15);	/* latter_half_bitrate */
-                skip_bits1(&s->gb);	/* marker */
-                get_bits(&s->gb, 15);	/* first_half_vbv_buffer_size */
-                skip_bits1(&s->gb);	/* marker */
-                get_bits(&s->gb, 3);	/* latter_half_vbv_buffer_size */
-                get_bits(&s->gb, 11);	/* first_half_vbv_occupancy */
-                skip_bits1(&s->gb);	/* marker */
-                get_bits(&s->gb, 15);	/* latter_half_vbv_occupancy */
-                skip_bits1(&s->gb);	/* marker */               
-            }
-        }else{
-            // set low delay flag only once so the smart? low delay detection wont be overriden
-            if(s->picture_number==0)
-                s->low_delay=0;
         }
-
-        s->shape = get_bits(&s->gb, 2); /* vol shape */
-        if(s->shape != RECT_SHAPE) printf("only rectangular vol supported\n");
-        if(s->shape == GRAY_SHAPE && vo_ver_id != 1){
-            printf("Gray shape not supported\n");
-            skip_bits(&s->gb, 4);  //video_object_layer_shape_extension
-        }
-
-        skip_bits1(&s->gb);   /* marker */
         
-        s->time_increment_resolution = get_bits(&s->gb, 16);
-        
-        s->time_increment_bits = av_log2(s->time_increment_resolution - 1) + 1;
-        if (s->time_increment_bits < 1)
-            s->time_increment_bits = 1;
-        skip_bits1(&s->gb);   /* marker */
-
-        if (get_bits1(&s->gb) != 0) {   /* fixed_vop_rate  */
-            skip_bits(&s->gb, s->time_increment_bits);
+        s->progressive_sequence= get_bits1(gb)^1;
+        if(!get_bits1(gb)) printf("OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
+        if (vo_ver_id == 1) {
+            s->vol_sprite_usage = get_bits1(gb); /* vol_sprite_usage */
+        } else {
+            s->vol_sprite_usage = get_bits(gb, 2); /* vol_sprite_usage */
         }
+        if(s->vol_sprite_usage==STATIC_SPRITE) printf("Static Sprites not supported\n");
+        if(s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE){
+            if(s->vol_sprite_usage==STATIC_SPRITE){
+                s->sprite_width = get_bits(gb, 13);
+                skip_bits1(gb); /* marker */
+                s->sprite_height= get_bits(gb, 13);
+                skip_bits1(gb); /* marker */
+                s->sprite_left  = get_bits(gb, 13);
+                skip_bits1(gb); /* marker */
+                s->sprite_top   = get_bits(gb, 13);
+                skip_bits1(gb); /* marker */
+            }
+            s->num_sprite_warping_points= get_bits(gb, 6);
+            s->sprite_warping_accuracy = get_bits(gb, 2);
+            s->sprite_brightness_change= get_bits1(gb);
+            if(s->vol_sprite_usage==STATIC_SPRITE)
+                s->low_latency_sprite= get_bits1(gb);            
+        }
+        // FIXME sadct disable bit if verid!=1 && shape not rect
+        
+        if (get_bits1(gb) == 1) {   /* not_8_bit */
+            s->quant_precision = get_bits(gb, 4); /* quant_precision */
+            if(get_bits(gb, 4)!=8) printf("N-bit not supported\n"); /* bits_per_pixel */
+            if(s->quant_precision!=5) printf("quant precission %d\n", s->quant_precision);
+        } else {
+            s->quant_precision = 5;
+        }
+        
+        // FIXME a bunch of grayscale shape things
 
-        if (s->shape != BIN_ONLY_SHAPE) {
-            if (s->shape == RECT_SHAPE) {
-                skip_bits1(&s->gb);   /* marker */
-                width = get_bits(&s->gb, 13);
-                skip_bits1(&s->gb);   /* marker */
-                height = get_bits(&s->gb, 13);
-                skip_bits1(&s->gb);   /* marker */
-                if(width && height){ /* they should be non zero but who knows ... */
-                    s->width = width;
-                    s->height = height;
-//                    printf("width/height: %d %d\n", width, height);
-                }
-            }
+        if((s->mpeg_quant=get_bits1(gb))){ /* vol_quant_type */
+            int i, j, v;
             
-            s->progressive_sequence= get_bits1(&s->gb)^1;
-            if(!get_bits1(&s->gb)) printf("OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
-            if (vo_ver_id == 1) {
-                s->vol_sprite_usage = get_bits1(&s->gb); /* vol_sprite_usage */
-            } else {
-                s->vol_sprite_usage = get_bits(&s->gb, 2); /* vol_sprite_usage */
-            }
-            if(s->vol_sprite_usage==STATIC_SPRITE) printf("Static Sprites not supported\n");
-            if(s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE){
-                if(s->vol_sprite_usage==STATIC_SPRITE){
-                    s->sprite_width = get_bits(&s->gb, 13);
-                    skip_bits1(&s->gb); /* marker */
-                    s->sprite_height= get_bits(&s->gb, 13);
-                    skip_bits1(&s->gb); /* marker */
-                    s->sprite_left  = get_bits(&s->gb, 13);
-                    skip_bits1(&s->gb); /* marker */
-                    s->sprite_top   = get_bits(&s->gb, 13);
-                    skip_bits1(&s->gb); /* marker */
-                }
-                s->num_sprite_warping_points= get_bits(&s->gb, 6);
-                s->sprite_warping_accuracy = get_bits(&s->gb, 2);
-                s->sprite_brightness_change= get_bits1(&s->gb);
-                if(s->vol_sprite_usage==STATIC_SPRITE)
-                    s->low_latency_sprite= get_bits1(&s->gb);            
-            }
-            // FIXME sadct disable bit if verid!=1 && shape not rect
-            
-            if (get_bits1(&s->gb) == 1) {   /* not_8_bit */
-                s->quant_precision = get_bits(&s->gb, 4); /* quant_precision */
-                if(get_bits(&s->gb, 4)!=8) printf("N-bit not supported\n"); /* bits_per_pixel */
-                if(s->quant_precision!=5) printf("quant precission %d\n", s->quant_precision);
-            } else {
-                s->quant_precision = 5;
-            }
-            
-            // FIXME a bunch of grayscale shape things
-
-            if((s->mpeg_quant=get_bits1(&s->gb))){ /* vol_quant_type */
-                int i, j, v;
+            /* load default matrixes */
+            for(i=0; i<64; i++){
+                int j= s->idct_permutation[i];
+                v= ff_mpeg4_default_intra_matrix[i];
+                s->intra_matrix[j]= v;
+                s->chroma_intra_matrix[j]= v;
                 
-                /* load default matrixes */
+                v= ff_mpeg4_default_non_intra_matrix[i];
+                s->inter_matrix[j]= v;
+                s->chroma_inter_matrix[j]= v;
+            }
+
+            /* load custom intra matrix */
+            if(get_bits1(gb)){
+                int last=0;
                 for(i=0; i<64; i++){
-                    int j= s->idct_permutation[i];
-                    v= ff_mpeg4_default_intra_matrix[i];
+                    v= get_bits(gb, 8);
+                    if(v==0) break;
+                    
+                    last= v;
+                    j= s->idct_permutation[ ff_zigzag_direct[i] ];
                     s->intra_matrix[j]= v;
                     s->chroma_intra_matrix[j]= v;
-                    
-                    v= ff_mpeg4_default_non_intra_matrix[i];
+                }
+
+                /* replicate last value */
+                for(; i<64; i++){
+                    j= s->idct_permutation[ ff_zigzag_direct[i] ];
+                    s->intra_matrix[j]= v;
+                    s->chroma_intra_matrix[j]= v;
+                }
+            }
+
+            /* load custom non intra matrix */
+            if(get_bits1(gb)){
+                int last=0;
+                for(i=0; i<64; i++){
+                    v= get_bits(gb, 8);
+                    if(v==0) break;
+
+                    last= v;
+                    j= s->idct_permutation[ ff_zigzag_direct[i] ];
                     s->inter_matrix[j]= v;
                     s->chroma_inter_matrix[j]= v;
                 }
 
-                /* load custom intra matrix */
-                if(get_bits1(&s->gb)){
-                    int last=0;
-                    for(i=0; i<64; i++){
-                        v= get_bits(&s->gb, 8);
-                        if(v==0) break;
-                        
-                        last= v;
-                        j= s->idct_permutation[ ff_zigzag_direct[i] ];
-                        s->intra_matrix[j]= v;
-                        s->chroma_intra_matrix[j]= v;
-                    }
-
-                    /* replicate last value */
-                    for(; i<64; i++){
-                        j= s->idct_permutation[ ff_zigzag_direct[i] ];
-                        s->intra_matrix[j]= v;
-                        s->chroma_intra_matrix[j]= v;
-                    }
-                }
-
-                /* load custom non intra matrix */
-                if(get_bits1(&s->gb)){
-                    int last=0;
-                    for(i=0; i<64; i++){
-                        v= get_bits(&s->gb, 8);
-                        if(v==0) break;
-
-                        last= v;
-                        j= s->idct_permutation[ ff_zigzag_direct[i] ];
-                        s->inter_matrix[j]= v;
-                        s->chroma_inter_matrix[j]= v;
-                    }
-
-                    /* replicate last value */
-                    for(; i<64; i++){
-                        j= s->idct_permutation[ ff_zigzag_direct[i] ];
-                        s->inter_matrix[j]= last;
-                        s->chroma_inter_matrix[j]= last;
-                    }
-                }
-
-                // FIXME a bunch of grayscale shape things
-            }
-
-            if(vo_ver_id != 1)
-                 s->quarter_sample= get_bits1(&s->gb);
-            else s->quarter_sample=0;
-
-            if(!get_bits1(&s->gb)) printf("Complexity estimation not supported\n");
-
-            s->resync_marker= !get_bits1(&s->gb); /* resync_marker_disabled */
-
-            s->data_partitioning= get_bits1(&s->gb);
-            if(s->data_partitioning){
-                s->rvlc= get_bits1(&s->gb);
-                if(s->rvlc){
-                    printf("reversible vlc not supported\n");
+                /* replicate last value */
+                for(; i<64; i++){
+                    j= s->idct_permutation[ ff_zigzag_direct[i] ];
+                    s->inter_matrix[j]= last;
+                    s->chroma_inter_matrix[j]= last;
                 }
             }
+
+            // FIXME a bunch of grayscale shape things
+        }
+
+        if(vo_ver_id != 1)
+             s->quarter_sample= get_bits1(gb);
+        else s->quarter_sample=0;
+
+        if(!get_bits1(gb)) printf("Complexity estimation not supported\n");
+
+        s->resync_marker= !get_bits1(gb); /* resync_marker_disabled */
+
+        s->data_partitioning= get_bits1(gb);
+        if(s->data_partitioning){
+            s->rvlc= get_bits1(gb);
+            if(s->rvlc){
+                printf("reversible vlc not supported\n");
+            }
+        }
+        
+        if(vo_ver_id != 1) {
+            s->new_pred= get_bits1(gb);
+            if(s->new_pred){
+                printf("new pred not supported\n");
+                skip_bits(gb, 2); /* requested upstream message type */
+                skip_bits1(gb); /* newpred segment type */
+            }
+            s->reduced_res_vop= get_bits1(gb);
+            if(s->reduced_res_vop) printf("reduced resolution VOP not supported\n");
+        }
+        else{
+            s->new_pred=0;
+            s->reduced_res_vop= 0;
+        }
+
+        s->scalability= get_bits1(gb);
+
+        if (s->scalability) {
+            GetBitContext bak= *gb;
+            int dummy= s->hierachy_type= get_bits1(gb);
+            int ref_layer_id= get_bits(gb, 4);
+            int ref_layer_sampling_dir= get_bits1(gb);
+            int h_sampling_factor_n= get_bits(gb, 5);
+            int h_sampling_factor_m= get_bits(gb, 5);
+            int v_sampling_factor_n= get_bits(gb, 5);
+            int v_sampling_factor_m= get_bits(gb, 5);
+            s->enhancement_type= get_bits1(gb);
             
-            if(vo_ver_id != 1) {
-                s->new_pred= get_bits1(&s->gb);
-                if(s->new_pred){
-                    printf("new pred not supported\n");
-                    skip_bits(&s->gb, 2); /* requested upstream message type */
-                    skip_bits1(&s->gb); /* newpred segment type */
-                }
-                s->reduced_res_vop= get_bits1(&s->gb);
-                if(s->reduced_res_vop) printf("reduced resolution VOP not supported\n");
-            }
-            else{
-                s->new_pred=0;
-                s->reduced_res_vop= 0;
-            }
-
-            s->scalability= get_bits1(&s->gb);
-
-            if (s->scalability) {
-                GetBitContext bak= s->gb;
-                int dummy= s->hierachy_type= get_bits1(&s->gb);
-                int ref_layer_id= get_bits(&s->gb, 4);
-                int ref_layer_sampling_dir= get_bits1(&s->gb);
-                int h_sampling_factor_n= get_bits(&s->gb, 5);
-                int h_sampling_factor_m= get_bits(&s->gb, 5);
-                int v_sampling_factor_n= get_bits(&s->gb, 5);
-                int v_sampling_factor_m= get_bits(&s->gb, 5);
-                s->enhancement_type= get_bits1(&s->gb);
-                
-                if(   h_sampling_factor_n==0 || h_sampling_factor_m==0 
-                   || v_sampling_factor_n==0 || v_sampling_factor_m==0){
-                   
-//                    fprintf(stderr, "illegal scalability header (VERY broken encoder), trying to workaround\n");
-                    s->scalability=0;
-                   
-                    s->gb= bak;
-                    goto redo;
-                }
-                
-                // bin shape stuff FIXME
+            if(   h_sampling_factor_n==0 || h_sampling_factor_m==0 
+               || v_sampling_factor_n==0 || v_sampling_factor_m==0){
+               
+//                fprintf(stderr, "illegal scalability header (VERY broken encoder), trying to workaround\n");
+                s->scalability=0;
+               
+                *gb= bak;
+            }else
                 printf("scalability not supported\n");
-            }
+            
+            // bin shape stuff FIXME
         }
-//printf("end Data %X %d\n", show_bits(&s->gb, 32), get_bits_count(&s->gb)&0x7);
-        goto redo;
-    } else if (startcode == 0x1b2) { //userdata
-        char buf[256];
-        int i;
-        int e;
-        int ver, build, ver2, ver3;
-
-//printf("user Data %X\n", show_bits(&s->gb, 32));
-        buf[0]= show_bits(&s->gb, 8);
-        for(i=1; i<256; i++){
-            buf[i]= show_bits(&s->gb, 16)&0xFF;
-            if(buf[i]==0) break;
-            skip_bits(&s->gb, 8);
-        }
-        buf[255]=0;
-        e=sscanf(buf, "DivX%dBuild%d", &ver, &build);
-        if(e!=2)
-            e=sscanf(buf, "DivX%db%d", &ver, &build);
-        if(e==2){
-            s->divx_version= ver;
-            s->divx_build= build;
-            if(s->picture_number==0){
-                printf("This file was encoded with DivX%d Build%d\n", ver, build);
-                if(ver==500 && build==413){
-                    printf("WARNING: this version of DivX is not MPEG4 compatible, trying to workaround these bugs...\n");
-                }
-            }
-        }
-        e=sscanf(buf, "FFmpeg%d.%d.%db%d", &ver, &ver2, &ver3, &build);
-        if(e!=4)
-            e=sscanf(buf, "FFmpeg v%d.%d.%d / libavcodec build: %d", &ver, &ver2, &ver3, &build); 
-        if(e!=4){
-            if(strcmp(buf, "ffmpeg")==0){
-                s->ffmpeg_version= 0x000406;
-                s->lavc_build= 4600;
-            }
-        }
-        if(e==4){
-            s->ffmpeg_version= ver*256*256 + ver2*256 + ver3;
-            s->lavc_build= build;
-            if(s->picture_number==0)
-                printf("This file was encoded with libavcodec build %d\n", build);
-        }
-//printf("User Data: %s\n", buf);
-        goto redo;
-    } else if (startcode != 0x1b6) { //VOP
-        goto redo;
     }
-    
-    s->pict_type = get_bits(&s->gb, 2) + I_TYPE;	/* pict type: I = 0 , P = 1 */
-//if(s->pict_type!=I_TYPE) return FRAME_SKIPED;
+    return 0;
+}
+
+static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
+    char buf[256];
+    int i;
+    int e;
+    int ver, build, ver2, ver3;
+
+    buf[0]= show_bits(gb, 8);
+    for(i=1; i<256; i++){
+        buf[i]= show_bits(gb, 16)&0xFF;
+        if(buf[i]==0) break;
+        skip_bits(gb, 8);
+    }
+    buf[255]=0;
+    e=sscanf(buf, "DivX%dBuild%d", &ver, &build);
+    if(e!=2)
+        e=sscanf(buf, "DivX%db%d", &ver, &build);
+    if(e==2){
+        s->divx_version= ver;
+        s->divx_build= build;
+        if(s->picture_number==0){
+            printf("This file was encoded with DivX%d Build%d\n", ver, build);
+            if(ver==500 && build==413){
+                printf("WARNING: this version of DivX is not MPEG4 compatible, trying to workaround these bugs...\n");
+            }
+        }
+    }
+    e=sscanf(buf, "FFmpeg%d.%d.%db%d", &ver, &ver2, &ver3, &build);
+    if(e!=4)
+        e=sscanf(buf, "FFmpeg v%d.%d.%d / libavcodec build: %d", &ver, &ver2, &ver3, &build); 
+    if(e!=4){
+        if(strcmp(buf, "ffmpeg")==0){
+            s->ffmpeg_version= 0x000406;
+            s->lavc_build= 4600;
+        }
+    }
+    if(e==4){
+        s->ffmpeg_version= ver*256*256 + ver2*256 + ver3;
+        s->lavc_build= build;
+        if(s->picture_number==0)
+            printf("This file was encoded with libavcodec build %d\n", build);
+    }
+//printf("User Data: %s\n", buf);
+    return 0;
+}
+
+static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
+    int time_incr, time_increment;
+
+    s->pict_type = get_bits(gb, 2) + I_TYPE;	/* pict type: I = 0 , P = 1 */
     if(s->pict_type==B_TYPE && s->low_delay && s->vol_control_parameters==0){
         printf("low_delay flag set, but shouldnt, clearing it\n");
         s->low_delay=0;
@@ -4371,11 +4341,11 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 //        fprintf(stderr, "time_increment_resolution is illegal\n");
     }
     time_incr=0;
-    while (get_bits1(&s->gb) != 0) 
+    while (get_bits1(gb) != 0) 
         time_incr++;
 
-    check_marker(&s->gb, "before time_increment");
-    time_increment= get_bits(&s->gb, s->time_increment_bits);
+    check_marker(gb, "before time_increment");
+    time_increment= get_bits(gb, s->time_increment_bits);
 //printf(" type:%d modulo_time_base:%d increment:%d\n", s->pict_type, time_incr, time_increment);
     if(s->pict_type!=B_TYPE){
         s->last_time_base= s->time_base;
@@ -4409,22 +4379,24 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
     
     s->avctx->pts= s->time*1000LL*1000LL / s->time_increment_resolution;
     
-    if(check_marker(&s->gb, "before vop_coded")==0 && s->picture_number==0){
+    if(check_marker(gb, "before vop_coded")==0 && s->picture_number==0){
         printf("hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
         for(s->time_increment_bits++ ;s->time_increment_bits<16; s->time_increment_bits++){
-            if(get_bits1(&s->gb)) break;
+            if(get_bits1(gb)) break;
         }
         printf("my guess is %d bits ;)\n",s->time_increment_bits);
     }
     /* vop coded */
-    if (get_bits1(&s->gb) != 1)
-        goto redo;
+    if (get_bits1(gb) != 1){
+        printf("vop not coded\n");
+        return FRAME_SKIPED;
+    }
 //printf("time %d %d %d || %Ld %Ld %Ld\n", s->time_increment_bits, s->time_increment_resolution, s->time_base,
 //s->time, s->last_non_b_time, s->last_non_b_time - s->pp_time);  
     if (s->shape != BIN_ONLY_SHAPE && ( s->pict_type == P_TYPE
                           || (s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE))) {
         /* rounding type for motion estimation */
-	s->no_rounding = get_bits1(&s->gb);
+	s->no_rounding = get_bits1(gb);
     } else {
 	s->no_rounding = 0;
     }
@@ -4434,29 +4406,29 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
          if (s->vol_sprite_usage != 1 || s->pict_type != I_TYPE) {
              int width, height, hor_spat_ref, ver_spat_ref;
  
-             width = get_bits(&s->gb, 13);
-             skip_bits1(&s->gb);   /* marker */
-             height = get_bits(&s->gb, 13);
-             skip_bits1(&s->gb);   /* marker */
-             hor_spat_ref = get_bits(&s->gb, 13); /* hor_spat_ref */
-             skip_bits1(&s->gb);   /* marker */
-             ver_spat_ref = get_bits(&s->gb, 13); /* ver_spat_ref */
+             width = get_bits(gb, 13);
+             skip_bits1(gb);   /* marker */
+             height = get_bits(gb, 13);
+             skip_bits1(gb);   /* marker */
+             hor_spat_ref = get_bits(gb, 13); /* hor_spat_ref */
+             skip_bits1(gb);   /* marker */
+             ver_spat_ref = get_bits(gb, 13); /* ver_spat_ref */
          }
-         skip_bits1(&s->gb); /* change_CR_disable */
+         skip_bits1(gb); /* change_CR_disable */
  
-         if (get_bits1(&s->gb) != 0) {
-             skip_bits(&s->gb, 8); /* constant_alpha_value */
+         if (get_bits1(gb) != 0) {
+             skip_bits(gb, 8); /* constant_alpha_value */
          }
      }
 //FIXME complexity estimation stuff
      
      if (s->shape != BIN_ONLY_SHAPE) {
          int t;
-         t=get_bits(&s->gb, 3); /* intra dc VLC threshold */
+         t=get_bits(gb, 3); /* intra dc VLC threshold */
 //printf("threshold %d\n", t);
          if(!s->progressive_sequence){
-             s->top_field_first= get_bits1(&s->gb);
-             s->alternate_scan= get_bits1(&s->gb);
+             s->top_field_first= get_bits1(gb);
+             s->alternate_scan= get_bits1(gb);
          }else
              s->alternate_scan= 0;
      }
@@ -4482,14 +4454,14 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
      }
 
      if (s->shape != BIN_ONLY_SHAPE) {
-         s->qscale = get_bits(&s->gb, s->quant_precision);
+         s->qscale = get_bits(gb, s->quant_precision);
          if(s->qscale==0){
              printf("Error, header damaged or not MPEG4 header (qscale=0)\n");
              return -1; // makes no sense to continue, as there is nothing left from the image then
          }
   
          if (s->pict_type != I_TYPE) {
-             s->f_code = get_bits(&s->gb, 3);	/* fcode_for */
+             s->f_code = get_bits(gb, 3);	/* fcode_for */
              if(s->f_code==0){
                  printf("Error, header damaged or not MPEG4 header (f_code=0)\n");
                  return -1; // makes no sense to continue, as the MV decoding will break very quickly
@@ -4498,28 +4470,28 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
              s->f_code=1;
      
          if (s->pict_type == B_TYPE) {
-             s->b_code = get_bits(&s->gb, 3);
+             s->b_code = get_bits(gb, 3);
          }else
              s->b_code=1;
 #if 0
 printf("qp:%d fc:%d bc:%d type:%s size:%d pro:%d alt:%d top:%d qpel:%d part:%d resync:%d\n", 
     s->qscale, s->f_code, s->b_code, 
     s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
-    s->gb.size,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
+    gb->size,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
     s->quarter_sample, s->data_partitioning, s->resync_marker); 
 #endif
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {
-                 skip_bits1(&s->gb); // vop shape coding type
+                 skip_bits1(gb); // vop shape coding type
              }
          }else{
              if(s->enhancement_type){
-                 int load_backward_shape= get_bits1(&s->gb);
+                 int load_backward_shape= get_bits1(gb);
                  if(load_backward_shape){
                      printf("load backward shape isnt supported\n");
                  }
              }
-             skip_bits(&s->gb, 2); //ref_select_code
+             skip_bits(gb, 2); //ref_select_code
          }
      }
      /* detect buggy encoders which dont set the low_delay flag (divx4/xvid/opendivx)*/
@@ -4539,6 +4511,53 @@ printf("qp:%d fc:%d bc:%d type:%s size:%d pro:%d alt:%d top:%d qpel:%d part:%d r
          s->v_edge_pos= s->height;
      }
      return 0;
+}
+
+/**
+ * decode mpeg4 headers
+ * @return <0 if no VOP found (or a damaged one)
+ *         FRAME_SKIPPED if a not coded VOP is found
+ *         0 if a VOP is found
+ */
+int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
+{
+    int startcode, v;
+
+    /* search next start code */
+    align_get_bits(gb);
+    startcode = 0xff;
+    for(;;) {
+        v = get_bits(gb, 8);
+        startcode = ((startcode << 8) | v) & 0xffffffff;
+        
+        if(get_bits_count(gb) >= gb->size*8){
+            if(gb->size==1 && s->divx_version){
+                printf("frame skip %d\n", gb->size);
+                return FRAME_SKIPED; //divx bug
+            }else
+                return -1; //end of stream
+        }
+
+        if((startcode&0xFFFFFF00) != 0x100)
+            continue; //no startcode
+        
+        switch(startcode){
+        case 0x120:
+            decode_vol_header(s, gb);
+            break;
+        case 0x1b2:
+            decode_user_data(s, gb);
+            break;
+        case 0x1b6:
+            return decode_vop_header(s, gb);
+        default:
+//            printf("startcode %X found\n", startcode);
+            break;
+        }
+
+        align_get_bits(gb);
+        startcode = 0xff;
+    }
 }
 
 /* don't understand why they choose a different header ! */

@@ -624,7 +624,9 @@ void h263_encode_init(MpegEncContext *s);
 void h263_decode_init_vlc(MpegEncContext *s);
 int h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_gob_header(MpegEncContext *s);
-int mpeg4_decode_picture_header(MpegEncContext * s);
+int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb);
+
+
 int intel_h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64]);

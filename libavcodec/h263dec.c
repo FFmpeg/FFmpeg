@@ -40,8 +40,6 @@ static inline long long rdtsc()
 }
 #endif
 
-const UINT16 ff_mpeg4_resync_prefix[8];
-
 static int h263_decode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
@@ -313,7 +311,14 @@ uint64_t time= rdtsc();
     if (s->h263_msmpeg4) {
         ret = msmpeg4_decode_picture_header(s);
     } else if (s->h263_pred) {
-        ret = mpeg4_decode_picture_header(s);
+        if(s->avctx->extradata_size && s->picture_number==0){
+            GetBitContext gb;
+            
+            init_get_bits(&gb, s->avctx->extradata, s->avctx->extradata_size);
+            ret = ff_mpeg4_decode_picture_header(s, &gb);
+        }
+        ret = ff_mpeg4_decode_picture_header(s, &s->gb);
+
         s->has_b_frames= !s->low_delay;
     } else if (s->h263_intel) {
         ret = intel_h263_decode_picture_header(s);
