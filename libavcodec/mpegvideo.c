@@ -1738,9 +1738,13 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                         int sx=mb_x*16 + 8;
                         int sy=mb_y*16 + 4 + 8*i;
                         int xy= mb_x*2 + (mb_y*2 + i)*s->b8_stride;
-                        int mx=(pict->motion_val[direction][xy][0]>>shift) + sx;
-                        int my=(pict->motion_val[direction][xy][1]>>shift) + sy;
-                        draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                        int mx=(pict->motion_val[direction][xy][0]>>shift);
+                        int my=(pict->motion_val[direction][xy][1]>>shift);
+                        
+                        if(IS_INTERLACED(pict->mb_type[mb_index]))
+                            my*=2;
+                        
+                        draw_arrow(ptr, sx, sy, mx+sx, my+sy, s->width, s->height, s->linesize, 100);
                       }
                     }else{
                       int sx= mb_x*16 + 8;
