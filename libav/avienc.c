@@ -58,9 +58,9 @@ CodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263, MKTAG('U', '2', '6', '3') },
     { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
-    { CODEC_ID_OPENDIVX, MKTAG('D', 'I', 'V', 'X') },
-    { CODEC_ID_OPENDIVX, MKTAG('d', 'i', 'v', 'x') },
-    { CODEC_ID_OPENDIVX, MKTAG(0x04, 0, 0, 0) }, /* some broken avi use this */
+    { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') },
+    { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x') },
+    { CODEC_ID_MPEG4, MKTAG(0x04, 0, 0, 0) }, /* some broken avi use this */
     { CODEC_ID_MSMPEG4, MKTAG('D', 'I', 'V', '3') }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4, MKTAG('M', 'P', '4', '3') }, 
     { 0, 0 },

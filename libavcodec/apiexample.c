@@ -292,7 +292,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     /* put default values */
     memset(c, 0, sizeof(*c));
 
-    /* for some codecs, such as msmpeg4 and opendivx, width and height
+    /* for some codecs, such as msmpeg4 and mpeg4, width and height
        MUST be initialized there because these info are not available
        in the bitstream */
 
@@ -320,9 +320,9 @@ void video_decode_example(const char *outfilename, const char *filename)
            and this is the only method to use them because you cannot
            know the compressed data size before analysing it. 
 
-           BUT some other codecs (msmpeg4, opendivx) are inherently
-           frame based, so you must call them with all the data for
-           one frame exactly. You must also initialize 'width' and
+           BUT some other codecs (msmpeg4, mpeg4) are inherently frame
+           based, so you must call them with all the data for one
+           frame exactly. You must also initialize 'width' and
            'height' before initializing them. */
 
         /* NOTE2: some codecs allow the raw parameters (frame size,

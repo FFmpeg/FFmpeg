@@ -283,7 +283,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_H263;
         s->h263_rv10 = 1;
         break;
-    case CODEC_ID_OPENDIVX:
+    case CODEC_ID_MPEG4:
         s->out_format = FMT_H263;
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
@@ -1341,10 +1341,10 @@ AVCodec mjpeg_encoder = {
     MPV_encode_end,
 };
 
-AVCodec opendivx_encoder = {
-    "opendivx",
+AVCodec mpeg4_encoder = {
+    "mpeg4",
     CODEC_TYPE_VIDEO,
-    CODEC_ID_OPENDIVX,
+    CODEC_ID_MPEG4,
     sizeof(MpegEncContext),
     MPV_encode_init,
     MPV_encode_picture,

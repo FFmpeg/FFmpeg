@@ -31,6 +31,7 @@ enum OutputFormat {
 #define MPEG_BUF_SIZE (16 * 1024)
 
 typedef struct MpegEncContext {
+    struct AVCodecContext *avctx;
     /* the following parameters must be initialized before encoding */
     int width, height; /* picture size. must be a multiple of 16 */
     int gop_size;
@@ -40,7 +41,7 @@ typedef struct MpegEncContext {
     enum OutputFormat out_format; /* output format */
     int h263_plus; /* h263 plus headers */
     int h263_rv10; /* use RV10 variation for H263 */
-    int h263_pred; /* use OpenDIVX (aka mpeg4) ac/dc predictions */
+    int h263_pred; /* use mpeg4/h263 ac/dc predictions */
     int h263_msmpeg4; /* generate MSMPEG4 compatible stream */
     int h263_intel; /* use I263 intel h263 header */
     int fixed_qscale; /* fixed qscale if non zero */
