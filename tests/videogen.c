@@ -76,7 +76,7 @@ static void rgb24_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
 /* cif format */
 #define DEFAULT_WIDTH   352
 #define DEFAULT_HEIGHT  288
-#define DEFAULT_NB_PICT 125 /* 5 seconds */
+#define DEFAULT_NB_PICT 50 /* 2 seconds */
 
 void pgmyuv_save(const char *filename, int w, int h,
                  unsigned char *rgb_tab)
