@@ -20,8 +20,6 @@
 #include "asm.h"
 #include "../dsputil.h"
 
-void simple_idct_axp(DCTELEM *block);
-
 void put_pixels_axp_asm(uint8_t *block, const uint8_t *pixels,
 			int line_size, int h);
 void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,

@@ -25,8 +25,6 @@
 #include "dsputil.h"
 #include "simple_idct.h"
 
-//#define ARCH_ALPHA
-
 #if 0
 #define W1 2841 /* 2048*sqrt (2)*cos (1*pi/16) */
 #define W2 2676 /* 2048*sqrt (2)*cos (2*pi/16) */
@@ -49,10 +47,6 @@
 #define COL_SHIFT 20 // 6
 #endif
 
-#ifdef ARCH_ALPHA
-#define FAST_64BIT
-#endif
-
 #if defined(ARCH_POWERPC_405)
 
 /* signed 16x16 -> 32 multiply add accumulate */
@@ -72,180 +66,6 @@
 #define MUL16(rt, ra, rb) rt = (ra) * (rb)
 
 #endif
-
-#ifdef ARCH_ALPHA
-/* 0: all entries 0, 1: only first entry nonzero, 2: otherwise  */
-static inline int idctRowCondDC(int16_t *row)
-{
-	int_fast32_t a0, a1, a2, a3, b0, b1, b2, b3;
-	uint64_t *lrow = (uint64_t *) row;
-
-	if (lrow[1] == 0) {
-		if (lrow[0] == 0)
-			return 0;
-		if ((lrow[0] & ~0xffffULL) == 0) {
-			uint64_t v;
-#if 1			//is ok if |a0| < 1024 than theres an +-1 error (for the *W4 case for W4=16383 !!!)
-			a0 = row[0]<<3;
-#else
-			a0 = W4 * row[0];
-			a0 += 1 << (ROW_SHIFT - 1);
-			a0 >>= ROW_SHIFT;
-#endif
-			v = (uint16_t) a0;
-			v += v << 16;
-			v += v << 32;
-			lrow[0] = v;
-			lrow[1] = v;
-
-			return 1;
-		}
-	}
-
-        a0 = (W4 * row[0]) + (1 << (ROW_SHIFT - 1));
-	a1 = a0;
-	a2 = a0;
-	a3 = a0;
-
-	if (row[2]) {
-		a0 += W2 * row[2];
-		a1 += W6 * row[2];
-		a2 -= W6 * row[2];
-		a3 -= W2 * row[2];
-	}
-
-	if (row[4]) {
-		a0 += W4 * row[4];
-		a1 -= W4 * row[4];
-		a2 -= W4 * row[4];
-		a3 += W4 * row[4];
-	}
-
-	if (row[6]) {
-		a0 += W6 * row[6];
-		a1 -= W2 * row[6];
-		a2 += W2 * row[6];
-		a3 -= W6 * row[6];
-	}
-
-	if (row[1]) {
-		b0 = W1 * row[1];
-		b1 = W3 * row[1];
-		b2 = W5 * row[1];
-		b3 = W7 * row[1];
-	} else {
-		b0 = 0;
-		b1 = 0;
-		b2 = 0;
-		b3 = 0;
-	}
-
-	if (row[3]) {
-		b0 += W3 * row[3];
-		b1 -= W7 * row[3];
-		b2 -= W1 * row[3];
-		b3 -= W5 * row[3];
-	}
-
-	if (row[5]) {
-		b0 += W5 * row[5];
-		b1 -= W1 * row[5];
-		b2 += W7 * row[5];
-		b3 += W3 * row[5];
-	}
-
-	if (row[7]) {
-		b0 += W7 * row[7];
-		b1 -= W5 * row[7];
-		b2 += W3 * row[7];
-		b3 -= W1 * row[7];
-	}
-
-	row[0] = (a0 + b0) >> ROW_SHIFT;
-	row[1] = (a1 + b1) >> ROW_SHIFT;
-	row[2] = (a2 + b2) >> ROW_SHIFT;
-	row[3] = (a3 + b3) >> ROW_SHIFT;
-	row[4] = (a3 - b3) >> ROW_SHIFT;
-	row[5] = (a2 - b2) >> ROW_SHIFT;
-	row[6] = (a1 - b1) >> ROW_SHIFT;
-	row[7] = (a0 - b0) >> ROW_SHIFT;
-
-	return 2;
-}
-
-inline static void idctSparseCol2(int16_t *col)
-{
-        int a0, a1, a2, a3, b0, b1, b2, b3;
-
-        col[0] += (1 << (COL_SHIFT - 1)) / W4;
-
-        a0 = W4 * col[8 * 0];
-        a1 = W4 * col[8 * 0];
-        a2 = W4 * col[8 * 0];
-        a3 = W4 * col[8 * 0];
-
-        if (col[8 * 2]) {
-                a0 += W2 * col[8 * 2];
-                a1 += W6 * col[8 * 2];
-                a2 -= W6 * col[8 * 2];
-                a3 -= W2 * col[8 * 2];
-        }
-
-        if (col[8 * 4]) {
-                a0 += W4 * col[8 * 4];
-                a1 -= W4 * col[8 * 4];
-                a2 -= W4 * col[8 * 4];
-                a3 += W4 * col[8 * 4];
-        }
-
-        if (col[8 * 6]) {
-                a0 += W6 * col[8 * 6];
-                a1 -= W2 * col[8 * 6];
-                a2 += W2 * col[8 * 6];
-                a3 -= W6 * col[8 * 6];
-        }
-
-        if (col[8 * 1]) {
-                b0 = W1 * col[8 * 1];
-                b1 = W3 * col[8 * 1];
-                b2 = W5 * col[8 * 1];
-                b3 = W7 * col[8 * 1];
-        } else {
-                b0 = b1 = b2 = b3 = 0;
-        }
-
-        if (col[8 * 3]) {
-                b0 += W3 * col[8 * 3];
-                b1 -= W7 * col[8 * 3];
-                b2 -= W1 * col[8 * 3];
-                b3 -= W5 * col[8 * 3];
-        }
-
-        if (col[8 * 5]) {
-                b0 += W5 * col[8 * 5];
-                b1 -= W1 * col[8 * 5];
-                b2 += W7 * col[8 * 5];
-                b3 += W3 * col[8 * 5];
-        }
-
-        if (col[8 * 7]) {
-                b0 += W7 * col[8 * 7];
-                b1 -= W5 * col[8 * 7];
-                b2 += W3 * col[8 * 7];
-                b3 -= W1 * col[8 * 7];
-        }
-
-        col[8 * 0] = (a0 + b0) >> COL_SHIFT;
-        col[8 * 7] = (a0 - b0) >> COL_SHIFT;
-        col[8 * 1] = (a1 + b1) >> COL_SHIFT;
-        col[8 * 6] = (a1 - b1) >> COL_SHIFT;
-        col[8 * 2] = (a2 + b2) >> COL_SHIFT;
-        col[8 * 5] = (a2 - b2) >> COL_SHIFT;
-        col[8 * 3] = (a3 + b3) >> COL_SHIFT;
-        col[8 * 4] = (a3 - b3) >> COL_SHIFT;
-}
-
-#else  /* not ARCH_ALPHA */
 
 static inline void idctRowCondDC (int16_t * row)
 {
@@ -337,7 +157,6 @@ static inline void idctRowCondDC (int16_t * row)
 	row[3] = (a3 + b3) >> ROW_SHIFT;
 	row[4] = (a3 - b3) >> ROW_SHIFT;
 }
-#endif /* not ARCH_ALPHA */
 
 static inline void idctSparseColPut (UINT8 *dest, int line_size, 
                                      int16_t * col)
@@ -546,87 +365,6 @@ static inline void idctSparseCol (int16_t * col)
         col[56] = ((a0 - b0) >> COL_SHIFT);
 }
 
-
-#ifdef ARCH_ALPHA
-/* If all rows but the first one are zero after row transformation,
-   all rows will be identical after column transformation.  */
-static inline void idctCol2(int16_t *col)
-{
-	int i;
-	uint64_t l, r;
-	uint64_t *lcol = (uint64_t *) col;
-
-	for (i = 0; i < 8; ++i) {
-		int a0 = col[0] + (1 << (COL_SHIFT - 1)) / W4;
-
-		a0 *= W4;
-		col[0] = a0 >> COL_SHIFT;
-		++col;
-	}
-
-	l = lcol[0];
-	r = lcol[1];
-	lcol[ 2] = l; lcol[ 3] = r;
-	lcol[ 4] = l; lcol[ 5] = r;
-	lcol[ 6] = l; lcol[ 7] = r;
-	lcol[ 8] = l; lcol[ 9] = r;
-	lcol[10] = l; lcol[11] = r;
-	lcol[12] = l; lcol[13] = r;
-	lcol[14] = l; lcol[15] = r;
-}
-
-void simple_idct (short *block)
-{
-
-	int i;
-        int rowsZero = 1;       /* all rows except row 0 zero */
-        int rowsConstant = 1;	/* all rows consist of a constant value */
-
-	for (i = 0; i < 8; i++) {
-		int sparseness = idctRowCondDC(block + 8 * i);
-
-		if (i > 0 && sparseness > 0)
-                        rowsZero = 0;
-                if (sparseness == 2)
-                        rowsConstant = 0;
-	}
-
-        if (rowsZero) {
-                idctCol2(block);
-        } else if (rowsConstant) {
-		uint64_t *lblock = (uint64_t *) block;
-
-		idctSparseCol2(block);
-		for (i = 0; i < 8; i++) {
-			uint64_t v = (uint16_t) block[i * 8];
-
-			v += v << 16;
-			v += v << 32;
-			lblock[0] = v;
-			lblock[1] = v;
-			lblock += 2;
-		}
-	} else {
-		for (i = 0; i < 8; i++)
-			idctSparseCol2(block + i);
-	}
-}
-
-/* XXX: suppress this mess */
-void simple_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
-{
-    simple_idct(block);
-    put_pixels_clamped(block, dest, line_size);
-}
-
-void simple_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
-{
-    simple_idct(block);
-    add_pixels_clamped(block, dest, line_size);
-}
-
-#else
-
 void simple_idct_put(UINT8 *dest, int line_size, INT16 *block)
 {
     int i;
@@ -656,8 +394,6 @@ void simple_idct(INT16 *block)
     for(i=0; i<8; i++)
         idctSparseCol(block + i);
 }
-
-#endif
 
 /* 2x4x8 idct */
 
