@@ -30,24 +30,26 @@ static void dct_unquantize_h263_axp(MpegEncContext *s, DCTELEM *block,
     DCTELEM *orig_block = block;
     DCTELEM block0;
 
+    qadd = WORD_VEC((qscale - 1) | 1);
+    qmul = qscale << 1;
+    /* This mask kills spill from negative subwords to the next subword.  */ 
+    correction = WORD_VEC((qmul - 1) + 1); /* multiplication / addition */
+
     if (s->mb_intra) {
         if (!s->h263_aic) {
             if (n < 4) 
                 block0 = block[0] * s->y_dc_scale;
             else
                 block0 = block[0] * s->c_dc_scale;
-        }
-        n_coeffs = 64; // does not always use zigzag table 
+        } else {
+	    qadd = 0;
+	}
+        n_coeffs = 63; // does not always use zigzag table 
     } else {
         n_coeffs = s->intra_scantable.raster_end[s->block_last_index[n]];
     }
 
-    qmul = qscale << 1;
-    qadd = WORD_VEC((qscale - 1) | 1);
-    /* This mask kills spill from negative subwords to the next subword.  */ 
-    correction = WORD_VEC((qmul - 1) + 1); /* multiplication / addition */
-
-    for(i = 0; i < n_coeffs; block += 4, i += 4) {
+    for(i = 0; i <= n_coeffs; block += 4, i += 4) {
         uint64_t levels, negmask, zeros, add;
 
         levels = ldq(block);
@@ -91,6 +93,5 @@ static void dct_unquantize_h263_axp(MpegEncContext *s, DCTELEM *block,
 
 void MPV_common_init_axp(MpegEncContext *s)
 {
-    /* disabled for now, buggy */
-    //s->dct_unquantize_h263 = dct_unquantize_h263_axp;
+    s->dct_unquantize_h263 = dct_unquantize_h263_axp;
 }
