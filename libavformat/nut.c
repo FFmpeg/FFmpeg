@@ -86,16 +86,35 @@ static int64_t get_s(ByteIOContext *bc)
         return (v>>1);
 }
 
-static int get_b(ByteIOContext *bc)
+static int get_b(ByteIOContext *bc, char *data, int maxlen)
 {
-    int i, len, val;
+    int i, len;
     
     len = get_v(bc);
+    for (i = 0; i < len && i < maxlen; i++)
+	data[i] = get_byte(bc);
+    if (i < len)
+    {
+	len = i;
+	for (i = 0; i < len; i++)
+	    get_byte(bc);
+    }
+
+    return 0;
+}
+
+static int get_bi(ByteIOContext *bc)
+{
+   int i, len, val;
+    
+    len = get_v(bc);
+    if(len > 4) return -1;
+    
     val = 0;
     for (i = 0; i < len; i++) {
-        if (i < 4)
-            val |= get_byte(bc) << (i * 8);
+        val |= get_byte(bc) << (i * 8);
     }
+
     return val;
 }
 
@@ -337,8 +356,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
 	return 1;
 
     enc = &s->streams[stream_index]->codec;
-    if (enc->codec_type == CODEC_TYPE_VIDEO)
-	key_frame = enc->coded_frame->key_frame;
+    key_frame = enc->coded_frame->key_frame;
 
     if (key_frame)
 	put_be64(bc, KEYFRAME_STARTCODE);
@@ -397,7 +415,6 @@ static int nut_probe(AVProbeData *p)
     for (i = 0; i < p->buf_size; i++) {
         int c = p->buf[i];
         code = (code << 8) | c;
-        code &= 0xFFFFFFFFFFFFFFFFULL;
         if (code == MAIN_STARTCODE)
             return AVPROBE_SCORE_MAX;
     }
@@ -444,18 +461,17 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	if (!st)
 	    return AVERROR_NOMEM;
 	class = get_v(bc);
+	tmp = get_bi(bc);
 	switch(class)
 	{
 	    case 0:
 		st->codec.codec_type = CODEC_TYPE_VIDEO;
-		tmp = get_b(bc);
 		st->codec.codec_id = codec_get_bmp_id(tmp);
 		if (st->codec.codec_id == CODEC_ID_NONE)
 		    fprintf(stderr, "Unknown codec?!\n");
 		break;
 	    case 32:
 		st->codec.codec_type = CODEC_TYPE_AUDIO;
-		tmp = get_b(bc);
 		st->codec.codec_id = codec_get_wav_id(tmp);
 		if (st->codec.codec_id == CODEC_ID_NONE)
 		    fprintf(stderr, "Unknown codec?!\n");
@@ -465,9 +481,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		return -1;
 	}
 	s->bit_rate += get_v(bc);
-	tmp = get_v(bc); /* language code */
-	while(tmp--)
-	    get_byte(bc);
+	get_b(bc, NULL, 0); /* language code */
 	st->codec.frame_rate_base = get_v(bc);
 	st->codec.frame_rate = get_v(bc);
 	get_v(bc); /* FIXME: msb timestamp base */
@@ -483,13 +497,13 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    get_v(bc); /* aspected w */
 	    get_v(bc); /* aspected h */
 	    get_v(bc); /* csp type */
-	    get_le32(bc); /* checksum */
+	    get_be32(bc); /* checksum */
 	}
 	if (class == 32) /* AUDIO */
 	{
 	    st->codec.sample_rate = get_v(bc) * (double)(st->codec.frame_rate_base / st->codec.frame_rate);
 	    st->codec.channels = get_v(bc);
-	    get_le32(bc); /* checksum */
+	    get_be32(bc); /* checksum */
 	}
     }    
     
