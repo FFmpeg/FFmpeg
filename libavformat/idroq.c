@@ -174,8 +174,6 @@ static int roq_read_header(AVFormatContext *s,
             st->codec.bits_per_sample;
         st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
     }
-printf (" video is %d x %d, audio is %d channels\n",
-  roq->width, roq->height, roq->audio_channels);
 
     return 0;
 }
@@ -261,7 +259,8 @@ static int roq_read_packet(AVFormatContext *s,
                 roq->audio_frame_count += (chunk_size / roq->audio_channels);
             }
 
-            ret = get_buffer(pb, pkt->data, chunk_size);
+            ret = get_buffer(pb, pkt->data + RoQ_CHUNK_PREAMBLE_SIZE,
+                chunk_size);
             if (ret != chunk_size)
                 ret = -EIO;
 
