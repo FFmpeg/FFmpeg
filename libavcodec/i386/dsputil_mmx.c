@@ -1080,7 +1080,9 @@ static void clear_blocks_mmx(DCTELEM *blocks)
         );
 }
 
+#if 0
 static void just_return() { return; }
+#endif
 
 void dsputil_init_mmx(void)
 {
@@ -1170,7 +1172,7 @@ void dsputil_init_mmx(void)
             put_pixels_tab[2] = put_pixels_y2_3dnow;
             put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_3dnow;
             put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_3dnow;
-            
+
             avg_pixels_tab[0] = avg_pixels_3dnow;
             avg_pixels_tab[1] = avg_pixels_x2_3dnow;
             avg_pixels_tab[2] = avg_pixels_y2_3dnow;
