@@ -2374,13 +2374,8 @@ H264_MC(avg_, 16)
 #undef op2_put
 #endif
 
-static inline uint8_t clip1(int x){
-    if(x > 255) return 255;
-    if(x < 0)   return 0;
-    return x;
-}
-#define op_scale1(x)  block[x] = clip1( (block[x]*weight + offset) >> log2_denom )
-#define op_scale2(x)  dst[x] = clip( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1), 0, 255 )
+#define op_scale1(x)  block[x] = clip_uint8( (block[x]*weight + offset) >> log2_denom )
+#define op_scale2(x)  dst[x] = clip_uint8( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
 #define H264_WEIGHT(W,H) \
 static void weight_h264_pixels ## W ## x ## H ## _c(uint8_t *block, int stride, int log2_denom, int weight, int offset){ \
     int x, y; \
