@@ -1627,9 +1627,11 @@ static int sad8x8_c(void *s, uint8_t *a, uint8_t *b, int stride){
 
 /**
  * permutes an 8x8 block.
- * @param block the block :)
+ * @param block the block which will be permuted according to the given permutation vector
  * @param permutation the permutation vector
  * @param last the last non zero coefficient in scantable order, used to speed the permutation up
+ * @param scantable the used scantable, this is only used to speed the permutation up, the block is not 
+ *                  (inverse) permutated to scantable order!
  */
 void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scantable, int last)
 {
@@ -1652,6 +1654,9 @@ void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scant
     }
 }
 
+/**
+ * memset(blocks, 0, sizeof(DCTELEM)*6*64)
+ */
 static void clear_blocks_c(DCTELEM *blocks)
 {
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
