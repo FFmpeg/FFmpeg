@@ -1068,6 +1068,10 @@ static int dct_quantize_mmx(MpegEncContext *s,
     const int *qmat;
 
     av_fdct (block);
+    
+    /* we need this permutation so that we correct the IDCT
+       permutation. will be moved into DCT code */
+    block_permute(block);
 
     if (s->mb_intra) {
         if (n < 4)
