@@ -21,8 +21,6 @@
 #include "../dsputil.h"
 #include "../mpegvideo.h"
 
-extern UINT8 zigzag_end[64];
-
 static void dct_unquantize_h263_axp(MpegEncContext *s, DCTELEM *block,
                                     int n, int qscale)
 {
@@ -41,7 +39,7 @@ static void dct_unquantize_h263_axp(MpegEncContext *s, DCTELEM *block,
         }
         n_coeffs = 64; // does not always use zigzag table 
     } else {
-        n_coeffs = zigzag_end[s->block_last_index[n]];
+        n_coeffs = s->intra_scantable.raster_end[s->block_last_index[n]];
     }
 
     qmul = qscale << 1;
@@ -93,5 +91,6 @@ static void dct_unquantize_h263_axp(MpegEncContext *s, DCTELEM *block,
 
 void MPV_common_init_axp(MpegEncContext *s)
 {
-    s->dct_unquantize_h263 = dct_unquantize_h263_axp;
+    /* disabled for now, buggy */
+    //s->dct_unquantize_h263 = dct_unquantize_h263_axp;
 }
