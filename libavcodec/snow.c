@@ -2033,8 +2033,16 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                         //FIXME try to store a more naive run
                         v=1;
                     }else{
+                        int py= y>>1;
                         run--;
                         v=0;
+
+                        if(y && parent && py < b->parent->height){
+                            while(run && x+2<w && !src[x + 2 + (y-1)*stride] && !parent[((x+1)>>1) + py*2*stride]){
+                                x++;
+                                run--;
+                            }
+                        }
                     }
                 }
                 if(v){
@@ -2046,7 +2054,7 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                 }
             }
         }
-        if(level+1 == s->spatial_decomposition_count){
+        if(w > 200 /*level+1 == s->spatial_decomposition_count*/){
             STOP_TIMER("decode_subband")
         }
         
