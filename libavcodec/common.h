@@ -804,6 +804,7 @@ void print_stats(void);
 #endif
 
 /* misc math functions */
+extern const uint8_t ff_log2_tab[256];
 
 static inline int av_log2(unsigned int v)
 {
@@ -818,19 +819,25 @@ static inline int av_log2(unsigned int v)
         v >>= 8;
         n += 8;
     }
-    if (v & 0xf0) {
-        v >>= 4;
-        n += 4;
-    }
-    if (v & 0xc) {
-        v >>= 2;
-        n += 2;
-    }
-    if (v & 0x2) {
-        n++;
-    }
+    n += ff_log2_tab[v];
+
     return n;
 }
+
+static inline int av_log2_16bit(unsigned int v)
+{
+    int n;
+
+    n = 0;
+    if (v & 0xff00) {
+        v >>= 8;
+        n += 8;
+    }
+    n += ff_log2_tab[v];
+
+    return n;
+}
+
 
 /* median of 3 */
 static inline int mid_pred(int a, int b, int c)
@@ -861,7 +868,7 @@ static inline int clip(int a, int amin, int amax)
 }
 
 /* math */
-extern const UINT8 ff_sqrt_tab[128];
+extern const uint8_t ff_sqrt_tab[128];
 
 int ff_gcd(int a, int b);
 
