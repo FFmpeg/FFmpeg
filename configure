@@ -2,6 +2,68 @@
 #
 # ffmpeg configure script (c) 2000, 2001, 2002 Fabrice Bellard
 #
+
+if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
+cat << EOF
+
+Usage: configure [options]
+Options: [defaults in brackets after descriptions]
+
+EOF
+echo "Standard options:"
+echo "  --help                   print this message"
+echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
+echo "  --mandir=DIR             man documentation in DIR [PREFIX/man]"
+echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]"
+echo "  --enable-vorbis          enable vorbis support via libvorbisenc [default=no]"
+echo "  --enable-faad            enable faad support via libfaad [default=no]"
+echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
+echo "  --enable-faac            enable faac support via libfaac [default=no]"
+echo "  --enable-mingw32         enable mingw32 native/cross windows compile"
+echo "  --enable-a52             enable GPL'ed A52 support [default=no]"
+echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
+echo "  --enable-pp              enable GPL'ed post processing support [default=no]"
+echo "  --enable-shared-pp       use libpostproc.so [default=no]"
+echo "  --enable-shared          build shared libraries [default=no]"
+echo "  --enable-amr_nb          enable amr_nb float audio codec"
+echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
+echo "  --enable-sunmlib         use Sun medialib [default=no]"
+echo ""
+echo "Advanced options (experts only):"
+echo "  --source-path=PATH       path of source code [$source_path]"
+echo "  --cross-prefix=PREFIX    use PREFIX for compile tools [$cross_prefix]"
+echo "  --cc=CC                  use C compiler CC [$cc]"
+echo "  --make=MAKE              use specified make [$make]"
+echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
+echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
+echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
+echo "  --cpu=CPU                force cpu to CPU  [$cpu]"
+echo "  --tune=PROCESSOR         tune code for a particular CPU (may fails or misperforms on other CPUs)"
+echo "  --powerpc-perf-enable    enable performance report on PPC (requires enabling PMC)"
+echo "  --disable-mmx            disable mmx usage"
+echo "  --disable-altivec        disable AltiVec usage"
+echo "  --disable-audio-oss      disable OSS audio support [default=no]"
+echo "  --disable-audio-beos     disable BeOS audio support [default=no]"
+echo "  --disable-v4l            disable video4linux grabbing [default=no]"
+echo "  --disable-dv1394         disable DV1394 grabbing [default=no]"
+echo "  --disable-network        disable network support [default=no]"
+echo "  --disable-zlib           disable zlib [default=no]"
+echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
+echo "  --disable-vhook          disable video hooking support"
+echo "  --enable-gprof           enable profiling with gprof [$gprof]"
+echo "  --disable-debug          disable debugging symbols"
+echo "  --disable-opts           disable compiler optimizations"
+echo "  --disable-mpegaudio-hp   faster (but less accurate)"
+echo "                           mpegaudio decoding [default=no]"
+echo "  --disable-ffserver       disable ffserver build"
+echo "  --disable-ffplay         disable ffplay build"
+echo "  --disable-risky          disables patent encumbered codecs"
+echo "  --enable-small           optimize for size instead of speed"
+echo ""
+echo "NOTE: The object files are build at the place where configure is launched"
+exit 1
+fi
+
 # set temporary file name
 if test ! -z "$TMPDIR" ; then
     TMPDIR1="${TMPDIR}"
@@ -176,18 +238,6 @@ darwin="yes"
 strip="strip -x"
 LDFLAGS="-d"
 FFSLDFLAGS=-Wl,-bind_at_load
-gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
-case "$gcc_version" in
-*2.95*) 
-CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer"
-;;
-*3.3*) 
-CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic -force_cpusubtype_ALL -Wno-sign-compare"
-;;
-*) 
-CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic"
-;;
-esac
 ;;
 MINGW32*)
 # Note: the rest of the mingw32 config is done afterwards as mingw32
@@ -366,6 +416,26 @@ if test $mmx = "default"; then
     fi
 fi
 
+#Darwin CC versions
+if test $targetos = Darwin; then
+    if test -n "$($cc -v 2>&1 | grep xlc)"; then
+	CFLAGS="-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
+    else
+	gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
+	case "$gcc_version" in
+	    *2.95*) 
+		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer"
+		;;
+	    *3.3*)
+		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic -force_cpusubtype_ALL -Wno-sign-compare"
+		;;
+	    *)
+		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic"
+		;;
+	esac
+    fi
+fi
+
 # Can only do AltiVec on PowerPC
 if test $altivec = "default"; then
     if test $cpu = "powerpc"; then
@@ -434,10 +504,10 @@ if test $tune != "generic"; then
     esac
 fi
 
-# AltiVec flags: The FSF version of GCC differs from the Darwin version 
+# AltiVec flags: The FSF version of GCC differs from the Apple version 
 if test $cpu = "powerpc"; then
     if test $altivec = "yes"; then
-        if test "$darwin" = "yes"; then
+        if test -n "$($cc -v 2>&1 | grep version | grep Apple)"; then
             CFLAGS="$CFLAGS -faltivec"
         else
             CFLAGS="$CFLAGS -maltivec -mabi=altivec"
@@ -648,12 +718,12 @@ EOF
 
 ldl=-ldl
 
-if $cc -o $TMPE $TMPC -ldl 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC -ldl > /dev/null 2>&1 ; then
 dlfcn=yes
 dlopen=yes
 fi
 
-if $cc -o $TMPE $TMPC 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC > /dev/null 2>&1 ; then
 dlfcn=yes
 dlopen=yes
 ldl=""
@@ -663,11 +733,11 @@ cat > $TMPC << EOF
 int main( void ) { return (int) dlopen("foo", 0); }
 EOF
 
-if $cc -o $TMPE $TMPC -ldl 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC -ldl > /dev/null 2>&1  ; then
 dlopen=yes
 fi
 
-if $cc -o $TMPE $TMPC 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC > /dev/null 2>&1  ; then
 dlopen=yes
 ldl=""
 fi
@@ -686,7 +756,7 @@ int main( void ) { return (int) imlib_load_font("foo"); }
 EOF
 
 imlib2=no
-if $cc -o $TMPE $TMPC -lImlib2 2> /dev/null  ; then
+if $cc -o $TMPE $TMPC -lImlib2 > /dev/null 2>&1  ; then
 imlib2=yes
 fi
 
@@ -701,7 +771,7 @@ EOF
 freetype2=no
 if test "x$targetos" != "xBeOS" && test "$os2" != "yes"; then
   if test "`which freetype-config`" != ""; then
-    if $cc -o $TMPE $TMPC `freetype-config --cflags` `freetype-config --libs`  2> /dev/null ; then
+    if $cc -o $TMPE $TMPC `freetype-config --cflags` `freetype-config --libs`  > /dev/null 2>&1 ; then
       freetype2=yes
     fi
   fi
@@ -718,7 +788,7 @@ EOF
 
 sdl_too_old=no
 sdl=no
-if $cc -o $TMPE `sdl-config --cflags` $TMPC `sdl-config --libs`  2> /dev/null  ; then
+if $cc -o $TMPE `sdl-config --cflags` $TMPC `sdl-config --libs`  > /dev/null 2>&1  ; then
 _sdlversion=`sdl-config --version | sed 's/[^0-9]//g'`
 if test "$_sdlversion" -lt 121 ; then
 sdl_too_old=yes
@@ -726,6 +796,14 @@ else
 sdl=yes
 fi
 fi
+
+case "$($cc -v 2>&1 | grep version)" in
+    *gcc*)
+	CFLAGS="-Wall $CFLAGS"
+	;;
+    *)
+	;;
+esac
 
 if test "$sdl" = "no" ; then
    ffplay=no
@@ -741,7 +819,12 @@ if test "$optimize" = "small"; then
 fi
 
 if test "$optimize" = "yes"; then
+    if test -n "$($cc -v 2>&1 | grep xlc)"; then
+	CFLAGS="$CFLAGS -O5"
+	LDFLAGS="$LDFLAGS -O5"
+    else
 	CFLAGS="$CFLAGS -O3"
+    fi
 fi
 
 if test x"$bindir" = x""; then
@@ -750,67 +833,6 @@ fi
 
 if test x"$mandir" = x""; then
 mandir="${prefix}/man"
-fi
-
-if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
-cat << EOF
-
-Usage: configure [options]
-Options: [defaults in brackets after descriptions]
-
-EOF
-echo "Standard options:"
-echo "  --help                   print this message"
-echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
-echo "  --mandir=DIR             man documentation in DIR [PREFIX/man]"
-echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]"
-echo "  --enable-vorbis          enable vorbis support via libvorbisenc [default=no]"
-echo "  --enable-faad            enable faad support via libfaad [default=no]"
-echo "  --enable-faadbin         build faad support with runtime linking [default=no]"
-echo "  --enable-faac            enable faac support via libfaac [default=no]"
-echo "  --enable-mingw32         enable mingw32 native/cross windows compile"
-echo "  --enable-a52             enable GPL'ed A52 support [default=no]"
-echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
-echo "  --enable-pp              enable GPL'ed post processing support [default=no]"
-echo "  --enable-shared-pp       use libpostproc.so [default=no]"
-echo "  --enable-shared          build shared libraries [default=no]"
-echo "  --enable-amr_nb          enable amr_nb float audio codec"
-echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
-echo "  --enable-sunmlib         use Sun medialib [default=no]"
-echo ""
-echo "Advanced options (experts only):"
-echo "  --source-path=PATH       path of source code [$source_path]"
-echo "  --cross-prefix=PREFIX    use PREFIX for compile tools [$cross_prefix]"
-echo "  --cc=CC                  use C compiler CC [$cc]"
-echo "  --make=MAKE              use specified make [$make]"
-echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
-echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
-echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
-echo "  --cpu=CPU                force cpu to CPU  [$cpu]"
-echo "  --tune=PROCESSOR         tune code for a particular CPU (may fails or misperforms on other CPUs)"
-echo "  --powerpc-perf-enable    enable performance report on PPC (requires enabling PMC)"
-echo "  --disable-mmx            disable mmx usage"
-echo "  --disable-altivec        disable AltiVec usage"
-echo "  --disable-audio-oss      disable OSS audio support [default=no]"
-echo "  --disable-audio-beos     disable BeOS audio support [default=no]"
-echo "  --disable-v4l            disable video4linux grabbing [default=no]"
-echo "  --disable-dv1394         disable DV1394 grabbing [default=no]"
-echo "  --disable-network        disable network support [default=no]"
-echo "  --disable-zlib           disable zlib [default=no]"
-echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
-echo "  --disable-vhook          disable video hooking support"
-echo "  --enable-gprof           enable profiling with gprof [$gprof]"
-echo "  --disable-debug          disable debugging symbols"
-echo "  --disable-opts           disable compiler optimizations"
-echo "  --disable-mpegaudio-hp   faster (but less accurate)"
-echo "                           mpegaudio decoding [default=no]"
-echo "  --disable-ffserver       disable ffserver build"
-echo "  --disable-ffplay         disable ffplay build"
-echo "  --disable-risky          disables patent encumbered codecs"
-echo "  --enable-small           optimize for size instead of speed"
-echo ""
-echo "NOTE: The object files are build at the place where configure is launched"
-exit 1
 fi
 
 echo "Install prefix   $prefix"
