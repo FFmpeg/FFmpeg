@@ -1301,6 +1301,10 @@ fi
 
 echo "#define restrict $_restrict" >> $TMPH
 
+if test "$optimize" = "small"; then
+  echo "#define always_inline"  >> $TMPH
+fi
+
 # build tree in object directory if source path is different from current one
 if test "$source_path_used" = "yes" ; then
     DIRS="libavformat libavcodec libavcodec/alpha libavcodec/armv4l libavcodec/i386 \
