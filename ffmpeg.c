@@ -20,6 +20,8 @@
 #include "common.h"
 #include "avformat.h"
 #include "framehook.h"
+/* usleep() */
+#include "os_support.h"
 
 #ifndef CONFIG_WIN32
 #include <unistd.h>
@@ -33,7 +35,6 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <stdlib.h>
-#define usleep(t) _sleep2((t)/1000)
 #endif
 #include <time.h>
 #include <ctype.h>
