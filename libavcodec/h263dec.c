@@ -465,6 +465,9 @@ retry:
         if(s->avctx->fourcc == ff_get_fourcc("XVID") && s->xvid_build==0)
             s->padding_bug_score= 256*256*256*64;
         
+        if(s->xvid_build && s->xvid_build<=3)
+            s->padding_bug_score= 256*256*256*64;
+        
         if(s->xvid_build && s->xvid_build<=1)
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
 
