@@ -254,7 +254,7 @@ static char *video_standard = "ntsc";
 
 static char *audio_grab_format = "audio_device";
 static char *audio_device = NULL;
-static int audio_volume = 100; //
+static int audio_volume = 256;
 
 static int using_stdin = 0;
 static int using_vhook = 0;
@@ -1212,12 +1212,11 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
             // preprocess audio (volume)
             if (ist->st->codec.codec_type == CODEC_TYPE_AUDIO) {
-                if (audio_volume != 100) {
+                if (audio_volume != 256) {
                     short *volp;
-                    int v;
                     volp = samples;
                     for(i=0;i<(data_size / sizeof(short));i++) {
-                        v = (*volp) * audio_volume / 100;
+                        int v = ((*volp) * audio_volume + 128) >> 8;
                         if (v < -32768) v = -32768;
                         if (v >  32767) v = 32767;
                         *volp++ = v;
@@ -4091,7 +4090,7 @@ const OptionDef options[] = {
     { "an", OPT_BOOL | OPT_AUDIO, {(void*)&audio_disable}, "disable audio" },
     { "acodec", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_tag}, "force audio tag/fourcc", "fourcc/tag" },
-    { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (100=normal)" , "volume" }, //
+    { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
 
     /* grab options */
     { "vd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_device}, "set video grab device", "device" },
