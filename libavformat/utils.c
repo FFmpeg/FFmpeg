@@ -915,6 +915,9 @@ int av_add_index_entry(AVStream *st,
                 memmove(entries + index + 1, entries + index, sizeof(AVIndexEntry)*(st->nb_index_entries - index));
             }
             st->nb_index_entries++;
+        }else{
+            if(ie->pos == pos && distance < ie->min_distance) //dont reduce the distance
+                distance= ie->min_distance;
         }
     }else{
         index= st->nb_index_entries++;
