@@ -208,7 +208,8 @@ static int wma_decode_init(AVCodecContext * avctx)
     int i, flags1, flags2;
     float *window;
     uint8_t *extradata;
-    float bps1, high_freq, bps;
+    float bps1, high_freq;
+    volatile float bps;
     int sample_rate1;
     int coef_vlc_table;
     
