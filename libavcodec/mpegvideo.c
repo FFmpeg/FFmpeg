@@ -3702,7 +3702,7 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
             if(s->first_field  && !(s->avctx->slice_flags&SLICE_FLAG_ALLOW_FIELD)) return;
         }
 
-        h= FFMIN(h, s->height - y);
+        h= FFMIN(h, (s->height>>s->avctx->lowres) - y);
 
         if(s->pict_type==B_TYPE || s->low_delay || (s->avctx->slice_flags&SLICE_FLAG_CODED_ORDER)) 
             src= (AVFrame*)s->current_picture_ptr;
