@@ -3,14 +3,39 @@
 #include "rgb2rgb.h"
 #include "mmx.h"
 
-/* TODO: MMX optimization */
-
 void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
   uint8_t *dest = dst;
   uint8_t *s = src;
   uint8_t *end;
+#ifdef HAVE_MMX
+  const uint64_t mask32 = 0x00FFFFFF00FFFFFFULL;
+  uint8_t *mm_end;
+#endif
   end = s + src_size;
+#ifdef HAVE_MMX
+  mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+  __asm __volatile("movq %0, %%mm7"::"m"(mask32):"memory");
+  while(s < mm_end)
+  {
+    __asm __volatile(
+	"movd	%1, %%mm0\n\t"
+	"movd	3%1, %%mm1\n\t"
+	"movd	6%1, %%mm2\n\t"
+	"movd	9%1, %%mm3\n\t"
+	"punpckldq %%mm1, %%mm0\n\t"
+	"punpckldq %%mm3, %%mm2\n\t"
+	"pand	%%mm7, %%mm0\n\t"
+	"pand	%%mm7, %%mm2\n\t"
+	"movq	%%mm0, %0\n\t"
+	"movq	%%mm2, 8%0"
+	:"=m"(*dest)
+	:"m"(*s)
+	:"memory");
+    dest += 16;
+    s += 12;
+  }
+#endif
   while(s < end)
   {
     *dest++ = *s++;
@@ -20,6 +45,7 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
   }
 }
 
+/* TODO: MMX optimization */
 void rgb32to24(uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
   uint8_t *dest = dst;
