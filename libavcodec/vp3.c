@@ -222,6 +222,7 @@ typedef struct Vp3DecodeContext {
     AVFrame current_frame;
     int keyframe;
     DSPContext dsp;
+    int flipped_image;
 
     int quality_index;
     int last_quality_index;
@@ -2365,7 +2366,8 @@ static void render_fragments(Vp3DecodeContext *s,
         output_plane = s->current_frame.data[0];
         last_plane = s->last_frame.data[0];
         golden_plane = s->golden_frame.data[0];
-        stride = -s->current_frame.linesize[0];
+        stride = s->current_frame.linesize[0];
+	if (!s->flipped_image) stride = -stride;
         upper_motion_limit = 7 * s->current_frame.linesize[0];
         lower_motion_limit = height * s->current_frame.linesize[0] + width - 8;
     } else if (plane == 1) {
@@ -2373,7 +2375,8 @@ static void render_fragments(Vp3DecodeContext *s,
         output_plane = s->current_frame.data[1];
         last_plane = s->last_frame.data[1];
         golden_plane = s->golden_frame.data[1];
-        stride = -s->current_frame.linesize[1];
+        stride = s->current_frame.linesize[1];
+	if (!s->flipped_image) stride = -stride;
         upper_motion_limit = 7 * s->current_frame.linesize[1];
         lower_motion_limit = height * s->current_frame.linesize[1] + width - 8;
     } else {
@@ -2381,7 +2384,8 @@ static void render_fragments(Vp3DecodeContext *s,
         output_plane = s->current_frame.data[2];
         last_plane = s->last_frame.data[2];
         golden_plane = s->golden_frame.data[2];
-        stride = -s->current_frame.linesize[2];
+        stride = s->current_frame.linesize[2];
+	if (!s->flipped_image) stride = -stride;
         upper_motion_limit = 7 * s->current_frame.linesize[2];
         lower_motion_limit = height * s->current_frame.linesize[2] + width - 8;
     }
@@ -2436,6 +2440,7 @@ av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, 
                     if(src_x<0 || src_y<0 || src_x + 9 >= width || src_y + 9 >= height){
                         uint8_t *temp= s->edge_emu_buffer;
                         if(stride<0) temp -= 9*stride;
+			else temp += 9*stride;
 
                         ff_emulated_edge_mc(temp, motion_source, stride, 9, 9, src_x, src_y, width, height);
                         motion_source= temp;
@@ -2536,6 +2541,53 @@ static void vp3_calculate_pixel_addresses(Vp3DecodeContext *s)
     /* V plane */
     i = s->v_fragment_start;
     for (y = s->fragment_height / 2; y > 0; y--) {
+        for (x = 0; x < s->fragment_width / 2; x++) {
+            s->all_fragments[i++].first_pixel = 
+                s->golden_frame.linesize[2] * y * FRAGMENT_PIXELS -
+                    s->golden_frame.linesize[2] +
+                    x * FRAGMENT_PIXELS;
+            debug_init("  fragment %d, first pixel @ %d\n", 
+                i-1, s->all_fragments[i-1].first_pixel);
+        }
+    }
+}
+
+/* FIXME: this should be merged with the above! */
+static void theora_calculate_pixel_addresses(Vp3DecodeContext *s) 
+{
+
+    int i, x, y;
+
+    /* figure out the first pixel addresses for each of the fragments */
+    /* Y plane */
+    i = 0;
+    for (y = 1; y <= s->fragment_height; y++) {
+        for (x = 0; x < s->fragment_width; x++) {
+            s->all_fragments[i++].first_pixel = 
+                s->golden_frame.linesize[0] * y * FRAGMENT_PIXELS -
+                    s->golden_frame.linesize[0] +
+                    x * FRAGMENT_PIXELS;
+            debug_init("  fragment %d, first pixel @ %d\n", 
+                i-1, s->all_fragments[i-1].first_pixel);
+        }
+    }
+
+    /* U plane */
+    i = s->u_fragment_start;
+    for (y = 1; y <= s->fragment_height / 2; y++) {
+        for (x = 0; x < s->fragment_width / 2; x++) {
+            s->all_fragments[i++].first_pixel = 
+                s->golden_frame.linesize[1] * y * FRAGMENT_PIXELS -
+                    s->golden_frame.linesize[1] +
+                    x * FRAGMENT_PIXELS;
+            debug_init("  fragment %d, first pixel @ %d\n", 
+                i-1, s->all_fragments[i-1].first_pixel);
+        }
+    }
+
+    /* V plane */
+    i = s->v_fragment_start;
+    for (y = 1; y <= s->fragment_height / 2; y++) {
         for (x = 0; x < s->fragment_width / 2; x++) {
             s->all_fragments[i++].first_pixel = 
                 s->golden_frame.linesize[2] * y * FRAGMENT_PIXELS -
@@ -2709,16 +2761,23 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     }
 
     s->keyframe = !get_bits1(&gb);
-    if (s->theora && s->keyframe)
+    if (s->theora)
     {
-	if (get_bits1(&gb))
-	    av_log(s->avctx, AV_LOG_ERROR, "Theora: warning, unsupported keyframe coding type?!\n");
-	skip_bits(&gb, 2); /* reserved? */
+	s->last_quality_index = s->quality_index;
+	s->quality_index = get_bits(&gb, 6);
+	if ( s->keyframe)
+	{
+	    if (get_bits1(&gb))
+		av_log(s->avctx, AV_LOG_ERROR, "Theora: warning, unsupported keyframe coding type?!\n");
+	    skip_bits(&gb, 2); /* reserved? */
+	}
     }
     else
+    {
 	skip_bits(&gb, 1);
-    s->last_quality_index = s->quality_index;
-    s->quality_index = get_bits(&gb, 6);
+	s->last_quality_index = s->quality_index;
+	s->quality_index = get_bits(&gb, 6);
+    }
 
     debug_vp3(" VP3 %sframe #%d: Q index = %d\n",
 	s->keyframe?"key":"", counter, s->quality_index);
@@ -2752,8 +2811,12 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
         /* time to figure out pixel addresses? */
         if (!s->pixel_addresses_inited)
-            vp3_calculate_pixel_addresses(s);
-
+	{
+	    if (!s->flipped_image)
+        	vp3_calculate_pixel_addresses(s);
+	    else
+		theora_calculate_pixel_addresses(s);
+	}
     } else {
         /* allocate a new current frame */
         s->current_frame.reference = 3;
@@ -2850,16 +2913,25 @@ static int vp3_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
-/* current version is 3.2.0 */
-
 static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
+    int major, minor, micro;
 
-    skip_bits(&gb, 8); /* version major */
-    skip_bits(&gb, 8); /* version minor */
-    skip_bits(&gb, 8); /* version micro */
-    
+    major = get_bits(&gb, 8); /* version major */
+    minor = get_bits(&gb, 8); /* version minor */
+    micro = get_bits(&gb, 8); /* version micro */
+    av_log(avctx, AV_LOG_INFO, "Theora bitstream version %d.%d.%d\n",
+	major, minor, micro);
+
+    /* 3.3.0 aka alpha3 has the same frame orientation as original vp3 */
+    /* but previous versions have the image flipped relative to vp3 */
+    if ((major <= 3) && (minor < 3))
+    {
+	s->flipped_image = 1;
+        av_log(avctx, AV_LOG_DEBUG, "Old (<alpha3) Theora bitstream, flipped image\n");
+    }
+
     s->width = get_bits(&gb, 16) << 4;
     s->height = get_bits(&gb, 16) << 4;
     
