@@ -66,6 +66,7 @@ bigendian="no"
 vhook="no"
 mpegaudio_hp="yes"
 SHFLAGS=-shared
+netserver="no"
 
 # OS specific
 targetos=`uname -s`
@@ -83,8 +84,8 @@ v4l="no"
 if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
 extralibs="-lbind -lsocket"
 else
-echo "Not sure building for net_server will succeed... good luck."
-extralibs="-lsocket"
+netserver="yes"
+extralibs="-lnet"
 fi ;;
 BSD/OS)
 v4l="no"
@@ -577,6 +578,11 @@ if test "$_memalign" = "yes" ; then
   echo "#define HAVE_MEMALIGN 1" >> $TMPH
 else
   echo "#undef  HAVE_MEMALIGN" >> $TMPH
+fi
+
+if test "$netserver" = "yes" ; then
+  echo "#define CONFIG_BEOS_NETSERVER 1" >> $TMPH
+  echo "CONFIG_BEOS_NETSERVER=yes" >> config.mak
 fi
 
 if test "$simpleidct" = "yes" ; then
