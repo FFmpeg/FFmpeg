@@ -59,7 +59,6 @@
 #define MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
 #endif
 
-
 #define YSCALEYUV2YV12X(x) \
 			"xorl %%eax, %%eax		\n\t"\
 			"pxor %%mm3, %%mm3		\n\t"\
@@ -239,11 +238,11 @@
 		"movd %6, %%mm6			\n\t" /*yalpha1*/\
 		"punpcklwd %%mm6, %%mm6		\n\t"\
 		"punpcklwd %%mm6, %%mm6		\n\t"\
-		"movq %%mm6, "MANGLE(asm_yalpha1)"\n\t"\
+		"movq %%mm6, 3968(%2)		\n\t"\
 		"movd %7, %%mm5			\n\t" /*uvalpha1*/\
 		"punpcklwd %%mm5, %%mm5		\n\t"\
 		"punpcklwd %%mm5, %%mm5		\n\t"\
-		"movq %%mm5, "MANGLE(asm_uvalpha1)"\n\t"\
+		"movq %%mm5, 3976(%2)		\n\t"\
 		"xorl %%eax, %%eax		\n\t"\
 		".balign 16			\n\t"\
 		"1:				\n\t"\
@@ -253,7 +252,7 @@
 		"movq 4096(%3, %%eax), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
 		"psubw %%mm3, %%mm2		\n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
 		"psubw %%mm4, %%mm5		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
-		"movq "MANGLE(asm_uvalpha1)", %%mm0\n\t"\
+		"movq 3976(%2), %%mm0		\n\t"\
 		"pmulhw %%mm0, %%mm2		\n\t" /* (uvbuf0[eax] - uvbuf1[eax])uvalpha1>>16*/\
 		"pmulhw %%mm0, %%mm5		\n\t" /* (uvbuf0[eax+2048] - uvbuf1[eax+2048])uvalpha1>>16*/\
 		"psraw $4, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
@@ -273,8 +272,8 @@
 		"movq 8(%1, %%eax, 2), %%mm7	\n\t" /*buf1[eax]*/\
 		"psubw %%mm1, %%mm0		\n\t" /* buf0[eax] - buf1[eax]*/\
 		"psubw %%mm7, %%mm6		\n\t" /* buf0[eax] - buf1[eax]*/\
-		"pmulhw "MANGLE(asm_yalpha1)", %%mm0\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
-		"pmulhw "MANGLE(asm_yalpha1)", %%mm6\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw 3968(%2), %%mm0		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
+		"pmulhw 3968(%2), %%mm6		\n\t" /* (buf0[eax] - buf1[eax])yalpha1>>16*/\
 		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"psraw $4, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"paddw %%mm0, %%mm1		\n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\

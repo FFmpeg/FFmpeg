@@ -203,10 +203,6 @@ static const uint64_t bgr2VCoeff  __attribute__((aligned(8))) = 0x00003831D0E6F6
 static const uint64_t bgr2YOffset __attribute__((aligned(8))) = 0x1010101010101010ULL;
 static const uint64_t bgr2UVOffset __attribute__((aligned(8)))= 0x8080808080808080ULL;
 static const uint64_t w1111       __attribute__((aligned(8))) = 0x0001000100010001ULL;
-
-// FIXME remove
-static uint64_t __attribute__((aligned(8))) asm_yalpha1;
-static uint64_t __attribute__((aligned(8))) asm_uvalpha1;
 #endif
 
 // clipping helper table for C implementations:
@@ -260,7 +256,7 @@ static inline void orderYUV(int format, uint8_t * sortedP[], int sortedStride[],
 void in_asm_used_var_warning_killer()
 {
  volatile int i= yCoeff+vrCoeff+ubCoeff+vgCoeff+ugCoeff+bF8+bFC+w400+w80+w10+
- bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+asm_yalpha1+ asm_uvalpha1+
+ bm00001111+bm00000111+bm11111000+b16Mask+g16Mask+r16Mask+b15Mask+g15Mask+r15Mask+
  M24A+M24B+M24C+w02 + b5Dither+g5Dither+r5Dither+g6Dither+dither4[0]+dither8[0]+bm01010101;
  if(i) i=0;
 }
