@@ -2110,11 +2110,72 @@ int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcS
 	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 }
 
+SwsFilter *sws_getDefaultFilter(float lumaGBlur, float chromaGBlur, 
+				float lumaSharpen, float chromaSharpen,
+				float chromaHShift, float chromaVShift,
+				int verbose)
+{
+	SwsFilter *filter= malloc(sizeof(SwsFilter));
+
+	if(lumaGBlur!=0.0){
+		filter->lumH= sws_getGaussianVec(lumaGBlur, 3.0);
+		filter->lumV= sws_getGaussianVec(lumaGBlur, 3.0);
+	}else{
+		filter->lumH= sws_getIdentityVec();
+		filter->lumV= sws_getIdentityVec();
+	}
+
+	if(chromaGBlur!=0.0){
+		filter->chrH= sws_getGaussianVec(chromaGBlur, 3.0);
+		filter->chrV= sws_getGaussianVec(chromaGBlur, 3.0);
+	}else{
+		filter->chrH= sws_getIdentityVec();
+		filter->chrV= sws_getIdentityVec();
+	}
+
+	if(chromaSharpen!=0.0){
+		SwsVector *g= sws_getConstVec(-1.0, 3);
+		SwsVector *id= sws_getConstVec(10.0/chromaSharpen, 1);
+		g->coeff[1]=2.0;
+		sws_addVec(id, g);
+		sws_convVec(filter->chrH, id);
+		sws_convVec(filter->chrV, id);
+		sws_freeVec(g);
+		sws_freeVec(id);
+	}
+
+	if(lumaSharpen!=0.0){
+		SwsVector *g= sws_getConstVec(-1.0, 3);
+		SwsVector *id= sws_getConstVec(10.0/lumaSharpen, 1);
+		g->coeff[1]=2.0;
+		sws_addVec(id, g);
+		sws_convVec(filter->lumH, id);
+		sws_convVec(filter->lumV, id);
+		sws_freeVec(g);
+		sws_freeVec(id);
+	}
+
+	if(chromaHShift != 0.0)
+		sws_shiftVec(filter->chrH, (int)(chromaHShift+0.5));
+
+	if(chromaVShift != 0.0)
+		sws_shiftVec(filter->chrV, (int)(chromaVShift+0.5));
+
+	sws_normalizeVec(filter->chrH, 1.0);
+	sws_normalizeVec(filter->chrV, 1.0);
+	sws_normalizeVec(filter->lumH, 1.0);
+	sws_normalizeVec(filter->lumV, 1.0);
+
+	if(verbose) sws_printVec(filter->chrH);
+	if(verbose) sws_printVec(filter->lumH);
+
+        return filter;
+}
+
 /**
  * returns a normalized gaussian curve used to filter stuff
  * quality=3 is high quality, lowwer is lowwer quality
  */
-
 SwsVector *sws_getGaussianVec(double variance, double quality){
 	const int length= (int)(variance*quality + 0.5) | 1;
 	int i;
@@ -2334,6 +2395,17 @@ void sws_freeVec(SwsVector *a){
 	a->length=0;
 	free(a);
 }
+
+void sws_freeFilter(SwsFilter *filter){
+	if(!filter) return;
+
+	if(filter->lumH) sws_freeVec(filter->lumH);
+	if(filter->lumV) sws_freeVec(filter->lumV);
+	if(filter->chrH) sws_freeVec(filter->chrH);
+	if(filter->chrV) sws_freeVec(filter->chrV);
+	free(filter);
+}
+
 
 void sws_freeContext(SwsContext *c){
 	int i;
