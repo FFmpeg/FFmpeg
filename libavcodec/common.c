@@ -121,7 +121,7 @@ void flush_put_bits(PutBitContext *s)
     s->bit_buf=0;
 }
 
-/* for jpeg : espace 0xff with 0x00 after it */
+/* for jpeg : escape 0xff with 0x00 after it */
 void jput_bits(PutBitContext *s, int n, unsigned int value)
 {
     unsigned int bit_buf, b;
@@ -401,7 +401,27 @@ static int build_table(VLC *vlc, int table_nb_bits,
 }
 
 
-/* wrap and size allow to handle most types of storage.  */
+/* Build VLC decoding tables suitable for use with get_vlc().
+
+   'nb_bits' set thee decoding table size (2^nb_bits) entries. The
+   bigger it is, the faster is the decoding. But it should not be too
+   big to save memory and L1 cache. '9' is a good compromise.
+   
+   'nb_codes' : number of vlcs codes
+
+   'bits' : table which gives the size (in bits) of each vlc code.
+
+   'codes' : table which gives the bit pattern of of each vlc code.
+
+   'xxx_wrap' : give the number of bytes between each entry of the
+   'bits' or 'codes' tables.
+
+   'xxx_size' : gives the number of bytes of each entry of the 'bits'
+   or 'codes' tables.
+
+   'wrap' and 'size' allows to use any memory configuration and types
+   (byte/word/long) to store the 'bits' and 'codes' tables.  
+*/
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
              const void *codes, int codes_wrap, int codes_size)

@@ -111,6 +111,7 @@ extern AVCodec msmpeg4_decoder;
 extern AVCodec mpeg_decoder;
 extern AVCodec h263i_decoder;
 extern AVCodec rv10_decoder;
+extern AVCodec mjpeg_decoder;
 
 /* dummy raw codecs */
 extern AVCodec pcm_codec;
