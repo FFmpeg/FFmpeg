@@ -1283,7 +1283,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 
 		    while (src<buf_end)
 		    {
-			unsigned char x = *(src++);
+			UINT8 x = *(src++);
 			
 			*(dst++) = x;
 			if (x == 0xff)
@@ -1295,7 +1295,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 				break;
 			}
 		    }
-		    init_get_bits(&s->gb, s->buffer, s->buffer_size);
+		    init_get_bits(&s->gb, s->buffer, dst - s->buffer);
 		}
 		else
 		    init_get_bits(&s->gb, buf_ptr, buf_end - buf_ptr);
