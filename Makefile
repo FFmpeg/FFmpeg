@@ -111,11 +111,19 @@ ffplay.o: ffplay.c
 videohook: .libs
 	$(MAKE) -C vhook all
 
-install: all $(INSTALLVHOOK)
+install: all install-man $(INSTALLVHOOK)
 	$(MAKE) -C libavcodec install
 	$(MAKE) -C libavformat install
 	install -d $(prefix)/bin
 	install -c -s -m 755 $(PROG) $(prefix)/bin
+
+# install man from source dir if available
+install-man:
+	if [ -f $(SRC_PATH)/doc/ffmpeg.1 ] ; then \
+	    install -d $(mandir)/man1 ; \
+	    install -m 644 $(SRC_PATH)/doc/ffmpeg.1 $(SRC_PATH)/doc/ffplay.1 \
+                           $(SRC_PATH)/doc/ffserver.1 $(mandir)/man1 ; \
+	fi
 
 install-vhook: $(prefix)/lib/vhook
 	$(MAKE) -C vhook install INSTDIR=$(prefix)/lib/vhook
