@@ -533,7 +533,6 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, unsigned 
 
 static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 {
-	int num_pixels= src_size >> 2;
 #ifdef HAVE_MMX
 	asm volatile (
 		"xorl %%eax, %%eax		\n\t"
@@ -554,7 +553,7 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsign
 		"addl $2, %%eax			\n\t"
 		"cmpl %2, %%eax			\n\t"
 		" jb 1b				\n\t"
-		:: "r" (src), "r"(dst), "r" (num_pixels)
+		:: "r" (src), "r"(dst), "r" (src_size)
 		: "%eax"
 	);
 
@@ -562,6 +561,7 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsign
 	__asm __volatile(EMMS:::"memory");
 #else
 	int i;
+	int num_pixels= src_size >> 2;
 	for(i=0; i<num_pixels; i++)
 	{
 		dst[4*i + 0] = src[4*i + 2];
