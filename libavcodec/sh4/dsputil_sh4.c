@@ -105,10 +105,13 @@ extern void dsputil_init_align(DSPContext* c, AVCodecContext *avctx);
 
 void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
 {
+	const int idct_algo= avctx->idct_algo;
 	dsputil_init_align(c,avctx);
 
 	c->clear_blocks = clear_blocks_sh4;
-	c->idct_put = idct_put;
-	c->idct_add = idct_add;
-	c->idct_permutation_type= FF_NO_IDCT_PERM; //FF_SIMPLE_IDCT_PERM; //FF_LIBMPEG2_IDCT_PERM;
+	if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SH4){        
+		c->idct_put = idct_put;
+		c->idct_add = idct_add;
+		c->idct_permutation_type= FF_NO_IDCT_PERM; //FF_SIMPLE_IDCT_PERM; //FF_LIBMPEG2_IDCT_PERM;
+	}
 }
