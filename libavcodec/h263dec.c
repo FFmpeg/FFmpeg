@@ -213,7 +213,7 @@ static int decode_slice(MpegEncContext *s){
                         
                     if(++s->mb_x >= s->mb_width){
                         s->mb_x=0;
-                        ff_draw_horiz_band(s);
+                        ff_draw_horiz_band(s, s->mb_y*16, 16);
                         s->mb_y++;
                     }
                     return 0; 
@@ -230,7 +230,7 @@ static int decode_slice(MpegEncContext *s){
             }
         }
         
-        ff_draw_horiz_band(s);
+        ff_draw_horiz_band(s, s->mb_y*16, 16);
         
         s->mb_x= 0;
     }

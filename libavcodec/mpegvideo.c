@@ -2051,7 +2051,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         }else
             s->mb_skiped= 0;
 
-        if(s->pict_type==B_TYPE && s->avctx->draw_horiz_band){
+        if(s->pict_type==B_TYPE && s->avctx->draw_horiz_band && s->picture_structure==PICT_FRAME){ //FIXME precalc
             dest_y  = s->current_picture.data[0] + mb_x * 16;
             dest_cb = s->current_picture.data[1] + mb_x * 8;
             dest_cr = s->current_picture.data[2] + mb_x * 8;
@@ -2356,17 +2356,18 @@ static int pix_diff_vcmp16x8(uint8_t *s1, uint8_t*s2, int stride){ //FIXME move 
 
 #endif //CONFIG_ENCODERS
 
-void ff_draw_horiz_band(MpegEncContext *s){
+/**
+ *
+ * @param h is the normal height, this will be reduced automatically if needed for the last row
+ */
+void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
     if (    s->avctx->draw_horiz_band 
         && (s->last_picture.data[0] || s->low_delay) ) {
         uint8_t *src_ptr[3];
-        int y, h, offset;
-        y = s->mb_y * 16;
-        h = s->height - y;
-        if (h > 16)
-            h = 16;
+        int offset;
+        h= FFMIN(h, s->height - y);
 
-        if(s->pict_type==B_TYPE)
+        if(s->pict_type==B_TYPE && s->picture_structure == PICT_FRAME)
             offset = 0;
         else
             offset = y * s->linesize;
