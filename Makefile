@@ -1,9 +1,11 @@
 # Main ffmpeg Makefile
-# (c) 2000, 2001 Gerard Lantau
+# (c) 2000, 2001, 2002 Gerard Lantau
 #
 include config.mak
 
-CFLAGS= $(OPTFLAGS) -Wall -g -I./libavcodec -I./libav 
+VPATH=$(SRC_PATH)
+
+CFLAGS= $(OPTFLAGS) -Wall -g -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libav
 LDFLAGS= -g
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
@@ -63,6 +65,7 @@ depend:
 clean: 
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libav clean
+	$(MAKE) -C tests clean
 	rm -f *.o *~ .depend gmon.out TAGS $(PROG) 
 
 distclean: clean
@@ -71,6 +74,11 @@ distclean: clean
 
 TAGS:
 	etags *.[ch] libav/*.[ch] libavcodec/*.[ch]
+
+# regression tests
+
+test mpeg4 mpeg: ffmpeg$(EXE)
+	make -C tests $@
 
 ifneq ($(wildcard .depend),)
 include .depend
