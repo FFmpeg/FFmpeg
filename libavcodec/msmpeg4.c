@@ -592,7 +592,7 @@ int msmpeg4_decode_init_vlc(MpegEncContext *s)
     init_vlc(&mb_non_intra_vlc, 9, 128, 
              &table_mb_non_intra[0][1], 8, 4,
              &table_mb_non_intra[0][0], 8, 4);
-    init_vlc(&mb_intra_vlc, 9, 128, 
+    init_vlc(&mb_intra_vlc, 9, 64, 
              &table_mb_intra[0][1], 4, 2,
              &table_mb_intra[0][0], 4, 2);
     return 0;
