@@ -526,44 +526,43 @@ int use_old_pp=0;
 
 /* -pp Command line Help
 NOTE/FIXME: put this at an appropriate place (--help, html docs, man mplayer)?
-
--pp <filterName>[:<option>[:<option>...]][,[-]<filterName>[:<option>...]]...
-
-long form example:
--pp vdeblock:autoq,hdeblock:autoq,linblenddeint		-pp default,-vdeblock
-short form example:
--pp vb:a,hb:a,lb					-pp de,-vb
-more examples:
--pp tn:64:128:256
-
-Filters			Options
-short	long name	short	long option	Description
-*	*		a	autoq		cpu power dependant enabler
-			c	chrom		chrominance filtring enabled
-			y	nochrom		chrominance filtring disabled
-hb	hdeblock	(2 Threshold)		horizontal deblocking filter
-                         1. Threshold: default is 1, higher means stronger deblocking
-                         2. Threshold: default is 40, lower means stronger deblocking
-			the horizontal & vertical deblocking filters share these 
-			so u cant set different thresholds for h / v
-vb	vdeblock	(2 Threshold)		vertical deblocking filter
-hr	rkhdeblock
-vr	rkvdeblock
-h1	x1hdeblock				Experimental horizontal deblock filter 1
-v1	x1vdeblock				Experimental vertical deblock filter 1
-dr	dering					not implemented yet
-al	autolevels				automatic brightness / contrast fixer
-			f	fullyrange	stretch luminance range to (0..255)
-lb	linblenddeint				linear blend deinterlacer
-li	linipoldeint				linear interpolating deinterlacer
-ci	cubicipoldeint				cubic interpolating deinterlacer
-md	mediandeint				median deinterlacer
-de	default					hdeblock:a,vdeblock:a,dering:a,autolevels
-fa	fast					x1hdeblock:a,x1vdeblock:a,dering:a,autolevels
-tn	tmpnoise	(3 Thresholds)		Temporal Noise Reducer
-			1. <= 2. <= 3. Threshold, larger means stronger filtering
-fq	forceQuant	<quantizer>		Force quantizer (for reencoded lq stuff)
 */
+char *help=
+"-npp <filterName>[:<option>[:<option>...]][,[-]<filterName>[:<option>...]]...\n"
+"long form example:\n"
+"-npp vdeblock:autoq,hdeblock:autoq,linblenddeint	-npp default,-vdeblock\n"
+"short form example:\n"
+"-npp vb:a,hb:a,lb					-npp de,-vb\n"
+"more examples:\n"
+"-npp tn:64:128:256\n"
+"Filters			Options\n"
+"short	long name	short	long option	Description\n"
+"*	*		a	autoq		cpu power dependant enabler\n"
+"			c	chrom		chrominance filtring enabled\n"
+"			y	nochrom		chrominance filtring disabled\n"
+"hb	hdeblock	(2 Threshold)		horizontal deblocking filter\n"
+"                        1. Threshold: default=1, higher -> more deblocking\n"
+"                        2. Threshold: default=40, lower -> more deblocking\n"
+"			the h & v deblocking filters share these\n"
+"			so u cant set different thresholds for h / v\n"
+"vb	vdeblock	(2 Threshold)		vertical deblocking filter\n"
+"hr	rkhdeblock\n"
+"vr	rkvdeblock\n"
+"h1	x1hdeblock				Experimental h deblock filter 1\n"
+"v1	x1vdeblock				Experimental v deblock filter 1\n"
+"dr	dering					Deringing filter\n"
+"al	autolevels				automatic brightness / contrast\n"
+"			f	fullyrange	stretch luminance to (0..255)\n"
+"lb	linblenddeint				linear blend deinterlacer\n"
+"li	linipoldeint				linear interpolating deinterlace\n"
+"ci	cubicipoldeint				cubic interpolating deinterlacer\n"
+"md	mediandeint				median deinterlacer\n"
+"de	default					hb:a,vb:a,dr:a,al\n"
+"fa	fast					h1:a,v1:a,dr:a,al\n"
+"tn	tmpnoise	(3 Thresholds)		Temporal Noise Reducer\n"
+"			1. <= 2. <= 3.		larger -> stronger filtering\n"
+"fq	forceQuant	<quantizer>		Force quantizer\n"
+;
 
 /**
  * returns a PPMode struct which will have a non 0 error variable if an error occured
@@ -581,6 +580,13 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 
 	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
+	if(!strcmp("help", name))
+	{
+		printf("%s", help);
+		ppMode.error++;
+		return ppMode;
+	}
+	
 	if(verbose) printf("%s\n", name);
 
 	for(;;){
