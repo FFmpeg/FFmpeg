@@ -220,7 +220,6 @@ AVCodec *avcodec_find(enum CodecID id)
 }
 
 const char *pix_fmt_str[] = {
-    "??",
     "yuv420p",
     "yuv422",
     "rgb24",
@@ -229,9 +228,10 @@ const char *pix_fmt_str[] = {
     "yuv444p",
     "rgba32",
     "bgra32",
-    "yuv410p"
+    "yuv410p",
+    "yuv411p",
 };
-    
+
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 {
     const char *codec_name;
