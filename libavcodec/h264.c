@@ -203,7 +203,7 @@ typedef struct H264Context{
     
     uint16_t *mb2b_xy; //FIXME are these 4 a good idea?
     uint16_t *mb2b8_xy;
-    int b_stride;
+    int b_stride; //FIXME use s->b4_stride
     int b8_stride;
 
     int halfpel_flag;
@@ -3035,8 +3035,8 @@ static int decode_slice_header(H264Context *h){
     s->mb_width= h->sps.mb_width;
     s->mb_height= h->sps.mb_height;
     
-    h->b_stride=  s->mb_width*4;
-    h->b8_stride= s->mb_width*2;
+    h->b_stride=  s->mb_width*4 + 1;
+    h->b8_stride= s->mb_width*2 + 1;
 
     s->resync_mb_x = s->mb_x = first_mb_in_slice % s->mb_width;
     s->resync_mb_y = s->mb_y = first_mb_in_slice / s->mb_width; //FIXME AFFW
