@@ -187,14 +187,25 @@ if test "$win32" = "yes" ; then
     network="no"
 fi
 
-# endianness : guess with cpu type. Should also use prefix
-if test "$cpu" = "powerpc"; then
-    bigendian="yes"
-fi
-
 cc="${cross_prefix}${cc}"
 ar="${cross_prefix}${ar}"
 strip="${cross_prefix}${strip}"
+
+# ---
+# big/little endian test
+cat > $TMPC << EOF
+#include <inttypes.h>
+int main(int argc, char ** argv){
+	volatile uint32_t i=0x01234567;
+	return (*((uint8_t*)(&i))) == 0x67;
+}
+EOF
+
+if $cc -o $TMPO $TMPC 2>/dev/null ; then
+$TMPO && bigendian="yes"
+else
+echo big/little test failed
+fi
 
 # ---
 # check availability of some header files
