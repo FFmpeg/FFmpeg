@@ -125,9 +125,9 @@ static inline int decode_block(ASV1Context *a, DCTELEM block[64]){
             }
 
             if(ccp&1) block[a->scantable.permutated[4*i+0]]= (get_level(&a->gb) * a->intra_matrix[4*i+0])>>4;
-            if(ccp&2) block[a->scantable.permutated[4*i+1]]= (get_level(&a->gb) * a->intra_matrix[4*i+1])>>4;;
-            if(ccp&4) block[a->scantable.permutated[4*i+2]]= (get_level(&a->gb) * a->intra_matrix[4*i+2])>>4;;
-            if(ccp&8) block[a->scantable.permutated[4*i+3]]= (get_level(&a->gb) * a->intra_matrix[4*i+3])>>4;;
+            if(ccp&2) block[a->scantable.permutated[4*i+1]]= (get_level(&a->gb) * a->intra_matrix[4*i+1])>>4;
+            if(ccp&4) block[a->scantable.permutated[4*i+2]]= (get_level(&a->gb) * a->intra_matrix[4*i+2])>>4;
+            if(ccp&8) block[a->scantable.permutated[4*i+3]]= (get_level(&a->gb) * a->intra_matrix[4*i+3])>>4;
         }
     }
 

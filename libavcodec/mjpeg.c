@@ -1599,7 +1599,7 @@ out:
 static int mjpeg_decode_com(MJpegDecodeContext *s)
 {
     /* XXX: verify len field validity */
-    unsigned int len = get_bits(&s->gb, 16);
+    int len = get_bits(&s->gb, 16);
     if (len >= 2 && len < 32768) {
 	/* XXX: any better upper bound */
 	uint8_t *cbuf = av_malloc(len - 1);

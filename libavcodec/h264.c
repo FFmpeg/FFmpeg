@@ -4009,8 +4009,8 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
     MpegEncContext * const s = &h->s;
     AVCodecContext * const avctx= s->avctx;
     int buf_index=0;
-    int i;
 #if 0
+    int i;
     for(i=0; i<32; i++){
         printf("%X ", buf[i]);
     }
