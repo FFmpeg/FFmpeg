@@ -1692,8 +1692,9 @@ static int av_encode(AVFormatContext **output_files,
     for(; received_sigterm == 0;) {
         int file_index, ist_index;
         AVPacket pkt;
-        double pts_min;
-        
+        double ipts_min= 1e100;
+        double opts_min= 1e100;
+
     redo:
         /* if 'q' pressed, exits */
         if (!using_stdin) {
@@ -1708,24 +1709,25 @@ static int av_encode(AVFormatContext **output_files,
         /* select the stream that we must read now by looking at the
            smallest output pts */
         file_index = -1;
-        pts_min = 1e100;
         for(i=0;i<nb_ostreams;i++) {
-            double pts;
+            double ipts, opts;
             ost = ost_table[i];
             os = output_files[ost->file_index];
             ist = ist_table[ost->source_index];
-            if (input_sync == 0) {
-                if(ost->st->codec.codec_type == CODEC_TYPE_VIDEO)
-                    pts = (double)ost->sync_opts * ost->st->codec.frame_rate_base / ost->st->codec.frame_rate;
-                else
-                    pts = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
-            } else {
-                pts = (double)ist->pts;
-            }
-            if (!file_table[ist->file_index].eof_reached && 
-                pts < pts_min) {
-                pts_min = pts;
-                file_index = ist->file_index;
+            if(ost->st->codec.codec_type == CODEC_TYPE_VIDEO)
+                opts = (double)ost->sync_opts * ost->st->codec.frame_rate_base / ost->st->codec.frame_rate;
+            else
+                opts = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
+            ipts = (double)ist->pts;
+            if (!file_table[ist->file_index].eof_reached){
+                if(ipts < ipts_min) {
+                    ipts_min = ipts;
+                    if(input_sync ) file_index = ist->file_index;
+                }
+                if(opts < opts_min) {
+                    opts_min = opts;
+                    if(!input_sync) file_index = ist->file_index;
+                }
             }
         }
         /* if none, if is finished */
@@ -1734,7 +1736,7 @@ static int av_encode(AVFormatContext **output_files,
         }
 
         /* finish if recording time exhausted */
-        if (recording_time > 0 && pts_min >= (recording_time / 1000000.0))
+        if (recording_time > 0 && opts_min >= (recording_time / 1000000.0))
             break;
 
         /* read a frame from it and output it in the fifo */
