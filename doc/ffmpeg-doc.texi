@@ -467,8 +467,10 @@ valid results, then crashes.
   decoding). See @file{libavcodec/apiexample.c} to see how to use it.
 
 @item libavformat is the library containing the file formats handling (mux and
-  demux code for several formats). (no example yet, the API is likely to
-  evolve).
+  demux code for several formats). See @file{ffplay.c} to use it in a
+player. See @file{output_example.c} to use it to generate audio or video
+streams.
+
 @end itemize
 
 @section Integrating libavcodec or libavformat in your program

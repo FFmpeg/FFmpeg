@@ -52,6 +52,10 @@ Use @file{-} as filename.
 
 @chapter Development
 
+@section Are there examples of use of the FFmpeg libraries libavcodec and libavformat ?
+
+Yes. Read the Developers Guide of the FFmpeg documentation.
+
 @section Can you support my C compiler XXX ?
 
 No. Only GCC is supported. GCC is ported on most systems available and I
