@@ -427,18 +427,19 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src++; /* if != 0  -> out-of-sync */
         }
 
-        for(m=3; src < (buf + buf_size);) {
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0], src[0] & 0x0F);
+        for(m=4; src < (buf + buf_size);) {
+	    *samples++ = adpcm_ima_expand_nibble(&c->status[0], src[0] & 0x0F);
             if (st)
                 *samples++ = adpcm_ima_expand_nibble(&c->status[1], src[4] & 0x0F);
             *samples++ = adpcm_ima_expand_nibble(&c->status[0], (src[0] >> 4) & 0x0F);
-            if (st)
+	    if (st) {
                 *samples++ = adpcm_ima_expand_nibble(&c->status[1], (src[4] >> 4) & 0x0F);
-            src++;
-            if (st && !m--) {
-                m=3;
-                src+=4;
-            }
+		if (!--m) {
+		    m=4;
+		    src+=4;
+		}
+	    }
+	    src++;
 	}
         break;
     case CODEC_ID_ADPCM_MS:
