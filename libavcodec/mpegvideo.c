@@ -239,6 +239,11 @@ int DCT_common_init(MpegEncContext *s)
     return 0;
 }
 
+static void copy_picture(Picture *dst, Picture *src){
+    *dst = *src;
+    dst->type= FF_BUFFER_TYPE_COPY;
+}
+
 /**
  * allocates a Picture
  * The pixels are allocated/set by calling get_buffer() if shared=0
@@ -1047,7 +1052,7 @@ alloc:
   //      s->current_picture_ptr->quality= s->new_picture_ptr->quality;
     s->current_picture_ptr->key_frame= s->pict_type == I_TYPE;
 
-    s->current_picture= *s->current_picture_ptr;
+    copy_picture(&s->current_picture, s->current_picture_ptr);
   
   if(s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3){
     if (s->pict_type != B_TYPE) {
@@ -1055,11 +1060,10 @@ alloc:
         s->next_picture_ptr= s->current_picture_ptr;
     }
     
-    if(s->last_picture_ptr) s->last_picture= *s->last_picture_ptr;
-    if(s->next_picture_ptr) s->next_picture= *s->next_picture_ptr;
-    if(s->new_picture_ptr ) s->new_picture = *s->new_picture_ptr;
+    if(s->last_picture_ptr) copy_picture(&s->last_picture, s->last_picture_ptr);
+    if(s->next_picture_ptr) copy_picture(&s->next_picture, s->next_picture_ptr);
     
-    if(s->pict_type != I_TYPE && s->last_picture_ptr==NULL){
+    if(s->pict_type != I_TYPE && (s->last_picture_ptr==NULL || s->last_picture_ptr->data[0]==NULL)){
         fprintf(stderr, "warning: first frame is no keyframe\n");
         assert(s->pict_type != B_TYPE); //these should have been dropped if we dont have a reference
         goto alloc;
@@ -1399,22 +1403,17 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
         }
         alloc_picture(s, (Picture*)pic, 1);
     }else{
+        int offset= 16;
         i= find_unused_picture(s, 0);
 
         pic= (AVFrame*)&s->picture[i];
         pic->reference= 3;
 
         alloc_picture(s, (Picture*)pic, 0);
-        for(i=0; i<4; i++){
-            /* the input will be 16 pixels to the right relative to the actual buffer start
-             * and the current_pic, so the buffer can be reused, yes its not beatifull 
-             */
-            pic->data[i]+= 16; 
-        }
 
-        if(   pic->data[0] == pic_arg->data[0] 
-           && pic->data[1] == pic_arg->data[1]
-           && pic->data[2] == pic_arg->data[2]){
+        if(   pic->data[0] + offset == pic_arg->data[0] 
+           && pic->data[1] + offset == pic_arg->data[1]
+           && pic->data[2] + offset == pic_arg->data[2]){
        // empty
         }else{
             int h_chroma_shift, v_chroma_shift;
@@ -1428,7 +1427,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
                 int w= s->width >>h_shift;
                 int h= s->height>>v_shift;
                 uint8_t *src= pic_arg->data[i];
-                uint8_t *dst= pic->data[i];
+                uint8_t *dst= pic->data[i] + offset;
             
                 if(src_stride==dst_stride)
                     memcpy(dst, src, src_stride*h);
@@ -1550,7 +1549,7 @@ static void select_input_picture(MpegEncContext *s){
     if(s->reordered_input_picture[0]){
         s->reordered_input_picture[0]->reference= s->reordered_input_picture[0]->pict_type!=B_TYPE ? 3 : 0;
 
-        s->new_picture= *s->reordered_input_picture[0];
+        copy_picture(&s->new_picture, s->reordered_input_picture[0]);
 
         if(s->reordered_input_picture[0]->type == FF_BUFFER_TYPE_SHARED){
             // input is a shared pix, so we cant modifiy it -> alloc a new one & ensure that the shared one is reuseable
@@ -1581,11 +1580,10 @@ static void select_input_picture(MpegEncContext *s){
             
             s->current_picture_ptr= s->reordered_input_picture[0];
             for(i=0; i<4; i++){
-                //reverse the +16 we did before storing the input
-                s->current_picture_ptr->data[i]-=16;
+                s->new_picture.data[i]+=16;
             }
         }
-        s->current_picture= *s->current_picture_ptr;
+        copy_picture(&s->current_picture, s->current_picture_ptr);
     
         s->picture_number= s->new_picture.display_picture_number;
 //printf("dpn:%d\n", s->picture_number);
