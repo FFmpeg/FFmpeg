@@ -661,15 +661,15 @@ static void fill_pad_region(AVPicture* img, int height, int width,
             optr = img->data[i] + (img->linesize[i] * (padtop >> shift)) +
                 (img->linesize[i] - (padright >> shift));
 
-            for (y = 0; y < ((height - (padtop + padbottom)) >> shift); y++) {
+            for (y = 0; y < ((height - (padtop + padbottom) - 1) >> shift); y++) {
                 memset(optr, color[i], (padleft + padright) >> shift);
                 optr += img->linesize[i];
             }
         }
       
-        if (padbottom) {
-            optr = img->data[i] + (img->linesize[i] * ((height - padbottom) >> shift));
-            memset(optr, color[i], ((img->linesize[i] * padbottom) >> shift));
+        if (padbottom || padright) {
+            optr = img->data[i] + (((img->linesize[i] * (height - padbottom)) - padright) >> shift);
+            memset(optr, color[i], (((img->linesize[i] * padbottom) + padright) >> shift));
         }
     }
 }
