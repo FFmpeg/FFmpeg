@@ -3086,24 +3086,24 @@ static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int sr
 	{
 #ifdef HAVE_MMX
 					asm volatile(
-						"leal (%2,%2), %%eax	\n\t"
-						"leal (%3,%3), %%ebx	\n\t"
+						"leal (%0,%2), %%eax	\n\t"
+						"leal (%1,%3), %%ebx	\n\t"
 						"movq packedYOffset, %%mm2	\n\t"
 						"movq packedYScale, %%mm3	\n\t"
 						"pxor %%mm4, %%mm4	\n\t"
 
-#define SCALED_CPY					\
-						"movq (%0), %%mm0	\n\t"\
-						"movq (%0), %%mm5	\n\t"\
+#define SCALED_CPY(src1, src2, dst1, dst2)					\
+						"movq " #src1 ", %%mm0	\n\t"\
+						"movq " #src1 ", %%mm5	\n\t"\
 						"punpcklbw %%mm4, %%mm0 \n\t"\
 						"punpckhbw %%mm4, %%mm5 \n\t"\
 						"psubw %%mm2, %%mm0	\n\t"\
 						"psubw %%mm2, %%mm5	\n\t"\
-						"movq (%0,%2), %%mm1	\n\t"\
+						"movq " #src2 ", %%mm1	\n\t"\
 						"psllw $6, %%mm0	\n\t"\
 						"psllw $6, %%mm5	\n\t"\
 						"pmulhw %%mm3, %%mm0	\n\t"\
-						"movq (%0,%2), %%mm6	\n\t"\
+						"movq " #src2 ", %%mm6	\n\t"\
 						"pmulhw %%mm3, %%mm5	\n\t"\
 						"punpcklbw %%mm4, %%mm1 \n\t"\
 						"punpckhbw %%mm4, %%mm6 \n\t"\
@@ -3113,23 +3113,22 @@ static inline void blockCopy(uint8_t dst[], int dstStride, uint8_t src[], int sr
 						"psllw $6, %%mm6	\n\t"\
 						"pmulhw %%mm3, %%mm1	\n\t"\
 						"pmulhw %%mm3, %%mm6	\n\t"\
-						"addl %%eax, %0		\n\t"\
 						"packuswb %%mm5, %%mm0	\n\t"\
 						"packuswb %%mm6, %%mm1	\n\t"\
-						"movq %%mm0, (%1)	\n\t"\
-						"movq %%mm1, (%1, %3)	\n\t"\
+						"movq %%mm0, " #dst1 "	\n\t"\
+						"movq %%mm1, " #dst2 "	\n\t"\
 
-SCALED_CPY
-						"addl %%ebx, %1		\n\t"
-SCALED_CPY
-						"addl %%ebx, %1		\n\t"
-SCALED_CPY
-						"addl %%ebx, %1		\n\t"
-SCALED_CPY
+SCALED_CPY((%0)       , (%0, %2)      , (%1)       , (%1, %3))
+SCALED_CPY((%0, %2, 2), (%%eax, %2, 2), (%1, %3, 2), (%%ebx, %3, 2))
+SCALED_CPY((%0, %2, 4), (%%eax, %2, 4), (%1, %3, 4), (%%ebx, %3, 4))
+						"leal (%%eax,%2,4), %%eax	\n\t"
+						"leal (%%ebx,%3,4), %%ebx	\n\t"
+SCALED_CPY((%%eax, %2), (%%eax, %2, 2), (%%ebx, %3), (%%ebx, %3, 2))
 
-						: "+r"(src),
-						"+r"(dst)
-						:"r" (srcStride),
+
+						: : "r"(src),
+						"r"(dst),
+						"r" (srcStride),
 						"r" (dstStride)
 						: "%eax", "%ebx"
 					);
@@ -3143,30 +3142,22 @@ SCALED_CPY
 	{
 #ifdef HAVE_MMX
 					asm volatile(
-						"pushl %0 \n\t"
-						"pushl %1 \n\t"
-						"leal (%2,%2), %%eax	\n\t"
-						"leal (%3,%3), %%ebx	\n\t"
+						"leal (%0,%2), %%eax	\n\t"
+						"leal (%1,%3), %%ebx	\n\t"
 
-#define SIMPLE_CPY					\
-						"movq (%0), %%mm0	\n\t"\
-						"movq (%0,%2), %%mm1	\n\t"\
-						"movq %%mm0, (%1)	\n\t"\
-						"movq %%mm1, (%1, %3)	\n\t"\
+#define SIMPLE_CPY(src1, src2, dst1, dst2)				\
+						"movq " #src1 ", %%mm0	\n\t"\
+						"movq " #src2 ", %%mm1	\n\t"\
+						"movq %%mm0, " #dst1 "	\n\t"\
+						"movq %%mm1, " #dst2 "	\n\t"\
 
-SIMPLE_CPY
-						"addl %%eax, %0		\n\t"
-						"addl %%ebx, %1		\n\t"
-SIMPLE_CPY
-						"addl %%eax, %0		\n\t"
-						"addl %%ebx, %1		\n\t"
-SIMPLE_CPY
-						"addl %%eax, %0		\n\t"
-						"addl %%ebx, %1		\n\t"
-SIMPLE_CPY
+SIMPLE_CPY((%0)       , (%0, %2)      , (%1)       , (%1, %3))
+SIMPLE_CPY((%0, %2, 2), (%%eax, %2, 2), (%1, %3, 2), (%%ebx, %3, 2))
+SIMPLE_CPY((%0, %2, 4), (%%eax, %2, 4), (%1, %3, 4), (%%ebx, %3, 4))
+						"leal (%%eax,%2,4), %%eax	\n\t"
+						"leal (%%ebx,%3,4), %%ebx	\n\t"
+SIMPLE_CPY((%%eax, %2), (%%eax, %2, 2), (%%ebx, %3), (%%ebx, %3, 2))
 
-						"popl %1 \n\t"
-						"popl %0 \n\t"
 						: : "r" (src),
 						"r" (dst),
 						"r" (srcStride),
