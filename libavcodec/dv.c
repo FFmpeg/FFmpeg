@@ -546,11 +546,13 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     if (buf_size < packet_size)
         return -1;
     
-    /* XXX: is it correct to assume that 420 is always used in PAL
-       mode ? */
-    s->sampling_411 = !dsf;
+    /* NTSC[dsf == 0] is always 720x480, 4:1:1
+     *  PAL[dsf == 1] is always 720x576, 4:2:0 for IEC 68134[apt == 0]
+     *  but for the SMPTE 314M[apt == 1] it is 720x576, 4:1:1
+     */
+    s->sampling_411 = !dsf || apt;
     if (s->sampling_411) {
-        mb_pos_ptr = dv_place_411;
+        mb_pos_ptr = dsf ? dv_place_411P : dv_place_411;
         avctx->pix_fmt = PIX_FMT_YUV411P;
     } else {
         mb_pos_ptr = dv_place_420;
