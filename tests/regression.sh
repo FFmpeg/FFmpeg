@@ -24,6 +24,7 @@ else
     do_msmpeg4=y
     do_wmv1=y
     do_h263=y
+    do_h263p=y
     do_mpeg4=y
     do_mjpeg=y
     do_rv10=y
@@ -120,6 +121,16 @@ if [ -n "$do_h263" ] ; then
 # h263 encoding
 file=${outfile}h263.avi
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263 $file
+
+# h263 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_h263p" ] ; then
+# h263p encoding
+file=${outfile}h263p.avi
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263p -ps 1000 $file
 
 # h263p decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 

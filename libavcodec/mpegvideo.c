@@ -361,8 +361,7 @@ int MPV_common_init(MpegEncContext *s)
     /* 4mv b frame decoding table */
     //note this is needed for h263 without b frames too (segfault on damaged streams otherwise)
     CHECKED_ALLOCZ(s->co_located_type_table, s->mb_num * sizeof(UINT8))
-
-    if (s->h263_pred || s->h263_plus) {
+    if (s->out_format == FMT_H263) {
         /* ac values */
         CHECKED_ALLOCZ(s->ac_val[0], yc_size * sizeof(INT16) * 16);
         s->ac_val[1] = s->ac_val[0] + y_size;
