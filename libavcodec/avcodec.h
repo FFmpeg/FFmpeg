@@ -140,6 +140,8 @@ enum CodecID {
     
     CODEC_ID_MPEG2TS, /* _FAKE_ codec to indicate a raw MPEG2 transport
                          stream (only used by libavformat) */
+
+    CODEC_ID_DTS,
 };
 
 /* CODEC_ID_MP3LAME is absolete */
@@ -1858,6 +1860,7 @@ extern AVCodec rawvideo_decoder;
 
 /* the following codecs use external GPL libs */
 extern AVCodec ac3_decoder;
+extern AVCodec dts_decoder;
 
 /* resample.c */
 

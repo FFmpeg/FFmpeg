@@ -348,6 +348,7 @@ static int wav_read_seek(AVFormatContext *s,
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
     case CODEC_ID_AC3:
+    case CODEC_ID_DTS:
         /* use generic seeking with dynamically generated indexes */
         return -1;
     default:

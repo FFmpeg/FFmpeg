@@ -42,6 +42,7 @@
 #define STREAM_TYPE_VIDEO_H264      0x1b
 
 #define STREAM_TYPE_AUDIO_AC3       0x81
+#define STREAM_TYPE_AUDIO_DTS       0x8a
 
 unsigned int mpegts_crc32(const uint8_t *data, int len);
 extern AVOutputFormat mpegts_mux;

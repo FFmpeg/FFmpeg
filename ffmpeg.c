@@ -1502,8 +1502,9 @@ static int av_encode(AVFormatContext **output_files,
                     ost->audio_resample = 0;
                 } else {
                     if (codec->channels != icodec->channels &&
-                        icodec->codec_id == CODEC_ID_AC3) {
-                        /* Special case for 5:1 AC3 input */
+                        (icodec->codec_id == CODEC_ID_AC3 ||
+                         icodec->codec_id == CODEC_ID_DTS)) {
+                        /* Special case for 5:1 AC3 and DTS input */
                         /* and mono or stereo output      */
                         /* Request specific number of channels */
                         icodec->channels = codec->channels;
@@ -3144,9 +3145,10 @@ static void opt_output_file(const char *filename)
                 audio_enc->bit_rate = audio_bit_rate;
                 audio_enc->strict_std_compliance = strict;
                 audio_enc->thread_count = thread_count;
-                /* For audio codecs other than AC3 we limit */
+                /* For audio codecs other than AC3 or DTS we limit */
                 /* the number of coded channels to stereo   */
-                if (audio_channels > 2 && codec_id != CODEC_ID_AC3) {
+                if (audio_channels > 2 && codec_id != CODEC_ID_AC3
+                    && codec_id != CODEC_ID_DTS) {
                     audio_enc->channels = 2;
                 } else
                     audio_enc->channels = audio_channels;

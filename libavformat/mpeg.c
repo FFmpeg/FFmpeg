@@ -77,6 +77,7 @@ typedef struct {
 #define AUDIO_ID 0xc0
 #define VIDEO_ID 0xe0
 #define AC3_ID   0x80
+#define DTS_ID   0x8a
 #define LPCM_ID  0xa0
 
 static const int lpcm_freq_tab[4] = { 48000, 96000, 44100, 32000 };
@@ -235,7 +236,7 @@ static int get_system_header_size(AVFormatContext *ctx)
 static int mpeg_mux_init(AVFormatContext *ctx)
 {
     MpegMuxContext *s = ctx->priv_data;
-    int bitrate, i, mpa_id, mpv_id, ac3_id, lpcm_id, j;
+    int bitrate, i, mpa_id, mpv_id, ac3_id, dts_id, lpcm_id, j;
     AVStream *st;
     StreamInfo *stream;
     int audio_bitrate;
@@ -258,6 +259,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     s->video_bound = 0;
     mpa_id = AUDIO_ID;
     ac3_id = AC3_ID;
+    dts_id = DTS_ID;
     mpv_id = VIDEO_ID;
     lpcm_id = LPCM_ID;
     s->scr_stream_index = -1;
@@ -272,6 +274,8 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         case CODEC_TYPE_AUDIO:
             if (st->codec.codec_id == CODEC_ID_AC3) {
                 stream->id = ac3_id++;
+            } else if (st->codec.codec_id == CODEC_ID_DTS) {
+                stream->id = dts_id++;
             } else if (st->codec.codec_id == CODEC_ID_PCM_S16BE) {
                 stream->id = lpcm_id++;
                 for(j = 0; j < 4; j++) {
@@ -1304,9 +1308,12 @@ static int mpegps_read_packet(AVFormatContext *s,
     } else if (startcode >= 0x1c0 && startcode <= 0x1df) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_MP2;
-    } else if (startcode >= 0x80 && startcode <= 0x9f) {
+    } else if (startcode >= 0x80 && startcode <= 0x89) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_AC3;
+    } else if (startcode >= 0x8a && startcode <= 0x9f) {
+        type = CODEC_TYPE_AUDIO;
+        codec_id = CODEC_ID_DTS;
     } else if (startcode >= 0xa0 && startcode <= 0xbf) {
         type = CODEC_TYPE_AUDIO;
         codec_id = CODEC_ID_PCM_S16BE;

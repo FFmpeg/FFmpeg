@@ -22,6 +22,7 @@ echo "  --enable-faac            enable faac support via libfaac [default=no]"
 echo "  --enable-mingw32         enable mingw32 native/cross windows compile"
 echo "  --enable-a52             enable GPL'ed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
+echo "  --enable-dts             enable GPL'ed DTS support [default=no]"
 echo "  --enable-pp              enable GPL'ed post processing support [default=no]"
 echo "  --enable-shared-pp       use libpostproc.so [default=no]"
 echo "  --enable-shared          build shared libraries [default=no]"
@@ -143,6 +144,7 @@ faadbin="no"
 faac="no"
 a52="no"
 a52bin="no"
+dts="no"
 pp="no"
 shared_pp="no"
 mingw32="no"
@@ -381,6 +383,8 @@ for opt do
   ;;
   --enable-a52bin) a52bin="yes" ; extralibs="$ldl $extralibs"
   ;;
+  --enable-dts) dts="yes" ; extralibs="$extralibs -ldts"
+  ;;
   --enable-pp) pp="yes"
   ;;
   --enable-shared-pp) shared_pp="yes"
@@ -442,6 +446,11 @@ if test "$gpl" != "yes"; then
 
     if test "$a52" != "no" -o "$a52bin" != "no"; then
         echo "liba52 is under GPL and --enable-gpl is not specified"
+        fail="yes"
+    fi
+
+    if test "$dts" != "no"; then
+        echo "libdts is under GPL and --enable-gpl is not specified"
         fail="yes"
     fi
     
@@ -973,6 +982,7 @@ echo "faadbin enabled  $faadbin"
 echo "faac enabled     $faac"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
+echo "dts support      $dts"
 echo "pp support       $pp"
 echo "debug symbols    $debug"
 echo "optimize         $optimize"
@@ -1167,6 +1177,12 @@ if test "$a52" = "yes" ; then
     echo "#define CONFIG_A52BIN 1" >> $TMPH
     echo "CONFIG_A52BIN=yes" >> config.mak
   fi
+fi
+
+# DTS
+if test "$dts" = "yes" ; then
+  echo "#define CONFIG_DTS 1" >> $TMPH
+  echo "CONFIG_DTS=yes" >> config.mak
 fi
 
 # PP

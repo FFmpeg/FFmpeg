@@ -2228,6 +2228,9 @@ matroska_read_header (AVFormatContext    *s,
             else if (!strcmp(track->codec_id,
                              MATROSKA_CODEC_ID_AUDIO_AC3))
                 codec_id = CODEC_ID_AC3;
+            else if (!strcmp(track->codec_id,
+                             MATROSKA_CODEC_ID_AUDIO_DTS))
+                codec_id = CODEC_ID_DTS;
             /* No such codec id so far. */
 /*             else if (!strcmp(track->codec_id, */
 /*                              MATROSKA_CODEC_ID_AUDIO_DTS)) */

@@ -151,6 +151,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif
+#ifdef CONFIG_DTS
+    register_avcodec(&dts_decoder);
+#endif
     register_avcodec(&ra_144_decoder);
     register_avcodec(&ra_288_decoder);
     register_avcodec(&roq_dpcm_decoder);

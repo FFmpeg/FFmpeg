@@ -73,6 +73,11 @@ OBJS+= liba52/bit_allocate.o liba52/bitstream.o liba52/downmix.o \
 endif
 endif
 
+# currently using libdts for dts decoding
+ifeq ($(CONFIG_DTS),yes)
+OBJS+= dtsdec.o
+endif
+
 ifeq ($(CONFIG_FAAD),yes)
 OBJS+= faad.o
 ifeq ($(CONFIG_FAADBIN),yes)
