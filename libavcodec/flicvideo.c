@@ -1,6 +1,6 @@
 /*
  * FLI/FLC Animation Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (C) 2003, 2004 the ffmpeg project
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -60,7 +60,6 @@
 typedef struct FlicDecodeContext {
     AVCodecContext *avctx;
     AVFrame frame;
-    AVFrame prev_frame;
 
     unsigned int palette[256];
     int new_palette;
@@ -82,11 +81,11 @@ static int flic_decode_init(AVCodecContext *avctx)
     } else if (s->avctx->extradata_size == 128) {
         s->fli_type = LE_16(&fli_header[4]);
     } else {
-        printf (" FLI video: expected extradata of 12 or 128 bytes\n");
+        av_log(avctx, AV_LOG_ERROR, "Expected extradata of 12 or 128 bytes\n");
         return -1;
     }
 
-    s->frame.data[0] = s->prev_frame.data[0] = NULL;
+    s->frame.data[0] = NULL;
     s->new_palette = 0;
 
     return 0;
@@ -126,18 +125,16 @@ static int flic_decode_frame(AVCodecContext *avctx,
     signed char byte_run;
     int pixel_skip;
     int pixel_countdown;
-    int height_countdown;
     unsigned char *pixels;
-    unsigned char *prev_pixels;
 
     s->frame.reference = 1;
-    if (avctx->get_buffer(avctx, &s->frame) < 0) {
-        fprintf(stderr, "  FLI: get_buffer() failed\n");
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    if (avctx->reget_buffer(avctx, &s->frame) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
 
     pixels = s->frame.data[0];
-    prev_pixels = s->prev_frame.data[0];
 
     frame_size = LE_32(&buf[stream_ptr]);
     stream_ptr += 6;  /* skip the magic number */
@@ -145,11 +142,6 @@ static int flic_decode_frame(AVCodecContext *avctx,
     stream_ptr += 10;  /* skip padding */
 
     frame_size -= 16;
-
-    /* if there is no data, copy previous frame */
-    if (frame_size == 0) {
-        memcpy(pixels, prev_pixels, s->frame.linesize[0] * s->avctx->height);
-    }
 
     /* iterate through the chunks */
     while ((frame_size > 0) && (num_chunks > 0)) {
@@ -210,7 +202,6 @@ static int flic_decode_frame(AVCodecContext *avctx,
 
         case FLI_DELTA:
             y_ptr = 0;
-            height_countdown = s->avctx->height;
             compressed_lines = LE_16(&buf[stream_ptr]);
             stream_ptr += 2;
             while (compressed_lines > 0) {
@@ -218,25 +209,14 @@ static int flic_decode_frame(AVCodecContext *avctx,
                 stream_ptr += 2;
                 if (line_packets < 0) {
                     line_packets = -line_packets;
-                    /* height_countdown was already decremented once on
-                     * this iteration */
-                    height_countdown -= line_packets;
-                    /* copy the skipped lines from the previous frame */
-                    while (line_packets--) {
-                        memcpy(&pixels[y_ptr], &prev_pixels[y_ptr], 
-                            s->avctx->width);
-                        y_ptr += s->frame.linesize[0];
-                    }
+                    y_ptr += line_packets * s->frame.linesize[0];
                 } else {
-                    height_countdown--;
                     compressed_lines--;
                     pixel_ptr = y_ptr;
                     pixel_countdown = s->avctx->width;
                     for (i = 0; i < line_packets; i++) {
                         /* account for the skip bytes */
                         pixel_skip = buf[stream_ptr++];
-                        memcpy(&pixels[pixel_ptr], &prev_pixels[pixel_ptr],
-                            pixel_skip);
                         pixel_ptr += pixel_skip;
                         pixel_countdown -= pixel_skip;
                         byte_run = buf[stream_ptr++];
@@ -256,36 +236,17 @@ static int flic_decode_frame(AVCodecContext *avctx,
                         }
                     }
 
-                    /* copy the remaining pixels in the line from the
-                     * previous frame */
-                    memcpy(&pixels[pixel_ptr], &prev_pixels[pixel_ptr],
-                        pixel_countdown);
-
                     y_ptr += s->frame.linesize[0];
                 }
-            }
-
-            /* copy the remainder of the lines from the previous frame */
-            while (height_countdown--) {
-                memcpy(&pixels[y_ptr], &prev_pixels[y_ptr], s->avctx->width);
-                y_ptr += s->frame.linesize[0];
             }
             break;
 
         case FLI_LC:
             /* line compressed */
-            height_countdown = s->avctx->height;
             starting_line = LE_16(&buf[stream_ptr]);
             stream_ptr += 2;
-
-            /* copy from the previous frame all of the lines prior to the
-             * starting line */
             y_ptr = 0;
-            height_countdown -= starting_line;
-            while (starting_line--) {
-                memcpy(&pixels[y_ptr], &prev_pixels[y_ptr], s->avctx->width);
-                y_ptr += s->frame.linesize[0];
-            }
+            y_ptr += starting_line * s->frame.linesize[0];
 
             compressed_lines = LE_16(&buf[stream_ptr]);
             stream_ptr += 2;
@@ -297,8 +258,6 @@ static int flic_decode_frame(AVCodecContext *avctx,
                     for (i = 0; i < line_packets; i++) {
                         /* account for the skip bytes */
                         pixel_skip = buf[stream_ptr++];
-                        memcpy(&pixels[pixel_ptr],
-                            &prev_pixels[pixel_ptr], pixel_skip);
                         pixel_ptr += pixel_skip;
                         pixel_countdown -= pixel_skip;
                         byte_run = buf[stream_ptr++];
@@ -317,19 +276,8 @@ static int flic_decode_frame(AVCodecContext *avctx,
                     }
                 }
 
-                /* copy the remainder of the line from the previous frame */
-                memcpy(&pixels[pixel_ptr], &prev_pixels[pixel_ptr],
-                    pixel_countdown);
-
                 y_ptr += s->frame.linesize[0];
                 compressed_lines--;
-                height_countdown--;
-            }
-
-            /* copy the remainder of the lines from the previous frame */
-            while (height_countdown--) {
-                memcpy(&pixels[y_ptr], &prev_pixels[y_ptr], s->avctx->width);
-                y_ptr += s->frame.linesize[0];
             }
             break;
 
@@ -357,8 +305,8 @@ static int flic_decode_frame(AVCodecContext *avctx,
                             pixels[pixel_ptr++] = palette_idx1;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
-                                printf ("fli warning: pixel_countdown < 0 (%d)\n",
-                                    pixel_countdown);
+                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d)\n",
+                                       pixel_countdown);
                         }
                     } else {  /* copy bytes if byte_run < 0 */
                         byte_run = -byte_run;
@@ -367,8 +315,8 @@ static int flic_decode_frame(AVCodecContext *avctx,
                             pixels[pixel_ptr++] = palette_idx1;
                             pixel_countdown--;
                             if (pixel_countdown < 0)
-                                printf ("fli warning: pixel_countdown < 0 (%d)\n",
-                                    pixel_countdown);
+                                av_log(avctx, AV_LOG_ERROR, "pixel_countdown < 0 (%d)\n",
+                                       pixel_countdown);
                         }
                     }
                 }
@@ -378,13 +326,10 @@ static int flic_decode_frame(AVCodecContext *avctx,
             break;
 
         case FLI_COPY:
-            /* copy the chunk (uncompressed frame) to the ghost image and
-             * schedule the whole frame to be updated */
+            /* copy the chunk (uncompressed frame) */
             if (chunk_size - 6 > s->avctx->width * s->avctx->height) {
-                printf(
-                "FLI: in chunk FLI_COPY : source data (%d bytes) bigger than" \
-                " image, skipping chunk\n",
-                chunk_size - 6);
+                av_log(avctx, AV_LOG_ERROR, "In chunk FLI_COPY : source data (%d bytes) " \
+                       "bigger than image, skipping chunk\n", chunk_size - 6);
                 stream_ptr += chunk_size - 6;
             } else {
                 for (y_ptr = 0; y_ptr < s->frame.linesize[0] * s->avctx->height;
@@ -402,7 +347,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
             break;
 
         default:
-            printf ("FLI: Unrecognized chunk type: %d\n", chunk_type);
+            av_log(avctx, AV_LOG_ERROR, "Unrecognized chunk type: %d\n", chunk_type);
             break;
         }
 
@@ -413,9 +358,8 @@ static int flic_decode_frame(AVCodecContext *avctx,
     /* by the end of the chunk, the stream ptr should equal the frame
      * size (minus 1, possibly); if it doesn't, issue a warning */
     if ((stream_ptr != buf_size) && (stream_ptr != buf_size - 1))
-        printf ("  warning: processed FLI chunk where chunk size = %d\n" \
-                "    and final chunk ptr = %d\n",
-            buf_size, stream_ptr);
+        av_log(avctx, AV_LOG_ERROR, "Processed FLI chunk where chunk size = %d " \
+               "and final chunk ptr = %d\n", buf_size, stream_ptr);
 
     /* make the palette available on the way out */
 //    if (s->new_palette) {
@@ -424,12 +368,6 @@ static int flic_decode_frame(AVCodecContext *avctx,
         s->frame.palette_has_changed = 1;
         s->new_palette = 0;
     }
-
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
-
-    /* shuffle frames */
-    s->prev_frame = s->frame;
 
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
@@ -441,8 +379,8 @@ static int flic_decode_end(AVCodecContext *avctx)
 {
     FlicDecodeContext *s = avctx->priv_data;
 
-    if (s->prev_frame.data[0])
-        avctx->release_buffer(avctx, &s->prev_frame);
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
 
     return 0;
 }
