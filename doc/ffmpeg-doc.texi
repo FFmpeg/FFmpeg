@@ -753,6 +753,7 @@ solutions.
 @item MS IMA ADPCM           @tab X    @tab X
 @item QT IMA ADPCM           @tab      @tab X
 @item 4X IMA ADPCM           @tab      @tab X
+@item G.726  ADPCM           @tab X    @tab X
 @item Duck DK3 IMA ADPCM     @tab      @tab X
 @tab used in some Sega Saturn console games
 @item Duck DK4 IMA ADPCM     @tab      @tab X
