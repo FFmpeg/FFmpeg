@@ -1845,6 +1845,7 @@ int av_find_stream_info(AVFormatContext *ic)
              st->codec.codec_id == CODEC_ID_PGMYUV ||
              st->codec.codec_id == CODEC_ID_PBM ||
              st->codec.codec_id == CODEC_ID_PPM ||
+             st->codec.codec_id == CODEC_ID_SHORTEN ||
              (st->codec.codec_id == CODEC_ID_MPEG4 && !st->need_parsing)))
             try_decode_frame(st, pkt->data, pkt->size);
         

@@ -164,6 +164,7 @@ enum CodecID {
     CODEC_ID_FLAC,
     CODEC_ID_MP3ADU,
     CODEC_ID_MP3ON4,
+    CODEC_ID_SHORTEN,
     
     CODEC_ID_OGGTHEORA= 0x16000, 
     
@@ -2008,6 +2009,7 @@ extern AVCodec ulti_decoder;
 extern AVCodec qdraw_decoder;
 extern AVCodec xl_decoder;
 extern AVCodec qpeg_decoder;
+extern AVCodec shorten_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

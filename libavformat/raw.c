@@ -188,6 +188,21 @@ static int ac3_read_header(AVFormatContext *s,
     return 0;
 }
 
+static int shorten_read_header(AVFormatContext *s,
+                               AVFormatParameters *ap)
+{
+    AVStream *st;
+
+    st = av_new_stream(s, 0);
+    if (!st)
+        return AVERROR_NOMEM;
+    st->codec.codec_type = CODEC_TYPE_AUDIO;
+    st->codec.codec_id = CODEC_ID_SHORTEN;
+    st->need_parsing = 1;
+    /* the parameters will be extracted from the compressed bitstream */
+    return 0;
+}
+
 /* dts read */
 static int dts_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
@@ -294,6 +309,17 @@ static int h261_probe(AVProbeData *p)
     }
     return 0;
 }
+
+AVInputFormat shorten_iformat = {
+    "shn",
+    "raw shn",
+    0,
+    NULL,
+    shorten_read_header,
+    raw_read_partial_packet,
+    raw_read_close,
+    .extensions = "shn",
+};
 
 AVInputFormat ac3_iformat = {
     "ac3",
@@ -672,6 +698,9 @@ AVOutputFormat null_oformat = {
 
 int raw_init(void)
 {
+
+    av_register_input_format(&shorten_iformat);
+
     av_register_input_format(&ac3_iformat);
     av_register_output_format(&ac3_oformat);
 

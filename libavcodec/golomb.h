@@ -284,6 +284,27 @@ static inline int get_sr_golomb_flac(GetBitContext *gb, int k, int limit, int es
     return (v>>1) ^ -(v&1);
 }
 
+/**
+ * read unsigned golomb rice code (shorten).
+ */
+static inline unsigned int get_ur_golomb_shorten(GetBitContext *gb, int k){
+	return get_ur_golomb_jpegls(gb, k, INT_MAX, 0);
+}
+
+/**
+ * read signed golomb rice code (shorten).
+ */
+static inline int get_sr_golomb_shorten(GetBitContext* gb, int k)
+{
+    int uvar = get_ur_golomb_jpegls(gb, k + 1, INT_MAX, 0);
+    if (uvar & 1)
+        return ~(uvar >> 1);
+    else
+        return uvar >> 1;
+}
+
+
+
 #ifdef TRACE
 
 static inline int get_ue(GetBitContext *s, char *file, const char *func, int line){
