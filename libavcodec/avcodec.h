@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4653
-#define LIBAVCODEC_BUILD_STR   "4653"
+#define LIBAVCODEC_BUILD       4654
+#define LIBAVCODEC_BUILD_STR   "4654"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -1047,8 +1047,8 @@ void img_resample(ImgReSampleContext *s,
 
 void img_resample_close(ImgReSampleContext *s);
 
-void avpicture_fill(AVPicture *picture, UINT8 *ptr,
-                    int pix_fmt, int width, int height);
+int avpicture_fill(AVPicture *picture, UINT8 *ptr,
+                   int pix_fmt, int width, int height);
 int avpicture_get_size(int pix_fmt, int width, int height);
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
 const char *avcodec_get_pix_fmt_name(int pix_fmt);
