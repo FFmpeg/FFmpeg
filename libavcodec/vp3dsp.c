@@ -40,8 +40,10 @@ void vp3_dsp_init_c(void)
     /* nop */
 }
 
-static void vp3_idct_c(int32_t *dequantized_data, int16_t *output_data)
+void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix,
+    int coeff_count, int16_t *output_data)
 {
+    int32_t dequantized_data[64];
     int32_t *ip = dequantized_data;
     int16_t *op = output_data;
 
@@ -49,7 +51,13 @@ static void vp3_idct_c(int32_t *dequantized_data, int16_t *output_data)
     int32_t _Ed, _Gd, _Add, _Bdd, _Fd, _Hd;
     int32_t t1, t2;
 
-    int i;
+    int i, j;
+
+    /* de-zigzag and dequantize */
+    for (i = 0; i < coeff_count; i++) {
+        j = dezigzag_index[i];
+        dequantized_data[j] = dequant_matrix[i] * input_data[i];
+    }
 
     /* Inverse DCT on the rows now */
     for (i = 0; i < 8; i++) {
@@ -246,73 +254,5 @@ static void vp3_idct_c(int32_t *dequantized_data, int16_t *output_data)
 
         ip++;            /* next column */
         op++;
-    }
-}
-
-void vp3_idct_put_c(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, uint8_t *dest, int stride)
-{
-    int32_t dequantized_data[64];
-    int16_t transformed_data[64];
-    int16_t *op;
-    int i, j;
-
-    /* de-zigzag and dequantize */
-    for (i = 0; i < coeff_count; i++) {
-        j = dezigzag_index[i];
-        dequantized_data[j] = dequant_matrix[i] * input_data[i];
-    }
-
-    vp3_idct_c(dequantized_data, transformed_data);
-
-    /* place in final output */
-    op = transformed_data;
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            if (*op < -128)
-                *dest = 0;
-            else if (*op > 127)
-                *dest = 255;
-            else
-                *dest = (uint8_t)(*op + 128);
-            op++;
-            dest++;
-        }
-        dest += (stride - 8);
-    }
-}
-
-void vp3_idct_add_c(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, uint8_t *dest, int stride)
-{
-    int32_t dequantized_data[64];
-    int16_t transformed_data[64];
-    int16_t *op;
-    int i, j;
-    int16_t sample;
-
-    /* de-zigzag and dequantize */
-    for (i = 0; i < coeff_count; i++) {
-        j = dezigzag_index[i];
-        dequantized_data[j] = dequant_matrix[i] * input_data[i];
-    }
-
-    vp3_idct_c(dequantized_data, transformed_data);
-
-    /* place in final output */
-    op = transformed_data;
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            sample = *dest + *op;
-            if (sample < 0)
-                *dest = 0;
-            else if (sample > 255)
-                *dest = 255;
-            else
-                *dest = (uint8_t)(sample & 0xFF);
-            op++;
-            dest++;
-        }
-        dest += (stride - 8);
     }
 }

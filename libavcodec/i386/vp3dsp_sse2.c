@@ -799,11 +799,12 @@ static unsigned short __align16 SSE2_idct_data[7 * 8] =
 void vp3_dsp_init_sse2(void)
 {
     /* nop */
+av_log(NULL, AV_LOG_INFO, "Hey! SSE2!\n");
 }
 
 
-static void vp3_idct_sse2(int16_t *input_data, int16_t *dequant_matrix,
-     int16_t *output_data)
+void vp3_idct_sse2(int16_t *input_data, int16_t *dequant_matrix,
+    int coeff_count, int16_t *output_data)
 {
     unsigned char *input_bytes = (unsigned char *)input_data;
     unsigned char *dequant_matrix_bytes = (unsigned char *)dequant_matrix;
@@ -831,60 +832,4 @@ static void vp3_idct_sse2(int16_t *input_data, int16_t *dequant_matrix,
     SSE2_Transpose();
         
     SSE2_Column_IDCT();
-}
-
-
-void vp3_idct_put_sse2(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, uint8_t *dest, int stride)
-{
-    int16_t transformed_data[64];
-    int16_t *op;
-    int i, j;
-
-    vp3_idct_sse2(input_data, dequant_matrix, transformed_data);
-
-    /* place in final output */
-    op = transformed_data;
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            if (*op < -128)
-                *dest = 0;
-            else if (*op > 127)
-                *dest = 255;
-            else
-                *dest = (uint8_t)(*op + 128);
-            op++;
-            dest++;
-        }
-        dest += (stride - 8);
-    }
-}
-
-
-void vp3_idct_add_sse2(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, uint8_t *dest, int stride)
-{
-    int16_t transformed_data[64];
-    int16_t *op;
-    int i, j;
-    int16_t sample;
-
-    vp3_idct_sse2(input_data, dequant_matrix, transformed_data);
-
-    /* place in final output */
-    op = transformed_data;
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            sample = *dest + *op;
-            if (sample < 0)
-                *dest = 0;
-            else if (sample > 255)
-                *dest = 255;
-            else
-                *dest = (uint8_t)(sample & 0xFF);
-            op++;
-            dest++;
-        }
-        dest += (stride - 8);
-    }
 }

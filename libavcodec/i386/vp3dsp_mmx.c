@@ -279,8 +279,8 @@ void vp3_dsp_init_mmx(void)
     idct_constants[46] = idct_constants[47] = IdctAdjustBeforeShift;
 }
 
-static void vp3_idct_mmx(int16_t *input_data, int16_t *dequant_matrix,
-     int16_t *output_data)
+void vp3_idct_mmx(int16_t *input_data, int16_t *dequant_matrix,
+    int coeff_count, int16_t *output_data)
 {
     /* eax = quantized input
      * ebx = dequantizer matrix
@@ -562,80 +562,4 @@ static void vp3_idct_mmx(int16_t *input_data, int16_t *dequant_matrix,
 #undef I
 #undef J
 
-}
-
-void vp3_idct_put_mmx(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, uint8_t *dest, int stride)
-{
-    int16_t transformed_data[64];
-    int16_t *op;
-    int i, j;
-    uint8_t vector128[8] = { 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80 };
-
-    vp3_idct_mmx(input_data, dequant_matrix, transformed_data);
-
-    /* place in final output */
-    op = transformed_data;
-    movq_m2r(*vector128, mm0);
-    for (i = 0; i < 8; i++) {
-#if 1
-        for (j = 0; j < 8; j++) {
-            if (*op < -128)
-                *dest = 0;
-            else if (*op > 127)
-                *dest = 255;
-            else
-                *dest = (uint8_t)(*op + 128);
-            op++;
-            dest++;
-        }
-        dest += (stride - 8);
-#else
-/* prototype optimization */
-        pxor_r2r(mm1, mm1);
-        packsswb_m2r(*(op + 4), mm1);
-        movq_r2r(mm1, mm2);
-        psrlq_i2r(32, mm2);
-        packsswb_m2r(*(op + 0), mm1);
-        op += 8;
-        por_r2r(mm2, mm1);
-        paddb_r2r(mm0, mm1);
-        movq_r2m(mm1, *dest);
-        dest += stride;
-#endif
-    }
-
-    /* be a good MMX citizen */
-    emms();
-}
-
-void vp3_idct_add_mmx(int16_t *input_data, int16_t *dequant_matrix,
-    int coeff_count, uint8_t *dest, int stride)
-{
-    int16_t transformed_data[64];
-    int16_t *op;
-    int i, j;
-    int16_t sample;
-
-    vp3_idct_mmx(input_data, dequant_matrix, transformed_data);
-
-    /* place in final output */
-    op = transformed_data;
-    for (i = 0; i < 8; i++) {
-        for (j = 0; j < 8; j++) {
-            sample = *dest + *op;
-            if (sample < 0)
-                *dest = 0;
-            else if (sample > 255)
-                *dest = 255;
-            else
-                *dest = (uint8_t)(sample & 0xFF);
-            op++;
-            dest++;
-        }
-        dest += (stride - 8);
-    }
-
-    /* be a good MMX citizen */
-    emms();
 }
