@@ -230,6 +230,7 @@ void avcodec_init(void);
 
 void register_avcodec(AVCodec *format);
 AVCodec *avcodec_find_encoder(enum CodecID id);
+AVCodec *avcodec_find_encoder_by_name(const char *name);
 AVCodec *avcodec_find_decoder(enum CodecID id);
 AVCodec *avcodec_find_decoder_by_name(const char *name);
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode);
