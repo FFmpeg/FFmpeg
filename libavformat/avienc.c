@@ -87,6 +87,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263P, MKTAG('U', '2', '6', '3') },
     { CODEC_ID_H263P, MKTAG('v', 'i', 'v', '1') },
 
+    { CODEC_ID_MPEG4, MKTAG('F', 'M', 'P', '4')},
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X'), .invalid_asf = 1 },
     { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0'), .invalid_asf = 1 },
     { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D'), .invalid_asf = 1 },
