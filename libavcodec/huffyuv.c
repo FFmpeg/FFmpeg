@@ -434,8 +434,8 @@ s->bgr32=1;
         assert(0);
     }
     
-//    printf("pred:%d bpp:%d hbpp:%d il:%d\n", s->predictor, s->bitstream_bpp, avctx->bits_per_sample, s->interlaced);
-    
+//    av_log(NULL, AV_LOG_DEBUG, "pred:%d bpp:%d hbpp:%d il:%d\n", s->predictor, s->bitstream_bpp, avctx->bits_per_sample, s->interlaced);
+
     return 0;
 }
 
@@ -969,8 +969,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             }
             
             lefty= sub_left_prediction(s, s->temp[0], p->data[0]+fake_ystride, 4, lefty);
-            leftu= sub_left_prediction(s, s->temp[1], p->data[1]+fake_ystride, 2, leftu);
-            leftv= sub_left_prediction(s, s->temp[2], p->data[2]+fake_ystride, 2, leftv);
+            leftu= sub_left_prediction(s, s->temp[1], p->data[1]+fake_ustride, 2, leftu);
+            leftv= sub_left_prediction(s, s->temp[2], p->data[2]+fake_vstride, 2, leftv);
         
             encode_422_bitstream(s, 4);
 
