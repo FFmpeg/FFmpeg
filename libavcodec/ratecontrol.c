@@ -358,6 +358,8 @@ static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, doubl
 static void get_qminmax(int *qmin_ret, int *qmax_ret, MpegEncContext *s, int pict_type){
     int qmin= s->avctx->qmin;                                                       
     int qmax= s->avctx->qmax;
+    
+    assert(qmin <= qmax);
 
     if(pict_type==B_TYPE){
         qmin= (int)(qmin*ABS(s->avctx->b_quant_factor)+s->avctx->b_quant_offset + 0.5);
@@ -367,13 +369,14 @@ static void get_qminmax(int *qmin_ret, int *qmax_ret, MpegEncContext *s, int pic
         qmax= (int)(qmax*ABS(s->avctx->i_quant_factor)+s->avctx->i_quant_offset + 0.5);
     }
 
-    if(qmin<1) qmin=1;
+    qmin= clip(qmin, 1, 31);
+    qmax= clip(qmax, 1, 31);
+
     if(qmin==1 && s->avctx->qmin>1) qmin=2; //avoid qmin=1 unless the user wants qmin=1
 
     if(qmin<3 && s->max_qcoeff<=128 && pict_type==I_TYPE) qmin=3; //reduce cliping problems
 
-    if(qmax>31) qmax=31;
-    if(qmax<=qmin) qmax= qmin= (qmax+qmin+1)>>1;
+    if(qmax<qmin) qmax= qmin;
     
     *qmin_ret= qmin;
     *qmax_ret= qmax;
