@@ -704,7 +704,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
 static int mjpeg_decode_sos(MJpegDecodeContext *s,
                             UINT8 *buf, int buf_size)
 {
-    int len, nb_components, i, j, n, h, v;
+    int len, nb_components, i, j, n, h, v, ret;
     int mb_width, mb_height, mb_x, mb_y, vmax, hmax, index, id;
     int comp_index[4];
     int dc_index[4];
@@ -781,7 +781,8 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
                                      dc_index[i], ac_index[i], 
                                      s->quant_index[c]) < 0) {
                         dprintf("error %d %d\n", mb_y, mb_x);
-                        return -1;
+                        ret = -1;
+                        goto the_end;
                     }
                     ff_idct (s->block);
                     ptr = s->current_picture[c] + 
@@ -796,8 +797,10 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
             }
         }
     }
+    ret = 0;
+ the_end:
     emms_c();
-    return 0;
+    return ret;
 }
 
 /* return the 8 bit start code value and update the search
@@ -912,6 +915,9 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                             avctx->pix_fmt = PIX_FMT_YUV420P;
                             break;
                         }
+                        /* dummy quality */
+                        /* XXX: infer it with matrix */
+                        avctx->quality = 3; 
                         goto the_end;
                     }
                     break;
