@@ -677,6 +677,7 @@ void ff_er_frame_end(MpegEncContext *s){
         av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
         
         s->current_picture.motion_val[0]= av_mallocz(size * 2 * sizeof(int16_t)); //FIXME
+        s->current_picture.motion_val[1]= av_mallocz(size * 2 * sizeof(int16_t));
     }
     
     if(s->avctx->debug&FF_DEBUG_ER){
