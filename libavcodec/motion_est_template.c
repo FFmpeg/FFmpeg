@@ -677,7 +677,7 @@ if(256*256*256*64 % (stats[0]+1)==0){
     }\
 }
 
-#define MAX_SAB_SIZE 16
+#define MAX_SAB_SIZE ME_MAP_SIZE
 static int sab_diamond_search(MpegEncContext * s, int *best, int dmin,
                                        int src_index, int ref_index, int const penalty_factor,
                                        int size, int h, int flags)
