@@ -3210,7 +3210,7 @@ void ff_mpeg_flush(AVCodecContext *avctx){
                                     || s->picture[i].type == FF_BUFFER_TYPE_USER))
         avctx->release_buffer(avctx, (AVFrame*)&s->picture[i]);
     }
-    s->last_picture_ptr = s->next_picture_ptr = NULL;
+    s->current_picture_ptr = s->last_picture_ptr = s->next_picture_ptr = NULL;
     
     s->parse_context.state= -1;
     s->parse_context.frame_start_found= 0;
