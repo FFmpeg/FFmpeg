@@ -981,7 +981,8 @@ alloc:
         if(s->current_picture_ptr)
             pic->coded_picture_number= s->current_picture_ptr->coded_picture_number+1;
         
-        alloc_picture(s, (Picture*)pic, 0);
+        if( alloc_picture(s, (Picture*)pic, 0) < 0)
+            return -1;
 
         s->current_picture_ptr= &s->picture[i];
     }
