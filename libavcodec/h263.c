@@ -4147,8 +4147,9 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             }
 
             s->scalability= get_bits1(&s->gb);
-            if(s->workaround_bugs==1) s->scalability=0;
+
             if (s->scalability) {
+                GetBitContext bak= s->gb;
                 int dummy= s->hierachy_type= get_bits1(&s->gb);
                 int ref_layer_id= get_bits(&s->gb, 4);
                 int ref_layer_sampling_dir= get_bits1(&s->gb);
@@ -4157,6 +4158,17 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 int v_sampling_factor_n= get_bits(&s->gb, 5);
                 int v_sampling_factor_m= get_bits(&s->gb, 5);
                 s->enhancement_type= get_bits1(&s->gb);
+                
+                if(   h_sampling_factor_n==0 || h_sampling_factor_m==0 
+                   || v_sampling_factor_n==0 || v_sampling_factor_m==0 || s->workaround_bugs==1){
+                   
+                    fprintf(stderr, "illegal scalability header (VERY broken encoder), trying to workaround\n");
+                    s->scalability=0;
+                   
+                    s->gb= bak;
+                    goto redo;
+                }
+                
                 // bin shape stuff FIXME
                 printf("scalability not supported\n");
             }
