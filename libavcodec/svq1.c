@@ -54,10 +54,6 @@ typedef struct vlc_code_s {
 #define SVQ1_BLOCK_INTER_4V	2
 #define SVQ1_BLOCK_INTRA	3
 
-#define SVQ1_FRAME_INTRA	0
-#define SVQ1_FRAME_INTER	1
-#define SVQ1_FRAME_DROPPABLE	2
-
 /* motion vector (prediction) */
 typedef struct svq1_pmv_s {
   int		 x;
@@ -2484,12 +2480,11 @@ static int svq1_decode_frame_header (bit_buffer_t *bitbuf,MpegEncContext *s) {
   get_bits (bitbuf, 8);
 
   /* frame type */
-  s->pict_type = get_bits (bitbuf, 2);
+  s->pict_type= get_bits (bitbuf, 2)+1;
+  if(s->pict_type==4) 
+      return -1;
 
-  if (s->pict_type == 3)
-    return -1;
-
-  if (s->pict_type == SVQ1_FRAME_INTRA) {
+  if (s->pict_type == I_TYPE) {
 
     /* unknown fields */
     if (s->f_code == 0x50 || s->f_code == 0x60) {
@@ -2572,6 +2567,8 @@ static int svq1_decode_frame(AVCodecContext *avctx,
   }
 
   result = svq1_decode_frame_header (&s->gb, s);
+  
+  MPV_frame_start(s, avctx);
 
   if (result != 0)
   {
@@ -2583,22 +2580,30 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 
   /* decode y, u and v components */
   for (i=0; i < 3; i++) {
+    int linesize;
     if (i == 0) {
       width  = (s->width+15)&~15;
       height = (s->height+15)&~15;
+      linesize= s->linesize;
     } else {
       width  = (s->width/4+15)&~15;
       height = (s->height/4+15)&~15;
+      linesize= s->uvlinesize;
     }
 
     current  = s->current_picture[i];
-    previous = s->last_picture[i];
 
-    if (s->pict_type == SVQ1_FRAME_INTRA) {
+    if(s->pict_type==B_TYPE){
+        previous = s->next_picture[i];
+    }else{
+        previous = s->last_picture[i];
+    }
+
+    if (s->pict_type == I_TYPE) {
       /* keyframe */
       for (y=0; y < height; y+=16) {
 	for (x=0; x < width; x+=16) {
-	  result = svq1_decode_block_intra (&s->gb, &current[x], width);
+	  result = svq1_decode_block_intra (&s->gb, &current[x], linesize);
 	  if (result != 0)
 	  {
 #ifdef DEBUG_SVQ1
@@ -2607,16 +2612,17 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 	    return result;
 	  }
 	}
-	current += 16*width;
+	current += 16*linesize;
       }
     } else {
+      svq1_pmv_t pmv[width/8+3];
       /* delta frame */
-      memset (s->opaque, 0, ((width / 8) + 3) * sizeof(svq1_pmv_t));
+      memset (pmv, 0, ((width / 8) + 3) * sizeof(svq1_pmv_t));
 
       for (y=0; y < height; y+=16) {
 	for (x=0; x < width; x+=16) {
 	  result = svq1_decode_delta_block (&s->gb, &current[x], previous,
-				       width, s->opaque, x, y);
+				       linesize, pmv, x, y);
 	  if (result != 0)
 	  {
 #ifdef DEBUG_SVQ1
@@ -2626,23 +2632,17 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 	  }
 	}
 
-	((svq1_pmv_t *)s->opaque)[0].x =
-	((svq1_pmv_t *)s->opaque)[0].y = 0;
+	pmv[0].x =
+	pmv[0].y = 0;
 
-	current += 16*width;
+	current += 16*linesize;
       }
     }
 
     pict->data[i] = s->current_picture[i];
-    pict->linesize[i] = width;
-    /* update backward reference frame */
-    if (s->pict_type != SVQ1_FRAME_DROPPABLE)
-    {
-	uint8_t *tmp = s->last_picture[i];
-	s->last_picture[i] = s->current_picture[i];
-	s->current_picture[i] = tmp;
-    }
+    pict->linesize[i] = linesize;
   }
+
   *data_size=sizeof(AVPicture);
   return 0;
 }
@@ -2656,11 +2656,9 @@ static int svq1_decode_init(AVCodecContext *avctx)
     s->height = (avctx->height+3)&~3;
     s->codec_id= avctx->codec->id;
     avctx->mbskip_table= s->mbskip_table;
-    s->opaque = (svq1_pmv_t *) malloc (((s->width / 8) + 3) * sizeof(svq1_pmv_t));
-    if (MPV_common_init(s) < 0) return -1;
-    for(i=0;i<3;i++)
-	s->current_picture[i] = s->next_picture[i];
     avctx->pix_fmt = PIX_FMT_YUV410P;
+    avctx->has_b_frames= s->has_b_frames=1; // not true, but DP frames and these behave like unidirectional b frames
+    if (MPV_common_init(s) < 0) return -1;
     return 0;
 }
 
@@ -2669,7 +2667,6 @@ static int svq1_decode_end(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
 
     MPV_common_end(s);
-    free(s->opaque);
     return 0;
 }
 
@@ -2681,5 +2678,6 @@ AVCodec svq1_decoder = {
     svq1_decode_init,
     NULL,
     svq1_decode_end,
-    svq1_decode_frame
+    svq1_decode_frame,
+    CODEC_CAP_DR1,
 };

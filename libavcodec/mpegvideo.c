@@ -651,7 +651,7 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->last_dr_opaque= s->next_dr_opaque;
             s->next_dr_opaque= avctx->dr_opaque_frame;
 
-            if(s->has_b_frames && s->last_dr_opaque)
+            if(s->has_b_frames && s->last_dr_opaque && s->codec_id!=CODEC_ID_SVQ1)
                 avctx->dr_opaque_frame= s->last_dr_opaque;
             else
                 avctx->dr_opaque_frame= s->next_dr_opaque;
