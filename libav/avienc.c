@@ -36,7 +36,7 @@ typedef struct {
     AVIIndex *first, *last;
 } AVIContext;
 
-offset_t start_tag(ByteIOContext *pb, char *tag)
+offset_t start_tag(ByteIOContext *pb, const char *tag)
 {
     put_tag(pb, tag);
     put_le32(pb, 0);
@@ -55,7 +55,7 @@ void end_tag(ByteIOContext *pb, offset_t start)
 
 /* Note: when encoding, the first matching tag is used, so order is
    important if multiple tags possible for a given codec. */
-CodecTag codec_bmp_tags[] = {
+const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263, MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263P, MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
@@ -122,7 +122,7 @@ unsigned int codec_get_bmp_tag(int id)
 }
 
 /* BITMAPINFOHEADER header */
-void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, CodecTag *tags, int for_asf)
+void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags, int for_asf)
 {
     put_le32(pb, 40); /* size */
     put_le32(pb, enc->width);
@@ -138,7 +138,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, CodecTag *tags, int 
     put_le32(pb, 0);
 }
 
-void parse_specific_params(AVCodecContext *stream, int *au_byterate, int *au_ssize, int *au_scale)
+static void parse_specific_params(AVCodecContext *stream, int *au_byterate, int *au_ssize, int *au_scale)
 {
     switch(stream->codec_id) {
     case CODEC_ID_PCM_S16LE:

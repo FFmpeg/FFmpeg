@@ -219,7 +219,7 @@ void put_be16(ByteIOContext *s, unsigned int val)
     put_byte(s, val);
 }
 
-void put_tag(ByteIOContext *s, char *tag)
+void put_tag(ByteIOContext *s, const char *tag)
 {
     while (*tag) {
         put_byte(s, *tag++);

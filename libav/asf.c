@@ -874,7 +874,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		    st->codec.extradata = av_mallocz(st->codec.extradata_size);
 		    get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
 		}
-                st->codec.codec_tag = tag1;
+                st->codec.codec_tag = st->codec.fourcc = tag1;
 		st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
             }
             pos2 = url_ftell(pb);
@@ -1202,7 +1202,7 @@ static int asf_read_seek(AVFormatContext *s, int64_t pts)
     return -1;
 }
 
-AVInputFormat asf_iformat = {
+static AVInputFormat asf_iformat = {
     "asf",
     "asf format",
     sizeof(ASFContext),
@@ -1213,7 +1213,7 @@ AVInputFormat asf_iformat = {
     asf_read_seek,
 };
 
-AVOutputFormat asf_oformat = {
+static AVOutputFormat asf_oformat = {
     "asf",
     "asf format",
     "application/octet-stream",
@@ -1230,7 +1230,7 @@ AVOutputFormat asf_oformat = {
     asf_write_trailer,
 };
 
-AVOutputFormat asf_stream_oformat = {
+static AVOutputFormat asf_stream_oformat = {
     "asf_stream",
     "asf format",
     "application/octet-stream",

@@ -85,7 +85,7 @@ void put_le32(ByteIOContext *s, unsigned int val);
 void put_be32(ByteIOContext *s, unsigned int val);
 void put_le16(ByteIOContext *s, unsigned int val);
 void put_be16(ByteIOContext *s, unsigned int val);
-void put_tag(ByteIOContext *s, char *tag);
+void put_tag(ByteIOContext *s, const char *tag);
 
 void put_be64_double(ByteIOContext *s, double val);
 void put_strz(ByteIOContext *s, const char *buf);
