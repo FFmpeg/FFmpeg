@@ -427,6 +427,7 @@ int MPV_common_init(MpegEncContext *s)
     if (!s->encoding)
         s->progressive_sequence= 1;
     s->progressive_frame= 1;
+    s->coded_picture_number = 0;
 
     y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
     c_size = (s->mb_width + 2) * (s->mb_height + 2);
@@ -975,6 +976,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
 
     s->picture_number = 0;
+    s->input_picture_number = 0;
     s->picture_in_gop_number = 0;
     s->fake_picture_number = 0;
     /* motion detector init */
@@ -1153,8 +1155,7 @@ alloc:
 
         pic->reference= s->pict_type != B_TYPE ? 3 : 0;
 
-        if(s->current_picture_ptr) //FIXME broken, we need a coded_picture_number in MpegEncContext
-            pic->coded_picture_number= s->current_picture_ptr->coded_picture_number+1;
+        pic->coded_picture_number= s->coded_picture_number++;
         
         if( alloc_picture(s, (Picture*)pic, 0) < 0)
             return -1;
@@ -1644,9 +1645,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
     }
     copy_picture_attributes(pic, pic_arg);
     
-    if(s->input_picture[encoding_delay])
-        pic->display_picture_number= s->input_picture[encoding_delay]->display_picture_number + 1;
-    
+    pic->display_picture_number= s->input_picture_number++;
   }
 
     /* shift buffer entries */
@@ -1660,10 +1659,6 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
 
 static void select_input_picture(MpegEncContext *s){
     int i;
-    int coded_pic_num=0;    
-
-    if(s->reordered_input_picture[0])
-        coded_pic_num= s->reordered_input_picture[0]->coded_picture_number + 1;
 
     for(i=1; i<MAX_PICTURE_COUNT; i++)
         s->reordered_input_picture[i-1]= s->reordered_input_picture[i];
@@ -1674,7 +1669,7 @@ static void select_input_picture(MpegEncContext *s){
         if(/*s->picture_in_gop_number >= s->gop_size ||*/ s->next_picture_ptr==NULL || s->intra_only){
             s->reordered_input_picture[0]= s->input_picture[0];
             s->reordered_input_picture[0]->pict_type= I_TYPE;
-            s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+            s->reordered_input_picture[0]->coded_picture_number= s->coded_picture_number++;
         }else{
             int b_frames;
             
@@ -1735,12 +1730,11 @@ static void select_input_picture(MpegEncContext *s){
                 s->reordered_input_picture[0]->pict_type= I_TYPE;
             else
                 s->reordered_input_picture[0]->pict_type= P_TYPE;
-            s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+            s->reordered_input_picture[0]->coded_picture_number= s->coded_picture_number++;
             for(i=0; i<b_frames; i++){
-                coded_pic_num++;
                 s->reordered_input_picture[i+1]= s->input_picture[i];
                 s->reordered_input_picture[i+1]->pict_type= B_TYPE;
-                s->reordered_input_picture[i+1]->coded_picture_number= coded_pic_num;
+                s->reordered_input_picture[i+1]->coded_picture_number= s->coded_picture_number++;
             }
         }
     }
@@ -1838,8 +1832,6 @@ int MPV_encode_picture(AVCodecContext *avctx,
             avctx->error[i] += s->current_picture_ptr->error[i];
         }
     }
-
-    s->input_picture_number++;
 
     flush_put_bits(&s->pb);
     s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;

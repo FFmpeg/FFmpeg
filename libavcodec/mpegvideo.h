@@ -260,8 +260,9 @@ typedef struct MpegEncContext {
 
     /* sequence parameters */
     int context_initialized;
-    int input_picture_number;
-    int picture_number;
+    int input_picture_number;  ///< used to set pic->display_picture_number, shouldnt be used for/by anything else
+    int coded_picture_number;  ///< used to set pic->coded_picture_number, shouldnt be used for/by anything else
+    int picture_number;       //FIXME remove, unclear definition
     int picture_in_gop_number; ///< 0-> first pic in gop, ... 
     int b_frames_since_non_b;  ///< used for encoding, relative to not yet reordered input 
     int mb_width, mb_height;   ///< number of MBs horizontally & vertically 
