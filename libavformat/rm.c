@@ -324,7 +324,7 @@ static int rm_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size)
+static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size, int flags)
 {
     uint8_t *buf1;
     RMContext *rm = s->priv_data;
@@ -335,7 +335,7 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size)
     /* XXX: suppress this malloc */
     buf1= (uint8_t*) av_malloc( size * sizeof(uint8_t) );
     
-    write_packet_header(s, stream, size, stream->enc->coded_frame->key_frame);
+    write_packet_header(s, stream, size, !!(flags & PKT_FLAG_KEY));
     
     /* for AC3, the words seems to be reversed */
     for(i=0;i<size;i+=2) {
@@ -349,12 +349,12 @@ static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size)
     return 0;
 }
 
-static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size)
+static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size, int flags)
 {
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     StreamInfo *stream = rm->video_stream;
-    int key_frame = stream->enc->coded_frame->key_frame;
+    int key_frame = !!(flags & PKT_FLAG_KEY);
 
     /* XXX: this is incorrect: should be a parameter */
 
@@ -393,9 +393,9 @@ static int rm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     if (s->streams[pkt->stream_index]->codec.codec_type == 
         CODEC_TYPE_AUDIO)
-        return rm_write_audio(s, pkt->data, pkt->size);
+        return rm_write_audio(s, pkt->data, pkt->size, pkt->flags);
     else
-        return rm_write_video(s, pkt->data, pkt->size);
+        return rm_write_video(s, pkt->data, pkt->size, pkt->flags);
 }
         
 static int rm_write_trailer(AVFormatContext *s)

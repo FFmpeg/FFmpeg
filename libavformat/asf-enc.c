@@ -586,7 +586,8 @@ static void put_payload_header(
                                 int             presentation_time,
                                 int             m_obj_size,
                                 int             m_obj_offset,
-                                int             payload_len
+                                int             payload_len,
+                                int             flags
             )
 {
     ASFContext *asf = s->priv_data;
@@ -594,7 +595,7 @@ static void put_payload_header(
     int val;
     
     val = stream->num;
-    if (s->streams[val - 1]->codec.coded_frame->key_frame)
+    if (flags & PKT_FLAG_KEY)
         val |= ASF_PL_FLAG_KEY_FRAME;
     put_byte(pb, val);
         
@@ -621,7 +622,8 @@ static void put_frame(
                     ASFStream       *stream,
 		    int             timestamp,
                     const uint8_t   *buf,
-		    int             m_obj_size
+		    int             m_obj_size,
+                    int             flags
 		)
 {
     ASFContext *asf = s->priv_data;
@@ -662,7 +664,7 @@ static void put_frame(
             else if (payload_len == (frag_len1 - 1))
                 payload_len = frag_len1 - 2;  //additional byte need to put padding length
             
-            put_payload_header(s, stream, timestamp+preroll_time, m_obj_size, m_obj_offset, payload_len);
+            put_payload_header(s, stream, timestamp+preroll_time, m_obj_size, m_obj_offset, payload_len, flags);
             put_buffer(&asf->pb, buf, payload_len);
 
             if (asf->multi_payloads_present)
@@ -706,7 +708,7 @@ static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (duration > asf->duration)
         asf->duration = duration;
 
-    put_frame(s, stream, pkt->pts, pkt->data, pkt->size);
+    put_frame(s, stream, pkt->pts, pkt->data, pkt->size, pkt->flags);
     return 0;
 }
 

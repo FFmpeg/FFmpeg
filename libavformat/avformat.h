@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4615
+#define LIBAVFORMAT_BUILD       4616
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -557,6 +557,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
 int av_write_header(AVFormatContext *s);
 int av_write_frame(AVFormatContext *s, AVPacket *pkt);
+int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
 
 int av_write_trailer(AVFormatContext *s);
 

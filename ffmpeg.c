@@ -458,7 +458,7 @@ static void do_audio_out(AVFormatContext *s,
             if(enc->coded_frame)
                 pkt.pts= enc->coded_frame->pts;
             pkt.flags |= PKT_FLAG_KEY;
-            av_write_frame(s, &pkt);
+            av_interleaved_write_frame(s, &pkt);
         }
     } else {
         AVPacket pkt;
@@ -484,7 +484,7 @@ static void do_audio_out(AVFormatContext *s,
         if(enc->coded_frame)
             pkt.pts= enc->coded_frame->pts;
         pkt.flags |= PKT_FLAG_KEY;
-        av_write_frame(s, &pkt);
+        av_interleaved_write_frame(s, &pkt);
     }
 }
 
@@ -771,7 +771,7 @@ static void do_video_out(AVFormatContext *s,
             if(dec->coded_frame && dec->coded_frame->key_frame)
                 pkt.flags |= PKT_FLAG_KEY;
 
-            av_write_frame(s, &pkt);
+            av_interleaved_write_frame(s, &pkt);
 	    enc->coded_frame = old_frame;
         } else {
             AVFrame big_picture;
@@ -807,7 +807,7 @@ static void do_video_out(AVFormatContext *s,
                     pkt.pts= enc->coded_frame->pts;
                 if(enc->coded_frame && enc->coded_frame->key_frame)
                     pkt.flags |= PKT_FLAG_KEY;
-                av_write_frame(s, &pkt);
+                av_interleaved_write_frame(s, &pkt);
                 *frame_size = ret;
                 //fprintf(stderr,"\nFrame: %3d %3d size: %5d type: %d",
                 //        enc->frame_number-1, enc->real_pict_num, ret,
@@ -1165,10 +1165,11 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             opkt.stream_index= ost->index;
                             opkt.data= data_buf;
                             opkt.size= data_size;
-                            opkt.pts= ist->pts; //FIXME dts vs. pts
+                            opkt.pts= pkt->pts; //FIXME ist->pts?
+                            opkt.dts= pkt->dts;
                             opkt.flags= pkt->flags;
                             
-                            av_write_frame(os, &opkt);
+                            av_interleaved_write_frame(os, &opkt);
                             ost->st->codec.frame_number++;
                             ost->frame_number++;
                         }
@@ -1633,7 +1634,10 @@ static int av_encode(AVFormatContext **output_files,
             ost = ost_table[i];
             os = output_files[ost->file_index];
             ist = ist_table[ost->source_index];
-            pts = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
+            if(ost->st->codec.codec_type == CODEC_TYPE_VIDEO)
+                pts = (double)ost->sync_opts * ost->st->codec.frame_rate_base / ost->st->codec.frame_rate;
+            else
+                pts = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
             if (!file_table[ist->file_index].eof_reached && 
                 pts < pts_min) {
                 pts_min = pts;

@@ -528,8 +528,7 @@ static int get_audio_frame_size(AVCodecContext *enc, int size)
 
 
 /* return the frame duration in seconds, return 0 if not available */
-static void compute_frame_duration(int *pnum, int *pden,
-                                   AVFormatContext *s, AVStream *st, 
+static void compute_frame_duration(int *pnum, int *pden, AVStream *st, 
                                    AVCodecParserContext *pc, AVPacket *pkt)
 {
     int frame_size;
@@ -577,7 +576,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     }
     
     if (pkt->duration == 0) {
-        compute_frame_duration(&num, &den, s, st, pc, pkt);
+        compute_frame_duration(&num, &den, st, pc, pkt);
         if (den && num) {
             pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num);
         }
@@ -604,7 +603,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         else                     st->cur_dts = 0;
     }
 
-//    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%lld, dts:%lld cur_dts:%lld\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts);
+//    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%lld, dts:%lld cur_dts:%lld st:%d pc:%p\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts, pkt->stream_index, pc);
     /* interpolate PTS and DTS if they are not present */
     if (presentation_delayed) {
         /* DTS = decompression time stamp */
@@ -1865,28 +1864,12 @@ int av_write_header(AVFormatContext *s)
     return 0;
 }
 
-/**
- * Write a packet to an output media file. The packet shall contain
- * one audio or video frame.
- *
- * @param s media file handle
- * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
- * @return < 0 if error, = 0 if OK, 1 if end of stream wanted.
- */
-int av_write_frame(AVFormatContext *s, AVPacket *pkt)
-{
-    AVStream *st;
-    int64_t pts_mask;
-    int ret, frame_size;
-    int b_frames;
+//FIXME merge with compute_pkt_fields
+static void compute_pkt_fields2(AVStream *st, AVPacket *pkt){
+    int b_frames = FFMAX(st->codec.has_b_frames, st->codec.max_b_frames);
+    int num, den, frame_size;
 
-    if(pkt->stream_index<0)
-        return -1;
-    st = s->streams[pkt->stream_index];
-
-    b_frames = FFMAX(st->codec.has_b_frames, st->codec.max_b_frames);
-
-  //  av_log(s, AV_LOG_DEBUG, "av_write_frame: pts:%lld dts:%lld cur_dts:%lld b:%d size:%d\n", pkt->pts, pkt->dts, st->cur_dts, b_frames, pkt->size);
+//    av_log(NULL, AV_LOG_DEBUG, "av_write_frame: pts:%lld dts:%lld cur_dts:%lld b:%d size:%d st:%d\n", pkt->pts, pkt->dts, st->cur_dts, b_frames, pkt->size, pkt->stream_index);
     
 /*    if(pkt->pts == AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE)
         return -1;*/
@@ -1898,6 +1881,12 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 
     /* duration field */
     pkt->duration = av_rescale(pkt->duration, st->time_base.den, AV_TIME_BASE * (int64_t)st->time_base.num);
+    if (pkt->duration == 0) {
+        compute_frame_duration(&num, &den, st, NULL, pkt);
+        if (den && num) {
+            pkt->duration = av_rescale(1, num * (int64_t)st->time_base.den, den * (int64_t)st->time_base.num);
+        }
+    }
 
     //XXX/FIXME this is a temporary hack until all encoders output pts
     if((pkt->pts == 0 || pkt->pts == AV_NOPTS_VALUE) && pkt->dts == AV_NOPTS_VALUE && !b_frames){
@@ -1910,9 +1899,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     if(pkt->pts != AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE){
         if(b_frames){
             if(st->last_IP_pts == AV_NOPTS_VALUE){
-                st->last_IP_pts= -av_rescale(1, 
-                    st->codec.frame_rate_base*(int64_t)st->time_base.den, 
-                    st->codec.frame_rate     *(int64_t)st->time_base.num);
+                st->last_IP_pts= -pkt->duration;
             }
             if(st->last_IP_pts < pkt->pts){
                 pkt->dts= st->last_IP_pts;
@@ -1923,18 +1910,9 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
             pkt->dts= pkt->pts;
     }
     
-//    av_log(s, AV_LOG_DEBUG, "av_write_frame: pts2:%lld dts2:%lld\n", pkt->pts, pkt->dts);
+//    av_log(NULL, AV_LOG_DEBUG, "av_write_frame: pts2:%lld dts2:%lld\n", pkt->pts, pkt->dts);
     st->cur_dts= pkt->dts;
     st->pts.val= pkt->dts;
-
-    pts_mask = (2LL << (st->pts_wrap_bits-1)) - 1;
-    pkt->pts &= pts_mask;
-    pkt->dts &= pts_mask;
-    
-    ret = s->oformat->write_packet(s, pkt);
-    
-    if (ret < 0)
-        return ret;
 
     /* update pts */
     switch (st->codec.codec_type) {
@@ -1953,7 +1931,106 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     default:
         break;
     }
-    return ret;
+}
+
+static void truncate_ts(AVStream *st, AVPacket *pkt){
+    int64_t pts_mask = (2LL << (st->pts_wrap_bits-1)) - 1;
+    
+    if(pkt->dts < 0)
+        pkt->dts= 0;  //this happens for low_delay=0 and b frames, FIXME, needs further invstigation about what we should do here
+    
+    pkt->pts &= pts_mask;
+    pkt->dts &= pts_mask;
+}
+
+/**
+ * Write a packet to an output media file. The packet shall contain
+ * one audio or video frame.
+ *
+ * @param s media file handle
+ * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
+ * @return < 0 if error, = 0 if OK, 1 if end of stream wanted.
+ */
+int av_write_frame(AVFormatContext *s, AVPacket *pkt)
+{
+    compute_pkt_fields2(s->streams[pkt->stream_index], pkt);
+    
+    truncate_ts(s->streams[pkt->stream_index], pkt);
+
+    return s->oformat->write_packet(s, pkt);
+}
+
+/**
+ * Writes a packet to an output media file ensuring correct interleaving. 
+ * The packet shall contain one audio or video frame.
+ * If the packets are already correctly interleaved the application should
+ * call av_write_frame() instead as its slightly faster, its also important
+ * to keep in mind that non interlaved input will need huge amounts
+ * of memory to interleave with this, so its prefereable to interleave at the
+ * demuxer level
+ *
+ * @param s media file handle
+ * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
+ * @return < 0 if error, = 0 if OK, 1 if end of stream wanted.
+ */
+int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
+    AVPacketList *pktl, **next_point, *this_pktl;
+    int stream_count=0;
+    int streams[MAX_STREAMS];
+    AVStream *st= s->streams[ pkt->stream_index];
+
+    compute_pkt_fields2(st, pkt);
+
+    if(pkt->dts == AV_NOPTS_VALUE)
+        return -1;
+        
+    assert(pkt->destruct != av_destruct_packet); //FIXME
+
+    this_pktl = av_mallocz(sizeof(AVPacketList));
+    this_pktl->pkt= *pkt;
+    av_dup_packet(&this_pktl->pkt);
+
+    next_point = &s->packet_buffer;
+    while(*next_point){
+        AVStream *st2= s->streams[ (*next_point)->pkt.stream_index];
+        int64_t left=  st2->time_base.num * st ->time_base.den;
+        int64_t right= st ->time_base.num * st2->time_base.den;
+        if((*next_point)->pkt.dts * left > pkt->dts * right) //FIXME this can overflow
+            break;
+        next_point= &(*next_point)->next;
+    }
+    this_pktl->next= *next_point;
+    *next_point= this_pktl;
+    
+    memset(streams, 0, sizeof(streams));
+    pktl= s->packet_buffer;
+    while(pktl){
+//av_log(s, AV_LOG_DEBUG, "show st:%d dts:%lld\n", pktl->pkt.stream_index, pktl->pkt.dts);
+        if(streams[ pktl->pkt.stream_index ] == 0)
+            stream_count++;
+        streams[ pktl->pkt.stream_index ]++;
+        pktl= pktl->next;
+    }
+
+    while(s->nb_streams == stream_count){
+        int ret;
+
+        pktl= s->packet_buffer;
+//av_log(s, AV_LOG_DEBUG, "write st:%d dts:%lld\n", pktl->pkt.stream_index, pktl->pkt.dts);
+        truncate_ts(s->streams[pktl->pkt.stream_index], &pktl->pkt);
+        ret= s->oformat->write_packet(s, &pktl->pkt);
+        
+        s->packet_buffer= pktl->next;        
+        if((--streams[ pktl->pkt.stream_index ]) == 0)
+            stream_count--;
+
+        av_free_packet(&pktl->pkt);
+        av_freep(&pktl);
+        
+        if(ret<0)
+            return ret;
+    }
+    return 0;
 }
 
 /**
@@ -1965,6 +2042,24 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 int av_write_trailer(AVFormatContext *s)
 {
     int ret;
+    
+    while(s->packet_buffer){
+        int ret;
+        AVPacketList *pktl= s->packet_buffer;
+
+//av_log(s, AV_LOG_DEBUG, "write_trailer st:%d dts:%lld\n", pktl->pkt.stream_index, pktl->pkt.dts);
+        truncate_ts(s->streams[pktl->pkt.stream_index], &pktl->pkt);
+        ret= s->oformat->write_packet(s, &pktl->pkt);
+        
+        s->packet_buffer= pktl->next;        
+
+        av_free_packet(&pktl->pkt);
+        av_freep(&pktl);
+        
+        if(ret<0)
+            return ret;
+    }
+
     ret = s->oformat->write_trailer(s);
     av_freep(&s->priv_data);
     return ret;
