@@ -169,10 +169,14 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int ret;
     ByteIOContext f1, *f;
 
+/*
+    This if-statement destroys pipes - I do not see why it is necessary
     if (get_frame_filename(filename, sizeof(filename),
                            s->path, s->img_number) < 0)
         return -EIO;
-    
+*/
+    get_frame_filename(filename, sizeof(filename),
+                       s->path, s->img_number);
     if (!s->is_pipe) {
         f = &f1;
         if (url_fopen(f, filename, URL_RDONLY) < 0)
@@ -547,10 +551,14 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
         return -EIO;
     }
     
+/*
+    This if-statement destroys pipes - I do not see why it is necessary
     if (get_frame_filename(filename, sizeof(filename), 
                            img->path, img->img_number) < 0)
         return -EIO;
-
+*/
+    get_frame_filename(filename, sizeof(filename), 
+                       img->path, img->img_number);
     if (!img->is_pipe) {
         pb = &pb1;
         if (url_fopen(pb, filename, URL_WRONLY) < 0)

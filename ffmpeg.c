@@ -302,15 +302,14 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
     UINT8 *buf, *src, *dest;
     int size, j, i;
 
-    size = avpicture_get_size(pix_fmt, w, h);
-    buf = malloc(size);
-    if (!buf)
-        return;
-
     /* XXX: not efficient, should add test if we can take
        directly the AVPicture */
     switch(pix_fmt) {
     case PIX_FMT_YUV420P:
+        size = avpicture_get_size(pix_fmt, w, h);
+        buf = malloc(size);
+        if (!buf)
+            return;
         dest = buf;
         for(i=0;i<3;i++) {
             if (i == 1) {
@@ -328,6 +327,8 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
     case PIX_FMT_YUV422P:
         size = (w * h) * 2; 
         buf = malloc(size);
+        if (!buf)
+            return;
         dest = buf;
         for(i=0;i<3;i++) {
             if (i == 1) {
@@ -344,6 +345,8 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
     case PIX_FMT_YUV444P:
         size = (w * h) * 3; 
         buf = malloc(size);
+        if (!buf)
+            return;
         dest = buf;
         for(i=0;i<3;i++) {
             src = picture->data[i];
@@ -357,6 +360,8 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
     case PIX_FMT_YUV422:
         size = (w * h) * 2; 
         buf = malloc(size);
+        if (!buf)
+            return;
         dest = buf;
         src = picture->data[0];
         for(j=0;j<h;j++) {
@@ -369,6 +374,8 @@ static void write_picture(AVFormatContext *s, int index, AVPicture *picture,
     case PIX_FMT_BGR24:
         size = (w * h) * 3; 
         buf = malloc(size);
+        if (!buf)
+            return;
         dest = buf;
         src = picture->data[0];
         for(j=0;j<h;j++) {
