@@ -15,7 +15,7 @@ EXE=.exe
 PROG=ffmpeg$(EXE)
 else
 EXT=
-PROG=ffmpeg ffserver
+PROG=ffmpeg ffplay ffserver
 endif
 
 all: lib $(PROG)
@@ -30,11 +30,15 @@ ffmpeg$(EXE): ffmpeg.o libav/libav.a libavcodec/libavcodec.a
 ffserver$(EXE): ffserver.o libav/libav.a libavcodec/libavcodec.a
 	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
+ffplay: ffmpeg$(EXE)
+	ln -sf $< $@
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
 install: all
 	install -s -m 755 $(PROG) $(prefix)/bin
+	ln -sf ffmpeg $(prefix)/bin/ffplay 
 
 clean: 
 	$(MAKE) -C libavcodec clean
