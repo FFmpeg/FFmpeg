@@ -70,6 +70,10 @@ ifeq ($(CONFIG_VORBIS),yes)
 OBJS+= ogg.o
 endif
 
+ifeq ($(TARGET_ARCH_SPARC64),yes)
+CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
+endif
+
 LIB= $(LIBPREF)avformat$(LIBSUF)
 ifeq ($(BUILD_SHARED),yes)
 SLIB= $(SLIBPREF)avformat$(SLIBSUF)

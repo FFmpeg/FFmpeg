@@ -161,11 +161,14 @@ ifeq ($(TARGET_ARCH_SH4),yes)
 OBJS+= sh4/idct_sh4.o sh4/dsputil_sh4.o sh4/dsputil_align.o
 endif
 
-ifeq ($(TARGET_ARCH_SPARC64),yes)
+ifeq ($(TARGET_ARCH_SPARC),yes)
 OBJS+=sparc/dsputil_vis.o
+sparc/%.o: sparc/%.c
+	$(CC) -mcpu=ultrasparc -mtune=ultrasparc $(CFLAGS) -c -o $@ $< 
+endif
+ifeq ($(TARGET_ARCH_SPARC64),yes)
 CFLAGS+= -mcpu=ultrasparc -mtune=ultrasparc
 endif
-
 
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
 OBJS := $(OBJS) $(ASM_OBJS)
@@ -220,6 +223,7 @@ clean: $(CLEANAMR)
 	   ppc/*.o ppc/*~ \
 	   ps2/*.o ps2/*~ \
 	   sh4/*.o sh4/*~ \
+	   sparc/*.o sparc/*~ \
 	   liba52/*.o liba52/*~ \
 	   apiexample $(TESTS)
 	$(MAKE) -C libpostproc clean

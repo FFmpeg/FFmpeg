@@ -372,7 +372,7 @@ typedef struct RL_VLC_ELEM {
     uint8_t run;
 } RL_VLC_ELEM;
 
-#ifdef ARCH_SPARC64
+#ifdef ARCH_SPARC
 #define UNALIGNED_STORES_ARE_BAD
 #endif
 
@@ -423,7 +423,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 	bit_buf<<=bit_left;
         bit_buf |= value >> (n - bit_left);
 #ifdef UNALIGNED_STORES_ARE_BAD
-        if (3 & (int) s->buf_ptr) {
+        if (3 & (intptr_t) s->buf_ptr) {
             s->buf_ptr[0] = bit_buf >> 24;
             s->buf_ptr[1] = bit_buf >> 16;
             s->buf_ptr[2] = bit_buf >>  8;
