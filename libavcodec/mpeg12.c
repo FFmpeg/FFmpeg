@@ -2300,10 +2300,10 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     width = get_bits(&s->gb, 12);
     height = get_bits(&s->gb, 12);
     s->aspect_ratio_info= get_bits(&s->gb, 4);
-    if(s->codec_id == CODEC_ID_MPEG1VIDEO){
-        aspect= 1.0/mpeg1_aspect[s->aspect_ratio_info];
-        if(aspect!=0.0) avctx->sample_aspect_ratio= av_d2q(aspect, 255);
-    }
+    if (s->aspect_ratio_info == 0)
+        return -1;
+    aspect= 1.0/mpeg1_aspect[s->aspect_ratio_info];
+    avctx->sample_aspect_ratio= av_d2q(aspect, 255);
 
     s->frame_rate_index = get_bits(&s->gb, 4);
     if (s->frame_rate_index == 0)
