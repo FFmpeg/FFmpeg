@@ -35,7 +35,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#define PALETTE_COUNT 256
 
 typedef struct {
     uint8_t  y0, y1, y2, y3;
@@ -63,7 +62,6 @@ typedef struct CinepakContext {
 
     int width, height;
 
-    unsigned char palette[PALETTE_COUNT * 4];
     int palette_video;
     cvid_strip_t strips[MAX_STRIPS];
 
@@ -361,22 +359,20 @@ static int cinepak_decode (CinepakContext *s)
 static int cinepak_decode_init(AVCodecContext *avctx)
 {
     CinepakContext *s = (CinepakContext *)avctx->priv_data;
-/*
-    int i;
-    unsigned char r, g, b;
-    unsigned char *raw_palette;
-    unsigned int *palette32;
-*/
 
     s->avctx = avctx;
     s->width = (avctx->width + 3) & ~3;
     s->height = (avctx->height + 3) & ~3;
 
-// check for paletted data
-s->palette_video = 0;
+    // check for paletted data
+    if (avctx->palctrl == NULL) {
+        s->palette_video = 0;
+        avctx->pix_fmt = PIX_FMT_YUV420P;
+    } else {
+        s->palette_video = 1;
+        avctx->pix_fmt = PIX_FMT_PAL8;
+    }
 
-
-    avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
@@ -403,6 +399,15 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     }
 
     cinepak_decode(s);
+
+    if (s->palette_video) {
+        memcpy (s->frame.data[1], avctx->palctrl->palette, AVPALETTE_SIZE);
+        if (avctx->palctrl->palette_changed) {
+            s->frame.palette_has_changed = 1;
+            avctx->palctrl->palette_changed = 0;
+        } else
+            s->frame.palette_has_changed = 0;
+    }
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->frame;
