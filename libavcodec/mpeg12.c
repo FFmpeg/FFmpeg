@@ -1559,7 +1559,18 @@ static void mpeg_decode_extension(AVCodecContext *avctx,
     }
 }
 
-/* return 1 if end of frame */
+#define DECODE_SLICE_FATAL_ERROR -2
+#define DECODE_SLICE_ERROR -1
+#define DECODE_SLICE_OK 0
+#define DECODE_SLICE_EOP 1
+
+/**
+ * decodes a slice.
+ * @return DECODE_SLICE_FATAL_ERROR if a non recoverable error occured<br>
+ *         DECODE_SLICE_ERROR if the slice is damaged<br>
+ *         DECODE_SLICE_OK if this slice is ok<br>
+ *         DECODE_SLICE_EOP if the end of the picture is reached
+ */
 static int mpeg_decode_slice(AVCodecContext *avctx, 
                               AVPicture *pict,
                               int start_code,
@@ -1572,7 +1583,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     start_code = (start_code - 1) & 0xff;
     if (start_code >= s->mb_height){
         fprintf(stderr, "slice below image (%d >= %d)\n", start_code, s->mb_height);
-        return -1;
+        return DECODE_SLICE_ERROR;
     }
     s->last_dc[0] = 1 << (7 + s->intra_dc_precision);
     s->last_dc[1] = s->last_dc[0];
@@ -1582,7 +1593,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     if (s->first_slice) {
         s->first_slice = 0;
         if(MPV_frame_start(s, avctx) < 0)
-            return -2;
+            return DECODE_SLICE_FATAL_ERROR;
     }
 
     init_get_bits(&s->gb, buf, buf_size);
@@ -1651,7 +1662,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         }
         if(s->mb_y >= s->mb_height){
             fprintf(stderr, "slice too long\n");
-            return -1;
+            return DECODE_SLICE_ERROR;
         }
     }
 eos: //end of slice
@@ -1689,12 +1700,12 @@ eos: //end of slice
             pict->linesize[0] = s->linesize;
             pict->linesize[1] = s->uvlinesize;
             pict->linesize[2] = s->uvlinesize;
-            return 1;
+            return DECODE_SLICE_EOP;
         } else {
-            return 0;
+            return DECODE_SLICE_OK;
         }
     } else {
-        return 0;
+        return DECODE_SLICE_OK;
     }
 }
 
@@ -1902,7 +1913,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         start_code <= SLICE_MAX_START_CODE) {
                         ret = mpeg_decode_slice(avctx, picture,
                                                 start_code, s->buffer, input_size);
-                        if (ret == 1) {
+                        if (ret == DECODE_SLICE_EOP) {
                             /* got a picture: exit */
                             /* first check if we must repeat the frame */
                             avctx->repeat_pict = 0;
@@ -1930,7 +1941,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                             goto the_end;
                         }else if(ret<0){
                             printf("Error while decoding slice\n");
-			    if(ret<-1) return -1;
+			    if(ret==DECODE_SLICE_FATAL_ERROR) return -1;
                         }
                     }
                     break;
