@@ -1452,7 +1452,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'd', 'p', 'n', 'd' ), mov_read_leaf },
 { MKTAG( 'd', 'r', 'e', 'f' ), mov_read_leaf },
 { MKTAG( 'e', 'd', 't', 's' ), mov_read_default },
-{ MKTAG( 'e', 'l', 's', 't' ), mov_read_elst },
+//{ MKTAG( 'e', 'l', 's', 't' ), mov_read_elst }, //broken, try some movs from http://videos.av7.net/
 { MKTAG( 'f', 'r', 'e', 'e' ), mov_read_leaf },
 { MKTAG( 'h', 'd', 'l', 'r' ), mov_read_hdlr },
 { MKTAG( 'h', 'i', 'n', 't' ), mov_read_leaf },
