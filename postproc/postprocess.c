@@ -143,6 +143,12 @@ static uint64_t packedYOffset=	0x0000000000000000LL;
 static uint64_t packedYScale=	0x0100010001000100LL;
 #endif
 
+extern int divx_quality;
+int newPPFlag=0; //is set if -npp is used
+struct PPMode gPPMode[GET_PP_QUALITY_MAX+1];
+
+extern int verbose;
+
 int hFlatnessThreshold= 56 - 16;
 int vFlatnessThreshold= 56 - 16;
 int deringThreshold= 20;
@@ -565,7 +571,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 
 	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
-	printf("%s\n", name);
+	if(verbose) printf("%s\n", name);
 
 	for(;;){
 		char *filterName;
@@ -582,7 +588,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 		if(filterToken == NULL) break;
 		p+= strlen(filterToken) + 1; // p points to next filterToken
 		filterName= strtok(filterToken, optionDelimiters);
-		printf("%s::%s\n", filterToken, filterName);
+		if(verbose) printf("%s::%s\n", filterToken, filterName);
 
 		if(*filterName == '-')
 		{
@@ -594,7 +600,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 			option= strtok(NULL, optionDelimiters);
 			if(option == NULL) break;
 
-			printf("%s\n", option);
+			if(verbose) printf(" option: %s\n", option);
 			if(!strcmp("autoq", option) || !strcmp("a", option)) q= quality;
 			else if(!strcmp("nochrom", option) || !strcmp("y", option)) chrom=0;
 			else if(!strcmp("chrom", option) || !strcmp("c", option)) chrom=1;
@@ -700,11 +706,34 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 	if(ppMode.chromMode & DERING) ppMode.oldMode |= PP_DERING_C;
 #endif
 
+	if(verbose) printf("lumMode=%X, chromMode=%X\n", ppMode.lumMode, ppMode.chromMode);
 	return ppMode;
 }
 
 /**
+ * Check and load the -npp part of the cmd line
+ */
+int readPPOpt(void *conf, char *arg)
+{
+	int quality;
+	for(quality=0; quality<GET_PP_QUALITY_MAX+1; quality++)
+	{
+		gPPMode[quality]= getPPModeByNameAndQuality(arg, quality);
+
+		if(gPPMode[quality].error) return -1;
+	}
+	newPPFlag=1;
+
+// it shouldnt matter what we set divx_quality to as long as its not 0 
+// (we dont use it if newPPFlag is set)
+	divx_quality=1; 
+	return 1;
+}
+
+/**
  * Obsolete, dont use it, use postprocess2() instead
+ * this will check newPPFlag automatically and use postprocess2 if it is set
+ * mode = quality if newPPFlag
  */
 void  postprocess(unsigned char * src[], int src_stride,
                  unsigned char * dst[], int dst_stride,
@@ -714,20 +743,17 @@ void  postprocess(unsigned char * src[], int src_stride,
 {
 	struct PPMode ppMode;
 	static QP_STORE_T zeroArray[2048/8];
-/*
-	static int qual=0;
 
-	ppMode= getPPModeByNameAndQuality("fast,default,-hdeblock,-vdeblock,tmpnoise:150:200:300", qual);
-	printf("OK\n");
-	qual++;
-	qual%=7;
-	printf("\n%X %X %X %X :%d: %d %d %d\n", ppMode.lumMode, ppMode.chromMode, ppMode.oldMode, ppMode.error,
-		qual, ppMode.maxTmpNoise[0], ppMode.maxTmpNoise[1], ppMode.maxTmpNoise[2]);
-	postprocess2(src, src_stride, dst, dst_stride,
-                 horizontal_size, vertical_size, QP_store, QP_stride, &ppMode);
+	if(newPPFlag)
+	{
+		ppMode= gPPMode[mode];
+		
+		postprocess2(src, src_stride, dst, dst_stride,
+			horizontal_size, vertical_size, QP_store, QP_stride, &ppMode);
 
-	return;
-*/
+		return;
+	}
+	
 	if(QP_store==NULL)
 	{
 		QP_store= zeroArray;
@@ -844,6 +870,7 @@ void  postprocess2(unsigned char * src[], int src_stride,
 
 /**
  * gets the mode flags for a given quality (larger values mean slower but better postprocessing)
+ * with -npp it simply returns quality 
  * 0 <= quality <= 6
  */
 int getPpModeForQuality(int quality){
@@ -880,7 +907,8 @@ int getPpModeForQuality(int quality){
 	};
 	if(use_old_pp) return odivx_modes[quality];
 #endif
-	return modes[quality];
+	if(newPPFlag)	return quality;
+	else		return modes[quality];
 }
 
 

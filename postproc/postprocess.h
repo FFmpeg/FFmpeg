@@ -114,4 +114,6 @@ int getPpModeForQuality(int quality);
 // name is the stuff after "-pp" on the command line
 struct PPMode getPpModeByNameAndQuality(char *name, int quality);
 
+int readPPOpt(void *conf, char *arg);
+
 #endif
