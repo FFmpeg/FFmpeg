@@ -564,10 +564,6 @@ static int rv10_decode_packet(AVCodecContext *avctx,
             return -1;
     }
 
-    if(s->pict_type == B_TYPE){ //FIXME remove after cleaning mottion_val indexing
-        memset(s->current_picture.motion_val[0], 0, sizeof(int16_t)*2*(s->mb_width*2+2)*(s->mb_height*2+2));
-    }
-
 #ifdef DEBUG
     printf("qscale=%d\n", s->qscale);
 #endif
@@ -600,9 +596,9 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     s->block_wrap[0]=
     s->block_wrap[1]=
     s->block_wrap[2]=
-    s->block_wrap[3]= s->mb_width*2 + 2;
+    s->block_wrap[3]= s->b8_stride;
     s->block_wrap[4]=
-    s->block_wrap[5]= s->mb_width + 2;
+    s->block_wrap[5]= s->mb_stride;
     ff_init_block_index(s);
     /* decode each macroblock */
 
@@ -677,10 +673,6 @@ static int rv10_decode_frame(AVCodecContext *avctx,
             return -1;
     }
     
-    if(s->pict_type == B_TYPE){ //FIXME remove after cleaning mottion_val indexing
-        memset(s->current_picture.motion_val[0], 0, sizeof(int16_t)*2*(s->mb_width*2+2)*(s->mb_height*2+2));
-    }
-
     if(s->mb_y>=s->mb_height){
         MPV_frame_end(s);
     

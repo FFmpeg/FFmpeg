@@ -216,7 +216,7 @@ void ff_wmv2_encode_mb(MpegEncContext * s,
                  wmv2_inter_table[w->cbp_table_index][cbp + 64][0]);
 
         /* motion vector */
-        h263_pred_motion(s, 0, &pred_x, &pred_y);
+        h263_pred_motion(s, 0, 0, &pred_x, &pred_y);
         msmpeg4_encode_motion(s, motion_x - pred_x, 
                               motion_y - pred_y);
     } else {
@@ -504,7 +504,7 @@ static int16_t *wmv2_pred_motion(Wmv2Context *w, int *px, int *py){
     int xy, wrap, diff, type;
     int16_t *A, *B, *C, *mot_val;
 
-    wrap = s->block_wrap[0];
+    wrap = s->b8_stride;
     xy = s->block_index[0];
 
     mot_val = s->current_picture.motion_val[0][xy];

@@ -733,7 +733,7 @@ static inline void set_p_mv_tables(MpegEncContext * s, int mx, int my, int mv4)
         s->current_picture.motion_val[0][mot_xy+1][0]= mx;
         s->current_picture.motion_val[0][mot_xy+1][1]= my;
 
-        mot_xy += s->block_wrap[0];
+        mot_xy += s->b8_stride;
         s->current_picture.motion_val[0][mot_xy  ][0]= mx;
         s->current_picture.motion_val[0][mot_xy  ][1]= my;
         s->current_picture.motion_val[0][mot_xy+1][0]= mx;
@@ -780,7 +780,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
         int pred_x4, pred_y4;
         int dmin4;
         static const int off[4]= {2, 1, 1, -1};
-        const int mot_stride = s->block_wrap[0];
+        const int mot_stride = s->b8_stride;
         const int mot_xy = s->block_index[block];
         const int block_x= (block&1);
         const int block_y= (block>>1);
@@ -1102,7 +1102,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     case ME_X1:
     case ME_EPZS:
        {
-            const int mot_stride = s->block_wrap[0];
+            const int mot_stride = s->b8_stride;
             const int mot_xy = s->block_index[0];
 
             P_LEFT[0]       = s->current_picture.motion_val[0][mot_xy - 1][0];
@@ -1252,7 +1252,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
                 int mean;
                 
                 if(s->out_format == FMT_H263){
-                    mean= (s->dc_val[i][mb_x + (mb_y+1)*(s->mb_width+2)] + 4)>>3; //FIXME not exact but simple ;)
+                    mean= (s->dc_val[i][mb_x + mb_y*s->b8_stride] + 4)>>3; //FIXME not exact but simple ;)
                 }else{
                     mean= (s->last_dc[i] + 4)>>3;
                 }
@@ -1809,11 +1809,11 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
     
 //printf("%d no:%d %d//\n", clip, noclip, f_code);
     if(s->flags&CODEC_FLAG_4MV){
-        const int wrap= 2+ s->mb_width*2;
+        const int wrap= s->b8_stride;
 
         /* clip / convert to intra 8x8 type MVs */
         for(y=0; y<s->mb_height; y++){
-            int xy= (y*2 + 1)*wrap + 1;
+            int xy= y*2*wrap;
             int i= y*s->mb_stride;
             int x;
 

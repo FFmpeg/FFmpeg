@@ -45,7 +45,7 @@ static void put_dc(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
 {
     int dc, dcu, dcv, y, i;
     for(i=0; i<4; i++){
-        dc= s->dc_val[0][mb_x*2+1 + (i&1) + (mb_y*2+1 + (i>>1))*(s->mb_width*2+2)];
+        dc= s->dc_val[0][mb_x*2 + (i&1) + (mb_y*2 + (i>>1))*s->b8_stride];
         if(dc<0) dc=0;
         else if(dc>2040) dc=2040;
         for(y=0; y<8; y++){
@@ -55,8 +55,8 @@ static void put_dc(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
             }
         }
     }
-    dcu = s->dc_val[1][mb_x+1 + (mb_y+1)*(s->mb_width+2)];
-    dcv = s->dc_val[2][mb_x+1 + (mb_y+1)*(s->mb_width+2)];
+    dcu = s->dc_val[1][mb_x + mb_y*s->mb_stride];
+    dcv = s->dc_val[2][mb_x + mb_y*s->mb_stride];
     if     (dcu<0   ) dcu=0;
     else if(dcu>2040) dcu=2040;
     if     (dcv<0   ) dcv=0;
@@ -209,8 +209,8 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             int left_damage =  left_status&(DC_ERROR|AC_ERROR|MV_ERROR);
             int right_damage= right_status&(DC_ERROR|AC_ERROR|MV_ERROR);
             int offset= b_x*8 + b_y*stride*8;
-            int16_t *left_mv=  s->current_picture.motion_val[0][s->block_wrap[0]*((b_y<<(1-is_luma)) + 1) + ( b_x   <<(1-is_luma))];
-            int16_t *right_mv= s->current_picture.motion_val[0][s->block_wrap[0]*((b_y<<(1-is_luma)) + 1) + ((b_x+1)<<(1-is_luma))];
+            int16_t *left_mv=  s->current_picture.motion_val[0][s->b8_stride*(b_y<<(1-is_luma)) + ( b_x   <<(1-is_luma))];
+            int16_t *right_mv= s->current_picture.motion_val[0][s->b8_stride*(b_y<<(1-is_luma)) + ((b_x+1)<<(1-is_luma))];
             
             if(!(left_damage||right_damage)) continue; // both undamaged
             
@@ -269,8 +269,8 @@ static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             int top_damage =      top_status&(DC_ERROR|AC_ERROR|MV_ERROR);
             int bottom_damage= bottom_status&(DC_ERROR|AC_ERROR|MV_ERROR);
             int offset= b_x*8 + b_y*stride*8;
-            int16_t *top_mv=    s->current_picture.motion_val[0][s->block_wrap[0]*(( b_y   <<(1-is_luma)) + 1) + (b_x<<(1-is_luma))];
-            int16_t *bottom_mv= s->current_picture.motion_val[0][s->block_wrap[0]*(((b_y+1)<<(1-is_luma)) + 1) + (b_x<<(1-is_luma))];
+            int16_t *top_mv=    s->current_picture.motion_val[0][s->b8_stride*( b_y   <<(1-is_luma)) + (b_x<<(1-is_luma))];
+            int16_t *bottom_mv= s->current_picture.motion_val[0][s->b8_stride*((b_y+1)<<(1-is_luma)) + (b_x<<(1-is_luma))];
             
             if(!(top_damage||bottom_damage)) continue; // both undamaged
             
@@ -378,8 +378,8 @@ int score_sum=0;
                     int j;
                     int best_score=256*256*256*64;
                     int best_pred=0;
-                    const int mot_stride= mb_width*2+2;
-                    const int mot_index= mb_x*2 + 1 + (mb_y*2+1)*mot_stride;
+                    const int mot_stride= s->b8_stride;
+                    const int mot_index= mb_x*2 + mb_y*2*mot_stride;
                     int prev_x= s->current_picture.motion_val[0][mot_index][0];
                     int prev_y= s->current_picture.motion_val[0][mot_index][1];
 
@@ -672,14 +672,14 @@ void ff_er_frame_end(MpegEncContext *s){
     av_log(s->avctx, AV_LOG_INFO, "concealing errors\n");
     
     if(s->current_picture.motion_val[0] == NULL){
-        int size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
+        int size = s->b8_stride * 2 * s->mb_height;
         Picture *pic= s->current_picture_ptr;
         
         av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
             
         for(i=0; i<2; i++){
-            pic->motion_val_base[i]= av_mallocz((size+1) * 2 * sizeof(uint16_t)); //FIXME size
-            pic->motion_val[i]= pic->motion_val_base[i]+1;
+            pic->motion_val_base[i]= av_mallocz((size+2) * 2 * sizeof(uint16_t));
+            pic->motion_val[i]= pic->motion_val_base[i]+2;
         }
         pic->motion_subsample_log2= 3;
         s->current_picture= *s->current_picture_ptr;
@@ -845,17 +845,17 @@ void ff_er_frame_end(MpegEncContext *s){
             s->mb_intra=0;
             s->mb_skiped=0;
             if(IS_8X8(mb_type)){
-                int mb_index= mb_x*2+1 + (mb_y*2+1)*s->block_wrap[0];
+                int mb_index= mb_x*2 + mb_y*2*s->b8_stride;
                 int j;
                 s->mv_type = MV_TYPE_8X8;
                 for(j=0; j<4; j++){
-                    s->mv[0][j][0] = s->current_picture.motion_val[0][ mb_index + (j&1) + (j>>1)*s->block_wrap[0] ][0];
-                    s->mv[0][j][1] = s->current_picture.motion_val[0][ mb_index + (j&1) + (j>>1)*s->block_wrap[0] ][1];
+                    s->mv[0][j][0] = s->current_picture.motion_val[0][ mb_index + (j&1) + (j>>1)*s->b8_stride ][0];
+                    s->mv[0][j][1] = s->current_picture.motion_val[0][ mb_index + (j&1) + (j>>1)*s->b8_stride ][1];
                 }
             }else{
                 s->mv_type = MV_TYPE_16X16;
-                s->mv[0][0][0] = s->current_picture.motion_val[0][ mb_x*2+1 + (mb_y*2+1)*s->block_wrap[0] ][0];
-                s->mv[0][0][1] = s->current_picture.motion_val[0][ mb_x*2+1 + (mb_y*2+1)*s->block_wrap[0] ][1];
+                s->mv[0][0][0] = s->current_picture.motion_val[0][ mb_x*2 + mb_y*2*s->b8_stride ][0];
+                s->mv[0][0][1] = s->current_picture.motion_val[0][ mb_x*2 + mb_y*2*s->b8_stride ][1];
             }
         
 	    s->dsp.clear_blocks(s->block[0]);
@@ -870,7 +870,7 @@ void ff_er_frame_end(MpegEncContext *s){
     if(s->pict_type==B_TYPE){
         for(mb_y=0; mb_y<s->mb_height; mb_y++){
             for(mb_x=0; mb_x<s->mb_width; mb_x++){
-                int xy= mb_x*2+1 + (mb_y*2+1)*s->block_wrap[0];
+                int xy= mb_x*2 + mb_y*2*s->b8_stride;
                 const int mb_xy= mb_x + mb_y * s->mb_stride;
                 const int mb_type= s->current_picture.mb_type[mb_xy];
                 error= s->error_status_table[mb_xy];
@@ -930,7 +930,7 @@ void ff_er_frame_end(MpegEncContext *s){
             dest_cb= s->current_picture.data[1] + mb_x*8  + mb_y*8 *s->uvlinesize;
             dest_cr= s->current_picture.data[2] + mb_x*8  + mb_y*8 *s->uvlinesize;
            
-            dc_ptr= &s->dc_val[0][mb_x*2+1 + (mb_y*2+1)*(s->mb_width*2+2)];
+            dc_ptr= &s->dc_val[0][mb_x*2 + mb_y*2*s->b8_stride];
             for(n=0; n<4; n++){
                 dc=0;
                 for(y=0; y<8; y++){
@@ -939,7 +939,7 @@ void ff_er_frame_end(MpegEncContext *s){
                        dc+= dest_y[x + (n&1)*8 + (y + (n>>1)*8)*s->linesize];
                     }
                 }
-                dc_ptr[(n&1) + (n>>1)*(s->mb_width*2+2)]= (dc+4)>>3;
+                dc_ptr[(n&1) + (n>>1)*s->b8_stride]= (dc+4)>>3;
             }
 
             dcu=dcv=0;
@@ -950,18 +950,18 @@ void ff_er_frame_end(MpegEncContext *s){
                     dcv+=dest_cr[x + y*(s->uvlinesize)];
                 }
             }
-            s->dc_val[1][mb_x+1 + (mb_y+1)*(s->mb_width+2)]= (dcu+4)>>3;
-            s->dc_val[2][mb_x+1 + (mb_y+1)*(s->mb_width+2)]= (dcv+4)>>3;   
+            s->dc_val[1][mb_x + mb_y*s->mb_stride]= (dcu+4)>>3;
+            s->dc_val[2][mb_x + mb_y*s->mb_stride]= (dcv+4)>>3;   
         }
     }
 #if 1
     /* guess DC for damaged blocks */
-    guess_dc(s, s->dc_val[0] + s->mb_width*2+3, s->mb_width*2, s->mb_height*2, s->mb_width*2+2, 1);
-    guess_dc(s, s->dc_val[1] + s->mb_width  +3, s->mb_width  , s->mb_height  , s->mb_width  +2, 0);
-    guess_dc(s, s->dc_val[2] + s->mb_width  +3, s->mb_width  , s->mb_height  , s->mb_width  +2, 0);
+    guess_dc(s, s->dc_val[0], s->mb_width*2, s->mb_height*2, s->b8_stride, 1);
+    guess_dc(s, s->dc_val[1], s->mb_width  , s->mb_height  , s->mb_stride, 0);
+    guess_dc(s, s->dc_val[2], s->mb_width  , s->mb_height  , s->mb_stride, 0);
 #endif   
     /* filter luma DC */
-    filter181(s->dc_val[0] + s->mb_width*2+3, s->mb_width*2, s->mb_height*2, s->mb_width*2+2);
+    filter181(s->dc_val[0], s->mb_width*2, s->mb_height*2, s->b8_stride);
     
 #if 1
     /* render DC only intra */

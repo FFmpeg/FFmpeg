@@ -2324,8 +2324,8 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
             return -1;
 
         if(s->current_picture.motion_val[0] && !s->encoding){ //note motion_val is normally NULL unless we want to extract the MVs
-            const int wrap = field_pic ? 2*s->block_wrap[0] : s->block_wrap[0];
-            int xy = s->mb_x*2 + 1 + (s->mb_y*2 +1)*wrap;
+            const int wrap = field_pic ? 2*s->b8_stride : s->b8_stride;
+            int xy = s->mb_x*2 + s->mb_y*2*wrap;
             int motion_x, motion_y, dir, i;
             if(field_pic && !s->first_field)
                 xy += wrap/2;
