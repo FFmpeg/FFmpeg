@@ -524,6 +524,7 @@ void fifo_free(FifoBuffer *f);
 int fifo_size(FifoBuffer *f, uint8_t *rptr);
 int fifo_read(FifoBuffer *f, uint8_t *buf, int buf_size, uint8_t **rptr_ptr);
 void fifo_write(FifoBuffer *f, uint8_t *buf, int size, uint8_t **wptr_ptr);
+int put_fifo(ByteIOContext *pb, FifoBuffer *f, int buf_size, uint8_t **rptr_ptr);
 
 /* media file input */
 AVInputFormat *av_find_input_format(const char *short_name);

@@ -264,6 +264,34 @@ void fifo_write(FifoBuffer *f, uint8_t *buf, int size, uint8_t **wptr_ptr)
     *wptr_ptr = wptr;
 }
 
+/* get data from the fifo (return -1 if not enough data) */
+int put_fifo(ByteIOContext *pb, FifoBuffer *f, int buf_size, uint8_t **rptr_ptr)
+{
+    uint8_t *rptr = *rptr_ptr;
+    int size, len;
+
+    if (f->wptr >= rptr) {
+        size = f->wptr - rptr;
+    } else {
+        size = (f->end - rptr) + (f->wptr - f->buffer);
+    }
+    
+    if (size < buf_size)
+        return -1;
+    while (buf_size > 0) {
+        len = f->end - rptr;
+        if (len > buf_size)
+            len = buf_size;
+        put_buffer(pb, rptr, len);
+        rptr += len;
+        if (rptr >= f->end)
+            rptr = f->buffer;
+        buf_size -= len;
+    }
+    *rptr_ptr = rptr;
+    return 0;
+}
+
 int filename_number_test(const char *filename)
 {
     char buf[1024];
