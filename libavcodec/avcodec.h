@@ -163,7 +163,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
     uint8_t *data[4];\
     int linesize[4];\
     /**\
-     * pointer to the first allocated byte of the picture. can be used in get_buffer/release_buffer
+     * pointer to the first allocated byte of the picture. can be used in get_buffer/release_buffer\
      * this isnt used by lavc unless the default get/release_buffer() is used\
      * encoding: \
      * decoding: \
