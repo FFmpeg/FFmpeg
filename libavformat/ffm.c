@@ -368,7 +368,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     FFMStream *fst;
     ByteIOContext *pb = &s->pb;
     AVCodecContext *codec;
-    int i;
+    int i, nb_streams;
     uint32_t tag;
 
     /* header */
@@ -386,17 +386,15 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         ffm->file_size = (uint64_t_C(1) << 63) - 1;
     }
 
-    s->nb_streams = get_be32(pb);
+    nb_streams = get_be32(pb);
     get_be32(pb); /* total bitrate */
     /* read each stream */
-    for(i=0;i<s->nb_streams;i++) {
+    for(i=0;i<nb_streams;i++) {
         char rc_eq_buf[128];
 
-        st = av_mallocz(sizeof(AVStream));
+        st = av_new_stream(s, 0);
         if (!st)
             goto fail;
-        avcodec_get_context_defaults(&st->codec);
-        s->streams[i] = st;
         fst = av_mallocz(sizeof(FFMStream));
         if (!fst)
             goto fail;
@@ -611,7 +609,7 @@ offset_t ffm_read_write_index(int fd)
     read(fd, buf, 8);
     pos = 0;
     for(i=0;i<8;i++)
-        pos |= buf[i] << (56 - i * 8);
+        pos |= (int64_t)buf[i] << (56 - i * 8);
     return pos;
 }
 

@@ -140,16 +140,9 @@ static int au_read_header(AVFormatContext *s,
     }
 
     /* now we are ready: build format streams */
-    st = av_malloc(sizeof(AVStream));
+    st = av_new_stream(s, 0);
     if (!st)
         return -1;
-    avcodec_get_context_defaults(&st->codec);
-
-    s->nb_streams = 1;
-    s->streams[0] = st;
-
-    st->id = 0;
-    
     st->codec.codec_type = CODEC_TYPE_AUDIO;
     st->codec.codec_tag = id;
     st->codec.codec_id = codec;

@@ -481,17 +481,14 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_le16(pb);
             /* if mp3 streaming found, OK */
             if ((v & 0x20) != 0) {
-                st = av_mallocz(sizeof(AVStream));
+                st = av_new_stream(s, 0);
                 if (!st)
                     return -ENOMEM;
-                avcodec_get_context_defaults(&st->codec);
 
                 if (v & 0x01)
                     st->codec.channels = 2;
                 else
                     st->codec.channels = 1;
-                s->nb_streams = 1;
-                s->streams[0] = st;
 
                 switch((v>> 2) & 0x03) {
                 case 1:
