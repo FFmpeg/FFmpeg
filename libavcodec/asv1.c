@@ -579,7 +579,7 @@ static int decode_init(AVCodecContext *avctx){
     }
 
     p->qstride= a->mb_width;
-    p->qscale_table= av_mallocz( p->qstride * a->mb_height);
+    p->qscale_table= av_malloc( p->qstride * a->mb_height);
     p->quality= (32*scale + a->inv_qscale/2)/a->inv_qscale;
     memset(p->qscale_table, p->quality, p->qstride*a->mb_height);
 

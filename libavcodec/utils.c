@@ -314,7 +314,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             //FIXME next ensures that linesize= 2^x uvlinesize, thats needed because some MC code assumes it
             buf->linesize[i]= ALIGN(pixel_size*w>>h_shift, STRIDE_ALIGN<<(h_chroma_shift-h_shift)); 
 
-            buf->base[i]= av_mallocz((buf->linesize[i]*h>>v_shift)+16); //FIXME 16
+            buf->base[i]= av_malloc((buf->linesize[i]*h>>v_shift)+16); //FIXME 16
             if(buf->base[i]==NULL) return -1;
             memset(buf->base[i], 128, buf->linesize[i]*h>>v_shift);
         

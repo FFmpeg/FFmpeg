@@ -594,7 +594,6 @@ static void MPV_encode_defaults(MpegEncContext *s){
         done=1;
 
         default_mv_penalty= av_mallocz( sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1) );
-        memset(default_mv_penalty, 0, sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1));
         memset(default_fcode_tab , 0, sizeof(uint8_t)*(2*MAX_MV+1));
 
         for(i=-16; i<16; i++){

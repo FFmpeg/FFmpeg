@@ -135,8 +135,6 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
     
-    memset(c, 0, sizeof(AVResampleContext));
-    
     c->phase_shift= phase_shift;
     c->phase_mask= phase_count-1;
     c->linear= linear;
