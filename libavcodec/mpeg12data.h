@@ -161,6 +161,9 @@ static const INT8 mpeg1_run[111] = {
  25, 26, 27, 28, 29, 30, 31,
 };
 
+static UINT8 mpeg1_index_run[2][64];
+static INT8 mpeg1_max_level[2][64];
+
 static RLTable rl_mpeg1 = {
     111,
     111,
