@@ -396,7 +396,7 @@ static int avi_write_header(AVFormatContext *s)
             put_le32(pb, nb_frames); /* length, XXX: fill later */
             put_le32(pb, 1024 * 1024); /* suggested buffer size */
             put_le32(pb, -1); /* quality */
-            put_le32(pb, stream->width * stream->height * 3); /* sample size */
+            put_le32(pb, 0); /* sample size */
             put_le16(pb, 0);
             put_le16(pb, 0);
             put_le16(pb, stream->width);
