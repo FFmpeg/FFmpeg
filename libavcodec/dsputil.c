@@ -599,6 +599,7 @@ PIXOP2(put, op_put)
 #undef op_avg
 #undef op_put
 
+#if 0
 /* FIXME this stuff could be removed as its ot really used anymore */
 #define PIXOP(BTYPE, OPNAME, OP, INCR)                                                   \
                                                                                          \
@@ -699,7 +700,6 @@ void (*OPNAME ## _pixels_tab[4])(BTYPE *block, const UINT8 *pixels, int line_siz
     OPNAME ## _pixels_xy2,                                                               \
 };
 
-
 /* rounding primitives */
 #define avg2(a,b) ((a+b+1)>>1)
 #define avg4(a,b,c,d) ((a+b+c+d+2)>>2)
@@ -719,10 +719,10 @@ PIXOP(DCTELEM, sub, op_sub, 8)
 
 #undef avg2
 #undef avg4
+#endif
+
 #define avg2(a,b) ((a+b+1)>>1)
 #define avg4(a,b,c,d) ((a+b+c+d+2)>>2)
-
-/* end of removeale stuff */
 
 static void gmc1_c(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder)
 {
@@ -1330,6 +1330,14 @@ void dsputil_init(void)
     }
     
     build_zigzag_end();
+}
+
+/* remove any non bit exact operation (testing purpose) */
+void avcodec_set_bit_exact(void)
+{
+#ifdef HAVE_MMX
+    dsputil_set_bit_exact_mmx();
+#endif
 }
 
 void get_psnr(UINT8 *orig_image[3], UINT8 *coded_image[3],

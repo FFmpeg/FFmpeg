@@ -61,13 +61,6 @@ extern op_pixels_func avg_no_rnd_pixels_tab[4];
 extern qpel_mc_func qpel_mc_rnd_tab[16];
 extern qpel_mc_func qpel_mc_no_rnd_tab[16];
 
-
-/* sub pixel (encoding) */
-extern void (*sub_pixels_tab[4])(DCTELEM *block, const UINT8 *pixels, int line_size, int h);
-
-#define sub_pixels_2(block, pixels, line_size, dxy) \
-   sub_pixels_tab[dxy](block, pixels, line_size, 8)
-
 /* motion estimation */
 
 typedef int (*op_pixels_abs_func)(UINT8 *blk1, UINT8 *blk2, int line_size);
@@ -119,6 +112,7 @@ static inline void emms(void)
 #define __align8 __attribute__ ((aligned (8)))
 
 void dsputil_init_mmx(void);
+void dsputil_set_bit_exact_mmx(void);
 
 #elif defined(ARCH_ARMV4L)
 
