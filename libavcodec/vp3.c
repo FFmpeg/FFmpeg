@@ -287,6 +287,7 @@ typedef struct Vp3DecodeContext {
     int last_coded_y_fragment;
     int last_coded_c_fragment;
 
+    uint8_t edge_emu_buffer[9*2048]; //FIXME dynamic alloc
 } Vp3DecodeContext;
 
 /************************************************************************
@@ -2340,7 +2341,7 @@ static void render_fragments(Vp3DecodeContext *s,
     int motion_x, motion_y;
     int upper_motion_limit, lower_motion_limit;
     int motion_halfpel_index;
-    unsigned int motion_source;
+    uint8_t *motion_source;
 
     debug_vp3("  vp3: rendering final fragments for %s\n",
         (plane == 0) ? "Y plane" : (plane == 1) ? "U plane" : "V plane");
@@ -2386,15 +2387,24 @@ static void render_fragments(Vp3DecodeContext *s,
             /* transform if this block was coded */
             if (s->all_fragments[i].coding_method != MODE_COPY) {
 
-                motion_source = s->all_fragments[i].first_pixel;
+                if ((s->all_fragments[i].coding_method == MODE_USING_GOLDEN) ||
+                    (s->all_fragments[i].coding_method == MODE_GOLDEN_MV))
+                    motion_source= golden_plane;
+                else 
+                    motion_source= last_plane;
+
+                motion_source += s->all_fragments[i].first_pixel;
                 motion_halfpel_index = 0;
 
                 /* sort out the motion vector if this fragment is coded
                  * using a motion vector method */
                 if ((s->all_fragments[i].coding_method > MODE_INTRA) &&
                     (s->all_fragments[i].coding_method != MODE_USING_GOLDEN)) {
+                    int src_x, src_y;
                     motion_x = s->all_fragments[i].motion_x;
                     motion_y = s->all_fragments[i].motion_y;
+                    src_x= (motion_x>>1) + x;
+                    src_y= (motion_y>>1) + y;
 if ((motion_x == 0xbeef) || (motion_y == 0xbeef))
 printf (" help! got beefy vector! (%X, %X)\n", motion_x, motion_y);
 
@@ -2417,32 +2427,22 @@ printf (" help! got beefy vector! (%X, %X)\n", motion_x, motion_y);
                         motion_source -= (((motion_y + 1) >> 1) * stride);
                     }
 
-                    /* if the are any problems with a motion vector, refuse
-                     * to render the block */
-                    if ((motion_source < upper_motion_limit) ||
-                        (motion_source > lower_motion_limit)) {
-                        printf ("  vp3: help! motion source (%d) out of range (%d..%d), fragment %d\n",
-                            motion_source, upper_motion_limit, lower_motion_limit, i);
-                        continue;
+                    if(src_x<0 || src_y<0 || src_x + 9 >= width || src_y + 9 >= height){
+                        uint8_t *temp= s->edge_emu_buffer;
+                        if(stride<0) temp -= 9*stride;
+
+                        ff_emulated_edge_mc(temp, motion_source, stride, 9, 9, src_x, src_y, width, height);
+                        motion_source= temp;
                     }
                 }
 
                 /* first, take care of copying a block from either the
                  * previous or the golden frame */
-                if ((s->all_fragments[i].coding_method == MODE_USING_GOLDEN) ||
-                    (s->all_fragments[i].coding_method == MODE_GOLDEN_MV)) {
-
-                    s->dsp.put_pixels_tab[1][motion_halfpel_index](
-                        output_plane + s->all_fragments[i].first_pixel,
-                        golden_plane + motion_source,
-                        stride, 8);
-
-                } else 
                 if (s->all_fragments[i].coding_method != MODE_INTRA) {
 
-                    s->dsp.put_pixels_tab[1][motion_halfpel_index](
+                    s->dsp.put_no_rnd_pixels_tab[1][motion_halfpel_index](
                         output_plane + s->all_fragments[i].first_pixel,
-                        last_plane + motion_source,
+                        motion_source,
                         stride, 8);
                 }
 
