@@ -133,6 +133,7 @@ static int audio_channels = 1;
 static int audio_codec_id = CODEC_ID_NONE;
 
 static int64_t recording_time = 0;
+static int64_t start_time = 0;
 static int file_overwrite = 0;
 static char *str_title = NULL;
 static char *str_author = NULL;
@@ -1255,11 +1256,12 @@ static int av_encode(AVFormatContext **output_files,
         if (ist->discard)
             goto discard_packet;
 
-        // printf("read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
+        //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
 
         len = pkt.size;
         ptr = pkt.data;
         while (len > 0) {
+	    int ipts;
 	    /* decode the packet if needed */
             data_buf = NULL; /* fail safe */
             data_size = 0;
@@ -1368,8 +1370,12 @@ static int av_encode(AVFormatContext **output_files,
                 }
             }
 #endif
-            /* transcode raw format, encode packets and output them */
+	    ipts = (double)ist->pts * is->pts_num / is->pts_den;
+        //fprintf(stderr,"decoded ipts=%ld %d\n",ipts,ist->pts);
 
+	    /* if output time reached then transcode raw format, 
+	       encode packets and output them */
+	    if (start_time == 0 || ipts > (start_time / 1000000.0))
             for(i=0;i<nb_ostreams;i++) {
                 int frame_size;
 
@@ -2028,6 +2034,11 @@ static void opt_recording_time(const char *arg)
     recording_time = parse_date(arg, 1);
 }
 
+static void opt_start_time(const char *arg)
+{
+    start_time = parse_date(arg, 1);
+}
+
 static void opt_input_file(const char *filename)
 {
     AVFormatContext *ic;
@@ -2663,6 +2674,7 @@ const OptionDef options[] = {
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream" },
     { "t", HAS_ARG, {(void*)opt_recording_time}, "set the recording time", "duration" },
+    { "start", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
