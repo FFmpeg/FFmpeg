@@ -2301,12 +2301,13 @@ static int av_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *in,
 int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
     AVStream *st= s->streams[ pkt->stream_index];
 
-    if(compute_pkt_fields2(st, pkt) < 0)
-        return -1;
-    
     //FIXME/XXX/HACK drop zero sized packets
     if(st->codec.codec_type == CODEC_TYPE_AUDIO && pkt->size==0)
         return 0;
+
+//av_log(NULL, AV_LOG_DEBUG, "av_interleaved_write_frame %d %Ld %Ld\n", pkt->size, pkt->dts, pkt->pts);
+    if(compute_pkt_fields2(st, pkt) < 0)
+        return -1;
     
     if(pkt->dts == AV_NOPTS_VALUE)
         return -1;
