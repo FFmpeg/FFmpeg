@@ -354,7 +354,7 @@ static int decode_p_frame(FourXContext *f, uint8_t *buf, int length){
     }
     
     if(bitstream_size != (get_bits_count(&f->gb)+31)/32*4)
-        av_log(f->avctx, AV_LOG_ERROR, " %d %zd %zd bytes left\n", 
+        av_log(f->avctx, AV_LOG_ERROR, " %d %d %d bytes left\n", 
             bitstream_size - (get_bits_count(&f->gb)+31)/32*4, 
             bytestream_size - (f->bytestream - (buf + 20 + bitstream_size + wordstream_size)),
             wordstream_size - (((uint8_t*)f->wordstream) - (buf + 20 + bitstream_size))
