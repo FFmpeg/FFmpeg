@@ -47,6 +47,8 @@ enum OutputFormat {
 #define MAX_FCODE 7
 #define MAX_MV 2048
 
+#define MAX_THREADS 8
+
 #define MAX_PICTURE_COUNT 15
 
 #define ME_MAP_SIZE 64
@@ -285,6 +287,10 @@ typedef struct MpegEncContext {
     Picture **input_picture;   ///< next pictures on display order for encoding
     Picture **reordered_input_picture; ///< pointer to the next pictures in codedorder for encoding
     
+    int start_mb_y;            ///< start mb_y of this thread (so current thread should process start_mb_y <= row < end_mb_y)
+    int end_mb_y;              ///< end   mb_y of this thread (so current thread should process start_mb_y <= row < end_mb_y)
+    struct MpegEncContext *thread_context[MAX_THREADS];
+    
     /** 
      * copy of the previous picture structure.
      * note, linesize & data, might not match the previous picture (for field pictures)
@@ -332,7 +338,10 @@ typedef struct MpegEncContext {
     uint8_t *cbp_table;           ///< used to store cbp, ac_pred for partitioned decoding 
     uint8_t *pred_dir_table;      ///< used to store pred_dir for partitioned decoding 
     uint8_t *allocated_edge_emu_buffer;
-    uint8_t *edge_emu_buffer;     ///< points into the middle of allocated_edge_emu_buffer  
+    uint8_t *edge_emu_buffer;     ///< points into the middle of allocated_edge_emu_buffer
+    uint8_t *rd_scratchpad;       ///< scartchpad for rate distortion mb decission
+    uint8_t *obmc_scratchpad;
+    uint8_t *b_scratchpad;        ///< scratchpad used for writing into write only buffers
 
     int qscale;                 ///< QP 
     int chroma_qscale;          ///< chroma QP 
@@ -487,6 +496,10 @@ typedef struct MpegEncContext {
     int misc_bits; ///< cbp, mb_type
     int last_bits; ///< temp var used for calculating the above vars
     
+    /* temp variables for picture complexity calculation */
+    int mc_mb_var_sum_temp;
+    int mb_var_sum_temp;
+
     /* error concealment / resync */
     int error_count;
     uint8_t *error_status_table;       ///< table of the error status of each MB  
@@ -565,9 +578,6 @@ typedef struct MpegEncContext {
     int intra_dc_threshold;          ///< QP above whch the ac VLC should be used for intra dc 
     PutBitContext tex_pb;            ///< used for data partitioned VOPs 
     PutBitContext pb2;               ///< used for data partitioned VOPs 
-#define PB_BUFFER_SIZE 1024*256
-    uint8_t *tex_pb_buffer;          
-    uint8_t *pb2_buffer;
     int mpeg_quant;
     int t_frame;                       ///< time distance of first I -> B, used for interlaced b frames 
     int padding_bug_score;             ///< used to detect the VERY common padding bug in MPEG4 
@@ -908,6 +918,7 @@ void mjpeg_encode_mb(MpegEncContext *s,
                      DCTELEM block[6][64]);
 void mjpeg_picture_header(MpegEncContext *s);
 void mjpeg_picture_trailer(MpegEncContext *s);
+void ff_mjpeg_stuffing(PutBitContext * pbc);
 
 
 /* rate control */

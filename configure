@@ -29,6 +29,7 @@ echo "  --enable-amr_nb          enable amr_nb float audio codec"
 echo "  --enable-amr_nb-fixed    use fixed point for amr-nb codec"
 echo "  --enable-amr_wb          enable amr_wb float audio codec"
 echo "  --enable-sunmlib         use Sun medialib [default=no]"
+echo "  --enable-pthreads        use pthreads [default=no]"
 echo ""
 echo "Advanced options (experts only):"
 echo "  --source-path=PATH       path of source code [$source_path]"
@@ -171,6 +172,7 @@ amr_nb="no"
 amr_wb="no"
 amr_nb_fixed="no"
 sunmlib="no"
+pthreads="no"
 
 # OS specific
 targetos=`uname -s`
@@ -414,6 +416,8 @@ for opt do
   --enable-amr_wb) amr_wb="yes"
   ;; 
   --enable-sunmlib) sunmlib="yes"
+  ;;
+  --enable-pthreads) pthreads="yes"
   ;;
   esac
 done
@@ -919,6 +923,7 @@ echo "Imlib2 support   $imlib2"
 echo "freetype support $freetype2"
 fi
 echo "Sun medialib support"  $sunmlib
+echo "pthreads support"      $pthreads
 echo "AMR-NB float support"  $amr_nb
 echo "AMR-NB fixed support"  $amr_nb_fixed
 echo "AMR-WB float support"  $amr_wb
@@ -1032,6 +1037,11 @@ if test "$sunmlib" = "yes" ; then
   echo "HAVE_MLIB=yes" >> config.mak
   echo "#define HAVE_MLIB 1" >> $TMPH
   extralibs="$extralibs -lmlib"
+fi
+if test "$pthreads" = "yes" ; then
+  echo "HAVE_PTHREADS=yes" >> config.mak
+  echo "#define HAVE_PTHREADS 1" >> $TMPH
+  extralibs="$extralibs -lpthread"
 fi
 if test "$sdl" = "yes" ; then
   echo "CONFIG_SDL=yes" >> config.mak

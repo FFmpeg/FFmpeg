@@ -1961,7 +1961,9 @@ void h263_encode_init(MpegEncContext *s)
         s->luma_dc_vlc_length= uni_DCtab_lum_len;
         s->chroma_dc_vlc_length= uni_DCtab_chrom_len;
         s->ac_esc_length= 7+2+1+6+1+12+1;
-        
+        s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table;
+        s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
+
         if(s->flags & CODEC_FLAG_GLOBAL_HEADER){
 
             s->avctx->extradata= av_malloc(1024);
@@ -2290,12 +2292,11 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
     put_bits(&s->pb, 1, s->progressive_sequence ? 0 : 1);
     put_bits(&s->pb, 1, 1);		/* obmc disable */
     if (vo_ver_id == 1) {
-        put_bits(&s->pb, 1, s->vol_sprite_usage=0);		/* sprite enable */
+        put_bits(&s->pb, 1, s->vol_sprite_usage);		/* sprite enable */
     }else{
-        put_bits(&s->pb, 2, s->vol_sprite_usage=0);		/* sprite enable */
+        put_bits(&s->pb, 2, s->vol_sprite_usage);		/* sprite enable */
     }
     
-    s->quant_precision=5;
     put_bits(&s->pb, 1, 0);		/* not 8 bit == false */
     put_bits(&s->pb, 1, s->mpeg_quant);	/* quant type= (0=h263 style)*/
 
@@ -2384,9 +2385,6 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     if (s->pict_type == B_TYPE)
 	put_bits(&s->pb, 3, s->b_code);	/* fcode_back */
     //    printf("****frame %d\n", picture_number);
-
-     s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table; //FIXME add short header support 
-     s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
 }
 
 #endif //CONFIG_ENCODERS
@@ -2965,8 +2963,16 @@ static inline void memsetw(short *tab, int val, int n)
 
 void ff_mpeg4_init_partitions(MpegEncContext *s)
 {
-    init_put_bits(&s->tex_pb, s->tex_pb_buffer, PB_BUFFER_SIZE);
-    init_put_bits(&s->pb2   , s->pb2_buffer   , PB_BUFFER_SIZE);
+    uint8_t *start= pbBufPtr(&s->pb);
+    uint8_t *end= s->pb.buf_end;
+    int size= end - start;
+    int pb_size = size/3;
+    int pb2_size= size/3;
+    int tex_size= size - pb_size - pb2_size;
+    
+    set_put_bits_buffer_size(&s->pb, pb_size);
+    init_put_bits(&s->tex_pb, start + pb_size           , tex_size);
+    init_put_bits(&s->pb2   , start + pb_size + tex_size, pb2_size);
 }
 
 void ff_mpeg4_merge_partitions(MpegEncContext *s)
@@ -2989,8 +2995,9 @@ void ff_mpeg4_merge_partitions(MpegEncContext *s)
     flush_put_bits(&s->pb2);
     flush_put_bits(&s->tex_pb);
 
-    ff_copy_bits(&s->pb, s->pb2_buffer   , pb2_len);
-    ff_copy_bits(&s->pb, s->tex_pb_buffer, tex_pb_len);
+    set_put_bits_buffer_size(&s->pb, s->pb2.buf_end - s->pb.buf);
+    ff_copy_bits(&s->pb, s->pb2.buf   , pb2_len);
+    ff_copy_bits(&s->pb, s->tex_pb.buf, tex_pb_len);
     s->last_bits= put_bits_count(&s->pb);
 }
 

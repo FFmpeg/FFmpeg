@@ -805,7 +805,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
         if(P_LEFT[0]       > (s->me.xmax<<shift)) P_LEFT[0]       = (s->me.xmax<<shift);
 
         /* special case for first line */
-        if (s->mb_y == 0 && block<2) {
+        if (s->first_slice_line && block<2) {
             pred_x4= P_LEFT[0];
             pred_y4= P_LEFT[1];
         } else {
@@ -845,13 +845,12 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
             int dxy;
             const int offset= ((block&1) + (block>>1)*stride)*8;
             uint8_t *dest_y = s->me.scratchpad + offset;
-
             if(s->quarter_sample){
                 uint8_t *ref= ref_data[0] + (mx4>>2) + (my4>>2)*stride;
                 dxy = ((my4 & 3) << 2) | (mx4 & 3);
 
                 if(s->no_rounding)
-                    s->dsp.put_no_rnd_qpel_pixels_tab[1][dxy](dest_y   , ref    , s->linesize);
+                    s->dsp.put_no_rnd_qpel_pixels_tab[1][dxy](dest_y   , ref    , stride);
                 else
                     s->dsp.put_qpel_pixels_tab       [1][dxy](dest_y   , ref    , stride);
             }else{
@@ -966,7 +965,7 @@ static int interlaced_search(MpegEncContext *s, uint8_t *frame_src_data[3], uint
             pred_x= P_LEFT[0];
             pred_y= P_LEFT[1];
             
-            if(s->mb_y){
+            if(!s->first_slice_line){
                 P_TOP[0]      = mv_table[xy - mot_stride][0];
                 P_TOP[1]      = mv_table[xy - mot_stride][1];
                 P_TOPRIGHT[0] = mv_table[xy - mot_stride + 1][0];
@@ -1115,7 +1114,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
             if(P_LEFT[0]       > (s->me.xmax<<shift)) P_LEFT[0]       = (s->me.xmax<<shift);
 
-            if(mb_y) {
+            if(!s->first_slice_line) {
                 P_TOP[0]      = s->current_picture.motion_val[0][mot_xy - mot_stride    ][0];
                 P_TOP[1]      = s->current_picture.motion_val[0][mot_xy - mot_stride    ][1];
                 P_TOPRIGHT[0] = s->current_picture.motion_val[0][mot_xy - mot_stride + 2][0];
@@ -1164,8 +1163,8 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     pic->mc_mb_var[s->mb_stride * mb_y + mb_x] = vard;
     pic->mb_mean  [s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
 //    pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin; 
-    pic->mb_var_sum    += varc;
-    pic->mc_mb_var_sum += vard;
+    s->mb_var_sum_temp    += varc;
+    s->mc_mb_var_sum_temp += vard;
 //printf("E%d %d %d %X %X %X\n", s->mb_width, mb_x, mb_y,(int)s, (int)s->mb_var, (int)s->mc_mb_var); fflush(stdout);
     
 #if 0
@@ -1326,7 +1325,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
     if(P_LEFT[0]       < (s->me.xmin<<shift)) P_LEFT[0]       = (s->me.xmin<<shift);
 
     /* special case for first line */
-    if (mb_y == s->mb_height-1) {
+    if (s->first_slice_line) {
         pred_x= P_LEFT[0];
         pred_y= P_LEFT[1];
         P_TOP[0]= P_TOPRIGHT[0]= P_MEDIAN[0]=
@@ -1409,7 +1408,7 @@ static int ff_estimate_motion_b(MpegEncContext * s,
             if(P_LEFT[0]       > (s->me.xmax<<shift)) P_LEFT[0]       = (s->me.xmax<<shift);
 
             /* special case for first line */
-            if (mb_y) {
+            if (!s->first_slice_line) {
                 P_TOP[0] = mv_table[mot_xy - mot_stride             ][0];
                 P_TOP[1] = mv_table[mot_xy - mot_stride             ][1];
                 P_TOPRIGHT[0] = mv_table[mot_xy - mot_stride + 1         ][0];
@@ -1610,7 +1609,7 @@ static inline int direct_search(MpegEncContext * s, uint8_t *src_data[3], uint8_
     P_LEFT[1]        = clip(mv_table[mot_xy - 1][1], ymin<<shift, ymax<<shift);
 
     /* special case for first line */
-    if (mb_y) {
+    if (!s->first_slice_line) { //FIXME maybe allow this over thread boundary as its cliped
         P_TOP[0]      = clip(mv_table[mot_xy - mot_stride             ][0], xmin<<shift, xmax<<shift);
         P_TOP[1]      = clip(mv_table[mot_xy - mot_stride             ][1], ymin<<shift, ymax<<shift);
         P_TOPRIGHT[0] = clip(mv_table[mot_xy - mot_stride + 1         ][0], xmin<<shift, xmax<<shift);
@@ -1727,7 +1726,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         }
         
         score= ((unsigned)(score*score + 128*256))>>16;
-        s->current_picture.mc_mb_var_sum += score;
+        s->mc_mb_var_sum_temp += score;
         s->current_picture.mc_mb_var[mb_y*s->mb_stride + mb_x] = score; //FIXME use SSE
     }
 

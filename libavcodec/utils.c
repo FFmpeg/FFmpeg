@@ -324,6 +324,16 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
     return 0;
 }
 
+int avcodec_default_execute(AVCodecContext *c, int (*func)(AVCodecContext *c2, void *arg2),void **arg, int *ret, int count){
+    int i;
+
+    for(i=0; i<count; i++){
+        int r= func(c, arg[i]);
+        if(ret) ret[i]= r;
+    }
+    return 0;
+}
+
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, enum PixelFormat * fmt){
     return fmt[0];
 }
@@ -352,6 +362,8 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->get_buffer= avcodec_default_get_buffer;
     s->release_buffer= avcodec_default_release_buffer;
     s->get_format= avcodec_default_get_format;
+    s->execute= avcodec_default_execute;
+    s->thread_count=1;
     s->me_subpel_quality=8;
     s->lmin= FF_QP2LAMBDA * s->qmin;
     s->lmax= FF_QP2LAMBDA * s->qmax;

@@ -531,11 +531,16 @@ static void escape_FF(MpegEncContext *s, int start)
     }
 }
 
+void ff_mjpeg_stuffing(PutBitContext * pbc)
+{
+    int length;
+    length= (-put_bits_count(pbc))&7;
+    if(length) put_bits(pbc, length, (1<<length)-1);
+}
+
 void mjpeg_picture_trailer(MpegEncContext *s)
 {
-    int pad= (-put_bits_count(&s->pb))&7;
-    
-    put_bits(&s->pb, pad,0xFF>>(8-pad));
+    ff_mjpeg_stuffing(&s->pb);
     flush_put_bits(&s->pb);
 
     assert((s->header_bits&7)==0);

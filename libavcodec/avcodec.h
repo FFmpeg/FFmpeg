@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4701
+#define LIBAVCODEC_BUILD       4702
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1508,6 +1508,32 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int quantizer_noise_shaping;
+
+    /**
+     * Thread count.
+     * is used to decide how many independant tasks should be passed to execute()
+     * - encoding: set by user
+     * - decoding: set by user
+     */
+    int thread_count;
+    
+    /**
+     * the codec may call this to execute several independant things. it will return only after
+     * finishing all tasks, the user may replace this with some multithreaded implementation, the
+     * default implementation will execute the parts serially
+     * @param count the number of functions this will be identical to thread_count if possible
+     * - encoding: set by lavc, user can override
+     * - decoding: set by lavc, user can override
+     */
+    int (*execute)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg), void **arg2, int *ret, int count);
+    
+    /**
+     * Thread opaque.
+     * can be used by execute() to store some per AVCodecContext stuff.
+     * - encoding: set by execute()
+     * - decoding: set by execute()
+     */
+    void *thread_opaque;
 } AVCodecContext;
 
 
@@ -1845,6 +1871,11 @@ AVFrame *avcodec_alloc_frame(void);
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_free_buffers(AVCodecContext *s);
+
+int avcodec_pthread_init(AVCodecContext *s, int thread_count);
+void avcodec_pthread_free(AVCodecContext *s);
+int avcodec_pthread_execute(AVCodecContext *s, int (*func)(AVCodecContext *c2, void *arg2),void **arg, int *ret, int count);
+//FIXME func typedef
 
 /**
  * opens / inits the AVCodecContext.

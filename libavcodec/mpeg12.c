@@ -419,7 +419,9 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
             put_bits(&s->pb, 8, 255);
         }
         put_bits(&s->pb, 2, s->intra_dc_precision);
-        put_bits(&s->pb, 2, s->picture_structure= PICT_FRAME);
+        
+        assert(s->picture_structure == PICT_FRAME);
+        put_bits(&s->pb, 2, s->picture_structure);
         if (s->progressive_sequence) {
             put_bits(&s->pb, 1, 0); /* no repeat */
         } else {

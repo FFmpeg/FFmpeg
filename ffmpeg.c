@@ -117,6 +117,13 @@ static int ildct_cmp = FF_CMP_VSAD;
 static int mb_cmp = FF_CMP_SAD;
 static int sub_cmp = FF_CMP_SAD;
 static int cmp = FF_CMP_SAD;
+static int pre_cmp = FF_CMP_SAD;
+static int pre_me = 0;
+static float lumi_mask = 0;
+static float dark_mask = 0;
+static float scplx_mask = 0;
+static float tcplx_mask = 0;
+static float p_mask = 0;
 static int use_4mv = 0;
 static int use_obmc = 0;
 static int use_aic = 0;
@@ -185,6 +192,7 @@ static char *audio_device = NULL;
 static int using_stdin = 0;
 static int using_vhook = 0;
 static int verbose = 1;
+static int thread_count= 1;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
@@ -1855,6 +1863,41 @@ static void opt_cmp(const char *arg)
     cmp = atoi(arg);
 }
 
+static void opt_pre_cmp(const char *arg)
+{
+    pre_cmp = atoi(arg);
+}
+
+static void opt_pre_me(const char *arg)
+{
+    pre_me = atoi(arg);
+}
+
+static void opt_lumi_mask(const char *arg)
+{
+    lumi_mask = atof(arg);
+}
+
+static void opt_dark_mask(const char *arg)
+{
+    dark_mask = atof(arg);
+}
+
+static void opt_scplx_mask(const char *arg)
+{
+    scplx_mask = atof(arg);
+}
+
+static void opt_tcplx_mask(const char *arg)
+{
+    tcplx_mask = atof(arg);
+}
+
+static void opt_p_mask(const char *arg)
+{
+    p_mask = atof(arg);
+}
+
 static void opt_qscale(const char *arg)
 {
     video_qscale = atof(arg);
@@ -1988,6 +2031,11 @@ static void opt_qns(const char *arg)
 static void opt_sc_threshold(const char *arg)
 {
     sc_threshold= atoi(arg);
+}
+
+static void opt_thread_count(const char *arg)
+{
+    thread_count= atoi(arg);
 }
 
 static void opt_audio_bitrate(const char *arg)
@@ -2348,6 +2396,10 @@ static void opt_output_file(const char *filename)
                 exit(1);
             }
             avcodec_get_context_defaults(&st->codec);
+#ifdef HAVE_PTHREADS
+            if(thread_count>1)
+                avcodec_pthread_init(&st->codec, thread_count);
+#endif
 
             video_enc = &st->codec;
             
@@ -2398,6 +2450,13 @@ static void opt_output_file(const char *filename)
                 video_enc->ildct_cmp = ildct_cmp;
                 video_enc->me_sub_cmp = sub_cmp;
                 video_enc->me_cmp = cmp;
+                video_enc->me_pre_cmp = pre_cmp;
+                video_enc->pre_me = pre_me;
+                video_enc->lumi_masking = lumi_mask;
+                video_enc->dark_masking = dark_mask;
+                video_enc->spatial_cplx_masking = scplx_mask;
+                video_enc->temporal_cplx_masking = tcplx_mask;
+                video_enc->p_masking = p_mask;
                 video_enc->quantizer_noise_shaping= qns;
                 
                 if (use_umv) {
@@ -2451,7 +2510,8 @@ static void opt_output_file(const char *filename)
                 video_enc->qcompress = video_qcomp;
                 video_enc->rc_eq = video_rc_eq;
                 video_enc->debug = debug;
-                video_enc->debug_mv = debug_mv;                
+                video_enc->debug_mv = debug_mv;
+                video_enc->thread_count = thread_count;
                 p= video_rc_override_string;
                 for(i=0; p; i++){
                     int start, end, q;
@@ -2527,6 +2587,10 @@ static void opt_output_file(const char *filename)
                 exit(1);
             }
             avcodec_get_context_defaults(&st->codec);
+#ifdef HAVE_PTHREADS
+            if(thread_count>1)
+                avcodec_pthread_init(&st->codec, thread_count);
+#endif
 
             audio_enc = &st->codec;
             audio_enc->codec_type = CODEC_TYPE_AUDIO;
@@ -2544,6 +2608,7 @@ static void opt_output_file(const char *filename)
                 audio_enc->bit_rate = audio_bit_rate;
                 audio_enc->sample_rate = audio_sample_rate;
                 audio_enc->strict_std_compliance = strict;
+                audio_enc->thread_count = thread_count;
                 /* For audio codecs other than AC3 we limit */
                 /* the number of coded channels to stereo   */
                 if (audio_channels > 2 && codec_id != CODEC_ID_AC3) {
@@ -2999,6 +3064,7 @@ const OptionDef options[] = {
     { "loop", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "control amount of logging", "verbose" },
     { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\" or \"dvd\")", "type" },
+    { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
 
     /* video options */
     { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
@@ -3049,6 +3115,13 @@ const OptionDef options[] = {
     { "ildctcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_ildct_cmp}, "ildct compare function", "cmp function" },
     { "subcmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sub_cmp}, "subpel compare function", "cmp function" },
     { "cmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_cmp}, "fullpel compare function", "cmp function" },
+    { "precmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_cmp}, "pre motion estimation compare function", "cmp function" },
+    { "preme", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_me}, "pre motion estimation", "" },
+    { "lumi_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lumi_mask}, "luminance masking", "" },
+    { "dark_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_dark_mask}, "darkness masking", "" },
+    { "scplx_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_scplx_mask}, "spatial complexity masking", "" },
+    { "tcplx_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_tcplx_mask}, "teporal complexity masking", "" },
+    { "p_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_p_mask}, "inter masking", "" },
     { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (MPEG4)" },
     { "obmc", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_obmc}, "use overlapped block motion compensation (h263+)" },
     { "part", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_part}, "use data partitioning (MPEG4)" },

@@ -33,6 +33,10 @@ CLEANAMR=cleanamrfloat
 endif
 endif
 
+ifeq ($(HAVE_PTHREADS),yes)
+OBJS+= pthread.o
+endif
+
 ifeq ($(AMR_WB),yes)
 OBJS+= amr.o amrwb_float/dec_acelp.o amrwb_float/dec_dtx.o amrwb_float/dec_gain.o \
 		amrwb_float/dec_if.o amrwb_float/dec_lpc.o amrwb_float/dec_main.o \

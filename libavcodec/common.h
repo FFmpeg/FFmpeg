@@ -475,6 +475,28 @@ static inline uint8_t* pbBufPtr(PutBitContext *s)
 #endif
 }
 
+/**
+ *
+ * PutBitContext must be flushed & aligned to a byte boundary before calling this.
+ */
+static inline void skip_put_bytes(PutBitContext *s, int n){
+        assert((put_bits_count(s)&7)==0);
+#ifdef ALT_BITSTREAM_WRITER
+        FIXME may need some cleaning of the buffer
+	s->index += n<<3;
+#else
+        assert(s->bit_left==32);
+	s->buf_ptr += n;
+#endif    
+}
+
+/**
+ * Changes the end of the buffer.
+ */
+static inline void set_put_bits_buffer_size(PutBitContext *s, int size){
+    s->buf_end= s->buf + size;
+}
+
 /* Bitstream reader API docs:
 name
     abritary name which is used as prefix for the internal variables

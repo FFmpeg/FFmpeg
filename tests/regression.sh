@@ -33,6 +33,7 @@ elif [ "$1" = "libavtest" ] ; then
 else
     do_mpeg=y
     do_mpeg2=y
+    do_mpeg2thread=y
     do_msmpeg4v2=y
     do_msmpeg4=y
     do_wmv1=y
@@ -51,6 +52,7 @@ else
     do_adpcm_ms=y
     do_rc=y
     do_mpeg4adv=y
+    do_mpeg4thread=y
     do_mpeg4nr=y
     do_mpeg1b=y
     do_asv1=y
@@ -143,6 +145,16 @@ do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2i.mpg
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -ildct -ilme $file 
+
+# mpeg2 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+fi
+
+###################################
+if [ -n "$do_mpeg2thread" ] ; then
+# mpeg2 encoding interlaced
+file=${outfile}mpeg2thread.mpg
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -bf 2 -ildct -ilme -threads 2 $file 
 
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
@@ -249,6 +261,16 @@ do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 fi
 
 ###################################
+if [ -n "$do_mpeg4thread" ] ; then
+# mpeg4
+file=${outfile}mpeg4-thread.avi
+do_ffmpeg $file -y -b 500 -4mv -hq -part -ps 200 -aic -trell -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 -threads 2 $file
+
+# mpeg4 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
 if [ -n "$do_error" ] ; then
 # damaged mpeg4
 file=${outfile}error-mpeg4-adv.avi
@@ -261,7 +283,7 @@ fi
 ###################################
 if [ -n "$do_mpeg4nr" ] ; then
 # noise reduction
-file=${outfile}error-mpeg4-nr.avi
+file=${outfile}mpeg4-nr.avi
 do_ffmpeg $file -y -qscale 8 -4mv -mbd 2 -nr 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
