@@ -618,7 +618,7 @@ library:
 @item MPEG4            @tab X @tab  X 
 @tab MPEG4 is a variant of Quicktime
 @item Raw MPEG4 video  @tab  X @tab  X 
-@item DV               @tab  @tab X
+@item DV               @tab  X @tab  X
 @item 4xm              @tab    @tab X
 @tab 4X Technologies format, used in some games
 @item Playstation STR  @tab    @tab X
@@ -668,7 +668,7 @@ following image formats are supported:
 @item WMV8                   @tab  X  @tab  X @tab Not completely working
 @item H263(+)                @tab  X  @tab  X @tab Also known as Real Video 1.0
 @item MJPEG                  @tab  X  @tab  X 
-@item DV                     @tab     @tab  X 
+@item DV                     @tab  X  @tab  X 
 @item Huff YUV               @tab  X  @tab  X
 @item Asus v1                @tab  X  @tab  X @tab fourcc: ASV1
 @item Asus v2                @tab  X  @tab  X @tab fourcc: ASV2

@@ -678,7 +678,6 @@ bail_out:
 void dv_delete_mux(DVMuxContext *c)
 {    
     fifo_free(&c->audio_data);
-    av_free(c);
 }
 
 DVDemuxContext* dv_init_demux(AVFormatContext *s, int vid, int aid)

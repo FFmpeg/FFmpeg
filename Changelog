@@ -1,4 +1,5 @@
 version <next>:
+- DV encoder, DV muxer
 - Microsoft RLE video decoder
 - Microsoft Video-1 decoder
 - Apple Video (RPZA) decoder
