@@ -2312,6 +2312,8 @@ int MPV_encode_picture(AVCodecContext *avctx,
             avctx->error[i] += s->current_picture_ptr->error[i];
         }
 
+        if(s->flags&CODEC_FLAG_PASS1)
+            assert(avctx->header_bits + avctx->mv_bits + avctx->misc_bits + avctx->i_tex_bits + avctx->p_tex_bits == put_bits_count(&s->pb));
         flush_put_bits(&s->pb);
         s->frame_bits  = put_bits_count(&s->pb);
 
@@ -4556,6 +4558,9 @@ static void write_slice_end(MpegEncContext *s){
 
     align_put_bits(&s->pb);
     flush_put_bits(&s->pb);
+    
+    if((s->flags&CODEC_FLAG_PASS1) && !s->partitioned_frame)
+        s->misc_bits+= get_bits_diff(s);
 }
 
 static int encode_thread(AVCodecContext *c, void *arg){
