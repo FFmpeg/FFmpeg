@@ -86,6 +86,7 @@ static const uint8_t vc9_4mv_block_pattern_bits[4][16] = {
 };
 
 /* I-Picture CBPCY VLC tables */
+//same as msmpeg4 table_mb_intra
 static const uint16_t vc9_cbpcy_i_codes[64] = {
      1,   23,    9,    5,    6,   71,   32,   16,
      2,  124,   58,   29,    2,  236,  119,    0,
@@ -310,6 +311,7 @@ static const uint8_t vc9_mv_diff_bits[4][73] = {
 };
 
 /* DC luma differentials low+hi-mo, p217 */
+//same as msmpeg4 table0/1_dc_lum
 static const uint32_t vc9_luma_dc_codes[2][120] = {
   {
           1,       1,       1,       1,       5,       7,       8,      12,
