@@ -165,6 +165,7 @@ enum IPAddressAction {
 typedef struct IPAddressACL {
     struct IPAddressACL *next;
     enum IPAddressAction action;
+    /* These are in host order */
     struct in_addr first;
     struct in_addr last;
 } IPAddressACL;
@@ -1076,9 +1077,10 @@ static int validate_acl(FFStream *stream, HTTPContext *c)
     enum IPAddressAction last_action = IP_DENY;
     IPAddressACL *acl;
     struct in_addr *src = &c->from_addr.sin_addr;
+    unsigned long src_addr = ntohl(src->s_addr);
 
     for (acl = stream->acl; acl; acl = acl->next) {
-        if (src->s_addr >= acl->first.s_addr && src->s_addr <= acl->last.s_addr) {
+        if (src_addr >= acl->first.s_addr && src_addr <= acl->last.s_addr) {
             return (acl->action == IP_ALLOW) ? 1 : 0;
         }
         last_action = acl->action;
@@ -4095,7 +4097,7 @@ static int parse_ffconfig(const char *filename)
                 errors++;
             } else {
                 /* Only take the first */
-                acl.first = *(struct in_addr *) he->h_addr_list[0];
+                acl.first.s_addr = ntohl(((struct in_addr *) he->h_addr_list[0])->s_addr);
                 acl.last = acl.first;
             }
 
@@ -4109,7 +4111,7 @@ static int parse_ffconfig(const char *filename)
                     errors++;
                 } else {
                     /* Only take the first */
-                    acl.last = *(struct in_addr *) he->h_addr_list[0];
+                    acl.last.s_addr = ntohl(((struct in_addr *) he->h_addr_list[0])->s_addr);
                 }
             }
 
