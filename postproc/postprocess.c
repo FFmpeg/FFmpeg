@@ -125,8 +125,8 @@ static uint64_t __attribute__((aligned(8))) b08= 		0x0808080808080808LL;
 static uint64_t __attribute__((aligned(8))) bFF= 		0xFFFFFFFFFFFFFFFFLL;
 static uint64_t __attribute__((aligned(8))) b20= 		0x2020202020202020LL;
 static uint64_t __attribute__((aligned(8))) b80= 		0x8080808080808080LL;
-static uint64_t __attribute__((aligned(8))) b7E= 		0x7E7E7E7E7E7E7E7ELL;
-static uint64_t __attribute__((aligned(8))) b7C= 		0x7C7C7C7C7C7C7C7CLL;
+static uint64_t __attribute__((aligned(8))) mmxDCOffset= 	0x7E7E7E7E7E7E7E7ELL;
+static uint64_t __attribute__((aligned(8))) mmxDCThreshold=	0x7C7C7C7C7C7C7C7CLL;
 static uint64_t __attribute__((aligned(8))) b3F= 		0x3F3F3F3F3F3F3F3FLL;
 static uint64_t __attribute__((aligned(8))) temp0=0;
 static uint64_t __attribute__((aligned(8))) temp1=0;
@@ -153,6 +153,9 @@ int hFlatnessThreshold= 56 - 16;
 int vFlatnessThreshold= 56 - 16;
 int deringThreshold= 20;
 
+static int dcOffset= 1;
+static int dcThreshold= 3;
+
 //amount of "black" u r willing to loose to get a brightness corrected picture
 double maxClippedThreshold= 0.01;
 
@@ -169,10 +172,10 @@ static struct PPFilter filters[]=
 	{"v1", "x1vdeblock", 		1, 2, 4, V_X1_FILTER},
 	{"dr", "dering", 		1, 5, 6, DERING},
 	{"al", "autolevels", 		0, 1, 2, LEVEL_FIX},
-	{"lb", "linblenddeint", 	0, 1, 6, LINEAR_BLEND_DEINT_FILTER},
-	{"li", "linipoldeint", 		0, 1, 6, LINEAR_IPOL_DEINT_FILTER},
-	{"ci", "cubicipoldeint",	0, 1, 6, CUBIC_IPOL_DEINT_FILTER},
-	{"md", "mediandeint", 		0, 1, 6, MEDIAN_DEINT_FILTER},
+	{"lb", "linblenddeint", 	1, 1, 4, LINEAR_BLEND_DEINT_FILTER},
+	{"li", "linipoldeint", 		1, 1, 4, LINEAR_IPOL_DEINT_FILTER},
+	{"ci", "cubicipoldeint",	1, 1, 4, CUBIC_IPOL_DEINT_FILTER},
+	{"md", "mediandeint", 		1, 1, 4, MEDIAN_DEINT_FILTER},
 	{"tn", "tmpnoise", 		1, 7, 8, TEMP_NOISE_FILTER},
 	{NULL, NULL,0,0,0,0} //End Marker
 };
@@ -193,7 +196,7 @@ if(
  packedYOffset + packedYScale + w05 + w20 + w1400 + bm00000001 + bm00010000
  + bm00001000 + bm10000000 + bm10000001 + bm11000011 + bm00000011 + bm11111110
  + bm11000000 + bm00011000 + bm00110011 + bm11001100 + b00 + b01 + b02 + b0F
- + bFF + b20 + b04+ b08 + pQPb2 + b80 + b7E + b7C + b3F + temp0 + temp1 + temp2 + temp3 + temp4
+ + bFF + b20 + b04+ b08 + pQPb2 + b80 + mmxDCOffset + mmxDCThreshold + b3F + temp0 + temp1 + temp2 + temp3 + temp4
  + temp5 + pQPb== 0) b00=0;
 }
 #endif
@@ -251,13 +254,13 @@ static inline int isHorizDC(uint8_t src[], int stride)
 	int y;
 	for(y=0; y<BLOCK_SIZE; y++)
 	{
-		if(((src[0] - src[1] + 1) & 0xFFFF) < 3) numEq++;
-		if(((src[1] - src[2] + 1) & 0xFFFF) < 3) numEq++;
-		if(((src[2] - src[3] + 1) & 0xFFFF) < 3) numEq++;
-		if(((src[3] - src[4] + 1) & 0xFFFF) < 3) numEq++;
-		if(((src[4] - src[5] + 1) & 0xFFFF) < 3) numEq++;
-		if(((src[5] - src[6] + 1) & 0xFFFF) < 3) numEq++;
-		if(((src[6] - src[7] + 1) & 0xFFFF) < 3) numEq++;
+		if(((src[0] - src[1] + dcOffset) & 0xFFFF) < dcThreshold) numEq++;
+		if(((src[1] - src[2] + dcOffset) & 0xFFFF) < dcThreshold) numEq++;
+		if(((src[2] - src[3] + dcOffset) & 0xFFFF) < dcThreshold) numEq++;
+		if(((src[3] - src[4] + dcOffset) & 0xFFFF) < dcThreshold) numEq++;
+		if(((src[4] - src[5] + dcOffset) & 0xFFFF) < dcThreshold) numEq++;
+		if(((src[5] - src[6] + dcOffset) & 0xFFFF) < dcThreshold) numEq++;
+		if(((src[6] - src[7] + dcOffset) & 0xFFFF) < dcThreshold) numEq++;
 		src+= stride;
 	}
 	return numEq > hFlatnessThreshold;
@@ -539,8 +542,12 @@ short	long name	short	long option	Description
 *	*		a	autoq		cpu power dependant enabler
 			c	chrom		chrominance filtring enabled
 			y	nochrom		chrominance filtring disabled
-hb	hdeblock				horizontal deblocking filter
-vb	vdeblock				vertical deblocking filter
+hb	hdeblock	(2 Threshold)		horizontal deblocking filter
+                         1. Threshold: default is 1, higher means stronger deblocking
+                         2. Threshold: default is 40, lower means stronger deblocking
+			the horizontal & vertical deblocking filters share these 
+			so u cant set different thresholds for h / v
+vb	vdeblock	(2 Threshold)		vertical deblocking filter
 hr	rkhdeblock
 vr	rkvdeblock
 h1	x1hdeblock				Experimental horizontal deblock filter 1
@@ -555,6 +562,7 @@ md	mediandeint				median deinterlacer
 de	default					hdeblock:a,vdeblock:a,dering:a,autolevels
 fa	fast					x1hdeblock:a,x1vdeblock:a,dering:a,autolevels
 tn	tmpnoise	(3 Thresholds)		Temporal Noise Reducer
+			1. <= 2. <= 3. Threshold, larger means stronger filtering
 */
 
 /**
@@ -691,6 +699,31 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 							numOfUnknownOptions--;
 							if(numOfNoises >= 3) break;
 						}
+					}
+				}
+				else if(filters[i].mask == V_DEBLOCK || filters[i].mask == H_DEBLOCK)
+				{
+					int o;
+
+					for(o=0; options[o]!=NULL && o<2; o++)
+					{
+						char *tail;
+						int val= strtol(options[o], &tail, 0);
+						if(tail==options[o]) break;
+
+						numOfUnknownOptions--;
+						if(o==0)
+						{
+							dcOffset= val;
+							dcThreshold= 2*val+1;
+							mmxDCOffset= 0x7F - val;
+							mmxDCThreshold= 0x7F - 2*val - 1;
+							
+							mmxDCOffset*= 0x0101010101010101LL;
+							mmxDCThreshold*= 0x0101010101010101LL;
+						}  
+						else hFlatnessThreshold=
+						     vFlatnessThreshold= val;
 					}
 				}
 			}

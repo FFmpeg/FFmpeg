@@ -60,8 +60,8 @@ asm volatile(
 		"leal (%%eax, %2, 4), %%ebx			\n\t"
 //	0	1	2	3	4	5	6	7	8	9
 //	%1	eax	eax+%2	eax+2%2	%1+4%2	ebx	ebx+%2	ebx+2%2	%1+8%2	ebx+4%2
-		"movq b7E, %%mm7					\n\t" // mm7 = 0x7F
-		"movq b7C, %%mm6					\n\t" // mm6 = 0x7D
+		"movq mmxDCOffset, %%mm7			\n\t" // mm7 = 0x7F
+		"movq mmxDCThreshold, %%mm6			\n\t" // mm6 = 0x7D
 		"movq (%1), %%mm0				\n\t"
 		"movq (%%eax), %%mm1				\n\t"
 		"psubb %%mm1, %%mm0				\n\t" // mm0 = differnece
@@ -129,14 +129,14 @@ asm volatile(
 #else
 	for(y=0; y<BLOCK_SIZE-1; y++)
 	{
-		if(((src[0] - src[0+stride] + 1)&0xFFFF) < 3) numEq++;
-		if(((src[1] - src[1+stride] + 1)&0xFFFF) < 3) numEq++;
-		if(((src[2] - src[2+stride] + 1)&0xFFFF) < 3) numEq++;
-		if(((src[3] - src[3+stride] + 1)&0xFFFF) < 3) numEq++;
-		if(((src[4] - src[4+stride] + 1)&0xFFFF) < 3) numEq++;
-		if(((src[5] - src[5+stride] + 1)&0xFFFF) < 3) numEq++;
-		if(((src[6] - src[6+stride] + 1)&0xFFFF) < 3) numEq++;
-		if(((src[7] - src[7+stride] + 1)&0xFFFF) < 3) numEq++;
+		if(((src[0] - src[0+stride] + dcOffset)&0xFFFF) < dcThreshold) numEq++;
+		if(((src[1] - src[1+stride] + dcOffset)&0xFFFF) < dcThreshold) numEq++;
+		if(((src[2] - src[2+stride] + dcOffset)&0xFFFF) < dcThreshold) numEq++;
+		if(((src[3] - src[3+stride] + dcOffset)&0xFFFF) < dcThreshold) numEq++;
+		if(((src[4] - src[4+stride] + dcOffset)&0xFFFF) < dcThreshold) numEq++;
+		if(((src[5] - src[5+stride] + dcOffset)&0xFFFF) < dcThreshold) numEq++;
+		if(((src[6] - src[6+stride] + dcOffset)&0xFFFF) < dcThreshold) numEq++;
+		if(((src[7] - src[7+stride] + dcOffset)&0xFFFF) < dcThreshold) numEq++;
 		src+= stride;
 	}
 #endif
