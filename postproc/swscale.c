@@ -101,6 +101,7 @@ untested special converters
 
 //FIXME replace this with something faster
 #define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_YVU9 \
+			|| (x)==IMGFMT_NV12 || (x)==IMGFMT_NV21 \
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
 #define isYUV(x)       ((x)==IMGFMT_UYVY || (x)==IMGFMT_YUY2 || isPlanarYUV(x))
 #define isGray(x)      ((x)==IMGFMT_Y800)
@@ -114,6 +115,7 @@ untested special converters
 #define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY\
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P\
 			|| isRGB(x) || isBGR(x)\
+			|| (x)==IMGFMT_NV12 || (x)==IMGFMT_NV21\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
 #define isPacked(x)    ((x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY ||isRGB(x) || isBGR(x))
 
@@ -251,6 +253,56 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 		}
 }
 
+static inline void yuv2nv12XinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+				int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+				uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, int dstFormat)
+{
+	//FIXME Optimize (just quickly writen not opti..)
+	int i;
+	for(i=0; i<dstW; i++)
+	{
+		int val=1<<18;
+		int j;
+		for(j=0; j<lumFilterSize; j++)
+			val += lumSrc[j][i] * lumFilter[j];
+
+		dest[i]= MIN(MAX(val>>19, 0), 255);
+	}
+
+	if(uDest == NULL)
+		return;
+
+	if(dstFormat == IMGFMT_NV12)
+		for(i=0; i<chrDstW; i++)
+		{
+			int u=1<<18;
+			int v=1<<18;
+			int j;
+			for(j=0; j<chrFilterSize; j++)
+			{
+				u += chrSrc[j][i] * chrFilter[j];
+				v += chrSrc[j][i + 2048] * chrFilter[j];
+			}
+
+			uDest[2*i]= MIN(MAX(u>>19, 0), 255);
+			uDest[2*i+1]= MIN(MAX(v>>19, 0), 255);
+		}
+	else
+		for(i=0; i<chrDstW; i++)
+		{
+			int u=1<<18;
+			int v=1<<18;
+			int j;
+			for(j=0; j<chrFilterSize; j++)
+			{
+				u += chrSrc[j][i] * chrFilter[j];
+				v += chrSrc[j][i + 2048] * chrFilter[j];
+			}
+
+			uDest[2*i]= MIN(MAX(v>>19, 0), 255);
+			uDest[2*i+1]= MIN(MAX(u>>19, 0), 255);
+		}
+}
 
 #define YSCALE_YUV_2_PACKEDX_C(type) \
 		for(i=0; i<(dstW>>1); i++){\
@@ -1379,13 +1431,16 @@ static int PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
 		uint8_t *dstPtr= dst;
 		for(i=0; i<srcSliceH; i++)
 		{
-			memcpy(dstPtr, srcPtr, srcStride[0]);
+			memcpy(dstPtr, srcPtr, c->srcW);
 			srcPtr+= srcStride[0];
 			dstPtr+= dstStride[0];
 		}
 	}
-	dst = dstParam[1] + dstStride[1]*srcSliceY;
-	interleaveBytes( src[1],src[2],dst,c->srcW,srcSliceH,srcStride[1],srcStride[2],dstStride[0] );
+	dst = dstParam[1] + dstStride[1]*srcSliceY/2;
+	if (c->dstFormat == IMGFMT_NV12)
+		interleaveBytes( src[1],src[2],dst,c->srcW/2,srcSliceH/2,srcStride[1],srcStride[2],dstStride[0] );
+	else
+		interleaveBytes( src[2],src[1],dst,c->srcW/2,srcSliceH/2,srcStride[2],srcStride[1],dstStride[0] );
 
 	return srcSliceH;
 }
@@ -1555,6 +1610,15 @@ static inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStrid
 		sortedStride[0]= stride[0];
 		sortedStride[1]= stride[1];
 		sortedStride[2]= stride[2];
+	}
+	else if(format == IMGFMT_NV12 || format == IMGFMT_NV21)
+	{
+		sortedP[0]= p[0];
+		sortedP[1]= p[1];
+		sortedP[2]= NULL;
+		sortedStride[0]= stride[0];
+		sortedStride[1]= stride[1];
+		sortedStride[2]= 0;
 	}else{
 		MSG_ERR("internal error in orderYUV\n");
 	}
@@ -1645,6 +1709,8 @@ static void getSubSampleFactors(int *h, int *v, int format){
 		break;
 	case IMGFMT_YV12:
 	case IMGFMT_Y800: //FIXME remove after different subsamplings are fully implemented
+	case IMGFMT_NV12:
+	case IMGFMT_NV21:
 		*h=1;
 		*v=1;
 		break;
@@ -1873,7 +1939,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	if(unscaled && !usesHFilter && !usesVFilter)
 	{
 		/* yv12_to_nv12 */
-		if(srcFormat == IMGFMT_YV12 && dstFormat == IMGFMT_NV12)
+		if(srcFormat == IMGFMT_YV12 && (dstFormat == IMGFMT_NV12 || dstFormat == IMGFMT_NV21))
 		{
 			c->swScale= PlanarToNV12Wrapper;
 		}

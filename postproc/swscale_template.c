@@ -796,6 +796,15 @@ yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
 #endif
 }
 
+static inline void RENAME(yuv2nv12X)(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+				     int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
+				     uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, int dstFormat)
+{
+yuv2nv12XinC(lumFilter, lumSrc, lumFilterSize,
+	     chrFilter, chrSrc, chrFilterSize,
+	     dest, uDest, dstW, chrDstW, dstFormat);
+}
+
 static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
 				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW)
 {
@@ -2792,7 +2801,15 @@ i--;
 				((uint16_t)vChrFilter[chrDstY*vChrFilterSize + i])*0x10001;
 		}
 #endif
-		if(isPlanarYUV(dstFormat) || isGray(dstFormat)) //YV12 like
+		if(dstFormat == IMGFMT_NV12 || dstFormat == IMGFMT_NV21){
+			const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
+			if(dstY&chrSkipMask) uDest= NULL; //FIXME split functions in lumi / chromi
+			RENAME(yuv2nv12X)(c,
+				vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
+				vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+				dest, uDest, dstW, chrDstW, dstFormat);
+		}
+		else if(isPlanarYUV(dstFormat) || isGray(dstFormat)) //YV12 like
 		{
 			const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
 			if((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
@@ -2840,7 +2857,15 @@ i--;
 	    {
 		int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
 		int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-		if(isPlanarYUV(dstFormat) || isGray(dstFormat)) //YV12
+		if(dstFormat == IMGFMT_NV12 || dstFormat == IMGFMT_NV21){
+			const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
+			if(dstY&chrSkipMask) uDest= NULL; //FIXME split functions in lumi / chromi
+			yuv2nv12XinC(
+				vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
+				vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+				dest, uDest, dstW, chrDstW, dstFormat);
+		}
+		else if(isPlanarYUV(dstFormat) || isGray(dstFormat)) //YV12
 		{
 			const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
 			if((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
