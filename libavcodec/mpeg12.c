@@ -777,7 +777,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
 
 		adiff = ABS(diff);
 		if(diff<0) diff--;
-		index = vlc_dc_table[adiff];
+		index = av_log2(2*adiff);
 
 		bits= vlc_dc_lum_bits[index] + index;
 		code= (vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1));
