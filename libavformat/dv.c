@@ -869,7 +869,7 @@ static int dv_write_packet(struct AVFormatContext *s,
         put_buffer(&s->pb, frame, fsize); 
         put_flush_packet(&s->pb);
     } 
-    return fsize;
+    return 0;
 }
 
 /* 
