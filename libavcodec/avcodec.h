@@ -476,7 +476,14 @@ typedef struct AVPanScan{
     uint8_t *mbskip_table;\
 \
     /**\
-     * Motion vector table\
+     * Motion vector table.\
+     * @code\
+     * example:\
+     * int mv_sample_log2= 4 - motion_subsample_log2;\
+     * int mb_width= (width+15)>>4;\
+     * int mv_stride= (mb_width << mv_sample_log2) + 1;\
+     * motion_val[direction][x + y*mv_stride][0->mv_x, 1->mv_y];\
+     * @endcode\
      * - encoding: set by user\
      * - decoding: set by lavc\
      */\
