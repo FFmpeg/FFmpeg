@@ -220,7 +220,6 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_CAP_PARSE_ONLY      0x0004
 #define CODEC_CAP_TRUNCATED       0x0008
 
-
 #define FF_COMMON_FRAME \
     /**\
      * pointer to the picture planes.\
@@ -464,7 +463,7 @@ typedef struct AVCodecContext {
      *                    do something for a generic case as well.
      * - decoding: set by lavc.
      */
-    enum PixelFormat pix_fmt; //FIXME move to AVFrme
+    enum PixelFormat pix_fmt;
  
     /**
      * Frame rate emulation. If not zero lower layer (i.e. format handler) 
@@ -712,7 +711,7 @@ typedef struct AVCodecContext {
                        data is returned. Only MPEG codecs support this now. */
     
     /**
-     * 0-> default, 1-> mpeg quant.
+     * 0-> h263 quant 1-> mpeg quant.
      * - encoding: set by user.
      * - decoding: unused
      */
@@ -1590,7 +1589,7 @@ typedef enum {
 int avcodec(void* handle, avc_cmd_t cmd, void* pin, void* pout);
 
 /* memory */
-void *av_malloc(unsigned int size); //FIXME unsigned could be bad, dunno, need thinking
+void *av_malloc(unsigned int size);
 void *av_mallocz(unsigned int size);
 void *av_realloc(void *ptr, unsigned int size);
 void av_free(void *ptr);

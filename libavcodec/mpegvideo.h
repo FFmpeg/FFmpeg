@@ -48,13 +48,8 @@ enum OutputFormat {
 
 #define MAX_PICTURE_COUNT 15
 
-#if 1
-#define ME_MAP_SIZE 4096
-#define ME_MAP_SHIFT 6
-#else
 #define ME_MAP_SIZE 64
 #define ME_MAP_SHIFT 3
-#endif
 #define ME_MAP_MV_BITS 11
 
 /* run length table */
@@ -390,10 +385,8 @@ typedef struct MpegEncContext {
     int me_method;                       ///< ME algorithm 
     int scene_change_score;
     int mv_dir;
-#define MV_DIR_L1        1
-#define MV_DIR_L0        2
-#define MV_DIR_BACKWARD  MV_DIR_L1
-#define MV_DIR_FORWARD   MV_DIR_L0
+#define MV_DIR_BACKWARD  1
+#define MV_DIR_FORWARD   2
 #define MV_DIRECT        4 ///< bidirectional mode where the difference equals the MV of the last P/S/I-Frame (mpeg4)
     int mv_type;
 #define MV_TYPE_16X16       0   ///< 1 vector for the whole mb 
@@ -575,11 +568,6 @@ typedef struct MpegEncContext {
     uint8_t *tex_pb_buffer;          
     uint8_t *pb2_buffer;
     int mpeg_quant;
-#define FF_QUANT_DEFAULT 0
-#define FF_QUANT_MPEG2   1
-#define FF_QUANT_MPEG1   2
-#define FF_QUANT_H263    3
-
     int16_t (*field_mv_table)[2][2];   ///< used for interlaced b frame decoding 
     int8_t (*field_select_table)[2];   ///< wtf, no really another table for interlaced b frames 
     int t_frame;                       ///< time distance of first I -> B, used for interlaced b frames 
@@ -663,7 +651,7 @@ typedef struct MpegEncContext {
     
     /* RTP specific */
     /* These are explained on avcodec.h */
-    int rtp_mode; //FIXME simplify this mess (remove callback, merge mode + payload)
+    int rtp_mode;
     int rtp_payload_size;
     void (*rtp_callback)(void *data, int size, int packet_number);
     uint8_t *ptr_lastgob;
@@ -881,7 +869,6 @@ int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
 int ff_msmpeg4_decode_init(MpegEncContext *s);
 void ff_msmpeg4_encode_init(MpegEncContext *s);
 int ff_wmv2_decode_picture_header(MpegEncContext * s);
-int ff_wmv2_decode_secondary_picture_header(MpegEncContext * s);
 void ff_wmv2_add_mb(MpegEncContext *s, DCTELEM block[6][64], uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr);
 void ff_mspel_motion(MpegEncContext *s,
                                uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,

@@ -34,8 +34,8 @@
 #include "fastmemcpy.h"
 #endif
 
-#undef NDEBUG
-#include <assert.h>
+//#undef NDEBUG
+//#include <assert.h>
 
 #ifdef CONFIG_ENCODERS
 static void encode_picture(MpegEncContext *s, int picture_number);
@@ -191,7 +191,7 @@ int DCT_common_init(MpegEncContext *s)
 #endif
         
 #ifdef HAVE_MMX
-    MPV_common_init_mmx(s); //FIXME dont pass mpegenccontext to these, rather use dspcontext
+    MPV_common_init_mmx(s);
 #endif
 #ifdef ARCH_ALPHA
     MPV_common_init_axp(s);
@@ -279,7 +279,7 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         }
 
         CHECKED_ALLOCZ(pic->mbskip_table , mb_array_size * sizeof(uint8_t)+2) //the +2 is for the slice end check
-        CHECKED_ALLOCZ(pic->qscale_table , mb_array_size * sizeof(uint8_t)+3) //+3 for mpeg2 SIMD >>1
+        CHECKED_ALLOCZ(pic->qscale_table , mb_array_size * sizeof(uint8_t))
         CHECKED_ALLOCZ(pic->mb_type_base , big_mb_num    * sizeof(int))
         pic->mb_type= pic->mb_type_base + s->mb_stride+1;
         if(s->out_format == FMT_H264){
@@ -424,7 +424,7 @@ int MPV_common_init(MpegEncContext *s)
         
     CHECKED_ALLOCZ(s->error_status_table, mb_array_size*sizeof(uint8_t))
     
-    if (s->out_format == FMT_H263 || s->encoding || 1) {
+    if (s->out_format == FMT_H263 || s->encoding) {
         int size;
 
         /* MV prediction */
@@ -581,7 +581,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->data_partitioning= avctx->flags & CODEC_FLAG_PART;
     s->quarter_sample= (avctx->flags & CODEC_FLAG_QPEL)!=0;
     s->mpeg_quant= avctx->mpeg_quant;
-    
+
     if (s->gop_size <= 1) {
         s->intra_only = 1;
         s->gop_size = 12;
@@ -622,12 +622,12 @@ int MPV_encode_init(AVCodecContext *avctx)
         fprintf(stderr, "b frames not supporetd by codec\n");
         return -1;
     }
-/*    
+    
     if(s->mpeg_quant && s->codec_id != CODEC_ID_MPEG4){ //FIXME mpeg2 uses that too
         fprintf(stderr, "mpeg2 style quantization not supporetd by codec\n");
         return -1;
     }
-  */      
+        
     if(s->codec_id==CODEC_ID_MJPEG){
         s->intra_quant_bias= 1<<(QUANT_BIAS_SHIFT-1); //(a + x/2)/x
         s->inter_quant_bias= 0;
@@ -1009,7 +1009,6 @@ alloc:
         
         if( alloc_picture(s, (Picture*)pic, 0) < 0)
             return -1;
-        assert(pic->data[0]);
 
         s->current_picture_ptr= &s->picture[i];
     }
@@ -2352,8 +2351,7 @@ static inline void MPV_motion(MpegEncContext *s,
         }
     }
     break;
-    default:
-        printf("X");
+
     }
 }
 
@@ -3005,9 +3003,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         for(i=0;i<6;i++) {
             if(!skip_dct[i]){
                 int overflow;
-START_TIMER;
                 s->block_last_index[i] = s->dct_quantize(s, s->block[i], i, s->qscale, &overflow);
-STOP_TIMER("dct_quant");
             // FIXME we could decide to change to quantizer instead of clipping
             // JS: I don't think that would be a good idea it could lower quality instead
             //     of improve it. Just INTRADC clipping deserves changes in quantizer
@@ -4018,7 +4014,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         start_i = 1;
         last_non_zero = 0;
         qmat = s->q_intra_matrix[qscale];
-        if(s->mpeg_quant)
+        if(s->mpeg_quant || s->out_format == FMT_MPEG1)
             bias= 1<<(QMAT_SHIFT-1);
         length     = s->intra_ac_vlc_length;
         last_length= s->intra_ac_vlc_last_length;
