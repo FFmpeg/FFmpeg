@@ -859,8 +859,6 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     MpegEncContext s2;
 
     s->avctx = avctx;
-    avctx->width = -((-avctx->width ) >> avctx->lowres);
-    avctx->height= -((-avctx->height) >> avctx->lowres);
 
     /* ugly way to get the idct & scantable FIXME */
     memset(&s2, 0, sizeof(MpegEncContext));
@@ -880,7 +878,7 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
 	return -1;
     s->start_code = -1;
     s->first_picture = 1;
-    s->org_height = avctx->height << avctx->lowres;
+    s->org_height = avctx->coded_height;
     
     build_vlc(&s->vlcs[0][0], bits_dc_luminance, val_dc_luminance, 12);
     build_vlc(&s->vlcs[0][1], bits_dc_chrominance, val_dc_chrominance, 12);
@@ -1032,8 +1030,7 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
             
         s->width = width;
         s->height = height;
-        s->avctx->width  = -((-s->width )>>s->avctx->lowres);
-        s->avctx->height = -((-s->height)>>s->avctx->lowres);
+        avcodec_set_dimensions(s->avctx, width, height);
 
         /* test interlaced mode */
         if (s->first_picture &&
@@ -2043,10 +2040,10 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     j += sizeof(sp5x_data_dht);
 
     memcpy(recoded+j, &sp5x_data_sof[0], sizeof(sp5x_data_sof));
-    recoded[j+5] = (avctx->height >> 8) & 0xFF; //FIXME lowres
-    recoded[j+6] = avctx->height & 0xFF;
-    recoded[j+7] = (avctx->width >> 8) & 0xFF;
-    recoded[j+8] = avctx->width & 0xFF;
+    recoded[j+5] = (avctx->coded_height >> 8) & 0xFF;
+    recoded[j+6] = avctx->coded_height & 0xFF;
+    recoded[j+7] = (avctx->coded_width >> 8) & 0xFF;
+    recoded[j+8] = avctx->coded_width & 0xFF;
     j += sizeof(sp5x_data_sof);
 
     memcpy(recoded+j, &sp5x_data_sos[0], sizeof(sp5x_data_sos));
@@ -2070,10 +2067,8 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
 #else
     /* SOF */
     s->bits = 8;
-    s->width  = avctx->width;
-    s->height = avctx->height;
-    avctx->width  = -((-avctx->width )>>avctx->lowres);
-    avctx->height = -((-avctx->height)>>avctx->lowres);
+    s->width  = avctx->coded_width;
+    s->height = avctx->coded_height;
     s->nb_components = 3;
     s->component_id[0] = 0;
     s->h_count[0] = 2;

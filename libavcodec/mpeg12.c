@@ -1966,8 +1966,8 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
 
     if (
     	(s1->mpeg_enc_ctx_allocated == 0)|| 
-        avctx->width  != -((-s->width )>>avctx->lowres) ||
-        avctx->height != -((-s->height)>>avctx->lowres) ||
+        avctx->coded_width  != s->width ||
+        avctx->coded_height != s->height||
 //      s1->save_aspect_info != avctx->aspect_ratio_info||
         0)
     {
@@ -1979,8 +1979,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
 	if( (s->width == 0 )||(s->height == 0))
 	    return -2;
 
-        avctx->width  = -((-s->width )>>avctx->lowres);
-        avctx->height = -((-s->height)>>avctx->lowres);
+        avcodec_set_dimensions(avctx, s->width, s->height);
         avctx->bit_rate = s->bit_rate;
         s1->save_aspect_info = s->aspect_ratio_info;
 
@@ -2776,8 +2775,8 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     if (s1->mpeg_enc_ctx_allocated) {
         MPV_common_end(s);
     }
-    s->width = avctx->width;
-    s->height = avctx->height;
+    s->width  = avctx->coded_width;
+    s->height = avctx->coded_height;
     avctx->has_b_frames= 0; //true?
     s->low_delay= 1;
 

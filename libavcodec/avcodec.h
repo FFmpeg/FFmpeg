@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4724
+#define LIBAVCODEC_BUILD       4725
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -677,9 +677,11 @@ typedef struct AVCodecContext {
     int frame_rate;
     
     /**
-     * width / height.
+     * picture width / height.
      * - encoding: MUST be set by user. 
-     * - decoding: set by user if known, codec should override / dynamically change if needed
+     * - decoding: set by lavc.
+     * Note, for compatibility its possible to set this instead of 
+     * coded_width/height before decoding
      */
     int width, height;
     
@@ -1663,6 +1665,14 @@ typedef struct AVCodecContext {
      * - decoding: set by user
      */
      int lowres;
+
+    /**
+     * bistream width / height. may be different from width/height if lowres
+     * or other things are used
+     * - encoding: unused
+     * - decoding: set by user before init if known, codec should override / dynamically change if needed
+     */
+    int coded_width, coded_height;
 } AVCodecContext;
 
 
@@ -1972,6 +1982,7 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
 int avpicture_get_size(int pix_fmt, int width, int height);
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
 const char *avcodec_get_pix_fmt_name(int pix_fmt);
+void avcodec_set_dimensions(AVCodecContext *s, int width, int height);
 enum PixelFormat avcodec_get_pix_fmt(const char* name);
 
 #define FF_LOSS_RESOLUTION  0x0001 /* loss due to resolution change */

@@ -222,8 +222,8 @@ static void mdec_common_init(AVCodecContext *avctx){
 
     dsputil_init(&a->dsp, avctx);
 
-    a->mb_width   = (avctx->width  + 15) / 16;
-    a->mb_height  = (avctx->height + 15) / 16;
+    a->mb_width   = (avctx->coded_width  + 15) / 16;
+    a->mb_height  = (avctx->coded_height + 15) / 16;
 
     avctx->coded_frame= (AVFrame*)&a->picture;
     a->avctx= avctx;

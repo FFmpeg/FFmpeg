@@ -123,6 +123,13 @@ void register_avcodec(AVCodec *format)
     format->next = NULL;
 }
 
+void avcodec_set_dimensions(AVCodecContext *s, int width, int height){
+    s->coded_width = width;
+    s->coded_height= height;
+    s->width = -((-width )>>s->lowres);
+    s->height= -((-height)>>s->lowres);
+}
+
 typedef struct InternalBuffer{
     int last_pic_num;
     uint8_t *base[4];
@@ -456,6 +463,12 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     } else {
         avctx->priv_data = NULL;
     }
+
+    if(avctx->coded_width && avctx->coded_height)
+        avcodec_set_dimensions(avctx, avctx->coded_width, avctx->coded_height);
+    else if(avctx->width && avctx->height)
+        avcodec_set_dimensions(avctx, avctx->width, avctx->height);
+
     ret = avctx->codec->init(avctx);
     if (ret < 0) {
         av_freep(&avctx->priv_data);
