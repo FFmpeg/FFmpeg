@@ -1056,6 +1056,9 @@ static int indeo3_decode_frame(AVCodecContext *avctx,
 
     iv_decode_frame(s, buf, buf_size);
 
+    if(s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
+
     s->frame.reference = 0;
     if(avctx->get_buffer(avctx, &s->frame) < 0) {
         fprintf(stderr, "get_buffer() failed\n");
@@ -1088,8 +1091,6 @@ static int indeo3_decode_frame(AVCodecContext *avctx,
 
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data= s->frame;
-
-    avctx->release_buffer(avctx, &s->frame);
 
     return buf_size;
 }

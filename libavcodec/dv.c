@@ -580,6 +580,9 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     else
         avctx->aspect_ratio = 4.0 / 3.0;
 
+    if(s->picture.data[0])
+        avctx->release_buffer(avctx, &s->picture);
+    
     s->picture.reference= 0;
     if(avctx->get_buffer(avctx, &s->picture) < 0) {
         fprintf(stderr, "get_buffer() failed\n");
@@ -616,8 +619,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     /* return image */
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data= s->picture;
-    
-    avctx->release_buffer(avctx, &s->picture);
     
     return packet_size;
 }

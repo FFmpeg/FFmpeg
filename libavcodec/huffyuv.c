@@ -737,6 +737,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     
     init_get_bits(&s->gb, s->bitstream_buffer, buf_size*8);
 
+    if(p->data[0])
+        avctx->release_buffer(avctx, p);
+
     p->reference= 0;
     if(avctx->get_buffer(avctx, p) < 0){
         fprintf(stderr, "get_buffer() failed\n");
@@ -943,9 +946,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     emms_c();
     
     *picture= *p;
-    
-    avctx->release_buffer(avctx, p);
-
     *data_size = sizeof(AVFrame);
     
     return (get_bits_count(&s->gb)+31)/32*4;

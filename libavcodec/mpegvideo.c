@@ -929,7 +929,7 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     s->mb_skiped = 0;
 
     assert(s->last_picture_ptr==NULL || s->out_format != FMT_H264);
-        
+
     /* mark&release old frames */
     if (s->pict_type != B_TYPE && s->last_picture_ptr) {
         avctx->release_buffer(avctx, (AVFrame*)s->last_picture_ptr);
@@ -945,9 +945,15 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             }
         }
     }
-    
 alloc:
     if(!s->encoding){
+        /* release non refernce frames */
+        for(i=0; i<MAX_PICTURE_COUNT; i++){
+            if(s->picture[i].data[0] && !s->picture[i].reference /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/){
+                s->avctx->release_buffer(s->avctx, (AVFrame*)&s->picture[i]);
+            }
+        }
+
         i= find_unused_picture(s, 0);
     
         pic= (AVFrame*)&s->picture[i];
@@ -1041,12 +1047,14 @@ void MPV_frame_end(MpegEncContext *s)
     assert(i<MAX_PICTURE_COUNT);
 #endif    
 
-    /* release non refernce frames */
-    for(i=0; i<MAX_PICTURE_COUNT; i++){
-        if(s->picture[i].data[0] && !s->picture[i].reference /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/)
-            s->avctx->release_buffer(s->avctx, (AVFrame*)&s->picture[i]);
+    if(s->encoding){
+        /* release non refernce frames */
+        for(i=0; i<MAX_PICTURE_COUNT; i++){
+            if(s->picture[i].data[0] && !s->picture[i].reference /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/){
+                s->avctx->release_buffer(s->avctx, (AVFrame*)&s->picture[i]);
+            }
+        }
     }
-    
     // clear copies, to avoid confusion
 #if 0
     memset(&s->last_picture, 0, sizeof(Picture));
