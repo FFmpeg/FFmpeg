@@ -217,8 +217,10 @@ static int http_connect(URLContext *h, const char *path)
     s->buf_end = s->buffer;
     s->line_count = 0;
     s->location[0] = '\0';
-    if (post)
+    if (post) {
+        sleep(1);
         return 0;
+    }
     
     /* wait for header */
     q = line;
