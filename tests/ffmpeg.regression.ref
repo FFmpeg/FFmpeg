@@ -1,0 +1,15 @@
+ffmpeg regression test
+5f79a1de94818e085d283612c979209e  /tmp/a-mpeg1.mpg
+ec8038d872249d000ef3ced8a929d852  /tmp/out.yuv
+0d2929a5ca7d59404ae302ceaef34ad0  /tmp/a-msmpeg4.avi
+78f75bae681ad659d8433be5c5be4355  /tmp/out.yuv
+dbdfcaec083cb2ff9484369d51b5dd37  /tmp/a-h263.avi
+dd556b4cab001f91594ed5198c0076e9  /tmp/out.yuv
+fa29e99ad3314a5ef6881f3fcad374e7  /tmp/a-odivx.avi
+42d47bf027f72cba83ea23b9755937bd  /tmp/out.yuv
+ff06a0b59e445d2694185a08e1000801  /tmp/a-mjpeg.avi
+6551ec4dea416fa3e8f3538d206f236f  /tmp/out.yuv
+21f8ff9f1daacd9133683bb4ea0f50a4  /tmp/a-mp2.mp2
+66ba0fcbf3ed6310d54a71611e16a59c  /tmp/out.wav
+048b9c3444c788bac6ce5cc3a8f4db00  /tmp/a-ac3.rm
+ae59a9cf43ee96b3214567ce8a25aa31  /tmp/out.wav
