@@ -48,6 +48,7 @@ audio_oss="yes"
 network="yes"
 zlib="yes"
 mp3lame="no"
+vorbis="no"
 a52="yes"
 a52bin="no"
 win32="no"
@@ -175,6 +176,8 @@ for opt do
   --enable-a52bin) a52bin="yes" ; extralibs="-ldl $extralibs"
   ;;
   --enable-mp3lame) mp3lame="yes"
+  ;;
+  --enable-vorbis) vorbis="yes"
   ;;
   --disable-vhook) vhook="no"
   ;;
@@ -305,6 +308,7 @@ echo "Standard options:"
 echo "  --help                   print this message"
 echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
 echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]"
+echo "  --enable-vorbis          enable vorbis support via libvorbisenc [default=no]"
 echo "  --enable-win32           enable win32 cross compile"
 echo "  --disable-a52            disable GPL'ed A52 support [default=no]"
 echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
@@ -344,6 +348,7 @@ echo "MMX enabled      $mmx"
 echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
 echo "mp3lame enabled  $mp3lame"
+echo "vorbis enabled   $vorbis"
 echo "a52 support      $a52"
 echo "a52 dlopened     $a52bin"
 # echo "Video hooking    $vhook"
@@ -458,6 +463,11 @@ fi
 if test "$mp3lame" = "yes" ; then
   echo "#define CONFIG_MP3LAME 1" >> $TMPH
   echo "CONFIG_MP3LAME=yes" >> config.mak
+fi
+
+if test "$vorbis" = "yes" ; then
+  echo "#define CONFIG_VORBIS 1" >> $TMPH
+  echo "CONFIG_VORBIS=yes" >> config.mak
 fi
 
 if test "$win32" = "yes" ; then

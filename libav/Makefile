@@ -33,6 +33,10 @@ ifeq ($(CONFIG_NETWORK),yes)
 OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o
 endif
 
+ifeq ($(CONFIG_VORBIS),yes)
+OBJS+= ogg.o
+endif
+
 LIB= libavformat.a
 
 all: $(LIB)

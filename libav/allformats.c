@@ -45,6 +45,10 @@ void av_register_all(void)
     mov_init();
     jpeg_init();
 
+#ifdef CONFIG_VORBIS
+    ogg_init();
+#endif
+
 #ifndef CONFIG_WIN32
     ffm_init();
 #endif

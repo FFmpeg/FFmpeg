@@ -3665,6 +3665,11 @@ int parse_ffconfig(const char *filename)
             if (stream) {
                 audio_enc.sample_rate = atoi(arg);
             }
+	} else if (!strcasecmp(cmd, "AudioQuality")) {
+	    get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                audio_enc.quality = atof(arg) * 1000;
+            }
         } else if (!strcasecmp(cmd, "VideoBitRate")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {

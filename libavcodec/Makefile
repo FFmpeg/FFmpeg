@@ -34,6 +34,11 @@ OBJS += mp3lameaudio.o
 EXTRALIBS += -lmp3lame
 endif
 
+ifeq ($(CONFIG_VORBIS),yes)
+OBJS += oggvorbis.o
+EXTRALIBS += -lvorbis -lvorbisenc
+endif
+
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
 LDFLAGS+=-p

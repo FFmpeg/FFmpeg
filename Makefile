@@ -36,6 +36,9 @@ DEP_LIBS=libavcodec/libavcodec.a libav/libavformat.a
 ifeq ($(CONFIG_MP3LAME),yes)
 EXTRALIBS+=-lmp3lame
 endif
+ifeq ($(CONFIG_VORBIS),yes)
+EXTRALIBS+=-logg -lvorbis -lvorbisenc
+endif
 endif
 
 OBJS = ffmpeg.o ffserver.o

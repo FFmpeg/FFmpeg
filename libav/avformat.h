@@ -213,6 +213,9 @@ int wav_init(void);
 /* raw.c */
 int raw_init(void);
 
+/* ogg.c */
+int ogg_init(void);
+
 /* ffm.c */
 int ffm_init(void);
 

@@ -39,6 +39,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_MP3LAME
     register_avcodec(&mp3lame_encoder);
 #endif
+#ifdef CONFIG_VORBIS
+    register_avcodec(&oggvorbis_encoder);
+#endif
     register_avcodec(&mpeg1video_encoder);
     register_avcodec(&h263_encoder);
     register_avcodec(&h263p_encoder);

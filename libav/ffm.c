@@ -151,6 +151,7 @@ static int ffm_write_header(AVFormatContext *s)
         put_be32(pb, codec->codec_id);
         put_byte(pb, codec->codec_type);
         put_be32(pb, codec->bit_rate);
+	put_be32(pb, codec->quality);
         put_be32(pb, codec->flags);
         /* specific info */
         switch(codec->codec_type) {
@@ -393,6 +394,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->codec.codec_id = get_be32(pb);
         st->codec.codec_type = get_byte(pb); /* codec_type */
         codec->bit_rate = get_be32(pb);
+	codec->quality = get_be32(pb);
         codec->flags = get_be32(pb);
         /* specific info */
         switch(codec->codec_type) {
