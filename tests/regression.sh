@@ -238,7 +238,7 @@ fi
 if [ -n "$do_mpeg4adv" ] ; then
 # mpeg4
 file=${outfile}mpeg4-adv.avi
-do_ffmpeg $file -y -qscale 9 -4mv -hq -part -ps 200 -aic -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 9 -4mv -hq -part -ps 200 -aic -trell -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 

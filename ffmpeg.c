@@ -120,6 +120,7 @@ static int use_aic = 0;
 static int use_aiv = 0;
 static int use_umv = 0;
 static int use_alt_scan = 0;
+static int use_trell = 0;
 static int do_deinterlace = 0;
 static int do_interlace_dct = 0;
 static int do_interlace_me = 0;
@@ -2395,6 +2396,9 @@ static void opt_output_file(const char *filename)
            	if (use_alt_scan) {
                     video_enc->flags |= CODEC_FLAG_ALT_SCAN;
                 }
+           	if (use_trell) {
+                    video_enc->flags |= CODEC_FLAG_TRELLIS_QUANT;
+                }
                 if (b_frames) {
                     video_enc->max_b_frames = b_frames;
                     video_enc->b_frame_strategy = 0;
@@ -3029,6 +3033,7 @@ const OptionDef options[] = {
     { "aiv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aiv}, "enable Alternative inter vlc (h263+)" },
     { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
     { "alt", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_alt_scan}, "enable alternate scantable (mpeg2)" },
+    { "trell", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_trell}, "enable trellis quantization" },
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
