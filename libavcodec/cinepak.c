@@ -365,7 +365,7 @@ static int cinepak_decode_init(AVCodecContext *avctx)
     s->height = (avctx->height + 3) & ~3;
 
     // check for paletted data
-    if (avctx->palctrl == NULL) {
+    if ((avctx->palctrl == NULL) || (avctx->bits_per_sample == 40)) {
         s->palette_video = 0;
         avctx->pix_fmt = PIX_FMT_YUV420P;
     } else {
