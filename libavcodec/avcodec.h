@@ -3,8 +3,7 @@
 
 /**
  * @file avcodec.h
- * @brief 
- *     external api header
+ * external api header.
  */
 
 
@@ -317,6 +316,10 @@ typedef struct AVFrame {
     FF_COMMON_FRAME
 } AVFrame;
 
+
+/**
+ * main external api structure.
+ */
 typedef struct AVCodecContext {
     /**
      * the average bitrate
