@@ -31,9 +31,11 @@ CodecTag codec_wav_tags[] = {
 };
 
 /* WAVEFORMATEX header */
+/* returns the size or -1 on error */
 int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 {
     int tag, bps, blkalign, bytespersec;
+    int hdrsize = 18;
 
     tag = codec_get_tag(codec_wav_tags, enc->codec_id);
     if (tag == 0)
@@ -67,6 +69,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le16(pb, bps); /* bits per sample */
     if (enc->codec_id == CODEC_ID_MP3LAME) {
         put_le16(pb, 12); /* wav_extra_size */
+        hdrsize += 12;
         put_le16(pb, 1); /* wID */
         put_le32(pb, 2); /* fdwFlags */
         put_le16(pb, 1152); /* nBlockSize */
@@ -74,6 +77,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         put_le16(pb, 1393); /* nCodecDelay */
     } else if (enc->codec_id == CODEC_ID_MP2) {
         put_le16(pb, 22); /* wav_extra_size */
+        hdrsize += 22;
         put_le16(pb, 2);  /* fwHeadLayer */
         put_le32(pb, enc->bit_rate); /* dwHeadBitrate */
         put_le16(pb, enc->channels == 2 ? 1 : 8); /* fwHeadMode */
@@ -85,7 +89,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     } else
         put_le16(pb, 0); /* wav_extra_size */
 
-    return 0;
+    return hdrsize;
 }
 
 int wav_codec_get_id(unsigned int tag, int bps)
