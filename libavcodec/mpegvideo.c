@@ -2041,7 +2041,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
         }
 
         flush_put_bits(&s->pb);
-        s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
+        s->frame_bits  = put_bits_count(&s->pb);
 
         stuffing_count= ff_vbv_update(s, s->frame_bits);
         if(stuffing_count){
@@ -2064,7 +2064,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
                 av_log(s->avctx, AV_LOG_ERROR, "vbv buffer overflow\n");
             }
             flush_put_bits(&s->pb);
-            s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
+            s->frame_bits  = put_bits_count(&s->pb);
         }
 
         /* update mpeg1/2 vbv_delay for CBR */    
@@ -4040,7 +4040,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
             if(s->rtp_mode){
                 int current_packet_size, is_gob_start;
                 
-                current_packet_size= pbBufPtr(&s->pb) - s->ptr_lastgob; //FIXME wrong
+                current_packet_size= ((put_bits_count(&s->pb)+7)>>3) - (s->ptr_lastgob - s->pb.buf);
                 
                 is_gob_start= s->avctx->rtp_payload_size && current_packet_size >= s->avctx->rtp_payload_size && mb_y + mb_x>0; 
                 
