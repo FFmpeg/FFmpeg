@@ -68,7 +68,6 @@ static int raw_read_header(AVFormatContext *s,
         case CODEC_TYPE_AUDIO:
             st->codec.sample_rate = ap->sample_rate;
             st->codec.channels = ap->channels;
-            /* XXX: endianness */
             break;
         case CODEC_TYPE_VIDEO:
             st->codec.frame_rate = ap->frame_rate;
@@ -81,6 +80,26 @@ static int raw_read_header(AVFormatContext *s,
     } else {
         return -1;
     }
+    return 0;
+}
+
+/* raw input */
+static int pcm_read_header(AVFormatContext *s,
+                           AVFormatParameters *ap)
+{
+    AVStream *st;
+
+    st = malloc(sizeof(AVStream));
+    if (!st)
+        return -1;
+    s->nb_streams = 1;
+    s->streams[0] = st;
+
+    st->id = 0;
+
+    st->codec.codec_type = CODEC_TYPE_AUDIO;
+    st->codec.codec_id = s->format->audio_codec;
+
     return 0;
 }
 
@@ -229,18 +248,148 @@ AVFormat mjpeg_format = {
     raw_read_close,
 };
 
-AVFormat pcm_format = {
-    "pcm",
-    "pcm raw format",
+/* pcm formats */
+
+AVFormat pcm_s16le_format = {
+    "s16le",
+    "pcm signed 16 bit little endian format",
     NULL,
+#ifdef WORDS_BIGENDIAN
+    "",
+#else
     "sw",
-    CODEC_ID_PCM,
+#endif
+    CODEC_ID_PCM_S16LE,
     0,
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
 
-    raw_read_header,
+    pcm_read_header,
+    raw_read_packet,
+    raw_read_close,
+};
+
+AVFormat pcm_s16be_format = {
+    "s16be",
+    "pcm signed 16 bit big endian format",
+    NULL,
+#ifdef WORDS_BIGENDIAN
+    "sw",
+#else
+    "",
+#endif
+    CODEC_ID_PCM_S16BE,
+    0,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+
+    pcm_read_header,
+    raw_read_packet,
+    raw_read_close,
+};
+
+AVFormat pcm_u16le_format = {
+    "u16le",
+    "pcm unsigned 16 bit little endian format",
+    NULL,
+#ifdef WORDS_BIGENDIAN
+    "",
+#else
+    "uw",
+#endif
+    CODEC_ID_PCM_U16LE,
+    0,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+
+    pcm_read_header,
+    raw_read_packet,
+    raw_read_close,
+};
+
+AVFormat pcm_u16be_format = {
+    "u16be",
+    "pcm unsigned 16 bit big endian format",
+    NULL,
+#ifdef WORDS_BIGENDIAN
+    "uw",
+#else
+    "",
+#endif
+    CODEC_ID_PCM_U16BE,
+    0,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+
+    pcm_read_header,
+    raw_read_packet,
+    raw_read_close,
+};
+
+AVFormat pcm_s8_format = {
+    "s8",
+    "pcm signed 8 bit format",
+    NULL,
+    "sb",
+    CODEC_ID_PCM_S8,
+    0,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+
+    pcm_read_header,
+    raw_read_packet,
+    raw_read_close,
+};
+
+AVFormat pcm_u8_format = {
+    "u8",
+    "pcm unsigned 8 bit format",
+    NULL,
+    "ub",
+    CODEC_ID_PCM_U8,
+    0,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+
+    pcm_read_header,
+    raw_read_packet,
+    raw_read_close,
+};
+
+AVFormat pcm_mulaw_format = {
+    "mulaw",
+    "pcm mu law format",
+    NULL,
+    "ul",
+    CODEC_ID_PCM_MULAW,
+    0,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+
+    pcm_read_header,
+    raw_read_packet,
+    raw_read_close,
+};
+
+AVFormat pcm_alaw_format = {
+    "alaw",
+    "pcm A law format",
+    NULL,
+    "al",
+    CODEC_ID_PCM_ALAW,
+    0,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+
+    pcm_read_header,
     raw_read_packet,
     raw_read_close,
 };

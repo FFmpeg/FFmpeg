@@ -140,7 +140,14 @@ extern AVFormat ac3_format;
 extern AVFormat h263_format;
 extern AVFormat mpeg1video_format;
 extern AVFormat mjpeg_format;
-extern AVFormat pcm_format;
+extern AVFormat pcm_s16le_format;
+extern AVFormat pcm_s16be_format;
+extern AVFormat pcm_u16le_format;
+extern AVFormat pcm_u16be_format;
+extern AVFormat pcm_s8_format;
+extern AVFormat pcm_u8_format;
+extern AVFormat pcm_mulaw_format;
+extern AVFormat pcm_alaw_format;
 extern AVFormat rawvideo_format;
 
 /* ffm.c */

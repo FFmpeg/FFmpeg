@@ -71,7 +71,9 @@ CodecTag codec_wav_tags[] = {
     { CODEC_ID_MP2, 0x55 },
     { CODEC_ID_MP2, 0x50 },
     { CODEC_ID_AC3, 0x2000 },
-    { CODEC_ID_PCM, 0x01 },
+    { CODEC_ID_PCM_S16LE, 0x01 },
+    { CODEC_ID_PCM_ALAW, 0x06 },
+    { CODEC_ID_PCM_MULAW, 0x07 },
     { 0, 0 },
 };
 

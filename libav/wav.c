@@ -110,7 +110,7 @@ static int wav_read_header(AVFormatContext *s,
     int size;
     unsigned int tag;
     ByteIOContext *pb = &s->pb;
-    unsigned int id, channels, rate, bit_rate, extra_size;
+    unsigned int id, channels, rate, bit_rate, extra_size, bps;
     AVStream *st;
 
     /* check RIFF header */
@@ -132,7 +132,7 @@ static int wav_read_header(AVFormatContext *s,
     rate = get_le32(pb);
     bit_rate = get_le32(pb) * 8;
     get_le16(pb); /* block align */
-    get_le16(pb); /* bits per sample */
+    bps = get_le16(pb); /* bits per sample */
     if (size >= 18) {
         /* wav_extra_size */
         extra_size = get_le16(pb); 
@@ -158,6 +158,9 @@ static int wav_read_header(AVFormatContext *s,
     st->codec.codec_id = codec_get_id(codec_wav_tags, id);
     st->codec.channels = channels;
     st->codec.sample_rate = rate;
+    if (st->codec.codec_id == CODEC_ID_PCM_S16LE && bps == 8) {
+        st->codec.codec_id = CODEC_ID_PCM_U8;
+    }
     return 0;
 }
 
@@ -181,6 +184,9 @@ static int wav_read_packet(AVFormatContext *s,
     ret = get_buffer(&s->pb, pkt->data, pkt->size);
     if (ret < 0)
         av_free_packet(pkt);
+    /* note: we need to modify the packet size here to handle the last
+       packet */
+    pkt->size = ret;
     return ret;
 }
 
@@ -194,7 +200,7 @@ AVFormat wav_format = {
     "wav format",
     "audio/x-wav",
     "wav",
-    CODEC_ID_PCM,
+    CODEC_ID_PCM_S16LE,
     CODEC_ID_NONE,
     wav_write_header,
     wav_write_packet,

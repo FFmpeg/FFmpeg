@@ -142,7 +142,14 @@ void register_all(void)
     register_avformat(&single_jpeg_format);
     register_avformat(&swf_format);
     register_avformat(&wav_format);
-    register_avformat(&pcm_format);
+    register_avformat(&pcm_s16le_format);
+    register_avformat(&pcm_s16be_format);
+    register_avformat(&pcm_u16le_format);
+    register_avformat(&pcm_u16be_format);
+    register_avformat(&pcm_s8_format);
+    register_avformat(&pcm_u8_format);
+    register_avformat(&pcm_mulaw_format);
+    register_avformat(&pcm_alaw_format);
     register_avformat(&rawvideo_format);
 #ifndef CONFIG_WIN32
     register_avformat(&ffm_format);
