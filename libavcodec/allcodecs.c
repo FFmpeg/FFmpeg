@@ -127,6 +127,7 @@ void avcodec_register_all(void)
     register_avcodec(&cinepak_decoder);
     register_avcodec(&msrle_decoder);
     register_avcodec(&msvideo1_decoder);
+    register_avcodec(&vqa_decoder);
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif

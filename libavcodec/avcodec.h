@@ -1432,6 +1432,7 @@ extern AVCodec rpza_decoder;
 extern AVCodec cinepak_decoder;
 extern AVCodec msrle_decoder;
 extern AVCodec msvideo1_decoder;
+extern AVCodec vqa_decoder;
 extern AVCodec ra_144_decoder;
 extern AVCodec ra_288_decoder;
 extern AVCodec roq_dpcm_decoder;
