@@ -20,8 +20,10 @@ endif
 
 ifeq ($(BUILD_SHARED),yes)
 FFMPEG_LIB=-Llibavcodec -lffmpeg
+DEP_FFMPEG_LIB=
 else
 FFMPEG_LIB=libavcodec/libavcodec.a
+DEP_FFMPEG_LIB=libavcodec/libavcodec.a
 endif
 
 all: lib $(PROG)
@@ -30,10 +32,10 @@ lib:
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libav all
 
-ffmpeg$(EXE): ffmpeg.o libav/libav.a 
+ffmpeg$(EXE): ffmpeg.o libav/libav.a $(DEP_FFMPEG_LIB)
 	$(CC) $(LDFLAGS) -lm -o $@ $^ $(FFMPEG_LIB)
 
-ffserver$(EXE): ffserver.o libav/libav.a 
+ffserver$(EXE): ffserver.o libav/libav.a $(DEP_FFMPEG_LIB)
 	$(CC) $(LDFLAGS) -lm -o $@ $^ $(FFMPEG_LIB)
 
 ffplay: ffmpeg$(EXE)
