@@ -533,6 +533,14 @@ static VLC mb_ptype_vlc;
 static VLC mb_btype_vlc;
 static VLC mb_pat_vlc;
 
+#define DC_VLC_BITS 9
+#define MV_VLC_BITS 9
+#define MBINCR_VLC_BITS 9
+#define MB_PAT_VLC_BITS 9
+#define MB_PTYPE_VLC_BITS 6
+#define MB_BTYPE_VLC_BITS 6
+#define TEX_VLC_BITS 9
+
 void mpeg1_init_vlc(MpegEncContext *s)
 {
     static int done = 0;
@@ -540,35 +548,35 @@ void mpeg1_init_vlc(MpegEncContext *s)
     if (!done) {
         done = 1;
 
-        init_vlc(&dc_lum_vlc, 9, 12, 
+        init_vlc(&dc_lum_vlc, DC_VLC_BITS, 10/*12*/, 
                  vlc_dc_lum_bits, 1, 1,
                  vlc_dc_lum_code, 2, 2);
-        init_vlc(&dc_chroma_vlc, 9, 12, 
+        init_vlc(&dc_chroma_vlc,  DC_VLC_BITS, 10/*12*/, 
                  vlc_dc_chroma_bits, 1, 1,
                  vlc_dc_chroma_code, 2, 2);
-        init_vlc(&mv_vlc, 9, 17, 
+        init_vlc(&mv_vlc, MV_VLC_BITS, 17, 
                  &mbMotionVectorTable[0][1], 2, 1,
                  &mbMotionVectorTable[0][0], 2, 1);
-        init_vlc(&mbincr_vlc, 9, 35, 
+        init_vlc(&mbincr_vlc, MBINCR_VLC_BITS, 35, 
                  &mbAddrIncrTable[0][1], 2, 1,
                  &mbAddrIncrTable[0][0], 2, 1);
-        init_vlc(&mb_pat_vlc, 9, 63, 
+        init_vlc(&mb_pat_vlc, MB_PAT_VLC_BITS, 63, 
                  &mbPatTable[0][1], 2, 1,
                  &mbPatTable[0][0], 2, 1);
         
-        init_vlc(&mb_ptype_vlc, 6, 32, 
+        init_vlc(&mb_ptype_vlc, MB_PTYPE_VLC_BITS, 32, 
                  &table_mb_ptype[0][1], 2, 1,
                  &table_mb_ptype[0][0], 2, 1);
-        init_vlc(&mb_btype_vlc, 6, 32, 
+        init_vlc(&mb_btype_vlc, MB_BTYPE_VLC_BITS, 32, 
                  &table_mb_btype[0][1], 2, 1,
                  &table_mb_btype[0][0], 2, 1);
         init_rl(&rl_mpeg1);
         init_rl(&rl_mpeg2);
         /* cannot use generic init because we must add the EOB code */
-        init_vlc(&rl_mpeg1.vlc, 9, rl_mpeg1.n + 2, 
+        init_vlc(&rl_mpeg1.vlc, TEX_VLC_BITS, rl_mpeg1.n + 2, 
                  &rl_mpeg1.table_vlc[0][1], 4, 2,
                  &rl_mpeg1.table_vlc[0][0], 4, 2);
-        init_vlc(&rl_mpeg2.vlc, 9, rl_mpeg2.n + 2, 
+        init_vlc(&rl_mpeg2.vlc, TEX_VLC_BITS, rl_mpeg2.n + 2, 
                  &rl_mpeg2.table_vlc[0][1], 4, 2,
                  &rl_mpeg2.table_vlc[0][0], 4, 2);
     }
@@ -614,7 +622,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
         /* read again increment */
         s->mb_incr = 1;
         for(;;) {
-            code = get_vlc(&s->gb, &mbincr_vlc);
+            code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
             if (code < 0)
                 return 1; /* error = end of slice */
             if (code >= 33) {
@@ -671,12 +679,12 @@ static int mpeg_decode_mb(MpegEncContext *s,
         }
         break;
     case P_TYPE:
-        mb_type = get_vlc(&s->gb, &mb_ptype_vlc);
+        mb_type = get_vlc2(&s->gb, mb_ptype_vlc.table, MB_PTYPE_VLC_BITS, 1);
         if (mb_type < 0)
             return -1;
         break;
     case B_TYPE:
-        mb_type = get_vlc(&s->gb, &mb_btype_vlc);
+        mb_type = get_vlc2(&s->gb, mb_btype_vlc.table, MB_BTYPE_VLC_BITS, 1);
         if (mb_type < 0)
             return -1;
         break;
@@ -846,7 +854,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
     }
     
     if (mb_type & MB_PAT) {
-        cbp = get_vlc(&s->gb, &mb_pat_vlc);
+        cbp = get_vlc2(&s->gb, mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
         if (cbp < 0)
             return -1;
         cbp++;
@@ -891,7 +899,7 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
 {
     int code, sign, val, m, l, shift;
 
-    code = get_vlc(&s->gb, &mv_vlc);
+    code = get_vlc2(&s->gb, mv_vlc.table, MV_VLC_BITS, 2);
     if (code < 0) {
         return 0xffff;
     }
@@ -924,9 +932,9 @@ static inline int decode_dc(MpegEncContext *s, int component)
     int code, diff;
 
     if (component == 0) {
-        code = get_vlc(&s->gb, &dc_lum_vlc);
+        code = get_vlc2(&s->gb, dc_lum_vlc.table, DC_VLC_BITS, 1);
     } else {
-        code = get_vlc(&s->gb, &dc_chroma_vlc);
+        code = get_vlc2(&s->gb, dc_chroma_vlc.table, DC_VLC_BITS, 1);
     }
     if (code < 0)
         return 0xffff;
@@ -979,7 +987,7 @@ static int mpeg1_decode_block(MpegEncContext *s,
 
     /* now quantify & encode AC coefs */
     for(;;) {
-        code = get_vlc(&s->gb, &rl->vlc);
+        code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
         if (code < 0) {
             return -1;
         }
@@ -1057,7 +1065,7 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
 
     /* now quantify & encode AC coefs */
     for(;;) {
-        code = get_vlc(&s->gb, &rl->vlc);
+        code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
         if (code < 0)
             return -1;
         if (code == 112) {
@@ -1136,7 +1144,7 @@ static int mpeg2_decode_block_intra(MpegEncContext *s,
 
     /* now quantify & encode AC coefs */
     for(;;) {
-        code = get_vlc(&s->gb, &rl->vlc);
+        code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
         if (code < 0)
             return -1;
         if (code == 112) {
