@@ -17,8 +17,8 @@
 */
 
 /*
-  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8, Y800, YVU9
-  supported output formats: YV12, I420, IYUV, BGR15, BGR16, BGR24, BGR32, Y8, Y800, YVU9
+  supported Input formats: YV12, I420/IYUV, YUY2, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8/Y800, YVU9/IF09
+  supported output formats: YV12, I420/IYUV, BGR15, BGR16, BGR24, BGR32, Y8/Y800, YVU9/IF09
   BGR15/16 support dithering
   
   unscaled special converters
@@ -1763,6 +1763,7 @@ static int remove_dup_fourcc(int fourcc)
 	{
 	    case IMGFMT_IYUV: return IMGFMT_I420;
 	    case IMGFMT_Y8  : return IMGFMT_Y800;
+	    case IMGFMT_IF09: return IMGFMT_YVU9;
 	    default: return fourcc;
 	}
 }
