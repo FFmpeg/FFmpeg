@@ -96,4 +96,9 @@ PPMode pp_get_mode_by_name_and_quality(char *name, int quality);
 void *pp_get_context(int width, int height);
 void pp_free_context(void *ppContext);
 
+int pp_init(int cpuCaps);
+#define PP_CPU_CAPS_MMX   1
+#define PP_CPU_CAPS_MMX2  2
+#define PP_CPU_CAPS_3DNOW 4
+
 #endif

@@ -77,7 +77,6 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 //#define DEBUG_BRIGHTNESS
 #include "../libvo/fastmemcpy.h"
 #include "postprocess.h"
-#include "../cpudetect.h"
 #include "../mangle.h"
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
@@ -104,6 +103,8 @@ static uint64_t __attribute__((aligned(8))) b80= 		0x8080808080808080LL;
 static int verbose= 0;
 
 static const int deringThreshold= 20;
+
+static int cpuCaps=0;
 
 struct PPFilter{
 	char *shortName;
@@ -189,15 +190,6 @@ static inline void unusedVariableWarningFixer()
 }
 #endif
 
-static inline long long rdtsc()
-{
-	long long l;
-	asm volatile(	"rdtsc\n\t"
-		: "=A" (l)
-	);
-//	printf("%d\n", int(l/1000));
-	return l;
-}
 
 #ifdef ARCH_X86
 static inline void prefetchnta(void *p)
@@ -228,6 +220,12 @@ static inline void prefetcht2(void *p)
 	);
 }
 #endif
+
+int pp_init(int caps){
+    cpuCaps= caps;
+    
+    return 0;
+}
 
 // The horizontal Functions exist only in C cuz the MMX code is faster with vertical filters and transposing
 
@@ -508,11 +506,11 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 #ifdef RUNTIME_CPUDETECT
 #ifdef ARCH_X86
 	// ordered per speed fasterst first
-	if(gCpuCaps.hasMMX2)
+	if(cpuCaps & PP_CPU_CAPS_MMX2)
 		postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-	else if(gCpuCaps.has3DNow)
+	else if(cpuCaps & PP_CPU_CAPS_3DNOW)
 		postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-	else if(gCpuCaps.hasMMX)
+	else if(cpuCaps & PP_CPU_CAPS_MMX)
 		postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 	else
 		postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
