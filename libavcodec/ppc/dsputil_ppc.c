@@ -120,7 +120,6 @@ POWERPC_TBL_START_COUNT(powerpc_clear_blocks_dcbz32, 1);
       ((unsigned long*)blocks)[1] = 0L;
       ((unsigned long*)blocks)[2] = 0L;
       ((unsigned long*)blocks)[3] = 0L;
-      vec_st((vector short)(0), 0, blocks);
       i += 16;
     }
     for ( ; i < sizeof(DCTELEM)*6*64 ; i += 32) {
@@ -142,17 +141,16 @@ POWERPC_TBL_STOP_COUNT(powerpc_clear_blocks_dcbz32, 1);
 /* check dcbz report how many bytes are set to 0 by dcbz */
 long check_dcbz_effect(void)
 {
-  register char *fakedata = (char*)malloc(1024);
+  register char *fakedata = (char*)av_malloc(1024);
   register char *fakedata_middle;
   register long zero = 0;
   register long i = 0;
   long count = 0;
 
-  if (fakedata == NULL)
+  if (!fakedata)
   {
     return 0L;
   }
-
 
   fakedata_middle = (fakedata + 512);
 
@@ -166,7 +164,7 @@ long check_dcbz_effect(void)
       count++;
   }
 
-  free(fakedata);
+  av_free(fakedata);
   
   return count;
 }

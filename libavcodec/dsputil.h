@@ -224,6 +224,10 @@ void dsputil_init_alpha(DSPContext* c, unsigned mask);
 
 extern int mm_flags;
 
+#if defined(HAVE_ALTIVEC) && !defined(CONFIG_DARWIN)
+#include <altivec.h>
+#endif
+
 #define __align8 __attribute__ ((aligned (16)))
 
 void dsputil_init_ppc(DSPContext* c, unsigned mask);

@@ -66,8 +66,8 @@ POWERPC_TBL_STOP_COUNT(altivec_gmc1_num, h == 8);
         (   x16)*(   y16), /* D */
         0, 0, 0, 0         /* padding */
       };
-    register const vector unsigned char vczero = (const vector unsigned char)(0);
-    register const vector unsigned short vcsr8 = (const vector unsigned short)(8);
+    register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
+    register const vector unsigned short vcsr8 = (const vector unsigned short)vec_splat_u16(8);
     register vector unsigned char dstv, dstv2, src_0, src_1, srcvA, srcvB, srcvC, srcvD;
     register vector unsigned short Av, Bv, Cv, Dv, rounderV, tempA, tempB, tempC, tempD;
     int i;

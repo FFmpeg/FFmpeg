@@ -90,6 +90,13 @@ do { \
     vec = vec_splat(vec, 0); \
 }
 
+
+#ifdef CONFIG_DARWIN
+#define FOUROF(a) (a)
+#else
+// slower, for dumb non-apple GCC
+#define FOUROF(a) {a,a,a,a}
+#endif
 int dct_quantize_altivec(MpegEncContext* s, 
                         DCTELEM* data, int n,
                         int qscale, int* overflow)
@@ -97,7 +104,7 @@ int dct_quantize_altivec(MpegEncContext* s,
     int lastNonZero;
     vector float row0, row1, row2, row3, row4, row5, row6, row7;
     vector float alt0, alt1, alt2, alt3, alt4, alt5, alt6, alt7;
-    const vector float zero = (const vector float)(0.0f);
+    const vector float zero = (const vector float)FOUROF(0.);
 
     // Load the data into the row/alt vectors
     {
@@ -141,18 +148,18 @@ int dct_quantize_altivec(MpegEncContext* s,
 		// in the vector local variables, as floats, which we'll use during the
 		// quantize step...
     {
-        const vector float vec_0_298631336 = (vector float)(0.298631336f);
-        const vector float vec_0_390180644 = (vector float)(-0.390180644f);
-        const vector float vec_0_541196100 = (vector float)(0.541196100f);
-        const vector float vec_0_765366865 = (vector float)(0.765366865f);
-        const vector float vec_0_899976223 = (vector float)(-0.899976223f);
-        const vector float vec_1_175875602 = (vector float)(1.175875602f);
-        const vector float vec_1_501321110 = (vector float)(1.501321110f);
-        const vector float vec_1_847759065 = (vector float)(-1.847759065f);
-        const vector float vec_1_961570560 = (vector float)(-1.961570560f);
-        const vector float vec_2_053119869 = (vector float)(2.053119869f);
-        const vector float vec_2_562915447 = (vector float)(-2.562915447f);
-        const vector float vec_3_072711026 = (vector float)(3.072711026f);
+        const vector float vec_0_298631336 = (vector float)FOUROF(0.298631336f);
+        const vector float vec_0_390180644 = (vector float)FOUROF(-0.390180644f);
+        const vector float vec_0_541196100 = (vector float)FOUROF(0.541196100f);
+        const vector float vec_0_765366865 = (vector float)FOUROF(0.765366865f);
+        const vector float vec_0_899976223 = (vector float)FOUROF(-0.899976223f);
+        const vector float vec_1_175875602 = (vector float)FOUROF(1.175875602f);
+        const vector float vec_1_501321110 = (vector float)FOUROF(1.501321110f);
+        const vector float vec_1_847759065 = (vector float)FOUROF(-1.847759065f);
+        const vector float vec_1_961570560 = (vector float)FOUROF(-1.961570560f);
+        const vector float vec_2_053119869 = (vector float)FOUROF(2.053119869f);
+        const vector float vec_2_562915447 = (vector float)FOUROF(-2.562915447f);
+        const vector float vec_3_072711026 = (vector float)FOUROF(3.072711026f);
 
 
         int whichPass, whichHalf;
@@ -306,7 +313,7 @@ int dct_quantize_altivec(MpegEncContext* s,
 				// rounding when we convert to int, instead of flooring.)
         {
             vector signed int biasInt;
-            const vector float negOneFloat = (vector float)(-1.0f);
+            const vector float negOneFloat = (vector float)FOUROF(-1.0f);
             LOAD4(biasInt, biasAddr);
             bias = vec_ctf(biasInt, QUANT_BIAS_SHIFT);
             negBias = vec_madd(bias, negOneFloat, zero);
@@ -503,6 +510,7 @@ int dct_quantize_altivec(MpegEncContext* s,
 
     return lastNonZero;
 }
+#undef FOUROF
 
 /*
   AltiVec version of dct_unquantize_h263
@@ -551,7 +559,7 @@ POWERPC_TBL_START_COUNT(altivec_dct_unquantize_h263_num, 1);
     }
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
     {
-      register const vector short vczero = (const vector short)(0);
+      register const vector short vczero = (const vector short)vec_splat_s16(0);
       short __attribute__ ((aligned(16))) qmul8[] =
           {
             qmul, qmul, qmul, qmul,

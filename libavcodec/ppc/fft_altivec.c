@@ -138,7 +138,11 @@ POWERPC_TBL_START_COUNT(altivec_fft_num, s->nbits >= 6);
 POWERPC_TBL_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
+#ifdef CONFIG_DARWIN
     register const vector float vczero = (const vector float)(0.);
+#else
+    register const vector float vczero = (const vector float){0.,0.,0.,0.};
+#endif
     
     int ln = s->nbits;
     int	j, np, np2;

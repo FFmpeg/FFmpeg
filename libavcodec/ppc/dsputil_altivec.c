@@ -21,22 +21,39 @@
 #include "../dsputil.h"
 #include "dsputil_altivec.h"
 
-#if CONFIG_DARWIN
+#ifdef CONFIG_DARWIN
 #include <sys/sysctl.h>
-#endif
+#else /* CONFIG_DARWIN */
+#include <signal.h>
+#include <setjmp.h>
+
+static sigjmp_buf jmpbuf;
+static volatile sig_atomic_t canjump = 0;
+
+static void sigill_handler (int sig)
+{
+    if (!canjump) {
+        signal (sig, SIG_DFL);
+        raise (sig);
+    }
+    
+    canjump = 0;
+    siglongjmp (jmpbuf, 1);
+}
+#endif /* CONFIG_DARWIN */
 
 int pix_abs16x16_x2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned char zero = (const vector unsigned char)(0);
+    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
     vector unsigned char *tv;
     vector unsigned char pix1v, pix2v, pix2iv, avgv, t5;
     vector unsigned int sad;
     vector signed int sumdiffs;
 
     s = 0;
-    sad = (vector unsigned int)(0);
+    sad = (vector unsigned int)vec_splat_u32(0);
     for(i=0;i<16;i++) {
         /*
            Read unaligned pixels into our vectors. The vectors are as follows:
@@ -76,7 +93,7 @@ int pix_abs16x16_y2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned char zero = (const vector unsigned char)(0);
+    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
     vector unsigned char *tv;
     vector unsigned char pix1v, pix2v, pix3v, avgv, t5;
     vector unsigned int sad;
@@ -84,7 +101,7 @@ int pix_abs16x16_y2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     uint8_t *pix3 = pix2 + line_size;
 
     s = 0;
-    sad = (vector unsigned int)(0);
+    sad = (vector unsigned int)vec_splat_u32(0);
 
     /*
        Due to the fact that pix3 = pix2 + line_size, the pix3 of one
@@ -137,8 +154,8 @@ int pix_abs16x16_xy2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     int i;
     int s __attribute__((aligned(16)));
     uint8_t *pix3 = pix2 + line_size;
-    const vector unsigned char zero = (const vector unsigned char)(0);
-    const vector unsigned short two = (const vector unsigned short)(2);
+    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
+    const vector unsigned short two = (const vector unsigned short)vec_splat_u16(2);
     vector unsigned char *tv, avgv, t5;
     vector unsigned char pix1v, pix2v, pix3v, pix2iv, pix3iv;
     vector unsigned short pix2lv, pix2hv, pix2ilv, pix2ihv;
@@ -148,7 +165,7 @@ int pix_abs16x16_xy2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     vector unsigned int sad;
     vector signed int sumdiffs;
 
-    sad = (vector unsigned int)(0);
+    sad = (vector unsigned int)vec_splat_u32(0);
     
     s = 0;
 
@@ -237,13 +254,13 @@ int pix_abs16x16_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)(0);
+    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
     vector unsigned int sad;
     vector signed int sumdiffs;
     
-    sad = (vector unsigned int) (0);
+    sad = (vector unsigned int)vec_splat_u32(0);
 
 
     for(i=0;i<16;i++) {
@@ -279,14 +296,18 @@ int pix_abs8x8_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)(0);
+    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, permclear, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
     vector unsigned int sad;
     vector signed int sumdiffs;
 
-    sad = (vector unsigned int)(0);
-    permclear = (vector unsigned char) (255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
+    sad = (vector unsigned int)vec_splat_u32(0);
+#ifdef CONFIG_DARWIN
+    permclear = (vector unsigned char)(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
+#else
+    permclear = (vector unsigned char){255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0};
+#endif
 
     for(i=0;i<8;i++) {
 	/* Read potentially unaligned pixels into t1 and t2
@@ -323,13 +344,13 @@ int pix_norm1_altivec(uint8_t *pix, int line_size)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)(0);
+    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
     vector unsigned char *tv;
     vector unsigned char pixv;
     vector unsigned int sv;
     vector signed int sum;
     
-    sv = (vector unsigned int)(0);
+    sv = (vector unsigned int)vec_splat_u32(0);
     
     s = 0;
     for (i = 0; i < 16; i++) {
@@ -359,14 +380,18 @@ int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)(0);
+    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, permclear, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
     vector unsigned int sum;
     vector signed int sumsqr;
     
-    sum = (vector unsigned int)(0);
-    permclear = (vector unsigned char)(0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00);
+    sum = (vector unsigned int)vec_splat_u32(0);
+#ifdef CONFIG_DARWIN
+    permclear = (vector unsigned char)(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
+#else
+    permclear = (vector unsigned char){255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0};
+#endif
     
     for(i=0;i<8;i++) {
 	/* Read potentially unaligned pixels into t1 and t2
@@ -413,13 +438,13 @@ int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
 {
     int i;
     int s __attribute__((aligned(16)));
-    const vector unsigned int zero = (const vector unsigned int)(0);
+    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm1, perm2, *pix1v, *pix2v;
     vector unsigned char t1, t2, t3,t4, t5;
     vector unsigned int sum;
     vector signed int sumsqr;
     
-    sum = (vector unsigned int)(0);
+    sum = (vector unsigned int)vec_splat_u32(0);
     
     for(i=0;i<16;i++) {
 	/* Read potentially unaligned pixels into t1 and t2 */
@@ -457,7 +482,7 @@ int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
 
 int pix_sum_altivec(UINT8 * pix, int line_size)
 {
-    const vector unsigned int zero = (const vector unsigned int)(0);
+    const vector unsigned int zero = (const vector unsigned int)vec_splat_u32(0);
     vector unsigned char perm, *pixv;
     vector unsigned char t1;
     vector unsigned int sad;
@@ -466,7 +491,7 @@ int pix_sum_altivec(UINT8 * pix, int line_size)
     int i;
     int s __attribute__((aligned(16)));
     
-    sad = (vector unsigned int) (0);
+    sad = (vector unsigned int)vec_splat_u32(0);
     
     for (i = 0; i < 16; i++) {
 	/* Read the potentially unaligned 16 pixels into t1 */
@@ -492,7 +517,7 @@ void get_pixels_altivec(DCTELEM *restrict block, const UINT8 *pixels, int line_s
 {
     int i;
     vector unsigned char perm, bytes, *pixv;
-    const vector unsigned char zero = (const vector unsigned char) (0);
+    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
     vector signed short shorts;
 
     for(i=0;i<8;i++)
@@ -519,7 +544,7 @@ void diff_pixels_altivec(DCTELEM *restrict block, const UINT8 *s1,
 {
     int i;
     vector unsigned char perm, bytes, *pixv;
-    const vector unsigned char zero = (const vector unsigned char) (0);
+    const vector unsigned char zero = (const vector unsigned char)vec_splat_u8(0);
     vector signed short shorts1, shorts2;
 
     for(i=0;i<4;i++)
@@ -830,8 +855,8 @@ POWERPC_TBL_STOP_COUNT(altivec_put_pixels8_xy2_num, 1);
      blockv, temp1, temp2;
    register vector unsigned short
      pixelssum1, pixelssum2, temp3;
-   register const vector unsigned char vczero = (const vector unsigned char)(0);
-   register const vector unsigned short vctwo = (const vector unsigned short)(2);
+   register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
+   register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
    
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
@@ -945,9 +970,9 @@ POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
      blockv, temp1, temp2;
    register vector unsigned short
      pixelssum1, pixelssum2, temp3;
-   register const vector unsigned char vczero = (const vector unsigned char)(0);
-   register const vector unsigned short vcone = (const vector unsigned short)(1);
-   register const vector unsigned short vctwo = (const vector unsigned short)(2);
+   register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
+   register const vector unsigned short vcone = (const vector unsigned short)vec_splat_u16(1);
+   register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
    
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
@@ -1061,8 +1086,8 @@ POWERPC_TBL_STOP_COUNT(altivec_put_pixels16_xy2_num, 1);
    register vector unsigned short
      pixelssum1, pixelssum2, temp3,
      pixelssum3, pixelssum4, temp4;
-   register const vector unsigned char vczero = (const vector unsigned char)(0);
-   register const vector unsigned short vctwo = (const vector unsigned short)(2);
+   register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
+   register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
    
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
@@ -1181,9 +1206,9 @@ POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
    register vector unsigned short
      pixelssum1, pixelssum2, temp3,
      pixelssum3, pixelssum4, temp4;
-   register const vector unsigned char vczero = (const vector unsigned char)(0);
-   register const vector unsigned short vcone = (const vector unsigned short)(1);
-   register const vector unsigned short vctwo = (const vector unsigned short)(2);
+   register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
+   register const vector unsigned short vcone = (const vector unsigned short)vec_splat_u16(1);
+   register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
    
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
@@ -1254,7 +1279,7 @@ POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
 
 int has_altivec(void)
 {
-#if CONFIG_DARWIN
+#ifdef CONFIG_DARWIN
     int sels[2] = {CTL_HW, HW_VECTORUNIT};
     int has_vu = 0;
     size_t len = sizeof(has_vu);
@@ -1263,6 +1288,25 @@ int has_altivec(void)
     err = sysctl(sels, 2, &has_vu, &len, NULL, 0);
 
     if (err == 0) return (has_vu != 0);
-#endif
+#else /* CONFIG_DARWIN */
+/* no Darwin, do it the brute-force way */
+/* this is borrowed from the libmpeg2 library */
+    {
+      signal (SIGILL, sigill_handler);
+      if (sigsetjmp (jmpbuf, 1)) {
+        signal (SIGILL, SIG_DFL);
+      } else {
+        canjump = 1;
+        
+        asm volatile ("mtspr 256, %0\n\t"
+                      "vand %%v0, %%v0, %%v0"
+                      :
+                      : "r" (-1));
+        
+        signal (SIGILL, SIG_DFL);
+        return 1;
+      }
+    }
+#endif /* CONFIG_DARWIN */
     return 0;
 }
