@@ -110,7 +110,7 @@ void put_string(PutBitContext * pbc, char *s)
 /* bit input functions */
 
 void init_get_bits(GetBitContext *s,
-                   uint8_t *buffer, int bit_size)
+                   const uint8_t *buffer, int bit_size)
 {
     const int buffer_size= (bit_size+7)>>3;
 

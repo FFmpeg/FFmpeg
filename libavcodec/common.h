@@ -236,7 +236,7 @@ void put_string(PutBitContext * pbc, char *s);
 /* bit input */
 
 typedef struct GetBitContext {
-    uint8_t *buffer, *buffer_end;
+    const uint8_t *buffer, *buffer_end;
 #ifdef ALT_BITSTREAM_READER
     int index;
 #elif defined LIBMPEG2_BITSTREAM_READER
@@ -669,7 +669,7 @@ static inline void skip_bits1(GetBitContext *s){
 }
 
 void init_get_bits(GetBitContext *s,
-                   uint8_t *buffer, int buffer_size);
+                   const uint8_t *buffer, int buffer_size);
 
 int check_marker(GetBitContext *s, const char *msg);
 void align_get_bits(GetBitContext *s);
