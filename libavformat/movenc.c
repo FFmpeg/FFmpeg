@@ -32,6 +32,7 @@
 #define MODE_3GP 2
 #define MODE_PSP 3 // example working PSP command line: 
 // ffmpeg -i testinput.avi  -f psp -r 14.985 -s 320x240 -b 768 -ar 24000 -ab 32 M4V00001.MP4
+#define MODE_3G2 4
 
 typedef struct MOVIentry {
     unsigned int flags, pos, size;
@@ -1210,6 +1211,8 @@ int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 
     if ( mov->mode == MODE_3GP )
         put_tag(pb, "3gp4");
+    else if ( mov->mode == MODE_3G2 )
+        put_tag(pb, "3g2a");
     else if ( mov->mode == MODE_PSP )
         put_tag(pb, "MSNV");
     else
@@ -1219,6 +1222,8 @@ int mov_write_ftyp_tag(ByteIOContext *pb, AVFormatContext *s)
 
     if ( mov->mode == MODE_3GP )
         put_tag(pb, "3gp4");
+    else if ( mov->mode == MODE_3G2 )
+        put_tag(pb, "3g2a");
     else if ( mov->mode == MODE_PSP )
         put_tag(pb, "MSNV");
     else
@@ -1311,10 +1316,12 @@ static int mov_write_header(AVFormatContext *s)
 
     if (s->oformat != NULL) {
         if (!strcmp("3gp", s->oformat->name)) mov->mode = MODE_3GP;
+        else if (!strcmp("3g2", s->oformat->name)) mov->mode = MODE_3G2;
         else if (!strcmp("mov", s->oformat->name)) mov->mode = MODE_MOV;
         else if (!strcmp("psp", s->oformat->name)) mov->mode = MODE_PSP;
 
-        if ( mov->mode == MODE_3GP || mov->mode == MODE_MP4 || mov->mode == MODE_PSP )
+        if ( mov->mode == MODE_3GP || mov->mode == MODE_3G2 ||
+             mov->mode == MODE_MP4 || mov->mode == MODE_PSP )
             mov_write_ftyp_tag(pb,s);
         if ( mov->mode == MODE_PSP ) {
             if ( s->nb_streams != 2 ) {
@@ -1509,11 +1516,25 @@ static AVOutputFormat psp_oformat = {
     mov_write_trailer,
 };
 
+static AVOutputFormat _3g2_oformat = {
+    "3g2",
+    "3gp2 format",
+    NULL,
+    "3g2",
+    sizeof(MOVContext),
+    CODEC_ID_AMR_NB,
+    CODEC_ID_H263,
+    mov_write_header,
+    mov_write_packet,
+    mov_write_trailer,
+};
+
 int movenc_init(void)
 {
     av_register_output_format(&mov_oformat);
     av_register_output_format(&_3gp_oformat);
     av_register_output_format(&mp4_oformat);
     av_register_output_format(&psp_oformat);
+    av_register_output_format(&_3g2_oformat);
     return 0;
 }

@@ -2239,7 +2239,7 @@ static int mov_read_close(AVFormatContext *s)
 }
 
 static AVInputFormat mov_iformat = {
-    "mov,mp4,m4a,3gp",
+    "mov,mp4,m4a,3gp,3g2",
     "QuickTime/MPEG4 format",
     sizeof(MOVContext),
     mov_probe,
