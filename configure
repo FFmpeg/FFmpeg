@@ -68,6 +68,9 @@ vhook="no"
 mpegaudio_hp="yes"
 SHFLAGS=-shared
 netserver="no"
+need_inet_aton="no"
+LDFLAGS=-Wl,--warn-common
+FFSLDFLAGS=-Wl,-E
 
 # OS specific
 targetos=`uname -s`
@@ -98,13 +101,23 @@ if (echo $BEINCLUDES|grep 'headers/be/bone' >/dev/null); then
 extralibs="-lbind -lsocket"
 else
 netserver="yes"
+need_inet_aton="yes"
 extralibs="-lnet"
 fi ;;
+SunOS)
+v4l="no"
+audio_oss="no"
+make="gmake"
+LDFLAGS=""
+FFSLDFLAGS=""
+need_inet_aton="yes"
+extralibs="$extralibs -lsocket -lnsl"
+;;
 FreeBSD)
 v4l="no"
 audio_oss="yes"
 make="gmake"
-LDFLAGS="-export-dynamic"
+LDFLAGS="$LDFLAGS -export-dynamic"
 ;;
 BSD/OS)
 v4l="no"
@@ -116,11 +129,21 @@ Darwin)
 cc="cc"
 v4l="no"
 audio_oss="no"
-CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic"
 SHFLAGS="-dynamiclib"
 extralibs=""
 darwin="yes"
 strip="strip -x"
+LDFLAGS="$LDFLAGS -d"
+FFSLDFLAGS=-Wl,-bind_at_load
+gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f4-)"
+case "$gcc_version" in
+*2.95*) 
+CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer"
+;;
+*) 
+CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic"
+;;
+esac
 ;;
 CYGWIN*)
 v4l="no"
@@ -133,7 +156,7 @@ echo "Missing inttypes.h, please copy cygwin_inttypes.h to" \
      "/usr/include/inttypes.h !!!"
 ;;
 Linux)
-LDFLAGS=-rdynamic
+LDFLAGS="$LDFLAGS -rdynamic"
 ;;
 *) ;;
 esac
@@ -487,6 +510,7 @@ echo "RANLIB=$ranlib" >> config.mak
 echo "STRIP=$strip" >> config.mak
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
+echo "FFSLDFLAGS=$FFSLDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
 if test "$cpu" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
@@ -640,6 +664,10 @@ fi
 if test "$netserver" = "yes" ; then
   echo "#define CONFIG_BEOS_NETSERVER 1" >> $TMPH
   echo "CONFIG_BEOS_NETSERVER=yes" >> config.mak
+fi
+
+if test "$need_inet_aton" = "yes" ; then
+  echo "NEED_INET_ATON=yes" >> config.mak
 fi
 
 if test "$simpleidct" = "yes" ; then

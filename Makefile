@@ -7,13 +7,7 @@ include config.mak
 VPATH=$(SRC_PATH)
 
 CFLAGS= $(OPTFLAGS) -Wall -g -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
-ifeq ($(CONFIG_DARWIN),yes)
-LDFLAGS+= -g -d
-FFSLDFLAGS= -Wl,-bind_at_load
-else
-LDFLAGS+= -g -Wl,--warn-common
-FFSLDFLAGS= -Wl,-E
-endif
+LDFLAGS+= -g 
 
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
@@ -90,7 +84,7 @@ install-vhook: $(prefix)/lib/vhook
 	$(MAKE) -C vhook install INSTDIR=$(prefix)/lib/vhook
 
 $(prefix)/lib/vhook:
-	mkdir $@
+	install -d $@
 
 installlib:
 	$(MAKE) -C libavcodec installlib
