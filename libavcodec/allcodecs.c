@@ -130,6 +130,7 @@ void avcodec_register_all(void)
     register_avcodec(&qpeg_decoder);
     register_avcodec(&loco_decoder);
     register_avcodec(&wnv1_decoder);
+    register_avcodec(&aasc_decoder);
 #ifdef CONFIG_FAAD
     register_avcodec(&aac_decoder);
     register_avcodec(&mpeg4aac_decoder);

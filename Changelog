@@ -13,6 +13,7 @@ version <next>
 - LOCO video decoder
 - Apple Lossless Audio Codec (ALAC) decoder 
 - Winnov WNV1 video decoder
+- Autodesk Animator Studio Codec (AASC) decoder
 
 version 0.4.9-pre1:
 
