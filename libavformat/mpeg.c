@@ -250,7 +250,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
 }
 
 /* flush the packet on stream stream_index */
-static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
+static void flush_packet(AVFormatContext *ctx, int stream_index)
 {
     MpegMuxContext *s = ctx->priv_data;
     StreamInfo *stream = ctx->streams[stream_index]->priv_data;
@@ -258,7 +258,6 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
     int size, payload_size, startcode, id, len, stuffing_size, i, header_len;
     int64_t timestamp;
     uint8_t buffer[128];
-    int last = last_pkt ? 4 : 0;
     
     id = stream->id;
     timestamp = stream->start_pts;
@@ -287,7 +286,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
     } else {
         header_len = 5;
     }
-    payload_size = s->packet_size - (size + 6 + header_len + last);
+    payload_size = s->packet_size - (size + 6 + header_len);
     if (id < 0xc0) {
         startcode = PRIVATE_STREAM_1;
         payload_size -= 4;
@@ -327,9 +326,6 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
         }
     }
 
-    if (last_pkt) {
-        put_be32(&ctx->pb, ISO_11172_END_CODE);
-    }
     /* output data */
     put_buffer(&ctx->pb, stream->buffer, payload_size - stuffing_size);
     put_flush_packet(&ctx->pb);
@@ -370,7 +366,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
             /* output the packet */
             if (stream->start_pts == -1)
                 stream->start_pts = pts;
-            flush_packet(ctx, stream_index, 0);
+            flush_packet(ctx, stream_index);
         }
     }
     return 0;
@@ -385,14 +381,13 @@ static int mpeg_mux_end(AVFormatContext *ctx)
     for(i=0;i<ctx->nb_streams;i++) {
         stream = ctx->streams[i]->priv_data;
         if (stream->buffer_ptr > 0) {
-            if (i == (ctx->nb_streams - 1)) 
-                flush_packet(ctx, i, 1);
-            else
-                flush_packet(ctx, i, 0);
+            flush_packet(ctx, i);
         }
     }
 
-    /* write the end header */
+    /* End header according to MPEG1 systems standard. We do not write
+       it as it is usually not needed by decoders and because it
+       complicates MPEG stream concatenation. */
     //put_be32(&ctx->pb, ISO_11172_END_CODE);
     //put_flush_packet(&ctx->pb);
 
