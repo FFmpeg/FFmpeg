@@ -1778,10 +1778,12 @@ static int av_encode(AVFormatContext **output_files,
     for(; received_sigterm == 0;) {
         int file_index, ist_index;
         AVPacket pkt;
-        double ipts_min= 1e100;
-        double opts_min= 1e100;
+        double ipts_min;
+        double opts_min;
 
     redo:
+        ipts_min= 1e100;
+        opts_min= 1e100;
         /* if 'q' pressed, exits */
         if (!using_stdin) {
             if (q_pressed)
