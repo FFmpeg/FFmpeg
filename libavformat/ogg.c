@@ -72,8 +72,11 @@ static int ogg_write_header(AVFormatContext *avfcontext)
 	ogg_stream_packetin(&context->os, &header_comm) ;
 	ogg_stream_packetin(&context->os, &header_code) ;  
 	
+	vorbis_block_clear(&vb) ;
+	vorbis_dsp_clear(&vd) ;
+	vorbis_info_clear(&vi) ;
 	vorbis_comment_clear(&vc) ;
-
+	
 	/* end of vorbis specific code */
 
 	context->header_handled = 0 ;
