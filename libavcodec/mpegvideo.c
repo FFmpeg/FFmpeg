@@ -2429,7 +2429,7 @@ if(s->quarter_sample)
                              src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
             ptr_y = s->edge_emu_buffer;
             if(!(s->flags&CODEC_FLAG_GRAY)){
-                uint8_t *uvbuf= s->edge_emu_buffer+17*s->linesize;
+                uint8_t *uvbuf= s->edge_emu_buffer+18*s->linesize;
                 ff_emulated_edge_mc(uvbuf  , ptr_cb, s->uvlinesize, 9, 9+field_based, 
                                  uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
                 ff_emulated_edge_mc(uvbuf+16, ptr_cr, s->uvlinesize, 9, 9+field_based, 
@@ -2592,7 +2592,7 @@ static inline void qpel_motion(MpegEncContext *s,
                          src_x, src_y<<field_based, s->h_edge_pos, s->v_edge_pos);
         ptr_y= s->edge_emu_buffer;
         if(!(s->flags&CODEC_FLAG_GRAY)){
-            uint8_t *uvbuf= s->edge_emu_buffer + 17*s->linesize;
+            uint8_t *uvbuf= s->edge_emu_buffer + 18*s->linesize;
             ff_emulated_edge_mc(uvbuf, ptr_cb, s->uvlinesize, 9, 9 + field_based, 
                              uvsrc_x, uvsrc_y<<field_based, s->h_edge_pos>>1, s->v_edge_pos>>1);
             ff_emulated_edge_mc(uvbuf + 16, ptr_cr, s->uvlinesize, 9, 9 + field_based, 
