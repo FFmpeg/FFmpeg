@@ -1,6 +1,6 @@
 /*
  * MPEG Audio decoder
- * Copyright (c) 2001 Gerard Lantau.
+ * Copyright (c) 2001, 2002 Gerard Lantau.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -127,7 +127,7 @@ static VLC huff_quad_vlc[2];
 static UINT16 band_index_long[9][23];
 /* XXX: free when all decoders are closed */
 #define TABLE_4_3_SIZE (8191 + 16)
-static UINT8  *table_4_3_exp;
+static INT8  *table_4_3_exp;
 #if FRAC_BITS <= 15
 static UINT16 *table_4_3_value;
 #else
@@ -1955,7 +1955,7 @@ static void compute_imdct(MPADecodeContext *s,
     }
 }
 
-#ifdef DEBUG
+#if defined(DEBUG)
 void sample_dump(int fnum, INT32 *tab, int n)
 {
     static FILE *files[16], *f;
@@ -2168,7 +2168,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                     }
                     g->scale_factors[j++] = 0;
                 }
-#ifdef DEBUG
+#if defined(DEBUG)
                 {
                     printf("scfsi=%x gr=%d ch=%d scale_factors:\n", 
                            g->scfsi, gr, ch);
@@ -2225,7 +2225,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 /* XXX: should compute exact size */
                 for(;j<40;j++)
                     g->scale_factors[j] = 0;
-#ifdef DEBUG
+#if defined(DEBUG)
                 {
                     printf("gr=%d ch=%d scale_factors:\n", 
                            gr, ch);
@@ -2242,8 +2242,8 @@ static int mp_decode_layer3(MPADecodeContext *s)
             if (huffman_decode(s, g, exponents,
                                bits_pos + g->part2_3_length) < 0)
                 return -1;
-#if defined(DEBUG) && 0
-            sample_dump(3, g->sb_hybrid, 576);
+#if defined(DEBUG)
+            sample_dump(0, g->sb_hybrid, 576);
 #endif
 
             /* skip extension bits */
@@ -2267,7 +2267,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
             g = &granules[ch][gr];
 
             reorder_block(s, g);
-#ifdef DEBUG
+#if defined(DEBUG)
             sample_dump(0, g->sb_hybrid, 576);
 #endif
             compute_antialias(s, g);
