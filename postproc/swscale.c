@@ -644,6 +644,13 @@ YSCALEYUV2RGB
 	g16Dither2= g16Dither;
   }
 
+#ifdef HAVE_3DNOW
+	asm volatile("femms");
+#elif defined (HAVE_MMX)
+	asm volatile("emms");
+#endif
+
+
 }
 
 
