@@ -87,8 +87,10 @@ static int MPA_encode_init(AVCodecContext *avctx)
             break;
         }
     }
-    if (i == 3)
+    if (i == 3){
+        av_log(avctx, AV_LOG_ERROR, "Sampling rate %d is not allowed in mp2\n", freq);
         return -1;
+    }
     s->freq_index = i;
 
     /* encoding bitrate & frequency */
@@ -96,8 +98,10 @@ static int MPA_encode_init(AVCodecContext *avctx)
         if (mpa_bitrate_tab[s->lsf][1][i] == bitrate) 
             break;
     }
-    if (i == 15)
+    if (i == 15){
+        av_log(avctx, AV_LOG_ERROR, "bitrate %d is not allowed in mp2\n", bitrate);
         return -1;
+    }
     s->bitrate_index = i;
 
     /* compute total header size & pad bit */
