@@ -27,29 +27,30 @@ int mm_support(void)
 {
     int rval;
     int eax, ebx, ecx, edx;
+    long a, c;
     
     __asm__ __volatile__ (
                           /* See if CPUID instruction is supported ... */
                           /* ... Get copies of EFLAGS into eax and ecx */
                           "pushf\n\t"
                           "pop %0\n\t"
-                          "movl %0, %1\n\t"
+                          "mov %0, %1\n\t"
                           
                           /* ... Toggle the ID bit in one copy and store */
                           /*     to the EFLAGS reg */
-                          "xorl $0x200000, %0\n\t"
+                          "xor $0x200000, %0\n\t"
                           "push %0\n\t"
                           "popf\n\t"
                           
                           /* ... Get the (hopefully modified) EFLAGS */
                           "pushf\n\t"
                           "pop %0\n\t"
-                          : "=a" (eax), "=c" (ecx)
+                          : "=a" (a), "=c" (c)
                           :
                           : "cc" 
                           );
     
-    if (eax == ecx)
+    if (a == c)
         return 0; /* CPUID not supported */
     
     cpuid(0, eax, ebx, ecx, edx);
