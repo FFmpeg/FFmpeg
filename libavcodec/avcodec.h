@@ -182,7 +182,7 @@ typedef struct AVCodecContext {
     int key_frame;      /* true if the previous compressed frame was 
                            a key frame (intra, or seekable) */
     int pict_type;      /* picture type of the previous 
-                           encoded frame */
+                           en/decoded frame */
 /* FIXME: these should have FF_ */
 #define I_TYPE 1 // Intra
 #define P_TYPE 2 // Predicted

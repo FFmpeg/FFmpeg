@@ -720,7 +720,8 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 /* generic function for encode/decode called after a frame has been coded/decoded */
 void MPV_frame_end(MpegEncContext *s)
 {
-//    if((s->picture_number%100)==0 && s->encoding) printf("sads:%d //\n", sads);
+    s->avctx->key_frame   = (s->pict_type == I_TYPE);
+    s->avctx->pict_type   = s->pict_type;
 
     /* draw edge for correct motion prediction if outside */
     if (s->pict_type != B_TYPE && !s->intra_only && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
@@ -870,8 +871,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
         MPV_frame_start(s, avctx);
 
         encode_picture(s, s->picture_number);
-        avctx->key_frame   = (s->pict_type == I_TYPE);
-        avctx->pict_type   = s->pict_type;
+        
         avctx->real_pict_num  = s->picture_number;
         avctx->header_bits = s->header_bits;
         avctx->mv_bits     = s->mv_bits;
