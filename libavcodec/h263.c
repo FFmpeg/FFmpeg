@@ -2173,11 +2173,18 @@ void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
 
 static void mpeg4_encode_gop_header(MpegEncContext * s){
     int hours, minutes, seconds;
+    int64_t time;
     
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, GOP_STARTCODE);
     
-    seconds= s->time/s->time_increment_resolution;
+    if(s->current_picture_ptr->pts){
+        time= FFMIN(s->reordered_input_picture[1]->pts, s->current_picture_ptr->pts);
+        time= (time*s->time_increment_resolution + 500*1000)/(1000*1000);
+    }else
+        time= av_rescale(s->current_picture_ptr->coded_picture_number*(int64_t)s->avctx->frame_rate_base, s->time_increment_resolution, s->avctx->frame_rate);
+
+    seconds= time/s->time_increment_resolution;
     minutes= seconds/60; seconds %= 60;
     hours= minutes/60; minutes %= 60;
     hours%=24;
@@ -2190,7 +2197,7 @@ static void mpeg4_encode_gop_header(MpegEncContext * s){
     put_bits(&s->pb, 1, !!(s->flags&CODEC_FLAG_CLOSED_GOP)); 
     put_bits(&s->pb, 1, 0); //broken link == NO
     
-    s->last_time_base= s->time_base;
+    s->last_time_base= time / s->time_increment_resolution; 
 
     ff_mpeg4_stuffing(&s->pb);
 }
