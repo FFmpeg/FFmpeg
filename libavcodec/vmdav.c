@@ -494,13 +494,10 @@ memset(data, 0x00, s->block_align * 2);
 bytes_decoded = s->block_align * 2;
             }
         } else {
-            if (s->bits == 16) {
-            } else {
-                /* copy the data but convert it to signed */
-                for (i = 0; i < s->block_align; i++)
-                    data[i * 2 + 1] = buf[i] + 0x80;
-                bytes_decoded = s->block_align * 2;
-            }
+            /* copy the data but convert it to signed */
+            for (i = 0; i < s->block_align; i++)
+                data[i * 2 + 1] = buf[i] + 0x80;
+            bytes_decoded = s->block_align * 2;
         }
     }
 
