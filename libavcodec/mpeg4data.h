@@ -8,7 +8,7 @@
 #define CORE_VO_TYPE   3
 
 // aspect_ratio_info
-#define EXTENDET_PAR 15
+#define EXTENDED_PAR 15
 
 //vol_sprite_usage / sprite_enable
 #define STATIC_SPRITE 1

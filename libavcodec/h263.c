@@ -20,6 +20,8 @@
  *
  * ac prediction encoding & b-frame support by Michael Niedermayer <michaelni@gmx.at>
  */
+ 
+//#define DEBUG
 #include "common.h"
 #include "dsputil.h"
 #include "avcodec.h"
@@ -66,15 +68,15 @@ int h263_get_picture_format(int width, int height)
     int format;
 
     if (width == 128 && height == 96)
-	format = 1;
+        format = 1;
     else if (width == 176 && height == 144)
-	format = 2;
+        format = 2;
     else if (width == 352 && height == 288)
-	format = 3;
+        format = 3;
     else if (width == 704 && height == 576)
-	format = 4;
+        format = 4;
     else if (width == 1408 && height == 1152)
-	format = 5;
+        format = 5;
     else
         format = 7;
     return format;
@@ -157,6 +159,9 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 		if (format == 7) {
             /* Custom Picture Format (CPFMT) */
 		
+	    if (s->aspect_ratio_info)
+            put_bits(&s->pb,4,s->aspect_ratio_info);
+	    else
             put_bits(&s->pb,4,2); /* Aspect ratio: CIF 12:11 (4:3) picture */
             put_bits(&s->pb,9,(s->width >> 2) - 1);
             put_bits(&s->pb,1,1); /* "1" to prevent start code emulation */
@@ -2380,15 +2385,24 @@ int h263_decode_picture_header(MpegEncContext *s)
 {
     int format, width, height;
 
-    /* picture header */
-    if (get_bits(&s->gb, 22) != 0x20)
+    /* picture start code */
+    if (get_bits(&s->gb, 22) != 0x20) {
+        fprintf(stderr, "Bad picture start code\n");
         return -1;
+    }
+    /* temporal reference */
     s->picture_number = get_bits(&s->gb, 8); /* picture timestamp */
-    
-    if (get_bits1(&s->gb) != 1)
-        return -1;	/* marker */
-    if (get_bits1(&s->gb) != 0)
+
+    /* PTYPE starts here */    
+    if (get_bits1(&s->gb) != 1) {
+        /* marker */
+        fprintf(stderr, "Bad marker\n");
+        return -1;
+    }
+    if (get_bits1(&s->gb) != 0) {
+        fprintf(stderr, "Bad H263 id\n");
         return -1;	/* h263 id */
+    }
     skip_bits1(&s->gb);	/* split screen off */
     skip_bits1(&s->gb);	/* camera  off */
     skip_bits1(&s->gb);	/* freeze picture release off */
@@ -2397,6 +2411,12 @@ int h263_decode_picture_header(MpegEncContext *s)
     s->gob_number = 0;
         
     format = get_bits(&s->gb, 3);
+    /*
+        0    forbidden
+        1    sub-QCIF
+        10   QCIF
+        7	extended PTYPE (PLUSPTYPE)
+    */
 
     if (format != 7 && format != 6) {
         s->h263_plus = 0;
@@ -2413,15 +2433,18 @@ int h263_decode_picture_header(MpegEncContext *s)
         s->unrestricted_mv = get_bits1(&s->gb); 
         s->h263_long_vectors = s->unrestricted_mv;
 
-        if (get_bits1(&s->gb) != 0)
+        if (get_bits1(&s->gb) != 0) {
+            fprintf(stderr, "H263 SAC not supported\n");
             return -1;	/* SAC: off */
+        }
         if (get_bits1(&s->gb) != 0) {
             s->mv_type = MV_TYPE_8X8; /* Advanced prediction mode */
         }   
         
-        if (get_bits1(&s->gb) != 0)
+        if (get_bits1(&s->gb) != 0) {
+            fprintf(stderr, "H263 PB frame not supported\n");
             return -1;	/* not PB frame */
-
+        }
         s->qscale = get_bits(&s->gb, 5);
         skip_bits1(&s->gb);	/* Continuous Presence Multipoint mode: off */
     } else {
@@ -2430,10 +2453,12 @@ int h263_decode_picture_header(MpegEncContext *s)
         /* H.263v2 */
         s->h263_plus = 1;
         ufep = get_bits(&s->gb, 3); /* Update Full Extended PTYPE */
-        
+
+        /* ufep other than 0 and 1 are reserved */        
         if (ufep == 1) {
             /* OPPTYPE */       
             format = get_bits(&s->gb, 3);
+            dprintf("ufep=1, format: %d\n", format);
             skip_bits(&s->gb,1); /* Custom PCF */
             s->umvplus_dec = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
             skip_bits1(&s->gb); /* Syntax-based Arithmetic Coding (SAC) */
@@ -2443,34 +2468,59 @@ int h263_decode_picture_header(MpegEncContext *s)
             if (get_bits1(&s->gb) != 0) { /* Advanced Intra Coding (AIC) */
                 s->h263_aic = 1;
             }
+	    
             skip_bits(&s->gb, 7);
+            /* these are the 7 bits: (in order of appearence  */
+            /* Deblocking Filter */
+            /* Slice Structured */
+            /* Reference Picture Selection */
+            /* Independent Segment Decoding */
+            /* Alternative Inter VLC */
+            /* Modified Quantization */
+            /* Prevent start code emulation */
+
             skip_bits(&s->gb, 3); /* Reserved */
-        } else if (ufep != 0)
+        } else if (ufep != 0) {
+            fprintf(stderr, "Bad UFEP type (%d)\n", ufep);
             return -1;
+        }
             
         /* MPPTYPE */
-        s->pict_type = get_bits(&s->gb, 3) + 1;
+        s->pict_type = get_bits(&s->gb, 3) + I_TYPE;
+        dprintf("pict_type: %d\n", s->pict_type);
         if (s->pict_type != I_TYPE &&
             s->pict_type != P_TYPE)
             return -1;
         skip_bits(&s->gb, 2);
         s->no_rounding = get_bits1(&s->gb);
-        //fprintf(stderr, "\nRTYPE: %d", s->no_rounding);
+        dprintf("RTYPE: %d\n", s->no_rounding);
         skip_bits(&s->gb, 4);
         
         /* Get the picture dimensions */
         if (ufep) {
             if (format == 6) {
                 /* Custom Picture Format (CPFMT) */
-                skip_bits(&s->gb, 4); /* aspect ratio */
+                s->aspect_ratio_info = get_bits(&s->gb, 4);
+                dprintf("aspect: %d\n", s->aspect_ratio_info);
+                /* aspect ratios:
+                0 - forbidden
+                1 - 1:1
+                2 - 12:11 (CIF 4:3)
+                3 - 10:11 (525-type 4:3)
+                4 - 16:11 (CIF 16:9)
+                5 - 40:33 (525-type 16:9)
+                6-14 - reserved
+                */
                 width = (get_bits(&s->gb, 9) + 1) * 4;
                 skip_bits1(&s->gb);
                 height = get_bits(&s->gb, 9) * 4;
-#ifdef DEBUG 
-                fprintf(stderr,"\nH.263+ Custom picture: %dx%d\n",width,height);
-#endif            
-            }
-            else {
+                dprintf("\nH.263+ Custom picture: %dx%d\n",width,height);
+                if (s->aspect_ratio_info == EXTENDED_PAR) {
+                    /* aspected dimensions */
+                    skip_bits(&s->gb, 8); /* width */
+                    skip_bits(&s->gb, 8); /* height */
+                }
+            } else {
                 width = h263_format[format][0];
                 height = h263_format[format][1];
             }
@@ -2727,7 +2777,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         }
 //printf("vo type:%d\n",s->vo_type);
         s->aspect_ratio_info= get_bits(&s->gb, 4);
-	if(s->aspect_ratio_info == EXTENDET_PAR){
+	if(s->aspect_ratio_info == EXTENDED_PAR){
             skip_bits(&s->gb, 8); //par_width
             skip_bits(&s->gb, 8); // par_height
         }
@@ -2940,7 +2990,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         goto redo;
     }
 
-    s->pict_type = get_bits(&s->gb, 2) + 1;	/* pict type: I = 0 , P = 1 */
+    s->pict_type = get_bits(&s->gb, 2) + I_TYPE;	/* pict type: I = 0 , P = 1 */
 // printf("pic: %d, qpel:%d\n", s->pict_type, s->quarter_sample); 
     time_incr=0;
     while (get_bits1(&s->gb) != 0) 
@@ -3068,22 +3118,29 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     int format;
 
     /* picture header */
-    if (get_bits(&s->gb, 22) != 0x20)
+    if (get_bits(&s->gb, 22) != 0x20) {
+        fprintf(stderr, "Bad picture start code\n");
         return -1;
-    skip_bits(&s->gb, 8); /* picture timestamp */
+    }
+    s->picture_number = get_bits(&s->gb, 8); /* picture timestamp */
 
-    if (get_bits1(&s->gb) != 1)
+    if (get_bits1(&s->gb) != 1) {
+        fprintf(stderr, "Bad marker\n");
         return -1;	/* marker */
-    if (get_bits1(&s->gb) != 0)
+    }
+    if (get_bits1(&s->gb) != 0) {
+        fprintf(stderr, "Bad H263 id\n");
         return -1;	/* h263 id */
+    }
     skip_bits1(&s->gb);	/* split screen off */
     skip_bits1(&s->gb);	/* camera  off */
     skip_bits1(&s->gb);	/* freeze picture release off */
 
     format = get_bits(&s->gb, 3);
-    if (format != 7)
+    if (format != 7) {
+        fprintf(stderr, "Intel H263 free format not supported\n");
         return -1;
-
+    }
     s->h263_plus = 0;
 
     s->pict_type = I_TYPE + get_bits1(&s->gb);
@@ -3091,12 +3148,18 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     s->unrestricted_mv = get_bits1(&s->gb); 
     s->h263_long_vectors = s->unrestricted_mv;
 
-    if (get_bits1(&s->gb) != 0)
+    if (get_bits1(&s->gb) != 0) {
+        fprintf(stderr, "SAC not supported\n");
         return -1;	/* SAC: off */
-    if (get_bits1(&s->gb) != 0)
+    }
+    if (get_bits1(&s->gb) != 0) {
+        fprintf(stderr, "Advanced Prediction Mode not supported\n");
         return -1;	/* advanced prediction mode: off */
-    if (get_bits1(&s->gb) != 0)
-        return -1;	/* not PB frame */
+    }
+    if (get_bits1(&s->gb) != 0) {
+        fprintf(stderr, "PB frame mode no supported\n");
+        return -1;	/* PB frame mode */
+    }
 
     /* skip unknown header garbage */
     skip_bits(&s->gb, 41);
