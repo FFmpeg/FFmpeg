@@ -987,11 +987,39 @@ Main priority in ffmpeg is simplicity and small code size (=less
 bugs).
 
 Comments: use the JavaDoc/Doxygen 
-format (see examples in @file{libavformat/utils.c}) so that a documentation
+format (see examples below) so that a documentation
 can be generated automatically. All non trivial functions should have a comment
 above it explaining what the function does, even if its just one sentance.
 All Structures and their member variables should be documented too.
+@example
+/**
+ * @file mpeg.c
+ * mpeg codec.
+ * @author ...
+ */
 
+/**
+ * Summary sentance.
+ * more text ...
+ * ...
+ */
+typedef struct Foobar{
+    int var1; /**< var1 description */
+    int var2; ///< var2 description
+    /** var3 description */
+    int var3;
+} Foobar;
+
+/**
+ * Summary sentance.
+ * more text ...
+ * ...
+ * @param my_parameter description of my_parameter
+ * @return return value description
+ */
+int myfunc(int my_parameter)
+...
+@end example
 
 fprintf and printf are forbidden in libavformat and libavcodec, 
 please use av_log() instead.
