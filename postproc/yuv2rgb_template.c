@@ -54,6 +54,11 @@ uint64_t __attribute__((aligned(8))) mmx_V_green = 0xe5fce5fce5fce5fc;
 uint64_t __attribute__((aligned(8))) mmx_redmask = 0xf8f8f8f8f8f8f8f8;
 uint64_t __attribute__((aligned(8))) mmx_grnmask = 0xfcfcfcfcfcfcfcfc;
 
+uint64_t __attribute__((aligned(8))) M24A=   0x00FF0000FF0000FFLL;
+uint64_t __attribute__((aligned(8))) M24B=   0xFF0000FF0000FF00LL;
+uint64_t __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000LL;
+
+
 #define YUV2RGB \
 		     /* Do the multiply part of the conversion for even and odd pixels,
 			register usage:
@@ -336,8 +341,54 @@ static void yuv420_rgb24_mmx (uint8_t * image, uint8_t * py,
 
 	    __asm__ __volatile__ (
 YUV2RGB
-
 	/* mm0=B, %%mm2=G, %%mm1=R */
+#ifdef HAVE_MMX2
+			"movq M24A, %%mm4		\n\t"
+			"movq M24C, %%mm7		\n\t"
+			"pshufw $0x50, %%mm0, %%mm5	\n\t" /* B3 B2 B3 B2  B1 B0 B1 B0 */
+			"pshufw $0x50, %%mm2, %%mm3	\n\t" /* G3 G2 G3 G2  G1 G0 G1 G0 */
+			"pshufw $0x00, %%mm1, %%mm6	\n\t" /* R1 R0 R1 R0  R1 R0 R1 R0 */
+
+			"pand %%mm4, %%mm5		\n\t" /*    B2        B1       B0 */
+			"pand %%mm4, %%mm3		\n\t" /*    G2        G1       G0 */
+			"pand %%mm7, %%mm6		\n\t" /*       R1        R0       */
+
+			"psllq $8, %%mm3		\n\t" /* G2        G1       G0    */
+			"por %%mm5, %%mm6		\n\t"
+			"por %%mm3, %%mm6		\n\t"
+			MOVNTQ" %%mm6, (%3)		\n\t"
+
+			"psrlq $8, %%mm2		\n\t" /* 00 G7 G6 G5  G4 G3 G2 G1 */
+			"pshufw $0xA5, %%mm0, %%mm5	\n\t" /* B5 B4 B5 B4  B3 B2 B3 B2 */
+			"pshufw $0x55, %%mm2, %%mm3	\n\t" /* G4 G3 G4 G3  G4 G3 G4 G3 */
+			"pshufw $0xA5, %%mm1, %%mm6	\n\t" /* R5 R4 R5 R4  R3 R2 R3 R2 */
+
+			"pand M24B, %%mm5		\n\t" /* B5       B4        B3    */
+			"pand %%mm7, %%mm3		\n\t" /*       G4        G3       */
+			"pand %%mm4, %%mm6		\n\t" /*    R4        R3       R2 */
+
+			"por %%mm5, %%mm3		\n\t" /* B5    G4 B4     G3 B3    */
+			"por %%mm3, %%mm6		\n\t"
+			MOVNTQ" %%mm6, 8(%3)		\n\t"
+
+			"pshufw $0xFF, %%mm0, %%mm5	\n\t" /* B7 B6 B7 B6  B7 B6 B6 B7 */
+			"pshufw $0xFA, %%mm2, %%mm3	\n\t" /* 00 G7 00 G7  G6 G5 G6 G5 */
+			"pshufw $0xFA, %%mm1, %%mm6	\n\t" /* R7 R6 R7 R6  R5 R4 R5 R4 */
+			"movd 4 (%1), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
+
+			"pand %%mm7, %%mm5		\n\t" /*       B7        B6       */
+			"pand %%mm4, %%mm3		\n\t" /*    G7        G6       G5 */
+			"pand M24B, %%mm6		\n\t" /* R7       R6        R5    */
+			"movd 4 (%2), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
+\
+			"por %%mm5, %%mm3		\n\t"
+			"por %%mm3, %%mm6		\n\t"
+			MOVNTQ" %%mm6, 16(%3)		\n\t"
+			"movq 8 (%0), %%mm6;" /* Load 8 Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */
+			"pxor %%mm4, %%mm4		\n\t"
+
+#else
+
 			"pxor %%mm4, %%mm4		\n\t"
 			"movq %%mm0, %%mm5		\n\t" /* B */
 			"movq %%mm1, %%mm6		\n\t" /* R */
@@ -390,7 +441,7 @@ YUV2RGB
 
 			"movd 4 (%2), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
 			"pxor %%mm4, %%mm4		\n\t"
-
+#endif
 
 		     : : "r" (_py), "r" (_pu), "r" (_pv), "r" (_image));
 
