@@ -2094,7 +2094,7 @@ static void render_fragments(Vp3DecodeContext *s,
         lower_motion_limit = height * s->current_frame.linesize[2] + width - 8;
     }
     
-    if((unsigned)stride > 2048)
+    if(ABS(stride) > 2048)
         return; //various tables are fixed size
 
     /* for each fragment row... */
