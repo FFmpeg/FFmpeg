@@ -1880,7 +1880,7 @@ int av_find_stream_info(AVFormatContext *ic)
                        higher level as it can change in a film */
                     if (coded_frame_rate >= 24.97 && 
                         (est_frame_rate >= 23.5 && est_frame_rate < 24.5)) {
-                        st->r_frame_rate = 24024;
+                        st->r_frame_rate = 24000;
                         st->r_frame_rate_base = 1001;
                     }
                 }
