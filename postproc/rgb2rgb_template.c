@@ -1619,16 +1619,20 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, int srcWid
 {
 	int x,y;
 	
+	dst[0]= src[0];
+        
 	// first line
-	for(x=0; x<srcWidth; x++){
-		dst[2*x+0]=
-		dst[2*x+1]= src[x];
+	for(x=0; x<srcWidth-1; x++){
+		dst[2*x+1]= (3*src[x] +   src[x+1])>>2;
+		dst[2*x+2]= (  src[x] + 3*src[x+1])>>2;
 	}
-	dst+= dstStride;
+	dst[2*srcWidth-1]= src[srcWidth-1];
+	
+        dst+= dstStride;
 
 	for(y=1; y<srcHeight; y++){
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-		const int mmxSize= srcWidth;
+		const int mmxSize= srcWidth&~15;
 		asm volatile(
 			"movl %4, %%eax			\n\t"
 			"1:				\n\t"
@@ -1636,67 +1640,76 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, int srcWid
 			"movq (%1, %%eax), %%mm1	\n\t"
 			"movq 1(%0, %%eax), %%mm2	\n\t"
 			"movq 1(%1, %%eax), %%mm3	\n\t"
-			"movq %%mm0, %%mm4		\n\t"
-			"movq %%mm1, %%mm5		\n\t"
-			PAVGB" %%mm3, %%mm0		\n\t"
-			PAVGB" %%mm3, %%mm0		\n\t"
-			PAVGB" %%mm4, %%mm3		\n\t"
-			PAVGB" %%mm4, %%mm3		\n\t"
-			PAVGB" %%mm2, %%mm1		\n\t"
-			PAVGB" %%mm2, %%mm1		\n\t"
-			PAVGB" %%mm5, %%mm2		\n\t"
-			PAVGB" %%mm5, %%mm2		\n\t"
-			"movq %%mm3, %%mm4		\n\t"
-			"movq %%mm2, %%mm5		\n\t"
-			"punpcklbw %%mm1, %%mm3		\n\t"
-			"punpckhbw %%mm1, %%mm4		\n\t"
-			"punpcklbw %%mm0, %%mm2		\n\t"
-			"punpckhbw %%mm0, %%mm5		\n\t"
+			"movq -1(%0, %%eax), %%mm4	\n\t"
+			"movq -1(%1, %%eax), %%mm5	\n\t"
+			PAVGB" %%mm0, %%mm5		\n\t"
+			PAVGB" %%mm0, %%mm3		\n\t"
+			PAVGB" %%mm0, %%mm5		\n\t"
+			PAVGB" %%mm0, %%mm3		\n\t"
+			PAVGB" %%mm1, %%mm4		\n\t"
+			PAVGB" %%mm1, %%mm2		\n\t"
+			PAVGB" %%mm1, %%mm4		\n\t"
+			PAVGB" %%mm1, %%mm2		\n\t"
+			"movq %%mm5, %%mm7		\n\t"
+			"movq %%mm4, %%mm6		\n\t"
+			"punpcklbw %%mm3, %%mm5		\n\t"
+			"punpckhbw %%mm3, %%mm7		\n\t"
+			"punpcklbw %%mm2, %%mm4		\n\t"
+			"punpckhbw %%mm2, %%mm6		\n\t"
 #if 1
-			MOVNTQ" %%mm3, (%2, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm4, 8(%2, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm2, (%3, %%eax, 2)	\n\t"
-			MOVNTQ" %%mm5, 8(%3, %%eax, 2)	\n\t"
+			MOVNTQ" %%mm5, (%2, %%eax, 2)	\n\t"
+			MOVNTQ" %%mm7, 8(%2, %%eax, 2)	\n\t"
+			MOVNTQ" %%mm4, (%3, %%eax, 2)	\n\t"
+			MOVNTQ" %%mm6, 8(%3, %%eax, 2)	\n\t"
 #else
-			"movq %%mm3, (%2, %%eax, 2)	\n\t"
-			"movq %%mm4, 8(%2, %%eax, 2)	\n\t"
-			"movq %%mm2, (%3, %%eax, 2)	\n\t"
-			"movq %%mm5, 8(%3, %%eax, 2)	\n\t"
+			"movq %%mm5, (%2, %%eax, 2)	\n\t"
+			"movq %%mm7, 8(%2, %%eax, 2)	\n\t"
+			"movq %%mm4, (%3, %%eax, 2)	\n\t"
+			"movq %%mm6, 8(%3, %%eax, 2)	\n\t"
 #endif
 			"addl $8, %%eax			\n\t"
 			" js 1b				\n\t"
-			:: "r" (src + mmxSize-1), "r" (src + srcStride + mmxSize-1),
+			:: "r" (src + mmxSize  ), "r" (src + srcStride + mmxSize  ),
 			   "r" (dst + mmxSize*2), "r" (dst + dstStride + mmxSize*2),
 			   "g" (-mmxSize)
 			: "%eax"
 
 		);
-		dst[0]= 
-		dst[dstStride]= src[0];
 #else
-		dst[0]= 
-		dst[dstStride]= src[0];
+		const int mmxSize=1;
+#endif
+		dst[0        ]= (3*src[0] +   src[srcStride])>>2;
+		dst[dstStride]= (  src[0] + 3*src[srcStride])>>2;
 
-		for(x=0; x<srcWidth-1; x++){
+		for(x=mmxSize-1; x<srcWidth-1; x++){
 			dst[2*x          +1]= (3*src[x+0] +   src[x+srcStride+1])>>2;
 			dst[2*x+dstStride+2]= (  src[x+0] + 3*src[x+srcStride+1])>>2;
 			dst[2*x+dstStride+1]= (  src[x+1] + 3*src[x+srcStride  ])>>2;
 			dst[2*x          +2]= (3*src[x+1] +   src[x+srcStride  ])>>2;
 		}
-#endif
-		dst[srcWidth*2 -1]= 
-		dst[srcWidth*2 -1 + dstStride]= src[srcWidth-1];
+		dst[srcWidth*2 -1            ]= (3*src[srcWidth-1] +   src[srcWidth-1 + srcStride])>>2;
+		dst[srcWidth*2 -1 + dstStride]= (  src[srcWidth-1] + 3*src[srcWidth-1 + srcStride])>>2;
 
 		dst+=dstStride*2;
 		src+=srcStride;
 	}
-	src-=srcStride;
 	
 	// last line
+#if 1
+	dst[0]= src[0];
+        
+	for(x=0; x<srcWidth-1; x++){
+		dst[2*x+1]= (3*src[x] +   src[x+1])>>2;
+		dst[2*x+2]= (  src[x] + 3*src[x+1])>>2;
+	}
+	dst[2*srcWidth-1]= src[srcWidth-1];
+#else
 	for(x=0; x<srcWidth; x++){
 		dst[2*x+0]=
 		dst[2*x+1]= src[x];
 	}
+#endif
+
 #ifdef HAVE_MMX
 asm volatile(   EMMS" \n\t"
         	SFENCE" \n\t"
