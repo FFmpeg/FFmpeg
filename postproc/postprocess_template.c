@@ -859,6 +859,43 @@ static inline void vertX1Filter(uint8_t *src, int stride, int QP)
 #endif
 }
 
+/**
+ * Experimental Filter 1 (Horizontal)
+ * will not damage linear gradients
+ * Flat blocks should look like they where passed through the (1,1,2,2,4,2,2,1,1) 9-Tap filter
+ * can only smooth blocks at the expected locations (it cant smooth them if they did move)
+ * MMX2 version does correct clipping C version doesnt
+ * not identical with the vertical one
+ */
+static inline void horizX1Filter(uint8_t *src, int stride, int QP)
+{
+	int y;
+//FIXME (has little in common with the mmx2 version)
+	for(y=0; y<BLOCK_SIZE; y++)
+	{
+		int a= src[1] - src[2];
+		int b= src[3] - src[4];
+		int c= src[5] - src[6];
+
+		int d= MAX(ABS(b) - (ABS(a) + ABS(c))/2, 0);
+
+		if(d < QP)
+		{
+			int v = d * SIGN(-b);
+
+			src[1] +=v/8;
+			src[2] +=v/4;
+			src[3] +=3*v/8;
+			src[4] -=3*v/8;
+			src[5] -=v/4;
+			src[6] -=v/8;
+
+		}
+		src+=stride;
+	}
+}
+
+
 static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 {
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
@@ -1437,6 +1474,109 @@ src-=8;
 	}
 #endif
 }
+
+/**
+ * Check if the given 8x8 Block is mostly "flat"
+ */
+static inline int isHorizDC(uint8_t src[], int stride)
+{
+	int numEq= 0;
+	int y;
+	for(y=0; y<BLOCK_SIZE; y++)
+	{
+		if(((src[0] - src[1] + 1) & 0xFFFF) < 3) numEq++;
+		if(((src[1] - src[2] + 1) & 0xFFFF) < 3) numEq++;
+		if(((src[2] - src[3] + 1) & 0xFFFF) < 3) numEq++;
+		if(((src[3] - src[4] + 1) & 0xFFFF) < 3) numEq++;
+		if(((src[4] - src[5] + 1) & 0xFFFF) < 3) numEq++;
+		if(((src[5] - src[6] + 1) & 0xFFFF) < 3) numEq++;
+		if(((src[6] - src[7] + 1) & 0xFFFF) < 3) numEq++;
+		src+= stride;
+	}
+	return numEq > hFlatnessThreshold;
+}
+
+static inline int isHorizMinMaxOk(uint8_t src[], int stride, int QP)
+{
+	if(abs(src[0] - src[7]) > 2*QP) return 0;
+
+	return 1;
+}
+
+static inline void doHorizDefFilter(uint8_t dst[], int stride, int QP)
+{
+	int y;
+	for(y=0; y<BLOCK_SIZE; y++)
+	{
+		const int middleEnergy= 5*(dst[4] - dst[5]) + 2*(dst[2] - dst[5]);
+
+		if(ABS(middleEnergy) < 8*QP)
+		{
+			const int q=(dst[3] - dst[4])/2;
+			const int leftEnergy=  5*(dst[2] - dst[1]) + 2*(dst[0] - dst[3]);
+			const int rightEnergy= 5*(dst[6] - dst[5]) + 2*(dst[4] - dst[7]);
+
+			int d= ABS(middleEnergy) - MIN( ABS(leftEnergy), ABS(rightEnergy) );
+			d= MAX(d, 0);
+
+			d= (5*d + 32) >> 6;
+			d*= SIGN(-middleEnergy);
+
+			if(q>0)
+			{
+				d= d<0 ? 0 : d;
+				d= d>q ? q : d;
+			}
+			else
+			{
+				d= d>0 ? 0 : d;
+				d= d<q ? q : d;
+			}
+
+        		dst[3]-= d;
+	        	dst[4]+= d;
+		}
+		dst+= stride;
+	}
+}
+
+/**
+ * Do a horizontal low pass filter on the 10x8 block (dst points to middle 8x8 Block)
+ * using the 9-Tap Filter (1,1,2,2,4,2,2,1,1)/16 (C version)
+ */
+static inline void doHorizLowPass(uint8_t dst[], int stride, int QP)
+{
+
+	int y;
+	for(y=0; y<BLOCK_SIZE; y++)
+	{
+		const int first= ABS(dst[-1] - dst[0]) < QP ? dst[-1] : dst[0];
+		const int last= ABS(dst[8] - dst[7]) < QP ? dst[8] : dst[7];
+
+		int sums[9];
+		sums[0] = first + dst[0];
+		sums[1] = dst[0] + dst[1];
+		sums[2] = dst[1] + dst[2];
+		sums[3] = dst[2] + dst[3];
+		sums[4] = dst[3] + dst[4];
+		sums[5] = dst[4] + dst[5];
+		sums[6] = dst[5] + dst[6];
+		sums[7] = dst[6] + dst[7];
+		sums[8] = dst[7] + last;
+
+		dst[0]= ((sums[0]<<2) + ((first + sums[2])<<1) + sums[4] + 8)>>4;
+		dst[1]= ((dst[1]<<2) + ((first + sums[0] + sums[3])<<1) + sums[5] + 8)>>4;
+		dst[2]= ((dst[2]<<2) + ((first + sums[1] + sums[4])<<1) + sums[6] + 8)>>4;
+		dst[3]= ((dst[3]<<2) + ((sums[2] + sums[5])<<1) + sums[0] + sums[7] + 8)>>4;
+		dst[4]= ((dst[4]<<2) + ((sums[3] + sums[6])<<1) + sums[1] + sums[8] + 8)>>4;
+		dst[5]= ((dst[5]<<2) + ((last + sums[7] + sums[4])<<1) + sums[2] + 8)>>4;
+		dst[6]= (((last + dst[6])<<2) + ((dst[7] + sums[5])<<1) + sums[3] + 8)>>4;
+		dst[7]= ((sums[8]<<2) + ((last + sums[6])<<1) + sums[4] + 8)>>4;
+
+		dst+= stride;
+	}
+}
+
 
 static inline void dering(uint8_t src[], int stride, int QP)
 {
