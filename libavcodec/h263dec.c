@@ -144,8 +144,6 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size){
 }
 
 static int decode_slice(MpegEncContext *s){
-    const int workaround_bugs= s->workaround_bugs;
-
     s->last_resync_gb= s->gb;
     s->first_slice_line= 1;
         
@@ -272,15 +270,10 @@ static int decode_slice(MpegEncContext *s){
             else
                 s->padding_bug_score++;            
         }                          
-        
-        if(s->padding_bug_score > -2)
-            s->workaround_bugs |=  FF_BUG_NO_PADDING;
-        else
-            s->workaround_bugs &= ~FF_BUG_NO_PADDING;
     }
 
     // handle formats which dont have unique end markers
-    if(s->msmpeg4_version || (workaround_bugs&FF_BUG_NO_PADDING)){ //FIXME perhaps solve this more cleanly
+    if(s->msmpeg4_version || (s->workaround_bugs&FF_BUG_NO_PADDING)){ //FIXME perhaps solve this more cleanly
         int left= s->gb.size*8 - get_bits_count(&s->gb);
         int max_extra=7;
         
@@ -289,9 +282,9 @@ static int decode_slice(MpegEncContext *s){
             max_extra+= 17;
         
         /* buggy padding but the frame should still end approximately at the bitstream end */
-        if((workaround_bugs&FF_BUG_NO_PADDING) && s->error_resilience>=3)
+        if((s->workaround_bugs&FF_BUG_NO_PADDING) && s->error_resilience>=3)
             max_extra+= 48;
-        else if((workaround_bugs&FF_BUG_NO_PADDING))
+        else if((s->workaround_bugs&FF_BUG_NO_PADDING))
             max_extra+= 256*256*256*64;
         
         if(left>max_extra){
@@ -482,6 +475,11 @@ retry:
     avctx->has_b_frames= !s->low_delay;
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
+        if(s->padding_bug_score > -2 && !s->data_partitioning)
+            s->workaround_bugs |=  FF_BUG_NO_PADDING;
+        else
+            s->workaround_bugs &= ~FF_BUG_NO_PADDING;
+
         if(s->avctx->fourcc == ff_get_fourcc("XVIX")) 
             s->workaround_bugs|= FF_BUG_XVID_ILACE;
 #if 0
