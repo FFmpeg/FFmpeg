@@ -33,7 +33,8 @@ case "$cpu" in
   i386|i486|i586|i686|i86pc|BePC)
     cpu="x86"
   ;;
-  armv4l)
+  # armv4l is a subset of armv5tel
+  armv4l|armv5tel)
     cpu="armv4l"
   ;;
   alpha)
