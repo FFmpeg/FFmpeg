@@ -279,9 +279,10 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                      enc->width, enc->height, 
                      (float)enc->frame_rate / FRAME_RATE_BASE);
         }
-        snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                ", q=%d-%d", enc->qmin, enc->qmax);
-
+        if (encode) {
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     ", q=%d-%d", enc->qmin, enc->qmax);
+        }
         bitrate = enc->bit_rate;
         break;
     case CODEC_TYPE_AUDIO:
@@ -330,6 +331,14 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         break;
     default:
         av_abort();
+    }
+    if (encode) {
+        if (enc->flags & CODEC_FLAG_PASS1)
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     ", pass 1");
+        if (enc->flags & CODEC_FLAG_PASS2)
+            snprintf(buf + strlen(buf), buf_size - strlen(buf),
+                     ", pass 2");
     }
     if (bitrate != 0) {
         snprintf(buf + strlen(buf), buf_size - strlen(buf), 
