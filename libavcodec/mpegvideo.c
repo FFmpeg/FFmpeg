@@ -892,7 +892,22 @@ int MPV_encode_init(AVCodecContext *avctx)
     
     MPV_encode_defaults(s);
 
-    avctx->pix_fmt = PIX_FMT_YUV420P; // FIXME
+    if(avctx->pix_fmt != PIX_FMT_YUVJ420P && avctx->pix_fmt != PIX_FMT_YUV420P){
+        av_log(avctx, AV_LOG_ERROR, "only YUV420 is supported\n");
+        return -1;
+    }
+
+    if(avctx->codec_id == CODEC_ID_MJPEG || avctx->codec_id == CODEC_ID_LJPEG){
+        if(avctx->strict_std_compliance>=0 && avctx->pix_fmt != PIX_FMT_YUVJ420P){
+            av_log(avctx, AV_LOG_ERROR, "colorspace not supported in jpeg\n");
+            return -1;
+        }
+    }else{
+        if(avctx->strict_std_compliance>=0 && avctx->pix_fmt != PIX_FMT_YUV420P){
+            av_log(avctx, AV_LOG_ERROR, "colorspace not supported\n");
+            return -1;
+        }
+    }
 
     s->bit_rate = avctx->bit_rate;
     s->width = avctx->width;
@@ -2259,7 +2274,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
     AVFrame *pic_arg = data;
     int i, stuffing_count;
 
-    if(avctx->pix_fmt != PIX_FMT_YUV420P){
+    if(avctx->pix_fmt != PIX_FMT_YUV420P && avctx->pix_fmt != PIX_FMT_YUVJ420P){
         av_log(avctx, AV_LOG_ERROR, "this codec supports only YUV420P\n");
         return -1;
     }

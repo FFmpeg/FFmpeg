@@ -87,12 +87,12 @@ stddev:  7.03 PSNR:31.18 bytes:7602176
 1037657 ./data/a-mpeg1b.mpg
 09a77de112e144c562bc1398b111b61b *./data/out.yuv
 stddev:  6.35 PSNR:32.06 bytes:7602176
-07042f42b3119c39eb26537a84a451df *./data/a-mjpeg.avi
-1437768 ./data/a-mjpeg.avi
-f23a9e50a559e174766ee808c48fea22 *./data/out.yuv
-stddev:  8.87 PSNR:29.15 bytes:7602176
-1d565db4a3a054261af95f2483a37cd6 *./data/a-ljpeg.avi
-6262762 ./data/a-ljpeg.avi
+8e69394fdcb19995dfe5cb8c562d9441 *./data/a-mjpeg.avi
+1566544 ./data/a-mjpeg.avi
+18c3a76f984e717dd886d21fa04355f6 *./data/out.yuv
+stddev:  7.93 PSNR:30.13 bytes:7602176
+a534c6fc190682842efc0defda2cd442 *./data/a-ljpeg.avi
+6263462 ./data/a-ljpeg.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
 49c87af74432890cadb28b93da1c653d *./data/a-rv10.rm

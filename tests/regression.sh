@@ -360,7 +360,7 @@ fi
 if [ -n "$do_mjpeg" ] ; then
 # mjpeg
 file=${outfile}mjpeg.avi
-do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mjpeg $file
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mjpeg -pix_fmt yuvj420p $file
 
 # mjpeg decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -370,7 +370,7 @@ fi
 if [ -n "$do_ljpeg" ] ; then
 # ljpeg
 file=${outfile}ljpeg.avi
-do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec ljpeg $file
+do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec ljpeg -strict -1 $file
 
 # ljpeg decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -601,7 +601,7 @@ do_ffmpeg_crc $file -i $file
 
 # jpeg (we do not do md5 on image files yet)
 file=${outfile}libav%d.jpg
-$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src -bitexact -dct_algo 1 -idct_algo 2 -f image2 $file
+$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src -bitexact -dct_algo 1 -idct_algo 2 -pix_fmt yuvj420p -f image2 $file
 do_ffmpeg_crc $file -f image2 -i $file
 
 ####################

@@ -43,7 +43,7 @@ b977a4fedff90a79baf70c8e02986820 *./data/b-libav.yuv4mpeg
 3801810 ./data/b-libav.yuv4mpeg
 ./data/b-libav%d.pgm CRC=84c09106
 ./data/b-libav%d.ppm CRC=25c06ecf
-./data/b-libav%d.jpg CRC=afa6eff5
+./data/b-libav%d.jpg CRC=62328baa
 b0a8c8063d81921db5d7c8f50a1cc454 *./data/b-libav.wav
 89132 ./data/b-libav.wav
 ./data/b-libav.wav CRC=2a09519c
