@@ -24,6 +24,9 @@
 #undef NDEBUG
 #include <assert.h>
 
+#define FRAME_HEADER_SIZE 17
+// Fix Me! FRAME_HEADER_SIZE may be different. 
+
 static const GUID index_guid = {
     0x33000890, 0xe5b1, 0x11cf, { 0x89, 0xf4, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xcb },
 };

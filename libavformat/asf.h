@@ -16,12 +16,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #define PACKET_SIZE 3200
-#define PACKET_HEADER_SIZE 12
-#define FRAME_HEADER_SIZE 17
 
 typedef struct {
     int num;
-    int seq;
+    unsigned char seq;
     /* use for reading */
     AVPacket pkt;
     int frag_offset;
@@ -74,8 +72,8 @@ typedef struct {
 
 
 typedef struct {
-    int seqno;
-    int packet_size;
+    uint32_t seqno;
+    unsigned int packet_size;
     int is_streamed;
     int asfid2avid[128];        /* conversion table from asf ID 2 AVStream ID */
     ASFStream streams[128];	/* it's max number and it's not that big */
@@ -83,9 +81,12 @@ typedef struct {
     int64_t nb_packets;
     int64_t duration; /* in 100ns units */
     /* packet filling */
+    unsigned char multi_payloads_present;
     int packet_size_left;
+    int prev_packet_sent_time;
     int packet_timestamp_start;
     int packet_timestamp_end;
+    unsigned int packet_nb_payloads;
     int packet_nb_frames;
     uint8_t packet_buf[PACKET_SIZE];
     ByteIOContext pb;
@@ -179,3 +180,64 @@ static const GUID extended_content_header = {
 static const GUID my_guid = {
     0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 },
 };
+
+#define ASF_PACKET_FLAG_ERROR_CORRECTION_PRESENT 0x80 //1000 0000
+
+
+//   ASF data packet structure
+//   =========================
+//
+//
+//  -----------------------------------
+// | Error Correction Data             |  Optional
+//  -----------------------------------
+// | Payload Parsing Information (PPI) |
+//  -----------------------------------
+// | Payload Data                      |
+//  -----------------------------------
+// | Padding Data                      |
+//  -----------------------------------
+
+
+// PPI_FLAG - Payload parsing information flags
+#define ASF_PPI_FLAG_MULTIPLE_PAYLOADS_PRESENT 1
+
+#define ASF_PPI_FLAG_SEQUENCE_FIELD_IS_BYTE  0x02 //0000 0010
+#define ASF_PPI_FLAG_SEQUENCE_FIELD_IS_WORD  0x04 //0000 0100
+#define ASF_PPI_FLAG_SEQUENCE_FIELD_IS_DWORD 0x06 //0000 0110
+#define ASF_PPI_MASK_SEQUENCE_FIELD_SIZE     0x06 //0000 0110
+
+#define ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_BYTE  0x08 //0000 1000
+#define ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_WORD  0x10 //0001 0000
+#define ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_DWORD 0x18 //0001 1000
+#define ASF_PPI_MASK_PADDING_LENGTH_FIELD_SIZE     0x18 //0001 1000
+
+#define ASF_PPI_FLAG_PACKET_LENGTH_FIELD_IS_BYTE  0x20 //0010 0000
+#define ASF_PPI_FLAG_PACKET_LENGTH_FIELD_IS_WORD  0x40 //0100 0000
+#define ASF_PPI_FLAG_PACKET_LENGTH_FIELD_IS_DWORD 0x60 //0110 0000
+#define ASF_PPI_MASK_PACKET_LENGTH_FIELD_SIZE     0x60 //0110 0000
+
+// PL_FLAG - Payload flags
+#define ASF_PL_FLAG_REPLICATED_DATA_LENGTH_FIELD_IS_BYTE   0x01 //0000 0001
+#define ASF_PL_FLAG_REPLICATED_DATA_LENGTH_FIELD_IS_WORD   0x02 //0000 0010
+#define ASF_PL_FLAG_REPLICATED_DATA_LENGTH_FIELD_IS_DWORD  0x03 //0000 0011
+#define ASF_PL_MASK_REPLICATED_DATA_LENGTH_FIELD_SIZE      0x03 //0000 0011
+
+#define ASF_PL_FLAG_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_IS_BYTE  0x04 //0000 0100
+#define ASF_PL_FLAG_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_IS_WORD  0x08 //0000 1000
+#define ASF_PL_FLAG_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_IS_DWORD 0x0c //0000 1100
+#define ASF_PL_MASK_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_SIZE     0x0c //0000 1100
+
+#define ASF_PL_FLAG_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_IS_BYTE  0x10 //0001 0000
+#define ASF_PL_FLAG_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_IS_WORD  0x20 //0010 0000
+#define ASF_PL_FLAG_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_IS_DWORD 0x30 //0011 0000
+#define ASF_PL_MASK_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_SIZE     0x30 //0011 0000
+
+#define ASF_PL_FLAG_STREAM_NUMBER_LENGTH_FIELD_IS_BYTE  0x40 //0100 0000
+#define ASF_PL_MASK_STREAM_NUMBER_LENGTH_FIELD_SIZE     0xc0 //1100 0000
+
+#define ASF_PL_FLAG_PAYLOAD_LENGTH_FIELD_IS_BYTE  0x40 //0100 0000
+#define ASF_PL_FLAG_PAYLOAD_LENGTH_FIELD_IS_WORD  0x80 //1000 0000
+#define ASF_PL_MASK_PAYLOAD_LENGTH_FIELD_SIZE     0xc0 //1100 0000
+
+#define ASF_PL_FLAG_KEY_FRAME 0x80 //1000 0000

@@ -24,6 +24,167 @@
 #include <assert.h>
 
 #ifdef CONFIG_ENCODERS
+
+#define ASF_PACKET_ERROR_CORRECTION_DATA_SIZE 0x2
+#define ASF_PACKET_ERROR_CORRECTION_FLAGS (\
+                                        ASF_PACKET_FLAG_ERROR_CORRECTION_PRESENT | \
+                                        ASF_PACKET_ERROR_CORRECTION_DATA_SIZE\
+                                        )
+
+#if (ASF_PACKET_ERROR_CORRECTION_FLAGS != 0)
+#   define ASF_PACKET_ERROR_CORRECTION_FLAGS_FIELD_SIZE 1
+#else
+#   define ASF_PACKET_ERROR_CORRECTION_FLAGS_FIELD_SIZE 0
+#endif
+
+#define ASF_PPI_PROPERTY_FLAGS (\
+                        ASF_PL_FLAG_REPLICATED_DATA_LENGTH_FIELD_IS_BYTE | \
+                        ASF_PL_FLAG_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_IS_DWORD | \
+                        ASF_PL_FLAG_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_IS_BYTE | \
+                        ASF_PL_FLAG_STREAM_NUMBER_LENGTH_FIELD_IS_BYTE \
+                        )
+
+#define ASF_PPI_LENGTH_TYPE_FLAGS 0
+
+#define ASF_PAYLOAD_FLAGS ASF_PL_FLAG_PAYLOAD_LENGTH_FIELD_IS_WORD
+
+#if (ASF_PPI_FLAG_SEQUENCE_FIELD_IS_BYTE == (ASF_PPI_LENGTH_TYPE_FLAGS & ASF_PPI_MASK_SEQUENCE_FIELD_SIZE))
+#   define ASF_PPI_SEQUENCE_FIELD_SIZE 1
+#endif
+#if (ASF_PPI_FLAG_SEQUENCE_FIELD_IS_WORD == (ASF_PPI_LENGTH_TYPE_FLAGS & ASF_PPI_MASK_SEQUENCE_FIELD_SIZE))
+#   define ASF_PPI_SEQUENCE_FIELD_SIZE 2
+#endif
+#if (ASF_PPI_FLAG_SEQUENCE_FIELD_IS_DWORD == (ASF_PPI_LENGTH_TYPE_FLAGS & ASF_PPI_MASK_SEQUENCE_FIELD_SIZE))
+#   define ASF_PPI_SEQUENCE_FIELD_SIZE 4
+#endif
+#ifndef ASF_PPI_SEQUENCE_FIELD_SIZE
+#   define ASF_PPI_SEQUENCE_FIELD_SIZE 0
+#endif
+
+
+#if (ASF_PPI_FLAG_PACKET_LENGTH_FIELD_IS_BYTE == (ASF_PPI_LENGTH_TYPE_FLAGS & ASF_PPI_MASK_PACKET_LENGTH_FIELD_SIZE))
+#   define ASF_PPI_PACKET_LENGTH_FIELD_SIZE 1
+#endif
+#if (ASF_PPI_FLAG_PACKET_LENGTH_FIELD_IS_WORD == (ASF_PPI_LENGTH_TYPE_FLAGS & ASF_PPI_MASK_PACKET_LENGTH_FIELD_SIZE))
+#   define ASF_PPI_PACKET_LENGTH_FIELD_SIZE 2
+#endif
+#if (ASF_PPI_FLAG_PACKET_LENGTH_FIELD_IS_DWORD == (ASF_PPI_LENGTH_TYPE_FLAGS & ASF_PPI_MASK_PACKET_LENGTH_FIELD_SIZE))
+#   define ASF_PPI_PACKET_LENGTH_FIELD_SIZE 4
+#endif
+#ifndef ASF_PPI_PACKET_LENGTH_FIELD_SIZE
+#   define ASF_PPI_PACKET_LENGTH_FIELD_SIZE 0
+#endif
+
+#if (ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_BYTE == (ASF_PPI_LENGTH_TYPE_FLAGS & ASF_PPI_MASK_PADDING_LENGTH_FIELD_SIZE))
+#   define ASF_PPI_PADDING_LENGTH_FIELD_SIZE 1
+#endif
+#if (ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_WORD == (ASF_PPI_LENGTH_TYPE_FLAGS & ASF_PPI_MASK_PADDING_LENGTH_FIELD_SIZE))
+#   define ASF_PPI_PADDING_LENGTH_FIELD_SIZE 2
+#endif
+#if (ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_DWORD == (ASF_PPI_LENGTH_TYPE_FLAGS & ASF_PPI_MASK_PADDING_LENGTH_FIELD_SIZE))
+#   define ASF_PPI_PADDING_LENGTH_FIELD_SIZE 4
+#endif
+#ifndef ASF_PPI_PADDING_LENGTH_FIELD_SIZE
+#   define ASF_PPI_PADDING_LENGTH_FIELD_SIZE 0
+#endif
+
+#if (ASF_PL_FLAG_REPLICATED_DATA_LENGTH_FIELD_IS_BYTE == (ASF_PPI_PROPERTY_FLAGS & ASF_PL_MASK_REPLICATED_DATA_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE 1
+#endif
+#if (ASF_PL_FLAG_REPLICATED_DATA_LENGTH_FIELD_IS_WORD == (ASF_PPI_PROPERTY_FLAGS & ASF_PL_MASK_REPLICATED_DATA_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE 2
+#endif
+#if (ASF_PL_FLAG_REPLICATED_DATA_LENGTH_FIELD_IS_DWORD == (ASF_PPI_PROPERTY_FLAGS & ASF_PL_MASK_REPLICATED_DATA_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE 4
+#endif
+#ifndef ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE
+#   define ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE 0
+#endif
+
+#if (ASF_PL_FLAG_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_IS_BYTE == (ASF_PPI_PROPERTY_FLAGS & ASF_PL_MASK_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE 1
+#endif
+#if (ASF_PL_FLAG_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_IS_WORD == (ASF_PPI_PROPERTY_FLAGS & ASF_PL_MASK_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE 2
+#endif
+#if (ASF_PL_FLAG_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_IS_DWORD == (ASF_PPI_PROPERTY_FLAGS & ASF_PL_MASK_OFFSET_INTO_MEDIA_OBJECT_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE 4
+#endif
+#ifndef ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE
+#   define ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE 0
+#endif
+
+#if (ASF_PL_FLAG_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_IS_BYTE == (ASF_PPI_PROPERTY_FLAGS & ASF_PL_MASK_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE 1
+#endif
+#if (ASF_PL_FLAG_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_IS_WORD == (ASF_PPI_PROPERTY_FLAGS & ASF_PL_MASK_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE 2
+#endif
+#if (ASF_PL_FLAG_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_IS_DWORD == (ASF_PPI_PROPERTY_FLAGS & ASF_PL_MASK_MEDIA_OBJECT_NUMBER_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE 4
+#endif
+#ifndef ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE
+#   define ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE 0
+#endif
+
+#if (ASF_PL_FLAG_PAYLOAD_LENGTH_FIELD_IS_BYTE == (ASF_PAYLOAD_FLAGS & ASF_PL_MASK_PAYLOAD_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_LENGTH_FIELD_SIZE 1
+#endif
+#if (ASF_PL_FLAG_PAYLOAD_LENGTH_FIELD_IS_WORD == (ASF_PAYLOAD_FLAGS & ASF_PL_MASK_PAYLOAD_LENGTH_FIELD_SIZE))
+#   define ASF_PAYLOAD_LENGTH_FIELD_SIZE 2
+#endif
+#ifndef ASF_PAYLOAD_LENGTH_FIELD_SIZE
+#   define ASF_PAYLOAD_LENGTH_FIELD_SIZE 0
+#endif
+
+#define PACKET_HEADER_MIN_SIZE (\
+                        ASF_PACKET_ERROR_CORRECTION_FLAGS_FIELD_SIZE + \
+                        ASF_PACKET_ERROR_CORRECTION_DATA_SIZE + \
+                        1 + /*Length Type Flags*/ \
+                        1 + /*Property Flags*/ \
+                        ASF_PPI_PACKET_LENGTH_FIELD_SIZE + \
+                        ASF_PPI_SEQUENCE_FIELD_SIZE + \
+                        ASF_PPI_PADDING_LENGTH_FIELD_SIZE + \
+                        4 + /*Send Time Field*/ \
+                        2   /*Duration Field*/ \
+                        )
+
+
+// Replicated Data shall be at least 8 bytes long.
+#define ASF_PAYLOAD_REPLICATED_DATA_LENGTH 0x08
+
+#define PAYLOAD_HEADER_SIZE_SINGLE_PAYLOAD (\
+                        1 + /*Stream Number*/ \
+                        ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE + \
+                        ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE + \
+                        ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE + \
+                        ASF_PAYLOAD_REPLICATED_DATA_LENGTH \
+                        )
+                        
+#define PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS (\
+                        1 + /*Stream Number*/ \
+                        ASF_PAYLOAD_MEDIA_OBJECT_NUMBER_FIELD_SIZE + \
+                        ASF_PAYLOAD_OFFSET_INTO_MEDIA_OBJECT_FIELD_SIZE + \
+                        ASF_PAYLOAD_REPLICATED_DATA_LENGTH_FIELD_SIZE + \
+                        ASF_PAYLOAD_REPLICATED_DATA_LENGTH + \
+                        ASF_PAYLOAD_LENGTH_FIELD_SIZE \
+                        )
+
+#define SINGLE_PAYLOAD_DATA_LENGTH (\
+                        PACKET_SIZE - \
+                        PACKET_HEADER_MIN_SIZE - \
+                        PAYLOAD_HEADER_SIZE_SINGLE_PAYLOAD \
+                        )
+
+#define MULTI_PAYLOAD_CONSTANT (\
+                        PACKET_SIZE - \
+                        PACKET_HEADER_MIN_SIZE - \
+                        1 - /*Payload Flags*/ \
+                        2*PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS \
+                        )
+
+static int preroll_time = 2000;
+
 static void put_guid(ByteIOContext *s, const GUID *g)
 {
     int i;
@@ -90,10 +251,10 @@ static void put_chunk(AVFormatContext *s, int type, int payload_length, int flag
 
     length = payload_length + 8;
     put_le16(pb, type);
-    put_le16(pb, length);
-    put_le32(pb, asf->seqno);
+    put_le16(pb, length);    //size
+    put_le32(pb, asf->seqno);//sequence number
     put_le16(pb, flags); /* unknown bytes */
-    put_le16(pb, length);
+    put_le16(pb, length);    //size_confirm
     asf->seqno++;
 }
 
@@ -320,10 +481,10 @@ static int asf_write_header(AVFormatContext *s)
 
     put_flush_packet(&s->pb);
 
-    asf->packet_nb_frames = 0;
+    asf->packet_nb_payloads = 0;
+    asf->prev_packet_sent_time = 0;
     asf->packet_timestamp_start = -1;
     asf->packet_timestamp_end = -1;
-    asf->packet_size_left = asf->packet_size - PACKET_HEADER_SIZE;
     init_put_byte(&asf->pb, asf->packet_buf, asf->packet_size, 1,
                   NULL, NULL, NULL, NULL);
 
@@ -339,124 +500,191 @@ static int asf_write_stream_header(AVFormatContext *s)
     return asf_write_header(s);
 }
 
-/* write a fixed size packet */
-static int put_packet(AVFormatContext *s,
-                       unsigned int timestamp, unsigned int duration,
-                       int nb_frames, int padsize)
+static int put_payload_parsing_info(
+                                AVFormatContext *s,
+                                unsigned int    sendtime, 
+                                unsigned int    duration,
+                                int             nb_payloads, 
+                                int             padsize
+            )
 {
     ASFContext *asf = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int flags;
+    int ppi_size, i;
+    unsigned char *start_ppi_ptr = pb->buf_ptr;
 
-    if (asf->is_streamed) {
-        put_chunk(s, 0x4424, asf->packet_size, 0);
+    int iLengthTypeFlags = ASF_PPI_LENGTH_TYPE_FLAGS;
+  
+    put_byte(pb, ASF_PACKET_ERROR_CORRECTION_FLAGS);
+    for (i = 0; i < ASF_PACKET_ERROR_CORRECTION_DATA_SIZE; i++){
+        put_byte(pb, 0x0);
     }
 
-    put_byte(pb, 0x82);
-    put_le16(pb, 0);
+    if (asf->multi_payloads_present)
+        iLengthTypeFlags |= ASF_PPI_FLAG_MULTIPLE_PAYLOADS_PRESENT;
 
-    flags = 0x01; /* nb segments present */
     if (padsize > 0) {
         if (padsize < 256)
-            flags |= 0x08;
+            iLengthTypeFlags |= ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_BYTE;
         else
-            flags |= 0x10;
+            iLengthTypeFlags |= ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_WORD;
     }
-    put_byte(pb, flags); /* flags */
-    put_byte(pb, 0x5d);
-    if (flags & 0x10)
-        put_le16(pb, padsize - 2);
-    if (flags & 0x08)
-        put_byte(pb, padsize - 1);
-    put_le32(pb, timestamp);
-    put_le16(pb, duration);
-    put_byte(pb, nb_frames | 0x80);
+    put_byte(pb, iLengthTypeFlags);
 
-    return PACKET_HEADER_SIZE + ((flags & 0x18) >> 3);
+    put_byte(pb, ASF_PPI_PROPERTY_FLAGS);
+
+    if (iLengthTypeFlags & ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_WORD)
+        put_le16(pb, padsize - 2);
+    if (iLengthTypeFlags & ASF_PPI_FLAG_PADDING_LENGTH_FIELD_IS_BYTE)
+        put_byte(pb, padsize - 1);
+
+    put_le32(pb, sendtime);
+    put_le16(pb, duration);
+    if (asf->multi_payloads_present)
+        put_byte(pb, nb_payloads | ASF_PAYLOAD_FLAGS);
+
+    ppi_size = pb->buf_ptr - start_ppi_ptr;
+
+    return ppi_size;
 }
 
 static void flush_packet(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
-    int hdr_size, ptr;
+    int packet_hdr_size, packet_filled_size;
 
-    hdr_size = put_packet(s, asf->packet_timestamp_start,
-               asf->packet_timestamp_end - asf->packet_timestamp_start,
-               asf->packet_nb_frames, asf->packet_size_left);
+    if (asf->is_streamed) {
+        put_chunk(s, 0x4424, asf->packet_size, 0);
+    }
 
-    /* Clear out the padding bytes */
-    ptr = asf->packet_size - hdr_size - asf->packet_size_left;
-    memset(asf->packet_buf + ptr, 0, asf->packet_size_left);
+    packet_hdr_size = put_payload_parsing_info(
+                            s,
+                            asf->packet_timestamp_start,
+                            asf->packet_timestamp_end - asf->packet_timestamp_start,
+                            asf->packet_nb_payloads,
+                            asf->packet_size_left
+                        );
 
-    put_buffer(&s->pb, asf->packet_buf, asf->packet_size - hdr_size);
+    packet_filled_size = PACKET_SIZE - packet_hdr_size - asf->packet_size_left;
+    memset(asf->packet_buf + packet_filled_size, 0, asf->packet_size_left);
+
+    put_buffer(&s->pb, asf->packet_buf, asf->packet_size - packet_hdr_size);
 
     put_flush_packet(&s->pb);
     asf->nb_packets++;
-    asf->packet_nb_frames = 0;
+    asf->packet_nb_payloads = 0;
+    asf->prev_packet_sent_time = asf->packet_timestamp_start;
     asf->packet_timestamp_start = -1;
     asf->packet_timestamp_end = -1;
-    asf->packet_size_left = asf->packet_size - PACKET_HEADER_SIZE;
     init_put_byte(&asf->pb, asf->packet_buf, asf->packet_size, 1,
                   NULL, NULL, NULL, NULL);
 }
 
-static void put_frame_header(AVFormatContext *s, ASFStream *stream, int timestamp,
-                             int payload_size, int frag_offset, int frag_len)
+static void put_payload_header(
+                                AVFormatContext *s,
+                                ASFStream       *stream,
+                                int             presentation_time,
+                                int             m_obj_size,
+                                int             m_obj_offset,
+                                int             payload_len
+            )
 {
     ASFContext *asf = s->priv_data;
     ByteIOContext *pb = &asf->pb;
     int val;
-
+    
     val = stream->num;
-    if (s->streams[val - 1]->codec.coded_frame->key_frame /* && frag_offset == 0 */)
-        val |= 0x80;
+    if (s->streams[val - 1]->codec.coded_frame->key_frame)
+        val |= ASF_PL_FLAG_KEY_FRAME;
     put_byte(pb, val);
-    put_byte(pb, stream->seq);
-    put_le32(pb, frag_offset); /* fragment offset */
-    put_byte(pb, 0x08); /* flags */
-    put_le32(pb, payload_size);
-    put_le32(pb, timestamp);
-    put_le16(pb, frag_len);
+        
+    put_byte(pb, stream->seq);  //Media object number
+    put_le32(pb, m_obj_offset); //Offset Into Media Object
+         
+    // Replicated Data shall be at least 8 bytes long.
+    // The first 4 bytes of data shall contain the 
+    // Size of the Media Object that the payload belongs to.
+    // The next 4 bytes of data shall contain the 
+    // Presentation Time for the media object that the payload belongs to.
+    put_byte(pb, ASF_PAYLOAD_REPLICATED_DATA_LENGTH);
+
+    put_le32(pb, m_obj_size);       //Replicated Data - Media Object Size
+    put_le32(pb, presentation_time);//Replicated Data - Presentation Time
+    
+    if (asf->multi_payloads_present){
+        put_le16(pb, payload_len);   //payload length
+    }
 }
 
-
-/* Output a frame. We suppose that payload_size <= PACKET_SIZE.
-
-   It is there that you understand that the ASF format is really
-   crap. They have misread the MPEG Systems spec !
- */
-static void put_frame(AVFormatContext *s, ASFStream *stream, int timestamp,
-                      const uint8_t *buf, int payload_size)
+static void put_frame(
+                    AVFormatContext *s,
+                    ASFStream       *stream,
+		    int             timestamp,
+                    const uint8_t   *buf,
+		    int             m_obj_size
+		)
 {
     ASFContext *asf = s->priv_data;
-    int frag_pos, frag_len, frag_len1;
+    int m_obj_offset, payload_len, frag_len1;
 
-    frag_pos = 0;
-    while (frag_pos < payload_size) {
-        frag_len = payload_size - frag_pos;
-        frag_len1 = asf->packet_size_left - FRAME_HEADER_SIZE;
-        if (frag_len1 > 0) {
-            if (frag_len > frag_len1)
-                frag_len = frag_len1;
-            put_frame_header(s, stream, timestamp+1, payload_size, frag_pos, frag_len);
-            put_buffer(&asf->pb, buf, frag_len);
-            asf->packet_size_left -= (frag_len + FRAME_HEADER_SIZE);
-            asf->packet_timestamp_end = timestamp;
-            if (asf->packet_timestamp_start == -1)
+    m_obj_offset = 0;
+    while (m_obj_offset < m_obj_size) {
+        payload_len = m_obj_size - m_obj_offset;
+        if (asf->packet_timestamp_start == -1) {
+            asf->multi_payloads_present = (payload_len < MULTI_PAYLOAD_CONSTANT);
+            
+            if (asf->multi_payloads_present){
+                asf->packet_size_left = PACKET_SIZE; //For debug
+                asf->packet_size_left = PACKET_SIZE - PACKET_HEADER_MIN_SIZE - 1;
+                frag_len1 = MULTI_PAYLOAD_CONSTANT - 1;
+            }
+            else {
+                asf->packet_size_left = PACKET_SIZE - PACKET_HEADER_MIN_SIZE;
+                frag_len1 = SINGLE_PAYLOAD_DATA_LENGTH;
+            }
+            if (asf->prev_packet_sent_time > timestamp)
+                asf->packet_timestamp_start = asf->prev_packet_sent_time;
+            else
                 asf->packet_timestamp_start = timestamp;
-            asf->packet_nb_frames++;
-        } else {
-            frag_len = 0;
         }
-        frag_pos += frag_len;
-        buf += frag_len;
-        /* output the frame if filled */
-        if (asf->packet_size_left <= FRAME_HEADER_SIZE)
+        else {
+            // multi payloads
+            frag_len1 = asf->packet_size_left - PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS;
+
+            if (asf->prev_packet_sent_time > timestamp)
+                asf->packet_timestamp_start = asf->prev_packet_sent_time;
+            else if (asf->packet_timestamp_start >= timestamp)
+                asf->packet_timestamp_start = timestamp;
+        }
+        if (frag_len1 > 0) {
+            if (payload_len > frag_len1)
+                payload_len = frag_len1;
+            else if (payload_len == (frag_len1 - 1))
+                payload_len = frag_len1 - 2;  //additional byte need to put padding length
+            
+            put_payload_header(s, stream, timestamp+preroll_time, m_obj_size, m_obj_offset, payload_len);
+            put_buffer(&asf->pb, buf, payload_len);
+
+            if (asf->multi_payloads_present)
+                asf->packet_size_left -= (payload_len + PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS);
+            else
+                asf->packet_size_left -= (payload_len + PAYLOAD_HEADER_SIZE_SINGLE_PAYLOAD);
+            asf->packet_timestamp_end = timestamp;
+            
+            asf->packet_nb_payloads++;
+        } else {
+            payload_len = 0;
+        }
+        m_obj_offset += payload_len;
+        buf += payload_len;
+
+        if (!asf->multi_payloads_present)
+            flush_packet(s);
+        else if (asf->packet_size_left <= (PAYLOAD_HEADER_SIZE_MULTIPLE_PAYLOADS + 1))
             flush_packet(s);
     }
     stream->seq++;
 }
-
 
 static int asf_write_packet(AVFormatContext *s, int stream_index,
                             const uint8_t *buf, int size, int64_t timestamp)
