@@ -1176,7 +1176,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
 /* as h263, but only 17 codes */
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
 {
-    int code, sign, val, m, l, shift;
+    int code, sign, val, l, shift;
 
     code = get_vlc2(&s->gb, mv_vlc.table, MV_VLC_BITS, 2);
     if (code == 0) {
@@ -1188,22 +1188,19 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
 
     sign = get_bits1(&s->gb);
     shift = fcode - 1;
-    val = (code - 1) << shift;
-    if (shift > 0)
+    val = code;
+    if (shift) {
+        val = (val - 1) << shift;
         val |= get_bits(&s->gb, shift);
-    val++;
+        val++;
+    }
     if (sign)
         val = -val;
     val += pred;
     
     /* modulo decoding */
     l = 1 << (shift+4);
-    m = 2 * l;
-    if (val < -l) {
-        val += m;
-    } else if (val >= l) {
-        val -= m;
-    }
+    val = ((val + l)&(l*2-1)) - l;
     return val;
 }
 

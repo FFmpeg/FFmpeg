@@ -3437,10 +3437,12 @@ static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
 
     sign = get_bits1(&s->gb);
     shift = f_code - 1;
-    val = (code - 1) << shift;
-    if (shift > 0)
+    val = code;
+    if (shift) {
+        val = (val - 1) << shift;
         val |= get_bits(&s->gb, shift);
-    val++;
+        val++;
+    }
     if (sign)
         val = -val;
     val += pred;
@@ -3448,11 +3450,7 @@ static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
     /* modulo decoding */
     if (!s->h263_long_vectors) {
         l = 1 << (f_code + 4);
-        if (val < -l) {
-            val += l<<1;
-        } else if (val >= l) {
-            val -= l<<1;
-        }
+        val = ((val + l)&(l*2-1)) - l;
     } else {
         /* horrible h263 long vector mode */
         if (pred < -31 && val < -63)

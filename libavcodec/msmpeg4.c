@@ -1481,10 +1481,12 @@ static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)
         return pred;
     sign = get_bits1(&s->gb);
     shift = f_code - 1;
-    val = (code - 1) << shift;
-    if (shift > 0)
+    val = code;
+    if (shift) {
+        val = (val - 1) << shift;
         val |= get_bits(&s->gb, shift);
-    val++;
+        val++;
+    }
     if (sign)
         val = -val;
 
