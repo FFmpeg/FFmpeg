@@ -145,7 +145,7 @@ fi
 if [ -n "$do_h263p" ] ; then
 # h263p encoding
 file=${outfile}h263p.avi
-do_ffmpeg $file -y -qscale 10 -umv -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263p -ps 1000 $file
+do_ffmpeg $file -y -qscale 10 -umv -f pgmyuv -i $raw_src -s 352x288 -an -vcodec h263p -ps 300 $file
 
 # h263p decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -185,7 +185,7 @@ fi
 if [ -n "$do_mpeg4adv" ] ; then
 # mpeg4
 file=${outfile}mpeg4-adv.avi
-do_ffmpeg $file -y -qscale 9 -4mv -hq -part -ps 1000 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 9 -4mv -hq -part -ps 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -195,7 +195,7 @@ fi
 if [ -n "$do_mpeg1b" ] ; then
 # mpeg1
 file=${outfile}mpeg1b.mpg
-do_ffmpeg $file -y -qscale 8 -bf 3 -f pgmyuv -i $raw_src -an -vcodec mpeg1video $file
+do_ffmpeg $file -y -qscale 8 -bf 3 -ps 200 -f pgmyuv -i $raw_src -an -vcodec mpeg1video $file
 
 # mpeg1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
