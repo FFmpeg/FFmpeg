@@ -1,5 +1,5 @@
 /*
- * MPEG1 encoder / MPEG2 decoder
+ * MPEG1 codec / MPEG2 decoder
  * Copyright (c) 2000,2001 Fabrice Bellard.
  *
  * This library is free software; you can redistribute it and/or
@@ -16,6 +16,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+ 
+/**
+ * @file mpeg12.c
+ * MPEG1 codec / MPEG2 decoder.
+ */
+ 
 //#define DEBUG
 #include "avcodec.h"
 #include "dsputil.h"

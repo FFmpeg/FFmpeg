@@ -1,4 +1,10 @@
 /* motion test. (c) 2001 Fabrice Bellard. */
+
+/**
+ * @file motion_test.c
+ * motion test.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

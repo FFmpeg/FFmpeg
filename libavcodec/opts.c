@@ -2,7 +2,9 @@
  * LGPL
  */
 
-/*
+/**
+ * @file opts.c
+ * options parser.
  * typical parsed command line:
  * msmpeg4:bitrate=720000:qmax=16
  *

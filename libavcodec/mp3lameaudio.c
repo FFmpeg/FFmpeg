@@ -16,6 +16,11 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+ 
+/**
+ * @file mp3lameaudio.c
+ * Interface to libmp3lame for mp3 encoding.
+ */
 
 #include "avcodec.h"
 #include "mpegaudio.h"

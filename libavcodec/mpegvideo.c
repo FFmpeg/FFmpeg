@@ -19,6 +19,11 @@
  * 4MV & hq & b-frame encoding stuff by Michael Niedermayer <michaelni@gmx.at>
  */
  
+/**
+ * @file mpegvideo.c
+ * The simplest mpeg encoder (well, it was the simplest!).
+ */ 
+ 
 #include <ctype.h>
 #include <limits.h>
 #include "avcodec.h"

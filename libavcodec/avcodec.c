@@ -1,3 +1,8 @@
+/**
+ * @file avcodec.c
+ * avcodec.
+ */
+
 #include "errno.h"
 #include "avcodec.h"
 

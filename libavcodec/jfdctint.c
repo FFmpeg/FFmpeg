@@ -23,6 +23,11 @@
  * scaled fixed-point arithmetic, with a minimal number of shifts.
  */
 
+/**
+ * @file jfdctint.c
+ * Independent JPEG Group's slow & accurate dct.
+ */
+ 
 #include <stdlib.h>
 #include <stdio.h>
 #include "common.h"

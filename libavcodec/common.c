@@ -18,6 +18,12 @@
  *
  * alternative bitstream reader & writer by Michael Niedermayer <michaelni@gmx.at>
  */
+
+/**
+ * @file common.c
+ * common internal api.
+ */
+
 #include "avcodec.h"
 
 const uint8_t ff_sqrt_tab[128]={

@@ -30,6 +30,11 @@
  * quality-setting files than with low-quality ones.
  */
 
+/**
+ * @file jfdctfst.c
+ * Independent JPEG Group's fast AAN dct.
+ */
+ 
 #include <stdlib.h>
 #include <stdio.h>
 #include "common.h"

@@ -16,6 +16,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+ 
+/**
+ * @file mem.c
+ * default memory allocator for libavcodec.
+ */
+ 
 #include "avcodec.h"
 
 /* here we can use OS dependant allocation functions */

@@ -1,3 +1,8 @@
+/**
+ * @file mpeg4data.h
+ * mpeg4 tables.
+ */
+
 // shapes
 #define RECT_SHAPE       0
 #define BIN_SHAPE        1

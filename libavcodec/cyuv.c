@@ -23,6 +23,11 @@
  *
  */
 
+/**
+ * @file cyuv.c 
+ * Creative YUV (CYUV) Video Decoder.
+ */
+ 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

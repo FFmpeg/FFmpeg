@@ -17,6 +17,11 @@
  *
  */
 
+/**
+ * @file wmv2.c
+ * wmv2 codec.
+ */
+ 
 #include "simple_idct.h"
  
 #define SKIP_TYPE_NONE 0

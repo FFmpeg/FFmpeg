@@ -1,4 +1,7 @@
-/* fdctref.c, forward discrete cosine transform, double precision           */
+/**
+ * @file fdctref.c
+ * forward discrete cosine transform, double precision.
+ */
 
 /* Copyright (C) 1996, MPEG Software Simulation Group. All Rights Reserved. */
 

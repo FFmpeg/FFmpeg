@@ -20,6 +20,12 @@
  * aspecting, new decode_frame mechanism and apple mjpeg-b support
  *                                  by Alex Beregszaszi <alex@naxine.org>
  */
+
+/**
+ * @file mjpeg.c
+ * MJPEG encoder and decoder.
+ */
+ 
 //#define DEBUG
 #include "avcodec.h"
 #include "dsputil.h"

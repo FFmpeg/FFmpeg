@@ -1,6 +1,7 @@
-/*
- * Ogg Vorbis codec support via libvorbisenc
- * Mark Hills <mark@pogo.org.uk>
+/**
+ * @file oggvorbis.c
+ * Ogg Vorbis codec support via libvorbisenc.
+ * @author Mark Hills <mark@pogo.org.uk>
  */
 
 #include <time.h>

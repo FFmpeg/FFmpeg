@@ -1,9 +1,12 @@
-/* avcodec API use example.
+/**
+ * @file apiexample.c
+ * avcodec API use example.
  *
  * Note that this library only handles codecs (mpeg, mpeg4, etc...),
  * not file formats (avi, vob, etc...). See library 'libav' for the
  * format handling 
  */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

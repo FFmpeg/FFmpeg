@@ -1,4 +1,8 @@
-/* FFT and MDCT tests */
+/**
+ * @file fft-test.c
+ * FFT and MDCT tests.
+ */
+
 #include "dsputil.h"
 #include <math.h>
 #include <unistd.h>

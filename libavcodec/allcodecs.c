@@ -16,6 +16,12 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+/**
+ * @file allcodecs.c
+ * Utils for libavcodec.
+ */
+
 #include "avcodec.h"
 
 /* If you do not call this function, then you can select exactly which

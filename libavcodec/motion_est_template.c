@@ -17,6 +17,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  */
+ 
+/**
+ * @file motion_est_template.c
+ * Motion estimation template.
+ */
 
 //lets hope gcc will remove the unused vars ...(gcc 3.2.2 seems to do it ...)
 //Note, the last line is there to kill these ugly unused var warnings

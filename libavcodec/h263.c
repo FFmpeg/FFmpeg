@@ -25,8 +25,7 @@
 
 /**
  * @file h263.c
- * @brief h263/mpeg4 codec
- *
+ * h263/mpeg4 codec.
  */
  
 //#define DEBUG

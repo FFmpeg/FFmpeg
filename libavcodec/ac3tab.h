@@ -1,4 +1,7 @@
-/* tables taken directly from AC3 spec */
+/**
+ * @file ac3tab.h
+ * tables taken directly from AC3 spec.
+ */
 
 /* possible frequencies */
 const uint16_t ac3_freqs[3] = { 48000, 44100, 32000 };

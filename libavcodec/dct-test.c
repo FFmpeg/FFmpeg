@@ -1,6 +1,9 @@
-/* DCT test. (c) 2001 Fabrice Bellard. 
-   Started from sample code by Juan J. Sierralta P.
-*/
+/**
+ * @file dct-test.c
+ * DCT test. (c) 2001 Fabrice Bellard. 
+ * Started from sample code by Juan J. Sierralta P.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

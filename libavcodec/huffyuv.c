@@ -20,6 +20,11 @@
  * see http://www.pcisys.net/~melanson/codecs/huffyuv.txt for a description of
  * the algorithm used 
  */
+ 
+/**
+ * @file huffyuv.c
+ * huffyuv codec for libavcodec.
+ */
 
 #include "common.h"
 #include "avcodec.h"

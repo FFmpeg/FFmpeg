@@ -1,4 +1,7 @@
-/* Various WMA tables */
+/**
+ * @file wmadata.h
+ * Various WMA tables.
+ */
 
 static const uint16_t wma_critical_freqs[25] = {
     100,   200,  300, 400,   510,  630,  770,    920,

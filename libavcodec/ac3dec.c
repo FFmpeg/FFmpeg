@@ -16,6 +16,14 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+/**
+ * @file ac3dec.c
+ * AC3 decoder.
+ */
+
+//#define DEBUG
+
 #include "avcodec.h"
 #include "libac3/ac3.h"
 

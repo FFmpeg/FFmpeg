@@ -18,7 +18,9 @@
  */
 #include "avcodec.h"
 
-/*
+/**
+ * @file adpcm.c
+ * ADPCM codecs.
  * First version by Francois Revol revol@free.fr
  *
  * Features and limitations:
@@ -47,7 +49,8 @@ static const int index_table[16] = {
     -1, -1, -1, -1, 2, 4, 6, 8,
 };
 
-/* This is the step table. Note that many programs use slight deviations from
+/** 
+ * This is the step table. Note that many programs use slight deviations from
  * this table, but such deviations are negligible:
  */
 static const int step_table[89] = {

@@ -1,3 +1,8 @@
+/**
+ * @file h263data.h
+ * H.263 tables.
+ */
+
 
 /* intra MCBPC, mb_type = (intra), then (intraq) */
 const uint8_t intra_MCBPC_code[8] = { 1, 1, 2, 3, 1, 1, 2, 3 };

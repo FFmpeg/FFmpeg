@@ -19,8 +19,7 @@
 
 /**
  * @file dsputil.h
- * @brief DSP utils
- *
+ * DSP utils.
  */
 
 #ifndef DSPUTIL_H

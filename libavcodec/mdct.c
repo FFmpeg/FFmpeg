@@ -18,8 +18,13 @@
  */
 #include "dsputil.h"
 
-/*
- * init MDCT or IMDCT computation
+/**
+ * @file mdct.c
+ * MDCT/IMDCT transforms.
+ */
+
+/**
+ * init MDCT or IMDCT computation.
  */
 int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
 {

@@ -20,6 +20,12 @@
  *
  * new Motion Estimation (X1/EPZS) by Michael Niedermayer <michaelni@gmx.at>
  */
+ 
+/**
+ * @file motion_est.c
+ * Motion estimation.
+ */
+ 
 #include <stdlib.h>
 #include <stdio.h>
 #include "avcodec.h"

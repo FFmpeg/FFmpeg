@@ -21,6 +21,12 @@
  * Ported to libavcodec by Nick Kurshev <nickols_k@mail.ru>
  *
  */
+
+/**
+ * @file svq1.c
+ * svq1 decoder.
+ */
+
 //#define DEBUG_SVQ1
 #include <stdio.h>
 #include <stdlib.h>

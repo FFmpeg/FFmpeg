@@ -1,3 +1,7 @@
+/**
+ * @file mpegaudiodectab.h
+ * mpeg audio layer decoder tables. 
+ */
 
 const uint16_t mpa_bitrate_tab[2][3][15] = {
     { {0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448 },

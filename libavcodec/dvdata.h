@@ -17,6 +17,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/**
+ * @file dvdata.h
+ * Constants for DV codec.
+ */
+ 
 #define NB_DV_VLC 409
 #define AAUX_OFFSET (80*6 + 80*16*3 + 3)
 

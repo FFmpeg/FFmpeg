@@ -1,3 +1,8 @@
+/**
+ * @file bswap.h
+ * byte swap.
+ */
+
 #ifndef __BSWAP_H__
 #define __BSWAP_H__
 

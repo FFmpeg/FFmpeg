@@ -1,4 +1,7 @@
-/* mpeg audio declarations for both encoder and decoder */
+/**
+ * @file mpegaudio.h
+ * mpeg audio declarations for both encoder and decoder.
+ */
 
 /* max frame size, in samples */
 #define MPA_FRAME_SIZE 1152 

@@ -18,6 +18,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/**
+ * @file simple_idct.h
+ * simple idct header.
+ */
+ 
 void simple_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
 void simple_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_simple_idct_mmx(int16_t *block);

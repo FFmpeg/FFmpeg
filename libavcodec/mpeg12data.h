@@ -1,5 +1,6 @@
-/*
- * MPEG1/2 tables
+/**
+ * @file mpeg12data.h
+ * MPEG1/2 tables.
  */
 
 const int16_t ff_mpeg1_default_intra_matrix[64] = {

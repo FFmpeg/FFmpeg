@@ -18,6 +18,12 @@
  *
  * msmpeg4v1 & v2 stuff by Michael Niedermayer <michaelni@gmx.at>
  */
+
+/**
+ * @file msmpeg4.c
+ * MSMPEG4 backend for ffmpeg encoder and decoder.
+ */
+
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"

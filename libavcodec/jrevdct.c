@@ -25,6 +25,12 @@
  * A better way to do this would be to pass in the DCT block as a sparse
  * matrix, perhaps with the difference cases encoded.
  */
+ 
+/**
+ * @file jrevdct.c
+ * Independent JPEG Group's LLM idct.
+ */
+ 
 #include "common.h"
 #include "dsputil.h"
 

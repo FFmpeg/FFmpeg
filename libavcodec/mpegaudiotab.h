@@ -8,6 +8,12 @@
  * same archive 
  */
 
+/**
+ * @file mpegaudiotab.h
+ * mpeg audio layer 2 tables. 
+ * Most of them come from the mpeg audio specification.
+ */
+ 
 #define SQRT2 1.41421356237309514547
 
 static const int costab32[30] = {

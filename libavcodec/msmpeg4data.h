@@ -1,4 +1,5 @@
-/*
+/**
+ * @file msmpeg4data.h
  * MSMPEG4 data tables. 
  */
 

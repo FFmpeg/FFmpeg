@@ -1,3 +1,8 @@
+/**
+ * @file oggvorbis.h
+ * oggvorbis.
+ */
+
 #ifndef AVCODEC_OGGVORBIS_H
 #define AVCODEC_OGGVORBIS_H
 
