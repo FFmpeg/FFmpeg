@@ -657,6 +657,9 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             s->next_picture[i] = tmp;
             s->current_picture[i] = tmp;
 
+            if(s->last_picture[i]==NULL)
+                s->last_picture[i]= s->next_picture[i];
+
             s->last_dr_opaque= s->next_dr_opaque;
             s->next_dr_opaque= avctx->dr_opaque_frame;
 
