@@ -92,6 +92,10 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 
 #include "mangle.h" //FIXME should be supressed
 
+#ifdef HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
+
 #ifndef HAVE_MEMALIGN
 #define memalign(a,b) malloc(b)
 #endif

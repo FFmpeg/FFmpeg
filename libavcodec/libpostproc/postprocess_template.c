@@ -2203,6 +2203,7 @@ static inline void RENAME(transpose2)(uint8_t *dst, int dstStride, uint8_t *src)
 #endif
 //static int test=0;
 
+#ifndef HAVE_ALTIVEC
 static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
 				    uint8_t *tempBlured, uint32_t *tempBluredPast, int *maxNoise)
 {
@@ -2510,7 +2511,7 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 {
 	int y;
 	int d=0;
-	int sysd=0;
+//	int sysd=0;
 	int i;
 
 	for(y=0; y<8; y++)
@@ -2525,7 +2526,7 @@ L2_DIFF_CORE((%0, %%ecx), (%1, %%ecx))
 //			if(y==0 || y==7) d1+= d1>>1;
 //			d+= ABS(d1);
 			d+= d1*d1;
-			sysd+= d1;
+//			sysd+= d1;
 		}
 	}
 	i=d;
@@ -2611,6 +2612,7 @@ Switch between
 }
 #endif
 }
+#endif //HAVE_ALTIVEC
 
 #ifdef HAVE_MMX
 /**
