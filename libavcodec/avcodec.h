@@ -113,6 +113,9 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 /* decoder can use draw_horiz_band callback */
 #define CODEC_CAP_DRAW_HORIZ_BAND 0x0001
 #define CODEC_CAP_DR1             0x0002 /* direct rendering method 1 */
+/* if 'parse_only' field is true, then avcodec_parse_frame() can be
+   used */
+#define CODEC_CAP_PARSE_ONLY      0x0004
 
 #define FRAME_RATE_BASE 10000
 
@@ -258,8 +261,8 @@ typedef struct AVCodecContext {
 #define QP_TYPE int //FIXME note xxx this might be changed to int8_t
 
     QP_TYPE *quant_store; /* field for communicating with external postprocessing */
-    unsigned qstride;
 
+    unsigned qstride;
     uint8_t *dr_buffer[3];
     int dr_stride;
     void *dr_opaque_frame;
@@ -269,6 +272,10 @@ typedef struct AVCodecContext {
     int dr_uvstride;
     int dr_ip_buffer_count;
     int block_align; /* currently only for adpcm codec in wav/avi */
+
+    int parse_only; /* decoding only: if true, only parsing is done
+                       (function avcodec_parse_frame()). The frame
+                       data is returned. Only MPEG codecs support this now. */
 
     //FIXME this should be reordered after kabis API is finished ...
     /*
@@ -292,7 +299,7 @@ typedef struct AVCodecContext {
 	    ul_res0,ul_res1,ul_res2,ul_res3,ul_res4,ul_res5,
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
     unsigned int
-	    ui_res0,ui_res1;
+	    ui_res0;
     unsigned short int
 	    us_res0,us_res1,us_res2,us_res3,us_res4,us_res5,
 	    us_res6,us_res7,us_res8,us_res9,us_res10,us_res11,us_res12;
@@ -459,6 +466,9 @@ int avcodec_decode_audio(AVCodecContext *avctx, INT16 *samples,
 int avcodec_decode_video(AVCodecContext *avctx, AVPicture *picture, 
                          int *got_picture_ptr,
                          UINT8 *buf, int buf_size);
+int avcodec_parse_frame(AVCodecContext *avctx, UINT8 **pdata, 
+                        int *data_size_ptr,
+                        UINT8 *buf, int buf_size);
 int avcodec_encode_audio(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
                          const short *samples);
 int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size, 
