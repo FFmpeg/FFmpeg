@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001-2002 Michael Niedermayer (michaelni@gmx.at)
+    Copyright (C) 2001-2003 Michael Niedermayer (michaelni@gmx.at)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,6 +18,16 @@
 
 #ifndef NEWPOSTPROCESS_H
 #define NEWPOSTPROCESS_H
+
+/**
+ * @file postprocess.h
+ * @brief 
+ *     external api for the pp stuff
+ */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #define PP_QUALITY_MAX 6
 
@@ -55,5 +65,9 @@ void pp_free_context(pp_context_t *ppContext);
 #define PP_FORMAT_422    (0x00000001|PP_FORMAT)
 #define PP_FORMAT_411    (0x00000002|PP_FORMAT)
 #define PP_FORMAT_444    (0x00000000|PP_FORMAT)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
