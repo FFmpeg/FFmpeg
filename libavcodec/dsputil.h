@@ -111,6 +111,15 @@ void dsputil_init_mmx(void);
 
 void dsputil_init_armv4l(void);   
 
+#elif defined(HAVE_MLIB)
+ 
+#define emms_c()
+
+/* SPARC/VIS IDCT needs 8-byte aligned DCT blocks */
+#define __align8 __attribute__ ((aligned (8)))
+
+void dsputil_init_mlib(void);   
+
 #else
 
 #define emms_c()

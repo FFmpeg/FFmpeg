@@ -29,6 +29,13 @@ ASM_OBJS += armv4l/jrevdct_arm.o
 OBJS += armv4l/dsputil_arm.o
 endif
 
+# sun mediaLib specific stuff
+# currently only works when libavcodec is used in mplayer
+ifeq ($(HAVE_MLIB),yes)
+OBJS += mlib/dsputil_mlib.o
+CFLAGS += $(MLIB_INC)
+endif
+
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 
 LIB= libavcodec.a
@@ -58,8 +65,8 @@ depend:
 clean: 
 	rm -f *.o *~ *.a i386/*.o i386/*~ \
 	   armv4l/*.o armv4l/*~ \
+	   mlib/*.o mlib/*~ \
            libac3/*.o libac3/*~ \
-           mpglib/*.o mpglib/*~ \
            apiexample $(TESTS)
 
 distclean: clean
