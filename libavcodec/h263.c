@@ -32,8 +32,8 @@
 //rounded divison & shift
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + (1<<((b)-1)))>>(b) : ((a) + (1<<((b)-1))-1)>>(b))
 
-#define PRINT_MB_TYPE(a) ;
-//#define PRINT_MB_TYPE(a) printf(a);
+#define PRINT_MB_TYPE(a) {}
+//#define PRINT_MB_TYPE(a) printf(a)
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
 			      int n);
@@ -2357,7 +2357,7 @@ int h263_decode_mb(MpegEncContext *s,
     INT16 *mot_val;
     static INT8 quant_tab[4] = { -1, -2, 1, 2 };
 
-    if(s->mb_x==0) PRINT_MB_TYPE("\n")
+    if(s->mb_x==0) PRINT_MB_TYPE("\n");
 
     if(s->resync_marker){
         if(s->resync_mb_x == s->mb_x && s->resync_mb_y+1 == s->mb_y){
@@ -2539,7 +2539,7 @@ int h263_decode_mb(MpegEncContext *s,
 //FIXME is this correct?
 /*            s->last_mv[0][0][0]=
             s->last_mv[0][0][1]=0;*/
-            PRINT_MB_TYPE("s")
+            PRINT_MB_TYPE("s");
             return 0;
         }
 
