@@ -260,7 +260,40 @@ static int h263_decode_frame(AVCodecContext *avctx,
     }
   
     MPV_frame_end(s);
-    
+#if 0 //dirty show MVs, we should export the MV tables and write a filter to show them
+{
+  int mb_y;
+  s->has_b_frames=1;
+  for(mb_y=0; mb_y<s->mb_height; mb_y++){
+    int mb_x;
+    int y= mb_y*16;
+    for(mb_x=0; mb_x<s->mb_width; mb_x++){
+      int x= mb_x*16;
+      uint8_t *ptr= s->last_picture[0];
+      int xy= 1 + mb_x*2 + (mb_y*2 + 1)*(s->mb_width*2 + 2);
+      int mx= (s->motion_val[xy][0]>>1) + x;
+      int my= (s->motion_val[xy][1]>>1) + y;
+      int i;
+      int max;
+
+      if(mx<0) mx=0;
+      if(my<0) my=0;
+      if(mx>=s->width)  mx= s->width -1;
+      if(my>=s->height) my= s->height-1;
+      max= ABS(mx-x);
+      if(ABS(my-y) > max) max= ABS(my-y);
+      /* the ugliest linedrawing routine ... */
+      for(i=0; i<max; i++){
+        int x1= x + (mx-x)*i/max;
+        int y1= y + (my-y)*i/max;
+        ptr[y1*s->linesize + x1]+=100;
+      }
+      s->mbskip_table[mb_x + mb_y*s->mb_width]=0;
+    }
+  }
+
+}
+#endif    
     if(s->pict_type==B_TYPE || (!s->has_b_frames)){
         pict->data[0] = s->current_picture[0];
         pict->data[1] = s->current_picture[1];
