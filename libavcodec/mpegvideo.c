@@ -430,6 +430,7 @@ void MPV_frame_end(MpegEncContext *s)
         draw_edges(s->current_picture[2], s->linesize/2, s->width/2, s->height/2, EDGE_WIDTH/2);
       }
     }
+    emms_c();
 }
 
 int MPV_encode_picture(AVCodecContext *avctx,
