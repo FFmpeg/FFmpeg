@@ -1519,8 +1519,13 @@ int h263_decode_mb(MpegEncContext *s,
 //                int l = (1 << (s->f_code - 1)) * 32;
 
                 s->mcsel=1;
-                s->mv[0][0][0] = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
-                s->mv[0][0][1] = RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
+                if(s->divx_version==500 && s->divx_build==413){
+                    s->mv[0][0][0] = s->sprite_offset[0][0] / (1<<(a-s->quarter_sample));
+                    s->mv[0][0][1] = s->sprite_offset[0][1] / (1<<(a-s->quarter_sample));
+                }else{
+                    s->mv[0][0][0] = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
+                    s->mv[0][0][1] = RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
+                }
 /*                if (s->mv[0][0][0] < -l) s->mv[0][0][0]= -l;
                 else if (s->mv[0][0][0] >= l) s->mv[0][0][0]= l-1;
                 if (s->mv[0][0][1] < -l) s->mv[0][0][1]= -l;
@@ -1573,9 +1578,13 @@ int h263_decode_mb(MpegEncContext *s,
             else {
                const int a= s->sprite_warping_accuracy;
 //        int l = (1 << (s->f_code - 1)) * 32;
-               mx= RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
-//        if (mx < -l) mx= -l;
-//        else if (mx >= l) mx= l-1;
+                if(s->divx_version==500 && s->divx_build==413){
+                    mx = s->sprite_offset[0][0] / (1<<(a-s->quarter_sample));
+                }else{
+                    mx = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
+                }
+//        if (mx < -l) mx= -l, printf("C");
+//        else if (mx >= l) mx= l-1, printf("C");
             }
             if (mx >= 0xffff)
                 return -1;
@@ -1587,9 +1596,13 @@ int h263_decode_mb(MpegEncContext *s,
             else{
                const int a= s->sprite_warping_accuracy;
 //       int l = (1 << (s->f_code - 1)) * 32;
-               my= RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
-//       if (my < -l) my= -l;
-//       else if (my >= l) my= l-1;
+                if(s->divx_version==500 && s->divx_build==413){
+                    my = s->sprite_offset[0][1] / (1<<(a-s->quarter_sample));
+                }else{
+                    my = RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
+                }
+//       if (my < -l) my= -l, printf("C");
+//       else if (my >= l) my= l-1, printf("C");
             }
             if (my >= 0xffff)
                 return -1;
@@ -2378,6 +2391,7 @@ printf("%d %d\n", s->sprite_delta[1][1][1], a<<s->sprite_shift[1][1]);*/
     else
         s->real_sprite_warping_points= s->num_sprite_warping_points;
 
+//printf("%d %d %d %d\n", d[0][0], d[0][1], s->sprite_offset[0][0], s->sprite_offset[0][1]);
 }
 
 /* decode mpeg4 VOP header */
