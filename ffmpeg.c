@@ -321,7 +321,7 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st;
 
-        st = av_mallocz(sizeof(AVFormatContext));
+        st = av_mallocz(sizeof(AVStream));
         memcpy(st, ic->streams[i], sizeof(AVStream));
         s->streams[i] = st;
     }
