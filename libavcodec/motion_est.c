@@ -370,10 +370,10 @@ static inline int small_diamond_search(MpegEncContext * s, int *best, int dmin,
         next_dir=-1;
 
 //printf("%d", dir);
-        if(dir!=2 && x-1>=xmin) CHECK_MV_DIR(x-1, y  , 0)
-        if(dir!=3 && y-1>=ymin) CHECK_MV_DIR(x  , y-1, 1)
-        if(dir!=0 && x+1<=xmax) CHECK_MV_DIR(x+1, y  , 2)
-        if(dir!=1 && y+1<=ymax) CHECK_MV_DIR(x  , y+1, 3)
+        if(dir!=2 && x>xmin) CHECK_MV_DIR(x-1, y  , 0)
+        if(dir!=3 && y>ymin) CHECK_MV_DIR(x  , y-1, 1)
+        if(dir!=0 && x<xmax) CHECK_MV_DIR(x+1, y  , 2)
+        if(dir!=1 && y<ymax) CHECK_MV_DIR(x  , y+1, 3)
 
         if(next_dir==-1){
             return dmin;
@@ -383,30 +383,21 @@ static inline int small_diamond_search(MpegEncContext * s, int *best, int dmin,
 
 static int epzs_motion_search(MpegEncContext * s,
                              int *mx_ptr, int *my_ptr,
-                             int *px_ptr, int *py_ptr,
+                             int P[5][2], int pred_x, int pred_y,
                              int xmin, int ymin, int xmax, int ymax)
 {
-    INT16 P_left[2], P_top[2], P_topright[2], P_last[2];
-    static const int off[4]= {2, 1, 1, -1};
     int best[2]={0, 0};
     int d, dmin; 
     UINT8 *new_pic, *old_pic;
     const int pic_stride= s->linesize;
     const int pic_xy= (s->mb_y*pic_stride + s->mb_x)*16;
-    const int mot_stride = s->block_wrap[0];
-    const int mot_xy = s->block_index[0];
     UINT16 *mv_penalty= s->mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
     int quant= s->qscale; // qscale of the prev frame
-    int pred_x, pred_y;
     const int shift= 1+s->quarter_sample;
 
     new_pic = s->new_picture[0] + pic_xy;
     old_pic = s->last_picture[0] + pic_xy;
-
-    xmin-=s->mb_x*16;
-    xmax-=s->mb_x*16;
-    ymin-=s->mb_y*16;
-    ymax-=s->mb_y*16;
+//printf("%d %d %d %d\n", xmin, ymin, xmax, ymax);
     
     dmin = pix_abs16x16(new_pic, old_pic, pic_stride, 16);
     if(dmin<Z_THRESHOLD){
@@ -416,53 +407,27 @@ static int epzs_motion_search(MpegEncContext * s,
         return dmin;
     }
 
-    P_last[0] = s->motion_val[mot_xy    ][0];
-    P_last[1] = s->motion_val[mot_xy    ][1];
-    P_left[0] = s->motion_val[mot_xy - 1][0];
-    P_left[1] = s->motion_val[mot_xy - 1][1];
-    if(P_left[0] > (xmax<<shift)) P_left[0]= (xmax<<shift);
-
-    /* special case for first line */
+    /* first line */
     if ((s->mb_y == 0 || s->first_slice_line || s->first_gob_line)) {
-        *px_ptr= pred_x = P_left[0];
-        *py_ptr= pred_y = P_left[1];
-        CHECK_MV(pred_x>>shift, pred_y>>shift)
+        CHECK_MV(P[1][0]>>shift, P[1][1]>>shift)
+    }else{
+        CHECK_MV(P[4][0]>>shift, P[4][1]>>shift)
         if(dmin<Z_THRESHOLD){
-            *mx_ptr= pred_x>>shift;
-            *my_ptr= pred_y>>shift;
-//printf("M");
+            *mx_ptr= P[4][0]>>shift;
+            *my_ptr= P[4][1]>>shift;
+//printf("M\n");
             return dmin;
         }
-    } else {
-        P_top     [0] = s->motion_val[mot_xy - mot_stride             ][0];
-        P_top     [1] = s->motion_val[mot_xy - mot_stride             ][1];
-        P_topright[0] = s->motion_val[mot_xy - mot_stride + off[0]    ][0];
-        P_topright[1] = s->motion_val[mot_xy - mot_stride + off[0]    ][1];
-        if(P_top     [1] > (ymax<<shift)) P_top     [1]= (ymax<<shift);
-        if(P_topright[0] < (xmin<<shift)) P_topright[0]= (xmin<<shift);
-        if(P_topright[1] > (ymax<<shift)) P_topright[1]= (ymax<<shift);
-
-        *px_ptr= pred_x = mid_pred(P_left[0], P_top[0], P_topright[0]);
-        *py_ptr= pred_y = mid_pred(P_left[1], P_top[1], P_topright[1]);
-        
-        CHECK_MV(pred_x>>shift, pred_y>>shift)
-        if(dmin<Z_THRESHOLD){
-            *mx_ptr= pred_x>>shift;
-            *my_ptr= pred_y>>shift;
-//printf("M");
-            return dmin;
-        }
-
-        CHECK_MV(P_left    [0]>>shift, P_left    [1]>>shift)
-        CHECK_MV(P_top     [0]>>shift, P_top     [1]>>shift)
-        CHECK_MV(P_topright[0]>>shift, P_topright[1]>>shift)
-        CHECK_MV(P_last    [0]>>shift, P_last    [1]>>shift)
+        CHECK_MV(P[1][0]>>shift, P[1][1]>>shift)
+        CHECK_MV(P[2][0]>>shift, P[2][1]>>shift)
+        CHECK_MV(P[3][0]>>shift, P[3][1]>>shift)
     }
+    CHECK_MV(P[0][0]>>shift, P[0][1]>>shift)
 
     dmin= small_diamond_search(s, best, dmin, new_pic, old_pic, pic_stride, 
                                pred_x, pred_y, mv_penalty, quant, xmin, ymin, xmax, ymax, shift);
     *mx_ptr= best[0];
-    *my_ptr= best[1];
+    *my_ptr= best[1];    
 
 //    printf("%d %d %d \n", best[0], best[1], dmin);
 
@@ -545,7 +510,10 @@ int estimate_motion(MpegEncContext * s,
     UINT8 *pix, *ppix;
     int sum, varc, vard, mx, my, range, dmin, xx, yy;
     int xmin, ymin, xmax, ymax;
+    int rel_xmin, rel_ymin, rel_xmax, rel_ymax;
     int pred_x=0, pred_y=0;
+    int P[5][2];
+    const int shift= 1+s->quarter_sample;
     
     range = 8 * (1 << (s->f_code - 1));
     /* XXX: temporary kludge to avoid overflow for msmpeg4 */
@@ -589,7 +557,68 @@ int estimate_motion(MpegEncContext * s,
         break;
     case ME_X1: // just reserving some space for experiments ...
     case ME_EPZS:
-	dmin = epzs_motion_search(s, &mx, &my, &pred_x, &pred_y, xmin, ymin, xmax, ymax);
+        rel_xmin= xmin - s->mb_x*16;
+        rel_xmax= xmax - s->mb_x*16;
+        rel_ymin= ymin - s->mb_y*16;
+        rel_ymax= ymax - s->mb_y*16;
+        if(s->out_format == FMT_H263){
+            static const int off[4]= {2, 1, 1, -1};
+            const int mot_stride = s->block_wrap[0];
+            const int mot_xy = s->block_index[0];
+         
+            P[0][0] = s->motion_val[mot_xy    ][0];
+            P[0][1] = s->motion_val[mot_xy    ][1];
+            P[1][0] = s->motion_val[mot_xy - 1][0];
+            P[1][1] = s->motion_val[mot_xy - 1][1];
+            if(P[1][0] > (rel_xmax<<shift)) P[1][0]= (rel_xmax<<shift);
+
+            /* special case for first line */
+            if ((s->mb_y == 0 || s->first_slice_line || s->first_gob_line)) {
+                pred_x = P[1][0];
+                pred_y = P[1][1];
+            } else {
+                P[2][0] = s->motion_val[mot_xy - mot_stride             ][0];
+                P[2][1] = s->motion_val[mot_xy - mot_stride             ][1];
+                P[3][0] = s->motion_val[mot_xy - mot_stride + off[0]    ][0];
+                P[3][1] = s->motion_val[mot_xy - mot_stride + off[0]    ][1];
+                if(P[2][1] > (rel_ymax<<shift)) P[2][1]= (rel_ymax<<shift);
+                if(P[3][0] < (rel_xmin<<shift)) P[3][0]= (rel_xmin<<shift);
+                if(P[3][1] > (rel_ymax<<shift)) P[3][1]= (rel_ymax<<shift);
+        
+                P[4][0]= pred_x = mid_pred(P[1][0], P[2][0], P[3][0]);
+                P[4][1]= pred_y = mid_pred(P[1][1], P[2][1], P[3][1]);
+            }
+        }else {
+            const int xy= s->mb_y*s->mb_width + s->mb_x;
+            pred_x= s->last_mv[0][0][0];
+            pred_y= s->last_mv[0][0][1];
+
+            P[0][0]= s->mv_table[0][xy  ];
+            P[0][1]= s->mv_table[1][xy  ];
+            if(s->mb_x == 0){
+                P[1][0]= 0;
+                P[1][1]= 0;
+            }else{
+                P[1][0]= s->mv_table[0][xy-1];
+                P[1][1]= s->mv_table[1][xy-1];
+                if(P[1][0] > (rel_xmax<<shift)) P[1][0]= (rel_xmax<<shift);
+            }
+    
+            if (!(s->mb_y == 0 || s->first_slice_line || s->first_gob_line)) {
+                P[2][0] = s->mv_table[0][xy - s->mb_width];
+                P[2][1] = s->mv_table[1][xy - s->mb_width];
+                P[3][0] = s->mv_table[0][xy - s->mb_width+1];
+                P[3][1] = s->mv_table[1][xy - s->mb_width+1];
+                if(P[2][1] > (rel_ymax<<shift)) P[2][1]= (rel_ymax<<shift);
+                if(P[3][0] > (rel_xmax<<shift)) P[3][0]= (rel_xmax<<shift);
+                if(P[3][0] < (rel_xmin<<shift)) P[3][0]= (rel_xmin<<shift);
+                if(P[3][1] > (rel_ymax<<shift)) P[3][1]= (rel_ymax<<shift);
+        
+                P[4][0]= mid_pred(P[1][0], P[2][0], P[3][0]);
+                P[4][1]= mid_pred(P[1][1], P[2][1], P[3][1]);
+            }
+        }
+	dmin = epzs_motion_search(s, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax);
         mx+= s->mb_x*16;
         my+= s->mb_y*16;
         break;
