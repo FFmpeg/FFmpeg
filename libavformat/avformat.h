@@ -480,6 +480,9 @@ int idcin_init(void);
 /* flic.c */
 int flic_init(void);
 
+/* sierravmd.c */
+int vmd_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"
