@@ -1,4 +1,12 @@
-Upcoming version 0.4.7:
+Upcoming version 0.4.8:
+- Id RoQ playback subsystem (Mike Melanson and Time Ferguson)
+- Wing Commander III Movie (.mve) file playback subsystem (Mike Melanson
+  and Mario Brito)
+- Xan DPCM audio decoder (Mario Brito)
+- Interplay MVE demuxer and DPCM audio decoder (Mike Melanson)
+- Duck DK3 and DK4 ADPCM audio decoders (Mike Melanson)
+
+version 0.4.7:
 
 - RealAudio 1.0 (14_4) and 2.0 (28_8) native decoders. Author unknown, code from a mplayerhq
   (originally from public domain player for Amiga at http://www.honeypot.net/audio)
@@ -32,6 +40,9 @@ Upcoming version 0.4.7:
 - b frame encoding speedup (Michael)
 - wmv2 codec (unfinished - Michael)
 - user specified diamond size for EPZS (Michael)
+- Playstation STR playback subsystem, still experimental (Mike and Michael)
+- ASV2 codec (Michael)
+- CLJR decoder (Alex)
 
 .. And lots more new enhances and fixes.
 
