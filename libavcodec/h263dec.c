@@ -158,7 +158,7 @@ uint64_t time= rdtsc();
 {
     static FILE *f=NULL;
     if(!f) f=fopen("rate_qp_cplx.txt", "w");
-    fprintf(f, "%d %d %f\n", buf_size, s->qscale, buf_size/(double)s->qscale);
+    fprintf(f, "%d %d %f\n", buf_size, s->qscale, buf_size*(double)s->qscale);
 }
 #endif
        
