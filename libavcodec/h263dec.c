@@ -377,6 +377,25 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h
     }
 }
 
+static void draw_arrow(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h, int stride, int color){ 
+    int dx= ex - sx;
+    int dy= ey - sy;
+    
+    if(dx*dx + dy*dy > 3*3){
+        int rx=  dx + dy;
+        int ry= -dx + dy;
+        int length= ff_sqrt((rx*rx + ry*ry)<<8);
+        
+        //FIXME subpixel accuracy
+        rx= ROUNDED_DIV(rx*3<<4, length);
+        ry= ROUNDED_DIV(ry*3<<4, length);
+        
+        draw_line(buf, sx, sy, sx + rx, sy + ry, w, h, stride, color);
+        draw_line(buf, sx, sy, sx - ry, sy + rx, w, h, stride, color);
+    }
+    draw_line(buf, sx, sy, ex, ey, w, h, stride, color);
+}
+
 int ff_h263_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
                              UINT8 *buf, int buf_size)
@@ -703,7 +722,7 @@ retry:
                         int xy= 1 + mb_x*2 + (i&1) + (mb_y*2 + 1 + (i>>1))*(s->mb_width*2 + 2);
                         int mx= (s->motion_val[xy][0]>>shift) + sx;
                         int my= (s->motion_val[xy][1]>>shift) + sy;
-                        draw_line(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                        draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
                     }
                 }else{
                     int sx= mb_x*16 + 8;
@@ -711,7 +730,7 @@ retry:
                     int xy= 1 + mb_x*2 + (mb_y*2 + 1)*(s->mb_width*2 + 2);
                     int mx= (s->motion_val[xy][0]>>shift) + sx;
                     int my= (s->motion_val[xy][1]>>shift) + sy;
-                    draw_line(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                    draw_arrow(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
                 }
                 s->mbskip_table[mb_index]=0;
             }
