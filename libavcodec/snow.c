@@ -1921,8 +1921,8 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
             int v=0;
             int lt=0, t=0, rt=0;
 
-            if(y){
-                rt= src[(y-1)*stride];
+            if(y && b->x[prev_index] == 0){
+                rt= b->coeff[prev_index];
             }
             for(x=0; x<w; x++){
                 int p=0;
@@ -1930,18 +1930,20 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                 
                 lt= t; t= rt;
 
-                if(y && x + 1 < w){
-                    rt= src[x + 1 + (y-1)*stride];
-                }else
-                    rt= 0;
+                if(y){
+                    if(b->x[prev_index] <= x) //FIXME if
+                        prev_index++;
+                    if(b->x[prev_index] == x + 1)
+                        rt= b->coeff[prev_index];
+                    else
+                        rt=0;
+                }
                 if(parent){
-                    int px= x>>1;
-                    int py= y>>1;
-                    if(px<b->parent->width && py<b->parent->height) 
-                        p= parent[px + py*2*stride];
-
                     if(x>>1 > b->parent->x[parent_index]){
                         parent_index++;
+                    }
+                    if(x>>1 == b->parent->x[parent_index]){
+                        p= b->parent->coeff[parent_index];
                     }
                 }
                 if(/*ll|*/l|lt|t|rt|p){
@@ -1958,8 +1960,6 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
 
                         if(y && parent){
                             int max_run;
-                            while(b->x[prev_index] < x)
-                                prev_index++;
 
                             max_run= FFMIN(run, b->x[prev_index] - x - 2);
                             max_run= FFMIN(max_run, 2*b->parent->x[parent_index] - x - 1);
@@ -1974,8 +1974,8 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
                     if(get_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]]))
                         v= -v;
                     src[x + y*stride]= v;
-                    b->x[index++]=x; //FIXME interleave x/coeff
-//                    b->coeff[index++]= v;
+                    b->x[index]=x; //FIXME interleave x/coeff
+                    b->coeff[index++]= v;
                 }
             }
             b->x[index++]= w+1; //end marker
