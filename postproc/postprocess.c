@@ -62,7 +62,6 @@ optimize c versions
 try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 smart blur
 commandline option for   the deblock / dering thresholds
-memcpy chrominance if no chroma filtering is done
 ...
 */
 
@@ -80,6 +79,7 @@ memcpy chrominance if no chroma filtering is done
 //#define HAVE_3DNOW
 //#undef HAVE_MMX
 //#define DEBUG_BRIGHTNESS
+#include "../libvo/fastmemcpy.h"
 #include "postprocess.h"
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
@@ -3037,20 +3037,32 @@ void  postprocess(unsigned char * src[], int src_stride,
 	src_stride      >>= 1;
 	dst_stride      >>= 1;
 
-	if(1)
+	if(ppMode.chromMode)
 	{
 		postProcess(src[1], src_stride, dst[1], dst_stride,
 			horizontal_size, vertical_size, QP_store, QP_stride, 1, &ppMode);
 		postProcess(src[2], src_stride, dst[2], dst_stride,
 			horizontal_size, vertical_size, QP_store, QP_stride, 2, &ppMode);
 	}
+	else if(src_stride == dst_stride)
+	{
+		memcpy(dst[1], src[1], src_stride*vertical_size);
+		memcpy(dst[2], src[2], src_stride*vertical_size);
+	}
 	else
 	{
+		int y;
+		for(y=0; y<vertical_size; y++)
+		{
+			memcpy(&(dst[1][y*dst_stride]), &(src[1][y*src_stride]), horizontal_size);
+			memcpy(&(dst[2][y*dst_stride]), &(src[2][y*src_stride]), horizontal_size);
+		}
+	}
+
+#if 0
 		memset(dst[1], 128, dst_stride*vertical_size);
 		memset(dst[2], 128, dst_stride*vertical_size);
-//		memcpy(dst[1], src[1], src_stride*horizontal_size);
-//		memcpy(dst[2], src[2], src_stride*horizontal_size);
-	}
+#endif
 }
 
 void  postprocess2(unsigned char * src[], int src_stride,
@@ -3085,10 +3097,27 @@ void  postprocess2(unsigned char * src[], int src_stride,
 	src_stride      >>= 1;
 	dst_stride      >>= 1;
 
-	postProcess(src[1], src_stride, dst[1], dst_stride,
-		horizontal_size, vertical_size, QP_store, QP_stride, 1, mode);
-	postProcess(src[2], src_stride, dst[2], dst_stride,
-		horizontal_size, vertical_size, QP_store, QP_stride, 2, mode);
+	if(mode->chromMode)
+	{
+		postProcess(src[1], src_stride, dst[1], dst_stride,
+			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode);
+		postProcess(src[2], src_stride, dst[2], dst_stride,
+			horizontal_size, vertical_size, QP_store, QP_stride, 2, mode);
+	}
+	else if(src_stride == dst_stride)
+	{
+		memcpy(dst[1], src[1], src_stride*vertical_size);
+		memcpy(dst[2], src[2], src_stride*vertical_size);
+	}
+	else
+	{
+		int y;
+		for(y=0; y<vertical_size; y++)
+		{
+			memcpy(&(dst[1][y*dst_stride]), &(src[1][y*src_stride]), horizontal_size);
+			memcpy(&(dst[2][y*dst_stride]), &(src[2][y*src_stride]), horizontal_size);
+		}
+	}
 }
 
 
