@@ -62,6 +62,7 @@ untested special converters
 #include "../libvo/img_format.h"
 #include "rgb2rgb.h"
 #include "../libvo/fastmemcpy.h"
+#include "../mp_msg.h"
 #undef MOVNTQ
 #undef PAVGB
 
@@ -936,8 +937,8 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	filter= (double*)memalign(8, filterSize*dstW*sizeof(double));
 	*outFilterSize= filterSize;
 
-	if((flags&SWS_PRINT_INFO) && verbose)
-		printf("SwScaler: reducing / aligning filtersize %d -> %d\n", filter2Size, filterSize);
+	if(flags&SWS_PRINT_INFO)
+		mp_msg(MSGT_SWS,MSGL_V,"SwScaler: reducing / aligning filtersize %d -> %d\n", filter2Size, filterSize);
 	/* try to reduce the filter-size (step2 reduce it) */
 	for(i=0; i<dstW; i++)
 	{
@@ -1452,19 +1453,19 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 
 	if(!isSupportedIn(srcFormat)) 
 	{
-		fprintf(stderr, "swScaler: %s is not supported as input format\n", vo_format_name(srcFormat));
+		mp_msg(MSGT_SWS,MSGL_ERR,"swScaler: %s is not supported as input format\n", vo_format_name(srcFormat));
 		return NULL;
 	}
 	if(!isSupportedOut(dstFormat))
 	{
-		fprintf(stderr, "swScaler: %s is not supported as output format\n", vo_format_name(dstFormat));
+		 mp_msg(MSGT_SWS,MSGL_ERR,"swScaler: %s is not supported as output format\n", vo_format_name(dstFormat));
 		return NULL;
 	}
 
 	/* sanity check */
 	if(srcW<4 || srcH<1 || dstW<8 || dstH<1) //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
 	{
-		fprintf(stderr, "swScaler: %dx%d -> %dx%d is invalid scaling dimension\n", 
+		 mp_msg(MSGT_SWS,MSGL_ERR,"swScaler: %dx%d -> %dx%d is invalid scaling dimension\n", 
 			srcW, srcH, dstW, dstH);
 		return NULL;
 	}
@@ -1513,7 +1514,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= planarYuvToBgr;
 
 			if(flags&SWS_PRINT_INFO)
-				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1524,7 +1525,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= simpleCopy;
 
 			if(flags&SWS_PRINT_INFO)
-				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1536,7 +1537,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= bgr32to24Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
-				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1548,7 +1549,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= bgr24to32Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
-				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1559,7 +1560,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= bgr15to16Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
-				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1570,7 +1571,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= bgr24toyv12Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
-				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1582,7 +1583,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if(!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR))
 		{
 			if(flags&SWS_PRINT_INFO)
-				fprintf(stderr, "SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
+				mp_msg(MSGT_SWS,MSGL_WARN,"SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
 		}
 	}
 	else
@@ -1720,35 +1721,35 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		char *dither= "";
 #endif
 		if(flags&SWS_FAST_BILINEAR)
-			fprintf(stderr, "\nSwScaler: FAST_BILINEAR scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: FAST_BILINEAR scaler, ");
 		else if(flags&SWS_BILINEAR)
-			fprintf(stderr, "\nSwScaler: BILINEAR scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: BILINEAR scaler, ");
 		else if(flags&SWS_BICUBIC)
-			fprintf(stderr, "\nSwScaler: BICUBIC scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: BICUBIC scaler, ");
 		else if(flags&SWS_X)
-			fprintf(stderr, "\nSwScaler: Experimental scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: Experimental scaler, ");
 		else if(flags&SWS_POINT)
-			fprintf(stderr, "\nSwScaler: Nearest Neighbor / POINT scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: Nearest Neighbor / POINT scaler, ");
 		else if(flags&SWS_AREA)
-			fprintf(stderr, "\nSwScaler: Area Averageing scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: Area Averageing scaler, ");
 		else
-			fprintf(stderr, "\nSwScaler: ehh flags invalid?! ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: ehh flags invalid?! ");
 
 		if(dstFormat==IMGFMT_BGR15 || dstFormat==IMGFMT_BGR16)
-			fprintf(stderr, "from %s to%s %s ", 
+			mp_msg(MSGT_SWS,MSGL_INFO,"from %s to%s %s ", 
 				vo_format_name(srcFormat), dither, vo_format_name(dstFormat));
 		else
-			fprintf(stderr, "from %s to %s ", 
+			mp_msg(MSGT_SWS,MSGL_INFO,"from %s to %s ", 
 				vo_format_name(srcFormat), vo_format_name(dstFormat));
 
 		if(cpuCaps.hasMMX2)
-			fprintf(stderr, "using MMX2\n");
+			mp_msg(MSGT_SWS,MSGL_INFO,"using MMX2\n");
 		else if(cpuCaps.has3DNow)
-			fprintf(stderr, "using 3DNOW\n");
+			mp_msg(MSGT_SWS,MSGL_INFO,"using 3DNOW\n");
 		else if(cpuCaps.hasMMX)
-			fprintf(stderr, "using MMX\n");
+			mp_msg(MSGT_SWS,MSGL_INFO,"using MMX\n");
 		else
-			fprintf(stderr, "using C\n");
+			mp_msg(MSGT_SWS,MSGL_INFO,"using C\n");
 	}
 
 	if((flags & SWS_PRINT_INFO) && verbose)
@@ -1756,70 +1757,70 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if(cpuCaps.hasMMX)
 		{
 			if(c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
-				printf("SwScaler: using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
 			else
 			{
 				if(c->hLumFilterSize==4)
-					printf("SwScaler: using 4-tap MMX scaler for horizontal luminance scaling\n");
+					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 4-tap MMX scaler for horizontal luminance scaling\n");
 				else if(c->hLumFilterSize==8)
-					printf("SwScaler: using 8-tap MMX scaler for horizontal luminance scaling\n");
+					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 8-tap MMX scaler for horizontal luminance scaling\n");
 				else
-					printf("SwScaler: using n-tap MMX scaler for horizontal luminance scaling\n");
+					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using n-tap MMX scaler for horizontal luminance scaling\n");
 
 				if(c->hChrFilterSize==4)
-					printf("SwScaler: using 4-tap MMX scaler for horizontal chrominance scaling\n");
+					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 4-tap MMX scaler for horizontal chrominance scaling\n");
 				else if(c->hChrFilterSize==8)
-					printf("SwScaler: using 8-tap MMX scaler for horizontal chrominance scaling\n");
+					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 8-tap MMX scaler for horizontal chrominance scaling\n");
 				else
-					printf("SwScaler: using n-tap MMX scaler for horizontal chrominance scaling\n");
+					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using n-tap MMX scaler for horizontal chrominance scaling\n");
 			}
 		}
 		else
 		{
 #ifdef ARCH_X86
-			printf("SwScaler: using X86-Asm scaler for horizontal scaling\n");
+			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using X86-Asm scaler for horizontal scaling\n");
 #else
 			if(flags & SWS_FAST_BILINEAR)
-				printf("SwScaler: using FAST_BILINEAR C scaler for horizontal scaling\n");
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using FAST_BILINEAR C scaler for horizontal scaling\n");
 			else
-				printf("SwScaler: using C scaler for horizontal scaling\n");
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using C scaler for horizontal scaling\n");
 #endif
 		}
 		if(isPlanarYUV(dstFormat))
 		{
 			if(c->vLumFilterSize==1)
-				printf("SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
 			else
-				printf("SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
 		}
 		else
 		{
 			if(c->vLumFilterSize==1 && c->vChrFilterSize==2)
-				printf("SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
 				       "SwScaler:       2-tap scaler for vertical chrominance scaling (BGR)\n",cpuCaps.hasMMX ? "MMX" : "C");
 			else if(c->vLumFilterSize==2 && c->vChrFilterSize==2)
-				printf("SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
 			else
-				printf("SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
 		}
 
 		if(dstFormat==IMGFMT_BGR24)
-			printf("SwScaler: using %s YV12->BGR24 Converter\n",
+			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using %s YV12->BGR24 Converter\n",
 				cpuCaps.hasMMX2 ? "MMX2" : (cpuCaps.hasMMX ? "MMX" : "C"));
 		else if(dstFormat==IMGFMT_BGR32)
-			printf("SwScaler: using %s YV12->BGR32 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using %s YV12->BGR32 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
 		else if(dstFormat==IMGFMT_BGR16)
-			printf("SwScaler: using %s YV12->BGR16 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using %s YV12->BGR16 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
 		else if(dstFormat==IMGFMT_BGR15)
-			printf("SwScaler: using %s YV12->BGR15 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using %s YV12->BGR15 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
 
-		printf("SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
+		mp_msg(MSGT_SWS,MSGL_V,"SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
 	}
 	if((flags & SWS_PRINT_INFO) && verbose>1)
 	{
-		printf("SwScaler:Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+		mp_msg(MSGT_SWS,MSGL_DBG2,"SwScaler:Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
 			c->srcW, c->srcH, c->dstW, c->dstH, c->lumXInc, c->lumYInc);
-		printf("SwScaler:Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+		mp_msg(MSGT_SWS,MSGL_DBG2,"SwScaler:Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
 			c->chrSrcW, c->chrSrcH, c->chrDstW, c->chrDstH, c->chrXInc, c->chrYInc);
 	}
 

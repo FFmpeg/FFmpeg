@@ -37,6 +37,7 @@
 #include "rgb2rgb.h"
 #include "../cpudetect.h"
 #include "../mangle.h"
+#include "../mp_msg.h"
 
 #ifdef HAVE_MLIB
 #include "yuv2rgb_mlib.c"
@@ -157,9 +158,9 @@ void yuv2rgb_init (int bpp, int mode)
 	if (yuv2rgb == NULL /*&& (config.flags & VO_MMX_ENABLE)*/) {
 		yuv2rgb = yuv2rgb_init_MMX2 (bpp, mode);
 		if (yuv2rgb != NULL)
-			printf ("Using MMX2 for colorspace transform\n");
+			mp_msg(MSGT_SWS,MSGL_INFO,"Using MMX2 for colorspace transform\n");
 		else
-			printf ("Cannot init MMX2 colorspace transform\n");
+			mp_msg(MSGT_SWS,MSGL_WARN,"Cannot init MMX2 colorspace transform\n");
 	}
     }
     else if(gCpuCaps.hasMMX)
@@ -167,9 +168,9 @@ void yuv2rgb_init (int bpp, int mode)
 	if (yuv2rgb == NULL /*&& (config.flags & VO_MMX_ENABLE)*/) {
 		yuv2rgb = yuv2rgb_init_MMX (bpp, mode);
 		if (yuv2rgb != NULL)
-			printf ("Using MMX for colorspace transform\n");
+			mp_msg(MSGT_SWS,MSGL_INFO,"Using MMX for colorspace transform\n");
 		else
-			printf ("Cannot init MMX colorspace transform\n");
+			mp_msg(MSGT_SWS,MSGL_WARN,"Cannot init MMX colorspace transform\n");
 	}
     }
 #endif
@@ -177,11 +178,11 @@ void yuv2rgb_init (int bpp, int mode)
     if (yuv2rgb == NULL /*&& (config.flags & VO_MLIB_ENABLE)*/) {
 	yuv2rgb = yuv2rgb_init_mlib (bpp, mode);
 	if (yuv2rgb != NULL)
-	    printf ("Using mlib for colorspace transform\n");
+	    mp_msg(MSGT_SWS,MSGL_INFO,"Using mlib for colorspace transform\n");
     }
 #endif
     if (yuv2rgb == NULL) {
-	printf ("No accelerated colorspace conversion found\n");
+	mp_msg(MSGT_SWS,MSGL_INFO,"No accelerated colorspace conversion found\n");
 	yuv2rgb_c_init (bpp, mode);
 	yuv2rgb = (yuv2rgb_fun)yuv2rgb_c;
     }
@@ -489,7 +490,7 @@ static void yuv2rgb_c_init (int bpp, int mode)
 	break;
 
     default:
-	printf ("%ibpp not supported by yuv2rgb\n", bpp);
+	mp_msg(MSGT_SWS,MSGL_ERR,"%ibpp not supported by yuv2rgb\n", bpp);
 	//exit (1);
     }
 

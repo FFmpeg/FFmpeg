@@ -2667,7 +2667,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		static int firstTime=1; //FIXME move this into the context perhaps
 		if(flags & SWS_PRINT_INFO && firstTime)
 		{
-			fprintf(stderr, "SwScaler: Warning: dstStride is not aligned!\n"
+			mp_msg(MSGT_SWS,MSGL_WARN,"SwScaler: Warning: dstStride is not aligned!\n"
 					"SwScaler:          ->cannot do aligned memory acesses anymore\n");
 			firstTime=0;
 		}
