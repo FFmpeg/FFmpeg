@@ -958,7 +958,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     AVFrame * const p= &s->picture;
     int i, size;
 
-    init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
+    init_put_bits(&s->pb, buf, buf_size);
     
     *p = *pict;
     p->pict_type= FF_I_TYPE;

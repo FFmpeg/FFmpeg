@@ -344,13 +344,13 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
     buf_ptr = buf_ptr1;
     block1 = &s->block[0][0];
     mb1 = mb_data;
-    init_put_bits(&vs_pb, vs_bit_buffer, 5 * 80, NULL, NULL);
+    init_put_bits(&vs_pb, vs_bit_buffer, 5 * 80);
     vs_bit_count = 0;
     for(mb_index = 0; mb_index < 5; mb_index++) {
         /* skip header */
         quant = buf_ptr[3] & 0x0f;
         buf_ptr += 4;
-        init_put_bits(&pb, mb_bit_buffer, 80, NULL, NULL);
+        init_put_bits(&pb, mb_bit_buffer, 80);
         mb_bit_count = 0;
         mb = mb1;
         block = block1;
@@ -758,13 +758,13 @@ encode_vs:
        uint8_t* p = dif + i*80 + 4;
        for (j=0; j<6; j++) {
           enc_blk->qno = QNO;
-	  init_put_bits(&enc_blk->pb, p, block_sizes[j]/8, NULL, NULL);
+	  init_put_bits(&enc_blk->pb, p, block_sizes[j]/8);
 	  enc_blk++;
 	  p += block_sizes[j]/8;
        }
     }
 
-    init_put_bits(&extra_vs, extra_vs_data, sizeof(extra_vs_data), NULL, NULL);
+    init_put_bits(&extra_vs, extra_vs_data, sizeof(extra_vs_data));
     free_vs_bits = 0;
     enc_blk = &enc_blks[0];
     for (i=0; i<5; i++) {
@@ -772,7 +772,7 @@ encode_vs:
        EncBlockInfo* enc_blk2 = enc_blk;
        int free_mb_bits = 0;
 
-       init_put_bits(&extra_mb, extra_mb_data, sizeof(extra_mb_data), NULL, NULL);
+       init_put_bits(&extra_mb, extra_mb_data, sizeof(extra_mb_data));
        dif[i*80 + 3] = enc_blk->qno;
        
        for (j=0; j<6; j++) {

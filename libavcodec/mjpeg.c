@@ -661,7 +661,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
     AVFrame * const p= (AVFrame*)&s->current_picture;
     const int predictor= avctx->prediction_method+1;
 
-    init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
+    init_put_bits(&s->pb, buf, buf_size);
 
     *p = *pict;
     p->pict_type= FF_I_TYPE;

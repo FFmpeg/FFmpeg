@@ -261,10 +261,7 @@ typedef struct PutBitContext {
     int64_t data_out_size; /* in bytes */
 } PutBitContext;
 
-void init_put_bits(PutBitContext *s, 
-                   uint8_t *buffer, int buffer_size,
-                   void *opaque,
-                   void (*write_data)(void *, uint8_t *, int));
+void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size);
 
 int64_t get_bit_count(PutBitContext *s); /* XXX: change function name */
 void align_put_bits(PutBitContext *s);

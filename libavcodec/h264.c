@@ -4231,7 +4231,7 @@ int main(){
     
     dsputil_init(&dsp, &avctx);
 
-    init_put_bits(&pb, temp, SIZE, NULL, NULL);
+    init_put_bits(&pb, temp, SIZE);
     printf("testing unsigned exp golomb\n");
     for(i=0; i<COUNT; i++){
         START_TIMER

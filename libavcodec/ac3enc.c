@@ -904,7 +904,7 @@ static int AC3_encode_init(AVCodecContext *avctx)
 /* output the AC3 frame header */
 static void output_frame_header(AC3EncodeContext *s, unsigned char *frame)
 {
-    init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE, NULL, NULL);
+    init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE);
 
     put_bits(&s->pb, 16, 0x0b77); /* frame header */
     put_bits(&s->pb, 16, 0); /* crc1: will be filled later */

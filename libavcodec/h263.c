@@ -1709,7 +1709,7 @@ void h263_encode_init(MpegEncContext *s)
         if(s->flags & CODEC_FLAG_GLOBAL_HEADER){
 
             s->avctx->extradata= av_malloc(1024);
-            init_put_bits(&s->pb, s->avctx->extradata, 1024, NULL, NULL);
+            init_put_bits(&s->pb, s->avctx->extradata, 1024);
             
             mpeg4_encode_visual_object_header(s);
             mpeg4_encode_vol_header(s, 0, 0);
@@ -2612,8 +2612,8 @@ static inline void memsetw(short *tab, int val, int n)
 
 void ff_mpeg4_init_partitions(MpegEncContext *s)
 {
-    init_put_bits(&s->tex_pb, s->tex_pb_buffer, PB_BUFFER_SIZE, NULL, NULL);
-    init_put_bits(&s->pb2   , s->pb2_buffer   , PB_BUFFER_SIZE, NULL, NULL);
+    init_put_bits(&s->tex_pb, s->tex_pb_buffer, PB_BUFFER_SIZE);
+    init_put_bits(&s->pb2   , s->pb2_buffer   , PB_BUFFER_SIZE);
 }
 
 void ff_mpeg4_merge_partitions(MpegEncContext *s)

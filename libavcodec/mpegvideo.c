@@ -1601,7 +1601,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
         return -1;
     }
     
-    init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
+    init_put_bits(&s->pb, buf, buf_size);
 
     s->picture_in_gop_number++;
 
@@ -3326,9 +3326,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     PutBitContext pb[2], pb2[2], tex_pb[2];
 
     for(i=0; i<2; i++){
-        init_put_bits(&pb    [i], bit_buf    [i], 3000, NULL, NULL);
-        init_put_bits(&pb2   [i], bit_buf2   [i], 3000, NULL, NULL);
-        init_put_bits(&tex_pb[i], bit_buf_tex[i], 3000, NULL, NULL);
+        init_put_bits(&pb    [i], bit_buf    [i], 3000);
+        init_put_bits(&pb2   [i], bit_buf2   [i], 3000);
+        init_put_bits(&tex_pb[i], bit_buf_tex[i], 3000);
     }
 
     s->picture_number = picture_number;
