@@ -42,7 +42,7 @@
 #define FELEM_MAX INT16_MAX
 #define FELEM_MIN INT16_MIN
 #else
-#define FILTER_SHIFT 24
+#define FILTER_SHIFT 22
 
 #define FELEM int32_t
 #define FELEM2 int64_t
@@ -193,12 +193,12 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         }else{
 #ifdef LINEAR
             int64_t v=0;
-            int sub_phase= (frac<<12) / c->src_incr;
+            int sub_phase= (frac<<8) / c->src_incr;
             for(i=0; i<c->filter_length; i++){
-                int64_t coeff= filter[i]*(FELEM2)(4096 - sub_phase) + filter[i + c->filter_length]*(FELEM2)sub_phase;
+                int64_t coeff= filter[i]*(256 - sub_phase) + filter[i + c->filter_length]*sub_phase;
                 v += src[sample_index + i] * coeff;
             }
-            val= v>>12;
+            val= v>>8;
 #else
             for(i=0; i<c->filter_length; i++){
                 val += src[sample_index + i] * (FELEM2)filter[i];
