@@ -129,7 +129,7 @@ static int adpcm_encode_init(AVCodecContext *avctx)
         return -1; /* only stereo or mono =) */
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_QT:
-        av_log(avctx, AV_LOG_ERROR, "ADPCM: codec admcp_ima_qt unsupported for encoding !\n");
+        av_log(avctx, AV_LOG_ERROR, "ADPCM: codec adpcm_ima_qt unsupported for encoding !\n");
         avctx->frame_size = 64; /* XXX: can multiple of avctx->channels * 64 (left and right blocks are interleaved) */
         return -1;
         break;
@@ -140,7 +140,7 @@ static int adpcm_encode_init(AVCodecContext *avctx)
         /* seems frame_size isn't taken into account... have to buffer the samples :-( */
         break;
     case CODEC_ID_ADPCM_MS:
-        av_log(avctx, AV_LOG_ERROR, "ADPCM: codec admcp_ms unsupported for encoding !\n");
+        av_log(avctx, AV_LOG_ERROR, "ADPCM: codec adpcm_ms unsupported for encoding !\n");
         return -1;
         break;
     default:
