@@ -3124,6 +3124,11 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         c->idct_permutation_type= FF_NO_IDCT_PERM;
     }
 
+    /* VP3 DSP support */
+    c->vp3_dsp_init = vp3_dsp_init_c;
+    c->vp3_idct_put = vp3_idct_put_c;
+    c->vp3_idct_add = vp3_idct_add_c;
+
     c->get_pixels = get_pixels_c;
     c->diff_pixels = diff_pixels_c;
     c->put_pixels_clamped = put_pixels_clamped_c;

@@ -60,6 +60,19 @@ extern const uint8_t ff_zigzag248_direct[64];
 extern uint32_t squareTbl[512];
 extern uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
 
+/* VP3 DSP functions */
+void vp3_dsp_init_c(void);
+void vp3_idct_put_c(int16_t *input_data, int16_t *dequant_matrix,
+    int coeff_count, uint8_t *dest, int stride);
+void vp3_idct_add_c(int16_t *input_data, int16_t *dequant_matrix,
+    int coeff_count, uint8_t *dest, int stride);
+
+void vp3_dsp_init_mmx(void);
+void vp3_idct_put_mmx(int16_t *input_data, int16_t *dequant_matrix,
+    int coeff_count, uint8_t *dest, int stride);
+void vp3_idct_add_mmx(int16_t *input_data, int16_t *dequant_matrix,
+    int coeff_count, uint8_t *dest, int stride);
+
 
 /* minimum alignment rules ;)
 if u notice errors in the align stuff, need more alignment for some asm code for some cpu
@@ -291,6 +304,40 @@ typedef struct DSPContext {
     void (*add_8x8basis)(int16_t rem[64], int16_t basis[64], int scale);
 #define BASIS_SHIFT 16
 #define RECON_SHIFT 6
+
+    /**
+     * This function handles any initialization for the VP3 DSP functions.
+     */
+    void (*vp3_dsp_init)(void);
+
+    /** 
+     * This function is responsible for taking a block of zigzag'd,
+     * quantized DCT coefficients, reconstructing the original block of
+     * samples, and placing it into the output.
+     * @param input_data 64 zigzag'd, quantized DCT coefficients
+     * @param dequant_matrix 64 zigzag'd quantizer coefficients
+     * @param coeff_count index of the last coefficient
+     * @param dest the final output location where the transformed samples
+     * are to be placed
+     * @param stride the width in 8-bit samples of a line on this plane
+     */
+    void (*vp3_idct_put)(int16_t *input_data, int16_t *dequant_matrix,
+        int coeff_count, uint8_t *dest, int stride);
+
+    /** 
+     * This function is responsible for taking a block of zigzag'd,
+     * quantized DCT coefficients, reconstructing the original block of
+     * samples, and adding the transformed samples to an existing block of
+     * samples in the output.
+     * @param input_data 64 zigzag'd, quantized DCT coefficients
+     * @param dequant_matrix 64 zigzag'd quantizer coefficients
+     * @param coeff_count index of the last coefficient
+     * @param dest the final output location where the transformed samples
+     * are to be placed
+     * @param stride the width in 8-bit samples of a line on this plane
+     */
+    void (*vp3_idct_add)(int16_t *input_data, int16_t *dequant_matrix,
+        int coeff_count, uint8_t *dest, int stride);
 
 } DSPContext;
 
