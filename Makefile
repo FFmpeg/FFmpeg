@@ -135,16 +135,13 @@ wininstaller: all install
 install-man:
 ifneq ($(CONFIG_WIN32),yes)
 	if [ -f $(SRC_PATH)/doc/ffmpeg.1 ] ; then \
-	    install -d $(mandir)/man1 ; \
-	    install -m 644 $(MANPAGE) $(mandir)/man1 ; \
+	    install -d "$(mandir)/man1" ; \
+	    install -m 644 $(MANPAGE) "$(mandir)/man1" ; \
 	fi
 endif
 
-install-vhook: $(prefix)/lib/vhook
-	$(MAKE) -C vhook install INSTDIR=$(prefix)/lib/vhook
-
-$(prefix)/lib/vhook:
-	install -d $@
+install-vhook:
+	$(MAKE) -C vhook install
 
 installlib:
 	$(MAKE) -C libavcodec installlib
