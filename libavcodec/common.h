@@ -546,7 +546,7 @@ static inline int get_bits_count(GetBitContext *s){
 #elif defined LIBMPEG2_BITSTREAM_READER
 //libmpeg2 like reader
 
-#   define MIN_CACHE_BITS 16
+#   define MIN_CACHE_BITS 17
 
 #   define OPEN_READER(name, gb)\
         int name##_bit_count=(gb)->bit_count;\
@@ -570,7 +570,7 @@ static inline int get_bits_count(GetBitContext *s){
 #else
 
 #   define UPDATE_CACHE(name, gb)\
-    if(name##_bit_count > 0){\
+    if(name##_bit_count >= 0){\
         name##_cache+= ((name##_buffer_ptr[0]<<8) + name##_buffer_ptr[1]) << name##_bit_count;\
         name##_buffer_ptr+=2;\
         name##_bit_count-= 16;\

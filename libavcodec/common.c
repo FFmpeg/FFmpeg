@@ -162,7 +162,7 @@ void init_get_bits(GetBitContext *s,
     {
         OPEN_READER(re, s)
         UPDATE_CACHE(re, s)
-//        UPDATE_CACHE(re, s)
+        UPDATE_CACHE(re, s)
         CLOSE_READER(re, s)
     }
 #ifdef A32_BITSTREAM_READER
