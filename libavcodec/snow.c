@@ -3005,6 +3005,7 @@ AVCodec snow_decoder = {
     NULL
 };
 
+#ifdef CONFIG_ENCODERS
 AVCodec snow_encoder = {
     "snow",
     CODEC_TYPE_VIDEO,
@@ -3014,6 +3015,7 @@ AVCodec snow_encoder = {
     encode_frame,
     encode_end,
 };
+#endif
 
 
 #if 0
