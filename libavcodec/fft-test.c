@@ -122,7 +122,7 @@ void check_diff(float *tab1, float *tab2, int n)
 
     for(i=0;i<n;i++) {
         if (fabsf(tab1[i] - tab2[i]) >= 1e-3) {
-            printf("ERROR %d: %f %f\n", 
+            av_log(NULL, AV_LOG_ERROR, "ERROR %d: %f %f\n", 
                    i, tab1[i], tab2[i]);
         }
     }
@@ -131,7 +131,7 @@ void check_diff(float *tab1, float *tab2, int n)
 
 void help(void)
 {
-    printf("usage: fft-test [-h] [-s] [-i] [-n b]\n"
+    av_log(NULL, AV_LOG_INFO,"usage: fft-test [-h] [-s] [-i] [-n b]\n"
            "-h     print this help\n"
            "-s     speed test\n"
            "-m     (I)MDCT test\n"
@@ -189,19 +189,19 @@ int main(int argc, char **argv)
 
     if (do_mdct) {
         if (do_inverse)
-            printf("IMDCT");
+            av_log(NULL, AV_LOG_INFO,"IMDCT");
         else
-            printf("MDCT");
+            av_log(NULL, AV_LOG_INFO,"MDCT");
         ff_mdct_init(m, fft_nbits, do_inverse);
     } else {
         if (do_inverse)
-            printf("IFFT");
+            av_log(NULL, AV_LOG_INFO,"IFFT");
         else
-            printf("FFT");
+            av_log(NULL, AV_LOG_INFO,"FFT");
         ff_fft_init(s, fft_nbits, do_inverse);
         fft_ref_init(fft_nbits, do_inverse);
     }
-    printf(" %d test\n", fft_size);
+    av_log(NULL, AV_LOG_INFO," %d test\n", fft_size);
 
     /* generate random data */
 
@@ -211,7 +211,7 @@ int main(int argc, char **argv)
     }
 
     /* checking result */
-    printf("Checking...\n");
+    av_log(NULL, AV_LOG_INFO,"Checking...\n");
 
     if (do_mdct) {
         if (do_inverse) {
@@ -240,7 +240,7 @@ int main(int argc, char **argv)
         int64_t time_start, duration;
         int nb_its;
 
-        printf("Speed test...\n");
+        av_log(NULL, AV_LOG_INFO,"Speed test...\n");
         /* we measure during about 1 seconds */
         nb_its = 1;
         for(;;) {
@@ -262,7 +262,7 @@ int main(int argc, char **argv)
                 break;
             nb_its *= 2;
         }
-        printf("time: %0.1f us/transform [total time=%0.2f s its=%d]\n", 
+        av_log(NULL, AV_LOG_INFO,"time: %0.1f us/transform [total time=%0.2f s its=%d]\n", 
                (double)duration / nb_its, 
                (double)duration / 1000000.0,
                nb_its);
