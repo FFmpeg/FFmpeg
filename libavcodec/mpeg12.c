@@ -1915,7 +1915,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                     break;
                 default:
                     if (start_code >= SLICE_MIN_START_CODE &&
-                        start_code <= SLICE_MAX_START_CODE && s2->avctx->hurry_up<5) {
+                        start_code <= SLICE_MAX_START_CODE && avctx->hurry_up<5) {
                         ret = mpeg_decode_slice(avctx, picture,
                                                 start_code, s->buffer, input_size);
                         if (ret == DECODE_SLICE_EOP) {

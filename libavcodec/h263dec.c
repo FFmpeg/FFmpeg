@@ -358,9 +358,6 @@ uint64_t time= rdtsc();
     printf("bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
 #endif
 
-    s->hurry_up= avctx->hurry_up;
-    s->error_resilience= avctx->error_resilience;
-
     s->flags= avctx->flags;
 
     *data_size = 0;
@@ -530,9 +527,9 @@ retry:
     /* skip b frames if we dont have reference frames */
     if(s->num_available_buffers<2 && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
     /* skip b frames if we are in a hurry */
-    if(s->hurry_up && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
+    if(avctx->hurry_up && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
     /* skip everything if we are in a hurry>=5 */
-    if(s->hurry_up>=5) return get_consumed_bytes(s, buf_size);
+    if(avctx->hurry_up>=5) return get_consumed_bytes(s, buf_size);
     
     if(s->next_p_frame_damaged){
         if(s->pict_type==B_TYPE)

@@ -819,6 +819,9 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     s->mb_skiped = 0;
     avctx->mbskip_table= s->mbskip_table;
 
+    s->hurry_up= s->avctx->hurry_up;
+    s->error_resilience= avctx->error_resilience;
+
     if(avctx->flags&CODEC_FLAG_DR1){
         if(avctx->get_buffer_callback(avctx, s->width, s->height, s->pict_type) < 0){
             fprintf(stderr, "get_buffer() failed\n");
