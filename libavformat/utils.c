@@ -1089,11 +1089,20 @@ int get_frame_filename(char *buf, int buf_size,
         if (c == '\0')
             break;
         if (c == '%') {
-            nd = 0;
-            while (*p >= '0' && *p <= '9') {
-                nd = nd * 10 + *p++ - '0';
-            }
-            c = *p++;
+            do {
+                nd = 0;
+                while (isdigit(*p)) {
+                    nd = nd * 10 + *p++ - '0';
+                }
+                c = *p++;
+                if (c == '*' && nd > 0) {
+                    // The nd field is actually the modulus
+                    number = number % nd;
+                    c = *p++;
+                    nd = 0;
+                }
+            } while (isdigit(c));
+
             switch(c) {
             case '%':
                 goto addchar;
