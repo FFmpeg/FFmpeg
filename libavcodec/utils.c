@@ -103,9 +103,13 @@ void av_free_static(void)
     last_static = 0;
 }
 
-/* cannot call it directly because of 'void **' casting is not automatic */
-void __av_freep(void **ptr)
+/**
+ * Frees memory and sets the pointer to NULL.
+ * @param arg pointer to the pointer which should be freed
+ */
+void av_freep(void *arg)
 {
+    void **ptr= (void**)arg;
     av_free(*ptr);
     *ptr = NULL;
 }
