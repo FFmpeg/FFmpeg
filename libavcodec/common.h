@@ -217,7 +217,7 @@ inline void dprintf(const char* fmt,...) {}
 #    else
 
 #        ifdef DEBUG
-#            define dprintf(fmt,...) printf(fmt, __VA_ARGS__)
+#            define dprintf(fmt,...) av_log(NULL, AV_LOG_DEBUG, fmt, __VA_ARGS__)
 #        else
 #            define dprintf(fmt,...)
 #        endif
@@ -1061,7 +1061,7 @@ static inline int get_xbits_trace(GetBitContext *s, int n, char *file, char *fun
 #define get_vlc(s, vlc)            get_vlc_trace(s, (vlc)->table, (vlc)->bits, 3, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_vlc2(s, tab, bits, max) get_vlc_trace(s, tab, bits, max, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 
-#define tprintf printf
+#define tprintf(...) av_log(NULL, AV_LOG_DEBUG, __VA_ARGS__)
 
 #else //TRACE
 #define tprintf(...) {}
