@@ -38,6 +38,7 @@ typedef struct {
     int channels;
     int frame_size; /* in bytes ! */
     int codec_id;
+    int flip_left : 1;
     UINT8 buffer[AUDIO_BLOCK_SIZE];
     int buffer_ptr;
 } AudioData;
@@ -46,6 +47,7 @@ static int audio_open(AudioData *s, int is_output)
 {
     int audio_fd;
     int tmp, err;
+    char *flip = getenv("AUDIO_FLIP_LEFT");
 
     /* open linux audio device */
     if (is_output)
@@ -55,6 +57,10 @@ static int audio_open(AudioData *s, int is_output)
     if (audio_fd < 0) {
         perror(audio_device);
         return -EIO;
+    }
+
+    if (flip && *flip == '1') {
+        s->flip_left = 1;
     }
 
     /* non blocking mode */
@@ -114,6 +120,8 @@ static int audio_open(AudioData *s, int is_output)
         perror("SNDCTL_DSP_STEREO");
         goto fail;
     }
+    if (tmp)
+        s->channels = 2;
     
     tmp = s->sample_rate;
     err = ioctl(audio_fd, SNDCTL_DSP_SPEED, &tmp);
@@ -259,6 +267,15 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
     }
     pkt->size = ret;
+    if (s->flip_left && s->channels == 2) {
+        int i;
+        short *p = (short *) pkt->data;
+
+        for (i = 0; i < ret; i += 4) {
+            *p = ~*p;
+            p += 2;
+        }
+    }
     return 0;
 }
 
