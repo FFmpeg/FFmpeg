@@ -107,6 +107,7 @@ static int pipe_open(URLContext *h, const char *filename, int flags)
     setmode(fd, O_BINARY);
 #endif
     h->priv_data = (void *)(size_t)fd;
+    h->is_streamed = 1;
     return 0;
 }
 
