@@ -416,8 +416,6 @@ resync:
         AVIStream *ast= st->priv_data;
         int size;
         
-        assert(ast->remaining);
-        
         if(ast->sample_size == 0)
             size= INT_MAX;
         else if(ast->sample_size < 32) 
@@ -528,7 +526,7 @@ resync:
         }
         
         //parse ##dc/##wb
-        if(n < s->nb_streams && size){
+        if(n < s->nb_streams){
           AVStream *st;
           AVIStream *ast;
           st = s->streams[n];
@@ -632,14 +630,14 @@ static int avi_read_idx1(AVFormatContext *s, int size)
 #if defined(DEBUG_SEEK)
         av_log(NULL, AV_LOG_DEBUG, "%d cum_len=%d\n", len, ast->cum_len);
 #endif
-        if(len)
+        if(last_pos == pos)
+            avi->non_interleaved= 1;
+        else
             av_add_index_entry(st, pos, ast->cum_len, 0, (flags&AVIIF_INDEX) ? AVINDEX_KEYFRAME : 0);
         if(ast->sample_size)
             ast->cum_len += len / ast->sample_size;
         else
             ast->cum_len ++;
-        if(last_pos == pos)
-            avi->non_interleaved= 1;
         last_pos= pos;
     }
     return 0;
