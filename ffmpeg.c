@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #define HAVE_AV_CONFIG_H
+#include <limits.h>
 #include "avformat.h"
 #include "framehook.h"
 
@@ -2751,18 +2752,34 @@ static void opt_output_file(const char *filename)
                     codec_id = video_codec_id;
                 
                 video_enc->codec_id = codec_id;
+                codec = avcodec_find_encoder(codec_id);
                 
                 video_enc->bit_rate = video_bit_rate;
                 video_enc->bit_rate_tolerance = video_bit_rate_tolerance;
                 video_enc->frame_rate = frame_rate; 
                 video_enc->frame_rate_base = frame_rate_base; 
+                if(codec && codec->supported_framerates){
+                    const AVRational *p= codec->supported_framerates;
+                    AVRational req= (AVRational){frame_rate, frame_rate_base};
+                    const AVRational *best=NULL;
+                    AVRational best_error= (AVRational){INT_MAX, 1};
+                    for(; p->den!=0; p++){
+                        AVRational error= av_sub_q(req, *p);
+                        if(error.num <0) error.num *= -1;
+                        if(av_cmp_q(error, best_error) < 0){
+                            best_error= error;
+                            best= p;
+                        }
+                    }
+                    video_enc->frame_rate     = best->num;
+                    video_enc->frame_rate_base= best->den;
+                }
                 
                 video_enc->width = frame_width + frame_padright + frame_padleft;
                 video_enc->height = frame_height + frame_padtop + frame_padbottom;
 		video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
                 video_enc->pix_fmt = frame_pix_fmt;
 
-                codec = avcodec_find_encoder(codec_id);
                 if(codec && codec->pix_fmts){
                     const enum PixelFormat *p= codec->pix_fmts;
                     for(; *p!=-1; p++){
