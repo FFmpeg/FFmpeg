@@ -799,7 +799,11 @@ EOF
 have_lrintf="no"
 if $cc $extralibs -o $TMPE $TMPC 2> /dev/null ; then
   have_lrintf="yes"
-  $TMPE 2> /dev/null > /dev/null || have_lrintf="no"
+  # allanc@chickenandporn.com: cannot execute cross-compiled
+  # code on the host.  Only execute if not cross-compiling.
+  if test -z "$cross_prefix" ; then
+    $TMPE 2> /dev/null > /dev/null || have_lrintf="no"
+  fi
 fi
 
 _restrict=
