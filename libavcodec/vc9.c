@@ -133,8 +133,15 @@ static VLC vc9_bfraction_vlc;
 static VLC vc9_imode_vlc;
 #define VC9_NORM2_VLC_BITS 3
 static VLC vc9_norm2_vlc;
+#if TILE_VLC_METHOD == 1
 #define VC9_NORM6_VLC_BITS 9
 static VLC vc9_norm6_vlc;
+#endif
+#if TILE_VLC_METHOD == 2
+#define VC9_NORM6_FIRST_BITS 8
+#define VC9_NORM6_SECOND 8
+static VLC vc9_norm6_first, vc9_norm6_second;
+#endif
 /* Could be optimized, one table only needs 8 bits */
 #define VC9_TTMB_VLC_BITS 9 //12
 static VLC vc9_ttmb_vlc[3];
@@ -212,13 +219,14 @@ typedef struct VC9Context{
   uint8_t pq, altpq; /* Quantizers */
   uint8_t dquantfrm, dqprofile, dqsbedge, dqbilevel; /* pquant parameters */
   int tile; /* 3x2 if (width_mb%3) else 2x3 */
-  VLC *luma_ac_vlc, *chroma_ac_vlc,
-    *luma_dc_vlc, *chroma_dc_vlc; /* transac/dcfrm bits are indexes */
+  int ac_table_level;
+  VLC *luma_dc_vlc, *chroma_dc_vlc; /* transac/dcfrm bits are indexes */
   uint8_t ttmbf, ttfrm; /* Transform type */
   uint8_t lumscale, lumshift; /* Luma compensation parameters */
   int16_t bfraction; /* Relative position % anchors=> how to scale MVs */
   uint8_t halfpq; /* Uniform quant over image and qp+.5 */
   uint8_t respic;
+  int buffer_fullness; /* For HRD ? */
   /* Ranges:
    * 0 -> [-64n 63.f] x [-32, 31.f]
    * 1 -> [-128, 127.f] x [-64, 63.f]
@@ -229,7 +237,6 @@ typedef struct VC9Context{
   uint8_t pquantizer;
   uint8_t *previous_line_cbpcy; /* To use for predicted CBPCY */
   VLC *cbpcy_vlc /* Current CBPCY VLC table */,
-    *mv_diff_vlc /* Current MV Diff VLC table */,
     *ttmb_vlc /* Current MB Transform Type VLC table */;
   BitPlane mv_type_mb_plane; /* bitplane for mv_type == (4MV) */
   BitPlane skip_mb_plane, /* bitplane for skipped MBs */
@@ -312,7 +319,8 @@ static int vc9_init_common(VC9Context *v)
 #endif
 
     /* VLC tables */
-#if 0 // spec -> actual tables converter
+#if TILE_VLC_METHOD == 1
+#  if 0 // spec -> actual tables converter
     for(i=0; i<64; i++){
         int code= (vc9_norm6_spec[i][1] << vc9_norm6_spec[i][4]) + vc9_norm6_spec[i][3];
         av_log(NULL, AV_LOG_DEBUG, "0x%03X, ", code);
@@ -323,6 +331,7 @@ static int vc9_init_common(VC9Context *v)
         av_log(NULL, AV_LOG_DEBUG, "%2d, ", code);
         if(i%16==15) av_log(NULL, AV_LOG_DEBUG, "\n");
     }
+#  endif
 #endif
     if(!done)
     {
@@ -333,9 +342,19 @@ static int vc9_init_common(VC9Context *v)
         INIT_VLC(&vc9_norm2_vlc, VC9_NORM2_VLC_BITS, 4,
                  vc9_norm2_bits, 1, 1,
                  vc9_norm2_codes, 1, 1, 1);
+#if TILE_VLC_METHOD == 1
         INIT_VLC(&vc9_norm6_vlc, VC9_NORM6_VLC_BITS, 64,
                  vc9_norm6_bits, 1, 1,
                  vc9_norm6_codes, 2, 2, 1);
+#endif
+#if TILE_VLC_METHOD == 2
+        INIT_VLC(&vc9_norm6_first, VC9_NORM6_FIRST_BITS, 64,
+                 &vc9_norm6_first[0][1], 1, 1,
+                 &vc9_norm6_first[0][0], 1, 1, 1);
+        INIT_VLC(&vc9_norm6_second, VC9_NORM6_SECOND_BITS, 64,
+                 vc9_norm6_second[0][1], 1, 1,
+                 vc9_norm6_second[0][1], 1, 1, 1);
+#endif
         INIT_VLC(&vc9_imode_vlc, VC9_IMODE_VLC_BITS, 7,
                  vc9_imode_bits, 1, 1,
                  vc9_imode_codes, 1, 1, 1);
@@ -401,14 +420,14 @@ static int decode_hrd(VC9Context *v, GetBitContext *gb)
         v->hrd_rate[i] = get_bits(gb, 16);
         if (i && v->hrd_rate[i-1]>=v->hrd_rate[i])
         {
-            av_log(v, AV_LOG_ERROR, "HDR Rates aren't strictly increasing:"
+            av_log(v->s.avctx, AV_LOG_ERROR, "HDR Rates aren't strictly increasing:"
                    "%i vs %i\n", v->hrd_rate[i-1], v->hrd_rate[i]);
             return -1;
         }
         v->hrd_buffer[i] = get_bits(gb, 16);
         if (i && v->hrd_buffer[i-1]<v->hrd_buffer[i])
         {
-            av_log(v, AV_LOG_ERROR, "HDR Buffers aren't decreasing:"
+            av_log(v->s.avctx, AV_LOG_ERROR, "HDR Buffers aren't decreasing:"
                    "%i vs %i\n", v->hrd_buffer[i-1], v->hrd_buffer[i]);
             return -1;
         }
@@ -476,7 +495,7 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
     }
 
     /* 6.1.8, p23 */
-    if ( get_bits(gb, 1) /* framerateflag */)
+    if ( !get_bits(gb, 1) /* framerateflag */)
     {
         if ( get_bits(gb, 1) /* framerateind */)
         {
@@ -599,7 +618,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
     v->frmrtq_postproc = get_bits(gb, 3); //common
     // (bitrate-32kbps)/64kbps
     v->bitrtq_postproc = get_bits(gb, 5); //common
-    v->loopfilter = get_bits(gb, 1); //common
+    v->s.loop_filter = get_bits(gb, 1); //common
 
 #if HAS_ADVANCED_PROFILE
     if (v->profile <= PROFILE_MAIN)
@@ -610,7 +629,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
         {
             av_log(avctx, AV_LOG_ERROR,
                    "1 for reserved RES_X8 is forbidden\n");
-            return -1;
+            //return -1;
         }
         v->multires = get_bits(gb, 1);
         v->res_fasttx = get_bits(gb, 1);
@@ -797,10 +816,9 @@ static void decode_colskip(uint8_t* plane, int width, int height, int stride, VC
 }
 
 //FIXME optimize
-//FIXME is this supposed to set elements to 0/FF or 0/1? 0/x!=0, not used for
-//      prediction
 //FIXME Use BitPlane struct or return if table is raw (no bits read here but
 //      later on)
+//Elements must be either 0 or 1
 static int bitplane_decoding(BitPlane *bp, VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -824,7 +842,7 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
         for(x=0; x<(bp->height*bp->width)>>1; x++){
             code = get_vlc2(gb, vc9_norm2_vlc.table, VC9_NORM2_VLC_BITS, 2);
             *(++planep) = code&1; //lsb => left
-            *(++planep) = code&2; //msb => right - bitplane => only !0 matters
+            *(++planep) = (code>>1)&1; //msb => right
             //FIXME width->stride
         }
         break;
@@ -836,15 +854,40 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
 
         for(y=  bp->height%tile_h; y< bp->height; y+=tile_h){
             for(x=  bp->width%tile_w; x< bp->width; x+=tile_w){
+#if TILE_VLC_METHOD == 1 //FIXME Too much optimized ?
                 code = get_vlc2(gb, vc9_norm6_vlc.table, VC9_NORM6_VLC_BITS, 2);
                 if(code<0){
                     av_log(v->s.avctx, AV_LOG_DEBUG, "inavlid NORM-6 VLC\n");
                     return -1;
                 }
+#endif
+#if TILE_VLC_METHOD == 2 //TODO Optimize VLC decoding
+                code = get_vlc2(gb, vc9_norm6_first.table, VC9_NORM6_FIRST_BITS, 2);
+                if (vc9_norm6_mode[code] == 1)
+                {
+#  if TRACE
+                    code = get_bits(gb, 5);
+                    assert(code>-1 && code<20);
+                    code = vc9_norm6_flc_val[code];
+#  else
+                    code = vc9_norm6_flc_val[get_bits(gb, 5)];
+#  endif
+                }
+                else if (vc9_norm6_mode[code] == 2)
+                {
+#  if TRACE
+                    code = get_vlc2(gb, vc9_norm6_second.table, VC9_NORM6_SECOND_BITS, 2);
+                    assert(code>-1 && code<22);
+                    code = vc9_norm6_second_val[code];
+#  else
+                    code = vc9_norm6_second_val[get_vlc2(gb, vc9_norm6_second.table, VC9_NORM6_SECOND_BITS, 2)];
+#  endif
+#endif //TILE_VLC_METHOD == 2
                 //FIXME following is a pure guess and probably wrong
                 //FIXME A bitplane (0 | !0), so could the shifts be avoided ?
                 planep[x     + 0*bp->stride]= (code>>0)&1;
                 planep[x + 1 + 0*bp->stride]= (code>>1)&1;
+                //FIXME Does branch prediction help here?
                 if(use_vertical_tile){
                     planep[x + 0 + 1*bp->stride]= (code>>2)&1;
                     planep[x + 1 + 1*bp->stride]= (code>>3)&1;
@@ -945,43 +988,6 @@ static int vop_dquant_decoding(VC9Context *v)
 /* All Profiles picture header decoding specific functions                   */
 /* Only pro/epilog differs between Simple/Main and Advanced => check caller  */
 /*****************************************************************************/
-static int decode_bi_picture_header(VC9Context *v)
-{
-    /* Very particular case:
-       - for S/M Profiles, decode_b_picture_header reads BF,
-         bfraction then determine if this is a BI frame, calling
-         this function afterwards
-       - for A Profile, PTYPE already tells so and we can go
-         directly there
-    */
-    GetBitContext *gb = &v->s.gb;
-    int pqindex;
-
-    /* Read the quantization stuff */
-    pqindex = get_bits(gb, 5);
-    if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
-        v->pq = pquant_table[0][pqindex];
-    else
-    {
-        v->pq = pquant_table[v->quantizer_mode-1][pqindex];
-    }
-    if (pqindex < 9) v->halfpq = get_bits(gb, 1);
-    if (v->quantizer_mode == QUANT_FRAME_EXPLICIT)
-        v->pquantizer = get_bits(gb, 1);
-
-    /* Read the MV type/mode */
-    if (v->extended_mv == 1)
-        v->mvrange = get_prefix(gb, 0, 3);
-
-    /* FIXME: what table are used in that case ? */
-    v->mv_diff_vlc = &vc9_mv_diff_vlc[0];
-    v->cbpcy_vlc = &ff_msmp4_mb_i_vlc;
-
-    av_log(v->s.avctx, AV_LOG_DEBUG, "B frame, QP=%i\n", v->pq);
-    av_log(v->s.avctx, AV_LOG_ERROR, "BI_TYPE not supported yet\n");
-    /* Epilog should be done in caller */
-    return -1;
-}
 
 /* Tables 11+12, p62-65 */
 static int decode_b_picture_primary_header(VC9Context *v)
@@ -992,7 +998,7 @@ static int decode_b_picture_primary_header(VC9Context *v)
     /* Prolog common to all frametypes should be done in caller */
     if (v->profile == PROFILE_SIMPLE)
     {
-        av_log(v, AV_LOG_ERROR, "Found a B frame while in Simple Profile!\n");
+        av_log(v->s.avctx, AV_LOG_ERROR, "Found a B frame while in Simple Profile!\n");
         return FRAME_SKIPED;
     }
 
@@ -1000,13 +1006,14 @@ static int decode_b_picture_primary_header(VC9Context *v)
                                               VC9_BFRACTION_VLC_BITS, 2)];
     if (v->bfraction < -1)
     {
-        av_log(v, AV_LOG_ERROR, "Invalid BFRaction\n");
+        av_log(v->s.avctx, AV_LOG_ERROR, "Invalid BFRaction\n");
         return FRAME_SKIPED;
     }
     else if (!v->bfraction)
     {
         /* We actually have a BI frame */
-        return decode_bi_picture_header(v);
+        v->s.pict_type = BI_TYPE;
+        v->buffer_fullness = get_bits(gb, 7);
     }
 
     /* Read the quantization stuff */
@@ -1024,26 +1031,29 @@ static int decode_b_picture_primary_header(VC9Context *v)
     /* Read the MV type/mode */
     if (v->extended_mv == 1)
         v->mvrange = get_prefix(gb, 0, 3);
-    v->mv_mode = get_bits(gb, 1);
-    if (v->pq < 13)
+    if (v->s.pict_type != BI_TYPE)
     {
-        if (!v->mv_mode)
+        v->mv_mode = get_bits(gb, 1);
+        if (v->pq < 13)
         {
-            v->mv_mode = get_bits(gb, 2);
-            if (v->mv_mode)
-                av_log(v, AV_LOG_ERROR,
+            if (!v->mv_mode)
+            {
+                v->mv_mode = get_bits(gb, 2);
+                if (v->mv_mode)
+                av_log(v->s.avctx, AV_LOG_ERROR,
                        "mv_mode for lowquant B frame was %i\n", v->mv_mode);
+            }
         }
-    }
-    else
-    {
-        if (!v->mv_mode)
+        else
         {
-            if (get_bits(gb, 1))
-                av_log(v, AV_LOG_ERROR,
-                       "mv_mode for highquant B frame was %i\n", v->mv_mode);
+            if (!v->mv_mode)
+            {
+                if (get_bits(gb, 1))
+                     av_log(v->s.avctx, AV_LOG_ERROR,
+                            "mv_mode for highquant B frame was %i\n", v->mv_mode);
+            }
+            v->mv_mode = 1-v->mv_mode; //To match (pq < 13) mapping
         }
-        v->mv_mode = 1-v->mv_mode; //To match (pq < 13) mapping
     }
 
     return 0;
@@ -1081,8 +1091,9 @@ static int decode_b_picture_secondary_header(VC9Context *v)
 #endif
 
     /* FIXME: what is actually chosen for B frames ? */
-    v->mv_diff_vlc = &vc9_mv_diff_vlc[get_bits(gb, 2)];
+    v->s.mv_table_index = get_bits(gb, 2); //but using vc9_ tables
     v->cbpcy_vlc = &vc9_cbpcy_p_vlc[get_bits(gb, 2)];
+
     if (v->dquant)
     {
         vop_dquant_decoding(v);
@@ -1094,11 +1105,11 @@ static int decode_b_picture_secondary_header(VC9Context *v)
         if (v->ttmbf)
         {
             v->ttfrm = get_bits(gb, 2);
-            av_log(v, AV_LOG_INFO, "Transform used: %ix%i\n",
+            av_log(v->s.avctx, AV_LOG_INFO, "Transform used: %ix%i\n",
                    (v->ttfrm & 2) ? 4 : 8, (v->ttfrm & 1) ? 4 : 8);
         }
     }
-    /* Epilog should be done in caller */
+    /* Epilog (AC/DC syntax) should be done in caller */
     return 0;
 }
 
@@ -1112,7 +1123,7 @@ static int decode_i_picture_header(VC9Context *v)
     //BF = Buffer Fullness
     if (v->profile <= PROFILE_MAIN && get_bits(gb, 7))
     {
-        av_log(v, AV_LOG_DEBUG, "I BufferFullness not 0\n");
+        av_log(v->s.avctx, AV_LOG_DEBUG, "I BufferFullness not 0\n");
     }
 
     /* Quantizer stuff */
@@ -1161,7 +1172,7 @@ static int decode_i_picture_header(VC9Context *v)
     }
 #endif
 
-    /* Epilog should be done in caller */
+    /* Epilog (AC/DC syntax) should be done in caller */
     return status;
 }
 
@@ -1228,7 +1239,7 @@ static int decode_p_picture_secondary_header(VC9Context *v)
 #endif
 
     /* Hopefully this is correct for P frames */
-    v->mv_diff_vlc = &vc9_mv_diff_vlc[get_bits(gb, 2)];
+    v->s.mv_table_index =get_bits(gb, 2); //but using vc9_ tables
     v->cbpcy_vlc = &vc9_cbpcy_p_vlc[get_bits(gb, 2)];
 
     if (v->dquant)
@@ -1237,6 +1248,7 @@ static int decode_p_picture_secondary_header(VC9Context *v)
         vop_dquant_decoding(v);
     }
 
+    v->ttfrm = 0; //FIXME Is that so ?
     if (v->vstransform)
     {
         v->ttmbf = get_bits(gb, 1);
@@ -1247,7 +1259,7 @@ static int decode_p_picture_secondary_header(VC9Context *v)
                    (v->ttfrm & 2) ? 4 : 8, (v->ttfrm & 1) ? 4 : 8);
         }
     }
-    /* Epilog should be done in caller */
+    /* Epilog (AC/DC syntax) should be done in caller */
     return 0;
 }
 
@@ -1261,24 +1273,28 @@ static int standard_decode_picture_primary_header(VC9Context *v)
     skip_bits(gb, 2); //framecnt unused
     if (v->rangered) v->rangeredfrm = get_bits(gb, 1);
     v->s.pict_type = get_bits(gb, 1);
-    if (v->s.avctx->max_b_frames && !v->s.pict_type)
+    if (v->s.avctx->max_b_frames)
     {
-        if (get_bits(gb, 1)) v->s.pict_type = I_TYPE;
+        if (!v->s.pict_type)
+        {
+            if (get_bits(gb, 1)) v->s.pict_type = I_TYPE;
+            else v->s.pict_type = B_TYPE;
+        }
         else v->s.pict_type = P_TYPE;
     }
-    else v->s.pict_type++; //P_TYPE
+    else v->s.pict_type++;
 
     switch (v->s.pict_type)
     {
     case I_TYPE: status = decode_i_picture_header(v); break;
-    case BI_TYPE: status = decode_bi_picture_header(v); break;
     case P_TYPE: status = decode_p_picture_primary_header(v); break;
+    case BI_TYPE:
     case B_TYPE: status = decode_b_picture_primary_header(v); break;
     }
 
     if (status == FRAME_SKIPED)
     {
-      av_log(v, AV_LOG_INFO, "Skipping frame...\n");
+      av_log(v->s.avctx, AV_LOG_INFO, "Skipping frame...\n");
       return status;
     }
     return 0;
@@ -1296,9 +1312,7 @@ static int standard_decode_picture_secondary_header(VC9Context *v)
     }
 
     /* AC Syntax */
-    index = decode012(gb);
-    v->luma_ac_vlc = NULL + index; //FIXME Add AC table
-    v->chroma_ac_vlc = NULL +  index;
+    v->ac_table_level = decode012(gb);
     if (v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
     {
         index = decode012(gb);
@@ -1388,9 +1402,7 @@ static int advanced_decode_picture_secondary_header(VC9Context *v)
     }
 
     /* AC Syntax */
-    index = decode012(gb);
-    v->luma_ac_vlc = NULL + index; //FIXME
-    v->chroma_ac_vlc = NULL +  index; //FIXME
+    v->ac_table_level = decode012(gb);
     if (v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
     {
         index = decode012(gb); //FIXME
@@ -1494,6 +1506,13 @@ static int standard_decode_i_mbs(VC9Context *v)
             /* TODO: Decode blocks from that mb wrt cbpcy */
 
             /* Update for next block */
+#if TRACE > 2
+            av_log(s->avctx, AV_LOG_DEBUG, "Block %4i: p_cbpcy=%i%i%i%i, previous_cbpcy=%i%i%i%i,"
+                   " cbpcy=%i%i%i%i\n", current_mb,
+                   p_cbpcy[0], p_cbpcy[1], p_cbpcy[2], p_cbpcy[3],
+                   previous_cbpcy[0], previous_cbpcy[1], previous_cbpcy[2], previous_cbpcy[3],
+                   cbpcy[0], cbpcy[1], cbpcy[2], cbpcy[3]);
+#endif
             *((uint32_t*)p_cbpcy) = *((uint32_t*)previous_cbpcy);
             *((uint32_t*)previous_cbpcy) = *((uint32_t*)cbpcy);
             current_mb++;
@@ -1522,7 +1541,7 @@ static int standard_decode_i_mbs(VC9Context *v)
 
 /* MVDATA decoding from 8.3.5.2, p(1)20 */
 #define GET_MVDATA(_dmv_x, _dmv_y)                                  \
-  index = 1 + get_vlc2(gb, v->mv_diff_vlc->table,               \
+  index = 1 + get_vlc2(gb, vc9_mv_diff_vlc[s->mv_table_index].table,\
                        VC9_MV_DIFF_VLC_BITS, 2);                    \
   if (index > 36)                                                   \
   {                                                                 \
@@ -1530,13 +1549,13 @@ static int standard_decode_i_mbs(VC9Context *v)
     index -= 37;                                                    \
   }                                                                 \
   else mb_has_coeffs = 0;                                           \
-  mb_is_intra = 0;                                                  \
+  s->mb_intra = 0;                                                  \
   if (!index) { _dmv_x = _dmv_y = 0; }                              \
   else if (index == 35)                                             \
   {                                                                 \
     _dmv_x = get_bits(gb, k_x);                                 \
     _dmv_y = get_bits(gb, k_y);                                 \
-    mb_is_intra = 1;                                                \
+    s->mb_intra = 1;                                                \
   }                                                                 \
   else                                                              \
   {                                                                 \
@@ -1570,7 +1589,7 @@ static int decode_p_mbs(VC9Context *v)
 
     static const int size_table[6] = { 0, 2, 3, 4, 5, 8 },
         offset_table[6] = { 0, 1, 3, 7, 15, 31 };
-    int mb_has_coeffs = 1 /* last_flag */, mb_is_intra;
+        int mb_has_coeffs = 1; /* last_flag */
     int dmv_x, dmv_y; /* Differential MV components */
     int k_x, k_y; /* Long MV fixed bitlength */
     int hpel_flag; /* Some MB properties */
@@ -1604,7 +1623,7 @@ static int decode_p_mbs(VC9Context *v)
         *((uint32_t*)previous_cbpcy) = 0x00000000;
         p_cbpcy = v->previous_line_cbpcy+4;
 
-        for (s->mb_x=0; s->mb_x<s->mb_width; s->mb_x++)
+        for (s->mb_x=0; s->mb_x<s->mb_width; s->mb_x++, p_cbpcy += 4)
         {
             if (v->mv_type_mb_plane.is_raw)
                 v->mv_type_mb_plane.data[current_mb] = get_bits(gb, 1);
@@ -1620,15 +1639,25 @@ static int decode_p_mbs(VC9Context *v)
                     if (v->mv_mode == MV_PMODE_1MV ||
                         v->mv_mode == MV_PMODE_MIXED_MV)
                         hybrid_pred = get_bits(gb, 1);
-                    if (mb_is_intra && !mb_has_coeffs)
+                    if (s->mb_intra && !mb_has_coeffs)
                     {
                         GET_MQUANT();
                         s->ac_pred = get_bits(gb, 1);
                     }
                     else if (mb_has_coeffs)
                     {
-                        if (mb_is_intra) s->ac_pred = get_bits(gb, 1);
-                        GET_CBPCY(v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS);
+                        if (s->mb_intra) s->ac_pred = get_bits(gb, 1);
+                        predicted_cbpcy = get_vlc2(gb, v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS, 2);
+                        cbpcy[0] = (p_cbpcy[-1] == p_cbpcy[2]) ? previous_cbpcy[1] : p_cbpcy[2];
+                        cbpcy[0] ^= ((predicted_cbpcy>>5)&0x01);
+                        cbpcy[1] = (p_cbpcy[2] == p_cbpcy[3]) ? cbpcy[0] : p_cbpcy[3];
+                        cbpcy[1] ^= ((predicted_cbpcy>>4)&0x01);
+                        cbpcy[2] = (previous_cbpcy[1] == cbpcy[0]) ? previous_cbpcy[3] : cbpcy[0];
+                        cbpcy[2] ^= ((predicted_cbpcy>>3)&0x01);
+                        cbpcy[3] = (cbpcy[1] == cbpcy[0]) ? cbpcy[2] : cbpcy[1];
+                        cbpcy[3] ^= ((predicted_cbpcy>>2)&0x01);
+                        //GET_CBPCY(v->cbpcy_vlc->table, VC9_CBPCY_P_VLC_BITS);
+
                         GET_MQUANT();
                     }
                     if (!v->ttmbf)
@@ -1659,7 +1688,7 @@ static int decode_p_mbs(VC9Context *v)
                         if (v->mv_mode == MV_PMODE_MIXED_MV /* Hybrid pred */)
                             hybrid_pred = get_bits(gb, 1);
                         GET_MQUANT();
-                        if (mb_is_intra /* One of the 4 blocks is intra */ &&
+                        if (s->mb_intra /* One of the 4 blocks is intra */ &&
                             index /* non-zero pred for that block */)
                             s->ac_pred = get_bits(gb, 1);
                         if (!v->ttmbf)
@@ -1709,7 +1738,7 @@ static int decode_b_mbs(VC9Context *v)
     
     static const int size_table[6] = { 0, 2, 3, 4, 5, 8 },
         offset_table[6] = { 0, 1, 3, 7, 15, 31 };
-    int mb_has_coeffs = 1 /* last_flag */, mb_is_intra = 1;
+    int mb_has_coeffs = 1; /* last_flag */
     int dmv1_x, dmv1_y, dmv2_x, dmv2_y; /* Differential MV components */
     int k_x, k_y; /* Long MV fixed bitlength */
     int hpel_flag; /* Some MB properties */
@@ -1754,7 +1783,7 @@ static int decode_b_mbs(VC9Context *v)
                 { 
                     /* FIXME getting tired commenting */
                     GET_MVDATA(dmv1_x, dmv1_y);
-                    if (!mb_is_intra /* b_mv1 tells not intra */)
+                    if (!s->mb_intra /* b_mv1 tells not intra */)
                     {
                         /* FIXME: actually read it */
                         b_mv_type = decode012(gb);
@@ -1768,7 +1797,7 @@ static int decode_b_mbs(VC9Context *v)
                 if (mb_has_coeffs /* BMV1 == "last" */)
                 {
                     GET_MQUANT();
-                    if (mb_is_intra /* intra mb */)
+                    if (s->mb_intra /* intra mb */)
                         s->ac_pred = get_bits(gb, 1);
                 }
                 else
@@ -1781,7 +1810,7 @@ static int decode_b_mbs(VC9Context *v)
                     /* GET_MVDATA has reset some stuff */
                     if (mb_has_coeffs /* b_mv2 == "last" */)
                     {
-                        if (mb_is_intra /* intra_mb */)
+                        if (s->mb_intra /* intra_mb */)
                             s->ac_pred = get_bits(gb, 1);
                         GET_MQUANT();
                     }
