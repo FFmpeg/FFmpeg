@@ -85,6 +85,7 @@ LIBSUF=".a"
 SLIBPREF="lib"
 SLIBSUF=".so"
 risky="yes"
+small="no"
 
 # OS specific
 targetos=`uname -s`
@@ -306,6 +307,8 @@ for opt do
   --disable-ffserver) ffserver="no"
   ;;
   --disable-risky) risky="no"
+  ;;
+  --enable-small) small="yes"
   ;;
   esac
 done
@@ -570,6 +573,11 @@ if test "x$targetos" != "xBeOS" && test "$os2" != "yes"; then
   fi
 fi
 
+if test "$small" == "yes"; then
+#  CFLAGS=${CFALGS//-O3/-Os}
+  CFLAGS="$CFLAGS -Os"
+fi
+
 if test x"$1" = x"-h" -o x"$1" = x"--help" ; then
 cat << EOF
 
@@ -614,6 +622,7 @@ echo "  --disable-mpegaudio-hp   faster (but less accurate)"
 echo "                           mpegaudio decoding [default=no]"
 echo "  --disable-ffserver       disable ffserver build"
 echo "  --disable-risky          disables patent encumbered codecs"
+echo "  --enable-small           optimize for size instead of speed"
 echo ""
 echo "NOTE: The object files are build at the place where configure is launched"
 exit 1
@@ -645,6 +654,7 @@ echo "pp support       $pp"
 echo "shared pp        $shared_pp"
 echo "Video hooking    $vhook"
 echo "risky / patent encumbered codecs $risky"
+echo "optimize for size $small"
 
 if test "$vhook" = "yes" ; then
 echo "Imlib2 support   $imlib2"
