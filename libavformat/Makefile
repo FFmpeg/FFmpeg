@@ -126,7 +126,7 @@ install-headers:
 %.o: %.cpp
 	g++ $(subst -Wall,,$(CFLAGS)) -c -o $@ $< 
 
-clean: 
+distclean clean: 
 	rm -f *.o *.d .depend *~ *.a $(LIB)
 
 #
