@@ -961,21 +961,20 @@ static int mpeg1_decode_block(MpegEncContext *s,
         dprintf("dc=%d diff=%d\n", dc, diff);
         i = 1;
     } else {
-        int bit_cnt, v;
-        UINT32 bit_buf;
-        UINT8 *buf_ptr;
+        int v;
+        OPEN_READER(re, &s->gb);
         i = 0;
         /* special case for the first coef. no need to add a second vlc table */
-        SAVE_BITS(&s->gb);
-        SHOW_BITS(&s->gb, v, 2);
+        UPDATE_CACHE(re, &s->gb);
+        v= SHOW_UBITS(re, &s->gb, 2);
         if (v & 2) {
             run = 0;
             level = 1 - ((v & 1) << 1);
-            FLUSH_BITS(2);
-            RESTORE_BITS(&s->gb);
+            SKIP_BITS(re, &s->gb, 2);
+            CLOSE_READER(re, &s->gb);
             goto add_coef;
         }
-        RESTORE_BITS(&s->gb);
+        CLOSE_READER(re, &s->gb);
     }
 
     /* now quantify & encode AC coefs */
@@ -1035,26 +1034,25 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
     mismatch = 1;
 
     {
-        int bit_cnt, v;
-        UINT32 bit_buf;
-        UINT8 *buf_ptr;
+        int v;
+        OPEN_READER(re, &s->gb);
         i = 0;
-        if (n < 4) 
+        if (n < 4)
             matrix = s->inter_matrix;
         else
             matrix = s->chroma_inter_matrix;
-            
+
         /* special case for the first coef. no need to add a second vlc table */
-        SAVE_BITS(&s->gb);
-        SHOW_BITS(&s->gb, v, 2);
+        UPDATE_CACHE(re, &s->gb);
+        v= SHOW_UBITS(re, &s->gb, 2);
         if (v & 2) {
             run = 0;
             level = 1 - ((v & 1) << 1);
-            FLUSH_BITS(2);
-            RESTORE_BITS(&s->gb);
+            SKIP_BITS(re, &s->gb, 2);
+            CLOSE_READER(re, &s->gb);
             goto add_coef;
         }
-        RESTORE_BITS(&s->gb);
+        CLOSE_READER(re, &s->gb);
     }
 
     /* now quantify & encode AC coefs */

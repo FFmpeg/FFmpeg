@@ -118,101 +118,39 @@ void put_string(PutBitContext * pbc, char *s)
 
 /* bit input functions */
 
-void init_get_bits(GetBitContext *s, 
+void init_get_bits(GetBitContext *s,
                    UINT8 *buffer, int buffer_size)
 {
+    s->buffer= buffer;
+    s->size= buffer_size;
+    s->buffer_end= buffer + buffer_size;
 #ifdef ALT_BITSTREAM_READER
     s->index=0;
-    s->buffer= buffer;
-#else
-    s->buf = buffer;
-    s->buf_ptr = buffer;
-    s->buf_end = buffer + buffer_size;
-    s->bit_cnt = 0;
-    s->bit_buf = 0;
-    while (s->buf_ptr < s->buf_end && 
-           s->bit_cnt < 32) {
-        s->bit_buf |= (*s->buf_ptr++ << (24 - s->bit_cnt));
-        s->bit_cnt += 8;
-    }
+#elif defined LIBMPEG2_BITSTREAM_READER
+    s->buffer_ptr = buffer;
+    s->bit_count = 16;
+    s->cache = 0;
+#elif defined A32_BITSTREAM_READER
+    s->buffer_ptr = (uint32_t*)buffer;
+    s->bit_count = 32;
+    s->cache0 = 0;
+    s->cache1 = 0;
 #endif
-    s->size= buffer_size;
-}
-
-#ifndef ALT_BITSTREAM_READER
-/* n must be >= 1 and <= 32 */
-/* also true: n > s->bit_cnt */
-unsigned int get_bits_long(GetBitContext *s, int n)
-{
-    unsigned int val;
-    int bit_cnt;
-    unsigned int bit_buf;
-
-#ifdef STATS
-    st_bit_counts[st_current_index] += n;
-#endif
-
-    bit_buf = s->bit_buf;
-    bit_cnt = s->bit_cnt - n;
-    
-//    if (bit_cnt >= 0) {
-//        val = bit_buf >> (32 - n);
-//        bit_buf <<= n; 
-//    } else 
     {
-	UINT8 *buf_ptr;
-        val = bit_buf >> (32 - n);
-        buf_ptr = s->buf_ptr;
-        buf_ptr += 4;
-        /* handle common case: we can read everything */
-        if (buf_ptr <= s->buf_end) {
-#ifdef ARCH_X86
-	    bit_buf = bswap_32(*((unsigned long*)(&buf_ptr[-4])));
-#else
-	    bit_buf = (buf_ptr[-4] << 24) |
-		(buf_ptr[-3] << 16) |
-                (buf_ptr[-2] << 8) |
-                (buf_ptr[-1]);	    
-#endif
-            val |= bit_buf >> (32 + bit_cnt);
-            bit_buf <<= - bit_cnt;
-            bit_cnt += 32;
-        } else {
-            buf_ptr -= 4;
-            bit_buf = 0;
-            if (buf_ptr < s->buf_end)
-                bit_buf |= *buf_ptr++ << 24;
-            if (buf_ptr < s->buf_end)
-                bit_buf |= *buf_ptr++ << 16;
-            if (buf_ptr < s->buf_end)
-                bit_buf |= *buf_ptr++ << 8;
-            if (buf_ptr < s->buf_end)
-                bit_buf |= *buf_ptr++;
-
-            val |= bit_buf >> (32 + bit_cnt);
-            bit_buf <<= - bit_cnt;
-            bit_cnt += 8*(buf_ptr - s->buf_ptr);
-            if(bit_cnt<0) bit_cnt=0;
-        }
-        s->buf_ptr = buf_ptr;
+        OPEN_READER(re, s)
+        UPDATE_CACHE(re, s)
+//        UPDATE_CACHE(re, s)
+        CLOSE_READER(re, s)
     }
-    s->bit_buf = bit_buf;
-    s->bit_cnt = bit_cnt;
-    return val;
-}
+#ifdef A32_BITSTREAM_READER
+    s->cache1 = 0;
 #endif
+}
 
 void align_get_bits(GetBitContext *s)
 {
-#ifdef ALT_BITSTREAM_READER
-    s->index= (s->index + 7) & (~7); 
-#else
-    int n;
-    n = s->bit_cnt & 7;
-    if (n > 0) {
-        get_bits(s, n);
-    }
-#endif
+    int n= (-get_bits_count(s)) & 7;
+    if(n) skip_bits(s, n);
 }
 
 int check_marker(GetBitContext *s, char *msg)
@@ -222,55 +160,6 @@ int check_marker(GetBitContext *s, char *msg)
 
     return bit;
 }
-
-#ifndef ALT_BITSTREAM_READER
-/* This function is identical to get_bits_long(), the */
-/* only diference is that it doesn't touch the buffer */
-/* it is usefull to see the buffer.                   */
-
-unsigned int show_bits_long(GetBitContext *s, int n)
-{
-    unsigned int val;
-    int bit_cnt;
-    unsigned int bit_buf;
-	UINT8 *buf_ptr;
-	
-    bit_buf = s->bit_buf;
-    bit_cnt = s->bit_cnt - n;
-
-    val = bit_buf >> (32 - n);
-    buf_ptr = s->buf_ptr;
-    buf_ptr += 4;
-
-    /* handle common case: we can read everything */
-    if (buf_ptr <= s->buf_end) {
-#ifdef ARCH_X86
-        bit_buf = bswap_32(*((unsigned long*)(&buf_ptr[-4])));
-#else
-        bit_buf = (buf_ptr[-4] << 24) |
-            (buf_ptr[-3] << 16) |
-            (buf_ptr[-2] << 8) |
-            (buf_ptr[-1]);	    
-#endif
-    } else {
-        buf_ptr -= 4;
-        bit_buf = 0;
-        if (buf_ptr < s->buf_end)
-            bit_buf |= *buf_ptr++ << 24;
-        if (buf_ptr < s->buf_end)
-            bit_buf |= *buf_ptr++ << 16;
-        if (buf_ptr < s->buf_end)
-            bit_buf |= *buf_ptr++ << 8;
-        if (buf_ptr < s->buf_end)
-            bit_buf |= *buf_ptr++;
-    }
-    val |= bit_buf >> (32 + bit_cnt);
-    bit_buf <<= - bit_cnt;
-    bit_cnt += 32;
-    
-    return val;
-}
-#endif
 
 /* VLC decoding */
 
@@ -300,18 +189,15 @@ static int alloc_table(VLC *vlc, int size)
     vlc->table_size += size;
     if (vlc->table_size > vlc->table_allocated) {
         vlc->table_allocated += (1 << vlc->bits);
-        vlc->table_bits = realloc(vlc->table_bits, 
-                                  sizeof(INT8) * vlc->table_allocated);
-        vlc->table_codes = realloc(vlc->table_codes,
-                                   sizeof(INT16) * vlc->table_allocated);
-        if (!vlc->table_bits ||
-            !vlc->table_codes)
+        vlc->table = realloc(vlc->table,
+                             sizeof(VLC_TYPE) * 2 * vlc->table_allocated);
+        if (!vlc->table)
             return -1;
     }
     return index;
 }
 
-static int build_table(VLC *vlc, int table_nb_bits, 
+static int build_table(VLC *vlc, int table_nb_bits,
                        int nb_codes,
                        const void *bits, int bits_wrap, int bits_size,
                        const void *codes, int codes_wrap, int codes_size,
@@ -319,23 +205,21 @@ static int build_table(VLC *vlc, int table_nb_bits,
 {
     int i, j, k, n, table_size, table_index, nb, n1, index;
     UINT32 code;
-    INT8 *table_bits;
-    INT16 *table_codes;
+    VLC_TYPE (*table)[2];
 
     table_size = 1 << table_nb_bits;
     table_index = alloc_table(vlc, table_size);
 #ifdef DEBUG_VLC
-    printf("new table index=%d size=%d code_prefix=%x n=%d\n", 
+    printf("new table index=%d size=%d code_prefix=%x n=%d\n",
            table_index, table_size, code_prefix, n_prefix);
 #endif
     if (table_index < 0)
         return -1;
-    table_bits = &vlc->table_bits[table_index];
-    table_codes = &vlc->table_codes[table_index];
+    table = &vlc->table[table_index];
 
     for(i=0;i<table_size;i++) {
-        table_bits[i] = 0;
-        table_codes[i] = -1;
+        table[i][1] = 0; //bits
+        table[i][0] = -1; //codes
     }
 
     /* first pass: map codes and compute auxillary table sizes */
@@ -360,12 +244,12 @@ static int build_table(VLC *vlc, int table_nb_bits,
                     printf("%4x: code=%d n=%d\n",
                            j, i, n);
 #endif
-                    if (table_bits[j] != 0) {
+                    if (table[j][1] /*bits*/ != 0) {
                         fprintf(stderr, "incorrect codes\n");
                         exit(1);
                     }
-                    table_bits[j] = n;
-                    table_codes[j] = i;
+                    table[j][1] = n; //bits
+                    table[j][0] = i; //code
                     j++;
                 }
             } else {
@@ -376,22 +260,22 @@ static int build_table(VLC *vlc, int table_nb_bits,
                        j, n);
 #endif
                 /* compute table size */
-                n1 = -table_bits[j];
+                n1 = -table[j][1]; //bits
                 if (n > n1)
                     n1 = n;
-                table_bits[j] = -n1;
+                table[j][1] = -n1; //bits
             }
         }
     }
 
     /* second pass : fill auxillary tables recursively */
     for(i=0;i<table_size;i++) {
-        n = table_bits[i];
+        n = table[i][1]; //bits
         if (n < 0) {
             n = -n;
             if (n > table_nb_bits) {
                 n = table_nb_bits;
-                table_bits[i] = -n;
+                table[i][1] = -n; //bits
             }
             index = build_table(vlc, n, nb_codes,
                                 bits, bits_wrap, bits_size,
@@ -401,9 +285,8 @@ static int build_table(VLC *vlc, int table_nb_bits,
             if (index < 0)
                 return -1;
             /* note: realloc has been done, so reload tables */
-            table_bits = &vlc->table_bits[table_index];
-            table_codes = &vlc->table_codes[table_index];
-            table_codes[i] = index;
+            table = &vlc->table[table_index];
+            table[i][0] = index; //code
         }
     }
     return table_index;
@@ -436,8 +319,7 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *codes, int codes_wrap, int codes_size)
 {
     vlc->bits = nb_bits;
-    vlc->table_bits = NULL;
-    vlc->table_codes = NULL;
+    vlc->table = NULL;
     vlc->table_allocated = 0;
     vlc->table_size = 0;
 #ifdef DEBUG_VLC
@@ -448,8 +330,7 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
                     bits, bits_wrap, bits_size,
                     codes, codes_wrap, codes_size,
                     0, 0) < 0) {
-        av_free(vlc->table_bits);
-        av_free(vlc->table_codes);
+        av_free(vlc->table);
         return -1;
     }
     return 0;
@@ -458,8 +339,7 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
 
 void free_vlc(VLC *vlc)
 {
-    av_free(vlc->table_bits);
-    av_free(vlc->table_codes);
+    av_free(vlc->table);
 }
 
 int ff_gcd(int a, int b){

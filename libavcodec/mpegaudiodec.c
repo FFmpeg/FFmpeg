@@ -1457,11 +1457,8 @@ static void seek_to_maindata(MPADecodeContext *s, long backstep)
     UINT8 *ptr;
 
     /* compute current position in stream */
-#ifdef ALT_BITSTREAM_READER
-    ptr = s->gb.buffer + (s->gb.index>>3);
-#else
-    ptr = s->gb.buf_ptr - (s->gb.bit_cnt >> 3);
-#endif    
+    ptr = s->gb.buffer + (get_bits_count(&s->gb)>>3);
+
     /* copy old data before current one */
     ptr -= backstep;
     memcpy(ptr, s->inbuf1[s->inbuf_index ^ 1] + 
@@ -1547,9 +1544,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
 {
     int s_index;
     int linbits, code, x, y, l, v, i, j, k, pos;
-    UINT8 *last_buf_ptr;
-    UINT32 last_bit_buf;
-    int last_bit_cnt;
+    GetBitContext last_gb;
     VLC *vlc;
     UINT8 *code_table;
 
@@ -1608,36 +1603,20 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
             
     /* high frequencies */
     vlc = &huff_quad_vlc[g->count1table_select];
-    last_buf_ptr = NULL;
-    last_bit_buf = 0;
-    last_bit_cnt = 0;
+    last_gb.buffer = NULL;
     while (s_index <= 572) {
         pos = get_bits_count(&s->gb);
         if (pos >= end_pos) {
-            if (pos > end_pos && last_buf_ptr != NULL) {
+            if (pos > end_pos && last_gb.buffer != NULL) {
                 /* some encoders generate an incorrect size for this
                    part. We must go back into the data */
                 s_index -= 4;
-#ifdef ALT_BITSTREAM_READER
-                s->gb.buffer = last_buf_ptr;
-                s->gb.index = last_bit_cnt;
-#else
-                s->gb.buf_ptr = last_buf_ptr;
-                s->gb.bit_buf = last_bit_buf;
-                s->gb.bit_cnt = last_bit_cnt;
-#endif            
+                s->gb = last_gb;
             }
             break;
         }
-#ifdef ALT_BITSTREAM_READER
-        last_buf_ptr = s->gb.buffer;
-        last_bit_cnt = s->gb.index;
-#else
-        last_buf_ptr = s->gb.buf_ptr;
-        last_bit_buf = s->gb.bit_buf;
-        last_bit_cnt = s->gb.bit_cnt;
-#endif
-        
+        last_gb= s->gb;
+
         code = get_vlc(&s->gb, vlc);
         dprintf("t=%d code=%d\n", g->count1table_select, code);
         if (code < 0)
