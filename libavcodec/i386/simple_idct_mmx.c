@@ -19,12 +19,25 @@
 #include <inttypes.h>
 #include "../dsputil.h"
 #include "../mangle.h"
-
+/*
+23170.475006
+22725.260826
+21406.727617
+19265.545870
+16384.000000
+12872.826198
+8866.956905
+4520.335430
+*/
 #define C0 23170 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define C1 22725 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define C2 21407 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define C3 19266 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+#if 0
 #define C4 16384 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
+#else
+#define C4 16383 //cos(i*M_PI/16)*sqrt(2)*(1<<14) - 0.5
+#endif
 #define C5 12873 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define C6 8867 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define C7 4520 //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
