@@ -773,6 +773,7 @@ following image formats are supported:
 @item Miro VideoXL           @tab     @tab  X @tab fourcc: VIXL
 @item QPEG                   @tab     @tab  X @tab fourccs: QPEG, Q1.0, Q1.1
 @item LOCO                   @tab     @tab  X @tab 
+@item Winnov WNV1            @tab     @tab  X @tab 
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
