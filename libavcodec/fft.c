@@ -51,34 +51,48 @@ int fft_init(FFTContext *s, int nbits, int inverse)
     s->exptab1 = NULL;
 
     /* compute constant table for HAVE_SSE version */
-#if defined(HAVE_MMX) && defined(HAVE_BUILTIN_VECTOR)
-    if (mm_support() & MM_SSE) {
-        int np, nblocks, np2, l;
-        FFTComplex *q;
-        
-        np = 1 << nbits;
-        nblocks = np >> 3;
-        np2 = np >> 1;
-        s->exptab1 = av_malloc(np * 2 * sizeof(FFTComplex));
-        if (!s->exptab1)
-            goto fail;
-        q = s->exptab1;
-        do {
-            for(l = 0; l < np2; l += 2 * nblocks) {
-                *q++ = s->exptab[l];
-                *q++ = s->exptab[l + nblocks];
+#if (defined(HAVE_MMX) && defined(HAVE_BUILTIN_VECTOR)) || defined(HAVE_ALTIVEC)
+    {
+        int has_vectors;
 
-                q->re = -s->exptab[l].im;
-                q->im = s->exptab[l].re;
-                q++;
-                q->re = -s->exptab[l + nblocks].im;
-                q->im = s->exptab[l + nblocks].re;
-                q++;
-            }
-            nblocks = nblocks >> 1;
-        } while (nblocks != 0);
-        av_freep(&s->exptab);
-        s->fft_calc = fft_calc_sse;
+#if defined(HAVE_MMX)
+        has_vectors = mm_support() & MM_SSE;
+#else
+        /* XXX: should also use mm_support() ? */
+        has_vectors = has_altivec() & MM_ALTIVEC;
+#endif
+        if (has_vectors) {
+            int np, nblocks, np2, l;
+            FFTComplex *q;
+            
+            np = 1 << nbits;
+            nblocks = np >> 3;
+            np2 = np >> 1;
+            s->exptab1 = av_malloc(np * 2 * sizeof(FFTComplex));
+            if (!s->exptab1)
+                goto fail;
+            q = s->exptab1;
+            do {
+                for(l = 0; l < np2; l += 2 * nblocks) {
+                    *q++ = s->exptab[l];
+                    *q++ = s->exptab[l + nblocks];
+
+                    q->re = -s->exptab[l].im;
+                    q->im = s->exptab[l].re;
+                    q++;
+                    q->re = -s->exptab[l + nblocks].im;
+                    q->im = s->exptab[l + nblocks].re;
+                    q++;
+                }
+                nblocks = nblocks >> 1;
+            } while (nblocks != 0);
+            av_freep(&s->exptab);
+#if defined(HAVE_MMX)
+            s->fft_calc = fft_calc_sse;
+#else
+            s->fft_calc = fft_calc_altivec;
+#endif
+        }
     }
 #endif
 

@@ -265,6 +265,8 @@ int fft_init(FFTContext *s, int nbits, int inverse);
 void fft_permute(FFTContext *s, FFTComplex *z);
 void fft_calc_c(FFTContext *s, FFTComplex *z);
 void fft_calc_sse(FFTContext *s, FFTComplex *z);
+void fft_calc_altivec(FFTContext *s, FFTComplex *z);
+
 static inline void fft_calc(FFTContext *s, FFTComplex *z)
 {
     s->fft_calc(s, z);
