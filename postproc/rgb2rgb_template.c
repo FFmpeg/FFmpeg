@@ -56,14 +56,13 @@ static inline void RENAME(rgb24to32)(const uint8_t *src,uint8_t *dst,unsigned sr
   const uint8_t *s = src;
   const uint8_t *end;
 #ifdef HAVE_MMX
-  uint8_t *mm_end;
+  const uint8_t *mm_end;
 #endif
   end = s + src_size;
 #ifdef HAVE_MMX
   __asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
-  mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*4))*(MMREG_SIZE*4));
+  mm_end = end - 23;
   __asm __volatile("movq	%0, %%mm7"::"m"(mask32):"memory");
-  if(mm_end == end) mm_end -= MMREG_SIZE*4;
   while(s < mm_end)
   {
     __asm __volatile(
@@ -108,12 +107,12 @@ static inline void RENAME(rgb32to24)(const uint8_t *src,uint8_t *dst,unsigned sr
   const uint8_t *s = src;
   const uint8_t *end;
 #ifdef HAVE_MMX
-  uint8_t *mm_end;
+  const uint8_t *mm_end;
 #endif
   end = s + src_size;
 #ifdef HAVE_MMX
   __asm __volatile(PREFETCH"	%0"::"m"(*s):"memory");
-  mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*4))*(MMREG_SIZE*4));
+  mm_end = end - 31;
   while(s < mm_end)
   {
     __asm __volatile(
@@ -188,9 +187,9 @@ static inline void RENAME(rgb32to24)(const uint8_t *src,uint8_t *dst,unsigned sr
 static inline void RENAME(rgb15to16)(const uint8_t *src,uint8_t *dst,unsigned src_size)
 {
 #ifdef HAVE_MMX
-  register const char* s=src+src_size;
-  register char* d=dst+src_size;
-  register int offs=-src_size;
+  register int offs=15-src_size;
+  register const char* s=src-offs;
+  register char* d=dst-offs;
   __asm __volatile(PREFETCH"	%0"::"m"(*(s+offs)));
   __asm __volatile(
 	"movq	%0, %%mm4\n\t"
@@ -252,7 +251,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 	const uint8_t *end,*mm_end;
 	uint16_t *d = (uint16_t *)dst;
 	end = s + src_size;
-	mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
+	mm_end = end - 15;
 	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
 	__asm __volatile(
 	    "movq	%0, %%mm7\n\t"
@@ -298,6 +297,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 		const int b= *s++;
 		const int g= *s++;
 		const int r= *s++;
+                s++;
 		*d++ = (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
 	}
 	__asm __volatile(SFENCE:::"memory");
@@ -323,7 +323,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 	const uint8_t *end,*mm_end;
 	uint16_t *d = (uint16_t *)dst;
 	end = s + src_size;
-	mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
+	mm_end = end - 15;
 	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
 	__asm __volatile(
 	    "movq	%0, %%mm7\n\t"
@@ -369,6 +369,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 		const int b= *s++;
 		const int g= *s++;
 		const int r= *s++;
+		s++;
 		*d++ = (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
 	}
 	__asm __volatile(SFENCE:::"memory");
@@ -394,13 +395,12 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, unsigned 
 	const uint8_t *end,*mm_end;
 	uint16_t *d = (uint16_t *)dst;
 	end = s + src_size;
-	mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
+	mm_end = end - 11;
 	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
 	__asm __volatile(
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_16mask),"m"(green_16mask));
-	if(mm_end == end) mm_end -= MMREG_SIZE*2;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -466,13 +466,12 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, unsigned 
 	const uint8_t *end,*mm_end;
 	uint16_t *d = (uint16_t *)dst;
 	end = s + src_size;
-	mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
+	mm_end = end -11;
 	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
 	__asm __volatile(
 	    "movq	%0, %%mm7\n\t"
 	    "movq	%1, %%mm6\n\t"
 	    ::"m"(red_15mask),"m"(green_15mask));
-	if(mm_end == end) mm_end -= MMREG_SIZE*2;
 	while(s < mm_end)
 	{
 	    __asm __volatile(
@@ -550,7 +549,7 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsign
 		"por %%mm0, %%mm2		\n\t"
 		"por %%mm1, %%mm2		\n\t"
 		MOVNTQ" %%mm2, (%1, %%eax)	\n\t"
-		"addl $2, %%eax			\n\t"
+		"addl $8, %%eax			\n\t"
 		"cmpl %2, %%eax			\n\t"
 		" jb 1b				\n\t"
 		:: "r" (src), "r"(dst), "r" (src_size)
@@ -620,11 +619,10 @@ static inline void RENAME(rgb24tobgr24)(const uint8_t *src, uint8_t *dst, unsign
 	__asm __volatile(SFENCE:::"memory");
 	__asm __volatile(EMMS:::"memory");
 
-	if(!mmx_size) return; //finihsed, was multiple of 8
-
+	if(mmx_size==23) return; //finihsed, was multiple of 8
 	src+= src_size;
 	dst+= src_size;
-	src_size= 24-mmx_size;
+	src_size= 23 - mmx_size;
 	src-= src_size;
 	dst-= src_size;
 #endif
