@@ -2586,6 +2586,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
       height = (s->height+15)&~15;
       linesize= s->linesize;
     } else {
+      if(s->flags&CODEC_FLAG_GRAY) break;
       width  = (s->width/4+15)&~15;
       height = (s->height/4+15)&~15;
       linesize= s->uvlinesize;
@@ -2658,6 +2659,7 @@ static int svq1_decode_init(AVCodecContext *avctx)
     avctx->mbskip_table= s->mbskip_table;
     avctx->pix_fmt = PIX_FMT_YUV410P;
     avctx->has_b_frames= s->has_b_frames=1; // not true, but DP frames and these behave like unidirectional b frames
+    s->flags= avctx->flags;
     if (MPV_common_init(s) < 0) return -1;
     return 0;
 }
