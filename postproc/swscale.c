@@ -17,7 +17,7 @@
 */
 
 /*
-  supported Input formats: YV12, I420/IYUV, YUY2, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8/Y800, YVU9/IF09
+  supported Input formats: YV12, I420/IYUV, YUY2, UYVY, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8/Y800, YVU9/IF09
   supported output formats: YV12, I420/IYUV, YUY2, {BGR,RGB}{1,4,8,15,16,24,32}, Y8/Y800, YVU9/IF09
   {BGR,RGB}{1,4,8,15,16} support dithering
   
@@ -105,11 +105,11 @@ untested special converters
 //FIXME replace this with something faster
 #define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YVU9 \
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
-#define isYUV(x)       ((x)==IMGFMT_YUY2 || isPlanarYUV(x))
+#define isYUV(x)       ((x)==IMGFMT_UYVY || (x)==IMGFMT_YUY2 || isPlanarYUV(x))
 #define isGray(x)      ((x)==IMGFMT_Y800)
 #define isRGB(x)       (((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
 #define isBGR(x)       (((x)&IMGFMT_BGR_MASK)==IMGFMT_BGR)
-#define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 \
+#define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY\
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
 			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9\
@@ -118,7 +118,7 @@ untested special converters
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P\
 			|| isRGB(x) || isBGR(x)\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
-#define isPacked(x)    ((x)==IMGFMT_YUY2 || isRGB(x) || isBGR(x))
+#define isPacked(x)    ((x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY ||isRGB(x) || isBGR(x))
 
 #define RGB2YUV_SHIFT 16
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
@@ -1904,6 +1904,7 @@ static int remove_dup_fourcc(int fourcc)
 
 static void getSubSampleFactors(int *h, int *v, int format){
 	switch(format){
+	case IMGFMT_UYVY:
 	case IMGFMT_YUY2:
 		*h=1;
 		*v=0;

@@ -1476,6 +1476,69 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1,
 #endif
 }
 
+//this is allmost identical to the previous, end exists only cuz yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses
+static inline void RENAME(uyvyToY)(uint8_t *dst, uint8_t *src, int width)
+{
+#ifdef HAVE_MMX
+	asm volatile(
+		"movl %0, %%eax			\n\t"
+		"1:				\n\t"
+		"movq (%1, %%eax,2), %%mm0	\n\t"
+		"movq 8(%1, %%eax,2), %%mm1	\n\t"
+		"psrlw $8, %%mm0		\n\t"
+		"psrlw $8, %%mm1		\n\t"
+		"packuswb %%mm1, %%mm0		\n\t"
+		"movq %%mm0, (%2, %%eax)	\n\t"
+		"addl $8, %%eax			\n\t"
+		" js 1b				\n\t"
+		: : "g" (-width), "r" (src+width*2), "r" (dst+width)
+		: "%eax"
+	);
+#else
+	int i;
+	for(i=0; i<width; i++)
+		dst[i]= src[2*i+1];
+#endif
+}
+
+static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+{
+#if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
+	asm volatile(
+		"movq "MANGLE(bm01010101)", %%mm4\n\t"
+		"movl %0, %%eax			\n\t"
+		"1:				\n\t"
+		"movq (%1, %%eax,4), %%mm0	\n\t"
+		"movq 8(%1, %%eax,4), %%mm1	\n\t"
+		"movq (%2, %%eax,4), %%mm2	\n\t"
+		"movq 8(%2, %%eax,4), %%mm3	\n\t"
+		PAVGB(%%mm2, %%mm0)
+		PAVGB(%%mm3, %%mm1)
+		"pand %%mm4, %%mm0		\n\t"
+		"pand %%mm4, %%mm1		\n\t"
+		"packuswb %%mm1, %%mm0		\n\t"
+		"movq %%mm0, %%mm1		\n\t"
+		"psrlw $8, %%mm0		\n\t"
+		"pand %%mm4, %%mm1		\n\t"
+		"packuswb %%mm0, %%mm0		\n\t"
+		"packuswb %%mm1, %%mm1		\n\t"
+		"movd %%mm0, (%4, %%eax)	\n\t"
+		"movd %%mm1, (%3, %%eax)	\n\t"
+		"addl $4, %%eax			\n\t"
+		" js 1b				\n\t"
+		: : "g" (-width), "r" (src1+width*4), "r" (src2+width*4), "r" (dstU+width), "r" (dstV+width)
+		: "%eax"
+	);
+#else
+	int i;
+	for(i=0; i<width; i++)
+	{
+		dstU[i]= (src1[4*i + 0] + src2[4*i + 0])>>1;
+		dstV[i]= (src1[4*i + 2] + src2[4*i + 2])>>1;
+	}
+#endif
+}
+
 static inline void RENAME(bgr32ToY)(uint8_t *dst, uint8_t *src, int width)
 {
 #ifdef HAVE_MMXFIXME
@@ -2113,6 +2176,11 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
 	RENAME(yuy2ToY)(formatConvBuffer, src, srcW);
 	src= formatConvBuffer;
     }
+    else if(srcFormat==IMGFMT_UYVY)
+    {
+	RENAME(uyvyToY)(formatConvBuffer, src, srcW);
+	src= formatConvBuffer;
+    }
     else if(srcFormat==IMGFMT_BGR32)
     {
 	RENAME(bgr32ToY)(formatConvBuffer, src, srcW);
@@ -2262,6 +2330,12 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, u
     if(srcFormat==IMGFMT_YUY2)
     {
 	RENAME(yuy2ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
+	src1= formatConvBuffer;
+	src2= formatConvBuffer+2048;
+    }
+    else if(srcFormat==IMGFMT_UYVY)
+    {
+	RENAME(uyvyToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
 	src1= formatConvBuffer;
 	src2= formatConvBuffer+2048;
     }
