@@ -10,7 +10,7 @@ ifeq ($(TARGET_ARCH_X86),yes)
 SRCS += yuv2rgb_mmx.c
 endif
 
-CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. -Wall
+CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. -Wall $(EXTRA_INC)
 # -I/usr/X11R6/include/
 
 .SUFFIXES: .c .o
