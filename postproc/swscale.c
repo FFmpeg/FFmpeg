@@ -108,6 +108,14 @@ s_xinc*= 256;
 s_xinc2=s_xinc>>1;
 canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
 
+#ifdef HAVE_MMX2
+	if(canMMX2BeUsed)
+	{
+		s_xinc+= s_xinc_diff;
+		s_xinc2+= s_xinc2_diff;
+	}
+#endif
+
   if(y==0){
       s_srcypos= s_yinc/2 - 0x8000;
       s_ypos=0;
@@ -190,6 +198,9 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
 
 		s_xinc2+= s_xinc2_diff;
 		s_xinc+= s_xinc_diff;
+
+		old_s_xinc= s_xinc;
+
 		for(i=0; i<dstw/8; i++)
 		{
 			int xx=xpos>>16;
@@ -236,17 +247,11 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstw&31)==0) ? 1 : 0;
 			xpos+=s_xinc2;
 		}
 //		funnyCode[0]= RET;
-
-
 	}
 
-	if(canMMX2BeUsed)
-	{
-		s_xinc+= s_xinc_diff;
-		s_xinc2+= s_xinc2_diff;
-	}
 #endif // HAVE_MMX2
   } // reset counters
+
 
   while(1){
     unsigned char *dest=dstptr+dststride*s_ypos;
