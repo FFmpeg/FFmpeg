@@ -81,7 +81,7 @@ static int amr_read_header(AVFormatContext *s,
 {
     ByteIOContext *pb = &s->pb;
     AVStream *st;
-    u_int8_t header[6];
+    uint8_t header[6];
 
     get_buffer(pb, header, 6);
 
@@ -107,8 +107,8 @@ static int amr_read_header(AVFormatContext *s,
 static int amr_read_packet(AVFormatContext *s,
                           AVPacket *pkt)
 {
-    static u_int16_t packed_size[16] = {12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0};
-    u_int8_t toc, q, ft;
+    static uint16_t packed_size[16] = {12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0};
+    uint8_t toc, q, ft;
     int read;
     int size;
 
