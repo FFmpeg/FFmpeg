@@ -969,12 +969,14 @@ static int asf_get_packet(AVFormatContext *s)
     int rsize = 11;
     int c = get_byte(pb);
     if (c != 0x82) {
-	printf("BAD HRD %x  at:%Ld\n", c, url_ftell(pb));
+        if (!url_feof(pb))
+	    printf("ff asf bad header %x  at:%Ld\n", c, url_ftell(pb));
 	return -EIO;
     }
     if ((c & 0x0f) == 2) { // always true for now
 	if (get_le16(pb) != 0) {
-	    printf("ff asf BAD NO ZERO\n");
+            if (!url_feof(pb))
+		printf("ff asf bad non zero\n");
 	    return -EIO;
 	}
     }
@@ -1022,7 +1024,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    url_fskip(pb, ret);
 	    ret = asf_get_packet(s);
 	    //printf("READ ASF PACKET  %d   r:%d   c:%d\n", ret, asf->packet_size_left, pc++);
-	    if (ret < 0)
+	    if (ret < 0 || url_feof(pb))
 		return -EIO;
             asf->packet_time_start = 0;
             continue;
