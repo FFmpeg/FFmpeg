@@ -63,7 +63,6 @@ static uint64_t get_v(ByteIOContext *bc)
 {
     uint64_t val = 0;
 
-//    for (; bytes_left(s)*8 > 0; )
     for(; bytes_left(bc) > 0; )
     {
 	int tmp = get_byte(bc);
@@ -93,27 +92,23 @@ static int get_b(ByteIOContext *bc, char *data, int maxlen)
     len = get_v(bc);
     for (i = 0; i < len && i < maxlen; i++)
 	data[i] = get_byte(bc);
-    if (i < len)
-    {
-	len = i;
-	for (i = 0; i < len; i++)
-	    get_byte(bc);
-    }
+    /* skip remaining bytes */
+    for (; i < len; i++)
+        get_byte(bc);
 
     return 0;
 }
 
 static int get_bi(ByteIOContext *bc)
 {
-   int i, len, val;
+   int i, len, val = 0;
     
     len = get_v(bc);
-    if(len > 4) return -1;
-    
-    val = 0;
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < len && i <= 4; i++)
         val |= get_byte(bc) << (i * 8);
-    }
+    /* skip remaining bytes */
+    for (; i < len; i++)
+        get_byte(bc);
 
     return val;
 }
@@ -232,21 +227,12 @@ static int nut_write_header(AVFormatContext *s)
     ByteIOContext *bc = &s->pb;
     AVCodecContext *codec;
     int i;
-    int stream_length = 0;
-
-    for (i = 0; i < s->nb_streams; i++)
-    {
-	if (stream_length < (s->streams[i]->duration * (AV_TIME_BASE / 1000)))
-	    stream_length = s->streams[i]->duration * (AV_TIME_BASE / 1000);
-    }
 
     /* main header */
     put_be64(bc, MAIN_STARTCODE);
     put_packetheader(nut, bc, 120);
     put_v(bc, 0); /* version */
     put_v(bc, s->nb_streams);
-    put_v(bc, 0); /* file size */
-    put_v(bc, stream_length); /* len in msec */
     put_be32(bc, 0); /* FIXME: checksum */
     
     update_packetheader(nut, bc, 0);
@@ -439,10 +425,6 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	fprintf(stderr, "bad version (%Ld)\n", tmp);
     
     nb_streams = get_v(bc);
-    
-    s->file_size = get_v(bc);
-    s->duration = get_v(bc) / (AV_TIME_BASE / 1000);
-
     get_be32(bc); /* checkusm */
     
     s->bit_rate = 0;
