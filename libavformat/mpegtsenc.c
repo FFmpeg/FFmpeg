@@ -604,10 +604,6 @@ static int mpegts_write_end(AVFormatContext *s)
     }
     av_free(ts->services);
 
-    for(i = 0; i < s->nb_streams; i++) {
-        st = s->streams[i];
-        av_free(st->priv_data);
-    }
     return 0;
 }
 
