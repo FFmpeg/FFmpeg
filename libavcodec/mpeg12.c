@@ -33,6 +33,14 @@
 #define EXT_START_CODE		0x000001b5
 #define USER_START_CODE		0x000001b2
 
+#define DC_VLC_BITS 9
+#define MV_VLC_BITS 9
+#define MBINCR_VLC_BITS 9
+#define MB_PAT_VLC_BITS 9
+#define MB_PTYPE_VLC_BITS 6
+#define MB_BTYPE_VLC_BITS 6
+#define TEX_VLC_BITS 9
+
 static void mpeg1_encode_block(MpegEncContext *s, 
                          DCTELEM *block, 
                          int component);
@@ -51,6 +59,46 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
 
 static UINT16 mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static UINT8 fcode_tab[MAX_MV*2+1];
+
+static void init_2d_vlc_rl(RLTable *rl)
+{
+    int i, q;
+    
+    init_vlc(&rl->vlc, TEX_VLC_BITS, rl->n + 2, 
+             &rl->table_vlc[0][1], 4, 2,
+             &rl->table_vlc[0][0], 4, 2);
+
+    
+    rl->rl_vlc[0]= av_malloc(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
+    for(i=0; i<rl->vlc.table_size; i++){
+        int code= rl->vlc.table[i][0];
+        int len = rl->vlc.table[i][1];
+        int level, run;
+    
+        if(len==0){ // illegal code
+            run= 65;
+            level= MAX_LEVEL;
+        }else if(len<0){ //more bits needed
+            run= 0;
+            level= code;
+        }else{
+            if(code==rl->n){ //esc
+                run= 65;
+                level= 0;
+            }else if(code==rl->n+1){ //eob
+                run= 192;
+                level= 1;
+            }else{
+                run=   rl->table_run  [code] + 1;
+                level= rl->table_level[code];
+            }
+        }
+        rl->rl_vlc[0][i].len= len;
+        rl->rl_vlc[0][i].level= level;
+        rl->rl_vlc[0][i].run= run;
+    }
+}
+
 
 static void put_header(MpegEncContext *s, int header)
 {
@@ -533,14 +581,6 @@ static VLC mb_ptype_vlc;
 static VLC mb_btype_vlc;
 static VLC mb_pat_vlc;
 
-#define DC_VLC_BITS 9
-#define MV_VLC_BITS 9
-#define MBINCR_VLC_BITS 9
-#define MB_PAT_VLC_BITS 9
-#define MB_PTYPE_VLC_BITS 6
-#define MB_BTYPE_VLC_BITS 6
-#define TEX_VLC_BITS 9
-
 void mpeg1_init_vlc(MpegEncContext *s)
 {
     static int done = 0;
@@ -572,13 +612,9 @@ void mpeg1_init_vlc(MpegEncContext *s)
                  &table_mb_btype[0][0], 2, 1);
         init_rl(&rl_mpeg1);
         init_rl(&rl_mpeg2);
-        /* cannot use generic init because we must add the EOB code */
-        init_vlc(&rl_mpeg1.vlc, TEX_VLC_BITS, rl_mpeg1.n + 2, 
-                 &rl_mpeg1.table_vlc[0][1], 4, 2,
-                 &rl_mpeg1.table_vlc[0][0], 4, 2);
-        init_vlc(&rl_mpeg2.vlc, TEX_VLC_BITS, rl_mpeg2.n + 2, 
-                 &rl_mpeg2.table_vlc[0][1], 4, 2,
-                 &rl_mpeg2.table_vlc[0][0], 4, 2);
+
+        init_2d_vlc_rl(&rl_mpeg1);
+        init_2d_vlc_rl(&rl_mpeg2);
     }
 }
 
@@ -1416,7 +1452,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     /* start frame decoding */
     if (s->first_slice) {
         s->first_slice = 0;
-        MPV_frame_start(s);
+        MPV_frame_start(s, avctx);
     }
 
     init_get_bits(&s->gb, buf, buf_size);
