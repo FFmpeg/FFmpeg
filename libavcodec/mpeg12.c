@@ -1630,7 +1630,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #ifdef DEBUG
         dprintf("intra matrix present\n");
         for(i=0;i<64;i++)
-            dprintf(" %d", s->intra_matrix[zigzag_direct[i]]);
+            dprintf(" %d", s->intra_matrix[s->intra_scantable.permutated[i]]);
         printf("\n");
 #endif
     } else {
@@ -1651,7 +1651,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #ifdef DEBUG
         dprintf("non intra matrix present\n");
         for(i=0;i<64;i++)
-            dprintf(" %d", s->inter_matrix[zigzag_direct[i]]);
+            dprintf(" %d", s->inter_matrix[s->intra_scantable.permutated[i]]);
         printf("\n");
 #endif
     } else {
