@@ -1202,6 +1202,7 @@ static int av_encode(AVFormatContext **output_files,
             case CODEC_TYPE_AUDIO:
                 codec->sample_rate = icodec->sample_rate;
                 codec->channels = icodec->channels;
+                codec->frame_size = icodec->frame_size;
                 break;
             case CODEC_TYPE_VIDEO:
                 codec->frame_rate = icodec->frame_rate;
