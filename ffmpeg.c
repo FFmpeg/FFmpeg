@@ -3130,6 +3130,7 @@ static void opt_output_file(const char *filename)
                     video_enc->gop_size = 0;
                 if (video_qscale || same_quality) {
                     video_enc->flags |= CODEC_FLAG_QSCALE;
+                    video_enc->global_quality= 
                     st->quality = FF_QP2LAMBDA * video_qscale;
                 }
 
