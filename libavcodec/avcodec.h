@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4648
-#define LIBAVCODEC_BUILD_STR   "4648"
+#define LIBAVCODEC_BUILD       4649
+#define LIBAVCODEC_BUILD_STR   "4649"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -882,11 +882,19 @@ typedef struct AVCodecContext {
 #define FF_CMP_CHROMA 256
     
     /**
-     * ME diamond size
+     * ME diamond size & shape
      * encoding: set by user.
      * decoding: unused
      */
     int dia_size;
+
+    /**
+     * amount of previous MV predictors (2a+1 x 2a+1 square)
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int last_predictor_count;
+
 } AVCodecContext;
 
 typedef struct AVCodec {

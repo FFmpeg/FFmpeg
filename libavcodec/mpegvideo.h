@@ -150,8 +150,8 @@ typedef struct MotionEstContext{
     int (*motion_search[7])(struct MpegEncContext * s, int block,
                              int *mx_ptr, int *my_ptr,
                              int P[10][2], int pred_x, int pred_y,
-                             int xmin, int ymin, int xmax, int ymax, Picture *ref_picture,
-                             uint16_t * const mv_penalty);
+                             int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
+                             int ref_mv_scale, uint16_t * const mv_penalty);
 }MotionEstContext;
 
 typedef struct MpegEncContext {
@@ -369,7 +369,7 @@ typedef struct MpegEncContext {
     
     int resync_mb_x;                 /* x position of last resync marker */
     int resync_mb_y;                 /* y position of last resync marker */
-    GetBitContext last_resync_gb;    /* used to serach for the next resync marker */
+    GetBitContext last_resync_gb;    /* used to search for the next resync marker */
     int mb_num_left;                 /* number of MBs left in this video packet (for partitioned Slices only)*/
     int next_p_frame_damaged;        /* set if the next p frame is damaged, to avoid showing trashed b frames */
     int error_resilience;

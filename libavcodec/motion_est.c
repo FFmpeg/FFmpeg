@@ -31,15 +31,10 @@
 
 #define SQ(a) ((a)*(a))
 
-#define P_LAST P[0]
 #define P_LEFT P[1]
 #define P_TOP P[2]
 #define P_TOPRIGHT P[3]
 #define P_MEDIAN P[4]
-#define P_LAST_LEFT P[5]
-#define P_LAST_RIGHT P[6]
-#define P_LAST_TOP P[7]
-#define P_LAST_BOTTOM P[8]
 #define P_MV1 P[9]
 
 static inline int sad_hpel_motion_search(MpegEncContext * s,
@@ -58,7 +53,19 @@ static inline int update_map_generation(MpegEncContext * s)
     return s->me.map_generation;
 }
 
+/* shape adaptive search stuff */
+typedef struct Minima{
+    int height;
+    int x, y;
+    int checked;
+}Minima;
 
+static int minima_cmp(const void *a, const void *b){
+    Minima *da = (Minima *) a;
+    Minima *db = (Minima *) b;
+    
+    return da->height - db->height;
+}
                                   
 /* SIMPLE */
 #define RENAME(a) simple_ ## a
@@ -792,18 +799,10 @@ static inline int mv4_search(MpegEncContext *s, int xmin, int ymin, int xmax, in
         const int rel_ymin4= ymin - block_y*8;
         const int rel_ymax4= ymax - block_y*8 + 8;
 #endif
-        P_LAST[0] = s->motion_val[mot_xy    ][0];
-        P_LAST[1] = s->motion_val[mot_xy    ][1];
         P_LEFT[0] = s->motion_val[mot_xy - 1][0];
         P_LEFT[1] = s->motion_val[mot_xy - 1][1];
-        P_LAST_RIGHT[0] = s->motion_val[mot_xy + 1][0];
-        P_LAST_RIGHT[1] = s->motion_val[mot_xy + 1][1];
-        P_LAST_BOTTOM[0]= s->motion_val[mot_xy + 1*mot_stride][0];
-        P_LAST_BOTTOM[1]= s->motion_val[mot_xy + 1*mot_stride][1];
 
         if(P_LEFT[0]       > (rel_xmax4<<shift)) P_LEFT[0]       = (rel_xmax4<<shift);
-        if(P_LAST_RIGHT[0] < (rel_xmin4<<shift)) P_LAST_RIGHT[0] = (rel_xmin4<<shift);
-        if(P_LAST_BOTTOM[1]< (rel_ymin4<<shift)) P_LAST_BOTTOM[1]= (rel_ymin4<<shift);
 
         /* special case for first line */
         if ((s->mb_y == 0 || s->first_slice_line) && block<2) {
@@ -834,7 +833,7 @@ static inline int mv4_search(MpegEncContext *s, int xmin, int ymin, int xmax, in
         P_MV1[1]= my;
 
         dmin4 = s->me.motion_search[1](s, block, &mx4, &my4, P, pred_x4, pred_y4, rel_xmin4, rel_ymin4, rel_xmax4, rel_ymax4, 
-                                       &s->last_picture, mv_penalty);
+                                       &s->last_picture, s->p_mv_table, (1<<16)>>shift, mv_penalty);
 
         dmin4= s->me.sub_motion_search(s, &mx4, &my4, dmin4, rel_xmin4, rel_ymin4, rel_xmax4, rel_ymax4, 
 					  pred_x4, pred_y4, &s->last_picture, block, 1, mv_penalty);
@@ -902,18 +901,10 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             const int mot_stride = s->block_wrap[0];
             const int mot_xy = s->block_index[0];
 
-            P_LAST[0]       = s->motion_val[mot_xy    ][0];
-            P_LAST[1]       = s->motion_val[mot_xy    ][1];
             P_LEFT[0]       = s->motion_val[mot_xy - 1][0];
             P_LEFT[1]       = s->motion_val[mot_xy - 1][1];
-            P_LAST_RIGHT[0] = s->motion_val[mot_xy + 2][0];
-            P_LAST_RIGHT[1] = s->motion_val[mot_xy + 2][1];
-            P_LAST_BOTTOM[0]= s->motion_val[mot_xy + 2*mot_stride][0];
-            P_LAST_BOTTOM[1]= s->motion_val[mot_xy + 2*mot_stride][1];
 
             if(P_LEFT[0]       > (rel_xmax<<shift)) P_LEFT[0]       = (rel_xmax<<shift);
-            if(P_LAST_RIGHT[0] < (rel_xmin<<shift)) P_LAST_RIGHT[0] = (rel_xmin<<shift);
-            if(P_LAST_BOTTOM[1]< (rel_ymin<<shift)) P_LAST_BOTTOM[1]= (rel_ymin<<shift);
 
             /* special case for first line */
             if ((mb_y == 0 || s->first_slice_line)) {
@@ -941,7 +932,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
             }
         }
         dmin = s->me.motion_search[0](s, 0, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax, 
-                                      &s->last_picture, mv_penalty);
+                                      &s->last_picture, s->p_mv_table, (1<<16)>>shift, mv_penalty);
  
         break;
     }
@@ -1046,6 +1037,7 @@ int ff_estimate_motion_b(MpegEncContext * s,
     const int mot_xy = (mb_y + 1)*mot_stride + mb_x + 1;
     uint8_t * const ref_picture= picture->data[0];
     uint16_t * const mv_penalty= s->me.mv_penalty[f_code] + MAX_MV;
+    int mv_scale;
         
     s->me.penalty_factor    = get_penalty_factor(s, s->avctx->me_cmp);
     s->me.sub_penalty_factor= get_penalty_factor(s, s->avctx->me_sub_cmp);
@@ -1082,19 +1074,10 @@ int ff_estimate_motion_b(MpegEncContext * s,
     case ME_X1:
     case ME_EPZS:
        {
-
-            P_LAST[0]        = mv_table[mot_xy    ][0];
-            P_LAST[1]        = mv_table[mot_xy    ][1];
             P_LEFT[0]        = mv_table[mot_xy - 1][0];
             P_LEFT[1]        = mv_table[mot_xy - 1][1];
-            P_LAST_RIGHT[0]  = mv_table[mot_xy + 1][0];
-            P_LAST_RIGHT[1]  = mv_table[mot_xy + 1][1];
-            P_LAST_BOTTOM[0] = mv_table[mot_xy + mot_stride][0];
-            P_LAST_BOTTOM[1] = mv_table[mot_xy + mot_stride][1];
 
             if(P_LEFT[0]       > (rel_xmax<<shift)) P_LEFT[0]       = (rel_xmax<<shift);
-            if(P_LAST_RIGHT[0] < (rel_xmin<<shift)) P_LAST_RIGHT[0] = (rel_xmin<<shift);
-            if(P_LAST_BOTTOM[1]< (rel_ymin<<shift)) P_LAST_BOTTOM[1]= (rel_ymin<<shift);
 
             /* special case for first line */
             if ((mb_y == 0 || s->first_slice_line)) {
@@ -1113,8 +1096,15 @@ int ff_estimate_motion_b(MpegEncContext * s,
             pred_x= P_LEFT[0];
             pred_y= P_LEFT[1];
         }
+        
+        if(mv_table == s->b_forw_mv_table){
+            mv_scale= (s->pb_time<<16) / (s->pp_time<<shift);
+        }else{
+            mv_scale= ((s->pb_time - s->pp_time)<<16) / (s->pp_time<<shift);
+        }
+        
         dmin = s->me.motion_search[0](s, 0, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax, 
-                                      picture, mv_penalty);
+                                      picture, s->p_mv_table, mv_scale, mv_penalty);
  
         break;
     }
@@ -1232,19 +1222,9 @@ static inline int direct_search(MpegEncContext * s,
     int16_t (*mv_table)[2]= s->b_direct_mv_table;
     uint16_t * const mv_penalty= s->me.mv_penalty[1] + MAX_MV;
     
-    P_LAST[0]        = mv_table[mot_xy    ][0];
-    P_LAST[1]        = mv_table[mot_xy    ][1];
     P_LEFT[0]        = mv_table[mot_xy - 1][0];
     P_LEFT[1]        = mv_table[mot_xy - 1][1];
-    P_LAST_RIGHT[0]  = mv_table[mot_xy + 1][0];
-    P_LAST_RIGHT[1]  = mv_table[mot_xy + 1][1];
-    P_LAST_BOTTOM[0] = mv_table[mot_xy + mot_stride][0];
-    P_LAST_BOTTOM[1] = mv_table[mot_xy + mot_stride][1];
-/*
-    if(P_LEFT[0]       > (rel_xmax<<shift)) P_LEFT[0]       = (rel_xmax<<shift);
-    if(P_LAST_RIGHT[0] < (rel_xmin<<shift)) P_LAST_RIGHT[0] = (rel_xmin<<shift);
-    if(P_LAST_BOTTOM[1]< (rel_ymin<<shift)) P_LAST_BOTTOM[1]= (rel_ymin<<shift);
-*/
+
     /* special case for first line */
     if ((mb_y == 0 || s->first_slice_line)) {
     } else {
@@ -1305,12 +1285,12 @@ static inline int direct_search(MpegEncContext * s,
 
     if(s->flags&CODEC_FLAG_QPEL){
         dmin = simple_direct_qpel_epzs_motion_search(s, 0, &mx, &my, P, 0, 0, xmin, ymin, xmax, ymax, 
-                                                     &s->last_picture, mv_penalty);
+                                                     &s->last_picture, mv_table, 1<<14, mv_penalty);
         dmin = simple_direct_qpel_qpel_motion_search(s, &mx, &my, dmin, xmin, ymin, xmax, ymax,
                                                 0, 0, &s->last_picture, 0, 0, mv_penalty);
     }else{
         dmin = simple_direct_hpel_epzs_motion_search(s, 0, &mx, &my, P, 0, 0, xmin, ymin, xmax, ymax, 
-                                                     &s->last_picture, mv_penalty);
+                                                     &s->last_picture, mv_table, 1<<15, mv_penalty);
         dmin = simple_direct_hpel_hpel_motion_search(s, &mx, &my, dmin, xmin, ymin, xmax, ymax,
                                                 0, 0, &s->last_picture, 0, 0, mv_penalty);
     }
