@@ -74,7 +74,7 @@ int frame_count = 0;
 
 #include "msmpeg4data.h"
 
-static int rl_length[2][NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
+static UINT8 rl_length[2][NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
 
 #ifdef STATS
 
