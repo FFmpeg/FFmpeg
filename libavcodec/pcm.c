@@ -209,14 +209,14 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_S8:
         for(;n>0;n--) {
             v = *samples++;
-            dst[0] = (v + 128) >> 8;
+            dst[0] = v >> 8;
             dst++;
         }
         break;
     case CODEC_ID_PCM_U8:
         for(;n>0;n--) {
             v = *samples++;
-            dst[0] = ((v + 128) >> 8) + 128;
+            dst[0] = (v >> 8) + 128;
             dst++;
         }
         break;
