@@ -161,7 +161,6 @@ static int decode_init(AVCodecContext *avctx)
 	c->pic.data[0] = NULL;
 
     if (avcodec_check_dimensions(avctx, avctx->width, avctx->height) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Bad image size (w = %d, h = %d).\n", avctx->width, avctx->height);
         return 1;
     }
 
