@@ -185,14 +185,14 @@ static unsigned int codec_get_asf_tag(const CodecTag *tags, int id)
     return 0;
 }
 
-int codec_get_id(const CodecTag *tags, unsigned int tag)
+enum CodecID codec_get_id(const CodecTag *tags, unsigned int tag)
 {
     while (tags->id != 0) {
         if (tags->tag == tag)
             return tags->id;
         tags++;
     }
-    return 0;
+    return CODEC_ID_NONE;
 }
 
 unsigned int codec_get_bmp_tag(int id)

@@ -1141,7 +1141,7 @@ int avoption_parse(void* strct, const AVOption* list, const char* opts);
  */
 typedef struct AVCodec {
     const char *name;
-    int type;
+    enum CodecType type;
     int id;
     int priv_data_size;
     int (*init)(AVCodecContext *);
