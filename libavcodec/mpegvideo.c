@@ -619,6 +619,7 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
     s->mb_skiped = 0;
     s->decoding_error=0;
+    avctx->mbskip_table= s->mbskip_table;
 
     if(avctx->flags&CODEC_FLAG_DR1){
         int i;
@@ -628,6 +629,7 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         s->uvlinesize= avctx->dr_uvstride;
         s->ip_buffer_count= avctx->dr_ip_buffer_count;
     }
+    avctx->dr_ip_buffer_count= s->ip_buffer_count;
     
     if (s->pict_type == B_TYPE) {
         for(i=0;i<3;i++) {
@@ -1443,9 +1445,9 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             }
         }
 
-        dest_y = s->current_picture[0] + (mb_y * 16 * s->linesize) + mb_x * 16;
-        dest_cb = s->current_picture[1] + (mb_y * 8 * (s->uvlinesize)) + mb_x * 8;
-        dest_cr = s->current_picture[2] + (mb_y * 8 * (s->uvlinesize)) + mb_x * 8;
+        dest_y = s->current_picture [0] + (mb_y * 16* s->linesize  ) + mb_x * 16;
+        dest_cb = s->current_picture[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
+        dest_cr = s->current_picture[2] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
 
         if (s->interlaced_dct) {
             dct_linesize = s->linesize * 2;

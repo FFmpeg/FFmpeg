@@ -88,7 +88,6 @@ static int h263_decode_init(AVCodecContext *avctx)
         return -1;
     }
     s->codec_id= avctx->codec->id;
-    avctx->mbskip_table= s->mbskip_table;
 
     /* for h263, we allocate the images after having read the header */
     if (avctx->codec->id != CODEC_ID_H263 && avctx->codec->id != CODEC_ID_MPEG4)
