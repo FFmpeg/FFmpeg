@@ -850,7 +850,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
 
 		"movq b80, %%mm6				\n\t"
-		"movd %2, %%mm5					\n\t" // QP
+		"movd pQPb, %%mm5				\n\t" // QP
 		"movq %%mm5, %%mm4				\n\t"
 		"paddusb %%mm5, %%mm5				\n\t" // 2QP
 		"paddusb %%mm5, %%mm4				\n\t" // 3QP
@@ -933,7 +933,7 @@ HX1old((%%ebx, %1, 2))
 		"psubusb %%mm3, %%mm2				\n\t"\
 		"movd %%mm1, %%ecx				\n\t"\
 		"psubusb %%mm4, %%mm3				\n\t"\
-		"paddsb (%3, %%ecx, 8), %%mm0			\n\t"\
+		"paddsb (%2, %%ecx, 8), %%mm0			\n\t"\
 		"por %%mm2, %%mm3				\n\t" /* p´x = |px - p(x+1)| */\
 		"paddb %%mm6, %%mm0				\n\t"\
 		"pcmpeqb %%mm7, %%mm2				\n\t" /* p´x = sgn[px - p(x+1)] */\
@@ -954,18 +954,18 @@ HX1old((%%ebx, %1, 2))
 		"movd 4" #c ", %%mm1				\n\t"\
 		"punpckldq %%mm1, %%mm0				\n\t"\
 		"paddb %%mm6, %%mm0				\n\t"\
-		"paddsb (%3, %%ecx, 8), %%mm0			\n\t"\
+		"paddsb (%2, %%ecx, 8), %%mm0			\n\t"\
 		"paddb %%mm6, %%mm0				\n\t"\
 		"movq %%mm0, " #c "				\n\t"\
 		"movd %%mm3, %%ecx				\n\t"\
 		"movd " #d ", %%mm0				\n\t"\
-		"paddsb (%3, %%ecx, 8), %%mm4			\n\t"\
+		"paddsb (%2, %%ecx, 8), %%mm4			\n\t"\
 		"movd 4" #d ", %%mm1				\n\t"\
 		"paddb %%mm6, %%mm4				\n\t"\
 		"punpckldq %%mm1, %%mm0				\n\t"\
 		"movq %%mm4, " #b "				\n\t"\
 		"paddb %%mm6, %%mm0				\n\t"\
-		"paddsb (%3, %%ecx, 8), %%mm0			\n\t"\
+		"paddsb (%2, %%ecx, 8), %%mm0			\n\t"\
 		"paddb %%mm6, %%mm0				\n\t"\
 		"movq %%mm0, " #d "				\n\t"\
 
@@ -974,7 +974,7 @@ HX1b((%0, %1, 4),(%%ebx),(%%ebx, %1),(%%ebx, %1, 2))
 
 
 		:
-		: "r" (src), "r" (stride), "r" (QP), "r" (lut)
+		: "r" (src), "r" (stride), "r" (lut)
 		: "%eax", "%ebx", "%ecx"
 	);
 #else
@@ -2101,7 +2101,8 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 			const int stride= dstStride;
 			int QP= isColor ?
 				QPs[(y>>3)*QPStride + (x>>3)]:
-				(QPs[(y>>4)*QPStride + (x>>4)] * (packedYScale &0xFFFF))>>8;
+				QPs[(y>>4)*QPStride + (x>>4)];
+			if(!isColor && (mode & LEVEL_FIX)) QP= (QP* (packedYScale &0xFFFF))>>8;
 #ifdef HAVE_MMX
 		asm volatile(
 			"movd %0, %%mm7					\n\t"
