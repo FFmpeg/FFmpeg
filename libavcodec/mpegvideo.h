@@ -76,7 +76,7 @@ typedef struct RateControlContext{
     Predictor pred[5];
     double short_term_qsum;   /* sum of recent qscales */
     double short_term_qcount; /* count of recent qscales */
-    double pass1_bits;        /* bits outputted by the pass1 code (including complexity init) */
+    double pass1_rc_eq_output_sum;/* sum of the output of the rc equation, this is used for normalization  */
     double pass1_wanted_bits; /* bits which should have been outputed by the pass1 code (including complexity init) */
     double last_qscale;
     double last_qscale_for[5]; /* last qscale for a specific pict type, used for max_diff & ipb factor stuff */

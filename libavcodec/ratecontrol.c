@@ -123,7 +123,7 @@ int ff_rate_control_init(MpegEncContext *s)
         rcc->short_term_qsum=0.001;
         rcc->short_term_qcount=0.001;
     
-        rcc->pass1_bits       =0.001;
+        rcc->pass1_rc_eq_output_sum= 0.001;
         rcc->pass1_wanted_bits=0.001;
         
         /* init stuff with the user specified complexity */
@@ -163,7 +163,7 @@ int ff_rate_control_init(MpegEncContext *s)
 
                 bits= rce.i_tex_bits + rce.p_tex_bits;
 
-                q= get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_bits, i);
+                q= get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum, i);
                 rcc->pass1_wanted_bits+= s->bit_rate/(s->frame_rate / (double)FRAME_RATE_BASE);
             }
         }
@@ -296,7 +296,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
 
     bits= ff_eval(s->avctx->rc_eq, const_values, const_names, func1, func1_names, NULL, NULL, rce);
     
-    rcc->pass1_bits+= bits;
+    rcc->pass1_rc_eq_output_sum+= bits;
     bits*=rate_factor;
     if(bits<0.0) bits=0.0;
     bits+= 1.0; //avoid 1/0 issues
@@ -628,7 +628,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
         rcc->frame_count[pict_type] ++;
 
         bits= rce->i_tex_bits + rce->p_tex_bits;
-        rate_factor= rcc->pass1_wanted_bits/rcc->pass1_bits * br_compensation;
+        rate_factor= rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum * br_compensation;
     
         q= get_qscale(s, rce, rate_factor, picture_number);
 
