@@ -42,29 +42,8 @@ typedef struct RICEContext{
     GetBitContext gb;
     int save, run, run2; /* internal rice decoder state */
     int sum, count; /* sum and count for getting rice parameter */
+    int lossy;
 }RICEContext;
-
-/* could use get_sr_golomb() but is behaves differently on numbers like Rice(2, -64) */
-static inline int get_rice(GetBitContext *gb, int K)
-{
-    int i;
-    int V = 0;
-    for(i = 0; !get_bits1(gb); i++);
-    V = i;
-    for(i = 0; i < K; i++) V = (V << 1) | get_bits1(gb);
-    if(V & 1) return (V + 1) >> 1;
-    return -(V >> 1);
-}
-
-static inline int get_u_rice(GetBitContext *gb, int K)
-{
-    int i;
-    int V = 0;
-    for(i = 0; !get_bits1(gb); i++);
-    V = i;
-    for(i = 0; i < K; i++) V = (V << 1) | get_bits1(gb);
-    return V;
-}
 
 static int loco_get_rice_param(RICEContext *r)
 {
@@ -81,8 +60,6 @@ static int loco_get_rice_param(RICEContext *r)
 
 static inline void loco_update_rice_param(RICEContext *r, int val)
 {
-    if (val < 0)
-        val = -val;
     r->sum += val;
     r->count++;
     
@@ -95,15 +72,16 @@ static inline void loco_update_rice_param(RICEContext *r, int val)
 static inline int loco_get_rice(RICEContext *r)
 {
     int v;
-    
     if (r->run > 0) { /* we have zero run */
         r->run--;
+        loco_update_rice_param(r, 0);
         return 0;
     }
-    v = -get_rice(&r->gb, loco_get_rice_param(r));
+    v = get_ur_golomb_jpegls(&r->gb, loco_get_rice_param(r), INT_MAX, 0);
+    loco_update_rice_param(r, (v+1)>>1);
     if (!v) {
         if (r->save >= 0) {
-            r->run = get_u_rice(&r->gb, 2);
+            r->run = get_ur_golomb_jpegls(&r->gb, 2, INT_MAX, 0);
             if(r->run > 1)
                 r->save += r->run + 1;
             else
@@ -111,12 +89,15 @@ static inline int loco_get_rice(RICEContext *r)
         }
         else
             r->run2++;
-    } else if (r->run2 > 0) {
-        if (r->run2 > 2)
-            r->save += r->run2;
-        else
-            r->save -= 3;
-        r->run2 = 0;
+    } else {
+        v = ((v>>1) + r->lossy) ^ -(v&1);
+        if (r->run2 > 0) {
+            if (r->run2 > 2)
+                r->save += r->run2;
+            else
+                r->save -= 3;
+            r->run2 = 0;
+        }
     }
     
     return v;
@@ -125,19 +106,13 @@ static inline int loco_get_rice(RICEContext *r)
 /* LOCO main predictor - LOCO-I/JPEG-LS predictor */
 static inline int loco_predict(uint8_t* data, int stride, int step)
 {
-    int max_ab, min_ab;
     int a, b, c;
     
     a = data[-stride];
     b = data[-step];
     c = data[-stride - step];
     
-    max_ab = (a > b) ? a : b;
-    min_ab = (a < b) ? a : b;
-    
-    if (c >= max_ab) return min_ab;
-    if (c <= min_ab) return max_ab;
-    return (a + b - c);
+    return mid_pred(a, a + b - c, b);
 }
 
 static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int height,
@@ -151,38 +126,27 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
     rc.save = 0;
     rc.run = 0;
     rc.run2 = 0;
+    rc.lossy = l->lossy; 
     
     rc.sum = 8;
     rc.count = 1;
     
     /* restore top left pixel */
     val = loco_get_rice(&rc);
-    loco_update_rice_param(&rc, val);
-    if (val < 0) val -= l->lossy;
-    if (val > 0) val += l->lossy;
     data[0] = 128 + val;
     /* restore top line */
     for (i = 1; i < width; i++) {
         val = loco_get_rice(&rc);
-        loco_update_rice_param(&rc, val);
-        if (val < 0) val -= l->lossy;
-        if (val > 0) val += l->lossy;
         data[i * step] = data[i * step - step] + val;
     }
     data += stride;
     for (j = 1; j < height; j++) {
         /* restore left column */
         val = loco_get_rice(&rc);
-        loco_update_rice_param(&rc, val);
-        if (val < 0) val -= l->lossy;
-        if (val > 0) val += l->lossy;
         data[0] = data[-stride] + val;
         /* restore all other pixels */
         for (i = 1; i < width; i++) {
             val = loco_get_rice(&rc);
-            loco_update_rice_param(&rc, val);
-            if (val < 0) val -= l->lossy;
-            if (val > 0) val += l->lossy;
             data[i * step] = loco_predict(&data[i * step], stride, step) + val;
         }
         data += stride;
@@ -302,6 +266,8 @@ static int decode_init(AVCodecContext *avctx){
         av_log(avctx, AV_LOG_INFO, "Unknown colorspace, index = %i\n", l->mode);
         return -1;
     }
+    if(avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(avctx, AV_LOG_INFO, "lossy:%i, version:%i, mode: %i\n", l->lossy, version, l->mode);
 
     return 0;
 }
