@@ -1342,6 +1342,38 @@ static void clear_blocks_c(DCTELEM *blocks)
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
 }
 
+static void add_bytes_c(uint8_t *dst, uint8_t *src, int w){
+    int i;
+    for(i=0; i+7<w; i++){
+        dst[i+0] += src[i+0];
+        dst[i+1] += src[i+1];
+        dst[i+2] += src[i+2];
+        dst[i+3] += src[i+3];
+        dst[i+4] += src[i+4];
+        dst[i+5] += src[i+5];
+        dst[i+6] += src[i+6];
+        dst[i+7] += src[i+7];
+    }
+    for(; i<w; i++)
+        dst[i+0] += src[i+0];
+}
+
+static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
+    int i;
+    for(i=0; i+7<w; i++){
+        dst[i+0] = src1[i+0]-src2[i+0];
+        dst[i+1] = src1[i+1]-src2[i+1];
+        dst[i+2] = src1[i+2]-src2[i+2];
+        dst[i+3] = src1[i+3]-src2[i+3];
+        dst[i+4] = src1[i+4]-src2[i+4];
+        dst[i+5] = src1[i+5]-src2[i+5];
+        dst[i+6] = src1[i+6]-src2[i+6];
+        dst[i+7] = src1[i+7]-src2[i+7];
+    }
+    for(; i<w; i++)
+        dst[i+0] = src1[i+0]-src2[i+0];
+}
+
 void dsputil_init(DSPContext* c, unsigned mask)
 {
     static int init_done = 0;
@@ -1430,6 +1462,9 @@ void dsputil_init(DSPContext* c, unsigned mask)
     dspfunc(avg_qpel, 1, 8);
     /* dspfunc(avg_no_rnd_qpel, 1, 8); */
 #undef dspfunc
+
+    c->add_bytes= add_bytes_c;
+    c->diff_bytes= diff_bytes_c;
 
 #ifdef HAVE_MMX
     dsputil_init_mmx(c, mask);

@@ -117,6 +117,11 @@ typedef struct DSPContext {
     op_pixels_abs_func pix_abs8x8_x2;
     op_pixels_abs_func pix_abs8x8_y2;
     op_pixels_abs_func pix_abs8x8_xy2;
+    
+    /* huffyuv specific */
+    //FIXME note: alignment isnt guranteed currently but could be if needed
+    void (*add_bytes)(uint8_t *dst/*align 16*/, uint8_t *src/*align 16*/, int w);
+    void (*diff_bytes)(uint8_t *dst/*align 16*/, uint8_t *src1/*align 16*/, uint8_t *src2/*align 16*/,int w);
 } DSPContext;
 
 void dsputil_init(DSPContext* p, unsigned mask);

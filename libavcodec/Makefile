@@ -16,7 +16,7 @@ OBJS= common.o utils.o mem.o allcodecs.o \
       motion_est.o imgconvert.o imgresample.o msmpeg4.o \
       mpeg12.o h263dec.o svq1.o rv10.o mpegaudiodec.o pcm.o simple_idct.o \
       ratecontrol.o adpcm.o eval.o dv.o error_resilience.o \
-      wmadec.o fft.o mdct.o mace.o
+      wmadec.o fft.o mdct.o mace.o huffyuv.o
 ASM_OBJS=
 
 # currently using liba52 for ac3 decoding

@@ -53,6 +53,7 @@ void avcodec_register_all(void)
     register_avcodec(&msmpeg4v3_encoder);
     register_avcodec(&wmv1_encoder);
     register_avcodec(&wmv2_encoder);
+    register_avcodec(&huffyuv_encoder);
 #endif /* CONFIG_ENCODERS */
     register_avcodec(&rawvideo_codec);
 
@@ -78,6 +79,7 @@ void avcodec_register_all(void)
     register_avcodec(&wmav2_decoder);
     register_avcodec(&mace3_decoder);
     register_avcodec(&mace6_decoder);
+    register_avcodec(&huffyuv_decoder);
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif

@@ -453,6 +453,51 @@ static int pix_sum16_mmx(UINT8 * pix, int line_size){
         return sum;
 }
 
+static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
+    int i=0;
+    asm volatile(
+        "1:				\n\t"
+        "movq  (%1, %0), %%mm0		\n\t"
+        "movq  (%2, %0), %%mm1		\n\t"
+        "paddb %%mm0, %%mm1		\n\t"
+        "movq %%mm1, (%2, %0)		\n\t"
+        "movq 8(%1, %0), %%mm0		\n\t"
+        "movq 8(%2, %0), %%mm1		\n\t"
+        "paddb %%mm0, %%mm1		\n\t"
+        "movq %%mm1, 8(%2, %0)		\n\t"
+        "addl $16, %0			\n\t"
+        "cmpl %3, %0			\n\t"
+        " jb 1b				\n\t"
+        : "+r" (i)
+        : "r"(src), "r"(dst), "r"(w-15)
+    );
+    for(; i<w; i++)
+        dst[i+0] += src[i+0];
+}
+
+static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
+    int i=0;
+    asm volatile(
+        "1:				\n\t"
+        "movq  (%2, %0), %%mm0		\n\t"
+        "movq  (%1, %0), %%mm1		\n\t"
+        "psubb %%mm0, %%mm1		\n\t"
+        "movq %%mm1, (%3, %0)		\n\t"
+        "movq 8(%2, %0), %%mm0		\n\t"
+        "movq 8(%1, %0), %%mm1		\n\t"
+        "psubb %%mm0, %%mm1		\n\t"
+        "movq %%mm1, 8(%3, %0)		\n\t"
+        "addl $16, %0			\n\t"
+        "cmpl %4, %0			\n\t"
+        " jb 1b				\n\t"
+        : "+r" (i)
+        : "r"(src1), "r"(src2), "r"(dst), "r"(w-15)
+    );
+    for(; i<w; i++)
+        dst[i+0] = src1[i+0]-src2[i+0];
+}
+
+
 #if 0
 static void just_return() { return; }
 #endif
@@ -531,6 +576,9 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
         c->avg_no_rnd_pixels_tab[1][1] = avg_no_rnd_pixels8_x2_mmx;
         c->avg_no_rnd_pixels_tab[1][2] = avg_no_rnd_pixels8_y2_mmx;
         c->avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels8_xy2_mmx;
+        
+        c->add_bytes= add_bytes_mmx;
+        c->diff_bytes= diff_bytes_mmx;
 
         if (mm_flags & MM_MMXEXT) {
             c->pix_abs16x16     = pix_abs16x16_mmx2;
