@@ -93,7 +93,7 @@ void av_build_filter(int16_t *filter, double factor, int tap_count, int phase_co
                 break;
             case 2:
                 w = 2.0*x / (factor*tap_count*M_PI);
-                y *= bessel(16*sqrt(FFMAX(1-w*w, 0))) / bessel(16);
+                y *= bessel(16*sqrt(FFMAX(1-w*w, 0)));
                 break;
             }
 
@@ -139,10 +139,9 @@ void av_resample_close(AVResampleContext *c){
 }
 
 void av_resample_compensate(AVResampleContext *c, int sample_delta, int compensation_distance){
-    assert(!c->compensation_distance); //FIXME
-
+//    sample_delta += (c->ideal_dst_incr - c->dst_incr)*(int64_t)c->compensation_distance / c->ideal_dst_incr;
     c->compensation_distance= compensation_distance;
-    c->dst_incr-= c->ideal_dst_incr * sample_delta / compensation_distance;
+    c->dst_incr = c->ideal_dst_incr - c->ideal_dst_incr * (int64_t)sample_delta / compensation_distance;
 }
 
 /**
@@ -202,7 +201,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
     }
     if(update_ctx){
         if(c->compensation_distance){
-            c->compensation_distance -= index;
+            c->compensation_distance -= dst_index;
             if(!c->compensation_distance)
                 c->dst_incr= c->ideal_dst_incr;
         }
@@ -210,5 +209,13 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
         c->index=0;
     }
     *consumed= index >> PHASE_SHIFT;
+#if 0    
+    if(update_ctx && !c->compensation_distance){
+#undef rand
+        av_resample_compensate(c, rand() % (8000*2) - 8000, 8000*2);
+av_log(NULL, AV_LOG_DEBUG, "%d %d %d\n", c->dst_incr, c->ideal_dst_incr, c->compensation_distance);
+    }
+#endif
+    
     return dst_index;
 }
