@@ -22,6 +22,12 @@
  * qpel decoding, gmc decoding, interlaced decoding, 
  * by Michael Niedermayer <michaelni@gmx.at>
  */
+
+/**
+ * @file h263.c
+ * @brief h263/mpeg4 codec
+ *
+ */
  
 //#define DEBUG
 #include "common.h"
@@ -1474,6 +1480,11 @@ void h263_encode_init(MpegEncContext *s)
     }
 }
 
+/**
+ * encodes a 8x8 block.
+ * @param block the 8x8 block
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ */
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
 {
     int level, run, last, i, j, last_index, last_non_zero, sign, slevel, code;
@@ -1799,6 +1810,13 @@ static void change_qscale(MpegEncContext * s, int dquant)
     s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
 }
 
+/**
+ * predicts the dc.
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ * @param dc_val_ptr a pointer to the dc_val entry for the current MB will be stored here
+ * @param dir_ptr pointer to an integer where the prediction direction will be stored
+ * @return the quantized predicted dc
+ */
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr)
 {
     int a, b, c, wrap, pred, scale;
@@ -1856,6 +1874,11 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_pt
     return pred;
 }
 
+/**
+ * predicts the ac.
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ * @param dir the ac prediction direction
+ */
 void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
                    int dir)
 {
@@ -1954,6 +1977,10 @@ static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
     }
 }
 
+/**
+ * encodes the dc value.
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ */
 static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
 {
 #if 1
@@ -1995,6 +2022,10 @@ static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
 #endif
 }
 #ifdef CONFIG_ENCODERS
+/**
+ * encodes a 8x8 block
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ */
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, 
                                UINT8 *scan_table, PutBitContext *dc_pb, PutBitContext *ac_pb)
 {
@@ -2626,6 +2657,7 @@ int ff_h263_resync(MpegEncContext *s){
 }
 
 /**
+ * gets the average motion vector for a GMC MB.
  * @param n either 0 for the x component or 1 for y
  * @returns the average MV for a GMC MB
  */
@@ -3591,6 +3623,12 @@ not_coded:
     return 0;
 }
 
+/**
+ * decodes the dc value.
+ * @param n block index (0-3 are luma, 4-5 are chroma)
+ * @param dir_ptr the prediction direction will be stored here
+ * @return the quantized dc
+ */
 static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 {
     int level, pred, code;
@@ -4476,6 +4514,10 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
     return 0;
 }
 
+/**
+ * decodes the user data stuff in the header.
+ * allso inits divx/xvid/lavc_version/build
+ */
 static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
     char buf[256];
     int i;
