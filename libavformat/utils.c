@@ -1009,7 +1009,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
             pos_min= e->pos;
             ts_min= e->timestamp;
 #ifdef DEBUG_SEEK
-        av_log(s, AV_LOG_DEBUG, "unsing cached pos_min=0x%llx dts_min=%lld\n", 
+        av_log(s, AV_LOG_DEBUG, "using cached pos_min=0x%llx dts_min=%lld\n", 
                pos_min,ts_min);
 #endif
         }else{
@@ -1023,7 +1023,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
             ts_max= e->timestamp;
             pos_limit= pos_max - e->min_distance;
 #ifdef DEBUG_SEEK
-        av_log(s, AV_LOG_DEBUG, "unsing cached pos_max=0x%llx pos_limit=0x%llx dts_max=%lld\n", 
+        av_log(s, AV_LOG_DEBUG, "using cached pos_max=0x%llx pos_limit=0x%llx dts_max=%lld\n", 
                pos_max,pos_limit, ts_max);
 #endif
         }
@@ -2229,6 +2229,7 @@ int64_t parse_date(const char *datestr, int duration)
     const char *q;
     int is_utc, len;
     char lastch;
+    int negative = 0;
 
 #undef time
     time_t now = time(0);
@@ -2273,6 +2274,10 @@ int64_t parse_date(const char *datestr, int duration)
             }
         }
     } else {
+	if (p[0] == '-') {
+	    negative = 1;
+	    ++p;
+	}
         q = small_strptime(p, time_fmt[0], &dt);
         if (!q) {
             dt.tm_sec = strtol(p, (char **)&q, 10);
@@ -2312,7 +2317,7 @@ int64_t parse_date(const char *datestr, int duration)
         }
         t += val;
     }
-    return t;
+    return negative ? -t : t;
 }
 
 /* syntax: '?tag1=val1&tag2=val2...'. Little URL decoding is done. Return

@@ -58,6 +58,7 @@ static void show_license(void);
 #define MAX_FILES 20
 
 static AVFormatContext *input_files[MAX_FILES];
+static int64_t input_files_ts_offset[MAX_FILES];
 static int nb_input_files = 0;
 
 static AVFormatContext *output_files[MAX_FILES];
@@ -184,6 +185,7 @@ static int audio_codec_id = CODEC_ID_NONE;
 static int64_t recording_time = 0;
 static int64_t start_time = 0;
 static int64_t rec_timestamp = 0;
+static int64_t input_ts_offset = 0;
 static int file_overwrite = 0;
 static char *str_title = NULL;
 static char *str_author = NULL;
@@ -220,6 +222,8 @@ static int me_range = 0;
 static int64_t video_size = 0;
 static int64_t audio_size = 0;
 static int64_t extra_size = 0;
+static int nb_frames_dup = 0;
+static int nb_frames_drop = 0;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
@@ -614,6 +618,12 @@ static void do_video_out(AVFormatContext *s,
             nb_frames = 2;
 //printf("vdelta:%f, ost->sync_opts:%lld, ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, ost->sync_ipts, nb_frames);
     }
+    if (nb_frames == 0)
+        ++nb_frames_drop;
+    else if (nb_frames == 2) {
+        ++nb_frames_dup;
+	//printf("*** dup!\n");
+    }
     ost->sync_opts+= nb_frames;
 
     if (nb_frames <= 0) 
@@ -964,6 +974,10 @@ static void print_report(AVFormatContext **output_files,
         sprintf(buf + strlen(buf), 
             "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
             (double)total_size / 1024, ti1, bitrate);
+
+	if (verbose > 1)
+	  sprintf(buf + strlen(buf), " dup=%d drop=%d",
+		  nb_frames_dup, nb_frames_drop);
         
         if (verbose >= 0)
             fprintf(stderr, "%s    \r", buf);
@@ -1116,7 +1130,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                ((double)ost->st->pts.val * ost->time_base.num / ost->time_base.den));
 #endif
                         /* set the input output pts pairs */
-                        ost->sync_ipts = (double)ist->pts / AV_TIME_BASE;
+                        ost->sync_ipts = (double)(ist->pts + input_files_ts_offset[ist->file_index])/ AV_TIME_BASE;
 
                         if (ost->encoding_needed) {
                             switch(ost->st->codec.codec_type) {
@@ -1167,8 +1181,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             opkt.stream_index= ost->index;
                             opkt.data= data_buf;
                             opkt.size= data_size;
-                            opkt.pts= pkt->pts; //FIXME ist->pts?
-                            opkt.dts= pkt->dts;
+                            opkt.pts= pkt->pts + input_files_ts_offset[ist->file_index];
+                            opkt.dts= pkt->dts + input_files_ts_offset[ist->file_index];
                             opkt.flags= pkt->flags;
                             
                             av_interleaved_write_frame(os, &opkt);
@@ -2522,6 +2536,11 @@ static void opt_rec_timestamp(const char *arg)
     rec_timestamp = parse_date(arg, 0) / 1000000;
 }
 
+static void opt_input_ts_offset(const char *arg)
+{
+    input_ts_offset = parse_date(arg, 1);
+}
+
 static void opt_input_file(const char *filename)
 {
     AVFormatContext *ic;
@@ -2632,6 +2651,9 @@ static void opt_input_file(const char *filename)
     }
     
     input_files[nb_input_files] = ic;
+    input_files_ts_offset[nb_input_files] = input_ts_offset;
+    if (ic->start_time != AV_NOPTS_VALUE && 0)
+	input_files_ts_offset[nb_input_files] -= ic->start_time;
     /* dump the file content */
     if (verbose >= 0)
         dump_format(ic, nb_input_files, filename, 0);
@@ -3501,6 +3523,7 @@ const OptionDef options[] = {
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream" },
     { "t", HAS_ARG, {(void*)opt_recording_time}, "set the recording time", "duration" },
     { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
+    { "itsoffset", HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
     { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
     { "timestamp", HAS_ARG, {(void*)&opt_rec_timestamp}, "set the timestamp", "time" },
     { "author", HAS_ARG | OPT_STRING, {(void*)&str_author}, "set the author", "string" },
