@@ -383,6 +383,12 @@ int fourxm_init(void);
 /* psxstr.c */
 int str_init(void);
 
+/* idroq.c */
+int roq_init(void);
+
+/* ipmovie.c */
+int ipmovie_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"

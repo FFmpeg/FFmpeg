@@ -52,6 +52,8 @@ void av_register_all(void)
     flvenc_init();
     flvdec_init();
     str_init();
+    roq_init();
+    ipmovie_init();
 
 #ifdef AMR_NB
     amr_init();

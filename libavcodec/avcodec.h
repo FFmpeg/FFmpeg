@@ -66,6 +66,8 @@ enum CodecID {
     CODEC_ID_VCR1,
     CODEC_ID_CLJR,
     CODEC_ID_MDEC,
+    CODEC_ID_ROQ,
+    CODEC_ID_INTERPLAY_VIDEO,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -88,6 +90,10 @@ enum CodecID {
     /* RealAudio codecs*/
     CODEC_ID_RA_144,
     CODEC_ID_RA_288,
+
+    /* various DPCM codecs */
+    CODEC_ID_ROQ_DPCM,
+    CODEC_ID_INTERPLAY_DPCM,
 };
 
 enum CodecType {
@@ -1347,8 +1353,12 @@ extern AVCodec cljr_decoder;
 extern AVCodec ffv1_decoder;
 extern AVCodec fourxm_decoder;
 extern AVCodec mdec_decoder;
+extern AVCodec roq_decoder;
+extern AVCodec interplay_video_decoder;
 extern AVCodec ra_144_decoder;
 extern AVCodec ra_288_decoder;
+extern AVCodec roq_dpcm_decoder;
+extern AVCodec interplay_dpcm_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
