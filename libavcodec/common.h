@@ -165,11 +165,25 @@ inline void dprintf(const char* fmt,...) {}
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 
-#if defined ARCH_X86 && (__GNUC__ != 3 || __GNUC_MINOR__ > 1)
-// inverse for shift optimization (gcc should do that ...)
-#define INV32(a) (-a)
+#ifdef ARCH_X86
+// avoid +32 for shift optimization (gcc should do that ...)
+static inline  int32_t NEG_SSR32( int32_t a, int8_t s){
+    asm ("sarl %1, %0\n\t"
+         : "+r" (a)
+         : "ic" ((uint8_t)(-s))
+    );
+    return a;
+}
+static inline uint32_t NEG_USR32(uint32_t a, int8_t s){
+    asm ("shrl %1, %0\n\t"
+         : "+r" (a)
+         : "ic" ((uint8_t)(-s))
+    );
+    return a;
+}
 #else
-#define INV32(a) (32-a)
+#define NEG_SSR32(a,s) ((( int32_t)(a))>>(32-(s)))
+#define NEG_USR32(a,s) (((uint32_t)(a))>>(32-(s)))
 #endif
 
 /* bit output */
@@ -530,10 +544,10 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 #   define LAST_SKIP_CACHE(name, gb, num) ;
 
 #   define SHOW_UBITS(name, gb, num)\
-        (((uint32_t)name##_cache)>>INV32(num))
+        NEG_USR32(name##_cache, num)
 
 #   define SHOW_SBITS(name, gb, num)\
-        (((int32_t)name##_cache)>>INV32(num))
+        NEG_SSR32(name##_cache, num)
 
 #   define GET_CACHE(name, gb)\
         ((uint32_t)name##_cache)
@@ -579,10 +593,10 @@ static inline int get_bits_count(GetBitContext *s){
 #   define LAST_SKIP_CACHE(name, gb, num) SKIP_CACHE(name, gb, num)
 
 #   define SHOW_UBITS(name, gb, num)\
-        (((uint32_t)name##_cache)>>INV32(num))
+        NEG_USR32(name##_cache, num)
 
 #   define SHOW_SBITS(name, gb, num)\
-        (((int32_t)name##_cache)>>INV32(num))
+        NEG_SSR32(name##_cache, num)
 
 #   define GET_CACHE(name, gb)\
         ((uint32_t)name##_cache)
@@ -610,7 +624,7 @@ static inline int get_bits_count(GetBitContext *s){
 #   define UPDATE_CACHE(name, gb)\
     if(name##_bit_count > 0){\
         const uint32_t next= be2me_32( *name##_buffer_ptr );\
-        name##_cache0 |= next>>INV32(name##_bit_count);\
+        name##_cache0 |= NEG_USR32(next,name##_bit_count);\
         name##_cache1 |= next<<name##_bit_count;\
         name##_buffer_ptr++;\
         name##_bit_count-= 32;\
@@ -627,7 +641,7 @@ static inline int get_bits_count(GetBitContext *s){
 #else
 #   define SKIP_CACHE(name, gb, num)\
         name##_cache0 <<= (num);\
-        name##_cache0 |= name##_cache1 >>INV32(num);\
+        name##_cache0 |= NEG_USR32(name##_cache1,num);\
         name##_cache1 <<= (num);
 #endif
 
@@ -644,10 +658,10 @@ static inline int get_bits_count(GetBitContext *s){
 #   define LAST_SKIP_CACHE(name, gb, num) SKIP_CACHE(name, gb, num)
 
 #   define SHOW_UBITS(name, gb, num)\
-        (((uint32_t)name##_cache0)>>INV32(num))
+        NEG_USR32(name##_cache0, num)
 
 #   define SHOW_SBITS(name, gb, num)\
-        (((int32_t)name##_cache0)>>INV32(num))
+        NEG_SSR32(name##_cache0, num)
 
 #   define GET_CACHE(name, gb)\
         (name##_cache0)
