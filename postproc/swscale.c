@@ -24,7 +24,7 @@ NOTES
 known BUGS with known cause (no bugreports please!, but patches are welcome :) )
 horizontal MMX2 scaler reads 1-7 samples too much (might cause a sig11)
 
-Supported output formats BGR15 BGR16 BGR24 BGR32 (15,24 are untested)
+Supported output formats BGR15 BGR16 BGR24 BGR32
 BGR15 & BGR16 MMX verions support dithering
 Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
@@ -388,10 +388,10 @@ static uint8_t funnyUVCode[10000];
 			"punpckhbw %%mm7, %%mm6		\n\t" /* 0R0R0R0R 2 */\
 			"movq %%mm2, %%mm0		\n\t" /* GBGBGBGB 0 */\
 			"movq %%mm1, %%mm3		\n\t" /* GBGBGBGB 2 */\
-			"punpcklbw %%mm5, %%mm0		\n\t" /* 0RGB0RGB 0 */\
-			"punpckhbw %%mm5, %%mm2		\n\t" /* 0RGB0RGB 1 */\
-			"punpcklbw %%mm6, %%mm1		\n\t" /* 0RGB0RGB 2 */\
-			"punpckhbw %%mm6, %%mm3		\n\t" /* 0RGB0RGB 3 */\
+			"punpcklwd %%mm5, %%mm0		\n\t" /* 0RGB0RGB 0 */\
+			"punpckhwd %%mm5, %%mm2		\n\t" /* 0RGB0RGB 1 */\
+			"punpcklwd %%mm6, %%mm1		\n\t" /* 0RGB0RGB 2 */\
+			"punpckhwd %%mm6, %%mm3		\n\t" /* 0RGB0RGB 3 */\
 \
 			"movq %%mm0, %%mm4		\n\t" /* 0RGB0RGB 0 */\
 			"psrlq $8, %%mm0		\n\t" /* 00RGB0RG 0 */\
