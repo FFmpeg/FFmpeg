@@ -22,12 +22,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/time.h>
-#include <time.h>
 #else
 #define strcasecmp _stricmp
 #include <sys/types.h>
 #include <sys/timeb.h>
 #endif
+#include <time.h>
 
 AVInputFormat *first_iformat;
 AVOutputFormat *first_oformat;
