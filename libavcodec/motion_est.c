@@ -1083,7 +1083,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     printf("varc=%4d avg_var=%4d (sum=%4d) vard=%4d mx=%2d my=%2d\n",
 	   varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
 #endif
-    if(s->flags&CODEC_FLAG_HQ){
+    if(s->avctx->mb_decision > FF_MB_DECISION_SIMPLE){
         if (vard <= 64 || vard < varc)
             s->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         else
@@ -1315,8 +1315,8 @@ static inline int check_bidir_mv(MpegEncContext * s,
         dxy = ((motion_fy & 3) << 2) | (motion_fx & 3);
         src_x = mb_x * 16 + (motion_fx >> 2);
         src_y = mb_y * 16 + (motion_fy >> 2);
-        assert(src_x >=-16 && src_x<=s->width);
-        assert(src_y >=-16 && src_y<=s->height);
+        assert(src_x >=-16 && src_x<=s->h_edge_pos);
+        assert(src_y >=-16 && src_y<=s->v_edge_pos);
 
         ptr = s->last_picture.data[0] + (src_y * s->linesize) + src_x;
         s->dsp.put_qpel_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize);
@@ -1324,8 +1324,8 @@ static inline int check_bidir_mv(MpegEncContext * s,
         dxy = ((motion_by & 3) << 2) | (motion_bx & 3);
         src_x = mb_x * 16 + (motion_bx >> 2);
         src_y = mb_y * 16 + (motion_by >> 2);
-        assert(src_x >=-16 && src_x<=s->width);
-        assert(src_y >=-16 && src_y<=s->height);
+        assert(src_x >=-16 && src_x<=s->h_edge_pos);
+        assert(src_y >=-16 && src_y<=s->v_edge_pos);
     
         ptr = s->next_picture.data[0] + (src_y * s->linesize) + src_x;
         s->dsp.avg_qpel_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize);
@@ -1333,8 +1333,8 @@ static inline int check_bidir_mv(MpegEncContext * s,
         dxy = ((motion_fy & 1) << 1) | (motion_fx & 1);
         src_x = mb_x * 16 + (motion_fx >> 1);
         src_y = mb_y * 16 + (motion_fy >> 1);
-        assert(src_x >=-16 && src_x<=s->width);
-        assert(src_y >=-16 && src_y<=s->height);
+        assert(src_x >=-16 && src_x<=s->h_edge_pos);
+        assert(src_y >=-16 && src_y<=s->v_edge_pos);
 
         ptr = s->last_picture.data[0] + (src_y * s->linesize) + src_x;
         s->dsp.put_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize, 16);
@@ -1342,8 +1342,8 @@ static inline int check_bidir_mv(MpegEncContext * s,
         dxy = ((motion_by & 1) << 1) | (motion_bx & 1);
         src_x = mb_x * 16 + (motion_bx >> 1);
         src_y = mb_y * 16 + (motion_by >> 1);
-        assert(src_x >=-16 && src_x<=s->width);
-        assert(src_y >=-16 && src_y<=s->height);
+        assert(src_x >=-16 && src_x<=s->h_edge_pos);
+        assert(src_y >=-16 && src_y<=s->v_edge_pos);
     
         ptr = s->next_picture.data[0] + (src_y * s->linesize) + src_x;
         s->dsp.avg_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize, 16);
@@ -1523,7 +1523,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         s->current_picture.mc_mb_var[mb_y*s->mb_stride + mb_x] = score; //FIXME use SSE
     }
 
-    if(s->flags&CODEC_FLAG_HQ){
+    if(s->avctx->mb_decision > FF_MB_DECISION_SIMPLE){
         type= MB_TYPE_FORWARD | MB_TYPE_BACKWARD | MB_TYPE_BIDIR | MB_TYPE_DIRECT; //FIXME something smarter
         if(dmin>256*256*16) type&= ~MB_TYPE_DIRECT; //dont try direct mode if its invalid for this MB
     }

@@ -30,6 +30,14 @@
 #include "mpegvideo.h"
 #include "common.h"
 
+static void decode_mb(MpegEncContext *s){
+    s->dest[0] = s->current_picture.data[0] + (s->mb_y * 16* s->linesize  ) + s->mb_x * 16;
+    s->dest[1] = s->current_picture.data[1] + (s->mb_y * 8 * s->uvlinesize) + s->mb_x * 8;
+    s->dest[2] = s->current_picture.data[2] + (s->mb_y * 8 * s->uvlinesize) + s->mb_x * 8;
+
+    MPV_decode_mb(s, s->block);    
+}
+
 /**
  * replaces the current MB with a flat dc only version.
  */
@@ -346,7 +354,7 @@ static void guess_mv(MpegEncContext *s){
                 s->mb_y= mb_y;
                 s->mv[0][0][0]= 0;
                 s->mv[0][0][1]= 0;
-                MPV_decode_mb(s, s->block);
+                decode_mb(s);
             }
         }
         return;
@@ -480,7 +488,7 @@ int score_sum=0;
                         s->motion_val[mot_index][0]= s->mv[0][0][0]= mv_predictor[j][0];
                         s->motion_val[mot_index][1]= s->mv[0][0][1]= mv_predictor[j][1];
 
-                        MPV_decode_mb(s, s->block);
+                        decode_mb(s);
                         
                         if(mb_x>0 && fixed[mb_xy-1]){
                             int k;
@@ -513,7 +521,7 @@ score_sum+= best_score;
                     s->motion_val[mot_index][0]= s->mv[0][0][0]= mv_predictor[best_pred][0];
                     s->motion_val[mot_index][1]= s->mv[0][0][1]= mv_predictor[best_pred][1];
 
-                    MPV_decode_mb(s, s->block);
+                    decode_mb(s);
 
                     
                     if(s->mv[0][0][0] != prev_x || s->mv[0][0][1] != prev_y){
@@ -848,7 +856,7 @@ void ff_er_frame_end(MpegEncContext *s){
 
             s->mb_x= mb_x;
             s->mb_y= mb_y;
-            MPV_decode_mb(s, s->block);
+            decode_mb(s);
         }
     }
 
@@ -888,7 +896,7 @@ void ff_er_frame_end(MpegEncContext *s){
                 s->dsp.clear_blocks(s->block[0]);
                 s->mb_x= mb_x;
                 s->mb_y= mb_y;
-                MPV_decode_mb(s, s->block);
+                decode_mb(s);
             }
         }
     }else

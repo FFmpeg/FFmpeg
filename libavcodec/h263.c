@@ -512,6 +512,53 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
     }
 }
 
+void ff_h263_update_motion_val(MpegEncContext * s){
+    const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
+               //FIXME a lot of thet is only needed for !low_delay
+    const int wrap = s->block_wrap[0];
+    const int xy = s->block_index[0];
+    
+    s->current_picture.mbskip_table[mb_xy]= s->mb_skiped; 
+
+    if(s->mv_type != MV_TYPE_8X8){
+        int motion_x, motion_y;
+        if (s->mb_intra) {
+            motion_x = 0;
+            motion_y = 0;
+        } else if (s->mv_type == MV_TYPE_16X16) {
+            motion_x = s->mv[0][0][0];
+            motion_y = s->mv[0][0][1];
+        } else /*if (s->mv_type == MV_TYPE_FIELD)*/ {
+            int i;
+            motion_x = s->mv[0][0][0] + s->mv[0][1][0];
+            motion_y = s->mv[0][0][1] + s->mv[0][1][1];
+            motion_x = (motion_x>>1) | (motion_x&1);
+            for(i=0; i<2; i++){
+                s->field_mv_table[mb_xy][i][0]= s->mv[0][i][0];
+                s->field_mv_table[mb_xy][i][1]= s->mv[0][i][1];
+                s->field_select_table[mb_xy][i]= s->field_select[0][i];
+            }
+        }
+        
+        /* no update if 8X8 because it has been done during parsing */
+        s->motion_val[xy][0] = motion_x;
+        s->motion_val[xy][1] = motion_y;
+        s->motion_val[xy + 1][0] = motion_x;
+        s->motion_val[xy + 1][1] = motion_y;
+        s->motion_val[xy + wrap][0] = motion_x;
+        s->motion_val[xy + wrap][1] = motion_y;
+        s->motion_val[xy + 1 + wrap][0] = motion_x;
+        s->motion_val[xy + 1 + wrap][1] = motion_y;
+    }
+
+    if(s->encoding){ //FIXME encoding MUST be cleaned up
+        if (s->mv_type == MV_TYPE_8X8) 
+            s->current_picture.mb_type[mb_xy]= MB_TYPE_L0 | MB_TYPE_8x8;
+        else
+            s->current_picture.mb_type[mb_xy]= MB_TYPE_L0 | MB_TYPE_16x16;
+    }
+}
+
 #ifdef CONFIG_ENCODERS
 void mpeg4_encode_mb(MpegEncContext * s,
 		    DCTELEM block[6][64],

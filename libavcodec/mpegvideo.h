@@ -430,6 +430,7 @@ typedef struct MpegEncContext {
 
     int block_index[6]; ///< index to current MB in block based arrays with edges
     int block_wrap[6];
+    uint8_t *dest[3];
     
     int *mb_index2xy;        ///< mb_index -> mb_x + mb_y*mb_stride
 
@@ -723,14 +724,7 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
 
 extern enum PixelFormat ff_yuv420p_list[2];
 
-static inline void ff_init_block_index(MpegEncContext *s){
-    s->block_index[0]= s->block_wrap[0]*(s->mb_y*2 + 1) - 1 + s->mb_x*2;
-    s->block_index[1]= s->block_wrap[0]*(s->mb_y*2 + 1)     + s->mb_x*2;
-    s->block_index[2]= s->block_wrap[0]*(s->mb_y*2 + 2) - 1 + s->mb_x*2;
-    s->block_index[3]= s->block_wrap[0]*(s->mb_y*2 + 2)     + s->mb_x*2;
-    s->block_index[4]= s->block_wrap[4]*(s->mb_y + 1)                    + s->block_wrap[0]*(s->mb_height*2 + 2) + s->mb_x;
-    s->block_index[5]= s->block_wrap[4]*(s->mb_y + 1 + s->mb_height + 2) + s->block_wrap[0]*(s->mb_height*2 + 2) + s->mb_x;
-}
+void ff_init_block_index(MpegEncContext *s);
 
 static inline void ff_update_block_index(MpegEncContext *s){
     s->block_index[0]+=2;
@@ -739,6 +733,9 @@ static inline void ff_update_block_index(MpegEncContext *s){
     s->block_index[3]+=2;
     s->block_index[4]++;
     s->block_index[5]++;
+    s->dest[0]+= 16;
+    s->dest[1]+= 8;
+    s->dest[2]+= 8;
 }
 
 static inline int get_bits_diff(MpegEncContext *s){
@@ -833,6 +830,7 @@ void h263_decode_init_vlc(MpegEncContext *s);
 int h263_decode_picture_header(MpegEncContext *s);
 int ff_h263_decode_gob_header(MpegEncContext *s);
 int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb);
+void ff_h263_update_motion_val(MpegEncContext * s);
 
 
 int intel_h263_decode_picture_header(MpegEncContext *s);

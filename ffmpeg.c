@@ -113,7 +113,7 @@ static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
 static int same_quality = 0;
 static int b_frames = 0;
-static int use_hq = 0;
+static int mb_decision = FF_MB_DECISION_SIMPLE;
 static int use_4mv = 0;
 /* Fx */
 static int use_aic = 0;
@@ -1751,6 +1751,11 @@ static void opt_b_frames(const char *arg)
     }
 }
 
+static void opt_mb_decision(const char *arg)
+{
+    mb_decision = atoi(arg);
+}
+
 static void opt_qscale(const char *arg)
 {
     video_qscale = atoi(arg);
@@ -2222,9 +2227,8 @@ static void opt_output_file(const char *filename)
                 if(bitexact)
                     video_enc->flags |= CODEC_FLAG_BITEXACT;
 
-                if (use_hq) {
-                    video_enc->flags |= CODEC_FLAG_HQ;
-                }
+                video_enc->mb_decision = mb_decision;
+                
            	/* Fx */ 
                 if (use_umv) {
                     video_enc->flags |= CODEC_FLAG_H263P_UMV;
@@ -2234,7 +2238,7 @@ static void opt_output_file(const char *filename)
                 }
            	/* /Fx */ 
                 if (use_4mv) {
-                    video_enc->flags |= CODEC_FLAG_HQ;
+                    video_enc->mb_decision = FF_MB_DECISION_BITS; //FIXME remove
                     video_enc->flags |= CODEC_FLAG_4MV;
                 }
             
@@ -2679,7 +2683,8 @@ const OptionDef options[] = {
     { "er", HAS_ARG | OPT_EXPERT, {(void*)opt_error_resilience}, "set error resilience",  "" },
     { "ec", HAS_ARG | OPT_EXPERT, {(void*)opt_error_concealment}, "set error concealment",  "" },
     { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
-    { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },
+    { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&mb_decision}, "activate high quality settings" },
+    { "mbd", HAS_ARG | OPT_EXPERT, {(void*)opt_mb_decision}, "macroblock decision", "mode" },
     { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
     { "part", OPT_BOOL | OPT_EXPERT, {(void*)&use_part}, "use data partitioning (only MPEG-4)" },
     { "bug", HAS_ARG | OPT_EXPERT, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },

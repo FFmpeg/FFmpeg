@@ -209,6 +209,9 @@ static int decode_slice(MpegEncContext *s){
 //printf("%d %d %06X\n", ret, get_bits_count(&s->gb), show_bits(&s->gb, 24));
             ret= s->decode_mb(s, s->block);
 
+            if (s->pict_type!=B_TYPE)
+                ff_h263_update_motion_val(s);
+
             if(ret<0){
                 const int xy= s->mb_x + s->mb_y*s->mb_stride;
                 if(ret==SLICE_END){
@@ -533,6 +536,9 @@ retry:
         if(s->divx_version && s->divx_version<500){
             s->workaround_bugs|= FF_BUG_EDGE;
         }
+        
+        if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->divx_version==0 && s->lavc_build==0 && s->xvid_build==0 && s->vo_type==0 && s->vol_control_parameters==0 && s->low_delay)
+            s->workaround_bugs|= FF_BUG_EDGE;
 
 #if 0
         if(s->divx_version==500)

@@ -466,6 +466,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
             fprintf(stderr, "ERROR at MB %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
+        ff_h263_update_motion_val(s);
         MPV_decode_mb(s, s->block);
         if (++s->mb_x == s->mb_width) {
             s->mb_x = 0;

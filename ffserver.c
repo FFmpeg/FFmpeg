@@ -4220,11 +4220,11 @@ static int parse_ffconfig(const char *filename)
             }
         } else if (!strcasecmp(cmd, "VideoHighQuality")) {
             if (stream) {
-                video_enc.flags |= CODEC_FLAG_HQ;
+                video_enc.mb_decision = FF_MB_DECISION_BITS;
             }
         } else if (!strcasecmp(cmd, "Video4MotionVector")) {
             if (stream) {
-                video_enc.flags |= CODEC_FLAG_HQ;
+                video_enc.mb_decision = FF_MB_DECISION_BITS; //FIXME remove
                 video_enc.flags |= CODEC_FLAG_4MV;
             }
         } else if (!strcasecmp(cmd, "VideoQDiff")) {

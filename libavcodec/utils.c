@@ -489,7 +489,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
     case CODEC_TYPE_VIDEO:
         snprintf(buf, buf_size,
                  "Video: %s%s",
-                 codec_name, enc->flags & CODEC_FLAG_HQ ? " (hq)" : "");
+                 codec_name, enc->mb_decision ? " (hq)" : "");
         if (enc->codec_id == CODEC_ID_RAWVIDEO) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s",

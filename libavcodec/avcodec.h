@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4672
-#define LIBAVCODEC_BUILD_STR   "4672"
+#define LIBAVCODEC_BUILD       4673
+#define LIBAVCODEC_BUILD_STR   "4673"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -169,7 +169,6 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
    Note: note not everything is supported yet 
 */
 
-#define CODEC_FLAG_HQ     0x0001  ///< brute force MB-type decission mode (slow) 
 #define CODEC_FLAG_QSCALE 0x0002  ///< use fixed qscale 
 #define CODEC_FLAG_4MV    0x0004  ///< 4 MV per MB allowed 
 #define CODEC_FLAG_QPEL   0x0010  ///< use qpel MC 
@@ -1173,7 +1172,17 @@ typedef struct AVCodecContext {
      * - decoding: set by decoder
      */
     int xvmc_acceleration;
-
+    
+    /**
+     * macroblock decision mode
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int mb_decision;
+#define FF_MB_DECISION_SIMPLE 0        ///< uses mb_cmp
+#define FF_MB_DECISION_BITS   1        ///< chooses the one which needs the fewest bits
+#define FF_MB_DECISION_RD     2        ///< rate distoration
+    
 } AVCodecContext;
 
 

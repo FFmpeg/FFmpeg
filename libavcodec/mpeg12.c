@@ -1924,6 +1924,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     s->resync_mb_x= s->mb_x;
     s->resync_mb_y= s->mb_y = start_code;
     s->mb_skip_run= 0;
+    ff_init_block_index(s);
 
     for(;;) {
 	s->dsp.clear_blocks(s->block[0]);
@@ -1959,8 +1960,12 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
             s->motion_val[xy + 1 + wrap][1] = motion_y;
         }
         
-        MPV_decode_mb(s, s->block);
+        s->dest[0] += 16;
+        s->dest[1] += 8;
+        s->dest[2] += 8;
 
+        MPV_decode_mb(s, s->block);
+        
         if (++s->mb_x >= s->mb_width) {
             if(s->avctx->codec_tag == ff_get_fourcc("VCR2"))
                 exchange_uv((AVFrame*)s->current_picture_ptr);
@@ -1983,6 +1988,8 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
                 }else
                     goto eos;
             }
+            
+            ff_init_block_index(s);
         }
 
         /* skip mb handling */
