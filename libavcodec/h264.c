@@ -2495,6 +2495,7 @@ static void frame_start(H264Context *h){
 
     MPV_frame_start(s, s->avctx);
     ff_er_frame_start(s);
+    h->mmco_index=0;
 
     assert(s->linesize && s->uvlinesize);
 
