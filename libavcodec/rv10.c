@@ -365,6 +365,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
 
     s->y_dc_scale_table=
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+    s->progressive_sequence=1;
 
     /* init rv vlc */
     if (!done) {
@@ -393,7 +394,6 @@ static int rv10_decode_packet(AVCodecContext *avctx,
 {
     MpegEncContext *s = avctx->priv_data;
     int i, mb_count, mb_pos, left;
-    DCTELEM block[6][64];
 
     init_get_bits(&s->gb, buf, buf_size);
     
@@ -430,47 +430,35 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     s->rv10_first_dc_coded[1] = 0;
     s->rv10_first_dc_coded[2] = 0;
 
+    if(s->mb_y==0) s->first_slice_line=1;
+    
     s->block_wrap[0]=
     s->block_wrap[1]=
     s->block_wrap[2]=
     s->block_wrap[3]= s->mb_width*2 + 2;
     s->block_wrap[4]=
     s->block_wrap[5]= s->mb_width + 2;
-    s->block_index[0]= s->block_wrap[0]*(s->mb_y*2 + 1) - 1 + s->mb_x*2;
-    s->block_index[1]= s->block_wrap[0]*(s->mb_y*2 + 1)     + s->mb_x*2;
-    s->block_index[2]= s->block_wrap[0]*(s->mb_y*2 + 2) - 1 + s->mb_x*2;
-    s->block_index[3]= s->block_wrap[0]*(s->mb_y*2 + 2)     + s->mb_x*2;
-    s->block_index[4]= s->block_wrap[4]*(s->mb_y + 1)                    + s->block_wrap[0]*(s->mb_height*2 + 2) + s->mb_x;
-    s->block_index[5]= s->block_wrap[4]*(s->mb_y + 1 + s->mb_height + 2) + s->block_wrap[0]*(s->mb_height*2 + 2) + s->mb_x;
+    ff_init_block_index(s);
     /* decode each macroblock */
     for(i=0;i<mb_count;i++) {
-        s->block_index[0]+=2;
-        s->block_index[1]+=2;
-        s->block_index[2]+=2;
-        s->block_index[3]+=2;
-        s->block_index[4]++;
-        s->block_index[5]++;
+        ff_update_block_index(s);
 #ifdef DEBUG
         printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
 #endif
         
-        memset(block, 0, sizeof(block));
+        clear_blocks(s->block[0]);
         s->mv_dir = MV_DIR_FORWARD;
         s->mv_type = MV_TYPE_16X16; 
-        if (h263_decode_mb(s, block) < 0) {
+        if (ff_h263_decode_mb(s, s->block) == SLICE_ERROR) {
             fprintf(stderr, "ERROR at MB %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
-        MPV_decode_mb(s, block);
+        MPV_decode_mb(s, s->block);
         if (++s->mb_x == s->mb_width) {
             s->mb_x = 0;
             s->mb_y++;
-            s->block_index[0]= s->block_wrap[0]*(s->mb_y*2 + 1) - 1;
-            s->block_index[1]= s->block_wrap[0]*(s->mb_y*2 + 1);
-            s->block_index[2]= s->block_wrap[0]*(s->mb_y*2 + 2) - 1;
-            s->block_index[3]= s->block_wrap[0]*(s->mb_y*2 + 2);
-            s->block_index[4]= s->block_wrap[4]*(s->mb_y + 1)                    + s->block_wrap[0]*(s->mb_height*2 + 2);
-            s->block_index[5]= s->block_wrap[4]*(s->mb_y + 1 + s->mb_height + 2) + s->block_wrap[0]*(s->mb_height*2 + 2);
+            ff_init_block_index(s);
+            s->first_slice_line=0;
         }
     }
 

@@ -61,6 +61,8 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->b_quant_offset=1.25;
     s->i_quant_factor=-0.8;
     s->i_quant_offset=0.0;
+    s->error_concealment= 3;
+    s->workaround_bugs= FF_BUG_AUTODETECT;
 }
 
 /**

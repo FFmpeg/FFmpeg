@@ -114,8 +114,9 @@ static int b_frames = 0;
 static int use_hq = 0;
 static int use_4mv = 0;
 static int do_deinterlace = 0;
-static int workaround_bugs = 0;
-static int error_resilience = 0;
+static int workaround_bugs = FF_BUG_AUTODETECT;
+static int error_resilience = 2;
+static int error_concealment = 3;
 static int dct_algo = 0;
 static int idct_algo = 0;
 static int use_part = 0;
@@ -1462,6 +1463,12 @@ void opt_error_resilience(const char *arg)
     error_resilience = atoi(arg);
 }
 
+void opt_error_concealment(const char *arg)
+{
+    error_concealment = atoi(arg);
+}
+
+
 void opt_frame_rate(const char *arg)
 {
     frame_rate = (int)(strtod(arg, 0) * FRAME_RATE_BASE);
@@ -1823,6 +1830,7 @@ void opt_input_file(const char *filename)
             rfps = ic->streams[i]->r_frame_rate;
             enc->workaround_bugs = workaround_bugs;
             enc->error_resilience = error_resilience; 
+            enc->error_concealment = error_concealment; 
             enc->idct_algo= idct_algo;
             if (enc->frame_rate != rfps) {
                 fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
@@ -2394,6 +2402,7 @@ const OptionDef options[] = {
     { "dct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
     { "idct_algo", HAS_ARG | OPT_EXPERT, {(void*)opt_idct_algo}, "set idct algo",  "algo" },
     { "er", HAS_ARG | OPT_EXPERT, {(void*)opt_error_resilience}, "set error resilience",  "" },
+    { "ec", HAS_ARG | OPT_EXPERT, {(void*)opt_error_resilience}, "set error concealment",  "" },
     { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
     { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },
     { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },

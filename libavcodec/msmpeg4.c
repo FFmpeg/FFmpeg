@@ -61,7 +61,8 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val);
 static void init_h263_dc_for_msmpeg4(void);
 static inline void msmpeg4_memsetw(short *tab, int val, int n);
 static int get_size_of_code(MpegEncContext * s, RLTable *rl, int last, int run, int level, int intra);
-
+static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
+static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 
 extern UINT32 inverse[256];
 
@@ -504,26 +505,7 @@ static inline void handle_slices(MpegEncContext *s){
     if (s->mb_x == 0) {
         if (s->slice_height && (s->mb_y % s->slice_height) == 0) {
             if(s->msmpeg4_version != 4){
-                int wrap;
-                /* reset DC pred (set previous line to 1024) */
-                wrap = 2 * s->mb_width + 2;
-                msmpeg4_memsetw(&s->dc_val[0][(1) + (2 * s->mb_y) * wrap],
-                                1024, 2 * s->mb_width);
-                wrap = s->mb_width + 2;
-                msmpeg4_memsetw(&s->dc_val[1][(1) + (s->mb_y) * wrap],
-                                1024, s->mb_width);
-                msmpeg4_memsetw(&s->dc_val[2][(1) + (s->mb_y) * wrap],
-                                1024, s->mb_width);
-
-                /* reset AC pred (set previous line to 0) */
-                wrap = s->mb_width * 2 + 2;
-                msmpeg4_memsetw(s->ac_val[0][0] + (1 + (2 * s->mb_y) * wrap)*16,
-                                0, 2 * s->mb_width*16);
-                wrap = s->mb_width + 2;
-                msmpeg4_memsetw(s->ac_val[1][0] + (1 + (s->mb_y) * wrap)*16,
-                                0, s->mb_width*16);
-                msmpeg4_memsetw(s->ac_val[2][0] + (1 + (s->mb_y) * wrap)*16,
-                                0, s->mb_width*16);
+                ff_mpeg4_clean_buffers(s);
             }
             s->first_slice_line = 1;
         } else {
@@ -710,6 +692,10 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
     a = dc_val[ - 1];
     b = dc_val[ - 1 - wrap];
     c = dc_val[ - wrap];
+    
+    if(s->first_slice_line && (n&2)==0){
+        b=c=1024;
+    }
 
     /* XXX: the following solution consumes divisions, but it does not
        necessitate to modify mpegvideo.c. The problem comes from the
@@ -941,6 +927,7 @@ static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int
         for(last_index=63; last_index>=0; last_index--){
             if(block[scantable[last_index]]) break;
         }
+        s->block_last_index[n]= last_index;
     }else
         last_index = s->block_last_index[n];
     /* AC coefs */
@@ -1170,6 +1157,18 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
                  &table_inter_intra[0][1], 2, 1,
                  &table_inter_intra[0][0], 2, 1);
     }
+    
+    switch(s->msmpeg4_version){
+    case 1:
+    case 2:
+        s->decode_mb= msmpeg4v12_decode_mb;
+        break;
+    case 3:
+    case 4:
+        s->decode_mb= msmpeg4v34_decode_mb;
+        break;
+    }
+    
     return 0;
 }
 
@@ -1444,11 +1443,12 @@ static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)
     return val;
 }
 
-
-static int msmpeg4v12_decode_mb(MpegEncContext *s, 
-                      DCTELEM block[6][64])
+static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int cbp, code, i;
+    
+    s->error_status_table[s->mb_x + s->mb_y*s->mb_width]= 0;
+    
     if (s->pict_type == P_TYPE) {
         if (s->use_skip_mb_code) {
             if (get_bits1(&s->gb)) {
@@ -1530,8 +1530,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s,
     return 0;
 }
 
-int msmpeg4_decode_mb(MpegEncContext *s, 
-                      DCTELEM block[6][64])
+static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int cbp, code, i;
     UINT8 *coded_val;
@@ -1542,10 +1541,8 @@ if(s->mb_x==0){
     if(s->mb_y==0) printf("\n");
 }
 #endif
-    /* special slice handling */
-    handle_slices(s);
 
-    if(s->msmpeg4_version<=2) return msmpeg4v12_decode_mb(s, block); //FIXME export function & call from outside perhaps
+    s->error_status_table[s->mb_x + s->mb_y*s->mb_width]= 0;
     
     if (s->pict_type == P_TYPE) {
         set_stat(ST_INTER_MB);
@@ -1866,7 +1863,7 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             i-= 192;
             if(i&(~63)){
                 const int left= s->gb.size*8 - get_bits_count(&s->gb);
-                if(((i+192 == 64 && level/qmul==-1) || s->error_resilience<0) && left>=0){
+                if(((i+192 == 64 && level/qmul==-1) || s->error_resilience<=1) && left>=0){
                     fprintf(stderr, "ignoring overflow at %d %d\n", s->mb_x, s->mb_y);
                     break;
                 }else{
