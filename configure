@@ -126,6 +126,9 @@ test -f /usr/local/include/inttypes.h || \
 echo "Missing inttypes.h, please copy cygwin_inttypes.h to" \
      "/usr/include/inttypes.h !!!"
 ;;
+Linux)
+LDFLAGS=-rdynamic
+;;
 *) ;;
 esac
 
@@ -472,6 +475,7 @@ echo "STRIP=$strip" >> config.mak
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
+echo "LDFLAGS=$LDFLAGS" >> config.mak
 if test "$cpu" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH

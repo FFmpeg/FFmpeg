@@ -38,7 +38,7 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <string.h>
-#include <sys/time.h>
+#include <time.h>
 #include <stdio.h>
 #include <dirent.h>
 

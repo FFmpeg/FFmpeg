@@ -1,11 +1,11 @@
 include ../config.mak
 
-CFLAGS=-fPIC $(OPTFLAGS) -g -Wall -I.. -I../libavformat -I../libavcodec -DHAVE_AV_CONFIG_H
+VPATH=$(SRC_PATH)/vhook
+
+CFLAGS=-fPIC $(OPTFLAGS) -g -Wall -I$(SRC_PATH) -I$(SRC_PATH)/libavformat -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H
 
 ifeq ($(CONFIG_DARWIN),yes)
-LDFLAGS+=-bundle -flat_namespace -undefined suppress
-else
-LDFLAGS+=-shared
+SHFLAGS+=-bundle -flat_namespace -undefined suppress
 endif
 HOOKS=null.so fish.so
 
@@ -19,11 +19,11 @@ install:
 	install -s -m 755 $(HOOKS) $(INSTDIR)
 
 imlib2.so: imlib2.o
-	$(CC) -g -o $@ $(LDFLAGS) $< -lImlib2
+	$(CC) -g -o $@ $(SHFLAGS) $< -lImlib2
 	rm $<
 
 %.so: %.o
-	$(CC) -g -o $@ $(LDFLAGS) $<
+	$(CC) -g -o $@ $(SHFLAGS) $<
 
 %.html: %.texi
 	texi2html -monolithic -number $<
