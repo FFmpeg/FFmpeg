@@ -1025,6 +1025,23 @@ static void   sub_pixels_xy2_mmx( DCTELEM  *block, const UINT8 *pixels, int line
   } while(--h);
 }
 
+static void clear_blocks_mmx(DCTELEM *blocks)
+{
+        asm volatile(
+                "pxor %%mm7, %%mm7		\n\t"
+                "movl $-128*6, %%eax		\n\t"
+                "1:				\n\t"
+                "movq %%mm7, (%0, %%eax)	\n\t"
+                "movq %%mm7, 8(%0, %%eax)	\n\t"
+                "movq %%mm7, 16(%0, %%eax)	\n\t"
+                "movq %%mm7, 24(%0, %%eax)	\n\t"
+                "addl $32, %%eax		\n\t"
+                " js 1b				\n\t"
+                : : "r" (((int)blocks)+128*6)
+                : "%eax"
+        );
+}
+
 static void just_return() { return; }
 
 void dsputil_init_mmx(void)
@@ -1049,7 +1066,8 @@ void dsputil_init_mmx(void)
         get_pixels = get_pixels_mmx;
         put_pixels_clamped = put_pixels_clamped_mmx;
         add_pixels_clamped = add_pixels_clamped_mmx;
-        
+        clear_blocks= clear_blocks_mmx;
+       
         pix_abs16x16     = pix_abs16x16_mmx;
         pix_abs16x16_x2  = pix_abs16x16_x2_mmx;
         pix_abs16x16_y2  = pix_abs16x16_y2_mmx;

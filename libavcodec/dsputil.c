@@ -30,6 +30,7 @@ void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*gmc1)(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder);
+void (*clear_blocks)(DCTELEM *blocks);
 
 op_pixels_abs_func pix_abs16x16;
 op_pixels_abs_func pix_abs16x16_x2;
@@ -866,6 +867,11 @@ void block_permute(INT16 *block)
 }
 #endif
 
+void clear_blocks_c(DCTELEM *blocks)
+{
+    memset(blocks, 0, sizeof(DCTELEM)*6*64);
+}
+
 void dsputil_init(void)
 {
     int i, j;
@@ -890,6 +896,7 @@ void dsputil_init(void)
     put_pixels_clamped = put_pixels_clamped_c;
     add_pixels_clamped = add_pixels_clamped_c;
     gmc1= gmc1_c;
+    clear_blocks= clear_blocks_c;
 
     pix_abs16x16     = pix_abs16x16_c;
     pix_abs16x16_x2  = pix_abs16x16_x2_c;
