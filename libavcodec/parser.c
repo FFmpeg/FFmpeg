@@ -502,7 +502,7 @@ typedef struct MpegAudioParseContext {
 
 /* header + layer + bitrate + freq + lsf/mpeg25 */
 #define SAME_HEADER_MASK \
-   (0xffe00000 | (3 << 17) | (0xf << 12) | (3 << 10) | (3 << 19))
+   (0xffe00000 | (3 << 17) | (3 << 10) | (3 << 19))
 
 static int mpegaudio_parse_init(AVCodecParserContext *s1)
 {
