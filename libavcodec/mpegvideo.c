@@ -1439,9 +1439,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }
 #endif
     /* DCT & quantize */
-    if (s->h263_msmpeg4) {
-        msmpeg4_dc_scale(s);
-    } else if (s->h263_pred) {
+    if (s->h263_pred && s->msmpeg4_version!=2) {
         h263_dc_scale(s);
     } else {
         /* default quantization values */

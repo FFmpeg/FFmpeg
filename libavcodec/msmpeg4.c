@@ -411,7 +411,8 @@ void msmpeg4_encode_mb(MpegEncContext * s,
 }
 
 
-/* strongly inspirated from MPEG4, but not exactly the same ! */
+#if 0
+/* identical to mpeg4 for msmpeg4v3 but not msmpeg4v2 */
 void msmpeg4_dc_scale(MpegEncContext * s)
 {
     if (s->qscale < 5 || s->msmpeg4_version==2){
@@ -420,11 +421,15 @@ void msmpeg4_dc_scale(MpegEncContext * s)
     }else if (s->qscale < 9){
         s->y_dc_scale = 2 * s->qscale;
         s->c_dc_scale = (s->qscale + 13)>>1;
-    }else{
+    }else if(s->qscale < 25){
         s->y_dc_scale = s->qscale + 8;
         s->c_dc_scale = (s->qscale + 13)>>1;
+    }else{
+        s->y_dc_scale = 2 * s->qscale - 16;
+        s->c_dc_scale = s->qscale - 6;
     }
 }
+#endif
 
 /* dir = 0: left, dir = 1: top prediction */
 static int msmpeg4_pred_dc(MpegEncContext * s, int n, 

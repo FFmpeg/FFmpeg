@@ -199,9 +199,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
 #endif
             //fprintf(stderr,"\nFrame: %d\tMB: %d",avctx->frame_number, (s->mb_y * s->mb_width) + s->mb_x);
             /* DCT & quantize */
-            if (s->h263_msmpeg4) {
-                msmpeg4_dc_scale(s);
-            } else if (s->h263_pred) {
+            if (s->h263_pred && s->msmpeg4_version!=2) {
                 h263_dc_scale(s);
             } else {
                 /* default quantization values */

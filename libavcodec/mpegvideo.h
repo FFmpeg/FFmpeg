@@ -490,7 +490,6 @@ void msmpeg4_encode_ext_header(MpegEncContext * s);
 void msmpeg4_encode_mb(MpegEncContext * s, 
                        DCTELEM block[6][64],
                        int motion_x, int motion_y);
-void msmpeg4_dc_scale(MpegEncContext * s);
 int msmpeg4_decode_picture_header(MpegEncContext * s);
 int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
 int msmpeg4_decode_mb(MpegEncContext *s, 
