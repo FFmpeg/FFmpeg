@@ -3759,6 +3759,26 @@ int parse_ffconfig(const char *filename)
                     errors++;
                 }
             }
+        } else if (!strcasecmp(cmd, "LumaElim")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                video_enc.luma_elim_threshold = atoi(arg);
+            }
+        } else if (!strcasecmp(cmd, "ChromaElim")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                video_enc.chroma_elim_threshold = atoi(arg);
+            }
+        } else if (!strcasecmp(cmd, "LumiMask")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                video_enc.lumi_masking = atof(arg);
+            }
+        } else if (!strcasecmp(cmd, "DarkMask")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                video_enc.dark_masking = atof(arg);
+            }
         } else if (!strcasecmp(cmd, "NoVideo")) {
             video_id = CODEC_ID_NONE;
         } else if (!strcasecmp(cmd, "NoAudio")) {
