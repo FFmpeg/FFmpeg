@@ -101,6 +101,8 @@ enum CodecID {
     CODEC_ID_ADPCM_IMA_WS,
     CODEC_ID_ADPCM_MS,
     CODEC_ID_ADPCM_4XM,
+    CODEC_ID_ADPCM_XA,
+    CODEC_ID_ADPCM_ADX,
 
 	/* AMR */
     CODEC_ID_AMR_NB,
@@ -138,7 +140,10 @@ enum CodecType {
  * image data is stored in AVFrame.data[0]. The palette is transported in
  * AVFrame.data[1] and, is 1024 bytes long (256 4-byte entries) and is
  * formatted the same as in PIX_FMT_RGBA32 described above (i.e., it is
- * also endian-specific).
+ * also endian-specific). Note also that the individual RGB palette
+ * components stored in AVFrame.data[1] should be in the range 0..255.
+ * This is important as many custom PAL8 video codecs that were designed
+ * to run on the IBM VGA graphics adapter use 6-bit palette components.
  */
 enum PixelFormat {
     PIX_FMT_YUV420P,   ///< Planar YUV 4:2:0 (1 Cr & Cb sample per 2x2 Y samples)
@@ -1488,6 +1493,8 @@ PCM_CODEC(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
 PCM_CODEC(CODEC_ID_ADPCM_IMA_WS, adpcm_ima_ws);
 PCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
 PCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
+PCM_CODEC(CODEC_ID_ADPCM_XA, adpcm_xa);
+PCM_CODEC(CODEC_ID_ADPCM_ADX, adpcm_adx);
 
 #undef PCM_CODEC
 
@@ -1740,6 +1747,9 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 void av_free_static(void);
 void *__av_mallocz_static(void** location, unsigned int size);
 #define av_mallocz_static(p, s) __av_mallocz_static((void **)(p), s)
+
+/* add by bero : in adx.c */
+int is_adx(const unsigned char *buf,size_t bufsize);
 
 #ifdef __cplusplus
 }
