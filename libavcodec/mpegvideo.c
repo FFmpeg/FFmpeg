@@ -85,7 +85,7 @@ static UINT8 h263_chroma_roundtab[16] = {
     0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
 };
 
-static UINT16 default_mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
+static UINT16 (*default_mv_penalty)[MAX_MV*2+1]=NULL;
 static UINT8 default_fcode_tab[MAX_MV*2+1];
 
 /* default motion estimation */
@@ -684,6 +684,8 @@ int MPV_encode_init(AVCodecContext *avctx)
         if(!done){
             int i;
             done=1;
+
+            default_mv_penalty= av_mallocz( sizeof(UINT16)*(MAX_FCODE+1)*(2*MAX_MV+1) );
             memset(default_mv_penalty, 0, sizeof(UINT16)*(MAX_FCODE+1)*(2*MAX_MV+1));
             memset(default_fcode_tab , 0, sizeof(UINT8)*(2*MAX_MV+1));
 
@@ -706,12 +708,14 @@ int MPV_encode_init(AVCodecContext *avctx)
     if (MPV_common_init(s) < 0)
         return -1;
     
+#ifdef CONFIG_ENCODERS
     if (s->out_format == FMT_H263)
         h263_encode_init(s);
     else if (s->out_format == FMT_MPEG1)
         ff_mpeg1_encode_init(s);
     if(s->msmpeg4_version)
         ff_msmpeg4_encode_init(s);
+#endif
 
     /* init default q matrix */
     for(i=0;i<64;i++) {
@@ -2389,6 +2393,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         s->block[5][0]= 128;
     }
 
+#ifdef CONFIG_ENCODERS
     /* huffman encode */
     switch(s->out_format) {
     case FMT_MPEG1:
@@ -2406,6 +2411,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         mjpeg_encode_mb(s, s->block);
         break;
     }
+#endif
 }
 
 void ff_copy_bits(PutBitContext *pb, UINT8 *src, int length)

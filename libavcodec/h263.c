@@ -49,6 +49,7 @@
 #define MB_TYPE_B_VLC_BITS 4
 #define TEX_VLC_BITS 9
 
+#ifdef CONFIG_ENCODERS
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
 			      int n);
 static void h263_encode_motion(MpegEncContext * s, int val, int fcode);
@@ -56,6 +57,8 @@ static void h263p_encode_umotion(MpegEncContext * s, int val);
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block,
 			       int n, int dc, UINT8 *scan_table, 
                                PutBitContext *dc_pb, PutBitContext *ac_pb);
+#endif
+
 static int h263_decode_motion(MpegEncContext * s, int pred, int fcode);
 static int h263p_decode_umotion(MpegEncContext * s, int pred);
 static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
@@ -69,15 +72,16 @@ static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
 static void mpeg4_decode_sprite_trajectory(MpegEncContext * s);
 static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
 
-
 extern UINT32 inverse[256];
-
-static UINT16 mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
-static UINT8 fcode_tab[MAX_MV*2+1];
-static UINT8 umv_fcode_tab[MAX_MV*2+1];
 
 static UINT16 uni_DCtab_lum  [512][2];
 static UINT16 uni_DCtab_chrom[512][2];
+
+#ifdef CONFIG_ENCODERS
+static UINT16 (*mv_penalty)[MAX_MV*2+1]= NULL;
+static UINT8 fcode_tab[MAX_MV*2+1];
+static UINT8 umv_fcode_tab[MAX_MV*2+1];
+
 static UINT32 uni_mpeg4_intra_rl_bits[64*64*2*2];
 static UINT8  uni_mpeg4_intra_rl_len [64*64*2*2];
 static UINT32 uni_mpeg4_inter_rl_bits[64*64*2*2];
@@ -94,6 +98,8 @@ intra
 max level: 53/16
 max run: 29/41
 */
+#endif
+
 
 int h263_get_picture_format(int width, int height)
 {
@@ -364,6 +370,7 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
     }
 }
 
+#ifdef CONFIG_ENCODERS
 void mpeg4_encode_mb(MpegEncContext * s,
 		    DCTELEM block[6][64],
 		    int motion_x, int motion_y)
@@ -870,6 +877,7 @@ void h263_encode_mb(MpegEncContext * s,
         }
     }
 }
+#endif
 
 static int h263_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr)
 {
@@ -1061,6 +1069,7 @@ INT16 *h263_pred_motion(MpegEncContext * s, int block,
     return mot_val;
 }
 
+#ifdef CONFIG_ENCODERS
 static void h263_encode_motion(MpegEncContext * s, int val, int f_code)
 {
     int range, l, bit_size, sign, code, bits;
@@ -1152,6 +1161,10 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
 {
     int f_code;
     int mv;
+    
+    if(mv_penalty==NULL)
+        mv_penalty= av_mallocz( sizeof(UINT16)*(MAX_FCODE+1)*(2*MAX_MV+1) );
+    
     for(f_code=1; f_code<=MAX_FCODE; f_code++){
         for(mv=-MAX_MV; mv<=MAX_MV; mv++){
             int len;
@@ -1189,6 +1202,7 @@ static void init_mv_penalty_and_fcode(MpegEncContext *s)
         umv_fcode_tab[mv]= 1;
     }
 }
+#endif
 
 static void init_uni_dc_tab(void)
 {
@@ -1242,6 +1256,7 @@ static void init_uni_dc_tab(void)
     }
 }
 
+#ifdef CONFIG_ENCODERS
 static void init_uni_mpeg4_rl_tab(RLTable *rl, UINT32 *bits_tab, UINT8 *len_tab){
     int slevel, run, last;
     
@@ -1434,6 +1449,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
 	    }
     }
 }
+#endif
 
 /***************************************************/
 /**
@@ -1832,7 +1848,7 @@ static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
     }
 #endif
 }
-
+#ifdef CONFIG_ENCODERS
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, 
                                UINT8 *scan_table, PutBitContext *dc_pb, PutBitContext *ac_pb)
 {
@@ -1948,7 +1964,7 @@ static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n
     }
 #endif
 }
-
+#endif
 
 
 /***********************************************/
