@@ -34,6 +34,7 @@ void av_register_all(void)
     crc_init();
     img_init();
     raw_init();
+    mp3_init();
     rm_init();
 #ifdef CONFIG_RISKY
     asf_init();

@@ -105,36 +105,6 @@ static int raw_read_close(AVFormatContext *s)
     return 0;
 }
 
-/* mp3 read */
-static int mp3_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
-{
-    AVStream *st;
-    int pos;
-
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR_NOMEM;
-
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = CODEC_ID_MP2;
-
-    /* looking for 11111111 111MMLLC - MPEG synchronization tag
-	MM: 00 - MPEG-2.5, 10 - MPEG-2, 11 - MPEG-1
-	LL: 11 - Layer I, 10 - Layer II, 01 - Layer III
-	XXX: this code does not read more bytes from file 
-	so if ID3 (or other stuff) length > IO_BUFFER_SIZE it fails back to CODEC_ID_MP2 */
-    for(pos=0; pos < s->pb.buffer_size-1; pos++)
-	if( s->pb.buffer[pos] == 0xFF && (s->pb.buffer[pos] & 0xE0) == 0xE0 )
-	    break;
-	    
-    if( pos < s->pb.buffer_size-1 && (s->pb.buffer[pos+1] & 6) == 2 )
-	st->codec.codec_id = CODEC_ID_MP3;
-
-    /* the parameters will be extracted from the compressed bitstream */
-    return 0;
-}
-
 /* ac3 read */
 static int ac3_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
@@ -222,50 +192,6 @@ static int h263_probe(AVProbeData *p)
     }
     return 0;
 }
-
-
-AVInputFormat mp3_iformat = {
-    "mp3",
-    "MPEG audio",
-    0,
-    NULL,
-    mp3_read_header,
-    raw_read_packet,
-    raw_read_close,
-    .extensions = "mp2,mp3", /* XXX: use probe */
-};
-
-AVOutputFormat mp2_oformat = {
-    "mp2",
-    "MPEG audio layer 2",
-    "audio/x-mpeg",
-#ifdef CONFIG_MP3LAME
-    "mp2",
-#else
-    "mp2,mp3",
-#endif
-    0,
-    CODEC_ID_MP2,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
-};
-
-#ifdef CONFIG_MP3LAME
-AVOutputFormat mp3_oformat = {
-    "mp3",
-    "MPEG audio layer 3",
-    "audio/x-mpeg",
-    "mp3",
-    0,
-    CODEC_ID_MP3,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
-};
-#endif
 
 AVInputFormat ac3_iformat = {
     "ac3",
@@ -558,11 +484,6 @@ AVOutputFormat null_oformat = {
 
 int raw_init(void)
 {
-    av_register_input_format(&mp3_iformat);
-    av_register_output_format(&mp2_oformat);
-#ifdef CONFIG_MP3LAME
-    av_register_output_format(&mp3_oformat);
-#endif    
     av_register_input_format(&ac3_iformat);
     av_register_output_format(&ac3_oformat);
 

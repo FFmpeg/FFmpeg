@@ -15,7 +15,7 @@ PPOBJS=
 OBJS+=mpeg.o mpegts.o mpegtsenc.o ffm.o crc.o img.o raw.o rm.o \
       avienc.o avidec.o wav.o swf.o au.o gif.o mov.o mpjpeg.o dvcore.o dv.o \
       yuv4mpeg.o 4xm.o flvenc.o flvdec.o movenc.o psxstr.o idroq.o ipmovie.o \
-      nut.o wc3movie.o
+      nut.o wc3movie.o mp3.o
 
 ifeq ($(CONFIG_RISKY),yes)
 OBJS+= asf.o

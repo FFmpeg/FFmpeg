@@ -7,8 +7,8 @@ extern "C" {
 
 #define LIBAVFORMAT_VERSION_INT 0x000408
 #define LIBAVFORMAT_VERSION     "0.4.8"
-#define LIBAVFORMAT_BUILD       4606
-#define LIBAVFORMAT_BUILD_STR   "4606"
+#define LIBAVFORMAT_BUILD       4607
+#define LIBAVFORMAT_BUILD_STR   "4607"
 
 #define LIBAVFORMAT_IDENT	"FFmpeg" LIBAVFORMAT_VERSION "b" LIBAVFORMAT_BUILD_STR
 
@@ -215,6 +215,11 @@ typedef struct AVFormatContext {
     char author[512];
     char copyright[512];
     char comment[512];
+    char album[512];
+    int year;  /* ID3 year, 0 if none */
+    int track; /* track number, 0 if none */
+    char genre[32]; /* ID3 genre */
+
     int flags; /* format specific flags */
     /* private data for pts handling (do not modify directly) */
     int pts_wrap_bits; /* number of bits in pts (used for wrapping control) */
@@ -365,6 +370,9 @@ int wav_init(void);
 
 /* raw.c */
 int raw_init(void);
+
+/* mp3.c */
+int mp3_init(void);
 
 /* yuv4mpeg.c */
 int yuv4mpeg_init(void);
