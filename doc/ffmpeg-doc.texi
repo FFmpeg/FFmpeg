@@ -767,7 +767,7 @@ solutions.
 @item MPEG audio layer 2     @tab  IX  @tab  IX 
 @item MPEG audio layer 1/3   @tab IX   @tab  IX
 @tab MP3 encoding is supported through the external library LAME
-@item AC3                    @tab  IX  @tab  X
+@item AC3                    @tab  IX  @tab  IX
 @tab liba52 is used internally for decoding
 @item Vorbis                 @tab  X   @tab  X
 @tab supported through the external library libvorbis
@@ -796,6 +796,8 @@ solutions.
 @tab Real 14400 bit/s codec
 @item RA288                  @tab      @tab X
 @tab Real 28800 bit/s codec
+@item RADnet                 @tab X    @tab IX
+@tab Real lowbitrate AC3 codec, liba52 is used for decoding
 @item AMR-NB                 @tab X    @tab X
 @tab supported through an external library
 @item AMR-WB                 @tab X    @tab X
