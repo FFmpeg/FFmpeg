@@ -1990,6 +1990,9 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
        
+    if (!s1->mpeg_enc_ctx_allocated)
+        return 0;
+
     /* end of slice reached */
     if (/*s->mb_y<<field_pic == s->mb_height &&*/ !s->first_field) {
         /* end of image */
