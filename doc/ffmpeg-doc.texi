@@ -201,6 +201,13 @@ ffmpeg -i myfile.avi -target vcd /tmp/vcd.mpg
 @item -hq
 activate high quality settings
 
+@item -itsoffset offset
+set the input time offset in seconds. @code{[-]hh:mm:ss[.xxx]} syntax
+is also supported.  This option affects all the input files that
+follow it.  The offset is added to the input files' timestamps;
+specifying a positive offset means that the corresponding streams are
+delayed by 'offset' seconds.
+
 @end table
 
 @section Video Options
