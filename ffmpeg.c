@@ -205,6 +205,7 @@ static int using_vhook = 0;
 static int verbose = 1;
 static int thread_count= 1;
 static int q_pressed = 0;
+static int me_range = 0;
 static int64_t video_size = 0;
 static int64_t audio_size = 0;
 static int64_t extra_size = 0;
@@ -2315,6 +2316,11 @@ static void opt_sc_threshold(const char *arg)
     sc_threshold= atoi(arg);
 }
 
+static void opt_me_range(const char *arg)
+{
+    me_range = atoi(arg);
+}
+
 static void opt_thread_count(const char *arg)
 {
     thread_count= atoi(arg);
@@ -2867,6 +2873,8 @@ static void opt_output_file(const char *filename)
                 video_enc->error_rate = error_rate;
                 video_enc->noise_reduction= noise_reduction;
                 video_enc->scenechange_threshold= sc_threshold;
+                video_enc->me_range = me_range;
+
                 if(packet_size){
                     video_enc->rtp_mode= 1;
                     video_enc->rtp_payload_size= packet_size;
@@ -3533,6 +3541,7 @@ const OptionDef options[] = {
     { "nr", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_noise_reduction}, "noise reduction", "" },
     { "qns", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qns}, "quantization noise shaping", "" },
     { "sc_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sc_threshold}, "scene change threshold", "threshold" },
+    { "me_range", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_range}, "limit motion vectors range (1023 for DivX player)", "range" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
