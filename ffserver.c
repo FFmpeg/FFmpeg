@@ -95,6 +95,7 @@ typedef struct HTTPContext {
     int last_packet_sent; /* true if last data packet was sent */
     int suppress_log;
     int bandwidth;
+    time_t start_time;
     char protocol[16];
     char method[16];
     char url[128];
@@ -116,6 +117,7 @@ typedef struct FFStream {
     AVOutputFormat *fmt;
     int nb_streams;
     int prebuffer;      /* Number of millseconds early to start */
+    time_t max_time;
     int send_on_key;
     AVStream *streams[MAX_STREAMS];
     int feed_streams[MAX_STREAMS]; /* index of streams in the feed */
@@ -559,7 +561,7 @@ static int http_parse_request(HTTPContext *c)
                 c->bandwidth += st->codec.bit_rate;
                 break;
             default:
-                abort();
+                av_abort();
             }
         }
     }
@@ -636,7 +638,7 @@ static int http_parse_request(HTTPContext *c)
                         q += sprintf(q, "http://%s/%s%s\r\n", 
                                 hostbuf, filename, info);
                     } else
-                        abort();
+                        av_abort();
 
                     /* prepare output buffer */
                     c->buffer_ptr = c->buffer;
@@ -829,7 +831,7 @@ static void compute_stats(HTTPContext *c)
                             }
                             break;
                         default:
-                            abort();
+                            av_abort();
                         }
                     }
                     q += sprintf(q, "<TD align=center> %s <TD align=right> %d <TD align=right> %d <TD> %s %s <TD align=right> %d <TD> %s %s", 
@@ -873,7 +875,7 @@ static void compute_stats(HTTPContext *c)
                     type = "video";
                     break;
                 default:
-                    abort();
+                    av_abort();
                 }
                 q += sprintf(q, "<tr><td align=right>%d<td>%s<td align=right>%d<td>%s\n",
                         i, type, st->codec.bit_rate/1000, codec ? codec->name : "");
@@ -960,7 +962,7 @@ static void http_write_packet(void *opaque,
         c->buffer_ptr = c->buffer_end = c->buffer;
 
     if (c->buffer_end - c->buffer + size > IOBUFFER_MAX_SIZE)
-        abort();
+        av_abort();
 
     memcpy(c->buffer_end, buf, size);
     c->buffer_end += size;
@@ -1127,8 +1129,12 @@ static int http_prepare_data(HTTPContext *c)
                                     c->stream->feed->feed_write_index,
                                     c->stream->feed->feed_size);
             }
-            
-            if (av_read_packet(c->fmt_in, &pkt) < 0) {
+
+            if (c->stream->max_time && 
+                c->stream->max_time + c->start_time > time(0)) {
+                /* We have timed out */
+                c->state = HTTPSTATE_SEND_DATA_TRAILER;
+            } else if (av_read_packet(c->fmt_in, &pkt) < 0) {
                 if (c->stream->feed && c->stream->feed->feed_opened) {
                     /* if coming from feed, it means we reached the end of the
                        ffm file, so must wait for more data */
@@ -1326,18 +1332,25 @@ static int http_receive_data(HTTPContext *c)
             if (!fmt_in)
                 goto fail;
 
+            s.priv_data = av_mallocz(fmt_in->priv_data_size);
+            if (!s.priv_data)
+                goto fail;
+
             if (fmt_in->read_header(&s, 0) < 0) {
+                av_freep(&s.priv_data);
                 goto fail;
             }
 
             /* Now we have the actual streams */
             if (s.nb_streams != feed->nb_streams) {
+                av_freep(&s.priv_data);
                 goto fail;
             }
             for (i = 0; i < s.nb_streams; i++) {
                 memcpy(&feed->streams[i]->codec, 
                        &s.streams[i]->codec, sizeof(AVCodecContext));
             } 
+            av_freep(&s.priv_data);
         }
         c->buffer_ptr = c->buffer;
     }
@@ -1379,7 +1392,7 @@ int add_av_stream(FFStream *feed,
                     goto found;
                 break;
             default:
-                abort();
+                av_abort();
             }
         }
     }
@@ -1530,7 +1543,7 @@ void add_codec(FFStream *stream, AVCodecContext *av)
 
         break;
     default:
-        abort();
+        av_abort();
     }
 
     st = av_mallocz(sizeof(AVStream));
@@ -1806,6 +1819,11 @@ int parse_ffconfig(const char *filename)
                 fprintf(stderr, "%s:%d: Unknown VideoCodec: %s\n", 
                         filename, line_num, arg);
                 errors++;
+            }
+        } else if (!strcasecmp(cmd, "MaxTime")) {
+            get_arg(arg, sizeof(arg), &p);
+            if (stream) {
+                stream->max_time = atoi(arg);
             }
         } else if (!strcasecmp(cmd, "AudioBitRate")) {
             get_arg(arg, sizeof(arg), &p);
