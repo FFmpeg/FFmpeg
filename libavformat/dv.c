@@ -582,9 +582,11 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
         avctx->height = sys->height;
         avctx->pix_fmt = sys->pix_fmt;
         
+	/* finding out SAR is a little bit messy */
 	vsc_pack = dv_extract_pack(frame, dv_video_control);
         apt = frame[4] & 0x07;
-	is16_9 = (vsc_pack && (vsc_pack[2] & 0x07) == (apt?0x02:0x07));
+	is16_9 = (vsc_pack && ((vsc_pack[2] & 0x07) == 0x02 ||
+	                       (!apt && (vsc_pack[2] & 0x07) == 0x07)));
 	avctx->sample_aspect_ratio = sys->sar[is16_9];
 	
 	size = sys->frame_size;
