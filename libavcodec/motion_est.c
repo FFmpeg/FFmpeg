@@ -1309,15 +1309,15 @@ static inline int direct_search(MpegEncContext * s,
         min= FFMIN(s->me.direct_basis_mv[i][0], s->me.direct_basis_mv[i][0] - s->me.co_located_mv[i][0])>>shift;
         max+= (2*mb_x + (i& 1))*8 - 1; // +-1 is for the simpler rounding
         min+= (2*mb_x + (i& 1))*8 + 1;
-        if(max >= s->width) xmax= s->width - max - 1;
-        if(min < -16      ) xmin= - 32 - min;
+        xmax= FFMIN(xmax, s->width - max);
+        xmin= FFMAX(xmin, - 16     - min);
 
         max= FFMAX(s->me.direct_basis_mv[i][1], s->me.direct_basis_mv[i][1] - s->me.co_located_mv[i][1])>>shift;
         min= FFMIN(s->me.direct_basis_mv[i][1], s->me.direct_basis_mv[i][1] - s->me.co_located_mv[i][1])>>shift;
         max+= (2*mb_y + (i>>1))*8 - 1; // +-1 is for the simpler rounding
         min+= (2*mb_y + (i>>1))*8 + 1;
-        if(max >= s->height) ymax= s->height - max - 1;
-        if(min < -16       ) ymin= - 32 - min;
+        ymax= FFMIN(ymax, s->height - max);
+        ymin= FFMAX(ymin, - 16      - min);
         
         if(s->mv_type == MV_TYPE_16X16) break;
     }
