@@ -601,7 +601,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
     
-    if(s->max_b_frames && (s->codec_id != CODEC_ID_MPEG4 || s->codec_id != CODEC_ID_MPEG1VIDEO)){
+    if(s->max_b_frames && s->codec_id != CODEC_ID_MPEG4 && s->codec_id != CODEC_ID_MPEG1VIDEO){
         fprintf(stderr, "b frames not supporetd by codec\n");
         return -1;
     }
