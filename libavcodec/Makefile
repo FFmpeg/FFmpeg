@@ -69,7 +69,7 @@ endif
 ifeq ($(TARGET_ARCH_ALPHA),yes)
 OBJS += alpha/dsputil_alpha.o alpha/mpegvideo_alpha.o alpha/motion_est_alpha.o
 ASM_OBJS += alpha/dsputil_alpha_asm.o
-CFLAGS += -Wa,-mpca56 -finline-limit=8000 -fforce-addr -freduce-all-givs
+CFLAGS += -fforce-addr -freduce-all-givs
 endif
 
 ifeq ($(TARGET_ARCH_POWERPC),yes)
@@ -109,6 +109,17 @@ dsputil.o: dsputil.c dsputil.h
 
 %.o: %.S
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+# motion_est_alpha uses the MVI extension, which is not available with
+# -mcpu=ev4 (default) or ev5/ev56. Thus, force -mcpu=pca56 in those
+# cases.
+ifeq ($(TARGET_ARCH_ALPHA),yes)
+alpha/motion_est_alpha.o: alpha/motion_est_alpha.c
+	cpu=`echo "$(CFLAGS)" | sed -n 's,.*-mcpu=\([a-zA-Z0-9]*\).*,\1,p'`; \
+	case x"$$cpu" in x|xev[45]*) newcpu=pca56;; *) newcpu=$$cpu;; esac; \
+	echo $(CC) $(CFLAGS) -mcpu=$$newcpu -c -o $@ $<;\
+	$(CC) $(CFLAGS) -mcpu=$$newcpu -c -o $@ $<
+endif
 
 # depend only used by mplayer now
 dep:	depend
