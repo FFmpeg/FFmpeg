@@ -28,7 +28,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef HAVE_MALLOC_H
 #include <malloc.h>
+#endif
 
 #define INBUF_SIZE 4096
 #define BUFFER_SIZE 4096
