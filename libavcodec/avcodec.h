@@ -831,7 +831,7 @@ extern AVCodec mace6_decoder;
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
 extern AVCodec name ## _decoder; \
-extern AVCodec name ## _encoder;
+extern AVCodec name ## _encoder
 
 PCM_CODEC(CODEC_ID_PCM_S16LE, pcm_s16le);
 PCM_CODEC(CODEC_ID_PCM_S16BE, pcm_s16be);
