@@ -530,9 +530,11 @@ retry:
         if(s->divx_version)
             s->workaround_bugs|= FF_BUG_DIRECT_BLOCKSIZE;
 //printf("padding_bug_score: %d\n", s->padding_bug_score);
+        if(s->divx_version==501 && s->divx_build==20020416)
+            s->padding_bug_score= 256*256*256*64;
 #if 0
         if(s->divx_version==500)
-            s->workaround_bugs|= FF_BUG_NO_PADDING;
+            s->padding_bug_score= 256*256*256*64;
 
         /* very ugly XVID padding bug detection FIXME/XXX solve this differently
          * lets hope this at least works
