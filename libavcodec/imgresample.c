@@ -539,7 +539,7 @@ static void dump_filter(INT16 *filter)
 }
 
 #ifdef HAVE_MMX
-extern int mm_flags;
+int mm_flags;
 #endif
 
 int main(int argc, char **argv)
@@ -598,7 +598,7 @@ int main(int argc, char **argv)
         fact = factors[i];
         xsize = (int)(XSIZE * fact);
         ysize = (int)((YSIZE - 100) * fact);
-        s = img_resample_full_init(xsize, ysize, XSIZE, YSIZE, 50 ,50);
+        s = img_resample_full_init(xsize, ysize, XSIZE, YSIZE, 50 ,50, 0, 0);
         printf("Factor=%0.2f\n", fact);
         dump_filter(&s->h_filters[0][0]);
         component_resample(s, img1, xsize, xsize, ysize,

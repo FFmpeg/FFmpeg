@@ -10,19 +10,19 @@
 
 #include "i386/mmx.h"
 
-int pix_abs16x16_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_mmx1(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_x2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_x2_mmx1(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_x2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_y2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_y2_mmx1(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_y2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_xy2_mmx(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_xy2_mmx1(UINT8 *blk1, UINT8 *blk2, int lx, int h);
-int pix_abs16x16_xy2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
+int pix_abs16x16_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_mmx1(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_x2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_x2_mmx1(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_x2_c(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_y2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_y2_mmx1(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_y2_c(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_xy2_mmx(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_xy2_mmx1(UINT8 *blk1, UINT8 *blk2, int lx);
+int pix_abs16x16_xy2_c(UINT8 *blk1, UINT8 *blk2, int lx);
 
-typedef int motion_func(UINT8 *blk1, UINT8 *blk2, int lx, int h);
+typedef int motion_func(UINT8 *blk1, UINT8 *blk2, int lx);
 
 #define WIDTH 64
 #define HEIGHT 64
@@ -77,8 +77,8 @@ void test_motion(const char *name,
         for(y=0;y<HEIGHT-17;y++) {
             for(x=0;x<WIDTH-17;x++) {
                 ptr = img2 + y * WIDTH + x; 
-                d1 = test_func(img1, ptr, WIDTH, 16);
-                d2 = ref_func(img1, ptr, WIDTH, 16);
+                d1 = test_func(img1, ptr, WIDTH);
+                d2 = ref_func(img1, ptr, WIDTH);
                 if (d1 != d2) {
                     printf("error: mmx=%d c=%d\n", d1, d2);
                 }
@@ -94,7 +94,7 @@ void test_motion(const char *name,
         for(y=0;y<HEIGHT-17;y++) {
             for(x=0;x<WIDTH-17;x++) {
                 ptr = img2 + y * WIDTH + x; 
-                d1 += test_func(img1, ptr, WIDTH, 16);
+                d1 += test_func(img1, ptr, WIDTH);
             }
         }
     }

@@ -139,14 +139,14 @@ cpuid_test: i386/cputest.c
 # testing progs
 
 imgresample-test: imgresample.c
-	$(CC) $(CFLAGS) -DTEST -o $@ $^ 
+	$(CC) $(CFLAGS) -DTEST -o $@ $^ -lm
 
 dct-test: dct-test.o jfdctfst.o jfdctint.o i386/fdct_mmx.o\
           fdctref.o jrevdct.o i386/idct_mmx.o simple_idct.o i386/simple_idct_mmx.o
 	$(CC) -o $@ $^ -lm
 
 motion-test: motion_test.o $(LIB)
-	$(CC) -o $@ $^
+	$(CC) -o $@ $^ -lm
 
 install: all
 ifeq ($(BUILD_SHARED),yes)
