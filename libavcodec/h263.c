@@ -82,12 +82,13 @@ static UINT16 (*mv_penalty)[MAX_MV*2+1]= NULL;
 static UINT8 fcode_tab[MAX_MV*2+1];
 static UINT8 umv_fcode_tab[MAX_MV*2+1];
 
-static UINT32 uni_mpeg4_intra_rl_bits[64*64*2*2];
-static UINT8  uni_mpeg4_intra_rl_len [64*64*2*2];
-static UINT32 uni_mpeg4_inter_rl_bits[64*64*2*2];
-static UINT8  uni_mpeg4_inter_rl_len [64*64*2*2];
-#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128 + (run)*256 + (level))
+static uint32_t uni_mpeg4_intra_rl_bits[64*64*2*2];
+static uint8_t  uni_mpeg4_intra_rl_len [64*64*2*2];
+static uint32_t uni_mpeg4_inter_rl_bits[64*64*2*2];
+static uint8_t  uni_mpeg4_inter_rl_len [64*64*2*2];
+//#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128 + (run)*256 + (level))
 //#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run) + (level)*64)
+#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run)*128 + (level))
 
 /* mpeg4
 inter
@@ -1441,6 +1442,11 @@ void h263_encode_init(MpegEncContext *s)
         s->fcode_tab= fcode_tab;
         s->min_qcoeff= -2048;
         s->max_qcoeff=  2047;
+        s->intra_ac_vlc_length     = uni_mpeg4_intra_rl_len;
+        s->intra_ac_vlc_last_length= uni_mpeg4_intra_rl_len + 128*64;
+        s->inter_ac_vlc_length     = uni_mpeg4_inter_rl_len;
+        s->inter_ac_vlc_last_length= uni_mpeg4_inter_rl_len + 128*64;
+        s->ac_esc_length= 7+2+1+6+1+12+1;
         break;
     case CODEC_ID_H263P:
         s->fcode_tab= umv_fcode_tab;

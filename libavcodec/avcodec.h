@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4647
-#define LIBAVCODEC_BUILD_STR   "4647"
+#define LIBAVCODEC_BUILD       4648
+#define LIBAVCODEC_BUILD_STR   "4648"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -146,6 +146,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_INTERLACED_DCT 0x00040000 /* use interlaced dct */
 #define CODEC_FLAG_LOW_DELAY      0x00080000 /* force low delay / will fail on b frames */
 #define CODEC_FLAG_ALT_SCAN       0x00100000 /* use alternate scan */
+#define CODEC_FLAG_TRELLIS_QUANT  0x00200000 /* use trellis quantization */
 
 /* codec capabilities */
 

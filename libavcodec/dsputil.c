@@ -1467,10 +1467,10 @@ static int sad8x8_c(void *s, uint8_t *a, uint8_t *b, int stride){
     return pix_abs8x8_c(a,b,stride);
 }
 
-void ff_block_permute(INT16 *block, UINT8 *permutation, const UINT8 *scantable, int last)
+void ff_block_permute(DCTELEM *block, UINT8 *permutation, const UINT8 *scantable, int last)
 {
     int i;
-    INT16 temp[64];
+    DCTELEM temp[64];
     
     if(last<=0) return;
     //if(permutation[1]==1) return; //FIXME its ok but not clean and might fail for some perms

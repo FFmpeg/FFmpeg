@@ -307,6 +307,13 @@ typedef struct MpegEncContext {
     int inter_quant_bias;    /* bias for the quantizer */
     int min_qcoeff;          /* minimum encodable coefficient */
     int max_qcoeff;          /* maximum encodable coefficient */
+    int ac_esc_length;       /* num of bits needed to encode the longest esc */
+    uint8_t *intra_ac_vlc_length;
+    uint8_t *intra_ac_vlc_last_length;
+    uint8_t *inter_ac_vlc_length;
+    uint8_t *inter_ac_vlc_last_length;
+#define UNI_ENC_INDEX(run,level) ((run)*128 + (level))
+
     /* precomputed matrix (combine qscale and DCT renorm) */
     int __align8 q_intra_matrix[32][64];
     int __align8 q_inter_matrix[32][64];

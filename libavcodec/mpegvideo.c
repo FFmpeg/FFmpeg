@@ -41,6 +41,7 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale);
 static void draw_edges_c(UINT8 *buf, int wrap, int width, int height, int w);
 static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
+static int dct_quantize_trellis_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 
 void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w)= draw_edges_c;
 
@@ -122,7 +123,8 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
                    so (1<<19) / 16 >= (1<<19) / (qscale * quant_matrix[i]) >= (1<<19) / 7905
                    so 32768        >= (1<<19) / (qscale * quant_matrix[i]) >= 67
                 */
-                qmat  [qscale][i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[i]);
+                qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) / (qscale * quant_matrix[j]));
+//                qmat  [qscale][i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[i]);
                 qmat16[qscale][i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[j]);
 
                 if(qmat16[qscale][i]==0 || qmat16[qscale][i]==128*256) qmat16[qscale][i]=128*256-1;
@@ -227,6 +229,10 @@ int DCT_common_init(MpegEncContext *s)
 #ifdef ARCH_POWERPC
     MPV_common_init_ppc(s);
 #endif
+
+    if(s->flags&CODEC_FLAG_TRELLIS_QUANT){
+        s->dct_quantize= dct_quantize_trellis_c; //move before MPV_common_init_*
+    }
 
     switch(s->idct_permutation_type){
     case FF_NO_IDCT_PERM:
@@ -3251,6 +3257,251 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         s->ptr_lastgob = pbBufPtr(&s->pb);
         //fprintf(stderr,"\nGOB: %2d size: %d (last)", s->gob_number, pdif);
     }
+}
+
+static int dct_quantize_trellis_c(MpegEncContext *s, 
+                        DCTELEM *block, int n,
+                        int qscale, int *overflow){
+    const int *qmat;
+    const UINT8 *scantable= s->intra_scantable.scantable;
+    int max=0;
+    unsigned int threshold1, threshold2;
+    int bias=0;
+    int run_tab[65];
+    int last_run[65];
+    int level_tab[65];
+    int last_level[65];
+    int score_tab[65];
+    int last_score[65];
+    int coeff[4][64];
+    int coeff_count[64];
+    int lambda, qmul, qadd, start_i, best_i, best_score, last_non_zero, i;
+    const int esc_length= s->ac_esc_length;
+    uint8_t * length;
+    uint8_t * last_length;
+        
+    s->fdct (block);
+
+    qmul= qscale*16;
+    qadd= ((qscale-1)|1)*8;
+    
+    if (s->mb_intra) {
+        int q;
+        if (!s->h263_aic) {
+            if (n < 4)
+                q = s->y_dc_scale;
+            else
+                q = s->c_dc_scale;
+            q = q << 3;
+        } else{
+            /* For AIC we skip quant/dequant of INTRADC */
+            q = 1 << 3;
+            qadd=0;
+        }
+            
+        /* note: block[0] is assumed to be positive */
+        block[0] = (block[0] + (q >> 1)) / q;
+        start_i = 1;
+        last_non_zero = 0;
+        qmat = s->q_intra_matrix[qscale];
+        if(s->mpeg_quant)
+            bias= 1<<(QMAT_SHIFT-1);
+        length     = s->intra_ac_vlc_length;
+        last_length= s->intra_ac_vlc_last_length;
+    } else {
+        start_i = 0;
+        last_non_zero = -1;
+        qmat = s->q_inter_matrix[qscale];
+        length     = s->inter_ac_vlc_length;
+        last_length= s->inter_ac_vlc_last_length;
+    }
+
+    threshold1= (1<<QMAT_SHIFT) - bias - 1;
+    threshold2= (threshold1<<1);
+//printf("%d %d %d\n", qmat[1], QMAT_SHIFT, qscale);
+    for(i=start_i; i<64; i++) {
+        const int j = scantable[i];
+        const int k= i-start_i;
+        int level = block[j];
+        level = level * qmat[j];
+
+//        if(   bias+level >= (1<<(QMAT_SHIFT - 3))
+//           || bias-level >= (1<<(QMAT_SHIFT - 3))){
+        if(((unsigned)(level+threshold1))>threshold2){
+            if(level>0){
+                level= (bias + level)>>QMAT_SHIFT;
+                coeff[0][k]= level;
+                coeff[1][k]= level-1;
+                coeff[2][k]= level-2;
+                coeff[3][k]= level-3;
+                coeff_count[k]= FFMIN(level, 4);
+            }else{
+                level= (bias - level)>>QMAT_SHIFT;
+                coeff[0][k]= -level;
+                coeff[1][k]= -level+1;
+                coeff[2][k]= -level+2;
+                coeff[3][k]= -level+3;
+                coeff_count[k]= FFMIN(level, 4);
+            }
+            max |=level;
+            last_non_zero = i;
+        }else{
+            if(level < 0)
+                coeff[0][k]= -1;
+            else
+                coeff[0][k]= 1;
+            coeff_count[k]= 1;
+        }
+    }
+    
+    *overflow= s->max_qcoeff < max; //overflow might have happend
+    
+    if(last_non_zero < start_i){
+        memset(block + start_i, 0, (64-start_i)*sizeof(DCTELEM));
+        return last_non_zero;
+    }
+
+    lambda= (qscale*qscale*64*82 + 50)/100; //FIXME finetune
+        
+    score_tab[0]=
+    last_score[0]= 0;
+//printf("qscale:%d\n", qscale);
+    for(i=0; i<=last_non_zero - start_i; i++){
+        int level_index, run, j;
+        const int dct_coeff= block[ scantable[i + start_i] ];
+        const int zero_distoration= dct_coeff*dct_coeff;
+        int best_score=256*256*256*120, best_last_score= 256*256*256*120;
+        
+//printf("%2d %5d ", i, dct_coeff);
+
+        for(level_index=0; level_index < coeff_count[i]; level_index++){
+            int distoration;
+            int level= coeff[level_index][i];
+            int unquant_coeff;
+            
+            assert(level);
+
+            if(s->out_format == FMT_H263){
+                if(level>0){
+                    unquant_coeff= level*qmul + qadd;
+                }else{
+                    unquant_coeff= level*qmul - qadd;
+                }
+            } //FIXME else
+//printf("(%d %d) ", level, unquant_coeff);
+            distoration= (unquant_coeff - dct_coeff) * (unquant_coeff - dct_coeff);
+            
+            level+=64;
+            if((level&(~127)) == 0){
+                for(run=0; run<=i; run++){
+                    int score= distoration + length[UNI_ENC_INDEX(run, level)]*lambda;
+                    score += score_tab[i-run];
+                    
+                    if(score < best_score){
+                        best_score= 
+                        score_tab[i+1]= score;
+                        run_tab[i+1]= run;
+                        level_tab[i+1]= level-64;
+                    }
+                }
+
+                if(s->out_format == FMT_H263){
+                    for(run=0; run<=i; run++){
+                        int score= distoration + last_length[UNI_ENC_INDEX(run, level)]*lambda;
+                        score += score_tab[i-run];
+                        if(score < best_last_score){
+                            best_last_score= 
+                            last_score[i+1]= score;
+                            last_run[i+1]= run;
+                            last_level[i+1]= level-64;
+                        }
+                    }
+                }
+            }else{
+                distoration += esc_length*lambda;
+                for(run=0; run<=i; run++){
+                    int score= distoration + score_tab[i-run];
+                    
+                    if(score < best_score){
+                        best_score= 
+                        score_tab[i+1]= score;
+                        run_tab[i+1]= run;
+                        level_tab[i+1]= level-64;
+                    }
+                }
+
+                if(s->out_format == FMT_H263){
+                    for(run=0; run<=i; run++){
+                        int score= distoration + score_tab[i-run];
+                        if(score < best_last_score){
+                            best_last_score= 
+                            last_score[i+1]= score;
+                            last_run[i+1]= run;
+                            last_level[i+1]= level-64;
+                        }
+                    }
+                }
+            }
+        }
+
+        for(j=0; j<=i; j++){
+            score_tab[j] += zero_distoration;
+//            printf("%6d ", score_tab[j]);
+        }
+//        printf("%6d ", score_tab[j]);
+
+//        printf("last: ");
+        if(s->out_format == FMT_H263){
+            for(j=0; j<=i; j++){
+                last_score[j] += zero_distoration;
+//                printf("%6d ", last_score[j]);
+            }
+//            printf("%6d ", last_score[j]);
+        }
+//        printf("\n");
+    }
+    
+    if(s->out_format != FMT_H263){
+        for(i=0; i<=last_non_zero - start_i + 1; i++){
+            last_score[i]= score_tab[i];
+            if(i) last_score[i] += lambda*2; //FIXME exacter?
+            last_run[i]= run_tab[i];
+            last_level[i]= level_tab[i];
+        }
+    }
+
+    //FIXME add some cbp penalty
+    best_i= 0;
+    best_score= 256*256*256*120;
+    for(i=0; i<=last_non_zero - start_i + 1; i++){
+        int score= last_score[i];
+        if(score < best_score){
+            best_score= score;
+            best_i= i;
+        }
+    }
+    
+    last_non_zero= best_i - 1 + start_i;
+    memset(block + start_i, 0, (64-start_i)*sizeof(DCTELEM));
+    
+    if(last_non_zero < start_i)
+        return last_non_zero;
+    
+    i= best_i;
+//printf("%d %d %d %d %d\n", last_level[i], i, start_i, last_non_zero, best_score);
+    assert(last_level[i]);
+//FIXME use permutated scantable
+    block[ s->idct_permutation[ scantable[last_non_zero] ] ]= last_level[i];
+    i -= last_run[i] + 1;
+    
+    for(;i>0 ; i -= run_tab[i] + 1){
+        const int j= s->idct_permutation[ scantable[i - 1 + start_i] ];
+    
+        block[j]= level_tab[i];
+        assert(block[j]);
+    }
+
+    return last_non_zero;
 }
 
 static int dct_quantize_c(MpegEncContext *s, 
