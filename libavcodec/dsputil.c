@@ -23,6 +23,8 @@
 #include "simple_idct.h"
 
 void (*ff_idct)(DCTELEM *block);
+void (*ff_idct_put)(UINT8 *dest, int line_size, DCTELEM *block);
+void (*ff_idct_add)(UINT8 *dest, int line_size, DCTELEM *block);
 void (*av_fdct)(DCTELEM *block);
 void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 void (*diff_pixels)(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
@@ -1244,6 +1246,20 @@ void clear_blocks_c(DCTELEM *blocks)
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
 }
 
+/* XXX: those functions should be suppressed ASAP when all IDCTs are
+   converted */
+void gen_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    ff_idct (block);
+    put_pixels_clamped(block, dest, line_size);
+}
+
+void gen_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
+{
+    ff_idct (block);
+    add_pixels_clamped(block, dest, line_size);
+}
+
 void dsputil_init(void)
 {
     int i, j;
@@ -1260,7 +1276,7 @@ void dsputil_init(void)
     }
 
 #ifdef SIMPLE_IDCT
-    ff_idct = simple_idct;
+    ff_idct = NULL;
 #else
     ff_idct = j_rev_dct;
 #endif
@@ -1299,7 +1315,14 @@ void dsputil_init(void)
 #endif
 
 #ifdef SIMPLE_IDCT
-    if(ff_idct == simple_idct) use_permuted_idct=0;
+    if (ff_idct == NULL) {
+        ff_idct_put = simple_idct_put;
+        ff_idct_add = simple_idct_add;
+        use_permuted_idct=0;
+    } else {
+        ff_idct_put = gen_idct_put;
+        ff_idct_add = gen_idct_add;
+    }
 #endif
 
     if(use_permuted_idct)

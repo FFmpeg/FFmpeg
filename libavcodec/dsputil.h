@@ -54,6 +54,8 @@ void dsputil_init(void);
 /* pixel ops : interface with DCT */
 
 extern void (*ff_idct)(DCTELEM *block);
+extern void (*ff_idct_put)(UINT8 *dest, int line_size, DCTELEM *block);
+extern void (*ff_idct_add)(UINT8 *dest, int line_size, DCTELEM *block);
 extern void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 extern void (*diff_pixels)(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
 extern void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
