@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4643
-#define LIBAVCODEC_BUILD_STR   "4643"
+#define LIBAVCODEC_BUILD       4644
+#define LIBAVCODEC_BUILD_STR   "4644"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -119,7 +119,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
                                        ME_X1, ME_EPZS, ME_FULL };
 
 
-#define FF_MAX_B_FRAMES 4
+#define FF_MAX_B_FRAMES 8
 
 /* encoding support
    these flags can be passed in AVCodecContext.flags before initing 
@@ -260,6 +260,19 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
      * decoding: unused\
      */\
     uint64_t error[4];\
+\
+    /**\
+     * type of the buffer (to keep track of who has to dealloc data[*])\
+     * encoding: set by the one who allocs it\
+     * decoding: set by the one who allocs it\
+     * Note: user allocated (direct rendering) & internal buffers can not coexist currently\ 
+     */\
+    int type;\
+
+#define FF_BUFFER_TYPE_INTERNAL 1
+#define FF_BUFFER_TYPE_USER     2 // Direct rendering buffers
+#define FF_BUFFER_TYPE_SHARED   4 // input frame for encoding(wont be dealloced)
+
 
 #define FF_I_TYPE 1 // Intra
 #define FF_P_TYPE 2 // Predicted

@@ -185,7 +185,6 @@ typedef struct MpegEncContext {
     Picture next_picture;       /* previous picture (for bidir pred) */
     Picture new_picture;        /* source picture for encoding */
     Picture current_picture;    /* buffer to store the decompressed current picture */
-    int num_available_buffers;   /* is 0 at the start & after seeking, after the first I frame its 1 after next I/P 2 */
     int last_dc[3];              /* last DC values for MPEG1 */
     INT16 *dc_val[3];            /* used for mpeg4 DC prediction, all 3 arrays must be continuous */
     int y_dc_scale, c_dc_scale;
@@ -254,7 +253,6 @@ typedef struct MpegEncContext {
     UINT16 (*mv_penalty)[MAX_MV*2+1]; /* amount of bits needed to encode a MV, used for ME */
     UINT8 *fcode_tab; /* smallest fcode needed for each MV */
 
-    int has_b_frames;
     int no_rounding; /* apply no rounding to motion compensation (MPEG4, msmpeg4, ...) 
                         for b-frames rounding mode is allways 0 */
 

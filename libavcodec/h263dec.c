@@ -55,6 +55,7 @@ static int h263_decode_init(AVCodecContext *avctx)
     s->quant_precision=5;
     s->progressive_sequence=1;
     s->decode_mb= ff_h263_decode_mb;
+    s->low_delay= 1;
 
     /* select sub codec */
     switch(avctx->codec->id) {
@@ -64,7 +65,7 @@ static int h263_decode_init(AVCodecContext *avctx)
     case CODEC_ID_MPEG4:
         s->time_increment_bits = 4; /* default value for broken headers */
         s->h263_pred = 1;
-        s->has_b_frames = 1; //default, might be overriden in the vol header during header parsing
+        s->low_delay = 0; //default, might be overriden in the vol header during header parsing
         break;
     case CODEC_ID_MSMPEG4V1:
         s->h263_msmpeg4 = 1;
@@ -430,14 +431,12 @@ retry:
 
         if(s->flags& CODEC_FLAG_LOW_DELAY)
             s->low_delay=1;
-
-        s->has_b_frames= !s->low_delay;
     } else if (s->h263_intel) {
         ret = intel_h263_decode_picture_header(s);
     } else {
         ret = h263_decode_picture_header(s);
     }
-    avctx->has_b_frames= s->has_b_frames;
+    avctx->has_b_frames= !s->low_delay;
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
         if(s->avctx->fourcc == ff_get_fourcc("XVIX")) 
@@ -531,7 +530,7 @@ retry:
     s->current_picture.key_frame= s->pict_type == I_TYPE;
 
     /* skip b frames if we dont have reference frames */
-    if(s->num_available_buffers<2 && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
+    if(s->last_picture.data[0]==NULL && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
     /* skip everything if we are in a hurry>=5 */
@@ -676,7 +675,7 @@ retry:
 
 }
 #endif
-    if(s->pict_type==B_TYPE || (!s->has_b_frames)){
+    if(s->pict_type==B_TYPE || s->low_delay){
         *pict= *(AVVideoFrame*)&s->current_picture;
     } else {
         *pict= *(AVVideoFrame*)&s->last_picture;
@@ -686,9 +685,8 @@ retry:
     /* we substract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 
-    /* dont output the last pic after seeking 
-       note we allready added +1 for the current pix in MPV_frame_end(s) */
-    if(s->num_available_buffers>=2 || (!s->has_b_frames))
+    /* dont output the last pic after seeking */
+    if(s->last_picture.data[0] || s->low_delay)
         *data_size = sizeof(AVVideoFrame);
 #ifdef PRINT_FRAME_TIME
 printf("%Ld\n", rdtsc()-time);

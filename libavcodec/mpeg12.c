@@ -1702,7 +1702,7 @@ eos: //end of slice
 
         MPV_frame_end(s);
 
-        if (s->pict_type == B_TYPE) {
+        if (s->pict_type == B_TYPE || s->low_delay) {
             *pict= *(AVVideoFrame*)&s->current_picture;
         } else {
             s->picture_number++;
@@ -1756,7 +1756,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         }
         s->width = width;
         s->height = height;
-        avctx->has_b_frames= s->has_b_frames = 1;
+        avctx->has_b_frames= 1;
         s->avctx = avctx;
         avctx->width = width;
         avctx->height = height;
