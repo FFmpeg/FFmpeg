@@ -730,7 +730,6 @@ void mpeg4_encode_mb(MpegEncContext * s,
     
     //    printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
     if (!s->mb_intra) {
-        /* compute cbp */
         int i, cbp;
         
         if(s->pict_type==B_TYPE){
@@ -1145,34 +1144,40 @@ void h263_encode_mb(MpegEncContext * s,
             s->mv_bits+= get_bits_diff(s);
         }
     } else {
-        int li = s->h263_aic ? 0 : 1;
         assert(s->mb_intra);
         
         cbp = 0;
-        for(i=0; i<6; i++) {
+        if (s->h263_aic) {
             /* Predict DC */
-            if (s->h263_aic) {
+            for(i=0; i<6; i++) {
                 int16_t level = block[i][0];
-            
+                int scale;
+                
+                if(i<4) scale= s->y_dc_scale;
+                else    scale= s->c_dc_scale;
+
                 pred_dc = h263_pred_dc(s, i, &dc_ptr[i]);
                 level -= pred_dc;
                 /* Quant */
-                if (level < 0)
-                    level = (level + (s->qscale >> 1))/(s->y_dc_scale);
+                if (level >= 0)
+                    level = (level + (scale>>1))/scale;
                 else
-                    level = (level - (s->qscale >> 1))/(s->y_dc_scale);
+                    level = (level - (scale>>1))/scale;
                     
                 /* AIC can change CBP */
                 if (level == 0 && s->block_last_index[i] == 0)
                     s->block_last_index[i] = -1;
-                else if (level < -127)
-                    level = -127;
-                else if (level > 127)
-                    level = 127;
-                
+
+                if(!s->modified_quant){
+                    if (level < -127)
+                        level = -127;
+                    else if (level > 127)
+                        level = 127;
+                }
+
                 block[i][0] = level;
                 /* Reconstruction */ 
-                rec_intradc[i] = (s->y_dc_scale*level) + pred_dc;
+                rec_intradc[i] = scale*level + pred_dc;
                 /* Oddify */
                 rec_intradc[i] |= 1;
                 //if ((rec_intradc[i] % 2) == 0)
@@ -1185,10 +1190,15 @@ void h263_encode_mb(MpegEncContext * s,
                                 
                 /* Update AC/DC tables */
                 *dc_ptr[i] = rec_intradc[i];
+                if (s->block_last_index[i] >= 0)
+                    cbp |= 1 << (5 - i);
             }
-            /* compute cbp */
-            if (s->block_last_index[i] >= li)
-                cbp |= 1 << (5 - i);
+        }else{
+            for(i=0; i<6; i++) {
+                /* compute cbp */
+                if (s->block_last_index[i] >= 1)
+                    cbp |= 1 << (5 - i);
+            }
         }
 
         cbpc = cbp & 3;
@@ -1907,9 +1917,17 @@ void h263_encode_init(MpegEncContext *s)
         
         break;
     case CODEC_ID_H263P:
-        s->fcode_tab= umv_fcode_tab;
-        s->min_qcoeff= -127;
-        s->max_qcoeff=  127;
+        if(s->umvplus)
+            s->fcode_tab= umv_fcode_tab;
+        else
+            s->fcode_tab= fcode_tab;
+        if(s->modified_quant){
+            s->min_qcoeff= -2047;
+            s->max_qcoeff=  2047;
+        }else{
+            s->min_qcoeff= -127;
+            s->max_qcoeff=  127;
+        }
         break;
         //Note for mpeg4 & h263 the dc-scale table will be set per frame as needed later 
     case CODEC_ID_FLV1:
