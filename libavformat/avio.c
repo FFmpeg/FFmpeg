@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
+#include <ctype.h>
 
 URLProtocol *first_protocol = NULL;
 
@@ -41,12 +42,16 @@ int url_open(URLContext **puc, const char *filename, int flags)
     p = filename;
     q = proto_str;
     while (*p != '\0' && *p != ':') {
+        /* protocols can only contain alphabetic chars */
+        if (!isalpha(*p))
+            goto file_proto;
         if ((q - proto_str) < sizeof(proto_str) - 1)
             *q++ = *p;
         p++;
     }
     /* if the protocol has length 1, we consider it is a dos drive */
     if (*p == '\0' || (q - proto_str) <= 1) {
+    file_proto:
         strcpy(proto_str, "file");
     } else {
         *q = '\0';
