@@ -228,8 +228,7 @@ static int audio_open(AudioData *s, int is_output)
     s->player->Start();
     s->player->SetHasData(true);
     /* bump up the priority (avoid realtime though) */
-//    set_thread_priority(find_thread(NULL), B_URGENT_DISPLAY_PRIORITY+1);
-//    set_thread_priority(find_thread(NULL), B_LOW_PRIORITY);
+    set_thread_priority(find_thread(NULL), B_DISPLAY_PRIORITY+1);
     return 0;
 }
 
