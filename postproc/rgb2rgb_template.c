@@ -2291,7 +2291,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"movd %%mm0, (%3, %%eax)	\n\t"
 			"addl $4, %%eax			\n\t"
 			" js 1b				\n\t"
-			: : "r" (src+width*6), "r" (src+srcStride+width*6), "r" (udst+width), "r" (vdst+width), "g" (-width)
+			: : "r" (src+chromWidth*6), "r" (src+srcStride+chromWidth*6), "r" (udst+chromWidth), "r" (vdst+chromWidth), "g" (-chromWidth)
 			: "%eax", "%ebx"
 		);
 
