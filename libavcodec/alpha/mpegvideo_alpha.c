@@ -23,69 +23,70 @@
 
 extern UINT8 zigzag_end[64];
 
-static void dct_unquantize_h263_axp(MpegEncContext *s, 
-				    DCTELEM *block, int n, int qscale)
+static void dct_unquantize_h263_mvi(MpegEncContext *s, DCTELEM *block,
+                                    int n, int qscale)
 {
-    int i, level;
-    UINT64 qmul, qadd;
+    int i, n_coeffs;
+    uint64_t qmul, qadd;
+    uint64_t correction;
+    DCTELEM *orig_block = block;
+    DCTELEM block0;
 
     ASM_ACCEPT_MVI;
-    
+
     if (s->mb_intra) {
-        if (n < 4) 
-            block[0] = block[0] * s->y_dc_scale;
-        else
-            block[0] = block[0] * s->c_dc_scale;
-	/* Catch up to aligned point.  */
-	qmul = s->qscale << 1;
-	qadd = (s->qscale - 1) | 1;
-	for (i = 1; i < 4; ++i) {
-	    level = block[i];
-	    if (level) {
-		if (level < 0) {
-		    level = level * qmul - qadd;
-		} else {
-		    level = level * qmul + qadd;
-		}
-		block[i] = level;
-	    }
-	}
-	block += 4;
-	i = 60 / 4;
+        if (!s->h263_aic) {
+            if (n < 4) 
+                block0 = block[0] * s->y_dc_scale;
+            else
+                block0 = block[0] * s->c_dc_scale;
+        }
+        n_coeffs = 64; // does not always use zigzag table 
     } else {
-        i = zigzag_end[s->block_last_index[n]] / 4;
+        n_coeffs = zigzag_end[s->block_last_index[n]];
     }
-    qmul = s->qscale << 1;
+
+    qmul = qscale << 1;
     qadd = WORD_VEC((qscale - 1) | 1);
-    do {
-	UINT64 levels, negmask, zeromask, corr;
-	levels = ldq(block);
-	if (levels == 0)
-	    continue;
-	zeromask = cmpbge(0, levels);
-	zeromask &= zeromask >> 1;
-	/* Negate all negative words.  */
-	negmask = maxsw4(levels, WORD_VEC(0xffff)); /* negative -> ffff (-1) */
-	negmask = minsw4(negmask, 0);		    /* positive -> 0000 (0) */
-	corr    = negmask & WORD_VEC(0x0001); /* twos-complement correction */
-	levels ^= negmask;
-	levels += corr;
+    /* This mask kills spill from negative subwords to the next subword.  */ 
+    correction = WORD_VEC((qmul - 1) + 1); /* multiplication / addition */
 
-	levels = levels * qmul;
-	levels += zap(qadd, zeromask);
+    for(i = 0; i < n_coeffs; block += 4, i += 4) {
+        uint64_t levels, negmask, zeros, add;
 
-	/* Re-negate negative words.  */
-	levels -= corr;
-	levels ^= negmask;
+        levels = ldq(block);
+        if (levels == 0)
+            continue;
 
-	stq(levels, block);
-    } while (block += 4, --i);
+        negmask = maxsw4(levels, -1); /* negative -> ffff (-1) */
+        negmask = minsw4(negmask, 0); /* positive -> 0000 (0) */
+
+        zeros = cmpbge(0, levels);
+        zeros &= zeros >> 1;
+        /* zeros |= zeros << 1 is not needed since qadd <= 255, so
+           zapping the lower byte suffices.  */
+
+        levels *= qmul;
+        levels -= correction & (negmask << 16);
+
+        /* Negate qadd for negative levels.  */
+        add = qadd ^ negmask;
+        add += WORD_VEC(0x0001) & negmask;
+        /* Set qadd to 0 for levels == 0.  */
+        add = zap(add, zeros);
+
+        levels += add;
+
+        stq(levels, block);
+    }
+
+    if (s->mb_intra && !s->h263_aic)
+        orig_block[0] = block0;
 }
 
 void MPV_common_init_axp(MpegEncContext *s)
 {
     if (amask(AMASK_MVI) == 0) {
-        if (s->out_format == FMT_H263)
-	    s->dct_unquantize = dct_unquantize_h263_axp;
+        s->dct_unquantize_h263 = dct_unquantize_h263_mvi;
     }
 }

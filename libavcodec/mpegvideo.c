@@ -132,6 +132,9 @@ int MPV_common_init(MpegEncContext *s)
 #ifdef HAVE_MMX
     MPV_common_init_mmx(s);
 #endif
+#ifdef ARCH_ALPHA
+    MPV_common_init_axp(s);
+#endif
     //setup default unquantizers (mpeg4 might change it later)
     if(s->out_format == FMT_H263)
         s->dct_unquantize = s->dct_unquantize_h263;

@@ -451,6 +451,9 @@ void MPV_frame_end(MpegEncContext *s);
 #ifdef HAVE_MMX
 void MPV_common_init_mmx(MpegEncContext *s);
 #endif
+#ifdef ARCH_ALPHA
+void MPV_common_init_axp(MpegEncContext *s);
+#endif
 extern int (*dct_quantize)(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 extern void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w);
 void ff_conceal_past_errors(MpegEncContext *s, int conceal_all);
