@@ -1,0 +1,69 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFmpeg FAQ
+@titlepage
+@sp 7
+@center @titlefont{FFmpeg FAQ}
+@sp 3
+@end titlepage
+
+
+@chapter General Problems
+
+@section ffserver doesn't not work. 
+
+ffmpeg development is now concentrated on the codec and format
+handling. New developments broke ffserver, so don't expect it to work
+correctly. It is planned to fix it ASAP.
+
+@section I cannot read this file although this format seems to be suppored by ffmpeg.
+
+Even if ffmpeg can read the file format, it may not support all its
+codecs. Please consult the supported codec list in the ffmpeg
+documentation.
+
+@section I get audio/video synchro problems when grabbing.
+
+Currently, the grabbing stuff does not handle synchronisation
+correctly. You are free to correct it. It is planned to fix it ASAP.
+
+@section How do I encode jpegs to another format ?
+
+If the jpegs are named img1.jpg, img2.jpg, img3.jpg,..., use:
+
+@example
+  ffmpeg -i img%d.jpg /tmp/a.mpg
+@end example
+
+@samp{%d} is replaced by the image number.
+
+@file{img%03d.jpg} generates @file{img001.jpg}, @file{img002.jpg}, etc...
+
+The same system is used for the other image formats.
+
+@section FFmpeg does not support codec XXX. Can you include a Windows DLL loader to support it ?
+
+No. FFmpeg only supports open source codecs. Windows DLLs are not
+portable, bloated and often slow.
+
+@chapter Development
+
+@section Can you support my C compiler XXX ?
+
+No. Only GCC is supported. GCC is ported on most systems available and I
+don't see the need to pollute the source code with @code{#ifdef}s
+related to the compiler.
+
+@section I want to use ffmpeg or libavcodec under Windows. Can you support my proprietary C compiler XXX ?
+
+No. Use @code{mingw-gcc} available at @url{http://www.mingw.org/} to
+compile the code. It generates object files fully compatible with other
+windows compilers.
+
+@section Can you add automake, libtool or autoconf support ?
+
+No. These tools are too blowted and they complicate the build. Moreover,
+since only @samp{gcc} is supported they would add little advantages in
+terms of portability.
+
+@bye
