@@ -62,21 +62,19 @@ enum CodecType {
 enum PixelFormat {
     PIX_FMT_YUV420P,
     PIX_FMT_YUV422,
-    PIX_FMT_RGB24,
-    PIX_FMT_BGR24,
+    PIX_FMT_RGB24,     /* 3 bytes, R is first */
+    PIX_FMT_BGR24,     /* 3 bytes, B is first */
     PIX_FMT_YUV422P,
     PIX_FMT_YUV444P,
-    PIX_FMT_RGBA32,
-    PIX_FMT_BGRA32,
+    PIX_FMT_RGBA32,    /* always stored in cpu endianness */
     PIX_FMT_YUV410P,
     PIX_FMT_YUV411P,
-    PIX_FMT_RGB565,
-    PIX_FMT_RGB555,
-//    PIX_FMT_RGB5551,
-    PIX_FMT_BGR565,
-    PIX_FMT_BGR555,
-//    PIX_FMT_GBR565,
-//    PIX_FMT_GBR555
+    PIX_FMT_RGB565,    /* always stored in cpu endianness */
+    PIX_FMT_RGB555,    /* always stored in cpu endianness, most significant bit to 1 */
+    PIX_FMT_GRAY8,
+    PIX_FMT_MONOWHITE, /* 0 is white */
+    PIX_FMT_MONOBLACK, /* 0 is black */
+    PIX_FMT_NB,
 };
 
 /* currently unused, may be used if 24/32 bits samples ever supported */
@@ -1052,7 +1050,8 @@ void img_resample_close(ImgReSampleContext *s);
 void avpicture_fill(AVPicture *picture, UINT8 *ptr,
                     int pix_fmt, int width, int height);
 int avpicture_get_size(int pix_fmt, int width, int height);
-void avcodec_get_chroma_sub_sample(int fmt, int *h_shift, int *v_shift);
+void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
+const char *avcodec_get_pix_fmt_name(int pix_fmt);
 
 /* convert among pixel formats */
 int img_convert(AVPicture *dst, int dst_pix_fmt,
