@@ -214,6 +214,23 @@ void palette8torgb24(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 	}
 }
 
+void bgr24torgb24(const uint8_t *src, uint8_t *dst, unsigned src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		bgr24torgb24_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		bgr24torgb24_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		bgr24torgb24_MMX(src, dst, src_size);
+	else
+		bgr24torgb24_C(src, dst, src_size);
+#else
+		bgr24torgb24_C(src, dst, src_size);
+#endif
+}
+
 void rgb32to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 #ifdef CAN_COMPILE_X86_ASM
@@ -429,6 +446,26 @@ void uyvytoyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 		uyvytoyv12_C(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
 #else
 		uyvytoyv12_C(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
+#endif
+}
+
+void yvu9toyv12(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
+	uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+	unsigned int width, unsigned int height,
+	unsigned int lumStride, unsigned int chromStride)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		yvu9toyv12_MMX2(ysrc, usrc, vsrc, ydst, udst, vdst, width, height, lumStride, chromStride);
+	else if(gCpuCaps.has3DNow)
+		yvu9toyv12_3DNow(ysrc, usrc, vsrc, ydst, udst, vdst, width, height, lumStride, chromStride);
+	else if(gCpuCaps.hasMMX)
+		yvu9toyv12_MMX(ysrc, usrc, vsrc, ydst, udst, vdst, width, height, lumStride, chromStride);
+	else
+		yvu9toyv12_C(ysrc, usrc, vsrc, ydst, udst, vdst, width, height, lumStride, chromStride);
+#else
+		yvu9toyv12_C(ysrc, usrc, vsrc, ydst, udst, vdst, width, height, lumStride, chromStride);
 #endif
 }
 

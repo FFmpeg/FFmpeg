@@ -244,6 +244,17 @@ static inline void RENAME(rgb15to16)(const uint8_t *src,uint8_t *dst,unsigned sr
 #endif
 }
 
+static inline void RENAME(bgr24torgb24)(const uint8_t *src, uint8_t *dst, unsigned src_size)
+{
+	unsigned j,i,num_pixels=src_size/3;
+	for(i=0,j=0; j<num_pixels; i+=3,j+=3)
+	{
+		dst[j+0] = src[i+2];
+		dst[j+1] = src[i+1];
+		dst[j+2] = src[i+0];
+	}
+}
+
 static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 #ifdef HAVE_MMX
@@ -851,6 +862,16 @@ asm volatile(   EMMS" \n\t"
         	SFENCE" \n\t"
         	:::"memory");
 #endif
+}
+
+static inline void RENAME(yvu9toyv12)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
+	uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
+	unsigned int width, unsigned int height, unsigned int lumStride, unsigned int chromStride)
+{
+	/* Y Plane */
+	memcpy(ydst, ysrc, width*height);
+
+	/* XXX: implement upscaling for U,V */
 }
 
 /**
