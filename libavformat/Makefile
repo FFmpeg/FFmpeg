@@ -20,7 +20,7 @@ OBJS+= asf.o
 endif
 
 # image formats
-OBJS+= pnm.o yuv.o png.o libpng/png.o libpng/pngread.o libpng/pngrutil.o libpng/pngwrite.o libpng/pngwutil.o jpeg.o gifdec.o
+OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o
 # file I/O
 OBJS+= avio.o aviobuf.o file.o 
 OBJS+= framehook.o 
