@@ -394,8 +394,7 @@ static inline void dv_decode_video_segment(DVVideoContext *s,
 	    init_get_bits(&gb, buf_ptr, last_index);
             
             /* get the dc */
-            dc = get_bits(&gb, 9);
-            dc = (dc << (32 - 9)) >> (32 - 9);
+            dc = get_sbits(&gb, 9);
             dct_mode = get_bits1(&gb);
             mb->dct_mode = dct_mode;
             mb->scan_table = s->dv_zigzag[dct_mode];
