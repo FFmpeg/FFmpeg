@@ -58,7 +58,7 @@ typedef struct {
  *   echo -n "{ 0x$r, 0x$g, 0x$b }, "; done; echo ""; done; done
  */
 
-const rgb_triplet gif_clut[216] = {
+static const rgb_triplet gif_clut[216] = {
     { 0x00, 0x00, 0x00 }, { 0x00, 0x00, 0x33 }, { 0x00, 0x00, 0x66 }, { 0x00, 0x00, 0x99 }, { 0x00, 0x00, 0xcc }, { 0x00, 0x00, 0xff },
     { 0x00, 0x33, 0x00 }, { 0x00, 0x33, 0x33 }, { 0x00, 0x33, 0x66 }, { 0x00, 0x33, 0x99 }, { 0x00, 0x33, 0xcc }, { 0x00, 0x33, 0xff },
     { 0x00, 0x66, 0x00 }, { 0x00, 0x66, 0x33 }, { 0x00, 0x66, 0x66 }, { 0x00, 0x66, 0x99 }, { 0x00, 0x66, 0xcc }, { 0x00, 0x66, 0xff },
@@ -106,15 +106,7 @@ const rgb_triplet gif_clut[216] = {
 # error no ALT_BITSTREAM_WRITER support for now
 #endif
 
-void init_put_bits_rev(PutBitContext *s,
-                   UINT8 *buffer, int buffer_size,
-                   void *opaque,
-                   void (*write_data)(void *, UINT8 *, int))
-{
-    init_put_bits(s, buffer, buffer_size, opaque, write_data);
-}
-
-void put_bits_rev(PutBitContext *s, int n, unsigned int value)
+static void gif_put_bits_rev(PutBitContext *s, int n, unsigned int value)
 {
     unsigned int bit_buf;
     int bit_cnt;
@@ -158,19 +150,8 @@ void put_bits_rev(PutBitContext *s, int n, unsigned int value)
     s->bit_left = 32 - bit_cnt;
 }
 
-/* return the number of bits output */
-INT64 get_bit_count_rev(PutBitContext *s)
-{
-    return get_bit_count(s);
-}
-
-void align_put_bits_rev(PutBitContext *s)
-{
-    align_put_bits(s);
-}
-
 /* pad the end of the output stream with zeros */
-void flush_put_bits_rev(PutBitContext *s)
+static void gif_flush_put_bits_rev(PutBitContext *s)
 {
     while (s->bit_left < 32) {
         /* XXX: should test end of buffer */
@@ -318,10 +299,7 @@ static int gif_write_video(AVFormatContext *s,
 
     left=size/3;
 
-    /* XXX:deprecated */
-    /*init_put_bits_rev(&p, buffer, sizeof(buf), (void *)pb, gif_put_chunk); *//* mmm found a but in my code: s/sizeof(buf)/150/ */
-
-    init_put_bits_rev(&p, buffer, 130, NULL, NULL);
+    init_put_bits(&p, buffer, 130, NULL, NULL);
 
 /*
  * the thing here is the bitstream is written as little packets, with a size byte before
@@ -330,16 +308,16 @@ static int gif_write_video(AVFormatContext *s,
 
     while(left>0) {
 
-        put_bits_rev(&p, 9, 0x0100); /* clear code */
+        gif_put_bits_rev(&p, 9, 0x0100); /* clear code */
 
         for(i=0;i<GIF_CHUNKS;i++) {
-            put_bits_rev(&p, 9, gif_clut_index(NULL, *buf, buf[1], buf[2]));
+	    gif_put_bits_rev(&p, 9, gif_clut_index(NULL, *buf, buf[1], buf[2]));
             buf+=3;
         }
 
         if(left<=GIF_CHUNKS) {
-            put_bits_rev(&p, 9, 0x101); /* end of stream */
-            flush_put_bits_rev(&p);
+            gif_put_bits_rev(&p, 9, 0x101); /* end of stream */
+            gif_flush_put_bits_rev(&p);
         }
         if(pbBufPtr(&p) - p.buf > 0) {
             put_byte(pb, pbBufPtr(&p) - p.buf); /* byte count of the packet */
