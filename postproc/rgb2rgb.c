@@ -446,8 +446,7 @@ void rgb32tobgr15(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 void rgb24tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 {
 	unsigned i;
-	unsigned num_pixels = src_size >> 2;
-	for(i=0; i<num_pixels; i++)
+	for(i=0; 3*i<src_size; i++)
 	{
 		dst[4*i + 0] = src[3*i + 2];
 		dst[4*i + 1] = src[3*i + 1];
