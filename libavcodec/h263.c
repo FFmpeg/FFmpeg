@@ -1623,8 +1623,15 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
      s->v_edge_pos= s->height;
 }
 
-static void h263_dc_scale(MpegEncContext * s)
+static void change_qscale(MpegEncContext * s, int dquant)
 {
+    s->qscale += dquant;
+
+    if (s->qscale < 1)
+        s->qscale = 1;
+    else if (s->qscale > 31)
+        s->qscale = 31;
+
     s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
     s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
 }
@@ -2385,12 +2392,7 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
                 s->mb_intra = 1;
 
                 if(cbpc & 4) {
-                    s->qscale += quant_tab[get_bits(&s->gb, 2)];
-                    if (s->qscale < 1)
-                        s->qscale = 1;
-                    else if (s->qscale > 31)
-                        s->qscale = 31;
-                    h263_dc_scale(s);
+                    change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
                 }
                 s->qscale_table[xy]= s->qscale;
 
@@ -2567,12 +2569,7 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
                     }
                     
                     if(s->cbp_table[xy] & 8) {
-                        s->qscale += quant_tab[get_bits(&s->gb, 2)];
-                        if (s->qscale < 1)
-                            s->qscale = 1;
-                        else if (s->qscale > 31)
-                            s->qscale = 31;
-                        h263_dc_scale(s);
+                        change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
                     }
                     s->qscale_table[xy]= s->qscale;
 
@@ -2601,13 +2598,7 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
                     }
                     
                     if(s->cbp_table[xy] & 8) {
-//fprintf(stderr, "dquant\n");
-                        s->qscale += quant_tab[get_bits(&s->gb, 2)];
-                        if (s->qscale < 1)
-                            s->qscale = 1;
-                        else if (s->qscale > 31)
-                            s->qscale = 31;
-                        h263_dc_scale(s);
+                        change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
                     }
                     s->qscale_table[xy]= s->qscale;
 
@@ -2643,7 +2634,8 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s,
         s->mb_x= s->resync_mb_x;
         s->mb_y= s->resync_mb_y;
         s->qscale= qscale;
-        h263_dc_scale(s);
+        s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
+        s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
 
         if(s->decoding_error==DECODING_DESYNC) return -1;
     }
@@ -2656,7 +2648,8 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s,
 
     if(s->decoding_error!=DECODING_ACDC_LOST && s->qscale_table[xy] != s->qscale){
         s->qscale= s->qscale_table[xy];
-        h263_dc_scale(s);
+        s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
+        s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
     }
 
     if (s->pict_type == P_TYPE || s->pict_type==S_TYPE) {
@@ -2843,12 +2836,7 @@ int h263_decode_mb(MpegEncContext *s,
         cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
         cbp = (cbpc & 3) | ((cbpy ^ 0xf) << 2);
         if (dquant) {
-            s->qscale += quant_tab[get_bits(&s->gb, 2)];
-            if (s->qscale < 1)
-                s->qscale = 1;
-            else if (s->qscale > 31)
-                s->qscale = 31;
-            h263_dc_scale(s);
+            change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
         }
         if((!s->progressive_sequence) && (cbp || s->workaround_bugs==2))
             s->interlaced_dct= get_bits1(&s->gb);
@@ -2997,12 +2985,7 @@ int h263_decode_mb(MpegEncContext *s,
 
             if (mb_type!=MB_TYPE_B_DIRECT && cbp) {
                 if(get_bits1(&s->gb)){
-                    s->qscale +=get_bits1(&s->gb)*4 - 2;
-                    if (s->qscale < 1)
-                        s->qscale = 1;
-                    else if (s->qscale > 31)
-                        s->qscale = 31;
-                    h263_dc_scale(s);
+                    change_qscale(s, get_bits1(&s->gb)*4 - 2);
                 }
             }
             field_mv=0;
@@ -3162,12 +3145,7 @@ intra:
         if(cbpy<0) return -1;
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
-            s->qscale += quant_tab[get_bits(&s->gb, 2)];
-            if (s->qscale < 1)
-                s->qscale = 1;
-            else if (s->qscale > 31)
-                s->qscale = 31;
-            h263_dc_scale(s);
+            change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
         }
         if(!s->progressive_sequence)
             s->interlaced_dct= get_bits1(&s->gb);
