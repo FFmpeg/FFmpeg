@@ -162,7 +162,7 @@ static int yuv_read(VideoData *s, const char *filename, UINT8 *buf, int size1)
     return 0;
 }
 
-int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
+static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     VideoData *s = s1->priv_data;
     char filename[1024];
