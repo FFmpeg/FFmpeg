@@ -555,7 +555,7 @@ INT16 *h263_pred_motion(MpegEncContext * s, int block,
     mot_val = s->motion_val[xy];
 
     /* special case for first line */
-    if (s->mb_y == 0 || s->first_slice_line || s->first_gob_line) {
+    if ((s->mb_y == 0 || s->first_slice_line || s->first_gob_line) && block<2) {
         A = s->motion_val[xy - 1];
         *px = A[0];
         *py = A[1];
@@ -2353,6 +2353,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 //printf("b-code %d\n", s->b_code);
          }
 //printf("quant:%d fcode:%d\n", s->qscale, s->f_code);
+
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {
                  skip_bits1(&s->gb); // vop shape coding type
