@@ -429,7 +429,7 @@ int url_fdopen(ByteIOContext *s, URLContext *h)
         return -ENOMEM;
 
     if (init_put_byte(s, buffer, buffer_size, 
-                      (h->flags & URL_WRONLY) != 0, h,
+                      (h->flags & URL_WRONLY || h->flags & URL_RDWR), h,
                       url_read_packet, url_write_packet, url_seek_packet) < 0) {
         av_free(buffer);
         return -EIO;
@@ -547,7 +547,8 @@ int url_fget_max_packet_size(ByteIOContext *s)
 int url_open_buf(ByteIOContext *s, uint8_t *buf, int buf_size, int flags)
 {
     return init_put_byte(s, buf, buf_size, 
-                         (flags & URL_WRONLY) != 0, NULL, NULL, NULL, NULL);
+                         (flags & URL_WRONLY || flags & URL_RDWR),
+                         NULL, NULL, NULL, NULL);
 }
 
 /* return the written or read size */
