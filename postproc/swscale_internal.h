@@ -54,6 +54,7 @@ typedef struct SwsContext{
 	int chrIntHSubSample, chrIntVSubSample;
 	int chrDstHSubSample, chrDstVSubSample;
 	int vChrDrop;
+	double param[2];
 
 	int16_t **lumPixBuf;
 	int16_t **chrPixBuf;

@@ -775,7 +775,7 @@ static double getSplineCoeff(double a, double b, double c, double d, double dist
 
 static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSize, int xInc,
 			      int srcW, int dstW, int filterAlign, int one, int flags,
-			      SwsVector *srcFilter, SwsVector *dstFilter)
+			      SwsVector *srcFilter, SwsVector *dstFilter, double param[2])
 {
 	int i;
 	int filterSize;
@@ -855,13 +855,12 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		double xDstInSrc;
 		double sizeFactor, filterSizeInSrc;
 		const double xInc1= (double)xInc / (double)(1<<16);
-		int param= (flags&SWS_PARAM_MASK)>>SWS_PARAM_SHIFT;
 
 		if     (flags&SWS_BICUBIC)	sizeFactor= 4.0;
 		else if(flags&SWS_X)		sizeFactor= 8.0;
 		else if(flags&SWS_AREA)		sizeFactor= 1.0; //downscale only, for upscale it is bilinear
 		else if(flags&SWS_GAUSS)	sizeFactor= 8.0;   // infinite ;)
-		else if(flags&SWS_LANCZOS)	sizeFactor= param ? 2.0*param : 6.0;
+		else if(flags&SWS_LANCZOS)	sizeFactor= param[0] != SWS_PARAM_DEFAULT ? 2.0*param[0] : 6.0;
 		else if(flags&SWS_SINC)		sizeFactor= 20.0; // infinite ;)
 		else if(flags&SWS_SPLINE)	sizeFactor= 20.0;  // infinite ;)
 		else if(flags&SWS_BILINEAR)	sizeFactor= 2.0;
@@ -890,13 +889,13 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 				double coeff;
 				if(flags & SWS_BICUBIC)
 				{
-					double A= param ? -param*0.01 : -0.60;
-					
-					// Equation is from VirtualDub
-					if(d<1.0)
-						coeff = (1.0 - (A+3.0)*d*d + (A+2.0)*d*d*d);
+					double B= param[0] != SWS_PARAM_DEFAULT ? param[0] : 0.0;
+					double C= param[1] != SWS_PARAM_DEFAULT ? param[1] : 0.6;
+
+					if(d<1.0) 
+						coeff = (12-9*B-6*C)*d*d*d + (-18+12*B+6*C)*d*d + 6-2*B;
 					else if(d<2.0)
-						coeff = (-4.0*A + 8.0*A*d - 5.0*A*d*d + A*d*d*d);
+						coeff = (-B-6*C)*d*d*d + (6*B+30*C)*d*d + (-12*B-48*C)*d +8*B+24*C;
 					else
 						coeff=0.0;
 				}
@@ -908,7 +907,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 				}*/
 				else if(flags & SWS_X)
 				{
-					double A= param ? param*0.1 : 1.0;
+					double A= param[0] != SWS_PARAM_DEFAULT ? param[0] : 1.0;
 					
 					if(d<1.0)
 						coeff = cos(d*PI);
@@ -927,7 +926,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 				}
 				else if(flags & SWS_GAUSS)
 				{
-					double p= param ? param*0.1 : 3.0;
+					double p= param[0] != SWS_PARAM_DEFAULT ? param[0] : 3.0;
 					coeff = pow(2.0, - p*d*d);
 				}
 				else if(flags & SWS_SINC)
@@ -936,7 +935,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 				}
 				else if(flags & SWS_LANCZOS)
 				{
-					double p= param ? param : 3.0; 
+					double p= param[0] != SWS_PARAM_DEFAULT ? param[0] : 3.0; 
 					coeff = d ? sin(d*PI)*sin(d*PI/p)/(d*d*PI*PI/p) : 1.0;
 					if(d>p) coeff=0;
 				}
@@ -1748,7 +1747,7 @@ int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int 
 }
 
 SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int dstH, int origDstFormat, int flags,
-                         SwsFilter *srcFilter, SwsFilter *dstFilter){
+                         SwsFilter *srcFilter, SwsFilter *dstFilter, double *param){
 
 	SwsContext *c;
 	int i;
@@ -1846,6 +1845,14 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 	// drop every 2. pixel for chroma calculation unless user wants full chroma
 	if((isBGR(srcFormat) || isRGB(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)) 
 		c->chrSrcHSubSample=1;
+
+	if(param){
+		c->param[0] = param[0];
+		c->param[1] = param[1];
+	}else{
+		c->param[0] =
+		c->param[1] = SWS_PARAM_DEFAULT;
+	}
 
 	c->chrIntHSubSample= c->chrDstHSubSample;
 	c->chrIntVSubSample= c->chrSrcVSubSample;
@@ -1982,11 +1989,11 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 		initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
 				 srcW      ,       dstW, filterAlign, 1<<14,
 				 (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-				 srcFilter->lumH, dstFilter->lumH);
+				 srcFilter->lumH, dstFilter->lumH, c->param);
 		initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
 				 c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
 				 (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-				 srcFilter->chrH, dstFilter->chrH);
+				 srcFilter->chrH, dstFilter->chrH, c->param);
 
 #ifdef ARCH_X86
 // can't downscale !!!
@@ -2014,11 +2021,11 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 		initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
 				srcH      ,        dstH, filterAlign, (1<<12)-4,
 				(flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
-				srcFilter->lumV, dstFilter->lumV);
+				srcFilter->lumV, dstFilter->lumV, c->param);
 		initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
 				c->chrSrcH, c->chrDstH, filterAlign, (1<<12)-4,
 				(flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
-				srcFilter->chrV, dstFilter->chrV);
+				srcFilter->chrV, dstFilter->chrV, c->param);
 	}
 
 	// Calculate Buffer Sizes so that they won't run out while handling these damn slices

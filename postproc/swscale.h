@@ -45,8 +45,7 @@ extern "C" {
 #define SWS_SRC_V_CHR_DROP_MASK		0x30000
 #define SWS_SRC_V_CHR_DROP_SHIFT	16
 
-#define SWS_PARAM_MASK			0x3FC0000
-#define SWS_PARAM_SHIFT			18
+#define SWS_PARAM_DEFAULT		123456
 
 #define SWS_PRINT_INFO		0x1000
 
@@ -94,7 +93,7 @@ struct SwsContext;
 void sws_freeContext(struct SwsContext *swsContext);
 
 struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
-			 SwsFilter *srcFilter, SwsFilter *dstFilter);
+			 SwsFilter *srcFilter, SwsFilter *dstFilter, double *param);
 int sws_scale(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]);
 int sws_scale_ordered(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
