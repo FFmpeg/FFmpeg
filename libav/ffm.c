@@ -24,7 +24,7 @@
 #define PACKET_ID       0x666d
 
 /* each packet contains frames (which can span several packets */
-#define FRAME_HEADER_SIZE    5
+#define FRAME_HEADER_SIZE    8
 #define FLAG_KEY_FRAME       0x01
 
 typedef struct FFMStream {
@@ -159,16 +159,20 @@ static int ffm_write_header(AVFormatContext *s)
             put_be32(pb, (codec->frame_rate * 1000) / FRAME_RATE_BASE);
             put_be16(pb, codec->width);
             put_be16(pb, codec->height);
-	    put_byte(pb, codec->qmin);
-	    put_byte(pb, codec->qmax);
-	    put_byte(pb, codec->max_qdiff);
-	    put_be16(pb, (int) (codec->qcompress * 10000.0));
-	    put_be16(pb, (int) (codec->qblur * 10000.0));
+            put_be16(pb, codec->gop_size);
+            put_byte(pb, codec->qmin);
+            put_byte(pb, codec->qmax);
+            put_byte(pb, codec->max_qdiff);
+            put_be16(pb, (int) (codec->qcompress * 10000.0));
+            put_be16(pb, (int) (codec->qblur * 10000.0));
             break;
         case CODEC_TYPE_AUDIO:
             put_be32(pb, codec->sample_rate);
             put_le16(pb, codec->channels);
+            put_le16(pb, codec->frame_size);
             break;
+        default:
+            abort();
         }
         /* hack to have real time */
         fst->pts = gettime();
@@ -206,6 +210,13 @@ static int ffm_write_packet(AVFormatContext *s, int stream_index,
     FFMStream *fst = st->priv_data;
     INT64 pts;
     UINT8 header[FRAME_HEADER_SIZE];
+    int duration;
+
+    if (st->codec.codec_type == CODEC_TYPE_AUDIO) {
+        duration = ((float)st->codec.frame_size / st->codec.sample_rate * 1000000.0);
+    } else {
+        duration = (1000000.0 * FRAME_RATE_BASE / (float)st->codec.frame_rate);
+    }
 
     pts = fst->pts;
     /* packet size & key_frame */
@@ -216,14 +227,13 @@ static int ffm_write_packet(AVFormatContext *s, int stream_index,
     header[2] = (size >> 16) & 0xff;
     header[3] = (size >> 8) & 0xff;
     header[4] = size & 0xff;
+    header[5] = (duration >> 16) & 0xff;
+    header[6] = (duration >> 8) & 0xff;
+    header[7] = duration & 0xff;
     ffm_write_data(s, header, FRAME_HEADER_SIZE, pts, 1);
     ffm_write_data(s, buf, size, pts, 0);
 
-    if (st->codec.codec_type == CODEC_TYPE_AUDIO) {
-        fst->pts += (INT64)((float)st->codec.frame_size / st->codec.sample_rate * 1000000.0);
-    } else {
-        fst->pts += (INT64)(1000000.0 * FRAME_RATE_BASE / (float)st->codec.frame_rate);
-    }
+    fst->pts += duration;
     return 0;
 }
 
@@ -372,16 +382,20 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->frame_rate = ((INT64)get_be32(pb) * FRAME_RATE_BASE) / 1000;
             codec->width = get_be16(pb);
             codec->height = get_be16(pb);
-	    codec->qmin = get_byte(pb);
-	    codec->qmax = get_byte(pb);
-	    codec->max_qdiff = get_byte(pb);
-	    codec->qcompress = get_be16(pb) / 10000.0;
-	    codec->qblur = get_be16(pb) / 10000.0;
+            codec->gop_size = get_be16(pb);
+            codec->qmin = get_byte(pb);
+            codec->qmax = get_byte(pb);
+            codec->max_qdiff = get_byte(pb);
+            codec->qcompress = get_be16(pb) / 10000.0;
+            codec->qblur = get_be16(pb) / 10000.0;
             break;
         case CODEC_TYPE_AUDIO:
             codec->sample_rate = get_be32(pb);
             codec->channels = get_le16(pb);
+            codec->frame_size = get_le16(pb);
             break;
+        default:
+            abort();
         }
 
     }
@@ -418,6 +432,7 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int size;
     FFMContext *ffm = s->priv_data;
+    int duration;
 
     switch(ffm->read_state) {
     case READ_HEADER:
@@ -446,6 +461,8 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
             return -EAGAIN;
         }
 
+        duration = (ffm->header[5] << 16) | (ffm->header[6] << 8) | ffm->header[7];
+
         av_new_packet(pkt, size);
         pkt->stream_index = ffm->header[0];
         if (ffm->header[1] & FLAG_KEY_FRAME)
@@ -457,6 +474,8 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_free_packet(pkt);
             return -EAGAIN;
         }
+        pkt->pts = ffm->pts;
+        pkt->duration = duration;
         break;
     }
     return 0;
