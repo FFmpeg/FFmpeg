@@ -395,7 +395,7 @@ static void putDescr(ByteIOContext *pb, int tag, int size)
 
 static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
 {
-    int decoderSpecificInfoLen = track->vosLen ? descrLength(track->vosLen):0;
+    int decoderSpecificInfoLen;
     int pos = url_ftell(pb);
     void *vosDataBackup=track->vosData;
     int vosLenBackup=track->vosLen;
@@ -419,6 +419,8 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
             track->vosData = PSPMP4Data;
         }
     }
+
+    decoderSpecificInfoLen = track->vosLen ? descrLength(track->vosLen):0;
 
     put_be32(pb, 0);               // size
     put_tag(pb, "esds");
