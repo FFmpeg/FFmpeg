@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4696
+#define LIBAVCODEC_BUILD       4697
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1932,8 +1932,18 @@ typedef struct AVCodecParserContext {
     /* video info */
     int pict_type; /* XXX: put it back in AVCodecContext */
     int repeat_pict; /* XXX: put it back in AVCodecContext */
-    int64_t pts;     /* in us, if given by the codec (used by raw mpeg4) */
-    int64_t dts;     /* in us, if given by the codec (used by raw mpeg4) */
+    int64_t pts;     /* pts of the current frame */
+    int64_t dts;     /* dts of the current frame */
+
+    /* private data */
+    int64_t last_pts;
+    int64_t last_dts;
+
+#define AV_PARSER_PTS_NB 4
+    int cur_frame_start_index;
+    int64_t cur_frame_offset[AV_PARSER_PTS_NB];
+    int64_t cur_frame_pts[AV_PARSER_PTS_NB];
+    int64_t cur_frame_dts[AV_PARSER_PTS_NB];
 } AVCodecParserContext;
 
 typedef struct AVCodecParser {
@@ -1955,7 +1965,8 @@ AVCodecParserContext *av_parser_init(int codec_id);
 int av_parser_parse(AVCodecParserContext *s, 
                     AVCodecContext *avctx,
                     uint8_t **poutbuf, int *poutbuf_size, 
-                    const uint8_t *buf, int buf_size);
+                    const uint8_t *buf, int buf_size,
+                    int64_t pts, int64_t dts);
 void av_parser_close(AVCodecParserContext *s);
 
 extern AVCodecParser mpegvideo_parser;
