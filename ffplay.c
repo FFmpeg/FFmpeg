@@ -144,6 +144,9 @@ typedef struct VideoState {
     SDL_mutex *pictq_mutex;
     SDL_cond *pictq_cond;
     
+    SDL_mutex *video_decoder_mutex;
+    SDL_mutex *audio_decoder_mutex;
+
     //    QETimer *video_timer;
     char filename[1024];
     int width, height, xleft, ytop;
@@ -899,9 +902,11 @@ static int video_thread(void *arg)
         if (pkt->dts != AV_NOPTS_VALUE)
             pts = (double)pkt->dts / AV_TIME_BASE;
 
+            SDL_LockMutex(is->video_decoder_mutex);
             len1 = avcodec_decode_video(&is->video_st->codec, 
                                         frame, &got_picture, 
                                         pkt->data, pkt->size);
+            SDL_UnlockMutex(is->video_decoder_mutex);
 //            if (len1 < 0)
 //                break;
             if (got_picture) {
@@ -1026,9 +1031,11 @@ static int audio_decode_frame(VideoState *is, uint8_t *audio_buf, double *pts_pt
     for(;;) {
         /* NOTE: the audio packet can contain several frames */
         while (is->audio_pkt_size > 0) {
+            SDL_LockMutex(is->audio_decoder_mutex);
             len1 = avcodec_decode_audio(&is->audio_st->codec, 
                                         (int16_t *)audio_buf, &data_size, 
                                         is->audio_pkt_data, is->audio_pkt_size);
+            SDL_UnlockMutex(is->audio_decoder_mutex);
             if (len1 < 0) {
                 /* if error, we skip the frame */
                 is->audio_pkt_size = 0;
@@ -1414,7 +1421,9 @@ static int decode_thread(void *arg)
                 }
                 if (is->video_stream >= 0) {
                     packet_queue_flush(&is->videoq);
+                    SDL_LockMutex(is->video_decoder_mutex);
                     avcodec_flush_buffers(&ic->streams[video_index]->codec);
+                    SDL_UnlockMutex(is->video_decoder_mutex);
                 }
             }
             is->seek_req = 0;
@@ -1494,6 +1503,9 @@ static VideoState *stream_open(const char *filename, AVInputFormat *iformat)
     /* start video display */
     is->pictq_mutex = SDL_CreateMutex();
     is->pictq_cond = SDL_CreateCond();
+    
+    is->audio_decoder_mutex = SDL_CreateMutex();
+    is->video_decoder_mutex = SDL_CreateMutex();
 
     /* add the refresh timer to draw the picture */
     schedule_refresh(is, 40);
@@ -1525,6 +1537,8 @@ static void stream_close(VideoState *is)
     }
     SDL_DestroyMutex(is->pictq_mutex);
     SDL_DestroyCond(is->pictq_cond);
+    SDL_DestroyMutex(is->audio_decoder_mutex);
+    SDL_DestroyMutex(is->video_decoder_mutex);
 }
 
 void stream_cycle_channel(VideoState *is, int codec_type)
