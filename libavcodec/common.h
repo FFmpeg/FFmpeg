@@ -22,10 +22,6 @@
 #define M_PI    3.14159265358979323846
 #endif
 
-#ifndef INT64_MAX
-#define INT64_MAX 9223372036854775807LL
-#endif
-
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
 #    include "config.h"
@@ -104,6 +100,10 @@ extern const struct AVOption avoptions_workaround_bug[11];
         typedef unsigned long long uint64_t;
 #   endif /* other OS */
 #endif /* HAVE_INTTYPES_H */
+
+#ifndef INT64_MAX
+#define INT64_MAX 9223372036854775807LL
+#endif
 
 #ifdef EMULATE_FAST_INT
 /* note that we don't emulate 64bit ints */
