@@ -816,7 +816,6 @@ static void do_video_out(AVFormatContext *s,
         final_picture = formatted_picture;
     }
     /* duplicates frame if needed */
-    /* XXX: pb because no interleaving */
     for(i=0;i<nb_frames;i++) {
         AVPacket pkt;
         av_init_packet(&pkt);
