@@ -1085,7 +1085,9 @@ static int output_packet(AVInputStream *ist, int ist_index,
     int data_size, got_picture;
     AVFrame picture;
     void *buffer_to_free;
-
+    static int samples_size= 0;
+    static short *samples= NULL;
+    
     if(!pkt){
         ist->pts= ist->next_pts; // needed for last packet if vsync=0
     } else if (pkt->dts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
@@ -1111,9 +1113,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
         if (ist->decoding_needed) {
             switch(ist->st->codec.codec_type) {
             case CODEC_TYPE_AUDIO:{
+                if(pkt) 
+                    samples= av_fast_realloc(samples, &samples_size, FFMAX(pkt->size, AVCODEC_MAX_AUDIO_FRAME_SIZE));
                     /* XXX: could avoid copy if PCM 16 bits with same
                        endianness as CPU */
-                short samples[pkt && pkt->size > AVCODEC_MAX_AUDIO_FRAME_SIZE/2 ? pkt->size : AVCODEC_MAX_AUDIO_FRAME_SIZE/2];
                 ret = avcodec_decode_audio(&ist->st->codec, samples, &data_size,
                                            ptr, len);
                 if (ret < 0)
