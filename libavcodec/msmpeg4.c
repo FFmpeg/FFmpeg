@@ -1195,16 +1195,6 @@ int ff_msmpeg4_decode_init(MpegEncContext *s)
     return 0;
 }
 
-static int decode012(GetBitContext *gb)
-{
-    int n;
-    n = get_bits1(gb);
-    if (n == 0)
-        return 0;
-    else
-        return get_bits1(gb) + 1;
-}
-
 int msmpeg4_decode_picture_header(MpegEncContext * s)
 {
     int code;

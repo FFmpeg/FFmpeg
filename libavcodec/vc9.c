@@ -299,16 +299,6 @@ static int get_prefix(GetBitContext *gb, int stop, int len)
 #endif
 }
 
-static int decode012(GetBitContext *gb)
-{
-    int n;
-    n = get_bits1(gb);
-    if (n == 0)
-        return 0;
-    else
-        return get_bits1(gb) + 1;
-}
-
 static int init_common(VC9Context *v)
 {
     static int done = 0;

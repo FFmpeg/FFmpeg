@@ -824,4 +824,13 @@ static inline int get_xbits_trace(GetBitContext *s, int n, char *file, const cha
 #define tprintf(...) {}
 #endif
 
+static int decode012(GetBitContext *gb){
+    int n;
+    n = get_bits1(gb);
+    if (n == 0)
+        return 0;
+    else
+        return get_bits1(gb) + 1;
+}
+
 #endif /* BITSTREAM_H */
