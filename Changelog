@@ -3,7 +3,7 @@ Upcoming version 0.4.8:
 - Wing Commander III Movie (.mve) file playback subsystem (Mike Melanson
   and Mario Brito)
 - Xan DPCM audio decoder (Mario Brito)
-- Interplay MVE demuxer and DPCM audio decoder (Mike Melanson)
+- Interplay MVE playback subsystem (Mike Melanson)
 - Duck DK3 and DK4 ADPCM audio decoders (Mike Melanson)
 
 version 0.4.7:
