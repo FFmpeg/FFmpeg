@@ -389,10 +389,12 @@ int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
 extern AVCodec *first_avcodec;
 
 /* returns LIBAVCODEC_VERSION_INT constant */
-unsigned avcodec_version( void );
+unsigned avcodec_version(void);
 /* returns LIBAVCODEC_BUILD constant */
-unsigned avcodec_build( void );
+unsigned avcodec_build(void);
 void avcodec_init(void);
+
+void avcodec_set_bit_exact(void);
 
 void register_avcodec(AVCodec *format);
 AVCodec *avcodec_find_encoder(enum CodecID id);
