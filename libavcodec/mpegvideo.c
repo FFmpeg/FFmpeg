@@ -1182,7 +1182,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     quant_store[mb_y][mb_x]=s->qscale;
     //printf("[%02d][%02d] %d\n",mb_x,mb_y,s->qscale);
 #else
-    if(s->avctx->quant_store) s->avctx->quant_store[mb_y*(MBR+1)+mb_x] = s->qscale;
+    if(s->avctx->quant_store) s->avctx->quant_store[mb_y*s->avctx->qstride+mb_x] = s->qscale;
 #endif
 
     /* update DC predictors for P macroblocks */

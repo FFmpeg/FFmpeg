@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4612
-#define LIBAVCODEC_BUILD_STR   "4612"
+#define LIBAVCODEC_BUILD       4613
+#define LIBAVCODEC_BUILD_STR   "4613"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -245,6 +245,7 @@ typedef struct AVCodecContext {
 #define MBR 96
 #endif
     int *quant_store; /* field for communicating with external postprocessing */
+    unsigned qstride;
     //FIXME this should be reordered after kabis API is finished ...
     /*
 	Note: Below are located reserved fields for further usage
@@ -268,7 +269,7 @@ typedef struct AVCodecContext {
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
     unsigned int
 	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5,
-	    ui_res6,ui_res7;
+	    ui_res6;
     unsigned short int
 	    us_res0,us_res1,us_res2,us_res3,us_res4,us_res5,
 	    us_res6,us_res7,us_res8,us_res9,us_res10,us_res11,us_res12;
