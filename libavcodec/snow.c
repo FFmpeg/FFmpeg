@@ -409,7 +409,6 @@ typedef struct SnowContext{
     int spatial_decomposition_count;
     int temporal_decomposition_count;
     DWTELEM *spatial_dwt_buffer;
-    DWTELEM *pred_buffer;
     int colorspace_type;
     int chroma_h_shift;
     int chroma_v_shift;
@@ -2514,7 +2513,6 @@ static int common_init(AVCodecContext *avctx){
     height= s->avctx->height;
 
     s->spatial_dwt_buffer= av_mallocz(width*height*sizeof(DWTELEM));
-    s->pred_buffer= av_mallocz(width*height*sizeof(DWTELEM));
     
     s->mv_scale= (s->avctx->flags & CODEC_FLAG_QPEL) ? 2 : 4;
     s->block_max_depth= (s->avctx->flags & CODEC_FLAG_4MV) ? 1 : 0;
