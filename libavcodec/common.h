@@ -15,14 +15,6 @@
 //#define LIBMPEG2_BITSTREAM_READER
 //#define A32_BITSTREAM_READER
 
-#ifdef ARCH_ALPHA
-#define ALT_BITSTREAM_READER
-#endif
-
-//#define ALIGNED_BITSTREAM
-#define FAST_GET_FIRST_VLC
-//#define DUMP_STREAM
-
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
 #include "config.h"
