@@ -98,6 +98,7 @@ typedef struct RTPContext {
     int max_payload_size;
     /* rtcp sender statistics receive */
     int64_t last_rtcp_ntp_time;
+    int64_t first_rtcp_ntp_time;
     uint32_t last_rtcp_timestamp;
     /* rtcp sender statistics */
     unsigned int packet_count;
@@ -189,7 +190,7 @@ static inline uint32_t decode_be32(const uint8_t *p)
     return (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
 }
 
-static inline uint32_t decode_be64(const uint8_t *p)
+static inline uint64_t decode_be64(const uint8_t *p)
 {
     return ((uint64_t)decode_be32(p) << 32) | decode_be32(p + 4);
 }
@@ -201,6 +202,8 @@ static int rtcp_parse_packet(AVFormatContext *s1, const unsigned char *buf, int 
     if (buf[1] != 200)
         return -1;
     s->last_rtcp_ntp_time = decode_be64(buf + 8);
+    if (s->first_rtcp_ntp_time == AV_NOPTS_VALUE)
+        s->first_rtcp_ntp_time = s->last_rtcp_ntp_time;
     s->last_rtcp_timestamp = decode_be32(buf + 16);
     return 0;
 }
@@ -298,11 +301,23 @@ int rtp_parse_packet(AVFormatContext *s1, AVPacket *pkt,
         break;
     }
 
-    if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
-        /* compute pts from timestamp with received ntp_time */
-        delta_timestamp = timestamp - s->last_rtcp_timestamp;
-        /* XXX: do conversion, but not needed for mpeg at 90 KhZ */
-        pkt->pts = s->last_rtcp_ntp_time + delta_timestamp;
+    switch(st->codec.codec_id) {
+    case CODEC_ID_MP2:
+    case CODEC_ID_MPEG1VIDEO:
+        if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
+            int64_t addend;
+            /* XXX: is it really necessary to unify the timestamp base ? */
+            /* compute pts from timestamp with received ntp_time */
+            delta_timestamp = timestamp - s->last_rtcp_timestamp;
+            /* convert to 90 kHz without overflow */
+            addend = (s->last_rtcp_ntp_time - s->first_rtcp_ntp_time) >> 14;
+            addend = (addend * 5625) >> 14;
+            pkt->pts = addend + delta_timestamp;
+        }
+        break;
+    default:
+        /* no timestamp info yet */
+        break;
     }
     return 0;
 }
@@ -313,6 +328,7 @@ static int rtp_read_header(AVFormatContext *s1,
     RTPContext *s = s1->priv_data;
     s->payload_type = -1;
     s->last_rtcp_ntp_time = AV_NOPTS_VALUE;
+    s->first_rtcp_ntp_time = AV_NOPTS_VALUE;
     return 0;
 }
 
@@ -613,7 +629,8 @@ static int rtp_write_packet(AVFormatContext *s1, int stream_index,
         RTCP_TX_RATIO_DEN;
     if (s->first_packet || rtcp_bytes >= 28) {
         /* compute NTP time */
-        ntp_time = force_pts; // ((int64_t)force_pts << 28) / 5625
+        /* XXX: 90 kHz timestamp hardcoded */
+        ntp_time = ((int64_t)force_pts << 28) / 5625;
         rtcp_send_sr(s1, ntp_time); 
         s->last_octet_count = s->octet_count;
         s->first_packet = 0;
