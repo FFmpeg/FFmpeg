@@ -12,6 +12,7 @@
 #include "rgb2rgb.h"
 #include "../cpudetect.h"
 #include "../mangle.h"
+#include "../bswap.h"
 
 #ifdef ARCH_X86
 #define CAN_COMPILE_X86_ASM
@@ -268,6 +269,29 @@ void palette8torgb32(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 		((unsigned *)dst)[i] = ((unsigned *)palette)[ src[i] ];
 }
 
+#if 0
+void palette8tobgr32(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
+{
+	unsigned i;
+	for(i=0; i<num_pixels; i++)
+	{
+		//FIXME slow?
+		dst[0]= palette[ src[i]*4+3 ];
+		dst[1]= palette[ src[i]*4+2 ];
+		dst[2]= palette[ src[i]*4+1 ];
+		dst[3]= palette[ src[i]*4+0 ];
+		dst+= 4;
+	}
+}
+#else
+void palette8tobgr32(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
+{
+	unsigned i;
+	for(i=0; i<num_pixels; i++)
+		((unsigned *)dst)[i] = bswap_32(((unsigned *)palette)[ src[i] ]);
+}
+#endif
+
 /**
  * Pallete is assumed to contain bgr32
  */
@@ -285,6 +309,24 @@ void palette8torgb24(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 		dst[0]= palette[ src[i]*4+0 ];
 		dst[1]= palette[ src[i]*4+1 ];
 		dst[2]= palette[ src[i]*4+2 ];
+		dst+= 3;
+	}
+}
+
+void palette8tobgr24(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
+{
+	unsigned i;
+/*
+	writes 1 byte o much and might cause alignment issues on some architectures?
+	for(i=0; i<num_pixels; i++)
+		((unsigned *)(&dst[i*3])) = ((unsigned *)palette)[ src[i] ];
+*/
+	for(i=0; i<num_pixels; i++)
+	{
+		//FIXME slow?
+		dst[0]= palette[ src[i]*4+3 ];
+		dst[1]= palette[ src[i]*4+2 ];
+		dst[2]= palette[ src[i]*4+1 ];
 		dst+= 3;
 	}
 }
@@ -375,6 +417,12 @@ void palette8torgb16(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 	for(i=0; i<num_pixels; i++)
 		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
 }
+void palette8tobgr16(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
+{
+	unsigned i;
+	for(i=0; i<num_pixels; i++)
+		((uint16_t *)dst)[i] = bswap_16(((uint16_t *)palette)[ src[i] ]);
+}
 
 /**
  * Pallete is assumed to contain bgr15, see rgb32to15 to convert the palette
@@ -384,6 +432,12 @@ void palette8torgb15(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 	unsigned i;
 	for(i=0; i<num_pixels; i++)
 		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
+}
+void palette8tobgr15(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
+{
+	unsigned i;
+	for(i=0; i<num_pixels; i++)
+		((uint16_t *)dst)[i] = bswap_16(((uint16_t *)palette)[ src[i] ]);
 }
 
 void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
