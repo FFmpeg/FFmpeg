@@ -2446,7 +2446,6 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 
 /**
  * Copies a block from src to dst and fixes the blacklevel
- * numLines must be a multiple of 4
  * levelFix == 0 -> dont touch the brighness & contrast
  */
 static inline void RENAME(blockCopy)(uint8_t dst[], int dstStride, uint8_t src[], int srcStride,
@@ -2570,6 +2569,31 @@ SIMPLE_CPY((%%eax, %2), (%%eax, %2, 2), (%%ebx, %3), (%%ebx, %3, 2))
 	}
 }
 
+/**
+ * Duplicates the given 8 src pixels ? times upward
+ */
+static inline void RENAME(duplicate)(uint8_t src[], int stride)
+{
+#ifdef HAVE_MMX
+	asm volatile(
+		"movq (%0), %%mm0		\n\t"
+		"addl %1, %0			\n\t"
+		"movq %%mm0, (%0)		\n\t"
+		"movq %%mm0, (%0, %1)		\n\t"
+		"movq %%mm0, (%0, %1, 2)	\n\t"
+		: "+r" (src)
+		: "r" (-stride)
+	);
+#else
+	int i;
+	uint8_t *p=src;
+	for(i=0; i<3; i++)
+	{
+		p-= stride;
+		memcpy(p, src, 8);
+	}
+#endif
+}
 
 /**
  * Filters array of bytes (Y or U or V values)
@@ -2740,11 +2764,8 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 	/* copy & deinterlace first row of blocks */
 	y=-BLOCK_SIZE;
 	{
-		//1% speedup if these are here instead of the inner loop
 		uint8_t *srcBlock= &(src[y*srcStride]);
-		uint8_t *dstBlock= &(dst[y*dstStride]);
-
-		dstBlock= tempDst + dstStride;
+		uint8_t *dstBlock= tempDst + dstStride;
 
 		// From this point on it is guranteed that we can read and write 16 lines downward
 		// finish 1 block before the next otherwise we´ll might have a problem
@@ -2788,8 +2809,10 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 */
 #endif
 
-			RENAME(blockCopy)(dstBlock + dstStride*copyAhead, dstStride,
-				srcBlock + srcStride*copyAhead, srcStride, mode & LEVEL_FIX);
+			RENAME(blockCopy)(dstBlock + dstStride*8, dstStride,
+				srcBlock + srcStride*8, srcStride, mode & LEVEL_FIX);
+
+			RENAME(duplicate)(dstBlock + dstStride*8, dstStride);
 
 			if(mode & LINEAR_IPOL_DEINT_FILTER)
 				RENAME(deInterlaceInterpolateLinear)(dstBlock, dstStride);
@@ -2805,7 +2828,7 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 			dstBlock+=8;
 			srcBlock+=8;
 		}
-		memcpy(&(dst[y*dstStride]) + 8*dstStride, tempDst + 9*dstStride, copyAhead*dstStride );
+		memcpy(dst, tempDst + 9*dstStride, copyAhead*dstStride );
 	}
 
 	for(y=0; y<height; y+=BLOCK_SIZE)
