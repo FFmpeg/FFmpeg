@@ -1167,6 +1167,11 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             avframe.key_frame = pkt->flags & PKT_FLAG_KEY; 
                             ost->st->pts.val= av_rescale(ist->pts, os->pts_den, os->pts_num*AV_TIME_BASE);
 
+                            if(ost->st->codec.codec_type == CODEC_TYPE_AUDIO)
+                                audio_size += data_size;
+                            else if (ost->st->codec.codec_type == CODEC_TYPE_VIDEO)
+                                video_size += data_size;
+
                             av_write_frame(os, ost->index, data_buf, data_size);
                             ost->st->codec.frame_number++;
                             ost->frame_number++;
