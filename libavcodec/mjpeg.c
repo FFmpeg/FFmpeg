@@ -608,13 +608,14 @@ typedef struct MJpegDecodeContext {
     UINT8 *current_picture[MAX_COMPONENTS]; /* picture structure */
     int linesize[MAX_COMPONENTS];
     DCTELEM block[64] __align8;
-
-    int buggy_avid;
-    int restart_interval;
-    int restart_count;
-    int interlace_polarity;
     ScanTable scantable;
     void (*idct_put)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+
+    int restart_interval;
+    int restart_count;
+
+    int buggy_avid;
+    int interlace_polarity;
 } MJpegDecodeContext;
 
 static int mjpeg_decode_dht(MJpegDecodeContext *s);
@@ -1032,7 +1033,9 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
                     }
                 }
             }
-            if ((s->restart_interval <= 8) && !--s->restart_count) {
+	    /* (< 1350) buggy workaround for Spectralfan.mov, should be fixed */
+	    
+            if ((s->restart_interval < 1350) && !--s->restart_count) {
                 align_get_bits(&s->gb);
                 skip_bits(&s->gb, 16); /* skip RSTn */
                 for (j=0; j<nb_components; j++) /* reset dc */
@@ -1073,8 +1076,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     len -= 6;
 
     /* buggy AVID, it puts EOI only at every 10th frame */
-    /* also this fourcc is used by non-avid files too, it means
-       interleaving, but it's always present in AVID files */
+    /* also this fourcc is used by non-avid files too, it holds some
+       informations, but it's always present in AVID creates files */
     if (id == ff_get_fourcc("AVI1"))
     {
 	/* structure:
@@ -1099,10 +1102,11 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 	goto out;
     }
     
-    len -= 2;
+//    len -= 2;
     
     if (id == ff_get_fourcc("JFIF"))
     {
+	int t_w, t_h;
 	skip_bits(&s->gb, 8); /* the trailing zero-byte */
 	printf("mjpeg: JFIF header found (version: %x.%x)\n",
 	    get_bits(&s->gb, 8), get_bits(&s->gb, 8));
@@ -1117,8 +1121,26 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 	    skip_bits(&s->gb, 16);
 	    skip_bits(&s->gb, 16);
 	}
-	skip_bits(&s->gb, 8);
-	skip_bits(&s->gb, 8);
+	t_w = get_bits(&s->gb, 8);
+	t_h = get_bits(&s->gb, 8);
+	if (t_w && t_h)
+	{
+	    /* skip thumbnail */
+	    if (len-10-(t_w*t_h*3) > 0)
+		len -= t_w*t_h*3;
+	}
+	len -= 10;
+	goto out;
+    }
+    
+    if (id == ff_get_fourcc("Adob") && (get_bits(&s->gb, 8) == 'e'))
+    {
+	printf("mjpeg: Adobe header found\n");
+	skip_bits(&s->gb, 16); /* version */
+	skip_bits(&s->gb, 16); /* flags0 */
+	skip_bits(&s->gb, 16); /* flags1 */
+	skip_bits(&s->gb, 8); /* transform */
+	len -= 7;
 	goto out;
     }
     
@@ -1146,6 +1168,12 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
     }
 
 out:
+    /* slow but needed for extreme adobe jpegs */
+    if (len < 0)
+	printf("mjpeg: error, decode_app parser read over the end\n");
+    while(--len > 0)
+	skip_bits(&s->gb, 8);
+
     return 0;
 }
 
@@ -1280,7 +1308,11 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		    while (src<buf_end)
 		    {
 			UINT8 x = *(src++);
-			
+
+#if 0
+			if (x == 0xff && *src == 0xff)
+			    break;
+#endif
 			*(dst++) = x;
 			if (x == 0xff)
 			{
@@ -1292,6 +1324,9 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 			}
 		    }
 		    init_get_bits(&s->gb, s->buffer, dst - s->buffer);
+		    
+		    dprintf("escaping removed %d bytes\n",
+			(buf_end - buf_ptr) - (dst - s->buffer));
 		}
 		else
 		    init_get_bits(&s->gb, buf_ptr, buf_end - buf_ptr);
