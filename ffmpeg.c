@@ -899,7 +899,7 @@ static void do_video_out(AVFormatContext *s,
                                        bit_buffer, bit_buffer_size,
                                        &big_picture);
             //enc->frame_number = enc->real_pict_num;
-            if(ret){
+            if(ret>0){
                 pkt.data= bit_buffer;
                 pkt.size= ret;
                 if(enc->coded_frame)
