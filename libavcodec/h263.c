@@ -2798,10 +2798,12 @@ int h263_decode_mb(MpegEncContext *s,
         s->mcsel=0;      //     ...               true gmc blocks
 
         if(s->mb_x==0){
-            s->last_mv[0][0][0]= 
-            s->last_mv[0][0][1]= 
-            s->last_mv[1][0][0]= 
-            s->last_mv[1][0][1]= 0;
+            for(i=0; i<2; i++){
+                s->last_mv[i][0][0]= 
+                s->last_mv[i][0][1]= 
+                s->last_mv[i][1][0]= 
+                s->last_mv[i][1][1]= 0;
+            }
         }
 
         /* if we skipped it in the future P Frame than skip it now too */
@@ -4190,10 +4192,11 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
          }else
              s->b_code=1;
 #if 0
-printf("qp:%d fc:%d bc:%d type:%s size:%d pro:%d alt:%d qpel:%d part:%d resync:%d\n", 
+printf("qp:%d fc:%d bc:%d type:%s size:%d pro:%d alt:%d top:%d qpel:%d part:%d resync:%d\n", 
     s->qscale, s->f_code, s->b_code, 
     s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
-    s->gb.size,s->progressive_sequence, s->alternate_scan, s->quarter_sample, s->data_partitioning, s->resync_marker); 
+    s->gb.size,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
+    s->quarter_sample, s->data_partitioning, s->resync_marker); 
 #endif
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {
