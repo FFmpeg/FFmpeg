@@ -19,6 +19,14 @@
  * Optimized for ia32 cpus by Nick Kurshev <nickols_k@mail.ru>
  */
 
+#include "../dsputil.h"
+#include "../mpegvideo.h"
+
+#if 0
+
+/* XXX: GL: I don't understand why this function needs optimization
+   (it is called only once per frame!), so I disabled it */
+
 void MPV_frame_start(MpegEncContext *s)
 {
     if (s->pict_type == B_TYPE) {
@@ -52,10 +60,8 @@ void MPV_frame_start(MpegEncContext *s)
 	    :"eax","edx","ecx","memory");
     }
 }
+#endif
 
-static void dct_unquantize(MpegEncContext *s, DCTELEM *block, int n, int qscale);
-
-#ifdef HAVE_MMX 
 static const unsigned long long int mm_wabs __attribute__ ((aligned(8))) = 0xffffffffffffffffULL;
 static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001ULL;
 
@@ -88,13 +94,8 @@ static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x000
  high3:low3 = low1*low2
  high3 += tlow1
 */
-#ifdef BIN_PORTABILITY
-static void dct_unquantize_mmx
-#else
-#define HAVE_DCT_UNQUANTIZE 1
-static void dct_unquantize
-#endif
-(MpegEncContext *s,DCTELEM *block, int n, int qscale)
+static void dct_unquantize_mpeg1_mmx(MpegEncContext *s,
+                                     DCTELEM *block, int n, int qscale)
 {
     int i, level;
     const UINT16 *quant_matrix;
@@ -216,24 +217,11 @@ static void dct_unquantize
     }
 }
 
-#ifdef BIN_PORTABILITY
-static void (*dct_unquantize_ptr)(MpegEncContext *s, 
-                		    DCTELEM *block, int n, int qscale);
-
-void MPV_common_init_mmx(void)
+void MPV_common_init_mmx(MpegEncContext *s)
 {
-  int mm_flags;
-  mm_flags = mm_support();
-  if (mm_flags & MM_MMX) {
-    dct_unquantize_ptr = dct_unquantize_mmx;
-  }
-  else {
-    dct_unquantize_ptr = dct_unquantize;
-  }
+    if (mm_flags & MM_MMX) {
+        /* XXX: should include h263 optimization too. It would go even
+           faster! */
+        s->dct_unquantize = dct_unquantize_mpeg1_mmx;
+    }
 }
-
-#define DCT_UNQUANTIZE(a,b,c,d) (*dct_unquantize_ptr)(a,b,c,d)
-#else
-#define DCT_UNQUANTIZE(a,b,c,d) dct_unquantize(a,b,c,d)
-#endif /* BIN_PORTABILITY */
-#endif /* HAVE_MMX */
