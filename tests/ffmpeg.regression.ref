@@ -130,7 +130,7 @@ stddev:9330.70 PSNR:16.92 bytes:527360
 stddev:4396.13 PSNR:23.46 bytes:526336
 d056da679e6d6682812fffb28a7f0db6 *./data/a-ac3.rm
 97983 ./data/a-ac3.rm
-2d081e0e1f2e9bd4514e9ac8ec41884c *./data/a-g726.wav
+9e6e66847a568ef4f1f229b0939d2aae *./data/a-g726.wav
 24268 ./data/a-g726.wav
 a719ab6d47d8d601520edb13bf6136b4 *./data/out.wav
 stddev:8459.88 PSNR:17.77 bytes:48128
