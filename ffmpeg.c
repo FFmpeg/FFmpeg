@@ -532,6 +532,8 @@ static void do_video_out(AVFormatContext *s,
     /* by default, we output a single frame */
     nb_frames = 1;
 
+    *frame_size = 0;
+
     /* NOTE: the A/V sync is always done by considering the audio is
        the master clock. It is suffisant for transcoding or playing,
        but not for the general case */
@@ -1401,7 +1403,7 @@ static int av_encode(AVFormatContext **output_files,
                                 }
 
                                 do_video_out(os, ost, ist, &picture, &frame_size, audio_sync);
-                                if (do_vstats)
+                                if (do_vstats && frame_size)
                                     do_video_stats(os, ost, frame_size);
                             }
                             break;
