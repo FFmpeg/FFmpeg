@@ -1034,7 +1034,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
 
     if(s->low_delay){
         put_bits(&s->pb, 1, 1);		/* vol control parameters= yes */
-        put_bits(&s->pb, 2, 1);		/* chroma format 422 */
+        put_bits(&s->pb, 2, 1);		/* chroma format YUV 420/YV12 */
         put_bits(&s->pb, 1, s->low_delay);
         put_bits(&s->pb, 1, 0);		/* vbv parameters= no */
     }else{
@@ -2602,7 +2602,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         } else {
             vo_ver_id = 1;
         }
-        
+//printf("vo type:%d\n",s->vo_type);
         s->aspect_ratio_info= get_bits(&s->gb, 4);
 	if(s->aspect_ratio_info == EXTENDET_PAR){
             skip_bits(&s->gb, 8); //par_width

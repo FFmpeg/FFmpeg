@@ -22,6 +22,7 @@
 #include "common.h"
 #include "dsputil.h"
 #include "avcodec.h"
+#include "mpegvideo.h"
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #else
@@ -478,6 +479,14 @@ PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
 
 #undef PCM_CODEC
 }
+
+/* this should be called after seeking and before trying to decode the next frame */
+void avcodec_flush_buffers(AVCodecContext *avctx)
+{
+    MpegEncContext *s = avctx->priv_data;
+    s->num_available_buffers=0;
+}
+
 
 static int encode_init(AVCodecContext *s)
 {

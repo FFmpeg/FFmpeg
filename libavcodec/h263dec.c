@@ -135,7 +135,6 @@ static int h263_decode_frame(AVCodecContext *avctx,
     } else {
         ret = h263_decode_picture_header(s);
     }
-    if(ret==FRAME_SKIPED) return 0;
 
         /* After H263 & mpeg4 header decode we have the height, width,*/
         /* and other parameters. So then we could init the picture   */
@@ -154,9 +153,12 @@ static int h263_decode_frame(AVCodecContext *avctx,
             return -1;
     }
 
+    if(ret==FRAME_SKIPED) return 0;
     if (ret < 0)
         return -1;
-
+    /* skip b frames if we dont have reference frames */
+    if(s->num_available_buffers<2 && s->pict_type==B_TYPE) return 0;
+        
     MPV_frame_start(s);
 
 #ifdef DEBUG
@@ -222,7 +224,8 @@ static int h263_decode_frame(AVCodecContext *avctx,
             }
             MPV_decode_mb(s, s->block);
         }
-        if (avctx->draw_horiz_band) {
+        if (    avctx->draw_horiz_band 
+            && (s->num_available_buffers>=1 || (!s->has_b_frames)) ) {
             UINT8 *src_ptr[3];
             int y, h, offset;
             y = s->mb_y * 16;
@@ -279,7 +282,11 @@ static int h263_decode_frame(AVCodecContext *avctx,
     /* we substract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 
-    *data_size = sizeof(AVPicture);
+    /* dont output the last pic after seeking 
+       note we allready added +1 for the current pix in MPV_frame_end(s) */
+    if(s->num_available_buffers>=2 || (!s->has_b_frames))
+        *data_size = sizeof(AVPicture);
+
     return buf_size;
 }
 

@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4602
-#define LIBAVCODEC_BUILD_STR   "4602"
+#define LIBAVCODEC_BUILD       4603
+#define LIBAVCODEC_BUILD_STR   "4603"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -339,6 +339,8 @@ int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size,
 int avcodec_close(AVCodecContext *avctx);
 
 void avcodec_register_all(void);
+
+void avcodec_flush_buffers(AVCodecContext *avctx);
 
 #ifdef FF_POSTPROCESS
 #ifndef MBC

@@ -629,6 +629,8 @@ void MPV_frame_end(MpegEncContext *s)
         s->last_non_b_pict_type= s->pict_type;
         s->last_non_b_qscale= s->qscale;
         s->last_non_b_mc_mb_var= s->mc_mb_var;
+        s->num_available_buffers++;
+        if(s->num_available_buffers>2) s->num_available_buffers= 2;
     }
 }
 
