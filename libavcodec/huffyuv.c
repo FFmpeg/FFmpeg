@@ -475,10 +475,6 @@ static int encode_init(AVCodecContext *avctx)
     
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV420P:
-        if(avctx->strict_std_compliance>=0){
-            av_log(avctx, AV_LOG_ERROR, "YV12-huffyuv is experimental, there WILL be no compatbility! (use (v)strict=-1)\n");
-            return -1;
-        }
         s->bitstream_bpp= 12;
         break;
     case PIX_FMT_YUV422P:
