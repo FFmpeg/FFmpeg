@@ -766,6 +766,7 @@ void free_vlc(VLC *vlc);
     SKIP_BITS(name, gb, n)\
 }
 
+// deprecated, dont use get_vlc for new code, use get_vlc2 instead or use GET_VLC directly
 static inline int get_vlc(GetBitContext *s, VLC *vlc)
 {
     int code;
@@ -775,6 +776,19 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
     UPDATE_CACHE(re, s)
 
     GET_VLC(code, re, s, table, vlc->bits, 3)    
+
+    CLOSE_READER(re, s)
+    return code;
+}
+
+static inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2], int bits, int max_depth)
+{
+    int code;
+    
+    OPEN_READER(re, s)
+    UPDATE_CACHE(re, s)
+
+    GET_VLC(code, re, s, table, bits, max_depth)
 
     CLOSE_READER(re, s)
     return code;
