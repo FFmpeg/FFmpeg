@@ -1423,7 +1423,8 @@ static int decode_thread(void *arg)
 
         /* if the queue are full, no need to read more */
         if (is->audioq.size > MAX_AUDIOQ_SIZE ||
-            is->videoq.size > MAX_VIDEOQ_SIZE) {
+            is->videoq.size > MAX_VIDEOQ_SIZE || 
+            url_feof(&ic->pb)) {
             /* wait 10 ms */
             SDL_Delay(10);
             continue;
