@@ -900,6 +900,14 @@ fi
 fi
 fi
 
+##########################################
+# texi2html probe
+
+texi2html=no
+if texi2html -version >/dev/null 2>&1; then
+texi2html=yes
+fi
+
 case "`$cc -v 2>&1 | grep version`" in
     *gcc*)
 	CFLAGS="-Wall $CFLAGS"
@@ -1122,6 +1130,9 @@ if test "$sdl" = "yes" ; then
   echo "CONFIG_SDL=yes" >> config.mak
   echo "SDL_LIBS=`sdl-config --libs`" >> config.mak
   echo "SDL_CFLAGS=`sdl-config --cflags`" >> config.mak
+fi
+if test "$texi2html" = "yes"; then
+  echo "BUILD_DOC=yes" >> config.mak
 fi
 if test "$have_lrintf" = "yes" ; then
   echo "#define HAVE_LRINTF 1" >> $TMPH

@@ -70,11 +70,15 @@ else
 TEST=test
 endif
 
+ifeq ($(BUILD_DOC),yes)
+DOC=documentation
+endif
+
 OBJS = ffmpeg.o ffserver.o cmdutils.o ffplay.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 FFLIBS = -L./libavformat -lavformat -L./libavcodec -lavcodec
 
-all: lib $(PROG) $(PROGTEST) $(VHOOK) $(QTFASTSTART)
+all: lib $(PROG) $(PROGTEST) $(VHOOK) $(QTFASTSTART) $(DOC)
 
 lib:
 	$(MAKE) -C libavcodec all
@@ -111,6 +115,9 @@ ffplay.o: ffplay.c
 
 videohook: .libs
 	$(MAKE) -C vhook all
+
+documentation:
+	$(MAKE) -C doc all
 
 .PHONY: install
 
