@@ -422,7 +422,7 @@ static int avi_write_header(AVFormatContext *s)
             put_le32(pb, 0);
             break;
         default:
-            av_abort();
+            return -1;
         }
         end_tag(pb, strh);
 
@@ -438,7 +438,7 @@ static int avi_write_header(AVFormatContext *s)
             }
             break;
         default:
-            av_abort();
+            return -1;
         }
         end_tag(pb, strf);
 	

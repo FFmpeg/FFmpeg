@@ -314,7 +314,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             s->video_bound++;
             break;
         default:
-            av_abort();
+            return -1;
         }
     }
     /* if no SCR, use first stream (audio) */

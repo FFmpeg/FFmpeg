@@ -315,7 +315,7 @@ static int rm_write_header(AVFormatContext *s)
             stream->total_frames = stream->nb_packets;
             break;
         default:
-            av_abort();
+            return -1;
         }
     }
 

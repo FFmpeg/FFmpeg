@@ -214,7 +214,7 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     packet_size = avpicture_get_size(st->codec.pix_fmt, width, height);
     if (packet_size < 0)
-        av_abort();
+        return -1;
 
     if (av_new_packet(pkt, packet_size) < 0)
         return AVERROR_IO;
