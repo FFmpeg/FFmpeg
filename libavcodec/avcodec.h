@@ -491,7 +491,8 @@ typedef struct AVPanScan{
     uint32_t *mb_type;\
 \
     /**\
-     * Macroblock size: (0->16x16, 1->8x8, 2-> 4x4, 3-> 2x2)\
+     * log2 of the size of the block which a single vector in motion_val represents: \
+     * (4->16x16, 3->8x8, 2-> 4x4, 1-> 2x2)\
      * - encoding: unused\
      * - decoding: set by lavc\
      */\
