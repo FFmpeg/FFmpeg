@@ -113,95 +113,6 @@ AVInputFormat *av_find_input_format(const char *short_name)
     return NULL;
 }
 
-
-/**
- * Return TRUE if val is a prefix of str. If it returns TRUE, ptr is
- * set to the next character in 'str' after the prefix.
- *
- * @param str input string
- * @param val prefix to test
- * @param ptr updated after the prefix in str in there is a match
- * @return TRUE if there is a match
- */
-int strstart(const char *str, const char *val, const char **ptr)
-{
-    const char *p, *q;
-    p = str;
-    q = val;
-    while (*q != '\0') {
-        if (*p != *q)
-            return 0;
-        p++;
-        q++;
-    }
-    if (ptr)
-        *ptr = p;
-    return 1;
-}
-
-/**
- * Copy the string str to buf. If str length is bigger than buf_size -
- * 1 then it is clamped to buf_size - 1.
- * NOTE: this function does what strncpy should have done to be
- * useful. NEVER use strncpy.
- * 
- * @param buf destination buffer
- * @param buf_size size of destination buffer
- * @param str source string
- */
-void pstrcpy(char *buf, int buf_size, const char *str)
-{
-    int c;
-    char *q = buf;
-
-    for(;;) {
-        c = *str++;
-        if (c == 0 || q >= buf + buf_size - 1)
-            break;
-        *q++ = c;
-    }
-    *q = '\0';
-}
-
-void register_all(void)
-{
-    avcodec_init();
-    avcodec_register_all();
-
-    mpegps_init();
-    mpegts_init();
-    crc_init();
-    img_init();
-    raw_init();
-    rm_init();
-    asf_init();
-    avienc_init();
-    avidec_init();
-    wav_init();
-    swf_init();
-    au_init();
-    gif_init();
-    mov_init();
-    jpeg_init();
-
-#ifndef CONFIG_WIN32
-    ffm_init();
-#endif
-#ifdef CONFIG_VIDEO4LINUX
-    video_grab_init();    
-#endif
-#ifdef CONFIG_AUDIO_OSS
-    audio_init();
-#endif
-    /* file protocols */
-    register_protocol(&file_protocol);
-    register_protocol(&pipe_protocol);
-#ifdef CONFIG_NETWORK
-    register_protocol(&udp_protocol);
-    register_protocol(&http_protocol);
-#endif
-}
-
 /* memory handling */
 
 /**
@@ -320,7 +231,7 @@ int filename_number_test(const char *filename)
 }
 
 /* guess file format */
-static AVInputFormat *probe_input_format(AVProbeData *pd, int is_opened)
+AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
 {
     AVInputFormat *fmt1, *fmt;
     int score, score_max;
@@ -384,7 +295,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
     if (!fmt) {
         /* guess format if no file can be opened  */
-        fmt = probe_input_format(pd, 0);
+        fmt = av_probe_input_format(pd, 0);
     }
 
     /* if no file needed do not try to open one */
@@ -403,7 +314,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     
     /* guess file format */
     if (!fmt) {
-        fmt = probe_input_format(pd, 1);
+        fmt = av_probe_input_format(pd, 1);
     }
 
     /* if still no format found, error */
@@ -862,7 +773,7 @@ int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
     return 0;
 }
 
-INT64 gettime(void)
+INT64 av_gettime(void)
 {
 #ifdef CONFIG_WIN32
     struct _timeb tb;
