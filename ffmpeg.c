@@ -3775,7 +3775,7 @@ static void opt_target(const char *arg)
             }
         }
         if(verbose && norm >= 0)
-            printf("Assuming %s for target.\n", norm ? "NTSC" : "PAL");
+            fprintf(stderr, "Assuming %s for target.\n", norm ? "NTSC" : "PAL");
     }
 
     if(norm < 0) {
@@ -3872,7 +3872,7 @@ static void opt_target(const char *arg)
 
 static void show_version(void)
 {
-    printf("ffmpeg      " FFMPEG_VERSION "\n"
+    fprintf(stderr, "ffmpeg      " FFMPEG_VERSION "\n"
            "libavcodec  %d\n"
            "libavformat %d\n", 
            avcodec_build(), LIBAVFORMAT_BUILD);
@@ -4073,14 +4073,14 @@ const OptionDef options[] = {
 
 static void show_banner(void)
 {
-    printf("ffmpeg version " FFMPEG_VERSION ", build %d, Copyright (c) 2000-2004 Fabrice Bellard\n",
+    fprintf(stderr, "ffmpeg version " FFMPEG_VERSION ", build %d, Copyright (c) 2000-2004 Fabrice Bellard\n",
         LIBAVCODEC_BUILD);
-    printf("  configuration: %s\n", FFMPEG_CONFIGURATION);
-    printf("  built on " __DATE__ " " __TIME__);
+    fprintf(stderr, "  configuration: %s\n", FFMPEG_CONFIGURATION);
+    fprintf(stderr, "  built on " __DATE__ " " __TIME__);
 #ifdef __GNUC__
-    printf(", gcc: %s\n", __VERSION__);
+    fprintf(stderr, ", gcc: %s\n", __VERSION__);
 #else
-    printf(", using a non-gcc compiler\n");
+    fprintf(stderr, ", using a non-gcc compiler\n");
 #endif
 }
 
