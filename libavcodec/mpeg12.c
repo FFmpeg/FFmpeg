@@ -1588,7 +1588,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     buf_ptr = buf;
     buf_end = buf + buf_size;
     
-    if (s->repeat_field % 2 == 1) {
+    if (s->repeat_field % 2 == 1 && avctx->repeat_pict) {
         s->repeat_field++;
         //fprintf(stderr,"\nRepeating last frame: %d -> %d! pict: %d %d", avctx->frame_number-1, avctx->frame_number,
         //                                                         s2->picture_number, s->repeat_field);
