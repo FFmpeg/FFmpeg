@@ -368,10 +368,9 @@ void msmpeg4_encode_mb(MpegEncContext * s,
 /* strongly inspirated from MPEG4, but not exactly the same ! */
 void msmpeg4_dc_scale(MpegEncContext * s)
 {
-    if (s->qscale < 5){
+    if (s->qscale < 5 || s->msmpeg4_version==2){
         s->y_dc_scale = 8;
         s->c_dc_scale = 8;
-//        s->c_dc_scale = (s->qscale + 13)>>1;
     }else if (s->qscale < 9){
         s->y_dc_scale = 2 * s->qscale;
         s->c_dc_scale = (s->qscale + 13)>>1;
@@ -379,24 +378,6 @@ void msmpeg4_dc_scale(MpegEncContext * s)
         s->y_dc_scale = s->qscale + 8;
         s->c_dc_scale = (s->qscale + 13)>>1;
     }
-    // this differs for quant >24 from mpeg4 
-    
-//    if(s->qscale==13) s->c_dc_scale=14;
-    
-//    if(s->qscale>=6)
-//     printf("%d", s->qscale);
-    
-    /* s->c_dc_scale values (found by Michael Nidermayer)
-     qscale=2 -> 8 (yes iam sure about that)
-     qscale=3 -> 8
-     qscale=4 -> 8
-     qscale=5 -> 9
-     qscale=6 -> 9 
-     qscale=7 -> 10
-     qscale=8 -> 10
-     qscale=9 -> 11
-     qscale=10-> 11
-    */
 }
 
 /* dir = 0: left, dir = 1: top prediction */
@@ -638,7 +619,7 @@ static void init_h263_dc_for_msmpeg4()
         int level, uni_code, uni_len;
         inited=1;
 
-        for(level=-255; level<256; level++){
+        for(level=-256; level<256; level++){
             int size, v, l;
             /* find number of bits */
             size = 0;
@@ -829,8 +810,6 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
 if(s->msmpeg4_version==2)
 {
 int i;
-printf("%s q:%d s:%X ", s->pict_type == I_TYPE ? "I" : "P" , s->qscale,
-                        s->pict_type == I_TYPE ? code : s->use_skip_mb_code);
 for(i=0; i<s->gb.size*8; i++)
 //    printf("%d", get_bits1(&s->gb));
     get_bits1(&s->gb);
@@ -908,8 +887,6 @@ int msmpeg4v2_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64])
 {
     int cbp, code, i;
-//printf("M");
-//fflush(stderr); fflush(stdout);
     if (s->pict_type == P_TYPE) {
         if (s->use_skip_mb_code) {
             if (get_bits1(&s->gb)) {
@@ -932,10 +909,7 @@ int msmpeg4v2_decode_mb(MpegEncContext *s,
         cbp = code & 0x3;
     } else {
         s->mb_intra = 1;
-//printf("%X ", show_bits(&s->gb, 24));
         cbp= get_vlc(&s->gb, &v2_intra_cbpc_vlc);
-//printf("%X ", show_bits(&s->gb, 24));
-//printf("CBP: %X ",cbp);
     }
 
     if (!s->mb_intra) {
@@ -953,17 +927,13 @@ int msmpeg4v2_decode_mb(MpegEncContext *s,
         s->mv[0][0][0] = mx;
         s->mv[0][0][1] = my;
     } else {
-//if(s->pict_type == P_TYPE) printf("intra cbp: %X", cbp);
         s->ac_pred = get_bits1(&s->gb);
-//printf("AC: %d ",s->ac_pred);
         cbp|= get_vlc(&s->gb, &cbpy_vlc)<<2;
-//printf("cbp: %X ",cbp);
     }
 
     for (i = 0; i < 6; i++) {
         if (msmpeg4_decode_block(s, block[i], i, (cbp >> (5 - i)) & 1) < 0)
 	{
-//fflush(stderr); fflush(stdout);
              fprintf(stderr,"\nIgnoring error while decoding block: %d x %d (%d)\n", s->mb_x, s->mb_y, i);
              return -1;
 	}
@@ -1216,9 +1186,8 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         } else {
             level = get_vlc(&s->gb, &v2_dc_chroma_vlc);
         }
-        if (level < 0)
+        if (level < 0) 
             return -1;
-
         level-=256;
     }else{  //FIXME optimize use unified tables & index
         if (n < 4) {
