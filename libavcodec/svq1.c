@@ -839,8 +839,7 @@ static int svq1_motion_inter_block (bit_buffer_t *bitbuf,
   src = &previous[(x + (mv.x >> 1)) + (y + (mv.y >> 1))*pitch];
   dst = current;
 
-  put_pixels_tab[((mv.y & 1) << 1) | (mv.x & 1)](dst,src,pitch,16);
-  put_pixels_tab[((mv.y & 1) << 1) | (mv.x & 1)](dst+8,src+8,pitch,16);
+  put_pixels_tab[0][((mv.y & 1) << 1) | (mv.x & 1)](dst,src,pitch,16);
 
   return 0;
 }
@@ -907,7 +906,7 @@ static int svq1_motion_inter_4v_block (bit_buffer_t *bitbuf,
     src = &previous[(x + (pmv[i]->x >> 1)) + (y + (pmv[i]->y >> 1))*pitch];
     dst = current;
 
-    put_pixels_tab[((pmv[i]->y & 1) << 1) | (pmv[i]->x & 1)](dst,src,pitch,8);
+    put_pixels_tab[1][((pmv[i]->y & 1) << 1) | (pmv[i]->x & 1)](dst,src,pitch,8);
 
     /* select next block */
     if (i & 1) {

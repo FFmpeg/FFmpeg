@@ -1337,8 +1337,7 @@ static inline int check_bidir_mv(MpegEncContext * s,
     src_y = mb_y * 16 + (motion_fy >> 1);
             
     ptr = s->last_picture[0] + (src_y * s->linesize) + src_x;
-    put_pixels_tab[dxy](dest_y    , ptr    , s->linesize, 16);
-    put_pixels_tab[dxy](dest_y + 8, ptr + 8, s->linesize, 16);
+    put_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize, 16);
     
     fbmin += (mv_penalty[motion_bx-pred_bx] + mv_penalty[motion_by-pred_by])*s->qscale;
 
@@ -1347,8 +1346,7 @@ static inline int check_bidir_mv(MpegEncContext * s,
     src_y = mb_y * 16 + (motion_by >> 1);
             
     ptr = s->next_picture[0] + (src_y * s->linesize) + src_x;
-    avg_pixels_tab[dxy](dest_y    , ptr    , s->linesize, 16);
-    avg_pixels_tab[dxy](dest_y + 8, ptr + 8, s->linesize, 16);
+    avg_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize, 16);
     
     fbmin += pix_abs16x16(s->new_picture[0] + mb_x*16 + mb_y*16*s->linesize, dest_y, s->linesize);
     return fbmin;
@@ -1433,8 +1431,7 @@ static inline int direct_search(MpegEncContext * s,
             if (src_y == height) dxy &= ~2;
 
             ptr = s->last_picture[0] + (src_y * s->linesize) + src_x;
-            put_pixels_tab[dxy](dest_y    , ptr    , s->linesize, 16);
-            put_pixels_tab[dxy](dest_y + 8, ptr + 8, s->linesize, 16);
+            put_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize, 16);
 
             dxy = ((motion_by & 1) << 1) | (motion_bx & 1);
             src_x = (mb_x + bx) * 16 + (motion_bx >> 1);
@@ -1444,8 +1441,7 @@ static inline int direct_search(MpegEncContext * s,
             src_y = clip(src_y, -16, height);
             if (src_y == height) dxy &= ~2;
 
-            avg_pixels_tab[dxy](dest_y    , ptr    , s->linesize, 16);
-            avg_pixels_tab[dxy](dest_y + 8, ptr + 8, s->linesize, 16);
+            avg_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize, 16);
         }
     }
 

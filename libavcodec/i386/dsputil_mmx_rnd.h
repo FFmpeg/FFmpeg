@@ -22,7 +22,7 @@
  */
 
 // put_pixels
-static void DEF(put, pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+static void DEF(put, pixels8_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     MOVQ_BFE(mm6);
     __asm __volatile(
@@ -54,7 +54,53 @@ static void DEF(put, pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size
 	:"eax", "memory");
 }
 
-static void DEF(put, pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+static void DEF(put, pixels16_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    __asm __volatile(
+	"lea	(%3, %3), %%eax		\n\t"
+	".balign 8			\n\t"
+	"1:				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	1(%1), %%mm1		\n\t"
+	"movq	(%1, %3), %%mm2		\n\t"
+	"movq	1(%1, %3), %%mm3	\n\t"
+	PAVGBP(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+	"movq	%%mm4, (%2)		\n\t"
+	"movq	%%mm5, (%2, %3)		\n\t"
+	"movq	8(%1), %%mm0		\n\t"
+	"movq	9(%1), %%mm1		\n\t"
+	"movq	8(%1, %3), %%mm2	\n\t"
+	"movq	9(%1, %3), %%mm3	\n\t"
+	PAVGBP(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+	"movq	%%mm4, 8(%2)		\n\t"
+	"movq	%%mm5, 8(%2, %3)	\n\t"
+	"addl	%%eax, %1		\n\t"
+	"addl	%%eax, %2		\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	1(%1), %%mm1		\n\t"
+	"movq	(%1, %3), %%mm2		\n\t"
+	"movq	1(%1, %3), %%mm3	\n\t"
+	PAVGBP(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+	"movq	%%mm4, (%2)		\n\t"
+	"movq	%%mm5, (%2, %3)		\n\t"
+	"movq	8(%1), %%mm0		\n\t"
+	"movq	9(%1), %%mm1		\n\t"
+	"movq	8(%1, %3), %%mm2	\n\t"
+	"movq	9(%1, %3), %%mm3	\n\t"
+	PAVGBP(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+	"movq	%%mm4, 8(%2)		\n\t"
+	"movq	%%mm5, 8(%2, %3)		\n\t"
+	"addl	%%eax, %1		\n\t"
+	"addl	%%eax, %2		\n\t"
+	"subl	$4, %0			\n\t"
+	"jnz	1b			\n\t"
+	:"+g"(h), "+S"(pixels), "+D"(block)
+	:"r"(line_size)
+	:"eax", "memory");
+}
+
+static void DEF(put, pixels8_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     MOVQ_BFE(mm6);
     __asm __volatile(
@@ -83,7 +129,7 @@ static void DEF(put, pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size
 	:"eax", "memory");
 }
 
-static void DEF(put, pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+static void DEF(put, pixels8_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     MOVQ_ZERO(mm7);
     SET_RND(mm6); // =2 for rnd  and  =1 for no_rnd version
@@ -151,7 +197,7 @@ static void DEF(put, pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_siz
 
 // avg_pixels
 // in case more speed is needed - unroling would certainly help
-static void DEF(avg, pixels)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+static void DEF(avg, pixels8)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();
@@ -170,7 +216,30 @@ static void DEF(avg, pixels)(UINT8 *block, const UINT8 *pixels, int line_size, i
     while (--h);
 }
 
-static void DEF(avg, pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+static void DEF(avg, pixels16)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    JUMPALIGN();
+    do {
+	__asm __volatile(
+	     "movq  %0, %%mm0		\n\t"
+	     "movq  %1, %%mm1		\n\t"
+	     PAVGB(%%mm0, %%mm1, %%mm2, %%mm6)
+	     "movq  %%mm2, %0		\n\t"
+	     "movq  8%0, %%mm0		\n\t"
+	     "movq  8%1, %%mm1		\n\t"
+	     PAVGB(%%mm0, %%mm1, %%mm2, %%mm6)
+	     "movq  %%mm2, 8%0		\n\t"
+	     :"+m"(*block)
+	     :"m"(*pixels)
+	     :"memory");
+	pixels += line_size;
+	block += line_size;
+    }
+    while (--h);
+}
+
+static void DEF(avg, pixels8_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();
@@ -190,7 +259,33 @@ static void DEF(avg, pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size
     } while (--h);
 }
 
-static void DEF(avg, pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+static void DEF(avg, pixels16_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+{
+    MOVQ_BFE(mm6);
+    JUMPALIGN();
+    do {
+	__asm __volatile(
+	    "movq  %1, %%mm0		\n\t"
+	    "movq  1%1, %%mm1		\n\t"
+	    "movq  %0, %%mm3		\n\t"
+	    PAVGB(%%mm0, %%mm1, %%mm2, %%mm6)
+	    PAVGB(%%mm3, %%mm2, %%mm0, %%mm6)
+	    "movq  %%mm0, %0		\n\t"
+	    "movq  8%1, %%mm0		\n\t"
+	    "movq  9%1, %%mm1		\n\t"
+	    "movq  8%0, %%mm3		\n\t"
+	    PAVGB(%%mm0, %%mm1, %%mm2, %%mm6)
+	    PAVGB(%%mm3, %%mm2, %%mm0, %%mm6)
+	    "movq  %%mm0, 8%0		\n\t"
+	    :"+m"(*block)
+	    :"m"(*pixels)
+	    :"memory");
+	pixels += line_size;
+	block += line_size;
+    } while (--h);
+}
+
+static void DEF(avg, pixels8_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     MOVQ_BFE(mm6);
     __asm __volatile(
@@ -230,7 +325,7 @@ static void DEF(avg, pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size
 }
 
 // this routine is 'slightly' suboptimal but mostly unused
-static void DEF(avg, pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+static void DEF(avg, pixels8_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     MOVQ_ZERO(mm7);
     SET_RND(mm6); // =2 for rnd  and  =1 for no_rnd version
@@ -303,3 +398,26 @@ static void DEF(avg, pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_siz
 	:"D"(block), "r"(line_size)
 	:"eax", "memory");
 }
+
+//FIXME optimize
+static void DEF(put, pixels16_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h){
+    DEF(put, pixels8_y2)(block  , pixels  , line_size, h);
+    DEF(put, pixels8_y2)(block+8, pixels+8, line_size, h);
+}
+
+static void DEF(put, pixels16_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h){
+    DEF(put, pixels8_xy2)(block  , pixels  , line_size, h);
+    DEF(put, pixels8_xy2)(block+8, pixels+8, line_size, h);
+}
+
+static void DEF(avg, pixels16_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h){
+    DEF(avg, pixels8_y2)(block  , pixels  , line_size, h);
+    DEF(avg, pixels8_y2)(block+8, pixels+8, line_size, h);
+}
+
+static void DEF(avg, pixels16_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h){
+    DEF(avg, pixels8_xy2)(block  , pixels  , line_size, h);
+    DEF(avg, pixels8_xy2)(block+8, pixels+8, line_size, h);
+}
+
+
