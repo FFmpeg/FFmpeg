@@ -1539,7 +1539,7 @@ static AVOutputFormat psp_oformat = {
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
-    .flags = AVFMT_GLOBALHEADER,
+//    .flags = AVFMT_GLOBALHEADER,
 };
 
 static AVOutputFormat _3g2_oformat = {
