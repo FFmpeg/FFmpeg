@@ -463,8 +463,8 @@ int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
 }
 
 static void img_copy_plane(uint8_t *dst, int dst_wrap, 
-                     uint8_t *src, int src_wrap,
-                     int width, int height)
+                           const uint8_t *src, int src_wrap,
+                           int width, int height)
 {
     for(;height > 0; height--) {
         memcpy(dst, src, width);
@@ -774,13 +774,60 @@ static void img_apply_table(uint8_t *dst, int dst_wrap,
 }
 
 /* XXX: use generic filter ? */
-/* 1x2 -> 1x1 */
-static void shrink2(uint8_t *dst, int dst_wrap, 
-                    uint8_t *src, int src_wrap,
-                    int width, int height)
+/* XXX: in most cases, the sampling position is incorrect */
+
+/* 4x1 -> 1x1 */
+static void shrink41(uint8_t *dst, int dst_wrap, 
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
 {
     int w;
-    uint8_t *s1, *s2, *d;
+    const uint8_t *s;
+    uint8_t *d;
+
+    for(;height > 0; height--) {
+        s = src;
+        d = dst;
+        for(w = width;w > 0; w--) {
+            d[0] = (s[0] + s[1] + s[2] + s[3] + 2) >> 2;
+            s += 4;
+            d++;
+        }
+        src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 2x1 -> 1x1 */
+static void shrink21(uint8_t *dst, int dst_wrap, 
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
+{
+    int w;
+    const uint8_t *s;
+    uint8_t *d;
+
+    for(;height > 0; height--) {
+        s = src;
+        d = dst;
+        for(w = width;w > 0; w--) {
+            d[0] = (s[0] + s[1]) >> 1;
+            s += 2;
+            d++;
+        }
+        src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 1x2 -> 1x1 */
+static void shrink12(uint8_t *dst, int dst_wrap, 
+                     const uint8_t *src, int src_wrap,
+                     int width, int height)
+{
+    int w;
+    uint8_t *d;
+    const uint8_t *s1, *s2;
 
     for(;height > 0; height--) {
         s1 = src;
@@ -808,11 +855,12 @@ static void shrink2(uint8_t *dst, int dst_wrap,
 
 /* 2x2 -> 1x1 */
 static void shrink22(uint8_t *dst, int dst_wrap, 
-                     uint8_t *src, int src_wrap,
+                     const uint8_t *src, int src_wrap,
                      int width, int height)
 {
     int w;
-    uint8_t *s1, *s2, *d;
+    const uint8_t *s1, *s2;
+    uint8_t *d;
 
     for(;height > 0; height--) {
         s1 = src;
@@ -838,29 +886,129 @@ static void shrink22(uint8_t *dst, int dst_wrap,
     }
 }
 
-/* 1x1 -> 2x2 */
-static void grow22(uint8_t *dst, int dst_wrap,
-                     uint8_t *src, int src_wrap,
+/* 4x4 -> 1x1 */
+static void shrink44(uint8_t *dst, int dst_wrap, 
+                     const uint8_t *src, int src_wrap,
                      int width, int height)
 {
     int w;
-    uint8_t *s1, *d;
+    const uint8_t *s1, *s2, *s3, *s4;
+    uint8_t *d;
 
     for(;height > 0; height--) {
         s1 = src;
+        s2 = s1 + src_wrap;
+        s3 = s2 + src_wrap;
+        s4 = s3 + src_wrap;
         d = dst;
-        for(w = width;w >= 4; w-=4) {
-            d[1] = d[0] = s1[0];
-            d[3] = d[2] = s1[1];
-            s1 += 2;
-            d += 4;
-        }
-        for(;w > 0; w--) {
-            d[0] = s1[0];
-            s1 ++;
+        for(w = width;w > 0; w--) {
+            d[0] = (s1[0] + s1[1] + s1[2] + s1[3] +
+                    s2[0] + s2[1] + s2[2] + s2[3] +
+                    s3[0] + s3[1] + s3[2] + s3[3] +
+                    s4[0] + s4[1] + s4[2] + s4[3] + 8) >> 4;
+            s1 += 4;
+            s2 += 4;
+            s3 += 4;
+            s4 += 4;
             d++;
         }
+        src += 4 * src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+static void grow21_line(uint8_t *dst, const uint8_t *src,
+                        int width)
+{
+    int w;
+    const uint8_t *s1;
+    uint8_t *d;
+
+    s1 = src;
+    d = dst;
+    for(w = width;w >= 4; w-=4) {
+        d[1] = d[0] = s1[0];
+        d[3] = d[2] = s1[1];
+        s1 += 2;
+        d += 4;
+    }
+    for(;w >= 2; w -= 2) {
+        d[1] = d[0] = s1[0];
+        s1 ++;
+        d += 2;
+    }
+    /* only needed if width is not a multiple of two */
+    /* XXX: veryfy that */
+    if (w) {
+        d[0] = s1[0];
+    }
+}
+
+static void grow41_line(uint8_t *dst, const uint8_t *src,
+                        int width)
+{
+    int w, v;
+    const uint8_t *s1;
+    uint8_t *d;
+
+    s1 = src;
+    d = dst;
+    for(w = width;w >= 4; w-=4) {
+        v = s1[0];
+        d[0] = v;
+        d[1] = v;
+        d[2] = v;
+        d[3] = v;
+        s1 ++;
+        d += 4;
+    }
+}
+
+/* 1x1 -> 2x1 */
+static void grow21(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height--) {
+        grow21_line(dst, src, width);
+        src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 1x1 -> 2x2 */
+static void grow22(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height--) {
+        grow21_line(dst, src, width);
         if (height%2)
+            src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 1x1 -> 4x1 */
+static void grow41(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height--) {
+        grow41_line(dst, src, width);
+        src += src_wrap;
+        dst += dst_wrap;
+    }
+}
+
+/* 1x1 -> 4x4 */
+static void grow44(uint8_t *dst, int dst_wrap,
+                   const uint8_t *src, int src_wrap,
+                   int width, int height)
+{
+    for(;height > 0; height--) {
+        grow41_line(dst, src, width);
+        if ((height & 3) == 1)
             src += src_wrap;
         dst += dst_wrap;
     }
@@ -868,11 +1016,12 @@ static void grow22(uint8_t *dst, int dst_wrap,
 
 /* 1x2 -> 2x1 */
 static void conv411(uint8_t *dst, int dst_wrap, 
-                    uint8_t *src, int src_wrap,
+                    const uint8_t *src, int src_wrap,
                     int width, int height)
 {
     int w, c;
-    uint8_t *s1, *s2, *d;
+    const uint8_t *s1, *s2;
+    uint8_t *d;
 
     width>>=1;
 
@@ -1188,10 +1337,12 @@ typedef struct ConvertEntry {
 
    - all FF_COLOR_RGB formats with alpha must convert to and from PIX_FMT_RGBA32
 
-   - all PIX_FMT_YUV444P and PIX_FMT_YUVJ444P must convert to and from
+   - PIX_FMT_YUV444P and PIX_FMT_YUVJ444P must convert to and from
      PIX_FMT_RGB24.
 
    - PIX_FMT_422 must convert to and from PIX_FMT_422P.
+
+   The other conversion functions are just optimisations for common cases.
 */
 static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     [PIX_FMT_YUV420P] = {
@@ -1510,9 +1661,9 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
 
     /* YUV to YUV planar */
     if (is_yuv_planar(dst_pix) && is_yuv_planar(src_pix)) {
-        int x_shift, y_shift, w, h;
+        int x_shift, y_shift, w, h, xy_shift;
         void (*resize_func)(uint8_t *dst, int dst_wrap, 
-                            uint8_t *src, int src_wrap,
+                            const uint8_t *src, int src_wrap,
                             int width, int height);
 
         /* compute chroma size of the smallest dimensions */
@@ -1529,20 +1680,46 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
 
         x_shift = (dst_pix->x_chroma_shift - src_pix->x_chroma_shift);
         y_shift = (dst_pix->y_chroma_shift - src_pix->y_chroma_shift);
-
-        if (x_shift == 0 && y_shift == 0) {
+        xy_shift = ((x_shift & 0xf) << 4) | (y_shift & 0xf);
+        /* there must be filters for conversion at least from and to
+           YUV444 format */
+        switch(xy_shift) {
+        case 0x00:
             resize_func = img_copy_plane;
-        } else if (x_shift == 0 && y_shift == 1) {
-            resize_func = shrink2;
-        } else if (x_shift == 1 && y_shift == 1) {
+            break;
+        case 0x10:
+            resize_func = shrink21;
+            break;
+        case 0x20:
+            resize_func = shrink41;
+            break;
+        case 0x01:
+            resize_func = shrink12;
+            break;
+        case 0x11:
             resize_func = shrink22;
-        } else if (x_shift == -1 && y_shift == -1) {
+            break;
+        case 0x22:
+            resize_func = shrink44;
+            break;
+        case 0xf0:
+            resize_func = grow21;
+            break;
+        case 0xe0:
+            resize_func = grow41;
+            break;
+        case 0xff:
             resize_func = grow22;
-        } else if (x_shift == -1 && y_shift == 1) {
+            break;
+        case 0xee:
+            resize_func = grow44;
+            break;
+        case 0xf1:
             resize_func = conv411;
-        } else {
+            break;
+        default:
             /* currently not handled */
-            return -1;
+            goto no_chroma_filter;
         }
 
         img_copy_plane(dst->data[0], dst->linesize[0],
@@ -1578,6 +1755,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
         }
         return 0;
     }
+ no_chroma_filter:
 
     /* try to use an intermediate format */
     if (src_pix_fmt == PIX_FMT_YUV422 ||
