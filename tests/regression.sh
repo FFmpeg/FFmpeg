@@ -47,6 +47,8 @@ else
     do_mp2=y
     do_ac3=y
     do_g726=y
+    do_adpcm_ima_wav=y
+    do_adpcm_ms=y
     do_rc=y
     do_mpeg4adv=y
     do_mpeg4nr=y
@@ -373,6 +375,26 @@ file=${outfile}g726.wav
 do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -ab 32 -ac 1 -ar 8000 -acodec g726 $file 
 
 # g726 decoding
+do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst 
+fi
+
+###################################
+if [ -n "$do_adpcm_ima_wav" ] ; then
+# encoding
+file=${outfile}adpcm_ima.wav
+do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec adpcm_ima_wav $file 
+
+# decoding
+do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst 
+fi
+
+###################################
+if [ -n "$do_adpcm_ms" ] ; then
+# encoding
+file=${outfile}adpcm_ms.wav
+do_ffmpeg $file -y -ab 128 -ac 2 -ar 44100 -f s16le -i $pcm_src -acodec adpcm_ms $file 
+
+# decoding
 do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst 
 fi
 
