@@ -2730,7 +2730,7 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
         int offset[4];
         h= FFMIN(h, s->height - y);
 
-        if(s->pict_type==B_TYPE && s->picture_structure == PICT_FRAME){
+        if(s->pict_type==B_TYPE && s->picture_structure == PICT_FRAME && s->out_format != FMT_H264){
             offset[0]=
             offset[1]=
             offset[2]=
