@@ -469,89 +469,177 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
         dst[i+0] += src[i+0];
 }
 
+#define H263_LOOP_FILTER \
+        "pxor %%mm7, %%mm7		\n\t"\
+        "movq  %0, %%mm0		\n\t"\
+        "movq  %0, %%mm1		\n\t"\
+        "movq  %3, %%mm2		\n\t"\
+        "movq  %3, %%mm3		\n\t"\
+        "punpcklbw %%mm7, %%mm0		\n\t"\
+        "punpckhbw %%mm7, %%mm1		\n\t"\
+        "punpcklbw %%mm7, %%mm2		\n\t"\
+        "punpckhbw %%mm7, %%mm3		\n\t"\
+        "psubw %%mm2, %%mm0		\n\t"\
+        "psubw %%mm3, %%mm1		\n\t"\
+        "movq  %1, %%mm2		\n\t"\
+        "movq  %1, %%mm3		\n\t"\
+        "movq  %2, %%mm4		\n\t"\
+        "movq  %2, %%mm5		\n\t"\
+        "punpcklbw %%mm7, %%mm2		\n\t"\
+        "punpckhbw %%mm7, %%mm3		\n\t"\
+        "punpcklbw %%mm7, %%mm4		\n\t"\
+        "punpckhbw %%mm7, %%mm5		\n\t"\
+        "psubw %%mm2, %%mm4		\n\t"\
+        "psubw %%mm3, %%mm5		\n\t"\
+        "psllw $2, %%mm4		\n\t"\
+        "psllw $2, %%mm5		\n\t"\
+        "paddw %%mm0, %%mm4		\n\t"\
+        "paddw %%mm1, %%mm5		\n\t"\
+        "pxor %%mm6, %%mm6		\n\t"\
+        "pcmpgtw %%mm4, %%mm6		\n\t"\
+        "pcmpgtw %%mm5, %%mm7		\n\t"\
+        "pxor %%mm6, %%mm4		\n\t"\
+        "pxor %%mm7, %%mm5		\n\t"\
+        "psubw %%mm6, %%mm4		\n\t"\
+        "psubw %%mm7, %%mm5		\n\t"\
+        "psrlw $3, %%mm4		\n\t"\
+        "psrlw $3, %%mm5		\n\t"\
+        "packuswb %%mm5, %%mm4		\n\t"\
+        "packsswb %%mm7, %%mm6		\n\t"\
+        "pxor %%mm7, %%mm7		\n\t"\
+        "movd %4, %%mm2			\n\t"\
+        "punpcklbw %%mm2, %%mm2		\n\t"\
+        "punpcklbw %%mm2, %%mm2		\n\t"\
+        "punpcklbw %%mm2, %%mm2		\n\t"\
+        "psubusb %%mm4, %%mm2		\n\t"\
+        "movq %%mm2, %%mm3		\n\t"\
+        "psubusb %%mm4, %%mm3		\n\t"\
+        "psubb %%mm3, %%mm2		\n\t"\
+        "movq %1, %%mm3			\n\t"\
+        "movq %2, %%mm4			\n\t"\
+        "pxor %%mm6, %%mm3		\n\t"\
+        "pxor %%mm6, %%mm4		\n\t"\
+        "paddusb %%mm2, %%mm3		\n\t"\
+        "psubusb %%mm2, %%mm4		\n\t"\
+        "pxor %%mm6, %%mm3		\n\t"\
+        "pxor %%mm6, %%mm4		\n\t"\
+        "paddusb %%mm2, %%mm2		\n\t"\
+        "packsswb %%mm1, %%mm0		\n\t"\
+        "pcmpgtb %%mm0, %%mm7		\n\t"\
+        "pxor %%mm7, %%mm0		\n\t"\
+        "psubb %%mm7, %%mm0		\n\t"\
+        "movq %%mm0, %%mm1		\n\t"\
+        "psubusb %%mm2, %%mm0		\n\t"\
+        "psubb %%mm0, %%mm1		\n\t"\
+        "pand %5, %%mm1			\n\t"\
+        "psrlw $2, %%mm1		\n\t"\
+        "pxor %%mm7, %%mm1		\n\t"\
+        "psubb %%mm7, %%mm1		\n\t"\
+        "movq %0, %%mm5			\n\t"\
+        "movq %3, %%mm6			\n\t"\
+        "psubb %%mm1, %%mm5		\n\t"\
+        "paddb %%mm1, %%mm6		\n\t"
+
 static void h263_v_loop_filter_mmx(uint8_t *src, int stride, int qscale){
     const int strength= ff_h263_loop_filter_strength[qscale];
 
     asm volatile(
-        "pxor %%mm7, %%mm7		\n\t"
-        "movq  %0, %%mm0		\n\t"
-        "movq  %0, %%mm1		\n\t"
-        "movq  %3, %%mm2		\n\t"
-        "movq  %3, %%mm3		\n\t"
-        "punpcklbw %%mm7, %%mm0		\n\t"
-        "punpckhbw %%mm7, %%mm1		\n\t"
-        "punpcklbw %%mm7, %%mm2		\n\t"
-        "punpckhbw %%mm7, %%mm3		\n\t"
-        "psubw %%mm2, %%mm0		\n\t"
-        "psubw %%mm3, %%mm1		\n\t"
-        "movq  %1, %%mm2		\n\t"
-        "movq  %1, %%mm3		\n\t"
-        "movq  %2, %%mm4		\n\t"
-        "movq  %2, %%mm5		\n\t"
-        "punpcklbw %%mm7, %%mm2		\n\t"
-        "punpckhbw %%mm7, %%mm3		\n\t"
-        "punpcklbw %%mm7, %%mm4		\n\t"
-        "punpckhbw %%mm7, %%mm5		\n\t"
-        "psubw %%mm2, %%mm4		\n\t"
-        "psubw %%mm3, %%mm5		\n\t"
-        "psllw $2, %%mm4		\n\t"
-        "psllw $2, %%mm5		\n\t"
-        "paddw %%mm0, %%mm4		\n\t"
-        "paddw %%mm1, %%mm5		\n\t"
-        "pxor %%mm6, %%mm6		\n\t"
-        "pcmpgtw %%mm4, %%mm6		\n\t" 
-        "pcmpgtw %%mm5, %%mm7		\n\t" 
-        "pxor %%mm6, %%mm4		\n\t"
-        "pxor %%mm7, %%mm5		\n\t"
-        "psubw %%mm6, %%mm4		\n\t" 
-        "psubw %%mm7, %%mm5		\n\t" 
-        "psrlw $3, %%mm4		\n\t"
-        "psrlw $3, %%mm5		\n\t"
-        "packuswb %%mm5, %%mm4		\n\t" //abs(d)
-        "packsswb %%mm7, %%mm6		\n\t" //sign(d)
-        "pxor %%mm7, %%mm7		\n\t"
-        "movd %4, %%mm2			\n\t"
-        "punpcklbw %%mm2, %%mm2		\n\t"
-        "punpcklbw %%mm2, %%mm2		\n\t"
-        "punpcklbw %%mm2, %%mm2		\n\t" //2*strength
-        "psubusb %%mm4, %%mm2		\n\t" // S(2*strength - abs(d))
-        "movq %%mm2, %%mm3		\n\t" // S(2*strength - abs(d))
-        "psubusb %%mm4, %%mm3		\n\t" // S(S(2*strength - abs(d)) - abs(d))
-        "psubb %%mm3, %%mm2		\n\t" // MIN(abs(d), S(2*strength - abs(d)))
-        "movq %1, %%mm3			\n\t"
-        "movq %2, %%mm4			\n\t"
-        "pxor %%mm6, %%mm3		\n\t"
-        "pxor %%mm6, %%mm4		\n\t"
-        "paddusb %%mm2, %%mm3		\n\t"
-        "psubusb %%mm2, %%mm4		\n\t"
-        "pxor %%mm6, %%mm3		\n\t"
-        "pxor %%mm6, %%mm4		\n\t"
+    
+        H263_LOOP_FILTER
+        
         "movq %%mm3, %1			\n\t"
         "movq %%mm4, %2			\n\t"
-        "paddusb %%mm2, %%mm2		\n\t"
-        "packsswb %%mm1, %%mm0		\n\t"
-        "pcmpgtb %%mm0, %%mm7		\n\t"
-        "pxor %%mm7, %%mm0		\n\t"
-        "psubb %%mm7, %%mm0		\n\t"
-        "movq %%mm0, %%mm1		\n\t"
-        "psubusb %%mm2, %%mm0		\n\t"
-        "psubb %%mm0, %%mm1		\n\t"
-        "pand %5, %%mm1			\n\t"
-        "psrlw $2, %%mm1		\n\t"
-        "pxor %%mm7, %%mm1		\n\t"
-        "psubb %%mm7, %%mm1		\n\t"
-        "movq %0, %%mm3			\n\t"
-        "movq %3, %%mm4			\n\t"
-        "psubb %%mm1, %%mm3		\n\t"
-        "paddb %%mm1, %%mm4		\n\t"
-        "movq %%mm3, %0			\n\t"
-        "movq %%mm4, %3			\n\t"
-        
+        "movq %%mm5, %0			\n\t"
+        "movq %%mm6, %3			\n\t"
         : "+m" (*(uint64_t*)(src - 2*stride)),
           "+m" (*(uint64_t*)(src - 1*stride)),
           "+m" (*(uint64_t*)(src + 0*stride)),
           "+m" (*(uint64_t*)(src + 1*stride))
         : "g" (2*strength), "m"(ff_pb_FC)
+    );
+}
+
+static inline void transpose4x4(uint8_t *dst, uint8_t *src, int dst_stride, int src_stride){
+    asm volatile( //FIXME could save 1 instruction if done as 8x4 ...
+        "movd  %4, %%mm0		\n\t"
+        "movd  %5, %%mm1		\n\t"
+        "movd  %6, %%mm2		\n\t"
+        "movd  %7, %%mm3		\n\t"
+        "punpcklbw %%mm1, %%mm0		\n\t"
+        "punpcklbw %%mm3, %%mm2		\n\t"
+        "movq %%mm0, %%mm1		\n\t"
+        "punpcklwd %%mm2, %%mm0		\n\t"
+        "punpckhwd %%mm2, %%mm1		\n\t"
+        "movd  %%mm0, %0		\n\t"
+        "punpckhdq %%mm0, %%mm0		\n\t"
+        "movd  %%mm0, %1		\n\t"
+        "movd  %%mm1, %2		\n\t"
+        "punpckhdq %%mm1, %%mm1		\n\t"
+        "movd  %%mm1, %3		\n\t"
+        
+        : "=m" (*(uint32_t*)(dst + 0*dst_stride)),
+          "=m" (*(uint32_t*)(dst + 1*dst_stride)),
+          "=m" (*(uint32_t*)(dst + 2*dst_stride)),
+          "=m" (*(uint32_t*)(dst + 3*dst_stride))
+        :  "m" (*(uint32_t*)(src + 0*src_stride)),
+           "m" (*(uint32_t*)(src + 1*src_stride)),
+           "m" (*(uint32_t*)(src + 2*src_stride)),
+           "m" (*(uint32_t*)(src + 3*src_stride))
+    );
+}
+
+static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
+    const int strength= ff_h263_loop_filter_strength[qscale];
+    uint64_t temp[4] __attribute__ ((aligned(8)));
+    uint8_t *btemp= (uint8_t*)temp;
+    
+    src -= 2;
+
+    transpose4x4(btemp  , src           , 8, stride);
+    transpose4x4(btemp+4, src + 4*stride, 8, stride);
+    asm volatile(
+        H263_LOOP_FILTER // 5 3 4 6
+        
+        : "+m" (temp[0]),
+          "+m" (temp[1]),
+          "+m" (temp[2]),
+          "+m" (temp[3])
+        : "g" (2*strength), "m"(ff_pb_FC)
+    );
+
+    asm volatile(
+        "movq %%mm5, %%mm1		\n\t"
+        "movq %%mm4, %%mm0		\n\t"
+        "punpcklbw %%mm3, %%mm5		\n\t"
+        "punpcklbw %%mm6, %%mm4		\n\t"
+        "punpckhbw %%mm3, %%mm1		\n\t"
+        "punpckhbw %%mm6, %%mm0		\n\t"
+        "movq %%mm5, %%mm3		\n\t"
+        "movq %%mm1, %%mm6		\n\t"
+        "punpcklwd %%mm4, %%mm5		\n\t"
+        "punpcklwd %%mm0, %%mm1		\n\t"
+        "punpckhwd %%mm4, %%mm3		\n\t"
+        "punpckhwd %%mm0, %%mm6		\n\t"
+        "movd %%mm5, %0			\n\t"
+        "punpckhdq %%mm5, %%mm5		\n\t"
+        "movd %%mm5, %1			\n\t"
+        "movd %%mm3, %2			\n\t"
+        "punpckhdq %%mm3, %%mm3		\n\t"
+        "movd %%mm3, %3			\n\t"
+        "movd %%mm1, %4			\n\t"
+        "punpckhdq %%mm1, %%mm1		\n\t"
+        "movd %%mm1, %5			\n\t"
+        "movd %%mm6, %6			\n\t"
+        "punpckhdq %%mm6, %%mm6		\n\t"
+        "movd %%mm6, %7			\n\t"
+        : "=m" (*(uint32_t*)(src + 0*stride)),
+          "=m" (*(uint32_t*)(src + 1*stride)),
+          "=m" (*(uint32_t*)(src + 2*stride)),
+          "=m" (*(uint32_t*)(src + 3*stride)),
+          "=m" (*(uint32_t*)(src + 4*stride)),
+          "=m" (*(uint32_t*)(src + 5*stride)),
+          "=m" (*(uint32_t*)(src + 6*stride)),
+          "=m" (*(uint32_t*)(src + 7*stride))
     );
 }
 
@@ -1783,6 +1871,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif //CONFIG_ENCODERS
 
         c->h263_v_loop_filter= h263_v_loop_filter_mmx;
+        c->h263_h_loop_filter= h263_h_loop_filter_mmx;
         
         if (mm_flags & MM_MMXEXT) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
