@@ -37,6 +37,10 @@ enum OutputFormat {
 #define MAX_MV 2048
 #define REORDER_BUFFER_SIZE (FF_MAX_B_FRAMES+2)
 
+#define ME_MAP_SIZE 64
+#define ME_MAP_SHIFT 3
+#define ME_MAP_MV_BITS 11
+
 typedef struct Predictor{
     double coeff;
     double count;
@@ -100,8 +104,12 @@ typedef struct MpegEncContext {
     int force_input_type;/* 0= no force, otherwise I_TYPE, P_TYPE, ... */
     int max_b_frames; /* max number of b-frames for encoding */
     float b_quant_factor;/* qscale factor between ips and b frames */
+    float b_quant_offset;/* qscale offset between ips and b frames */
     int rc_strategy;
     int b_frame_strategy;
+    int luma_elim_threshold;
+    int chroma_elim_threshold;
+    int strict_std_compliance; /* strictly follow the std (MPEG4, ...) */
     int workaround_bugs;       /* workaround bugs in encoders which cannot be detected automatically */
     /* the following fields are managed internally by the encoder */
 
@@ -142,6 +150,9 @@ typedef struct MpegEncContext {
     UINT8 *mbskip_table;        /* used to avoid copy if macroblock skipped (for black regions for example) 
                                    and used for b-frame encoding & decoding (contains skip table of next P Frame) */
     UINT8 *mbintra_table;       /* used to avoid setting {ac, dc, cbp}-pred stuff to zero on inter MB decoding */
+    UINT8 *cbp_table;           /* used to store cbp, ac_pred for partitioned decoding */
+    UINT8 *pred_dir_table;      /* used to store pred_dir for partitioned decoding */
+    INT8 *qscale_table;         /* used to store qscale for partitioned decoding (& postprocessing FIXME export) */
 
     int input_qscale;           /* qscale prior to reordering of frames */
     int input_pict_type;        /* pict_type prior to reordering of frames */
@@ -159,7 +170,6 @@ typedef struct MpegEncContext {
     int b_code; /* backward MV resolution for B Frames (mpeg4) */
     INT16 (*motion_val)[2];            /* used for MV prediction (4MV per MB) */
     INT16 (*p_mv_table)[2];            /* MV table (1MV per MB) p-frame encoding */
-    INT16 (*last_p_mv_table)[2];       /* MV table (1MV per MB) p-frame encoding */
     INT16 (*b_forw_mv_table)[2];       /* MV table (1MV per MB) forward mode b-frame encoding */
     INT16 (*b_back_mv_table)[2];       /* MV table (1MV per MB) backward mode b-frame encoding */
     INT16 (*b_bidir_forw_mv_table)[2]; /* MV table (1MV per MB) bidir mode b-frame encoding */
@@ -169,6 +179,10 @@ typedef struct MpegEncContext {
     INT16 (*b_direct_mv_table)[2];     /* MV table (1MV per MB) direct mode b-frame encoding */
     int me_method;                     /* ME algorithm */
     uint8_t *me_scratchpad;            /* data area for the me algo, so that the ME doesnt need to malloc/free */
+    uint32_t *me_map;                  /* map to avoid duplicate evaluations */
+    uint16_t *me_score_map;            /* map to store the SADs */
+    int me_map_generation;
+    int skip_me;                       /* set if ME is skiped for the current MB */
     int mv_dir;
 #define MV_DIR_BACKWARD  1
 #define MV_DIR_FORWARD   2
@@ -201,12 +215,15 @@ typedef struct MpegEncContext {
     int mb_x, mb_y;
     int mb_incr;
     int mb_intra;
-    UINT16 *mb_var;    /* Table for MB variances */
-    UINT8 *mb_type;    /* Table for MB type */
+    UINT16 *mb_var;       /* Table for MB variances */
+    UINT16 *mc_mb_var;    /* Table for motion compensated MB variances */
+    UINT8 *mb_type;       /* Table for MB type */
 #define MB_TYPE_INTRA    0x01
 #define MB_TYPE_INTER    0x02
 #define MB_TYPE_INTER4V  0x04
 #define MB_TYPE_SKIPED   0x08
+#define MB_TYPE_GMC      0x10
+
 #define MB_TYPE_DIRECT   0x10
 #define MB_TYPE_FORWARD  0x20
 #define MB_TYPE_BACKWARD 0x40
@@ -239,8 +256,8 @@ typedef struct MpegEncContext {
 
     /* bit rate control */
     int I_frame_bits; //FIXME used in mpeg12 ...
-    int avg_mb_var;        /* average MB variance for current frame */
-    int mc_mb_var;         /* motion compensated MB variance for current frame */
+    int mb_var_sum;          /* sum of MB variance for current frame */
+    int mc_mb_var_sum;       /* motion compensated MB variance for current frame */
     int last_non_b_mc_mb_var;/* motion compensated MB variance for last non b frame */
     INT64 wanted_bits;
     INT64 total_bits;
@@ -264,11 +281,24 @@ typedef struct MpegEncContext {
     int skip_count;
     int misc_bits; // cbp, mb_type
     int last_bits; //temp var used for calculating the above vars
+    
+    /* error concealment / resync */
+    int resync_mb_x;                 /* x position of last resync marker */
+    int resync_mb_y;                 /* y position of last resync marker */
+    int mb_num_left;                 /* number of MBs left in this video packet */
+    GetBitContext next_resync_gb;    /* starts at the next resync marker */
+    int next_resync_qscale;          /* qscale of next resync marker */
+    int next_resync_pos;             /* bitstream position of next resync marker */
+#define DECODING_AC_LOST -1
+#define DECODING_ACDC_LOST -2
+#define DECODING_DESYNC -3
+    int decoding_error;
+    int next_p_frame_damaged;        /* set if the next p frame is damaged, to avoid showing trashed b frames */
+    int error_resilience;
 
     /* H.263 specific */
     int gob_number;
     int gob_index;
-    int first_gob_line;
         
     /* H.263+ specific */
     int umvplus;
@@ -306,12 +336,17 @@ typedef struct MpegEncContext {
     int aspect_ratio_info;
     int sprite_warping_accuracy;
     int low_latency_sprite;
-    int data_partioning;
-    int resync_marker;
-    int resync_x_pos;
+    int data_partitioning;
+    int rvlc;                        /* reversible vlc */
+    int resync_marker;               /* could this stream contain resync markers*/
     int low_delay;                   /* no reordering needed / has no b-frames */
     int vo_type;
     int vol_control_parameters;      /* does the stream contain the low_delay flag, used to workaround buggy encoders */
+    PutBitContext tex_pb;            /* used for data partitioned VOPs */
+    PutBitContext pb2;               /* used for data partitioned VOPs */
+#define PB_BUFFER_SIZE 1024*256
+    uint8_t *tex_pb_buffer;          
+    uint8_t *pb2_buffer;
 
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;
@@ -341,7 +376,6 @@ typedef struct MpegEncContext {
     int slice_height;      /* in macroblocks */
     int first_slice_line;  /* used in mpeg4 too to handle resync markers */
     int flipflop_rounding;
-    int bitrate;
     int msmpeg4_version;   /* 0=not msmpeg4, 1=mp41, 2=mp42, 3=mp43/divx3 */
     /* decompression specific */
     GetBitContext gb;
@@ -402,6 +436,9 @@ void MPV_common_init_mmx(MpegEncContext *s);
 #endif
 int (*dct_quantize)(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w);
+void ff_conceal_past_errors(MpegEncContext *s, int conceal_all);
+void ff_copy_bits(PutBitContext *pb, UINT8 *src, int length);
+void ff_clean_intra_table_entries(MpegEncContext *s);
 
 /* motion_est.c */
 void ff_estimate_p_frame_motion(MpegEncContext * s,
@@ -479,6 +516,13 @@ int intel_h263_decode_picture_header(MpegEncContext *s);
 int h263_decode_mb(MpegEncContext *s,
                    DCTELEM block[6][64]);
 int h263_get_picture_format(int width, int height);
+int ff_mpeg4_decode_video_packet_header(MpegEncContext *s);
+int ff_mpeg4_resync(MpegEncContext *s);
+void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
+void ff_mpeg4_clean_buffers(MpegEncContext *s);
+void ff_mpeg4_stuffing(PutBitContext * pbc);
+void ff_mpeg4_init_partitions(MpegEncContext *s);
+void ff_mpeg4_merge_partitions(MpegEncContext *s);
 
 /* rv10.c */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number);

@@ -109,6 +109,15 @@ static void convert_matrix(int (*qmat)[64], uint16_t (*qmat16)[64], uint16_t (*q
         }
     }
 }
+// move into common.c perhaps 
+#define CHECKED_ALLOCZ(p, size)\
+{\
+    p= av_mallocz(size);\
+    if(p==NULL){\
+        perror("malloc");\
+        goto fail;\
+    }\
+}
 
 /* init common structure for both encoder and decoder */
 int MPV_common_init(MpegEncContext *s)
@@ -143,24 +152,18 @@ int MPV_common_init(MpegEncContext *s)
         c_size = (w >> shift) * (h >> shift);
         pict_start = (w >> shift) * (EDGE_WIDTH >> shift) + (EDGE_WIDTH >> shift);
 
-        pict = av_mallocz(c_size);
-        if (pict == NULL)
-            goto fail;
+        CHECKED_ALLOCZ(pict, c_size)
         s->last_picture_base[i] = pict;
         s->last_picture[i] = pict + pict_start;
     
-        pict = av_mallocz(c_size);
-        if (pict == NULL)
-            goto fail;
+        CHECKED_ALLOCZ(pict, c_size)
         s->next_picture_base[i] = pict;
         s->next_picture[i] = pict + pict_start;
         
         if (s->has_b_frames || s->codec_id==CODEC_ID_MPEG4) {
         /* Note the MPEG4 stuff is here cuz of buggy encoders which dont set the low_delay flag but 
            do low-delay encoding, so we cant allways distinguish b-frame containing streams from low_delay streams */
-            pict = av_mallocz(c_size);
-            if (pict == NULL) 
-                goto fail;
+            CHECKED_ALLOCZ(pict, c_size)
             s->aux_picture_base[i] = pict;
             s->aux_picture[i] = pict + pict_start;
         }
@@ -169,72 +172,24 @@ int MPV_common_init(MpegEncContext *s)
     if (s->encoding) {
         int j;
         int mv_table_size= (s->mb_width+2)*(s->mb_height+2);
-
-        /* Allocate MB type table */
-        s->mb_type = av_mallocz(s->mb_num * sizeof(char));
-        if (s->mb_type == NULL) {
-            perror("malloc");
-            goto fail;
-        }
         
-        s->mb_var = av_mallocz(s->mb_num * sizeof(INT16));
-        if (s->mb_var == NULL) {
-            perror("malloc");
-            goto fail;
-        }
+        CHECKED_ALLOCZ(s->mb_var   , s->mb_num * sizeof(INT16))
+        CHECKED_ALLOCZ(s->mc_mb_var, s->mb_num * sizeof(INT16))
 
         /* Allocate MV tables */
-        s->p_mv_table = av_mallocz(mv_table_size * 2 * sizeof(INT16));
-        if (s->p_mv_table == NULL) {
-            perror("malloc");
-            goto fail;
-        }
-        s->last_p_mv_table = av_mallocz(mv_table_size * 2 * sizeof(INT16));
-        if (s->last_p_mv_table == NULL) {
-            perror("malloc");
-            goto fail;
-        }
-        s->b_forw_mv_table = av_mallocz(mv_table_size * 2 * sizeof(INT16));
-        if (s->b_forw_mv_table == NULL) {
-            perror("malloc");
-            goto fail;
-        }
-        s->b_back_mv_table = av_mallocz(mv_table_size * 2 * sizeof(INT16));
-        if (s->b_back_mv_table == NULL) {
-            perror("malloc");
-            goto fail;
-        }
-        s->b_bidir_forw_mv_table = av_mallocz(mv_table_size * 2 * sizeof(INT16));
-        if (s->b_bidir_forw_mv_table == NULL) {
-            perror("malloc");
-            goto fail;
-        }
-        s->b_bidir_back_mv_table = av_mallocz(mv_table_size * 2 * sizeof(INT16));
-        if (s->b_bidir_back_mv_table == NULL) {
-            perror("malloc");
-            goto fail;
-        }
-        s->b_direct_forw_mv_table = av_mallocz(mv_table_size * 2 * sizeof(INT16));
-        if (s->b_direct_forw_mv_table == NULL) {
-            perror("malloc");
-            goto fail;
-        }
-        s->b_direct_back_mv_table = av_mallocz(mv_table_size * 2 * sizeof(INT16));
-        if (s->b_direct_back_mv_table == NULL) {
-            perror("malloc");
-            goto fail;
-        }
-        s->b_direct_mv_table = av_mallocz(mv_table_size * 2 * sizeof(INT16));
-        if (s->b_direct_mv_table == NULL) {
-            perror("malloc");
-            goto fail;
-        }
+        CHECKED_ALLOCZ(s->p_mv_table            , mv_table_size * 2 * sizeof(INT16))
+        CHECKED_ALLOCZ(s->b_forw_mv_table       , mv_table_size * 2 * sizeof(INT16))
+        CHECKED_ALLOCZ(s->b_back_mv_table       , mv_table_size * 2 * sizeof(INT16))
+        CHECKED_ALLOCZ(s->b_bidir_forw_mv_table , mv_table_size * 2 * sizeof(INT16))
+        CHECKED_ALLOCZ(s->b_bidir_back_mv_table , mv_table_size * 2 * sizeof(INT16))
+        CHECKED_ALLOCZ(s->b_direct_forw_mv_table, mv_table_size * 2 * sizeof(INT16))
+        CHECKED_ALLOCZ(s->b_direct_back_mv_table, mv_table_size * 2 * sizeof(INT16))
+        CHECKED_ALLOCZ(s->b_direct_mv_table     , mv_table_size * 2 * sizeof(INT16))
 
-        s->me_scratchpad = av_mallocz( s->linesize*16*3*sizeof(uint8_t));
-        if (s->me_scratchpad == NULL) {
-            perror("malloc");
-            goto fail;
-        }
+        CHECKED_ALLOCZ(s->me_scratchpad,  s->linesize*16*3*sizeof(uint8_t))
+        
+        CHECKED_ALLOCZ(s->me_map      , ME_MAP_SIZE*sizeof(uint32_t))
+        CHECKED_ALLOCZ(s->me_score_map, ME_MAP_SIZE*sizeof(uint16_t))
 
         if(s->max_b_frames){
             for(j=0; j<REORDER_BUFFER_SIZE; j++){
@@ -247,23 +202,26 @@ int MPV_common_init(MpegEncContext *s)
                     shift = (i == 0) ? 0 : 1;
                     c_size = (w >> shift) * (h >> shift);
 
-                    pict = av_mallocz(c_size);
-                    if (pict == NULL)
-                        goto fail;
+                    CHECKED_ALLOCZ(pict, c_size);
                     s->picture_buffer[j][i] = pict;
                 }
             }
+        }
+
+        if(s->codec_id==CODEC_ID_MPEG4){
+            CHECKED_ALLOCZ(s->tex_pb_buffer, PB_BUFFER_SIZE);
+            CHECKED_ALLOCZ(   s->pb2_buffer, PB_BUFFER_SIZE);
         }
     }
     
     if (s->out_format == FMT_H263 || s->encoding) {
         int size;
+        /* Allocate MB type table */
+        CHECKED_ALLOCZ(s->mb_type  , s->mb_num * sizeof(UINT8))
+
         /* MV prediction */
         size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
-        s->motion_val = av_malloc(size * 2 * sizeof(INT16));
-        if (s->motion_val == NULL)
-            goto fail;
-        memset(s->motion_val, 0, size * 2 * sizeof(INT16));
+        CHECKED_ALLOCZ(s->motion_val, size * 2 * sizeof(INT16));
     }
 
     if (s->h263_pred || s->h263_plus) {
@@ -274,44 +232,38 @@ int MPV_common_init(MpegEncContext *s)
         y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
         c_size = (s->mb_width + 2) * (s->mb_height + 2);
         size = y_size + 2 * c_size;
-        s->dc_val[0] = av_malloc(size * sizeof(INT16));
-        if (s->dc_val[0] == NULL)
-            goto fail;
+        CHECKED_ALLOCZ(s->dc_val[0], size * sizeof(INT16));
         s->dc_val[1] = s->dc_val[0] + y_size;
         s->dc_val[2] = s->dc_val[1] + c_size;
         for(i=0;i<size;i++)
             s->dc_val[0][i] = 1024;
 
         /* ac values */
-        s->ac_val[0] = av_mallocz(size * sizeof(INT16) * 16);
-        if (s->ac_val[0] == NULL)
-            goto fail;
+        CHECKED_ALLOCZ(s->ac_val[0], size * sizeof(INT16) * 16);
         s->ac_val[1] = s->ac_val[0] + y_size;
         s->ac_val[2] = s->ac_val[1] + c_size;
         
         /* cbp values */
-        s->coded_block = av_mallocz(y_size);
-        if (!s->coded_block)
-            goto fail;
+        CHECKED_ALLOCZ(s->coded_block, y_size);
 
         /* which mb is a intra block */
-        s->mbintra_table = av_mallocz(s->mb_num);
-        if (!s->mbintra_table)
-            goto fail;
+        CHECKED_ALLOCZ(s->mbintra_table, s->mb_num);
         memset(s->mbintra_table, 1, s->mb_num);
         
         /* divx501 bitstream reorder buffer */
-        s->bitstream_buffer= av_mallocz(BITSTREAM_BUFFER_SIZE);
-        if (!s->bitstream_buffer)
-            goto fail;
+        CHECKED_ALLOCZ(s->bitstream_buffer, BITSTREAM_BUFFER_SIZE);
+        
+        /* cbp, ac_pred, pred_dir */
+        CHECKED_ALLOCZ(s->cbp_table  , s->mb_num * sizeof(UINT8))
+        CHECKED_ALLOCZ(s->pred_dir_table, s->mb_num * sizeof(UINT8))
+        
+        CHECKED_ALLOCZ(s->qscale_table  , s->mb_num * sizeof(UINT8))
     }
     /* default structure is frame */
     s->picture_structure = PICT_FRAME;
 
     /* init macroblock skip table */
-    s->mbskip_table = av_mallocz(s->mb_num);
-    if (!s->mbskip_table)
-        goto fail;
+    CHECKED_ALLOCZ(s->mbskip_table, s->mb_num);
     
     s->block= s->blocks[0];
 
@@ -322,6 +274,9 @@ int MPV_common_init(MpegEncContext *s)
     return -1;
 }
 
+
+//extern int sads;
+
 /* init common structure for both encoder and decoder */
 void MPV_common_end(MpegEncContext *s)
 {
@@ -329,8 +284,8 @@ void MPV_common_end(MpegEncContext *s)
 
     av_freep(&s->mb_type);
     av_freep(&s->mb_var);
+    av_freep(&s->mc_mb_var);
     av_freep(&s->p_mv_table);
-    av_freep(&s->last_p_mv_table);
     av_freep(&s->b_forw_mv_table);
     av_freep(&s->b_back_mv_table);
     av_freep(&s->b_bidir_forw_mv_table);
@@ -343,10 +298,17 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->ac_val[0]);
     av_freep(&s->coded_block);
     av_freep(&s->mbintra_table);
+    av_freep(&s->cbp_table);
+    av_freep(&s->pred_dir_table);
+    av_freep(&s->qscale_table);
     av_freep(&s->me_scratchpad);
-
+    av_freep(&s->me_map);
+    av_freep(&s->me_score_map);
+    
     av_freep(&s->mbskip_table);
     av_freep(&s->bitstream_buffer);
+    av_freep(&s->tex_pb_buffer);
+    av_freep(&s->pb2_buffer);
     for(i=0;i<3;i++) {
         int j;
         av_freep(&s->last_picture_base[i]);
@@ -372,6 +334,10 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->frame_rate = avctx->frame_rate;
     s->width = avctx->width;
     s->height = avctx->height;
+    if(avctx->gop_size > 600){
+        fprintf(stderr, "Warning keyframe intervall too large! reducing it ...\n");
+        avctx->gop_size=600;
+    }
     s->gop_size = avctx->gop_size;
     s->rtp_mode = avctx->rtp_mode;
     s->rtp_payload_size = avctx->rtp_payload_size;
@@ -383,6 +349,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->qcompress= avctx->qcompress;
     s->qblur= avctx->qblur;
     s->b_quant_factor= avctx->b_quant_factor;
+    s->b_quant_offset= avctx->b_quant_offset;
     s->avctx = avctx;
     s->aspect_ratio_info= avctx->aspect_ratio_info;
     s->flags= avctx->flags;
@@ -390,6 +357,10 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->rc_strategy= avctx->rc_strategy;
     s->b_frame_strategy= avctx->b_frame_strategy;
     s->codec_id= avctx->codec->id;
+    s->luma_elim_threshold  = avctx->luma_elim_threshold;
+    s->chroma_elim_threshold= avctx->chroma_elim_threshold;
+    s->strict_std_compliance= avctx->strict_std_compliance;
+    s->data_partitioning= avctx->flags & CODEC_FLAG_PART;
 
     if (s->gop_size <= 1) {
         s->intra_only = 1;
@@ -490,11 +461,6 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
     
-    if((s->flags&CODEC_FLAG_4MV) && !(s->flags&CODEC_FLAG_HQ)){
-        printf("4MV is currently only supported in HQ mode\n");
-        return -1;
-    }
-
     { /* set up some save defaults, some codecs might override them later */
         static int done=0;
         if(!done){
@@ -609,6 +575,8 @@ void MPV_frame_start(MpegEncContext *s)
     UINT8 *tmp;
 
     s->mb_skiped = 0;
+    s->decoding_error=0;
+
     if (s->pict_type == B_TYPE) {
         for(i=0;i<3;i++) {
             s->current_picture[i] = s->aux_picture[i];
@@ -627,6 +595,8 @@ void MPV_frame_start(MpegEncContext *s)
 /* generic function for encode/decode called after a frame has been coded/decoded */
 void MPV_frame_end(MpegEncContext *s)
 {
+//    if((s->picture_number%100)==0 && s->encoding) printf("sads:%d //\n", sads);
+
     /* draw edge for correct motion prediction if outside */
     if (s->pict_type != B_TYPE && !s->intra_only) {
       if(s->avctx==NULL || s->avctx->codec->id!=CODEC_ID_MPEG4 || s->divx_version==500){
@@ -645,7 +615,7 @@ void MPV_frame_end(MpegEncContext *s)
     if(s->pict_type!=B_TYPE){
         s->last_non_b_pict_type= s->pict_type;
         s->last_non_b_qscale= s->qscale;
-        s->last_non_b_mc_mb_var= s->mc_mb_var;
+        s->last_non_b_mc_mb_var= s->mc_mb_var_sum;
         s->num_available_buffers++;
         if(s->num_available_buffers>2) s->num_available_buffers= 2;
     }
@@ -804,6 +774,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
         
         if(s->flags&CODEC_FLAG_PASS1)
             ff_write_pass1_stats(s);
+    
     }
 
     s->input_picture_number++;
@@ -897,7 +868,6 @@ if(s->quarter_sample)
     motion_x>>=1;
     motion_y>>=1;
 }
-
     dxy = ((motion_y & 1) << 1) | (motion_x & 1);
     src_x = s->mb_x * 16 + (motion_x >> 1);
     src_y = s->mb_y * (16 >> field_based) + (motion_y >> 1);
@@ -1154,6 +1124,39 @@ static inline void add_dct(MpegEncContext *s,
     }
 }
 
+/**
+ * cleans dc, ac, coded_block for the current non intra MB
+ */
+void ff_clean_intra_table_entries(MpegEncContext *s)
+{
+    int wrap = s->block_wrap[0];
+    int xy = s->block_index[0];
+    
+    s->dc_val[0][xy           ] = 
+    s->dc_val[0][xy + 1       ] = 
+    s->dc_val[0][xy     + wrap] =
+    s->dc_val[0][xy + 1 + wrap] = 1024;
+    /* ac pred */
+    memset(s->ac_val[0][xy       ], 0, 32 * sizeof(INT16));
+    memset(s->ac_val[0][xy + wrap], 0, 32 * sizeof(INT16));
+    if (s->msmpeg4_version>=3) {
+        s->coded_block[xy           ] =
+        s->coded_block[xy + 1       ] =
+        s->coded_block[xy     + wrap] =
+        s->coded_block[xy + 1 + wrap] = 0;
+    }
+    /* chroma */
+    wrap = s->block_wrap[4];
+    xy = s->mb_x + 1 + (s->mb_y + 1) * wrap;
+    s->dc_val[1][xy] =
+    s->dc_val[2][xy] = 1024;
+    /* ac pred */
+    memset(s->ac_val[1][xy], 0, 16 * sizeof(INT16));
+    memset(s->ac_val[2][xy], 0, 16 * sizeof(INT16));
+    
+    s->mbintra_table[s->mb_x + s->mb_y*s->mb_width]= 0;
+}
+
 /* generic function called after a macroblock has been parsed by the
    decoder or after it has been encoded by the encoder.
 
@@ -1182,41 +1185,11 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
         if (s->h263_pred || s->h263_aic) {
-          if(s->mbintra_table[mb_x + mb_y*s->mb_width])
-          {
-            int wrap, xy, v;
-            s->mbintra_table[mb_x + mb_y*s->mb_width]=0;
-            wrap = 2 * s->mb_width + 2;
-            xy = 2 * mb_x + 1 +  (2 * mb_y + 1) * wrap;
-            v = 1024;
-            
-            s->dc_val[0][xy] = v;
-            s->dc_val[0][xy + 1] = v;
-            s->dc_val[0][xy + wrap] = v;
-            s->dc_val[0][xy + 1 + wrap] = v;
-            /* ac pred */
-            memset(s->ac_val[0][xy], 0, 16 * sizeof(INT16));
-            memset(s->ac_val[0][xy + 1], 0, 16 * sizeof(INT16));
-            memset(s->ac_val[0][xy + wrap], 0, 16 * sizeof(INT16));
-            memset(s->ac_val[0][xy + 1 + wrap], 0, 16 * sizeof(INT16));
-            if (s->h263_msmpeg4) {
-                s->coded_block[xy] = 0;
-                s->coded_block[xy + 1] = 0;
-                s->coded_block[xy + wrap] = 0;
-                s->coded_block[xy + 1 + wrap] = 0;
-            }
-            /* chroma */
-            wrap = s->mb_width + 2;
-            xy = mb_x + 1 + (mb_y + 1) * wrap;
-            s->dc_val[1][xy] = v;
-            s->dc_val[2][xy] = v;
-            /* ac pred */
-            memset(s->ac_val[1][xy], 0, 16 * sizeof(INT16));
-            memset(s->ac_val[2][xy], 0, 16 * sizeof(INT16));
-          }
+            if(s->mbintra_table[mb_x + mb_y*s->mb_width])
+                ff_clean_intra_table_entries(s);
         } else {
-            s->last_dc[0] = 128 << s->intra_dc_precision;
-            s->last_dc[1] = 128 << s->intra_dc_precision;
+            s->last_dc[0] =
+            s->last_dc[1] =
             s->last_dc[2] = 128 << s->intra_dc_precision;
         }
     }
@@ -1284,8 +1257,10 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         }
 
         if (!s->mb_intra) {
+            const int xy= s->mb_y * s->mb_width + s->mb_x;
             /* motion handling */
-            if((s->flags&CODEC_FLAG_HQ) || (!s->encoding)){
+            /* decoding or more than one mb_type (MC was allready done otherwise) */
+            if((!s->encoding) || (s->mb_type[xy]&(s->mb_type[xy]-1))){
                 if ((!s->no_rounding) || s->pict_type==B_TYPE){                
                     op_pix = put_pixels_tab;
                     op_qpix= qpel_mc_rnd_tab;
@@ -1329,6 +1304,50 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     emms_c(); //FIXME remove
 }
 
+static inline void dct_single_coeff_elimination(MpegEncContext *s, int n, int threshold, int skip_dc)
+{
+    static const char tab[64]=
+        {3,2,2,1,1,1,1,1,
+         1,1,1,1,1,1,1,1,
+         1,1,1,1,1,1,1,1,
+         0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0,
+         0,0,0,0,0,0,0,0};
+    int score=0;
+    int run=0;
+    int i;
+    DCTELEM *block= s->block[n];
+    const int last_index= s->block_last_index[n];
+
+    if(skip_dc) skip_dc=1;
+    
+    /* are all which we could set to zero are allready zero? */
+    if(last_index<=skip_dc - 1) return;
+
+    for(i=0; i<=last_index; i++){
+        const int j = zigzag_direct[i];
+        const int level = ABS(block[j]);
+        if(level==1){
+            if(skip_dc && i==0) continue;
+            score+= tab[run];
+            run=0;
+        }else if(level>1){
+            return;
+        }else{
+            run++;
+        }
+    }
+    if(score >= threshold) return;
+    for(i=skip_dc; i<=last_index; i++){
+        const int j = zigzag_direct[i];
+        block[j]=0;
+    }
+    if(block[0]) s->block_last_index[n]= 0;
+    else         s->block_last_index[n]= -1;
+}
+
 static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index)
 {
     int i;
@@ -1350,6 +1369,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     const int mb_x= s->mb_x;
     const int mb_y= s->mb_y;
     int i;
+    int skip_dct[6];
 #if 0
         if (s->interlaced_dct) {
             dct_linesize = s->linesize * 2;
@@ -1359,6 +1379,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             dct_offset = s->linesize * 8;
         }
 #endif
+    for(i=0; i<6; i++) skip_dct[i]=0;
 
     if (s->mb_intra) {
         UINT8 *ptr;
@@ -1381,12 +1402,17 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         op_pixels_func *op_pix;
         qpel_mc_func *op_qpix;
         UINT8 *dest_y, *dest_cb, *dest_cr;
-        UINT8 *ptr;
-        int wrap;
+        UINT8 *ptr_y, *ptr_cb, *ptr_cr;
+        int wrap_y, wrap_c;
 
         dest_y  = s->current_picture[0] + (mb_y * 16 * s->linesize       ) + mb_x * 16;
         dest_cb = s->current_picture[1] + (mb_y * 8  * (s->linesize >> 1)) + mb_x * 8;
         dest_cr = s->current_picture[2] + (mb_y * 8  * (s->linesize >> 1)) + mb_x * 8;
+        wrap_y = s->linesize;
+        wrap_c = wrap_y>>1;
+        ptr_y  = s->new_picture[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
+        ptr_cb = s->new_picture[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
+        ptr_cr = s->new_picture[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
 
         if ((!s->no_rounding) || s->pict_type==B_TYPE){
             op_pix = put_pixels_tab;
@@ -1406,19 +1432,39 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         if (s->mv_dir & MV_DIR_BACKWARD) {
             MPV_motion(s, dest_y, dest_cb, dest_cr, 1, s->next_picture, op_pix, op_qpix);
         }
-        wrap = s->linesize;
-        ptr = s->new_picture[0] + (mb_y * 16 * wrap) + mb_x * 16;
-        diff_pixels(s->block[0], ptr               , dest_y               , wrap);
-        diff_pixels(s->block[1], ptr            + 8, dest_y            + 8, wrap);
-        diff_pixels(s->block[2], ptr + 8 * wrap    , dest_y + 8 * wrap    , wrap);
-        diff_pixels(s->block[3], ptr + 8 * wrap + 8, dest_y + 8 * wrap + 8, wrap);
 
-        wrap >>=1;
-        ptr = s->new_picture[1] + (mb_y * 8 * wrap) + mb_x * 8;
-        diff_pixels(s->block[4], ptr, dest_cb, wrap);
+        diff_pixels(s->block[0], ptr_y                 , dest_y                 , wrap_y);
+        diff_pixels(s->block[1], ptr_y              + 8, dest_y              + 8, wrap_y);
+        diff_pixels(s->block[2], ptr_y + 8 * wrap_y    , dest_y + 8 * wrap_y    , wrap_y);
+        diff_pixels(s->block[3], ptr_y + 8 * wrap_y + 8, dest_y + 8 * wrap_y + 8, wrap_y);
+        diff_pixels(s->block[4], ptr_cb, dest_cb, wrap_c);
+        diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
+    
+        /* pre quantization */         
+        if(s->mc_mb_var[s->mb_width*mb_y+ mb_x]<2*s->qscale*s->qscale){
+            if(pix_abs8x8(ptr_y               , dest_y               , wrap_y) < 20*s->qscale) skip_dct[0]= 1;
+            if(pix_abs8x8(ptr_y            + 8, dest_y            + 8, wrap_y) < 20*s->qscale) skip_dct[1]= 1;
+            if(pix_abs8x8(ptr_y + 8*wrap_y    , dest_y + 8*wrap_y    , wrap_y) < 20*s->qscale) skip_dct[2]= 1;
+            if(pix_abs8x8(ptr_y + 8*wrap_y + 8, dest_y + 8*wrap_y + 8, wrap_y) < 20*s->qscale) skip_dct[3]= 1;
+            if(pix_abs8x8(ptr_cb              , dest_cb              , wrap_y) < 20*s->qscale) skip_dct[4]= 1;
+            if(pix_abs8x8(ptr_cr              , dest_cr              , wrap_y) < 20*s->qscale) skip_dct[5]= 1;
+#if 0
+{
+ static int stat[7];
+ int num=0;
+ for(i=0; i<6; i++)
+  if(skip_dct[i]) num++;
+ stat[num]++;
+ 
+ if(s->mb_x==0 && s->mb_y==0){
+  for(i=0; i<7; i++){
+   printf("%6d %1d\n", stat[i], i);
+  }
+ }
+}
+#endif
+        }
 
-        ptr = s->new_picture[2] + (mb_y * 8 * wrap) + mb_x * 8;
-        diff_pixels(s->block[5], ptr, dest_cr, wrap);
     }
             
 #if 0
@@ -1435,7 +1481,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }
 #endif
     /* DCT & quantize */
-    if (s->h263_pred && s->msmpeg4_version!=2) {
+    if (s->h263_pred && !(s->msmpeg4_version==1 || s->msmpeg4_version==2)) {
         h263_dc_scale(s);
     } else if (s->h263_aic) {
         s->y_dc_scale = 2*s->qscale;
@@ -1453,13 +1499,22 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         }
     }else{
         for(i=0;i<6;i++) {
-            int overflow;
-            s->block_last_index[i] = dct_quantize(s, s->block[i], i, s->qscale, &overflow);
+            if(!skip_dct[i]){
+                int overflow;
+                s->block_last_index[i] = dct_quantize(s, s->block[i], i, s->qscale, &overflow);
             // FIXME we could decide to change to quantizer instead of clipping
             // JS: I don't think that would be a good idea it could lower quality instead
             //     of improve it. Just INTRADC clipping deserves changes in quantizer
-            if (overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
+                if (overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
+            }else
+                s->block_last_index[i]= -1;
         }
+        if(s->luma_elim_threshold && !s->mb_intra)
+            for(i=0; i<4; i++)
+                dct_single_coeff_elimination(s, i, s->luma_elim_threshold, 0);
+        if(s->chroma_elim_threshold && !s->mb_intra)
+            for(i=4; i<6; i++)
+                dct_single_coeff_elimination(s, i, s->chroma_elim_threshold, 1);
     }
 
     /* huffman encode */
@@ -1481,12 +1536,14 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     }
 }
 
-static void copy_bits(PutBitContext *pb, UINT8 *src, int length)
+void ff_copy_bits(PutBitContext *pb, UINT8 *src, int length)
 {
 #if 1
     int bytes= length>>4;
     int bits= length&15;
     int i;
+
+    if(length==0) return;
 
     for(i=0; i<bytes; i++) put_bits(pb, 16, be2me_16(((uint16_t*)src)[i]));
     put_bits(pb, bits, be2me_16(((uint16_t*)src)[i])>>(16-bits));
@@ -1500,7 +1557,7 @@ static void copy_bits(PutBitContext *pb, UINT8 *src, int length)
 #endif
 }
 
-static void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int type){
+static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int type){
     int i;
 
     memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster then a loop?
@@ -1523,7 +1580,7 @@ static void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int
     d->mb_skiped= s->mb_skiped;
 }
 
-static void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int type){
+static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int type){
     int i;
 
     memcpy(d->mv, s->mv, 2*4*2*sizeof(int)); 
@@ -1548,11 +1605,45 @@ static void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int 
     d->mv_type= s->mv_type;
     d->mv_dir= s->mv_dir;
     d->pb= s->pb;
+    if(s->data_partitioning){
+        d->pb2= s->pb2;
+        d->tex_pb= s->tex_pb;
+    }
     d->block= s->block;
     for(i=0; i<6; i++)
         d->block_last_index[i]= s->block_last_index[i];
 }
 
+static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegEncContext *best, int type, 
+                           PutBitContext pb[2], PutBitContext pb2[2], PutBitContext tex_pb[2],
+                           int *dmin, int *next_block, int motion_x, int motion_y)
+{
+    int bits_count;
+    
+    copy_context_before_encode(s, backup, type);
+
+    s->block= s->blocks[*next_block];
+    s->pb= pb[*next_block];
+    if(s->data_partitioning){
+        s->pb2   = pb2   [*next_block];
+        s->tex_pb= tex_pb[*next_block];
+    }
+
+    encode_mb(s, motion_x, motion_y);
+
+    bits_count= get_bit_count(&s->pb);
+    if(s->data_partitioning){
+        bits_count+= get_bit_count(&s->pb2);
+        bits_count+= get_bit_count(&s->tex_pb);
+    }
+
+    if(bits_count<*dmin){
+        *dmin= bits_count;
+        *next_block^=1;
+
+        copy_context_after_encode(best, s, type);
+    }
+}
 
 static void encode_picture(MpegEncContext *s, int picture_number)
 {
@@ -1560,7 +1651,16 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     int i;
     int bits;
     MpegEncContext best_s, backup_s;
-    UINT8 bit_buf[7][3000]; //FIXME check that this is ALLWAYS large enogh for a MB
+    UINT8 bit_buf[2][3000];
+    UINT8 bit_buf2[2][3000];
+    UINT8 bit_buf_tex[2][3000];
+    PutBitContext pb[2], pb2[2], tex_pb[2];
+
+    for(i=0; i<2; i++){
+        init_put_bits(&pb    [i], bit_buf    [i], 3000, NULL, NULL);
+        init_put_bits(&pb2   [i], bit_buf2   [i], 3000, NULL, NULL);
+        init_put_bits(&tex_pb[i], bit_buf_tex[i], 3000, NULL, NULL);
+    }
 
     s->picture_number = picture_number;
 
@@ -1572,8 +1672,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->block_wrap[5]= s->mb_width + 2;
     
     /* Reset the average MB variance */
-    s->avg_mb_var = 0;
-    s->mc_mb_var = 0;
+    s->mb_var_sum = 0;
+    s->mc_mb_var_sum = 0;
 
     /* we need to initialize some time vars before we can encode b-frames */
     if (s->h263_pred && !s->h263_msmpeg4)
@@ -1581,10 +1681,6 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
     /* Estimate motion for every MB */
     if(s->pict_type != I_TYPE){
-//        int16_t (*tmp)[2]= s->p_mv_table;
-//        s->p_mv_table= s->last_mv_table;
-//        s->last_mv_table= s->mv_table;
-    
         for(mb_y=0; mb_y < s->mb_height; mb_y++) {
             s->block_index[0]= s->block_wrap[0]*(mb_y*2 + 1) - 1;
             s->block_index[1]= s->block_wrap[0]*(mb_y*2 + 1);
@@ -1607,7 +1703,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             }
         }
         emms_c();
-    }else if(s->pict_type == I_TYPE){
+    }else /* if(s->pict_type == I_TYPE) */{
         /* I-Frame */
         //FIXME do we need to zero them?
         memset(s->motion_val[0], 0, sizeof(INT16)*(s->mb_width*2 + 2)*(s->mb_height*2 + 2)*2);
@@ -1615,7 +1711,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         memset(s->mb_type      , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
     }
 
-    if(s->avg_mb_var < s->mc_mb_var && s->pict_type == P_TYPE){ //FIXME subtract MV bits
+    if(s->mb_var_sum < s->mc_mb_var_sum && s->pict_type == P_TYPE){ //FIXME subtract MV bits
         s->pict_type= I_TYPE;
         memset(s->mb_type   , MB_TYPE_INTRA, sizeof(UINT8)*s->mb_width*s->mb_height);
         if(s->max_b_frames==0){
@@ -1703,21 +1799,31 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->gob_index = 2;
         else
             s->gob_index = 4;
+    }else if(s->codec_id==CODEC_ID_MPEG4){
+        s->gob_index = 1;
     }
-        
-    s->avg_mb_var = s->avg_mb_var / s->mb_num;        
-    
+
+    if(s->codec_id==CODEC_ID_MPEG4 && s->data_partitioning && s->pict_type!=B_TYPE)
+        ff_mpeg4_init_partitions(s);
+
+    s->resync_mb_x=0;
+    s->resync_mb_y=0;
     for(mb_y=0; mb_y < s->mb_height; mb_y++) {
-        /* Put GOB header based on RTP MTU */
+        /* Put GOB header based on RTP MTU for formats which support it per line (H263*)*/
         /* TODO: Put all this stuff in a separate generic function */
         if (s->rtp_mode) {
             if (!mb_y) {
                 s->ptr_lastgob = s->pb.buf;
                 s->ptr_last_mb_line = s->pb.buf;
             } else if (s->out_format == FMT_H263 && !s->h263_pred && !s->h263_msmpeg4 && !(mb_y % s->gob_index)) {
+                // MN: we could move the space check from h263 -> here, as its not h263 specific
                 last_gob = h263_encode_gob_header(s, mb_y);
                 if (last_gob) {
-                    s->first_gob_line = 1;
+                    s->first_slice_line = 1;
+                }else{
+                    /*MN: we reset it here instead at the end of each line cuz mpeg4 can have 
+                          slice lines starting & ending in the middle*/
+                    s->first_slice_line = 0;
                 }
             }
         }
@@ -1731,10 +1837,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
             const int mb_type= s->mb_type[mb_y * s->mb_width + mb_x];
             const int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
-            PutBitContext pb;
-            int d;
+//            int d;
             int dmin=10000000;
-            int best=0;
 
             s->mb_x = mb_x;
             s->mb_y = mb_y;
@@ -1744,11 +1848,50 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->block_index[3]+=2;
             s->block_index[4]++;
             s->block_index[5]++;
+            
+            /* write gob / video packet header for formats which support it at any MB (MPEG4) */
+            if(s->rtp_mode && s->mb_y>0 && s->codec_id==CODEC_ID_MPEG4){
+                int pdif= pbBufPtr(&s->pb) - s->ptr_lastgob;
+
+                //the *2 is there so we stay below the requested size
+                if(pdif + s->mb_line_avgsize/s->mb_width >= s->rtp_payload_size){ 
+                    if(s->codec_id==CODEC_ID_MPEG4){
+                        if(s->data_partitioning && s->pict_type!=B_TYPE){
+                            ff_mpeg4_merge_partitions(s);
+                            ff_mpeg4_init_partitions(s);
+                        }
+                        ff_mpeg4_encode_video_packet_header(s);
+
+                        if(s->flags&CODEC_FLAG_PASS1){
+                            int bits= get_bit_count(&s->pb);
+                            s->misc_bits+= bits - s->last_bits;
+                            s->last_bits= bits;
+                        }
+                        ff_mpeg4_clean_buffers(s);
+                    }
+                    s->ptr_lastgob = pbBufPtr(&s->pb);
+                    s->first_slice_line=1;
+                    s->resync_mb_x=mb_x;
+                    s->resync_mb_y=mb_y;
+                }
+
+                if(  (s->resync_mb_x   == s->mb_x)
+                   && s->resync_mb_y+1 == s->mb_y){
+                    s->first_slice_line=0; 
+                }
+            }
+
             if(mb_type & (mb_type-1)){ // more than 1 MB type possible
                 int next_block=0;
-                pb= s->pb;
+                int pb_bits_count, pb2_bits_count, tex_pb_bits_count;
 
                 copy_context_before_encode(&backup_s, s, -1);
+                backup_s.pb= s->pb;
+                best_s.data_partitioning= s->data_partitioning;
+                if(s->data_partitioning){
+                    backup_s.pb2= s->pb2;
+                    backup_s.tex_pb= s->tex_pb;
+                }
 
                 if(mb_type&MB_TYPE_INTER){
                     s->mv_dir = MV_DIR_FORWARD;
@@ -1756,22 +1899,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s->mb_intra= 0;
                     s->mv[0][0][0] = s->p_mv_table[xy][0];
                     s->mv[0][0][1] = s->p_mv_table[xy][1];
-                    init_put_bits(&s->pb, bit_buf[1], 3000, NULL, NULL);
-                    s->block= s->blocks[next_block];
-                    s->last_bits= 0; //done in copy_context_before_encode but we skip that here
-
-                    encode_mb(s, s->mv[0][0][0], s->mv[0][0][1]);
-                    d= get_bit_count(&s->pb);
-                    if(d<dmin){
-                        flush_put_bits(&s->pb);
-                        dmin=d;
-                        copy_context_after_encode(&best_s, s, MB_TYPE_INTER);
-                        best=1;
-                        next_block^=1;
-                    }
+                    encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_INTER, pb, pb2, tex_pb, 
+                                 &dmin, &next_block, s->mv[0][0][0], s->mv[0][0][1]);
                 }
                 if(mb_type&MB_TYPE_INTER4V){                 
-                    copy_context_before_encode(s, &backup_s, MB_TYPE_INTER4V);
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mv_type = MV_TYPE_8X8;
                     s->mb_intra= 0;
@@ -1779,61 +1910,28 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                         s->mv[0][i][0] = s->motion_val[s->block_index[i]][0];
                         s->mv[0][i][1] = s->motion_val[s->block_index[i]][1];
                     }
-                    init_put_bits(&s->pb, bit_buf[2], 3000, NULL, NULL);
-                    s->block= s->blocks[next_block];
-
-                    encode_mb(s, 0, 0);
-                    d= get_bit_count(&s->pb);
-                    if(d<dmin){
-                        flush_put_bits(&s->pb);
-                        dmin=d;
-                        copy_context_after_encode(&best_s, s, MB_TYPE_INTER4V);
-                        best=2;
-                        next_block^=1;
-                    }
+                    encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_INTER4V, pb, pb2, tex_pb, 
+                                 &dmin, &next_block, 0, 0);
                 }
                 if(mb_type&MB_TYPE_FORWARD){
-                    copy_context_before_encode(s, &backup_s, MB_TYPE_FORWARD);
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_intra= 0;
                     s->mv[0][0][0] = s->b_forw_mv_table[xy][0];
                     s->mv[0][0][1] = s->b_forw_mv_table[xy][1];
-                    init_put_bits(&s->pb, bit_buf[3], 3000, NULL, NULL);
-                    s->block= s->blocks[next_block];
-
-                    encode_mb(s, s->mv[0][0][0], s->mv[0][0][1]);
-                    d= get_bit_count(&s->pb);
-                    if(d<dmin){
-                        flush_put_bits(&s->pb);
-                        dmin=d;
-                        copy_context_after_encode(&best_s, s, MB_TYPE_FORWARD);
-                        best=3;
-                        next_block^=1;
-                    }
+                    encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_FORWARD, pb, pb2, tex_pb, 
+                                 &dmin, &next_block, s->mv[0][0][0], s->mv[0][0][1]);
                 }
                 if(mb_type&MB_TYPE_BACKWARD){
-                    copy_context_before_encode(s, &backup_s, MB_TYPE_BACKWARD);
                     s->mv_dir = MV_DIR_BACKWARD;
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_intra= 0;
                     s->mv[1][0][0] = s->b_back_mv_table[xy][0];
                     s->mv[1][0][1] = s->b_back_mv_table[xy][1];
-                    init_put_bits(&s->pb, bit_buf[4], 3000, NULL, NULL);
-                    s->block= s->blocks[next_block];
-
-                    encode_mb(s, s->mv[1][0][0], s->mv[1][0][1]);
-                    d= get_bit_count(&s->pb);
-                    if(d<dmin){
-                        flush_put_bits(&s->pb);
-                        dmin=d;
-                        copy_context_after_encode(&best_s, s, MB_TYPE_BACKWARD);
-                        best=4;
-                        next_block^=1;
-                    }
+                    encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_BACKWARD, pb, pb2, tex_pb, 
+                                 &dmin, &next_block, s->mv[1][0][0], s->mv[1][0][1]);
                 }
                 if(mb_type&MB_TYPE_BIDIR){
-                    copy_context_before_encode(s, &backup_s, MB_TYPE_BIDIR);
                     s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_intra= 0;
@@ -1841,21 +1939,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s->mv[0][0][1] = s->b_bidir_forw_mv_table[xy][1];
                     s->mv[1][0][0] = s->b_bidir_back_mv_table[xy][0];
                     s->mv[1][0][1] = s->b_bidir_back_mv_table[xy][1];
-                    init_put_bits(&s->pb, bit_buf[5], 3000, NULL, NULL);
-                    s->block= s->blocks[next_block];
-
-                    encode_mb(s, 0, 0);
-                    d= get_bit_count(&s->pb);
-                    if(d<dmin){
-                        flush_put_bits(&s->pb);
-                        dmin=d;
-                        copy_context_after_encode(&best_s, s, MB_TYPE_BIDIR);
-                        best=5;
-                        next_block^=1;
-                    }
+                    encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_BIDIR, pb, pb2, tex_pb, 
+                                 &dmin, &next_block, 0, 0);
                 }
                 if(mb_type&MB_TYPE_DIRECT){
-                    copy_context_before_encode(s, &backup_s, MB_TYPE_DIRECT);
                     s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
                     s->mv_type = MV_TYPE_16X16; //FIXME
                     s->mb_intra= 0;
@@ -1863,45 +1950,39 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s->mv[0][0][1] = s->b_direct_forw_mv_table[xy][1];
                     s->mv[1][0][0] = s->b_direct_back_mv_table[xy][0];
                     s->mv[1][0][1] = s->b_direct_back_mv_table[xy][1];
-                    init_put_bits(&s->pb, bit_buf[6], 3000, NULL, NULL);
-                    s->block= s->blocks[next_block];
-
-                    encode_mb(s, s->b_direct_mv_table[xy][0], s->b_direct_mv_table[xy][1]);
-                    d= get_bit_count(&s->pb);
-                    if(d<dmin){
-                        flush_put_bits(&s->pb);
-                        dmin=d;
-                        copy_context_after_encode(&best_s, s, MB_TYPE_DIRECT);
-                        best=6;
-                        next_block^=1;
-                    }
+                    encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_DIRECT, pb, pb2, tex_pb, 
+                                 &dmin, &next_block, s->b_direct_mv_table[xy][0], s->b_direct_mv_table[xy][1]);
                 }
                 if(mb_type&MB_TYPE_INTRA){
-                    copy_context_before_encode(s, &backup_s, MB_TYPE_INTRA);
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_intra= 1;
                     s->mv[0][0][0] = 0;
                     s->mv[0][0][1] = 0;
-                    init_put_bits(&s->pb, bit_buf[0], 3000, NULL, NULL);
-                    s->block= s->blocks[next_block];
-                   
-                    encode_mb(s, 0, 0);
-                    d= get_bit_count(&s->pb);
-                    if(d<dmin){
-                        flush_put_bits(&s->pb);
-                        dmin=d;
-                        copy_context_after_encode(&best_s, s, MB_TYPE_INTRA);
-                        best=0;
-                        next_block^=1;
-                    }
+                    encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_INTRA, pb, pb2, tex_pb, 
+                                 &dmin, &next_block, 0, 0);
                     /* force cleaning of ac/dc pred stuff if needed ... */
                     if(s->h263_pred || s->h263_aic)
                         s->mbintra_table[mb_x + mb_y*s->mb_width]=1;
                 }
                 copy_context_after_encode(s, &best_s, -1);
-                copy_bits(&pb, bit_buf[best], dmin);
-                s->pb= pb;
+                
+                pb_bits_count= get_bit_count(&s->pb);
+                flush_put_bits(&s->pb);
+                ff_copy_bits(&backup_s.pb, bit_buf[next_block^1], pb_bits_count);
+                s->pb= backup_s.pb;
+                
+                if(s->data_partitioning){
+                    pb2_bits_count= get_bit_count(&s->pb2);
+                    flush_put_bits(&s->pb2);
+                    ff_copy_bits(&backup_s.pb2, bit_buf2[next_block^1], pb2_bits_count);
+                    s->pb2= backup_s.pb2;
+                    
+                    tex_pb_bits_count= get_bit_count(&s->tex_pb);
+                    flush_put_bits(&s->tex_pb);
+                    ff_copy_bits(&backup_s.tex_pb, bit_buf_tex[next_block^1], tex_pb_bits_count);
+                    s->tex_pb= backup_s.tex_pb;
+                }
                 s->last_bits= get_bit_count(&s->pb);
             } else {
                 int motion_x, motion_y;
@@ -1919,6 +2000,16 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s->mb_intra= 0;
                     motion_x= s->mv[0][0][0] = s->p_mv_table[xy][0];
                     motion_y= s->mv[0][0][1] = s->p_mv_table[xy][1];
+                    break;
+                case MB_TYPE_INTER4V:
+                    s->mv_dir = MV_DIR_FORWARD;
+                    s->mv_type = MV_TYPE_8X8;
+                    s->mb_intra= 0;
+                    for(i=0; i<4; i++){
+                        s->mv[0][i][0] = s->motion_val[s->block_index[i]][0];
+                        s->mv[0][i][1] = s->motion_val[s->block_index[i]][1];
+                    }
+                    motion_x= motion_y= 0;
                     break;
                 case MB_TYPE_DIRECT:
                     s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD | MV_DIRECT;
@@ -1966,6 +2057,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             }
 
             MPV_decode_mb(s, s->block);
+//printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_width, get_bit_count(&s->pb));
         }
 
 
@@ -1979,13 +2071,19 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             }
             //fprintf(stderr, "\nMB line: %d\tSize: %u\tAvg. Size: %u", s->mb_y, 
             //                    (s->pb.buf_ptr - s->ptr_last_mb_line), s->mb_line_avgsize);
-            s->first_gob_line = 0;
+            if(s->codec_id!=CODEC_ID_MPEG4) s->first_slice_line = 0; //FIXME clean
         }
     }
     emms_c();
 
-    if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type == I_TYPE)
+    if(s->codec_id==CODEC_ID_MPEG4 && s->data_partitioning && s->pict_type!=B_TYPE)
+        ff_mpeg4_merge_partitions(s);
+
+    if (s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type == I_TYPE)
         msmpeg4_encode_ext_header(s);
+
+    if(s->codec_id==CODEC_ID_MPEG4) 
+        ff_mpeg4_stuffing(&s->pb);
 
     //if (s->gob_number)
     //    fprintf(stderr,"\nNumber of GOB: %d", s->gob_number);
@@ -2011,7 +2109,7 @@ static int dct_quantize_c(MpegEncContext *s,
     int bias;
     int max=0;
     unsigned int threshold1, threshold2;
-
+    
     av_fdct (block);
 
     /* we need this permutation so that we correct the IDCT
@@ -2237,6 +2335,119 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
 #endif
             block[i] = level;
         }
+    }
+}
+
+static void remove_ac(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr, int mb_x, int mb_y)
+{
+    int dc, dcb, dcr, y, i;
+    for(i=0; i<4; i++){
+        dc= s->dc_val[0][mb_x*2+1 + (i&1) + (mb_y*2+1 + (i>>1))*(s->mb_width*2+2)];
+        for(y=0; y<8; y++){
+            int x;
+            for(x=0; x<8; x++){
+                dest_y[x + (i&1)*8 + (y + (i>>1)*8)*s->linesize]= dc/8;
+            }
+        }
+    }
+    dcb = s->dc_val[1][mb_x+1 + (mb_y+1)*(s->mb_width+2)];
+    dcr= s->dc_val[2][mb_x+1 + (mb_y+1)*(s->mb_width+2)];
+    for(y=0; y<8; y++){
+        int x;
+        for(x=0; x<8; x++){
+            dest_cb[x + y*(s->linesize>>1)]= dcb/8;
+            dest_cr[x + y*(s->linesize>>1)]= dcr/8;
+        }
+    }
+}
+
+/**
+ * will conceal past errors, and allso drop b frames if needed
+ *
+ */
+void ff_conceal_past_errors(MpegEncContext *s, int unknown_pos)
+{
+    int mb_x= s->mb_x;
+    int mb_y= s->mb_y;
+    int mb_dist=0;
+    int i, intra_count=0, inter_count=0;
+    int intra_conceal= s->msmpeg4_version ? 50 : 50; //FIXME finetune
+    int inter_conceal= s->msmpeg4_version ? 50 : 50;
+    
+    // for last block
+    if(mb_x>=s->mb_width)  mb_x= s->mb_width -1;
+    if(mb_y>=s->mb_height) mb_y= s->mb_height-1;
+
+    if(s->decoding_error==0 && unknown_pos){
+        if(s->data_partitioning && s->pict_type!=B_TYPE)
+                s->decoding_error= DECODING_AC_LOST;
+        else
+                s->decoding_error= DECODING_DESYNC;
+    }
+
+    if(s->decoding_error==DECODING_DESYNC && s->pict_type!=B_TYPE) s->next_p_frame_damaged=1;
+
+    for(i=mb_x + mb_y*s->mb_width; i>=0; i--){
+        if(s->mbintra_table[i]) intra_count++;
+        else                    inter_count++;
+    }
+    
+    if(s->decoding_error==DECODING_AC_LOST){
+        intra_conceal*=2;
+        inter_conceal*=2;
+    }else if(s->decoding_error==DECODING_ACDC_LOST){
+        intra_conceal*=2;
+        inter_conceal*=2;
+    }
+
+    if(unknown_pos && (intra_count<inter_count)){
+        intra_conceal= inter_conceal= s->mb_num; 
+//        printf("%d %d\n",intra_count, inter_count);
+    }
+
+    fprintf(stderr, "concealing errors\n");
+
+    /* for all MBs from the current one back until the last resync marker */
+    for(; mb_y>=0 && mb_y>=s->resync_mb_y; mb_y--){
+        for(; mb_x>=0; mb_x--){
+            uint8_t *dest_y  = s->current_picture[0] + (mb_y * 16*  s->linesize      ) + mb_x * 16;
+            uint8_t *dest_cb = s->current_picture[1] + (mb_y * 8 * (s->linesize >> 1)) + mb_x * 8;
+            uint8_t *dest_cr = s->current_picture[2] + (mb_y * 8 * (s->linesize >> 1)) + mb_x * 8;
+            int mb_x_backup= s->mb_x; //FIXME pass xy to mpeg_motion
+            int mb_y_backup= s->mb_y;
+            s->mb_x=mb_x;
+            s->mb_y=mb_y;
+            if(s->mbintra_table[mb_y*s->mb_width + mb_x] && mb_dist<intra_conceal){
+                if(s->decoding_error==DECODING_AC_LOST){
+                    remove_ac(s, dest_y, dest_cb, dest_cr, mb_x, mb_y);
+//                    printf("remove ac to %d %d\n", mb_x, mb_y);
+                }else{
+                    mpeg_motion(s, dest_y, dest_cb, dest_cr, 0, 
+                                s->last_picture, 0, 0, put_pixels_tab,
+                                0/*mx*/, 0/*my*/, 16);
+                }
+            }
+            else if(!s->mbintra_table[mb_y*s->mb_width + mb_x] && mb_dist<inter_conceal){
+                int mx=0;
+                int my=0;
+
+                if(s->decoding_error!=DECODING_DESYNC){
+                    int xy= mb_x*2+1 + (mb_y*2+1)*(s->mb_width*2+2);
+                    mx= s->motion_val[ xy ][0];
+                    my= s->motion_val[ xy ][1];
+                }
+
+                mpeg_motion(s, dest_y, dest_cb, dest_cr, 0, 
+                            s->last_picture, 0, 0, put_pixels_tab,
+                            mx, my, 16);
+            }
+            s->mb_x= mb_x_backup;
+            s->mb_y= mb_y_backup;
+
+            if(mb_x== s->resync_mb_x && mb_y== s->resync_mb_y) return;
+            if(!s->mbskip_table[mb_x + mb_y*s->mb_width]) mb_dist++;
+        }
+        mb_x=s->mb_width-1;
     }
 }
 
