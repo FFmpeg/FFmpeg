@@ -1956,29 +1956,33 @@ static int get_intra_count(MpegEncContext *s, uint8_t *src, uint8_t *ref, int st
 
 static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
     AVFrame *pic=NULL;
+    int64_t pts;
     int i;
     const int encoding_delay= s->max_b_frames;
     int direct=1;
     
     if(pic_arg){
-        if(pic_arg->pts != AV_NOPTS_VALUE){ 
+        pts= pic_arg->pts;
+        pic_arg->display_picture_number= s->input_picture_number++;
+
+        if(pts != AV_NOPTS_VALUE){ 
             if(s->user_specified_pts != AV_NOPTS_VALUE){
-                int64_t time= av_rescale(pic_arg->pts, s->avctx->frame_rate, s->avctx->frame_rate_base*(int64_t)AV_TIME_BASE);
+                int64_t time= av_rescale(pts, s->avctx->frame_rate, s->avctx->frame_rate_base*(int64_t)AV_TIME_BASE);
                 int64_t last= av_rescale(s->user_specified_pts, s->avctx->frame_rate, s->avctx->frame_rate_base*(int64_t)AV_TIME_BASE);
             
                 if(time <= last){            
-                    av_log(s->avctx, AV_LOG_ERROR, "Error, Invalid timestamp=%Ld, last=%Ld\n", pic_arg->pts, s->user_specified_pts);
+                    av_log(s->avctx, AV_LOG_ERROR, "Error, Invalid timestamp=%Ld, last=%Ld\n", pts, s->user_specified_pts);
                     return -1;
                 }
             }
-            s->user_specified_pts= pic_arg->pts;
+            s->user_specified_pts= pts;
         }else{
             if(s->user_specified_pts != AV_NOPTS_VALUE){
                 s->user_specified_pts= 
-                pic_arg->pts= s->user_specified_pts + AV_TIME_BASE*(int64_t)s->avctx->frame_rate_base / s->avctx->frame_rate;
-                av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=? trying to guess (%Ld)\n", pic_arg->pts);
+                pts= s->user_specified_pts + AV_TIME_BASE*(int64_t)s->avctx->frame_rate_base / s->avctx->frame_rate;
+                av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=? trying to guess (%Ld)\n", pts);
             }else{
-                pic_arg->pts= av_rescale(pic_arg->display_picture_number*(int64_t)s->avctx->frame_rate_base, AV_TIME_BASE, s->avctx->frame_rate);
+                pts= av_rescale(pic_arg->display_picture_number*(int64_t)s->avctx->frame_rate_base, AV_TIME_BASE, s->avctx->frame_rate);
             }
         }
     }
@@ -2042,9 +2046,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
         }
     }
     copy_picture_attributes(s, pic, pic_arg);
-    
-    pic->display_picture_number= s->input_picture_number++;
- 
+    pic->pts= pts; //we set this here to avoid modifiying pic_arg
   }
   
     /* shift buffer entries */
