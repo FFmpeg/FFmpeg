@@ -2078,7 +2078,7 @@ static void opt_input_file(const char *filename)
         case CODEC_TYPE_VIDEO:
             frame_height = enc->height;
             frame_width = enc->width;
-	    frame_aspect_ratio = enc->aspect_ratio;
+	    frame_aspect_ratio = av_q2d(enc->sample_aspect_ratio) * enc->width / enc->height;
 	    frame_pix_fmt = enc->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate;
             rfps_base = ic->streams[i]->r_frame_rate_base;
@@ -2239,7 +2239,7 @@ static void opt_output_file(const char *filename)
                 
                 video_enc->width = frame_width;
                 video_enc->height = frame_height;
-		video_enc->aspect_ratio = frame_aspect_ratio;
+		video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 30000);
 		video_enc->pix_fmt = frame_pix_fmt;
 
                 if (!intra_only)

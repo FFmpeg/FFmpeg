@@ -190,10 +190,10 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         int n, i;
         uint64_t time_code;
         float best_aspect_error= 1E10;
-        float aspect_ratio= s->avctx->aspect_ratio;
+        float aspect_ratio= av_q2d(s->avctx->sample_aspect_ratio);
         int constraint_parameter_flag;
         
-        if(aspect_ratio==0.0) aspect_ratio= s->width / (float)s->height; //pixel aspect 1:1 (VGA)
+        if(aspect_ratio==0.0) aspect_ratio= 1.0; //pixel aspect 1:1 (VGA)
         
         if (s->current_picture.key_frame) {
             /* mpeg1 header repeated every gop */
@@ -219,7 +219,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             put_bits(&s->pb, 12, s->height);
             
             for(i=1; i<15; i++){
-                float error= mpeg1_aspect[i] - s->width/(s->height*aspect_ratio);
+                float error= mpeg1_aspect[i] - aspect_ratio;
                 error= ABS(error);
                 
                 if(error < best_aspect_error){
@@ -1742,7 +1742,6 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     int bit_rate_ext, vbv_buf_ext;
     int frame_rate_ext_n, frame_rate_ext_d;
     int level, profile;
-    float aspect;
 
     skip_bits(&s->gb, 1); /* profil and level esc*/
     profile= get_bits(&s->gb, 3);
@@ -1774,9 +1773,15 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     s->codec_id= s->avctx->codec_id= CODEC_ID_MPEG2VIDEO;
     s->avctx->sub_id = 2; /* indicates mpeg2 found */
 
-    aspect= mpeg2_aspect[s->aspect_ratio_info];
-    if(aspect>0.0)      s->avctx->aspect_ratio= s->width/(aspect*s->height);
-    else if(aspect<0.0) s->avctx->aspect_ratio= -1.0/aspect;
+    if(s->aspect_ratio_info <= 1)
+        s->avctx->sample_aspect_ratio= mpeg2_aspect[s->aspect_ratio_info];
+    else{
+        s->avctx->sample_aspect_ratio= 
+            av_div_q(
+                mpeg2_aspect[s->aspect_ratio_info], 
+                (AVRational){s->width, s->height}
+            );
+    }
     
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
         printf("profile: %d, level: %d \n", profile, level);
@@ -1802,8 +1807,12 @@ static void mpeg_decode_sequence_display_extension(Mpeg1Context *s1)
     s1->pan_scan.width= 16*w;
     s1->pan_scan.height=16*h;
 
-    if(mpeg2_aspect[s->aspect_ratio_info] < 0.0)
-        s->avctx->aspect_ratio*= (s->width * h)/(float)(s->height * w);
+    if(s->aspect_ratio_info > 1)
+        s->avctx->sample_aspect_ratio= 
+            av_div_q(
+                mpeg2_aspect[s->aspect_ratio_info], 
+                (AVRational){w, h}
+            );
     
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
         printf("sde w:%d, h:%d\n", w, h);
@@ -2243,7 +2252,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->aspect_ratio_info= get_bits(&s->gb, 4);
     if(s->codec_id == CODEC_ID_MPEG1VIDEO){
         aspect= mpeg1_aspect[s->aspect_ratio_info];
-        if(aspect!=0.0) avctx->aspect_ratio= width/(aspect*height);
+        if(aspect!=0.0) avctx->sample_aspect_ratio= av_d2q(aspect, 30000);
     }
 
     s->frame_rate_index = get_bits(&s->gb, 4);

@@ -554,8 +554,6 @@ typedef struct MpegEncContext {
     int new_pred;
     int reduced_res_vop;
     int aspect_ratio_info; //FIXME remove
-    int aspected_width;    //FIXME remove
-    int aspected_height;   //FIXME remove
     int sprite_warping_accuracy;
     int low_latency_sprite;
     int data_partitioning;           ///< data partitioning flag from header 

@@ -393,7 +393,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx,
     MpegEncContext *s = avctx->priv_data;
     int ret;
     AVFrame *pict = data; 
-    float new_aspect;
     
 #ifdef PRINT_FRAME_TIME
 uint64_t time= rdtsc();
@@ -602,13 +601,8 @@ retry:
         /* and other parameters. So then we could init the picture   */
         /* FIXME: By the way H263 decoder is evolving it should have */
         /* an H263EncContext                                         */
-    if(s->aspected_height)
-        new_aspect= s->aspected_width*s->width / (float)(s->height*s->aspected_height);
-    else
-        new_aspect=0;
     
-    if (   s->width != avctx->width || s->height != avctx->height 
-        || ABS(new_aspect - avctx->aspect_ratio) > 0.001) {
+    if (   s->width != avctx->width || s->height != avctx->height) {
         /* H.263 could change picture size any time */
         ParseContext pc= s->parse_context; //FIXME move these demuxng hack to avformat
         s->parse_context.buffer=0;
@@ -618,7 +612,6 @@ retry:
     if (!s->context_initialized) {
         avctx->width = s->width;
         avctx->height = s->height;
-        avctx->aspect_ratio= new_aspect;
 
         goto retry;
     }

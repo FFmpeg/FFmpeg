@@ -131,19 +131,13 @@ int h263_get_picture_format(int width, int height)
 
 #ifdef CONFIG_ENCODERS
 
-static void float_aspect_to_info(MpegEncContext * s, float aspect){
+static void aspect_to_info(MpegEncContext * s, AVRational aspect){
     int i;
 
-    aspect*= s->height/(double)s->width;
-//printf("%f\n", aspect);
-    
-    if(aspect==0) aspect= 1.0;
+    if(aspect.num==0) aspect= (AVRational){1,1};
 
-    ff_float2fraction(&s->aspected_width, &s->aspected_height, aspect, 255);
-
-//printf("%d %d\n", s->aspected_width, s->aspected_height);
     for(i=1; i<6; i++){
-        if(s->aspected_width == pixel_aspect[i][0] && s->aspected_height== pixel_aspect[i][1]){
+        if(av_cmp_q(pixel_aspect[i], aspect) == 0){
             s->aspect_ratio_info=i;
             return;
         }
@@ -270,16 +264,15 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 		
 		if (format == 7) {
             /* Custom Picture Format (CPFMT) */
-            float_aspect_to_info(s, s->avctx->aspect_ratio);
+            aspect_to_info(s, s->avctx->sample_aspect_ratio);
 
             put_bits(&s->pb,4,s->aspect_ratio_info);
             put_bits(&s->pb,9,(s->width >> 2) - 1);
             put_bits(&s->pb,1,1); /* "1" to prevent start code emulation */
             put_bits(&s->pb,9,(s->height >> 2));
-	    if (s->aspect_ratio_info == FF_ASPECT_EXTENDED)
-	    {
-		put_bits(&s->pb, 8, s->aspected_width);
-		put_bits(&s->pb, 8, s->aspected_height);
+            if (s->aspect_ratio_info == FF_ASPECT_EXTENDED){
+                put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.num);
+                put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.den);
 	    }
         }
         
@@ -1949,13 +1942,12 @@ static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_n
       put_bits(&s->pb, 4, vo_ver_id);	/* is obj layer ver id */
       put_bits(&s->pb, 3, 1);		/* is obj layer priority */
     
-    float_aspect_to_info(s, s->avctx->aspect_ratio);
+    aspect_to_info(s, s->avctx->sample_aspect_ratio);
 
     put_bits(&s->pb, 4, s->aspect_ratio_info);/* aspect ratio info */
-    if (s->aspect_ratio_info == FF_ASPECT_EXTENDED)
-    {
-	put_bits(&s->pb, 8, s->aspected_width);
-	put_bits(&s->pb, 8, s->aspected_height);
+    if (s->aspect_ratio_info == FF_ASPECT_EXTENDED){
+        put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.num);
+        put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.den);
     }
 
     if(s->low_delay){
@@ -4341,11 +4333,10 @@ int h263_decode_picture_header(MpegEncContext *s)
                 dprintf("\nH.263+ Custom picture: %dx%d\n",width,height);
                 if (s->aspect_ratio_info == FF_ASPECT_EXTENDED) {
                     /* aspected dimensions */
-		    s->aspected_width = get_bits(&s->gb, 8);
-		    s->aspected_height = get_bits(&s->gb, 8);
+                    s->avctx->sample_aspect_ratio.num= get_bits(&s->gb, 8);
+                    s->avctx->sample_aspect_ratio.den= get_bits(&s->gb, 8);
                 }else{
-                    s->aspected_width = pixel_aspect[s->aspect_ratio_info][0];
-                    s->aspected_height= pixel_aspect[s->aspect_ratio_info][1];
+                    s->avctx->sample_aspect_ratio= pixel_aspect[s->aspect_ratio_info];
                 }
             } else {
                 width = h263_format[format][0];
@@ -4632,11 +4623,10 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
 //printf("vo type:%d\n",s->vo_type);
     s->aspect_ratio_info= get_bits(gb, 4);
     if(s->aspect_ratio_info == FF_ASPECT_EXTENDED){	    
-        s->aspected_width = get_bits(gb, 8); // par_width
-        s->aspected_height = get_bits(gb, 8); // par_height
+        s->avctx->sample_aspect_ratio.num= get_bits(gb, 8); // par_width
+        s->avctx->sample_aspect_ratio.den= get_bits(gb, 8); // par_height
     }else{
-        s->aspected_width = pixel_aspect[s->aspect_ratio_info][0];
-        s->aspected_height= pixel_aspect[s->aspect_ratio_info][1];
+        s->avctx->sample_aspect_ratio= pixel_aspect[s->aspect_ratio_info];
     }
 
     if ((s->vol_control_parameters=get_bits1(gb))) { /* vol control parameter */

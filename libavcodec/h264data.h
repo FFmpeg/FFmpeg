@@ -51,8 +51,8 @@
 
 #define EXTENDED_SAR          255
 
-static const uint16_t pixel_aspect[16][2]={
- {0, 0},
+static const AVRational pixel_aspect[14]={
+ {0, 1},
  {1, 1},
  {12, 11},
  {10, 11},

@@ -12,10 +12,11 @@ extern "C" {
 #endif
 
 #include "common.h"
+#include "rational.h"
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4686
+#define LIBAVCODEC_BUILD       4687
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1034,11 +1035,11 @@ typedef struct AVCodecContext {
 #define FF_PRED_MEDIAN 2
     
     /**
-     * aspect ratio (0 if unknown).
+     * sample aspect ratio (0 if unknown).
      * - encoding: set by user.
      * - decoding: set by lavc.
      */
-    float aspect_ratio;
+    AVRational sample_aspect_ratio;
 
     /**
      * the picture in the bitstream.

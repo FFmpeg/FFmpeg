@@ -79,8 +79,7 @@ typedef struct SPS{
     int crop_top;               ///< frame_cropping_rect_top_offset
     int crop_bottom;            ///< frame_cropping_rect_bottom_offset
     int vui_parameters_present_flag;
-    int sar_width;
-    int sar_height;
+    AVRational sar;
     short offset_for_ref_frame[256]; //FIXME dyn aloc?
 }SPS;
 
@@ -2829,7 +2828,6 @@ static int decode_slice_header(H264Context *h){
     int first_mb_in_slice, pps_id;
     int num_ref_idx_active_override_flag;
     static const uint8_t slice_type_map[5]= {P_TYPE, B_TYPE, I_TYPE, SP_TYPE, SI_TYPE};
-    float new_aspect;
 
     s->current_picture.reference= h->nal_ref_idc != 0;
 
@@ -2881,14 +2879,8 @@ static int decode_slice_header(H264Context *h){
     else
         s->height= 16*s->mb_height - 4*(h->sps.crop_top  + h->sps.crop_bottom); //FIXME recheck
     
-    if(s->aspected_height) //FIXME emms at end of slice ?
-        new_aspect= h->sps.sar_width*s->width / (float)(s->height*h->sps.sar_height);
-    else
-        new_aspect=0;
-
     if (s->context_initialized 
-        && (   s->width != s->avctx->width || s->height != s->avctx->height 
-            || ABS(new_aspect - s->avctx->aspect_ratio) > 0.001)) {
+        && (   s->width != s->avctx->width || s->height != s->avctx->height)) {
         free_tables(h);
         MPV_common_end(s);
     }
@@ -2900,7 +2892,7 @@ static int decode_slice_header(H264Context *h){
 
         s->avctx->width = s->width;
         s->avctx->height = s->height;
-        s->avctx->aspect_ratio= new_aspect;
+        s->avctx->sample_aspect_ratio= h->sps.sar;
     }
 
     if(first_mb_in_slice == 0){
@@ -3736,18 +3728,17 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
     if( aspect_ratio_info_present_flag ) {
         aspect_ratio_idc= get_bits(&s->gb, 8);
         if( aspect_ratio_idc == EXTENDED_SAR ) {
-            sps->sar_width= get_bits(&s->gb, 16);
-            sps->sar_height= get_bits(&s->gb, 16);
+            sps->sar.num= get_bits(&s->gb, 16);
+            sps->sar.den= get_bits(&s->gb, 16);
         }else if(aspect_ratio_idc < 16){
-            sps->sar_width=  pixel_aspect[aspect_ratio_idc][0];
-            sps->sar_height= pixel_aspect[aspect_ratio_idc][1];
+            sps->sar=  pixel_aspect[aspect_ratio_idc];
         }else{
             fprintf(stderr, "illegal aspect ratio\n");
             return -1;
         }
     }else{
-        sps->sar_width= 
-        sps->sar_height= 0;
+        sps->sar.num= 
+        sps->sar.den= 0;
     }
 //            s->avctx->aspect_ratio= sar_width*s->width / (float)(s->height*sar_height);
 #if 0

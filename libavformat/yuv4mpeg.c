@@ -24,18 +24,11 @@
 
 #ifdef CONFIG_ENCODERS
 
-
-static struct { int n; int d;} SAR[] = {{10, 11}, /*  4:3 NTSC */
-	                                {59, 54}, /*  4:3 PAL  */
-	                                {40, 33}, /* 16:9 NTSC */
-				       {118, 81}, /* 16:9 PAL  */
-					{ 1,  1}};/* should always be the last */
-
 static int yuv4_generate_header(AVFormatContext *s, char* buf)
 {
     AVStream *st;
     int width, height;
-    int raten, rated, aspectn, aspectd, n, i;
+    int raten, rated, aspectn, aspectd, n;
     char inter;
 
     st = s->streams[0];
@@ -44,13 +37,8 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
 
     av_reduce(&raten, &rated, st->codec.frame_rate, st->codec.frame_rate_base, (1UL<<31)-1);
     
-    for (i=0; i<sizeof(SAR)/sizeof(SAR[0])-1; i++) {
-       if (ABS(st->codec.aspect_ratio -
-	       (float)SAR[i].n/SAR[i].d * (float)width/height) < 0.05)
-		  break;
-    }
-    aspectn = SAR[i].n;
-    aspectd = SAR[i].d;
+    aspectn = st->codec.sample_aspect_ratio.num;
+    aspectd = st->codec.sample_aspect_ratio.den;
     
     inter = 'p'; /* progressive is the default */
     if (st->codec.coded_frame && st->codec.coded_frame->interlaced_frame) {
@@ -200,6 +188,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec.pix_fmt = PIX_FMT_YUV420P;
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = CODEC_ID_RAWVIDEO;
+    st->codec.sample_aspect_ratio= (AVRational){aspectn, aspectd};
 
     return 0;
 }

@@ -556,10 +556,12 @@ static int dv_extract_video_info(uint8_t* frame, AVCodecContext* avctx)
         avctx->height = sys->height;
         avctx->pix_fmt = sys->pix_fmt;
         vsc_pack = dv_extract_pack(frame, dv_video_control);
+        /* MN: someone please fill in the correct SAR for dv, i dont have the standard doc so i cant, allthough its very likely the same as MPEG4 (12:11 10:11 16:11 40:33) */
         if (vsc_pack && (vsc_pack[2] & 0x07) == (apt?0x02:0x07))
-            avctx->aspect_ratio = 16.0 / 9.0;
+            avctx->sample_aspect_ratio = (AVRational){16,9};
         else
-            avctx->aspect_ratio = 4.0 / 3.0;
+            avctx->sample_aspect_ratio = (AVRational){4,3};
+        avctx->sample_aspect_ratio = av_div_q(avctx->sample_aspect_ratio, (AVRational){sys->width,sys->height});
 	size = sys->frame_size;
     }
     return size;
@@ -660,7 +662,7 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
     c->has_audio = c->has_video = 0;
     c->start_time = time(NULL);
     c->aspect = 0; /* 4:3 is the default */
-    if ((int)(vst->codec.aspect_ratio * 10) == 17) /* 16:9 */ 
+    if ((int)(av_q2d(vst->codec.sample_aspect_ratio) * vst->codec.width / vst->codec.height * 10) == 17) /* 16:9 */ 
         c->aspect = 0x07;
 
     if (fifo_init(&c->audio_data, 100*AVCODEC_MAX_AUDIO_FRAME_SIZE) < 0)

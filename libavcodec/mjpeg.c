@@ -381,28 +381,8 @@ static void jpeg_put_comments(MpegEncContext *s)
     put_string(p, "JFIF"); /* this puts the trailing zero-byte too */
     put_bits(p, 16, 0x0201); /* v 1.02 */
     put_bits(p, 8, 0); /* units type: 0 - aspect ratio */
-    switch(s->aspect_ratio_info)
-    {
-	case FF_ASPECT_4_3_625:
-	case FF_ASPECT_4_3_525:
-	    put_bits(p, 16, 4); 
-	    put_bits(p, 16, 3);
-	    break;
-	case FF_ASPECT_16_9_625:
-	case FF_ASPECT_16_9_525:
-	    put_bits(p, 16, 16); 
-	    put_bits(p, 16, 9);
-	    break;
-	case FF_ASPECT_EXTENDED:
-	    put_bits(p, 16, s->aspected_width);
-	    put_bits(p, 16, s->aspected_height);
-	    break;
-	case FF_ASPECT_SQUARE:
-	default:
-	    put_bits(p, 16, 1); /* aspect: 1:1 */
-	    put_bits(p, 16, 1);
-	    break;
-    }
+    put_bits(p, 16, s->avctx->sample_aspect_ratio.num);
+    put_bits(p, 16, s->avctx->sample_aspect_ratio.den);
     put_bits(p, 8, 0); /* thumbnail width */
     put_bits(p, 8, 0); /* thumbnail height */
     }
@@ -1547,29 +1527,10 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
 	skip_bits(&s->gb, 8); /* the trailing zero-byte */
 	printf("mjpeg: JFIF header found (version: %x.%x)\n",
 	    get_bits(&s->gb, 8), get_bits(&s->gb, 8));
-	if (get_bits(&s->gb, 8) == 0)
-	{
-	    int x_density, y_density; 
-	    x_density = get_bits(&s->gb, 16);
-	    y_density = get_bits(&s->gb, 16);
+        skip_bits(&s->gb, 8);
 
-	    dprintf("x/y density: %d (%f), %d (%f)\n", x_density,
-		(float)x_density, y_density, (float)y_density);
-#if 0
-            //MN: needs to be checked
-            if(x_density)
-//                s->avctx->aspect_ratio= s->width*y_density/((float)s->height*x_density);
-		s->avctx->aspect_ratio = (float)x_density/y_density;
-		/* it's better, but every JFIF I have seen stores 1:1 */
-            else
-                s->avctx->aspect_ratio= 0.0;
-#endif
-	}
-	else
-	{
-	    skip_bits(&s->gb, 16);
-	    skip_bits(&s->gb, 16);
-	}
+        s->avctx->sample_aspect_ratio.num= get_bits(&s->gb, 16);
+        s->avctx->sample_aspect_ratio.den= get_bits(&s->gb, 16);
 
 	t_w = get_bits(&s->gb, 8);
 	t_h = get_bits(&s->gb, 8);
@@ -2085,7 +2046,7 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     memcpy(recoded+j, &sp5x_data_sos[0], sizeof(sp5x_data_sos));
     j += sizeof(sp5x_data_sos);
 
-    for (i = 14; i < buf_size, j < buf_size+1024-2; i++)
+    for (i = 14; i < buf_size && j < buf_size+1024-2; i++)
     {
 	recoded[j++] = buf[i];
 	if (buf[i] == 0xff)

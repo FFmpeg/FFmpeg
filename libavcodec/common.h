@@ -1056,9 +1056,6 @@ static inline int ff_get_fourcc(const char *s){
 #define MKBETAG(a,b,c,d) (d | (c << 8) | (b << 16) | (a << 24))
 
 
-void ff_float2fraction(int *nom_arg, int *denom_arg, double f, int max);
-
-
 #ifdef ARCH_X86
 #define MASK_ABS(mask, level)\
             asm volatile(\
