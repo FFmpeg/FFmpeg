@@ -2803,6 +2803,7 @@ static void opt_input_file(const char *filename)
             enc->idct_algo = idct_algo;
             enc->debug = debug;
             enc->debug_mv = debug_mv;            
+            enc->lowres= lowres;
             if(bitexact)
                 enc->flags|= CODEC_FLAG_BITEXACT;
             if(me_threshold)
@@ -3151,7 +3152,6 @@ static void opt_output_file(const char *filename)
                 video_enc->level= video_level;
                 video_enc->nsse_weight= nsse_weight;
                 video_enc->me_subpel_quality= subpel_quality;
-                video_enc->lowres= lowres;
 
                 if(packet_size){
                     video_enc->rtp_mode= 1;
