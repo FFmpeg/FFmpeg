@@ -6,7 +6,7 @@
 #ifdef HAVE_3DNOW
 #define PREFETCH "prefetch"
 #define PREFETCHW "prefetchw"
-#elif HAVE_MMX2
+#elif defined ( HAVE_MMX2 )
 #define PREFETCH "prefetchnta"
 #define PREFETCHW "prefetcht0"
 #endif
