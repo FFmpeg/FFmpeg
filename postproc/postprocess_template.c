@@ -503,7 +503,6 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, int QP)
 
 	asm volatile(
 		"pxor %%mm7, %%mm7				\n\t" // 0
-//		"movq "MANGLE(b80)", %%mm6			\n\t" // MIN_SIGNED_BYTE
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
 //	0	1	2	3	4	5	6	7	8	9
@@ -515,7 +514,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, int QP)
 		"psubusb %%mm2, %%mm0				\n\t"
 		"por %%mm1, %%mm0				\n\t" // |l2 - l3|
 		"movq (%%ebx), %%mm3				\n\t" // line 5
-		"movq (%%ebx, %1), %%mm4				\n\t" // line 6
+		"movq (%%ebx, %1), %%mm4			\n\t" // line 6
 		"movq %%mm3, %%mm5				\n\t" // line 5
 		"psubusb %%mm4, %%mm3				\n\t"
 		"psubusb %%mm5, %%mm4				\n\t"
@@ -529,7 +528,9 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, int QP)
 		"por %%mm5, %%mm4				\n\t" // |l4 - l5|
 		"psubusb %%mm0, %%mm4		\n\t" //d = MAX(0, |l4-l5| - (|l2-l3| + |l5-l6|)/2)
 		"movq %%mm4, %%mm3				\n\t" // d
-		"psubusb "MANGLE(pQPb)", %%mm4			\n\t"
+		"movq "MANGLE(pQPb)", %%mm0			\n\t"
+                "paddusb %%mm0, %%mm0				\n\t"
+		"psubusb %%mm0, %%mm4				\n\t"
 		"pcmpeqb %%mm7, %%mm4				\n\t" // d <= QP ? -1 : 0
 		"psubusb "MANGLE(b01)", %%mm3			\n\t"
 		"pand %%mm4, %%mm3				\n\t" // d <= QP ? d : 0
@@ -606,7 +607,7 @@ static inline void RENAME(vertX1Filter)(uint8_t *src, int stride, int QP)
 		int d= ABS(b) - ((ABS(a) + ABS(c))>>1);
 		d= MAX(d, 0);
 
-		if(d < QP)
+		if(d < QP*2)
 		{
 			int v = d * SIGN(-b);
 
