@@ -441,7 +441,7 @@ do_ffmpeg_crc $file -i $file
 
 # asf
 file=${outfile}libav.asf
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec mp2 $file
 do_ffmpeg_crc $file -i $file
 
 # rm
@@ -467,7 +467,7 @@ do_ffmpeg_crc $file -i $file
 
 # flv
 file=${outfile}libav.flv
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -an $file
 do_ffmpeg_crc $file -i $file
 
 # mov
@@ -477,7 +477,7 @@ do_ffmpeg_crc $file -i $file
 
 # nut
 file=${outfile}libav.nut
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec mp2 $file
 do_ffmpeg_crc $file -i $file
 
 # XXX: need mpegts tests (add bitstreams or add output capability in ffmpeg)
