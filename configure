@@ -58,9 +58,11 @@ echo "  --disable-mmx           disable mmx usage"
 echo "  --enable-gprof          enable profiling with gprof [$gprof]"
 echo "  --disable-grab          disable audio/video grabbing code"
 echo "  --enable-win32          enable win32 cross compile"
+echo "  --enable-shared         build shared libraries [default=no]"
 exit 1
 fi
 
+lshared=no
 for opt do
   case "$opt" in
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`
@@ -76,6 +78,8 @@ for opt do
   --disable-grab) grab="no"
   ;;
   --enable-win32) win32="yes"
+  ;;
+  --enable-shared=*) lshared=`echo $opt | cut -d '=' -f 2`
   ;;
   esac
 done
@@ -150,7 +154,14 @@ if [ "$gprof" = "yes" ] ; then
   echo "TARGET_GPROF=yes" >> config.mak
   echo "#define HAVE_GPROF 1" >> config.h
 fi
-
+if [ "$lshared" = "yes" ] ; then
+  echo "BUILD_SHARED=yes" >> config.mak
+else
+  echo "BUILD_SHARED=no" >> config.mak
+fi
+echo -n "VERSION=" >>config.mak
+head VERSION >>config.mak
+echo "" >>config.mak
 # if you do not want to use encoders, disable that.
 echo "#define CONFIG_ENCODERS 1" >> config.h
 echo "CONFIG_ENCODERS=yes" >> config.mak
