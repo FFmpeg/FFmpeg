@@ -277,8 +277,10 @@ CYGWIN*)
 v4l="no"
 audio_oss="yes"
 dv1394="no"
+ffserver="no"
 extralibs=""
 cygwin="yes"
+EXESUF=".exe"
 test -f /usr/include/inttypes.h || \
 test -f /usr/local/include/inttypes.h || \
 echo "Missing inttypes.h, please copy cygwin_inttypes.h to" \
@@ -772,6 +774,7 @@ _malloc_h=yes
 _memalign=yes
 # check for memalign - atmos
 cat > $TMPC << EOF
+#include <stdio.h>
 #include <malloc.h>
 int main ( void ) {
 char *string = NULL;
