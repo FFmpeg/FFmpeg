@@ -96,7 +96,7 @@ typedef struct IPMVEContext {
     unsigned char *buf;
     int buf_size;
 
-    int fps;
+    float fps;
     int frame_pts_inc;
 
     unsigned int video_width;
@@ -198,6 +198,9 @@ static int load_ipmovie_packet(IPMVEContext *s, ByteIOContext *pb,
 
         pkt->stream_index = s->video_stream_index;
         pkt->pts = s->video_pts;
+
+        debug_ipmovie("sending video frame with pts %lld\n",
+            pkt->pts);
 
         s->video_pts += s->frame_pts_inc;
 
@@ -330,10 +333,9 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
                 chunk_type = CHUNK_BAD;
                 break;
             }
-            s->fps = 1000000 / (LE_32(&scratch[0]) * LE_16(&scratch[4]));
-            s->fps++;  /* above calculation usually yields 14.9; we need 15 */
+            s->fps = 1000000.0 / (LE_32(&scratch[0]) * LE_16(&scratch[4]));
             s->frame_pts_inc = 90000 / s->fps;
-            debug_ipmovie("%d frames/second (timer div = %d, subdiv = %d)\n",
+            debug_ipmovie("  %.2f frames/second (timer div = %d, subdiv = %d)\n",
                 s->fps, LE_32(&scratch[0]), LE_16(&scratch[4]));
             break;
 
@@ -527,6 +529,8 @@ static int ipmovie_read_header(AVFormatContext *s,
     ByteIOContext *pb = &s->pb;
     AVPacket pkt;
     AVStream *st;
+    unsigned char chunk_preamble[CHUNK_PREAMBLE_SIZE];
+    int chunk_type;
 
     /* initialize private context members */
     ipmovie->video_pts = ipmovie->audio_frame_count = 0;
@@ -540,8 +544,17 @@ static int ipmovie_read_header(AVFormatContext *s,
     if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_VIDEO)
         return AVERROR_INVALIDDATA;
 
-    /* process the next chunk which should be CHUNK_INIT_AUDIO */
-    if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_AUDIO)
+    /* peek ahead to the next chunk-- if it is an init audio chunk, process
+     * it; if it is the first video chunk, this is a silent file */
+    if (get_buffer(pb, chunk_preamble, CHUNK_PREAMBLE_SIZE) !=
+        CHUNK_PREAMBLE_SIZE)
+        return -EIO;
+    chunk_type = LE_16(&chunk_preamble[2]);
+    url_fseek(pb, -CHUNK_PREAMBLE_SIZE, SEEK_CUR);
+
+    if (chunk_type == CHUNK_VIDEO)
+        ipmovie->audio_type = 0;  /* no audio */
+    else if (process_ipmovie_chunk(ipmovie, pb, &pkt) != CHUNK_INIT_AUDIO)
         return AVERROR_INVALIDDATA;
 
     /* set the pts reference (1 pts = 1/90000) */
@@ -563,21 +576,23 @@ static int ipmovie_read_header(AVFormatContext *s,
     st->codec.extradata_size = sizeof(AVPaletteControl);
     st->codec.extradata = &ipmovie->palette_control;
 
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR_NOMEM;
-    ipmovie->audio_stream_index = st->index;
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = ipmovie->audio_type;
-    st->codec.codec_tag = 0;  /* no tag */
-    st->codec.channels = ipmovie->audio_channels;
-    st->codec.sample_rate = ipmovie->audio_sample_rate;
-    st->codec.bits_per_sample = ipmovie->audio_bits;
-    st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
-        st->codec.bits_per_sample;
-    if (st->codec.codec_id == CODEC_ID_INTERPLAY_DPCM)
-        st->codec.bit_rate /= 2;
-    st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
+    if (ipmovie->audio_type) {
+        st = av_new_stream(s, 0);
+        if (!st)
+            return AVERROR_NOMEM;
+        ipmovie->audio_stream_index = st->index;
+        st->codec.codec_type = CODEC_TYPE_AUDIO;
+        st->codec.codec_id = ipmovie->audio_type;
+        st->codec.codec_tag = 0;  /* no tag */
+        st->codec.channels = ipmovie->audio_channels;
+        st->codec.sample_rate = ipmovie->audio_sample_rate;
+        st->codec.bits_per_sample = ipmovie->audio_bits;
+        st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
+            st->codec.bits_per_sample;
+        if (st->codec.codec_id == CODEC_ID_INTERPLAY_DPCM)
+            st->codec.bit_rate /= 2;
+        st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
+    }
 
     return 0;
 }
