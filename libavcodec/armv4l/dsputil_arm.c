@@ -48,6 +48,7 @@ void dsputil_init_armv4l(DSPContext* c, AVCodecContext *avctx)
     if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_ARM){
         c->idct_put= arm_idct_put;
         c->idct_add= arm_idct_add;
+        c->idct    = j_rev_dct_ARM;
         c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;/* FF_NO_IDCT_PERM */
     }
 }

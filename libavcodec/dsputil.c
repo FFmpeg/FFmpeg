@@ -2860,10 +2860,12 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     if(avctx->idct_algo==FF_IDCT_INT){
         c->idct_put= ff_jref_idct_put;
         c->idct_add= ff_jref_idct_add;
+        c->idct    = j_rev_dct;
         c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
     }else{ //accurate/default
         c->idct_put= simple_idct_put;
         c->idct_add= simple_idct_add;
+        c->idct    = simple_idct;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
     }
 

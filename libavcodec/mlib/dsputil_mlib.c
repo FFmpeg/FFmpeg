@@ -221,6 +221,11 @@ static void ff_idct_add_mlib(uint8_t *dest, int line_size, DCTELEM *data)
     mlib_VideoAddBlock_U8_S16(dest, (mlib_s16 *)data, line_size);
 }
 
+static void ff_idct_mlib(uint8_t *dest, int line_size, DCTELEM *data)
+{
+    mlib_VideoIDCT8x8_S16_S16 (data, data);
+}
+
 static void ff_fdct_mlib(DCTELEM *data)
 {
     mlib_VideoDCT8x8_S16_S16 (data, data);
@@ -264,6 +269,7 @@ void MPV_common_init_mlib(MpegEncContext *s)
     if(s->avctx->idct_algo==FF_IDCT_AUTO || s->avctx->idct_algo==FF_IDCT_MLIB){
         s->dsp.idct_put= ff_idct_put_mlib;
         s->dsp.idct_add= ff_idct_add_mlib;
+        s->dsp.idct    = ff_idct_mlib;
         s->dsp.idct_permutation_type= FF_NO_IDCT_PERM;
     }
 }

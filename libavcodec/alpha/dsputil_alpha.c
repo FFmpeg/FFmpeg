@@ -363,4 +363,5 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
     
     c->idct_put = simple_idct_put_axp;
     c->idct_add = simple_idct_add_axp;
+    c->idct_idct = simple_idct_axp;
 }

@@ -34,7 +34,6 @@
 //#define DEBUG
 /* dct code */
 typedef short DCTELEM;
-//typedef int DCTELEM;
 
 void fdct_ifast (DCTELEM *data);
 void ff_jpeg_fdct_islow (DCTELEM *data);
@@ -239,6 +238,9 @@ typedef struct DSPContext {
     
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);
+    
+    /* IDCT really*/
+    void (*idct)(DCTELEM *block/* align 16*/);
     
     /**
      * block -> idct -> clip to unsigned 8 bit -> dest.

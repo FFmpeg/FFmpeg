@@ -1567,14 +1567,17 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SIMPLEMMX){
             c->idct_put= ff_simple_idct_put_mmx;
             c->idct_add= ff_simple_idct_add_mmx;
+            c->idct    = ff_simple_idct_mmx;
             c->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
         }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
             if(mm_flags & MM_MMXEXT){
                 c->idct_put= ff_libmpeg2mmx2_idct_put;
                 c->idct_add= ff_libmpeg2mmx2_idct_add;
+                c->idct    = ff_mmxext_idct;
             }else{
                 c->idct_put= ff_libmpeg2mmx_idct_put;
                 c->idct_add= ff_libmpeg2mmx_idct_add;
+                c->idct    = ff_mmx_idct;
             }
             c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
         }

@@ -25,7 +25,7 @@
 
 void ff_mmi_idct_put(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_mmi_idct_add(uint8_t *dest, int line_size, DCTELEM *block);
-
+void ff_mmi_idct(DCTELEM *block);
 
 static void clear_blocks_mmi(DCTELEM * blocks)
 {
@@ -154,6 +154,7 @@ void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx)
     if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_PS2){
         c->idct_put= ff_mmi_idct_put;
         c->idct_add= ff_mmi_idct_add;
+        c->idct    = ff_mmi_idct;
         c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
     }
 }
