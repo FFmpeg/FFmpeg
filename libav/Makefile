@@ -43,7 +43,8 @@ all: $(LIB)
 
 $(LIB): $(OBJS)
 	rm -f $@
-	$(AR) rcs $@ $(OBJS)
+	$(AR) rc $@ $(OBJS)
+	$(RANLIB) $@
 
 installlib: all
 	install -m 644 $(LIB) $(prefix)/lib

@@ -21,6 +21,7 @@ prefix="/usr/local"
 cross_prefix=""
 cc="gcc"
 ar="ar"
+ranlib="ranlib"
 make="make"
 strip="strip"
 cpu=`uname -m`
@@ -239,6 +240,7 @@ fi
 
 cc="${cross_prefix}${cc}"
 ar="${cross_prefix}${ar}"
+ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
 # ---
@@ -392,6 +394,7 @@ echo "prefix=$prefix" >> config.mak
 echo "MAKE=$make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
+echo "RANLIB=$ranlib" >> config.mak
 echo "STRIP=$strip" >> config.mak
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak

@@ -96,7 +96,8 @@ tests: apiexample cpuid_test $(TESTS)
 
 $(LIB): $(OBJS)
 	rm -f $@
-	$(AR) rcs $@ $(OBJS)
+	$(AR) rc $@ $(OBJS)
+	$(RANLIB) $@
 
 $(SLIB): $(OBJS)
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)
