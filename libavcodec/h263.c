@@ -48,7 +48,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
 			      int n);
 static void h263_encode_motion(MpegEncContext * s, int val, int fcode);
 static void h263p_encode_umotion(MpegEncContext * s, int val);
-static void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block,
+static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block,
 			       int n, int dc, UINT8 *scan_table, 
                                PutBitContext *dc_pb, PutBitContext *ac_pb);
 static int h263_decode_motion(MpegEncContext * s, int pred, int fcode);
@@ -71,6 +71,22 @@ static UINT8 umv_fcode_tab[MAX_MV*2+1];
 
 static UINT16 uni_DCtab_lum  [512][2];
 static UINT16 uni_DCtab_chrom[512][2];
+static UINT32 uni_mpeg4_intra_rl_bits[64*64*2*2];
+static UINT8  uni_mpeg4_intra_rl_len [64*64*2*2];
+static UINT32 uni_mpeg4_inter_rl_bits[64*64*2*2];
+static UINT8  uni_mpeg4_inter_rl_len [64*64*2*2];
+#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128 + (run)*256 + (level))
+//#define UNI_MPEG4_ENC_INDEX(last,run,level) ((last)*128*64 + (run) + (level)*64)
+
+/* mpeg4
+inter
+max level: 24/6
+max run: 53/63
+
+intra
+max level: 53/16
+max run: 29/41
+*/
 
 int h263_get_picture_format(int width, int height)
 {
@@ -1085,6 +1101,91 @@ static void init_uni_dc_tab(void)
     }
 }
 
+static void init_uni_mpeg4_rl_tab(RLTable *rl, UINT32 *bits_tab, UINT8 *len_tab){
+    int slevel, run, last;
+    
+    assert(MAX_LEVEL >= 64);
+    assert(MAX_RUN   >= 63);
+
+    for(slevel=-64; slevel<64; slevel++){
+        if(slevel==0) continue;
+        for(run=0; run<64; run++){
+            for(last=0; last<=1; last++){
+                const int index= UNI_MPEG4_ENC_INDEX(last, run, slevel+64);
+                int level= slevel < 0 ? -slevel : slevel;
+                int sign= slevel < 0 ? 1 : 0;
+                int bits, len, code;
+                int level1, run1;
+                
+                len_tab[index]= 100;
+                     
+                /* ESC0 */
+                code= get_rl_index(rl, last, run, level);
+                bits= rl->table_vlc[code][0];
+                len=  rl->table_vlc[code][1];
+                bits=bits*2+sign; len++;
+                
+                if(code!=rl->n && len < len_tab[index]){
+                    bits_tab[index]= bits;
+                    len_tab [index]= len;
+                }
+#if 1
+                /* ESC1 */
+                bits= rl->table_vlc[rl->n][0];
+                len=  rl->table_vlc[rl->n][1];
+                bits=bits*2;    len++; //esc1
+                level1= level - rl->max_level[last][run];
+                if(level1>0){
+                    code= get_rl_index(rl, last, run, level1);
+                    bits<<= rl->table_vlc[code][1];
+                    len  += rl->table_vlc[code][1];
+                    bits += rl->table_vlc[code][0];
+                    bits=bits*2+sign; len++;
+                
+                    if(code!=rl->n && len < len_tab[index]){
+                        bits_tab[index]= bits;
+                        len_tab [index]= len;
+                    }
+                }
+#endif 
+#if 1
+                /* ESC2 */
+                bits= rl->table_vlc[rl->n][0];
+                len=  rl->table_vlc[rl->n][1];
+                bits=bits*4+2;    len+=2; //esc2
+                run1 = run - rl->max_run[last][level] - 1;
+                if(run1>=0){
+                    code= get_rl_index(rl, last, run1, level);
+                    bits<<= rl->table_vlc[code][1];
+                    len  += rl->table_vlc[code][1];
+                    bits += rl->table_vlc[code][0];
+                    bits=bits*2+sign; len++;
+                
+                    if(code!=rl->n && len < len_tab[index]){
+                        bits_tab[index]= bits;
+                        len_tab [index]= len;
+                    }
+                }
+#endif           
+                /* ESC3 */        
+                bits= rl->table_vlc[rl->n][0];
+                len = rl->table_vlc[rl->n][1];
+                bits=bits*4+3;    len+=2; //esc3
+                bits=bits*2+last; len++;
+                bits=bits*64+run; len+=6;
+                bits=bits*2+1;    len++;  //marker
+                bits=bits*4096+(slevel&0xfff); len+=12;
+                bits=bits*2+1;    len++;  //marker
+                
+                if(len < len_tab[index]){
+                    bits_tab[index]= bits;
+                    len_tab [index]= len;
+                }
+            }
+        }
+    }
+}
+
 void h263_encode_init(MpegEncContext *s)
 {
     static int done = 0;
@@ -1097,6 +1198,9 @@ void h263_encode_init(MpegEncContext *s)
         init_rl(&rl_inter);
         init_rl(&rl_intra);
         init_rl(&rl_intra_aic);
+        
+        init_uni_mpeg4_rl_tab(&rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
+        init_uni_mpeg4_rl_tab(&rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
 
         init_mv_penalty_and_fcode(s);
     }
@@ -1529,34 +1633,69 @@ static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
 #endif
 }
 
-static void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, 
+static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int intra_dc, 
                                UINT8 *scan_table, PutBitContext *dc_pb, PutBitContext *ac_pb)
 {
-    int level, run, last, i, j, last_index, last_non_zero, sign, slevel;
+    int last, i, last_non_zero, sign;
     int code;
     const RLTable *rl;
+    UINT32 *bits_tab;
+    UINT8 *len_tab;
+    const int last_index = s->block_last_index[n];
 
-    if (s->mb_intra) {
+    if (s->mb_intra) { //Note gcc (3.2.1 at least) will optimize this away
 	/* mpeg4 based DC predictor */
 	mpeg4_encode_dc(dc_pb, intra_dc, n);
+        if(last_index<1) return;
 	i = 1;
         rl = &rl_intra;
+        bits_tab= uni_mpeg4_intra_rl_bits;
+        len_tab = uni_mpeg4_intra_rl_len;
     } else {
+        if(last_index<0) return;
 	i = 0;
         rl = &rl_inter;
+        bits_tab= uni_mpeg4_inter_rl_bits;
+        len_tab = uni_mpeg4_inter_rl_len;
     }
 
     /* AC coefs */
-    last_index = s->block_last_index[n];
     last_non_zero = i - 1;
-    for (; i <= last_index; i++) {
-	j = scan_table[i];
-	level = block[j];
+#if 1
+    for (; i < last_index; i++) {
+	int level = block[ scan_table[i] ];
 	if (level) {
-	    run = i - last_non_zero - 1;
+	    int run = i - last_non_zero - 1;
+            level+=64;
+            if((level&(~127)) == 0){
+                const int index= UNI_MPEG4_ENC_INDEX(0, run, level);
+                put_bits(ac_pb, len_tab[index], bits_tab[index]);
+            }else{ //ESC3
+                put_bits(ac_pb, 7+2+1+6+1+12+1, (3<<23)+(3<<21)+(0<<20)+(run<<14)+(1<<13)+(((level-64)&0xfff)<<1)+1);
+            }
+	    last_non_zero = i;
+	}
+    }
+    /*if(i<=last_index)*/{
+	int level = block[ scan_table[i] ];
+        int run = i - last_non_zero - 1;
+        level+=64;
+        if((level&(~127)) == 0){
+            const int index= UNI_MPEG4_ENC_INDEX(1, run, level);
+            put_bits(ac_pb, len_tab[index], bits_tab[index]);
+        }else{ //ESC3
+            put_bits(ac_pb, 7+2+1+6+1+12+1, (3<<23)+(3<<21)+(1<<20)+(run<<14)+(1<<13)+(((level-64)&0xfff)<<1)+1);
+        }
+    }
+#else
+    for (; i <= last_index; i++) {
+	const int slevel = block[ scan_table[i] ];
+	if (slevel) {
+            int level;
+	    int run = i - last_non_zero - 1;
 	    last = (i == last_index);
 	    sign = 0;
-	    slevel = level;
+	    level = slevel;
 	    if (level < 0) {
 		sign = 1;
 		level = -level;
@@ -1605,6 +1744,7 @@ static void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int i
 	    last_non_zero = i;
 	}
     }
+#endif
 }
 
 
@@ -3831,7 +3971,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         printf("low_delay flag set, but shouldnt, clearing it\n");
         s->low_delay=0;
     }
-// printf("pic: %d, qpel:%d\n", s->pict_type, s->quarter_sample); 
+// printf("pic: %d, qpel:%d part:%d resync:%d\n", s->pict_type, s->quarter_sample, s->data_partitioning, s->resync_marker); 
     time_incr=0;
     while (get_bits1(&s->gb) != 0) 
         time_incr++;
@@ -3935,11 +4075,10 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
      
          if (s->pict_type == B_TYPE) {
              s->b_code = get_bits(&s->gb, 3);
-//printf("b-code %d\n", s->b_code);
          }else
              s->b_code=1;
 
-//printf("quant:%d fcode:%d bcode:%d type:%d\n", s->qscale, s->f_code, s->b_code, s->pict_type);
+//printf("quant:%d fcode:%d bcode:%d type:%d size:%d\n", s->qscale, s->f_code, s->b_code, s->pict_type, s->gb.size);
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {
                  skip_bits1(&s->gb); // vop shape coding type
@@ -3962,7 +4101,6 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
      }
 
      s->picture_number++; // better than pic number==0 allways ;)
-//printf("done\n");
 
      s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table; //FIXME add short header support 
      s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
