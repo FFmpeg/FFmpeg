@@ -22,6 +22,8 @@
 #include <inttypes.h>
 #include <stdarg.h>
 
+#include "../config.h"
+
 #include "swscale.h"
 #include "../libvo/img_format.h"
 
@@ -101,7 +103,10 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 	sws_scale(srcContext, ref, refStride, 0, h   , src, srcStride);
 	sws_scale(dstContext, src, srcStride, 0, srcH, dst, dstStride);
 	sws_scale(outContext, dst, dstStride, 0, dstH, out, refStride);
-asm volatile ("emms\n\t");
+
+#ifdef ARCH_X86
+	asm volatile ("emms\n\t");
+#endif
 	     
 	ssdY= getSSD(ref[0], out[0], refStride[0], refStride[0], w, h);
 	ssdU= getSSD(ref[1], out[1], refStride[1], refStride[1], (w+1)>>1, (h+1)>>1);
@@ -194,9 +199,17 @@ int main(int argc, char **argv){
 			rgb_data[ x + y*4*W]= random();
 		}
 	}
+#ifdef ARCH_X86
 	sws_rgb2rgb_init(SWS_CPU_CAPS_MMX*0);
+#else
+	sws_rgb2rgb_init(0);
+#endif
 	sws_scale(sws, rgb_src, rgb_stride, 0, H   , src, stride);
-asm volatile ("emms\n\t");
+
+#ifdef ARCH_X86
+	asm volatile ("emms\n\t");
+#endif
+
 	selfTest(src,  stride, W, H);
 
         return 123;
