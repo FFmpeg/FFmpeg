@@ -659,6 +659,7 @@ library:
 @tab .fli/.flc files
 @item Sierra VMD       @tab    @tab X
 @tab used in Sierra CD-ROM games
+@item Matroska         @tab    @tab X
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
