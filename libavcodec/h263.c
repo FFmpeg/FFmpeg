@@ -1900,8 +1900,6 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
      s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table; //FIXME add short header support 
      s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
-     s->h_edge_pos= s->width;
-     s->v_edge_pos= s->height;
 }
 
 #endif //CONFIG_ENCODERS
@@ -4955,7 +4953,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
      s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table; //FIXME add short header support 
      s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
 
-     if(!(s->workaround_bugs&FF_BUG_EDGE)){
+     if(s->workaround_bugs&FF_BUG_EDGE){
          s->h_edge_pos= s->width;
          s->v_edge_pos= s->height;
      }

@@ -512,13 +512,17 @@ retry:
         if(s->lavc_build && s->lavc_build<4655)
             s->workaround_bugs|= FF_BUG_DIRECT_BLOCKSIZE;
 
+        if(s->lavc_build && s->lavc_build<4618){
+            s->workaround_bugs|= FF_BUG_EDGE;
+        }
+
         if(s->divx_version)
             s->workaround_bugs|= FF_BUG_DIRECT_BLOCKSIZE;
 //printf("padding_bug_score: %d\n", s->padding_bug_score);
         if(s->divx_version==501 && s->divx_build==20020416)
             s->padding_bug_score= 256*256*256*64;
 
-        if(s->divx_version>=500){
+        if(s->divx_version && s->divx_version<500){
             s->workaround_bugs|= FF_BUG_EDGE;
         }
 
