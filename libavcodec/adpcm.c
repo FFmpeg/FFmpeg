@@ -312,6 +312,33 @@ static inline short adpcm_ima_expand_nibble(ADPCMChannelStatus *c, char nibble)
     return (short)predictor;
 }
 
+static inline short adpcm_4xa_expand_nibble(ADPCMChannelStatus *c, char nibble)
+{
+    int step_index;
+    int predictor;
+    int sign, delta, diff, step;
+
+    step = step_table[c->step_index];
+    step_index = c->step_index + index_table[(unsigned)nibble];
+    if (step_index < 0) step_index = 0;
+    else if (step_index > 88) step_index = 88;
+
+    sign = nibble & 8;
+    delta = nibble & 7;
+    
+    diff = (delta*step + (step>>1))>>3; // difference to code above
+    
+    predictor = c->predictor;
+    if (sign) predictor -= diff;
+    else predictor += diff;
+
+    CLAMP_TO_SHORT(predictor);
+    c->predictor = predictor;
+    c->step_index = step_index;
+
+    return (short)predictor;
+}
+
 static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
 {
     int predictor;
@@ -334,7 +361,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 {
     ADPCMContext *c = avctx->priv_data;
     ADPCMChannelStatus *cs;
-    int n, m, channel;
+    int n, m, channel, i;
     int block_predictor[2];
     short *samples;
     uint8_t *src;
@@ -445,6 +472,34 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 	    src++;
 	}
         break;
+    case CODEC_ID_ADPCM_4XM:
+        cs = &(c->status[0]);
+        c->status[0].predictor= (int16_t)(src[0] + (src[1]<<8)); src+=2;
+        if(st){
+            c->status[1].predictor= (int16_t)(src[0] + (src[1]<<8)); src+=2;
+        }
+        c->status[0].step_index= (int16_t)(src[0] + (src[1]<<8)); src+=2;
+        if(st){
+            c->status[1].step_index= (int16_t)(src[0] + (src[1]<<8)); src+=2;
+        }
+//            if (cs->step_index < 0) cs->step_index = 0;
+//            if (cs->step_index > 88) cs->step_index = 88;
+
+        m= (buf_size - (src - buf))>>st;
+//printf("%d %d %d %d\n", st, m, c->status[0].predictor, c->status[0].step_index);
+        //FIXME / XXX decode chanels individual & interleave samples
+        for(i=0; i<m; i++) {
+	    *samples++ = adpcm_4xa_expand_nibble(&c->status[0], src[i] & 0x0F);
+            if (st)
+                *samples++ = adpcm_4xa_expand_nibble(&c->status[1], src[i+m] & 0x0F);
+            *samples++ = adpcm_4xa_expand_nibble(&c->status[0], src[i] >> 4);
+	    if (st)
+                *samples++ = adpcm_4xa_expand_nibble(&c->status[1], src[i+m] >> 4);
+	}
+
+        src += m<<st;
+
+        break;
     case CODEC_ID_ADPCM_MS:
 
         if (buf_size > BLKSIZE) {
@@ -529,6 +584,7 @@ AVCodec name ## _decoder = {                    \
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
 ADPCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
+ADPCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
 
 #undef ADPCM_CODEC
 

@@ -71,6 +71,7 @@ typedef struct AudioTrack {
     int bits;
     int channels;
     int stream_index;
+    int adpcm;
 } AudioTrack;
 
 typedef struct FourxmDemuxContext {
@@ -172,9 +173,11 @@ static int fourxm_read_header(AVFormatContext *s,
                     return AVERROR_NOMEM;
                 }
             }
+            fourxm->tracks[current_track].adpcm = LE_32(&header[i + 12]);
             fourxm->tracks[current_track].channels = LE_32(&header[i + 36]);
             fourxm->tracks[current_track].sample_rate = LE_32(&header[i + 40]);
             fourxm->tracks[current_track].bits = LE_32(&header[i + 44]);
+            printf("bps:%d\n", fourxm->tracks[current_track].bits);
             i += 8 + size;
 
             /* allocate a new AVStream */
@@ -192,7 +195,9 @@ static int fourxm_read_header(AVFormatContext *s,
             st->codec.bit_rate = st->codec.channels * st->codec.sample_rate *
                 st->codec.bits_per_sample;
             st->codec.block_align = st->codec.channels * st->codec.bits_per_sample;
-            if (st->codec.bits_per_sample == 8)
+            if (fourxm->tracks[current_track].adpcm)
+                st->codec.codec_id = CODEC_ID_ADPCM_4XM;
+            else if (st->codec.bits_per_sample == 8)
                 st->codec.codec_id = CODEC_ID_PCM_U8;
             else
                 st->codec.codec_id = CODEC_ID_PCM_S16LE;
@@ -224,7 +229,7 @@ static int fourxm_read_packet(AVFormatContext *s,
     FourxmDemuxContext *fourxm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     unsigned int fourcc_tag;
-    unsigned int size;
+    unsigned int size, out_size;
     int ret = 0;
     int track_number;
     int packet_read = 0;
@@ -237,10 +242,9 @@ static int fourxm_read_packet(AVFormatContext *s,
             return ret;
         fourcc_tag = LE_32(&header[0]);
         size = LE_32(&header[4]);
-
+//printf(" %8X %c%c%c%c %d\n", fourcc_tag, fourcc_tag, fourcc_tag>>8, fourcc_tag>>16, fourcc_tag>>24, size);
         if (url_feof(pb))
             return -EIO;
-
         switch (fourcc_tag) {
 
         case LIST_TAG:
@@ -277,7 +281,7 @@ if (fourcc_tag == cfrm_TAG) {
 id = LE_32(&pkt->data[12]);
 whole = LE_32(&pkt->data[16]);
 stats[id] += size - 12;
-printf(" cfrm chunk id:%d size:%d whole:%d until now:%d\n", id, size, whole, stats[id]);
+//printf(" cfrm chunk id:%d size:%d whole:%d until now:%d\n", id, size, whole, stats[id]);
 }
 
             if (ret < 0)
@@ -290,7 +294,9 @@ printf(" cfrm chunk id:%d size:%d whole:%d until now:%d\n", id, size, whole, sta
         case snd__TAG:
 printf (" snd_ chunk, ");
             track_number = get_le32(pb);
-            size = get_le32(pb);
+            out_size= get_le32(pb);
+            size-=8;
+
             if (track_number == fourxm->selected_track) {
 printf ("correct track, dispatching...\n");
                 if (av_new_packet(pkt, size))
@@ -321,7 +327,6 @@ printf ("wrong track, skipping...\n");
             break;
         }
     }
-
     return ret;
 }
 
