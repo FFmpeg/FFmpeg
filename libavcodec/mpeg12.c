@@ -1981,7 +1981,7 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
     	(s1->mpeg_enc_ctx_allocated == 0)|| 
         avctx->coded_width  != s->width ||
         avctx->coded_height != s->height||
-//      s1->save_aspect_info != avctx->aspect_ratio_info||
+        s1->save_aspect_info != s->aspect_ratio_info||
         0)
     {
     
