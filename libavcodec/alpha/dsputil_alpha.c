@@ -22,6 +22,8 @@
 
 void simple_idct_axp(DCTELEM *block);
 
+void put_pixels_axp_asm(uint8_t *block, const uint8_t *pixels,
+			int line_size, int h);
 void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels,
 				int line_size);
 void add_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels, 
@@ -232,12 +234,12 @@ static inline UINT64 avg4_no_rnd(UINT64 l1, UINT64 l2, UINT64 l3, UINT64 l4)
 
 void dsputil_init_alpha(void)
 {
-    put_pixels_tab[0] = put_pixels_axp;
+    put_pixels_tab[0] = put_pixels_axp_asm;
     put_pixels_tab[1] = put_pixels_x2_axp;
     put_pixels_tab[2] = put_pixels_y2_axp;
     put_pixels_tab[3] = put_pixels_xy2_axp;
 
-    put_no_rnd_pixels_tab[0] = put_pixels_axp;
+    put_no_rnd_pixels_tab[0] = put_pixels_axp_asm;
     put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_axp;
     put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_axp;
     put_no_rnd_pixels_tab[3] = put_no_rnd_pixels_xy2_axp;

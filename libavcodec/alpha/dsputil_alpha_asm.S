@@ -44,6 +44,123 @@
         .text
 
 /************************************************************************
+ * void put_pixels_axp_asm(uint8_t *block, const uint8_t *pixels,
+ *                         int line_size, int h)
+ */
+        .align 6
+        .globl put_pixels_axp_asm
+        .ent put_pixels_axp_asm
+put_pixels_axp_asm:
+        .frame sp, 0, ra
+        .prologue 0
+
+#ifdef HAVE_GPROF
+        lda     AT, _mcount
+        jsr     AT, (AT), _mcount
+#endif
+
+        and     a1, 7, t0
+        beq     t0, $aligned
+
+        .align 4
+$unaligned:
+        ldq_u   t0, 0(a1)
+        ldq_u   t1, 8(a1)
+        addq    a1, a2, a1
+        nop
+
+        ldq_u   t2, 0(a1)
+        ldq_u   t3, 8(a1)
+        addq    a1, a2, a1
+        nop
+
+	ldq_u   t4, 0(a1)
+        ldq_u   t5, 8(a1)
+        addq    a1, a2, a1
+        nop
+
+        ldq_u   t6, 0(a1)
+        ldq_u   t7, 8(a1)
+        extql   t0, a1, t0
+        addq    a1, a2, a1
+
+        extqh   t1, a1, t1
+        addq    a0, a2, t8
+        extql   t2, a1, t2
+        addq    t8, a2, t9
+
+        extqh   t3, a1, t3
+        addq    t9, a2, ta
+        extql   t4, a1, t4
+        or      t0, t1, t0
+
+        extqh   t5, a1, t5
+        or      t2, t3, t2
+        extql   t6, a1, t6
+        or      t4, t5, t4
+
+        extqh   t7, a1, t7
+        or      t6, t7, t6
+        stq     t0, 0(a0)
+        stq     t2, 0(t8)
+
+        stq     t4, 0(t9)
+        subq    a3, 4, a3
+        stq     t6, 0(ta)
+        addq    ta, a2, a0
+
+        bne     a3, $unaligned
+        ret
+
+        .align 4
+$aligned:
+        ldq     t0, 0(a1)
+        addq    a1, a2, a1
+        ldq     t1, 0(a1)
+        addq    a1, a2, a1
+
+        ldq     t2, 0(a1)
+        addq    a1, a2, a1
+        ldq     t3, 0(a1)
+        addq    a1, a2, a1
+
+        ldq     t4, 0(a1)
+        addq    a1, a2, a1
+        ldq     t5, 0(a1)
+        addq    a1, a2, a1
+
+        ldq     t6, 0(a1)
+        addq    a1, a2, a1
+        ldq     t7, 0(a1)
+        addq    a1, a2, a1
+
+        addq    a0, a2, t8
+        stq     t0, 0(a0)
+        addq    t8, a2, t9
+        stq     t1, 0(t8)
+
+        addq    t9, a2, ta
+        stq     t2, 0(t9)
+        addq    ta, a2, tb
+        stq     t3, 0(ta)
+
+        addq    tb, a2, tc
+        stq     t4, 0(tb)
+        addq    tc, a2, td
+        stq     t5, 0(tc)
+
+        addq    td, a2, te
+        stq     t6, 0(td)
+        addq    te, a2, a0
+        stq     t7, 0(te)
+
+        subq    a3, 8, a3
+        bne     a3, $aligned
+
+        ret
+        .end put_pixels_axp_asm
+
+/************************************************************************
  * void put_pixels_clamped_mvi_asm(const DCTELEM *block, uint8_t *pixels, 
  *                                 int line_size)
  */
