@@ -16,7 +16,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4687
+#define LIBAVCODEC_BUILD       4688
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -117,6 +117,9 @@ enum CodecID {
     CODEC_ID_ROQ_DPCM,
     CODEC_ID_INTERPLAY_DPCM,
     CODEC_ID_XAN_DPCM,
+    
+    CODEC_ID_MPEG2TS, /* _FAKE_ codec to indicate a raw MPEG2 transport
+                         stream (only used by libavformat) */
 };
 
 /* CODEC_ID_MP3LAME is absolete */
@@ -126,6 +129,7 @@ enum CodecType {
     CODEC_TYPE_UNKNOWN = -1,
     CODEC_TYPE_VIDEO,
     CODEC_TYPE_AUDIO,
+    CODEC_TYPE_DATA,
 };
 
 /**
