@@ -214,6 +214,9 @@ void mpegts_close_filter(MpegTSContext *ts, MpegTSFilter *filter)
     pid = filter->pid;
     if (filter->type == MPEGTS_SECTION)
         av_freep(&filter->u.section_filter.section_buf);
+    else if (filter->type == MPEGTS_PES)
+        av_freep(&filter->u.pes_filter.opaque);
+
     av_free(filter);
     ts->pids[pid] = NULL;
 }
@@ -1271,7 +1274,7 @@ static int mpegts_read_close(AVFormatContext *s)
     MpegTSContext *ts = s->priv_data;
     int i;
     for(i=0;i<NB_PID_MAX;i++)
-        av_free(ts->pids[i]);
+        if (ts->pids[i]) mpegts_close_filter(ts, ts->pids[i]);
     return 0;
 }
 

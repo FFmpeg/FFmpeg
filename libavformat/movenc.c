@@ -893,6 +893,8 @@ static int mov_write_trailer(AVFormatContext *s)
             av_free(mov->tracks[i].cluster[j]);
         }
         av_free(mov->tracks[i].cluster);
+        if( mov->tracks[i].vosLen ) av_free( mov->tracks[i].vosData );
+
         mov->tracks[i].cluster = NULL;
         mov->tracks[i].ents_allocated = mov->tracks[i].entry = 0;
     }
