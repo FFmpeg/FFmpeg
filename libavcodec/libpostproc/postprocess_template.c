@@ -16,6 +16,12 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
+/**
+ * @file postprocess_template.c
+ * mmx/mmx2/3dnow postprocess code.
+ */
+
+
 #undef PAVGB
 #undef PMINUB
 #undef PMAXUB
@@ -1523,7 +1529,7 @@ DERING_CORE((%0, %1, 8),(%%edx, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm
 }
 
 /**
- * Deinterlaces the given block
+ * Deinterlaces the given block by linearly interpolating every second line.
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -1570,7 +1576,7 @@ static inline void RENAME(deInterlaceInterpolateLinear)(uint8_t src[], int strid
 }
 
 /**
- * Deinterlaces the given block
+ * Deinterlaces the given block by cubic interpolating every second line.
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -1635,7 +1641,7 @@ DEINT_CUBIC((%%edx, %1), (%0, %1, 8), (%%edx, %1, 4), (%%ecx), (%%ecx, %1, 2))
 }
 
 /**
- * Deinterlaces the given block
+ * Deinterlaces the given block by filtering every second line with a (-1 4 2 4 -1) filter.
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -1714,7 +1720,7 @@ DEINT_FF((%%edx, %1), (%%edx, %1, 2), (%0, %1, 8), (%%edx, %1, 4))
 }
 
 /**
- * Deinterlaces the given block
+ * Deinterlaces the given block by filtering all lines with a (1 2 1) filter.
  * will be called for every 8x8 block and can read & write from line 4-15
  * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
@@ -1789,7 +1795,7 @@ static inline void RENAME(deInterlaceBlendLinear)(uint8_t src[], int stride)
 }
 
 /**
- * Deinterlaces the given block
+ * Deinterlaces the given block by applying a median filter to every second line.
  * will be called for every 8x8 block and can read & write from line 4-15,
  * lines 0-3 have been passed through the deblock / dering filters allready, but can be read too
  * lines 4-12 will be read into the deblocking filter and should be deinterlaced
