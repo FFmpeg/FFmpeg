@@ -1086,7 +1086,9 @@ POWERPC_TBL_STOP_COUNT(altivec_put_pixels16_xy2_num, 1);
      pixelssum3, pixelssum4, temp4;
    register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
    register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
-   
+
+POWERPC_TBL_START_COUNT(altivec_put_pixels16_xy2_num, 1);
+ 
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
    pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(0, pixels));
@@ -1109,7 +1111,6 @@ POWERPC_TBL_STOP_COUNT(altivec_put_pixels16_xy2_num, 1);
                         (vector unsigned short)pixelsv2);
    pixelssum1 = vec_add(pixelssum1, vctwo);
    
-POWERPC_TBL_START_COUNT(altivec_put_pixels16_xy2_num, 1); 
    for (i = 0; i < h ; i++) {
      blockv = vec_ld(0, block);
 
@@ -1207,7 +1208,9 @@ POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
    register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
    register const vector unsigned short vcone = (const vector unsigned short)vec_splat_u16(1);
    register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
-   
+
+POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
+ 
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
    pixelsv1 = vec_perm(temp1, temp2, vec_lvsl(0, pixels));
@@ -1230,7 +1233,6 @@ POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
                         (vector unsigned short)pixelsv2);
    pixelssum1 = vec_add(pixelssum1, vcone);
    
-POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1); 
    for (i = 0; i < h ; i++) {
      blockv = vec_ld(0, block);
 

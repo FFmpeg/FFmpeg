@@ -19,6 +19,17 @@
 #ifndef _DSPUTIL_PPC_
 #define _DSPUTIL_PPC_
 
+#ifdef CONFIG_DARWIN
+/* The Apple assembler shipped w/ gcc-3.3 knows about DCBZL, previous assemblers don't
+   We assume here that the Darwin GCC is from Apple.... */
+#if (__GNUC__ * 100 + __GNUC_MINOR__ < 303)
+#define NO_DCBZL
+#endif
+#else /* CONFIG_DARWIN */
+/* I don't think any non-Apple assembler knows about DCBZL */
+#define NO_DCBZL
+#endif /* CONFIG_DARWIN */
+
 #ifdef POWERPC_TBL_PERFORMANCE_REPORT
 void powerpc_display_perf_report(void);
 /* if you add to the enum below, also add to the perfname array
@@ -49,7 +60,8 @@ enum powerpc_data_index {
 };
 extern unsigned long long perfdata[powerpc_perf_total][powerpc_data_total];
 #ifdef POWERPC_PERF_USE_PMC
-extern unsigned long long perfdata_miss[powerpc_perf_total][powerpc_data_total];
+extern unsigned long long perfdata_pmc2[powerpc_perf_total][powerpc_data_total];
+extern unsigned long long perfdata_pmc3[powerpc_perf_total][powerpc_data_total];
 #endif
 
 #ifndef POWERPC_PERF_USE_PMC
@@ -75,12 +87,17 @@ extern unsigned long long perfdata_miss[powerpc_perf_total][powerpc_data_total];
 
 #else /* POWERPC_PERF_USE_PMC */
 #define POWERPC_GET_CYCLES(a) asm volatile("mfspr %0, 937" : "=r" (a))
-#define POWERPC_GET_MISS(a) asm volatile("mfspr %0, 938" : "=r" (a))
-#define POWERPC_TBL_DECLARE(a, cond) register unsigned long cycles_start, cycles_stop, miss_start, miss_stop
-#define POWERPC_TBL_START_COUNT(a, cond) do { POWERPC_GET_MISS(miss_start); POWERPC_GET_CYCLES(cycles_start); } while (0)
+#define POWERPC_GET_PMC2(a) asm volatile("mfspr %0, 938" : "=r" (a))
+#define POWERPC_GET_PMC3(a) asm volatile("mfspr %0, 941" : "=r" (a))
+#define POWERPC_TBL_DECLARE(a, cond) register unsigned long cycles_start, cycles_stop, pmc2_start, pmc2_stop, pmc3_start, pmc3_stop
+#define POWERPC_TBL_START_COUNT(a, cond) do {    \
+  POWERPC_GET_PMC3(pmc3_start);                  \
+  POWERPC_GET_PMC2(pmc2_start);                  \
+  POWERPC_GET_CYCLES(cycles_start); } while (0)
 #define POWERPC_TBL_STOP_COUNT(a, cond) do {     \
   POWERPC_GET_CYCLES(cycles_stop);               \
-  POWERPC_GET_MISS(miss_stop);                   \
+  POWERPC_GET_PMC2(pmc2_stop);                   \
+  POWERPC_GET_PMC3(pmc3_stop);                   \
   if (cycles_stop >= cycles_start)               \
   {                                              \
     unsigned long diff =                         \
@@ -95,18 +112,32 @@ extern unsigned long long perfdata_miss[powerpc_perf_total][powerpc_data_total];
       perfdata[a][powerpc_data_num] ++;          \
     }                                            \
   }                                              \
-  if (miss_stop >= miss_start)                   \
+  if (pmc2_stop >= pmc2_start)                   \
   {                                              \
     unsigned long diff =                         \
-                miss_stop - miss_start;          \
+                pmc2_stop - pmc2_start;          \
     if (cond)                                    \
     {                                            \
-      if (diff < perfdata_miss[a][powerpc_data_min]) \
-        perfdata_miss[a][powerpc_data_min] = diff;   \
-      if (diff > perfdata_miss[a][powerpc_data_max]) \
-        perfdata_miss[a][powerpc_data_max] = diff;   \
-      perfdata_miss[a][powerpc_data_sum] += diff;    \
-      perfdata_miss[a][powerpc_data_num] ++;         \
+      if (diff < perfdata_pmc2[a][powerpc_data_min]) \
+        perfdata_pmc2[a][powerpc_data_min] = diff;   \
+      if (diff > perfdata_pmc2[a][powerpc_data_max]) \
+        perfdata_pmc2[a][powerpc_data_max] = diff;   \
+      perfdata_pmc2[a][powerpc_data_sum] += diff;    \
+      perfdata_pmc2[a][powerpc_data_num] ++;         \
+    }                                            \
+  }                                              \
+  if (pmc3_stop >= pmc3_start)                   \
+  {                                              \
+    unsigned long diff =                         \
+                pmc3_stop - pmc3_start;          \
+    if (cond)                                    \
+    {                                            \
+      if (diff < perfdata_pmc3[a][powerpc_data_min]) \
+        perfdata_pmc3[a][powerpc_data_min] = diff;   \
+      if (diff > perfdata_pmc3[a][powerpc_data_max]) \
+        perfdata_pmc3[a][powerpc_data_max] = diff;   \
+      perfdata_pmc3[a][powerpc_data_sum] += diff;    \
+      perfdata_pmc3[a][powerpc_data_num] ++;         \
     }                                            \
   }                                              \
 } while (0)

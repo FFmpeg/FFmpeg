@@ -380,18 +380,25 @@ if test $tune != "generic"; then
 	    TUNECPU=ppc604
 	;;
 	G3|75*|ppc75*|PowerPC75*)
-	    CFLAGS="$CFLAGS -mcpu=750"
+	    CFLAGS="$CFLAGS -mcpu=750 -mtune=750"
 	    if test $altivec = "yes"; then
 		echo "WARNING: tuning for PPC75x but altivec enabled !";
 	    fi
 	    TUNECPU=ppc750
 	;;
-	G4|74*|ppc74*|PowerPC74*)
-	    CFLAGS="$CFLAGS -mcpu=7400"
+	G4|745*|ppc745*|PowerPC745*)
+	    CFLAGS="$CFLAGS -mcpu=7450 -mtune=7450"
+	    if test $altivec = "no"; then
+		echo "WARNING: tuning for PPC745x but altivec disabled !";
+	    fi
+	    TUNECPU=ppc7450
+	;;
+	74*|ppc74*|PowerPC74*)
+	    CFLAGS="$CFLAGS -mcpu=7400 -mtune=7400"
 	    if test $altivec = "no"; then
 		echo "WARNING: tuning for PPC74xx but altivec disabled !";
 	    fi
-	    TUNECPU=ppc7400
+	    TUNECPU=ppc7450
 	;;
 	G5|970|ppc970|PowerPC970|power4*|Power4*)
 	    CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc64 -force_cpusubtype_ALL "

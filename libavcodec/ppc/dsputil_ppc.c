@@ -61,7 +61,8 @@ static unsigned char* perfname[] = {
   "clear_blocks_dcbz128_ppc"
 };
 #ifdef POWERPC_PERF_USE_PMC
-unsigned long long perfdata_miss[powerpc_perf_total][powerpc_data_total];
+unsigned long long perfdata_pmc2[powerpc_perf_total][powerpc_data_total];
+unsigned long long perfdata_pmc3[powerpc_perf_total][powerpc_data_total];
 #endif
 #include <stdio.h>
 #endif
@@ -86,14 +87,22 @@ void powerpc_display_perf_report(void)
               (double)perfdata[i][powerpc_data_num],
               perfdata[i][powerpc_data_num]);
 #ifdef POWERPC_PERF_USE_PMC
-    if (perfdata_miss[i][powerpc_data_num] != (unsigned long long)0)
+    if (perfdata_pmc2[i][powerpc_data_num] != (unsigned long long)0)
       fprintf(stderr, " Function \"%s\" (pmc2):\n\tmin: %llu\n\tmax: %llu\n\tavg: %1.2lf (%llu)\n",
               perfname[i],
-              perfdata_miss[i][powerpc_data_min],
-              perfdata_miss[i][powerpc_data_max],
-              (double)perfdata_miss[i][powerpc_data_sum] /
-              (double)perfdata_miss[i][powerpc_data_num],
-              perfdata_miss[i][powerpc_data_num]);
+              perfdata_pmc2[i][powerpc_data_min],
+              perfdata_pmc2[i][powerpc_data_max],
+              (double)perfdata_pmc2[i][powerpc_data_sum] /
+              (double)perfdata_pmc2[i][powerpc_data_num],
+              perfdata_pmc2[i][powerpc_data_num]);
+    if (perfdata_pmc3[i][powerpc_data_num] != (unsigned long long)0)
+      fprintf(stderr, " Function \"%s\" (pmc3):\n\tmin: %llu\n\tmax: %llu\n\tavg: %1.2lf (%llu)\n",
+              perfname[i],
+              perfdata_pmc3[i][powerpc_data_min],
+              perfdata_pmc3[i][powerpc_data_max],
+              (double)perfdata_pmc3[i][powerpc_data_sum] /
+              (double)perfdata_pmc3[i][powerpc_data_num],
+              perfdata_pmc3[i][powerpc_data_num]);
 #endif
   }
 }
@@ -139,7 +148,7 @@ POWERPC_TBL_START_COUNT(powerpc_clear_blocks_dcbz32, 1);
       i += 16;
     }
     for ( ; i < sizeof(DCTELEM)*6*64 ; i += 32) {
-      asm volatile("dcbz %0,%1" : : "r" (i), "r" (blocks) : "memory");
+      asm volatile("dcbz %0,%1" : : "b" (blocks), "r" (i) : "memory");
     }
     if (misal) {
       ((unsigned long*)blocks)[188] = 0L;
@@ -172,7 +181,7 @@ POWERPC_TBL_START_COUNT(powerpc_clear_blocks_dcbz128, 1);
     }
     else
       for ( ; i < sizeof(DCTELEM)*6*64 ; i += 128) {
-	asm volatile("dcbzl %0,%1" : : "r" (i), "r" (blocks) : "memory");
+	asm volatile("dcbzl %0,%1" : : "b" (blocks), "r" (i) : "memory");
       }
 #else
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
@@ -209,7 +218,9 @@ long check_dcbzl_effect(void)
 
   memset(fakedata, 0xFF, 1024);
 
-  asm volatile("dcbzl %0, %1" : : "r" (fakedata_middle), "r" (zero));
+  /* below the constraint "b" seems to mean "Address base register"
+     in gcc-3.3 / RS/6000 speaks. seems to avoid using r0, so.... */
+  asm volatile("dcbzl %0, %1" : : "b" (fakedata_middle), "r" (zero));
 
   for (i = 0; i < 1024 ; i ++)
   {
@@ -300,10 +311,14 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
             perfdata[i][powerpc_data_sum] = 0x0000000000000000;
             perfdata[i][powerpc_data_num] = 0x0000000000000000;
 #ifdef POWERPC_PERF_USE_PMC
-            perfdata_miss[i][powerpc_data_min] = 0xFFFFFFFFFFFFFFFF;
-            perfdata_miss[i][powerpc_data_max] = 0x0000000000000000;
-            perfdata_miss[i][powerpc_data_sum] = 0x0000000000000000;
-            perfdata_miss[i][powerpc_data_num] = 0x0000000000000000;
+            perfdata_pmc2[i][powerpc_data_min] = 0xFFFFFFFFFFFFFFFF;
+            perfdata_pmc2[i][powerpc_data_max] = 0x0000000000000000;
+            perfdata_pmc2[i][powerpc_data_sum] = 0x0000000000000000;
+            perfdata_pmc2[i][powerpc_data_num] = 0x0000000000000000;
+            perfdata_pmc3[i][powerpc_data_min] = 0xFFFFFFFFFFFFFFFF;
+            perfdata_pmc3[i][powerpc_data_max] = 0x0000000000000000;
+            perfdata_pmc3[i][powerpc_data_sum] = 0x0000000000000000;
+            perfdata_pmc3[i][powerpc_data_num] = 0x0000000000000000;
 #endif /* POWERPC_PERF_USE_PMC */
           }
         }

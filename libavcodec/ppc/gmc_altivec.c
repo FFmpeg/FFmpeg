@@ -28,9 +28,10 @@
   altivec-enhanced gmc1. ATM this code assume stride is a multiple of 8,
   to preserve proper dst alignement.
 */
+#define GMC1_PERF_COND (h==8)
 void gmc1_altivec(uint8_t *dst /* align 8 */, uint8_t *src /* align1 */, int stride, int h, int x16, int y16, int rounder)
 {
-POWERPC_TBL_DECLARE(altivec_gmc1_num, h == 8);
+POWERPC_TBL_DECLARE(altivec_gmc1_num, GMC1_PERF_COND);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     const int A=(16-x16)*(16-y16);
     const int B=(   x16)*(16-y16);
@@ -38,7 +39,7 @@ POWERPC_TBL_DECLARE(altivec_gmc1_num, h == 8);
     const int D=(   x16)*(   y16);
     int i;
 
-POWERPC_TBL_START_COUNT(altivec_gmc1_num, h == 8);
+POWERPC_TBL_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
     
     for(i=0; i<h; i++)
     {
@@ -54,7 +55,7 @@ POWERPC_TBL_START_COUNT(altivec_gmc1_num, h == 8);
         src+= stride;
     }
 
-POWERPC_TBL_STOP_COUNT(altivec_gmc1_num, h == 8);
+POWERPC_TBL_STOP_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
     const unsigned short __attribute__ ((aligned(16))) rounder_a[8] =
@@ -77,7 +78,7 @@ POWERPC_TBL_STOP_COUNT(altivec_gmc1_num, h == 8);
     unsigned long src_really_odd = (unsigned long)src & 0x0000000F;
 
 
-POWERPC_TBL_START_COUNT(altivec_gmc1_num, h == 8);
+POWERPC_TBL_START_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
 
     tempA = vec_ld(0, (unsigned short*)ABCD);
     Av = vec_splat(tempA, 0);
@@ -165,7 +166,7 @@ POWERPC_TBL_START_COUNT(altivec_gmc1_num, h == 8);
       src += stride;
     }
 
-POWERPC_TBL_STOP_COUNT(altivec_gmc1_num, h == 8);
+POWERPC_TBL_STOP_COUNT(altivec_gmc1_num, GMC1_PERF_COND);
 
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
