@@ -37,6 +37,7 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_MJPEG     , "jpeg"},
     { CODEC_ID_MJPEG     , "jpg"},
     { CODEC_ID_LJPEG     , "ljpg"},
+//    { CODEC_ID_PNG       , "png"},
     { CODEC_ID_MPEG1VIDEO, "mpg1-img"},
     { CODEC_ID_MPEG2VIDEO, "mpg2-img"},
     { CODEC_ID_MPEG4     , "mpg4-img"},
@@ -153,8 +154,10 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     /* find format */
     if (s1->iformat->flags & AVFMT_NOFILE)
         s->is_pipe = 0;
-    else
+    else{
         s->is_pipe = 1;
+        st->need_parsing= 1;
+    }
         
     if (!ap || !ap->frame_rate) {
         st->codec.frame_rate      = 25;
