@@ -1817,10 +1817,11 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 #ifdef DEBUG
         fprintf(stderr, "sc[ffid %d]->sample_size = %d\n", sc->ffindex, sc->sample_size);
 #endif
-        // sample_size is not always correct for audio. Quicktime ignores this value and
-        // computes it differently.
-        if(s->streams[sc->ffindex]->codec.codec_type == CODEC_TYPE_VIDEO)
-            size = sc->sample_size?sc->sample_size:sc->sample_sizes[sc->current_sample];
+        //size = sc->sample_sizes[sc->current_sample];
+        // that ain't working...
+        //size = (sc->sample_size)?sc->sample_size:sc->sample_sizes[sc->current_sample];
+        size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
+
         sc->current_sample++;
         sc->left_in_chunk--;
 
@@ -1906,8 +1907,7 @@ again:
 
 #ifdef MOV_SPLIT_CHUNKS
     /* split chunks into samples */
-    if (s->streams[sc->ffindex]->codec.codec_type == CODEC_TYPE_VIDEO) {
-        // This does not support split audio, as the sample_size is often not correct
+    if (sc->sample_size == 0) {
         idx = sc->sample_to_chunk_index;
         if ((idx + 1 < sc->sample_to_chunk_sz)
                 && (sc->next_chunk >= sc->sample_to_chunk[idx + 1].first))
@@ -1917,7 +1917,7 @@ again:
 	    mov->partial = sc;
             /* we'll have to get those samples before next chunk */
             sc->left_in_chunk = sc->sample_to_chunk[idx].count - 1;
-            size = sc->sample_size?sc->sample_size:sc->sample_sizes[sc->current_sample];
+            size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
         }
 
         sc->current_sample++;
