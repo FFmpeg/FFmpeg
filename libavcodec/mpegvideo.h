@@ -499,6 +499,7 @@ typedef struct MpegEncContext {
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;
     int divx_build;
+    int divx_packed;
 #define BITSTREAM_BUFFER_SIZE 1024*256
     uint8_t *bitstream_buffer; //Divx 5.01 puts several frames in a single one, this is used to reorder them
     int bitstream_buffer_size;

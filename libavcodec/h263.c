@@ -4566,6 +4566,7 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
     int i;
     int e;
     int ver, build, ver2, ver3;
+    char last;
 
     buf[0]= show_bits(gb, 8);
     for(i=1; i<256; i++){
@@ -4574,16 +4575,21 @@ static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
         skip_bits(gb, 8);
     }
     buf[255]=0;
-    
+
     /* divx detection */
-    e=sscanf(buf, "DivX%dBuild%d", &ver, &build);
-    if(e!=2)
-        e=sscanf(buf, "DivX%db%d", &ver, &build);
-    if(e==2){
+    e=sscanf(buf, "DivX%dBuild%d%c", &ver, &build, &last);
+    if(e<2)
+        e=sscanf(buf, "DivX%db%d%c", &ver, &build, &last);
+    if(e>=2){
         s->divx_version= ver;
         s->divx_build= build;
+        s->divx_packed= e==3 && last=='p';
         if(s->picture_number==0){
-            printf("This file was encoded with DivX%d Build%d\n", ver, build);
+            printf("This file was encoded with DivX%d Build%d", ver, build);
+            if(s->divx_packed)
+                printf("p\n");
+            else
+                printf("\n");
         }
     }
     

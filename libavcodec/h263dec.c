@@ -128,7 +128,7 @@ int ff_h263_decode_end(AVCodecContext *avctx)
 static int get_consumed_bytes(MpegEncContext *s, int buf_size){
     int pos= (get_bits_count(&s->gb)+7)>>3;
     
-    if(s->divx_version>=500){
+    if(s->divx_packed){
         //we would have to scan through the whole buf to handle the weird reordering ...
         return buf_size; 
     }else if(s->flags&CODEC_FLAG_TRUNCATED){
@@ -675,7 +675,7 @@ retry:
         }
     
     /* divx 5.01+ bistream reorder stuff */
-    if(s->codec_id==CODEC_ID_MPEG4 && s->bitstream_buffer_size==0 && s->divx_version>=500){
+    if(s->codec_id==CODEC_ID_MPEG4 && s->bitstream_buffer_size==0 && s->divx_packed){
         int current_pos= get_bits_count(&s->gb)>>3;
 
         if(   buf_size - current_pos > 5 
