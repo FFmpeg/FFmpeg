@@ -86,6 +86,7 @@ static int me_method = 0;
 static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
 static int same_quality = 0;
+static int b_frames = 0;
 static int use_hq = 0;
 static int use_4mv = 0;
 static int do_deinterlace = 0;
@@ -1270,6 +1271,18 @@ void opt_gop_size(const char *arg)
     gop_size = atoi(arg);
 }
 
+void opt_b_frames(const char *arg)
+{
+    b_frames = atoi(arg);
+    if (b_frames > FF_MAX_B_FRAMES) {
+        fprintf(stderr, "\nCannot have more than %d B frames, increase FF_MAX_B_FRAMES.\n", FF_MAX_B_FRAMES);
+        exit(1);
+    } else if (b_frames < 1) {
+        fprintf(stderr, "\nNumber of B frames must be higher than 0\n");
+        exit(1);
+    }
+}
+
 void opt_qscale(const char *arg)
 {
     video_qscale = atoi(arg);
@@ -1773,11 +1786,22 @@ void opt_output_file(const char *filename)
                 video_enc->flags |= CODEC_FLAG_HQ;
                 video_enc->flags |= CODEC_FLAG_4MV;
             }
-            video_enc->qmin= video_qmin;
-            video_enc->qmax= video_qmax;
-            video_enc->max_qdiff= video_qdiff;
-            video_enc->qblur= video_qblur;
-            video_enc->qcompress= video_qcomp;
+            
+            if (b_frames) {
+                if (codec_id != CODEC_ID_MPEG4) {
+                    fprintf(stderr, "\nB frames encoding only supported by MPEG-4.\n");
+                    exit(1);
+                }
+                video_enc->max_b_frames = b_frames;
+                video_enc->b_frame_strategy = 0;
+                video_enc->b_quant_factor = 2.0;
+            }
+            
+            video_enc->qmin = video_qmin;
+            video_enc->qmax = video_qmax;
+            video_enc->max_qdiff = video_qdiff;
+            video_enc->qblur = video_qblur;
+            video_enc->qcompress = video_qcomp;
             
             if (do_psnr)
                 video_enc->get_psnr = 1;
@@ -2124,6 +2148,7 @@ const OptionDef options[] = {
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
+    { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
     { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },
     { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
     { "sameq", OPT_BOOL, {(void*)&same_quality}, 

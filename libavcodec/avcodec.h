@@ -75,7 +75,8 @@ enum Motion_Est_ID {
 extern int motion_estimation_method;
 
 /* ME algos sorted by quality */
-static const int Motion_Est_QTab[] = { 1, 4, 3, 6, 5, 2 };
+static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG, 
+                                       ME_X1, ME_EPZS, ME_FULL };
 
 #define FF_MAX_B_FRAMES 4
 
