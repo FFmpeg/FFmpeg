@@ -608,6 +608,8 @@ typedef struct MJpegDecodeContext {
 	skip_bits(gb, 8); \
 }
 
+static int mjpeg_decode_dht(MJpegDecodeContext *s, UINT8 *buf, int buf_size);
+
 static void build_vlc(VLC *vlc, const UINT8 *bits_table, const UINT8 *val_table, 
                       int nb_codes)
 {
