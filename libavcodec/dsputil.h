@@ -331,7 +331,12 @@ static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int st
 /* btw, rintf() is existing on fbsd too -- alex */
 static inline long int lrintf(float x)
 {
+#ifdef CONFIG_WIN32
+    /* XXX: incorrect, but make it compile */
+    return (int)(x);
+#else
     return (int)(rint(x));
+#endif
 }
 #endif
 
