@@ -436,6 +436,9 @@ static int ra144_decode_frame(AVCodecContext * avctx,
   int16_t *data = vdata;
   Real144_internal *glob=avctx->priv_data;
 
+  if(buf_size==0)
+      return 0;
+  
   datao = data;
   unpack_input(buf,glob->unpacked);
   
