@@ -141,12 +141,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int size1, len, fd_max;
+    int len, fd_max;
     fd_set rfds;
     struct timeval tv;
 
-    size1 = size;
-    while (size > 0) {
+    for (;;) {
         if (url_interrupt_cb())
             return -EINTR;
         fd_max = s->fd;
@@ -167,15 +166,9 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
 #else
                 return -errno;
 #endif
-            else
-                continue;
-        } else if (len == 0) {
-            break;
-        }
-        size -= len;
-        buf += len;
+        } else break;
     }
-    return size1 - size;
+    return len;
 }
 
 static int tcp_write(URLContext *h, uint8_t *buf, int size)

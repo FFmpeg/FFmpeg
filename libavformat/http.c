@@ -183,11 +183,11 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr)
     post = h->flags & URL_WRONLY;
 
     snprintf(s->buffer, sizeof(s->buffer),
-             "%s %s HTTP/1.0\n"
-             "User-Agent: %s\n"
-             "Accept: */*\n"
-             "Host: %s\n"
-             "\n",
+             "%s %s HTTP/1.0\r\n"
+             "User-Agent: %s\r\n"
+             "Accept: */*\r\n"
+             "Host: %s\r\n"
+             "\r\n",
              post ? "POST" : "GET",
              path,
              LIBAVFORMAT_IDENT,
@@ -238,29 +238,19 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr)
 static int http_read(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
-    int size1, len;
+    int len;
 
-    size1 = size;
-    while (size > 0) {
-        /* read bytes from input buffer first */
-        len = s->buf_end - s->buf_ptr;
-        if (len > 0) {
-            if (len > size)
-                len = size;
-            memcpy(buf, s->buf_ptr, len);
-            s->buf_ptr += len;
-        } else {
-            len = url_read (s->hd, buf, size);
-            if (len < 0) {
-                return len;
-            } else if (len == 0) {
-                break;
-            }
-        }
-        size -= len;
-        buf += len;
+    /* read bytes from input buffer first */
+    len = s->buf_end - s->buf_ptr;
+    if (len > 0) {
+        if (len > size)
+            len = size;
+        memcpy(buf, s->buf_ptr, len);
+        s->buf_ptr += len;
+    } else {
+        len = url_read(s->hd, buf, size);
     }
-    return size1 - size;
+    return len;
 }
 
 /* used only when posting data */
