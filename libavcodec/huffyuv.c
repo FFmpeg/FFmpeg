@@ -644,7 +644,10 @@ static int encode_422_bitstream(HYuvContext *s, int count){
             s->stats[0][ s->temp[0][2*i+1] ]++;
             s->stats[2][ s->temp[2][  i  ] ]++;
         }
-    }else if(s->context){
+    }
+    if(s->avctx->flags2&CODEC_FLAG2_NO_OUTPUT)
+        return 0;
+    if(s->context){
         for(i=0; i<count; i++){
             s->stats[0][ s->temp[0][2*i  ] ]++;
             put_bits(&s->pb, s->len[0][ s->temp[0][2*i  ] ], s->bits[0][ s->temp[0][2*i  ] ]);
@@ -680,7 +683,11 @@ static int encode_gray_bitstream(HYuvContext *s, int count){
             s->stats[0][ s->temp[0][2*i  ] ]++;
             s->stats[0][ s->temp[0][2*i+1] ]++;
         }
-    }else if(s->context){
+    }
+    if(s->avctx->flags2&CODEC_FLAG2_NO_OUTPUT)
+        return 0;
+    
+    if(s->context){
         for(i=0; i<count; i++){
             s->stats[0][ s->temp[0][2*i  ] ]++;
             put_bits(&s->pb, s->len[0][ s->temp[0][2*i  ] ], s->bits[0][ s->temp[0][2*i  ] ]);
@@ -1176,7 +1183,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
             snprintf(p, end-p, "\n");
             p++;
         }
-    }else{
+    }
+    if(!(s->avctx->flags2 & CODEC_FLAG2_NO_OUTPUT)){
         flush_put_bits(&s->pb);
         s->dsp.bswap_buf((uint32_t*)buf, (uint32_t*)buf, size);
         avctx->stats_out[0] = '\0';

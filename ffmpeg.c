@@ -170,6 +170,7 @@ static int do_normalize_aqp = 0;
 static int qns = 0;
 static int closed_gop = 0;
 static int strict_gop = 0;
+static int no_output = 0;
 static int do_deinterlace = 0;
 static int do_interlace_dct = 0;
 static int do_interlace_me = 0;
@@ -3220,6 +3221,9 @@ static void opt_output_file(const char *filename)
                 if (do_interlace_me) {
                     video_enc->flags |= CODEC_FLAG_INTERLACED_ME;
                 }
+                if (no_output) {
+                    video_enc->flags2 |= CODEC_FLAG2_NO_OUTPUT;
+                }
                 video_enc->qmin = video_qmin;
                 video_enc->qmax = video_qmax;
                 video_enc->lmin = video_lmin;
@@ -4025,6 +4029,7 @@ const OptionDef options[] = {
     { "naq", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_normalize_aqp}, "normalize adaptive quantization" },
     { "cgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&closed_gop}, "closed gop" },
     { "sgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&strict_gop}, "strict gop" },
+    { "noout", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&no_output}, "skip bitstream encoding" },
     { "scan_offset", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_scan_offset}, "enable SVCD Scan Offset placeholder" },
     { "qpel", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_qpel}, "enable 1/4-pel" },
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },

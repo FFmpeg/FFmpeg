@@ -321,6 +321,7 @@ extern int motion_estimation_method;
 #define CODEC_FLAG_CLOSED_GOP     0x80000000
 #define CODEC_FLAG2_FAST          0x00000001 ///< allow non spec compliant speedup tricks
 #define CODEC_FLAG2_STRICT_GOP    0x00000002 ///< strictly enforce GOP size
+#define CODEC_FLAG2_NO_OUTPUT     0x00000004 ///< skip bitstream encoding
 
 /* Unsupported options :
  * 		Syntax Arithmetic coding (SAC)
