@@ -267,6 +267,17 @@ static void copy_picture(Picture *dst, Picture *src){
     dst->type= FF_BUFFER_TYPE_COPY;
 }
 
+static void copy_picture_attributes(AVFrame *dst, AVFrame *src){
+    dst->pict_type              = src->pict_type;
+    dst->quality                = src->quality;
+    dst->coded_picture_number   = src->coded_picture_number;
+    dst->display_picture_number = src->display_picture_number;
+//    dst->reference              = src->reference;
+    dst->pts                    = src->pts;
+    dst->interlaced_frame       = src->interlaced_frame;
+    dst->top_field_first        = src->top_field_first;
+}
+
 /**
  * allocates a Picture
  * The pixels are allocated/set by calling get_buffer() if shared=0
@@ -1631,12 +1642,8 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
             }
         }
     }
-    pic->quality= pic_arg->quality;
-    pic->pict_type= pic_arg->pict_type;
-    pic->pts = pic_arg->pts;
-    pic->interlaced_frame = pic_arg->interlaced_frame;
-    pic->top_field_first = pic_arg->top_field_first;
-
+    copy_picture_attributes(pic, pic_arg);
+    
     if(s->input_picture[encoding_delay])
         pic->display_picture_number= s->input_picture[encoding_delay]->display_picture_number + 1;
     
@@ -1754,12 +1761,8 @@ static void select_input_picture(MpegEncContext *s){
                 s->reordered_input_picture[0]->data[i]= NULL;
             s->reordered_input_picture[0]->type= 0;
             
-            //FIXME bad, copy * except
-            pic->pict_type = s->reordered_input_picture[0]->pict_type;
-            pic->quality   = s->reordered_input_picture[0]->quality;
-            pic->coded_picture_number = s->reordered_input_picture[0]->coded_picture_number;
-            pic->reference = s->reordered_input_picture[0]->reference;
-	    pic->pts = s->reordered_input_picture[0]->pts;
+            copy_picture_attributes((AVFrame*)pic, (AVFrame*)s->reordered_input_picture[0]);
+            pic->reference              = s->reordered_input_picture[0]->reference;
             
             alloc_picture(s, pic, 0);
 
@@ -1806,7 +1809,6 @@ int MPV_encode_picture(AVCodecContext *avctx,
     
     /* output? */
     if(s->new_picture.data[0]){
-
         s->pict_type= s->new_picture.pict_type;
 //emms_c();
 //printf("qs:%f %f %d\n", s->new_picture.quality, s->current_picture.quality, s->qscale);
