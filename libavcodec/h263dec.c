@@ -165,7 +165,7 @@ static int decode_slice(MpegEncContext *s){
                 return -1; 
         }
         
-        /* restore variables which where modified */
+        /* restore variables which were modified */
         s->first_slice_line=1;
         s->mb_x= s->resync_mb_x;
         s->mb_y= s->resync_mb_y;

@@ -3,7 +3,7 @@
  * avcodec API use example.
  *
  * Note that this library only handles codecs (mpeg, mpeg4, etc...),
- * not file formats (avi, vob, etc...). See library 'libav' for the
+ * not file formats (avi, vob, etc...). See library 'libavformat' for the
  * format handling 
  */
 
