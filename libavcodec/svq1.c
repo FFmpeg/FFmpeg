@@ -1933,6 +1933,7 @@ AVCodec svq1_decoder = {
     svq1_decode_frame,
     CODEC_CAP_DR1,
     .flush= ff_mpeg_flush,
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV410P, -1},
 };
 
 #ifdef CONFIG_ENCODERS
@@ -1945,6 +1946,7 @@ AVCodec svq1_encoder = {
     svq1_encode_init,
     svq1_encode_frame,
     svq1_encode_end,
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV410P, -1},
 };
 
 #endif //CONFIG_ENCODERS

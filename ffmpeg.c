@@ -2744,6 +2744,7 @@ static void opt_output_file(const char *filename)
             } else {
                 char *p;
                 int i;
+                AVCodec *codec;
             
                 codec_id = file_oformat->video_codec;
                 if (video_codec_id != CODEC_ID_NONE)
@@ -2759,7 +2760,18 @@ static void opt_output_file(const char *filename)
                 video_enc->width = frame_width + frame_padright + frame_padleft;
                 video_enc->height = frame_height + frame_padtop + frame_padbottom;
 		video_enc->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
-		video_enc->pix_fmt = frame_pix_fmt;
+                video_enc->pix_fmt = frame_pix_fmt;
+
+                codec = avcodec_find_encoder(codec_id);
+                if(codec && codec->pix_fmts){
+                    const enum PixelFormat *p= codec->pix_fmts;
+                    for(; *p!=-1; p++){
+                        if(*p == video_enc->pix_fmt)
+                            break;
+                    }
+                    if(*p == -1)
+                        video_enc->pix_fmt = codec->pix_fmts[0];
+                }
 
                 if (!intra_only)
                     video_enc->gop_size = gop_size;
