@@ -598,6 +598,7 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 	ppMode.flatnessThreshold=40;
 	ppMode.flatnessThreshold= 56-16;
 	ppMode.maxClippedThreshold= 0.01;
+	ppMode.error=0;
 
 	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
@@ -845,6 +846,7 @@ for(y=0; y<mbHeight; y++){
 	printf("\n");
 }
 //printf("pict_type:%d\n", pict_type);
+
 	if(pict_type!=3)
 	{
 		int x,y;
