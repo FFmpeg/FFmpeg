@@ -236,7 +236,7 @@ enum PixelFormat avcodec_get_pix_fmt(const char* name)
 
 /* Picture field are filled with 'ptr' addresses. Also return size */
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
-                   int pix_fmt, int width, int height)
+		   int pix_fmt, int width, int height)
 {
     int size, w2, h2, size2;
     PixFmtInfo *pinfo;
@@ -313,12 +313,12 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
     }
 }
 
-int avpicture_layout(AVPicture* src, int pix_fmt, int width, int height,
+int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size)
 {
     PixFmtInfo* pf = &pix_fmt_info[pix_fmt];
     int i, j, w, h, data_planes;
-    unsigned char* s; 
+    const unsigned char* s; 
     int size = avpicture_get_size(pix_fmt, width, height);
 
     if (size > dest_size)
@@ -535,7 +535,7 @@ static void img_copy_plane(uint8_t *dst, int dst_wrap,
 /**
  * Copy image 'src' to 'dst'.
  */
-void img_copy(AVPicture *dst, AVPicture *src,
+void img_copy(AVPicture *dst, const AVPicture *src,
               int pix_fmt, int width, int height)
 {
     int bwidth, bits, i;
@@ -588,7 +588,7 @@ void img_copy(AVPicture *dst, AVPicture *src,
 
 /* XXX: totally non optimized */
 
-static void yuv422_to_yuv420p(AVPicture *dst, AVPicture *src,
+static void yuv422_to_yuv420p(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     const uint8_t *p, *p1;
@@ -644,7 +644,7 @@ static void yuv422_to_yuv420p(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void yuv422_to_yuv422p(AVPicture *dst, AVPicture *src,
+static void yuv422_to_yuv422p(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     const uint8_t *p, *p1;
@@ -677,7 +677,7 @@ static void yuv422_to_yuv422p(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void yuv422p_to_yuv422(AVPicture *dst, AVPicture *src,
+static void yuv422p_to_yuv422(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     uint8_t *p, *p1;
@@ -1286,7 +1286,7 @@ static inline unsigned int bitcopy_n(unsigned int a, int n)
 
 #include "imgconvert_template.h"
 
-static void mono_to_gray(AVPicture *dst, AVPicture *src,
+static void mono_to_gray(AVPicture *dst, const AVPicture *src,
                          int width, int height, int xor_mask)
 {
     const unsigned char *p;
@@ -1327,19 +1327,19 @@ static void mono_to_gray(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void monowhite_to_gray(AVPicture *dst, AVPicture *src,
+static void monowhite_to_gray(AVPicture *dst, const AVPicture *src,
                                int width, int height)
 {
     mono_to_gray(dst, src, width, height, 0xff);
 }
 
-static void monoblack_to_gray(AVPicture *dst, AVPicture *src,
+static void monoblack_to_gray(AVPicture *dst, const AVPicture *src,
                                int width, int height)
 {
     mono_to_gray(dst, src, width, height, 0x00);
 }
 
-static void gray_to_mono(AVPicture *dst, AVPicture *src,
+static void gray_to_mono(AVPicture *dst, const AVPicture *src,
                          int width, int height, int xor_mask)
 {
     int n;
@@ -1383,20 +1383,21 @@ static void gray_to_mono(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void gray_to_monowhite(AVPicture *dst, AVPicture *src,
+static void gray_to_monowhite(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     gray_to_mono(dst, src, width, height, 0xff);
 }
 
-static void gray_to_monoblack(AVPicture *dst, AVPicture *src,
+static void gray_to_monoblack(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     gray_to_mono(dst, src, width, height, 0x00);
 }
 
 typedef struct ConvertEntry {
-    void (*convert)(AVPicture *dst, AVPicture *src, int width, int height);
+    void (*convert)(AVPicture *dst,
+		    const AVPicture *src, int width, int height);
 } ConvertEntry;
 
 /* Add each new convertion function in this table. In order to be able
@@ -1644,7 +1645,7 @@ static inline int is_yuv_planar(PixFmtInfo *ps)
 
 /* XXX: always use linesize. Return -1 if not supported */
 int img_convert(AVPicture *dst, int dst_pix_fmt,
-                AVPicture *src, int src_pix_fmt, 
+                const AVPicture *src, int src_pix_fmt, 
                 int src_width, int src_height)
 {
     static int inited;
@@ -1877,7 +1878,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
 }
 
 /* NOTE: we scan all the pixels to have an exact information */
-static int get_alpha_info_pal8(AVPicture *src, int width, int height)
+static int get_alpha_info_pal8(const AVPicture *src, int width, int height)
 {
     const unsigned char *p;
     int src_wrap, ret, x, y;
@@ -1906,7 +1907,8 @@ static int get_alpha_info_pal8(AVPicture *src, int width, int height)
  * Tell if an image really has transparent alpha values.
  * @return ored mask of FF_ALPHA_xxx constants
  */
-int img_get_alpha_info(AVPicture *src, int pix_fmt, int width, int height)
+int img_get_alpha_info(const AVPicture *src,
+		       int pix_fmt, int width, int height)
 {
     PixFmtInfo *pf = &pix_fmt_info[pix_fmt];
     int ret;
@@ -1981,8 +1983,11 @@ int img_get_alpha_info(AVPicture *src, int pix_fmt, int width, int height)
 #endif
 
 /* filter parameters: [-1 4 2 4 -1] // 8 */
-static void deinterlace_line(uint8_t *dst, uint8_t *lum_m4, uint8_t *lum_m3, uint8_t *lum_m2, uint8_t *lum_m1, uint8_t *lum,
-                                int size)
+static void deinterlace_line(uint8_t *dst, 
+			     const uint8_t *lum_m4, const uint8_t *lum_m3, 
+			     const uint8_t *lum_m2, const uint8_t *lum_m1, 
+			     const uint8_t *lum,
+			     int size)
 {
 #ifndef HAVE_MMX
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
@@ -2071,10 +2076,10 @@ static void deinterlace_line_inplace(uint8_t *lum_m4, uint8_t *lum_m3, uint8_t *
    top field is copied as is, but the bottom field is deinterlaced
    against the top field. */
 static void deinterlace_bottom_field(uint8_t *dst, int dst_wrap,
-                                    uint8_t *src1, int src_wrap,
+                                    const uint8_t *src1, int src_wrap,
                                     int width, int height)
 {
-    uint8_t *src_m2, *src_m1, *src_0, *src_p1, *src_p2;
+    const uint8_t *src_m2, *src_m1, *src_0, *src_p1, *src_p2;
     int y;
 
     src_m2 = src1;
@@ -2100,7 +2105,7 @@ static void deinterlace_bottom_field(uint8_t *dst, int dst_wrap,
 }
 
 static void deinterlace_bottom_field_inplace(uint8_t *src1, int src_wrap,
-                                     int width, int height)
+					     int width, int height)
 {
     uint8_t *src_m1, *src_0, *src_p1, *src_p2;
     int y;
@@ -2126,7 +2131,7 @@ static void deinterlace_bottom_field_inplace(uint8_t *src1, int src_wrap,
 
 
 /* deinterlace - if not supported return -1 */
-int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
+int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
                           int pix_fmt, int width, int height)
 {
     int i;
@@ -2157,7 +2162,7 @@ int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
             }
         }
         if (src == dst) {
-            deinterlace_bottom_field_inplace(src->data[i], src->linesize[i],
+            deinterlace_bottom_field_inplace(dst->data[i], dst->linesize[i],
                                  width, height);
         } else {
             deinterlace_bottom_field(dst->data[i],dst->linesize[i],

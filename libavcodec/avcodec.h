@@ -520,7 +520,7 @@ typedef struct AVCodecContext {
      * @param offset offset into the AVFrame.data from which the slice should be read
      */
     void (*draw_horiz_band)(struct AVCodecContext *s,
-                            AVFrame *src, int offset[4],
+                            const AVFrame *src, int offset[4],
                             int y, int type, int height);
 
     /* audio only */
@@ -1483,13 +1483,13 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
                                       int leftBand, int rightBand);
 
 void img_resample(ImgReSampleContext *s, 
-                  AVPicture *output, AVPicture *input);
+                  AVPicture *output, const AVPicture *input);
 
 void img_resample_close(ImgReSampleContext *s);
 
 int avpicture_fill(AVPicture *picture, uint8_t *ptr,
                    int pix_fmt, int width, int height);
-int avpicture_layout(AVPicture* src, int pix_fmt, int width, int height,
+int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
                      unsigned char *dest, int dest_size);
 int avpicture_get_size(int pix_fmt, int width, int height);
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift);
@@ -1510,15 +1510,16 @@ int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
 
 #define FF_ALPHA_TRANSP       0x0001 /* image has some totally transparent pixels */
 #define FF_ALPHA_SEMI_TRANSP  0x0002 /* image has some transparent pixels */
-int img_get_alpha_info(AVPicture *src, int pix_fmt, int width, int height);
+int img_get_alpha_info(const AVPicture *src,
+		       int pix_fmt, int width, int height);
 
 /* convert among pixel formats */
 int img_convert(AVPicture *dst, int dst_pix_fmt,
-                AVPicture *src, int pix_fmt, 
+                const AVPicture *src, int pix_fmt, 
                 int width, int height);
 
 /* deinterlace a picture */
-int avpicture_deinterlace(AVPicture *dst, AVPicture *src,
+int avpicture_deinterlace(AVPicture *dst, const AVPicture *src,
                           int pix_fmt, int width, int height);
 
 /* external high level API */

@@ -58,11 +58,12 @@ static inline int get_phase(int pos)
 }
 
 /* This function must be optimized */
-static void h_resample_fast(uint8_t *dst, int dst_width, uint8_t *src, int src_width,
-                            int src_start, int src_incr, int16_t *filters)
+static void h_resample_fast(uint8_t *dst, int dst_width, const uint8_t *src,
+			    int src_width, int src_start, int src_incr,
+			    int16_t *filters)
 {
     int src_pos, phase, sum, i;
-    uint8_t *s;
+    const uint8_t *s;
     int16_t *filter;
 
     src_pos = src_start;
@@ -101,11 +102,11 @@ static void h_resample_fast(uint8_t *dst, int dst_width, uint8_t *src, int src_w
 }
 
 /* This function must be optimized */
-static void v_resample(uint8_t *dst, int dst_width, uint8_t *src, int wrap, 
-                       int16_t *filter)
+static void v_resample(uint8_t *dst, int dst_width, const uint8_t *src,
+		       int wrap, int16_t *filter)
 {
     int sum, i;
-    uint8_t *s;
+    const uint8_t *s;
 
     s = src;
     for(i=0;i<dst_width;i++) {
@@ -160,11 +161,12 @@ static void v_resample(uint8_t *dst, int dst_width, uint8_t *src, int wrap,
 #define DUMP(reg) movq_r2m(reg, tmp); printf(#reg "=%016Lx\n", tmp.uq);
 
 /* XXX: do four pixels at a time */
-static void h_resample_fast4_mmx(uint8_t *dst, int dst_width, uint8_t *src, int src_width,
+static void h_resample_fast4_mmx(uint8_t *dst, int dst_width,
+				 const uint8_t *src, int src_width,
                                  int src_start, int src_incr, int16_t *filters)
 {
     int src_pos, phase;
-    uint8_t *s;
+    const uint8_t *s;
     int16_t *filter;
     mmx_t tmp;
     
@@ -204,11 +206,11 @@ static void h_resample_fast4_mmx(uint8_t *dst, int dst_width, uint8_t *src, int 
     emms();
 }
 
-static void v_resample4_mmx(uint8_t *dst, int dst_width, uint8_t *src, int wrap, 
-                            int16_t *filter)
+static void v_resample4_mmx(uint8_t *dst, int dst_width, const uint8_t *src,
+			    int wrap, int16_t *filter)
 {
     int sum, i, v;
-    uint8_t *s;
+    const uint8_t *s;
     mmx_t tmp;
     mmx_t coefs[4];
     
@@ -280,11 +282,11 @@ typedef	union {
     signed short s[8];
 } vec_ss_t;
 
-void v_resample16_altivec(uint8_t *dst, int dst_width, uint8_t *src, int wrap,
-                            int16_t *filter)
+void v_resample16_altivec(uint8_t *dst, int dst_width, const uint8_t *src,
+			  int wrap, int16_t *filter)
 {
     int sum, i;
-    uint8_t *s;
+    const uint8_t *s;
     vector unsigned char *tv, tmp, dstv, zero;
     vec_ss_t srchv[4], srclv[4], fv[4];
     vector signed short zeros, sumhv, sumlv;    
@@ -397,11 +399,12 @@ void v_resample16_altivec(uint8_t *dst, int dst_width, uint8_t *src, int wrap,
 #endif
 
 /* slow version to handle limit cases. Does not need optimisation */
-static void h_resample_slow(uint8_t *dst, int dst_width, uint8_t *src, int src_width,
+static void h_resample_slow(uint8_t *dst, int dst_width,
+			    const uint8_t *src, int src_width,
                             int src_start, int src_incr, int16_t *filters)
 {
     int src_pos, phase, sum, j, v, i;
-    uint8_t *s, *src_end;
+    const uint8_t *s, *src_end;
     int16_t *filter;
 
     src_end = src + src_width;
@@ -432,8 +435,9 @@ static void h_resample_slow(uint8_t *dst, int dst_width, uint8_t *src, int src_w
     }
 }
 
-static void h_resample(uint8_t *dst, int dst_width, uint8_t *src, int src_width,
-                       int src_start, int src_incr, int16_t *filters)
+static void h_resample(uint8_t *dst, int dst_width, const uint8_t *src,
+		       int src_width, int src_start, int src_incr,
+		       int16_t *filters)
 {
     int n, src_end;
 
@@ -607,7 +611,7 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
 }
 
 void img_resample(ImgReSampleContext *s, 
-                  AVPicture *output, AVPicture *input)
+                  AVPicture *output, const AVPicture *input)
 {
     int i, shift;
 

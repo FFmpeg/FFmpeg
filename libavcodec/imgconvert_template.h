@@ -21,10 +21,11 @@
 #define RGB_OUT(d, r, g, b) RGBA_OUT(d, r, g, b, 0xff)
 #endif
 
-static void glue(yuv420p_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
+static void glue(yuv420p_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
                                         int width, int height)
 {
-    uint8_t *y1_ptr, *y2_ptr, *cb_ptr, *cr_ptr, *d, *d1, *d2;
+    const uint8_t *y1_ptr, *y2_ptr, *cb_ptr, *cr_ptr;
+    uint8_t *d, *d1, *d2;
     int w, y, cb, cr, r_add, g_add, b_add, width2;
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
     unsigned int r, g, b;
@@ -114,10 +115,11 @@ static void glue(yuv420p_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void glue(yuvj420p_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
+static void glue(yuvj420p_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
                                          int width, int height)
 {
-    uint8_t *y1_ptr, *y2_ptr, *cb_ptr, *cr_ptr, *d, *d1, *d2;
+    const uint8_t *y1_ptr, *y2_ptr, *cb_ptr, *cr_ptr;
+    uint8_t *d, *d1, *d2;
     int w, y, cb, cr, r_add, g_add, b_add, width2;
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
     unsigned int r, g, b;
@@ -207,7 +209,7 @@ static void glue(yuvj420p_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void glue(RGB_NAME, _to_yuv420p)(AVPicture *dst, AVPicture *src,
+static void glue(RGB_NAME, _to_yuv420p)(AVPicture *dst, const AVPicture *src,
                                         int width, int height)
 {
     int wrap, wrap3, width2;
@@ -314,7 +316,7 @@ static void glue(RGB_NAME, _to_yuv420p)(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void glue(RGB_NAME, _to_gray)(AVPicture *dst, AVPicture *src,
+static void glue(RGB_NAME, _to_gray)(AVPicture *dst, const AVPicture *src,
                                      int width, int height)
 {
     const unsigned char *p;
@@ -340,7 +342,7 @@ static void glue(RGB_NAME, _to_gray)(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void glue(gray_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
+static void glue(gray_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
                                      int width, int height)
 {
     const unsigned char *p;
@@ -366,7 +368,7 @@ static void glue(gray_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void glue(pal8_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
+static void glue(pal8_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
                                      int width, int height)
 {
     const unsigned char *p;
@@ -409,7 +411,7 @@ static void glue(pal8_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
 #if !defined(FMT_RGBA32) && defined(RGBA_OUT)
 /* alpha support */
 
-static void glue(rgba32_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
+static void glue(rgba32_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
                                       int width, int height)
 {
     const uint8_t *s;
@@ -439,7 +441,7 @@ static void glue(rgba32_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void glue(RGB_NAME, _to_rgba32)(AVPicture *dst, AVPicture *src,
+static void glue(RGB_NAME, _to_rgba32)(AVPicture *dst, const AVPicture *src,
                                        int width, int height)
 {
     const uint8_t *s;
@@ -469,7 +471,7 @@ static void glue(RGB_NAME, _to_rgba32)(AVPicture *dst, AVPicture *src,
 
 #ifndef FMT_RGB24
 
-static void glue(rgb24_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
+static void glue(rgb24_to_, RGB_NAME)(AVPicture *dst, const AVPicture *src,
                                       int width, int height)
 {
     const uint8_t *s;
@@ -497,7 +499,7 @@ static void glue(rgb24_to_, RGB_NAME)(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void glue(RGB_NAME, _to_rgb24)(AVPicture *dst, AVPicture *src,
+static void glue(RGB_NAME, _to_rgb24)(AVPicture *dst, const AVPicture *src,
                                       int width, int height)
 {
     const uint8_t *s;
@@ -529,10 +531,11 @@ static void glue(RGB_NAME, _to_rgb24)(AVPicture *dst, AVPicture *src,
 
 #ifdef FMT_RGB24
 
-static void yuv444p_to_rgb24(AVPicture *dst, AVPicture *src,
+static void yuv444p_to_rgb24(AVPicture *dst, const AVPicture *src,
                              int width, int height)
 {
-    uint8_t *y1_ptr, *cb_ptr, *cr_ptr, *d, *d1;
+    const uint8_t *y1_ptr, *cb_ptr, *cr_ptr;
+    uint8_t *d, *d1;
     int w, y, cb, cr, r_add, g_add, b_add;
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
     unsigned int r, g, b;
@@ -561,10 +564,11 @@ static void yuv444p_to_rgb24(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void yuvj444p_to_rgb24(AVPicture *dst, AVPicture *src,
+static void yuvj444p_to_rgb24(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
-    uint8_t *y1_ptr, *cb_ptr, *cr_ptr, *d, *d1;
+    const uint8_t *y1_ptr, *cb_ptr, *cr_ptr;
+    uint8_t *d, *d1;
     int w, y, cb, cr, r_add, g_add, b_add;
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
     unsigned int r, g, b;
@@ -593,7 +597,7 @@ static void yuvj444p_to_rgb24(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void rgb24_to_yuv444p(AVPicture *dst, AVPicture *src,
+static void rgb24_to_yuv444p(AVPicture *dst, const AVPicture *src,
                              int width, int height)
 {
     int src_wrap, x, y;
@@ -625,7 +629,7 @@ static void rgb24_to_yuv444p(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void rgb24_to_yuvj420p(AVPicture *dst, AVPicture *src,
+static void rgb24_to_yuvj420p(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     int wrap, wrap3, width2;
@@ -732,7 +736,7 @@ static void rgb24_to_yuvj420p(AVPicture *dst, AVPicture *src,
     }
 }
 
-static void rgb24_to_yuvj444p(AVPicture *dst, AVPicture *src,
+static void rgb24_to_yuvj444p(AVPicture *dst, const AVPicture *src,
                               int width, int height)
 {
     int src_wrap, x, y;
@@ -768,7 +772,7 @@ static void rgb24_to_yuvj444p(AVPicture *dst, AVPicture *src,
 
 #if defined(FMT_RGB24) || defined(FMT_RGBA32)
 
-static void glue(RGB_NAME, _to_pal8)(AVPicture *dst, AVPicture *src,
+static void glue(RGB_NAME, _to_pal8)(AVPicture *dst, const AVPicture *src,
                                      int width, int height)
 {
     const unsigned char *p;
@@ -816,7 +820,8 @@ static void glue(RGB_NAME, _to_pal8)(AVPicture *dst, AVPicture *src,
         
 #ifdef RGBA_IN
 
-static int glue(get_alpha_info_, RGB_NAME)(AVPicture *src, int width, int height)
+static int glue(get_alpha_info_, RGB_NAME)(const AVPicture *src,
+					   int width, int height)
 {
     const unsigned char *p;
     int src_wrap, ret, x, y;
