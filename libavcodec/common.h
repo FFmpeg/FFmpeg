@@ -50,6 +50,8 @@ typedef UINT16 uint16_t;
 typedef INT16 int16_t;
 typedef UINT32 uint32_t;
 typedef INT32 int32_t;
+typedef UINT64 uint64_t;
+typedef INT64 int64_t;
 
 #ifndef __MINGW32__
 #define INT64_C(c)     (c ## i64)
@@ -69,22 +71,15 @@ typedef INT32 int32_t;
 #define DEBUG
 #endif
 
-// code from bits/byteswap.h (C) 1997, 1998 Free Software Foundation, Inc.
-#define bswap_32(x) \
-     ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) | \
-      (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24))
-#define be2me_32(x) bswap_32(x)
-
 #define snprintf _snprintf
 
-#ifndef __MINGW32__
-/* no config.h with VC */
-#define CONFIG_ENCODERS 1
-#define CONFIG_DECODERS 1
-#define CONFIG_AC3      1
-#endif
+#ifdef HAVE_AV_CONFIG_H
 
-#else
+#define MANGLE(a) "_" #a
+
+#endif /* HAVE_AV_CONFIG_H */
+
+#else /* CONFIG_WIN32 */
 
 /* unix */
 
@@ -114,19 +109,22 @@ typedef signed long long INT64;
 #define UINT64_C(c)    (c ## ULL)
 #endif
 
-#include "bswap.h"
-
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
 #endif
+
+#define MANGLE(a) #a
 
 #endif /* HAVE_AV_CONFIG_H */
 
 #endif /* !CONFIG_WIN32 */
 
 
-/* debug stuff */
 #ifdef HAVE_AV_CONFIG_H
+
+#include "bswap.h"
+
+/* debug stuff */
 
 #ifndef DEBUG
 #define NDEBUG
