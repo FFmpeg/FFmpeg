@@ -39,7 +39,7 @@ EXTRALIBS+=-lmedia -lbe
 endif
 
 ifeq ($(BUILD_SHARED),yes)
-DEP_LIBS=libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF)
+DEP_LIBS=libavcodec/$(SLIBPREF)avcodec$(SLIBSUF) libavformat/$(SLIBPREF)avformat$(SLIBSUF)
 else
 DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(LIBSUF)
 ifeq ($(CONFIG_MP3LAME),yes)
@@ -109,6 +109,7 @@ videohook: .libs
 
 install: all $(INSTALLVHOOK)
 	$(MAKE) -C libavcodec install
+	$(MAKE) -C libavformat install
 	install -d $(prefix)/bin
 	install -c -s -m 755 $(PROG) $(prefix)/bin
 

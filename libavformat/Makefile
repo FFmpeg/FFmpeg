@@ -63,18 +63,38 @@ OBJS+= ogg.o
 endif
 
 LIB= $(LIBPREF)avformat$(LIBSUF)
+ifeq ($(BUILD_SHARED),yes)
+SLIB= $(SLIBPREF)avformat$(SLIBSUF)
+endif
 
 SRCS := $(OBJS:.o=.c) $(PPOBJS:.o=.cpp)
 
-all: $(LIB)
+all: $(LIB) $(SLIB)
 
 $(LIB): $(OBJS) $(PPOBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS) $(PPOBJS)
 	$(RANLIB) $@
 
+$(SLIB): $(OBJS)
+	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
+
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
+
+install: all
+ifeq ($(BUILD_SHARED),yes)
+	install -d $(prefix)/lib
+	install -s -m 755 $(SLIB) $(prefix)/lib/libavformat-$(VERSION).so
+	ln -sf libavformat-$(VERSION).so $(prefix)/lib/libavformat.so
+	ldconfig || true
+	mkdir -p $(prefix)/include/ffmpeg
+	install -m 644 $(VPATH)/avformat.h $(prefix)/include/ffmpeg/avformat.h
+	install -m 644 $(VPATH)/avio.h $(prefix)/include/ffmpeg/avio.h
+	install -m 644 $(VPATH)/rtp.h $(prefix)/include/ffmpeg/rtp.h
+	install -m 644 $(VPATH)/rtsp.h $(prefix)/include/ffmpeg/rtsp.h
+	install -m 644 $(VPATH)/rtspcodes.h $(prefix)/include/ffmpeg/rtspcodes.h
+endif
 
 installlib: all
 	install -m 644 $(LIB) $(prefix)/lib
