@@ -347,16 +347,35 @@ void msmpeg4_encode_mb(MpegEncContext * s,
 /* strongly inspirated from MPEG4, but not exactly the same ! */
 void msmpeg4_dc_scale(MpegEncContext * s)
 {
-    int scale;
-
-    if (s->qscale < 5)
-        scale = 8;
-    else if (s->qscale < 9)
-        scale = 2 * s->qscale;
-    else 
-        scale = s->qscale + 8;
-    s->y_dc_scale = scale;
-    s->c_dc_scale = (s->qscale + 13) / 2;
+    if (s->qscale < 5){
+        s->y_dc_scale = 8;
+        s->c_dc_scale = 8;
+//        s->c_dc_scale = (s->qscale + 13)>>1;
+    }else if (s->qscale < 9){
+        s->y_dc_scale = 2 * s->qscale;
+        s->c_dc_scale = (s->qscale + 13)>>1;
+    }else{
+        s->y_dc_scale = s->qscale + 8;
+        s->c_dc_scale = (s->qscale + 13)>>1;
+    }
+    // this differs for quant >24 from mpeg4 
+    
+//    if(s->qscale==13) s->c_dc_scale=14;
+    
+//    if(s->qscale>=6)
+//     printf("%d", s->qscale);
+    
+    /* s->c_dc_scale values (found by Michael Nidermayer)
+     qscale=2 -> 8 (yes iam sure about that)
+     qscale=3 -> 8
+     qscale=4 -> 8
+     qscale=5 -> 9
+     qscale=6 -> 9 
+     qscale=7 -> 10
+     qscale=8 -> 10
+     qscale=9 -> 11
+     qscale=10-> 11
+    */
 }
 
 /* dir = 0: left, dir = 1: top prediction */
