@@ -1185,7 +1185,7 @@ static int http_parse_request(HTTPContext *c)
     if (match_ext(filename, "asx")) {
         redir_type = REDIR_ASX;
         filename[strlen(filename)-1] = 'f';
-    } else if (match_ext(filename, ".asf") &&
+    } else if (match_ext(filename, "asf") &&
         (!useragent || strncasecmp(useragent, "NSPlayer", 8) != 0)) {
         /* if this isn't WMP or lookalike, return the redirector file */
         redir_type = REDIR_ASF;
