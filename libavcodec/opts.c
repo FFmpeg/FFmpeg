@@ -9,17 +9,15 @@
  */
 
 #include "avcodec.h"
-#ifdef OPTS_MAIN
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#endif
 
-/*
- * todo - use for decoder options also
- */
+extern const AVOption common_options[2];
 
-static int parse_bool(avc_config_t* c, char* s)
+const AVOption common_options[2] = {
+    AVOPTION_CODEC_INT("common", "test", bit_rate, 0, 10, 0),
+    AVOPTION_END()
+};
+
+static int parse_bool(const AVOption *c, char *s, int *var)
 {
     int b = 1; /* by default -on- when present */
     if (s) {
@@ -33,12 +31,11 @@ static int parse_bool(avc_config_t* c, char* s)
 	    return -1;
     }
 
-    if (c && c->val)
-	*(int*)(c->val) = b;
+    *var = b;
     return 0;
 }
 
-static int parse_double(avc_config_t* c, char* s)
+static int parse_double(const AVOption *c, char *s, double *var)
 {
     double d;
     if (!s)
@@ -51,12 +48,11 @@ static int parse_double(avc_config_t* c, char* s)
 	    return -1;
 	}
     }
-    if (c && c->val)
-	*(double*)(c->val) = d;
+    *var = d;
     return 0;
 }
 
-static int parse_int(avc_config_t* c, char* s)
+static int parse_int(const AVOption* c, char* s, int* var)
 {
     int i;
     if (!s)
@@ -69,25 +65,23 @@ static int parse_int(avc_config_t* c, char* s)
 	    return -1;
 	}
     }
-    if (c && c->val)
-	*(int*)(c->val) = i;
+    *var = i;
     return 0;
 }
 
-static int parse_string(AVCodecContext* avctx, avc_config_t* c, char* s)
+static int parse_string(const AVOption *c, char *s, AVCodecContext *avctx, char **var)
 {
     if (!s)
 	return -1;
 
-    if (c->type == FF_CONF_TYPE_RCOVERIDE) {
+    if (c->type == FF_OPT_TYPE_RCOVERRIDE) {
 	int sf, ef, qs;
 	float qf;
 	if (sscanf(s, "%d,%d,%d,%f", &sf, &ef, &qs, &qf) == 4 && sf < ef) {
-	    RcOverride* o;
-	    *((RcOverride**)c->val) =
-		realloc(*((RcOverride**)c->val),
-			sizeof(RcOverride) * (avctx->rc_override_count + 1));
-            o = *((RcOverride**)c->val) + avctx->rc_override_count++;
+	    RcOverride *o;
+	    avctx->rc_override = av_realloc(avctx->rc_override,
+					    sizeof(RcOverride) * (avctx->rc_override_count + 1));
+	    o = avctx->rc_override + avctx->rc_override_count++;
 	    o->start_frame = sf;
 	    o->end_frame = ef;
 	    o->qscale = qs;
@@ -98,181 +92,76 @@ static int parse_string(AVCodecContext* avctx, avc_config_t* c, char* s)
 	    printf("incorrect/unparsable Rc: \"%s\"\n", s);
 	}
     } else
-	(char*)(c->val) = strdup(s);
-    return 0;
-}
-
-static int parse(AVCodecContext* avctx, avc_config_t* config, char* str)
-{
-    while (str && *str) {
-	avc_config_t* c = config;
-	char* e = strchr(str, ':');
-        char* p;
-	if (e)
-            *e++ = 0;
-
-	p = strchr(str, '=');
-	if (p)
-	    *p++ = 0;
-
-	while (c->name) {
-	    if (!strcmp(c->name, str)) {
-		switch (c->type & FF_CONF_TYPE_MASK) {
-		case FF_CONF_TYPE_BOOL:
-                    parse_bool(c, p);
-                    break;
-		case FF_CONF_TYPE_DOUBLE:
-                    parse_double(c, p);
-                    break;
-		case FF_CONF_TYPE_INT:
-                    parse_int(c, p);
-                    break;
-		case FF_CONF_TYPE_STRING:
-		    parse_string(avctx, c, p);
-		    break;
-		default:
-                    abort();
-                    break;
-		}
-	    }
-            c++;
-	}
-	str = e;
-    }
+	*var = av_strdup(s);
     return 0;
 }
 
 /**
  *
+ * \param codec  codec for option parsing
+ * \param opts   string with options for parsing
  * \param avctx  where to store parsed results
- * \param str    string with options for parsing
- *               or selectional string (pick only options appliable
- *               for codec - use  ,msmpeg4, (with commas to avoid mismatch)
- * \param config allocated avc_config_t for external parsing
- *               i.e. external program might learn about all available
- *               options for given codec
- **/
-void avcodec_getopt(AVCodecContext* avctx, const char* str, avc_config_t** config)
-{
-    AVCodecContext avctx_tmp;
-    AVCodecContext* ctx = (avctx) ? avctx : &avctx_tmp;
-    static const char* class_h263 = ",msmpeg4,";
-    //"huffyuv,wmv1,msmpeg4v2,msmpeg4,mpeg4,mpeg1,mpeg1video,mjpeg,rv10,h263,h263p"
-
-    avc_config_t cnf[] =
-    {
-	// FIXME: sorted by importance!!!
-        // expert option should follow more common ones
-	{
-	    "bitrate", "desired video bitrate",
-	    FF_CONF_TYPE_INT, &ctx->bit_rate, 4, 240000000, 800000, NULL, class_h263
-	}, {
-	    "vhq", "very high quality",
-	    FF_CONF_TYPE_FLAG, &ctx->flags, 0, CODEC_FLAG_HQ, 0, NULL, class_h263
-	}, {
-	    "ratetol", "number of bits the bitstream is allowed to diverge from the reference"
-	    "the reference can be CBR (for CBR pass1) or VBR (for pass2)",
-	    FF_CONF_TYPE_INT, &ctx->bit_rate_tolerance, 4, 240000000, 8000, NULL, class_h263
-	}, {
-	    "qmin", "minimum quantizer", FF_CONF_TYPE_INT, &ctx->qmin, 1, 31, 2, NULL, class_h263
-	}, {
-	    "qmax", "maximum qunatizer", FF_CONF_TYPE_INT, &ctx->qmax, 1, 31, 31, NULL, class_h263
-	}, {
-	    "rc_eq", "rate control equation",
-	    FF_CONF_TYPE_STRING, &ctx->rc_eq, 0, 0, 0, "tex^qComp" /* FILLME options */, class_h263
-	}, {
-	    "rc_minrate", "rate control minimum bitrate",
-	    FF_CONF_TYPE_INT, &ctx->rc_min_rate, 4, 24000000, 0, NULL, class_h263
-	}, {
-	    "rc_maxrate", "rate control maximum bitrate",
-	    FF_CONF_TYPE_INT, &ctx->rc_max_rate, 4, 24000000, 0, NULL, class_h263
-	}, {
-	    "psnr", "calculate PSNR of compressed frames",
-	    FF_CONF_TYPE_FLAG, &ctx->flags, 0, CODEC_FLAG_PSNR, 0, NULL, class_h263
-	}, {
-	    "rc_override", "ratecontrol override (=startframe,endframe,qscale,quality_factor)",
-	    FF_CONF_TYPE_RCOVERIDE, &ctx->rc_override, 0, 0, 0, "0,0,0,0", class_h263
-	},
-
-        { NULL, NULL, 0, NULL, 0, 0, 0, NULL, NULL }
-    };
-
-    if (config) {
-	*config = malloc(sizeof(cnf));
-	if (*config) {
-	    avc_config_t* src = cnf;
-	    avc_config_t* dst = *config;
-	    while (src->name) {
-		if (!str || !src->supported || strstr(src->supported, str))
-		    memcpy(dst++, src, sizeof(avc_config_t));
-                src++;
-	    }
-	    memset(dst, 0, sizeof(avc_config_t));
-	}
-    } else if (str) {
-	char* s = strdup(str);
-	if (s) {
-	    parse(avctx, cnf, s);
-            free(s);
-	}
-    }
-}
-
-#ifdef OPTS_MAIN
-/*
- * API test -
- * arg1: options
- * arg2: codec type
- *
- * compile standalone: make CFLAGS="-DOPTS_MAIN" opts
  */
-int main(int argc, char* argv[])
+int avcodec_parse(const AVCodec *codec, const char *opts, AVCodecContext *avctx)
 {
-    AVCodecContext avctx;
-    avc_config_t* config;
-    char* def = malloc(5000);
-    const char* col = "";
-    int i = 0;
+    int r = 0;
+    char* dopts = av_strdup(opts);
+    if (dopts) {
+        char *str = dopts;
 
-    memset(&avctx, 0, sizeof(avctx));
-    *def = 0;
-    avcodec_getopt(&avctx, argv[1], NULL);
+	while (str && *str && r == 0) {
+	    const AVOption *stack[FF_OPT_MAX_DEPTH];
+	    int depth = 0;
+	    const AVOption *c = codec->options;
+	    char* e = strchr(str, ':');
+	    char* p;
+	    if (e)
+		*e++ = 0;
 
-    avcodec_getopt(NULL, (argc > 2) ? argv[2] : NULL, &config);
-    if (config)
-	while (config->name) {
-            int t = config->type & FF_CONF_TYPE_MASK;
-	    printf("Config   %s  %s\n", config->name,
-		   t == FF_CONF_TYPE_BOOL ? "bool" :
-                   t == FF_CONF_TYPE_DOUBLE ? "double" :
-                   t == FF_CONF_TYPE_INT ? "integer" :
-		   t == FF_CONF_TYPE_STRING ? "string" :
-		   "unknown??");
-	    switch (t) {
-	    case FF_CONF_TYPE_BOOL:
-		i += sprintf(def + i, "%s%s=%s",
-			     col, config->name,
-			     config->defval != 0. ? "on" : "off");
-                break;
-	    case FF_CONF_TYPE_DOUBLE:
-		i += sprintf(def + i, "%s%s=%f",
-			     col, config->name, config->defval);
-                break;
-	    case FF_CONF_TYPE_INT:
-		i += sprintf(def + i, "%s%s=%d",
-			     col, config->name, (int) config->defval);
-                break;
-	    case FF_CONF_TYPE_STRING:
-		i += sprintf(def + i, "%s%s=%s",
-			     col, config->name, config->defstr);
-		break;
+	    p = strchr(str, '=');
+	    if (p)
+		*p++ = 0;
+
+            // going through option structures
+	    for (;;) {
+		if (!c->name) {
+		    if (c->sub) {
+			stack[depth++] = c;
+			c = c->sub;
+			assert(depth > FF_OPT_MAX_DEPTH);
+		    } else {
+			if (depth == 0)
+			    break; // finished
+			c = stack[--depth];
+                        c++;
+		    }
+		} else {
+		    if (!strcmp(c->name, str)) {
+			void* ptr = (char*)avctx + c->offset;
+
+			switch (c->type & FF_OPT_TYPE_MASK) {
+			case FF_OPT_TYPE_BOOL:
+			    r = parse_bool(c, p, (int*)ptr);
+			    break;
+			case FF_OPT_TYPE_DOUBLE:
+			    r = parse_double(c, p, (double*)ptr);
+			    break;
+			case FF_OPT_TYPE_INT:
+			    r = parse_int(c, p, (int*)ptr);
+			    break;
+			case FF_OPT_TYPE_STRING:
+			    r = parse_string(c, p, avctx, (char**)ptr);
+			    break;
+			default:
+			    assert(0 == 1);
+			}
+		    }
+		    c++;
+		}
 	    }
-	    col = ":";
-	    config++;
+	    str = e;
 	}
-
-    printf("Default Options: %s\n", def);
-
-    return 0;
+	av_free(dopts);
+    }
+    return r;
 }
-#endif

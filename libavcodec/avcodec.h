@@ -950,6 +950,42 @@ typedef struct AVCodecContext {
     enum PixelFormat (*get_format)(struct AVCodecContext *s, enum PixelFormat * fmt);
 } AVCodecContext;
 
+//void avcodec_getopt(AVCodecContext* avctx, const char* str, avc_config_t** config);
+
+typedef struct AVOption {
+    /** options' name */
+    const char *name; /* if name is NULL, it indicates a link to next */
+    /** short English text help */
+    const char *help;
+    /** offset to context structure where the parsed value should be stored */
+    int offset;
+    /** options' type */
+    int type;
+#define FF_OPT_TYPE_BOOL 1     // boolean - true,1,on  (or simply presence)
+#define FF_OPT_TYPE_DOUBLE 2   // double
+#define FF_OPT_TYPE_INT 3      // integer
+#define FF_OPT_TYPE_STRING 4   // string (finished with \0)
+#define FF_OPT_TYPE_MASK 0x1f	// mask for types - upper bits are various flags
+//#define FF_OPT_TYPE_EXPERT 0x20 // flag for expert option
+#define FF_OPT_TYPE_FLAG (FF_OPT_TYPE_BOOL | 0x40)
+#define FF_OPT_TYPE_RCOVERRIDE (FF_OPT_TYPE_STRING | 0x80)
+    /** min value  (min == max   ->  no limits) */
+    double min;
+    /** maximum value for double/int */
+    double max;
+    /** default boo [0,1]l/double/int value */
+    double defval;
+    /**
+     * default string value (with optional semicolon delimited extra option-list
+     * i.e.   option1;option2;option3
+     * defval might select other then first argument as default
+     */
+    const char *defstr;
+    const struct AVOption *sub; /* used when name is NULL */
+    /* when it's NULL return to previous level (or finish reading) */
+#define FF_OPT_MAX_DEPTH 10
+} AVOption;
+
 typedef struct AVCodec {
     const char *name;
     int type;
@@ -961,10 +997,11 @@ typedef struct AVCodec {
     int (*decode)(AVCodecContext *, void *outdata, int *outdata_size,
                   UINT8 *buf, int buf_size);
     int capabilities;
+    const AVOption *options;
     struct AVCodec *next;
 } AVCodec;
 
-/** 
+/**
  * four components are given, that's all.
  * the last component is alpha
  */
@@ -1135,40 +1172,7 @@ void avcodec_register_all(void);
 
 void avcodec_flush_buffers(AVCodecContext *avctx);
 
-typedef struct {
-    /** options' name with default value*/
-    const char* name;
-    /** English text help */
-    const char* help;
-    /** type of variable */
-    int type;
-#define FF_CONF_TYPE_BOOL 1     // boolean - true,1,on  (or simply presence)
-#define FF_CONF_TYPE_DOUBLE 2   // double
-#define FF_CONF_TYPE_INT 3      // integer
-#define FF_CONF_TYPE_STRING 4   // string (finished with \0)
-#define FF_CONF_TYPE_MASK 0x1f	// mask for types - upper bits are various flags
-#define FF_CONF_TYPE_EXPERT 0x20 // flag for expert option
-#define FF_CONF_TYPE_FLAG (FF_CONF_TYPE_BOOL | 0x40)
-#define FF_CONF_TYPE_RCOVERIDE (FF_CONF_TYPE_STRING | 0x80)
-    /** where the parsed value should be stored */
-    void* val;
-    /** min value  (min == max   ->  no limits) */
-    double min;
-    /** maximum value for double/int */
-    double max;
-    /** default boo [0,1]l/double/int value */
-    double defval;
-    /**
-     * default string value (with optional semicolon delimited extra option-list
-     * i.e.   option1;option2;option3
-     * defval might select other then first argument as default
-     */
-    const char* defstr;
-    /** char* list of supported codecs (i.e. ",msmpeg4,h263," NULL - everything */
-    const char* supported;
-} avc_config_t;
 
-void avcodec_getopt(AVCodecContext* avctx, const char* str, avc_config_t** config);
 
 /**
  * Interface for 0.5.0 version
@@ -1254,7 +1258,7 @@ void av_free(void *ptr);
 char *av_strdup(const char *s);
 void __av_freep(void **ptr);
 #define av_freep(p) __av_freep((void **)(p))
-void *av_fast_realloc(void *ptr, int *size, int min_size);
+void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size);
 /* for static data only */
 /* call av_free_static to release all staticaly allocated tables */
 void av_free_static(void);
