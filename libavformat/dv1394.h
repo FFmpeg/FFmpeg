@@ -31,7 +31,8 @@
 #define DV1394_RING_FRAMES     20
 
 #define DV1394_WIDTH  720
-#define DV1394_HEIGHT 576
+#define DV1394_NTSC_HEIGHT 480
+#define DV1394_PAL_HEIGHT 576
 
 /* This is the public user-space interface. Try not to break it. */
 

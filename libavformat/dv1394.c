@@ -91,21 +91,21 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         return -ENOMEM;
     }
 
-    dv->width   = DV1394_WIDTH;
-    dv->height  = DV1394_HEIGHT;
+    /* FIXME: Need a format change parameter */
+    dv->format = DV1394_NTSC;
 
     if (ap->channel)
         dv->channel = ap->channel;
     else
         dv->channel = DV1394_DEFAULT_CHANNEL;
 
-    /* FIXME: Need a format change parameter */
-    dv->format = DV1394_NTSC;
-
+    dv->width = DV1394_WIDTH;
     if (dv->format == DV1394_NTSC) {
+	dv->height = DV1394_NTSC_HEIGHT;
         dv->frame_size = DV1394_NTSC_FRAME_SIZE;
         dv->frame_rate = 30;
     } else {
+	dv->height = DV1394_PAL_HEIGHT;
         dv->frame_size = DV1394_PAL_FRAME_SIZE;
         dv->frame_rate = 25;
     }
