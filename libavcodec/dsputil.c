@@ -2489,26 +2489,28 @@ static void ff_jref_idct_add(uint8_t *dest, int line_size, DCTELEM *block)
     add_pixels_clamped_c(block, dest, line_size);
 }
 
-void dsputil_init(DSPContext* c, AVCodecContext *avctx)
+/* init static data */
+void dsputil_static_init(void)
 {
-    static int init_done = 0;
     int i;
 
-    if (!init_done) {
-	for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
-	for(i=0;i<MAX_NEG_CROP;i++) {
-	    cropTbl[i] = 0;
-	    cropTbl[i + MAX_NEG_CROP + 256] = 255;
-	}
-
-	for(i=0;i<512;i++) {
-	    squareTbl[i] = (i - 256) * (i - 256);
-	}
-
-	for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
-
-	init_done = 1;
+    for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
+    for(i=0;i<MAX_NEG_CROP;i++) {
+        cropTbl[i] = 0;
+        cropTbl[i + MAX_NEG_CROP + 256] = 255;
     }
+    
+    for(i=0;i<512;i++) {
+        squareTbl[i] = (i - 256) * (i - 256);
+    }
+    
+    for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
+}
+
+
+void dsputil_init(DSPContext* c, AVCodecContext *avctx)
+{
+    int i;
 
 #ifdef CONFIG_ENCODERS
     if(avctx->dct_algo==FF_DCT_FASTINT)

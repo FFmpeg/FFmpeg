@@ -245,6 +245,7 @@ typedef struct DSPContext {
 
 } DSPContext;
 
+void dsputil_static_init(void);
 void dsputil_init(DSPContext* p, AVCodecContext *avctx);
 
 /**

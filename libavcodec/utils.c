@@ -555,7 +555,7 @@ void avcodec_init(void)
 	return;
     inited = 1;
 
-    //dsputil_init();
+    dsputil_static_init();
 }
 
 /* this can be called after seeking and before trying to decode the next keyframe */
