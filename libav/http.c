@@ -36,25 +36,27 @@
 #define URL_SIZE    4096
 
 typedef struct {
-    int fd;
+    URLContext *hd;
     unsigned char buffer[BUFFER_SIZE], *buf_ptr, *buf_end;
     int line_count;
     int http_code;
     char location[URL_SIZE];
 } HTTPContext;
 
-static int http_connect(URLContext *h, const char *path);
+static int http_connect(URLContext *h, const char *path, const char *hoststr);
 static int http_write(URLContext *h, UINT8 *buf, int size);
+
 
 /* return non zero if error */
 static int http_open(URLContext *h, const char *uri, int flags)
 {
-    struct sockaddr_in dest_addr;
-    const char *p, *path, *proxy_path;
-    char hostname[1024], *q;
-    int port, fd = -1, use_proxy;
-    struct hostent *hp;
+    const char *path, *proxy_path;
+    char hostname[1024], hoststr[1024];
+    char path1[1024];
+    char buf[1024];
+    int port, use_proxy, err;
     HTTPContext *s;
+    URLContext *hd = NULL;
 
     h->is_streamed = 1;
 
@@ -65,70 +67,51 @@ static int http_open(URLContext *h, const char *uri, int flags)
     h->priv_data = s;
 
     proxy_path = getenv("http_proxy");
-    use_proxy = (proxy_path != NULL) && !getenv("no_proxy") && (strncmp(proxy_path, "http://", 7) == 0);
+    use_proxy = (proxy_path != NULL) && !getenv("no_proxy") && 
+        strstart(proxy_path, "http://", NULL);
 
     /* fill the dest addr */
  redo:
-    if (use_proxy) {
-        p = proxy_path;
+    /* needed in any case to build the host string */
+    url_split(NULL, 0, hostname, sizeof(hostname), &port, 
+              path1, sizeof(path1), uri);
+    if (port > 0) {
+        snprintf(hoststr, sizeof(hoststr), "%s:%d", hostname, port);
     } else {
-        p = uri;
+        pstrcpy(hoststr, sizeof(hoststr), hostname);
     }
-    if (!strstart(p, "http://", &p))
-        goto fail;
-    q = hostname;
-    while (*p != ':' && *p != '/' && *p != '\0') {
-        if ((q - hostname) < sizeof(hostname) - 1)
-            *q++ = *p;
-        p++;
-    }
-    *q = '\0';
-    port = 80;
-    if (*p == ':') {
-        p++;
-        port = strtoul(p, (char **)&p, 10);
-    }
-    if (port <= 0)
-        goto fail;
+
     if (use_proxy) {
+        url_split(NULL, 0, hostname, sizeof(hostname), &port, 
+                  NULL, 0, proxy_path);
         path = uri;
     } else {
-        if (*p == '\0')
+        if (path1[0] == '\0')
             path = "/";
         else
-            path = p;
+            path = path1;
     }
+    if (port < 0)
+        port = 80;
 
-    dest_addr.sin_family = AF_INET;
-    dest_addr.sin_port = htons(port);
-    if ((inet_aton(hostname, &dest_addr.sin_addr)) == 0) {
-        hp = gethostbyname(hostname);
-        if (!hp)
-            goto fail;
-        memcpy (&dest_addr.sin_addr, hp->h_addr, sizeof(dest_addr.sin_addr));
-    }
-    
-    fd = socket(PF_INET, SOCK_STREAM, 0);
-    if (fd < 0)
+    snprintf(buf, sizeof(buf), "tcp://%s:%d", hostname, port);
+    err = url_open(&hd, buf, URL_RDWR);
+    if (err < 0)
         goto fail;
 
-    if (connect(fd, (struct sockaddr *)&dest_addr, 
-                sizeof(dest_addr)) < 0)
-        goto fail;
-
-    s->fd = fd;
-    if (http_connect(h, path) < 0)
+    s->hd = hd;
+    if (http_connect(h, path, hoststr) < 0)
         goto fail;
     if (s->http_code == 303 && s->location[0] != '\0') {
         /* url moved, get next */
         uri = s->location;
+        url_close(hd);
         goto redo;
     }
-
     return 0;
  fail:
-    if (fd >= 0)
-        close(fd);
+    if (hd)
+        url_close(hd);
     av_free(s);
     return -EIO;
 }
@@ -137,11 +120,8 @@ static int http_getc(HTTPContext *s)
 {
     int len;
     if (s->buf_ptr >= s->buf_end) {
-    redo:
-        len = read(s->fd, s->buffer, BUFFER_SIZE);
+        len = url_read(s->hd, s->buffer, BUFFER_SIZE);
         if (len < 0) {
-            if (errno == EAGAIN || errno == EINTR)
-                goto redo;
             return -EIO;
         } else if (len == 0) {
             return -1;
@@ -189,7 +169,7 @@ static int process_line(HTTPContext *s, char *line, int line_count)
     return 1;
 }
 
-static int http_connect(URLContext *h, const char *path)
+static int http_connect(URLContext *h, const char *path, const char *hoststr)
 {
     HTTPContext *s = h->priv_data;
     int post, err, ch;
@@ -203,12 +183,13 @@ static int http_connect(URLContext *h, const char *path)
              "%s %s HTTP/1.0\n"
              "User-Agent: FFmpeg %s\n"
              "Accept: */*\n"
+             "Host: %s\n"
              "\n",
              post ? "POST" : "GET",
              path,
-             FFMPEG_VERSION
-             );
-
+             FFMPEG_VERSION,
+             hoststr);
+    
     if (http_write(h, s->buffer, strlen(s->buffer)) < 0)
         return -EIO;
         
@@ -266,12 +247,9 @@ static int http_read(URLContext *h, UINT8 *buf, int size)
             memcpy(buf, s->buf_ptr, len);
             s->buf_ptr += len;
         } else {
-            len = read (s->fd, buf, size);
+            len = url_read (s->hd, buf, size);
             if (len < 0) {
-                if (errno != EINTR && errno != EAGAIN)
-                    return -errno;
-                else
-                    continue;
+                return len;
             } else if (len == 0) {
                 break;
             }
@@ -286,23 +264,14 @@ static int http_read(URLContext *h, UINT8 *buf, int size)
 static int http_write(URLContext *h, UINT8 *buf, int size)
 {
     HTTPContext *s = h->priv_data;
-    int ret, size1;
-
-    size1 = size;
-    while (size > 0) {
-        ret = write (s->fd, buf, size);
-        if (ret < 0 && errno != EINTR && errno != EAGAIN)
-            return -errno;
-        size -= ret;
-        buf += ret;
-    }
-    return size1 - size;
+    return url_write(s->hd, buf, size);
 }
 
 static int http_close(URLContext *h)
 {
     HTTPContext *s = h->priv_data;
-    close(s->fd);
+    url_close(s->hd);
+    av_free(s);
     return 0;
 }
 
@@ -314,3 +283,4 @@ URLProtocol http_protocol = {
     NULL, /* seek */
     http_close,
 };
+
