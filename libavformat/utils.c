@@ -558,7 +558,7 @@ static void compute_frame_duration(int *pnum, int *pden,
 }
 
 static int64_t lsb2full(int64_t lsb, int64_t last_ts, int lsb_bits){
-    int64_t mask = (1LL<<lsb_bits)-1;
+    int64_t mask = lsb_bits < 64 ? (1LL<<lsb_bits)-1 : -1LL;
     int64_t delta= last_ts - mask/2;
     return  ((lsb - delta)&mask) + delta;
 }

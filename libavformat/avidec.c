@@ -597,8 +597,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         return -1;
     ast = st->priv_data;
     /* compute the frame number */
-    frame_number = (timestamp * ast->rate) /
-        (ast->scale * (int64_t)AV_TIME_BASE);
+    frame_number = timestamp;
 #ifdef DEBUG_SEEK
     printf("timestamp=%0.3f nb_indexes=%d frame_number=%d\n", 
            (double)timestamp / AV_TIME_BASE,
