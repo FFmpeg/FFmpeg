@@ -903,11 +903,7 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s)
 static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
 {
     int code, diff;
-#if 1
     code = get_vlc2(&s->gb, s->vlcs[0][dc_index].table, 9, 2);
-#else
-    code = get_vlc(&s->gb, &s->vlcs[0][dc_index]);
-#endif
     if (code < 0)
     {
 	dprintf("mjpeg_decode_dc: bad vlc: %d:%d (%p)\n", 0, dc_index,
@@ -917,9 +913,7 @@ static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
     if (code == 0) {
         diff = 0;
     } else {
-        diff = get_bits(&s->gb, code);
-        if ((diff & (1 << (code - 1))) == 0) 
-            diff = (-1 << code) | (diff + 1);
+        diff = get_xbits(&s->gb, code);
     }
     return diff;
 }
@@ -947,11 +941,8 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     ac_vlc = &s->vlcs[1][ac_index];
     i = 1;
     for(;;) {
-#if 1
 	code = get_vlc2(&s->gb, s->vlcs[1][ac_index].table, 9, 2);
-#else
-        code = get_vlc(&s->gb, ac_vlc);
-#endif
+
         if (code < 0) {
             dprintf("error ac\n");
             return -1;
@@ -964,9 +955,7 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
         } else {
             run = code >> 4;
             nbits = code & 0xf;
-            level = get_bits(&s->gb, nbits);
-            if ((level & (1 << (nbits - 1))) == 0) 
-                level = (-1 << nbits) | (level + 1);
+            level = get_xbits(&s->gb, nbits);
             i += run;
             if (i >= 64) {
                 dprintf("error count: %d\n", i);
