@@ -2499,6 +2499,11 @@ static int mpeg4_decode_video_packet_header(MpegEncContext *s)
         fprintf(stderr, "illegal mb_num in video packet (%d %d) \n", mb_num, s->mb_num);
         return -1;
     }
+    if(s->pict_type == B_TYPE){
+        while(s->next_picture.mbskip_table[ mb_num ]) mb_num++;
+        if(mb_num >= s->mb_num) return -1; // slice contains just skiped MBs which where allready decoded
+    }
+    
     s->mb_x= mb_num % s->mb_width;
     s->mb_y= mb_num / s->mb_width;
 
