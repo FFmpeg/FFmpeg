@@ -507,27 +507,18 @@ static inline int get_symbol(CABACContext *c, uint8_t *state, int is_signed){
     if(get_cabac(c, state+0))
         return 0;
     else{
-        int i, e, a, el;
- //FIXME try to merge loops with FFMIN() maybe they are equally fast and they are surly cuter
-        for(e=0; e<10; e++){ 
-            if(get_cabac(c, state + 1 + e)==0) // 1..10
-                break;
-        }
-        el= e;
- 
-        if(e==10){
-            while(get_cabac(c, state + 1 + 9)) //10
-                e++;
-        }
-        a= 1;
-        for(i=e-1; i>=el; i--){
-            a += a + get_cabac(c, state+22+9); //31
-        }
-        for(; i>=0; i--){
-            a += a + get_cabac(c, state+22+i); //22..31
+        int i, e, a;
+        e= 0;
+        while(get_cabac(c, state+1 + FFMIN(e,9))){ //1..10
+            e++;
         }
 
-        if(is_signed && get_cabac(c, state+11 + el)) //11..21
+        a= 1;
+        for(i=e-1; i>=0; i--){
+            a += a + get_cabac(c, state+22 + FFMIN(i,9)); //22..31
+        }
+
+        if(is_signed && get_cabac(c, state+11 + FFMIN(e,10))) //11..21
             return -a;
         else
             return a;
