@@ -229,6 +229,8 @@ int MPV_common_init(MpegEncContext *s)
     UINT8 *pict;
 
     DCT_common_init(s);
+    
+    s->flags= s->avctx->flags;
 
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
