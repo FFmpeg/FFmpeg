@@ -298,6 +298,11 @@ typedef struct MpegEncContext {
     ScanTable intra_v_scantable;
     ScanTable inter_scantable; // if inter == intra then intra should be used to reduce tha cache usage
     UINT8 idct_permutation[64];
+    int idct_permutation_type;
+#define FF_NO_IDCT_PERM 1
+#define FF_LIBMPEG2_IDCT_PERM 2
+#define FF_SIMPLE_IDCT_PERM 3
+#define FF_TRANSPOSE_IDCT_PERM 4
 
     void *opaque; /* private data for the user */
 

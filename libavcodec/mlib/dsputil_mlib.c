@@ -260,8 +260,6 @@ void MPV_common_init_mlib(MpegEncContext *s)
     if(s->avctx->idct_algo==FF_IDCT_AUTO || s->avctx->idct_algo==FF_IDCT_MLIB){
         s->idct_put= ff_idct_put_mlib;
         s->idct_add= ff_idct_add_mlib;
-        for(i=0; i<64; i++)
-            s->idct_permutation[i]= i;
+        s->idct_permutation_type= FF_NO_IDCT_PERM;
     }
-
 }

@@ -25,18 +25,6 @@
 #include "../avcodec.h"
 #include "../simple_idct.h"
 
-/* Input permutation for the simple_idct_mmx */
-static UINT8 simple_mmx_permutation[64]={
-	0x00, 0x08, 0x04, 0x09, 0x01, 0x0C, 0x05, 0x0D, 
-	0x10, 0x18, 0x14, 0x19, 0x11, 0x1C, 0x15, 0x1D, 
-	0x20, 0x28, 0x24, 0x29, 0x21, 0x2C, 0x25, 0x2D, 
-	0x12, 0x1A, 0x16, 0x1B, 0x13, 0x1E, 0x17, 0x1F, 
-	0x02, 0x0A, 0x06, 0x0B, 0x03, 0x0E, 0x07, 0x0F, 
-	0x30, 0x38, 0x34, 0x39, 0x31, 0x3C, 0x35, 0x3D, 
-	0x22, 0x2A, 0x26, 0x2B, 0x23, 0x2E, 0x27, 0x2F, 
-	0x32, 0x3A, 0x36, 0x3B, 0x33, 0x3E, 0x37, 0x3F,
-};
-
 extern UINT8 zigzag_direct_noperm[64];
 extern UINT16 inv_zigzag_direct16[64];
 extern UINT32 inverse[256];
@@ -559,12 +547,11 @@ void MPV_common_init_mmx(MpegEncContext *s)
                 s->dct_quantize= dct_quantize_MMX;
             }
         }
-        
+
         if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SIMPLEMMX){
             s->idct_put= ff_simple_idct_put_mmx;
             s->idct_add= ff_simple_idct_add_mmx;
-            for(i=0; i<64; i++)
-                s->idct_permutation[i]= simple_mmx_permutation[i];
+            s->idct_permutation_type= FF_SIMPLE_IDCT_PERM;
         }else if(idct_algo==FF_IDCT_LIBMPEG2MMX){
             if(mm_flags & MM_MMXEXT){
                 s->idct_put= ff_libmpeg2mmx2_idct_put;
@@ -573,8 +560,7 @@ void MPV_common_init_mmx(MpegEncContext *s)
                 s->idct_put= ff_libmpeg2mmx_idct_put;
                 s->idct_add= ff_libmpeg2mmx_idct_add;
             }
-            for(i=0; i<64; i++)
-                s->idct_permutation[i]= (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
+            s->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
         }
     }
 }

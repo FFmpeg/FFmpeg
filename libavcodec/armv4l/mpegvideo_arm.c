@@ -44,7 +44,6 @@ void MPV_common_init_armv4l(MpegEncContext *s)
     if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_ARM){
         s->idct_put= arm_idct_put;
         s->idct_add= arm_idct_add;
-        for(i=0; i<64; i++)
-            s->idct_permutation[i]= i;
+        s->idct_permutation_type= FF_NO_IDCT_PERM;
     }
 }

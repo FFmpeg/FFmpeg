@@ -85,14 +85,12 @@ static void dct_unquantize_h263_mmi(MpegEncContext *s,
 void MPV_common_init_mmi(MpegEncContext *s)
 {
     int i;
-//  const int dct_algo = s->avctx->dct_algo;
     const int idct_algo= s->avctx->idct_algo;
        
-    if(idct_algo==FF_IDCT_AUTO){
+    if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_PS2){
         s->idct_put= ff_mmi_idct_put;
         s->idct_add= ff_mmi_idct_add;
-        for(i=0; i<64; i++)
-            s->idct_permutation[i]= (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
+        s->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
     }
     s->dct_unquantize_h263 = dct_unquantize_h263_mmi;
 }
