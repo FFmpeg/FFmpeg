@@ -73,12 +73,6 @@ typedef INT64 int64_t;
 
 #define snprintf _snprintf
 
-#ifdef HAVE_AV_CONFIG_H
-
-#define MANGLE(a) "_" #a
-
-#endif /* HAVE_AV_CONFIG_H */
-
 #else /* CONFIG_WIN32 */
 
 /* unix */
@@ -113,8 +107,6 @@ typedef signed long long INT64;
 #include "fastmemcpy.h"
 #endif
 
-#define MANGLE(a) #a
-
 #endif /* HAVE_AV_CONFIG_H */
 
 #endif /* !CONFIG_WIN32 */
@@ -123,6 +115,13 @@ typedef signed long long INT64;
 #ifdef HAVE_AV_CONFIG_H
 
 #include "bswap.h"
+
+#if defined(__MINGW32__) || defined(__CYGWIN__) || \
+    defined(__OS2__) || defined (__OpenBSD__)
+#define MANGLE(a) "_" #a
+#else
+#define MANGLE(a) #a
+#endif
 
 /* debug stuff */
 
