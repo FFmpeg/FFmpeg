@@ -539,7 +539,7 @@ retry:
         if(s->lavc_build && s->lavc_build<4655)
             s->workaround_bugs|= FF_BUG_DIRECT_BLOCKSIZE;
 
-        if(s->lavc_build && s->lavc_build<4618){
+        if(s->lavc_build && s->lavc_build<4670){
             s->workaround_bugs|= FF_BUG_EDGE;
         }
 
