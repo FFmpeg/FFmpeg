@@ -102,6 +102,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         put_le32(pb, 0);  /* dwPTSHigh */
     } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
         put_le16(pb, 2); /* wav_extra_size */
+        hdrsize += 2;
         put_le16(pb, ((enc->block_align - 4 * enc->channels) / (4 * enc->channels)) * 8 + 1); /* wSamplesPerBlock */
     } else
         put_le16(pb, 0); /* wav_extra_size */
