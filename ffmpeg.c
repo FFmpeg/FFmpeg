@@ -1870,7 +1870,7 @@ void opt_audio_channels(const char *arg)
 
 void opt_video_device(const char *arg)
 {
-    video_device = strdup(arg);
+    video_device = av_strdup(arg);
 }
 
 void opt_video_channel(const char *arg)
@@ -1880,7 +1880,7 @@ void opt_video_channel(const char *arg)
 
 void opt_audio_device(const char *arg)
 {
-    audio_device = strdup(arg);
+    audio_device = av_strdup(arg);
 }
 
 void opt_dv1394(const char *arg)
@@ -1916,7 +1916,7 @@ void add_frame_hooker(const char *arg)
     int argc = 0;
     char *argv[64];
     int i;
-    char *args = strdup(arg);
+    char *args = av_strdup(arg);
 
     argv[0] = strtok(args, " ");
     while (argc < 62 && (argv[++argc] = strtok(NULL, " "))) {
@@ -2812,7 +2812,7 @@ int main(int argc, char **argv)
             }
             if (po->flags & OPT_STRING) {
                 char *str;
-                str = strdup(arg);
+                str = av_strdup(arg);
                 *po->u.str_arg = str;
             } else if (po->flags & OPT_BOOL) {
                 *po->u.int_arg = 1;

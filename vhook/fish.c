@@ -134,7 +134,7 @@ int Configure(void **ctxp, int argc, char *argv[])
                 ci->debug++;
                 break;
             case 'D':
-                ci->dir = strdup(optarg);
+                ci->dir = av_strdup(optarg);
                 break;
             default:
                 fprintf(stderr, "Unrecognized argument '%s'\n", argv[optind]);

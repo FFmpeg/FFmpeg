@@ -112,10 +112,10 @@ int Configure(void **ctxp, int argc, char *argv[])
                 font = optarg;
                 break;
             case 't':
-                ci->text = strdup(optarg);
+                ci->text = av_strdup(optarg);
                 break;
             case 'f':
-                ci->file = strdup(optarg);
+                ci->file = av_strdup(optarg);
                 break;
             case 'x':
                 ci->x = atoi(optarg);

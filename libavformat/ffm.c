@@ -421,7 +421,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->qcompress = get_be16(pb) / 10000.0;
             codec->qblur = get_be16(pb) / 10000.0;
             codec->bit_rate_tolerance = get_be32(pb);
-            codec->rc_eq = strdup(get_strz(pb, rc_eq_buf, sizeof(rc_eq_buf)));
+            codec->rc_eq = av_strdup(get_strz(pb, rc_eq_buf, sizeof(rc_eq_buf)));
             codec->rc_max_rate = get_be32(pb);
             codec->rc_min_rate = get_be32(pb);
             codec->rc_buffer_size = get_be32(pb);
