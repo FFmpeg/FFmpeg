@@ -37,7 +37,7 @@
 #define SWS_MAX_REDUCE_CUTOFF 0.002
 
 /* this struct should be aligned on at least 32-byte boundary */
-typedef struct{
+typedef struct SwsContext{
 	int srcW, srcH, dstW, dstH;
 	int chrSrcW, chrSrcH, chrDstW, chrDstH;
 	int lumXInc, chrXInc;
@@ -78,6 +78,9 @@ typedef struct{
 	int chrBufIndex;
 	int dstY;
 	int flags;
+
+	void (*swScale)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]);
 } SwsContext;
 //FIXME check init (where 0)
 
@@ -115,9 +118,6 @@ void freeSwsContext(SwsContext *swsContext);
 SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat);
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
 			 SwsFilter *srcFilter, SwsFilter *dstFilter);
-
-extern void (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
-             int srcSliceH, uint8_t* dst[], int dstStride[]);
 
 SwsVector *getGaussianVec(double variance, double quality);
 SwsVector *getConstVec(double c, int length);

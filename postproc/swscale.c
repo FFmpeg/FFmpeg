@@ -34,6 +34,7 @@
 #include "swscale.h"
 #include "../cpudetect.h"
 #include "../libvo/img_format.h"
+#include "rgb2rgb.h"
 #undef MOVNTQ
 #undef PAVGB
 
@@ -69,6 +70,7 @@
 			|| (x)==IMGFMT_Y800)
 #define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15)
+#define isBGR(x)       ((x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15)
 
 #define RGB2YUV_SHIFT 16
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
@@ -92,7 +94,6 @@ Special versions: fast Y 1:1 scaling (no interpolation in y direction)
 
 TODO
 more intelligent missalignment avoidance for the horizontal scaler
-change the distance of the u & v buffer
 write special vertical cubic upscale version
 Optimize C code (yv12 / minmax)
 add support for packed pixel yuv input & output
@@ -100,6 +101,7 @@ add support for Y8 output
 optimize bgr24 & bgr32
 add BGR4 output support
 write special BGR->BGR scaler
+deglobalize yuv2rgb*.c
 */
 
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
@@ -1107,12 +1109,22 @@ cpuCaps= gCpuCaps;
 #endif //!RUNTIME_CPUDETECT
 }
 
+/* Warper functions for yuv2bgr */
+static void planarYuvToBgr(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+
+	if(c->srcFormat==IMGFMT_YV12)
+		yuv2rgb( dst[0],src[0],src[1],src[2],c->srcW,c->srcH,dstStride[0],srcStride[0],srcStride[1] );
+	else /* I420 & IYUV */
+		yuv2rgb( dst[0],src[0],src[2],src[1],c->srcW,c->srcH,dstStride[0],srcStride[0],srcStride[1] );
+}
 
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
                          SwsFilter *srcFilter, SwsFilter *dstFilter){
 
 	SwsContext *c;
 	int i;
+	int usesFilter;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
 
 #ifdef ARCH_X86
@@ -1161,6 +1173,33 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	c->flags= flags;
 	c->dstFormat= dstFormat;
 	c->srcFormat= srcFormat;
+
+	usesFilter=0;
+	if(dstFilter->lumV!=NULL && dstFilter->lumV->length>1) usesFilter=1;
+	if(dstFilter->lumH!=NULL && dstFilter->lumH->length>1) usesFilter=1;
+	if(dstFilter->chrV!=NULL && dstFilter->chrV->length>1) usesFilter=1;
+	if(dstFilter->chrH!=NULL && dstFilter->chrH->length>1) usesFilter=1;
+	if(srcFilter->lumV!=NULL && srcFilter->lumV->length>1) usesFilter=1;
+	if(srcFilter->lumH!=NULL && srcFilter->lumH->length>1) usesFilter=1;
+	if(srcFilter->chrV!=NULL && srcFilter->chrV->length>1) usesFilter=1;
+	if(srcFilter->chrH!=NULL && srcFilter->chrH->length>1) usesFilter=1;
+	
+	/* special Cases */
+	if(srcW==dstW && srcH==dstH && !usesFilter)
+	{
+		/* yuv2bgr */
+		if(isPlanarYUV(srcFormat) && isBGR(dstFormat))
+		{
+			// FIXME multiple yuv2rgb converters wont work that way cuz that thing is full of globals&statics
+			yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_BGR);
+			c->swScale= planarYuvToBgr;
+			
+			if(flags&SWS_PRINT_INFO)
+				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+	}
 
 	if(cpuCaps.hasMMX2)
 	{
@@ -1403,7 +1442,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		printf("SwScaler:Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
 			c->chrSrcW, c->chrSrcH, c->chrDstW, c->chrDstH, c->chrXInc, c->chrYInc);
 	}
-	
+
+	c->swScale= swScale;
 	return c;
 }
 

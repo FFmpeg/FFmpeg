@@ -2192,7 +2192,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	uint8_t *src[3];
 	uint8_t *dst[3];
 	
-	if((c->srcFormat == IMGFMT_IYUV) || (c->srcFormat == IMGFMT_I420)){
+	if(c->srcFormat == IMGFMT_I420){
 		src[0]= srcParam[0];
 		src[1]= srcParam[2];
 		src[2]= srcParam[1];
@@ -2225,7 +2225,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		srcStride[2]= 0;
 	}
 
-	if((c->dstFormat == IMGFMT_IYUV) || (c->dstFormat == IMGFMT_I420)){
+	if(c->dstFormat == IMGFMT_I420){
 		dst[0]= dstParam[0];
 		dst[1]= dstParam[2];
 		dst[2]= dstParam[1];
@@ -2235,7 +2235,9 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		dst[1]= dstParam[1];
 		dst[2]= dstParam[2];
 	}
-	
+
+//printf("sws Strides:%d %d %d -> %d %d %d\n", srcStride[0],srcStride[1],srcStride[2],
+//dstStride[0],dstStride[1],dstStride[2]);
 
 	if(dstStride[0]%8 !=0 || dstStride[1]%8 !=0 || dstStride[2]%8 !=0)
 	{
