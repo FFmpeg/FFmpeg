@@ -551,18 +551,39 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     else
         mb_pos_ptr = dv_place_420;
 
+    if (avctx->flags & CODEC_FLAG_DR1 && avctx->get_buffer_callback)
+    {
+	s->width = -1;
+	avctx->dr_buffer[0] = avctx->dr_buffer[1] = avctx->dr_buffer[2] = 0;
+	if(avctx->get_buffer_callback(avctx, width, height, I_TYPE) < 0){
+	    fprintf(stderr, "get_buffer() failed\n");
+	    return -1;
+	}
+    }
+
+
     /* (re)alloc picture if needed */
     if (s->width != width || s->height != height) {
-        for(i=0;i<3;i++)
-            av_freep(&s->current_picture[i]);
+	if (!(avctx->flags & CODEC_FLAG_DR1))
+	    for(i=0;i<3;i++) {
+		if (avctx->dr_buffer[i] != s->current_picture[i])
+		    av_freep(&s->current_picture[i]);
+		avctx->dr_buffer[i] = 0;
+	    }
+
         for(i=0;i<3;i++) {
-            size = width * height;
-            s->linesize[i] = width;
-            if (i >= 1) {
-                size >>= 2;
-                s->linesize[i] >>= s->sampling_411 ? 2 : 1;
-            }
-            s->current_picture[i] = av_malloc(size);
+	    if (avctx->dr_buffer[i]) {
+		s->current_picture[i] = avctx->dr_buffer[i];
+		s->linesize[i] = (i == 0) ? avctx->dr_stride : avctx->dr_uvstride;
+	    } else {
+		size = width * height;
+		s->linesize[i] = width;
+		if (i >= 1) {
+		    size >>= 2;
+		    s->linesize[i] >>= s->sampling_411 ? 2 : 1;
+		}
+		s->current_picture[i] = av_malloc(size);
+	    }
             if (!s->current_picture[i])
                 return -1;
         }
@@ -614,6 +635,7 @@ static int dvvideo_decode_end(AVCodecContext *avctx)
     int i;
 
     for(i=0;i<3;i++)
+	if (avctx->dr_buffer[i] != s->current_picture[i])
         av_freep(&s->current_picture[i]);
     return 0;
 }
@@ -627,7 +649,7 @@ AVCodec dvvideo_decoder = {
     NULL,
     dvvideo_decode_end,
     dvvideo_decode_frame,
-    0,
+    CODEC_CAP_DR1,
     NULL
 };
 
