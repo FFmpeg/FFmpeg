@@ -976,7 +976,7 @@ static inline int get_xbits_trace(GetBitContext *s, int n, char *file, char *fun
 #define tprintf printf
 
 #else //TRACE
-#define tprintf(_arg...) {}
+#define tprintf(...) {}
 #endif
 
 /* define it to include statistics code (useful only for optimizing
