@@ -27,12 +27,14 @@
   YUY2/BGR15/BGR16/BGR24/BGR32/RGB24/RGB32 -> same format
   BGR24 -> BGR32 & RGB24 -> RGB32
   BGR32 -> BGR24 & RGB32 -> RGB24
+  BGR15 -> BGR16
 */
 
 /* 
 tested special converters
  YV12/I420 -> BGR16
  YV12 -> YV12
+ BGR15 -> BGR16
 
 untested special converters
   YV12/I420/IYUV -> BGR15/BGR24/BGR32 (its the yuv2rgb stuff, so it should be ok)
@@ -1153,7 +1155,7 @@ static void bgr24to32Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
              int srcSliceH, uint8_t* dst[], int dstStride[]){
 	
 	if(dstStride[0]*3==srcStride[0]*4)
-		rgb24to32(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*dstStride[0]>>2);
+		rgb24to32(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
 	else
 	{
 		int i;
@@ -1162,7 +1164,7 @@ static void bgr24to32Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 
 		for(i=0; i<srcSliceH; i++)
 		{
-			rgb24to32(srcPtr, dstPtr, c->srcW);
+			rgb24to32(srcPtr, dstPtr, c->srcW*3);
 			srcPtr+= srcStride[0];
 			dstPtr+= dstStride[0];
 		}
@@ -1173,7 +1175,7 @@ static void bgr32to24Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
              int srcSliceH, uint8_t* dst[], int dstStride[]){
 	
 	if(dstStride[0]*4==srcStride[0]*3)
-		rgb32to24(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]>>2);
+		rgb32to24(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
 	else
 	{
 		int i;
@@ -1182,7 +1184,27 @@ static void bgr32to24Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 
 		for(i=0; i<srcSliceH; i++)
 		{
-			rgb32to24(srcPtr, dstPtr, c->srcW);
+			rgb32to24(srcPtr, dstPtr, c->srcW<<2);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+static void bgr15to16Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]==srcStride[0])
+		rgb15to16(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb15to16(srcPtr, dstPtr, c->srcW<<1);
 			srcPtr+= srcStride[0];
 			dstPtr+= dstStride[0];
 		}
@@ -1394,6 +1416,17 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		 ||(srcFormat==IMGFMT_RGB24 && dstFormat==IMGFMT_RGB32))
 		{
 			c->swScale= bgr24to32Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr15to16 */
+		if(srcFormat==IMGFMT_BGR15 && dstFormat==IMGFMT_BGR16)
+		{
+			c->swScale= bgr15to16Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
 				printf("SwScaler: using unscaled %s -> %s special converter\n", 
