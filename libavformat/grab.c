@@ -31,6 +31,7 @@ typedef struct {
     int use_mmap;
     int width, height;
     int frame_rate;
+    int frame_rate_base;
     int64_t time_frame;
     int frame_size;
     struct video_capability video_cap;
@@ -59,7 +60,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     AVStream *st;
     int width, height;
     int video_fd, frame_size;
-    int ret, frame_rate;
+    int ret, frame_rate, frame_rate_base;
     int desired_palette;
     struct video_audio audio;
     const char *video_device;
@@ -69,7 +70,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     
     width = ap->width;
     height = ap->height;
-    frame_rate = ap->frame_rate;
+    frame_rate      = ap->frame_rate;
+    frame_rate_base = ap->frame_rate_base;
 
     st = av_new_stream(s1, 0);
     if (!st)
@@ -77,7 +79,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     s->width = width;
     s->height = height;
-    s->frame_rate = frame_rate;
+    s->frame_rate      = frame_rate;
+    s->frame_rate_base = frame_rate_base;
 
     video_device = ap->device;
     if (!video_device)
@@ -240,7 +243,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.codec_id = CODEC_ID_RAWVIDEO;
     st->codec.width = width;
     st->codec.height = height;
-    st->codec.frame_rate = frame_rate;
+    st->codec.frame_rate      = frame_rate;
+    st->codec.frame_rate_base = frame_rate_base;
     
     av_set_pts_info(s1, 48, 1, 1000000); /* 48 bits pts in us */
 
@@ -283,7 +287,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     VideoData *s = s1->priv_data;
     int64_t curtime, delay;
     struct timespec ts;
-    int64_t per_frame = (int64_t_C(1000000) * FRAME_RATE_BASE) / s->frame_rate;
+    int64_t per_frame = (int64_t_C(1000000) * s->frame_rate_base) / s->frame_rate;
 
     /* Calculate the time of the next frame */
     s->time_frame += per_frame;

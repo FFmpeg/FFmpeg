@@ -203,8 +203,10 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 int i, dmin, d;
                 s->frame_rate_index = 0;
                 dmin = 0x7fffffff;
-                for(i=1;i<9;i++) {
-                    d = abs(s->frame_rate - frame_rate_tab[i]);
+                for(i=1;i<14;i++) {
+                    if(s->avctx->strict_std_compliance >= 0 && i>=9) break;
+                     
+                    d = abs(MPEG1_FRAME_RATE_BASE*(int64_t)s->avctx->frame_rate/s->avctx->frame_rate_base - frame_rate_tab[i]);
                     if (d < dmin) {
                         dmin = d;
                         s->frame_rate_index = i;
@@ -248,22 +250,22 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
             fps = frame_rate_tab[s->frame_rate_index];
-            time_code = (int64_t)s->fake_picture_number * FRAME_RATE_BASE;
+            time_code = (int64_t)s->fake_picture_number * MPEG1_FRAME_RATE_BASE;
             s->gop_picture_number = s->fake_picture_number;
             put_bits(&s->pb, 5, (uint32_t)((time_code / (fps * 3600)) % 24));
             put_bits(&s->pb, 6, (uint32_t)((time_code / (fps * 60)) % 60));
             put_bits(&s->pb, 1, 1);
             put_bits(&s->pb, 6, (uint32_t)((time_code / fps) % 60));
-            put_bits(&s->pb, 6, (uint32_t)((time_code % fps) / FRAME_RATE_BASE));
+            put_bits(&s->pb, 6, (uint32_t)((time_code % fps) / MPEG1_FRAME_RATE_BASE));
             put_bits(&s->pb, 1, 1); /* closed gop */
             put_bits(&s->pb, 1, 0); /* broken link */
         }
 
-        if (s->frame_rate < (24 * FRAME_RATE_BASE) && s->picture_number > 0) {
+        if (s->avctx->frame_rate < (24 * s->avctx->frame_rate_base) && s->picture_number > 0) {
             /* insert empty P pictures to slow down to the desired
                frame rate. Each fake pictures takes about 20 bytes */
             fps = frame_rate_tab[s->frame_rate_index];
-            n = (((int64_t)s->picture_number * fps) / s->frame_rate) - 1;
+            n = av_rescale((int64_t)s->picture_number * s->avctx->frame_rate_base, fps, s->avctx->frame_rate) / MPEG1_FRAME_RATE_BASE - 1;
             while (s->fake_picture_number < n) {
                 mpeg1_skip_picture(s, s->fake_picture_number - 
                                    s->gop_picture_number); 
@@ -1638,8 +1640,13 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     s->low_delay = get_bits1(&s->gb);
     frame_rate_ext_n = get_bits(&s->gb, 2);
     frame_rate_ext_d = get_bits(&s->gb, 5);
-    if (frame_rate_ext_d >= 1)
-        s->frame_rate = (s->frame_rate * frame_rate_ext_n) / frame_rate_ext_d;
+    av_reduce(
+        &s->avctx->frame_rate, 
+        &s->avctx->frame_rate_base, 
+        frame_rate_tab[s->frame_rate_index] * (frame_rate_ext_n+1),
+        MPEG1_FRAME_RATE_BASE * (frame_rate_ext_d+1),
+        1<<30);
+
     dprintf("sequence extension\n");
     s->mpeg2 = 1;
     s->avctx->sub_id = 2; /* indicates mpeg2 found */
@@ -1990,13 +1997,13 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         s->avctx = avctx;
         avctx->width = width;
         avctx->height = height;
-        if (s->frame_rate_index >= 9) {
-            /* at least give a valid frame rate (some old mpeg1 have this) */
-            avctx->frame_rate = 25 * FRAME_RATE_BASE;
-        } else {
-            avctx->frame_rate = frame_rate_tab[s->frame_rate_index];
-        }
-        s->frame_rate = avctx->frame_rate;
+        av_reduce(
+            &avctx->frame_rate, 
+            &avctx->frame_rate_base,
+            frame_rate_tab[s->frame_rate_index],
+            MPEG1_FRAME_RATE_BASE, //FIXME store in allready reduced form 
+            1<<30
+            );
         avctx->bit_rate = s->bit_rate;
         
         if (MPV_common_init(s) < 0)

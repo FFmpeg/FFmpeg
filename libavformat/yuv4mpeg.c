@@ -26,7 +26,7 @@ static int yuv4_write_header(AVFormatContext *s)
 {
     AVStream *st;
     int width, height;
-    int raten, rated, aspectn, aspectd, fps, fps1, n;
+    int raten, rated, aspectn, aspectd, fps, fps1, n, gcd;
     char buf[Y4M_LINE_MAX+1];
 
     if (s->nb_streams != 1)
@@ -35,9 +35,13 @@ static int yuv4_write_header(AVFormatContext *s)
     st = s->streams[0];
     width = st->codec.width;
     height = st->codec.height;
-    
+
+#if 1
+    //this is identical to the code below for exact fps
+    av_reduce(&raten, &rated, st->codec.frame_rate, st->codec.frame_rate_base, (1UL<<31)-1);
+#else
     fps = st->codec.frame_rate;
-    fps1 = (((float)fps / FRAME_RATE_BASE) * 1000);
+    fps1 = (((float)fps / st->codec.frame_rate_base) * 1000);
    
    /* Sorry about this messy code, but mpeg2enc is very picky about
     * the framerates it accepts. */
@@ -75,13 +79,17 @@ static int yuv4_write_header(AVFormatContext *s)
         rated = 1;
         break;
     default:
-        raten = fps1; /* this setting should work, but often doesn't */
-        rated = 1000;
+        raten = st->codec.frame_rate; /* this setting should work, but often doesn't */
+        rated = st->codec.frame_rate_base;
+        gcd= av_gcd(raten, rated);
+        raten /= gcd;
+        rated /= gcd;
         break;
     }
+#endif
     
     aspectn = 1;
-    aspectd = 1;	/* ffmpeg always uses a 1:1 aspect ratio */
+    aspectd = 1;	/* ffmpeg always uses a 1:1 aspect ratio */ //FIXME not true anymore
 
     /* construct stream header, if this is the first frame */
     n = snprintf(buf, sizeof(buf), "%s W%d H%d F%d:%d I%s A%d:%d\n",

@@ -192,7 +192,6 @@ typedef struct MpegEncContext {
     /* the following parameters must be initialized before encoding */
     int width, height;///< picture size. must be a multiple of 16 
     int gop_size;
-    int frame_rate;   ///< number of frames per second 
     int intra_only;   ///< if true, only intra pictures are generated 
     int bit_rate;     ///< wanted bit rate 
     int bit_rate_tolerance; ///< amount of +- bits (>0)

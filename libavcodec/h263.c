@@ -164,8 +164,8 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     s->gob_number = 0;
 
     put_bits(&s->pb, 22, 0x20); /* PSC */
-    put_bits(&s->pb, 8, (((int64_t)s->picture_number * 30 * FRAME_RATE_BASE) / 
-                         s->frame_rate) & 0xff);
+    put_bits(&s->pb, 8, (((int64_t)s->picture_number * 30 * s->avctx->frame_rate_base) / 
+                         s->avctx->frame_rate) & 0xff);
 
     put_bits(&s->pb, 1, 1);	/* marker */
     put_bits(&s->pb, 1, 0);	/* h263 id */
@@ -1587,16 +1587,16 @@ void ff_set_mpeg4_time(MpegEncContext * s, int picture_number){
     int time_div, time_mod;
 
     if(s->pict_type==I_TYPE){ //we will encode a vol header
-        s->time_increment_resolution= s->frame_rate/ff_gcd(s->frame_rate, FRAME_RATE_BASE);
-        if(s->time_increment_resolution>=256*256) s->time_increment_resolution= 256*128;
-
+        int dummy;
+        av_reduce(&s->time_increment_resolution, &dummy, s->avctx->frame_rate, s->avctx->frame_rate_base, (1<<16)-1);
+        
         s->time_increment_bits = av_log2(s->time_increment_resolution - 1) + 1;
     }
     
     if(s->current_picture.pts)
         s->time= (s->current_picture.pts*s->time_increment_resolution + 500*1000)/(1000*1000);
     else
-        s->time= picture_number*(int64_t)FRAME_RATE_BASE*s->time_increment_resolution/s->frame_rate;
+        s->time= av_rescale(picture_number*(int64_t)s->avctx->frame_rate_base, s->time_increment_resolution, s->avctx->frame_rate);
     time_div= s->time/s->time_increment_resolution;
     time_mod= s->time%s->time_increment_resolution;
 

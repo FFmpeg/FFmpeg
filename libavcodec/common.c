@@ -341,7 +341,7 @@ void free_vlc(VLC *vlc)
     av_free(vlc->table);
 }
 
-int ff_gcd(int a, int b){
+int64_t ff_gcd(int64_t a, int64_t b){
     if(b) return ff_gcd(b, a%b);
     else  return a;
 }

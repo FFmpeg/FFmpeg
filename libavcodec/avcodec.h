@@ -186,8 +186,6 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_CAP_PARSE_ONLY      0x0004
 #define CODEC_CAP_TRUNCATED       0x0008
 
-#define FRAME_RATE_BASE 10010
-
 #define FF_COMMON_FRAME \
     uint8_t *data[4];\
     int linesize[4];\
@@ -321,6 +319,7 @@ typedef struct AVFrame {
     FF_COMMON_FRAME
 } AVFrame;
 
+#define DEFAULT_FRAME_RATE_BASE 1001000
 
 /**
  * main external api structure.
@@ -375,13 +374,21 @@ typedef struct AVCodecContext {
     
     /* video only */
     /**
-     * frames per sec multiplied by FRAME_RATE_BASE.
+     * frames per sec multiplied by frame_rate_base.
      * for variable fps this is the precission, so if the timestamps 
-     * can be specified in msec precssion then this is 1000*FRAME_RATE_BASE
+     * can be specified in msec precssion then this is 1000*frame_rate_base
      * - encoding: MUST be set by user
      * - decoding: set by lavc. 0 or the frame_rate if available
      */
     int frame_rate;
+    
+    /**
+     * frame_rate_base.
+     * for variable fps this is 1
+     * - encoding: set by user.
+     * - decoding: set by lavc.
+     */
+    int frame_rate_base;
 
     /**
      * width / height.
@@ -1258,6 +1265,20 @@ void avcodec_register_all(void);
 
 void avcodec_flush_buffers(AVCodecContext *avctx);
 
+/* misc usefull functions */
+/**
+ * reduce a fraction.
+ * this is usefull for framerate calculations
+ * @param max the maximum allowed for dst_nom & dst_den
+ * @return 1 if exact, 0 otherwise
+ */
+int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max);
+
+/**
+ * rescale a 64bit integer.
+ * a simple a*b/c isnt possible as it can overflow
+ */
+int64_t av_rescale(int64_t a, int b, int c);
 
 
 /**

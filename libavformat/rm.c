@@ -306,7 +306,7 @@ static int rm_write_header(AVFormatContext *s)
             break;
         case CODEC_TYPE_VIDEO:
             rm->video_stream = stream;
-            stream->frame_rate = (float)codec->frame_rate / (float)FRAME_RATE_BASE;
+            stream->frame_rate = (float)codec->frame_rate / (float)codec->frame_rate_base;
             /* XXX: dummy values */
             stream->packet_max_size = 4096;
             stream->nb_packets = 0;
@@ -582,7 +582,8 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     goto fail1;
                 st->codec.width = get_be16(pb);
                 st->codec.height = get_be16(pb);
-                st->codec.frame_rate = get_be16(pb) * FRAME_RATE_BASE;
+                st->codec.frame_rate_base= 1;
+                st->codec.frame_rate = get_be16(pb) * st->codec.frame_rate_base;
                 st->codec.codec_type = CODEC_TYPE_VIDEO;
                 get_be32(pb);
                 get_be16(pb);

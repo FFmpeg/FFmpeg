@@ -140,8 +140,6 @@ static int ffm_write_header(AVFormatContext *s)
 
     /* list of streams */
     for(i=0;i<s->nb_streams;i++) {
-        int gcd;
-    
         st = s->streams[i];
         fst = av_mallocz(sizeof(FFMStream));
         if (!fst)
@@ -158,9 +156,8 @@ static int ffm_write_header(AVFormatContext *s)
         /* specific info */
         switch(codec->codec_type) {
         case CODEC_TYPE_VIDEO:
-            gcd= av_gcd(FRAME_RATE_BASE, codec->frame_rate);
-            put_be32(pb, FRAME_RATE_BASE / gcd);
-            put_be32(pb, codec->frame_rate / gcd);
+            put_be32(pb, codec->frame_rate_base);
+            put_be32(pb, codec->frame_rate);
             put_be16(pb, codec->width);
             put_be16(pb, codec->height);
             put_be16(pb, codec->gop_size);
@@ -229,7 +226,7 @@ static int ffm_write_packet(AVFormatContext *s, int stream_index,
     if (st->codec.codec_type == CODEC_TYPE_AUDIO) {
         duration = ((float)st->codec.frame_size / st->codec.sample_rate * 1000000.0);
     } else {
-        duration = (1000000.0 * FRAME_RATE_BASE / (float)st->codec.frame_rate);
+        duration = (1000000.0 * st->codec.frame_rate_base / (float)st->codec.frame_rate);
     }
 
     pts = fst->pts;
@@ -394,7 +391,6 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* read each stream */
     for(i=0;i<s->nb_streams;i++) {
         char rc_eq_buf[128];
-        int rate, scale;
 
         st = av_mallocz(sizeof(AVStream));
         if (!st)
@@ -416,9 +412,8 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         /* specific info */
         switch(codec->codec_type) {
         case CODEC_TYPE_VIDEO:
-            scale= get_be32(pb);
-            rate= get_be32(pb);
-            codec->frame_rate = (rate * (int64_t)FRAME_RATE_BASE) / scale;
+            codec->frame_rate_base = get_be32(pb);
+            codec->frame_rate = get_be32(pb);
             codec->width = get_be16(pb);
             codec->height = get_be16(pb);
             codec->gop_size = get_be16(pb);

@@ -138,7 +138,8 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
     vst->codec.codec_id   = CODEC_ID_DVVIDEO;
     vst->codec.width      = dv->width;
     vst->codec.height     = dv->height;
-    vst->codec.frame_rate = dv->frame_rate * FRAME_RATE_BASE;
+    vst->codec.frame_rate = dv->frame_rate;
+    vst->codec.frame_rate_base = 1;
     vst->codec.bit_rate   = 25000000;  /* Consumer DV is 25Mbps */
 
     ast->codec.codec_type = CODEC_TYPE_AUDIO;

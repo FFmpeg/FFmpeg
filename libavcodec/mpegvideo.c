@@ -504,7 +504,6 @@ int MPV_encode_init(AVCodecContext *avctx)
 
     s->bit_rate = avctx->bit_rate;
     s->bit_rate_tolerance = avctx->bit_rate_tolerance;
-    s->frame_rate = avctx->frame_rate;
     s->width = avctx->width;
     s->height = avctx->height;
     if(avctx->gop_size > 600){
@@ -557,7 +556,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
-        avctx->delay=0; //FIXME not sure, should check the spec
+        s->low_delay= 0; //s->max_b_frames ? 0 : 1;
+        avctx->delay= s->low_delay ? 0 : (s->max_b_frames + 1);
         break;
     case CODEC_ID_MJPEG:
         s->out_format = FMT_MJPEG;

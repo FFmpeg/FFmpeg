@@ -218,7 +218,7 @@ static int avi_write_header(AVFormatContext *s)
     nb_frames = 0;
 
     if(video_enc){
-    put_le32(pb, (uint32_t)(int64_t_C(1000000) * FRAME_RATE_BASE / video_enc->frame_rate));
+        put_le32(pb, (uint32_t)(int64_t_C(1000000) * video_enc->frame_rate_base / video_enc->frame_rate));
     } else {
 	put_le32(pb, 0);
     }
@@ -244,8 +244,6 @@ static int avi_write_header(AVFormatContext *s)
     
     /* stream list */
     for(i=0;i<n;i++) {
-        int gcd;
-    
         list2 = start_tag(pb, "LIST");
         put_tag(pb, "strl");
     
@@ -262,10 +260,8 @@ static int avi_write_header(AVFormatContext *s)
             put_le16(pb, 0); /* language */
             put_le32(pb, 0); /* initial frame */
             
-            gcd= av_gcd(stream->frame_rate, FRAME_RATE_BASE);
-            
-            put_le32(pb, FRAME_RATE_BASE / gcd); /* scale */
-            put_le32(pb, stream->frame_rate / gcd); /* rate */
+            put_le32(pb, stream->frame_rate_base); /* scale */
+            put_le32(pb, stream->frame_rate); /* rate */
 
             put_le32(pb, 0); /* start */
             avi->frames_hdr_strm[i] = url_ftell(pb); /* remember this offset to fill later */

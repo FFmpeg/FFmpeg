@@ -90,7 +90,8 @@ static int frame_topBand  = 0;
 static int frame_bottomBand = 0;
 static int frame_leftBand  = 0;
 static int frame_rightBand = 0;
-static int frame_rate = 25 * FRAME_RATE_BASE;
+static int frame_rate = 25;
+static int frame_rate_base = 1;
 static int video_bit_rate = 200*1000;
 static int video_bit_rate_tolerance = 4000*1000;
 static int video_qscale = 0;
@@ -746,7 +747,7 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
         if (ti1 < 0.01)
             ti1 = 0.01;
     
-        bitrate = (double)(frame_size * 8) * enc->frame_rate / FRAME_RATE_BASE / 1000.0;
+        bitrate = (double)(frame_size * 8) * enc->frame_rate / enc->frame_rate_base / 1000.0;
         avg_bitrate = (double)(total_size * 8) / ti1 / 1000.0;
         fprintf(fvstats, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
             (double)total_size / 1024, ti1, bitrate, avg_bitrate);
@@ -974,6 +975,7 @@ static int av_encode(AVFormatContext **output_files,
                 break;
             case CODEC_TYPE_VIDEO:
                 codec->frame_rate = icodec->frame_rate;
+                codec->frame_rate_base = icodec->frame_rate_base;
                 codec->width = icodec->width;
                 codec->height = icodec->height;
                 break;
@@ -1361,7 +1363,7 @@ static int av_encode(AVFormatContext **output_files,
 
             /* frame rate emulation */
             if (ist->st->codec.rate_emu) {
-                int64_t pts = ((int64_t) ist->frame * FRAME_RATE_BASE * 1000000) / (ist->st->codec.frame_rate);
+                int64_t pts = av_rescale((int64_t) ist->frame * ist->st->codec.frame_rate_base, 1000000, ist->st->codec.frame_rate);
                 int64_t now = av_gettime() - ist->start;
                 if (pts > now)
                     usleep(pts - now);
@@ -1673,7 +1675,9 @@ static void opt_debug(const char *arg)
 
 static void opt_frame_rate(const char *arg)
 {
-    frame_rate = (int)(strtod(arg, 0) * FRAME_RATE_BASE);
+    frame_rate_base = DEFAULT_FRAME_RATE_BASE; //FIXME not optimal
+    frame_rate = (int)(strtod(arg, 0) * frame_rate_base + 0.5);
+    //FIXME parse fractions 
 }
 
 
@@ -2051,7 +2055,7 @@ static void opt_input_file(const char *filename)
 {
     AVFormatContext *ic;
     AVFormatParameters params, *ap = &params;
-    int err, i, ret, rfps;
+    int err, i, ret, rfps, rfps_base;
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -2061,6 +2065,7 @@ static void opt_input_file(const char *filename)
     ap->sample_rate = audio_sample_rate;
     ap->channels = audio_channels;
     ap->frame_rate = frame_rate;
+    ap->frame_rate_base = frame_rate_base;
     ap->width = frame_width;
     ap->height = frame_height;
     ap->image_format = image_format;
@@ -2092,7 +2097,8 @@ static void opt_input_file(const char *filename)
         case CODEC_TYPE_VIDEO:
             frame_height = enc->height;
             frame_width = enc->width;
-            rfps = ic->streams[i]->r_frame_rate;
+            rfps      = ic->streams[i]->r_frame_rate;
+            rfps_base = ic->streams[i]->r_frame_rate_base;
             enc->workaround_bugs = workaround_bugs;
             enc->error_resilience = error_resilience; 
             enc->error_concealment = error_concealment; 
@@ -2106,13 +2112,15 @@ static void opt_input_file(const char *filename)
             if(bitexact)
                 enc->flags|= CODEC_FLAG_BITEXACT;
 
-            if (enc->frame_rate != rfps) {
+            assert(enc->frame_rate_base == rfps_base); // should be true for now
+            if (enc->frame_rate != rfps) { 
                 fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
-                    i, (float)enc->frame_rate / FRAME_RATE_BASE,
-                    (float)rfps / FRAME_RATE_BASE);
+                    i, (float)enc->frame_rate / enc->frame_rate_base,
+                    (float)rfps / rfps_base);
             }
             /* update the current frame rate to match the stream frame rate */
-            frame_rate = rfps;
+            frame_rate      = rfps;
+            frame_rate_base = rfps_base;
 
             enc->rate_emu = rate_emu;
             break;
@@ -2241,6 +2249,7 @@ static void opt_output_file(const char *filename)
                 video_enc->bit_rate = video_bit_rate;
                 video_enc->bit_rate_tolerance = video_bit_rate_tolerance;
                 video_enc->frame_rate = frame_rate; 
+                video_enc->frame_rate_base = frame_rate_base; 
                 
                 video_enc->width = frame_width;
                 video_enc->height = frame_height;
@@ -2492,8 +2501,12 @@ static void prepare_grab(void)
                     vp->width = enc->width;
                 if (enc->height > vp->height)
                     vp->height = enc->height;
-                if (enc->frame_rate > vp->frame_rate)
-                    vp->frame_rate = enc->frame_rate;
+                
+                assert(enc->frame_rate_base == DEFAULT_FRAME_RATE_BASE);
+                if (enc->frame_rate > vp->frame_rate){
+                    vp->frame_rate      = enc->frame_rate;
+                    vp->frame_rate_base = enc->frame_rate_base;
+                }
                 has_video = 1;
                 break;
             default:
@@ -2517,7 +2530,8 @@ static void prepare_grab(void)
             exit(1);
         }
         /* by now video grab has one stream */
-        ic->streams[0]->r_frame_rate = vp->frame_rate;
+        ic->streams[0]->r_frame_rate      = vp->frame_rate;
+        ic->streams[0]->r_frame_rate_base = vp->frame_rate_base;
         input_files[nb_input_files] = ic;
         dump_format(ic, nb_input_files, "", 0);
         nb_input_files++;

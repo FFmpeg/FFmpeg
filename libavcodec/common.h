@@ -876,7 +876,7 @@ static inline int clip(int a, int amin, int amax)
 /* math */
 extern const uint8_t ff_sqrt_tab[128];
 
-int ff_gcd(int a, int b);
+int64_t ff_gcd(int64_t a, int64_t b);
 
 static inline int ff_sqrt(int a)
 {

@@ -164,7 +164,7 @@ int ff_rate_control_init(MpegEncContext *s)
                 bits= rce.i_tex_bits + rce.p_tex_bits;
 
                 q= get_qscale(s, &rce, rcc->pass1_wanted_bits/rcc->pass1_rc_eq_output_sum, i);
-                rcc->pass1_wanted_bits+= s->bit_rate/(s->frame_rate / (double)FRAME_RATE_BASE);
+                rcc->pass1_wanted_bits+= s->bit_rate/(s->avctx->frame_rate / (double)s->avctx->frame_rate_base);
             }
         }
 
@@ -197,7 +197,7 @@ static inline double bits2qp(RateControlEntry *rce, double bits){
     
 static void update_rc_buffer(MpegEncContext *s, int frame_size){
     RateControlContext *rcc= &s->rc_context;
-    const double fps= (double)s->frame_rate / FRAME_RATE_BASE;
+    const double fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
     const double buffer_size= s->avctx->rc_buffer_size;
     const double min_rate= s->avctx->rc_min_rate/fps;
     const double max_rate= s->avctx->rc_max_rate/fps;
@@ -571,7 +571,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
 
     get_qminmax(&qmin, &qmax, s, pict_type);
 
-    fps= (double)s->frame_rate / FRAME_RATE_BASE;
+    fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
 //printf("input_pic_num:%d pic_num:%d frame_rate:%d\n", s->input_picture_number, s->picture_number, s->frame_rate);
         /* update predictors */
     if(picture_number>2){
@@ -698,7 +698,7 @@ static int init_pass2(MpegEncContext *s)
 {
     RateControlContext *rcc= &s->rc_context;
     int i;
-    double fps= (double)s->frame_rate / FRAME_RATE_BASE;
+    double fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
     double complexity[5]={0,0,0,0,0};   // aproximate bits at quant=1
     double avg_quantizer[5];
     uint64_t const_bits[5]={0,0,0,0,0}; // quantizer idependant bits

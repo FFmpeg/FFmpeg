@@ -1725,7 +1725,7 @@ static void compute_stats(HTTPContext *c)
                 case CODEC_TYPE_VIDEO:
                     type = "video";
                     sprintf(parameters, "%dx%d, q=%d-%d, fps=%d", st->codec.width, st->codec.height,
-                                st->codec.qmin, st->codec.qmax, st->codec.frame_rate / FRAME_RATE_BASE);
+                                st->codec.qmin, st->codec.qmax, st->codec.frame_rate / st->codec.frame_rate_base);
                     break;
                 default:
                     av_abort();
@@ -1950,7 +1950,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                                          (int64_t)s->pts_num * st->codec.sample_rate);
                             break;
                         case CODEC_TYPE_VIDEO:
-                            st->pts_incr = (int64_t)s->pts_den * FRAME_RATE_BASE;
+                            st->pts_incr = (int64_t)s->pts_den * st->codec.frame_rate_base;
                             av_frac_init(&st->pts, st->pts.val, 0,
                                          (int64_t)s->pts_num * st->codec.frame_rate);
                             break;
@@ -2018,7 +2018,7 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
                                      (int64_t)s->pts_num * st->codec.sample_rate);
                         break;
                     case CODEC_TYPE_VIDEO:
-                        st->pts_incr = (int64_t)s->pts_den * FRAME_RATE_BASE;
+                        st->pts_incr = (int64_t)s->pts_den * st->codec.frame_rate_base;
                         av_frac_init(&st->pts, st->pts.val, 0,
                                      (int64_t)s->pts_num * st->codec.frame_rate);
                         break;
@@ -3219,6 +3219,7 @@ static int add_av_stream(FFStream *feed, AVStream *st)
                 if (av1->width == av->width &&
                     av1->height == av->height &&
                     av1->frame_rate == av->frame_rate &&
+                    av1->frame_rate_base == av->frame_rate_base &&
                     av1->gop_size == av->gop_size)
                     goto found;
                 break;
@@ -3406,6 +3407,7 @@ static void build_feed_streams(void)
                                 matches = 0;
                             } else if (ccf->codec_type == CODEC_TYPE_VIDEO) {
                                 if (CHECK_CODEC(frame_rate) ||
+                                    CHECK_CODEC(frame_rate_base) ||
                                     CHECK_CODEC(width) ||
                                     CHECK_CODEC(height)) {
                                     printf("Codec width, height and framerate do not match for stream %d\n", i);
@@ -3553,8 +3555,10 @@ static void add_codec(FFStream *stream, AVCodecContext *av)
     case CODEC_TYPE_VIDEO:
         if (av->bit_rate == 0)
             av->bit_rate = 64000;
-        if (av->frame_rate == 0)
-            av->frame_rate = 5 * FRAME_RATE_BASE;
+        if (av->frame_rate == 0){
+            av->frame_rate = 5;
+            av->frame_rate_base = 1;
+        }
         if (av->width == 0 || av->height == 0) {
             av->width = 160;
             av->height = 128;
@@ -4017,7 +4021,8 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "VideoFrameRate")) {
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
-                video_enc.frame_rate = (int)(strtod(arg, NULL) * FRAME_RATE_BASE);
+                video_enc.frame_rate_base= DEFAULT_FRAME_RATE_BASE;
+                video_enc.frame_rate = (int)(strtod(arg, NULL) * video_enc.frame_rate_base);
             }
         } else if (!strcasecmp(cmd, "VideoGopSize")) {
             get_arg(arg, sizeof(arg), &p);

@@ -61,7 +61,8 @@ static int raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec.channels = ap->channels;
             break;
         case CODEC_TYPE_VIDEO:
-            st->codec.frame_rate = ap->frame_rate;
+            st->codec.frame_rate      = ap->frame_rate;
+            st->codec.frame_rate_base = ap->frame_rate_base;
             st->codec.width = ap->width;
             st->codec.height = ap->height;
             break;
@@ -151,9 +152,11 @@ static int video_read_header(AVFormatContext *s,
     /* for mpeg4 specify it too (most mpeg4 streams dont have the fixed_vop_rate set ...)*/
     if (st->codec.codec_id == CODEC_ID_MJPEG || st->codec.codec_id == CODEC_ID_MPEG4) {
         if (ap) {
-            st->codec.frame_rate = ap->frame_rate;
+            st->codec.frame_rate      = ap->frame_rate;
+            st->codec.frame_rate_base = ap->frame_rate_base;
         } else {
-            st->codec.frame_rate = 25 * FRAME_RATE_BASE;
+            st->codec.frame_rate      = 25;
+            st->codec.frame_rate_base = 1;
         }
     }
     return 0;

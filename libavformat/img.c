@@ -124,10 +124,13 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.pix_fmt = s->pix_fmt;
     s->img_size = avpicture_get_size(s->pix_fmt, s->width, s->height);
 
-    if (!ap || !ap->frame_rate)
-        st->codec.frame_rate = 25 * FRAME_RATE_BASE;
-    else
-        st->codec.frame_rate = ap->frame_rate;
+    if (!ap || !ap->frame_rate){
+        st->codec.frame_rate      = 25;
+        st->codec.frame_rate_base = 1;
+    }else{
+        st->codec.frame_rate      = ap->frame_rate;
+        st->codec.frame_rate_base = ap->frame_rate_base;
+    }
     
     return 0;
  fail1:
@@ -182,7 +185,7 @@ static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         av_free_packet(pkt);
         return -EIO; /* signal EOF */
     } else {
-        pkt->pts = ((int64_t)s->img_number * s1->pts_den * FRAME_RATE_BASE) / (s1->streams[0]->codec.frame_rate * s1->pts_num);
+        pkt->pts = av_rescale((int64_t)s->img_number * s1->streams[0]->codec.frame_rate_base, s1->pts_den, s1->streams[0]->codec.frame_rate) / s1->pts_num;
         s->img_number++;
         return 0;
     }

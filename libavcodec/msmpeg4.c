@@ -435,7 +435,7 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 
 void msmpeg4_encode_ext_header(MpegEncContext * s)
 {
-        put_bits(&s->pb, 5, s->frame_rate / FRAME_RATE_BASE); //yes 29.97 -> 29
+        put_bits(&s->pb, 5, s->avctx->frame_rate / s->avctx->frame_rate_base); //yes 29.97 -> 29
 
         put_bits(&s->pb, 11, FFMIN(s->bit_rate/1024, 2047));
 

@@ -236,7 +236,8 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->error_concealment= 3;
     s->error_resilience= 1;
     s->workaround_bugs= FF_BUG_AUTODETECT;
-    s->frame_rate = 25 * FRAME_RATE_BASE;
+    s->frame_rate_base= 1;
+    s->frame_rate = 25;
     s->gop_size= 50;
     s->me_method= ME_EPZS;
     s->get_buffer= avcodec_default_get_buffer;
@@ -463,7 +464,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %dx%d, %0.2f fps",
                      enc->width, enc->height, 
-                     (float)enc->frame_rate / FRAME_RATE_BASE);
+                     (float)enc->frame_rate / enc->frame_rate_base);
         }
         if (encode) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
@@ -586,6 +587,65 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
         //FIXME
         break;
     }
+}
+
+int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max){
+    int exact=1, sign=0;
+    int64_t gcd, larger;
+
+    assert(den != 0);
+
+    if(den < 0){
+        den= -den;
+        nom= -nom;
+    }
+    
+    if(nom < 0){
+        nom= -nom;
+        sign= 1;
+    }
+    
+    for(;;){ //note is executed 1 or 2 times 
+        gcd = ff_gcd(nom, den);
+        nom /= gcd;
+        den /= gcd;
+    
+        larger= FFMAX(nom, den);
+    
+        if(larger > max){
+            int64_t div= (larger + max - 1) / max;
+            nom =  (nom + div/2)/div;
+            den =  (den + div/2)/div;
+            exact=0;
+        }else 
+            break;
+    }
+    
+    if(sign) nom= -nom;
+    
+    *dst_nom = nom;
+    *dst_den = den;
+    
+    return exact;
+}
+
+int64_t av_rescale(int64_t a, int b, int c){
+    uint64_t h, l;
+    assert(c > 0);
+    assert(b >=0);
+    
+    if(a<0) return -av_rescale(-a, b, c);
+    
+    h= a>>32;
+    if(h==0) return a*b/c;
+    
+    l= a&0xFFFFFFFF;
+    l *= b;
+    h *= b;
+
+    l += (h%c)<<32;
+
+    return ((h/c)<<32) + l/c;
 }
 
 static int raw_encode_init(AVCodecContext *s)

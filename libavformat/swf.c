@@ -194,7 +194,7 @@ static int swf_write_header(AVFormatContext *s)
     AVCodecContext *enc, *audio_enc, *video_enc;
     PutBitContext p;
     uint8_t buf1[256];
-    int i, width, height, rate;
+    int i, width, height, rate, rate_base;
 
     swf = av_malloc(sizeof(SWFContext));
     if (!swf)
@@ -215,11 +215,13 @@ static int swf_write_header(AVFormatContext *s)
         /* currenty, cannot work correctly if audio only */
         width = 320;
         height = 200;
-        rate = 10 * FRAME_RATE_BASE;
+        rate = 10;
+        rate_base= 1;
     } else {
         width = video_enc->width;
         height = video_enc->height;
         rate = video_enc->frame_rate;
+        rate_base = video_enc->frame_rate_base;
     }
 
     put_tag(pb, "FWS");
@@ -228,9 +230,9 @@ static int swf_write_header(AVFormatContext *s)
                                       (will be patched if not streamed) */ 
 
     put_swf_rect(pb, 0, width, 0, height);
-    put_le16(pb, (rate * 256) / FRAME_RATE_BASE); /* frame rate */
+    put_le16(pb, (rate * 256) / rate_base); /* frame rate */
     swf->duration_pos = url_ftell(pb);
-    put_le16(pb, (uint16_t)(DUMMY_DURATION * (int64_t)rate / FRAME_RATE_BASE)); /* frame count */
+    put_le16(pb, (uint16_t)(DUMMY_DURATION * (int64_t)rate / rate_base)); /* frame count */
     
     /* define a shape with the jpeg inside */
 
@@ -305,7 +307,7 @@ static int swf_write_header(AVFormatContext *s)
         put_swf_tag(s, TAG_STREAMHEAD);
         put_byte(&s->pb, 0);
         put_byte(&s->pb, v);
-        put_le16(&s->pb, (audio_enc->sample_rate * FRAME_RATE_BASE) / rate);  /* avg samples per frame */
+        put_le16(&s->pb, (audio_enc->sample_rate * rate_base) / rate);  /* avg samples per frame */
         
         
         put_swf_end_tag(s);

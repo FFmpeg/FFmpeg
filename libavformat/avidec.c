@@ -133,12 +133,16 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 scale= get_le32(pb); /* scale */
                 rate= get_le32(pb); /* rate */
 
-                if(scale && rate)
-                    st->codec.frame_rate= (rate * (uint64_t)FRAME_RATE_BASE + scale/2) / scale;
-                else if(frame_period)
-                    st->codec.frame_rate = (1000000LL * FRAME_RATE_BASE + frame_period/2) / frame_period;
-                else
-                    st->codec.frame_rate = 25 * FRAME_RATE_BASE;
+                if(scale && rate){
+                    st->codec.frame_rate = rate;
+                    st->codec.frame_rate_base= scale;
+                }else if(frame_period){
+                    st->codec.frame_rate = 1000000;
+                    st->codec.frame_rate_base= frame_period;
+                }else{
+                    st->codec.frame_rate = 25;
+                    st->codec.frame_rate_base = 1;
+                }
                 
                 url_fskip(pb, size - 7 * 4);
                 break;

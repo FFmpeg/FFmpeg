@@ -537,16 +537,17 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     /* init size */
     width = 720;
     if (dsf) {
-        avctx->frame_rate = 25 * FRAME_RATE_BASE;
+        avctx->frame_rate = 25;
         packet_size = PAL_FRAME_SIZE;
         height = 576;
         nb_dif_segs = 12;
     } else {
-        avctx->frame_rate = 30 * FRAME_RATE_BASE;
+        avctx->frame_rate = 30;
         packet_size = NTSC_FRAME_SIZE;
         height = 480;
         nb_dif_segs = 10;
     }
+    avctx->frame_rate_base= 1;
     /* NOTE: we only accept several full frames */
     if (buf_size < packet_size)
         return -1;

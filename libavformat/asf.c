@@ -621,8 +621,7 @@ static int asf_write_packet(AVFormatContext *s, int stream_index,
         duration = (codec->frame_number * codec->frame_size * int64_t_C(10000000)) /
             codec->sample_rate;
     } else {
-        duration = codec->frame_number *
-            ((int64_t_C(10000000) * FRAME_RATE_BASE) / codec->frame_rate);
+        duration = av_rescale(codec->frame_number * codec->frame_rate_base, 10000000, codec->frame_rate);
     }
     if (duration > asf->duration)
         asf->duration = duration;

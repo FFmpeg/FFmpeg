@@ -77,6 +77,7 @@ typedef struct AVProbeData {
 
 typedef struct AVFormatParameters {
     int frame_rate;
+    int frame_rate_base;
     int sample_rate;
     int channels;
     int width;
@@ -159,6 +160,7 @@ typedef struct AVStream {
     int id;       /* format specific stream id */
     AVCodecContext codec; /* codec context */
     int r_frame_rate;     /* real frame rate of the stream */
+    int r_frame_rate_base;/* real frame rate base of the stream */
     uint64_t time_length; /* real length of the stream in miliseconds */
     void *priv_data;
     /* internal data used in av_find_stream_info() */
@@ -331,8 +333,6 @@ extern AVOutputFormat yuv4mpegpipe_oformat;
 /* utils.c */
 #define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
 #define MKBETAG(a,b,c,d) (d | (c << 8) | (b << 16) | (a << 24))
-
-int av_gcd(int a, int b);
 
 void av_register_input_format(AVInputFormat *format);
 void av_register_output_format(AVOutputFormat *format);

@@ -614,10 +614,12 @@ int av_find_stream_info(AVFormatContext *ic)
 #endif
                         /* stop after 40 frames */
                         if (st->codec_info_nb_real_frames >= 40) {
-                            st->r_frame_rate = (st->codec.frame_rate * 
-                                                st->codec_info_nb_real_frames) /
-                                (st->codec_info_nb_real_frames + 
-                                 (st->codec_info_nb_repeat_frames >> 1));
+                            av_reduce(
+                                &st->r_frame_rate,
+                                &st->r_frame_rate_base,
+                                (int64_t)st->codec.frame_rate * st->codec_info_nb_real_frames,
+                                st->codec_info_nb_real_frames + (st->codec_info_nb_repeat_frames >> 1),
+                                1<<30);
                             goto close_codec;
                         }
                     } else {
@@ -645,8 +647,10 @@ int av_find_stream_info(AVFormatContext *ic)
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
         if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
-            if (!st->r_frame_rate)
-                st->r_frame_rate = st->codec.frame_rate;
+            if (!st->r_frame_rate){
+                st->r_frame_rate      = st->codec.frame_rate;
+                st->r_frame_rate_base = st->codec.frame_rate_base;
+            }
         }
     }
 
@@ -820,7 +824,7 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
         break;
     case CODEC_TYPE_VIDEO:
         av_frac_add(&st->pts, 
-                    (int64_t)s->pts_den * FRAME_RATE_BASE);
+                    (int64_t)s->pts_den * st->codec.frame_rate_base);
         break;
     default:
         break;
@@ -1314,11 +1318,6 @@ void av_frac_add(AVFrac *f, int64_t incr)
         num = num % den;
     }
     f->num = num;
-}
-
-int av_gcd(int a, int b){
-    if(b) return av_gcd(b, a%b);
-    else  return a;
 }
 
 /**

@@ -686,7 +686,8 @@ static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
             get_be16(pb); /* depth */
             get_be16(pb); /* colortable id */
             
-            st->codec.frame_rate = 25 * FRAME_RATE_BASE;
+            st->codec.frame_rate      = 25;
+            st->codec.frame_rate_base = 1;
             
             size -= (16+8*4+2+32+2*2);
             while (size >= 8) {
@@ -932,9 +933,8 @@ printf("track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
         sample_duration = get_be32(pb);
 
         if (!i && st->codec.codec_type==CODEC_TYPE_VIDEO) {
-            st->codec.frame_rate = FRAME_RATE_BASE * c->streams[c->total_streams]->time_scale;
-            if (sample_duration)
-                st->codec.frame_rate /= sample_duration;
+            st->codec.frame_rate_base = sample_duration ? sample_duration : 1;
+            st->codec.frame_rate = c->streams[c->total_streams]->time_scale;
 #ifdef DEBUG
             printf("VIDEO FRAME RATE= %i (sd= %i)\n", st->codec.frame_rate, sample_duration);
 #endif

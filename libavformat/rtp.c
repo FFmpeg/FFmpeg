@@ -560,9 +560,8 @@ static void rtp_send_mpegvideo(AVFormatContext *s1,
         q += len;
 
         /* 90 KHz time stamp */
-        /* XXX: overflow */
         s->timestamp = s->base_timestamp + 
-            (s->cur_timestamp * 90000LL * FRAME_RATE_BASE) / st->codec.frame_rate;
+            av_rescale((int64_t)s->cur_timestamp * st->codec.frame_rate_base, 90000, st->codec.frame_rate);
         rtp_send_data(s1, s->buf, q - s->buf);
 
         buf1 += len;
@@ -586,9 +585,8 @@ static void rtp_send_raw(AVFormatContext *s1,
             len = size;
 
         /* 90 KHz time stamp */
-        /* XXX: overflow */
         s->timestamp = s->base_timestamp + 
-            (s->cur_timestamp * 90000LL * FRAME_RATE_BASE) / st->codec.frame_rate;
+            av_rescale((int64_t)s->cur_timestamp * st->codec.frame_rate_base, 90000, st->codec.frame_rate);
         rtp_send_data(s1, buf1, len);
 
         buf1 += len;
