@@ -172,20 +172,20 @@ uint64_t time= rdtsc();
             return -1;
     }
 
-    if(ret==FRAME_SKIPED) return 0;
+    if(ret==FRAME_SKIPED) return (get_bits_count(&s->gb)+7)>>3;
     /* skip if the header was thrashed */
     if (ret < 0){
         fprintf(stderr, "header damaged\n");
         return -1;
     }
     /* skip b frames if we dont have reference frames */
-    if(s->num_available_buffers<2 && s->pict_type==B_TYPE) return 0;
+    if(s->num_available_buffers<2 && s->pict_type==B_TYPE) return buf_size;
     /* skip b frames if we are in a hurry */
-    if(s->hurry_up && s->pict_type==B_TYPE) return 0;
+    if(s->hurry_up && s->pict_type==B_TYPE) return buf_size;
     
     if(s->next_p_frame_damaged){
         if(s->pict_type==B_TYPE)
-            return 0;
+            return buf_size;
         else
             s->next_p_frame_damaged=0;
     }
@@ -447,7 +447,7 @@ uint64_t time= rdtsc();
 #ifdef PRINT_FRAME_TIME
 printf("%Ld\n", rdtsc()-time);
 #endif
-    return buf_size;
+    return (get_bits_count(&s->gb)+7)>>3;
 }
 
 AVCodec mpeg4_decoder = {
