@@ -995,6 +995,10 @@ static int modify_current_stream(HTTPContext *c, char *rates)
     FFStream *req = c->stream;
     int action_required = 0;
 
+    /* Not much we can do for a feed */
+    if (!req->feed)
+        return 0;
+
     for (i = 0; i < req->nb_streams; i++) {
         AVCodecContext *codec = &req->streams[i]->codec;
 
