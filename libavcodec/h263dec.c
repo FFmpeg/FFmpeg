@@ -470,6 +470,15 @@ retry:
     } else {
         ret = h263_decode_picture_header(s);
     }
+    
+    if(ret==FRAME_SKIPED) return get_consumed_bytes(s, buf_size);
+
+    /* skip if the header was thrashed */
+    if (ret < 0){
+        fprintf(stderr, "header damaged\n");
+        return -1;
+    }
+    
     avctx->has_b_frames= !s->low_delay;
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
@@ -604,13 +613,6 @@ retry:
 
     if((s->codec_id==CODEC_ID_H263 || s->codec_id==CODEC_ID_H263P))
         s->gob_index = ff_h263_get_gob_height(s);
-
-    if(ret==FRAME_SKIPED) return get_consumed_bytes(s, buf_size);
-    /* skip if the header was thrashed */
-    if (ret < 0){
-        fprintf(stderr, "header damaged\n");
-        return -1;
-    }
     
     // for hurry_up==5
     s->current_picture.pict_type= s->pict_type;

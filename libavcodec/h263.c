@@ -2500,6 +2500,8 @@ static int h263_decode_gob_header(MpegEncContext *s)
         return -1;
     s->mb_x= 0;
     s->mb_y= s->gob_index* s->gob_number;
+    if(s->mb_y >= s->mb_height) 
+        return -1;
 #ifdef DEBUG
     fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", s->gob_number, gfid, s->qscale);
 #endif
@@ -4069,7 +4071,7 @@ int h263_decode_picture_header(MpegEncContext *s)
 
     startcode= get_bits(&s->gb, 22-8);
 
-    for(i= s->gb.size_in_bits - get_bits_count(&s->gb); i>0; i--) {
+    for(i= s->gb.size_in_bits - get_bits_count(&s->gb); i>24; i-=8) {
         startcode = ((startcode << 8) | get_bits(&s->gb, 8)) & 0x003FFFFF;
         
         if(startcode == 0x20)
@@ -4116,8 +4118,6 @@ int h263_decode_picture_header(MpegEncContext *s)
         if (!width)
             return -1;
         
-        s->width = width;
-        s->height = height;
         s->pict_type = I_TYPE + get_bits1(&s->gb);
 
         s->unrestricted_mv = get_bits1(&s->gb); 
@@ -4137,6 +4137,9 @@ int h263_decode_picture_header(MpegEncContext *s)
         }
         s->qscale = get_bits(&s->gb, 5);
         skip_bits1(&s->gb);	/* Continuous Presence Multipoint mode: off */
+
+        s->width = width;
+        s->height = height;
     } else {
         int ufep;
         

@@ -1004,6 +1004,14 @@ alloc:
     if(s->next_picture_ptr) s->next_picture= *s->next_picture_ptr;
     if(s->new_picture_ptr ) s->new_picture = *s->new_picture_ptr;
     
+    if(s->pict_type != I_TYPE && s->last_picture_ptr==NULL){
+        fprintf(stderr, "warning: first frame is no keyframe\n");
+        assert(s->pict_type != B_TYPE); //these should have been dropped if we dont have a reference
+        goto alloc;
+    }
+
+    assert(s->pict_type == I_TYPE || (s->last_picture_ptr && s->last_picture_ptr->data[0]));
+
     if(s->picture_structure!=PICT_FRAME){
         int i;
         for(i=0; i<4; i++){
@@ -1014,12 +1022,6 @@ alloc:
             s->last_picture.linesize[i] *=2;
             s->next_picture.linesize[i] *=2;
         }
-    }
-    
-    if(s->pict_type != I_TYPE && s->last_picture_ptr==NULL){
-        fprintf(stderr, "warning: first frame is no keyframe\n");
-        assert(s->pict_type != B_TYPE); //these should have been dropped if we dont have a reference
-        goto alloc;
     }
   }
    
