@@ -81,6 +81,8 @@ void parse_options(int argc, char **argv, const OptionDef *options)
                 *po->u.str_arg = str;
             } else if (po->flags & OPT_BOOL) {
                 *po->u.int_arg = 1;
+            } else if (po->flags & OPT_INT) {
+                *po->u.int_arg = atoi(arg);
             } else {
 		po->u.func_arg(arg);
             }

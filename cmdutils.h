@@ -11,6 +11,7 @@ typedef struct {
 #define OPT_VIDEO  0x0010
 #define OPT_AUDIO  0x0020
 #define OPT_GRAB   0x0040
+#define OPT_INT    0x0080
     union {
         void (*func_arg)(const char *);
         int *int_arg;
