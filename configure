@@ -27,6 +27,7 @@ strip="strip"
 cpu=`uname -m`
 mmx="default"
 altivec="default"
+mmi="default"
 case "$cpu" in
   i386|i486|i586|i686|i86pc|BePC)
     cpu="x86"
@@ -39,6 +40,9 @@ case "$cpu" in
   ;;
   "Power Macintosh"|ppc)
     cpu="powerpc"
+  ;;
+  mips)
+    cpu="mips"
   ;;
   *)
     cpu="unknown"
@@ -226,6 +230,26 @@ EOF
 $cc -o $TMPO $TMPC -faltivec 2> /dev/null || altivec="no"
 fi
 
+# Can only do mmi on mips
+if test $mmi = "default"; then
+    if test $cpu = "mips"; then
+        mmi="yes"
+    else
+        mmi="no"
+    fi
+fi
+
+# See does our compiler support mmi
+if test $mmi = "yes"; then
+cat > $TMPC << EOF
+int main(void) {
+    __asm__ ("lq \$2, 0(\$2)");
+    return 0;
+}
+EOF
+$cc -o $TMPO $TMPC 2> /dev/null || mmi="no"
+fi
+
 # Checking for CFLAGS
 if test -z "$CFLAGS"; then
     CFLAGS="-O3"
@@ -372,6 +396,7 @@ echo "make             $make"
 echo "CPU              $cpu"
 echo "Big Endian       $bigendian"
 echo "MMX enabled      $mmx"
+echo "MMI enabled      $mmi"
 echo "AltiVec enabled  $altivec"
 echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
@@ -411,6 +436,9 @@ elif test "$cpu" = "alpha" ; then
 elif test "$cpu" = "powerpc" ; then
   echo "TARGET_ARCH_POWERPC=yes" >> config.mak
   echo "#define ARCH_POWERPC 1" >> $TMPH
+elif test "$cpu" = "mips" ; then
+  echo "TARGET_ARCH_MIPS=yes" >> config.mak
+  echo "#define ARCH_MIPS 1" >> $TMPH
 fi
 if test "$bigendian" = "yes" ; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
@@ -419,6 +447,10 @@ fi
 if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
   echo "#define HAVE_MMX 1" >> $TMPH
+fi
+if test "$mmi" = "yes" ; then
+  echo "TARGET_MMI=yes" >> config.mak
+  echo "#define HAVE_MMI 1" >> $TMPH
 fi
 if test "$altivec" = "yes" ; then
   echo "TARGET_ALTIVEC=yes" >> config.mak

@@ -187,6 +187,14 @@ void dsputil_init_alpha(void);
 
 void dsputil_init_ppc(void);
 
+#elif defined(HAVE_MMI)
+
+#define emms_c()
+
+#define __align8 __attribute__ ((aligned (16)))
+
+void dsputil_init_mmi(void);   
+
 #else
 
 #define emms_c()

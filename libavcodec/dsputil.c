@@ -1652,6 +1652,10 @@ void dsputil_init(void)
 #ifdef ARCH_POWERPC
     dsputil_init_ppc();
 #endif
+#ifdef HAVE_MMI
+    dsputil_init_mmi();
+    use_permuted_idct = 0;
+#endif
 
 #ifdef SIMPLE_IDCT
     if (ff_idct == NULL) {

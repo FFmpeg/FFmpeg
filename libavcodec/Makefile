@@ -76,6 +76,10 @@ ifeq ($(TARGET_ARCH_POWERPC),yes)
 OBJS += ppc/dsputil_ppc.o
 endif
 
+ifeq ($(TARGET_MMI),yes)
+OBJS += ps2/dsputil_mmi.o ps2/idct_mmi.o
+endif
+
 ifeq ($(TARGET_ALTIVEC),yes)
 CFLAGS += -faltivec
 OBJS += ppc/dsputil_altivec.o
@@ -133,6 +137,7 @@ clean:
 	   mlib/*.o mlib/*~ \
 	   alpha/*.o alpha/*~ \
 	   ppc/*.o ppc/*~ \
+	   ps2/*.o ps2/*~ \
 	   liba52/*.o liba52/*~ \
 	   apiexample $(TESTS)
 
