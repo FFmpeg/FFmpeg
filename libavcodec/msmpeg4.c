@@ -58,17 +58,13 @@
 static uint32_t v2_dc_lum_table[512][2];
 static uint32_t v2_dc_chroma_table[512][2];
 
-#ifdef CONFIG_ENCODERS
 static inline void msmpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n);
-#endif //CONFIG_ENCODERS
 static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                                        int n, int coded, const uint8_t *scantable);
 static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr);
 static int msmpeg4_decode_motion(MpegEncContext * s, 
                                  int *mx_ptr, int *my_ptr);
-#ifdef CONFIG_ENCODERS
 static void msmpeg4v2_encode_motion(MpegEncContext * s, int val);
-#endif //CONFIG_ENCODERS
 static void init_h263_dc_for_msmpeg4(void);
 static inline void msmpeg4_memsetw(short *tab, int val, int n);
 #ifdef CONFIG_ENCODERS
@@ -86,7 +82,9 @@ int frame_count = 0;
 
 #include "msmpeg4data.h"
 
+#ifdef CONFIG_ENCODERS //strangely gcc includes this even if its not references
 static uint8_t rl_length[NB_RL_TABLES][MAX_LEVEL+1][MAX_RUN+1][2];
+#endif //CONFIG_ENCODERS
 
 #ifdef STATS
 
@@ -850,8 +848,6 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
 
 #define DC_MAX 119
 
-#ifdef CONFIG_ENCODERS
-
 static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr)
 {
     int sign, code;
@@ -1043,8 +1039,6 @@ else
 	}
     }
 }
-
-#endif //CONFIG_ENCODERS
 
 /****************************************/
 /* decoding stuff */
@@ -1428,8 +1422,6 @@ static inline void msmpeg4_memsetw(short *tab, int val, int n)
         tab[i] = val;
 }
 
-#ifdef CONFIG_ENCODERS
-
 static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
 {
     int range, bit_size, sign, code, bits;
@@ -1462,8 +1454,6 @@ static void msmpeg4v2_encode_motion(MpegEncContext * s, int val)
         }
     }
 }
-
-#endif //CONFIG_ENCODERS
 
 /* this is identical to h263 except that its range is multiplied by 2 */
 static int msmpeg4v2_decode_motion(MpegEncContext * s, int pred, int f_code)

@@ -73,6 +73,13 @@ static uint8_t fcode_tab[MAX_MV*2+1];
 
 static uint32_t uni_mpeg1_ac_vlc_bits[64*64*2];
 static uint8_t  uni_mpeg1_ac_vlc_len [64*64*2];
+
+/* simple include everything table for dc, first byte is bits number next 3 are code*/
+static uint32_t mpeg1_lum_dc_uni[512];
+static uint32_t mpeg1_chr_dc_uni[512];
+
+static uint8_t mpeg1_index_run[2][64];
+static int8_t mpeg1_max_level[2][64];
 #endif
 
 static void init_2d_vlc_rl(RLTable *rl)
@@ -114,6 +121,7 @@ static void init_2d_vlc_rl(RLTable *rl)
     }
 }
 
+#ifdef CONFIG_ENCODERS
 static void init_uni_ac_vlc(RLTable *rl, uint32_t *uni_ac_vlc_bits, uint8_t *uni_ac_vlc_len){
     int i;
 
@@ -309,11 +317,19 @@ static void mpeg1_skip_picture(MpegEncContext *s, int pict_num)
     put_bits(&s->pb, 1, 1); 
     put_bits(&s->pb, 1, 1); 
 }
+#endif
 
 static void common_init(MpegEncContext *s)
 {
     s->y_dc_scale_table=
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+}
+
+void ff_mpeg1_clean_buffers(MpegEncContext *s){
+    s->last_dc[0] = 1 << (7 + s->intra_dc_precision);
+    s->last_dc[1] = s->last_dc[0];
+    s->last_dc[2] = s->last_dc[0];
+    memset(s->last_mv, 0, sizeof(s->last_mv));
 }
 
 #ifdef CONFIG_ENCODERS
@@ -322,13 +338,6 @@ void ff_mpeg1_encode_slice_header(MpegEncContext *s){
     put_header(s, SLICE_MIN_START_CODE + s->mb_y);
     put_bits(&s->pb, 5, s->qscale); /* quantizer scale */
     put_bits(&s->pb, 1, 0); /* slice extra information */
-}
-
-void ff_mpeg1_clean_buffers(MpegEncContext *s){
-    s->last_dc[0] = 1 << (7 + s->intra_dc_precision);
-    s->last_dc[1] = s->last_dc[0];
-    s->last_dc[2] = s->last_dc[0];
-    memset(s->last_mv, 0, sizeof(s->last_mv));
 }
 
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)

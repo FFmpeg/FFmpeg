@@ -905,6 +905,7 @@ AVCodec ffv1_decoder = {
     NULL
 };
 
+#ifdef CONFIG_ENCODERS
 AVCodec ffv1_encoder = {
     "ffv1",
     CODEC_TYPE_VIDEO,
@@ -914,3 +915,4 @@ AVCodec ffv1_encoder = {
     encode_frame,
     encode_end,
 };
+#endif

@@ -95,8 +95,6 @@ static inline int get_level(GetBitContext *gb){
     else        return code - 3;
 }
 
-#ifdef CONFIG_ENCODERS
-
 static inline void put_level(PutBitContext *pb, int level){
     unsigned int index= level + 3;
 
@@ -106,8 +104,6 @@ static inline void put_level(PutBitContext *pb, int level){
         put_bits(pb, 8, level&0xFF);
     }
 }
-
-#endif //CONFIG_ENCODERS
 
 static inline int decode_block(ASV1Context *a, DCTELEM block[64]){
     int i;
@@ -133,8 +129,6 @@ static inline int decode_block(ASV1Context *a, DCTELEM block[64]){
 
     return 0;
 }
-
-#ifdef CONFIG_ENCODERS
 
 static inline void encode_block(ASV1Context *a, DCTELEM block[64]){
     int i;
@@ -169,8 +163,6 @@ static inline void encode_block(ASV1Context *a, DCTELEM block[64]){
     put_bits(&a->pb, ccp_tab[16][1], ccp_tab[16][0]);
 }
 
-#endif //CONFIG_ENCODERS
-
 static inline int decode_mb(ASV1Context *a, DCTELEM block[6][64]){
     int i;
 
@@ -183,8 +175,6 @@ static inline int decode_mb(ASV1Context *a, DCTELEM block[6][64]){
     return 0;
 }
 
-#ifdef CONFIG_ENCODERS
-
 static inline void encode_mb(ASV1Context *a, DCTELEM block[6][64]){
     int i;
 
@@ -192,8 +182,6 @@ static inline void encode_mb(ASV1Context *a, DCTELEM block[6][64]){
         encode_block(a, block[i]);
     }
 }
-        
-#endif //CONFIG_ENCODERS
 
 static inline void idct_put(ASV1Context *a, int mb_x, int mb_y){
     DCTELEM (*block)[64]= a->block;
@@ -213,8 +201,6 @@ static inline void idct_put(ASV1Context *a, int mb_x, int mb_y){
         a->dsp.idct_put(dest_cr, a->picture.linesize[2], block[5]);
     }
 }
-
-#ifdef CONFIG_ENCODERS
 
 static inline void dct_get(ASV1Context *a, int mb_x, int mb_y){
     DCTELEM (*block)[64]= a->block;
@@ -239,8 +225,6 @@ static inline void dct_get(ASV1Context *a, int mb_x, int mb_y){
             a->dsp.fdct(block[i]);
     }
 }
-
-#endif //CONFIG_ENCODERS
 
 static int decode_frame(AVCodecContext *avctx, 
                         void *data, int *data_size,
@@ -324,8 +308,6 @@ for(i=0; i<s->avctx->extradata_size; i++){
     return (get_bits_count(&a->gb)+31)/32*4;
 }
 
-#ifdef CONFIG_ENCODERS
-
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
     ASV1Context * const a = avctx->priv_data;
     AVFrame *pict = data;
@@ -374,8 +356,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     return size*4;
 }
 
-#endif //CONFIG_ENCODERS
-
 static void common_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
 
@@ -416,8 +396,6 @@ static int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
-#ifdef CONFIG_ENCODERS
-
 static int encode_init(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;
     int i;
@@ -440,8 +418,6 @@ static int encode_init(AVCodecContext *avctx){
 
     return 0;
 }
-
-#endif //CONFIG_ENCODERS
 
 static int decode_end(AVCodecContext *avctx){
     ASV1Context * const a = avctx->priv_data;

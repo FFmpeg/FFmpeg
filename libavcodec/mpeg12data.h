@@ -25,7 +25,7 @@ const int16_t ff_mpeg1_default_non_intra_matrix[64] = {
     16, 16, 16, 16, 16, 16, 16, 16,
 };
 
-const unsigned char vlc_dc_table[256] = {
+static const unsigned char vlc_dc_table[256] = {
     0, 1, 2, 2,
     3, 3, 3, 3,
     4, 4, 4, 4, 4, 4, 4, 4,
@@ -48,10 +48,10 @@ const unsigned char vlc_dc_table[256] = {
     8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8,
 };
 
-const uint16_t vlc_dc_lum_code[12] = {
+static const uint16_t vlc_dc_lum_code[12] = {
     0x4, 0x0, 0x1, 0x5, 0x6, 0xe, 0x1e, 0x3e, 0x7e, 0xfe, 0x1fe, 0x1ff,
 };
-const unsigned char vlc_dc_lum_bits[12] = {
+static const unsigned char vlc_dc_lum_bits[12] = {
     3, 2, 2, 3, 3, 4, 5, 6, 7, 8, 9, 9,
 };
 
@@ -61,10 +61,6 @@ const uint16_t vlc_dc_chroma_code[12] = {
 const unsigned char vlc_dc_chroma_bits[12] = {
     2, 2, 2, 3, 4, 5, 6, 7, 8, 9, 10, 10,
 };
-
-/* simple include everything table for dc, first byte is bits number next 3 are code*/
-static uint32_t mpeg1_lum_dc_uni[512];
-static uint32_t mpeg1_chr_dc_uni[512];
 
 static const uint16_t mpeg1_vlc[113][2] = {
  { 0x3, 2 }, { 0x4, 4 }, { 0x5, 5 }, { 0x6, 7 },
@@ -165,9 +161,6 @@ static const int8_t mpeg1_run[111] = {
  17, 18, 19, 20, 21, 22, 23, 24,
  25, 26, 27, 28, 29, 30, 31,
 };
-
-static uint8_t mpeg1_index_run[2][64];
-static int8_t mpeg1_max_level[2][64];
 
 static RLTable rl_mpeg1 = {
     111,

@@ -292,6 +292,7 @@ void mjpeg_close(MpegEncContext *s)
         case 7: ret= (left + top)>>1; break;\
     }
 
+#ifdef CONFIG_ENCODERS
 static inline void put_marker(PutBitContext *p, int code)
 {
     put_bits(p, 8, 0xff);
@@ -575,7 +576,7 @@ static inline void mjpeg_encode_dc(MpegEncContext *s, int val,
             mant--;
         }
         
-        nbits= av_log2(val) + 1;
+        nbits= av_log2_16bit(val) + 1;
             
         put_bits(&s->pb, huff_size[nbits], huff_code[nbits]);
         
@@ -789,6 +790,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
 //    return (get_bit_count(&f->pb)+7)/8;
 }
 
+#endif //CONFIG_ENCODERS
 
 /******************************************/
 /* decoding */
@@ -2038,6 +2040,7 @@ AVCodec mjpegb_decoder = {
     NULL
 };
 
+#ifdef CONFIG_ENCODERS
 AVCodec ljpeg_encoder = { //FIXME avoid MPV_* lossless jpeg shouldnt need them
     "ljpeg",
     CODEC_TYPE_VIDEO,
@@ -2047,3 +2050,4 @@ AVCodec ljpeg_encoder = { //FIXME avoid MPV_* lossless jpeg shouldnt need them
     encode_picture_lossless,
     MPV_encode_end,
 };
+#endif
