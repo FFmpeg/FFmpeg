@@ -17,6 +17,8 @@ version 0.4.6:
 - added GOB header for H.263/H.263+ coding on RTP mode. (Juanjo)
 - now H.263 picture size is returned on the first decoded frame. (Juanjo)
 - added first regression tests
+- added MPEG2 TS demux
+- new demux API for libav
 
 version 0.4.5:
 
