@@ -663,6 +663,7 @@ static void fill_pad_region(AVPicture* img, int height, int width,
     }
 }
 
+static int bit_buffer_size= 1024*256;
 static uint8_t *bit_buffer= NULL;
 
 static void do_video_out(AVFormatContext *s, 
@@ -678,8 +679,6 @@ static void do_video_out(AVFormatContext *s,
     AVCodecContext *enc, *dec;
     enum PixelFormat target_pixfmt;
     
-#define VIDEO_BUFFER_SIZE (1024*1024)
-
     avcodec_get_frame_defaults(&picture_format_temp);
     avcodec_get_frame_defaults(&picture_crop_temp);
 
@@ -891,7 +890,7 @@ static void do_video_out(AVFormatContext *s,
             big_picture.pts= av_rescale(ost->sync_opts, AV_TIME_BASE*(int64_t)enc->frame_rate_base, enc->frame_rate);
 //av_log(NULL, AV_LOG_DEBUG, "%lld -> encoder\n", ost->sync_opts);
             ret = avcodec_encode_video(enc, 
-                                       bit_buffer, VIDEO_BUFFER_SIZE,
+                                       bit_buffer, bit_buffer_size,
                                        &big_picture);
             //enc->frame_number = enc->real_pict_num;
             if(ret){
@@ -1298,12 +1297,12 @@ static int output_packet(AVInputStream *ist, int ist_index,
  
                         switch(ost->st->codec.codec_type) {
                         case CODEC_TYPE_AUDIO:        
-                            ret = avcodec_encode_audio(enc, bit_buffer, VIDEO_BUFFER_SIZE, NULL);
+                            ret = avcodec_encode_audio(enc, bit_buffer, bit_buffer_size, NULL);
                             audio_size += ret;
                             pkt.flags |= PKT_FLAG_KEY;
                             break;
                         case CODEC_TYPE_VIDEO:
-                            ret = avcodec_encode_video(enc, bit_buffer, VIDEO_BUFFER_SIZE, NULL);
+                            ret = avcodec_encode_video(enc, bit_buffer, bit_buffer_size, NULL);
                             video_size += ret;
                             if(enc->coded_frame && enc->coded_frame->key_frame)
                                 pkt.flags |= PKT_FLAG_KEY;
@@ -1354,11 +1353,6 @@ static int av_encode(AVFormatContext **output_files,
 
     file_table= (AVInputFile*) av_mallocz(nb_input_files * sizeof(AVInputFile));
     if (!file_table)
-        goto fail;
-
-    if (!bit_buffer)
-        bit_buffer = av_malloc(VIDEO_BUFFER_SIZE);
-    if (!bit_buffer)
         goto fail;
         
     /* input stream init */
@@ -1663,7 +1657,16 @@ static int av_encode(AVFormatContext **output_files,
                 }
             }
         }
+        if(codec->codec_type == CODEC_TYPE_VIDEO){
+            int size= codec->width * codec->height;
+            bit_buffer_size= FFMAX(bit_buffer_size, 4*size);
+        }
     }
+
+    if (!bit_buffer)
+        bit_buffer = av_malloc(bit_buffer_size);
+    if (!bit_buffer)
+        goto fail;
 
     /* dump the file output parameters - cannot be done before in case
        of stream copy */
