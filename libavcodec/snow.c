@@ -1906,12 +1906,12 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
     int qmul= qexp[qlog&7]<<(qlog>>3);
     int qadd= (s->qbias*qmul)>>QBIAS_SHIFT;
     
+    START_TIMER
+
     if(b->buf == s->spatial_dwt_buffer || s->qlog == LOSSLESS_QLOG){
         qadd= 0;
         qmul= 1<<QEXPSHIFT;
     }
-
-    START_TIMER
 
     if(1){
         int run;
@@ -2507,7 +2507,7 @@ mca( 8, 0,16)
 mca( 0, 8,16)
 mca( 8, 8,16)
 
-static void add_xblock(SnowContext *s, DWTELEM *dst, uint8_t *src, uint8_t *obmc, int s_x, int s_y, int b_w, int b_h, int mv_x, int mv_y, int w, int h, int dst_stride, int src_stride, int obmc_stride, int mb_type, int add, int color){
+static always_inline void add_xblock(SnowContext *s, DWTELEM *dst, uint8_t *src, uint8_t *obmc, int s_x, int s_y, int b_w, int b_h, int mv_x, int mv_y, int w, int h, int dst_stride, int src_stride, int obmc_stride, int mb_type, int add, int color){
     uint8_t tmp[src_stride*(b_h+5)]; //FIXME move to context to gurantee alignment
     int x,y;
 
@@ -2579,6 +2579,7 @@ static void predict_plane(SnowContext *s, DWTELEM *buf, int plane_index, int add
     uint8_t *ref  = s->last_picture.data[plane_index];
     int w= p->width;
     int h= p->height;
+    START_TIMER
     
 if(s->avctx->debug&512){
     for(y=0; y<h; y++){
@@ -2594,6 +2595,7 @@ if(s->avctx->debug&512){
         for(mb_x=-1; mb_x<=mb_w; mb_x++){
             int index= clip(mb_x, 0, mb_w-1) + clip(mb_y, 0, mb_h-1)*mb_stride;
 
+            START_TIMER
             add_xblock(s, buf, ref, obmc, 
                        block_w*mb_x - block_w/2, 
                        block_w*mb_y - block_w/2,
@@ -2603,8 +2605,11 @@ if(s->avctx->debug&512){
                        w, ref_stride, obmc_stride, 
                        s->block[index].type, add, s->block[index].color[plane_index]);
 
+            STOP_TIMER("add_xblock")
         }
     }
+    
+    STOP_TIMER("predict_plane")
 }
 
 static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int bias){
