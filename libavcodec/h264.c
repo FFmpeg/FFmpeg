@@ -4153,7 +4153,7 @@ static int decode_cabac_mb_mvd( H264Context *h, int list, int n, int l ) {
 }
 
 
-static int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
+static int inline get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
     int nza, nzb;
     int ctx = 0;
 
@@ -4181,19 +4181,18 @@ static int get_cabac_cbf_ctx( H264Context *h, int cat, int idx ) {
     return ctx + 4 * cat;
 }
 
-static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int qp, int max_coeff) {
+static int inline decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n, const uint8_t *scantable, int qp, int max_coeff) {
     const int mb_xy  = h->s.mb_x + h->s.mb_y*h->s.mb_stride;
     const uint16_t *qmul= dequant_coeff[qp];
     static const int significant_coeff_flag_offset[5] = { 0, 15, 29, 44, 47 };
     static const int coeff_abs_level_m1_offset[5] = {227+ 0, 227+10, 227+20, 227+30, 227+39 };
 
-    int coeff[16];
     int index[16];
 
     int i, last;
     int coeff_count = 0;
 
-    int abslevel1 = 0;
+    int abslevel1 = 1;
     int abslevelgt1 = 0;
 
     /* cat: 0-> DC 16x16  n = 0
@@ -4225,24 +4224,31 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
     if( last == max_coeff -1 ) {
         index[coeff_count++] = last;
     }
+    assert(coeff_count > 0);
 
-    if( cat == 0 && coeff_count > 0 )
+    if( cat == 0 )
         h->cbp_table[mb_xy] |= 0x100;
     else if( cat == 1 || cat == 2 )
         h->non_zero_count_cache[scan8[n]] = coeff_count;
-    else if( cat == 3 && coeff_count > 0 )
+    else if( cat == 3 )
         h->cbp_table[mb_xy] |= 0x40 << n;
-    else if( cat == 4 )
+    else {
+        assert( cat == 4 );
         h->non_zero_count_cache[scan8[16+n]] = coeff_count;
+    }
 
     for( i = coeff_count - 1; i >= 0; i-- ) {
-        int ctx = (abslevelgt1 != 0 ? 0 : FFMIN( 4, abslevel1 + 1 )) + coeff_abs_level_m1_offset[cat];
+        int ctx = (abslevelgt1 != 0 ? 0 : FFMIN( 4, abslevel1 )) + coeff_abs_level_m1_offset[cat];
+        int j= scantable[index[i]];
 
         if( get_cabac( &h->cabac, &h->cabac_state[ctx] ) == 0 ) {
-            if( get_cabac_bypass( &h->cabac ) )
-                coeff[i] = -1;
-            else
-                coeff[i] = 1;
+            if( cat == 0 || cat == 3 ) {
+                if( get_cabac_bypass( &h->cabac ) ) block[j] = -1;
+                else                                block[j] =  1;
+            }else{
+                if( get_cabac_bypass( &h->cabac ) ) block[j] = -qmul[j];
+                else                                block[j] =  qmul[j];
+            }
     
             abslevel1++;
         } else {
@@ -4265,24 +4271,15 @@ static int decode_cabac_residual( H264Context *h, DCTELEM *block, int cat, int n
                 }
             }
 
-            if( get_cabac_bypass( &h->cabac ) )
-                coeff[i] = -coeff_abs;
-            else
-                coeff[i] = coeff_abs;
+            if( cat == 0 || cat == 3 ) {
+                if( get_cabac_bypass( &h->cabac ) ) block[j] = -coeff_abs;
+                else                                block[j] =  coeff_abs;
+            }else{
+                if( get_cabac_bypass( &h->cabac ) ) block[j] = -coeff_abs * qmul[j];
+                else                                block[j] =  coeff_abs * qmul[j];
+            }
     
             abslevelgt1++;
-        }
-    }
-
-    if( cat == 0 || cat == 3 ) { /* DC */
-        for(i = 0; i < coeff_count; i++) {
-            block[scantable[ index[i] ]] = coeff[i];
-        }
-
-    } else { /* AC */
-        for(i = 0; i < coeff_count; i++) {
-            int j= scantable[index[i]];
-            block[j] = coeff[i] * qmul[j];
         }
     }
     return 0;
