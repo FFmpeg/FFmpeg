@@ -74,3 +74,19 @@ if [ "$gprof" = "yes" ] ; then
   echo "TARGET_GPROF=yes" >> config.mak
   echo "#define HAVE_GPROF 1" >> config.h
 fi
+
+# if you do not want to use encoders, disable that.
+echo "#define CONFIG_ENCODERS 1" >> config.h
+echo "CONFIG_ENCODERS=yes" >> config.mak
+
+# if you do not want to use decoders, disable that.
+echo "#define CONFIG_DECODERS 1" >> config.h
+echo "CONFIG_DECODERS=yes" >> config.mak
+
+# special AC3 and MPGLIB enabling stuff in case you already have it
+# without libavcodec.
+echo "#define CONFIG_AC3 1" >> config.h
+echo "CONFIG_AC3=yes" >> config.mak
+
+echo "#define CONFIG_MPGLIB 1" >> config.h
+echo "CONFIG_MPGLIB=yes" >> config.mak

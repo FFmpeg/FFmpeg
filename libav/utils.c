@@ -126,7 +126,6 @@ void register_all(void)
 {
     avcodec_init();
     avcodec_register_all();
-    avcodec_register_more();
 
     register_avformat(&mp2_format);
     register_avformat(&ac3_format);

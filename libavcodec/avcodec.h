@@ -174,4 +174,3 @@ int avcodec_encode_video(AVCodecContext *avctx, UINT8 *buf, int buf_size,
 int avcodec_close(AVCodecContext *avctx);
 
 void avcodec_register_all(void);
-void avcodec_register_more(void);

@@ -178,12 +178,3 @@ AVCodec ac3_decoder = {
     ac3_decode_end,
     ac3_decode_frame,
 };
-
-/* register codecs which could clash with mplayer symbols */
-/* XXX: rename all symbols to avoid clashed */
-void avcodec_register_more(void)
-{
-    register_avcodec(&mp3_decoder);
-    register_avcodec(&ac3_decoder);
-}
-

@@ -244,6 +244,8 @@ void avcodec_init(void)
 /* simple call to use all the codecs */
 void avcodec_register_all(void)
 {
+    /* encoders */
+#ifdef CONFIG_ENCODERS
     register_avcodec(&ac3_encoder);
     register_avcodec(&mp2_encoder);
     register_avcodec(&mpeg1video_encoder);
@@ -253,15 +255,25 @@ void avcodec_register_all(void)
     register_avcodec(&mjpeg_encoder);
     register_avcodec(&opendivx_encoder);
     register_avcodec(&msmpeg4_encoder);
+#endif /* CONFIG_ENCODERS */
     register_avcodec(&pcm_codec);
     register_avcodec(&rawvideo_codec);
+
     /* decoders */
+#ifdef CONFIG_DECODERS
     register_avcodec(&h263_decoder);
     register_avcodec(&opendivx_decoder);
     register_avcodec(&msmpeg4_decoder);
     register_avcodec(&mpeg_decoder);
     register_avcodec(&h263i_decoder);
     register_avcodec(&rv10_decoder);
+#ifdef CONFIG_MPGLIB
+    register_avcodec(&mp3_decoder);
+#endif
+#ifdef CONFIG_AC3
+    register_avcodec(&ac3_decoder);
+#endif
+#endif /* CONFIG_DECODERS */
 }
 
 static int encode_init(AVCodecContext *s)

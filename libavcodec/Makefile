@@ -10,14 +10,18 @@ OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
 ASM_OBJS=
 
 # currently using libac3 for ac3 decoding
+ifeq ($(CONFIG_AC3),yes)
 OBJS+= ac3dec.o \
        libac3/bit_allocate.o libac3/bitstream.o libac3/downmix.o \
        libac3/imdct.o  libac3/parse.o
+endif
 
 # currently using mpglib for mpeg audio decoding
+ifeq ($(CONFIG_MPGLIB),yes)
 OBJS+= mpegaudiodec.o \
        mpglib/layer1.o mpglib/layer2.o mpglib/layer3.o \
        mpglib/dct64_i386.o mpglib/decode_i386.o  mpglib/tabinit.o
+endif
 
 # i386 mmx specific stuff
 ifeq ($(TARGET_MMX),yes)
@@ -71,3 +75,10 @@ imgresample-test: imgresample.c
 
 dct-test: dct-test.o jfdctfst.o i386/fdct_mmx.o i386/fdctdata.o fdctref.o
 	$(CC) -o $@ $^
+
+#
+# include dependency files if they exist
+#
+ifneq ($(wildcard .depend),)
+include .depend
+endif
