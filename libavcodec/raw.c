@@ -52,6 +52,7 @@ typedef struct RawVideoContext {
     unsigned char * buffer;  /* block of memory for holding one frame */
     unsigned char * p;       /* current position in buffer */
     int             length;  /* number of bytes in buffer */
+    AVFrame pic;             ///< AVCodecContext.coded_frame
 } RawVideoContext;
 
 
@@ -67,6 +68,10 @@ static int raw_init(AVCodecContext *avctx)
 	context->buffer = av_malloc(context->length);
 	context->p      = context->buffer;
 
+    context->pic.pict_type= FF_I_TYPE;
+    context->pic.key_frame= 1;
+    avctx->coded_frame= &context->pic;
+    
     if (! context->buffer) {
         return -1;
     }
