@@ -97,8 +97,8 @@ void *pp_get_context(int width, int height);
 void pp_free_context(void *ppContext);
 
 int pp_init(int cpuCaps);
-#define PP_CPU_CAPS_MMX   1
-#define PP_CPU_CAPS_MMX2  2
-#define PP_CPU_CAPS_3DNOW 4
+#define PP_CPU_CAPS_MMX   0x80000000
+#define PP_CPU_CAPS_MMX2  0x20000000
+#define PP_CPU_CAPS_3DNOW 0x40000000
 
 #endif
