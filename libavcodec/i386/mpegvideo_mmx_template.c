@@ -67,17 +67,17 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
 #if 1
 	asm volatile (
 		"xorl %%edx, %%edx	\n\t"
-		"mul %%ebx		\n\t"
+		"mul %%ecx		\n\t"
 		: "=d" (temp_block[0]), "=a"(dummy)
-		: "a" (block[0] + (q >> 1)), "b" (inverse[q])
+		: "a" (block[0] + (q >> 1)), "c" (inverse[q])
 	);
 #else
 	asm volatile (
 		"xorl %%edx, %%edx	\n\t"
-		"divw %%bx		\n\t"
+		"divw %%cx		\n\t"
 		"movzwl %%ax, %%eax	\n\t"
 		: "=a" (temp_block[0])
-		: "a" (block[0] + (q >> 1)), "b" (q)
+		: "a" (block[0] + (q >> 1)), "c" (q)
 		: "%edx"
 	);
 #endif
@@ -119,8 +119,10 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
 	SPREADW(%%mm3)
 	"movd %4, %%mm4			\n\t"
 	SPREADW(%%mm4)
+#ifndef HAVE_MMX2	
 	"movd %5, %%mm5			\n\t"
 	SPREADW(%%mm5)
+#endif
 	"pxor %%mm7, %%mm7		\n\t"
 	"movd %%eax, %%mm2		\n\t"
 	SPREADW(%%mm2)
@@ -160,9 +162,9 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
 	: "+a" (last_non_zero_p1)
 	: "r" (block+64), "r" (qmat+64), 
 #ifdef HAVE_MMX2
-	  "m" (maxLevel),          "m" (minLevel),                    "m" (0 /* dummy */), "g" (2*i - 128),
+	  "m" (maxLevel),          "m" (minLevel),                    "m" (minLevel /* dummy */), "g" (2*i - 128),
 #else
-	  "m" (0x7FFF - maxLevel), "m" (0x7FFF -maxLevel + minLevel), "m" (minLevel),      "g" (2*i - 128),
+	  "m" (0x7FFF - maxLevel), "m" (0x7FFF -maxLevel + minLevel), "m" (minLevel),             "g" (2*i - 128),
 #endif
 	  "r" (inv_zigzag_direct16+64), "r" (temp_block+64)
     );
