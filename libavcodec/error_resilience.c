@@ -666,6 +666,8 @@ void ff_er_frame_end(MpegEncContext *s){
     int threshold_part[4]= {100,100,100};
     int threshold= 50;
     int is_intra_likely;
+    int size = s->b8_stride * 2 * s->mb_height;
+    Picture *pic= s->current_picture_ptr;
     
     if(!s->error_resilience || s->error_count==0 || 
        s->error_count==3*s->mb_width*(s->avctx->skip_top + s->avctx->skip_bottom)) return;
@@ -673,9 +675,6 @@ void ff_er_frame_end(MpegEncContext *s){
     av_log(s->avctx, AV_LOG_INFO, "concealing %d errors\n", s->error_count);
     
     if(s->current_picture.motion_val[0] == NULL){
-        int size = s->b8_stride * 2 * s->mb_height;
-        Picture *pic= s->current_picture_ptr;
-        
         av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
             
         for(i=0; i<2; i++){
@@ -687,6 +686,11 @@ void ff_er_frame_end(MpegEncContext *s){
         s->current_picture= *s->current_picture_ptr;
     }
     
+    for(i=0; i<2; i++){
+        if(pic->ref_index[i])
+            memset(pic->ref_index[i], 0, size * sizeof(uint8_t));
+    }
+
     if(s->avctx->debug&FF_DEBUG_ER){
         for(mb_y=0; mb_y<s->mb_height; mb_y++){
             for(mb_x=0; mb_x<s->mb_width; mb_x++){
