@@ -101,7 +101,6 @@ static int wmv2_encode_init(AVCodecContext *avctx){
 }
 
 static int wmv2_encode_end(AVCodecContext *avctx){
-    Wmv2Context * const w= avctx->priv_data;
     
     if(MPV_encode_end(avctx) < 0)
         return -1;
@@ -587,7 +586,6 @@ static inline int wmv2_decode_inter_block(Wmv2Context *w, DCTELEM *block, int n,
 
 static void wmv2_add_block(Wmv2Context *w, DCTELEM *block1, uint8_t *dst, int stride, int n){
     MpegEncContext * const s= &w->s;
-    uint8_t temp[2][64];
 
     switch(w->abt_type_table[n]){
     case 0:
