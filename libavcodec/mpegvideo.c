@@ -648,6 +648,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
         s->msmpeg4_version= 3;
+        s->flipflop_rounding=1;
         avctx->delay=0;
         s->low_delay=1;
         break;
@@ -657,6 +658,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
         s->msmpeg4_version= 4;
+        s->flipflop_rounding=1;
         avctx->delay=0;
         s->low_delay=1;
         break;
@@ -666,6 +668,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
         s->msmpeg4_version= 5;
+        s->flipflop_rounding=1;
         avctx->delay=0;
         s->low_delay=1;
         break;
@@ -2834,8 +2837,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->qscale= (int)(s->frame_qscale + 0.5); //FIXME qscale / ... stuff for ME ratedistoration
     
     if(s->pict_type==I_TYPE){
-        if(s->msmpeg4_version) s->no_rounding=1;
-        else                   s->no_rounding=0;
+        if(s->msmpeg4_version >= 3) s->no_rounding=1;
+        else                        s->no_rounding=0;
     }else if(s->pict_type!=B_TYPE){
         if(s->flipflop_rounding || s->codec_id == CODEC_ID_H263P || s->codec_id == CODEC_ID_MPEG4)
             s->no_rounding ^= 1;          

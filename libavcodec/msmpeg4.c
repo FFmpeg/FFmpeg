@@ -439,12 +439,10 @@ void msmpeg4_encode_ext_header(MpegEncContext * s)
 
         put_bits(&s->pb, 11, FFMIN(s->bit_rate/1024, 2047));
 
-        if(s->msmpeg4_version<3)
-            s->flipflop_rounding=0;
-        else{
-            s->flipflop_rounding=1;
+        if(s->msmpeg4_version>=3)
             put_bits(&s->pb, 1, s->flipflop_rounding);
-        }
+        else
+            assert(s->flipflop_rounding==0);
 }
 
 #endif //CONFIG_ENCODERS

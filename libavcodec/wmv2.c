@@ -131,7 +131,10 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
     w->abt_type=0;
     w->j_type=0;
 
+    assert(s->flipflop_rounding);
+
     if (s->pict_type == I_TYPE) {
+        assert(s->no_rounding==1);
         if(w->j_type_bit) put_bits(&s->pb, 1, w->j_type);
         
         if(w->per_mb_rl_bit) put_bits(&s->pb, 1, s->per_mb_rl_table);
@@ -144,7 +147,6 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb, 1, s->dc_table_index);
 
         s->inter_intra_pred= 0;
-        s->no_rounding = 1;
     }else{
         int cbp_index;
 
@@ -181,7 +183,6 @@ int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb, 1, s->mv_table_index);
     
         s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE);
-        s->no_rounding ^= 1;
     }
     s->esc3_level_length= 0;
     s->esc3_run_length= 0;

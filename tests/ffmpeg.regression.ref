@@ -1,8 +1,8 @@
 ffmpeg regression test
 dda0ba041aef50a5101884291c06d4d9 *./data/a-mpeg1.mpg
 6713259d72260740bbddaea30631ea18 *./data/out.yuv
-8730846cd73f07689bfab061eac3e800 *./data/a-msmpeg4v2.avi
-2cfc9307a2fd9651cf9c8e42dea1a80e *./data/out.yuv
+8836c5e38c7891f04e8e75836e48551e *./data/a-msmpeg4v2.avi
+712aa6c959d1d90a78fe98657cbff19c *./data/out.yuv
 8b2a7f5e105784d65426989e4fce6e94 *./data/a-msmpeg4.avi
 8786aa956838234fe3e48d0ef8cbd46c *./data/out.yuv
 a0bec32a81f9a4cd174557a49cd26430 *./data/a-wmv1.avi
