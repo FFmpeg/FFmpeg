@@ -642,12 +642,6 @@ typedef struct EncBlockInfo {
     uint32_t partial_bit_buffer; /* we can't use uint16_t here */
 } EncBlockInfo;
 
-static always_inline int dv_bits_left(PutBitContext* s)
-{
-    return (s->buf_end - s->buf) * 8 - 
-           ((s->buf_ptr - s->buf) * 8 + 32 - (int64_t)s->bit_left);
-}
-
 static always_inline void dv_encode_ac(EncBlockInfo* bi, PutBitContext* pb_pool, 
                                        int pb_size)
 {
@@ -660,7 +654,7 @@ static always_inline void dv_encode_ac(EncBlockInfo* bi, PutBitContext* pb_pool,
     bi->partial_bit_count = bi->partial_bit_buffer = 0;
 vlc_loop:
        /* Find suitable storage space */
-       for (; size > (bits_left = dv_bits_left(pb)); pb++) {
+       for (; size > (bits_left = put_bits_left(pb)); pb++) {
           if (bits_left) {
               size -= bits_left;
 	      put_bits(pb, bits_left, vlc >> size);
