@@ -1517,8 +1517,7 @@ static inline void MPV_motion(MpegEncContext *s,
 static inline void put_dct(MpegEncContext *s, 
                            DCTELEM *block, int i, UINT8 *dest, int line_size)
 {
-    if (!s->mpeg2)
-        s->dct_unquantize(s, block, i, s->qscale);
+    s->dct_unquantize(s, block, i, s->qscale);
     s->idct_put (dest, line_size, block);
 }
 
@@ -1723,7 +1722,8 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             if(s->hurry_up>1) goto the_end;
 
             /* add dct residue */
-            if(s->encoding || !(s->mpeg2 || s->h263_msmpeg4 || (s->codec_id==CODEC_ID_MPEG4 && !s->mpeg_quant))){
+            if(s->encoding || !(   s->mpeg2 || s->h263_msmpeg4 || s->codec_id==CODEC_ID_MPEG1VIDEO 
+                                || (s->codec_id==CODEC_ID_MPEG4 && !s->mpeg_quant))){
                 add_dequant_dct(s, block[0], 0, dest_y, dct_linesize);
                 add_dequant_dct(s, block[1], 1, dest_y + 8, dct_linesize);
                 add_dequant_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
@@ -1746,14 +1746,26 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             }
         } else {
             /* dct only in intra block */
-            put_dct(s, block[0], 0, dest_y, dct_linesize);
-            put_dct(s, block[1], 1, dest_y + 8, dct_linesize);
-            put_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
-            put_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
+            if(s->encoding || !(s->mpeg2 || s->codec_id==CODEC_ID_MPEG1VIDEO)){
+                put_dct(s, block[0], 0, dest_y, dct_linesize);
+                put_dct(s, block[1], 1, dest_y + 8, dct_linesize);
+                put_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
+                put_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
-            if(!(s->flags&CODEC_FLAG_GRAY)){
-                put_dct(s, block[4], 4, dest_cb, s->uvlinesize);
-                put_dct(s, block[5], 5, dest_cr, s->uvlinesize);
+                if(!(s->flags&CODEC_FLAG_GRAY)){
+                    put_dct(s, block[4], 4, dest_cb, s->uvlinesize);
+                    put_dct(s, block[5], 5, dest_cr, s->uvlinesize);
+                }
+            }else{
+                s->idct_put(dest_y                 , dct_linesize, block[0]);
+                s->idct_put(dest_y              + 8, dct_linesize, block[1]);
+                s->idct_put(dest_y + dct_offset    , dct_linesize, block[2]);
+                s->idct_put(dest_y + dct_offset + 8, dct_linesize, block[3]);
+
+                if(!(s->flags&CODEC_FLAG_GRAY)){
+                    s->idct_put(dest_cb, s->uvlinesize, block[4]);
+                    s->idct_put(dest_cr, s->uvlinesize, block[5]);
+                }
             }
         }
     }
