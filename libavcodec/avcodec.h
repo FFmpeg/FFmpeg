@@ -72,6 +72,7 @@ extern int motion_estimation_method;
 
 typedef struct AVCodecContext {
     int bit_rate;
+    int bit_rate_tolerance; /* amount of +- bits (>0)*/
     int flags;
     int sub_id;    /* some codecs needs additionnal format info. It is
                       stored there */
@@ -101,6 +102,12 @@ typedef struct AVCodecContext {
                          a key frame (intra, or seekable) */
     int quality;      /* quality of the previous encoded frame 
                          (between 1 (good) and 31 (bad)) */
+    float qcompress;  /* amount of qscale change between easy & hard scenes (0.0-1.0)*/
+    float qblur;      /* amount of qscale smoothing over time (0.0-1.0) */
+    int qmin;         /* min qscale */
+    int qmax;         /* max qscale */
+    int max_qdiff;    /* max qscale difference between frames */
+
     struct AVCodec *codec;
     void *priv_data;
 

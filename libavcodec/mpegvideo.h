@@ -34,6 +34,12 @@ enum OutputFormat {
 #define QMAT_SHIFT_MMX 19
 #define QMAT_SHIFT 25
 
+typedef struct Predictor{
+    double coeff;
+    double count;
+    double decay;
+} Predictor;
+
 typedef struct MpegEncContext {
     struct AVCodecContext *avctx;
     /* the following parameters must be initialized before encoding */
@@ -42,6 +48,7 @@ typedef struct MpegEncContext {
     int frame_rate; /* number of frames per second */
     int intra_only; /* if true, only intra pictures are generated */
     int bit_rate;        /* wanted bit rate */
+    int bit_rate_tolerance; /* amount of +- bits (>0)*/
     enum OutputFormat out_format; /* output format */
     int h263_plus; /* h263 plus headers */
     int h263_rv10; /* use RV10 variation for H263 */
@@ -49,6 +56,11 @@ typedef struct MpegEncContext {
     int h263_msmpeg4; /* generate MSMPEG4 compatible stream */
     int h263_intel; /* use I263 intel h263 header */
     int fixed_qscale; /* fixed qscale if non zero */
+    float qcompress;  /* amount of qscale change between easy & hard scenes (0.0-1.0) */
+    float qblur;      /* amount of qscale smoothing over time (0.0-1.0) */
+    int qmin;         /* min qscale */
+    int qmax;         /* max qscale */
+    int max_qdiff;    /* max qscale difference between frames */
     int encoding;     /* true if we are encoding (vs decoding) */
     /* the following fields are managed internally by the encoder */
 
@@ -85,6 +97,7 @@ typedef struct MpegEncContext {
     int qscale;
     int pict_type;
     int last_non_b_pict_type; /* used for mpeg4 gmc b-frames */
+    int last_pict_type; /* used for bit rate stuff (needs that to update the right predictor) */
     int frame_rate_index;
     /* motion compensation */
     int unrestricted_mv;
@@ -146,9 +159,19 @@ typedef struct MpegEncContext {
     int I_frame_bits;    /* wanted number of bits per I frame */
     int P_frame_bits;    /* same for P frame */
     int avg_mb_var;        /* average MB variance for current frame */
+    int mc_mb_var;     /* motion compensated MB variance for current frame */
+    int last_mc_mb_var;     /* motion compensated MB variance for last frame */
     INT64 wanted_bits;
     INT64 total_bits;
- 
+    int frame_bits;      /* bits used for the current frame */
+    int last_frame_bits; /* bits used for the last frame */
+    Predictor i_pred;
+    Predictor p_pred;
+    double qsum;         /* sum of qscales */
+    double qcount;       /* count of qscales */
+    double short_term_qsum;   /* sum of recent qscales */
+    double short_term_qcount; /* count of recent qscales */
+
     /* H.263 specific */
     int gob_number;
     int gob_index;

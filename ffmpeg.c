@@ -75,7 +75,13 @@ static int frame_width  = 160;
 static int frame_height = 128;
 static int frame_rate = 25 * FRAME_RATE_BASE;
 static int video_bit_rate = 200000;
+static int video_bit_rate_tolerance = 200000;
 static int video_qscale = 0;
+static int video_qmin = 3;
+static int video_qmax = 15;
+static int video_qdiff = 3;
+static float video_qblur = 0.5;
+static float video_qcomp = 0.5;
 static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
 static int same_quality = 0;
@@ -1149,6 +1155,11 @@ void opt_video_bitrate(const char *arg)
     video_bit_rate = atoi(arg) * 1000;
 }
 
+void opt_video_bitrate_tolerance(const char *arg)
+{
+    video_bit_rate_tolerance = atoi(arg) * 1000;
+}
+
 void opt_frame_rate(const char *arg)
 {
     frame_rate = (int)(strtod(arg, 0) * FRAME_RATE_BASE);
@@ -1182,6 +1193,45 @@ void opt_qscale(const char *arg)
     }
 }
 
+void opt_qmin(const char *arg)
+{
+    video_qmin = atoi(arg);
+    if (video_qmin < 0 ||
+        video_qmin > 31) {
+        fprintf(stderr, "qmin must be >= 1 and <= 31\n");
+        exit(1);
+    }
+}
+
+void opt_qmax(const char *arg)
+{
+    video_qmax = atoi(arg);
+    if (video_qmax < 0 ||
+        video_qmax > 31) {
+        fprintf(stderr, "qmax must be >= 1 and <= 31\n");
+        exit(1);
+    }
+}
+
+void opt_qdiff(const char *arg)
+{
+    video_qdiff = atoi(arg);
+    if (video_qdiff < 0 ||
+        video_qdiff > 31) {
+        fprintf(stderr, "qdiff must be >= 1 and <= 31\n");
+        exit(1);
+    }
+}
+
+void opt_qblur(const char *arg)
+{
+    video_qblur = atof(arg);
+}
+
+void opt_qcomp(const char *arg)
+{
+    video_qcomp = atof(arg);
+}
 
 void opt_audio_bitrate(const char *arg)
 {
@@ -1611,6 +1661,7 @@ void opt_output_file(const char *filename)
             video_enc->codec_type = CODEC_TYPE_VIDEO;
             
             video_enc->bit_rate = video_bit_rate;
+            video_enc->bit_rate_tolerance = video_bit_rate_tolerance;
             video_enc->frame_rate = frame_rate; 
             
             video_enc->width = frame_width;
@@ -1623,6 +1674,13 @@ void opt_output_file(const char *filename)
                 video_enc->flags |= CODEC_FLAG_QSCALE;
                 video_enc->quality = video_qscale;
             }
+            
+            video_enc->qmin= video_qmin;
+            video_enc->qmax= video_qmax;
+            video_enc->max_qdiff= video_qdiff;
+            video_enc->qblur= video_qblur;
+            video_enc->qcompress= video_qcomp;
+            
             if (do_psnr)
                 video_enc->get_psnr = 1;
             else
@@ -1948,6 +2006,12 @@ const OptionDef options[] = {
     { "intra", OPT_BOOL | OPT_EXPERT, {(void*)&intra_only}, "use only intra frames"},
     { "vn", OPT_BOOL, {(void*)&video_disable}, "disable video" },
     { "qscale", HAS_ARG | OPT_EXPERT, {(void*)opt_qscale}, "use fixed video quantiser scale (VBR)", "q" },
+    { "qmin", HAS_ARG | OPT_EXPERT, {(void*)opt_qmin}, "min video quantiser scale (VBR)", "q" },
+    { "qmax", HAS_ARG | OPT_EXPERT, {(void*)opt_qmax}, "max video quantiser scale (VBR)", "q" },
+    { "qdiff", HAS_ARG | OPT_EXPERT, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
+    { "qblur", HAS_ARG | OPT_EXPERT, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
+    { "qcomp", HAS_ARG | OPT_EXPERT, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },
+    { "bt", HAS_ARG, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
 #ifdef CONFIG_GRAB
     { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video device", "device" },
 #endif
