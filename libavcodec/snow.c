@@ -916,7 +916,7 @@ static void vertical_decompose53iL0(int *b0, int *b1, int *b2, int width){
 }
 
 static void spatial_decompose53i(int *buffer, int width, int height, int stride){
-    int x, y;
+    int y;
     DWTELEM *b0= buffer + mirror(-2-1, height-1)*stride;
     DWTELEM *b1= buffer + mirror(-2  , height-1)*stride;
   
@@ -1059,7 +1059,7 @@ static void vertical_decompose97iL1(int *b0, int *b1, int *b2, int width){
 }
 
 static void spatial_decompose97i(int *buffer, int width, int height, int stride){
-    int x, y;
+    int y;
     DWTELEM *b0= buffer + mirror(-4-1, height-1)*stride;
     DWTELEM *b1= buffer + mirror(-4  , height-1)*stride;
     DWTELEM *b2= buffer + mirror(-4+1, height-1)*stride;
@@ -1168,7 +1168,7 @@ static void vertical_compose53iL0(int *b0, int *b1, int *b2, int width){
 }
 
 static void spatial_compose53i(int *buffer, int width, int height, int stride){
-    int x, y;
+    int y;
     DWTELEM *b0= buffer + mirror(-1-1, height-1)*stride;
     DWTELEM *b1= buffer + mirror(-1  , height-1)*stride;
   
@@ -1242,7 +1242,7 @@ static void vertical_compose97iL1(int *b0, int *b1, int *b2, int width){
 }
 
 static void spatial_compose97i(int *buffer, int width, int height, int stride){
-    int x, y;
+    int y;
     DWTELEM *b0= buffer + mirror(-3-1, height-1)*stride;
     DWTELEM *b1= buffer + mirror(-3  , height-1)*stride;
     DWTELEM *b2= buffer + mirror(-3+1, height-1)*stride;
@@ -1293,496 +1293,7 @@ void ff_spatial_idwt(int *buffer, int width, int height, int stride, int type, i
     }
 }
 
-static const int hilbert[16][2]={
-    {0,0}, {1,0}, {1,1}, {0,1},
-    {0,2}, {0,3}, {1,3}, {1,2},
-    {2,2}, {2,3}, {3,3}, {3,2},
-    {3,1}, {2,1}, {2,0}, {3,0},
-};
-#if 0
--o o-
- | |
- o-o
- 
--o-o o-o-
-   | | 
- o-o o-o
- |     |
- o o-o o
- | | | |
- o-o o-o
- 
- 0112122312232334122323342334
- 0123456789ABCDEF0123456789AB
- RLLRMRRLLRRMRLLMLRRLMLLRRLLM
- 
- 4  B  F 14 1B
- 4 11 15 20 27
- 
--o o-o-o o-o-o o-
- | |   | |   | |
- o-o o-o o-o o-o
-     |     |
- o-o o-o o-o o-o
- | |   | |   | |
- o o-o-o o-o-o o
- |             |
- o-o o-o-o-o o-o
-   | |     | | 
- o-o o-o o-o o-o
- |     | |     |
- o o-o o o o-o o
- | | | | | | | |
- o-o o-o o-o o-o
-
-#endif
-
-#define SVI(a, i, x, y) \
-{\
-    a[i][0]= x;\
-    a[i][1]= y;\
-    i++;\
-}
-
-static int sig_cmp(const void *a, const void *b){
-    const int16_t* da = (const int16_t *) a;
-    const int16_t* db = (const int16_t *) b;
-    
-    if(da[1] != db[1]) return da[1] - db[1];
-    else               return da[0] - db[0];
-}
-
-static int deint(unsigned int a){
-    a &= 0x55555555;         //0 1 2 3 4 5 6 7 8 9 A B C D E F
-    a +=     a & 0x11111111; // 01  23  45  67  89  AB  CD  EF
-    a +=  3*(a & 0x0F0F0F0F);//   0123    4567    89AB    CDEF
-    a += 15*(a & 0x00FF00FF);//       01234567        89ABCDEF
-    a +=255*(a & 0x0000FFFF);//               0123456789ABCDEF
-    return a>>15;
-}
-
-static void encode_subband_z0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
-    const int level= b->level;
-    const int w= b->width;
-    const int h= b->height;
-    int x, y, pos;
-
-    if(1){
-        int run=0;
-        int runs[w*h];
-        int run_index=0;
-        int count=0;
-        
-        for(pos=0; ; pos++){
-            int x= deint(pos   );
-            int y= deint(pos>>1);
-            int v, p=0, pr=0, pd=0;
-            int /*ll=0, */l=0, lt=0, t=0/*, rt=0*/;
-
-            if(x>=w || y>=h){
-                if(x>=w && y>=h)
-                    break;
-                continue;
-            }
-            count++;
-                
-            v= src[x + y*stride];
-
-            if(y){
-                t= src[x + (y-1)*stride];
-                if(x){
-                    lt= src[x - 1 + (y-1)*stride];
-                }
-                if(x + 1 < w){
-                    /*rt= src[x + 1 + (y-1)*stride]*/;
-                }
-            }
-            if(x){
-                l= src[x - 1 + y*stride];
-                /*if(x > 1){
-                    if(orientation==1) ll= src[y + (x-2)*stride];
-                    else               ll= src[x - 2 + y*stride];
-                }*/
-            }
-            if(parent){
-                int px= x>>1;
-                int py= y>>1;
-                if(px<b->parent->width && py<b->parent->height){
-                    p= parent[px + py*2*stride];
-                    /*if(px+1<b->parent->width) 
-                        pr= parent[px + 1 + py*2*stride];
-                    if(py+1<b->parent->height) 
-                        pd= parent[px + (py+1)*2*stride];*/
-                }
-            }
-            if(!(/*ll|*/l|lt|t|/*rt|*/p)){
-                if(v){
-                    runs[run_index++]= run;
-                    run=0;
-                }else{
-                    run++;
-                }
-            }
-        }
-        assert(count==w*h);
-        runs[run_index++]= run;
-        run_index=0;
-        run= runs[run_index++];
-
-        put_symbol(&s->c, b->state[1], run, 0);
-        
-        for(pos=0; ; pos++){
-            int x= deint(pos   );
-            int y= deint(pos>>1);
-            int v, p=0, pr=0, pd=0;
-            int /*ll=0, */l=0, lt=0, t=0/*, rt=0*/;
-
-            if(x>=w || y>=h){
-                if(x>=w && y>=h)
-                    break;
-                continue;
-            }
-            v= src[x + y*stride];
-
-            if(y){
-                t= src[x + (y-1)*stride];
-                if(x){
-                    lt= src[x - 1 + (y-1)*stride];
-                }
-                if(x + 1 < w){
-//                    rt= src[x + 1 + (y-1)*stride];
-                }
-            }
-            if(x){
-                l= src[x - 1 + y*stride];
-                /*if(x > 1){
-                    if(orientation==1) ll= src[y + (x-2)*stride];
-                    else               ll= src[x - 2 + y*stride];
-                }*/
-            }
-
-            if(parent){
-                int px= x>>1;
-                int py= y>>1;
-                if(px<b->parent->width && py<b->parent->height){
-                    p= parent[px + py*2*stride];
-/*                        if(px+1<b->parent->width) 
-                        pr= parent[px + 1 + py*2*stride];
-                    if(py+1<b->parent->height) 
-                        pd= parent[px + (py+1)*2*stride];*/
-                }
-            }
-            if(/*ll|*/l|lt|t|/*rt|*/p){
-                int context= av_log2(/*ABS(ll) + */2*(3*ABS(l) + ABS(lt) + 2*ABS(t) + /*ABS(rt) +*/ ABS(p)));
-
-                put_cabac(&s->c, &b->state[0][context], !!v);
-            }else{
-                if(!run){
-                    run= runs[run_index++];
-                    put_symbol(&s->c, b->state[1], run, 0);
-                    assert(v);
-                }else{
-                    run--;
-                    assert(!v);
-                }
-            }
-            if(v){
-                int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + /*ABS(rt) +*/ ABS(p));
-
-                put_symbol(&s->c, b->state[context + 2], ABS(v)-1, 0);
-                put_cabac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
-            }
-        }
-    }
-}
-
-static void encode_subband_bp(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
-    const int level= b->level;
-    const int w= b->width;
-    const int h= b->height;
-    int x, y;
-
-#if 0
-    int plane;
-    for(plane=24; plane>=0; plane--){
-        int run=0;
-        int runs[w*h];
-        int run_index=0;
-                
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                int v, lv, p=0;
-                int d=0, r=0, rd=0, ld=0;
-                int /*ll=0, */l=0, lt=0, t=0, rt=0;
-                v= src[x + y*stride];
-
-                if(y){
-                    t= src[x + (y-1)*stride];
-                    if(x){
-                        lt= src[x - 1 + (y-1)*stride];
-                    }
-                    if(x + 1 < w){
-                        rt= src[x + 1 + (y-1)*stride];
-                    }
-                }
-                if(x){
-                    l= src[x - 1 + y*stride];
-                    /*if(x > 1){
-                        if(orientation==1) ll= src[y + (x-2)*stride];
-                        else               ll= src[x - 2 + y*stride];
-                    }*/
-                }
-                if(y+1<h){
-                    d= src[x + (y+1)*stride];
-                    if(x)         ld= src[x - 1 + (y+1)*stride];
-                    if(x + 1 < w) rd= src[x + 1 + (y+1)*stride];
-                }
-                if(x + 1 < w)
-                    r= src[x + 1 + y*stride];
-                if(parent){
-                    int px= x>>1;
-                    int py= y>>1;
-                    if(px<b->parent->width && py<b->parent->height) 
-                        p= parent[px + py*2*stride];
-                }
-#define HIDE(c, plane) c= c>=0 ? c&((-1)<<(plane)) : -((-c)&((-1)<<(plane)));
-                lv=v;
-                HIDE( v, plane)
-                HIDE(lv, plane+1)
-                HIDE( p, plane)
-                HIDE( l, plane)
-                HIDE(lt, plane)
-                HIDE( t, plane)
-                HIDE(rt, plane)
-                HIDE( r, plane+1)
-                HIDE(rd, plane+1)
-                HIDE( d, plane+1)
-                HIDE(ld, plane+1)
-                if(!(/*ll|*/l|lt|t|rt|r|rd|ld|d|p|lv)){
-                    if(v){
-                        runs[run_index++]= run;
-                        run=0;
-                    }else{
-                        run++;
-                    }
-                }
-            }
-        }
-        runs[run_index++]= run;
-        run_index=0;
-        run= runs[run_index++];
-
-        put_symbol(&s->c, b->state[1], run, 0);
-        
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                int v, p=0, lv;
-                int /*ll=0, */l=0, lt=0, t=0, rt=0;
-                int d=0, r=0, rd=0, ld=0;
-                v= src[x + y*stride];
-
-                if(y){
-                    t= src[x + (y-1)*stride];
-                    if(x){
-                        lt= src[x - 1 + (y-1)*stride];
-                    }
-                    if(x + 1 < w){
-                        rt= src[x + 1 + (y-1)*stride];
-                    }
-                }
-                if(x){
-                    l= src[x - 1 + y*stride];
-                    /*if(x > 1){
-                        if(orientation==1) ll= src[y + (x-2)*stride];
-                        else               ll= src[x - 2 + y*stride];
-                    }*/
-                }
-                if(y+1<h){
-                    d= src[x + (y+1)*stride];
-                    if(x)         ld= src[x - 1 + (y+1)*stride];
-                    if(x + 1 < w) rd= src[x + 1 + (y+1)*stride];
-                }
-                if(x + 1 < w)
-                    r= src[x + 1 + y*stride];
-
-                if(parent){
-                    int px= x>>1;
-                    int py= y>>1;
-                    if(px<b->parent->width && py<b->parent->height) 
-                        p= parent[px + py*2*stride];
-                }
-                lv=v;
-                HIDE( v, plane)
-                HIDE(lv, plane+1)
-                HIDE( p, plane)
-                HIDE( l, plane)
-                HIDE(lt, plane)
-                HIDE( t, plane)
-                HIDE(rt, plane)
-                HIDE( r, plane+1)
-                HIDE(rd, plane+1)
-                HIDE( d, plane+1)
-                HIDE(ld, plane+1)
-                if(/*ll|*/l|lt|t|rt|r|rd|ld|d|p|lv){
-                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p)
-                                                      +3*ABS(r) + ABS(rd) + 2*ABS(d) + ABS(ld));
-
-                    if(lv) put_cabac(&s->c, &b->state[99][context + 8*(av_log2(ABS(lv))-plane)], !!(v-lv));
-                    else   put_cabac(&s->c, &b->state[ 0][context], !!v);
-                }else{
-                    assert(!lv);
-                    if(!run){
-                        run= runs[run_index++];
-                        put_symbol(&s->c, b->state[1], run, 0);
-                        assert(v);
-                    }else{
-                        run--;
-                        assert(!v);
-                    }
-                }
-                if(v && !lv){
-                    int context=    clip(quant3b[l&0xFF] + quant3b[r&0xFF], -1,1)
-                                + 3*clip(quant3b[t&0xFF] + quant3b[d&0xFF], -1,1);
-                    put_cabac(&s->c, &b->state[0][16 + 1 + 3 + context], v<0);
-                }
-            }
-        }
-    }
-    return;    
-#endif
-}
-
-static void encode_subband_X(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
-    const int level= b->level;
-    const int w= b->width;
-    const int h= b->height;
-    int x, y;
-
-#if 0
-    if(orientation==3 && parent && 0){
-        int16_t candidate[w*h][2];
-        uint8_t state[w*h];
-        int16_t boarder[3][w*h*4][2];
-        int16_t significant[w*h][2];
-        int candidate_count=0;
-        int boarder_count[3]={0,0,0};
-        int significant_count=0;
-        int rle_pos=0;
-        int v, last_v;
-        int primary= orientation==1;
-        
-        memset(candidate, 0, sizeof(candidate));
-        memset(state, 0, sizeof(state));
-        memset(boarder, 0, sizeof(boarder));
-        
-        for(y=0; y<h; y++){
-            for(x=0; x<w; x++){
-                if(parent[(x>>1) + (y>>1)*2*stride])
-                    SVI(candidate, candidate_count, x, y)
-            }
-        }
-
-        for(;;){
-            while(candidate_count && !boarder_count[0] && !boarder_count[1] && !boarder_count[2]){
-                candidate_count--;
-                x= candidate[ candidate_count][0];
-                y= candidate[ candidate_count][1];
-                if(state[x + y*w])
-                    continue;
-                state[x + y*w]= 1;
-                v= !!src[x + y*stride];
-                put_cabac(&s->c, &b->state[0][0], v);
-                if(v){
-                    SVI(significant, significant_count, x,y)
-                    if(x     && !state[x - 1 +  y   *w]) SVI(boarder[0],boarder_count[0],x-1,y  )
-                    if(y     && !state[x     + (y-1)*w]) SVI(boarder[1],boarder_count[1],x  ,y-1)
-                    if(x+1<w && !state[x + 1 +  y   *w]) SVI(boarder[0],boarder_count[0],x+1,y  )
-                    if(y+1<h && !state[x     + (y+1)*w]) SVI(boarder[1],boarder_count[1],x  ,y+1)
-                    if(x     && y     && !state[x - 1 + (y-1)*w]) SVI(boarder[2],boarder_count[2],x-1,y-1)
-                    if(x     && y+1<h && !state[x - 1 + (y+1)*w]) SVI(boarder[2],boarder_count[2],x-1,y+1)
-                    if(x+1<w && y+1<h && !state[x + 1 + (y+1)*w]) SVI(boarder[2],boarder_count[2],x+1,y+1)
-                    if(x+1<w && y     && !state[x + 1 + (y-1)*w]) SVI(boarder[2],boarder_count[2],x+1,y-1)
-                }
-            }
-            while(!boarder_count[0] && !boarder_count[1] && !boarder_count[2] && rle_pos < w*h){
-                int run=0;
-                for(; rle_pos < w*h;){
-                    x= rle_pos % w; //FIXME speed
-                    y= rle_pos / w;
-                    rle_pos++;
-                    if(state[x + y*w])
-                        continue;
-                    state[x + y*w]= 1;
-                    v= !!src[x + y*stride];
-                    if(v){
-                        put_symbol(&s->c, b->state[1], run, 0);
-                        SVI(significant, significant_count, x,y)
-                        if(x     && !state[x - 1 +  y   *w]) SVI(boarder[0],boarder_count[0],x-1,y  )
-                        if(y     && !state[x     + (y-1)*w]) SVI(boarder[1],boarder_count[1],x  ,y-1)
-                        if(x+1<w && !state[x + 1 +  y   *w]) SVI(boarder[0],boarder_count[0],x+1,y  )
-                        if(y+1<h && !state[x     + (y+1)*w]) SVI(boarder[1],boarder_count[1],x  ,y+1)
-                        if(x     && y     && !state[x - 1 + (y-1)*w]) SVI(boarder[2],boarder_count[2],x-1,y-1)
-                        if(x     && y+1<h && !state[x - 1 + (y+1)*w]) SVI(boarder[2],boarder_count[2],x-1,y+1)
-                        if(x+1<w && y+1<h && !state[x + 1 + (y+1)*w]) SVI(boarder[2],boarder_count[2],x+1,y+1)
-                        if(x+1<w && y     && !state[x + 1 + (y-1)*w]) SVI(boarder[2],boarder_count[2],x+1,y-1)
-                        break;
-//FIXME                note only right & down can be boarders
-                    }
-                    run++;
-                }
-            }
-            if(!boarder_count[0] && !boarder_count[1] && !boarder_count[2])
-                break;
-            
-            while(boarder_count[0] || boarder_count[1] || boarder_count[2]){
-                int index;
-                
-                if     (boarder_count[  primary]) index=  primary;
-                else if(boarder_count[1-primary]) index=1-primary;
-                else                              index=2;
-                
-                boarder_count[index]--;
-                x= boarder[index][ boarder_count[index] ][0];
-                y= boarder[index][ boarder_count[index] ][1];
-                if(state[x + y*w]) //FIXME maybe check earlier
-                    continue;
-                state[x + y*w]= 1;
-                v= !!src[x + y*stride];
-                put_cabac(&s->c, &b->state[0][index+1], v);
-                if(v){
-                    SVI(significant, significant_count, x,y)
-                    if(x     && !state[x - 1 +  y   *w]) SVI(boarder[0],boarder_count[0],x-1,y  )
-                    if(y     && !state[x     + (y-1)*w]) SVI(boarder[1],boarder_count[1],x  ,y-1)
-                    if(x+1<w && !state[x + 1 +  y   *w]) SVI(boarder[0],boarder_count[0],x+1,y  )
-                    if(y+1<h && !state[x     + (y+1)*w]) SVI(boarder[1],boarder_count[1],x  ,y+1)
-                    if(x     && y     && !state[x - 1 + (y-1)*w]) SVI(boarder[2],boarder_count[2],x-1,y-1)
-                    if(x     && y+1<h && !state[x - 1 + (y+1)*w]) SVI(boarder[2],boarder_count[2],x-1,y+1)
-                    if(x+1<w && y+1<h && !state[x + 1 + (y+1)*w]) SVI(boarder[2],boarder_count[2],x+1,y+1)
-                    if(x+1<w && y     && !state[x + 1 + (y-1)*w]) SVI(boarder[2],boarder_count[2],x+1,y-1)
-                }
-            }
-        }
-        //FIXME sort significant coeffs maybe
-        if(1){
-            qsort(significant, significant_count, sizeof(int16_t[2]), sig_cmp);
-        }
-        
-        last_v=1;
-        while(significant_count){
-            int context= 3 + quant7[last_v&0xFF]; //use significance of suroundings
-            significant_count--;
-            x= significant[significant_count][0];//FIXME try opposit direction
-            y= significant[significant_count][1];
-            v= src[x + y*stride];
-            put_symbol(&s->c, b->state[context + 2], v, 1); //FIXME try to avoid first bit, try this with the old code too!!
-            last_v= v;
-        }
-    }
-#endif
-}
-
 static void encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
-    const int level= b->level;
     const int w= b->width;
     const int h= b->height;
     int x, y;
@@ -1898,7 +1409,6 @@ static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *pa
 }
 
 static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
-    const int level= b->level;
     const int w= b->width;
     const int h= b->height;
     int x,y;
@@ -2342,7 +1852,6 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
 
 static void decode_q_branch(SnowContext *s, int level, int x, int y){
     const int w= s->b_width << s->block_max_depth;
-    const int h= s->b_height<< s->block_max_depth;
     const int rem_depth= s->block_max_depth - level;
     const int index= (x + y*w) << rem_depth;
     static BlockNode null_block= { //FIXME add border maybe
@@ -2353,7 +1862,6 @@ static void decode_q_branch(SnowContext *s, int level, int x, int y){
         .level= 0,
     };
     int trx= (x+1)<<rem_depth;
-    int try= (y+1)<<rem_depth;
     BlockNode *left  = x ? &s->block[index-1] : &null_block;
     BlockNode *top   = y ? &s->block[index-w] : &null_block;
     BlockNode *tl    = y && x ? &s->block[index-w-1] : left;
@@ -2676,7 +2184,6 @@ static void quantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int b
 }
 
 static void dequantize(SnowContext *s, SubBand *b, DWTELEM *src, int stride){
-    const int level= b->level;
     const int w= b->width;
     const int h= b->height;
     const int qlog= clip(s->qlog + b->qlog, 0, 128);
@@ -2937,7 +2444,7 @@ static int common_init(AVCodecContext *avctx){
 static void calculate_vissual_weight(SnowContext *s, Plane *p){
     int width = p->width;
     int height= p->height;
-    int i, level, orientation, x, y;
+    int level, orientation, x, y;
 
     for(level=0; level<s->spatial_decomposition_count; level++){
         for(orientation=level ? 1 : 0; orientation<4; orientation++){
@@ -2964,8 +2471,7 @@ static void calculate_vissual_weight(SnowContext *s, Plane *p){
 static int encode_init(AVCodecContext *avctx)
 {
     SnowContext *s = avctx->priv_data;
-    int i;
-    int level, orientation, plane_index;
+    int plane_index;
 
     if(avctx->strict_std_compliance >= 0){
         av_log(avctx, AV_LOG_ERROR, "this codec is under development, files encoded with it wont be decodeable with future versions!!!\n"
@@ -3044,8 +2550,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     AVFrame *pict = data;
     const int width= s->avctx->width;
     const int height= s->avctx->height;
-    int used_count= 0;
-    int log2_threshold, level, orientation, plane_index, i;
+    int level, orientation, plane_index;
 
     ff_init_cabac_encoder(c, buf, buf_size);
     ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
@@ -3071,9 +2576,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         int block_width = (width +15)>>4;
         int block_height= (height+15)>>4;
         int stride= s->current_picture.linesize[0];
-        uint8_t *src_plane= s->input_picture.data[0];
-        int src_stride= s->input_picture.linesize[0];
-        int x,y;
         
         assert(s->current_picture.data[0]);
         assert(s->last_picture.data[0]);
@@ -3124,7 +2626,7 @@ redo_frame:
         int w= p->width;
         int h= p->height;
         int x, y;
-        int bits= put_bits_count(&s->c.pb);
+//        int bits= put_bits_count(&s->c.pb);
 
         //FIXME optimize
      if(pict->data[plane_index]) //FIXME gray hack
@@ -3263,11 +2765,9 @@ static int decode_init(AVCodecContext *avctx)
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8_t *buf, int buf_size){
     SnowContext *s = avctx->priv_data;
     CABACContext * const c= &s->c;
-    const int width= s->avctx->width;
-    const int height= s->avctx->height;
     int bytes_read;
     AVFrame *picture = data;
-    int log2_threshold, level, orientation, plane_index;
+    int level, orientation, plane_index;
     
 
     /* no supplementary picture */
