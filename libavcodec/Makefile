@@ -50,7 +50,7 @@ ifeq ($(TARGET_MMX),yes)
 OBJS += i386/fdct_mmx.o i386/cputest.o \
 	i386/dsputil_mmx.o i386/mpegvideo_mmx.o \
 	i386/idct_mmx.o i386/motion_est_mmx.o \
-	i386/simple_idct_mmx.o
+	i386/simple_idct_mmx.o i386/fft_sse.o
 endif
 
 # armv4l specific stuff
@@ -110,14 +110,6 @@ $(SLIB): $(OBJS)
 
 dsputil.o: dsputil.c dsputil.h
 
-# specific sse code
-%_sse.o : %_sse.c
-	$(CC) $(CFLAGS) -msse -c -o $@ $< 
-
-# specific 3dnow code
-%_3dnow.o : %_3dnow.c
-	$(CC) $(CFLAGS) -m3dnow -c -o $@ $< 
-
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
@@ -174,7 +166,7 @@ dct-test: dct-test.o jfdctfst.o jfdctint.o i386/fdct_mmx.o\
 motion-test: motion_test.o $(LIB)
 	$(CC) -o $@ $^ -lm
 
-fft-test: fft-test.o fft.o mdct.o
+fft-test: fft-test.o $(LIB)
 	$(CC) -o $@ $^ -lm
 
 install: all
