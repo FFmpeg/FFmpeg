@@ -750,7 +750,7 @@ void h263_decode_init_vlc(MpegEncContext *s)
         init_vlc(&intra_MCBPC_vlc, 6, 8, 
                  intra_MCBPC_bits, 1, 1,
                  intra_MCBPC_code, 1, 1);
-        init_vlc(&inter_MCBPC_vlc, 9, 20, 
+        init_vlc(&inter_MCBPC_vlc, 9, 25, 
                  inter_MCBPC_bits, 1, 1,
                  inter_MCBPC_code, 1, 1);
         init_vlc(&cbpy_vlc, 6, 16,
@@ -825,6 +825,10 @@ int h263_decode_mb(MpegEncContext *s,
         //fprintf(stderr, "\tCBPC: %d", cbpc);
         if (cbpc < 0)
             return -1;
+        if (cbpc > 20)
+            cbpc+=3;
+        else if (cbpc == 20)
+            fprintf(stderr, "Stuffing !");
         
         dquant = cbpc & 8;
         s->mb_intra = ((cbpc & 4) != 0);
@@ -1223,14 +1227,16 @@ int h263_decode_picture_header(MpegEncContext *s)
         
     format = get_bits(&s->gb, 3);
 
-    if (format != 7) {
+    if (format != 7 && format != 6) {
         s->h263_plus = 0;
         /* H.263v1 */
         width = h263_format[format][0];
         height = h263_format[format][1];
         if (!width)
             return -1;
-
+        
+        s->width = width;
+        s->height = height;
         s->pict_type = I_TYPE + get_bits1(&s->gb);
 
         s->unrestricted_mv = get_bits1(&s->gb); 
@@ -1238,27 +1244,36 @@ int h263_decode_picture_header(MpegEncContext *s)
 
         if (get_bits1(&s->gb) != 0)
             return -1;	/* SAC: off */
-        if (get_bits1(&s->gb) != 0)
-            return -1;	/* advanced prediction mode: off */
+        if (get_bits1(&s->gb) != 0) {
+            s->mv_type = MV_TYPE_8X8; /* Advanced prediction mode */
+        }   
+        
         if (get_bits1(&s->gb) != 0)
             return -1;	/* not PB frame */
 
         s->qscale = get_bits(&s->gb, 5);
         skip_bits1(&s->gb);	/* Continuous Presence Multipoint mode: off */
     } else {
-        s->h263_plus = 1;
-        /* H.263v2 */
-        /* OPPTYPE */
-     
-        if (get_bits(&s->gb, 3) != 1) /* Update Full Extended PTYPE */
-            return -1;
-        format = get_bits(&s->gb, 3);
-                
-        skip_bits(&s->gb,1); /* Custom PCF */
-        s->umvplus_dec = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
-        skip_bits(&s->gb, 10);
-        skip_bits(&s->gb, 3); /* Reserved */
+        int ufep;
         
+        /* H.263v2 */
+        s->h263_plus = 1;
+        ufep = get_bits(&s->gb, 3); /* Update Full Extended PTYPE */
+        
+        if (ufep == 1) {
+            /* OPPTYPE */       
+            format = get_bits(&s->gb, 3);
+            skip_bits(&s->gb,1); /* Custom PCF */
+            s->umvplus_dec = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
+            skip_bits1(&s->gb); /* Syntax-based Arithmetic Coding (SAC) */
+            if (get_bits1(&s->gb) != 0) {
+                s->mv_type = MV_TYPE_8X8; /* Advanced prediction mode */
+            }
+            skip_bits(&s->gb, 8);
+            skip_bits(&s->gb, 3); /* Reserved */
+        } else if (ufep != 0)
+            return -1;
+            
         /* MPPTYPE */
         s->pict_type = get_bits(&s->gb, 3) + 1;
         if (s->pict_type != I_TYPE &&
@@ -1267,26 +1282,28 @@ int h263_decode_picture_header(MpegEncContext *s)
         skip_bits(&s->gb, 7);
         
         /* Get the picture dimensions */
-        if (format == 6) {
-            /* Custom Picture Format (CPFMT) */
-            skip_bits(&s->gb, 4); /* aspect ratio */
-            width = (get_bits(&s->gb, 9) + 1) * 4;
-            skip_bits1(&s->gb);
-            height = get_bits(&s->gb, 9) * 4;
+        if (ufep) {
+            if (format == 6) {
+                /* Custom Picture Format (CPFMT) */
+                skip_bits(&s->gb, 4); /* aspect ratio */
+                width = (get_bits(&s->gb, 9) + 1) * 4;
+                skip_bits1(&s->gb);
+                height = get_bits(&s->gb, 9) * 4;
 #ifdef DEBUG 
-            fprintf(stderr,"\nH.263+ Custom picture: %dx%d\n",width,height);
+                fprintf(stderr,"\nH.263+ Custom picture: %dx%d\n",width,height);
 #endif            
-        }
-        else {
-            width = h263_format[format][0];
-            height = h263_format[format][1];
-        }
-        
-        if ((width == 0) || (height == 0))
-            return -1;
-            
-        if (s->umvplus_dec) {
-            skip_bits1(&s->gb); /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
+            }
+            else {
+                width = h263_format[format][0];
+                height = h263_format[format][1];
+            }
+            if ((width == 0) || (height == 0))
+                return -1;
+            s->width = width;
+            s->height = height;
+            if (s->umvplus_dec) {
+                skip_bits1(&s->gb); /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
+            }
         }
             
         s->qscale = get_bits(&s->gb, 5);
@@ -1296,9 +1313,6 @@ int h263_decode_picture_header(MpegEncContext *s)
         skip_bits(&s->gb, 8);
     }
     s->f_code = 1;
-    s->width = width;
-    s->height = height;
-    
     return 0;
 }
 

@@ -4,20 +4,24 @@ static const UINT8 intra_MCBPC_code[8] = { 1, 1, 2, 3, 1, 1, 2, 3 };
 static const UINT8 intra_MCBPC_bits[8] = { 1, 3, 3, 3, 4, 6, 6, 6 };
 
 /* inter MCBPC, mb_type = (inter), (intra), (interq), (intraq), (inter4v) */
-/* Changed the tables for interq, following the standard ** Juanjo ** */
-static const UINT8 inter_MCBPC_code[20] = { 
+/* Changed the tables for interq and inter4v+q, following the standard ** Juanjo ** */
+static const UINT8 inter_MCBPC_code[25] = { 
     1, 3, 2, 5, 
     3, 4, 3, 3, 
     3, 7, 6, 5,
     4, 4, 3, 2,
     2, 5, 4, 5,
+    1, /* Stuffing */
+    2, 12, 14, 15,
 };
-static const UINT8 inter_MCBPC_bits[20] = { 
+static const UINT8 inter_MCBPC_bits[25] = { 
     1, 4, 4, 6, 
     5, 8, 8, 7,
     3, 7, 7, 9,
     6, 9, 9, 9,
     3, 7, 7, 8,
+    9, /* Stuffing */
+    11, 13, 13, 13,
 };
 
 /* This is the old table 

@@ -163,8 +163,10 @@ static int h263_decode_frame(AVCodecContext *avctx,
                 if (msmpeg4_decode_mb(s, s->block) < 0)
                     return -1;
             } else {
-                if (h263_decode_mb(s, s->block) < 0)
+                if (h263_decode_mb(s, s->block) < 0) {
+                    fprintf(stderr,"\nError at MB: %d\n", (s->mb_y * s->mb_width) + s->mb_x);
                     return -1;
+                }
             }
             MPV_decode_mb(s, s->block);
         }
