@@ -181,7 +181,7 @@ static void audiorecord_callback(void *cookie, bigtime_t timestamp, void *buffer
 }
 #endif
 
-static int audio_open(AudioData *s, int is_output)
+static int audio_open(AudioData *s, int is_output, const char *audio_device)
 {
     int p[2];
     int ret;
@@ -210,7 +210,13 @@ static int audio_open(AudioData *s, int is_output)
     set_thread_priority(find_thread(NULL), B_DISPLAY_PRIORITY+1);
 #ifdef HAVE_BSOUNDRECORDER
     if (!is_output) {
-        s->recorder = new BSoundRecorder(&iformat, false, "ffmpeg input", audiorecord_callback);
+        bool wait_for_input = false;
+        if (audio_device && !strcmp(audio_device, "wait:"))
+            wait_for_input = true;
+        s->recorder = new BSoundRecorder(&iformat, wait_for_input, "ffmpeg input", audiorecord_callback);
+        if (wait_for_input && (s->recorder->InitCheck() == B_OK)) {
+            s->recorder->WaitForIncomingConnection(&iformat);
+        }
         if (s->recorder->InitCheck() != B_OK || iformat.format != media_raw_audio_format::B_AUDIO_SHORT) {
             delete s->recorder;
             s->recorder = NULL;
@@ -283,7 +289,7 @@ static int audio_write_header(AVFormatContext *s1)
     st = s1->streams[0];
     s->sample_rate = st->codec.sample_rate;
     s->channels = st->codec.channels;
-    ret = audio_open(s, 1);
+    ret = audio_open(s, 1, NULL);
     if (ret < 0)
         return -EIO;
     return 0;
@@ -345,7 +351,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s->sample_rate = ap->sample_rate;
     s->channels = ap->channels;
 
-    ret = audio_open(s, 0);
+    ret = audio_open(s, 0, ap->device);
     if (ret < 0) {
         av_free(st);
         return -EIO;
