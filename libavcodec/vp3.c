@@ -311,7 +311,7 @@ void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix,
     int32_t *ip = intermediate_data;
     int16_t *op = output_data;
 
-    int32_t _A, _B, _C, _D, _Ad, _Bd, _Cd, _Dd, _E, _F, _G, _H;
+    int32_t A_, B_, C_, D_, _Ad, _Bd, _Cd, _Dd, E_, F_, G_, H_;
     int32_t _Ed, _Gd, _Add, _Bdd, _Fd, _Hd;
     int32_t t1, t2;
 
@@ -348,68 +348,68 @@ void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix,
             t2 = (int32_t)(xC7S1 * ip[7]);
             t1 >>= 16;
             t2 >>= 16;
-            _A = t1 + t2;
+            A_ = t1 + t2;
 
             t1 = (int32_t)(xC7S1 * ip[1]);
             t2 = (int32_t)(xC1S7 * ip[7]);
             t1 >>= 16;
             t2 >>= 16;
-            _B = t1 - t2;
+            B_ = t1 - t2;
 
             t1 = (int32_t)(xC3S5 * ip[3]);
             t2 = (int32_t)(xC5S3 * ip[5]);
             t1 >>= 16;
             t2 >>= 16;
-            _C = t1 + t2;
+            C_ = t1 + t2;
 
             t1 = (int32_t)(xC3S5 * ip[5]);
             t2 = (int32_t)(xC5S3 * ip[3]);
             t1 >>= 16;
             t2 >>= 16;
-            _D = t1 - t2;
+            D_ = t1 - t2;
 
 
-            t1 = (int32_t)(xC4S4 * (_A - _C));
+            t1 = (int32_t)(xC4S4 * (A_ - C_));
             t1 >>= 16;
             _Ad = t1;
 
-            t1 = (int32_t)(xC4S4 * (_B - _D));
+            t1 = (int32_t)(xC4S4 * (B_ - D_));
             t1 >>= 16;
             _Bd = t1;
 
 
-            _Cd = _A + _C;
-            _Dd = _B + _D;
+            _Cd = A_ + C_;
+            _Dd = B_ + D_;
 
             t1 = (int32_t)(xC4S4 * (ip[0] + ip[4]));
             t1 >>= 16;
-            _E = t1;
+            E_ = t1;
 
             t1 = (int32_t)(xC4S4 * (ip[0] - ip[4]));
             t1 >>= 16;
-            _F = t1;
+            F_ = t1;
 
             t1 = (int32_t)(xC2S6 * ip[2]);
             t2 = (int32_t)(xC6S2 * ip[6]);
             t1 >>= 16;
             t2 >>= 16;
-            _G = t1 + t2;
+            G_ = t1 + t2;
 
             t1 = (int32_t)(xC6S2 * ip[2]);
             t2 = (int32_t)(xC2S6 * ip[6]);
             t1 >>= 16;
             t2 >>= 16;
-            _H = t1 - t2;
+            H_ = t1 - t2;
 
 
-            _Ed = _E - _G;
-            _Gd = _E + _G;
+            _Ed = E_ - G_;
+            _Gd = E_ + G_;
 
-            _Add = _F + _Ad;
-            _Bdd = _Bd - _H;
+            _Add = F_ + _Ad;
+            _Bdd = _Bd - H_;
 
-            _Fd = _F - _Ad;
-            _Hd = _Bd + _H;
+            _Fd = F_ - _Ad;
+            _Hd = _Bd + H_;
 
             /*  Final sequence of operations over-write original inputs. */
             ip[0] = (int16_t)((_Gd + _Cd )   >> 0);
@@ -440,68 +440,68 @@ void vp3_idct_c(int16_t *input_data, int16_t *dequant_matrix,
             t2 = (int32_t)(xC7S1 * ip[7*8]);
             t1 >>= 16;
             t2 >>= 16;
-            _A = t1 + t2;
+            A_ = t1 + t2;
 
             t1 = (int32_t)(xC7S1 * ip[1*8]);
             t2 = (int32_t)(xC1S7 * ip[7*8]);
             t1 >>= 16;
             t2 >>= 16;
-            _B = t1 - t2;
+            B_ = t1 - t2;
 
             t1 = (int32_t)(xC3S5 * ip[3*8]);
             t2 = (int32_t)(xC5S3 * ip[5*8]);
             t1 >>= 16;
             t2 >>= 16;
-            _C = t1 + t2;
+            C_ = t1 + t2;
 
             t1 = (int32_t)(xC3S5 * ip[5*8]);
             t2 = (int32_t)(xC5S3 * ip[3*8]);
             t1 >>= 16;
             t2 >>= 16;
-            _D = t1 - t2;
+            D_ = t1 - t2;
 
 
-            t1 = (int32_t)(xC4S4 * (_A - _C));
+            t1 = (int32_t)(xC4S4 * (A_ - C_));
             t1 >>= 16;
             _Ad = t1;
 
-            t1 = (int32_t)(xC4S4 * (_B - _D));
+            t1 = (int32_t)(xC4S4 * (B_ - D_));
             t1 >>= 16;
             _Bd = t1;
 
 
-            _Cd = _A + _C;
-            _Dd = _B + _D;
+            _Cd = A_ + C_;
+            _Dd = B_ + D_;
 
             t1 = (int32_t)(xC4S4 * (ip[0*8] + ip[4*8]));
             t1 >>= 16;
-            _E = t1;
+            E_ = t1;
 
             t1 = (int32_t)(xC4S4 * (ip[0*8] - ip[4*8]));
             t1 >>= 16;
-            _F = t1;
+            F_ = t1;
 
             t1 = (int32_t)(xC2S6 * ip[2*8]);
             t2 = (int32_t)(xC6S2 * ip[6*8]);
             t1 >>= 16;
             t2 >>= 16;
-            _G = t1 + t2;
+            G_ = t1 + t2;
 
             t1 = (int32_t)(xC6S2 * ip[2*8]);
             t2 = (int32_t)(xC2S6 * ip[6*8]);
             t1 >>= 16;
             t2 >>= 16;
-            _H = t1 - t2;
+            H_ = t1 - t2;
 
 
-            _Ed = _E - _G;
-            _Gd = _E + _G;
+            _Ed = E_ - G_;
+            _Gd = E_ + G_;
 
-            _Add = _F + _Ad;
-            _Bdd = _Bd - _H;
+            _Add = F_ + _Ad;
+            _Bdd = _Bd - H_;
 
-            _Fd = _F - _Ad;
-            _Hd = _Bd + _H;
+            _Fd = F_ - _Ad;
+            _Hd = _Bd + H_;
 
             _Gd += IdctAdjustBeforeShift;
             _Add += IdctAdjustBeforeShift;
