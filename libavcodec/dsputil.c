@@ -1357,7 +1357,10 @@ void dsputil_init(DSPContext* c, unsigned mask)
 	for(i=0;i<512;i++) {
 	    squareTbl[i] = (i - 256) * (i - 256);
 	}
-        init_done = 1;
+
+	for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
+
+	init_done = 1;
     }
 
     c->get_pixels = get_pixels_c;
@@ -1453,7 +1456,6 @@ void dsputil_init(DSPContext* c, unsigned mask)
     dsputil_init_mmi(c, mask);
 #endif
 
-    for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
 }
 
 /* remove any non bit exact operation (testing purpose) */
