@@ -4380,8 +4380,23 @@ int h263_decode_picture_header(MpegEncContext *s)
          s->h263_plus ? "+" : ""
          ); 
      }
+#if 1
+    if (s->pict_type == I_TYPE && s->avctx->codec_tag == ff_get_fourcc("ZYGO")){
+        int i,j;
+        for(i=0; i<85; i++) printf("%d", get_bits1(&s->gb));
+        printf("\n");
+        for(i=0; i<13; i++){
+            for(j=0; j<3; j++){
+                int v= get_bits(&s->gb, 8);
+                v |= get_sbits(&s->gb, 8)<<8;
+                printf(" %5d", v);
+            }
+            printf("\n");
+        }
+        for(i=0; i<50; i++) printf("%d", get_bits1(&s->gb));
+    }
+#endif
 
-    
     return 0;
 }
 
