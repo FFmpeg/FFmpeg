@@ -51,7 +51,7 @@ stddev:  5.44 PSNR:33.41 bytes:7602176
 868164 ./data/a-h263p.avi
 80fb224bebbe2e04f228da7485b905c5 *./data/out.yuv
 stddev:  1.91 PSNR:42.49 bytes:7602176
-c2a983da91e6b965a9cebf3d9b7ff14c *./data/a-odivx.mp4
+86f888a1da2ef9f34d12cbab5ed087c9 *./data/a-odivx.mp4
 120196 ./data/a-odivx.mp4
 8b7657a7f9fc7298cc016abb466d1d19 *./data/out.yuv
 stddev:  5.34 PSNR:33.56 bytes:7602176
