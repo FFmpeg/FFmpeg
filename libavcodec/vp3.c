@@ -2919,13 +2919,20 @@ static int theora_decode_init(AVCodecContext *avctx)
     Vp3DecodeContext *s = avctx->priv_data;
     GetBitContext gb;
     int ptype;
+    uint8_t *p= avctx->extradata;
+    int op_bytes, i;
     
     s->theora = 1;
 
     if (!avctx->extradata_size)
 	return -1;
 
-    init_get_bits(&gb, avctx->extradata, avctx->extradata_size);
+  for(i=0;i<3;i++) {
+    op_bytes = *(p++)<<8;
+    op_bytes += *(p++);
+
+    init_get_bits(&gb, p, op_bytes);
+    p += op_bytes;
 
     ptype = get_bits(&gb, 8);
     debug_vp3("Theora headerpacket type: %x\n", ptype);
@@ -2948,6 +2955,7 @@ static int theora_decode_init(AVCodecContext *avctx)
 	    theora_decode_tables(avctx, gb);
 	    break;
     }
+  }
 
     return 0;
 }
