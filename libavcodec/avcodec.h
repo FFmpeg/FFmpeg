@@ -255,6 +255,7 @@ static const __attribute__((unused)) int Motion_Est_QTab[] =
 #define CODEC_FLAG_AC_PRED        0x01000000 ///< H263 Advanced intra coding / MPEG4 AC prediction
 #define CODEC_FLAG_H263P_UMV      0x02000000 ///< Unlimited motion vector  
 #define CODEC_FLAG_CBP_RD         0x04000000 ///< use rate distortion optimization for cbp
+#define CODEC_FLAG_QP_RD          0x08000000 ///< use rate distortion optimization for qp selectioon
 /* For advanced prediction mode, we reuse the 4MV flag */
 /* Unsupported options :
  * 		Syntax Arithmetic coding (SAC)
@@ -1065,6 +1066,7 @@ typedef struct AVCodecContext {
     
     /**
      * sample aspect ratio (0 if unknown).
+     * numerator and denominator must be relative prime and smaller then 256 for some video standards
      * - encoding: set by user.
      * - decoding: set by lavc.
      */

@@ -664,7 +664,8 @@ int MPV_encode_init(AVCodecContext *avctx)
                         || s->avctx->dark_masking
                         || s->avctx->temporal_cplx_masking 
                         || s->avctx->spatial_cplx_masking
-                        || s->avctx->p_masking)
+                        || s->avctx->p_masking
+                        || (s->flags&CODEC_FLAG_QP_RD))
                        && !s->fixed_qscale;
     
     s->progressive_sequence= !(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
@@ -2898,15 +2899,18 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 
         s->lambda= s->lambda_table[mb_xy];
         update_qscale(s);
-        s->dquant= s->qscale - last_qp;
+    
+        if(!(s->flags&CODEC_FLAG_QP_RD)){
+            s->dquant= s->qscale - last_qp;
 
-        if(s->out_format==FMT_H263)
-            s->dquant= clip(s->dquant, -2, 2); //FIXME RD
+            if(s->out_format==FMT_H263)
+                s->dquant= clip(s->dquant, -2, 2); //FIXME RD
             
-        if(s->codec_id==CODEC_ID_MPEG4){        
-            if(!s->mb_intra){
-                if((s->mv_dir&MV_DIRECT) || s->mv_type==MV_TYPE_8X8)
-                    s->dquant=0;
+            if(s->codec_id==CODEC_ID_MPEG4){        
+                if(!s->mb_intra){
+                    if((s->mv_dir&MV_DIRECT) || s->mv_type==MV_TYPE_8X8)
+                        s->dquant=0;
+                }
             }
         }
         s->qscale= last_qp + s->dquant;
@@ -3256,6 +3260,7 @@ static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext 
 
     d->mb_skiped= 0;
     d->qscale= s->qscale;
+    d->dquant= s->dquant;
 }
 
 static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *s, int type){
@@ -3724,8 +3729,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             }
 
             s->mb_skiped=0;
+            s->dquant=0; //only for QP_RD
 
-            if(mb_type & (mb_type-1)){ // more than 1 MB type possible
+            if(mb_type & (mb_type-1) || (s->flags & CODEC_FLAG_QP_RD)){ // more than 1 MB type possible
                 int next_block=0;
                 int pb_bits_count, pb2_bits_count, tex_pb_bits_count;
 
@@ -3823,6 +3829,52 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                             ff_clean_intra_table_entries(s); //old mode?
                     }
                 }
+
+                if(s->flags & CODEC_FLAG_QP_RD){
+                    if(best_s.mv_type==MV_TYPE_16X16 && !(best_s.mv_dir&MV_DIRECT)){
+                        const int last_qp= backup_s.qscale;
+                        int dquant, dir, qp, dc[6];
+                        
+                        assert(backup_s.dquant == 0);
+
+                        //FIXME intra
+                        s->mv_dir= best_s.mv_dir;
+                        s->mv_type = MV_TYPE_16X16;
+                        s->mb_intra= best_s.mb_intra;
+                        s->mv[0][0][0] = best_s.mv[0][0][0];
+                        s->mv[0][0][1] = best_s.mv[0][0][1];
+                        s->mv[1][0][0] = best_s.mv[1][0][0];
+                        s->mv[1][0][1] = best_s.mv[1][0][1];
+                        
+                        dir= s->pict_type == B_TYPE ? 2 : 1;
+                        if(last_qp + dir >= s->avctx->qmax) dir= -dir;
+                        for(dquant= dir; dquant<=2 && dquant>=-2; dquant += dir){
+                            qp= last_qp + dquant;
+                            if(qp < s->avctx->qmin || qp > s->avctx->qmax)
+                                break;
+                            backup_s.dquant= dquant;
+                            for(i=0; i<6; i++){
+                                dc[i]= s->dc_val[0][ s->block_index[i] ]; //FIXME AC
+                            }
+//printf("%d %d\n", backup_s.dquant, backup_s.qscale);
+                            encode_mb_hq(s, &backup_s, &best_s, MB_TYPE_INTER /* wrong but unused */, pb, pb2, tex_pb, 
+                                         &dmin, &next_block, s->mv[0][0][0], s->mv[0][0][1]);
+                            if(best_s.qscale != qp){
+                                for(i=0; i<6; i++){
+                                    s->dc_val[0][ s->block_index[i] ]= dc[i];
+                                }
+                                if(dir > 0 && dquant==dir){
+                                    dquant= 0;
+                                    dir= -dir;
+                                }else
+                                    break;
+                            }
+                        }
+                        qp= best_s.qscale;
+                        s->current_picture.qscale_table[xy]= qp;
+                    }
+                }
+
                 copy_context_after_encode(s, &best_s, -1);
                 
                 pb_bits_count= get_bit_count(&s->pb);
