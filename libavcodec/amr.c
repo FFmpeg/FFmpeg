@@ -53,7 +53,6 @@
  
  */
 
-#include "../config.h"
 #include "avcodec.h"
 
 #ifdef AMR_NB_FIXED
