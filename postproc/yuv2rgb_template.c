@@ -56,8 +56,8 @@
 		     "punpcklbw %%mm4, %%mm0;" /* scatter 4 Cb 00 u3 00 u2 00 u1 00 u0 */ \
 		     "punpcklbw %%mm4, %%mm1;" /* scatter 4 Cr 00 v3 00 v2 00 v1 00 v0 */ \
 \
-		     "psubsw mmx_80w, %%mm0;" /* Cb -= 128 */ \
-		     "psubsw mmx_80w, %%mm1;" /* Cr -= 128 */ \
+		     "psubsw "MANGLE(mmx_80w)", %%mm0;" /* Cb -= 128 */ \
+		     "psubsw "MANGLE(mmx_80w)", %%mm1;" /* Cr -= 128 */ \
 \
 		     "psllw $3, %%mm0;" /* Promote precision */ \
 		     "psllw $3, %%mm1;" /* Promote precision */ \
@@ -65,27 +65,27 @@
 		     "movq %%mm0, %%mm2;" /* Copy 4 Cb 00 u3 00 u2 00 u1 00 u0 */ \
 		     "movq %%mm1, %%mm3;" /* Copy 4 Cr 00 v3 00 v2 00 v1 00 v0 */ \
 \
-		     "pmulhw mmx_U_green, %%mm2;" /* Mul Cb with green coeff -> Cb green */ \
-		     "pmulhw mmx_V_green, %%mm3;" /* Mul Cr with green coeff -> Cr green */ \
+		     "pmulhw "MANGLE(mmx_U_green)", %%mm2;" /* Mul Cb with green coeff -> Cb green */ \
+		     "pmulhw "MANGLE(mmx_V_green)", %%mm3;" /* Mul Cr with green coeff -> Cr green */ \
 \
-		     "pmulhw mmx_U_blue, %%mm0;" /* Mul Cb -> Cblue 00 b3 00 b2 00 b1 00 b0 */\
-		     "pmulhw mmx_V_red, %%mm1;" /* Mul Cr -> Cred 00 r3 00 r2 00 r1 00 r0 */\
+		     "pmulhw "MANGLE(mmx_U_blue)", %%mm0;" /* Mul Cb -> Cblue 00 b3 00 b2 00 b1 00 b0 */\
+		     "pmulhw "MANGLE(mmx_V_red)", %%mm1;" /* Mul Cr -> Cred 00 r3 00 r2 00 r1 00 r0 */\
 \
 		     "paddsw %%mm3, %%mm2;" /* Cb green + Cr green -> Cgreen */\
 \
 		     /* convert the luma part */\
-		     "psubusb mmx_10w, %%mm6;" /* Y -= 16 */\
+		     "psubusb "MANGLE(mmx_10w)", %%mm6;" /* Y -= 16 */\
 \
 		     "movq %%mm6, %%mm7;" /* Copy 8 Y Y7 Y6 Y5 Y4 Y3 Y2 Y1 Y0 */\
-		     "pand mmx_00ffw, %%mm6;" /* get Y even 00 Y6 00 Y4 00 Y2 00 Y0 */\
+		     "pand "MANGLE(mmx_00ffw)", %%mm6;" /* get Y even 00 Y6 00 Y4 00 Y2 00 Y0 */\
 \
 		     "psrlw $8, %%mm7;" /* get Y odd 00 Y7 00 Y5 00 Y3 00 Y1 */\
 \
 		     "psllw $3, %%mm6;" /* Promote precision */\
 		     "psllw $3, %%mm7;" /* Promote precision */\
 \
-		     "pmulhw mmx_Y_coeff, %%mm6;" /* Mul 4 Y even 00 y6 00 y4 00 y2 00 y0 */\
-		     "pmulhw mmx_Y_coeff, %%mm7;" /* Mul 4 Y odd 00 y7 00 y5 00 y3 00 y1 */\
+		     "pmulhw "MANGLE(mmx_Y_coeff)", %%mm6;" /* Mul 4 Y even 00 y6 00 y4 00 y2 00 y0 */\
+		     "pmulhw "MANGLE(mmx_Y_coeff)", %%mm7;" /* Mul 4 Y odd 00 y7 00 y5 00 y3 00 y1 */\
 \
 		     /* Do the addition part of the conversion for even and odd pixels,
 			register usage:
@@ -164,14 +164,14 @@ static inline void RENAME(yuv420_rgb16) (uint8_t * image, uint8_t * py,
 YUV2RGB
 
 #ifdef DITHER1XBPP
-			"paddusb b5Dither, %%mm0;"
-			"paddusb g6Dither, %%mm2;"
-			"paddusb r5Dither, %%mm1;"
+			"paddusb "MANGLE(b5Dither)", %%mm0;"
+			"paddusb "MANGLE(g6Dither)", %%mm2;"
+			"paddusb "MANGLE(r5Dither)", %%mm1;"
 #endif
 		     /* mask unneeded bits off */
-		     "pand mmx_redmask, %%mm0;" /* b7b6b5b4 b3_0_0_0 b7b6b5b4 b3_0_0_0 */
-		     "pand mmx_grnmask, %%mm2;" /* g7g6g5g4 g3g2_0_0 g7g6g5g4 g3g2_0_0 */
-		     "pand mmx_redmask, %%mm1;" /* r7r6r5r4 r3_0_0_0 r7r6r5r4 r3_0_0_0 */
+		     "pand "MANGLE(mmx_redmask)", %%mm0;" /* b7b6b5b4 b3_0_0_0 b7b6b5b4 b3_0_0_0 */
+		     "pand "MANGLE(mmx_grnmask)", %%mm2;" /* g7g6g5g4 g3g2_0_0 g7g6g5g4 g3g2_0_0 */
+		     "pand "MANGLE(mmx_redmask)", %%mm1;" /* r7r6r5r4 r3_0_0_0 r7r6r5r4 r3_0_0_0 */
 
 		     "psrlw $3,%%mm0;" /* 0_0_0_b7 b6b5b4b3 0_0_0_b7 b6b5b4b3 */
 		     "pxor %%mm4, %%mm4;" /* zero mm4 */
@@ -259,15 +259,15 @@ static inline void RENAME(yuv420_rgb15) (uint8_t * image, uint8_t * py,
 YUV2RGB
 
 #ifdef DITHER1XBPP
-			"paddusb b5Dither, %%mm0	\n\t"
-			"paddusb g5Dither, %%mm2	\n\t"
-			"paddusb r5Dither, %%mm1	\n\t"
+			"paddusb "MANGLE(b5Dither)", %%mm0	\n\t"
+			"paddusb "MANGLE(g5Dither)", %%mm2	\n\t"
+			"paddusb "MANGLE(r5Dither)", %%mm1	\n\t"
 #endif
 
 		     /* mask unneeded bits off */
-		     "pand mmx_redmask, %%mm0;" /* b7b6b5b4 b3_0_0_0 b7b6b5b4 b3_0_0_0 */
-		     "pand mmx_redmask, %%mm2;" /* g7g6g5g4 g3_0_0_0 g7g6g5g4 g3_0_0_0 */
-		     "pand mmx_redmask, %%mm1;" /* r7r6r5r4 r3_0_0_0 r7r6r5r4 r3_0_0_0 */
+		     "pand "MANGLE(mmx_redmask)", %%mm0;" /* b7b6b5b4 b3_0_0_0 b7b6b5b4 b3_0_0_0 */
+		     "pand "MANGLE(mmx_redmask)", %%mm2;" /* g7g6g5g4 g3_0_0_0 g7g6g5g4 g3_0_0_0 */
+		     "pand "MANGLE(mmx_redmask)", %%mm1;" /* r7r6r5r4 r3_0_0_0 r7r6r5r4 r3_0_0_0 */
 
 		     "psrlw $3,%%mm0;" /* 0_0_0_b7 b6b5b4b3 0_0_0_b7 b6b5b4b3 */
 		     "psrlw $1,%%mm1;"            /* 0_r7r6r5  r4r3_0_0 0_r7r6r5 r4r3_0_0 */
@@ -351,8 +351,8 @@ static inline void RENAME(yuv420_rgb24) (uint8_t * image, uint8_t * py,
 YUV2RGB
 	/* mm0=B, %%mm2=G, %%mm1=R */
 #ifdef HAVE_MMX2
-			"movq M24A, %%mm4		\n\t"
-			"movq M24C, %%mm7		\n\t"
+			"movq "MANGLE(M24A)", %%mm4	\n\t"
+			"movq "MANGLE(M24C)", %%mm7	\n\t"
 			"pshufw $0x50, %%mm0, %%mm5	\n\t" /* B3 B2 B3 B2  B1 B0 B1 B0 */
 			"pshufw $0x50, %%mm2, %%mm3	\n\t" /* G3 G2 G3 G2  G1 G0 G1 G0 */
 			"pshufw $0x00, %%mm1, %%mm6	\n\t" /* R1 R0 R1 R0  R1 R0 R1 R0 */
@@ -371,7 +371,7 @@ YUV2RGB
 			"pshufw $0x55, %%mm2, %%mm3	\n\t" /* G4 G3 G4 G3  G4 G3 G4 G3 */
 			"pshufw $0xA5, %%mm1, %%mm6	\n\t" /* R5 R4 R5 R4  R3 R2 R3 R2 */
 
-			"pand M24B, %%mm5		\n\t" /* B5       B4        B3    */
+			"pand "MANGLE(M24B)", %%mm5	\n\t" /* B5       B4        B3    */
 			"pand %%mm7, %%mm3		\n\t" /*       G4        G3       */
 			"pand %%mm4, %%mm6		\n\t" /*    R4        R3       R2 */
 
@@ -386,7 +386,7 @@ YUV2RGB
 
 			"pand %%mm7, %%mm5		\n\t" /*       B7        B6       */
 			"pand %%mm4, %%mm3		\n\t" /*    G7        G6       G5 */
-			"pand M24B, %%mm6		\n\t" /* R7       R6        R5    */
+			"pand "MANGLE(M24B)", %%mm6	\n\t" /* R7       R6        R5    */
 			"movd 4 (%2), %%mm1;" /* Load 4 Cr 00 00 00 00 v3 v2 v1 v0 */
 \
 			"por %%mm5, %%mm3		\n\t"

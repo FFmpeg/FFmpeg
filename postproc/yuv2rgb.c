@@ -36,6 +36,7 @@
 //#include "video_out.h"
 #include "rgb2rgb.h"
 #include "../cpudetect.h"
+#include "../mangle.h"
 
 #ifdef HAVE_MLIB
 #include "yuv2rgb_mlib.c"
