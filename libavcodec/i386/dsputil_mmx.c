@@ -928,6 +928,7 @@ static void clear_blocks_mmx(DCTELEM *blocks)
 static void just_return() { return; }
 #endif
 
+#ifndef TESTCPU_MAIN
 void dsputil_init_mmx(void)
 {
     mm_flags = mm_support();
@@ -952,7 +953,7 @@ void dsputil_init_mmx(void)
         put_pixels_clamped = put_pixels_clamped_mmx;
         add_pixels_clamped = add_pixels_clamped_mmx;
         clear_blocks= clear_blocks_mmx;
-       
+
         pix_abs16x16     = pix_abs16x16_mmx;
         pix_abs16x16_x2  = pix_abs16x16_x2_mmx;
         pix_abs16x16_y2  = pix_abs16x16_y2_mmx;
@@ -972,7 +973,7 @@ void dsputil_init_mmx(void)
         put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_mmx;
         put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_mmx;
         put_no_rnd_pixels_tab[3] = put_no_rnd_pixels_xy2_mmx;
-        
+
         avg_pixels_tab[0] = avg_pixels_mmx;
         avg_pixels_tab[1] = avg_pixels_x2_mmx;
         avg_pixels_tab[2] = avg_pixels_y2_mmx;
@@ -988,7 +989,7 @@ void dsputil_init_mmx(void)
             pix_abs16x16_x2 = pix_abs16x16_x2_mmx2;
             pix_abs16x16_y2 = pix_abs16x16_y2_mmx2;
             pix_abs16x16_xy2= pix_abs16x16_xy2_mmx2;
-            
+
             pix_abs8x8    = pix_abs8x8_mmx2;
             pix_abs8x8_x2 = pix_abs8x8_x2_mmx2;
             pix_abs8x8_y2 = pix_abs8x8_y2_mmx2;
@@ -998,7 +999,7 @@ void dsputil_init_mmx(void)
             put_pixels_tab[2] = put_pixels_y2_mmx2;
             put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_mmx2;
             put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_mmx2;
-            
+
             avg_pixels_tab[0] = avg_pixels_mmx2;
             avg_pixels_tab[1] = avg_pixels_x2_mmx2;
             avg_pixels_tab[2] = avg_pixels_y2_mmx2;
@@ -1080,3 +1081,44 @@ void dsputil_set_bit_exact_mmx(void)
         }
     }
 }
+
+#else // TESTCPU_MAIN
+/*
+ * for testing speed of various routine - should be probably extended
+ * for a general purpose regression test later
+ *
+ * for now use it this way:
+ *
+ * gcc -O4 -fomit-frame-pointer -DHAVE_AV_CONFIG_H -DTESTCPU_MAIN  -I../.. -o test dsputil_mmx.c
+ *
+ * in libavcodec/i386 directory - then run ./test
+ */
+static inline long long rdtsc()
+{
+    long long l;
+    asm volatile(   "rdtsc\n\t"
+		    : "=A" (l)
+		);
+    return l;
+}
+
+int main(int argc, char* argv[])
+{
+    volatile int v;
+    int i;
+    const int linesize = 720;
+    char bu[32768];
+    uint64_t te, ts = rdtsc();
+    char* im = bu;
+    op_pixels_func fc = put_pixels_y2_mmx2;
+    for(i=0; i<1000000; i++){
+	fc(im, im + 1000, linesize, 16);
+	im += 16; //
+	if (im > bu + 10000)
+            im = bu;
+    }
+    te = rdtsc();
+    printf("CPU Ticks: %7d\n", (int)(te - ts));
+    fflush(stdout);
+}
+#endif
