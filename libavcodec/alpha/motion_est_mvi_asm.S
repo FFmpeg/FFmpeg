@@ -18,9 +18,6 @@
  */
 
 #include "regdef.h"
-#ifdef HAVE_AV_CONFIG_H	
-#include "config.h"
-#endif
 
 /* Some nicer register names.  */
 #define ta t10
