@@ -265,6 +265,8 @@ static void copy_picture(Picture *dst, Picture *src){
 static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
     const int big_mb_num= s->mb_stride*(s->mb_height+1) + 1; //the +1 is needed so memset(,,stride*height) doesnt sig11
     const int mb_array_size= s->mb_stride*s->mb_height;
+    const int b8_array_size= s->b8_stride*s->mb_height*2;
+    const int b4_array_size= s->b4_stride*s->mb_height*4;
     int i;
     
     if(shared){
@@ -310,8 +312,14 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         pic->mb_type= pic->mb_type_base + s->mb_stride+1;
         if(s->out_format == FMT_H264){
             for(i=0; i<2; i++){
-                CHECKED_ALLOCZ(pic->motion_val[i], 2 * 16 * s->mb_num * sizeof(uint16_t))
-                CHECKED_ALLOCZ(pic->ref_index[i] , 4 * s->mb_num * sizeof(uint8_t))
+                CHECKED_ALLOCZ(pic->motion_val_base[i], 2 * (b4_array_size+1)  * sizeof(uint16_t))
+                pic->motion_val[i]= pic->motion_val_base[i]+1;
+                CHECKED_ALLOCZ(pic->ref_index[i] , b8_array_size * sizeof(uint8_t))
+            }
+        }else if(s->out_format == FMT_H263){
+            for(i=0; i<2; i++){
+                CHECKED_ALLOCZ(pic->motion_val_base[i], 2 * (b8_array_size+1) * sizeof(uint16_t))
+                pic->motion_val[i]= pic->motion_val_base[i]+1;
             }
         }
         pic->qstride= s->mb_stride;
@@ -348,7 +356,7 @@ static void free_picture(MpegEncContext *s, Picture *pic){
     av_freep(&pic->pan_scan);
     pic->mb_type= NULL;
     for(i=0; i<2; i++){
-        av_freep(&pic->motion_val[i]);
+        av_freep(&pic->motion_val_base[i]);
         av_freep(&pic->ref_index[i]);
     }
     
@@ -374,6 +382,8 @@ int MPV_common_init(MpegEncContext *s)
     s->mb_width  = (s->width  + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
     s->mb_stride = s->mb_width + 1;
+    s->b8_stride = s->mb_width*2 + 1;
+    s->b4_stride = s->mb_width*4 + 1;
     mb_array_size= s->mb_height * s->mb_stride;
 
     /* set default edge pos, will be overriden in decode_header if needed */
@@ -2364,7 +2374,7 @@ static inline void MPV_motion(MpegEncContext *s,
     mb_x = s->mb_x;
     mb_y = s->mb_y;
 
-    if(s->obmc){
+    if(s->obmc && s->pict_type != B_TYPE){
         int16_t mv_cache[4][4][2];
         const int xy= s->mb_x + s->mb_y*s->mb_stride;
         const int mot_stride= s->mb_width*2 + 2;

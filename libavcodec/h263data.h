@@ -29,6 +29,49 @@ const uint8_t inter_MCBPC_bits[28] = {
     11, 13, 13, 13,/* inter4Q*/
 };
 
+static const uint8_t h263_mbtype_b_tab[15][2] = {
+ {1, 1}, 
+ {3, 3}, 
+ {1, 5}, 
+ {4, 4},
+ {5, 4},
+ {6, 6},
+ {2, 4},
+ {3, 4},
+ {7, 6},
+ {4, 6},
+ {5, 6},
+ {1, 6},
+ {1,10},
+ {1, 7},
+ {1, 8},
+};
+
+static const int h263_mb_type_b_map[15]= {
+    MB_TYPE_DIRECT2 | MB_TYPE_L0L1,
+    MB_TYPE_DIRECT2 | MB_TYPE_L0L1 | MB_TYPE_CBP,
+    MB_TYPE_DIRECT2 | MB_TYPE_L0L1 | MB_TYPE_CBP | MB_TYPE_QUANT,
+                      MB_TYPE_L0,
+                      MB_TYPE_L0   | MB_TYPE_CBP,
+                      MB_TYPE_L0   | MB_TYPE_CBP | MB_TYPE_QUANT,
+                      MB_TYPE_L1,
+                      MB_TYPE_L1   | MB_TYPE_CBP,
+                      MB_TYPE_L1   | MB_TYPE_CBP | MB_TYPE_QUANT,
+                      MB_TYPE_L0L1,
+                      MB_TYPE_L0L1 | MB_TYPE_CBP,
+                      MB_TYPE_L0L1 | MB_TYPE_CBP | MB_TYPE_QUANT,
+    0, //stuffing
+    MB_TYPE_INTRA                  | MB_TYPE_CBP,
+    MB_TYPE_INTRA                  | MB_TYPE_CBP | MB_TYPE_QUANT,
+};
+
+const uint8_t cbpc_b_tab[4][2] = {
+{0, 1},
+{2, 2},
+{7, 3},
+{6, 3},
+};
+
 const uint8_t cbpy_tab[16][2] =
 {
   {3,4}, {5,5}, {4,5}, {9,4}, {3,5}, {7,4}, {2,6}, {11,4},

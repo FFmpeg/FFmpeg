@@ -283,10 +283,8 @@ static const uint8_t mbPatTable[63][2] = {
     {0xc, 6}
 };
 
-#define MB_TYPE_PAT       0x40000000
 #define MB_TYPE_ZERO_MV   0x20000000
 #define IS_ZERO_MV(a)   ((a)&MB_TYPE_ZERO_MV)
-#define IS_PAT(a)       ((a)&MB_TYPE_PAT)
 
 static const uint8_t table_mb_ptype[7][2] = {
     { 3, 5 }, // 0x01 MB_INTRA
@@ -300,12 +298,12 @@ static const uint8_t table_mb_ptype[7][2] = {
 
 static const uint32_t ptype2mb_type[7] = {
                     MB_TYPE_INTRA,
-                    MB_TYPE_L0 | MB_TYPE_PAT | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
+                    MB_TYPE_L0 | MB_TYPE_CBP | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
                     MB_TYPE_L0,
-                    MB_TYPE_L0 | MB_TYPE_PAT,
+                    MB_TYPE_L0 | MB_TYPE_CBP,
     MB_TYPE_QUANT | MB_TYPE_INTRA,
-    MB_TYPE_QUANT | MB_TYPE_L0 | MB_TYPE_PAT | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
-    MB_TYPE_QUANT | MB_TYPE_L0 | MB_TYPE_PAT,
+    MB_TYPE_QUANT | MB_TYPE_L0 | MB_TYPE_CBP | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
+    MB_TYPE_QUANT | MB_TYPE_L0 | MB_TYPE_CBP,
 };
 
 static const uint8_t table_mb_btype[11][2] = {
@@ -325,15 +323,15 @@ static const uint8_t table_mb_btype[11][2] = {
 static const uint32_t btype2mb_type[11] = {
                     MB_TYPE_INTRA,
                     MB_TYPE_L1,
-                    MB_TYPE_L1   | MB_TYPE_PAT,
+                    MB_TYPE_L1   | MB_TYPE_CBP,
                     MB_TYPE_L0,
-                    MB_TYPE_L0   | MB_TYPE_PAT,
+                    MB_TYPE_L0   | MB_TYPE_CBP,
                     MB_TYPE_L0L1,
-                    MB_TYPE_L0L1 | MB_TYPE_PAT,
+                    MB_TYPE_L0L1 | MB_TYPE_CBP,
     MB_TYPE_QUANT | MB_TYPE_INTRA,
-    MB_TYPE_QUANT | MB_TYPE_L1   | MB_TYPE_PAT,
-    MB_TYPE_QUANT | MB_TYPE_L0   | MB_TYPE_PAT,
-    MB_TYPE_QUANT | MB_TYPE_L0L1 | MB_TYPE_PAT,
+    MB_TYPE_QUANT | MB_TYPE_L1   | MB_TYPE_CBP,
+    MB_TYPE_QUANT | MB_TYPE_L0   | MB_TYPE_CBP,
+    MB_TYPE_QUANT | MB_TYPE_L0L1 | MB_TYPE_CBP,
 };
 
 static const uint8_t mbMotionVectorTable[17][2] = {

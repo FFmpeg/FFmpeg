@@ -340,6 +340,13 @@ static int rv10_decode_picture_header(MpegEncContext *s)
 static int rv20_decode_picture_header(MpegEncContext *s)
 {
     int seq, mb_pos, i;
+    
+    if(s->avctx->sub_id == 0x30202002 || s->avctx->sub_id == 0x30203002){
+        if (get_bits(&s->gb, 3)){
+            av_log(s->avctx, AV_LOG_ERROR, "unknown triplet set\n");
+            return -1;
+        } 
+    }   
 
     i= get_bits(&s->gb, 2);
     switch(i){
@@ -362,12 +369,41 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "error, qscale:0\n");
         return -1;
     }
-
-    if(s->avctx->sub_id == 0x20200002)
-        seq= get_bits(&s->gb, 16);
-    else
-        seq= get_bits(&s->gb, 8);
-
+    if(s->avctx->sub_id == 0x30203002){
+        if (get_bits(&s->gb, 1)){
+            av_log(s->avctx, AV_LOG_ERROR, "unknown bit2 set\n");
+            return -1;
+        }
+    }
+        
+    if(s->avctx->sub_id == 0x20200002 || s->avctx->sub_id == 0x30202002 || s->avctx->sub_id == 0x30203002){
+        if (get_bits(&s->gb, 1)){
+            av_log(s->avctx, AV_LOG_ERROR, "unknown bit3 set\n");
+            return -1;
+        }
+        seq= get_bits(&s->gb, 15);
+    }else
+        seq= get_bits(&s->gb, 8)*128;
+//printf("%d\n", seq);
+    seq |= s->time &~0x7FFF;
+    if(seq - s->time >  0x4000) seq -= 0x8000;
+    if(seq - s->time < -0x4000) seq += 0x8000;
+    if(seq != s->time){  
+        if(s->pict_type!=B_TYPE){
+            s->time= seq;
+            s->pp_time= s->time - s->last_non_b_time;
+            s->last_non_b_time= s->time;
+        }else{
+            s->time= seq;
+            s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
+            if(s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0){
+                printf("messed up order, seeking?, skiping current b frame\n");
+                return FRAME_SKIPED;
+            }
+        }
+    }
+//    printf("%d %d %d %d %d\n", seq, (int)s->time, (int)s->last_non_b_time, s->pp_time, s->pb_time);
+    
     for(i=0; i<6; i++){
         if(s->mb_width*s->mb_height < ff_mba_max[i]) break;
     }
@@ -390,10 +426,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
                    seq, s->mb_x, s->mb_y, s->pict_type, s->qscale, s->no_rounding);
     }
 
-    if (s->pict_type == B_TYPE){
-        av_log(s->avctx, AV_LOG_ERROR, "b frame not supported\n");
-        return -1;
-    }
+    assert(s->pict_type != B_TYPE || !s->low_delay);
 
     return s->mb_width*s->mb_height - mb_pos;
 }
@@ -414,14 +447,17 @@ static int rv10_decode_init(AVCodecContext *avctx)
     case 0x10000000:
         s->rv10_version= 0;
         s->h263_long_vectors=0;
+        s->low_delay=1;
         break;
     case 0x10003000:
         s->rv10_version= 3;
         s->h263_long_vectors=1;
+        s->low_delay=1;
         break;
     case 0x10003001:
         s->rv10_version= 3;
         s->h263_long_vectors=0;
+        s->low_delay=1;
         break;
     case 0x20001000:
     case 0x20100001: //ok
@@ -613,9 +649,15 @@ static int rv10_decode_frame(AVCodecContext *avctx,
 
     if(s->mb_y>=s->mb_height){
         MPV_frame_end(s);
-        
-        *pict= *(AVFrame*)&s->current_picture;
     
+        if(s->pict_type==B_TYPE || s->low_delay){
+            *pict= *(AVFrame*)&s->current_picture;
+            ff_print_debug_info(s, s->current_picture_ptr);
+        } else {
+            *pict= *(AVFrame*)&s->last_picture;
+            ff_print_debug_info(s, s->last_picture_ptr);
+        }
+        
         *data_size = sizeof(AVFrame);
     }else{
         *data_size = 0;
@@ -647,3 +689,4 @@ AVCodec rv20_decoder = {
     rv10_decode_frame,
     CODEC_CAP_DR1
 };
+

@@ -135,7 +135,8 @@ typedef struct Picture{
      */
     uint8_t *interpolated[3];
     
-    int16_t (*motion_val[2])[2];
+    int16_t (*motion_val_base[2])[2];
+    int16_t (*motion_val[2])[2];       ///< motion_val_base+1, so motion_val[][-1] doesnt segfault
     int8_t *ref_index[2];
     uint32_t *mb_type_base;
     uint32_t *mb_type;           ///< mb_type_base + mb_width + 2, note: only used for decoding currently
@@ -149,7 +150,7 @@ typedef struct Picture{
 #define MB_TYPE_INTERLACED 0x0080
 #define MB_TYPE_DIRECT2     0x0100 //FIXME
 #define MB_TYPE_ACPRED     0x0200
-#define MB_TYPE_GMC        0x0400 //FIXME mpeg4 specific
+#define MB_TYPE_GMC        0x0400
 #define MB_TYPE_SKIP       0x0800
 #define MB_TYPE_P0L0       0x1000
 #define MB_TYPE_P1L0       0x2000
@@ -159,7 +160,8 @@ typedef struct Picture{
 #define MB_TYPE_L1         (MB_TYPE_P0L1 | MB_TYPE_P1L1)
 #define MB_TYPE_L0L1       (MB_TYPE_L0   | MB_TYPE_L1)
 #define MB_TYPE_QUANT      0x00010000
-//Note bits 24-31 are reserved for codec specific use (h264 ref0, mpeg1 pat, ...)
+#define MB_TYPE_CBP        0x00020000
+//Note bits 24-31 are reserved for codec specific use (h264 ref0, mpeg1 0mv, ...)
 
 #define IS_INTRA4x4(a)   ((a)&MB_TYPE_INTRA4x4)
 #define IS_INTRA16x16(a) ((a)&MB_TYPE_INTRA16x16)
@@ -183,6 +185,7 @@ typedef struct Picture{
 #define IS_QUANT(a)      ((a)&MB_TYPE_QUANT)
 #define IS_DIR(a, part, list) ((a) & (MB_TYPE_P0L0<<((part)+2*(list))))
 #define USES_LIST(a, list) ((a) & ((MB_TYPE_P0L0|MB_TYPE_P1L0)<<(2*(list)))) ///< does this mb use listX, note doesnt work if subMBs
+#define HAS_CBP(a)        ((a)&MB_TYPE_CBP)
 
 
     int field_poc[2];           ///< h264 top/bottom POC
@@ -296,6 +299,8 @@ typedef struct MpegEncContext {
     int b_frames_since_non_b;  ///< used for encoding, relative to not yet reordered input 
     int mb_width, mb_height;   ///< number of MBs horizontally & vertically 
     int mb_stride;             ///< mb_width+1 used for some arrays to allow simple addressng of left & top MBs withoutt sig11
+    int b8_stride;             ///< 2*mb_width+1 used for some 8x8 block arrays to allow simple addressng
+    int b4_stride;             ///< 4*mb_width+1 used for some 4x4 block arrays to allow simple addressng
     int h_edge_pos, v_edge_pos;///< horizontal / vertical position of the right/bottom edge (pixel replicateion)
     int mb_num;                ///< number of MBs of a picture 
     int linesize;              ///< line size, in bytes, may be different from width 

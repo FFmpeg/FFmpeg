@@ -1109,7 +1109,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
         }
     } else {
         if (mb_type & MB_TYPE_ZERO_MV){
-            assert(mb_type & MB_TYPE_PAT);
+            assert(mb_type & MB_TYPE_CBP);
 
             /* compute dct type */
             if (s->picture_structure == PICT_FRAME && //FIXME add a interlaced_dct coded var?
@@ -1140,7 +1140,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
 
             /* compute dct type */
             if (s->picture_structure == PICT_FRAME && //FIXME add a interlaced_dct coded var?
-                !s->frame_pred_frame_dct && IS_PAT(mb_type)) {
+                !s->frame_pred_frame_dct && HAS_CBP(mb_type)) {
                 s->interlaced_dct = get_bits1(&s->gb);
             }
 
@@ -1266,7 +1266,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
         
         s->mb_intra = 0;
 
-        if (IS_PAT(mb_type)) {
+        if (HAS_CBP(mb_type)) {
             cbp = get_vlc2(&s->gb, mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
             if (cbp < 0){
                 av_log(s->avctx, AV_LOG_ERROR, "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
