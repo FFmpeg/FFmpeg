@@ -165,6 +165,9 @@ static int debug_mv = 0;
 static int me_threshold = 0;
 static int mb_threshold = 0;
 static int intra_dc_precision = 0;
+static int coder = 0;
+static int context = 0;
+static int predictor = 0;
 extern int loop_input; /* currently a hack */
 
 static int gop_size = 12;
@@ -601,7 +604,7 @@ static void do_video_out(AVFormatContext *s,
             nb_frames = 2;
         else if (av_delay > AV_DELAY_MAX)
             nb_frames = 0;
-//        printf("delay=%f nb=%d (A)\n", av_delay, nb_frames);
+//        printf("adelta=%f vdelta=%f delay=%f nb=%d (A)\n", adelta, vdelta, av_delay, nb_frames);
     } else {
         double vdelta;
 
@@ -2900,6 +2903,9 @@ static void opt_output_file(const char *filename)
                 video_enc->noise_reduction= noise_reduction;
                 video_enc->scenechange_threshold= sc_threshold;
                 video_enc->me_range = me_range;
+                video_enc->coder_type= coder;
+                video_enc->context_model= context;
+                video_enc->prediction_method= predictor;
 
                 if(packet_size){
                     video_enc->rtp_mode= 1;
@@ -3583,6 +3589,9 @@ const OptionDef options[] = {
     { "sc_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sc_threshold}, "scene change threshold", "threshold" },
     { "me_range", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_range}, "limit motion vectors range (1023 for DivX player)", "range" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
+    { "coder", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&coder}, "coder type", "" },
+    { "context", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&context}, "context model", "" },
+    { "pred", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&predictor}, "prediction method", "" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
