@@ -29,6 +29,8 @@ else
     do_rv10=y
     do_mp2=y
     do_ac3=y
+    do_rc=y
+    do_mpeg4adv=y
 fi
 
 
@@ -128,6 +130,26 @@ if [ -n "$do_mpeg4" ] ; then
 # mpeg4
 file=${outfile}odivx.avi
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+
+# mpeg4 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_rc" ] ; then
+# mpeg4 rate control
+file=${outfile}mpeg4-rc.avi
+do_ffmpeg $file -y -b 400 -bf 2 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+
+# mpeg4 rate control decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_mpeg4adv" ] ; then
+# mpeg4
+file=${outfile}mpeg4-adv.avi
+do_ffmpeg $file -y -qscale 9 -4mv -hq -part -ps 1000 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 

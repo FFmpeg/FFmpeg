@@ -117,6 +117,8 @@ static int do_deinterlace = 0;
 static int workaround_bugs = 0;
 static int error_resilience = 0;
 static int dct_algo = 0;
+static int use_part = 0;
+static int packet_size = 0;
 
 static int gop_size = 12;
 static int intra_only = 0;
@@ -1570,6 +1572,11 @@ void opt_i_qoffset(const char *arg)
     video_i_qoffset = atof(arg);
 }
 
+void opt_packet_size(const char *arg)
+{
+    packet_size= atoi(arg);
+}
+
 void opt_audio_bitrate(const char *arg)
 {
     audio_bit_rate = atoi(arg) * 1000;
@@ -1886,6 +1893,10 @@ void opt_output_file(const char *filename)
                 video_enc->flags |= CODEC_FLAG_4MV;
             }
             
+            if(use_part)
+                video_enc->flags |= CODEC_FLAG_PART;
+               
+            
             if (b_frames) {
                 if (codec_id != CODEC_ID_MPEG4) {
                     fprintf(stderr, "\nB frames encoding only supported by MPEG-4.\n");
@@ -1911,6 +1922,10 @@ void opt_output_file(const char *filename)
             video_enc->i_quant_offset = video_i_qoffset;
             video_enc->b_quant_offset = video_b_qoffset;
             video_enc->dct_algo = dct_algo;
+            if(packet_size){
+                video_enc->rtp_mode= 1;
+                video_enc->rtp_payload_size= packet_size;
+            }
             
             if (do_psnr)
                 video_enc->get_psnr = 1;
@@ -2276,7 +2291,9 @@ const OptionDef options[] = {
     { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
     { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },
     { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
+    { "part", OPT_BOOL | OPT_EXPERT, {(void*)&use_part}, "use data partitioning (only MPEG-4)" },
     { "bug", HAS_ARG | OPT_EXPERT, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
+    { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "packet size", "size in bits" },
     { "sameq", OPT_BOOL, {(void*)&same_quality}, 
       "use same video quality as source (implies VBR)" },
     /* audio options */
