@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4609
+#define LIBAVFORMAT_BUILD       4610
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -31,12 +31,15 @@ extern "C" {
 #define AV_TIME_BASE 1000000
 
 typedef struct AVPacket {
-    int64_t pts; /* presentation time stamp in stream units (set av_set_pts_info) */
+    int64_t pts; /* presentation time stamp in AV_TIME_BASE units (or
+                    pts_den units in muxers or demuxers) */
+    int64_t dts; /* decompression time stamp in AV_TIME_BASE units (or
+                    pts_den units in muxers or demuxers) */
     uint8_t *data;
     int   size;
     int   stream_index;
     int   flags;
-    int   duration;
+    int   duration; /* presentation duration (0 if not available) */
     void  (*destruct)(struct AVPacket *);
     void  *priv;
 } AVPacket; 
@@ -46,11 +49,14 @@ typedef struct AVPacket {
 static inline void av_init_packet(AVPacket *pkt)
 {
     pkt->pts   = AV_NOPTS_VALUE;
+    pkt->dts   = AV_NOPTS_VALUE;
+    pkt->duration = 0;
     pkt->flags = 0;
     pkt->stream_index = 0;
 }
 
 int av_new_packet(AVPacket *pkt, int size);
+int av_dup_packet(AVPacket *pkt);
 
 /**
  * Free a packet
@@ -107,6 +113,8 @@ typedef struct AVFormatParameters {
     int mpeg2ts_compute_pcr:1; /* compute exact PCR for each transport
                                   stream packet (only meaningful if
                                   mpeg2ts_raw is TRUE */
+    int initial_pause:1;       /* do not begin to play the stream
+                                  immediately (RTSP only) */
 } AVFormatParameters;
 
 #define AVFMT_NOFILE        0x0001 /* no file should be opened */
@@ -158,9 +166,10 @@ typedef struct AVInputFormat {
     /* close the stream. The AVFormatContext and AVStreams are not
        freed by this function */
     int (*read_close)(struct AVFormatContext *);
-    /* seek at or before a given pts (given in microsecond). The pts
-       origin is defined by the stream */
-    int (*read_seek)(struct AVFormatContext *, int64_t pts);
+    /* seek at or before a given timestamp (given in AV_TIME_BASE
+       units) relative to the frames in stream component stream_index */
+    int (*read_seek)(struct AVFormatContext *, 
+                     int stream_index, int64_t timestamp);
     /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER */
     int flags;
     /* if extensions are defined, then no probe is done. You should
@@ -169,9 +178,25 @@ typedef struct AVInputFormat {
     const char *extensions;
     /* general purpose read only value that the format can use */
     int value;
+
+    /* start/resume playing - only meaningful if using a network based format
+       (RTSP) */
+    int (*read_play)(struct AVFormatContext *);
+
+    /* pause playing - only meaningful if using a network based format
+       (RTSP) */
+    int (*read_pause)(struct AVFormatContext *);
+
     /* private fields */
     struct AVInputFormat *next;
 } AVInputFormat;
+
+typedef struct AVIndexEntry {
+    int64_t pos;
+    int64_t timestamp;
+#define AVINDEX_KEYFRAME 0x0001
+    int flags;
+} AVIndexEntry;
 
 typedef struct AVStream {
     int index;    /* stream index in AVFormatContext */
@@ -181,9 +206,8 @@ typedef struct AVStream {
     int r_frame_rate_base;/* real frame rate base of the stream */
     void *priv_data;
     /* internal data used in av_find_stream_info() */
-    int codec_info_state;     
-    int codec_info_nb_repeat_frames;
-    int codec_info_nb_real_frames;
+    int64_t codec_info_duration;     
+    int codec_info_nb_frames;
     /* encoding: PTS generation when outputing stream */
     AVFrac pts;
     /* ffmpeg.c private use */
@@ -197,6 +221,20 @@ typedef struct AVStream {
     /* decoding: duration of the stream, in AV_TIME_BASE fractional
        seconds. */
     int64_t duration;
+
+    /* av_read_frame() support */
+    int need_parsing;
+    struct AVCodecParserContext *parser;
+    int got_frame;
+    int64_t cur_frame_pts;
+    int64_t cur_frame_dts;
+    int64_t cur_dts;
+    int last_IP_duration;
+    /* av_seek_frame() support */
+    AVIndexEntry *index_entries; /* only used if the format does not
+                                    support seeking natively */
+    int nb_index_entries;
+    int index_entries_allocated_size;
 } AVStream;
 
 #define AVFMTCTX_NOHEADER      0x0001 /* signal that no header is present
@@ -247,6 +285,24 @@ typedef struct AVFormatContext {
        available. Never set it directly if the file_size and the
        duration are known as ffmpeg can compute it automatically. */
     int bit_rate;
+
+    /* av_read_frame() support */
+    AVStream *cur_st;
+    const uint8_t *cur_ptr;
+    int cur_len;
+    AVPacket cur_pkt;
+
+    /* the following are used for pts/dts unit conversion */
+    int64_t last_pkt_stream_pts;
+    int64_t last_pkt_stream_dts;
+    int64_t last_pkt_pts;
+    int64_t last_pkt_dts;
+    int last_pkt_pts_frac;
+    int last_pkt_dts_frac;
+
+    /* av_seek_frame() support */
+    int64_t data_offset; /* offset of the first packet */
+    int index_built;
 } AVFormatContext;
 
 typedef struct AVPacketList {
@@ -373,6 +429,8 @@ int amr_init(void);
 int wav_init(void);
 
 /* raw.c */
+int pcm_read_seek(AVFormatContext *s, 
+                  int stream_index, int64_t timestamp);
 int raw_init(void);
 
 /* mp3.c */
@@ -436,7 +494,8 @@ AVOutputFormat *guess_stream_format(const char *short_name,
 AVOutputFormat *guess_format(const char *short_name, 
                              const char *filename, const char *mime_type);
 
-void av_hex_dump(uint8_t *buf, int size);
+void av_hex_dump(FILE *f, uint8_t *buf, int size);
+void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 
 void av_register_all(void);
 
@@ -468,9 +527,14 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 #define AVERROR_INVALIDDATA (-4)  /* invalid data found */
 #define AVERROR_NOMEM       (-5)  /* not enough memory */
 #define AVERROR_NOFMT       (-6)  /* unknown format */
-
+#define AVERROR_NOTSUPP     (-7)  /* operation not supported */
+ 
 int av_find_stream_info(AVFormatContext *ic);
 int av_read_packet(AVFormatContext *s, AVPacket *pkt);
+int av_read_frame(AVFormatContext *s, AVPacket *pkt);
+int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp);
+int av_read_play(AVFormatContext *s);
+int av_read_pause(AVFormatContext *s);
 void av_close_input_file(AVFormatContext *s);
 AVStream *av_new_stream(AVFormatContext *s, int id);
 void av_set_pts_info(AVFormatContext *s, int pts_wrap_bits,
