@@ -1,20 +1,20 @@
 /*
  * FFM (ffserver live feed) encoder and decoder
- * Copyright (c) 2001 Gerard Lantau.
+ * Copyright (c) 2001 Fabrice Bellard.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
 #include <unistd.h>
@@ -48,7 +48,7 @@ typedef struct FFMContext {
     int frame_offset;
     INT64 pts;
     UINT8 *packet_ptr, *packet_end;
-    UINT8 packet[1]; /* must be last */
+    UINT8 packet[FFM_PACKET_SIZE];
 } FFMContext;
 
 /* disable pts hack for testing */
@@ -249,6 +249,15 @@ static int ffm_write_trailer(AVFormatContext *s)
 
     put_flush_packet(pb);
 
+    if (!url_is_streamed(pb)) {
+        INT64 size;
+        /* update the write offset */
+        size = url_ftell(pb);
+        url_fseek(pb, 8, SEEK_SET);
+        put_be64(pb, size);
+        put_flush_packet(pb);
+    }
+
     for(i=0;i<s->nb_streams;i++)
         av_freep(&s->streams[i]->priv_data);
     return 0;
@@ -263,8 +272,11 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
     int len;
 
     len = ffm->packet_end - ffm->packet_ptr;
-    if (size <= len)
-        return 1;
+    if (!ffm_nopts) {
+        /* XXX: I don't understand this test, so I disabled it for testing */
+        if (size <= len)
+            return 1;
+    }
     pos = url_ftell(&s->pb);
     if (pos == ffm->write_index) {
         /* exactly at the end of stream */
@@ -283,7 +295,7 @@ static int ffm_is_avail_data(AVFormatContext *s, int size)
 
 /* first is true if we read the frame header */
 static int ffm_read_data(AVFormatContext *s,
-                          UINT8 *buf, int size, int first)
+                         UINT8 *buf, int size, int first)
 {
     FFMContext *ffm = s->priv_data;
     ByteIOContext *pb = &s->pb;
@@ -439,15 +451,16 @@ static int ffm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     switch(ffm->read_state) {
     case READ_HEADER:
-        if (!ffm_is_avail_data(s, FRAME_HEADER_SIZE))
+        if (!ffm_is_avail_data(s, FRAME_HEADER_SIZE)) {
             return -EAGAIN;
+        }
 #if 0
         printf("pos=%08Lx spos=%Lx, write_index=%Lx size=%Lx\n",
                url_ftell(&s->pb), s->pb.pos, ffm->write_index, ffm->file_size);
 #endif
-        if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) != FRAME_HEADER_SIZE)
+        if (ffm_read_data(s, ffm->header, FRAME_HEADER_SIZE, 1) != 
+            FRAME_HEADER_SIZE)
             return -EAGAIN;
-
 #if 0
         {
             int i;
@@ -604,28 +617,27 @@ static int ffm_read_close(AVFormatContext *s)
         st = s->streams[i];
         av_freep(&st->priv_data);
     }
-    av_freep(&s->priv_data);
     return 0;
 }
 
 static int ffm_probe(AVProbeData *p)
 {
-    if (memcmp(p->buf, "FFM", 3) == 0)
+    if (p->buf_size >= 4 &&
+        p->buf[0] == 'F' && p->buf[1] == 'F' && p->buf[2] == 'M' && 
+        p->buf[3] == '1')
         return AVPROBE_SCORE_MAX + 1;
-
     return 0;
 }
 
 AVInputFormat ffm_iformat = {
     "ffm",
     "ffm format",
-    sizeof(FFMContext) + FFM_PACKET_SIZE,
+    sizeof(FFMContext),
     ffm_probe,
     ffm_read_header,
     ffm_read_packet,
     ffm_read_close,
     ffm_seek,
-    extensions: "ffm",
 };
 
 AVOutputFormat ffm_oformat = {
@@ -633,7 +645,7 @@ AVOutputFormat ffm_oformat = {
     "ffm format",
     "",
     "ffm",
-    sizeof(FFMContext) + FFM_PACKET_SIZE,
+    sizeof(FFMContext),
     /* not really used */
     CODEC_ID_MP2,
     CODEC_ID_MPEG1VIDEO,
