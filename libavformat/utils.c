@@ -1739,6 +1739,7 @@ int av_find_stream_info(AVFormatContext *ic)
              st->codec.codec_id == CODEC_ID_H263 ||
              st->codec.codec_id == CODEC_ID_VORBIS ||
              st->codec.codec_id == CODEC_ID_MJPEG ||
+             st->codec.codec_id == CODEC_ID_PNG ||
              (st->codec.codec_id == CODEC_ID_MPEG4 && !st->need_parsing)))
             try_decode_frame(st, pkt->data, pkt->size);
         

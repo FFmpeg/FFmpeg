@@ -74,6 +74,7 @@ void avcodec_register_all(void)
 #endif
     register_avcodec(&mjpeg_encoder);
     register_avcodec(&ljpeg_encoder);
+    register_avcodec(&png_encoder);
     register_avcodec(&huffyuv_encoder);
     register_avcodec(&asv1_encoder);
     register_avcodec(&asv2_encoder);
@@ -126,6 +127,7 @@ void avcodec_register_all(void)
     register_avcodec(&mjpeg_decoder);
     register_avcodec(&mjpegb_decoder);
     register_avcodec(&sp5x_decoder);
+    register_avcodec(&png_decoder);
     register_avcodec(&mp2_decoder);
     register_avcodec(&mp3_decoder);
     register_avcodec(&mace3_decoder);

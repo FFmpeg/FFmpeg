@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4729
+#define LIBAVCODEC_BUILD       4730
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -152,6 +152,8 @@ enum CodecID {
 
     CODEC_ID_DTS,
     CODEC_ID_XVID,
+
+    CODEC_ID_PNG,    
 };
 
 /* CODEC_ID_MP3LAME is absolete */
@@ -1795,6 +1797,7 @@ extern AVCodec rv20_encoder;
 extern AVCodec dvvideo_encoder;
 extern AVCodec mjpeg_encoder;
 extern AVCodec ljpeg_encoder;
+extern AVCodec png_encoder;
 extern AVCodec mpeg4_encoder;
 extern AVCodec msmpeg4v1_encoder;
 extern AVCodec msmpeg4v2_encoder;
@@ -1838,6 +1841,7 @@ extern AVCodec wmav2_decoder;
 extern AVCodec mjpeg_decoder;
 extern AVCodec mjpegb_decoder;
 extern AVCodec sp5x_decoder;
+extern AVCodec png_decoder;
 extern AVCodec mp2_decoder;
 extern AVCodec mp3_decoder;
 extern AVCodec mace3_decoder;
