@@ -442,7 +442,7 @@ static void do_audio_out(AVFormatContext *s,
         if(fabs(delta) > 50){
             if(ist->is_start){
                 if(byte_delta < 0){
-                    byte_delta= FFMIN(byte_delta, size);
+                    byte_delta= FFMAX(byte_delta, -size);
                     size += byte_delta;
                     buf  -= byte_delta;
                     if(verbose > 2)
