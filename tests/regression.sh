@@ -20,7 +20,9 @@ elif [ "$1" = "libavtest" ] ; then
     logfile="$datadir/libav.regression"
 else
     do_mpeg=y
+    do_msmpeg4v2=y
     do_msmpeg4=y
+    do_wmv1=y
     do_h263=y
     do_mpeg4=y
     do_mjpeg=y
@@ -82,12 +84,32 @@ do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 fi
 
 ###################################
+if [ -n "$do_msmpeg4v2" ] ; then
+# msmpeg4 encoding
+file=${outfile}msmpeg4v2.avi
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec msmpeg4v2 $file
+
+# msmpeg4v2 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
 if [ -n "$do_msmpeg4" ] ; then
 # msmpeg4 encoding
 file=${outfile}msmpeg4.avi
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec msmpeg4 $file
 
 # msmpeg4 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_wmv1" ] ; then
+# wmv1 encoding
+file=${outfile}wmv1.avi
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec wmv1 $file
+
+# wmv1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
