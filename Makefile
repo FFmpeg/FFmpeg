@@ -1,5 +1,6 @@
+#
 # Main ffmpeg Makefile
-# (c) 2000, 2001, 2002 Gerard Lantau
+# (c) 2000, 2001, 2002 Fabrice Bellard
 #
 include config.mak
 
@@ -20,12 +21,11 @@ EXT=
 PROG=ffmpeg ffplay ffserver
 endif
 
+
 ifeq ($(BUILD_SHARED),yes)
-FFMPEG_LIB=-Llibavcodec -lffmpeg
-DEP_FFMPEG_LIB=
+DEP_LIBS=libavcodec/libavcodec.so libav/libavformat.a
 else
-FFMPEG_LIB=libavcodec/libavcodec.a
-DEP_FFMPEG_LIB=libavcodec/libavcodec.a
+DEP_LIBS=libavcodec/libavcodec.a libav/libavformat.a
 ifeq ($(CONFIG_MP3LAME),yes)
 EXTRALIBS+=-lmp3lame
 endif
@@ -40,11 +40,13 @@ lib:
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libav all
 
-ffmpeg$(EXE): ffmpeg.o libav/libav.a $(DEP_FFMPEG_LIB)
-	$(CC) $(LDFLAGS) -o $@ $^ $(FFMPEG_LIB) $(EXTRALIBS)
+ffmpeg$(EXE): ffmpeg.o $(DEP_LIBS)
+	$(CC) $(LDFLAGS) -o $@ ffmpeg.o -L./libavcodec -L./libav \
+              -lavformat -lavcodec $(EXTRALIBS)
 
-ffserver$(EXE): ffserver.o libav/libav.a $(DEP_FFMPEG_LIB)
-	$(CC) $(LDFLAGS) -o $@ $^ $(FFMPEG_LIB) $(EXTRALIBS)
+ffserver$(EXE): ffserver.o $(DEP_LIBS)
+	$(CC) $(LDFLAGS) -o $@ ffserver.o -L./libavcodec -L./libav \
+              -lavformat -lavcodec $(EXTRALIBS)
 
 ffplay: ffmpeg$(EXE)
 	ln -sf $< $@
