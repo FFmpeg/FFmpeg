@@ -281,22 +281,50 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
         ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val1= ac_val;
         if(dir[n]){
+            const int xy= s->mb_x + s->mb_y*s->mb_width - s->mb_width;
+            /* top prediction */
             ac_val-= s->block_wrap[n]*16;
-            for(i=1; i<8; i++){
-                const int level= block[n][block_permute_op(i   )];
-                score0+= ABS(level);
-                score1+= ABS(level - ac_val[i+8]);
-                ac_val1[i  ]=    block[n][block_permute_op(i<<3)];
-                ac_val1[i+8]= level;
+            if(s->mb_y==0 || s->qscale == s->qscale_table[xy] || n==2 || n==3){
+                /* same qscale */
+                for(i=1; i<8; i++){
+                    const int level= block[n][block_permute_op(i   )];
+                    score0+= ABS(level);
+                    score1+= ABS(level - ac_val[i+8]);
+                    ac_val1[i  ]=    block[n][block_permute_op(i<<3)];
+                    ac_val1[i+8]= level;
+                }
+            }else{
+                /* different qscale, we must rescale */
+                for(i=1; i<8; i++){
+                    const int level= block[n][block_permute_op(i   )];
+                    score0+= ABS(level);
+                    score1+= ABS(level - ROUNDED_DIV(ac_val[i + 8]*s->qscale_table[xy], s->qscale));
+                    ac_val1[i  ]=    block[n][block_permute_op(i<<3)];
+                    ac_val1[i+8]= level;
+                }
             }
         }else{
+            const int xy= s->mb_x-1 + s->mb_y*s->mb_width;
+            /* left prediction */
             ac_val-= 16;
-            for(i=1; i<8; i++){
-                const int level= block[n][block_permute_op(i<<3)];
-                score0+= ABS(level);
-                score1+= ABS(level - ac_val[i]);
-                ac_val1[i  ]= level;
-                ac_val1[i+8]=    block[n][block_permute_op(i   )];
+            if(s->mb_x==0 || s->qscale == s->qscale_table[xy] || n==1 || n==3){
+                /* same qscale */
+                for(i=1; i<8; i++){
+                    const int level= block[n][block_permute_op(i<<3)];
+                    score0+= ABS(level);
+                    score1+= ABS(level - ac_val[i]);
+                    ac_val1[i  ]= level;
+                    ac_val1[i+8]=    block[n][block_permute_op(i   )];
+                }
+            }else{
+                /* different qscale, we must rescale */
+                for(i=1; i<8; i++){
+                    const int level= block[n][block_permute_op(i<<3)];
+                    score0+= ABS(level);
+                    score1+= ABS(level - ROUNDED_DIV(ac_val[i]*s->qscale_table[xy], s->qscale));
+                    ac_val1[i  ]= level;
+                    ac_val1[i+8]=    block[n][block_permute_op(i   )];
+                }
             }
         }
     }
@@ -1678,16 +1706,34 @@ static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
     ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
  
     if (dir == 0) {
+        const int xy= s->mb_x-1 + s->mb_y*s->mb_width;
         /* left prediction */
         ac_val -= 16;
-        for(i=1;i<8;i++) {
-            block[block_permute_op(i*8)] -= ac_val[i];
+        if(s->mb_x==0 || s->qscale == s->qscale_table[xy] || n==1 || n==3){
+            /* same qscale */
+            for(i=1;i<8;i++) {
+                block[block_permute_op(i*8)] -= ac_val[i];
+            }
+        }else{
+            /* different qscale, we must rescale */
+            for(i=1;i<8;i++) {
+                block[block_permute_op(i*8)] -= ROUNDED_DIV(ac_val[i]*s->qscale_table[xy], s->qscale);
+            }
         }
     } else {
+        const int xy= s->mb_x + s->mb_y*s->mb_width - s->mb_width;
         /* top prediction */
         ac_val -= 16 * s->block_wrap[n];
-        for(i=1;i<8;i++) {
-            block[block_permute_op(i)] -= ac_val[i + 8];
+        if(s->mb_y==0 || s->qscale == s->qscale_table[xy] || n==2 || n==3){
+            /* same qscale */
+            for(i=1;i<8;i++) {
+                block[block_permute_op(i)] -= ac_val[i + 8];
+            }
+        }else{
+            /* different qscale, we must rescale */
+            for(i=1;i<8;i++) {
+                block[block_permute_op(i)] -= ROUNDED_DIV(ac_val[i + 8]*s->qscale_table[xy], s->qscale);
+            }
         }
     }
 }
