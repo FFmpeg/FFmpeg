@@ -360,6 +360,11 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         return -1;
     }
     
+    if(s->last_picture_ptr==NULL && s->pict_type==B_TYPE){
+        av_log(s->avctx, AV_LOG_ERROR, "early B pix\n");
+        return -1;
+    }
+    
     if (get_bits(&s->gb, 1)){
         av_log(s->avctx, AV_LOG_ERROR, "unknown bit set\n");
         return -1;
