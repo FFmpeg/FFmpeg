@@ -1125,12 +1125,12 @@ static void globalInit(){
     for(i=0; i<768; i++)
     {
 	int v= clip_table[i];
-	clip_table16b[i]= le2me_16( v>>3);
-	clip_table16g[i]= le2me_16((v<<3)&0x07E0);
-	clip_table16r[i]= le2me_16((v<<8)&0xF800);
-	clip_table15b[i]= le2me_16( v>>3);
-	clip_table15g[i]= le2me_16((v<<2)&0x03E0);
-	clip_table15r[i]= le2me_16((v<<7)&0x7C00);
+	clip_table16b[i]=  v>>3;
+	clip_table16g[i]= (v<<3)&0x07E0;
+	clip_table16r[i]= (v<<8)&0xF800;
+	clip_table15b[i]=  v>>3;
+	clip_table15g[i]= (v<<2)&0x03E0;
+	clip_table15r[i]= (v<<7)&0x7C00;
     }
 
 cpuCaps= gCpuCaps;
@@ -1420,7 +1420,10 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		{
 			// FIXME multiple yuv2rgb converters wont work that way cuz that thing is full of globals&statics
 #ifdef WORDS_BIGENDIAN
-			yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_BGR);
+			if(dstFormat==IMGFMT_BGR32)
+				yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_BGR);
+			else
+				yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_RGB);
 #else
 			yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_RGB);
 #endif
