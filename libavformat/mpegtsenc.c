@@ -259,10 +259,10 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         MpegTSWriteStream *ts_st = st->priv_data;
         switch(st->codec.codec_type) {
         case CODEC_TYPE_VIDEO:
-            stream_type = STREAM_TYPE_VIDEO;
+            stream_type = STREAM_TYPE_VIDEO_MPEG2; //XXX/FIXME is this (and the define) correct?
             break;
         case CODEC_TYPE_AUDIO:
-            stream_type = STREAM_TYPE_AUDIO;
+            stream_type = STREAM_TYPE_AUDIO_MPEG1;
             break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;

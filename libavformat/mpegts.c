@@ -348,7 +348,7 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
 #ifdef DEBUG_SI
     printf("sid=0x%x sec_num=%d/%d\n", h->id, h->sec_num, h->last_sec_num);
 #endif
-    if (h->tid != PMT_TID || h->id != ts->req_sid)
+    if (h->tid != PMT_TID || (ts->req_sid >= 0 && h->id != ts->req_sid) )
         return;
 
     pcr_pid = get16(&p, p_end) & 0x1fff;
@@ -383,8 +383,10 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
 
         /* now create ffmpeg stream */
         switch(stream_type) {
-        case STREAM_TYPE_AUDIO:
-        case STREAM_TYPE_VIDEO:
+        case STREAM_TYPE_AUDIO_MPEG1:
+        case STREAM_TYPE_AUDIO_MPEG2:
+        case STREAM_TYPE_VIDEO_MPEG1:
+        case STREAM_TYPE_VIDEO_MPEG2:
             add_pes_stream(ts->stream, pid);
             break;
         default:
@@ -429,7 +431,7 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
         if (sid == 0x0000) {
             /* NIT info */
         } else {
-            if (ts->req_sid == sid) {
+            if (ts->req_sid == sid || ts->req_sid < 0) {
                 ts->pmt_filter = mpegts_open_section_filter(ts, pmt_pid, 
                                                             pmt_cb, ts, 1);
                 goto found;
@@ -861,28 +863,32 @@ static int mpegts_read_header(AVFormatContext *s,
     ts->auto_guess = 0;
     
     if (!ts->auto_guess) {
+        int sid = -1;
+        ts->set_service_ret = -1;
 
         /* first do a scaning to get all the services */
         url_fseek(pb, pos, SEEK_SET);
         mpegts_scan_sdt(ts);
         
         handle_packets(s, MAX_SCAN_PACKETS);
-        
-        /* if no service found, no need to do anything */
-        if (ts->nb_services <= 0)
-            return -1;
-        
-        /* now find the info for the first service */
-        
-        url_fseek(pb, pos, SEEK_SET);
-        service = ts->services[0];
+
+        if (ts->nb_services > 0)
+        {
+            /* tune to first service found */
+            service = ts->services[0];
+            sid = service->sid;
 #ifdef DEBUG_SI
-        printf("tuning to '%s'\n", service->name);
+            printf("tuning to '%s'\n", service->name);
 #endif
-        /* tune to first service found */
+        }
+
+        /* now find the info for the first service if we found any,
+           otherwise try to filter all PATs */
+
+        url_fseek(pb, pos, SEEK_SET);
         ts->stream = s;
-        mpegts_set_service(ts, service->sid, set_service_cb, ts);
-        
+        mpegts_set_service(ts, sid, set_service_cb, ts);
+
         handle_packets(s, MAX_SCAN_PACKETS);
 
         /* if could not find service, exit */
