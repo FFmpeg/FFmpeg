@@ -67,6 +67,7 @@ typedef struct SVQ1Context {
     AVCodecContext *avctx;
     DSPContext dsp;
     AVFrame picture;
+    AVFrame ref_picture[2];
     PutBitContext pb;
     GetBitContext gb;
     
@@ -1318,7 +1319,23 @@ static int encode_block(SVQ1Context *s, uint8_t *src, int stride, int level, int
     int h= 2<<((level+1)>>1);
     int size=w*h;
     int16_t block[7][256];
-    
+    const int intra= 1;
+    const int8_t *codebook_sum, *codebook;
+    const uint16_t (*mean_vlc)[2];
+    const uint8_t (*multistage_vlc)[2];
+
+    if(intra){
+        codebook_sum= svq1_intra_codebook_sum[level];
+        codebook= svq1_intra_codebooks[level];
+        mean_vlc= svq1_intra_mean_vlc;
+        multistage_vlc= svq1_intra_multistage_vlc[level];
+    }else{
+        codebook_sum= svq1_inter_codebook_sum[level];
+        codebook= svq1_inter_codebooks[level];
+        mean_vlc= svq1_inter_mean_vlc;
+        multistage_vlc= svq1_inter_multistage_vlc[level];
+    }
+
     best_score=0;
     for(y=0; y<h; y++){
         for(x=0; x<w; x++){
@@ -1338,14 +1355,14 @@ static int encode_block(SVQ1Context *s, uint8_t *src, int stride, int level, int
             int best_vector_score= INT_MAX;
             int best_vector_sum=-99, best_vector_mean=-99;
             const int stage= count-1;
-            int8_t *vector;
+            const int8_t *vector;
     
             for(i=0; i<16; i++){
-                int sum= svq1_intra_codebook_sum[level][stage*16 + i];
+                int sum= codebook_sum[stage*16 + i];
                 int sqr=0;
                 int diff, mean, score;
     
-                vector = svq1_intra_codebooks[level] + stage*size*16 + i*size;
+                vector = codebook + stage*size*16 + i*size;
     
                 for(j=0; j<size; j++){
                     int v= vector[j];
@@ -1364,15 +1381,15 @@ static int encode_block(SVQ1Context *s, uint8_t *src, int stride, int level, int
                 }
             }
             assert(best_vector_mean != -99);
-            vector= svq1_intra_codebooks[level] + stage*size*16 + best_vector[stage]*size;
+            vector= codebook + stage*size*16 + best_vector[stage]*size;
             for(j=0; j<size; j++){
                 block[stage+1][j] = block[stage][j] - vector[j];
             }
             block_sum[stage+1]= block_sum[stage] - best_vector_sum;
             best_vector_score += 
                 lambda*(+ 1 + 4*count
-                        + svq1_intra_multistage_vlc[level][1+count][1]
-                        + svq1_intra_mean_vlc[best_vector_mean][1]);
+                        + multistage_vlc[1+count][1]
+                        + mean_vlc[best_vector_mean][1]);
     
             if(best_vector_score < best_score){
                 best_score= best_vector_score;
@@ -1414,10 +1431,10 @@ static int encode_block(SVQ1Context *s, uint8_t *src, int stride, int level, int
             
         /* output the encoding */
         put_bits(&s->reorder_pb[level], 
-            svq1_intra_multistage_vlc[level][1 + best_count][1],
-            svq1_intra_multistage_vlc[level][1 + best_count][0]);
-        put_bits(&s->reorder_pb[level], svq1_intra_mean_vlc[best_mean][1],
-            svq1_intra_mean_vlc[best_mean][0]);
+            multistage_vlc[1 + best_count][1],
+            multistage_vlc[1 + best_count][0]);
+        put_bits(&s->reorder_pb[level], mean_vlc[best_mean][1],
+            mean_vlc[best_mean][0]);
 
         for (i = 0; i < best_count; i++){
             assert(best_vector[i]>=0 && best_vector[i]<16);
@@ -1653,7 +1670,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
     *p = *pict;
     p->pict_type = I_TYPE;
-    p->key_frame = 1;
+    p->key_frame = p->pict_type == I_TYPE;
 
     svq1_write_header(s, p->pict_type);
     svq1_encode_plane(s, s->picture.data[0], s->frame_width, s->frame_height, 
