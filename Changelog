@@ -1,0 +1,139 @@
+version 0.4.5:
+
+- some header fixes (Zdenek Kabelac <kabi@informatics.muni.cz>).
+- many MMX optimizations (Nick Kurshev <nickols_k@mail.ru>).
+- added configure system (actually a small shell script).
+- added mpeg audio layer 1/2/3 decoding using LGPL'ed mpglib by
+  Michael Hipp (temporary solution - waiting for integer only
+  decoder).
+- fixed VIDIOCSYNC interrupt.
+- added Intel H263 decoding support ('I263' avi fourCC)
+- added Real Video 1.0 decoding (needs further testing).
+- simplified image formats again. Added PGM format (=grey
+  pgm). Renamed old PGM to PGMYUV.
+- fixed msmpeg4 slice issues (tell me if you still find problems).
+- fixed opendivx bugs with newer versions (added VOL header decoding).
+- added support for mplayer interface.
+
+version 0.4.4:
+
+- fixed some std header definitions (Bjorn Lindgren
+  <bjorn.e.lindgren@telia.com>).
+- added mpeg demux (mpeg 1 and 2 compatible).
+- added ASF demux.
+- added prototype RM demux.
+- added AC3 decoding (done with libac3 by Aaron Holtzman).
+- added decoding codec parameter guessing (.e.g. for mpeg, because the
+  header does not include them).
+- fixed header generation in mpeg1, AVI and ASF mux : wmplayer can now
+  play them (only tested video).
+- fixed h263 white bug.
+- fixed phase rounding in img resample filter.
+- add mmx code for polyphase img resample filter.
+- added CPU autodetect.
+- added generic title/author/copyright/comment string handling (ASF and RM use them).
+- added SWF demux to extract MP3 track (not usable yet because no MP3
+  decoder).
+- added fractional frame rate support.
+- codecs are no longer searched by read_header() (should fix ffserver
+  segfault).
+
+version 0.4.3:
+
+- BGR24 patch (initial patch by Jeroen Vreeken <pe1rxq@amsat.org>).
+- fixed raw yuv output.
+- added motion rounding support in MPEG4.
+- fixed motion bug rounding in MSMPEG4.
+- added B frame handling in video core.
+- added full MPEG1 decoding support.
+- added partial (frame only) MPEG2 support.
+- changed the FOURCC code for H.263 to "U263" to be able to see the
++AVI/H.263 file with the UB Video H.263+ decoder. MPlayer works with
+this +codec ;) (JuanJo).
+- Halfpel motion estimation after mb type selection (JuanJo).
+- added pgm and .Y.U.V output format.
+- suppressed 'img:' protocol. Simply use: /tmp/test%d.[pgm|Y] as input or
+  output.
+- added pgmpipe I/O format (original patch from Martin Aumueller
+  <lists@reserv.at>, but changed completely since we use a format
+  instead of a protocol).
+
+version 0.4.2:
+
+- added H263/MPEG4/MSMPEG4 decoding support. MPEG4 decoding support
+  (for openDIVX) is almost complete: 8x8 MVs and rounding are
+  missing. MSMPEG4 support is complete.
+- added prototype MPEG1 decoder. Only I and P frames handled yet (it
+  can decode ffmpeg mpegs :-)).
+- added libavcodec API documentation (see apiexample.c).
+- fixed image polyphase bug (the bottom of some images could be
+  greenish).
+- added support for non clipped motion vectors (decoding only)
+  and image sizes non multiple of 16.
+- added support for AC prediction (decoding only).
+- added file overwrite confirmation (can be disabled with -y).
+- Added custom size picture to H.263 using H.263+ (Juanjo).
+
+version 0.4.1:
+
+- added MSMPEG4 (aka DIVX) compatible encoder. Changed default codec
+  of avi and asf to DIV3.
+- added -me option to set motion estimation method
+  (default=log). suppressed redundant -hq option.
+- added options -acodec and -vcodec to force a given codec (useful for
+  AVI for example).
+- fixed -an option.
+- improved dct_quantize speed.
+- factorized some motion estimation code.
+
+version 0.4.0:
+
+- removing grab code from ffserver and moved it to ffmpeg. Added multi
+  stream support to ffmpeg.
+- added timeshifting support for live feeds (option ?date=xxx in the
+  URL).
+- added high quality image resize code with polyphase filter (need
+  mmx/see optimisation). Enable multiple image size support in ffserver.
+- added multi live feed support in ffserver.
+- suppressed master feature from ffserver (it should be done with an
+  external program which opens the .ffm url and writes it to another
+  ffserver).
+- added preliminary support for video stream parsing (wav and avi half
+  done). Added proper support for audio/video file convertion in
+  ffmpeg.
+- added preliminary support for video file sending from ffserver.
+- redesigning I/O subsystem : now using URL based input and output
+  (see avio.h).
+- added wav format support.
+- added "tty user interface" to ffmpeg to stop grabbing gracefully.
+- added MMX/SSE optimizations to SAD (Sums of Absolutes Diferences)
+  (Juan J. Sierralta P. a.k.a. "Juanjo" <juanjo@atmlab.utfsm.cl>).
+- added MMX DCT from mpeg2_movie 1.5 (Juanjo).
+- added new motion estimation algorithms, log and phods (Juanjo).
+- changed directories : libav for format handling, libavcodec for
+  codecs.
+
+version 0.3.4:
+
+- added stereo in mpeg audio encoder.
+
+version 0.3.3:
+
+- added 'high quality' mode which use motion vectors. It can be used in
+  real time at low resolution.
+- fixed rounding problems which caused quality problems at high
+  bitrates and large gop size.
+
+version 0.3.2: small fixes
+
+- asf fixes
+- put_seek bug fix
+
+version 0.3.1: added avi/divx support
+
+- added avi support
+- added mpeg4 codec compatible with open divx. It is based on the h263
+  codec.
+- added sound for flash format (not tested)
+
+version 0.3: initial public release

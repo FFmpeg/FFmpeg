@@ -1,0 +1,8 @@
+
+1) Type './configure' create the configuration (use './configure
+--help' to have the configure options).
+
+2) Then type 'make' to build ffmpeg.
+
+3) Type 'make install' to install ffmpeg and ffserver in
+/usr/local/bin.

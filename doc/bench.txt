@@ -1,0 +1,52 @@
+
+source: MarsAttack, divx, 800 kbit/s
+
+q=10 constant:
+
+* full motion search, fcode=1, half pel:
+  Video: opendivx (hq), 640x352, 25 fps, 200 kb/s
+frame=  500 q=10 size=    1815kB time=20.0 bitrate= 743.6kbits/s
+
+* log motion search:
+  Video: opendivx (hq), 640x352, 25 fps, 200 kb/s
+frame=  500 q=10 size=    1995kB time=20.0 bitrate= 817.2kbits/s
+
+* no motion search:
+  Video: opendivx, 640x352, 25 fps, 200 kb/s
+frame=  500 size=    3197kB time=20.0 fps=25.0 bitrate=1309.6kbits/s q=10
+
+* log motion search:
+  Video: opendivx (hq), 640x352, 25 fps, 200 kb/s
+frame=  500 q=10 size=    1995kB time=20.0 bitrate= 817.2kbits/s
+
+./ffmpeg -me log -t 20 -g 100 -qscale 10 -i img:%d.pgm -an /tmp/b.avi
+  Stream #0.0: Video: msmpeg4, 640x352, 25 fps, 200 kb/s
+frame=  500 q=10 size=    1833kB time=20.0 bitrate= 750.9kbits/s    
+
+./ffmpeg -me full -t 20 -g 100 -qscale 10 -i img:%d.pgm -an /tmp/b.avi
+  Stream #0.0: Video: msmpeg4, 640x352, 25 fps, 200 kb/s
+frame=  500 q=10 size=    1793kB time=20.0 bitrate= 734.8kbits/s    
+
+-------------------------------------------
+
+* with -sameq, -me log
+
+./ffmpeg -g 100 -t 20 -sameq -i MarsAttacks_f800.avi -an /tmp/a.avi
+  Stream #0.0: Video: msmpeg4, 640x352, 25 fps, 200 kb/s
+frame=  500 q= 5 size=    2605kB time=20.0 bitrate=1067.1kbits/s
+
+./ffmpeg -g 100 -t 20 -sameq -i MarsAttacks_f800.avi -f mpeg1video -an /tmp/a.mpg
+  Stream #0.0: Video: mpeg1video, 640x352, 25 fps, 200 kb/s
+frame=  500 q= 5 size=    2655kB time=20.0 bitrate=1087.7kbits/s
+
+./ffmpeg -g 100 -t 20 -sameq -i MarsAttacks_f800.avi -vcodec opendivx -an /tmp/a.avi
+frame=  500 q= 5 size=    2774kB time=20.0 bitrate=1136.2kbits/s
+
+
+the matrix, complete, video only:
+
+source=14147kB
+
+ffmpeg:
+  mpeg1     17154kB (20%)
+  msmpeg4   17229kB
