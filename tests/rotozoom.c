@@ -188,8 +188,6 @@ void gen_image(int num, int w, int h)
   
   const int xj = -(h/2) * s;
   const int yj = -(h/2) * c;
-  
-  unsigned dep;
   int i,j;
   
   int x,y;
@@ -211,8 +209,11 @@ void gen_image(int num, int w, int h)
 #if 1
       put_pixel(i, j, ipol(tab_r, x, y), ipol(tab_g, x, y), ipol(tab_b, x, y));
 #else
-      dep = ((x>>16)&255) + (((y>>16)&255)<<8);
-      put_pixel(i, j, tab_r[dep], tab_g[dep], tab_b[dep]);
+      {
+          unsigned dep;
+          dep = ((x>>16)&255) + (((y>>16)&255)<<8);
+          put_pixel(i, j, tab_r[dep], tab_g[dep], tab_b[dep]);
+      }
 #endif
     }
   }
@@ -222,7 +223,7 @@ void gen_image(int num, int w, int h)
 #define W 256
 #define H 256
 
-void init_demo() {
+void init_demo(const char *filename) {
   int i,j;
   int h;
   int radian;
@@ -230,7 +231,12 @@ void init_demo() {
 
   FILE *fichier;
 
-  fichier = fopen("lena.pnm","r");
+  fichier = fopen(filename,"r");
+  if (!fichier) {
+      perror(filename);
+      exit(1);
+  }
+      
   fread(line, 1, 15, fichier);
   for (i=0;i<H;i++) {
     fread(line,1,3*W,fichier);
@@ -256,8 +262,8 @@ int main(int argc, char **argv)
     int w, h, i;
     char buf[1024];
 
-    if (argc != 2) {
-        printf("usage: %s directory/\n"
+    if (argc != 3) {
+        printf("usage: %s directory/ image.pnm\n"
                "generate a test video stream\n", argv[0]);
         exit(1);
     }
@@ -270,7 +276,7 @@ int main(int argc, char **argv)
     width = w;
     height = h;
 
-    init_demo();
+    init_demo(argv[2]);
 
     for(i=0;i<DEFAULT_NB_PICT;i++) {
         snprintf(buf, sizeof(buf), "%s%d.pgm", argv[1], i);
