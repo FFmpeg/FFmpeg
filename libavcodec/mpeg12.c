@@ -2586,37 +2586,6 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
     }
 }
 
-static void mpeg_decode_gop(AVCodecContext *avctx, 
-                            const uint8_t *buf, int buf_size){
-    Mpeg1Context *s1 = avctx->priv_data;
-    MpegEncContext *s = &s1->mpeg_enc_ctx;
-
-    int drop_frame_flag;
-    int time_code_hours, time_code_minutes;
-    int time_code_seconds, time_code_pictures;
-    int broken_link;
-
-    s->first_field = 0;
-
-    init_get_bits(&s->gb, buf, buf_size*8);
-
-    drop_frame_flag = get_bits1(&s->gb);
-    
-    time_code_hours=get_bits(&s->gb,5);
-    time_code_minutes = get_bits(&s->gb,6);
-    skip_bits1(&s->gb);//marker bit
-    time_code_seconds = get_bits(&s->gb,6);
-    time_code_pictures = get_bits(&s->gb,6);
-    /*broken_link indicate that after editing the
-      reference frames of the first B-Frames after GOP I-Frame
-      are missing (open gop)*/
-    broken_link = get_bits1(&s->gb);
-    if(broken_link == 1){
-//        avcodec_flush_buffers(avctx);
-        ff_mpeg_flush(avctx);
-    }
-}
-
 /**
  * finds the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
@@ -2754,7 +2723,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                                           buf_ptr, input_size);
                     break;
                 case GOP_START_CODE:
-    	            mpeg_decode_gop(avctx, buf_ptr, input_size);
+                    s2->first_field=0;
                     break;
                 default:
                     if (start_code >= SLICE_MIN_START_CODE &&
