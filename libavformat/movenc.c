@@ -1426,7 +1426,7 @@ static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (mov->mdat_written == 0) {
         mov_write_mdat_tag(pb, mov);
         mov->mdat_written = 1;
-        mov->time = s->timestamp;
+        mov->time = s->timestamp + 0x7C25B080; //1970 based -> 1904 based
     }
 
     trk->cluster[cl][id].pos = url_ftell(pb);
