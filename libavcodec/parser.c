@@ -281,7 +281,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     int32_t start_code;
     int frame_rate_index, ext_type, bytes_left;
     int frame_rate_ext_n, frame_rate_ext_d;
-    int top_field_first, repeat_first_field, progressive_frame;
+    int picture_structure, top_field_first, repeat_first_field, progressive_frame;
     int horiz_size_ext, vert_size_ext;
 
     s->repeat_pict = 0;
@@ -328,6 +328,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                     break;
                 case 0x8: /* picture coding extension */
                     if (bytes_left >= 5) {
+                        picture_structure = (buf[3]>>5)&3;
                         top_field_first = buf[3] & (1 << 7);
                         repeat_first_field = buf[3] & (1 << 1);
                         progressive_frame = buf[4] & (1 << 7);
@@ -343,6 +344,11 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                                 s->repeat_pict = 1;
                             }
                         }
+                        
+                        /* the packet only represents half a frame 
+                           XXX,FIXME maybe find a different solution */
+                        if(picture_structure != 3)
+                            s->repeat_pict = -1;
                     }
                     break;
                 }
