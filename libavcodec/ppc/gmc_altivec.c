@@ -1,5 +1,5 @@
 /*
- * GMC (???)
+ * GMC (Global Motion Compensation)
  * AltiVec-enabled
  * Copyright (c) 2003 Romain Dolbeau <romain@dolbeau.org>
  *

@@ -27,6 +27,8 @@
 extern int dct_quantize_altivec(MpegEncContext *s,  
         DCTELEM *block, int n,
         int qscale, int *overflow);
+extern void dct_unquantize_h263_altivec(MpegEncContext *s,
+                                        DCTELEM *block, int n, int qscale);
 
 extern void idct_put_altivec(UINT8 *dest, int line_size, INT16 *block);
 extern void idct_add_altivec(UINT8 *dest, int line_size, INT16 *block);
@@ -66,6 +68,7 @@ void MPV_common_init_ppc(MpegEncContext *s)
                 (s->avctx->dct_algo == FF_DCT_ALTIVEC))
         {
             s->dct_quantize = dct_quantize_altivec;
+            s->dct_unquantize_h263 = dct_unquantize_h263_altivec;
         }
     } else
 #endif
