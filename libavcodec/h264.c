@@ -380,6 +380,9 @@ static inline void fill_caches(H264Context *h, int mb_type){
     
     if(h->sps.mb_aff){
     //FIXME
+        topleft_xy = 0; /* avoid warning */
+        top_xy = 0; /* avoid warning */
+        topright_xy = 0; /* avoid warning */
     }else{
         topleft_xy = mb_xy-1 - s->mb_stride;
         top_xy     = mb_xy   - s->mb_stride;
@@ -2925,7 +2928,7 @@ static int decode_slice_header(H264Context *h){
     }
         
     if(h->nal_unit_type == NAL_IDR_SLICE){
-        int idr_pic_id= get_ue_golomb(&s->gb);
+        get_ue_golomb(&s->gb); /* idr_pic_id */
     }
    
     if(h->sps.poc_type==0){
@@ -2988,10 +2991,10 @@ static int decode_slice_header(H264Context *h){
     s->qscale = h->pps.init_qp + get_se_golomb(&s->gb); //slice_qp_delta
     //FIXME qscale / qp ... stuff
     if(h->slice_type == SP_TYPE){
-        int sp_for_switch_flag= get_bits1(&s->gb);
+        get_bits1(&s->gb); /* sp_for_switch_flag */
     }
     if(h->slice_type==SP_TYPE || h->slice_type == SI_TYPE){
-        int slice_qs_delta= get_se_golomb(&s->gb);
+        get_se_golomb(&s->gb); /* slice_qs_delta */
     }
 
     if( h->pps.deblocking_filter_parameters_present ) {
@@ -3198,7 +3201,8 @@ static int decode_mb(H264Context *h){
     s->dsp.clear_blocks(h->mb); //FIXME avoid if allready clear (move after skip handlong?    
 
     tprintf("pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
-
+    cbp = 0; /* avoid warning. FIXME: find a solution without slowing
+                down the code */
     if(h->slice_type != I_TYPE && h->slice_type != SI_TYPE){
         if(s->mb_skip_run==-1)
             s->mb_skip_run= get_ue_golomb(&s->gb);

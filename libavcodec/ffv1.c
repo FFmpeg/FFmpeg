@@ -865,6 +865,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
         if(bytes_read ==0) printf("error at end of AC stream\n");
 //printf("pos=%d\n", bytes_read);
         init_get_bits(&f->gb, buf + bytes_read, buf_size - bytes_read);
+    } else {
+        bytes_read = 0; /* avoid warning */
     }
     
     if(1){

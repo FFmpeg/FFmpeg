@@ -390,7 +390,7 @@ int ff_h263_decode_frame(AVCodecContext *avctx,
                              uint8_t *buf, int buf_size)
 {
     MpegEncContext *s = avctx->priv_data;
-    int ret,i;
+    int ret;
     AVFrame *pict = data; 
     float new_aspect;
     
