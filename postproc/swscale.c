@@ -689,7 +689,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		xDstInSrc= xInc/2 - 0x8000;
 		for(i=0; i<dstW; i++)
 		{
-			int xx= (xDstInSrc>>16) - (filterSize>>1) + 1;
+			int xx= (xDstInSrc - ((filterSize-1)<<15) + (1<<15))>>16;
 
 			(*filterPos)[i]= xx;
 			filter[i]= 1.0;
@@ -709,7 +709,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		xDstInSrc= xInc/2 - 0x8000;
 		for(i=0; i<dstW; i++)
 		{
-			int xx= (xDstInSrc>>16) - (filterSize>>1) + 1;
+			int xx= (xDstInSrc - ((filterSize-1)<<15) + (1<<15))>>16;
 			int j;
 
 			(*filterPos)[i]= xx;
@@ -1125,7 +1125,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	/* avoid dupplicate Formats, so we dont need to check to much */
 	if(srcFormat==IMGFMT_IYUV) srcFormat=IMGFMT_I420;
 	if(srcFormat==IMGFMT_Y8)   srcFormat=IMGFMT_Y800;
-	
+	if(dstFormat==IMGFMT_Y8)   dstFormat=IMGFMT_Y800;
+
 	if(!isSupportedIn(srcFormat)) return NULL;
 	if(!isSupportedOut(dstFormat)) return NULL;
 
