@@ -178,6 +178,17 @@ typedef struct MpegEncContext {
     double short_term_qsum;   /* sum of recent qscales */
     double short_term_qcount; /* count of recent qscales */
 
+    /* statistics, used for 2-pass encoding */
+    int mv_bits;
+    int header_bits;
+    int i_tex_bits;
+    int p_tex_bits;
+    int i_count;
+    int p_count;
+    int skip_count;
+    int misc_bits; // cbp, mb_type
+    int last_bits; //temp var used for calculating the above vars
+
     /* H.263 specific */
     int gob_number;
     int gob_index;

@@ -542,7 +542,15 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     encode_picture(s, s->picture_number);
     avctx->key_frame = (s->pict_type == I_TYPE);
-    
+    avctx->header_bits = s->header_bits;
+    avctx->mv_bits     = s->mv_bits;
+    avctx->misc_bits   = s->misc_bits;
+    avctx->i_tex_bits  = s->i_tex_bits;
+    avctx->p_tex_bits  = s->p_tex_bits;
+    avctx->i_count     = s->i_count;
+    avctx->p_count     = s->p_count;
+    avctx->skip_count  = s->skip_count;
+
     MPV_frame_end(s);
     s->picture_number++;
     s->picture_in_gop_number++;
@@ -554,6 +562,9 @@ int MPV_encode_picture(AVCodecContext *avctx,
     s->last_frame_bits= s->frame_bits;
     s->frame_bits  = (pbBufPtr(&s->pb) - s->pb.buf) * 8;
     s->total_bits += s->frame_bits;
+    avctx->frame_bits  = s->frame_bits;
+//printf("fcode: %d, type: %d, head: %d, mv: %d, misc: %d, frame: %d, itex: %d, ptex: %d\n", 
+//s->f_code, avctx->key_frame, s->header_bits, s->mv_bits, s->misc_bits, s->frame_bits, s->i_tex_bits, s->p_tex_bits);
 
     avctx->quality = s->qscale;
     if (avctx->get_psnr) {
@@ -1071,6 +1082,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     int mb_x, mb_y, wrap, last_gob, pdif = 0;
     UINT8 *ptr;
     int i, motion_x, motion_y;
+    int bits;
 
     s->picture_number = picture_number;
 
@@ -1134,7 +1146,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
         for(i=MAX_FCODE; i>1; i--){
             loose+= mv_num[i];
-            if(loose > 4) break; //FIXME this is pretty ineffective
+            if(loose > 10) break; //FIXME this is pretty ineffective
         }
         s->f_code= i;
     }else{
@@ -1179,6 +1191,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         convert_matrix(s->q_non_intra_matrix, s->q_non_intra_matrix16, s->non_intra_matrix, s->qscale);
     }
 
+    s->last_bits= get_bit_count(&s->pb);
     switch(s->out_format) {
     case FMT_MJPEG:
         mjpeg_picture_header(s);
@@ -1197,7 +1210,17 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         mpeg1_encode_picture_header(s, picture_number);
         break;
     }
-        
+    bits= get_bit_count(&s->pb);
+    s->header_bits= bits - s->last_bits;
+    s->last_bits= bits;
+    s->mv_bits=0;
+    s->misc_bits=0;
+    s->i_tex_bits=0;
+    s->p_tex_bits=0;
+    s->i_count=0;
+    s->p_count=0;
+    s->skip_count=0;
+
     /* init last dc values */
     /* note: quant matrix value (8) is implied here */
     s->last_dc[0] = 128;
@@ -1372,7 +1395,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 mjpeg_encode_mb(s, s->block);
                 break;
             }
-
+            
             /* decompress blocks so that we keep the state of the decoder */
             s->mv[0][0][0] = motion_x;
             s->mv[0][0][1] = motion_y;
@@ -1394,7 +1417,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->first_gob_line = 0;
         }
     }
-    
+
     if (s->h263_msmpeg4 && s->pict_type == I_TYPE)
         msmpeg4_encode_ext_header(s);
 

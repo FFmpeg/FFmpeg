@@ -145,6 +145,17 @@ typedef struct AVCodecContext {
     float psnr_y;
     float psnr_cb;
     float psnr_cr;
+    
+    /* statistics, used for 2-pass encoding */
+    int mv_bits;
+    int header_bits;
+    int i_tex_bits;
+    int p_tex_bits;
+    int i_count;
+    int p_count;
+    int skip_count;
+    int misc_bits; // cbp, mb_type
+    int frame_bits;
                  
     /* the following fields are ignored */
     void *opaque;   /* can be used to carry app specific stuff */

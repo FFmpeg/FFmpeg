@@ -245,6 +245,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
 		    int motion_x, int motion_y)
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y;
+    int bits;
     
     //    printf("**mb x=%d y=%d\n", s->mb_x, s->mb_y);
     if (!s->mb_intra) {
@@ -257,6 +258,9 @@ void mpeg4_encode_mb(MpegEncContext * s,
         if ((cbp | motion_x | motion_y) == 0) {
             /* skip macroblock */
             put_bits(&s->pb, 1, 1);
+            s->misc_bits++;
+            s->last_bits++;
+            s->skip_count++;
             return;
         }
         put_bits(&s->pb, 1, 0);	/* mb coded */
@@ -267,6 +271,10 @@ void mpeg4_encode_mb(MpegEncContext * s,
         cbpy = cbp >> 2;
         cbpy ^= 0xf;
         put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+            
+        bits= get_bit_count(&s->pb);
+        s->misc_bits+= bits - s->last_bits;
+        s->last_bits=bits;
 
         /* motion vectors: 16x16 mode only now */
         h263_pred_motion(s, 0, &pred_x, &pred_y);
@@ -274,10 +282,18 @@ void mpeg4_encode_mb(MpegEncContext * s,
         h263_encode_motion(s, motion_x - pred_x);
         h263_encode_motion(s, motion_y - pred_y);
 
+        bits= get_bit_count(&s->pb);
+        s->mv_bits+= bits - s->last_bits;
+        s->last_bits=bits;
+
         /* encode each block */
         for (i = 0; i < 6; i++) {
             mpeg4_encode_block(s, block[i], i, 0, zigzag_direct);
         }
+        bits= get_bit_count(&s->pb);
+        s->p_tex_bits+= bits - s->last_bits;
+        s->last_bits=bits;
+        s->p_count++;
     } else {
         int dc_diff[6];   //dc values with the dc prediction subtracted 
         int dir[6];  //prediction direction
@@ -340,10 +356,19 @@ void mpeg4_encode_mb(MpegEncContext * s,
         cbpy = cbp >> 2;
         put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
 
+        bits= get_bit_count(&s->pb);
+        s->misc_bits+= bits - s->last_bits;
+        s->last_bits=bits;
+
         /* encode each block */
         for (i = 0; i < 6; i++) {
             mpeg4_encode_block(s, block[i], i, dc_diff[i], scan_table[i]);
         }
+
+        bits= get_bit_count(&s->pb);
+        s->i_tex_bits+= bits - s->last_bits;
+        s->last_bits=bits;
+        s->i_count++;
 
         /* restore ac coeffs & last_index stuff if we messed them up with the prediction */
         if(s->ac_pred){
