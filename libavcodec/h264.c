@@ -2540,8 +2540,6 @@ static int alloc_tables(H264Context *h){
         }
     }
 
-    CHECKED_ALLOCZ(s->obmc_scratchpad, 16*s->linesize + 2*8*s->uvlinesize);
-    
     return 0;
 fail:
     free_tables(h);
@@ -2612,6 +2610,11 @@ static void frame_start(H264Context *h){
         h->block_offset[16+i]=
         h->block_offset[20+i]= 4*((scan8[i] - scan8[0])&7) + 4*s->uvlinesize*((scan8[i] - scan8[0])>>3);
     }
+
+    /* can't be in alloc_tables because linesize isn't known there.
+     * FIXME: redo bipred weight to not require extra buffer? */
+    if(!s->obmc_scratchpad)
+        s->obmc_scratchpad = av_malloc(16*s->linesize + 2*8*s->uvlinesize);
 
 //    s->decode= (s->flags&CODEC_FLAG_PSNR) || !s->encoding || s->current_picture.reference /*|| h->contains_intra*/ || 1;
 }
