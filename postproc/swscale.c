@@ -160,7 +160,7 @@ static    int clip_yuvtab_1a1e[768];
 static    int clip_yuvtab_40cf[768];
 
 //global sws_flags from the command line
-int sws_flags=0;
+int sws_flags=2;
 
 //global srcFilter
 SwsFilter src_filter= {NULL, NULL, NULL, NULL};
