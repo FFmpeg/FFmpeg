@@ -407,7 +407,7 @@ fi
 if [ -n "$do_svq1" ] ; then
 # svq1 encoding
 file=${outfile}svq1.mov
-do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec svq1 -pix_fmt yuv410p $file
+do_ffmpeg $file -y -f pgmyuv -i $raw_src -an -vcodec svq1 -qscale 3 -pix_fmt yuv410p $file
 
 # svq1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
