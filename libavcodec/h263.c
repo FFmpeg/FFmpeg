@@ -2809,6 +2809,10 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
     }else{
         s->time= (s->last_time_base + time_incr)*s->time_increment_resolution + time_increment;
         s->bp_time= s->last_non_b_time - s->time;
+        if(s->pp_time <=s->bp_time){
+//            printf("messed up order, seeking?, skiping current b frame\n");
+            return FRAME_SKIPED;
+        }
     }
 
     if(check_marker(&s->gb, "before vop_coded")==0 && s->picture_number==0){
