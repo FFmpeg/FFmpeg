@@ -40,20 +40,26 @@ void rgb24to32(const uint8_t *src,uint8_t *dst,unsigned src_size)
     __asm __volatile(
 	PREFETCH"	32%1\n\t"
 	"movd	%1, %%mm0\n\t"
-	"movd	3%1, %%mm1\n\t"
-	"movd	6%1, %%mm2\n\t"
-	"movd	9%1, %%mm3\n\t"
-	"punpckldq %%mm1, %%mm0\n\t"
-	"punpckldq %%mm3, %%mm2\n\t"
+	"punpckldq 3%1, %%mm0\n\t"
+	"movd	6%1, %%mm1\n\t"
+	"punpckldq 9%1, %%mm1\n\t"
+	"movd	12%1, %%mm2\n\t"
+	"punpckldq 15%1, %%mm2\n\t"
+	"movd	18%1, %%mm3\n\t"
+	"punpckldq 21%1, %%mm3\n\t"
 	"pand	%%mm7, %%mm0\n\t"
+	"pand	%%mm7, %%mm1\n\t"
 	"pand	%%mm7, %%mm2\n\t"
+	"pand	%%mm7, %%mm3\n\t"
 	MOVNTQ"	%%mm0, %0\n\t"
-	MOVNTQ"	%%mm2, 8%0"
+	MOVNTQ"	%%mm1, 8%0\n\t"
+	MOVNTQ"	%%mm2, 16%0\n\t"
+	MOVNTQ"	%%mm3, 24%0"
 	:"=m"(*dest)
 	:"m"(*s)
 	:"memory");
-    dest += 16;
-    s += 12;
+    dest += 32;
+    s += 24;
   }
   __asm __volatile(SFENCE:::"memory");
   __asm __volatile(EMMS:::"memory");
@@ -249,6 +255,48 @@ void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 	unsigned j,i,num_pixels=src_size/3;
 	uint16_t *d = (uint16_t *)dst;
+#if 0/*def HAVE_MMX*/
+	unsigned mm_npix;
+	const uint64_t mm_fc = 0xFCFCFCFCFCFCFCFCULL, mm_f8 = 0xF8F8F8F8F8F8F8F8ULL;
+	mm_npix = ((num_pixels)/(MMREG_SIZE*2))*(MMREG_SIZE*2);
+	num_pixels -= mm_npix;
+	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
+	__asm __volatile(
+	    "movq	%0, %%mm7\n\t"
+	    "movq	%1, %%mm6\n\t"
+	    ::"m"(mm_fc),"m"(mm_f8));
+
+	for(j=0,i=0;j<mm_npix;j+=4,i+=12)
+	{
+	    __asm __volatile(
+		PREFETCH" 32%1\n\t"
+		"movd	%1, %%mm0\n\t"
+		"punpckldq 3%1, %%mm0\n\t"
+		"movd	6%1, %%mm3\n\t"
+		"punpckldq 9%1, %%mm3\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm0, %%mm2\n\t"
+		"movq	%%mm3, %%mm4\n\t"
+		"movq	%%mm3, %%mm5\n\t"
+		"psrlq	$3, %%mm0\n\t"
+		"psrlq	$3, %%mm3\n\t"
+		"pand	%%mm7, %%mm1\n\t"
+		"pand	%%mm7, %%mm4\n\t"
+		"psllq	$3, %%mm1\n\t"
+		"psllq	$3, %%mm4\n\t"
+		"pand	%%mm6, %%mm2\n\t"
+		"pand	%%mm6, %%mm5\n\t"
+		"psllq	$8, %%mm2\n\t"
+		"psllq	$8, %%mm5\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm2, %%mm0\n\t"
+		"por	%%mm4, %%mm3\n\t"
+		"por	%%mm5, %%mm3\n\t"
+		"punpcklwd %%mm3, %%mm0\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		:"=m"(d[j]):"m"(src[i]):"memory");
+	}
+#endif
 	for(i=0,j=0; j<num_pixels; i+=3,j++)
 	{
 		const int b= src[i+0];
