@@ -1652,7 +1652,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
     emms_c();
 
-    if (s->h263_msmpeg4 && s->pict_type == I_TYPE)
+    if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type == I_TYPE)
         msmpeg4_encode_ext_header(s);
 
     //if (s->gob_number)

@@ -17,6 +17,7 @@ enum CodecID {
     CODEC_ID_MSMPEG4V1,
     CODEC_ID_MSMPEG4V2,
     CODEC_ID_MSMPEG4V3,
+    CODEC_ID_WMV1,
     CODEC_ID_H263P,
     CODEC_ID_H263I,
 
@@ -212,6 +213,7 @@ extern AVCodec mpeg4_decoder;
 extern AVCodec msmpeg4v1_decoder;
 extern AVCodec msmpeg4v2_decoder;
 extern AVCodec msmpeg4v3_decoder;
+extern AVCodec wmv1_decoder;
 extern AVCodec mpeg_decoder;
 extern AVCodec h263i_decoder;
 extern AVCodec rv10_decoder;

@@ -62,6 +62,11 @@ static int h263_decode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->msmpeg4_version=3;
         break;
+    case CODEC_ID_WMV1:
+        s->h263_msmpeg4 = 1;
+        s->h263_pred = 1;
+        s->msmpeg4_version=4;
+        break;
     case CODEC_ID_H263I:
         s->h263_intel = 1;
         break;
@@ -234,7 +239,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
         }
     }
     
-    if (s->h263_msmpeg4 && s->pict_type==I_TYPE)
+    if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==I_TYPE)
         if(msmpeg4_decode_ext_header(s, buf_size) < 0) return -1;
 
     MPV_frame_end(s);
@@ -314,6 +319,18 @@ AVCodec msmpeg4v3_decoder = {
     "msmpeg4",
     CODEC_TYPE_VIDEO,
     CODEC_ID_MSMPEG4V3,
+    sizeof(MpegEncContext),
+    h263_decode_init,
+    NULL,
+    h263_decode_end,
+    h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND,
+};
+
+AVCodec wmv1_decoder = {
+    "wmv1",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_WMV1,
     sizeof(MpegEncContext),
     h263_decode_init,
     NULL,

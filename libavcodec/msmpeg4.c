@@ -802,8 +802,18 @@ static int decode012(GetBitContext *gb)
 
 int msmpeg4_decode_picture_header(MpegEncContext * s)
 {
-    int code;
+    int code, code2;
 
+#if 0
+{
+int i;
+for(i=0; i<s->gb.size*8; i++)
+    printf("%d", get_bits1(&s->gb));
+//    get_bits1(&s->gb);
+printf("END\n");
+return -1;
+}
+#endif
     s->pict_type = get_bits(&s->gb, 2) + 1;
     if (s->pict_type != I_TYPE &&
         s->pict_type != P_TYPE)
@@ -817,16 +827,34 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
         if (code < 0x17)
             return -1;
         s->slice_height = s->mb_height / (code - 0x16);
-        if(s->msmpeg4_version==2){
+
+        switch(s->msmpeg4_version){
+        case 2:
             s->rl_chroma_table_index = 2;
             s->rl_table_index = 2;
 
             s->dc_table_index = 0; //not used
-        }else{
+            break;
+        case 3:
             s->rl_chroma_table_index = decode012(&s->gb);
             s->rl_table_index = decode012(&s->gb);
 
             s->dc_table_index = get_bits1(&s->gb);
+            break;
+        case 4:
+            msmpeg4_decode_ext_header(s, 999 /* bufer size (useless here) */);
+            printf("%X\n", show_bits(&s->gb, 24));
+            code= get_bits(&s->gb, 2);
+            if(code==1){
+                code2= get_bits(&s->gb, 3);
+                if(code2==7) skip_bits(&s->gb, 1);
+            }
+            printf("%X\n", show_bits(&s->gb, 24));
+            s->rl_chroma_table_index = 2;
+            s->rl_table_index = 2;
+
+            s->dc_table_index = 0;
+            break;
         }
         s->no_rounding = 1;
 /*	printf(" %d %d %d %d     \n", 
@@ -864,6 +892,7 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
 	    s->no_rounding = 0;
 	}
 //	printf("%d", s->no_rounding);
+//return -1;
     }
     
 #if 0
@@ -1250,6 +1279,7 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         i += run;
         if (i >= 64)
             return -1;
+//printf("RL:%d %d %d ", run, level, last);
 	j = scan_table[i];
         block[j] = level;
         i++;
