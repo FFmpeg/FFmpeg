@@ -324,12 +324,15 @@ int avpicture_layout(AVPicture* src, int pix_fmt, int width, int height,
     if (size > dest_size)
         return -1;
 
-    if (pf->pixel_type == FF_PIXEL_PACKED) {
+    if (pf->pixel_type == FF_PIXEL_PACKED || pf->pixel_type == FF_PIXEL_PALETTE) {
         if (pix_fmt == PIX_FMT_YUV422 || pix_fmt == PIX_FMT_RGB565 ||
 	    pix_fmt == PIX_FMT_RGB555)
 	  w = width * 2;
+	else if (pix_fmt == PIX_FMT_PAL8)
+	  w = width;
 	else
 	  w = width * (pf->depth * pf->nb_channels / 8);
+	  
 	data_planes = 1;
 	h = height;
     } else {
@@ -350,7 +353,10 @@ int avpicture_layout(AVPicture* src, int pix_fmt, int width, int height,
 	     s += src->linesize[i];
 	 }
     }
-
+    
+    if (pf->pixel_type == FF_PIXEL_PALETTE)
+	memcpy((unsigned char *)(((size_t)dest + 3) & ~3), src->data[1], 256 * 4);
+    
     return size;
 }
 

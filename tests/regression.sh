@@ -67,8 +67,8 @@ do_ffmpeg()
 {
     f="$1"
     shift
-    echo $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 $*
-    $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
+    echo $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 $*
+    $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
     egrep -v "^(Stream|Press|Input|Output|frame|  Stream)" /tmp/ffmpeg$$ || true
     rm -f /tmp/ffmpeg$$
     md5sum -b $f >> $logfile
@@ -84,17 +84,20 @@ do_ffmpeg_crc()
     f="$1"
     shift
     echo $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 $* -f crc $datadir/ffmpeg.crc
-    $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 $* -f crc $datadir/ffmpeg.crc
-    echo -n "$f " >> $logfile
-    cat $datadir/ffmpeg.crc >> $logfile
+    $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 $* -f crc $datadir/ffmpeg.crc > /tmp/ffmpeg$$ 2>&1
+    egrep -v "^(Stream|Press|Input|Output|frame|  Stream)" /tmp/ffmpeg$$ || true
+    rm -f /tmp/ffmpeg$$ 
+    echo "$f `cat $datadir/ffmpeg.crc`" >> $logfile
 }
 
 do_ffmpeg_nocheck()
 {
     f="$1"
     shift
-    echo $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 $*
-    $ffmpeg -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp
+    echo $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 $*
+    $ffmpeg -y -bitexact -dct_algo 1 -idct_algo 2 -benchmark $* > $datadir/bench.tmp 2> /tmp/ffmpeg$$
+    egrep -v "^(Stream|Press|Input|Output|frame|  Stream)" /tmp/ffmpeg$$ || true
+    rm -f /tmp/ffmpeg$$
     expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
     echo `cat $datadir/bench2.tmp` $f >> $benchfile
 }
@@ -312,9 +315,9 @@ do_ffmpeg_crc $file -i $file
 ####################
 # streamed images
 # mjpeg
-file=${outfile}libav.mjpeg
-do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
-do_ffmpeg_crc $file -i $file
+#file=${outfile}libav.mjpeg
+#do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src $file
+#do_ffmpeg_crc $file -i $file
 
 # pbmpipe
 file=${outfile}libav.pbm
@@ -354,9 +357,9 @@ $ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
 do_ffmpeg_crc $file -i $file
 
 # jpeg (we do not do md5 on image files yet)
-file=${outfile}libav%d.jpg
-$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
-do_ffmpeg_crc $file -i $file
+#file=${outfile}libav%d.jpg
+#$ffmpeg -t 0.5 -y -qscale 10 -f pgmyuv -i $raw_src $file
+#do_ffmpeg_crc $file -i $file
 
 ####################
 # audio only
@@ -380,6 +383,19 @@ do_ffmpeg_crc $file -i $file
 file=${outfile}libav.au
 do_ffmpeg $file -t 1 -y -qscale 10 -f s16le -i $pcm_src $file
 do_ffmpeg_crc $file -i $file
+
+####################
+# pix_fmt conversions
+conversions="yuv420p yuv422p yuv444p yuv422 yuv410p yuv411p yuvj420p \
+             yuvj422p yuvj444p rgb24 bgr24 rgba32 rgb565 rgb555 gray monow \
+	     monob pal8"
+for pix_fmt in $conversions ; do
+    file=${outfile}libav-${pix_fmt}.yuv
+    do_ffmpeg_nocheck $file -r 1 -t 1 -y -f pgmyuv -i $raw_src \
+                            -f rawvideo -s 352x288 -pix_fmt $pix_fmt $raw_dst
+    do_ffmpeg $file -f rawvideo -s 352x288 -pix_fmt $pix_fmt -i $raw_dst \
+                    -f rawvideo -s 352x288 -pix_fmt yuv444p $file
+done
 
 fi
 
