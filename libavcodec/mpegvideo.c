@@ -1974,15 +1974,16 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
                 return -1;
             }
         }
+        s->user_specified_pts= pic->pts;
     }else{
         if(s->user_specified_pts != AV_NOPTS_VALUE){
+            s->user_specified_pts= 
             pic->pts= s->user_specified_pts + AV_TIME_BASE*(int64_t)s->avctx->frame_rate_base / s->avctx->frame_rate;
             av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=? trying to guess (%Ld)\n", pic->pts);
         }else{
             pic->pts= av_rescale(pic->display_picture_number*(int64_t)s->avctx->frame_rate_base, AV_TIME_BASE, s->avctx->frame_rate);
         }
     }
-    s->user_specified_pts= pic->pts;
   }
   
     /* shift buffer entries */
