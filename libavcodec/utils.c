@@ -119,29 +119,39 @@ void register_avcodec(AVCodec *format)
     format->next = NULL;
 }
 
-typedef struct DefaultPicOpaque{
+typedef struct InternalBuffer{
     int last_pic_num;
+    uint8_t *base[4];
     uint8_t *data[4];
-}DefaultPicOpaque;
+}InternalBuffer;
+
+#define INTERNAL_BUFFER_SIZE 32
 
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
     const int width = s->width;
     const int height= s->height;
-    DefaultPicOpaque *opaque;
+    InternalBuffer *buf;
     
     assert(pic->data[0]==NULL);
-    assert(pic->type==0 || pic->type==FF_BUFFER_TYPE_INTERNAL);
+    assert(INTERNAL_BUFFER_SIZE > s->internal_buffer_count);
 
-    if(pic->opaque){
-        opaque= (DefaultPicOpaque *)pic->opaque;
-        for(i=0; i<3; i++)
-            pic->data[i]= opaque->data[i];
+    if(s->internal_buffer==NULL){
+        s->internal_buffer= av_mallocz(INTERNAL_BUFFER_SIZE*sizeof(InternalBuffer));
+    }
+#if 0
+    s->internal_buffer= av_fast_realloc(
+        s->internal_buffer, 
+        &s->internal_buffer_size, 
+        sizeof(InternalBuffer)*FFMAX(99,  s->internal_buffer_count+1)/*FIXME*/
+        );
+#endif
+     
+    buf= &((InternalBuffer*)s->internal_buffer)[s->internal_buffer_count];
 
-//    printf("get_buffer %X coded_pic_num:%d last:%d\n", pic->opaque, pic->coded_picture_number, opaque->last_pic_num);    
-        pic->age= pic->coded_picture_number - opaque->last_pic_num;
-        opaque->last_pic_num= pic->coded_picture_number;
-//printf("age: %d %d %d\n", pic->age, c->picture_number, pic->coded_picture_number);
+    if(buf->base[0]){
+        pic->age= pic->coded_picture_number - buf->last_pic_num;
+        buf->last_pic_num= pic->coded_picture_number;
     }else{
         int align, h_chroma_shift, v_chroma_shift;
         int w, h, pixel_size;
@@ -174,11 +184,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             h+= EDGE_WIDTH*2;
         }
         
-        opaque= av_mallocz(sizeof(DefaultPicOpaque));
-        if(opaque==NULL) return -1;
-
-        pic->opaque= opaque;
-        opaque->last_pic_num= -256*256*256*64;
+        buf->last_pic_num= -256*256*256*64;
 
         for(i=0; i<3; i++){
             const int h_shift= i==0 ? 0 : h_chroma_shift;
@@ -186,32 +192,51 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
 
             pic->linesize[i]= pixel_size*w>>h_shift;
 
-            pic->base[i]= av_mallocz((pic->linesize[i]*h>>v_shift)+16); //FIXME 16
-            if(pic->base[i]==NULL) return -1;
-
-            memset(pic->base[i], 128, pic->linesize[i]*h>>v_shift);
+            buf->base[i]= av_mallocz((pic->linesize[i]*h>>v_shift)+16); //FIXME 16
+            if(buf->base[i]==NULL) return -1;
+            memset(buf->base[i], 128, pic->linesize[i]*h>>v_shift);
         
             if(s->flags&CODEC_FLAG_EMU_EDGE)
-                pic->data[i] = pic->base[i];
+                buf->data[i] = buf->base[i];
             else
-                pic->data[i] = pic->base[i] + (pic->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift);
-            
-            opaque->data[i]= pic->data[i];
+                buf->data[i] = buf->base[i] + (pic->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift);
         }
         pic->age= 256*256*256*64;
         pic->type= FF_BUFFER_TYPE_INTERNAL;
     }
+
+    for(i=0; i<4; i++){
+        pic->base[i]= buf->base[i];
+        pic->data[i]= buf->data[i];
+    }
+    s->internal_buffer_count++;
 
     return 0;
 }
 
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
-    
+    InternalBuffer *buf, *last, temp;
+
     assert(pic->type==FF_BUFFER_TYPE_INTERNAL);
-    
-    for(i=0; i<3; i++)
+
+    for(i=0; i<s->internal_buffer_count; i++){ //just 3-5 checks so is not worth to optimize
+        buf= &((InternalBuffer*)s->internal_buffer)[i];
+        if(buf->data[0] == pic->data[0])
+            break;
+    }
+    assert(i < s->internal_buffer_count);
+    s->internal_buffer_count--;
+    last = &((InternalBuffer*)s->internal_buffer)[s->internal_buffer_count];
+
+    temp= *buf;
+    *buf= *last;
+    *last= temp;
+
+    for(i=0; i<3; i++){
         pic->data[i]=NULL;
+//        pic->base[i]=NULL;
+    }
 //printf("R%X\n", pic->opaque);
 }
 
@@ -590,6 +615,23 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
         //FIXME
         break;
     }
+}
+
+void avcodec_default_free_buffers(AVCodecContext *s){
+    int i, j;
+
+    if(s->internal_buffer==NULL) return;
+    
+    for(i=0; i<INTERNAL_BUFFER_SIZE; i++){
+        InternalBuffer *buf= &((InternalBuffer*)s->internal_buffer)[i];
+        for(j=0; j<4; j++){
+            av_freep(&buf->base[j]);
+            buf->data[j]= NULL;
+        }
+    }
+    av_freep(&s->internal_buffer);
+    
+    s->internal_buffer_count=0;
 }
 
 int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max){

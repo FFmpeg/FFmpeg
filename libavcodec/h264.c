@@ -3868,6 +3868,7 @@ fprintf(stderr, "FMO not supported\n");
 |)                                                  |   |        |
 |    slice_group_id[ i ]                            |1  |u(v)    |
 #endif
+            break;
         }
     }
     pps->ref_count[0]= get_ue_golomb(&s->gb) + 1;
@@ -4366,6 +4367,6 @@ AVCodec h264_decoder = {
     NULL,
     decode_end,
     decode_frame,
-    /*CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | */CODEC_CAP_TRUNCATED,
+    /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
 };
 

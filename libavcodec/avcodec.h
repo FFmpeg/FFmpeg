@@ -1089,6 +1089,17 @@ typedef struct AVCodecContext {
      */
     int color_table_id;
     
+    /**
+     * internal_buffer count. 
+     * Dont touch, used by lavc default_get_buffer()
+     */
+    int internal_buffer_count;
+    
+    /**
+     * internal_buffers. 
+     * Dont touch, used by lavc default_get_buffer()
+     */
+    void *internal_buffer;
 } AVCodecContext;
 
 
@@ -1320,6 +1331,7 @@ AVFrame *avcodec_alloc_frame(void);
 
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
+void avcodec_default_free_buffers(AVCodecContext *s);
 
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
 int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples, 

@@ -305,15 +305,8 @@ static void free_picture(MpegEncContext *s, Picture *pic){
         av_freep(&pic->motion_val[i]);
         av_freep(&pic->ref_index[i]);
     }
-
-    if(pic->type == FF_BUFFER_TYPE_INTERNAL){
-        for(i=0; i<4; i++){
-            av_freep(&pic->base[i]);
-            pic->data[i]= NULL;
-        }
-        av_freep(&pic->opaque);
-        pic->type= 0;
-    }else if(pic->type == FF_BUFFER_TYPE_SHARED){
+    
+    if(pic->type == FF_BUFFER_TYPE_SHARED){
         for(i=0; i<4; i++){
             pic->base[i]=
             pic->data[i]= NULL;
@@ -524,6 +517,7 @@ void MPV_common_end(MpegEncContext *s)
     for(i=0; i<MAX_PICTURE_COUNT; i++){
         free_picture(s, &s->picture[i]);
     }
+    avcodec_default_free_buffers(s->avctx);
     s->context_initialized = 0;
 }
 
@@ -978,6 +972,7 @@ alloc:
         s->last_picture_ptr= s->next_picture_ptr;
         s->next_picture_ptr= s->current_picture_ptr;
     }
+    
     if(s->last_picture_ptr) s->last_picture= *s->last_picture_ptr;
     if(s->next_picture_ptr) s->next_picture= *s->next_picture_ptr;
     if(s->new_picture_ptr ) s->new_picture = *s->new_picture_ptr;
