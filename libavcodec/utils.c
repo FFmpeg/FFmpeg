@@ -112,7 +112,7 @@ void av_freep(void *arg)
 }
 
 /* encoder management */
-AVCodec *first_avcodec;
+AVCodec *first_avcodec = NULL;
 
 void register_avcodec(AVCodec *format)
 {

@@ -21,9 +21,9 @@
 #undef NDEBUG
 #include <assert.h>
 
-AVInputFormat *first_iformat;
-AVOutputFormat *first_oformat;
-AVImageFormat *first_image_format;
+AVInputFormat *first_iformat = NULL;
+AVOutputFormat *first_oformat = NULL;
+AVImageFormat *first_image_format = NULL;
 
 void av_register_input_format(AVInputFormat *format)
 {

@@ -31,8 +31,8 @@
 #include "simple_idct.h"
 #include "faandct.h"
 
-uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
-uint32_t squareTbl[512];
+uint8_t cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
+uint32_t squareTbl[512] = {0, };
 
 const uint8_t ff_zigzag_direct[64] = {
     0,   1,  8, 16,  9,  2,  3, 10,
@@ -59,7 +59,7 @@ const uint8_t ff_zigzag248_direct[64] = {
 };
 
 /* not permutated inverse zigzag_direct + 1 for MMX quantizer */
-uint16_t __align8 inv_zigzag_direct16[64];
+uint16_t __align8 inv_zigzag_direct16[64] = {0, };
 
 const uint8_t ff_alternate_horizontal_scan[64] = {
     0,  1,   2,  3,  8,  9, 16, 17, 
