@@ -275,12 +275,18 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         }
 }
 
+static inline void encode_mb_skip_run(MpegEncContext *s, int run){
+    while (run >= 33) {
+        put_bits(&s->pb, 11, 0x008);
+        run -= 33;
+    }
+    put_bits(&s->pb, mbAddrIncrTable[run][1], 
+             mbAddrIncrTable[run][0]);
+}
 
 /* insert a fake P picture */
 static void mpeg1_skip_picture(MpegEncContext *s, int pict_num)
 {
-    unsigned int mb_incr;
-
     /* mpeg1 picture header */
     put_header(s, PICTURE_START_CODE);
     /* temporal reference */
@@ -299,9 +305,7 @@ static void mpeg1_skip_picture(MpegEncContext *s, int pict_num)
     put_bits(&s->pb, 5, 1); /* quantizer scale */
     put_bits(&s->pb, 1, 0); /* slice extra information */
     
-    mb_incr = 1;
-    put_bits(&s->pb, mbAddrIncrTable[mb_incr - 1][1], 
-             mbAddrIncrTable[mb_incr - 1][0]);
+    encode_mb_skip_run(s, 0);
     
     /* empty macroblock */
     put_bits(&s->pb, 3, 1); /* motion only */
@@ -311,13 +315,7 @@ static void mpeg1_skip_picture(MpegEncContext *s, int pict_num)
     put_bits(&s->pb, 1, 1); 
 
     /* output a number of empty slice */
-    mb_incr = s->mb_width * s->mb_height - 1;
-    while (mb_incr > 33) {
-        put_bits(&s->pb, 11, 0x008);
-        mb_incr -= 33;
-    }
-    put_bits(&s->pb, mbAddrIncrTable[mb_incr - 1][1], 
-             mbAddrIncrTable[mb_incr - 1][0]);
+    encode_mb_skip_run(s, s->mb_width * s->mb_height - 2);
     
     /* empty macroblock */
     put_bits(&s->pb, 3, 1); /* motion only */
@@ -334,6 +332,20 @@ static void common_init(MpegEncContext *s)
 }
 
 #ifdef CONFIG_ENCODERS
+
+void ff_mpeg1_encode_slice_header(MpegEncContext *s){
+    put_header(s, SLICE_MIN_START_CODE + s->mb_y);
+    put_bits(&s->pb, 5, s->qscale); /* quantizer scale */
+    put_bits(&s->pb, 1, 0); /* slice extra information */
+}
+
+void ff_mpeg1_clean_buffers(MpegEncContext *s){
+    s->last_dc[0] = 1 << (7 + s->intra_dc_precision);
+    s->last_dc[1] = s->last_dc[0];
+    s->last_dc[2] = s->last_dc[0];
+    memset(s->last_mv, 0, sizeof(s->last_mv));
+}
+
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     mpeg1_encode_sequence_header(s);
@@ -364,20 +376,18 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
 
     put_bits(&s->pb, 1, 0); /* extra bit picture */
     
-    /* only one slice */
-    put_header(s, SLICE_MIN_START_CODE);
-    put_bits(&s->pb, 5, s->qscale); /* quantizer scale */
-    put_bits(&s->pb, 1, 0); /* slice extra information */
+    s->mb_y=0;
+    ff_mpeg1_encode_slice_header(s);
 }
 
 void mpeg1_encode_mb(MpegEncContext *s,
                      DCTELEM block[6][64],
                      int motion_x, int motion_y)
 {
-    int mb_incr, i, cbp, mb_x, mb_y;
-
-    mb_x = s->mb_x;
-    mb_y = s->mb_y;
+    int i, cbp;
+    const int mb_x = s->mb_x;
+    const int mb_y = s->mb_y;
+    const int first_mb= mb_x == s->resync_mb_x && mb_y == s->resync_mb_y;
 
     /* compute cbp */
     cbp = 0;
@@ -386,26 +396,22 @@ void mpeg1_encode_mb(MpegEncContext *s,
             cbp |= 1 << (5 - i);
     }
 
-    // RAL: Skipped macroblocks for B frames...
-    if (cbp == 0 && (!((mb_x | mb_y) == 0 || (mb_x == s->mb_width - 1 && mb_y == s->mb_height - 1))) && 
+    if (cbp == 0 && !first_mb && (mb_x != s->mb_width - 1 || mb_y != s->mb_height - 1) && 
         ((s->pict_type == P_TYPE && (motion_x | motion_y) == 0) ||
         (s->pict_type == B_TYPE && s->mv_dir == s->last_mv_dir && (((s->mv_dir & MV_DIR_FORWARD) ? ((s->mv[0][0][0] - s->last_mv[0][0][0])|(s->mv[0][0][1] - s->last_mv[0][0][1])) : 0) |
         ((s->mv_dir & MV_DIR_BACKWARD) ? ((s->mv[1][0][0] - s->last_mv[1][0][0])|(s->mv[1][0][1] - s->last_mv[1][0][1])) : 0)) == 0))) {
-        s->mb_incr++;
+        s->mb_skip_run++;
         s->qscale -= s->dquant;
         s->skip_count++;
         s->misc_bits++;
         s->last_bits++;
     } else {
-        /* output mb incr */
-        mb_incr = s->mb_incr;
-
-        while (mb_incr > 33) {
-            put_bits(&s->pb, 11, 0x008);
-            mb_incr -= 33;
+        if(first_mb){
+            assert(s->mb_skip_run == 0);
+            encode_mb_skip_run(s, s->mb_x);
+        }else{
+            encode_mb_skip_run(s, s->mb_skip_run);
         }
-        put_bits(&s->pb, mbAddrIncrTable[mb_incr - 1][1], 
-                 mbAddrIncrTable[mb_incr - 1][0]);
         
         if (s->pict_type == I_TYPE) {
             if(s->dquant && cbp){
@@ -553,7 +559,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
                 mpeg1_encode_block(s, block[i], i);
             }
         }
-        s->mb_incr = 1;
+        s->mb_skip_run = 0;
         if(s->mb_intra)
             s->i_tex_bits+= get_bits_diff(s);
         else
@@ -888,7 +894,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
 
     assert(s->mb_skiped==0);
 
-    if (--s->mb_incr != 0) {
+    if (s->mb_skip_run-- != 0) {
         /* skip mb */
         s->mb_intra = 0;
         for(i=0;i<6;i++)
@@ -1795,10 +1801,8 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         fprintf(stderr, "slice below image (%d >= %d)\n", start_code, s->mb_height);
         return DECODE_SLICE_ERROR;
     }
-    s->last_dc[0] = 1 << (7 + s->intra_dc_precision);
-    s->last_dc[1] = s->last_dc[0];
-    s->last_dc[2] = s->last_dc[0];
-    memset(s->last_mv, 0, sizeof(s->last_mv));
+    
+    ff_mpeg1_clean_buffers(s);
         
     /* start frame decoding */
     if (s->first_slice) {
@@ -1863,8 +1867,9 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
             break;
         }
     }
+    
     s->mb_y = start_code;
-    s->mb_incr= 1;
+    s->mb_skip_run= 0;
 
     for(;;) {
 	s->dsp.clear_blocks(s->block[0]);
@@ -1892,20 +1897,20 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         PRINT_QP("%2d", s->qscale);
 
         /* skip mb handling */
-        if (s->mb_incr == 0) {
+        if (s->mb_skip_run == -1) {
             /* read again increment */
-            s->mb_incr = 1;
+            s->mb_skip_run = 0;
             for(;;) {
                 int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
                 if (code < 0)
                     goto eos; /* error = end of slice */
                 if (code >= 33) {
                     if (code == 33) {
-                        s->mb_incr += 33;
+                        s->mb_skip_run += 33;
                     }
                     /* otherwise, stuffing, nothing to do */
                 } else {
-                    s->mb_incr += code;
+                    s->mb_skip_run += code;
                     break;
                 }
             }

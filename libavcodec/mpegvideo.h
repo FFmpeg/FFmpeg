@@ -338,7 +338,7 @@ typedef struct MpegEncContext {
                         
     /* macroblock layer */
     int mb_x, mb_y;
-    int mb_incr;
+    int mb_skip_run;
     int mb_intra;
     uint8_t *mb_type;       ///< Table for MB type 
 #define MB_TYPE_INTRA    0x01
@@ -685,6 +685,8 @@ void mpeg1_encode_mb(MpegEncContext *s,
                      DCTELEM block[6][64],
                      int motion_x, int motion_y);
 void ff_mpeg1_encode_init(MpegEncContext *s);
+void ff_mpeg1_encode_slice_header(MpegEncContext *s);
+void ff_mpeg1_clean_buffers(MpegEncContext *s);
 
 
 /** RLTable. */

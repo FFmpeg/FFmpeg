@@ -2684,7 +2684,7 @@ static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext 
     memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster then a loop?
 
     /* mpeg1 */
-    d->mb_incr= s->mb_incr;
+    d->mb_skip_run= s->mb_skip_run;
     for(i=0; i<3; i++)
         d->last_dc[i]= s->last_dc[i];
     
@@ -2710,7 +2710,7 @@ static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *
     memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster then a loop?
     
     /* mpeg1 */
-    d->mb_incr= s->mb_incr;
+    d->mb_skip_run= s->mb_skip_run;
     for(i=0; i<3; i++)
         d->last_dc[i]= s->last_dc[i];
     
@@ -3023,7 +3023,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         
         s->current_picture_ptr->error[i] = 0;
     }
-    s->mb_incr = 1;
+    s->mb_skip_run = 0;
     s->last_mv[0][0][0] = 0;
     s->last_mv[0][0][1] = 0;
     s->last_mv[1][0][0] = 0;
@@ -3092,6 +3092,13 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                             s->last_bits= bits;
                         }
                         ff_mpeg4_clean_buffers(s);
+                        is_gob_start=1;
+                    }
+                }else if(s->codec_id==CODEC_ID_MPEG1VIDEO){
+                    if(   current_packet_size >= s->rtp_payload_size 
+                       && s->mb_y + s->mb_x>0 && s->mb_skip_run==0){
+                        ff_mpeg1_encode_slice_header(s);
+                        ff_mpeg1_clean_buffers(s);
                         is_gob_start=1;
                     }
                 }else{
