@@ -403,7 +403,7 @@ s->bgr32=1;
     case 24:
     case 32:
         if(s->bgr32){
-            avctx->pix_fmt = PIX_FMT_BGRA32;
+            avctx->pix_fmt = PIX_FMT_RGBA32;
         }else{
             avctx->pix_fmt = PIX_FMT_BGR24;
         }
