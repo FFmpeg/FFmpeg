@@ -874,6 +874,13 @@ PIXOP2(put, op_put)
 #define avg2(a,b) ((a+b+1)>>1)
 #define avg4(a,b,c,d) ((a+b+c+d+2)>>2)
 
+static void put_no_rnd_pixels16_l2_c(uint8_t *dst, const uint8_t *a, const uint8_t *b, int stride, int h){
+    put_no_rnd_pixels16_l2(dst, a, b, stride, stride, stride, h);
+}
+
+static void put_no_rnd_pixels8_l2_c(uint8_t *dst, const uint8_t *a, const uint8_t *b, int stride, int h){
+    put_no_rnd_pixels8_l2(dst, a, b, stride, stride, stride, h);
+}
 
 static void gmc1_c(uint8_t *dst, uint8_t *src, int stride, int h, int x16, int y16, int rounder)
 {
@@ -3157,6 +3164,9 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     dspfunc(avg, 2, 4);
     dspfunc(avg, 3, 2);
 #undef dspfunc
+
+    c->put_no_rnd_pixels_l2[0]= put_no_rnd_pixels16_l2_c;
+    c->put_no_rnd_pixels_l2[1]= put_no_rnd_pixels8_l2_c;
 
     c->put_tpel_pixels_tab[ 0] = put_tpel_pixels_mc00_c;
     c->put_tpel_pixels_tab[ 1] = put_tpel_pixels_mc10_c;

@@ -2451,15 +2451,24 @@ av_log(s->avctx, AV_LOG_ERROR, " help! got beefy vector! (%X, %X)\n", motion_x, 
                         motion_source= temp;
                     }
                 }
+                
 
                 /* first, take care of copying a block from either the
                  * previous or the golden frame */
                 if (s->all_fragments[i].coding_method != MODE_INTRA) {
-
-                    s->dsp.put_no_rnd_pixels_tab[1][motion_halfpel_index](
-                        output_plane + s->all_fragments[i].first_pixel,
-                        motion_source,
-                        stride, 8);
+                    //Note, it is possible to implement all MC cases with put_no_rnd_pixels_l2 which would look more like the VP3 source but this would be slower as put_no_rnd_pixels_tab is better optimzed
+                    if(motion_halfpel_index != 3){
+                        s->dsp.put_no_rnd_pixels_tab[1][motion_halfpel_index](
+                            output_plane + s->all_fragments[i].first_pixel,
+                            motion_source, stride, 8);
+                    }else{
+                        int d= (motion_x ^ motion_y)>>31; // d is 0 if motion_x and _y have the same sign, else -1
+                        s->dsp.put_no_rnd_pixels_l2[1](
+                            output_plane + s->all_fragments[i].first_pixel,
+                            motion_source - d, 
+                            motion_source + stride + 1 + d, 
+                            stride, 8);
+                    }
                 }
 
                 /* dequantize the DCT coefficients */
