@@ -67,7 +67,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return -ENOMEM;
     st = av_mallocz(sizeof(AVStream));
     if (!st) {
-        free(s);
+        av_free(s);
         return -ENOMEM;
     }
     s1->priv_data = s;
@@ -231,8 +231,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
  fail:
     if (video_fd >= 0)
         close(video_fd);
-    free(st);
-    free(s);
+    av_free(st);
+    av_free(s);
     return -EIO;
 }
 
@@ -327,7 +327,7 @@ static int grab_read_close(AVFormatContext *s1)
     ioctl(s->fd, VIDIOCSAUDIO, &audio_saved);
 
     close(s->fd);
-    free(s);
+    av_free(s);
     return 0;
 }
 

@@ -93,6 +93,7 @@ static int crc_write_trailer(struct AVFormatContext *s)
     snprintf(buf, sizeof(buf), "CRC=%08x\n", crc->crcval);
     put_buffer(&s->pb, buf, strlen(buf));
     put_flush_packet(&s->pb);
+    av_free(crc);
     return 0;
 }
 

@@ -337,14 +337,14 @@ int url_fdopen(ByteIOContext *s, URLContext *h)
     int buffer_size;
 
     buffer_size = (IO_BUFFER_SIZE / h->packet_size) * h->packet_size;
-    buffer = malloc(buffer_size);
+    buffer = av_malloc(buffer_size);
     if (!buffer)
         return -ENOMEM;
 
     if (init_put_byte(s, buffer, buffer_size, 
                       (h->flags & URL_WRONLY) != 0, h,
                       url_read_packet, url_write_packet, url_seek_packet) < 0) {
-        free(buffer);
+        av_free(buffer);
         return -EIO;
     }
     s->is_streamed = h->is_streamed;
@@ -356,11 +356,11 @@ int url_fdopen(ByteIOContext *s, URLContext *h)
 int url_setbufsize(ByteIOContext *s, int buf_size)
 {
     UINT8 *buffer;
-    buffer = malloc(buf_size);
+    buffer = av_malloc(buf_size);
     if (!buffer)
         return -ENOMEM;
 
-    free(s->buffer);
+    av_free(s->buffer);
     s->buffer = buffer;
     s->buffer_size = buf_size;
     s->buf_ptr = buffer;
@@ -391,7 +391,7 @@ int url_fclose(ByteIOContext *s)
 {
     URLContext *h = s->opaque;
     
-    free(s->buffer);
+    av_free(s->buffer);
     memset(s, 0, sizeof(ByteIOContext));
     return url_close(h);
 }

@@ -198,10 +198,9 @@ static int ffm_write_header(AVFormatContext *s)
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
         fst = st->priv_data;
-        if (fst)
-            free(fst);
+        av_free(fst);
     }
-    free(ffm);
+    av_free(ffm);
     return -1;
 }
 
@@ -252,8 +251,8 @@ static int ffm_write_trailer(AVFormatContext *s)
     put_flush_packet(pb);
 
     for(i=0;i<s->nb_streams;i++)
-        free(s->streams[i]->priv_data);
-    free(ffm);
+        av_free(s->streams[i]->priv_data);
+    av_free(ffm);
     return 0;
 }
 
@@ -433,13 +432,12 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st = s->streams[i];
         if (st) {
             fst = st->priv_data;
-            if (fst)
-                free(fst);
-            free(st);
+            av_free(fst);
+            av_free(st);
         }
     }
     if (ffm)
-        free(ffm);
+        av_free(ffm);
     return -1;
 }
 
@@ -615,9 +613,9 @@ static int ffm_read_close(AVFormatContext *s)
 
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        free(st->priv_data);
+        av_free(st->priv_data);
     }
-    free(s->priv_data);
+    av_free(s->priv_data);
     return 0;
 }
 

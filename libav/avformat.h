@@ -142,6 +142,9 @@ extern AVFormat au_format;
 /* wav.c */
 extern AVFormat wav_format;
 
+/* crc.c */
+extern AVFormat crc_format;
+
 /* img.c */
 extern AVFormat pgm_format;
 extern AVFormat ppm_format;

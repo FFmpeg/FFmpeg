@@ -431,7 +431,7 @@ static int asf_write_header(AVFormatContext *s)
     asf->nb_packets = 0;
 
     if (asf_write_header1(s, 0, 50) < 0) {
-        free(asf);
+        av_free(asf);
         return -1;
     }
 
@@ -615,7 +615,7 @@ static int asf_write_trailer(AVFormatContext *s)
 
     put_flush_packet(&s->pb);
 
-    free(asf);
+    av_free(asf);
     return 0;
 }
 
@@ -869,10 +869,10 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
         if (st)
-            free(st->priv_data);
-        free(st);
+            av_free(st->priv_data);
+        av_free(st);
     }
-    free(asf);
+    av_free(asf);
     return -1;
 }
 
@@ -1009,9 +1009,9 @@ static int asf_read_close(AVFormatContext *s)
 
     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
-            free(st->priv_data);
+        av_free(st->priv_data);
     }
-    free(asf);
+    av_free(asf);
     return 0;
 }
 

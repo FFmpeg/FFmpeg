@@ -155,10 +155,9 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     AVStream *st;
     StreamInfo *stream;
 
-    s = malloc(sizeof(MpegMuxContext));
+    s = av_mallocz(sizeof(MpegMuxContext));
     if (!s)
         return -1;
-    memset(s, 0, sizeof(MpegMuxContext));
     ctx->priv_data = s;
     s->packet_number = 0;
 
@@ -251,9 +250,9 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     return 0;
  fail:
     for(i=0;i<ctx->nb_streams;i++) {
-        free(ctx->streams[i]->priv_data);
+        av_free(ctx->streams[i]->priv_data);
     }
-    free(s);
+    av_free(s);
     return -ENOMEM;
 }
 
@@ -873,7 +872,7 @@ static int mpeg_mux_check_packet(AVFormatContext *s, int *size)
 static int mpeg_mux_read_close(AVFormatContext *s)
 {
     MpegDemuxContext *m = s->priv_data;
-    free(m);
+    av_free(m);
     return 0;
 }
 

@@ -58,7 +58,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
 
     h->is_streamed = 1;
 
-    s = malloc(sizeof(HTTPContext));
+    s = av_malloc(sizeof(HTTPContext));
     if (!s) {
         return -ENOMEM;
     }
@@ -129,7 +129,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
  fail:
     if (fd >= 0)
         close(fd);
-    free(s);
+    av_free(s);
     return -EIO;
 }
 

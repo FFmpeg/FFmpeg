@@ -54,7 +54,7 @@ int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i, bps;
     AVStream *st;
 
-    avi = malloc(sizeof(AVIContext));
+    avi = av_malloc(sizeof(AVIContext));
     if (!avi)
         return -1;
     memset(avi, 0, sizeof(AVIContext));
@@ -106,7 +106,7 @@ int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             s->nb_streams = get_le32(pb);
             for(i=0;i<s->nb_streams;i++) {
                 AVStream *st;
-                st = malloc(sizeof(AVStream));
+                st = av_malloc(sizeof(AVStream));
                 if (!st)
                     goto fail;
                 memset(st, 0, sizeof(AVStream));
@@ -198,8 +198,7 @@ int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (stream_index != s->nb_streams - 1) {
     fail:
         for(i=0;i<s->nb_streams;i++) {
-            if (s->streams[i])
-                free(s->streams[i]);
+            av_freep(&s->streams[i]);
         }
         return -1;
     }
@@ -248,6 +247,6 @@ int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 int avi_read_close(AVFormatContext *s)
 {
     AVIContext *avi = s->priv_data;
-    free(avi);
+    av_free(avi);
     return 0;
 }

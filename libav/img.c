@@ -255,7 +255,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     ByteIOContext pb1, *f = &pb1;
     AVStream *st;
 
-    s = malloc(sizeof(VideoData));
+    s = av_malloc(sizeof(VideoData));
     if (!s)
         return -ENOMEM;
 
@@ -264,7 +264,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s1->nb_streams = 1;
     st = av_mallocz(sizeof(AVStream));
     if (!st) {
-        free(s);
+        av_free(s);
         return -ENOMEM;
     }
     s1->streams[0] = st;
@@ -372,14 +372,14 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (!s->is_pipe)
         url_fclose(f);
  fail:
-    free(s);
+    av_free(s);
     return -EIO;
 }
 
 static int img_read_close(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
-    free(s);
+    av_free(s);
     return 0;
 }
 
@@ -510,7 +510,7 @@ static int img_write_header(AVFormatContext *s)
     }
     return 0;
  fail:
-    free(img);
+    av_free(img);
     return -EIO;
 }
 
@@ -591,7 +591,7 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
 static int img_write_trailer(AVFormatContext *s)
 {
     VideoData *img = s->priv_data;
-    free(img);
+    av_free(img);
     return 0;
 }
 

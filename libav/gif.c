@@ -202,7 +202,7 @@ static int gif_write_header(AVFormatContext *s)
         return -1;
 */
 
-    gif = malloc(sizeof(GIFContext));
+    gif = av_malloc(sizeof(GIFContext));
     if (!gif)
         return -1;
     s->priv_data = gif;
@@ -218,7 +218,7 @@ static int gif_write_header(AVFormatContext *s)
     }
 
     if (!video_enc) {
-        free(gif);
+        av_free(gif);
         return -1;
     } else {
         width = video_enc->width;
@@ -382,7 +382,7 @@ static int gif_write_trailer(AVFormatContext *s)
     put_byte(pb, 0x3b);
     put_flush_packet(&s->pb);
 
-    free(gif);
+    av_free(gif);
     return 0;
 }
 

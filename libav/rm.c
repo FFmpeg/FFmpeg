@@ -286,7 +286,7 @@ static int rm_write_header(AVFormatContext *s)
     int n;
     AVCodecContext *codec;
 
-    rm = malloc(sizeof(RMContext));
+    rm = av_malloc(sizeof(RMContext));
     if (!rm)
         return -1;
     memset(rm, 0, sizeof(RMContext));
@@ -337,7 +337,7 @@ static int rm_write_audio(AVFormatContext *s, UINT8 *buf, int size)
     int i;
 
     /* XXX: suppress this malloc */
-    buf1= (UINT8*) malloc( size * sizeof(UINT8) );
+    buf1= (UINT8*) av_malloc( size * sizeof(UINT8) );
     
     write_packet_header(s, stream, size, stream->enc->key_frame);
     
@@ -349,7 +349,7 @@ static int rm_write_audio(AVFormatContext *s, UINT8 *buf, int size)
     put_buffer(pb, buf1, size);
     put_flush_packet(pb);
     stream->nb_frames++;
-    free(buf1);
+    av_free(buf1);
     return 0;
 }
 
@@ -439,7 +439,7 @@ static int rm_write_trailer(AVFormatContext *s)
     }
     put_flush_packet(pb);
 
-    free(rm);
+    av_free(rm);
     return 0;
 }
 
@@ -638,7 +638,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
  fail:
     for(i=0;i<s->nb_streams;i++) {
-        free(s->streams[i]);
+        av_free(s->streams[i]);
     }
     return -EIO;
 }
@@ -707,7 +707,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int rm_read_close(AVFormatContext *s)
 {
     RMContext *rm = s->priv_data;
-    free(rm);
+    av_free(rm);
     return 0;
 }
 

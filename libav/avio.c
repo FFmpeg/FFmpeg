@@ -60,7 +60,7 @@ int url_open(URLContext **puc, const char *filename, int flags)
     }
     return -ENOENT;
  found:
-    uc = malloc(sizeof(URLContext));
+    uc = av_malloc(sizeof(URLContext));
     if (!uc)
         return -ENOMEM;
     uc->prot = up;
@@ -69,7 +69,7 @@ int url_open(URLContext **puc, const char *filename, int flags)
     uc->packet_size = 1; /* default packet size */
     err = up->url_open(uc, filename, flags);
     if (err < 0) {
-        free(uc);
+        av_free(uc);
         *puc = NULL;
         return err;
     }
@@ -118,7 +118,7 @@ int url_close(URLContext *h)
     int ret;
 
     ret = h->prot->url_close(h);
-    free(h);
+    av_free(h);
     return ret;
 }
 

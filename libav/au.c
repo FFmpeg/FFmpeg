@@ -128,7 +128,7 @@ static int au_read_header(AVFormatContext *s,
     }
 
     /* now we are ready: build format streams */
-    st = malloc(sizeof(AVStream));
+    st = av_malloc(sizeof(AVStream));
     if (!st)
         return -1;
     s->nb_streams = 1;

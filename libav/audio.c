@@ -161,7 +161,7 @@ static int audio_write_header(AVFormatContext *s1)
     s->channels = st->codec.channels;
     ret = audio_open(s, 1);
     if (ret < 0) {
-        free(s);
+        av_free(s);
         return -EIO;
     } else {
         return 0;
@@ -201,7 +201,7 @@ static int audio_write_trailer(AVFormatContext *s1)
     AudioData *s = s1->priv_data;
 
     audio_close(s);
-    free(s);
+    av_free(s);
     return 0;
 }
 
@@ -221,7 +221,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return -ENOMEM;
     st = av_mallocz(sizeof(AVStream));
     if (!st) {
-        free(s);
+        av_free(s);
         return -ENOMEM;
     }
     s1->priv_data = s;
@@ -232,8 +232,8 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     ret = audio_open(s, 0);
     if (ret < 0) {
-        free(st);
-        free(s);
+        av_free(st);
+        av_free(s);
         return -EIO;
     } else {
         /* take real parameters */
@@ -284,7 +284,7 @@ static int audio_read_close(AVFormatContext *s1)
     AudioData *s = s1->priv_data;
 
     audio_close(s);
-    free(s);
+    av_free(s);
     return 0;
 }
 

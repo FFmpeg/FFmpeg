@@ -92,7 +92,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
 
-    s = malloc(sizeof(UDPContext));
+    s = av_malloc(sizeof(UDPContext));
     if (!s)
         return -ENOMEM;
     h->priv_data = s;

@@ -335,11 +335,11 @@ static int parse_trak(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
 #endif
 
     c = (MOVContext *)param;
-    st = malloc(sizeof(AVStream));
-        if (!st) return -2;
+    st = av_malloc(sizeof(AVStream));
+    if (!st) return -2;
     memset(st, 0, sizeof(AVStream));
     c->fc->streams[c->fc->nb_streams] = st;
-    sc = malloc(sizeof(MOVStreamContext));
+    sc = av_malloc(sizeof(MOVStreamContext));
     st->priv_data = sc;
     st->codec.codec_type = CODEC_TYPE_MOV_OTHER;
     c->streams[c->fc->nb_streams++] = sc;
@@ -461,13 +461,13 @@ static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     } else {
         len = get_byte(pb);
         if(len) {
-            buf = malloc(len+1);
+            buf = av_malloc(len+1);
             get_buffer(pb, buf, len);
             buf[len] = '\0';
 #ifdef DEBUG
             puts(buf);
 #endif
-            free(buf);
+            av_free(buf);
         }
     }
     
@@ -578,11 +578,11 @@ static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     }
 /*
     if(len) {
-        buf = malloc(len+1);
+    buf = av_malloc(len+1);
         get_buffer(pb, buf, len);
         buf[len] = '\0';
         puts(buf);
-        free(buf);
+        av_free(buf);
     }
 */
     return 0;
@@ -606,7 +606,7 @@ static int parse_stco(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
 
     entries = get_be32(pb);
     sc->chunk_count = entries;
-    sc->chunk_offsets = malloc(entries * sizeof(INT64));
+    sc->chunk_offsets = av_malloc(entries * sizeof(INT64));
     if(atom_type == MKTAG('s', 't', 'c', 'o')) {
         for(i=0; i<entries; i++) {
             sc->chunk_offsets[i] = get_be32(pb);
@@ -640,7 +640,7 @@ static int parse_stsc(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
 
     entries = get_be32(pb);
     sc->sample_to_chunk_sz = entries;
-    sc->sample_to_chunk = malloc(entries * sizeof(MOV_sample_to_chunk_tbl));
+    sc->sample_to_chunk = av_malloc(entries * sizeof(MOV_sample_to_chunk_tbl));
     for(i=0; i<entries; i++) {
         sc->sample_to_chunk[i].first = get_be32(pb);
         sc->sample_to_chunk[i].count = get_be32(pb);
@@ -674,7 +674,7 @@ static int parse_stsz(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     printf("sample_size = %ld sample_count = %ld\n", sc->sample_size, sc->sample_count);
     if(sc->sample_size)
         return 0; /* there isn't any table following */
-    sc->sample_sizes = malloc(entries * sizeof(long));
+    sc->sample_sizes = av_malloc(entries * sizeof(long));
     for(i=0; i<entries; i++) {
         sc->sample_sizes[i] = get_be32(pb);
 #ifdef DEBUG
@@ -757,11 +757,9 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 static void mov_free_stream_context(MOVStreamContext *sc)
 {
     if(sc) {
-        if(sc->chunk_offsets)
-            free(sc->chunk_offsets);
-        if(sc->sample_to_chunk)
-            free(sc->sample_to_chunk);
-        free(sc);
+        av_free(sc->chunk_offsets);
+        av_free(sc->sample_to_chunk);
+        av_free(sc);
     }
 }
 
@@ -772,10 +770,9 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i, j, nb, err;
     INT64 size;
 
-    mov = malloc(sizeof(MOVContext));
+    mov = av_mallocz(sizeof(MOVContext));
     if (!mov)
         return -1;
-    memset(mov, 0, sizeof(MOVContext));
     s->priv_data = mov;
 
     mov->fc = s;
@@ -817,7 +814,7 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 #if 1
     for(i=0; i<s->nb_streams;) {
         if(s->streams[i]->codec.codec_type == CODEC_TYPE_MOV_OTHER) {/* not audio, not video, delete */
-            free(s->streams[i]);
+            av_free(s->streams[i]);
             for(j=i+1; j<s->nb_streams; j++)
                 s->streams[j-1] = s->streams[j];
             s->nb_streams--;
@@ -918,8 +915,8 @@ static int mov_read_close(AVFormatContext *s)
     for(i=0; i<mov->total_streams; i++)
         mov_free_stream_context(mov->streams[i]);
     for(i=0; i<s->nb_streams; i++)
-        free(s->streams[i]);
-    free(mov);
+        av_free(s->streams[i]);
+    av_free(mov);
     return 0;
 }
 

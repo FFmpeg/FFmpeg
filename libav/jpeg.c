@@ -144,7 +144,7 @@ static int jpeg_write_packet(AVFormatContext *s1, int stream_index,
 static int jpeg_write_trailer(AVFormatContext *s1)
 {
     JpegContext *s = s1->priv_data;
-    free(s);
+    av_free(s);
     return 0;
 }
 
@@ -167,7 +167,7 @@ static int jpeg_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     s1->nb_streams = 1;
     st = av_mallocz(sizeof(AVStream));
     if (!st) {
-        free(s);
+        av_free(s);
         return -ENOMEM;
     }
     s1->streams[0] = st;
@@ -193,7 +193,7 @@ static int jpeg_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->codec.frame_rate = ap->frame_rate;
     return 0;
  fail:
-    free(s);
+    av_free(s);
     return -EIO;
 }
 
@@ -227,7 +227,7 @@ static int jpeg_read_packet(AVFormatContext *s1, AVPacket *pkt)
 static int jpeg_read_close(AVFormatContext *s1)
 {
     JpegContext *s = s1->priv_data;
-    free(s);
+    av_free(s);
     return 0;
 }
 

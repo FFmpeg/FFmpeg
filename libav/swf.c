@@ -196,7 +196,7 @@ static int swf_write_header(AVFormatContext *s)
     UINT8 buf1[256];
     int i, width, height, rate;
 
-    swf = malloc(sizeof(SWFContext));
+    swf = av_malloc(sizeof(SWFContext));
     if (!swf)
         return -1;
     s->priv_data = swf;
@@ -294,7 +294,7 @@ static int swf_write_header(AVFormatContext *s)
             break;
         default:
             /* not supported */
-            free(swf);
+            av_free(swf);
             return -1;
         }
         if (audio_enc->channels == 2)
@@ -414,7 +414,7 @@ static int swf_write_trailer(AVFormatContext *s)
         url_fseek(pb, swf->duration_pos, SEEK_SET);
         put_le16(pb, video_enc->frame_number);
     }
-    free(swf);
+    av_free(swf);
     return 0;
 }
 
@@ -488,7 +488,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec.sample_rate = 44100;
                     break;
                 default:
-                    free(st);
+                    av_free(st);
                     return -EIO;
                 }
                 st->codec.codec_type = CODEC_TYPE_AUDIO;

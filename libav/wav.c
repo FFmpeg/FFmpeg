@@ -114,7 +114,7 @@ static int wav_write_header(AVFormatContext *s)
     ByteIOContext *pb = &s->pb;
     offset_t fmt;
 
-    wav = malloc(sizeof(WAVContext));
+    wav = av_malloc(sizeof(WAVContext));
     if (!wav)
         return -1;
     memset(wav, 0, sizeof(WAVContext));
@@ -127,7 +127,7 @@ static int wav_write_header(AVFormatContext *s)
     /* format header */
     fmt = start_tag(pb, "fmt ");
     if (put_wav_header(pb, &s->streams[0]->codec) < 0) {
-        free(wav);
+        av_free(wav);
         return -1;
     }
     end_tag(pb, fmt);
@@ -166,7 +166,7 @@ static int wav_write_trailer(AVFormatContext *s)
         put_flush_packet(pb);
     }
 
-    free(wav);
+    av_free(wav);
     return 0;
 }
 
@@ -233,7 +233,7 @@ static int wav_read_header(AVFormatContext *s,
         return -1;
     
     /* now we are ready: build format streams */
-    st = malloc(sizeof(AVStream));
+    st = av_malloc(sizeof(AVStream));
     if (!st)
         return -1;
     s->nb_streams = 1;

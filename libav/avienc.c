@@ -149,7 +149,7 @@ static int avi_write_header(AVFormatContext *s)
     AVCodecContext *stream, *video_enc;
     offset_t list1, list2, strh, strf;
 
-    avi = malloc(sizeof(AVIContext));
+    avi = av_malloc(sizeof(AVIContext));
     if (!avi)
         return -1;
     memset(avi, 0, sizeof(AVIContext));
@@ -177,7 +177,7 @@ static int avi_write_header(AVFormatContext *s)
     }
     
     if (!video_enc) {
-        free(avi);
+        av_free(avi);
         return -1;
     }
     nb_frames = 0;
@@ -259,7 +259,7 @@ static int avi_write_header(AVFormatContext *s)
             break;
         case CODEC_TYPE_AUDIO:
             if (put_wav_header(pb, stream) < 0) {
-                free(avi);
+                av_free(avi);
                 return -1;
             }
             break;
@@ -309,7 +309,7 @@ static int avi_write_packet(AVFormatContext *s, int stream_index,
        avi->audio_strm_length[stream_index] += size;
 
     if (!url_is_streamed(&s->pb)) {
-        idx = malloc(sizeof(AVIIndex));
+        idx = av_malloc(sizeof(AVIIndex));
         memcpy(idx->tag, tag, 4);
         idx->flags = flags;
         idx->pos = url_ftell(pb) - avi->movi_list;
@@ -389,7 +389,7 @@ static int avi_write_trailer(AVFormatContext *s)
     }
     put_flush_packet(pb);
 
-    free(avi);
+    av_free(avi);
     return 0;
 }
 

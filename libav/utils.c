@@ -159,6 +159,8 @@ void register_all(void)
     register_avformat(&gif_format);
     register_avformat(&au_format);
     register_avformat(&wav_format);
+    register_avformat(&crc_format);
+
     register_avformat(&pcm_s16le_format);
     register_avformat(&pcm_s16be_format);
     register_avformat(&pcm_u16le_format);
@@ -196,7 +198,7 @@ void register_all(void)
 
 int av_new_packet(AVPacket *pkt, int size)
 {
-    pkt->data = malloc(size);
+    pkt->data = av_malloc(size);
     if (!pkt->data)
         return -ENOMEM;
     pkt->size = size;
@@ -209,9 +211,8 @@ int av_new_packet(AVPacket *pkt, int size)
 
 void av_free_packet(AVPacket *pkt)
 {
-    free(pkt->data);
+    av_freep(&pkt->data);
     /* fail safe */
-    pkt->data = NULL;
     pkt->size = 0;
 }
 
@@ -219,7 +220,7 @@ void av_free_packet(AVPacket *pkt)
 
 int fifo_init(FifoBuffer *f, int size)
 {
-    f->buffer = malloc(size);
+    f->buffer = av_malloc(size);
     if (!f->buffer)
         return -1;
     f->end = f->buffer + size;
@@ -229,7 +230,7 @@ int fifo_init(FifoBuffer *f, int size)
 
 void fifo_free(FifoBuffer *f)
 {
-    free(f->buffer);
+    av_free(f->buffer);
 }
 
 int fifo_size(FifoBuffer *f, UINT8 *rptr)
@@ -343,8 +344,7 @@ AVFormatContext *av_open_input_file(const char *filename,
     return ic;
 
  fail:
-    if (ic)
-        free(ic);
+    av_free(ic);
     return NULL;
 }
 
@@ -357,7 +357,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* read packet from packet buffer, if there is data */
         *pkt = pktl->pkt;
         s->packet_buffer = pktl->next;
-        free(pktl);
+        av_free(pktl);
         return 0;
     } else {
         return s->format->read_packet(s, pkt);
@@ -371,7 +371,7 @@ void av_close_input_file(AVFormatContext *s)
     if (s->format->read_close)
         s->format->read_close(s);
     for(i=0;i<s->nb_streams;i++) {
-        free(s->streams[i]);
+        av_free(s->streams[i]);
     }
     if (s->packet_buffer) {
         AVPacketList *p, *p1;
@@ -379,7 +379,7 @@ void av_close_input_file(AVFormatContext *s)
         while (p != NULL) {
             p1 = p->next;
             av_free_packet(&p->pkt);
-            free(p);
+            av_free(p);
             p = p1;
         }
         s->packet_buffer = NULL;
@@ -387,7 +387,7 @@ void av_close_input_file(AVFormatContext *s)
     if (!(s->format->flags & AVFMT_NOFILE)) {
         url_fclose(&s->pb);
     }
-    free(s);
+    av_free(s);
 }
 
 
