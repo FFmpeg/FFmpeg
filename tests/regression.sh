@@ -150,6 +150,13 @@ do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1v
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 
+# mpeg2 encoding
+file=${outfile}mpeg2.mpg
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -idct_algo 1 -dct_algo 2 -f mpeg1video $file 
+
+# mpeg2 decoding
+do_ffmpeg $raw_dst -y -idct_algo 1 -i $file -f rawvideo $raw_dst
+
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2i.mpg
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -ildct -ilme $file 

@@ -5,6 +5,9 @@ stddev:  5.03 PSNR:34.07 bytes:7602176
 8a7a3b90f1fac5e207f3e9e3cdf11197 *./data/a-mpeg2.mpg
 686d5937aec5c8ffd3a7be5363580b79 *./data/out.yuv
 stddev:  5.05 PSNR:34.04 bytes:7602176
+7b9333730f9a1ca89134b9b1c55700d3 *./data/a-mpeg2.mpg
+acd0d0f73b95d5a4ed5da34e567e4a6e *./data/out.yuv
+stddev:  5.05 PSNR:34.04 bytes:7602176
 3f5ee459440c4bc5f9fd8f53e2591073 *./data/a-mpeg2i.mpg
 07f678cfa5f1c81657dadbc820d20841 *./data/out.yuv
 stddev:  5.06 PSNR:34.02 bytes:7602176
