@@ -442,6 +442,8 @@ typedef struct MJpegDecodeContext {
     INT16 quant_matrixes[4][64];
     VLC vlcs[2][4];
     int width, height;
+    int nb_components;
+    int component_id[MAX_COMPONENTS];
     int h_count[MAX_COMPONENTS]; /* horizontal and vertical count for each component */
     int v_count[MAX_COMPONENTS];
     int h_max, v_max; /* maximum h and v counts */
@@ -552,7 +554,7 @@ static int mjpeg_decode_dht(MJpegDecodeContext *s,
 static int mjpeg_decode_sof0(MJpegDecodeContext *s,
                              UINT8 *buf, int buf_size)
 {
-    int len, nb_components, i, index, width, height;
+    int len, nb_components, i, width, height;
 
     init_get_bits(&s->gb, buf, buf_size);
 
@@ -568,14 +570,12 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
     if (nb_components <= 0 ||
         nb_components > MAX_COMPONENTS)
         return -1;
+    s->nb_components = nb_components;
     s->h_max = 1;
     s->v_max = 1;
     for(i=0;i<nb_components;i++) {
         /* component id */
-        index = get_bits(&s->gb, 8) - 1;
-        /* XXX: avoid this limitation */
-        if (index < 0 || index >= MAX_COMPONENTS)
-            return -1;
+        s->component_id[i] = get_bits(&s->gb, 8) - 1;
         s->h_count[i] = get_bits(&s->gb, 4);
         s->v_count[i] = get_bits(&s->gb, 4);
         /* compute hmax and vmax (only used in interleaved case) */
@@ -583,11 +583,12 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s,
             s->h_max = s->h_count[i];
         if (s->v_count[i] > s->v_max)
             s->v_max = s->v_count[i];
-
+#if 1
         /* XXX: only 420 is accepted */
         if ((i == 0 && (s->h_count[i] != 2 || s->v_count[i] != 2)) ||
             (i != 0 && (s->h_count[i] != 1 || s->v_count[i] != 1)))
             return -1;
+#endif
         s->quant_index[i] = get_bits(&s->gb, 8);
         if (s->quant_index[i] >= 4)
             return -1;
@@ -696,7 +697,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
                             UINT8 *buf, int buf_size)
 {
     int len, nb_components, i, j, n, h, v;
-    int mb_width, mb_height, mb_x, mb_y, vmax, hmax, index;
+    int mb_width, mb_height, mb_x, mb_y, vmax, hmax, index, id;
     int comp_index[4];
     int dc_index[4];
     int ac_index[4];
@@ -714,12 +715,15 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
     vmax = 0;
     hmax = 0;
     for(i=0;i<nb_components;i++) {
-        index = get_bits(&s->gb, 8) - 1;
-        /* XXX: this limitation is not OK */
-        if (index < 0 || index >= 4) 
+        id = get_bits(&s->gb, 8) - 1;
+        /* find component index */
+        for(index=0;index<s->nb_components;index++)
+            if (id == s->component_id[index])
+                break;
+        if (index == s->nb_components)
             return -1;
+
         comp_index[i] = index;
-        
         nb_blocks[i] = s->h_count[index] * s->v_count[index];
         h_count[i] = s->h_count[index];
         v_count[i] = s->v_count[index];
