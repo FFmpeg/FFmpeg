@@ -700,6 +700,11 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if((s->flags & CODEC_FLAG_QP_RD) && s->avctx->mb_decision != FF_MB_DECISION_RD){
+        av_log(avctx, AV_LOG_ERROR, "QP RD needs mbd=2\n");
+        return -1;
+    }
+    
     if(s->codec_id==CODEC_ID_MJPEG){
         s->intra_quant_bias= 1<<(QUANT_BIAS_SHIFT-1); //(a + x/2)/x
         s->inter_quant_bias= 0;
