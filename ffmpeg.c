@@ -890,7 +890,7 @@ static int av_encode(AVFormatContext **output_files,
 #endif
     term_init();
 
-    start_time = gettime();
+    start_time = av_gettime();
     min_pts = 0;
     stream_no_data = 0;
     key = -1;
@@ -1959,7 +1959,7 @@ INT64 getutime(void)
 #else
 INT64 getutime(void)
 {
-  return gettime();
+  return av_gettime();
 }
 #endif
 
@@ -2134,7 +2134,7 @@ int main(int argc, char **argv)
     const OptionDef *po;
     INT64 ti;
     
-    register_all();
+    av_register_all();
 
     /* detect if invoked as player */
     i = strlen(argv[0]);

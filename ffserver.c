@@ -1430,9 +1430,9 @@ static int open_input_stream(HTTPContext *c, const char *info)
             stream_pos = parse_date(buf, 0);
         } else if (find_info_tag(buf, sizeof(buf), "buffer", info)) {
             int prebuffer = strtol(buf, 0, 10);
-            stream_pos = gettime() - prebuffer * 1000000;
+            stream_pos = av_gettime() - prebuffer * 1000000;
         } else {
-            stream_pos = gettime() - c->stream->prebuffer * 1000;
+            stream_pos = av_gettime() - c->stream->prebuffer * 1000;
         }
     } else {
         strcpy(input_filename, c->stream->feed_filename);
@@ -2585,7 +2585,7 @@ int main(int argc, char **argv)
     int c;
     struct sigaction sigact;
 
-    register_all();
+    av_register_all();
 
     config_filename = "/etc/ffserver.conf";
 
