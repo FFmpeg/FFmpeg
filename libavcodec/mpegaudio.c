@@ -20,13 +20,35 @@
 #include <math.h>
 #include "mpegaudio.h"
 
+#define DCT_BITS 14 /* number of bits for the DCT */
+#define MUL(a,b) (((a) * (b)) >> DCT_BITS)
+#define FIX(a)   ((int)((a) * (1 << DCT_BITS)))
+
+#define SAMPLES_BUF_SIZE 4096
+
+typedef struct MpegAudioContext {
+    PutBitContext pb;
+    int nb_channels;
+    int freq, bit_rate;
+    int lsf;           /* 1 if mpeg2 low bitrate selected */
+    int bitrate_index; /* bit rate */
+    int freq_index;
+    int frame_size; /* frame size, in bits, without padding */
+    INT64 nb_samples; /* total number of samples encoded */
+    /* padding computation */
+    int frame_frac, frame_frac_incr, do_padding;
+    short samples_buf[MPA_MAX_CHANNELS][SAMPLES_BUF_SIZE]; /* buffer for filter */
+    int samples_offset[MPA_MAX_CHANNELS];       /* offset in samples_buf */
+    int sb_samples[MPA_MAX_CHANNELS][3][12][SBLIMIT];
+    unsigned char scale_factors[MPA_MAX_CHANNELS][SBLIMIT][3]; /* scale factors */
+    /* code to group 3 scale factors */
+    unsigned char scale_code[MPA_MAX_CHANNELS][SBLIMIT];       
+    int sblimit; /* number of used subbands */
+    const unsigned char *alloc_table;
+} MpegAudioContext;
+
 /* define it to use floats in quantization (I don't like floats !) */
 //#define USE_FLOATS
-
-#define MPA_STEREO  0
-#define MPA_JSTEREO 1
-#define MPA_DUAL    2
-#define MPA_MONO    3
 
 #include "mpegaudiotab.h"
 
@@ -36,7 +58,7 @@ int MPA_encode_init(AVCodecContext *avctx)
     int freq = avctx->sample_rate;
     int bitrate = avctx->bit_rate;
     int channels = avctx->channels;
-    int i, v, table, ch_bitrate;
+    int i, v, table;
     float a;
 
     if (channels > 2)
@@ -51,9 +73,9 @@ int MPA_encode_init(AVCodecContext *avctx)
     /* encoding freq */
     s->lsf = 0;
     for(i=0;i<3;i++) {
-        if (freq_tab[i] == freq) 
+        if (mpa_freq_tab[i] == freq) 
             break;
-        if ((freq_tab[i] / 2) == freq) {
+        if ((mpa_freq_tab[i] / 2) == freq) {
             s->lsf = 1;
             break;
         }
@@ -64,7 +86,7 @@ int MPA_encode_init(AVCodecContext *avctx)
 
     /* encoding bitrate & frequency */
     for(i=0;i<15;i++) {
-        if (bitrate_tab[1-s->lsf][i] == bitrate) 
+        if (mpa_bitrate_tab[s->lsf][1][i] == bitrate) 
             break;
     }
     if (i == 15)
@@ -81,20 +103,8 @@ int MPA_encode_init(AVCodecContext *avctx)
     s->frame_frac_incr = (int)((a - floor(a)) * 65536.0);
     
     /* select the right allocation table */
-    ch_bitrate = bitrate / s->nb_channels;
-    if (!s->lsf) {
-        if ((freq == 48000 && ch_bitrate >= 56) ||
-            (ch_bitrate >= 56 && ch_bitrate <= 80)) 
-            table = 0;
-        else if (freq != 48000 && ch_bitrate >= 96) 
-            table = 1;
-        else if (freq != 32000 && ch_bitrate <= 48) 
-            table = 2;
-        else 
-            table = 3;
-    } else {
-        table = 4;
-    }
+    table = l2_select_table(bitrate, s->nb_channels, freq, s->lsf);
+
     /* number of used subbands */
     s->sblimit = sblimit_table[table];
     s->alloc_table = alloc_tables[table];
@@ -107,10 +117,16 @@ int MPA_encode_init(AVCodecContext *avctx)
     for(i=0;i<s->nb_channels;i++)
         s->samples_offset[i] = 0;
 
-    for(i=0;i<512;i++) {
-        float a = enwindow[i] * 32768.0 * 16.0;
-        filter_bank[i] = (int)(a);
+    for(i=0;i<257;i++) {
+        int v;
+        v = (mpa_enwindow[i] + 2) >> 2;
+        filter_bank[i] = v;
+        if ((i & 63) != 0)
+            v = -v;
+        if (i != 0)
+            filter_bank[512 - i] = v;
     }
+
     for(i=0;i<64;i++) {
         v = (int)(pow(2.0, (3 - i) / 3.0) * (1 << 20));
         if (v <= 0)
@@ -151,7 +167,7 @@ int MPA_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/* 32 point floating point IDCT */
+/* 32 point floating point IDCT without 1/sqrt(2) coef zero scaling */
 static void idct32(int *out, int *tab, int sblimit, int left_shift)
 {
     int i, j;
