@@ -47,7 +47,7 @@ static inline int sad_hpel_motion_search(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
 				  int xmin, int ymin, int xmax, int ymax,
                                   int pred_x, int pred_y, Picture *picture,
-                                  int n, int size, uint16_t * const mv_penalty);
+                                  int n, int size, uint8_t * const mv_penalty);
 
 static inline int update_map_generation(MpegEncContext * s)
 {
@@ -657,7 +657,7 @@ static inline int sad_hpel_motion_search(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
 				  int xmin, int ymin, int xmax, int ymax,
                                   int pred_x, int pred_y, Picture *picture,
-                                  int n, int size, uint16_t * const mv_penalty)
+                                  int n, int size, uint8_t * const mv_penalty)
 {
     uint8_t *ref_picture= picture->data[0];
     uint32_t *score_map= s->me.score_map;
@@ -831,7 +831,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int xmin, int ymin, int xma
     int block;
     int P[10][2];
     int dmin_sum=0, mx4_sum=0, my4_sum=0;
-    uint16_t * const mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV;
+    uint8_t * const mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV;
 
     for(block=0; block<4; block++){
         int mx4, my4;
@@ -982,7 +982,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     int mb_type=0;
     uint8_t *ref_picture= s->last_picture.data[0];
     Picture * const pic= &s->current_picture;
-    uint16_t * const mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV;
+    uint8_t * const mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV;
     
     assert(s->quarter_sample==0 || s->quarter_sample==1);
 
@@ -1151,7 +1151,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
     int pred_x=0, pred_y=0;
     int P[10][2];
     const int shift= 1+s->quarter_sample;
-    uint16_t * const mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV;
+    uint8_t * const mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV;
     const int mv_stride= s->mb_width + 2;
     const int xy= mb_x + 1 + (mb_y + 1)*mv_stride;
     
@@ -1213,7 +1213,7 @@ static int ff_estimate_motion_b(MpegEncContext * s,
     const int mot_stride = s->mb_width + 2;
     const int mot_xy = (mb_y + 1)*mot_stride + mb_x + 1;
     uint8_t * const ref_picture= picture->data[0];
-    uint16_t * const mv_penalty= s->me.mv_penalty[f_code] + MAX_MV;
+    uint8_t * const mv_penalty= s->me.mv_penalty[f_code] + MAX_MV;
     int mv_scale;
         
     s->me.penalty_factor    = get_penalty_factor(s, s->avctx->me_cmp);
@@ -1310,7 +1310,7 @@ static inline int check_bidir_mv(MpegEncContext * s,
     //FIXME optimize?
     //FIXME move into template?
     //FIXME better f_code prediction (max mv & distance)
-    uint16_t *mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
+    uint8_t * const mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
     uint8_t *dest_y = s->me.scratchpad;
     uint8_t *ptr;
     int dxy;
@@ -1405,7 +1405,7 @@ static inline int direct_search(MpegEncContext * s,
     const int time_pb= s->pb_time;
     int mx, my, xmin, xmax, ymin, ymax;
     int16_t (*mv_table)[2]= s->b_direct_mv_table;
-    uint16_t * const mv_penalty= s->me.mv_penalty[1] + MAX_MV;
+    uint8_t * const mv_penalty= s->me.mv_penalty[1] + MAX_MV;
     
     ymin= xmin=(-32)>>shift;
     ymax= xmax=   31>>shift;

@@ -164,24 +164,24 @@ typedef struct MotionEstContext{
     int mb_penalty_factor;
     int pre_pass;                      ///< = 1 for the pre pass 
     int dia_size;
-    uint16_t (*mv_penalty)[MAX_MV*2+1];  ///< amount of bits needed to encode a MV 
+    uint8_t (*mv_penalty)[MAX_MV*2+1];  ///< amount of bits needed to encode a MV 
     int (*sub_motion_search)(struct MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
 				  int xmin, int ymin, int xmax, int ymax,
                                   int pred_x, int pred_y, Picture *ref_picture, 
-                                  int n, int size, uint16_t * const mv_penalty);
+                                  int n, int size, uint8_t * const mv_penalty);
     int (*motion_search[7])(struct MpegEncContext * s, int block,
                              int *mx_ptr, int *my_ptr,
                              int P[10][2], int pred_x, int pred_y,
                              int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
-                             int ref_mv_scale, uint16_t * const mv_penalty);
+                             int ref_mv_scale, uint8_t * const mv_penalty);
     int (*pre_motion_search)(struct MpegEncContext * s, int block,
                              int *mx_ptr, int *my_ptr,
                              int P[10][2], int pred_x, int pred_y,
                              int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
-                             int ref_mv_scale, uint16_t * const mv_penalty);
+                             int ref_mv_scale, uint8_t * const mv_penalty);
     int (*get_mb_score)(struct MpegEncContext * s, int mx, int my, int pred_x, int pred_y, Picture *ref_picture, 
-                                  uint16_t * const mv_penalty);
+                                  uint8_t * const mv_penalty);
 }MotionEstContext;
 
 /**

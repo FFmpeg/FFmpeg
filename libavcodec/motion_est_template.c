@@ -72,7 +72,7 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
 				  int xmin, int ymin, int xmax, int ymax,
                                   int pred_x, int pred_y, Picture *ref_picture, 
-                                  int n, int size, uint16_t * const mv_penalty)
+                                  int n, int size, uint8_t * const mv_penalty)
 {
     const int xx = 16 * s->mb_x + 8*(n&1);
     const int yy = 16 * s->mb_y + 8*(n>>1);
@@ -141,7 +141,7 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
 				  int xmin, int ymin, int xmax, int ymax,
                                   int pred_x, int pred_y, Picture *ref_picture, 
-                                  int n, int size, uint16_t * const mv_penalty)
+                                  int n, int size, uint8_t * const mv_penalty)
 {
     const int xx = 16 * s->mb_x + 8*(n&1);
     const int yy = 16 * s->mb_y + 8*(n>>1);
@@ -246,7 +246,7 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
 #endif
 
 static int RENAME(hpel_get_mb_score)(MpegEncContext * s, int mx, int my, int pred_x, int pred_y, Picture *ref_picture, 
-                                  uint16_t * const mv_penalty)
+                                  uint8_t * const mv_penalty)
 {
 //    const int check_luma= s->dsp.me_sub_cmp != s->dsp.mb_cmp;
     const int size= 0;
@@ -295,7 +295,7 @@ static int RENAME(qpel_motion_search)(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
 				  int xmin, int ymin, int xmax, int ymax,
                                   int pred_x, int pred_y, Picture *ref_picture, 
-                                  int n, int size, uint16_t * const mv_penalty)
+                                  int n, int size, uint8_t * const mv_penalty)
 {
     const int xx = 16 * s->mb_x + 8*(n&1);
     const int yy = 16 * s->mb_y + 8*(n>>1);
@@ -513,7 +513,7 @@ static int RENAME(qpel_motion_search)(MpegEncContext * s,
 }
 
 static int RENAME(qpel_get_mb_score)(MpegEncContext * s, int mx, int my, int pred_x, int pred_y, Picture *ref_picture, 
-                                  uint16_t * const mv_penalty)
+                                  uint8_t * const mv_penalty)
 {
     const int size= 0;
     const int xx = 16 * s->mb_x;
@@ -598,7 +598,7 @@ static inline int RENAME(small_diamond_search)(MpegEncContext * s, int *best, in
                                        Picture *ref_picture,
                                        int const pred_x, int const pred_y, int const penalty_factor,
                                        int const xmin, int const ymin, int const xmax, int const ymax, int const shift,
-                                       uint32_t *map, int map_generation, int size, uint16_t * const mv_penalty
+                                       uint32_t *map, int map_generation, int size, uint8_t * const mv_penalty
                                        )
 {
     me_cmp_func cmp, chroma_cmp;
@@ -640,7 +640,7 @@ static inline int RENAME(funny_diamond_search)(MpegEncContext * s, int *best, in
                                        Picture *ref_picture,
                                        int const pred_x, int const pred_y, int const penalty_factor,
                                        int const xmin, int const ymin, int const xmax, int const ymax, int const shift,
-                                       uint32_t *map, int map_generation, int size, uint16_t * const mv_penalty
+                                       uint32_t *map, int map_generation, int size, uint8_t * const mv_penalty
                                        )
 {
     me_cmp_func cmp, chroma_cmp;
@@ -731,7 +731,7 @@ static inline int RENAME(sab_diamond_search)(MpegEncContext * s, int *best, int 
                                        Picture *ref_picture,
                                        int const pred_x, int const pred_y, int const penalty_factor,
                                        int const xmin, int const ymin, int const xmax, int const ymax, int const shift,
-                                       uint32_t *map, int map_generation, int size, uint16_t * const mv_penalty
+                                       uint32_t *map, int map_generation, int size, uint8_t * const mv_penalty
                                        )
 {
     me_cmp_func cmp, chroma_cmp;
@@ -811,7 +811,7 @@ static inline int RENAME(var_diamond_search)(MpegEncContext * s, int *best, int 
                                        Picture *ref_picture,
                                        int const pred_x, int const pred_y, int const penalty_factor,
                                        int const xmin, int const ymin, int const xmax, int const ymax, int const shift,
-                                       uint32_t *map, int map_generation, int size, uint16_t * const mv_penalty
+                                       uint32_t *map, int map_generation, int size, uint8_t * const mv_penalty
                                        )
 {
     me_cmp_func cmp, chroma_cmp;
@@ -888,7 +888,7 @@ static int RENAME(epzs_motion_search)(MpegEncContext * s, int block,
                              int *mx_ptr, int *my_ptr,
                              int P[10][2], int pred_x, int pred_y,
                              int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
-                             int ref_mv_scale, uint16_t * const mv_penalty)
+                             int ref_mv_scale, uint8_t * const mv_penalty)
 {
     int best[2]={0, 0};
     int d, dmin; 
@@ -1000,7 +1000,7 @@ static int RENAME(epzs_motion_search4)(MpegEncContext * s, int block,
                              int *mx_ptr, int *my_ptr,
                              int P[10][2], int pred_x, int pred_y,
                              int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
-                             int ref_mv_scale, uint16_t * const mv_penalty)
+                             int ref_mv_scale, uint8_t * const mv_penalty)
 {
     int best[2]={0, 0};
     int d, dmin; 

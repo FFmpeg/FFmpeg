@@ -82,7 +82,7 @@ static const uint8_t h263_chroma_roundtab[16] = {
 };
 
 #ifdef CONFIG_ENCODERS
-static uint16_t (*default_mv_penalty)[MAX_MV*2+1]=NULL;
+static uint8_t (*default_mv_penalty)[MAX_MV*2+1]=NULL;
 static uint8_t default_fcode_tab[MAX_MV*2+1];
 
 enum PixelFormat ff_yuv420p_list[2]= {PIX_FMT_YUV420P, -1};
@@ -680,8 +680,8 @@ int MPV_encode_init(AVCodecContext *avctx)
             int i;
             done=1;
 
-            default_mv_penalty= av_mallocz( sizeof(uint16_t)*(MAX_FCODE+1)*(2*MAX_MV+1) );
-            memset(default_mv_penalty, 0, sizeof(uint16_t)*(MAX_FCODE+1)*(2*MAX_MV+1));
+            default_mv_penalty= av_mallocz( sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1) );
+            memset(default_mv_penalty, 0, sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1));
             memset(default_fcode_tab , 0, sizeof(uint8_t)*(2*MAX_MV+1));
 
             for(i=-16; i<16; i++){
