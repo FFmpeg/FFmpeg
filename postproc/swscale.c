@@ -42,6 +42,7 @@ untested special converters
   YUY2/BGR15/BGR16/BGR24/BGR32/RGB24/RGB32 -> same format
   BGR24 -> BGR32 & RGB24 -> RGB32
   BGR32 -> BGR24 & RGB32 -> RGB24
+  BGR24 -> YV12
 */
 
 #include <inttypes.h>
@@ -1227,6 +1228,18 @@ static void bgr15to16Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 	}     
 }
 
+static void bgr24toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+
+	rgb24toyv12(
+		src[0], 
+		dst[0]+ srcSliceY    *dstStride[0], 
+		dst[1]+(srcSliceY>>1)*dstStride[1], 
+		dst[2]+(srcSliceY>>1)*dstStride[2],
+		c->srcW, srcSliceH, 
+		dstStride[0], dstStride[1], srcStride[0]);
+}
+
 
 /* unscaled copy like stuff (assumes nearly identical formats) */
 static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
@@ -1443,6 +1456,17 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if(srcFormat==IMGFMT_BGR15 && dstFormat==IMGFMT_BGR16)
 		{
 			c->swScale= bgr15to16Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				printf("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr24toYV12 */
+		if(srcFormat==IMGFMT_BGR24 && dstFormat==IMGFMT_YV12)
+		{
+			c->swScale= bgr24toyv12Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
 				printf("SwScaler: using unscaled %s -> %s special converter\n", 
