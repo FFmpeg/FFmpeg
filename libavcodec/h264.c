@@ -3762,7 +3762,7 @@ static int decode_slice_header(H264Context *h){
     else
         h->use_weight = 0;
     
-    if(s->current_picture.reference == 3)
+    if(s->current_picture.reference)
         decode_ref_pic_marking(h);
 
     if( h->slice_type != I_TYPE && h->slice_type != SI_TYPE && h->pps.cabac )
