@@ -49,6 +49,7 @@ typedef struct {
     int64_t  movi_end;
     offset_t movi_list;
     int index_loaded;
+    int is_odml;
     DVDemuxContext* dv_demux;
 } AVIContext;
 
@@ -128,6 +129,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 goto end_of_header;
             }
             break;
+        case MKTAG('d', 'm', 'l', 'h'):
+	    avi->is_odml = 1;
+	    url_fskip(pb, size + (size & 1));
+	    break;
         case MKTAG('a', 'v', 'i', 'h'):
 	    /* avi header */
             /* using frame_period is bad idea */
@@ -363,7 +368,8 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int n, d[8], size, i;
+    int n, d[8], size;
+    offset_t i;
     void* dstr;
 
     memset(d, -1, sizeof(int)*8);
@@ -377,19 +383,12 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     for(i=url_ftell(pb); !url_feof(pb); i++) {
         int j;
 
-	if (i >= avi->movi_end) { /* Let's see if it's an OpenDML AVI */
-	    uint32_t tag, size, tag2;
-	    url_fskip(pb, avi->riff_end - url_ftell(pb));
-	    if (get_riff(avi, pb) < 0)
-	        return -1;
-	    
-	    tag = get_le32(pb);
-	    size = get_le32(pb);
-	    tag2 = get_le32(pb);
-	    if (tag == MKTAG('L','I','S','T') && tag2 == MKTAG('m','o','v','i'))
-	        avi->movi_end = url_ftell(pb) + size - 4; 
-	    else
-	        return -1;
+	if (i >= avi->movi_end) {
+	    if (avi->is_odml) {
+		url_fskip(pb, avi->riff_end - i);
+	        avi->riff_end = avi->movi_end = url_filesize(url_fileno(pb));
+	    } else
+	        break;
 	}
 
         for(j=0; j<7; j++)
@@ -405,6 +404,13 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             && d[0] == 'i' && d[1] == 'x'
             && n < s->nb_streams
             && i + size <= avi->movi_end){
+            
+            url_fskip(pb, size);
+        }
+
+	//parse JUNK
+        if(d[0] == 'J' && d[1] == 'U' && d[2] == 'N' && d[3] == 'K' &&
+           i + size <= avi->movi_end) {
             
             url_fskip(pb, size);
         }
