@@ -286,7 +286,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
                 return -1;
             /* note: realloc has been done, so reload tables */
             table = &vlc->table[table_index];
-            table[i][0] = index - table_index; //code
+            table[i][0] = index; //code
         }
     }
     return table_index;

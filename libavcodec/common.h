@@ -724,7 +724,6 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *codes, int codes_wrap, int codes_size);
 void free_vlc(VLC *vlc);
 
-//note table will be trashed (pointer increased)
 #define GET_VLC(code, name, gb, table, bits, max_depth)\
 {\
     int n, index, nb_bits;\
@@ -738,9 +737,8 @@ void free_vlc(VLC *vlc);
         UPDATE_CACHE(name, gb)\
 \
         nb_bits = -n;\
-        table += code;\
 \
-        index= SHOW_UBITS(name, gb, nb_bits);\
+        index= SHOW_UBITS(name, gb, nb_bits) + code;\
         code = table[index][0];\
         n    = table[index][1];\
         if(max_depth > 2 && n < 0){\
@@ -748,9 +746,8 @@ void free_vlc(VLC *vlc);
             UPDATE_CACHE(name, gb)\
 \
             nb_bits = -n;\
-            table += code;\
 \
-            index= SHOW_UBITS(name, gb, nb_bits);\
+            index= SHOW_UBITS(name, gb, nb_bits) + code;\
             code = table[index][0];\
             n    = table[index][1];\
         }\
