@@ -79,7 +79,7 @@ static int hpel_motion_search)(MpegEncContext * s,
         return dmin;
     }
         
-    if(s->avctx->me_cmp != s->avctx->me_sub_cmp){
+    if(c->avctx->me_cmp != c->avctx->me_sub_cmp){
         CMP_HPEL(dmin, 0, 0, mx, my, size);
         if(mx || my)
             dmin += (mv_penalty[2*mx - pred_x] + mv_penalty[2*my - pred_y])*penalty_factor;
@@ -138,7 +138,7 @@ static int hpel_motion_search(MpegEncContext * s,
         return dmin;
     }
         
-    if(s->avctx->me_cmp != s->avctx->me_sub_cmp){
+    if(c->avctx->me_cmp != c->avctx->me_sub_cmp){
         dmin= cmp(s, mx, my, 0, 0, size, h, ref_index, src_index, cmp_sub, chroma_cmp_sub, flags);
         if(mx || my || size>0)
             dmin += (mv_penalty[2*mx - pred_x] + mv_penalty[2*my - pred_y])*penalty_factor;
@@ -243,7 +243,7 @@ static int inline get_mb_score(MpegEncContext * s, int mx, int my, int src_index
     chroma_cmp_sub= s->dsp.mb_cmp[size+1];
     
     assert(!c->skip);
-    assert(s->avctx->me_sub_cmp != s->avctx->mb_cmp);
+    assert(c->avctx->me_sub_cmp != c->avctx->mb_cmp);
 
     d= cmp(s, mx>>(qpel+1), my>>(qpel+1), mx&mask, my&mask, size, h, ref_index, src_index, cmp_sub, chroma_cmp_sub, flags);
     //FIXME check cbp before adding penalty for (0,0) vector
@@ -272,7 +272,7 @@ static int qpel_motion_search(MpegEncContext * s,
     const int my = *my_ptr;   
     const int penalty_factor= c->sub_penalty_factor;
     const int map_generation= c->map_generation;
-    const int subpel_quality= s->avctx->me_subpel_quality;
+    const int subpel_quality= c->avctx->me_subpel_quality;
     uint32_t *map= c->map;
     me_cmp_func cmpf, chroma_cmpf;
     me_cmp_func cmp_sub, chroma_cmp_sub;
@@ -293,7 +293,7 @@ static int qpel_motion_search(MpegEncContext * s,
         return dmin;
     }
         
-    if(s->avctx->me_cmp != s->avctx->me_sub_cmp){
+    if(c->avctx->me_cmp != c->avctx->me_sub_cmp){
         dmin= cmp(s, mx, my, 0, 0, size, h, ref_index, src_index, cmp_sub, chroma_cmp_sub, flags);
         if(mx || my || size>0)
             dmin += (mv_penalty[4*mx - pred_x] + mv_penalty[4*my - pred_y])*penalty_factor;
@@ -908,8 +908,8 @@ static always_inline int epzs_motion_search_internal(MpegEncContext * s, int *mx
         }
     }
 
-    if(s->avctx->last_predictor_count){
-        const int count= s->avctx->last_predictor_count;
+    if(c->avctx->last_predictor_count){
+        const int count= c->avctx->last_predictor_count;
         const int xstart= FFMAX(0, s->mb_x - count);
         const int ystart= FFMAX(0, s->mb_y - count);
         const int xend= FFMIN(s->mb_width , s->mb_x + count + 1);

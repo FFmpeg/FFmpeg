@@ -196,6 +196,7 @@ struct MpegEncContext;
  * Motion estimation context.
  */
 typedef struct MotionEstContext{
+    AVCodecContext *avctx;
     int skip;                          ///< set if ME is skiped for the current MB 
     int co_located_mv[4][2];           ///< mv from last p frame for direct mode ME 
     int direct_basis_mv[4][2];
@@ -226,6 +227,10 @@ typedef struct MotionEstContext{
     uint8_t *ref[4][4];
     int stride;
     int uvstride;
+    /* temp variables for picture complexity calculation */
+    int mc_mb_var_sum_temp;
+    int mb_var_sum_temp;
+    int scene_change_score;
 /*    cmp, chroma_cmp;*/
     op_pixels_func (*hpel_put)[4];
     op_pixels_func (*hpel_avg)[4];
@@ -393,7 +398,6 @@ typedef struct MpegEncContext {
     uint8_t (*p_field_select_table[2]);
     uint8_t (*b_field_select_table[2][2]);
     int me_method;                       ///< ME algorithm 
-    int scene_change_score;
     int mv_dir;
 #define MV_DIR_BACKWARD  1
 #define MV_DIR_FORWARD   2
@@ -508,10 +512,6 @@ typedef struct MpegEncContext {
     int misc_bits; ///< cbp, mb_type
     int last_bits; ///< temp var used for calculating the above vars
     
-    /* temp variables for picture complexity calculation */
-    int mc_mb_var_sum_temp;
-    int mb_var_sum_temp;
-
     /* error concealment / resync */
     int error_count;
     uint8_t *error_status_table;       ///< table of the error status of each MB  
