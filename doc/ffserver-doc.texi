@@ -1,18 +1,30 @@
-The FFserver streaming HOWTO
-----------------------------
+\input texinfo @c -*- texinfo -*-
 
-Philip Gladstone <philip-ffserver@gladstonefamily.net>
-Last updated: July 26, 2002
+@settitle FFserver Documentation
+@titlepage
+@sp 7
+@center @titlefont{FFserver Documentation}
+@sp 3
+@end titlepage
 
-0. What is this HOWTO about?
 
-This covers only the streaming aspects of ffserver / ffmpeg. All questions about
-parameters for ffmpeg, codec questions, etc. are not covered here.
+@chapter Introduction
 
-You should also read the ffserver.txt file in this directory. It contains
-roughly the same information.
+FFserver is a streaming server for both audio and video. It supports
+several live feeds, streaming from files and time shifting on live feeds
+(you can seek to positions in the past on each live feed, provided you
+specify a big enough feed storage in ffserver.conf).
 
-1. What can this do?
+This documentation covers only the streaming aspects of ffserver /
+ffmpeg. All questions about parameters for ffmpeg, codec questions,
+etc. are not covered here. Read @file{ffmpeg-doc.[texi|html]} for more
+information.
+
+@chapter QuickStart
+
+[Contributed by Philip Gladstone, philip-ffserver at gladstonefamily dot net]
+
+@section What can this do?
 
 When properly configured and running, you can capture video and audio in real
 time from a suitable capture card, and stream it out over the Internet to
@@ -21,7 +33,7 @@ either Windows Media Player or RealAudio player (with some restrictions).
 It can also stream from files, though that is currently broken. Very often, a
 web server can be used to serve up the files just as well.
 
-2. What do I need?
+@section What do I need?
 
 I use Linux on a 900MHz Duron with a cheapo Bt848 based TV capture card. I'm
 using stock linux 2.4.17 with the stock drivers. [Actually that isn't true,
@@ -29,7 +41,7 @@ I needed some special drivers from my motherboard based sound card.]
 
 I understand that FreeBSD systems work just fine as well.
 
-3. How do I make it work?
+@section How do I make it work?
 
 First, build the kit. It *really* helps to have installed LAME first. Then when
 you run the ffserver ./configure, make sure that you have the --enable-mp3lame
@@ -40,28 +52,32 @@ ask why the other audio types do not work.
 
 As a simple test, just run the following two command lines:
 
+@example
 ./ffserver -f doc/ffserver.conf &
 ./ffmpeg http://localhost:8090/feed1.ffm
+@end example
 
 At this point you should be able to go to your windows machine and fire up
 Windows Media Player (WMP). Go to Open URL and enter 
 
+@example
     http://<linuxbox>:8090/test.asf
+@end example
 
 You should see (after a short delay) video and hear audio. 
 
 WARNING: trying to stream test1.mpg doesn't work with WMP as it tries to
 transfer the entire file before starting to play.
 
-4. What happens next?
+@section What happens next?
 
 You should edit the ffserver.conf file to suit your needs (in terms of 
 frame rates etc). Then install ffserver and ffmpeg, write a script to start
 them up, and off you go.
 
-5. Troubleshooting
+@section Troubleshooting
 
-* I don't hear any audio, but video is fine
+@subsection I don't hear any audio, but video is fine
 
 Maybe you didn't install LAME, or get your ./configure statement right. Check
 the ffmpeg output to see if a line referring to mp3 is present. If not, then
@@ -72,15 +88,15 @@ that only captures in stereo and also requires that one channel be flipped.
 If you are one of these people, then export 'AUDIO_FLIP_LEFT=1' before 
 starting ffmpeg.
 
-* The audio and video loose sync after a while.
+@subsection The audio and video loose sync after a while.
 
 Yes, they do.
 
-* After a long while, the video update rate goes way down in WMP.
+@subsection After a long while, the video update rate goes way down in WMP.
 
 Yes, it does. Who knows why?
 
-* WMP 6.4 behaves differently to WMP 7.
+@subsection WMP 6.4 behaves differently to WMP 7.
 
 Yes, it does. Any thoughts on this would be gratefully received. These
 differences extend to embedding WMP into a web page. [There are two
@@ -88,7 +104,7 @@ different object ids that you can use, one of them -- the old one -- cannot
 play very well, and the new one works well (both on the same system). However, 
 I suspect that the new one is not available unless you have installed WMP 7].
 
-6. What else can it do?
+@section What else can it do?
 
 There seems to be a bunch of code that allows you to replay previous
 video. I've never tried it, so it probably doesn't work properly. YMMV.
@@ -108,7 +124,7 @@ are very small and can be transferred quickly. [The stream itself is
 often 'infinite' and thus the browser tries to download it and never 
 finishes.]
 
-7. Tips
+@section Tips
 
 * When you connect to a live stream, most players (WMP, RA etc) want to
 buffer a certain number of seconds of material so that they can display the
@@ -129,7 +145,7 @@ that will be discarded.
 * You may want to adjust the MaxBandwidth in the ffserver.conf to limit
 the amount of bandwidth consumed by live streams.
 
-8. Why does the ?buffer / Preroll stop working after a time?
+@section Why does the ?buffer / Preroll stop working after a time?
 
 It turns out that (on my machine at least) the number of frames successfully
 grabbed is marginally less than the number that ought to be grabbed. This
@@ -140,22 +156,26 @@ or more seconds behind, there is no preroll left.
 Fixing this requires a require in the internals in how timestampts are 
 handled.
 
-9. Does the ?date= stuff work.
+@section Does the @code{?date=} stuff work.
 
 Yes (subject to the caution above). Also note that whenever you start
 ffserver, it deletes the ffm file, thus wiping out what you had recorded
 before. This behaviour is a temporary fix to various crashes. The aim is
 to fix it so that the old data is saved if possible.
 
-The format of the ?date=xxxxxx is fairly flexible. You should use one
+The format of the @code{?date=xxxxxx} is fairly flexible. You should use one
 of the following formats (the 'T' is literal):
 
+@example
 * YYYY-MM-DDTHH:MM:SS     (localtime)
 * YYYY-MM-DDTHH:MM:SSZ    (UTC)
+@end example
 
 You can omit the YYYY-MM-DD, and then it refers to the current day. However 
-note that ?date=16:00:00  refers to 4PM on the current day -- this may be
+note that @samp{?date=16:00:00}  refers to 4PM on the current day -- this may be
 in the future and so unlikely to useful.
 
 You use this by adding the ?date= to the end of the URL for the stream.
-For example:   http://localhost:8080/test.asf?date=2002-07-26T23:05:00
+For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
+
+@bye

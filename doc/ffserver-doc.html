@@ -1,0 +1,306 @@
+<HTML>
+<HEAD>
+<!-- Created by texi2html 1.56k from ffserver-doc.texi on 19 November 2002 -->
+
+<TITLE>FFserver Documentation</TITLE>
+</HEAD>
+<BODY>
+<H1>FFserver Documentation</H1>
+<P>
+<P><HR><P>
+<H1>Table of Contents</H1>
+<UL>
+<LI><A NAME="TOC1" HREF="ffserver-doc.html#SEC1">1. Introduction</A>
+<LI><A NAME="TOC2" HREF="ffserver-doc.html#SEC2">2. QuickStart</A>
+<UL>
+<LI><A NAME="TOC3" HREF="ffserver-doc.html#SEC3">2.1 What can this do?</A>
+<LI><A NAME="TOC4" HREF="ffserver-doc.html#SEC4">2.2 What do I need?</A>
+<LI><A NAME="TOC5" HREF="ffserver-doc.html#SEC5">2.3 How do I make it work?</A>
+<LI><A NAME="TOC6" HREF="ffserver-doc.html#SEC6">2.4 What happens next?</A>
+<LI><A NAME="TOC7" HREF="ffserver-doc.html#SEC7">2.5 Troubleshooting</A>
+<UL>
+<LI><A NAME="TOC8" HREF="ffserver-doc.html#SEC8">2.5.1 I don't hear any audio, but video is fine</A>
+<LI><A NAME="TOC9" HREF="ffserver-doc.html#SEC9">2.5.2 The audio and video loose sync after a while.</A>
+<LI><A NAME="TOC10" HREF="ffserver-doc.html#SEC10">2.5.3 After a long while, the video update rate goes way down in WMP.</A>
+<LI><A NAME="TOC11" HREF="ffserver-doc.html#SEC11">2.5.4 WMP 6.4 behaves differently to WMP 7.</A>
+</UL>
+<LI><A NAME="TOC12" HREF="ffserver-doc.html#SEC12">2.6 What else can it do?</A>
+<LI><A NAME="TOC13" HREF="ffserver-doc.html#SEC13">2.7 Tips</A>
+<LI><A NAME="TOC14" HREF="ffserver-doc.html#SEC14">2.8 Why does the ?buffer / Preroll stop working after a time?</A>
+<LI><A NAME="TOC15" HREF="ffserver-doc.html#SEC15">2.9 Does the <CODE>?date=</CODE> stuff work.</A>
+</UL>
+</UL>
+<P><HR><P>
+
+<P>
+FFserver Documentation
+
+
+
+
+<H1><A NAME="SEC1" HREF="ffserver-doc.html#TOC1">1. Introduction</A></H1>
+
+<P>
+FFserver is a streaming server for both audio and video. It supports
+several live feeds, streaming from files and time shifting on live feeds
+(you can seek to positions in the past on each live feed, provided you
+specify a big enough feed storage in ffserver.conf).
+
+
+<P>
+This documentation covers only the streaming aspects of ffserver /
+ffmpeg. All questions about parameters for ffmpeg, codec questions,
+etc. are not covered here. Read <TT>`ffmpeg-doc.[texi|html]'</TT> for more
+information.
+
+
+
+
+<H1><A NAME="SEC2" HREF="ffserver-doc.html#TOC2">2. QuickStart</A></H1>
+
+<P>
+[Contributed by Philip Gladstone, philip-ffserver at gladstonefamily dot net]
+
+
+
+
+<H2><A NAME="SEC3" HREF="ffserver-doc.html#TOC3">2.1 What can this do?</A></H2>
+
+<P>
+When properly configured and running, you can capture video and audio in real
+time from a suitable capture card, and stream it out over the Internet to
+either Windows Media Player or RealAudio player (with some restrictions).
+
+
+<P>
+It can also stream from files, though that is currently broken. Very often, a
+web server can be used to serve up the files just as well.
+
+
+
+
+<H2><A NAME="SEC4" HREF="ffserver-doc.html#TOC4">2.2 What do I need?</A></H2>
+
+<P>
+I use Linux on a 900MHz Duron with a cheapo Bt848 based TV capture card. I'm
+using stock linux 2.4.17 with the stock drivers. [Actually that isn't true,
+I needed some special drivers from my motherboard based sound card.]
+
+
+<P>
+I understand that FreeBSD systems work just fine as well.
+
+
+
+
+<H2><A NAME="SEC5" HREF="ffserver-doc.html#TOC5">2.3 How do I make it work?</A></H2>
+
+<P>
+First, build the kit. It *really* helps to have installed LAME first. Then when
+you run the ffserver ./configure, make sure that you have the --enable-mp3lame
+flag turned on.
+
+
+<P>
+LAME is important as it allows streaming of audio to Windows Media Player. Don't
+ask why the other audio types do not work.
+
+
+<P>
+As a simple test, just run the following two command lines:
+
+
+
+<PRE>
+./ffserver -f doc/ffserver.conf &#38;
+./ffmpeg http://localhost:8090/feed1.ffm
+</PRE>
+
+<P>
+At this point you should be able to go to your windows machine and fire up
+Windows Media Player (WMP). Go to Open URL and enter 
+
+
+
+<PRE>
+    http://&#60;linuxbox&#62;:8090/test.asf
+</PRE>
+
+<P>
+You should see (after a short delay) video and hear audio. 
+
+
+<P>
+WARNING: trying to stream test1.mpg doesn't work with WMP as it tries to
+transfer the entire file before starting to play.
+
+
+
+
+<H2><A NAME="SEC6" HREF="ffserver-doc.html#TOC6">2.4 What happens next?</A></H2>
+
+<P>
+You should edit the ffserver.conf file to suit your needs (in terms of 
+frame rates etc). Then install ffserver and ffmpeg, write a script to start
+them up, and off you go.
+
+
+
+
+<H2><A NAME="SEC7" HREF="ffserver-doc.html#TOC7">2.5 Troubleshooting</A></H2>
+
+
+
+<H3><A NAME="SEC8" HREF="ffserver-doc.html#TOC8">2.5.1 I don't hear any audio, but video is fine</A></H3>
+
+<P>
+Maybe you didn't install LAME, or get your ./configure statement right. Check
+the ffmpeg output to see if a line referring to mp3 is present. If not, then
+your configuration was incorrect. If it is, then maybe your wiring is not
+setup correctly. Maybe the sound card is not getting data from the right 
+input source. Maybe you have a really awful audio interface (like I do)
+that only captures in stereo and also requires that one channel be flipped. 
+If you are one of these people, then export 'AUDIO_FLIP_LEFT=1' before 
+starting ffmpeg.
+
+
+
+
+<H3><A NAME="SEC9" HREF="ffserver-doc.html#TOC9">2.5.2 The audio and video loose sync after a while.</A></H3>
+
+<P>
+Yes, they do.
+
+
+
+
+<H3><A NAME="SEC10" HREF="ffserver-doc.html#TOC10">2.5.3 After a long while, the video update rate goes way down in WMP.</A></H3>
+
+<P>
+Yes, it does. Who knows why?
+
+
+
+
+<H3><A NAME="SEC11" HREF="ffserver-doc.html#TOC11">2.5.4 WMP 6.4 behaves differently to WMP 7.</A></H3>
+
+<P>
+Yes, it does. Any thoughts on this would be gratefully received. These
+differences extend to embedding WMP into a web page. [There are two
+different object ids that you can use, one of them -- the old one -- cannot
+play very well, and the new one works well (both on the same system). However, 
+I suspect that the new one is not available unless you have installed WMP 7].
+
+
+
+
+<H2><A NAME="SEC12" HREF="ffserver-doc.html#TOC12">2.6 What else can it do?</A></H2>
+
+<P>
+There seems to be a bunch of code that allows you to replay previous
+video. I've never tried it, so it probably doesn't work properly. YMMV.
+In fact, in order to get some level of stability, ffserver now deletes
+all the previously sent video whenever it restarts.
+
+
+<P>
+You can fiddle with many of the codec choices and encoding parameters, and
+there are a bunch more parameters that you cannot control. Post a message
+to the mailing list if there are some 'must have' parameters. Look in the
+ffserver.conf for a list of the currently available controls.
+
+
+<P>
+It will automatically generate the .ASX or .RAM files that are often used
+in browsers. These files are actually redirections to the underlying .ASF
+or .RM file. The reason for this is that the browser often fetches the
+entire file before starting up the external viewer. The redirection files
+are very small and can be transferred quickly. [The stream itself is
+often 'infinite' and thus the browser tries to download it and never 
+finishes.]
+
+
+
+
+<H2><A NAME="SEC13" HREF="ffserver-doc.html#TOC13">2.7 Tips</A></H2>
+
+<P>
+* When you connect to a live stream, most players (WMP, RA etc) want to
+buffer a certain number of seconds of material so that they can display the
+signal continuously. However, ffserver (by default) starts sending data
+in real time. This means that there is a pause of a few seconds while the
+buffering is being done by the player. The good news is that this can be
+cured by adding a '?buffer=5' to the end of the URL. This says that the
+stream should start 5 seconds in the past -- and so the first 5 seconds 
+of the stream is sent as fast as the network will allow. It will then
+slow down to real time. This noticeably improves the startup experience.
+
+
+<P>
+You can also add a 'Preroll 15' statement into the ffserver.conf that will
+add the 15 second prebuffering on all requests that do not otherwise
+specify a time. In addition, ffserver will skip frames until a key_frame
+is found. This further reduces the startup delay by not transferring data
+that will be discarded.
+
+
+<P>
+* You may want to adjust the MaxBandwidth in the ffserver.conf to limit
+the amount of bandwidth consumed by live streams.
+
+
+
+
+<H2><A NAME="SEC14" HREF="ffserver-doc.html#TOC14">2.8 Why does the ?buffer / Preroll stop working after a time?</A></H2>
+
+<P>
+It turns out that (on my machine at least) the number of frames successfully
+grabbed is marginally less than the number that ought to be grabbed. This
+means that the timestamp in the encoded data stream gets behind real time.
+This means that if you say 'preroll 10', then when the stream gets 10
+or more seconds behind, there is no preroll left.
+
+
+<P>
+Fixing this requires a require in the internals in how timestampts are 
+handled.
+
+
+
+
+<H2><A NAME="SEC15" HREF="ffserver-doc.html#TOC15">2.9 Does the <CODE>?date=</CODE> stuff work.</A></H2>
+
+<P>
+Yes (subject to the caution above). Also note that whenever you start
+ffserver, it deletes the ffm file, thus wiping out what you had recorded
+before. This behaviour is a temporary fix to various crashes. The aim is
+to fix it so that the old data is saved if possible.
+
+
+<P>
+The format of the <CODE>?date=xxxxxx</CODE> is fairly flexible. You should use one
+of the following formats (the 'T' is literal):
+
+
+
+<PRE>
+* YYYY-MM-DDTHH:MM:SS     (localtime)
+* YYYY-MM-DDTHH:MM:SSZ    (UTC)
+</PRE>
+
+<P>
+You can omit the YYYY-MM-DD, and then it refers to the current day. However 
+note that <SAMP>`?date=16:00:00'</SAMP>  refers to 4PM on the current day -- this may be
+in the future and so unlikely to useful.
+
+
+<P>
+You use this by adding the ?date= to the end of the URL for the stream.
+For example:   <SAMP>`http://localhost:8080/test.asf?date=2002-07-26T23:05:00'</SAMP>.
+
+
+<P><HR><P>
+This document was generated on 19 November 2002 using
+<A HREF="http://wwwinfo.cern.ch/dis/texi2html/">texi2html</A>&nbsp;1.56k.
+</BODY>
+</HTML>
