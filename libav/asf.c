@@ -301,7 +301,8 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
         
         if (enc->codec_type == CODEC_TYPE_AUDIO) {
             /* WAVEFORMATEX header */
-            put_wav_header(pb, enc);
+            if (put_wav_header(pb, enc) < 0)
+                return -1;
         } else {
             put_le32(pb, enc->width);
             put_le32(pb, enc->height);
@@ -376,7 +377,10 @@ static int asf_write_header(AVFormatContext *s)
     asf->packet_size = PACKET_SIZE;
     asf->nb_packets = 0;
 
-    asf_write_header1(s, 0, 24);
+    if (asf_write_header1(s, 0, 24) < 0) {
+        free(asf);
+        return -1;
+    }
 
     put_flush_packet(&s->pb);
 
@@ -637,7 +641,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ByteIOContext *pb = &s->pb;
     AVStream *st;
     ASFStream *asf_st;
-    int size, i;
+    int size, i, bps;
     INT64 gsize;
 
     asf = av_mallocz(sizeof(ASFContext));
@@ -710,13 +714,13 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (type == CODEC_TYPE_AUDIO) {
                 id = get_le16(pb); 
                 st->codec.codec_tag = id;
-                st->codec.codec_id = codec_get_id(codec_wav_tags, id);
                 st->codec.channels = get_le16(pb);
                 st->codec.sample_rate = get_le32(pb);
                 st->codec.bit_rate = get_le32(pb) * 8;
                 get_le16(pb); /* block align */
-                get_le16(pb); /* bits per sample */
-                size = get_le16(pb); 
+                bps = get_le16(pb); /* bits per sample */
+                st->codec.codec_id = wav_codec_get_id(id, bps);
+                size = get_le16(pb);
                 url_fskip(pb, size);
             } else {
                 get_le32(pb);

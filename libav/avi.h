@@ -10,7 +10,8 @@ offset_t start_tag(ByteIOContext *pb, char *tag);
 void end_tag(ByteIOContext *pb, offset_t start);
 
 void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc);
-void put_wav_header(ByteIOContext *pb, AVCodecContext *enc);
+int put_wav_header(ByteIOContext *pb, AVCodecContext *enc);
+int wav_codec_get_id(unsigned int tag, int bps);
 
 typedef struct CodecTag {
     int id;

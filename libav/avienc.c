@@ -67,17 +67,6 @@ CodecTag codec_bmp_tags[] = {
     { 0, 0 },
 };
 
-CodecTag codec_wav_tags[] = {
-    { CODEC_ID_MP2, 0x55 },
-    { CODEC_ID_MP2, 0x50 },
-    { CODEC_ID_AC3, 0x2000 },
-    { CODEC_ID_PCM_S16LE, 0x01 },
-    { CODEC_ID_PCM_ALAW, 0x06 },
-    { CODEC_ID_PCM_MULAW, 0x07 },
-    { 0, 0 },
-};
-
-
 unsigned int codec_get_tag(CodecTag *tags, int id)
 {
     while (tags->id != 0) {
@@ -118,22 +107,6 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le32(pb, 0);
     put_le32(pb, 0);
     put_le32(pb, 0);
-}
-
-/* WAVEFORMATEX header */
-void put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
-{
-    int tag;
-
-    tag = codec_get_tag(codec_wav_tags, enc->codec_id);
-
-    put_le16(pb, tag); 
-    put_le16(pb, enc->channels);
-    put_le32(pb, enc->sample_rate);
-    put_le32(pb, enc->bit_rate / 8);
-    put_le16(pb, 1); /* block align */
-    put_le16(pb, 16); /* bits per sample */
-    put_le16(pb, 0); /* wav_extra_size */
 }
 
 static int avi_write_header(AVFormatContext *s)
@@ -247,7 +220,10 @@ static int avi_write_header(AVFormatContext *s)
             put_bmp_header(pb, stream);
             break;
         case CODEC_TYPE_AUDIO:
-            put_wav_header(pb, stream);
+            if (put_wav_header(pb, stream) < 0) {
+                free(avi);
+                return -1;
+            }
             break;
         }
         end_tag(pb, strf);

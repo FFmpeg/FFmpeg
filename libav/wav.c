@@ -19,6 +19,55 @@
 #include "avformat.h"
 #include "avi.h"
 
+CodecTag codec_wav_tags[] = {
+    { CODEC_ID_MP2, 0x55 },
+    { CODEC_ID_MP2, 0x50 },
+    { CODEC_ID_AC3, 0x2000 },
+    { CODEC_ID_PCM_S16LE, 0x01 },
+    { CODEC_ID_PCM_U8, 0x01 }, /* must come after s16le in this list */
+    { CODEC_ID_PCM_ALAW, 0x06 },
+    { CODEC_ID_PCM_MULAW, 0x07 },
+    { 0, 0 },
+};
+
+/* WAVEFORMATEX header */
+int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
+{
+    int tag, bps;
+
+    tag = codec_get_tag(codec_wav_tags, enc->codec_id);
+    if (tag == 0)
+        return -1;
+    put_le16(pb, tag); 
+    put_le16(pb, enc->channels);
+    put_le32(pb, enc->sample_rate);
+    put_le32(pb, enc->bit_rate / 8);
+    put_le16(pb, 1); /* block align */
+    if (enc->codec_id == CODEC_ID_PCM_U8 ||
+        enc->codec_id == CODEC_ID_PCM_ALAW ||
+        enc->codec_id == CODEC_ID_PCM_MULAW) {
+        bps = 8;
+    } else {
+        bps = 16;
+    }
+    put_le16(pb, bps); /* bits per sample */
+    
+    put_le16(pb, 0); /* wav_extra_size */
+    return 0;
+}
+
+int wav_codec_get_id(unsigned int tag, int bps)
+{
+    int id;
+    id = codec_get_id(codec_wav_tags, tag);
+    if (id <= 0)
+        return id;
+    /* handle specific u8 codec */
+    if (id == CODEC_ID_PCM_S16LE && bps == 8)
+        id = CODEC_ID_PCM_U8;
+    return id;
+}
+
 typedef struct {
     offset_t data;
 } WAVContext;
@@ -41,7 +90,10 @@ static int wav_write_header(AVFormatContext *s)
 
     /* format header */
     fmt = start_tag(pb, "fmt ");
-    put_wav_header(pb, &s->streams[0]->codec);
+    if (put_wav_header(pb, &s->streams[0]->codec) < 0) {
+        free(wav);
+        return -1;
+    }
     end_tag(pb, fmt);
 
     /* data header */
@@ -155,12 +207,9 @@ static int wav_read_header(AVFormatContext *s,
     
     st->codec.codec_type = CODEC_TYPE_AUDIO;
     st->codec.codec_tag = id;
-    st->codec.codec_id = codec_get_id(codec_wav_tags, id);
+    st->codec.codec_id = wav_codec_get_id(id, bps);
     st->codec.channels = channels;
     st->codec.sample_rate = rate;
-    if (st->codec.codec_id == CODEC_ID_PCM_S16LE && bps == 8) {
-        st->codec.codec_id = CODEC_ID_PCM_U8;
-    }
     return 0;
 }
 
