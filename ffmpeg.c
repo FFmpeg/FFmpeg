@@ -159,6 +159,7 @@ static int rate_emu = 0;
 static char *video_grab_format = "video4linux";
 static char *video_device = NULL;
 static int  video_channel = 0;
+static char *video_standard = "ntsc";
 
 static char *audio_grab_format = "audio_device";
 static char *audio_device = NULL;
@@ -1858,6 +1859,11 @@ static void opt_video_channel(const char *arg)
     video_channel = strtol(arg, NULL, 0);
 }
 
+static void opt_video_standard(const char *arg)
+{
+    video_standard = av_strdup(arg);
+}
+
 static void opt_audio_device(const char *arg)
 {
     audio_device = av_strdup(arg);
@@ -2457,6 +2463,7 @@ static void prepare_grab(void)
         fmt1 = av_find_input_format(video_grab_format);
         vp->device  = video_device;
         vp->channel = video_channel;
+	vp->standard = video_standard;
         if (av_open_input_file(&ic, "", fmt1, 0, vp) < 0) {
             fprintf(stderr, "Could not find video grab device\n");
             exit(1);
@@ -2644,6 +2651,7 @@ const OptionDef options[] = {
     { "bufsize", HAS_ARG, {(void*)opt_video_buffer_size}, "set ratecontrol buffere size (in kbit)", "size" },
     { "vd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_device}, "set video grab device", "device" },
     { "vc", HAS_ARG | OPT_EXPERT, {(void*)opt_video_channel}, "set video grab channel (DV1394 only)", "channel" },
+    { "tvstd", HAS_ARG | OPT_EXPERT, {(void*)opt_video_standard}, "set television standard (NTSC, PAL (SECAM))", "standard" },
     { "dv1394", OPT_EXPERT, {(void*)opt_dv1394}, "set DV1394 grab", "" },
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 

@@ -86,6 +86,7 @@ typedef struct AVFormatParameters {
     struct AVImageFormat *image_format;
     int channel; /* used to select dv channel */
     const char *device; /* video4linux, audio or DV device */
+    const char *standard; /* tv standard, NTSC, PAL, SECAM */
 } AVFormatParameters;
 
 #define AVFMT_NOFILE        0x0001 /* no file should be opened */

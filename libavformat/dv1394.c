@@ -91,8 +91,10 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         return -ENOMEM;
     }
 
-    /* FIXME: Need a format change parameter */
-    dv->format = DV1394_NTSC;
+    if (ap->standard && !strcasecmp(ap->standard, "pal"))
+	dv->format = DV1394_PAL;
+    else
+	dv->format = DV1394_NTSC;
 
     if (ap->channel)
         dv->channel = ap->channel;

@@ -62,6 +62,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int video_fd, frame_size;
     int ret, frame_rate, frame_rate_base;
     int desired_palette;
+    struct video_tuner tuner;
     struct video_audio audio;
     const char *video_device;
 
@@ -109,6 +110,17 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     } else if (st->codec.pix_fmt == PIX_FMT_BGR24) {
         desired_palette = VIDEO_PALETTE_RGB24;
     }    
+
+    /* set tv standard */
+    if (ap->standard && !ioctl(video_fd, VIDIOCGTUNER, &tuner)) {
+	if (!strcasecmp(ap->standard, "pal"))
+	    tuner.mode = VIDEO_MODE_PAL;
+	else if (!strcasecmp(ap->standard, "secam"))
+	    tuner.mode = VIDEO_MODE_SECAM;
+	else
+	    tuner.mode = VIDEO_MODE_NTSC;
+	ioctl(video_fd, VIDIOCSTUNER, &tuner);
+    }
     
     /* unmute audio */
     audio.audio = 0;
