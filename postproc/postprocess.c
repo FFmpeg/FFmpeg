@@ -47,7 +47,6 @@ c = checked against the other implementations (-vo md5)
 
 /*
 TODO:
-verify that everything workes as it should (how?)
 reduce the time wasted on the mem transfer
 implement everything in C at least (done at the moment but ...)
 unroll stuff if instructions depend too much on the prior one
@@ -62,7 +61,8 @@ border remover
 optimize c versions
 try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 smart blur
-commandline option for   the deblock thresholds
+commandline option for   the deblock / dering thresholds
+memcpy chrominance if no chroma filtering is done
 ...
 */
 
@@ -162,6 +162,7 @@ static uint8_t tempBlocks[8*16*2]; //used for the horizontal code
 
 int hFlatnessThreshold= 56 - 16;
 int vFlatnessThreshold= 56 - 16;
+int deringThreshold= 20;
 
 //amount of "black" u r willing to loose to get a brightness corrected picture
 double maxClippedThreshold= 0.01;
@@ -310,28 +311,26 @@ asm volatile(
 		"paddb %%mm2, %%mm0				\n\t"
 
 		"						\n\t"
+#ifdef HAVE_MMX2
+		"pxor %%mm7, %%mm7				\n\t"
+		"psadbw %%mm7, %%mm0				\n\t"
+#else
 		"movq %%mm0, %%mm1				\n\t"
 		"psrlw $8, %%mm0				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
-#ifdef HAVE_MMX2
-		"pshufw $0xF9, %%mm0, %%mm1			\n\t"
-		"paddb %%mm1, %%mm0				\n\t"
-		"pshufw $0xFE, %%mm0, %%mm1			\n\t"
-#else
 		"movq %%mm0, %%mm1				\n\t"
 		"psrlq $16, %%mm0				\n\t"
 		"paddb %%mm1, %%mm0				\n\t"
 		"movq %%mm0, %%mm1				\n\t"
 		"psrlq $32, %%mm0				\n\t"
-#endif
 		"paddb %%mm1, %%mm0				\n\t"
+#endif
 		"movd %%mm0, %0					\n\t"
 		: "=r" (numEq)
 		: "r" (src), "r" (stride)
-		: "%eax", "%ebx"
+		: "%ebx"
 		);
-
-	numEq= (256 - numEq) &0xFF;
+	numEq= (-numEq) &0xFF;
 
 #else
 	for(y=0; y<BLOCK_SIZE-1; y++)
@@ -1591,21 +1590,21 @@ static inline void dering(uint8_t src[], int stride, int QP)
 //	0	1	2	3	4	5	6	7	8	9
 //	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
 
-		"pcmpeqb %%mm6, %%mm6				\n\t"
-		"pxor %%mm7, %%mm7				\n\t"
+		"pcmpeqb %%mm7, %%mm7				\n\t"
+		"pxor %%mm6, %%mm6				\n\t"
 #ifdef HAVE_MMX2
 #define FIND_MIN_MAX(addr)\
 		"movq " #addr ", %%mm0				\n\t"\
-		"pminub %%mm0, %%mm6				\n\t"\
-		"pmaxub %%mm0, %%mm7				\n\t"
+		"pminub %%mm0, %%mm7				\n\t"\
+		"pmaxub %%mm0, %%mm6				\n\t"
 #else
 #define FIND_MIN_MAX(addr)\
 		"movq " #addr ", %%mm0				\n\t"\
-		"movq %%mm6, %%mm1				\n\t"\
-		"psubusb %%mm0, %%mm7				\n\t"\
-		"paddb %%mm0, %%mm7				\n\t"\
+		"movq %%mm7, %%mm1				\n\t"\
+		"psubusb %%mm0, %%mm6				\n\t"\
+		"paddb %%mm0, %%mm6				\n\t"\
 		"psubusb %%mm0, %%mm1				\n\t"\
-		"psubb %%mm1, %%mm6				\n\t"
+		"psubb %%mm1, %%mm7				\n\t"
 #endif
 
 FIND_MIN_MAX((%%eax))
@@ -1617,52 +1616,57 @@ FIND_MIN_MAX((%%ebx, %1))
 FIND_MIN_MAX((%%ebx, %1, 2))
 FIND_MIN_MAX((%0, %1, 8))
 
-		"movq %%mm6, %%mm4				\n\t"
-		"psrlq $8, %%mm6				\n\t"
-#ifdef HAVE_MMX2
-		"pminub %%mm4, %%mm6				\n\t" // min of pixels
-		"pshufw $0xF9, %%mm6, %%mm4			\n\t"
-		"pminub %%mm4, %%mm6				\n\t" // min of pixels
-		"pshufw $0xFE, %%mm6, %%mm4			\n\t"
-		"pminub %%mm4, %%mm6				\n\t"
-#else
-		"movq %%mm6, %%mm1				\n\t"
-		"psubusb %%mm4, %%mm1				\n\t"
-		"psubb %%mm1, %%mm6				\n\t"
-		"movq %%mm6, %%mm4				\n\t"
-		"psrlq $16, %%mm6				\n\t"
-		"movq %%mm6, %%mm1				\n\t"
-		"psubusb %%mm4, %%mm1				\n\t"
-		"psubb %%mm1, %%mm6				\n\t"
-		"movq %%mm6, %%mm4				\n\t"
-		"psrlq $32, %%mm6				\n\t"
-		"movq %%mm6, %%mm1				\n\t"
-		"psubusb %%mm4, %%mm1				\n\t"
-		"psubb %%mm1, %%mm6				\n\t"
-#endif
-
-
 		"movq %%mm7, %%mm4				\n\t"
 		"psrlq $8, %%mm7				\n\t"
 #ifdef HAVE_MMX2
-		"pmaxub %%mm4, %%mm7				\n\t" // max of pixels
+		"pminub %%mm4, %%mm7				\n\t" // min of pixels
 		"pshufw $0xF9, %%mm7, %%mm4			\n\t"
-		"pmaxub %%mm4, %%mm7				\n\t"
+		"pminub %%mm4, %%mm7				\n\t" // min of pixels
 		"pshufw $0xFE, %%mm7, %%mm4			\n\t"
-		"pmaxub %%mm4, %%mm7				\n\t"
+		"pminub %%mm4, %%mm7				\n\t"
 #else
-		"psubusb %%mm4, %%mm7				\n\t"
-		"paddb %%mm4, %%mm7				\n\t"
+		"movq %%mm7, %%mm1				\n\t"
+		"psubusb %%mm4, %%mm1				\n\t"
+		"psubb %%mm1, %%mm7				\n\t"
 		"movq %%mm7, %%mm4				\n\t"
 		"psrlq $16, %%mm7				\n\t"
-		"psubusb %%mm4, %%mm7				\n\t"
-		"paddb %%mm4, %%mm7				\n\t"
+		"movq %%mm7, %%mm1				\n\t"
+		"psubusb %%mm4, %%mm1				\n\t"
+		"psubb %%mm1, %%mm7				\n\t"
 		"movq %%mm7, %%mm4				\n\t"
 		"psrlq $32, %%mm7				\n\t"
-		"psubusb %%mm4, %%mm7				\n\t"
-		"paddb %%mm4, %%mm7				\n\t"
+		"movq %%mm7, %%mm1				\n\t"
+		"psubusb %%mm4, %%mm1				\n\t"
+		"psubb %%mm1, %%mm7				\n\t"
 #endif
-		PAVGB(%%mm6, %%mm7)				      // a=(max + min)/2
+
+
+		"movq %%mm6, %%mm4				\n\t"
+		"psrlq $8, %%mm6				\n\t"
+#ifdef HAVE_MMX2
+		"pmaxub %%mm4, %%mm6				\n\t" // max of pixels
+		"pshufw $0xF9, %%mm6, %%mm4			\n\t"
+		"pmaxub %%mm4, %%mm6				\n\t"
+		"pshufw $0xFE, %%mm6, %%mm4			\n\t"
+		"pmaxub %%mm4, %%mm6				\n\t"
+#else
+		"psubusb %%mm4, %%mm6				\n\t"
+		"paddb %%mm4, %%mm6				\n\t"
+		"movq %%mm6, %%mm4				\n\t"
+		"psrlq $16, %%mm6				\n\t"
+		"psubusb %%mm4, %%mm6				\n\t"
+		"paddb %%mm4, %%mm6				\n\t"
+		"movq %%mm6, %%mm4				\n\t"
+		"psrlq $32, %%mm6				\n\t"
+		"psubusb %%mm4, %%mm6				\n\t"
+		"paddb %%mm4, %%mm6				\n\t"
+#endif
+		"movq %%mm6, %%mm0				\n\t" // max
+		"psubb %%mm7, %%mm6				\n\t" // max - min
+		"movd %%mm6, %%ecx				\n\t"
+		"cmpb deringThreshold, %%cl			\n\t"
+		" jb 1f						\n\t"
+		PAVGB(%%mm0, %%mm7)				      // a=(max + min)/2
 		"punpcklbw %%mm7, %%mm7				\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
@@ -1785,9 +1789,9 @@ DERING_CORE((%%ebx, %1), (%%ebx, %1, 2),%%mm4,%%mm0,%%mm2,%%mm5,%%mm1,%%mm3,%%mm
 DERING_CORE((%%ebx, %1, 2),(%0, %1, 8) ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
 DERING_CORE((%0, %1, 8),(%%ebx, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
 
-
+		"1:			\n\t"
 		: : "r" (src), "r" (stride), "r" (QP)
-		: "%eax", "%ebx"
+		: "%eax", "%ebx", "%ecx"
 	);
 #else
 	int y;
@@ -1809,6 +1813,8 @@ DERING_CORE((%0, %1, 8),(%%ebx, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm
 		}
 	}
 	avg= (min + max + 1)/2;
+
+	if(max - min <deringThreshold) return;
 
 	for(y=0; y<10; y++)
 	{
@@ -1842,13 +1848,69 @@ DERING_CORE((%0, %1, 8),(%%ebx, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm
 				      +(*(p+stride-1)) + 2*(*(p+stride)) + (*(p+stride+1));
 				f= (f + 8)>>4;
 
+#ifdef DEBUG_DERING_THRESHOLD
+				asm volatile("emms\n\t":);
+				{
+				static long long numPixels=0;
+				if(x!=1 && x!=8 && y!=1 && y!=8) numPixels++;
+//				if((max-min)<20 || (max-min)*QP<200)
+//				if((max-min)*QP < 500)
+//				if(max-min<QP/2)
+				if(max-min < 20)
+				{
+					static int numSkiped=0;
+					static int errorSum=0;
+					static int worstQP=0;
+					static int worstRange=0;
+					static int worstDiff=0;
+					int diff= (f - *p);
+					int absDiff= ABS(diff);
+					int error= diff*diff;
+
+					if(x==1 || x==8 || y==1 || y==8) continue;
+
+					numSkiped++;
+					if(absDiff > worstDiff)
+					{
+						worstDiff= absDiff;
+						worstQP= QP;
+						worstRange= max-min;
+					}
+					errorSum+= error;
+
+					if(1024LL*1024LL*1024LL % numSkiped == 0)
+					{
+						printf( "sum:%1.3f, skip:%d, wQP:%d, "
+							"wRange:%d, wDiff:%d, relSkip:%1.3f\n",
+							(float)errorSum/numSkiped, numSkiped, worstQP, worstRange,
+							worstDiff, (float)numSkiped/numPixels);
+					}
+				}
+				}
+#endif
 				if     (*p + 2*QP < f) *p= *p + 2*QP;
 				else if(*p - 2*QP > f) *p= *p - 2*QP;
 				else *p=f;
 			}
 		}
 	}
-
+#ifdef DEBUG_DERING_THRESHOLD
+	if(max-min < 20)
+	{
+		for(y=1; y<9; y++)
+		{
+			int x;
+			int t = 0;
+			p= src + stride*y;
+			for(x=1; x<9; x++)
+			{
+				p++;
+				*p = MIN(*p + 20, 255);
+			}
+		}
+//		src[0] = src[7]=src[stride*7]=src[stride*7 + 7]=255;
+	}
+#endif
 #endif
 }
 
