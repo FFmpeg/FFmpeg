@@ -366,6 +366,7 @@ extern AVImageFormat png_image_format;
 #endif
 extern AVImageFormat jpeg_image_format;
 extern AVImageFormat gif_image_format;
+extern AVImageFormat sgi_image_format;
 
 /* XXX: use automatic init with either ELF sections or C file parser */
 /* modules */

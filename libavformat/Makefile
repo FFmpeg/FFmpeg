@@ -34,7 +34,7 @@ OBJS+= amr.o
 endif
 
 # image formats
-OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o
+OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o sgi.o
 # file I/O
 OBJS+= avio.o aviobuf.o file.o 
 OBJS+= framehook.o 

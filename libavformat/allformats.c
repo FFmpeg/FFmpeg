@@ -112,6 +112,7 @@ void av_register_all(void)
 #endif
     av_register_image_format(&jpeg_image_format);
     av_register_image_format(&gif_image_format);
+    av_register_image_format(&sgi_image_format);
 #endif //CONFIG_ENCODERS
 
     /* file protocols */
