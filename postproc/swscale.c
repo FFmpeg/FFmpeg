@@ -10,6 +10,7 @@
 #include "../config.h"
 #include "swscale.h"
 #include "../mmx_defs.h"
+#undef MOVNTQ
 
 //#undef HAVE_MMX2
 //#undef HAVE_MMX
