@@ -52,6 +52,7 @@ grab="yes"
 mp3lame="no"
 a52bin="no"
 win32="no"
+lshared="no"
 extralibs="-lm"
 simpleidct="yes"
 
@@ -96,7 +97,6 @@ echo "  --enable-shared         build shared libraries [default=no]"
 exit 1
 fi
 
-lshared=no
 for opt do
   case "$opt" in
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`
@@ -119,7 +119,7 @@ for opt do
   ;;
   --enable-win32) win32="yes"
   ;;
-  --enable-shared=*) lshared=`echo $opt | cut -d '=' -f 2`
+  --enable-shared) lshared="yes"
   ;;
   esac
 done
