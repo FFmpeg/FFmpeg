@@ -2371,6 +2371,9 @@ static void opt_output_file(const char *filename)
 
             audio_enc = &st->codec;
             audio_enc->codec_type = CODEC_TYPE_AUDIO;
+
+            if(!strcmp(file_oformat->name, "mp4") || !strcmp(file_oformat->name, "mov") || !strcmp(file_oformat->name, "3gp"))
+                audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
             if (audio_stream_copy) {
                 st->stream_copy = 1;
             } else {
