@@ -2271,9 +2271,9 @@ static int decode_frame(AVCodecContext * avctx,
 	    if (len > buf_size)
 		len = buf_size;
 	    else if (len > 0) {
-	    memcpy(s->inbuf_ptr, buf_ptr, len);
-	    buf_ptr += len;
-	    buf_size -= len;
+		memcpy(s->inbuf_ptr, buf_ptr, len);
+		buf_ptr += len;
+		buf_size -= len;
 		s->inbuf_ptr += len;
 	    }
 	    if ((s->inbuf_ptr - s->inbuf) >= HEADER_SIZE) {
@@ -2282,7 +2282,7 @@ static int decode_frame(AVCodecContext * avctx,
 		    (s->inbuf[2] << 8) | s->inbuf[3];
 		if (check_header(header) < 0) {
 		    /* no sync found : move by one byte (inefficient, but simple!) */
-		    memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf);
+		    memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
 		    s->inbuf_ptr--;
                     dprintf("skip %x\n", header);
                     /* reset free format frame size to give a chance
@@ -2291,14 +2291,14 @@ static int decode_frame(AVCodecContext * avctx,
 		} else {
 		    if (decode_header(s, header) == 1) {
                         /* free format: compute frame size */
-                        s->frame_size = -1;
-			memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf);
+			s->frame_size = -1;
+			memcpy(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
 			s->inbuf_ptr--;
                     } else {
                         /* update codec info */
                         avctx->sample_rate = s->sample_rate;
                         avctx->channels = s->nb_channels;
-                        avctx->bit_rate = s->bit_rate;
+			avctx->bit_rate = s->bit_rate;
                     }
 		}
 	    }
@@ -2359,13 +2359,12 @@ static int decode_frame(AVCodecContext * avctx,
 	    len = s->frame_size - len;
 	    if (len > buf_size)
 		len = buf_size;
-	    else if (len > 0)
-	    {
+	    else if (len < 4)
+		len = buf_size > 4 ? 4 : buf_size;
 	    memcpy(s->inbuf_ptr, buf_ptr, len);
 	    buf_ptr += len;
 	    s->inbuf_ptr += len;
 	    buf_size -= len;
-	    }
 	} else {
             out_size = mp_decode_frame(s, out_samples);
 	    s->inbuf_ptr = s->inbuf;
