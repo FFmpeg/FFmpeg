@@ -64,7 +64,7 @@ static int encode_ext_header(Wmv2Context *w){
     PutBitContext pb;
     int code;
         
-    init_put_bits(&pb, s->avctx->extradata, s->avctx->extradata_size, NULL, NULL);
+    init_put_bits(&pb, s->avctx->extradata, s->avctx->extradata_size);
 
     put_bits(&pb, 5, s->avctx->frame_rate / s->avctx->frame_rate_base); //yes 29.97 -> 29
     put_bits(&pb, 11, FFMIN(s->bit_rate/1024, 2047));

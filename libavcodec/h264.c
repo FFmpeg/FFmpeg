@@ -4256,7 +4256,7 @@ int main(){
     }
     
     
-    init_put_bits(&pb, temp, SIZE, NULL, NULL);
+    init_put_bits(&pb, temp, SIZE);
     printf("testing signed exp golomb\n");
     for(i=0; i<COUNT; i++){
         START_TIMER
