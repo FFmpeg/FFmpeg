@@ -403,15 +403,16 @@ void MPV_frame_end(MpegEncContext *s)
 {
     /* draw edge for correct motion prediction if outside */
     if (s->pict_type != B_TYPE) {
-#if 1
+      if(s->avctx->codec->id!=CODEC_ID_MPEG4){
         draw_edges(s->current_picture[0], s->linesize, s->mb_width*16, s->mb_height*16, EDGE_WIDTH);
         draw_edges(s->current_picture[1], s->linesize/2, s->mb_width*8, s->mb_height*8, EDGE_WIDTH/2);
         draw_edges(s->current_picture[2], s->linesize/2, s->mb_width*8, s->mb_height*8, EDGE_WIDTH/2);
-#else
+      }else{
+        /* OpenDivx, but i dunno how to distinguish it from mpeg4 */
         draw_edges(s->current_picture[0], s->linesize, s->width, s->height, EDGE_WIDTH);
         draw_edges(s->current_picture[1], s->linesize/2, s->width/2, s->height/2, EDGE_WIDTH/2);
         draw_edges(s->current_picture[2], s->linesize/2, s->width/2, s->height/2, EDGE_WIDTH/2);
-#endif
+      }
     }
 }
 
