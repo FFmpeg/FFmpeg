@@ -3434,8 +3434,13 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #endif //CONFIG_ENCODERS
 
     if(avctx->lowres==1){
-        c->idct_put= ff_jref_idct4_put;
-        c->idct_add= ff_jref_idct4_add;
+        if(avctx->idct_algo==FF_IDCT_INT || avctx->idct_algo==FF_IDCT_AUTO){
+            c->idct_put= ff_jref_idct4_put;
+            c->idct_add= ff_jref_idct4_add;
+        }else{
+            c->idct_put= ff_h264_lowres_idct_put_c;
+            c->idct_add= ff_h264_lowres_idct_add_c;
+        }
         c->idct    = j_rev_dct4;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
     }else if(avctx->lowres==2){
@@ -3461,6 +3466,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_permutation_type= FF_NO_IDCT_PERM;
         }
     }
+
+    c->h264_idct_add= ff_h264_idct_add_c;
 
     /* VP3 DSP support */
     c->vp3_dsp_init = vp3_dsp_init_c;

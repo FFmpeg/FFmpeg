@@ -50,6 +50,10 @@ void ff_fdct_mmx(DCTELEM *block);
 void ff_fdct_mmx2(DCTELEM *block);
 void ff_fdct_sse2(DCTELEM *block);
 
+void ff_h264_idct_add_c(uint8_t *dst, DCTELEM *block, int stride);
+void ff_h264_lowres_idct_add_c(uint8_t *dst, int stride, DCTELEM *block);
+void ff_h264_lowres_idct_put_c(uint8_t *dst, int stride, DCTELEM *block);
+
 /* encoding scans */
 extern const uint8_t ff_alternate_horizontal_scan[64];
 extern const uint8_t ff_alternate_vertical_scan[64];
@@ -330,7 +334,8 @@ typedef struct DSPContext {
      */
     void (*vp3_idct)(int16_t *input_data, int16_t *dequant_matrix,
         int coeff_count, DCTELEM *output_samples);
-
+ 
+    void (*h264_idct_add)(uint8_t *dst, DCTELEM *block, int stride);
 } DSPContext;
 
 void dsputil_static_init(void);

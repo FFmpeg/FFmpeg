@@ -1323,40 +1323,6 @@ static inline int get_chroma_qp(H264Context *h, int qscale){
 }
 
 
-/**
- *
- */
-static void h264_add_idct_c(uint8_t *dst, DCTELEM *block, int stride){
-    int i;
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
-
-    block[0] += 32;
-
-    for(i=0; i<4; i++){
-        const int z0=  block[0 + 4*i]     +  block[2 + 4*i];
-        const int z1=  block[0 + 4*i]     -  block[2 + 4*i];
-        const int z2= (block[1 + 4*i]>>1) -  block[3 + 4*i];
-        const int z3=  block[1 + 4*i]     + (block[3 + 4*i]>>1);
-
-        block[0 + 4*i]= z0 + z3;
-        block[1 + 4*i]= z1 + z2;
-        block[2 + 4*i]= z1 - z2;
-        block[3 + 4*i]= z0 - z3;
-    }
-
-    for(i=0; i<4; i++){
-        const int z0=  block[i + 4*0]     +  block[i + 4*2];
-        const int z1=  block[i + 4*0]     -  block[i + 4*2];
-        const int z2= (block[i + 4*1]>>1) -  block[i + 4*3];
-        const int z3=  block[i + 4*1]     + (block[i + 4*3]>>1);
-
-        dst[i + 0*stride]= cm[ dst[i + 0*stride] + ((z0 + z3) >> 6) ];
-        dst[i + 1*stride]= cm[ dst[i + 1*stride] + ((z1 + z2) >> 6) ];
-        dst[i + 2*stride]= cm[ dst[i + 2*stride] + ((z1 - z2) >> 6) ];
-        dst[i + 3*stride]= cm[ dst[i + 3*stride] + ((z0 - z3) >> 6) ];
-    }
-}
-
 #if 0
 static void h264_diff_dct_c(DCTELEM *block, uint8_t *src1, uint8_t *src2, int stride){
     int i;
@@ -2440,7 +2406,7 @@ static void hl_decode_mb(H264Context *h){
                     h->pred4x4[ dir ](ptr, topright, linesize);
                     if(h->non_zero_count_cache[ scan8[i] ]){
                         if(s->codec_id == CODEC_ID_H264)
-                            h264_add_idct_c(ptr, h->mb + i*16, linesize);
+                            s->dsp.h264_idct_add(ptr, h->mb + i*16, linesize);
                         else
                             svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, 0);
                     }
@@ -2467,7 +2433,7 @@ static void hl_decode_mb(H264Context *h){
             for(i=0; i<16; i++){
                 if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
                     uint8_t * const ptr= dest_y + h->block_offset[i];
-                    h264_add_idct_c(ptr, h->mb + i*16, linesize);
+                    s->dsp.h264_idct_add(ptr, h->mb + i*16, linesize);
                 }
             }
         }else{
@@ -2487,13 +2453,13 @@ static void hl_decode_mb(H264Context *h){
             for(i=16; i<16+4; i++){
                 if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
                     uint8_t * const ptr= dest_cb + h->block_offset[i];
-                    h264_add_idct_c(ptr, h->mb + i*16, uvlinesize);
+                    s->dsp.h264_idct_add(ptr, h->mb + i*16, uvlinesize);
                 }
             }
             for(i=20; i<20+4; i++){
                 if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
                     uint8_t * const ptr= dest_cr + h->block_offset[i];
-                    h264_add_idct_c(ptr, h->mb + i*16, uvlinesize);
+                    s->dsp.h264_idct_add(ptr, h->mb + i*16, uvlinesize);
                 }
             }
         }else{
@@ -3232,7 +3198,7 @@ static inline int get_level_prefix(GetBitContext *gb){
     log= 32 - av_log2(buf);
 #ifdef TRACE
     print_bin(buf>>(32-log), log);
-    printf("%5d %2d %3d lpr @%5d in %s get_level_prefix\n", buf>>(32-log), log, log-1, get_bits_count(gb), __FILE__);
+    av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d lpr @%5d in %s get_level_prefix\n", buf>>(32-log), log, log-1, get_bits_count(gb), __FILE__);
 #endif
 
     LAST_SKIP_BITS(re, gb, log);
@@ -5975,7 +5941,7 @@ int main(){
         }
 //        printf("\n");
         
-        h264_add_idct_c(ref, block, 4);
+        s->dsp.h264_idct_add(ref, block, 4);
 /*        for(j=0; j<16; j++){
             printf("%d ", ref[j]);
         }
