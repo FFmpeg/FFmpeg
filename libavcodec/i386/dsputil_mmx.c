@@ -229,12 +229,12 @@ static void add_pixels_clamped_mmx(const DCTELEM *block, UINT8 *pixels, int line
     pix = pixels;
     MOVQ_ZERO(mm7);
     i = 4;
-    while (i) {
+    do {
 	__asm __volatile(
-		"movq	%2, %%mm0\n\t"
-		"movq	8%2, %%mm1\n\t"
-		"movq	16%2, %%mm2\n\t"
-		"movq	24%2, %%mm3\n\t"
+		"movq	(%2), %%mm0\n\t"
+		"movq	8(%2), %%mm1\n\t"
+		"movq	16(%2), %%mm2\n\t"
+		"movq	24(%2), %%mm3\n\t"
 		"movq	%0, %%mm4\n\t"
 		"movq	%1, %%mm6\n\t"
 		"movq	%%mm4, %%mm5\n\t"
@@ -252,12 +252,11 @@ static void add_pixels_clamped_mmx(const DCTELEM *block, UINT8 *pixels, int line
 		"movq	%%mm0, %0\n\t"
 		"movq	%%mm2, %1\n\t"
 		:"+m"(*pix), "+m"(*(pix+line_size))
-		:"m"(*p)
+		:"r"(p)
 		:"memory");
         pix += line_size*2;
         p += 16;
-        i--;
-    };
+    } while (--i);
 }
 
 static void put_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
