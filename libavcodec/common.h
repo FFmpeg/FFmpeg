@@ -828,7 +828,7 @@ static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2], int bits
 #define tprintf printf
 
 #else //TRACE
-#define tprintf(...) {}
+#define tprintf(_arg...) {}
 #endif
 
 /* define it to include statistics code (useful only for optimizing
