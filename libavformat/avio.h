@@ -109,7 +109,11 @@ int url_feof(ByteIOContext *s);
 
 #define URL_EOF (-1)
 int url_fgetc(ByteIOContext *s);
+#ifdef __GNUC__
 int url_fprintf(ByteIOContext *s, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+#else
+int url_fprintf(ByteIOContext *s, const char *fmt, ...);
+#endif
 char *url_fgets(ByteIOContext *s, char *buf, int buf_size);
 
 void put_flush_packet(ByteIOContext *s);
