@@ -49,63 +49,91 @@ static void clear_blocks_mmi(DCTELEM * blocks)
 
 static void get_pixels_mmi(DCTELEM *block, const uint8_t *pixels, int line_size)
 {
-    int i;
-    for(i=0;i<8;i++) {
         asm volatile(
         ".set   push            \n\t"
         ".set   mips3           \n\t"
-        "ld     $8, 0(%1)       \n\t"
-        "add    %1, %1, %2      \n\t"
+        "ld     $8, 0(%0)       \n\t"
+        "add    %0, %0, %2      \n\t"
+        "ld     $9, 0(%0)       \n\t"
+        "add    %0, %0, %2      \n\t"
+        "ld     $10, 0(%0)      \n\t"
         "pextlb $8, $0, $8      \n\t"
-        "sq     $8, 0(%0)       \n\t"
+        "sq     $8, 0(%1)       \n\t"
+        "add    %0, %0, %2      \n\t"
+        "ld     $8, 0(%0)       \n\t"
+        "pextlb $9, $0, $9      \n\t"
+        "sq     $9, 16(%1)      \n\t"
+        "add    %0, %0, %2      \n\t"
+        "ld     $9, 0(%0)       \n\t"
+        "pextlb $10, $0, $10    \n\t"
+        "sq     $10, 32(%1)     \n\t"
+        "add    %0, %0, %2      \n\t"
+        "ld     $10, 0(%0)      \n\t"
+        "pextlb $8, $0, $8      \n\t"
+        "sq     $8, 48(%1)      \n\t"
+        "add    %0, %0, %2      \n\t"
+        "ld     $8, 0(%0)       \n\t"
+        "pextlb $9, $0, $9      \n\t"
+        "sq     $9, 64(%1)      \n\t"
+        "add    %0, %0, %2      \n\t"
+        "ld     $9, 0(%0)       \n\t"
+        "pextlb $10, $0, $10    \n\t"
+        "sq     $10, 80(%1)     \n\t"
+        "pextlb $8, $0, $8      \n\t"
+	"sq     $8, 96(%1)      \n\t"
+        "pextlb $9, $0, $9      \n\t"
+        "sq     $9, 112(%1)     \n\t"
         ".set   pop             \n\t"
-        :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
-        block += 8;
-    }
+        : "+r" (pixels) : "r" (block), "r" (line_size) : "$8", "$9", "$10", "memory" );
 }
 
 
 static void put_pixels8_mmi(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    int i;
-    for(i=0; i<h; i++) {
         asm volatile(
         ".set   push            \n\t"
         ".set   mips3           \n\t"
+        "1:                     \n\t"
         "ldr    $8, 0(%1)       \n\t"
+        "addiu  %2, %2, -1      \n\t"
         "ldl    $8, 7(%1)       \n\t"
-        "add    %1, %1, %2      \n\t"
+        "add    %1, %1, %3      \n\t"
         "sd     $8, 0(%0)       \n\t"
-        "add    %0, %0, %2      \n\t"
+        "add    %0, %0, %3      \n\t"
+        "bgtz   %2, 1b          \n\t"
         ".set   pop             \n\t"
-        :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "memory" );
-    }
+        : "+r" (block), "+r" (pixels), "+r" (h) : "r" (line_size)
+        : "$8", "memory" );
 }
 
 
 static void put_pixels16_mmi(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-    int i;
-    for(i=0; i<(h>>2); i++) {
         asm volatile (
         ".set   push            \n\t"
         ".set   mips3           \n\t"
-#define PUTPIX16 \
-        "ldr    $8, 0(%1)       \n\t" \
-        "ldl    $8, 7(%1)       \n\t" \
-        "ldr    $9, 8(%1)       \n\t" \
-        "ldl    $9, 15(%1)      \n\t" \
-        "add    %1, %1, %2      \n\t" \
-        "pcpyld $8, $9, $8      \n\t" \
-        "sq     $8, 0(%0)       \n\t" \
-        "add    %0, %0, %2      \n\t"
-        PUTPIX16
-        PUTPIX16
-        PUTPIX16
-        PUTPIX16
+	"1:                     \n\t"
+        "ldr    $8, 0(%1)       \n\t"
+        "add    $11, %1, %3     \n\t"
+        "ldl    $8, 7(%1)       \n\t"
+        "add    $10, %0, %3     \n\t"
+        "ldr    $9, 8(%1)       \n\t"
+        "ldl    $9, 15(%1)      \n\t"
+        "ldr    $12, 0($11)     \n\t"
+        "add    %1, $11, %3     \n\t"
+        "ldl    $12, 7($11)     \n\t"
+        "pcpyld $8, $9, $8      \n\t"
+        "sq     $8, 0(%0)       \n\t"
+        "ldr    $13, 8($11)     \n\t"
+        "addiu  %2, %2, -2      \n\t"
+        "ldl    $13, 15($11)    \n\t"
+        "add    %0, $10, %3     \n\t"
+        "pcpyld $12, $13, $12   \n\t"
+        "sq     $12, 0($10)     \n\t"
+        "bgtz   %2, 1b          \n\t"
         ".set   pop             \n\t"
-        :: "r" (block), "r" (pixels), "r" (line_size) : "$8", "$9", "memory" );
-    }
+        : "+r" (block), "+r" (pixels), "+r" (h) : "r" (line_size)
+	: "$8", "$9", "$10", "$11", "$12", "$13", "memory" );
 }
 
 
