@@ -20,8 +20,6 @@
 #include "common.h"
 #include "avformat.h"
 #include "framehook.h"
-/* usleep() */
-#include "os_support.h"
 
 #ifndef CONFIG_WIN32
 #include <unistd.h>
@@ -38,7 +36,6 @@
 #include <stdlib.h>
 #endif
 #include <time.h>
-#include <ctype.h>
 
 #include "cmdutils.h"
 
@@ -2692,7 +2689,7 @@ const OptionDef options[] = {
     { "idct_algo", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_idct_algo}, "set idct algo",  "algo" },
     { "er", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_resilience}, "set error resilience",  "n" },
     { "ec", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_concealment}, "set error concealment",  "bit_mask" },
-    { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
+    { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames", "frames" },
     { "hq", OPT_BOOL, {(void*)&mb_decision}, "activate high quality settings" },
     { "mbd", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_decision}, "macroblock decision", "mode" },
     { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
