@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4649
-#define LIBAVCODEC_BUILD_STR   "4649"
+#define LIBAVCODEC_BUILD       4650
+#define LIBAVCODEC_BUILD_STR   "4650"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -894,6 +894,13 @@ typedef struct AVCodecContext {
      * decoding: unused
      */
     int last_predictor_count;
+    
+    /**
+     * pre pass for motion estimation
+     * encoding: set by user.
+     * decoding: unused
+     */
+    int pre_me;
 
 } AVCodecContext;
 

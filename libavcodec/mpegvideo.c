@@ -2789,6 +2789,19 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
     /* Estimate motion for every MB */
     if(s->pict_type != I_TYPE){
+
+        if(s->pict_type != B_TYPE){
+            if((s->avctx->pre_me && s->last_non_b_pict_type==I_TYPE) || s->avctx->pre_me==2){
+                for(mb_y=s->mb_height-1; mb_y >=0 ; mb_y--) {
+                    for(mb_x=s->mb_width-1; mb_x >=0 ; mb_x--) {
+                        s->mb_x = mb_x;
+                        s->mb_y = mb_y;
+                        ff_pre_estimate_p_frame_motion(s, mb_x, mb_y);
+                    }
+                }
+            }
+        }
+
         for(mb_y=0; mb_y < s->mb_height; mb_y++) {
             s->block_index[0]= s->block_wrap[0]*(mb_y*2 + 1) - 1;
             s->block_index[1]= s->block_wrap[0]*(mb_y*2 + 1);

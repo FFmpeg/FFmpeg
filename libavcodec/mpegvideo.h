@@ -620,6 +620,7 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type);
 void ff_fix_long_p_mvs(MpegEncContext * s);
 void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, int type);
 void ff_init_me(MpegEncContext *s);
+int ff_pre_estimate_p_frame_motion(MpegEncContext * s, int mb_x, int mb_y);
 
 
 /* mpeg12.c */
