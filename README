@@ -1,70 +1,16 @@
-1) Introduction
----------------
+FFmpeg README
+-------------
 
-ffmpeg is a hyper fast realtime audio/video encoder, a streaming
-server and a generic audio and video file converter. 
-
-It can grab from a standard Video4Linux video source and convert it
-into several file formats based on DCT/motion compensation
-encoding. Sound is compressed in MPEG audio layer 2 or using an AC3
-compatible stream.
-
-What makes ffmpeg interesting ?
-
-- Innovative streaming technology : multiformat, real time encoding,
-  simple configuration.
-
-- Simple and efficient video encoder: outputs MPEG1, H263, Real
-  Video(tm), MPEG4, DIVX and MJPEG compatible bitstreams using the
-  same encoder core.
-
-- Real time encoding (25 fps in 352x288 on a K6 500) using the
-  video4linux API.
-
-- Generates I and P frames, which means it is far better than a MJPEG
-  encoder.
-
-- Hyper fast MPEG audio layer 2 compression (50 times faster than
-  realtime on a K6 500).
-
-- Hyper fast AC3 compatible encoder.
-
-- simple and very small portable C source code, easy to understand and
-  to modify. It be may the smallest decent MPEG encoder :-)
-
-- optional non real time higher quality encoding (different motion
-  estimators available).
-
-- Audio and Video decoders are in development.
-
-ffmpeg is made of two programs:
-
-* ffmpeg: soft VCR which encodes in real time to several formats. It
-  can also encode from any supported input file format to any input
-  supported format.
-
-* ffserver: high performance live broadcast streaming server based on
-  the ffmpeg core encoders.
-
-2) Documentation
+1) Documentation
 ----------------
 
-* Read doc/ffmpeg.txt and doc/ffserver.txt to learn the basic features.
+* Read the documentation in the doc/ directory.
 
-* Read doc/TODO to know what are the know bugs and missing features.
-
-* Read doc/README.dev if you want to contribute or use the codec or
-  format libraries.
-
-3) Licensing:
+2) Licensing
 ------------
 
-* See the file COPYING. ffmpeg and the associated library EXCEPT
+* Read the file COPYING. ffmpeg and the associated libraries EXCEPT
   liba52 are licensed under the Lesser GNU General Public
   License. liba52 is distributed under the GNU General Public License.
-
-* This code should be patent free since it is very simple. I took care
-  to use the same video encoder/decoder core for all formats to show
-  that they really are mostly the same.
 
 Fabrice Bellard.

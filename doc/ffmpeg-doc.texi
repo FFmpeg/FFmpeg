@@ -362,7 +362,7 @@ library.
 
 @multitable @columnfractions .4 .1 .1 .7
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
-@item MPEG1 video            @tab  X  @tab  X 
+@item MPEG1 video            @tab  X  @tab  X
 @item MPEG2 video            @tab     @tab  X 
 @item MPEG4                  @tab  X  @tab  X @tab Also known as DIVX4/5
 @item MSMPEG4 V1             @tab  X  @tab  X
@@ -372,6 +372,7 @@ library.
 @item H263(+)                @tab  X  @tab  X @tab Also known as Real Video 1.0
 @item MJPEG                  @tab  X  @tab  X 
 @item DV                     @tab     @tab  X 
+@item Huff YUV               @tab  X  @tab  X
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -391,6 +392,8 @@ solutions.
 @tab liba52 is used internally for decoding.
 @item Vorbis                 @tab  X   @tab
 @tab encoding is supported thru the external library libvorbis.
+@item WMA V1/V2              @tab      @tab X
+
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
