@@ -64,8 +64,9 @@ static const struct pix_func {
 } pix_func[] = {
 
     PIX_FUNC_MMX(put_pixels),
-    PIX_FUNC_MMX(put_pixels_x2),
-    PIX_FUNC_MMX(put_pixels_y2),
+#if 1
+    PIX_FUNC(put_pixels_x2),
+    PIX_FUNC(put_pixels_y2),
     PIX_FUNC_MMX(put_pixels_xy2),
 
     PIX_FUNC(put_no_rnd_pixels_x2),
@@ -76,7 +77,7 @@ static const struct pix_func {
     PIX_FUNC(avg_pixels_x2),
     PIX_FUNC(avg_pixels_y2),
     PIX_FUNC(avg_pixels_xy2),
-
+#endif
     { 0, 0 }
 };
 
