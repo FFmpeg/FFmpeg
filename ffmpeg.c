@@ -417,9 +417,13 @@ static void do_video_out(AVFormatContext *s,
     int n1, n2, nb, i, ret, frame_number, dec_frame_rate;
     AVPicture *picture, *picture2, *pict;
     AVPicture picture_tmp1, picture_tmp2;
-    UINT8 video_buffer[1024*1024];
+    UINT8 *video_buffer;
     UINT8 *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
+
+#define VIDEO_BUFFER_SIZE (1024*1024)
+    video_buffer= av_malloc(VIDEO_BUFFER_SIZE);
+    if(!video_buffer) return;
 
     enc = &ost->st->codec;
     dec = &ist->st->codec;
@@ -501,7 +505,7 @@ static void do_video_out(AVFormatContext *s,
             }
             
             ret = avcodec_encode_video(enc, 
-                                       video_buffer, sizeof(video_buffer), 
+                                       video_buffer, VIDEO_BUFFER_SIZE,
                                        picture);
             //enc->frame_number = enc->real_pict_num;
             s->oformat->write_packet(s, ost->index, video_buffer, ret, 0);
@@ -516,6 +520,7 @@ static void do_video_out(AVFormatContext *s,
     the_end:
     av_free(buf);
     av_free(buf1);
+    av_free(video_buffer);
 }
 
 static void do_video_stats(AVOutputStream *ost, 
