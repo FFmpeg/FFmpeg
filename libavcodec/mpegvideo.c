@@ -68,6 +68,8 @@ static UINT8 h263_chroma_roundtab[16] = {
 /* default motion estimation */
 int motion_estimation_method = ME_LOG;
 
+extern UINT8 zigzag_end[64];
+
 /* XXX: should use variable shift ? */
 #define QMAT_SHIFT_MMX 19
 #define QMAT_SHIFT 25
@@ -674,7 +676,8 @@ static inline void add_dct(MpegEncContext *s,
 {
     if (s->block_last_index[i] >= 0) {
         if (!s->mpeg2)
-            s->dct_unquantize(s, block, i, s->qscale);
+            if(s->encoding || s->avctx==NULL || s->avctx->codec->id!=CODEC_ID_MSMPEG4)
+                s->dct_unquantize(s, block, i, s->qscale);
         ff_idct (block);
         add_pixels_clamped(block, dest, line_size);
     }
@@ -1206,9 +1209,12 @@ static int dct_quantize_mmx(MpegEncContext *s,
 static void dct_unquantize_mpeg1_c(MpegEncContext *s, 
                                    DCTELEM *block, int n, int qscale)
 {
-    int i, level;
+    int i, level, nCoeffs;
     const UINT16 *quant_matrix;
 
+    if(s->alternate_scan) nCoeffs= 64;
+    else nCoeffs= s->block_last_index[n]+1;
+    
     if (s->mb_intra) {
         if (n < 4) 
             block[0] = block[0] * s->y_dc_scale;
@@ -1216,47 +1222,49 @@ static void dct_unquantize_mpeg1_c(MpegEncContext *s,
             block[0] = block[0] * s->c_dc_scale;
         /* XXX: only mpeg1 */
         quant_matrix = s->intra_matrix;
-        for(i=1;i<64;i++) {
-            level = block[i];
+        for(i=1;i<nCoeffs;i++) {
+            int j= zigzag_direct[i];
+            level = block[j];
             if (level) {
                 if (level < 0) {
                     level = -level;
-                    level = (int)(level * qscale * quant_matrix[i]) >> 3;
+                    level = (int)(level * qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                     level = -level;
                 } else {
-                    level = (int)(level * qscale * quant_matrix[i]) >> 3;
+                    level = (int)(level * qscale * quant_matrix[j]) >> 3;
                     level = (level - 1) | 1;
                 }
 #ifdef PARANOID
                 if (level < -2048 || level > 2047)
                     fprintf(stderr, "unquant error %d %d\n", i, level);
 #endif
-                block[i] = level;
+                block[j] = level;
             }
         }
     } else {
         i = 0;
         quant_matrix = s->non_intra_matrix;
-        for(;i<64;i++) {
-            level = block[i];
+        for(i=1;i<nCoeffs;i++) {
+            int j= zigzag_direct[i];
+            level = block[j];
             if (level) {
                 if (level < 0) {
                     level = -level;
                     level = (((level << 1) + 1) * qscale *
-                             ((int) (quant_matrix[i]))) >> 4;
+                             ((int) (quant_matrix[j]))) >> 4;
                     level = (level - 1) | 1;
                     level = -level;
                 } else {
                     level = (((level << 1) + 1) * qscale *
-                             ((int) (quant_matrix[i]))) >> 4;
+                             ((int) (quant_matrix[j]))) >> 4;
                     level = (level - 1) | 1;
                 }
 #ifdef PARANOID
                 if (level < -2048 || level > 2047)
                     fprintf(stderr, "unquant error %d %d\n", i, level);
 #endif
-                block[i] = level;
+                block[j] = level;
             }
         }
     }
@@ -1266,6 +1274,7 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
     int i, level, qmul, qadd;
+    int nCoeffs;
 
     if (s->mb_intra) {
         if (n < 4) 
@@ -1273,14 +1282,16 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
         else
             block[0] = block[0] * s->c_dc_scale;
         i = 1;
+        nCoeffs= 64; //does not allways use zigzag table 
     } else {
         i = 0;
+        nCoeffs= zigzag_end[ s->block_last_index[n] ];
     }
 
     qmul = s->qscale << 1;
     qadd = (s->qscale - 1) | 1;
 
-    for(;i<64;i++) {
+    for(;i<nCoeffs;i++) {
         level = block[i];
         if (level) {
             if (level < 0) {

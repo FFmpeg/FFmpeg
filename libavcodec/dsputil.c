@@ -83,8 +83,23 @@ static UINT8 simple_mmx_permutation[64]={
 	0x32, 0x3A, 0x33, 0x3B, 0x36, 0x3E, 0x37, 0x3F,
 };
 
+/* used to skip zeros at the end */
+UINT8 zigzag_end[64];
+
 UINT8 permutation[64];
 //UINT8 invPermutation[64];
+
+static void build_zigzag_end()
+{
+    int lastIndex;
+    int lastIndexAfterPerm=0;
+    for(lastIndex=0; lastIndex<64; lastIndex++)
+    {
+        if(zigzag_direct[lastIndex] > lastIndexAfterPerm) 
+            lastIndexAfterPerm= zigzag_direct[lastIndex];
+        zigzag_end[lastIndex]= lastIndexAfterPerm + 1;
+    }
+}
 
 void get_pixels_c(DCTELEM *block, const UINT8 *pixels, int line_size)
 {
@@ -509,4 +524,6 @@ void dsputil_init(void)
         block_permute(default_intra_matrix);
         block_permute(default_non_intra_matrix);
     }
+    
+    build_zigzag_end();
 }

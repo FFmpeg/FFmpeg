@@ -630,6 +630,7 @@ static int decode012(GetBitContext *gb)
 int msmpeg4_decode_picture_header(MpegEncContext * s)
 {
     int code;
+static int weirdAl=0;
 
     s->pict_type = get_bits(&s->gb, 2) + 1;
     if (s->pict_type != I_TYPE &&
@@ -642,6 +643,7 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
         code = get_bits(&s->gb, 5); 
         /* 0x17: one slice, 0x18: three slices */
         /* XXX: implement it */
+	//printf("%d %d %d\n", code, s->slice_height, s->first_slice_line);
         if (code < 0x17)
             return -1;
         s->slice_height = s->mb_height / (code - 0x16);
@@ -650,6 +652,11 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
 
         s->dc_table_index = get_bits1(&s->gb);
         s->no_rounding = 1;
+/*	printf(" %d %d %d %d     \n", 
+		s->qscale,
+		s->rl_chroma_table_index,
+		s->rl_table_index, 
+		s->dc_table_index);*/
     } else {
         s->use_skip_mb_code = get_bits1(&s->gb);
         
@@ -659,7 +666,16 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
         s->dc_table_index = get_bits1(&s->gb);
 
         s->mv_table_index = get_bits1(&s->gb);
-        s->no_rounding ^= 1;
+/*	printf(" %d %d %d %d %d     \n", 
+		s->use_skip_mb_code, 
+		s->rl_table_index, 
+		s->rl_chroma_table_index, 
+		s->dc_table_index,
+		s->mv_table_index);*/
+  if(weirdAl)
+	s->no_rounding = 0;
+  else
+	s->no_rounding ^= 1;
     }
 #ifdef DEBUG
     printf("*****frame %d:\n", frame_count++);
@@ -785,8 +801,12 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
     int dc_pred_dir;
     RLTable *rl;
     const UINT8 *scan_table;
+    int qmul, qadd;
 
     if (s->mb_intra) {
+        qmul=1;
+        qadd=0;
+
 	/* DC coef */
         set_stat(ST_DC);
         level = msmpeg4_decode_dc(s, n, &dc_pred_dir);
@@ -798,6 +818,7 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         } else {
             rl = &rl_table[3 + s->rl_chroma_table_index];
         }
+
         run_diff = 0;
 	i = 1;
         if (!coded) {
@@ -813,6 +834,8 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         }
         set_stat(ST_INTRA_AC);
     } else {
+        qmul = s->qscale << 1;
+        qadd = (s->qscale - 1) | 1;
 	i = 0;
         rl = &rl_table[3 + s->rl_table_index];
         run_diff = 1;
@@ -837,13 +860,15 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     run = get_bits(&s->gb, 6);
                     level = get_bits(&s->gb, 8);
                     level = (level << 24) >> 24; /* sign extend */
+                    if(level>0) level= level * qmul + qadd;
+                    else        level= level * qmul - qadd;
                 } else {
                     /* second escape */
                     code = get_vlc(&s->gb, &rl->vlc);
                     if (code < 0 || code >= rl->n)
                         return -1;
                     run = rl->table_run[code];
-                    level = rl->table_level[code];
+                    level = rl->table_level[code] * qmul + qadd;
                     last = code >= rl->last;
                     run += rl->max_run[last][level] + run_diff;
                     if (get_bits1(&s->gb))
@@ -858,12 +883,13 @@ static int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 level = rl->table_level[code];
                 last = code >= rl->last;
                 level += rl->max_level[last][run];
+                level= level * qmul + qadd;
                 if (get_bits1(&s->gb))
                     level = -level;
             }
         } else {
             run = rl->table_run[code];
-            level = rl->table_level[code];
+            level = rl->table_level[code] * qmul + qadd;
             last = code >= rl->last;
             if (get_bits1(&s->gb))
                 level = -level;

@@ -17,10 +17,13 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * Optimized for ia32 cpus by Nick Kurshev <nickols_k@mail.ru>
+ * h263 dequantizer by Michael Niedermayer <michaelni@gmx.at>
  */
 
 #include "../dsputil.h"
 #include "../mpegvideo.h"
+
+extern UINT8 zigzag_end[64];
 
 #if 0
 
@@ -69,8 +72,8 @@ static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x000
 static void dct_unquantize_h263_mmx(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
-    int i, level, qmul, qadd;
-
+    int i, level, qmul, qadd, nCoeffs;
+    
     qmul = s->qscale << 1;
     qadd = (s->qscale - 1) | 1;
 
@@ -91,10 +94,12 @@ static void dct_unquantize_h263_mmx(MpegEncContext *s,
 			block[i] = level;
 		}
 	}
+	nCoeffs=64;
     } else {
         i = 0;
+	nCoeffs= zigzag_end[ s->block_last_index[n] ];
     }
-
+//printf("%d %d  ", qmul, qadd);
 asm volatile(
 		"movd %1, %%mm6			\n\t" //qmul
 		"packssdw %%mm6, %%mm6		\n\t"
@@ -138,9 +143,8 @@ asm volatile(
 		"movq %%mm1, 8(%0, %3)		\n\t"
 
 		"addl $16, %3			\n\t"
-		"cmpl $128, %3			\n\t"
-		"jb 1b				\n\t"
-		::"r" (block), "g"(qmul), "g" (qadd), "r" (2*i)
+		"js 1b				\n\t"
+		::"r" (block+nCoeffs), "g"(qmul), "g" (qadd), "r" (2*(i-nCoeffs))
 		: "memory"
 	);
 }
@@ -178,17 +182,22 @@ asm volatile(
 static void dct_unquantize_mpeg1_mmx(MpegEncContext *s,
                                      DCTELEM *block, int n, int qscale)
 {
-    int i, level;
+    int i, level, nCoeffs;
     const UINT16 *quant_matrix;
+    
+    if(s->alternate_scan) nCoeffs= 64;
+    else nCoeffs= nCoeffs= zigzag_end[ s->block_last_index[n] ];
+
     if (s->mb_intra) {
         if (n < 4) 
             block[0] = block[0] * s->y_dc_scale;
         else
             block[0] = block[0] * s->c_dc_scale;
-        if (s->out_format == FMT_H263) {
+        /* isnt used anymore (we have a h263 unquantizer since some time)
+	if (s->out_format == FMT_H263) {
             i = 1;
             goto unquant_even;
-        }
+        }*/
         /* XXX: only mpeg1 */
         quant_matrix = s->intra_matrix;
 	i=1;
@@ -214,7 +223,7 @@ static void dct_unquantize_mpeg1_mmx(MpegEncContext *s,
 	"packssdw %%mm6, %%mm7\n\t" /* mm7 = qscale | qscale | qscale | qscale */
 	"pxor	%%mm6, %%mm6\n\t"
 	::"g"(qscale),"m"(mm_wone),"m"(mm_wabs):"memory");
-        for(;i<64;i+=4) {
+        for(;i<nCoeffs;i+=4) {
 		__asm __volatile(
 			"movq	%1, %%mm0\n\t"
 			"movq	%%mm7, %%mm1\n\t"
@@ -258,7 +267,6 @@ static void dct_unquantize_mpeg1_mmx(MpegEncContext *s,
 	    }
 	    i++;
 	}
-
 asm volatile(
 		"pcmpeqw %%mm7, %%mm7		\n\t"
 		"psrlw $15, %%mm7		\n\t"
@@ -307,9 +315,8 @@ asm volatile(
 		"movq %%mm5, 8(%0, %3)		\n\t"
 
 		"addl $16, %3			\n\t"
-		"cmpl $128, %3			\n\t"
-		"jb 1b				\n\t"
-		::"r" (block), "r"(quant_matrix), "g" (qscale), "r" (2*i)
+		"js 1b				\n\t"
+		::"r" (block+nCoeffs), "r"(quant_matrix+nCoeffs), "g" (qscale), "r" (2*(i-nCoeffs))
 		: "memory"
 	);
     }
