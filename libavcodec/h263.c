@@ -204,8 +204,8 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     /* Update the pointer to last GOB */
     s->ptr_lastgob = pbBufPtr(&s->pb);
     put_bits(&s->pb, 22, 0x20); /* PSC */
-    put_bits(&s->pb, 8, (((int64_t)s->picture_number * 30 * s->avctx->frame_rate_base) / 
-                         s->avctx->frame_rate) & 0xff);
+    put_bits(&s->pb, 8, ((s->picture_number * 30000LL * s->avctx->frame_rate_base) / 
+                         (1001LL  *s->avctx->frame_rate)) & 0xff); /* TemporalReference */
 
     put_bits(&s->pb, 1, 1);	/* marker */
     put_bits(&s->pb, 1, 0);	/* h263 id */
@@ -4891,7 +4891,10 @@ int h263_decode_picture_header(MpegEncContext *s)
         return -1;
     }
     /* temporal reference */
-    s->picture_number = get_bits(&s->gb, 8); /* picture timestamp */
+    i = get_bits(&s->gb, 8); /* picture timestamp */
+    if( (s->picture_number&~0xFF)+i < s->picture_number)
+        i+= 256;
+    s->picture_number= (s->picture_number&~0xFF) + i;
 
     /* PTYPE starts here */    
     if (get_bits1(&s->gb) != 1) {
@@ -4943,6 +4946,9 @@ int h263_decode_picture_header(MpegEncContext *s)
 
         s->width = width;
         s->height = height;
+        s->avctx->sample_aspect_ratio= (AVRational){12,11};
+        s->avctx->frame_rate     = 30000;
+        s->avctx->frame_rate_base= 1001;
     } else {
         int ufep;
         
@@ -4955,7 +4961,9 @@ int h263_decode_picture_header(MpegEncContext *s)
             /* OPPTYPE */       
             format = get_bits(&s->gb, 3);
             dprintf("ufep=1, format: %d\n", format);
-            skip_bits(&s->gb,1); /* Custom PCF */
+            if (get_bits1(&s->gb) != 0) {
+                av_log(s->avctx, AV_LOG_ERROR, "Custom PCF not supported\n");
+            }
             s->umvplus = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
             if (get_bits1(&s->gb) != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Syntax-based Arithmetic Coding (SAC) not supported\n");
@@ -5028,9 +5036,12 @@ int h263_decode_picture_header(MpegEncContext *s)
             } else {
                 width = h263_format[format][0];
                 height = h263_format[format][1];
+                s->avctx->sample_aspect_ratio= (AVRational){12,11};
             }
             if ((width == 0) || (height == 0))
                 return -1;
+            s->avctx->frame_rate     = 30000;
+            s->avctx->frame_rate_base= 1001;
             s->width = width;
             s->height = height;
             if (s->umvplus) {
