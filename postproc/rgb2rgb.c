@@ -604,6 +604,9 @@ void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 		:: "r" (src), "r"(dst), "r" (num_pixels)
 		: "%eax"
 	);
+
+	__asm __volatile(SFENCE:::"memory");
+	__asm __volatile(EMMS:::"memory");
 #else
 	int i;
 	for(i=0; i<num_pixels; i++)
