@@ -714,37 +714,48 @@ void pp_free_mode(pp_mode_t *mode){
     if(mode) free(mode);
 }
 
-pp_context_t *pp_get_context(int width, int height, int cpuCaps){
-	PPContext *c= memalign(32, sizeof(PPContext));
-	int i;
+static void reallocAlign(void **p, int alignment, int size){
+	if(*p) free(*p);
+	*p= memalign(alignment, size);
+	memset(*p, 0, size);
+}
+
+static void reallocBuffers(PPContext *c, int width, int height, int stride){
 	int mbWidth = (width+15)>>4;
 	int mbHeight= (height+15)>>4;
-	
-	c->cpuCaps= cpuCaps;
+	int i;
 
-	c->tempBlocks= (uint8_t*)memalign(8, 2*16*8);
-	c->yHistogram= (uint64_t*)memalign(8, 256*sizeof(uint64_t));
+	c->stride= stride;
+
+	reallocAlign((void **)&c->tempDst, 8, stride*24);
+	reallocAlign((void **)&c->tempSrc, 8, stride*24);
+	reallocAlign((void **)&c->tempBlocks, 8, 2*16*8);
+	reallocAlign((void **)&c->yHistogram, 8, 256*sizeof(uint64_t));
 	for(i=0; i<256; i++)
 		c->yHistogram[i]= width*height/64*15/256;
 
 	for(i=0; i<3; i++)
 	{
 		//Note:the +17*1024 is just there so i dont have to worry about r/w over te end
-		c->tempBlured[i]= (uint8_t*)memalign(8, ((width+7)&(~7))*2*((height+7)&(~7)) + 17*1024); //FIXME dstStride instead of width
-		c->tempBluredPast[i]= (uint32_t*)memalign(8, 256*((height+7)&(~7))/2 + 17*1024);
-
-		memset(c->tempBlured[i], 0, ((width+7)&(~7))*2*((height+7)&(~7)) + 17*1024);
-		memset(c->tempBluredPast[i], 0, 256*((height+7)&(~7))/2 + 17*1024);
+		reallocAlign((void **)&c->tempBlured[i], 8, stride*mbHeight*16 + 17*1024);
+		reallocAlign((void **)&c->tempBluredPast[i], 8, 256*((height+7)&(~7))/2 + 17*1024);//FIXME size
 	}
-	
-	c->tempDst= (uint8_t*)memalign(8, 1024*24);
-	c->tempSrc= (uint8_t*)memalign(8, 1024*24);
-	c->tempDstBlock= (uint8_t*)memalign(8, 1024*24);
-	c->tempSrcBlock= (uint8_t*)memalign(8, 1024*24);
-	c->deintTemp= (uint8_t*)memalign(8, width+16);
-	c->nonBQPTable= (QP_STORE_T*)memalign(8, mbWidth*mbHeight*sizeof(QP_STORE_T));
-	memset(c->nonBQPTable, 0, mbWidth*mbHeight*sizeof(QP_STORE_T));
 
+	reallocAlign((void **)&c->deintTemp, 8, width+16);
+	reallocAlign((void **)&c->nonBQPTable, 8, mbWidth*mbHeight*sizeof(QP_STORE_T));
+	reallocAlign((void **)&c->forcedQPTable, 8, mbWidth*sizeof(QP_STORE_T));
+}
+
+pp_context_t *pp_get_context(int width, int height, int cpuCaps){
+	PPContext *c= memalign(32, sizeof(PPContext));
+	int i;
+	int stride= (width+15)&(~15); //assumed / will realloc if needed
+        
+	memset(c, 0, sizeof(PPContext));
+	c->cpuCaps= cpuCaps;
+
+	reallocBuffers(c, width, height, stride);
+        
 	c->frameNum=-1;
 
 	return c;
@@ -761,11 +772,12 @@ void pp_free_context(void *vc){
 	free(c->yHistogram);
 	free(c->tempDst);
 	free(c->tempSrc);
-	free(c->tempDstBlock);
-	free(c->tempSrcBlock);
 	free(c->deintTemp);
 	free(c->nonBQPTable);
-	
+	free(c->forcedQPTable);
+        
+	memset(c, 0, sizeof(PPContext));
+
 	free(c);
 }
 
@@ -777,19 +789,23 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
 {
 	int mbWidth = (width+15)>>4;
 	int mbHeight= (height+15)>>4;
-	QP_STORE_T quantArray[2048/8];
 	PPMode *mode = (PPMode*)vm;
 	PPContext *c = (PPContext*)vc;
+        int minStride= MAX(srcStride[0], dstStride[0]);
+	
+	if(c->stride < minStride)
+		reallocBuffers(c, width, height, minStride);
+        
 
 	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)) 
 	{
 		int i;
-		QP_store= quantArray;
+		QP_store= c->forcedQPTable;
 		QPStride= 0;
 		if(mode->lumMode & FORCE_QUANT)
-			for(i=0; i<2048/8; i++) quantArray[i]= mode->forcedQuant;
+			for(i=0; i<mbWidth; i++) QP_store[i]= mode->forcedQuant;
 		else
-			for(i=0; i<2048/8; i++) quantArray[i]= 1;
+			for(i=0; i<mbWidth; i++) QP_store[i]= 1;
 	}
 if(0){
 int x,y;

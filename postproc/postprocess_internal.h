@@ -100,9 +100,6 @@ typedef struct PPContext{
 	uint8_t *tempDst;
 	uint8_t *tempSrc;
 
-	/* Temporary buffers for handling the last block */
-	uint8_t *tempDstBlock;
-	uint8_t *tempSrcBlock;
 	uint8_t *deintTemp;
 
 	uint64_t __attribute__((aligned(8))) pQPb;
@@ -110,15 +107,18 @@ typedef struct PPContext{
 
 	uint64_t __attribute__((aligned(8))) mmxDcOffset[32];
 	uint64_t __attribute__((aligned(8))) mmxDcThreshold[32];
-	
+
 	QP_STORE_T *nonBQPTable;
-	
+	QP_STORE_T *forcedQPTable;
+
 	int QP;
 	int nonBQP;
 
 	int frameNum;
 	
 	int cpuCaps;
+        
+	int stride; //size of some buffers (needed to realloc them if needed)
 
 	PPMode ppMode;
 } PPContext;
