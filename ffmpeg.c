@@ -87,6 +87,8 @@ static int video_mb_qmax = 31;
 static int video_qdiff = 3;
 static float video_qblur = 0.5;
 static float video_qcomp = 0.5;
+static uint16_t *intra_matrix = NULL;
+static uint16_t *inter_matrix = NULL;
 #if 0 //experimental, (can be removed)
 static float video_rc_qsquish=1.0;
 static float video_rc_qmod_amp=0;
@@ -2261,7 +2263,12 @@ static void opt_output_file(const char *filename)
                     video_enc->flags |= CODEC_FLAG_QSCALE;
                     st->quality = FF_QP2LAMBDA * video_qscale;
                 }
-                
+
+                if(intra_matrix)
+                    video_enc->intra_matrix = intra_matrix;
+                if(inter_matrix)
+                    video_enc->inter_matrix = inter_matrix;
+
                 if(bitexact)
                     video_enc->flags |= CODEC_FLAG_BITEXACT;
 
@@ -2666,6 +2673,35 @@ static void show_formats(void)
     exit(1);
 }
 
+void parse_matrix_coeffs(uint16_t *dest, const char *str)
+{
+    int i;
+    const char *p = str;
+    for(i = 0;; i++) {
+        dest[i] = atoi(p);
+        if(i == 63)
+            break;
+        p = strchr(p, ',');
+        if(!p) {
+            fprintf(stderr, "Syntax error in matrix \"%s\" at coeff %d\n", str, i);
+            exit(1);
+        }
+        p++;
+    }
+}
+
+void opt_inter_matrix(const char *arg)
+{
+    inter_matrix = av_mallocz(sizeof(uint16_t) * 64);
+    parse_matrix_coeffs(inter_matrix, arg);
+}
+
+void opt_intra_matrix(const char *arg)
+{
+    intra_matrix = av_mallocz(sizeof(uint16_t) * 64);
+    parse_matrix_coeffs(intra_matrix, arg);
+}
+
 const OptionDef options[] = {
     /* main options */
     { "L", 0, {(void*)show_license}, "show license" },
@@ -2751,6 +2787,8 @@ const OptionDef options[] = {
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
     { "aic", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aic}, "enable Advanced intra coding (h263+)" },
     { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
+    { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
+    { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
@@ -2875,6 +2913,10 @@ int main(int argc, char **argv)
 
     av_free_static();
 
+    if(intra_matrix)
+        av_free(intra_matrix);
+    if(inter_matrix)
+        av_free(inter_matrix);
     
 #ifdef POWERPC_PERFORMANCE_REPORT
     extern void powerpc_display_perf_report(void);
