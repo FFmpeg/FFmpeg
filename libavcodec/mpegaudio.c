@@ -1,6 +1,6 @@
 /*
  * The simplest mpeg audio layer 2 encoder
- * Copyright (c) 2000 Gerard Lantau.
+ * Copyright (c) 2000, 2001 Gerard Lantau.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,9 +20,12 @@
 #include <math.h>
 #include "mpegaudio.h"
 
-#define DCT_BITS 14 /* number of bits for the DCT */
-#define MUL(a,b) (((a) * (b)) >> DCT_BITS)
-#define FIX(a)   ((int)((a) * (1 << DCT_BITS)))
+/* currently, cannot change these constants (need to modify
+   quantization stage) */
+#define FRAC_BITS 15
+#define WFRAC_BITS  14
+#define MUL(a,b) (((INT64)(a) * (INT64)(b)) >> FRAC_BITS)
+#define FIX(a)   ((int)((a) * (1 << FRAC_BITS)))
 
 #define SAMPLES_BUF_SIZE 4096
 
@@ -119,7 +122,10 @@ int MPA_encode_init(AVCodecContext *avctx)
 
     for(i=0;i<257;i++) {
         int v;
-        v = (mpa_enwindow[i] + 2) >> 2;
+        v = mpa_enwindow[i];
+#if WFRAC_BITS != 16
+        v = (v + (1 << (16 - WFRAC_BITS - 1))) >> (16 - WFRAC_BITS);
+#endif
         filter_bank[i] = v;
         if ((i & 63) != 0)
             v = -v;
@@ -168,7 +174,7 @@ int MPA_encode_init(AVCodecContext *avctx)
 }
 
 /* 32 point floating point IDCT without 1/sqrt(2) coef zero scaling */
-static void idct32(int *out, int *tab, int sblimit, int left_shift)
+static void idct32(int *out, int *tab)
 {
     int i, j;
     int *t, *t1, xr;
@@ -283,15 +289,17 @@ static void idct32(int *out, int *tab, int sblimit, int left_shift)
     } while (t >= tab);
 
     for(i=0;i<32;i++) {
-        out[i] = tab[bitinv32[i]] << left_shift;
+        out[i] = tab[bitinv32[i]];
     }
 }
+
+#define WSHIFT (WFRAC_BITS + 15 - FRAC_BITS)
 
 static void filter(MpegAudioContext *s, int ch, short *samples, int incr)
 {
     short *p, *q;
-    int sum, offset, i, j, norm, n;
-    short tmp[64];
+    int sum, offset, i, j;
+    int tmp[64];
     int tmp1[32];
     int *out;
 
@@ -319,29 +327,15 @@ static void filter(MpegAudioContext *s, int ch, short *samples, int incr)
             sum += p[5*64] * q[5*64];
             sum += p[6*64] * q[6*64];
             sum += p[7*64] * q[7*64];
-            tmp[i] = sum >> 14;
+            tmp[i] = sum;
             p++;
             q++;
         }
-        tmp1[0] = tmp[16];
-        for( i=1; i<=16; i++ ) tmp1[i] = tmp[i+16]+tmp[16-i];
-        for( i=17; i<=31; i++ ) tmp1[i] = tmp[i+16]-tmp[80-i];
+        tmp1[0] = tmp[16] >> WSHIFT;
+        for( i=1; i<=16; i++ ) tmp1[i] = (tmp[i+16]+tmp[16-i]) >> WSHIFT;
+        for( i=17; i<=31; i++ ) tmp1[i] = (tmp[i+16]-tmp[80-i]) >> WSHIFT;
 
-        /* integer IDCT 32 with normalization. XXX: There may be some
-           overflow left */
-        norm = 0;
-        for(i=0;i<32;i++) {
-            norm |= abs(tmp1[i]);
-        }
-        n = av_log2(norm) - 12;
-        if (n > 0) {
-            for(i=0;i<32;i++) 
-                tmp1[i] >>= n;
-        } else {
-            n = 0;
-        }
-
-        idct32(out, tmp1, s->sblimit, n);
+        idct32(out, tmp1);
 
         /* advance of 32 samples */
         offset -= 32;
@@ -391,9 +385,9 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
                     index = 0; /* very unlikely case of overflow */
                 }
             } else {
-                index = 63;
+                index = 62; /* value 63 is not allowed */
             }
-            
+
 #if 0
             printf("%2d:%d in=%x %x %d\n", 
                    j, i, vmax, scale_factor_table[index], index);
