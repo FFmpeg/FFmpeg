@@ -218,7 +218,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_le32(pb);
 	    st->codec.codec_type = type;
             /* 1 fps default (XXX: put 0 fps instead) */
-            st->codec.frame_rate = 1; 
+            st->codec.frame_rate = 1000; 
             st->codec.frame_rate_base = 1;
             if (type == CODEC_TYPE_AUDIO) {
                 get_wav_header(pb, &st->codec, type_specific_size);
