@@ -203,6 +203,9 @@ static int using_vhook = 0;
 static int verbose = 1;
 static int thread_count= 1;
 static int q_pressed = 0;
+static int64_t video_size = 0;
+static int64_t audio_size = 0;
+static int64_t extra_size = 0;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
@@ -434,6 +437,7 @@ static void do_audio_out(AVFormatContext *s,
                      &ost->fifo.rptr) == 0) {
             ret = avcodec_encode_audio(enc, audio_out, audio_out_size, 
                                        (short *)audio_buf);
+            audio_size += ret;
             av_write_frame(s, ost->index, audio_out, ret);
         }
     } else {
@@ -451,6 +455,7 @@ static void do_audio_out(AVFormatContext *s,
         }
         ret = avcodec_encode_audio(enc, audio_out, size_out, 
 				   (short *)buftmp);
+        audio_size += ret;
         av_write_frame(s, ost->index, audio_out, ret);
     }
 }
@@ -816,7 +821,6 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
                            int frame_size)
 {
     static FILE *fvstats=NULL;
-    static int64_t total_size = 0;
     char filename[40];
     time_t today2;
     struct tm *today;
@@ -840,7 +844,6 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
     
     ti = MAXINT64;
     enc = &ost->st->codec;
-    total_size += frame_size;
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         frame_number = ost->frame_number;
         fprintf(fvstats, "frame= %5d q= %2.1f ", frame_number, enc->coded_frame->quality/(float)FF_QP2LAMBDA);
@@ -854,9 +857,9 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
             ti1 = 0.01;
     
         bitrate = (double)(frame_size * 8) * enc->frame_rate / enc->frame_rate_base / 1000.0;
-        avg_bitrate = (double)(total_size * 8) / ti1 / 1000.0;
+        avg_bitrate = (double)(video_size * 8) / ti1 / 1000.0;
         fprintf(fvstats, "s_size= %8.0fkB time= %0.3f br= %7.1fkbits/s avg_br= %7.1fkbits/s ",
-            (double)total_size / 1024, ti1, bitrate, avg_bitrate);
+            (double)video_size / 1024, ti1, bitrate, avg_bitrate);
         fprintf(fvstats,"type= %c\n", av_get_pict_type_char(enc->coded_frame->pict_type));        
     }
 }
@@ -953,8 +956,16 @@ static void print_report(AVFormatContext **output_files,
         fflush(stderr);
     }
         
-    if (is_last_report && verbose >= 0)
+    if (is_last_report && verbose >= 0){
+        int64_t raw= audio_size + video_size + extra_size;
         fprintf(stderr, "\n");
+        fprintf(stderr, "video:%1.0fkB audio:%1.0fkB global headers:%1.0fkB muxing overhead %f%%\n",
+                video_size/1024.0,
+                audio_size/1024.0,
+                extra_size/1024.0,
+                100.0*(total_size - raw)/raw
+        );
+    }
 }
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
@@ -1117,6 +1128,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                     }
 
                                     do_video_out(os, ost, ist, &picture, &frame_size, audio_sync);
+                                    video_size += frame_size;
                                     if (do_vstats && frame_size)
                                         do_video_stats(os, ost, frame_size);
                                 }
@@ -1513,6 +1525,7 @@ static int av_encode(AVFormatContext **output_files,
                         ost->file_index, ost->index);
                 exit(1);
             }
+            extra_size += ost->st->codec.extradata_size;
         }
     }
 
