@@ -196,11 +196,14 @@ static int decode_frame(AVCodecContext *avctx,
 //    a->dsp.bswap_buf((uint32_t*)a->bitstream_buffer, (uint32_t*)buf, buf_size/4);
     init_get_bits(&a->gb, a->bitstream_buffer, buf_size*8);
     
+    /* skip over 4 preamble bytes in stream (typically 0xXX 0xXX 0x00 0x38) */
+    skip_bits(&a->gb, 32);
+
     a->qscale=  get_bits(&a->gb, 16);
     a->version= get_bits(&a->gb, 16);
     skip_bits(&a->gb, 8*8); 
     
-    printf("qscale:%d, version:%d\n", a->qscale, a->version);
+    printf("qscale:%d (0x%X), version:%d (0x%X)\n", a->qscale, a->qscale, a->version, a->version);
     
     for(a->mb_y=0; a->mb_y<a->mb_height; a->mb_y++){
         for(a->mb_x=0; a->mb_x<a->mb_width; a->mb_x++){
