@@ -19,33 +19,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-#ifdef HAVE_MALLOC_H
-#include <malloc.h>
-#endif
-
-/* memory alloc */
-void *av_malloc(int size)
-{
-    void *ptr;
-#if defined ( ARCH_X86 ) && defined ( HAVE_MEMALIGN )
-    ptr = memalign(64,size);
-    /* Why 64? 
-       Indeed, we should align it:
-         on 4 for 386
-         on 16 for 486
-	 on 32 for 586, PPro - k6-III
-	 on 64 for K7 (maybe for P3 too).
-       Because L1 and L2 caches are aligned on those values.
-       But I don't want to code such logic here!
-     */
-#else
-    ptr = malloc(size);
-#endif
-    if (!ptr)
-        return NULL;
-    memset(ptr, 0, size);
-    return ptr;
-}
 
 void *av_mallocz(int size)
 {
@@ -55,14 +28,6 @@ void *av_mallocz(int size)
         return NULL;
     memset(ptr, 0, size);
     return ptr;
-}
-
-/* NOTE: ptr = NULL is explicetly allowed */
-void av_free(void *ptr)
-{
-    /* XXX: this test should not be needed on most libcs */
-    if (ptr)
-        free(ptr);
 }
 
 /* cannot call it directly because of 'void **' casting is not automatic */
@@ -443,71 +408,6 @@ void avcodec_init(void)
     inited = 1;
 
     dsputil_init();
-}
-
-/* simple call to use all the codecs */
-void avcodec_register_all(void)
-{
-    static int inited = 0;
-    
-    if (inited != 0)
-	return;
-    inited = 1;
-
-    /* encoders */
-#ifdef CONFIG_ENCODERS
-    register_avcodec(&ac3_encoder);
-    register_avcodec(&mp2_encoder);
-#ifdef CONFIG_MP3LAME
-    register_avcodec(&mp3lame_encoder);
-#endif
-    register_avcodec(&mpeg1video_encoder);
-    register_avcodec(&h263_encoder);
-    register_avcodec(&h263p_encoder);
-    register_avcodec(&rv10_encoder);
-    register_avcodec(&mjpeg_encoder);
-    register_avcodec(&mpeg4_encoder);
-    register_avcodec(&msmpeg4v1_encoder);
-    register_avcodec(&msmpeg4v2_encoder);
-    register_avcodec(&msmpeg4v3_encoder);
-#endif /* CONFIG_ENCODERS */
-    register_avcodec(&rawvideo_codec);
-
-    /* decoders */
-#ifdef CONFIG_DECODERS
-    register_avcodec(&h263_decoder);
-    register_avcodec(&mpeg4_decoder);
-    register_avcodec(&msmpeg4v1_decoder);
-    register_avcodec(&msmpeg4v2_decoder);
-    register_avcodec(&msmpeg4v3_decoder);
-    register_avcodec(&wmv1_decoder);
-    register_avcodec(&mpeg_decoder);
-    register_avcodec(&h263i_decoder);
-    register_avcodec(&rv10_decoder);
-    register_avcodec(&mjpeg_decoder);
-    register_avcodec(&mp2_decoder);
-    register_avcodec(&mp3_decoder);
-#ifdef CONFIG_AC3
-    register_avcodec(&ac3_decoder);
-#endif
-#endif /* CONFIG_DECODERS */
-
-    /* pcm codecs */
-
-#define PCM_CODEC(id, name) \
-    register_avcodec(& name ## _encoder); \
-    register_avcodec(& name ## _decoder); \
-
-PCM_CODEC(CODEC_ID_PCM_S16LE, pcm_s16le);
-PCM_CODEC(CODEC_ID_PCM_S16BE, pcm_s16be);
-PCM_CODEC(CODEC_ID_PCM_U16LE, pcm_u16le);
-PCM_CODEC(CODEC_ID_PCM_U16BE, pcm_u16be);
-PCM_CODEC(CODEC_ID_PCM_S8, pcm_s8);
-PCM_CODEC(CODEC_ID_PCM_U8, pcm_u8);
-PCM_CODEC(CODEC_ID_PCM_ALAW, pcm_alaw);
-PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
-
-#undef PCM_CODEC
 }
 
 /* this should be called after seeking and before trying to decode the next frame */
