@@ -190,7 +190,7 @@ set the copyright
 set the comment
 
 @item -target type
-specify target file type ("vcd", "svcd", "dvd", "pal-vcd", "ntsc-svcd", ... ). All the format
+specify target file type ("vcd", "svcd", "dvd", "dv", "pal-vcd", "ntsc-svcd", ... ). All the format
 options (bitrate, codecs, buffer sizes) are automatically set by this
 option. You can just type:
 

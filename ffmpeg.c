@@ -3806,6 +3806,16 @@ static void opt_target(const char *arg)
         audio_bit_rate = 448000;
         audio_sample_rate = 48000;
 
+    } else if(!strcmp(arg, "dv")) {
+
+        opt_format("dv");
+
+        opt_frame_size(norm ? "720x480" : "720x576");
+        opt_frame_rate(frame_rates[norm]);
+
+        audio_sample_rate = 48000;
+        audio_channels = 2;
+
     } else {
         fprintf(stderr, "Unknown target: %s\n", arg);
         exit(1);
@@ -3853,7 +3863,7 @@ const OptionDef options[] = {
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
     { "loop", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "control amount of logging", "verbose" },
-    { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
+    { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
