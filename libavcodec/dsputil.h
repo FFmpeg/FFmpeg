@@ -240,6 +240,10 @@ typedef struct DSPContext {
     
     /**
      * idct input permutation.
+     * several optimized IDCTs need a permutated input (relative to the normal order of the reference
+     * IDCT)
+     * this permutation must be performed before the idct_put/add, note, normally this can be merged
+     * with the zigzag/alternate scan<br>
      * an example to avoid confusion:
      * - (->decode coeffs -> zigzag reorder -> dequant -> reference idct ->...)
      * - (x -> referece dct -> reference idct -> x)
