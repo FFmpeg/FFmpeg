@@ -1,6 +1,10 @@
 #ifndef AVFORMAT_H
 #define AVFORMAT_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define LIBAVFORMAT_VERSION_INT 0x000406  
 #define LIBAVFORMAT_VERSION     "0.4.6"
 #define LIBAVFORMAT_BUILD       4603
@@ -402,5 +406,9 @@ void url_split(char *proto, int proto_size,
 int match_ext(const char *filename, const char *extensions);
 
 #endif /* HAVE_AV_CONFIG_H */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* AVFORMAT_H */

@@ -1,6 +1,10 @@
 #ifndef AVCODEC_H
 #define AVCODEC_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include "common.h"
 
 #define LIBAVCODEC_VERSION_INT 0x000406
@@ -1244,5 +1248,9 @@ void *av_fast_realloc(void *ptr, int *size, int min_size);
 void av_free_static(void);
 void *__av_mallocz_static(void** location, unsigned int size);
 #define av_mallocz_static(p, s) __av_mallocz_static((void **)(p), s)
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* AVCODEC_H */
