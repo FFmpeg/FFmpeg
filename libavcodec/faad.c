@@ -1,6 +1,7 @@
 /*
  * Faad decoder
  * Copyright (c) 2003 Zdenek Kabelac.
+ * Copyright (c) 2004 Thomas Raivio.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,20 +52,42 @@ typedef struct {
     /* faad calls */
     faacDecHandle FAADAPI (*faacDecOpen)(void);
     faacDecConfigurationPtr FAADAPI (*faacDecGetCurrentConfiguration)(faacDecHandle hDecoder);
-    unsigned char FAADAPI (*faacDecSetConfiguration)(faacDecHandle hDecoder,
-                                                     faacDecConfigurationPtr config);
-    long FAADAPI (*faacDecInit)(faacDecHandle hDecoder,
+#ifndef FAAD2_VERSION
+	int FAADAPI (*faacDecSetConfiguration)(faacDecHandle hDecoder,
+                                           faacDecConfigurationPtr config);
+	int FAADAPI (*faacDecInit)(faacDecHandle hDecoder,
 				unsigned char *buffer,
 				unsigned long *samplerate,
-				unsigned char *channels);
-    char FAADAPI (*faacDecInit2)(faacDecHandle hDecoder, unsigned char *pBuffer,
+				unsigned long *channels);
+	int FAADAPI (*faacDecInit2)(faacDecHandle hDecoder, unsigned char *pBuffer,
+                                unsigned long SizeOfDecoderSpecificInfo,
+                                unsigned long *samplerate, unsigned long *channels);
+	int FAADAPI (*faacDecDecode)(faacDecHandle hDecoder,
+		                unsigned char *buffer,
+				unsigned long *bytesconsumed,
+				short *sample_buffer,
+                                unsigned long *samples);
+#else
+	unsigned char FAADAPI (*faacDecSetConfiguration)(faacDecHandle hDecoder,
+                                                     faacDecConfigurationPtr config);
+	long FAADAPI (*faacDecInit)(faacDecHandle hDecoder,
+		  		 unsigned char *buffer,
+				 unsigned long buffer_size,
+				 unsigned long *samplerate,
+				 unsigned char *channels);
+	char FAADAPI (*faacDecInit2)(faacDecHandle hDecoder, unsigned char *pBuffer,
                                  unsigned long SizeOfDecoderSpecificInfo,
                                  unsigned long *samplerate, unsigned char *channels);
+	void *FAADAPI (*faacDecDecode)(faacDecHandle hDecoder,
+		                         faacDecFrameInfo *hInfo,
+		                         unsigned char *buffer,
+								 unsigned long buffer_size);
+	unsigned char* FAADAPI (*faacDecGetErrorMessage)(unsigned char errcode);
+#endif
+    
     void FAADAPI (*faacDecClose)(faacDecHandle hDecoder);
-    void* FAADAPI (*faacDecDecode)(faacDecHandle hDecoder,
-                                   faacDecFrameInfo *hInfo,
-                                   unsigned char *buffer);
-    unsigned char* FAADAPI (*faacDecGetErrorMessage)(unsigned char errcode);
+    
+    
 } FAACContext;
 
 static const unsigned long faac_srates[] =
@@ -77,7 +100,11 @@ static int faac_init_mp4(AVCodecContext *avctx)
 {
     FAACContext *s = (FAACContext *) avctx->priv_data;
     unsigned long samplerate;
+#ifndef FAAD2_VERSION
+    unsigned long channels;
+#else
     unsigned char channels;
+#endif
     int r = 0;
 
     if (avctx->extradata)
@@ -87,15 +114,13 @@ static int faac_init_mp4(AVCodecContext *avctx)
     // else r = s->faacDecInit(s->faac_handle ... );
 
     if (r < 0)
-	av_log(avctx, AV_LOG_ERROR, "faacDecInit2 failed r:%d   sr:%ld  ch:%d  s:%d\n",
-		r, samplerate, channels, avctx->extradata_size);
-
+	av_log(avctx, AV_LOG_ERROR, "faacDecInit2 failed r:%d   sr:%ld  ch:%ld  s:%d\n",
+		r, samplerate, (long)channels, avctx->extradata_size);
     return r;
 }
 
 static int faac_init_aac(AVCodecContext *avctx)
 {
-    FAACContext *s = (FAACContext *) avctx->priv_data;
     return 0;
 }
 
@@ -104,9 +129,31 @@ static int faac_decode_frame(AVCodecContext *avctx,
                              uint8_t *buf, int buf_size)
 {
     FAACContext *s = (FAACContext *) avctx->priv_data;
+#ifndef FAAD2_VERSION
+    unsigned long bytesconsumed;
+    short *sample_buffer = NULL;
+    unsigned long samples;
+    int out;
+#else
     faacDecFrameInfo frame_info;
-    void* out = s->faacDecDecode(s->faac_handle, &frame_info, (unsigned char*)buf);
-    //printf("DECODE FRAME %d, %d, %d - %p\n", buf_size, frame_info.samples, frame_info.bytesconsumed, out);
+    void *out;
+#endif
+    if(buf_size == 0)
+	return 0;
+#ifndef FAAD2_VERSION
+    out = s->faacDecDecode(s->faac_handle, 
+                           (unsigned char*)buf, 
+                           &bytesconsumed, 
+                           data, 
+                           &samples);
+    samples *= s->sample_size;
+    if (data_size)
+	*data_size = samples;
+    return (buf_size < (int)bytesconsumed)
+	? buf_size : (int)bytesconsumed;
+#else
+	
+    out = s->faacDecDecode(s->faac_handle, &frame_info, (unsigned char*)buf, (unsigned long)buf_size);
 
     if (frame_info.error > 0) {
 	av_log(avctx, AV_LOG_ERROR, "faac: frame decodinf failed: %s\n",
@@ -122,6 +169,7 @@ static int faac_decode_frame(AVCodecContext *avctx,
 
     return (buf_size < (int)frame_info.bytesconsumed)
 	? buf_size : (int)frame_info.bytesconsumed;
+#endif
 }
 
 static int faac_decode_end(AVCodecContext *avctx)
@@ -159,22 +207,33 @@ static int faac_decode_init(AVCodecContext *avctx)
 #endif /* CONFIG_FAADBIN */
 
         // resolve all needed function calls
-        dfaac(Open, (faacDecHandle FAADAPI (*)(void)));
+	dfaac(Open, (faacDecHandle FAADAPI (*)(void)));
 	dfaac(GetCurrentConfiguration, (faacDecConfigurationPtr
 					FAADAPI (*)(faacDecHandle)));
-	dfaac(SetConfiguration, (unsigned char FAADAPI (*)(faacDecHandle,
+#ifndef FAAD2_VERSION
+	dfaac(SetConfiguration, (int FAADAPI (*)(faacDecHandle,
 							   faacDecConfigurationPtr)));
 
+	dfaac(Init, (int FAADAPI (*)(faacDecHandle, unsigned char*,
+				     unsigned long*, unsigned long*)));
+    dfaac(Init2, (int FAADAPI (*)(faacDecHandle, unsigned char*,
+				       unsigned long, unsigned long*,
+				       unsigned long*)));
+    dfaac(Close, (void FAADAPI (*)(faacDecHandle hDecoder)));
+	dfaac(Decode, (int FAADAPI (*)(faacDecHandle, unsigned char*,
+		             unsigned long*, short*, unsigned long*)));
+#else
+	dfaac(SetConfiguration, (unsigned char FAADAPI (*)(faacDecHandle,
+							   faacDecConfigurationPtr)));
 	dfaac(Init, (long FAADAPI (*)(faacDecHandle, unsigned char*,
-				     unsigned long*, unsigned char*)));
-        dfaac(Init2, (char FAADAPI (*)(faacDecHandle, unsigned char*,
+				     unsigned long, unsigned long*, unsigned char*)));
+	dfaac(Init2, (char FAADAPI (*)(faacDecHandle, unsigned char*,
 				       unsigned long, unsigned long*,
 				       unsigned char*)));
-        dfaac(Close, (void FAADAPI (*)(faacDecHandle hDecoder)));
-	dfaac(Decode, (void* FAADAPI (*)(faacDecHandle, faacDecFrameInfo*,
-					 unsigned char*)));
-
+	dfaac(Decode, (void *FAADAPI (*)(faacDecHandle, faacDecFrameInfo*,
+		             unsigned char*, unsigned long)));
 	dfaac(GetErrorMessage, (unsigned char* FAADAPI (*)(unsigned char)));
+#endif
 #undef dfacc
 
 #ifdef CONFIG_FAADBIN
@@ -203,15 +262,21 @@ static int faac_decode_init(AVCodecContext *avctx)
 	case 8: av_log(avctx, AV_LOG_ERROR, "FAADlib unsupported bps %d\n", avctx->bits_per_sample); break;
 	default:
 	case 16:
+#ifdef FAAD2_VERSION
 	    faac_cfg->outputFormat = FAAD_FMT_16BIT;
+#endif
 	    s->sample_size = 2;
 	    break;
 	case 24:
+#ifdef FAAD2_VERSION
 	    faac_cfg->outputFormat = FAAD_FMT_24BIT;
+#endif
 	    s->sample_size = 3;
 	    break;
 	case 32:
+#ifdef FAAD2_VERSION
 	    faac_cfg->outputFormat = FAAD_FMT_32BIT;
+#endif
 	    s->sample_size = 4;
 	    break;
 	}
