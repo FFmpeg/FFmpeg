@@ -47,8 +47,15 @@ struct dv1394_data {
 
     int stream; /* Current stream. 0 - video, 1 - audio */
     int64_t pts;  /* Current timestamp */
+    AVStream *vst, *ast;
 };
 
+/* 
+ * The trick here is to kludge around well known problem with kernel Ooopsing
+ * when you try to capture PAL on a device node configure for NTSC. That's 
+ * why we have to configure the device node for PAL, and then read only NTSC
+ * amount of data.
+ */
 static int dv1394_reset(struct dv1394_data *dv)
 {
     struct dv1394_init init;
@@ -56,7 +63,7 @@ static int dv1394_reset(struct dv1394_data *dv)
     init.channel     = dv->channel;
     init.api_version = DV1394_API_VERSION;
     init.n_frames    = DV1394_RING_FRAMES;
-    init.format      = dv->format;
+    init.format      = DV1394_PAL;
 
     if (ioctl(dv->fd, DV1394_INIT, &init) < 0)
         return -1;
@@ -79,15 +86,14 @@ static int dv1394_start(struct dv1394_data *dv)
 static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap)
 {
     struct dv1394_data *dv = context->priv_data;
-    AVStream *vst, *ast;
     const char *video_device;
 
-    vst = av_new_stream(context, 0);
-    if (!vst)
+    dv->vst = av_new_stream(context, 0);
+    if (!dv->vst)
         return -ENOMEM;
-    ast = av_new_stream(context, 1);
-    if (!ast) {
-        av_free(vst);
+    dv->ast = av_new_stream(context, 1);
+    if (!dv->ast) {
+        av_free(dv->vst);
         return -ENOMEM;
     }
 
@@ -127,27 +133,27 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
         goto failed;
     }
 
-    dv->ring = mmap(NULL, DV1394_NTSC_FRAME_SIZE * DV1394_RING_FRAMES,
+    dv->ring = mmap(NULL, DV1394_PAL_FRAME_SIZE * DV1394_RING_FRAMES,
                     PROT_READ, MAP_PRIVATE, dv->fd, 0);
-    if (!dv->ring) {
+    if (dv->ring == MAP_FAILED) {
         perror("Failed to mmap DV ring buffer");
         goto failed;
     }
 
     dv->stream = 0;
 
-    vst->codec.codec_type = CODEC_TYPE_VIDEO;
-    vst->codec.codec_id   = CODEC_ID_DVVIDEO;
-    vst->codec.width      = dv->width;
-    vst->codec.height     = dv->height;
-    vst->codec.frame_rate = dv->frame_rate;
-    vst->codec.frame_rate_base = 1;
-    vst->codec.bit_rate   = 25000000;  /* Consumer DV is 25Mbps */
+    dv->vst->codec.codec_type = CODEC_TYPE_VIDEO;
+    dv->vst->codec.codec_id   = CODEC_ID_DVVIDEO;
+    dv->vst->codec.width      = dv->width;
+    dv->vst->codec.height     = dv->height;
+    dv->vst->codec.frame_rate = dv->frame_rate;
+    dv->vst->codec.frame_rate_base = 1;
+    dv->vst->codec.bit_rate   = 25000000;  /* Consumer DV is 25Mbps */
 
-    ast->codec.codec_type = CODEC_TYPE_AUDIO;
-    ast->codec.codec_id   = CODEC_ID_DVAUDIO;
-    ast->codec.channels   = 2;
-    ast->codec.sample_rate= 48000;
+    dv->ast->codec.codec_type = CODEC_TYPE_AUDIO;
+    dv->ast->codec.codec_id   = CODEC_ID_DVAUDIO;
+    dv->ast->codec.channels   = 2;
+    dv->ast->codec.sample_rate= 48000;
 
     av_set_pts_info(context, 48, 1, 1000000);
 
@@ -158,8 +164,8 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
 
 failed:
     close(dv->fd);
-    av_free(vst);
-    av_free(ast);
+    av_free(dv->vst);
+    av_free(dv->ast);
     return -EIO;
 }
 
@@ -171,7 +177,7 @@ static void __destruct_pkt(struct AVPacket *pkt)
 
 static inline int __get_frame(struct dv1394_data *dv, AVPacket *pkt)
 {
-    char *ptr = dv->ring + (dv->index * dv->frame_size);
+    char *ptr = dv->ring + (dv->index * DV1394_PAL_FRAME_SIZE);
 
     if (dv->stream) {
         dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
@@ -180,6 +186,17 @@ static inline int __get_frame(struct dv1394_data *dv, AVPacket *pkt)
         dv->pts = av_gettime() & ((1LL << 48) - 1);
     }
 
+    dv->format = ((ptr[3] & 0x80) == 0) ? DV1394_NTSC : DV1394_PAL;
+    if (dv->format == DV1394_NTSC) {
+        dv->frame_size = DV1394_NTSC_FRAME_SIZE;
+        dv->vst->codec.height = dv->height = DV1394_NTSC_HEIGHT;
+        dv->vst->codec.frame_rate = dv->frame_rate = 30;
+    } else {
+        dv->frame_size = DV1394_PAL_FRAME_SIZE;
+        dv->vst->codec.height = dv->height = DV1394_PAL_HEIGHT;
+        dv->vst->codec.frame_rate = dv->frame_rate = 25;
+    }
+	
     av_init_packet(pkt);
     pkt->destruct = __destruct_pkt;
     pkt->data     = ptr;

@@ -26,7 +26,7 @@
 #ifndef _DV_1394_H
 #define _DV_1394_H
 
-#define DV1394_DEFAULT_CHANNEL 0x63
+#define DV1394_DEFAULT_CHANNEL 63
 #define DV1394_DEFAULT_CARD    0
 #define DV1394_RING_FRAMES     20
 
@@ -199,12 +199,12 @@
 #define DV1394_MAX_FRAMES 32
 
 /* number of *full* isochronous packets per DV frame */
-#define DV1394_NTSC_PACKETS_PER_FRAME 300
-#define DV1394_PAL_PACKETS_PER_FRAME  250
+#define DV1394_NTSC_PACKETS_PER_FRAME 250
+#define DV1394_PAL_PACKETS_PER_FRAME  300
 
 /* size of one frame's worth of DV data, in bytes */
 #define DV1394_NTSC_FRAME_SIZE (480 * DV1394_NTSC_PACKETS_PER_FRAME)
-#define DV1394_PAL_FRAME_SIZE  (576 * DV1394_PAL_PACKETS_PER_FRAME)
+#define DV1394_PAL_FRAME_SIZE  (480 * DV1394_PAL_PACKETS_PER_FRAME)
 
 
 /* ioctl() commands */
