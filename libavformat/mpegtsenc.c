@@ -258,12 +258,26 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     for(i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MpegTSWriteStream *ts_st = st->priv_data;
-        switch(st->codec.codec_type) {
-        case CODEC_TYPE_VIDEO:
-            stream_type = STREAM_TYPE_VIDEO_MPEG2; //XXX/FIXME is this (and the define) correct?
+        switch(st->codec.codec_id) {
+        case CODEC_ID_MPEG1VIDEO:
+        case CODEC_ID_MPEG2VIDEO:
+            stream_type = STREAM_TYPE_VIDEO_MPEG2;
             break;
-        case CODEC_TYPE_AUDIO:
+        case CODEC_ID_MPEG4:
+            stream_type = STREAM_TYPE_VIDEO_MPEG4;
+            break;
+        case CODEC_ID_H264:
+            stream_type = STREAM_TYPE_VIDEO_H264;
+            break;
+        case CODEC_ID_MP2:
+        case CODEC_ID_MP3:
             stream_type = STREAM_TYPE_AUDIO_MPEG1;
+            break;
+        case CODEC_ID_AAC:
+            stream_type = STREAM_TYPE_AUDIO_AAC;
+            break;
+        case CODEC_ID_AC3:
+            stream_type = STREAM_TYPE_AUDIO_AC3;
             break;
         default:
             stream_type = STREAM_TYPE_PRIVATE_DATA;

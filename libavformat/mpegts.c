@@ -30,7 +30,7 @@
    synchronisation is lost */
 #define MAX_RESYNC_SIZE 4096
 
-static int add_pes_stream(MpegTSContext *ts, int pid);
+static int add_pes_stream(MpegTSContext *ts, int pid, int stream_type);
 
 enum MpegTSFilterType {
     MPEGTS_PES,
@@ -403,8 +403,11 @@ static void pmt_cb(void *opaque, const uint8_t *section, int section_len)
         case STREAM_TYPE_AUDIO_MPEG2:
         case STREAM_TYPE_VIDEO_MPEG1:
         case STREAM_TYPE_VIDEO_MPEG2:
+        case STREAM_TYPE_VIDEO_MPEG4:
+        case STREAM_TYPE_VIDEO_H264:
+        case STREAM_TYPE_AUDIO_AAC:
         case STREAM_TYPE_AUDIO_AC3:
-            add_pes_stream(ts, pid);
+            add_pes_stream(ts, pid, stream_type);
             break;
         default:
             /* we ignore the other streams */
@@ -632,6 +635,7 @@ enum MpegTSState {
 
 typedef struct PESContext {
     int pid;
+    int stream_type;
     MpegTSContext *ts;
     AVFormatContext *stream;
     AVStream *st;
@@ -698,15 +702,45 @@ static void mpegts_push_data(void *opaque,
                         goto skip;
                     if (!pes->st) {
                         /* allocate stream */
-                        if (code >= 0x1c0 && code <= 0x1df) {
+                        switch(pes->stream_type){
+                        case STREAM_TYPE_AUDIO_MPEG1:
+                        case STREAM_TYPE_AUDIO_MPEG2:
                             codec_type = CODEC_TYPE_AUDIO;
-                            codec_id = CODEC_ID_MP2;
-                        } else if (code == 0x1bd) {
+                            codec_id = CODEC_ID_MP3;
+                            break;
+                        case STREAM_TYPE_VIDEO_MPEG1:
+                        case STREAM_TYPE_VIDEO_MPEG2:
+                            codec_type = CODEC_TYPE_VIDEO;
+                            codec_id = CODEC_ID_MPEG2VIDEO;
+                            break;
+                        case STREAM_TYPE_VIDEO_MPEG4:
+                            codec_type = CODEC_TYPE_VIDEO;
+                            codec_id = CODEC_ID_MPEG4;
+                            break;
+                        case STREAM_TYPE_VIDEO_H264:
+                            codec_type = CODEC_TYPE_VIDEO;
+                            codec_id = CODEC_ID_H264;
+                            break;
+                        case STREAM_TYPE_AUDIO_AAC:
+                            codec_type = CODEC_TYPE_AUDIO;
+                            codec_id = CODEC_ID_AAC;
+                            break;
+                        case STREAM_TYPE_AUDIO_AC3:
                             codec_type = CODEC_TYPE_AUDIO;
                             codec_id = CODEC_ID_AC3;
-                        } else {
-                            codec_type = CODEC_TYPE_VIDEO;
-                            codec_id = CODEC_ID_MPEG1VIDEO;
+                            break;
+                        default:
+                            if (code >= 0x1c0 && code <= 0x1df) {
+                                codec_type = CODEC_TYPE_AUDIO;
+                                codec_id = CODEC_ID_MP2;
+                            } else if (code == 0x1bd) {
+                                codec_type = CODEC_TYPE_AUDIO;
+                                codec_id = CODEC_ID_AC3;
+                            } else {
+                                codec_type = CODEC_TYPE_VIDEO;
+                                codec_id = CODEC_ID_MPEG1VIDEO;
+                            }
+                            break;
                         }
                         st = av_new_stream(pes->stream, pes->pid);
                         if (st) {
@@ -794,7 +828,7 @@ static void mpegts_push_data(void *opaque,
     }
 }
 
-static int add_pes_stream(MpegTSContext *ts, int pid)
+static int add_pes_stream(MpegTSContext *ts, int pid, int stream_type)
 {
     MpegTSFilter *tss;
     PESContext *pes;
@@ -806,6 +840,7 @@ static int add_pes_stream(MpegTSContext *ts, int pid)
     pes->ts = ts;
     pes->stream = ts->stream;
     pes->pid = pid;
+    pes->stream_type = stream_type;
     tss = mpegts_open_pes_filter(ts, pid, mpegts_push_data, pes);
     if (!tss) {
         av_free(pes);
@@ -826,7 +861,7 @@ static void handle_packet(MpegTSContext *ts, const uint8_t *packet)
     is_start = packet[1] & 0x40;
     tss = ts->pids[pid];
     if (ts->auto_guess && tss == NULL && is_start) {
-        add_pes_stream(ts, pid);
+        add_pes_stream(ts, pid, 0);
         tss = ts->pids[pid];
     }
     if (!tss)
