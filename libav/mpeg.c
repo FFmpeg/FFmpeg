@@ -432,7 +432,7 @@ static int mpeg_mux_read_header(AVFormatContext *s,
 {
     MpegDemuxContext *m;
     int size, startcode, c, rate_bound, audio_bound, video_bound, mux_rate, val;
-    int codec_id, n, i, type;
+    int codec_id, n, i, type, seems_dvd;
     AVStream *st;
     offset_t start_pos;
 
@@ -440,25 +440,26 @@ static int mpeg_mux_read_header(AVFormatContext *s,
     if (!m)
         return -ENOMEM;
     s->priv_data = m;
-
+    seems_dvd = 0;
+    
     /* search first pack header */
     m->header_state = 0xff;
     size = MAX_SYNC_SIZE;
     start_pos = url_ftell(&s->pb); /* remember this pos */
     for(;;) {
-        while (size > 0) {
+        /*while (size > 0) {
             startcode = find_start_code(&s->pb, &size, &m->header_state);
             if (startcode == PACK_START_CODE)
                 goto found;
-        }
+        }*/
         /* System Header not found find streams searching through file */
-        fprintf(stderr,"libav: MPEG-PS System Header not found!\n");
+        //fprintf(stderr,"libav: MPEG-PS System Header not found!\n");
         url_fseek(&s->pb, start_pos, SEEK_SET);
         video_bound = 0;
         audio_bound = 0;
         c = 0;
         s->nb_streams = 0;
-        size = 15*MAX_SYNC_SIZE;
+        //size = 15*MAX_SYNC_SIZE;
         while (size > 0) {
             type = 0;
             codec_id = 0;
@@ -477,6 +478,7 @@ static int mpeg_mux_read_header(AVFormatContext *s,
                     audio_bound++;
                     n = 1;
                     c = startcode;
+                    seems_dvd = 1;
                 }    
             } else if (startcode == 0x1e0 && !check_stream_id(s, startcode)) {
                 //fprintf(stderr,"Found MPEGVIDEO stream ID: 0x%x\n", startcode);
@@ -485,14 +487,14 @@ static int mpeg_mux_read_header(AVFormatContext *s,
                 n = 1;
                 c = startcode;
                 video_bound++;
-            } /*else if (startcode >= 0x1c0 && startcode <= 0x1df && !check_stream_id(s, startcode)) {
-                fprintf(stderr,"Found MPEGAUDIO stream ID: 0x%x\n", startcode);
+            } else if (startcode >= 0x1c0 && startcode <= 0x1df && !seems_dvd && !check_stream_id(s, startcode)) {
+                //fprintf(stderr,"Found MPEGAUDIO stream ID: 0x%x\n", startcode);
                 type = CODEC_TYPE_AUDIO;
                 codec_id = CODEC_ID_MP2;
                 n = 1;
                 c = startcode;
                 audio_bound++;
-            } */
+            } 
             for(i=0;i<n;i++) {
                 st = av_mallocz(sizeof(AVStream));
                 if (!st)
