@@ -70,6 +70,7 @@ static inline int mpeg2_decode_block_non_intra(MpegEncContext *s,
 static inline int mpeg2_decode_block_intra(MpegEncContext *s, 
                                     DCTELEM *block, 
                                     int n);
+static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s, DCTELEM *block, int n);
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
 static void exchange_uv(MpegEncContext *s);
 
@@ -1358,16 +1359,27 @@ static int mpeg_decode_mb(MpegEncContext *s,
 #endif
 
             if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
-                cbp<<= 12-mb_block_count;
-
-                for(i=0;i<mb_block_count;i++) {
-                    if ( cbp & (1<<11) ) {
-                        if (mpeg2_decode_block_non_intra(s, s->pblocks[i], i) < 0)
-                            return -1;
-                    } else {
-                        s->block_last_index[i] = -1;
+                if(s->flags2 & CODEC_FLAG2_FAST){
+                    for(i=0;i<6;i++) {
+                        if(cbp & 32) {
+                            mpeg2_fast_decode_block_non_intra(s, s->pblocks[i], i);
+                        } else {
+                            s->block_last_index[i] = -1;
+                        }
+                        cbp+=cbp;
                     }
-                    cbp+=cbp;
+                }else{
+                    cbp<<= 12-mb_block_count;
+    
+                    for(i=0;i<mb_block_count;i++) {
+                        if ( cbp & (1<<11) ) {
+                            if (mpeg2_decode_block_non_intra(s, s->pblocks[i], i) < 0)
+                                return -1;
+                        } else {
+                            s->block_last_index[i] = -1;
+                        }
+                        cbp+=cbp;
+                    }
                 }
             } else {
                 for(i=0;i<6;i++) {
@@ -1592,8 +1604,6 @@ static inline int mpeg1_decode_block_inter(MpegEncContext *s,
     return 0;
 }
 
-/* Also does unquantization here, since I will never support mpeg2
-   encoding */
 static inline int mpeg2_decode_block_non_intra(MpegEncContext *s, 
                                DCTELEM *block, 
                                int n)
@@ -1672,6 +1682,67 @@ static inline int mpeg2_decode_block_non_intra(MpegEncContext *s,
     s->block_last_index[n] = i;
     return 0;
 }
+
+static inline int mpeg2_fast_decode_block_non_intra(MpegEncContext *s, 
+                               DCTELEM *block, 
+                               int n)
+{
+    int level, i, j, run;
+    RLTable *rl = &rl_mpeg1;
+    uint8_t * const scantable= s->intra_scantable.permutated;
+    const int qscale= s->qscale;
+    int v;
+    OPEN_READER(re, &s->gb);
+    i = -1;
+
+    /* special case for the first coef. no need to add a second vlc table */
+    UPDATE_CACHE(re, &s->gb);
+    v= SHOW_UBITS(re, &s->gb, 2);
+    if (v & 2) {
+        LAST_SKIP_BITS(re, &s->gb, 2);
+        level= (3*qscale)>>1;
+        if(v&1)
+            level= -level;
+        block[0] = level;
+        i++;
+    }
+
+    /* now quantify & encode AC coefs */
+    for(;;) {
+        UPDATE_CACHE(re, &s->gb);
+        GET_RL_VLC(level, run, re, &s->gb, rl->rl_vlc[0], TEX_VLC_BITS, 2);
+        
+        if(level == 127){
+            break;
+        } else if(level != 0) {
+            i += run;
+            j = scantable[i];
+            level= ((level*2+1)*qscale)>>1;
+            level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+            LAST_SKIP_BITS(re, &s->gb, 1);
+        } else {
+            /* escape */
+            run = SHOW_UBITS(re, &s->gb, 6)+1; LAST_SKIP_BITS(re, &s->gb, 6);
+            UPDATE_CACHE(re, &s->gb);
+            level = SHOW_SBITS(re, &s->gb, 12); SKIP_BITS(re, &s->gb, 12);
+
+            i += run;
+            j = scantable[i];
+            if(level<0){
+                level= ((-level*2+1)*qscale)>>1;
+                level= -level;
+            }else{
+                level= ((level*2+1)*qscale)>>1;
+            }
+        }
+        
+        block[j] = level;
+    }
+    CLOSE_READER(re, &s->gb);
+    s->block_last_index[n] = i;
+    return 0;
+}
+
 
 static inline int mpeg2_decode_block_intra(MpegEncContext *s, 
                                DCTELEM *block, 

@@ -283,6 +283,8 @@ extern int motion_estimation_method;
 #define CODEC_FLAG_INTERLACED_ME  0x20000000 ///< interlaced motion estimation
 #define CODEC_FLAG_SVCD_SCAN_OFFSET 0x40000000 ///< will reserve space for SVCD scan offset user data
 #define CODEC_FLAG_CLOSED_GOP     0x80000000
+#define CODEC_FLAG2_FAST          0x00000001 ///< allow non spec compliant speedup tricks
+
 /* Unsupported options :
  * 		Syntax Arithmetic coding (SAC)
  * 		Reference Picture Selection

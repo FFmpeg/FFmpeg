@@ -170,6 +170,7 @@ static int debug_mv = 0;
 static int step = 0;
 static int thread_count = 1;
 static int workaround_bugs = 1;
+static int fast = 0;
 
 /* current context */
 static int is_full_screen;
@@ -1172,6 +1173,7 @@ static int stream_component_open(VideoState *is, int stream_index)
     enc->debug_mv = debug_mv;
     enc->debug = debug;
     enc->workaround_bugs = workaround_bugs;
+    if(fast) enc->flags2 |= CODEC_FLAG2_FAST;
     if (!codec ||
         avcodec_open(enc, codec) < 0)
         return -1;
@@ -1829,6 +1831,7 @@ const OptionDef options[] = {
     { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
     { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&workaround_bugs}, "workaround bugs", "" },
     { "vismv", HAS_ARG | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
+    { "fast", OPT_BOOL | OPT_EXPERT, {(void*)&fast}, "non spec compliant optimizations", "" },
 #ifdef CONFIG_NETWORK
     { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },
 #endif
