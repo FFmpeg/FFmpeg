@@ -1082,45 +1082,4 @@ void dsputil_set_bit_exact_mmx(void)
     }
 }
 
-#else // TESTCPU_MAIN
-/*
- * for testing speed of various routine - should be probably extended
- * for a general purpose regression test later
- *
- * for now use it this way:
- *
- * gcc -O4 -fomit-frame-pointer -DHAVE_AV_CONFIG_H -DTESTCPU_MAIN  -I../.. -o test dsputil_mmx.c
- *
- * in libavcodec/i386 directory - then run ./test
- */
-static inline long long rdtsc()
-{
-    long long l;
-    asm volatile(   "rdtsc\n\t"
-		    : "=A" (l)
-		);
-    return l;
-}
-
-int main(int argc, char* argv[])
-{
-    volatile int v;
-    int i;
-    const int linesize = 720;
-    char empty[32768];
-    uint64_t te, ts = rdtsc();
-    char* im, *bu = empty;
-    op_pixels_func fc = put_pixels_y2_mmx2;
-    bu += 32;
-    bu =(char*)(((long)bu) & ~0xf); // 16 bytes alignment
-    im = bu;
-    for(i=0; i<1000000; i++){
-	fc(im, im + 1000, linesize, 16);
-	im += 4; //
-	if (im > bu + 10000)
-            im = bu;
-    }
-    te = rdtsc();
-    printf("CPU Ticks: %7d\n", (int)(te - ts));
-}
 #endif

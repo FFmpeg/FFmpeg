@@ -36,6 +36,12 @@ asynth1.sw: audiogen
 audiogen: audiogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
 
+DSPDEPS = $(SRC_PATH)/libavcodec/i386/dsputil_mmx.c \
+ $(SRC_PATH)/libavcodec/i386/dsputil_mmx_avg.h 
+
+dsptest: dsptest.c $(DSPDEPS)
+	$(CC) -O4 -fomit-frame-pointer -DHAVE_AV_CONFIG_H -I.. -I$(SRC_PATH)/libavcodec/i386 -I$(SRC_PATH)/libavcodec/ -o $@ $<
+
 clean:
 	rm -rf vsynth1
 	rm -f asynth1.sw *~ audiogen videogen
