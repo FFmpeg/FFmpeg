@@ -3484,15 +3484,15 @@ void ff_init_block_index(MpegEncContext *s){ //FIXME maybe rename
     s->block_index[5]= s->mb_stride*(s->mb_y + s->mb_height + 2) + s->b8_stride*s->mb_height*2 + s->mb_x - 1;
     //block_index is not used by mpeg2, so it is not affected by chroma_format
 
-    s->dest[0] = s->current_picture.data[0] + (s->mb_x - 1)*16;
-    s->dest[1] = s->current_picture.data[1] + (s->mb_x - 1)*(16 >> s->chroma_x_shift);
-    s->dest[2] = s->current_picture.data[2] + (s->mb_x - 1)*(16 >> s->chroma_x_shift);
-    
+    s->dest[0] = s->current_picture.data[0] + ((s->mb_x - 1) << 4);
+    s->dest[1] = s->current_picture.data[1] + ((s->mb_x - 1) << (4 - s->chroma_x_shift));
+    s->dest[2] = s->current_picture.data[2] + ((s->mb_x - 1) << (4 - s->chroma_x_shift));
+
     if(!(s->pict_type==B_TYPE && s->avctx->draw_horiz_band && s->picture_structure==PICT_FRAME))
     {
-        s->dest[0] += s->mb_y *   linesize * 16;
-        s->dest[1] += s->mb_y * uvlinesize * (16 >> s->chroma_y_shift);
-        s->dest[2] += s->mb_y * uvlinesize * (16 >> s->chroma_y_shift);
+        s->dest[0] += s->mb_y *   linesize << 4;
+        s->dest[1] += s->mb_y * uvlinesize << (4 - s->chroma_y_shift);
+        s->dest[2] += s->mb_y * uvlinesize << (4 - s->chroma_y_shift);
     }
 }
 
