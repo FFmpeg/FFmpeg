@@ -47,8 +47,8 @@
 
 static const uint64_t __attribute__((aligned(8))) wm1010= 0xFFFF0000FFFF0000ULL;
 static const uint64_t __attribute__((aligned(8))) d40000= 0x0000000000040000ULL;
-static int16_t __attribute__((aligned(8))) temp[64];
-static int16_t __attribute__((aligned(8))) coeffs[]= {
+
+static const int16_t __attribute__((aligned(8))) coeffs[]= {
 	1<<(ROW_SHIFT-1), 0, 1<<(ROW_SHIFT-1), 0,
 //	1<<(COL_SHIFT-1), 0, 1<<(COL_SHIFT-1), 0,
 //	0, 1<<(COL_SHIFT-1-16), 0, 1<<(COL_SHIFT-1-16),
@@ -206,6 +206,9 @@ row[7] = input[13];
 
 static inline void idct(int16_t *block)
 {
+	int64_t __attribute__((aligned(8))) align_tmp[16];
+	int16_t * const temp= (int16_t*)align_tmp;
+
 	asm volatile(
 #if 0 //Alternative, simpler variant
 
