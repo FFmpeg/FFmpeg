@@ -1299,6 +1299,7 @@ static int svq1_encode_init(AVCodecContext *avctx)
     s->c_block_height = (s->frame_height / 4 + 15) / 16;
 
     s->avctx= avctx;
+    s->m.avctx= avctx;
     s->m.me.scratchpad= av_mallocz((avctx->width+64)*2*16*2*sizeof(uint8_t)); 
     s->m.me.map       = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
     s->m.me.score_map = av_mallocz(ME_MAP_SIZE*sizeof(uint32_t));
