@@ -27,6 +27,12 @@
 #define MB_TYPE_B_BACKW  2
 #define MB_TYPE_B_FORW   3
 
+#define VOS_STARTCODE        0x1B0
+#define USER_DATA_STARTCODE  0x1B2
+#define GOP_STARTCODE        0x1B3
+#define VISUAL_OBJ_STARTCODE 0x1B5
+#define VOP_STARTCODE        0x1B6
+
 /* dc encoding for mpeg4 */
 const UINT8 DCtab_lum[13][2] =
 {
