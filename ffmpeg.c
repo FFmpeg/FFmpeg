@@ -335,11 +335,21 @@ static void do_audio_out(AVFormatContext *s,
                          unsigned char *buf, int size)
 {
     uint8_t *buftmp;
-    uint8_t audio_buf[2*MAX_AUDIO_PACKET_SIZE]; /* XXX: allocate it */
-    uint8_t audio_out[4*MAX_AUDIO_PACKET_SIZE]; /* XXX: allocate it - yep really WMA */
+    static uint8_t *audio_buf = NULL;
+    static uint8_t *audio_out = NULL;
+
     int size_out, frame_bytes, ret;
     AVCodecContext *enc;
 
+    /* SC: dynamic allocation of buffers */
+    if (!audio_buf)
+        audio_buf = av_malloc(2*MAX_AUDIO_PACKET_SIZE);
+    if (!audio_out)
+        audio_out = av_malloc(4*MAX_AUDIO_PACKET_SIZE);
+    if (!audio_buf || !audio_out)
+        return;               /* Should signal an error ! */
+
+    
     enc = &ost->st->codec;
 
     if (ost->audio_resample) {
