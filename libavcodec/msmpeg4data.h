@@ -569,6 +569,13 @@ extern const UINT16 intra_vlc[103][2];
 extern const INT8 intra_level[102];
 extern const INT8 intra_run[102];
 
+extern const UINT8 DCtab_lum[13][2];
+extern const UINT8 DCtab_chrom[13][2];
+
+extern const UINT8 cbpy_tab[16][2];
+extern const UINT8 mvtab[33][2];
+
+
 #define NB_RL_TABLES  6
 
 static RLTable rl_table[NB_RL_TABLES] = {
@@ -1764,4 +1771,13 @@ static MVTable mv_tables[2] = {
         table1_mvx,
         table1_mvy,
     }
+};
+
+static const UINT8 v2_mb_type[8][2] = {
+ {1, 1}, {0   , 2}, {3   , 3}, {9   , 5},
+ {5, 4}, {0x21, 7}, {0x20, 7}, {0x11, 6},
+};
+
+static const UINT8 v2_intra_cbpc[4][2] = {
+ {1, 1}, {0, 3}, {1, 3}, {1, 2},
 };

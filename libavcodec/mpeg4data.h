@@ -12,13 +12,13 @@
 #define GMC_SPRITE 2
 
 /* dc encoding for mpeg4 */
-static const UINT8 DCtab_lum[13][2] =
+const UINT8 DCtab_lum[13][2] =
 {
     {3,3}, {3,2}, {2,2}, {2,3}, {1,3}, {1,4}, {1,5}, {1,6}, {1,7},
     {1,8}, {1,9}, {1,10}, {1,11},
 }; 
 
-static const UINT8 DCtab_chrom[13][2] =
+const UINT8 DCtab_chrom[13][2] =
 {
     {3,2}, {2,2}, {1,2}, {1,3}, {1,4}, {1,5}, {1,6}, {1,7}, {1,8},
     {1,9}, {1,10}, {1,11}, {1,12},
@@ -102,4 +102,23 @@ static const UINT16 sprite_trajectory_tab[15][2] = {
 
 static const UINT8 mb_type_b_tab[4][2] = {
  {1, 1}, {1, 2}, {1, 3}, {1, 4},
+};
+
+static const UINT16 pixel_aspect[16][2]={
+ {0, 0},
+ {1, 1},
+ {12, 11},
+ {10, 11},
+ {16, 11},
+ {40, 33},
+ {0, 0},
+ {0, 0},
+ {0, 0},
+ {0, 0},
+ {0, 0},
+ {0, 0},
+ {0, 0},
+ {0, 0},
+ {0, 0},
+ {0, 0},
 };

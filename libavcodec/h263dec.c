@@ -47,9 +47,20 @@ static int h263_decode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->has_b_frames = 1;
         break;
-    case CODEC_ID_MSMPEG4:
+    case CODEC_ID_MSMPEG4V1:
         s->h263_msmpeg4 = 1;
         s->h263_pred = 1;
+        s->msmpeg4_version=1;
+        break;
+    case CODEC_ID_MSMPEG4V2:
+        s->h263_msmpeg4 = 1;
+        s->h263_pred = 1;
+        s->msmpeg4_version=2;
+        break;
+    case CODEC_ID_MSMPEG4V3:
+        s->h263_msmpeg4 = 1;
+        s->h263_pred = 1;
+        s->msmpeg4_version=3;
         break;
     case CODEC_ID_H263I:
         s->h263_intel = 1;
@@ -269,10 +280,34 @@ AVCodec h263_decoder = {
     CODEC_CAP_DRAW_HORIZ_BAND,
 };
 
-AVCodec msmpeg4_decoder = {
+AVCodec msmpeg4v1_decoder = {
+    "msmpeg4v1",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MSMPEG4V1,
+    sizeof(MpegEncContext),
+    h263_decode_init,
+    NULL,
+    h263_decode_end,
+    h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND,
+};
+
+AVCodec msmpeg4v2_decoder = {
+    "msmpeg4v2",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MSMPEG4V2,
+    sizeof(MpegEncContext),
+    h263_decode_init,
+    NULL,
+    h263_decode_end,
+    h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND,
+};
+
+AVCodec msmpeg4v3_decoder = {
     "msmpeg4",
     CODEC_TYPE_VIDEO,
-    CODEC_ID_MSMPEG4,
+    CODEC_ID_MSMPEG4V3,
     sizeof(MpegEncContext),
     h263_decode_init,
     NULL,

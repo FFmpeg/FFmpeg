@@ -267,6 +267,7 @@ typedef struct MpegEncContext {
     int first_slice_line;  /* used in mpeg4 too to handle resync markers */
     int flipflop_rounding;
     int bitrate;
+    int msmpeg4_version;   /* 1=mp41, 2=mp42, 3=mp43/divx3 */
     /* decompression specific */
     GetBitContext gb;
 

@@ -416,7 +416,9 @@ void avcodec_register_all(void)
     register_avcodec(&rv10_encoder);
     register_avcodec(&mjpeg_encoder);
     register_avcodec(&mpeg4_encoder);
-    register_avcodec(&msmpeg4_encoder);
+    register_avcodec(&msmpeg4v1_encoder);
+    register_avcodec(&msmpeg4v2_encoder);
+    register_avcodec(&msmpeg4v3_encoder);
 #endif /* CONFIG_ENCODERS */
     register_avcodec(&rawvideo_codec);
 
@@ -424,7 +426,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_DECODERS
     register_avcodec(&h263_decoder);
     register_avcodec(&mpeg4_decoder);
-    register_avcodec(&msmpeg4_decoder);
+    register_avcodec(&msmpeg4v1_decoder);
+    register_avcodec(&msmpeg4v2_decoder);
+    register_avcodec(&msmpeg4v3_decoder);
     register_avcodec(&mpeg_decoder);
     register_avcodec(&h263i_decoder);
     register_avcodec(&rv10_decoder);

@@ -355,11 +355,26 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
         break;
-    case CODEC_ID_MSMPEG4:
+    case CODEC_ID_MSMPEG4V1:
         s->out_format = FMT_H263;
         s->h263_msmpeg4 = 1;
         s->h263_pred = 1;
         s->unrestricted_mv = 1;
+        s->msmpeg4_version= 1;
+        break;
+    case CODEC_ID_MSMPEG4V2:
+        s->out_format = FMT_H263;
+        s->h263_msmpeg4 = 1;
+        s->h263_pred = 1;
+        s->unrestricted_mv = 1;
+        s->msmpeg4_version= 2;
+        break;
+    case CODEC_ID_MSMPEG4V3:
+        s->out_format = FMT_H263;
+        s->h263_msmpeg4 = 1;
+        s->h263_pred = 1;
+        s->unrestricted_mv = 1;
+        s->msmpeg4_version= 3;
         break;
     default:
         return -1;
@@ -2117,10 +2132,30 @@ AVCodec mpeg4_encoder = {
     MPV_encode_end,
 };
 
-AVCodec msmpeg4_encoder = {
+AVCodec msmpeg4v1_encoder = {
+    "msmpeg4v1",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MSMPEG4V1,
+    sizeof(MpegEncContext),
+    MPV_encode_init,
+    MPV_encode_picture,
+    MPV_encode_end,
+};
+
+AVCodec msmpeg4v2_encoder = {
+    "msmpeg4v2",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MSMPEG4V2,
+    sizeof(MpegEncContext),
+    MPV_encode_init,
+    MPV_encode_picture,
+    MPV_encode_end,
+};
+
+AVCodec msmpeg4v3_encoder = {
     "msmpeg4",
     CODEC_TYPE_VIDEO,
-    CODEC_ID_MSMPEG4,
+    CODEC_ID_MSMPEG4V3,
     sizeof(MpegEncContext),
     MPV_encode_init,
     MPV_encode_picture,

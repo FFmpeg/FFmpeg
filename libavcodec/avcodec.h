@@ -14,7 +14,9 @@ enum CodecID {
     CODEC_ID_MJPEG,
     CODEC_ID_MPEG4,
     CODEC_ID_RAWVIDEO,
-    CODEC_ID_MSMPEG4,
+    CODEC_ID_MSMPEG4V1,
+    CODEC_ID_MSMPEG4V2,
+    CODEC_ID_MSMPEG4V3,
     CODEC_ID_H263P,
     CODEC_ID_H263I,
 
@@ -28,6 +30,7 @@ enum CodecID {
     CODEC_ID_PCM_MULAW,
     CODEC_ID_PCM_ALAW,
 };
+#define CODEC_ID_MSMPEG4 CODEC_ID_MSMPEG4V3
 
 enum CodecType {
     CODEC_TYPE_VIDEO,
@@ -200,11 +203,15 @@ extern AVCodec h263p_encoder;
 extern AVCodec rv10_encoder;
 extern AVCodec mjpeg_encoder;
 extern AVCodec mpeg4_encoder;
-extern AVCodec msmpeg4_encoder;
+extern AVCodec msmpeg4v1_encoder;
+extern AVCodec msmpeg4v2_encoder;
+extern AVCodec msmpeg4v3_encoder;
 
 extern AVCodec h263_decoder;
 extern AVCodec mpeg4_decoder;
-extern AVCodec msmpeg4_decoder;
+extern AVCodec msmpeg4v1_decoder;
+extern AVCodec msmpeg4v2_decoder;
+extern AVCodec msmpeg4v3_decoder;
 extern AVCodec mpeg_decoder;
 extern AVCodec h263i_decoder;
 extern AVCodec rv10_decoder;
