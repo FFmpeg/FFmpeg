@@ -30,10 +30,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#ifndef INT64_MAX
-#define INT64_MAX 9223372036854775807LL
-#endif
-
 #define VLC_BITS 11
 
 typedef enum Predictor{
