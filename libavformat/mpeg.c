@@ -306,13 +306,18 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             break;
         case CODEC_TYPE_VIDEO:
             stream->id = mpv_id++;
-            if (s->is_vcd)
+            if (st->codec.rc_buffer_size)
+                stream->max_buffer_size = 6*1024 + st->codec.rc_buffer_size/8;
+            else
+                stream->max_buffer_size = 230*1024; //FIXME this is probably too small as default
+#if 0
                 /* see VCD standard, p. IV-7*/
                 stream->max_buffer_size = 46 * 1024; 
             else
                 /* This value HAS to be used for SVCD (see SVCD standard, p. 26 V.2.3.2).
                    Right now it is also used for everything else.*/
                 stream->max_buffer_size = 230 * 1024; 
+#endif
             s->video_bound++;
             break;
         default:
