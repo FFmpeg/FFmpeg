@@ -150,6 +150,8 @@ inline void dprintf(const char* fmt,...) {}
 
 #endif /* HAVE_AV_CONFIG_H */
 
+#define av_abort()      do { fprintf(stderr, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
+
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
 #define ABS(a) ((a) >= 0 ? (a) : (-(a)))
