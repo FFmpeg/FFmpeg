@@ -21,12 +21,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "simple_idct.h"
-#include "config.h"
-
-/* Suppress restrict if it was not defined in config.h  */
-#ifndef restrict
-#define restrict
-#endif
 
 void (*ff_idct)(DCTELEM *block);
 void (*ff_idct_put)(UINT8 *dest, int line_size, DCTELEM *block);

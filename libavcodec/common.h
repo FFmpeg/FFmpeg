@@ -35,6 +35,11 @@
 
 #endif /* HAVE_AV_CONFIG_H */
 
+/* Suppress restrict if it was not defined in config.h.  */
+#ifndef restrict
+#define restrict
+#endif
+
 #ifdef CONFIG_WIN32
 
 /* windows */
