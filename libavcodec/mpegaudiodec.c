@@ -1207,15 +1207,10 @@ static int decode_header(MPADecodeContext *s, uint32_t header)
 }
 
 /* useful helper to get mpeg audio stream infos. Return -1 if error in
-   header */
-int mp_decode_header(int *sample_rate_ptr,
-                     int *nb_channels_ptr, 
-                     int *coded_frame_size_ptr,
-                     int *decoded_frame_size_ptr,
-                     uint32_t head)
+   header, otherwise the coded frame size in bytes */
+int mpa_decode_header(AVCodecContext *avctx, uint32_t head)
 {
     MPADecodeContext s1, *s = &s1;
-    int decoded_frame_size;
 
     if (check_header(head) != 0)
         return -1;
@@ -1226,25 +1221,25 @@ int mp_decode_header(int *sample_rate_ptr,
 
     switch(s->layer) {
     case 1:
-        decoded_frame_size = 384;
+        avctx->frame_size = 384;
         break;
     case 2:
-        decoded_frame_size = 1152;
+        avctx->frame_size = 1152;
         break;
     default:
     case 3:
         if (s->lsf)
-            decoded_frame_size = 576;
+            avctx->frame_size = 576;
         else
-            decoded_frame_size = 1152;
+            avctx->frame_size = 1152;
         break;
     }
 
-    *sample_rate_ptr = s->sample_rate;
-    *nb_channels_ptr = s->nb_channels;
-    *coded_frame_size_ptr = s->frame_size;
-    *decoded_frame_size_ptr = decoded_frame_size * 2 * s->nb_channels;
-    return 0;
+    avctx->sample_rate = s->sample_rate;
+    avctx->channels = s->nb_channels;
+    avctx->bit_rate = s->bit_rate;
+    avctx->sub_id = s->layer;
+    return s->frame_size;
 }
 
 /* return the number of decoded frames */

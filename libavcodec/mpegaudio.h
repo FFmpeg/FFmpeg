@@ -19,6 +19,7 @@
 #define MPA_MONO    3
 
 int l2_select_table(int bitrate, int nb_channels, int freq, int lsf);
+int mpa_decode_header(AVCodecContext *avctx, uint32_t head);
 
 extern const uint16_t mpa_bitrate_tab[2][3][15];
 extern const uint16_t mpa_freq_tab[3];
