@@ -223,7 +223,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
      * - encoding: MUST be set by user\
      * - decoding: set by lavc\
      */\
-    long long int pts;\
+    int64_t pts;\
 \
     /**\
      * picture number in bitstream order.\
