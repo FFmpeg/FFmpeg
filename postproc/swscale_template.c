@@ -2271,12 +2271,26 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
 			PREFETCH" 32(%%"REG_c")		\n\t"
 			PREFETCH" 64(%%"REG_c")		\n\t"
 
+#ifdef ARCH_X86_64
+
 #define FUNNY_Y_CODE \
-			"mov (%%"REG_b"), %%"REG_S"	\n\t"\
+			"movl (%%"REG_b"), %%esi	\n\t"\
 			"call *%4			\n\t"\
-			"addl (%%"REG_b", %%"REG_a"), %%ecx\n\t"\
+			"movl (%%"REG_b", %%"REG_a"), %%esi\n\t"\
+			"add %%"REG_S", %%"REG_c"	\n\t"\
 			"add %%"REG_a", %%"REG_D"	\n\t"\
 			"xor %%"REG_a", %%"REG_a"	\n\t"\
+
+#else
+
+#define FUNNY_Y_CODE \
+			"movl (%%"REG_b"), %%esi	\n\t"\
+			"call *%4			\n\t"\
+			"addl (%%"REG_b", %%"REG_a"), %%"REG_c"\n\t"\
+			"add %%"REG_a", %%"REG_D"	\n\t"\
+			"xor %%"REG_a", %%"REG_a"	\n\t"\
+
+#endif
 
 FUNNY_Y_CODE
 FUNNY_Y_CODE
@@ -2440,12 +2454,26 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, u
 			PREFETCH" 32(%%"REG_c")		\n\t"
 			PREFETCH" 64(%%"REG_c")		\n\t"
 
+#ifdef ARCH_X86_64
+
 #define FUNNY_UV_CODE \
 			"movl (%%"REG_b"), %%esi	\n\t"\
 			"call *%4			\n\t"\
-			"addl (%%"REG_b", %%"REG_a"), %%ecx\n\t"\
+			"movl (%%"REG_b", %%"REG_a"), %%esi\n\t"\
+			"add %%"REG_S", %%"REG_c"	\n\t"\
 			"add %%"REG_a", %%"REG_D"	\n\t"\
 			"xor %%"REG_a", %%"REG_a"	\n\t"\
+
+#else
+
+#define FUNNY_UV_CODE \
+			"movl (%%"REG_b"), %%esi	\n\t"\
+			"call *%4			\n\t"\
+			"addl (%%"REG_b", %%"REG_a"), %%"REG_c"\n\t"\
+			"add %%"REG_a", %%"REG_D"	\n\t"\
+			"xor %%"REG_a", %%"REG_a"	\n\t"\
+
+#endif
 
 FUNNY_UV_CODE
 FUNNY_UV_CODE
@@ -2466,7 +2494,7 @@ FUNNY_UV_CODE
 
 			:: "m" (src1), "m" (dst), "m" (mmx2Filter), "m" (mmx2FilterPos),
 			"m" (funnyUVCode), "m" (src2)
-			: "%"REG_a, "%"REG_b, "%"REG_c, "%"REG_d, "%esi", "%"REG_D
+			: "%"REG_a, "%"REG_b, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 		);
 		for(i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--)
 		{
