@@ -2171,6 +2171,8 @@ void prepare_grab(void)
     
     if (has_video) {
         ic = av_open_input_file("", "video_grab_device", 0, ap);
+        /* by now video grab has one stream */
+        ic->streams[0]->r_frame_rate = ap->frame_rate;
         if (!ic) {
             fprintf(stderr, "Could not open video grab device\n");
             exit(1);
