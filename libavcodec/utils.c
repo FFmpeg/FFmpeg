@@ -123,6 +123,7 @@ typedef struct InternalBuffer{
     int last_pic_num;
     uint8_t *base[4];
     uint8_t *data[4];
+    int linesize[4];
 }InternalBuffer;
 
 #define INTERNAL_BUFFER_SIZE 32
@@ -170,6 +171,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     int w= s->width;
     int h= s->height;
     InternalBuffer *buf;
+    int *picture_number;
     
     assert(pic->data[0]==NULL);
     assert(INTERNAL_BUFFER_SIZE > s->internal_buffer_count);
@@ -186,10 +188,12 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
 #endif
      
     buf= &((InternalBuffer*)s->internal_buffer)[s->internal_buffer_count];
-
+    picture_number= &(((InternalBuffer*)s->internal_buffer)[INTERNAL_BUFFER_SIZE-1]).last_pic_num; //FIXME ugly hack
+    (*picture_number)++;
+    
     if(buf->base[0]){
-        pic->age= pic->coded_picture_number - buf->last_pic_num;
-        buf->last_pic_num= pic->coded_picture_number;
+        pic->age= *picture_number - buf->last_pic_num;
+        buf->last_pic_num= *picture_number;
     }else{
         int h_chroma_shift, v_chroma_shift;
         int s_align, pixel_size;
@@ -231,24 +235,25 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             const int h_shift= i==0 ? 0 : h_chroma_shift;
             const int v_shift= i==0 ? 0 : v_chroma_shift;
 
-            pic->linesize[i]= ALIGN(pixel_size*w>>h_shift, s_align);
+            buf->linesize[i]= ALIGN(pixel_size*w>>h_shift, s_align);
 
-            buf->base[i]= av_mallocz((pic->linesize[i]*h>>v_shift)+16); //FIXME 16
+            buf->base[i]= av_mallocz((buf->linesize[i]*h>>v_shift)+16); //FIXME 16
             if(buf->base[i]==NULL) return -1;
-            memset(buf->base[i], 128, pic->linesize[i]*h>>v_shift);
+            memset(buf->base[i], 128, buf->linesize[i]*h>>v_shift);
         
             if(s->flags&CODEC_FLAG_EMU_EDGE)
                 buf->data[i] = buf->base[i];
             else
-                buf->data[i] = buf->base[i] + ALIGN((pic->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift), s_align);
+                buf->data[i] = buf->base[i] + ALIGN((buf->linesize[i]*EDGE_WIDTH>>v_shift) + (EDGE_WIDTH>>h_shift), s_align);
         }
         pic->age= 256*256*256*64;
-        pic->type= FF_BUFFER_TYPE_INTERNAL;
     }
+    pic->type= FF_BUFFER_TYPE_INTERNAL;
 
     for(i=0; i<4; i++){
         pic->base[i]= buf->base[i];
         pic->data[i]= buf->data[i];
+        pic->linesize[i]= buf->linesize[i];
     }
     s->internal_buffer_count++;
 
