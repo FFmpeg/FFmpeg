@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4633
-#define LIBAVCODEC_BUILD_STR   "4633"
+#define LIBAVCODEC_BUILD       4634
+#define LIBAVCODEC_BUILD_STR   "4634"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -32,6 +32,8 @@ enum CodecID {
     CODEC_ID_DVAUDIO,
     CODEC_ID_WMAV1,
     CODEC_ID_WMAV2,
+    CODEC_ID_MACE3,
+    CODEC_ID_MACE6,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -805,6 +807,8 @@ extern AVCodec wmav2_decoder;
 extern AVCodec mjpeg_decoder;
 extern AVCodec mp2_decoder;
 extern AVCodec mp3_decoder;
+extern AVCodec mace3_decoder;
+extern AVCodec mace6_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

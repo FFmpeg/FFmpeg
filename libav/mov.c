@@ -121,6 +121,8 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_PCM_MULAW, MKTAG('u', 'l', 'a', 'w') }, /*  */
     { CODEC_ID_PCM_ALAW, MKTAG('a', 'l', 'a', 'w') }, /*  */
     { CODEC_ID_ADPCM_IMA_QT, MKTAG('i', 'm', 'a', '4') }, /* IMA-4 ADPCM */
+    { CODEC_ID_MACE3, MKTAG('M', 'A', 'C', '3') }, /* Macintosh Audio Compression and Expansion 3:1 */
+    { CODEC_ID_MACE6, MKTAG('M', 'A', 'C', '6') }, /* Macintosh Audio Compression and Expansion 6:1 */
 
     { CODEC_ID_MP2, MKTAG('.', 'm', 'p', '3') }, /* MPEG layer 3 */ /* sample files at http://www.3ivx.com/showcase.html use this tag */
     { CODEC_ID_MP2, 0x6D730055 }, /* MPEG layer 3 */
@@ -829,9 +831,11 @@ static int parse_stco(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     } else
         return -1;
 #ifdef DEBUG
+/*
     for(i=0; i<entries; i++) {
         printf("chunk offset=0x%Lx\n", sc->chunk_offsets[i]);
     }
+*/
 #endif
     return 0;
 }
