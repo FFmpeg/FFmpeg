@@ -929,6 +929,16 @@ int MPV_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_INFO, "Warning min_rate > 0 but min_rate != max_rate isnt recommanded!\n");
     }
     
+    if(avctx->rc_min_rate && avctx->rc_min_rate > avctx->bit_rate){
+        av_log(avctx, AV_LOG_INFO, "bitrate below min bitrate\n");
+        return -1;
+    }
+    
+    if(avctx->rc_max_rate && avctx->rc_max_rate < avctx->bit_rate){
+        av_log(avctx, AV_LOG_INFO, "bitrate above max bitrate\n");
+        return -1;
+    }
+        
     if(   s->avctx->rc_max_rate && s->avctx->rc_min_rate == s->avctx->rc_max_rate 
        && (s->codec_id == CODEC_ID_MPEG1VIDEO || s->codec_id == CODEC_ID_MPEG2VIDEO)
        && 90000LL * (avctx->rc_buffer_size-1) > s->avctx->rc_max_rate*0xFFFFLL){
