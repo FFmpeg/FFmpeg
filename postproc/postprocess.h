@@ -16,9 +16,9 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-
-#ifndef POSTPROCESS_H
-#define POSTPROCESS_H
+// POSTPROCESS_H is defined by opendivx's postprocess.h
+#ifndef NEWPOSTPROCESS_H
+#define NEWPOSTPROCESS_H
 
 #define BLOCK_SIZE 8
 #define TEMP_STRIDE 8
@@ -66,8 +66,8 @@
 //#ifdef __cplusplus
 //#include <inttypes.h>
 
-void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, int isColor, int mode);
+//void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
+//	QP_STORE_T QPs[], int QPStride, int isColor, int mode);
 //#endif
 
 //#ifdef __cplusplus
@@ -77,13 +77,12 @@ void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int
 void postprocess(unsigned char * src[], int src_stride,
                  unsigned char * dst[], int dst_stride,
                  int horizontal_size,   int vertical_size,
-                 QP_STORE_T *QP_store,  int QP_stride,
-		 					   int mode);
-
-int getModeForQuality(int quality);
+                 QP_STORE_T *QP_store,  int QP_stride, int mode);
+int getPpModeForQuality(int quality);
 //#ifdef __cplusplus
 //}
 //#endif
 
+#define GET_PP_QUALITY_MAX 6
 
 #endif
