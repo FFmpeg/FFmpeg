@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <stdlib.h>
+#define usleep(t) _sleep2((t)/1000)
 #endif
 #include <time.h>
 #include <ctype.h>

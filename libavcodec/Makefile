@@ -125,9 +125,7 @@ tests: apiexample cpuid_test $(TESTS)
 $(LIB): $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS)
-ifneq ($(CONFIG_OS2),yes)
 	$(RANLIB) $@
-endif
 
 $(SLIB): $(OBJS)
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS)

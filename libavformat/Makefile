@@ -67,9 +67,7 @@ all: $(LIB)
 $(LIB): $(OBJS) $(PPOBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS) $(PPOBJS)
-ifneq ($(CONFIG_OS2),yes)
 	$(RANLIB) $@
-endif
 
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend

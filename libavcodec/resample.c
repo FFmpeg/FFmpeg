@@ -24,6 +24,10 @@
 
 #include "avcodec.h"
 
+#if defined (CONFIG_OS2)
+#define floorf(n) floor(n)
+#endif
+
 typedef struct {
     /* fractional resampling */
     uint32_t incr; /* fractional increment */
