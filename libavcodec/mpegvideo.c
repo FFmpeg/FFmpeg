@@ -519,6 +519,9 @@ static void MPV_common_defaults(MpegEncContext *s){
     s->input_picture_number = 0;
 
     s->picture_in_gop_number = 0;
+
+    s->f_code = 1;
+    s->b_code = 1;
 }
 
 /**
@@ -1167,10 +1170,6 @@ int MPV_encode_init(AVCodecContext *avctx)
 
     if(ff_rate_control_init(s) < 0)
         return -1;
-
-    /* motion detector init */
-    s->f_code = 1;
-    s->b_code = 1;
     
     return 0;
 }
