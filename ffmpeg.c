@@ -2900,6 +2900,8 @@ static void opt_input_file(const char *filename)
             //fprintf(stderr, "\nInput Audio channels: %d", enc->channels);
             audio_channels = enc->channels;
             audio_sample_rate = enc->sample_rate;
+            if(audio_disable)
+                ic->streams[i]->discard= 1;
             break;
         case CODEC_TYPE_VIDEO:
             frame_height = enc->height;
@@ -2933,6 +2935,8 @@ static void opt_input_file(const char *filename)
             frame_rate_base = rfps_base;
 
             enc->rate_emu = rate_emu;
+            if(video_disable)
+                ic->streams[i]->discard= 1;
             break;
         case CODEC_TYPE_DATA:
             break;

@@ -449,6 +449,11 @@ resync:
           AVIStream *ast;
           st = s->streams[n];
           ast = st->priv_data;
+          
+          if(st->discard){
+                url_fskip(pb, size);
+                goto resync;
+          }
 
           if(   ((ast->prefix_count<5 || sync+9 > i) && d[2]<128 && d[3]<128) || 
                 d[2]*256+d[3] == ast->prefix /*||

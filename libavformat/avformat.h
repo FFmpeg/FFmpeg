@@ -227,6 +227,8 @@ typedef struct AVStream {
     int pts_wrap_bits; /* number of bits in pts (used for wrapping control) */
     /* ffmpeg.c private use */
     int stream_copy; /* if TRUE, just copy stream */
+    int discard; ///< if 1, packets can be discarded at will and dont need to be demuxed
+    //FIXME move stuff to a flags field?
     /* quality, as it has been removed from AVCodecContext and put in AVVideoFrame
      * MN:dunno if thats the right place, for it */
     float quality; 
