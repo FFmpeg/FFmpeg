@@ -31,6 +31,7 @@
 #include <getopt.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ctype.h>
@@ -69,6 +70,11 @@ const char *http_state[] = {
 #define REQUEST_TIMEOUT (15 * 1000)
 #define SYNC_TIMEOUT (10 * 1000)
 
+typedef struct {
+    INT64 count1, count2;
+    long time1, time2;
+} DataRateData;
+
 /* context associated with one connection */
 typedef struct HTTPContext {
     enum HTTPState state;
@@ -96,6 +102,7 @@ typedef struct HTTPContext {
     int suppress_log;
     int bandwidth;
     long start_time;            /* In milliseconds - this wraps fairly often */
+    DataRateData datarate;
     int wmp_client_id;
     char protocol[16];
     char method[16];
@@ -132,6 +139,7 @@ typedef struct FFStream {
     char copyright[512];
     char comment[512];
     pid_t pid;  /* Of ffmpeg process */
+    time_t pid_start;  /* Of ffmpeg process */
     char **child_argv;
     struct FFStream *next;
     /* feed specific */
@@ -156,9 +164,9 @@ HTTPContext *first_http_ctx;
 FFStream *first_feed;   /* contains only feeds */
 FFStream *first_stream; /* contains all streams, including feeds */
 
-static int handle_http(HTTPContext *c, long cur_time);
+static int handle_http(HTTPContext *c);
 static int http_parse_request(HTTPContext *c);
-static int http_send_data(HTTPContext *c, long cur_time);
+static int http_send_data(HTTPContext *c);
 static void compute_stats(HTTPContext *c);
 static int open_input_stream(HTTPContext *c, const char *info);
 static int http_start_receive_data(HTTPContext *c);
@@ -168,12 +176,15 @@ static const char *my_program_name;
 
 static int ffserver_debug;
 static int no_launch;
+static int need_to_start_children;
 
 int nb_max_connections;
 int nb_connections;
 
 int nb_max_bandwidth;
 int nb_bandwidth;
+
+static long cur_time;           // Making this global saves on passing it around everywhere
 
 static long gettime_ms(void)
 {
@@ -218,13 +229,39 @@ static void log_connection(HTTPContext *c)
              buf1, buf2, c->method, c->url, c->protocol, (c->http_error ? c->http_error : 200), c->data_count);
 }
 
+static void update_datarate(DataRateData *drd, INT64 count)
+{
+    if (!drd->time1 && !drd->count1) {
+        drd->time1 = drd->time2 = cur_time;
+        drd->count1 = drd->count2 = count;
+    } else {
+        if (cur_time - drd->time2 > 5000) {
+            drd->time1 = drd->time2;
+            drd->count1 = drd->count2;
+            drd->time2 = cur_time;
+            drd->count2 = count;
+        }
+    }
+}
+
+/* In bytes per second */
+static int compute_datarate(DataRateData *drd, INT64 count)
+{
+    if (cur_time == drd->time1)
+        return 0;
+
+    return ((count - drd->count1) * 1000) / (cur_time - drd->time1);
+}
+
 static void start_children(FFStream *feed)
 {
     if (no_launch)
         return;
 
     for (; feed; feed = feed->next) {
-        if (feed->child_argv) {
+        if (feed->child_argv && !feed->pid) {
+            feed->pid_start = time(0);
+
             feed->pid = fork();
 
             if (feed->pid < 0) {
@@ -237,16 +274,18 @@ static void start_children(FFStream *feed)
                 char *slash;
                 int i;
 
-                if (!ffserver_debug) {
-                    for (i = 0; i < 10; i++) {
-                        close(i);
-                    }
+                for (i = 3; i < 256; i++) {
+                    close(i);
+                }
 
+                if (!ffserver_debug) {
                     i = open("/dev/null", O_RDWR);
                     if (i)
                         dup2(i, 0);
                     dup2(i, 1);
                     dup2(i, 2);
+                    if (i)
+                        close(i);
                 }
 
                 pstrcpy(pathname, sizeof(pathname), my_program_name);
@@ -274,7 +313,6 @@ static int http_server(struct sockaddr_in my_addr)
     struct sockaddr_in from_addr;
     struct pollfd poll_table[HTTP_MAX_CONNECTIONS + 1], *poll_entry;
     HTTPContext *c, **cp;
-    long cur_time;
 
     server_fd = socket(AF_INET,SOCK_STREAM,0);
     if (server_fd < 0) {
@@ -360,12 +398,17 @@ static int http_server(struct sockaddr_in my_addr)
         
         cur_time = gettime_ms();
 
+        if (need_to_start_children) {
+            need_to_start_children = 0;
+            start_children(first_feed);
+        }
+
         /* now handle the events */
 
         cp = &first_http_ctx;
         while ((*cp) != NULL) {
             c = *cp;
-            if (handle_http (c, cur_time) < 0) {
+            if (handle_http (c) < 0) {
                 /* close and free the connection */
                 log_connection(c);
                 close(c->fd);
@@ -430,7 +473,7 @@ static int http_server(struct sockaddr_in my_addr)
     }
 }
 
-static int handle_http(HTTPContext *c, long cur_time)
+static int handle_http(HTTPContext *c)
 {
     int len;
     
@@ -507,7 +550,7 @@ static int handle_http(HTTPContext *c, long cur_time)
         
         if (!(c->poll_entry->revents & POLLOUT))
             return 0;
-        if (http_send_data(c, cur_time) < 0)
+        if (http_send_data(c) < 0)
             return -1;
         break;
     case HTTPSTATE_RECEIVE_DATA:
@@ -1207,7 +1250,7 @@ static void compute_stats(HTTPContext *c)
 
 #ifdef linux
                 /* This is somewhat linux specific I guess */
-                snprintf(ps_cmd, sizeof(ps_cmd), "ps -o \"%%cpu,cputime\" --no-headers %d", stream->pid);
+                snprintf(ps_cmd, sizeof(ps_cmd), "ps -o \"%%cpu,bsdtime\" --no-headers %d", stream->pid);
 
                 pid_stat = popen(ps_cmd, "r");
                 if (pid_stat) {
@@ -1295,7 +1338,7 @@ static void compute_stats(HTTPContext *c)
                  nb_bandwidth, nb_max_bandwidth);
 
     q += sprintf(q, "<TABLE>\n");
-    q += sprintf(q, "<TR><Th>#<Th>File<Th>IP<Th>State<Th>kbits/sec<Th>Size\n");
+    q += sprintf(q, "<TR><Th>#<Th>File<Th>IP<Th>State<Th>Target bits/sec<Th>Actual bits/sec<Th>Bytes transferred\n");
     c1 = first_http_ctx;
     i = 0;
     while (c1 != NULL && q < (char *) c->buffer + c->buffer_size - 2048) {
@@ -1311,12 +1354,15 @@ static void compute_stats(HTTPContext *c)
 
         i++;
         p = inet_ntoa(c1->from_addr.sin_addr);
-        q += sprintf(q, "<TR><TD><B>%d</B><TD>%s%s <TD> %s <TD> %s <td align=right> %d <TD align=right> ", 
+        q += sprintf(q, "<TR><TD><B>%d</B><TD>%s%s <TD> %s <TD> %s <td align=right>", 
                      i, c1->stream->filename, 
                      c1->state == HTTPSTATE_RECEIVE_DATA ? "(input)" : "",
                      p, 
-                     http_state[c1->state],
-                     bitrate / 1000);
+                     http_state[c1->state]);
+        q += fmt_bytecount(q, bitrate);
+        q += sprintf(q, "<td align=right>");
+        q += fmt_bytecount(q, compute_datarate(&c1->datarate, c1->data_count) * 8);
+        q += sprintf(q, "<td align=right>");
         q += fmt_bytecount(q, c1->data_count);
         *q++ = '\n';
         c1 = c1->next;
@@ -1414,7 +1460,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
     return 0;
 }
 
-static int http_prepare_data(HTTPContext *c, long cur_time)
+static int http_prepare_data(HTTPContext *c)
 {
     int i;
 
@@ -1622,12 +1668,12 @@ static int http_prepare_data(HTTPContext *c, long cur_time)
 }
 
 /* should convert the format at the same time */
-static int http_send_data(HTTPContext *c, long cur_time)
+static int http_send_data(HTTPContext *c)
 {
     int len, ret;
 
     while (c->buffer_ptr >= c->buffer_end) {
-        ret = http_prepare_data(c, cur_time);
+        ret = http_prepare_data(c);
         if (ret < 0)
             return -1;
         else if (ret == 0) {
@@ -1648,6 +1694,7 @@ static int http_send_data(HTTPContext *c, long cur_time)
         } else {
             c->buffer_ptr += len;
             c->data_count += len;
+            update_datarate(&c->datarate, c->data_count);
             if (c->stream)
                 c->stream->bytes_served += len;
         }
@@ -1698,6 +1745,7 @@ static int http_receive_data(HTTPContext *c)
         } else {
             c->buffer_ptr += len;
             c->data_count += len;
+            update_datarate(&c->datarate, c->data_count);
         }
     }
 
@@ -2505,10 +2553,37 @@ void licence(void)
     );
 }
 
+static void handle_child_exit(int sig)
+{
+    pid_t pid;
+    int status;
+
+    while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+        FFStream *feed;
+
+        for (feed = first_feed; feed; feed = feed->next) {
+            if (feed->pid == pid) {
+                int uptime = time(0) - feed->pid_start;
+
+                feed->pid = 0;
+                fprintf(stderr, "%s: Pid %d exited with status %d after %d seconds\n", feed->filename, pid, status, uptime);
+
+                if (uptime < 30) {
+                    /* Turn off any more restarts */
+                    feed->child_argv = 0;
+                }    
+            }
+        }
+    }
+
+    need_to_start_children = 1;
+}
+
 int main(int argc, char **argv)
 {
     const char *config_filename;
     int c;
+    struct sigaction sigact;
 
     register_all();
 
@@ -2552,6 +2627,11 @@ int main(int argc, char **argv)
     nb_max_bandwidth = 1000;
     first_stream = NULL;
     logfilename[0] = '\0';
+
+    memset(&sigact, 0, sizeof(sigact));
+    sigact.sa_handler = handle_child_exit;
+    sigact.sa_flags = SA_NOCLDSTOP | SA_RESTART;
+    sigaction(SIGCHLD, &sigact, 0);
 
     if (parse_ffconfig(config_filename) < 0) {
         fprintf(stderr, "Incorrect config file - exiting.\n");
