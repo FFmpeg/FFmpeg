@@ -64,54 +64,73 @@ static const uint16_t table_mb_intra[64][2];
            codes, codes_wrap, codes_size, use_static)
 #endif
 
+/** Available Profiles */
+//@{
 #define PROFILE_SIMPLE   0
 #define PROFILE_MAIN     1
 #define PROFILE_ADVANCED 3
+//@}
 
+/** Sequence quantizer mode */
+//@{
 #define QUANT_FRAME_IMPLICIT   0
 #define QUANT_FRAME_EXPLICIT   1
 #define QUANT_NON_UNIFORM      2
 #define QUANT_UNIFORM          3
+//@}
 
-/* Where quant can be changed */
+/** Where quant can be changed */
+//@{
 #define DQPROFILE_FOUR_EDGES   0
 #define DQPROFILE_DOUBLE_EDGES 1
 #define DQPROFILE_SINGLE_EDGE  2
 #define DQPROFILE_ALL_MBS      3
+//@}
 
-/* Which edge is quantized with ALTPQUANT */
+/** @name Where quant can be changed
+ */
+//@{
+#define DQPROFILE_FOUR_EDGES   0
 #define DQSINGLE_BEDGE_LEFT   0
 #define DQSINGLE_BEDGE_TOP    1
 #define DQSINGLE_BEDGE_RIGHT  2
 #define DQSINGLE_BEDGE_BOTTOM 3
+//@}
 
-/* Which pair of edges is quantized with ALTPQUANT */
+/** Which pair of edges is quantized with ALTPQUANT */
+//@{
 #define DQDOUBLE_BEDGE_TOPLEFT     0
 #define DQDOUBLE_BEDGE_TOPRIGHT    1
 #define DQDOUBLE_BEDGE_BOTTOMRIGHT 2
 #define DQDOUBLE_BEDGE_BOTTOMLEFT  3
+//@}
 
-/* MV P modes */
+/** MV modes for P frames */
+//@{
 #define MV_PMODE_1MV_HPEL_BILIN   0
 #define MV_PMODE_1MV              1
 #define MV_PMODE_1MV_HPEL         2
 #define MV_PMODE_MIXED_MV         3
 #define MV_PMODE_INTENSITY_COMP   4
+//@}
 
+/** @name MV types for B frames */
+//@{
+#define BMV_TYPE_BACKWARD          0
 #define BMV_TYPE_BACKWARD          0
 #define BMV_TYPE_FORWARD           1
 #define BMV_TYPE_INTERPOLATED      3
+//@}
 
-/* MV P mode - the 5th element is only used for mode 1 */
+/** MV P mode - the 5th element is only used for mode 1 */
 static const uint8_t mv_pmode_table[2][5] = {
   { MV_PMODE_1MV_HPEL_BILIN, MV_PMODE_1MV, MV_PMODE_1MV_HPEL, MV_PMODE_MIXED_MV, MV_PMODE_INTENSITY_COMP },
   { MV_PMODE_1MV, MV_PMODE_MIXED_MV, MV_PMODE_1MV_HPEL, MV_PMODE_1MV_HPEL_BILIN, MV_PMODE_INTENSITY_COMP }
 };
 
-/* One more frame type */
+/** One more frame type */
 #define BI_TYPE 7
 
-/* FIXME Worse than ugly */
 static const int fps_nr[5] = { 24, 25, 30, 50, 60 },
   fps_dr[2] = { 1000, 1001 };
 static const uint8_t pquant_table[3][32] = {
@@ -129,21 +148,24 @@ static const uint8_t pquant_table[3][32] = {
   }
 };
 
-// FIXME move this into the context
+/** @name VC-9 VLC tables and defines
+ *  @todo TODO move this into the context
+ */
+//@{
 #define VC9_BFRACTION_VLC_BITS 7
 static VLC vc9_bfraction_vlc;
 #define VC9_IMODE_VLC_BITS 4
 static VLC vc9_imode_vlc;
 #define VC9_NORM2_VLC_BITS 3
 static VLC vc9_norm2_vlc;
-#if TILE_VLC_METHOD == 1
+#if VLC_NORM6_METH0D == 1
 #define VC9_NORM6_VLC_BITS 9
 static VLC vc9_norm6_vlc;
 #endif
-#if TILE_VLC_METHOD == 2
+#if VLC_NORM6_METH0D == 2
 #define VC9_NORM6_FIRST_BITS 8
 #define VC9_NORM6_SECOND_BITS 8
-static VLC vc9_norm6_first, vc9_norm6_second;
+static VLC vc9_norm6_first_vlc, vc9_norm6_second_vlc;
 #endif
 /* Could be optimized, one table only needs 8 bits */
 #define VC9_TTMB_VLC_BITS 9 //12
@@ -154,125 +176,155 @@ static VLC vc9_mv_diff_vlc[4];
 static VLC vc9_cbpcy_p_vlc[4];
 #define VC9_4MV_BLOCK_PATTERN_VLC_BITS 6
 static VLC vc9_4mv_block_pattern_vlc[4];
+//@}
 
-//We mainly need data and is_raw, so this struct could be avoided
-//to save a level of indirection; feel free to modify
+/** Bitplane struct
+ * We mainly need data and is_raw, so this struct could be avoided
+ * to save a level of indirection; feel free to modify
+ * @fixme For now, stride=width
+ * @warning Data are bits, either 1 or 0
+ */
 typedef struct BitPlane {
-    uint8_t *data;
-    int width, stride;
-    int height;
-    uint8_t is_raw;
+    uint8_t *data;      ///< Data buffer
+    int width;          ///< Width of the buffer
+    int stride;         ///< Stride of the buffer
+    int height;         ///< Plane height
+    uint8_t is_raw;     ///< Bit values must be read at MB level
 } BitPlane;
 
+/** The VC9 Context */
 typedef struct VC9Context{
-  /* No MpegEnc context, might be good to use it */
-  MpegEncContext s;
+    MpegEncContext s;
 
-  /***************************/
-  /* Sequence Header         */
-  /***************************/
-  /* Simple/Main Profile */
-  int res_sm; //reserved, 2b
-  int res_x8; //reserved
-  int multires; //frame-level RESPIC syntax element present
-  int res_fasttx; //always 1
-  int res_transtab; //always 0
-  int rangered; //RANGEREDFRM (range reduction) syntax element present
-  int res_rtm_flag; //reserved, set to 1
-  int reserved; //duh
+    /** Simple/Main Profile sequence header */
+    //@{
+    int res_sm;           ///< reserved, 2b
+    int res_x8;           ///< reserved
+    int multires;         ///< frame-level RESPIC syntax element present
+    int res_fasttx;       ///< reserved, always 1
+    int res_transtab;     ///< reserved, always 0
+    int rangered;         ///< RANGEREDFRM (range reduction) syntax element present
+                          ///< at frame level
+    int res_rtm_flag;     ///< reserved, set to 1
+    int reserved;         ///< reserved
+    //@}
 
 #if HAS_ADVANCED_PROFILE
-  /* Advanced Profile */
-  int level; //3
-  int chromaformat; //2
-  int postprocflag; //frame-based processing use
-  int broadcast; //TFF/RFF present
-    int interlace; //Progressive/interlaced (RPTFTM syntax element)
-  int tfcntrflag; //TFCNTR present
-  int panscanflag; //NUMPANSCANWIN, TOPLEFT{X,Y}, BOTRIGHT{X,Y} presents
-    int extended_dmv;
-  int color_prim; //8
-  int transfer_char; //8
-  int matrix_coef; //8
-  int hrd_param_flag;
+    /** Advanced Profile */
+    //@{
+    int level;            ///< 3bits, for Advanced/Simple Profile, provided by TS layer
+    int chromaformat;     ///< 2bits, 2=4:2:0, only defined
+    int postprocflag;     ///< Per-frame processing suggestion flag present
+    int broadcast;        ///< TFF/RFF present
+    int interlace;        ///< Progressive/interlaced (RPTFTM syntax element)
+    int tfcntrflag;       ///< TFCNTR present
+    int panscanflag;      ///< NUMPANSCANWIN, TOPLEFT{X,Y}, BOTRIGHT{X,Y} present
+    int extended_dmv;     ///< Additional extended dmv range at P/B frame-level
+    int color_prim;       ///< 8bits, chroma coordinates of the color primaries
+    int transfer_char;    ///< 8bits, Opto-electronic transfer characteristics
+    int matrix_coef;      ///< 8bits, Color primaries->YCbCr transform matrix
+    int hrd_param_flag;   ///< Presence of Hypothetical Reference
+                          ///< Decoder parameters
+    //@}
 #endif
 
-  /* All Profiles */
-  /* TODO: move all int to flags */
-  int profile; //2
-  int frmrtq_postproc; //3
-  int bitrtq_postproc; //5
-    int loopfilter;
-    int fastuvmc; //Rounding of qpel vector to hpel ? (not in Simple)
-  int extended_mv; //Ext MV in P/B (not in Simple)
-  int dquant; //How qscale varies with MBs, 2bits (not in Simple)
-  int vstransform; //variable-size transform46
-  
 
-  int overlap; //overlapped transforms in use
-  int quantizer_mode; //2, quantizer mode used for sequence, see QUANT_*
-  int finterpflag; //INTERPFRM present
+    /** Sequence header data for all Profiles
+     * TODO: choose between ints, uint8_ts and monobit flags
+     */
+    //@{
+    int profile;          ///< 2bits, Profile
+    int frmrtq_postproc;  ///< 3bits, 
+    int bitrtq_postproc;  ///< 5bits, quantized framerate-based postprocessing strength
+    int fastuvmc;         ///< Rounding of qpel vector to hpel ? (not in Simple)
+    int extended_mv;      ///< Ext MV in P/B (not in Simple)
+    int dquant;           ///< How qscale varies with MBs, 2bits (not in Simple)
+    int vstransform;      ///< variable-size [48]x[48] transform type + info
+    int overlap;          ///< overlapped transforms in use
+    int quantizer_mode;   ///< 2bits, quantizer mode used for sequence, see QUANT_*
+    int finterpflag;      ///< INTERPFRM present
+    //@}
 
+    /** Frame decoding info for all profiles */
+    //@{
+    uint8_t mv_mode;      ///< MV coding monde
+    uint8_t mv_mode2;     ///< Secondary MV coding mode (B frames)
+    uint8_t pq, altpq;    ///< Current/alternate frame quantizer scale
+    /** pquant parameters */
+    //@{
+    uint8_t dquantfrm;
+    uint8_t dqprofile;
+    uint8_t dqsbedge;
+    uint8_t dqbilevel;
+    //@}
+    int ac_table_level;   ///< Index for AC tables from ACFRM element
+    VLC *luma_dc_vlc;     ///< Pointer to current luma DC VLC table
+    VLC *chroma_dc_vlc;   ///< Pointer to current luma AC VLC table
+    int ttfrm;            ///< Transform type info present at frame level
+    uint8_t ttmbf;        ///< Transform type
+    /** Luma compensation parameters */
+    //@{
+    uint8_t lumscale;
+    uint8_t lumshift;
+    //@}
+    int16_t bfraction;    ///< Relative position % anchors=> how to scale MVs
+    uint8_t halfpq;       ///< Uniform quant over image and qp+.5
+    uint8_t respic;       ///< Frame-level flag for resized images
+    int buffer_fullness;  ///< HRD info
+    /** Ranges:
+     * -# 0 -> [-64n 63.f] x [-32, 31.f]
+     * -# 1 -> [-128, 127.f] x [-64, 63.f]
+     * -# 2 -> [-512, 511.f] x [-128, 127.f]
+     * -# 3 -> [-1024, 1023.f] x [-256, 255.f]
+     */
+    uint8_t mvrange;
+    uint8_t pquantizer;
+    uint8_t *previous_line_cbpcy; ///< To use for predicted CBPCY
+    VLC *cbpcy_vlc;               ///< Current CBPCY VLC table
+    VLC *ttmb_vlc;                ///< Current MB Transform Type VLC table
+    BitPlane mv_type_mb_plane;    ///< bitplane for mv_type == (4MV)
+    BitPlane skip_mb_plane;       ///< bitplane for skipped MBs
+    BitPlane direct_mb_plane;     ///< bitplane for "direct" MBs
 
-  /*****************************/
-  /* Frame decoding            */
-  /*****************************/
-  /* All profiles */
-  uint8_t mv_mode, mv_mode2; /* MV coding mode */
-  uint8_t pq, altpq; /* Quantizers */
-  uint8_t dquantfrm, dqprofile, dqsbedge, dqbilevel; /* pquant parameters */
-  int tile; /* 3x2 if (width_mb%3) else 2x3 */
-  int ac_table_level;
-  VLC *luma_dc_vlc, *chroma_dc_vlc; /* transac/dcfrm bits are indexes */
-  uint8_t ttmbf, ttfrm; /* Transform type */
-  uint8_t lumscale, lumshift; /* Luma compensation parameters */
-  int16_t bfraction; /* Relative position % anchors=> how to scale MVs */
-  uint8_t halfpq; /* Uniform quant over image and qp+.5 */
-  uint8_t respic;
-  int buffer_fullness; /* For HRD ? */
-  /* Ranges:
-   * 0 -> [-64n 63.f] x [-32, 31.f]
-   * 1 -> [-128, 127.f] x [-64, 63.f]
-   * 2 -> [-512, 511.f] x [-128, 127.f]
-   * 3 -> [-1024, 1023.f] x [-256, 255.f]
-   */
-  uint8_t mvrange;
-  uint8_t pquantizer;
-  uint8_t *previous_line_cbpcy; /* To use for predicted CBPCY */
-  VLC *cbpcy_vlc /* Current CBPCY VLC table */,
-    *ttmb_vlc /* Current MB Transform Type VLC table */;
-  BitPlane mv_type_mb_plane; /* bitplane for mv_type == (4MV) */
-  BitPlane skip_mb_plane, /* bitplane for skipped MBs */
-    direct_mb_plane; /* bitplane for "direct" MBs */
-
-  /* S/M only ? */
-  uint8_t rangeredfrm; /* out_sample = CLIP((in_sample-128)*2+128) */
-  uint8_t interpfrm;
+    /** Frame decoding info for S/M profiles only */
+    //@{
+    uint8_t rangeredfrm; ///< out_sample = CLIP((in_sample-128)*2+128)
+    uint8_t interpfrm;
+    //@}
 
 #if HAS_ADVANCED_PROFILE
-  /* Advanced */
-  uint8_t fcm; //0->Progressive, 2->Frame-Interlace, 3->Field-Interlace
-  uint8_t numpanscanwin;
-  uint8_t tfcntr;
-  uint8_t rptfrm, tff, rff;
-  uint8_t topleftx;
-  uint8_t toplefty;
-  uint8_t bottomrightx;
-  uint8_t bottomrighty;
-  uint8_t uvsamp;
-  uint8_t postproc;
-  int hrd_num_leaky_buckets;
-  uint8_t bit_rate_exponent;
-  uint8_t buffer_size_exponent;
-  BitPlane ac_pred_plane; //AC prediction flags bitplane
-  BitPlane over_flags_plane; //Overflags bitplane
-  uint8_t condover;
-  uint16_t *hrd_rate, *hrd_buffer;
-  VLC *luma_ac2_vlc, *chroma_ac2_vlc;
+    /** Frame decoding info for Advanced profile */
+    //@{
+    uint8_t fcm; ///< 0->Progressive, 2->Frame-Interlace, 3->Field-Interlace
+    uint8_t numpanscanwin;
+    uint8_t tfcntr;
+    uint8_t rptfrm, tff, rff;
+    uint8_t topleftx;
+    uint8_t toplefty;
+    uint8_t bottomrightx;
+    uint8_t bottomrighty;
+    uint8_t uvsamp;
+    uint8_t postproc;
+    int hrd_num_leaky_buckets;
+    uint8_t bit_rate_exponent;
+    uint8_t buffer_size_exponent;
+    BitPlane ac_pred_plane;       ///< AC prediction flags bitplane
+    BitPlane over_flags_plane;    ///< Overflags bitplane
+    uint8_t condover;
+    uint16_t *hrd_rate, *hrd_buffer;
+    int ac2_table_level;          ///< Index for AC2 tables from AC2FRM element
+    //@}
 #endif
 } VC9Context;
 
-/* FIXME Slow and ugly */
+/**
+ * Get unary code of limited length
+ * @fixme FIXME Slow and ugly
+ * @param gb GetBitContext
+ * @param[in] stop The bitstop value (unary code of 1's or 0's)
+ * @param[in] len Maximum length
+ * @return Unary length/index
+ */
 static int get_prefix(GetBitContext *gb, int stop, int len)
 {
 #if 1
@@ -306,13 +358,17 @@ static int get_prefix(GetBitContext *gb, int stop, int len)
 #endif
 }
 
+/**
+ * Init VC-9 specific tables and VC9Context members
+ * @param v The VC9Context to initialize
+ * @return Status
+ */
 static int vc9_init_common(VC9Context *v)
 {
     static int done = 0;
     int i;
 
     /* Set the bit planes */
-    /* FIXME memset better ? (16bytes) */
     v->mv_type_mb_plane = (struct BitPlane) { NULL, 0, 0, 0 };
     v->direct_mb_plane = (struct BitPlane) { NULL, 0, 0, 0 };
     v->skip_mb_plane = (struct BitPlane) { NULL, 0, 0, 0 };
@@ -322,7 +378,7 @@ static int vc9_init_common(VC9Context *v)
 #endif
 
     /* VLC tables */
-#if TILE_VLC_METHOD == 1
+#if VLC_NORM6_METH0D == 1
 #  if 0 // spec -> actual tables converter
     for(i=0; i<64; i++){
         int code= (vc9_norm6_spec[i][1] << vc9_norm6_spec[i][4]) + vc9_norm6_spec[i][3];
@@ -345,18 +401,18 @@ static int vc9_init_common(VC9Context *v)
         INIT_VLC(&vc9_norm2_vlc, VC9_NORM2_VLC_BITS, 4,
                  vc9_norm2_bits, 1, 1,
                  vc9_norm2_codes, 1, 1, 1);
-#if TILE_VLC_METHOD == 1
+#if VLC_NORM6_METH0D == 1
         INIT_VLC(&vc9_norm6_vlc, VC9_NORM6_VLC_BITS, 64,
                  vc9_norm6_bits, 1, 1,
                  vc9_norm6_codes, 2, 2, 1);
 #endif
-#if TILE_VLC_METHOD == 2
-        INIT_VLC(&vc9_norm6_first, VC9_NORM6_FIRST_BITS, 64,
+#if VLC_NORM6_METH0D == 2
+        INIT_VLC(&vc9_norm6_first_vlc, VC9_NORM6_FIRST_BITS, 24,
                  &vc9_norm6_first[0][1], 1, 1,
                  &vc9_norm6_first[0][0], 1, 1, 1);
-        INIT_VLC(&vc9_norm6_second, VC9_NORM6_SECOND_BITS, 64,
-                 vc9_norm6_second[0][1], 1, 1,
-                 vc9_norm6_second[0][1], 1, 1, 1);
+        INIT_VLC(&vc9_norm6_second_vlc, VC9_NORM6_SECOND_BITS, 22,
+                 &vc9_norm6_second[0][1], 1, 1,
+                 &vc9_norm6_second[0][0], 1, 1, 1);
 #endif
         INIT_VLC(&vc9_imode_vlc, VC9_IMODE_VLC_BITS, 7,
                  vc9_imode_bits, 1, 1,
@@ -389,7 +445,13 @@ static int vc9_init_common(VC9Context *v)
 }
 
 #if HAS_ADVANCED_PROFILE
-/* 6.2.1, p32 */
+/**
+ * Decode sequence header's Hypothetic Reference Decoder data
+ * @see 6.2.1, p32
+ * @param v The VC9Context to initialize
+ * @param gb A GetBitContext initialized from AVCodecContext extra_data
+ * @return Status
+ */
 static int decode_hrd(VC9Context *v, GetBitContext *gb)
 {
     int i, num;
@@ -438,7 +500,14 @@ static int decode_hrd(VC9Context *v, GetBitContext *gb)
     return 0;
 }
 
-/* Table 2, p18 */
+/**
+ * Decode sequence header for Advanced Profile
+ * @see Table 2, p18
+ * @see 6.1.7, pp21-27
+ * @param v The VC9Context to initialize
+ * @param gb A GetBitContext initialized from AVCodecContext extra_data
+ * @return Status
+ */
 static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 {
     VC9Context *v = avctx->priv_data;
@@ -585,7 +654,13 @@ static int decode_advanced_sequence_header(AVCodecContext *avctx, GetBitContext 
 }
 #endif
 
-/* Figure 7-8, p16-17 */
+/** 
+ * Decode Simple/Main Profiles sequence header
+ * @see Figure 7-8, p16-17
+ * @param avctx Codec context
+ * @param gb GetBit context initialized from Codec context extra_data
+ * @return Status
+ */
 static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 {
     VC9Context *v = avctx->priv_data;
@@ -706,7 +781,7 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
                "Rangered=%i, VSTransform=%i, Overlap=%i, SyncMarker=%i\n"
                "DQuant=%i, Quantizer mode=%i, Max B frames=%i\n",
                v->profile, v->frmrtq_postproc, v->bitrtq_postproc,
-               v->loopfilter, v->multires, v->fastuvmc, v->extended_mv,
+               v->s.loop_filter, v->multires, v->fastuvmc, v->extended_mv,
                v->rangered, v->vstransform, v->overlap, v->s.resync_marker,
                v->dquant, v->quantizer_mode, avctx->max_b_frames
                );
@@ -720,9 +795,11 @@ static int decode_sequence_header(AVCodecContext *avctx, GetBitContext *gb)
 
 
 #if HAS_ADVANCED_PROFILE
-/*****************************************************************************/
-/* Entry point decoding (Advanced Profile)                                   */
-/*****************************************************************************/
+/** Entry point decoding (Advanced Profile)
+ * @param avctx Codec context
+ * @param gb GetBit context initialized from avctx->extra_data
+ * @return Status
+ */
 static int advanced_entry_point_process(AVCodecContext *avctx, GetBitContext *gb)
 {
     VC9Context *v = avctx->priv_data;
@@ -762,9 +839,17 @@ static int advanced_entry_point_process(AVCodecContext *avctx, GetBitContext *gb
 }
 #endif
 
-/******************************************************************************/
-/* Bitplane decoding: 8.7, p56                                                */
-/******************************************************************************/
+/***********************************************************************/
+/**
+ * @defgroup bitplane VC9 Bitplane decoding
+ * @see 8.7, p56
+ * @{
+ */
+
+/** @addtogroup bitplane
+ * Imode types
+ * @{
+ */
 #define IMODE_RAW     0
 #define IMODE_NORM2   1
 #define IMODE_DIFF2   2
@@ -772,22 +857,41 @@ static int advanced_entry_point_process(AVCodecContext *avctx, GetBitContext *gb
 #define IMODE_DIFF6   4
 #define IMODE_ROWSKIP 5
 #define IMODE_COLSKIP 6
+/** @} */ //imode defines
+
+/** Allocate the buffer from a bitplane, given its dimensions
+ * @param bp Bitplane which buffer is to allocate
+ * @param[in] width Width of the buffer
+ * @param[in] height Height of the buffer
+ * @return Status
+ * @todo TODO: Take into account stride
+ * @todo TODO: Allow use of external buffers ?
+ */
 int alloc_bitplane(BitPlane *bp, int width, int height)
 {
     if (!bp || bp->width<0 || bp->height<0) return -1;
     bp->data = (uint8_t*)av_malloc(width*height);
     if (!bp->data) return -1;
-    bp->width = bp->stride = width; //FIXME Needed for aligned data ?
+    bp->width = bp->stride = width; 
     bp->height = height;
     return 0;
 }
 
+/** Free the bitplane's buffer
+ * @param bp Bitplane which buffer is to free
+ */
 void free_bitplane(BitPlane *bp)
 {
     bp->width = bp->stride = bp->height = 0;
     if (bp->data) av_freep(&bp->data);
 }
 
+/** Decode rows by checking if they are skiped
+ * @param plane Buffer to store decoded bits
+ * @param[in] width Width of this buffer
+ * @param[in] height Height of this buffer
+ * @param[in] stride of this buffer
+ */
 static void decode_rowskip(uint8_t* plane, int width, int height, int stride, VC9Context *v){
     int x, y;
     GetBitContext *gb = &v->s.gb;
@@ -802,7 +906,13 @@ static void decode_rowskip(uint8_t* plane, int width, int height, int stride, VC
     }
 }
 
-//FIXME optimize
+/** Decode columns by checking if they are skiped
+ * @param plane Buffer to store decoded bits
+ * @param[in] width Width of this buffer
+ * @param[in] height Height of this buffer
+ * @param[in] stride of this buffer
+ * @fixme FIXME: Optimize
+ */
 static void decode_colskip(uint8_t* plane, int width, int height, int stride, VC9Context *v){
     int x, y;
     GetBitContext *gb = &v->s.gb;
@@ -818,10 +928,13 @@ static void decode_colskip(uint8_t* plane, int width, int height, int stride, VC
     }
 }
 
-//FIXME optimize
-//FIXME Use BitPlane struct or return if table is raw (no bits read here but
-//      later on)
-//Elements must be either 0 or 1
+/** Decode a bitplane's bits
+ * @param bp Bitplane where to store the decode bits
+ * @param v VC9 context for bit reading and logging
+ * @return Status
+ * @fixme FIXME: Optimize
+ * @todo TODO: Decide if a struct is needed
+ */
 static int bitplane_decoding(BitPlane *bp, VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -857,35 +970,30 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
 
         for(y=  bp->height%tile_h; y< bp->height; y+=tile_h){
             for(x=  bp->width%tile_w; x< bp->width; x+=tile_w){
-#if TILE_VLC_METHOD == 1 //FIXME Too much optimized ?
+#if VLC_NORM6_METH0D == 1
                 code = get_vlc2(gb, vc9_norm6_vlc.table, VC9_NORM6_VLC_BITS, 2);
                 if(code<0){
-                    av_log(v->s.avctx, AV_LOG_DEBUG, "inavlid NORM-6 VLC\n");
+                    av_log(v->s.avctx, AV_LOG_DEBUG, "invalid NORM-6 VLC\n");
                     return -1;
                 }
 #endif
-#if TILE_VLC_METHOD == 2 //TODO Optimize VLC decoding
-                code = get_vlc2(gb, vc9_norm6_first.table, VC9_NORM6_FIRST_BITS, 2);
-                if (vc9_norm6_mode[code] == 1)
+#if VLC_NORM6_METH0D == 2 //Failure
+                code = get_vlc2(gb, vc9_norm6_first_vlc.table, VC9_NORM6_FIRST_BITS, 2);
+                if (code == 22)
                 {
-#  if TRACE
-                    code = get_bits(gb, 5);
-                    assert(code>-1 && code<20);
-                    code = vc9_norm6_flc_val[code];
-#  else
                     code = vc9_norm6_flc_val[get_bits(gb, 5)];
-#  endif
                 }
-                else if (vc9_norm6_mode[code] == 2)
+                else if (code == 23)
                 {
 #  if TRACE
-                    code = get_vlc2(gb, vc9_norm6_second.table, VC9_NORM6_SECOND_BITS, 2);
+                    code = get_vlc2(gb, vc9_norm6_second_vlc.table, VC9_NORM6_SECOND_BITS, 2);
                     assert(code>-1 && code<22);
                     code = vc9_norm6_second_val[code];
 #  else
-                    code = vc9_norm6_second_val[get_vlc2(gb, vc9_norm6_second.table, VC9_NORM6_SECOND_BITS, 2)];
+                    code = vc9_norm6_second_val[get_vlc2(gb, vc9_norm6_second_vlc.table, VC9_NORM6_SECOND_BITS, 2)];
 #  endif
-#endif //TILE_VLC_METHOD == 2
+                }
+#endif //VLC_NORM6_METH0D == 2
                 //FIXME following is a pure guess and probably wrong
                 //FIXME A bitplane (0 | !0), so could the shifts be avoided ?
                 planep[x     + 0*bp->stride]= (code>>0)&1;
@@ -944,10 +1052,12 @@ static int bitplane_decoding(BitPlane *bp, VC9Context *v)
     }
     return (imode<<1) + invert;
 }
+/** @} */ //Bitplane group
 
-/*****************************************************************************/
-/* VOP Dquant decoding                                                       */
-/*****************************************************************************/
+/***********************************************************************/
+/** VOP Dquant decoding
+ * @param v VC9 Context
+ */
 static int vop_dquant_decoding(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -987,12 +1097,19 @@ static int vop_dquant_decoding(VC9Context *v)
     return 0;
 }
 
-/*****************************************************************************/
-/* All Profiles picture header decoding specific functions                   */
-/* Only pro/epilog differs between Simple/Main and Advanced => check caller  */
-/*****************************************************************************/
-
-/* Tables 11+12, p62-65 */
+/***********************************************************************/
+/** 
+ * @defgroup all_frame_hdr All VC9 profiles frame header
+ * @brief Part of the frame header decoding from all profiles
+ * @warning Only pro/epilog differs between Simple/Main and Advanced => check caller
+ * @{
+ */
+/** B and BI frame header decoding, primary part
+ * @see Tables 11+12, p62-65
+ * @param v VC9 context
+ * @return Status
+ * @warning Also handles BI frames
+ */
 static int decode_b_picture_primary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -1062,6 +1179,13 @@ static int decode_b_picture_primary_header(VC9Context *v)
     return 0;
 }
 
+/** B and BI frame header decoding, secondary part
+ * @see Tables 11+12, p62-65
+ * @param v VC9 context
+ * @return Status
+ * @warning Also handles BI frames
+ * @warning To call once all MB arrays are allocated
+ */
 static int decode_b_picture_secondary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -1116,7 +1240,11 @@ static int decode_b_picture_secondary_header(VC9Context *v)
     return 0;
 }
 
-/* Tables 5+7, p53-54 and 55-57 */
+/** I frame header decoding, primary part
+ * @see Tables 5+7, p53-54 and 55-57
+ * @param v VC9 context
+ * @return Status
+ */
 static int decode_i_picture_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -1179,7 +1307,11 @@ static int decode_i_picture_header(VC9Context *v)
     return status;
 }
 
-/* Table 9, p58-60 */
+/** P frame header decoding, primary part
+ * @see Tables 5+7, p53-54 and 55-57
+ * @param v VC9 context
+ * @return Status
+ */
 static int decode_p_picture_primary_header(VC9Context *v)
 {
     /* INTERFRM, FRMCNT, RANGEREDFRM read in caller */
@@ -1218,6 +1350,12 @@ static int decode_p_picture_primary_header(VC9Context *v)
     return 0;
 }
 
+/** P frame header decoding, secondary part
+ * @see Tables 5+7, p53-54 and 55-57
+ * @param v VC9 context
+ * @warning To call once all MB arrays are allocated
+ * @return Status
+ */
 static int decode_p_picture_secondary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -1265,8 +1403,23 @@ static int decode_p_picture_secondary_header(VC9Context *v)
     /* Epilog (AC/DC syntax) should be done in caller */
     return 0;
 }
+/** @} */ //End of group all_frm_hdr
 
 
+/***********************************************************************/
+/** 
+ * @defgroup std_frame_hdr VC9 Simple/Main Profiles header decoding
+ * @brief Part of the frame header decoding belonging to Simple/Main Profiles
+ * @warning Only pro/epilog differs between Simple/Main and Advanced =>
+ *          check caller
+ * @{
+ */
+
+/** Frame header decoding, first part, in Simple and Main profiles
+ * @see Tables 5+7, p53-54 and 55-57
+ * @param v VC9 context
+ * @return Status
+ */
 static int standard_decode_picture_primary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -1303,6 +1456,11 @@ static int standard_decode_picture_primary_header(VC9Context *v)
     return 0;
 }
 
+/** Frame header decoding, secondary part
+ * @param v VC9 context
+ * @warning To call once all MB arrays are allocated
+ * @return Status
+ */
 static int standard_decode_picture_secondary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -1318,9 +1476,7 @@ static int standard_decode_picture_secondary_header(VC9Context *v)
     v->ac_table_level = decode012(gb);
     if (v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
     {
-        index = decode012(gb);
-        v->luma_ac2_vlc = NULL + index; //FIXME Add AC2 table
-        v->chroma_ac2_vlc = NULL + index;
+        v->ac2_table_level = decode012(gb);
     }
     /* DC Syntax */
     index = decode012(gb);
@@ -1329,12 +1485,21 @@ static int standard_decode_picture_secondary_header(VC9Context *v)
    
     return 0;
 }
-
+/** @} */ //End for group std_frame_hdr
 
 #if HAS_ADVANCED_PROFILE
-/******************************************************************************/
-/* Advanced Profile picture header decoding specific functions                */
-/******************************************************************************/
+/***********************************************************************/
+/** 
+ * @defgroup adv_frame_hdr VC9 Advanced Profile header decoding
+ * @brief Part of the frame header decoding belonging to Advanced Profiles
+ * @warning Only pro/epilog differs between Simple/Main and Advanced =>
+ *          check caller
+ * @{
+ */
+/** Frame header decoding, primary part
+ * @param v VC9 context
+ * @return Status
+ */
 static int advanced_decode_picture_primary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -1392,6 +1557,10 @@ static int advanced_decode_picture_primary_header(VC9Context *v)
     return 0;
 }
 
+/** Frame header decoding, secondary part
+ * @param v VC9 context
+ * @return Status
+ */
 static int advanced_decode_picture_secondary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
@@ -1408,9 +1577,7 @@ static int advanced_decode_picture_secondary_header(VC9Context *v)
     v->ac_table_level = decode012(gb);
     if (v->s.pict_type == I_TYPE || v->s.pict_type == BI_TYPE)
     {
-        index = decode012(gb); //FIXME
-        v->luma_ac2_vlc = NULL + index;
-        v->chroma_ac2_vlc = NULL + index;
+        v->ac2_table_level = decode012(gb);
     }
     /* DC Syntax */
     index = decode012(gb);
@@ -1420,12 +1587,23 @@ static int advanced_decode_picture_secondary_header(VC9Context *v)
     return 0;
 }
 #endif
+/** @} */ //End for adv_frame_hdr
 
-/******************************************************************************/
-/* Block decoding functions                                                   */
-/******************************************************************************/
-/* 7.1.4, p91 and 8.1.1.7, p(1)04 */
-/* FIXME proper integration (unusable and lots of parameters to send */
+/***********************************************************************/
+/** 
+ * @defgroup block VC9 Block-level functions
+ * @see 7.1.4, p91 and 8.1.1.7, p(1)04
+ * @todo TODO: Integrate to MpegEncContext facilities
+ * @{
+ */
+/** Decode a luma intra block
+ * @warning Will be removed, due to necessary integration
+ * @see coeff scaling for Adv Profile: 8.1.1.15, p(1)13, 
+ * @param v VC9 context
+ * @param mquant Macroblock quantizer scale
+ * @return Status
+ * @todo TODO: Implement Coeff scaling for Advanced Profile
+ */
 int decode_luma_intra_block(VC9Context *v, int mquant)
 {
     GetBitContext *gb = &v->s.gb;
@@ -1456,12 +1634,22 @@ int decode_luma_intra_block(VC9Context *v, int mquant)
 
     return 0;
 }
+/** @} */ //End for group block
 
-/******************************************************************************/
-/* MacroBlock decoding functions                                              */
-/******************************************************************************/
-/* 8.1.1.5, p(1)02-(1)03 */
-/* We only need to store 3 flags, but math with 4 is easier */
+/***********************************************************************/
+/** 
+ * @defgroup std_mb VC9 Macroblock-level functions in Simple/Main Profiles
+ * @see 7.1.4, p91 and 8.1.1.7, p(1)04
+ * @todo TODO: Integrate to MpegEncContext facilities
+ * @{
+ */
+/**
+ * @def GET_CBPCY(table, bits)
+ * @brief Get the Coded Block Pattern for luma and chroma
+ * @param table VLC table to use (get_vlc2 second parameter)
+ * @param bits Average bitlength (third parameter to get_vlc2)
+ * @see  8.1.1.5, p(1)02-(1)03
+ */
 #define GET_CBPCY(table, bits)                                      \
     predicted_cbpcy = get_vlc2(gb, table, bits, 2);             \
     cbpcy[0] = (p_cbpcy[-1] == p_cbpcy[2])                          \
@@ -1475,13 +1663,16 @@ int decode_luma_intra_block(VC9Context *v, int mquant)
     cbpcy[3] = (cbpcy[1] == cbpcy[0]) ? cbpcy[2] : cbpcy[1];        \
     cbpcy[3] ^= ((predicted_cbpcy>>2)&0x01);
      
-/* 8.1, p100 */
+/** Decode all MBs for an I frame in Simple/Main profile
+ * @see 8.1, p100
+ * @todo TODO: Process the blocks
+ * @todo TODO: Use M$ MPEG-4 cbp prediction
+ */
 static int standard_decode_i_mbs(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     MpegEncContext *s = &v->s;
     int current_mb = 0; /* MB/Block Position info */
-    /* FIXME: better to use a pointer than using (x<<4) */
     uint8_t cbpcy[4], previous_cbpcy[4], predicted_cbpcy,
         *p_cbpcy /* Pointer to skip some math */;
 
@@ -1524,6 +1715,10 @@ static int standard_decode_i_mbs(VC9Context *v)
     return 0;
 }
 
+/**
+ * @def GET_MQUANT
+ * @brief Get macroblock-level quantizer scale
+ */
 #define GET_MQUANT()                                           \
   if (v->dquantfrm)                                            \
   {                                                            \
@@ -1542,7 +1737,13 @@ static int standard_decode_i_mbs(VC9Context *v)
     }                                                          \
   }
 
-/* MVDATA decoding from 8.3.5.2, p(1)20 */
+/**
+ * @def GET_MVDATA(_dmv_x, _dmv_y)
+ * @brief Get MV differentials
+ * @see MVDATA decoding from 8.3.5.2, p(1)20
+ * @param dmv_x Horizontal differential for decoded MV
+ * @param dmv_y Vertical differential for decoded MV
+ */
 #define GET_MVDATA(_dmv_x, _dmv_y)                                  \
   index = 1 + get_vlc2(gb, vc9_mv_diff_vlc[s->mv_table_index].table,\
                        VC9_MV_DIFF_VLC_BITS, 2);                    \
@@ -1577,7 +1778,11 @@ static int standard_decode_i_mbs(VC9Context *v)
     _dmv_y = (sign ^ ((val>>1) + offset_table[index1])) - sign;     \
   }
 
-/* 8.1, p(1)15 */
+/** Decode all MBs for an P frame in Simple/Main profile
+ * @see 8.1, p(1)15
+ * @todo TODO: Process the blocks
+ * @todo TODO: Use M$ MPEG-4 cbp prediction
+ */
 static int decode_p_mbs(VC9Context *v)
 {
     MpegEncContext *s = &v->s;
@@ -1730,6 +1935,10 @@ static int decode_p_mbs(VC9Context *v)
     return 0;
 }
 
+/** Decode all MBs for an P frame in Simple/Main profile
+ * @todo TODO: Process the blocks
+ * @todo TODO: Use M$ MPEG-4 cbp prediction
+ */
 static int decode_b_mbs(VC9Context *v)
 {
     MpegEncContext *s = &v->s;
@@ -1784,11 +1993,9 @@ static int decode_b_mbs(VC9Context *v)
                 }
                 else
                 { 
-                    /* FIXME getting tired commenting */
                     GET_MVDATA(dmv1_x, dmv1_y);
                     if (!s->mb_intra /* b_mv1 tells not intra */)
                     {
-                        /* FIXME: actually read it */
                         b_mv_type = decode012(gb);
                         if (v->bfraction > 420 /*1/2*/ &&
                             b_mv_type < 3) b_mv_type = 1-b_mv_type;
@@ -1835,8 +2042,16 @@ static int decode_b_mbs(VC9Context *v)
     }
     return 0;
 }
+/** @} */ //End for group std_mb
 
 #if HAS_ADVANCED_PROFILE
+/***********************************************************************/
+/** 
+ * @defgroup adv_mb VC9 Macroblock-level functions in Advanced Profile
+ * @todo TODO: Integrate to MpegEncContext facilities
+ * @todo TODO: Code P, B and BI
+ * @{
+ */
 static int advanced_decode_i_mbs(VC9Context *v)
 {
     MpegEncContext *s = &v->s;
@@ -1861,8 +2076,13 @@ static int advanced_decode_i_mbs(VC9Context *v)
     }
     return 0;
 }
+/** @} */ //End for group adv_mb
 #endif
 
+/** Initialize a VC9/WMV3 decoder
+ * @todo TODO: Handle VC-9 IDUs (Transport level?)
+ * @todo TODO: Decypher remaining bits in extra_data
+ */
 static int vc9_decode_init(AVCodecContext *avctx)
 {
     VC9Context *v = avctx->priv_data;
@@ -1935,6 +2155,10 @@ static int vc9_decode_init(AVCodecContext *avctx)
     return 0;
     }
 
+/** Decode a VC9/WMV3 frame
+ * @todo TODO: Handle VC-9 IDUs (Transport level?)
+ * @warning Initial try at using MpegEncContext stuff
+ */
 static int vc9_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             uint8_t *buf, int buf_size)
@@ -2153,6 +2377,9 @@ static int vc9_decode_frame(AVCodecContext *avctx,
     return buf_size; //Number of bytes consumed
 }
 
+/** Close a VC9/WMV3 decoder
+ * @warning Initial try at using MpegEncContext stuff
+ */
 static int vc9_decode_end(AVCodecContext *avctx)
 {
     VC9Context *v = avctx->priv_data;
