@@ -387,7 +387,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
         }
     }
 
-    if(s->avctx->rc_qsquish==0.0){
+    if(s->avctx->rc_qsquish==0.0 || qmin==qmax){
         if     (q<qmin) q=qmin;
         else if(q>qmax) q=qmax;
     }else{
@@ -517,12 +517,12 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
     
         q= get_qscale(s, rce, rate_factor, picture_number);
 
+        assert(q>0.0);
 //printf("%f ", q);
         if     (pict_type==I_TYPE && s->avctx->i_quant_factor>0.0)
             q= rcc->next_p_qscale*s->avctx->i_quant_factor + s->avctx->i_quant_offset;
         else if(pict_type==B_TYPE && s->avctx->b_quant_factor>0.0)
             q= rcc->next_non_b_qscale*s->avctx->b_quant_factor + s->avctx->b_quant_offset;
-            
 //printf("%f ", q);
         assert(q>0.0);
 
@@ -539,6 +539,8 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
         q= modify_qscale(s, rce, q, picture_number);
 
         rcc->pass1_wanted_bits+= s->bit_rate/fps;
+
+        assert(q>0.0);
 
         if(pict_type != B_TYPE) rcc->next_non_b_qscale= q;
         if(pict_type == P_TYPE) rcc->next_p_qscale= q;
