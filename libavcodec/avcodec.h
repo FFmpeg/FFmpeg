@@ -230,6 +230,14 @@ enum Motion_Est_ID {
     ME_X1
 };
 
+enum AVRounding {
+    AV_ROUND_ZERO     = 0, ///< round toward zero
+    AV_ROUND_INF      = 1, ///< round away from zero
+    AV_ROUND_DOWN     = 2, ///< round toward -infinity
+    AV_ROUND_UP       = 3, ///< round toward +infinity
+    AV_ROUND_NEAR_INF = 5, ///< round to nearest and halfway cases away from zero
+};
+
 typedef struct RcOverride{
     int start_frame;
     int end_frame;
@@ -2061,11 +2069,16 @@ char av_get_pict_type_char(int pict_type);
 int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max);
 
 /**
- * rescale a 64bit integer.
+ * rescale a 64bit integer with rounding to nearest.
  * a simple a*b/c isnt possible as it can overflow
  */
 int64_t av_rescale(int64_t a, int64_t b, int64_t c);
 
+/**
+ * rescale a 64bit integer with specified rounding.
+ * a simple a*b/c isnt possible as it can overflow
+ */
+int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding);
 
 /**
  * Interface for 0.5.0 version

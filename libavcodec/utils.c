@@ -822,25 +822,33 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
     return den==0;
 }
 
-int64_t av_rescale(int64_t a, int64_t b, int64_t c){
-    AVInteger ai, ci;
+int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd){
+    AVInteger ai;
+    int64_t r=0;
     assert(c > 0);
     assert(b >=0);
+    assert(rnd >=0 && rnd<=5 && rnd!=4);
     
-    if(a<0) return -av_rescale(-a, b, c);
+    if(a<0) return -av_rescale_rnd(-a, b, c, rnd ^ ((rnd>>1)&1)); 
     
+    if(rnd==AV_ROUND_NEAR_INF) r= c/2;
+    else if(rnd&1)             r= c-1;
+
     if(b<=INT_MAX && c<=INT_MAX){
         if(a<=INT_MAX)
-            return (a * b + c/2)/c;
+            return (a * b + r)/c;
         else
-            return a/c*b + (a%c*b + c/2)/c;
+            return a/c*b + (a%c*b + r)/c;
     }
     
     ai= av_mul_i(av_int2i(a), av_int2i(b));
-    ci= av_int2i(c);
-    ai= av_add_i(ai, av_shr_i(ci,1));
+    ai= av_add_i(ai, av_int2i(r));
     
-    return av_i2int(av_div_i(ai, ci));
+    return av_i2int(av_div_i(ai, av_int2i(c)));
+}
+
+int64_t av_rescale(int64_t a, int64_t b, int64_t c){
+    return av_rescale_rnd(a, b, c, AV_ROUND_NEAR_INF);
 }
 
 /* av_log API */
