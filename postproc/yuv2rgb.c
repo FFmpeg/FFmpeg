@@ -26,6 +26,7 @@
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * MMX/MMX2 Template stuff from Michael Niedermayer (michaelni@gmx.at) (needed for fast movntq support)
+ * 8bpp support by Michael Niedermayer (michaelni@gmx.at)
  */
 
 #include <stdio.h>
@@ -86,6 +87,20 @@ uint64_t __attribute__((aligned(8))) dither8[2]={
 	0x0602060206020602LL,
 	0x0004000400040004LL,};
 
+uint8_t  __attribute__((aligned(8))) dither32[4][8]={
+	{ 0,16, 6,22, 0,16, 6,22},
+	{28, 8,24,14,28, 8,24,14},
+	{ 4,20, 2,18, 4,20, 2,18},
+	{26,12,30,10,26,12,30,10},
+};
+
+uint8_t  __attribute__((aligned(8))) dither64[4][8]={
+	{ 8,40, 4,36, 8,40, 4,36,},
+	{52,24,60,20,52,24,60,20,},
+	{00,32,12,44,00,32,12,44,},
+	{56,16,48,28,56,16,48,28,},
+};
+
 #undef HAVE_MMX
 #undef ARCH_X86
 
@@ -129,7 +144,7 @@ yuv2rgb_fun yuv2rgb;
 
 static void (* yuv2rgb_c_internal) (uint8_t *, uint8_t *,
 				    uint8_t *, uint8_t *,
-				    void *, void *, int);
+				    void *, void *, int, int);
 
 static void yuv2rgb_c (void * dst, uint8_t * py,
 		       uint8_t * pu, uint8_t * pv,
@@ -140,7 +155,7 @@ static void yuv2rgb_c (void * dst, uint8_t * py,
 
     while (v_size--) {
 	yuv2rgb_c_internal (py, py + y_stride, pu, pv, dst, dst + rgb_stride,
-			    h_size);
+			    h_size, v_size<<1);
 
 	py += 2 * y_stride;
 	pu += uv_stride;
@@ -238,7 +253,7 @@ void * table_bU[256];
 
 static void yuv2rgb_c_32 (uint8_t * py_1, uint8_t * py_2,
 			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size)
+			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
 {
     int U, V, Y;
     uint32_t * r, * g, * b;
@@ -277,7 +292,7 @@ static void yuv2rgb_c_32 (uint8_t * py_1, uint8_t * py_2,
 // This is very near from the yuv2rgb_c_32 code
 static void yuv2rgb_c_24_rgb (uint8_t * py_1, uint8_t * py_2,
 			      uint8_t * pu, uint8_t * pv,
-			      void * _dst_1, void * _dst_2, int h_size)
+			      void * _dst_1, void * _dst_2, int h_size, int v_pos)
 {
     int U, V, Y;
     uint8_t * r, * g, * b;
@@ -316,7 +331,7 @@ static void yuv2rgb_c_24_rgb (uint8_t * py_1, uint8_t * py_2,
 // only trivial mods from yuv2rgb_c_24_rgb
 static void yuv2rgb_c_24_bgr (uint8_t * py_1, uint8_t * py_2,
 			      uint8_t * pu, uint8_t * pv,
-			      void * _dst_1, void * _dst_2, int h_size)
+			      void * _dst_1, void * _dst_2, int h_size, int v_pos)
 {
     int U, V, Y;
     uint8_t * r, * g, * b;
@@ -356,7 +371,7 @@ static void yuv2rgb_c_24_bgr (uint8_t * py_1, uint8_t * py_2,
 // r, g, b, dst_1, dst_2
 static void yuv2rgb_c_16 (uint8_t * py_1, uint8_t * py_2,
 			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size)
+			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
 {
     int U, V, Y;
     uint16_t * r, * g, * b;
@@ -396,7 +411,7 @@ static void yuv2rgb_c_16 (uint8_t * py_1, uint8_t * py_2,
 // r, g, b, dst_1, dst_2
 static void yuv2rgb_c_8  (uint8_t * py_1, uint8_t * py_2,
 			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size)
+			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
 {
     int U, V, Y;
     uint8_t * r, * g, * b;
@@ -432,6 +447,72 @@ static void yuv2rgb_c_8  (uint8_t * py_1, uint8_t * py_2,
     }
 }
 
+// This is exactly the same code as yuv2rgb_c_32 except for the types of
+// r, g, b, dst_1, dst_2
+static void yuv2rgb_c_8_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
+			  uint8_t * pu, uint8_t * pv,
+			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
+{
+    int U, V, Y;
+    uint8_t * r, * g, * b;
+    uint8_t * dst_1, * dst_2;
+
+    h_size >>= 3;
+    dst_1 = _dst_1;
+    dst_2 = _dst_2;
+
+    while (h_size--) {
+	uint8_t *d32= dither32[v_pos&3];
+	uint8_t *d64= dither64[v_pos&3];
+
+#define DST1a(i)					\
+	Y = py_1[2*i];				\
+	dst_1[2*i] = r[Y+d32[0]] + g[Y+d32[0]] + b[Y+d64[0]];	\
+	Y = py_1[2*i+1];			\
+	dst_1[2*i+1] = r[Y+d32[1]] + g[Y+d32[1]] + b[Y+d64[1]];
+
+#define DST2a(i)					\
+	Y = py_2[2*i];				\
+	dst_2[2*i] =  r[Y+d32[8]] + g[Y+d32[8]] + b[Y+d64[8]];	\
+	Y = py_2[2*i+1];			\
+	dst_2[2*i+1] =  r[Y+d32[9]] + g[Y+d32[9]] + b[Y+d64[9]];
+
+#define DST1b(i)					\
+	Y = py_1[2*i];				\
+	dst_1[2*i] = r[Y+d32[2]] + g[Y+d32[2]] + b[Y+d64[2]];	\
+	Y = py_1[2*i+1];			\
+	dst_1[2*i+1] = r[Y+d32[3]] + g[Y+d32[3]] + b[Y+d64[3]];
+
+#define DST2b(i)					\
+	Y = py_2[2*i];				\
+	dst_2[2*i] =  r[Y+d32[10]] + g[Y+d32[10]] + b[Y+d64[10]];	\
+	Y = py_2[2*i+1];			\
+	dst_2[2*i+1] =  r[Y+d32[11]] + g[Y+d32[11]] + b[Y+d64[11]];
+
+	RGB(0);
+	DST1a(0);
+	DST2a(0);
+
+	RGB(1);
+	DST2b(1);
+	DST1b(1);
+
+	RGB(2);
+	DST1a(2);
+	DST2a(2);
+
+	RGB(3);
+	DST2b(3);
+	DST1b(3);
+
+	pu += 4;
+	pv += 4;
+	py_1 += 8;
+	py_2 += 8;
+	dst_1 += 8;
+	dst_2 += 8;
+    }
+}
 
 static int div_round (int dividend, int divisor)
 {
@@ -532,7 +613,7 @@ static void yuv2rgb_c_init (int bpp, int mode)
 	break;
 
     case 8:
-	yuv2rgb_c_internal = yuv2rgb_c_8;
+	yuv2rgb_c_internal = yuv2rgb_c_8_ordered_dither; //yuv2rgb_c_8;
 
 	table_332 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
 
