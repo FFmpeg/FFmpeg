@@ -51,6 +51,8 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         bps = 8;
     } else if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3LAME) {
         bps = 0;
+    } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV || enc->codec_id == CODEC_ID_ADPCM_MS) {
+        bps = 4;
     } else {
         bps = 16;
     }
@@ -90,6 +92,9 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         put_le16(pb, 16); /* fwHeadFlags */
         put_le32(pb, 0);  /* dwPTSLow */
         put_le32(pb, 0);  /* dwPTSHigh */
+    } else if (enc->codec_id == CODEC_ID_ADPCM_IMA_WAV) {
+        put_le16(pb, 2); /* wav_extra_size */
+        put_le16(pb, ((enc->block_align - 4 * enc->channels) / (4 * enc->channels)) * 8 + 1); /* wSamplesPerBlock */
     } else
         put_le16(pb, 0); /* wav_extra_size */
 

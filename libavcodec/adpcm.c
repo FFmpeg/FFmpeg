@@ -28,6 +28,8 @@
  * http://www.geocities.com/SiliconValley/8682/aud3.txt
  * http://openquicktime.sourceforge.net/plugins.htm
  * XAnim sources (xa_codec.c) http://www.rasnaimaging.com/people/lapus/download.html
+ * http://www.cs.ucla.edu/~leec/mediabench/applications.html
+ * SoX source code http://home.sprynet.com/~cbagwell/sox.html
  */
 
 #define BLKSIZE 1024
@@ -60,6 +62,7 @@ static int step_table[89] = {
     15289, 16818, 18500, 20350, 22385, 24623, 27086, 29794, 32767
 };
 
+/* Those are for MS-ADPCM */
 /* AdaptationTable[], AdaptCoeff1[], and AdaptCoeff2[] are from libsndfile */
 static int AdaptationTable[] = {
         230, 230, 230, 230, 307, 409, 512, 614,
@@ -80,6 +83,8 @@ typedef struct ADPCMChannelStatus {
     int predictor;
     short int step_index;
     int step;
+    /* for encoding */
+    int prev_sample;
 
     /* MS version */
     short sample1;
@@ -99,15 +104,26 @@ typedef struct ADPCMContext {
 
 static int adpcm_encode_init(AVCodecContext *avctx)
 {
+    if (avctx->channels > 2)
+        return -1; /* only stereo or mono =) */
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_QT:
-        avctx->frame_size = 64; /* XXX: ??? */
+        fprintf(stderr, "ADPCM: codec admcp_ima_qt unsupported for encoding !\n");
+        avctx->frame_size = 64; /* XXX: can multiple of avctx->channels * 64 (left and right blocks are interleaved) */
+        return -1;
         break;
     case CODEC_ID_ADPCM_IMA_WAV:
-        avctx->frame_size = 64; /* XXX: ??? */
+        avctx->frame_size = (BLKSIZE - 4 * avctx->channels) * 8 / (4 * avctx->channels) + 1; /* each 16 bits sample gives one nibble */
+                                                             /* and we have 4 bytes per channel overhead */
+        avctx->block_align = BLKSIZE;
+        /* seems frame_size isn't taken into account... have to buffer the samples :-( */
+        break;
+    case CODEC_ID_ADPCM_MS:
+        fprintf(stderr, "ADPCM: codec admcp_ms unsupported for encoding !\n");
+        return -1;
         break;
     default:
-        avctx->frame_size = 1;
+        return -1;
         break;
     }
     return 0;
@@ -115,28 +131,129 @@ static int adpcm_encode_init(AVCodecContext *avctx)
 
 static int adpcm_encode_close(AVCodecContext *avctx)
 {
-    switch(avctx->codec->id) {
-    default:
-        /* nothing to free */
-        break;
-    }
+    /* nothing to free */
     return 0;
+}
+
+
+static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c, short sample)
+{
+    int step_index;
+    unsigned char nibble;
+    
+    int sign = 0; /* sign bit of the nibble (MSB) */
+    int delta, predicted_delta;
+
+    delta = sample - c->prev_sample;
+
+    if (delta < 0) {
+        sign = 1;
+        delta = -delta;
+    }
+
+    step_index = c->step_index;
+
+    /* nibble = 4 * delta / step_table[step_index]; */
+    nibble = (delta << 2) / step_table[step_index];
+
+    if (nibble > 7)
+        nibble = 7;
+
+    step_index += index_table[nibble];
+    if (step_index < 0)
+        step_index = 0;
+    if (step_index > 88)
+        step_index = 88;
+
+    /* what the decoder will find */
+    predicted_delta = ((step_table[step_index] * nibble) / 4) + (step_table[step_index] / 8);
+
+    if (sign)
+        c->prev_sample -= predicted_delta;
+    else
+        c->prev_sample += predicted_delta;
+
+    CLAMP_TO_SHORT(c->prev_sample);
+
+
+    nibble += sign << 3; /* sign * 8 */   
+
+    /* save back */
+    c->step_index = step_index;
+
+    return nibble;
 }
 
 static int adpcm_encode_frame(AVCodecContext *avctx,
 			    unsigned char *frame, int buf_size, void *data)
 {
-    int n, sample_size, v;
+    int n;
     short *samples;
     unsigned char *dst;
+    ADPCMContext *c = avctx->priv_data;
+
+    dst = frame;
+    samples = (short *)data;
+/*    n = (BLKSIZE - 4 * avctx->channels) / (2 * 8 * avctx->channels); */
 
     switch(avctx->codec->id) {
+    case CODEC_ID_ADPCM_IMA_QT: /* XXX: can't test until we get .mov writer */
+        break;
+    case CODEC_ID_ADPCM_IMA_WAV:
+        n = avctx->frame_size / 8;
+            c->status[0].prev_sample = (signed short)samples[0]; /* XXX */
+/*            c->status[0].step_index = 0; *//* XXX: not sure how to init the state machine */
+            *dst++ = (c->status[0].prev_sample) & 0xFF; /* little endian */
+            *dst++ = (c->status[0].prev_sample >> 8) & 0xFF;
+            *dst++ = (unsigned char)c->status[0].step_index;
+            *dst++ = 0; /* unknown */
+            samples++;
+            if (avctx->channels == 2) {
+                c->status[1].prev_sample = (signed short)samples[0];
+/*                c->status[1].step_index = 0; */
+                *dst++ = (c->status[1].prev_sample) & 0xFF;
+                *dst++ = (c->status[1].prev_sample >> 8) & 0xFF;
+                *dst++ = (unsigned char)c->status[1].step_index;
+                *dst++ = 0;
+                samples++;
+            }
+        
+            /* stereo: 4 bytes (8 samples) for left, 4 bytes for right, 4 bytes left, ... */
+            for (; n>0; n--) {
+                *dst = adpcm_ima_compress_sample(&c->status[0], samples[0]) & 0x0F;
+                *dst |= (adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels]) << 4) & 0xF0;
+                dst++;
+                *dst = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 2]) & 0x0F;
+                *dst |= (adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 3]) << 4) & 0xF0;
+                dst++;
+                *dst = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 4]) & 0x0F;
+                *dst |= (adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 5]) << 4) & 0xF0;
+                dst++;
+                *dst = adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 6]) & 0x0F;
+                *dst |= (adpcm_ima_compress_sample(&c->status[0], samples[avctx->channels * 7]) << 4) & 0xF0;
+                dst++;
+                /* right channel */
+                if (avctx->channels == 2) {
+                    *dst = adpcm_ima_compress_sample(&c->status[1], samples[1]);
+                    *dst |= adpcm_ima_compress_sample(&c->status[1], samples[3]) << 4;
+                    dst++;
+                    *dst = adpcm_ima_compress_sample(&c->status[1], samples[5]);
+                    *dst |= adpcm_ima_compress_sample(&c->status[1], samples[7]) << 4;
+                    dst++;
+                    *dst = adpcm_ima_compress_sample(&c->status[1], samples[9]);
+                    *dst |= adpcm_ima_compress_sample(&c->status[1], samples[11]) << 4;
+                    dst++;
+                    *dst = adpcm_ima_compress_sample(&c->status[1], samples[13]);
+                    *dst |= adpcm_ima_compress_sample(&c->status[1], samples[15]) << 4;
+                    dst++;
+                }
+                samples += 8 * avctx->channels;
+            }
+        break;
     default:
         return -1;
     }
     avctx->key_frame = 1;
-    //avctx->frame_size = (dst - frame) / (sample_size * avctx->channels);
-
     return dst - frame;
 }
 
@@ -221,8 +338,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     samples = data;
     src = buf;
 
-//printf("adpcm_decode_frame() buf_size=%i\n", buf_size);
-
     st = avctx->channels == 2;
 
     switch(avctx->codec->id) {
@@ -245,13 +360,16 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         cs->step_index = (*src++) & 0x7F;
 
-if (cs->step_index > 88) printf("ERROR: step_index = %i\n", cs->step_index);
+        if (cs->step_index > 88) fprintf(stderr, "ERROR: step_index = %i\n", cs->step_index);
         if (cs->step_index > 88) cs->step_index = 88;
 
         cs->step = step_table[cs->step_index];
 
         if (st && channel)
             samples++;
+
+        *samples++ = cs->predictor;
+        samples += st;
 
         for(m=32; n>0 && m>0; n--, m--) { /* in QuickTime, IMA is encoded by chuncks of 34 bytes (=64 samples) */
             *samples = adpcm_ima_expand_nibble(cs, src[0] & 0x0F);
@@ -284,10 +402,13 @@ if (cs->step_index > 88) printf("ERROR: step_index = %i\n", cs->step_index);
             cs->predictor -= 0x10000;
         CLAMP_TO_SHORT(cs->predictor);
 
+        *samples++ = cs->predictor;
+
         cs->step_index = *src++;
         if (cs->step_index < 0) cs->step_index = 0;
         if (cs->step_index > 88) cs->step_index = 88;
-        if (*src++) puts("unused byte should be null !!"); /* unused */
+        if (*src++) fprintf(stderr, "unused byte should be null !!\n"); /* unused */
+
         if (st) {
             cs = &(c->status[1]);
             cs->predictor = (*src++) & 0x0FF;
@@ -295,6 +416,8 @@ if (cs->step_index > 88) printf("ERROR: step_index = %i\n", cs->step_index);
             if(cs->predictor & 0x8000)
                 cs->predictor -= 0x10000;
             CLAMP_TO_SHORT(cs->predictor);
+
+            *samples++ = cs->predictor;
 
             cs->step_index = *src++;
             if (cs->step_index < 0) cs->step_index = 0;
@@ -404,3 +527,4 @@ ADPCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
 ADPCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
 
 #undef ADPCM_CODEC
+
