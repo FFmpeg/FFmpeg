@@ -1,7 +1,7 @@
 
 #define LIBAV_VERSION_INT 0x000406  
 #define LIBAV_VERSION     "0.4.6"
-#define LIBAV_BUILD       4600
+#define LIBAV_BUILD       4601
 
 #include "avcodec.h"
 
@@ -94,6 +94,7 @@ typedef struct AVFormatContext {
     char author[512];
     char copyright[512];
     char comment[512];
+    int flags; /* format specific flags */
     /* This buffer is only needed when packets were already buffered but
        not decoded, for example to get the codec parameters in mpeg
        streams */
@@ -111,6 +112,7 @@ extern AVFormat *first_format;
 extern AVFormat rm_format;
 
 /* mpegmux.c */
+#define AVF_FLAG_VCD   0x00000001   /* VCD compatible MPEG-PS */
 extern AVFormat mpeg_mux_format;
 
 /* asfenc.c */

@@ -47,6 +47,7 @@ typedef struct {
 
 #define PACK_START_CODE             ((unsigned int)0x000001ba)
 #define SYSTEM_HEADER_START_CODE    ((unsigned int)0x000001bb)
+#define SEQUENCE_END_CODE           ((unsigned int)0x000001b7)
 #define PACKET_START_CODE_MASK      ((unsigned int)0xffffff00)
 #define PACKET_START_CODE_PREFIX    ((unsigned int)0x00000100)
 #define ISO_11172_END_CODE          ((unsigned int)0x000001b9)
@@ -162,7 +163,11 @@ static int mpeg_mux_init(AVFormatContext *ctx)
     s->packet_number = 0;
 
     /* XXX: hardcoded */
-    s->packet_size = 2048;
+    if (ctx->flags & AVF_FLAG_VCD)
+        s->packet_size = 2324; /* VCD packet size */
+    else
+        s->packet_size = 2048;
+        
     /* startcode(4) + length(2) + flags(1) */
     s->packet_data_max_size = s->packet_size - 7;
     s->audio_bound = 0;
@@ -204,11 +209,22 @@ static int mpeg_mux_init(AVFormatContext *ctx)
         bitrate += st->codec.bit_rate;
     }
     s->mux_rate = (bitrate + (8 * 50) - 1) / (8 * 50);
-    /* every 2 seconds */
-    s->pack_header_freq = 2 * bitrate / s->packet_size / 8;
-    /* every 10 seconds */
-    s->system_header_freq = s->pack_header_freq * 5;
-
+    
+    if (ctx->flags & AVF_FLAG_VCD)
+        /* every packet */
+        s->pack_header_freq = 1;
+    else
+        /* every 2 seconds */
+        s->pack_header_freq = 2 * bitrate / s->packet_size / 8;
+    
+    if (ctx->flags & AVF_FLAG_VCD)
+        /* every 40 packets, this is my invention */
+        s->system_header_freq = s->pack_header_freq * 40;
+    else
+        /* every 10 seconds */
+        s->system_header_freq = s->pack_header_freq * 5;
+    
+    
     for(i=0;i<ctx->nb_streams;i++) {
         stream = ctx->streams[i]->priv_data;
         stream->buffer_ptr = 0;
@@ -242,7 +258,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
 }
 
 /* flush the packet on stream stream_index */
-static void flush_packet(AVFormatContext *ctx, int stream_index)
+static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
 {
     MpegMuxContext *s = ctx->priv_data;
     StreamInfo *stream = ctx->streams[stream_index]->priv_data;
@@ -250,7 +266,8 @@ static void flush_packet(AVFormatContext *ctx, int stream_index)
     int size, payload_size, startcode, id, len, stuffing_size, i;
     INT64 timestamp;
     UINT8 buffer[128];
-
+    int last = last_pkt ? 4 : 0;
+    
     id = stream->id;
     timestamp = stream->start_pts;
 
@@ -260,7 +277,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index)
 #endif
 
     buf_ptr = buffer;
-    if ((s->packet_number % s->pack_header_freq) == 0) {
+    if (((s->packet_number % s->pack_header_freq) == 0)) {
         /* output pack and systems header if needed */
         size = put_pack_header(ctx, buf_ptr, timestamp);
         buf_ptr += size;
@@ -273,7 +290,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index)
     put_buffer(&ctx->pb, buffer, size);
 
     /* packet header */
-    payload_size = s->packet_size - (size + 6 + 5);
+    payload_size = s->packet_size - (size + 6 + 5 + last);
     if (id < 0xc0) {
         startcode = PRIVATE_STREAM_1;
         payload_size -= 4;
@@ -309,6 +326,9 @@ static void flush_packet(AVFormatContext *ctx, int stream_index)
         }
     }
 
+    if (last_pkt) {
+        put_be32(&ctx->pb, ISO_11172_END_CODE);
+    }
     /* output data */
     put_buffer(&ctx->pb, stream->buffer, payload_size - stuffing_size);
     put_flush_packet(&ctx->pb);
@@ -351,7 +371,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
             /* output the packet */
             if (stream->start_pts == -1)
                 stream->start_pts = stream->pts;
-            flush_packet(ctx, stream_index);
+            flush_packet(ctx, stream_index, 0);
         }
     }
 
@@ -367,13 +387,17 @@ static int mpeg_mux_end(AVFormatContext *ctx)
     /* flush each packet */
     for(i=0;i<ctx->nb_streams;i++) {
         stream = ctx->streams[i]->priv_data;
-        if (stream->buffer_ptr > 0) 
-            flush_packet(ctx, i);
+        if (stream->buffer_ptr > 0) {
+            if (i == (ctx->nb_streams - 1)) 
+                flush_packet(ctx, i, 1);
+            else
+                flush_packet(ctx, i, 0);
+        }
     }
 
     /* write the end header */
-    put_be32(&ctx->pb, ISO_11172_END_CODE);
-    put_flush_packet(&ctx->pb);
+    //put_be32(&ctx->pb, ISO_11172_END_CODE);
+    //put_flush_packet(&ctx->pb);
     return 0;
 }
 
