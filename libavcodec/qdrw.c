@@ -65,10 +65,15 @@ static int decode_frame(AVCodecContext *avctx,
     }
     
     for (i = 0; i <= colors; i++) {
-        int idx;
+        unsigned int idx;
         idx = BE_16(buf); /* color index */
         buf += 2;
         
+        if (idx > 255) {
+            av_log(avctx, AV_LOG_ERROR, "Palette index out of range: %u\n", idx);
+            buf += 6;
+            continue;
+        }
         a->palette[idx * 3 + 0] = *buf++;
         buf++;
         a->palette[idx * 3 + 1] = *buf++;
@@ -76,9 +81,6 @@ static int decode_frame(AVCodecContext *avctx,
         a->palette[idx * 3 + 2] = *buf++;
         buf++;
     }
-
-    if (colors)
-        a->pic.palette_has_changed = 1;
 
     buf += 18; /* skip unneeded data */
     for (i = 0; i < avctx->height; i++) {
@@ -98,6 +100,8 @@ static int decode_frame(AVCodecContext *avctx,
             if (code & 0x80 ) { /* run */
                 int i;
                 pix = *buf++;
+                if ((out + (257 - code) * 3) > (outdata +  a->pic.linesize[0]))
+                    break;
                 for (i = 0; i < 257 - code; i++) {
                     *out++ = a->palette[pix * 3 + 0];
                     *out++ = a->palette[pix * 3 + 1];
@@ -107,6 +111,8 @@ static int decode_frame(AVCodecContext *avctx,
                 left -= 2;
             } else { /* copy */
                 int i, pix;
+                if ((out + code * 3) > (outdata +  a->pic.linesize[0]))
+                    break;
                 for (i = 0; i <= code; i++) {
                     pix = *buf++;
                     *out++ = a->palette[pix * 3 + 0];
@@ -129,6 +135,10 @@ static int decode_frame(AVCodecContext *avctx,
 
 static int decode_init(AVCodecContext *avctx){
 //    QdrawContext * const a = avctx->priv_data;
+
+    if (avcodec_check_dimensions(avctx, avctx->height, avctx->width) < 0) {
+        return 1;
+    }
 
     avctx->pix_fmt= PIX_FMT_RGB24;
 
