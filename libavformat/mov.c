@@ -903,11 +903,11 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                     /* if flag bit 3 is set, use the default palette */
                     color_count = 1 << color_depth;
                     if (color_depth == 2)
-                        color_table = qt_default_palette_4;
+                        color_table = ff_qt_default_palette_4;
                     else if (color_depth == 4)
-                        color_table = qt_default_palette_16;
+                        color_table = ff_qt_default_palette_16;
                     else
-                        color_table = qt_default_palette_256;
+                        color_table = ff_qt_default_palette_256;
 
                     for (j = 0; j < color_count; j++) {
                         r = color_table[j * 4 + 0];
