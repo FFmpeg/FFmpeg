@@ -877,9 +877,12 @@ static int ac3_parse(AVCodecParserContext *s1,
 		    s->frame_size = len;
                     /* update codec info */
                     avctx->sample_rate = sample_rate;
-                    avctx->channels = ac3_channels[s->flags & 7];
-                    if (s->flags & A52_LFE)
-			avctx->channels++;
+                    /* set channels,except if the user explicitly requests 1 or 2 channels, XXX/FIXME this is a bit ugly */
+                    if(avctx->channels!=1 && avctx->channels!=2){
+                        avctx->channels = ac3_channels[s->flags & 7];
+                        if (s->flags & A52_LFE)
+                            avctx->channels++;
+                    }
 		    avctx->bit_rate = bit_rate;
                     avctx->frame_size = 6 * 256;
                 }
