@@ -703,10 +703,10 @@ assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
 assert(s->current_picture.pict_type == s->pict_type);
     if(s->pict_type==B_TYPE || s->low_delay){
         *pict= *(AVFrame*)&s->current_picture;
-        ff_print_debug_info(s, s->current_picture_ptr);
+        ff_print_debug_info(s, pict);
     } else {
         *pict= *(AVFrame*)&s->last_picture;
-        ff_print_debug_info(s, s->last_picture_ptr);
+        ff_print_debug_info(s, pict);
     }
 
     /* Return the Picture timestamp as the frame number */

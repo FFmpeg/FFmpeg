@@ -166,6 +166,7 @@ static int show_status;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
 static int debug = 0;
+static int debug_mv = 0;
 static int step = 0;
 
 /* current context */
@@ -1196,7 +1197,8 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         packet_queue_init(&is->videoq);
         is->video_tid = SDL_CreateThread(video_thread, is);
-        enc->debug= debug;
+        enc->debug = debug;
+        enc->debug_mv = debug_mv;
         break;
     default:
         break;
@@ -1784,6 +1786,11 @@ static void opt_debug(const char *arg)
     debug = atoi(arg);
 }
     
+static void opt_vismv(const char *arg)
+{
+    debug_mv = atoi(arg);
+}
+    
 const OptionDef options[] = {
     { "h", 0, {(void*)show_help}, "show help" },    
     { "x", HAS_ARG, {(void*)opt_width}, "force displayed width", "width" },
@@ -1800,6 +1807,7 @@ const OptionDef options[] = {
     { "img", HAS_ARG, {(void*)opt_image_format}, "force image format", "img_fmt" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
     { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
+    { "vismv", HAS_ARG | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
 #ifdef CONFIG_NETWORK
     { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },
 #endif

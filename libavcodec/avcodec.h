@@ -1133,7 +1133,7 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_MB_TYPE   8
 #define FF_DEBUG_QP        16
 #define FF_DEBUG_MV        32
-#define FF_DEBUG_VIS_MV    0x00000040
+//#define FF_DEBUG_VIS_MV    0x00000040
 #define FF_DEBUG_SKIP      0x00000080
 #define FF_DEBUG_STARTCODE 0x00000100
 #define FF_DEBUG_PTS       0x00000200
@@ -1143,6 +1143,16 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_VIS_QP    0x00002000
 #define FF_DEBUG_VIS_MB_TYPE 0x00004000
     
+    /**
+     * debug.
+     * - encoding: set by user.
+     * - decoding: set by user.
+     */
+    int debug_mv;
+#define FF_DEBUG_VIS_MV_P_FOR  0x00000001 //visualize forward predicted MVs of P frames
+#define FF_DEBUG_VIS_MV_B_FOR  0x00000002 //visualize forward predicted MVs of B frames
+#define FF_DEBUG_VIS_MV_B_BACK 0x00000004 //visualize backward predicted MVs of B frames
+
     /**
      * error.
      * - encoding: set by lavc if flags&CODEC_FLAG_PSNR

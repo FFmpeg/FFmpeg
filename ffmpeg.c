@@ -131,6 +131,7 @@ static int packet_size = 0;
 static int error_rate = 0;
 static int strict = 0;
 static int debug = 0;
+static int debug_mv = 0;
 extern int loop_input; /* currently a hack */
 
 static int gop_size = 12;
@@ -1672,6 +1673,11 @@ static void opt_debug(const char *arg)
     debug = atoi(arg);
 }
 
+static void opt_vismv(const char *arg)
+{
+    debug_mv = atoi(arg);
+}
+    
 static void opt_verbose(const char *arg)
 {
     verbose = atoi(arg);
@@ -2171,8 +2177,9 @@ static void opt_input_file(const char *filename)
             enc->workaround_bugs = workaround_bugs;
             enc->error_resilience = error_resilience; 
             enc->error_concealment = error_concealment; 
-            enc->idct_algo= idct_algo;
-            enc->debug= debug;
+            enc->idct_algo = idct_algo;
+            enc->debug = debug;
+            enc->debug_mv = debug_mv;            
             if(bitexact)
                 enc->flags|= CODEC_FLAG_BITEXACT;
 
@@ -2382,8 +2389,8 @@ static void opt_output_file(const char *filename)
                 video_enc->qblur = video_qblur;
                 video_enc->qcompress = video_qcomp;
                 video_enc->rc_eq = video_rc_eq;
-                video_enc->debug= debug;
-                
+                video_enc->debug = debug;
+                video_enc->debug_mv = debug_mv;                
                 p= video_rc_override_string;
                 for(i=0; p; i++){
                     int start, end, q;
@@ -2913,6 +2920,7 @@ const OptionDef options[] = {
     { "copyright", HAS_ARG | OPT_STRING, {(void*)&str_copyright}, "set the copyright", "string" },
     { "comment", HAS_ARG | OPT_STRING, {(void*)&str_comment}, "set the comment", "string" },
     { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
+    { "vismv", HAS_ARG | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark}, 
       "add timings for benchmarking" },
     { "dump", OPT_BOOL | OPT_EXPERT, {(void*)&do_pkt_dump}, 

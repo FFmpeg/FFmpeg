@@ -662,10 +662,10 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     
         if(s->pict_type==B_TYPE || s->low_delay){
             *pict= *(AVFrame*)&s->current_picture;
-            ff_print_debug_info(s, s->current_picture_ptr);
+            ff_print_debug_info(s, pict);
         } else {
             *pict= *(AVFrame*)&s->last_picture;
-            ff_print_debug_info(s, s->last_picture_ptr);
+            ff_print_debug_info(s, pict);
         }
         
         *data_size = sizeof(AVFrame);

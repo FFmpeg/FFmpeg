@@ -4172,7 +4172,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     *pict= *(AVFrame*)&s->current_picture; //FIXME 
-    ff_print_debug_info(s, s->current_picture_ptr);
+    ff_print_debug_info(s, pict);
     assert(pict->data[0]);
 //printf("out %d\n", (int)pict->data[0]);
 #if 0 //?
