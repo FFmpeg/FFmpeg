@@ -1,0 +1,104 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FFplay Documentation
+@titlepage
+@sp 7
+@center @titlefont{FFplay Documentation}
+@sp 3
+@end titlepage
+
+
+@chapter Introduction
+
+@c man begin DESCRIPTION
+FFplay is a very simple and portable media player using the FFmpeg
+libraries and the SDL library. It is mostly used as a test bench for the
+various APIs of FFmpeg.
+@c man end
+
+@chapter Invocation
+
+@section Syntax
+@example 
+@c man begin SYNOPSIS
+ffplay [options] @file{input_file}
+@c man end
+@end example
+
+@c man begin OPTIONS
+@section Main options
+
+@table @option
+@item -h
+show help
+@item -x width
+force displayed width
+@item -y height
+force displayed height
+@item -an
+disable audio
+@item -vn
+disable video
+@item -nodisp
+disable graphical display
+@item -f fmt
+force format
+@end table
+
+@section Advanced options
+@table @option
+@item -stats
+show the stream duration, the codec parameters, the current position in
+the stream, and the audio/video synchronisation drift.
+@item -rtp_tcp
+force RTP/TCP protocol usage instead of RTP/UDP. It is only meaningful
+if you are doing stream with the RTSP protocol.
+@item -sync type
+set the master clock to audio (@code{type=audio}), video
+(@code{type=video}) or external (@code{type=ext}). Default is audio. The
+master clock is used to control audio-video synchronization. Most media
+players use audio as master clock, but in some cases (streaming or high
+quality broadcast) it is necessary to change that. This option is mainly
+used for debugging purposes.
+@end table
+
+@section While playing
+
+@table @key
+@item q, ESC
+quit
+
+@item f
+toggle full screen
+
+@item p, SPC
+pause
+
+@item a
+cycle audio channel
+
+@item v
+cycle video channel
+
+@item w
+show audio waves
+@end table
+
+@c man end
+
+@ignore
+
+@setfilename ffplay
+@settitle FFplay media player
+
+@c man begin SEEALSO
+ffmpeg(1), ffserver(1) and the html documentation of @file{ffmpeg}.
+@c man end
+
+@c man begin AUTHOR
+Fabrice Bellard
+@c man end
+
+@end ignore
+
+@bye

@@ -10,6 +10,7 @@
 
 @chapter Introduction
 
+@c man begin DESCRIPTION
 FFserver is a streaming server for both audio and video. It supports
 several live feeds, streaming from files and time shifting on live feeds
 (you can seek to positions in the past on each live feed, provided you
@@ -17,8 +18,9 @@ specify a big enough feed storage in ffserver.conf).
 
 This documentation covers only the streaming aspects of ffserver /
 ffmpeg. All questions about parameters for ffmpeg, codec questions,
-etc. are not covered here. Read @file{ffmpeg-doc.[texi|html]} for more
+etc. are not covered here. Read @file{ffmpeg-doc.html} for more
 information.
+@c man end
 
 @chapter QuickStart
 
@@ -181,5 +183,40 @@ in the future and so unlikely to useful.
 
 You use this by adding the ?date= to the end of the URL for the stream.
 For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
+
+@chapter Invocation
+@section Syntax
+@example 
+@c man begin SYNOPSIS
+ffserver [options]
+@c man end
+@end example
+
+@section Options
+@c man begin OPTIONS
+@table @option
+@item -L
+print the license
+@item -h
+print the help
+@item -f configfile
+use @file{configfile} instead of @file{/etc/ffserver.conf}
+@end table
+@c man end
+
+@ignore
+
+@setfilename ffsserver
+@settitle FFserver video server
+
+@c man begin SEEALSO
+ffmpeg(1), ffplay(1) and the html documentation of @file{ffmpeg}.
+@c man end
+
+@c man begin AUTHOR
+Fabrice Bellard
+@c man end
+
+@end ignore
 
 @bye
