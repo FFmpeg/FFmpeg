@@ -96,7 +96,7 @@ Darwin)
 cc="cc"
 v4l="no"
 audio_oss="no"
-CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer"
+CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer -mdynamic-no-pic"
 SHFLAGS="-dynamiclib"
 extralibs=""
 darwin="yes"
