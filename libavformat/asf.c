@@ -659,14 +659,36 @@ static int asf_write_trailer(AVFormatContext *s)
 //#define DEBUG
 
 #ifdef DEBUG
+#define PRINT_IF_GUID(g,cmp) \
+if (!memcmp(g, &cmp, sizeof(GUID))) \
+    printf("(GUID: %s) ", #cmp)
+
 static void print_guid(const GUID *g)
 {
     int i;
+    PRINT_IF_GUID(g, asf_header);
+    else PRINT_IF_GUID(g, file_header);
+    else PRINT_IF_GUID(g, stream_header);
+    else PRINT_IF_GUID(g, audio_stream);
+    else PRINT_IF_GUID(g, audio_conceal_none);
+    else PRINT_IF_GUID(g, video_stream);
+    else PRINT_IF_GUID(g, video_conceal_none);
+    else PRINT_IF_GUID(g, comment_header);
+    else PRINT_IF_GUID(g, codec_comment_header);
+    else PRINT_IF_GUID(g, codec_comment1_header);
+    else PRINT_IF_GUID(g, data_header);
+    else PRINT_IF_GUID(g, index_guid);
+    else PRINT_IF_GUID(g, head1_guid);
+    else PRINT_IF_GUID(g, head2_guid);
+    else PRINT_IF_GUID(g, my_guid);
+    else
+        printf("(GUID: unknown) ");
     printf("0x%08x, 0x%04x, 0x%04x, {", g->v1, g->v2, g->v3);
     for(i=0;i<8;i++)
         printf(" 0x%02x,", g->v4[i]);
     printf("}\n");
 }
+#undef PRINT_IF_GUID(g,cmp)
 #endif
 
 static void get_guid(ByteIOContext *s, GUID *g)
