@@ -1,50 +1,41 @@
 #!/bin/sh
-
-TMPC="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
-TMPO="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
-TMPS="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
-TMPH="ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
-
+#
+# ffmpeg configure script (c) 2000, 2001, 2002 Gerard Lantau
+#
+# set temporary file name
 if test ! -z "$TMPDIR" ; then
-	TMPC="${TMPDIR}/${TMPC}"
-	TMPCPP="${TMPDIR}/${TMPCPP}"
-	TMPO="${TMPDIR}/${TMPO}"
-	TMPS="${TMPDIR}/${TMPS}"
-	TMPH="${TMPDIR}/${TMPH}"
+    TMPDIR1="${TMPDIR}"
 elif test ! -z "$TEMPDIR" ; then
-	TMPC="${TEMPDIR}/${TMPC}"
-	TMPCPP="${TEMPDIR}/${TMPCPP}"
-	TMPO="${TEMPDIR}/${TMPO}"
-	TMPS="${TEMPDIR}/${TMPS}"
-	TMPH="${TEMPDIR}/${TMPH}"
+    TMPDIR1="${TEMPDIR}"
 else
-	TMPC="/tmp/${TMPC}"
-	TMPCPP="/tmp/${TMPCPP}"
-	TMPO="/tmp/${TMPO}"
-	TMPS="/tmp/${TMPS}"
-	TMPH="/tmp/${TMPH}"
+    TMPDIR1="/tmp"
 fi
+
+TMPC="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.c"
+TMPO="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.o"
+TMPS="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.S"
+TMPH="${TMPDIR1}/ffmpeg-conf-${RANDOM}-$$-${RANDOM}.h"
 
 # default parameters
 prefix="/usr/local"
+cross_prefix=""
 cc="gcc"
 ar="ar"
+strip="strip"
 cpu=`uname -m`
+mmx="default"
 case "$cpu" in
   i386|i486|i586|i686|i86pc|BePC)
     cpu="x86"
-    mmx="yes"
   ;;
   armv4l)
     cpu="armv4l"
-    mmx="no"
   ;;
   alpha)
     cpu="alpha"
-    mmx="no"
   ;;
   *)
-    mmx="no"
+    cpu="unknown"
   ;;
 esac
 gprof="no"
@@ -55,6 +46,7 @@ win32="no"
 lshared="no"
 extralibs="-lm"
 simpleidct="yes"
+bigendian="no"
 
 # OS specific
 targetos=`uname -s`
@@ -75,33 +67,32 @@ fi ;;
 *) ;;
 esac
 
-if test "$1" = "-h" -o "$1" = "--help" ; then
-cat << EOF
-
-Usage: configure [options]
-Options: [defaults in brackets after descriptions]
-
-  --help                  print this message
-EOF
-echo "  --prefix=PREFIX         install in PREFIX [$prefix]"
-echo "  --cc=CC                 use C compiler CC [$cc]"
-echo "  --cpu=CPU               force cpu to CPU  [$cpu]"
-echo "  --disable-mmx           disable mmx usage"
-echo "  --enable-gprof          enable profiling with gprof [$gprof]"
-echo "  --disable-grab          disable audio/video grabbing code"
-echo "  --disable-simple_idct   disable simple IDCT routines [default=no]"
-echo "  --enable-mp3lame        enable mp3 encoding via libmp3lame [default=no]"
-echo "  --enable-win32          enable win32 cross compile"
-echo "  --enable-a52bin         open liba52.so.0 at runtime [default=no]"
-echo "  --enable-shared         build shared libraries [default=no]"
-exit 1
+# find source path
+# XXX: we assume an absolute path is given when launching configure, 
+# except in './configure' case.
+source_path=${0%configure}
+source_path=${source_path%/}
+source_path_used="yes"
+if test -z "$source_path" -o "$source_path" = "." ; then
+    source_path=`pwd`
+    source_path_used="no"
 fi
 
 for opt do
   case "$opt" in
   --prefix=*) prefix=`echo $opt | cut -d '=' -f 2`
   ;;
+  --source-path=*) source_path=`echo $opt | cut -d '=' -f 2`
+  ;;
+  --cross-prefix=*) cross_prefix=`echo $opt | cut -d '=' -f 2`
+  ;;
   --cc=*) cc=`echo $opt | cut -d '=' -f 2`
+  ;;
+  --extra-cflags=*) CFLAGS="${opt#--extra-cflags=}"
+  ;;
+  --extra-ldflags=*) LDFLAGS=${opt#--extra-ldflags=}
+  ;;
+  --extra-libs=*) extralibs=${opt#--extra-libs=}
   ;;
   --cpu=*) cpu=`echo $opt | cut -d '=' -f 2`
   ;;
@@ -124,6 +115,15 @@ for opt do
   esac
 done
 
+# compute mmx state
+if test $mmx = "default"; then
+    if test $cpu = "x86"; then
+        mmx="yes"
+    else
+        mmx="no"
+    fi
+fi
+
 # Checking for CFLAGS
 if test -z "$CFLAGS"; then
     CFLAGS="-O2"
@@ -131,10 +131,17 @@ fi
 
 if test "$win32" = "yes" ; then
     cross_prefix="i386-mingw32msvc-"
-    cc="${cross_prefix}gcc"
-    ar="${cross_prefix}ar"
     grab="no"
 fi
+
+# endianness : guess with cpu type. Should also use prefix
+if test "$cpu" = "powerpc"; then
+    bigendian="yes"
+fi
+
+cc="${cross_prefix}${cc}"
+ar="${cross_prefix}${ar}"
+strip="${cross_prefix}${strip}"
 
 # ---
 # check availability of some header files
@@ -161,9 +168,43 @@ EOF
 $cc -o $TMPO $TMPC 2> /dev/null || _memalign=no
 fi
 
+if test "$1" = "-h" -o "$1" = "--help" ; then
+cat << EOF
+
+Usage: configure [options]
+Options: [defaults in brackets after descriptions]
+
+EOF
+echo "Standard options:"
+echo "  --help                   print this message"
+echo "  --prefix=PREFIX          install in PREFIX [$prefix]"
+echo "  --disable-grab           disable audio/video grabbing code"
+echo "  --disable-simple_idct    disable simple IDCT routines [default=no]"
+echo "  --enable-mp3lame         enable mp3 encoding via libmp3lame [default=no]"
+echo "  --enable-win32           enable win32 cross compile"
+echo "  --enable-a52bin          open liba52.so.0 at runtime [default=no]"
+echo "  --enable-shared          build shared libraries [default=no]"
+echo ""
+echo "Advanced options (experts only):"
+echo "  --source-path=PATH       path of source code [$source_path]"
+echo "  --cross-prefix=PREFIX    use PREFIX for compile tools [$cross_prefix]"
+echo "  --cc=CC                  use C compiler CC [$cc]"
+echo "  --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]"
+echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
+echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
+echo "  --cpu=CPU                force cpu to CPU  [$cpu]"
+echo "  --disable-mmx            disable mmx usage"
+echo "  --enable-gprof           enable profiling with gprof [$gprof]"
+echo ""
+echo "NOTE: The object files are build at the place where configure is launched"
+exit 1
+fi
+
 echo "Install prefix   $prefix"
+echo "Source path      $source_path"
 echo "C compiler       $cc"
 echo "CPU              $cpu"
+echo "Big Endian       $bigendian"
 echo "MMX enabled      $mmx"
 echo "gprof enabled    $gprof"
 echo "grab enabled     $grab"
@@ -179,18 +220,25 @@ echo "prefix=$prefix" >> config.mak
 echo "MAKE=make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
+echo "STRIP=$strip" >> config.mak
 echo "OPTFLAGS=$CFLAGS" >> config.mak
+echo "LDFLAGS=$LDFLAGS" >> config.mak
 if test "$cpu" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH
-fi
-if test "$cpu" = "armv4l" ; then
+elif test "$cpu" = "armv4l" ; then
   echo "TARGET_ARCH_ARMV4L=yes" >> config.mak
   echo "#define ARCH_ARMV4L 1" >> $TMPH
-fi
-if test "$cpu" = "alpha" ; then
+elif test "$cpu" = "alpha" ; then
   echo "TARGET_ARCH_ALPHA=yes" >> config.mak
   echo "#define ARCH_ALPHA 1" >> $TMPH
+elif test "$cpu" = "powerpc" ; then
+  echo "TARGET_ARCH_POWERPC=yes" >> config.mak
+  echo "#define ARCH_POWERPC 1" >> $TMPH
+fi
+if test "$bigendian" = "yes" ; then
+  echo "WORDS_BIGENDIAN=yes" >> config.mak
+  echo "#define WORDS_BIGENDIAN 1" >> $TMPH
 fi
 if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
@@ -207,7 +255,7 @@ else
 fi
 echo "EXTRALIBS=$extralibs" >> config.mak
 echo -n "VERSION=" >>config.mak
-head VERSION >>config.mak
+head $source_path/VERSION >>config.mak
 echo "" >>config.mak
 # if you do not want to use encoders, disable that.
 echo "#define CONFIG_ENCODERS 1" >> $TMPH
@@ -259,6 +307,20 @@ fi
 if test "$simpleidct" = "yes" ; then
   echo "#define SIMPLE_IDCT 1" >> $TMPH
 fi
+
+# build tree in object directory if source path is different from current one
+if test "$source_path_used" = "yes" ; then
+    DIRS="libav libavcodec libavcodec/alpha libavcodec/armv4l libavcodec/i386 \
+          libavcodec/liba52 libavcodec/mlib tests"
+    FILES="Makefile libav/Makefile libavcodec/Makefile tests/Makefile"
+    for dir in $DIRS ; do
+            mkdir -p $dir
+    done
+    for f in $FILES ; do
+        ln -sf $source_path/$f $f
+    done
+fi
+echo "SRC_PATH=$source_path" >> config.mak
 
 diff $TMPH config.h >/dev/null 2>&1
 if test $? -ne 0 ; then
