@@ -141,7 +141,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int len, fd_max;
+    int len, fd_max, ret;
     fd_set rfds;
     struct timeval tv;
 
@@ -153,28 +153,31 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
         FD_SET(s->fd, &rfds);
         tv.tv_sec = 0;
         tv.tv_usec = 100 * 1000;
-        select(fd_max + 1, &rfds, NULL, NULL, &tv);
+        ret = select(fd_max + 1, &rfds, NULL, NULL, &tv);
+        if (ret > 0 && FD_ISSET(s->fd, &rfds)) {
 #ifdef __BEOS__
-        len = recv(s->fd, buf, size, 0);
+            len = recv(s->fd, buf, size, 0);
 #else
-        len = read(s->fd, buf, size);
+            len = read(s->fd, buf, size);
 #endif
-        if (len < 0) {
-            if (errno != EINTR && errno != EAGAIN)
+            if (len < 0) {
+                if (errno != EINTR && errno != EAGAIN)
 #ifdef __BEOS__
-                return errno;
+                    return errno;
 #else
-                return -errno;
+                    return -errno;
 #endif
-        } else break;
+            } else return len;
+        } else if (ret < 0) {
+            return -1;
+        }
     }
-    return len;
 }
 
 static int tcp_write(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
-    int ret, size1, fd_max;
+    int ret, size1, fd_max, len;
     fd_set wfds;
     struct timeval tv;
 
@@ -187,24 +190,28 @@ static int tcp_write(URLContext *h, uint8_t *buf, int size)
         FD_SET(s->fd, &wfds);
         tv.tv_sec = 0;
         tv.tv_usec = 100 * 1000;
-        select(fd_max + 1, NULL, &wfds, NULL, &tv);
+        ret = select(fd_max + 1, NULL, &wfds, NULL, &tv);
+        if (ret > 0 && FD_ISSET(s->fd, &wfds)) {
 #ifdef __BEOS__
-        ret = send(s->fd, buf, size, 0);
+            len = send(s->fd, buf, size, 0);
 #else
-        ret = write(s->fd, buf, size);
+            len = write(s->fd, buf, size);
 #endif
-        if (ret < 0) {
-            if (errno != EINTR && errno != EAGAIN) {
+            if (len < 0) {
+                if (errno != EINTR && errno != EAGAIN) {
 #ifdef __BEOS__
-                return errno;
+                    return errno;
 #else
-                return -errno;
+                    return -errno;
 #endif
+                }
+                continue;
             }
-            continue;
+            size -= len;
+            buf += len;
+        } else if (ret < 0) {
+            return -1;
         }
-        size -= ret;
-        buf += ret;
     }
     return size1 - size;
 }

@@ -193,6 +193,7 @@ static int using_stdin = 0;
 static int using_vhook = 0;
 static int verbose = 1;
 static int thread_count= 1;
+static int q_pressed = 0;
 
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
@@ -320,6 +321,11 @@ static int read_key(void)
         return n;
     }
     return -1;
+}
+
+static int decode_interrupt_cb(void)
+{
+    return q_pressed || (q_pressed = read_key() == 'q');
 }
 
 #else
@@ -1411,8 +1417,10 @@ static int av_encode(AVFormatContext **output_files,
     }
 
 #ifndef CONFIG_WIN32
-    if ( !using_stdin )
+    if ( !using_stdin ) {
         fprintf(stderr, "Press [q] to stop encoding\n");
+        url_set_interrupt_cb(decode_interrupt_cb);
+    }
 #endif
     term_init();
 
@@ -1427,6 +1435,8 @@ static int av_encode(AVFormatContext **output_files,
     redo:
         /* if 'q' pressed, exits */
         if (!using_stdin) {
+            if (q_pressed)
+                break;
             /* read_key() returns 0 on EOF */
             key = read_key();
             if (key == 'q')
