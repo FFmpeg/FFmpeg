@@ -1010,7 +1010,7 @@ static inline int get_qscale(MpegEncContext *s)
 #define MT_DMV   3
 
 static int mpeg_decode_mb(MpegEncContext *s,
-                          DCTELEM block[6][64])
+                          DCTELEM block[12][64])
 {
     int i, j, k, cbp, val, mb_type, motion_type;
     
@@ -1026,7 +1026,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
     
         /* skip mb */
         s->mb_intra = 0;
-        for(i=0;i<6;i++)
+        for(i=0;i<12;i++)
             s->block_last_index[i] = -1;
         if(s->picture_structure == PICT_FRAME)
             s->mv_type = MV_TYPE_16X16;
@@ -1126,7 +1126,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
 #endif
 
         if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
-            for(i=0;i<6;i++) {
+            for(i=0;i<4+(1<<s->chroma_format);i++) {
                 if (mpeg2_decode_block_intra(s, s->pblocks[i], i) < 0)
                     return -1;
             }
@@ -1311,6 +1311,12 @@ static int mpeg_decode_mb(MpegEncContext *s,
                 return -1;
             }
             cbp++;
+            if(s->chroma_format == 2){//CHROMA422
+                 cbp|= ( get_bits(&s->gb,2) ) << 6;
+            }else
+            if(s->chroma_format >  2){//CHROMA444
+                 cbp|= ( get_bits(&s->gb,6) ) << 6;
+            }
 
 #ifdef HAVE_XVMC
             //on 1 we memcpy blocks in xvmcvideo
@@ -1324,13 +1330,33 @@ static int mpeg_decode_mb(MpegEncContext *s,
 
             if (s->codec_id == CODEC_ID_MPEG2VIDEO) {
                 for(i=0;i<6;i++) {
-                    if (cbp & 32) {
+                    if (cbp & (1<<(5-i)) ) {
                         if (mpeg2_decode_block_non_intra(s, s->pblocks[i], i) < 0)
                             return -1;
                     } else {
                         s->block_last_index[i] = -1;
                     }
-                    cbp+=cbp;
+                }
+                if (s->chroma_format >= 2) {
+                    if (s->chroma_format == 2) {//CHROMA_422)
+                        for(i=6;i<8;i++) {
+                            if (cbp & (1<<(6+7-i)) ) {
+                                if (mpeg2_decode_block_non_intra(s, s->pblocks[i], i) < 0)
+                                    return -1;
+                            } else {
+                                s->block_last_index[i] = -1;
+                            }
+                        }
+                    }else{ /*CHROMA_444*/
+                        for(i=6;i<12;i++) {
+                            if (cbp & (1<<(6+11-i)) ) {
+                                if (mpeg2_decode_block_non_intra(s, s->pblocks[i], i) < 0)
+                                    return -1;
+                            } else {
+                                s->block_last_index[i] = -1;
+                            }
+                        }
+                    }
                 }
             } else {
                 for(i=0;i<6;i++) {
@@ -1654,7 +1680,7 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
         component = 0; 
     }else{
         quant_matrix = s->chroma_intra_matrix;
-        component = n - 3;
+        component = (n&1) + 1;
     }
     diff = decode_dc(&s->gb, component);
     if (diff >= 0xffff)
@@ -1817,13 +1843,13 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     profile= get_bits(&s->gb, 3);
     level= get_bits(&s->gb, 4);
     s->progressive_sequence = get_bits1(&s->gb); /* progressive_sequence */
-    skip_bits(&s->gb, 2); /* chroma_format */
+    s->chroma_format = get_bits(&s->gb, 2); /* chroma_format 1=420, 2=422, 3=444 */
     horiz_size_ext = get_bits(&s->gb, 2);
     vert_size_ext = get_bits(&s->gb, 2);
     s->width |= (horiz_size_ext << 12);
     s->height |= (vert_size_ext << 12);
     bit_rate_ext = get_bits(&s->gb, 12);  /* XXX: handle it */
-    s->bit_rate = ((s->bit_rate / 400) | (bit_rate_ext << 12)) * 400;
+    s->bit_rate += (bit_rate_ext << 12) * 400;
     skip_bits1(&s->gb); /* marker */
     s->avctx->rc_buffer_size += get_bits(&s->gb, 8)*1024*16<<10;
 
@@ -2556,6 +2582,37 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
     }
 }
 
+static void mpeg_decode_gop(AVCodecContext *avctx, 
+                            uint8_t *buf, int buf_size){
+    Mpeg1Context *s1 = avctx->priv_data;
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
+
+    int drop_frame_flag;
+    int time_code_hours, time_code_minutes;
+    int time_code_seconds, time_code_pictures;
+    int broken_link;
+
+    s->first_field = 0;
+
+    init_get_bits(&s->gb, buf, buf_size*8);
+
+    drop_frame_flag = get_bits1(&s->gb);
+    
+    time_code_hours=get_bits(&s->gb,5);
+    time_code_minutes = get_bits(&s->gb,6);
+    skip_bits1(&s->gb);//marker bit
+    time_code_seconds = get_bits(&s->gb,6);
+    time_code_pictures = get_bits(&s->gb,6);
+    /*broken_link indicate that after editing the
+      reference frames of the first B-Frames after GOP I-Frame
+      are missing (open gop)*/
+    broken_link = get_bits1(&s->gb);
+    if(broken_link == 1){
+//        avcodec_flush_buffers(avctx);
+        ff_mpeg_flush(avctx);
+    }
+}
+
 /**
  * finds the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
@@ -2692,7 +2749,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                                           buf_ptr, input_size);
                     break;
                 case GOP_START_CODE:
-                    s2->first_field=0;
+    	            mpeg_decode_gop(avctx, buf_ptr, input_size);
                     break;
                 default:
                     if (start_code >= SLICE_MIN_START_CODE &&
@@ -2850,7 +2907,8 @@ AVCodec mpeg_xvmc_decoder = {
     NULL,
     mpeg_decode_end,
     mpeg_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED| CODEC_CAP_HWACCEL,
+    .flush= ff_mpeg_flush,
 };
 
 #endif

@@ -267,8 +267,6 @@ int DCT_common_init(MpegEncContext *s)
     ff_init_scantable(s->dsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
     ff_init_scantable(s->dsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
 
-    s->picture_structure= PICT_FRAME;
-    
     return 0;
 }
 
@@ -424,7 +422,7 @@ static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base){
             CHECKED_ALLOCZ(s->dct_error_sum, 2 * 64 * sizeof(int))
         }
     }   
-    CHECKED_ALLOCZ(s->blocks, 64*6*2 * sizeof(DCTELEM))
+    CHECKED_ALLOCZ(s->blocks, 64*12*2 * sizeof(DCTELEM))
     s->block= s->blocks[0];
 
     for(i=0;i<12;i++){
@@ -539,9 +537,18 @@ int MPV_common_init(MpegEncContext *s)
     s->y_dc_scale_table=
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     s->chroma_qscale_table= ff_default_chroma_qscale_table;
-    if (!s->encoding)
-        s->progressive_sequence= 1;
-    s->progressive_frame= 1;
+    if( s->codec_id != CODEC_ID_MPEG1VIDEO && 
+        s->codec_id != CODEC_ID_MPEG2VIDEO) 
+    {
+        /* default structure is frame */
+        s->progressive_frame= 1;
+        s->picture_structure= PICT_FRAME;
+
+        s->y_dc_scale_table=
+        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+        if (!s->encoding)
+            s->progressive_sequence= 1;
+    }
     s->coded_picture_number = 0;
 
     y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);

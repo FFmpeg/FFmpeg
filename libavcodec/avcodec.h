@@ -291,6 +291,8 @@ extern int motion_estimation_method;
    used */
 #define CODEC_CAP_PARSE_ONLY      0x0004
 #define CODEC_CAP_TRUNCATED       0x0008
+/* codec can export data for HW decoding (XvMC) */
+#define CODEC_CAP_HWACCEL         0x0010
 
 //the following defines might change, so dont expect compatibility if u use them
 #define MB_TYPE_INTRA4x4   0x0001

@@ -355,6 +355,9 @@ typedef struct MpegEncContext {
     int last_pict_type;
     int last_non_b_pict_type;   ///< used for mpeg4 gmc b-frames & ratecontrol 
     int frame_rate_index;
+    int frame_rate_ext_n;       ///< MPEG-2 specific framerate modificators (numerator)
+    int frame_rate_ext_d;       ///< MPEG-2 specific framerate modificators (denominator)
+
     /* motion compensation */
     int unrestricted_mv;        ///< mv can point outside of the coded picture 
     int h263_long_vectors;      ///< use horrible h263v1 long vector mode 
@@ -465,7 +468,7 @@ typedef struct MpegEncContext {
     /** identical to the above but for MMX & these are not permutated, second 64 entries are bias*/
     uint16_t (*q_intra_matrix16)[2][64];
     uint16_t (*q_inter_matrix16)[2][64];
-    int block_last_index[6];  ///< last non zero coefficient in block
+    int block_last_index[12];  ///< last non zero coefficient in block
     /* scantables */
     ScanTable __align8 intra_scantable;
     ScanTable intra_h_scantable;
@@ -653,6 +656,11 @@ typedef struct MpegEncContext {
     int alternate_scan;
     int repeat_first_field;
     int chroma_420_type;
+    int chroma_format;
+#define CHROMA_420 1
+#define CHROMA_422 2
+#define CHROMA_444 3
+
     int progressive_frame;
     int full_pel[2];
     int interlaced_dct;
