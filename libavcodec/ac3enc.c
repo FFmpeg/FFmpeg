@@ -842,10 +842,12 @@ static inline int sym_quant(int c, int e, int levels)
     int v;
 
     if (c >= 0) {
-        v = (levels * (c << e)) >> 25;
+        v = (levels * (c << e)) >> 24;
+        v = (v + 1) >> 1;
         v = (levels >> 1) + v;
     } else {
-        v = (levels * ((-c) << e)) >> 25;
+        v = (levels * ((-c) << e)) >> 24;
+        v = (v + 1) >> 1;
         v = (levels >> 1) - v;
     }
     assert (v >= 0 && v < levels);
