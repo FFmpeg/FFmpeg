@@ -161,13 +161,14 @@ void register_all(void)
     register_avformat(&pgmpipe_format);
     register_avformat(&pgmyuvpipe_format);
     register_avformat(&ppmpipe_format);
+#ifdef CONFIG_GRAB
+    register_avformat(&video_grab_device_format);
+    register_avformat(&audio_device_format);
+#endif
 
+    /* file protocols */
     register_protocol(&file_protocol);
     register_protocol(&pipe_protocol);
-#ifdef CONFIG_GRAB
-    register_protocol(&audio_protocol);
-    register_protocol(&video_protocol);
-#endif
 #ifndef CONFIG_WIN32
     register_protocol(&udp_protocol);
     register_protocol(&http_protocol);
@@ -274,49 +275,51 @@ void fifo_write(FifoBuffer *f, UINT8 *buf, int size, UINT8 **wptr_ptr)
     *wptr_ptr = wptr;
 }
 
-/* media file handling */
+/* media file handling. 
+   'filename' is the filename to open.
+   'format_name' is used to force the file format (NULL if auto guess).
+   'buf_size' is the optional buffer size (zero if default is OK).
+   'ap' are additionnal parameters needed when opening the file (NULL if default).
+*/
 
-AVFormatContext *av_open_input_file(const char *filename, int buf_size)
+AVFormatContext *av_open_input_file(const char *filename, 
+                                    const char *format_name,
+                                    int buf_size,
+                                    AVFormatParameters *ap)
 {
-    AVFormatParameters params, *ap;
     AVFormat *fmt;
     AVFormatContext *ic = NULL;
-    URLFormat url_format;
     int err;
 
     ic = av_mallocz(sizeof(AVFormatContext));
     if (!ic)
         goto fail;
-    if (url_fopen(&ic->pb, filename, URL_RDONLY) < 0)
-        goto fail;
-    
-    if (buf_size > 0) {
-        url_setbufsize(&ic->pb, buf_size);
-    }
 
     /* find format */
-    err = url_getformat(url_fileno(&ic->pb), &url_format);
-    if (err >= 0) {
-        fmt = guess_format(url_format.format_name, NULL, NULL);
-        ap = &params;
-        ap->sample_rate = url_format.sample_rate;
-        ap->frame_rate = url_format.frame_rate;
-        ap->channels = url_format.channels;
-        ap->width = url_format.width;
-        ap->height = url_format.height;
-        ap->pix_fmt = url_format.pix_fmt;
+    if (format_name != NULL) {
+        fmt = guess_format(format_name, NULL, NULL);
     } else {
         fmt = guess_format(NULL, filename, NULL);
-        ap = NULL;
     }
     if (!fmt || !fmt->read_header) {
         return NULL;
     }
     ic->format = fmt;
 
+    /* if no file needed do not try to open one */
+    if (!(fmt->flags & AVFMT_NOFILE)) {
+        if (url_fopen(&ic->pb, filename, URL_RDONLY) < 0)
+            goto fail;
+        if (buf_size > 0) {
+            url_setbufsize(&ic->pb, buf_size);
+        }
+    }
+    
     err = ic->format->read_header(ic, ap);
     if (err < 0) {
-        url_fclose(&ic->pb);
+        if (!(fmt->flags & AVFMT_NOFILE)) {
+            url_fclose(&ic->pb);
+        }
         goto fail;
     }
     
@@ -364,7 +367,9 @@ void av_close_input_file(AVFormatContext *s)
         }
         s->packet_buffer = NULL;
     }
-    url_fclose(&s->pb);
+    if (!(s->format->flags & AVFMT_NOFILE)) {
+        url_fclose(&s->pb);
+    }
     free(s);
 }
 

@@ -180,7 +180,10 @@ int fifo_size(FifoBuffer *f, UINT8 *rptr);
 int fifo_read(FifoBuffer *f, UINT8 *buf, int buf_size, UINT8 **rptr_ptr);
 void fifo_write(FifoBuffer *f, UINT8 *buf, int size, UINT8 **wptr_ptr);
 
-AVFormatContext *av_open_input_file(const char *filename, int buf_size);
+AVFormatContext *av_open_input_file(const char *filename, 
+                                    const char *format_name,
+                                    int buf_size,
+                                    AVFormatParameters *ap);
 int av_read_packet(AVFormatContext *s, AVPacket *pkt);
 void av_close_input_file(AVFormatContext *s);
 
@@ -204,3 +207,10 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
 
 int get_frame_filename(char *buf, int buf_size,
                        const char *path, int number);
+
+/* grab/output specific */
+extern AVFormat video_grab_device_format;
+extern AVFormat audio_device_format;
+
+extern const char *v4l_device;
+extern const char *audio_device;
