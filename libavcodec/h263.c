@@ -577,12 +577,13 @@ int ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my){
     } else if(IS_INTERLACED(colocated_mb_type)){
         s->mv_type = MV_TYPE_FIELD;
         for(i=0; i<2; i++){
+            int field_select= s->next_picture.ref_index[0][s->block_index[2*i]];
             if(s->top_field_first){
-                time_pp= s->pp_field_time - s->p_field_select_table[i][mb_index] + i;
-                time_pb= s->pb_field_time - s->p_field_select_table[i][mb_index] + i;
+                time_pp= s->pp_field_time - field_select + i;
+                time_pb= s->pb_field_time - field_select + i;
             }else{
-                time_pp= s->pp_field_time + s->p_field_select_table[i][mb_index] - i;
-                time_pb= s->pb_field_time + s->p_field_select_table[i][mb_index] - i;
+                time_pp= s->pp_field_time + field_select - i;
+                time_pb= s->pb_field_time + field_select - i;
             }
             s->mv[0][i][0] = s->p_field_mv_table[i][0][mb_index][0]*time_pb/time_pp + mx;
             s->mv[0][i][1] = s->p_field_mv_table[i][0][mb_index][1]*time_pb/time_pp + my;
@@ -631,10 +632,13 @@ void ff_h263_update_motion_val(MpegEncContext * s){
             for(i=0; i<2; i++){
                 s->p_field_mv_table[i][0][mb_xy][0]= s->mv[0][i][0];
                 s->p_field_mv_table[i][0][mb_xy][1]= s->mv[0][i][1];
-                s->p_field_select_table[i][mb_xy]= s->field_select[0][i];
             }
+            s->current_picture.ref_index[0][xy           ]=
+            s->current_picture.ref_index[0][xy        + 1]= s->field_select[0][0];
+            s->current_picture.ref_index[0][xy + wrap    ]=
+            s->current_picture.ref_index[0][xy + wrap + 1]= s->field_select[0][1];
         }
-        
+
         /* no update if 8X8 because it has been done during parsing */
         s->current_picture.motion_val[0][xy][0] = motion_x;
         s->current_picture.motion_val[0][xy][1] = motion_y;
