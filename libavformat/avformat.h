@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4610
+#define LIBAVFORMAT_BUILD       4611
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -225,9 +225,7 @@ typedef struct AVStream {
     /* av_read_frame() support */
     int need_parsing;
     struct AVCodecParserContext *parser;
-    int got_frame;
-    int64_t cur_frame_pts;
-    int64_t cur_frame_dts;
+
     int64_t cur_dts;
     int last_IP_duration;
     /* av_seek_frame() support */

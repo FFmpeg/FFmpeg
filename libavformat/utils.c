@@ -672,18 +672,11 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 s->cur_st = NULL;
                 return 0;
             } else if (s->cur_len > 0) {
-                /* we use the MPEG semantics: the pts and dts in a
-                   packet are given from the first frame beginning in
-                   it */
-                if (!st->got_frame) {
-                    st->cur_frame_pts = s->cur_pkt.pts;
-                    st->cur_frame_dts = s->cur_pkt.dts;
-                    s->cur_pkt.pts = AV_NOPTS_VALUE;
-                    s->cur_pkt.dts = AV_NOPTS_VALUE;
-                    st->got_frame = 1;
-                }
                 len = av_parser_parse(st->parser, &st->codec, &pkt->data, &pkt->size, 
-                                      s->cur_ptr, s->cur_len);
+                                      s->cur_ptr, s->cur_len,
+                                      s->cur_pkt.pts, s->cur_pkt.dts);
+                s->cur_pkt.pts = AV_NOPTS_VALUE;
+                s->cur_pkt.dts = AV_NOPTS_VALUE;
                 /* increment read pointer */
                 s->cur_ptr += len;
                 s->cur_len -= len;
@@ -693,11 +686,10 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 got_packet:
                     pkt->duration = 0;
                     pkt->stream_index = st->index;
-                    pkt->pts = st->cur_frame_pts;
-                    pkt->dts = st->cur_frame_dts;
+                    pkt->pts = st->parser->pts;
+                    pkt->dts = st->parser->dts;
                     pkt->destruct = av_destruct_packet_nofree;
                     compute_pkt_fields(s, st, st->parser, pkt);
-                    st->got_frame = 0;
                     return 0;
                 }
             } else {
@@ -717,7 +709,8 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     if (st->parser) {
                         av_parser_parse(st->parser, &st->codec, 
                                         &pkt->data, &pkt->size, 
-                                        NULL, 0);
+                                        NULL, 0, 
+                                        AV_NOPTS_VALUE, AV_NOPTS_VALUE);
                         if (pkt->size)
                             goto got_packet;
                     }
@@ -736,7 +729,7 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                                                &s->last_pkt_stream_dts,
                                                s->cur_pkt.dts);
 #if 0
-            if (s->cur_pkt.stream_index == 1) {
+            if (s->cur_pkt.stream_index == 0) {
                 if (s->cur_pkt.pts != AV_NOPTS_VALUE) 
                     printf("PACKET pts=%0.3f\n", 
                            (double)s->cur_pkt.pts / AV_TIME_BASE);
@@ -844,7 +837,6 @@ static void av_read_frame_flush(AVFormatContext *s)
             av_parser_close(st->parser);
             st->parser = NULL;
         }
-        st->got_frame = 0;
         st->cur_dts = 0; /* we set the current DTS to an unspecified origin */
     }
 }
