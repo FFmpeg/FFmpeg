@@ -1172,6 +1172,8 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         stream->predecode_packet= pkt_desc;
     stream->next_packet= &pkt_desc->next;
 
+    fifo_realloc(&stream->fifo, fifo_size(&stream->fifo, NULL) + size + 1);
+
     if (s->is_dvd){
         if (is_iframe) {
             stream->fifo_iframe_ptr = stream->fifo.wptr;
@@ -1181,7 +1183,6 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         }
     }
 
-    fifo_realloc(&stream->fifo, fifo_size(&stream->fifo, NULL) + size + 1);
     fifo_write(&stream->fifo, buf, size, &stream->fifo.wptr);
 
     for(;;){
