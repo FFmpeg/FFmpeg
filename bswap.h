@@ -1,10 +1,6 @@
 #ifndef __BSWAP_H__
 #define __BSWAP_H__
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
-
 #ifdef HAVE_BYTESWAP_H
 #include <byteswap.h>
 #else
