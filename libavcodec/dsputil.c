@@ -43,10 +43,10 @@ op_pixels_abs_func pix_abs8x8_xy2;
 UINT8 cropTbl[256 + 2 * MAX_NEG_CROP];
 UINT32 squareTbl[512];
 
-extern UINT16 default_intra_matrix[64];
-extern UINT16 default_non_intra_matrix[64];
-extern UINT16 ff_mpeg4_default_intra_matrix[64];
-extern UINT16 ff_mpeg4_default_non_intra_matrix[64];
+extern INT16 default_intra_matrix[64];
+extern INT16 default_non_intra_matrix[64];
+extern INT16 ff_mpeg4_default_intra_matrix[64];
+extern INT16 ff_mpeg4_default_non_intra_matrix[64];
 
 UINT8 zigzag_direct[64] = {
     0, 1, 8, 16, 9, 2, 3, 10,
