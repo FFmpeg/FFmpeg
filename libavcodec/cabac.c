@@ -127,49 +127,75 @@ void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4],
 int main(){
     CABACContext c;
     uint8_t b[9*SIZE];
-    uint8_t bit[9*SIZE];
+    uint8_t r[9*SIZE];
     int i;
-    uint8_t state= 0;
+    uint8_t state[10]= {0};
     
     ff_init_cabac_encoder(&c, b, SIZE);
     ff_init_cabac_states(&c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
     
     for(i=0; i<SIZE; i++){
-        bit[i]= (random()%7)&1;
+        r[i]= random()%7;
     }
     
     for(i=0; i<SIZE; i++){
 START_TIMER
-        put_cabac_bypass(&c, bit[i]);
+        put_cabac_bypass(&c, r[i]&1);
 STOP_TIMER("put_cabac_bypass")
     }
     
     for(i=0; i<SIZE; i++){
 START_TIMER
-        put_cabac(&c, &state, bit[i]);
+        put_cabac(&c, state, r[i]&1);
 STOP_TIMER("put_cabac")
     }
 
+    for(i=0; i<SIZE; i++){
+START_TIMER
+        put_cabac_u(&c, state, r[i], 6, 3, i&1);
+STOP_TIMER("put_cabac_u")
+    }    
+
+    for(i=0; i<SIZE; i++){
+START_TIMER
+        put_cabac_ueg(&c, state, r[i], 0, 3, 0, 1, 2);
+STOP_TIMER("put_cabac_ueg")
+    }    
+   
     put_cabac_terminate(&c, 1);
     
     ff_init_cabac_decoder(&c, b, SIZE);
     
-    state=0;
+    memset(state, 0, sizeof(state));
     
     for(i=0; i<SIZE; i++){
 START_TIMER
-        if( bit[i] != get_cabac_bypass(&c) )
+        if( (r[i]&1) != get_cabac_bypass(&c) )
             printf("CABAC bypass failure at %d\n", i);
 STOP_TIMER("get_cabac_bypass")
     }
     
     for(i=0; i<SIZE; i++){
 START_TIMER
-        if( bit[i] != get_cabac(&c, &state) )
+        if( (r[i]&1) != get_cabac(&c, state) )
             printf("CABAC failure at %d\n", i);
 STOP_TIMER("get_cabac")
     }
-    
+
+    for(i=0; i<SIZE; i++){
+START_TIMER
+        if( r[i] != get_cabac_u(&c, state, (i&1) ? 6 : 7, 3, i&1) )
+            printf("CABAC unary (truncated) binarization failure at %d\n", i);
+STOP_TIMER("get_cabac_u")
+    }
+
+    for(i=0; i<SIZE; i++){
+START_TIMER
+        if( r[i] != get_cabac_ueg(&c, state, 3, 0, 1, 2))
+            printf("CABAC unary (truncated) binarization failure at %d\n", i);
+STOP_TIMER("get_cabac_ueg")
+    }
+
     if(!get_cabac_terminate(&c))
         printf("where's the Terminator?\n");
     

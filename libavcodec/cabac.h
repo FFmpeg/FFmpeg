@@ -113,6 +113,9 @@ static inline void put_cabac_static(CABACContext *c, int RangeLPS, int bit){
 #endif
 }
 
+/**
+ * @param bit 0 -> write zero bit, !=0 write one bit
+ */
 static inline void put_cabac_bypass(CABACContext *c, int bit){
     c->low += c->low;
 
@@ -156,6 +159,82 @@ static inline void put_cabac_terminate(CABACContext *c, int bit){
 #ifdef STRICT_LIMITS
     c->symCount++;
 #endif
+}
+
+/**
+ * put (truncated) unary binarization.
+ */
+static inline void put_cabac_u(CABACContext *c, uint8_t * state, int v, int max, int max_index, int truncated){
+    int i;
+    
+    assert(v <= max);
+    
+#if 1
+    for(i=0; i<v; i++){
+        put_cabac(c, state, 1);
+        if(i < max_index) state++;
+    }
+    if(truncated==0 || v<max)
+        put_cabac(c, state, 0);
+#else
+    if(v <= max_index){
+        for(i=0; i<v; i++){
+            put_cabac(c, state+i, 1);
+        }
+        if(truncated==0 || v<max)
+            put_cabac(c, state+i, 0);
+    }else{
+        for(i=0; i<=max_index; i++){
+            put_cabac(c, state+i, 1);
+        }
+        for(; i<v; i++){
+            put_cabac(c, state+max_index, 1);
+        }
+        if(truncated==0 || v<max)
+            put_cabac(c, state+max_index, 0);
+    }
+#endif
+}
+
+/**
+ * put unary exp golomb k-th order binarization.
+ */
+static inline void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int sign, int max, int is_signed, int k, int max_index){
+    int i;
+    
+    if(v==0)
+        put_cabac(c, state, 0);
+    else{
+        if(v<max){
+            for(i=0; i<v; i++){
+                put_cabac(c, state, 1);
+                if(i < max_index) state++;
+            }
+
+            put_cabac(c, state, 0);
+        }else{
+            int m= 1<<k;
+
+            for(i=0; i<max; i++){
+                put_cabac(c, state, 1);
+                if(i < max_index) state++;
+            }
+
+            v -= max;
+            while(v >= m){ //FIXME optimize
+                put_cabac_bypass(c, 1);
+                v-= m;
+                m+= m;
+            }
+            put_cabac_bypass(c, 0);
+            while(m>>=1){
+                put_cabac_bypass(c, v&m);
+            }
+        }
+
+        if(is_signed)
+            put_cabac_bypass(c, sign);
+    }
 }
 
 static inline void renorm_cabac_decoder(CABACContext *c){
@@ -230,3 +309,58 @@ static inline int get_cabac_terminate(CABACContext *c){
     }    
 }
 
+/**
+ * get (truncated) unnary binarization.
+ */
+static inline int get_cabac_u(CABACContext *c, uint8_t * state, int max, int max_index, int truncated){
+    int i;
+    
+    for(i=0; i<max; i++){ 
+        if(get_cabac(c, state)==0)
+            return i;
+            
+        if(i< max_index) state++;
+    }
+
+    return truncated ? max : -1;
+}
+
+/**
+ * get unary exp golomb k-th order binarization.
+ */
+static inline int get_cabac_ueg(CABACContext *c, uint8_t * state, int max, int is_signed, int k, int max_index){
+    int i, v;
+    int m= 1<<k;
+    
+    if(get_cabac(c, state)==0) 
+        return 0;
+        
+    if(0 < max_index) state++;
+    
+    for(i=1; i<max; i++){ 
+        if(get_cabac(c, state)==0){
+            if(is_signed && get_cabac_bypass(c)){
+                return -i;
+            }else
+                return i;
+        }
+
+        if(i < max_index) state++;
+    }
+    
+    while(get_cabac_bypass(c)){
+        i+= m;
+        m+= m;
+    }
+    
+    v=0;
+    while(m>>=1){
+        v+= v + get_cabac_bypass(c);
+    }
+    i += v;
+
+    if(is_signed && get_cabac_bypass(c)){
+        return -i;
+    }else
+        return i;
+}
