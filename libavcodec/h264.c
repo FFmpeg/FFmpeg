@@ -6536,10 +6536,10 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     {
-//#define DECODE_ORDER
         Picture *out = s->current_picture_ptr;
+#if 0 //decode order
         *data_size = sizeof(AVFrame);
-#ifndef DECODE_ORDER
+#else
         /* Sort B-frames into display order */
         Picture *cur = s->current_picture_ptr;
         Picture *prev = h->delayed_output_pic;
@@ -6595,6 +6595,8 @@ static int decode_frame(AVCodecContext *avctx,
 
         if(prev == out && !dropped_frame)
             *data_size = 0;
+        else
+            *data_size = sizeof(AVFrame);
         if(prev && prev != out && prev->reference == 1)
             prev->reference = 0;
         h->delayed_output_pic = out;
