@@ -1326,8 +1326,15 @@ static void av_estimate_timings_from_pts(AVFormatContext *ic)
 
     /* flush packet queue */
     flush_packet_queue(ic);
-    
 
+    for(i=0;i<ic->nb_streams;i++) {
+        st = ic->streams[i];
+        if (st->parser) {
+            av_parser_close(st->parser);
+            st->parser= NULL;
+        }
+    }
+    
     /* we read the first packets to get the first PTS (not fully
        accurate, but it is enough now) */
     url_fseek(&ic->pb, 0, SEEK_SET);
