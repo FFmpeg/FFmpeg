@@ -743,6 +743,7 @@ char *pp_help=
 "ci	cubicipoldeint				cubic interpolating deinterlacer\n"
 "md	mediandeint				median deinterlacer\n"
 "fd	ffmpegdeint				ffmpeg deinterlacer\n"
+"l5	lowpass5				FIR lowpass deinterlacer\n"
 "de	default					hb:a,vb:a,dr:a\n"
 "fa	fast					h1:a,v1:a,dr:a\n"
 "tn	tmpnoise	(3 threshold)		temporal noise reducer\n"
