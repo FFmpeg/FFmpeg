@@ -157,8 +157,8 @@ TAGS:
 
 # regression tests
 
-libavtest test mpeg4 mpeg: ffmpeg$(EXE)
-	$(MAKE) all -C tests $@
+libavtest test mpeg4 mpeg test-server fulltest: ffmpeg$(EXE)
+	$(MAKE) -C tests $@
 
 # tar release (use 'make -k tar' on a checkouted tree)
 FILE=ffmpeg-$(shell cat VERSION)
