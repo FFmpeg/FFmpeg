@@ -634,6 +634,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 /* ra type header */
                 rm_read_audio_stream_info(s, st, 0);
             } else {
+                int fps, fps2;
                 if (get_le32(pb) != MKTAG('V', 'I', 'D', 'O')) {
                 fail1:
                     av_log(&st->codec, AV_LOG_ERROR, "Unsupported video codec\n");
@@ -647,14 +648,24 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st->codec.width = get_be16(pb);
                 st->codec.height = get_be16(pb);
                 st->codec.frame_rate_base= 1;
-                st->codec.frame_rate = get_be16(pb) * st->codec.frame_rate_base;
+                fps= get_be16(pb);
                 st->codec.codec_type = CODEC_TYPE_VIDEO;
                 get_be32(pb);
+                fps2= get_be16(pb);
                 get_be16(pb);
-                get_be32(pb);
-                get_be16(pb);
+                
+                st->codec.extradata_size= codec_data_size - (url_ftell(pb) - codec_pos);
+                st->codec.extradata= av_malloc(st->codec.extradata_size);
+                get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
+                
+//                av_log(NULL, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
+                st->codec.frame_rate = fps * st->codec.frame_rate_base;
                 /* modification of h263 codec version (!) */
-                h263_hack_version = get_be32(pb);
+#ifdef WORDS_BIGENDIAN
+                h263_hack_version = ((uint32_t*)st->codec.extradata)[1];
+#else
+                h263_hack_version = bswap_32(((uint32_t*)st->codec.extradata)[1]);
+#endif
                 st->codec.sub_id = h263_hack_version;
                 if((h263_hack_version>>28)==1)
                     st->codec.codec_id = CODEC_ID_RV10;
