@@ -2708,7 +2708,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
             if(s->pict_type==I_TYPE){
                 int i;
 
-                if(show_bits(&s->gb, 19)==DC_MARKER){
+                if(show_bits_long(&s->gb, 19)==DC_MARKER){
                     return mb_num-1;
                 }
 
@@ -2956,7 +2956,7 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
     s->mb_num_left= mb_num;
         
     if(s->pict_type==I_TYPE){
-        if(get_bits(&s->gb, 19)!=DC_MARKER){
+        if(get_bits_long(&s->gb, 19)!=DC_MARKER){
             fprintf(stderr, "marker missing after first I partition at %d %d\n", s->mb_x, s->mb_y);
             return -1;
         }
@@ -3885,7 +3885,7 @@ int h263_decode_picture_header(MpegEncContext *s)
     int format, width, height;
 
     /* picture start code */
-    if (get_bits(&s->gb, 22) != 0x20) {
+    if (get_bits_long(&s->gb, 22) != 0x20) {
         fprintf(stderr, "Bad picture start code\n");
         return -1;
     }
@@ -4878,7 +4878,7 @@ int intel_h263_decode_picture_header(MpegEncContext *s)
     int format;
 
     /* picture header */
-    if (get_bits(&s->gb, 22) != 0x20) {
+    if (get_bits_long(&s->gb, 22) != 0x20) {
         fprintf(stderr, "Bad picture start code\n");
         return -1;
     }

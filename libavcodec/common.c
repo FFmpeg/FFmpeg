@@ -140,7 +140,7 @@ void init_get_bits(GetBitContext *s,
 #ifdef ALT_BITSTREAM_READER
     s->index=0;
 #elif defined LIBMPEG2_BITSTREAM_READER
-#ifdef LIBMPEG2_BITSTREAM_HACK
+#ifdef LIBMPEG2_BITSTREAM_READER_HACK
   if ((int)buffer&1) {
      /* word alignment */
     s->cache = (*buffer++)<<24;
@@ -168,6 +168,30 @@ void init_get_bits(GetBitContext *s,
 #ifdef A32_BITSTREAM_READER
     s->cache1 = 0;
 #endif
+}
+
+/** 
+ * reads 0-32 bits.
+ */
+unsigned int get_bits_long(GetBitContext *s, int n){
+    if(n<=17) return get_bits(s, n);
+    else{
+        int ret= get_bits(s, 16) << (n-16);
+        return ret | get_bits(s, n-16);
+    }
+}
+
+/** 
+ * shows 0-32 bits.
+ */
+unsigned int show_bits_long(GetBitContext *s, int n){
+    if(n<=17) return show_bits(s, n);
+    else{
+        GetBitContext gb= *s;
+        int ret= get_bits_long(s, n);
+        *s= gb;
+        return ret;
+    }
 }
 
 void align_get_bits(GetBitContext *s)

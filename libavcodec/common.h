@@ -543,8 +543,8 @@ static inline int get_bits_count(GetBitContext *s){
 
 #   define UPDATE_CACHE(name, gb)\
     if(name##_bit_count >= 0){\
-        name##_cache+= (int)be2me_16(*(uint16_t*)name##_buffer_ptr++) << name##_bit_count;\
-        name##_buffer_ptr+=2;\
+        name##_cache+= (int)be2me_16(*(uint16_t*)name##_buffer_ptr) << name##_bit_count;\
+        ((uint16_t*)name##_buffer_ptr)++;\
         name##_bit_count-= 16;\
     }\
 
@@ -654,9 +654,12 @@ static inline int get_bits_count(GetBitContext *s){
 
 #endif
 
-/* add BERO
-   if MSB not set it is negative 
-*/
+/**
+ * read mpeg1 dc style vlc (sign bit + mantisse with no MSB).
+ * if MSB not set it is negative 
+ * @param n length in bits
+ * @author BERO  
+ */
 static inline int get_xbits(GetBitContext *s, int n){
     register int tmp;
     register int32_t cache;
@@ -685,6 +688,10 @@ static inline int get_sbits(GetBitContext *s, int n){
     return tmp;
 }
 
+/**
+ * reads 0-17 bits.
+ * Note, the alt bitstream reader can read upto 25 bits, but the libmpeg2 reader cant
+ */
 static inline unsigned int get_bits(GetBitContext *s, int n){
     register int tmp;
     OPEN_READER(re, s)
@@ -695,6 +702,12 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
     return tmp;
 }
 
+unsigned int get_bits_long(GetBitContext *s, int n);
+
+/**
+ * shows 0-17 bits.
+ * Note, the alt bitstream reader can read upto 25 bits, but the libmpeg2 reader cant
+ */
 static inline unsigned int show_bits(GetBitContext *s, int n){
     register int tmp;
     OPEN_READER(re, s)
@@ -703,6 +716,8 @@ static inline unsigned int show_bits(GetBitContext *s, int n){
 //    CLOSE_READER(re, s)
     return tmp;
 }
+
+unsigned int show_bits_long(GetBitContext *s, int n);
 
 static inline void skip_bits(GetBitContext *s, int n){
  //Note gcc seems to optimize this to s->index+=n for the ALT_READER :))
