@@ -1,10 +1,14 @@
 include ../config.mak
-CFLAGS= $(OPTFLAGS) -Wall -g -I../libavcodec -DHAVE_AV_CONFIG_H
+
+VPATH=$(SRC_PATH)/libav
+PWD=$(shell pwd)
+
+CFLAGS= $(OPTFLAGS) -Wall -g -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H
 
 OBJS= rm.o mpeg.o asf.o avienc.o jpeg.o swf.o wav.o raw.o \
 	 avidec.o ffm.o \
 	 avio.o aviobuf.o utils.o \
-	 file.o img.o au.o gif.o mov.o
+	 file.o img.o au.o gif.o mov.o crc.o
 
 ifeq ($(CONFIG_GRAB),yes)
 OBJS+= grab.o audio.o 
