@@ -2374,6 +2374,82 @@ H264_MC(avg_, 16)
 #undef op2_put
 #endif
 
+static inline uint8_t clip1(int x){
+    if(x > 255) return 255;
+    if(x < 0)   return 0;
+    return x;
+}
+#define op_scale1(x)  block[x] = clip1( (block[x]*weight + offset) >> log2_denom )
+#define op_scale2(x)  dst[x] = clip( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1), 0, 255 )
+#define H264_WEIGHT(W,H) \
+static void weight_h264_pixels ## W ## x ## H ## _c(uint8_t *block, int stride, int log2_denom, int weight, int offset){ \
+    int x, y; \
+    offset <<= log2_denom; \
+    if(log2_denom) offset += 1<<(log2_denom-1); \
+    for(y=0; y<H; y++, block += stride){ \
+        op_scale1(0); \
+        op_scale1(1); \
+        if(W==2) continue; \
+        op_scale1(2); \
+        op_scale1(3); \
+        if(W==4) continue; \
+        op_scale1(4); \
+        op_scale1(5); \
+        op_scale1(6); \
+        op_scale1(7); \
+        if(W==8) continue; \
+        op_scale1(8); \
+        op_scale1(9); \
+        op_scale1(10); \
+        op_scale1(11); \
+        op_scale1(12); \
+        op_scale1(13); \
+        op_scale1(14); \
+        op_scale1(15); \
+    } \
+} \
+static void biweight_h264_pixels ## W ## x ## H ## _c(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offsetd, int offsets){ \
+    int x, y; \
+    int offset = (offsets + offsetd + 1) >> 1; \
+    offset = ((offset << 1) + 1) << log2_denom; \
+    for(y=0; y<H; y++, dst += stride, src += stride){ \
+        op_scale2(0); \
+        op_scale2(1); \
+        if(W==2) continue; \
+        op_scale2(2); \
+        op_scale2(3); \
+        if(W==4) continue; \
+        op_scale2(4); \
+        op_scale2(5); \
+        op_scale2(6); \
+        op_scale2(7); \
+        if(W==8) continue; \
+        op_scale2(8); \
+        op_scale2(9); \
+        op_scale2(10); \
+        op_scale2(11); \
+        op_scale2(12); \
+        op_scale2(13); \
+        op_scale2(14); \
+        op_scale2(15); \
+    } \
+}
+
+H264_WEIGHT(16,16)
+H264_WEIGHT(16,8)
+H264_WEIGHT(8,16)
+H264_WEIGHT(8,8)
+H264_WEIGHT(8,4)
+H264_WEIGHT(4,8)
+H264_WEIGHT(4,4)
+H264_WEIGHT(4,2)
+H264_WEIGHT(2,4)
+H264_WEIGHT(2,2)
+
+#undef op_scale1
+#undef op_scale2
+#undef H264_WEIGHT
+
 static void wmv2_mspel8_h_lowpass(uint8_t *dst, uint8_t *src, int dstStride, int srcStride, int h){
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
     int i;
@@ -3603,6 +3679,27 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->avg_h264_chroma_pixels_tab[0]= avg_h264_chroma_mc8_c;
     c->avg_h264_chroma_pixels_tab[1]= avg_h264_chroma_mc4_c;
     c->avg_h264_chroma_pixels_tab[2]= avg_h264_chroma_mc2_c;
+
+    c->weight_h264_pixels_tab[0]= weight_h264_pixels16x16_c;
+    c->weight_h264_pixels_tab[1]= weight_h264_pixels16x8_c;
+    c->weight_h264_pixels_tab[2]= weight_h264_pixels8x16_c;
+    c->weight_h264_pixels_tab[3]= weight_h264_pixels8x8_c;
+    c->weight_h264_pixels_tab[4]= weight_h264_pixels8x4_c;
+    c->weight_h264_pixels_tab[5]= weight_h264_pixels4x8_c;
+    c->weight_h264_pixels_tab[6]= weight_h264_pixels4x4_c;
+    c->weight_h264_pixels_tab[7]= weight_h264_pixels4x2_c;
+    c->weight_h264_pixels_tab[8]= weight_h264_pixels2x4_c;
+    c->weight_h264_pixels_tab[9]= weight_h264_pixels2x2_c;
+    c->biweight_h264_pixels_tab[0]= biweight_h264_pixels16x16_c;
+    c->biweight_h264_pixels_tab[1]= biweight_h264_pixels16x8_c;
+    c->biweight_h264_pixels_tab[2]= biweight_h264_pixels8x16_c;
+    c->biweight_h264_pixels_tab[3]= biweight_h264_pixels8x8_c;
+    c->biweight_h264_pixels_tab[4]= biweight_h264_pixels8x4_c;
+    c->biweight_h264_pixels_tab[5]= biweight_h264_pixels4x8_c;
+    c->biweight_h264_pixels_tab[6]= biweight_h264_pixels4x4_c;
+    c->biweight_h264_pixels_tab[7]= biweight_h264_pixels4x2_c;
+    c->biweight_h264_pixels_tab[8]= biweight_h264_pixels2x4_c;
+    c->biweight_h264_pixels_tab[9]= biweight_h264_pixels2x2_c;
 
     c->put_mspel_pixels_tab[0]= put_mspel8_mc00_c;
     c->put_mspel_pixels_tab[1]= put_mspel8_mc10_c;
