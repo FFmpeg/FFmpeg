@@ -361,6 +361,8 @@ library:
 @item WAV@tab X @tab X 
 @item Macromedia Flash@tab X @tab X
 @tab Only embedded audio is decoded
+@item FLV              @tab  X @tab X
+@tab Macromedia Flash video files
 @item Real Audio and Video @tab X @tab X 
 @item Raw AC3 @tab X  @tab  X 
 @item Raw MJPEG @tab X  @tab  X 
@@ -372,7 +374,6 @@ library:
 @tab MPEG4 is a variant of Quicktime
 @item Raw MPEG4 video  @tab  X @tab  X 
 @item DV               @tab  @tab X
-@tab Only the video track is decoded.
 @item 4xm              @tab    @tab X
 @tab 4X Technologies format, used in some games
 @end multitable
@@ -387,10 +388,12 @@ following image formats are supported:
 @multitable @columnfractions .4 .1 .1
 @item Supported Image Format @tab Encoding @tab Decoding @tab Comments
 @item PGM, PPM     @tab X @tab X 
-@item PGMYUV       @tab X @tab X @tab PGM with U and V components in 420
+@item PAM          @tab X @tab X @tab PAM is a PNM extension with alpha support
+@item PGMYUV       @tab X @tab X @tab PGM with U and V components in YUV 4:2:0
 @item JPEG         @tab X @tab X @tab Progressive JPEG is not supported
 @item .Y.U.V       @tab X @tab X @tab One raw file per component
-@item Animated GIF @tab X @tab   @tab Only uncompressed GIFs are generated
+@item Animated GIF @tab X @tab X @tab Only uncompressed GIFs are generated
+@item PNG          @tab X @tab X @tab 2 bit and 4 bit/pixel not supported yet
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -418,6 +421,7 @@ following image formats are supported:
 @item Sorenson Video 3       @tab     @tab  X @tab fourcc: SVQ3
 @item On2 VP3                @tab     @tab  X @tab still experimental
 @item Intel Indeo 3          @tab     @tab  X @tab only works on i386 right now
+@item FLV                    @tab  X  @tab  X @tab Flash H263 variant
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -434,12 +438,19 @@ solutions.
 @item MPEG audio layer 1/3   @tab IX   @tab  IX
 @tab MP3 encoding is supported through the external library LAME
 @item AC3                    @tab  IX  @tab  X
-@tab liba52 is used internally for decoding.
+@tab liba52 is used internally for decoding
 @item Vorbis                 @tab  X   @tab  X
-@tab supported through the external library libvorbis.
+@tab supported through the external library libvorbis
 @item WMA V1/V2              @tab      @tab X
 @item Microsoft ADPCM        @tab X    @tab X
 @item IMA ADPCM              @tab X    @tab X
+@item RA144                  @tab      @tab X
+@tab Real 14400 bit/s codec
+@item RA288                  @tab      @tab X
+@tab Real 28800 bit/s codec
+@item AMR-NB                 @tab X    @tab X
+@tab supported through an external library
+@item DV audio               @tab      @tab X
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
