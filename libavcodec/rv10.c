@@ -404,7 +404,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
     }
 //    printf("%d %d %d %d %d\n", seq, (int)s->time, (int)s->last_non_b_time, s->pp_time, s->pb_time);
 
-    ff_h263_decode_mba(s);    
+    mb_pos= ff_h263_decode_mba(s);
     s->no_rounding= get_bits1(&s->gb);
     
     s->f_code = 1;
