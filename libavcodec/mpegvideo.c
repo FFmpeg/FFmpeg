@@ -1850,8 +1850,18 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
     copy_picture_attributes(pic, pic_arg);
     
     pic->display_picture_number= s->input_picture_number++;
+    if(pic->pts){ 
+        s->user_specified_pts= pic->pts;
+    }else{
+        if(s->user_specified_pts){
+            pic->pts= s->user_specified_pts + 1000ULL*1000ULL*s->avctx->frame_rate_base / s->avctx->frame_rate;
+            av_log(s->avctx, AV_LOG_INFO, "Warning: AVFrame.pts=0 trying to guess (%Ld)\n", pic->pts);
+        }else{
+            pic->pts= av_rescale(pic->display_picture_number*(int64_t)s->avctx->frame_rate_base, 1000*1000, s->avctx->frame_rate);
+        }
+    }
   }
-
+  
     /* shift buffer entries */
     for(i=1; i<MAX_PICTURE_COUNT /*s->encoding_delay+1*/; i++)
         s->input_picture[i-1]= s->input_picture[i];
