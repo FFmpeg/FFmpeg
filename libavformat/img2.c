@@ -155,7 +155,6 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     st = av_new_stream(s1, 0);
     if (!st) {
-        av_free(s);
         return -ENOMEM;
     }
 
@@ -181,7 +180,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     
     if (!s->is_pipe) {
         if (find_image_range(&first_index, &last_index, s->path) < 0)
-            goto fail;
+            return AVERROR_IO;
         s->img_first = first_index;
         s->img_last = last_index;
         s->img_number = first_index;
@@ -204,10 +203,6 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
 
     return 0;
- 
- fail:
-    av_free(s);
-    return AVERROR_IO;
 }
 
 static int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
