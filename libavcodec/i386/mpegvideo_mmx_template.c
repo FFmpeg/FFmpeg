@@ -53,8 +53,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         if (!s->h263_aic) {
 #if 1
         asm volatile (
-        	"xorl %%edx, %%edx	\n\t"
-        	"mul %%ecx		\n\t"
+        	"imul %%ecx		\n\t"
         	: "=d" (level), "=a"(dummy)
         	: "a" ((block[0]>>2) + q), "c" (inverse[q<<1])
         );

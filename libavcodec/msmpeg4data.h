@@ -1868,7 +1868,10 @@ static const uint8_t *wmv1_scantable[WMV1_SCANTABLE_COUNT+1]={
 };
 
 static const uint8_t table_inter_intra[4][2]={
-    {0,1},{2,2},{6,3},{7,3}
+    {0,1} /*Luma-Left Chroma-Left*/,
+    {2,2} /*Luma-Top  Chroma-Left*/,
+    {6,3} /*luma-Left Chroma-Top */,
+    {7,3} /*luma-Top  Chroma-Top */
 };
 
 #define WMV2_INTER_CBP_TABLE_COUNT 4

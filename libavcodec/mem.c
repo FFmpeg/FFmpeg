@@ -29,6 +29,9 @@
 void *av_malloc(unsigned int size)
 {
     void *ptr;
+    
+//    if(size==0) return NULL;
+    
 #if defined (HAVE_MEMALIGN)
     ptr = memalign(16,size);
     /* Why 64? 

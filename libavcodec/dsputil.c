@@ -1807,7 +1807,7 @@ static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *s
     
     memcpy(bak, temp, 64*sizeof(DCTELEM));
     
-    s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
+    s->block_last_index[0/*FIXME*/]= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
     s->dct_unquantize(s, temp, 0, s->qscale);
     simple_idct(temp); //FIXME 
     
@@ -1826,19 +1826,7 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
     uint8_t * last_length;
-
-    s->mb_intra=0;
     
-    if (s->mb_intra) {
-        start_i = 1;
-        length     = s->intra_ac_vlc_length;
-        last_length= s->intra_ac_vlc_last_length;
-    } else {
-        start_i = 0;
-        length     = s->inter_ac_vlc_length;
-        last_length= s->inter_ac_vlc_last_length;
-    }
-
     for(i=0; i<8; i++){
         ((uint32_t*)(bak + i*stride))[0]= ((uint32_t*)(src2 + i*stride))[0];
         ((uint32_t*)(bak + i*stride))[1]= ((uint32_t*)(src2 + i*stride))[1];
@@ -1846,10 +1834,22 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
 
     s->dsp.diff_pixels(temp, src1, src2, stride);
 
-    last= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
-    
+    s->block_last_index[0/*FIXME*/]= last= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
+
     bits=0;
-    if(last>=0){
+    
+    if (s->mb_intra) {
+        start_i = 1; 
+        length     = s->intra_ac_vlc_length;
+        last_length= s->intra_ac_vlc_last_length;
+        bits+= s->luma_dc_vlc_length[temp[0] + 256]; //FIXME chroma
+    } else {
+        start_i = 0;
+        length     = s->inter_ac_vlc_length;
+        last_length= s->inter_ac_vlc_last_length;
+    }
+    
+    if(last>=start_i){
         run=0;
         for(i=start_i; i<last; i++){
             int j= scantable[i];
@@ -1876,6 +1876,9 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
         }else
             bits+= esc_length;
     
+    }
+
+    if(last>=0){
         s->dct_unquantize(s, temp, 0, s->qscale);
     }
     
@@ -1883,7 +1886,7 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
     
     distoration= s->dsp.sse[1](NULL, bak, src1, stride);
 
-    return distoration + ((bits*s->qscale*s->qscale*105 + 64)>>7);
+    return distoration + ((bits*s->qscale*s->qscale*109 + 64)>>7);
 }
 
 static int bit8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int stride){
@@ -1894,25 +1897,25 @@ static int bit8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, in
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
     uint8_t * last_length;
+    
+    s->dsp.diff_pixels(temp, src1, src2, stride);
 
-    s->mb_intra=0;
+    s->block_last_index[0/*FIXME*/]= last= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
+
+    bits=0;
     
     if (s->mb_intra) {
-        start_i = 1;
+        start_i = 1; 
         length     = s->intra_ac_vlc_length;
         last_length= s->intra_ac_vlc_last_length;
+        bits+= s->luma_dc_vlc_length[temp[0] + 256]; //FIXME chroma
     } else {
         start_i = 0;
         length     = s->inter_ac_vlc_length;
         last_length= s->inter_ac_vlc_last_length;
     }
-
-    s->dsp.diff_pixels(temp, src1, src2, stride);
-
-    last= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
     
-    bits=0;
-    if(last>=0){
+    if(last>=start_i){
         run=0;
         for(i=start_i; i<last; i++){
             int j= scantable[i];
@@ -1929,10 +1932,11 @@ static int bit8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, in
                 run++;
         }
         i= scantable[last];
-        
-        assert(level);
-        
+                
         level= temp[i] + 64;
+        
+        assert(level - 64);
+        
         if((level&(~127)) == 0){
             bits+= last_length[UNI_AC_ENC_INDEX(run, level)];
         }else

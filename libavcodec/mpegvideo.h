@@ -98,7 +98,6 @@ typedef struct RateControlContext{
     int last_non_b_pict_type;
 }RateControlContext;
 
-
 typedef struct ScanTable{
     const UINT8 *scantable;
     UINT8 permutated[64];
@@ -117,6 +116,7 @@ typedef struct Picture{
     uint16_t *mb_var;           /* Table for MB variances */
     uint16_t *mc_mb_var;        /* Table for motion compensated MB variances */
     uint8_t *mb_mean;           /* Table for MB luminance */
+    int32_t *mb_cmp_score;	/* Table for MB cmp scores, for mb decission */
     int b_frame_score;          /* */
 } Picture;
 
@@ -142,6 +142,7 @@ typedef struct MotionEstContext{
     int pre_penalty_factor;
     int penalty_factor;
     int sub_penalty_factor;
+    int mb_penalty_factor;
     int pre_pass;                      /* = 1 for the pre pass */
     int dia_size;
     UINT16 (*mv_penalty)[MAX_MV*2+1];  /* amount of bits needed to encode a MV */
@@ -160,6 +161,8 @@ typedef struct MotionEstContext{
                              int P[10][2], int pred_x, int pred_y,
                              int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
                              int ref_mv_scale, uint16_t * const mv_penalty);
+    int (*get_mb_score)(struct MpegEncContext * s, int mx, int my, int pred_x, int pred_y, Picture *ref_picture, 
+                                  uint16_t * const mv_penalty);
 }MotionEstContext;
 
 typedef struct MpegEncContext {
@@ -321,6 +324,8 @@ typedef struct MpegEncContext {
     uint8_t *intra_ac_vlc_last_length;
     uint8_t *inter_ac_vlc_length;
     uint8_t *inter_ac_vlc_last_length;
+    uint8_t *luma_dc_vlc_length;
+    uint8_t *chroma_dc_vlc_length;
 #define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
 
     /* precomputed matrix (combine qscale and DCT renorm) */
@@ -719,6 +724,7 @@ int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 int ff_h263_resync(MpegEncContext *s);
 int ff_h263_get_gob_height(MpegEncContext *s);
 void ff_mpeg4_set_direct_mv(MpegEncContext *s, int mx, int my);
+inline int ff_h263_round_chroma(int x);
 
 
 /* rv10.c */

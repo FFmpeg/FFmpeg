@@ -39,7 +39,7 @@
     qpel_mc_func (*qpel_put)[16];\
     qpel_mc_func (*qpel_avg)[16]= &s->dsp.avg_qpel_pixels_tab[size];\
     const __attribute__((unused)) int unu= time_pp + time_pb + (int)src_u + (int)src_v + (int)ref_u + (int)ref_v\
-                                           + (int)ref2_y + (int)hpel_avg + (int)qpel_avg;\
+                                           + (int)ref2_y + (int)hpel_avg + (int)qpel_avg + (int)score_map;\
     if(s->no_rounding /*FIXME b_type*/){\
         hpel_put= &s->dsp.put_no_rnd_pixels_tab[size];\
         chroma_hpel_put= &s->dsp.put_no_rnd_pixels_tab[size+1];\
@@ -144,6 +144,7 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
     const int my = *my_ptr;   
     const int penalty_factor= s->me.sub_penalty_factor;
     me_cmp_func cmp_sub, chroma_cmp_sub;
+    int bx=2*mx, by=2*my;
 
     LOAD_COMMON(xx, yy);
     
@@ -166,7 +167,6 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
         
     if (mx > xmin && mx < xmax && 
         my > ymin && my < ymax) {
-        int bx=2*mx, by=2*my;
         int d= dmin;
         const int index= (my<<ME_MAP_SHIFT) + mx;
         const int t= score_map[(index-(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)] 
@@ -178,7 +178,7 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
         const int b= score_map[(index+(1<<ME_MAP_SHIFT))&(ME_MAP_SIZE-1)]
                      + (mv_penalty[bx   - pred_x] + mv_penalty[by+2 - pred_y])*s->me.penalty_factor;
     
-#if 0
+#if 1
         int key;
         int map_generation= s->me.map_generation;
         uint32_t *map= s->me.map;
@@ -231,19 +231,49 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
             CHECK_HALF_MV(0, 1, mx  , my)
         }
         assert(bx >= xmin*2 && bx <= xmax*2 && by >= ymin*2 && by <= ymax*2);
-
-        *mx_ptr = bx;
-        *my_ptr = by;
-    }else{
-        *mx_ptr =2*mx;
-        *my_ptr =2*my;
     }
 
+    *mx_ptr = bx;
+    *my_ptr = by;
+    
     return dmin;
 }
 #endif
 
+static int RENAME(hpel_get_mb_score)(MpegEncContext * s, int mx, int my, int pred_x, int pred_y, Picture *ref_picture, 
+                                  uint16_t * const mv_penalty)
+{
+//    const int check_luma= s->dsp.me_sub_cmp != s->dsp.mb_cmp;
+    const int size= 0;
+    const int xx = 16 * s->mb_x;
+    const int yy = 16 * s->mb_y;
+    const int penalty_factor= s->me.mb_penalty_factor;
+    const int xmin= -256*256, ymin= -256*256, xmax= 256*256, ymax= 256*256; //assume that the caller checked these
+    const __attribute__((unused)) int unu2= xmin + xmax +ymin + ymax; //no unused warning shit
+    me_cmp_func cmp_sub, chroma_cmp_sub;
+    int d;
+
+    LOAD_COMMON(xx, yy);
+    
+ //FIXME factorize
+
+    cmp_sub= s->dsp.mb_cmp[size];
+    chroma_cmp_sub= s->dsp.mb_cmp[size+1];
+    
+    assert(!s->me.skip);
+    assert(s->avctx->me_sub_cmp != s->avctx->mb_cmp);
+
+    CMP_HPEL(d, mx&1, my&1, mx>>1, my>>1, size);
+    //FIXME check cbp before adding penalty for (0,0) vector
+    if(mx || my || size>0)
+        d += (mv_penalty[mx - pred_x] + mv_penalty[my - pred_y])*penalty_factor;
+        
+    return d;
+}
+
 #endif /* CMP_HPEL */
+
+
 
 #ifdef CMP_QPEL
 
@@ -476,6 +506,37 @@ static int RENAME(qpel_motion_search)(MpegEncContext * s,
 
     return dmin;
 }
+
+static int RENAME(qpel_get_mb_score)(MpegEncContext * s, int mx, int my, int pred_x, int pred_y, Picture *ref_picture, 
+                                  uint16_t * const mv_penalty)
+{
+    const int size= 0;
+    const int xx = 16 * s->mb_x;
+    const int yy = 16 * s->mb_y;
+    const int penalty_factor= s->me.mb_penalty_factor;
+    const int xmin= -256*256, ymin= -256*256, xmax= 256*256, ymax= 256*256; //assume that the caller checked these
+    const __attribute__((unused)) int unu2= xmin + xmax +ymin + ymax; //no unused warning shit
+    me_cmp_func cmp_sub, chroma_cmp_sub;
+    int d;
+
+    LOAD_COMMON(xx, yy);
+    
+ //FIXME factorize
+
+    cmp_sub= s->dsp.mb_cmp[size];
+    chroma_cmp_sub= s->dsp.mb_cmp[size+1];
+    
+    assert(!s->me.skip);
+    assert(s->avctx->me_sub_cmp != s->avctx->mb_cmp);
+
+    CMP_QPEL(d, mx&3, my&3, mx>>2, my>>2, size);
+    //FIXME check cbp before adding penalty for (0,0) vector
+    if(mx || my || size>0)
+        d += (mv_penalty[mx - pred_x] + mv_penalty[my - pred_y])*penalty_factor;
+        
+    return d;
+}
+
 
 #endif /* CMP_QPEL */
 

@@ -74,8 +74,10 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_pt
 
 extern UINT32 inverse[256];
 
-static UINT16 uni_DCtab_lum  [512][2];
-static UINT16 uni_DCtab_chrom[512][2];
+static UINT8 uni_DCtab_lum_len[512];
+static UINT8 uni_DCtab_chrom_len[512];
+static UINT16 uni_DCtab_lum_bits[512];
+static UINT16 uni_DCtab_chrom_bits[512];
 
 #ifdef CONFIG_ENCODERS
 static UINT16 (*mv_penalty)[MAX_MV*2+1]= NULL;
@@ -1309,8 +1311,8 @@ static void init_uni_dc_tab(void)
                 uni_len++;
             }
         }
-        uni_DCtab_lum[level+256][0]= uni_code;
-        uni_DCtab_lum[level+256][1]= uni_len;
+        uni_DCtab_lum_bits[level+256]= uni_code;
+        uni_DCtab_lum_len [level+256]= uni_len;
 
         /* chrominance */
         uni_code= DCtab_chrom[size][0];
@@ -1324,8 +1326,8 @@ static void init_uni_dc_tab(void)
                 uni_len++;
             }
         }
-        uni_DCtab_chrom[level+256][0]= uni_code;
-        uni_DCtab_chrom[level+256][1]= uni_len;
+        uni_DCtab_chrom_bits[level+256]= uni_code;
+        uni_DCtab_chrom_len [level+256]= uni_len;
 
     }
 }
@@ -1446,6 +1448,8 @@ void h263_encode_init(MpegEncContext *s)
         s->intra_ac_vlc_last_length= uni_mpeg4_intra_rl_len + 128*64;
         s->inter_ac_vlc_length     = uni_mpeg4_inter_rl_len;
         s->inter_ac_vlc_last_length= uni_mpeg4_inter_rl_len + 128*64;
+        s->luma_dc_vlc_length= uni_DCtab_lum_len;
+        s->chroma_dc_vlc_length= uni_DCtab_chrom_len;
         s->ac_esc_length= 7+2+1+6+1+12+1;
         break;
     case CODEC_ID_H263P:
@@ -1957,10 +1961,10 @@ static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
     level+=256;
     if (n < 4) {
 	/* luminance */
-	put_bits(s, uni_DCtab_lum[level][1], uni_DCtab_lum[level][0]);
+	put_bits(s, uni_DCtab_lum_len[level], uni_DCtab_lum_bits[level]);
     } else {
 	/* chrominance */
-	put_bits(s, uni_DCtab_chrom[level][1], uni_DCtab_chrom[level][0]);
+	put_bits(s, uni_DCtab_chrom_len[level], uni_DCtab_chrom_bits[level]);
     }
 #else
     int size, v;
