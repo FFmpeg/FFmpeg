@@ -549,7 +549,7 @@ void MPV_common_end(MpegEncContext *s)
 int MPV_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
-    int i;
+    int i, dummy;
     int chroma_h_shift, chroma_v_shift;
 
     avctx->pix_fmt = PIX_FMT_YUV420P; // FIXME
@@ -645,6 +645,9 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->inter_quant_bias= avctx->inter_quant_bias;
         
     avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift, &chroma_v_shift);
+
+    av_reduce(&s->time_increment_resolution, &dummy, s->avctx->frame_rate, s->avctx->frame_rate_base, (1<<16)-1);
+    s->time_increment_bits = av_log2(s->time_increment_resolution - 1) + 1;
 
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
@@ -872,6 +875,8 @@ int MPV_encode_end(AVCodecContext *avctx)
     MPV_common_end(s);
     if (s->out_format == FMT_MJPEG)
         mjpeg_close(s);
+        
+    av_freep(&avctx->extradata);
       
     return 0;
 }
