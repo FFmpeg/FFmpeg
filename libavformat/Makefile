@@ -20,7 +20,7 @@ OBJS+= asf.o
 endif
 
 # image formats
-OBJS+= pnm.o yuv.o
+OBJS+= pnm.o yuv.o png.o libpng/png.o libpng/pngread.o libpng/pngrutil.o libpng/pngwrite.o libpng/pngwutil.o
 # file I/O
 OBJS+= avio.o aviobuf.o file.o 
 OBJS+= framehook.o 
@@ -63,14 +63,14 @@ SRCS := $(OBJS:.o=.c)
 
 all: $(LIB)
 
-$(LIB): .depend $(OBJS)
+$(LIB): $(OBJS)
 	rm -f $@
 	$(AR) rc $@ $(OBJS)
 ifneq ($(CONFIG_OS2),yes)
 	$(RANLIB) $@
 endif
 
-.depend: $(SRCS)
+depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 installlib: all
