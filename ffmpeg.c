@@ -1725,7 +1725,7 @@ static int av_encode(AVFormatContext **output_files,
                 exit(1);
             }
             if (avcodec_open(&ost->st->codec, codec) < 0) {
-                fprintf(stderr, "Error while opening codec for stream #%d.%d - maybe incorrect parameters such as bit_rate, rate, width or height\n", 
+                fprintf(stderr, "Error while opening codec for output stream #%d.%d - maybe incorrect parameters such as bit_rate, rate, width or height\n", 
                         ost->file_index, ost->index);
                 exit(1);
             }
