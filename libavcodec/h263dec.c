@@ -74,6 +74,7 @@ static int h263_decode_init(AVCodecContext *avctx)
         return -1;
     }
     s->codec_id= avctx->codec->id;
+    avctx->mbskip_table= s->mbskip_table;
     
     /* for h263, we allocate the images after having read the header */
     if (avctx->codec->id != CODEC_ID_H263 && avctx->codec->id != CODEC_ID_MPEG4)
@@ -108,6 +109,8 @@ static int h263_decode_frame(AVCodecContext *avctx,
     printf("*****frame %d size=%d\n", avctx->frame_number, buf_size);
     printf("bytes=%x %x %x %x\n", buf[0], buf[1], buf[2], buf[3]);
 #endif
+
+    s->hurry_up= avctx->hurry_up;
     
     /* no supplementary picture */
     if (buf_size == 0) {
@@ -154,6 +157,8 @@ static int h263_decode_frame(AVCodecContext *avctx,
         return -1;
     /* skip b frames if we dont have reference frames */
     if(s->num_available_buffers<2 && s->pict_type==B_TYPE) return 0;
+    /* skip b frames if we are in a hurry */
+    if(s->hurry_up && s->pict_type==B_TYPE) return 0;
         
     MPV_frame_start(s);
 

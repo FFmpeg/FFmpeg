@@ -1145,6 +1145,9 @@ static inline void put_dct(MpegEncContext *s,
 static inline void add_dct(MpegEncContext *s, 
                            DCTELEM *block, int i, UINT8 *dest, int line_size)
 {
+    /* skip dequant / idct if we are really late ;) */
+    if(s->hurry_up>1) return;
+
     if (s->block_last_index[i] >= 0) {
         if (!s->mpeg2)
             if(s->encoding || (!s->h263_msmpeg4))

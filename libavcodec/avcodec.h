@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4603
-#define LIBAVCODEC_BUILD_STR   "4603"
+#define LIBAVCODEC_BUILD       4604
+#define LIBAVCODEC_BUILD_STR   "4604"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -141,6 +141,8 @@ typedef struct AVCodecContext {
     int key_frame;    /* true if the previous compressed frame was 
                          a key frame (intra, or seekable) */
     int delay;        /* number of frames the decoded output will be delayed relative to the encoded input */
+    uint8_t *mbskip_table; /* =1 if MB didnt change, is only valid for I/P frames 
+                              stride= mb_width = (width+15)>>4 */
     
     /* encoding parameters */
     int quality;      /* quality of the previous encoded frame 
@@ -157,6 +159,9 @@ typedef struct AVCodecContext {
     int rc_strategy;
     int b_frame_strategy;
 
+    int hurry_up;     /* when set to 1 during decoding, b frames will be skiped
+                         when set to 2 idct/dequant will be skipped too */
+    
     struct AVCodec *codec;
     void *priv_data;
 

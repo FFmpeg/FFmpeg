@@ -1187,6 +1187,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     s->mpeg_enc_ctx.picture_number = 0;
     s->repeat_field = 0;
     s->mpeg_enc_ctx.codec_id= avctx->codec->id;
+    avctx->mbskip_table= s->mpeg_enc_ctx.mbskip_table;
     return 0;
 }
 
