@@ -458,6 +458,13 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     put_bits(&s->pb, 1, 0);
             }else
                 s->qscale -= s->dquant;
+            
+            if(!s->progressive_sequence){
+                if(cbp)
+                    put_bits(&s->pb, 1, s->interlaced_dct);
+                if(mb_type) // not diect mode
+                    put_bits(&s->pb, 1, 0); // no interlaced ME yet
+            }
 
             if(interleaved_stats){
                 bits= get_bit_count(&s->pb);
@@ -580,6 +587,12 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 put_bits(pb2, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
                 if(s->dquant)
                     put_bits(pb2, 2, dquant_code[s->dquant+2]);
+
+                if(!s->progressive_sequence){
+                    if(cbp)
+                        put_bits(pb2, 1, s->interlaced_dct);
+                    put_bits(pb2, 1, 0); // no interlaced ME yet
+                }
                     
                 if(interleaved_stats){
                     bits= get_bit_count(&s->pb);
@@ -700,6 +713,10 @@ void mpeg4_encode_mb(MpegEncContext * s,
         put_bits(pb2, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
         if(s->dquant)
             put_bits(dc_pb, 2, dquant_code[s->dquant+2]);
+
+        if(!s->progressive_sequence){
+            put_bits(dc_pb, 1, s->interlaced_dct);
+        }
 
         if(interleaved_stats){
             bits= get_bit_count(&s->pb);
@@ -1511,7 +1528,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     put_bits(&s->pb, 1, 1);		/* marker bit */
     put_bits(&s->pb, 13, s->height);	/* vol height */
     put_bits(&s->pb, 1, 1);		/* marker bit */
-    put_bits(&s->pb, 1, 0);		/* interlace */
+    put_bits(&s->pb, 1, s->progressive_sequence ? 0 : 1);
     put_bits(&s->pb, 1, 1);		/* obmc disable */
     if (vo_ver_id == 1) {
         put_bits(&s->pb, 1, s->vol_sprite_usage=0);		/* sprite enable */
@@ -1586,6 +1603,10 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 	put_bits(&s->pb, 1, s->no_rounding);	/* rounding type */
     }
     put_bits(&s->pb, 3, 0);	/* intra dc VLC threshold */
+    if(!s->progressive_sequence){
+         put_bits(&s->pb, 1, s->top_field_first);
+         put_bits(&s->pb, 1, s->alternate_scan);
+    }
     //FIXME sprite stuff
 
     put_bits(&s->pb, 5, s->qscale);
@@ -4215,7 +4236,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 
     check_marker(&s->gb, "before time_increment");
     time_increment= get_bits(&s->gb, s->time_increment_bits);
-//printf(" type:%d incr:%d increment:%d\n", s->pict_type, time_incr, time_increment);
+//printf(" type:%d modulo_time_base:%d increment:%d\n", s->pict_type, time_incr, time_increment);
     if(s->pict_type!=B_TYPE){
         s->last_time_base= s->time_base;
         s->time_base+= time_incr;

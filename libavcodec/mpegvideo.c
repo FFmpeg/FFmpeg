@@ -450,6 +450,8 @@ int MPV_encode_init(AVCodecContext *avctx)
                         || s->avctx->spatial_cplx_masking
                         || s->avctx->p_masking)
                        && !s->fixed_qscale;
+    
+    s->progressive_sequence= !(avctx->flags & CODEC_FLAG_INTERLACED_DCT);
 
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
@@ -1747,29 +1749,154 @@ static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index
     }
 }
 
+static inline void requantize_coeffs(MpegEncContext *s, DCTELEM block[64], int oldq, int newq, int n)
+{
+    int i;
+    
+    if(s->mb_intra){ 
+        //FIXME requantize, note (mpeg1/h263/h263p-aic dont need it,...)
+        i=1;
+    }else
+        i=0;
+    
+    for(;i<=s->block_last_index[n]; i++){
+        const int j = zigzag_direct[i];
+        int level = block[j];
+        
+        block[j]= ROUNDED_DIV(level*oldq, newq);
+    }
+
+    for(i=s->block_last_index[n]; i>=0; i--){
+        const int j = zigzag_direct[i]; //FIXME other scantabs
+        if(block[j]) break;
+    }
+    s->block_last_index[n]= i;
+}
+
+static inline void auto_requantize_coeffs(MpegEncContext *s, DCTELEM block[6][64])
+{
+    int i,n, newq;
+    const int maxlevel= s->max_qcoeff;
+    const int minlevel= s->min_qcoeff;
+    int largest=0, smallest=0;
+
+    assert(s->adaptive_quant);
+    
+    for(n=0; n<6; n++){
+        if(s->mb_intra) i=1;
+        else            i=0;
+
+        for(;i<=s->block_last_index[n]; i++){
+            const int j = zigzag_direct[i]; //FIXME other scantabs
+            int level = block[n][j];
+            if(largest  < level) largest = level;
+            if(smallest > level) smallest= level;
+        }
+    }
+    
+    for(newq=s->qscale+1; newq<32; newq++){
+        if(   ROUNDED_DIV(smallest*s->qscale, newq) >= minlevel
+           && ROUNDED_DIV(largest *s->qscale, newq) <= maxlevel) 
+            break;
+    }
+        
+    if(s->out_format==FMT_H263){
+        /* h263 like formats cannot change qscale by more than 2 easiely */
+        if(s->avctx->qmin + 2 < newq)
+            newq= s->avctx->qmin + 2;
+    }
+
+    for(n=0; n<6; n++){
+        requantize_coeffs(s, block[n], s->qscale, newq, n);
+        clip_coeffs(s, block[n], s->block_last_index[n]);
+    }
+     
+    s->dquant+= newq - s->qscale;
+    s->qscale= newq;
+}
+#if 0
+static int pix_vcmp16x8(UINT8 *s, int stride){ //FIXME move to dsputil & optimize
+    int score=0;
+    int x,y;
+    
+    for(y=0; y<7; y++){
+        for(x=0; x<16; x+=4){
+            score+= ABS(s[x  ] - s[x  +stride]) + ABS(s[x+1] - s[x+1+stride]) 
+                   +ABS(s[x+2] - s[x+2+stride]) + ABS(s[x+3] - s[x+3+stride]);
+        }
+        s+= stride;
+    }
+    
+    return score;
+}
+
+static int pix_diff_vcmp16x8(UINT8 *s1, UINT8*s2, int stride){ //FIXME move to dsputil & optimize
+    int score=0;
+    int x,y;
+    
+    for(y=0; y<7; y++){
+        for(x=0; x<16; x++){
+            score+= ABS(s1[x  ] - s2[x ] - s1[x  +stride] + s2[x +stride]);
+        }
+        s1+= stride;
+        s2+= stride;
+    }
+    
+    return score;
+}
+#else
+#define SQ(a) ((a)*(a))
+
+static int pix_vcmp16x8(UINT8 *s, int stride){ //FIXME move to dsputil & optimize
+    int score=0;
+    int x,y;
+    
+    for(y=0; y<7; y++){
+        for(x=0; x<16; x+=4){
+            score+= SQ(s[x  ] - s[x  +stride]) + SQ(s[x+1] - s[x+1+stride]) 
+                   +SQ(s[x+2] - s[x+2+stride]) + SQ(s[x+3] - s[x+3+stride]);
+        }
+        s+= stride;
+    }
+    
+    return score;
+}
+
+static int pix_diff_vcmp16x8(UINT8 *s1, UINT8*s2, int stride){ //FIXME move to dsputil & optimize
+    int score=0;
+    int x,y;
+    
+    for(y=0; y<7; y++){
+        for(x=0; x<16; x++){
+            score+= SQ(s1[x  ] - s2[x ] - s1[x  +stride] + s2[x +stride]);
+        }
+        s1+= stride;
+        s2+= stride;
+    }
+    
+    return score;
+}
+
+#endif
 static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 {
     const int mb_x= s->mb_x;
     const int mb_y= s->mb_y;
     int i;
     int skip_dct[6];
-#if 0
-        if (s->interlaced_dct) {
-            dct_linesize = s->linesize * 2;
-            dct_offset = s->linesize;
-        } else {
-            dct_linesize = s->linesize;
-            dct_offset = s->linesize * 8;
-        }
-#endif
+    int dct_offset   = s->linesize*8; //default for progressive frames
+    
     for(i=0; i<6; i++) skip_dct[i]=0;
     
     if(s->adaptive_quant){
         s->dquant= s->qscale_table[mb_x + mb_y*s->mb_width] - s->qscale;
-        if(s->codec_id==CODEC_ID_MPEG4){
+
+        if(s->out_format==FMT_H263){
             if     (s->dquant> 2) s->dquant= 2;
             else if(s->dquant<-2) s->dquant=-2;
-        
+        }
+            
+        if(s->codec_id==CODEC_ID_MPEG4){        
             if(!s->mb_intra){
                 assert(s->dquant==0 || s->mv_type!=MV_TYPE_8X8);
 
@@ -1784,39 +1911,56 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 
     if (s->mb_intra) {
         UINT8 *ptr;
-        int wrap;
+        int wrap_y;
         int emu=0;
 
-        wrap = s->linesize;
-        ptr = s->new_picture[0] + (mb_y * 16 * wrap) + mb_x * 16;
+        wrap_y = s->linesize;
+        ptr = s->new_picture[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
+
         if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
-            emulated_edge_mc(s, ptr, wrap, 16, 16, mb_x*16, mb_y*16, s->width, s->height);
+            emulated_edge_mc(s, ptr, wrap_y, 16, 16, mb_x*16, mb_y*16, s->width, s->height);
             ptr= s->edge_emu_buffer;
             emu=1;
         }
-        get_pixels(s->block[0], ptr               , wrap);
-        get_pixels(s->block[1], ptr            + 8, wrap);
-        get_pixels(s->block[2], ptr + 8 * wrap    , wrap);
-        get_pixels(s->block[3], ptr + 8 * wrap + 8, wrap);
+        
+        if(s->flags&CODEC_FLAG_INTERLACED_DCT){
+            int progressive_score, interlaced_score;
+            
+            progressive_score= pix_vcmp16x8(ptr, wrap_y  ) + pix_vcmp16x8(ptr + wrap_y*8, wrap_y );
+            interlaced_score = pix_vcmp16x8(ptr, wrap_y*2) + pix_vcmp16x8(ptr + wrap_y  , wrap_y*2);
+            
+            if(progressive_score > interlaced_score + 100){
+                s->interlaced_dct=1;
+            
+                dct_offset= wrap_y;
+                wrap_y<<=1;
+            }else
+                s->interlaced_dct=0;
+        }
+        
+        get_pixels(s->block[0], ptr                 , wrap_y);
+        get_pixels(s->block[1], ptr              + 8, wrap_y);
+        get_pixels(s->block[2], ptr + dct_offset    , wrap_y);
+        get_pixels(s->block[3], ptr + dct_offset + 8, wrap_y);
 
         if(s->flags&CODEC_FLAG_GRAY){
             skip_dct[4]= 1;
             skip_dct[5]= 1;
         }else{
-            wrap >>=1;
-            ptr = s->new_picture[1] + (mb_y * 8 * wrap) + mb_x * 8;
+            int wrap_c = s->uvlinesize;
+            ptr = s->new_picture[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
             if(emu){
-                emulated_edge_mc(s, ptr, wrap, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+                emulated_edge_mc(s, ptr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
                 ptr= s->edge_emu_buffer;
             }
-            get_pixels(s->block[4], ptr, wrap);
+            get_pixels(s->block[4], ptr, wrap_c);
 
-            ptr = s->new_picture[2] + (mb_y * 8 * wrap) + mb_x * 8;
+            ptr = s->new_picture[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
             if(emu){
-                emulated_edge_mc(s, ptr, wrap, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
+                emulated_edge_mc(s, ptr, wrap_c, 8, 8, mb_x*8, mb_y*8, s->width>>1, s->height>>1);
                 ptr= s->edge_emu_buffer;
             }
-            get_pixels(s->block[5], ptr, wrap);
+            get_pixels(s->block[5], ptr, wrap_c);
         }
     }else{
         op_pixels_func (*op_pix)[4];
@@ -1830,7 +1974,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         dest_cb = s->current_picture[1] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
         dest_cr = s->current_picture[2] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
         wrap_y = s->linesize;
-        wrap_c = wrap_y>>1;
+        wrap_c = s->uvlinesize;
         ptr_y  = s->new_picture[0] + (mb_y * 16 * wrap_y) + mb_x * 16;
         ptr_cb = s->new_picture[1] + (mb_y * 8 * wrap_c) + mb_x * 8;
         ptr_cr = s->new_picture[2] + (mb_y * 8 * wrap_c) + mb_x * 8;
@@ -1857,10 +2001,28 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             ptr_y= s->edge_emu_buffer;
             emu=1;
         }
+        
+        if(s->flags&CODEC_FLAG_INTERLACED_DCT){
+            int progressive_score, interlaced_score;
+            
+            progressive_score= pix_diff_vcmp16x8(ptr_y           , dest_y           , wrap_y  ) 
+                             + pix_diff_vcmp16x8(ptr_y + wrap_y*8, dest_y + wrap_y*8, wrap_y  );
+            interlaced_score = pix_diff_vcmp16x8(ptr_y           , dest_y           , wrap_y*2)
+                             + pix_diff_vcmp16x8(ptr_y + wrap_y  , dest_y + wrap_y  , wrap_y*2);
+            
+            if(progressive_score > interlaced_score + 600){
+                s->interlaced_dct=1;
+            
+                dct_offset= wrap_y;
+                wrap_y<<=1;
+            }else
+                s->interlaced_dct=0;
+        }
+        
         diff_pixels(s->block[0], ptr_y                 , dest_y                 , wrap_y);
         diff_pixels(s->block[1], ptr_y              + 8, dest_y              + 8, wrap_y);
-        diff_pixels(s->block[2], ptr_y + 8 * wrap_y    , dest_y + 8 * wrap_y    , wrap_y);
-        diff_pixels(s->block[3], ptr_y + 8 * wrap_y + 8, dest_y + 8 * wrap_y + 8, wrap_y);
+        diff_pixels(s->block[2], ptr_y + dct_offset    , dest_y + dct_offset    , wrap_y);
+        diff_pixels(s->block[3], ptr_y + dct_offset + 8, dest_y + dct_offset + 8, wrap_y);
         
         if(s->flags&CODEC_FLAG_GRAY){
             skip_dct[4]= 1;
@@ -1880,10 +2042,11 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 
         /* pre quantization */         
         if(s->mc_mb_var[s->mb_width*mb_y+ mb_x]<2*s->qscale*s->qscale){
+            //FIXME optimize
             if(pix_abs8x8(ptr_y               , dest_y               , wrap_y) < 20*s->qscale) skip_dct[0]= 1;
             if(pix_abs8x8(ptr_y            + 8, dest_y            + 8, wrap_y) < 20*s->qscale) skip_dct[1]= 1;
-            if(pix_abs8x8(ptr_y + 8*wrap_y    , dest_y + 8*wrap_y    , wrap_y) < 20*s->qscale) skip_dct[2]= 1;
-            if(pix_abs8x8(ptr_y + 8*wrap_y + 8, dest_y + 8*wrap_y + 8, wrap_y) < 20*s->qscale) skip_dct[3]= 1;
+            if(pix_abs8x8(ptr_y +dct_offset   , dest_y +dct_offset   , wrap_y) < 20*s->qscale) skip_dct[2]= 1;
+            if(pix_abs8x8(ptr_y +dct_offset+ 8, dest_y +dct_offset+ 8, wrap_y) < 20*s->qscale) skip_dct[3]= 1;
             if(pix_abs8x8(ptr_cb              , dest_cb              , wrap_y) < 20*s->qscale) skip_dct[4]= 1;
             if(pix_abs8x8(ptr_cr              , dest_cr              , wrap_y) < 20*s->qscale) skip_dct[5]= 1;
 #if 0

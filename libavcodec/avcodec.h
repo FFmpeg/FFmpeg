@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4626
-#define LIBAVCODEC_BUILD_STR   "4626"
+#define LIBAVCODEC_BUILD       4627
+#define LIBAVCODEC_BUILD_STR   "4627"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -124,6 +124,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_NOT_TRUNCATED  0x00010000 /* input bitstream is not truncated, except before a startcode 
                                                 allows the last part of a frame to be decoded earlier */
 #define CODEC_FLAG_NORMALIZE_AQP  0x00020000 /* normalize adaptive quantization */
+#define CODEC_FLAG_INTERLACED_DCT 0x00040000 /* use interlaced dct */
 
 /* codec capabilities */
 
