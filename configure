@@ -51,6 +51,7 @@ mp3lame="no"
 a52="yes"
 a52bin="no"
 win32="no"
+cygwin="no"
 lshared="no"
 extralibs="-lm"
 simpleidct="yes"
@@ -92,6 +93,16 @@ CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer"
 SHFLAGS="-dynamiclib"
 extralibs=""
 darwin="yes"
+;;
+CYGWIN*)
+v4l="no"
+audio_oss="yes"
+extralibs=""
+cygwin="yes"
+test -f /usr/include/inttypes.h || \
+test -f /usr/local/include/inttypes.h || \
+echo "Missing inttypes.h, please copy cygwin_inttypes.h to" \
+     "/usr/include/inttypes.h !!!"
 ;;
 *) ;;
 esac
@@ -451,6 +462,11 @@ fi
 
 if test "$win32" = "yes" ; then
   echo "#define CONFIG_WIN32 1" >> $TMPH
+  echo "CONFIG_WIN32=yes" >> config.mak
+fi
+
+if test "$cygwin" = "yes" ; then
+  # setup correct exesuffix
   echo "CONFIG_WIN32=yes" >> config.mak
 fi
 

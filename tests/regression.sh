@@ -43,18 +43,18 @@ pcm_dst="$datadir/out.wav"
 # create the data directory if it does not exists
 mkdir -p $datadir
 
-function do_ffmpeg ()
+do_ffmpeg()
 {
     f="$1"
     shift
     echo $ffmpeg -bitexact $*
     $ffmpeg -bitexact -benchmark $* > $datadir/bench.tmp
-    md5sum $f >> $logfile
+    md5sum -b $f >> $logfile
     expr "`cat $datadir/bench.tmp`" : '.*utime=\(.*s\)' > $datadir/bench2.tmp
     echo `cat $datadir/bench2.tmp` $f >> $benchfile
 }
 
-function do_ffmpeg_crc ()
+do_ffmpeg_crc()
 {
     f="$1"
     shift
