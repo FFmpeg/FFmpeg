@@ -960,6 +960,8 @@ typedef struct AVCodecContext {
 
     /**
      * qscale factor between p and i frames.
+     * if > 0 then the last p frame quantizer will be used (q= lastp_q*factor+offset)
+     * if < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset)
      * - encoding: set by user.
      * - decoding: unused
      */
@@ -967,8 +969,6 @@ typedef struct AVCodecContext {
     
     /**
      * qscale offset between p and i frames.
-     * if > 0 then the last p frame quantizer will be used (q= lastp_q*factor+offset)
-     * if < 0 then normal ratecontrol will be done (q= -normal_q*factor+offset)
      * - encoding: set by user.
      * - decoding: unused
      */
@@ -1490,6 +1490,17 @@ typedef struct AVCodecContext {
      * - decoding: unused.
      */
     int error_rate;
+    
+    /**
+     * MP3 antialias algorithm, see FF_AA_* below.
+     * - encoding: unused
+     * - decoding: set by user
+     */
+    int antialias_algo;
+#define FF_AA_AUTO    0
+#define FF_AA_FASTINT 1 //not implemented yet
+#define FF_AA_INT     2
+#define FF_AA_FLOAT   3
 } AVCodecContext;
 
 

@@ -66,6 +66,8 @@ typedef int32_t MPA_INT;
 #define HEADER_SIZE 4
 #define BACKSTEP_SIZE 512
 
+struct GranuleDef;
+
 typedef struct MPADecodeContext {
     uint8_t inbuf1[2][MPA_MAX_CODED_FRAME_SIZE + BACKSTEP_SIZE];	/* input buffer */
     int inbuf_index;
@@ -93,6 +95,7 @@ typedef struct MPADecodeContext {
 #ifdef DEBUG
     int frame_count;
 #endif
+    void (*compute_antialias)(struct MPADecodeContext *s, struct GranuleDef *g);
 } MPADecodeContext;
 
 /* layer 3 "granule" */
@@ -127,6 +130,9 @@ typedef struct HuffTable {
 
 #include "mpegaudiodectab.h"
 
+static void compute_antialias_integer(MPADecodeContext *s, GranuleDef *g);
+static void compute_antialias_float(MPADecodeContext *s, GranuleDef *g);
+
 /* vlc structure for decoding layer 3 huffman tables */
 static VLC huff_vlc[16]; 
 static uint8_t *huff_code_table[16];
@@ -144,7 +150,8 @@ static uint32_t *table_4_3_value;
 /* intensity stereo coef table */
 static int32_t is_table[2][16];
 static int32_t is_table_lsf[2][2][16];
-static int32_t csa_table[8][2];
+static int32_t csa_table[8][4];
+static float csa_table_float[8][4];
 static int32_t mdct_win[8][36];
 
 /* lower 2 bits: modulo 3, higher bits: shift */
@@ -455,6 +462,10 @@ static int decode_init(AVCodecContext * avctx)
             }
         }
 
+        if(avctx->antialias_algo == FF_AA_INT)
+            s->compute_antialias= compute_antialias_integer;
+        else
+            s->compute_antialias= compute_antialias_float;
         for(i=0;i<8;i++) {
             float ci, cs, ca;
             ci = ci_table[i];
@@ -462,6 +473,13 @@ static int decode_init(AVCodecContext * avctx)
             ca = cs * ci;
             csa_table[i][0] = FIX(cs);
             csa_table[i][1] = FIX(ca);
+            csa_table[i][2] = FIX(ca) + FIX(cs);
+            csa_table[i][3] = FIX(ca) - FIX(cs); 
+            csa_table_float[i][0] = cs;
+            csa_table_float[i][1] = ca;
+            csa_table_float[i][2] = ca + cs;
+            csa_table_float[i][3] = ca - cs; 
+//            printf("%d %d %d %d\n", FIX(cs), FIX(cs-1), FIX(ca), FIX(cs)-FIX(ca));
         }
 
         /* compute mdct windows */
@@ -1892,11 +1910,11 @@ static void compute_stereo(MPADecodeContext *s,
     }
 }
 
-static void compute_antialias(MPADecodeContext *s,
+static void compute_antialias_integer(MPADecodeContext *s,
                               GranuleDef *g)
 {
     int32_t *ptr, *p0, *p1, *csa;
-    int n, tmp0, tmp1, i, j;
+    int n, i, j;
 
     /* we antialias only "long" bands */
     if (g->block_type == 2) {
@@ -1912,17 +1930,85 @@ static void compute_antialias(MPADecodeContext *s,
     for(i = n;i > 0;i--) {
         p0 = ptr - 1;
         p1 = ptr;
-        csa = &csa_table[0][0];
-        for(j=0;j<8;j++) {
-            tmp0 = *p0;
-            tmp1 = *p1;
+        csa = &csa_table[0][0];       
+        for(j=0;j<4;j++) {
+            int tmp0 = *p0;
+            int tmp1 = *p1;
+#if 0
             *p0 = FRAC_RND(MUL64(tmp0, csa[0]) - MUL64(tmp1, csa[1]));
             *p1 = FRAC_RND(MUL64(tmp0, csa[1]) + MUL64(tmp1, csa[0]));
-            p0--;
-            p1++;
-            csa += 2;
+#else
+            int64_t tmp2= MUL64(tmp0 + tmp1, csa[0]);
+            *p0 = FRAC_RND(tmp2 - MUL64(tmp1, csa[2]));
+            *p1 = FRAC_RND(tmp2 + MUL64(tmp0, csa[3]));
+#endif
+            p0--; p1++;
+            csa += 4;
+            tmp0 = *p0;
+            tmp1 = *p1;
+#if 0
+            *p0 = FRAC_RND(MUL64(tmp0, csa[0]) - MUL64(tmp1, csa[1]));
+            *p1 = FRAC_RND(MUL64(tmp0, csa[1]) + MUL64(tmp1, csa[0]));
+#else
+            tmp2= MUL64(tmp0 + tmp1, csa[0]);
+            *p0 = FRAC_RND(tmp2 - MUL64(tmp1, csa[2]));
+            *p1 = FRAC_RND(tmp2 + MUL64(tmp0, csa[3]));
+#endif
+            p0--; p1++;
+            csa += 4;
         }
-        ptr += 18;
+        ptr += 18;       
+    }
+}
+
+static void compute_antialias_float(MPADecodeContext *s,
+                              GranuleDef *g)
+{
+    int32_t *ptr, *p0, *p1;
+    int n, i, j;
+
+    /* we antialias only "long" bands */
+    if (g->block_type == 2) {
+        if (!g->switch_point)
+            return;
+        /* XXX: check this for 8000Hz case */
+        n = 1;
+    } else {
+        n = SBLIMIT - 1;
+    }
+    
+    ptr = g->sb_hybrid + 18;
+    for(i = n;i > 0;i--) {
+        float *csa = &csa_table_float[0][0];       
+        p0 = ptr - 1;
+        p1 = ptr;
+        for(j=0;j<4;j++) {
+            float tmp0 = *p0;
+            float tmp1 = *p1;
+#if 1
+            *p0 = lrintf(tmp0 * csa[0] - tmp1 * csa[1]);
+            *p1 = lrintf(tmp0 * csa[1] + tmp1 * csa[0]);
+#else
+            float tmp2= (tmp0 + tmp1) * csa[0];
+            *p0 = lrintf(tmp2 - tmp1 * csa[2]);
+            *p1 = lrintf(tmp2 + tmp0 * csa[3]);
+#endif
+            p0--; p1++;
+            csa += 4;
+            tmp0 = *p0;
+            tmp1 = *p1;
+#if 1
+            *p0 = lrintf(tmp0 * csa[0] - tmp1 * csa[1]);
+            *p1 = lrintf(tmp0 * csa[1] + tmp1 * csa[0]);
+#else
+            tmp2= (tmp0 + tmp1) * csa[0];
+            *p0 = lrintf(tmp2 - tmp1 * csa[2]);
+            *p1 = lrintf(tmp2 + tmp0 * csa[3]);
+#endif
+            p0--; p1++;
+            csa += 4;
+        }
+        ptr += 18;       
     }
 }
 
@@ -2352,7 +2438,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
 #if defined(DEBUG)
             sample_dump(0, g->sb_hybrid, 576);
 #endif
-            compute_antialias(s, g);
+            s->compute_antialias(s, g);
 #if defined(DEBUG)
             sample_dump(1, g->sb_hybrid, 576);
 #endif
