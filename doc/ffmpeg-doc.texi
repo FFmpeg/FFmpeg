@@ -932,6 +932,10 @@ encoding which ensures that the patch wont be trashed during
 transmission) to the ffmpeg-devel mailinglist, see 
 @url{http://lists.sourceforge.net/lists/listinfo/ffmpeg-devel}
 
+It also helps quite a bit if you tell us what the patch does (for example
+'replaces lrint by lrintf') , and why (for example '*bsd isnt c99 compliant
+and has no lrint()')
+
 @section Regression tests
 
 Before submitting a patch (or committing with CVS), you should at least
