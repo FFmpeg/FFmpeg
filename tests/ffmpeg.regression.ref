@@ -117,9 +117,9 @@ stddev: 10.99 PSNR:27.30 bytes:7602176
 1055278 ./data/out.wav
 d056da679e6d6682812fffb28a7f0db6 *./data/a-ac3.rm
 97983 ./data/a-ac3.rm
-ca36e726f055dbd45c217db6e240a15c *./data/a-g726.wav
+69526b38166395785eec8ccfb90a105e *./data/a-g726.wav
 24332 ./data/a-g726.wav
-0d06dca7464958b5ee7798e6eab3c6cd *./data/out.wav
+20cb2fcffd33573a60c93d4dceacd1d1 *./data/out.wav
 97190 ./data/out.wav
 bdc512b78e2ccb1d815aec08794650eb *./data/a-adpcm_ima.wav
 266288 ./data/a-adpcm_ima.wav

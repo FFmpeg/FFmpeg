@@ -104,7 +104,7 @@ void av_build_filter(int16_t *filter, double factor, int tap_count, int phase_co
 
         /* normalize so that an uniform color remains the same */
         for(i=0;i<tap_count;i++) {
-            v = clip(lrintf(tab[i] * scale / norm) + e, -32768, 32767);
+            v = clip(lrintf(tab[i] * scale / norm + e), -32768, 32767);
             filter[ph * tap_count + i] = v;
             e += tab[i] * scale / norm - v;
         }
