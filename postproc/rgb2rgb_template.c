@@ -545,9 +545,9 @@ static inline void RENAME(rgb32tobgr32)(const uint8_t *src, uint8_t *dst, unsign
 		"movq %%mm0, %%mm2		\n\t"
 		"pslld $16, %%mm0		\n\t"
 		"psrld $16, %%mm1		\n\t"
-		"pand mask32r, %%mm0		\n\t"
-		"pand mask32g, %%mm2		\n\t"
-		"pand mask32b, %%mm1		\n\t"
+		"pand "MANGLE(mask32r)", %%mm0		\n\t"
+		"pand "MANGLE(mask32g)", %%mm2		\n\t"
+		"pand "MANGLE(mask32b)", %%mm1		\n\t"
 		"por %%mm0, %%mm2		\n\t"
 		"por %%mm1, %%mm2		\n\t"
 		MOVNTQ" %%mm2, (%1, %%eax)	\n\t"
@@ -915,8 +915,8 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 		{
 			asm volatile(
 				"movl %2, %%eax			\n\t"
-				"movq bgr2YCoeff, %%mm6		\n\t"
-				"movq w1111, %%mm5		\n\t"
+				"movq "MANGLE(bgr2YCoeff)", %%mm6		\n\t"
+				"movq "MANGLE(w1111)", %%mm5		\n\t"
 				"pxor %%mm7, %%mm7		\n\t"
 				"leal (%%eax, %%eax, 2), %%ebx	\n\t"
 				".balign 16			\n\t"
@@ -974,7 +974,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 				"psraw $7, %%mm4		\n\t"
 
 				"packuswb %%mm4, %%mm0		\n\t"
-				"paddusb bgr2YOffset, %%mm0	\n\t"
+				"paddusb "MANGLE(bgr2YOffset)", %%mm0	\n\t"
 
 				MOVNTQ" %%mm0, (%1, %%eax)	\n\t"
 				"addl $8, %%eax			\n\t"
@@ -988,8 +988,8 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 		src -= srcStride*2;
 		asm volatile(
 			"movl %4, %%eax			\n\t"
-			"movq w1111, %%mm5		\n\t"
-			"movq bgr2UCoeff, %%mm6		\n\t"
+			"movq "MANGLE(w1111)", %%mm5		\n\t"
+			"movq "MANGLE(bgr2UCoeff)", %%mm6		\n\t"
 			"pxor %%mm7, %%mm7		\n\t"
 			"leal (%%eax, %%eax, 2), %%ebx	\n\t"
 			"addl %%ebx, %%ebx		\n\t"
@@ -1038,8 +1038,8 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"psrlw $2, %%mm0		\n\t"
 			"psrlw $2, %%mm2		\n\t"
 #endif
-			"movq bgr2VCoeff, %%mm1		\n\t"
-			"movq bgr2VCoeff, %%mm3		\n\t"
+			"movq "MANGLE(bgr2VCoeff)", %%mm1		\n\t"
+			"movq "MANGLE(bgr2VCoeff)", %%mm3		\n\t"
 
 			"pmaddwd %%mm0, %%mm1		\n\t"
 			"pmaddwd %%mm2, %%mm3		\n\t"
@@ -1096,12 +1096,12 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"paddw %%mm1, %%mm5		\n\t"
 			"paddw %%mm3, %%mm2		\n\t"
 			"paddw %%mm5, %%mm2		\n\t"
-			"movq w1111, %%mm5		\n\t"
+			"movq "MANGLE(w1111)", %%mm5		\n\t"
 			"psrlw $2, %%mm4		\n\t"
 			"psrlw $2, %%mm2		\n\t"
 #endif
-			"movq bgr2VCoeff, %%mm1		\n\t"
-			"movq bgr2VCoeff, %%mm3		\n\t"
+			"movq "MANGLE(bgr2VCoeff)", %%mm1		\n\t"
+			"movq "MANGLE(bgr2VCoeff)", %%mm3		\n\t"
 
 			"pmaddwd %%mm4, %%mm1		\n\t"
 			"pmaddwd %%mm2, %%mm3		\n\t"
@@ -1125,7 +1125,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 			"punpckldq %%mm4, %%mm0		\n\t"
 			"punpckhdq %%mm4, %%mm1		\n\t"
 			"packsswb %%mm1, %%mm0		\n\t"
-			"paddb bgr2UVOffset, %%mm0	\n\t"
+			"paddb "MANGLE(bgr2UVOffset)", %%mm0	\n\t"
 
 			"movd %%mm0, (%2, %%eax)	\n\t"
 			"punpckhdq %%mm0, %%mm0		\n\t"

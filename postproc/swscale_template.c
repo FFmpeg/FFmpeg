@@ -1647,8 +1647,8 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, int width)
 #ifdef HAVE_MMX
 	asm volatile(
 		"movl %2, %%eax			\n\t"
-		"movq bgr2YCoeff, %%mm6		\n\t"
-		"movq w1111, %%mm5		\n\t"
+		"movq "MANGLE(bgr2YCoeff)", %%mm6		\n\t"
+		"movq "MANGLE(w1111)", %%mm5		\n\t"
 		"pxor %%mm7, %%mm7		\n\t"
 		"leal (%%eax, %%eax, 2), %%ebx	\n\t"
 		".balign 16			\n\t"
@@ -1706,7 +1706,7 @@ static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, int width)
 		"psraw $7, %%mm4		\n\t"
 
 		"packuswb %%mm4, %%mm0		\n\t"
-		"paddusb bgr2YOffset, %%mm0	\n\t"
+		"paddusb "MANGLE(bgr2YOffset)", %%mm0	\n\t"
 
 		"movq %%mm0, (%1, %%eax)	\n\t"
 		"addl $8, %%eax			\n\t"
@@ -1732,8 +1732,8 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 #ifdef HAVE_MMX
 	asm volatile(
 		"movl %4, %%eax			\n\t"
-		"movq w1111, %%mm5		\n\t"
-		"movq bgr2UCoeff, %%mm6		\n\t"
+		"movq "MANGLE(w1111)", %%mm5		\n\t"
+		"movq "MANGLE(bgr2UCoeff)", %%mm6		\n\t"
 		"pxor %%mm7, %%mm7		\n\t"
 		"leal (%%eax, %%eax, 2), %%ebx	\n\t"
 		"addl %%ebx, %%ebx		\n\t"
@@ -1782,8 +1782,8 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"psrlw $2, %%mm0		\n\t"
 		"psrlw $2, %%mm2		\n\t"
 #endif
-		"movq bgr2VCoeff, %%mm1		\n\t"
-		"movq bgr2VCoeff, %%mm3		\n\t"
+		"movq "MANGLE(bgr2VCoeff)", %%mm1		\n\t"
+		"movq "MANGLE(bgr2VCoeff)", %%mm3		\n\t"
 		
 		"pmaddwd %%mm0, %%mm1		\n\t"
 		"pmaddwd %%mm2, %%mm3		\n\t"
@@ -1840,12 +1840,12 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"paddw %%mm1, %%mm5		\n\t"
 		"paddw %%mm3, %%mm2		\n\t"
 		"paddw %%mm5, %%mm2		\n\t"
-		"movq w1111, %%mm5		\n\t"
+		"movq "MANGLE(w1111)", %%mm5		\n\t"
 		"psrlw $2, %%mm4		\n\t"
 		"psrlw $2, %%mm2		\n\t"
 #endif
-		"movq bgr2VCoeff, %%mm1		\n\t"
-		"movq bgr2VCoeff, %%mm3		\n\t"
+		"movq "MANGLE(bgr2VCoeff)", %%mm1		\n\t"
+		"movq "MANGLE(bgr2VCoeff)", %%mm3		\n\t"
 		
 		"pmaddwd %%mm4, %%mm1		\n\t"
 		"pmaddwd %%mm2, %%mm3		\n\t"
@@ -1869,7 +1869,7 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		"punpckldq %%mm4, %%mm0		\n\t"
 		"punpckhdq %%mm4, %%mm1		\n\t"
 		"packsswb %%mm1, %%mm0		\n\t"
-		"paddb bgr2UVOffset, %%mm0	\n\t"
+		"paddb "MANGLE(bgr2UVOffset)", %%mm0	\n\t"
 
 		"movd %%mm0, (%2, %%eax)	\n\t"
 		"punpckhdq %%mm0, %%mm0		\n\t"

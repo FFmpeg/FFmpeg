@@ -11,6 +11,7 @@
 #include "../config.h"
 #include "rgb2rgb.h"
 #include "../cpudetect.h"
+#include "../mangle.h"
 
 #ifdef ARCH_X86
 #define CAN_COMPILE_X86_ASM
