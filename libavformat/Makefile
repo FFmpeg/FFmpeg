@@ -20,6 +20,7 @@ OBJS+=mpeg.o mpegts.o mpegtsenc.o ffm.o crc.o img.o raw.o rm.o \
 
 ifeq ($(CONFIG_RISKY),yes)
 OBJS+= asf.o
+OBJS+= asf-enc.o
 endif
 
 ifeq ($(AMR_NB),yes)
