@@ -172,6 +172,7 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
     int i;
      
     avfcontext->ctx_flags |= AVFMTCTX_NOHEADER;
+    av_set_pts_info(avfcontext, 60, 1, AV_TIME_BASE);
      
     ogg_sync_init(&context->oy) ;
     buf = ogg_sync_buffer(&context->oy, DECODER_BUFFER_SIZE) ;
@@ -218,6 +219,9 @@ static int ogg_read_packet(AVFormatContext *avfcontext, AVPacket *pkt) {
 	return -EIO ;
     pkt->stream_index = 0 ;
     memcpy(pkt->data, op.packet, op.bytes);
+    if(avfcontext->streams[0]->codec.sample_rate && op.granulepos!=-1)
+        pkt->pts= av_rescale(op.granulepos, AV_TIME_BASE, avfcontext->streams[0]->codec.sample_rate);
+//    printf("%lld %d %d\n", pkt->pts, (int)op.granulepos, avfcontext->streams[0]->codec.sample_rate);
 
     return op.bytes;
 }
