@@ -176,12 +176,18 @@ void put_be32(ByteIOContext *s, unsigned int val)
     put_byte(s, val);
 }
 
-void put_native_double(ByteIOContext *s, double val)
+/* IEEE format is assumed */
+void put_be64_double(ByteIOContext *s, double val)
 {
-    put_buffer(s, (const unsigned char *) &val, sizeof(val));
+    union {
+        double d;
+        UINT64 ull;
+    } u;
+    u.d = val;
+    put_be64(s, u.ull);
 }
 
-void put_native_string(ByteIOContext *s, const char *str)
+void put_strz(ByteIOContext *s, const char *str)
 {
     if (str)
         put_buffer(s, (const unsigned char *) str, strlen(str) + 1);
@@ -339,16 +345,18 @@ unsigned int get_be32(ByteIOContext *s)
     return val;
 }
 
-double get_native_double(ByteIOContext *s)
+double get_be64_double(ByteIOContext *s)
 {
-    double val;
+    union {
+        double d;
+        UINT64 ull;
+    } u;
 
-    get_buffer(s, (unsigned char *) &val, sizeof(val));
-
-    return val;
+    u.ull = get_be64(s);
+    return u.d;
 }
 
-char *get_native_string(ByteIOContext *s, char *buf, int maxlen)
+char *get_strz(ByteIOContext *s, char *buf, int maxlen)
 {
     int i = 0;
     char c;
