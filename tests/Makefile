@@ -7,6 +7,7 @@ include ../config.mak
 VPATH=$(SRC_PATH)/tests
 CFLAGS=-O2 -Wall -g
 REFFILE=$(SRC_PATH)/tests/ffmpeg.regression.ref
+LIBAV_REFFILE=$(SRC_PATH)/tests/libav.regression.ref
 
 all: test
 
@@ -14,9 +15,9 @@ all: test
 test mpeg4 mpeg: vsynth1/0.pgm asynth1.sw
 	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE)
 
-# update the regression test with the current results
-updatetest:
-	cp /tmp/ffmpeg.regression $(REFFILE)
+# fast regression for libav formats
+libavtest: vsynth1/0.pgm asynth1.sw
+	@$(SRC_PATH)/tests/regression.sh $@ $(LIBAV_REFFILE)
 
 # video generation 
 

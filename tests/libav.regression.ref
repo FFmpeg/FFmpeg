@@ -1,0 +1,25 @@
+ffmpeg regression test
+ef90f12bc797e5e5a1b861842337ea07  /tmp/a-libav.avi
+/tmp/a-libav.avi CRC=3a24751b
+1b4c24ad5186d7f636a3ef9e94fa0d0c  /tmp/a-libav.asf
+/tmp/a-libav.asf CRC=3a24751b
+4508a1cbbe65a42e7da42b680b8ef7e5  /tmp/a-libav.rm
+e5956eba346efaf8d485c8e595672f15  /tmp/a-libav.mpg
+/tmp/a-libav.mpg CRC=917d4442
+bb02e59ef519ef72bcfcfc0265ac2965  /tmp/a-libav.ffm
+7a03394d82a1437a45143768b7544116  /tmp/a-libav.mjpeg
+aff140ce80a1c86c1bf54118ad23da7b  /tmp/a-libav.pgmpipe
+/tmp/a-libav.pgmpipe CRC=50151823
+5f50d148d57d25a900a071a5c471df9e  /tmp/a-libav.ppmpipe
+/tmp/a-libav.ppmpipe CRC=12f0c2c6
+5f50d148d57d25a900a071a5c471df9e  /tmp/a-libav.gif
+/tmp/a-libav%d.pgm CRC=50151823
+/tmp/a-libav%d.ppm CRC=b24e0c74
+8854ea97f2d2172383941b001c69228b  /tmp/a-libav.wav
+/tmp/a-libav.wav CRC=f1ae5536
+8bce9c3758b0d38da2e0718b6ab57fb4  /tmp/a-libav.al
+/tmp/a-libav.al CRC=5e6d372b
+e64027a96ad5907ee281deff3286da0a  /tmp/a-libav.ul
+/tmp/a-libav.ul CRC=e028b50a
+dbd11f783219485cae32024e47c19dfb  /tmp/a-libav.au
+/tmp/a-libav.au CRC=f1ae5536
