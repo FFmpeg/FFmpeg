@@ -514,7 +514,8 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
 
-    s->force_type= avctx->force_type;
+    s->force_type= (avctx->flags&CODEC_FLAG_TYPE) ?
+	(avctx->key_frame ? I_TYPE : P_TYPE) : 0;
     if (!s->intra_only) {
         /* first picture of GOP is intra */
         if (s->picture_in_gop_number % s->gop_size==0 || s->force_type==I_TYPE){

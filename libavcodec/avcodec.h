@@ -69,6 +69,7 @@ extern int motion_estimation_method;
 #define CODEC_FLAG_B      0x0008 /* use B frames */
 #define CODEC_FLAG_QPEL   0x0010 /* use qpel MC */
 #define CODEC_FLAG_GMC    0x0020 /* use GMC */
+#define CODEC_FLAG_TYPE   0x0040 /* fixed I/P frame type, from avctx->key_frame */
 
 /* codec capabilities */
 
@@ -121,8 +122,6 @@ typedef struct AVCodecContext {
     int qmax;         /* max qscale */
     int max_qdiff;    /* max qscale difference between frames */
     
-    int force_type;   /* 0= no force, otherwise I_TYPE, P_TYPE, ... */
-
     struct AVCodec *codec;
     void *priv_data;
 
