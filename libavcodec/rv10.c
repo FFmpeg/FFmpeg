@@ -223,8 +223,18 @@ int rv_decode_dc(MpegEncContext *s, int n)
 /* write RV 1.0 compatible frame header */
 void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 {
-    align_put_bits(&s->pb);
+    int full_frame= 1;
 
+    align_put_bits(&s->pb);
+    
+    if(full_frame){
+        put_bits(&s->pb, 8, 0xc0);	/* packet header */
+        put_bits(&s->pb, 16, 0x4000);	/* len */
+        put_bits(&s->pb, 16, 0x4000);	/* pos */
+    }
+
+    put_bits(&s->pb, 8, picture_number&0xFF);
+    
     put_bits(&s->pb, 1, 1);	/* marker */
 
     put_bits(&s->pb, 1, (s->pict_type == P_TYPE));
@@ -238,9 +248,11 @@ void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
     }
     /* if multiple packets per frame are sent, the position at which
        to display the macro blocks is coded here */
-    put_bits(&s->pb, 6, 0);	/* mb_x */
-    put_bits(&s->pb, 6, 0);	/* mb_y */
-    put_bits(&s->pb, 12, s->mb_width * s->mb_height);
+    if(!full_frame){
+        put_bits(&s->pb, 6, 0);	/* mb_x */
+        put_bits(&s->pb, 6, 0);	/* mb_y */
+        put_bits(&s->pb, 12, s->mb_width * s->mb_height);
+    }
 
     put_bits(&s->pb, 3, 0);	/* ignored */
 }
