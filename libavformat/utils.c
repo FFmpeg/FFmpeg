@@ -605,7 +605,7 @@ int av_find_stream_info(AVFormatContext *ic)
                            TS case we do not do it because it would be
                            too long */
                         st->codec_info_nb_real_frames++;
-                        st->codec_info_nb_repeat_frames += st->codec.repeat_pict;
+                        st->codec_info_nb_repeat_frames += st->codec.coded_frame->repeat_pict;
 #if 0
                         /* XXX: testing */
                         if ((st->codec_info_nb_real_frames % 24) == 23) {

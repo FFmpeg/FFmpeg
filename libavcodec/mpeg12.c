@@ -1786,7 +1786,21 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         s->first_slice = 0;
         if(MPV_frame_start(s, avctx) < 0)
             return DECODE_SLICE_FATAL_ERROR;
-            
+        /* first check if we must repeat the frame */
+        s->current_picture.repeat_pict = 0;
+
+        if (s->repeat_first_field) {
+            if (s->progressive_sequence) {
+                if (s->top_field_first)
+                    s->current_picture.repeat_pict = 4;
+                else
+                    s->current_picture.repeat_pict = 2;
+            } else if (s->progressive_frame) {
+                s->current_picture.repeat_pict = 1;
+            }
+        }         
+//        printf("%d \n", s->current_picture.repeat_pict);
+
         if(s->avctx->debug&FF_DEBUG_PICT_INFO){
              printf("qp:%d fc:%2d%2d%2d%2d %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n", 
                  s->qscale, s->mpeg_f_code[0][0],s->mpeg_f_code[0][1],s->mpeg_f_code[1][0],s->mpeg_f_code[1][1],
@@ -2146,29 +2160,6 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                         ret = mpeg_decode_slice(avctx, picture,
                                                 start_code, s->buffer, input_size);
                         if (ret == DECODE_SLICE_EOP) {
-                            /* got a picture: exit */
-                            /* first check if we must repeat the frame */
-                            avctx->repeat_pict = 0;
-#if 0
-                            if (s2->progressive_frame && s2->repeat_first_field) {
-                                //fprintf(stderr,"\nRepeat this frame: %d! pict: %d",avctx->frame_number,s2->picture_number);
-                                //s2->repeat_first_field = 0;
-                                //s2->progressive_frame = 0;
-                                if (++s->repeat_field > 2)
-                                    s->repeat_field = 0;
-                                avctx->repeat_pict = 1;
-                            }
-#endif                      
-                            if (s2->repeat_first_field) {
-                                if (s2->progressive_sequence) {
-                                    if (s2->top_field_first)
-                                        avctx->repeat_pict = 4;
-                                    else
-                                        avctx->repeat_pict = 2;
-                                } else if (s2->progressive_frame) {
-                                    avctx->repeat_pict = 1;
-                                }
-                            }         
                             *data_size = sizeof(AVPicture);
                             goto the_end;
                         }else if(ret<0){

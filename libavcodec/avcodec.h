@@ -16,8 +16,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4657
-#define LIBAVCODEC_BUILD_STR   "4657"
+#define LIBAVCODEC_BUILD       4658
+#define LIBAVCODEC_BUILD_STR   "4658"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -280,6 +280,15 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
      * Note: user allocated (direct rendering) & internal buffers can not coexist currently\ 
      */\
     int type;\
+    \
+    /**\
+     * when decoding, this signal how much the picture must be delayed.\
+     * extra_delay = repeat_pict / (2*fps)\
+     * encoding: unused\
+     * decoding: set by lavc\
+     */\
+    int repeat_pict;
+
 
 #define FF_BUFFER_TYPE_INTERNAL 1
 #define FF_BUFFER_TYPE_USER     2 // Direct rendering buffers
@@ -379,11 +388,7 @@ typedef struct AVCodecContext {
      * decoding: set by lavc.
      */
     enum PixelFormat pix_fmt;
-    
-    int repeat_pict; /* when decoding, this signal how much the picture */
-                     /* must be delayed.                                */
-                     /* extra_delay = (repeat_pict / 2) * (1/fps)       */
-    
+        
     /**
      * if non NULL, 'draw_horiz_band' is called by the libavcodec
      * decoder to draw an horizontal band. It improve cache usage. Not
