@@ -51,13 +51,52 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
   }
 }
 
-/* TODO: MMX optimization */
 void rgb32to24(uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
   uint8_t *dest = dst;
   uint8_t *s = src;
   uint8_t *end;
+#ifdef HAVE_MMX
+  const uint64_t mask24l = 0x0000000000FFFFFFULL;
+  const uint64_t mask24h = 0x0000FFFFFF000000ULL;
+  uint8_t *mm_end;
+#endif
   end = s + src_size;
+#ifdef HAVE_MMX
+  __asm __volatile(PREFETCH" %0\n\t"::"m"(*s):"memory");
+  mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
+  __asm __volatile(
+    "movq %0, %%mm7\n\t"
+    "movq %1, %%mm6\n\t"
+    ::"m"(mask24l),"m"(mask24h):"memory");
+  if(mm_end == end) mm_end -= MMREG_SIZE*2;
+  while(s < mm_end)
+  {
+    __asm __volatile(
+	PREFETCH" 32%1\n\t"
+	"movq	%1, %%mm0\n\t"
+	"movq	8%1, %%mm1\n\t"
+	"movq	%%mm0, %%mm2\n\t"
+	"movq	%%mm1, %%mm3\n\t"
+	"psrlq	$8, %%mm2\n\t"
+	"psrlq	$8, %%mm3\n\t"
+	"pand	%%mm7, %%mm0\n\t"
+	"pand	%%mm7, %%mm1\n\t"
+	"pand	%%mm6, %%mm2\n\t"
+	"pand	%%mm6, %%mm3\n\t"
+	"por	%%mm2, %%mm0\n\t"
+	"por	%%mm3, %%mm1\n\t"
+	MOVNTQ"	%%mm0, %0\n\t"
+	MOVNTQ"	%%mm1, 6%0"
+	:"=m"(*dest)
+	:"m"(*s)
+	:"memory");
+    dest += 12;
+    s += 16;
+  }
+  __asm __volatile(SFENCE:::"memory");
+  __asm __volatile(EMMS:::"memory");
+#endif
   while(s < end)
   {
     *dest++ = *s++;
@@ -66,6 +105,8 @@ void rgb32to24(uint8_t *src,uint8_t *dst,uint32_t src_size)
     s++;
   }
 }
+
+/* TODO: 3DNOW, MMX2 optimization */
 
 /* Original by Strepto/Astral
  ported to gcc & bugfixed : A'rpi */
