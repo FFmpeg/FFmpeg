@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * gmc & q-pel support by Michael Niedermayer <michaelni@gmx.at>
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -469,7 +471,7 @@ static inline void avg4_block(UINT8 *dst, UINT8 *src1, UINT8 *src2, UINT8 *src3,
         dst+=dstStride;
         src1+=srcStride;
         src2+=8;
-        src3+=9;
+        src3+=8;
         src4+=8;
     }
 }
@@ -520,42 +522,42 @@ static void qpel_mc03_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcS
 static void qpel_mc11_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
 {\
     UINT8 halfH[72];\
-    UINT8 halfV[72];\
+    UINT8 halfV[64];\
     UINT8 halfHV[64];\
     qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
-    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src, 8, srcStride, 8, 128-r);\
     qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
     avg4_block(dst, src, halfH, halfV, halfHV, dstStride, srcStride, 2-r);\
 }\
 static void qpel_mc31_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
 {\
     UINT8 halfH[72];\
-    UINT8 halfV[72];\
+    UINT8 halfV[64];\
     UINT8 halfHV[64];\
     qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
-    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src+1, 8, srcStride, 8, 128-r);\
     qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
     avg4_block(dst, src+1, halfH, halfV, halfHV, dstStride, srcStride, 2-r);\
 }\
 static void qpel_mc13_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
 {\
     UINT8 halfH[72];\
-    UINT8 halfV[72];\
+    UINT8 halfV[64];\
     UINT8 halfHV[64];\
     qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
-    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src, 8, srcStride, 8, 128-r);\
     qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
-    avg4_block(dst, src+srcStride, halfH, halfV, halfHV, dstStride, srcStride, 2-r);\
+    avg4_block(dst, src+srcStride, halfH+8, halfV, halfHV, dstStride, srcStride, 2-r);\
 }\
 static void qpel_mc33_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
 {\
     UINT8 halfH[72];\
-    UINT8 halfV[72];\
+    UINT8 halfV[64];\
     UINT8 halfHV[64];\
     qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
-    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src+1, 8, srcStride, 8, 128-r);\
     qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
-    avg4_block(dst, src+srcStride+1, halfH, halfV, halfHV, dstStride, srcStride, 2-r);\
+    avg4_block(dst, src+srcStride+1, halfH+8, halfV, halfHV, dstStride, srcStride, 2-r);\
 }\
 static void qpel_mc21_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
 {\
@@ -576,22 +578,22 @@ static void qpel_mc23_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcS
 static void qpel_mc12_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
 {\
     UINT8 halfH[72];\
-    UINT8 halfV[72];\
+    UINT8 halfV[64];\
     UINT8 halfHV[64];\
     qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
-    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src, 8, srcStride, 8, 128-r);\
     qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
-    avg2_block(dst, halfV, halfHV, dstStride, 9, 1-r);\
+    avg2_block(dst, halfV, halfHV, dstStride, 8, 1-r);\
 }\
 static void qpel_mc32_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
 {\
     UINT8 halfH[72];\
-    UINT8 halfV[72];\
+    UINT8 halfV[64];\
     UINT8 halfHV[64];\
     qpel_h_lowpass(halfH, src, 8, srcStride, 9, 128-r);\
-    qpel_v_lowpass(halfV, src, 9, srcStride, 9, 128-r);\
+    qpel_v_lowpass(halfV, src+1, 8, srcStride, 8, 128-r);\
     qpel_v_lowpass(halfHV, halfH, 8, 8, 8, 128-r);\
-    avg2_block(dst, halfV+1, halfHV, dstStride, 9, 1-r);\
+    avg2_block(dst, halfV, halfHV, dstStride, 8, 1-r);\
 }\
 static void qpel_mc22_c ## name (UINT8 *dst, UINT8 *src, int dstStride, int srcStride, int mx, int my)\
 {\
