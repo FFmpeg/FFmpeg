@@ -249,8 +249,60 @@ static int canMMX2BeUsed=0;
 		"pmulhw ugCoeff, %%mm3		\n\t"\
 		"pmulhw vgCoeff, %%mm4		\n\t"\
 	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
-		"movq (%1, %%eax, 2), %%mm1	\n\t" /*buf0[eax]*/\
-		"movq 8(%1, %%eax, 2), %%mm7	\n\t" /*buf0[eax]*/\
+		"movq (%0, %%eax, 2), %%mm1	\n\t" /*buf0[eax]*/\
+		"movq 8(%0, %%eax, 2), %%mm7	\n\t" /*buf0[eax]*/\
+		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
+		"psraw $4, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
+		"pmulhw ubCoeff, %%mm2		\n\t"\
+		"pmulhw vrCoeff, %%mm5		\n\t"\
+		"psubw w80, %%mm1		\n\t" /* 8(Y-16)*/\
+		"psubw w80, %%mm7		\n\t" /* 8(Y-16)*/\
+		"pmulhw yCoeff, %%mm1		\n\t"\
+		"pmulhw yCoeff, %%mm7		\n\t"\
+	/* mm1= Y1, mm2=ub, mm3=ug, mm4=vg mm5=vr, mm7=Y2 */\
+		"paddw %%mm3, %%mm4		\n\t"\
+		"movq %%mm2, %%mm0		\n\t"\
+		"movq %%mm5, %%mm6		\n\t"\
+		"movq %%mm4, %%mm3		\n\t"\
+		"punpcklwd %%mm2, %%mm2		\n\t"\
+		"punpcklwd %%mm5, %%mm5		\n\t"\
+		"punpcklwd %%mm4, %%mm4		\n\t"\
+		"paddw %%mm1, %%mm2		\n\t"\
+		"paddw %%mm1, %%mm5		\n\t"\
+		"paddw %%mm1, %%mm4		\n\t"\
+		"punpckhwd %%mm0, %%mm0		\n\t"\
+		"punpckhwd %%mm6, %%mm6		\n\t"\
+		"punpckhwd %%mm3, %%mm3		\n\t"\
+		"paddw %%mm7, %%mm0		\n\t"\
+		"paddw %%mm7, %%mm6		\n\t"\
+		"paddw %%mm7, %%mm3		\n\t"\
+		/* mm0=B1, mm2=B2, mm3=G2, mm4=G1, mm5=R1, mm6=R2 */\
+		"packuswb %%mm0, %%mm2		\n\t"\
+		"packuswb %%mm6, %%mm5		\n\t"\
+		"packuswb %%mm3, %%mm4		\n\t"\
+		"pxor %%mm7, %%mm7		\n\t"
+
+// do vertical chrominance interpolation
+#define YSCALEYUV2RGB1b \
+		"xorl %%eax, %%eax		\n\t"\
+		"1:				\n\t"\
+		"movq (%2, %%eax), %%mm2	\n\t" /* uvbuf0[eax]*/\
+		"movq (%3, %%eax), %%mm3	\n\t" /* uvbuf1[eax]*/\
+		"movq 4096(%2, %%eax), %%mm5	\n\t" /* uvbuf0[eax+2048]*/\
+		"movq 4096(%3, %%eax), %%mm4	\n\t" /* uvbuf1[eax+2048]*/\
+		"paddw %%mm2, %%mm3		\n\t"\
+		"paddw %%mm5, %%mm4		\n\t"\
+		"psraw $5, %%mm3		\n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
+		"psraw $5, %%mm4		\n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
+		"psubw w400, %%mm3		\n\t" /* (U-128)8*/\
+		"psubw w400, %%mm4		\n\t" /* (V-128)8*/\
+		"movq %%mm3, %%mm2		\n\t" /* (U-128)8*/\
+		"movq %%mm4, %%mm5		\n\t" /* (V-128)8*/\
+		"pmulhw ugCoeff, %%mm3		\n\t"\
+		"pmulhw vgCoeff, %%mm4		\n\t"\
+	/* mm2=(U-128)8, mm3=ug, mm4=vg mm5=(V-128)8 */\
+		"movq (%0, %%eax, 2), %%mm1	\n\t" /*buf0[eax]*/\
+		"movq 8(%0, %%eax, 2), %%mm7	\n\t" /*buf0[eax]*/\
 		"psraw $4, %%mm1		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"psraw $4, %%mm7		\n\t" /* buf0[eax] - buf1[eax] >>4*/\
 		"pmulhw ubCoeff, %%mm2		\n\t"\
@@ -803,6 +855,9 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 		return;
 	}
 #ifdef HAVE_MMX
+	if( yalpha > 2048 ) buf0 = buf1;
+	if( uvalpha < 2048 ) // note this is not correct (shifts chrominance by 0.5 pixels) but its a bit faster
+	{
 		if(dstbpp == 32)
 		{
 			asm volatile(
@@ -856,53 +911,110 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 			: "%eax"
 			);
 		}
-#else
-//FIXME unroll C loop and dont recalculate UV
-		asm volatile ("\n\t"::: "memory");
-
-		if(dstbpp==32 || dstbpp==24)
+	}
+	else
+	{
+		if(dstbpp == 32)
 		{
-			for(i=0;i<dstw;i++){
-				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y=yuvtab_2568[buf0[i]>>7];
-				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
-				dest[0]=clip_table[((Y + yuvtab_40cf[U]) >>13)];
-				dest[1]=clip_table[((Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13)];
-				dest[2]=clip_table[((Y + yuvtab_3343[V]) >>13)];
-				dest+=dstbpp>>3;
-			}
+			asm volatile(
+				YSCALEYUV2RGB1b
+				WRITEBGR32
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
 		}
-		else if(dstbpp==16)
+		else if(dstbpp==24)
 		{
-			for(i=0;i<dstw;i++){
-				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y=yuvtab_2568[buf0[i]>>7];
-				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
-
-				((uint16_t*)dest)[0] =
-					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
-					((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
-				dest+=2;
-			}
+			asm volatile(
+				YSCALEYUV2RGB1b
+				WRITEBGR24
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax", "%ebx"
+			);
 		}
 		else if(dstbpp==15)
 		{
-			for(i=0;i<dstw;i++){
-				// vertical linear interpolation && yuv2rgb in a single step:
-				int Y=yuvtab_2568[buf0[i]>>7];
-				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
-				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
-
-				((uint16_t*)dest)[0] =
-					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
-					((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
-				dest+=2;
-			}
+			asm volatile(
+				YSCALEYUV2RGB1b
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+				"paddusb b16Dither, %%mm2	\n\t"
+				"paddusb b16Dither, %%mm4	\n\t"
+				"paddusb b16Dither, %%mm5	\n\t"
+#endif
+				WRITEBGR15
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
 		}
+		else if(dstbpp==16)
+		{
+			asm volatile(
+				YSCALEYUV2RGB1b
+		/* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+				"paddusb g16Dither, %%mm2	\n\t"
+				"paddusb b16Dither, %%mm4	\n\t"
+				"paddusb b16Dither, %%mm5	\n\t"
+#endif
+
+				WRITEBGR16
+			:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "r" (dest), "m" (dstw),
+			"m" (yalpha1), "m" (uvalpha1)
+			: "%eax"
+			);
+		}
+	}
+#else
+//FIXME unroll C loop and dont recalculate UV
+	asm volatile ("\n\t"::: "memory");
+
+	if(dstbpp==32 || dstbpp==24)
+	{
+		for(i=0;i<dstw;i++){
+			// vertical linear interpolation && yuv2rgb in a single step:
+			int Y=yuvtab_2568[buf0[i]>>7];
+			int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+			int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+			dest[0]=clip_table[((Y + yuvtab_40cf[U]) >>13)];
+			dest[1]=clip_table[((Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13)];
+			dest[2]=clip_table[((Y + yuvtab_3343[V]) >>13)];
+			dest+=dstbpp>>3;
+		}
+	}
+	else if(dstbpp==16)
+	{
+		for(i=0;i<dstw;i++){
+			// vertical linear interpolation && yuv2rgb in a single step:
+			int Y=yuvtab_2568[buf0[i]>>7];
+			int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+			int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+
+			((uint16_t*)dest)[0] =
+				(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
+				((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
+				((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
+			dest+=2;
+		}
+	}
+	else if(dstbpp==15)
+	{
+		for(i=0;i<dstw;i++){
+			// vertical linear interpolation && yuv2rgb in a single step:
+			int Y=yuvtab_2568[buf0[i]>>7];
+			int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
+			int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
+
+			((uint16_t*)dest)[0] =
+				(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
+				((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
+				((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
+			dest+=2;
+		}
+	}
 #endif
 }
 
