@@ -36,7 +36,7 @@ vsynth1/0.pgm: videogen
 
 vsynth2/0.pgm: rotozoom
 	@mkdir -p vsynth2
-	./rotozoom 'vsynth2/'
+	./rotozoom 'vsynth2/' $(SRC_PATH)/tests/lena.pnm
 
 videogen: videogen.c
 	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $<
