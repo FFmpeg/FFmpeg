@@ -6,6 +6,8 @@
 #define AVIF_WASCAPTUREFILE	0x00010000
 #define AVIF_COPYRIGHTED	0x00020000
 
+#define AVI_MAX_RIFF_SIZE       0x40000000LL
+
 offset_t start_tag(ByteIOContext *pb, const char *tag);
 void end_tag(ByteIOContext *pb, offset_t start);
 
