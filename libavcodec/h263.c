@@ -3292,14 +3292,14 @@ end:
             return SLICE_END;
         }
     }else{
-        if(get_bits_count(&s->gb) + 7 >= s->gb.size*8){
-            int v= show_bits(&s->gb, 8) >> (((get_bits_count(&s->gb)-1)&7)+1);
-            if(v==0)
-                return SLICE_END;
-        }else{
-            if(show_bits(&s->gb, 16)==0)
-                return SLICE_END; 
+        int v= show_bits(&s->gb, 16);
+    
+        if(get_bits_count(&s->gb) + 16 > s->gb.size*8){
+            v>>= get_bits_count(&s->gb) + 16 - s->gb.size*8;
         }
+
+        if(v==0)
+            return SLICE_END;
     }
 
     return SLICE_OK;     
