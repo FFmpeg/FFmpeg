@@ -279,6 +279,10 @@ void ff_init_me(MpegEncContext *s){
         c->hpel_put[2][2]= c->hpel_put[2][3]= zero_hpel;
     }
 
+    if(s->codec_id == CODEC_ID_H261){
+        c->sub_motion_search= no_sub_motion_search;
+    }
+
     c->temp= c->scratchpad;
 }
       
@@ -691,6 +695,12 @@ static inline void get_limits(MpegEncContext *s, int x, int y)
         c->ymin = - y - 16;
         c->xmax = - x + s->mb_width *16;
         c->ymax = - y + s->mb_height*16;
+    } else if (s->out_format == FMT_H261){
+        // Search range of H261 is different from other codec standards
+        c->xmin = (x > 15) ? - 15 : 0;
+        c->ymin = (y > 15) ? - 15 : 0;
+        c->xmax = (x < s->mb_width * 16 - 16) ? 15 : 0;              
+        c->ymax = (y < s->mb_height * 16 - 16) ? 15 : 0;
     } else {
         c->xmin = - x;
         c->ymin = - y;

@@ -865,6 +865,12 @@ extern const uint8_t ff_h263_loop_filter_strength[32];
 
 /* h261.c */
 void ff_h261_loop_filter(MpegEncContext *s);
+void ff_h261_reorder_mb_index(MpegEncContext* s);
+void ff_h261_encode_mb(MpegEncContext *s,
+                    DCTELEM block[6][64],
+                    int motion_x, int motion_y);
+void ff_h261_encode_picture_header(MpegEncContext * s, int picture_number);
+void ff_h261_encode_init(MpegEncContext *s);
 
 
 /* h263.c, h263dec.c */

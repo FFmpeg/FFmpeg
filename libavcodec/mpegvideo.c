@@ -1080,6 +1080,11 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->low_delay=1;
         break;
 #ifdef CONFIG_RISKY
+    case CODEC_ID_H261:
+        s->out_format = FMT_H261;
+        avctx->delay=0;
+        s->low_delay=1;
+        break;
     case CODEC_ID_H263:
         if (h263_get_picture_format(s->width, s->height) == 7) {
             av_log(avctx, AV_LOG_INFO, "Input picture size isn't suitable for h263 codec! try h263+\n");
@@ -1199,6 +1204,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     
 #ifdef CONFIG_ENCODERS
 #ifdef CONFIG_RISKY
+    if (s->out_format == FMT_H261)
+        ff_h261_encode_init(s);
     if (s->out_format == FMT_H263)
         h263_encode_init(s);
     if(s->msmpeg4_version)
@@ -1215,7 +1222,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         if(s->codec_id==CODEC_ID_MPEG4 && s->mpeg_quant){
             s->intra_matrix[j] = ff_mpeg4_default_intra_matrix[i];
             s->inter_matrix[j] = ff_mpeg4_default_non_intra_matrix[i];
-        }else if(s->out_format == FMT_H263){
+        }else if(s->out_format == FMT_H263 || s->out_format == FMT_H261){
             s->intra_matrix[j] =
             s->inter_matrix[j] = ff_mpeg1_default_non_intra_matrix[i];
         }else
@@ -4127,6 +4134,8 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         msmpeg4_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_WMV2:
          ff_wmv2_encode_mb(s, s->block, motion_x, motion_y); break;
+    case CODEC_ID_H261:
+        ff_h261_encode_mb(s, s->block, motion_x, motion_y); break;
     case CODEC_ID_H263:
     case CODEC_ID_H263P:
     case CODEC_ID_FLV1:
@@ -4495,14 +4504,20 @@ static int encode_thread(AVCodecContext *c, void *arg){
         ff_init_block_index(s);
         
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
-            const int xy= mb_y*s->mb_stride + mb_x;
+            int xy= mb_y*s->mb_stride + mb_x; // removed const, H261 needs to adjust this
             int mb_type= s->mb_type[xy];
 //            int d;
             int dmin= INT_MAX;
             int dir;
 
             s->mb_x = mb_x;
+            s->mb_y = mb_y;  // moved into loop, can get changed by H.261
             ff_update_block_index(s);
+
+            if(s->codec_id == CODEC_ID_H261){
+                ff_h261_reorder_mb_index(s);
+                xy= s->mb_y*s->mb_stride + s->mb_x;
+            }
 
             /* write gob / video packet header  */
 #ifdef CONFIG_RISKY
@@ -5215,6 +5230,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         mjpeg_picture_header(s);
         break;
 #ifdef CONFIG_RISKY
+    case FMT_H261:
+        ff_h261_encode_picture_header(s, picture_number);
+        break;
     case FMT_H263:
         if (s->codec_id == CODEC_ID_WMV2) 
             ff_wmv2_encode_picture_header(s, picture_number);

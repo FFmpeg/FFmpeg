@@ -1786,6 +1786,7 @@ extern AVCodec faac_encoder;
 extern AVCodec xvid_encoder;
 extern AVCodec mpeg1video_encoder;
 extern AVCodec mpeg2video_encoder;
+extern AVCodec h261_encoder;
 extern AVCodec h263_encoder;
 extern AVCodec h263p_encoder;
 extern AVCodec flv_encoder;

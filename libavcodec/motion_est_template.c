@@ -221,6 +221,16 @@ static int hpel_motion_search(MpegEncContext * s,
 }
 #endif
 
+static int no_sub_motion_search(MpegEncContext * s,
+          int *mx_ptr, int *my_ptr, int dmin,
+                                  int src_index, int ref_index,
+                                  int size, int h)
+{
+    (*mx_ptr)<<=1;
+    (*my_ptr)<<=1;
+    return dmin;
+}
+
 int inline ff_get_mb_score(MpegEncContext * s, int mx, int my, int src_index,
                                int ref_index, int size, int h, int add_rate)
 {

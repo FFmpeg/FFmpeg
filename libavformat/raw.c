@@ -344,6 +344,21 @@ AVInputFormat h261_iformat = {
     .value = CODEC_ID_H261,
 };
 
+#ifdef CONFIG_ENCODERS
+AVOutputFormat h261_oformat = {
+    "h261",
+    "raw h261",
+    "video/x-h261",
+    "h261",
+    0,
+    0,
+    CODEC_ID_H261,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+};
+#endif //CONFIG_ENCODERS
+
 AVInputFormat h263_iformat = {
     "h263",
     "raw h263",
@@ -648,6 +663,7 @@ int raw_init(void)
     av_register_input_format(&dts_iformat);
 
     av_register_input_format(&h261_iformat);
+    av_register_output_format(&h261_oformat);
 
     av_register_input_format(&h263_iformat);
     av_register_output_format(&h263_oformat);
