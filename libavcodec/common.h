@@ -77,7 +77,7 @@ typedef INT64 int64_t;
 
 /* unix */
 
-#include <inttypes.h>
+#include <stdint.h>
 
 #ifndef __WINE_WINDEF16_H
 /* workaround for typedef conflict in MPlayer (wine typedefs) */
@@ -111,9 +111,9 @@ typedef signed long long INT64;
 
 #endif /* !CONFIG_WIN32 */
 
-#include "bswap.h"
-
 #ifdef HAVE_AV_CONFIG_H
+
+#include "bswap.h"
 
 #if defined(__MINGW32__) || defined(__CYGWIN__) || \
     defined(__OS2__) || defined (__OpenBSD__)
@@ -143,8 +143,6 @@ inline void dprintf(const char* fmt,...) {}
 #endif
 
 #endif /* !CONFIG_WIN32 */
-
-#endif /* HAVE_AV_CONFIG_H */
 
 #define av_abort()      do { fprintf(stderr, "Abort at %s:%d\n", __FILE__, __LINE__); abort(); } while (0)
 
@@ -888,13 +886,6 @@ static inline int clip(int a, int amin, int amax)
         return a;
 }
 
-/* memory */
-void *av_malloc(int size);
-void *av_mallocz(int size);
-void av_free(void *ptr);
-void __av_freep(void **ptr);
-#define av_freep(p) __av_freep((void **)(p))
-
 /* math */
 int ff_gcd(int a, int b);
 
@@ -934,4 +925,6 @@ if((y)<(x)){\
 
 #define CLAMP_TO_8BIT(d) ((d > 0xff) ? 0xff : (d < 0) ? 0 : d)
 
-#endif
+#endif /* HAVE_AV_CONFIG_H */
+
+#endif /* COMMON_H */
