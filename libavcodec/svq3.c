@@ -291,7 +291,7 @@ static inline void svq3_mc_dir_part (MpegEncContext *s,
   src  = pic->data[0] + mx + my*s->linesize;
 
   if (emu) {
-    ff_emulated_edge_mc (s, src, s->linesize, (width + 1), (height + 1),
+    ff_emulated_edge_mc (s->edge_emu_buffer, src, s->linesize, (width + 1), (height + 1),
 			 mx, my, s->h_edge_pos, s->v_edge_pos);
     src = s->edge_emu_buffer;
   }
@@ -312,9 +312,9 @@ static inline void svq3_mc_dir_part (MpegEncContext *s,
       src  = pic->data[i] + mx + my*s->uvlinesize;
 
       if (emu) {
-	ff_emulated_edge_mc (s, src, s->uvlinesize, (width + 1), (height + 1),
+        ff_emulated_edge_mc (s->edge_emu_buffer, src, s->uvlinesize, (width + 1), (height + 1),
 			     mx, my, (s->h_edge_pos >> 1), (s->v_edge_pos >> 1));
-	src = s->edge_emu_buffer;
+        src = s->edge_emu_buffer;
       }
       if(thirdpel)
         (avg ? s->dsp.avg_tpel_pixels_tab : s->dsp.put_tpel_pixels_tab)[dxy](dest, src, s->uvlinesize, width, height);
