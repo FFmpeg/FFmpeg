@@ -1,11 +1,13 @@
 #ifndef _OS_SUPPORT_H
 #define _OS_SUPPORT_H
 
-/*
- * miscellaneous OS support macros/function
+/**
+ * @file os_support.h
+ * miscellaneous OS support macros and functions.
  *
- * For now:
- * usleep()
+ * - usleep() (Win32, BeOS, OS/2)
+ * - floatf() (OS/2)
+ * - strcasecmp() (OS/2)
  */
 
 #ifdef __MINGW32__
