@@ -208,6 +208,7 @@ typedef struct FFStream {
     /* feed specific */
     int feed_opened;     /* true if someone is writing to the feed */
     int is_feed;         /* true if it is a feed */
+    int readonly;        /* True if writing is prohibited to the file */
     int conns_served;
     int64_t bytes_served;
     int64_t feed_max_size;      /* maximum storage size */
@@ -2389,6 +2390,10 @@ static int http_start_receive_data(HTTPContext *c)
     if (c->stream->feed_opened)
         return -1;
 
+    /* Don't permit writing to this one */
+    if (c->stream->readonly)
+        return -1;
+
     /* open feed */
     fd = open(c->stream->feed_filename, O_RDWR);
     if (fd < 0)
@@ -3455,11 +3460,23 @@ static void build_feed_streams(void)
                 printf("Deleting feed file '%s' as it appears to be corrupt\n",
                         feed->feed_filename);
             }
-            if (!matches)
+            if (!matches) {
+                if (feed->readonly) {
+                    printf("Unable to delete feed file '%s' as it is marked readonly\n",
+                        feed->feed_filename);
+                    exit(1);
+                }
                 unlink(feed->feed_filename);
+            }
         }
         if (!url_exist(feed->feed_filename)) {
             AVFormatContext s1, *s = &s1;
+
+            if (feed->readonly) {
+                printf("Unable to create feed file '%s' as it is marked readonly\n",
+                    feed->feed_filename);
+                exit(1);
+            }
 
             /* only write the header of the ffm file */
             if (url_fopen(&s->pb, feed->feed_filename, URL_WRONLY) < 0) {
@@ -3815,6 +3832,13 @@ static int parse_ffconfig(const char *filename)
                 snprintf(feed->child_argv[i], 256, "http://127.0.0.1:%d/%s", 
                     ntohs(my_http_addr.sin_port), feed->filename);
             }
+        } else if (!strcasecmp(cmd, "ReadOnlyFile")) {
+            if (feed) {
+                get_arg(feed->feed_filename, sizeof(feed->feed_filename), &p);
+                feed->readonly = 1;
+            } else if (stream) {
+                get_arg(stream->feed_filename, sizeof(stream->feed_filename), &p);
+            }
         } else if (!strcasecmp(cmd, "File")) {
             if (feed) {
                 get_arg(feed->feed_filename, sizeof(feed->feed_filename), &p);
@@ -4052,6 +4076,11 @@ static int parse_ffconfig(const char *filename)
         } else if (!strcasecmp(cmd, "VideoHighQuality")) {
             if (stream) {
                 video_enc.flags |= CODEC_FLAG_HQ;
+            }
+        } else if (!strcasecmp(cmd, "Video4MotionVector")) {
+            if (stream) {
+                video_enc.flags |= CODEC_FLAG_HQ;
+                video_enc.flags |= CODEC_FLAG_4MV;
             }
         } else if (!strcasecmp(cmd, "VideoQDiff")) {
             get_arg(arg, sizeof(arg), &p);
