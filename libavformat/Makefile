@@ -77,7 +77,7 @@ $(LIB): $(OBJS) $(PPOBJS)
 	$(RANLIB) $@
 
 $(SLIB): $(OBJS)
-ifeq ($(TARGET_MINGW32),yes)
+ifeq ($(CONFIG_WIN32),yes)
 	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(PPOBJS) $(EXTRALIBS) $(AMREXTRALIBS) $(VPATH)/../libavcodec/avcodec.dll
 	-lib /machine:i386 /def:$(@:.dll=.def)
 else
@@ -87,27 +87,29 @@ endif
 depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
-install: all
 ifeq ($(BUILD_SHARED),yes)
+install: all install-headers
+ifeq ($(CONFIG_WIN32),yes)
+	install -s -m 755 $(SLIB) "$(prefix)"
+else
 	install -d $(prefix)/lib
 	install -s -m 755 $(SLIB) $(prefix)/lib/libavformat-$(VERSION).so
 	ln -sf libavformat-$(VERSION).so $(prefix)/lib/libavformat.so
 	ldconfig || true
-	mkdir -p $(prefix)/include/ffmpeg
-	install -m 644 $(VPATH)/avformat.h $(prefix)/include/ffmpeg/avformat.h
-	install -m 644 $(VPATH)/avio.h $(prefix)/include/ffmpeg/avio.h
-	install -m 644 $(VPATH)/rtp.h $(prefix)/include/ffmpeg/rtp.h
-	install -m 644 $(VPATH)/rtsp.h $(prefix)/include/ffmpeg/rtsp.h
-	install -m 644 $(VPATH)/rtspcodes.h $(prefix)/include/ffmpeg/rtspcodes.h
+endif
+else
+install:
 endif
 
-installlib: all
+installlib: all install-headers
 	install -m 644 $(LIB) $(prefix)/lib
-	mkdir -p $(prefix)/include/ffmpeg
+
+install-headers:
+	mkdir -p "$(prefix)/include/ffmpeg"
 	install -m 644 $(SRC_PATH)/libavformat/avformat.h $(SRC_PATH)/libavformat/avio.h \
                 $(SRC_PATH)/libavformat/rtp.h $(SRC_PATH)/libavformat/rtsp.h \
                 $(SRC_PATH)/libavformat/rtspcodes.h \
-                $(prefix)/include/ffmpeg
+                "$(prefix)/include/ffmpeg"
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 

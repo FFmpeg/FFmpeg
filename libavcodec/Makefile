@@ -219,22 +219,27 @@ motion-test: motion_test.o $(LIB)
 fft-test: fft-test.o $(LIB)
 	$(CC) -o $@ $^ -lm
 
-install: all
 ifeq ($(BUILD_SHARED),yes)
+install: all install-headers
+ifeq ($(CONFIG_WIN32),yes)
+	install -s -m 755 $(SLIB) "$(prefix)"
+else
 	install -d $(prefix)/lib
 	install -s -m 755 $(SLIB) $(prefix)/lib/libavcodec-$(VERSION).so
 	ln -sf libavcodec-$(VERSION).so $(prefix)/lib/libavcodec.so
 	ldconfig || true
-	mkdir -p $(prefix)/include/ffmpeg
-	install -m 644 $(VPATH)/avcodec.h $(prefix)/include/ffmpeg/avcodec.h
-	install -m 644 $(VPATH)/common.h $(prefix)/include/ffmpeg/common.h
+endif
+else
+install:
 endif
 
-installlib: all
+installlib: all install-headers
 	install -m 644 $(LIB) $(prefix)/lib
-	mkdir -p $(prefix)/include/ffmpeg
+
+install-headers:
+	mkdir -p "$(prefix)/include/ffmpeg"
 	install -m 644 $(SRC_PATH)/libavcodec/avcodec.h $(SRC_PATH)/libavcodec/common.h \
-                $(prefix)/include/ffmpeg
+                "$(prefix)/include/ffmpeg"
 
 #
 # include dependency files if they exist
