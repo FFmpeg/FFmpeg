@@ -386,11 +386,14 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     }
     
     /* allocate private data */
-    ic->priv_data = av_mallocz(fmt->priv_data_size);
-    if (!ic->priv_data) {
-        err = AVERROR_NOMEM;
-        goto fail;
-    }
+    if (fmt->priv_data_size > 0) {
+        ic->priv_data = av_mallocz(fmt->priv_data_size);
+        if (!ic->priv_data) {
+            err = AVERROR_NOMEM;
+            goto fail;
+        }
+    } else
+        ic->priv_data = NULL;
 
     /* default pts settings is MPEG like */
     av_set_pts_info(ic, 33, 1, 90000);
@@ -722,10 +725,14 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
 {
     int ret;
-
-    s->priv_data = av_mallocz(s->oformat->priv_data_size);
-    if (!s->priv_data)
-        return AVERROR_NOMEM;
+    
+    if (s->oformat->priv_data_size > 0) {
+        s->priv_data = av_mallocz(s->oformat->priv_data_size);
+        if (!s->priv_data)
+            return AVERROR_NOMEM;
+    } else
+        s->priv_data = NULL;
+	
     if (s->oformat->set_parameters) {
         ret = s->oformat->set_parameters(s, ap);
         if (ret < 0)

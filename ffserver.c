@@ -2457,9 +2457,12 @@ static int http_receive_data(HTTPContext *c)
             if (!fmt_in)
                 goto fail;
 
-            s.priv_data = av_mallocz(fmt_in->priv_data_size);
-            if (!s.priv_data)
-                goto fail;
+            if (fmt_in->priv_data_size > 0) {
+                s.priv_data = av_mallocz(fmt_in->priv_data_size);
+                if (!s.priv_data)
+                    goto fail;
+	    } else
+	        s.priv_data = NULL;
 
             if (fmt_in->read_header(&s, 0) < 0) {
                 av_freep(&s.priv_data);
