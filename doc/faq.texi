@@ -91,6 +91,18 @@ The following list of audio codecs should work on most windows systems
 if some mp3 codec like lame is installed
 @end table
 
+@section The chrominance seems to come from a different time then the luminance on bt8x8 captures on linux?
+
+well known bug in the bt8x8 driver, for 2.4.26 theres a patch at 
+(@url{http://www.mplayerhq.hu/~michael/bttv-420-2.4.26.patch}), i suspect that
+this will also apply cleanly to other 2.4 kernels
+
+@section How to avoid the ugly aliassing artefacts in bt8x8 captures on linux?
+
+pass 'combfilter=1 lumafilter=1' to the bttv driver, note though that 'combfilter=1'
+will cause somewhat too strong filtering, a fix is too apply (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.4.26.patch})
+and pass 'combfilter=2'
+
 @chapter Development
 
 @section Are there examples of use of the FFmpeg libraries libavcodec and libavformat ?
