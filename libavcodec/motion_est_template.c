@@ -897,8 +897,8 @@ static int RENAME(epzs_motion_search)(MpegEncContext * s, int block,
     int map_generation;
     const int penalty_factor= s->me.penalty_factor;
     const int size=0;
-    const int ref_mv_stride= s->mb_width+2;
-    const int ref_mv_xy= 1 + s->mb_x + (s->mb_y + 1)*ref_mv_stride;
+    const int ref_mv_stride= s->mb_stride;
+    const int ref_mv_xy= s->mb_x + s->mb_y*ref_mv_stride;
     me_cmp_func cmp, chroma_cmp;
     LOAD_COMMON(s->mb_x*16, s->mb_y*16);
     
@@ -1009,8 +1009,8 @@ static int RENAME(epzs_motion_search4)(MpegEncContext * s, int block,
     int map_generation;
     const int penalty_factor= s->me.penalty_factor;
     const int size=1;
-    const int ref_mv_stride= s->mb_width+2;
-    const int ref_mv_xy= 1 + s->mb_x + (s->mb_y + 1)*ref_mv_stride;
+    const int ref_mv_stride= s->mb_stride;
+    const int ref_mv_xy= s->mb_x + s->mb_y *ref_mv_stride;
     me_cmp_func cmp, chroma_cmp;
     LOAD_COMMON((s->mb_x*2 + (block&1))*8, (s->mb_y*2 + (block>>1))*8);
     

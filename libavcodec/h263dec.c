@@ -209,7 +209,7 @@ static int decode_slice(MpegEncContext *s){
             MPV_decode_mb(s, s->block);
 
             if(ret<0){
-                const int xy= s->mb_x + s->mb_y*s->mb_width;
+                const int xy= s->mb_x + s->mb_y*s->mb_stride;
                 if(ret==SLICE_END){
 //printf("%d %d %d %06X\n", s->mb_x, s->mb_y, s->gb.size*8 - get_bits_count(&s->gb), show_bits(&s->gb, 24));
                     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
@@ -644,12 +644,6 @@ retry:
     ff_er_frame_start(s);
     
     /* decode each macroblock */
-    s->block_wrap[0]=
-    s->block_wrap[1]=
-    s->block_wrap[2]=
-    s->block_wrap[3]= s->mb_width*2 + 2;
-    s->block_wrap[4]=
-    s->block_wrap[5]= s->mb_width + 2;
     s->mb_x=0; 
     s->mb_y=0;
     
@@ -708,8 +702,8 @@ retry:
         for(mb_y=0; mb_y<s->mb_height; mb_y++){
             int mb_x;
             for(mb_x=0; mb_x<s->mb_width; mb_x++){
-                const int mb_index= mb_x + mb_y*s->mb_width;
-                if(s->co_located_type_table[mb_index] == MV_TYPE_8X8){
+                const int mb_index= mb_x + mb_y*s->mb_stride;
+                if(IS_8X8(s->current_picture.mb_type[mb_index])){
                     int i;
                     for(i=0; i<4; i++){
                         int sx= mb_x*16 + 4 + 8*(i&1);
@@ -732,25 +726,14 @@ retry:
         }
     }
 
-
     if(s->pict_type==B_TYPE || s->low_delay){
         *pict= *(AVFrame*)&s->current_picture;
+        ff_print_debug_info(s, s->current_picture_ptr);
     } else {
         *pict= *(AVFrame*)&s->last_picture;
+        ff_print_debug_info(s, s->last_picture_ptr);
     }
-
-    if(avctx->debug&FF_DEBUG_QP){
-        int8_t *qtab= pict->qscale_table;
-        int x,y;
-        
-        for(y=0; y<s->mb_height; y++){
-            for(x=0; x<s->mb_width; x++){
-                printf("%2d ", qtab[x + y*s->mb_width]);
-            }
-            printf("\n");
-        }
-        printf("\n");
-    }
+    
 
     /* Return the Picture timestamp as the frame number */
     /* we substract 1 because it is added on utils.c    */

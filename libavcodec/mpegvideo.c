@@ -136,16 +136,6 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
 }
 #endif //CONFIG_ENCODERS
 
-// move into common.c perhaps 
-#define CHECKED_ALLOCZ(p, size)\
-{\
-    p= av_mallocz(size);\
-    if(p==NULL){\
-        perror("malloc");\
-        goto fail;\
-    }\
-}
-
 void ff_init_scantable(MpegEncContext *s, ScanTable *st, const uint8_t *src_scantable){
     int i;
     int end;
@@ -227,9 +217,10 @@ int DCT_common_init(MpegEncContext *s)
  * The pixels are allocated/set by calling get_buffer() if shared=0
  */
 static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
-    const int big_mb_num= (s->mb_width+1)*(s->mb_height+1);
+    const int big_mb_num= s->mb_stride*(s->mb_height+1) + 1; //the +1 is needed so memset(,,stride*height) doesnt sig11
+    const int mb_array_size= s->mb_stride*s->mb_height;
     int i;
-
+    
     if(shared){
         assert(pic->data[0]);
         assert(pic->type == 0 || pic->type == FF_BUFFER_TYPE_SHARED);
@@ -262,23 +253,23 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
     
     if(pic->qscale_table==NULL){
         if (s->encoding) {        
-            CHECKED_ALLOCZ(pic->mb_var   , s->mb_num * sizeof(int16_t))
-            CHECKED_ALLOCZ(pic->mc_mb_var, s->mb_num * sizeof(int16_t))
-            CHECKED_ALLOCZ(pic->mb_mean  , s->mb_num * sizeof(int8_t))
-            CHECKED_ALLOCZ(pic->mb_cmp_score, s->mb_num * sizeof(int32_t))
+            CHECKED_ALLOCZ(pic->mb_var   , mb_array_size * sizeof(int16_t))
+            CHECKED_ALLOCZ(pic->mc_mb_var, mb_array_size * sizeof(int16_t))
+            CHECKED_ALLOCZ(pic->mb_mean  , mb_array_size * sizeof(int8_t))
+            CHECKED_ALLOCZ(pic->mb_cmp_score, mb_array_size * sizeof(int32_t))
         }
 
-        CHECKED_ALLOCZ(pic->mbskip_table , s->mb_num * sizeof(uint8_t)+1) //the +1 is for the slice end check
-        CHECKED_ALLOCZ(pic->qscale_table , s->mb_num * sizeof(uint8_t))
+        CHECKED_ALLOCZ(pic->mbskip_table , mb_array_size * sizeof(uint8_t)+2) //the +2 is for the slice end check
+        CHECKED_ALLOCZ(pic->qscale_table , mb_array_size * sizeof(uint8_t))
+        CHECKED_ALLOCZ(pic->mb_type_base , big_mb_num    * sizeof(int))
+        pic->mb_type= pic->mb_type_base + s->mb_stride+1;
         if(s->out_format == FMT_H264){
-            CHECKED_ALLOCZ(pic->mb_type_base , big_mb_num * sizeof(uint16_t))
-            pic->mb_type= pic->mb_type_base + s->mb_width+2;
             for(i=0; i<2; i++){
                 CHECKED_ALLOCZ(pic->motion_val[i], 2 * 16 * s->mb_num * sizeof(uint16_t))
                 CHECKED_ALLOCZ(pic->ref_index[i] , 4 * s->mb_num * sizeof(uint8_t))
             }
         }
-        pic->qstride= s->mb_width;
+        pic->qstride= s->mb_stride;
     }
 
     //it might be nicer if the application would keep track of these but it would require a API change
@@ -334,7 +325,7 @@ static void free_picture(MpegEncContext *s, Picture *pic){
 /* init common structure for both encoder and decoder */
 int MPV_common_init(MpegEncContext *s)
 {
-    int y_size, c_size, yc_size, i;
+    int y_size, c_size, yc_size, i, mb_array_size, x, y;
 
     dsputil_init(&s->dsp, s->avctx);
     DCT_common_init(s);
@@ -343,12 +334,21 @@ int MPV_common_init(MpegEncContext *s)
 
     s->mb_width  = (s->width  + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
+    s->mb_stride = s->mb_width + 1;
+    mb_array_size= s->mb_height * s->mb_stride;
 
     /* set default edge pos, will be overriden in decode_header if needed */
     s->h_edge_pos= s->mb_width*16;
     s->v_edge_pos= s->mb_height*16;
 
     s->mb_num = s->mb_width * s->mb_height;
+    
+    s->block_wrap[0]=
+    s->block_wrap[1]=
+    s->block_wrap[2]=
+    s->block_wrap[3]= s->mb_width*2 + 2;
+    s->block_wrap[4]=
+    s->block_wrap[5]= s->mb_width + 2;
 
     y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
     c_size = (s->mb_width + 2) * (s->mb_height + 2);
@@ -365,16 +365,30 @@ int MPV_common_init(MpegEncContext *s)
 
     s->avctx->coded_frame= (AVFrame*)&s->current_picture;
 
+    CHECKED_ALLOCZ(s->mb_index2xy, (s->mb_num+1)*sizeof(int)) //error ressilience code looks cleaner with this
+    for(y=0; y<s->mb_height; y++){
+        for(x=0; x<s->mb_width; x++){
+            s->mb_index2xy[ x + y*s->mb_width ] = x + y*s->mb_stride;
+        }
+    }
+    s->mb_index2xy[ s->mb_height*s->mb_width ] = (s->mb_height-1)*s->mb_stride + s->mb_width; //FIXME really needed?
+    
     if (s->encoding) {
-        int mv_table_size= (s->mb_width+2)*(s->mb_height+2);
+        int mv_table_size= s->mb_stride * (s->mb_height+2) + 1;
 
         /* Allocate MV tables */
-        CHECKED_ALLOCZ(s->p_mv_table            , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_forw_mv_table       , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_back_mv_table       , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_bidir_forw_mv_table , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_bidir_back_mv_table , mv_table_size * 2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->b_direct_mv_table     , mv_table_size * 2 * sizeof(int16_t))
+        CHECKED_ALLOCZ(s->p_mv_table_base            , mv_table_size * 2 * sizeof(int16_t))
+        CHECKED_ALLOCZ(s->b_forw_mv_table_base       , mv_table_size * 2 * sizeof(int16_t))
+        CHECKED_ALLOCZ(s->b_back_mv_table_base       , mv_table_size * 2 * sizeof(int16_t))
+        CHECKED_ALLOCZ(s->b_bidir_forw_mv_table_base , mv_table_size * 2 * sizeof(int16_t))
+        CHECKED_ALLOCZ(s->b_bidir_back_mv_table_base , mv_table_size * 2 * sizeof(int16_t))
+        CHECKED_ALLOCZ(s->b_direct_mv_table_base     , mv_table_size * 2 * sizeof(int16_t))
+        s->p_mv_table           = s->p_mv_table_base            + s->mb_stride + 1;
+        s->b_forw_mv_table      = s->b_forw_mv_table_base       + s->mb_stride + 1;
+        s->b_back_mv_table      = s->b_back_mv_table_base       + s->mb_stride + 1;
+        s->b_bidir_forw_mv_table= s->b_bidir_forw_mv_table_base + s->mb_stride + 1;
+        s->b_bidir_back_mv_table= s->b_bidir_back_mv_table_base + s->mb_stride + 1;
+        s->b_direct_mv_table    = s->b_direct_mv_table_base     + s->mb_stride + 1;
 
         //FIXME should be linesize instead of s->width*2 but that isnt known before get_buffer()
         CHECKED_ALLOCZ(s->me.scratchpad,  s->width*2*16*3*sizeof(uint8_t)) 
@@ -391,14 +405,15 @@ int MPV_common_init(MpegEncContext *s)
             CHECKED_ALLOCZ(s->ac_stats, 2*2*(MAX_LEVEL+1)*(MAX_RUN+1)*2*sizeof(int));
         }
         CHECKED_ALLOCZ(s->avctx->stats_out, 256);
+
+        /* Allocate MB type table */
+        CHECKED_ALLOCZ(s->mb_type  , mb_array_size * sizeof(uint8_t)) //needed for encoding
     }
         
-    CHECKED_ALLOCZ(s->error_status_table, s->mb_num*sizeof(uint8_t))
+    CHECKED_ALLOCZ(s->error_status_table, mb_array_size*sizeof(uint8_t))
     
     if (s->out_format == FMT_H263 || s->encoding) {
         int size;
-        /* Allocate MB type table */
-        CHECKED_ALLOCZ(s->mb_type  , s->mb_num * sizeof(uint8_t))
 
         /* MV prediction */
         size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
@@ -407,12 +422,9 @@ int MPV_common_init(MpegEncContext *s)
 
     if(s->codec_id==CODEC_ID_MPEG4){
         /* interlaced direct mode decoding tables */
-        CHECKED_ALLOCZ(s->field_mv_table, s->mb_num*2*2 * sizeof(int16_t))
-        CHECKED_ALLOCZ(s->field_select_table, s->mb_num*2* sizeof(int8_t))
+        CHECKED_ALLOCZ(s->field_mv_table, mb_array_size*2*2 * sizeof(int16_t))
+        CHECKED_ALLOCZ(s->field_select_table, mb_array_size*2* sizeof(int8_t))
     }
-    /* 4mv b frame decoding table */
-    //note this is needed for h263 without b frames too (segfault on damaged streams otherwise)
-    CHECKED_ALLOCZ(s->co_located_type_table, s->mb_num * sizeof(uint8_t))
     if (s->out_format == FMT_H263) {
         /* ac values */
         CHECKED_ALLOCZ(s->ac_val[0], yc_size * sizeof(int16_t) * 16);
@@ -426,8 +438,8 @@ int MPV_common_init(MpegEncContext *s)
         CHECKED_ALLOCZ(s->bitstream_buffer, BITSTREAM_BUFFER_SIZE);
 
         /* cbp, ac_pred, pred_dir */
-        CHECKED_ALLOCZ(s->cbp_table  , s->mb_num * sizeof(uint8_t))
-        CHECKED_ALLOCZ(s->pred_dir_table, s->mb_num * sizeof(uint8_t))
+        CHECKED_ALLOCZ(s->cbp_table  , mb_array_size * sizeof(uint8_t))
+        CHECKED_ALLOCZ(s->pred_dir_table, mb_array_size * sizeof(uint8_t))
     }
     
     if (s->h263_pred || s->h263_plus || !s->encoding) {
@@ -441,14 +453,14 @@ int MPV_common_init(MpegEncContext *s)
     }
 
     /* which mb is a intra block */
-    CHECKED_ALLOCZ(s->mbintra_table, s->mb_num);
-    memset(s->mbintra_table, 1, s->mb_num);
+    CHECKED_ALLOCZ(s->mbintra_table, mb_array_size);
+    memset(s->mbintra_table, 1, mb_array_size);
     
     /* default structure is frame */
     s->picture_structure = PICT_FRAME;
     
     /* init macroblock skip table */
-    CHECKED_ALLOCZ(s->mbskip_table, s->mb_num+1);
+    CHECKED_ALLOCZ(s->mbskip_table, mb_array_size+2);
     //Note the +1 is for a quicker mpeg4 slice_end detection
     CHECKED_ALLOCZ(s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE);
     
@@ -472,12 +484,19 @@ void MPV_common_end(MpegEncContext *s)
     int i;
 
     av_freep(&s->mb_type);
-    av_freep(&s->p_mv_table);
-    av_freep(&s->b_forw_mv_table);
-    av_freep(&s->b_back_mv_table);
-    av_freep(&s->b_bidir_forw_mv_table);
-    av_freep(&s->b_bidir_back_mv_table);
-    av_freep(&s->b_direct_mv_table);
+    av_freep(&s->p_mv_table_base);
+    av_freep(&s->b_forw_mv_table_base);
+    av_freep(&s->b_back_mv_table_base);
+    av_freep(&s->b_bidir_forw_mv_table_base);
+    av_freep(&s->b_bidir_back_mv_table_base);
+    av_freep(&s->b_direct_mv_table_base);
+    s->p_mv_table= NULL;
+    s->b_forw_mv_table= NULL;
+    s->b_back_mv_table= NULL;
+    s->b_bidir_forw_mv_table= NULL;
+    s->b_bidir_back_mv_table= NULL;
+    s->b_direct_mv_table= NULL;
+    
     av_freep(&s->motion_val);
     av_freep(&s->dc_val[0]);
     av_freep(&s->ac_val[0]);
@@ -495,12 +514,12 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->tex_pb_buffer);
     av_freep(&s->pb2_buffer);
     av_freep(&s->allocated_edge_emu_buffer); s->edge_emu_buffer= NULL;
-    av_freep(&s->co_located_type_table);
     av_freep(&s->field_mv_table);
     av_freep(&s->field_select_table);
     av_freep(&s->avctx->stats_out);
     av_freep(&s->ac_stats);
     av_freep(&s->error_status_table);
+    av_freep(&s->mb_index2xy);
 
     for(i=0; i<MAX_PICTURE_COUNT; i++){
         free_picture(s, &s->picture[i]);
@@ -925,6 +944,7 @@ alloc:
 
     s->current_picture_ptr->pict_type= s->pict_type;
     s->current_picture_ptr->quality= s->qscale;
+    s->current_picture_ptr->key_frame= s->pict_type == I_TYPE;
 
     s->current_picture= *s->current_picture_ptr;
   
@@ -1000,34 +1020,95 @@ void MPV_frame_end(MpegEncContext *s)
     }
     assert(i<MAX_PICTURE_COUNT);
 #endif    
-    s->current_picture_ptr->quality= s->qscale; //FIXME get average of qscale_table
-    s->current_picture_ptr->pict_type= s->pict_type;
-    s->current_picture_ptr->key_frame= s->pict_type == I_TYPE;
 
     /* release non refernce frames */
     for(i=0; i<MAX_PICTURE_COUNT; i++){
         if(s->picture[i].data[0] && !s->picture[i].reference /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/)
             s->avctx->release_buffer(s->avctx, (AVFrame*)&s->picture[i]);
     }
-    if(s->avctx->debug&FF_DEBUG_SKIP){
-        int x,y;        
-        for(y=0; y<s->mb_height; y++){
-            for(x=0; x<s->mb_width; x++){
-                int count= s->mbskip_table[x + y*s->mb_width];
-                if(count>9) count=9;
-                printf(" %1d", count);
-            }
-            printf("\n");
-        }
-        printf("pict type: %d\n", s->pict_type);
-    }
-
+    
     // clear copies, to avoid confusion
 #if 0
     memset(&s->last_picture, 0, sizeof(Picture));
     memset(&s->next_picture, 0, sizeof(Picture));
     memset(&s->current_picture, 0, sizeof(Picture));
 #endif
+}
+
+/**
+ * prints debuging info for the given picture.
+ */
+void ff_print_debug_info(MpegEncContext *s, Picture *pict){
+
+    if(!pict || !pict->mb_type) return;
+
+    if(s->avctx->debug&(FF_DEBUG_SKIP | FF_DEBUG_QP | FF_DEBUG_MB_TYPE)){
+        int x,y;
+
+        for(y=0; y<s->mb_height; y++){
+            for(x=0; x<s->mb_width; x++){
+                if(s->avctx->debug&FF_DEBUG_SKIP){
+                    int count= s->mbskip_table[x + y*s->mb_stride];
+                    if(count>9) count=9;
+                    printf("%1d", count);
+                }
+                if(s->avctx->debug&FF_DEBUG_QP){
+                    printf("%2d", pict->qscale_table[x + y*s->mb_stride]);
+                }
+                if(s->avctx->debug&FF_DEBUG_MB_TYPE){
+                    int mb_type= pict->mb_type[x + y*s->mb_stride];
+                    
+                    //Type & MV direction
+                    if(IS_PCM(mb_type))
+                        printf("P");
+                    else if(IS_INTRA(mb_type) && IS_ACPRED(mb_type))
+                        printf("A");
+                    else if(IS_INTRA4x4(mb_type))
+                        printf("i");
+                    else if(IS_INTRA16x16(mb_type))
+                        printf("I");
+                    else if(IS_DIRECT(mb_type) && IS_SKIP(mb_type))
+                        printf("d");
+                    else if(IS_DIRECT(mb_type))
+                        printf("D");
+                    else if(IS_GMC(mb_type) && IS_SKIP(mb_type))
+                        printf("g");
+                    else if(IS_GMC(mb_type))
+                        printf("G");
+                    else if(IS_SKIP(mb_type))
+                        printf("S");
+                    else if(!USES_LIST(mb_type, 1))
+                        printf(">");
+                    else if(!USES_LIST(mb_type, 0))
+                        printf("<");
+                    else{
+                        assert(USES_LIST(mb_type, 0) && USES_LIST(mb_type, 1));
+                        printf("X");
+                    }
+                    
+                    //segmentation
+                    if(IS_8X8(mb_type))
+                        printf("+");
+                    else if(IS_16X8(mb_type))
+                        printf("-");
+                    else if(IS_8X16(mb_type))
+                        printf("¦");
+                    else if(IS_INTRA(mb_type) || IS_16X16(mb_type))
+                        printf(" ");
+                    else
+                        printf("?");
+                    
+                        
+                    if(IS_INTERLACED(mb_type) && s->codec_id == CODEC_ID_H264)
+                        printf("=");
+                    else
+                        printf(" ");
+                }
+//                printf(" ");
+            }
+            printf("\n");
+        }
+    }
 }
 
 #ifdef CONFIG_ENCODERS
@@ -2007,7 +2088,7 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
     memset(s->ac_val[1][xy], 0, 16 * sizeof(int16_t));
     memset(s->ac_val[2][xy], 0, 16 * sizeof(int16_t));
     
-    s->mbintra_table[s->mb_x + s->mb_y*s->mb_width]= 0;
+    s->mbintra_table[s->mb_x + s->mb_y*s->mb_stride]= 0;
 }
 
 /* generic function called after a macroblock has been parsed by the
@@ -2023,7 +2104,7 @@ void ff_clean_intra_table_entries(MpegEncContext *s)
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int mb_x, mb_y;
-    const int mb_xy = s->mb_y * s->mb_width + s->mb_x;
+    const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
     mb_x = s->mb_x;
     mb_y = s->mb_y;
@@ -2049,33 +2130,26 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         //FIXME a lot of thet is only needed for !low_delay
         const int wrap = s->block_wrap[0];
         const int xy = s->block_index[0];
-        const int mb_index= s->mb_x + s->mb_y*s->mb_width;
-        if(s->mv_type == MV_TYPE_8X8){
-            s->co_located_type_table[mb_index]= CO_LOCATED_TYPE_4MV;
-        } else {
+        if(s->mv_type != MV_TYPE_8X8){
             int motion_x, motion_y;
             if (s->mb_intra) {
                 motion_x = 0;
                 motion_y = 0;
-                if(s->co_located_type_table)
-                    s->co_located_type_table[mb_index]= 0;
             } else if (s->mv_type == MV_TYPE_16X16) {
                 motion_x = s->mv[0][0][0];
                 motion_y = s->mv[0][0][1];
-                if(s->co_located_type_table)
-                    s->co_located_type_table[mb_index]= 0;
             } else /*if (s->mv_type == MV_TYPE_FIELD)*/ {
                 int i;
                 motion_x = s->mv[0][0][0] + s->mv[0][1][0];
                 motion_y = s->mv[0][0][1] + s->mv[0][1][1];
                 motion_x = (motion_x>>1) | (motion_x&1);
                 for(i=0; i<2; i++){
-                    s->field_mv_table[mb_index][i][0]= s->mv[0][i][0];
-                    s->field_mv_table[mb_index][i][1]= s->mv[0][i][1];
-                    s->field_select_table[mb_index][i]= s->field_select[0][i];
+                    s->field_mv_table[mb_xy][i][0]= s->mv[0][i][0];
+                    s->field_mv_table[mb_xy][i][1]= s->mv[0][i][1];
+                    s->field_select_table[mb_xy][i]= s->field_select[0][i];
                 }
-                s->co_located_type_table[mb_index]= CO_LOCATED_TYPE_FIELDMV;
             }
+            
             /* no update if 8X8 because it has been done during parsing */
             s->motion_val[xy][0] = motion_x;
             s->motion_val[xy][1] = motion_y;
@@ -2085,6 +2159,13 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             s->motion_val[xy + wrap][1] = motion_y;
             s->motion_val[xy + 1 + wrap][0] = motion_x;
             s->motion_val[xy + 1 + wrap][1] = motion_y;
+        }
+
+        if(s->encoding){ //FIXME encoding MUST be cleaned up
+            if (s->mv_type == MV_TYPE_8X8) 
+                s->current_picture.mb_type[mb_xy]= MB_TYPE_L0 | MB_TYPE_8x8;
+            else
+                s->current_picture.mb_type[mb_xy]= MB_TYPE_L0 | MB_TYPE_16x16;
         }
     }
     
@@ -2411,7 +2492,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     for(i=0; i<6; i++) skip_dct[i]=0;
     
     if(s->adaptive_quant){
-        s->dquant= s->current_picture.qscale_table[mb_x + mb_y*s->mb_width] - s->qscale;
+        s->dquant= s->current_picture.qscale_table[mb_x + mb_y*s->mb_stride] - s->qscale;
 
         if(s->out_format==FMT_H263){
             if     (s->dquant> 2) s->dquant= 2;
@@ -2562,7 +2643,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             s->dsp.diff_pixels(s->block[5], ptr_cr, dest_cr, wrap_c);
         }
         /* pre quantization */         
-        if(s->current_picture.mc_mb_var[s->mb_width*mb_y+ mb_x]<2*s->qscale*s->qscale){
+        if(s->current_picture.mc_mb_var[s->mb_stride*mb_y+ mb_x]<2*s->qscale*s->qscale){
             //FIXME optimize
 	    if(s->dsp.pix_abs8x8(ptr_y               , dest_y               , wrap_y) < 20*s->qscale) skip_dct[0]= 1;
             if(s->dsp.pix_abs8x8(ptr_y            + 8, dest_y            + 8, wrap_y) < 20*s->qscale) skip_dct[1]= 1;
@@ -2593,13 +2674,13 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             {
                 float adap_parm;
                 
-                adap_parm = ((s->avg_mb_var << 1) + s->mb_var[s->mb_width*mb_y+mb_x] + 1.0) /
-                            ((s->mb_var[s->mb_width*mb_y+mb_x] << 1) + s->avg_mb_var + 1.0);
+                adap_parm = ((s->avg_mb_var << 1) + s->mb_var[s->mb_stride*mb_y+mb_x] + 1.0) /
+                            ((s->mb_var[s->mb_stride*mb_y+mb_x] << 1) + s->avg_mb_var + 1.0);
             
                 printf("\ntype=%c qscale=%2d adap=%0.2f dquant=%4.2f var=%4d avgvar=%4d", 
-                        (s->mb_type[s->mb_width*mb_y+mb_x] > 0) ? 'I' : 'P', 
+                        (s->mb_type[s->mb_stride*mb_y+mb_x] > 0) ? 'I' : 'P', 
                         s->qscale, adap_parm, s->qscale*adap_parm,
-                        s->mb_var[s->mb_width*mb_y+mb_x], s->avg_mb_var);
+                        s->mb_var[s->mb_stride*mb_y+mb_x], s->avg_mb_var);
             }
 #endif
     /* DCT & quantize */
@@ -2837,13 +2918,6 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
 
     s->picture_number = picture_number;
-
-    s->block_wrap[0]=
-    s->block_wrap[1]=
-    s->block_wrap[2]=
-    s->block_wrap[3]= s->mb_width*2 + 2;
-    s->block_wrap[4]=
-    s->block_wrap[5]= s->mb_width + 2;
     
     /* Reset the average MB variance */
     s->current_picture.mb_var_sum = 0;
@@ -2912,8 +2986,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         /* I-Frame */
         //FIXME do we need to zero them?
         memset(s->motion_val[0], 0, sizeof(int16_t)*(s->mb_width*2 + 2)*(s->mb_height*2 + 2)*2);
-        memset(s->p_mv_table   , 0, sizeof(int16_t)*(s->mb_width+2)*(s->mb_height+2)*2);
-        memset(s->mb_type      , MB_TYPE_INTRA, sizeof(uint8_t)*s->mb_width*s->mb_height);
+        memset(s->p_mv_table   , 0, sizeof(int16_t)*(s->mb_stride)*s->mb_height*2);
+        memset(s->mb_type      , MB_TYPE_INTRA, sizeof(uint8_t)*s->mb_stride*s->mb_height);
         
         if(!s->fixed_qscale){
             /* finding spatial complexity for I-frame rate control */
@@ -2927,8 +3001,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     
 		    varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
 
-                    s->current_picture.mb_var [s->mb_width * mb_y + mb_x] = varc;
-                    s->current_picture.mb_mean[s->mb_width * mb_y + mb_x] = (sum+128)>>8;
+                    s->current_picture.mb_var [s->mb_stride * mb_y + mb_x] = varc;
+                    s->current_picture.mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
                     s->current_picture.mb_var_sum    += varc;
                 }
             }
@@ -2938,7 +3012,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
     if(s->scene_change_score > 0 && s->pict_type == P_TYPE){
         s->pict_type= I_TYPE;
-        memset(s->mb_type   , MB_TYPE_INTRA, sizeof(uint8_t)*s->mb_width*s->mb_height);
+        memset(s->mb_type   , MB_TYPE_INTRA, sizeof(uint8_t)*s->mb_stride*s->mb_height);
 //printf("Scene change detected, encoding as I Frame %d %d\n", s->current_picture.mb_var_sum, s->current_picture.mc_mb_var_sum);
     }
 
@@ -3081,8 +3155,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         s->block_index[4]= s->block_wrap[4]*(mb_y + 1)                    + s->block_wrap[0]*(s->mb_height*2 + 2);
         s->block_index[5]= s->block_wrap[4]*(mb_y + 1 + s->mb_height + 2) + s->block_wrap[0]*(s->mb_height*2 + 2);
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
-            int mb_type= s->mb_type[mb_y * s->mb_width + mb_x];
-            const int xy= (mb_y+1) * (s->mb_width+2) + mb_x + 1;
+            const int xy= mb_y*s->mb_stride + mb_x;
+            int mb_type= s->mb_type[xy];
 //            int d;
             int dmin=10000000;
 
@@ -3235,7 +3309,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                                  &dmin, &next_block, 0, 0);
                     /* force cleaning of ac/dc pred stuff if needed ... */
                     if(s->h263_pred || s->h263_aic)
-                        s->mbintra_table[mb_x + mb_y*s->mb_width]=1;
+                        s->mbintra_table[mb_x + mb_y*s->mb_stride]=1;
                 }
                 copy_context_after_encode(s, &best_s, -1);
                 
@@ -3259,16 +3333,16 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             } else {
                 int motion_x, motion_y;
                 int intra_score;
-                int inter_score= s->current_picture.mb_cmp_score[mb_x + mb_y*s->mb_width];
+                int inter_score= s->current_picture.mb_cmp_score[mb_x + mb_y*s->mb_stride];
                 
               if(!(s->flags&CODEC_FLAG_HQ) && s->pict_type==P_TYPE){
                 /* get luma score */
                 if((s->avctx->mb_cmp&0xFF)==FF_CMP_SSE){
-                    intra_score= (s->current_picture.mb_var[mb_x + mb_y*s->mb_width]<<8) - 500; //FIXME dont scale it down so we dont have to fix it
+                    intra_score= (s->current_picture.mb_var[mb_x + mb_y*s->mb_stride]<<8) - 500; //FIXME dont scale it down so we dont have to fix it
                 }else{
                     uint8_t *dest_y;
 
-                    int mean= s->current_picture.mb_mean[mb_x + mb_y*s->mb_width]; //FIXME
+                    int mean= s->current_picture.mb_mean[mb_x + mb_y*s->mb_stride]; //FIXME
                     mean*= 0x01010101;
                     
                     dest_y  = s->new_picture.data[0] + (mb_y * 16 * s->linesize    ) + mb_x * 16;
@@ -3284,8 +3358,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     intra_score= s->dsp.mb_cmp[0](s, s->me.scratchpad, dest_y, s->linesize);
                                         
 /*                    printf("intra:%7d inter:%7d var:%7d mc_var.%7d\n", intra_score>>8, inter_score>>8, 
-                        s->current_picture.mb_var[mb_x + mb_y*s->mb_width],
-                        s->current_picture.mc_mb_var[mb_x + mb_y*s->mb_width]);*/
+                        s->current_picture.mb_var[mb_x + mb_y*s->mb_stride],
+                        s->current_picture.mc_mb_var[mb_x + mb_y*s->mb_stride]);*/
                 }
                 
                 /* get chroma score */
@@ -3442,7 +3516,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                     s->current_picture.data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
                     w>>1, h>>1, s->uvlinesize);
             }
-//printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_width, get_bit_count(&s->pb));
+//printf("MB %d %d bits\n", s->mb_x+s->mb_y*s->mb_stride, get_bit_count(&s->pb));
         }
     }
     emms_c();

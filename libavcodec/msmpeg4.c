@@ -27,7 +27,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-//#define PRINT_MB
 
 /*
  * You can also call this codec : MPEG4 with a twist ! 
@@ -1585,13 +1584,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int cbp, code, i;
     uint8_t *coded_val;
-
-#ifdef PRINT_MB
-if(s->mb_x==0){
-    printf("\n");
-    if(s->mb_y==0) printf("\n");
-}
-#endif
+    uint32_t * const mb_type_ptr= &s->current_picture.mb_type[ s->mb_x + s->mb_y*s->mb_stride ];
 
     if (s->pict_type == P_TYPE) {
         set_stat(ST_INTER_MB);
@@ -1606,9 +1599,8 @@ if(s->mb_x==0){
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
                 s->mb_skiped = 1;
-#ifdef PRINT_MB
-printf("S ");
-#endif
+                *mb_type_ptr = MB_TYPE_SKIP | MB_TYPE_L0 | MB_TYPE_16x16;
+
                 return 0;
             }
         }
@@ -1654,16 +1646,12 @@ printf("S ");
         s->mv_type = MV_TYPE_16X16;
         s->mv[0][0][0] = mx;
         s->mv[0][0][1] = my;
-#ifdef PRINT_MB
-printf("P ");
-#endif
+        *mb_type_ptr = MB_TYPE_L0 | MB_TYPE_16x16;
     } else {
 //printf("I at %d %d %d %06X\n", s->mb_x, s->mb_y, ((cbp&3)? 1 : 0) +((cbp&0x3C)? 2 : 0), show_bits(&s->gb, 24));
         set_stat(ST_INTRA_MB);
         s->ac_pred = get_bits1(&s->gb);
-#ifdef PRINT_MB
-printf("%c", s->ac_pred ? 'A' : 'I');
-#endif
+        *mb_type_ptr = MB_TYPE_INTRA;
         if(s->inter_intra_pred){
             s->h263_aic_dir= get_vlc2(&s->gb, inter_intra_vlc.table, INTER_INTRA_VLC_BITS, 1);
 //            printf("%d%d %d %d/", s->ac_pred, s->h263_aic_dir, s->mb_x, s->mb_y);
@@ -1701,14 +1689,7 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 	/* DC coef */
         set_stat(ST_DC);
         level = msmpeg4_decode_dc(s, n, &dc_pred_dir);
-#ifdef PRINT_MB
-{
-    static int c;
-    if(n==0) c=0;
-    if(n==4) printf("%X", c);
-    c+= c +dc_pred_dir;
-}
-#endif
+        
         if (level < 0){
             fprintf(stderr, "dc overflow- block: %d qscale: %d//\n", n, s->qscale);
             if(s->inter_intra_pred) level=0;

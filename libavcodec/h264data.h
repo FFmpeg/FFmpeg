@@ -306,6 +306,9 @@ static const uint8_t chroma_dc_scan[4]={
  (0+1*2)*16, (1+1*2)*16,  //FIXME
 };
 
+#define MB_TYPE_REF0       0x40000000
+#define IS_REF0(a)       ((a)&MB_TYPE_REF0)
+
 typedef struct IMbInfo{
     uint16_t type;
     uint8_t pred_mode;
@@ -362,7 +365,7 @@ static const PMbInfo p_sub_mb_type_info[4]={
 };
 
 static const PMbInfo b_mb_type_info[23]={
-{MB_TYPE_DIRECT                                                   , 1, },
+{MB_TYPE_DIRECT2                                                   , 1, },
 {MB_TYPE_16x16|MB_TYPE_P0L0                                       , 1, },
 {MB_TYPE_16x16             |MB_TYPE_P0L1                          , 1, },
 {MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1                          , 1, },
@@ -388,7 +391,7 @@ static const PMbInfo b_mb_type_info[23]={
 };
 
 static const PMbInfo b_sub_mb_type_info[13]={
-{MB_TYPE_DIRECT                                                   , 1, },
+{MB_TYPE_DIRECT2                                                   , 1, },
 {MB_TYPE_16x16|MB_TYPE_P0L0                                       , 1, },
 {MB_TYPE_16x16             |MB_TYPE_P0L1                          , 1, },
 {MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P0L1                          , 1, },

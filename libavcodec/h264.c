@@ -149,8 +149,6 @@ typedef struct H264Context{
     uint8_t *rbsp_buffer;
     int rbsp_buffer_size;
 
-    int mb_stride; ///< stride of some mb tables
-
     int chroma_qp; //QPc
 
     int prev_mb_skiped; //FIXME remove (IMHO not used)
@@ -355,7 +353,7 @@ static inline void fill_rectangle(void *p, int w, int h, int stride, uint32_t va
 
 static inline void fill_caches(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*h->mb_stride;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
     int topleft_type, top_type, topright_type, left_type[2];
     int left_block[4];
@@ -366,9 +364,9 @@ static inline void fill_caches(H264Context *h, int mb_type){
     if(h->sps.mb_aff){
     //FIXME
     }else{
-        topleft_xy = mb_xy-1 - h->mb_stride;
-        top_xy     = mb_xy   - h->mb_stride;
-        topright_xy= mb_xy+1 - h->mb_stride;
+        topleft_xy = mb_xy-1 - s->mb_stride;
+        top_xy     = mb_xy   - s->mb_stride;
+        topright_xy= mb_xy+1 - s->mb_stride;
         left_xy[0]   = mb_xy-1;
         left_xy[1]   = mb_xy-1;
         left_block[0]= 0;
@@ -602,7 +600,7 @@ static inline void fill_caches(H264Context *h, int mb_type){
 
 static inline void write_back_intra_pred_mode(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*h->mb_stride;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
 
     h->intra4x4_pred_mode[mb_xy][0]= h->intra4x4_pred_mode_cache[7+8*1];
     h->intra4x4_pred_mode[mb_xy][1]= h->intra4x4_pred_mode_cache[7+8*2];
@@ -693,7 +691,7 @@ static inline int pred_intra_mode(H264Context *h, int n){
 
 static inline void write_back_non_zero_count(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*h->mb_stride;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
 
     h->non_zero_count[mb_xy][0]= h->non_zero_count_cache[4+8*4];
     h->non_zero_count[mb_xy][1]= h->non_zero_count_cache[5+8*4];
@@ -896,7 +894,7 @@ static inline void pred_pskip_motion(H264Context * const h, int * const mx, int 
 
 static inline void write_back_motion(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*h->mb_stride;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     const int b_xy = 4*s->mb_x + 4*s->mb_y*h->b_stride;
     const int b8_xy= 2*s->mb_x + 2*s->mb_y*h->b8_stride;
     int list;
@@ -1952,7 +1950,7 @@ static void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t
                       qpel_mc_func (*qpix_put)[16], h264_chroma_mc_func (*chroma_put),
                       qpel_mc_func (*qpix_avg)[16], h264_chroma_mc_func (*chroma_avg)){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*h->mb_stride;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     const int mb_type= s->current_picture.mb_type[mb_xy];
     
     assert(IS_INTER(mb_type));
@@ -2122,7 +2120,7 @@ static void free_tables(H264Context *h){
  */
 static int alloc_tables(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int big_mb_num= h->mb_stride * (s->mb_height+1);
+    const int big_mb_num= s->mb_stride * (s->mb_height+1);
     int x,y;
 
     CHECKED_ALLOCZ(h->intra4x4_pred_mode, big_mb_num * 8  * sizeof(uint8_t))
@@ -2130,13 +2128,13 @@ static int alloc_tables(H264Context *h){
     CHECKED_ALLOCZ(h->slice_table_base  , big_mb_num * sizeof(uint8_t))
 
     memset(h->slice_table_base, -1, big_mb_num  * sizeof(uint8_t));
-    h->slice_table= h->slice_table_base + h->mb_stride + 1;
+    h->slice_table= h->slice_table_base + s->mb_stride + 1;
 
     CHECKED_ALLOCZ(h->mb2b_xy  , big_mb_num * sizeof(uint16_t));
     CHECKED_ALLOCZ(h->mb2b8_xy , big_mb_num * sizeof(uint16_t));
     for(y=0; y<s->mb_height; y++){
         for(x=0; x<s->mb_width; x++){
-            const int mb_xy= x + y*h->mb_stride;
+            const int mb_xy= x + y*s->mb_stride;
             const int b_xy = 4*x + 4*y*h->b_stride;
             const int b8_xy= 2*x + 2*y*h->b8_stride;
         
@@ -2211,7 +2209,7 @@ static void hl_decode_mb(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int mb_x= s->mb_x;
     const int mb_y= s->mb_y;
-    const int mb_xy= mb_x + mb_y*h->mb_stride;
+    const int mb_xy= mb_x + mb_y*s->mb_stride;
     const int mb_type= s->current_picture.mb_type[mb_xy];
     uint8_t  *dest_y, *dest_cb, *dest_cr;
     int linesize, uvlinesize /*dct_offset*/;
@@ -2839,7 +2837,6 @@ static int decode_slice_header(H264Context *h){
     
     s->mb_width= h->sps.mb_width;
     s->mb_height= h->sps.mb_height;
-    h->mb_stride= s->mb_width + 1;
     
     h->b_stride=  s->mb_width*4;
     h->b8_stride= s->mb_width*2;
@@ -3171,7 +3168,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
  */
 static int decode_mb(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*h->mb_stride;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int mb_type, partition_count, cbp;
 
     memset(h->mb, 0, sizeof(int16_t)*24*16); //FIXME avoid if allready clear (move after skip handlong?
@@ -4164,6 +4161,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     *pict= *(AVFrame*)&s->current_picture; //FIXME 
+    ff_print_debug_info(s, s->current_picture_ptr);
     assert(pict->data[0]);
 //printf("out %d\n", (int)pict->data[0]);
 #if 0 //?
@@ -4183,12 +4181,12 @@ static int decode_frame(AVCodecContext *avctx,
 #if 0
 static inline void fill_mb_avail(H264Context *h){
     MpegEncContext * const s = &h->s;
-    const int mb_xy= s->mb_x + s->mb_y*h->mb_stride;
+    const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
 
     if(s->mb_y){
-        h->mb_avail[0]= s->mb_x                 && h->slice_table[mb_xy - h->mb_stride - 1] == h->slice_num;
-        h->mb_avail[1]=                            h->slice_table[mb_xy - h->mb_stride    ] == h->slice_num;
-        h->mb_avail[2]= s->mb_x+1 < s->mb_width && h->slice_table[mb_xy - h->mb_stride + 1] == h->slice_num;
+        h->mb_avail[0]= s->mb_x                 && h->slice_table[mb_xy - s->mb_stride - 1] == h->slice_num;
+        h->mb_avail[1]=                            h->slice_table[mb_xy - s->mb_stride    ] == h->slice_num;
+        h->mb_avail[2]= s->mb_x+1 < s->mb_width && h->slice_table[mb_xy - s->mb_stride + 1] == h->slice_num;
     }else{
         h->mb_avail[0]=
         h->mb_avail[1]=

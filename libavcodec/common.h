@@ -999,6 +999,15 @@ if((y)<(x)){\
 #define free please_use_av_free
 #define realloc please_use_av_realloc
 
+#define CHECKED_ALLOCZ(p, size)\
+{\
+    p= av_mallocz(size);\
+    if(p==NULL){\
+        perror("malloc");\
+        goto fail;\
+    }\
+}
+
 #endif /* HAVE_AV_CONFIG_H */
 
 #endif /* COMMON_H */

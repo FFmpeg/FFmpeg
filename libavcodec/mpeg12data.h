@@ -289,80 +289,57 @@ static const uint8_t mbPatTable[63][2] = {
     {0xc, 6}
 };
 
-#define MB_INTRA 0x01
-#define MB_PAT   0x02
-#define MB_BACK  0x04
-#define MB_FOR   0x08
-#define MB_QUANT 0x10  
+#define MB_TYPE_PAT       0x40000000
+#define MB_TYPE_ZERO_MV   0x20000000
+#define IS_ZERO_MV(a)   ((a)&MB_TYPE_ZERO_MV)
+#define IS_PAT(a)       ((a)&MB_TYPE_PAT)
 
-static const uint8_t table_mb_ptype[32][2] = {
-    { 0, 0 }, // 0x00
+static const uint8_t table_mb_ptype[7][2] = {
     { 3, 5 }, // 0x01 MB_INTRA
     { 1, 2 }, // 0x02 MB_PAT
-    { 0, 0 }, // 0x03
-    { 0, 0 }, // 0x04
-    { 0, 0 }, // 0x05
-    { 0, 0 }, // 0x06
-    { 0, 0 }, // 0x07
     { 1, 3 }, // 0x08 MB_FOR
-    { 0, 0 }, // 0x09
     { 1, 1 }, // 0x0A MB_FOR|MB_PAT
-    { 0, 0 }, // 0x0B
-    { 0, 0 }, // 0x0C
-    { 0, 0 }, // 0x0D
-    { 0, 0 }, // 0x0E
-    { 0, 0 }, // 0x0F
-    { 0, 0 }, // 0x10
     { 1, 6 }, // 0x11 MB_QUANT|MB_INTRA
     { 1, 5 }, // 0x12 MB_QUANT|MB_PAT
-    { 0, 0 }, // 0x13
-    { 0, 0 }, // 0x14
-    { 0, 0 }, // 0x15
-    { 0, 0 }, // 0x16
-    { 0, 0 }, // 0x17
-    { 0, 0 }, // 0x18
-    { 0, 0 }, // 0x19
     { 2, 5 }, // 0x1A MB_QUANT|MB_FOR|MB_PAT
-    { 0, 0 }, // 0x1B
-    { 0, 0 }, // 0x1C
-    { 0, 0 }, // 0x1D
-    { 0, 0 }, // 0x1E
-    { 0, 0 }, // 0x1F
 };
 
-static const uint8_t table_mb_btype[32][2] = {
-    { 0, 0 }, // 0x00
+static const uint32_t ptype2mb_type[7] = {
+                    MB_TYPE_INTRA,
+                    MB_TYPE_L0 | MB_TYPE_PAT | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
+                    MB_TYPE_L0,
+                    MB_TYPE_L0 | MB_TYPE_PAT,
+    MB_TYPE_QUANT | MB_TYPE_INTRA,
+    MB_TYPE_QUANT | MB_TYPE_L0 | MB_TYPE_PAT | MB_TYPE_ZERO_MV | MB_TYPE_16x16,
+    MB_TYPE_QUANT | MB_TYPE_L0 | MB_TYPE_PAT,
+};
+
+static const uint8_t table_mb_btype[11][2] = {
     { 3, 5 }, // 0x01 MB_INTRA
-    { 0, 0 }, // 0x02
-    { 0, 0 }, // 0x03
     { 2, 3 }, // 0x04 MB_BACK
-    { 0, 0 }, // 0x05
     { 3, 3 }, // 0x06 MB_BACK|MB_PAT
-    { 0, 0 }, // 0x07
     { 2, 4 }, // 0x08 MB_FOR
-    { 0, 0 }, // 0x09
     { 3, 4 }, // 0x0A MB_FOR|MB_PAT
-    { 0, 0 }, // 0x0B
     { 2, 2 }, // 0x0C MB_FOR|MB_BACK
-    { 0, 0 }, // 0x0D
     { 3, 2 }, // 0x0E MB_FOR|MB_BACK|MB_PAT
-    { 0, 0 }, // 0x0F
-    { 0, 0 }, // 0x10
     { 1, 6 }, // 0x11 MB_QUANT|MB_INTRA
-    { 0, 0 }, // 0x12
-    { 0, 0 }, // 0x13
-    { 0, 0 }, // 0x14
-    { 0, 0 }, // 0x15
     { 2, 6 }, // 0x16 MB_QUANT|MB_BACK|MB_PAT
-    { 0, 0 }, // 0x17
-    { 0, 0 }, // 0x18
-    { 0, 0 }, // 0x19
     { 3, 6 }, // 0x1A MB_QUANT|MB_FOR|MB_PAT
-    { 0, 0 }, // 0x1B
-    { 0, 0 }, // 0x1C
-    { 0, 0 }, // 0x1D
     { 2, 5 }, // 0x1E MB_QUANT|MB_FOR|MB_BACK|MB_PAT
-    { 0, 0 }, // 0x1F
+};
+
+static const uint32_t btype2mb_type[11] = {
+                    MB_TYPE_INTRA,
+                    MB_TYPE_L1,
+                    MB_TYPE_L1   | MB_TYPE_PAT,
+                    MB_TYPE_L0,
+                    MB_TYPE_L0   | MB_TYPE_PAT,
+                    MB_TYPE_L0L1,
+                    MB_TYPE_L0L1 | MB_TYPE_PAT,
+    MB_TYPE_QUANT | MB_TYPE_INTRA,
+    MB_TYPE_QUANT | MB_TYPE_L1   | MB_TYPE_PAT,
+    MB_TYPE_QUANT | MB_TYPE_L0   | MB_TYPE_PAT,
+    MB_TYPE_QUANT | MB_TYPE_L0L1 | MB_TYPE_PAT,
 };
 
 static const uint8_t mbMotionVectorTable[17][2] = {

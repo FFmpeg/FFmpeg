@@ -775,7 +775,7 @@ static inline int sad_hpel_motion_search(MpegEncContext * s,
 
 static inline void set_p_mv_tables(MpegEncContext * s, int mx, int my, int mv4)
 {
-    const int xy= s->mb_x + 1 + (s->mb_y + 1)*(s->mb_width + 2);
+    const int xy= s->mb_x + s->mb_y*s->mb_stride;
     
     s->p_mv_table[xy][0] = mx;
     s->p_mv_table[xy][1] = my;
@@ -1076,10 +1076,10 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     vard = (s->dsp.sse[0](NULL, pix, ppix, s->linesize)+128)>>8;
 
 //printf("%d %d %d %X %X %X\n", s->mb_width, mb_x, mb_y,(int)s, (int)s->mb_var, (int)s->mc_mb_var); fflush(stdout);
-    pic->mb_var   [s->mb_width * mb_y + mb_x] = varc;
-    pic->mc_mb_var[s->mb_width * mb_y + mb_x] = vard;
-    pic->mb_mean  [s->mb_width * mb_y + mb_x] = (sum+128)>>8;
-//    pic->mb_cmp_score[s->mb_width * mb_y + mb_x] = dmin; 
+    pic->mb_var   [s->mb_stride * mb_y + mb_x] = varc;
+    pic->mc_mb_var[s->mb_stride * mb_y + mb_x] = vard;
+    pic->mb_mean  [s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
+//    pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin; 
     pic->mb_var_sum    += varc;
     pic->mc_mb_var_sum += vard;
 //printf("E%d %d %d %X %X %X\n", s->mb_width, mb_x, mb_y,(int)s, (int)s->mb_var, (int)s->mc_mb_var); fflush(stdout);
@@ -1129,7 +1129,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
                 dmin=dmin4;
             }
         }
-        pic->mb_cmp_score[s->mb_width * mb_y + mb_x] = dmin; 
+        pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin; 
         set_p_mv_tables(s, mx, my, mb_type!=MB_TYPE_INTER4V);
         
         if (vard <= 64 || vard < varc) {
@@ -1139,7 +1139,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         }
     }
 
-    s->mb_type[mb_y*s->mb_width + mb_x]= mb_type;
+    s->mb_type[mb_y*s->mb_stride + mb_x]= mb_type;
 }
 
 int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
@@ -1152,8 +1152,7 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
     int P[10][2];
     const int shift= 1+s->quarter_sample;
     uint8_t * const mv_penalty= s->me.mv_penalty[s->f_code] + MAX_MV;
-    const int mv_stride= s->mb_width + 2;
-    const int xy= mb_x + 1 + (mb_y + 1)*mv_stride;
+    const int xy= mb_x + mb_y*s->mb_stride;
     
     assert(s->quarter_sample==0 || s->quarter_sample==1);
 
@@ -1178,10 +1177,10 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
         P_TOP[0]= P_TOPRIGHT[0]= P_MEDIAN[0]=
         P_TOP[1]= P_TOPRIGHT[1]= P_MEDIAN[1]= 0; //FIXME 
     } else {
-        P_TOP[0]      = s->p_mv_table[xy + mv_stride    ][0];
-        P_TOP[1]      = s->p_mv_table[xy + mv_stride    ][1];
-        P_TOPRIGHT[0] = s->p_mv_table[xy + mv_stride - 1][0];
-        P_TOPRIGHT[1] = s->p_mv_table[xy + mv_stride - 1][1];
+        P_TOP[0]      = s->p_mv_table[xy + s->mb_stride    ][0];
+        P_TOP[1]      = s->p_mv_table[xy + s->mb_stride    ][1];
+        P_TOPRIGHT[0] = s->p_mv_table[xy + s->mb_stride - 1][0];
+        P_TOPRIGHT[1] = s->p_mv_table[xy + s->mb_stride - 1][1];
         if(P_TOP[1]      < (rel_ymin<<shift)) P_TOP[1]     = (rel_ymin<<shift);
         if(P_TOPRIGHT[0] > (rel_xmax<<shift)) P_TOPRIGHT[0]= (rel_xmax<<shift);
         if(P_TOPRIGHT[1] < (rel_ymin<<shift)) P_TOPRIGHT[1]= (rel_ymin<<shift);
@@ -1210,8 +1209,8 @@ static int ff_estimate_motion_b(MpegEncContext * s,
     int pred_x=0, pred_y=0;
     int P[10][2];
     const int shift= 1+s->quarter_sample;
-    const int mot_stride = s->mb_width + 2;
-    const int mot_xy = (mb_y + 1)*mot_stride + mb_x + 1;
+    const int mot_stride = s->mb_stride;
+    const int mot_xy = mb_y*mot_stride + mb_x;
     uint8_t * const ref_picture= picture->data[0];
     uint8_t * const mv_penalty= s->me.mv_penalty[f_code] + MAX_MV;
     int mv_scale;
@@ -1370,8 +1369,8 @@ static inline int check_bidir_mv(MpegEncContext * s,
 static inline int bidir_refine(MpegEncContext * s,
                                   int mb_x, int mb_y)
 {
-    const int mot_stride = s->mb_width + 2;
-    const int xy = (mb_y + 1)*mot_stride + mb_x + 1;
+    const int mot_stride = s->mb_stride;
+    const int xy = mb_y *mot_stride + mb_x;
     int fbmin;
     int pred_fx= s->b_bidir_forw_mv_table[xy-1][0];
     int pred_fy= s->b_bidir_forw_mv_table[xy-1][1];
@@ -1397,8 +1396,8 @@ static inline int direct_search(MpegEncContext * s,
                                 int mb_x, int mb_y)
 {
     int P[10][2];
-    const int mot_stride = s->mb_width + 2;
-    const int mot_xy = (mb_y + 1)*mot_stride + mb_x + 1;
+    const int mot_stride = s->mb_stride;
+    const int mot_xy = mb_y*mot_stride + mb_x;
     const int shift= 1+s->quarter_sample;
     int dmin, i;
     const int time_pp= s->pp_time;
@@ -1410,7 +1409,7 @@ static inline int direct_search(MpegEncContext * s,
     ymin= xmin=(-32)>>shift;
     ymax= xmax=   31>>shift;
 
-    if(s->co_located_type_table[mb_x + mb_y*s->mb_width]==CO_LOCATED_TYPE_4MV){
+    if(IS_8X8(s->next_picture.mb_type[mot_xy])){
         s->mv_type= MV_TYPE_8X8;
     }else{
         s->mv_type= MV_TYPE_16X16;
@@ -1526,7 +1525,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         
         score= ((unsigned)(score*score + 128*256))>>16;
         s->current_picture.mc_mb_var_sum += score;
-        s->current_picture.mc_mb_var[mb_y*s->mb_width + mb_x] = score; //FIXME use SSE
+        s->current_picture.mc_mb_var[mb_y*s->mb_stride + mb_x] = score; //FIXME use SSE
     }
 
     if(s->flags&CODEC_FLAG_HQ){
@@ -1534,7 +1533,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         if(dmin>256*256*16) type&= ~MB_TYPE_DIRECT; //dont try direct mode if its invalid for this MB
     }
 
-    s->mb_type[mb_y*s->mb_width + mb_x]= type;
+    s->mb_type[mb_y*s->mb_stride + mb_x]= type;
 }
 
 /* find best f_code for ME which do unlimited searches */
@@ -1551,20 +1550,18 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
 
         for(y=0; y<s->mb_height; y++){
             int x;
-            int xy= (y+1)* (s->mb_width+2) + 1;
-            i= y*s->mb_width;
+            int xy= y*s->mb_stride;
             for(x=0; x<s->mb_width; x++){
-                if(s->mb_type[i] & type){
+                if(s->mb_type[xy] & type){
                     int fcode= FFMAX(fcode_tab[mv_table[xy][0] + MAX_MV],
                                      fcode_tab[mv_table[xy][1] + MAX_MV]);
                     int j;
                     
                     for(j=0; j<fcode && j<8; j++){
-                        if(s->pict_type==B_TYPE || s->current_picture.mc_mb_var[i] < s->current_picture.mb_var[i])
+                        if(s->pict_type==B_TYPE || s->current_picture.mc_mb_var[xy] < s->current_picture.mb_var[xy])
                             score[j]-= 170;
                     }
                 }
-                i++;
                 xy++;
             }
         }
@@ -1602,23 +1599,18 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
     /* clip / convert to intra 16x16 type MVs */
     for(y=0; y<s->mb_height; y++){
         int x;
-        int xy= (y+1)* (s->mb_width+2)+1;
-        int i= y*s->mb_width;
+        int xy= y*s->mb_stride;
         for(x=0; x<s->mb_width; x++){
-            if(s->mb_type[i]&MB_TYPE_INTER){
+            if(s->mb_type[xy]&MB_TYPE_INTER){
                 if(   s->p_mv_table[xy][0] >=range || s->p_mv_table[xy][0] <-range
                    || s->p_mv_table[xy][1] >=range || s->p_mv_table[xy][1] <-range){
-                    s->mb_type[i] &= ~MB_TYPE_INTER;
-                    s->mb_type[i] |= MB_TYPE_INTRA;
+                    s->mb_type[xy] &= ~MB_TYPE_INTER;
+                    s->mb_type[xy] |= MB_TYPE_INTRA;
                     s->p_mv_table[xy][0] = 0;
                     s->p_mv_table[xy][1] = 0;
-//clip++;
                 }
-//else
-//  noclip++;
             }
             xy++;
-            i++;
         }
     }
 //printf("%d no:%d %d//\n", clip, noclip, f_code);
@@ -1628,7 +1620,7 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
         /* clip / convert to intra 8x8 type MVs */
         for(y=0; y<s->mb_height; y++){
             int xy= (y*2 + 1)*wrap + 1;
-            int i= y*s->mb_width;
+            int i= y*s->mb_stride;
             int x;
 
             for(x=0; x<s->mb_width; x++){
@@ -1665,10 +1657,9 @@ void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, i
     /* clip / convert to intra 16x16 type MVs */
     for(y=0; y<s->mb_height; y++){
         int x;
-        int xy= (y+1)* (s->mb_width+2)+1;
-        int i= y*s->mb_width;
+        int xy= y*s->mb_stride;
         for(x=0; x<s->mb_width; x++){
-            if (s->mb_type[i] & type){    // RAL: "type" test added...
+            if (s->mb_type[xy] & type){    // RAL: "type" test added...
                 if(   mv_table[xy][0] >=range || mv_table[xy][0] <-range
                    || mv_table[xy][1] >=range || mv_table[xy][1] <-range){
 
@@ -1682,7 +1673,6 @@ void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, i
                 }
             }
             xy++;
-            i++;
         }
     }
 }

@@ -27,10 +27,12 @@
 #define MOTION_MARKER 0x1F001
 #define DC_MARKER     0x6B001
 
-#define MB_TYPE_B_DIRECT 0
-#define MB_TYPE_B_BIDIR  1
-#define MB_TYPE_B_BACKW  2
-#define MB_TYPE_B_FORW   3
+const static int mb_type_b_map[4]= {
+    MB_TYPE_DIRECT2 | MB_TYPE_L0L1,
+    MB_TYPE_L0L1 | MB_TYPE_16x16,
+    MB_TYPE_L1 | MB_TYPE_16x16,
+    MB_TYPE_L0 | MB_TYPE_16x16,
+};
 
 #define VOS_STARTCODE        0x1B0
 #define USER_DATA_STARTCODE  0x1B2
