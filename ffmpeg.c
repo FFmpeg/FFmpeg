@@ -961,7 +961,9 @@ static int av_encode(AVFormatContext **output_files,
                                                ptr, len);
                     if (ret < 0)
                         goto fail_decode;
-                    if (data_size == 0) {
+                    /* Some bug in mpeg audio decoder gives */
+                    /* data_size < 0, it seems they are overflows */
+                    if (data_size <= 0) {
                         /* no audio frame */
                         ptr += ret;
                         len -= ret;
