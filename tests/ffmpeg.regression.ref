@@ -103,14 +103,14 @@ a00fbb82c030fe41febe1d03eacb338e *./data/a-rv20.rm
 652897 ./data/a-rv20.rm
 203e9790cb25b1d308fd602275afbb0e *./data/out.yuv
 stddev:  8.27 PSNR:29.76 bytes:7602176
-89ad858355f9b0a92d024c5ba6e369dd *./data/a-asv1.avi
-2292416 ./data/a-asv1.avi
-b3e1696d73071c8f7f0ff4e10c1677ca *./data/out.yuv
-stddev: 19.19 PSNR:22.46 bytes:7602176
-3909db39c3d2e9a72a952254e8685ff7 *./data/a-asv2.avi
-2221012 ./data/a-asv2.avi
-551b263bfb2acb9ea6dd2000f184494f *./data/out.yuv
-stddev: 17.98 PSNR:23.02 bytes:7602176
+bee98096658646b9484251b264dcf66f *./data/a-asv1.avi
+1487828 ./data/a-asv1.avi
+925320b74c7dfda5dc8378dd879ae2c3 *./data/out.yuv
+stddev: 20.00 PSNR:22.10 bytes:7602176
+3cff5590a76ad2a157d6accc36b575fd *./data/a-asv2.avi
+1453500 ./data/a-asv2.avi
+0b310840a6d3970595983491687669df *./data/out.yuv
+stddev: 18.82 PSNR:22.63 bytes:7602176
 de42cb5a15bfa8e70cf60edda0b32355 *./data/a-flv.flv
 657991 ./data/a-flv.flv
 4d9c04e7017dc68da7891048c46c1c37 *./data/out.yuv
