@@ -13,6 +13,11 @@ ifeq ($(HAVE_IMLIB2),yes)
     HOOKS += imlib2.so
 endif    
 
+ifeq ($(HAVE_FREETYPE2),yes)
+    HOOKS += drawtext.so
+    CFLAGS += `freetype-config --cflags`
+endif    
+
 all: $(HOOKS) 
 
 SRCS := $(HOOKS:.so=.c)
@@ -25,6 +30,9 @@ install:
 
 imlib2.so: imlib2.o
 	$(CC) -g -o $@ $(SHFLAGS) $< -lImlib2
+
+drawtext.so: drawtext.o
+	$(CC) -g -o $@ $(SHFLAGS) $< `freetype-config --libs`
 
 %.so: %.o
 	$(CC) -g -o $@ $(SHFLAGS) $<
