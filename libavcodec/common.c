@@ -190,7 +190,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
 #endif
                     if (table[j][1] /*bits*/ != 0) {
                         av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
-                        av_abort();
+                        return -1;
                     }
                     table[j][1] = n; //bits
                     table[j][0] = i; //code

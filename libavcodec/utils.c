@@ -726,7 +726,8 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         bitrate = enc->bit_rate;
         break;
     default:
-        av_abort();
+        snprintf(buf, buf_size, "Invalid Codec type %d", enc->codec_type);
+        return;
     }
     if (encode) {
         if (enc->flags & CODEC_FLAG_PASS1)

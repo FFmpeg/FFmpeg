@@ -466,7 +466,7 @@ static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
             sf[1] = sf[2] = sf[0];
             break;
         default:
-            av_abort();
+            assert(0); //cant happen
         }
         
 #if 0
