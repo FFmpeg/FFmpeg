@@ -27,7 +27,7 @@ cc="gcc"
 ar="ar"
 cpu=`uname -m`
 case "$cpu" in
-  i386|i486|i586|i686)
+  i386|i486|i586|i686|i86pc)
     cpu="x86"
     mmx="yes"
   ;;
