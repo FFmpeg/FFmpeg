@@ -23,7 +23,11 @@
 //#define DEBUG_SI
 
 /* 1.0 second at 24Mbit/s */
-#define MAX_SCAN_PACKETS 16000
+#define MAX_SCAN_PACKETS 32000
+
+/* maximum size in which we look for synchronisation if
+   synchronisation is lost */
+#define MAX_RESYNC_SIZE 4096
 
 static int add_pes_stream(AVFormatContext *s, int pid);
 
@@ -32,7 +36,6 @@ enum MpegTSFilterType {
     MPEGTS_SECTION,
 };
 
-/* XXX: suppress 'pkt' parameter */
 typedef void PESCallback(void *opaque, const uint8_t *buf, int len, int is_start);
 
 typedef struct MpegTSPESFilter {
@@ -432,7 +435,7 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
         if (sid == 0x0000) {
             /* NIT info */
         } else {
-            if (ts->req_sid == sid || ts->req_sid < 0) {
+            if (ts->req_sid == sid) {
                 ts->pmt_filter = mpegts_open_section_filter(ts, pmt_pid, 
                                                             pmt_cb, ts, 1);
                 goto found;
@@ -443,6 +446,59 @@ static void pat_cb(void *opaque, const uint8_t *section, int section_len)
     ts->set_service_cb(ts->set_service_opaque, -1);
 
  found:
+    mpegts_close_filter(ts, ts->pat_filter);
+    ts->pat_filter = NULL;
+}
+
+/* add all services found in the PAT */
+static void pat_scan_cb(void *opaque, const uint8_t *section, int section_len)
+{
+    MpegTSContext *ts = opaque;
+    SectionHeader h1, *h = &h1;
+    const uint8_t *p, *p_end;
+    int sid, pmt_pid;
+    char *provider_name, *name;
+    char buf[256];
+
+#ifdef DEBUG_SI
+    printf("PAT:\n");
+    av_hex_dump((uint8_t *)section, section_len);
+#endif
+    p_end = section + section_len - 4;
+    p = section;
+    if (parse_section_header(h, &p, p_end) < 0)
+        return;
+    if (h->tid != PAT_TID)
+        return;
+
+    for(;;) {
+        sid = get16(&p, p_end);
+        if (sid < 0)
+            break;
+        pmt_pid = get16(&p, p_end) & 0x1fff;
+        if (pmt_pid < 0)
+            break;
+#ifdef DEBUG_SI
+        printf("sid=0x%x pid=0x%x\n", sid, pmt_pid);
+#endif
+        if (sid == 0x0000) {
+            /* NIT info */
+        } else {
+            /* add the service with a dummy name */
+            snprintf(buf, sizeof(buf), "Service %x\n", sid);
+            name = av_strdup(buf);
+            provider_name = av_strdup("");
+            if (name && provider_name) {
+                new_service(ts, sid, provider_name, name);
+            } else {
+                av_freep(&name);
+                av_freep(&provider_name);
+            }
+        }
+    }
+    ts->stop_parse = 1;
+
+    /* remove filter */
     mpegts_close_filter(ts, ts->pat_filter);
     ts->pat_filter = NULL;
 }
@@ -533,13 +589,20 @@ static void sdt_cb(void *opaque, const uint8_t *section, int section_len)
     ts->sdt_filter = NULL;
 }
 
-/* scan services an a transport stream by looking at the sdt */
+/* scan services in a transport stream by looking at the SDT */
 void mpegts_scan_sdt(MpegTSContext *ts)
 {
     ts->sdt_filter = mpegts_open_section_filter(ts, SDT_PID, 
                                                 sdt_cb, ts, 1);
 }
 
+/* scan services in a transport stream by looking at the PAT (better
+   than nothing !) */
+void mpegts_scan_pat(MpegTSContext *ts)
+{
+    ts->pat_filter = mpegts_open_section_filter(ts, PAT_PID, 
+                                                pat_scan_cb, ts, 1);
+}
 
 /* TS stream handling */
 
@@ -795,12 +858,32 @@ static void handle_packet(AVFormatContext *s, uint8_t *packet)
             if (cc_ok) {
                 write_section_data(s, tss, 
                                    p, p_end - p, 0);
-                }
+            }
         }
     } else {
         tss->u.pes_filter.pes_cb(tss->u.pes_filter.opaque, 
                                  p, p_end - p, is_start);
     }
+}
+
+/* XXX: try to find a better synchro over several packets (use
+   get_packet_size() ?) */
+static int mpegts_resync(AVFormatContext *s)
+{
+    ByteIOContext *pb = &s->pb;
+    int c, i;
+
+    for(i = 0;i < MAX_RESYNC_SIZE; i++) {
+        c = url_fgetc(pb);
+        if (c < 0)
+            return -1;
+        if (c == 0x47) {
+            url_fseek(pb, -1, SEEK_CUR);
+            return 0;
+        }
+    }
+    /* no sync found */
+    return -1;
 }
 
 static int handle_packets(AVFormatContext *s, int nb_packets)
@@ -809,7 +892,6 @@ static int handle_packets(AVFormatContext *s, int nb_packets)
     ByteIOContext *pb = &s->pb;
     uint8_t packet[TS_FEC_PACKET_SIZE];
     int packet_num, len;
-    int i, found = 0;
     int64_t pos;
 
     ts->stop_parse = 0;
@@ -825,26 +907,13 @@ static int handle_packets(AVFormatContext *s, int nb_packets)
         if (len != ts->raw_packet_size)
             return AVERROR_IO;
         /* check paquet sync byte */
-        if (packet[0] != 0x47)
-        {
-           //printf("bad packet: 0x%x\n", packet[0]);
-           found = 0;
-           for (i = 0; i < ts->raw_packet_size; i++)
-           {
-               if (packet[i] == 0x47)
-               {
-                   found = 1;
-                   //printf("packet start at: %d\n", i);
-                   break;
-               }
-           }
-           
-           if (found)
-           {
-               url_fseek(pb, pos + i, SEEK_SET);
-               continue;
-           }
-           return AVERROR_INVALIDDATA;
+        if (packet[0] != 0x47) {
+            /* find a new packet start */
+            url_fseek(pb, -ts->raw_packet_size, SEEK_CUR);
+            if (mpegts_resync(s) < 0)
+                return AVERROR_INVALIDDATA;
+            else
+                continue;
         }
         handle_packet(s, packet);
     }
@@ -853,11 +922,19 @@ static int handle_packets(AVFormatContext *s, int nb_packets)
 
 static int mpegts_probe(AVProbeData *p)
 {
+#if 1
     int size;
     size = get_packet_size(p->buf, p->buf_size);
     if (size < 0)
         return 0;
     return AVPROBE_SCORE_MAX - 1;
+#else
+    /* only use the extension for safer guess */
+    if (match_ext(p->filename, "ts"))
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+#endif
 }
 
 void set_service_cb(void *opaque, int ret)
@@ -873,7 +950,7 @@ static int mpegts_read_header(AVFormatContext *s,
     MpegTSContext *ts = s->priv_data;
     ByteIOContext *pb = &s->pb;
     uint8_t buf[1024];
-    int len;
+    int len, sid;
     int64_t pos;
     MpegTSService *service;
     
@@ -888,24 +965,32 @@ static int mpegts_read_header(AVFormatContext *s,
     ts->auto_guess = 0;
     
     if (!ts->auto_guess) {
-        int sid = -1;
         ts->set_service_ret = -1;
 
         /* first do a scaning to get all the services */
         url_fseek(pb, pos, SEEK_SET);
         mpegts_scan_sdt(ts);
-        
+
         handle_packets(s, MAX_SCAN_PACKETS);
 
-        if (ts->nb_services > 0)
-        {
-            /* tune to first service found */
-            service = ts->services[0];
-            sid = service->sid;
-#ifdef DEBUG_SI
-            printf("tuning to '%s'\n", service->name);
-#endif
+        if (ts->nb_services <= 0) {
+            /* no SDT found, we try to look at the PAT */
+            
+            url_fseek(pb, pos, SEEK_SET);
+            mpegts_scan_pat(ts);
+            
+            handle_packets(s, MAX_SCAN_PACKETS);
         }
+        
+        if (ts->nb_services <= 0)
+            return -1;
+        
+        /* tune to first service found */
+        service = ts->services[0];
+        sid = service->sid;
+#ifdef DEBUG_SI
+        printf("tuning to '%s'\n", service->name);
+#endif
 
         /* now find the info for the first service if we found any,
            otherwise try to filter all PATs */
