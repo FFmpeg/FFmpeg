@@ -1124,13 +1124,13 @@ static int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-#endif //CONFIG_ENCODERS
-
 static const AVOption huffyuv_options[] =
 {
     AVOPTION_CODEC_INT("prediction_method", "prediction_method", prediction_method, 0, 2, 0),
     AVOPTION_END()
 };
+
+#endif //CONFIG_ENCODERS
 
 AVCodec huffyuv_decoder = {
     "huffyuv",
