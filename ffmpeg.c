@@ -428,14 +428,15 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
         picture2 = &picture_tmp;
         avpicture_fill(picture2, buf, dec->pix_fmt, dec->width, dec->height);
 
-        if (do_deinterlace && avpicture_deinterlace(picture2, picture, 
-                                  dec->pix_fmt, dec->width, dec->height) < 0) {
-            /* if error, do not deinterlace */
-            av_free(buf);
-            buf = NULL;
-            picture2 = picture;
-        }
-        else {
+        if (do_deinterlace){
+            if(avpicture_deinterlace(picture2, picture, 
+                                     dec->pix_fmt, dec->width, dec->height) < 0) {
+                /* if error, do not deinterlace */
+                av_free(buf);
+                buf = NULL;
+                picture2 = picture;
+            }
+        } else {
             if (img_convert(picture2, dec->pix_fmt, picture, 
                             dec->pix_fmt, dec->width, dec->height) < 0) {
                 /* if error, do not copy */
