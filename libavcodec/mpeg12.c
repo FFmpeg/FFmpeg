@@ -362,7 +362,8 @@ int i;
 
     s->y_dc_scale_table=
     s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
-    
+
+    if(!s->encoding)    
     for(i=0;i<64;i++)
        s->dsp.idct_permutation[i]=i;
 }
