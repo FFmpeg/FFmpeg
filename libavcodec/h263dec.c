@@ -344,6 +344,42 @@ static int mpeg4_find_frame_end(MpegEncContext *s, UINT8 *buf, int buf_size){
     return -1;
 }
 
+static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h, int stride, int color){
+    int t, x, y, f;
+    
+    ex= clip(ex, 0, w-1);
+    ey= clip(ey, 0, h-1);
+    
+    buf[sy*stride + sx]+= color;
+    
+    if(ABS(ex - sx) > ABS(ey - sy)){
+        if(sx > ex){
+            t=sx; sx=ex; ex=t;
+            t=sy; sy=ey; ey=t;
+        }
+        buf+= sx + sy*stride;
+        ex-= sx;
+        f= ((ey-sy)<<16)/ex;
+        for(x= 0; x <= ex; x++){
+            y= ((x*f) + (1<<15))>>16;
+            buf[y*stride + x]+= color;
+        }
+    }else{
+        if(sy > ey){
+            t=sx; sx=ex; ex=t;
+            t=sy; sy=ey; ey=t;
+        }
+        buf+= sx + sy*stride;
+        ey-= sy;
+        if(ey) f= ((ex-sx)<<16)/ey;
+        else   f= 0;
+        for(y= 0; y <= ey; y++){
+            x= ((y*f) + (1<<15))>>16;
+            buf[y*stride + x]+= color;
+        }
+    }
+}
+
 int ff_h263_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
                              UINT8 *buf, int buf_size)
@@ -472,6 +508,14 @@ retry:
         if(s->xvid_build && s->xvid_build<=1)
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
 
+#define SET_QPEL_FUNC(postfix1, postfix2) \
+    s->dsp.put_ ## postfix1 = ff_put_ ## postfix2;\
+    s->dsp.put_no_rnd_ ## postfix1 = ff_put_no_rnd_ ## postfix2;\
+    s->dsp.avg_ ## postfix1 = ff_avg_ ## postfix2;
+
+        if(s->lavc_build && s->lavc_build<4653)
+            s->workaround_bugs|= FF_BUG_STD_QPEL;
+        
 //printf("padding_bug_score: %d\n", s->padding_bug_score);
 #if 0
         if(s->divx_version==500)
@@ -489,6 +533,21 @@ retry:
 #endif
     }
     
+    if(s->workaround_bugs& FF_BUG_STD_QPEL){
+        SET_QPEL_FUNC(qpel_pixels_tab[0][ 5], qpel16_mc11_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][ 7], qpel16_mc31_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][ 9], qpel16_mc12_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][11], qpel16_mc32_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][13], qpel16_mc13_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[0][15], qpel16_mc33_old_c)
+
+        SET_QPEL_FUNC(qpel_pixels_tab[1][ 5], qpel8_mc11_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][ 7], qpel8_mc31_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][ 9], qpel8_mc12_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][11], qpel8_mc32_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][13], qpel8_mc13_old_c)
+        SET_QPEL_FUNC(qpel_pixels_tab[1][15], qpel8_mc33_old_c)
+    }
 
 #if 0 // dump bits per frame / qp / complexity
 {
@@ -645,41 +704,40 @@ retry:
     }
 
     MPV_frame_end(s);
-#if 0 //dirty show MVs, we should export the MV tables and write a filter to show them
-{
-  int mb_y;
-  s->has_b_frames=1;
-  for(mb_y=0; mb_y<s->mb_height; mb_y++){
-    int mb_x;
-    int y= mb_y*16 + 8;
-    for(mb_x=0; mb_x<s->mb_width; mb_x++){
-      int x= mb_x*16 + 8;
-      uint8_t *ptr= s->last_picture.data[0];
-      int xy= 1 + mb_x*2 + (mb_y*2 + 1)*(s->mb_width*2 + 2);
-      int mx= (s->motion_val[xy][0]>>1) + x;
-      int my= (s->motion_val[xy][1]>>1) + y;
-      int i;
-      int max;
 
-      if(mx<0) mx=0;
-      if(my<0) my=0;
-      if(mx>=s->width)  mx= s->width -1;
-      if(my>=s->height) my= s->height-1;
-      max= ABS(mx-x);
-      if(ABS(my-y) > max) max= ABS(my-y);
-      /* the ugliest linedrawing routine ... */
-      for(i=0; i<max; i++){
-        int x1= x + (mx-x)*i/max;
-        int y1= y + (my-y)*i/max;
-        ptr[y1*s->linesize + x1]+=100;
-      }
-      ptr[y*s->linesize + x]+=100;
-      s->mbskip_table[mb_x + mb_y*s->mb_width]=0;
+    if((avctx->debug&FF_DEBUG_VIS_MV) && s->last_picture.data[0]){
+        const int shift= 1 + s->quarter_sample;
+        int mb_y;
+        uint8_t *ptr= s->last_picture.data[0];
+        s->low_delay=0; //needed to see the vectors without trashing the buffers
+
+        for(mb_y=0; mb_y<s->mb_height; mb_y++){
+            int mb_x;
+            for(mb_x=0; mb_x<s->mb_width; mb_x++){
+                const int mb_index= mb_x + mb_y*s->mb_width;
+                if(s->co_located_type_table[mb_index] == MV_TYPE_8X8){
+                    int i;
+                    for(i=0; i<4; i++){
+                        int sx= mb_x*16 + 4 + 8*(i&1);
+                        int sy= mb_y*16 + 4 + 8*(i>>1);
+                        int xy= 1 + mb_x*2 + (i&1) + (mb_y*2 + 1 + (i>>1))*(s->mb_width*2 + 2);
+                        int mx= (s->motion_val[xy][0]>>shift) + sx;
+                        int my= (s->motion_val[xy][1]>>shift) + sy;
+                        draw_line(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                    }
+                }else{
+                    int sx= mb_x*16 + 8;
+                    int sy= mb_y*16 + 8;
+                    int xy= 1 + mb_x*2 + (mb_y*2 + 1)*(s->mb_width*2 + 2);
+                    int mx= (s->motion_val[xy][0]>>shift) + sx;
+                    int my= (s->motion_val[xy][1]>>shift) + sy;
+                    draw_line(ptr, sx, sy, mx, my, s->width, s->height, s->linesize, 100);
+                }
+                s->mbskip_table[mb_index]=0;
+            }
+        }
     }
-  }
 
-}
-#endif
 
     if(s->pict_type==B_TYPE || s->low_delay){
         *pict= *(AVFrame*)&s->current_picture;

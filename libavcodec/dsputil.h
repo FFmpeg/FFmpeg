@@ -69,7 +69,23 @@ void clear_blocks_c(DCTELEM *blocks);
 typedef void (*op_pixels_func)(UINT8 *block/*align width (8 or 16)*/, const UINT8 *pixels/*align 1*/, int line_size, int h);
 typedef void (*qpel_mc_func)(UINT8 *dst/*align width (8 or 16)*/, UINT8 *src/*align 1*/, int stride);
 
+#define DEF_OLD_QPEL(name)\
+void ff_put_        ## name (UINT8 *dst/*align width (8 or 16)*/, UINT8 *src/*align 1*/, int stride);\
+void ff_put_no_rnd_ ## name (UINT8 *dst/*align width (8 or 16)*/, UINT8 *src/*align 1*/, int stride);\
+void ff_avg_        ## name (UINT8 *dst/*align width (8 or 16)*/, UINT8 *src/*align 1*/, int stride);
 
+DEF_OLD_QPEL(qpel16_mc11_old_c)
+DEF_OLD_QPEL(qpel16_mc31_old_c)
+DEF_OLD_QPEL(qpel16_mc12_old_c)
+DEF_OLD_QPEL(qpel16_mc32_old_c)
+DEF_OLD_QPEL(qpel16_mc13_old_c)
+DEF_OLD_QPEL(qpel16_mc33_old_c)
+DEF_OLD_QPEL(qpel8_mc11_old_c)
+DEF_OLD_QPEL(qpel8_mc31_old_c)
+DEF_OLD_QPEL(qpel8_mc12_old_c)
+DEF_OLD_QPEL(qpel8_mc32_old_c)
+DEF_OLD_QPEL(qpel8_mc13_old_c)
+DEF_OLD_QPEL(qpel8_mc33_old_c)
 
 #define CALL_2X_PIXELS(a, b, n)\
 static void a(uint8_t *block, const uint8_t *pixels, int line_size, int h){\

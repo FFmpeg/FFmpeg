@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4652
-#define LIBAVCODEC_BUILD_STR   "4652"
+#define LIBAVCODEC_BUILD       4653
+#define LIBAVCODEC_BUILD_STR   "4653"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -520,6 +520,7 @@ typedef struct AVCodecContext {
 #define FF_BUG_NO_PADDING       16
 #define FF_BUG_AC_VLC           32
 #define FF_BUG_QPEL_CHROMA      64
+#define FF_BUG_STD_QPEL         128
 //#define FF_BUG_FAKE_SCALABILITY 16 //autodetection should work 100%
         
     /**

@@ -58,6 +58,16 @@ static void DEF(put, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int
 {
     MOVQ_BFE(mm6);
     __asm __volatile(
+	"test $1, %0			\n\t"
+        " jz 1f				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	(%2), %%mm1		\n\t"
+	"addl	%4, %1			\n\t"
+        "addl	$8, %2			\n\t"
+	PAVGB(%%mm0, %%mm1, %%mm4, %%mm6)
+	"movq	%%mm4, (%3)		\n\t"
+	"addl	%5, %3			\n\t"
+        "decl	%0			\n\t"
 	".balign 8			\n\t"
 	"1:				\n\t"
 	"movq	(%1), %%mm0		\n\t"
@@ -144,6 +154,19 @@ static void DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, in
 {
     MOVQ_BFE(mm6);
     __asm __volatile(
+	"test $1, %0			\n\t"
+        " jz 1f				\n\t"
+	"movq	(%1), %%mm0		\n\t"
+	"movq	(%2), %%mm1		\n\t"
+	"movq	8(%1), %%mm2		\n\t"
+	"movq	8(%2), %%mm3		\n\t"
+	"addl	%4, %1			\n\t"
+	"addl	$16, %2			\n\t"
+	PAVGBP(%%mm0, %%mm1, %%mm4,   %%mm2, %%mm3, %%mm5)
+	"movq	%%mm4, (%3)		\n\t"
+	"movq	%%mm5, 8(%3)		\n\t"
+	"addl	%5, %3			\n\t"
+	"decl	%0			\n\t"
 	".balign 8			\n\t"
 	"1:				\n\t"
 	"movq	(%1), %%mm0		\n\t"
@@ -269,124 +292,6 @@ static void DEF(put, pixels8_xy2)(UINT8 *block, const UINT8 *pixels, int line_si
 	:"+g"(h), "+S"(pixels)
 	:"D"(block), "r"(line_size)
 	:"eax", "memory");
-}
-
-static void DEF(put, pixels8_l4)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int stride, int h)
-{
-    MOVQ_ZERO(mm7);
-    SET_RND(mm6); // =2 for rnd  and  =1 for no_rnd version
-    __asm __volatile(
-	".balign 8      		\n\t"
-	"1:				\n\t"
-	"movq	(%1), %%mm0		\n\t"
-	"movq	(%2), %%mm1		\n\t"
-	"movq	64(%2), %%mm2		\n\t"
-	"movq	136(%2), %%mm3		\n\t"
-	"punpcklbw %%mm7, %%mm0		\n\t"
-	"punpcklbw %%mm7, %%mm1		\n\t"
-	"punpcklbw %%mm7, %%mm2		\n\t"
-	"punpcklbw %%mm7, %%mm3		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm3		\n\t"
-	"paddusw %%mm1, %%mm3		\n\t"
-	"psrlw	$2, %%mm3		\n\t"
-	"movq	(%1), %%mm0		\n\t"
-	"movq	(%2), %%mm1		\n\t"
-	"movq	64(%2), %%mm2		\n\t"
-	"movq	136(%2), %%mm4		\n\t"
-	"punpckhbw %%mm7, %%mm0		\n\t"
-	"punpckhbw %%mm7, %%mm1		\n\t"
-	"punpckhbw %%mm7, %%mm2		\n\t"
-	"punpckhbw %%mm7, %%mm4		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm4		\n\t"
-	"paddusw %%mm1, %%mm4		\n\t"
-	"psrlw	$2, %%mm4		\n\t"
-	"packuswb  %%mm4, %%mm3		\n\t"
-	"movq	%%mm3, (%0)		\n\t"
-        "addl	%4, %0			\n\t"
-        "addl	%4, %1			\n\t"
-        "addl	$8, %2			\n\t" 
-        "decl	%3			\n\t"
-	"jnz	1b			\n\t"
-	:"+r"(dst), "+r"(src1), "+r"(src2), "+r"(h)
-	:"r"(stride)
-	:"memory");
-}
-
-static void DEF(put, pixels16_l4)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int stride, int h)
-{
-    MOVQ_ZERO(mm7);
-    SET_RND(mm6); // =2 for rnd  and  =1 for no_rnd version
-    __asm __volatile(
-	".balign 8      		\n\t"
-	"1:				\n\t"
-	"movq	(%1), %%mm0		\n\t"
-	"movq	(%2), %%mm1		\n\t"
-	"movq	256(%2), %%mm2		\n\t"
-	"movq	528(%2), %%mm3		\n\t"
-	"punpcklbw %%mm7, %%mm0		\n\t"
-	"punpcklbw %%mm7, %%mm1		\n\t"
-	"punpcklbw %%mm7, %%mm2		\n\t"
-	"punpcklbw %%mm7, %%mm3		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm3		\n\t"
-	"paddusw %%mm1, %%mm3		\n\t"
-	"psrlw	$2, %%mm3		\n\t"
-	"movq	(%1), %%mm0		\n\t"
-	"movq	(%2), %%mm1		\n\t"
-	"movq	256(%2), %%mm2		\n\t"
-	"movq	528(%2), %%mm4		\n\t"
-	"punpckhbw %%mm7, %%mm0		\n\t"
-	"punpckhbw %%mm7, %%mm1		\n\t"
-	"punpckhbw %%mm7, %%mm2		\n\t"
-	"punpckhbw %%mm7, %%mm4		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm4		\n\t"
-	"paddusw %%mm1, %%mm4		\n\t"
-	"psrlw	$2, %%mm4		\n\t"
-	"packuswb  %%mm4, %%mm3		\n\t"
-	"movq	%%mm3, (%0)		\n\t"
-	"movq	8(%1), %%mm0		\n\t"
-	"movq	8(%2), %%mm1		\n\t"
-	"movq	264(%2), %%mm2		\n\t"
-	"movq	536(%2), %%mm3		\n\t"
-	"punpcklbw %%mm7, %%mm0		\n\t"
-	"punpcklbw %%mm7, %%mm1		\n\t"
-	"punpcklbw %%mm7, %%mm2		\n\t"
-	"punpcklbw %%mm7, %%mm3		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm3		\n\t"
-	"paddusw %%mm1, %%mm3		\n\t"
-	"psrlw	$2, %%mm3		\n\t"
-	"movq	8(%1), %%mm0		\n\t"
-	"movq	8(%2), %%mm1		\n\t"
-	"movq	264(%2), %%mm2		\n\t"
-	"movq	536(%2), %%mm4		\n\t"
-	"punpckhbw %%mm7, %%mm0		\n\t"
-	"punpckhbw %%mm7, %%mm1		\n\t"
-	"punpckhbw %%mm7, %%mm2		\n\t"
-	"punpckhbw %%mm7, %%mm4		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm4		\n\t"
-	"paddusw %%mm1, %%mm4		\n\t"
-	"psrlw	$2, %%mm4		\n\t"
-	"packuswb  %%mm4, %%mm3		\n\t"
-	"movq	%%mm3, 8(%0)		\n\t"
-        "addl	%4, %0			\n\t"
-        "addl	%4, %1			\n\t"
-        "addl	$16, %2			\n\t" 
-        "decl	%3			\n\t"
-	"jnz	1b			\n\t"
-	:"+r"(dst), "+r"(src1), "+r"(src2), "+r"(h)
-	:"r"(stride)
-	:"memory");
 }
 
 // avg_pixels
@@ -640,133 +545,6 @@ static void DEF(avg, pixels8_xy2)(UINT8 *block, const UINT8 *pixels, int line_si
 	:"D"(block), "r"(line_size)
 	:"eax", "memory");
 }
-
-static void DEF(avg, pixels8_l4)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int stride, int h)
-{
-    MOVQ_ZERO(mm7);
-    SET_RND(mm6); // =2 for rnd  and  =1 for no_rnd version
-    MOVQ_BFE(mm5);
-    __asm __volatile(
-	".balign 8      		\n\t"
-	"1:				\n\t"
-	"movq	(%1), %%mm0		\n\t"
-	"movq	(%2), %%mm1		\n\t"
-	"movq	64(%2), %%mm2		\n\t"
-	"movq	136(%2), %%mm3		\n\t"
-	"punpcklbw %%mm7, %%mm0		\n\t"
-	"punpcklbw %%mm7, %%mm1		\n\t"
-	"punpcklbw %%mm7, %%mm2		\n\t"
-	"punpcklbw %%mm7, %%mm3		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm3		\n\t"
-	"paddusw %%mm1, %%mm3		\n\t"
-	"psrlw	$2, %%mm3		\n\t"
-	"movq	(%1), %%mm0		\n\t"
-	"movq	(%2), %%mm1		\n\t"
-	"movq	64(%2), %%mm2		\n\t"
-	"movq	136(%2), %%mm4		\n\t"
-	"punpckhbw %%mm7, %%mm0		\n\t"
-	"punpckhbw %%mm7, %%mm1		\n\t"
-	"punpckhbw %%mm7, %%mm2		\n\t"
-	"punpckhbw %%mm7, %%mm4		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm4		\n\t"
-	"paddusw %%mm1, %%mm4		\n\t"
-	"psrlw	$2, %%mm4		\n\t"
-	"packuswb  %%mm4, %%mm3		\n\t"
-	"movq	(%0), %%mm4		\n\t"
-        PAVGB(%%mm3, %%mm4, %%mm0, %%mm5)
-	"movq	%%mm0, (%0)		\n\t"
-        "addl	%4, %0			\n\t"
-        "addl	%4, %1			\n\t"
-        "addl	$8, %2			\n\t" 
-        "decl	%3			\n\t"
-	"jnz	1b			\n\t"
-	:"+r"(dst), "+r"(src1), "+r"(src2), "+r"(h)
-	:"r"(stride)
-	:"memory");
-}
-
-static void DEF(avg, pixels16_l4)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int stride, int h)
-{
-    MOVQ_ZERO(mm7);
-    SET_RND(mm6); // =2 for rnd  and  =1 for no_rnd version
-    MOVQ_BFE(mm5);
-    __asm __volatile(
-	".balign 8      		\n\t"
-	"1:				\n\t"
-	"movq	(%1), %%mm0		\n\t"
-	"movq	(%2), %%mm1		\n\t"
-	"movq	256(%2), %%mm2		\n\t"
-	"movq	528(%2), %%mm3		\n\t"
-	"punpcklbw %%mm7, %%mm0		\n\t"
-	"punpcklbw %%mm7, %%mm1		\n\t"
-	"punpcklbw %%mm7, %%mm2		\n\t"
-	"punpcklbw %%mm7, %%mm3		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm3		\n\t"
-	"paddusw %%mm1, %%mm3		\n\t"
-	"psrlw	$2, %%mm3		\n\t"
-	"movq	(%1), %%mm0		\n\t"
-	"movq	(%2), %%mm1		\n\t"
-	"movq	256(%2), %%mm2		\n\t"
-	"movq	528(%2), %%mm4		\n\t"
-	"punpckhbw %%mm7, %%mm0		\n\t"
-	"punpckhbw %%mm7, %%mm1		\n\t"
-	"punpckhbw %%mm7, %%mm2		\n\t"
-	"punpckhbw %%mm7, %%mm4		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm4		\n\t"
-	"paddusw %%mm1, %%mm4		\n\t"
-	"psrlw	$2, %%mm4		\n\t"
-	"packuswb  %%mm4, %%mm3		\n\t"
-	"movq	(%0), %%mm4		\n\t"
-        PAVGB(%%mm3, %%mm4, %%mm0, %%mm5)
-	"movq	%%mm0, (%0)		\n\t"
-	"movq	8(%1), %%mm0		\n\t"
-	"movq	8(%2), %%mm1		\n\t"
-	"movq	264(%2), %%mm2		\n\t"
-	"movq	536(%2), %%mm3		\n\t"
-	"punpcklbw %%mm7, %%mm0		\n\t"
-	"punpcklbw %%mm7, %%mm1		\n\t"
-	"punpcklbw %%mm7, %%mm2		\n\t"
-	"punpcklbw %%mm7, %%mm3		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm3		\n\t"
-	"paddusw %%mm1, %%mm3		\n\t"
-	"psrlw	$2, %%mm3		\n\t"
-	"movq	8(%1), %%mm0		\n\t"
-	"movq	8(%2), %%mm1		\n\t"
-	"movq	264(%2), %%mm2		\n\t"
-	"movq	536(%2), %%mm4		\n\t"
-	"punpckhbw %%mm7, %%mm0		\n\t"
-	"punpckhbw %%mm7, %%mm1		\n\t"
-	"punpckhbw %%mm7, %%mm2		\n\t"
-	"punpckhbw %%mm7, %%mm4		\n\t"
-	"paddusw %%mm6, %%mm0		\n\t"
-	"paddusw %%mm0, %%mm1		\n\t"
-	"paddusw %%mm2, %%mm4		\n\t"
-	"paddusw %%mm1, %%mm4		\n\t"
-	"psrlw	$2, %%mm4		\n\t"
-	"packuswb  %%mm4, %%mm3		\n\t"
-	"movq	8(%0), %%mm4		\n\t"
-        PAVGB(%%mm3, %%mm4, %%mm0, %%mm5)
-	"movq	%%mm0, 8(%0)		\n\t"
-        "addl	%4, %0			\n\t"
-        "addl	%4, %1			\n\t"
-        "addl	$16, %2			\n\t" 
-        "decl	%3			\n\t"
-	"jnz	1b			\n\t"
-	:"+r"(dst), "+r"(src1), "+r"(src2), "+r"(h)
-	:"r"(stride)
-	:"memory");
-}
-
 
 //FIXME optimize
 static void DEF(put, pixels16_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h){

@@ -1085,7 +1085,7 @@ static void OPNAME ## qpel8_mc00_ ## MMX (UINT8 *dst, UINT8 *src, int stride){\
 }\
 \
 static void OPNAME ## qpel8_mc10_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t temp[32];\
+    uint64_t temp[8];\
     uint8_t * const half= (uint8_t*)temp;\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(half, src, 8, stride, 8);\
     OPNAME ## pixels8_l2_mmx(dst, src, half, stride, stride, 8);\
@@ -1096,14 +1096,14 @@ static void OPNAME ## qpel8_mc20_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
 }\
 \
 static void OPNAME ## qpel8_mc30_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t temp[32];\
+    uint64_t temp[8];\
     uint8_t * const half= (uint8_t*)temp;\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(half, src, 8, stride, 8);\
     OPNAME ## pixels8_l2_mmx(dst, src+1, half, stride, stride, 8);\
 }\
 \
 static void OPNAME ## qpel8_mc01_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t temp[32];\
+    uint64_t temp[8];\
     uint8_t * const half= (uint8_t*)temp;\
     put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(half, src, 8, stride);\
     OPNAME ## pixels8_l2_mmx(dst, src, half, stride, stride, 8);\
@@ -1114,53 +1114,49 @@ static void OPNAME ## qpel8_mc02_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
 }\
 \
 static void OPNAME ## qpel8_mc03_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t temp[32];\
+    uint64_t temp[8];\
     uint8_t * const half= (uint8_t*)temp;\
     put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(half, src, 8, stride);\
     OPNAME ## pixels8_l2_mmx(dst, src+stride, half, stride, stride, 8);\
 }\
 static void OPNAME ## qpel8_mc11_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[8*2 + 8*2 + 18*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*64 + 8;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    uint64_t half[8 + 9];\
+    uint8_t * const halfH= ((uint8_t*)half) + 64;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
-    put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfV, src, 8, stride);\
+    put ## RND ## pixels8_l2_mmx(halfH, src, halfH, 8, stride, 9);\
     put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    OPNAME ## pixels8_l4_mmx(dst, src, (uint8_t*)half, stride, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, halfH, halfHV, stride, 8, 8);\
 }\
 static void OPNAME ## qpel8_mc31_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[8*2 + 8*2 + 18*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*64 + 8;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    uint64_t half[8 + 9];\
+    uint8_t * const halfH= ((uint8_t*)half) + 64;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
-    put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfV, src+1, 8, stride);\
+    put ## RND ## pixels8_l2_mmx(halfH, src+1, halfH, 8, stride, 9);\
     put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    OPNAME ## pixels8_l4_mmx(dst, src+1, (uint8_t*)half, stride, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, halfH, halfHV, stride, 8, 8);\
 }\
 static void OPNAME ## qpel8_mc13_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[8*2 + 8*2 + 9*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*64;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    uint64_t half[8 + 9];\
+    uint8_t * const halfH= ((uint8_t*)half) + 64;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
-    put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfV, src, 8, stride);\
+    put ## RND ## pixels8_l2_mmx(halfH, src, halfH, 8, stride, 9);\
     put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    OPNAME ## pixels8_l4_mmx(dst, src+stride, (uint8_t*)half, stride, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, halfH+8, halfHV, stride, 8, 8);\
 }\
 static void OPNAME ## qpel8_mc33_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[8*2 + 8*2 + 9*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*64;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
-    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src  , 8, stride, 9);\
-    put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfV, src+1, 8, stride);\
+    uint64_t half[8 + 9];\
+    uint8_t * const halfH= ((uint8_t*)half) + 64;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
+    put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
+    put ## RND ## pixels8_l2_mmx(halfH, src+1, halfH, 8, stride, 9);\
     put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    OPNAME ## pixels8_l4_mmx(dst, src+stride+1, (uint8_t*)half, stride, 8);\
+    OPNAME ## pixels8_l2_mmx(dst, halfH+8, halfHV, stride, 8, 8);\
 }\
 static void OPNAME ## qpel8_mc21_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[8*2 + 9*2];\
+    uint64_t half[8 + 9];\
     uint8_t * const halfH= ((uint8_t*)half) + 64;\
     uint8_t * const halfHV= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
@@ -1168,7 +1164,7 @@ static void OPNAME ## qpel8_mc21_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
     OPNAME ## pixels8_l2_mmx(dst, halfH, halfHV, stride, 8, 8);\
 }\
 static void OPNAME ## qpel8_mc23_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[8*2 + 9*2];\
+    uint64_t half[8 + 9];\
     uint8_t * const halfH= ((uint8_t*)half) + 64;\
     uint8_t * const halfHV= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
@@ -1176,27 +1172,21 @@ static void OPNAME ## qpel8_mc23_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
     OPNAME ## pixels8_l2_mmx(dst, halfH+8, halfHV, stride, 8, 8);\
 }\
 static void OPNAME ## qpel8_mc12_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[8*2 + 8*2 + 9*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*64;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    uint64_t half[8 + 9];\
+    uint8_t * const halfH= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
-    put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfV, src, 8, stride);\
-    put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    OPNAME ## pixels8_l2_mmx(dst, halfV, halfHV, stride, 8, 8);\
+    put ## RND ## pixels8_l2_mmx(halfH, src, halfH, 8, stride, 9);\
+    OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(dst, halfH, stride, 8);\
 }\
 static void OPNAME ## qpel8_mc32_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[8*2 + 8*2 + 9*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*64;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 64;\
+    uint64_t half[8 + 9];\
+    uint8_t * const halfH= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
-    put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfV, src+1, 8, stride);\
-    put ## RND ## mpeg4_qpel8_v_lowpass_ ## MMX(halfHV, halfH, 8, 8);\
-    OPNAME ## pixels8_l2_mmx(dst, halfV, halfHV, stride, 8, 8);\
+    put ## RND ## pixels8_l2_mmx(halfH, src+1, halfH, 8, stride, 9);\
+    OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(dst, halfH, stride, 8);\
 }\
 static void OPNAME ## qpel8_mc22_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[9*2];\
+    uint64_t half[9];\
     uint8_t * const halfH= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel8_h_lowpass_ ## MMX(halfH, src, 8, stride, 9);\
     OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(dst, halfH, stride, 8);\
@@ -1241,44 +1231,40 @@ static void OPNAME ## qpel16_mc03_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
     OPNAME ## pixels16_l2_mmx(dst, src+stride, half, stride, stride, 16);\
 }\
 static void OPNAME ## qpel16_mc11_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[16*2 + 16*2 + 18*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*256 + 16;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    uint64_t half[16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 256;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
-    put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfV, src, 16, stride);\
+    put ## RND ## pixels16_l2_mmx(halfH, src, halfH, 16, stride, 17);\
     put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH, 16, 16);\
-    OPNAME ## pixels16_l4_mmx(dst, src, (uint8_t*)half, stride, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, halfH, halfHV, stride, 16, 16);\
 }\
 static void OPNAME ## qpel16_mc31_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[16*2 + 16*2 + 18*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*256 + 16;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    uint64_t half[16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 256;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
-    put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfV, src+1, 16, stride);\
+    put ## RND ## pixels16_l2_mmx(halfH, src+1, halfH, 16, stride, 17);\
     put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH, 16, 16);\
-    OPNAME ## pixels16_l4_mmx(dst, src+1, (uint8_t*)half, stride, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, halfH, halfHV, stride, 16, 16);\
 }\
 static void OPNAME ## qpel16_mc13_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[16*2 + 16*2 + 17*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*256;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    uint64_t half[16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 256;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
-    put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfV, src, 16, stride);\
+    put ## RND ## pixels16_l2_mmx(halfH, src, halfH, 16, stride, 17);\
     put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH, 16, 16);\
-    OPNAME ## pixels16_l4_mmx(dst, src+stride, (uint8_t*)half, stride, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, halfH+16, halfHV, stride, 16, 16);\
 }\
 static void OPNAME ## qpel16_mc33_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[16*2 + 16*2 + 17*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*256;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
-    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src  , 16, stride, 17);\
-    put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfV, src+1, 16, stride);\
+    uint64_t half[16*2 + 17*2];\
+    uint8_t * const halfH= ((uint8_t*)half) + 256;\
+    uint8_t * const halfHV= ((uint8_t*)half);\
+    put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
+    put ## RND ## pixels16_l2_mmx(halfH, src+1, halfH, 16, stride, 17);\
     put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH, 16, 16);\
-    OPNAME ## pixels16_l4_mmx(dst, src+stride+1, (uint8_t*)half, stride, 16);\
+    OPNAME ## pixels16_l2_mmx(dst, halfH+16, halfHV, stride, 16, 16);\
 }\
 static void OPNAME ## qpel16_mc21_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
     uint64_t half[16*2 + 17*2];\
@@ -1297,24 +1283,18 @@ static void OPNAME ## qpel16_mc23_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
     OPNAME ## pixels16_l2_mmx(dst, halfH+16, halfHV, stride, 16, 16);\
 }\
 static void OPNAME ## qpel16_mc12_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[16*2 + 16*2 + 17*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*256;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    uint64_t half[17*2];\
+    uint8_t * const halfH= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
-    put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfV, src, 16, stride);\
-    put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH, 16, 16);\
-    OPNAME ## pixels16_l2_mmx(dst, halfV, halfHV, stride, 16, 16);\
+    put ## RND ## pixels16_l2_mmx(halfH, src, halfH, 16, stride, 17);\
+    OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(dst, halfH, stride, 16);\
 }\
 static void OPNAME ## qpel16_mc32_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
-    uint64_t half[16*2 + 16*2 + 17*2];\
-    uint8_t * const halfH= ((uint8_t*)half) + 2*256;\
-    uint8_t * const halfV= ((uint8_t*)half);\
-    uint8_t * const halfHV= ((uint8_t*)half) + 256;\
+    uint64_t half[17*2];\
+    uint8_t * const halfH= ((uint8_t*)half);\
     put ## RND ## mpeg4_qpel16_h_lowpass_ ## MMX(halfH, src, 16, stride, 17);\
-    put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfV, src+1, 16, stride);\
-    put ## RND ## mpeg4_qpel16_v_lowpass_ ## MMX(halfHV, halfH, 16, 16);\
-    OPNAME ## pixels16_l2_mmx(dst, halfV, halfHV, stride, 16, 16);\
+    put ## RND ## pixels16_l2_mmx(halfH, src+1, halfH, 16, stride, 17);\
+    OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(dst, halfH, stride, 16);\
 }\
 static void OPNAME ## qpel16_mc22_ ## MMX(UINT8 *dst, UINT8 *src, int stride){\
     uint64_t half[17*2];\
@@ -1525,7 +1505,7 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
             c->avg_pixels_tab[1][1] = avg_pixels8_x2_3dnow;
             c->avg_pixels_tab[1][2] = avg_pixels8_y2_3dnow;
             c->avg_pixels_tab[1][3] = avg_pixels8_xy2_3dnow;
-        
+
             SET_QPEL_FUNC(qpel_pixels_tab[0][ 0], qpel16_mc00_3dnow)
             SET_QPEL_FUNC(qpel_pixels_tab[0][ 1], qpel16_mc10_3dnow)
             SET_QPEL_FUNC(qpel_pixels_tab[0][ 2], qpel16_mc20_3dnow)
