@@ -7,7 +7,7 @@ extern "C" {
 
 #define LIBAVFORMAT_VERSION_INT 0x000406  
 #define LIBAVFORMAT_VERSION     "0.4.6"
-#define LIBAVFORMAT_BUILD       4603
+#define LIBAVFORMAT_BUILD       4604
 
 #include "avcodec.h"
 
@@ -219,8 +219,12 @@ typedef struct AVImageInfo {
     enum PixelFormat pix_fmt; /* requested pixel format */
     int width; /* requested width */
     int height; /* requested height */
+    int progressive; /* image is progressive (e.g. interleaved GIF) */
     AVPicture pict; /* returned allocated image */
 } AVImageInfo;
+
+/* AVImageFormat.flags field constants */
+#define AVIMAGE_PROGRESSIVE 0x0001 /* image format support progressive output */
 
 typedef struct AVImageFormat {
     const char *name;
@@ -236,6 +240,7 @@ typedef struct AVImageFormat {
     /* write the image */
     int supported_pixel_formats; /* mask of supported formats for output */
     int (*img_write)(ByteIOContext *, AVImageInfo *);
+    int flags;
     struct AVImageFormat *next;
 } AVImageFormat;
 
