@@ -733,10 +733,16 @@ int estimate_motion(MpegEncContext * s,
     pix = s->new_picture[0] + (yy * s->linesize) + xx;
     /* At this point (mx,my) are full-pell and the absolute displacement */
     ppix = s->last_picture[0] + (my * s->linesize) + mx;
-
+    
     sum = pix_sum(pix, s->linesize);
-    varc = pix_dev(pix, s->linesize, (sum+128)>>8);
+#if 0
+    varc = pix_dev(pix, s->linesize, (sum+128)>>8) + INTER_BIAS;
     vard = pix_abs16x16(pix, ppix, s->linesize, 16);
+#else
+    sum= (sum+8)>>4;
+    varc = ((pix_norm1(pix, s->linesize) - sum*sum + 128 + 500)>>8);
+    vard = (pix_norm(pix, ppix, s->linesize)+128)>>8;
+#endif
 
     s->mb_var[s->mb_width * mb_y + mb_x] = varc;
     s->avg_mb_var += varc;
@@ -746,7 +752,7 @@ int estimate_motion(MpegEncContext * s,
     printf("varc=%4d avg_var=%4d (sum=%4d) vard=%4d mx=%2d my=%2d\n",
 	   varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
 #endif
-    if (vard <= 64 || vard < varc + INTER_BIAS) {
+    if (vard <= 64 || vard < varc) {
         if (s->full_search != ME_ZERO) {
             halfpel_motion_search(s, &mx, &my, dmin, xmin, ymin, xmax, ymax, pred_x, pred_y);
         } else {
