@@ -482,7 +482,6 @@ void mpeg1_encode_mb(MpegEncContext *s,
 void ff_mpeg1_encode_init(MpegEncContext *s);
 
 /* h263enc.c */
-
 typedef struct RLTable {
     int n; /* number of entries of table_vlc minus 1 */
     int last; /* number of values for last = 0 */
@@ -492,7 +491,8 @@ typedef struct RLTable {
     UINT8 *index_run[2]; /* encoding only */
     INT8 *max_level[2]; /* encoding & decoding */
     INT8 *max_run[2];   /* encoding & decoding */
-    VLC vlc;            /* decoding only */
+    VLC vlc;            /* decoding only deprected FIXME remove*/
+    RL_VLC_ELEM *rl_vlc[32]; /* decoding only */
 } RLTable;
 
 void init_rl(RLTable *rl);

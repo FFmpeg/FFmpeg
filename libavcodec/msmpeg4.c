@@ -1629,9 +1629,10 @@ printf("%c", s->ac_pred ? 'A' : 'I');
 static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded)
 {
-    int code, level, i, j, last, run, run_diff;
+    int level, i, last, run, run_diff;
     int dc_pred_dir;
     RLTable *rl;
+    RL_VLC_ELEM *rl_vlc;
     const UINT8 *scan_table;
     int qmul, qadd;
 
@@ -1671,7 +1672,7 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
         block[0] = level;
 
         run_diff = 0;
-	i = 1;
+        i = 0;
         if (!coded) {
             goto not_coded;
         }
@@ -1684,10 +1685,11 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             scan_table = s->intra_scantable;
         }
         set_stat(ST_INTRA_AC);
+        rl_vlc= rl->rl_vlc[0];
     } else {
         qmul = s->qscale << 1;
         qadd = (s->qscale - 1) | 1;
-	i = 0;
+        i = -1;
         rl = &rl_table[3 + s->rl_table_index];
 
         if(s->msmpeg4_version==2)
@@ -1696,53 +1698,66 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
             run_diff = 1;
 
         if (!coded) {
-            s->block_last_index[n] = i - 1;
+            s->block_last_index[n] = i;
             return 0;
         }
         scan_table = s->inter_scantable;
         set_stat(ST_INTER_AC);
+        rl_vlc= rl->rl_vlc[s->qscale];
     }
-
+  {
+    OPEN_READER(re, &s->gb);
     for(;;) {
-        code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
-        if (code < 0){
-            fprintf(stderr, "illegal AC-VLC code at %d %d\n", s->mb_x, s->mb_y);
-            return -1;
-        }
-        if (code == rl->n) {
+        UPDATE_CACHE(re, &s->gb);
+        GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2);
+        if (level==0) {
+            int cache;
+            cache= GET_CACHE(re, &s->gb);
             /* escape */
-            if (s->msmpeg4_version==1 || get_bits1(&s->gb) == 0) {
-                if (s->msmpeg4_version==1 || get_bits1(&s->gb) == 0) {
+            if (s->msmpeg4_version==1 || (cache&0x80000000)==0) {
+                if (s->msmpeg4_version==1 || (cache&0x40000000)==0) {
                     /* third escape */
+                    if(s->msmpeg4_version!=1) LAST_SKIP_BITS(re, &s->gb, 2);
+                    UPDATE_CACHE(re, &s->gb);
                     if(s->msmpeg4_version<=3){
-                        last= get_bits1(&s->gb);
-                        run= get_bits(&s->gb, 6);  
-                        level= get_bits(&s->gb, 8);
-                        level= ((int8_t)level);
-                    }else{
+                        last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
+                        run=   SHOW_UBITS(re, &s->gb, 6); SKIP_CACHE(re, &s->gb, 6);
+                        level= SHOW_SBITS(re, &s->gb, 8); LAST_SKIP_CACHE(re, &s->gb, 8);
+                        SKIP_COUNTER(re, &s->gb, 1+6+8);
+                    }else{                        
                         int sign;
-                        last= get_bits1(&s->gb);
+                        last=  SHOW_UBITS(re, &s->gb, 1); SKIP_BITS(re, &s->gb, 1);
                         if(!s->esc3_level_length){
                             int ll;
                             //printf("ESC-3 %X at %d %d\n", show_bits(&s->gb, 24), s->mb_x, s->mb_y);
                             if(s->qscale<8){
-                                ll= get_bits(&s->gb, 3);
+                                ll= SHOW_UBITS(re, &s->gb, 3); SKIP_BITS(re, &s->gb, 3);
                                 if(ll==0){
-                                    if(get_bits1(&s->gb)) printf("cool a new vlc code ,contact the ffmpeg developers and upload the file\n");
+                                    if(SHOW_UBITS(re, &s->gb, 1)) printf("cool a new vlc code ,contact the ffmpeg developers and upload the file\n");
+                                    SKIP_BITS(re, &s->gb, 1);
                                     ll=8;
                                 }
                             }else{
                                 ll=2;
-                                while(ll<8 && get_bits1(&s->gb)==0) ll++;
+                                while(ll<8 && SHOW_UBITS(re, &s->gb, 1)==0){
+                                    ll++;
+                                    SKIP_BITS(re, &s->gb, 1);
+                                }
+                                SKIP_BITS(re, &s->gb, 1);
                             }
 
                             s->esc3_level_length= ll;
-                            s->esc3_run_length= get_bits(&s->gb, 2) + 3;
+                            s->esc3_run_length= SHOW_UBITS(re, &s->gb, 2) + 3; SKIP_BITS(re, &s->gb, 2);
 //printf("level length:%d, run length: %d\n", ll, s->esc3_run_length);
                         }
-                        run= get_bits(&s->gb, s->esc3_run_length);  
-                        sign= get_bits1(&s->gb);
-                        level= get_bits(&s->gb, s->esc3_level_length);
+                        run=   SHOW_UBITS(re, &s->gb, s->esc3_run_length); 
+                        SKIP_BITS(re, &s->gb, s->esc3_run_length);
+                        
+                        sign=  SHOW_UBITS(re, &s->gb, 1); 
+                        SKIP_BITS(re, &s->gb, 1);
+                        
+                        level= SHOW_UBITS(re, &s->gb, s->esc3_level_length); 
+                        SKIP_BITS(re, &s->gb, s->esc3_level_length);
                         if(sign) level= -level;
                     }
 //printf("level: %d, run: %d at %d %d\n", level, run, s->mb_x, s->mb_y);
@@ -1775,64 +1790,64 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         return DECODING_AC_LOST;
                     }
 #endif
+                    i+= run + 1;
+                    if(last) i+=192;
                 } else {
                     /* second escape */
-                    code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
-                    if (code < 0 || code >= rl->n){
-                        fprintf(stderr, "illegal ESC2-VLC code %d at %d %d\n", code, s->mb_x, s->mb_y);
-                        return -1;
-                    }
-                    run = rl->table_run[code];
-                    level = rl->table_level[code];
-                    last = code >= rl->last;
-                    run += rl->max_run[last][level] + run_diff;
-                    level= level * qmul + qadd;
-                    if (get_bits1(&s->gb))
-                        level = -level;
+#if MIN_CACHE_BITS < 23
+                    LAST_SKIP_BITS(re, &s->gb, 2);
+                    UPDATE_CACHE(re, &s->gb);
+#else
+                    SKIP_BITS(re, &s->gb, 2);
+#endif
+                    GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2);
+                    i+= run + rl->max_run[run>>7][level/qmul] + run_diff; //FIXME opt indexing
+                    level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+                    LAST_SKIP_BITS(re, &s->gb, 1);
                 }
             } else {
                 /* first escape */
-                code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
-                if (code < 0 || code >= rl->n){
-                    fprintf(stderr, "illegal ESC2-VLC code %d at %d %d\n", code, s->mb_x, s->mb_y);
-                    return -1;
-                }
-                run = rl->table_run[code];
-                level = rl->table_level[code];
-                last = code >= rl->last;
-                level += rl->max_level[last][run];
-                level= level * qmul + qadd;
-                if (get_bits1(&s->gb))
-                    level = -level;
+#if MIN_CACHE_BITS < 22
+                LAST_SKIP_BITS(re, &s->gb, 1);
+                UPDATE_CACHE(re, &s->gb);
+#else
+                SKIP_BITS(re, &s->gb, 1);
+#endif
+                GET_RL_VLC(level, run, re, &s->gb, rl_vlc, TEX_VLC_BITS, 2);
+                i+= run;
+                level = level + rl->max_level[run>>7][(run-1)&63] * qmul;//FIXME opt indexing
+                level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+                LAST_SKIP_BITS(re, &s->gb, 1);
             }
         } else {
-            run = rl->table_run[code];
-            level = rl->table_level[code] * qmul + qadd;
-            last = code >= rl->last;
-            if (get_bits1(&s->gb))
-                level = -level;
+            i+= run;
+            level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
+            LAST_SKIP_BITS(re, &s->gb, 1);
         }
-        i += run;
-        if (i >= 64){
-            fprintf(stderr, "run too long at %d %d\n", s->mb_x, s->mb_y);
-            return -1;
+        if (i > 62){
+            i-= 192;
+            if(i&(~63)){
+                fprintf(stderr, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
+                return -1;
+            }
+
+            block[scan_table[i]] = level;
+            break;
         }
 
-	j = scan_table[i];
-        block[j] = level;
-        i++;
-        if (last)
-            break;
+        block[scan_table[i]] = level;
     }
+    CLOSE_READER(re, &s->gb);
+  }
  not_coded:
     if (s->mb_intra) {
         mpeg4_pred_ac(s, block, n, dc_pred_dir);
         if (s->ac_pred) {
-            i = 64; /* XXX: not optimal */
+            i = 63; /* XXX: not optimal */
         }
     }
-    if(s->msmpeg4_version==4 && i>1) i=64; //FIXME/XXX optimize
-    s->block_last_index[n] = i - 1;
+    if(s->msmpeg4_version==4 && i>0) i=63; //FIXME/XXX optimize
+    s->block_last_index[n] = i;
     
     return 0;
 }

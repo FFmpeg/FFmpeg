@@ -238,6 +238,12 @@ typedef struct VLC {
     int table_size, table_allocated;
 } VLC;
 
+typedef struct RL_VLC_ELEM {
+    int16_t level;
+    int8_t len;
+    uint8_t run;
+} RL_VLC_ELEM;
+
 /* used to avoid missaligned exceptions on some archs (alpha, ...) */
 #ifdef ARCH_X86
 #define unaligned32(a) (*(UINT32*)(a))
@@ -755,6 +761,28 @@ void free_vlc(VLC *vlc);
     SKIP_BITS(name, gb, n)\
 }
 
+#define GET_RL_VLC(level, run, name, gb, table, bits, max_depth)\
+{\
+    int n, index, nb_bits;\
+\
+    index= SHOW_UBITS(name, gb, bits);\
+    level = table[index].level;\
+    n     = table[index].len;\
+\
+    if(max_depth > 1 && n < 0){\
+        LAST_SKIP_BITS(name, gb, bits)\
+        UPDATE_CACHE(name, gb)\
+\
+        nb_bits = -n;\
+\
+        index= SHOW_UBITS(name, gb, nb_bits) + level;\
+        level = table[index].level;\
+        n     = table[index].len;\
+    }\
+    run= table[index].run;\
+    SKIP_BITS(name, gb, n)\
+}
+
 // deprecated, dont use get_vlc for new code, use get_vlc2 instead or use GET_VLC directly
 static inline int get_vlc(GetBitContext *s, VLC *vlc)
 {
@@ -782,6 +810,7 @@ static inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2], int bits, int
     CLOSE_READER(re, s)
     return code;
 }
+
 
 /* define it to include statistics code (useful only for optimizing
    codec efficiency */
