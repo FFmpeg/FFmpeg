@@ -360,6 +360,19 @@ if test "$zlib" = "yes"; then
 extralibs="$extralibs -lz"
 fi
 
+# test for lrintf in math.h
+cat > $TMPC << EOF
+#define _ISOC9X_SOURCE  1
+#include <math.h>
+int main( void ) { return (lrintf(3.999f) > 0)?0:1; }
+EOF
+
+have_lrintf="no"
+if $cc $extralibs -o $TMPO $TMPC 2> /dev/null ; then
+  have_lrintf="yes"
+  $TMPO 2> /dev/null > /dev/null || have_lrintf="no"
+fi
+
 _restrict=
 for restrict_keyword in restrict __restrict__ __restrict; do
   echo "void foo(char * $restrict_keyword p);" > $TMPC
@@ -495,6 +508,9 @@ else
 fi
 if test "$imlib2" = "yes" ; then
   echo "HAVE_IMLIB2=yes" >> config.mak
+fi
+if test "$have_lrintf" = "yes" ; then
+  echo "#define HAVE_LRINTF 1" >> $TMPH
 fi
 if test "$vhook" = "yes" ; then
   echo "BUILD_VHOOK=yes" >> config.mak
