@@ -104,12 +104,12 @@ static int put_pack_header(AVFormatContext *ctx,
     if (s->is_mpeg2) {
         /* clock extension */
         put_bits(&pb, 9, 0);
-        put_bits(&pb, 1, 1);
     }
     put_bits(&pb, 1, 1);
     put_bits(&pb, 22, s->mux_rate);
     put_bits(&pb, 1, 1);
     if (s->is_mpeg2) {
+        put_bits(&pb, 1, 1);
         put_bits(&pb, 5, 0x1f); /* reserved */
         put_bits(&pb, 3, 0); /* stuffing length */
     }
@@ -439,9 +439,10 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
     put_be32(&ctx->pb, startcode);
 
     put_be16(&ctx->pb, packet_size);
-    /* stuffing */
-    for(i=0;i<stuffing_size;i++)
-        put_byte(&ctx->pb, 0xff);
+
+    if (!s->is_mpeg2) 
+        for(i=0;i<stuffing_size;i++)
+            put_byte(&ctx->pb, 0xff);
 
     if (s->is_mpeg2) {
         put_byte(&ctx->pb, 0x80); /* mpeg2 id */
@@ -449,17 +450,17 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
         if (pts != AV_NOPTS_VALUE) {
             if (dts != pts) {
                 put_byte(&ctx->pb, 0xc0); /* flags */
-                put_byte(&ctx->pb, header_len - 3);
+                put_byte(&ctx->pb, header_len - 3 + stuffing_size);
                 put_timestamp(&ctx->pb, 0x03, pts);
                 put_timestamp(&ctx->pb, 0x01, dts);
             } else {
                 put_byte(&ctx->pb, 0x80); /* flags */
-                put_byte(&ctx->pb, header_len - 3);
+                put_byte(&ctx->pb, header_len - 3 + stuffing_size);
                 put_timestamp(&ctx->pb, 0x02, pts);
             }
         } else {
             put_byte(&ctx->pb, 0x00); /* flags */
-            put_byte(&ctx->pb, header_len - 3);
+            put_byte(&ctx->pb, header_len - 3 + stuffing_size);
         }
     } else {
         if (pts != AV_NOPTS_VALUE) {
@@ -489,6 +490,10 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
             put_be16(&ctx->pb, stream->frame_start_offset);
         }
     }
+
+    if (s->is_mpeg2)
+        for(i=0;i<stuffing_size;i++)
+            put_byte(&ctx->pb, 0xff);
 
     /* output data */
     put_buffer(&ctx->pb, stream->buffer, payload_size - stuffing_size);
