@@ -23,6 +23,9 @@
  */
 
 #include "regdef.h"
+#ifdef HAVE_AV_CONFIG_H	
+#include "config.h"
+#endif
 
 /* Some nicer register names.  */
 #define ta t10
@@ -50,6 +53,11 @@
 put_pixels_clamped_mvi_asm:
         .frame sp, 0, ra
         .prologue 0
+
+#ifdef HAVE_GPROF
+        lda     AT, _mcount
+        jsr     AT, (AT), _mcount
+#endif
 
         lda     t8, -1
         lda     t9, 8           # loop counter
@@ -100,6 +108,11 @@ put_pixels_clamped_mvi_asm:
 add_pixels_clamped_mvi_asm:
         .frame sp, 0, ra
         .prologue 0
+
+#ifdef HAVE_GPROF
+        lda     AT, _mcount
+        jsr     AT, (AT), _mcount
+#endif
 
         lda     t1, -1
         lda     th, 8
