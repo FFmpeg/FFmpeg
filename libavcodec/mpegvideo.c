@@ -354,6 +354,9 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
             }
             pic->motion_subsample_log2= 3;
         }
+        if(s->avctx->debug&FF_DEBUG_DCT_COEFF) {
+            CHECKED_ALLOCZ(pic->dct_coeff, 64 * mb_array_size * sizeof(DCTELEM)*6)
+        }
         pic->qstride= s->mb_stride;
         CHECKED_ALLOCZ(pic->pan_scan , 1 * sizeof(AVPanScan))
     }
@@ -385,6 +388,7 @@ static void free_picture(MpegEncContext *s, Picture *pic){
     av_freep(&pic->mbskip_table);
     av_freep(&pic->qscale_table);
     av_freep(&pic->mb_type_base);
+    av_freep(&pic->dct_coeff);
     av_freep(&pic->pan_scan);
     pic->mb_type= NULL;
     for(i=0; i<2; i++){
@@ -3079,6 +3083,15 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     mb_x = s->mb_x;
     mb_y = s->mb_y;
+
+    if(s->avctx->debug&FF_DEBUG_DCT_COEFF) {
+       /* save DCT coefficients */
+       int i,j;
+       DCTELEM *dct = &s->current_picture.dct_coeff[mb_xy*64*6];
+       for(i=0; i<6; i++)
+           for(j=0; j<64; j++)
+               *dct++ = block[i][s->dsp.idct_permutation[j]];
+    }
 
     s->current_picture.qscale_table[mb_xy]= s->qscale;
 

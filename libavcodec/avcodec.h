@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4704
+#define LIBAVCODEC_BUILD       4705
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -529,6 +529,13 @@ typedef struct AVPanScan{
      * - decoding: set by lavc (before get_buffer() call))\
      */\
     int buffer_hints;\
+\
+    /**\
+     * DCT coeffitients\
+     * - encoding: unused\
+     * - decoding: set by lavc\
+     */\
+    short *dct_coeff;\
 
 #define FF_QSCALE_TYPE_MPEG1	0
 #define FF_QSCALE_TYPE_MPEG2	1
@@ -1138,7 +1145,7 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_MB_TYPE   8
 #define FF_DEBUG_QP        16
 #define FF_DEBUG_MV        32
-//#define FF_DEBUG_VIS_MV    0x00000040
+#define FF_DEBUG_DCT_COEFF 0x00000040
 #define FF_DEBUG_SKIP      0x00000080
 #define FF_DEBUG_STARTCODE 0x00000100
 #define FF_DEBUG_PTS       0x00000200
