@@ -62,6 +62,9 @@ typedef struct RoqDemuxContext {
 
 static int roq_probe(AVProbeData *p)
 {
+    if (p->buf_size < 6)
+        return 0;
+
     if ((LE_16(&p->buf[0]) != RoQ_MAGIC_NUMBER) ||
         (LE_32(&p->buf[2]) != 0xFFFFFFFF))
         return 0;

@@ -89,6 +89,9 @@ typedef struct FourxmDemuxContext {
 
 static int fourxm_probe(AVProbeData *p)
 {
+    if (p->buf_size < 12)
+        return 0;
+
     if ((LE_32(&p->buf[0]) != RIFF_TAG) ||
         (LE_32(&p->buf[8]) != _4XMV_TAG))
         return 0;
@@ -242,7 +245,6 @@ static int fourxm_read_packet(AVFormatContext *s,
             return ret;
         fourcc_tag = LE_32(&header[0]);
         size = LE_32(&header[4]);
-//printf(" %8X %c%c%c%c %d\n", fourcc_tag, fourcc_tag, fourcc_tag>>8, fourcc_tag>>16, fourcc_tag>>24, size);
         if (url_feof(pb))
             return -EIO;
         switch (fourcc_tag) {
@@ -256,10 +258,7 @@ static int fourxm_read_packet(AVFormatContext *s,
         case pfrm_TAG:
         case cfrm_TAG:{
 
-int id, whole;
-static int stats[1000];
-
-            /* bump the pts if this last data sent out was audio */
+            /* bump the pts if the last data sent out was audio */
             if (fourxm->last_chunk_was_audio) {
                 fourxm->last_chunk_was_audio = 0;
                 pts_inc = fourxm->last_audio_frame_count;
@@ -277,13 +276,6 @@ static int stats[1000];
             memcpy(pkt->data, header, 8);
             ret = get_buffer(&s->pb, &pkt->data[8], size);
 
-if (fourcc_tag == cfrm_TAG) {
-id = LE_32(&pkt->data[12]);
-whole = LE_32(&pkt->data[16]);
-stats[id] += size - 12;
-//printf(" cfrm chunk id:%d size:%d whole:%d until now:%d\n", id, size, whole, stats[id]);
-}
-
             if (ret < 0)
                 av_free_packet(pkt);
             else
@@ -292,13 +284,11 @@ stats[id] += size - 12;
         }
 
         case snd__TAG:
-printf (" snd_ chunk, ");
             track_number = get_le32(pb);
             out_size= get_le32(pb);
             size-=8;
 
             if (track_number == fourxm->selected_track) {
-printf ("correct track, dispatching...\n");
                 if (av_new_packet(pkt, size))
                     return -EIO;
                 pkt->stream_index = 
@@ -317,7 +307,6 @@ printf ("correct track, dispatching...\n");
                       fourxm->tracks[fourxm->selected_track].channels);
 
             } else {
-printf ("wrong track, skipping...\n");
                 url_fseek(pb, size, SEEK_CUR);
             }
             break;
