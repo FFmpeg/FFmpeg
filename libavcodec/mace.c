@@ -242,7 +242,8 @@ typedef struct MACEContext {
 static void chomp3(MACEContext *ctx,
             uint8_t val,
             const uint16_t tab1[],
-            const uint16_t tab2[][8])
+            const uint16_t tab2[][8],
+            uint32_t numChannels)
 {
   short current;
 
@@ -252,7 +253,8 @@ static void chomp3(MACEContext *ctx,
   else current+=ctx->lev;
   ctx->lev=current-(current >> 3);
 //  *ctx->outPtr++=current >> 8;
-  *ctx->outPtr++=current;
+  *ctx->outPtr=current;
+  ctx->outPtr+=numChannels;
   if ( ( ctx->index += tab1[val]-(ctx->index>>5) ) < 0 ) ctx->index = 0;
 }
 /* \\\ */
@@ -281,13 +283,13 @@ static void Exp1to3(MACEContext *ctx,
 
    while (cnt>0) {
      pkt=inBuffer[0];
-     chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2);
-     chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4);
-     chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2);
+     chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
+     chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
+     chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
      pkt=inBuffer[1];
-     chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2);
-     chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4);
-     chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2);
+     chomp3(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
+     chomp3(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
+     chomp3(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
 
      inBuffer+=numChannels*2;
      --cnt;
@@ -306,7 +308,8 @@ static void Exp1to3(MACEContext *ctx,
 static void chomp6(MACEContext *ctx,
             uint8_t val,
             const uint16_t tab1[],
-            const uint16_t tab2[][8])
+            const uint16_t tab2[][8],
+            uint32_t numChannels)
 {
   short current;
 
@@ -329,9 +332,10 @@ static void chomp6(MACEContext *ctx,
 
 //  *ctx->outPtr++=(ctx->previous+ctx->prev2-((ctx->prev2-current) >> 2)) >> 8;
 //  *ctx->outPtr++=(ctx->previous+current+((ctx->prev2-current) >> 2)) >> 8;
-  *ctx->outPtr++=(ctx->previous+ctx->prev2-((ctx->prev2-current) >> 2));
-  *ctx->outPtr++=(ctx->previous+current+((ctx->prev2-current) >> 2));
-
+  *ctx->outPtr=(ctx->previous+ctx->prev2-((ctx->prev2-current) >> 2));
+  ctx->outPtr+=numChannels;
+  *ctx->outPtr=(ctx->previous+current+((ctx->prev2-current) >> 2));
+  ctx->outPtr+=numChannels;
   ctx->prev2=ctx->previous;
   ctx->previous=current;
 
@@ -366,9 +370,9 @@ static void Exp1to6(MACEContext *ctx,
    while (cnt>0) {
      pkt=*inBuffer;
 
-     chomp6(ctx, pkt >> 5     , MACEtab1, MACEtab2);
-     chomp6(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4);
-     chomp6(ctx, pkt       & 7, MACEtab1, MACEtab2);
+     chomp6(ctx, pkt >> 5     , MACEtab1, MACEtab2, numChannels);
+     chomp6(ctx,(pkt >> 3) & 3, MACEtab3, MACEtab4, numChannels);
+     chomp6(ctx, pkt       & 7, MACEtab1, MACEtab2, numChannels);
 
      inBuffer+=numChannels;
      --cnt;
