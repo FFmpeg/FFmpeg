@@ -94,7 +94,7 @@ unsigned int codec_get_bmp_tag(int id)
 }
 
 /* BITMAPINFOHEADER header */
-void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc)
+void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, CodecTag *tags)
 {
     put_le32(pb, 40); /* size */
     put_le32(pb, enc->width);
@@ -102,7 +102,7 @@ void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le16(pb, 1); /* planes */
     put_le16(pb, 24); /* depth */
     /* compression type */
-    put_le32(pb, codec_get_bmp_tag(enc->codec_id));
+    put_le32(pb, codec_get_tag(tags, enc->codec_id));
     put_le32(pb, enc->width * enc->height * 3);
     put_le32(pb, 0);
     put_le32(pb, 0);
@@ -251,7 +251,7 @@ static int avi_write_header(AVFormatContext *s)
         strf = start_tag(pb, "strf");
         switch(stream->codec_type) {
         case CODEC_TYPE_VIDEO:
-            put_bmp_header(pb, stream);
+	    put_bmp_header(pb, stream, codec_bmp_tags);
             break;
         case CODEC_TYPE_AUDIO:
             if (put_wav_header(pb, stream) < 0) {
