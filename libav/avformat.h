@@ -1,3 +1,5 @@
+#ifndef AVFORMAT_H
+#define AVFORMAT_H
 
 #define LIBAV_VERSION_INT 0x000406  
 #define LIBAV_VERSION     "0.4.6"
@@ -8,6 +10,8 @@
 #include "avio.h"
 
 /* packet functions */
+
+#define AV_NOPTS_VALUE 0
 
 typedef struct AVPacket {
     INT64 pts;
@@ -53,6 +57,8 @@ typedef struct AVFormatParameters {
 #define AVFMT_SHOW_IDS      0x0008 /* show format stream IDs numbers */
 #define AVFMT_RGB24         0x0010 /* force RGB24 output for ppm (hack
                                       - need better api) */
+#define AVFMT_RAWPICTURE    0x0020 /* format wants AVPicture structure for
+                                      raw picture data */
 
 typedef struct AVOutputFormat {
     const char *name;
@@ -207,6 +213,14 @@ int raw_init(void);
 /* ffm.c */
 int ffm_init(void);
 
+/* rtsp.c */
+extern AVInputFormat redir_demux;
+int redir_open(AVFormatContext **ic_ptr, ByteIOContext *f);
+
+#include "rtp.h"
+
+#include "rtsp.h"
+
 /* utils.c */
 #define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
 #define MKBETAG(a,b,c,d) (d | (c << 8) | (b << 16) | (a << 24))
@@ -216,10 +230,6 @@ void av_register_output_format(AVOutputFormat *format);
 AVOutputFormat *guess_format(const char *short_name, 
                              const char *filename, const char *mime_type);
 
-int strstart(const char *str, const char *val, const char **ptr);
-void pstrcpy(char *buf, int buf_size, const char *str);
-
-int match_ext(const char *filename, const char *extensions);
 void av_hex_dump(UINT8 *buf, int size);
 
 void register_all(void);
@@ -286,3 +296,23 @@ int audio_init(void);
 
 extern const char *v4l_device;
 extern const char *audio_device;
+
+#ifdef HAVE_AV_CONFIG_H
+int strstart(const char *str, const char *val, const char **ptr);
+int stristart(const char *str, const char *val, const char **ptr);
+void pstrcpy(char *buf, int buf_size, const char *str);
+char *pstrcat(char *buf, int buf_size, const char *s);
+int match_ext(const char *filename, const char *extensions);
+
+struct in_addr;
+int resolve_host(struct in_addr *sin_addr, const char *hostname);
+
+void url_split(char *proto, int proto_size,
+               char *hostname, int hostname_size,
+               int *port_ptr,
+               char *path, int path_size,
+               const char *url);
+
+#endif /* HAVE_AV_CONFIG_H */
+
+#endif /* AVFORMAT_H */
