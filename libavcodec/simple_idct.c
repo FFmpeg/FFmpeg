@@ -59,7 +59,7 @@ static int coeff[64]={
 	W7,-W5, W3,-W1, W1,-W3, W5,-W7
 };
 
-static int inline idctRowCondZ (int16_t * row)
+static inline int idctRowCondZ (int16_t * row)
 {
 	int a0, a1, a2, a3, b0, b1, b2, b3;
 
@@ -105,7 +105,7 @@ static int inline idctRowCondZ (int16_t * row)
 
 #ifdef ARCH_ALPHA
 /* 0: all entries 0, 1: only first entry nonzero, 2: otherwise  */
-static int inline idctRowCondDC(int16_t *row)
+static inline int idctRowCondDC(int16_t *row)
 {
 	int_fast32_t a0, a1, a2, a3, b0, b1, b2, b3;
 	uint64_t *lrow = (uint64_t *) row;
@@ -205,7 +205,7 @@ static int inline idctRowCondDC(int16_t *row)
 	return 2;
 }
 #else  /* not ARCH_ALPHA */
-static int inline idctRowCondDC (int16_t * row)
+static inline int idctRowCondDC (int16_t * row)
 {
 	int a0, a1, a2, a3, b0, b1, b2, b3;
 
@@ -252,7 +252,7 @@ static int inline idctRowCondDC (int16_t * row)
 }
 #endif /* not ARCH_ALPHA */
 
-static void inline idctCol (int16_t * col)
+static inline void idctCol (int16_t * col)
 {
 
 /*
@@ -284,7 +284,7 @@ static void inline idctCol (int16_t * col)
 	col[8*4] = (a3 - b3) >> COL_SHIFT;
 }
 
-static void inline idctSparseCol (int16_t * col)
+static inline void idctSparseCol (int16_t * col)
 {
 	int a0, a1, a2, a3, b0, b1, b2, b3;
 	col[0] += (1<<(COL_SHIFT-1))/W4;
@@ -372,7 +372,7 @@ static void inline idctSparseCol (int16_t * col)
 #endif
 }
 
-static void inline idctSparse2Col (int16_t * col)
+static inline void idctSparse2Col (int16_t * col)
 {
 	int a0, a1, a2, a3, b0, b1, b2, b3;
 	col[0] += (1<<(COL_SHIFT-1))/W4;
