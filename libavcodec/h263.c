@@ -1122,10 +1122,13 @@ void h263_encode_init(MpegEncContext *s)
         s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
     }
 
-    /* h263 type bias */
-    //FIXME mpeg4 mpeg quantizer    
-    s->intra_quant_bias=0;
-    s->inter_quant_bias=-(1<<(QUANT_BIAS_SHIFT-2)); //(a - x/4)/x
+    if(s->mpeg_quant){
+        s->intra_quant_bias= 3<<(QUANT_BIAS_SHIFT-3); //(a + x*3/8)/x
+        s->inter_quant_bias= 0;
+    }else{
+        s->intra_quant_bias=0;
+        s->inter_quant_bias=-(1<<(QUANT_BIAS_SHIFT-2)); //(a - x/4)/x
+    }
 }
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
@@ -1274,7 +1277,9 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
         put_bits(&s->pb, 2, s->vol_sprite_usage=0);		/* sprite enable */
     }
     put_bits(&s->pb, 1, 0);		/* not 8 bit */
-    put_bits(&s->pb, 1, 0);		/* quant type= h263 style*/
+    put_bits(&s->pb, 1, s->mpeg_quant);	/* quant type= (0=h263 style)*/
+    if(s->mpeg_quant) put_bits(&s->pb, 2, 0); /* no custom matrixes */
+
     if (vo_ver_id != 1)
         put_bits(&s->pb, 1, s->quarter_sample=0);
     put_bits(&s->pb, 1, 1);		/* complexity estimation disable */

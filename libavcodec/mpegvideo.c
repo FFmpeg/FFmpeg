@@ -390,6 +390,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->chroma_elim_threshold= avctx->chroma_elim_threshold;
     s->strict_std_compliance= avctx->strict_std_compliance;
     s->data_partitioning= avctx->flags & CODEC_FLAG_PART;
+    s->mpeg_quant= avctx->mpeg_quant;
 
     if (s->gop_size <= 1) {
         s->intra_only = 1;
@@ -542,12 +543,16 @@ int MPV_encode_init(AVCodecContext *avctx)
     
     /* init default q matrix */
     for(i=0;i<64;i++) {
-        if(s->out_format == FMT_H263)
-            s->intra_matrix[i] = ff_mpeg1_default_non_intra_matrix[i];
-        else
+        if(s->codec_id==CODEC_ID_MPEG4 && s->mpeg_quant){
+            s->intra_matrix[i] = ff_mpeg4_default_intra_matrix[i];
+            s->inter_matrix[i] = ff_mpeg4_default_non_intra_matrix[i];
+        }else if(s->out_format == FMT_H263){
+            s->intra_matrix[i] =
+            s->inter_matrix[i] = ff_mpeg1_default_non_intra_matrix[i];
+        }else{ /* mpeg1 */
             s->intra_matrix[i] = ff_mpeg1_default_intra_matrix[i];
-
-        s->inter_matrix[i] = ff_mpeg1_default_non_intra_matrix[i];
+            s->inter_matrix[i] = ff_mpeg1_default_non_intra_matrix[i];
+        }
     }
 
     /* precompute matrix */

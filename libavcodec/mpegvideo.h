@@ -521,6 +521,9 @@ static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
 
 extern UINT8 ff_mpeg4_y_dc_scale_table[32];
 extern UINT8 ff_mpeg4_c_dc_scale_table[32];
+extern INT16 ff_mpeg4_default_intra_matrix[64];
+extern INT16 ff_mpeg4_default_non_intra_matrix[64];
+
 void h263_encode_mb(MpegEncContext *s, 
                     DCTELEM block[6][64],
                     int motion_x, int motion_y);

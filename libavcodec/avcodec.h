@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4618
-#define LIBAVCODEC_BUILD_STR   "4618"
+#define LIBAVCODEC_BUILD       4619
+#define LIBAVCODEC_BUILD_STR   "4619"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -278,6 +278,7 @@ typedef struct AVCodecContext {
     int parse_only; /* decoding only: if true, only parsing is done
                        (function avcodec_parse_frame()). The frame
                        data is returned. Only MPEG codecs support this now. */
+    int mpeg_quant; /* 0-> h263 quant 1-> mpeg quant */
 
     //FIXME this should be reordered after kabis API is finished ...
     /*
@@ -300,8 +301,6 @@ typedef struct AVCodecContext {
     unsigned long int
 	    ul_res0,ul_res1,ul_res2,ul_res3,ul_res4,ul_res5,
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
-    unsigned int
-	    ui_res0;
     unsigned short int
 	    us_res0,us_res1,us_res2,us_res3,us_res4,us_res5,
 	    us_res6,us_res7,us_res8,us_res9,us_res10,us_res11,us_res12;

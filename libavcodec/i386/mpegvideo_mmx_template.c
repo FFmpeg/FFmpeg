@@ -82,7 +82,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         qmat = s->q_inter_matrix16[qscale];
     }
 
-    if(s->out_format == FMT_H263){
+    if(s->out_format == FMT_H263 && s->mpeg_quant==0){
     
         asm volatile(
             "movd %%eax, %%mm3			\n\t" // last_non_zero_p1
@@ -189,6 +189,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     }
 
     if(s->mb_intra) temp_block[0]= level; //FIXME move afer permute
+        
 // last_non_zero_p1=64;       
     /* permute for IDCT */
     asm volatile(
