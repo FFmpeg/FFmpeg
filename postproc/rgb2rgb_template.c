@@ -12,7 +12,8 @@
 #include <inttypes.h> /* for __WORDSIZE */
 
 #ifndef __WORDSIZE
-#warning You have misconfigured system and probably will lose performance!
+// #warning You have misconfigured system and probably will lose performance!
+#define __WORDSIZE MP_WORDSIZE
 #endif
 
 #undef PREFETCH
