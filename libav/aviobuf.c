@@ -519,7 +519,7 @@ static void dyn_buf_write(void *opaque, UINT8 *buf, int buf_size)
         if (!new_allocated_size)
             new_allocated_size = new_size;
         else
-            new_allocated_size = (new_allocated_size * 3) / 2;
+            new_allocated_size = (new_allocated_size * 3) / 2 + 1;    
     }
     
     if (new_allocated_size > d->allocated_size) {
