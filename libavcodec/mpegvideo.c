@@ -1453,8 +1453,8 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
         const int shift= 1 + s->quarter_sample;
         int mb_y;
         uint8_t *ptr;
-        s->low_delay=0; //needed to see the vectors without trashing the buffers
         int i;
+        s->low_delay=0; //needed to see the vectors without trashing the buffers
 
         for(i=0; i<3; i++){
             memcpy(s->visualization_buffer[i], pict->data[i], (i==0) ? pict->linesize[i]*s->height:pict->linesize[i]*s->height/2);
