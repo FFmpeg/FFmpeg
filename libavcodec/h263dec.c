@@ -60,7 +60,6 @@ static int h263_decode_init(AVCodecContext *avctx)
     switch(avctx->codec->id) {
     case CODEC_ID_H263:
         s->gob_number = 0;
-        s->first_slice_line = 0;
         break;
     case CODEC_ID_MPEG4:
         s->time_increment_bits = 4; /* default value for broken headers */
@@ -479,7 +478,7 @@ retry:
     
     decode_slice(s);
     s->error_status_table[0]|= VP_START;
-    while(s->mb_y<s->mb_height && s->gb.size*8 - get_bits_count(&s->gb)>32){
+    while(s->mb_y<s->mb_height && s->gb.size*8 - get_bits_count(&s->gb)>16){
         if(s->msmpeg4_version){
             if(s->mb_x!=0 || (s->mb_y%s->slice_height)!=0)
                 break;
