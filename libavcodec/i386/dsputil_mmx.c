@@ -672,26 +672,22 @@ static void h263_h_loop_filter_mmx(uint8_t *src, int stride, int qscale){
         "punpcklwd %%mm0, %%mm1		\n\t"
         "punpckhwd %%mm4, %%mm3		\n\t"
         "punpckhwd %%mm0, %%mm6		\n\t"
-        "movd %%mm5, %0			\n\t"
+        "movd %%mm5, (%0)		\n\t"
         "punpckhdq %%mm5, %%mm5		\n\t"
-        "movd %%mm5, %1			\n\t"
-        "movd %%mm3, %2			\n\t"
+        "movd %%mm5, (%0,%2)		\n\t"
+        "movd %%mm3, (%0,%2,2)		\n\t"
         "punpckhdq %%mm3, %%mm3		\n\t"
-        "movd %%mm3, %3			\n\t"
-        "movd %%mm1, %4			\n\t"
+        "movd %%mm3, (%0,%3)		\n\t"
+        "movd %%mm1, (%1)		\n\t"
         "punpckhdq %%mm1, %%mm1		\n\t"
-        "movd %%mm1, %5			\n\t"
-        "movd %%mm6, %6			\n\t"
+        "movd %%mm1, (%1,%2)		\n\t"
+        "movd %%mm6, (%1,%2,2)		\n\t"
         "punpckhdq %%mm6, %%mm6		\n\t"
-        "movd %%mm6, %7			\n\t"
-        : "=m" (*(uint32_t*)(src + 0*stride)),
-          "=m" (*(uint32_t*)(src + 1*stride)),
-          "=m" (*(uint32_t*)(src + 2*stride)),
-          "=m" (*(uint32_t*)(src + 3*stride)),
-          "=m" (*(uint32_t*)(src + 4*stride)),
-          "=m" (*(uint32_t*)(src + 5*stride)),
-          "=m" (*(uint32_t*)(src + 6*stride)),
-          "=m" (*(uint32_t*)(src + 7*stride))
+        "movd %%mm6, (%1,%3)		\n\t"
+        :: "r" (src),
+           "r" (src + 4*stride),
+           "r" ((long)   stride ),
+           "r" ((long)(3*stride))
     );
 }
 
