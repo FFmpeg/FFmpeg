@@ -456,7 +456,7 @@ void mpeg1_init_vlc(MpegEncContext *s)
         init_vlc(&mv_vlc, 9, 17, 
                  &mbMotionVectorTable[0][1], 2, 1,
                  &mbMotionVectorTable[0][0], 2, 1);
-        init_vlc(&mbincr_vlc, 9, 34, 
+        init_vlc(&mbincr_vlc, 9, 35, 
                  &mbAddrIncrTable[0][1], 2, 1,
                  &mbAddrIncrTable[0][0], 2, 1);
         init_vlc(&mb_pat_vlc, 9, 63, 
@@ -1120,7 +1120,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
 
     ref = get_bits(&s->gb, 10); /* temporal ref */
     s->pict_type = get_bits(&s->gb, 3);
-    dprintf("pict_type=%d\n", s->pict_type);
+    dprintf("pict_type=%d number=%d\n", s->pict_type, s->picture_number);
     skip_bits(&s->gb, 16);
     if (s->pict_type == P_TYPE || s->pict_type == B_TYPE) {
         s->full_pel[0] = get_bits1(&s->gb);
