@@ -280,7 +280,7 @@ inline void draw_glyph(AVPicture *picture, FT_Bitmap *bitmap, unsigned int x, un
 }
 
 
-void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, INT64 pts)
+void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width, int height, int64_t pts)
 {
   ContextInfo *ci = (ContextInfo *) ctx;
   FT_Face face = ci->ft_face;
