@@ -196,9 +196,9 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!asf_st)
                 goto fail;
             st->priv_data = asf_st;
-            st->start_time = asf->hdr.preroll / (10000000 / AV_TIME_BASE);
-	    st->duration = (asf->hdr.send_time - asf->hdr.preroll) / 
-                (10000000 / AV_TIME_BASE);
+            st->start_time = asf->hdr.preroll * (int64_t)AV_TIME_BASE / 1000;
+            st->duration = asf->hdr.send_time / 
+                (10000000 / AV_TIME_BASE) - st->start_time;
             get_guid(pb, &g);
             if (!memcmp(&g, &audio_stream, sizeof(GUID))) {
                 type = CODEC_TYPE_AUDIO;
@@ -599,7 +599,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    /* new packet */
 	    av_new_packet(&asf_st->pkt, asf->packet_obj_size);
 	    asf_st->seq = asf->packet_seq;
-	    asf_st->pkt.pts = asf->packet_frag_timestamp - asf->hdr.preroll;
+	    asf_st->pkt.pts = asf->packet_frag_timestamp;
 	    asf_st->pkt.stream_index = asf->stream_index;
             asf_st->packet_pos= asf->packet_pos;            
 //printf("new packet: stream:%d key:%d packet_key:%d audio:%d size:%d\n", 
