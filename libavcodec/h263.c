@@ -5780,7 +5780,8 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     
     /* vop coded */
     if (get_bits1(gb) != 1){
-        av_log(s->avctx, AV_LOG_ERROR, "vop not coded\n");
+        if(s->avctx->debug&FF_DEBUG_PICT_INFO)
+            av_log(s->avctx, AV_LOG_ERROR, "vop not coded\n");
         return FRAME_SKIPED;
     }
 //printf("time %d %d %d || %Ld %Ld %Ld\n", s->time_increment_bits, s->time_increment_resolution, s->time_base,
