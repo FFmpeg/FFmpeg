@@ -395,9 +395,15 @@ echo "C compiler       $cc"
 echo "make             $make"
 echo "CPU              $cpu"
 echo "Big Endian       $bigendian"
+if test $cpu = "x86"; then
 echo "MMX enabled      $mmx"
+fi
+if test $cpu = "mips"; then
 echo "MMI enabled      $mmi"
+fi
+if test $cpu = "powerpc"; then
 echo "AltiVec enabled  $altivec"
+fi
 echo "gprof enabled    $gprof"
 echo "zlib enabled     $zlib"
 echo "mp3lame enabled  $mp3lame"
