@@ -668,7 +668,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
 
     if(s->avctx->debug&FF_DEBUG_RC){
         printf("%c qp:%d<%2.1f<%d %d want:%d total:%d comp:%f st_q:%2.2f size:%d var:%d/%d br:%d fps:%d\n",
-        ff_get_pict_type_char(pict_type), qmin, q, qmax, picture_number, (int)wanted_bits/1000, (int)s->total_bits/1000,
+        av_get_pict_type_char(pict_type), qmin, q, qmax, picture_number, (int)wanted_bits/1000, (int)s->total_bits/1000,
         br_compensation, short_term_q, s->frame_bits, pic->mb_var_sum, pic->mc_mb_var_sum, s->bit_rate/1000, (int)fps
         );
     }

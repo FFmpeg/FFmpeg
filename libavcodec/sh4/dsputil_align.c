@@ -26,15 +26,13 @@
 #define	LP(p)	*(uint32_t*)(p)
 
 
-#define	BYTE_VEC(c)	((c)*0x01010101UL)
-
 #define	UNPACK(ph,pl,tt0,tt1) do { \
 	uint32_t t0,t1; t0=tt0;t1=tt1; \
-	ph = ( (t0 & ~BYTE_VEC(0x03))>>2) + ( (t1 & ~BYTE_VEC(0x03))>>2); \
-	pl = (t0 & BYTE_VEC(0x03)) + (t1 & BYTE_VEC(0x03)); } while(0)
+	ph = ( (t0 & ~BYTE_VEC32(0x03))>>2) + ( (t1 & ~BYTE_VEC32(0x03))>>2); \
+	pl = (t0 & BYTE_VEC32(0x03)) + (t1 & BYTE_VEC32(0x03)); } while(0)
 
-#define	rnd_PACK(ph,pl,nph,npl)	ph + nph + (((pl + npl + BYTE_VEC(0x02))>>2) & BYTE_VEC(0x03))
-#define	no_rnd_PACK(ph,pl,nph,npl)	ph + nph + (((pl + npl + BYTE_VEC(0x01))>>2) & BYTE_VEC(0x03))
+#define	rnd_PACK(ph,pl,nph,npl)	ph + nph + (((pl + npl + BYTE_VEC32(0x02))>>2) & BYTE_VEC32(0x03))
+#define	no_rnd_PACK(ph,pl,nph,npl)	ph + nph + (((pl + npl + BYTE_VEC32(0x01))>>2) & BYTE_VEC32(0x03))
 
 /* little endian */
 #define	MERGE1(a,b,ofs)	(ofs==0)?a:( ((a)>>(8*ofs))|((b)<<(32-8*ofs)) )
@@ -46,18 +44,7 @@
 
 
 #define	put(d,s)	d = s
-#define	avg(d,s)	d = rnd_avg2(s,d)
-
-static inline uint32_t rnd_avg2(uint32_t a, uint32_t b)
-{
-    return (a | b) - (((a ^ b) & ~BYTE_VEC(0x01)) >> 1);
-}
-
-static inline uint32_t no_rnd_avg2(uint32_t a, uint32_t b)
-{
-    return (a & b) + (((a ^ b) & ~BYTE_VEC(0x01)) >> 1);
-}
-
+#define	avg(d,s)	d = rnd_avg32(s,d)
 
 #define	OP_C4(ofs) \
 	ref-=ofs; \

@@ -494,10 +494,10 @@ static inline void OPNAME ## _no_rnd_pixels8_l2(uint8_t *dst, const uint8_t *src
         uint32_t a,b;\
         a= LD32(&src1[i*src_stride1  ]);\
         b= LD32(&src2[i*src_stride2  ]);\
-        OP(*((uint32_t*)&dst[i*dst_stride  ]), (a&b) + (((a^b)&0xFEFEFEFEUL)>>1));\
+        OP(*((uint32_t*)&dst[i*dst_stride  ]), no_rnd_avg32(a, b));\
         a= LD32(&src1[i*src_stride1+4]);\
         b= LD32(&src2[i*src_stride2+4]);\
-        OP(*((uint32_t*)&dst[i*dst_stride+4]), (a&b) + (((a^b)&0xFEFEFEFEUL)>>1));\
+        OP(*((uint32_t*)&dst[i*dst_stride+4]), no_rnd_avg32(a, b));\
     }\
 }\
 \
@@ -508,10 +508,10 @@ static inline void OPNAME ## _pixels8_l2(uint8_t *dst, const uint8_t *src1, cons
         uint32_t a,b;\
         a= LD32(&src1[i*src_stride1  ]);\
         b= LD32(&src2[i*src_stride2  ]);\
-        OP(*((uint32_t*)&dst[i*dst_stride  ]), (a|b) - (((a^b)&0xFEFEFEFEUL)>>1));\
+        OP(*((uint32_t*)&dst[i*dst_stride  ]), rnd_avg32(a, b));\
         a= LD32(&src1[i*src_stride1+4]);\
         b= LD32(&src2[i*src_stride2+4]);\
-        OP(*((uint32_t*)&dst[i*dst_stride+4]), (a|b) - (((a^b)&0xFEFEFEFEUL)>>1));\
+        OP(*((uint32_t*)&dst[i*dst_stride+4]), rnd_avg32(a, b));\
     }\
 }\
 \
@@ -522,7 +522,7 @@ static inline void OPNAME ## _pixels4_l2(uint8_t *dst, const uint8_t *src1, cons
         uint32_t a,b;\
         a= LD32(&src1[i*src_stride1  ]);\
         b= LD32(&src2[i*src_stride2  ]);\
-        OP(*((uint32_t*)&dst[i*dst_stride  ]), (a|b) - (((a^b)&0xFEFEFEFEUL)>>1));\
+        OP(*((uint32_t*)&dst[i*dst_stride  ]), rnd_avg32(a, b));\
     }\
 }\
 \
@@ -726,7 +726,7 @@ CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_x2_c , OPNAME ## _no_rnd_pixels8_x2_c 
 CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_y2_c , OPNAME ## _no_rnd_pixels8_y2_c , 8)\
 CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_xy2_c, OPNAME ## _no_rnd_pixels8_xy2_c, 8)\
 
-#define op_avg(a, b) a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEUL)>>1) )
+#define op_avg(a, b) a = rnd_avg32(a, b)
 #endif
 #define op_put(a, b) a = b
 

@@ -9,8 +9,8 @@
 /*static inline void OPNAME ## _no_rnd_pixels8_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),no_rnd_avg2(LD32(src1  ),LD32(src2  )) ); \
-		OP(LP(dst+4),no_rnd_avg2(LD32(src1+4),LD32(src2+4)) ); \
+		OP(LP(dst  ),no_rnd_avg32(LD32(src1  ),LD32(src2  )) ); \
+		OP(LP(dst+4),no_rnd_avg32(LD32(src1+4),LD32(src2+4)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -20,8 +20,8 @@
 static inline void OPNAME ## _pixels8_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),rnd_avg2(LD32(src1  ),LD32(src2  )) ); \
-		OP(LP(dst+4),rnd_avg2(LD32(src1+4),LD32(src2+4)) ); \
+		OP(LP(dst  ),rnd_avg32(LD32(src1  ),LD32(src2  )) ); \
+		OP(LP(dst+4),rnd_avg32(LD32(src1+4),LD32(src2+4)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -31,7 +31,7 @@ static inline void OPNAME ## _pixels8_l2(uint8_t *dst, const uint8_t *src1, cons
 static inline void OPNAME ## _pixels4_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),rnd_avg2(LD32(src1  ),LD32(src2  )) ); \
+		OP(LP(dst  ),rnd_avg32(LD32(src1  ),LD32(src2  )) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -41,10 +41,10 @@ static inline void OPNAME ## _pixels4_l2(uint8_t *dst, const uint8_t *src1, cons
 static inline void OPNAME ## _no_rnd_pixels16_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),no_rnd_avg2(LD32(src1  ),LD32(src2  )) ); \
-		OP(LP(dst+4),no_rnd_avg2(LD32(src1+4),LD32(src2+4)) ); \
-		OP(LP(dst+8),no_rnd_avg2(LD32(src1+8),LD32(src2+8)) ); \
-		OP(LP(dst+12),no_rnd_avg2(LD32(src1+12),LD32(src2+12)) ); \
+		OP(LP(dst  ),no_rnd_avg32(LD32(src1  ),LD32(src2  )) ); \
+		OP(LP(dst+4),no_rnd_avg32(LD32(src1+4),LD32(src2+4)) ); \
+		OP(LP(dst+8),no_rnd_avg32(LD32(src1+8),LD32(src2+8)) ); \
+		OP(LP(dst+12),no_rnd_avg32(LD32(src1+12),LD32(src2+12)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -54,10 +54,10 @@ static inline void OPNAME ## _no_rnd_pixels16_l2(uint8_t *dst, const uint8_t *sr
 static inline void OPNAME ## _pixels16_l2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),rnd_avg2(LD32(src1  ),LD32(src2  )) ); \
-		OP(LP(dst+4),rnd_avg2(LD32(src1+4),LD32(src2+4)) ); \
-		OP(LP(dst+8),rnd_avg2(LD32(src1+8),LD32(src2+8)) ); \
-		OP(LP(dst+12),rnd_avg2(LD32(src1+12),LD32(src2+12)) ); \
+		OP(LP(dst  ),rnd_avg32(LD32(src1  ),LD32(src2  )) ); \
+		OP(LP(dst+4),rnd_avg32(LD32(src1+4),LD32(src2+4)) ); \
+		OP(LP(dst+8),rnd_avg32(LD32(src1+8),LD32(src2+8)) ); \
+		OP(LP(dst+12),rnd_avg32(LD32(src1+12),LD32(src2+12)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -67,7 +67,7 @@ static inline void OPNAME ## _pixels16_l2(uint8_t *dst, const uint8_t *src1, con
 static inline void OPNAME ## _pixels4_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),rnd_avg2(LP(src1  ),LP(src2  )) ); \
+		OP(LP(dst  ),rnd_avg32(LP(src1  ),LP(src2  )) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -77,7 +77,7 @@ static inline void OPNAME ## _pixels4_l2_aligned(uint8_t *dst, const uint8_t *sr
 static inline void OPNAME ## _pixels4_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),rnd_avg2(LD32(src1  ),LP(src2  )) ); \
+		OP(LP(dst  ),rnd_avg32(LD32(src1  ),LP(src2  )) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -87,10 +87,10 @@ static inline void OPNAME ## _pixels4_l2_aligned2(uint8_t *dst, const uint8_t *s
 static inline void OPNAME ## _no_rnd_pixels16_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),no_rnd_avg2(LD32(src1  ),LP(src2  )) ); \
-		OP(LP(dst+4),no_rnd_avg2(LD32(src1+4),LP(src2+4)) ); \
-		OP(LP(dst+8),no_rnd_avg2(LD32(src1+8),LP(src2+8)) ); \
-		OP(LP(dst+12),no_rnd_avg2(LD32(src1+12),LP(src2+12)) ); \
+		OP(LP(dst  ),no_rnd_avg32(LD32(src1  ),LP(src2  )) ); \
+		OP(LP(dst+4),no_rnd_avg32(LD32(src1+4),LP(src2+4)) ); \
+		OP(LP(dst+8),no_rnd_avg32(LD32(src1+8),LP(src2+8)) ); \
+		OP(LP(dst+12),no_rnd_avg32(LD32(src1+12),LP(src2+12)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -100,10 +100,10 @@ static inline void OPNAME ## _no_rnd_pixels16_l2_aligned2(uint8_t *dst, const ui
 static inline void OPNAME ## _pixels16_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),rnd_avg2(LD32(src1  ),LP(src2  )) ); \
-		OP(LP(dst+4),rnd_avg2(LD32(src1+4),LP(src2+4)) ); \
-		OP(LP(dst+8),rnd_avg2(LD32(src1+8),LP(src2+8)) ); \
-		OP(LP(dst+12),rnd_avg2(LD32(src1+12),LP(src2+12)) ); \
+		OP(LP(dst  ),rnd_avg32(LD32(src1  ),LP(src2  )) ); \
+		OP(LP(dst+4),rnd_avg32(LD32(src1+4),LP(src2+4)) ); \
+		OP(LP(dst+8),rnd_avg32(LD32(src1+8),LP(src2+8)) ); \
+		OP(LP(dst+12),rnd_avg32(LD32(src1+12),LP(src2+12)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -113,8 +113,8 @@ static inline void OPNAME ## _pixels16_l2_aligned2(uint8_t *dst, const uint8_t *
 static inline void OPNAME ## _no_rnd_pixels8_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do { /* onlye src2 aligned */\
-		OP(LP(dst  ),no_rnd_avg2(LD32(src1  ),LP(src2  )) ); \
-		OP(LP(dst+4),no_rnd_avg2(LD32(src1+4),LP(src2+4)) ); \
+		OP(LP(dst  ),no_rnd_avg32(LD32(src1  ),LP(src2  )) ); \
+		OP(LP(dst+4),no_rnd_avg32(LD32(src1+4),LP(src2+4)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -124,8 +124,8 @@ static inline void OPNAME ## _no_rnd_pixels8_l2_aligned2(uint8_t *dst, const uin
 static inline void OPNAME ## _pixels8_l2_aligned2(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),rnd_avg2(LD32(src1  ),LP(src2  )) ); \
-		OP(LP(dst+4),rnd_avg2(LD32(src1+4),LP(src2+4)) ); \
+		OP(LP(dst  ),rnd_avg32(LD32(src1  ),LP(src2  )) ); \
+		OP(LP(dst+4),rnd_avg32(LD32(src1+4),LP(src2+4)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -135,8 +135,8 @@ static inline void OPNAME ## _pixels8_l2_aligned2(uint8_t *dst, const uint8_t *s
 static inline void OPNAME ## _no_rnd_pixels8_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),no_rnd_avg2(LP(src1  ),LP(src2  )) ); \
-		OP(LP(dst+4),no_rnd_avg2(LP(src1+4),LP(src2+4)) ); \
+		OP(LP(dst  ),no_rnd_avg32(LP(src1  ),LP(src2  )) ); \
+		OP(LP(dst+4),no_rnd_avg32(LP(src1+4),LP(src2+4)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -146,8 +146,8 @@ static inline void OPNAME ## _no_rnd_pixels8_l2_aligned(uint8_t *dst, const uint
 static inline void OPNAME ## _pixels8_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),rnd_avg2(LP(src1  ),LP(src2  )) ); \
-		OP(LP(dst+4),rnd_avg2(LP(src1+4),LP(src2+4)) ); \
+		OP(LP(dst  ),rnd_avg32(LP(src1  ),LP(src2  )) ); \
+		OP(LP(dst+4),rnd_avg32(LP(src1+4),LP(src2+4)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -157,10 +157,10 @@ static inline void OPNAME ## _pixels8_l2_aligned(uint8_t *dst, const uint8_t *sr
 static inline void OPNAME ## _no_rnd_pixels16_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),no_rnd_avg2(LP(src1  ),LP(src2  )) ); \
-		OP(LP(dst+4),no_rnd_avg2(LP(src1+4),LP(src2+4)) ); \
-		OP(LP(dst+8),no_rnd_avg2(LP(src1+8),LP(src2+8)) ); \
-		OP(LP(dst+12),no_rnd_avg2(LP(src1+12),LP(src2+12)) ); \
+		OP(LP(dst  ),no_rnd_avg32(LP(src1  ),LP(src2  )) ); \
+		OP(LP(dst+4),no_rnd_avg32(LP(src1+4),LP(src2+4)) ); \
+		OP(LP(dst+8),no_rnd_avg32(LP(src1+8),LP(src2+8)) ); \
+		OP(LP(dst+12),no_rnd_avg32(LP(src1+12),LP(src2+12)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -170,10 +170,10 @@ static inline void OPNAME ## _no_rnd_pixels16_l2_aligned(uint8_t *dst, const uin
 static inline void OPNAME ## _pixels16_l2_aligned(uint8_t *dst, const uint8_t *src1, const uint8_t *src2, int dst_stride, int src_stride1, int src_stride2, int h) \
 {\
 	do {\
-		OP(LP(dst  ),rnd_avg2(LP(src1  ),LP(src2  )) ); \
-		OP(LP(dst+4),rnd_avg2(LP(src1+4),LP(src2+4)) ); \
-		OP(LP(dst+8),rnd_avg2(LP(src1+8),LP(src2+8)) ); \
-		OP(LP(dst+12),rnd_avg2(LP(src1+12),LP(src2+12)) ); \
+		OP(LP(dst  ),rnd_avg32(LP(src1  ),LP(src2  )) ); \
+		OP(LP(dst+4),rnd_avg32(LP(src1+4),LP(src2+4)) ); \
+		OP(LP(dst+8),rnd_avg32(LP(src1+8),LP(src2+8)) ); \
+		OP(LP(dst+12),rnd_avg32(LP(src1+12),LP(src2+12)) ); \
 		src1+=src_stride1; \
 		src2+=src_stride2; \
 		dst+=dst_stride; \
@@ -353,7 +353,7 @@ static inline void OPNAME ## _no_rnd_pixels16_l4_aligned0(uint8_t *dst, const ui
 } \
 \
 
-#define op_avg(a, b) a = rnd_avg2(a,b)
+#define op_avg(a, b) a = rnd_avg32(a,b)
 #define op_put(a, b) a = b
 
 PIXOP2(avg, op_avg)

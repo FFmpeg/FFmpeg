@@ -268,6 +268,18 @@ void dsputil_init(DSPContext* p, AVCodecContext *avctx);
  */
 void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scantable, int last);
 
+#define	BYTE_VEC32(c)	((c)*0x01010101UL)
+
+static inline uint32_t rnd_avg32(uint32_t a, uint32_t b)
+{
+    return (a | b) - (((a ^ b) & ~BYTE_VEC32(0x01)) >> 1);
+}
+
+static inline uint32_t no_rnd_avg32(uint32_t a, uint32_t b)
+{
+    return (a & b) + (((a ^ b) & ~BYTE_VEC32(0x01)) >> 1);
+}
+
 /**
  * Empty mmx state.
  * this must be called between any dsp function and float/double code.

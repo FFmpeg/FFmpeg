@@ -742,7 +742,7 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   
   if(avctx->debug&FF_DEBUG_PICT_INFO){
       printf("%c hpel:%d, tpel:%d aqp:%d qp:%d\n", 
-      ff_get_pict_type_char(s->pict_type), h->halfpel_flag, h->thirdpel_flag,
+      av_get_pict_type_char(s->pict_type), h->halfpel_flag, h->thirdpel_flag,
       s->adaptive_quant, s->qscale
       );
   }

@@ -710,7 +710,6 @@ void ff_init_scantable(MpegEncContext *s, ScanTable *st, const uint8_t *src_scan
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_emulated_edge_mc(MpegEncContext *s, uint8_t *src, int linesize, int block_w, int block_h, 
                                     int src_x, int src_y, int w, int h);
-char ff_get_pict_type_char(int pict_type);
 #define END_NOT_FOUND -100
 int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size);
 void ff_print_debug_info(MpegEncContext *s, Picture *pict);

@@ -3015,7 +3015,7 @@ static int decode_slice_header(H264Context *h){
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
         printf("mb:%d %c pps:%d frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d\n", 
                first_mb_in_slice, 
-               ff_get_pict_type_char(h->slice_type),
+               av_get_pict_type_char(h->slice_type),
                pps_id, h->frame_num,
                s->current_picture_ptr->field_poc[0], s->current_picture_ptr->field_poc[1],
                h->ref_count[0], h->ref_count[1],
@@ -3265,7 +3265,7 @@ static int decode_mb(H264Context *h){
        assert(h->slice_type == I_TYPE);
 decode_intra_mb:
         if(mb_type > 25){
-            fprintf(stderr, "mb_type %d in %c slice to large at %d %d\n", mb_type, ff_get_pict_type_char(h->slice_type), s->mb_x, s->mb_y);
+            fprintf(stderr, "mb_type %d in %c slice to large at %d %d\n", mb_type, av_get_pict_type_char(h->slice_type), s->mb_x, s->mb_y);
             return -1;
         }
         partition_count=0;

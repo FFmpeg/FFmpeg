@@ -4105,18 +4105,6 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
 }
 
 
-char ff_get_pict_type_char(int pict_type){
-    switch(pict_type){
-    case I_TYPE: return 'I'; 
-    case P_TYPE: return 'P'; 
-    case B_TYPE: return 'B'; 
-    case S_TYPE: return 'S'; 
-    case SI_TYPE:return 'i'; 
-    case SP_TYPE:return 'p'; 
-    default:     return '?';
-    }
-}
-
 static const AVOption mpeg4_options[] =
 {
     AVOPTION_CODEC_INT("bitrate", "desired video bitrate", bit_rate, 4, 240000000, 800000),

@@ -640,6 +640,18 @@ void avcodec_default_free_buffers(AVCodecContext *s){
     s->internal_buffer_count=0;
 }
 
+char av_get_pict_type_char(int pict_type){
+    switch(pict_type){
+    case I_TYPE: return 'I'; 
+    case P_TYPE: return 'P'; 
+    case B_TYPE: return 'B'; 
+    case S_TYPE: return 'S'; 
+    case SI_TYPE:return 'i'; 
+    case SP_TYPE:return 'p'; 
+    default:     return '?';
+    }
+}
+
 int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max){
     int exact=1, sign=0;
     int64_t gcd, larger;

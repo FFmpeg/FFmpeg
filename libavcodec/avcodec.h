@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4666
-#define LIBAVCODEC_BUILD_STR   "4666"
+#define LIBAVCODEC_BUILD       4667
+#define LIBAVCODEC_BUILD_STR   "4667"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -1372,6 +1372,12 @@ void avcodec_register_all(void);
 void avcodec_flush_buffers(AVCodecContext *avctx);
 
 /* misc usefull functions */
+
+/**
+ * returns a single letter to describe the picture type
+ */
+char av_get_pict_type_char(int pict_type);
+
 /**
  * reduce a fraction.
  * this is usefull for framerate calculations
