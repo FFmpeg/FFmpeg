@@ -329,13 +329,13 @@ static AVInputFormat *probe_input_format(AVProbeData *pd, int is_opened)
         if (!is_opened && !(fmt1->flags & AVFMT_NOFILE))
             continue;
         score = 0;
-        if (fmt1->extensions) {
+        if (fmt1->read_probe) {
+            score = fmt1->read_probe(pd);
+        } else if (fmt1->extensions) {
             if (match_ext(pd->filename, fmt1->extensions)) {
                 score = 50;
             }
-        } else if (fmt1->read_probe) {
-            score = fmt1->read_probe(pd);
-        }
+        } 
         if (score > score_max) {
             score_max = score;
             fmt = fmt1;
@@ -438,7 +438,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     }
  fail:
     if (ic) {
-        av_free(ic->priv_data);
+        av_freep(&ic->priv_data);
     }
     av_free(ic);
     *ic_ptr = NULL;
@@ -714,7 +714,7 @@ void av_close_input_file(AVFormatContext *s)
     if (!(s->iformat->flags & AVFMT_NOFILE)) {
         url_fclose(&s->pb);
     }
-    av_free(s->priv_data);
+    av_freep(&s->priv_data);
     av_free(s);
 }
 
