@@ -2707,12 +2707,14 @@ asm volatile(
 		"paddb %%mm2, %%mm0				\n\t"
 		"psubusb %%mm3, %%mm4				\n\t"
 
+		"pxor %%mm6, %%mm6				\n\t"
                 "movq %4, %%mm7					\n\t" // QP,..., QP
 		"paddusb %%mm7, %%mm7				\n\t" // 2QP ... 2QP
-		"pcmpgtb %%mm4, %%mm7				\n\t" // Diff < 2QP -> FF
+		"psubusb %%mm4, %%mm7				\n\t" // Diff >=2QP -> 0
+		"pcmpeqb %%mm6, %%mm7				\n\t" // Diff < 2QP -> 0
+		"pcmpeqb %%mm6, %%mm7				\n\t" // Diff < 2QP -> 0
 		"movq %%mm7, %1					\n\t"
 
-		"pxor %%mm6, %%mm6				\n\t"
 		"movq %5, %%mm7					\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
