@@ -83,6 +83,7 @@ SHFLAGS=-shared
 netserver="no"
 need_inet_aton="no"
 ffserver="yes"
+ffplay="yes"
 LDFLAGS=-Wl,--warn-common
 FFSLDFLAGS=-Wl,-E
 LIBPREF="lib"
@@ -316,6 +317,8 @@ for opt do
   --disable-mpegaudio-hp) mpegaudio_hp="no"
   ;;
   --disable-ffserver) ffserver="no"
+  ;;
+  --disable-ffplay) ffplay="no"
   ;;
   --disable-risky) risky="no"
   ;;
@@ -588,6 +591,9 @@ if test "$vhook" = "default" ; then
   vhook="$dlopen"
 fi
 
+##########################################
+# imlib probe
+
 cat > $TMPC << EOF
 #include <X11/Xlib.h>
 #include <Imlib2.h>
@@ -598,6 +604,9 @@ imlib2=no
 if $cc -o $TMPE $TMPC -lImlib2 2> /dev/null  ; then
 imlib2=yes
 fi
+
+##########################################
+# freetype probe
 
 cat > $TMPC << EOF
 #include <ft2build.h>
@@ -611,6 +620,25 @@ if test "x$targetos" != "xBeOS" && test "$os2" != "yes"; then
       freetype2=yes
     fi
   fi
+fi
+
+##########################################
+# SDL probe
+
+cat > $TMPC << EOF
+#include <SDL.h>
+int main( void ) { return SDL_Init (SDL_INIT_VIDEO); }
+EOF
+
+sdl_too_old=no
+sdl=no
+if $cc -o $TMPE `sdl-config --cflags` $TMPC `sdl-config --libs`  2> /dev/null  ; then
+_sdlversion=`sdl-config --version | sed 's/[^0-9]//g'`
+if test "$_sdlversion" -lt 121 ; then
+sdl_too_old=yes
+else
+sdl=yes
+fi
 fi
 
 if test "$small" = "yes"; then
@@ -665,6 +693,7 @@ echo "  --enable-gprof           enable profiling with gprof [$gprof]"
 echo "  --disable-mpegaudio-hp   faster (but less accurate)"
 echo "                           mpegaudio decoding [default=no]"
 echo "  --disable-ffserver       disable ffserver build"
+echo "  --disable-ffplay         disable ffplay build"
 echo "  --disable-risky          disables patent encumbered codecs"
 echo "  --enable-small           optimize for size instead of speed"
 echo ""
@@ -699,6 +728,10 @@ echo "a52 dlopened     $a52bin"
 echo "pp support       $pp"
 echo "shared pp        $shared_pp"
 echo "Video hooking    $vhook"
+echo "SDL support      $sdl"
+if test $sdl_too_old = "yes"; then
+echo "-> Your SDL version is too old - please upgrade to have FFplay/SDL support"
+fi
 echo "risky / patent encumbered codecs $risky"
 echo "optimize for size $small"
 
@@ -794,6 +827,11 @@ if test "$imlib2" = "yes" ; then
 fi
 if test "$freetype2" = "yes" ; then
   echo "HAVE_FREETYPE2=yes" >> config.mak
+fi
+if test "$sdl" = "yes" ; then
+  echo "CONFIG_SDL=yes" >> config.mak
+  echo "SDL_LIBS=`sdl-config --libs`" >> config.mak
+  echo "SDL_CFLAGS=`sdl-config --cflags`" >> config.mak
 fi
 if test "$have_lrintf" = "yes" ; then
   echo "#define HAVE_LRINTF 1" >> $TMPH
@@ -962,6 +1000,10 @@ fi
 if test "$ffserver" = "yes" ; then
   echo "#define CONFIG_FFSERVER 1" >> $TMPH
   echo "CONFIG_FFSERVER=yes" >> config.mak
+fi
+
+if test "$ffplay" = "yes" ; then
+  echo "CONFIG_FFPLAY=yes" >> config.mak
 fi
 
 if test "$risky" = "yes" ; then
