@@ -400,7 +400,8 @@ static int handle_http(HTTPContext *c, long cur_time)
             }
         } else {
             c->buffer_ptr += len;
-            c->stream->bytes_served += len;
+            if (c->stream)
+                c->stream->bytes_served += len;
             c->data_count += len;
             if (c->buffer_ptr >= c->buffer_end) {
                 /* if error, exit */
@@ -1225,7 +1226,8 @@ static int http_send_data(HTTPContext *c)
         } else {
             c->buffer_ptr += len;
             c->data_count += len;
-            c->stream->bytes_served += len;
+            if (c->stream)
+                c->stream->bytes_served += len;
         }
     }
     return 0;
