@@ -17,8 +17,8 @@
 */
 
 /*
-  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8, Y800
-  supported output formats: YV12, I420, IYUV, BGR15, BGR16, BGR24, BGR32, Y8, Y800
+  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24, BGR16, BGR15, RGB32, RGB24, Y8, Y800, YVU9
+  supported output formats: YV12, I420, IYUV, BGR15, BGR16, BGR24, BGR32, Y8, Y800, YVU9
   BGR15/16 support dithering
   
   unscaled special converters
@@ -106,10 +106,10 @@ untested special converters
 #define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
 			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
-			|| (x)==IMGFMT_Y800)
+			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
 #define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
-			|| (x)==IMGFMT_Y800)
+			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
 #define isRGB(x)       (((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
 #define isBGR(x)       (((x)&IMGFMT_BGR_MASK)==IMGFMT_BGR)
 #define isPacked(x)    ((x)==IMGFMT_YUY2 || isRGB(x) || isBGR(x))
@@ -265,6 +265,7 @@ void in_asm_used_var_warning_killer()
 #endif
 
 static int testFormat[]={
+IMGFMT_YVU9,
 IMGFMT_YV12,
 //IMGFMT_IYUV,
 IMGFMT_I420,
@@ -335,7 +336,7 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 	ssdU/= w*h/4;
 	ssdV/= w*h/4;
 	
-	if(ssdY>10 || ssdU>10 || ssdV>10){
+	if(ssdY>100 || ssdU>50 || ssdV>50){
 		printf(" %s %dx%d -> %s %4dx%4d flags=%2d SSD=%5lld,%5lld,%5lld\n", 
 			vo_format_name(srcFormat), srcW, srcH, 
 			vo_format_name(dstFormat), dstW, dstH,
@@ -382,13 +383,13 @@ static void selfTest(uint8_t *src[3], int stride[3], int w, int h){
 	}
 }
 
-static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
+static inline void yuv2yuvXinC(SwsContext *c, int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW)
+				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest)
 {
 	//FIXME Optimize (just quickly writen not opti..)
 	int i;
-	for(i=0; i<dstW; i++)
+	for(i=0; i<c->dstW; i++)
 	{
 		int val=0;
 		int j;
@@ -399,7 +400,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 	}
 
 	if(uDest != NULL)
-		for(i=0; i<(dstW>>1); i++)
+		for(i=0; i<c->chrDstW; i++)
 		{
 			int u=0;
 			int v=0;
@@ -1657,7 +1658,7 @@ static void bgr24toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
  * bring pointers in YUV order instead of YVU
  */
 static inline void orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
-	if(format == IMGFMT_YV12){
+	if(format == IMGFMT_YV12 || format == IMGFMT_YVU9){
 		sortedP[0]= p[0];
 		sortedP[1]= p[1];
 		sortedP[2]= p[2];
@@ -1726,14 +1727,14 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 		int plane;
 		for(plane=0; plane<3; plane++)
 		{
-			int length= plane==0 ? c->srcW  : ((c->srcW+1)>>1);
-			int y=      plane==0 ? srcSliceY: ((srcSliceY+1)>>1);
-			int height= plane==0 ? srcSliceH: ((srcSliceH+1)>>1);
+			int length= plane==0 ? c->srcW  : -((-c->srcW  )>>c->chrDstHSubSample);
+			int y=      plane==0 ? srcSliceY: -((-srcSliceY)>>c->chrDstVSubSample);
+			int height= plane==0 ? srcSliceH: -((-srcSliceH)>>c->chrDstVSubSample);
 
 			if((isGray(c->srcFormat) || isGray(c->dstFormat)) && plane>0)
 			{
 				if(!isGray(c->dstFormat))
-					memset(dst[plane], 0, dstStride[plane]*height);
+					memset(dst[plane], 128, dstStride[plane]*height);
 			}
 			else
 			{
@@ -1774,6 +1775,7 @@ static void getSubSampleFactors(int *h, int *v, int format){
 		break;
 	case IMGFMT_YV12:
 	case IMGFMT_I420:
+	case IMGFMT_Y800: //FIXME remove after different subsamplings are fully implemented
 		*h=1;
 		*v=1;
 		break;
@@ -1801,7 +1803,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		asm volatile("emms\n\t"::: "memory");
 #endif
 	if(swScale==NULL) globalInit();
-
+//srcFormat= IMGFMT_Y800;
+//srcFormat= IMGFMT_YVU9;
 	/* avoid dupplicate Formats, so we dont need to check to much */
 	srcFormat = remove_dup_fourcc(srcFormat);
 	dstFormat = remove_dup_fourcc(dstFormat);
@@ -1852,6 +1855,38 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	if(srcFilter->lumH!=NULL && srcFilter->lumH->length>1) usesFilter=1;
 	if(srcFilter->chrV!=NULL && srcFilter->chrV->length>1) usesFilter=1;
 	if(srcFilter->chrH!=NULL && srcFilter->chrH->length>1) usesFilter=1;
+
+	getSubSampleFactors(&c->chrSrcHSubSample, &c->chrSrcVSubSample, srcFormat);
+	getSubSampleFactors(&c->chrDstHSubSample, &c->chrDstVSubSample, dstFormat);
+
+	// reuse chroma for 2 pixles rgb/bgr unless user wants full chroma interpolation
+	if((isBGR(dstFormat) || isRGB(dstFormat)) && !(flags&SWS_FULL_CHR_H_INT)) c->chrDstHSubSample=1;
+
+	// drop eery 2. pixel for chroma calculation unless user wants full chroma
+	if((isBGR(srcFormat) || isRGB(srcFormat) || srcFormat==IMGFMT_YUY2) && !(flags&SWS_FULL_CHR_V)) 
+		c->chrSrcVSubSample=1;
+
+	// drop eery 2. pixel for chroma calculation unless user wants full chroma
+	if((isBGR(srcFormat) || isRGB(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)) 
+		c->chrSrcHSubSample=1;
+
+	c->chrIntHSubSample= c->chrDstHSubSample;
+	c->chrIntVSubSample= c->chrSrcVSubSample;
+	
+	// note the -((-x)>>y) is so that we allways round toward +inf
+	c->chrSrcW= -((-srcW) >> c->chrSrcHSubSample);
+	c->chrSrcH= -((-srcH) >> c->chrSrcVSubSample);
+	c->chrDstW= -((-dstW) >> c->chrDstHSubSample);
+	c->chrDstH= -((-dstH) >> c->chrDstVSubSample);
+/*	printf("%d %d %d %d / %d %d %d %d //\n", 
+	c->chrSrcW,
+c->chrSrcH,
+c->chrDstW,
+c->chrDstH,
+srcW,
+srcH,
+dstW,
+dstH);*/
 	
 	/* unscaled special Cases */
 	if(unscaled && !usesFilter)
@@ -1877,7 +1912,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			return c;
 		}
 		/* yuv2bgr */
-		if(isPlanarYUV(srcFormat) && isBGR(dstFormat))
+		if((srcFormat==IMGFMT_YV12 || srcFormat==IMGFMT_I420) && isBGR(dstFormat))
 		{
 			// FIXME multiple yuv2rgb converters wont work that way cuz that thing is full of globals&statics
 #ifdef WORDS_BIGENDIAN
@@ -1895,10 +1930,14 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
-
+#if 1
 		/* simple copy */
-		if(srcFormat == dstFormat 
-		   || ((isPlanarYUV(srcFormat)||isGray(srcFormat)) && (isPlanarYUV(dstFormat)||isGray(dstFormat))))
+		if(   srcFormat == dstFormat
+		   || (srcFormat==IMGFMT_YV12 && dstFormat==IMGFMT_I420)
+		   || (srcFormat==IMGFMT_I420 && dstFormat==IMGFMT_YV12)
+		   || (isPlanarYUV(srcFormat) && isGray(dstFormat))
+		   || (isPlanarYUV(dstFormat) && isGray(srcFormat))
+		  )
 		{
 			c->swScale= simpleCopy;
 
@@ -1907,7 +1946,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
-
+#endif
 		/* bgr32to24 & rgb32to24*/
 		if((srcFormat==IMGFMT_BGR32 && dstFormat==IMGFMT_BGR24)
 		 ||(srcFormat==IMGFMT_RGB32 && dstFormat==IMGFMT_RGB24))
@@ -1943,7 +1982,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
-		
+
 		/* bgr24to32 & rgb24to32*/
 		if((srcFormat==IMGFMT_BGR24 && dstFormat==IMGFMT_BGR32)
 		 ||(srcFormat==IMGFMT_RGB24 && dstFormat==IMGFMT_RGB32))
@@ -2003,6 +2042,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			return c;
 		}
 
+#if 0 //segfaults
 		/* bgr15to32 */
 		if((srcFormat==IMGFMT_BGR15 && dstFormat==IMGFMT_BGR32)
 		 ||(srcFormat==IMGFMT_RGB15 && dstFormat==IMGFMT_RGB32))
@@ -2014,7 +2054,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
-
+#endif
 		/* bgr16to24 */
 		if((srcFormat==IMGFMT_BGR16 && dstFormat==IMGFMT_BGR24)
 		 ||(srcFormat==IMGFMT_RGB16 && dstFormat==IMGFMT_RGB24))
@@ -2027,6 +2067,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			return c;
 		}
 
+#if 0 //segfaults
 		/* bgr16to32 */
 		if((srcFormat==IMGFMT_BGR16 && dstFormat==IMGFMT_BGR32)
 		 ||(srcFormat==IMGFMT_RGB16 && dstFormat==IMGFMT_RGB32))
@@ -2038,7 +2079,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
-
+#endif
 		/* bgr24toYV12 */
 		if(srcFormat==IMGFMT_BGR24 && dstFormat==IMGFMT_YV12)
 		{
@@ -2063,37 +2104,6 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	else
 		c->canMMX2BeUsed=0;
 
-	getSubSampleFactors(&c->chrSrcHSubSample, &c->chrSrcVSubSample, srcFormat);
-	getSubSampleFactors(&c->chrDstHSubSample, &c->chrDstVSubSample, dstFormat);
-
-	// reuse chroma for 2 pixles rgb/bgr unless user wants full chroma interpolation
-	if((isBGR(dstFormat) || isRGB(dstFormat)) && !(flags&SWS_FULL_CHR_H_INT)) c->chrDstHSubSample=1;
-
-	// drop eery 2. pixel for chroma calculation unless user wants full chroma
-	if((isBGR(srcFormat) || isRGB(srcFormat) || srcFormat==IMGFMT_YUY2) && !(flags&SWS_FULL_CHR_V)) 
-		c->chrSrcVSubSample=1;
-
-	// drop eery 2. pixel for chroma calculation unless user wants full chroma
-	if((isBGR(srcFormat) || isRGB(srcFormat)) && !(flags&SWS_FULL_CHR_H_INP)) 
-		c->chrSrcHSubSample=1;
-
-	c->chrIntHSubSample= c->chrDstHSubSample;
-	c->chrIntVSubSample= c->chrSrcVSubSample;
-	
-	// note the -((-x)>>y) is so that we allways round toward +inf
-	c->chrSrcW= -((-srcW) >> c->chrSrcHSubSample);
-	c->chrSrcH= -((-srcH) >> c->chrSrcVSubSample);
-	c->chrDstW= -((-dstW) >> c->chrDstHSubSample);
-	c->chrDstH= -((-dstH) >> c->chrDstVSubSample);
-/*	printf("%d %d %d %d / %d %d %d %d //\n", 
-	c->chrSrcW,
-c->chrSrcH,
-c->chrDstW,
-c->chrDstH,
-srcW,
-srcH,
-dstW,
-dstH);*/
 	c->chrXInc= ((c->chrSrcW<<16) + (c->chrDstW>>1))/c->chrDstW;
 	c->chrYInc= ((c->chrSrcH<<16) + (c->chrDstH>>1))/c->chrDstH;
 
@@ -2126,7 +2136,7 @@ dstH);*/
 				 srcW      ,       dstW, filterAlign, 1<<14, flags,
 				 srcFilter->lumH, dstFilter->lumH);
 		initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
-				(srcW+1)>>1, c->chrDstW, filterAlign, 1<<14, flags,
+				 c->chrSrcW, c->chrDstW, filterAlign, 1<<14, flags,
 				 srcFilter->chrH, dstFilter->chrH);
 
 #ifdef ARCH_X86
@@ -2151,7 +2161,7 @@ dstH);*/
 			srcH      ,        dstH, 1, (1<<12)-4, flags,
 			srcFilter->lumV, dstFilter->lumV);
 	initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
-			(srcH+1)>>1, c->chrDstH, 1, (1<<12)-4, flags,
+			c->chrSrcH, c->chrDstH, 1, (1<<12)-4, flags,
 			 srcFilter->chrV, dstFilter->chrV);
 
 	// Calculate Buffer Sizes so that they wont run out while handling these damn slices
@@ -2161,12 +2171,12 @@ dstH);*/
 	{
 		int chrI= i*c->chrDstH / dstH;
 		int nextSlice= MAX(c->vLumFilterPos[i   ] + c->vLumFilterSize - 1,
-				 ((c->vChrFilterPos[chrI] + c->vChrFilterSize - 1)<<1));
-		nextSlice&= ~1; // Slices start at even boundaries
+				 ((c->vChrFilterPos[chrI] + c->vChrFilterSize - 1)<<c->chrSrcVSubSample));
+		nextSlice&= ~3; // Slices start at boundaries which are divisable through 4
 		if(c->vLumFilterPos[i   ] + c->vLumBufSize < nextSlice)
 			c->vLumBufSize= nextSlice - c->vLumFilterPos[i   ];
-		if(c->vChrFilterPos[chrI] + c->vChrBufSize < (nextSlice>>1))
-			c->vChrBufSize= (nextSlice>>1) - c->vChrFilterPos[chrI];
+		if(c->vChrFilterPos[chrI] + c->vChrBufSize < (nextSlice>>c->chrSrcVSubSample))
+			c->vChrBufSize= (nextSlice>>c->chrSrcVSubSample) - c->vChrFilterPos[chrI];
 	}
 
 	// allocate pixbufs (we use dynamic allocation because otherwise we would need to

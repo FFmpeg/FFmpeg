@@ -655,7 +655,7 @@
 
 static inline void RENAME(yuv2yuvX)(int16_t *lumFilter, int16_t **lumSrc, int lumFilterSize,
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
-				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW,
+				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW,
 				    int16_t * lumMmxFilter, int16_t * chrMmxFilter)
 {
 #ifdef HAVE_MMX
@@ -664,14 +664,14 @@ static inline void RENAME(yuv2yuvX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 		asm volatile(
 				YSCALEYUV2YV12X(0)
 				:: "m" (-chrFilterSize), "r" (chrSrc+chrFilterSize),
-				"r" (chrMmxFilter+chrFilterSize*4), "r" (uDest), "m" (dstW>>1)
+				"r" (chrMmxFilter+chrFilterSize*4), "r" (uDest), "m" (chrDstW)
 				: "%eax", "%edx", "%esi"
 			);
 
 		asm volatile(
 				YSCALEYUV2YV12X(4096)
 				:: "m" (-chrFilterSize), "r" (chrSrc+chrFilterSize),
-				"r" (chrMmxFilter+chrFilterSize*4), "r" (vDest), "m" (dstW>>1)
+				"r" (chrMmxFilter+chrFilterSize*4), "r" (vDest), "m" (chrDstW)
 				: "%eax", "%edx", "%esi"
 			);
 	}
@@ -683,29 +683,29 @@ static inline void RENAME(yuv2yuvX)(int16_t *lumFilter, int16_t **lumSrc, int lu
 			: "%eax", "%edx", "%esi"
 		);
 #else
-yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
+yuv2yuvXinC(c, lumFilter, lumSrc, lumFilterSize,
 	    chrFilter, chrSrc, chrFilterSize,
-	    dest, uDest, vDest, dstW);
+	    dest, uDest, vDest);
 #endif
 }
 
 static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
-				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW)
+				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW)
 {
 #ifdef HAVE_MMX
 	if(uDest != NULL)
 	{
 		asm volatile(
 				YSCALEYUV2YV121
-				:: "r" (chrSrc + (dstW>>1)), "r" (uDest + (dstW>>1)),
-				"g" (-(dstW>>1))
+				:: "r" (chrSrc + chrDstW), "r" (uDest + chrDstW),
+				"g" (-chrDstW)
 				: "%eax"
 			);
 
 		asm volatile(
 				YSCALEYUV2YV121
-				:: "r" (chrSrc + 2048 + (dstW>>1)), "r" (vDest + (dstW>>1)),
-				"g" (-(dstW>>1))
+				:: "r" (chrSrc + 2048 + chrDstW), "r" (vDest + chrDstW),
+				"g" (-chrDstW)
 				: "%eax"
 			);
 	}
@@ -731,7 +731,7 @@ static inline void RENAME(yuv2yuv1)(int16_t *lumSrc, int16_t *chrSrc,
 	}
 
 	if(uDest != NULL)
-		for(i=0; i<(dstW>>1); i++)
+		for(i=0; i<chrDstW; i++)
 		{
 			int u=chrSrc[i]>>7;
 			int v=chrSrc[i + 2048]>>7;
@@ -2582,6 +2582,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	const int dstW= c->dstW;
 	const int dstH= c->dstH;
 	const int chrDstW= c->chrDstW;
+	const int chrSrcW= c->chrSrcW;
 	const int lumXInc= c->lumXInc;
 	const int chrXInc= c->chrXInc;
 	const int dstFormat= c->dstFormat;
@@ -2609,6 +2610,8 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	uint8_t *funnyYCode= c->funnyYCode;
 	uint8_t *funnyUVCode= c->funnyUVCode;
 	uint8_t *formatConvBuffer= c->formatConvBuffer;
+	const int chrSrcSliceY= srcSliceY >> c->chrSrcVSubSample;
+	const int chrSrcSliceH= -((-srcSliceH) >> c->chrSrcVSubSample);
 
 	/* vars whch will change and which we need to storw back in the context */
 	int dstY= c->dstY;
@@ -2629,7 +2632,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		srcStride[1]= srcStrideParam[2];
 		srcStride[2]= srcStrideParam[1];
 	}
-	else if(c->srcFormat==IMGFMT_YV12){
+	else if(c->srcFormat==IMGFMT_YV12 || c->srcFormat==IMGFMT_YVU9){
 		src[0]= srcParam[0];
 		src[1]= srcParam[1];
 		src[2]= srcParam[2];
@@ -2726,7 +2729,7 @@ i--;
 		ASSERT(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1)
 
 		// Do we have enough lines in this slice to output the dstY line
-		if(lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < ((srcSliceY + srcSliceH + 1)>>1))
+		if(lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < -((-srcSliceY - srcSliceH)>>c->chrSrcVSubSample))
 		{
 			//Do horizontal scaling
 			while(lastInLumBuf < lastLumSrcY)
@@ -2746,16 +2749,16 @@ i--;
 			}
 			while(lastInChrBuf < lastChrSrcY)
 			{
-				uint8_t *src1= src[1]+(lastInChrBuf + 1 - (srcSliceY>>1))*srcStride[1];
-				uint8_t *src2= src[2]+(lastInChrBuf + 1 - (srcSliceY>>1))*srcStride[2];
+				uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
+				uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
 				chrBufIndex++;
 				ASSERT(chrBufIndex < 2*vChrBufSize)
-				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < ((srcSliceH+1)>>1))
-				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
+				ASSERT(lastInChrBuf + 1 - chrSrcSliceY < (chrSrcSliceH))
+				ASSERT(lastInChrBuf + 1 - chrSrcSliceY >= 0)
 				//FIXME replace parameters through context struct (some at least)
 
 				if(!(isGray(srcFormat) || isGray(dstFormat)))
-					RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
+					RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
 						flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
 						funnyUVCode, c->srcFormat, formatConvBuffer, 
 						c->chrMmx2Filter, c->chrMmx2FilterPos);
@@ -2770,8 +2773,8 @@ i--;
 /*		printf("%d %d Last:%d %d LastInBuf:%d %d Index:%d %d Y:%d FSize: %d %d BSize: %d %d\n",
 			firstChrSrcY,firstLumSrcY,lastChrSrcY,lastLumSrcY,
 			lastInChrBuf,lastInLumBuf,chrBufIndex,lumBufIndex,dstY,vChrFilterSize,vLumFilterSize,
-			vChrBufSize, vLumBufSize);
-*/
+			vChrBufSize, vLumBufSize);*/
+
 			//Do horizontal scaling
 			while(lastInLumBuf+1 < srcSliceY + srcSliceH)
 			{
@@ -2786,17 +2789,17 @@ i--;
 						c->lumMmx2Filter, c->lumMmx2FilterPos);
 				lastInLumBuf++;
 			}
-			while(lastInChrBuf+1 < ((srcSliceY + srcSliceH)>>1))
+			while(lastInChrBuf+1 < (chrSrcSliceY + chrSrcSliceH))
 			{
-				uint8_t *src1= src[1]+(lastInChrBuf + 1 - (srcSliceY>>1))*srcStride[1];
-				uint8_t *src2= src[2]+(lastInChrBuf + 1 - (srcSliceY>>1))*srcStride[2];
+				uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
+				uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
 				chrBufIndex++;
 				ASSERT(chrBufIndex < 2*vChrBufSize)
-				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < ((srcSliceH+1)>>1))
-				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
+				ASSERT(lastInChrBuf + 1 - chrSrcSliceY < chrSrcSliceH)
+				ASSERT(lastInChrBuf + 1 - chrSrcSliceY >= 0)
 
 				if(!(isGray(srcFormat) || isGray(dstFormat)))
-					RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
+					RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
 						flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
 						funnyUVCode, c->srcFormat, formatConvBuffer, 
 						c->chrMmx2Filter, c->chrMmx2FilterPos);
@@ -2823,17 +2826,17 @@ i--;
 			{
 				int16_t *lumBuf = lumPixBuf[0];
 				int16_t *chrBuf= chrPixBuf[0];
-				RENAME(yuv2yuv1)(lumBuf, chrBuf, dest, uDest, vDest, dstW);
+				RENAME(yuv2yuv1)(lumBuf, chrBuf, dest, uDest, vDest, dstW, chrDstW);
 			}
 			else //General YV12
 			{
 				int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
 				int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
 				RENAME(yuv2yuvX)(
-					vLumFilter+dstY*vLumFilterSize     , lumSrcPtr, vLumFilterSize,
-					vChrFilter+(dstY>>1)*vChrFilterSize, chrSrcPtr, vChrFilterSize,
-					dest, uDest, vDest, dstW,
-					lumMmxFilter+dstY*vLumFilterSize*4, chrMmxFilter+(dstY>>1)*vChrFilterSize*4);
+					vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
+					vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+					dest, uDest, vDest, dstW, chrDstW,
+					lumMmxFilter+dstY*vLumFilterSize*4, chrMmxFilter+chrDstY*vChrFilterSize*4);
 			}
 		}
 		else
@@ -2874,11 +2877,11 @@ i--;
 		int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
 		if(isPlanarYUV(dstFormat)) //YV12
 		{
-			if(dstY&1) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
-			yuv2yuvXinC(
-				vLumFilter+dstY*vLumFilterSize     , lumSrcPtr, vLumFilterSize,
-				vChrFilter+(dstY>>1)*vChrFilterSize, chrSrcPtr, vChrFilterSize,
-				dest, uDest, vDest, dstW);
+			if(dstY&1) uDest=vDest= NULL;
+			yuv2yuvXinC(c, 
+				vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
+				vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
+				dest, uDest, vDest);
 		}
 		else
 		{
