@@ -889,8 +889,8 @@ static AVOutputFormat _3gp_oformat = {
 static AVOutputFormat mp4_oformat = {
     "mp4",
     "mp4 format",
-    NULL,
-    "mp4",
+    "application/mp4",
+    "mp4,m4a",
     sizeof(MOVContext),
     CODEC_ID_AAC,
     CODEC_ID_MPEG4,

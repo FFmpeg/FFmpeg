@@ -120,7 +120,7 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_MP2, 0x5500736D }, /* MPEG layer 3 *//* XXX: check endianness */
 /*    { CODEC_ID_OGG_VORBIS, MKTAG('O', 'g', 'g', 'S') }, *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
 /* MP4 tags */
-    { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') }, /* MPEG 4 AAC or audio ? */
+    { CODEC_ID_MPEG4AAC, MKTAG('m', 'p', '4', 'a') }, /* MPEG-4 AAC */
     /* The standard for mpeg4 audio is still not normalised AFAIK anyway */
     { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
@@ -1658,7 +1658,7 @@ static int mov_read_close(AVFormatContext *s)
 }
 
 static AVInputFormat mov_iformat = {
-    "mov",
+    "mov,mp4,m4a,3gp",
     "QuickTime/MPEG4 format",
     sizeof(MOVContext),
     mov_probe,
