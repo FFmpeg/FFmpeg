@@ -574,8 +574,8 @@ static void rgb_name ## _to_yuv420p(AVPicture *dst, AVPicture *src,     \
     cb = dst->data[1];                                                  \
     cr = dst->data[2];                                                  \
                                                                         \
-    wrap = width;                                                       \
-    wrap3 = width * BPP;                                                \
+    wrap = dst->linesize[0];                                            \
+    wrap3 = src->linesize[0];                                           \
     p = src->data[0];                                                   \
     for(y=0;y<height;y+=2) {                                            \
         for(x=0;x<width;x+=2) {                                         \
@@ -620,8 +620,10 @@ static void rgb_name ## _to_yuv420p(AVPicture *dst, AVPicture *src,     \
             p += -wrap3 + 2 * BPP;                                      \
             lum += -wrap + 2;                                           \
         }                                                               \
-        p += wrap3;                                                     \
-        lum += wrap;                                                    \
+        p += wrap3 + (wrap3 - width * BPP);                             \
+        lum += wrap + (wrap - width);                                   \
+        cb += dst->linesize[1] - width / 2;                             \
+        cr += dst->linesize[2] - width / 2;                             \
     }                                                                   \
 }                                                                       \
                                                                         \
