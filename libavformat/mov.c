@@ -89,6 +89,7 @@ static const CodecTag mov_video_tags[] = {
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') }, /* OpenDiVX *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
 /*    { CODEC_ID_, MKTAG('I', 'V', '5', '0') }, *//* Indeo 5.0 */
     { CODEC_ID_H263, MKTAG('h', '2', '6', '3') }, /* H263 */
+    { CODEC_ID_H263, MKTAG('s', '2', '6', '3') }, /* H263 ?? works */
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', ' ') }, /* DV NTSC */
     { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', 'p') }, /* DV PAL */
 /*    { CODEC_ID_DVVIDEO, MKTAG('A', 'V', 'd', 'v') }, *//* AVID dv */
@@ -1288,9 +1289,10 @@ static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     /* check MOV header */
     err = mov_read_default(mov, pb, atom);
-    if(err<0 || (!mov->found_moov || !mov->found_mdat)) {
-        puts("header not found !!!");
-        exit(1);
+    if (err<0 || (!mov->found_moov && !mov->found_mdat)) {
+	fprintf(stderr, "mov: header not found !!! (err:%d, moov:%d, mdat:%d) pos:%Ld\n",
+		err, mov->found_moov, mov->found_mdat, url_ftell(pb));
+	return -1;
     }
 #ifdef DEBUG
     printf("on_parse_exit_offset=%d\n", (int) url_ftell(pb));
