@@ -228,34 +228,7 @@ int MPV_common_init(MpegEncContext *s)
     s->context_initialized = 1;
     return 0;
  fail:
-    if (s->mb_type)
-        free(s->mb_type);
-    if (s->mb_var)
-        free(s->mb_var);
-    if (s->mv_table[0])
-        free(s->mv_table[0]);
-    if (s->mv_table[1])
-        free(s->mv_table[1]);
-    if (s->motion_val)
-        free(s->motion_val);
-    if (s->dc_val[0])
-        free(s->dc_val[0]);
-    if (s->ac_val[0])
-        free(s->ac_val[0]);
-    if (s->coded_block)
-        free(s->coded_block);
-    if (s->mbintra_table)
-        free(s->mbintra_table);
-    if (s->mbskip_table)
-        free(s->mbskip_table);
-    for(i=0;i<3;i++) {
-        if (s->last_picture_base[i])
-            free(s->last_picture_base[i]);
-        if (s->next_picture_base[i])
-            free(s->next_picture_base[i]);
-        if (s->aux_picture_base[i])
-            free(s->aux_picture_base[i]);
-    }
+    MPV_common_end(s);
     return -1;
 }
 
@@ -274,17 +247,22 @@ void MPV_common_end(MpegEncContext *s)
         free(s->mv_table[1]);
     if (s->motion_val)
         free(s->motion_val);
-    if (s->h263_pred) {
+    if (s->dc_val[0])
         free(s->dc_val[0]);
+    if (s->ac_val[0])
         free(s->ac_val[0]);
+    if (s->coded_block)
         free(s->coded_block);
+    if (s->mbintra_table)
         free(s->mbintra_table);
-    }
+
     if (s->mbskip_table)
         free(s->mbskip_table);
     for(i=0;i<3;i++) {
-        free(s->last_picture_base[i]);
-        free(s->next_picture_base[i]);
+        if (s->last_picture_base[i])
+	    free(s->last_picture_base[i]);
+	if (s->next_picture_base[i])
+	    free(s->next_picture_base[i]);
         if (s->has_b_frames)
             free(s->aux_picture_base[i]);
     }
@@ -753,7 +731,7 @@ static inline void add_dct(MpegEncContext *s,
  */
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
-    int mb_x, mb_y, motion_x, motion_y;
+    int mb_x, mb_y;
     int dct_linesize, dct_offset;
     op_pixels_func *op_pix;
 
@@ -770,38 +748,35 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         if (s->h263_pred) {
           if(s->mbintra_table[mb_x + mb_y*s->mb_width])
           {
-            int wrap, x, y, v;
+            int wrap, xy, v;
             s->mbintra_table[mb_x + mb_y*s->mb_width]=0;
-  
             wrap = 2 * s->mb_width + 2;
+            xy = 2 * mb_x + 1 +  (2 * mb_y + 1) * wrap;
             v = 1024;
-            x = 2 * mb_x + 1;
-            y = 2 * mb_y + 1;
             
-            s->dc_val[0][(x) + (y) * wrap] = v;
-            s->dc_val[0][(x + 1) + (y) * wrap] = v;
-            s->dc_val[0][(x) + (y + 1) * wrap] = v;
-            s->dc_val[0][(x + 1) + (y + 1) * wrap] = v;
+	    s->dc_val[0][xy] = v;
+            s->dc_val[0][xy + 1] = v;
+            s->dc_val[0][xy + wrap] = v;
+            s->dc_val[0][xy + 1 + wrap] = v;
             /* ac pred */
-            memset(s->ac_val[0][(x) + (y) * wrap], 0, 16 * sizeof(INT16));
-            memset(s->ac_val[0][(x + 1) + (y) * wrap], 0, 16 * sizeof(INT16));
-            memset(s->ac_val[0][(x) + (y + 1) * wrap], 0, 16 * sizeof(INT16));
-            memset(s->ac_val[0][(x + 1) + (y + 1) * wrap], 0, 16 * sizeof(INT16));
+            memset(s->ac_val[0][xy], 0, 16 * sizeof(INT16));
+            memset(s->ac_val[0][xy + 1], 0, 16 * sizeof(INT16));
+            memset(s->ac_val[0][xy + wrap], 0, 16 * sizeof(INT16));
+            memset(s->ac_val[0][xy + 1 + wrap], 0, 16 * sizeof(INT16));
             if (s->h263_msmpeg4) {
-                s->coded_block[(x) + (y) * wrap] = 0;
-                s->coded_block[(x + 1) + (y) * wrap] = 0;
-                s->coded_block[(x) + (y + 1) * wrap] = 0;
-                s->coded_block[(x + 1) + (y + 1) * wrap] = 0;
+                s->coded_block[xy] = 0;
+                s->coded_block[xy + 1] = 0;
+                s->coded_block[xy + wrap] = 0;
+                s->coded_block[xy + 1 + wrap] = 0;
             }
             /* chroma */
             wrap = s->mb_width + 2;
-            x = mb_x + 1;
-            y = mb_y + 1;
-            s->dc_val[1][(x) + (y) * wrap] = v;
-            s->dc_val[2][(x) + (y) * wrap] = v;
+            xy = mb_x + 1 + (mb_y + 1) * wrap;
+            s->dc_val[1][xy] = v;
+            s->dc_val[2][xy] = v;
             /* ac pred */
-            memset(s->ac_val[1][(x) + (y) * wrap], 0, 16 * sizeof(INT16));
-            memset(s->ac_val[2][(x) + (y) * wrap], 0, 16 * sizeof(INT16));
+            memset(s->ac_val[1][xy], 0, 16 * sizeof(INT16));
+            memset(s->ac_val[2][xy], 0, 16 * sizeof(INT16));
           }
         } else {
             s->last_dc[0] = 128 << s->intra_dc_precision;
@@ -814,11 +789,10 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 
     /* update motion predictor */
     if (s->out_format == FMT_H263) {
-        int x, y, wrap;
+        int xy, wrap, motion_x, motion_y;
         
-        x = 2 * mb_x + 1;
-        y = 2 * mb_y + 1;
         wrap = 2 * s->mb_width + 2;
+        xy = 2 * mb_x + 1 + (2 * mb_y + 1) * wrap;
         if (s->mb_intra) {
             motion_x = 0;
             motion_y = 0;
@@ -828,14 +802,14 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             motion_y = s->mv[0][0][1];
         motion_init:
             /* no update if 8X8 because it has been done during parsing */
-            s->motion_val[(x) + (y) * wrap][0] = motion_x;
-            s->motion_val[(x) + (y) * wrap][1] = motion_y;
-            s->motion_val[(x + 1) + (y) * wrap][0] = motion_x;
-            s->motion_val[(x + 1) + (y) * wrap][1] = motion_y;
-            s->motion_val[(x) + (y + 1) * wrap][0] = motion_x;
-            s->motion_val[(x) + (y + 1) * wrap][1] = motion_y;
-            s->motion_val[(x + 1) + (y + 1) * wrap][0] = motion_x;
-            s->motion_val[(x + 1) + (y + 1) * wrap][1] = motion_y;
+            s->motion_val[xy][0] = motion_x;
+            s->motion_val[xy][1] = motion_y;
+            s->motion_val[xy + 1][0] = motion_x;
+            s->motion_val[xy + 1][1] = motion_y;
+            s->motion_val[xy + wrap][0] = motion_x;
+            s->motion_val[xy + wrap][1] = motion_y;
+            s->motion_val[xy + 1 + wrap][0] = motion_x;
+            s->motion_val[xy + 1 + wrap][1] = motion_y;
         }
     }
     
