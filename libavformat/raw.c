@@ -280,6 +280,31 @@ AVOutputFormat m4v_oformat = {
     raw_write_trailer,
 };
 
+AVInputFormat h264_iformat = {
+    "h264",
+    "raw H264 video format",
+    0,
+    NULL /*mpegvideo_probe*/,
+    video_read_header,
+    raw_read_packet,
+    raw_read_close,
+    .extensions = "h26l,h264", //FIXME remove after writing mpeg4_probe
+    .value = CODEC_ID_H264,
+};
+
+AVOutputFormat h264_oformat = {
+    "h264",
+    "raw H264 video format",
+    NULL,
+    "h264",
+    0,
+    CODEC_ID_NONE,
+    CODEC_ID_H264,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+};
+
 AVInputFormat mpegvideo_iformat = {
     "mpegvideo",
     "MPEG video",
@@ -494,6 +519,9 @@ int raw_init(void)
     
     av_register_input_format(&m4v_iformat);
     av_register_output_format(&m4v_oformat);
+    
+    av_register_input_format(&h264_iformat);
+    av_register_output_format(&h264_oformat);
 
     av_register_input_format(&mpegvideo_iformat);
     av_register_output_format(&mpeg1video_oformat);

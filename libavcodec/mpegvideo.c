@@ -227,7 +227,9 @@ int DCT_common_init(MpegEncContext *s)
  * The pixels are allocated/set by calling get_buffer() if shared=0
  */
 static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
-    
+    const int big_mb_num= (s->mb_width+1)*(s->mb_height+1);
+    int i;
+
     if(shared){
         assert(pic->data[0]);
         assert(pic->type == 0 || pic->type == FF_BUFFER_TYPE_SHARED);
@@ -268,9 +270,17 @@ static int alloc_picture(MpegEncContext *s, Picture *pic, int shared){
 
         CHECKED_ALLOCZ(pic->mbskip_table , s->mb_num * sizeof(uint8_t)+1) //the +1 is for the slice end check
         CHECKED_ALLOCZ(pic->qscale_table , s->mb_num * sizeof(uint8_t))
+        if(s->out_format == FMT_H264){
+            CHECKED_ALLOCZ(pic->mb_type_base , big_mb_num * sizeof(uint16_t))
+            pic->mb_type= pic->mb_type_base + s->mb_width+2;
+            for(i=0; i<2; i++){
+                CHECKED_ALLOCZ(pic->motion_val[i], 2 * 16 * s->mb_num * sizeof(uint16_t))
+                CHECKED_ALLOCZ(pic->ref_index[i] , 4 * s->mb_num * sizeof(uint8_t))
+            }
+        }
         pic->qstride= s->mb_width;
     }
-    
+
     //it might be nicer if the application would keep track of these but it would require a API change
     memmove(s->prev_pict_types+1, s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE-1);
     s->prev_pict_types[0]= s->pict_type;
@@ -298,7 +308,13 @@ static void free_picture(MpegEncContext *s, Picture *pic){
     av_freep(&pic->mb_cmp_score);
     av_freep(&pic->mbskip_table);
     av_freep(&pic->qscale_table);
-    
+    av_freep(&pic->mb_type_base);
+    pic->mb_type= NULL;
+    for(i=0; i<2; i++){
+        av_freep(&pic->motion_val[i]);
+        av_freep(&pic->ref_index[i]);
+    }
+
     if(pic->type == FF_BUFFER_TYPE_INTERNAL){
         for(i=0; i<4; i++){
             av_freep(&pic->base[i]);
@@ -855,7 +871,7 @@ static int find_unused_picture(MpegEncContext *s, int shared){
         }
     }else{
         for(i=0; i<MAX_PICTURE_COUNT; i++){
-            if(s->picture[i].data[0]==NULL && s->picture[i].type!=0) break;
+            if(s->picture[i].data[0]==NULL && s->picture[i].type!=0) break; //FIXME
         }
         for(i=0; i<MAX_PICTURE_COUNT; i++){
             if(s->picture[i].data[0]==NULL) break;
@@ -873,7 +889,9 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     AVFrame *pic;
 
     s->mb_skiped = 0;
-    
+
+    assert(s->last_picture_ptr==NULL || s->out_format != FMT_H264);
+        
     /* mark&release old frames */
     if (s->pict_type != B_TYPE && s->last_picture_ptr) {
         avctx->release_buffer(avctx, (AVFrame*)s->last_picture_ptr);
@@ -895,7 +913,7 @@ alloc:
         i= find_unused_picture(s, 0);
     
         pic= (AVFrame*)&s->picture[i];
-        pic->reference= s->pict_type != B_TYPE;
+        pic->reference= s->pict_type != B_TYPE ? 3 : 0;
 
         if(s->current_picture_ptr)
             pic->coded_picture_number= s->current_picture_ptr->coded_picture_number+1;
@@ -905,11 +923,12 @@ alloc:
         s->current_picture_ptr= &s->picture[i];
     }
 
+    s->current_picture= *s->current_picture_ptr;
+  if(s->out_format != FMT_H264){
     if (s->pict_type != B_TYPE) {
         s->last_picture_ptr= s->next_picture_ptr;
         s->next_picture_ptr= s->current_picture_ptr;
     }
-    s->current_picture= *s->current_picture_ptr;
     if(s->last_picture_ptr) s->last_picture= *s->last_picture_ptr;
     if(s->next_picture_ptr) s->next_picture= *s->next_picture_ptr;
     if(s->new_picture_ptr ) s->new_picture = *s->new_picture_ptr;
@@ -931,6 +950,7 @@ alloc:
         assert(s->pict_type != B_TYPE); //these should have been dropped if we dont have a reference
         goto alloc;
     }
+  }
    
     s->hurry_up= s->avctx->hurry_up;
     s->error_resilience= avctx->error_resilience;
@@ -1059,7 +1079,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
         i= find_unused_picture(s, 1);
 
         pic= (AVFrame*)&s->picture[i];
-        pic->reference= 1;
+        pic->reference= 3;
     
         for(i=0; i<4; i++){
             pic->data[i]= pic_arg->data[i];
@@ -1070,7 +1090,7 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
         i= find_unused_picture(s, 0);
 
         pic= (AVFrame*)&s->picture[i];
-        pic->reference= 1;
+        pic->reference= 3;
 
         alloc_picture(s, (Picture*)pic, 0);
         for(i=0; i<4; i++){
@@ -1215,7 +1235,7 @@ static void select_input_picture(MpegEncContext *s){
     }
     
     if(s->reordered_input_picture[0]){
-        s->reordered_input_picture[0]->reference= s->reordered_input_picture[0]->pict_type!=B_TYPE;
+        s->reordered_input_picture[0]->reference= s->reordered_input_picture[0]->pict_type!=B_TYPE ? 3 : 0;
 
         s->new_picture= *s->reordered_input_picture[0];
 
@@ -3944,6 +3964,8 @@ char ff_get_pict_type_char(int pict_type){
     case P_TYPE: return 'P'; 
     case B_TYPE: return 'B'; 
     case S_TYPE: return 'S'; 
+    case SI_TYPE:return 'i'; 
+    case SP_TYPE:return 'p'; 
     default:     return '?';
     }
 }

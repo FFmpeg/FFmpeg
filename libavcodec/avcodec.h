@@ -49,6 +49,7 @@ enum CodecID {
     CODEC_ID_MACE6,
     CODEC_ID_HUFFYUV,
     CODEC_ID_CYUV,
+    CODEC_ID_H264,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -210,7 +211,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
     int key_frame;\
 \
     /**\
-     * picture type of the frame, see ?_TYPE below\
+     * picture type of the frame, see ?_TYPE below.\
      * - encoding: set by lavc for coded_picture (and set by user for input)\
      * - decoding: set by lavc\
      */\
@@ -320,7 +321,12 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define FF_P_TYPE 2 // Predicted
 #define FF_B_TYPE 3 // Bi-dir predicted
 #define FF_S_TYPE 4 // S(GMC)-VOP MPEG4
+#define FF_SI_TYPE 5
+#define FF_SP_TYPE 6
 
+/**
+ * Audio Video Frame.
+ */
 typedef struct AVFrame {
     FF_COMMON_FRAME
 } AVFrame;
@@ -906,6 +912,7 @@ typedef struct AVCodecContext {
 #define FF_DEBUG_STARTCODE 0x00000100
 #define FF_DEBUG_PTS       0x00000200
 #define FF_DEBUG_ER        0x00000400
+#define FF_DEBUG_MMCO      0x00000800
     
     /**
      * error.
@@ -1149,6 +1156,7 @@ extern AVCodec msmpeg4v3_encoder;
 extern AVCodec wmv1_encoder;
 extern AVCodec wmv2_encoder;
 extern AVCodec huffyuv_encoder;
+extern AVCodec h264_encoder;
 
 extern AVCodec h263_decoder;
 extern AVCodec mpeg4_decoder;
@@ -1174,6 +1182,7 @@ extern AVCodec mace6_decoder;
 extern AVCodec huffyuv_decoder;
 extern AVCodec oggvorbis_decoder;
 extern AVCodec cyuv_decoder;
+extern AVCodec h264_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

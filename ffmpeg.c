@@ -2008,7 +2008,7 @@ static void opt_input_file(const char *filename)
             enc->debug= debug;
 /*            if(enc->codec->capabilities & CODEC_CAP_TRUNCATED)
                 enc->flags|= CODEC_FLAG_TRUNCATED; */
-            if(/*enc->codec_id==CODEC_ID_MPEG4 || */enc->codec_id==CODEC_ID_MPEG1VIDEO)
+            if(/*enc->codec_id==CODEC_ID_MPEG4 || */enc->codec_id==CODEC_ID_MPEG1VIDEO || enc->codec_id==CODEC_ID_H264)
                 enc->flags|= CODEC_FLAG_TRUNCATED;
             
             if(bitexact)

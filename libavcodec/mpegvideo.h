@@ -33,6 +33,7 @@ enum OutputFormat {
     FMT_MPEG1,
     FMT_H263,
     FMT_MJPEG, 
+    FMT_H264,
 };
 
 #define EDGE_WIDTH 16
@@ -59,6 +60,8 @@ enum OutputFormat {
 #define P_TYPE FF_P_TYPE  ///< Predicted
 #define B_TYPE FF_B_TYPE  ///< Bi-dir predicted
 #define S_TYPE FF_S_TYPE  ///< S(GMC)-VOP MPEG4
+#define SI_TYPE FF_SI_TYPE  ///< Switching Intra
+#define SP_TYPE FF_SP_TYPE  ///< Switching Predicted
 
 typedef struct Predictor{
     double coeff;
@@ -126,6 +129,57 @@ typedef struct ScanTable{
  */
 typedef struct Picture{
     FF_COMMON_FRAME
+
+    /**
+     * halfpel luma planes.
+     */
+    uint8_t *interpolated[3];
+    
+    int16_t (*motion_val[2])[2];
+    int8_t *ref_index[2];
+    uint16_t *mb_type_base;
+    uint16_t *mb_type;           ///< mb_type_base + mb_width + 2
+#define MB_TYPE_INTRA4x4   0x0001
+#define MB_TYPE_INTRA16x16 0x0002
+#define MB_TYPE_INTRA_PCM  0x0004
+#define MB_TYPE_16x16      0x0008
+#define MB_TYPE_16x8       0x0010
+#define MB_TYPE_8x16       0x0020
+#define MB_TYPE_8x8        0x0040
+#define MB_TYPE_INTERLACED 0x0080
+#define MB_TYPE_DIRECT2     0x0100 //FIXME
+#define MB_TYPE_REF0       0x0200
+#define MB_TYPE_GMC2        0x0400 //FIXME
+#define MB_TYPE_P0L0       0x1000
+#define MB_TYPE_P1L0       0x2000
+#define MB_TYPE_P0L1       0x4000
+#define MB_TYPE_P1L1       0x8000
+
+#define IS_INTRA4x4(a)   ((a)&MB_TYPE_INTRA4x4)
+#define IS_INTRA16x16(a) ((a)&MB_TYPE_INTRA16x16)
+#define IS_INTRA(a)      ((a)&3)
+#define IS_INTER(a)      ((a)&(MB_TYPE_16x16|MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_8x8))
+#define IS_INTRA_PCM(a)  ((a)&MB_TYPE_INTRA_PCM)
+#define IS_INTERLACED(a) ((a)&MB_TYPE_INTERLACED)
+#define IS_DIRECT(a)     ((a)&MB_TYPE_DIRECT2)
+#define IS_16X16(a)      ((a)&MB_TYPE_16x16)
+#define IS_16X8(a)       ((a)&MB_TYPE_16x8)
+#define IS_8X16(a)       ((a)&MB_TYPE_8x16)
+#define IS_8X8(a)        ((a)&MB_TYPE_8x8)
+#define IS_SUB_8X8(a)    ((a)&MB_TYPE_16x16) //note reused
+#define IS_SUB_8X4(a)    ((a)&MB_TYPE_16x8)  //note reused
+#define IS_SUB_4X8(a)    ((a)&MB_TYPE_8x16)  //note reused
+#define IS_SUB_4X4(a)    ((a)&MB_TYPE_8x8)   //note reused
+#define IS_REF0(a)       ((a)&MB_TYPE_REF0)
+#define IS_DIR(a, part, list) ((a) & (MB_TYPE_P0L0<<((part)+2*(list))))
+#define USES_LIST(a, list) ((a) & ((MB_TYPE_P0L0|MB_TYPE_P1L0)<<(2*(list)))) ///< does this mb use listX, note doesnt work if subMBs
+
+
+    int field_poc[2];           ///< h264 top/bottom POC
+    int poc;                    ///< h264 frame POC
+    int frame_num;              ///< h264 frame_num
+    int pic_id;                 ///< h264 pic_num or long_term_pic_idx
+    int long_ref;               ///< 1->long term reference 0->short term reference
 
     int mb_var_sum;             ///< sum of MB variance for current frame 
     int mc_mb_var_sum;          ///< motion compensated MB variance for current frame 
@@ -267,6 +321,7 @@ typedef struct MpegEncContext {
     Picture *current_picture_ptr;  ///< pointer to the current picture
     int last_dc[3];                ///< last DC values for MPEG1 
     int16_t *dc_val[3];            ///< used for mpeg4 DC prediction, all 3 arrays must be continuous 
+    int16_t dc_cache[4*5];
     int y_dc_scale, c_dc_scale;
     uint8_t *y_dc_scale_table;     ///< qscale -> y_dc_scale table 
     uint8_t *c_dc_scale_table;     ///< qscale -> c_dc_scale table 
@@ -295,6 +350,7 @@ typedef struct MpegEncContext {
     /* motion compensation */
     int unrestricted_mv;        ///< mv can point outside of the coded picture 
     int h263_long_vectors;      ///< use horrible h263v1 long vector mode 
+    int decode;                 ///< if 0 then decoding will be skiped (for encoding b frames for example)
 
     DSPContext dsp;             ///< pointers for accelerated dsp fucntions 
     int f_code;                 ///< forward MV resolution 
@@ -470,9 +526,9 @@ typedef struct MpegEncContext {
     int enhancement_type;
     int new_pred;
     int reduced_res_vop;
-    int aspect_ratio_info;
-    int aspected_width;
-    int aspected_height;
+    int aspect_ratio_info; //FIXME remove
+    int aspected_width;    //FIXME remove
+    int aspected_height;   //FIXME remove
     int sprite_warping_accuracy;
     int low_latency_sprite;
     int data_partitioning;           ///< data partitioning flag from header 
@@ -546,6 +602,7 @@ typedef struct MpegEncContext {
     int fake_picture_number; ///< picture number at the bitstream frame rate 
     int gop_picture_number;  ///< index of the first picture of a GOP based on fake_pic_num & mpeg1 specific 
     int last_mv_dir;         ///< last mv_dir, used for b frame encoding 
+    int broken_link;         ///< no_output_of_prior_pics_flag
     
     /* MPEG2 specific - I wish I had not to support this mess. */
     int progressive_sequence;

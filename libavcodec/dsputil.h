@@ -76,6 +76,7 @@ void clear_blocks_c(DCTELEM *blocks);
 // blocksizes for op_pixels_func are 8x4,8x8 16x8 16x16
 typedef void (*op_pixels_func)(uint8_t *block/*align width (8 or 16)*/, const uint8_t *pixels/*align 1*/, int line_size, int h);
 typedef void (*qpel_mc_func)(uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, int stride);
+typedef void (*h264_chroma_mc_func)(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int srcStride, int h, int x, int y);
 
 #define DEF_OLD_QPEL(name)\
 void ff_put_        ## name (uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, int stride);\
@@ -106,6 +107,7 @@ static void a(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
 typedef int (*op_pixels_abs_func)(uint8_t *blk1/*align width (8 or 16)*/, uint8_t *blk2/*align 1*/, int line_size)/* __attribute__ ((const))*/;
 
 typedef int (*me_cmp_func)(void /*MpegEncContext*/ *s, uint8_t *blk1/*align width (8 or 16)*/, uint8_t *blk2/*align 1*/, int line_size)/* __attribute__ ((const))*/;
+
 
 /**
  * DSPContext.
@@ -187,7 +189,16 @@ typedef struct DSPContext {
     qpel_mc_func put_no_rnd_qpel_pixels_tab[2][16];
     qpel_mc_func avg_no_rnd_qpel_pixels_tab[2][16];
     qpel_mc_func put_mspel_pixels_tab[8];
+    
+    /**
+     * h264 Chram MC
+     */
+    h264_chroma_mc_func put_h264_chroma_pixels_tab[3];
+    h264_chroma_mc_func avg_h264_chroma_pixels_tab[3];
 
+    qpel_mc_func put_h264_qpel_pixels_tab[3][16];
+    qpel_mc_func avg_h264_qpel_pixels_tab[3][16];
+    
     op_pixels_abs_func pix_abs16x16;
     op_pixels_abs_func pix_abs16x16_x2;
     op_pixels_abs_func pix_abs16x16_y2;
