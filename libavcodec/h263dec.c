@@ -482,13 +482,17 @@ retry:
     avctx->has_b_frames= !s->low_delay;
     
     if(s->xvid_build==0 && s->divx_version==0 && s->lavc_build==0){
-        if(s->avctx->codec_tag == ff_get_fourcc("XVID") || s->avctx->codec_tag == ff_get_fourcc("XVIX"))
+        if(s->avctx->stream_codec_tag == ff_get_fourcc("XVID") || 
+           s->avctx->codec_tag == ff_get_fourcc("XVID") || s->avctx->codec_tag == ff_get_fourcc("XVIX"))
             s->xvid_build= -1;
-        
+#if 0
         if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==1
            && s->padding_bug_score > 0 && s->low_delay) // XVID with modified fourcc 
             s->xvid_build= -1;
+#endif
+    }
 
+    if(s->xvid_build==0 && s->divx_version==0 && s->lavc_build==0){
         if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==0)
             s->divx_version= 400; //divx 4
     }

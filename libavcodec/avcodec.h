@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000408
 #define LIBAVCODEC_VERSION     "0.4.8"
-#define LIBAVCODEC_BUILD       4678
-#define LIBAVCODEC_BUILD_STR   "4678"
+#define LIBAVCODEC_BUILD       4679
+#define LIBAVCODEC_BUILD_STR   "4679"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -1219,6 +1219,13 @@ typedef struct AVCodecContext {
      */
     uint16_t *inter_matrix;
     
+    /**
+     * fourcc from the AVI stream header (LSB first, so "ABCD" -> ('D'<<24) + ('C'<<16) + ('B'<<8) + 'A').
+     * this is used to workaround some encoder bugs
+     * - encoding: unused
+     * - decoding: set by user, will be converted to upper case by lavc during init
+     */
+    unsigned int stream_codec_tag;
 } AVCodecContext;
 
 

@@ -371,6 +371,11 @@ int MPV_common_init(MpegEncContext *s)
                         + (toupper((s->avctx->codec_tag>>16)&0xFF)<<16) 
                         + (toupper((s->avctx->codec_tag>>24)&0xFF)<<24);
 
+    s->avctx->stream_codec_tag=   toupper( s->avctx->stream_codec_tag     &0xFF)          
+                               + (toupper((s->avctx->stream_codec_tag>>8 )&0xFF)<<8 )
+                               + (toupper((s->avctx->stream_codec_tag>>16)&0xFF)<<16) 
+                               + (toupper((s->avctx->stream_codec_tag>>24)&0xFF)<<24);
+
     CHECKED_ALLOCZ(s->allocated_edge_emu_buffer, (s->width+64)*2*17*2); //(width + edge + align)*interlaced*MBsize*tolerance
     s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*17;
 
@@ -874,7 +879,7 @@ int MPV_encode_end(AVCodecContext *avctx)
     MPV_common_end(s);
     if (s->out_format == FMT_MJPEG)
         mjpeg_close(s);
-        
+
     av_freep(&avctx->extradata);
       
     return 0;
