@@ -835,7 +835,19 @@ static int svq1_motion_inter_block (MpegEncContext *s, bit_buffer_t *bitbuf,
   motion[0].y		=
   motion[(x / 8) + 2].y	=
   motion[(x / 8) + 3].y	= mv.y;
+  
+  if(y + (mv.y >> 1)<0)
+     mv.y= 0;
+  if(x + (mv.x >> 1)<0)
+     mv.x= 0;
 
+#if 0
+  int w= (s->width+15)&~15;
+  int h= (s->height+15)&~15;
+  if(x + (mv.x >> 1)<0 || y + (mv.y >> 1)<0 || x + (mv.x >> 1) + 16 > w || y + (mv.y >> 1) + 16> h)
+      printf("%d %d %d %d\n", x, y, x + (mv.x >> 1), y + (mv.y >> 1));
+#endif
+ 
   src = &previous[(x + (mv.x >> 1)) + (y + (mv.y >> 1))*pitch];
   dst = current;
 
@@ -903,18 +915,31 @@ static int svq1_motion_inter_4v_block (MpegEncContext *s, bit_buffer_t *bitbuf,
 
   /* form predictions */
   for (i=0; i < 4; i++) {
-    src = &previous[(x + (pmv[i]->x >> 1)) + (y + (pmv[i]->y >> 1))*pitch];
-    dst = current;
+    int mvx= pmv[i]->x + (i&1)*16;
+    int mvy= pmv[i]->y + (i>>1)*16;
+  
+    ///XXX /FIXME cliping or padding?
+    if(y + (mvy >> 1)<0)
+       mvy= 0;
+    if(x + (mvx >> 1)<0)
+       mvx= 0;
 
-    s->dsp.put_pixels_tab[1][((pmv[i]->y & 1) << 1) | (pmv[i]->x & 1)](dst,src,pitch,8);
+#if 0
+  int w= (s->width+15)&~15;
+  int h= (s->height+15)&~15;
+  if(x + (mvx >> 1)<0 || y + (mvy >> 1)<0 || x + (mvx >> 1) + 8 > w || y + (mvy >> 1) + 8> h)
+      printf("%d %d %d %d\n", x, y, x + (mvx >> 1), y + (mvy >> 1));
+#endif
+    src = &previous[(x + (mvx >> 1)) + (y + (mvy >> 1))*pitch];
+    dst = current;
+    
+    s->dsp.put_pixels_tab[1][((mvy & 1) << 1) | (mvx & 1)](dst,src,pitch,8);
 
     /* select next block */
     if (i & 1) {
       current  += 8*(pitch - 1);
-      previous += 8*(pitch - 1);
     } else {
       current  += 8;
-      previous += 8;
     }
   }
 
@@ -1000,7 +1025,7 @@ static int svq1_decode_frame_header (bit_buffer_t *bitbuf,MpegEncContext *s) {
   s->pict_type= get_bits (bitbuf, 2)+1;
   if(s->pict_type==4) 
       return -1;
-
+      
   if (s->pict_type == I_TYPE) {
 
     /* unknown fields */
