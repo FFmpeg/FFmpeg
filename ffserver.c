@@ -34,7 +34,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <ctype.h>
 #include <signal.h>
 #ifdef CONFIG_HAVE_DLFCN
 #include <dlfcn.h>
