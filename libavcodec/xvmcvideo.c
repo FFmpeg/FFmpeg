@@ -120,8 +120,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
     if(s->encoding){
         fprintf(stderr,"XVMC doesn't support encoding!!!\n");
-        assert(0);
-        return;
+	av_abort();
     }
 
    //from MPV_decode_mb(),
