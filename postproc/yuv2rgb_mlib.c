@@ -33,7 +33,7 @@
 #include "../libvo/img_format.h" //FIXME try to reduce dependency of such stuff
 #include "swscale.h"
 
-static void mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
+static int mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     uint8_t *src[3];
     int srcStride[3];
@@ -48,9 +48,10 @@ static void mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* srcParam[], int srcStrid
  
     mlib_VideoColorYUV2ARGB420(dst[0], src[0], src[1], src[2], c->dstW,
 			     c->dstH, dstStride[0], srcStride[0], srcStride[1]);
+    return srcSliceH;
 }
 
-static void mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
+static int mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     uint8_t *src[3];
     int srcStride[3];
@@ -65,9 +66,10 @@ static void mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* srcParam[], int srcStrid
  
     mlib_VideoColorYUV2ABGR420(dst[0], src[0], src[1], src[2], c->dstW,
 			     c->dstH, dstStride[0], srcStride[0], srcStride[1]);
+    return srcSliceH;
 }
 
-static void mlib_YUV2RGB420_24(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
+static int mlib_YUV2RGB420_24(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     uint8_t *src[3];
     int srcStride[3];
@@ -82,6 +84,7 @@ static void mlib_YUV2RGB420_24(SwsContext *c, uint8_t* srcParam[], int srcStride
  
     mlib_VideoColorYUV2RGB420(dst[0], src[0], src[1], src[2], c->dstW,
 			     c->dstH, dstStride[0], srcStride[0], srcStride[1]);
+    return srcSliceH;
 }
 
 

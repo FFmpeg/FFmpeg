@@ -226,11 +226,11 @@ float sws_lum_sharpen= 0.0;
    (if there is no support for something compiled in it wont appear here) */
 static CpuCaps cpuCaps;
 
-void (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
+int (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[])=NULL;
 
-static SwsVector *getConvVec(SwsVector *a, SwsVector *b);
-
+static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b);
+		  
 extern const uint8_t dither_2x2_4[2][8];
 extern const uint8_t dither_2x2_8[2][8];
 extern const uint8_t dither_8x8_32[8][8];
@@ -306,9 +306,9 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 		out[i]= malloc(refStride[i]*h);
 	}
 
-	srcContext= getSwsContext(w, h, IMGFMT_YV12, srcW, srcH, srcFormat, flags, NULL, NULL);
-	dstContext= getSwsContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL);
-	outContext= getSwsContext(dstW, dstH, dstFormat, w, h, IMGFMT_YV12, flags, NULL, NULL);
+	srcContext= sws_getContext(w, h, IMGFMT_YV12, srcW, srcH, srcFormat, flags, NULL, NULL);
+	dstContext= sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, NULL, NULL);
+	outContext= sws_getContext(dstW, dstH, dstFormat, w, h, IMGFMT_YV12, flags, NULL, NULL);
 	if(srcContext==NULL ||dstContext==NULL ||outContext==NULL){
 		printf("Failed allocating swsContext\n");
 		goto end;
@@ -340,9 +340,9 @@ static void doTest(uint8_t *ref[3], int refStride[3], int w, int h, int srcForma
 
 	end:
 	
-	freeSwsContext(srcContext);
-	freeSwsContext(dstContext);
-	freeSwsContext(outContext);
+	sws_freeContext(srcContext);
+	sws_freeContext(dstContext);
+	sws_freeContext(outContext);
 
 	for(i=0; i<3; i++){
 		free(src[i]);
@@ -918,12 +918,12 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 		default: return;
 	}
 
-	if(!context) context=getSwsContextFromCmdLine(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat);
+	if(!context) context=sws_getContextFromCmdLine(srcW, srcH, IMGFMT_YV12, dstW, dstH, dstFormat);
 
 	context->swScale(context, src, srcStride, srcSliceY, srcSliceH, dst, dstStride3);
 }
 
-void swsGetFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam)
+void sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam)
 {
 	static int firstTime=1;
 	*flags=0;
@@ -939,62 +939,62 @@ void swsGetFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, Sws
 	}
 	else if(verbose>1) *flags= SWS_PRINT_INFO;
 
-	if(src_filter.lumH) freeVec(src_filter.lumH);
-	if(src_filter.lumV) freeVec(src_filter.lumV);
-	if(src_filter.chrH) freeVec(src_filter.chrH);
-	if(src_filter.chrV) freeVec(src_filter.chrV);
+	if(src_filter.lumH) sws_freeVec(src_filter.lumH);
+	if(src_filter.lumV) sws_freeVec(src_filter.lumV);
+	if(src_filter.chrH) sws_freeVec(src_filter.chrH);
+	if(src_filter.chrV) sws_freeVec(src_filter.chrV);
 
 	if(sws_lum_gblur!=0.0){
-		src_filter.lumH= getGaussianVec(sws_lum_gblur, 3.0);
-		src_filter.lumV= getGaussianVec(sws_lum_gblur, 3.0);
+		src_filter.lumH= sws_getGaussianVec(sws_lum_gblur, 3.0);
+		src_filter.lumV= sws_getGaussianVec(sws_lum_gblur, 3.0);
 	}else{
-		src_filter.lumH= getIdentityVec();
-		src_filter.lumV= getIdentityVec();
+		src_filter.lumH= sws_getIdentityVec();
+		src_filter.lumV= sws_getIdentityVec();
 	}
 
 	if(sws_chr_gblur!=0.0){
-		src_filter.chrH= getGaussianVec(sws_chr_gblur, 3.0);
-		src_filter.chrV= getGaussianVec(sws_chr_gblur, 3.0);
+		src_filter.chrH= sws_getGaussianVec(sws_chr_gblur, 3.0);
+		src_filter.chrV= sws_getGaussianVec(sws_chr_gblur, 3.0);
 	}else{
-		src_filter.chrH= getIdentityVec();
-		src_filter.chrV= getIdentityVec();
+		src_filter.chrH= sws_getIdentityVec();
+		src_filter.chrV= sws_getIdentityVec();
 	}
 
 	if(sws_chr_sharpen!=0.0){
-		SwsVector *g= getConstVec(-1.0, 3);
-		SwsVector *id= getConstVec(10.0/sws_chr_sharpen, 1);
+		SwsVector *g= sws_getConstVec(-1.0, 3);
+		SwsVector *id= sws_getConstVec(10.0/sws_chr_sharpen, 1);
 		g->coeff[1]=2.0;
-		addVec(id, g);
-		convVec(src_filter.chrH, id);
-		convVec(src_filter.chrV, id);
-		freeVec(g);
-		freeVec(id);
+		sws_addVec(id, g);
+		sws_convVec(src_filter.chrH, id);
+		sws_convVec(src_filter.chrV, id);
+		sws_freeVec(g);
+		sws_freeVec(id);
 	}
 
 	if(sws_lum_sharpen!=0.0){
-		SwsVector *g= getConstVec(-1.0, 3);
-		SwsVector *id= getConstVec(10.0/sws_lum_sharpen, 1);
+		SwsVector *g= sws_getConstVec(-1.0, 3);
+		SwsVector *id= sws_getConstVec(10.0/sws_lum_sharpen, 1);
 		g->coeff[1]=2.0;
-		addVec(id, g);
-		convVec(src_filter.lumH, id);
-		convVec(src_filter.lumV, id);
-		freeVec(g);
-		freeVec(id);
+		sws_addVec(id, g);
+		sws_convVec(src_filter.lumH, id);
+		sws_convVec(src_filter.lumV, id);
+		sws_freeVec(g);
+		sws_freeVec(id);
 	}
 
 	if(sws_chr_hshift)
-		shiftVec(src_filter.chrH, sws_chr_hshift);
+		sws_shiftVec(src_filter.chrH, sws_chr_hshift);
 
 	if(sws_chr_vshift)
-		shiftVec(src_filter.chrV, sws_chr_vshift);
+		sws_shiftVec(src_filter.chrV, sws_chr_vshift);
 
-	normalizeVec(src_filter.chrH, 1.0);
-	normalizeVec(src_filter.chrV, 1.0);
-	normalizeVec(src_filter.lumH, 1.0);
-	normalizeVec(src_filter.lumV, 1.0);
+	sws_normalizeVec(src_filter.chrH, 1.0);
+	sws_normalizeVec(src_filter.chrV, 1.0);
+	sws_normalizeVec(src_filter.lumH, 1.0);
+	sws_normalizeVec(src_filter.lumV, 1.0);
 
-	if(verbose > 1) printVec(src_filter.chrH);
-	if(verbose > 1) printVec(src_filter.lumH);
+	if(verbose > 1) sws_printVec(src_filter.chrH);
+	if(verbose > 1) sws_printVec(src_filter.lumH);
 
 	switch(sws_flags)
 	{
@@ -1017,13 +1017,13 @@ void swsGetFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, Sws
 }
 
 // will use sws_flags & src_filter (from cmd line)
-SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat)
+SwsContext *sws_getContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat)
 {
 	int flags;
 	SwsFilter *dstFilterParam, *srcFilterParam;
-	swsGetFlagsAndFilterFromCmdLine(&flags, &srcFilterParam, &dstFilterParam);
+	sws_getFlagsAndFilterFromCmdLine(&flags, &srcFilterParam, &dstFilterParam);
 
-	return getSwsContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, srcFilterParam, dstFilterParam);
+	return sws_getContext(srcW, srcH, srcFormat, dstW, dstH, dstFormat, flags, srcFilterParam, dstFilterParam);
 }
 
 static double getSplineCoeff(double a, double b, double c, double d, double dist)
@@ -1245,7 +1245,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		scaleFilter.coeff= filter + i*filterSize;
 		scaleFilter.length= filterSize;
 
-		if(srcFilter) outVec= getConvVec(srcFilter, &scaleFilter);
+		if(srcFilter) outVec= sws_getConvVec(srcFilter, &scaleFilter);
 		else	      outVec= &scaleFilter;
 
 		ASSERT(outVec->length == filter2Size)
@@ -1258,7 +1258,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 
 		(*filterPos)[i]+= (filterSize-1)/2 - (filter2Size-1)/2;
 
-		if(outVec != &scaleFilter) freeVec(outVec);
+		if(outVec != &scaleFilter) sws_freeVec(outVec);
 	}
 	free(filter); filter=NULL;
 
@@ -1607,7 +1607,7 @@ cpuCaps= gCpuCaps;
 #endif //!RUNTIME_CPUDETECT
 }
 
-static void PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static int PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dstParam[], int dstStride[]){
 	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
 	/* Copy Y plane */
@@ -1630,9 +1630,10 @@ static void PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], 
 		interleaveBytes( src[1],src[2],dst,c->srcW,srcSliceH,srcStride[1],srcStride[2],dstStride[0] );
 	else /* I420 & IYUV */
 		interleaveBytes( src[2],src[1],dst,c->srcW,srcSliceH,srcStride[2],srcStride[1],dstStride[0] );
+	return srcSliceH;
 }
 
-static void PlanarToYuy2Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static int PlanarToYuy2Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dstParam[], int dstStride[]){
 	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
 
@@ -1640,10 +1641,11 @@ static void PlanarToYuy2Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], 
 		yv12toyuy2( src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
 	else /* I420 & IYUV */
 		yv12toyuy2( src[0],src[2],src[1],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
+	return srcSliceH;
 }
 
 /* {RGB,BGR}{15,16,24,32} -> {RGB,BGR}{15,16,24,32} */
-static void rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static int rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
 			   int srcSliceH, uint8_t* dst[], int dstStride[]){
 	const int srcFormat= c->srcFormat;
 	const int dstFormat= c->dstFormat;
@@ -1714,9 +1716,10 @@ static void rgb2rgbWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int s
 			dstPtr+= dstStride[0];
 		}
 	}     
+	return srcSliceH;
 }
 
-static void bgr24toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static int bgr24toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
 
 	rgb24toyv12(
@@ -1726,9 +1729,10 @@ static void bgr24toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
 		dst[2]+(srcSliceY>>1)*dstStride[2],
 		c->srcW, srcSliceH, 
 		dstStride[0], dstStride[1], srcStride[0]);
+	return srcSliceH;
 }
 
-static void yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
 	int i;
 
@@ -1754,6 +1758,7 @@ static void yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], in
 		planar2x(src[1], dst[2], c->chrSrcW, c->chrSrcH, srcStride[1], dstStride[2]);
 		planar2x(src[2], dst[1], c->chrSrcW, c->chrSrcH, srcStride[2], dstStride[1]);
 	}
+	return srcSliceH;
 }
 
 /**
@@ -1792,7 +1797,7 @@ inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], ui
 }
 
 /* unscaled copy like stuff (assumes nearly identical formats) */
-static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static int simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
              int srcSliceH, uint8_t* dstParam[], int dstStrideParam[]){
 
 	int srcStride[3];
@@ -1860,6 +1865,7 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 			}
 		}
 	}
+	return srcSliceH;
 }
 
 static int remove_dup_fourcc(int fourcc)
@@ -1985,7 +1991,7 @@ int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int 
 	return 0;	
 }
 
-SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
+SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
                          SwsFilter *srcFilter, SwsFilter *dstFilter){
 
 	SwsContext *c;
@@ -2374,11 +2380,20 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 }
 
 /**
+ * swscale warper, so we dont need to export the SwsContext
+ */
+int sws_scale(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                           int srcSliceH, uint8_t* dst[], int dstStride[]){
+	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
+}
+//FIXME order YV12/I420 here
+
+/**
  * returns a normalized gaussian curve used to filter stuff
  * quality=3 is high quality, lowwer is lowwer quality
  */
 
-SwsVector *getGaussianVec(double variance, double quality){
+SwsVector *sws_getGaussianVec(double variance, double quality){
 	const int length= (int)(variance*quality + 0.5) | 1;
 	int i;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
@@ -2394,12 +2409,12 @@ SwsVector *getGaussianVec(double variance, double quality){
 		coeff[i]= exp( -dist*dist/(2*variance*variance) ) / sqrt(2*variance*PI);
 	}
 
-	normalizeVec(vec, 1.0);
+	sws_normalizeVec(vec, 1.0);
 
 	return vec;
 }
 
-SwsVector *getConstVec(double c, int length){
+SwsVector *sws_getConstVec(double c, int length){
 	int i;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	SwsVector *vec= malloc(sizeof(SwsVector));
@@ -2414,7 +2429,7 @@ SwsVector *getConstVec(double c, int length){
 }
 
 
-SwsVector *getIdentityVec(void){
+SwsVector *sws_getIdentityVec(void){
 	double *coeff= memalign(sizeof(double), sizeof(double));
 	SwsVector *vec= malloc(sizeof(SwsVector));
 	coeff[0]= 1.0;
@@ -2425,7 +2440,7 @@ SwsVector *getIdentityVec(void){
 	return vec;
 }
 
-void normalizeVec(SwsVector *a, double height){
+void sws_normalizeVec(SwsVector *a, double height){
 	int i;
 	double sum=0;
 	double inv;
@@ -2439,14 +2454,14 @@ void normalizeVec(SwsVector *a, double height){
 		a->coeff[i]*= inv;
 }
 
-void scaleVec(SwsVector *a, double scalar){
+void sws_scaleVec(SwsVector *a, double scalar){
 	int i;
 
 	for(i=0; i<a->length; i++)
 		a->coeff[i]*= scalar;
 }
 
-static SwsVector *getConvVec(SwsVector *a, SwsVector *b){
+static SwsVector *sws_getConvVec(SwsVector *a, SwsVector *b){
 	int length= a->length + b->length - 1;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i, j;
@@ -2468,7 +2483,7 @@ static SwsVector *getConvVec(SwsVector *a, SwsVector *b){
 	return vec;
 }
 
-static SwsVector *sumVec(SwsVector *a, SwsVector *b){
+static SwsVector *sws_sumVec(SwsVector *a, SwsVector *b){
 	int length= MAX(a->length, b->length);
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i;
@@ -2485,7 +2500,7 @@ static SwsVector *sumVec(SwsVector *a, SwsVector *b){
 	return vec;
 }
 
-static SwsVector *diffVec(SwsVector *a, SwsVector *b){
+static SwsVector *sws_diffVec(SwsVector *a, SwsVector *b){
 	int length= MAX(a->length, b->length);
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i;
@@ -2503,7 +2518,7 @@ static SwsVector *diffVec(SwsVector *a, SwsVector *b){
 }
 
 /* shift left / or right if "shift" is negative */
-static SwsVector *getShiftedVec(SwsVector *a, int shift){
+static SwsVector *sws_getShiftedVec(SwsVector *a, int shift){
 	int length= a->length + ABS(shift)*2;
 	double *coeff= memalign(sizeof(double), length*sizeof(double));
 	int i;
@@ -2522,39 +2537,39 @@ static SwsVector *getShiftedVec(SwsVector *a, int shift){
 	return vec;
 }
 
-void shiftVec(SwsVector *a, int shift){
-	SwsVector *shifted= getShiftedVec(a, shift);
+void sws_shiftVec(SwsVector *a, int shift){
+	SwsVector *shifted= sws_getShiftedVec(a, shift);
 	free(a->coeff);
 	a->coeff= shifted->coeff;
 	a->length= shifted->length;
 	free(shifted);
 }
 
-void addVec(SwsVector *a, SwsVector *b){
-	SwsVector *sum= sumVec(a, b);
+void sws_addVec(SwsVector *a, SwsVector *b){
+	SwsVector *sum= sws_sumVec(a, b);
 	free(a->coeff);
 	a->coeff= sum->coeff;
 	a->length= sum->length;
 	free(sum);
 }
 
-void subVec(SwsVector *a, SwsVector *b){
-	SwsVector *diff= diffVec(a, b);
+void sws_subVec(SwsVector *a, SwsVector *b){
+	SwsVector *diff= sws_diffVec(a, b);
 	free(a->coeff);
 	a->coeff= diff->coeff;
 	a->length= diff->length;
 	free(diff);
 }
 
-void convVec(SwsVector *a, SwsVector *b){
-	SwsVector *conv= getConvVec(a, b);
-	free(a->coeff);
+void sws_convVec(SwsVector *a, SwsVector *b){
+	SwsVector *conv= sws_getConvVec(a, b);
+	free(a->coeff);  
 	a->coeff= conv->coeff;
 	a->length= conv->length;
 	free(conv);
 }
 
-SwsVector *cloneVec(SwsVector *a){
+SwsVector *sws_cloneVec(SwsVector *a){
 	double *coeff= memalign(sizeof(double), a->length*sizeof(double));
 	int i;
 	SwsVector *vec= malloc(sizeof(SwsVector));
@@ -2567,7 +2582,7 @@ SwsVector *cloneVec(SwsVector *a){
 	return vec;
 }
 
-void printVec(SwsVector *a){
+void sws_printVec(SwsVector *a){
 	int i;
 	double max=0;
 	double min=0;
@@ -2590,7 +2605,7 @@ void printVec(SwsVector *a){
 	}
 }
 
-void freeVec(SwsVector *a){
+void sws_freeVec(SwsVector *a){
 	if(!a) return;
 	if(a->coeff) free(a->coeff);
 	a->coeff=NULL;
@@ -2598,7 +2613,7 @@ void freeVec(SwsVector *a){
 	free(a);
 }
 
-void freeSwsContext(SwsContext *c){
+void sws_freeContext(SwsContext *c){
 	int i;
 	if(!c) return;
 

@@ -19,7 +19,15 @@
 #ifndef SWSCALE_H
 #define SWSCALE_H
 
-#include "swscale_internal.h" //FIXME HACK REMOVE
+/**
+ * @file swscale.h
+ * @brief 
+ *     external api for the swscale stuff
+ */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* values for the flags, the stuff on the command line is different */
 #define SWS_FAST_BILINEAR 1
@@ -76,42 +84,47 @@ typedef struct {
 	SwsVector *chrV;
 } SwsFilter;
 
+struct SwsContext;
 
+//typedef struct SwsContext;
 // *** bilinear scaling and yuv->rgb & yuv->yuv conversion of yv12 slices:
 // *** Note: it's called multiple times while decoding a frame, first time y==0
 // dstbpp == 12 -> yv12 output
 // will use sws_flags
+// deprecated, will be removed
 void SwScale_YV12slice(unsigned char* src[],int srcStride[], int srcSliceY,
 			     int srcSliceH, uint8_t* dst[], int dstStride, int dstbpp,
 			     int srcW, int srcH, int dstW, int dstH);
 
-// Obsolete, will be removed soon
-void SwScale_Init();
 
+void sws_freeContext(struct SwsContext *swsContext);
 
-
-void freeSwsContext(SwsContext *swsContext);
-
-SwsContext *getSwsContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat);
-SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
+struct SwsContext *sws_getContextFromCmdLine(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat);
+struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
 			 SwsFilter *srcFilter, SwsFilter *dstFilter);
-void swsGetFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam);
+int sws_scale(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
+                           int srcSliceH, uint8_t* dst[], int dstStride[]);
 
-int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation);
-int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation);
+void sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam); //FIXME try to seperate this 
 
-SwsVector *getGaussianVec(double variance, double quality);
-SwsVector *getConstVec(double c, int length);
-SwsVector *getIdentityVec(void);
-void scaleVec(SwsVector *a, double scalar);
-void normalizeVec(SwsVector *a, double height);
-void convVec(SwsVector *a, SwsVector *b);
-void addVec(SwsVector *a, SwsVector *b);
-void subVec(SwsVector *a, SwsVector *b);
-void shiftVec(SwsVector *a, int shift);
-SwsVector *cloneVec(SwsVector *a);
+int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation);
+int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation);
+SwsVector *sws_getGaussianVec(double variance, double quality);
+SwsVector *sws_getConstVec(double c, int length);
+SwsVector *sws_getIdentityVec(void);
+void sws_scaleVec(SwsVector *a, double scalar);
+void sws_normalizeVec(SwsVector *a, double height);
+void sws_convVec(SwsVector *a, SwsVector *b);
+void sws_addVec(SwsVector *a, SwsVector *b);
+void sws_subVec(SwsVector *a, SwsVector *b);
+void sws_shiftVec(SwsVector *a, int shift);
+SwsVector *sws_cloneVec(SwsVector *a);
 
-void printVec(SwsVector *a);
-void freeVec(SwsVector *a);
+void sws_printVec(SwsVector *a);
+void sws_freeVec(SwsVector *a);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

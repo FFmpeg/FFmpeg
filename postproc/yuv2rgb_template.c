@@ -123,7 +123,7 @@
 		     "punpcklbw %%mm5, %%mm2;" /* G7 G6 G5 G4 G3 G2 G1 G0 */\
 
 
-static inline void RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static inline int RENAME(yuv420_rgb16)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     int srcStride[3];
     uint8_t *src[3];
@@ -217,9 +217,11 @@ YUV2RGB
     }
 
     __asm__ __volatile__ (EMMS);
+    
+    return srcSliceH;
 }
 
-static inline void RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static inline int RENAME(yuv420_rgb15)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     int srcStride[3];
     uint8_t *src[3];
@@ -308,9 +310,10 @@ YUV2RGB
     }
 
     __asm__ __volatile__ (EMMS);
+    return srcSliceH;
 }
 
-static inline void RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static inline int RENAME(yuv420_rgb24)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     int srcStride[3];
     uint8_t *src[3];
@@ -456,9 +459,10 @@ YUV2RGB
     }
 
     __asm__ __volatile__ (EMMS);
+    return srcSliceH;
 }
 
-static inline void RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static inline int RENAME(yuv420_rgb32)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
     int srcStride[3];
     uint8_t *src[3];
@@ -544,4 +548,5 @@ YUV2RGB
     }
 
     __asm__ __volatile__ (EMMS);
+    return srcSliceH;
 }

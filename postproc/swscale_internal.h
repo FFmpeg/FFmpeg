@@ -21,13 +21,12 @@
 
 #define MAX_FILTER_SIZE 256
 
-struct SwsContext;
-
-typedef void (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
+typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]);
 
 /* this struct should be aligned on at least 32-byte boundary */
 typedef struct SwsContext{
+	SwsFunc swScale;
 	int srcW, srcH, dstH;
 	int chrSrcW, chrSrcH, chrDstW, chrDstH;
 	int lumXInc, chrXInc;
@@ -85,8 +84,6 @@ typedef struct SwsContext{
 	int dstColorspaceTable[4];
 	int srcRange, dstRange;
 
-	SwsFunc swScale;
-
 #define RED_DITHER   "0*8"
 #define GREEN_DITHER "1*8"
 #define BLUE_DITHER  "2*8"
@@ -121,7 +118,6 @@ typedef struct SwsContext{
 	int esp;
 } SwsContext;
 //FIXME check init (where 0)
-//FIXME split private & public
 
 inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]);
 SwsFunc yuv2rgb_get_func_ptr (SwsContext *c);

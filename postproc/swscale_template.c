@@ -2502,7 +2502,7 @@ FUNNY_UV_CODE
    }
 }
 
-static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
+static int RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
              int srcSliceH, uint8_t* dstParam[], int dstStrideParam[]){
 
 	/* load a few things into local vars to make the code more readable? and faster */
@@ -2540,6 +2540,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	uint8_t *formatConvBuffer= c->formatConvBuffer;
 	const int chrSrcSliceY= srcSliceY >> c->chrSrcVSubSample;
 	const int chrSrcSliceH= -((-srcSliceH) >> c->chrSrcVSubSample);
+	int lastDstY;
 
 	/* vars whch will change and which we need to storw back in the context */
 	int dstY= c->dstY;
@@ -2602,6 +2603,8 @@ i--;
 		lastInLumBuf= -1;
 		lastInChrBuf= -1;
 	}
+
+	lastDstY= dstY;
 
 	for(;dstY < dstH; dstY++){
 		unsigned char *dest =dst[0]+dstStride[0]*dstY;
@@ -2810,4 +2813,6 @@ i--;
 	c->chrBufIndex= chrBufIndex;
 	c->lastInLumBuf= lastInLumBuf;
 	c->lastInChrBuf= lastInChrBuf;
+
+	return dstY - lastDstY;
 }

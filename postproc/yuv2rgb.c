@@ -262,7 +262,7 @@ const int32_t Inverse_Table_6_9[8][4] = {
 	dst_2[6*i+3] = b[Y]; dst_2[6*i+4] = g[Y]; dst_2[6*i+5] = r[Y];
 
 #define PROLOG(func_name, dst_type) \
-static void func_name(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, \
+static int func_name(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, \
              int srcSliceH, uint8_t* dst[], int dstStride[]){\
     uint8_t *src[3];\
     int srcStride[3];\
@@ -294,6 +294,7 @@ static void func_name(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], 
 	    dst_2 += dst_delta;\
 	}\
     }\
+    return srcSliceH;\
 }
 
 PROLOG(yuv2rgb_c_32, uint32_t)
