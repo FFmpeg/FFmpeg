@@ -28,7 +28,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "simple_idct.h"
-
+#include "faandct.h"
 
 uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
 uint32_t squareTbl[512];
@@ -2871,6 +2871,8 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #ifdef CONFIG_ENCODERS
     if(avctx->dct_algo==FF_DCT_FASTINT)
         c->fdct = fdct_ifast;
+    else if(avctx->dct_algo==FF_DCT_FAAN)
+        c->fdct = ff_faandct;
     else
         c->fdct = ff_jpeg_fdct_islow; //slow/accurate/default
 #endif //CONFIG_ENCODERS

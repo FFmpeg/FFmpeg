@@ -14,6 +14,7 @@
 
 #include "i386/mmx.h"
 #include "simple_idct.h"
+#include "faandct.h"
 
 #ifndef MAX
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
@@ -479,6 +480,7 @@ int main(int argc, char **argv)
             dct_error("IJG-AAN-INT", 0, fdct_ifast, fdct, test);
             dct_error("IJG-LLM-INT", 0, ff_jpeg_fdct_islow, fdct, test);
             dct_error("MMX", 0, ff_fdct_mmx, fdct, test);
+            dct_error("FAAN", 0, ff_faandct, fdct, test);
         } else {
             dct_error("REF-DBL", 1, idct, idct, test);
             dct_error("INT", 1, j_rev_dct, idct, test);

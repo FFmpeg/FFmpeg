@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "faandct.h"
 
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
@@ -100,7 +101,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
 
     for(qscale=qmin; qscale<=qmax; qscale++){
         int i;
-        if (s->dsp.fdct == ff_jpeg_fdct_islow) {
+        if (s->dsp.fdct == ff_jpeg_fdct_islow || s->dsp.fdct == ff_faandct) {
             for(i=0;i<64;i++) {
                 const int j= s->dsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
