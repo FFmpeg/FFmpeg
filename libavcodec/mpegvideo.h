@@ -457,8 +457,8 @@ typedef struct MpegEncContext {
     int coded_score[6];
 
     /** precomputed matrix (combine qscale and DCT renorm) */
-    int __align8 q_intra_matrix[32][64];
-    int __align8 q_inter_matrix[32][64];
+    int (*q_intra_matrix)[64];
+    int (*q_inter_matrix)[64];
     /** identical to the above but for MMX & these are not permutated */
     uint16_t __align8 q_intra_matrix16[32][64];
     uint16_t __align8 q_inter_matrix16[32][64];

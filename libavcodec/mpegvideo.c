@@ -442,6 +442,9 @@ int MPV_common_init(MpegEncContext *s)
         CHECKED_ALLOCZ(s->mb_type  , mb_array_size * sizeof(uint8_t)) //needed for encoding
         
         CHECKED_ALLOCZ(s->lambda_table, mb_array_size * sizeof(int))
+        
+        CHECKED_ALLOCZ(s->q_intra_matrix, 64*32 * sizeof(int))
+        CHECKED_ALLOCZ(s->q_inter_matrix, 64*32 * sizeof(int))
     }
         
     CHECKED_ALLOCZ(s->picture, MAX_PICTURE_COUNT * sizeof(Picture))
@@ -560,6 +563,8 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->error_status_table);
     av_freep(&s->mb_index2xy);
     av_freep(&s->lambda_table);
+    av_freep(&s->q_intra_matrix);
+    av_freep(&s->q_inter_matrix);
 
     for(i=0; i<MAX_PICTURE_COUNT; i++){
         free_picture(s, &s->picture[i]);
