@@ -1247,7 +1247,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                             s->bottom_field ^= 1;
                             /* if not bottom field, do not output image yet */
                             if (s->bottom_field)
-                                goto the_end;
+                                goto not_the_end;
                         }
                         for(i=0;i<3;i++) {
                             picture->data[i] = s->current_picture[i];
@@ -1313,6 +1313,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 #endif
             }
         }
+ not_the_end:
     }
  the_end:
     return buf_ptr - buf;
