@@ -703,7 +703,8 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         pic_num= get_byte(pb);
 
         //XXX/FIXME/HACK, demuxer should be fixed to send complete frames ...
-        if(st->codec.slice_offset==NULL) st->codec.slice_offset= (int*)malloc(sizeof(int));
+        if(st->codec.slice_offset==NULL) 
+            st->codec.slice_offset= (int*)av_malloc(sizeof(int));
         st->codec.slice_count= full_frame; 
         st->codec.slice_offset[0]= 0;
     }
