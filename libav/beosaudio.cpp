@@ -31,11 +31,21 @@ extern "C" {
 #include "avformat.h"
 }
 
+/* enable performance checks */
+//#define PERF_CHECK
 
 //const char *audio_device = "/dev/dsp";
 const char *audio_device = "beosaudio:";
 
+/* Pipes are 4k in BeOS IIRC */
 #define AUDIO_BLOCK_SIZE 4096
+//#define AUDIO_BLOCK_SIZE 2048
+#define AUDIO_BLOCK_COUNT 8
+
+#define AUDIO_BUFFER_SIZE (AUDIO_BLOCK_SIZE*AUDIO_BLOCK_COUNT)
+
+/* pipes suck for realtime */
+#define USE_RING_BUFFER 1
 
 typedef struct {
     int fd;
@@ -44,14 +54,24 @@ typedef struct {
     int frame_size; /* in bytes ! */
     CodecID codec_id;
     int flip_left : 1;
-    UINT8 buffer[AUDIO_BLOCK_SIZE];
+    UINT8 buffer[AUDIO_BUFFER_SIZE];
     int buffer_ptr;
     int pipefd; /* the other end of the pipe */
+    /* ring buffer */
+    sem_id input_sem;
+    int input_index;
+    sem_id output_sem;
+    int output_index;
+    int queued;
     BSoundPlayer *player;
     int has_quit; /* signal callbacks not to wait */
+    volatile bigtime_t starve_time;
 } AudioData;
 
+static thread_id main_thid;
+static thread_id bapp_thid;
 static int own_BApp_created = 0;
+static int refcount = 0;
 
 /* create the BApplication and Run() it */
 static int32 bapp_thread(void *arg)
@@ -60,34 +80,88 @@ static int32 bapp_thread(void *arg)
     own_BApp_created = 1;
     be_app->Run();
     /* kill the process group */
-    kill(0, SIGINT);
+//    kill(0, SIGINT);
+//    kill(main_thid, SIGHUP);
     return B_OK;
+}
+
+/* create the BApplication only if needed */
+static void create_bapp_if_needed(void)
+{
+    if (refcount++ == 0) {
+        /* needed by libmedia */
+        if (be_app == NULL) {
+            bapp_thid = spawn_thread(bapp_thread, "ffmpeg BApplication", B_NORMAL_PRIORITY, NULL);
+            resume_thread(bapp_thid);
+            while (!own_BApp_created)
+                snooze(50000);
+        }
+    }
+}
+
+static void destroy_bapp_if_needed(void)
+{
+    if (--refcount == 0 && own_BApp_created) {
+        be_app->Lock();
+        be_app->Quit();
+        be_app = NULL;
+    }
 }
 
 /* called back by BSoundPlayer */
 static void audioplay_callback(void *cookie, void *buffer, size_t bufferSize, const media_raw_audio_format &format)
 {
     AudioData *s;
-    size_t amount;
+    size_t len, amount;
     unsigned char *buf = (unsigned char *)buffer;
 
     s = (AudioData *)cookie;
     if (s->has_quit)
         return;
     while (bufferSize > 0) {
-        if ((amount = read(s->pipefd, buf, bufferSize)) < B_OK) {
+#ifdef PERF_CHECK
+        bigtime_t t;
+        t = system_time();
+#endif
+#ifdef USE_RING_BUFFER
+        len = MIN(AUDIO_BLOCK_SIZE, bufferSize);
+        if (acquire_sem_etc(s->output_sem, len, B_CAN_INTERRUPT, 0LL) < B_OK) {
+            s->has_quit = 1;
+            s->player->SetHasData(false);
+            return;
+        }
+        amount = MIN(len, (AUDIO_BUFFER_SIZE - s->output_index));
+        memcpy(buf, &s->buffer[s->output_index], amount);
+        s->output_index += amount;
+        if (s->output_index >= AUDIO_BUFFER_SIZE) {
+            s->output_index %= AUDIO_BUFFER_SIZE;
+            memcpy(buf + amount, &s->buffer[s->output_index], len - amount);
+            s->output_index += len-amount;
+            s->output_index %= AUDIO_BUFFER_SIZE;
+        }
+        release_sem_etc(s->input_sem, len, 0);
+#else
+        len = read(s->pipefd, buf, bufferSize);
+#endif
+#ifdef PERF_CHECK
+        t = system_time() - t;
+        s->starve_time = MAX(s->starve_time, t);
+#endif
+#ifndef USE_RING_BUFFER
+        if (len < B_OK) {
             puts("EPIPE");
-            snooze(100000);
             s->player->SetHasData(false);
+            snooze(100000);
             return;
         }
-        if (amount == 0) {
-            snooze(100000);
+        if (len == 0) {
             s->player->SetHasData(false);
+            snooze(100000);
             return;
         }
-        buf += amount;
-        bufferSize -= amount;
+#endif
+        buf += len;
+        bufferSize -= len;
     }
 }
 
@@ -99,6 +173,20 @@ static int audio_open(AudioData *s, int is_output)
 
     if (!is_output)
         return -EIO; /* not for now */
+#ifdef USE_RING_BUFFER
+    s->input_sem = create_sem(AUDIO_BUFFER_SIZE, "ffmpeg_ringbuffer_input");
+//    s->input_sem = create_sem(AUDIO_BLOCK_SIZE, "ffmpeg_ringbuffer_input");
+    if (s->input_sem < B_OK)
+        return -EIO;
+    s->output_sem = create_sem(0, "ffmpeg_ringbuffer_output");
+    if (s->output_sem < B_OK) {
+        delete_sem(s->input_sem);
+        return -EIO;
+    }
+    s->input_index = 0;
+    s->output_index = 0;
+    s->queued = 0;
+#else
     ret = pipe(p);
     if (ret < 0)
         return -EIO;
@@ -108,6 +196,8 @@ static int audio_open(AudioData *s, int is_output)
         perror(is_output?"audio out":"audio in");
         return -EIO;
     }
+#endif
+    create_bapp_if_needed();
     /* non blocking mode */
 //    fcntl(s->fd, F_SETFL, O_NONBLOCK);
 //    fcntl(s->pipefd, F_SETFL, O_NONBLOCK);
@@ -122,27 +212,46 @@ static int audio_open(AudioData *s, int is_output)
     if (s->player->InitCheck() != B_OK) {
         delete s->player;
         s->player = NULL;
+#ifdef USE_RING_BUFFER
+    if (s->input_sem)
+        delete_sem(s->input_sem);
+    if (s->output_sem)
+        delete_sem(s->output_sem);
+#else
         close(s->fd);
         close(s->pipefd);
+#endif
         return -EIO;
     }
     s->player->SetCookie(s);
     s->player->SetVolume(1.0);
     s->player->Start();
     s->player->SetHasData(true);
+    /* bump up the priority (avoid realtime though) */
+//    set_thread_priority(find_thread(NULL), B_URGENT_DISPLAY_PRIORITY+1);
+//    set_thread_priority(find_thread(NULL), B_LOW_PRIORITY);
     return 0;
 }
 
 static int audio_close(AudioData *s)
 {
+#ifdef USE_RING_BUFFER
+    if (s->input_sem)
+        delete_sem(s->input_sem);
+    if (s->output_sem)
+        delete_sem(s->output_sem);
+#endif
     s->has_quit = 1;
     if (s->player) {
         s->player->Stop();
     }
     if (s->player)
         delete s->player;
+#ifndef USE_RING_BUFFER
     close(s->pipefd);
     close(s->fd);
+#endif
+    destroy_bapp_if_needed();
     return 0;
 }
 
@@ -167,7 +276,30 @@ static int audio_write_packet(AVFormatContext *s1, int stream_index,
 {
     AudioData *s = (AudioData *)s1->priv_data;
     int len, ret;
-
+#ifdef PERF_CHECK
+    bigtime_t t = s->starve_time;
+    s->starve_time = 0;
+    printf("starve_time: %lld    \n", t);
+#endif
+#ifdef USE_RING_BUFFER
+    while (size > 0) {
+        int amount;
+        len = MIN(size, AUDIO_BLOCK_SIZE);
+        if (acquire_sem_etc(s->input_sem, len, B_CAN_INTERRUPT, 0LL) < B_OK)
+            return -EIO;
+        amount = MIN(len, (AUDIO_BUFFER_SIZE - s->input_index));
+        memcpy(&s->buffer[s->input_index], buf, amount);
+        s->input_index += amount;
+        if (s->input_index >= AUDIO_BUFFER_SIZE) {
+            s->input_index %= AUDIO_BUFFER_SIZE;
+            memcpy(&s->buffer[s->input_index], buf + amount, len - amount);
+            s->input_index += len - amount;
+        }
+        release_sem_etc(s->output_sem, len, 0);
+        buf += len;
+        size -= len;
+    }
+#else
     while (size > 0) {
         len = AUDIO_BLOCK_SIZE - s->buffer_ptr;
         if (len > size)
@@ -176,7 +308,7 @@ static int audio_write_packet(AVFormatContext *s1, int stream_index,
         s->buffer_ptr += len;
         if (s->buffer_ptr >= AUDIO_BLOCK_SIZE) {
             for(;;) {
-snooze(1000);
+//snooze(1000);
                 ret = write(s->fd, s->buffer, AUDIO_BLOCK_SIZE);
                 if (ret != 0)
                     break;
@@ -188,6 +320,7 @@ snooze(1000);
         buf += len;
         size -= len;
     }
+#endif
     return 0;
 }
 
@@ -307,12 +440,7 @@ extern "C" {
 
 int audio_init(void)
 {
-    /* needed by libmedia */
-    if (be_app == NULL) {
-        resume_thread(spawn_thread(bapp_thread, "ffmpeg BApplication", B_NORMAL_PRIORITY, NULL));
-        while (!own_BApp_created)
-            snooze(50000);
-    }
+    main_thid = find_thread(NULL);
     av_register_input_format(&audio_in_format);
     av_register_output_format(&audio_out_format);
     return 0;
