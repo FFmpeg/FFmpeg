@@ -1228,6 +1228,10 @@ return -1;
 }
 #endif
     s->qscale = get_bits(&s->gb, 5);
+    if(s->qscale==0){
+        fprintf(stderr, "invalid qscale\n");
+        return -1;
+    }
 
     if (s->pict_type == I_TYPE) {
         code = get_bits(&s->gb, 5); 
