@@ -908,9 +908,18 @@ static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2], int bits
     printf("%5d %2d %3d vlc @%5d in %s %s:%d\n", bits2, len, r, pos, file, func, line);
     return r;
 }
+static inline int get_xbits_trace(GetBitContext *s, int n, char *file, char *func, int line){
+    int show= show_bits(s, n);
+    int r= get_xbits(s, n);
+    
+    print_bin(show, n);
+    printf("%5d %2d %3d xbt @%5d in %s %s:%d\n", show, n, r, get_bits_count(s)-n, file, func, line);
+    return r;
+}
 
 #define get_bits(s, n)  get_bits_trace(s, n, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_bits1(s)    get_bits_trace(s, 1, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define get_xbits(s, n) get_xbits_trace(s, n, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_vlc(s, vlc)            get_vlc_trace(s, (vlc)->table, (vlc)->bits, 3, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_vlc2(s, tab, bits, max) get_vlc_trace(s, tab, bits, max, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 

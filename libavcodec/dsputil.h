@@ -234,6 +234,7 @@ typedef struct DSPContext {
     /* huffyuv specific */
     void (*add_bytes)(uint8_t *dst/*align 16*/, uint8_t *src/*align 16*/, int w);
     void (*diff_bytes)(uint8_t *dst/*align 16*/, uint8_t *src1/*align 16*/, uint8_t *src2/*align 1*/,int w);
+    void (*bswap_buf)(uint32_t *dst, uint32_t *src, int w);
     
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);

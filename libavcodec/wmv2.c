@@ -55,8 +55,8 @@ typedef struct Wmv2Context{
 static void wmv2_common_init(Wmv2Context * w){
     MpegEncContext * const s= &w->s;
         
-    ff_init_scantable(s, &w->abt_scantable[0], wmv2_scantableA);
-    ff_init_scantable(s, &w->abt_scantable[1], wmv2_scantableB);
+    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[0], wmv2_scantableA);
+    ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[1], wmv2_scantableB);
 }
 
 static int encode_ext_header(Wmv2Context *w){

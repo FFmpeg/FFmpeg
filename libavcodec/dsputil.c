@@ -187,6 +187,23 @@ static int pix_norm1_c(uint8_t * pix, int line_size)
     return s;
 }
 
+static void bswap_buf(uint32_t *dst, uint32_t *src, int w){
+    int i;
+    
+    for(i=0; i+8<=w; i+=8){
+        dst[i+0]= bswap_32(src[i+0]);
+        dst[i+1]= bswap_32(src[i+1]);
+        dst[i+2]= bswap_32(src[i+2]);
+        dst[i+3]= bswap_32(src[i+3]);
+        dst[i+4]= bswap_32(src[i+4]);
+        dst[i+5]= bswap_32(src[i+5]);
+        dst[i+6]= bswap_32(src[i+6]);
+        dst[i+7]= bswap_32(src[i+7]);
+    }
+    for(;i<w; i++){
+        dst[i+0]= bswap_32(src[i+0]);
+    }
+}
 
 static int sse8_c(void *v, uint8_t * pix1, uint8_t * pix2, int line_size)
 {
@@ -2879,6 +2896,7 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         
     c->add_bytes= add_bytes_c;
     c->diff_bytes= diff_bytes_c;
+    c->bswap_buf= bswap_buf;
 
 #ifdef HAVE_MMX
     dsputil_init_mmx(c, avctx);

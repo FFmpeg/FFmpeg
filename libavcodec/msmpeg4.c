@@ -180,10 +180,10 @@ static void common_init(MpegEncContext * s)
 
     
     if(s->msmpeg4_version>=4){
-        ff_init_scantable(s, &s->intra_scantable  , wmv1_scantable[1]);
-        ff_init_scantable(s, &s->intra_h_scantable, wmv1_scantable[2]);
-        ff_init_scantable(s, &s->intra_v_scantable, wmv1_scantable[3]);
-        ff_init_scantable(s, &s->inter_scantable  , wmv1_scantable[0]);
+        ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable  , wmv1_scantable[1]);
+        ff_init_scantable(s->dsp.idct_permutation, &s->intra_h_scantable, wmv1_scantable[2]);
+        ff_init_scantable(s->dsp.idct_permutation, &s->intra_v_scantable, wmv1_scantable[3]);
+        ff_init_scantable(s->dsp.idct_permutation, &s->inter_scantable  , wmv1_scantable[0]);
     }
     //Note the default tables are set in common_init in mpegvideo.c
     

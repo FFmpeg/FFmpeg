@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4667
-#define LIBAVCODEC_BUILD_STR   "4667"
+#define LIBAVCODEC_BUILD       4668
+#define LIBAVCODEC_BUILD_STR   "4668"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -55,6 +55,7 @@ enum CodecID {
     CODEC_ID_VP3,
     CODEC_ID_AAC,
     CODEC_ID_MPEG4AAC,
+    CODEC_ID_ASV1,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1108,6 +1109,15 @@ typedef struct AVCodecContext {
      * Dont touch, used by lavc default_get_buffer()
      */
     void *internal_buffer;
+    
+#define FF_QUALITY_SCALE 256
+    /**
+     * global quality for codecs which cannot change it per frame.
+     * this should be proportional to MPEG1/2/4 qscale.
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int global_quality;
 } AVCodecContext;
 
 
@@ -1199,6 +1209,7 @@ extern AVCodec wmv1_encoder;
 extern AVCodec wmv2_encoder;
 extern AVCodec huffyuv_encoder;
 extern AVCodec h264_encoder;
+extern AVCodec asv1_encoder;
 
 extern AVCodec h263_decoder;
 extern AVCodec mpeg4_decoder;
@@ -1231,6 +1242,7 @@ extern AVCodec vp3_decoder;
 extern AVCodec amr_nb_decoder;
 extern AVCodec aac_decoder;
 extern AVCodec mpeg4aac_decoder;
+extern AVCodec asv1_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

@@ -136,7 +136,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
 }
 #endif //CONFIG_ENCODERS
 
-void ff_init_scantable(MpegEncContext *s, ScanTable *st, const uint8_t *src_scantable){
+void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_scantable){
     int i;
     int end;
     
@@ -145,7 +145,7 @@ void ff_init_scantable(MpegEncContext *s, ScanTable *st, const uint8_t *src_scan
     for(i=0; i<64; i++){
         int j;
         j = src_scantable[i];
-        st->permutated[i] = s->dsp.idct_permutation[j];
+        st->permutated[i] = permutation[j];
 #ifdef ARCH_POWERPC
         st->inverse[j] = i;
 #endif
@@ -202,10 +202,10 @@ int DCT_common_init(MpegEncContext *s)
     /* load & permutate scantables
        note: only wmv uses differnt ones 
     */
-    ff_init_scantable(s, &s->inter_scantable  , ff_zigzag_direct);
-    ff_init_scantable(s, &s->intra_scantable  , ff_zigzag_direct);
-    ff_init_scantable(s, &s->intra_h_scantable, ff_alternate_horizontal_scan);
-    ff_init_scantable(s, &s->intra_v_scantable, ff_alternate_vertical_scan);
+    ff_init_scantable(s->dsp.idct_permutation, &s->inter_scantable  , ff_zigzag_direct);
+    ff_init_scantable(s->dsp.idct_permutation, &s->intra_scantable  , ff_zigzag_direct);
+    ff_init_scantable(s->dsp.idct_permutation, &s->intra_h_scantable, ff_alternate_horizontal_scan);
+    ff_init_scantable(s->dsp.idct_permutation, &s->intra_v_scantable, ff_alternate_vertical_scan);
 
     s->picture_structure= PICT_FRAME;
     
