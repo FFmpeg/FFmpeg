@@ -699,7 +699,7 @@ void print_report(AVFormatContext **output_files,
         }
         /* compute min output value */
         pts = (double)ost->st->pts.val * os->pts_num / os->pts_den;
-        if (pts < ti1)
+        if ((pts < ti1) && (pts > 0))
             ti1 = pts;
     }
     if (ti1 < 0.01)
