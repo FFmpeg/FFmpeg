@@ -22,7 +22,7 @@ CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 # .PHONY: all clean
 
 .c.o:
-	$(CC) -c $(CFLAGS) -o $@ $<
+	$(CC) -c $(CFLAGS) -I.. -o $@ $<
 
 all:    $(SWSLIB) $(PPLIB) $(SPPLIB)
 
@@ -45,7 +45,7 @@ cs_test: $(CS_TEST_OBJS)
 
 ifeq ($(SHARED_PP),yes)
 postprocess_pic.o: postprocess.c
-	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -o $@ $<
+	$(CC) -c $(CFLAGS) -fomit-frame-pointer -fPIC -DPIC -I.. -o $@ $<
 
 $(SPPLIB): $(SPPOBJS)
 	$(CC) -shared -Wl,-soname,$(SPPLIB).0 \

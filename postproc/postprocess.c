@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001-2002 Michael Niedermayer (michaelni@gmx.at)
+    Copyright (C) 2001-2003 Michael Niedermayer (michaelni@gmx.at)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -62,7 +62,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 
 //Changelog: use the CVS log
 
-#include "../config.h"
+#include "config.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -80,7 +80,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #endif
 #include "postprocess.h"
 #include "postprocess_internal.h"
-#include "../mangle.h"
+#include "mangle.h"
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 #define MAX(a,b) ((a) < (b) ? (b) : (a))
