@@ -619,6 +619,11 @@ void mpeg4_encode_mb(MpegEncContext * s,
                 cbpy ^= 0xf;
                 put_bits(pb2, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
 
+                if(!s->progressive_sequence){
+                    if(cbp)
+                        put_bits(pb2, 1, s->interlaced_dct);
+                }
+    
                 if(interleaved_stats){
                     bits= get_bit_count(&s->pb);
                     s->misc_bits+= bits - s->last_bits;
