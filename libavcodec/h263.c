@@ -2584,6 +2584,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 {
     int time_incr, startcode, state, v;
     int time_increment;
+    int vol_control=-1;
 
  redo:
     /* search next start code */
@@ -2627,7 +2628,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             skip_bits(&s->gb, 8); // par_height
         }
 
-        if(get_bits1(&s->gb)){ /* vol control parameter */
+        if(vol_control=get_bits1(&s->gb)){ /* vol control parameter */
             int chroma_format= get_bits(&s->gb, 2);
             if(chroma_format!=1){
                 printf("illegal chroma format\n");
@@ -2943,8 +2944,17 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
              }
          }
      }
+     /* detect buggy encoders which dont set the low_delay flag (divx4/xvid/opendivx)*/
+     // note we cannot detect divx5 without b-frames easyly (allthough its buggy too)
+     if(s->vo_type==0 && vol_control==0 && s->divx_version==0){
+         if(s->picture_number==0)
+             printf("looks like this file was encoded with (divx4/(old)xvid/opendivx) -> forcing low_delay flag\n");
+         s->low_delay=1;
+     }
+
      s->picture_number++; // better than pic number==0 allways ;)
 //printf("done\n");
+
      return 0;
 }
 
