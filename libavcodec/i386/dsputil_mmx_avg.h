@@ -22,7 +22,8 @@
  */
  
 /* XXX: we use explicit registers to avoid a gcc 2.95.2 register asm
-   clobber bug */
+   clobber bug - now it will work with 2.95.2 and also with -fPIC
+ */
 static void DEF(put_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
@@ -50,8 +51,8 @@ static void DEF(put_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size,
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-        :"b"(pixels), "c"(pixels+line_size), "d" (block), "S" (block+line_size),
-        "D"(line_size<<1)
+        :"D"(pixels), "S"(pixels+line_size), "r" (block), "r" (block+line_size),
+        "g"(line_size<<1)
 	:"%eax", "memory");
 }
  
@@ -88,13 +89,43 @@ static void DEF(put_no_rnd_pixels_x2)(UINT8 *block, const UINT8 *pixels, int lin
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-        :"b"(pixels), "c"(pixels+line_size), "d" (block), "S" (block+line_size),
-        "D"(line_size<<1)
+        :"D"(pixels), "S"(pixels+line_size), "r" (block), "r" (block+line_size),
+        "r"(line_size<<1)
 	:"%eax", "memory");
 }
 
 static void DEF(put_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
+#if 1
+    // Michael - measure me
+    __asm __volatile(
+        "lea (%3, %3), %%eax            \n\t"
+        "movq (%1), %%mm0		\n\t"
+        "subl %3, %2			\n\t"
+        ".balign 16			\n\t"
+        "1:				\n\t"
+	"movq (%1, %3), %%mm1		\n\t"
+	"movq (%1, %3, 2), %%mm2	\n\t"
+	PAVGB" %%mm1, %%mm0		\n\t"
+	PAVGB" %%mm2, %%mm1		\n\t"
+        "addl %%eax, %1			\n\t"
+	"movq %%mm0, (%2, %3)		\n\t"
+	"movq %%mm1, (%2, %3, 2)	\n\t"
+	"movq (%1, %3), %%mm1		\n\t"
+	"movq (%1, %3, 2), %%mm0	\n\t"
+	PAVGB" %%mm1, %%mm2		\n\t"
+	PAVGB" %%mm0, %%mm1		\n\t"
+        "addl %%eax, %2			\n\t"
+        "addl %%eax, %1			\n\t"
+	"movq %%mm2, (%2, %3)		\n\t"
+	"movq %%mm1, (%2, %3, 2)	\n\t"
+        "addl %%eax, %2			\n\t"
+        "subl $4, %0			\n\t"
+        "jnz 1b				\n\t"
+	:"+g"(h)
+	:"D"(pixels), "S" (block), "c"(line_size)
+	:"%eax", "memory");
+#else
     __asm __volatile(
         "xorl %%eax, %%eax		\n\t"
 	"movq (%1), %%mm0		\n\t"
@@ -117,9 +148,10 @@ static void DEF(put_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-	:"b"(pixels), "c"(pixels+line_size), "d"(pixels+line_size*2), "S" (block), 
-         "D" (block+line_size), "g"(line_size<<1)
+	:"D"(pixels), "S"(pixels+line_size), "r"(pixels+line_size*2), "r" (block),
+         "r" (block+line_size), "g"(line_size<<1)
 	:"%eax",  "memory");
+#endif
 }
 
 /* GL: this function does incorrect rounding if overflow */
@@ -150,8 +182,8 @@ static void DEF(put_no_rnd_pixels_y2)(UINT8 *block, const UINT8 *pixels, int lin
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-	:"b"(pixels), "c"(pixels+line_size), "d"(pixels+line_size*2), "S" (block), 
-         "D" (block+line_size), "g"(line_size<<1)
+	:"D"(pixels), "S"(pixels+line_size), "r"(pixels+line_size*2), "r" (block),
+         "r" (block+line_size), "g"(line_size<<1)
 	:"%eax",  "memory");
 }
 
@@ -182,8 +214,8 @@ static void DEF(avg_pixels)(UINT8 *block, const UINT8 *pixels, int line_size, in
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-        :"b"(pixels), "c"(pixels+line_size), "d" (block), "S" (block+line_size),
-         "D"(line_size<<1)
+        :"D"(pixels), "S"(pixels+line_size), "r" (block), "r" (block+line_size),
+         "g"(line_size<<1)
 	:"%eax", "memory");
 }
 
@@ -222,8 +254,8 @@ static void DEF(avg_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size,
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-        :"b"(pixels), "c"(pixels+line_size), "d" (block), "S" (block+line_size),
-         "D"(line_size<<1)
+        :"D"(pixels), "S"(pixels+line_size), "r" (block), "r" (block+line_size),
+         "g"(line_size<<1)
 	:"%eax", "memory");
 }
 
@@ -259,8 +291,8 @@ static void DEF(avg_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-	:"b"(pixels), "c"(pixels+line_size), "d"(pixels+line_size*2), "S" (block), 
-         "D" (block+line_size), "g"(line_size<<1)
+	:"D"(pixels), "S"(pixels+line_size), "r"(pixels+line_size*2), "r" (block),
+         "r" (block+line_size), "g"(line_size<<1)
 	:"%eax",  "memory");
 }
 
@@ -309,7 +341,7 @@ static void DEF(avg_pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size
         "subl $4, %0			\n\t"
         " jnz 1b			\n\t"
 	:"+g"(h)
-	:"b"(pixels), "c"(pixels+line_size), "d"(pixels+line_size*2), "S" (block), 
-         "D" (block+line_size), "g"(line_size<<1)
+	:"D"(pixels), "S"(pixels+line_size), "r"(pixels+line_size*2), "r" (block),
+         "r" (block+line_size), "g"(line_size<<1)
 	:"%eax",  "memory");
 }
