@@ -40,7 +40,6 @@ case "$cpu" in
   ;;
 esac
 gprof="no"
-mp3lib="yes"
 grab="yes"
 win32="no"
 
@@ -57,7 +56,6 @@ echo "  --cc=CC                 use C compiler CC [$cc]"
 echo "  --cpu=CPU               force cpu to CPU  [$cpu]"
 echo "  --disable-mmx           disable mmx usage"
 echo "  --enable-gprof          enable profiling with gprof [$gprof]"
-echo "  --disable-mp3lib        disable mp3 lib compiling"
 echo "  --disable-grab          disable audio/video grabbing code"
 echo "  --enable-win32          enable win32 cross compile"
 exit 1
@@ -74,8 +72,6 @@ for opt do
   --disable-mmx) mmx="no"
   ;;
   --enable-gprof) gprof="yes"
-  ;;
-  --disable-mp3lib) mp3lib="no"
   ;;
   --disable-grab) grab="no"
   ;;
@@ -163,15 +159,10 @@ echo "CONFIG_ENCODERS=yes" >> config.mak
 echo "#define CONFIG_DECODERS 1" >> config.h
 echo "CONFIG_DECODERS=yes" >> config.mak
 
-# special AC3 and MPGLIB enabling stuff in case you already have it
+# special AC3 stuff in case you already have it
 # without libavcodec.
 echo "#define CONFIG_AC3 1" >> config.h
 echo "CONFIG_AC3=yes" >> config.mak
-
-if [ "$mp3lib" = "yes" ] ; then
-  echo "#define CONFIG_MPGLIB 1" >> config.h
-  echo "CONFIG_MPGLIB=yes" >> config.mak
-fi
 
 if [ "$grab" = "yes" ] ; then
   echo "#define CONFIG_GRAB 1" >> config.h
