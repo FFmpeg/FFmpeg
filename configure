@@ -100,6 +100,12 @@ else
 netserver="yes"
 extralibs="-lnet"
 fi ;;
+FreeBSD)
+v4l="no"
+audio_oss="yes"
+make="gmake"
+LDFLAGS="-export-dynamic"
+;;
 BSD/OS)
 v4l="no"
 audio_oss="yes"
@@ -148,8 +154,15 @@ cat > $TMPC << EOF
 int main( void ) { return (int) dlopen("foo", 0); }
 EOF
 
+ldl=-ldl
+
 if $cc -o $TMPO $TMPC -ldl 2> /dev/null  ; then
 vhook=yes
+fi
+
+if $cc -o $TMPO $TMPC 2> /dev/null  ; then
+vhook=yes
+ldl=""
 fi
 
 cat > $TMPC << EOF
@@ -201,7 +214,7 @@ for opt do
   ;;
   --disable-a52) a52="no"
   ;;
-  --enable-a52bin) a52bin="yes" ; extralibs="-ldl $extralibs"
+  --enable-a52bin) a52bin="yes" ; extralibs="$ldl $extralibs"
   ;;
   --enable-mp3lame) mp3lame="yes"
   ;;
@@ -475,7 +488,6 @@ echo "STRIP=$strip" >> config.mak
 echo "OPTFLAGS=$CFLAGS" >> config.mak
 echo "LDFLAGS=$LDFLAGS" >> config.mak
 echo "SHFLAGS=$SHFLAGS" >> config.mak
-echo "LDFLAGS=$LDFLAGS" >> config.mak
 if test "$cpu" = "x86" ; then
   echo "TARGET_ARCH_X86=yes" >> config.mak
   echo "#define ARCH_X86 1" >> $TMPH
@@ -529,7 +541,7 @@ fi
 if test "$vhook" = "yes" ; then
   echo "BUILD_VHOOK=yes" >> config.mak
   echo "#define HAVE_VHOOK 1" >> $TMPH
-  extralibs="$extralibs -ldl"
+  extralibs="$extralibs $ldl"
 fi
 if test "$lshared" = "yes" ; then
   echo "BUILD_SHARED=yes" >> config.mak

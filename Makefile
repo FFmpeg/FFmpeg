@@ -69,7 +69,7 @@ ffmpeg$(EXE): ffmpeg_g$(EXE)
 ffserver$(EXE): ffserver.o $(DEP_LIBS)
 	$(CC) $(LDFLAGS) $(FFSLDFLAGS) \
 		-o $@ ffserver.o -L./libavcodec -L./libavformat \
-              -lavformat -lavcodec -ldl $(EXTRALIBS) 
+              -lavformat -lavcodec $(EXTRALIBS) 
 
 ffplay: ffmpeg$(EXE)
 	ln -sf $< $@
@@ -120,7 +120,7 @@ TAGS:
 # regression tests
 
 libavtest test mpeg4 mpeg: ffmpeg$(EXE)
-	make -C tests $@
+	$(MAKE) -C tests $@
 
 ifneq ($(wildcard .depend),)
 include .depend

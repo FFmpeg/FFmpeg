@@ -20,7 +20,6 @@
 #include "avformat.h"
 
 #include <stdarg.h>
-#include <netinet/in.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -31,6 +30,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ctype.h>
