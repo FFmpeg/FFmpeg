@@ -859,8 +859,8 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     MpegEncContext s2;
 
     s->avctx = avctx;
-    avctx->width = -((-avctx->width )) >> avctx->lowres;
-    avctx->height= -((-avctx->height)) >> avctx->lowres;
+    avctx->width = -((-avctx->width ) >> avctx->lowres);
+    avctx->height= -((-avctx->height) >> avctx->lowres);
 
     /* ugly way to get the idct & scantable FIXME */
     memset(&s2, 0, sizeof(MpegEncContext));
@@ -2070,8 +2070,10 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
 #else
     /* SOF */
     s->bits = 8;
-    s->width  = avctx->width << avctx->lowres;
-    s->height = avctx->height<< avctx->lowres;
+    s->width  = avctx->width;
+    s->height = avctx->height;
+    avctx->width  = -((-avctx->width )>>avctx->lowres);
+    avctx->height = -((-avctx->height)>>avctx->lowres);
     s->nb_components = 3;
     s->component_id[0] = 0;
     s->h_count[0] = 2;
