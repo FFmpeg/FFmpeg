@@ -266,7 +266,6 @@ typedef struct MpegEncContext {
 
 /* the following codec id fields are deprecated in favor of codec_id */
     int h263_plus;    ///< h263 plus headers 
-    int h263_rv10;    ///< use RV10 variation for H263 
     int h263_msmpeg4; ///< generate MSMPEG4 compatible stream (deprecated, use msmpeg4_version instead)
     int h263_intel;   ///< use I263 intel h263 header 
     int h263_flv;     ///< use flv h263 header 

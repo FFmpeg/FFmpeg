@@ -402,17 +402,14 @@ static int rv10_decode_init(AVCodecContext *avctx)
     case 0x10000000:
         s->rv10_version= 0;
         s->h263_long_vectors=0;
-        s->h263_rv10 = 1;
         break;
     case 0x10003000:
         s->rv10_version= 3;
         s->h263_long_vectors=1;
-        s->h263_rv10 = 1;
         break;
     case 0x10003001:
         s->rv10_version= 3;
         s->h263_long_vectors=0;
-        s->h263_rv10 = 1;
         break;
     case 0x20001000:
     case 0x20100001: //ok

@@ -796,7 +796,6 @@ int MPV_encode_init(AVCodecContext *avctx)
         break;
     case CODEC_ID_RV10:
         s->out_format = FMT_H263;
-        s->h263_rv10 = 1;
         avctx->delay=0;
         s->low_delay=1;
         break;
@@ -3782,7 +3781,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             msmpeg4_encode_picture_header(s, picture_number);
         else if (s->h263_pred)
             mpeg4_encode_picture_header(s, picture_number);
-        else if (s->h263_rv10) 
+        else if (s->codec_id == CODEC_ID_RV10) 
             rv10_encode_picture_header(s, picture_number);
         else if (s->codec_id == CODEC_ID_FLV1)
             ff_flv_encode_picture_header(s, picture_number);

@@ -3938,7 +3938,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
         }
     } else if (s->mb_intra) {
         /* DC coef */
-        if(s->h263_rv10){
+        if(s->codec_id == CODEC_ID_RV10){
           if (s->rv10_version == 3 && s->pict_type == I_TYPE) {
             int component, diff;
             component = (n <= 3 ? 0 : n - 4 + 1);
@@ -3999,7 +3999,7 @@ retry:
                 run = get_bits(&s->gb, 6);
                 level = (int8_t)get_bits(&s->gb, 8);
                 if(level == -128){
-                    if (s->h263_rv10) {
+                    if (s->codec_id == CODEC_ID_RV10) {
                         /* XXX: should patch encoder too */
                         level = get_sbits(&s->gb, 12);
                     }else{
