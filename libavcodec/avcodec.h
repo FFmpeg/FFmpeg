@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4669
-#define LIBAVCODEC_BUILD_STR   "4669"
+#define LIBAVCODEC_BUILD       4670
+#define LIBAVCODEC_BUILD_STR   "4670"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
@@ -473,7 +473,7 @@ typedef struct AVCodecContext {
      * - decoding: set by user.
      */
     void (*draw_horiz_band)(struct AVCodecContext *s,
-                            uint8_t **src_ptr, int linesize,
+                            AVFrame *src, int offset[4],
                             int y, int width, int height);
 
     /* audio only */
@@ -1209,6 +1209,7 @@ typedef struct AVCodec {
     int capabilities;
     const AVOption *options;
     struct AVCodec *next;
+    void (*flush)(AVCodecContext *);
 } AVCodec;
 
 /**
@@ -1400,7 +1401,12 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_free_buffers(AVCodecContext *s);
 
+/**
+ * opens / inits the AVCodecContext.
+ * not thread save!
+ */
 int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
+
 int avcodec_decode_audio(AVCodecContext *avctx, int16_t *samples, 
                          int *frame_size_ptr,
                          uint8_t *buf, int buf_size);

@@ -838,4 +838,5 @@ AVCodec svq1_decoder = {
     svq1_decode_end,
     svq1_decode_frame,
     CODEC_CAP_DR1,
+    .flush= ff_mpeg_flush,
 };

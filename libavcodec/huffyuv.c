@@ -673,7 +673,7 @@ static void decode_bgr_bitstream(HYuvContext *s, int count){
 
 static void draw_slice(HYuvContext *s, int y){
     int h, cy;
-    uint8_t *src_ptr[3];
+    int offset[4];
     
     if(s->avctx->draw_horiz_band==NULL) 
         return;
@@ -686,13 +686,14 @@ static void draw_slice(HYuvContext *s, int y){
     }else{
         cy= y;
     }
-    
-    src_ptr[0] = s->picture.data[0] + s->picture.linesize[0]*y;
-    src_ptr[1] = s->picture.data[1] + s->picture.linesize[1]*cy;
-    src_ptr[2] = s->picture.data[2] + s->picture.linesize[2]*cy;
+
+    offset[0] = s->picture.linesize[0]*y;
+    offset[1] = s->picture.linesize[1]*cy;
+    offset[2] = s->picture.linesize[2]*cy;
+    offset[3] = 0;
     emms_c();
 
-    s->avctx->draw_horiz_band(s->avctx, src_ptr, s->picture.linesize[0], y, s->width, h);
+    s->avctx->draw_horiz_band(s->avctx, &s->picture, offset, y, s->width, h);
     
     s->last_slice_end= y + h;
 }

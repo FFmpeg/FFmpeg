@@ -590,39 +590,13 @@ void avcodec_init(void)
     dsputil_static_init();
 }
 
-/* this can be called after seeking and before trying to decode the next keyframe */
+/**
+ * Flush buffers, should be called when seeking or when swicthing to a different stream.
+ */
 void avcodec_flush_buffers(AVCodecContext *avctx)
 {
-    int i;
-    MpegEncContext *s = avctx->priv_data;
-    
-    switch(avctx->codec_id){
-    case CODEC_ID_MPEG1VIDEO:
-    case CODEC_ID_H263:
-    case CODEC_ID_RV10:
-//    case CODEC_ID_MJPEG:
-//    case CODEC_ID_MJPEGB:
-    case CODEC_ID_MPEG4:
-    case CODEC_ID_MSMPEG4V1:
-    case CODEC_ID_MSMPEG4V2:
-    case CODEC_ID_MSMPEG4V3:
-    case CODEC_ID_WMV1:
-    case CODEC_ID_WMV2:
-    case CODEC_ID_H263P:
-    case CODEC_ID_H263I:
-    case CODEC_ID_FLV1:
-    case CODEC_ID_SVQ1:
-        for(i=0; i<MAX_PICTURE_COUNT; i++){
-           if(s->picture[i].data[0] && (   s->picture[i].type == FF_BUFFER_TYPE_INTERNAL
-                                        || s->picture[i].type == FF_BUFFER_TYPE_USER))
-            avctx->release_buffer(avctx, (AVFrame*)&s->picture[i]);
-	}
-	s->last_picture_ptr = s->next_picture_ptr = NULL;
-        break;
-    default:
-        //FIXME
-        break;
-    }
+    if(avctx->codec->flush)
+        avctx->codec->flush(avctx);
 }
 
 void avcodec_default_free_buffers(AVCodecContext *s){

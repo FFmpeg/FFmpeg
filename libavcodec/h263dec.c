@@ -723,6 +723,7 @@ AVCodec mpeg4_decoder = {
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
     .options = mpeg4_decoptions,
+    .flush= ff_mpeg_flush,
 };
 
 AVCodec h263_decoder = {
@@ -735,6 +736,7 @@ AVCodec h263_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
+    .flush= ff_mpeg_flush,
 };
 
 AVCodec msmpeg4v1_decoder = {
