@@ -46,7 +46,7 @@
 
 typedef struct {
   int stream;
-  off_t sample_offset;
+  offset_t sample_offset;
   unsigned int sample_size;
   int64_t pts;
   int keyframe;
