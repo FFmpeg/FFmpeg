@@ -376,7 +376,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         }
     }
         
-    if(s->avctx->sub_id == 0x20200002 || s->avctx->sub_id == 0x30202002 || s->avctx->sub_id == 0x30203002){
+    if(s->avctx->has_b_frames){
         if (get_bits(&s->gb, 1)){
             av_log(s->avctx, AV_LOG_ERROR, "unknown bit3 set\n");
             return -1;
@@ -460,9 +460,16 @@ static int rv10_decode_init(AVCodecContext *avctx)
         s->low_delay=1;
         break;
     case 0x20001000:
-    case 0x20100001: //ok
+    case 0x20100001:
+    case 0x20101001:
+        s->low_delay=1;
+        break;
     case 0x20200002:
-    case 0x20101001: //ok
+    case 0x30202002:
+    case 0x30203002:
+        s->low_delay=0;
+        s->avctx->has_b_frames=1;
+        break;
     default:
         av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", avctx->sub_id);
     }
@@ -508,7 +515,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
 
     init_get_bits(&s->gb, buf, buf_size*8);
 #if 0
-    for(i=0; i<buf_size*8 && i<100; i++)
+    for(i=0; i<buf_size*8 && i<200; i++)
         printf("%d", get_bits1(&s->gb));
     printf("\n");
     return 0;
