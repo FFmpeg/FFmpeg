@@ -442,13 +442,13 @@ retry:
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
         if(s->avctx->fourcc == ff_get_fourcc("XVIX")) 
             s->workaround_bugs|= FF_BUG_XVID_ILACE;
-
+#if 0
         if(s->avctx->fourcc == ff_get_fourcc("MP4S")) 
             s->workaround_bugs|= FF_BUG_AC_VLC;
         
         if(s->avctx->fourcc == ff_get_fourcc("M4S2")) 
             s->workaround_bugs|= FF_BUG_AC_VLC;
-                
+#endif
         if(s->avctx->fourcc == ff_get_fourcc("UMP4")){
             s->workaround_bugs|= FF_BUG_UMP4;
             s->workaround_bugs|= FF_BUG_AC_VLC;
