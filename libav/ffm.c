@@ -166,6 +166,7 @@ static int ffm_write_header(AVFormatContext *s)
             put_byte(pb, codec->max_qdiff);
             put_be16(pb, (int) (codec->qcompress * 10000.0));
             put_be16(pb, (int) (codec->qblur * 10000.0));
+            put_be32(pb, codec->bit_rate_tolerance);
             break;
         case CODEC_TYPE_AUDIO:
             put_be32(pb, codec->sample_rate);
@@ -390,6 +391,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->max_qdiff = get_byte(pb);
             codec->qcompress = get_be16(pb) / 10000.0;
             codec->qblur = get_be16(pb) / 10000.0;
+            codec->bit_rate_tolerance = get_be32(pb);
             break;
         case CODEC_TYPE_AUDIO:
             codec->sample_rate = get_be32(pb);
