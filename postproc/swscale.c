@@ -17,7 +17,7 @@
 */
 
 /*
-  supported Input formats: YV12, I420, IYUV (grayscale soon too)
+  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24 (grayscale soon too)
   supported output formats: YV12, I420, IYUV, BGR15, BGR16, BGR24, BGR32 (grayscale soon too)
   BGR15/16 support dithering
 */
@@ -43,7 +43,7 @@
 //#undef ARCH_X86
 #define DITHER1XBPP
 
-#define RET 0xC3 //near return opcode
+#define RET 0xC3 //near return opcode for X86
 
 #ifdef MP_DEBUG
 #define ASSERT(x) if(!(x)) { printf("ASSERT " #x " failed\n"); *((int*)0)=0; }
@@ -58,10 +58,22 @@
 #endif
 
 //FIXME replace this with something faster
-#define isYUV(x)       ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
 #define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
+#define isYUV(x)       ((x)==IMGFMT_YUY2 || isPlanarYUV(x))
 #define isHalfChrV(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
-#define isHalfChrH(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
+#define isHalfChrH(x)  ((x)==IMGFMT_YUY2 || (x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
+#define isPacked(x)    ((x)==IMGFMT_YUY2 || (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24)
+
+#define RGB2YUV_SHIFT 8
+#define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
+#define BV ((int)(-0.071*(1<<RGB2YUV_SHIFT)+0.5))
+#define BU ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
+#define GY ((int)( 0.504*(1<<RGB2YUV_SHIFT)+0.5))
+#define GV ((int)(-0.368*(1<<RGB2YUV_SHIFT)+0.5))
+#define GU ((int)(-0.291*(1<<RGB2YUV_SHIFT)+0.5))
+#define RY ((int)( 0.257*(1<<RGB2YUV_SHIFT)+0.5))
+#define RV ((int)( 0.439*(1<<RGB2YUV_SHIFT)+0.5))
+#define RU ((int)(-0.148*(1<<RGB2YUV_SHIFT)+0.5))
 
 extern int verbose; // defined in mplayer.c
 /*
@@ -80,7 +92,7 @@ Optimize C code (yv12 / minmax)
 add support for packed pixel yuv input & output
 add support for Y8 input & output
 add BGR4 output support
-add BGR32 / BGR24 input support
+write special BGR->BGR scaler
 */
 
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
@@ -1105,7 +1117,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	/* sanity check */
 	if(srcW<4 || srcH<1 || dstW<8 || dstH<1) return NULL; //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
 	
-	if(srcFormat!=IMGFMT_YV12 && srcFormat!=IMGFMT_I420 && srcFormat!=IMGFMT_IYUV) return NULL;
+//	if(!isSupportedIn(srcFormat)) return NULL;
+//	if(!isSupportedOut(dstFormat)) return NULL;
 
 	if(!dstFilter) dstFilter= &dummyFilter;
 	if(!srcFilter) srcFilter= &dummyFilter;
@@ -1135,6 +1148,30 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	else
 		c->canMMX2BeUsed=0;
 
+
+	/* dont use full vertical UV input/internaly if the source doesnt even have it */
+	if(isHalfChrV(srcFormat)) c->flags= flags= flags&(~SWS_FULL_CHR_V);
+	/* dont use full horizontal UV input if the source doesnt even have it */
+	if(isHalfChrH(srcFormat)) c->flags= flags= flags&(~SWS_FULL_CHR_H_INP);
+	/* dont use full horizontal UV internally if the destination doesnt even have it */
+	if(isHalfChrH(dstFormat)) c->flags= flags= flags&(~SWS_FULL_CHR_H_INT);
+
+	if(flags&SWS_FULL_CHR_H_INP)	c->chrSrcW= srcW;
+	else				c->chrSrcW= (srcW+1)>>1;
+
+	if(flags&SWS_FULL_CHR_H_INT)	c->chrDstW= dstW;
+	else				c->chrDstW= (dstW+1)>>1;
+
+	if(flags&SWS_FULL_CHR_V)	c->chrSrcH= srcH;
+	else				c->chrSrcH= (srcH+1)>>1;
+
+	if(isHalfChrV(dstFormat))	c->chrDstH= (dstH+1)>>1;
+	else				c->chrDstH= dstH;
+
+	c->chrXInc= ((c->chrSrcW<<16) + (c->chrDstW>>1))/c->chrDstW;
+	c->chrYInc= ((c->chrSrcH<<16) + (c->chrDstH>>1))/c->chrDstH;
+
+
 	// match pixel 0 of the src to pixel 0 of dst and match pixel n-2 of src to pixel n-2 of dst
 	// but only for the FAST_BILINEAR mode otherwise do correct scaling
 	// n-2 is the last chrominance sample available
@@ -1143,21 +1180,18 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	// first and last pixel
 	if(flags&SWS_FAST_BILINEAR)
 	{
-		if(c->canMMX2BeUsed) 	c->lumXInc+= 20;
+		if(c->canMMX2BeUsed)
+		{
+			c->lumXInc+= 20;
+			c->chrXInc+= 20;
+		}
 		//we dont use the x86asm scaler if mmx is available
-		else if(cpuCaps.hasMMX)	c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
+		else if(cpuCaps.hasMMX)
+		{
+			c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
+			c->chrXInc = ((c->chrSrcW-2)<<16)/(c->chrDstW-2) - 20;
+		}
 	}
-
-	/* set chrXInc & chrDstW */
-	if((flags&SWS_FULL_UV_IPOL) && !isHalfChrH(dstFormat))
-		c->chrXInc= c->lumXInc>>1, c->chrDstW= dstW;
-	else
-		c->chrXInc= c->lumXInc,    c->chrDstW= (dstW+1)>>1;
-
-	/* set chrYInc & chrDstH */
-	if(isHalfChrV(dstFormat))
-		c->chrYInc= c->lumYInc,    c->chrDstH= (dstH+1)>>1;
-	else	c->chrYInc= c->lumYInc>>1, c->chrDstH= dstH;
 
 	/* precalculate horizontal scaler filter coefficients */
 	{
@@ -1246,6 +1280,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			fprintf(stderr, "\nSwScaler: BILINEAR scaler ");
 		else if(flags&SWS_BICUBIC)
 			fprintf(stderr, "\nSwScaler: BICUBIC scaler ");
+		else if(flags&SWS_X)
+			fprintf(stderr, "\nSwScaler: Experimental scaler ");
 		else if(flags&SWS_POINT)
 			fprintf(stderr, "\nSwScaler: Nearest Neighbor / POINT scaler ");
 		else if(flags&SWS_AREA)
@@ -1344,7 +1380,14 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 
 		printf("SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
 	}
-
+	if((flags & SWS_PRINT_INFO) && verbose>1)
+	{
+		printf("SwScaler:Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+			c->srcW, c->srcH, c->dstW, c->dstH, c->lumXInc, c->lumYInc);
+		printf("SwScaler:Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+			c->chrSrcW, c->chrSrcH, c->chrDstW, c->chrDstH, c->chrXInc, c->chrYInc);
+	}
+	
 	return c;
 }
 

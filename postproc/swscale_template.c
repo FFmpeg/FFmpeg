@@ -841,7 +841,7 @@ static inline void RENAME(yuv2rgb2)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 	int yalpha1=yalpha^4095;
 	int uvalpha1=uvalpha^4095;
 
-	if(flags&SWS_FULL_UV_IPOL)
+	if(flags&SWS_FULL_CHR_H_INT)
 	{
 
 #ifdef HAVE_MMX
@@ -1267,7 +1267,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 	int uvalpha1=uvalpha^4095;
 	const int yalpha1=0;
 
-	if(flags&SWS_FULL_UV_IPOL)
+	if(flags&SWS_FULL_CHR_H_INT)
 	{
 		RENAME(yuv2rgb2)(buf0, buf0, uvbuf0, uvbuf1, dest, dstW, 0, uvalpha, dstFormat, flags);
 		return;
@@ -1535,6 +1535,96 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 #endif
 }
 
+static inline void RENAME(yuy2ToY)(uint8_t *dst, uint8_t *src, int width)
+{
+#ifdef HAVE_MMXFIXME
+#else
+	int i;
+	for(i=0; i<width; i++)
+		dst[i]= src[2*i];
+#endif
+}
+
+static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+{
+#ifdef HAVE_MMXFIXME
+#else
+	int i;
+	for(i=0; i<width; i++)
+	{
+		dstU[i]= (src1[4*i + 1] + src2[4*i + 1])>>1;
+		dstV[i]= (src1[4*i + 3] + src2[4*i + 3])>>1;
+	}
+#endif
+}
+
+static inline void RENAME(bgr32ToY)(uint8_t *dst, uint8_t *src, int width)
+{
+#ifdef HAVE_MMXFIXME
+#else
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int b= src[i*4+0];
+		int g= src[i*4+1];
+		int r= src[i*4+2];
+
+		dst[i]= ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
+	}
+#endif
+}
+
+static inline void RENAME(bgr32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+{
+#ifdef HAVE_MMXFIXME
+#else
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int b= src1[8*i + 0] + src1[8*i + 4] + src2[8*i + 0] + src2[8*i + 4];
+		int g= src1[8*i + 1] + src1[8*i + 5] + src2[8*i + 1] + src2[8*i + 5];
+		int r= src1[8*i + 2] + src1[8*i + 6] + src2[8*i + 2] + src2[8*i + 6];
+
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
+	}
+#endif
+}
+
+static inline void RENAME(bgr24ToY)(uint8_t *dst, uint8_t *src, int width)
+{
+#ifdef HAVE_MMXFIXME
+#else
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int b= src[i*3+0];
+		int g= src[i*3+1];
+		int r= src[i*3+2];
+
+		dst[i]= ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
+	}
+#endif
+}
+
+static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+{
+#ifdef HAVE_MMXFIXME
+#else
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int b= src1[6*i + 0] + src1[6*i + 3] + src2[6*i + 0] + src2[6*i + 3];
+		int g= src1[6*i + 1] + src1[6*i + 4] + src2[6*i + 1] + src2[6*i + 4];
+		int r= src1[6*i + 2] + src1[6*i + 5] + src2[6*i + 2] + src2[6*i + 5];
+
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
+	}
+#endif
+}
+
+
 // Bilinear / Bicubic scaling
 static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW, int xInc,
 				  int16_t *filter, int16_t *filterPos, int filterSize)
@@ -1699,8 +1789,25 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW
       // *** horizontal scale Y line to temp buffer
 static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, int srcW, int xInc,
 				   int flags, int canMMX2BeUsed, int16_t *hLumFilter,
-				   int16_t *hLumFilterPos, int hLumFilterSize, void *funnyYCode)
+				   int16_t *hLumFilterPos, int hLumFilterSize, void *funnyYCode, 
+				   int srcFormat, uint8_t *formatConvBuffer)
 {
+    if(srcFormat==IMGFMT_YUY2)
+    {
+	RENAME(yuy2ToY)(formatConvBuffer, src, srcW);
+	src= formatConvBuffer;
+    }
+    else if(srcFormat==IMGFMT_BGR32)
+    {
+	RENAME(bgr32ToY)(formatConvBuffer, src, srcW);
+	src= formatConvBuffer;
+    }
+    else if(srcFormat==IMGFMT_BGR24)
+    {
+	RENAME(bgr24ToY)(formatConvBuffer, src, srcW);
+	src= formatConvBuffer;
+    }
+
 #ifdef HAVE_MMX
 	// use the new MMX scaler if th mmx2 cant be used (its faster than the x86asm one)
     if(!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
@@ -1826,8 +1933,28 @@ FUNNY_Y_CODE
 
 inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, uint8_t *src2,
 				   int srcW, int xInc, int flags, int canMMX2BeUsed, int16_t *hChrFilter,
-				   int16_t *hChrFilterPos, int hChrFilterSize, void *funnyUVCode)
+				   int16_t *hChrFilterPos, int hChrFilterSize, void *funnyUVCode,
+				   int srcFormat, uint8_t *formatConvBuffer)
 {
+    if(srcFormat==IMGFMT_YUY2)
+    {
+	RENAME(yuy2ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
+	src1= formatConvBuffer;
+	src2= formatConvBuffer+2048;
+    }
+    else if(srcFormat==IMGFMT_BGR32)
+    {
+	RENAME(bgr32ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
+	src1= formatConvBuffer;
+	src2= formatConvBuffer+2048;
+    }
+    else if(srcFormat==IMGFMT_BGR24)
+    {
+	RENAME(bgr24ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
+	src1= formatConvBuffer;
+	src2= formatConvBuffer+2048;
+    }
+
 #ifdef HAVE_MMX
 	// use the new MMX scaler if th mmx2 cant be used (its faster than the x86asm one)
     if(!(flags&SWS_FAST_BILINEAR) || (!canMMX2BeUsed))
@@ -1974,7 +2101,7 @@ FUNNYUVCODE
    }
 }
 
-static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[], int srcSliceY,
+static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
              int srcSliceH, uint8_t* dstParam[], int dstStride[]){
 
 	/* load a few things into local vars to make the code more readable? and faster */
@@ -2007,6 +2134,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[],
 	const int vChrBufSize= c->vChrBufSize;
 	uint8_t *funnyYCode= c->funnyYCode;
 	uint8_t *funnyUVCode= c->funnyUVCode;
+	uint8_t *formatConvBuffer= c->formatConvBuffer;
 
 	/* vars whch will change and which we need to storw back in the context */
 	int dstY= c->dstY;
@@ -2014,6 +2142,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[],
 	int chrBufIndex= c->chrBufIndex;
 	int lastInLumBuf= c->lastInLumBuf;
 	int lastInChrBuf= c->lastInChrBuf;
+	int srcStride[3];
 	uint8_t *src[3];
 	uint8_t *dst[3];
 	
@@ -2021,11 +2150,33 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[],
 		src[0]= srcParam[0];
 		src[1]= srcParam[2];
 		src[2]= srcParam[1];
-		
-	}else{
+		srcStride[0]= srcStrideParam[0];
+		srcStride[1]= srcStrideParam[2];
+		srcStride[2]= srcStrideParam[1];
+	}
+	else if(c->srcFormat==IMGFMT_YV12){
 		src[0]= srcParam[0];
 		src[1]= srcParam[1];
 		src[2]= srcParam[2];
+		srcStride[0]= srcStrideParam[0];
+		srcStride[1]= srcStrideParam[1];
+		srcStride[2]= srcStrideParam[2];
+	}
+	else if(isPacked(c->srcFormat)){
+		src[0]=
+		src[1]=
+		src[2]= srcParam[0];
+		srcStride[0]= srcStrideParam[0];
+		srcStride[1]=
+		srcStride[2]= srcStrideParam[0]<<1;
+	}
+	else if(c->srcFormat==IMGFMT_Y8){
+		src[0]= srcParam[0];
+		src[1]=
+		src[2]= NULL;
+		srcStride[0]= srcStrideParam[0];
+		srcStride[1]=
+		srcStride[2]= 0;
 	}
 
 	if((c->dstFormat == IMGFMT_IYUV) || (c->dstFormat == IMGFMT_I420)){
@@ -2038,6 +2189,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[],
 		dst[1]= dstParam[1];
 		dst[2]= dstParam[2];
 	}
+	
 
 	if(dstStride[0]%8 !=0 || dstStride[1]%8 !=0 || dstStride[2]%8 !=0)
 	{
@@ -2050,10 +2202,12 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[],
 		}
 	}
 
+	/* Note the user might start scaling the picture in the middle so this will not get executed
+	   this is not really intended but works currently, so ppl might do it */
 	if(srcSliceY ==0){
 		lumBufIndex=0;
 		chrBufIndex=0;
-		dstY=0;
+		dstY=0;	
 		lastInLumBuf= -1;
 		lastInChrBuf= -1;
 	}
@@ -2091,7 +2245,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[],
 //				printf("%d %d\n", lumBufIndex, vLumBufSize);
 				RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
 						flags, canMMX2BeUsed, hLumFilter, hLumFilterPos, hLumFilterSize,
-						funnyYCode);
+						funnyYCode, c->srcFormat, formatConvBuffer);
 				lastInLumBuf++;
 			}
 			while(lastInChrBuf < lastChrSrcY)
@@ -2105,7 +2259,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[],
 				//FIXME replace parameters through context struct (some at least)
 				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
 						flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
-						funnyUVCode);
+						funnyUVCode, c->srcFormat, formatConvBuffer);
 				lastInChrBuf++;
 			}
 			//wrap buf index around to stay inside the ring buffer
@@ -2129,7 +2283,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[],
 				ASSERT(lastInLumBuf + 1 - srcSliceY >= 0)
 				RENAME(hyscale)(lumPixBuf[ lumBufIndex ], dstW, s, srcW, lumXInc,
 						flags, canMMX2BeUsed, hLumFilter, hLumFilterPos, hLumFilterSize,
-						funnyYCode);
+						funnyYCode, c->srcFormat, formatConvBuffer);
 				lastInLumBuf++;
 			}
 			while(lastInChrBuf+1 < ((srcSliceY + srcSliceH)>>1))
@@ -2142,7 +2296,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStride[],
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
 				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
 						flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
-						funnyUVCode);
+						funnyUVCode, c->srcFormat, formatConvBuffer);
 				lastInChrBuf++;
 			}
 			//wrap buf index around to stay inside the ring buffer

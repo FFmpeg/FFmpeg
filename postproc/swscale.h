@@ -23,7 +23,15 @@
 #define SWS_X        8
 #define SWS_POINT    0x10
 #define SWS_AREA     0x20
-#define SWS_FULL_UV_IPOL 0x100
+
+//the following 4 flags are not completly implemented
+//internal chrominace subsamling info
+#define SWS_FULL_CHR_V		0x100
+#define SWS_FULL_CHR_H_INT	0x200
+//input subsampling info
+#define SWS_FULL_CHR_H_INP	0x400
+#define SWS_DIRECT_BGR		0x800
+
 #define SWS_PRINT_INFO 0x1000
 
 #define SWS_MAX_REDUCE_CUTOFF 0.002
@@ -31,7 +39,7 @@
 /* this struct should be aligned on at least 32-byte boundary */
 typedef struct{
 	int srcW, srcH, dstW, dstH;
-	int chrDstW, chrDstH;
+	int chrSrcW, chrSrcH, chrDstW, chrDstH;
 	int lumXInc, chrXInc;
 	int lumYInc, chrYInc;
 	int dstFormat, srcFormat;
@@ -50,6 +58,7 @@ typedef struct{
 // Contain simply the values from v(Lum|Chr)Filter just nicely packed for mmx
 	int16_t  *lumMmxFilter;
 	int16_t  *chrMmxFilter;
+	uint8_t formatConvBuffer[4000]; //FIXME dynamic alloc, but we have to change alot of code for this to be usefull
 
 	int hLumFilterSize;
 	int hChrFilterSize;
