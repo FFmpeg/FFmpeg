@@ -175,7 +175,7 @@ enum CodecType {
  */
 enum PixelFormat {
     PIX_FMT_YUV420P,   ///< Planar YUV 4:2:0 (1 Cr & Cb sample per 2x2 Y samples)
-    PIX_FMT_YUV422,    
+    PIX_FMT_YUV422,    ///< Packed pixel, Y0 Cb Y1 Cr 
     PIX_FMT_RGB24,     ///< Packed pixel, 3 bytes per pixel, RGBRGB...
     PIX_FMT_BGR24,     ///< Packed pixel, 3 bytes per pixel, BGRBGR...
     PIX_FMT_YUV422P,   ///< Planar YUV 4:2:2 (1 Cr & Cb sample per 2x1 Y samples)
@@ -194,6 +194,7 @@ enum PixelFormat {
     PIX_FMT_YUVJ444P,  ///< Planar YUV 4:4:4 full scale (jpeg)
     PIX_FMT_XVMC_MPEG2_MC,///< XVideo Motion Acceleration via common packet passing(xvmc_render.h)
     PIX_FMT_XVMC_MPEG2_IDCT,
+    PIX_FMT_UYVY422,   ///< Packed pixel, Cb Y0 Cr Y1 
     PIX_FMT_NB,
 };
 

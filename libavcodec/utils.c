@@ -141,6 +141,7 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
     switch(s->pix_fmt){
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422:
+    case PIX_FMT_UYVY422:
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV444P:
     case PIX_FMT_GRAY8:
@@ -218,6 +219,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         case PIX_FMT_RGB555:
         case PIX_FMT_RGB565:
         case PIX_FMT_YUV422:
+        case PIX_FMT_UYVY422:
             pixel_size=2;
             break;
         case PIX_FMT_RGB24:
