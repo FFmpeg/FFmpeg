@@ -884,4 +884,7 @@ static inline int mid_pred(int a, int b, int c)
 /* memory */
 void *av_mallocz(int size);
 
+/* math */
+int ff_gcd(int a, int b);
+
 #endif

@@ -37,6 +37,7 @@ void dsputil_init(void);
 
 extern void (*ff_idct)(DCTELEM *block);
 extern void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
+extern void (*diff_pixels)(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
 extern void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 extern void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 extern void (*gmc1)(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder);
@@ -44,6 +45,7 @@ extern void (*clear_blocks)(DCTELEM *blocks);
 
 
 void get_pixels_c(DCTELEM *block, const UINT8 *pixels, int line_size);
+void diff_pixels_c(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
 void put_pixels_clamped_c(const DCTELEM *block, UINT8 *pixels, int line_size);
 void add_pixels_clamped_c(const DCTELEM *block, UINT8 *pixels, int line_size);
 void clear_blocks_c(DCTELEM *blocks);

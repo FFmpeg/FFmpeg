@@ -77,16 +77,20 @@ extern int motion_estimation_method;
 /* ME algos sorted by quality */
 static const int Motion_Est_QTab[] = { 1, 4, 3, 6, 5, 2 };
 
+#define FF_MAX_B_FRAMES 4
+
 /* encoding support */
 /* note not everything is supported yet */
 
 #define CODEC_FLAG_HQ     0x0001 /* high quality (non real time) encoding */
 #define CODEC_FLAG_QSCALE 0x0002 /* use fixed qscale */
 #define CODEC_FLAG_4MV    0x0004 /* 4 MV per MB allowed */
-#define CODEC_FLAG_B      0x0008 /* use B frames */
 #define CODEC_FLAG_QPEL   0x0010 /* use qpel MC */
 #define CODEC_FLAG_GMC    0x0020 /* use GMC */
 #define CODEC_FLAG_TYPE   0x0040 /* fixed I/P frame type, from avctx->key_frame */
+/* parent program gurantees that the input for b-frame containing streams is not written to 
+   for at least s->max_b_frames+1 frames, if this is not set than the input will be copied */
+#define CODEC_FLAG_INPUT_PRESERVED 0x0100 
 
 /* codec capabilities */
 
@@ -141,7 +145,8 @@ typedef struct AVCodecContext {
     int qmin;         /* min qscale */
     int qmax;         /* max qscale */
     int max_qdiff;    /* max qscale difference between frames */
-    
+    int max_b_frames; /* maximum b frames, the output will be delayed by max_b_frames+1 relative to the input */
+
     struct AVCodec *codec;
     void *priv_data;
 

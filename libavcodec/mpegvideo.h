@@ -26,7 +26,7 @@
 enum OutputFormat {
     FMT_MPEG1,
     FMT_H263,
-    FMT_MJPEG,
+    FMT_MJPEG, 
 };
 
 #define MPEG_BUF_SIZE (16 * 1024)
@@ -36,12 +36,22 @@ enum OutputFormat {
 
 #define MAX_FCODE 7
 #define MAX_MV 2048
+#define REORDER_BUFFER_SIZE (FF_MAX_B_FRAMES+2)
 
 typedef struct Predictor{
     double coeff;
     double count;
     double decay;
 } Predictor;
+
+typedef struct ReorderBuffer{
+    UINT8 *picture[3];
+    int pict_type;
+    int qscale;
+    int force_type;
+    int picture_number;
+    int picture_in_gop_number;
+} ReorderBuffer;
 
 typedef struct MpegEncContext {
     struct AVCodecContext *avctx;
@@ -66,7 +76,8 @@ typedef struct MpegEncContext {
     int max_qdiff;    /* max qscale difference between frames */
     int encoding;     /* true if we are encoding (vs decoding) */
     int flags;        /* AVCodecContext.flags (HQ, MV4, ...) */
-    int force_type;   /* 0= no force, otherwise I_TYPE, P_TYPE, ... */
+    int force_input_type;/* 0= no force, otherwise I_TYPE, P_TYPE, ... */
+    int max_b_frames; /* max number of b-frames for encoding */
     /* the following fields are managed internally by the encoder */
 
     /* bit output */
@@ -74,45 +85,62 @@ typedef struct MpegEncContext {
 
     /* sequence parameters */
     int context_initialized;
+    int input_picture_number;
+    int input_picture_in_gop_number; /* 0-> first pic in gop, ... */
     int picture_number;
     int fake_picture_number; /* picture number at the bitstream frame rate */
     int gop_picture_number;  /* index of the first picture of a GOP based on fake_pic_num & mpeg1 specific */
     int picture_in_gop_number; /* 0-> first pic in gop, ... */
-    int mb_width, mb_height;
+    int b_frames_since_non_b;  /* used for encoding, relative to not yet reordered input */
+    int mb_width, mb_height;   /* number of MBs horizontally & vertically */
     int mb_num;                /* number of MBs of a picture */
     int linesize;              /* line size, in bytes, may be different from width */
     UINT8 *new_picture[3];     /* picture to be compressed */
-    UINT8 *last_picture[3];    /* previous picture */
+    UINT8 *picture_buffer[REORDER_BUFFER_SIZE][3]; /* internal buffers used for reordering of input pictures */
+    int picture_buffer_index;
+    ReorderBuffer coded_order[REORDER_BUFFER_SIZE];
+    UINT8 *last_picture[3];      /* previous picture */
     UINT8 *last_picture_base[3]; /* real start of the picture */
-    UINT8 *next_picture[3];    /* previous picture (for bidir pred) */
+    UINT8 *next_picture[3];      /* previous picture (for bidir pred) */
     UINT8 *next_picture_base[3]; /* real start of the picture */
-    UINT8 *aux_picture[3];    /* aux picture (for B frames only) */
-    UINT8 *aux_picture_base[3]; /* real start of the picture */
-    UINT8 *current_picture[3]; /* buffer to store the decompressed current picture */
-    int last_dc[3]; /* last DC values for MPEG1 */
-    INT16 *dc_val[3]; /* used for mpeg4 DC prediction, all 3 arrays must be continuous */
+    UINT8 *aux_picture[3];       /* aux picture (for B frames only) */
+    UINT8 *aux_picture_base[3];  /* real start of the picture */
+    UINT8 *current_picture[3];   /* buffer to store the decompressed current picture */
+    int last_dc[3];              /* last DC values for MPEG1 */
+    INT16 *dc_val[3];            /* used for mpeg4 DC prediction, all 3 arrays must be continuous */
     int y_dc_scale, c_dc_scale;
-    UINT8 *coded_block; /* used for coded block pattern prediction */
-    INT16 (*ac_val[3])[16]; /* used for for mpeg4 AC prediction, all 3 arrays must be continuous */
+    UINT8 *coded_block;          /* used for coded block pattern prediction (msmpeg4v3, wmv1)*/
+    INT16 (*ac_val[3])[16];      /* used for for mpeg4 AC prediction, all 3 arrays must be continuous */
     int ac_pred;
     int mb_skiped;              /* MUST BE SET only during DECODING */
-    UINT8 *mbskip_table;        /* used to avoid copy if macroblock
-                                   skipped (for black regions for example) */
-    UINT8 *mbintra_table;            /* used to kill a few memsets */
+    UINT8 *mbskip_table;        /* used to avoid copy if macroblock skipped (for black regions for example) 
+                                   and used for b-frame encoding & decoding (contains skip table of next P Frame) */
+    UINT8 *mbintra_table;       /* used to avoid setting {ac, dc, cbp}-pred stuff to zero on inter MB decoding */
 
-    int qscale;
-    int pict_type;
-    int last_non_b_pict_type; /* used for mpeg4 gmc b-frames */
-    int last_pict_type; /* used for bit rate stuff (needs that to update the right predictor) */
+    int input_qscale;           /* qscale prior to reordering of frames */
+    int input_pict_type;        /* pict_type prior to reordering of frames */
+    int force_type;             /* 0= no force, otherwise I_TYPE, P_TYPE, ... */
+    int qscale;                 /* QP */
+    int pict_type;              /* I_TYPE, P_TYPE, B_TYPE, ... */
+    int last_non_b_pict_type;   /* used for mpeg4 gmc b-frames */
+    int last_pict_type;         /* used for bit rate stuff (needs that to update the right predictor) */
     int frame_rate_index;
     /* motion compensation */
     int unrestricted_mv;
     int h263_long_vectors; /* use horrible h263v1 long vector mode */
 
-    int f_code; /* resolution */
-    int b_code; /* backward resolution for B Frames (mpeg4) */
-    INT16 *mv_table[2];    /* MV table (1MV per MB)*/
-    INT16 (*motion_val)[2]; /* used for MV prediction (4MV per MB)*/
+    int f_code; /* forward MV resolution */
+    int b_code; /* backward MV resolution for B Frames (mpeg4) */
+    INT16 (*motion_val)[2];            /* used for MV prediction (4MV per MB) */
+    INT16 (*p_mv_table)[2];            /* MV table (1MV per MB) p-frame encoding */
+    INT16 (*last_p_mv_table)[2];       /* MV table (1MV per MB) p-frame encoding */
+    INT16 (*b_forw_mv_table)[2];       /* MV table (1MV per MB) forward mode b-frame encoding */
+    INT16 (*b_back_mv_table)[2];       /* MV table (1MV per MB) backward mode b-frame encoding */
+    INT16 (*b_bidir_forw_mv_table)[2]; /* MV table (1MV per MB) bidir mode b-frame encoding */
+    INT16 (*b_bidir_back_mv_table)[2]; /* MV table (1MV per MB) bidir mode b-frame encoding */
+    INT16 (*b_direct_forw_mv_table)[2];/* MV table (1MV per MB) direct mode b-frame encoding */
+    INT16 (*b_direct_back_mv_table)[2];/* MV table (1MV per MB) direct mode b-frame encoding */
+    INT16 (*b_direct_mv_table)[2];     /* MV table (1MV per MB) direct mode b-frame encoding */
     int me_method;          /* ME algorithm */
     int mv_dir;
 #define MV_DIR_BACKWARD  1
@@ -131,12 +159,12 @@ typedef struct MpegEncContext {
     */
     int mv[2][4][2];
     int field_select[2][2];
-    int last_mv[2][2][2];
+    int last_mv[2][2][2];             /* last MV, used for MV prediction in MPEG1 & B-frame MPEG4 */
     UINT16 (*mv_penalty)[MAX_MV*2+1]; /* amount of bits needed to encode a MV, used for ME */
     UINT8 *fcode_tab; /* smallest fcode needed for each MV */
 
     int has_b_frames;
-    int no_rounding; /* apply no rounding to motion estimation (MPEG4) */
+    int no_rounding; /* apply no rounding to motion compensation (MPEG4, msmpeg4, ...) */
 
     /* macroblock layer */
     int mb_x, mb_y;
@@ -150,10 +178,10 @@ typedef struct MpegEncContext {
 #define MB_TYPE_SKIPED   0x08
 #define MB_TYPE_DIRECT   0x10
 #define MB_TYPE_FORWARD  0x20
-#define MB_TYPE_BACKWAD  0x40
+#define MB_TYPE_BACKWARD 0x40
 #define MB_TYPE_BIDIR    0x80
 
-    int block_index[6];
+    int block_index[6]; /* index to current MB in block based arrays with edges*/
     int block_wrap[6];
 
     /* matrix transmitted in the bitstream */
@@ -172,8 +200,7 @@ typedef struct MpegEncContext {
     void *opaque; /* private data for the user */
 
     /* bit rate control */
-    int I_frame_bits;    /* wanted number of bits per I frame */
-    int P_frame_bits;    /* same for P frame */
+    int I_frame_bits; //FIXME used in mpeg12 ...
     int avg_mb_var;        /* average MB variance for current frame */
     int mc_mb_var;     /* motion compensated MB variance for current frame */
     int last_mc_mb_var;     /* motion compensated MB variance for last frame */
@@ -212,11 +239,13 @@ typedef struct MpegEncContext {
     
     /* mpeg4 specific */
     int time_increment_resolution;
-    int time_increment_bits;
-    int time_increment;
-    int time_base;
-    int time;
-    int last_non_b_time[2];
+    int time_increment_bits;        /* number of bits to represent the fractional part of time */
+    int last_time_base;
+    int time_base;                  /* time in seconds of last I,P,S Frame */
+    int64_t time;                   /* time of current frame */ 
+    int64_t last_non_b_time;
+    uint16_t pp_time;               /* time distance between the last 2 p,s,i frames */
+    uint16_t bp_time;               /* time distance between the last b and p,s,i frame */
     int shape;
     int vol_sprite_usage;
     int sprite_width;
@@ -231,7 +260,7 @@ typedef struct MpegEncContext {
     int sprite_shift[2][2];
     int mcsel;
     int quant_precision;
-    int quarter_sample;
+    int quarter_sample;              /* 1->qpel, 0->half pel ME/MC */ 
     int scalability;
     int new_pred;
     int reduced_res_vop;
@@ -327,9 +356,13 @@ void MPV_common_init_mmx(MpegEncContext *s);
 #endif
 
 /* motion_est.c */
-
-void estimate_motion(MpegEncContext *s, 
-                    int mb_x, int mb_y);
+void ff_estimate_p_frame_motion(MpegEncContext * s,
+                             int mb_x, int mb_y);
+void ff_estimate_b_frame_motion(MpegEncContext * s,
+                             int mb_x, int mb_y);
+int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type);
+void ff_fix_long_p_mvs(MpegEncContext * s);
+void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, int type);
 
 /* mpeg12.c */
 extern INT16 default_intra_matrix[64];

@@ -451,3 +451,7 @@ void free_vlc(VLC *vlc)
     free(vlc->table_codes);
 }
 
+int ff_gcd(int a, int b){
+    if(b) return ff_gcd(b, a%b);
+    else  return a;
+}

@@ -44,7 +44,6 @@ int pix_abs8x8_x2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
 int pix_abs8x8_y2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
 int pix_abs8x8_xy2_mmx2(UINT8 *blk1, UINT8 *blk2, int lx);
 
-
 /* external functions, from idct_mmx.c */
 void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
@@ -134,6 +133,34 @@ static void get_pixels_mmx(DCTELEM *block, const UINT8 *pixels, int line_size)
         pix += line_size*2;
         p += 16;
     }
+}
+
+static void diff_pixels_mmx(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride)
+{
+    asm volatile(
+        ".balign 16		\n\t"
+        "movl $-128, %%eax	\n\t"
+        "1:			\n\t"
+        "movq (%0), %%mm0	\n\t"
+        "movq (%1), %%mm2	\n\t"
+        "movq %%mm0, %%mm1	\n\t"
+        "movq %%mm2, %%mm3	\n\t"
+        "punpcklbw %%mm7, %%mm0	\n\t"
+        "punpckhbw %%mm7, %%mm1	\n\t"
+        "punpcklbw %%mm7, %%mm2	\n\t"
+        "punpckhbw %%mm7, %%mm3	\n\t"
+        "psubw %%mm2, %%mm0	\n\t"
+        "psubw %%mm3, %%mm1	\n\t"
+        "movq %%mm0, (%2, %%eax)\n\t"
+        "movq %%mm1, 8(%2, %%eax)\n\t"
+        "addl %3, %0		\n\t"
+        "addl %3, %1		\n\t"
+        "addl $16, %%eax	\n\t"
+        "jnz 1b			\n\t"
+        : "+r" (s1), "+r" (s2)
+        : "r" (block+64), "r" (stride)
+        : "%eax"
+    );
 }
 
 static void put_pixels_clamped_mmx(const DCTELEM *block, UINT8 *pixels, int line_size)
@@ -1064,6 +1091,7 @@ void dsputil_init_mmx(void)
 
     if (mm_flags & MM_MMX) {
         get_pixels = get_pixels_mmx;
+        diff_pixels = diff_pixels_mmx;
         put_pixels_clamped = put_pixels_clamped_mmx;
         add_pixels_clamped = add_pixels_clamped_mmx;
         clear_blocks= clear_blocks_mmx;

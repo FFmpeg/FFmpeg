@@ -27,6 +27,7 @@
 
 void (*ff_idct)(DCTELEM *block);
 void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
+void (*diff_pixels)(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
 void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*gmc1)(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder);
@@ -180,6 +181,28 @@ void get_pixels_c(DCTELEM *block, const UINT8 *pixels, int line_size)
         p += 8;
     }
 }
+
+void diff_pixels_c(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride){
+    DCTELEM *p;
+    int i;
+
+    /* read the pixels */
+    p = block;
+    for(i=0;i<8;i++) {
+        p[0] = s1[0] - s2[0];
+        p[1] = s1[1] - s2[1];
+        p[2] = s1[2] - s2[2];
+        p[3] = s1[3] - s2[3];
+        p[4] = s1[4] - s2[4];
+        p[5] = s1[5] - s2[5];
+        p[6] = s1[6] - s2[6];
+        p[7] = s1[7] - s2[7];
+        s1 += stride;
+        s2 += stride;
+        p += 8;
+    }
+}
+
 
 void put_pixels_clamped_c(const DCTELEM *block, UINT8 *pixels, int line_size)
 {
@@ -898,6 +921,7 @@ void dsputil_init(void)
     ff_idct = j_rev_dct;
 #endif
     get_pixels = get_pixels_c;
+    diff_pixels = diff_pixels_c;
     put_pixels_clamped = put_pixels_clamped_c;
     add_pixels_clamped = add_pixels_clamped_c;
     gmc1= gmc1_c;
