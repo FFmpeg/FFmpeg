@@ -36,9 +36,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#define printf(...) {} //(f)printf() usage is forbidden in libavcodec, use av_log
-#define fprintf(...) {} 
-
 #include "truemotion1data.h"
 
 typedef struct TrueMotion1Context {
@@ -232,7 +229,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     header.header_size = ((s->buf[0] >> 5) | (s->buf[0] << 3)) & 0x7f;
     if (s->buf[0] < 0x10)
     {
-        printf("invalid header size\n");
+        av_log(s->avctx, AV_LOG_ERROR, "invalid header size\n");
         return -1;
     }
 
@@ -282,7 +279,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     }
 
     if (header.compression > 17) {
-        printf("invalid compression type (%d)\n", header.compression);
+        av_log(s->avctx, AV_LOG_ERROR, "invalid compression type (%d)\n", header.compression);
         return -1;
     }
     
@@ -296,7 +293,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
         if (header.vectable < 4)
             sel_vector_table = tables[header.vectable - 1];
         else {
-            printf("invalid vector table id (%d)\n", header.vectable);
+            av_log(s->avctx, AV_LOG_ERROR, "invalid vector table id (%d)\n", header.vectable);
             return -1;
         }
     }
@@ -305,7 +302,7 @@ static int truemotion1_decode_header(TrueMotion1Context *s)
     {
         if (compression_types[header.compression].algorithm == ALGO_RGB24H)
         {
-            printf("24bit compression not yet supported\n");
+            av_log(s->avctx, AV_LOG_ERROR, "24bit compression not yet supported\n");
         }
         else
             gen_vector_table(s, sel_vector_table);
@@ -354,7 +351,7 @@ static int truemotion1_decode_init(AVCodecContext *avctx)
 #define GET_NEXT_INDEX() \
 {\
     if (index_stream_index >= s->index_stream_size) { \
-        printf (" help! truemotion1 decoder went out of bounds\n"); \
+        av_log(s->avctx, AV_LOG_INFO, " help! truemotion1 decoder went out of bounds\n"); \
         return; \
     } \
     index = s->index_stream[index_stream_index++] * 4; \
@@ -542,7 +539,7 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
 
     s->frame.reference = 1;
     if (avctx->get_buffer(avctx, &s->frame) < 0) {
-        fprintf(stderr, "truemotion1: get_buffer() failed\n");
+        av_log(s->avctx, AV_LOG_ERROR, "truemotion1: get_buffer() failed\n");
         return -1;
     }
 
@@ -561,7 +558,7 @@ static int truemotion1_decode_frame(AVCodecContext *avctx,
         memcpy(s->frame.data[0], s->prev_frame.data[0],
             s->frame.linesize[0] * s->avctx->height);
     } else if (compression_types[s->compression].algorithm == ALGO_RGB24H) {
-        printf ("  24-bit Duck TrueMotion decoding not yet implemented\n");
+        av_log(s->avctx, AV_LOG_ERROR, "24bit compression not yet supported\n");
     } else {
         truemotion1_decode_16bit(s);
     }

@@ -36,9 +36,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#define printf(...) {} //(f)printf() usage is forbidden in libavcodec, use av_log
-#define fprintf(...) {} 
-
 #define CPAIR 2
 #define CQUAD 4
 #define COCTET 8
@@ -75,7 +72,7 @@ typedef struct SmcContext {
     total_blocks--; \
     if (total_blocks < 0) \
     { \
-        printf("warning: block counter just went negative (this should not happen)\n"); \
+        av_log(s->avctx, AV_LOG_INFO, "warning: block counter just went negative (this should not happen)\n"); \
         return; \
     } \
 }
@@ -124,7 +121,7 @@ static void smc_decode_stream(SmcContext *s)
     chunk_size = BE_32(&s->buf[stream_ptr]) & 0x00FFFFFF;
     stream_ptr += 4;
     if (chunk_size != s->size)
-        printf("warning: MOV chunk size != encoded chunk size (%d != %d); using MOV chunk size\n",
+        av_log(s->avctx, AV_LOG_INFO, "warning: MOV chunk size != encoded chunk size (%d != %d); using MOV chunk size\n",
             chunk_size, s->size);
 
     chunk_size = s->size;
@@ -135,13 +132,13 @@ static void smc_decode_stream(SmcContext *s)
         /* sanity checks */
         /* make sure stream ptr hasn't gone out of bounds */
         if (stream_ptr > chunk_size) {
-            printf("SMC decoder just went out of bounds (stream ptr = %d, chunk size = %d)\n",
+            av_log(s->avctx, AV_LOG_INFO, "SMC decoder just went out of bounds (stream ptr = %d, chunk size = %d)\n",
                 stream_ptr, chunk_size);
             return;
         }
         /* make sure the row pointer hasn't gone wild */
         if (row_ptr >= image_size) {
-            printf("SMC decoder just went out of bounds (row ptr = %d, height = %d)\n",
+            av_log(s->avctx, AV_LOG_INFO, "SMC decoder just went out of bounds (row ptr = %d, height = %d)\n",
                 row_ptr, image_size);
             return;
         }
@@ -164,7 +161,7 @@ static void smc_decode_stream(SmcContext *s)
 
             /* sanity check */
             if ((row_ptr == 0) && (pixel_ptr == 0)) {
-                printf("encountered repeat block opcode (%02X) but no blocks rendered yet\n",
+                av_log(s->avctx, AV_LOG_INFO, "encountered repeat block opcode (%02X) but no blocks rendered yet\n",
                     opcode & 0xF0);
                 break;
             }
@@ -198,7 +195,7 @@ static void smc_decode_stream(SmcContext *s)
 
             /* sanity check */
             if ((row_ptr == 0) && (pixel_ptr < 2 * 4)) {
-                printf("encountered repeat block opcode (%02X) but not enough blocks rendered yet\n",
+        	av_log(s->avctx, AV_LOG_INFO, "encountered repeat block opcode (%02X) but not enough blocks rendered yet\n",
                     opcode & 0xF0);
                 break;
             }
@@ -425,7 +422,7 @@ static void smc_decode_stream(SmcContext *s)
             break;
 
         case 0xF0:
-            printf("0xF0 opcode seen in SMC chunk (xine developers would like to know)\n");
+            av_log(s->avctx, AV_LOG_INFO, "0xF0 opcode seen in SMC chunk (contact the developers)\n");
             break;
         }
     }
@@ -462,7 +459,7 @@ static int smc_decode_frame(AVCodecContext *avctx,
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | 
                             FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
     if (avctx->reget_buffer(avctx, &s->frame)) {
-        printf ("reget_buffer() failed\n");
+        av_log(s->avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
 

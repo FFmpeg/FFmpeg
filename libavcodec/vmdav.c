@@ -47,9 +47,6 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#define printf(...) {} //(f)printf() usage is forbidden in libavcodec, use av_log
-#define fprintf(...) {} 
-
 #define VMD_HEADER_SIZE 0x330
 #define PALETTE_COUNT 256
 
@@ -245,7 +242,7 @@ static void vmd_decode(VmdVideoContext *s)
                     }
                 } while (ofs < frame_width);
                 if (ofs > frame_width) {
-                    printf (" VMD video: offset > width (%d > %d)\n",
+                    av_log(s->avctx, AV_LOG_ERROR, "VMD video: offset > width (%d > %d)\n",
                         ofs, frame_width);
                     break;
                 }
@@ -283,7 +280,7 @@ static void vmd_decode(VmdVideoContext *s)
                     }
                 } while (ofs < frame_width);
                 if (ofs > frame_width) {
-                    printf (" VMD video: offset > width (%d > %d)\n",
+                    av_log(s->avctx, AV_LOG_ERROR, "VMD video: offset > width (%d > %d)\n",
                         ofs, frame_width);
                 }
                 dp += s->frame.linesize[0];
@@ -311,7 +308,7 @@ static int vmdvideo_decode_init(AVCodecContext *avctx)
 
     /* make sure the VMD header made it */
     if (s->avctx->extradata_size != VMD_HEADER_SIZE) {
-        printf("  VMD video: expected extradata size of %d\n", 
+        av_log(s->avctx, AV_LOG_ERROR, "VMD video: expected extradata size of %d\n", 
             VMD_HEADER_SIZE);
         return -1;
     }
@@ -350,7 +347,7 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
 
     s->frame.reference = 1;
     if (avctx->get_buffer(avctx, &s->frame)) {
-        printf ("  VMD Video: get_buffer() failed\n");
+        av_log(s->avctx, AV_LOG_ERROR, "VMD Video: get_buffer() failed\n");
         return -1;
     }
 
@@ -389,6 +386,7 @@ static int vmdvideo_decode_end(AVCodecContext *avctx)
  */
 
 typedef struct VmdAudioContext {
+    AVCodecContext *avctx;
     int channels;
     int bits;
     int block_align;
@@ -403,12 +401,13 @@ static int vmdaudio_decode_init(AVCodecContext *avctx)
     VmdAudioContext *s = (VmdAudioContext *)avctx->priv_data;
     int i;
 
+    s->avctx = avctx;
     s->channels = avctx->channels;
     s->bits = avctx->bits_per_sample;
     s->block_align = avctx->block_align;
 
-printf ("  %d channels, %d bits/sample, block align = %d, sample rate = %d\n",
-  s->channels, s->bits, s->block_align, avctx->sample_rate);
+    av_log(s->avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, block align = %d, sample rate = %d\n",
+	    s->channels, s->bits, s->block_align, avctx->sample_rate);
 
     /* set up the steps8 and steps16 tables */
     for (i = 0; i < 8; i++) {
@@ -465,8 +464,8 @@ static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
     int bytes_decoded = 0;
     int i;
 
-if (silence)
-  printf (" silent block!\n");
+    if (silence)
+	av_log(s->avctx, AV_LOG_INFO, "silent block!\n");
     if (s->channels == 2) {
 
         /* stereo handling */
@@ -520,7 +519,6 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     unsigned char *p = buf + 16;
     unsigned char *p_end = buf + buf_size;
 
-printf ("    processing audio frame with %d bytes\n", buf_size);
     if (buf_size < 16)
         return buf_size;
 
@@ -529,7 +527,6 @@ printf ("    processing audio frame with %d bytes\n", buf_size);
         /* the chunk contains audio */
         *data_size = vmdaudio_loadsound(s, output_samples, p, 0);
     } else if (buf[6] == 2) {
-printf ("  hey! audio case #2\n");
         /* the chunk contains audio and silence mixed together */
         sound_flags = LE_32(p);
         p += 4;
@@ -549,13 +546,10 @@ printf ("  hey! audio case #2\n");
             sound_flags >>= 1;
         }
     } else if (buf[6] == 3) {
-printf ("  hey! audio case #3\n");
         /* silent chunk */
         *data_size = vmdaudio_loadsound(s, output_samples, p, 1);
     }
 
-printf ("      final sample count = %d, byte count = %d\n", (*data_size) / 2,
-  *data_size);
     return buf_size;
 }
 
