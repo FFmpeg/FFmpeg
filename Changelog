@@ -21,6 +21,10 @@ version 0.4.5:
   <celer@shell.scrypt.net>).
 - added pixel format convertion layer (e.g. for MJPEG or PPM).
 - added deinterlacing option.
+- mpeg1/2 fixes.
+- mpeg4 vol header fixes (Jonathan Marsden <snmjbm@pacbell.net>).
+- ARM optimizations (Lionel Ulmer <lionel.ulmer@free.fr>).
+- Windows porting of file converter.
 
 version 0.4.4:
 
