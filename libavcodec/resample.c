@@ -23,7 +23,6 @@
  */
 
 #include "avcodec.h"
-#include "os_support.h"
 
 typedef struct {
     /* fractional resampling */

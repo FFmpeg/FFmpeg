@@ -492,4 +492,10 @@ static inline long int lrintf(float x)
 }
 #endif
 
+#if defined(CONFIG_OS2) || defined(CONFIG_SUNOS)
+static inline float floorf(float f) { 
+    return floor(f); 
+}
+#endif
+
 #endif

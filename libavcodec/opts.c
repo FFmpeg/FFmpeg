@@ -11,7 +11,6 @@
  */
 
 #include "avcodec.h"
-#include "os_support.h"
 
 const AVOption avoptions_common[] = {
     AVOPTION_CODEC_FLAG("bit_exact", "use only bit-exact stuff", flags, CODEC_FLAG_BITEXACT, 0),
@@ -40,15 +39,32 @@ const AVOption avoptions_workaround_bug[] = {
     AVOPTION_END()
 };
 
+/* avoid compatibility problems by redefining it */
+static int av_strcasecmp(const char *s1, const char *s2)
+{
+    signed char val;
+    
+    for(;;) {
+        val = toupper(*s1) - toupper(*s2);
+        if (val != 0)
+            break;
+        if (*s1 != '\0')
+            break;
+        s1++;
+        s2++;
+    }
+    return val;
+}
+
 
 static int parse_bool(const AVOption *c, char *s, int *var)
 {
     int b = 1; /* by default -on- when present */
     if (s) {
-	if (!strcasecmp(s, "off") || !strcasecmp(s, "false")
+	if (!av_strcasecmp(s, "off") || !av_strcasecmp(s, "false")
 	    || !strcmp(s, "0"))
 	    b = 0;
-	else if (!strcasecmp(s, "on") || !strcasecmp(s, "true")
+	else if (!av_strcasecmp(s, "on") || !av_strcasecmp(s, "true")
 		 || !strcmp(s, "1"))
 	    b = 1;
 	else
