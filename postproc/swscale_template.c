@@ -992,10 +992,10 @@ FULL_YSCALEYUV2RGB
 #else
 		if(dstFormat==IMGFMT_BGR32)
 		{
+			int i;
 #ifdef WORDS_BIGENDIAN
 			dest++;
 #endif
-			int i;
 			for(i=0;i<dstW;i++){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -1118,10 +1118,10 @@ FULL_YSCALEYUV2RGB
 #else
 		if(dstFormat==IMGFMT_BGR32)
 		{
+			int i;
 #ifdef WORDS_BIGENDIAN
 			dest++;
 #endif
-			int i;
 			for(i=0; i<dstW-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -1399,10 +1399,10 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 
 	if(dstFormat==IMGFMT_BGR32)
 	{
+		int i;
 #ifdef WORDS_BIGENDIAN
 		dest++;
 #endif
-		int i;
 		for(i=0; i<dstW-1; i+=2){
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];

@@ -68,6 +68,7 @@ untested special converters
 //#define HAVE_3DNOW
 //#undef HAVE_MMX
 //#undef ARCH_X86
+//#define WORDS_BIGENDIAN
 #define DITHER1XBPP
 
 #define FAST_BGR2YV12 // use 7 bit coeffs instead of 15bit
@@ -294,10 +295,10 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 {
 	if(dstFormat==IMGFMT_BGR32)
 	{
+		int i;
 #ifdef WORDS_BIGENDIAN
 	dest++;
 #endif
-		int i;
 		for(i=0; i<(dstW>>1); i++){
 			int j;
 			int Y1=0;
