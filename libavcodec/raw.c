@@ -83,6 +83,14 @@ static int raw_init_decoder(AVCodecContext *avctx)
 
     if (avctx->codec_tag)
         avctx->pix_fmt = findPixelFormat(avctx->codec_tag);
+    else if (avctx->bits_per_sample){
+        switch(avctx->bits_per_sample){
+        case 15: avctx->pix_fmt= PIX_FMT_RGB555; break;
+        case 16: avctx->pix_fmt= PIX_FMT_RGB565; break;
+        case 24: avctx->pix_fmt= PIX_FMT_BGR24 ; break;
+        case 32: avctx->pix_fmt= PIX_FMT_RGBA32; break;
+        }
+    }
     
     context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     context->buffer = av_malloc(context->length);
