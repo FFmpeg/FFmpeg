@@ -1546,6 +1546,10 @@ int parse_ffconfig(const char *filename)
             if (stream) {
                 video_enc.gop_size = 1;
             }
+        } else if (!strcasecmp(cmd, "VideoHighQuality")) {
+            if (stream) {
+                video_enc.flags |= CODEC_FLAG_HQ;
+            }
         } else if (!strcasecmp(cmd, "NoVideo")) {
             video_id = CODEC_ID_NONE;
         } else if (!strcasecmp(cmd, "NoAudio")) {
