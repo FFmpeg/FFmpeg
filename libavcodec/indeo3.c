@@ -223,6 +223,9 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
     hdr_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos, 
     min(hdr_width, 160));
 
+  if (!(s->avctx->flags & CODEC_FLAG_GRAY))
+  {
+
   buf_pos = buf + 16 + offs2;
   offs = le2me_32(*(uint32_t *)buf_pos);
   buf_pos += 4;
@@ -238,6 +241,8 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
   iv_Decode_Chunk(s, s->cur_frame->Ubuf, s->ref_frame->Ubuf, chroma_width, 
     chroma_height, buf_pos + offs * 2, fflags2, hdr_pos, buf_pos, 
     min(chroma_width, 40));
+
+  }
 
   return 8;
 }
@@ -1080,6 +1085,8 @@ static int indeo3_decode_frame(AVCodecContext *avctx,
       dest += s->frame.linesize[0];
     }
 
+    if (!(s->avctx->flags & CODEC_FLAG_GRAY))
+    {
     src = s->cur_frame->Ubuf;
     dest = s->frame.data[1];
     for (y = 0; y < s->height / 4; y++) {
@@ -1094,6 +1101,7 @@ static int indeo3_decode_frame(AVCodecContext *avctx,
       memcpy(dest, src, s->cur_frame->uv_w);
       src += s->cur_frame->uv_w;
       dest += s->frame.linesize[2];
+    }
     }
 
     *data_size=sizeof(AVFrame);
