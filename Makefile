@@ -44,10 +44,17 @@ EXTRALIBS+=-logg -lvorbis -lvorbisenc
 endif
 endif
 
+ifeq ($(BUILD_VHOOK),yes)
+VHOOK=videohook
+INSTALLVHOOK=install-vhook
+CLEANVHOOK=clean-vhook
+LDFLAGS += -rdynamic
+endif
+
 OBJS = ffmpeg.o ffserver.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 
-all: lib $(PROG)
+all: lib $(PROG) $(VHOOK)
 
 lib:
 	$(MAKE) -C libavcodec all
@@ -71,11 +78,20 @@ ffplay: ffmpeg$(EXE)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
 
-install: all
+videohook:
+	$(MAKE) -C vhook all
+
+install: all $(INSTALLVHOOK)
 	$(MAKE) -C libavcodec install
 	install -d $(prefix)/bin
 	install -s -m 755 $(PROG) $(prefix)/bin
 	ln -sf ffmpeg $(prefix)/bin/ffplay 
+
+install-vhook: $(prefix)/lib/vhook
+	$(MAKE) -C vhook install INSTDIR=$(prefix)/lib/vhook
+
+$(prefix)/lib/vhook:
+	mkdir $@
 
 installlib:
 	$(MAKE) -C libavcodec installlib
@@ -86,11 +102,14 @@ dep:	depend
 depend:
 	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
 
-clean: 
+clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libav clean
 	$(MAKE) -C tests clean
 	rm -f *.o *~ .depend gmon.out TAGS ffmpeg_g$(EXE) $(PROG) 
+
+clean-vhook:
+	$(MAKE) -C vhook clean
 
 distclean: clean
 	$(MAKE) -C libavcodec distclean
