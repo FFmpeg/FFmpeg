@@ -24,58 +24,27 @@
  * the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
  * 15,24 bpp and dithering from Michael Niedermayer (michaelni@gmx.at)
+ * MMX/MMX2 Template stuff from Michael Niedermayer (needed for fast movntq support)
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#undef MOVNTQ
+#undef EMMS
+#undef SFENCE
 
-#include "../config.h"
+#ifdef HAVE_3DNOW
+/* On K6 femms is faster of emms. On K7 femms is directly mapped on emms. */
+#define EMMS     "femms"
+#else
+#define EMMS     "emms"
+#endif
 
-//#include "libmpeg2/mpeg2.h"
-//#include "libmpeg2/mpeg2_internal.h"
-#include <inttypes.h>
-
-#include "rgb2rgb.h"
-#include "../mmx_defs.h"
-
-#define DITHER1XBPP
-
-/* hope these constant values are cache line aligned */
-uint64_t __attribute__((aligned(8))) mmx_80w = 0x0080008000800080;
-uint64_t __attribute__((aligned(8))) mmx_10w = 0x1010101010101010;
-uint64_t __attribute__((aligned(8))) mmx_00ffw = 0x00ff00ff00ff00ff;
-uint64_t __attribute__((aligned(8))) mmx_Y_coeff = 0x253f253f253f253f;
-
-/* hope these constant values are cache line aligned */
-uint64_t __attribute__((aligned(8))) mmx_U_green = 0xf37df37df37df37d;
-uint64_t __attribute__((aligned(8))) mmx_U_blue = 0x4093409340934093;
-uint64_t __attribute__((aligned(8))) mmx_V_red = 0x3312331233123312;
-uint64_t __attribute__((aligned(8))) mmx_V_green = 0xe5fce5fce5fce5fc;
-
-/* hope these constant values are cache line aligned */
-uint64_t __attribute__((aligned(8))) mmx_redmask = 0xf8f8f8f8f8f8f8f8;
-uint64_t __attribute__((aligned(8))) mmx_grnmask = 0xfcfcfcfcfcfcfcfc;
-
-uint64_t __attribute__((aligned(8))) M24A=   0x00FF0000FF0000FFLL;
-uint64_t __attribute__((aligned(8))) M24B=   0xFF0000FF0000FF00LL;
-uint64_t __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000LL;
-
-// the volatile is required because gcc otherwise optimizes some writes away not knowing that these
-// are read in the asm block
-volatile uint64_t __attribute__((aligned(8))) b5Dither;
-volatile uint64_t __attribute__((aligned(8))) g5Dither;
-volatile uint64_t __attribute__((aligned(8))) g6Dither;
-volatile uint64_t __attribute__((aligned(8))) r5Dither;
-
-uint64_t __attribute__((aligned(8))) dither4[2]={
-	0x0103010301030103LL,
-	0x0200020002000200LL,};
-
-uint64_t __attribute__((aligned(8))) dither8[2]={
-	0x0602060206020602LL,
-	0x0004000400040004LL,};
-
-
+#ifdef HAVE_MMX2
+#define MOVNTQ "movntq"
+#define SFENCE "sfence"
+#else
+#define MOVNTQ "movq"
+#define SFENCE "/nop"
+#endif
 
 #define YUV2RGB \
 		     /* Do the multiply part of the conversion for even and odd pixels,
@@ -152,7 +121,7 @@ uint64_t __attribute__((aligned(8))) dither8[2]={
 		     "punpcklbw %%mm5, %%mm2;" /* G7 G6 G5 G4 G3 G2 G1 G0 */\
 
 
-static void yuv420_rgb16_mmx (uint8_t * image, uint8_t * py,
+static inline void RENAME(yuv420_rgb16) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
 			      int h_size, int v_size,
 			      int rgb_stride, int y_stride, int uv_stride)
@@ -253,7 +222,7 @@ YUV2RGB
     __asm__ __volatile__ (EMMS);
 }
 
-static void yuv420_rgb15_mmx (uint8_t * image, uint8_t * py,
+static inline void RENAME(yuv420_rgb15) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
 			      int h_size, int v_size,
 			      int rgb_stride, int y_stride, int uv_stride)
@@ -350,7 +319,7 @@ YUV2RGB
     __asm__ __volatile__ (EMMS);
 }
 
-static void yuv420_rgb24_mmx (uint8_t * image, uint8_t * py,
+static inline void RENAME(yuv420_rgb24) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
 			      int h_size, int v_size,
 			      int rgb_stride, int y_stride, int uv_stride)
@@ -505,7 +474,7 @@ YUV2RGB
 }
 
 
-static void yuv420_argb32_mmx (uint8_t * image, uint8_t * py,
+static inline void RENAME(yuv420_argb32) (uint8_t * image, uint8_t * py,
 			       uint8_t * pu, uint8_t * pv,
 			       int h_size, int v_size,
 			       int rgb_stride, int y_stride, int uv_stride)
@@ -599,12 +568,12 @@ YUV2RGB
     __asm__ __volatile__ (EMMS);
 }
 
-yuv2rgb_fun yuv2rgb_init_mmx (int bpp, int mode)
+yuv2rgb_fun RENAME(yuv2rgb_init) (int bpp, int mode)
 {
-    if (bpp == 15 && mode == MODE_RGB) return yuv420_rgb15_mmx;
-    if (bpp == 16 && mode == MODE_RGB) return yuv420_rgb16_mmx;
-    if (bpp == 24 && mode == MODE_RGB) return yuv420_rgb24_mmx;
-    if (bpp == 32 && mode == MODE_RGB) return yuv420_argb32_mmx;
+    if (bpp == 15 && mode == MODE_RGB) return RENAME(yuv420_rgb15);
+    if (bpp == 16 && mode == MODE_RGB) return RENAME(yuv420_rgb16);
+    if (bpp == 24 && mode == MODE_RGB) return RENAME(yuv420_rgb24);
+    if (bpp == 32 && mode == MODE_RGB) return RENAME(yuv420_argb32);
     return NULL; // Fallback to C.
 }
 

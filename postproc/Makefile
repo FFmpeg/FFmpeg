@@ -6,10 +6,6 @@ LIBNAME = libpostproc.a
 SRCS=postprocess.c swscale.c rgb2rgb.c yuv2rgb.c
 OBJS=$(SRCS:.c=.o)
 
-ifeq ($(TARGET_ARCH_X86),yes)
-SRCS += yuv2rgb_mmx.c
-endif
-
 CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. -Wall $(EXTRA_INC)
 # -I/usr/X11R6/include/
 

@@ -25,6 +25,7 @@
  *  along with GNU Make; see the file COPYING.  If not, write to
  *  the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
+ * MMX/MMX2 Template stuff from Michael Niedermayer (michaelni@gmx.at) (needed for fast movntq support)
  */
 
 #include <stdio.h>
@@ -34,12 +35,77 @@
 #include "config.h"
 //#include "video_out.h"
 #include "rgb2rgb.h"
+#include "../cpudetect.h"
 
 #ifdef HAVE_MLIB
 #include "yuv2rgb_mlib.c"
 #endif
 
-extern yuv2rgb_fun yuv2rgb_init_mmx (int bpp, int mode);
+#define DITHER1XBPP // only for mmx
+
+#ifdef ARCH_X86
+#define CAN_COMPILE_X86_ASM
+#endif
+
+#ifdef CAN_COMPILE_X86_ASM
+
+/* hope these constant values are cache line aligned */
+uint64_t __attribute__((aligned(8))) mmx_80w = 0x0080008000800080;
+uint64_t __attribute__((aligned(8))) mmx_10w = 0x1010101010101010;
+uint64_t __attribute__((aligned(8))) mmx_00ffw = 0x00ff00ff00ff00ff;
+uint64_t __attribute__((aligned(8))) mmx_Y_coeff = 0x253f253f253f253f;
+
+/* hope these constant values are cache line aligned */
+uint64_t __attribute__((aligned(8))) mmx_U_green = 0xf37df37df37df37d;
+uint64_t __attribute__((aligned(8))) mmx_U_blue = 0x4093409340934093;
+uint64_t __attribute__((aligned(8))) mmx_V_red = 0x3312331233123312;
+uint64_t __attribute__((aligned(8))) mmx_V_green = 0xe5fce5fce5fce5fc;
+
+/* hope these constant values are cache line aligned */
+uint64_t __attribute__((aligned(8))) mmx_redmask = 0xf8f8f8f8f8f8f8f8;
+uint64_t __attribute__((aligned(8))) mmx_grnmask = 0xfcfcfcfcfcfcfcfc;
+
+uint64_t __attribute__((aligned(8))) M24A=   0x00FF0000FF0000FFLL;
+uint64_t __attribute__((aligned(8))) M24B=   0xFF0000FF0000FF00LL;
+uint64_t __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000LL;
+
+// the volatile is required because gcc otherwise optimizes some writes away not knowing that these
+// are read in the asm block
+volatile uint64_t __attribute__((aligned(8))) b5Dither;
+volatile uint64_t __attribute__((aligned(8))) g5Dither;
+volatile uint64_t __attribute__((aligned(8))) g6Dither;
+volatile uint64_t __attribute__((aligned(8))) r5Dither;
+
+uint64_t __attribute__((aligned(8))) dither4[2]={
+	0x0103010301030103LL,
+	0x0200020002000200LL,};
+
+uint64_t __attribute__((aligned(8))) dither8[2]={
+	0x0602060206020602LL,
+	0x0004000400040004LL,};
+
+#undef HAVE_MMX
+#undef ARCH_X86
+
+//MMX versions
+#undef RENAME
+#define HAVE_MMX
+#undef HAVE_MMX2
+#undef HAVE_3DNOW
+#define ARCH_X86
+#define RENAME(a) a ## _MMX
+#include "yuv2rgb_template.c"
+
+//MMX2 versions
+#undef RENAME
+#define HAVE_MMX
+#define HAVE_MMX2
+#undef HAVE_3DNOW
+#define ARCH_X86
+#define RENAME(a) a ## _MMX2
+#include "yuv2rgb_template.c"
+
+#endif // CAN_COMPILE_X86_ASM
 
 
 uint32_t matrix_coefficients = 6;
@@ -63,10 +129,10 @@ static void (* yuv2rgb_c_internal) (uint8_t *, uint8_t *,
 				    uint8_t *, uint8_t *,
 				    void *, void *, int);
 
-static void yuv2rgb_c (void * dst, uint8_t * py, 
-		       uint8_t * pu, uint8_t * pv, 
-		       int h_size, int v_size, 
-		       int rgb_stride, int y_stride, int uv_stride) 
+static void yuv2rgb_c (void * dst, uint8_t * py,
+		       uint8_t * pu, uint8_t * pv,
+		       int h_size, int v_size,
+		       int rgb_stride, int y_stride, int uv_stride)
 {
     v_size >>= 1;
 
@@ -81,16 +147,29 @@ static void yuv2rgb_c (void * dst, uint8_t * py,
     }
 }
 
-void yuv2rgb_init (int bpp, int mode) 
+void yuv2rgb_init (int bpp, int mode)
 {
     yuv2rgb = NULL;
-#ifdef HAVE_MMX
-    if (yuv2rgb == NULL /*&& (config.flags & VO_MMX_ENABLE)*/) {
-        yuv2rgb = yuv2rgb_init_mmx (bpp, mode);
-        if (yuv2rgb != NULL)
-            printf ("Using MMX for colorspace transform\n");
-        else
-            printf ("Cannot init MMX colorspace transform\n");
+#ifdef CAN_COMPILE_X86_ASM
+    if(gCpuCaps.hasMMX2)
+    {
+	if (yuv2rgb == NULL /*&& (config.flags & VO_MMX_ENABLE)*/) {
+		yuv2rgb = yuv2rgb_init_MMX2 (bpp, mode);
+		if (yuv2rgb != NULL)
+			printf ("Using MMX2 for colorspace transform\n");
+		else
+			printf ("Cannot init MMX2 colorspace transform\n");
+	}
+    }
+    else if(gCpuCaps.hasMMX)
+    {
+	if (yuv2rgb == NULL /*&& (config.flags & VO_MMX_ENABLE)*/) {
+		yuv2rgb = yuv2rgb_init_MMX (bpp, mode);
+		if (yuv2rgb != NULL)
+			printf ("Using MMX for colorspace transform\n");
+		else
+			printf ("Cannot init MMX colorspace transform\n");
+	}
     }
 #endif
 #ifdef HAVE_MLIB
