@@ -417,7 +417,7 @@ static int decode_init(AVCodecContext * avctx)
             int e, m;
             f = pow((double)(i/4), 4.0 / 3.0) * pow(2, (i&3)*0.25);
             fm = frexp(f, &e);
-            m = FIXHR(fm*0.5);
+            m = (uint32_t)(fm*(1LL<<31) + 0.5);
             e+= FRAC_BITS - 31 + 5;
 
             /* normalized to FRAC_BITS */
