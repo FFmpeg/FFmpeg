@@ -430,7 +430,7 @@ static inline void encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], i
 
 static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride, int plane_index){
     int x,y,i;
-    const int ring_size=2;
+    const int ring_size= s->avctx->context_model ? 3 : 2;
     int_fast16_t sample_buffer[ring_size][w+6], *sample[ring_size];
     s->run_index=0;
     
@@ -453,7 +453,7 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
 
 static void encode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int stride){
     int x, y, p, i;
-    const int ring_size=2;
+    const int ring_size= s->avctx->context_model ? 3 : 2;
     int_fast16_t sample_buffer[3][ring_size][w+6], *sample[3][ring_size];
     s->run_index=0;
     
