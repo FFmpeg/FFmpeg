@@ -251,6 +251,61 @@ static inline void RENAME(bgr24torgb24)(const uint8_t *src, uint8_t *dst, unsign
 	}
 }
 
+static inline void RENAME(rgb16to15)(const uint8_t *src,uint8_t *dst,unsigned src_size)
+{
+  register const uint8_t* s=src;
+  register uint8_t* d=dst;
+  register const uint8_t *end;
+  uint8_t *mm_end;
+  end = s + src_size;
+#ifdef HAVE_MMX
+  __asm __volatile(PREFETCH"	%0"::"m"(*s));
+  __asm __volatile("movq	%0, %%mm7"::"m"(mask15rg));
+  __asm __volatile("movq	%0, %%mm6"::"m"(mask15b));
+  mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+  while(s<mm_end)
+  {
+	__asm __volatile(
+		PREFETCH"	32%1\n\t"
+		"movq	%1, %%mm0\n\t"
+		"movq	8%1, %%mm2\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm2, %%mm3\n\t"
+		"psrlq	$1, %%mm0\n\t"
+		"psrlq	$1, %%mm2\n\t"
+		"pand	%%mm7, %%mm0\n\t"
+		"pand	%%mm7, %%mm2\n\t"
+		"pand	%%mm6, %%mm1\n\t"
+		"pand	%%mm6, %%mm3\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm3, %%mm2\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		MOVNTQ"	%%mm2, 8%0"
+		:"=m"(*d)
+		:"m"(*s)
+		);
+	d+=16;
+	s+=16;
+  }
+  __asm __volatile(SFENCE:::"memory");
+  __asm __volatile(EMMS:::"memory");
+#endif
+    while(s < end)
+    {
+	register uint32_t x= *((uint32_t *)s);
+	*((uint32_t *)d) = ((x>>1)&0x7FE07FE0) | (x&0x001F001F);
+	s+=4;
+	d+=4;
+    }
+    if(s < end)
+    {
+	register uint16_t x= *((uint16_t *)s);
+	*((uint16_t *)d) = ((x>>1)&0x7FE0) | (x&0x001F);
+	s+=2;
+	d+=2;
+    }
+}
+
 static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 	const uint8_t *s = src;
@@ -310,6 +365,70 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 		const int b= *s++;
 		const int g= *s++;
 		const int r= *s++;
+		*d++ = (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
+		s++;
+	}
+}
+
+static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	const uint8_t *s = src;
+	const uint8_t *end;
+#ifdef HAVE_MMX
+	const uint8_t *mm_end;
+#endif
+	uint16_t *d = (uint16_t *)dst;
+	end = s + src_size;
+#ifdef HAVE_MMX
+	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
+	__asm __volatile(
+	    "movq	%0, %%mm7\n\t"
+	    "movq	%1, %%mm6\n\t"
+	    ::"m"(red_16mask),"m"(green_16mask));
+	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	while(s < mm_end)
+	{
+	    __asm __volatile(
+		PREFETCH" 32%1\n\t"
+		"movd	%1, %%mm0\n\t"
+		"movd	4%1, %%mm3\n\t"
+		"punpckldq 8%1, %%mm0\n\t"
+		"punpckldq 12%1, %%mm3\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm0, %%mm2\n\t"
+		"movq	%%mm3, %%mm4\n\t"
+		"movq	%%mm3, %%mm5\n\t"
+		"psllq	$8, %%mm0\n\t"
+		"psllq	$8, %%mm3\n\t"
+		"pand	%%mm7, %%mm0\n\t"
+		"pand	%%mm7, %%mm3\n\t"
+		"psrlq	$5, %%mm1\n\t"
+		"psrlq	$5, %%mm4\n\t"
+		"pand	%%mm6, %%mm1\n\t"
+		"pand	%%mm6, %%mm4\n\t"
+		"psrlq	$19, %%mm2\n\t"
+		"psrlq	$19, %%mm5\n\t"
+		"pand	%2, %%mm2\n\t"
+		"pand	%2, %%mm5\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm4, %%mm3\n\t"
+		"por	%%mm2, %%mm0\n\t"
+		"por	%%mm5, %%mm3\n\t"
+		"psllq	$16, %%mm3\n\t"
+		"por	%%mm3, %%mm0\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		:"=m"(*d):"m"(*s),"m"(blue_16mask):"memory");
+		d += 4;
+		s += 16;
+	}
+	__asm __volatile(SFENCE:::"memory");
+	__asm __volatile(EMMS:::"memory");
+#endif
+	while(s < end)
+	{
+		const int r= *s++;
+		const int g= *s++;
+		const int b= *s++;
 		*d++ = (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
 		s++;
 	}
@@ -379,6 +498,70 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 	}
 }
 
+static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, unsigned src_size)
+{
+	const uint8_t *s = src;
+	const uint8_t *end;
+#ifdef HAVE_MMX
+	const uint8_t *mm_end;
+#endif
+	uint16_t *d = (uint16_t *)dst;
+	end = s + src_size;
+#ifdef HAVE_MMX
+	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
+	__asm __volatile(
+	    "movq	%0, %%mm7\n\t"
+	    "movq	%1, %%mm6\n\t"
+	    ::"m"(red_15mask),"m"(green_15mask));
+	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	while(s < mm_end)
+	{
+	    __asm __volatile(
+		PREFETCH" 32%1\n\t"
+		"movd	%1, %%mm0\n\t"
+		"movd	4%1, %%mm3\n\t"
+		"punpckldq 8%1, %%mm0\n\t"
+		"punpckldq 12%1, %%mm3\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm0, %%mm2\n\t"
+		"movq	%%mm3, %%mm4\n\t"
+		"movq	%%mm3, %%mm5\n\t"
+		"psllq	$7, %%mm0\n\t"
+		"psllq	$7, %%mm3\n\t"
+		"pand	%%mm7, %%mm0\n\t"
+		"pand	%%mm7, %%mm3\n\t"
+		"psrlq	$6, %%mm1\n\t"
+		"psrlq	$6, %%mm4\n\t"
+		"pand	%%mm6, %%mm1\n\t"
+		"pand	%%mm6, %%mm4\n\t"
+		"psrlq	$19, %%mm2\n\t"
+		"psrlq	$19, %%mm5\n\t"
+		"pand	%2, %%mm2\n\t"
+		"pand	%2, %%mm5\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm4, %%mm3\n\t"
+		"por	%%mm2, %%mm0\n\t"
+		"por	%%mm5, %%mm3\n\t"
+		"psllq	$16, %%mm3\n\t"
+		"por	%%mm3, %%mm0\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		:"=m"(*d):"m"(*s),"m"(blue_15mask):"memory");
+		d += 4;
+		s += 16;
+	}
+	__asm __volatile(SFENCE:::"memory");
+	__asm __volatile(EMMS:::"memory");
+#endif
+	while(s < end)
+	{
+		const int r= *s++;
+		const int g= *s++;
+		const int b= *s++;
+		*d++ = (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
+		s++;
+	}
+}
+
 static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 	const uint8_t *s = src;
@@ -442,6 +625,69 @@ static inline void RENAME(rgb24to16)(const uint8_t *src, uint8_t *dst, unsigned 
 	}
 }
 
+static inline void RENAME(rgb24tobgr16)(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	const uint8_t *s = src;
+	const uint8_t *end;
+#ifdef HAVE_MMX
+	const uint8_t *mm_end;
+#endif
+	uint16_t *d = (uint16_t *)dst;
+	end = s + src_size;
+#ifdef HAVE_MMX
+	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
+	__asm __volatile(
+	    "movq	%0, %%mm7\n\t"
+	    "movq	%1, %%mm6\n\t"
+	    ::"m"(red_16mask),"m"(green_16mask));
+	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	while(s < mm_end)
+	{
+	    __asm __volatile(
+		PREFETCH" 32%1\n\t"
+		"movd	%1, %%mm0\n\t"
+		"movd	3%1, %%mm3\n\t"
+		"punpckldq 6%1, %%mm0\n\t"
+		"punpckldq 9%1, %%mm3\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm0, %%mm2\n\t"
+		"movq	%%mm3, %%mm4\n\t"
+		"movq	%%mm3, %%mm5\n\t"
+		"psllq	$8, %%mm0\n\t"
+		"psllq	$8, %%mm3\n\t"
+		"pand	%%mm7, %%mm0\n\t"
+		"pand	%%mm7, %%mm3\n\t"
+		"psrlq	$5, %%mm1\n\t"
+		"psrlq	$5, %%mm4\n\t"
+		"pand	%%mm6, %%mm1\n\t"
+		"pand	%%mm6, %%mm4\n\t"
+		"psrlq	$19, %%mm2\n\t"
+		"psrlq	$19, %%mm5\n\t"
+		"pand	%2, %%mm2\n\t"
+		"pand	%2, %%mm5\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm4, %%mm3\n\t"
+		"por	%%mm2, %%mm0\n\t"
+		"por	%%mm5, %%mm3\n\t"
+		"psllq	$16, %%mm3\n\t"
+		"por	%%mm3, %%mm0\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		:"=m"(*d):"m"(*s),"m"(blue_16mask):"memory");
+		d += 4;
+		s += 12;
+	}
+	__asm __volatile(SFENCE:::"memory");
+	__asm __volatile(EMMS:::"memory");
+#endif
+	while(s < end)
+	{
+		const int r= *s++;
+		const int g= *s++;
+		const int b= *s++;
+		*d++ = (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
+	}
+}
+
 static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, unsigned src_size)
 {
 	const uint8_t *s = src;
@@ -501,6 +747,69 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, unsigned 
 		const int b= *s++;
 		const int g= *s++;
 		const int r= *s++;
+		*d++ = (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
+	}
+}
+
+static inline void RENAME(rgb24tobgr15)(const uint8_t *src, uint8_t *dst, unsigned src_size)
+{
+	const uint8_t *s = src;
+	const uint8_t *end;
+#ifdef HAVE_MMX
+	const uint8_t *mm_end;
+#endif
+	uint16_t *d = (uint16_t *)dst;
+	end = s + src_size;
+#ifdef HAVE_MMX
+	__asm __volatile(PREFETCH"	%0"::"m"(*src):"memory");
+	__asm __volatile(
+	    "movq	%0, %%mm7\n\t"
+	    "movq	%1, %%mm6\n\t"
+	    ::"m"(red_15mask),"m"(green_15mask));
+	mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+	while(s < mm_end)
+	{
+	    __asm __volatile(
+		PREFETCH" 32%1\n\t"
+		"movd	%1, %%mm0\n\t"
+		"movd	3%1, %%mm3\n\t"
+		"punpckldq 6%1, %%mm0\n\t"
+		"punpckldq 9%1, %%mm3\n\t"
+		"movq	%%mm0, %%mm1\n\t"
+		"movq	%%mm0, %%mm2\n\t"
+		"movq	%%mm3, %%mm4\n\t"
+		"movq	%%mm3, %%mm5\n\t"
+		"psllq	$7, %%mm0\n\t"
+		"psllq	$7, %%mm3\n\t"
+		"pand	%%mm7, %%mm0\n\t"
+		"pand	%%mm7, %%mm3\n\t"
+		"psrlq	$6, %%mm1\n\t"
+		"psrlq	$6, %%mm4\n\t"
+		"pand	%%mm6, %%mm1\n\t"
+		"pand	%%mm6, %%mm4\n\t"
+		"psrlq	$19, %%mm2\n\t"
+		"psrlq	$19, %%mm5\n\t"
+		"pand	%2, %%mm2\n\t"
+		"pand	%2, %%mm5\n\t"
+		"por	%%mm1, %%mm0\n\t"
+		"por	%%mm4, %%mm3\n\t"
+		"por	%%mm2, %%mm0\n\t"
+		"por	%%mm5, %%mm3\n\t"
+		"psllq	$16, %%mm3\n\t"
+		"por	%%mm3, %%mm0\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		:"=m"(*d):"m"(*s),"m"(blue_15mask):"memory");
+		d += 4;
+		s += 12;
+	}
+	__asm __volatile(SFENCE:::"memory");
+	__asm __volatile(EMMS:::"memory");
+#endif
+	while(s < end)
+	{
+		const int r= *s++;
+		const int g= *s++;
+		const int b= *s++;
 		*d++ = (b>>3) | ((g&0xF8)<<2) | ((r&0xF8)<<7);
 	}
 }
@@ -1885,6 +2194,209 @@ void RENAME(interleaveBytes)(uint8_t *src1, uint8_t *src2, uint8_t *dest,
                 src1 += src1Stride;
                 src2 += src2Stride;
 	}
+#ifdef HAVE_MMX
+	asm(
+		EMMS" \n\t"
+		SFENCE" \n\t"
+		::: "memory"
+		);
+#endif
+}
+
+static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
+			uint8_t *dst1, uint8_t *dst2,
+			unsigned width, unsigned height,
+			unsigned srcStride1, unsigned srcStride2,
+			unsigned dstStride1, unsigned dstStride2)
+{
+    unsigned y,x,w,h;
+    w=width/2; h=height/2;
+#ifdef HAVE_MMX
+    asm volatile(
+	PREFETCH" %0\n\t"
+	PREFETCH" %1\n\t"
+	::"m"(*(src1+srcStride1)),"m"(*(src2+srcStride2)):"memory");
+#endif
+    for(y=0;y<h;y++){
+	const uint8_t* s1=src1+srcStride1*(y>>1);
+	uint8_t* d=dst1+dstStride1*y;
+	x=0;
+#ifdef HAVE_MMX
+	if(w > 32)
+	for(;x<w;x+=32)
+	{
+	    asm volatile(
+		PREFETCH" 32%1\n\t"
+	        "movq	%1, %%mm0\n\t"
+	        "movq	8%1, %%mm2\n\t"
+	        "movq	16%1, %%mm4\n\t"
+	        "movq	24%1, %%mm6\n\t"
+	        "movq	%%mm0, %%mm1\n\t"
+	        "movq	%%mm2, %%mm3\n\t"
+	        "movq	%%mm4, %%mm5\n\t"
+	        "movq	%%mm6, %%mm7\n\t"
+		"punpcklbw %%mm0, %%mm0\n\t"
+		"punpckhbw %%mm1, %%mm1\n\t"
+		"punpcklbw %%mm2, %%mm2\n\t"
+		"punpckhbw %%mm3, %%mm3\n\t"
+		"punpcklbw %%mm4, %%mm4\n\t"
+		"punpckhbw %%mm5, %%mm5\n\t"
+		"punpcklbw %%mm6, %%mm6\n\t"
+		"punpckhbw %%mm7, %%mm7\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		MOVNTQ"	%%mm1, 8%0\n\t"
+		MOVNTQ"	%%mm2, 16%0\n\t"
+		MOVNTQ"	%%mm3, 24%0\n\t"
+		MOVNTQ"	%%mm4, 32%0\n\t"
+		MOVNTQ"	%%mm5, 40%0\n\t"
+		MOVNTQ"	%%mm6, 48%0\n\t"
+		MOVNTQ"	%%mm7, 56%0"
+		:"=m"(d[2*x])
+		:"m"(s1[x])
+		:"memory");
+	}
+#endif
+	for(;x<w;x++) d[2*x]=d[2*x+1]=s1[x];
+    }
+    for(y=0;y<h;y++){
+	const uint8_t* s2=src2+srcStride2*(y>>1);
+	uint8_t* d=dst2+dstStride2*y;
+	x=0;
+#ifdef HAVE_MMX
+	if(w > 32)
+	for(;x<w;x+=32)
+	{
+	    asm volatile(
+		PREFETCH" 32%1\n\t"
+	        "movq	%1, %%mm0\n\t"
+	        "movq	8%1, %%mm2\n\t"
+	        "movq	16%1, %%mm4\n\t"
+	        "movq	24%1, %%mm6\n\t"
+	        "movq	%%mm0, %%mm1\n\t"
+	        "movq	%%mm2, %%mm3\n\t"
+	        "movq	%%mm4, %%mm5\n\t"
+	        "movq	%%mm6, %%mm7\n\t"
+		"punpcklbw %%mm0, %%mm0\n\t"
+		"punpckhbw %%mm1, %%mm1\n\t"
+		"punpcklbw %%mm2, %%mm2\n\t"
+		"punpckhbw %%mm3, %%mm3\n\t"
+		"punpcklbw %%mm4, %%mm4\n\t"
+		"punpckhbw %%mm5, %%mm5\n\t"
+		"punpcklbw %%mm6, %%mm6\n\t"
+		"punpckhbw %%mm7, %%mm7\n\t"
+		MOVNTQ"	%%mm0, %0\n\t"
+		MOVNTQ"	%%mm1, 8%0\n\t"
+		MOVNTQ"	%%mm2, 16%0\n\t"
+		MOVNTQ"	%%mm3, 24%0\n\t"
+		MOVNTQ"	%%mm4, 32%0\n\t"
+		MOVNTQ"	%%mm5, 40%0\n\t"
+		MOVNTQ"	%%mm6, 48%0\n\t"
+		MOVNTQ"	%%mm7, 56%0"
+		:"=m"(d[2*x])
+		:"m"(s2[x])
+		:"memory");
+	}
+#endif
+	for(;x<w;x++) d[2*x]=d[2*x+1]=s2[x];
+    }
+#ifdef HAVE_MMX
+	asm(
+		EMMS" \n\t"
+		SFENCE" \n\t"
+		::: "memory"
+		);
+#endif
+}
+
+static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
+			uint8_t *dst,
+			unsigned width, unsigned height,
+			unsigned srcStride1, unsigned srcStride2,
+			unsigned srcStride3, unsigned dstStride)
+{
+    unsigned y,x,x2,w,h;
+    w=width/2; h=height;
+#ifdef HAVE_MMX
+    asm volatile(
+	PREFETCH" %0\n\t"
+	PREFETCH" %1\n\t"
+	PREFETCH" %2\n\t"
+	::"m"(*(src1+srcStride1)),"m"(*(src2+srcStride2)),"m"(*(src3+srcStride3)):"memory");
+#endif
+    for(y=0;y<h;y++){
+	const uint8_t* yp=src1+srcStride1*y;
+	const uint8_t* up=src2+srcStride2*(y>>2);
+	const uint8_t* vp=src3+srcStride3*(y>>2);
+	uint8_t* d=dst+dstStride*y;
+	x2=0;
+	x=0;
+#ifdef HAVE_MMX
+	for(;x<w;x+=8,x2+=32)
+	{
+	    asm volatile(
+		PREFETCH" 32%1\n\t"
+		PREFETCH" 32%2\n\t"
+		PREFETCH" 32%3\n\t"
+		"movq	%1, %%mm0\n\t"       /* Y0Y1Y2Y3Y4Y5Y6Y7 */
+		"movq	%2, %%mm1\n\t"       /* U0U1U2U3U4U5U6U7 */
+		"movq	%3, %%mm2\n\t"	     /* V0V1V2V3V4V5V6V7 */
+		"movq	%%mm0, %%mm3\n\t"    /* Y0Y1Y2Y3Y4Y5Y6Y7 */
+		"movq	%%mm1, %%mm4\n\t"    /* U0U1U2U3U4U5U6U7 */
+		"movq	%%mm2, %%mm5\n\t"    /* V0V1V2V3V4V5V6V7 */
+		"punpcklbw %%mm1, %%mm1\n\t" /* U0U0 U1U1 U2U2 U3U3 */
+		"punpcklbw %%mm2, %%mm2\n\t" /* V0V0 V1V1 V2V2 V3V3 */
+		"punpckhbw %%mm4, %%mm4\n\t" /* U4U4 U5U5 U6U6 U7U7 */
+		"punpckhbw %%mm5, %%mm5\n\t" /* V4V4 V5V5 V6V6 V7V7 */
+
+		"movq	%%mm1, %%mm6\n\t"
+		"punpcklbw %%mm2, %%mm1\n\t" /* U0V0 U0V0 U1V1 U1V1*/
+		"punpcklbw %%mm1, %%mm0\n\t" /* Y0U0 Y1V0 Y2U0 Y3V0*/
+		"punpckhbw %%mm1, %%mm3\n\t" /* Y4U1 Y5V1 Y6U1 Y7V1*/
+		MOVNTQ"	%%mm0, %0\n\t"
+		MOVNTQ"	%%mm3, 8%0\n\t"
+		
+		"punpckhbw %%mm2, %%mm6\n\t" /* U2V2 U2V2 U3V3 U3V3*/
+		"movq	8%1, %%mm0\n\t"
+		"movq	%%mm0, %%mm3\n\t"
+		"punpcklbw %%mm6, %%mm0\n\t" /* Y U2 Y V2 Y U2 Y V2*/
+		"punpckhbw %%mm6, %%mm3\n\t" /* Y U3 Y V3 Y U3 Y V3*/
+		MOVNTQ"	%%mm0, 16%0\n\t"
+		MOVNTQ"	%%mm3, 24%0\n\t"
+
+		"movq	%%mm4, %%mm6\n\t"
+		"movq	16%1, %%mm0\n\t"
+		"movq	%%mm0, %%mm3\n\t"
+		"punpcklbw %%mm5, %%mm4\n\t"
+		"punpcklbw %%mm4, %%mm0\n\t" /* Y U4 Y V4 Y U4 Y V4*/
+		"punpckhbw %%mm4, %%mm3\n\t" /* Y U5 Y V5 Y U5 Y V5*/
+		MOVNTQ"	%%mm0, 32%0\n\t"
+		MOVNTQ"	%%mm3, 40%0\n\t"
+		
+		"punpckhbw %%mm5, %%mm6\n\t"
+		"movq	24%1, %%mm0\n\t"
+		"movq	%%mm0, %%mm3\n\t"
+		"punpcklbw %%mm6, %%mm0\n\t" /* Y U6 Y V6 Y U6 Y V6*/
+		"punpckhbw %%mm6, %%mm3\n\t" /* Y U7 Y V7 Y U7 Y V7*/
+		MOVNTQ"	%%mm0, 48%0\n\t"
+		MOVNTQ"	%%mm3, 56%0\n\t"
+
+		:"=m"(d[8*x])
+		:"m"(yp[x2]),"m"(up[x]),"m"(vp[x])
+		:"memory");
+	}
+#endif
+	for(;x<w;x++,x2+=4)
+	{
+	    d[8*x+0]=yp[x2];
+	    d[8*x+1]=up[x];
+	    d[8*x+2]=yp[x2+1];
+	    d[8*x+3]=vp[x];
+	    d[8*x+4]=yp[x2+2];
+	    d[8*x+5]=up[x];
+	    d[8*x+6]=yp[x2+3];
+	    d[8*x+7]=vp[x];
+	}
+    }
 #ifdef HAVE_MMX
 	asm(
 		EMMS" \n\t"

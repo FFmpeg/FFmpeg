@@ -9,6 +9,7 @@
 #ifndef RGB2RGB_INCLUDED
 #define RGB2RGB_INCLUDED
 
+/* A full collection of rgb to rgb(bgr) convertors */
 extern void rgb24to32(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb24to16(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb24to15(const uint8_t *src,uint8_t *dst,unsigned src_size);
@@ -18,10 +19,26 @@ extern void rgb32to15(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb15to16(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb15to24(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb15to32(const uint8_t *src,uint8_t *dst,unsigned src_size);
+extern void rgb16to15(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb16to24(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb16to32(const uint8_t *src,uint8_t *dst,unsigned src_size);
-extern void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb24tobgr32(const uint8_t *src, uint8_t *dst, unsigned src_size);
 extern void rgb24tobgr24(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb24tobgr16(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb24tobgr15(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb32tobgr24(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb32tobgr16(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb32tobgr15(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb16tobgr32(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb16tobgr24(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb16tobgr16(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb16tobgr15(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb15tobgr32(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb15tobgr24(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb15tobgr16(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb15tobgr15(const uint8_t *src, uint8_t *dst, unsigned src_size);
+extern void rgb8tobgr8(const uint8_t *src, uint8_t *dst, unsigned src_size);
 
 
 extern void palette8torgb32(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette);
@@ -46,6 +63,18 @@ extern void planar2x(const uint8_t *src, uint8_t *dst, int width, int height, in
 extern void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
 			    unsigned width, unsigned height, unsigned src1Stride,
 			    unsigned src2Stride, unsigned dstStride);
+
+extern void vu9_to_vu12(const uint8_t *src1, const uint8_t *src2,
+			uint8_t *dst1, uint8_t *dst2,
+			unsigned width, unsigned height,
+			unsigned srcStride1, unsigned srcStride2,
+			unsigned dstStride1, unsigned dstStride2);
+
+extern void yvu9_to_yuy2(const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
+			uint8_t *dst,
+			unsigned width, unsigned height,
+			unsigned srcStride1, unsigned srcStride2,
+			unsigned srcStride3, unsigned dstStride);
 	
 
 #define MODE_RGB  0x1

@@ -244,6 +244,20 @@ void rgb15to16(const uint8_t *src,uint8_t *dst,unsigned src_size)
 		rgb15to16_C(src, dst, src_size);
 }
 
+void rgb16to15(const uint8_t *src,uint8_t *dst,unsigned src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb16to15_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb16to15_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb16to15_MMX(src, dst, src_size);
+	else
+#endif
+		rgb16to15_C(src, dst, src_size);
+}
 /**
  * Pallete is assumed to contain bgr32
  */
@@ -387,6 +401,61 @@ void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 		rgb32tobgr32_C(src, dst, src_size);
 }
 
+void rgb32tobgr24(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	unsigned i;
+	unsigned num_pixels = src_size >> 2;
+	for(i=0; i<num_pixels; i++)
+	{
+		dst[3*i + 0] = src[4*i + 2];
+		dst[3*i + 1] = src[4*i + 1];
+		dst[3*i + 2] = src[4*i + 0];
+	}
+}
+
+void rgb32tobgr16(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb32tobgr16_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb32tobgr16_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb32tobgr16_MMX(src, dst, src_size);
+	else
+#endif
+		rgb32tobgr16_C(src, dst, src_size);
+}
+
+void rgb32tobgr15(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb32tobgr15_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb32tobgr15_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb32tobgr15_MMX(src, dst, src_size);
+	else
+#endif
+		rgb32tobgr15_C(src, dst, src_size);
+}
+
+void rgb24tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	unsigned i;
+	unsigned num_pixels = src_size >> 2;
+	for(i=0; i<num_pixels; i++)
+	{
+		dst[4*i + 0] = src[3*i + 2];
+		dst[4*i + 1] = src[3*i + 1];
+		dst[4*i + 2] = src[3*i + 0];
+		dst[4*i + 3] = 0;
+	}
+}
+
 void rgb24tobgr24(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 {
 #ifdef CAN_COMPILE_X86_ASM
@@ -400,6 +469,186 @@ void rgb24tobgr24(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 	else
 #endif
 		rgb24tobgr24_C(src, dst, src_size);
+}
+
+void rgb24tobgr16(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb24tobgr16_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb24tobgr16_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb24tobgr16_MMX(src, dst, src_size);
+	else
+#endif
+		rgb24tobgr16_C(src, dst, src_size);
+}
+
+void rgb24tobgr15(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb24tobgr15_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb24tobgr15_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb24tobgr15_MMX(src, dst, src_size);
+	else
+#endif
+		rgb24tobgr15_C(src, dst, src_size);
+}
+
+void rgb16tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	const uint16_t *end;
+	uint8_t *d = (uint8_t *)dst;
+	const uint16_t *s = (uint16_t *)src;
+	end = s + src_size/2;
+	while(s < end)
+	{
+		register uint16_t bgr;
+		bgr = *s++;
+		*d++ = (bgr&0xF800)>>8;
+		*d++ = (bgr&0x7E0)>>3;
+		*d++ = (bgr&0x1F)<<3;
+		*d++ = 0;
+	}
+}
+
+void rgb16tobgr24(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	const uint16_t *end;
+	uint8_t *d = (uint8_t *)dst;
+	const uint16_t *s = (const uint16_t *)src;
+	end = s + src_size/2;
+	while(s < end)
+	{
+		register uint16_t bgr;
+		bgr = *s++;
+		*d++ = (bgr&0xF800)>>8;
+		*d++ = (bgr&0x7E0)>>3;
+		*d++ = (bgr&0x1F)<<3;
+	}
+}
+
+void rgb16tobgr16(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	unsigned i;
+	unsigned num_pixels = src_size >> 1;
+	
+	for(i=0; i<num_pixels; i++)
+	{
+	    unsigned b,g,r;
+	    register uint16_t rgb;
+	    rgb = src[2*i];
+	    r = rgb&0x1F;
+	    g = (rgb&0x7E0)>>5;
+	    b = (rgb&0xF800)>>11;
+	    dst[2*i] = (b&0x1F) | ((g&0x3F)<<5) | ((r&0x1F)<<11);
+	}
+}
+
+void rgb16tobgr15(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	unsigned i;
+	unsigned num_pixels = src_size >> 1;
+	
+	for(i=0; i<num_pixels; i++)
+	{
+	    unsigned b,g,r;
+	    register uint16_t rgb;
+	    rgb = src[2*i];
+	    r = rgb&0x1F;
+	    g = (rgb&0x7E0)>>5;
+	    b = (rgb&0xF800)>>11;
+	    dst[2*i] = (b&0x1F) | ((g&0x1F)<<5) | ((r&0x1F)<<10);
+	}
+}
+
+void rgb15tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	const uint16_t *end;
+	uint8_t *d = (uint8_t *)dst;
+	const uint16_t *s = (const uint16_t *)src;
+	end = s + src_size/2;
+	while(s < end)
+	{
+		register uint16_t bgr;
+		bgr = *s++;
+		*d++ = (bgr&0x7C00)>>7;
+		*d++ = (bgr&0x3E0)>>2;
+		*d++ = (bgr&0x1F)<<3;
+		*d++ = 0;
+	}
+}
+
+void rgb15tobgr24(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	const uint16_t *end;
+	uint8_t *d = (uint8_t *)dst;
+	const uint16_t *s = (uint16_t *)src;
+	end = s + src_size/2;
+	while(s < end)
+	{
+		register uint16_t bgr;
+		bgr = *s++;
+		*d++ = (bgr&0x7C00)>>7;
+		*d++ = (bgr&0x3E0)>>2;
+		*d++ = (bgr&0x1F)<<3;
+	}
+}
+
+void rgb15tobgr16(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	unsigned i;
+	unsigned num_pixels = src_size >> 1;
+	
+	for(i=0; i<num_pixels; i++)
+	{
+	    unsigned b,g,r;
+	    register uint16_t rgb;
+	    rgb = src[2*i];
+	    r = rgb&0x1F;
+	    g = (rgb&0x3E0)>>5;
+	    b = (rgb&0x7C00)>>10;
+	    dst[2*i] = (b&0x1F) | ((g&0x3F)<<5) | ((r&0x1F)<<11);
+	}
+}
+
+void rgb15tobgr15(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	unsigned i;
+	unsigned num_pixels = src_size >> 1;
+	
+	for(i=0; i<num_pixels; i++)
+	{
+	    unsigned b,g,r;
+	    register uint16_t rgb;
+	    rgb = src[2*i];
+	    r = rgb&0x1F;
+	    g = (rgb&0x3E0)>>5;
+	    b = (rgb&0x7C00)>>10;
+	    dst[2*i] = (b&0x1F) | ((g&0x1F)<<5) | ((r&0x1F)<<10);
+	}
+}
+
+void rgb8tobgr8(const uint8_t *src, uint8_t *dst, unsigned int src_size)
+{
+	unsigned i;
+	unsigned num_pixels = src_size;
+	for(i=0; i<num_pixels; i++)
+	{
+	    unsigned b,g,r;
+	    register uint8_t rgb;
+	    rgb = src[i];
+	    r = (rgb&0x07);
+	    g = (rgb&0x38)>>3;
+	    b = (rgb&0xC0)>>6;
+	    dst[i] = ((b<<1)&0x07) | ((g&0x07)<<3) | ((r&0x03)<<6);
+	}
 }
 
 /**
@@ -563,4 +812,40 @@ void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
 	else
 #endif
 		interleaveBytes_C(src1, src2, dst, width, height, src1Stride, src2Stride, dstStride);
+}
+
+void vu9_to_vu12(const uint8_t *src1, const uint8_t *src2,
+		uint8_t *dst1, uint8_t *dst2,
+		unsigned width, unsigned height,
+		unsigned srcStride1, unsigned srcStride2,
+		unsigned dstStride1, unsigned dstStride2)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	if(gCpuCaps.hasMMX2)
+		vu9_to_vu12_MMX2(src1, src2, dst1, dst2, width, height, srcStride1, srcStride2, dstStride1, dstStride2);
+	else if(gCpuCaps.has3DNow)
+		vu9_to_vu12_3DNow(src1, src2, dst1, dst2, width, height, srcStride1, srcStride2, dstStride1, dstStride2);
+	else if(gCpuCaps.hasMMX)
+		vu9_to_vu12_MMX(src1, src2, dst1, dst2, width, height, srcStride1, srcStride2, dstStride1, dstStride2);
+	else
+#endif
+		vu9_to_vu12_C(src1, src2, dst1, dst2, width, height, srcStride1, srcStride2, dstStride1, dstStride2);
+}
+
+void yvu9_to_yuy2(const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
+		uint8_t *dst,
+		unsigned width, unsigned height,
+		unsigned srcStride1, unsigned srcStride2,
+		unsigned srcStride3, unsigned dstStride)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	if(gCpuCaps.hasMMX2)
+		yvu9_to_yuy2_MMX2(src1, src2, src3, dst, width, height, srcStride1, srcStride2, srcStride3, dstStride);
+	else if(gCpuCaps.has3DNow)
+		yvu9_to_yuy2_3DNow(src1, src2, src3, dst, width, height, srcStride1, srcStride2, srcStride3, dstStride);
+	else if(gCpuCaps.hasMMX)
+		yvu9_to_yuy2_MMX(src1, src2, src3, dst, width, height, srcStride1, srcStride2, srcStride3, dstStride);
+	else
+#endif
+		yvu9_to_yuy2_C(src1, src2, src3, dst, width, height, srcStride1, srcStride2, srcStride3, dstStride);
 }
