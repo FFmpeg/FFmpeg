@@ -3852,7 +3852,7 @@ static void show_license(void)
 static void show_help(void)
 {
     show_banner();
-    printf("usage: ffmpeg [[options] -i input_file]... {[options] outfile}...\n"
+    printf("usage: ffmpeg [[infile options] -i infile]... {[outfile options] outfile}...\n"
            "Hyper fast Audio and Video encoder\n");
     printf("\n");
     show_help_options(options, "Main options:\n",

@@ -131,7 +131,7 @@ The generic syntax is:
 
 @example 
 @c man begin SYNOPSIS
-ffmpeg [[options][@option{-i} @var{input_file}]]... @{[options] @var{output_file}@}...
+ffmpeg [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
 @c man end
 @end example
 @c man begin DESCRIPTION
