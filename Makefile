@@ -14,25 +14,15 @@ CFLAGS+=-p
 LDFLAGS+=-p
 endif
 
-ifeq ($(CONFIG_WIN32),yes)
-EXE=.exe
-else
-ifeq ($(CONFIG_OS2),yes)
-EXE=.exe
-else
-EXE=
-endif
-endif
-
-PROG=ffmpeg$(EXE)
-PROGTEST=output_example$(EXE)
+PROG=ffmpeg$(EXESUF)
+PROGTEST=output_example$(EXESUF)
 
 ifeq ($(CONFIG_FFSERVER),yes)
-PROG+=ffserver$(EXE)
+PROG+=ffserver$(EXESUF)
 endif
 
 ifeq ($(CONFIG_FFPLAY),yes)
-PROG+=ffplay$(EXE)
+PROG+=ffplay$(EXESUF)
 endif
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
@@ -78,28 +68,28 @@ FFLIBS = -L./libavformat -lavformat -L./libavcodec -lavcodec
 
 all: lib $(PROG) $(PROGTEST) $(VHOOK)
 
-lib: $(AMRLIBS)
+lib:
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libavformat all
 
-ffmpeg_g$(EXE): ffmpeg.o cmdutils.o .libs
+ffmpeg_g$(EXESUF): ffmpeg.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ ffmpeg.o cmdutils.o $(FFLIBS) $(EXTRALIBS)
 
-ffmpeg$(EXE): ffmpeg_g$(EXE)
+ffmpeg$(EXESUF): ffmpeg_g$(EXESUF)
 	cp -p $< $@
 	$(STRIP) $@
 
-ffserver$(EXE): ffserver.o .libs
+ffserver$(EXESUF): ffserver.o .libs
 	$(CC) $(LDFLAGS) $(FFSLDFLAGS) -o $@ ffserver.o $(FFLIBS) $(EXTRALIBS) 
 
-ffplay_g$(EXE): ffplay.o cmdutils.o .libs
+ffplay_g$(EXESUF): ffplay.o cmdutils.o .libs
 	$(CC) $(LDFLAGS) -o $@ ffplay.o cmdutils.o $(FFLIBS) $(EXTRALIBS) $(SDL_LIBS)
 
-ffplay$(EXE): ffplay_g$(EXE)
+ffplay$(EXESUF): ffplay_g$(EXESUF)
 	cp -p $< $@
 	$(STRIP) $@
 
-output_example$(EXE): output_example.o .libs
+output_example$(EXESUF): output_example.o .libs
 	$(CC) $(LDFLAGS) -o $@ output_example.o $(FFLIBS) $(EXTRALIBS)
 
 ffplay.o: ffplay.c
@@ -116,8 +106,8 @@ videohook: .libs
 install: all install-man $(INSTALLVHOOK)
 	$(MAKE) -C libavcodec install
 	$(MAKE) -C libavformat install
-	install -d $(prefix)/bin
-	install -c -s -m 755 $(PROG) $(prefix)/bin
+	install -d "$(bindir)"
+	install -c -s -m 755 $(PROG) "$(bindir)"
 
 # create the window installer
 wininstaller: all install
@@ -125,11 +115,13 @@ wininstaller: all install
 
 # install man from source dir if available
 install-man:
+ifneq ($(CONFIG_WIN32),yes)
 	if [ -f $(SRC_PATH)/doc/ffmpeg.1 ] ; then \
 	    install -d $(mandir)/man1 ; \
 	    install -m 644 $(SRC_PATH)/doc/ffmpeg.1 $(SRC_PATH)/doc/ffplay.1 \
                            $(SRC_PATH)/doc/ffserver.1 $(mandir)/man1 ; \
 	fi
+endif
 
 install-vhook: $(prefix)/lib/vhook
 	$(MAKE) -C vhook install INSTDIR=$(prefix)/lib/vhook
@@ -161,7 +153,7 @@ clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C tests clean
-	rm -f *.o *.d *~ .libs .depend gmon.out TAGS ffmpeg_g$(EXE) ffplay_g$(EXE) $(PROG) 
+	rm -f *.o *.d *~ .libs .depend gmon.out TAGS ffmpeg_g$(EXESUF) ffplay_g$(EXESUF) $(PROG) 
 
 clean-vhook:
 	$(MAKE) -C vhook clean
@@ -175,11 +167,12 @@ TAGS:
 
 # regression tests
 
-libavtest test mpeg4 mpeg test-server fulltest: ffmpeg$(EXE)
+libavtest test mpeg4 mpeg test-server fulltest: ffmpeg$(EXESUF)
 	$(MAKE) -C tests $@
 
 # tar release (use 'make -k tar' on a checkouted tree)
-FILE=ffmpeg-$(shell cat VERSION)
+FILE=ffmpeg-$(shell grep "\#define FFMPEG_VERSION " libavcodec/avcodec.h | \
+                    cut -d "\"" -f 2 )
 
 tar:
 	rm -rf /tmp/$(FILE)

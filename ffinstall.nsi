@@ -27,9 +27,9 @@ Section "Install"
   SetOutPath $INSTDIR
   SetCompress Auto
   SetOverwrite IfNewer
-  File "C:\Program Files\FFmpeg\bin\ffmpeg.exe"
-  File "C:\Program Files\FFmpeg\bin\SDL.dll"
-  File "C:\Program Files\FFmpeg\bin\ffplay.exe"
+  File ".\ffmpeg.exe"
+  File ".\SDL.dll"
+  File ".\ffplay.exe"
   File ".\COPYING"
   File ".\CREDITS"
   
