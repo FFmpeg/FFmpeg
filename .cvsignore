@@ -1,6 +1,7 @@
 config.h
 config.mak
 *ffmpeg
+ffmpeg_g
 ffserver
 Makefile.*
 .depend
