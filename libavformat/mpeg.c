@@ -47,6 +47,7 @@ typedef struct {
     int lpcm_align;
     uint8_t *fifo_iframe_ptr;
     int align_iframe;
+    int64_t vobu_start_pts;
 } StreamInfo;
 
 typedef struct {
@@ -1176,9 +1177,10 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     fifo_realloc(&stream->fifo, fifo_size(&stream->fifo, NULL) + size + 1);
 
     if (s->is_dvd){
-        if (is_iframe) {
+        if (is_iframe && (s->packet_number == 0 || (pts - stream->vobu_start_pts >= 36000))) { // min VOBU length 0.4 seconds (mpucoder)
             stream->fifo_iframe_ptr = stream->fifo.wptr;
             stream->align_iframe = 1;
+            stream->vobu_start_pts = pts;
         } else {
             stream->align_iframe = 0;
         }
