@@ -1120,6 +1120,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         }else
             set_p_mv_tables(s, mx, my, 1);
     }else{
+        int intra_score, i;
         mb_type= MB_TYPE_INTER;
 
         dmin= s->me.sub_motion_search(s, &mx, &my, dmin, rel_xmin, rel_ymin, rel_xmax, rel_ymax,
@@ -1136,10 +1137,59 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
                 dmin=dmin4;
             }
         }
-        pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin; 
+                
+//        pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin; 
         set_p_mv_tables(s, mx, my, mb_type!=MB_TYPE_INTER4V);
+
+        /* get intra luma score */
+        if((s->avctx->mb_cmp&0xFF)==FF_CMP_SSE){
+            intra_score= (varc<<8) - 500; //FIXME dont scale it down so we dont have to fix it
+        }else{
+            int mean= (sum+128)>>8;
+            mean*= 0x01010101;
+            
+            for(i=0; i<16; i++){
+                *(uint32_t*)(&s->me.scratchpad[i*s->linesize+ 0]) = mean;
+                *(uint32_t*)(&s->me.scratchpad[i*s->linesize+ 4]) = mean;
+                *(uint32_t*)(&s->me.scratchpad[i*s->linesize+ 8]) = mean;
+                *(uint32_t*)(&s->me.scratchpad[i*s->linesize+12]) = mean;
+            }
+
+            intra_score= s->dsp.mb_cmp[0](s, s->me.scratchpad, pix, s->linesize);
+        }
+#if 0 //FIXME
+        /* get chroma score */
+        if(s->avctx->mb_cmp&FF_CMP_CHROMA){
+            for(i=1; i<3; i++){
+                uint8_t *dest_c;
+                int mean;
+                
+                if(s->out_format == FMT_H263){
+                    mean= (s->dc_val[i][mb_x + (mb_y+1)*(s->mb_width+2)] + 4)>>3; //FIXME not exact but simple ;)
+                }else{
+                    mean= (s->last_dc[i] + 4)>>3;
+                }
+                dest_c = s->new_picture.data[i] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
+                
+                mean*= 0x01010101;
+                for(i=0; i<8; i++){
+                    *(uint32_t*)(&s->me.scratchpad[i*s->uvlinesize+ 0]) = mean;
+                    *(uint32_t*)(&s->me.scratchpad[i*s->uvlinesize+ 4]) = mean;
+                }
+                
+                intra_score+= s->dsp.mb_cmp[1](s, s->me.scratchpad, dest_c, s->uvlinesize);
+            }                
+        }
+#endif
+        intra_score += s->me.mb_penalty_factor*16;
         
-        if (vard <= 64 || vard < varc) {
+        if(intra_score < dmin){
+            mb_type= MB_TYPE_INTRA;
+            s->current_picture.mb_type[mb_y*s->mb_stride + mb_x]= MB_TYPE_INTRA; //FIXME cleanup
+        }else
+            s->current_picture.mb_type[mb_y*s->mb_stride + mb_x]= 0;
+        
+        if (vard <= 64 || vard < varc) { //FIXME
             s->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         }else{
             s->scene_change_score+= s->qscale;
@@ -1566,7 +1616,7 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
             int x;
             int xy= y*s->mb_stride;
             for(x=0; x<s->mb_width; x++){
-                if(s->mb_type[xy] & type){
+                if((s->mb_type[xy] & type) || (s->mb_type[xy] & MB_TYPE_INTRA)){ //FIXME 
                     int fcode= FFMAX(fcode_tab[mv_table[xy][0] + MAX_MV],
                                      fcode_tab[mv_table[xy][1] + MAX_MV]);
                     int j;
@@ -1621,6 +1671,7 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
                    || s->p_mv_table[xy][1] >=range || s->p_mv_table[xy][1] <-range){
                     s->mb_type[xy] &= ~MB_TYPE_INTER;
                     s->mb_type[xy] |= MB_TYPE_INTRA;
+                    s->current_picture.mb_type[xy]= MB_TYPE_INTRA;
                     s->p_mv_table[xy][0] = 0;
                     s->p_mv_table[xy][1] = 0;
                 }
@@ -1650,6 +1701,7 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
                            || my >=range || my <-range){
                             s->mb_type[i] &= ~MB_TYPE_INTER4V;
                             s->mb_type[i] |= MB_TYPE_INTRA;
+                            s->current_picture.mb_type[i]= MB_TYPE_INTRA;
                         }
                     }
                 }

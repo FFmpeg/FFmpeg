@@ -2268,7 +2268,6 @@ static void opt_output_file(const char *filename)
                     video_enc->flags |= CODEC_FLAG_H263P_AIC;
                 }
                 if (use_4mv) {
-                    video_enc->mb_decision = FF_MB_DECISION_BITS; //FIXME remove
                     video_enc->flags |= CODEC_FLAG_4MV;
                 }
             
