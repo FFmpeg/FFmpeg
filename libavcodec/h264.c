@@ -1257,31 +1257,7 @@ static void h264_add_idct_c(uint8_t *dst, DCTELEM *block, int stride){
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
     block[0] += 32;
-#if 1
-    for(i=0; i<4; i++){
-        const int z0=  block[i + 4*0]     +  block[i + 4*2];
-        const int z1=  block[i + 4*0]     -  block[i + 4*2];
-        const int z2= (block[i + 4*1]>>1) -  block[i + 4*3];
-        const int z3=  block[i + 4*1]     + (block[i + 4*3]>>1);
 
-        block[i + 4*0]= z0 + z3;
-        block[i + 4*1]= z1 + z2;
-        block[i + 4*2]= z1 - z2;
-        block[i + 4*3]= z0 - z3;
-    }
-
-    for(i=0; i<4; i++){
-        const int z0=  block[0 + 4*i]     +  block[2 + 4*i];
-        const int z1=  block[0 + 4*i]     -  block[2 + 4*i];
-        const int z2= (block[1 + 4*i]>>1) -  block[3 + 4*i];
-        const int z3=  block[1 + 4*i]     + (block[3 + 4*i]>>1);
-
-        dst[0 + i*stride]= cm[ dst[0 + i*stride] + ((z0 + z3) >> 6) ];
-        dst[1 + i*stride]= cm[ dst[1 + i*stride] + ((z1 + z2) >> 6) ];
-        dst[2 + i*stride]= cm[ dst[2 + i*stride] + ((z1 - z2) >> 6) ];
-        dst[3 + i*stride]= cm[ dst[3 + i*stride] + ((z0 - z3) >> 6) ];
-    }
-#else
     for(i=0; i<4; i++){
         const int z0=  block[0 + 4*i]     +  block[2 + 4*i];
         const int z1=  block[0 + 4*i]     -  block[2 + 4*i];
@@ -1305,7 +1281,6 @@ static void h264_add_idct_c(uint8_t *dst, DCTELEM *block, int stride){
         dst[i + 2*stride]= cm[ dst[i + 2*stride] + ((z1 - z2) >> 6) ];
         dst[i + 3*stride]= cm[ dst[i + 3*stride] + ((z0 - z3) >> 6) ];
     }
-#endif
 }
 
 #if 0
@@ -2162,9 +2137,6 @@ static int alloc_tables(H264Context *h){
     if( h->pps.cabac ) {
         CHECKED_ALLOCZ(h->chroma_pred_mode_table, big_mb_num * sizeof(uint8_t))
         CHECKED_ALLOCZ(h->cbp_table, big_mb_num * sizeof(uint16_t))
-    } else {
-        h->chroma_pred_mode_table = NULL;
-        h->cbp_table = NULL;
     }
 
     memset(h->slice_table_base, -1, big_mb_num  * sizeof(uint8_t));
