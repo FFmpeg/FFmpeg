@@ -143,9 +143,12 @@ void register_all(void)
     register_avformat(&rawvideo_format);
     register_avformat(&ffm_format);
     register_avformat(&pgm_format);
+    register_avformat(&ppm_format);
     register_avformat(&pgmyuv_format);
     register_avformat(&imgyuv_format);
     register_avformat(&pgmpipe_format);
+    register_avformat(&pgmyuvpipe_format);
+    register_avformat(&ppmpipe_format);
 
     register_protocol(&file_protocol);
     register_protocol(&pipe_protocol);

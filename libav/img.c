@@ -29,6 +29,7 @@
 #define IMGFMT_YUV     1
 #define IMGFMT_PGMYUV  2
 #define IMGFMT_PGM     3
+#define IMGFMT_PPM     4
 
 typedef struct {
     int width;
@@ -109,6 +110,31 @@ static int pgm_read(VideoData *s, ByteIOContext *f, UINT8 *buf, int size, int is
     return 0;
 }
 
+static int ppm_read(VideoData *s, ByteIOContext *f, UINT8 *buf, int size)
+{
+    int width, height;
+    char buf1[32];
+    UINT8 *picture[3];
+
+    width = s->width;
+    height = s->height;
+
+    pnm_get(f, buf1, sizeof(buf1));
+    if (strcmp(buf1, "P6")) {
+        return -EIO;
+    }
+    
+    pnm_get(f, buf1, sizeof(buf1));
+    pnm_get(f, buf1, sizeof(buf1));
+    pnm_get(f, buf1, sizeof(buf1));
+    
+    picture[0] = buf;
+    get_buffer(f, picture[0], width * height*3);
+    
+    return 0;
+
+}
+
 static int yuv_read(VideoData *s, const char *filename, UINT8 *buf, int size1)
 {
     ByteIOContext pb1, *pb = &pb1;
@@ -175,6 +201,9 @@ int img_read_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case IMGFMT_YUV:
         ret = yuv_read(s, filename, pkt->data, pkt->size);
+        break;
+    case IMGFMT_PPM:
+        ret = ppm_read(s, f, pkt->data, pkt->size);
         break;
     default:
         return -EIO;
@@ -250,13 +279,17 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     else
         s->is_pipe = 1;
         
-    if (s1->format == &pgmpipe_format ||
+    if (s1->format == &pgmyuvpipe_format ||
         s1->format == &pgmyuv_format)
         s->img_fmt = IMGFMT_PGMYUV;
-    else if (s1->format == &pgm_format)
+    else if (s1->format == &pgmpipe_format ||
+             s1->format == &pgm_format)
         s->img_fmt = IMGFMT_PGM;
     else if (s1->format == &imgyuv_format)
         s->img_fmt = IMGFMT_YUV;
+    else if (s1->format == &ppmpipe_format ||
+             s1->format == &ppm_format)
+        s->img_fmt = IMGFMT_PPM;
     else
         goto fail;
 
@@ -279,6 +312,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     switch(s->img_fmt) {
     case IMGFMT_PGM:
     case IMGFMT_PGMYUV:
+    case IMGFMT_PPM:
         pnm_get(f, buf1, sizeof(buf1));
         pnm_get(f, buf1, sizeof(buf1));
         s->width = atoi(buf1);
@@ -316,13 +350,18 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         url_fseek(f, 0, SEEK_SET);
     }
     
-    s->img_size = (s->width * s->height * 3) / 2;
 
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = CODEC_ID_RAWVIDEO;
     st->codec.width = s->width;
     st->codec.height = s->height;
-    st->codec.pix_fmt = PIX_FMT_YUV420P;
+    if (s->img_fmt == IMGFMT_PPM) {
+        st->codec.pix_fmt = PIX_FMT_RGB24;
+        s->img_size = (s->width * s->height * 3);
+    } else {
+        st->codec.pix_fmt = PIX_FMT_YUV420P;
+        s->img_size = (s->width * s->height * 3) / 2;
+    }
     if (!ap || !ap->frame_rate)
         st->codec.frame_rate = 25 * FRAME_RATE_BASE;
     else
@@ -347,7 +386,7 @@ static int img_read_close(AVFormatContext *s1)
 /******************************************************/
 /* image output */
 
-int pgm_save(AVPicture *picture, int width, int height, ByteIOContext *pb, int is_yuv) 
+static int pgm_save(AVPicture *picture, int width, int height, ByteIOContext *pb, int is_yuv) 
 {
     int i, h;
     char buf[100];
@@ -379,6 +418,27 @@ int pgm_save(AVPicture *picture, int width, int height, ByteIOContext *pb, int i
             ptr2 += picture->linesize[2];
         }
     }
+    put_flush_packet(pb);
+    return 0;
+}
+
+static int ppm_save(AVPicture *picture, int width, int height, ByteIOContext *pb) 
+{
+    int i;
+    char buf[100];
+    UINT8 *ptr;
+
+    snprintf(buf, sizeof(buf), 
+             "P6\n%d %d\n%d\n",
+             width, height, 255);
+    put_buffer(pb, buf, strlen(buf));
+    
+    ptr = picture->data[0];
+    for(i=0;i<height;i++) {
+        put_buffer(pb, ptr, width * 3);
+        ptr += picture->linesize[0];
+    }
+
     put_flush_packet(pb);
     return 0;
 }
@@ -434,15 +494,20 @@ static int img_write_header(AVFormatContext *s)
     else
         img->is_pipe = 1;
         
-    if (s->format == &pgmpipe_format ||
-        s->format == &pgmyuv_format)
+    if (s->format == &pgmyuvpipe_format ||
+        s->format == &pgmyuv_format) {
         img->img_fmt = IMGFMT_PGMYUV;
-    else if (s->format == &pgm_format)
+    } else if (s->format == &pgmpipe_format ||
+               s->format == &pgm_format) {
         img->img_fmt = IMGFMT_PGM;
-    else if (s->format == &imgyuv_format)
+    } else if (s->format == &imgyuv_format) {
         img->img_fmt = IMGFMT_YUV;
-    else
+    } else if (s->format == &ppmpipe_format ||
+               s->format == &ppm_format) {
+        img->img_fmt = IMGFMT_PPM;
+    } else {
         goto fail;
+    }
     return 0;
  fail:
     free(img);
@@ -461,16 +526,31 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
 
     width = st->codec.width;
     height = st->codec.height;
-    size1 = (width * height * 3) / 2;
-    if (size != size1)
-        return -EIO;
 
-    picture.data[0] = buf;
-    picture.data[1] = picture.data[0] + width * height;
-    picture.data[2] = picture.data[1] + (width * height) / 4;
-    picture.linesize[0] = width;
-    picture.linesize[1] = width >> 1; 
-    picture.linesize[2] = width >> 1;
+    switch(st->codec.pix_fmt) {
+    case PIX_FMT_YUV420P:
+        size1 = (width * height * 3) / 2;
+        if (size != size1)
+            return -EIO;
+        
+        picture.data[0] = buf;
+        picture.data[1] = picture.data[0] + width * height;
+        picture.data[2] = picture.data[1] + (width * height) / 4;
+        picture.linesize[0] = width;
+        picture.linesize[1] = width >> 1; 
+        picture.linesize[2] = width >> 1;
+        break;
+    case PIX_FMT_RGB24:
+        size1 = (width * height * 3);
+        if (size != size1)
+            return -EIO;
+        picture.data[0] = buf;
+        picture.linesize[0] = width * 3;
+        break;
+    default:
+        return -EIO;
+    }
+    
     snprintf(filename, sizeof(filename), img->path, img->img_number);
 
     if (!img->is_pipe) {
@@ -489,6 +569,9 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
         break;
     case IMGFMT_YUV:
         ret = yuv_save(&picture, width, height, filename);
+        break;
+    case IMGFMT_PPM:
+        ret = ppm_save(&picture, width, height, pb);
         break;
     }
     if (!img->is_pipe) {
@@ -542,6 +625,24 @@ AVFormat pgmyuv_format = {
     AVFMT_NOFILE,
 };
 
+AVFormat ppm_format = {
+    "ppm",
+    "ppm image format",
+    "",
+    "ppm",
+    CODEC_ID_NONE,
+    CODEC_ID_RAWVIDEO,
+    img_write_header,
+    img_write_packet,
+    img_write_trailer,
+
+    img_read_header,
+    img_read_packet,
+    img_read_close,
+    NULL,
+    AVFMT_NOFILE,
+};
+
 AVFormat imgyuv_format = {
     ".Y.U.V",
     ".Y.U.V format",
@@ -565,6 +666,40 @@ AVFormat pgmpipe_format = {
     "PGM pipe format",
     "",
     "pgm",
+    CODEC_ID_NONE,
+    CODEC_ID_RAWVIDEO,
+    img_write_header,
+    img_write_packet,
+    img_write_trailer,
+
+    img_read_header,
+    img_read_packet,
+    img_read_close,
+    NULL,
+};
+
+AVFormat pgmyuvpipe_format = {
+    "pgmyuvpipe",
+    "PGM YUV pipe format",
+    "",
+    "pgm",
+    CODEC_ID_NONE,
+    CODEC_ID_RAWVIDEO,
+    img_write_header,
+    img_write_packet,
+    img_write_trailer,
+
+    img_read_header,
+    img_read_packet,
+    img_read_close,
+    NULL,
+};
+
+AVFormat ppmpipe_format = {
+    "ppmpipe",
+    "PPM pipe format",
+    "",
+    "ppm",
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
     img_write_header,

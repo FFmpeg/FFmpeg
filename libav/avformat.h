@@ -126,9 +126,13 @@ extern AVFormat wav_format;
 
 /* img.c */
 extern AVFormat pgm_format;
+extern AVFormat ppm_format;
 extern AVFormat pgmyuv_format;
 extern AVFormat imgyuv_format;
+
 extern AVFormat pgmpipe_format;
+extern AVFormat pgmyuvpipe_format;
+extern AVFormat ppmpipe_format;
 
 /* raw.c */
 extern AVFormat mp2_format;
