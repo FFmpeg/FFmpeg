@@ -50,7 +50,14 @@ static const long long fdct_one_corr ATTR_ALIGN(8) = 0x0001000100010001LL;
 
 static const long fdct_r_row[2] ATTR_ALIGN(8) = {RND_FRW_ROW, RND_FRW_ROW };
 
-static const long fdct_r_row_sse2[4] ATTR_ALIGN(16) = {RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW};
+struct 
+{
+ const long fdct_r_row_sse2[4] ATTR_ALIGN(16);
+} fdct_r_row_sse2 ATTR_ALIGN(16)=
+{{
+ RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW
+}};
+//static const long fdct_r_row_sse2[4] ATTR_ALIGN(16) = {RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW};
 
 static const int16_t tab_frw_01234567[] ATTR_ALIGN(8) = {  // forward_dct coeff table
   16384,   16384,   -8867,  -21407, 
@@ -126,7 +133,12 @@ static const int16_t tab_frw_01234567[] ATTR_ALIGN(8) = {  // forward_dct coeff 
    6270,   26722,    6270,  -17855, 
 };
 
-static const int16_t tab_frw_01234567_sse2[] ATTR_ALIGN(16) = {  // forward_dct coeff table  
+struct 
+{
+ const int16_t tab_frw_01234567_sse2[256] ATTR_ALIGN(16);
+} tab_frw_01234567_sse2 ATTR_ALIGN(16) =
+{{
+//static const int16_t tab_frw_01234567_sse2[] ATTR_ALIGN(16) = {  // forward_dct coeff table  
 #define TABLE_SSE2 C4,  C4,  C1,  C3, -C6, -C2, -C1, -C5, \
                    C4,  C4,  C5,  C7,  C2,  C6,  C3, -C7, \
                   -C4,  C4,  C7,  C3,  C6, -C2,  C7, -C5, \
@@ -252,7 +264,8 @@ TABLE_SSE2
 #define C6 12299
 #define C7 6270
 TABLE_SSE2
-};
+}};
+
 
 static always_inline void fdct_col(const int16_t *in, int16_t *out, int offset)
 {
@@ -392,7 +405,7 @@ static always_inline void fdct_row_sse2(const int16_t *in, int16_t *out)
 	"FDCT_ROW_SSE2_H2 80 192 \n\t"
 	"FDCT_ROW_SSE2 80 \n\t"
 	:
-	: "r" (in), "r" (tab_frw_01234567_sse2), "r" (fdct_r_row_sse2), "i" (SHIFT_FRW_ROW), "r" (out)
+	: "r" (in), "r" (tab_frw_01234567_sse2.tab_frw_01234567_sse2), "r" (fdct_r_row_sse2.fdct_r_row_sse2), "i" (SHIFT_FRW_ROW), "r" (out)
     );
 }
 
