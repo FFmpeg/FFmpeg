@@ -1111,7 +1111,8 @@ static int mov_probe(AVProbeData *p)
         case MKTAG( 'm', 'o', 'o', 'v' ):
         case MKTAG( 'w', 'i', 'd', 'e' ):
         case MKTAG( 'f', 'r', 'e', 'e' ):
-        case MKTAG( 'm', 'd', 'a', 't'):
+        case MKTAG( 'm', 'd', 'a', 't' ):
+        case MKTAG( 'p', 'n', 'o', 't' ): /* detect movs with preview pics like ew.mov and april.mov */
             return AVPROBE_SCORE_MAX;
         case MKTAG( 'f', 't', 'y', 'p' ):
         case MKTAG( 's', 'k', 'i', 'p' ):            
