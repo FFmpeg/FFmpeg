@@ -1685,7 +1685,20 @@ static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 	int i;
 	for(i=0; i<width; i++)
 	{
-//FIXME optimize
+#if 1
+		int d0= le2me_32( ((uint32_t*)src1)[i] );
+		int d1= le2me_32( ((uint32_t*)src2)[i] );
+		
+		int dl= (d0&0x07E0F81F) + (d1&0x07E0F81F);
+		int dh= ((d0>>5)&0x07C0F83F) + ((d1>>5)&0x07C0F83F);
+
+		int dh2= (dh>>11) + (dh<<21);
+		int d= dh2 + dl;
+
+		int b= d&0x7F;
+		int r= (d>>11)&0x7F;
+		int g= d>>21;
+#else
 		int d0= src1[i*4] + (src1[i*4+1]<<8);
 		int b0= d0&0x1F;
 		int g0= (d0>>5)&0x3F;
@@ -1709,7 +1722,7 @@ static inline void RENAME(bgr16ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 		int b= b0 + b1 + b2 + b3;
 		int g= g0 + g1 + g2 + g3;
 		int r= r0 + r1 + r2 + r3;
-
+#endif
 		dstU[i]= ((2*RU*r + GU*g + 2*BU*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
 		dstV[i]= ((2*RV*r + GV*g + 2*BV*b)>>(RGB2YUV_SHIFT+2-2)) + 128;
 	}
