@@ -218,57 +218,52 @@ static inline int get_context(FFV1Context *f, int_fast16_t *src, int_fast16_t *l
         return f->quant_table[0][(L-LT) & 0xFF] + f->quant_table[1][(LT-T) & 0xFF] + f->quant_table[2][(T-RT) & 0xFF];
 }
 
-/**
- * put 
- */
-static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed, int max_exp){
+static inline void put_symbol(RangeCoder *c, uint8_t *state, int v, int is_signed){
     int i;
 
     if(v){
         const int a= ABS(v);
         const int e= av_log2(a);
-
         put_rac(c, state+0, 0);
         
+        assert(e<=9);
+
         for(i=0; i<e; i++){
-            put_rac(c, state+1+i, 1);  //1..8
+            put_rac(c, state+1+i, 1);  //1..10
+        }
+        put_rac(c, state+1+i, 0);
+
+        for(i=e-1; i>=0; i--){
+            put_rac(c, state+22+i, (a>>i)&1); //22..31
         }
 
-        if(e<max_exp){
-            put_rac(c, state+1+i, 0);      //1..8
-
-            for(i=e-1; i>=0; i--){
-                put_rac(c, state+16+e+i, (a>>i)&1); //17..29
-            }
-            if(is_signed)
-                put_rac(c, state+9 + e, v < 0); //9..16
-        }
+        if(is_signed)
+            put_rac(c, state+11 + e, v < 0); //11..21
     }else{
         put_rac(c, state+0, 1);
     }
 }
 
-static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed, int max_exp){
+static inline int get_symbol(RangeCoder *c, uint8_t *state, int is_signed){
     if(get_rac(c, state+0))
         return 0;
     else{
-        int i, e;
- 
-        for(e=0; e<max_exp; e++){ 
-            int a= 1<<e;
-
-            if(get_rac(c, state + 1 + e)==0){ // 1..8
-                for(i=e-1; i>=0; i--){
-                    a += get_rac(c, state+16+e+i)<<i; //17..29
-                }
-
-                if(is_signed && get_rac(c, state+9 + e)) //9..16
-                    return -a;
-                else
-                    return a;
-            }
+        int i, e, a;
+        e= 0;
+        while(get_rac(c, state+1 + e)){ //1..10
+            e++;
         }
-        return -(1<<e);
+        assert(e<=9);
+
+        a= 1;
+        for(i=e-1; i>=0; i--){
+            a += a + get_rac(c, state+22 + i); //22..31
+        }
+
+        if(is_signed && get_rac(c, state+11 + e)) //11..21
+            return -a;
+        else
+            return a;
     }
 }
 
@@ -380,7 +375,7 @@ static inline void encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], i
         diff= fold(diff, bits);
         
         if(s->ac){
-            put_symbol(c, p->state[context], diff, 1, bits-1);
+            put_symbol(c, p->state[context], diff, 1);
         }else{
             if(context == 0) run_mode=1;
             
@@ -492,11 +487,11 @@ static void write_quant_table(RangeCoder *c, int16_t *quant_table){
 
     for(i=1; i<128 ; i++){
         if(quant_table[i] != quant_table[i-1]){
-            put_symbol(c, state, i-last-1, 0, 7);
+            put_symbol(c, state, i-last-1, 0);
             last= i;
         }
     }
-    put_symbol(c, state, i-last-1, 0, 7);
+    put_symbol(c, state, i-last-1, 0);
 }
 
 static void write_header(FFV1Context *f){
@@ -506,12 +501,12 @@ static void write_header(FFV1Context *f){
 
     memset(state, 128, sizeof(state));
     
-    put_symbol(c, state, f->version, 0, 7);
-    put_symbol(c, state, f->avctx->coder_type, 0, 7);
-    put_symbol(c, state, f->colorspace, 0, 7); //YUV cs type 
+    put_symbol(c, state, f->version, 0);
+    put_symbol(c, state, f->avctx->coder_type, 0);
+    put_symbol(c, state, f->colorspace, 0); //YUV cs type 
     put_rac(c, state, 1); //chroma planes
-        put_symbol(c, state, f->chroma_h_shift, 0, 7);
-        put_symbol(c, state, f->chroma_v_shift, 0, 7);
+        put_symbol(c, state, f->chroma_h_shift, 0);
+        put_symbol(c, state, f->chroma_v_shift, 0);
     put_rac(c, state, 0); //no transparency plane
 
     for(i=0; i<5; i++)
@@ -618,7 +613,6 @@ static void clear_state(FFV1Context *f){
         for(j=0; j<p->context_count; j++){
             if(f->ac){
                 memset(p->state[j], 128, sizeof(uint8_t)*CONTEXT_SIZE);
-                p->state[j][7] = 256-8;
             }else{
                 p->vlc_state[j].drift= 0;
                 p->vlc_state[j].error_sum= 4; //FFMAX((RANGE + 32)/64, 2);
@@ -723,9 +717,9 @@ static inline void decode_line(FFV1Context *s, int w, int_fast16_t *sample[2], i
             sign=0;
         
 
-        if(s->ac)
-            diff= get_symbol(c, p->state[context], 1, bits-1);
-        else{
+        if(s->ac){
+            diff= get_symbol(c, p->state[context], 1);
+        }else{
             if(context == 0 && run_mode==0) run_mode=1;
             
             if(run_mode){
@@ -838,7 +832,7 @@ static int read_quant_table(RangeCoder *c, int16_t *quant_table, int scale){
     memset(state, 128, sizeof(state));
 
     for(v=0; i<128 ; v++){
-        int len= get_symbol(c, state, 0, 7) + 1;
+        int len= get_symbol(c, state, 0) + 1;
 
         if(len + i > 128) return -1;
         
@@ -865,12 +859,12 @@ static int read_header(FFV1Context *f){
     
     memset(state, 128, sizeof(state));
 
-    f->version= get_symbol(c, state, 0, 7);
-    f->ac= f->avctx->coder_type= get_symbol(c, state, 0, 7);
-    f->colorspace= get_symbol(c, state, 0, 7); //YUV cs type
+    f->version= get_symbol(c, state, 0);
+    f->ac= f->avctx->coder_type= get_symbol(c, state, 0);
+    f->colorspace= get_symbol(c, state, 0); //YUV cs type
     get_rac(c, state); //no chroma = false
-    f->chroma_h_shift= get_symbol(c, state, 0, 7);
-    f->chroma_v_shift= get_symbol(c, state, 0, 7);
+    f->chroma_h_shift= get_symbol(c, state, 0);
+    f->chroma_v_shift= get_symbol(c, state, 0);
     get_rac(c, state); //transparency plane
     f->plane_count= 2;
 
