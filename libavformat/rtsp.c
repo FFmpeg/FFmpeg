@@ -52,9 +52,6 @@ typedef struct RTSPStream {
     int sdp_payload_type; /* payload type - only used in SDP */
 } RTSPStream;
 
-/* suppress this hack */
-int rtsp_abort_req = 0;
-
 /* XXX: currently, the only way to change the protocols consists in
    changing this variable */
 #if 1
@@ -518,6 +515,31 @@ void rtsp_parse_line(RTSPHeader *reply, const char *buf)
     }
 }
 
+/* skip a RTP/TCP interleaved packet */
+static void rtsp_skip_packet(AVFormatContext *s)
+{
+    RTSPState *rt = s->priv_data;
+    int ret, len, len1;
+    uint8_t buf[1024];
+
+    ret = url_read(rt->rtsp_hd, buf, 3);
+    if (ret != 3)
+        return;
+    len = (buf[1] << 8) | buf[2];
+#ifdef DEBUG
+    printf("skipping RTP packet len=%d\n", len);
+#endif
+    /* skip payload */
+    while (len > 0) {
+        len1 = len;
+        if (len1 > sizeof(buf))
+            len1 = sizeof(buf);
+        ret = url_read(rt->rtsp_hd, buf, len1);
+        if (ret != len1)
+            return;
+        len -= len1;
+    }
+}
 
 static void rtsp_send_cmd(AVFormatContext *s, 
                           const char *cmd, RTSPHeader *reply, 
@@ -552,11 +574,14 @@ static void rtsp_send_cmd(AVFormatContext *s,
     for(;;) {
         q = buf;
         for(;;) {
-            if (url_read(rt->rtsp_hd, &ch, 1) == 0)
+            if (url_read(rt->rtsp_hd, &ch, 1) != 1)
                 break;
             if (ch == '\n')
                 break;
-            if (ch != '\r') {
+            if (ch == '$') {
+                /* XXX: only parse it if first char on line ? */
+                rtsp_skip_packet(s);
+            } else if (ch != '\r') {
                 if ((q - buf) < sizeof(buf) - 1)
                     *q++ = ch;
             }
@@ -617,8 +642,6 @@ static int rtsp_read_header(AVFormatContext *s,
     RTSPStream *rtsp_st;
     int protocol_mask;
 
-    rtsp_abort_req = 0;
-    
     /* extract hostname and port */
     url_split(NULL, 0,
               host, sizeof(host), &port, path, sizeof(path), s->filename);
@@ -904,7 +927,7 @@ static int udp_read_packet(AVFormatContext *s,
     struct timeval tv;
 
     for(;;) {
-        if (rtsp_abort_req)
+        if (url_interrupt_cb())
             return -EIO;
         FD_ZERO(&rfds);
         fd_max = -1;
@@ -920,7 +943,7 @@ static int udp_read_packet(AVFormatContext *s,
         }
         /* XXX: also add proper API to abort */
         tv.tv_sec = 0;
-        tv.tv_usec = 500000;
+        tv.tv_usec = 100 * 1000;
         n = select(fd_max + 1, &rfds, NULL, NULL, &tv);
         if (n > 0) {
             for(i = 0; i < s->nb_streams; i++) {
@@ -957,6 +980,52 @@ static int rtsp_read_packet(AVFormatContext *s,
         break;
     }
     return ret;
+}
+
+/* pause the stream */
+int rtsp_pause(AVFormatContext *s)
+{
+    RTSPState *rt;
+    RTSPHeader reply1, *reply = &reply1;
+    char cmd[1024];
+
+    if (s->iformat != &rtsp_demux)
+        return -1;
+    
+    rt = s->priv_data;
+    
+    snprintf(cmd, sizeof(cmd), 
+             "PAUSE %s RTSP/1.0\r\n",
+             s->filename);
+    rtsp_send_cmd(s, cmd, reply, NULL);
+    if (reply->status_code != RTSP_STATUS_OK) {
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
+/* resume the stream */
+int rtsp_resume(AVFormatContext *s)
+{
+    RTSPState *rt;
+    RTSPHeader reply1, *reply = &reply1;
+    char cmd[1024];
+
+    if (s->iformat != &rtsp_demux)
+        return -1;
+    
+    rt = s->priv_data;
+    
+    snprintf(cmd, sizeof(cmd), 
+             "PLAY %s RTSP/1.0\r\n",
+             s->filename);
+    rtsp_send_cmd(s, cmd, reply, NULL);
+    if (reply->status_code != RTSP_STATUS_OK) {
+        return -1;
+    } else {
+        return 0;
+    }
 }
 
 static int rtsp_read_close(AVFormatContext *s)
@@ -997,7 +1066,7 @@ static int rtsp_read_close(AVFormatContext *s)
     return 0;
 }
 
-static AVInputFormat rtsp_demux = {
+AVInputFormat rtsp_demux = {
     "rtsp",
     "RTSP input format",
     sizeof(RTSPState),
