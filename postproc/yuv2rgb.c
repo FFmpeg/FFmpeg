@@ -159,20 +159,20 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
 #ifdef ARCH_X86
 
 /* hope these constant values are cache line aligned */
-uint64_t __attribute__((aligned(8))) mmx_00ffw = 0x00ff00ff00ff00ffULL;
-uint64_t __attribute__((aligned(8))) mmx_redmask = 0xf8f8f8f8f8f8f8f8ULL;
-uint64_t __attribute__((aligned(8))) mmx_grnmask = 0xfcfcfcfcfcfcfcfcULL;
+uint64_t attribute_used __attribute__((aligned(8))) mmx_00ffw = 0x00ff00ff00ff00ffULL;
+uint64_t attribute_used __attribute__((aligned(8))) mmx_redmask = 0xf8f8f8f8f8f8f8f8ULL;
+uint64_t attribute_used __attribute__((aligned(8))) mmx_grnmask = 0xfcfcfcfcfcfcfcfcULL;
 
-uint64_t __attribute__((aligned(8))) M24A=   0x00FF0000FF0000FFULL;
-uint64_t __attribute__((aligned(8))) M24B=   0xFF0000FF0000FF00ULL;
-uint64_t __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000ULL;
+uint64_t attribute_used __attribute__((aligned(8))) M24A=   0x00FF0000FF0000FFULL;
+uint64_t attribute_used __attribute__((aligned(8))) M24B=   0xFF0000FF0000FF00ULL;
+uint64_t attribute_used __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000ULL;
 
 // the volatile is required because gcc otherwise optimizes some writes away not knowing that these
 // are read in the asm block
-volatile uint64_t __attribute__((aligned(8))) b5Dither;
-volatile uint64_t __attribute__((aligned(8))) g5Dither;
-volatile uint64_t __attribute__((aligned(8))) g6Dither;
-volatile uint64_t __attribute__((aligned(8))) r5Dither;
+volatile uint64_t attribute_used __attribute__((aligned(8))) b5Dither;
+volatile uint64_t attribute_used __attribute__((aligned(8))) g5Dither;
+volatile uint64_t attribute_used __attribute__((aligned(8))) g6Dither;
+volatile uint64_t attribute_used __attribute__((aligned(8))) r5Dither;
 
 uint64_t __attribute__((aligned(8))) dither4[2]={
 	0x0103010301030103LL,
