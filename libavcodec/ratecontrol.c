@@ -1,7 +1,7 @@
 /*
  * Rate control for video encoders
  *
- * Copyright (c) 2002 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (c) 2002-2003 Michael Niedermayer <michaelni@gmx.at>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -62,7 +62,7 @@ int ff_rate_control_init(MpegEncContext *s)
         rcc->frame_count[i]= 1; // 1 is better cuz of 1/0 and such
         rcc->last_qscale_for[i]=FF_QP2LAMBDA * 5;
     }
-    rcc->buffer_index= s->avctx->rc_buffer_size/2;
+    rcc->buffer_index= s->avctx->rc_initial_buffer_occupancy;
 
     if(s->flags&CODEC_FLAG_PASS2){
         int i;
@@ -202,20 +202,23 @@ static void update_rc_buffer(MpegEncContext *s, int frame_size){
     const double min_rate= s->avctx->rc_min_rate/fps;
     const double max_rate= s->avctx->rc_max_rate/fps;
 
+//printf("%f %f %d %f %f\n", buffer_size, rcc->buffer_index, frame_size, min_rate, max_rate);
     if(buffer_size){
+        int left;
+
         rcc->buffer_index-= frame_size;
-        if(rcc->buffer_index < buffer_size/2 /*FIXME /2 */ || min_rate==0){
-            rcc->buffer_index+= max_rate;
-            if(rcc->buffer_index >= buffer_size)
-                rcc->buffer_index= buffer_size-1;
-        }else{
-            rcc->buffer_index+= min_rate;
-        }
-        
-        if(rcc->buffer_index < 0)
+        if(rcc->buffer_index < 0){
             av_log(s->avctx, AV_LOG_ERROR, "rc buffer underflow\n");
-        if(rcc->buffer_index >= s->avctx->rc_buffer_size)
+            rcc->buffer_index= 0;
+        }
+
+        left= buffer_size - rcc->buffer_index - 1;
+        rcc->buffer_index += clip(left, min_rate, max_rate);
+
+        if(rcc->buffer_index > s->avctx->rc_buffer_size){
             av_log(s->avctx, AV_LOG_ERROR, "rc buffer overflow\n");
+            rcc->buffer_index= s->avctx->rc_buffer_size;
+        }
     }
 }
 
@@ -385,8 +388,9 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
     double bits;
     const int pict_type= rce->new_pict_type;
     const double buffer_size= s->avctx->rc_buffer_size;
-    const double min_rate= s->avctx->rc_min_rate;
-    const double max_rate= s->avctx->rc_max_rate;
+    const double fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
+    const double min_rate= s->avctx->rc_min_rate / fps;
+    const double max_rate= s->avctx->rc_max_rate / fps;
     
     get_qminmax(&qmin, &qmax, s, pict_type);
 
@@ -406,7 +410,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
             else if(d<0.0001) d=0.0001;
             q*= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
 
-            q= FFMIN(q, bits2qp(rce, FFMAX((min_rate - buffer_size + rcc->buffer_index)*2, 1)));
+            q= FFMIN(q, bits2qp(rce, FFMAX((min_rate - buffer_size + rcc->buffer_index)*3, 1)));
         }
 
         if(max_rate){
@@ -415,7 +419,7 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
             else if(d<0.0001) d=0.0001;
             q/= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
 
-            q= FFMAX(q, bits2qp(rce, FFMAX(rcc->buffer_index/2, 1)));
+            q= FFMAX(q, bits2qp(rce, FFMAX(rcc->buffer_index/3, 1)));
         }
     }
 //printf("q:%f max:%f min:%f size:%f index:%d bits:%f agr:%f\n", q,max_rate, min_rate, buffer_size, rcc->buffer_index, bits, s->avctx->rc_buffer_aggressivity);

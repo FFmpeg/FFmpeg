@@ -93,7 +93,7 @@ typedef struct RateControlContext{
     FILE *stats_file;
     int num_entries;              ///< number of RateControlEntries 
     RateControlEntry *entry;
-    int buffer_index;             ///< amount of bits in the video/audio buffer 
+    double buffer_index;          ///< amount of bits in the video/audio buffer 
     Predictor pred[5];
     double short_term_qsum;       ///< sum of recent qscales 
     double short_term_qcount;     ///< count of recent qscales 
