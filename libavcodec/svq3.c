@@ -271,15 +271,15 @@ static inline void svq3_mc_dir_part (MpegEncContext *s, int x, int y,
   mx += x;
   my += y;
   
-  if (mx < 0 || mx >= (s->width  - width  - 1) ||
-      my < 0 || my >= (s->height - height - 1)) {
+  if (mx < 0 || mx >= (s->h_edge_pos - width  - 1) ||
+      my < 0 || my >= (s->v_edge_pos - height - 1)) {
 
     if ((s->flags & CODEC_FLAG_EMU_EDGE)) {
       emu = 1;
     }
 
-    mx = clip (mx, -16, (s->width  - width  + 15));
-    my = clip (my, -16, (s->height - height + 15));
+    mx = clip (mx, -16, (s->h_edge_pos - width  + 15));
+    my = clip (my, -16, (s->v_edge_pos - height + 15));
   }
 
   /* form component predictions */
@@ -288,7 +288,7 @@ static inline void svq3_mc_dir_part (MpegEncContext *s, int x, int y,
 
   if (emu) {
     ff_emulated_edge_mc (s, src, s->linesize, (width + 1), (height + 1),
-			 mx, my, s->width, s->height);
+			 mx, my, s->h_edge_pos, s->v_edge_pos);
     src = s->edge_emu_buffer;
   }
   if(thirdpel)
@@ -309,7 +309,7 @@ static inline void svq3_mc_dir_part (MpegEncContext *s, int x, int y,
 
       if (emu) {
 	ff_emulated_edge_mc (s, src, s->uvlinesize, (width + 1), (height + 1),
-			     mx, my, (s->width >> 1), (s->height >> 1));
+			     mx, my, (s->h_edge_pos >> 1), (s->v_edge_pos >> 1));
 	src = s->edge_emu_buffer;
       }
       if(thirdpel)
@@ -397,8 +397,8 @@ static int svq3_decode_mb (H264Context *h, unsigned int mb_type) {
 	pred_motion (h, k, (part_width >> 2), 0, 1, &mx, &my);
 
 	/* clip motion vector prediction to frame border */
-	mx = clip (mx, -6*x, 6*(s->width  - part_width  - x));
-	my = clip (my, -6*y, 6*(s->height - part_height - y));
+	mx = clip (mx, -6*x, 6*(s->h_edge_pos - part_width  - x));
+	my = clip (my, -6*y, 6*(s->v_edge_pos - part_height - y));
 
 	/* get motion vector differential */
 	dy = svq3_get_se_golomb (&s->gb);
@@ -576,11 +576,10 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   int i;
 
   s->flags = avctx->flags;
-
+  
   if (!s->context_initialized) {
-    s->width = (avctx->width + 15) & ~15;
-    s->height = (avctx->height + 15) & ~15;
-    h->b_stride = (s->width >> 2);
+    s->width = avctx->width;
+    s->height = avctx->height;
     h->pred4x4[DIAG_DOWN_LEFT_PRED] = pred4x4_down_left_svq3_c;
     h->pred16x16[PLANE_PRED8x8] = pred16x16_plane_svq3_c;
     h->halfpel_flag = 1;
@@ -590,8 +589,13 @@ static int svq3_decode_frame (AVCodecContext *avctx,
     if (MPV_common_init (s) < 0)
       return -1;
 
+    h->b_stride = 4*s->mb_width;
+
     alloc_tables (h);
   }
+  
+  s->low_delay= 1;  
+  
   if (avctx->extradata && avctx->extradata_size >= 0x63
       && !memcmp (avctx->extradata, "SVQ3", 4)) {
 
@@ -685,6 +689,8 @@ static int svq3_decode_frame (AVCodecContext *avctx,
 	hl_decode_mb (h);
       }
     }
+
+    ff_draw_horiz_band(s, 16*s->mb_y, 16);
   }
 
   *(AVFrame *) data = *(AVFrame *) &s->current_picture;
@@ -705,5 +711,5 @@ AVCodec svq3_decoder = {
     NULL,
     decode_end,
     svq3_decode_frame,
-    CODEC_CAP_DR1,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
