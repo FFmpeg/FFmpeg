@@ -105,25 +105,25 @@ static void DEF(put_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
         ".balign 16			\n\t"
         "1:				\n\t"
 	"movq (%1, %3), %%mm1		\n\t"
-	"movq (%1, %3, 2), %%mm2	\n\t"
+	"movq (%1, %%eax), %%mm2	\n\t"
 	PAVGB" %%mm1, %%mm0		\n\t"
 	PAVGB" %%mm2, %%mm1		\n\t"
         "addl %%eax, %1			\n\t"
 	"movq %%mm0, (%2, %3)		\n\t"
-	"movq %%mm1, (%2, %3, 2)	\n\t"
+	"movq %%mm1, (%2, %%eax)	\n\t"
 	"movq (%1, %3), %%mm1		\n\t"
-	"movq (%1, %3, 2), %%mm0	\n\t"
+	"movq (%1, %%eax), %%mm0	\n\t"
 	PAVGB" %%mm1, %%mm2		\n\t"
 	PAVGB" %%mm0, %%mm1		\n\t"
         "addl %%eax, %2			\n\t"
         "addl %%eax, %1			\n\t"
 	"movq %%mm2, (%2, %3)		\n\t"
-	"movq %%mm1, (%2, %3, 2)	\n\t"
+	"movq %%mm1, (%2, %%eax)	\n\t"
         "addl %%eax, %2			\n\t"
         "subl $4, %0			\n\t"
         "jnz 1b				\n\t"
-	:"+g"(h)
-	:"D"(pixels), "S" (block), "c"(line_size)
+        :"+g"(h), "+D"(pixels), "+S" (block)
+	:"c"(line_size)
 	:"%eax", "memory");
 #else
    // kabi measure me
