@@ -305,6 +305,8 @@ static int decode_end(AVCodecContext *avctx)
 {
     CamtasiaContext * const c = (CamtasiaContext *)avctx->priv_data;
 
+    av_freep(&c->decomp_buf);
+
     if (c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
 #ifdef CONFIG_ZLIB
