@@ -12,7 +12,7 @@ SWSSRCS=swscale.c rgb2rgb.c yuv2rgb.c
 SWSOBJS=$(SWSSRCS:.c=.o)
 PPOBJS=postprocess.o
 SPPOBJS=postprocess_pic.o
-CS_TEST_OBJS=cs_test.o rgb2rgb.o ../cpudetect.o ../mp_msg.o
+CS_TEST_OBJS=cs_test.o rgb2rgb.o ../cpudetect.o ../mp_msg.o ../libvo/aclib.o
 
 CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 # -I/usr/X11R6/include/
