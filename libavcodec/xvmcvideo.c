@@ -298,7 +298,7 @@ const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 
     blocks_per_mb = 6;
     if( s->chroma_format >= 2){
-        block_per_mb = 4 + (1 << (s->chroma_format));
+        blocks_per_mb = 4 + (1 << (s->chroma_format));
     }
 
     if(s->flags & CODEC_FLAG_GRAY){
