@@ -4845,7 +4845,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     }
     
     //FIXME var duplication
+    s->current_picture_ptr->key_frame=
     s->current_picture.key_frame= s->pict_type == I_TYPE; //FIXME pic_ptr
+    s->current_picture_ptr->pict_type=
     s->current_picture.pict_type= s->pict_type;
 
     if(s->current_picture.key_frame)
