@@ -222,51 +222,25 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     }
 }
 
+/**
+ * Encodes a group of blocks header.
+ */
 int h263_encode_gob_header(MpegEncContext * s, int mb_line)
 {
-    int pdif=0;
-    
-    /* Check to see if we need to put a new GBSC */
-    /* for RTP packetization                    */
-    if (s->rtp_mode) {
-        pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
-        if (pdif >= s->rtp_payload_size) {
-            /* Bad luck, packet must be cut before */
-            align_put_bits(&s->pb);
-            flush_put_bits(&s->pb);
-            /* Call the RTP callback to send the last GOB */
-            if (s->rtp_callback) {
-                pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
-                s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
-            }
-            s->ptr_lastgob = pbBufPtr(&s->pb);
-            put_bits(&s->pb, 17, 1); /* GBSC */
-            s->gob_number = mb_line / s->gob_index;
-            put_bits(&s->pb, 5, s->gob_number); /* GN */
-            put_bits(&s->pb, 2, s->pict_type == I_TYPE); /* GFID */
-            put_bits(&s->pb, 5, s->qscale); /* GQUANT */
-            //fprintf(stderr,"\nGOB: %2d size: %d", s->gob_number - 1, pdif);
-            return pdif;
-       } else if (pdif + s->mb_line_avgsize >= s->rtp_payload_size) {
-           /* Cut the packet before we can't */
            align_put_bits(&s->pb);
            flush_put_bits(&s->pb);
            /* Call the RTP callback to send the last GOB */
            if (s->rtp_callback) {
-               pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
+               int pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
                s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
            }
-           s->ptr_lastgob = pbBufPtr(&s->pb);
            put_bits(&s->pb, 17, 1); /* GBSC */
            s->gob_number = mb_line / s->gob_index;
            put_bits(&s->pb, 5, s->gob_number); /* GN */
            put_bits(&s->pb, 2, s->pict_type == I_TYPE); /* GFID */
            put_bits(&s->pb, 5, s->qscale); /* GQUANT */
            //fprintf(stderr,"\nGOB: %2d size: %d", s->gob_number - 1, pdif);
-           return pdif;
-       }
-   }
-   return 0;
+    return 0;
 }
 
 static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int dir[6])

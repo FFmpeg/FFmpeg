@@ -576,8 +576,6 @@ int MPV_encode_init(AVCodecContext *avctx)
         break;
     case CODEC_ID_H263P:
         s->out_format = FMT_H263;
-        s->rtp_mode = 1;
-        s->rtp_payload_size = 1200; 
         s->h263_plus = 1;
         s->unrestricted_mv = 1;
         s->h263_aic = 1;
@@ -2475,7 +2473,7 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
 
 static void encode_picture(MpegEncContext *s, int picture_number)
 {
-    int mb_x, mb_y, last_gob, pdif = 0;
+    int mb_x, mb_y, pdif = 0;
     int i;
     int bits;
     MpegEncContext best_s, backup_s;
@@ -2657,10 +2655,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->last_mv[0][0][0] = 0;
     s->last_mv[0][0][1] = 0;
 
-    if (s->codec_id==CODEC_ID_H263 && s->codec_id==CODEC_ID_H263)
+    if (s->codec_id==CODEC_ID_H263 || s->codec_id==CODEC_ID_H263P)
         s->gob_index = ff_h263_get_gob_height(s);
-    else
-        s->gob_index = 1; //FIXME remove 
 
     if(s->codec_id==CODEC_ID_MPEG4 && s->partitioned_frame)
         ff_mpeg4_init_partitions(s);
@@ -2668,26 +2664,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     s->resync_mb_x=0;
     s->resync_mb_y=0;
     s->first_slice_line = 1;
+    s->ptr_lastgob = s->pb.buf;
+    s->ptr_last_mb_line = s->pb.buf;
     for(mb_y=0; mb_y < s->mb_height; mb_y++) {
-        /* Put GOB header based on RTP MTU for formats which support it per line (H263*)*/
-        /* TODO: Put all this stuff in a separate generic function */
-        if (s->rtp_mode) {
-            if (!mb_y) {
-                s->ptr_lastgob = s->pb.buf;
-                s->ptr_last_mb_line = s->pb.buf;
-            } else if (s->out_format == FMT_H263 && !s->h263_pred && !s->h263_msmpeg4 && !(mb_y % s->gob_index)) {
-                // MN: we could move the space check from h263 -> here, as its not h263 specific
-                last_gob = h263_encode_gob_header(s, mb_y);
-                if (last_gob) {
-                    s->first_slice_line = 1;
-                }else{
-                    /*MN: we reset it here instead at the end of each line cuz mpeg4 can have 
-                          slice lines starting & ending in the middle*/
-                    s->first_slice_line = 0;
-                }
-            }
-        }
-
         s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
         s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
         
@@ -2711,14 +2690,18 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->block_index[3]+=2;
             s->block_index[4]++;
             s->block_index[5]++;
-//printf("%d %d %d %d %d\n", s->mb_x, s->mb_y, s->resync_mb_x, s->resync_mb_y, s->first_slice_line);
-            /* write gob / video packet header for formats which support it at any MB (MPEG4) */
-            if(s->rtp_mode && s->mb_y>0 && s->codec_id==CODEC_ID_MPEG4){
-                int pdif= pbBufPtr(&s->pb) - s->ptr_lastgob;
 
-                //the *2 is there so we stay below the requested size
-                if(pdif + s->mb_line_avgsize/s->mb_width >= s->rtp_payload_size){ 
-                    if(s->codec_id==CODEC_ID_MPEG4){
+            /* write gob / video packet header  */
+            if(s->rtp_mode){
+                int current_packet_size, is_gob_start;
+                
+                current_packet_size= pbBufPtr(&s->pb) - s->ptr_lastgob;
+                is_gob_start=0;
+                
+                if(s->codec_id==CODEC_ID_MPEG4){
+                    if(current_packet_size + s->mb_line_avgsize/s->mb_width >= s->rtp_payload_size
+                       && s->mb_y + s->mb_x>0){
+
                         if(s->partitioned_frame){
                             ff_mpeg4_merge_partitions(s);
                             ff_mpeg4_init_partitions(s);
@@ -2731,7 +2714,18 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                             s->last_bits= bits;
                         }
                         ff_mpeg4_clean_buffers(s);
+                        is_gob_start=1;
                     }
+                }else{
+                    if(current_packet_size + s->mb_line_avgsize*s->gob_index >= s->rtp_payload_size
+                       && s->mb_x==0 && s->mb_y>0 && s->mb_y%s->gob_index==0){
+                       
+                        h263_encode_gob_header(s, mb_y);                       
+                        is_gob_start=1;
+                    }
+                }
+
+                if(is_gob_start){
                     s->ptr_lastgob = pbBufPtr(&s->pb);
                     s->first_slice_line=1;
                     s->resync_mb_x=mb_x;
@@ -2925,17 +2919,14 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         }
 
 
-        /* Obtain average GOB size for RTP */
+        /* Obtain average mb_row size for RTP */
         if (s->rtp_mode) {
-            if (!mb_y)
+            if (mb_y==0)
                 s->mb_line_avgsize = pbBufPtr(&s->pb) - s->ptr_last_mb_line;
-            else if (!(mb_y % s->gob_index)) {    
+            else {    
                 s->mb_line_avgsize = (s->mb_line_avgsize + pbBufPtr(&s->pb) - s->ptr_last_mb_line) >> 1;
-                s->ptr_last_mb_line = pbBufPtr(&s->pb);
             }
-            //fprintf(stderr, "\nMB line: %d\tSize: %u\tAvg. Size: %u", s->mb_y, 
-            //                    (s->pb.buf_ptr - s->ptr_last_mb_line), s->mb_line_avgsize);
-            if(s->codec_id!=CODEC_ID_MPEG4) s->first_slice_line = 0; //FIXME clean
+            s->ptr_last_mb_line = pbBufPtr(&s->pb);
         }
     }
     emms_c();
