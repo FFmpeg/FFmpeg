@@ -143,6 +143,7 @@ static int64_t get_utf8(GetBitContext *gb)
     return val;
 }
 
+#if 0
 static int skip_utf8(GetBitContext *gb)
 {
     int ones=0, bytes;
@@ -163,6 +164,7 @@ static int skip_utf8(GetBitContext *gb)
     }
     return 0;
 }
+#endif
 
 static int get_crc8(const uint8_t *buf, int count){
     int crc=0;

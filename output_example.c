@@ -140,7 +140,6 @@ void get_audio_frame(int16_t *samples, int frame_size, int nb_channels)
 
 void write_audio_frame(AVFormatContext *oc, AVStream *st)
 {
-    int out_size;
     AVCodecContext *c;
     AVPacket pkt;
     av_init_packet(&pkt);

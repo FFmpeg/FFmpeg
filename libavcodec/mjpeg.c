@@ -676,7 +676,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
     if(avctx->pix_fmt == PIX_FMT_RGBA32){
         int x, y, i;
         const int linesize= p->linesize[0];
-        uint16_t (*buffer)[4]= s->rd_scratchpad;
+        uint16_t (*buffer)[4]= (void *) s->rd_scratchpad;
         int left[3], top[3], topleft[3];
 
         for(i=0; i<3; i++){

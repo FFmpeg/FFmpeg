@@ -314,6 +314,7 @@ static int adx_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
+#if 0
 static void dump(unsigned char *buf,size_t len)
 {
     int i;
@@ -324,6 +325,8 @@ static void dump(unsigned char *buf,size_t len)
     }
     av_log(NULL, AV_LOG_ERROR, "\n");
 }
+#endif
+
 static int adx_decode_frame(AVCodecContext *avctx,
                 void *data, int *data_size,
                 uint8_t *buf0, int buf_size)

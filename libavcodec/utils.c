@@ -677,18 +677,6 @@ AVCodec *avcodec_find_decoder_by_name(const char *name)
     return NULL;
 }
 
-static AVCodec *avcodec_find(enum CodecID id)
-{
-    AVCodec *p;
-    p = first_avcodec;
-    while (p) {
-        if (p->id == id)
-            return p;
-        p = p->next;
-    }
-    return NULL;
-}
-
 void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
 {
     const char *codec_name;

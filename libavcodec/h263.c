@@ -1940,7 +1940,6 @@ static void init_uni_h263_rl_tab(RLTable *rl, uint32_t *bits_tab, uint8_t *len_t
                 int level= slevel < 0 ? -slevel : slevel;
                 int sign= slevel < 0 ? 1 : 0;
                 int bits, len, code;
-                int level1, run1;
                 
                 len_tab[index]= 100;
                      

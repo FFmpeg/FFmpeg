@@ -119,12 +119,14 @@ static int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
+#if 0
 static int encode_init(AVCodecContext *avctx){
 
     common_init(avctx);
     
     return 0;
 }
+#endif
 
 AVCodec cljr_decoder = {
     "cljr",

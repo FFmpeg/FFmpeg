@@ -3740,7 +3740,7 @@ void opt_intra_matrix(const char *arg)
 static void opt_target(const char *arg)
 {
     int norm = -1;
-    static const char const *frame_rates[] = {"25", "30000/1001", "24000/1001"};
+    static const char *const frame_rates[] = {"25", "30000/1001", "24000/1001"};
 
     if(!strncmp(arg, "pal-", 4)) {
         norm = 0;

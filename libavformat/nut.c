@@ -1051,7 +1051,7 @@ static int decode_info_header(NUTContext *nut){
         }
         
         if(!strcmp(type, "v")){
-            int value= get_v(bc);
+            get_v(bc);
         }else{
             if(!strcmp(name, "Author"))
                 get_str(bc, s->author, sizeof(s->author));

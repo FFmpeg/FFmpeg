@@ -31,6 +31,9 @@
 #include "simple_idct.h"
 #include "faandct.h"
 
+/* snow.c */
+void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, int decomposition_count);
+
 uint8_t cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t squareTbl[512] = {0, };
 
@@ -2378,7 +2381,7 @@ H264_MC(avg_, 16)
 #define op_scale2(x)  dst[x] = clip_uint8( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
 #define H264_WEIGHT(W,H) \
 static void weight_h264_pixels ## W ## x ## H ## _c(uint8_t *block, int stride, int log2_denom, int weight, int offset){ \
-    int x, y; \
+    int attribute_unused x, y; \
     offset <<= log2_denom; \
     if(log2_denom) offset += 1<<(log2_denom-1); \
     for(y=0; y<H; y++, block += stride){ \
@@ -2404,7 +2407,7 @@ static void weight_h264_pixels ## W ## x ## H ## _c(uint8_t *block, int stride, 
     } \
 } \
 static void biweight_h264_pixels ## W ## x ## H ## _c(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offsetd, int offsets){ \
-    int x, y; \
+    int attribute_unused x, y; \
     int offset = (offsets + offsetd + 1) >> 1; \
     offset = ((offset << 1) + 1) << log2_denom; \
     for(y=0; y<H; y++, dst += stride, src += stride){ \

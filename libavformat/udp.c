@@ -160,14 +160,14 @@ int udp_ipv6_set_local(URLContext *h) {
     socklen_t addrlen;
     char sbuf[NI_MAXSERV];
     char hbuf[NI_MAXHOST];
-    struct addrinfo *res0;
+    struct addrinfo *res0 = NULL;
     int family;
                 
     if (s->local_port != 0) {       
         res0 = udp_ipv6_resolve_host(0, s->local_port, SOCK_DGRAM, AF_UNSPEC, AI_PASSIVE);
-        if (res0 == 0) return -1;
+        if (res0 == 0)
+            goto fail;
         family = res0->ai_family;
-        freeaddrinfo(res0);
     } else {
         family = s->dest_addr.ss_family;
     }
@@ -183,6 +183,8 @@ int udp_ipv6_set_local(URLContext *h) {
             perror("bind");
             goto fail;
         }
+        freeaddrinfo(res0);
+        res0 = NULL;
     } 
 
     addrlen = sizeof(clientaddr);
@@ -207,6 +209,8 @@ int udp_ipv6_set_local(URLContext *h) {
 #else
         close(udp_fd);
 #endif
+    if(res0)
+        freeaddrinfo(res0);
     return -1;
 }
 
@@ -274,13 +278,16 @@ int udp_get_file_handle(URLContext *h)
 /* return non zero if error */
 static int udp_open(URLContext *h, const char *uri, int flags)
 {
-    struct sockaddr_in my_addr, my_addr1;
     char hostname[1024];
     int port, udp_fd = -1, tmp;
     UDPContext *s = NULL;
-    int is_output, len;
+    int is_output;
     const char *p;
     char buf[256];
+#ifndef CONFIG_IPV6
+    struct sockaddr_in my_addr, my_addr1;
+    int len;
+#endif
 
     h->is_streamed = 1;
     h->max_packet_size = 1472;

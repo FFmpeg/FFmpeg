@@ -86,7 +86,7 @@ typedef struct {
 		                         faacDecFrameInfo *hInfo,
 		                         unsigned char *buffer,
 								 unsigned long buffer_size);
-	unsigned char* FAADAPI (*faacDecGetErrorMessage)(unsigned char errcode);
+	char* FAADAPI (*faacDecGetErrorMessage)(unsigned char errcode);
 #endif
     
     void FAADAPI (*faacDecClose)(faacDecHandle hDecoder);
@@ -124,11 +124,6 @@ static int faac_init_mp4(AVCodecContext *avctx)
     avctx->channels = channels;
 
     return r;
-}
-
-static int faac_init_aac(AVCodecContext *avctx)
-{
-    return 0;
 }
 
 static int faac_decode_frame(AVCodecContext *avctx,
@@ -239,7 +234,7 @@ static int faac_decode_init(AVCodecContext *avctx)
 				       unsigned char*)));
 	dfaac(Decode, (void *FAADAPI (*)(faacDecHandle, faacDecFrameInfo*,
 		             unsigned char*, unsigned long)));
-	dfaac(GetErrorMessage, (unsigned char* FAADAPI (*)(unsigned char)));
+	dfaac(GetErrorMessage, (char* FAADAPI (*)(unsigned char)));
 #endif
 #undef dfacc
 

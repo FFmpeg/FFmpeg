@@ -107,6 +107,7 @@ static int str_probe(AVProbeData *p)
     return 50;
 }
 
+#if 0
 static void dump(unsigned char *buf,size_t len)
 {
     int i;
@@ -117,6 +118,7 @@ static void dump(unsigned char *buf,size_t len)
     }
     av_log(NULL, AV_LOG_DEBUG, "\n");
 }
+#endif
 
 static int str_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)

@@ -257,11 +257,13 @@ static inline int l3_unscale(int value, int exponent)
 
 static int dev_4_3_coefs[DEV_ORDER];
 
+#if 0 /* unused */
 static int pow_mult3[3] = {
     POW_FIX(1.0),
     POW_FIX(1.25992104989487316476),
     POW_FIX(1.58740105196819947474),
 };
+#endif
 
 static void int_pow_init(void)
 {
@@ -274,6 +276,7 @@ static void int_pow_init(void)
     }
 }
 
+#if 0 /* unused, remove? */
 /* return the mantissa and the binary exponent */
 static int int_pow(int i, int *exp_ptr)
 {
@@ -318,6 +321,7 @@ static int int_pow(int i, int *exp_ptr)
     *exp_ptr = eq;
     return a;
 }
+#endif
 
 static int decode_init(AVCodecContext * avctx)
 {

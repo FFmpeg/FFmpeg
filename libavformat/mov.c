@@ -415,12 +415,12 @@ static int mov_read_default(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_ctab(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    unsigned int len;
-    MOV_ctab_t *t;
 #if 1
     url_fskip(pb, atom.size); // for now
 #else
     VERY VERY BROKEN, NEVER execute this, needs rewrite
+    unsigned int len;
+    MOV_ctab_t *t;
     c->ctab = av_realloc(c->ctab, ++c->ctab_size);
     t = c->ctab[c->ctab_size];
     t->seed = get_be32(pb);

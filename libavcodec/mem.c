@@ -45,7 +45,9 @@
 void *av_malloc(unsigned int size)
 {
     void *ptr;
+#ifdef MEMALIGN_HACK
     int diff;
+#endif
 
     /* lets disallow possible ambiguous cases */
     if(size > INT_MAX)
@@ -97,7 +99,10 @@ void *av_malloc(unsigned int size)
  */
 void *av_realloc(void *ptr, unsigned int size)
 {
+#ifdef MEMALIGN_HACK
     int diff;
+#endif
+
     /* lets disallow possible ambiguous cases */
     if(size > INT_MAX)
         return NULL;

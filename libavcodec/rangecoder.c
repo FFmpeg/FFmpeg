@@ -58,7 +58,7 @@ void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf, int buf_size){
 void ff_build_rac_states(RangeCoder *c, int factor, int max_p){
     const int64_t one= 1LL<<32;
     int64_t p;
-    int last_p8, p8, i, j;
+    int last_p8, p8, i;
 
     memset(c->zero_state, 0, sizeof(c->zero_state));
     memset(c-> one_state, 0, sizeof(c-> one_state));

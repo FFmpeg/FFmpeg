@@ -101,6 +101,7 @@ static int wmv2_encode_init(AVCodecContext *avctx){
     return 0;
 }
 
+#if 0 /* unused, remove? */
 static int wmv2_encode_end(AVCodecContext *avctx){
     
     if(MPV_encode_end(avctx) < 0)
@@ -111,6 +112,7 @@ static int wmv2_encode_end(AVCodecContext *avctx){
     
     return 0;
 }
+#endif
 
 int ff_wmv2_encode_picture_header(MpegEncContext * s, int picture_number)
 {

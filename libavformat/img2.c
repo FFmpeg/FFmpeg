@@ -97,16 +97,6 @@ static enum CodecID av_str2id(const IdStrMap *tags, const char *str)
     return CODEC_ID_NONE;
 }
 
-static const char *av_id2str(const IdStrMap *tags, enum CodecID id)
-{
-    while (tags->id) {
-        if(tags->id == id)
-            return tags->str;
-        tags++;
-    }
-    return NULL;
-}
-
 /* return -1 if no image found */
 static int find_image_range(int *pfirst_index, int *plast_index, 
                             const char *path)

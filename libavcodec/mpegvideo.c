@@ -1820,7 +1820,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                       for(i=0; i<4; i++){
                         int sx= mb_x*16 + 4 + 8*(i&1);
                         int sy= mb_y*16 + 4 + 8*(i>>1);
-                        int xy= (mb_x*2 + (i&1) + (mb_y*2 + (i>>1))*mv_stride) << mv_sample_log2-1;
+                        int xy= (mb_x*2 + (i&1) + (mb_y*2 + (i>>1))*mv_stride) << (mv_sample_log2-1);
                         int mx= (pict->motion_val[direction][xy][0]>>shift) + sx;
                         int my= (pict->motion_val[direction][xy][1]>>shift) + sy;
                         draw_arrow(ptr, sx, sy, mx, my, width, height, s->linesize, 100);
@@ -1830,7 +1830,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                       for(i=0; i<2; i++){
                         int sx=mb_x*16 + 8;
                         int sy=mb_y*16 + 4 + 8*i;
-                        int xy= (mb_x*2 + (mb_y*2 + i)*mv_stride) << mv_sample_log2-1;
+                        int xy= (mb_x*2 + (mb_y*2 + i)*mv_stride) << (mv_sample_log2-1);
                         int mx=(pict->motion_val[direction][xy][0]>>shift);
                         int my=(pict->motion_val[direction][xy][1]>>shift);
                         
@@ -1844,7 +1844,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                       for(i=0; i<2; i++){
                         int sx=mb_x*16 + 4 + 8*i;
                         int sy=mb_y*16 + 8;
-                        int xy= (mb_x*2 + i + mb_y*2*mv_stride) << mv_sample_log2-1;
+                        int xy= (mb_x*2 + i + mb_y*2*mv_stride) << (mv_sample_log2-1);
                         int mx=(pict->motion_val[direction][xy][0]>>shift);
                         int my=(pict->motion_val[direction][xy][1]>>shift);
                         
@@ -2077,7 +2077,6 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref){
     int x, y, plane;
     int score=0;
     int64_t score64=0;
-    int64_t threshold;
 
     for(plane=0; plane<3; plane++){
         const int stride= p->linesize[plane];

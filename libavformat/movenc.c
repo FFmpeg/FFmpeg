@@ -793,6 +793,7 @@ static int mov_write_trak_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize(pb, pos);
 }
 
+#if 0
 /* TODO: Not sorted out, but not necessary either */
 static int mov_write_iods_tag(ByteIOContext *pb, MOVContext *mov)
 {
@@ -806,6 +807,7 @@ static int mov_write_iods_tag(ByteIOContext *pb, MOVContext *mov)
     put_be16(pb, 0x01ff);
     return 0x15;
 }
+#endif
 
 static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
 {

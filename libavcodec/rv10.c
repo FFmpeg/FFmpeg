@@ -287,6 +287,7 @@ void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
     }
 }
 
+#if 0 /* unused, remove? */
 static int get_num(GetBitContext *gb)
 {
     int n, n1;
@@ -299,6 +300,7 @@ static int get_num(GetBitContext *gb)
         return (n << 16) | n1;
     }
 }
+#endif
 
 #endif //CONFIG_ENCODERS
 

@@ -132,7 +132,7 @@ int MP3lame_encode_frame(AVCodecContext *avctx,
                      unsigned char *frame, int buf_size, void *data)
 {
 	Mp3AudioContext *s = avctx->priv_data;
-	int len, i;
+	int len;
 	int lame_result;
 
 	/* lame 3.91 dies on '1-channel interleaved' data */

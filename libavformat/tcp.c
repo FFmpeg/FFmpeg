@@ -57,8 +57,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     struct sockaddr_in dest_addr;
     char hostname[1024], *q;
     int port, fd = -1;
-    TCPContext *s;
-    const char *p;
+    TCPContext *s = NULL;
     fd_set wfds;
     int fd_max, ret;
     struct timeval tv;

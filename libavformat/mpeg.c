@@ -530,6 +530,7 @@ static int get_vcd_padding_size(AVFormatContext *ctx, int64_t pts)
 }
 
 
+#if 0 /* unused, remove? */
 /* return the exact available payload size for the next packet for
    stream 'stream_index'. 'pts' and 'dts' are only used to know if
    timestamps are needed in the packet header. */
@@ -613,6 +614,7 @@ static int get_packet_payload_size(AVFormatContext *ctx, int stream_index,
     }
     return s->packet_size - buf_index; 
 }
+#endif
 
 /* Write an MPEG padding packet header. */
 static void put_padding_packet(AVFormatContext *ctx, ByteIOContext *pb,int packet_bytes)
@@ -979,6 +981,7 @@ static void put_vcd_padding_sector(AVFormatContext *ctx)
     s->packet_number++;
 }
 
+#if 0 /* unused, remove? */
 static int64_t get_vcd_scr(AVFormatContext *ctx,int stream_index,int64_t pts)
 {
     MpegMuxContext *s = ctx->priv_data;
@@ -998,6 +1001,7 @@ static int64_t get_vcd_scr(AVFormatContext *ctx,int stream_index,int64_t pts)
 
     return scr;
 }    
+#endif
 
 static int remove_decoded_packets(AVFormatContext *ctx, int64_t scr){
 //    MpegMuxContext *s = ctx->priv_data;
@@ -1319,6 +1323,7 @@ static int find_next_start_code(ByteIOContext *pb, int *size_ptr,
     return val;
 }
 
+#if 0 /* unused, remove? */
 /* XXX: optimize */
 static int find_prev_start_code(ByteIOContext *pb, int *size_ptr)
 {
@@ -1351,6 +1356,7 @@ static int find_prev_start_code(ByteIOContext *pb, int *size_ptr)
     *size_ptr = pos_start - pos;
     return start_code;
 }
+#endif
 
 /* read the next PES header. Return its position in ppos 
    (if not NULL), and its start code, pts and dts.

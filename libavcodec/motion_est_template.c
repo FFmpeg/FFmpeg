@@ -25,11 +25,11 @@
 
 //lets hope gcc will remove the unused vars ...(gcc 3.2.2 seems to do it ...)
 #define LOAD_COMMON\
-    uint32_t * const score_map= c->score_map;\
-    const int xmin= c->xmin;\
-    const int ymin= c->ymin;\
-    const int xmax= c->xmax;\
-    const int ymax= c->ymax;\
+    uint32_t attribute_unused * const score_map= c->score_map;\
+    const int attribute_unused xmin= c->xmin;\
+    const int attribute_unused ymin= c->ymin;\
+    const int attribute_unused xmax= c->xmax;\
+    const int attribute_unused ymax= c->ymax;\
     uint8_t *mv_penalty= c->current_mv_penalty;\
     const int pred_x= c->pred_x;\
     const int pred_y= c->pred_y;\

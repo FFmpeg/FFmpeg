@@ -1275,7 +1275,6 @@ av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%L
 }
 
 static int av_seek_frame_byte(AVFormatContext *s, int stream_index, int64_t pos, int flags){
-    AVInputFormat *avif= s->iformat;
     int64_t pos_min, pos_max;
 #if 0
     AVStream *st;

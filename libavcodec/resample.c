@@ -128,7 +128,6 @@ ReSampleContext *audio_resample_init(int output_channels, int input_channels,
                                       int output_rate, int input_rate)
 {
     ReSampleContext *s;
-    int i;
     
     if ( input_channels > 2)
       {

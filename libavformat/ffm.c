@@ -261,7 +261,6 @@ static int ffm_write_trailer(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
     FFMContext *ffm = s->priv_data;
-    int i;
 
     /* flush packets */
     if (ffm->packet_ptr > ffm->packet)

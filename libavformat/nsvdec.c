@@ -280,16 +280,11 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     NSVContext *nsv = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    uint32_t tag, tag1, handler;
-    int codec_type, stream_index, frame_period, bit_rate, scale, rate;
-    unsigned int file_size, size, nb_frames;
+    unsigned int file_size, size;
     int64_t duration;
     int strings_size;
     int table_entries;
     int table_entries_used;
-    int i, n;
-    AVStream *st;
-    NSVStream *ast;
 
     PRINT(("%s()\n", __FUNCTION__));
 
@@ -501,14 +496,7 @@ fail:
 static int nsv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     NSVContext *nsv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
-    uint32_t tag, tag1, handler;
-    int codec_type, stream_index, frame_period, bit_rate, scale, rate;
-    unsigned int size, nb_frames;
-    int table_entries;
-    int i, n, err;
-    AVStream *st;
-    NSVStream *ast;
+    int i, err;
 
     PRINT(("%s()\n", __FUNCTION__));
     PRINT(("filename '%s'\n", s->filename));
@@ -543,7 +531,6 @@ static int nsv_read_chunk(AVFormatContext *s, int fill_header)
     AVStream *st[2] = {NULL, NULL};
     NSVStream *nst;
     AVPacket *pkt;
-    uint32_t v = 0;
     int i, err = 0;
     uint8_t auxcount; /* number of aux metadata, also 4 bits of vsize */
     uint32_t vsize;
@@ -667,7 +654,6 @@ null_chunk_retry:
 static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     NSVContext *nsv = s->priv_data;
-    ByteIOContext *pb = &s->pb;
     int i, err = 0;
 
     PRINT(("%s()\n", __FUNCTION__));
@@ -695,18 +681,20 @@ static int nsv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int nsv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
 {
+#if 0
     NSVContext *avi = s->priv_data;
     AVStream *st;
     NSVStream *ast;
     int frame_number, i;
     int64_t pos;
+#endif
 
     return -1;
 }
 
 static int nsv_read_close(AVFormatContext *s)
 {
-    int i;
+/*     int i; */
     NSVContext *nsv = s->priv_data;
 
     if (nsv->index_entries)

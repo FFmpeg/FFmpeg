@@ -317,6 +317,7 @@ static inline void no_motion_search(MpegEncContext * s,
     *my_ptr = 16 * s->mb_y;
 }
 
+#if 0  /* the use of these functions is inside #if 0 */
 static int full_motion_search(MpegEncContext * s,
                               int *mx_ptr, int *my_ptr, int range,
                               int xmin, int ymin, int xmax, int ymax, uint8_t *ref_picture)
@@ -537,7 +538,7 @@ static int phods_motion_search(MpegEncContext * s,
     *my_ptr = my;
     return dminy;
 }
-
+#endif /* 0 */
 
 #define Z_THRESHOLD 256
 
@@ -730,7 +731,6 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
     int dmin_sum=0, mx4_sum=0, my4_sum=0;
     int same=1;
     const int stride= c->stride;
-    const int uvstride= c->uvstride;
     uint8_t *mv_penalty= c->current_mv_penalty;
 
     init_mv4_ref(c);
@@ -881,7 +881,6 @@ static int interlaced_search(MpegEncContext *s, int ref_index,
     uint8_t * const mv_penalty= c->current_mv_penalty;
     int same=1;
     const int stride= 2*s->linesize;
-    const int uvstride= 2*s->uvlinesize;
     int dmin_sum= 0;
     const int mot_stride= s->mb_stride;
     const int xy= s->mb_x + s->mb_y*mot_stride;
