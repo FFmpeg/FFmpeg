@@ -548,12 +548,16 @@ typedef struct AVCodecContext {
     float b_quant_offset;
     
     /**
-     * error resilience {-1,0,1} higher values will detect more errors but may missdetect
+     * error resilience higher values will detect more errors but may missdetect
      * some more or less valid parts as errors
      * encoding: unused
      * decoding: set by user
      */
     int error_resilience;
+#define FF_ER_CAREFULL        1
+#define FF_ER_COMPLIANT       2
+#define FF_ER_AGGRESSIVE      3
+#define FF_ER_VERY_AGGRESSIVE 4
     
     /**
      * called at the beginning of each frame to get a buffer for it.

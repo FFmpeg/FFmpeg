@@ -3624,19 +3624,21 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 #if 1 
                     {
                         const int abs_level= ABS(level);
-                        if(abs_level<=MAX_LEVEL && run<=MAX_RUN && ((s->workaround_bugs&FF_BUG_AC_VLC)==0)){
+                        if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
                             const int run1= run - rl->max_run[last][abs_level] - 1;
                             if(abs_level <= rl->max_level[last][run]){
                                 fprintf(stderr, "illegal 3. esc, vlc encoding possible\n");
                                 return -1;
                             }
-                            if(abs_level <= rl->max_level[last][run]*2){
-                                fprintf(stderr, "illegal 3. esc, esc 1 encoding possible\n");
-                                return -1;
-                            }
-                            if(run1 >= 0 && abs_level <= rl->max_level[last][run1]){
-                                fprintf(stderr, "illegal 3. esc, esc 2 encoding possible\n");
-                                return -1;
+                            if(s->error_resilience > FF_ER_COMPLIANT){
+                                if(abs_level <= rl->max_level[last][run]*2){
+                                    fprintf(stderr, "illegal 3. esc, esc 1 encoding possible\n");
+                                    return -1;
+                                }
+                                if(run1 >= 0 && abs_level <= rl->max_level[last][run1]){
+                                    fprintf(stderr, "illegal 3. esc, esc 2 encoding possible\n");
+                                    return -1;
+                                }
                             }
                         }
                     }
