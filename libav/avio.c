@@ -58,15 +58,18 @@ int url_open(URLContext **puc, const char *filename, int flags)
             goto found;
         up = up->next;
     }
-    return -ENOENT;
+    err = -ENOENT;
+    goto fail;
  found:
     uc = av_malloc(sizeof(URLContext));
-    if (!uc)
-        return -ENOMEM;
+    if (!uc) {
+        err = -ENOMEM;
+        goto fail;
+    }
     uc->prot = up;
     uc->flags = flags;
     uc->is_streamed = 0; /* default = not streamed */
-    uc->packet_size = 1; /* default packet size */
+    uc->max_packet_size = 0; /* default: stream file */
     err = up->url_open(uc, filename, flags);
     if (err < 0) {
         av_free(uc);
@@ -75,6 +78,9 @@ int url_open(URLContext **puc, const char *filename, int flags)
     }
     *puc = uc;
     return 0;
+ fail:
+    *puc = NULL;
+    return err;
 }
 
 int url_read(URLContext *h, unsigned char *buf, int size)
@@ -89,8 +95,11 @@ int url_read(URLContext *h, unsigned char *buf, int size)
 int url_write(URLContext *h, unsigned char *buf, int size)
 {
     int ret;
-    if (!(h->flags & URL_WRONLY))
+    if (!(h->flags & (URL_WRONLY | URL_RDWR)))
         return -EIO;
+    /* avoid sending too big packets */
+    if (h->max_packet_size && size > h->max_packet_size)
+        return -EIO; 
     ret = h->prot->url_write(h, buf, size);
     return ret;
 }
@@ -131,4 +140,17 @@ offset_t url_filesize(URLContext *h)
     size = url_seek(h, 0, SEEK_END);
     url_seek(h, pos, SEEK_SET);
     return size;
+}
+
+/* 
+ * Return the maximum packet size associated to packetized file
+ * handle. If the file is not packetized (stream like http or file on
+ * disk), then 0 is returned.
+ * 
+ * @param h file handle
+ * @return maximum packet size in bytes
+ */
+int url_get_max_packet_size(URLContext *h)
+{
+    return h->max_packet_size;
 }
