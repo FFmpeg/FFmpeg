@@ -79,7 +79,7 @@ static int frame_rate = 25;
 static int frame_rate_base = 1;
 static int video_bit_rate = 200*1000;
 static int video_bit_rate_tolerance = 4000*1000;
-static int video_qscale = 0;
+static float video_qscale = 0;
 static int video_qmin = 2;
 static int video_qmax = 31;
 static int video_mb_qmin = 2;
@@ -680,7 +680,7 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
     total_size += frame_size;
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         frame_number = ost->frame_number;
-        fprintf(fvstats, "frame= %5d q= %2.1f ", frame_number, enc->coded_frame->quality);
+        fprintf(fvstats, "frame= %5d q= %2.1f ", frame_number, enc->coded_frame->quality/(float)FF_QP2LAMBDA);
         if (enc->flags&CODEC_FLAG_PSNR)
             fprintf(fvstats, "PSNR= %6.2f ", psnr(enc->coded_frame->error[0]/(enc->width*enc->height*255.0*255.0)));
         
@@ -738,12 +738,12 @@ static void print_report(AVFormatContext **output_files,
         enc = &ost->st->codec;
         if (vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             sprintf(buf + strlen(buf), "q=%2.1f ",
-                    enc->coded_frame->quality);
+                    enc->coded_frame->quality/(float)FF_QP2LAMBDA);
         }
         if (!vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             frame_number = ost->frame_number;
             sprintf(buf + strlen(buf), "frame=%5d q=%2.1f ",
-                    frame_number, enc->coded_frame ? enc->coded_frame->quality : 0);
+                    frame_number, enc->coded_frame ? enc->coded_frame->quality/(float)FF_QP2LAMBDA : 0);
             if (enc->flags&CODEC_FLAG_PSNR)
                 sprintf(buf + strlen(buf), "PSNR= %6.2f ", psnr(enc->coded_frame->error[0]/(enc->width*enc->height*255.0*255.0)));
             vid = 1;
@@ -1774,10 +1774,10 @@ static void opt_mb_decision(const char *arg)
 
 static void opt_qscale(const char *arg)
 {
-    video_qscale = atoi(arg);
-    if (video_qscale < 0 ||
-        video_qscale > 31) {
-        fprintf(stderr, "qscale must be >= 1 and <= 31\n");
+    video_qscale = atof(arg);
+    if (video_qscale < 0.01 ||
+        video_qscale > 255) {
+        fprintf(stderr, "qscale must be >= 0.01 and <= 255\n");
         exit(1);
     }
 }
@@ -2245,7 +2245,7 @@ static void opt_output_file(const char *filename)
                     video_enc->gop_size = 0;
                 if (video_qscale || same_quality) {
                     video_enc->flags |= CODEC_FLAG_QSCALE;
-                    st->quality = video_qscale;
+                    st->quality = FF_QP2LAMBDA * video_qscale;
                 }
                 
                 if(bitexact)

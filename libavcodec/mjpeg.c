@@ -1877,7 +1877,8 @@ eoi_parser:
                             picture->qscale_table= s->qscale_table;
                             memset(picture->qscale_table, picture->quality, (s->width+15)/16);
                             if(avctx->debug & FF_DEBUG_QP)
-                                printf("QP: %d\n", (int)picture->quality);
+                                printf("QP: %d\n", picture->quality);
+                            picture->quality*= FF_QP2LAMBDA;
                         }
                         
                         goto the_end;
@@ -2052,7 +2053,8 @@ read_header:
         picture->qscale_table= s->qscale_table;
         memset(picture->qscale_table, picture->quality, (s->width+15)/16);
         if(avctx->debug & FF_DEBUG_QP)
-            printf("QP: %f\n", picture->quality);
+            printf("QP: %d\n", picture->quality);
+        picture->quality*= FF_QP2LAMBDA;
     }
 
     return buf_ptr - buf;

@@ -626,7 +626,7 @@ static inline int get_p_cbp(MpegEncContext * s,
         int best_cbpc_score= INT_MAX;
         int cbpc, cbpy;
         const int offset= (s->mv_type==MV_TYPE_16X16 ? 0 : 16) + (s->dquant ? 8 : 0);
-        const int lambda= (s->qscale*s->qscale*64*105 + 64)>>7; 
+        const int lambda= s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
 
         for(i=0; i<4; i++){
             int score= inter_MCBPC_bits[i + offset] * lambda;
@@ -679,7 +679,7 @@ static inline int get_b_cbp(MpegEncContext * s, DCTELEM block[6][64],
 
     if(s->flags & CODEC_FLAG_CBP_RD){
         int score=0;
-        const int lambda= (s->qscale*s->qscale*64*105 + 64)>>7; 
+        const int lambda= s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
         
         for(i=0; i<6; i++){
             if(s->coded_score[i] < 0){

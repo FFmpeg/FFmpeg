@@ -140,6 +140,13 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
         }
     }
 }
+
+static inline void update_qscale(MpegEncContext *s){
+    s->qscale= (s->lambda*139 + FF_LAMBDA_SCALE*64) >> (FF_LAMBDA_SHIFT + 7);
+    s->qscale= clip(s->qscale, s->avctx->qmin, s->avctx->qmax);
+    
+    s->lambda2= (s->lambda*s->lambda + FF_LAMBDA_SCALE/2) >> FF_LAMBDA_SHIFT;
+}
 #endif //CONFIG_ENCODERS
 
 void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_scantable){
@@ -424,6 +431,8 @@ int MPV_common_init(MpegEncContext *s)
 
         /* Allocate MB type table */
         CHECKED_ALLOCZ(s->mb_type  , mb_array_size * sizeof(uint8_t)) //needed for encoding
+        
+        CHECKED_ALLOCZ(s->lambda_table, mb_array_size * sizeof(int))
     }
         
     CHECKED_ALLOCZ(s->error_status_table, mb_array_size*sizeof(uint8_t))
@@ -539,6 +548,7 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->ac_stats);
     av_freep(&s->error_status_table);
     av_freep(&s->mb_index2xy);
+    av_freep(&s->lambda_table);
 
     for(i=0; i<MAX_PICTURE_COUNT; i++){
         free_picture(s, &s->picture[i]);
@@ -1028,7 +1038,8 @@ alloc:
     }
 
     s->current_picture_ptr->pict_type= s->pict_type;
-    s->current_picture_ptr->quality= s->qscale;
+//    if(s->flags && CODEC_FLAG_QSCALE) 
+  //      s->current_picture_ptr->quality= s->new_picture_ptr->quality;
     s->current_picture_ptr->key_frame= s->pict_type == I_TYPE;
 
     s->current_picture= *s->current_picture_ptr;
@@ -1602,10 +1613,6 @@ int MPV_encode_picture(AVCodecContext *avctx,
     if(s->new_picture.data[0]){
 
         s->pict_type= s->new_picture.pict_type;
-        if (s->fixed_qscale){ /* the ratecontrol needs the last qscale so we dont touch it for CBR */
-            s->qscale= (int)(s->new_picture.quality+0.5);
-            assert(s->qscale);
-        }
 //emms_c();
 //printf("qs:%f %f %d\n", s->new_picture.quality, s->current_picture.quality, s->qscale);
         MPV_frame_start(s, avctx);
@@ -2815,22 +2822,23 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
     for(i=0; i<6; i++) skip_dct[i]=0;
     
     if(s->adaptive_quant){
-        s->dquant= s->current_picture.qscale_table[mb_x + mb_y*s->mb_stride] - s->qscale;
+        const int last_qp= s->qscale;
+        const int mb_xy= mb_x + mb_y*s->mb_stride;
 
-        if(s->out_format==FMT_H263){
-            if     (s->dquant> 2) s->dquant= 2;
-            else if(s->dquant<-2) s->dquant=-2;
-        }
+        s->lambda= s->lambda_table[mb_xy];
+        update_qscale(s);
+        s->dquant= s->qscale - last_qp;
+
+        if(s->out_format==FMT_H263)
+            s->dquant= clip(s->dquant, -2, 2); //FIXME RD
             
         if(s->codec_id==CODEC_ID_MPEG4){        
             if(!s->mb_intra){
-                if(s->mv_dir&MV_DIRECT)
+                if((s->mv_dir&MV_DIRECT) || s->mv_type==MV_TYPE_8X8)
                     s->dquant=0;
-
-                assert(s->dquant==0 || s->mv_type!=MV_TYPE_8X8);
             }
         }
-        s->qscale+= s->dquant;
+        s->qscale= last_qp + s->dquant;
         s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
         s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
     }
@@ -2993,19 +3001,6 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 
     }
             
-#if 0
-            {
-                float adap_parm;
-                
-                adap_parm = ((s->avg_mb_var << 1) + s->mb_var[s->mb_stride*mb_y+mb_x] + 1.0) /
-                            ((s->mb_var[s->mb_stride*mb_y+mb_x] << 1) + s->avg_mb_var + 1.0);
-            
-                printf("\ntype=%c qscale=%2d adap=%0.2f dquant=%4.2f var=%4d avgvar=%4d", 
-                        (s->mb_type[s->mb_stride*mb_y+mb_x] > 0) ? 'I' : 'P', 
-                        s->qscale, adap_parm, s->qscale*adap_parm,
-                        s->mb_var[s->mb_stride*mb_y+mb_x], s->avg_mb_var);
-            }
-#endif
     /* DCT & quantize */
     if(s->out_format==FMT_MJPEG){
         for(i=0;i<6;i++) {
@@ -3265,8 +3260,8 @@ static inline void encode_mb_hq(MpegEncContext *s, MpegEncContext *backup, MpegE
     if(s->avctx->mb_decision == FF_MB_DECISION_RD){
         MPV_decode_mb(s, s->block);
 
-        score *= s->qscale * s->qscale * 109;
-        score += sse_mb(s) << 7;
+        score *= s->lambda2;
+        score += sse_mb(s) << FF_LAMBDA_SHIFT;
     }
     
     if(*next_block){
@@ -3351,7 +3346,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         
     s->scene_change_score=0;
     
-    s->qscale= (int)(s->frame_qscale + 0.5); //FIXME qscale / ... stuff for ME ratedistoration
+    s->lambda= s->current_picture_ptr->quality; //FIXME qscale / ... stuff for ME ratedistoration
     
     if(s->pict_type==I_TYPE){
         if(s->msmpeg4_version >= 3) s->no_rounding=1;
@@ -3460,10 +3455,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         }
     }
     
-    if (s->fixed_qscale) 
-        s->frame_qscale = s->current_picture.quality;
-    else
-        s->frame_qscale = ff_rate_estimate_qscale(s);
+    if (!s->fixed_qscale) 
+        s->current_picture.quality = ff_rate_estimate_qscale(s);
 
     if(s->adaptive_quant){
 #ifdef CONFIG_RISKY
@@ -3479,9 +3472,15 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         }
 #endif
 
-        s->qscale= s->current_picture.qscale_table[0];
+        s->lambda= s->lambda_table[0];
+        //FIXME broken
     }else
-        s->qscale= (int)(s->frame_qscale + 0.5);
+        s->lambda= s->current_picture.quality;
+//printf("%d %d\n", s->avctx->global_quality, s->current_picture.quality);
+    update_qscale(s);
+    
+    if(s->qscale < 3 && s->max_qcoeff<=128 && s->pict_type==I_TYPE && !(s->flags & CODEC_FLAG_QSCALE)) 
+        s->qscale= 3; //reduce cliping problems
         
     if (s->out_format == FMT_MJPEG) {
         /* for mjpeg, we do include qscale in the matrix */
@@ -4020,12 +4019,14 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     int not_coded_score= 0;
     int coeff[3][64];
     int coeff_count[64];
-    int lambda, qmul, qadd, start_i, last_non_zero, i, dc;
+    int qmul, qadd, start_i, last_non_zero, i, dc;
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
     uint8_t * last_length;
     int score_limit=0;
     int left_limit= 0;
+    const int lambda= s->lambda2 >> (FF_LAMBDA_SHIFT - 6);
+    const int patch_table= s->out_format == FMT_MPEG1 && !s->mb_intra;
         
     s->dsp.fdct (block);
 
@@ -4103,9 +4104,13 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         return last_non_zero;
     }
 
-    lambda= (qscale*qscale*64*105 + 64)>>7; //FIXME finetune
-        
     score_tab[0]= 0;
+    
+    if(patch_table){
+//        length[UNI_AC_ENC_INDEX(0, 63)]=
+//        length[UNI_AC_ENC_INDEX(0, 65)]= 2;
+    }
+
     for(i=0; i<=last_non_zero - start_i; i++){
         int level_index, run, j;
         const int dct_coeff= block[ scantable[i + start_i] ];
@@ -4212,9 +4217,12 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         
         //Note: there is a vlc code in mpeg4 which is 1 bit shorter then another one with a shorter run and the same level
         while(score_tab[ left_limit ] > score_limit + lambda) left_limit++;
+    
+        if(patch_table){
+//            length[UNI_AC_ENC_INDEX(0, 63)]=
+//            length[UNI_AC_ENC_INDEX(0, 65)]= 3;
+        }
     }
-
-        //FIXME add some cbp penalty
 
     if(s->out_format != FMT_H263){
         last_score= 256*256*256*120;

@@ -272,6 +272,8 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->release_buffer= avcodec_default_release_buffer;
     s->get_format= avcodec_default_get_format;
     s->me_subpel_quality=8;
+    s->lmin= FF_QP2LAMBDA * s->qmin;
+    s->lmax= FF_QP2LAMBDA * s->qmax;
     
     s->intra_quant_bias= FF_DEFAULT_QUANT_BIAS;
     s->inter_quant_bias= FF_DEFAULT_QUANT_BIAS;

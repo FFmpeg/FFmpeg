@@ -15,7 +15,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4683
+#define LIBAVCODEC_BUILD       4684
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -316,15 +316,15 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
     int display_picture_number;\
 \
     /**\
-     * quality (between 1 (good) and 31 (bad)) \
+     * quality (between 1 (good) and FF_LAMBDA_MAX (bad)) \
      * - encoding: set by lavc for coded_picture (and set by user for input)\
      * - decoding: set by lavc\
      */\
-    float quality; \
+    int quality; \
 \
     /**\
      * buffer age (1->was last buffer and dint change, 2->..., ...).\
-     * set to something large if the buffer has not been used yet \
+     * set to INT_MAX if the buffer has not been used yet \
      * - encoding: unused\
      * - decoding: MUST be set by get_buffer()\
      */\
@@ -1181,8 +1181,13 @@ typedef struct AVCodecContext {
      * Dont touch, used by lavc default_get_buffer()
      */
     void *internal_buffer;
-    
-#define FF_QUALITY_SCALE 256
+
+#define FF_LAMBDA_SHIFT 7
+#define FF_LAMBDA_SCALE (1<<FF_LAMBDA_SHIFT)
+#define FF_QP2LAMBDA 118 ///< factor to convert from H.263 QP to lambda
+#define FF_LAMBDA_MAX (256*128-1)
+
+#define FF_QUALITY_SCALE FF_LAMBDA_SCALE //FIXME maybe remove
     /**
      * global quality for codecs which cannot change it per frame.
      * this should be proportional to MPEG1/2/4 qscale.
@@ -1263,6 +1268,20 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int scenechange_threshold;
+
+    /**
+     * minimum lagrange multipler
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int lmin;
+
+    /**
+     * maximum lagrange multipler
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int lmax;
 } AVCodecContext;
 
 

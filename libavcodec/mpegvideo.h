@@ -354,7 +354,9 @@ typedef struct MpegEncContext {
     uint8_t *edge_emu_buffer;     ///< points into the middle of allocated_edge_emu_buffer  
 
     int qscale;                 ///< QP 
-    float frame_qscale;         ///< qscale from the frame level rc FIXME remove
+    int lambda;                 ///< lagrange multipler used in rate distortion
+    int lambda2;                ///< (lambda*lambda) >> FF_LAMBDA_SHIFT 
+    int *lambda_table;
     int adaptive_quant;         ///< use adaptive quantization 
     int dquant;                 ///< qscale difference to prev qscale  
     int pict_type;              ///< I_TYPE, P_TYPE, B_TYPE, ... 
