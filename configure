@@ -485,6 +485,9 @@ elif test "$cpu" = "armv4l" ; then
 elif test "$cpu" = "alpha" ; then
   echo "TARGET_ARCH_ALPHA=yes" >> config.mak
   echo "#define ARCH_ALPHA 1" >> $TMPH
+elif test "$cpu" = "sparc64" ; then
+  echo "TARGET_ARCH_SPARC64=yes" >> config.mak
+  echo "#define ARCH_SPARC64 1" >> $TMPH
 elif test "$cpu" = "powerpc" ; then
   echo "TARGET_ARCH_POWERPC=yes" >> config.mak
   echo "#define ARCH_POWERPC 1" >> $TMPH
