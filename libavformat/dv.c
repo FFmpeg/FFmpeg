@@ -47,7 +47,6 @@ static int dv_read_header(AVFormatContext *s,
 
     ast->codec.codec_type = CODEC_TYPE_AUDIO;
     ast->codec.codec_id = CODEC_ID_DVAUDIO;
-    ast->codec.channels = 2;
     c->is_audio = 0;
 
     return 0;

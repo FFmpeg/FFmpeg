@@ -23,7 +23,9 @@
  */
  
 #define NB_DV_VLC 409
-#define AAUX_OFFSET (80*6 + 80*16*3 + 3)
+#define AAUX_AS_OFFSET  (80*6 + 80*16*3 + 3)
+#define AAUX_ASC_OFFSET (80*6 + 80*16*4 + 3)
+#define VAUX_TC61_OFFSET (80*5 + 48 + 5)
 
 static const uint16_t dv_vlc_bits[409] = {
  0x0000, 0x0002, 0x0007, 0x0008, 0x0009, 0x0014, 0x0015, 0x0016,
