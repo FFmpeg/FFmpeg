@@ -1548,9 +1548,9 @@ int16_t *h263_pred_motion2(MpegEncContext * s, int block, int dir,
     static const int off[4]= {2, 1, 1, -1};
 
     wrap = s->b8_stride;
-    xy = s->mb_x + s->mb_y * wrap;
+    xy = 2*(s->mb_x + s->mb_y * wrap);
 
-    mot_val = s->current_picture.motion_val[0][dir] + xy;
+    mot_val = s->current_picture.motion_val[dir] + xy;
 
     A = mot_val[ - 1];
     /* special case for first (slice) line */
@@ -3815,15 +3815,15 @@ int ff_h263_decode_mb(MpegEncContext *s,
     } else if(s->pict_type==B_TYPE) {
         int mb_type;
         const int stride= s->b8_stride;
-        int16_t *mot_val0 = s->current_picture.motion_val[0][ s->mb_x + s->mb_y*stride ];
-        int16_t *mot_val1 = s->current_picture.motion_val[1][ s->mb_x + s->mb_y*stride ];
+        int16_t *mot_val0 = s->current_picture.motion_val[0][ 2*(s->mb_x + s->mb_y*stride) ];
+        int16_t *mot_val1 = s->current_picture.motion_val[1][ 2*(s->mb_x + s->mb_y*stride) ];
 //        const int mv_xy= s->mb_x + 1 + s->mb_y * s->mb_stride;
 
         //FIXME ugly 
-        mot_val0[0       ]= mot_val0[2       ]= mot_val0[0+stride]= mot_val0[2+stride]= 0;
-        mot_val0[1       ]= mot_val0[3       ]= mot_val0[1+stride]= mot_val0[3+stride]= 0;
-        mot_val1[0       ]= mot_val1[2       ]= mot_val1[0+stride]= mot_val1[2+stride]= 0;
-        mot_val1[1       ]= mot_val1[3       ]= mot_val1[1+stride]= mot_val1[3+stride]= 0;
+        mot_val0[0       ]= mot_val0[2       ]= mot_val0[0+2*stride]= mot_val0[2+2*stride]= 
+        mot_val0[1       ]= mot_val0[3       ]= mot_val0[1+2*stride]= mot_val0[3+2*stride]= 
+        mot_val1[0       ]= mot_val1[2       ]= mot_val1[0+2*stride]= mot_val1[2+2*stride]= 
+        mot_val1[1       ]= mot_val1[3       ]= mot_val1[1+2*stride]= mot_val1[3+2*stride]= 0;
 
         do{
             mb_type= get_vlc2(&s->gb, h263_mbtype_b_vlc.table, H263_MBTYPE_B_VLC_BITS, 2);
@@ -3877,22 +3877,24 @@ int ff_h263_decode_mb(MpegEncContext *s,
 
                 mx = h263_decode_motion(s, mx, 1);
                 my = h263_decode_motion(s, my, 1);
+                
                 s->mv[0][0][0] = mx;
                 s->mv[0][0][1] = my;
-                mot_val[0       ]= mot_val[2       ]= mot_val[0+stride]= mot_val[2+stride]= mx;
-                mot_val[1       ]= mot_val[3       ]= mot_val[1+stride]= mot_val[3+stride]= my;
+                mot_val[0       ]= mot_val[2       ]= mot_val[0+2*stride]= mot_val[2+2*stride]= mx;
+                mot_val[1       ]= mot_val[3       ]= mot_val[1+2*stride]= mot_val[3+2*stride]= my;
             }
     
             if(USES_LIST(mb_type, 1)){
                 int16_t *mot_val= h263_pred_motion2(s, 0, 1, &mx, &my);
                 s->mv_dir |= MV_DIR_BACKWARD;
-
+                
                 mx = h263_decode_motion(s, mx, 1);
                 my = h263_decode_motion(s, my, 1);
+
                 s->mv[1][0][0] = mx;
                 s->mv[1][0][1] = my;
-                mot_val[0       ]= mot_val[2       ]= mot_val[0+stride]= mot_val[2+stride]= mx;
-                mot_val[1       ]= mot_val[3       ]= mot_val[1+stride]= mot_val[3+stride]= my;
+                mot_val[0       ]= mot_val[2       ]= mot_val[0+2*stride]= mot_val[2+2*stride]= mx;
+                mot_val[1       ]= mot_val[3       ]= mot_val[1+2*stride]= mot_val[3+2*stride]= my;
             }
         }
           

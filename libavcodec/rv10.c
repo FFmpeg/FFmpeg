@@ -378,12 +378,17 @@ static int rv20_decode_picture_header(MpegEncContext *s)
         
     if(s->avctx->has_b_frames){
         if (get_bits(&s->gb, 1)){
-            av_log(s->avctx, AV_LOG_ERROR, "unknown bit3 set\n");
+//            av_log(s->avctx, AV_LOG_ERROR, "unknown bit3 set\n");
 //            return -1;
         }
         seq= get_bits(&s->gb, 15);
-    }else
+        mb_pos= get_bits(&s->gb, av_log2(s->mb_num-1)+1);
+        s->mb_x= mb_pos % s->mb_width;
+        s->mb_y= mb_pos / s->mb_width;
+    }else{
         seq= get_bits(&s->gb, 8)*128;
+        mb_pos= ff_h263_decode_mba(s);
+    }
 //printf("%d\n", seq);
     seq |= s->time &~0x7FFF;
     if(seq - s->time >  0x4000) seq -= 0x8000;
@@ -404,7 +409,6 @@ static int rv20_decode_picture_header(MpegEncContext *s)
     }
 //    printf("%d %d %d %d %d\n", seq, (int)s->time, (int)s->last_non_b_time, s->pp_time, s->pb_time);
 
-    mb_pos= ff_h263_decode_mba(s);
     s->no_rounding= get_bits1(&s->gb);
     
     s->f_code = 1;
@@ -647,6 +651,10 @@ static int rv10_decode_frame(AVCodecContext *avctx,
     }else{
         if( rv10_decode_packet(avctx, buf, buf_size) < 0 )
             return -1;
+    }
+    
+    if(s->pict_type == B_TYPE){ //FIXME remove after cleaning mottion_val indexing
+        memset(s->current_picture.motion_val[0], 0, sizeof(int16_t)*2*(s->mb_width*2+2)*(s->mb_height*2+2));
     }
 
     if(s->mb_y>=s->mb_height){
