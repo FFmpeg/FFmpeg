@@ -5800,7 +5800,7 @@ static void dct_unquantize_h263_inter_c(MpegEncContext *s,
 static void dct_unquantize_h261_intra_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale)
 {
-    int i, level, odd;
+    int i, level, even;
     int nCoeffs;
     
     assert(s->block_last_index[n]>=0);
@@ -5809,16 +5809,16 @@ static void dct_unquantize_h261_intra_c(MpegEncContext *s,
         block[0] = block[0] * s->y_dc_scale;
     else
         block[0] = block[0] * s->c_dc_scale;
-    odd = qscale & 0x1;
+    even = (qscale & 1)^1;
     nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
 
     for(i=1; i<=nCoeffs; i++){
         level = block[i];
         if (level){
             if (level < 0){
-                level = qscale * ((level << 1) - 1) + (~odd);
+                level = qscale * ((level << 1) - 1) + even;
             }else{
-                level = qscale * ((level << 1) + 1) - (~odd);
+                level = qscale * ((level << 1) + 1) - even;
             }
         }
         block[i] = level;
@@ -5828,12 +5828,12 @@ static void dct_unquantize_h261_intra_c(MpegEncContext *s,
 static void dct_unquantize_h261_inter_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale)
 {
-    int i, level, odd;
+    int i, level, even;
     int nCoeffs;
     
     assert(s->block_last_index[n]>=0);
-    
-    odd = qscale & 0x1;
+
+    even = (qscale & 1)^1;
     
     nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
 
@@ -5841,9 +5841,9 @@ static void dct_unquantize_h261_inter_c(MpegEncContext *s,
         level = block[i];
         if (level){
             if (level < 0){
-                level = qscale * ((level << 1) - 1) + (~odd);
+                level = qscale * ((level << 1) - 1) + even;
             }else{
-                level = qscale * ((level << 1) + 1) - (~odd);
+                level = qscale * ((level << 1) + 1) - even;
             }
         }
         block[i] = level;
