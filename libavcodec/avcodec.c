@@ -8,11 +8,15 @@
 // private structure used to hide all internal memory allocations
 // and structures used for de/encoding - end user should
 // never see any complicated structure
-typedef struct
+typedef struct private_handle
 {
     AVCodec* avcodec;
     AVCodecContext avcontext;
+    struct private_handle* next;
+    struct private_handle* prev;
 } private_handle_t;
+
+static private_handle_t* handle_first = 0;
 
 static AVCodec* avcodec_find_by_fcc(uint32_t fcc)
 {
@@ -23,7 +27,7 @@ static AVCodec* avcodec_find_by_fcc(uint32_t fcc)
     } lc[] = {
 	{ CODEC_ID_H263, { MKTAG('U', '2', '6', '3'), 0 } },
 	{ CODEC_ID_H263I, { MKTAG('I', '2', '6', '3'), 0 } },
-	{ CODEC_ID_MSMPEG4, { MKTAG('D', 'I', 'V', '3'), 0 } },
+	{ CODEC_ID_MSMPEG4V3, { MKTAG('D', 'I', 'V', '3'), 0 } },
 	{ CODEC_ID_MPEG4, { MKTAG('D', 'I', 'V', 'X'),  MKTAG('D', 'X', '5', '0'), 0 } },
 	{ CODEC_ID_MSMPEG4V2, { MKTAG('M', 'P', '4', '2'), 0 } },
 	{ CODEC_ID_MJPEG, { MKTAG('M', 'J', 'P', 'G'), 0 } },
@@ -51,10 +55,22 @@ static private_handle_t* create_handle()
     private_handle_t* t = malloc(sizeof(private_handle_t));
     if (!t)
 	return NULL;
+    memset(t, 0, sizeof(*t));
 
     // register and fill
-    avcodec_init();
-    avcodec_register_all();
+    if (!handle_first)
+    {
+	avcodec_init();
+	avcodec_register_all();
+        handle_first = t;
+    }
+    else
+    {
+        t->prev = handle_first->next;
+	handle_first->next = t;
+	t->next = handle_first;
+    }
+
     return t;
 }
 
