@@ -109,7 +109,10 @@ static int video_lmax = 31*FF_QP2LAMBDA;
 static int video_mb_qmin = 2;
 static int video_mb_qmax = 31;
 static int video_qdiff = 3;
+static int video_lelim = 0;
+static int video_celim = 0;
 static float video_qblur = 0.5;
+static float video_qsquish = 0.0;
 static float video_qcomp = 0.5;
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
@@ -162,6 +165,8 @@ static int use_scan_offset = 0;
 static int use_qpel = 0;
 static int use_qprd = 0;
 static int use_cbprd = 0;
+static int use_mv0 = 0;
+static int do_normalize_aqp = 0;
 static int qns = 0;
 static int closed_gop = 0;
 static int strict_gop = 0;
@@ -2442,6 +2447,36 @@ static void opt_qscale(const char *arg)
     }
 }
 
+static void opt_qsquish(const char *arg)
+{
+    video_qsquish = atof(arg);
+    if (video_qsquish < 0.0 ||
+        video_qsquish > 99.0) {
+        fprintf(stderr, "qsquish must be >= 0.0 and <= 99.0\n");
+        exit(1);
+    }
+}
+
+static void opt_lelim(const char *arg)
+{
+    video_lelim = atoi(arg);
+    if (video_lelim < -99 ||
+        video_lelim > 99) {
+        fprintf(stderr, "lelim must be >= -99 and <= 99\n");
+        exit(1);
+    }
+}
+
+static void opt_celim(const char *arg)
+{
+    video_celim = atoi(arg);
+    if (video_celim < -99 ||
+        video_celim > 99) {
+        fprintf(stderr, "celim must be >= -99 and <= 99\n");
+        exit(1);
+    }
+}
+
 static void opt_lmax(const char *arg)
 {
     video_lmax = atof(arg)*FF_QP2LAMBDA;
@@ -3146,6 +3181,12 @@ static void opt_output_file(const char *filename)
            	if (use_trell) {
                     video_enc->flags |= CODEC_FLAG_TRELLIS_QUANT;
                 }
+                   if (use_mv0) {
+                    video_enc->flags |= CODEC_FLAG_MV0;
+                }
+                   if (do_normalize_aqp) {
+                    video_enc->flags |= CODEC_FLAG_NORMALIZE_AQP;
+                }
            	if (use_scan_offset) {
                     video_enc->flags |= CODEC_FLAG_SVCD_SCAN_OFFSET;
                 }
@@ -3179,6 +3220,9 @@ static void opt_output_file(const char *filename)
                 video_enc->qmax = video_qmax;
                 video_enc->lmin = video_lmin;
                 video_enc->lmax = video_lmax;
+                video_enc->rc_qsquish = video_qsquish;
+                video_enc->luma_elim_threshold = video_lelim;
+                video_enc->chroma_elim_threshold = video_celim;
                 video_enc->mb_qmin = video_mb_qmin;
                 video_enc->mb_qmax = video_mb_qmax;
                 video_enc->max_qdiff = video_qdiff;
@@ -3903,6 +3947,7 @@ const OptionDef options[] = {
     { "mbqmax", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_qmax}, "max macroblock quantiser scale (VBR)", "q" },
     { "qdiff", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
     { "qblur", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
+    { "qsquish", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qsquish}, "how to keep quantiser between qmin and qmax (0 = clip, 1 = use differentiable function)", "squish" },
     { "qcomp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },
     { "rc_init_cplx", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_rc_initial_cplx}, "initial complexity for 1-pass encoding", "complexity" },
     { "b_qfactor", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_qfactor}, "qp factor between p and b frames", "factor" },
@@ -3936,6 +3981,8 @@ const OptionDef options[] = {
     { "cmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_cmp}, "fullpel compare function", "cmp function" },
     { "precmp", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_cmp}, "pre motion estimation compare function", "cmp function" },
     { "preme", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_pre_me}, "pre motion estimation", "" },
+    { "lelim", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lelim}, "single coefficient elimination threshold for luminance (negative values also consider DC coefficient)", "elim" },
+    { "celim", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_celim}, "single coefficient elimination threshold for chrominance (negative values also consider DC coefficient)", "elim" },
     { "lumi_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_lumi_mask}, "luminance masking", "" },
     { "dark_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_dark_mask}, "darkness masking", "" },
     { "scplx_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_scplx_mask}, "spatial complexity masking", "" },
@@ -3970,6 +4017,8 @@ const OptionDef options[] = {
     { "qprd", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_qprd}, "" },
     { "cbp", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_cbprd}, "" },
     { "trell", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_trell}, "enable trellis quantization" },
+    { "mv0", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_mv0}, "try to encode each MB with MV=<0,0> and choose the better one (has no effect if mbd=0)" },
+    { "naq", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_normalize_aqp}, "normalize adaptive quantization" },
     { "cgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&closed_gop}, "closed gop" },
     { "sgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&strict_gop}, "strict gop" },
     { "scan_offset", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_scan_offset}, "enable SVCD Scan Offset placeholder" },
