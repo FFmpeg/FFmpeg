@@ -104,7 +104,7 @@ static AVInputFormat dv_iformat = {
     .extensions = "dv",
 };
 
-#if 0
+
 int dv_write_header(struct AVFormatContext *s)
 {
     return 0;
@@ -136,11 +136,10 @@ AVOutputFormat dv_oformat = {
     dv_write_packet,
     dv_write_trailer,
 };
-#endif
 
 int dv_init(void)
 {
     av_register_input_format(&dv_iformat);
-    //    av_register_output_format(&dv_oformat);
+    av_register_output_format(&dv_oformat);
     return 0;
 }
