@@ -60,77 +60,77 @@ struct
 //static const long fdct_r_row_sse2[4] ATTR_ALIGN(16) = {RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW, RND_FRW_ROW};
 
 static const int16_t tab_frw_01234567[] ATTR_ALIGN(8) = {  // forward_dct coeff table
-  16384,   16384,   -8867,  -21407, 
-  16384,   16384,   21407,    8867, 
-  16384,  -16384,   21407,   -8867, 
- -16384,   16384,    8867,  -21407, 
-  22725,   19266,  -22725,  -12873, 
-  12873,    4520,   19266,   -4520, 
-  12873,  -22725,   19266,  -22725, 
-   4520,   19266,    4520,  -12873, 
+  16384,   16384,   22725,   19266, 
+  16384,   16384,   12873,    4520, 
+  21407,    8867,   19266,   -4520, 
+  -8867,  -21407,  -22725,  -12873, 
+  16384,  -16384,   12873,  -22725, 
+ -16384,   16384,    4520,   19266, 
+   8867,  -21407,    4520,  -12873, 
+  21407,   -8867,   19266,  -22725, 
 
-  22725,   22725,  -12299,  -29692, 
-  22725,   22725,   29692,   12299, 
-  22725,  -22725,   29692,  -12299, 
- -22725,   22725,   12299,  -29692, 
-  31521,   26722,  -31521,  -17855, 
-  17855,    6270,   26722,   -6270, 
-  17855,  -31521,   26722,  -31521, 
-   6270,   26722,    6270,  -17855, 
+  22725,   22725,   31521,   26722, 
+  22725,   22725,   17855,    6270, 
+  29692,   12299,   26722,   -6270, 
+ -12299,  -29692,  -31521,  -17855, 
+  22725,  -22725,   17855,  -31521, 
+ -22725,   22725,    6270,   26722, 
+  12299,  -29692,    6270,  -17855, 
+  29692,  -12299,   26722,  -31521, 
 
-  21407,   21407,  -11585,  -27969, 
-  21407,   21407,   27969,   11585, 
-  21407,  -21407,   27969,  -11585, 
- -21407,   21407,   11585,  -27969, 
-  29692,   25172,  -29692,  -16819, 
-  16819,    5906,   25172,   -5906, 
-  16819,  -29692,   25172,  -29692, 
-   5906,   25172,    5906,  -16819, 
+  21407,   21407,   29692,   25172, 
+  21407,   21407,   16819,    5906, 
+  27969,   11585,   25172,   -5906, 
+ -11585,  -27969,  -29692,  -16819, 
+  21407,  -21407,   16819,  -29692, 
+ -21407,   21407,    5906,   25172, 
+  11585,  -27969,    5906,  -16819, 
+  27969,  -11585,   25172,  -29692, 
 
-  19266,   19266,  -10426,  -25172, 
-  19266,   19266,   25172,   10426, 
-  19266,  -19266,   25172,  -10426, 
- -19266,   19266,   10426,  -25172, 
-  26722,   22654,  -26722,  -15137, 
-  15137,    5315,   22654,   -5315, 
-  15137,  -26722,   22654,  -26722, 
-   5315,   22654,    5315,  -15137, 
+  19266,   19266,   26722,   22654, 
+  19266,   19266,   15137,    5315, 
+  25172,   10426,   22654,   -5315, 
+ -10426,  -25172,  -26722,  -15137, 
+  19266,  -19266,   15137,  -26722, 
+ -19266,   19266,    5315,   22654, 
+  10426,  -25172,    5315,  -15137, 
+  25172,  -10426,   22654,  -26722, 
 
-  16384,   16384,   -8867,  -21407, 
-  16384,   16384,   21407,    8867, 
-  16384,  -16384,   21407,   -8867, 
- -16384,   16384,    8867,  -21407, 
-  22725,   19266,  -22725,  -12873, 
-  12873,    4520,   19266,   -4520, 
-  12873,  -22725,   19266,  -22725, 
-   4520,   19266,    4520,  -12873, 
+  16384,   16384,   22725,   19266, 
+  16384,   16384,   12873,    4520, 
+  21407,    8867,   19266,   -4520, 
+  -8867,  -21407,  -22725,  -12873, 
+  16384,  -16384,   12873,  -22725, 
+ -16384,   16384,    4520,   19266, 
+   8867,  -21407,    4520,  -12873, 
+  21407,   -8867,   19266,  -22725, 
 
-  19266,   19266,  -10426,  -25172, 
-  19266,   19266,   25172,   10426, 
-  19266,  -19266,   25172,  -10426, 
- -19266,   19266,   10426,  -25172, 
-  26722,   22654,  -26722,  -15137, 
-  15137,    5315,   22654,   -5315, 
-  15137,  -26722,   22654,  -26722, 
-   5315,   22654,    5315,  -15137, 
+  19266,   19266,   26722,   22654, 
+  19266,   19266,   15137,    5315, 
+  25172,   10426,   22654,   -5315, 
+ -10426,  -25172,  -26722,  -15137, 
+  19266,  -19266,   15137,  -26722, 
+ -19266,   19266,    5315,   22654, 
+  10426,  -25172,    5315,  -15137, 
+  25172,  -10426,   22654,  -26722, 
 
-  21407,   21407,  -11585,  -27969, 
-  21407,   21407,   27969,   11585, 
-  21407,  -21407,   27969,  -11585, 
- -21407,   21407,   11585,  -27969, 
-  29692,   25172,  -29692,  -16819, 
-  16819,    5906,   25172,   -5906, 
-  16819,  -29692,   25172,  -29692, 
-   5906,   25172,    5906,  -16819, 
+  21407,   21407,   29692,   25172, 
+  21407,   21407,   16819,    5906, 
+  27969,   11585,   25172,   -5906, 
+ -11585,  -27969,  -29692,  -16819, 
+  21407,  -21407,   16819,  -29692, 
+ -21407,   21407,    5906,   25172, 
+  11585,  -27969,    5906,  -16819, 
+  27969,  -11585,   25172,  -29692, 
 
-  22725,   22725,  -12299,  -29692, 
-  22725,   22725,   29692,   12299, 
-  22725,  -22725,   29692,  -12299, 
- -22725,   22725,   12299,  -29692, 
-  31521,   26722,  -31521,  -17855, 
-  17855,    6270,   26722,   -6270, 
-  17855,  -31521,   26722,  -31521, 
-   6270,   26722,    6270,  -17855, 
+  22725,   22725,   31521,   26722, 
+  22725,   22725,   17855,    6270, 
+  29692,   12299,   26722,   -6270, 
+ -12299,  -29692,  -31521,  -17855, 
+  22725,  -22725,   17855,  -31521, 
+ -22725,   22725,    6270,   26722, 
+  12299,  -29692,    6270,  -17855, 
+  29692,  -12299,   26722,  -31521, 
 };
 
 struct 
@@ -413,93 +413,91 @@ static always_inline void fdct_row_mmx2(const int16_t *in, int16_t *out, const i
 { 
     pshufw_m2r(*(in + 4), mm5, 0x1B);
     movq_m2r(*(in + 0), mm0);
-    movq_r2r(mm0, mm1);	
+    movq_r2r(mm0, mm1);
     paddsw_r2r(mm5, mm0);
     psubsw_r2r(mm5, mm1);
-    pshufw_r2r(mm0, mm2, 0x4E);
-    pshufw_r2r(mm1, mm3, 0x4E);
-    movq_m2r(*(table + 0), mm4);
-    movq_m2r(*(table + 4), mm6);
-    movq_m2r(*(table + 16), mm5);
+    movq_r2r(mm0, mm2);
+    punpckldq_r2r(mm1, mm0);
+    punpckhdq_r2r(mm1, mm2);
+    movq_m2r(*(table + 0), mm1);
+    movq_m2r(*(table + 4), mm3);
+    movq_m2r(*(table + 8), mm4);
+    movq_m2r(*(table + 12), mm5);
+    movq_m2r(*(table + 16), mm6);
     movq_m2r(*(table + 20), mm7);
+    pmaddwd_r2r(mm0, mm1);
+    pmaddwd_r2r(mm2, mm3);
     pmaddwd_r2r(mm0, mm4);
-    pmaddwd_r2r(mm1, mm5);
-    pmaddwd_r2r(mm2, mm6);
-    pmaddwd_r2r(mm3, mm7);
-    pmaddwd_m2r(*(table + 8), mm0);
-    pmaddwd_m2r(*(table + 12), mm2);
-    pmaddwd_m2r(*(table + 24), mm1);
-    pmaddwd_m2r(*(table + 28), mm3);
-    paddd_r2r(mm6, mm4);
-    paddd_r2r(mm7, mm5);
-    paddd_r2r(mm2, mm0);
-    paddd_r2r(mm3, mm1);
-    movq_m2r(*fdct_r_row, mm7);
-    paddd_r2r(mm7, mm4);
-    paddd_r2r(mm7, mm5);
-    paddd_r2r(mm7, mm0);
-    paddd_r2r(mm7, mm1);
-    psrad_i2r(SHIFT_FRW_ROW, mm4);
+    pmaddwd_r2r(mm2, mm5);
+    pmaddwd_r2r(mm0, mm6);
+    pmaddwd_r2r(mm2, mm7);
+    pmaddwd_m2r(*(table + 24), mm0);
+    pmaddwd_m2r(*(table + 28), mm2);
+    paddd_r2r(mm1, mm3);
+    paddd_r2r(mm4, mm5);
+    paddd_r2r(mm6, mm7);
+    paddd_r2r(mm0, mm2);
+    movq_m2r(*fdct_r_row, mm0);
+    paddd_r2r(mm0, mm3);
+    paddd_r2r(mm0, mm5);
+    paddd_r2r(mm0, mm7);
+    paddd_r2r(mm0, mm2);
+    psrad_i2r(SHIFT_FRW_ROW, mm3);
     psrad_i2r(SHIFT_FRW_ROW, mm5);
-    psrad_i2r(SHIFT_FRW_ROW, mm0);
-    psrad_i2r(SHIFT_FRW_ROW, mm1);
-    packssdw_r2r(mm0, mm4);
-    packssdw_r2r(mm1, mm5);
-    movq_r2r(mm4, mm2);
-    punpcklwd_r2r(mm5, mm4);
-    punpckhwd_r2r(mm5, mm2);
-    movq_r2m(mm4, *(out + 0));
-    movq_r2m(mm2, *(out + 4));
+    psrad_i2r(SHIFT_FRW_ROW, mm7);
+    psrad_i2r(SHIFT_FRW_ROW, mm2);
+    packssdw_r2r(mm5, mm3);
+    packssdw_r2r(mm2, mm7);
+    movq_r2m(mm3, *(out + 0));
+    movq_r2m(mm7, *(out + 4));
 }
 
 static always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const int16_t *table)
 { 
+//FIXME reorder (i dont have a old mmx only cpu here to benchmark ...)
     movd_m2r(*(in + 6), mm1);
     punpcklwd_m2r(*(in + 4), mm1);
     movq_r2r(mm1, mm2);
     psrlq_i2r(0x20, mm1);
     movq_m2r(*(in + 0), mm0);
     punpcklwd_r2r(mm2, mm1);
-    movq_r2r(mm0, mm5);	
+    movq_r2r(mm0, mm5);
     paddsw_r2r(mm1, mm0);
     psubsw_r2r(mm1, mm5);
-    movq_r2r(mm0, mm1);	    
-    movq_r2r(mm5, mm6);	
-    punpckldq_r2r(mm5, mm3);
-    punpckhdq_r2r(mm3, mm6);
-    movq_m2r(*(table + 0), mm3);
-    movq_m2r(*(table + 4), mm4);
-    punpckldq_r2r(mm0, mm2);
-    pmaddwd_r2r(mm0, mm3);
-    punpckhdq_r2r(mm2, mm1);
-    movq_m2r(*(table + 16), mm2);
-    pmaddwd_r2r(mm1, mm4);
-    pmaddwd_m2r(*(table + 8), mm0);
+    movq_r2r(mm0, mm2);
+    punpckldq_r2r(mm5, mm0);
+    punpckhdq_r2r(mm5, mm2);
+    movq_m2r(*(table + 0), mm1);
+    movq_m2r(*(table + 4), mm3);
+    movq_m2r(*(table + 8), mm4);
+    movq_m2r(*(table + 12), mm5);
+    movq_m2r(*(table + 16), mm6);
     movq_m2r(*(table + 20), mm7);
-    pmaddwd_r2r(mm5, mm2);
-    paddd_m2r(*fdct_r_row, mm3);
-    pmaddwd_r2r(mm6, mm7);
-    pmaddwd_m2r(*(table + 12), mm1);
-    paddd_r2r(mm4, mm3);
-    pmaddwd_m2r(*(table + 24), mm5);
-    pmaddwd_m2r(*(table + 28), mm6);
-    paddd_r2r(mm7, mm2);
-    paddd_m2r(*fdct_r_row, mm0);
+    pmaddwd_r2r(mm0, mm1);
+    pmaddwd_r2r(mm2, mm3);
+    pmaddwd_r2r(mm0, mm4);
+    pmaddwd_r2r(mm2, mm5);
+    pmaddwd_r2r(mm0, mm6);
+    pmaddwd_r2r(mm2, mm7);
+    pmaddwd_m2r(*(table + 24), mm0);
+    pmaddwd_m2r(*(table + 28), mm2);
+    paddd_r2r(mm1, mm3);
+    paddd_r2r(mm4, mm5);
+    paddd_r2r(mm6, mm7);
+    paddd_r2r(mm0, mm2);
+    movq_m2r(*fdct_r_row, mm0);
+    paddd_r2r(mm0, mm3);
+    paddd_r2r(mm0, mm5);
+    paddd_r2r(mm0, mm7);
+    paddd_r2r(mm0, mm2);
     psrad_i2r(SHIFT_FRW_ROW, mm3);
-    paddd_m2r(*fdct_r_row, mm2);
-    paddd_r2r(mm1, mm0);
-    paddd_m2r(*fdct_r_row, mm5);
-    psrad_i2r(SHIFT_FRW_ROW, mm2);
-    paddd_r2r(mm6, mm5);
-    psrad_i2r(SHIFT_FRW_ROW, mm0);
     psrad_i2r(SHIFT_FRW_ROW, mm5);
-    packssdw_r2r(mm0, mm3);
-    packssdw_r2r(mm5, mm2);
-    movq_r2r(mm3, mm6);
-    punpcklwd_r2r(mm2, mm3);
-    punpckhwd_r2r(mm2, mm6);
+    psrad_i2r(SHIFT_FRW_ROW, mm7);
+    psrad_i2r(SHIFT_FRW_ROW, mm2);
+    packssdw_r2r(mm5, mm3);
+    packssdw_r2r(mm2, mm7);
     movq_r2m(mm3, *(out + 0));
-    movq_r2m(mm6, *(out + 4));
+    movq_r2m(mm7, *(out + 4));
 }
 
 void ff_fdct_mmx(int16_t *block)
@@ -553,7 +551,6 @@ void ff_fdct_sse2(int16_t *block)
     int64_t align_tmp[16] ATTR_ALIGN(8);
     int16_t * const block_tmp= (int16_t*)align_tmp;
     int16_t *block1;
-    int i;
 
     block1 = block_tmp;
     fdct_col(block, block1, 0);
