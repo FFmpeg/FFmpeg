@@ -41,6 +41,8 @@ typedef struct {
     int ds_chunk_size;
     int ds_data_size;
     int ds_silence_data;
+    
+    int packet_pos;
 
 } ASFStream;
 
@@ -116,6 +118,7 @@ typedef struct {
     int packet_obj_size;
     int packet_time_delta;
     int packet_time_start;
+    int packet_pos;
 
     int stream_index;
     ASFStream* asf_st; /* currently decoded stream */
@@ -1117,6 +1120,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    //printf("PacketLeftSize:%d  Pad:%d Pos:%Ld\n", asf->packet_size_left, asf->packet_padsize, url_ftell(pb));
 	    /* fail safe */
 	    url_fskip(pb, ret);
+            asf->packet_pos= url_ftell(&s->pb);
 	    ret = asf_get_packet(s);
 	    //printf("READ ASF PACKET  %d   r:%d   c:%d\n", ret, asf->packet_size_left, pc++);
 	    if (ret < 0 || url_feof(pb))
@@ -1135,7 +1139,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    DO_2BITS(asf->packet_property >> 4, asf->packet_seq, 0);
 	    DO_2BITS(asf->packet_property >> 2, asf->packet_frag_offset, 0);
 	    DO_2BITS(asf->packet_property, asf->packet_replic_size, 0);
-
+//printf("key:%d stream:%d seq:%d offset:%d replic_size:%d\n", asf->packet_key_frame, asf->stream_index, asf->packet_seq, //asf->packet_frag_offset, asf->packet_replic_size);
 	    if (asf->packet_replic_size > 1) {
                 // it should be always at least 8 bytes - FIXME validate
 		asf->packet_obj_size = get_le32(pb);
@@ -1228,6 +1232,10 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    asf_st->seq = asf->packet_seq;
 	    asf_st->pkt.pts = asf->packet_frag_timestamp - asf->hdr.preroll;
 	    asf_st->pkt.stream_index = asf->stream_index;
+            asf_st->packet_pos= asf->packet_pos;
+//printf("new packet: stream:%d key:%d packet_key:%d audio:%d\n", 
+//asf->stream_index, asf->packet_key_frame, asf_st->pkt.flags & PKT_FLAG_KEY,
+//s->streams[asf->stream_index]->codec.codec_type == CODEC_TYPE_AUDIO);
 	    if (s->streams[asf->stream_index]->codec.codec_type == CODEC_TYPE_AUDIO) 
 		asf->packet_key_frame = 1;
 	    if (asf->packet_key_frame)
@@ -1304,6 +1312,8 @@ static int64_t asf_align(AVFormatContext *s, int64_t pos){
 static void asf_reset_header(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
+    ASFStream *asf_st;
+    int i;
 
     asf->packet_nb_frames = 0;
     asf->packet_timestamp_start = -1;
@@ -1326,30 +1336,41 @@ static void asf_reset_header(AVFormatContext *s)
     asf->packet_obj_size = 0;
     asf->packet_time_delta = 0;
     asf->packet_time_start = 0;
+    
+    for(i=0; i<s->nb_streams; i++){
+        asf_st= s->streams[i]->priv_data;
+        av_free_packet(&asf_st->pkt);
+        asf_st->frag_offset=0;
+        asf_st->seq=0;
+    }
+    asf->asf_st= NULL;
 }
 
 static int64_t asf_read_pts(AVFormatContext *s, int64_t *ppos, int stream_index)
 {
     ASFContext *asf = s->priv_data;
     AVPacket pkt1, *pkt = &pkt1;
-    int64_t pos= *ppos;
+    ASFStream *asf_st;
     int64_t pts;
+    int64_t pos= *ppos;
 
     // ensure we are on the packet boundry
     assert(pos % asf->packet_size == 0);
-
+//printf("asf_read_pts\n");
     url_fseek(&s->pb, pos + s->data_offset, SEEK_SET);
+    asf_reset_header(s);
     do{
-        pos= url_ftell(&s->pb) - s->data_offset;
-        asf_reset_header(s);
-        if (av_read_frame(s, pkt) < 0)
+        if (av_read_frame(s, pkt) < 0){
+            printf("seek failed\n");
     	    return AV_NOPTS_VALUE;
+        }
         pts= pkt->pts;
 
         av_free_packet(pkt);
-    }while(pkt->stream_index != stream_index);
-    
-    *ppos= pos;
+    }while(pkt->stream_index != stream_index || !(pkt->flags&PKT_FLAG_KEY));
+    asf_st= s->streams[stream_index]->priv_data;
+    *ppos= asf_st->packet_pos - s->data_offset;
+//printf("found keyframe at %Ld stream %d stamp:%Ld\n", *ppos, stream_index, pts);
 
     return pts;
 }
@@ -1361,7 +1382,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
     AVPacket pkt1, *pkt;
     int block_align;
     int64_t pos;
-    int64_t pos_min, pos_max, pts_min, pts_max, cur_pts;
+    int64_t pos_min, pos_max, pts_min, pts_max, cur_pts, pos_limit;
 
     pkt = &pkt1;
 
@@ -1386,48 +1407,42 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
    
     pos_max = asf_align(s, url_filesize(url_fileno(&s->pb)) - 1 - s->data_offset); //FIXME wrong
     pts_max = pts_min + s->duration;
+    pos_limit= pos_max;
 
-    while (pos_min <= pos_max) {
+    while (pos_min < pos_limit) {
+        int64_t start_pos;
 
-        if (pts <= pts_min) {
-            pos = pos_min;
-            goto found;
-        } else if (pts >= pts_max) {
-            pos = pos_max;
-            goto found;
-        } else {
-            // interpolate position (better than dichotomy)
-            pos = (int64_t)((double)(pos_max - pos_min) *
-                            (double)(pts - pts_min) /
-                            (double)(pts_max - pts_min)) + pos_min;
-            pos= asf_align(s, pos);
-        }
+        assert(pos_limit <= pos_max);
+
+        // interpolate position (better than dichotomy)
+        pos = (int64_t)((double)(pos_limit - pos_min) *
+                        (double)(pts - pts_min) /
+                        (double)(pts_max - pts_min)) + pos_min;
+        pos= asf_align(s, pos);
+        if(pos <= pos_min)
+            pos= pos_min + asf->packet_size;
+        else if(pos > pos_limit)
+            pos= pos_limit;
+        start_pos= pos;
 
         // read the next timestamp 
     	cur_pts = asf_read_pts(s, &pos, stream_index);    
-	
-        /* check if we are lucky */
-        if (pts == cur_pts) {
-            goto found;
-        } else if (cur_pts == AV_NOPTS_VALUE) {
-	    return -1;
+
+        if (cur_pts == AV_NOPTS_VALUE) {
+            return -1;
         } else if (pts < cur_pts) {
+            pos_limit = start_pos - asf->packet_size;
             pos_max = pos;
-	    pts_max = asf_read_pts(s, &pos_max, stream_index); //FIXME wrong, must do backward search, or change this somehow
-            if (pts >= pts_max) {
-                pos = pos_max;
-                goto found;
-            }
+            pts_max = cur_pts;
         } else {
-            pos_min = pos + asf->packet_size;
-	    pts_min = asf_read_pts(s, &pos_min, stream_index);
-            if (pts <= pts_min) {
-                goto found;
-            }
+            pos_min = pos;
+            pts_min = cur_pts;
+            /* check if we are lucky */
+            if (pts == cur_pts)
+                break;
         }
     }
     pos = pos_min;
-found:
     url_fseek(&s->pb, pos + s->data_offset, SEEK_SET);
     asf_reset_header(s);
     return 0;
