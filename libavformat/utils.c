@@ -35,6 +35,7 @@
 
 AVInputFormat *first_iformat;
 AVOutputFormat *first_oformat;
+AVImageFormat *first_image_format;
 
 void av_register_input_format(AVInputFormat *format)
 {
@@ -83,6 +84,11 @@ AVOutputFormat *guess_format(const char *short_name, const char *filename,
 {
     AVOutputFormat *fmt, *fmt_found;
     int score_max, score;
+
+    /* specific test for image sequences */
+    if (!short_name && filename && filename_number_test(filename) >= 0) {
+        return guess_format("image", NULL, NULL);
+    }
 
     /* find the proper file type */
     fmt_found = NULL;
@@ -326,8 +332,8 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         fmt = av_probe_input_format(pd, 0);
     }
 
-    /* if no file needed do not try to open one */
     if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
+        /* if no file needed do not try to open one */
         if (url_fopen(&ic->pb, filename, URL_RDONLY) < 0) {
             err = AVERROR_IO;
             goto fail;
@@ -365,6 +371,14 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 
     ic->iformat = fmt;
 
+    /* check filename in case of an image number is expected */
+    if (ic->iformat->flags & AVFMT_NEEDNUMBER) {
+        if (filename_number_test(ic->filename) < 0) { 
+            err = AVERROR_NUMEXPECTED;
+            goto fail1;
+        }
+    }
+    
     /* allocate private data */
     ic->priv_data = av_mallocz(fmt->priv_data_size);
     if (!ic->priv_data) {
@@ -375,14 +389,6 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     /* default pts settings is MPEG like */
     av_set_pts_info(ic, 33, 1, 90000);
 
-    /* check filename in case of an image number is expected */
-    if (ic->iformat->flags & AVFMT_NEEDNUMBER) {
-        if (filename_number_test(ic->filename) < 0) { 
-            err = AVERROR_NUMEXPECTED;
-            goto fail1;
-        }
-    }
-    
     err = ic->iformat->read_header(ic, ap);
     if (err < 0)
         goto fail1;
@@ -707,6 +713,21 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
 /************************************************************/
 /* output media file */
 
+int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
+{
+    int ret;
+
+    s->priv_data = av_mallocz(s->oformat->priv_data_size);
+    if (!s->priv_data)
+        return AVERROR_NOMEM;
+    if (s->oformat->set_parameters) {
+        ret = s->oformat->set_parameters(s, ap);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
 /**
  * allocate the stream private data and write the stream header to an
  * output media file
@@ -719,9 +740,6 @@ int av_write_header(AVFormatContext *s)
     int ret, i;
     AVStream *st;
 
-    s->priv_data = av_mallocz(s->oformat->priv_data_size);
-    if (!s->priv_data)
-        return AVERROR_NOMEM;
     /* default pts settings is MPEG like */
     av_set_pts_info(s, 33, 1, 90000);
     ret = s->oformat->write_header(s);
@@ -1291,3 +1309,88 @@ void av_frac_add(AVFrac *f, INT64 incr)
     }
     f->num = num;
 }
+
+/**
+ * register a new image format
+ * @param img_fmt Image format descriptor
+ */
+void av_register_image_format(AVImageFormat *img_fmt)
+{
+    AVImageFormat **p;
+
+    p = &first_image_format;
+    while (*p != NULL) p = &(*p)->next;
+    *p = img_fmt;
+    img_fmt->next = NULL;
+}
+
+/* guess image format */
+AVImageFormat *av_probe_image_format(AVProbeData *pd)
+{
+    AVImageFormat *fmt1, *fmt;
+    int score, score_max;
+
+    fmt = NULL;
+    score_max = 0;
+    for(fmt1 = first_image_format; fmt1 != NULL; fmt1 = fmt1->next) {
+        if (fmt1->img_probe) {
+            score = fmt1->img_probe(pd);
+            if (score > score_max) {
+                score_max = score;
+                fmt = fmt1;
+            }
+        }
+    }
+    return fmt;
+}
+
+AVImageFormat *guess_image_format(const char *filename)
+{
+    AVImageFormat *fmt1;
+
+    for(fmt1 = first_image_format; fmt1 != NULL; fmt1 = fmt1->next) {
+        if (fmt1->extensions && match_ext(filename, fmt1->extensions))
+            return fmt1;
+    }
+    return NULL;
+}
+
+/**
+ * Read an image from a stream. 
+ * @param gb byte stream containing the image
+ * @param fmt image format, NULL if probing is required
+ */
+int av_read_image(ByteIOContext *pb, const char *filename,
+                  AVImageFormat *fmt,
+                  int (*alloc_cb)(void *, AVImageInfo *info), void *opaque)
+{
+    char buf[PROBE_BUF_SIZE];
+    AVProbeData probe_data, *pd = &probe_data;
+    offset_t pos;
+    int ret;
+
+    if (!fmt) {
+        pd->filename = (char *)filename;
+        pd->buf = buf;
+        pos = url_ftell(pb);
+        pd->buf_size = get_buffer(pb, buf, PROBE_BUF_SIZE);
+        url_fseek(pb, pos, SEEK_SET);
+        fmt = av_probe_image_format(pd);
+    }
+    if (!fmt)
+        return AVERROR_NOFMT;
+    ret = fmt->img_read(pb, alloc_cb, opaque);
+    return ret;
+}
+
+/**
+ * Write an image to a stream.
+ * @param pb byte stream for the image output
+ * @param fmt image format
+ * @param img image data and informations
+ */
+int av_write_image(ByteIOContext *pb, AVImageFormat *fmt, AVImageInfo *img)
+{
+    return fmt->img_write(pb, img);
+}
+

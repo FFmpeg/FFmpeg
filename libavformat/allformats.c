@@ -45,6 +45,8 @@ void av_register_all(void)
     mov_init();
     jpeg_init();
     dv_init();
+
+    av_register_output_format(&yuv4mpegpipe_oformat);
     
 #ifdef CONFIG_VORBIS
     ogg_init();
@@ -59,6 +61,14 @@ void av_register_all(void)
 #if defined(CONFIG_AUDIO_OSS) || defined(CONFIG_AUDIO_BEOS)
     audio_init();
 #endif
+
+    /* image formats */
+    av_register_image_format(&pnm_image_format);
+    av_register_image_format(&pbm_image_format);
+    av_register_image_format(&pgm_image_format);
+    av_register_image_format(&ppm_image_format);
+    av_register_image_format(&pgmyuv_image_format);
+    av_register_image_format(&yuv_image_format);
 
     /* file protocols */
     register_protocol(&file_protocol);

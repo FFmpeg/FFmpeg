@@ -12,9 +12,13 @@ OBJS= utils.o cutils.o allformats.o
 
 # mux and demuxes
 OBJS+=mpeg.o mpegts.o ffm.o crc.o img.o raw.o rm.o asf.o \
-      avienc.o avidec.o wav.o swf.o au.o gif.o mov.o jpeg.o dv.o framehook.o
+      avienc.o avidec.o wav.o swf.o au.o gif.o mov.o jpeg.o dv.o \
+      yuv4mpeg.o
+# image formats
+OBJS+= pnm.o yuv.o
 # file I/O
 OBJS+= avio.o aviobuf.o file.o 
+OBJS+= framehook.o 
 
 ifeq ($(BUILD_STRPTIME),yes)
 OBJS+= strptime.o
