@@ -167,7 +167,9 @@ void dsputil_init_alpha(void);
 #define emms_c()
 #define __align8 __attribute__ ((aligned (16)))
 
+#ifdef CONFIG_DARWIN
 void dsputil_init_altivec(void);
+#endif
 
 #else
 

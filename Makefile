@@ -9,8 +9,10 @@ VPATH=$(SRC_PATH)
 CFLAGS= $(OPTFLAGS) -Wall -g -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libav -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 ifeq ($(CONFIG_DARWIN),yes)
 LDFLAGS+= -g -d
+FFSLDFLAGS= -Wl,-bind_at_load
 else
 LDFLAGS+= -g -Wl,--warn-common
+FFSLDFLAGS= -Wl,-E
 endif
 
 ifeq ($(TARGET_GPROF),yes)
@@ -53,7 +55,8 @@ ffmpeg$(EXE): ffmpeg_g$(EXE)
 	$(STRIP) -o $@ $<
 
 ffserver$(EXE): ffserver.o $(DEP_LIBS)
-	$(CC) $(LDFLAGS) -Wl,-E -o $@ ffserver.o -L./libavcodec -L./libav \
+	$(CC) $(LDFLAGS) $(FFSLDFLAGS) \
+		-o $@ ffserver.o -L./libavcodec -L./libav \
               -lavformat -lavcodec -ldl $(EXTRALIBS) 
 
 ffplay: ffmpeg$(EXE)

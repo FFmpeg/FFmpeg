@@ -35,7 +35,7 @@ case "$cpu" in
   alpha)
     cpu="alpha"
   ;;
-  "Power Macintosh")
+  "Power Macintosh"|ppc)
     cpu="powerpc"
   ;;
   *)
@@ -85,12 +85,13 @@ extralibs="-lpoll -lgnugetopt -lm"
 make="gmake"
 ;;
 Darwin)
+cc="cc"
 v4l="no"
 audio_oss="no"
 CFLAGS="-no-cpp-precomp -pipe -O3 -fomit-frame-pointer"
-SHFLAGS=-dynamic
+SHFLAGS="-dynamiclib"
 extralibs=""
-darwin=yes
+darwin="yes"
 ;;
 *) ;;
 esac

@@ -1340,7 +1340,9 @@ void dsputil_init(void)
     use_permuted_idct = 0;
 #endif
 #ifdef ARCH_POWERPC
+#ifdef CONFIG_DARWIN
     dsputil_init_altivec();
+#endif
 #endif
 
 #ifdef SIMPLE_IDCT
