@@ -1625,7 +1625,7 @@ printf("%c", s->ac_pred ? 'A' : 'I');
     
     return 0;
 }
-
+//#define ERROR_DETAILS
 static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded)
 {
@@ -1792,6 +1792,12 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 #endif
                     i+= run + 1;
                     if(last) i+=192;
+#ifdef ERROR_DETAILS
+                if(run==66)
+                    fprintf(stderr, "illegal vlc code in ESC3 level=%d\n", level);
+                else if((i>62 && i<192) || i>192+63)
+                    fprintf(stderr, "run overflow in ESC3 i=%d run=%d level=%d\n", i, run, level);
+#endif
                 } else {
                     /* second escape */
 #if MIN_CACHE_BITS < 23
@@ -1804,6 +1810,12 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     i+= run + rl->max_run[run>>7][level/qmul] + run_diff; //FIXME opt indexing
                     level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
                     LAST_SKIP_BITS(re, &s->gb, 1);
+#ifdef ERROR_DETAILS
+                if(run==66)
+                    fprintf(stderr, "illegal vlc code in ESC2 level=%d\n", level);
+                else if((i>62 && i<192) || i>192+63)
+                    fprintf(stderr, "run overflow in ESC2 i=%d run=%d level=%d\n", i, run, level);
+#endif
                 }
             } else {
                 /* first escape */
@@ -1818,17 +1830,34 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 level = level + rl->max_level[run>>7][(run-1)&63] * qmul;//FIXME opt indexing
                 level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
                 LAST_SKIP_BITS(re, &s->gb, 1);
+#ifdef ERROR_DETAILS
+                if(run==66)
+                    fprintf(stderr, "illegal vlc code in ESC1 level=%d\n", level);
+                else if((i>62 && i<192) || i>192+63)
+                    fprintf(stderr, "run overflow in ESC1 i=%d run=%d level=%d\n", i, run, level);
+#endif
             }
         } else {
             i+= run;
             level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
             LAST_SKIP_BITS(re, &s->gb, 1);
+#ifdef ERROR_DETAILS
+                if(run==66)
+                    fprintf(stderr, "illegal vlc code level=%d\n", level);
+                else if((i>62 && i<192) || i>192+63)
+                    fprintf(stderr, "run overflow i=%d run=%d level=%d\n", i, run, level);
+#endif
         }
         if (i > 62){
             i-= 192;
             if(i&(~63)){
-                fprintf(stderr, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
-                return -1;
+                if(i+192 == 64 && level/qmul==-1){
+                    fprintf(stderr, "ignoring overflow at %d %d\n", s->mb_x, s->mb_y);
+                    break;
+                }else{
+                    fprintf(stderr, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
+                    return -1;
+                }
             }
 
             block[scan_table[i]] = level;

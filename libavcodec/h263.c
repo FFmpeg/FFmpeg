@@ -1654,14 +1654,14 @@ void init_vlc_rl(RLTable *rl)
             int level, run;
         
             if(len==0){ // illegal code
-                run= 65;
+                run= 66;
                 level= MAX_LEVEL;
             }else if(len<0){ //more bits needed
                 run= 0;
                 level= code;
             }else{
                 if(code==rl->n){ //esc
-                    run= 65;
+                    run= 66;
                     level= 0;
                 }else{
                     run=   rl->table_run  [code] + 1;
