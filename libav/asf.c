@@ -18,7 +18,6 @@
  */
 #include "avformat.h"
 #include "avi.h"
-#include "tick.h"
 #include "mpegaudio.h"
 
 #define PACKET_SIZE 3200
@@ -28,7 +27,6 @@
 typedef struct {
     int num;
     int seq;
-    Ticker pts_ticker;
     /* use for reading */
     AVPacket pkt;
     int frag_offset;
@@ -183,31 +181,6 @@ static const GUID head2_guid = {
 static const GUID my_guid = {
     0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 },
 };
-
-CodecTag codec_asf_bmp_tags[] = {
-    { CODEC_ID_H263, MKTAG('H', '2', '6', '3') },
-    { CODEC_ID_H263P, MKTAG('H', '2', '6', '3') },
-    { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
-    { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
-    { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') },
-    { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x') },
-    { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0') },
-    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D') },
-    { CODEC_ID_MPEG4, MKTAG('x', 'v', 'i', 'd') },
-    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 's') },
-    { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
-    { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
-    { CODEC_ID_MPEG4, MKTAG('m', '4', 's', '2') },
-    { CODEC_ID_MPEG4, MKTAG(0x04, 0, 0, 0) }, /* some broken avi use this */
-    { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') }, /* default signature when using MSMPEG4 */
-    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3') },
-    { CODEC_ID_MSMPEG4V2, MKTAG('M', 'P', '4', '2') },
-    { CODEC_ID_MSMPEG4V1, MKTAG('M', 'P', 'G', '4') },
-    { CODEC_ID_WMV1, MKTAG('W', 'M', 'V', '1') },
-    { 0, 0 },
-};
-
-
 
 static void put_guid(ByteIOContext *s, const GUID *g)
 {
@@ -365,7 +338,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
     /* stream headers */
     for(n=0;n<s->nb_streams;n++) {
         INT64 es_pos;
-        ASFStream *stream = &asf->streams[n];
+        //        ASFStream *stream = &asf->streams[n];
 
         enc = &s->streams[n]->codec;
         asf->streams[n].num = n + 1;
@@ -376,20 +349,12 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
             wav_extra_size = 0;
             extra_size = 18 + wav_extra_size;
             extra_size2 = 0;
-            /* Init the ticker */
-            ticker_init(&stream->pts_ticker,
-                        enc->sample_rate,
-                        1000 * enc->frame_size);
             break;
         default:
         case CODEC_TYPE_VIDEO:
             wav_extra_size = 0;
             extra_size = 0x33;
             extra_size2 = 0;
-            /* Init the ticker */
-            ticker_init(&stream->pts_ticker,
-                        enc->frame_rate,
-                        1000 * FRAME_RATE_BASE);
             break;
         }
 
@@ -427,7 +392,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
             put_le16(pb, 40); /* size */
 
             /* BITMAPINFOHEADER header */
-            put_bmp_header(pb, enc, codec_asf_bmp_tags);
+            put_bmp_header(pb, enc, codec_bmp_tags);
         }
         end_header(pb, hpos);
     }
@@ -452,7 +417,7 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
             put_le16(pb, codec_get_tag(codec_wav_tags, enc->codec_id));
         } else {
             put_le16(pb, 4);
-            put_le32(pb, codec_get_tag(codec_asf_bmp_tags, enc->codec_id));
+            put_le32(pb, codec_get_tag(codec_bmp_tags, enc->codec_id));
         }
     }
     end_header(pb, hpos);
@@ -490,6 +455,8 @@ static int asf_write_header1(AVFormatContext *s, INT64 file_size, INT64 data_chu
 static int asf_write_header(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
+
+    av_set_pts_info(s, 32, 1, 1000); /* 32 bit pts in ms */
 
     asf->packet_size = PACKET_SIZE;
     asf->nb_packets = 0;
@@ -640,24 +607,20 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, int timestamp,
 
 
 static int asf_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size, int force_pts)
+                            UINT8 *buf, int size, int timestamp)
 {
     ASFContext *asf = s->priv_data;
     ASFStream *stream;
-    int timestamp;
     INT64 duration;
     AVCodecContext *codec;
 
-    stream = &asf->streams[stream_index];
     codec = &s->streams[stream_index]->codec;
     stream = &asf->streams[stream_index];
 
     if (codec->codec_type == CODEC_TYPE_AUDIO) {
-        timestamp = (int)ticker_abs(&stream->pts_ticker, codec->frame_number);
         duration = (codec->frame_number * codec->frame_size * INT64_C(10000000)) /
             codec->sample_rate;
     } else {
-        timestamp = (int)ticker_abs(&stream->pts_ticker, codec->frame_number);
         duration = codec->frame_number *
             ((INT64_C(10000000) * FRAME_RATE_BASE) / codec->frame_rate);
     }
@@ -784,6 +747,8 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ASFStream *asf_st;
     int size, i, bps;
     INT64 gsize;
+
+    av_set_pts_info(s, 32, 1, 1000); /* 32 bit pts in ms */
 
     get_guid(pb, &g);
     if (memcmp(&g, &asf_header, sizeof(GUID)))
@@ -923,7 +888,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		    get_buffer(pb, st->extra_data, st->extra_data_size);
 		}
                 st->codec.codec_tag = tag1;
-		st->codec.codec_id = codec_get_id(codec_asf_bmp_tags, tag1);
+		st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
             }
             pos2 = url_ftell(pb);
             url_fskip(pb, gsize - (pos2 - pos1 + 24));
