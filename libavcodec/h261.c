@@ -36,7 +36,8 @@
 #define H261_CBP_VLC_BITS 9
 #define TCOEFF_VLC_BITS 9
 
-#define MAX_MBA 33
+#define MBA_STUFFING 33
+#define MBA_STARTCODE 34
 #define IS_FIL(a)    ((a)&MB_TYPE_H261_FIL)
 
 /**
@@ -51,9 +52,9 @@ typedef struct H261Context{
     int current_mv_x;
     int current_mv_y;
     int gob_number;
-    int loop_filter;
     int bits_left; //8 - nr of bits left of the following frame in the last byte in this frame
     int last_bits; //bits left of the following frame in the last byte in this frame
+    int gob_start_code_skipped; // 1 if gob start code is already read before gob header is read
 }H261Context;
 
 void ff_h261_loop_filter(H261Context * h){
@@ -74,8 +75,7 @@ void ff_h261_loop_filter(H261Context * h){
 
 static int h261_decode_block(H261Context *h, DCTELEM *block,
                              int n, int coded);
-static int h261_decode_mb(H261Context *h,
-                      DCTELEM block[6][64]);
+static int h261_decode_mb(H261Context *h);
 void ff_set_qscale(MpegEncContext * s, int qscale);
 
 /***********************************************/
@@ -93,7 +93,7 @@ static void h261_decode_init_vlc(H261Context *h){
 
     if(!done){
         done = 1;
-        init_vlc(&h261_mba_vlc, H261_MBA_VLC_BITS, 34,
+        init_vlc(&h261_mba_vlc, H261_MBA_VLC_BITS, 35,
                  h261_mba_bits, 1, 1,
                  h261_mba_code, 1, 1);
         init_vlc(&h261_mtype_vlc, H261_MTYPE_VLC_BITS, 10,
@@ -132,6 +132,7 @@ static int h261_decode_init(AVCodecContext *avctx){
 
     h->bits_left = 0;
     h->last_bits = 0;
+    h->gob_start_code_skipped = 0;
     
     return 0;
 }
@@ -144,16 +145,30 @@ static int h261_decode_gob_header(H261Context *h){
     unsigned int val;
     MpegEncContext * const s = &h->s;
     
-    /* Check for GOB Start Code */
-    val = show_bits(&s->gb, 15);
-    if(val)
-        return -1;
+    if ( !h->gob_start_code_skipped ){
+        /* Check for GOB Start Code */
+        val = show_bits(&s->gb, 15);
+        if(val)
+            return -1;
 
-    /* We have a GBSC */
-    skip_bits(&s->gb, 16);
+        /* We have a GBSC */
+        skip_bits(&s->gb, 16);
+    }
+
+    h->gob_start_code_skipped = 0;
 
     h->gob_number = get_bits(&s->gb, 4); /* GN */
     s->qscale = get_bits(&s->gb, 5); /* GQUANT */
+
+    /* Check if gob_number is valid */
+    if (s->mb_height==18){ //cif
+        if ((h->gob_number<=0) || (h->gob_number>12))
+            return -1;
+    }
+    else{ //qcif
+        if ((h->gob_number!=1) && (h->gob_number!=3) && (h->gob_number!=5))
+            return -1;
+    }
 
     /* GEI */
     while (get_bits1(&s->gb) != 0) {
@@ -180,27 +195,34 @@ static int ff_h261_resync(H261Context *h){
     MpegEncContext * const s = &h->s;
     int left, ret;
 
-    if(show_bits(&s->gb, 15)==0){
+    if ( h->gob_start_code_skipped ){
         ret= h261_decode_gob_header(h);
         if(ret>=0)
             return 0;
     }
-    //ok, its not where its supposed to be ...
-    s->gb= s->last_resync_gb;
-    align_get_bits(&s->gb);
-    left= s->gb.size_in_bits - get_bits_count(&s->gb);
-
-    for(;left>15+1+4+5; left-=8){
+    else{
         if(show_bits(&s->gb, 15)==0){
-            GetBitContext bak= s->gb;
-
             ret= h261_decode_gob_header(h);
             if(ret>=0)
                 return 0;
-
-            s->gb= bak;
         }
-        skip_bits(&s->gb, 8);
+        //ok, its not where its supposed to be ...
+        s->gb= s->last_resync_gb;
+        align_get_bits(&s->gb);
+        left= s->gb.size_in_bits - get_bits_count(&s->gb);
+
+        for(;left>15+1+4+5; left-=8){
+            if(show_bits(&s->gb, 15)==0){
+                GetBitContext bak= s->gb;
+
+                ret= h261_decode_gob_header(h);
+                if(ret>=0)
+                    return 0;
+
+                s->gb= bak;
+            }
+            skip_bits(&s->gb, 8);
+        }
     }
 
     return -1;
@@ -245,6 +267,11 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2 )
 
 static int decode_mv_component(GetBitContext *gb, int v){
     int mv_diff = get_vlc2(gb, h261_mv_vlc.table, H261_MV_VLC_BITS, 2);
+
+    /* check if mv_diff is valid */
+    if ( mv_diff < 0 )
+        return v;
+
     mv_diff = mvmap[mv_diff];
 
     if(mv_diff && !get_bits1(gb))
@@ -257,32 +284,41 @@ static int decode_mv_component(GetBitContext *gb, int v){
     return v;
 }
 
-static int h261_decode_mb(H261Context *h,
-                          DCTELEM block[6][64])
-{
+static int h261_decode_mb(H261Context *h){
     MpegEncContext * const s = &h->s;
     int i, cbp, xy, old_mtype;
 
     cbp = 63;
     // Read mba
     do{
-        h->mba_diff = get_vlc2(&s->gb, h261_mba_vlc.table, H261_MBA_VLC_BITS, 2)+1;
+        h->mba_diff = get_vlc2(&s->gb, h261_mba_vlc.table, H261_MBA_VLC_BITS, 2);
+
+        /* Check for slice end */
+        /* NOTE: GOB can be empty (no MB data) or exist only of MBA_stuffing */
+        if (h->mba_diff == MBA_STARTCODE){ // start code
+            h->gob_start_code_skipped = 1;
+            return SLICE_END;
+        }
     }
-    while( h->mba_diff == MAX_MBA + 1 ); // stuffing
+    while( h->mba_diff == MBA_STUFFING ); // stuffing
 
-    if ( h->mba_diff < 0 )
-        return -1;
+    if ( h->mba_diff < 0 ){
+        if ( get_bits_count(&s->gb) + 7 >= s->gb.size_in_bits )
+            return SLICE_END;
 
+        av_log(s->avctx, AV_LOG_ERROR, "illegal mba at %d %d\n", s->mb_x, s->mb_y);
+        return SLICE_ERROR;
+    }
+
+    h->mba_diff += 1;
     h->current_mba += h->mba_diff;
 
-    if ( h->current_mba > MAX_MBA )
-        return -1;
+    if ( h->current_mba > MBA_STUFFING )
+        return SLICE_ERROR;
     
     s->mb_x= ((h->gob_number-1) % 2) * 11 + ((h->current_mba-1) % 11);
     s->mb_y= ((h->gob_number-1) / 2) * 3 + ((h->current_mba-1) / 11);
-
     xy = s->mb_x + s->mb_y * s->mb_stride;
-
     ff_init_block_index(s);
     ff_update_block_index(s);
     s->dsp.clear_blocks(s->block[0]);
@@ -291,9 +327,6 @@ static int h261_decode_mb(H261Context *h,
     old_mtype = h->mtype;
     h->mtype = get_vlc2(&s->gb, h261_mtype_vlc.table, H261_MTYPE_VLC_BITS, 2);
     h->mtype = h261_mtype_map[h->mtype];
-
-    if (IS_FIL (h->mtype))
-        h->loop_filter = 1;
 
     // Read mquant
     if ( IS_QUANT ( h->mtype ) ){
@@ -348,25 +381,19 @@ intra:
     /* decode each block */
     if(s->mb_intra || HAS_CBP(h->mtype)){
         for (i = 0; i < 6; i++) {
-            if (h261_decode_block(h, block[i], i, cbp&32) < 0){
-                return -1;
+            if (h261_decode_block(h, s->block[i], i, cbp&32) < 0){
+                return SLICE_ERROR;
             }
             cbp+=cbp;
         }
     }
 
-    /* per-MB end of slice check */
-    {
-        int v= show_bits(&s->gb, 15);
+    MPV_decode_mb(s, s->block);
 
-        if(get_bits_count(&s->gb) + 15 > s->gb.size_in_bits){
-            v>>= get_bits_count(&s->gb) + 15 - s->gb.size_in_bits;
-        }
-
-        if(v==0){
-            return SLICE_END;
-        }
+    if(IS_FIL (h->mtype)){
+        ff_h261_loop_filter(h);
     }
+
     return SLICE_OK;
 }
 
@@ -459,7 +486,6 @@ static int h261_decode_block(H261Context * h, DCTELEM * block,
 int h261_decode_picture_header(H261Context *h){
     MpegEncContext * const s = &h->s;
     int format, i;
-    static int h261_framecounter = 0;
     uint32_t startcode;
     align_get_bits(&s->gb);
 
@@ -510,13 +536,9 @@ int h261_decode_picture_header(H261Context *h){
         skip_bits(&s->gb, 8);
     }
 
-    //h261 has no I-FRAMES, pass the test in MPV_frame_start in mpegvideo.c
-    if(h261_framecounter > 1)
-        s->pict_type = P_TYPE;
-    else
-        s->pict_type = I_TYPE;
-
-    h261_framecounter++;
+    // h261 has no I-FRAMES, but if we pass I_TYPE for the first frame, the codec crashes if it does 
+    // not contain all I-blocks (e.g. when a packet is lost)
+    s->pict_type = P_TYPE;
 
     h->gob_number = 0;
     return 0;
@@ -524,52 +546,24 @@ int h261_decode_picture_header(H261Context *h){
 
 static int h261_decode_gob(H261Context *h){
     MpegEncContext * const s = &h->s;
-    int v;
     
     ff_set_qscale(s, s->qscale);
 
-    /* check for empty gob */
-    v= show_bits(&s->gb, 15);
-
-    if(get_bits_count(&s->gb) + 15 > s->gb.size_in_bits){
-        v>>= get_bits_count(&s->gb) + 15 - s->gb.size_in_bits;
-    }
-
-    if(v==0){
-        h261_decode_mb_skipped(h, 0, 33);
-        return 0;
-    }
-
     /* decode mb's */
-    while(h->current_mba <= MAX_MBA)
+    while(h->current_mba <= MBA_STUFFING)
     {
         int ret;
         /* DCT & quantize */
-        ret= h261_decode_mb(h, s->block);
+        ret= h261_decode_mb(h);
         if(ret<0){
-            const int xy= s->mb_x + s->mb_y*s->mb_stride;
             if(ret==SLICE_END){
-                MPV_decode_mb(s, s->block);
-                if(h->loop_filter){
-                    ff_h261_loop_filter(h);
-                }
-                h->loop_filter = 0;
-                h261_decode_mb_skipped(h, h->current_mba-h->mba_diff, h->current_mba-1);
                 h261_decode_mb_skipped(h, h->current_mba, 33);                
                 return 0;
-            }else if(ret==SLICE_NOEND){
-                av_log(s->avctx, AV_LOG_ERROR, "Slice mismatch at MB: %d\n", xy);
-                return -1;
             }
-            av_log(s->avctx, AV_LOG_ERROR, "Error at MB: %d\n", xy);
+            av_log(s->avctx, AV_LOG_ERROR, "Error at MB: %d\n", s->mb_x + s->mb_y*s->mb_stride);
             return -1;
         }
-        MPV_decode_mb(s, s->block);
-        if(h->loop_filter){
-            ff_h261_loop_filter(h);
-        }
-
-        h->loop_filter = 0;
+        
         h261_decode_mb_skipped(h, h->current_mba-h->mba_diff, h->current_mba-1);
     }
     

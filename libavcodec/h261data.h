@@ -5,7 +5,7 @@
 #define MB_TYPE_H261_FIL 0x800000
 
 // H.261 VLC table for macroblock addressing
-const uint8_t h261_mba_code[34] = {
+const uint8_t h261_mba_code[35] = {
      1,  3,  2,  3,
      2,  3,  2,  7,
      6, 11, 10,  9,
@@ -15,10 +15,11 @@ const uint8_t h261_mba_code[34] = {
     32, 31, 30, 29,
     28, 27, 26, 25,
     24,
-    15             //(MBA stuffing)
+    15,           //(MBA stuffing)
+    1             //(start code)
 };
 
-const uint8_t h261_mba_bits[34] = {
+const uint8_t h261_mba_bits[35] = {
      1,  3,  3,  4,
      4,  5,  5,  7,
      7,  8,  8,  8,
@@ -28,7 +29,8 @@ const uint8_t h261_mba_bits[34] = {
     11, 11, 11, 11,
     11, 11, 11, 11,
     11,
-    11            //(MBA stuffing)
+    11,           //(MBA stuffing)
+    16            //(start code)
 };
 
 //H.261 VLC table for macroblock type
