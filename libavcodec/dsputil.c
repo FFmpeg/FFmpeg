@@ -44,6 +44,8 @@ op_pixels_abs_func pix_abs8x8_x2;
 op_pixels_abs_func pix_abs8x8_y2;
 op_pixels_abs_func pix_abs8x8_xy2;
 
+int ff_bit_exact=0;
+
 UINT8 cropTbl[256 + 2 * MAX_NEG_CROP];
 UINT32 squareTbl[512];
 
@@ -1697,6 +1699,7 @@ void dsputil_init(void)
 /* remove any non bit exact operation (testing purpose) */
 void avcodec_set_bit_exact(void)
 {
+    ff_bit_exact=1;
 #ifdef HAVE_MMX
     dsputil_set_bit_exact_mmx();
 #endif

@@ -1420,14 +1420,17 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
         put_bits(&s->pb, 1, 0);		/* reduced res vop */
     }
     put_bits(&s->pb, 1, 0);		/* scalability */
-
+    
     ff_mpeg4_stuffing(&s->pb);
-    put_bits(&s->pb, 16, 0);
-    put_bits(&s->pb, 16, 0x1B2);	/* user_data */
-    sprintf(buf, "FFmpeg%sb%s", FFMPEG_VERSION, LIBAVCODEC_BUILD_STR);
-    put_string(&s->pb, buf);
 
-    ff_mpeg4_stuffing(&s->pb);
+    /* user data */
+    if(!ff_bit_exact){
+        put_bits(&s->pb, 16, 0);
+        put_bits(&s->pb, 16, 0x1B2);	/* user_data */
+        sprintf(buf, "FFmpeg%sb%s", FFMPEG_VERSION, LIBAVCODEC_BUILD_STR);
+        put_string(&s->pb, buf);
+        ff_mpeg4_stuffing(&s->pb);
+    }
 }
 
 /* write mpeg4 VOP header */

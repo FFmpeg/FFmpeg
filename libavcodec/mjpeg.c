@@ -390,16 +390,18 @@ static void jpeg_put_comments(MpegEncContext *s)
     }
 
     /* comment */
-    put_marker(p, COM);
-    flush_put_bits(p);
-    ptr = pbBufPtr(p);
-    put_bits(p, 16, 0); /* patched later */
+    if(!ff_bit_exact){
+        put_marker(p, COM);
+        flush_put_bits(p);
+        ptr = pbBufPtr(p);
+        put_bits(p, 16, 0); /* patched later */
 #define MJPEG_VERSION "FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
-    put_string(p, MJPEG_VERSION);
-    size = strlen(MJPEG_VERSION)+3;
+        put_string(p, MJPEG_VERSION);
+        size = strlen(MJPEG_VERSION)+3;
 #undef MJPEG_VERSION
-    ptr[0] = size >> 8;
-    ptr[1] = size;
+        ptr[0] = size >> 8;
+        ptr[1] = size;
+    }
 }
 
 void mjpeg_picture_header(MpegEncContext *s)

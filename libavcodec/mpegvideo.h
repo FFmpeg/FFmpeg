@@ -496,6 +496,8 @@ void ff_conceal_past_errors(MpegEncContext *s, int conceal_all);
 void ff_copy_bits(PutBitContext *pb, UINT8 *src, int length);
 void ff_clean_intra_table_entries(MpegEncContext *s);
 
+extern int ff_bit_exact;
+
 /* motion_est.c */
 void ff_estimate_p_frame_motion(MpegEncContext * s,
                              int mb_x, int mb_y);
