@@ -153,23 +153,26 @@ static int video_read_header(AVFormatContext *s,
 /* XXX: improve that by looking at several start codes */
 static int mpegvideo_probe(AVProbeData *p)
 {
-    int code, c, i;
-    code = 0xff;
+    int code;
+    const uint8_t *d;
 
     /* we search the first start code. If it is a sequence, gop or
        picture start code then we decide it is an mpeg video
        stream. We do not send highest value to give a chance to mpegts */
-    for(i=0;i<p->buf_size;i++) {
-        c = p->buf[i];
-        code = (code << 8) | c;
-        if ((code & 0xffffff00) == 0x100) {
-            if (code == SEQ_START_CODE ||
-                code == GOP_START_CODE ||
-                code == PICTURE_START_CODE)
-                return 50 - 1;
-            else
-                return 0;
-        }
+    /* NOTE: the search range was restricted to avoid too many false
+       detections */
+
+    if (p->buf_size < 6)
+        return 0;
+    d = p->buf;
+    code = (d[0] << 24) | (d[1] << 16) | (d[2] << 8) | (d[3]);
+    if ((code & 0xffffff00) == 0x100) {
+        if (code == SEQ_START_CODE ||
+            code == GOP_START_CODE ||
+            code == PICTURE_START_CODE)
+            return 50 - 1;
+        else
+            return 0;
     }
     return 0;
 }
