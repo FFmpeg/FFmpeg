@@ -626,21 +626,7 @@ void img_resample_close(ImgReSampleContext *s)
 }
 
 #ifdef TEST
-
-void *av_mallocz(int size)
-{
-    void *ptr;
-    ptr = malloc(size);
-    memset(ptr, 0, size);
-    return ptr;
-}
-
-void av_free(void *ptr)
-{
-    /* XXX: this test should not be needed on most libcs */
-    if (ptr)
-        free(ptr);
-}
+#include <stdio.h>
 
 /* input */
 #define XSIZE 256
@@ -667,11 +653,11 @@ static void dump_filter(int16_t *filter)
     int i, ph;
 
     for(ph=0;ph<NB_PHASES;ph++) {
-        printf("%2d: ", ph);
+        av_log(NULL, AV_LOG_INFO, "%2d: ", ph);
         for(i=0;i<NB_TAPS;i++) {
-            printf(" %5.2f", filter[ph * NB_TAPS + i] / 256.0);
+            av_log(NULL, AV_LOG_INFO, " %5.2f", filter[ph * NB_TAPS + i] / 256.0);
         }
-        printf("\n");
+        av_log(NULL, AV_LOG_INFO, "\n");
     }
 }
 
@@ -735,8 +721,8 @@ int main(int argc, char **argv)
         fact = factors[i];
         xsize = (int)(XSIZE * fact);
         ysize = (int)((YSIZE - 100) * fact);
-        s = img_resample_full_init(xsize, ysize, XSIZE, YSIZE, 50 ,50, 0, 0);
-        printf("Factor=%0.2f\n", fact);
+        s = img_resample_full_init(xsize, ysize, XSIZE, YSIZE, 50 ,50, 0, 0, 0, 0, 0, 0);
+        av_log(NULL, AV_LOG_INFO, "Factor=%0.2f\n", fact);
         dump_filter(&s->h_filters[0][0]);
         component_resample(s, img1, xsize, xsize, ysize,
                            img + 50 * XSIZE, XSIZE, XSIZE, YSIZE - 100);
@@ -748,7 +734,7 @@ int main(int argc, char **argv)
 
     /* mmx test */
 #ifdef HAVE_MMX
-    printf("MMX test\n");
+    av_log(NULL, AV_LOG_INFO, "MMX test\n");
     fact = 0.72;
     xsize = (int)(XSIZE * fact);
     ysize = (int)(YSIZE * fact);
@@ -762,10 +748,10 @@ int main(int argc, char **argv)
     component_resample(s, img2, xsize, xsize, ysize,
                        img, XSIZE, XSIZE, YSIZE);
     if (memcmp(img1, img2, xsize * ysize) != 0) {
-        fprintf(stderr, "mmx error\n");
+        av_log(NULL, AV_LOG_ERROR, "mmx error\n");
         exit(1);
     }
-    printf("MMX OK\n");
+    av_log(NULL, AV_LOG_INFO, "MMX OK\n");
 #endif
     return 0;
 }
