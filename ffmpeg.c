@@ -1320,7 +1320,7 @@ static int av_encode(AVFormatContext **output_files,
                         fprintf(stderr, "Could not allocate log buffer\n");
                         exit(1);
                     }
-                    fread(logbuffer, 1, size, f);
+                    size = fread(logbuffer, 1, size, f);
                     fclose(f);
                     logbuffer[size] = '\0';
                     codec->stats_in = logbuffer;
