@@ -1065,6 +1065,7 @@ static uint8_t *decode_nal(H264Context *h, uint8_t *src, int *dst_length, int *c
                 dst[di++]= 0;
                 dst[di++]= 0;
                 si+=3;
+                continue;
             }else //next start code
                 break;
         }
