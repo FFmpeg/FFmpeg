@@ -340,6 +340,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
     int i;
     static int done;
 
+//    s->avctx= avctx;
     s->out_format = FMT_H263;
 
     s->width = avctx->width;
@@ -350,11 +351,6 @@ static int rv10_decode_init(AVCodecContext *avctx)
 
     if (MPV_common_init(s) < 0)
         return -1;
-
-    /* XXX: suppress this matrix init, only needed because using mpeg1
-       dequantize in mmx case */
-    for(i=0;i<64;i++)
-        s->non_intra_matrix[i] = default_non_intra_matrix[i];
 
     h263_decode_init_vlc(s);
 

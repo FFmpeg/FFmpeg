@@ -399,8 +399,11 @@ void mpeg1_encode_init(MpegEncContext *s)
         }
     }
     s->mv_penalty= mv_penalty;
-    
     s->fcode_tab= fcode_tab;
+    s->min_qcoeff=-255;
+    s->max_qcoeff= 255;
+    s->intra_quant_bias= 3<<(QUANT_BIAS_SHIFT-3); //(a + x*3/8)/x
+    s->inter_quant_bias= 0;
 }
  
 static inline void encode_dc(MpegEncContext *s, int diff, int component)
@@ -1027,9 +1030,9 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
         UINT8 *buf_ptr;
         i = 0;
         if (n < 4) 
-            matrix = s->non_intra_matrix;
+            matrix = s->inter_matrix;
         else
-            matrix = s->chroma_non_intra_matrix;
+            matrix = s->chroma_inter_matrix;
             
         /* special case for the first coef. no need to add a second vlc table */
         SAVE_BITS(&s->gb);
@@ -1183,6 +1186,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     s->buf_ptr = s->buffer;
     s->mpeg_enc_ctx.picture_number = 0;
     s->repeat_field = 0;
+    s->mpeg_enc_ctx.codec_id= avctx->codec->id;
     return 0;
 }
 
@@ -1292,8 +1296,8 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
             j = zigzag_direct[i];
-            s->non_intra_matrix[j] = v;
-            s->chroma_non_intra_matrix[j] = v;
+            s->inter_matrix[j] = v;
+            s->chroma_inter_matrix[j] = v;
         }
     }
     if (get_bits1(&s->gb)) {
@@ -1307,7 +1311,7 @@ static void mpeg_decode_quant_matrix_extension(MpegEncContext *s)
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
             j = zigzag_direct[i];
-            s->chroma_non_intra_matrix[j] = v;
+            s->chroma_inter_matrix[j] = v;
         }
     }
 }
@@ -1386,7 +1390,6 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     s->mb_x = -1;
     s->mb_y = start_code;
     s->mb_incr = 0;
-
     /* start frame decoding */
     if (s->first_slice) {
         s->first_slice = 0;
@@ -1526,20 +1529,20 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         for(i=0;i<64;i++) {
             v = get_bits(&s->gb, 8);
             j = zigzag_direct[i];
-            s->non_intra_matrix[j] = v;
-            s->chroma_non_intra_matrix[j] = v;
+            s->inter_matrix[j] = v;
+            s->chroma_inter_matrix[j] = v;
         }
 #ifdef DEBUG
         dprintf("non intra matrix present\n");
         for(i=0;i<64;i++)
-            dprintf(" %d", s->non_intra_matrix[zigzag_direct[i]]);
+            dprintf(" %d", s->inter_matrix[zigzag_direct[i]]);
         printf("\n");
 #endif
     } else {
         for(i=0;i<64;i++) {
             v = default_non_intra_matrix[i];
-            s->non_intra_matrix[i] = v;
-            s->chroma_non_intra_matrix[i] = v;
+            s->inter_matrix[i] = v;
+            s->chroma_inter_matrix[i] = v;
         }
     }
 
@@ -1566,7 +1569,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     dprintf("fill_buffer\n");
 
     *data_size = 0;
-    
+
     /* special case for last picture */
     if (buf_size == 0) {
         if (s2->picture_number > 0) {
@@ -1591,7 +1594,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         *data_size = sizeof(AVPicture);
         goto the_end;
     }
-        
+
     while (buf_ptr < buf_end) {
         buf_start = buf_ptr;
         /* find start next code */

@@ -160,6 +160,9 @@ int mjpeg_init(MpegEncContext *s)
     m = malloc(sizeof(MJpegContext));
     if (!m)
         return -1;
+    
+    s->min_qcoeff=-1023;
+    s->max_qcoeff= 1023;
 
     /* build all the huffman tables */
     build_huffman_codes(m->huff_size_dc_luminance,

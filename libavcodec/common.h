@@ -157,6 +157,9 @@ inline void dprintf(const char* fmt,...) {}
 
 #endif /* HAVE_AV_CONFIG_H */
 
+/* assume b>0 */
+#define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
+
 /* bit output */
 
 struct PutBitContext;

@@ -73,16 +73,12 @@ static int h263_decode_init(AVCodecContext *avctx)
     default:
         return -1;
     }
-
+    s->codec_id= avctx->codec->id;
+    
     /* for h263, we allocate the images after having read the header */
     if (avctx->codec->id != CODEC_ID_H263 && avctx->codec->id != CODEC_ID_MPEG4)
         if (MPV_common_init(s) < 0)
             return -1;
-
-    /* XXX: suppress this matrix init, only needed because using mpeg1
-       dequantize in mmx case */
-    for(i=0;i<64;i++)
-        s->non_intra_matrix[i] = default_non_intra_matrix[i];
 
     if (s->h263_msmpeg4)
         msmpeg4_decode_init_vlc(s);
@@ -251,7 +247,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
         if(msmpeg4_decode_ext_header(s, buf_size) < 0) return -1;
     
     /* divx 5.01+ bistream reorder stuff */
-    if(s->h263_pred && s->bitstream_buffer_size==0){
+    if(s->codec_id==CODEC_ID_MPEG4 && s->bitstream_buffer_size==0){
         int current_pos= get_bits_count(&s->gb)/8;
         if(   buf_size - current_pos > 5 
            && buf_size - current_pos < BITSTREAM_BUFFER_SIZE){

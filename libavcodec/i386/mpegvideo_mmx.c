@@ -26,8 +26,6 @@
 #include "../mangle.h"
 
 extern UINT8 zigzag_end[64];
-extern void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w);
-extern int (*dct_quantize)(MpegEncContext *s, DCTELEM *block, int n, int qscale);
 
 extern UINT8 zigzag_direct_noperm[64];
 extern UINT16 inv_zigzag_direct16[64];
@@ -260,7 +258,7 @@ asm volatile(
         block[0]= block0;
 
         } else {
-        quant_matrix = s->non_intra_matrix;
+        quant_matrix = s->inter_matrix;
 asm volatile(
 		"pcmpeqw %%mm7, %%mm7		\n\t"
 		"psrlw $15, %%mm7		\n\t"
@@ -382,7 +380,7 @@ asm volatile(
         //Note, we dont do mismatch control for intra as errors cannot accumulate
 
     } else {
-        quant_matrix = s->non_intra_matrix;
+        quant_matrix = s->inter_matrix;
 asm volatile(
 		"pcmpeqw %%mm7, %%mm7		\n\t"
                 "psrlq $48, %%mm7		\n\t"

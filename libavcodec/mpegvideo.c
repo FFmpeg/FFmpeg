@@ -38,9 +38,9 @@ static void dct_unquantize_mpeg2_c(MpegEncContext *s,
 static void dct_unquantize_h263_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale);
 static void draw_edges_c(UINT8 *buf, int wrap, int width, int height, int w);
-static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale);
+static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 
-int (*dct_quantize)(MpegEncContext *s, DCTELEM *block, int n, int qscale)= dct_quantize_c;
+int (*dct_quantize)(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow)= dct_quantize_c;
 void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w)= draw_edges_c;
 
 #define EDGE_WIDTH 16
@@ -78,29 +78,38 @@ extern UINT8 zigzag_end[64];
 /* default motion estimation */
 int motion_estimation_method = ME_EPZS;
 
-static void convert_matrix(int *qmat, UINT16 *qmat16, const UINT16 *quant_matrix, int qscale)
+static void convert_matrix(int (*qmat)[64], uint16_t (*qmat16)[64], uint16_t (*qmat16_bias)[64],
+                           const UINT16 *quant_matrix, int bias)
 {
-    int i;
+    int qscale;
 
-    if (av_fdct == jpeg_fdct_ifast) {
-        for(i=0;i<64;i++) {
-            /* 16 <= qscale * quant_matrix[i] <= 7905 */
-            /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
-            /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
-            /* 3444240       >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= 275 */
-            
-            qmat[block_permute_op(i)] = (int)((UINT64_C(1) << (QMAT_SHIFT + 11)) / 
-                            (aanscales[i] * qscale * quant_matrix[block_permute_op(i)]));
-        }
-    } else {
-        for(i=0;i<64;i++) {
-            /* We can safely suppose that 16 <= quant_matrix[i] <= 255
-               So 16           <= qscale * quant_matrix[i]             <= 7905
-               so (1<<19) / 16 >= (1<<19) / (qscale * quant_matrix[i]) >= (1<<19) / 7905
-               so 32768        >= (1<<19) / (qscale * quant_matrix[i]) >= 67
-            */
-            qmat[i]   = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[i]);
-            qmat16[i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[block_permute_op(i)]);
+    for(qscale=1; qscale<32; qscale++){
+        int i;
+        if (av_fdct == jpeg_fdct_ifast) {
+            for(i=0;i<64;i++) {
+                const int j= block_permute_op(i);
+                /* 16 <= qscale * quant_matrix[i] <= 7905 */
+                /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
+                /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
+                /* 3444240       >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= 275 */
+                
+                qmat[qscale][j] = (int)((UINT64_C(1) << (QMAT_SHIFT + 11)) / 
+                                (aanscales[i] * qscale * quant_matrix[j]));
+            }
+        } else {
+            for(i=0;i<64;i++) {
+                /* We can safely suppose that 16 <= quant_matrix[i] <= 255
+                   So 16           <= qscale * quant_matrix[i]             <= 7905
+                   so (1<<19) / 16 >= (1<<19) / (qscale * quant_matrix[i]) >= (1<<19) / 7905
+                   so 32768        >= (1<<19) / (qscale * quant_matrix[i]) >= 67
+                */
+                qmat  [qscale][i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[i]);
+                qmat16[qscale][i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[block_permute_op(i)]);
+
+                if(qmat16[qscale][i]==0 || qmat16[qscale][i]==128*256) qmat16[qscale][i]=128*256-1;
+
+                qmat16_bias[qscale][i]= ROUNDED_DIV(bias<<(16-QUANT_BIAS_SHIFT), qmat16[qscale][i]);
+            }
         }
     }
 }
@@ -388,7 +397,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->max_b_frames= avctx->max_b_frames;
     s->rc_strategy= avctx->rc_strategy;
     s->b_frame_strategy= avctx->b_frame_strategy;
-    
+    s->codec_id= avctx->codec->id;
+
     if (s->gop_size <= 1) {
         s->intra_only = 1;
         s->gop_size = 12;
@@ -523,8 +533,21 @@ int MPV_encode_init(AVCodecContext *avctx)
     
     /* init default q matrix */
     for(i=0;i<64;i++) {
-        s->intra_matrix[i] = default_intra_matrix[i];
-        s->non_intra_matrix[i] = default_non_intra_matrix[i];
+        if(s->out_format == FMT_H263)
+            s->intra_matrix[i] = default_non_intra_matrix[i];
+        else
+            s->intra_matrix[i] = default_intra_matrix[i];
+
+        s->inter_matrix[i] = default_non_intra_matrix[i];
+    }
+
+    /* precompute matrix */
+        /* for mjpeg, we do include qscale in the matrix */
+    if (s->out_format != FMT_MJPEG) {
+        convert_matrix(s->q_intra_matrix, s->q_intra_matrix16, s->q_intra_matrix16_bias, 
+                       s->intra_matrix, s->intra_quant_bias);
+        convert_matrix(s->q_inter_matrix, s->q_inter_matrix16, s->q_inter_matrix16_bias, 
+                       s->inter_matrix, s->inter_quant_bias);
     }
 
     if(ff_rate_control_init(s) < 0)
@@ -1307,6 +1330,21 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     emms_c(); //FIXME remove
 }
 
+static inline void clip_coeffs(MpegEncContext *s, DCTELEM *block, int last_index)
+{
+    int i;
+    const int maxlevel= s->max_qcoeff;
+    const int minlevel= s->min_qcoeff;
+
+    for(i=0; i<=last_index; i++){
+        const int j = zigzag_direct[i];
+        int level = block[j];
+       
+        if     (level>maxlevel) level=maxlevel;
+        else if(level<minlevel) level=minlevel;
+        block[j]= level;
+    }
+}
 
 static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 {
@@ -1407,8 +1445,19 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         s->y_dc_scale = 8;
         s->c_dc_scale = 8;
     }
-    for(i=0;i<6;i++) {
-        s->block_last_index[i] = dct_quantize(s, s->block[i], i, s->qscale);
+    if(s->out_format==FMT_MJPEG){
+        for(i=0;i<6;i++) {
+            int overflow;
+            s->block_last_index[i] = dct_quantize(s, s->block[i], i, 8, &overflow);
+            if(overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
+        }
+    }else{
+        for(i=0;i<6;i++) {
+            int overflow;
+            s->block_last_index[i] = dct_quantize(s, s->block[i], i, s->qscale, &overflow);
+            // FIXME we could decide to change to quantizer instead of clipping
+            if(overflow) clip_coeffs(s, s->block[i], s->block_last_index[i]);
+        }
     }
 
     /* huffman encode */
@@ -1596,17 +1645,13 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     else if (!s->fixed_qscale) 
         s->qscale = ff_rate_estimate_qscale(s);
 
-
-    /* precompute matrix */
     if (s->out_format == FMT_MJPEG) {
         /* for mjpeg, we do include qscale in the matrix */
         s->intra_matrix[0] = default_intra_matrix[0];
         for(i=1;i<64;i++)
             s->intra_matrix[i] = (default_intra_matrix[i] * s->qscale) >> 3;
-        convert_matrix(s->q_intra_matrix, s->q_intra_matrix16, s->intra_matrix, 8);
-    } else {
-        convert_matrix(s->q_intra_matrix, s->q_intra_matrix16, s->intra_matrix, s->qscale);
-        convert_matrix(s->q_non_intra_matrix, s->q_non_intra_matrix16, s->non_intra_matrix, s->qscale);
+        convert_matrix(s->q_intra_matrix, s->q_intra_matrix16, 
+                       s->q_intra_matrix16_bias, s->intra_matrix, s->intra_quant_bias);
     }
 
     s->last_bits= get_bit_count(&s->pb);
@@ -1957,29 +2002,13 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
 static int dct_quantize_c(MpegEncContext *s, 
                         DCTELEM *block, int n,
-                        int qscale)
+                        int qscale, int *overflow)
 {
     int i, j, level, last_non_zero, q;
     const int *qmat;
-    int minLevel, maxLevel;
-
-    if(s->avctx!=NULL && s->avctx->codec->id==CODEC_ID_MPEG4){
-	/* mpeg4 */
-        minLevel= -2048;
-	maxLevel= 2047;
-    }else if(s->out_format==FMT_MPEG1){
-	/* mpeg1 */
-        minLevel= -255;
-	maxLevel= 255;
-    }else if(s->out_format==FMT_MJPEG){
-	/* (m)jpeg */
-        minLevel= -1023;
-	maxLevel= 1023;
-    }else{
-	/* h263 / msmpeg4 */
-        minLevel= -128;
-	maxLevel= 127;
-    }
+    int bias;
+    int max=0;
+    unsigned int threshold1, threshold2;
 
     av_fdct (block);
 
@@ -1998,71 +2027,40 @@ static int dct_quantize_c(MpegEncContext *s,
         block[0] = (block[0] + (q >> 1)) / q;
         i = 1;
         last_non_zero = 0;
-        if (s->out_format == FMT_H263) {
-            qmat = s->q_non_intra_matrix;
-        } else {
-            qmat = s->q_intra_matrix;
-        }
+        qmat = s->q_intra_matrix[qscale];
+        bias= s->intra_quant_bias<<(QMAT_SHIFT - 3 - QUANT_BIAS_SHIFT);
     } else {
         i = 0;
         last_non_zero = -1;
-        qmat = s->q_non_intra_matrix;
+        qmat = s->q_inter_matrix[qscale];
+        bias= s->inter_quant_bias<<(QMAT_SHIFT - 3 - QUANT_BIAS_SHIFT);
     }
+    threshold1= (1<<(QMAT_SHIFT - 3)) - bias - 1;
+    threshold2= threshold1<<1;
 
     for(;i<64;i++) {
         j = zigzag_direct[i];
         level = block[j];
         level = level * qmat[j];
-#ifdef PARANOID
-        {
-            static int count = 0;
-            int level1, level2, qmat1;
-            double val;
-            if (qmat == s->q_non_intra_matrix) {
-                qmat1 = default_non_intra_matrix[j] * s->qscale;
-            } else {
-                qmat1 = default_intra_matrix[j] * s->qscale;
-            }
-            if (av_fdct != jpeg_fdct_ifast)
-                val = ((double)block[j] * 8.0) / (double)qmat1;
-            else
-                val = ((double)block[j] * 8.0 * 2048.0) / 
-                    ((double)qmat1 * aanscales[j]);
-            level1 = (int)val;
-            level2 = level / (1 << (QMAT_SHIFT - 3));
-            if (level1 != level2) {
-                fprintf(stderr, "%d: quant error qlevel=%d wanted=%d level=%d qmat1=%d qmat=%d wantedf=%0.6f\n", 
-                        count, level2, level1, block[j], qmat1, qmat[j],
-                        val);
-                count++;
-            }
 
-        }
-#endif
-        /* XXX: slight error for the low range. Test should be equivalent to
-           (level <= -(1 << (QMAT_SHIFT - 3)) || level >= (1 <<
-           (QMAT_SHIFT - 3)))
-        */
-        if (((level << (31 - (QMAT_SHIFT - 3))) >> (31 - (QMAT_SHIFT - 3))) != 
-            level) {
-            level = level / (1 << (QMAT_SHIFT - 3));
-            /* XXX: currently, this code is not optimal. the range should be:
-               mpeg1: -255..255
-               mpeg2: -2048..2047
-               h263:  -128..127
-               mpeg4: -2048..2047
-            */
-            if (level > maxLevel)
-                level = maxLevel;
-            else if (level < minLevel)
-                level = minLevel;
-
-            block[j] = level;
+//        if(   bias+level >= (1<<(QMAT_SHIFT - 3))
+//           || bias-level >= (1<<(QMAT_SHIFT - 3))){
+        if(((unsigned)(level+threshold1))>threshold2){
+            if(level>0){
+                level= (bias + level)>>(QMAT_SHIFT - 3);
+                block[j]= level;
+            }else{
+                level= (bias - level)>>(QMAT_SHIFT - 3);
+                block[j]= -level;
+            }
+            max |=level;
             last_non_zero = i;
-        } else {
-            block[j] = 0;
+        }else{
+            block[j]=0;
         }
     }
+    *overflow= s->max_qcoeff < max; //overflow might have happend
+    
     return last_non_zero;
 }
 
@@ -2104,7 +2102,7 @@ static void dct_unquantize_mpeg1_c(MpegEncContext *s,
         }
     } else {
         i = 0;
-        quant_matrix = s->non_intra_matrix;
+        quant_matrix = s->inter_matrix;
         for(;i<nCoeffs;i++) {
             int j= zigzag_direct[i];
             level = block[j];
@@ -2166,7 +2164,7 @@ static void dct_unquantize_mpeg2_c(MpegEncContext *s,
     } else {
         int sum=-1;
         i = 0;
-        quant_matrix = s->non_intra_matrix;
+        quant_matrix = s->inter_matrix;
         for(;i<nCoeffs;i++) {
             int j= zigzag_direct[i];
             level = block[j];

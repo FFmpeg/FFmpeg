@@ -904,8 +904,26 @@ void h263_encode_init(MpegEncContext *s)
     s->mv_penalty= mv_penalty; //FIXME exact table for msmpeg4 & h263p
     
     // use fcodes >1 only for mpeg4 & h263 & h263p FIXME
-    if(s->h263_plus) s->fcode_tab= umv_fcode_tab;
-    else if(s->h263_pred && !s->h263_msmpeg4) s->fcode_tab= fcode_tab;
+    switch(s->codec_id){
+    case CODEC_ID_MPEG4:
+        s->fcode_tab= fcode_tab;
+        s->min_qcoeff= -2048;
+        s->max_qcoeff=  2047;
+        break;
+    case CODEC_ID_H263P:
+        s->fcode_tab= umv_fcode_tab;
+        s->min_qcoeff= -128;
+        s->max_qcoeff=  127;
+        break;
+    default: //nothing needed default table allready set in mpegvideo.c
+        s->min_qcoeff= -128;
+        s->max_qcoeff=  127;
+    }
+
+    /* h263 type bias */
+    //FIXME mpeg4 mpeg quantizer    
+    s->intra_quant_bias=0;
+    s->inter_quant_bias=-(1<<(QUANT_BIAS_SHIFT-2)); //(a - x/4)/x
 }
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
@@ -2702,8 +2720,8 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                     s->chroma_intra_matrix[i]= v;
                     
                     v= ff_mpeg4_default_non_intra_matrix[i];
-                    s->non_intra_matrix[i]= v;
-                    s->chroma_non_intra_matrix[i]= v;
+                    s->inter_matrix[i]= v;
+                    s->chroma_inter_matrix[i]= v;
                 }
 
                 /* load custom intra matrix */
@@ -2725,15 +2743,15 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                         if(v==0) break;
 
                         j= zigzag_direct[i];
-                        s->non_intra_matrix[j]= v;
-                        s->chroma_non_intra_matrix[j]= v;
+                        s->inter_matrix[j]= v;
+                        s->chroma_inter_matrix[j]= v;
                     }
 
                     /* replicate last value */
                     for(; i<64; i++){
                         j= zigzag_direct[i];
-                        s->non_intra_matrix[j]= v;
-                        s->chroma_non_intra_matrix[j]= v;
+                        s->inter_matrix[j]= v;
+                        s->chroma_inter_matrix[j]= v;
                     }
                 }
 

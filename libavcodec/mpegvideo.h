@@ -83,11 +83,15 @@ typedef struct MpegEncContext {
     int bit_rate;        /* wanted bit rate */
     int bit_rate_tolerance; /* amount of +- bits (>0)*/
     enum OutputFormat out_format; /* output format */
+    int h263_pred;    /* use mpeg4/h263 ac/dc predictions */
+
+/* the following codec id fields are deprecated in favor of codec_id */
     int h263_plus; /* h263 plus headers */
     int h263_rv10; /* use RV10 variation for H263 */
-    int h263_pred; /* use mpeg4/h263 ac/dc predictions */
-    int h263_msmpeg4; /* generate MSMPEG4 compatible stream */
+    int h263_msmpeg4; /* generate MSMPEG4 compatible stream (deprecated, use msmpeg4_version instead)*/
     int h263_intel; /* use I263 intel h263 header */
+    
+    int codec_id;     /* see CODEC_ID_xxx */
     int fixed_qscale; /* fixed qscale if non zero */
     float qcompress;  /* amount of qscale change between easy & hard scenes (0.0-1.0) */
     float qblur;      /* amount of qscale smoothing over time (0.0-1.0) */
@@ -213,14 +217,21 @@ typedef struct MpegEncContext {
     /* matrix transmitted in the bitstream */
     UINT16 intra_matrix[64];
     UINT16 chroma_intra_matrix[64];
-    UINT16 non_intra_matrix[64];
-    UINT16 chroma_non_intra_matrix[64];
+    UINT16 inter_matrix[64];
+    UINT16 chroma_inter_matrix[64];
+#define QUANT_BIAS_SHIFT 4
+    int intra_quant_bias;    /* bias for the quantizer */
+    int inter_quant_bias;    /* bias for the quantizer */
+    int min_qcoeff;          /* minimum encodable coefficient */
+    int max_qcoeff;          /* maximum encodable coefficient */
     /* precomputed matrix (combine qscale and DCT renorm) */
-    int q_intra_matrix[64];
-    int q_non_intra_matrix[64];
+    int q_intra_matrix[32][64];
+    int q_inter_matrix[32][64];
     /* identical to the above but for MMX & these are not permutated */
-    UINT16 __align8 q_intra_matrix16[64];
-    UINT16 __align8 q_non_intra_matrix16[64];
+    UINT16 __align8 q_intra_matrix16[32][64];
+    UINT16 __align8 q_inter_matrix16[32][64];
+    UINT16 __align8 q_intra_matrix16_bias[32][64];
+    UINT16 __align8 q_inter_matrix16_bias[32][64];
     int block_last_index[6];  /* last non zero coefficient in block */
 
     void *opaque; /* private data for the user */
@@ -328,7 +339,7 @@ typedef struct MpegEncContext {
     int first_slice_line;  /* used in mpeg4 too to handle resync markers */
     int flipflop_rounding;
     int bitrate;
-    int msmpeg4_version;   /* 1=mp41, 2=mp42, 3=mp43/divx3 */
+    int msmpeg4_version;   /* 0=not msmpeg4, 1=mp41, 2=mp42, 3=mp43/divx3 */
     /* decompression specific */
     GetBitContext gb;
 
@@ -386,6 +397,8 @@ void MPV_frame_end(MpegEncContext *s);
 #ifdef HAVE_MMX
 void MPV_common_init_mmx(MpegEncContext *s);
 #endif
+int (*dct_quantize)(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
+void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w);
 
 /* motion_est.c */
 void ff_estimate_p_frame_motion(MpegEncContext * s,
