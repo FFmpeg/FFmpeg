@@ -35,7 +35,8 @@ SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
 LIB= libavcodec.a
 TESTS= imgresample-test dct-test
 
-all: $(LIB) apiexample
+all: $(LIB)
+tests: apiexample $(TESTS)
 
 $(LIB): $(OBJS) $(ASM_OBJS)
 	rm -f $@

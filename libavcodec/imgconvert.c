@@ -21,6 +21,14 @@
 #include <string.h>
 #include "avcodec.h"
 
+/* Stuff below is useful only for mplayer project */
+#ifdef HAVE_CONFIG_H
+#include "../config.h"
+#endif
+
+#ifdef USE_FASTMEMCPY
+#include "fastmemcpy.h"
+#endif
 /* XXX: totally non optimized */
 
 static void yuv422_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
