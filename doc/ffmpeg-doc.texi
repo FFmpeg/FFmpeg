@@ -322,7 +322,7 @@ You can use the @code{-formats} option to have an exhaustive list.
 @section File Formats
 
 FFmpeg supports the following file formats thru the @code{libavformat}
-library.
+library:
 
 @multitable @columnfractions .4 .1 .1
 @item Supported File Format @tab Encoding @tab Decoding @tab Comments
@@ -339,9 +339,6 @@ library.
 @item Macromedia Flash@tab X @tab X
 @tab Only embedded audio is decoded
 @item Real Audio and Video @tab X @tab X 
-@item PGM, YUV, PPM, JPEG images @tab X @tab X 
-@item Animated GIF @tab X @tab
-@tab Only uncompressed GIFs are generated
 @item Raw AC3 @tab X  @tab  X 
 @item Raw MJPEG @tab X  @tab  X 
 @item Raw MPEG video @tab X  @tab  X 
@@ -350,10 +347,25 @@ library.
 @item Quicktime        @tab   @tab  X 
 @item MPEG4            @tab  @tab  X 
 @tab MPEG4 is a variant of Quicktime
-@item Raw MPEG4 video  @tab  @tab  X 
-@tab Only small files are supported.
+@item Raw MPEG4 video  @tab  X @tab  X 
 @item DV               @tab  @tab X
 @tab Only the video track is decoded.
+@end multitable
+
+@code{X} means that the encoding (resp. decoding) is supported.
+
+@section Image Formats
+
+FFmpeg can read and write images for each frame of a video sequence. The
+following image formats are supported:
+
+@multitable @columnfractions .4 .1 .1
+@item Supported Image Format @tab Encoding @tab Decoding @tab Comments
+@item PGM, PPM     @tab X @tab X 
+@item PGMYUV       @tab X @tab X @tab PGM with U and V components in 420
+@item JPEG         @tab X @tab X @tab Progressive JPEG is not supported
+@item .Y.U.V       @tab X @tab X @tab One raw file per component
+@item Animated GIF @tab X @tab   @tab Only uncompressed GIFs are generated
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.

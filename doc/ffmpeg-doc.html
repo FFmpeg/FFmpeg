@@ -29,24 +29,25 @@
 <LI><A NAME="TOC13" HREF="ffmpeg-doc.html#SEC13">5. Supported File Formats and Codecs</A>
 <UL>
 <LI><A NAME="TOC14" HREF="ffmpeg-doc.html#SEC14">5.1 File Formats</A>
-<LI><A NAME="TOC15" HREF="ffmpeg-doc.html#SEC15">5.2 Video Codecs</A>
-<LI><A NAME="TOC16" HREF="ffmpeg-doc.html#SEC16">5.3 Audio Codecs</A>
+<LI><A NAME="TOC15" HREF="ffmpeg-doc.html#SEC15">5.2 Image Formats</A>
+<LI><A NAME="TOC16" HREF="ffmpeg-doc.html#SEC16">5.3 Video Codecs</A>
+<LI><A NAME="TOC17" HREF="ffmpeg-doc.html#SEC17">5.4 Audio Codecs</A>
 </UL>
-<LI><A NAME="TOC17" HREF="ffmpeg-doc.html#SEC17">6. Platform Specific information</A>
+<LI><A NAME="TOC18" HREF="ffmpeg-doc.html#SEC18">6. Platform Specific information</A>
 <UL>
-<LI><A NAME="TOC18" HREF="ffmpeg-doc.html#SEC18">6.1 Linux</A>
-<LI><A NAME="TOC19" HREF="ffmpeg-doc.html#SEC19">6.2 BSD</A>
-<LI><A NAME="TOC20" HREF="ffmpeg-doc.html#SEC20">6.3 Windows</A>
-<LI><A NAME="TOC21" HREF="ffmpeg-doc.html#SEC21">6.4 MacOS X</A>
-<LI><A NAME="TOC22" HREF="ffmpeg-doc.html#SEC22">6.5 BeOS</A>
+<LI><A NAME="TOC19" HREF="ffmpeg-doc.html#SEC19">6.1 Linux</A>
+<LI><A NAME="TOC20" HREF="ffmpeg-doc.html#SEC20">6.2 BSD</A>
+<LI><A NAME="TOC21" HREF="ffmpeg-doc.html#SEC21">6.3 Windows</A>
+<LI><A NAME="TOC22" HREF="ffmpeg-doc.html#SEC22">6.4 MacOS X</A>
+<LI><A NAME="TOC23" HREF="ffmpeg-doc.html#SEC23">6.5 BeOS</A>
 </UL>
-<LI><A NAME="TOC23" HREF="ffmpeg-doc.html#SEC23">7. Developpers Guide</A>
+<LI><A NAME="TOC24" HREF="ffmpeg-doc.html#SEC24">7. Developpers Guide</A>
 <UL>
-<LI><A NAME="TOC24" HREF="ffmpeg-doc.html#SEC24">7.1 API</A>
-<LI><A NAME="TOC25" HREF="ffmpeg-doc.html#SEC25">7.2 Integrating libavcodec or libavformat in your program</A>
-<LI><A NAME="TOC26" HREF="ffmpeg-doc.html#SEC26">7.3 Coding Rules</A>
-<LI><A NAME="TOC27" HREF="ffmpeg-doc.html#SEC27">7.4 Submitting patches</A>
-<LI><A NAME="TOC28" HREF="ffmpeg-doc.html#SEC28">7.5 Regression tests</A>
+<LI><A NAME="TOC25" HREF="ffmpeg-doc.html#SEC25">7.1 API</A>
+<LI><A NAME="TOC26" HREF="ffmpeg-doc.html#SEC26">7.2 Integrating libavcodec or libavformat in your program</A>
+<LI><A NAME="TOC27" HREF="ffmpeg-doc.html#SEC27">7.3 Coding Rules</A>
+<LI><A NAME="TOC28" HREF="ffmpeg-doc.html#SEC28">7.4 Submitting patches</A>
+<LI><A NAME="TOC29" HREF="ffmpeg-doc.html#SEC29">7.5 Regression tests</A>
 </UL>
 </UL>
 <P><HR><P>
@@ -526,7 +527,7 @@ You can use the <CODE>-formats</CODE> option to have an exhaustive list.
 
 <P>
 FFmpeg supports the following file formats thru the <CODE>libavformat</CODE>
-library.
+library:
 
 
 <TABLE BORDER>
@@ -565,13 +566,6 @@ library.
 <TR><TD>Real Audio and Video </TD><TD> X </TD><TD> X</TD>
 
 </TR>
-<TR><TD>PGM, YUV, PPM, JPEG images </TD><TD> X </TD><TD> X</TD>
-
-</TR>
-<TR><TD>Animated GIF </TD><TD> X </TD><TD></TD>
-
-</TD><TD> Only uncompressed GIFs are generated
-</TR>
 <TR><TD>Raw AC3 </TD><TD> X  </TD><TD>  X</TD>
 
 </TR>
@@ -594,9 +588,8 @@ library.
 
 </TD><TD> MPEG4 is a variant of Quicktime
 </TR>
-<TR><TD>Raw MPEG4 video  </TD><TD>  </TD><TD>  X</TD>
+<TR><TD>Raw MPEG4 video  </TD><TD>  X </TD><TD>  X</TD>
 
-</TD><TD> Only small files are supported.
 </TR>
 <TR><TD>DV               </TD><TD>  </TD><TD> X</TD>
 
@@ -609,7 +602,41 @@ library.
 
 
 
-<H2><A NAME="SEC15" HREF="ffmpeg-doc.html#TOC15">5.2 Video Codecs</A></H2>
+<H2><A NAME="SEC15" HREF="ffmpeg-doc.html#TOC15">5.2 Image Formats</A></H2>
+
+<P>
+FFmpeg can read and write images for each frame of a video sequence. The
+following image formats are supported:
+
+
+<TABLE BORDER>
+
+<TR><TD>Supported Image Format </TD><TD> Encoding </TD><TD> Decoding </TD><TD> Comments</TD>
+
+</TR>
+<TR><TD>PGM, PPM     </TD><TD> X </TD><TD> X</TD>
+
+</TR>
+<TR><TD>PGMYUV       </TD><TD> X </TD><TD> X </TD><TD> PGM with U and V components in 420</TD>
+
+</TR>
+<TR><TD>JPEG         </TD><TD> X </TD><TD> X </TD><TD> Progressive JPEG is not supported</TD>
+
+</TR>
+<TR><TD>.Y.U.V       </TD><TD> X </TD><TD> X </TD><TD> One raw file per component</TD>
+
+</TR>
+<TR><TD>Animated GIF </TD><TD> X </TD><TD>   </TD><TD> Only uncompressed GIFs are generated</TD>
+
+</TR></TABLE>
+
+<P>
+<CODE>X</CODE> means that the encoding (resp. decoding) is supported.
+
+
+
+
+<H2><A NAME="SEC16" HREF="ffmpeg-doc.html#TOC16">5.3 Video Codecs</A></H2>
 
 <TABLE BORDER>
 
@@ -662,7 +689,7 @@ solutions.
 
 
 
-<H2><A NAME="SEC16" HREF="ffmpeg-doc.html#TOC16">5.3 Audio Codecs</A></H2>
+<H2><A NAME="SEC17" HREF="ffmpeg-doc.html#TOC17">5.4 Audio Codecs</A></H2>
 
 <TABLE BORDER>
 
@@ -699,11 +726,11 @@ performances on systems without hardware floating point support).
 
 
 
-<H1><A NAME="SEC17" HREF="ffmpeg-doc.html#TOC17">6. Platform Specific information</A></H1>
+<H1><A NAME="SEC18" HREF="ffmpeg-doc.html#TOC18">6. Platform Specific information</A></H1>
 
 
 
-<H2><A NAME="SEC18" HREF="ffmpeg-doc.html#TOC18">6.1 Linux</A></H2>
+<H2><A NAME="SEC19" HREF="ffmpeg-doc.html#TOC19">6.1 Linux</A></H2>
 
 <P>
 ffmpeg should be compiled with at least GCC 2.95.3. GCC 3.2 is the
@@ -713,19 +740,19 @@ features only found in GCC 3.2.
 
 
 
-<H2><A NAME="SEC19" HREF="ffmpeg-doc.html#TOC19">6.2 BSD</A></H2>
+<H2><A NAME="SEC20" HREF="ffmpeg-doc.html#TOC20">6.2 BSD</A></H2>
 
 
 
-<H2><A NAME="SEC20" HREF="ffmpeg-doc.html#TOC20">6.3 Windows</A></H2>
+<H2><A NAME="SEC21" HREF="ffmpeg-doc.html#TOC21">6.3 Windows</A></H2>
 
 
 
-<H2><A NAME="SEC21" HREF="ffmpeg-doc.html#TOC21">6.4 MacOS X</A></H2>
+<H2><A NAME="SEC22" HREF="ffmpeg-doc.html#TOC22">6.4 MacOS X</A></H2>
 
 
 
-<H2><A NAME="SEC22" HREF="ffmpeg-doc.html#TOC22">6.5 BeOS</A></H2>
+<H2><A NAME="SEC23" HREF="ffmpeg-doc.html#TOC23">6.5 BeOS</A></H2>
 
 <P>
 The configure script should guess the configuration itself.
@@ -759,11 +786,11 @@ valid results, then crashes.
 
 
 
-<H1><A NAME="SEC23" HREF="ffmpeg-doc.html#TOC23">7. Developpers Guide</A></H1>
+<H1><A NAME="SEC24" HREF="ffmpeg-doc.html#TOC24">7. Developpers Guide</A></H1>
 
 
 
-<H2><A NAME="SEC24" HREF="ffmpeg-doc.html#TOC24">7.1 API</A></H2>
+<H2><A NAME="SEC25" HREF="ffmpeg-doc.html#TOC25">7.1 API</A></H2>
 
 <UL>
 <LI>libavcodec is the library containing the codecs (both encoding and
@@ -778,7 +805,7 @@ valid results, then crashes.
 
 
 
-<H2><A NAME="SEC25" HREF="ffmpeg-doc.html#TOC25">7.2 Integrating libavcodec or libavformat in your program</A></H2>
+<H2><A NAME="SEC26" HREF="ffmpeg-doc.html#TOC26">7.2 Integrating libavcodec or libavformat in your program</A></H2>
 
 <P>
 You can integrate all the source code of the libraries to link them
@@ -795,7 +822,7 @@ to send your patches to the ffmpeg mailing list.
 
 
 
-<H2><A NAME="SEC26" HREF="ffmpeg-doc.html#TOC26">7.3 Coding Rules</A></H2>
+<H2><A NAME="SEC27" HREF="ffmpeg-doc.html#TOC27">7.3 Coding Rules</A></H2>
 
 <P>
 ffmpeg is programmed in ANSI C language. GCC extensions are
@@ -819,7 +846,7 @@ can be generated automatically.
 
 
 
-<H2><A NAME="SEC27" HREF="ffmpeg-doc.html#TOC27">7.4 Submitting patches</A></H2>
+<H2><A NAME="SEC28" HREF="ffmpeg-doc.html#TOC28">7.4 Submitting patches</A></H2>
 
 <P>
 When you submit your patch, try to send a unified diff (diff '-u'
@@ -847,7 +874,7 @@ transmission) to the ffmpeg-devel mailinglist, see
 
 
 
-<H2><A NAME="SEC28" HREF="ffmpeg-doc.html#TOC28">7.5 Regression tests</A></H2>
+<H2><A NAME="SEC29" HREF="ffmpeg-doc.html#TOC29">7.5 Regression tests</A></H2>
 
 <P>
 Before submitting a patch (or commiting with CVS), you should at least
