@@ -223,7 +223,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             for(i=1; i<15; i++){
                 float error= aspect_ratio;
                 if(s->codec_id == CODEC_ID_MPEG1VIDEO || i <=1)
-                    error-= mpeg1_aspect[i];
+                    error-= 1.0/mpeg1_aspect[i];
                 else
                     error-= av_q2d(mpeg2_aspect[i])*s->height/s->width;
              
@@ -2278,7 +2278,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     height = get_bits(&s->gb, 12);
     s->aspect_ratio_info= get_bits(&s->gb, 4);
     if(s->codec_id == CODEC_ID_MPEG1VIDEO){
-        aspect= mpeg1_aspect[s->aspect_ratio_info];
+        aspect= 1.0/mpeg1_aspect[s->aspect_ratio_info];
         if(aspect!=0.0) avctx->sample_aspect_ratio= av_d2q(aspect, 255);
     }
 
