@@ -159,6 +159,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     break;
 		case CODEC_TYPE_AUDIO:
                     get_wav_header(pb, &st->codec, (size >= 18));
+                    if (size%2) /* 2-aligned (fix for Stargate SG-1 - 3x18 - Shades of Grey.avi) */
+                        url_fskip(pb, 1);
                     break;
                 default:
                     url_fskip(pb, size);
