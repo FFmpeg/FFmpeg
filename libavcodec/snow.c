@@ -430,6 +430,10 @@ typedef struct SnowContext{
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independant of MpegEncContext, so this will be removed then (FIXME/XXX)
 }SnowContext;
 
+#ifdef	__sgi
+// Avoid a name clash on SGI IRIX
+#undef	qexp
+#endif
 #define QEXPSHIFT (7-FRAC_BITS+8) //FIXME try to change this to 0
 static const uint8_t qexp[8]={
     128, 140, 152, 166, 181, 197, 215, 235
