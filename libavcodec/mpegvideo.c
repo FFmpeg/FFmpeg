@@ -3005,7 +3005,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         /* note: quant matrix value (8) is implied here */
         s->last_dc[i] = 128;
         
-        s->current_picture.error[i] = 0;
+        s->current_picture_ptr->error[i] = 0;
     }
     s->mb_incr = 1;
     s->last_mv[0][0][0] = 0;
@@ -3377,17 +3377,17 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 if(s->mb_x*16 + 16 > s->width ) w= s->width - s->mb_x*16;
                 if(s->mb_y*16 + 16 > s->height) h= s->height- s->mb_y*16;
 
-                s->current_picture.error[0] += sse(
+                s->current_picture_ptr->error[0] += sse(
                     s,
                     s->new_picture    .data[0] + s->mb_x*16 + s->mb_y*s->linesize*16,
                     s->current_picture.data[0] + s->mb_x*16 + s->mb_y*s->linesize*16,
                     w, h, s->linesize);
-                s->current_picture.error[1] += sse(
+                s->current_picture_ptr->error[1] += sse(
                     s,
                     s->new_picture    .data[1] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
                     s->current_picture.data[1] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
                     w>>1, h>>1, s->uvlinesize);
-                s->current_picture.error[2] += sse(
+                s->current_picture_ptr->error[2] += sse(
                     s,
                     s->new_picture    .data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
                     s->current_picture.data[2] + s->mb_x*8  + s->mb_y*s->uvlinesize*8,
