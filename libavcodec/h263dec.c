@@ -306,8 +306,7 @@ static int decode_slice(MpegEncContext *s){
  * finds the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
-static int mpeg4_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
-    ParseContext *pc= &s->parse_context;
+int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size){
     int vop_found, i;
     uint32_t state;
     
@@ -326,23 +325,25 @@ static int mpeg4_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
         }
     }
 
-    if(vop_found){    
-      for(; i<buf_size; i++){
-        state= (state<<8) | buf[i];
-        if((state&0xFFFFFF00) == 0x100){
-            pc->frame_start_found=0;
-            pc->state=-1; 
-            return i-3;
+    if(vop_found){
+        /* EOF considered as end of frame */
+        if (buf_size == 0)
+            return 0;
+        for(; i<buf_size; i++){
+            state= (state<<8) | buf[i];
+            if((state&0xFFFFFF00) == 0x100){
+                pc->frame_start_found=0;
+                pc->state=-1; 
+                return i-3;
+            }
         }
-      }
     }
     pc->frame_start_found= vop_found;
     pc->state= state;
     return END_NOT_FOUND;
 }
 
-static int h263_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
-    ParseContext *pc= &s->parse_context;
+static int h263_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size){
     int vop_found, i;
     uint32_t state;
     
@@ -375,6 +376,27 @@ static int h263_find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
     pc->state= state;
     
     return END_NOT_FOUND;
+}
+
+static int h263_parse(AVCodecParserContext *s,
+                           AVCodecContext *avctx,
+                           uint8_t **poutbuf, int *poutbuf_size, 
+                           const uint8_t *buf, int buf_size)
+{
+    ParseContext *pc = s->priv_data;
+    int next;
+    
+    next= h263_find_frame_end(pc, buf, buf_size);
+
+    if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+        *poutbuf = NULL;
+        *poutbuf_size = 0;
+        return buf_size;
+    }
+
+    *poutbuf = (uint8_t *)buf;
+    *poutbuf_size = buf_size;
+    return next;
 }
 
 int ff_h263_decode_frame(AVCodecContext *avctx, 
@@ -414,15 +436,15 @@ uint64_t time= rdtsc();
         int next;
         
         if(s->codec_id==CODEC_ID_MPEG4){
-            next= mpeg4_find_frame_end(s, buf, buf_size);
+            next= ff_mpeg4_find_frame_end(&s->parse_context, buf, buf_size);
         }else if(s->codec_id==CODEC_ID_H263){
-            next= h263_find_frame_end(s, buf, buf_size);
+            next= h263_find_frame_end(&s->parse_context, buf, buf_size);
         }else{
             av_log(s->avctx, AV_LOG_ERROR, "this codec doesnt support truncated bitstreams\n");
             return -1;
         }
         
-        if( ff_combine_frame(s, next, &buf, &buf_size) < 0 )
+        if( ff_combine_frame(&s->parse_context, next, &buf, &buf_size) < 0 )
             return buf_size;
     }
 
@@ -842,4 +864,12 @@ AVCodec flv_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1
+};
+
+AVCodecParser h263_parser = {
+    { CODEC_ID_H263 },
+    sizeof(ParseContext),
+    NULL,
+    h263_parse,
+    ff_parse_close,
 };

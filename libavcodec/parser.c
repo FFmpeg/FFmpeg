@@ -144,15 +144,8 @@ void av_parser_close(AVCodecParserContext *s)
 #define SLICE_MAX_START_CODE	0x000001af
 
 typedef struct ParseContext1{
-    uint8_t *buffer;
-    int index;
-    int last_index;
-    int buffer_size;
-    uint32_t state;             ///< contains the last few bytes in MSB order
-    int frame_start_found;
-    int overread;               ///< the number of bytes which where irreversibly read from the next frame
-    int overread_index;         ///< the index into ParseContext1.buffer of the overreaded bytes
-
+    ParseContext pc;
+/* XXX/FIXME PC1 vs. PC */
     /* MPEG2 specific */
     int frame_rate;
     int progressive_sequence;
@@ -167,7 +160,7 @@ typedef struct ParseContext1{
  * combines the (truncated) bitstream to a complete frame
  * @returns -1 if no complete frame could be created
  */
-static int ff_combine_frame1(ParseContext1 *pc, int next, uint8_t **buf, int *buf_size)
+int ff_combine_frame(ParseContext *pc, int next, uint8_t **buf, int *buf_size)
 {
 #if 0
     if(pc->overread){
@@ -218,48 +211,6 @@ static int ff_combine_frame1(ParseContext1 *pc, int next, uint8_t **buf, int *bu
 #endif
 
     return 0;
-}
-
-/**
- * finds the end of the current frame in the bitstream.
- * @return the position of the first byte of the next frame, or -1
- */
-static int mpeg1_find_frame_end(ParseContext1 *pc, const uint8_t *buf, int buf_size)
-{
-    int i;
-    uint32_t state;
-    
-    state= pc->state;
-    
-    i=0;
-    if(!pc->frame_start_found){
-        for(i=0; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if(state >= SLICE_MIN_START_CODE && state <= SLICE_MAX_START_CODE){
-                i++;
-                pc->frame_start_found=1;
-                break;
-            }
-        }
-    }
-    
-    if(pc->frame_start_found){
-        /* EOF considered as end of frame */
-        if (buf_size == 0)
-            return 0;
-        for(; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if((state&0xFFFFFF00) == 0x100){
-                if(state < SLICE_MIN_START_CODE || state > SLICE_MAX_START_CODE){
-                    pc->frame_start_found=0;
-                    pc->state=-1; 
-                    return i-3;
-                }
-            }
-        }
-    }        
-    pc->state= state;
-    return END_NOT_FOUND;
 }
 
 static int find_start_code(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
@@ -404,12 +355,13 @@ static int mpegvideo_parse(AVCodecParserContext *s,
                            uint8_t **poutbuf, int *poutbuf_size, 
                            const uint8_t *buf, int buf_size)
 {
-    ParseContext1 *pc = s->priv_data;
+    ParseContext1 *pc1 = s->priv_data;
+    ParseContext *pc= &pc1->pc;
     int next;
     
-    next= mpeg1_find_frame_end(pc, buf, buf_size);
+    next= ff_mpeg1_find_frame_end(pc, buf, buf_size);
     
-    if (ff_combine_frame1(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+    if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
         *poutbuf = NULL;
         *poutbuf_size = 0;
         return buf_size;
@@ -428,58 +380,22 @@ static int mpegvideo_parse(AVCodecParserContext *s,
     return next;
 }
 
-static void mpegvideo_parse_close(AVCodecParserContext *s)
+void ff_parse_close(AVCodecParserContext *s)
 {
-    ParseContext1 *pc = s->priv_data;
+    ParseContext *pc = s->priv_data;
 
     av_free(pc->buffer);
-    av_free(pc->enc);
+}
+
+static void parse1_close(AVCodecParserContext *s)
+{
+    ParseContext1 *pc1 = s->priv_data;
+
+    av_free(pc1->pc.buffer);
+    av_free(pc1->enc);
 }
 
 /*************************/
-
-/**
- * finds the end of the current frame in the bitstream.
- * @return the position of the first byte of the next frame, or -1
- */
-static int mpeg4_find_frame_end(ParseContext1 *pc, 
-                                const uint8_t *buf, int buf_size)
-{
-    int vop_found, i;
-    uint32_t state;
-    
-    vop_found= pc->frame_start_found;
-    state= pc->state;
-    
-    i=0;
-    if(!vop_found){
-        for(i=0; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if(state == 0x1B6){
-                i++;
-                vop_found=1;
-                break;
-            }
-        }
-    }
-
-    if(vop_found){    
-        /* EOF considered as end of frame */
-        if (buf_size == 0)
-            return 0;
-        for(; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if((state&0xFFFFFF00) == 0x100){
-                pc->frame_start_found=0;
-                pc->state=-1; 
-                return i-3;
-            }
-        }
-    }
-    pc->frame_start_found= vop_found;
-    pc->state= state;
-    return END_NOT_FOUND;
-}
 
 /* used by parser */
 /* XXX: make it use less memory */
@@ -526,127 +442,17 @@ static int mpeg4video_parse(AVCodecParserContext *s,
                            uint8_t **poutbuf, int *poutbuf_size, 
                            const uint8_t *buf, int buf_size)
 {
-    ParseContext1 *pc = s->priv_data;
+    ParseContext *pc = s->priv_data;
     int next;
     
-    next= mpeg4_find_frame_end(pc, buf, buf_size);
+    next= ff_mpeg4_find_frame_end(pc, buf, buf_size);
 
-    if (ff_combine_frame1(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+    if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
         *poutbuf = NULL;
         *poutbuf_size = 0;
         return buf_size;
     }
     av_mpeg4_decode_header(s, avctx, buf, buf_size);
-
-    *poutbuf = (uint8_t *)buf;
-    *poutbuf_size = buf_size;
-    return next;
-}
-
-/*************************/
-
-static int h263_find_frame_end(ParseContext1 *pc, const uint8_t *buf, int buf_size)
-{
-    int vop_found, i;
-    uint32_t state;
-    
-    vop_found= pc->frame_start_found;
-    state= pc->state;
-    
-    i=0;
-    if(!vop_found){
-        for(i=0; i<buf_size; i++){
-            state= (state<<8) | buf[i];
-            if(state>>(32-22) == 0x20){
-                i++;
-                vop_found=1;
-                break;
-            }
-        }
-    }
-
-    if(vop_found){    
-      for(; i<buf_size; i++){
-        state= (state<<8) | buf[i];
-        if(state>>(32-22) == 0x20){
-            pc->frame_start_found=0;
-            pc->state=-1; 
-            return i-3;
-        }
-      }
-    }
-    pc->frame_start_found= vop_found;
-    pc->state= state;
-    
-    return END_NOT_FOUND;
-}
-
-static int h263_parse(AVCodecParserContext *s,
-                           AVCodecContext *avctx,
-                           uint8_t **poutbuf, int *poutbuf_size, 
-                           const uint8_t *buf, int buf_size)
-{
-    ParseContext1 *pc = s->priv_data;
-    int next;
-    
-    next= h263_find_frame_end(pc, buf, buf_size);
-
-    if (ff_combine_frame1(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
-        *poutbuf = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
-    }
-
-    *poutbuf = (uint8_t *)buf;
-    *poutbuf_size = buf_size;
-    return next;
-}
-
-/*************************/
-
-/**
- * finds the end of the current frame in the bitstream.
- * @return the position of the first byte of the next frame, or -1
- */
-static int h264_find_frame_end(ParseContext1 *pc, const uint8_t *buf, int buf_size)
-{
-    int i;
-    uint32_t state;
-//printf("first %02X%02X%02X%02X\n", buf[0], buf[1],buf[2],buf[3]);
-//    mb_addr= pc->mb_addr - 1;
-    state= pc->state;
-    //FIXME this will fail with slices
-    for(i=0; i<buf_size; i++){
-        state= (state<<8) | buf[i];
-        if((state&0xFFFFFF1F) == 0x101 || (state&0xFFFFFF1F) == 0x102 || (state&0xFFFFFF1F) == 0x105){
-            if(pc->frame_start_found){
-                pc->state=-1; 
-                pc->frame_start_found= 0;
-                return i-3;
-            }
-            pc->frame_start_found= 1;
-        }
-    }
-    
-    pc->state= state;
-    return END_NOT_FOUND;
-}
-
-static int h264_parse(AVCodecParserContext *s,
-                      AVCodecContext *avctx,
-                      uint8_t **poutbuf, int *poutbuf_size, 
-                      const uint8_t *buf, int buf_size)
-{
-    ParseContext1 *pc = s->priv_data;
-    int next;
-    
-    next= h264_find_frame_end(pc, buf, buf_size);
-
-    if (ff_combine_frame1(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
-        *poutbuf = NULL;
-        *poutbuf_size = 0;
-        return buf_size;
-    }
 
     *poutbuf = (uint8_t *)buf;
     *poutbuf_size = buf_size;
@@ -913,7 +719,7 @@ AVCodecParser mpegvideo_parser = {
     sizeof(ParseContext1),
     NULL,
     mpegvideo_parse,
-    mpegvideo_parse_close,
+    parse1_close,
 };
 
 AVCodecParser mpeg4video_parser = {
@@ -921,23 +727,7 @@ AVCodecParser mpeg4video_parser = {
     sizeof(ParseContext1),
     mpeg4video_parse_init,
     mpeg4video_parse,
-    mpegvideo_parse_close,
-};
-
-AVCodecParser h263_parser = {
-    { CODEC_ID_H263 },
-    sizeof(ParseContext1),
-    NULL,
-    h263_parse,
-    mpegvideo_parse_close,
-};
-
-AVCodecParser h264_parser = {
-    { CODEC_ID_H264 },
-    sizeof(ParseContext1),
-    NULL,
-    h264_parse,
-    mpegvideo_parse_close,
+    parse1_close,
 };
 
 AVCodecParser mpegaudio_parser = {

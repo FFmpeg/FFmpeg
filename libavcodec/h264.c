@@ -5520,8 +5520,7 @@ static inline int decode_picture_parameter_set(H264Context *h){
  * finds the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
-static int find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
-    ParseContext *pc= &s->parse_context;
+static int find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size){
     int i;
     uint32_t state;
 //printf("first %02X%02X%02X%02X\n", buf[0], buf[1],buf[2],buf[3]);
@@ -5542,6 +5541,27 @@ static int find_frame_end(MpegEncContext *s, uint8_t *buf, int buf_size){
     
     pc->state= state;
     return END_NOT_FOUND;
+}
+
+static int h264_parse(AVCodecParserContext *s,
+                      AVCodecContext *avctx,
+                      uint8_t **poutbuf, int *poutbuf_size, 
+                      const uint8_t *buf, int buf_size)
+{
+    ParseContext *pc = s->priv_data;
+    int next;
+    
+    next= find_frame_end(pc, buf, buf_size);
+
+    if (ff_combine_frame(pc, next, (uint8_t **)&buf, &buf_size) < 0) {
+        *poutbuf = NULL;
+        *poutbuf_size = 0;
+        return buf_size;
+    }
+
+    *poutbuf = (uint8_t *)buf;
+    *poutbuf_size = buf_size;
+    return next;
 }
 
 static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
@@ -5701,9 +5721,9 @@ static int decode_frame(AVCodecContext *avctx,
     }
     
     if(s->flags&CODEC_FLAG_TRUNCATED){
-        int next= find_frame_end(s, buf, buf_size);
+        int next= find_frame_end(&s->parse_context, buf, buf_size);
         
-        if( ff_combine_frame(s, next, &buf, &buf_size) < 0 )
+        if( ff_combine_frame(&s->parse_context, next, &buf, &buf_size) < 0 )
             return buf_size;
 //printf("next:%d buf_size:%d last_index:%d\n", next, buf_size, s->parse_context.last_index);
     }
@@ -5968,6 +5988,14 @@ AVCodec h264_decoder = {
     decode_end,
     decode_frame,
     /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED,
+};
+
+AVCodecParser h264_parser = {
+    { CODEC_ID_H264 },
+    sizeof(ParseContext),
+    NULL,
+    h264_parse,
+    ff_parse_close,
 };
 
 #include "svq3.c"

@@ -749,7 +749,8 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h);
 void ff_emulated_edge_mc(uint8_t *buf, uint8_t *src, int linesize, int block_w, int block_h, 
                                     int src_x, int src_y, int w, int h);
 #define END_NOT_FOUND -100
-int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size);
+int ff_combine_frame(ParseContext *pc, int next, uint8_t **buf, int *buf_size);
+void ff_parse_close(AVCodecParserContext *s);
 void ff_mpeg_flush(AVCodecContext *avctx);
 void ff_print_debug_info(MpegEncContext *s, AVFrame *pict);
 void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix);
