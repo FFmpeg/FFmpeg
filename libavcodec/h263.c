@@ -2654,8 +2654,7 @@ static inline int get_amv(MpegEncContext *s, int n){
                 v+= dx;
             }
         }
-        sum /= 256;
-        sum= RSHIFT(sum<<s->quarter_sample, a);
+        sum= RSHIFT(sum, a+8-s->quarter_sample);
     }
 
     if      (sum < -len) sum= -len;
