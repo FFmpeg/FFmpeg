@@ -142,6 +142,7 @@ void avcodec_register_all(void)
 #endif
     register_avcodec(&mp2_decoder);
     register_avcodec(&mp3_decoder);
+    register_avcodec(&mp3adu_decoder);
     register_avcodec(&mace3_decoder);
     register_avcodec(&mace6_decoder);
     register_avcodec(&huffyuv_decoder);

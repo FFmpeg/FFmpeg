@@ -98,6 +98,7 @@ typedef struct MPADecodeContext {
     int frame_count;
 #endif
     void (*compute_antialias)(struct MPADecodeContext *s, struct GranuleDef *g);
+    int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
 } MPADecodeContext;
 
 /* layer 3 "granule" */
@@ -532,6 +533,8 @@ static int decode_init(AVCodecContext * avctx)
 #ifdef DEBUG
     s->frame_count = 0;
 #endif
+    if (avctx->codec_id == CODEC_ID_MP3ADU)
+        s->adu_mode = 1;
     return 0;
 }
 
@@ -2298,9 +2301,11 @@ static int mp_decode_layer3(MPADecodeContext *s)
         }
     }
 
+  if (!s->adu_mode) {
     /* now we get bits from the main_data_begin offset */
     dprintf("seekback: %d\n", main_data_begin);
     seek_to_maindata(s, main_data_begin);
+  }
 
     for(gr=0;gr<nb_granules;gr++) {
         for(ch=0;ch<s->nb_channels;ch++) {
@@ -2669,6 +2674,62 @@ static int decode_frame(AVCodecContext * avctx,
     return buf_ptr - buf;
 }
 
+
+static int decode_frame_adu(AVCodecContext * avctx,
+			void *data, int *data_size,
+			uint8_t * buf, int buf_size)
+{
+    MPADecodeContext *s = avctx->priv_data;
+    uint32_t header;
+    int len, out_size;
+    short *out_samples = data;
+
+    len = buf_size;
+
+    // Discard too short frames
+    if (buf_size < HEADER_SIZE) {
+        *data_size = 0;
+        return buf_size;
+    }
+
+
+    if (len > MPA_MAX_CODED_FRAME_SIZE)
+        len = MPA_MAX_CODED_FRAME_SIZE;
+
+    memcpy(s->inbuf, buf, len);
+    s->inbuf_ptr = s->inbuf + len;
+
+    // Get header and restore sync word
+    header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
+              (s->inbuf[2] << 8) | s->inbuf[3] | 0xffe00000;
+
+    if (check_header(header) < 0) { // Bad header, discard frame
+        *data_size = 0;
+        return buf_size;
+    }
+
+    decode_header(s, header);
+    /* update codec info */
+    avctx->sample_rate = s->sample_rate;
+    avctx->channels = s->nb_channels;
+    avctx->bit_rate = s->bit_rate;
+    avctx->sub_id = s->layer;
+
+    avctx->frame_size=s->frame_size = len;
+
+    if (avctx->parse_only) {
+        /* simply return the frame data */
+        *(uint8_t **)data = s->inbuf;
+        out_size = s->inbuf_ptr - s->inbuf;
+    } else {
+        out_size = mp_decode_frame(s, out_samples);
+    }
+
+    *data_size = out_size;
+    return buf_size;
+}
+
+
 AVCodec mp2_decoder =
 {
     "mp2",
@@ -2692,5 +2753,18 @@ AVCodec mp3_decoder =
     NULL,
     NULL,
     decode_frame,
+    CODEC_CAP_PARSE_ONLY,
+};
+
+AVCodec mp3adu_decoder =
+{
+    "mp3adu",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_MP3ADU,
+    sizeof(MPADecodeContext),
+    decode_init,
+    NULL,
+    NULL,
+    decode_frame_adu,
     CODEC_CAP_PARSE_ONLY,
 };

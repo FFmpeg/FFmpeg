@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4737
+#define LIBAVCODEC_BUILD       4738
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -159,6 +159,7 @@ enum CodecID {
     CODEC_ID_SONIC,
     CODEC_ID_SONIC_LS,
     CODEC_ID_FLAC,
+    CODEC_ID_MP3ADU,
     
     CODEC_ID_MPEG2TS= 0x20000, /* _FAKE_ codec to indicate a raw MPEG2 transport
                          stream (only used by libavformat) */
@@ -1906,6 +1907,7 @@ extern AVCodec sp5x_decoder;
 extern AVCodec png_decoder;
 extern AVCodec mp2_decoder;
 extern AVCodec mp3_decoder;
+extern AVCodec mp3adu_decoder;
 extern AVCodec mace3_decoder;
 extern AVCodec mace6_decoder;
 extern AVCodec huffyuv_decoder;
