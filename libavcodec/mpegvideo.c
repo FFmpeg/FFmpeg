@@ -3950,6 +3950,27 @@ static int estimate_motion_thread(AVCodecContext *c, void *arg){
     return 0;
 }
 
+static int mb_var_thread(AVCodecContext *c, void *arg){
+    MpegEncContext *s= arg;
+    int mb_x, mb_y;
+
+    for(mb_y=s->start_mb_y; mb_y < s->end_mb_y; mb_y++) {
+        for(mb_x=0; mb_x < s->mb_width; mb_x++) {
+            int xx = mb_x * 16;
+            int yy = mb_y * 16;
+            uint8_t *pix = s->new_picture.data[0] + (yy * s->linesize) + xx;
+            int varc;
+            int sum = s->dsp.pix_sum(pix, s->linesize);
+    
+            varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
+
+            s->current_picture.mb_var [s->mb_stride * mb_y + mb_x] = varc;
+            s->current_picture.mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
+            s->mb_var_sum_temp    += varc;
+        }
+    }
+}
+
 static void write_slice_end(MpegEncContext *s){
     if(s->codec_id==CODEC_ID_MPEG4){
         if(s->partitioned_frame){
@@ -4618,9 +4639,6 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         }
 
         s->avctx->execute(s->avctx, estimate_motion_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count);
-        for(i=1; i<s->avctx->thread_count; i++){
-            merge_context_after_me(s, s->thread_context[i]);
-        }
     }else /* if(s->pict_type == I_TYPE) */{
         /* I-Frame */
         for(i=0; i<s->mb_stride*s->mb_height; i++)
@@ -4628,22 +4646,11 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         
         if(!s->fixed_qscale){
             /* finding spatial complexity for I-frame rate control */
-            for(mb_y=0; mb_y < s->mb_height; mb_y++) {
-                for(mb_x=0; mb_x < s->mb_width; mb_x++) {
-                    int xx = mb_x * 16;
-                    int yy = mb_y * 16;
-                    uint8_t *pix = s->new_picture.data[0] + (yy * s->linesize) + xx;
-                    int varc;
-		    int sum = s->dsp.pix_sum(pix, s->linesize);
-    
-		    varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
-
-                    s->current_picture.mb_var [s->mb_stride * mb_y + mb_x] = varc;
-                    s->current_picture.mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
-                    s->mb_var_sum_temp    += varc;
-                }
-            }
+            s->avctx->execute(s->avctx, mb_var_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count);
         }
+    }
+    for(i=1; i<s->avctx->thread_count; i++){
+        merge_context_after_me(s, s->thread_context[i]);
     }
     s->current_picture.mc_mb_var_sum= s->current_picture_ptr->mc_mb_var_sum= s->mc_mb_var_sum_temp;
     s->current_picture.   mb_var_sum= s->current_picture_ptr->   mb_var_sum= s->   mb_var_sum_temp;
