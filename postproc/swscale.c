@@ -1264,10 +1264,6 @@ static void initMMX2HScaler(int dstW, int xInc, uint8_t *funnyCode, int16_t *fil
 }
 #endif // ARCH_X86
 
-//FIXME remove
-void SwScale_Init(){
-}
-
 static void globalInit(){
     // generating tables:
     int i;
