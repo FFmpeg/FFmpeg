@@ -3955,7 +3955,7 @@ static int decode_slice_header(H264Context *h){
     h->slice_num++;
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        av_log(h->s.avctx, AV_LOG_DEBUG, "slice:%d %s mb:%d %c pps:%d frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d weight:%d%s\n", 
+        av_log(h->s.avctx, AV_LOG_DEBUG, "slice:%d %s mb:%d %c pps:%d frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d:%d:%d weight:%d%s\n", 
                h->slice_num,
                (s->picture_structure==PICT_FRAME ? "F" : s->picture_structure==PICT_TOP_FIELD ? "T" : "B"),
                first_mb_in_slice, 
@@ -3964,7 +3964,7 @@ static int decode_slice_header(H264Context *h){
                s->current_picture_ptr->field_poc[0], s->current_picture_ptr->field_poc[1],
                h->ref_count[0], h->ref_count[1],
                s->qscale,
-               h->deblocking_filter,
+               h->deblocking_filter, h->slice_alpha_c0_offset/2, h->slice_beta_offset/2,
                h->use_weight,
                h->use_weight==1 && h->use_weight_chroma ? "c" : ""
                );
