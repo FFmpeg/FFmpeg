@@ -104,18 +104,18 @@ untested special converters
 #endif
 
 //FIXME replace this with something faster
-#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YVU9 \
+#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_YVU9 \
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
 #define isYUV(x)       ((x)==IMGFMT_UYVY || (x)==IMGFMT_YUY2 || isPlanarYUV(x))
 #define isGray(x)      ((x)==IMGFMT_Y800)
 #define isRGB(x)       (((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
 #define isBGR(x)       (((x)&IMGFMT_BGR_MASK)==IMGFMT_BGR)
-#define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY\
+#define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_YUY2 || (x)==IMGFMT_UYVY\
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
 			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9\
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P)
-#define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2\
+#define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_YUY2\
 			|| (x)==IMGFMT_444P || (x)==IMGFMT_422P || (x)==IMGFMT_411P\
 			|| isRGB(x) || isBGR(x)\
 			|| (x)==IMGFMT_Y800 || (x)==IMGFMT_YVU9)
@@ -1626,10 +1626,8 @@ static int PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
 		}
 	}
 	dst = dstParam[1] + dstStride[1]*srcSliceY;
-	if(c->srcFormat==IMGFMT_YV12)
-		interleaveBytes( src[1],src[2],dst,c->srcW,srcSliceH,srcStride[1],srcStride[2],dstStride[0] );
-	else /* I420 & IYUV */
-		interleaveBytes( src[2],src[1],dst,c->srcW,srcSliceH,srcStride[2],srcStride[1],dstStride[0] );
+	interleaveBytes( src[1],src[2],dst,c->srcW,srcSliceH,srcStride[1],srcStride[2],dstStride[0] );
+
 	return srcSliceH;
 }
 
@@ -1637,10 +1635,8 @@ static int PlanarToYuy2Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
              int srcSliceH, uint8_t* dstParam[], int dstStride[]){
 	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
 
-	if(c->srcFormat==IMGFMT_YV12)
-		yv12toyuy2( src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
-	else /* I420 & IYUV */
-		yv12toyuy2( src[0],src[2],src[1],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
+	yv12toyuy2( src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
+
 	return srcSliceH;
 }
 
@@ -1764,15 +1760,15 @@ static int yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 /**
  * bring pointers in YUV order instead of YVU
  */
-inline static void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
-	if(format == IMGFMT_YV12 || format == IMGFMT_YVU9 
+static inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
+	if(format == IMGFMT_YV12 || format == IMGFMT_YVU9
            || format == IMGFMT_444P || format == IMGFMT_422P || format == IMGFMT_411P){
 		sortedP[0]= p[0];
-		sortedP[1]= p[1];
-		sortedP[2]= p[2];
+		sortedP[1]= p[2];
+		sortedP[2]= p[1];
 		sortedStride[0]= stride[0];
-		sortedStride[1]= stride[1];
-		sortedStride[2]= stride[2];
+		sortedStride[1]= stride[2];
+		sortedStride[2]= stride[1];
 	}
 	else if(isPacked(format) || isGray(format))
 	{
@@ -1783,14 +1779,14 @@ inline static void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStrid
 		sortedStride[1]= 
 		sortedStride[2]= 0;
 	}
-	else if(format == IMGFMT_I420)
+	else if(format == IMGFMT_I420 || format == IMGFMT_IYUV)
 	{
 		sortedP[0]= p[0];
-		sortedP[1]= p[2];
-		sortedP[2]= p[1];
+		sortedP[1]= p[1];
+		sortedP[2]= p[2];
 		sortedStride[0]= stride[0];
-		sortedStride[1]= stride[2];
-		sortedStride[2]= stride[1];
+		sortedStride[1]= stride[1];
+		sortedStride[2]= stride[2];
 	}else{
 		MSG_ERR("internal error in orderYUV\n");
 	}
@@ -1864,7 +1860,8 @@ static int remove_dup_fourcc(int fourcc)
 {
 	switch(fourcc)
 	{
-	    case IMGFMT_IYUV: return IMGFMT_I420;
+	    case IMGFMT_I420:
+	    case IMGFMT_IYUV: return IMGFMT_YV12;
 	    case IMGFMT_Y8  : return IMGFMT_Y800;
 	    case IMGFMT_IF09: return IMGFMT_YVU9;
 	    default: return fourcc;
@@ -1879,7 +1876,6 @@ static void getSubSampleFactors(int *h, int *v, int format){
 		*v=0;
 		break;
 	case IMGFMT_YV12:
-	case IMGFMT_I420:
 	case IMGFMT_Y800: //FIXME remove after different subsamplings are fully implemented
 		*h=1;
 		*v=1;
@@ -1983,24 +1979,24 @@ int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int 
 	return 0;	
 }
 
-SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
+SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int dstH, int origDstFormat, int flags,
                          SwsFilter *srcFilter, SwsFilter *dstFilter){
 
 	SwsContext *c;
 	int i;
 	int usesFilter;
 	int unscaled, needsDither;
+	int srcFormat, dstFormat;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
 #ifdef ARCH_X86
 	if(gCpuCaps.hasMMX)
 		asm volatile("emms\n\t"::: "memory");
 #endif
 	if(swScale==NULL) globalInit();
-//srcFormat= IMGFMT_Y800;
-//dstFormat= IMGFMT_Y800;
+
 	/* avoid dupplicate Formats, so we dont need to check to much */
-	srcFormat = remove_dup_fourcc(srcFormat);
-	dstFormat = remove_dup_fourcc(dstFormat);
+	srcFormat = remove_dup_fourcc(origSrcFormat);
+	dstFormat = remove_dup_fourcc(origDstFormat);
 
 	unscaled = (srcW == dstW && srcH == dstH);
 	needsDither= (isBGR(dstFormat) || isRGB(dstFormat)) 
@@ -2041,6 +2037,8 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	c->flags= flags;
 	c->dstFormat= dstFormat;
 	c->srcFormat= srcFormat;
+	c->origDstFormat= origDstFormat;
+	c->origSrcFormat= origSrcFormat;
 
 	usesFilter=0;
 	if(dstFilter->lumV!=NULL && dstFilter->lumV->length>1) usesFilter=1;
@@ -2081,17 +2079,17 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 	if(unscaled && !usesFilter)
 	{
 		/* yv12_to_nv12 */
-		if((srcFormat == IMGFMT_YV12||srcFormat==IMGFMT_I420)&&dstFormat == IMGFMT_NV12)
+		if(srcFormat == IMGFMT_YV12 && dstFormat == IMGFMT_NV12)
 		{
 			c->swScale= PlanarToNV12Wrapper;
 		}
 		/* yuv2bgr */
-		if((srcFormat==IMGFMT_YV12 || srcFormat==IMGFMT_I420 || srcFormat==IMGFMT_422P) && (isBGR(dstFormat) || isRGB(dstFormat)))
+		if((srcFormat==IMGFMT_YV12 || srcFormat==IMGFMT_422P) && (isBGR(dstFormat) || isRGB(dstFormat)))
 		{
 			c->swScale= yuv2rgb_get_func_ptr(c);
 		}
 		
-		if( srcFormat==IMGFMT_YVU9 && (dstFormat==IMGFMT_YV12 || dstFormat==IMGFMT_I420) )
+		if( srcFormat==IMGFMT_YVU9 && dstFormat==IMGFMT_YV12 )
 		{
 			c->swScale= yvu9toyv12Wrapper;
 		}
@@ -2115,7 +2113,7 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 				c->swScale= rgb2rgbWrapper;
 
 			/* yv12_to_yuy2 */
-			if((srcFormat == IMGFMT_YV12||srcFormat==IMGFMT_I420)&&dstFormat == IMGFMT_YUY2)
+			if(srcFormat == IMGFMT_YV12 && dstFormat == IMGFMT_YUY2)
 			{
 				c->swScale= PlanarToYuy2Wrapper;
 			}
@@ -2123,8 +2121,6 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 
 		/* simple copy */
 		if(   srcFormat == dstFormat
-		   || (srcFormat==IMGFMT_YV12 && dstFormat==IMGFMT_I420)
-		   || (srcFormat==IMGFMT_I420 && dstFormat==IMGFMT_YV12)
 		   || (isPlanarYUV(srcFormat) && isGray(dstFormat))
 		   || (isPlanarYUV(dstFormat) && isGray(srcFormat))
 		  )
@@ -2372,6 +2368,15 @@ SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, int dstH
 }
 
 /**
+ * swscale warper, so we dont need to export the SwsContext.
+ * assumes planar YUV to be in YUV order instead of YVU
+ */
+int sws_scale_ordered(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+                           int srcSliceH, uint8_t* dst[], int dstStride[]){
+	c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
+}
+
+/**
  * swscale warper, so we dont need to export the SwsContext
  */
 int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
@@ -2380,11 +2385,10 @@ int sws_scale(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcS
 	int dstStride[3];
 	uint8_t *src[3];
 	uint8_t *dst[3];
-
-	sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
-	sws_orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
+	sws_orderYUV(c->origSrcFormat, src, srcStride, srcParam, srcStrideParam);
+	sws_orderYUV(c->origDstFormat, dst, dstStride, dstParam, dstStrideParam);
 //printf("sws: slice %d %d\n", srcSliceY, srcSliceH);
-	return c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
+	c->swScale(c, src, srcStride, srcSliceY, srcSliceH, dst, dstStride);
 }
 
 /**

@@ -104,6 +104,8 @@ struct SwsContext *sws_getContext(int srcW, int srcH, int srcFormat, int dstW, i
 			 SwsFilter *srcFilter, SwsFilter *dstFilter);
 int sws_scale(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
                            int srcSliceH, uint8_t* dst[], int dstStride[]);
+int sws_scale_ordered(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,
+                           int srcSliceH, uint8_t* dst[], int dstStride[]);
 
 void sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam); //FIXME try to seperate this 
 
