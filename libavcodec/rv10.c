@@ -22,6 +22,8 @@
 
 //#define DEBUG
 
+#define DC_VLC_BITS 9
+
 static const UINT16 rv_lum_code[256] =
 {
  0x3e7f, 0x0f00, 0x0f01, 0x0f02, 0x0f03, 0x0f04, 0x0f05, 0x0f06,
@@ -173,7 +175,7 @@ int rv_decode_dc(MpegEncContext *s, int n)
     int code;
 
     if (n < 4) {
-        code = get_vlc(&s->gb, &rv_dc_lum);
+        code = get_vlc2(&s->gb, rv_dc_lum.table, DC_VLC_BITS, 2);
         if (code < 0) {
             /* XXX: I don't understand why they use LONGER codes than
                necessary. The following code would be completely useless
@@ -196,7 +198,7 @@ int rv_decode_dc(MpegEncContext *s, int n)
             code -= 128;
         }
     } else {
-        code = get_vlc(&s->gb, &rv_dc_chrom);
+        code = get_vlc2(&s->gb, rv_dc_chrom.table, DC_VLC_BITS, 2);
         /* same remark */
         if (code < 0) {
             code = get_bits(&s->gb, 9);
@@ -351,10 +353,10 @@ static int rv10_decode_init(AVCodecContext *avctx)
 
     /* init rv vlc */
     if (!done) {
-        init_vlc(&rv_dc_lum, 9, 256, 
+        init_vlc(&rv_dc_lum, DC_VLC_BITS, 256, 
                  rv_lum_bits, 1, 1,
                  rv_lum_code, 2, 2);
-        init_vlc(&rv_dc_chrom, 9, 256, 
+        init_vlc(&rv_dc_chrom, DC_VLC_BITS, 256, 
                  rv_chrom_bits, 1, 1,
                  rv_chrom_code, 2, 2);
         done = 1;
