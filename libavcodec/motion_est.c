@@ -803,7 +803,7 @@ static inline int mv4_search(MpegEncContext *s, int xmin, int ymin, int xmax, in
         if(P_LEFT[0]       > (rel_xmax4<<shift)) P_LEFT[0]       = (rel_xmax4<<shift);
 
         /* special case for first line */
-        if ((s->mb_y == 0 || s->first_slice_line) && block<2) {
+        if (s->mb_y == 0 && block<2) {
             pred_x4= P_LEFT[0];
             pred_y4= P_LEFT[1];
         } else {
@@ -904,11 +904,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
             if(P_LEFT[0]       > (rel_xmax<<shift)) P_LEFT[0]       = (rel_xmax<<shift);
 
-            /* special case for first line */
-            if ((mb_y == 0 || s->first_slice_line)) {
-                pred_x= P_LEFT[0];
-                pred_y= P_LEFT[1];
-            } else {
+            if(mb_y) {
                 P_TOP[0]      = s->motion_val[mot_xy - mot_stride    ][0];
                 P_TOP[1]      = s->motion_val[mot_xy - mot_stride    ][1];
                 P_TOPRIGHT[0] = s->motion_val[mot_xy - mot_stride + 2][0];
@@ -927,7 +923,11 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
                     pred_x= P_LEFT[0];
                     pred_y= P_LEFT[1];
                 }
+            }else{
+                pred_x= P_LEFT[0];
+                pred_y= P_LEFT[1];
             }
+
         }
         dmin = s->me.motion_search[0](s, 0, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax, 
                                       &s->last_picture, s->p_mv_table, (1<<16)>>shift, mv_penalty);
@@ -1055,6 +1055,8 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
     if (mb_y == s->mb_height-1) {
         pred_x= P_LEFT[0];
         pred_y= P_LEFT[1];
+        P_TOP[0]= P_TOPRIGHT[0]= P_MEDIAN[0]=
+        P_TOP[1]= P_TOPRIGHT[1]= P_MEDIAN[1]= 0; //FIXME 
     } else {
         P_TOP[0]      = s->p_mv_table[xy + mv_stride    ][0];
         P_TOP[1]      = s->p_mv_table[xy + mv_stride    ][1];
@@ -1067,17 +1069,12 @@ int ff_pre_estimate_p_frame_motion(MpegEncContext * s,
         P_MEDIAN[0]= mid_pred(P_LEFT[0], P_TOP[0], P_TOPRIGHT[0]);
         P_MEDIAN[1]= mid_pred(P_LEFT[1], P_TOP[1], P_TOPRIGHT[1]);
 
-        if(s->out_format == FMT_H263){
-            pred_x = P_MEDIAN[0];
-            pred_y = P_MEDIAN[1];
-        }else { /* mpeg1 at least */
-            pred_x= P_LEFT[0];
-            pred_y= P_LEFT[1];
-        }
+        pred_x = P_MEDIAN[0];
+        pred_y = P_MEDIAN[1];
     }
     dmin = s->me.motion_search[0](s, 0, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax, 
                                   &s->last_picture, s->p_mv_table, (1<<16)>>shift, mv_penalty);
-        
+
     s->p_mv_table[xy][0] = mx<<shift;
     s->p_mv_table[xy][1] = my<<shift;
     
@@ -1140,8 +1137,7 @@ int ff_estimate_motion_b(MpegEncContext * s,
             if(P_LEFT[0]       > (rel_xmax<<shift)) P_LEFT[0]       = (rel_xmax<<shift);
 
             /* special case for first line */
-            if ((mb_y == 0 || s->first_slice_line)) {
-            } else {
+            if (mb_y) {
                 P_TOP[0] = mv_table[mot_xy - mot_stride             ][0];
                 P_TOP[1] = mv_table[mot_xy - mot_stride             ][1];
                 P_TOPRIGHT[0] = mv_table[mot_xy - mot_stride + 1         ][0];
@@ -1332,8 +1328,7 @@ static inline int direct_search(MpegEncContext * s,
     P_LEFT[1]        = clip(mv_table[mot_xy - 1][1], ymin<<shift, ymax<<shift);
 
     /* special case for first line */
-    if ((mb_y == 0 || s->first_slice_line)) {
-    } else {
+    if (mb_y) {
         P_TOP[0]      = clip(mv_table[mot_xy - mot_stride             ][0], xmin<<shift, xmax<<shift);
         P_TOP[1]      = clip(mv_table[mot_xy - mot_stride             ][1], ymin<<shift, ymax<<shift);
         P_TOPRIGHT[0] = clip(mv_table[mot_xy - mot_stride + 1         ][0], xmin<<shift, xmax<<shift);

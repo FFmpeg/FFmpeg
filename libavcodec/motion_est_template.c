@@ -835,7 +835,7 @@ static int RENAME(epzs_motion_search)(MpegEncContext * s, int block,
     score_map[0]= dmin;
 
     /* first line */
-    if ((s->mb_y == 0 || s->first_slice_line)) {
+    if (s->mb_y == 0) {
         CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
         CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
@@ -858,10 +858,17 @@ static int RENAME(epzs_motion_search)(MpegEncContext * s, int block,
         }
     }
     if(dmin>256*4){
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16, 
-                        (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
-        CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
-                        (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
+        if(s->me.pre_pass){
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy-1][0]*ref_mv_scale + (1<<15))>>16, 
+                            (last_mv[ref_mv_xy-1][1]*ref_mv_scale + (1<<15))>>16)
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy-ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
+                            (last_mv[ref_mv_xy-ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
+        }else{
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16, 
+                            (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
+                            (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
+        }
     }
 
     if(s->avctx->last_predictor_count){
@@ -938,7 +945,7 @@ static int RENAME(epzs_motion_search4)(MpegEncContext * s, int block,
     dmin = 1000000;
 //printf("%d %d %d %d //",xmin, ymin, xmax, ymax); 
     /* first line */
-    if ((s->mb_y == 0 || s->first_slice_line) && block<2) {
+    if (s->mb_y == 0 && block<2) {
 	CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
         CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)

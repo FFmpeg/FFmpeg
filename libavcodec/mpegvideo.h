@@ -141,6 +141,7 @@ typedef struct MotionEstContext{
     int map_generation;  
     int penalty_factor;
     int sub_penalty_factor;
+    int pre_pass;                      /* = 1 for the pre pass */
     UINT16 (*mv_penalty)[MAX_MV*2+1];  /* amount of bits needed to encode a MV */
     int (*sub_motion_search)(struct MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
