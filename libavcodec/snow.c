@@ -71,6 +71,24 @@ static const int8_t quant3b[256]={
 -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,
 };
+static const int8_t quant3bA[256]={
+ 0, 0, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+ 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1, 1,-1,
+};
 static const int8_t quant5[256]={
  0, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
  2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
@@ -373,7 +391,7 @@ typedef struct BlockNode{
 
 typedef struct x_and_coeff{
     int16_t x;
-    int16_t coeff;
+    uint16_t coeff;
 } x_and_coeff;
 
 typedef struct SubBand{
@@ -1702,9 +1720,11 @@ static int encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELE
                 }
                 if(v){
                     int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
+                    int l2= 2*ABS(l) + (l<0);
+                    int t2= 2*ABS(t) + (t<0);
 
                     put_symbol2(&s->c, b->state[context + 2], ABS(v)-1, context-4);
-                    put_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]], v<0);
+                    put_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3bA[l2&0xFF] + 3*quant3bA[t2&0xFF]], v<0);
                 }
             }
         }
@@ -1763,7 +1783,7 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                     }
                 }
                 if(/*ll|*/l|lt|t|rt|p){
-                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
+                    int context= av_log2(/*ABS(ll) + */3*(l>>1) + (lt>>1) + (t&~1) + (rt>>1) + (p>>1));
 
                     v=get_rac(&s->c, &b->state[0][context]);
                 }else{
@@ -1785,10 +1805,10 @@ static inline void unpack_coeffs(SnowContext *s, SubBand *b, SubBand * parent, i
                     }
                 }
                 if(v){
-                    int context= av_log2(/*ABS(ll) + */3*ABS(l) + ABS(lt) + 2*ABS(t) + ABS(rt) + ABS(p));
-                    v= get_symbol2(&s->c, b->state[context + 2], context-4) + 1;
-                    if(get_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3b[l&0xFF] + 3*quant3b[t&0xFF]]))
-                        v *= -1;
+                    int context= av_log2(/*ABS(ll) + */3*(l>>1) + (lt>>1) + (t&~1) + (rt>>1) + (p>>1));
+                    v= 2*(get_symbol2(&s->c, b->state[context + 2], context-4) + 1);
+                    v+=get_rac(&s->c, &b->state[0][16 + 1 + 3 + quant3bA[l&0xFF] + 3*quant3bA[t&0xFF]]);
+                       
                     b->x_coeff[index].x=x;
                     b->x_coeff[index++].coeff= v;
                 }
@@ -1842,10 +1862,10 @@ static inline void decode_subband_slice_buffered(SnowContext *s, SubBand *b, sli
         x = b->x_coeff[new_index++].x;
         while(x < w)
         {
-            if (v < 0)
-                line[x] = -(( -v*qmul + qadd)>>(QEXPSHIFT));
-            else
-                line[x] = (( v*qmul + qadd)>>(QEXPSHIFT));
+            register int t= ( (v>>1)*qmul + qadd)>>QEXPSHIFT;
+            register int u= -(v&1);
+            line[x] = (t^u) - u;
+
             v = b->x_coeff[new_index].coeff;
             x = b->x_coeff[new_index++].x;
         }

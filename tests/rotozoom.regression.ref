@@ -119,12 +119,12 @@ d0831a8339491fd680b650f05262e5d9 *./data/a-ffv1.avi
 3524768 ./data/a-ffv1.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-440794294cc44c4cb25e32b947ba3311 *./data/a-snow.avi
+6e0ea3a5128f54f42e5fdb81532d95fe *./data/a-snow.avi
 332700 ./data/a-snow.avi
 1f3439e1b3ff09492f196a024d7119e3 *./data/out.yuv
 stddev:  2.37 PSNR:40.60 bytes:7602176
-eaea93acf339ad2a7349dc5d0872e870 *./data/a-snow53.avi
-2724574 ./data/a-snow53.avi
+92ab639886be86087942dd76cfd91bf3 *./data/a-snow53.avi
+2724572 ./data/a-snow53.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
 920c610ec324b772d882b0717e375943 *./data/a-svq1.mov
