@@ -41,9 +41,10 @@ DEP_LIBS=libavcodec/$(LIBPREF)avcodec$(LIBSUF) libavformat/$(LIBPREF)avformat$(L
 ifeq ($(CONFIG_MP3LAME),yes)
 EXTRALIBS+=-lmp3lame
 endif
+endif
+
 ifeq ($(CONFIG_VORBIS),yes)
 EXTRALIBS+=-logg -lvorbis -lvorbisenc
-endif
 endif
 
 ifeq ($(BUILD_VHOOK),yes)
