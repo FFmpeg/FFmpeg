@@ -413,9 +413,9 @@ int options_example(int argc, char* argv[])
 	int depth = 0;
 	for (;;) {
 	    if (!c->name) {
-		if (c->sub) {
+		if (c->help) {
 		    stack[depth++] = c;
-		    c = c->sub;
+		    c = (const AVOption*)c->help;
 		} else {
 		    if (depth == 0)
 			break; // finished

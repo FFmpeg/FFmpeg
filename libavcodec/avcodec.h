@@ -829,10 +829,23 @@ typedef struct AVCodecContext {
 #define FF_EC_DEBLOCK     2
 
     /**
-     * dsp_mask could be used to disable unwanted
+     * dsp_mask could be add used to disable unwanted CPU features
      * CPU features (i.e. MMX, SSE. ...)
+     *
+     * with FORCE flag you may instead enable given CPU features
+     * (Dangerous: usable in case of misdetection, improper usage however will
+     * result into program crash)
      */
-     unsigned dsp_mask;
+    unsigned dsp_mask;
+#define FF_MM_FORCE	0x80000000 /* force usage of selected flags (OR) */
+    /* lower 16 bits - CPU features */
+#ifdef HAVE_MMX
+#define FF_MM_MMX	0x0001 /* standard MMX */
+#define FF_MM_3DNOW	0x0004 /* AMD 3DNOW */
+#define FF_MM_MMXEXT	0x0002 /* SSE integer functions or AMD MMX ext */
+#define FF_MM_SSE	0x0008 /* SSE functions */
+#define FF_MM_SSE2	0x0010 /* PIV SSE2 functions */
+#endif /* HAVE_MMX */
 
     /**
      * bits per sample/pixel from the demuxer (needed for huffyuv).
@@ -1012,7 +1025,6 @@ typedef struct AVCodecContext {
 
 } AVCodecContext;
 
-//void avcodec_getopt(AVCodecContext* avctx, const char* str, avc_config_t** config);
 
 /**
  * AVOption.
@@ -1020,8 +1032,8 @@ typedef struct AVCodecContext {
 typedef struct AVOption {
     /** options' name */
     const char *name; /* if name is NULL, it indicates a link to next */
-    /** short English text help */
-    const char *help;
+    /** short English text help or const struct AVOption* subpointer */
+    const char *help; //	const struct AVOption* sub;
     /** offset to context structure where the parsed value should be stored */
     int offset;
     /** options' type */
@@ -1046,10 +1058,17 @@ typedef struct AVOption {
      * defval might select other then first argument as default
      */
     const char *defstr;
-    const struct AVOption *sub; /* used when name is NULL */
-    /* when it's NULL return to previous level (or finish reading) */
 #define FF_OPT_MAX_DEPTH 10
 } AVOption;
+
+/**
+ * Parse option(s) and sets fields in passed structure
+ * @param strct	structure where the parsed results will be written
+ * @param list  list with AVOptions
+ * @param opts	string with options for parsing
+ */
+int avoption_parse(void* strct, const AVOption* list, const char* opts);
+
 
 /**
  * AVCodec.

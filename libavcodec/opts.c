@@ -12,10 +12,22 @@
 
 #include "avcodec.h"
 
-extern const AVOption common_options[2];
+#ifdef HAVE_MMX
+extern const AVOption common_options[3 + 5];
+#else
+extern const AVOption common_options[3];
+#endif
 
-const AVOption common_options[2] = {
-    AVOPTION_CODEC_INT("common", "test", bit_rate, 0, 10, 0),
+const AVOption common_options[] = {
+    AVOPTION_CODEC_FLAG("bit_exact", "use only bit-exact stuff", flags, CODEC_FLAG_BITEXACT, 0),
+    AVOPTION_CODEC_FLAG("mm_force", "force mm flags", dsp_mask, FF_MM_FORCE, 0),
+#ifdef HAVE_MMX
+    AVOPTION_CODEC_FLAG("mm_mmx", "mask MMX feature", dsp_mask, FF_MM_MMX, 0),
+    AVOPTION_CODEC_FLAG("mm_3dnow", "mask 3DNow feature", dsp_mask, FF_MM_3DNOW, 0),
+    AVOPTION_CODEC_FLAG("mm_mmxext", "mask MMXEXT (MMX2) feature", dsp_mask, FF_MM_MMXEXT, 0),
+    AVOPTION_CODEC_FLAG("mm_sse", "mask SSE feature", dsp_mask, FF_MM_SSE, 0),
+    AVOPTION_CODEC_FLAG("mm_sse2", "mask SSE2 feature", dsp_mask, FF_MM_SSE2, 0),
+#endif
     AVOPTION_END()
 };
 
@@ -71,7 +83,7 @@ static int parse_int(const AVOption* c, char* s, int* var)
     return 0;
 }
 
-static int parse_string(const AVOption *c, char *s, AVCodecContext *avctx, char **var)
+static int parse_string(const AVOption *c, char *s, void* strct, char **var)
 {
     if (!s)
 	return -1;
@@ -80,6 +92,7 @@ static int parse_string(const AVOption *c, char *s, AVCodecContext *avctx, char 
 	int sf, ef, qs;
 	float qf;
 	if (sscanf(s, "%d,%d,%d,%f", &sf, &ef, &qs, &qf) == 4 && sf < ef) {
+	    AVCodecContext *avctx = (AVCodecContext *) strct;
 	    RcOverride *o;
 	    avctx->rc_override = av_realloc(avctx->rc_override,
 					    sizeof(RcOverride) * (avctx->rc_override_count + 1));
@@ -98,13 +111,7 @@ static int parse_string(const AVOption *c, char *s, AVCodecContext *avctx, char 
     return 0;
 }
 
-/**
- *
- * \param codec  codec for option parsing
- * \param opts   string with options for parsing
- * \param avctx  where to store parsed results
- */
-int avcodec_parse(const AVCodec *codec, const char *opts, AVCodecContext *avctx)
+int avoption_parse(void* strct, const AVOption* list, const char *opts)
 {
     int r = 0;
     char* dopts = av_strdup(opts);
@@ -113,8 +120,8 @@ int avcodec_parse(const AVCodec *codec, const char *opts, AVCodecContext *avctx)
 
 	while (str && *str && r == 0) {
 	    const AVOption *stack[FF_OPT_MAX_DEPTH];
+	    const AVOption *c = list;
 	    int depth = 0;
-	    const AVOption *c = codec->options;
 	    char* e = strchr(str, ':');
 	    char* p;
 	    if (e)
@@ -127,9 +134,9 @@ int avcodec_parse(const AVCodec *codec, const char *opts, AVCodecContext *avctx)
             // going through option structures
 	    for (;;) {
 		if (!c->name) {
-		    if (c->sub) {
+		    if (c->help) {
 			stack[depth++] = c;
-			c = c->sub;
+			c = (const AVOption*) c->help;
 			assert(depth > FF_OPT_MAX_DEPTH);
 		    } else {
 			if (depth == 0)
@@ -139,7 +146,7 @@ int avcodec_parse(const AVCodec *codec, const char *opts, AVCodecContext *avctx)
 		    }
 		} else {
 		    if (!strcmp(c->name, str)) {
-			void* ptr = (char*)avctx + c->offset;
+			void* ptr = (char*)strct + c->offset;
 
 			switch (c->type & FF_OPT_TYPE_MASK) {
 			case FF_OPT_TYPE_BOOL:
@@ -152,7 +159,7 @@ int avcodec_parse(const AVCodec *codec, const char *opts, AVCodecContext *avctx)
 			    r = parse_int(c, p, (int*)ptr);
 			    break;
 			case FF_OPT_TYPE_STRING:
-			    r = parse_string(c, p, avctx, (char**)ptr);
+			    r = parse_string(c, p, strct, (char**)ptr);
 			    break;
 			default:
 			    assert(0 == 1);
