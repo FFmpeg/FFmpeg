@@ -404,18 +404,43 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 }
 
 
-//Note: we have C, MMX, MMX2, 3DNOW version therse no 3DNOW+MMX2 one
+//Note: we have C, MMX, MMX2, 3DNOW version there is no 3DNOW+MMX2 one
 //Plain C versions
+#if !defined (HAVE_MMX) || defined (RUNTIME_CPUDETECT)
+#define COMPILE_C
+#endif
+
+#ifdef CAN_COMPILE_X86_ASM
+
+#if (defined (HAVE_MMX) && !defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
+#define COMPILE_MMX
+#endif
+
+#if defined (HAVE_MMX2) || defined (RUNTIME_CPUDETECT)
+#define COMPILE_MMX2
+#endif
+
+#if (defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
+#define COMPILE_3DNOW
+#endif
+#endif //CAN_COMPILE_X86_ASM
+
+#undef HAVE_MMX
+#undef HAVE_MMX2
+#undef HAVE_3DNOW
+#undef ARCH_X86
+
+#ifdef COMPILE_C
 #undef HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
 #undef ARCH_X86
 #define RENAME(a) a ## _C
 #include "postprocess_template.c"
-
-#ifdef CAN_COMPILE_X86_ASM
+#endif
 
 //MMX versions
+#ifdef COMPILE_MMX
 #undef RENAME
 #define HAVE_MMX
 #undef HAVE_MMX2
@@ -423,8 +448,10 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 #define ARCH_X86
 #define RENAME(a) a ## _MMX
 #include "postprocess_template.c"
+#endif
 
 //MMX2 versions
+#ifdef COMPILE_MMX2
 #undef RENAME
 #define HAVE_MMX
 #define HAVE_MMX2
@@ -432,8 +459,10 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 #define ARCH_X86
 #define RENAME(a) a ## _MMX2
 #include "postprocess_template.c"
+#endif
 
 //3DNOW versions
+#ifdef COMPILE_3DNOW
 #undef RENAME
 #define HAVE_MMX
 #undef HAVE_MMX2
@@ -441,8 +470,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 #define ARCH_X86
 #define RENAME(a) a ## _3DNow
 #include "postprocess_template.c"
-
-#endif //CAN_COMPILE_X86_ASM
+#endif
 
 // minor note: the HAVE_xyz is messed up after that line so dont use it
 
@@ -452,7 +480,7 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 	// useing ifs here as they are faster than function pointers allthough the
 	// difference wouldnt be messureable here but its much better because
 	// someone might exchange the cpu whithout restarting mplayer ;)
-
+#ifdef RUNTIME_CPUDETECT
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
 	if(gCpuCaps.hasMMX2)
@@ -466,6 +494,17 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 #else
 		postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, ppMode);
 #endif
+#else //RUNTIME_CPUDETECT
+#ifdef HAVE_MMX2
+		postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, ppMode);
+#elif defined (HAVE_3DNOW)
+		postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, ppMode);
+#elif defined (HAVE_MMX)
+		postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, ppMode);
+#else
+		postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, ppMode);
+#endif
+#endif //!RUNTIME_CPUDETECT
 }
 
 #ifdef HAVE_ODIVX_POSTPROCESS
