@@ -1314,6 +1314,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
             }
         }
  not_the_end:
+	;
     }
  the_end:
     return buf_ptr - buf;
