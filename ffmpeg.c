@@ -3491,11 +3491,13 @@ static void show_formats(void)
         int decode=0;
         int encode=0;
         const char *name=NULL;
+        const char *long_name=NULL;
 
         for(ofmt = first_oformat; ofmt != NULL; ofmt = ofmt->next) {
             if((name == NULL || strcmp(ofmt->name, name)<0) &&
                 strcmp(ofmt->name, last_name)>0){
                 name= ofmt->name;
+                long_name= ofmt->long_name;
                 encode=1;
             }
         }
@@ -3503,6 +3505,7 @@ static void show_formats(void)
             if((name == NULL || strcmp(ifmt->name, name)<0) &&
                 strcmp(ifmt->name, last_name)>0){
                 name= ifmt->name;
+                long_name= ifmt->long_name;
                 encode=0;
             }
             if(name && strcmp(ifmt->name, name)==0)
@@ -3513,21 +3516,23 @@ static void show_formats(void)
         last_name= name;
         
         printf(
-            " %s%s %s\n", 
+            " %s%s %-15s %s\n", 
             decode ? "D":" ", 
             encode ? "E":" ", 
-            name);
+            name,
+            long_name ? long_name:" ");
     }
     printf("\n");
 
-    printf("Image formats:\n");
+    printf("Image formats (filename extensions, if any, follow):\n");
     for(image_fmt = first_image_format; image_fmt != NULL; 
         image_fmt = image_fmt->next) {
         printf(
-            " %s%s %s\n",
+            " %s%s %-6s %s\n",
             image_fmt->img_read  ? "D":" ",
             image_fmt->img_write ? "E":" ",
-            image_fmt->name);
+            image_fmt->name,
+            image_fmt->extensions ? image_fmt->extensions:" ");
     }
     printf("\n");
 
