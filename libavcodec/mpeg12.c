@@ -33,8 +33,6 @@
 #define EXT_START_CODE		0x000001b5
 #define USER_START_CODE		0x000001b2
 
-//#define ABS(a) ((a)<0 ? -(a) : (a))
-
 static void mpeg1_encode_block(MpegEncContext *s, 
                          DCTELEM *block, 
                          int component);
@@ -1194,6 +1192,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     s->repeat_field = 0;
     s->mpeg_enc_ctx.codec_id= avctx->codec->id;
     avctx->mbskip_table= s->mpeg_enc_ctx.mbskip_table;
+    s->mpeg_enc_ctx.flags= avctx->flags;
     return 0;
 }
 
