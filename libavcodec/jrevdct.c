@@ -1184,11 +1184,13 @@ void j_rev_dct4(DCTBLOCK data)
   int32_t d0, d2, d4, d6;
   register DCTELEM *dataptr;
   int rowctr;
-   
+
   /* Pass 1: process rows. */
   /* Note results are scaled up by sqrt(8) compared to a true IDCT; */
   /* furthermore, we scale the results by 2**PASS1_BITS. */
 
+  data[0] += 4;
+  
   dataptr = data;
 
   for (rowctr = DCTSIZE-1; rowctr >= 0; rowctr--) {
@@ -1222,13 +1224,11 @@ void j_rev_dct4(DCTBLOCK data)
       dataptr += DCTSTRIDE;	/* advance pointer to next row */
       continue;
     }
-
+    
     /* Even part: reverse the even part of the forward DCT. */
     /* The rotator is sqrt(2)*c(-6). */
     if (d6) {
-	if (d4) {
 	    if (d2) {
-		if (d0) {
 		    /* d0 != 0, d2 != 0, d4 != 0, d6 != 0 */
 		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
 		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
@@ -1241,21 +1241,7 @@ void j_rev_dct4(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 != 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    } else {
-		if (d0) {
 		    /* d0 != 0, d2 == 0, d4 != 0, d6 != 0 */
 		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
 		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
@@ -1267,72 +1253,9 @@ void j_rev_dct4(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 != 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    }
-	} else {
-	    if (d2) {
-		if (d0) {
-		    /* d0 != 0, d2 != 0, d4 == 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 == 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    } else {
-		if (d0) {
-		    /* d0 != 0, d2 == 0, d4 == 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 == 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    }
-	}
     } else {
-	if (d4) {
 	    if (d2) {
-		if (d0) {
 		    /* d0 != 0, d2 != 0, d4 != 0, d6 == 0 */
 		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
 		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
@@ -1344,62 +1267,11 @@ void j_rev_dct4(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 != 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    } else {
-		if (d0) {
 		    /* d0 != 0, d2 == 0, d4 != 0, d6 == 0 */
 		    tmp10 = tmp13 = (d0 + d4) << CONST_BITS;
 		    tmp11 = tmp12 = (d0 - d4) << CONST_BITS;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 != 0, d6 == 0 */
-		    tmp10 = tmp13 = d4 << CONST_BITS;
-		    tmp11 = tmp12 = -tmp10;
-		}
 	    }
-	} else {
-	    if (d2) {
-		if (d0) {
-		    /* d0 != 0, d2 != 0, d4 == 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 == 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    } else {
-		if (d0) {
-		    /* d0 != 0, d2 == 0, d4 == 0, d6 == 0 */
-		    tmp10 = tmp13 = tmp11 = tmp12 = d0 << CONST_BITS;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 == 0, d6 == 0 */
-		    tmp10 = tmp13 = tmp11 = tmp12 = 0;
-		}
-	    }
-	}
       }
 
     /* Final output stage: inputs are tmp10..tmp13, tmp0..tmp3 */
@@ -1434,9 +1306,7 @@ void j_rev_dct4(DCTBLOCK data)
     /* Even part: reverse the even part of the forward DCT. */
     /* The rotator is sqrt(2)*c(-6). */
     if (d6) {
-	if (d4) {
 	    if (d2) {
-		if (d0) {
 		    /* d0 != 0, d2 != 0, d4 != 0, d6 != 0 */
 		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
 		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
@@ -1449,21 +1319,7 @@ void j_rev_dct4(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 != 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    } else {
-		if (d0) {
 		    /* d0 != 0, d2 == 0, d4 != 0, d6 != 0 */
 		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
 		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
@@ -1475,72 +1331,9 @@ void j_rev_dct4(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 != 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    }
-	} else {
-	    if (d2) {
-		if (d0) {
-		    /* d0 != 0, d2 != 0, d4 == 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 == 0, d6 != 0 */
-		    z1 = MULTIPLY(d2 + d6, FIX_0_541196100);
-		    tmp2 = z1 + MULTIPLY(-d6, FIX_1_847759065);
-		    tmp3 = z1 + MULTIPLY(d2, FIX_0_765366865);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    } else {
-		if (d0) {
-		    /* d0 != 0, d2 == 0, d4 == 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 == 0, d6 != 0 */
-		    tmp2 = MULTIPLY(-d6, FIX_1_306562965);
-		    tmp3 = MULTIPLY(d6, FIX_0_541196100);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    }
-	}
     } else {
-	if (d4) {
 	    if (d2) {
-		if (d0) {
 		    /* d0 != 0, d2 != 0, d4 != 0, d6 == 0 */
 		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
 		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
@@ -1552,74 +1345,19 @@ void j_rev_dct4(DCTBLOCK data)
 		    tmp13 = tmp0 - tmp3;
 		    tmp11 = tmp1 + tmp2;
 		    tmp12 = tmp1 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 != 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp0 = d4 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp2 - tmp0;
-		    tmp12 = -(tmp0 + tmp2);
-		}
 	    } else {
-		if (d0) {
 		    /* d0 != 0, d2 == 0, d4 != 0, d6 == 0 */
 		    tmp10 = tmp13 = (d0 + d4) << CONST_BITS;
 		    tmp11 = tmp12 = (d0 - d4) << CONST_BITS;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 != 0, d6 == 0 */
-		    tmp10 = tmp13 = d4 << CONST_BITS;
-		    tmp11 = tmp12 = -tmp10;
-		}
 	    }
-	} else {
-	    if (d2) {
-		if (d0) {
-		    /* d0 != 0, d2 != 0, d4 == 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp0 = d0 << CONST_BITS;
-
-		    tmp10 = tmp0 + tmp3;
-		    tmp13 = tmp0 - tmp3;
-		    tmp11 = tmp0 + tmp2;
-		    tmp12 = tmp0 - tmp2;
-		} else {
-		    /* d0 == 0, d2 != 0, d4 == 0, d6 == 0 */
-		    tmp2 = MULTIPLY(d2, FIX_0_541196100);
-		    tmp3 = MULTIPLY(d2, FIX_1_306562965);
-
-		    tmp10 = tmp3;
-		    tmp13 = -tmp3;
-		    tmp11 = tmp2;
-		    tmp12 = -tmp2;
-		}
-	    } else {
-		if (d0) {
-		    /* d0 != 0, d2 == 0, d4 == 0, d6 == 0 */
-		    tmp10 = tmp13 = tmp11 = tmp12 = d0 << CONST_BITS;
-		} else {
-		    /* d0 == 0, d2 == 0, d4 == 0, d6 == 0 */
-		    tmp10 = tmp13 = tmp11 = tmp12 = 0;
-		}
-	    }
-	}
     }
 
     /* Final output stage: inputs are tmp10..tmp13, tmp0..tmp3 */
 
-    dataptr[DCTSTRIDE*0] = (DCTELEM) DESCALE(tmp10,
-					   CONST_BITS+PASS1_BITS+3);
-    dataptr[DCTSTRIDE*1] = (DCTELEM) DESCALE(tmp11,
-					   CONST_BITS+PASS1_BITS+3);
-    dataptr[DCTSTRIDE*2] = (DCTELEM) DESCALE(tmp12,
-					   CONST_BITS+PASS1_BITS+3);
-    dataptr[DCTSTRIDE*3] = (DCTELEM) DESCALE(tmp13,
-					   CONST_BITS+PASS1_BITS+3);
+    dataptr[DCTSTRIDE*0] = tmp10 >> (CONST_BITS+PASS1_BITS+3);
+    dataptr[DCTSTRIDE*1] = tmp11 >> (CONST_BITS+PASS1_BITS+3);
+    dataptr[DCTSTRIDE*2] = tmp12 >> (CONST_BITS+PASS1_BITS+3);
+    dataptr[DCTSTRIDE*3] = tmp13 >> (CONST_BITS+PASS1_BITS+3);
     
     dataptr++;			/* advance pointer to next column */
   }
