@@ -376,6 +376,10 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
     }
 
     stream->pts += ticker_tick(&stream->pts_ticker, 1);
+    //if (st->codec.codec_type == CODEC_TYPE_VIDEO)
+    //    fprintf(stderr,"\nVideo PTS: %6lld", stream->pts);
+    //else
+    //    fprintf(stderr,"\nAudio PTS: %6lld", stream->pts);
     return 0;
 }
 

@@ -76,6 +76,7 @@ typedef struct AVFormat {
 typedef struct AVStream {
     int id;       /* internal stream id */
     AVCodecContext codec; /* codec context */
+    int r_frame_rate;     /* real frame rate of the stream */
     void *priv_data;
 } AVStream;
 
