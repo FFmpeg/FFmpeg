@@ -280,10 +280,10 @@ fft-test: fft-test.o $(LIB)
 ifeq ($(BUILD_SHARED),yes)
 install: all install-headers
 ifeq ($(CONFIG_WIN32),yes)
-	install -s -m 755 $(SLIB) "$(prefix)"
+	install $(INSTALLSTRIP) -m 755 $(SLIB) "$(prefix)"
 else
 	install -d $(prefix)/lib
-	install -s -m 755 $(SLIB) $(prefix)/lib/libavcodec-$(VERSION).so
+	install $(INSTALLSTRIP) -m 755 $(SLIB) $(prefix)/lib/libavcodec-$(VERSION).so
 	ln -sf libavcodec-$(VERSION).so $(prefix)/lib/libavcodec.so
 	ldconfig || true
 endif

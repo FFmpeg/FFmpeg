@@ -102,10 +102,10 @@ depend: $(SRCS)
 ifeq ($(BUILD_SHARED),yes)
 install: all install-headers
 ifeq ($(CONFIG_WIN32),yes)
-	install -s -m 755 $(SLIB) "$(prefix)"
+	install $(INSTALLSTRIP) -m 755 $(SLIB) "$(prefix)"
 else
 	install -d $(prefix)/lib
-	install -s -m 755 $(SLIB) $(prefix)/lib/libavformat-$(VERSION).so
+	install $(INSTALLSTRIP) -m 755 $(SLIB) $(prefix)/lib/libavformat-$(VERSION).so
 	ln -sf libavformat-$(VERSION).so $(prefix)/lib/libavformat.so
 	ldconfig || true
 endif

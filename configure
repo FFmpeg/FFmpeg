@@ -65,6 +65,7 @@ echo "  --disable-ffplay         disable ffplay build"
 echo "  --disable-risky          disables patent encumbered codecs"
 echo "  --enable-small           optimize for size instead of speed"
 echo "  --enable-memalign-hack   emulate memalign, interferes with memory debuggers"
+echo "  --disable-strip          disable stripping of executables and shared libraries"
 echo ""
 echo "NOTE: The object files are build at the place where configure is launched"
 exit 1
@@ -155,6 +156,7 @@ os2="no"
 lshared="no"
 optimize="yes"
 debug="yes"
+dostrip="yes"
 extralibs="-lm"
 simpleidct="yes"
 bigendian="no"
@@ -438,6 +440,8 @@ for opt do
   --enable-gpl) gpl="yes"
   ;;
   --enable-memalign-hack) memalignhack="yes"
+  ;;
+  --disable-strip) dostrip="no"
   ;;
   esac
 done
@@ -1004,6 +1008,7 @@ echo "a52 dlopened     $a52bin"
 echo "dts support      $dts"
 echo "pp support       $pp"
 echo "debug symbols    $debug"
+echo "strip symbols    $dostrip"
 echo "optimize         $optimize"
 echo "shared pp        $shared_pp"
 echo "Video hooking    $vhook"
@@ -1040,7 +1045,13 @@ echo "MAKE=$make" >> config.mak
 echo "CC=$cc" >> config.mak
 echo "AR=$ar" >> config.mak
 echo "RANLIB=$ranlib" >> config.mak
+if test "$dostrip" = "yes" ; then
 echo "STRIP=$strip" >> config.mak
+echo "INSTALLSTRIP=-s" >> config.mak
+else
+echo "STRIP=echo ignoring strip" >> config.mak
+echo "INSTALLSTRIP=" >> config.mak
+fi
 
 # SHCFLAGS is a copy of CFLAGS without -mdynamic-no-pic.  Used when building 
 # shared modules on OS/X (vhook/Makefile).

@@ -130,7 +130,7 @@ install: all install-man $(INSTALLVHOOK)
 	$(MAKE) -C libavcodec install
 	$(MAKE) -C libavformat install
 	install -d "$(bindir)"
-	install -c -s -m 755 $(PROG) "$(bindir)"
+	install -c $(INSTALLSTRIP) -m 755 $(PROG) "$(bindir)"
 
 # create the window installer
 wininstaller: all install
