@@ -50,6 +50,13 @@ portable, bloated and often slow.
 
 Use @file{-} as filename.
 
+@section Why Audio is not decoded in VOB files ?
+
+AC3 decoding is optional as the codec is currently released under the
+GPL. Enable it with @code{./configure --enable-a52}. Take care: by
+enabling AC3, you automatically change the license of libavcodec from
+LGPL to GPL.
+
 @chapter Development
 
 @section Are there examples of use of the FFmpeg libraries libavcodec and libavformat ?
