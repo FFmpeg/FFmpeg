@@ -220,7 +220,7 @@ static int put_huffman_table(MpegEncContext *s, int table_class, int table_id,
 static void jpeg_table_header(MpegEncContext *s)
 {
     PutBitContext *p = &s->pb;
-    int i, size;
+    int i, j, size;
     UINT8 *ptr;
 
     /* quant matrixes */
@@ -229,13 +229,15 @@ static void jpeg_table_header(MpegEncContext *s)
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 0); /* table 0 */
     for(i=0;i<64;i++) {
-        put_bits(p, 8, s->intra_matrix[i]);
+        j = zigzag_direct[i];
+        put_bits(p, 8, s->intra_matrix[j]);
     }
 #if 0
     put_bits(p, 4, 0); /* 8 bit precision */
     put_bits(p, 4, 1); /* table 1 */
     for(i=0;i<64;i++) {
-        put_bits(p, 8, s->chroma_intra_matrix[i]);
+        j = zigzag_direct[i];
+        put_bits(p, 8, s->chroma_intra_matrix[j]);
     }
 #endif
 
@@ -489,7 +491,7 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
 static int mjpeg_decode_dqt(MJpegDecodeContext *s,
                             UINT8 *buf, int buf_size)
 {
-    int len, index, i;
+    int len, index, i, j;
     init_get_bits(&s->gb, buf, buf_size);
 
     len = get_bits(&s->gb, 16);
@@ -504,8 +506,10 @@ static int mjpeg_decode_dqt(MJpegDecodeContext *s,
             return -1;
         dprintf("index=%d\n", index);
         /* read quant table */
-        for(i=0;i<64;i++)
-            s->quant_matrixes[index][i] = get_bits(&s->gb, 8);
+        for(i=0;i<64;i++) {
+            j = zigzag_direct[i];
+            s->quant_matrixes[index][j] = get_bits(&s->gb, 8);
+        }
         len -= 65;
     }
     return 0;
