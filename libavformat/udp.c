@@ -116,6 +116,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     h->priv_data = s;
     s->ttl = 16;
     s->is_multicast = 0;
+    s->local_port = 0;
     p = strchr(uri, '?');
     if (p) {
         s->is_multicast = find_info_tag(buf, sizeof(buf), "multicast", p);
