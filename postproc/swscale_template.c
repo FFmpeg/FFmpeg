@@ -2557,9 +2557,9 @@ i--;
 	    {
 		int16_t **lumSrcPtr= lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
 		int16_t **chrSrcPtr= chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-		if(isPlanarYUV(dstFormat)) //YV12
+		if(isPlanarYUV(dstFormat) || isGray(dstFormat)) //YV12
 		{
-			if(dstY&1) uDest=vDest= NULL;
+			if((dstY&1) || isGray(dstFormat)) uDest=vDest= NULL;
 			yuv2yuvXinC(
 				vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
 				vChrFilter+chrDstY*vChrFilterSize, chrSrcPtr, vChrFilterSize,
