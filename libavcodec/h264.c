@@ -3152,7 +3152,7 @@ static void implicit_weight_table(H264Context *h){
     for(ref0=0; ref0 < h->ref_count[0]; ref0++){
         int poc0 = h->ref_list[0][ref0].poc;
         for(ref1=0; ref1 < h->ref_count[1]; ref1++){
-            int poc1 = h->ref_list[0][ref1].poc;
+            int poc1 = h->ref_list[1][ref1].poc;
             int td = clip(poc1 - poc0, -128, 127);
             if(td){
                 int tb = clip(cur_poc - poc0, -128, 127);
