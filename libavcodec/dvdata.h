@@ -37,6 +37,7 @@ typedef struct DVprofile {
     int              ltc_divisor;         /* FPS from the LTS standpoint */
     int              height;              /* picture height in pixels */
     int              width;               /* picture width in pixels */
+    AVRational       sar[2];              /* sample aspect ratios for 4:3 and 16:9 */
     const uint16_t  *video_place;         /* positions of all DV macro blocks */
     enum PixelFormat pix_fmt;             /* picture pixel format */
     
@@ -1293,6 +1294,7 @@ static const DVprofile dv_profiles[] = {
       .frame_rate_base = 1001,
       .height = 480,
       .width = 720,
+      .sar = {{72, 79}, {96, 79}},
       .video_place = dv_place_411,
       .pix_fmt = PIX_FMT_YUV411P,
       .audio_stride = 90,
@@ -1308,6 +1310,7 @@ static const DVprofile dv_profiles[] = {
       .ltc_divisor = 25,
       .height = 576,
       .width = 720,
+      .sar = {{128, 117}, {512, 351}},
       .video_place = dv_place_420,
       .pix_fmt = PIX_FMT_YUV420P,
       .audio_stride = 108,
@@ -1323,6 +1326,7 @@ static const DVprofile dv_profiles[] = {
       .ltc_divisor = 25,
       .height = 576,
       .width = 720,
+      .sar = {{128, 117}, {512, 351}},
       .video_place = dv_place_411P,
       .pix_fmt = PIX_FMT_YUV411P,
       .audio_stride = 108,

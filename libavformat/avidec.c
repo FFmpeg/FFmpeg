@@ -33,7 +33,7 @@ typedef struct {
     int64_t  movi_end;
     offset_t movi_list;
     AVIIndex *first, *last;
-    void* dv_demux;
+    DVDemuxContext* dv_demux;
 } AVIContext;
 
 #ifdef DEBUG
@@ -140,11 +140,16 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	            handler != MKTAG('d', 'v', 'h', 'd') &&
 		    handler != MKTAG('d', 'v', 's', 'l'))
 	           goto fail;
-
-	        avi->dv_demux = dv_init_demux(s, stream_index, stream_index + 1);
+                
+		av_freep(&s->streams[0]->codec.extradata);
+		av_freep(&s->streams[0]);
+		s->nb_streams = 0;
+	        avi->dv_demux = dv_init_demux(s);
 		if (!avi->dv_demux)
 		    goto fail;
-	        stream_index++;
+	        stream_index = s->nb_streams - 1;
+		url_fskip(pb, size - 8);
+		break;
 	    case MKTAG('v', 'i', 'd', 's'):
                 codec_type = CODEC_TYPE_VIDEO;
 

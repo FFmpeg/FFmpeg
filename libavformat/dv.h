@@ -22,11 +22,13 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
-void* dv_init_demux(AVFormatContext *s, int vid, int aid);
-int dv_get_packet(void*, AVPacket *);
-int dv_produce_packet(void*, AVPacket*, uint8_t*, int);
 
-void* dv_init_mux(AVFormatContext* s);
-int dv_assemble_frame(void *c, AVStream*, const uint8_t*, int, uint8_t**);
-void dv_delete_mux(void*);
+typedef struct DVDemuxContext DVDemuxContext;
+DVDemuxContext* dv_init_demux(AVFormatContext* s);
+int dv_get_packet(DVDemuxContext*, AVPacket *);
+int dv_produce_packet(DVDemuxContext*, AVPacket*, uint8_t*, int);
+
+typedef struct DVMuxContext DVMuxContext;
+DVMuxContext* dv_init_mux(AVFormatContext* s);
+int dv_assemble_frame(DVMuxContext *c, AVStream*, const uint8_t*, int, uint8_t**);
+void dv_delete_mux(DVMuxContext*);

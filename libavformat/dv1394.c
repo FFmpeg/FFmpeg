@@ -45,7 +45,7 @@ struct dv1394_data {
 
     int64_t pts;  /* Current timestamp */
 
-    void* dv_demux; /* Generic DV muxing/demuxing context */
+    DVDemuxContext* dv_demux; /* Generic DV muxing/demuxing context */
 };
 
 /* 
@@ -85,7 +85,7 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
     struct dv1394_data *dv = context->priv_data;
     const char *video_device;
 
-    dv->dv_demux = dv_init_demux(context, 0, 1);
+    dv->dv_demux = dv_init_demux(context);
     if (!dv->dv_demux)
         goto failed;
 

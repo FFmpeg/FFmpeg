@@ -2542,6 +2542,12 @@ static void prepare_grab(void)
             fprintf(stderr, "Could not find video grab device\n");
             exit(1);
         }
+        /* If not enough info to get the stream parameters, we decode the
+           first frames to get it. */
+	if ((ic->ctx_flags & AVFMTCTX_NOHEADER) && av_find_stream_info(ic) < 0) {
+            fprintf(stderr, "Could not find video grab parameters\n");
+            exit(1);
+        }
         /* by now video grab has one stream */
         ic->streams[0]->r_frame_rate      = vp->frame_rate;
         ic->streams[0]->r_frame_rate_base = vp->frame_rate_base;
