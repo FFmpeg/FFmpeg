@@ -1843,19 +1843,18 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         ff_er_frame_start(s);
 
         /* first check if we must repeat the frame */
-        s->current_picture.repeat_pict = 0;
-
+        s->current_picture_ptr->repeat_pict = 0;
         if (s->repeat_first_field) {
             if (s->progressive_sequence) {
                 if (s->top_field_first)
-                    s->current_picture.repeat_pict = 4;
+                    s->current_picture_ptr->repeat_pict = 4;
                 else
-                    s->current_picture.repeat_pict = 2;
+                    s->current_picture_ptr->repeat_pict = 2;
             } else if (s->progressive_frame) {
-                s->current_picture.repeat_pict = 1;
+                s->current_picture_ptr->repeat_pict = 1;
             }
         }         
-//        printf("%d \n", s->current_picture.repeat_pict);
+        //printf("%d\n", s->current_picture_ptr->repeat_pict);
 
         if(s->avctx->debug&FF_DEBUG_PICT_INFO){
              printf("qp:%d fc:%2d%2d%2d%2d %s %s %s %s dc:%d pstruct:%d fdct:%d cmv:%d qtype:%d ivlc:%d rff:%d %s\n", 
