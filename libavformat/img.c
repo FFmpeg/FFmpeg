@@ -38,6 +38,11 @@ extern AVInputFormat ppmpipe_iformat;
 extern AVOutputFormat ppmpipe_oformat;
 extern AVOutputFormat yuv4mpegpipe_oformat;
 
+#ifdef __MINGW32__
+#  include <windows.h>
+#  define usleep(t)	Sleep((t) / 1000)
+#endif
+
 #define IMGFMT_YUV     1
 #define IMGFMT_PGMYUV  2
 #define IMGFMT_PGM     3

@@ -354,12 +354,14 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     }
         
     /* XXX: suppress this hack for redirectors */
+#ifndef __MINGW32__
     if (fmt == &redir_demux) {
         err = redir_open(ic_ptr, &ic->pb);
         url_fclose(&ic->pb);
         av_free(ic);
         return err;
     }
+#endif
 
     ic->iformat = fmt;
 
