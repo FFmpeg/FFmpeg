@@ -57,7 +57,7 @@ typedef struct HYuvContext{
     int flags;
     int picture_number;
     int last_slice_end;
-    uint8_t __align8 temp[3][2500];
+    uint8_t __align8 temp[3][2560];
     uint64_t stats[3][256];
     uint8_t len[3][256];
     uint32_t bits[3][256];
