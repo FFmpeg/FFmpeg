@@ -1151,6 +1151,8 @@ alloc:
             return -1;
 
         s->current_picture_ptr= (Picture*)pic;
+        s->current_picture_ptr->top_field_first= s->top_field_first; //FIXME use only the vars from current_pic
+        s->current_picture_ptr->interlaced_frame= !s->progressive_frame;
     }
 
     s->current_picture_ptr->pict_type= s->pict_type;
