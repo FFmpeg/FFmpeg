@@ -12,6 +12,11 @@ else
   diff_cmd="diff"
 fi
 
+diff -w $0 $0 > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  diff_cmd="$diff_cmd -w"
+fi
+
 set -e
 
 datadir="./data"
