@@ -1928,8 +1928,6 @@ void h263_encode_init(MpegEncContext *s)
     case CODEC_ID_H263P:
         if(s->umvplus)
             s->fcode_tab= umv_fcode_tab;
-        else
-            s->fcode_tab= fcode_tab;
         if(s->modified_quant){
             s->min_qcoeff= -2047;
             s->max_qcoeff=  2047;
