@@ -7,7 +7,8 @@ include config.mak
 VPATH=$(SRC_PATH)
 
 CFLAGS= $(OPTFLAGS) -Wall -g -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libav -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
-LDFLAGS= -g
+LDFLAGS+= -g -Wl,--warn-common
+
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
 LDFLAGS+=-p
@@ -40,13 +41,16 @@ lib:
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libav all
 
-ffmpeg$(EXE): ffmpeg.o $(DEP_LIBS)
+ffmpeg_g$(EXE): ffmpeg.o $(DEP_LIBS)
 	$(CC) $(LDFLAGS) -o $@ ffmpeg.o -L./libavcodec -L./libav \
               -lavformat -lavcodec $(EXTRALIBS)
 
+ffmpeg$(EXE): ffmpeg_g$(EXE)
+	$(STRIP) -o $@ $<
+
 ffserver$(EXE): ffserver.o $(DEP_LIBS)
-	$(CC) $(LDFLAGS) -o $@ ffserver.o -L./libavcodec -L./libav \
-              -lavformat -lavcodec $(EXTRALIBS)
+	$(CC) $(LDFLAGS) -Wl,-E -o $@ ffserver.o -L./libavcodec -L./libav \
+              -lavformat -lavcodec -ldl $(EXTRALIBS) 
 
 ffplay: ffmpeg$(EXE)
 	ln -sf $< $@
@@ -59,6 +63,10 @@ install: all
 	install -s -m 755 $(PROG) $(prefix)/bin
 	ln -sf ffmpeg $(prefix)/bin/ffplay 
 
+installlib:
+	$(MAKE) -C libavcodec installlib
+	$(MAKE) -C libav installlib
+
 dep:	depend
 
 depend:
@@ -68,7 +76,7 @@ clean:
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libav clean
 	$(MAKE) -C tests clean
-	rm -f *.o *~ .depend gmon.out TAGS $(PROG) 
+	rm -f *.o *~ .depend gmon.out TAGS ffmpeg_g$(EXE) $(PROG) 
 
 distclean: clean
 	$(MAKE) -C libavcodec distclean
