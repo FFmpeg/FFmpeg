@@ -9,7 +9,7 @@ ffmpeg regression test
 3ed8e11a8a8147c3e7d736593fccae79 *./data/out.yuv
 abe11239875a32f00fa2910828bba4fb *./data/a-h263.avi
 c1f6c8ee7a24d8345deddf1a24ca3756 *./data/out.yuv
-704ea824cf548831fa03efd064114c25 *./data/a-odivx.avi
+ca763dce433d2abc0f6176d36cbb971b *./data/a-odivx.avi
 145c98a175e760f8ba1997edf15b2964 *./data/out.yuv
 3ad5ac82d92157d2483ab007fb0a8881 *./data/a-mjpeg.avi
 278033451d7a6bfeb8339abbe4228499 *./data/out.yuv
