@@ -50,6 +50,10 @@ EXTRALIBS += -lfaad
 endif
 endif
 
+ifeq ($(CONFIG_FAAC),yes)
+EXTRALIBS+=-lfaac
+endif
+
 ifeq ($(BUILD_VHOOK),yes)
 VHOOK=videohook
 INSTALLVHOOK=install-vhook

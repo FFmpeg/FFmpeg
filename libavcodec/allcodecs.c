@@ -49,6 +49,9 @@ void avcodec_register_all(void)
     register_avcodec(&oggvorbis_encoder);
     register_avcodec(&oggvorbis_decoder);
 #endif
+#ifdef CONFIG_FAAC
+    register_avcodec(&faac_encoder);
+#endif
     register_avcodec(&mpeg1video_encoder);
 //    register_avcodec(&h264_encoder);
 #ifdef CONFIG_RISKY

@@ -72,6 +72,11 @@ EXTRALIBS += -lfaad
 endif
 endif
 
+ifeq ($(CONFIG_FAAC),yes)
+OBJS+= faac.o
+EXTRALIBS += -lfaac
+endif
+
 ifeq ($(CONFIG_PP),yes)
 ifeq ($(SHARED_PP),yes)
 EXTRALIBS += -lpostproc
