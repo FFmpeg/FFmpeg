@@ -1248,8 +1248,10 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                             if(ost->st->codec.codec_type == CODEC_TYPE_AUDIO)
                                 audio_size += data_size;
-                            else if (ost->st->codec.codec_type == CODEC_TYPE_VIDEO)
+                            else if (ost->st->codec.codec_type == CODEC_TYPE_VIDEO) {
                                 video_size += data_size;
+                                ost->sync_opts++;
+                            }
 
                             opkt.stream_index= ost->index;
                             opkt.data= data_buf;
