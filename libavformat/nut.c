@@ -1,5 +1,5 @@
 /*
- * NUT (de)muxer based on initial draft
+ * "NUT" Container Format muxer and demuxer (DRAFT-20031003)
  * Copyright (c) 2003 Alex Beregszaszi
  *
  * This library is free software; you can redistribute it and/or
@@ -18,19 +18,18 @@
  *
  * NUT DRAFT can be found in MPlayer CVS at DOCS/tech/mpcf.txt
  *
- * Compatible with draft version 20030906
+ * AND http://people.fsn.hu/~alex/nut/ (TeX, pdf, ps, dvi, ..)
  *
  */
 
 /*
  * TODO:
  * - checksumming
- * - correct timestamp handling
+ * - optimal timestamp handling
  * - index writing
  * - info and index packet reading support
  * - startcode searching for broken streams
  * - subpacket support
- * - handling of codec specific headers
 */
 
 //#define DEBUG 1
@@ -92,8 +91,7 @@ static int get_b(ByteIOContext *bc, char *data, int maxlen)
     for (i = 0; i < len && i < maxlen; i++)
 	data[i] = get_byte(bc);
     /* skip remaining bytes */
-    for (; i < len; i++)
-        get_byte(bc);
+    url_fskip(bc, len-i);
 
     return 0;
 }
@@ -106,8 +104,7 @@ static int get_bi(ByteIOContext *bc)
     for (i = 0; i < len && i <= 4; i++)
         val |= get_byte(bc) << (i * 8);
     /* skip remaining bytes */
-    for (; i < len; i++)
-        get_byte(bc);
+    url_fskip(bc, len-i);
 
     return val;
 }
@@ -474,8 +471,10 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	get_v(bc); /* FIXME: msb timestamp base */
 	get_v(bc); /* shuffle type */
 	get_byte(bc); /* flags */
-	
-	get_v(bc); /* FIXME: codec specific data headers */
+
+	/* codec specific data headers */
+	while(get_v(bc) != 0)
+	    url_fskip(bc, get_v(bc));
 	
 	if (class == 0) /* VIDEO */
 	{
