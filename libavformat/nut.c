@@ -25,7 +25,6 @@
 /*
  * TODO:
  * - checksumming
- * - correct rate denom/nom and sample_mul
  * - correct timestamp handling
  * - index writing
  * - info and index packet reading support
@@ -240,6 +239,8 @@ static int nut_write_header(AVFormatContext *s)
     /* stream headers */
     for (i = 0; i < s->nb_streams; i++)
     {
+	int nom, denom;
+
 	codec = &s->streams[i]->codec;
 	
 	put_be64(bc, STREAM_STARTCODE);
@@ -252,17 +253,21 @@ static int nut_write_header(AVFormatContext *s)
 	{
 	    int tmp = codec_get_bmp_tag(codec->codec_id);
 	    put_bi(bc, tmp);
+	    nom = codec->frame_rate;
+	    denom = codec->frame_rate_base;
 	}
 	else if (codec->codec_type == CODEC_TYPE_AUDIO)
 	{
 	    int tmp = codec_get_wav_tag(codec->codec_id);
 	    put_bi(bc, tmp);
+	    nom = codec->sample_rate/8;
+	    denom = 8;
 	}
 	put_v(bc, codec->bit_rate);
 	put_v(bc, 0); /* no language code */
-	put_v(bc, codec->frame_rate_base);
-	put_v(bc, codec->frame_rate);
-	put_v(bc, 0); /* timestamp_shift */
+	put_v(bc, nom);
+	put_v(bc, denom);
+	put_v(bc, 0); /* msb timestamp_shift */
 	put_v(bc, 0); /* shuffle type */
 	put_byte(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
 	
@@ -271,7 +276,7 @@ static int nut_write_header(AVFormatContext *s)
 	switch(codec->codec_type)
 	{
 	    case CODEC_TYPE_AUDIO:
-		put_v(bc, codec->sample_rate / (double)(codec->frame_rate_base / codec->frame_rate));
+		put_v(bc, (codec->sample_rate * denom) / nom);
 		put_v(bc, codec->channels);
 		put_be32(bc, 0); /* FIXME: checksum */
 		break;
@@ -432,7 +437,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* stream header */
     for (cur_stream = 0; cur_stream < nb_streams; cur_stream++)
     {
-	int class;
+	int class, nom, denom;
 	AVStream *st;
 	
 	tmp = get_be64(bc);
@@ -464,8 +469,8 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	}
 	s->bit_rate += get_v(bc);
 	get_b(bc, NULL, 0); /* language code */
-	st->codec.frame_rate_base = get_v(bc);
-	st->codec.frame_rate = get_v(bc);
+	nom = get_v(bc);
+	denom = get_v(bc);
 	get_v(bc); /* FIXME: msb timestamp base */
 	get_v(bc); /* shuffle type */
 	get_byte(bc); /* flags */
@@ -480,10 +485,13 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    get_v(bc); /* aspected h */
 	    get_v(bc); /* csp type */
 	    get_be32(bc); /* checksum */
+
+	    st->codec.frame_rate = nom;
+	    st->codec.frame_rate_base = denom;
 	}
 	if (class == 32) /* AUDIO */
 	{
-	    st->codec.sample_rate = get_v(bc) * (double)(st->codec.frame_rate_base / st->codec.frame_rate);
+	    st->codec.sample_rate = (get_v(bc) * nom) / denom;
 	    st->codec.channels = get_v(bc);
 	    get_be32(bc); /* checksum */
 	}
