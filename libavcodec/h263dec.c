@@ -255,17 +255,24 @@ static int decode_slice(MpegEncContext *s){
         
         if(bits_left==0){
             s->padding_bug_score+=16;
-        }else if(bits_left>8){
-            s->padding_bug_score++;
         } else if(bits_left != 1){
             int v= show_bits(&s->gb, 8);
             v|= 0x7F >> (7-(bits_count&7));
 
-            if(v==0x7F)
+            if(v==0x7F && bits_left<=8)
                 s->padding_bug_score--;
+            else if(v==0x7F && ((get_bits_count(&s->gb)+8)&8) && bits_left<=16)
+                s->padding_bug_score+= 4;
             else
                 s->padding_bug_score++;            
         }                          
+    }
+    
+    if(s->workaround_bugs&FF_BUG_AUTODETECT){
+        if(s->padding_bug_score > -2 && !s->data_partitioning && (s->divx_version || !s->resync_marker))
+            s->workaround_bugs |=  FF_BUG_NO_PADDING;
+        else
+            s->workaround_bugs &= ~FF_BUG_NO_PADDING;
     }
 
     // handle formats which dont have unique end markers
@@ -523,11 +530,6 @@ retry:
     }
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
-        s->workaround_bugs &= ~FF_BUG_NO_PADDING;
-        
-        if(s->padding_bug_score > -2 && !s->data_partitioning && (s->divx_version || !s->resync_marker))
-            s->workaround_bugs |=  FF_BUG_NO_PADDING;
-
         if(s->avctx->codec_tag == ff_get_fourcc("XVIX")) 
             s->workaround_bugs|= FF_BUG_XVID_ILACE;
 
