@@ -55,7 +55,8 @@ static void dct_unquantize_h263_mmx(MpegEncContext *s,
         }
         nCoeffs=63;
     } else {
-        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+	nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+        level = 0;/* keep gcc quiet */
     }
 //printf("%d %d  ", qmul, qadd);
 asm volatile(
@@ -507,22 +508,22 @@ void ff_mmxext_idct(DCTELEM *block);
 static void ff_libmpeg2mmx_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
 {
     ff_mmx_idct (block);
-    put_pixels_clamped(block, dest, line_size);
+    put_pixels_clamped_mmx(block, dest, line_size);
 }
 static void ff_libmpeg2mmx_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
 {
     ff_mmx_idct (block);
-    add_pixels_clamped(block, dest, line_size);
+    add_pixels_clamped_mmx(block, dest, line_size);
 }
 static void ff_libmpeg2mmx2_idct_put(UINT8 *dest, int line_size, DCTELEM *block)
 {
     ff_mmxext_idct (block);
-    put_pixels_clamped(block, dest, line_size);
+    put_pixels_clamped_mmx(block, dest, line_size);
 }
 static void ff_libmpeg2mmx2_idct_add(UINT8 *dest, int line_size, DCTELEM *block)
 {
     ff_mmxext_idct (block);
-    add_pixels_clamped(block, dest, line_size);
+    add_pixels_clamped_mmx(block, dest, line_size);
 }
 
 void MPV_common_init_mmx(MpegEncContext *s)
