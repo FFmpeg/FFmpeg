@@ -53,6 +53,7 @@ else
     do_asv2=y
     do_flv=y
     do_ffv1=y
+    do_error=y
 fi
 
 
@@ -240,6 +241,16 @@ file=${outfile}mpeg4-adv.avi
 do_ffmpeg $file -y -qscale 9 -4mv -hq -part -ps 200 -aic -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_error" ] ; then
+# damaged mpeg4
+file=${outfile}error-mpeg4-adv.avi
+do_ffmpeg $file -y -qscale 7 -4mv -mbd 2 -part -ps 250 -error 10 -aic -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+
+# damaged mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
