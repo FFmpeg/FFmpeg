@@ -483,11 +483,11 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 /* -pp Command line Help
 */
 char *pp_help=
-"<filterName>[:<option>[:<option>...]][,[-]<filterName>[:<option>...]]...\n"
+"<filterName>[:<option>[:<option>...]][[,|/][-]<filterName>[:<option>...]]...\n"
 "long form example:\n"
-"vdeblock:autoq,hdeblock:autoq,linblenddeint	default,-vdeblock\n"
+"vdeblock:autoq/hdeblock:autoq/linblenddeint	default,-vdeblock\n"
 "short form example:\n"
-"vb:a,hb:a,lb					de,-vb\n"
+"vb:a/hb:a/lb					de,-vb\n"
 "more examples:\n"
 "tn:64:128:256\n"
 "Filters			Options\n"
@@ -496,8 +496,8 @@ char *pp_help=
 "			c	chrom		chrominance filtring enabled\n"
 "			y	nochrom		chrominance filtring disabled\n"
 "hb	hdeblock	(2 Threshold)		horizontal deblocking filter\n"
-"                        1. Threshold: default=1, higher -> more deblocking\n"
-"                        2. Threshold: default=40, lower -> more deblocking\n"
+"	1. difference factor: default=64, higher -> more deblocking\n"
+"	2. flatness threshold: default=40, lower -> more deblocking\n"
 "			the h & v deblocking filters share these\n"
 "			so u cant set different thresholds for h / v\n"
 "vb	vdeblock	(2 Threshold)		vertical deblocking filter\n"
@@ -537,7 +537,6 @@ pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 	ppMode->maxAllowedY= 234;
 	ppMode->minAllowedY= 16;
 	ppMode->baseDcDiff= 256/4;
-	ppMode->flatnessThreshold=40;
 	ppMode->flatnessThreshold= 56-16;
 	ppMode->maxClippedThreshold= 0.01;
 	ppMode->error=0;
