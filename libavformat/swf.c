@@ -481,6 +481,8 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             get_byte(pb);
             v = get_byte(pb);
             get_le16(pb);
+            if (len!=4)
+                url_fskip(pb,len-4);
             /* if mp3 streaming found, OK */
             if ((v & 0x20) != 0) {
                 st = av_new_stream(s, 0);
