@@ -2833,10 +2833,10 @@ int main(int argc, char **argv)
     av_free_static();
 
     
-#ifdef ALTIVEC_TBL_PERFORMANCE_REPORT
-    extern void altivec_display_perf_report(void);
-    altivec_display_perf_report();
-#endif /* ALTIVEC_TBL_PERFORMANCE_REPORT */
+#ifdef POWERPC_TBL_PERFORMANCE_REPORT
+    extern void powerpc_display_perf_report(void);
+    powerpc_display_perf_report();
+#endif /* POWERPC_TBL_PERFORMANCE_REPORT */
 
     return 0;
 }

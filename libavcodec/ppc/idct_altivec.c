@@ -161,16 +161,16 @@ static const vector_s16_t constants[5] = {
 
 void idct_put_altivec(uint8_t* dest, int stride, vector_s16_t* block)
 {
-ALTIVEC_TBL_DECLARE(altivec_idct_put_num, 1);
+POWERPC_TBL_DECLARE(altivec_idct_put_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
-ALTIVEC_TBL_START_COUNT(altivec_idct_put_num, 1);
+POWERPC_TBL_START_COUNT(altivec_idct_put_num, 1);
     void simple_idct_put(UINT8 *dest, int line_size, INT16 *block);
     simple_idct_put(dest, stride, (INT16*)block);
-ALTIVEC_TBL_STOP_COUNT(altivec_idct_put_num, 1);
+POWERPC_TBL_STOP_COUNT(altivec_idct_put_num, 1);
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
     vector_u8_t tmp;
 
-ALTIVEC_TBL_START_COUNT(altivec_idct_put_num, 1);
+POWERPC_TBL_START_COUNT(altivec_idct_put_num, 1);
 
     IDCT
 
@@ -188,18 +188,18 @@ ALTIVEC_TBL_START_COUNT(altivec_idct_put_num, 1);
     COPY (dest, vx6)	dest += stride;
     COPY (dest, vx7)
 
-ALTIVEC_TBL_STOP_COUNT(altivec_idct_put_num, 1);
+POWERPC_TBL_STOP_COUNT(altivec_idct_put_num, 1);
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 
 void idct_add_altivec(uint8_t* dest, int stride, vector_s16_t* block)
 {
-ALTIVEC_TBL_DECLARE(altivec_idct_add_num, 1);
+POWERPC_TBL_DECLARE(altivec_idct_add_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
-ALTIVEC_TBL_START_COUNT(altivec_idct_add_num, 1);
+POWERPC_TBL_START_COUNT(altivec_idct_add_num, 1);
     void simple_idct_add(UINT8 *dest, int line_size, INT16 *block);
     simple_idct_add(dest, stride, (INT16*)block);
-ALTIVEC_TBL_STOP_COUNT(altivec_idct_add_num, 1);
+POWERPC_TBL_STOP_COUNT(altivec_idct_add_num, 1);
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
     vector_u8_t tmp;
     vector_s16_t tmp2, tmp3;
@@ -207,7 +207,7 @@ ALTIVEC_TBL_STOP_COUNT(altivec_idct_add_num, 1);
     vector_u8_t perm1;
     vector_u8_t p0, p1, p;
 
-ALTIVEC_TBL_START_COUNT(altivec_idct_add_num, 1);
+POWERPC_TBL_START_COUNT(altivec_idct_add_num, 1);
 
     IDCT
 
@@ -235,7 +235,7 @@ ALTIVEC_TBL_START_COUNT(altivec_idct_add_num, 1);
     ADD (dest, vx6, perm0)	dest += stride;
     ADD (dest, vx7, perm1)
 
-ALTIVEC_TBL_STOP_COUNT(altivec_idct_add_num, 1);
+POWERPC_TBL_STOP_COUNT(altivec_idct_add_num, 1);
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 

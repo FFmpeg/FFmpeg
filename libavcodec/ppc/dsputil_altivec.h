@@ -17,6 +17,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef _DSPUTIL_ALTIVEC_
+#define _DSPUTIL_ALTIVEC_
+
+#include "dsputil_ppc.h"
+
+#ifdef HAVE_ALTIVEC
+
 extern int pix_abs16x16_x2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
 extern int pix_abs16x16_y2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
 extern int pix_abs16x16_xy2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
@@ -33,14 +40,14 @@ extern void get_pixels_altivec(DCTELEM* block, const UINT8 * pixels, int line_si
 
 extern void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w);
 extern void put_pixels_clamped_altivec(const DCTELEM *block, UINT8 *restrict pixels, int line_size);
-void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
-void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+extern void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+extern void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
+extern void avg_pixels8_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h);
+extern void put_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 
 extern void gmc1_altivec(UINT8 *dst, UINT8 *src, int stride, int h, int x16, int y16, int rounder);
 
 extern int has_altivec(void);
-
-#ifdef HAVE_ALTIVEC
 
 // used to build registers permutation vectors (vcprm)
 // the 's' are for words in the _s_econd vector
@@ -67,58 +74,10 @@ extern int has_altivec(void);
 
 #define vcii(a,b,c,d) (const vector float)(FLOAT_ ## a, FLOAT_ ## b, FLOAT_ ## c, FLOAT_ ## d)
 
-#ifdef ALTIVEC_TBL_PERFORMANCE_REPORT
-void altivec_display_perf_report(void);
-/* if you add to the enum below, also add to the perfname array
-   in dsputil_altivec.c */
-enum altivec_perf_index {
-  altivec_fft_num = 0,
-  altivec_gmc1_num,
-  altivec_dct_unquantize_h263_num,
-  altivec_idct_add_num,
-  altivec_idct_put_num,
-  altivec_put_pixels_clamped_num,
-  altivec_put_pixels16_num,
-  altivec_avg_pixels16_num,
-  altivec_perf_total
-};
-enum altivec_data_index {
-  altivec_data_min = 0,
-  altivec_data_max,
-  altivec_data_sum,
-  altivec_data_num,
-  altivec_data_total
-};
-extern unsigned long long perfdata[altivec_perf_total][altivec_data_total];
-#define ALTIVEC_TBL_DECLARE(a, cond) register unsigned long tbl_start, tbl_stop
-#define ALTIVEC_TBL_START_COUNT(a, cond) do { asm("mftb %0" : "=r" (tbl_start)); } while (0)
-#define ALTIVEC_TBL_STOP_COUNT(a, cond) do {     \
-  asm volatile("mftb %0" : "=r" (tbl_stop));              \
-  if (tbl_stop > tbl_start)                      \
-  {                                              \
-    unsigned long diff =  tbl_stop - tbl_start;  \
-    if (cond)                                    \
-    {                                            \
-      if (diff < perfdata[a][altivec_data_min])  \
-        perfdata[a][altivec_data_min] = diff;    \
-      if (diff > perfdata[a][altivec_data_max])  \
-        perfdata[a][altivec_data_max] = diff;    \
-      perfdata[a][altivec_data_sum] += diff;     \
-      perfdata[a][altivec_data_num] ++;          \
-    }                                            \
-  }                                              \
-} while (0)
-#else /* ALTIVEC_TBL_PERFORMANCE_REPORT */
-#define ALTIVEC_TBL_DECLARE(a, cond)
-#define ALTIVEC_TBL_START_COUNT(a, cond)
-#define ALTIVEC_TBL_STOP_COUNT(a, cond)
-#endif /* ALTIVEC_TBL_PERFORMANCE_REPORT */
-
 #else /* HAVE_ALTIVEC */
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
 #error "I can't use ALTIVEC_USE_REFERENCE_C_CODE if I don't use HAVE_ALTIVEC"
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
-#ifdef ALTIVEC_TBL_PERFORMANCE_REPORT
-#error "I can't use ALTIVEC_TBL_PERFORMANCE_REPORT if I don't use HAVE_ALTIVEC"
-#endif /* ALTIVEC_TBL_PERFORMANCE_REPORT */
 #endif /* HAVE_ALTIVEC */
+
+#endif /* _DSPUTIL_ALTIVEC_ */

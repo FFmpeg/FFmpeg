@@ -621,6 +621,10 @@ elif test "$cpu" = "sparc64" ; then
 elif test "$cpu" = "powerpc" ; then
   echo "TARGET_ARCH_POWERPC=yes" >> config.mak
   echo "#define ARCH_POWERPC 1" >> $TMPH
+  echo "// Enable the next line to get PowerPC performance report" >> $TMPH
+  echo "// #define POWERPC_TBL_PERFORMANCE_REPORT 1" >> $TMPH
+  echo "// Enable the next line to use PMC registers instead of TBL" >> $TMPH
+  echo "// #define POWERPC_PERF_USE_PMC 1" >> $TMPH
 elif test "$cpu" = "mips" ; then
   echo "TARGET_ARCH_MIPS=yes" >> config.mak
   echo "#define ARCH_MIPS 1" >> $TMPH
@@ -644,8 +648,6 @@ fi
 if test "$altivec" = "yes" ; then
   echo "TARGET_ALTIVEC=yes" >> config.mak
   echo "#define HAVE_ALTIVEC 1" >> $TMPH
-  echo "// Enable the next line to get AltiVec performance report" >> $TMPH
-  echo "// #define ALTIVEC_TBL_PERFORMANCE_REPORT 1" >> $TMPH
   echo "// Enable the next line to use the reference C code instead of AltiVec" >> $TMPH
   echo "// #define ALTIVEC_USE_REFERENCE_C_CODE 1" >> $TMPH
 fi
