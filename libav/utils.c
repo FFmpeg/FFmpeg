@@ -734,7 +734,7 @@ int av_write_header(AVFormatContext *s)
  * @param stream_index stream index
  * @param buf buffer containing the frame data
  * @param size size of buffer
- * @return non zero if error.
+ * @return < 0 if error, = 0 if OK, 1 if end of stream wanted.
  */
 int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf, 
                    int size)
@@ -763,7 +763,7 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
     default:
         break;
     }
-    return 0;
+    return ret;
 }
 
 /**
