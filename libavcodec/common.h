@@ -36,6 +36,12 @@
 #define restrict
 #endif
 
+#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#define always_inline __attribute__((always_inline)) inline
+#else
+#define always_inline inline
+#endif
+
 #ifdef CONFIG_WIN32
 
 /* windows */
@@ -798,7 +804,8 @@ static inline int get_vlc(GetBitContext *s, VLC *vlc)
     return code;
 }
 
-static inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2], int bits, int max_depth)
+static always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
+                                  int bits, int max_depth)
 {
     int code;
     
