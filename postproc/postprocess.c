@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001 Michael Niedermayer (michaelni@gmx.at)
+    Copyright (C) 2001-2002 Michael Niedermayer (michaelni@gmx.at)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -175,6 +175,7 @@ static struct PPFilter filters[]=
 	{"ci", "cubicipoldeint",	1, 1, 4, CUBIC_IPOL_DEINT_FILTER},
 	{"md", "mediandeint", 		1, 1, 4, MEDIAN_DEINT_FILTER},
 	{"tn", "tmpnoise", 		1, 7, 8, TEMP_NOISE_FILTER},
+	{"fq", "forcequant", 		1, 0, 0, FORCE_QUANT},
 	{NULL, NULL,0,0,0,0} //End Marker
 };
 
@@ -561,6 +562,7 @@ de	default					hdeblock:a,vdeblock:a,dering:a,autolevels
 fa	fast					x1hdeblock:a,x1vdeblock:a,dering:a,autolevels
 tn	tmpnoise	(3 Thresholds)		Temporal Noise Reducer
 			1. <= 2. <= 3. Threshold, larger means stronger filtering
+fq	forceQuant	<quantizer>		Force quantizer (for reencoded lq stuff)
 */
 
 /**
@@ -720,6 +722,21 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 						     vFlatnessThreshold= val;
 					}
 				}
+				else if(filters[i].mask == FORCE_QUANT)
+				{
+					int o;
+					ppMode.forcedQuant= 15;
+
+					for(o=0; options[o]!=NULL && o<1; o++)
+					{
+						char *tail;
+						int val= strtol(options[o], &tail, 0);
+						if(tail==options[o]) break;
+
+						numOfUnknownOptions--;
+						ppMode.forcedQuant= val;
+					}
+				}
 			}
 		}
 		if(!filterNameOk) ppMode.error++;
@@ -775,7 +792,7 @@ void  postprocess(unsigned char * src[], int src_stride,
 	if(newPPFlag)
 	{
 		ppMode= gPPMode[mode];
-		
+//		printf("%d \n",QP_store[5]);
 		postprocess2(src, src_stride, dst, dst_stride,
 			horizontal_size, vertical_size, QP_store, QP_stride, &ppMode);
 
@@ -850,11 +867,16 @@ void  postprocess2(unsigned char * src[], int src_stride,
 		 struct PPMode *mode)
 {
 
-	static QP_STORE_T zeroArray[2048/8];
-	if(QP_store==NULL)
+	QP_STORE_T quantArray[2048/8];
+	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)) 
 	{
-		QP_store= zeroArray;
+		int i;
+		QP_store= quantArray;
 		QP_stride= 0;
+		if(mode->lumMode & FORCE_QUANT)
+			for(i=0; i<2048/8; i++) quantArray[i]= mode->forcedQuant;
+		else
+			for(i=0; i<2048/8; i++) quantArray[i]= 1;
 	}
 
 #ifdef HAVE_ODIVX_POSTPROCESS

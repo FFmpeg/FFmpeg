@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001 Michael Niedermayer (michaelni@gmx.at)
+    Copyright (C) 2001-2002 Michael Niedermayer (michaelni@gmx.at)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -57,6 +57,7 @@
 #define	MEDIAN_DEINT_FILTER		0x80000	// 524288
 
 #define TEMP_NOISE_FILTER		0x100000
+#define FORCE_QUANT			0x200000
 
 
 #define GET_PP_QUALITY_MAX 6
@@ -87,6 +88,7 @@ struct PPMode{
 	int maxTmpNoise[3]; // for Temporal Noise Reducing filter (Maximal sum of abs differences)
 	
 	int maxDcDiff; // max abs diff between pixels to be considered flat
+	int forcedQuant; // quantizer if FORCE_QUANT is used
 };
 
 struct PPFilter{
