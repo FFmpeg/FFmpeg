@@ -152,6 +152,7 @@ typedef struct AVCodecContext {
 #define FF_ASPECT_4_3_525 3
 #define FF_ASPECT_16_9_625 4
 #define FF_ASPECT_16_9_525 5
+#define FF_ASPECT_EXTENDED 15
     int gop_size; /* 0 = intra only */
     enum PixelFormat pix_fmt;  /* pixel format, see PIX_FMT_xxx */
     int repeat_pict; /* when decoding, this signal how much the picture */
@@ -304,6 +305,9 @@ typedef struct AVCodecContext {
     float i_quant_offset;/* qscale offset between i and p frames */
     float rc_initial_cplx;
 
+    int aspected_width;
+    int aspected_height;
+
     //FIXME this should be reordered after kabis API is finished ...
     //TODO kill kabi
     /*
@@ -334,7 +338,7 @@ typedef struct AVCodecContext {
 	    uc_res6,uc_res7,uc_res8,uc_res9,uc_res10,uc_res11,uc_res12;
     unsigned int
 	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5,ui_res6,ui_res7,ui_res8,ui_res9,
-	    ui_res10,ui_res11,ui_res12,ui_res13,ui_res14,ui_res15,ui_res16,ui_res17,ui_res18,ui_res19;
+	    ui_res10,ui_res11,ui_res12,ui_res13,ui_res14,ui_res15,ui_res16,ui_res17;
 } AVCodecContext;
 
 typedef struct AVCodec {

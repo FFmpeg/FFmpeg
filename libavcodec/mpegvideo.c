@@ -382,6 +382,11 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->qblur= avctx->qblur;
     s->avctx = avctx;
     s->aspect_ratio_info= avctx->aspect_ratio_info;
+    if (avctx->aspect_ratio_info == FF_ASPECT_EXTENDED)
+    {
+	s->aspected_width = avctx->aspected_width;
+	s->aspected_height = avctx->aspected_height;
+    }
     s->flags= avctx->flags;
     s->max_b_frames= avctx->max_b_frames;
     s->b_frame_strategy= avctx->b_frame_strategy;

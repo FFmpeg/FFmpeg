@@ -360,6 +360,8 @@ typedef struct MpegEncContext {
     int new_pred;
     int reduced_res_vop;
     int aspect_ratio_info;
+    int aspected_width;
+    int aspected_height;
     int sprite_warping_accuracy;
     int low_latency_sprite;
     int data_partitioning;
@@ -415,7 +417,6 @@ typedef struct MpegEncContext {
     /* [mb_intra][isChroma][level][run][last] */
     int ac_stats[2][2][MAX_LEVEL+1][MAX_RUN+1][2];
     int inter_intra_pred;
-    
 
     /* decompression specific */
     GetBitContext gb;
