@@ -1739,8 +1739,6 @@ static int mov_read_close(AVFormatContext *s)
     MOVContext *mov = (MOVContext *) s->priv_data;
     for(i=0; i<mov->total_streams; i++)
         mov_free_stream_context(mov->streams[i]);
-    for(i=0; i<s->nb_streams; i++)
-	av_freep(&s->streams[i]);
     /* free color tabs */
     for(i=0; i<mov->ctab_size; i++)
 	av_freep(&mov->ctab[i]);
