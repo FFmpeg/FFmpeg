@@ -394,6 +394,9 @@ void avcodec_register_all(void)
 #ifdef CONFIG_ENCODERS
     register_avcodec(&ac3_encoder);
     register_avcodec(&mp2_encoder);
+#ifdef CONFIG_MP3LAME
+    register_avcodec(&mp3lame_encoder);
+#endif
     register_avcodec(&mpeg1video_encoder);
     register_avcodec(&h263_encoder);
     register_avcodec(&h263p_encoder);

@@ -9,6 +9,7 @@ enum CodecID {
     CODEC_ID_H263,
     CODEC_ID_RV10,
     CODEC_ID_MP2,
+    CODEC_ID_MP3LAME,
     CODEC_ID_AC3,
     CODEC_ID_MJPEG,
     CODEC_ID_MPEG4,
@@ -160,6 +161,7 @@ typedef struct AVPicture {
 
 extern AVCodec ac3_encoder;
 extern AVCodec mp2_encoder;
+extern AVCodec mp3lame_encoder;
 extern AVCodec mpeg1video_encoder;
 extern AVCodec h263_encoder;
 extern AVCodec h263p_encoder;
