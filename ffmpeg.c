@@ -46,8 +46,6 @@
 #define INFINITY HUGE_VAL
 #endif
 
-#define MAXINT64 int64_t_C(0x7fffffffffffffff)
-
 /* select an input stream for an output stream */
 typedef struct AVStreamMap {
     int file_index;
