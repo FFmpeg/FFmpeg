@@ -15,10 +15,10 @@ stddev:  4.98 PSNR:34.17 bytes:7602176
 205006 ./data/a-mpeg2i.mpg
 d215d0f3cbbfb687a929ccf2dd1a034a *./data/out.yuv
 stddev:  4.99 PSNR:34.16 bytes:7602176
-1a4cf7d54537d94ad9d042b06ac3da24 *./data/a-mpeg2thread.mpg
-177370 ./data/a-mpeg2thread.mpg
-0df3695c3379b0573bb1b50431170949 *./data/out.yuv
-stddev:  5.58 PSNR:33.18 bytes:7299072
+df6924f747ea4355f9072e7ab0fe776d *./data/a-mpeg2thread.mpg
+184101 ./data/a-mpeg2thread.mpg
+abc276d30f874cb36d2fa113dabc67a8 *./data/out.yuv
+stddev:  4.76 PSNR:34.56 bytes:7602176
 fe0779aa87f6e30c450944c807afb13a *./data/a-msmpeg4v2.avi
 129504 ./data/a-msmpeg4v2.avi
 25b5ba0b024fcd4028e707ffbeb80f55 *./data/out.yuv
@@ -51,34 +51,34 @@ stddev:  5.34 PSNR:33.56 bytes:7602176
 4987020 ./data/a-huffyuv.avi
 dde5895817ad9d219f79a52d0bdfb001 *./data/out.yuv
 stddev:  0.00 PSNR:99.99 bytes:7602176
-f9d5a1e802400461b7186438399f0bb4 *./data/a-mpeg4-rc.avi
-225558 ./data/a-mpeg4-rc.avi
-3ca86bcd34c25ab2d1376f1df5d6f949 *./data/out.yuv
-stddev:  5.18 PSNR:33.83 bytes:7299072
-2a59d75495d025e5d0b9469e15b659ec *./data/a-mpeg4-adv.avi
+ad386d2b05f50bf2b4f922c9970455cb *./data/a-mpeg4-rc.avi
+228092 ./data/a-mpeg4-rc.avi
+764d5da4f1c8eda9bd554179ed1ea283 *./data/out.yuv
+stddev:  4.26 PSNR:35.51 bytes:7602176
+f5e3b1dc7fbfe47fd1354cb620825000 *./data/a-mpeg4-adv.avi
 172538 ./data/a-mpeg4-adv.avi
 49fecc1105d25ff1c2fc9c0d4cb821b0 *./data/out.yuv
 stddev:  4.84 PSNR:34.41 bytes:7602176
-67b2b8a44968fd781ccb6d3e1eabec0b *./data/a-mpeg4-thread.avi
-249118 ./data/a-mpeg4-thread.avi
-7a7fefcea4c4147eb325c4b209c36143 *./data/out.yuv
-stddev:  5.00 PSNR:34.13 bytes:7299072
-2ecc22df666cbf8f188489c4e0136a19 *./data/a-mpeg4-Q.avi
-160760 ./data/a-mpeg4-Q.avi
-55620e8d62bc55cc994a63d4932c1b47 *./data/out.yuv
-stddev:  5.02 PSNR:34.10 bytes:7299072
-3f334fa234af979bd30142ac0986922d *./data/a-error-mpeg4-adv.avi
+04f280768c952362c366a711f0648b7a *./data/a-mpeg4-thread.avi
+253092 ./data/a-mpeg4-thread.avi
+da1a5a3301ad2bdf5806a51ffa74d4fb *./data/out.yuv
+stddev:  4.06 PSNR:35.93 bytes:7602176
+7e6d45149272eee543612f117af6e61a *./data/a-mpeg4-Q.avi
+165012 ./data/a-mpeg4-Q.avi
+94d8bd3897ac20bb3bef9cf384f9abd0 *./data/out.yuv
+stddev:  4.01 PSNR:36.05 bytes:7602176
+24f27c7781eb2d4f644f031d3f852686 *./data/a-error-mpeg4-adv.avi
 175778 ./data/a-error-mpeg4-adv.avi
 62106b2ae4c1cfc985face2dadb90cbc *./data/out.yuv
 stddev: 10.05 PSNR:28.08 bytes:7602176
-0c9873e9bc6077f8ab01583ff900c715 *./data/a-mpeg4-nr.avi
+ae0d93b0d0f34403aac369f9fcfc522b *./data/a-mpeg4-nr.avi
 154392 ./data/a-mpeg4-nr.avi
 33a6f702049ef4e074c6266b9d17d3e9 *./data/out.yuv
 stddev:  4.73 PSNR:34.61 bytes:7602176
-843ea53e2731a9562959b685693679bd *./data/a-mpeg1b.mpg
-218567 ./data/a-mpeg1b.mpg
-001fa1424491dbb19e454db40e38908f *./data/out.yuv
-stddev:  5.94 PSNR:32.64 bytes:7145472
+5ebacda3ae827549f7df10ce0361f617 *./data/a-mpeg1b.mpg
+231306 ./data/a-mpeg1b.mpg
+c665bd56f8e241f8bf3a5a8f803227c3 *./data/out.yuv
+stddev:  4.13 PSNR:35.78 bytes:7602176
 e9218a1db885fe0262e88f9df630307d *./data/a-mjpeg.avi
 635218 ./data/a-mjpeg.avi
 a365b4da246ad68caf96b702b7f961a1 *./data/out.yuv
@@ -112,20 +112,20 @@ a9d289b2272969b7d59dcf7f8cfa5fc5 *./data/a-svq1.mov
 fc35c02e4d3b27f2a83d8fcebaa6ab1b *./data/out.yuv
 stddev:  2.89 PSNR:38.90 bytes:7602176
 21f8ff9f1daacd9133683bb4ea0f50a4 *./data/a-mp2.mp2
-  95712 ./data/a-mp2.mp2
+95712 ./data/a-mp2.mp2
 624d9789f3ac193bbae4af3bd8cb02b7 *./data/out.wav
 1055278 ./data/out.wav
 d056da679e6d6682812fffb28a7f0db6 *./data/a-ac3.rm
-  97983 ./data/a-ac3.rm
+97983 ./data/a-ac3.rm
 ca36e726f055dbd45c217db6e240a15c *./data/a-g726.wav
 24332 ./data/a-g726.wav
 0d06dca7464958b5ee7798e6eab3c6cd *./data/out.wav
 97190 ./data/out.wav
 bdc512b78e2ccb1d815aec08794650eb *./data/a-adpcm_ima.wav
- 266288 ./data/a-adpcm_ima.wav
+266288 ./data/a-adpcm_ima.wav
 449ec3854e8b09982302f92ea9cd47ca *./data/out.wav
 1056686 ./data/out.wav
 5ac5a5ffd680d7880dfb1dd069851691 *./data/a-adpcm_ms.wav
- 267310 ./data/a-adpcm_ms.wav
+267310 ./data/a-adpcm_ms.wav
 e4276587e9ffef41a007ac4c12d3fad2 *./data/out.wav
 1056574 ./data/out.wav
