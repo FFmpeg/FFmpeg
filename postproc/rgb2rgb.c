@@ -20,6 +20,8 @@
 #define FAST_BGR2YV12 // use 7 bit coeffs instead of 15bit
 
 #ifdef CAN_COMPILE_X86_ASM
+static const uint64_t mmx_null  __attribute__((aligned(8))) = 0x0000000000000000ULL;
+static const uint64_t mmx_one   __attribute__((aligned(8))) = 0xFFFFFFFFFFFFFFFFULL;
 static const uint64_t mask32b  __attribute__((aligned(8))) = 0x000000FF000000FFULL;
 static const uint64_t mask32g  __attribute__((aligned(8))) = 0x0000FF000000FF00ULL;
 static const uint64_t mask32r  __attribute__((aligned(8))) = 0x00FF000000FF0000ULL;
@@ -35,6 +37,11 @@ static const uint64_t mask24hhhh  __attribute__((aligned(8))) = 0xffffffffffff00
 static const uint64_t mask15b  __attribute__((aligned(8))) = 0x001F001F001F001FULL; /* 00000000 00011111  xxB */
 static const uint64_t mask15rg __attribute__((aligned(8))) = 0x7FE07FE07FE07FE0ULL; /* 01111111 11100000  RGx */
 static const uint64_t mask15s  __attribute__((aligned(8))) = 0xFFE0FFE0FFE0FFE0ULL;
+static const uint64_t mask15g  __attribute__((aligned(8))) = 0x03E003E003E003E0ULL;
+static const uint64_t mask15r  __attribute__((aligned(8))) = 0x7C007C007C007C00ULL;
+#define mask16b mask15b
+static const uint64_t mask16g  __attribute__((aligned(8))) = 0x07E007E007E007E0ULL;
+static const uint64_t mask16r  __attribute__((aligned(8))) = 0xF800F800F800F800ULL;
 static const uint64_t red_16mask  __attribute__((aligned(8))) = 0x0000f8000000f800ULL;
 static const uint64_t green_16mask __attribute__((aligned(8)))= 0x000007e0000007e0ULL;
 static const uint64_t blue_16mask __attribute__((aligned(8))) = 0x0000001f0000001fULL;
@@ -137,10 +144,68 @@ void rgb24to32(const uint8_t *src,uint8_t *dst,unsigned src_size)
 	else if(gCpuCaps.hasMMX)
 		rgb24to32_MMX(src, dst, src_size);
 	else
-		rgb24to32_C(src, dst, src_size);
-#else
-		rgb24to32_C(src, dst, src_size);
 #endif
+		rgb24to32_C(src, dst, src_size);
+}
+
+void rgb15to24(const uint8_t *src,uint8_t *dst,unsigned src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb15to24_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb15to24_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb15to24_MMX(src, dst, src_size);
+	else
+#endif
+		rgb15to24_C(src, dst, src_size);
+}
+
+void rgb16to24(const uint8_t *src,uint8_t *dst,unsigned src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb16to24_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb16to24_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb16to24_MMX(src, dst, src_size);
+	else
+#endif
+		rgb16to24_C(src, dst, src_size);
+}
+
+void rgb15to32(const uint8_t *src,uint8_t *dst,unsigned src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb15to32_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb15to32_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb15to32_MMX(src, dst, src_size);
+	else
+#endif
+		rgb15to32_C(src, dst, src_size);
+}
+
+void rgb16to32(const uint8_t *src,uint8_t *dst,unsigned src_size)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		rgb16to32_MMX2(src, dst, src_size);
+	else if(gCpuCaps.has3DNow)
+		rgb16to32_3DNow(src, dst, src_size);
+	else if(gCpuCaps.hasMMX)
+		rgb16to32_MMX(src, dst, src_size);
+	else
+#endif
+		rgb16to32_C(src, dst, src_size);
 }
 
 void rgb32to24(const uint8_t *src,uint8_t *dst,unsigned src_size)
@@ -154,10 +219,8 @@ void rgb32to24(const uint8_t *src,uint8_t *dst,unsigned src_size)
 	else if(gCpuCaps.hasMMX)
 		rgb32to24_MMX(src, dst, src_size);
 	else
-		rgb32to24_C(src, dst, src_size);
-#else
-		rgb32to24_C(src, dst, src_size);
 #endif
+		rgb32to24_C(src, dst, src_size);
 }
 
 /*
@@ -177,10 +240,8 @@ void rgb15to16(const uint8_t *src,uint8_t *dst,unsigned src_size)
 	else if(gCpuCaps.hasMMX)
 		rgb15to16_MMX(src, dst, src_size);
 	else
-		rgb15to16_C(src, dst, src_size);
-#else
-		rgb15to16_C(src, dst, src_size);
 #endif
+		rgb15to16_C(src, dst, src_size);
 }
 
 /**
@@ -242,10 +303,8 @@ void rgb32to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 	else if(gCpuCaps.hasMMX)
 		rgb32to16_MMX(src, dst, src_size);
 	else
-		rgb32to16_C(src, dst, src_size);
-#else
-		rgb32to16_C(src, dst, src_size);
 #endif
+		rgb32to16_C(src, dst, src_size);
 }
 
 void rgb32to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
@@ -259,10 +318,8 @@ void rgb32to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 	else if(gCpuCaps.hasMMX)
 		rgb32to15_MMX(src, dst, src_size);
 	else
-		rgb32to15_C(src, dst, src_size);
-#else
-		rgb32to15_C(src, dst, src_size);
 #endif
+		rgb32to15_C(src, dst, src_size);
 }
 
 void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
@@ -276,10 +333,8 @@ void rgb24to16(const uint8_t *src, uint8_t *dst, unsigned src_size)
 	else if(gCpuCaps.hasMMX)
 		rgb24to16_MMX(src, dst, src_size);
 	else
-		rgb24to16_C(src, dst, src_size);
-#else
-		rgb24to16_C(src, dst, src_size);
 #endif
+		rgb24to16_C(src, dst, src_size);
 }
 
 void rgb24to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
@@ -293,10 +348,8 @@ void rgb24to15(const uint8_t *src, uint8_t *dst, unsigned src_size)
 	else if(gCpuCaps.hasMMX)
 		rgb24to15_MMX(src, dst, src_size);
 	else
-		rgb24to15_C(src, dst, src_size);
-#else
-		rgb24to15_C(src, dst, src_size);
 #endif
+		rgb24to15_C(src, dst, src_size);
 }
 
 /**
@@ -330,10 +383,8 @@ void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 	else if(gCpuCaps.hasMMX)
 		rgb32tobgr32_MMX(src, dst, src_size);
 	else
-		rgb32tobgr32_C(src, dst, src_size);
-#else
-		rgb32tobgr32_C(src, dst, src_size);
 #endif
+		rgb32tobgr32_C(src, dst, src_size);
 }
 
 void rgb24tobgr24(const uint8_t *src, uint8_t *dst, unsigned int src_size)
@@ -347,10 +398,8 @@ void rgb24tobgr24(const uint8_t *src, uint8_t *dst, unsigned int src_size)
 	else if(gCpuCaps.hasMMX)
 		rgb24tobgr24_MMX(src, dst, src_size);
 	else
-		rgb24tobgr24_C(src, dst, src_size);
-#else
-		rgb24tobgr24_C(src, dst, src_size);
 #endif
+		rgb24tobgr24_C(src, dst, src_size);
 }
 
 /**
@@ -371,10 +420,8 @@ void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, u
 	else if(gCpuCaps.hasMMX)
 		yv12toyuy2_MMX(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
 	else
-		yv12toyuy2_C(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
-#else
-		yv12toyuy2_C(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
 #endif
+		yv12toyuy2_C(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
 }
 
 /**
@@ -394,10 +441,8 @@ void yuv422ptoyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc
 	else if(gCpuCaps.hasMMX)
 		yuv422ptoyuy2_MMX(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
 	else
-		yuv422ptoyuy2_C(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
-#else
-		yuv422ptoyuy2_C(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
 #endif
+		yuv422ptoyuy2_C(ysrc, usrc, vsrc, dst, width, height, lumStride, chromStride, dstStride);
 }
 
 /**
@@ -418,10 +463,8 @@ void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	else if(gCpuCaps.hasMMX)
 		yuy2toyv12_MMX(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
 	else
-		yuy2toyv12_C(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
-#else
-		yuy2toyv12_C(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
 #endif
+		yuy2toyv12_C(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
 }
 
 /**
@@ -488,14 +531,13 @@ void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst
 	else if(gCpuCaps.hasMMX)
 		rgb24toyv12_MMX(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
 	else
-		rgb24toyv12_C(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
-#else
-		rgb24toyv12_C(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
 #endif
+		rgb24toyv12_C(src, ydst, udst, vdst, width,  height, lumStride, chromStride, srcStride);
 }
 
 void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
-		     int width, int height, int src1Stride, int src2Stride, int dstStride)
+		     unsigned width, unsigned height, unsigned src1Stride,
+		     unsigned src2Stride, unsigned dstStride)
 {
 #ifdef CAN_COMPILE_X86_ASM
 	// ordered per speed fasterst first
@@ -506,8 +548,6 @@ void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
 	else if(gCpuCaps.hasMMX)
 		interleaveBytes_MMX(src1, src2, dst, width, height, src1Stride, src2Stride, dstStride);
 	else
-		interleaveBytes_C(src1, src2, dst, width, height, src1Stride, src2Stride, dstStride);
-#else
-		interleaveBytes_C(src1, src2, dst, width, height, src1Stride, src2Stride, dstStride);
 #endif
+		interleaveBytes_C(src1, src2, dst, width, height, src1Stride, src2Stride, dstStride);
 }

@@ -10,12 +10,16 @@
 #define RGB2RGB_INCLUDED
 
 extern void rgb24to32(const uint8_t *src,uint8_t *dst,unsigned src_size);
-extern void rgb32to24(const uint8_t *src,uint8_t *dst,unsigned src_size);
-extern void rgb15to16(const uint8_t *src,uint8_t *dst,unsigned src_size);
-extern void rgb32to16(const uint8_t *src,uint8_t *dst,unsigned src_size);
-extern void rgb32to15(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb24to16(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb24to15(const uint8_t *src,uint8_t *dst,unsigned src_size);
+extern void rgb32to24(const uint8_t *src,uint8_t *dst,unsigned src_size);
+extern void rgb32to16(const uint8_t *src,uint8_t *dst,unsigned src_size);
+extern void rgb32to15(const uint8_t *src,uint8_t *dst,unsigned src_size);
+extern void rgb15to16(const uint8_t *src,uint8_t *dst,unsigned src_size);
+extern void rgb15to24(const uint8_t *src,uint8_t *dst,unsigned src_size);
+extern void rgb15to32(const uint8_t *src,uint8_t *dst,unsigned src_size);
+extern void rgb16to24(const uint8_t *src,uint8_t *dst,unsigned src_size);
+extern void rgb16to32(const uint8_t *src,uint8_t *dst,unsigned src_size);
 extern void rgb32tobgr32(const uint8_t *src, uint8_t *dst, unsigned src_size);
 extern void rgb24tobgr24(const uint8_t *src, uint8_t *dst, unsigned src_size);
 
@@ -39,7 +43,8 @@ extern void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_
 	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride);
 
 extern void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
-			    int width, int height, int src1Stride, int src2Stride, int dstStride);
+			    unsigned width, unsigned height, unsigned src1Stride,
+			    unsigned src2Stride, unsigned dstStride);
 	
 
 #define MODE_RGB  0x1
@@ -47,11 +52,11 @@ extern void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
 
 typedef void (* yuv2rgb_fun) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
-			      int h_size, int v_size,
-			      int rgb_stride, int y_stride, int uv_stride);
+			      unsigned h_size, unsigned v_size,
+			      unsigned rgb_stride, unsigned y_stride, unsigned uv_stride);
 
 extern yuv2rgb_fun yuv2rgb;
 
-void yuv2rgb_init (int bpp, int mode);
+void yuv2rgb_init (unsigned bpp, int mode);
 
 #endif

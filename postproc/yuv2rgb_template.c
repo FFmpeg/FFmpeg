@@ -123,8 +123,8 @@
 
 static inline void RENAME(yuv420_rgb16) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
-			      int h_size, int v_size,
-			      int rgb_stride, int y_stride, int uv_stride)
+			      unsigned h_size, unsigned v_size,
+			      unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
 {
     int even = 1;
     int x, y;
@@ -228,8 +228,8 @@ YUV2RGB
 
 static inline void RENAME(yuv420_rgb15) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
-			      int h_size, int v_size,
-			      int rgb_stride, int y_stride, int uv_stride)
+			      unsigned h_size, unsigned v_size,
+			      unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
 {
     int even = 1;
     int x, y;
@@ -329,8 +329,8 @@ YUV2RGB
 
 static inline void RENAME(yuv420_rgb24) (uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
-			      int h_size, int v_size,
-			      int rgb_stride, int y_stride, int uv_stride)
+			      unsigned h_size, unsigned v_size,
+			      unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
 {
     int even = 1;
     int x, y;
@@ -488,8 +488,8 @@ YUV2RGB
 
 static inline void RENAME(yuv420_argb32) (uint8_t * image, uint8_t * py,
 			       uint8_t * pu, uint8_t * pv,
-			       int h_size, int v_size,
-			       int rgb_stride, int y_stride, int uv_stride)
+			       unsigned h_size, unsigned v_size,
+			       unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
 {
     int even = 1;
     int x, y;
@@ -584,7 +584,7 @@ YUV2RGB
     __asm__ __volatile__ (EMMS);
 }
 
-yuv2rgb_fun RENAME(yuv2rgb_init) (int bpp, int mode)
+yuv2rgb_fun RENAME(yuv2rgb_init) (unsigned bpp, int mode)
 {
     if (bpp == 15 && mode == MODE_RGB) return RENAME(yuv420_rgb15);
     if (bpp == 16 && mode == MODE_RGB) return RENAME(yuv420_rgb16);

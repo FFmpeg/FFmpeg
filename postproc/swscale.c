@@ -65,6 +65,14 @@ untested special converters
 #include "rgb2rgb.h"
 #include "../libvo/fastmemcpy.h"
 #include "../mp_msg.h"
+
+#define MSG_WARN(args...) mp_msg(MSGT_SWS,MSGL_WARN, ##args )
+#define MSG_FATAL(args...) mp_msg(MSGT_SWS,MSGL_FATAL, ##args )
+#define MSG_ERR(args...) mp_msg(MSGT_SWS,MSGL_ERR, ##args )
+#define MSG_V(args...) mp_msg(MSGT_SWS,MSGL_V, ##args )
+#define MSG_DBG2(args...) mp_msg(MSGT_SWS,MSGL_DBG2, ##args )
+#define MSG_INFO(args...) mp_msg(MSGT_SWS,MSGL_INFO, ##args )
+
 #undef MOVNTQ
 #undef PAVGB
 
@@ -92,19 +100,26 @@ untested special converters
 #endif
 
 //FIXME replace this with something faster
-#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
-#define isYUV(x)       ((x)==IMGFMT_YUY2 || isPlanarYUV(x))
-#define isHalfChrV(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
+#define isBGR(x)       ((x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15)
+#define isRGB(x)       ((x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24|| (x)==IMGFMT_RGB16|| (x)==IMGFMT_RGB15)
+#define isPlanarYUV(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV|| (x)==IMGFMT_YVU9 || (x)==IMGFMT_IF09)
+#define isYUV(x)       (!(isBGR(x) || isRGB(x)))
+#define isHalfChrV(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_IYUV)
 #define isHalfChrH(x)  ((x)==IMGFMT_YUY2 || (x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
-#define isPacked(x)    ((x)==IMGFMT_YUY2 || ((x)&IMGFMT_BGR_MASK)==IMGFMT_BGR || ((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
-#define isGray(x)      ((x)==IMGFMT_Y800)
+#define isPacked(x)    (isYUV(x) && !isPlanarYUV(x))
+#define isGray(x)      ((x)==IMGFMT_Y800) /* Behaviour the same as PACKED but it's PLANAR */
 #define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
 			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
 			|| (x)==IMGFMT_Y800)
 #define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15)
-#define isBGR(x)       ((x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15)
+#define isSupportedUnscaledIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 || (x)==IMGFMT_NV12 \
+			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15\
+			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
+			|| (x)==IMGFMT_Y800)
+#define isSupportedUnscaledOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x) == IMGFMT_YUY2 \
+			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15)
 
 #define RGB2YUV_SHIFT 16
 #define BY ((int)( 0.098*(1<<RGB2YUV_SHIFT)+0.5))
@@ -751,7 +766,6 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		if     (flags&SWS_BICUBIC) filterSize= 4;
 		else if(flags&SWS_X      ) filterSize= 4;
 		else			   filterSize= 2; // SWS_BILINEAR / SWS_AREA 
-//		printf("%d %d %d\n", filterSize, srcW, dstW);
 		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
 
 		xDstInSrc= xInc/2 - 0x8000;
@@ -780,12 +794,10 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 					y4 = (    -1.0*d           + 1.0*d*d*d)/6.0;
 				}
 
-//				printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
 				filter[i*filterSize + 0]= y1;
 				filter[i*filterSize + 1]= y2;
 				filter[i*filterSize + 2]= y3;
 				filter[i*filterSize + 3]= y4;
-//				printf("%1.3f %1.3f %1.3f %1.3f %1.3f\n",d , y1, y2, y3, y4);
 			}
 			else
 			{
@@ -795,7 +807,6 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 					double d= ABS((xx<<16) - xDstInSrc)/(double)(1<<16);
 					double coeff= 1.0 - d;
 					if(coeff<0) coeff=0;
-	//				printf("%d %d %d \n", coeff, (int)d, xDstInSrc);
 					filter[i*filterSize + j]= coeff;
 					xx++;
 				}
@@ -812,7 +823,6 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		else if(flags&SWS_X)	filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
 		else if(flags&SWS_AREA)	filterSize= (int)ceil(1 + 1.0*srcW / (double)dstW);
 		else /* BILINEAR */	filterSize= (int)ceil(1 + 2.0*srcW / (double)dstW);
-//		printf("%d %d %d\n", *filterSize, srcW, dstW);
 		filter= (double*)memalign(8, dstW*sizeof(double)*filterSize);
 
 		xDstInSrc= xInc/2 - 0x8000;
@@ -849,7 +859,6 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 					coeff= 1.0 - d;
 					if(coeff<0) coeff=0;
 				}
-//				printf("%1.3f %2.3f %d \n", coeff, d, xDstInSrc);
 				filter[i*filterSize + j]= coeff;
 				xx++;
 			}
@@ -940,7 +949,7 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	*outFilterSize= filterSize;
 
 	if(flags&SWS_PRINT_INFO)
-		mp_msg(MSGT_SWS,MSGL_V,"SwScaler: reducing / aligning filtersize %d -> %d\n", filter2Size, filterSize);
+		MSG_INFO("SwScaler: reducing / aligning filtersize %d -> %d\n", filter2Size, filterSize);
 	/* try to reduce the filter-size (step2 reduce it) */
 	for(i=0; i<dstW; i++)
 	{
@@ -1254,6 +1263,32 @@ cpuCaps= gCpuCaps;
 #endif //!RUNTIME_CPUDETECT
 }
 
+static void PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
+	/* Copy Y plane */
+	if(dstStride[0]==srcStride[0])
+		memcpy(dst, src[0], srcSliceH*dstStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst;
+		for(i=0; i<srcSliceH; i++)
+		{
+			memcpy(dstPtr, srcPtr, srcStride[0]);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}
+	dst = dstParam[1] + dstStride[1]*srcSliceY;
+	if(c->srcFormat==IMGFMT_YV12)
+		interleaveBytes( src[1],src[2],dst,c->srcW,srcSliceH,srcStride[1],srcStride[2],dstStride[0] );
+	else /* I420 & IYUV */
+		interleaveBytes( src[2],src[1],dst,c->srcW,srcSliceH,srcStride[2],srcStride[1],dstStride[0] );
+}
+
+
 /* Warper functions for yuv2bgr */
 static void planarYuvToBgr(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dstParam[], int dstStride[]){
@@ -1263,6 +1298,16 @@ static void planarYuvToBgr(SwsContext *c, uint8_t* src[], int srcStride[], int s
 		yuv2rgb( dst,src[0],src[1],src[2],c->srcW,srcSliceH,dstStride[0],srcStride[0],srcStride[1] );
 	else /* I420 & IYUV */
 		yuv2rgb( dst,src[0],src[2],src[1],c->srcW,srcSliceH,dstStride[0],srcStride[0],srcStride[1] );
+}
+
+static void Planar2PackedWrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
+
+	if(c->srcFormat==IMGFMT_YV12)
+		yv12toyuy2( src[0],src[1],src[2],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
+	else /* I420 & IYUV */
+		yv12toyuy2( src[0],src[2],src[1],dst,c->srcW,srcSliceH,srcStride[0],srcStride[1],dstStride[0] );
 }
 
 static void bgr24to32Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
@@ -1279,6 +1324,46 @@ static void bgr24to32Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 		for(i=0; i<srcSliceH; i++)
 		{
 			rgb24to32(srcPtr, dstPtr, c->srcW*3);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+static void bgr24to16Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*3==srcStride[0]*2)
+		rgb24to16(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb24to16(srcPtr, dstPtr, c->srcW*3);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+static void bgr24to15Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*3==srcStride[0]*2)
+		rgb24to15(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb24to15(srcPtr, dstPtr, c->srcW*3);
 			srcPtr+= srcStride[0];
 			dstPtr+= dstStride[0];
 		}
@@ -1305,6 +1390,46 @@ static void bgr32to24Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 	}     
 }
 
+static void bgr32to16Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*4==srcStride[0]*2)
+		rgb32to16(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb32to16(srcPtr, dstPtr, c->srcW<<2);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+static void bgr32to15Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*4==srcStride[0]*2)
+		rgb32to15(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb32to15(srcPtr, dstPtr, c->srcW<<2);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
 static void bgr15to16Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dst[], int dstStride[]){
 	
@@ -1319,6 +1444,86 @@ static void bgr15to16Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int
 		for(i=0; i<srcSliceH; i++)
 		{
 			rgb15to16(srcPtr, dstPtr, c->srcW<<1);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+static void bgr15to24Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*2==srcStride[0]*3)
+		rgb15to24(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb15to24(srcPtr, dstPtr, c->srcW<<1);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+static void bgr15to32Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*2==srcStride[0]*4)
+		rgb15to32(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb15to32(srcPtr, dstPtr, c->srcW<<1);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+static void bgr16to24Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*2==srcStride[0]*3)
+		rgb16to24(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb16to24(srcPtr, dstPtr, c->srcW<<1);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}     
+}
+
+static void bgr16to32Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	
+	if(dstStride[0]*2==srcStride[0]*4)
+		rgb16to32(src[0], dst[0] + dstStride[0]*srcSliceY, srcSliceH*srcStride[0]);
+	else
+	{
+		int i;
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			rgb16to32(srcPtr, dstPtr, c->srcW<<1);
 			srcPtr+= srcStride[0];
 			dstPtr+= dstStride[0];
 		}
@@ -1346,21 +1551,25 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 	uint8_t *src[3];
 	uint8_t *dst[3];
 
-	if(c->srcFormat == IMGFMT_I420){
+	if(isPlanarYUV(c->srcFormat))
+	{
+	    if(c->srcFormat == IMGFMT_I420 || c->srcFormat == IMGFMT_IYUV){
 		src[0]= srcParam[0];
 		src[1]= srcParam[2];
 		src[2]= srcParam[1];
 		srcStride[0]= srcStrideParam[0];
 		srcStride[1]= srcStrideParam[2];
 		srcStride[2]= srcStrideParam[1];
-	}
-	else if(c->srcFormat==IMGFMT_YV12){
+	    }
+	    else
+	    {
 		src[0]= srcParam[0];
 		src[1]= srcParam[1];
 		src[2]= srcParam[2];
 		srcStride[0]= srcStrideParam[0];
 		srcStride[1]= srcStrideParam[1];
 		srcStride[2]= srcStrideParam[2];
+	    }
 	}
 	else if(isPacked(c->srcFormat) || isGray(c->srcFormat)){
 		src[0]= srcParam[0];
@@ -1371,7 +1580,7 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 		srcStride[2]= 0;
 	}
 
-	if(c->dstFormat == IMGFMT_I420){
+	if(c->dstFormat == IMGFMT_I420 || c->dstFormat == IMGFMT_IYUV){
 		dst[0]= dstParam[0];
 		dst[1]= dstParam[2];
 		dst[2]= dstParam[1];
@@ -1411,9 +1620,21 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 		int plane;
 		for(plane=0; plane<3; plane++)
 		{
-			int length= plane==0 ? c->srcW  : ((c->srcW+1)>>1);
-			int y=      plane==0 ? srcSliceY: ((srcSliceY+1)>>1);
-			int height= plane==0 ? srcSliceH: ((srcSliceH+1)>>1);
+			int length;
+			int y;
+			int height;
+			if(c->srcFormat == IMGFMT_YVU9 || c->srcFormat == IMGFMT_IF09)
+			{
+			    length= plane==0 ? c->srcW  : ((c->srcW+1)>>2);
+			    y=      plane==0 ? srcSliceY: ((srcSliceY+1)>>2);
+			    height= plane==0 ? srcSliceH: ((srcSliceH+1)>>2);
+			}
+			else
+			{
+			    length= plane==0 ? c->srcW  : ((c->srcW+1)>>1);
+			    y=      plane==0 ? srcSliceY: ((srcSliceY+1)>>1);
+			    height= plane==0 ? srcSliceH: ((srcSliceH+1)>>1);
+			}
 
 			if(dstStride[plane]==srcStride[plane])
 				memcpy(dst[plane] + dstStride[plane]*y, src[plane], height*dstStride[plane]);
@@ -1433,12 +1654,23 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 	}
 }
 
+static uint32_t remove_dup_fourcc(uint32_t fourcc)
+{
+	switch(fourcc)
+	{
+	    case IMGFMT_IYUV: return IMGFMT_I420;
+	    case IMGFMT_Y8  : return IMGFMT_Y800;
+	    default: return fourcc;
+	}
+}
+
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
                          SwsFilter *srcFilter, SwsFilter *dstFilter){
 
 	SwsContext *c;
 	int i;
 	int usesFilter;
+	int simple_copy, unscaled_copy;
 	SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
 
 #ifdef ARCH_X86
@@ -1449,25 +1681,44 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	if(swScale==NULL) globalInit();
 
 	/* avoid dupplicate Formats, so we dont need to check to much */
-	if(srcFormat==IMGFMT_IYUV) srcFormat=IMGFMT_I420;
-	if(srcFormat==IMGFMT_Y8)   srcFormat=IMGFMT_Y800;
-	if(dstFormat==IMGFMT_Y8)   dstFormat=IMGFMT_Y800;
-
-	if(!isSupportedIn(srcFormat)) 
+	srcFormat = remove_dup_fourcc(srcFormat);
+	dstFormat = remove_dup_fourcc(dstFormat);
+	/* don't refuse this beauty */
+	unscaled_copy = (srcW == dstW && srcH == dstH);
+	simple_copy = (srcW == dstW && srcH == dstH && srcFormat == dstFormat);
+	if(!simple_copy)
 	{
-		mp_msg(MSGT_SWS,MSGL_ERR,"swScaler: %s is not supported as input format\n", vo_format_name(srcFormat));
-		return NULL;
+	    if(unscaled_copy)
+	    {
+		if(!isSupportedUnscaledIn(srcFormat)) 
+		{
+		    MSG_ERR("swScaler: %s is not supported as input format\n", vo_format_name(srcFormat));
+		    return NULL;
+		}
+		if(!isSupportedUnscaledOut(dstFormat))
+		{
+		    MSG_ERR("swScaler: %s is not supported as output format\n", vo_format_name(dstFormat));
+		    return NULL;
+		}
+	    }
+	    else
+	    {
+		if(!isSupportedIn(srcFormat)) 
+		{
+		    MSG_ERR("swScaler: %s is not supported as input format\n", vo_format_name(srcFormat));
+		    return NULL;
+		}
+		if(!isSupportedOut(dstFormat))
+		{
+		    MSG_ERR("swScaler: %s is not supported as output format\n", vo_format_name(dstFormat));
+		    return NULL;
+		}
+	    }
 	}
-	if(!isSupportedOut(dstFormat))
-	{
-		 mp_msg(MSGT_SWS,MSGL_ERR,"swScaler: %s is not supported as output format\n", vo_format_name(dstFormat));
-		return NULL;
-	}
-
 	/* sanity check */
 	if(srcW<4 || srcH<1 || dstW<8 || dstH<1) //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
 	{
-		 mp_msg(MSGT_SWS,MSGL_ERR,"swScaler: %dx%d -> %dx%d is invalid scaling dimension\n", 
+		 MSG_ERR("swScaler: %dx%d -> %dx%d is invalid scaling dimension\n", 
 			srcW, srcH, dstW, dstH);
 		return NULL;
 	}
@@ -1501,6 +1752,26 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	/* unscaled special Cases */
 	if(srcW==dstW && srcH==dstH && !usesFilter)
 	{
+		/* yv12_to_nv12 */
+		if((srcFormat == IMGFMT_YV12||srcFormat==IMGFMT_I420)&&dstFormat == IMGFMT_NV12)
+		{
+			c->swScale= PlanarToNV12Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+		/* yv12_to_yuy2 */
+		if((srcFormat == IMGFMT_YV12||srcFormat==IMGFMT_I420)&&dstFormat == IMGFMT_YUY2)
+		{
+			c->swScale= Planar2PackedWrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
 		/* yuv2bgr */
 		if(isPlanarYUV(srcFormat) && isBGR(dstFormat))
 		{
@@ -1516,7 +1787,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= planarYuvToBgr;
 
 			if(flags&SWS_PRINT_INFO)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1527,7 +1798,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= simpleCopy;
 
 			if(flags&SWS_PRINT_INFO)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1539,7 +1810,31 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= bgr32to24Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr32to16 & rgb32to16*/
+		if((srcFormat==IMGFMT_BGR32 && dstFormat==IMGFMT_BGR16)
+		 ||(srcFormat==IMGFMT_RGB32 && dstFormat==IMGFMT_RGB16))
+		{
+			c->swScale= bgr32to16Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr32to15 & rgb32to15*/
+		if((srcFormat==IMGFMT_BGR32 && dstFormat==IMGFMT_BGR15)
+		 ||(srcFormat==IMGFMT_RGB32 && dstFormat==IMGFMT_RGB15))
+		{
+			c->swScale= bgr32to15Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1551,7 +1846,31 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= bgr24to32Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr24to16 & rgb24to16*/
+		if((srcFormat==IMGFMT_BGR24 && dstFormat==IMGFMT_BGR16)
+		 ||(srcFormat==IMGFMT_RGB24 && dstFormat==IMGFMT_RGB16))
+		{
+			c->swScale= bgr24to16Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr24to15 & rgb24to15*/
+		if((srcFormat==IMGFMT_BGR24 && dstFormat==IMGFMT_BGR15)
+		 ||(srcFormat==IMGFMT_RGB24 && dstFormat==IMGFMT_RGB15))
+		{
+			c->swScale= bgr24to15Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1562,7 +1881,55 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= bgr15to16Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr15to24 */
+		if((srcFormat==IMGFMT_BGR15 && dstFormat==IMGFMT_BGR24)
+		 ||(srcFormat==IMGFMT_RGB15 && dstFormat==IMGFMT_RGB24))
+		{
+			c->swScale= bgr15to24Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr15to32 */
+		if((srcFormat==IMGFMT_BGR15 && dstFormat==IMGFMT_BGR32)
+		 ||(srcFormat==IMGFMT_RGB15 && dstFormat==IMGFMT_RGB32))
+		{
+			c->swScale= bgr15to32Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr16to24 */
+		if((srcFormat==IMGFMT_BGR16 && dstFormat==IMGFMT_BGR24)
+		 ||(srcFormat==IMGFMT_RGB16 && dstFormat==IMGFMT_RGB24))
+		{
+			c->swScale= bgr16to24Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
+		/* bgr16to32 */
+		if((srcFormat==IMGFMT_BGR16 && dstFormat==IMGFMT_BGR32)
+		 ||(srcFormat==IMGFMT_RGB16 && dstFormat==IMGFMT_RGB32))
+		{
+			c->swScale= bgr16to32Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1573,7 +1940,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= bgr24toyv12Wrapper;
 
 			if(flags&SWS_PRINT_INFO)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using unscaled %s -> %s special converter\n", 
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
@@ -1585,7 +1952,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if(!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR))
 		{
 			if(flags&SWS_PRINT_INFO)
-				mp_msg(MSGT_SWS,MSGL_WARN,"SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
+				MSG_INFO("SwScaler: output Width is not a multiple of 32 -> no MMX2 scaler\n");
 		}
 	}
 	else
@@ -1723,33 +2090,35 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		char *dither= "";
 #endif
 		if(flags&SWS_FAST_BILINEAR)
-			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: FAST_BILINEAR scaler, ");
+			MSG_INFO("\nSwScaler: FAST_BILINEAR scaler, ");
 		else if(flags&SWS_BILINEAR)
-			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: BILINEAR scaler, ");
+			MSG_INFO("\nSwScaler: BILINEAR scaler, ");
 		else if(flags&SWS_BICUBIC)
-			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: BICUBIC scaler, ");
+			MSG_INFO("\nSwScaler: BICUBIC scaler, ");
 		else if(flags&SWS_X)
-			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: Experimental scaler, ");
+			MSG_INFO("\nSwScaler: Experimental scaler, ");
 		else if(flags&SWS_POINT)
-			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: Nearest Neighbor / POINT scaler, ");
+			MSG_INFO("\nSwScaler: Nearest Neighbor / POINT scaler, ");
 		else if(flags&SWS_AREA)
-			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: Area Averageing scaler, ");
+			MSG_INFO("\nSwScaler: Area Averageing scaler, ");
 		else
-			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: ehh flags invalid?! ");
+			MSG_INFO("\nSwScaler: ehh flags invalid?! ");
 
-		mp_msg(MSGT_SWS,MSGL_INFO,"%dx%d %s -> %dx%d%s %s ", 
-			srcW,srcH, vo_format_name(srcFormat), dstW,dstH,
-			(dstFormat==IMGFMT_BGR15 || dstFormat==IMGFMT_BGR16) ?
-			dither : "", vo_format_name(dstFormat));
+		if(dstFormat==IMGFMT_BGR15 || dstFormat==IMGFMT_BGR16)
+			MSG_INFO("from %s to%s %s ", 
+				vo_format_name(srcFormat), dither, vo_format_name(dstFormat));
+		else
+			MSG_INFO("from %s to %s ", 
+				vo_format_name(srcFormat), vo_format_name(dstFormat));
 
 		if(cpuCaps.hasMMX2)
-			mp_msg(MSGT_SWS,MSGL_INFO,"using MMX2\n");
+			MSG_INFO("using MMX2\n");
 		else if(cpuCaps.has3DNow)
-			mp_msg(MSGT_SWS,MSGL_INFO,"using 3DNOW\n");
+			MSG_INFO("using 3DNOW\n");
 		else if(cpuCaps.hasMMX)
-			mp_msg(MSGT_SWS,MSGL_INFO,"using MMX\n");
+			MSG_INFO("using MMX\n");
 		else
-			mp_msg(MSGT_SWS,MSGL_INFO,"using C\n");
+			MSG_INFO("using C\n");
 	}
 
 	if((flags & SWS_PRINT_INFO) && verbose)
@@ -1757,70 +2126,70 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if(cpuCaps.hasMMX)
 		{
 			if(c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
+				MSG_V("SwScaler: using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
 			else
 			{
 				if(c->hLumFilterSize==4)
-					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 4-tap MMX scaler for horizontal luminance scaling\n");
+					MSG_V("SwScaler: using 4-tap MMX scaler for horizontal luminance scaling\n");
 				else if(c->hLumFilterSize==8)
-					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 8-tap MMX scaler for horizontal luminance scaling\n");
+					MSG_V("SwScaler: using 8-tap MMX scaler for horizontal luminance scaling\n");
 				else
-					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using n-tap MMX scaler for horizontal luminance scaling\n");
+					MSG_V("SwScaler: using n-tap MMX scaler for horizontal luminance scaling\n");
 
 				if(c->hChrFilterSize==4)
-					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 4-tap MMX scaler for horizontal chrominance scaling\n");
+					MSG_V("SwScaler: using 4-tap MMX scaler for horizontal chrominance scaling\n");
 				else if(c->hChrFilterSize==8)
-					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 8-tap MMX scaler for horizontal chrominance scaling\n");
+					MSG_V("SwScaler: using 8-tap MMX scaler for horizontal chrominance scaling\n");
 				else
-					mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using n-tap MMX scaler for horizontal chrominance scaling\n");
+					MSG_V("SwScaler: using n-tap MMX scaler for horizontal chrominance scaling\n");
 			}
 		}
 		else
 		{
 #ifdef ARCH_X86
-			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using X86-Asm scaler for horizontal scaling\n");
+			MSG_V("SwScaler: using X86-Asm scaler for horizontal scaling\n");
 #else
 			if(flags & SWS_FAST_BILINEAR)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using FAST_BILINEAR C scaler for horizontal scaling\n");
+				MSG_V("SwScaler: using FAST_BILINEAR C scaler for horizontal scaling\n");
 			else
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using C scaler for horizontal scaling\n");
+				MSG_V("SwScaler: using C scaler for horizontal scaling\n");
 #endif
 		}
 		if(isPlanarYUV(dstFormat))
 		{
 			if(c->vLumFilterSize==1)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				MSG_V("SwScaler: using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
 			else
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				MSG_V("SwScaler: using n-tap %s scaler for vertical scaling (YV12 like)\n", cpuCaps.hasMMX ? "MMX" : "C");
 		}
 		else
 		{
 			if(c->vLumFilterSize==1 && c->vChrFilterSize==2)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
+				MSG_V("SwScaler: using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
 				       "SwScaler:       2-tap scaler for vertical chrominance scaling (BGR)\n",cpuCaps.hasMMX ? "MMX" : "C");
 			else if(c->vLumFilterSize==2 && c->vChrFilterSize==2)
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				MSG_V("SwScaler: using 2-tap linear %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
 			else
-				mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
+				MSG_V("SwScaler: using n-tap %s scaler for vertical scaling (BGR)\n", cpuCaps.hasMMX ? "MMX" : "C");
 		}
 
 		if(dstFormat==IMGFMT_BGR24)
-			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using %s YV12->BGR24 Converter\n",
+			MSG_V("SwScaler: using %s YV12->BGR24 Converter\n",
 				cpuCaps.hasMMX2 ? "MMX2" : (cpuCaps.hasMMX ? "MMX" : "C"));
 		else if(dstFormat==IMGFMT_BGR32)
-			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using %s YV12->BGR32 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+			MSG_V("SwScaler: using %s YV12->BGR32 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
 		else if(dstFormat==IMGFMT_BGR16)
-			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using %s YV12->BGR16 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+			MSG_V("SwScaler: using %s YV12->BGR16 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
 		else if(dstFormat==IMGFMT_BGR15)
-			mp_msg(MSGT_SWS,MSGL_V,"SwScaler: using %s YV12->BGR15 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+			MSG_V("SwScaler: using %s YV12->BGR15 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
 
-		mp_msg(MSGT_SWS,MSGL_V,"SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
+		MSG_V("SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
 	}
 	if((flags & SWS_PRINT_INFO) && verbose>1)
 	{
-		mp_msg(MSGT_SWS,MSGL_DBG2,"SwScaler:Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+		MSG_DBG2("SwScaler:Lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
 			c->srcW, c->srcH, c->dstW, c->dstH, c->lumXInc, c->lumYInc);
-		mp_msg(MSGT_SWS,MSGL_DBG2,"SwScaler:Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
+		MSG_DBG2("SwScaler:Chr srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
 			c->chrSrcW, c->chrSrcH, c->chrDstW, c->chrDstH, c->chrXInc, c->chrYInc);
 	}
 
@@ -2039,9 +2408,9 @@ void printVec(SwsVector *a){
 	for(i=0; i<a->length; i++)
 	{
 		int x= (int)((a->coeff[i]-min)*60.0/range +0.5);
-		printf("%1.3f ", a->coeff[i]);
-		for(;x>0; x--) printf(" ");
-		printf("|\n");
+		MSG_DBG2("%1.3f ", a->coeff[i]);
+		for(;x>0; x--) MSG_DBG2(" ");
+		MSG_DBG2("|\n");
 	}
 }
 

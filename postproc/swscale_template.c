@@ -2626,7 +2626,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		srcStride[1]= srcStrideParam[1];
 		srcStride[2]= srcStrideParam[2];
 	}
-	else if(isPacked(c->srcFormat)){
+	else if(isPacked(c->srcFormat) || isBGR(c->srcFormat) || isRGB(c->srcFormat)){
 		src[0]=
 		src[1]=
 		src[2]= srcParam[0];

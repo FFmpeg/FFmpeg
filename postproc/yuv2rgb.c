@@ -156,7 +156,7 @@ const int32_t Inverse_Table_6_9[8][4] = {
     {117579, 136230, 16907, 35559}  /* SMPTE 240M (1987) */
 };
 
-static void yuv2rgb_c_init (int bpp, int mode);
+static void yuv2rgb_c_init (unsigned bpp, int mode);
 
 yuv2rgb_fun yuv2rgb;
 
@@ -166,11 +166,11 @@ static void (* yuv2rgb_c_internal) (uint8_t *, uint8_t *,
 
 static void yuv2rgb_c (void * dst, uint8_t * py,
 		       uint8_t * pu, uint8_t * pv,
-		       int h_size, int v_size,
-		       int rgb_stride, int y_stride, int uv_stride)
+		       unsigned h_size, unsigned v_size,
+		       unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
 {
     v_size >>= 1;
-    
+
     while (v_size--) {
 	yuv2rgb_c_internal (py, py + y_stride, pu, pv, dst, dst + rgb_stride,
 			    h_size, v_size<<1);
@@ -182,7 +182,7 @@ static void yuv2rgb_c (void * dst, uint8_t * py,
     }
 }
 
-void yuv2rgb_init (int bpp, int mode)
+void yuv2rgb_init (unsigned bpp, int mode)
 {
     yuv2rgb = NULL;
 #ifdef CAN_COMPILE_X86_ASM
@@ -676,7 +676,7 @@ static int div_round (int dividend, int divisor)
 	return -((-dividend + (divisor>>1)) / divisor);
 }
 
-static void yuv2rgb_c_init (int bpp, int mode)
+static void yuv2rgb_c_init (unsigned bpp, int mode)
 {  
     int i;
     uint8_t table_Y[1024];
