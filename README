@@ -10,7 +10,10 @@ FFmpeg README
 ------------
 
 * Read the file COPYING. ffmpeg and the associated libraries EXCEPT
-  liba52 are licensed under the Lesser GNU General Public
-  License. liba52 is distributed under the GNU General Public License.
+  liba52 and libpostproc are licensed under the Lesser GNU General
+  Public License. 
+
+* liba52 and libpostproc are distributed under the GNU General Public
+  License and their compilation and use is optional in ffmpeg.
 
 Fabrice Bellard.
