@@ -46,22 +46,12 @@
 #define H_RK1_FILTER	0x1000			// 4096
 #define H_X1_FILTER	0x2000			// 8192
 
+#define GET_PP_QUALITY_MAX 6
 
-#define TIMEING
-#define MORE_TIMEING
-
-#define MIN(a,b) ((a) > (b) ? (b) : (a))
-#define MAX(a,b) ((a) < (b) ? (b) : (a))
-#define ABS(a) ((a) > 0 ? (a) : (-(a)))
-#define SIGN(a) ((a) > 0 ? 1 : -1)
+//#define TIMEING
+//#define MORE_TIMEING
 
 #define QP_STORE_T int
-
-#ifdef HAVE_MMX2
-#define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
-#elif defined (HAVE_3DNOW)
-#define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
-#endif
 
 //#ifdef __cplusplus
 //#include <inttypes.h>
@@ -74,15 +64,16 @@
 //extern "C"
 //{
 //#endif
+
 void postprocess(unsigned char * src[], int src_stride,
                  unsigned char * dst[], int dst_stride,
                  int horizontal_size,   int vertical_size,
                  QP_STORE_T *QP_store,  int QP_stride, int mode);
+
 int getPpModeForQuality(int quality);
+
 //#ifdef __cplusplus
 //}
 //#endif
-
-#define GET_PP_QUALITY_MAX 6
 
 #endif

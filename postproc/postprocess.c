@@ -90,6 +90,16 @@ Changelog: use the CVS log
 //#undef HAVE_MMX
 #include "postprocess.h"
 
+#define MIN(a,b) ((a) > (b) ? (b) : (a))
+#define MAX(a,b) ((a) < (b) ? (b) : (a))
+#define ABS(a) ((a) > 0 ? (a) : (-(a)))
+#define SIGN(a) ((a) > 0 ? 1 : -1)
+
+#ifdef HAVE_MMX2
+#define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
+#elif defined (HAVE_3DNOW)
+#define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
+#endif
 
 static uint64_t packedYOffset=	0x0000000000000000LL;
 static uint64_t packedYScale=	0x0100010001000100LL;
