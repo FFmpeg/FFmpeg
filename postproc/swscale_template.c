@@ -1155,7 +1155,7 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *buf1, uint16_t *uv
 }
 
 
-static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, int srcWidth, int xInc)
+static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, int srcW, int xInc)
 {
       // *** horizontal scale Y line to temp buffer
 #ifdef ARCH_X86
@@ -1208,7 +1208,7 @@ FUNNY_Y_CODE
 			"m" ((xInc*4)&0xFFFF), "m" (xInc&0xFFFF)
 			: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
 		);
-		for(i=dstWidth-1; (i*xInc)>>16 >=srcWidth-1; i--) dst[i] = src[srcWidth-1]*128;
+		for(i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) dst[i] = src[srcW-1]*128;
 	}
 	else
 	{
@@ -1270,7 +1270,7 @@ FUNNY_Y_CODE
 }
 
 inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth,
-				uint8_t *src1, uint8_t *src2, int srcWidth, int xInc)
+				uint8_t *src1, uint8_t *src2, int srcW, int xInc)
 {
 #ifdef ARCH_X86
 #ifdef HAVE_MMX2
@@ -1337,10 +1337,10 @@ FUNNYUVCODE
 		  "m" ((xInc*4)&0xFFFF), "m" (xInc&0xFFFF), "m" (src2)
 		: "%eax", "%ebx", "%ecx", "%edx", "%esi", "%edi"
 	);
-		for(i=dstWidth-1; (i*xInc)>>16 >=srcWidth/2-1; i--)
+		for(i=dstWidth-1; (i*xInc)>>16 >=srcW/2-1; i--)
 		{
-			dst[i] = src1[srcWidth/2-1]*128;
-			dst[i+2048] = src2[srcWidth/2-1]*128;
+			dst[i] = src1[srcW/2-1]*128;
+			dst[i+2048] = src2[srcW/2-1]*128;
 		}
 	}
 	else
@@ -1413,7 +1413,7 @@ unsigned int s_xinc2;
 //FIXME do we need th +-2 stuff?
 unsigned int s_xinc= (srcW << 16) / dstW - 2;
 unsigned int s_yinc= (srcH << 16) / dstH + 2;
-
+			  
 static int lumDstYInSrc; // points to the dst Pixels center in the source (0 is the center of pixel 0,0 in src)
 static int dstY;
 
@@ -1427,17 +1427,18 @@ static int old_dstW= -1;
 static int old_s_xinc= -1;
 #endif
 
-int srcWidth;
 int dstUVw;
 int i;
 
 if(((dstW + 7)&(~7)) >= dststride) dstW&= ~7;
 
-srcWidth= (dstW*s_xinc + 0x8000)>>16;
 dstUVw= fullUVIpol ? dstW : dstW/2;
 
+//printf("%d %d %d %d\n", srcW, srcH, dstW, dstH);
+//printf("%d %d %d %d\n", s_xinc, s_yinc, srcSliceY, srcSliceH);
+
 #ifdef HAVE_MMX2
-canMMX2BeUsed= (s_xinc <= 0x10000 && (dstW&31)==0 && (srcWidth&15)==0) ? 1 : 0;
+canMMX2BeUsed= (s_xinc <= 0x10000 && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
 #endif
 
 // match pixel 0 of the src to pixel 0 of dst and match pixel n-2 of src to pixel n-2 of dst
@@ -1446,14 +1447,14 @@ canMMX2BeUsed= (s_xinc <= 0x10000 && (dstW&31)==0 && (srcWidth&15)==0) ? 1 : 0;
 // would be like the vertical one, but that would require some special code for the
 // first and last pixel
 if(canMMX2BeUsed) 	s_xinc+= 20;
-else			s_xinc = ((srcWidth-2)<<16)/(dstW-2) - 20;
+else			s_xinc = ((srcW-2)<<16)/(dstW-2) - 20;
 
 if(fullUVIpol && !(dstbpp==12)) 	s_xinc2= s_xinc>>1;
 else					s_xinc2= s_xinc;
   // force calculation of the horizontal interpolation of the first line
 
   if(srcSliceY ==0){
-//	printf("dstW %d, srcw %d, mmx2 %d\n", dstW, srcWidth, canMMX2BeUsed);
+//	printf("dstW %d, srcw %d, mmx2 %d\n", dstW, srcW, canMMX2BeUsed);
 	lastLumSrcY=-99;
 	lastChrSrcY=-99;
 	lumDstYInSrc= s_yinc/2 - 0x8000;
@@ -1620,9 +1621,9 @@ else					s_xinc2= s_xinc;
     uint16_t *uvbuf0=pix_buf_uv[ chrSrcY   &1];	// top line of the interpolated slice
     uint16_t *uvbuf1=pix_buf_uv[(chrSrcY+1)&1];	// bottom line of the interpolated slice
 
-//    if(lumSrcY>=srcSliceY + srcSliceH) break; // wrong, skips last lines, but they are dupliactes anyway
+    if(lumSrcY>=srcSliceY + srcSliceH && srcSliceY + srcSliceH < srcH) break;
     if(dstY >= dstH) break;
-
+    
 //	printf("lumSrcY:%d, dstY:%d, yalpha:%d\n", lumSrcY, dstY, yalpha*100/0x1000);
 
     if((dstY&1) && dstbpp==12) uvalpha=-1;
@@ -1633,6 +1634,7 @@ else					s_xinc2= s_xinc;
 	if(lastLumSrcY!=lumSrcY)
 	{
 		unsigned char *src;
+		
 		// skip if first line has been horiz scaled alleady
 		if(lastLumSrcY != lumSrcY-1)
 		{
@@ -1640,7 +1642,7 @@ else					s_xinc2= s_xinc;
 			if(lumSrcY-1 < srcSliceY ) src=srcptr[0]+(0                   )*stride[0];
 			else			   src=srcptr[0]+(lumSrcY-srcSliceY -1)*stride[0];
 
-			RENAME(hyscale)(buf0, dstW, src, srcWidth, s_xinc);
+			RENAME(hyscale)(buf0, dstW, src, srcW, s_xinc);
 		}
 		// check if second line is after any available src lines
 		if(lumSrcY-srcSliceY  >= srcSliceH) src=srcptr[0]+(srcSliceH-1       )*stride[0];
@@ -1648,7 +1650,7 @@ else					s_xinc2= s_xinc;
 
 		// the min() is required to avoid reuseing lines which where not available
 		lastLumSrcY= MIN(lumSrcY, srcSliceY +srcSliceH-1);
-		RENAME(hyscale)(buf1, dstW, src, srcWidth, s_xinc);
+		RENAME(hyscale)(buf1, dstW, src, srcW, s_xinc);
 	}
 //	printf("%d %d %d %d\n", y, chrSrcY, lastChrSrcY, h);
       // *** horizontal scale U and V lines to temp buffer
@@ -1667,7 +1669,7 @@ else					s_xinc2= s_xinc;
 				src1= srcptr[1]+(chrSrcY-srcSliceY /2-1)*stride[1];
 				src2= srcptr[2]+(chrSrcY-srcSliceY /2-1)*stride[2];
 			}
-			RENAME(hcscale)(uvbuf0, dstUVw, src1, src2, srcWidth, s_xinc2);
+			RENAME(hcscale)(uvbuf0, dstUVw, src1, src2, srcW, s_xinc2);
 		}
 
 		// check if second line is after any available src lines
@@ -1679,7 +1681,7 @@ else					s_xinc2= s_xinc;
 			src1= srcptr[1]+(chrSrcY-srcSliceY /2)*stride[1];
 			src2= srcptr[2]+(chrSrcY-srcSliceY /2)*stride[2];
 		}
-		RENAME(hcscale)(uvbuf1, dstUVw, src1, src2, srcWidth, s_xinc2);
+		RENAME(hcscale)(uvbuf1, dstUVw, src1, src2, srcW, s_xinc2);
 
 		// the min() is required to avoid reuseing lines which where not available
 		lastChrSrcY= MIN(chrSrcY, srcSliceY /2+srcSliceH/2-1);
