@@ -31,7 +31,7 @@
 #define DV1394_RING_FRAMES     20
 
 #define DV1394_WIDTH  720
-#define DV1394_HEIGHT 480
+#define DV1394_HEIGHT 576
 
 /* This is the public user-space interface. Try not to break it. */
 
@@ -198,12 +198,12 @@
 #define DV1394_MAX_FRAMES 32
 
 /* number of *full* isochronous packets per DV frame */
-#define DV1394_NTSC_PACKETS_PER_FRAME 250
-#define DV1394_PAL_PACKETS_PER_FRAME  300
+#define DV1394_NTSC_PACKETS_PER_FRAME 300
+#define DV1394_PAL_PACKETS_PER_FRAME  250
 
 /* size of one frame's worth of DV data, in bytes */
 #define DV1394_NTSC_FRAME_SIZE (480 * DV1394_NTSC_PACKETS_PER_FRAME)
-#define DV1394_PAL_FRAME_SIZE  (480 * DV1394_PAL_PACKETS_PER_FRAME)
+#define DV1394_PAL_FRAME_SIZE  (576 * DV1394_PAL_PACKETS_PER_FRAME)
 
 
 /* ioctl() commands */
