@@ -30,6 +30,9 @@ enum OutputFormat {
 
 #define MPEG_BUF_SIZE (16 * 1024)
 
+#define QMAT_SHIFT_MMX 19
+#define QMAT_SHIFT 25
+
 typedef struct MpegEncContext {
     struct AVCodecContext *avctx;
     /* the following parameters must be initialized before encoding */
@@ -120,6 +123,9 @@ typedef struct MpegEncContext {
     /* precomputed matrix (combine qscale and DCT renorm) */
     int q_intra_matrix[64];
     int q_non_intra_matrix[64];
+    /* identical to the above but for MMX & these are not permutated */
+    UINT16 __align8 q_intra_matrix16[64] ;
+    UINT16 __align8 q_non_intra_matrix16[64];
     int block_last_index[6];  /* last non zero coefficient in block */
 
     void *opaque; /* private data for the user */

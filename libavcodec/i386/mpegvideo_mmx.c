@@ -22,9 +22,16 @@
 
 #include "../dsputil.h"
 #include "../mpegvideo.h"
+#include "../avcodec.h"
+#include "../mangle.h"
 
 extern UINT8 zigzag_end[64];
 extern void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w);
+extern int (*dct_quantize)(MpegEncContext *s, DCTELEM *block, int n, int qscale);
+
+extern UINT8 zigzag_direct_noperm[64];
+extern UINT16 inv_zigzag_direct16[64];
+extern UINT32 inverse[256];
 
 #if 0
 
@@ -252,7 +259,7 @@ static void dct_unquantize_mpeg1_mmx(MpegEncContext *s,
         }
     } else {
         i = 0;
-    unquant_even:
+//    unquant_even:
         quant_matrix = s->non_intra_matrix;
 	/* Align on 4 elements boundary */
 	while(i&7)
@@ -411,6 +418,20 @@ static void draw_edges_mmx(UINT8 *buf, int wrap, int width, int height, int w)
     }
 }
 
+static volatile int esp_temp;
+
+void unused_var_warning_killer(){
+	esp_temp++;
+}
+
+#undef HAVE_MMX2
+#define RENAME(a) a ## _MMX
+#include "mpegvideo_mmx_template.c"
+
+#define HAVE_MMX2
+#undef RENAME
+#define RENAME(a) a ## _MMX2
+#include "mpegvideo_mmx_template.c"
 
 void MPV_common_init_mmx(MpegEncContext *s)
 {
@@ -421,5 +442,11 @@ void MPV_common_init_mmx(MpegEncContext *s)
         	s->dct_unquantize = dct_unquantize_mpeg1_mmx;
 	
 	draw_edges = draw_edges_mmx;
+
+	if(mm_flags & MM_MMXEXT){
+	        dct_quantize= dct_quantize_MMX2;
+	}else{
+		dct_quantize= dct_quantize_MMX;
+	}
     }
 }

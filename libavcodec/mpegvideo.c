@@ -35,12 +35,10 @@ static void dct_unquantize_mpeg1_c(MpegEncContext *s,
                                    DCTELEM *block, int n, int qscale);
 static void dct_unquantize_h263_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale);
-static int dct_quantize(MpegEncContext *s, DCTELEM *block, int n, int qscale);
-static int dct_quantize_mmx(MpegEncContext *s, 
-                            DCTELEM *block, int n,
-                            int qscale);
 static void draw_edges_c(UINT8 *buf, int wrap, int width, int height, int w);
+static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale);
 
+int (*dct_quantize)(MpegEncContext *s, DCTELEM *block, int n, int qscale)= dct_quantize_c;
 void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w)= draw_edges_c;
 
 #define EDGE_WIDTH 16
@@ -74,29 +72,29 @@ int motion_estimation_method = ME_LOG;
 
 extern UINT8 zigzag_end[64];
 
-/* XXX: should use variable shift ? */
-#define QMAT_SHIFT_MMX 19
-#define QMAT_SHIFT 25
-
-static void convert_matrix(int *qmat, const UINT16 *quant_matrix, int qscale)
+static void convert_matrix(int *qmat, UINT16 *qmat16, const UINT16 *quant_matrix, int qscale)
 {
     int i;
 
     if (av_fdct == jpeg_fdct_ifast) {
         for(i=0;i<64;i++) {
             /* 16 <= qscale * quant_matrix[i] <= 7905 */
-            /* 19952 <= aanscales[i] * qscale * quant_matrix[i] <= 249205026 */
+            /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
+            /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
+            /* 3444240       >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= 275 */
             
-            qmat[i] = (int)((UINT64_C(1) << (QMAT_SHIFT + 11)) / 
-                            (aanscales[i] * qscale * quant_matrix[i]));
+            qmat[block_permute_op(i)] = (int)((UINT64_C(1) << (QMAT_SHIFT + 11)) / 
+                            (aanscales[i] * qscale * quant_matrix[block_permute_op(i)]));
         }
     } else {
         for(i=0;i<64;i++) {
             /* We can safely suppose that 16 <= quant_matrix[i] <= 255
-               So 16 <= qscale * quant_matrix[i] <= 7905
-               so (1 << QMAT_SHIFT) / 16 >= qmat[i] >= (1 << QMAT_SHIFT) / 7905
+               So 16           <= qscale * quant_matrix[i]             <= 7905
+               so (1<<19) / 16 >= (1<<19) / (qscale * quant_matrix[i]) >= (1<<19) / 7905
+               so 32768        >= (1<<19) / (qscale * quant_matrix[i]) >= 67
             */
-            qmat[i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[i]);
+            qmat[i]   = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[i]);
+            qmat16[i] = (1 << QMAT_SHIFT_MMX) / (qscale * quant_matrix[block_permute_op(i)]);
         }
     }
 }
@@ -418,7 +416,7 @@ void MPV_frame_start(MpegEncContext *s)
 void MPV_frame_end(MpegEncContext *s)
 {
     /* draw edge for correct motion prediction if outside */
-    if (s->pict_type != B_TYPE) {
+    if (s->pict_type != B_TYPE && !s->intra_only) {
       if(s->avctx==NULL || s->avctx->codec->id!=CODEC_ID_MPEG4){
         draw_edges(s->current_picture[0], s->linesize, s->mb_width*16, s->mb_height*16, EDGE_WIDTH);
         draw_edges(s->current_picture[1], s->linesize/2, s->mb_width*8, s->mb_height*8, EDGE_WIDTH/2);
@@ -457,7 +455,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
     avctx->key_frame = (s->pict_type == I_TYPE);
     
     MPV_frame_start(s);
-
+    
     for(i=0;i<3;i++) {
         UINT8 *src = pict->data[i];
         UINT8 *dest = s->current_picture[i];
@@ -472,11 +470,15 @@ int MPV_encode_picture(AVCodecContext *avctx,
             h >>= 1;
         }
 
-        for(j=0;j<h;j++) {
-            memcpy(dest, src, w);
-            dest += dest_wrap;
-            src += src_wrap;
-        }
+	if(s->intra_only && dest_wrap==src_wrap){
+	    s->current_picture[i] = pict->data[i];
+	}else {
+            for(j=0;j<h;j++) {
+                memcpy(dest, src, w);
+                dest += dest_wrap;
+                src += src_wrap;
+            }
+	}
         s->new_picture[i] = s->current_picture[i];
     }
 
@@ -873,10 +875,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         s->intra_matrix[0] = default_intra_matrix[0];
         for(i=1;i<64;i++)
             s->intra_matrix[i] = (default_intra_matrix[i] * s->qscale) >> 3;
-        convert_matrix(s->q_intra_matrix, s->intra_matrix, 8);
+        convert_matrix(s->q_intra_matrix, s->q_intra_matrix16, s->intra_matrix, 8);
     } else {
-        convert_matrix(s->q_intra_matrix, s->intra_matrix, s->qscale);
-        convert_matrix(s->q_non_intra_matrix, s->non_intra_matrix, s->qscale);
+        convert_matrix(s->q_intra_matrix, s->q_intra_matrix16, s->intra_matrix, s->qscale);
+        convert_matrix(s->q_non_intra_matrix, s->q_non_intra_matrix16, s->non_intra_matrix, s->qscale);
     }
 
     switch(s->out_format) {
@@ -1011,14 +1013,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 s->y_dc_scale = 8;
                 s->c_dc_scale = 8;
             }
-
             for(i=0;i<6;i++) {
-                int last_index;
-                if (av_fdct == jpeg_fdct_ifast)
-                    last_index = dct_quantize(s, s->block[i], i, s->qscale);
-                else
-                    last_index = dct_quantize_mmx(s, s->block[i], i, s->qscale);
-                s->block_last_index[i] = last_index;
+                s->block_last_index[i] = dct_quantize(s, s->block[i], i, s->qscale);
             }
 
             /* huffman encode */
@@ -1060,7 +1056,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     //    fprintf(stderr,"\nNumber of GOB: %d", s->gob_number);
 }
 
-static int dct_quantize(MpegEncContext *s, 
+static int dct_quantize_c(MpegEncContext *s, 
                         DCTELEM *block, int n,
                         int qscale)
 {
@@ -1157,85 +1153,7 @@ static int dct_quantize(MpegEncContext *s,
                 level = maxLevel;
             else if (level < minLevel)
                 level = minLevel;
-            block[j] = level;
-            last_non_zero = i;
-        } else {
-            block[j] = 0;
-        }
-    }
-    return last_non_zero;
-}
 
-static int dct_quantize_mmx(MpegEncContext *s, 
-                            DCTELEM *block, int n,
-                            int qscale)
-{
-    int i, j, level, last_non_zero, q;
-    const int *qmat;
-    int minLevel, maxLevel;
-
-    if(s->avctx!=NULL && s->avctx->codec->id==CODEC_ID_MPEG4){
-	/* mpeg4 */
-        minLevel= -2048;
-	maxLevel= 2047;
-    }else if(s->out_format==FMT_MPEG1){
-	/* mpeg1 */
-        minLevel= -255;
-	maxLevel= 255;
-    }else{
-	/* h263 / msmpeg4 */
-        minLevel= -128;
-	maxLevel= 127;
-    }
-
-    av_fdct (block);
-    
-    /* we need this permutation so that we correct the IDCT
-       permutation. will be moved into DCT code */
-    block_permute(block);
-
-    if (s->mb_intra) {
-        if (n < 4)
-            q = s->y_dc_scale;
-        else
-            q = s->c_dc_scale;
-        
-        /* note: block[0] is assumed to be positive */
-        block[0] = (block[0] + (q >> 1)) / q;
-        i = 1;
-        last_non_zero = 0;
-        if (s->out_format == FMT_H263) {
-            qmat = s->q_non_intra_matrix;
-        } else {
-            qmat = s->q_intra_matrix;
-        }
-    } else {
-        i = 0;
-        last_non_zero = -1;
-        qmat = s->q_non_intra_matrix;
-    }
-
-    for(;i<64;i++) {
-        j = zigzag_direct[i];
-        level = block[j];
-        level = level * qmat[j];
-        /* XXX: slight error for the low range. Test should be equivalent to
-           (level <= -(1 << (QMAT_SHIFT_MMX - 3)) || level >= (1 <<
-           (QMAT_SHIFT_MMX - 3)))
-        */
-        if (((level << (31 - (QMAT_SHIFT_MMX - 3))) >> (31 - (QMAT_SHIFT_MMX - 3))) != 
-            level) {
-            level = level / (1 << (QMAT_SHIFT_MMX - 3));
-            /* XXX: currently, this code is not optimal. the range should be:
-               mpeg1: -255..255
-               mpeg2: -2048..2047
-               h263:  -128..127
-               mpeg4: -2048..2047
-            */
-            if (level > maxLevel)
-                level = maxLevel;
-            else if (level < minLevel)
-                level = minLevel;
             block[j] = level;
             last_non_zero = i;
         } else {
