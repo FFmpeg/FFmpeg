@@ -56,6 +56,7 @@ else
     do_mjpeg=y
     do_ljpeg=y
     do_rv10=y
+    do_rv20=y
     do_mp2=y
     do_ac3=y
     do_g726=y
@@ -382,6 +383,16 @@ file=${outfile}rv10.rm
 do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an $file 
 
 # rv10 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_rv20" ] ; then
+# rv20 encoding
+file=${outfile}rv20.rm
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec rv20 -an $file 
+
+# rv20 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
