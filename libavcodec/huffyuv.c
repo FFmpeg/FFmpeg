@@ -893,7 +893,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     *data_size = sizeof(AVFrame);
     
-    return (get_bits_count(&s->gb)+7)>>3;
+    return (get_bits_count(&s->gb)+31)/32*4;
 }
 
 static int decode_end(AVCodecContext *avctx)
