@@ -912,17 +912,22 @@ static int64_t update_scr(AVFormatContext *ctx,int stream_index,int64_t pts)
 }    
 
 
-static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
-                                 const uint8_t *buf, int size, 
-                                 int64_t timestamp)
+static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
 {
     MpegMuxContext *s = ctx->priv_data;
+    int stream_index= pkt->stream_index;
+    int size= pkt->size;
+    uint8_t *buf= pkt->data;
     AVStream *st = ctx->streams[stream_index];
     StreamInfo *stream = st->priv_data;
     int64_t pts, dts, new_start_pts, new_start_dts;
     int len, avail_size;
     
-    compute_pts_dts(st, &pts, &dts, timestamp);
+    //XXX/FIXME this is and always was broken
+//    compute_pts_dts(st, &pts, &dts, pkt->pts);
+
+    pts= pkt->pts;
+    dts= pkt->dts;
 
     if(s->is_svcd) {
         /* offset pts and dts slightly into the future to be able

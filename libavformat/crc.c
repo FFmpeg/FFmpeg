@@ -71,12 +71,10 @@ static int crc_write_header(struct AVFormatContext *s)
     return 0;
 }
 
-static int crc_write_packet(struct AVFormatContext *s, 
-                            int stream_index,
-                            const uint8_t *buf, int size, int64_t pts)
+static int crc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     CRCState *crc = s->priv_data;
-    crc->crcval = update_adler32(crc->crcval, buf, size);
+    crc->crcval = update_adler32(crc->crcval, pkt->data, pkt->size);
     return 0;
 }
 

@@ -888,15 +888,13 @@ static int dv_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int dv_write_packet(struct AVFormatContext *s, 
-                           int stream_index,
-                           const uint8_t *buf, int size, int64_t pts)
+static int dv_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     uint8_t* frame;
     int fsize;
    
-    fsize = dv_assemble_frame((DVMuxContext *)s->priv_data, s->streams[stream_index],
-                              buf, size, &frame);
+    fsize = dv_assemble_frame((DVMuxContext *)s->priv_data, s->streams[pkt->stream_index],
+                              pkt->data, pkt->size, &frame);
     if (fsize > 0) {
         put_buffer(&s->pb, frame, fsize); 
         put_flush_packet(&s->pb);

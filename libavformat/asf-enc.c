@@ -310,7 +310,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     put_le64(pb, asf->nb_packets); /* number of packets */
     put_le64(pb, asf->duration); /* end time stamp (in 100ns units) */
     put_le64(pb, asf->duration); /* duration (in 100ns units) */
-    put_le32(pb, 0); /* start time stamp */
+    put_le32(pb, preroll_time); /* start time stamp */
     put_le32(pb, 0); /* ??? */
     put_le32(pb, asf->is_streamed ? 1 : 0); /* ??? */
     put_le32(pb, asf->packet_size); /* packet size */
@@ -686,17 +686,17 @@ static void put_frame(
     stream->seq++;
 }
 
-static int asf_write_packet(AVFormatContext *s, int stream_index,
-                            const uint8_t *buf, int size, int64_t timestamp)
+static int asf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ASFContext *asf = s->priv_data;
     ASFStream *stream;
     int64_t duration;
     AVCodecContext *codec;
 
-    codec = &s->streams[stream_index]->codec;
-    stream = &asf->streams[stream_index];
+    codec = &s->streams[pkt->stream_index]->codec;
+    stream = &asf->streams[pkt->stream_index];
 
+    //XXX /FIXME use duration from AVPacket
     if (codec->codec_type == CODEC_TYPE_AUDIO) {
         duration = (codec->frame_number * codec->frame_size * int64_t_C(10000000)) /
             codec->sample_rate;
@@ -706,7 +706,7 @@ static int asf_write_packet(AVFormatContext *s, int stream_index,
     if (duration > asf->duration)
         asf->duration = duration;
 
-    put_frame(s, stream, timestamp, buf, size);
+    put_frame(s, stream, pkt->pts, pkt->data, pkt->size);
     return 0;
 }
 

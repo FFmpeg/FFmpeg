@@ -389,14 +389,13 @@ static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size)
     return 0;
 }
 
-static int rm_write_packet(AVFormatContext *s, int stream_index, 
-                           const uint8_t *buf, int size, int64_t pts)
+static int rm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    if (s->streams[stream_index]->codec.codec_type == 
+    if (s->streams[pkt->stream_index]->codec.codec_type == 
         CODEC_TYPE_AUDIO)
-        return rm_write_audio(s, buf, size);
+        return rm_write_audio(s, pkt->data, pkt->size);
     else
-        return rm_write_video(s, buf, size);
+        return rm_write_video(s, pkt->data, pkt->size);
 }
         
 static int rm_write_trailer(AVFormatContext *s)

@@ -58,10 +58,9 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     return n;
 }
 
-static int yuv4_write_packet(AVFormatContext *s, int stream_index,
-                             const uint8_t *buf, int size, int64_t pts)
+static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVStream *st = s->streams[stream_index];
+    AVStream *st = s->streams[pkt->stream_index];
     ByteIOContext *pb = &s->pb;
     AVPicture *picture;
     int* first_pkt = s->priv_data;
@@ -71,7 +70,7 @@ static int yuv4_write_packet(AVFormatContext *s, int stream_index,
     char buf1[20];
     uint8_t *ptr, *ptr1, *ptr2;
 
-    picture = (AVPicture *)buf;
+    picture = (AVPicture *)pkt->data;
 
     /* for the first packet we have to output the header as well */
     if (*first_pkt) {

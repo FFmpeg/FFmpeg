@@ -669,16 +669,17 @@ static void rtp_send_mpegts_raw(AVFormatContext *s1,
 }
 
 /* write an RTP packet. 'buf1' must contain a single specific frame. */
-static int rtp_write_packet(AVFormatContext *s1, int stream_index,
-                            const uint8_t *buf1, int size, int64_t pts)
+static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     RTPDemuxContext *s = s1->priv_data;
     AVStream *st = s1->streams[0];
     int rtcp_bytes;
     int64_t ntp_time;
+    int size= pkt->size;
+    uint8_t *buf1= pkt->data;
     
 #ifdef DEBUG
-    printf("%d: write len=%d\n", stream_index, size);
+    printf("%d: write len=%d\n", pkt->stream_index, size);
 #endif
 
     /* XXX: mpeg pts hardcoded. RTCP send every 0.5 seconds */
@@ -687,7 +688,7 @@ static int rtp_write_packet(AVFormatContext *s1, int stream_index,
     if (s->first_packet || rtcp_bytes >= 28) {
         /* compute NTP time */
         /* XXX: 90 kHz timestamp hardcoded */
-        ntp_time = (pts << 28) / 5625;
+        ntp_time = (pkt->pts << 28) / 5625;
         rtcp_send_sr(s1, ntp_time); 
         s->last_octet_count = s->octet_count;
         s->first_packet = 0;

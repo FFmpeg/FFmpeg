@@ -239,18 +239,19 @@ static int flv_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-static int flv_write_packet(AVFormatContext *s, int stream_index,
-                            const uint8_t *buf, int size, int64_t timestamp)
+static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ByteIOContext *pb = &s->pb;
-    AVCodecContext *enc = &s->streams[stream_index]->codec;
+    AVCodecContext *enc = &s->streams[pkt->stream_index]->codec;
     FLVContext *flv = s->priv_data;
     FLVFrame *frame = av_malloc(sizeof(FLVFrame));
+    int size= pkt->size;
+    uint8_t *buf= pkt->data;
 
     frame->next = 0;
     frame->size = size;
     frame->data = av_malloc(size);
-    frame->timestamp = timestamp;
+    frame->timestamp = pkt->pts;
     frame->reserved= flv->reserved;
     memcpy(frame->data,buf,size);
     
@@ -259,7 +260,7 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
     if (enc->codec_type == CODEC_TYPE_VIDEO) {
         frame->type = 9;
         frame->flags = 2; // choose h263
-        frame->flags |= enc->coded_frame->key_frame ? 0x10 : 0x20; // add keyframe indicator
+        frame->flags |= pkt->flags & PKT_FLAG_KEY ? 0x10 : 0x20; // add keyframe indicator
         //frame->timestamp = ( ( flv->frameCount * (int64_t)FRAME_RATE_BASE * (int64_t)1000 ) / (int64_t)enc->frame_rate );
         //printf("%08x %f %f\n",frame->timestamp,(double)enc->frame_rate/(double)FRAME_RATE_BASE,1000*(double)FRAME_RATE_BASE/(double)enc->frame_rate);
         flv->hasVideo = 1;
@@ -306,7 +307,7 @@ static int flv_write_packet(AVFormatContext *s, int stream_index,
 
         assert(size);
         if ( flv->initDelay == -1 ) {
-            flv->initDelay = timestamp;
+            flv->initDelay = pkt->pts;
         }
 
         frame->type = 8;

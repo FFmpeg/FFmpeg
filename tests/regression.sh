@@ -477,7 +477,7 @@ do_ffmpeg_crc $file -i $file
 # asf
 file=${outfile}libav.asf
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src -acodec mp2 $file
-do_ffmpeg_crc $file -i $file
+do_ffmpeg_crc $file -i $file -r 25
 
 # rm
 file=${outfile}libav.rm

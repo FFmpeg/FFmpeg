@@ -607,14 +607,15 @@ static int avi_write_idx1(AVFormatContext *s)
     return 0;
 }
 
-static int avi_write_packet(AVFormatContext *s, int stream_index,
-                            const uint8_t *buf, int size, int64_t pts)
+static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     unsigned char tag[5];
-    unsigned int flags;
+    unsigned int flags=0;
     AVCodecContext *enc;
+    const int stream_index= pkt->stream_index;
+    int size= pkt->size;
 
     if (url_ftell(pb) - avi->riff_start > AVI_MAX_RIFF_SIZE) { 
         avi_write_ix(s);
@@ -629,11 +630,11 @@ static int avi_write_packet(AVFormatContext *s, int stream_index,
     
     enc = &s->streams[stream_index]->codec;
     avi_stream2fourcc(&tag[0], stream_index, enc->codec_type);
+    if(pkt->flags&PKT_FLAG_KEY)
+        flags = 0x10;
     if (enc->codec_type == CODEC_TYPE_AUDIO) {
        avi->audio_strm_length[stream_index] += size;
-       flags = 0x10;
-    } else
-       flags = enc->coded_frame->key_frame ? 0x10 : 0x00;
+    }
 
     if (!url_is_streamed(&s->pb)) {
         AVIIndex* idx = &avi->indexes[stream_index];
@@ -657,7 +658,7 @@ static int avi_write_packet(AVFormatContext *s, int stream_index,
     
     put_buffer(pb, tag, 4);
     put_le32(pb, size);
-    put_buffer(pb, buf, size);
+    put_buffer(pb, pkt->data, size);
     if (size & 1)
         put_byte(pb, 0);
 

@@ -950,15 +950,15 @@ static int mov_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int mov_write_packet(AVFormatContext *s, int stream_index,
-                            const uint8_t *buf, int size, int64_t pts)
+static int mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MOVContext *mov = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    AVCodecContext *enc = &s->streams[stream_index]->codec;
-    MOVTrack* trk = &mov->tracks[stream_index];
+    AVCodecContext *enc = &s->streams[pkt->stream_index]->codec;
+    MOVTrack* trk = &mov->tracks[pkt->stream_index];
     int cl, id;
     unsigned int samplesInChunk = 0;
+    int size= pkt->size;
 
     if (url_is_streamed(&s->pb)) return 0; /* Can't handle that */
     if (!size) return 0; /* Discard 0 sized packets */
@@ -974,7 +974,7 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
             int len = 0;
 
             while (len < size && samplesInChunk < 100) {
-                len += packed_size[(buf[len] >> 3) & 0x0F];
+                len += packed_size[(pkt->data[len] >> 3) & 0x0F];
                 samplesInChunk++;
             }
         }
@@ -1021,8 +1021,8 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
     trk->cluster[cl][id].size = size;
     trk->cluster[cl][id].entries = samplesInChunk;
     if(enc->codec_type == CODEC_TYPE_VIDEO) {
-        trk->cluster[cl][id].key_frame = enc->coded_frame->key_frame;
-        if(enc->coded_frame->pict_type == FF_I_TYPE)
+        trk->cluster[cl][id].key_frame = !!(pkt->flags & PKT_FLAG_KEY);
+        if(trk->cluster[cl][id].key_frame)
             trk->hasKeyframes = 1;
     }
     trk->enc = enc;
@@ -1030,7 +1030,7 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
     trk->sampleCount += samplesInChunk;
     trk->mdat_size += size;
 
-    put_buffer(pb, buf, size);
+    put_buffer(pb, pkt->data, size);
 
     put_flush_packet(pb);
     return 0;

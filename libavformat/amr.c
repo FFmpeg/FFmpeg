@@ -51,10 +51,9 @@ static int amr_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int amr_write_packet(AVFormatContext *s, int stream_index_ptr,
-                           uint8_t *buf, int size, int force_pts)
+static int amr_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    put_buffer(&s->pb, buf, size);
+    put_buffer(&s->pb, pkt->data, pkt->size);
     put_flush_packet(&s->pb);
     return 0;
 }

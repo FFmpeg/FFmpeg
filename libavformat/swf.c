@@ -700,14 +700,13 @@ static int swf_write_audio(AVFormatContext *s,
     return 0;
 }
 
-static int swf_write_packet(AVFormatContext *s, int stream_index, 
-                           const uint8_t *buf, int size, int64_t pts)
+static int swf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVCodecContext *codec = &s->streams[stream_index]->codec;
+    AVCodecContext *codec = &s->streams[pkt->stream_index]->codec;
     if (codec->codec_type == CODEC_TYPE_AUDIO)
-        return swf_write_audio(s, codec, buf, size);
+        return swf_write_audio(s, codec, pkt->data, pkt->size);
     else
-        return swf_write_video(s, codec, buf, size);
+        return swf_write_video(s, codec, pkt->data, pkt->size);
 }
 
 static int swf_write_trailer(AVFormatContext *s)

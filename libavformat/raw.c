@@ -25,10 +25,9 @@ static int raw_write_header(struct AVFormatContext *s)
     return 0;
 }
 
-static int raw_write_packet(struct AVFormatContext *s, int stream_index,
-			    const uint8_t *buf, int size, int64_t pts)
+static int raw_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
-    put_buffer(&s->pb, buf, size);
+    put_buffer(&s->pb, pkt->data, pkt->size);
     put_flush_packet(&s->pb);
     return 0;
 }
@@ -551,9 +550,7 @@ AVOutputFormat rawvideo_oformat = {
 #endif //CONFIG_ENCODERS
 
 #ifdef CONFIG_ENCODERS
-static int null_write_packet(struct AVFormatContext *s, 
-                             int stream_index,
-                             const uint8_t *buf, int size, int64_t pts)
+static int null_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     return 0;
 }

@@ -569,10 +569,12 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     int num, den, presentation_delayed;
 
     /* handle wrapping */
-    if(pkt->pts != AV_NOPTS_VALUE)
-        pkt->pts= lsb2full(pkt->pts, st->cur_dts, st->pts_wrap_bits);
-    if(pkt->dts != AV_NOPTS_VALUE)
-        pkt->dts= lsb2full(pkt->dts, st->cur_dts, st->pts_wrap_bits);
+    if(st->cur_dts != AV_NOPTS_VALUE){
+        if(pkt->pts != AV_NOPTS_VALUE)
+            pkt->pts= lsb2full(pkt->pts, st->cur_dts, st->pts_wrap_bits);
+        if(pkt->dts != AV_NOPTS_VALUE)
+            pkt->dts= lsb2full(pkt->dts, st->cur_dts, st->pts_wrap_bits);
+    }
     
     if (pkt->duration == 0) {
         compute_frame_duration(&num, &den, s, st, pc, pkt);
@@ -596,7 +598,13 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         if(pkt->dts != AV_NOPTS_VALUE && pkt->pts != AV_NOPTS_VALUE && pkt->pts > pkt->dts)
             presentation_delayed = 1;
     }
+    
+    if(st->cur_dts == AV_NOPTS_VALUE){
+        if(presentation_delayed) st->cur_dts = -pkt->duration;
+        else                     st->cur_dts = 0;
+    }
 
+//    av_log(NULL, AV_LOG_DEBUG, "IN delayed:%d pts:%lld, dts:%lld cur_dts:%lld\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts);
     /* interpolate PTS and DTS if they are not present */
     if (presentation_delayed) {
         /* DTS = decompression time stamp */
@@ -637,6 +645,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         }
         st->cur_dts += pkt->duration;
     }
+//    av_log(NULL, AV_LOG_DEBUG, "OUTdelayed:%d pts:%lld, dts:%lld cur_dts:%lld\n", presentation_delayed, pkt->pts, pkt->dts, st->cur_dts);
     
     /* update flags */
     if (pc) {
@@ -1672,6 +1681,30 @@ int av_find_stream_info(AVFormatContext *ic)
     }
 
     av_estimate_timings(ic);
+#if 0
+    /* correct DTS for b frame streams with no timestamps */
+    for(i=0;i<ic->nb_streams;i++) {
+        st = ic->streams[i];
+        if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
+            if(b-frames){
+                ppktl = &ic->packet_buffer;
+                while(ppkt1){
+                    if(ppkt1->stream_index != i)
+                        continue;
+                    if(ppkt1->pkt->dts < 0)
+                        break;
+                    if(ppkt1->pkt->pts != AV_NOPTS_VALUE)
+                        break;
+                    ppkt1->pkt->dts -= delta;
+                    ppkt1= ppkt1->next;
+                }
+                if(ppkt1)
+                    continue;
+                st->cur_dts -= delta;
+            }
+        }
+    }
+#endif
     return ret;
 }
 
@@ -1764,6 +1797,7 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     st->id = id;
     st->start_time = AV_NOPTS_VALUE;
     st->duration = AV_NOPTS_VALUE;
+    st->cur_dts = AV_NOPTS_VALUE;
 
     /* default pts settings is MPEG like */
     av_set_pts_info(st, 33, 1, 90000);
@@ -1836,27 +1870,68 @@ int av_write_header(AVFormatContext *s)
  * one audio or video frame.
  *
  * @param s media file handle
- * @param stream_index stream index
- * @param buf buffer containing the frame data
- * @param size size of buffer
+ * @param pkt the packet, which contains the stream_index, buf/buf_size, dts/pts, ...
  * @return < 0 if error, = 0 if OK, 1 if end of stream wanted.
  */
-int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf, 
-                   int size)
+int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 {
     AVStream *st;
     int64_t pts_mask;
     int ret, frame_size;
+    int b_frames;
 
-    st = s->streams[stream_index];
-    pts_mask = (1LL << st->pts_wrap_bits) - 1;
+    if(pkt->stream_index<0)
+        return -1;
+    st = s->streams[pkt->stream_index];
 
-    /* HACK/FIXME we skip all zero size audio packets so a encoder can pass pts by outputing zero size packets */
-    if(st->codec.codec_type==CODEC_TYPE_AUDIO && size==0)
-        ret = 0;
-    else
-        ret = s->oformat->write_packet(s, stream_index, buf, size, 
-                                       st->pts.val & pts_mask);
+    b_frames = FFMAX(st->codec.has_b_frames, st->codec.max_b_frames);
+
+  //  av_log(s, AV_LOG_DEBUG, "av_write_frame: pts:%lld dts:%lld cur_dts:%lld b:%d size:%d\n", pkt->pts, pkt->dts, st->cur_dts, b_frames, pkt->size);
+    
+/*    if(pkt->pts == AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE)
+        return -1;*/
+            
+    if(pkt->pts != AV_NOPTS_VALUE)
+        pkt->pts = av_rescale(pkt->pts, st->time_base.den, AV_TIME_BASE * (int64_t)st->time_base.num);
+    if(pkt->dts != AV_NOPTS_VALUE)
+        pkt->dts = av_rescale(pkt->dts, st->time_base.den, AV_TIME_BASE * (int64_t)st->time_base.num);
+
+    /* duration field */
+    pkt->duration = av_rescale(pkt->duration, st->time_base.den, AV_TIME_BASE * (int64_t)st->time_base.num);
+
+    //XXX/FIXME this is a temporary hack until all encoders output pts
+    if((pkt->pts == 0 || pkt->pts == AV_NOPTS_VALUE) && pkt->dts == AV_NOPTS_VALUE && !b_frames){
+        pkt->dts=
+//        pkt->pts= st->cur_dts;
+        pkt->pts= st->pts.val;
+    }
+
+    //calculate dts from pts    
+    if(pkt->pts != AV_NOPTS_VALUE && pkt->dts == AV_NOPTS_VALUE){
+        if(b_frames){
+            if(st->last_IP_pts == AV_NOPTS_VALUE){
+                st->last_IP_pts= -av_rescale(1, 
+                    st->codec.frame_rate_base*(int64_t)st->time_base.den, 
+                    st->codec.frame_rate     *(int64_t)st->time_base.num);
+            }
+            if(st->last_IP_pts < pkt->pts){
+                pkt->dts= st->last_IP_pts;
+                st->last_IP_pts= pkt->pts;
+            }else
+                pkt->dts= pkt->pts;
+        }else
+            pkt->dts= pkt->pts;
+    }
+    
+//    av_log(s, AV_LOG_DEBUG, "av_write_frame: pts2:%lld dts2:%lld\n", pkt->pts, pkt->dts);
+    st->cur_dts= pkt->dts;
+    st->pts.val= pkt->dts;
+
+    pts_mask = (2LL << (st->pts_wrap_bits-1)) - 1;
+    pkt->pts &= pts_mask;
+    pkt->dts &= pts_mask;
+    
+    ret = s->oformat->write_packet(s, pkt);
     
     if (ret < 0)
         return ret;
@@ -1864,11 +1939,11 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
     /* update pts */
     switch (st->codec.codec_type) {
     case CODEC_TYPE_AUDIO:
-        frame_size = get_audio_frame_size(&st->codec, size);
+        frame_size = get_audio_frame_size(&st->codec, pkt->size);
 
         /* HACK/FIXME, we skip the initial 0-size packets as they are most likely equal to the encoder delay,
            but it would be better if we had the real timestamps from the encoder */
-        if (frame_size >= 0 && (size || st->pts.num!=st->pts.den>>1 || st->pts.val)) {
+        if (frame_size >= 0 && (pkt->size || st->pts.num!=st->pts.den>>1 || st->pts.val)) {
             av_frac_add(&st->pts, (int64_t)st->time_base.den * frame_size);
         }
         break;

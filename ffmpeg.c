@@ -230,9 +230,8 @@ typedef struct AVOutputStream {
     int frame_number;
     /* input pts and corresponding output pts
        for A/V sync */
-    double sync_ipts;
-    double sync_ipts_offset;
-    int64_t sync_opts;
+    double sync_ipts;        /* dts from the AVPacket of the demuxer in second units */
+    int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ //FIXME look at frame_number
     /* video only */
     int video_resample;      /* video_resample and video_crop are mutually exclusive */
     AVFrame pict_tmp;      /* temporary image for resampling */
@@ -447,12 +446,23 @@ static void do_audio_out(AVFormatContext *s,
         
         while (fifo_read(&ost->fifo, audio_buf, frame_bytes, 
                      &ost->fifo.rptr) == 0) {
+            AVPacket pkt;
+            av_init_packet(&pkt);
+
             ret = avcodec_encode_audio(enc, audio_out, audio_out_size, 
                                        (short *)audio_buf);
             audio_size += ret;
-            av_write_frame(s, ost->index, audio_out, ret);
+            pkt.stream_index= ost->index;
+            pkt.data= audio_out;
+            pkt.size= ret;
+            if(enc->coded_frame)
+                pkt.pts= enc->coded_frame->pts;
+            pkt.flags |= PKT_FLAG_KEY;
+            av_write_frame(s, &pkt);
         }
     } else {
+        AVPacket pkt;
+        av_init_packet(&pkt);
         /* output a pcm frame */
         /* XXX: change encoding codec API to avoid this ? */
         switch(enc->codec->id) {
@@ -468,7 +478,13 @@ static void do_audio_out(AVFormatContext *s,
         ret = avcodec_encode_audio(enc, audio_out, size_out, 
 				   (short *)buftmp);
         audio_size += ret;
-        av_write_frame(s, ost->index, audio_out, ret);
+        pkt.stream_index= ost->index;
+        pkt.data= audio_out;
+        pkt.size= ret;
+        if(enc->coded_frame)
+            pkt.pts= enc->coded_frame->pts;
+        pkt.flags |= PKT_FLAG_KEY;
+        av_write_frame(s, &pkt);
     }
 }
 
@@ -586,58 +602,17 @@ static void do_video_out(AVFormatContext *s,
 
     *frame_size = 0;
 
-    /* NOTE: the A/V sync is always done by considering the audio is
-       the master clock. It is suffisant for transcoding or playing,
-       but not for the general case */
-  if(sync_method){
-    if (audio_sync) {
-        /* compute the A-V delay and duplicate/remove frames if needed */
-        double adelta, vdelta, av_delay;
-
-        adelta = audio_sync->sync_ipts - ((double)audio_sync->sync_opts * 
-            audio_sync->st->time_base.num / audio_sync->st->time_base.den);
-
-        vdelta = ost->sync_ipts - ((double)ost->sync_opts *
-            ost->st->time_base.num / ost->st->time_base.den);
-
-        av_delay = adelta - vdelta;
-        if (av_delay < -AV_DELAY_MAX)
-            nb_frames = 2;
-        else if (av_delay > AV_DELAY_MAX)
-            nb_frames = 0;
-//        printf("adelta=%f vdelta=%f delay=%f nb=%d (A)\n", adelta, vdelta, av_delay, nb_frames);
-    } else {
+    if(sync_method){
         double vdelta;
-
-        vdelta = (double)(ost->st->pts.val) * ost->st->time_base.num / ost->st->time_base.den - (ost->sync_ipts - ost->sync_ipts_offset);
-        if (vdelta < 100 && vdelta > -100 && ost->sync_ipts_offset) {
-            if (vdelta < -AV_DELAY_MAX)
-                nb_frames = 2;
-            else if (vdelta > AV_DELAY_MAX)
-                nb_frames = 0;
-        } else {
-            ost->sync_ipts_offset -= vdelta;
-            if (!ost->sync_ipts_offset)
-                ost->sync_ipts_offset = 0.000001; /* one microsecond */
-        }
-//        printf("delay=%f nb=%d (V)\n",vdelta, nb_frames);
+        vdelta = ost->sync_ipts * enc->frame_rate / enc->frame_rate_base - ost->sync_opts;
+        //FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
+        if (vdelta < -1.1)
+            nb_frames = 0;
+        else if (vdelta > 1.1)
+            nb_frames = 2;
+//printf("vdelta:%f, ost->sync_opts:%lld, ost->sync_ipts:%f nb_frames:%d\n", vdelta, ost->sync_opts, ost->sync_ipts, nb_frames);
     }
-  }
-    
-#if defined(AVSYNC_DEBUG)
-    {
-        static char *action[] = { "drop frame", "copy frame", "dup frame" };
-        if (audio_sync && verbose >=0) {
-            fprintf(stderr, "Input APTS %12.6f, output APTS %12.6f, ",
-                    (double) audio_sync->sync_ipts, 
-                    (double) audio_sync->st->pts.val * st->time_base.num / st->time_base.den);
-            fprintf(stderr, "Input VPTS %12.6f, output VPTS %12.6f: %s\n",
-                    (double) ost->sync_ipts, 
-                    (double) ost->st->pts.val * st->time_base.num / st->time_base.den,
-                    action[nb_frames]);
-        }
-    }
-#endif
+    ost->sync_opts+= nb_frames;
 
     if (nb_frames <= 0) 
         return;
@@ -779,14 +754,24 @@ static void do_video_out(AVFormatContext *s,
     /* duplicates frame if needed */
     /* XXX: pb because no interleaving */
     for(i=0;i<nb_frames;i++) {
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        pkt.stream_index= ost->index;
+
         if (s->oformat->flags & AVFMT_RAWPICTURE) {
             /* raw pictures are written as AVPicture structure to
                avoid any copies. We support temorarily the older
                method. */
             AVFrame* old_frame = enc->coded_frame;
-	    enc->coded_frame = dec->coded_frame;
-            av_write_frame(s, ost->index, 
-                           (uint8_t *)final_picture, sizeof(AVPicture));
+	    enc->coded_frame = dec->coded_frame; //FIXME/XXX remove this hack
+            pkt.data= (uint8_t *)final_picture;
+            pkt.size=  sizeof(AVPicture);
+            if(dec->coded_frame)
+                pkt.pts= dec->coded_frame->pts;
+            if(dec->coded_frame && dec->coded_frame->key_frame)
+                pkt.flags |= PKT_FLAG_KEY;
+
+            av_write_frame(s, &pkt);
 	    enc->coded_frame = old_frame;
         } else {
             AVFrame big_picture;
@@ -815,14 +800,22 @@ static void do_video_out(AVFormatContext *s,
                                        video_buffer, VIDEO_BUFFER_SIZE,
                                        &big_picture);
             //enc->frame_number = enc->real_pict_num;
-            av_write_frame(s, ost->index, video_buffer, ret);
-            *frame_size = ret;
-            //fprintf(stderr,"\nFrame: %3d %3d size: %5d type: %d",
-            //        enc->frame_number-1, enc->real_pict_num, ret,
-            //        enc->pict_type);
-            /* if two pass, output log */
-            if (ost->logfile && enc->stats_out) {
-                fprintf(ost->logfile, "%s", enc->stats_out);
+            if(ret){
+                pkt.data= video_buffer;
+                pkt.size= ret;
+                if(enc->coded_frame)
+                    pkt.pts= enc->coded_frame->pts;
+                if(enc->coded_frame && enc->coded_frame->key_frame)
+                    pkt.flags |= PKT_FLAG_KEY;
+                av_write_frame(s, &pkt);
+                *frame_size = ret;
+                //fprintf(stderr,"\nFrame: %3d %3d size: %5d type: %d",
+                //        enc->frame_number-1, enc->real_pict_num, ret,
+                //        enc->pict_type);
+                /* if two pass, output log */
+                if (ost->logfile && enc->stats_out) {
+                    fprintf(ost->logfile, "%s", enc->stats_out);
+                }
             }
         }
         ost->frame_number++;
@@ -872,7 +865,7 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
         
         fprintf(fvstats,"f_size= %6d ", frame_size);
         /* compute pts value */
-        ti1 = (double)ost->st->pts.val * ost->st->time_base.num / ost->st->time_base.den;
+        ti1 = (double)ost->sync_opts *enc->frame_rate_base / enc->frame_rate;
         if (ti1 < 0.01)
             ti1 = 0.01;
     
@@ -1003,8 +996,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
     short samples[AVCODEC_MAX_AUDIO_FRAME_SIZE / 2];
     void *buffer_to_free;
     
-    if (pkt && pkt->pts != AV_NOPTS_VALUE) {
-        ist->next_pts = ist->pts = pkt->pts;
+    if (pkt && pkt->pts != AV_NOPTS_VALUE) { //FIXME seems redundant, as libavformat does this too
+        ist->next_pts = ist->pts = pkt->dts;
     } else {
         ist->pts = ist->next_pts;
     }
@@ -1122,10 +1115,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
 #endif
                         /* set the input output pts pairs */
                         ost->sync_ipts = (double)ist->pts / AV_TIME_BASE;
-                        /* XXX: take into account the various fifos,
-                           in particular for audio */
-                        ost->sync_opts = ost->st->pts.val;
-                        //printf("ipts=%lld sync_ipts=%f sync_opts=%lld pts.val=%lld pkt->pts=%lld\n", ist->pts, ost->sync_ipts, ost->sync_opts, ost->st->pts.val, pkt->pts); 
 
                         if (ost->encoding_needed) {
                             switch(ost->st->codec.codec_type) {
@@ -1157,22 +1146,29 @@ static int output_packet(AVInputStream *ist, int ist_index,
                                 av_abort();
                             }
                         } else {
-                            AVFrame avframe;
-                                                
+                            AVFrame avframe; //FIXME/XXX remove this
+                            AVPacket opkt;
+                            av_init_packet(&opkt);
+
                             /* no reencoding needed : output the packet directly */
                             /* force the input stream PTS */
                         
                             avcodec_get_frame_defaults(&avframe);
                             ost->st->codec.coded_frame= &avframe;
                             avframe.key_frame = pkt->flags & PKT_FLAG_KEY; 
-                            ost->st->pts.val= av_rescale(ist->pts, ost->st->time_base.den, ost->st->time_base.num*AV_TIME_BASE);
 
                             if(ost->st->codec.codec_type == CODEC_TYPE_AUDIO)
                                 audio_size += data_size;
                             else if (ost->st->codec.codec_type == CODEC_TYPE_VIDEO)
                                 video_size += data_size;
 
-                            av_write_frame(os, ost->index, data_buf, data_size);
+                            opkt.stream_index= ost->index;
+                            opkt.data= data_buf;
+                            opkt.size= data_size;
+                            opkt.pts= ist->pts; //FIXME dts vs. pts
+                            opkt.flags= pkt->flags;
+                            
+                            av_write_frame(os, &opkt);
                             ost->st->codec.frame_number++;
                             ost->frame_number++;
                         }

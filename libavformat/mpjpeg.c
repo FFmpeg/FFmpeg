@@ -33,14 +33,13 @@ static int mpjpeg_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int mpjpeg_write_packet(AVFormatContext *s, int stream_index, 
-                               const uint8_t *buf, int size, int64_t pts)
+static int mpjpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     uint8_t buf1[256];
 
     snprintf(buf1, sizeof(buf1), "Content-type: image/jpeg\n\n");
     put_buffer(&s->pb, buf1, strlen(buf1));
-    put_buffer(&s->pb, buf, size);
+    put_buffer(&s->pb, pkt->data, pkt->size);
 
     snprintf(buf1, sizeof(buf1), "\n--%s\n", BOUNDARY_TAG);
     put_buffer(&s->pb, buf1, strlen(buf1));
@@ -75,10 +74,9 @@ static int single_jpeg_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int single_jpeg_write_packet(AVFormatContext *s, int stream_index,
-                                    const uint8_t *buf, int size, int64_t pts)
+static int single_jpeg_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    put_buffer(&s->pb, buf, size);
+    put_buffer(&s->pb, pkt->data, pkt->size);
     put_flush_packet(&s->pb);
     return 1; /* no more data can be sent */
 }

@@ -222,15 +222,16 @@ static int ffm_write_header(AVFormatContext *s)
     return -1;
 }
 
-static int ffm_write_packet(AVFormatContext *s, int stream_index,
-                            const uint8_t *buf, int size, int64_t force_pts)
+static int ffm_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVStream *st = s->streams[stream_index];
+    AVStream *st = s->streams[pkt->stream_index];
     FFMStream *fst = st->priv_data;
     int64_t pts;
     uint8_t header[FRAME_HEADER_SIZE];
     int duration;
+    int size= pkt->size;
 
+    //XXX/FIXME use duration from pkt
     if (st->codec.codec_type == CODEC_TYPE_AUDIO) {
         duration = ((float)st->codec.frame_size / st->codec.sample_rate * 1000000.0);
     } else {
@@ -239,9 +240,9 @@ static int ffm_write_packet(AVFormatContext *s, int stream_index,
 
     pts = fst->pts;
     /* packet size & key_frame */
-    header[0] = stream_index;
+    header[0] = pkt->stream_index;
     header[1] = 0;
-    if (st->codec.coded_frame->key_frame) //if st->codec.coded_frame==NULL then there is a bug somewhere else
+    if (pkt->flags & PKT_FLAG_KEY)
         header[1] |= FLAG_KEY_FRAME;
     header[2] = (size >> 16) & 0xff;
     header[3] = (size >> 8) & 0xff;
@@ -250,7 +251,7 @@ static int ffm_write_packet(AVFormatContext *s, int stream_index,
     header[6] = (duration >> 8) & 0xff;
     header[7] = duration & 0xff;
     ffm_write_data(s, header, FRAME_HEADER_SIZE, pts, 1);
-    ffm_write_data(s, buf, size, pts, 0);
+    ffm_write_data(s, pkt->data, size, pts, 0);
 
     fst->pts += duration;
     return 0;
@@ -467,6 +468,9 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         fst = av_mallocz(sizeof(FFMStream));
         if (!fst)
             goto fail;
+            
+        av_set_pts_info(st, 64, 1, 1000000);
+            
         st->priv_data = fst;
 
         codec = &st->codec;

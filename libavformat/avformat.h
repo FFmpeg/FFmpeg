@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4614
+#define LIBAVFORMAT_BUILD       4615
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -131,9 +131,7 @@ typedef struct AVOutputFormat {
     enum CodecID audio_codec; /* default audio codec */
     enum CodecID video_codec; /* default video codec */
     int (*write_header)(struct AVFormatContext *);
-    int (*write_packet)(struct AVFormatContext *, 
-                        int stream_index,
-                        const uint8_t *buf, int size, int64_t pts);
+    int (*write_packet)(struct AVFormatContext *, AVPacket *pkt);
     int (*write_trailer)(struct AVFormatContext *);
     /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER */
     int flags;
@@ -558,8 +556,8 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
 /* media file output */
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
 int av_write_header(AVFormatContext *s);
-int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf, 
-                   int size);
+int av_write_frame(AVFormatContext *s, AVPacket *pkt);
+
 int av_write_trailer(AVFormatContext *s);
 
 void dump_format(AVFormatContext *ic,

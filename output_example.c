@@ -142,16 +142,22 @@ void write_audio_frame(AVFormatContext *oc, AVStream *st)
 {
     int out_size;
     AVCodecContext *c;
-
-
+    AVPacket pkt;
+    av_init_packet(&pkt);
+    
     c = &st->codec;
 
     get_audio_frame(samples, audio_input_frame_size, c->channels);
 
-    out_size = avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
+    pkt.size= avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
+
+    pkt.pts= c->coded_frame->pts;
+    pkt.flags |= PKT_FLAG_KEY;
+    pkt.stream_index= st->index;
+    pkt.data= audio_outbuf;
 
     /* write the compressed frame in the media file */
-    if (av_write_frame(oc, st->index, audio_outbuf, out_size) != 0) {
+    if (av_write_frame(oc, &pkt) != 0) {
         fprintf(stderr, "Error while writing audio frame\n");
         exit(1);
     }
@@ -336,16 +342,32 @@ void write_video_frame(AVFormatContext *oc, AVStream *st)
     if (oc->oformat->flags & AVFMT_RAWPICTURE) {
         /* raw video case. The API will change slightly in the near
            futur for that */
-        ret = av_write_frame(oc, st->index, 
-                       (uint8_t *)picture_ptr, sizeof(AVPicture));
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        
+        pkt.flags |= PKT_FLAG_KEY;
+        pkt.stream_index= st->index;
+        pkt.data= (uint8_t *)picture_ptr;
+        pkt.size= sizeof(AVPicture);
+        
+        ret = av_write_frame(oc, &pkt);
     } else {
         /* encode the image */
         out_size = avcodec_encode_video(c, video_outbuf, video_outbuf_size, picture_ptr);
         /* if zero size, it means the image was buffered */
         if (out_size != 0) {
+            AVPacket pkt;
+            av_init_packet(&pkt);
+            
+            pkt.pts= c->coded_frame->pts;
+            if(c->coded_frame->key_frame)
+                pkt.flags |= PKT_FLAG_KEY;
+            pkt.stream_index= st->index;
+            pkt.data= video_outbuf;
+            pkt.size= out_size;
+            
             /* write the compressed frame in the media file */
-            /* XXX: in case of B frames, the pts is not yet valid */
-            ret = av_write_frame(oc, st->index, video_outbuf, out_size);
+            ret = av_write_frame(oc, &pkt);
         } else {
             ret = 0;
         }

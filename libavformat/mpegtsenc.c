@@ -549,10 +549,11 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     put_flush_packet(&s->pb);
 }
 
-static int mpegts_write_packet(AVFormatContext *s, int stream_index,
-                               const uint8_t *buf, int size, int64_t pts1)
+static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVStream *st = s->streams[stream_index];
+    AVStream *st = s->streams[pkt->stream_index];
+    int size= pkt->size;
+    uint8_t *buf= pkt->data;
     MpegTSWriteStream *ts_st = st->priv_data;
     int len;
 
@@ -565,7 +566,7 @@ static int mpegts_write_packet(AVFormatContext *s, int stream_index,
         size -= len;
         ts_st->payload_index += len;
         if (ts_st->payload_pts == AV_NOPTS_VALUE)
-            ts_st->payload_pts = pts1;
+            ts_st->payload_pts = pkt->pts;
         if (ts_st->payload_index >= DEFAULT_PES_PAYLOAD_SIZE) {
             mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
                              ts_st->payload_pts);

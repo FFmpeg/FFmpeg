@@ -691,25 +691,22 @@ static int64_t lsb2full(StreamContext *stream, int64_t lsb){
     return  ((lsb - delta)&mask) + delta;
 }
 
-static int nut_write_packet(AVFormatContext *s, int stream_index, 
-			    const uint8_t *buf, int size, int64_t pts)
+static int nut_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     NUTContext *nut = s->priv_data;
-    StreamContext *stream= &nut->stream[stream_index];
+    StreamContext *stream= &nut->stream[pkt->stream_index];
     ByteIOContext *bc = &s->pb;
     int key_frame = 0, full_pts=0;
     AVCodecContext *enc;
     int64_t coded_pts;
     int frame_type, best_length, frame_code, flags, i, size_mul, size_lsb, time_delta;
     const int64_t frame_start= url_ftell(bc);
+    int64_t pts= pkt->pts;
+    int size= pkt->size;
+    int stream_index= pkt->stream_index;
 
-    if (stream_index > s->nb_streams)
-	return 1;
-        
     enc = &s->streams[stream_index]->codec;
-    key_frame = enc->coded_frame->key_frame;
-    if(enc->coded_frame->pts != AV_NOPTS_VALUE)
-        pts= av_rescale(enc->coded_frame->pts, stream->rate_num, stream->rate_den*(int64_t)AV_TIME_BASE); //FIXME XXX HACK
+    key_frame = !!(pkt->flags & PKT_FLAG_KEY);
     
     frame_type=0;
     if(frame_start + size + 20 - FFMAX(nut->packet_start[1], nut->packet_start[2]) > MAX_DISTANCE)
@@ -808,7 +805,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
         assert(frame_type > 1);
     }
     
-    put_buffer(bc, buf, size);
+    put_buffer(bc, pkt->data, size);
 
     update(nut, stream_index, frame_start, frame_type, frame_code, key_frame, size, pts);
     

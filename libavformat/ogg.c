@@ -62,16 +62,15 @@ static int ogg_write_header(AVFormatContext *avfcontext)
     return 0 ;
 }
 
-static int ogg_write_packet(AVFormatContext *avfcontext,
-			    int stream_index,
-			    const uint8_t *buf, int size, int64_t pts)
+static int ogg_write_packet(AVFormatContext *avfcontext, AVPacket *pkt)
 {
     OggContext *context = avfcontext->priv_data ;
-    AVCodecContext *avctx= &avfcontext->streams[stream_index]->codec;
+    AVCodecContext *avctx= &avfcontext->streams[pkt->stream_index]->codec;
     ogg_packet *op= &context->op;
     ogg_page og ;
+    int64_t pts;
 
-    pts= av_rescale(pts, avctx->sample_rate, AV_TIME_BASE);
+    pts= av_rescale(pkt->pts, avctx->sample_rate, AV_TIME_BASE);
 
 //    av_log(avfcontext, AV_LOG_DEBUG, "M%d\n", size);
 
@@ -86,8 +85,8 @@ static int ogg_write_packet(AVFormatContext *avfcontext,
 	context->header_handled = 1 ;
     }
 
-    op->packet = (uint8_t*) buf;
-    op->bytes  = size;
+    op->packet = (uint8_t*) pkt->data;
+    op->bytes  = pkt->size;
     op->b_o_s  = op->packetno == 0;
     op->granulepos= pts;
 

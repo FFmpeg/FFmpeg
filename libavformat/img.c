@@ -300,11 +300,10 @@ static int img_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int img_write_packet(AVFormatContext *s, int stream_index,
-                            const uint8_t *buf, int size, int64_t pts)
+static int img_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     VideoData *img = s->priv_data;
-    AVStream *st = s->streams[stream_index];
+    AVStream *st = s->streams[pkt->stream_index];
     ByteIOContext pb1, *pb;
     AVPicture *picture;
     int width, height, ret;
@@ -314,7 +313,7 @@ static int img_write_packet(AVFormatContext *s, int stream_index,
     width = st->codec.width;
     height = st->codec.height;
     
-    picture = (AVPicture *)buf;
+    picture = (AVPicture *)pkt->data;
 
     if (!img->is_pipe) {
         if (get_frame_filename(filename, sizeof(filename), 
