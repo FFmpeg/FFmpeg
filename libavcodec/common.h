@@ -82,6 +82,25 @@ extern const struct AVOption avoptions_workaround_bug[11];
 #    define always_inline inline
 #endif
 
+#ifdef HAVE_INTTYPES_H
+#   include <inttypes.h>
+#else
+    typedef signed char  int8_t;
+    typedef signed short int16_t;
+    typedef signed int   int32_t;
+    typedef unsigned char  uint8_t;
+    typedef unsigned short uint16_t;
+    typedef unsigned int   uint32_t;
+
+#   ifdef CONFIG_WIN32
+        typedef signed __int64   int64_t;
+        typedef unsigned __int64 uint64_t;
+#   else /* other OS */
+        typedef signed long long   int64_t;
+        typedef unsigned long long uint64_t;
+#   endif /* other OS */
+#endif /* HAVE_INTTYPES_H */
+
 #ifdef EMULATE_FAST_INT
 /* note that we don't emulate 64bit ints */
 typedef signed char int_fast8_t;
@@ -101,15 +120,6 @@ static inline float floorf(float f) {
 #ifdef CONFIG_WIN32
 
 /* windows */
-
-typedef unsigned short uint16_t;
-typedef signed short int16_t;
-typedef unsigned char uint8_t;
-typedef unsigned int uint32_t;
-typedef unsigned __int64 uint64_t;
-typedef signed char int8_t;
-typedef signed int int32_t;
-typedef signed __int64 int64_t;
 
 #    ifndef __MINGW32__
 #        define int64_t_C(c)     (c ## i64)
@@ -137,8 +147,6 @@ typedef signed __int64 int64_t;
 #elif defined (CONFIG_OS2)
 /* OS/2 EMX */
 
-#include <inttypes.h>
-
 #ifndef int64_t_C
 #define int64_t_C(c)     (c ## LL)
 #define uint64_t_C(c)    (c ## ULL)
@@ -158,8 +166,6 @@ typedef signed __int64 int64_t;
 #else
 
 /* unix */
-
-#include <inttypes.h>
 
 #ifndef int64_t_C
 #define int64_t_C(c)     (c ## LL)

@@ -148,6 +148,7 @@ debug="yes"
 extralibs="-lm"
 simpleidct="yes"
 bigendian="no"
+inttypes="yes"
 emu_fast_int="no"
 vhook="default"
 dlfcn="no"
@@ -634,6 +635,17 @@ fi
 fi
 
 # ---
+# *inttypes.h* test
+cat > $TMPC << EOF
+#include <inttypes.h>
+int main(int argc, char ** argv){
+    return 0;
+}
+EOF
+
+$cc -o $TMPE $TMPC 2>/dev/null || inttypes="no"
+
+# ---
 # *int_fast* test
 cat > $TMPC << EOF
 #include <inttypes.h>
@@ -870,6 +882,7 @@ echo "C compiler       $cc"
 echo "make             $make"
 echo "CPU              $cpu ($tune)"
 echo "Big Endian       $bigendian"
+echo "inttypes.h       $inttypes"
 echo "broken inttypes.h $emu_fast_int"
 if test $cpu = "x86"; then
 echo "MMX enabled      $mmx"
@@ -971,6 +984,9 @@ echo "#define TUNECPU $TUNECPU" >> $TMPH
 if test "$bigendian" = "yes" ; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
+fi
+if test "$inttypes" = "yes" ; then
+  echo "#define HAVE_INTTYPES_H 1" >> $TMPH
 fi
 if test "$emu_fast_int" = "yes" ; then
   echo "#define EMULATE_FAST_INT 1" >> $TMPH
