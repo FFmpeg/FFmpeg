@@ -320,7 +320,7 @@ AVInputFormat video_grab_device_format = {
     grab_read_header,
     grab_read_packet,
     grab_read_close,
-    flags: AVFMT_NOFILE,
+    .flags = AVFMT_NOFILE,
 };
 
 int video_grab_init(void)

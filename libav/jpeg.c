@@ -238,8 +238,8 @@ static AVInputFormat jpeg_iformat = {
     jpeg_read_packet,
     jpeg_read_close,
     NULL,
-    flags: AVFMT_NOFILE | AVFMT_NEEDNUMBER,
-    extensions: "jpg,jpeg",
+    .flags = AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    .extensions = "jpg,jpeg",
 };
 
 static AVOutputFormat jpeg_oformat = {
@@ -253,7 +253,7 @@ static AVOutputFormat jpeg_oformat = {
     jpeg_write_header,
     jpeg_write_packet,
     jpeg_write_trailer,
-    flags: AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    .flags = AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
 int jpeg_init(void)

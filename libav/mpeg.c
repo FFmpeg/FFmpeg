@@ -647,7 +647,7 @@ static AVInputFormat mpegps_demux = {
     mpegps_read_header,
     mpegps_read_packet,
     mpegps_read_close,
-    flags: AVFMT_NOHEADER,
+    .flags = AVFMT_NOHEADER,
 };
 
 int mpegps_init(void)

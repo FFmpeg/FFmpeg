@@ -280,7 +280,7 @@ AVInputFormat audio_in_format = {
     audio_read_header,
     audio_read_packet,
     audio_read_close,
-    flags: AVFMT_NOFILE,
+    .flags = AVFMT_NOFILE,
 };
 
 AVOutputFormat audio_out_format = {
@@ -301,7 +301,7 @@ AVOutputFormat audio_out_format = {
     audio_write_header,
     audio_write_packet,
     audio_write_trailer,
-    flags: AVFMT_NOFILE,
+    .flags = AVFMT_NOFILE,
 };
 
 int audio_init(void)

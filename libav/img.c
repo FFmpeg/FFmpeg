@@ -729,7 +729,7 @@ AVInputFormat pgm_iformat = {
     img_read_close,
     NULL,
     AVFMT_NOFILE | AVFMT_NEEDNUMBER,
-    extensions: "pgm",
+    .extensions = "pgm",
 };
 
 AVOutputFormat pgm_oformat = {
@@ -782,7 +782,7 @@ AVInputFormat ppm_iformat = {
     img_read_close,
     NULL,
     AVFMT_NOFILE | AVFMT_NEEDNUMBER | AVFMT_RGB24,
-    extensions: "ppm",
+    .extensions = "ppm",
 };
 
 AVOutputFormat ppm_oformat = {
@@ -809,7 +809,7 @@ AVInputFormat imgyuv_iformat = {
     img_read_close,
     NULL,
     AVFMT_NOFILE | AVFMT_NEEDNUMBER,
-    extensions: "Y",
+    .extensions = "Y",
 };
 
 AVOutputFormat imgyuv_oformat = {
@@ -883,7 +883,7 @@ AVInputFormat ppmpipe_iformat = {
     img_read_packet,
     img_read_close,
     NULL,
-    flags: AVFMT_RGB24,
+    .flags = AVFMT_RGB24,
 };
 
 AVOutputFormat ppmpipe_oformat = {
@@ -897,7 +897,7 @@ AVOutputFormat ppmpipe_oformat = {
     img_write_header,
     img_write_packet,
     img_write_trailer,
-    flags: AVFMT_RGB24,
+    .flags = AVFMT_RGB24,
 };
 
 

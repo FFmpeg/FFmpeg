@@ -818,7 +818,7 @@ static AVInputFormat rtsp_demux = {
     rtsp_read_header,
     rtsp_read_packet,
     rtsp_read_close,
-    flags: AVFMT_NOFILE,
+    .flags = AVFMT_NOFILE,
 };
 
 /* dummy redirector format (used directly in av_open_input_file now) */

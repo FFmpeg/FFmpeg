@@ -185,7 +185,7 @@ AVInputFormat mp3_iformat = {
     mp3_read_header,
     raw_read_packet,
     raw_read_close,
-    extensions: "mp2,mp3", /* XXX: use probe */
+    .extensions = "mp2,mp3", /* XXX: use probe */
 };
 
 AVOutputFormat mp2_oformat = {
@@ -210,8 +210,8 @@ AVInputFormat ac3_iformat = {
     raw_read_header,
     raw_read_packet,
     raw_read_close,
-    extensions: "ac3",
-    value: CODEC_ID_AC3,
+    .extensions = "ac3",
+    .value = CODEC_ID_AC3,
 };
 
 AVOutputFormat ac3_oformat = {
@@ -248,8 +248,8 @@ AVInputFormat m4v_iformat = {
     video_read_header,
     raw_read_packet,
     raw_read_close,
-    extensions: "m4v", //FIXME remove after writing mpeg4_probe
-    value: CODEC_ID_MPEG4,
+    .extensions = "m4v", //FIXME remove after writing mpeg4_probe
+    .value = CODEC_ID_MPEG4,
 };
 
 AVOutputFormat m4v_oformat = {
@@ -273,7 +273,7 @@ AVInputFormat mpegvideo_iformat = {
     video_read_header,
     raw_read_packet,
     raw_read_close,
-    value: CODEC_ID_MPEG1VIDEO,
+    .value = CODEC_ID_MPEG1VIDEO,
 };
 
 AVOutputFormat mpeg1video_oformat = {
@@ -297,8 +297,8 @@ AVInputFormat mjpeg_iformat = {
     video_read_header,
     raw_read_packet,
     raw_read_close,
-    extensions: "mjpg,mjpeg",
-    value: CODEC_ID_MJPEG,
+    .extensions = "mjpg,mjpeg",
+    .value = CODEC_ID_MJPEG,
 };
 
 AVOutputFormat mjpeg_oformat = {
@@ -325,8 +325,8 @@ AVInputFormat pcm_ ## name ## _iformat = {\
     raw_read_header,\
     raw_read_packet,\
     raw_read_close,\
-    extensions: ext,\
-    value: codec,\
+    .extensions = ext,\
+    .value = codec,\
 };\
 \
 AVOutputFormat pcm_ ## name ## _oformat = {\
@@ -426,8 +426,8 @@ AVInputFormat rawvideo_iformat = {
     raw_read_header,
     rawvideo_read_packet,
     raw_read_close,
-    extensions: "yuv",
-    value: CODEC_ID_RAWVIDEO,
+    .extensions = "yuv",
+    .value = CODEC_ID_RAWVIDEO,
 };
 
 AVOutputFormat rawvideo_oformat = {

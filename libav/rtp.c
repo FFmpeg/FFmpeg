@@ -630,7 +630,7 @@ AVInputFormat rtp_demux = {
     rtp_read_header,
     rtp_read_packet,
     rtp_read_close,
-    flags: AVFMT_NOHEADER,
+    .flags = AVFMT_NOHEADER,
 };
 
 AVOutputFormat rtp_mux = {

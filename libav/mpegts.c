@@ -306,7 +306,7 @@ AVInputFormat mpegts_demux = {
     mpegts_read_header,
     mpegts_read_packet,
     mpegts_read_close,
-    flags: AVFMT_NOHEADER | AVFMT_SHOW_IDS,
+    .flags = AVFMT_NOHEADER | AVFMT_SHOW_IDS,
 };
 
 int mpegts_init(void)
