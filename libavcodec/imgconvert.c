@@ -955,6 +955,39 @@ static void yuv420p_to_yuv422(AVPicture *dst, const AVPicture *src,
     }
 }
 
+static void yuv420p_to_uyvy422(AVPicture *dst, const AVPicture *src,
+                              int width, int height)
+{
+    int w, h;
+    uint8_t *line1, *line2, *linesrc = dst->data[0];
+    uint8_t *lum1, *lum2, *lumsrc = src->data[0];
+    uint8_t *cb1, *cb2 = src->data[1];
+    uint8_t *cr1, *cr2 = src->data[2];
+    
+    for(h = height / 2; h--;) {
+        line1 = linesrc;
+        line2 = linesrc + dst->linesize[0];
+        
+        lum1 = lumsrc;
+        lum2 = lumsrc + src->linesize[0];
+        
+        cb1 = cb2;
+        cr1 = cr2;
+        
+        for(w = width / 2; w--;) {
+                *line1++ =          *line2++ = *cb1++;                      
+                *line1++ = *lum1++; *line2++ = *lum2++;                     
+                *line1++ =          *line2++ = *cr1++;
+                *line1++ = *lum1++; *line2++ = *lum2++;                     
+        }
+        
+        linesrc += dst->linesize[0] * 2;
+        lumsrc += src->linesize[0] * 2;
+        cb2 += src->linesize[1];
+        cr2 += src->linesize[2];
+    }
+}
+
 #define SCALEBITS 10
 #define ONE_HALF  (1 << (SCALEBITS - 1))
 #define FIX(x)	  ((int) ((x) * (1<<SCALEBITS) + 0.5))
@@ -1681,6 +1714,9 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         },
         [PIX_FMT_RGBA32] = { 
             .convert = yuv420p_to_rgba32
+        },
+	[PIX_FMT_UYVY422] = { 
+            .convert = yuv420p_to_uyvy422,
         },
     },
     [PIX_FMT_YUV422P] = { 
