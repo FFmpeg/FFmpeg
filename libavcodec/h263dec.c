@@ -301,9 +301,9 @@ static int decode_slice(MpegEncContext *s){
         return 0;
     }
 
-    fprintf(stderr, "slice end not reached but screenspace end (%d left %06X)\n", 
+    fprintf(stderr, "slice end not reached but screenspace end (%d left %06X, score= %d)\n", 
             s->gb.size_in_bits - get_bits_count(&s->gb),
-            show_bits(&s->gb, 24));
+            show_bits(&s->gb, 24), s->padding_bug_score);
             
     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
 
@@ -480,28 +480,30 @@ retry:
     }
     
     avctx->has_b_frames= !s->low_delay;
+    
+    if(s->xvid_build==0 && s->divx_version==0 && s->lavc_build==0){
+        if(s->avctx->codec_tag == ff_get_fourcc("XVID") || s->avctx->codec_tag == ff_get_fourcc("XVIX"))
+            s->xvid_build= -1;
+
+        if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->vo_type==0 && s->vol_control_parameters==0)
+            s->divx_version= 400; //divx 4
+    }
 
     if(s->workaround_bugs&FF_BUG_AUTODETECT){
-        if(s->padding_bug_score > -2 && !s->data_partitioning && !s->resync_marker)
+        s->workaround_bugs &= ~FF_BUG_NO_PADDING;
+        
+        if(s->padding_bug_score > -2 && !s->data_partitioning && (s->divx_version || !s->resync_marker))
             s->workaround_bugs |=  FF_BUG_NO_PADDING;
-        else
-            s->workaround_bugs &= ~FF_BUG_NO_PADDING;
 
         if(s->avctx->codec_tag == ff_get_fourcc("XVIX")) 
             s->workaround_bugs|= FF_BUG_XVID_ILACE;
-#if 0
-        if(s->avctx->codec_tag == ff_get_fourcc("MP4S")) 
-            s->workaround_bugs|= FF_BUG_AC_VLC;
-        
-        if(s->avctx->codec_tag == ff_get_fourcc("M4S2")) 
-            s->workaround_bugs|= FF_BUG_AC_VLC;
-#endif
+
         if(s->avctx->codec_tag == ff_get_fourcc("UMP4")){
             s->workaround_bugs|= FF_BUG_UMP4;
             s->workaround_bugs|= FF_BUG_AC_VLC;
         }
 
-        if(s->divx_version){
+        if(s->divx_version>=500){
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
         }
 
@@ -509,17 +511,14 @@ retry:
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA2;
         }
 
-        if(s->avctx->codec_tag == ff_get_fourcc("XVID") && s->xvid_build==0)
-            s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
-        
-        if(s->avctx->codec_tag == ff_get_fourcc("XVID") && s->xvid_build==0)
-            s->padding_bug_score= 256*256*256*64;
-        
         if(s->xvid_build && s->xvid_build<=3)
             s->padding_bug_score= 256*256*256*64;
         
         if(s->xvid_build && s->xvid_build<=1)
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
+
+        if(s->xvid_build && s->xvid_build<=12)
+            s->workaround_bugs|= FF_BUG_EDGE;
 
 #define SET_QPEL_FUNC(postfix1, postfix2) \
     s->dsp.put_ ## postfix1 = ff_put_ ## postfix2;\
@@ -546,9 +545,6 @@ retry:
             s->workaround_bugs|= FF_BUG_EDGE;
         }
         
-        if(s->avctx->codec_tag == ff_get_fourcc("DIVX") && s->divx_version==0 && s->lavc_build==0 && s->xvid_build==0 && s->vo_type==0 && s->vol_control_parameters==0 && s->low_delay)
-            s->workaround_bugs|= FF_BUG_EDGE;
-
 #if 0
         if(s->divx_version==500)
             s->padding_bug_score= 256*256*256*64;
