@@ -364,11 +364,20 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 #endif
 	while(s < end)
 	{
+#ifndef WORDS_BIGENDIAN
 		const int b= *s++;
 		const int g= *s++;
 		const int r= *s++;
+#else
+		const int a= *s++; /*skip*/
+		const int r= *s++;
+		const int g= *s++;
+		const int b= *s++;
+#endif		
 		*d++ = (b>>3) | ((g&0xFC)<<3) | ((r&0xF8)<<8);
+#ifndef WORDS_BIGENDIAN
 		s++;
+#endif
 	}
 }
 
