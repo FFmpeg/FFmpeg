@@ -60,6 +60,7 @@ compare the quality & speed of all filters
 split this huge file
 fix warnings (unused vars, ...)
 noise reduction filters
+write an exact implementation of the horizontal delocking filter
 ...
 
 Notes:
@@ -1450,7 +1451,10 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 {
 #ifdef HAVE_MMX
 	asm volatile(
-		"pushl %0					\n\t"
+		"leal (%0, %1), %%ecx				\n\t"
+		"leal (%%ecx, %1, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%0	ecx	ecx+%1	ecx+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
 		"pxor %%mm7, %%mm7				\n\t"
 		"movq bm00001000, %%mm6				\n\t"
 		"movd %2, %%mm5					\n\t" // QP
@@ -1464,10 +1468,10 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 
 //FIXME? "unroll by 2" and mix
 #ifdef HAVE_MMX2
-#define HDF(i)	\
-		"movq " #i "(%%eax), %%mm0			\n\t"\
-		"movq %%mm0, %%mm1				\n\t"\
-		"movq %%mm0, %%mm2				\n\t"\
+#define HDF(src, dst)	\
+		"movq " #src "(%%eax), %%mm0			\n\t"\
+		"movq " #src "(%%eax), %%mm1			\n\t"\
+		"movq " #src "(%%eax), %%mm2			\n\t"\
 		"psrlq $8, %%mm1				\n\t"\
 		"psubusb %%mm1, %%mm2				\n\t"\
 		"psubusb %%mm0, %%mm1				\n\t"\
@@ -1486,12 +1490,12 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 		"psubb %%mm1, %%mm0				\n\t"\
 		"psllq $8, %%mm1				\n\t"\
 		"paddb %%mm1, %%mm0				\n\t"\
-		"movd %%mm0, (%0)				\n\t"\
+		"movd %%mm0, " #dst"				\n\t"\
 		"psrlq $32, %%mm0				\n\t"\
-		"movd %%mm0, 4(%0)				\n\t"
+		"movd %%mm0, 4" #dst"				\n\t"
 #else
-#define HDF(i)\
-		"movq " #i "(%%eax), %%mm0			\n\t"\
+#define HDF(src, dst)\
+		"movq " #src "(%%eax), %%mm0			\n\t"\
 		"movq %%mm0, %%mm1				\n\t"\
 		"movq %%mm0, %%mm2				\n\t"\
 		"psrlq $8, %%mm1				\n\t"\
@@ -1515,29 +1519,21 @@ static inline void doHorizDefFilterAndCopyBack(uint8_t dst[], int stride, int QP
 		"psubb %%mm1, %%mm0				\n\t"\
 		"psllq $8, %%mm1				\n\t"\
 		"paddb %%mm1, %%mm0				\n\t"\
-		"movd %%mm0, (%0)				\n\t"\
+		"movd %%mm0, " #dst "				\n\t"\
 		"psrlq $32, %%mm0				\n\t"\
-		"movd %%mm0, 4(%0)				\n\t"
+		"movd %%mm0, 4" #dst "				\n\t"
 #endif
-		HDF(0)
-		"addl %1, %0					\n\t"
-		HDF(8)
-		"addl %1, %0					\n\t"
-		HDF(16)
-		"addl %1, %0					\n\t"
-		HDF(24)
-		"addl %1, %0					\n\t"
-		HDF(32)
-		"addl %1, %0					\n\t"
-		HDF(40)
-		"addl %1, %0					\n\t"
-		HDF(48)
-		"addl %1, %0					\n\t"
-		HDF(56)
-		"popl %0					\n\t"
+		HDF(0,(%0))
+		HDF(8,(%%ecx))
+		HDF(16,(%%ecx, %1))
+		HDF(24,(%%ecx, %1, 2))
+		HDF(32,(%0, %1, 4))
+		HDF(40,(%%ebx))
+		HDF(48,(%%ebx, %1))
+		HDF(56,(%%ebx, %1, 2))
 		:
 		: "r" (dst), "r" (stride), "r" (QP)
-		: "%eax"
+		: "%eax", "%ebx", "%ecx"
 	);
 #else
 	uint8_t *src= tempBlock;
@@ -1597,8 +1593,11 @@ static inline void doHorizLowPassAndCopyBack(uint8_t dst[], int stride, int QP)
 {
 //return;
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
-	asm volatile(	//"movv %0 %1 %2\n\t"
-		"pushl %0\n\t"
+	asm volatile(
+		"leal (%0, %1), %%ecx				\n\t"
+		"leal (%%ecx, %1, 4), %%ebx			\n\t"
+//	0	1	2	3	4	5	6	7	8	9
+//	%0	ecx	ecx+%1	ecx+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
 		"pxor %%mm7, %%mm7					\n\t"
 		"leal tempBlock, %%eax					\n\t"
 /*
@@ -1714,20 +1713,20 @@ Implemented	Exact 7-Tap
 #endif
 
 /* uses the 7-Tap Filter: 1112111 */
-#define NEW_HLP(i)\
-		"movq " #i "(%%eax), %%mm0				\n\t"\
-		"movq %%mm0, %%mm1					\n\t"\
-		"movq %%mm0, %%mm2					\n\t"\
-		"movd -4(%0), %%mm3					\n\t" /*0001000*/\
-		"movd 8(%0), %%mm4					\n\t" /*0001000*/\
+#define NEW_HLP(src, dst)\
+		"movq " #src "(%%eax), %%mm1				\n\t"\
+		"movq " #src "(%%eax), %%mm2				\n\t"\
 		"psllq $8, %%mm1					\n\t"\
 		"psrlq $8, %%mm2					\n\t"\
+		"movd -4" #dst ", %%mm3					\n\t" /*0001000*/\
+		"movd 8" #dst ", %%mm4					\n\t" /*0001000*/\
 		"psrlq $24, %%mm3					\n\t"\
 		"psllq $56, %%mm4					\n\t"\
 		"por %%mm3, %%mm1					\n\t"\
 		"por %%mm4, %%mm2					\n\t"\
 		"movq %%mm1, %%mm5					\n\t"\
 		PAVGB(%%mm2, %%mm1)\
+		"movq " #src "(%%eax), %%mm0				\n\t"\
 		PAVGB(%%mm1, %%mm0)\
 		"psllq $8, %%mm5					\n\t"\
 		"psrlq $8, %%mm2					\n\t"\
@@ -1742,9 +1741,9 @@ Implemented	Exact 7-Tap
 		PAVGB(%%mm2, %%mm1)\
 		PAVGB(%%mm1, %%mm5)\
 		PAVGB(%%mm5, %%mm0)\
-		"movd %%mm0, (%0)					\n\t"\
+		"movd %%mm0, " #dst "					\n\t"\
 		"psrlq $32, %%mm0					\n\t"\
-		"movd %%mm0, 4(%0)					\n\t"
+		"movd %%mm0, 4" #dst "					\n\t"
 
 /* uses the 9-Tap Filter: 112242211 */
 #define NEW_HLP2(i)\
@@ -1786,28 +1785,20 @@ Implemented	Exact 7-Tap
 		"psrlq $32, %%mm0					\n\t"\
 		"movd %%mm0, 4(%0)					\n\t"
 
-#define HLP(i) NEW_HLP(i)
+#define HLP(src, dst) NEW_HLP(src, dst)
 
-		HLP(0)
-		"addl %1, %0						\n\t"
-		HLP(8)
-		"addl %1, %0						\n\t"
-		HLP(16)
-		"addl %1, %0						\n\t"
-		HLP(24)
-		"addl %1, %0						\n\t"
-		HLP(32)
-		"addl %1, %0						\n\t"
-		HLP(40)
-		"addl %1, %0						\n\t"
-		HLP(48)
-		"addl %1, %0						\n\t"
-		HLP(56)
+		HLP(0, (%0))
+		HLP(8, (%%ecx))
+		HLP(16, (%%ecx, %1))
+		HLP(24, (%%ecx, %1, 2))
+		HLP(32, (%0, %1, 4))
+		HLP(40, (%%ebx))
+		HLP(48, (%%ebx, %1))
+		HLP(56, (%%ebx, %1, 2))
 
-		"popl %0\n\t"
 		:
 		: "r" (dst), "r" (stride)
-		: "%eax", "%ebx"
+		: "%eax", "%ebx", "%ecx"
 	);
 
 #else
@@ -2743,10 +2734,17 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		for(x=0; x<width; x+=BLOCK_SIZE)
 		{
 			const int stride= dstStride;
-			int QP= isColor ?
-				QPs[(y>>3)*QPStride + (x>>3)]:
-				QPs[(y>>4)*QPStride + (x>>4)];
-			if(!isColor && (mode & LEVEL_FIX)) QP= (QP* (packedYScale &0xFFFF))>>8;
+			int QP;
+			if(isColor)
+			{
+				QP=QPs[(y>>3)*QPStride + (x>>3)];
+			}
+			else
+			{
+				QP= QPs[(y>>4)*QPStride + (x>>4)];
+				if(mode & LEVEL_FIX) QP= (QP* (packedYScale &0xFFFF))>>8;
+				yHistogram[ srcBlock[srcStride*5] ]++;
+			}
 #ifdef HAVE_MMX
 			asm volatile(
 				"movd %0, %%mm7					\n\t"
@@ -2775,8 +2773,6 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			prefetchw(dstBlock + (((x>>3)&3) + 9)*dstStride + 32);
 */
 #endif
-
-			if(!isColor) yHistogram[ srcBlock[srcStride*5] ]++;
 
 #ifdef PP_FUNNY_STRIDE
 			//can we mess with a 8x16 block, if not use a temp buffer, yes again
