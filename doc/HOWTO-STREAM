@@ -2,7 +2,7 @@ The FFserver streaming HOWTO
 ----------------------------
 
 Philip Gladstone <philip-ffserver@gladstonefamily.net>
-Last updated: May 10, 2002
+Last updated: May 16, 2002
 
 0. What is this HOWTO about?
 
@@ -49,6 +49,9 @@ Windows Media Player (WMP). Go to Open URL and enter
     http://<linuxbox>:8090/test.asf
 
 You should see (after a short delay) video and hear audio. 
+
+WARNING: trying to stream test1.mpg doesn't work with WMP as it tries to
+transfer the entire file before starting to play.
 
 4. What happens next?
 
