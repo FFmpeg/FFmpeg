@@ -660,7 +660,7 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
     c->has_audio = c->has_video = 0;
     c->start_time = time(NULL);
     c->aspect = 0; /* 4:3 is the default */
-    if (vst->codec.aspect_ratio == 16.0 / 9.0)
+    if ((int)(vst->codec.aspect_ratio * 10) == 17) /* 16:9 */ 
         c->aspect = 0x07;
 
     if (fifo_init(&c->audio_data, 100*AVCODEC_MAX_AUDIO_FRAME_SIZE) < 0)

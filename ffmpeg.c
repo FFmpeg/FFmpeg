@@ -467,6 +467,7 @@ static void do_video_out(AVFormatContext *s,
     static uint8_t *video_buffer;
     uint8_t *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
+    enum PixelFormat target_pixfmt;
 
 #define VIDEO_BUFFER_SIZE (1024*1024)
 
@@ -534,7 +535,8 @@ static void do_video_out(AVFormatContext *s,
         return;
 
     /* convert pixel format if needed */
-    if (enc->pix_fmt != dec->pix_fmt) {
+    target_pixfmt = ost->video_resample ? PIX_FMT_YUV420P : enc->pix_fmt;
+    if (dec->pix_fmt != target_pixfmt) {
         int size;
 
         /* create temporary picture */
@@ -545,7 +547,7 @@ static void do_video_out(AVFormatContext *s,
         formatted_picture = &picture_format_temp;
         avpicture_fill(formatted_picture, buf, enc->pix_fmt, dec->width, dec->height);
         
-        if (img_convert(formatted_picture, enc->pix_fmt, 
+        if (img_convert(formatted_picture, target_pixfmt, 
                         in_picture, dec->pix_fmt, 
                         dec->width, dec->height) < 0) {
             fprintf(stderr, "pixel format conversion not handled\n");
@@ -561,6 +563,25 @@ static void do_video_out(AVFormatContext *s,
     if (ost->video_resample) {
         final_picture = &ost->pict_tmp;
         img_resample(ost->img_resample_ctx, final_picture, formatted_picture);
+	if (enc->pix_fmt != PIX_FMT_YUV420P) {
+            int size;
+	    
+	    av_free(buf);
+            /* create temporary picture */
+            size = avpicture_get_size(enc->pix_fmt, enc->width, enc->height);
+            buf = av_malloc(size);
+            if (!buf)
+                return;
+            final_picture = &picture_format_temp;
+            avpicture_fill(final_picture, buf, enc->pix_fmt, enc->width, enc->height);
+        
+            if (img_convert(final_picture, enc->pix_fmt, 
+                            &ost->pict_tmp, PIX_FMT_YUV420P, 
+                            enc->width, enc->height) < 0) {
+                fprintf(stderr, "pixel format conversion not handled\n");
+                goto the_end;
+            }
+	}
     } else if (ost->video_crop) {
         picture_crop_temp.data[0] = formatted_picture->data[0] +
                 (ost->topBand * formatted_picture->linesize[0]) + ost->leftBand;
