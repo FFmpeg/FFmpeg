@@ -1,6 +1,6 @@
 include ../config.mak
 
-CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H
+CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H -I. -I..
 LDFLAGS= -g
 
 OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
