@@ -10,22 +10,22 @@
 
 @chapter General Problems
 
-@section ffserver doesn't not work. 
+@section ffserver does not work. 
 
 ffmpeg development is now concentrated on the codec and format
 handling. New developments broke ffserver, so don't expect it to work
 correctly. If you have time and experience, please help us fix it.
 
-@section I cannot read this file although this format seems to be suppored by ffmpeg.
+@section I cannot read this file although this format seems to be supported by ffmpeg.
 
 Even if ffmpeg can read the file format, it may not support all its
 codecs. Please consult the supported codec list in the ffmpeg
 documentation.
 
-@section I get audio/video synchro problems when grabbing.
+@section I get audio/video synchronization problems when grabbing.
 
 Currently, the grabbing stuff does not handle synchronisation
-correctly. You are free to correct it. It is planned to fix it ASAP.
+correctly. You are free to correct it. A fix is planned.
 
 @section How do I encode jpegs to another format ?
 
@@ -49,17 +49,19 @@ portable, bloated and often slow.
 @section Why do I see a slight quality degradation with multithreaded MPEG* encoding ?
 
 For multithreaded MPEG* encoding, the encoded slices must be independent,
-otherwise thread n would practically have to wait for n-1 to finish, so its
-quite logic that there is a small reduction of quality, this is not a bug
+otherwise thread n would practically have to wait for n-1 to finish, so it's
+quite logical that there is a small reduction of quality. This is not a bug.
 
 @section How can I read from the standard input or write to the standard output ?
 
 Use @file{-} as filename.
 
-@section Why Audio is not decoded in VOB files ?
+@section Why does ffmpeg not decode audio in VOB files ?
 
-AC3 decoding is optional as the codec is currently released under the
-GPL. Enable it with @code{./configure --enable-a52}. Take care: by
+The audio is AC3 (a.k.a. A/52). AC3 decoding is an optional component in ffmpeg
+as the component that handles AC3 decoding (liba52) is currently released under 
+the GPL. If you have liba52 installed on your system, enable AC3 decoding
+with @code{./configure --enable-a52}. Take care: by
 enabling AC3, you automatically change the license of libavcodec from
 LGPL to GPL.
 
@@ -83,10 +85,10 @@ only if you have some mpeg4 codec installed like ffdshow or xvid
 @item mpeg1
 .mpg only
 @end table
-note, asf often uses .wmv or .wma extensions in windows, it should also be
-mentioned that asf is patented, so microsoft may sue or threaten users who
-use it if they see any reason to do so, it is strongly recommanded to avoid asf
-for any use
+Note, asf files often have .wmv or .wma extensions in windows. It should also 
+be mentioned that Microsoft claims a patent on the ASF format, and may sue 
+or threaten users who create ASF files with non-Microsoft software. It is
+strongly advised to avoid ASF where possible.
 
 The following list of audio codecs should work on most windows systems
 @table @option
@@ -97,49 +99,51 @@ The following list of audio codecs should work on most windows systems
 if some mp3 codec like lame is installed
 @end table
 
-@section The chrominance seems to come from a different time then the luminance on bt8x8 captures on linux?
+@section Why does the chrominance data seem to be sampled at a different time than the luminance data on bt8x8 captures on Linux?
 
-well known bug in the bt8x8 driver, for 2.4.26 theres a patch at 
-(@url{http://www.mplayerhq.hu/~michael/bttv-420-2.4.26.patch}), i suspect that
-this will also apply cleanly to other 2.4 kernels
+This is a well-known bug in the bt8x8 driver. For 2.4.26 there is a patch at 
+(@url{http://www.mplayerhq.hu/~michael/bttv-420-2.4.26.patch}). This may also
+apply cleanly to other 2.4-series kernels.
 
-@section How to avoid the ugly aliassing artefacts in bt8x8 captures on linux?
+@section How do I avoid the ugly aliassing artifacts in bt8x8 captures on linux?
 
-pass 'combfilter=1 lumafilter=1' to the bttv driver, note though that 'combfilter=1'
-will cause somewhat too strong filtering, a fix is too apply (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.4.26.patch})
+Pass 'combfilter=1 lumafilter=1' to the bttv driver. Note though that 'combfilter=1'
+will cause somewhat too strong filtering. A fix is to apply (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.4.26.patch})
 or (@url{http://www.mplayerhq.hu/~michael/bttv-comb-2.6.6.patch})
-and pass 'combfilter=2'
+and pass 'combfilter=2'.
 
-@section I have a problem with an old version of ffmpeg, where should i report it?
-Nowhere, upgrade to the latest release or if there is no recent release upgrade
-to cvs, you could also try to report it, maybe you are lucky and
-will become the first person in history to get a different awnser from "upgrade
+@section I have a problem with an old version of ffmpeg; where should i report it?
+Nowhere. Upgrade to the latest release or if there is no recent release upgrade
+to cvs. You could also try to report it. Maybe you will get lucky and
+become the first person in history to get a different answer from "upgrade
 to cvs".
 
 @section -f jpeg doesnt work.
 
 try '-f image -img jpeg test%d.jpg'
 
-@section i cant change the framerate
+@section Why can I not change the framerate?
 
-some codecs, like mpeg1/2 only allow a small number of fixed framerates, 
-choose a different codec with -vcodec
+Some codecs, like MPEG 1/2 only allow a small number of fixed framerates.
+Choose a different codec with the -vcodec command line option.
 
-@section it doesnt work
+@section ffmpeg does not work; What is wrong?
 
-try a 'make distclean' if this doesnt help see
-(@url{ffmpeg-bugreport.html})
+Try a 'make distclean' in the ffmpeg source directory. If this does not help see
+(@url{ffmpeg-bugreport.html}).
 
 @chapter Development
 
-@section Are there examples of use of the FFmpeg libraries libavcodec and libavformat ?
+@section Are there examples illustrating how to use the FFmpeg libraries, particularly libavcodec and libavformat ?
 
-Yes. Read the Developers Guide of the FFmpeg documentation.
+Yes. Read the Developers Guide of the FFmpeg documentation. Alternatively,
+examine the source code for one of the many open source projects that 
+already incorporate ffmpeg at (@url{projects.php}).
 
 @section Can you support my C compiler XXX ?
 
-No. Only GCC is supported. GCC is ported on most systems available and I
-don't see the need to pollute the source code with @code{#ifdef}s
+No. Only GCC is supported. GCC is ported to most systems available and there
+is no need to pollute the source code with @code{#ifdef}s
 related to the compiler.
 
 @section Can I use FFmpeg or libavcodec under Windows ?
@@ -147,16 +151,25 @@ related to the compiler.
 Yes, but the MinGW tools @emph{must} be used to compile FFmpeg. You
 can link the resulting DLLs with any other Windows program. Read the
 @emph{Native Windows Compilation} section in the FFmpeg documentation
-to have more information.
+to find more information.
 
 @section Can you add automake, libtool or autoconf support ?
 
-No. These tools are too blowted and they complicate the build. Moreover,
+No. These tools are too bloated and they complicate the build. Moreover,
 since only @samp{gcc} is supported they would add little advantages in
 terms of portability.
 
-@section ffmpeg doesnt contain any debugging symbols ?
+@section Why not rewrite ffmpeg in object-oriented C++ ?
 
-try ffmpeg_g, ffplay_g, ...
+ffmpeg is already organized in a highly modular manner does not need to
+be rewritten in a formal object language. Further, many of the developers 
+favor straight C; it works for them. For more arguments on this matter,
+read "Programming Religion" at (@url{http://lkml.org/faq/lkmlfaq-15.html}).
+
+@section Why are the ffmpeg programs devoid of debugging symbols ?
+
+The build process creates ffmpeg_g, ffplay_g, etc. which contain full debug
+information. Those binaries are strip'd to create ffmpeg, ffplay, etc. If
+you need the debug information, used the *_g versions.
 
 @bye
