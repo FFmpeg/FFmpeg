@@ -29,7 +29,8 @@ typedef struct DVDemuxContext {
 static int dv_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
-    AVStream *vst, *ast;
+    AVStream *vst;
+    //    AVStream *ast;
 
     vst = av_new_stream(s, 0);
     if (!vst)

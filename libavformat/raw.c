@@ -82,7 +82,7 @@ int raw_read_packet(AVFormatContext *s,
                     AVPacket *pkt)
 {
     int ret, size;
-    AVStream *st = s->streams[0];
+    //    AVStream *st = s->streams[0];
     
     size= RAW_PACKET_SIZE;
 
