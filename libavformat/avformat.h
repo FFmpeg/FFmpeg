@@ -12,7 +12,7 @@ extern "C" {
 #define LIBAVFORMAT_IDENT	"FFmpeg" FFMPEG_VERSION "b" AV_STRINGIFY(LIBAVFORMAT_BUILD)
 
 #include <time.h>
-
+#include <stdio.h>  /* FILE */
 #include "avcodec.h"
 
 #include "avio.h"
