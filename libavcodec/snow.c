@@ -31,6 +31,7 @@
 #define DWTELEM int
 #define QROOT 8 
 #define LOSSLESS_QLOG -128
+#define FRAC_BITS 8
 
 static const int8_t quant3[256]={
  0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -427,7 +428,7 @@ typedef struct SnowContext{
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to make the motion estimation eventually independant of MpegEncContext, so this will be removed then (FIXME/XXX)
 }SnowContext;
 
-#define QEXPSHIFT 7 //FIXME try to change this to 0
+#define QEXPSHIFT (7-FRAC_BITS+8) //FIXME try to change this to 0
 static const uint8_t qexp[8]={
     128, 140, 152, 166, 181, 197, 215, 235
 //   64,  70,  76,  83,  91,  99, 108, 117
@@ -2152,8 +2153,14 @@ assert(src_stride > 7*MB_SIZE);
                     +obmc2[x] * block[2][x + y*src_stride]
                     +obmc3[x] * block[1][x + y*src_stride]
                     +obmc4[x] * block[0][x + y*src_stride];
-            if(add) dst[x + y*dst_stride] += v * (256/OBMC_MAX);
-            else    dst[x + y*dst_stride] -= v * (256/OBMC_MAX);
+                    
+            v *= 256/OBMC_MAX;
+            if(FRAC_BITS != 8){
+                v += 1<<(7 - FRAC_BITS);
+                v >>= 8 - FRAC_BITS;
+            }
+            if(add) dst[x + y*dst_stride] += v;
+            else    dst[x + y*dst_stride] -= v;
         }
     }
 #endif
@@ -2177,8 +2184,8 @@ static always_inline void predict_plane(SnowContext *s, DWTELEM *buf, int plane_
     if(s->keyframe || (s->avctx->debug&512)){
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
-                if(add) buf[x + y*w]+= 128*256;
-                else    buf[x + y*w]-= 128*256;
+                if(add) buf[x + y*w]+= 128<<FRAC_BITS;
+                else    buf[x + y*w]-= 128<<FRAC_BITS;
             }
         }
 
@@ -2727,7 +2734,7 @@ redo_frame:
      if(pict->data[plane_index]) //FIXME gray hack
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
-                s->spatial_dwt_buffer[y*w + x]= pict->data[plane_index][y*pict->linesize[plane_index] + x]<<8;
+                s->spatial_dwt_buffer[y*w + x]= pict->data[plane_index][y*pict->linesize[plane_index] + x]<<FRAC_BITS;
             }
         }
         predict_plane(s, s->spatial_dwt_buffer, plane_index, 0);
@@ -2746,7 +2753,7 @@ redo_frame:
         if(s->qlog == LOSSLESS_QLOG){
             for(y=0; y<h; y++){
                 for(x=0; x<w; x++){
-                    s->spatial_dwt_buffer[y*w + x]= (s->spatial_dwt_buffer[y*w + x] + 127)>>8;
+                    s->spatial_dwt_buffer[y*w + x]= (s->spatial_dwt_buffer[y*w + x] + (1<<(FRAC_BITS-1)))>>FRAC_BITS;
                 }
             }
         }
@@ -2780,7 +2787,7 @@ redo_frame:
         if(s->qlog == LOSSLESS_QLOG){
             for(y=0; y<h; y++){
                 for(x=0; x<w; x++){
-                    s->spatial_dwt_buffer[y*w + x]<<=8;
+                    s->spatial_dwt_buffer[y*w + x]<<=FRAC_BITS;
                 }
             }
         }
@@ -2788,7 +2795,7 @@ redo_frame:
         //FIXME optimize
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
-                int v= (s->spatial_dwt_buffer[y*w + x]+128)>>8;
+                int v= (s->spatial_dwt_buffer[y*w + x]+(1<<(FRAC_BITS-1)))>>FRAC_BITS;
                 if(v&(~255)) v= ~(v>>31);
                 s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x]= v;
             }
@@ -2895,7 +2902,7 @@ if(s->avctx->debug&2048){
 
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
-                int v= (s->spatial_dwt_buffer[y*w + x]+128)>>8;
+                int v= (s->spatial_dwt_buffer[y*w + x]+(1<<(FRAC_BITS-1)))>>FRAC_BITS;
                 if(v&(~255)) v= ~(v>>31);
                 s->mconly_picture.data[plane_index][y*s->mconly_picture.linesize[plane_index] + x]= v;
             }
@@ -2918,7 +2925,7 @@ if(s->avctx->debug&2048){
         if(s->qlog == LOSSLESS_QLOG){
             for(y=0; y<h; y++){
                 for(x=0; x<w; x++){
-                    s->spatial_dwt_buffer[y*w + x]<<=8;
+                    s->spatial_dwt_buffer[y*w + x]<<=FRAC_BITS;
                 }
             }
         }
@@ -2927,7 +2934,7 @@ if(s->avctx->debug&2048){
         //FIXME optimize
         for(y=0; y<h; y++){
             for(x=0; x<w; x++){
-                int v= (s->spatial_dwt_buffer[y*w + x]+128)>>8;
+                int v= (s->spatial_dwt_buffer[y*w + x]+(1<<(FRAC_BITS-1)))>>FRAC_BITS;
                 if(v&(~255)) v= ~(v>>31);
                 s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x]= v;
             }
