@@ -1184,7 +1184,7 @@ static int wma_decode_frame(WMADecodeContext *s, int16_t *samples)
         iptr = s->frame_out[ch];
 
         for(i=0;i<n;i++) {
-            a = lrint(*iptr++);
+            a = lrintf(*iptr++);
             if (a > 32767)
                 a = 32767;
             else if (a < -32768)
