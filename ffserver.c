@@ -148,6 +148,8 @@ typedef struct HTTPContext {
                                  seconds max) */
 } HTTPContext;
 
+static AVFrame dummy_frame;
+
 /* each generated stream is described here */
 enum StreamType {
     STREAM_TYPE_LIVE,
@@ -401,6 +403,8 @@ static void start_children(FFStream *feed)
 
                 /* This is needed to make relative pathnames work */
                 chdir(my_program_dir);
+
+                signal(SIGPIPE, SIG_DFL);
 
                 execvp(pathname, feed->child_argv);
 
@@ -2090,6 +2094,10 @@ static int http_prepare_data(HTTPContext *c)
                            sizeof(AVStream));
             st->codec.frame_number = 0; /* XXX: should be done in
                                            AVStream, not in codec */
+            /* I'm pretty sure that this is not correct...
+             * However, without it, we crash
+             */
+            st->codec.coded_frame = &dummy_frame;
         }
         c->got_key_frame = 0;
 
@@ -3156,6 +3164,7 @@ AVStream *add_av_stream1(FFStream *stream, AVCodecContext *codec)
         return NULL;
     fst->priv_data = av_mallocz(sizeof(FeedData));
     memcpy(&fst->codec, codec, sizeof(AVCodecContext));
+    fst->codec.coded_frame = &dummy_frame;
     stream->streams[stream->nb_streams++] = fst;
     return fst;
 }
