@@ -4508,9 +4508,6 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
         s->data_partitioning= get_bits1(gb);
         if(s->data_partitioning){
             s->rvlc= get_bits1(gb);
-            if(s->rvlc){
-                printf("reversible vlc not supported\n");
-            }
         }
         
         if(vo_ver_id != 1) {
