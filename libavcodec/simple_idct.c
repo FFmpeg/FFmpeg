@@ -104,6 +104,7 @@ static int inline idctRowCondZ (int16_t * row)
 }
 
 #ifdef ARCH_ALPHA
+/* 0: all entries 0, 1: only first entry nonzero, 2: otherwise  */
 static int inline idctRowCondDC(int16_t *row)
 {
 	int_fast32_t a0, a1, a2, a3, b0, b1, b2, b3;
@@ -201,7 +202,7 @@ static int inline idctRowCondDC(int16_t *row)
 	row[6] = (a1 - b1) >> ROW_SHIFT;
 	row[7] = (a0 - b0) >> ROW_SHIFT;
 
-	return 1;
+	return 2;
 }
 #else  /* not ARCH_ALPHA */
 static int inline idctRowCondDC (int16_t * row)
@@ -547,16 +548,33 @@ void simple_idct (short *block)
 			idctSparse2Col(block + i);
 	}
 #elif defined(ARCH_ALPHA)
-	int shortcut = 1;
+        int rowsZero = 1;       /* all rows except row 0 zero */
+        int rowsConstant = 1;	/* all rows consist of a constant value */
 
 	for (i = 0; i < 8; i++) {
-		int anynonzero = idctRowCondDC(block + 8 * i);
-		if (i > 0 && anynonzero)
-			shortcut = 0;
+		int sparseness = idctRowCondDC(block + 8 * i);
+
+		if (i > 0 && sparseness > 0)
+                        rowsZero = 0;
+                if (sparseness == 2)
+                        rowsConstant = 0;
 	}
 
-	if (shortcut) {
-		idctCol2(block);
+        if (rowsZero) {
+                idctCol2(block);
+        } else if (rowsConstant) {
+		uint64_t *lblock = (uint64_t *) block;
+
+		idctSparseCol(block);
+		for (i = 0; i < 8; i++) {
+			uint64_t v = (uint16_t) block[i * 8];
+
+			v += v << 16;
+			v += v << 32;
+			lblock[0] = v;
+			lblock[1] = v;
+			lblock += 2;
+		}
 	} else {
 		for (i = 0; i < 8; i++)
 			idctSparseCol(block + i);
