@@ -128,17 +128,17 @@ void dsputil_init_mlib(void)
 {
     ff_idct = ff_idct_mlib;
 
-    put_pixels_tab[0] = put_pixels_mlib;
-    put_pixels_tab[1] = put_pixels_x2_mlib;
-    put_pixels_tab[2] = put_pixels_y2_mlib;
-    put_pixels_tab[3] = put_pixels_xy2_mlib;
+    put_pixels_tab[1][0] = put_pixels_mlib;
+    put_pixels_tab[1][1] = put_pixels_x2_mlib;
+    put_pixels_tab[1][2] = put_pixels_y2_mlib;
+    put_pixels_tab[1][3] = put_pixels_xy2_mlib;
 
-    avg_pixels_tab[0] = avg_pixels_mlib;
-    avg_pixels_tab[1] = avg_pixels_x2_mlib;
-    avg_pixels_tab[2] = avg_pixels_y2_mlib;
-    avg_pixels_tab[3] = avg_pixels_xy2_mlib;
+    avg_pixels_tab[1][0] = avg_pixels_mlib;
+    avg_pixels_tab[1][1] = avg_pixels_x2_mlib;
+    avg_pixels_tab[1][2] = avg_pixels_y2_mlib;
+    avg_pixels_tab[1][3] = avg_pixels_xy2_mlib;
     
-    put_no_rnd_pixels_tab[0] = put_pixels_mlib;
+    put_no_rnd_pixels_tab[1][0] = put_pixels_mlib;
     
     add_pixels_clamped = add_pixels_clamped_mlib;
 }
