@@ -1131,7 +1131,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         if (vard <= 64 || vard < varc)
             s->scene_change_score+= ff_sqrt(vard) - ff_sqrt(varc);
         else
-            s->scene_change_score+= 20;
+            s->scene_change_score+= s->qscale;
 
         if (vard*2 + 200 > varc)
             mb_type|= MB_TYPE_INTRA;
