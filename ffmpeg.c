@@ -7,15 +7,6 @@
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
- * As a special exception, if you link this library with other files
- * to produce an executable, this library does not by itself cause the
- * resulting executable to be covered by the GNU General Public
- * License.  This exception does not however invalidate any other
- * reasons why the executable file might be covered by the GNU General
- * Public License. (The General Public License restrictions do apply
- * in other respects; for example, they cover modification of the
- * file, and distribution when not linked into a combine executable.)
- * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -23,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 #define HAVE_AV_CONFIG_H
 #include "avformat.h"
