@@ -20,6 +20,8 @@
 /**
  * @file dsputil.h
  * DSP utils.
+ * note, many functions in here may use MMX which trashes the FPU state, it is
+ * absolutely necessary to call emms_c() between dsp & float/double code
  */
 
 #ifndef DSPUTIL_H
@@ -147,7 +149,7 @@ typedef struct DSPContext {
     /* maybe create an array for 16/8 functions */
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
-     * *pixels_tab[ 0->16x16 1->8x8 ][ xhalfpel + 2*yhalfpel ]
+     * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination where the result is stored
      * @param pixels source
      * @param line_size number of bytes in a horizontal line of block
@@ -157,7 +159,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
-     * *pixels_tab[ 0->16x16 1->8x8 ][ xhalfpel + 2*yhalfpel ]
+     * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b+1)>>1
      * @param pixels source
      * @param line_size number of bytes in a horizontal line of block
@@ -167,7 +169,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
-     * *pixels_tab[ 0->16x16 1->8x8 ][ xhalfpel + 2*yhalfpel ]
+     * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination where the result is stored
      * @param pixels source
      * @param line_size number of bytes in a horizontal line of block
@@ -177,7 +179,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with no rounding (a+b)>>1.
-     * *pixels_tab[ 0->16x16 1->8x8 ][ xhalfpel + 2*yhalfpel ]
+     * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b)>>1
      * @param pixels source
      * @param line_size number of bytes in a horizontal line of block
