@@ -771,7 +771,7 @@ if test "$altivec" = "yes" ; then
   if test "$_altivec_h" = "yes" ; then
     echo "#define HAVE_ALTIVEC_H 1" >> $TMPH
   else
-    echo "#undef HAVE_ALTIVEC_H 1" >> $TMPH
+    echo "#undef HAVE_ALTIVEC_H" >> $TMPH
   fi
 fi
 if test "$gprof" = "yes" ; then
