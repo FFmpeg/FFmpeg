@@ -54,6 +54,7 @@ endif
 
 OBJS = ffmpeg.o ffserver.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
+FFLIBS = -L./libavformat -lavformat -L./libavcodec -lavcodec
 
 all: lib $(PROG) $(VHOOK)
 
@@ -61,18 +62,15 @@ lib:
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libavformat all
 
-ffmpeg_g$(EXE): ffmpeg.o $(DEP_LIBS)
-	$(CC) $(LDFLAGS) -o $@ ffmpeg.o -L./libavcodec -L./libavformat \
-              -lavformat -lavcodec $(EXTRALIBS)
+ffmpeg_g$(EXE): ffmpeg.o .libs
+	$(CC) $(LDFLAGS) -o $@ ffmpeg.o $(FFLIBS) $(EXTRALIBS)
 
 ffmpeg$(EXE): ffmpeg_g$(EXE)
 	cp -p $< $@
 	$(STRIP) $@
 
-ffserver$(EXE): ffserver.o $(DEP_LIBS)
-	$(CC) $(LDFLAGS) $(FFSLDFLAGS) \
-		-o $@ ffserver.o -L./libavcodec -L./libavformat \
-              -lavformat -lavcodec $(EXTRALIBS) 
+ffserver$(EXE): ffserver.o .libs
+	$(CC) $(LDFLAGS) $(FFSLDFLAGS) -o $@ ffserver.o $(FFLIBS) $(EXTRALIBS) 
 
 ffplay: ffmpeg$(EXE)
 	ln -sf $< $@
@@ -111,11 +109,14 @@ endif
 .depend: $(SRCS)
 	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
+.libs: lib
+	touch .libs
+
 clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
 	$(MAKE) -C libavformat clean
 	$(MAKE) -C tests clean
-	rm -f *.o *.d *~ .depend gmon.out TAGS ffmpeg_g$(EXE) $(PROG) 
+	rm -f *.o *.d *~ .libs .depend gmon.out TAGS ffmpeg_g$(EXE) $(PROG) 
 
 clean-vhook:
 	$(MAKE) -C vhook clean
@@ -140,6 +141,8 @@ tar:
 	cp -r . /tmp/$(FILE)
 	( cd /tmp ; tar zcvf ~/$(FILE).tar.gz $(FILE) --exclude CVS )
 	rm -rf /tmp/$(FILE)
+
+.PHONY: lib
 
 ifneq ($(wildcard .depend),)
 include .depend
