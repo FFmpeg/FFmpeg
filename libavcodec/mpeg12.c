@@ -1750,8 +1750,6 @@ typedef struct Mpeg1Context {
     MpegEncContext mpeg_enc_ctx;
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
     int repeat_field; /* true if we must repeat the field */
-    int display_weight;
-    int display_height;
     AVPanScan pan_scan; /** some temporary storage for the panscan */
     int slice_count;
     int swap_uv;//indicate VCR2
@@ -1838,7 +1836,7 @@ uint8_t old_permutation[64];
                 1<<30);
         //mpeg2 aspect
             if(s->aspect_ratio_info > 1){
-                if( (s1->display_weight == 0 )||(s1->display_height == 0) ){
+                if( (s1->pan_scan.width == 0 )||(s1->pan_scan.height == 0) ){
                     s->avctx->sample_aspect_ratio= 
                         av_div_q(
                          mpeg2_aspect[s->aspect_ratio_info], 
@@ -1848,7 +1846,7 @@ uint8_t old_permutation[64];
                     s->avctx->sample_aspect_ratio= 
                         av_div_q(
                          mpeg2_aspect[s->aspect_ratio_info], 
-                         (AVRational){s1->display_weight, s1->display_height}
+                         (AVRational){s1->pan_scan.width, s1->pan_scan.height}
                         );
         	}
             }else{
@@ -2018,11 +2016,7 @@ static void mpeg_decode_sequence_display_extension(Mpeg1Context *s1)
     
     s1->pan_scan.width= 16*w;
     s1->pan_scan.height=16*h;
-    
-    s1->display_weight = w;
-    s1->display_height = h;
-
-    
+        
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG, "sde w:%d, h:%d\n", w, h);
 }
@@ -2030,9 +2024,23 @@ static void mpeg_decode_sequence_display_extension(Mpeg1Context *s1)
 static void mpeg_decode_picture_display_extension(Mpeg1Context *s1)
 {
     MpegEncContext *s= &s1->mpeg_enc_ctx;
-    int i;
+    int i,nofco;
 
-    for(i=0; i<1; i++){ //FIXME count
+    nofco = 1;
+    if(s->progressive_sequence){
+        if(s->repeat_first_field){
+	    nofco++;
+	    if(s->top_field_first)
+	        nofco++;	
+	}
+    }else{
+        if(s->picture_structure == PICT_FRAME){
+            nofco++;
+	    if(s->repeat_first_field)
+	        nofco++;
+	}
+    }
+    for(i=0; i<nofco; i++){
         s1->pan_scan.position[i][0]= get_sbits(&s->gb, 16);
         skip_bits(&s->gb, 1); //marker
         s1->pan_scan.position[i][1]= get_sbits(&s->gb, 16);
