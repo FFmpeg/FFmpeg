@@ -55,14 +55,15 @@ rwpipe *rwpipe_open( int argc, char *argv[] )
 
         if ( this->pid == 0 )
         {
-            char *command = av_mallocz( 10240 );
+#define COMMAND_SIZE 10240
+            char *command = av_mallocz( COMMAND_SIZE );
             int i;
 
             strcpy( command, "" );
             for ( i = 0; i < argc; i ++ )
             {
-                strcat( command, argv[ i ] );
-                strcat( command, " " );
+                pstrcat( command, COMMAND_SIZE, argv[ i ] );
+                pstrcat( command, COMMAND_SIZE, " " );
             }
 
             dup2( output[ 0 ], STDIN_FILENO );
