@@ -699,11 +699,40 @@ static int advanced_entry_point_process(AVCodecContext *avctx, GetBitContext *gb
 #define IMODE_ROWSKIP 5
 #define IMODE_COLSKIP 6
 
+static void decode_rowskip(uint8_t* plane, int width, int height, int stride, VC9Context *v){
+    int x, y;
+
+    for (y=0; y<height; y++){
+        if (!get_bits(&v->gb, 1)) //rowskip
+            memset(plane, 0, width);
+        else
+            for (x=0; x<width; x++) 
+                plane[x] = get_bits(&v->gb, 1);
+        plane += stride;
+    }
+}
+
+static void decode_colskip(uint8_t* plane, int width, int height, int stride, VC9Context *v){
+    int x, y;
+
+    for (x=0; x<width; x++){
+        if (!get_bits(&v->gb, 1)) //colskip
+            for (y=0; y<height; y++)
+                plane[y*stride] = 0;
+        else
+            for (y=0; y<height; y++)
+                plane[y*stride] = get_bits(&v->gb, 1);
+        plane ++;
+    }
+}
+
 //FIXME optimize
+//FIXME is this supposed to set elements to 0/FF or 0/1?
 static int bitplane_decoding(uint8_t* plane, int width, int height, VC9Context *v)
 {
-    int imode, x, y, code;
+    int imode, x, y, i, code, use_vertical_tile;
     uint8_t invert, *planep = plane;
+    int stride= width;
 
     invert = get_bits(&v->gb, 1);
     imode = get_vlc2(&v->gb, vc9_imode_vlc.table, VC9_IMODE_VLC_BITS, 2);
@@ -717,76 +746,61 @@ static int bitplane_decoding(uint8_t* plane, int width, int height, VC9Context *
         {
             for (x=0; x<width; x++)
                 planep[x] = (-get_bits(&v->gb, 1)); //-1=0xFF
-            planep += width;
+            planep += stride;
         }
+        invert=0; //spec says ignore invert if raw
         break;
     case IMODE_DIFF2:
     case IMODE_NORM2:
         if ((height*width) & 1) *(++planep) = get_bits(&v->gb, 1);
-        code = get_vlc2(&v->gb, vc9_norm2_vlc.table, VC9_NORM2_VLC_BITS, 2);
-        *(++planep) = code&1; //lsb => left
-        *(++planep) = code&2; //msb => right - this is a bitplane, so only !0 matters
+        for(i=0; i<(height*width)>>1; i++){
+            code = get_vlc2(&v->gb, vc9_norm2_vlc.table, VC9_NORM2_VLC_BITS, 2);
+            *(++planep) = code&1; //lsb => left
+            *(++planep) = code&2; //msb => right - this is a bitplane, so only !0 matters
+            //FIXME width->stride
+        }
         break;
     case IMODE_DIFF6:
     case IMODE_NORM6:
+        use_vertical_tile= height%3==0 && width%3!=0;
+        if(use_vertical_tile){
+        }else{
+        }
+        
         av_log(v->avctx, AV_LOG_ERROR, "Imode using Norm-6 isn't supported\n");
         return -1;
         break;
     case IMODE_ROWSKIP:
-        for (y=0; y<height; y++)
-        {
-            if (get_bits(&v->gb, 1)) //rowskip
-              memset(planep, 0, width);
-            else for (x=0; x<width; x++) planep[x] = get_bits(&v->gb, 1);
-            planep += width;
-        }
+        decode_rowskip(plane, width, height, stride, v);
         break;
     case IMODE_COLSKIP: //Teh ugly
-        for (x=0; x<width; x++)
-        {
-            planep = plane;
-            if (get_bits(&v->gb, 1)) //colskip
-            {
-                for (y=0; y<height; y++)
-                {
-                    planep[x] = 0;
-                    planep += width;
-                }
-            }
-            else
-            {
-                for (y=0; y<height; y++)
-                {
-                    planep[x] = get_bits(&v->gb, 1);
-                    planep += width;
-                }
-            }
-        }
+        decode_rowskip(plane, width, height, stride, v);
         break;
     default: break;
     }
 
     /* Applying diff operator */
-    if (imode == IMODE_DIFF2 || imode == IMODE_DIFF2)
+    if (imode == IMODE_DIFF2 || imode == IMODE_DIFF6)
     {
-        /* And what about j=0 !? */
-        planep = plane + width;
-        memset(plane, invert, width);
-        for (y=0; y<height; y++)
+        planep = plane;
+        planep[0] ^= invert;
+        for (x=1; x<width; x++)
+            planep[x] ^= planep[x-1];
+        for (y=1; y<height; y++)
         {
-            planep[0] = planep[-width];
+            planep += stride;
+            planep[0] ^= planep[-stride];
             for (x=1; x<width; x++)
             {
-                if (planep[x-1] != planep[-width]) planep[x] = invert;
-                else planep[x] = planep[x-1];
+                if (planep[x-1] != planep[x-stride]) planep[x] ^= invert;
+                else                                 planep[x] ^= planep[x-1];
             }
-            planep += width;
         }
     }
     else if (invert)
     {
         planep = plane;
-        for (x=0; x<width*height; x++) planep[x] = !planep[x];
+        for (x=0; x<width*height; x++) planep[x] = !planep[x]; //FIXME stride
     }
     return 0;
 }
