@@ -1231,6 +1231,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
     
+    s->mpeg_enc_ctx.flags= avctx->flags;
     common_init(&s->mpeg_enc_ctx);
 
     s->header_state = 0xff;
@@ -1242,7 +1243,6 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     s->repeat_field = 0;
     s->mpeg_enc_ctx.codec_id= avctx->codec->id;
     avctx->mbskip_table= s->mpeg_enc_ctx.mbskip_table;
-    s->mpeg_enc_ctx.flags= avctx->flags;
     return 0;
 }
 
@@ -1764,4 +1764,5 @@ AVCodec mpeg_decoder = {
     NULL,
     mpeg_decode_end,
     mpeg_decode_frame,
+    CODEC_CAP_DR1,
 };
