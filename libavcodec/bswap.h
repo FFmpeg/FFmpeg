@@ -5,6 +5,7 @@
 #include <byteswap.h>
 #else
 
+#include <inttypes.h> /* for __WORDSIZE */
 #ifdef ARCH_X86
 inline static unsigned short ByteSwap16(unsigned short x)
 {
@@ -52,6 +53,17 @@ inline static unsigned long long int ByteSwap64(unsigned long long int x)
      ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >>  8) | \
       (((x) & 0x0000ff00) <<  8) | (((x) & 0x000000ff) << 24))
 
+#if __WORDSIZE >= 64
+# define bswap_64(x) \
+     ((((x) & 0xff00000000000000ull) >> 56)				      \
+      | (((x) & 0x00ff000000000000ull) >> 40)				      \
+      | (((x) & 0x0000ff0000000000ull) >> 24)				      \
+      | (((x) & 0x000000ff00000000ull) >> 8)				      \
+      | (((x) & 0x00000000ff000000ull) << 8)				      \
+      | (((x) & 0x0000000000ff0000ull) << 24)				      \
+      | (((x) & 0x000000000000ff00ull) << 40)				      \
+      | (((x) & 0x00000000000000ffull) << 56))
+#else
 #define bswap_64(x) \
      (__extension__						\
       ({ union { __extension__ unsigned long long int __ll;	\
@@ -60,6 +72,7 @@ inline static unsigned long long int ByteSwap64(unsigned long long int x)
          __r.__l[0] = bswap_32 (__w.__l[1]);			\
          __r.__l[1] = bswap_32 (__w.__l[0]);			\
          __r.__ll; }))
+#endif
 #endif	/* !ARCH_X86 */
 
 #endif	/* !HAVE_BYTESWAP_H */
