@@ -163,7 +163,8 @@ static struct PPFilter filters[]=
 {
 	{"hb", "hdeblock", 		1, 1, 3, H_DEBLOCK},
 	{"vb", "vdeblock", 		1, 2, 4, V_DEBLOCK},
-	{"vr", "rkvdeblock", 		1, 2, 4, H_RK1_FILTER},
+	{"hr", "rkhdeblock", 		1, 1, 3, H_RK1_FILTER},
+	{"vr", "rkvdeblock", 		1, 2, 4, V_RK1_FILTER},
 	{"h1", "x1hdeblock", 		1, 1, 3, H_X1_FILTER},
 	{"v1", "x1vdeblock", 		1, 2, 4, V_X1_FILTER},
 	{"dr", "dering", 		1, 5, 6, DERING},
@@ -540,6 +541,7 @@ short	long name	short	long option	Description
 			y	nochrom		chrominance filtring disabled
 hb	hdeblock				horizontal deblocking filter
 vb	vdeblock				vertical deblocking filter
+hr	rkhdeblock
 vr	rkvdeblock
 h1	x1hdeblock				Experimental horizontal deblock filter 1
 v1	x1vdeblock				Experimental vertical deblock filter 1
@@ -724,9 +726,8 @@ int readPPOpt(void *conf, char *arg)
 	}
 	newPPFlag=1;
 
-// it shouldnt matter what we set divx_quality to as long as its not 0 
-// (we dont use it if newPPFlag is set)
-	divx_quality=1; 
+//divx_quality is passed to postprocess if autoq if off
+	divx_quality= GET_PP_QUALITY_MAX; 
 	return 1;
 }
 
