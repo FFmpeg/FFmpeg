@@ -766,7 +766,8 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   *data_size = 0;
 
   s->flags = avctx->flags;
-  
+  s->unrestricted_mv = 1;
+
   if (!s->context_initialized) {
     s->width = avctx->width;
     s->height = avctx->height;
