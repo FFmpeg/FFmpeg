@@ -528,6 +528,7 @@ typedef struct MpegEncContext {
     int full_pel[2];
     int interlaced_dct;
     int first_slice;
+    int first_field;
     
     /* RTP specific */
     /* These are explained on avcodec.h */

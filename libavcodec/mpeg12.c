@@ -1023,8 +1023,8 @@ static int mpeg_decode_mb(MpegEncContext *s,
                     }
                     break;
                 case MT_FIELD:
+                    s->mv_type = MV_TYPE_FIELD;
                     if (s->picture_structure == PICT_FRAME) {
-                        s->mv_type = MV_TYPE_FIELD;
                         for(j=0;j<2;j++) {
                             s->field_select[i][j] = get_bits1(&s->gb);
                             val = mpeg_decode_motion(s, s->mpeg_f_code[i][0],
@@ -1039,7 +1039,6 @@ static int mpeg_decode_mb(MpegEncContext *s,
                             dprintf("fmy=%d\n", val);
                         }
                     } else {
-                        s->mv_type = MV_TYPE_16X16;
                         s->field_select[i][0] = get_bits1(&s->gb);
                         for(k=0;k<2;k++) {
                             val = mpeg_decode_motion(s, s->mpeg_f_code[i][k],
@@ -1701,6 +1700,13 @@ static void mpeg_decode_picture_coding_extension(MpegEncContext *s)
     s->chroma_420_type = get_bits1(&s->gb);
     s->progressive_frame = get_bits1(&s->gb);
     
+    if(s->picture_structure == PICT_FRAME)
+        s->first_field=0;
+    else{
+        s->first_field ^= 1;
+        memset(s->mbskip_table, 0, s->mb_width*s->mb_height);
+    }
+    
     if(s->alternate_scan){
         ff_init_scantable(s, &s->inter_scantable  , ff_alternate_vertical_scan);
         ff_init_scantable(s, &s->intra_scantable  , ff_alternate_vertical_scan);
@@ -1771,6 +1777,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
     int ret;
+    const int field_pic= s->picture_structure != PICT_FRAME;
 
     start_code = (start_code - 1) & 0xff;
     if (start_code >= s->mb_height){
@@ -1781,9 +1788,9 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     s->last_dc[1] = s->last_dc[0];
     s->last_dc[2] = s->last_dc[0];
     memset(s->last_mv, 0, sizeof(s->last_mv));
+        
     /* start frame decoding */
-    if (s->first_slice) {
-        s->first_slice = 0;
+    if (s->first_slice && (s->first_field || s->picture_structure==PICT_FRAME)) {
         if(MPV_frame_start(s, avctx) < 0)
             return DECODE_SLICE_FATAL_ERROR;
         /* first check if we must repeat the frame */
@@ -1810,6 +1817,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
                  s->q_scale_type, s->intra_vlc_format, s->repeat_first_field, s->chroma_420_type ? "420" :"");
         }
     }
+    s->first_slice = 0;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
@@ -1844,8 +1852,27 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         dprintf("ret=%d\n", ret);
         if (ret < 0)
             return -1;
-    
+//printf("%d %d\n", s->mb_x, s->mb_y);
+        //FIXME this isnt the most beautifull way to solve the problem ...
+        if(s->picture_structure!=PICT_FRAME){
+            if(s->picture_structure == PICT_BOTTOM_FIELD){
+                s->current_picture.data[0] += s->linesize;
+                s->current_picture.data[1] += s->uvlinesize;
+                s->current_picture.data[2] += s->uvlinesize;
+            } 
+            s->linesize *= 2;
+            s->uvlinesize *= 2;
+        }
         MPV_decode_mb(s, s->block);
+        if(s->picture_structure!=PICT_FRAME){
+            s->linesize /= 2;
+            s->uvlinesize /= 2;
+            if(s->picture_structure == PICT_BOTTOM_FIELD){
+                s->current_picture.data[0] -= s->linesize;
+                s->current_picture.data[1] -= s->uvlinesize;
+                s->current_picture.data[2] -= s->uvlinesize;
+            } 
+        }
 
         if (++s->mb_x >= s->mb_width) {
             ff_draw_horiz_band(s);
@@ -1875,7 +1902,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
                 }
             }
         }
-        if(s->mb_y >= s->mb_height){
+        if(s->mb_y<<field_pic >= s->mb_height){
             fprintf(stderr, "slice too long\n");
             return DECODE_SLICE_ERROR;
         }
@@ -1883,10 +1910,9 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
 eos: //end of slice
     
     emms_c();
-
+//intf("%d %d %d %d\n", s->mb_y, s->mb_height, s->pict_type, s->picture_number);
     /* end of slice reached */
-    if (/*s->mb_x == 0 &&*/
-        s->mb_y == s->mb_height) {
+    if (s->mb_y<<field_pic == s->mb_height && !s->first_field) {
         /* end of image */
 
         if(s->mpeg2)
@@ -2159,6 +2185,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
                         ret = mpeg_decode_slice(avctx, picture,
                                                 start_code, s->buffer, input_size);
+
                         if (ret == DECODE_SLICE_EOP) {
                             *data_size = sizeof(AVPicture);
                             goto the_end;

@@ -212,6 +212,8 @@ int DCT_common_init(MpegEncContext *s)
     ff_init_scantable(s, &s->intra_h_scantable, ff_alternate_horizontal_scan);
     ff_init_scantable(s, &s->intra_v_scantable, ff_alternate_vertical_scan);
 
+    s->picture_structure= PICT_FRAME;
+    
     return 0;
 }
 
@@ -1855,8 +1857,18 @@ static inline void MPV_motion(MpegEncContext *s,
                             s->mv[dir][1][0], s->mv[dir][1][1], 8);
             }
         } else {
-            
+            int offset;
+            if(s->picture_structure == s->field_select[dir][0] + 1 || s->pict_type == B_TYPE || s->first_field){
+                offset= s->field_select[dir][0] ? s->linesize/2 : 0;
+            }else{
+                ref_picture= s->current_picture.data;
+                offset= s->field_select[dir][0] ? s->linesize/2 : -s->linesize/2; 
+            } 
 
+            mpeg_motion(s, dest_y, dest_cb, dest_cr, 0,
+                        ref_picture, offset,
+                        0, pix_op,
+                        s->mv[dir][0][0], s->mv[dir][0][1], 16);
         }
         break;
     }
