@@ -36,6 +36,7 @@ clean:
 	rm -f *.o *~ gmon.out TAGS $(PROG) 
 
 distclean: clean
+	$(MAKE) -C libavcodec distclean
 	rm -f config.mak config.h
 
 TAGS:
