@@ -1290,6 +1290,7 @@ static int av_encode(AVFormatContext **output_files,
                         /* no reencoding needed : output the packet directly */
                         /* force the input stream PTS */
                         av_write_frame(os, ost->index, data_buf, data_size);
+			ost->st->codec.frame_number++;
                     }
                 }
             }
