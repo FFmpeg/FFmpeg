@@ -2248,7 +2248,7 @@ static int decode_init(AVCodecContext *avctx){
 
     decode_init_vlc(h);
     
-    if(avctx->codec_tag != 0x31637661) // avc1
+    if(avctx->codec_tag != 0x31637661 && avctx->codec_tag != 0x31435641) // avc1
         h->is_avc = 0;
     else {
         if((avctx->extradata_size == 0) || (avctx->extradata == NULL)) {
