@@ -706,6 +706,7 @@ typedef struct MpegEncContext {
 
 
 int DCT_common_init(MpegEncContext *s);
+void MPV_decode_defaults(MpegEncContext *s);
 int MPV_common_init(MpegEncContext *s);
 void MPV_common_end(MpegEncContext *s);
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);

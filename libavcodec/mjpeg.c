@@ -862,13 +862,11 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     memset(&s2, 0, sizeof(MpegEncContext));
     s2.avctx= avctx;
 //    s2->out_format = FMT_MJPEG;
-    s2.width = 8;
-    s2.height = 8;
-    if (MPV_common_init(&s2) < 0)
-       return -1;
+    dsputil_init(&s2.dsp, avctx);
+    DCT_common_init(&s2);
+
     s->scantable= s2.intra_scantable;
     s->idct_put= s2.dsp.idct_put;
-    MPV_common_end(&s2);
 
     s->mpeg_enc_ctx_allocated = 0;
     s->buffer_size = 102400; /* smaller buffer should be enough,

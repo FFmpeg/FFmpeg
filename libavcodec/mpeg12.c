@@ -1760,6 +1760,9 @@ typedef struct Mpeg1Context {
 static int mpeg_decode_init(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
+    MpegEncContext *s2 = &s->mpeg_enc_ctx;
+    
+    MPV_decode_defaults(s2);
     
     s->mpeg_enc_ctx.avctx= avctx;
     s->mpeg_enc_ctx.flags= avctx->flags;

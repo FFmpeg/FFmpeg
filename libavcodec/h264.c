@@ -2166,6 +2166,8 @@ static int decode_init(AVCodecContext *avctx){
     H264Context *h= avctx->priv_data;
     MpegEncContext * const s = &h->s;
 
+    MPV_decode_defaults(s);
+    
     s->avctx = avctx;
     common_init(h);
 
@@ -2173,7 +2175,6 @@ static int decode_init(AVCodecContext *avctx){
     s->workaround_bugs= avctx->workaround_bugs;
 
     // set defaults
-    s->progressive_sequence=1;
 //    s->decode_mb= ff_h263_decode_mb;
     s->low_delay= 1;
     avctx->pix_fmt= PIX_FMT_YUV420P;

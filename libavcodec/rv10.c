@@ -441,6 +441,8 @@ static int rv10_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     static int done=0;
 
+    MPV_decode_defaults(s);
+    
     s->avctx= avctx;
     s->out_format = FMT_H263;
     s->codec_id= avctx->codec_id;
@@ -489,8 +491,6 @@ static int rv10_decode_init(AVCodecContext *avctx)
         return -1;
 
     h263_decode_init_vlc(s);
-
-    s->progressive_sequence=1;
 
     /* init rv vlc */
     if (!done) {

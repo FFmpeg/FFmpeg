@@ -502,7 +502,62 @@ static void update_duplicate_context_after_me(MpegEncContext *dst, MpegEncContex
 #undef COPY
 }
 
-/* init common structure for both encoder and decoder */
+/**
+ * sets the given MpegEncContext to common defaults (same for encoding and decoding).
+ * the changed fields will not depend upon the prior state of the MpegEncContext.
+ */
+static void MPV_common_defaults(MpegEncContext *s){
+    s->y_dc_scale_table=
+    s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+    s->chroma_qscale_table= ff_default_chroma_qscale_table;
+    s->progressive_frame= 1;
+    s->progressive_sequence= 1;
+    s->picture_structure= PICT_FRAME;
+
+    s->coded_picture_number = 0;
+    s->picture_number = 0;
+    s->input_picture_number = 0;
+
+    s->picture_in_gop_number = 0;
+}
+
+/**
+ * sets the given MpegEncContext to defaults for decoding.
+ * the changed fields will not depend upon the prior state of the MpegEncContext.
+ */
+void MPV_decode_defaults(MpegEncContext *s){
+    MPV_common_defaults(s);
+}
+
+/**
+ * sets the given MpegEncContext to defaults for encoding.
+ * the changed fields will not depend upon the prior state of the MpegEncContext.
+ */
+void MPV_encode_defaults(MpegEncContext *s){
+    static int done=0;
+    
+    MPV_common_defaults(s);
+    
+    if(!done){
+        int i;
+        done=1;
+
+        default_mv_penalty= av_mallocz( sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1) );
+        memset(default_mv_penalty, 0, sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1));
+        memset(default_fcode_tab , 0, sizeof(uint8_t)*(2*MAX_MV+1));
+
+        for(i=-16; i<16; i++){
+            default_fcode_tab[i + MAX_MV]= 1;
+        }
+    }
+    s->me.mv_penalty= default_mv_penalty;
+    s->fcode_tab= default_fcode_tab;
+}
+
+/** 
+ * init common structure for both encoder and decoder.
+ * this assumes that some variables like width/height are already set
+ */
 int MPV_common_init(MpegEncContext *s)
 {
     int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y;
@@ -533,28 +588,11 @@ int MPV_common_init(MpegEncContext *s)
     s->block_wrap[3]= s->mb_width*2 + 2;
     s->block_wrap[4]=
     s->block_wrap[5]= s->mb_width + 2;
-
-    s->y_dc_scale_table=
-    s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
-    s->chroma_qscale_table= ff_default_chroma_qscale_table;
-    if( s->codec_id != CODEC_ID_MPEG1VIDEO && 
-        s->codec_id != CODEC_ID_MPEG2VIDEO) 
-    {
-        /* default structure is frame */
-        s->progressive_frame= 1;
-        s->picture_structure= PICT_FRAME;
-
-        s->y_dc_scale_table=
-        s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
-        if (!s->encoding)
-            s->progressive_sequence= 1;
-    }
-    s->coded_picture_number = 0;
-
+ 
     y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
     c_size = (s->mb_width + 2) * (s->mb_height + 2);
     yc_size = y_size + 2 * c_size;
-
+    
     /* convert fourcc to upper case */
     s->avctx->codec_tag=   toupper( s->avctx->codec_tag     &0xFF)          
                         + (toupper((s->avctx->codec_tag>>8 )&0xFF)<<8 )
@@ -662,9 +700,6 @@ int MPV_common_init(MpegEncContext *s)
     /* which mb is a intra block */
     CHECKED_ALLOCZ(s->mbintra_table, mb_array_size);
     memset(s->mbintra_table, 1, mb_array_size);
-    
-    /* default structure is frame */
-    s->picture_structure = PICT_FRAME;
     
     /* init macroblock skip table */
     CHECKED_ALLOCZ(s->mbskip_table, mb_array_size+2);
@@ -787,6 +822,8 @@ int MPV_encode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     int i, dummy;
     int chroma_h_shift, chroma_v_shift;
+    
+    MPV_encode_defaults(s);
 
     avctx->pix_fmt = PIX_FMT_YUV420P; // FIXME
 
@@ -1070,28 +1107,6 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    { /* set up some save defaults, some codecs might override them later */
-        static int done=0;
-        if(!done){
-            int i;
-            done=1;
-
-            default_mv_penalty= av_mallocz( sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1) );
-            memset(default_mv_penalty, 0, sizeof(uint8_t)*(MAX_FCODE+1)*(2*MAX_MV+1));
-            memset(default_fcode_tab , 0, sizeof(uint8_t)*(2*MAX_MV+1));
-
-            for(i=-16; i<16; i++){
-                default_fcode_tab[i + MAX_MV]= 1;
-            }
-        }
-    }
-    s->me.mv_penalty= default_mv_penalty;
-    s->fcode_tab= default_fcode_tab;
- 
-    /* dont use mv_penalty table for crap MV as it would be confused */
-    //FIXME remove after fixing / removing old ME
-    if (s->me_method < ME_EPZS) s->me.mv_penalty = default_mv_penalty;
-
     s->encoding = 1;
 
     /* init */
@@ -1119,7 +1134,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         ff_mpeg1_encode_init(s);
 #endif
 
-    /* init default q matrix */
+    /* init q matrix */
     for(i=0;i<64;i++) {
         int j= s->dsp.idct_permutation[i];
 #ifdef CONFIG_RISKY
@@ -1153,13 +1168,10 @@ int MPV_encode_init(AVCodecContext *avctx)
     if(ff_rate_control_init(s) < 0)
         return -1;
 
-    s->picture_number = 0;
-    s->input_picture_number = 0;
-    s->picture_in_gop_number = 0;
     /* motion detector init */
     s->f_code = 1;
     s->b_code = 1;
-
+    
     return 0;
 }
 

@@ -42,8 +42,8 @@ int ff_h263_decode_init(AVCodecContext *avctx)
     s->workaround_bugs= avctx->workaround_bugs;
 
     // set defaults
+    MPV_decode_defaults(s);
     s->quant_precision=5;
-    s->progressive_sequence=1;
     s->decode_mb= ff_h263_decode_mb;
     s->low_delay= 1;
     avctx->pix_fmt= PIX_FMT_YUV420P;

@@ -783,6 +783,8 @@ static int svq1_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     int i;
 
+    MPV_decode_defaults(s);
+
     s->avctx = avctx;
     s->width = (avctx->width+3)&~3;
     s->height = (avctx->height+3)&~3;
