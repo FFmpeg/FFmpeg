@@ -2890,6 +2890,25 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     return 0;
 }
 
+static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb)
+{
+    int nb_comments, i, tmp;
+
+    tmp = get_bits(&gb, 32);
+    while(tmp-=8)
+	skip_bits(&gb, 8);
+
+    nb_comments = get_bits(&gb, 32);
+    for (i = 0; i < nb_comments; i++)
+    {
+	tmp = get_bits(&gb, 32);
+	while(tmp-=8)
+	    skip_bits(&gb, 8);
+    }
+    
+    return 0;
+}
+
 static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
@@ -2948,7 +2967,7 @@ static int theora_decode_init(AVCodecContext *avctx)
 	    vp3_decode_init(avctx);
     	    break;
 	case 0x81:
-	    /* comment */
+	    theora_decode_comments(avctx, gb);
 	    break;
 	case 0x82:
 	    theora_decode_tables(avctx, gb);
