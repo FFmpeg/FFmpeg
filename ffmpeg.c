@@ -3890,6 +3890,7 @@ static void show_banner(void)
 {
     printf("ffmpeg version " FFMPEG_VERSION ", build %d, Copyright (c) 2000-2004 Fabrice Bellard\n",
         LIBAVCODEC_BUILD);
+    printf("  configuration: %s\n", FFMPEG_CONFIGURATION);
     printf("  built on " __DATE__ " " __TIME__);
 #ifdef __GNUC__
     printf(", gcc: %s\n", __VERSION__);

@@ -178,6 +178,7 @@ clean: $(CLEANVHOOK)
 clean-vhook:
 	$(MAKE) -C vhook clean
 
+# Note well: config.log is NOT removed.
 distclean: clean
 	$(MAKE) -C libavcodec distclean
 	rm -f config.mak config.h
