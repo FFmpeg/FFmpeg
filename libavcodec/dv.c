@@ -171,8 +171,12 @@ static int dvvideo_init(AVCodecContext *avctx)
 	free_vlc(&dv_vlc);
 
 	for (i = 0; i < NB_DV_VLC - 1; i++) {
-           if (dv_vlc_run[i] >= DV_VLC_MAP_RUN_SIZE || dv_vlc_level[i] >= DV_VLC_MAP_LEV_SIZE)
+           if (dv_vlc_run[i] >= DV_VLC_MAP_RUN_SIZE)
 	       continue;
+#ifdef DV_CODEC_TINY_TARGET
+           if (dv_vlc_level[i] >= DV_VLC_MAP_LEV_SIZE)
+	       continue;
+#endif
 	   
 	   if (dv_vlc_map[dv_vlc_run[i]][dv_vlc_level[i]].size != 0)
 	       continue;
