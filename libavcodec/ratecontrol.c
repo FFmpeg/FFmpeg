@@ -64,9 +64,6 @@ int ff_rate_control_init(MpegEncContext *s)
     }
     rcc->buffer_index= s->avctx->rc_buffer_size/2;
 
-    rcc->next_non_b_qscale=10;
-    rcc->next_p_qscale=10;
-    
     if(s->flags&CODEC_FLAG_PASS2){
         int i;
         char *p;
@@ -231,7 +228,6 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
     const int pict_type= rce->new_pict_type;
     const double mb_num= s->mb_num;  
     int i;
-    const double last_q= rcc->last_qscale_for[pict_type];
 
     double const_values[]={
         M_PI,
@@ -324,13 +320,34 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         q= -q*s->avctx->i_quant_factor + s->avctx->i_quant_offset;
     else if(pict_type==B_TYPE && s->avctx->b_quant_factor<0.0)
         q= -q*s->avctx->b_quant_factor + s->avctx->b_quant_offset;
-    
+        
+    return q;
+}
+
+static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, double q){
+    RateControlContext *rcc= &s->rc_context;
+    AVCodecContext *a= s->avctx;
+    const int pict_type= rce->new_pict_type;
+    const double last_p_q    = rcc->last_qscale_for[P_TYPE];
+    const double last_non_b_q= rcc->last_qscale_for[rcc->last_non_b_pict_type];
+
+    if     (pict_type==I_TYPE && (a->i_quant_factor>0.0 || rcc->last_non_b_pict_type==P_TYPE))
+        q= last_p_q    *ABS(a->i_quant_factor) + a->i_quant_offset;
+    else if(pict_type==B_TYPE && a->b_quant_factor>0.0)
+        q= last_non_b_q*    a->b_quant_factor  + a->b_quant_offset;
+
     /* last qscale / qdiff stuff */
-    if     (q > last_q + s->max_qdiff) q= last_q + s->max_qdiff;
-    else if(q < last_q - s->max_qdiff) q= last_q - s->max_qdiff;
+    if(rcc->last_non_b_pict_type==pict_type || pict_type!=I_TYPE){
+        double last_q= rcc->last_qscale_for[pict_type];
+        if     (q > last_q + a->max_qdiff) q= last_q + a->max_qdiff;
+        else if(q < last_q - a->max_qdiff) q= last_q - a->max_qdiff;
+    }
 
     rcc->last_qscale_for[pict_type]= q; //Note we cant do that after blurring
     
+    if(pict_type!=B_TYPE)
+        rcc->last_non_b_pict_type= pict_type;
+
     return q;
 }
 
@@ -380,13 +397,15 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
 //printf("q:%f\n", q);
     /* buffer overflow/underflow protection */
     if(buffer_size){
-        double expected_size= rcc->buffer_index - bits;
+        double expected_size= rcc->buffer_index;
 
         if(min_rate){
-            double d= 2*(buffer_size - (expected_size + min_rate))/buffer_size;
+            double d= 2*(buffer_size - expected_size)/buffer_size;
             if(d>1.0) d=1.0;
             else if(d<0.0001) d=0.0001;
             q*= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
+
+            q= MIN(q, bits2qp(rce, MAX((min_rate - buffer_size + rcc->buffer_index)*2, 1)));
         }
 
         if(max_rate){
@@ -394,6 +413,8 @@ static double modify_qscale(MpegEncContext *s, RateControlEntry *rce, double q, 
             if(d>1.0) d=1.0;
             else if(d<0.0001) d=0.0001;
             q/= pow(d, 1.0/s->avctx->rc_buffer_aggressivity);
+
+            q= MAX(q, bits2qp(rce, MAX(rcc->buffer_index/2, 1)));
         }
     }
 //printf("q:%f max:%f min:%f size:%f index:%d bits:%f agr:%f\n", q,max_rate, min_rate, buffer_size, rcc->buffer_index, bits, s->avctx->rc_buffer_aggressivity);
@@ -529,10 +550,7 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
 
         assert(q>0.0);
 //printf("%f ", q);
-        if     (pict_type==I_TYPE && s->avctx->i_quant_factor>0.0)
-            q= rcc->next_p_qscale*s->avctx->i_quant_factor + s->avctx->i_quant_offset;
-        else if(pict_type==B_TYPE && s->avctx->b_quant_factor>0.0)
-            q= rcc->next_non_b_qscale*s->avctx->b_quant_factor + s->avctx->b_quant_offset;
+        q= get_diff_limited_q(s, rce, q);
 //printf("%f ", q);
         assert(q>0.0);
 
@@ -553,9 +571,6 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
         rcc->pass1_wanted_bits+= s->bit_rate/fps;
 
         assert(q>0.0);
-
-        if(pict_type != B_TYPE) rcc->next_non_b_qscale= q;
-        if(pict_type == P_TYPE) rcc->next_p_qscale= q;
     }
 //printf("qmin:%d, qmax:%d, q:%f\n", qmin, qmax, q);
     
@@ -565,13 +580,11 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
         
 //    printf("%f %d %d %d\n", q, picture_number, (int)wanted_bits, (int)s->total_bits);
     
-
 //printf("%f %f %f\n", q, br_compensation, short_term_q);
     qscale= (int)(q + 0.5);
-//printf("%d ", qscale);
     
-//printf("q:%d diff:%d comp:%f st_q:%f last_size:%d\n", qscale, (int)diff, br_compensation, 
-//       short_term_q, s->frame_bits);
+//printf("q:%d diff:%d comp:%f st_q:%f last_size:%d type:%d\n", qscale, (int)diff, br_compensation, 
+//       short_term_q, s->frame_bits, pict_type);
 //printf("%d %d\n", s->bit_rate, (int)fps);
 
     rcc->last_qscale= qscale;
@@ -693,21 +706,10 @@ static int init_pass2(MpegEncContext *s)
         assert(filter_size%2==1);
 
         /* fixed I/B QP relative to P mode */
-        rcc->next_non_b_qscale= 10;
-        rcc->next_p_qscale= 10;
         for(i=rcc->num_entries-1; i>=0; i--){
             RateControlEntry *rce= &rcc->entry[i];
-            const int pict_type= rce->new_pict_type;
-        
-            if     (pict_type==I_TYPE && s->avctx->i_quant_factor>0.0)
-                qscale[i]= rcc->next_p_qscale*s->avctx->i_quant_factor + s->avctx->i_quant_offset;
-            else if(pict_type==B_TYPE && s->avctx->b_quant_factor>0.0)
-                qscale[i]= rcc->next_non_b_qscale*s->avctx->b_quant_factor + s->avctx->b_quant_offset;
-
-            if(pict_type!=B_TYPE) 
-                rcc->next_non_b_qscale= qscale[i];
-            if(pict_type==P_TYPE) 
-                rcc->next_p_qscale= qscale[i];
+            
+            qscale[i]= get_diff_limited_q(s, rce, qscale[i]);
         }
 
         /* smooth curve */
