@@ -348,6 +348,8 @@ static int h263_decode_frame(AVCodecContext *avctx,
     MpegEncContext *s = avctx->priv_data;
     int ret,i;
     AVPicture *pict = data; 
+    float new_aspect;
+    
 #ifdef PRINT_FRAME_TIME
 uint64_t time= rdtsc();
 #endif
@@ -495,23 +497,19 @@ retry:
         /* and other parameters. So then we could init the picture   */
         /* FIXME: By the way H263 decoder is evolving it should have */
         /* an H263EncContext                                         */
+    if(s->aspected_height)
+        new_aspect= (float)s->aspected_width / (float)s->aspected_height;
+    else
+        new_aspect=0;
+
     if (   s->width != avctx->width || s->height != avctx->height 
-        || avctx->aspect_ratio_info != s->aspect_ratio_info
-        || avctx->aspected_width != s->aspected_width
-        || avctx->aspected_height != s->aspected_height) {
+        || ABS(new_aspect - avctx->aspect_ratio) > 0.001) {
         /* H.263 could change picture size any time */
         MPV_common_end(s);
         s->context_initialized=0;
     }
     if (!s->context_initialized) {
-        avctx->width = s->width;
-        avctx->height = s->height;
-        avctx->aspect_ratio_info= s->aspect_ratio_info;
-	if (s->aspect_ratio_info == FF_ASPECT_EXTENDED)
-	{
-	    avctx->aspected_width = s->aspected_width;
-	    avctx->aspected_height = s->aspected_height;
-	}
+        avctx->aspect_ratio= new_aspect;
 
         goto retry;
     }

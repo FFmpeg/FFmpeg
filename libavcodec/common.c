@@ -326,3 +326,29 @@ int ff_gcd(int a, int b){
     if(b) return ff_gcd(b, a%b);
     else  return a;
 }
+
+void ff_float2fraction(int *nom_arg, int *denom_arg, double f, int max){
+    double best_diff=1E10, diff;
+    int best_denom=1, best_nom=1;
+    int nom, denom, gcd;
+    
+    //brute force here, perhaps we should try continued fractions if we need large max ...
+    for(denom=1; denom<=max; denom++){
+        nom= (int)(f*denom + 0.5);
+        if(nom<=0 || nom>max) continue;
+        
+        diff= ABS( f - (double)nom / (double)denom );
+        if(diff < best_diff){
+            best_diff= diff;
+            best_nom= nom;
+            best_denom= denom;
+        }
+    }
+    
+    gcd= ff_gcd(best_nom, best_denom);
+    best_nom   /= gcd;
+    best_denom /= gcd;
+
+    *nom_arg= best_nom;
+    *denom_arg= best_denom;
+}

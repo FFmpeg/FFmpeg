@@ -120,6 +120,26 @@ int h263_get_picture_format(int width, int height)
     return format;
 }
 
+static void init_aspect_info(MpegEncContext * s){
+    double aspect;
+    
+    emms_c(); //paranoia ;)
+    
+    if(s->avctx->aspect_ratio==0) aspect= 1.0;
+    aspect= s->avctx->aspect_ratio;
+    
+    ff_float2fraction(&s->aspected_width, &s->aspected_height, aspect, 255);
+    
+    if(s->aspected_width == 4 && s->aspected_height == 3)
+        s->aspect_ratio_info= FF_ASPECT_4_3_625;
+    else if(s->aspected_width == 16 && s->aspected_height == 9)
+        s->aspect_ratio_info= FF_ASPECT_16_9_625;
+    else if(s->aspected_width == 1 && s->aspected_height == 1)
+        s->aspect_ratio_info= FF_ASPECT_SQUARE;
+    else
+        s->aspect_ratio_info= FF_ASPECT_EXTENDED;
+}
+
 void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 {
     int format;
@@ -196,11 +216,9 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 		
 		if (format == 7) {
             /* Custom Picture Format (CPFMT) */
-		
-	    if (s->aspect_ratio_info)
-        	put_bits(&s->pb,4,s->aspect_ratio_info);
-	    else
-        	put_bits(&s->pb,4,2); /* Aspect ratio: CIF 12:11 (4:3) picture */
+            init_aspect_info(s);
+
+            put_bits(&s->pb,4,s->aspect_ratio_info);
             put_bits(&s->pb,9,(s->width >> 2) - 1);
             put_bits(&s->pb,1,1); /* "1" to prevent start code emulation */
             put_bits(&s->pb,9,(s->height >> 2));
@@ -1508,10 +1526,10 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     put_bits(&s->pb, 1, 1);		/* is obj layer id= yes */
       put_bits(&s->pb, 4, vo_ver_id);	/* is obj layer ver id */
       put_bits(&s->pb, 3, 1);		/* is obj layer priority */
-    if(s->aspect_ratio_info) 
-        put_bits(&s->pb, 4, s->aspect_ratio_info);/* aspect ratio info */
-    else
-        put_bits(&s->pb, 4, 1);		/* aspect ratio info= sqare pixel */
+    
+    init_aspect_info(s);
+
+    put_bits(&s->pb, 4, s->aspect_ratio_info);/* aspect ratio info */
     if (s->aspect_ratio_info == FF_ASPECT_EXTENDED)
     {
 	put_bits(&s->pb, 8, s->aspected_width);

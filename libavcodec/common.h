@@ -842,6 +842,8 @@ static inline int ff_get_fourcc(const char *s){
     return (s[0]) + (s[1]<<8) + (s[2]<<16) + (s[3]<<24);
 }
 
+void ff_float2fraction(int *nom_arg, int *denom_arg, double f, int max);
+
 
 #ifdef ARCH_X86
 #define MASK_ABS(mask, level)\
