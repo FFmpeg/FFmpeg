@@ -180,13 +180,13 @@ int MPV_common_init(MpegEncContext *s)
         s->coded_block = av_mallocz(y_size);
         if (!s->coded_block)
             goto fail;
+    }
 
         /* which mb is a intra block */
-        s->mbintra_table = av_mallocz(y_size/4);
+        s->mbintra_table = av_mallocz(s->mb_width * s->mb_height);
         if (!s->mbintra_table)
             goto fail;
-        memset(s->mbintra_table, 1, y_size/4);
-    }
+        memset(s->mbintra_table, 1, s->mb_width * s->mb_height);
     /* default structure is frame */
     s->picture_structure = PICT_FRAME;
 
@@ -209,7 +209,7 @@ int MPV_common_init(MpegEncContext *s)
     if (s->coded_block)
         free(s->coded_block);
     if (s->mbintra_table)
-        free(s->mbintra_table);
+        { free(s->mbintra_table);s->mbintra_table=NULL; }
     if (s->mbskip_table)
         free(s->mbskip_table);
     for(i=0;i<3;i++) {
@@ -234,7 +234,7 @@ void MPV_common_end(MpegEncContext *s)
         free(s->dc_val[0]);
         free(s->ac_val[0]);
         free(s->coded_block);
-        free(s->mbintra_table);
+        { free(s->mbintra_table);s->mbintra_table=NULL; }
     }
     if (s->mbskip_table)
         free(s->mbskip_table);
