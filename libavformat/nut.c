@@ -645,6 +645,8 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
 
     enc = &s->streams[stream_index]->codec;
     key_frame = enc->coded_frame->key_frame;
+    if(enc->coded_frame->pts != AV_NOPTS_VALUE)
+        pts= (av_rescale(enc->coded_frame->pts, stream->rate_num, stream->rate_den) + AV_TIME_BASE/2) / AV_TIME_BASE; //FIXME XXX HACK
     delta_pts= pts - stream->last_pts;
     
     frame_type=0;
