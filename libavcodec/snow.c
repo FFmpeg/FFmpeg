@@ -618,7 +618,7 @@ static always_inline void lift5(DWTELEM *dst, DWTELEM *src, DWTELEM *ref, int ds
 }
 
 
-static void inplace_lift(int *dst, int width, int *coeffs, int n, int shift, int start, int inverse){
+static void inplace_lift(DWTELEM *dst, int width, int *coeffs, int n, int shift, int start, int inverse){
     int x, i;
     
     for(x=start; x<width; x+=2){
@@ -635,7 +635,7 @@ static void inplace_lift(int *dst, int width, int *coeffs, int n, int shift, int
     }
 }
 
-static void inplace_liftV(int *dst, int width, int height, int stride, int *coeffs, int n, int shift, int start, int inverse){
+static void inplace_liftV(DWTELEM *dst, int width, int height, int stride, int *coeffs, int n, int shift, int start, int inverse){
     int x, y, i;
     for(y=start; y<height; y+=2){
         for(x=0; x<width; x++){
@@ -767,8 +767,8 @@ static void inplace_liftV(int *dst, int width, int height, int stride, int *coef
 #define SHIFT4 1
 #define COEFFS4 NULL
 #endif
-static void horizontal_decomposeX(int *b, int width){
-    int temp[width];
+static void horizontal_decomposeX(DWTELEM *b, int width){
+    DWTELEM temp[width];
     const int width2= width>>1;
     const int w2= (width+1)>>1;
     int A1,A2,A3,A4, x;
@@ -787,8 +787,8 @@ static void horizontal_decomposeX(int *b, int width){
     memcpy(b, temp, width*sizeof(int));
 }
 
-static void horizontal_composeX(int *b, int width){
-    int temp[width];
+static void horizontal_composeX(DWTELEM *b, int width){
+    DWTELEM temp[width];
     const int width2= width>>1;
     int A1,A2,A3,A4, x;
     const int w2= (width+1)>>1;
@@ -807,7 +807,7 @@ static void horizontal_composeX(int *b, int width){
     inplace_lift(b, width, COEFFS1, N1, SHIFT1, LX1, 1);
 }
 
-static void spatial_decomposeX(int *buffer, int width, int height, int stride){
+static void spatial_decomposeX(DWTELEM *buffer, int width, int height, int stride){
     int x, y;
   
     for(y=0; y<height; y++){
@@ -826,7 +826,7 @@ static void spatial_decomposeX(int *buffer, int width, int height, int stride){
     inplace_liftV(buffer, width, height, stride, COEFFS4, N4, SHIFT4, LX0, 0);    
 }
 
-static void spatial_composeX(int *buffer, int width, int height, int stride){
+static void spatial_composeX(DWTELEM *buffer, int width, int height, int stride){
     int x, y;
   
     inplace_liftV(buffer, width, height, stride, COEFFS4, N4, SHIFT4, LX0, 1);
@@ -845,8 +845,8 @@ static void spatial_composeX(int *buffer, int width, int height, int stride){
     }
 }
 
-static void horizontal_decompose53i(int *b, int width){
-    int temp[width];
+static void horizontal_decompose53i(DWTELEM *b, int width){
+    DWTELEM temp[width];
     const int width2= width>>1;
     int A1,A2,A3,A4, x;
     const int w2= (width+1)>>1;
@@ -891,7 +891,7 @@ static void horizontal_decompose53i(int *b, int width){
 #endif
 }
 
-static void vertical_decompose53iH0(int *b0, int *b1, int *b2, int width){
+static void vertical_decompose53iH0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -899,7 +899,7 @@ static void vertical_decompose53iH0(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void vertical_decompose53iL0(int *b0, int *b1, int *b2, int width){
+static void vertical_decompose53iL0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -907,7 +907,7 @@ static void vertical_decompose53iL0(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void spatial_decompose53i(int *buffer, int width, int height, int stride){
+static void spatial_decompose53i(DWTELEM *buffer, int width, int height, int stride){
     int y;
     DWTELEM *b0= buffer + mirror(-2-1, height-1)*stride;
     DWTELEM *b1= buffer + mirror(-2  , height-1)*stride;
@@ -1000,8 +1000,8 @@ STOP_TIMER("vertical_decompose53i*")}
 #define W_DO 128
 #define W_DS 9
 #endif
-static void horizontal_decompose97i(int *b, int width){
-    int temp[width];
+static void horizontal_decompose97i(DWTELEM *b, int width){
+    DWTELEM temp[width];
     const int w2= (width+1)>>1;
 
     lift (temp+w2, b    +1, b      , 1, 2, 2, width, -W_AM, W_AO, W_AS, 1, 0);
@@ -1011,7 +1011,7 @@ static void horizontal_decompose97i(int *b, int width){
 }
 
 
-static void vertical_decompose97iH0(int *b0, int *b1, int *b2, int width){
+static void vertical_decompose97iH0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1019,7 +1019,7 @@ static void vertical_decompose97iH0(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void vertical_decompose97iH1(int *b0, int *b1, int *b2, int width){
+static void vertical_decompose97iH1(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1034,7 +1034,7 @@ static void vertical_decompose97iH1(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void vertical_decompose97iL0(int *b0, int *b1, int *b2, int width){
+static void vertical_decompose97iL0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1042,7 +1042,7 @@ static void vertical_decompose97iL0(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void vertical_decompose97iL1(int *b0, int *b1, int *b2, int width){
+static void vertical_decompose97iL1(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1050,7 +1050,7 @@ static void vertical_decompose97iL1(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void spatial_decompose97i(int *buffer, int width, int height, int stride){
+static void spatial_decompose97i(DWTELEM *buffer, int width, int height, int stride){
     int y;
     DWTELEM *b0= buffer + mirror(-4-1, height-1)*stride;
     DWTELEM *b1= buffer + mirror(-4  , height-1)*stride;
@@ -1085,7 +1085,7 @@ STOP_TIMER("vertical_decompose97i")
     }
 }
 
-void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, int decomposition_count){
+void ff_spatial_dwt(DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
     int level;
     
     for(level=0; level<decomposition_count; level++){
@@ -1097,8 +1097,8 @@ void ff_spatial_dwt(int *buffer, int width, int height, int stride, int type, in
     }
 }
 
-static void horizontal_compose53i(int *b, int width){
-    int temp[width];
+static void horizontal_compose53i(DWTELEM *b, int width){
+    DWTELEM temp[width];
     const int width2= width>>1;
     const int w2= (width+1)>>1;
     int A1,A2,A3,A4, x;
@@ -1143,7 +1143,7 @@ static void horizontal_compose53i(int *b, int width){
         b[2*x    ]= temp[x   ];
 }
 
-static void vertical_compose53iH0(int *b0, int *b1, int *b2, int width){
+static void vertical_compose53iH0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1151,7 +1151,7 @@ static void vertical_compose53iH0(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void vertical_compose53iL0(int *b0, int *b1, int *b2, int width){
+static void vertical_compose53iL0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1159,7 +1159,7 @@ static void vertical_compose53iL0(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void spatial_compose53i(int *buffer, int width, int height, int stride){
+static void spatial_compose53i(DWTELEM *buffer, int width, int height, int stride){
     int y;
     DWTELEM *b0= buffer + mirror(-1-1, height-1)*stride;
     DWTELEM *b1= buffer + mirror(-1  , height-1)*stride;
@@ -1184,8 +1184,8 @@ STOP_TIMER("horizontal_compose53i")}
 }   
 
  
-static void horizontal_compose97i(int *b, int width){
-    int temp[width];
+static void horizontal_compose97i(DWTELEM *b, int width){
+    DWTELEM temp[width];
     const int w2= (width+1)>>1;
 
     lift (temp   , b      , b   +w2, 1, 1, 1, width,  W_DM, W_DO, W_DS, 0, 1);
@@ -1194,7 +1194,7 @@ static void horizontal_compose97i(int *b, int width){
     lift (b+1    , temp+w2, b      , 2, 1, 2, width, -W_AM, W_AO, W_AS, 1, 1);
 }
 
-static void vertical_compose97iH0(int *b0, int *b1, int *b2, int width){
+static void vertical_compose97iH0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1202,7 +1202,7 @@ static void vertical_compose97iH0(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void vertical_compose97iH1(int *b0, int *b1, int *b2, int width){
+static void vertical_compose97iH1(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1217,7 +1217,7 @@ static void vertical_compose97iH1(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void vertical_compose97iL0(int *b0, int *b1, int *b2, int width){
+static void vertical_compose97iL0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1225,7 +1225,7 @@ static void vertical_compose97iL0(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void vertical_compose97iL1(int *b0, int *b1, int *b2, int width){
+static void vertical_compose97iL1(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2, int width){
     int i;
     
     for(i=0; i<width; i++){
@@ -1233,7 +1233,7 @@ static void vertical_compose97iL1(int *b0, int *b1, int *b2, int width){
     }
 }
 
-static void spatial_compose97i(int *buffer, int width, int height, int stride){
+static void spatial_compose97i(DWTELEM *buffer, int width, int height, int stride){
     int y;
     DWTELEM *b0= buffer + mirror(-3-1, height-1)*stride;
     DWTELEM *b1= buffer + mirror(-3  , height-1)*stride;
@@ -1273,7 +1273,7 @@ STOP_TIMER("horizontal_compose97i")}}
     }
 }
 
-void ff_spatial_idwt(int *buffer, int width, int height, int stride, int type, int decomposition_count){
+void ff_spatial_idwt(DWTELEM *buffer, int width, int height, int stride, int type, int decomposition_count){
     int level;
 
     for(level=decomposition_count-1; level>=0; level--){
