@@ -19,6 +19,7 @@ typedef struct OggVorbisContext {
 
     /* decoder */
     vorbis_comment vc ;
+    ogg_packet op;
 } OggVorbisContext ;
 
 
@@ -146,6 +147,7 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
 
     vorbis_info_init(&context->vi) ;
     vorbis_comment_init(&context->vc) ;
+    context->op.packetno= 0;
 
     return 0 ;
 }
@@ -181,8 +183,8 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
                         uint8_t *buf, int buf_size)
 {
     OggVorbisContext *context = avccontext->priv_data ;
-    ogg_packet *op = (ogg_packet*)buf ;
     float **pcm ;
+    ogg_packet *op= &context->op;    
     int samples, total_samples, total_bytes,i;
  
     if(!buf_size){
@@ -191,14 +193,15 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
         return 0;
     }
     
-    op->packet = (char*)op + sizeof(ogg_packet) ; /* correct data pointer */
+    op->packet = buf;
+    op->bytes  = buf_size;
+    op->b_o_s  = op->packetno == 0;
 
 //    av_log(avccontext, AV_LOG_DEBUG, "%d %d %d %lld %lld %d %d\n", op->bytes, op->b_o_s, op->e_o_s, op->granulepos, op->packetno, buf_size, context->vi.rate);
     
 /*    for(i=0; i<op->bytes; i++)
       av_log(avccontext, AV_LOG_DEBUG, "%02X ", op->packet[i]);
     av_log(avccontext, AV_LOG_DEBUG, "\n");*/
-//    op->b_o_s= op->packetno == 0;
     if(op->packetno < 3) {
 	if(vorbis_synthesis_headerin(&context->vi, &context->vc, op)<0){
             av_log(avccontext, AV_LOG_ERROR, "%lld. vorbis header damaged\n", op->packetno+1);
@@ -206,6 +209,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
         }
 	avccontext->channels = context->vi.channels ;
 	avccontext->sample_rate = context->vi.rate ;
+        op->packetno++;
 	return buf_size ;
     }
 
@@ -230,6 +234,7 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
         vorbis_synthesis_read(&context->vd, samples) ;
     }
 
+    op->packetno++;
     *data_size = total_bytes ;   
     return buf_size ;
 }

@@ -226,13 +226,12 @@ static int ogg_read_packet(AVFormatContext *avfcontext, AVPacket *pkt) {
 
     if(next_packet(avfcontext, &op)) 
 	return -EIO ;
-    if(av_new_packet(pkt, sizeof(ogg_packet) + op.bytes) < 0)
+    if(av_new_packet(pkt, op.bytes) < 0)
 	return -EIO ;
     pkt->stream_index = 0 ;
-    memcpy(pkt->data, &op, sizeof(ogg_packet)) ;
-    memcpy(pkt->data + sizeof(ogg_packet), op.packet, op.bytes) ;
+    memcpy(pkt->data, op.packet, op.bytes);
 
-    return sizeof(ogg_packet) + op.bytes ;
+    return op.bytes;
 }
 
 
