@@ -28,6 +28,10 @@
 #include <string.h>
 #include <math.h>
 
+#ifndef NAN
+  #define NAN 0
+#endif
+
 #define STACK_SIZE 100
 
 typedef struct Parser{
