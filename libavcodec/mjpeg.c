@@ -1,20 +1,20 @@
 /*
  * MJPEG encoder and decoder
- * Copyright (c) 2000, 2001 Gerard Lantau.
+ * Copyright (c) 2000, 2001 Fabrice Bellard.
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Support for external huffman table and various fixes (AVID workaround) by
  *                                    Alex Beregszaszi <alex@naxine.org>
@@ -815,8 +815,8 @@ static inline int decode_dc(MJpegDecodeContext *s, int dc_index)
     code = get_vlc(&s->gb, &s->vlcs[0][dc_index]);
     if (code < 0)
     {
-	dprintf("decode_dc: bad vlc: %d:%d (%x)\n", 0, dc_index,
-	    &s->vlcs[0][dc_index]);
+	dprintf("decode_dc: bad vlc: %d:%d (%p)\n", 0, dc_index,
+                &s->vlcs[0][dc_index]);
         return 0xffff;
     }
     if (code == 0) {
@@ -987,7 +987,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s,
                     if (decode_block(s, s->block, i, 
                                      dc_index[i], ac_index[i], 
                                      s->quant_index[c]) < 0) {
-                        dprintf("error %d %d\n", mb_y, mb_x);
+                        dprintf("error y=%d x=%d\n", mb_y, mb_x);
                         ret = -1;
                         goto the_end;
                     }
@@ -1213,9 +1213,11 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
         } else {
             memcpy(s->buf_ptr, buf_start, len);
             s->buf_ptr += len;
-            /* if we got FF 00, we copy FF to the stream to unescape FF 00 */
-	    /* valid marker code is between 00 and ff - alex */
-	    if (code <= 0 || code >= 0xff) {
+            if (code < 0) {
+                /* nothing to do: wait next marker */
+            } else if (code == 0 || code == 0xff) {
+                /* if we got FF 00, we copy FF to the stream to unescape FF 00 */
+                /* valid marker code is between 00 and ff - alex */
                 s->buf_ptr--;
             } else {
                 /* prepare data for next start code */
@@ -1299,12 +1301,9 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		    return -1;
                 }
 #if 1
-		if (start_code >= 0xd0 && start_code <= 0xd7)
-		{
+		if (start_code >= 0xd0 && start_code <= 0xd7) {
 		    dprintf("restart marker: %d\n", start_code&0x0f);
-		}
-		else if (s->first_picture)
-		{
+		} else if (s->first_picture) {
 		    /* APP fields */
 		    if (start_code >= 0xe0 && start_code <= 0xef)
 			mjpeg_decode_app(s, s->buffer, input_size, start_code);
