@@ -108,6 +108,7 @@ extern void (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int
              int srcSliceH, uint8_t* dst[], int dstStride[]);
 
 SwsVector *getGaussianVec(double variance, double quality);
+SwsVector *getConstVec(double c, int length);
 SwsVector *getIdentityVec(void);
 void scaleVec(SwsVector *a, double scalar);
 void normalizeVec(SwsVector *a, double height);

@@ -1163,6 +1163,28 @@ FULL_YSCALEYUV2RGB
 		else if(dstFormat==IMGFMT_BGR16)
 		{
 			int i;
+#ifdef DITHER1XBPP
+			static int ditherb1=1<<14;
+			static int ditherg1=1<<13;
+			static int ditherr1=2<<14;
+			static int ditherb2=3<<14;
+			static int ditherg2=3<<13;
+			static int ditherr2=0<<14;
+
+			ditherb1 ^= (1^2)<<14;
+			ditherg1 ^= (1^2)<<13;
+			ditherr1 ^= (1^2)<<14;
+			ditherb2 ^= (3^0)<<14;
+			ditherg2 ^= (3^0)<<13;
+			ditherr2 ^= (3^0)<<14;
+#else
+			const int ditherb1=0;
+			const int ditherg1=0;
+			const int ditherr1=0;
+			const int ditherb2=0;
+			const int ditherg2=0;
+			const int ditherr2=0;
+#endif
 			for(i=0; i<dstW-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -1175,19 +1197,41 @@ FULL_YSCALEYUV2RGB
 				int Cr= yuvtab_3343[V];
 
 				((uint16_t*)dest)[i] =
-					clip_table16b[(Y1 + Cb) >>13] |
-					clip_table16g[(Y1 + Cg) >>13] |
-					clip_table16r[(Y1 + Cr) >>13];
+					clip_table16b[(Y1 + Cb + ditherb1) >>13] |
+					clip_table16g[(Y1 + Cg + ditherg1) >>13] |
+					clip_table16r[(Y1 + Cr + ditherr1) >>13];
 
 				((uint16_t*)dest)[i+1] =
-					clip_table16b[(Y2 + Cb) >>13] |
-					clip_table16g[(Y2 + Cg) >>13] |
-					clip_table16r[(Y2 + Cr) >>13];
+					clip_table16b[(Y2 + Cb + ditherb2) >>13] |
+					clip_table16g[(Y2 + Cg + ditherg2) >>13] |
+					clip_table16r[(Y2 + Cr + ditherr2) >>13];
 			}
 		}
 		else if(dstFormat==IMGFMT_BGR15)
 		{
 			int i;
+#ifdef DITHER1XBPP
+			static int ditherb1=1<<14;
+			static int ditherg1=1<<14;
+			static int ditherr1=2<<14;
+			static int ditherb2=3<<14;
+			static int ditherg2=3<<14;
+			static int ditherr2=0<<14;
+
+			ditherb1 ^= (1^2)<<14;
+			ditherg1 ^= (1^2)<<14;
+			ditherr1 ^= (1^2)<<14;
+			ditherb2 ^= (3^0)<<14;
+			ditherg2 ^= (3^0)<<14;
+			ditherr2 ^= (3^0)<<14;
+#else
+			const int ditherb1=0;
+			const int ditherg1=0;
+			const int ditherr1=0;
+			const int ditherb2=0;
+			const int ditherg2=0;
+			const int ditherr2=0;
+#endif
 			for(i=0; i<dstW-1; i+=2){
 				// vertical linear interpolation && yuv2rgb in a single step:
 				int Y1=yuvtab_2568[((buf0[i]*yalpha1+buf1[i]*yalpha)>>19)];
@@ -1200,14 +1244,14 @@ FULL_YSCALEYUV2RGB
 				int Cr= yuvtab_3343[V];
 
 				((uint16_t*)dest)[i] =
-					clip_table15b[(Y1 + Cb) >>13] |
-					clip_table15g[(Y1 + Cg) >>13] |
-					clip_table15r[(Y1 + Cr) >>13];
+					clip_table15b[(Y1 + Cb + ditherb1) >>13] |
+					clip_table15g[(Y1 + Cg + ditherg1) >>13] |
+					clip_table15r[(Y1 + Cr + ditherr1) >>13];
 
 				((uint16_t*)dest)[i+1] =
-					clip_table15b[(Y2 + Cb) >>13] |
-					clip_table15g[(Y2 + Cg) >>13] |
-					clip_table15r[(Y2 + Cr) >>13];
+					clip_table15b[(Y2 + Cb + ditherb2) >>13] |
+					clip_table15g[(Y2 + Cg + ditherg2) >>13] |
+					clip_table15r[(Y2 + Cr + ditherr2) >>13];
 			}
 		}
 #endif
@@ -1397,6 +1441,28 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 	else if(dstFormat==IMGFMT_BGR16)
 	{
 		int i;
+#ifdef DITHER1XBPP
+		static int ditherb1=1<<14;
+		static int ditherg1=1<<13;
+		static int ditherr1=2<<14;
+		static int ditherb2=3<<14;
+		static int ditherg2=3<<13;
+		static int ditherr2=0<<14;
+
+		ditherb1 ^= (1^2)<<14;
+		ditherg1 ^= (1^2)<<13;
+		ditherr1 ^= (1^2)<<14;
+		ditherb2 ^= (3^0)<<14;
+		ditherg2 ^= (3^0)<<13;
+		ditherr2 ^= (3^0)<<14;
+#else
+		const int ditherb1=0;
+		const int ditherg1=0;
+		const int ditherr1=0;
+		const int ditherb2=0;
+		const int ditherg2=0;
+		const int ditherr2=0;
+#endif
 		for(i=0; i<dstW-1; i+=2){
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
@@ -1409,19 +1475,41 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			int Cr= yuvtab_3343[V];
 
 			((uint16_t*)dest)[i] =
-				clip_table16b[(Y1 + Cb) >>13] |
-				clip_table16g[(Y1 + Cg) >>13] |
-				clip_table16r[(Y1 + Cr) >>13];
+				clip_table16b[(Y1 + Cb + ditherb1) >>13] |
+				clip_table16g[(Y1 + Cg + ditherg1) >>13] |
+				clip_table16r[(Y1 + Cr + ditherr1) >>13];
 
 			((uint16_t*)dest)[i+1] =
-				clip_table16b[(Y2 + Cb) >>13] |
-				clip_table16g[(Y2 + Cg) >>13] |
-				clip_table16r[(Y2 + Cr) >>13];
+				clip_table16b[(Y2 + Cb + ditherb2) >>13] |
+				clip_table16g[(Y2 + Cg + ditherg2) >>13] |
+				clip_table16r[(Y2 + Cr + ditherr2) >>13];
 		}
 	}
 	else if(dstFormat==IMGFMT_BGR15)
 	{
 		int i;
+#ifdef DITHER1XBPP
+		static int ditherb1=1<<14;
+		static int ditherg1=1<<14;
+		static int ditherr1=2<<14;
+		static int ditherb2=3<<14;
+		static int ditherg2=3<<14;
+		static int ditherr2=0<<14;
+
+		ditherb1 ^= (1^2)<<14;
+		ditherg1 ^= (1^2)<<14;
+		ditherr1 ^= (1^2)<<14;
+		ditherb2 ^= (3^0)<<14;
+		ditherg2 ^= (3^0)<<14;
+		ditherr2 ^= (3^0)<<14;
+#else
+		const int ditherb1=0;
+		const int ditherg1=0;
+		const int ditherr1=0;
+		const int ditherb2=0;
+		const int ditherg2=0;
+		const int ditherr2=0;
+#endif
 		for(i=0; i<dstW-1; i+=2){
 			// vertical linear interpolation && yuv2rgb in a single step:
 			int Y1=yuvtab_2568[buf0[i]>>7];
@@ -1434,14 +1522,14 @@ static inline void RENAME(yuv2rgb1)(uint16_t *buf0, uint16_t *uvbuf0, uint16_t *
 			int Cr= yuvtab_3343[V];
 
 			((uint16_t*)dest)[i] =
-				clip_table15b[(Y1 + Cb) >>13] |
-				clip_table15g[(Y1 + Cg) >>13] |
-				clip_table15r[(Y1 + Cr) >>13];
+				clip_table15b[(Y1 + Cb + ditherb1) >>13] |
+				clip_table15g[(Y1 + Cg + ditherg1) >>13] |
+				clip_table15r[(Y1 + Cr + ditherr1) >>13];
 
 			((uint16_t*)dest)[i+1] =
-				clip_table15b[(Y2 + Cb) >>13] |
-				clip_table15g[(Y2 + Cg) >>13] |
-				clip_table15r[(Y2 + Cr) >>13];
+				clip_table15b[(Y2 + Cb + ditherb2) >>13] |
+				clip_table15g[(Y2 + Cg + ditherg2) >>13] |
+				clip_table15r[(Y2 + Cr + ditherr2) >>13];
 		}
 	}
 #endif

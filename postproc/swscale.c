@@ -161,6 +161,8 @@ float sws_lum_gblur= 0.0;
 float sws_chr_gblur= 0.0;
 int sws_chr_vshift= 0;
 int sws_chr_hshift= 0;
+float sws_chr_sharpen= 0.0;
+float sws_lum_sharpen= 0.0;
 
 /* cpuCaps combined from cpudetect and whats actually compiled in
    (if there is no support for something compiled in it wont appear here) */
@@ -298,6 +300,28 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 	else if(dstFormat==IMGFMT_BGR16)
 	{
 		int i;
+#ifdef DITHER1XBPP
+		static int ditherb1=1<<14;
+		static int ditherg1=1<<13;
+		static int ditherr1=2<<14;
+		static int ditherb2=3<<14;
+		static int ditherg2=3<<13;
+		static int ditherr2=0<<14;
+
+		ditherb1 ^= (1^2)<<14;
+		ditherg1 ^= (1^2)<<13;
+		ditherr1 ^= (1^2)<<14;
+		ditherb2 ^= (3^0)<<14;
+		ditherg2 ^= (3^0)<<13;
+		ditherr2 ^= (3^0)<<14;
+#else
+		const int ditherb1=0;
+		const int ditherg1=0;
+		const int ditherr1=0;
+		const int ditherb2=0;
+		const int ditherg2=0;
+		const int ditherr2=0;
+#endif
 		for(i=0; i<(dstW>>1); i++){
 			int j;
 			int Y1=0;
@@ -325,19 +349,41 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 			Cr= clip_yuvtab_3343[V+ 256];
 
 			((uint16_t*)dest)[2*i] =
-				clip_table16b[(Y1 + Cb) >>13] |
-				clip_table16g[(Y1 + Cg) >>13] |
-				clip_table16r[(Y1 + Cr) >>13];
+				clip_table16b[(Y1 + Cb + ditherb1) >>13] |
+				clip_table16g[(Y1 + Cg + ditherg1) >>13] |
+				clip_table16r[(Y1 + Cr + ditherr1) >>13];
 
 			((uint16_t*)dest)[2*i+1] =
-				clip_table16b[(Y2 + Cb) >>13] |
-				clip_table16g[(Y2 + Cg) >>13] |
-				clip_table16r[(Y2 + Cr) >>13];
+				clip_table16b[(Y2 + Cb + ditherb2) >>13] |
+				clip_table16g[(Y2 + Cg + ditherg2) >>13] |
+				clip_table16r[(Y2 + Cr + ditherr2) >>13];
 		}
 	}
 	else if(dstFormat==IMGFMT_BGR15)
 	{
 		int i;
+#ifdef DITHER1XBPP
+		static int ditherb1=1<<14;
+		static int ditherg1=1<<14;
+		static int ditherr1=2<<14;
+		static int ditherb2=3<<14;
+		static int ditherg2=3<<14;
+		static int ditherr2=0<<14;
+
+		ditherb1 ^= (1^2)<<14;
+		ditherg1 ^= (1^2)<<14;
+		ditherr1 ^= (1^2)<<14;
+		ditherb2 ^= (3^0)<<14;
+		ditherg2 ^= (3^0)<<14;
+		ditherr2 ^= (3^0)<<14;
+#else
+		const int ditherb1=0;
+		const int ditherg1=0;
+		const int ditherr1=0;
+		const int ditherb2=0;
+		const int ditherg2=0;
+		const int ditherr2=0;
+#endif
 		for(i=0; i<(dstW>>1); i++){
 			int j;
 			int Y1=0;
@@ -365,14 +411,14 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 			Cr= clip_yuvtab_3343[V+ 256];
 
 			((uint16_t*)dest)[2*i] =
-				clip_table15b[(Y1 + Cb) >>13] |
-				clip_table15g[(Y1 + Cg) >>13] |
-				clip_table15r[(Y1 + Cr) >>13];
+				clip_table15b[(Y1 + Cb + ditherb1) >>13] |
+				clip_table15g[(Y1 + Cg + ditherg1) >>13] |
+				clip_table15r[(Y1 + Cr + ditherr1) >>13];
 
 			((uint16_t*)dest)[2*i+1] =
-				clip_table15b[(Y2 + Cb) >>13] |
-				clip_table15g[(Y2 + Cg) >>13] |
-				clip_table15r[(Y2 + Cr) >>13];
+				clip_table15b[(Y2 + Cb + ditherb2) >>13] |
+				clip_table15g[(Y2 + Cg + ditherg2) >>13] |
+				clip_table15r[(Y2 + Cr + ditherr2) >>13];
 		}
 	}
 }
@@ -402,13 +448,11 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 #undef HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
-#undef ARCH_X86
 
 #ifdef COMPILE_C
 #undef HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
-#undef ARCH_X86
 #define RENAME(a) a ## _C
 #include "swscale_template.c"
 #endif
@@ -431,7 +475,6 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 #define HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
-#define ARCH_X86
 #define RENAME(a) a ## _MMX
 #include "swscale_template.c"
 #endif
@@ -442,7 +485,6 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 #define HAVE_MMX
 #define HAVE_MMX2
 #undef HAVE_3DNOW
-#define ARCH_X86
 #define RENAME(a) a ## _MMX2
 #include "swscale_template.c"
 #endif
@@ -453,7 +495,6 @@ static inline void yuv2rgbXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 #define HAVE_MMX
 #undef HAVE_MMX2
 #define HAVE_3DNOW
-#define ARCH_X86
 #define RENAME(a) a ## _3DNow
 #include "swscale_template.c"
 #endif
@@ -477,6 +518,10 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 
 	if(firstTime)
 	{
+#ifdef ARCH_X86
+		if(gCpuCaps.hasMMX)
+			asm volatile("emms\n\t"::: "memory"); //FIXME this shouldnt be required but it IS (even for non mmx versions)
+#endif
 		flags= SWS_PRINT_INFO;
 		firstTime=0;
 
@@ -501,12 +546,41 @@ void SwScale_YV12slice(unsigned char* src[], int srcStride[], int srcSliceY ,
 			src_filter.chrV= getIdentityVec();
 		}
 
+		if(sws_chr_sharpen!=0.0){
+			SwsVector *g= getConstVec(-1.0, 3);
+			SwsVector *id= getConstVec(10.0/sws_chr_sharpen, 1);
+			g->coeff[1]=2.0;
+			addVec(id, g);
+			convVec(src_filter.chrH, id);
+			convVec(src_filter.chrV, id);
+			freeVec(g);
+			freeVec(id);
+		}
+
+		if(sws_lum_sharpen!=0.0){
+			SwsVector *g= getConstVec(-1.0, 3);
+			SwsVector *id= getConstVec(10.0/sws_lum_sharpen, 1);
+			g->coeff[1]=2.0;
+			addVec(id, g);
+			convVec(src_filter.lumH, id);
+			convVec(src_filter.lumV, id);
+			freeVec(g);
+			freeVec(id);
+		}
+
 		if(sws_chr_hshift)
 			shiftVec(src_filter.chrH, sws_chr_hshift);
 
 		if(sws_chr_vshift)
 			shiftVec(src_filter.chrV, sws_chr_vshift);
 
+		normalizeVec(src_filter.chrH, 1.0);
+		normalizeVec(src_filter.chrV, 1.0);
+		normalizeVec(src_filter.lumH, 1.0);
+		normalizeVec(src_filter.lumV, 1.0);
+
+		if(verbose > 1) printVec(src_filter.chrH);
+		if(verbose > 1) printVec(src_filter.lumH);
 	}
 
 	switch(dstbpp)
@@ -551,7 +625,6 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 #endif
 
 	*filterPos = (int16_t*)memalign(8, dstW*sizeof(int16_t));
-
 	if(ABS(xInc - 0x10000) <10) // unscaled
 	{
 		int i;
@@ -1002,8 +1075,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	c->srcH= srcH;
 	c->dstW= dstW;
 	c->dstH= dstH;
-	c->lumXInc= ((srcW<<16) + (1<<15))/dstW;
-	c->lumYInc= ((srcH<<16) + (1<<15))/dstH;
+	c->lumXInc= ((srcW<<16) + (dstW>>1))/dstW;
+	c->lumYInc= ((srcH<<16) + (dstH>>1))/dstH;
 	c->flags= flags;
 	c->dstFormat= dstFormat;
 	c->srcFormat= srcFormat;
@@ -1120,7 +1193,9 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	if(flags&SWS_PRINT_INFO)
 	{
 #ifdef DITHER1XBPP
-		char *dither= cpuCaps.hasMMX ? " dithered" : "";
+		char *dither= " dithered";
+#else
+		char *dither= "";
 #endif
 		if(flags&SWS_FAST_BILINEAR)
 			fprintf(stderr, "\nSwScaler: FAST_BILINEAR scaler ");
@@ -1243,6 +1318,21 @@ SwsVector *getGaussianVec(double variance, double quality){
 
 	return vec;
 }
+
+SwsVector *getConstVec(double c, int length){
+	int i;
+	double *coeff= memalign(sizeof(double), length*sizeof(double));
+	SwsVector *vec= malloc(sizeof(SwsVector));
+
+	vec->coeff= coeff;
+	vec->length= length;
+
+	for(i=0; i<length; i++)
+		coeff[i]= c;
+
+	return vec;
+}
+
 
 SwsVector *getIdentityVec(void){
 	double *coeff= memalign(sizeof(double), sizeof(double));
