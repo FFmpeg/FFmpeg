@@ -27,7 +27,7 @@ static const __attribute__ ((aligned(8))) uint64_t round_tab[3]={
 0x0002000200020002ULL,
 };
 
-static __attribute__ ((aligned(8), unused)) uint64_t bone= 0x0101010101010101LL;
+static attribute_used __attribute__ ((aligned(8))) uint64_t bone= 0x0101010101010101LL;
 
 static inline void sad8_1_mmx(uint8_t *blk1, uint8_t *blk2, int stride, int h)
 {

@@ -82,6 +82,12 @@ extern const struct AVOption avoptions_workaround_bug[11];
 #    define always_inline inline
 #endif
 
+#if defined(__GNUC__) && (__GNUC__ > 3 || __GNUC__ == 3 && __GNUC_MINOR__ > 0)
+#    define attribute_used __attribute__((used))
+#else
+#    define attribute_used
+#endif
+
 #ifndef EMULATE_INTTYPES
 #   include <inttypes.h>
 #else
