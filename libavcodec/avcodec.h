@@ -60,6 +60,7 @@ enum CodecID {
     CODEC_ID_ASV1,
     CODEC_ID_FFV1,
     CODEC_ID_4XM,
+    CODEC_ID_VCR1,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1257,6 +1258,7 @@ extern AVCodec wmv2_encoder;
 extern AVCodec huffyuv_encoder;
 extern AVCodec h264_encoder;
 extern AVCodec asv1_encoder;
+extern AVCodec vcr1_encoder;
 extern AVCodec ffv1_encoder;
 
 extern AVCodec h263_decoder;
@@ -1293,6 +1295,7 @@ extern AVCodec amr_nb_encoder;
 extern AVCodec aac_decoder;
 extern AVCodec mpeg4aac_decoder;
 extern AVCodec asv1_decoder;
+extern AVCodec vcr1_decoder;
 extern AVCodec ffv1_decoder;
 extern AVCodec fourxm_decoder;
 extern AVCodec ra_144_decoder;
