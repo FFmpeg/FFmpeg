@@ -62,7 +62,6 @@ static void DEF(put_pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size,
 	:"memory");
      pix += line_size; p += line_size;
   }
-  emms();
 }
 
 static void DEF(put_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
@@ -102,7 +101,6 @@ static void DEF(put_pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size,
 	 "m"(*(pix+line_size))
 	:"memory");
   }
-  emms();
 }
 
 static void DEF(avg_pixels)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
@@ -148,7 +146,6 @@ static void DEF(avg_pixels)(UINT8 *block, const UINT8 *pixels, int line_size, in
 	:"memory");
      pix += line_size; p += line_size;
   }
-  emms();
 }
 
 static void DEF(avg_pixels_x2)( UINT8  *block, const UINT8 *pixels, int line_size, int h)
@@ -192,7 +189,6 @@ static void DEF(avg_pixels_x2)( UINT8  *block, const UINT8 *pixels, int line_siz
 	:"m"(*pix)
 	:"memory");
   }
-  emms();
 }
 
 static void  DEF(avg_pixels_y2)( UINT8  *block, const UINT8 *pixels, int line_size, int h)
@@ -236,7 +232,6 @@ static void  DEF(avg_pixels_y2)( UINT8  *block, const UINT8 *pixels, int line_si
 	:"m"(*pix), "m"(*(pix+line_size))
 	:"memory");
   }
-  emms();
 }
 
 static void DEF(avg_pixels_xy2)( UINT8  *block, const UINT8 *pixels, int line_size, int h)
@@ -287,7 +282,6 @@ static void DEF(avg_pixels_xy2)( UINT8  *block, const UINT8 *pixels, int line_si
    pix += line_size;
    p +=   line_size ;
   } while(--h);
-  emms();
 }
 
 static void DEF(sub_pixels_x2)( DCTELEM  *block, const UINT8 *pixels, int line_size, int h)
@@ -317,7 +311,6 @@ static void DEF(sub_pixels_x2)( DCTELEM  *block, const UINT8 *pixels, int line_s
    pix += line_size;
    p +=   8;
  } while (--h);
- emms();
 }
 
 static void DEF(sub_pixels_y2)( DCTELEM  *block, const UINT8 *pixels, int line_size, int h)
@@ -347,6 +340,5 @@ static void DEF(sub_pixels_y2)( DCTELEM  *block, const UINT8 *pixels, int line_s
    pix += line_size;
    p +=   8;
  } while (--h);
- emms();
 }
 
