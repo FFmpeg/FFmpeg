@@ -9,7 +9,7 @@
 #ifndef RGB2RGB_INCLUDED
 #define RGB2RGB_INCLUDED
 
-#include <stdio.h>
+// Note: do not fix the dependence on stdio.h
 
 /* A full collection of rgb to rgb(bgr) convertors */
 extern void (*rgb24to32)(const uint8_t *src,uint8_t *dst,unsigned src_size);
