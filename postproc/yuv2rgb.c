@@ -27,28 +27,29 @@
  *
  * MMX/MMX2 Template stuff from Michael Niedermayer (michaelni@gmx.at) (needed for fast movntq support)
  * 1,4,8bpp support by Michael Niedermayer (michaelni@gmx.at)
+ * context / deglobalize stuff by Michael Niedermayer
  */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <assert.h>
 
 #include "config.h"
 //#include "video_out.h"
 #include "rgb2rgb.h"
+#include "swscale.h"
+#include "swscale_internal.h"
 #include "../cpudetect.h"
 #include "../mangle.h"
 #include "../mp_msg.h"
+#include "../libvo/img_format.h" //FIXME try to reduce dependency of such stuff
 
 #ifdef HAVE_MLIB
 #include "yuv2rgb_mlib.c"
 #endif
 
 #define DITHER1XBPP // only for mmx
-
-#ifdef ARCH_X86
-#define CAN_COMPILE_X86_ASM
-#endif
 
 const uint8_t  __attribute__((aligned(8))) dither_2x2_4[2][8]={
 {  1,   3,   1,   3,   1,   3,   1,   3, },
@@ -157,21 +158,10 @@ const uint8_t  __attribute__((aligned(8))) dither_8x8_220[8][8]={
 };
 #endif
 
-#ifdef CAN_COMPILE_X86_ASM
+#ifdef ARCH_X86
 
 /* hope these constant values are cache line aligned */
-uint64_t __attribute__((aligned(8))) mmx_80w = 0x0080008000800080;
-uint64_t __attribute__((aligned(8))) mmx_10w = 0x1010101010101010;
 uint64_t __attribute__((aligned(8))) mmx_00ffw = 0x00ff00ff00ff00ff;
-uint64_t __attribute__((aligned(8))) mmx_Y_coeff = 0x253f253f253f253f;
-
-/* hope these constant values are cache line aligned */
-uint64_t __attribute__((aligned(8))) mmx_U_green = 0xf37df37df37df37d;
-uint64_t __attribute__((aligned(8))) mmx_U_blue = 0x4093409340934093;
-uint64_t __attribute__((aligned(8))) mmx_V_red = 0x3312331233123312;
-uint64_t __attribute__((aligned(8))) mmx_V_green = 0xe5fce5fce5fce5fc;
-
-/* hope these constant values are cache line aligned */
 uint64_t __attribute__((aligned(8))) mmx_redmask = 0xf8f8f8f8f8f8f8f8;
 uint64_t __attribute__((aligned(8))) mmx_grnmask = 0xfcfcfcfcfcfcfcfc;
 
@@ -217,8 +207,6 @@ uint64_t __attribute__((aligned(8))) dither8[2]={
 
 #endif // CAN_COMPILE_X86_ASM
 
-uint32_t matrix_coefficients = 6;
-
 const int32_t Inverse_Table_6_9[8][4] = {
     {117504, 138453, 13954, 34903}, /* no sequence_display_extension */
     {117504, 138453, 13954, 34903}, /* ITU-R Rec. 709 (1990) */
@@ -230,82 +218,12 @@ const int32_t Inverse_Table_6_9[8][4] = {
     {117579, 136230, 16907, 35559}  /* SMPTE 240M (1987) */
 };
 
-void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_gU[256], int table_gV[256], void *table_bU[256]);
-
-yuv2rgb_fun yuv2rgb= NULL;
-
-static void (* yuv2rgb_c_internal) (uint8_t *, uint8_t *,
-				    uint8_t *, uint8_t *,
-				    void *, void *, int, int);
-
-static void yuv2rgb_c (void * dst, uint8_t * py,
-		       uint8_t * pu, uint8_t * pv,
-		       unsigned h_size, unsigned v_size,
-		       unsigned rgb_stride, unsigned y_stride, unsigned uv_stride)
-{
-    v_size >>= 1;
-
-    while (v_size--) {
-	yuv2rgb_c_internal (py, py + y_stride, pu, pv, dst, dst + rgb_stride,
-			    h_size, v_size<<1);
-
-	py += 2 * y_stride;
-	pu += uv_stride;
-	pv += uv_stride;
-	dst += 2 * rgb_stride;
-    }
-}
-
-void * table_rV[256];
-void * table_gU[256];
-int table_gV[256];
-void * table_bU[256];
-
-void yuv2rgb_init (unsigned bpp, int mode)
-{
-    if(yuv2rgb) return;
-#ifdef CAN_COMPILE_X86_ASM
-    if(gCpuCaps.hasMMX2)
-    {
-	if (yuv2rgb == NULL /*&& (config.flags & VO_MMX_ENABLE)*/) {
-		yuv2rgb = yuv2rgb_init_MMX2 (bpp, mode);
-		if (yuv2rgb != NULL)
-			mp_msg(MSGT_SWS,MSGL_INFO,"Using MMX2 for colorspace transform\n");
-		else
-			mp_msg(MSGT_SWS,MSGL_WARN,"Cannot init MMX2 colorspace transform\n");
-	}
-    }
-    else if(gCpuCaps.hasMMX)
-    {
-	if (yuv2rgb == NULL /*&& (config.flags & VO_MMX_ENABLE)*/) {
-		yuv2rgb = yuv2rgb_init_MMX (bpp, mode);
-		if (yuv2rgb != NULL)
-			mp_msg(MSGT_SWS,MSGL_INFO,"Using MMX for colorspace transform\n");
-		else
-			mp_msg(MSGT_SWS,MSGL_WARN,"Cannot init MMX colorspace transform\n");
-	}
-    }
-#endif
-#ifdef HAVE_MLIB
-    if (yuv2rgb == NULL /*&& (config.flags & VO_MLIB_ENABLE)*/) {
-	yuv2rgb = yuv2rgb_init_mlib (bpp, mode);
-	if (yuv2rgb != NULL)
-	    mp_msg(MSGT_SWS,MSGL_INFO,"Using mlib for colorspace transform\n");
-    }
-#endif
-    if (yuv2rgb == NULL) {
-	mp_msg(MSGT_SWS,MSGL_INFO,"No accelerated colorspace conversion found\n");
-	yuv2rgb_c_init (bpp, mode, table_rV, table_gU, table_gV, table_bU);
-	yuv2rgb = (yuv2rgb_fun)yuv2rgb_c;
-    }
-}
-
 #define RGB(i)					\
 	U = pu[i];				\
 	V = pv[i];				\
-	r = table_rV[V];			\
-	g = table_gU[U] + table_gV[V];		\
-	b = table_bU[U];
+	r = c->table_rV[V];			\
+	g = c->table_gU[U] + c->table_gV[V];		\
+	b = c->table_bU[U];
 
 #define DST1(i)					\
 	Y = py_1[2*i];				\
@@ -343,19 +261,42 @@ void yuv2rgb_init (unsigned bpp, int mode)
 	Y = py_2[2*i+1];						\
 	dst_2[6*i+3] = b[Y]; dst_2[6*i+4] = g[Y]; dst_2[6*i+5] = r[Y];
 
-static void yuv2rgb_c_32 (uint8_t * py_1, uint8_t * py_2,
-			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint32_t * r, * g, * b;
-    uint32_t * dst_1, * dst_2;
+#define PROLOG(func_name, dst_type) \
+static void func_name(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, \
+             int srcSliceH, uint8_t* dst[], int dstStride[]){\
+    uint8_t *src[3];\
+    int srcStride[3];\
+    int y;\
+\
+    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);\
+    if(c->srcFormat == IMGFMT_422P){\
+	srcStride[1] *= 2;\
+	srcStride[2] *= 2;\
+    }\
+    for(y=0; y<srcSliceH; y+=2){\
+	dst_type *dst_1= (dst_type*)(dst[0] + (y+srcSliceY  )*dstStride[0]);\
+	dst_type *dst_2= (dst_type*)(dst[0] + (y+srcSliceY+1)*dstStride[0]);\
+	dst_type *r, *g, *b;\
+	uint8_t *py_1= src[0] + y*srcStride[0];\
+	uint8_t *py_2= py_1 + srcStride[0];\
+	uint8_t *pu= src[1] + (y>>1)*srcStride[1];\
+	uint8_t *pv= src[2] + (y>>1)*srcStride[2];\
+	unsigned int h_size= c->dstW>>3;\
+	while (h_size--) {\
+	    int U, V, Y;\
 
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
+#define EPILOG(dst_delta)\
+	    pu += 4;\
+	    pv += 4;\
+	    py_1 += 8;\
+	    py_2 += 8;\
+	    dst_1 += dst_delta;\
+	    dst_2 += dst_delta;\
+	}\
+    }\
+}
 
-    while (h_size--) {
+PROLOG(yuv2rgb_c_32, uint32_t)
 	RGB(0);
 	DST1(0);
 	DST2(0);
@@ -371,30 +312,9 @@ static void yuv2rgb_c_32 (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2(3);
 	DST1(3);
+EPILOG(8)
 
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 8;
-	dst_2 += 8;
-    }
-}
-
-// This is very near from the yuv2rgb_c_32 code
-static void yuv2rgb_c_24_rgb (uint8_t * py_1, uint8_t * py_2,
-			      uint8_t * pu, uint8_t * pv,
-			      void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint8_t * r, * g, * b;
-    uint8_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-
-    while (h_size--) {
+PROLOG(yuv2rgb_c_24_rgb, uint8_t)
 	RGB(0);
 	DST1RGB(0);
 	DST2RGB(0);
@@ -410,30 +330,10 @@ static void yuv2rgb_c_24_rgb (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2RGB(3);
 	DST1RGB(3);
-
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 24;
-	dst_2 += 24;
-    }
-}
+EPILOG(24)
 
 // only trivial mods from yuv2rgb_c_24_rgb
-static void yuv2rgb_c_24_bgr (uint8_t * py_1, uint8_t * py_2,
-			      uint8_t * pu, uint8_t * pv,
-			      void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint8_t * r, * g, * b;
-    uint8_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-
-    while (h_size--) {
+PROLOG(yuv2rgb_c_24_bgr, uint8_t)
 	RGB(0);
 	DST1BGR(0);
 	DST2BGR(0);
@@ -449,31 +349,11 @@ static void yuv2rgb_c_24_bgr (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2BGR(3);
 	DST1BGR(3);
-
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 24;
-	dst_2 += 24;
-    }
-}
+EPILOG(24)
 
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
-static void yuv2rgb_c_16 (uint8_t * py_1, uint8_t * py_2,
-			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint16_t * r, * g, * b;
-    uint16_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-
-    while (h_size--) {
+PROLOG(yuv2rgb_c_16, uint16_t)
 	RGB(0);
 	DST1(0);
 	DST2(0);
@@ -489,31 +369,11 @@ static void yuv2rgb_c_16 (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2(3);
 	DST1(3);
-
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 8;
-	dst_2 += 8;
-    }
-}
+EPILOG(8)
 
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
-static void yuv2rgb_c_8  (uint8_t * py_1, uint8_t * py_2,
-			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint8_t * r, * g, * b;
-    uint8_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-
-    while (h_size--) {
+PROLOG(yuv2rgb_c_8, uint8_t)
 	RGB(0);
 	DST1(0);
 	DST2(0);
@@ -529,32 +389,12 @@ static void yuv2rgb_c_8  (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2(3);
 	DST1(3);
-
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 8;
-	dst_2 += 8;
-    }
-}
+EPILOG(8)
 
 // r, g, b, dst_1, dst_2
-static void yuv2rgb_c_8_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
-			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint8_t * r, * g, * b;
-    uint8_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-
-    while (h_size--) {
-	const uint8_t *d32= dither_8x8_32[v_pos&7];
-	const uint8_t *d64= dither_8x8_73[v_pos&7];
+PROLOG(yuv2rgb_c_8_ordered_dither, uint8_t)
+	const uint8_t *d32= dither_8x8_32[y&7];
+	const uint8_t *d64= dither_8x8_73[y&7];
 #define DST1bpp8(i,o)					\
 	Y = py_1[2*i];				\
 	dst_1[2*i] = r[Y+d32[0+o]] + g[Y+d32[0+o]] + b[Y+d64[0+o]];	\
@@ -583,32 +423,12 @@ static void yuv2rgb_c_8_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2bpp8(3,6);
 	DST1bpp8(3,6);
-
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 8;
-	dst_2 += 8;
-    }
-}
+EPILOG(8)
 
 
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
-static void yuv2rgb_c_4  (uint8_t * py_1, uint8_t * py_2,
-			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint8_t * r, * g, * b;
-    uint8_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-
-    while (h_size--) {
+PROLOG(yuv2rgb_c_4, uint8_t)
         int acc;
 #define DST1_4(i)					\
 	Y = py_1[2*i];				\
@@ -639,31 +459,11 @@ static void yuv2rgb_c_4  (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2_4(3);
 	DST1_4(3);
+EPILOG(4)
 
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 4;
-	dst_2 += 4;
-    }
-}
-
-static void yuv2rgb_c_4_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
-			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint8_t * r, * g, * b;
-    uint8_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-
-    while (h_size--) {
-	const uint8_t *d64= dither_8x8_73[v_pos&7];
-	const uint8_t *d128=dither_8x8_220[v_pos&7];
+PROLOG(yuv2rgb_c_4_ordered_dither, uint8_t)
+	const uint8_t *d64= dither_8x8_73[y&7];
+	const uint8_t *d128=dither_8x8_220[y&7];
         int acc;
 
 #define DST1bpp4(i,o)					\
@@ -696,31 +496,11 @@ static void yuv2rgb_c_4_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2bpp4(3,6);
 	DST1bpp4(3,6);
-
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 4;
-	dst_2 += 4;
-    }
-}
+EPILOG(4)
 
 // This is exactly the same code as yuv2rgb_c_32 except for the types of
 // r, g, b, dst_1, dst_2
-static void yuv2rgb_c_4b  (uint8_t * py_1, uint8_t * py_2,
-			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint8_t * r, * g, * b;
-    uint8_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-
-    while (h_size--) {
+PROLOG(yuv2rgb_c_4b, uint8_t)
 	RGB(0);
 	DST1(0);
 	DST2(0);
@@ -736,31 +516,11 @@ static void yuv2rgb_c_4b  (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2(3);
 	DST1(3);
+EPILOG(8)
 
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 8;
-	dst_2 += 8;
-    }
-}
-
-static void yuv2rgb_c_4b_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
-			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int U, V, Y;
-    uint8_t * r, * g, * b;
-    uint8_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-
-    while (h_size--) {
-	const uint8_t *d64= dither_8x8_73[v_pos&7];
-	const uint8_t *d128=dither_8x8_220[v_pos&7];
+PROLOG(yuv2rgb_c_4b_ordered_dither, uint8_t)
+	const uint8_t *d64= dither_8x8_73[y&7];
+	const uint8_t *d128=dither_8x8_220[y&7];
 
 #define DST1bpp4b(i,o)					\
 	Y = py_1[2*i];				\
@@ -790,31 +550,11 @@ static void yuv2rgb_c_4b_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 	RGB(3);
 	DST2bpp4b(3,6);
 	DST1bpp4b(3,6);
+EPILOG(8)
 
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 += 8;
-	dst_2 += 8;
-    }
-}
-
-static void yuv2rgb_c_1_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
-			  uint8_t * pu, uint8_t * pv,
-			  void * _dst_1, void * _dst_2, int h_size, int v_pos)
-{
-    int Y;
-    uint8_t * g;
-    uint8_t * dst_1, * dst_2;
-
-    h_size >>= 3;
-    dst_1 = _dst_1;
-    dst_2 = _dst_2;
-    g= table_gU[128] + table_gV[128];
-
-    while (h_size--) {
-	const uint8_t *d128=dither_8x8_220[v_pos&7];
+PROLOG(yuv2rgb_c_1_ordered_dither, uint8_t)
+	g= c->table_gU[128] + c->table_gV[128];
+	const uint8_t *d128=dither_8x8_220[y&7];
 	char out_1=0, out_2=0;
 
 #define DST1bpp1(i,o)					\
@@ -843,16 +583,58 @@ static void yuv2rgb_c_1_ordered_dither  (uint8_t * py_1, uint8_t * py_2,
 	
 	dst_1[0]= out_1;
 	dst_2[0]= out_2;
+EPILOG(1)
 
-	pu += 4;
-	pv += 4;
-	py_1 += 8;
-	py_2 += 8;
-	dst_1 ++;
-	dst_2 ++;
+SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
+{
+#ifdef ARCH_X86
+    if(gCpuCaps.hasMMX2){
+	switch(c->dstFormat){
+	case IMGFMT_BGR32: return yuv420_rgb32_MMX2;
+	case IMGFMT_BGR24: return yuv420_rgb24_MMX2;
+	case IMGFMT_BGR16: return yuv420_rgb16_MMX2;
+	case IMGFMT_BGR15: return yuv420_rgb15_MMX2;
+	}
     }
-}
+    if(gCpuCaps.hasMMX){
+	switch(c->dstFormat){
+	case IMGFMT_BGR32: return yuv420_rgb32_MMX;
+	case IMGFMT_BGR24: return yuv420_rgb24_MMX;
+	case IMGFMT_BGR16: return yuv420_rgb16_MMX;
+	case IMGFMT_BGR15: return yuv420_rgb15_MMX;
+	}
+    }
+#endif
+#ifdef HAVE_MLIB
+    {
+	SwsFunc t= yuv2rgb_init_mlib(c);
+	if(t) return t;
+    }
+#endif
+    mp_msg(MSGT_SWS,MSGL_WARN,"No accelerated colorspace conversion found\n");
 
+    switch(c->dstFormat){
+    case IMGFMT_RGB32:
+    case IMGFMT_BGR32: return yuv2rgb_c_32;
+    case IMGFMT_RGB24: return yuv2rgb_c_24_rgb;
+    case IMGFMT_BGR24: return yuv2rgb_c_24_bgr;
+    case IMGFMT_RGB16:
+    case IMGFMT_BGR16:
+    case IMGFMT_RGB15:
+    case IMGFMT_BGR15: return yuv2rgb_c_16;
+    case IMGFMT_RGB8:
+    case IMGFMT_BGR8:  return yuv2rgb_c_8_ordered_dither;
+    case IMGFMT_RGB4:
+    case IMGFMT_BGR4:  return yuv2rgb_c_4_ordered_dither;
+    case IMGFMT_RG4B:
+    case IMGFMT_BG4B:  return yuv2rgb_c_4b_ordered_dither;
+    case IMGFMT_RGB1:
+    case IMGFMT_BGR1:  return yuv2rgb_c_1_ordered_dither;
+    default:
+    	assert(0);
+    }
+    return NULL;
+}
 
 static int div_round (int dividend, int divisor)
 {
@@ -862,8 +644,10 @@ static int div_round (int dividend, int divisor)
 	return -((-dividend + (divisor>>1)) / divisor);
 }
 
-void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_gU[256], int table_gV[256], void *table_bU[256])
+int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange, int brightness, int contrast, int saturation)
 {  
+    const int bpp= c->dstFormat&0xFF;
+    const int isRgb= (c->dstFormat>>24) != 'R';
     int i;
     uint8_t table_Y[1024];
     uint32_t *table_32 = 0;
@@ -876,23 +660,37 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
     void *table_r = 0, *table_g = 0, *table_b = 0;
     void *table_start;
 
-    int crv = Inverse_Table_6_9[matrix_coefficients][0];
-    int cbu = Inverse_Table_6_9[matrix_coefficients][1];
-    int cgu = -Inverse_Table_6_9[matrix_coefficients][2];
-    int cgv = -Inverse_Table_6_9[matrix_coefficients][3];
+    int64_t crv =  inv_table[0];
+    int64_t cbu =  inv_table[1];
+    int64_t cgu = -inv_table[2];
+    int64_t cgv = -inv_table[3];
+    int64_t cy  = 1<<16;
+    int64_t oy  = 0;
+
+//printf("%lld %lld %lld %lld %lld\n", cy, crv, cbu, cgu, cgv);
+    if(!fullRange){
+	cy= (cy*255) / 219;
+	oy= 16<<16;
+    }
+	
+    cy = (cy *contrast             )>>16;
+    crv= (crv*contrast * saturation)>>32;
+    cbu= (cbu*contrast * saturation)>>32;
+    cgu= (cgu*contrast * saturation)>>32;
+    cgv= (cgv*contrast * saturation)>>32;
+//printf("%lld %lld %lld %lld %lld\n", cy, crv, cbu, cgu, cgv);
+    oy -= 256*brightness;
 
     for (i = 0; i < 1024; i++) {
 	int j;
 
-	j = (76309 * (i - 384 - 16) + 32768) >> 16;
+	j= (cy*(((i - 384)<<16) - oy) + (1<<31))>>32;
 	j = (j < 0) ? 0 : ((j > 255) ? 255 : j);
 	table_Y[i] = j;
     }
 
     switch (bpp) {
     case 32:
-	yuv2rgb_c_internal = yuv2rgb_c_32;
-
 	table_start= table_32 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint32_t));
 
 	entry_size = sizeof (uint32_t);
@@ -901,17 +699,14 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	table_g = table_32 + 197 + 2*682;
 
 	for (i = -197; i < 256+197; i++)
-	    ((uint32_t *)table_r)[i] = table_Y[i+384] << ((mode==MODE_RGB) ? 16 : 0);
+	    ((uint32_t *)table_r)[i] = table_Y[i+384] << (isRgb ? 16 : 0);
 	for (i = -132; i < 256+132; i++)
 	    ((uint32_t *)table_g)[i] = table_Y[i+384] << 8;
 	for (i = -232; i < 256+232; i++)
-	    ((uint32_t *)table_b)[i] = table_Y[i+384] << ((mode==MODE_RGB) ? 0 : 16);
+	    ((uint32_t *)table_b)[i] = table_Y[i+384] << (isRgb ? 0 : 16);
 	break;
 
     case 24:
-//	yuv2rgb_c_internal = (mode==MODE_RGB) ? yuv2rgb_c_24_rgb : yuv2rgb_c_24_bgr;
-	yuv2rgb_c_internal = (mode!=MODE_RGB) ? yuv2rgb_c_24_rgb : yuv2rgb_c_24_bgr;
-
 	table_start= table_8 = malloc ((256 + 2*232) * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
@@ -923,8 +718,6 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 
     case 15:
     case 16:
-	yuv2rgb_c_internal = yuv2rgb_c_16;
-
 	table_start= table_16 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint16_t));
 
 	entry_size = sizeof (uint16_t);
@@ -935,7 +728,7 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	for (i = -197; i < 256+197; i++) {
 	    int j = table_Y[i+384] >> 3;
 
-	    if (mode == MODE_RGB)
+	    if (isRgb)
 		j <<= ((bpp==16) ? 11 : 10);
 
 	    ((uint16_t *)table_r)[i] = j;
@@ -948,7 +741,7 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	for (i = -232; i < 256+232; i++) {
 	    int j = table_Y[i+384] >> 3;
 
-	    if (mode == MODE_BGR)
+	    if (!isRgb)
 		j <<= ((bpp==16) ? 11 : 10);
 
 	    ((uint16_t *)table_b)[i] = j;
@@ -956,8 +749,6 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	break;
 
     case 8:
-	yuv2rgb_c_internal = yuv2rgb_c_8_ordered_dither; //yuv2rgb_c_8;
-
 	table_start= table_332 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
@@ -968,7 +759,7 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	for (i = -197; i < 256+197; i++) {
 	    int j = (table_Y[i+384 - 16] + 18)/36;
 
-	    if (mode == MODE_RGB)
+	    if (isRgb)
 		j <<= 5;
 
 	    ((uint8_t *)table_r)[i] = j;
@@ -976,7 +767,7 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	for (i = -132; i < 256+132; i++) {
 	    int j = (table_Y[i+384 - 16] + 18)/36;
 
-	    if (mode == MODE_BGR)
+	    if (!isRgb)
 		j <<= 1;
 
 	    ((uint8_t *)table_g)[i] = j << 2;
@@ -984,7 +775,7 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	for (i = -232; i < 256+232; i++) {
 	    int j = (table_Y[i+384 - 37] + 43)/85;
 
-	    if (mode == MODE_BGR)
+	    if (!isRgb)
 		j <<= 6;
 
 	    ((uint8_t *)table_b)[i] = j;
@@ -992,11 +783,6 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	break;
     case 4:
     case 4|128:
-        if(bpp==4)
-	    yuv2rgb_c_internal = yuv2rgb_c_4_ordered_dither; //yuv2rgb_c_4;
-        else
-	    yuv2rgb_c_internal = yuv2rgb_c_4b_ordered_dither; //yuv2rgb_c_4;
-
 	table_start= table_121 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
@@ -1007,7 +793,7 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	for (i = -197; i < 256+197; i++) {
 	    int j = table_Y[i+384 - 110] >> 7;
 
-	    if (mode == MODE_RGB)
+	    if (isRgb)
 		j <<= 3;
 
 	    ((uint8_t *)table_r)[i] = j;
@@ -1020,7 +806,7 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	for (i = -232; i < 256+232; i++) {
 	    int j =table_Y[i+384 - 110] >> 7;
 
-	    if (mode == MODE_BGR)
+	    if (!isRgb)
 		j <<= 3;
 
 	    ((uint8_t *)table_b)[i] = j;
@@ -1028,8 +814,6 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
 	break;
 
     case 1:
-	yuv2rgb_c_internal = yuv2rgb_c_1_ordered_dither;
-
 	table_start= table_1 = malloc (256*2 * sizeof (uint8_t));
 
 	entry_size = sizeof (uint8_t);
@@ -1046,15 +830,18 @@ void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_g
     default:
 	table_start= NULL;
 	mp_msg(MSGT_SWS,MSGL_ERR,"%ibpp not supported by yuv2rgb\n", bpp);
-	//exit (1);
+	//free mem?
+	return -1;
     }
 
     for (i = 0; i < 256; i++) {
-	table_rV[i] = table_r + entry_size * div_round (crv * (i-128), 76309);
-	table_gU[i] = table_g + entry_size * div_round (cgu * (i-128), 76309);
-	table_gV[i] = entry_size * div_round (cgv * (i-128), 76309);
-	table_bU[i] = table_b + entry_size * div_round (cbu * (i-128), 76309);
+	c->table_rV[i] = table_r + entry_size * div_round (crv * (i-128), 76309);
+	c->table_gU[i] = table_g + entry_size * div_round (cgu * (i-128), 76309);
+	c->table_gV[i] = entry_size * div_round (cgv * (i-128), 76309);
+	c->table_bU[i] = table_b + entry_size * div_round (cbu * (i-128), 76309);
     }
 
-    return table_start; 
+    if(c->yuvTable) free(c->yuvTable);
+    c->yuvTable= table_start;
+    return 0;
 }

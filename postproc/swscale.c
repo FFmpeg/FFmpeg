@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001-2002 Michael Niedermayer <michaelni@gmx.at>
+    Copyright (C) 2001-2003 Michael Niedermayer <michaelni@gmx.at>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -62,6 +62,7 @@ untested special converters
 #include <stdlib.h>
 #endif
 #include "swscale.h"
+#include "swscale_internal.h"
 #include "../cpudetect.h"
 #include "../bswap.h"
 #include "../libvo/img_format.h"
@@ -147,7 +148,6 @@ add support for Y8 output
 optimize bgr24 & bgr32
 add BGR4 output support
 write special BGR->BGR scaler
-deglobalize yuv2rgb*.c
 */
 
 #define ABS(a) ((a) > 0 ? (a) : (-(a)))
@@ -230,8 +230,6 @@ void (*swScale)(SwsContext *context, uint8_t* src[], int srcStride[], int srcSli
              int srcSliceH, uint8_t* dst[], int dstStride[])=NULL;
 
 static SwsVector *getConvVec(SwsVector *a, SwsVector *b);
-static inline void orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]);
-void *yuv2rgb_c_init (unsigned bpp, int mode, void *table_rV[256], void *table_gU[256], int table_gV[256], void *table_bU[256]);
 
 extern const uint8_t dither_2x2_4[2][8];
 extern const uint8_t dither_2x2_8[2][8];
@@ -1634,18 +1632,6 @@ static void PlanarToNV12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], 
 		interleaveBytes( src[2],src[1],dst,c->srcW,srcSliceH,srcStride[2],srcStride[1],dstStride[0] );
 }
 
-
-/* Warper functions for yuv2bgr */
-static void planarYuvToBgr(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
-             int srcSliceH, uint8_t* dstParam[], int dstStride[]){
-	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
-
-	if(c->srcFormat==IMGFMT_YV12)
-		yuv2rgb( dst,src[0],src[1],src[2],c->srcW,srcSliceH,dstStride[0],srcStride[0],srcStride[1] );
-	else /* I420 & IYUV */
-		yuv2rgb( dst,src[0],src[2],src[1],c->srcW,srcSliceH,dstStride[0],srcStride[0],srcStride[1] );
-}
-
 static void PlanarToYuy2Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
              int srcSliceH, uint8_t* dstParam[], int dstStride[]){
 	uint8_t *dst=dstParam[0] + dstStride[0]*srcSliceY;
@@ -1773,7 +1759,7 @@ static void yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], in
 /**
  * bring pointers in YUV order instead of YVU
  */
-static inline void orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
+inline void sws_orderYUV(int format, uint8_t * sortedP[], int sortedStride[], uint8_t * p[], int stride[]){
 	if(format == IMGFMT_YV12 || format == IMGFMT_YVU9 
            || format == IMGFMT_444P || format == IMGFMT_422P || format == IMGFMT_411P){
 		sortedP[0]= p[0];
@@ -1814,8 +1800,8 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 	uint8_t *src[3];
 	uint8_t *dst[3];
 
-	orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
-	orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
+	sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
+	sws_orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
 
 	if(isPacked(c->srcFormat))
 	{
@@ -1923,41 +1909,51 @@ static void getSubSampleFactors(int *h, int *v, int format){
 	}
 }
 
-static uint16_t roundToInt16(float f){
-	     if(f<-0x7FFF) f= -0x7FFF;
-	else if(f> 0x7FFF) f=  0x7FFF;
-	
-	return (int)floor(f + 0.5);
+static uint16_t roundToInt16(int64_t f){
+	int r= (f + (1<<15))>>16;
+	     if(r<-0x7FFF) return 0x8000;
+	else if(r> 0x7FFF) return 0x7FFF;
+	else               return r;
 }
 
 /**
- * @param colorspace colorspace
+ * @param inv_table the yuv2rgb coeffs, normally Inverse_Table_6_9[x]
  * @param fullRange if 1 then the luma range is 0..255 if 0 its 16..235
+ * @return -1 if not supported
  */
-void setInputColorspaceDetails(SwsContext *c, int colorspace, int fullRange, float brightness, float contrast, float saturation){
+int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation){
+	int64_t crv =  inv_table[0];
+	int64_t cbu =  inv_table[1];
+	int64_t cgu = -inv_table[2];
+	int64_t cgv = -inv_table[3];
+	int64_t cy  = 1<<16;
+	int64_t oy  = 0;
 
-	float crv =  Inverse_Table_6_9[colorspace][0]/65536.0;
-	float cbu =  Inverse_Table_6_9[colorspace][1]/65536.0;
-	float cgu = -Inverse_Table_6_9[colorspace][2]/65536.0;
-	float cgv = -Inverse_Table_6_9[colorspace][3]/65536.0;
-	float cy  = 1.0;
-	float oy  = 0;
+	if(isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
+	memcpy(c->srcColorspaceTable, inv_table, sizeof(int)*4);
+	memcpy(c->dstColorspaceTable,     table, sizeof(int)*4);
+
+	c->brightness= brightness;
+	c->contrast  = contrast;
+	c->saturation= saturation;
+	c->srcRange  = srcRange;
+	c->dstRange  = dstRange;
 
 	c->uOffset=   0x0400040004000400LL;
 	c->vOffset=   0x0400040004000400LL;
 
-	if(!fullRange){
-		cy= (cy*255.0) / 219.0;
-		oy= 16.0;
+	if(!srcRange){
+		cy= (cy*255) / 219;
+		oy= 16<<16;
 	}
 
-	cy *= contrast;
-	crv*= contrast * saturation;
-	cbu*= contrast * saturation;
-	cgu*= contrast * saturation;
-	cgv*= contrast * saturation;
+	cy = (cy *contrast             )>>16;
+	crv= (crv*contrast * saturation)>>32;
+	cbu= (cbu*contrast * saturation)>>32;
+	cgu= (cgu*contrast * saturation)>>32;
+	cgv= (cgv*contrast * saturation)>>32;
 
-	oy -= 256.0*brightness;
+	oy -= 256*brightness;
 
 	c->yCoeff=    roundToInt16(cy *8192) * 0x0001000100010001ULL;
 	c->vrCoeff=   roundToInt16(crv*8192) * 0x0001000100010001ULL;
@@ -1965,6 +1961,28 @@ void setInputColorspaceDetails(SwsContext *c, int colorspace, int fullRange, flo
 	c->vgCoeff=   roundToInt16(cgv*8192) * 0x0001000100010001ULL;
 	c->ugCoeff=   roundToInt16(cgu*8192) * 0x0001000100010001ULL;
 	c->yOffset=   roundToInt16(oy *   8) * 0x0001000100010001ULL;
+
+	yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness, contrast, saturation);
+	//FIXME factorize
+	
+	return 0;
+}
+
+/**
+ * @return -1 if not supported
+ */
+int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation){
+	if(isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
+
+	*inv_table = c->srcColorspaceTable;
+	*table     = c->dstColorspaceTable;
+	*srcRange  = c->srcRange;
+	*dstRange  = c->dstRange;
+	*brightness= c->brightness;
+	*contrast  = c->contrast;
+	*saturation= c->saturation;
+	
+	return 0;	
 }
 
 SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH, int dstFormat, int flags,
@@ -2026,8 +2044,6 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 	c->dstFormat= dstFormat;
 	c->srcFormat= srcFormat;
 
-	setInputColorspaceDetails(c, SWS_CS_DEFAULT, 0, 0.0, 1.0, 1.0);
-	
 	usesFilter=0;
 	if(dstFilter->lumV!=NULL && dstFilter->lumV->length>1) usesFilter=1;
 	if(dstFilter->lumH!=NULL && dstFilter->lumH->length>1) usesFilter=1;
@@ -2054,17 +2070,14 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 
 	c->chrIntHSubSample= c->chrDstHSubSample;
 	c->chrIntVSubSample= c->chrSrcVSubSample;
-	
+
 	// note the -((-x)>>y) is so that we allways round toward +inf
 	c->chrSrcW= -((-srcW) >> c->chrSrcHSubSample);
 	c->chrSrcH= -((-srcH) >> c->chrSrcVSubSample);
 	c->chrDstW= -((-dstW) >> c->chrDstHSubSample);
 	c->chrDstH= -((-dstH) >> c->chrDstVSubSample);
-	
-	if(isBGR(dstFormat))
-		c->yuvTable= yuv2rgb_c_init(dstFormat & 0xFF, MODE_RGB, c->table_rV, c->table_gU, c->table_gV, c->table_bU);
-	if(isRGB(dstFormat))
-		c->yuvTable= yuv2rgb_c_init(dstFormat & 0xFF, MODE_BGR, c->table_rV, c->table_gU, c->table_gV, c->table_bU);
+
+	sws_setColorspaceDetails(c, Inverse_Table_6_9[SWS_CS_DEFAULT], 0, Inverse_Table_6_9[SWS_CS_DEFAULT] /* FIXME*/, 0, 0, 1<<16, 1<<16); 
 
 	/* unscaled special Cases */
 	if(unscaled && !usesFilter)
@@ -2075,19 +2088,9 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			c->swScale= PlanarToNV12Wrapper;
 		}
 		/* yuv2bgr */
-		if((srcFormat==IMGFMT_YV12 || srcFormat==IMGFMT_I420) && isBGR(dstFormat))
+		if((srcFormat==IMGFMT_YV12 || srcFormat==IMGFMT_I420 || srcFormat==IMGFMT_422P) && (isBGR(dstFormat) || isRGB(dstFormat)))
 		{
-			// FIXME multiple yuv2rgb converters wont work that way cuz that thing is full of globals&statics
-			//FIXME rgb vs. bgr ? 
-#ifdef WORDS_BIGENDIAN
-			if(dstFormat==IMGFMT_BGR32)
-				yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_BGR);
-			else
-				yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_RGB);
-#else
-			yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_RGB);
-#endif
-			c->swScale= planarYuvToBgr;
+			c->swScale= yuv2rgb_get_func_ptr(c);
 		}
 		
 		if( srcFormat==IMGFMT_YVU9 && (dstFormat==IMGFMT_YV12 || dstFormat==IMGFMT_I420) )

@@ -26,52 +26,72 @@
 #include <mlib_status.h>
 #include <mlib_sys.h>
 #include <mlib_video.h>
+#include <inttypes.h>
+#include <stdlib.h>
+#include <assert.h>
 
-static void mlib_YUV2ARGB420_32(uint8_t* image, uint8_t* py, 
-			 uint8_t* pu, uint8_t* pv, 
-			 unsigned h_size, unsigned v_size, 
-			 int rgb_stride, int y_stride, int uv_stride)
-{
-  mlib_VideoColorYUV2ARGB420(image, py, pu, pv, h_size,
-			     v_size, rgb_stride, y_stride, uv_stride);
+#include "../libvo/img_format.h" //FIXME try to reduce dependency of such stuff
+#include "swscale.h"
+
+static void mlib_YUV2ARGB420_32(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+    uint8_t *src[3];
+    int srcStride[3];
+
+    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
+    if(c->srcFormat == IMGFMT_422P){
+	srcStride[1] *= 2;
+	srcStride[2] *= 2;
+    }
+    
+    assert(srcStride[1] == srcStride[2]);
+ 
+    mlib_VideoColorYUV2ARGB420(dst[0], src[0], src[1], src[2], c->dstW,
+			     c->dstH, dstStride[0], srcStride[0], srcStride[1]);
 }
 
-static void mlib_YUV2ABGR420_32(uint8_t* image, uint8_t* py, 
-			 uint8_t* pu, uint8_t* pv, 
-			 unsigned h_size, unsigned v_size, 
-			 int rgb_stride, int y_stride, int uv_stride)
-{
-  mlib_VideoColorYUV2ABGR420(image, py, pu, pv, h_size,
-			     v_size, rgb_stride, y_stride, uv_stride);
+static void mlib_YUV2ABGR420_32(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+    uint8_t *src[3];
+    int srcStride[3];
+
+    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
+    if(c->srcFormat == IMGFMT_422P){
+	srcStride[1] *= 2;
+	srcStride[2] *= 2;
+    }
+    
+    assert(srcStride[1] == srcStride[2]);
+ 
+    mlib_VideoColorYUV2ABGR420(dst[0], src[0], src[1], src[2], c->dstW,
+			     c->dstH, dstStride[0], srcStride[0], srcStride[1]);
 }
 
-static void mlib_YUV2RGB420_24(uint8_t* image, uint8_t* py, 
-			 uint8_t* pu, uint8_t* pv, 
-			 unsigned h_size, unsigned v_size, 
-			 int rgb_stride, int y_stride, int uv_stride)
-{
-  mlib_VideoColorYUV2RGB420(image, py, pu, pv, h_size,
-			    v_size, rgb_stride, y_stride, uv_stride);
+static void mlib_YUV2RGB420_24(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY, 
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+    uint8_t *src[3];
+    int srcStride[3];
+
+    sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
+    if(c->srcFormat == IMGFMT_422P){
+	srcStride[1] *= 2;
+	srcStride[2] *= 2;
+    }
+    
+    assert(srcStride[1] == srcStride[2]);
+ 
+    mlib_VideoColorYUV2RGB420(dst[0], src[0], src[1], src[2], c->dstW,
+			     c->dstH, dstStride[0], srcStride[0], srcStride[1]);
 }
 
 
-yuv2rgb_fun yuv2rgb_init_mlib(unsigned bpp, int mode) 
-{  
-
-	if( bpp == 24 ) 
-	{
-		if( mode == MODE_RGB )
-			return mlib_YUV2RGB420_24;
-  }
-
-	if( bpp == 32 ) 
-	{
-		if( mode == MODE_RGB )
-			return mlib_YUV2ARGB420_32;
-		else if( mode == MODE_BGR )
-			return mlib_YUV2ABGR420_32;
+SwsFunc yuv2rgb_init_mlib(SwsContext *c) 
+{
+	switch(c->dstFormat){
+	case IMGFMT_RGB24: return mlib_YUV2RGB420_24;
+	case IMGFMT_RGB32: return mlib_YUV2ARGB420_32;
+	case IMGFMT_BGR32: return mlib_YUV2ARGB420_32;
+	default: return NULL;
 	}
-  
-	return NULL;
 }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2001-2002 Michael Niedermayer <michaelni@gmx.at>
+    Copyright (C) 2001-2003 Michael Niedermayer <michaelni@gmx.at>
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -741,7 +741,6 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, int16_t *lumFilter, int16_t *
 				    int16_t *chrFilter, int16_t **chrSrc, int chrFilterSize,
 				    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, int dstW, int chrDstW)
 {
-	int dummy=0;
 #ifdef HAVE_MMX
 	if(uDest != NULL)
 	{
@@ -2553,8 +2552,8 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	uint8_t *src[3];
 	uint8_t *dst[3];
 	
-	orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
-	orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
+	sws_orderYUV(c->srcFormat, src, srcStride, srcParam, srcStrideParam);
+	sws_orderYUV(c->dstFormat, dst, dstStride, dstParam, dstStrideParam);
 
 	if(isPacked(c->srcFormat)){
 		src[0]=

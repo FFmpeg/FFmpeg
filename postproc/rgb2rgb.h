@@ -84,13 +84,15 @@ extern void yvu9_to_yuy2(const uint8_t *src1, const uint8_t *src2, const uint8_t
 #define MODE_RGB  0x1
 #define MODE_BGR  0x2
 
-typedef void (* yuv2rgb_fun) (uint8_t * image, uint8_t * py,
+static void yuv2rgb(uint8_t * image, uint8_t * py,
 			      uint8_t * pu, uint8_t * pv,
 			      unsigned h_size, unsigned v_size,
-			      int rgb_stride, int y_stride, int uv_stride);
+			      int rgb_stride, int y_stride, int uv_stride){
+printf("broken, this should use the swscaler\n");
+}
 
-extern yuv2rgb_fun yuv2rgb;
-
-void yuv2rgb_init (unsigned bpp, int mode);
+static void yuv2rgb_init (unsigned bpp, int mode){
+printf("broken, this should use the swscaler\n");
+}
 
 #endif
