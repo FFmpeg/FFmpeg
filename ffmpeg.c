@@ -125,6 +125,7 @@ static int dct_algo = 0;
 static int idct_algo = 0;
 static int use_part = 0;
 static int packet_size = 0;
+static int strict = 0;
 static int debug = 0;
 
 static int gop_size = 12;
@@ -1819,6 +1820,11 @@ void opt_packet_size(const char *arg)
     packet_size= atoi(arg);
 }
 
+void opt_strict(const char *arg)
+{
+    strict= atoi(arg);
+}
+
 void opt_audio_bitrate(const char *arg)
 {
     audio_bit_rate = atoi(arg) * 1000;
@@ -2241,6 +2247,7 @@ void opt_output_file(const char *filename)
                 video_enc->b_quant_offset = video_b_qoffset;
                 video_enc->dct_algo = dct_algo;
                 video_enc->idct_algo = idct_algo;
+                video_enc->strict_std_compliance = strict;
                 if(packet_size){
                     video_enc->rtp_mode= 1;
                     video_enc->rtp_payload_size= packet_size;
@@ -2645,6 +2652,7 @@ const OptionDef options[] = {
     { "part", OPT_BOOL | OPT_EXPERT, {(void*)&use_part}, "use data partitioning (only MPEG-4)" },
     { "bug", HAS_ARG | OPT_EXPERT, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "packet size", "size in bits" },
+    { "strict", HAS_ARG | OPT_EXPERT, {(void*)opt_strict}, "strictness", "how strictly to follow the standarts" },
     { "sameq", OPT_BOOL, {(void*)&same_quality}, 
       "use same video quality as source (implies VBR)" },
     { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
