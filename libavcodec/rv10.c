@@ -379,7 +379,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
     if(s->avctx->has_b_frames){
         if (get_bits(&s->gb, 1)){
             av_log(s->avctx, AV_LOG_ERROR, "unknown bit3 set\n");
-            return -1;
+//            return -1;
         }
         seq= get_bits(&s->gb, 15);
     }else
@@ -537,7 +537,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     }
 //if(s->pict_type == P_TYPE) return 0;
 
-    if (s->mb_x == 0 && s->mb_y == 0) {
+    if ((s->mb_x == 0 && s->mb_y == 0) || s->current_picture_ptr==NULL) {
         if(MPV_frame_start(s, avctx) < 0)
             return -1;
     }
