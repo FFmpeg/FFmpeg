@@ -332,6 +332,8 @@ extern AVOutputFormat yuv4mpegpipe_oformat;
 #define MKTAG(a,b,c,d) (a | (b << 8) | (c << 16) | (d << 24))
 #define MKBETAG(a,b,c,d) (d | (c << 8) | (b << 16) | (a << 24))
 
+int av_gcd(int a, int b);
+
 void av_register_input_format(AVInputFormat *format);
 void av_register_output_format(AVOutputFormat *format);
 AVOutputFormat *guess_stream_format(const char *short_name, 

@@ -50,7 +50,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     uint32_t tag, tag1;
-    int codec_type, stream_index, frame_period, bit_rate;
+    int codec_type, stream_index, frame_period, bit_rate, scale, rate;
     unsigned int size;
     int i;
     AVStream *st;
@@ -117,13 +117,29 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             switch(tag1) {
             case MKTAG('v', 'i', 'd', 's'):
                 codec_type = CODEC_TYPE_VIDEO;
+
+                if (stream_index >= s->nb_streams) {
+                    url_fskip(pb, size - 4);
+                    break;
+                } 
+
+                st = s->streams[stream_index];
+
                 get_le32(pb); /* codec tag */
                 get_le32(pb); /* flags */
                 get_le16(pb); /* priority */
                 get_le16(pb); /* language */
                 get_le32(pb); /* XXX: initial frame ? */
-                get_le32(pb); /* scale */
-                get_le32(pb); /* rate */
+                scale= get_le32(pb); /* scale */
+                rate= get_le32(pb); /* rate */
+
+                if(scale && rate)
+                    st->codec.frame_rate= (rate * (uint64_t)FRAME_RATE_BASE + scale/2) / scale;
+                else if(frame_period)
+                    st->codec.frame_rate = (1000000LL * FRAME_RATE_BASE + frame_period/2) / frame_period;
+                else
+                    st->codec.frame_rate = 25 * FRAME_RATE_BASE;
+                
                 url_fskip(pb, size - 7 * 4);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
@@ -146,20 +162,26 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* size */
                     st->codec.width = get_le32(pb);
                     st->codec.height = get_le32(pb);
-                    if (frame_period)
-                        st->codec.frame_rate = (int64_t_C(1000000) * FRAME_RATE_BASE) / frame_period;
-                    else
-                        st->codec.frame_rate = 25 * FRAME_RATE_BASE;
                     get_le16(pb); /* panes */
-                    get_le16(pb); /* depth */
+                    st->codec.bits_per_sample= get_le16(pb); /* depth */
                     tag1 = get_le32(pb);
+                    get_le32(pb); /* ImageSize */
+                    get_le32(pb); /* XPelsPerMeter */
+                    get_le32(pb); /* YPelsPerMeter */
+                    get_le32(pb); /* ClrUsed */
+                    get_le32(pb); /* ClrImportant */
+
+                    st->codec.extradata_size= size - 10*4;
+                    st->codec.extradata= av_malloc(st->codec.extradata_size); //FIXME where should we free this?
+                    get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
+
 #ifdef DEBUG
                     print_tag("video", tag1, 0);
 #endif
                     st->codec.codec_type = CODEC_TYPE_VIDEO;
                     st->codec.codec_tag = tag1;
                     st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
-                    url_fskip(pb, size - 5 * 4);
+//                    url_fskip(pb, size - 5 * 4);
                     break;
                 case CODEC_TYPE_AUDIO:
                     get_wav_header(pb, &st->codec, (size >= 18));
@@ -197,7 +219,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int n, d1, d2, size;
-    
+
  find_next:
     if (url_feof(pb) || url_ftell(pb) >= avi->movi_end)
         return -1;

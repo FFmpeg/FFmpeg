@@ -1316,6 +1316,11 @@ void av_frac_add(AVFrac *f, int64_t incr)
     f->num = num;
 }
 
+int av_gcd(int a, int b){
+    if(b) return av_gcd(b, a%b);
+    else  return a;
+}
+
 /**
  * register a new image format
  * @param img_fmt Image format descriptor
