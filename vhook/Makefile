@@ -30,7 +30,7 @@ imlib2.so: imlib2.o
 	$(CC) -g -o $@ $(SHFLAGS) $<
 
 clean:
-	rm -f *.o *.d *.so *~
+	rm -f *.o *.d .depend *.so *~
 
 ifneq ($(wildcard .depend),)
 include .depend

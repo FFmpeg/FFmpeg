@@ -54,17 +54,14 @@ endif
 
 OBJS = ffmpeg.o ffserver.o
 SRCS = $(OBJS:.o=.c) $(ASM_OBJS:.o=.s)
-DEPS = $(OBJS:.o=.d)
 
 all: lib $(PROG) $(VHOOK)
-
--include $(DEPS)
 
 lib:
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libavformat all
 
-ffmpeg_g$(EXE): ffmpeg.o $(DEP_LIBS)
+ffmpeg_g$(EXE): .depend ffmpeg.o $(DEP_LIBS)
 	$(CC) $(LDFLAGS) -o $@ ffmpeg.o -L./libavcodec -L./libavformat \
               -lavformat -lavcodec $(EXTRALIBS)
 
@@ -82,10 +79,6 @@ ffplay: ffmpeg$(EXE)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
-
-%.d: %.c
-	@echo $@ \\ > $@
-	$(CC) $(CFLAGS) -MM $< >> $@
 
 videohook:
 	$(MAKE) -C vhook all
@@ -108,8 +101,10 @@ installlib:
 
 dep:	depend
 
-depend:
-	$(CC) -MM $(CFLAGS) $(SRCS) 1>.depend
+depend: .depend
+
+.depend: $(SRCS)
+	$(CC) -MM $(CFLAGS) $^ 1>.depend
 
 clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
