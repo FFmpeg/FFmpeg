@@ -52,6 +52,8 @@ typedef struct {
     DVDemuxContext* dv_demux;
 } AVIContext;
 
+static int avi_load_index(AVFormatContext *s);
+
 #ifdef DEBUG
 static void print_tag(const char *str, unsigned int tag, int size)
 {
@@ -338,6 +340,10 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
+    assert(!avi->index_loaded);
+    avi_load_index(s);
+    avi->index_loaded = 1;
+ 
     return 0;
 }
 
@@ -422,9 +428,10 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                 ast = st->priv_data;
 
                 /* XXX: how to handle B frames in avi ? */
-                pkt->pts = ast->frame_offset;
+                pkt->dts = ast->frame_offset;
+//                pkt->dts += ast->start;
                 if(ast->sample_size)
-                    pkt->pts /= ast->sample_size;
+                    pkt->dts /= ast->sample_size;
 //printf("%Ld %d %d %d %d\n", pkt->pts, ast->frame_offset, ast->scale,  AV_TIME_BASE,  ast->rate);
                 pkt->stream_index = n;
                 /* FIXME: We really should read index for that */
