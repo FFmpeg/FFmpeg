@@ -408,6 +408,7 @@ static void free_picture(MpegEncContext *s, Picture *pic){
 static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base){
     int i;
 
+    // edge emu needs blocksize + filter length - 1 (=17x17 for halfpel / 21x21 for h264) 
     CHECKED_ALLOCZ(s->allocated_edge_emu_buffer, (s->width+64)*2*17*2); //(width + edge + align)*interlaced*MBsize*tolerance
     s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*17;
 
@@ -2019,10 +2020,11 @@ int MPV_encode_picture(AVCodecContext *avctx,
     }
     
     for(i=0; i<avctx->thread_count; i++){
-        int y= s->thread_context[i]->start_mb_y;
+        int start_y= s->thread_context[i]->start_mb_y;
+        int   end_y= s->thread_context[i]->  end_mb_y;
         int h= s->mb_height;
-        uint8_t *start= buf + buf_size* y   /h;
-        uint8_t *end  = buf + buf_size*(y+1)/h;
+        uint8_t *start= buf + buf_size*start_y/h;
+        uint8_t *end  = buf + buf_size*  end_y/h;
 
         init_put_bits(&s->thread_context[i]->pb, start, end - start);
     }
