@@ -720,15 +720,62 @@ static int get_num(ByteIOContext *pb, int *len)
 /* multiple of 20 bytes for ra144 (ugly) */
 #define RAW_PACKET_SIZE 1000
 
+static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_index){
+    RMContext *rm = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+    int len, num, res, i;
+    AVStream *st;
+
+    while(!url_feof(pb)){
+        if(rm->remaining_len > 0){
+            num= rm->current_stream;
+            len= rm->remaining_len;
+            *timestamp = AV_NOPTS_VALUE;
+            *flags= 0;
+        }else{
+            if(get_byte(pb))
+                continue;
+            if(get_byte(pb))
+                continue;
+            len = get_be16(pb);
+            if (len < 12)
+                continue;
+            num = get_be16(pb);
+            *timestamp = get_be32(pb);
+            res= get_byte(pb); /* reserved */
+            *flags = get_byte(pb); /* flags */
+            
+//            av_log(s, AV_LOG_DEBUG, "%d %Ld %X %X\n", num, *timestamp, *flags, res);
+            
+            len -= 12;
+        }
+        for(i=0;i<s->nb_streams;i++) {
+            st = s->streams[i];
+            if (num == st->id)
+                break;
+        }
+        if (i == s->nb_streams) {
+            /* skip packet if unknown number */
+            url_fskip(pb, len);
+            rm->remaining_len -= len;
+            continue;
+        }
+        *stream_index= i;
+        
+        return len;
+    }
+    return -1;
+}
+
 static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     AVStream *st;
-    int num, i, len, tmp, j;
+    int i, len, tmp, j;
     int64_t timestamp;
     uint8_t *ptr;
-    int flags, res;
+    int flags;
 
     if (rm->old_format) {
         /* just read raw bytes */
@@ -743,44 +790,11 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->size = len;
         st = s->streams[0];
     } else {
-    redo:
-        if (url_feof(pb))
+        len=sync(s, &timestamp, &flags, &i);
+        if(len<0)
             return AVERROR_IO;
-      if(rm->remaining_len > 0){
-        num= rm->current_stream;
-        len= rm->remaining_len;
-        timestamp = AV_NOPTS_VALUE;
-        flags= 0;
-      }else{
-        if(get_byte(pb))
-            goto redo;
-        if(get_byte(pb))
-            goto redo;
-        len = get_be16(pb);
-        if (len < 12)
-            goto redo;
-        num = get_be16(pb);
-        timestamp = get_be32(pb);
-        res= get_byte(pb); /* reserved */
-        flags = get_byte(pb); /* flags */
-        
-//        av_log(s, AV_LOG_DEBUG, "%d %d %X %d\n", num, timestamp, flags, res);
-        
-        len -= 12;
-      }
-        
-        st = NULL;
-        for(i=0;i<s->nb_streams;i++) {
-            st = s->streams[i];
-            if (num == st->id)
-                break;
-        }
-        if (i == s->nb_streams) {
-            /* skip packet if unknown number */
-            url_fskip(pb, len);
-            goto redo;
-        }
-        
+        st = s->streams[i];
+
         if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
             int h, pic_num, len2, pos;
 
@@ -861,6 +875,39 @@ static int rm_probe(AVProbeData *p)
         return 0;
 }
 
+static int64_t rm_read_dts(AVFormatContext *s, int stream_index, 
+                               int64_t *ppos, int64_t pos_limit)
+{
+    RMContext *rm = s->priv_data;
+    int64_t pos, dts;
+    int stream_index2, flags, len;
+
+    pos = *ppos;
+    
+    if(rm->old_format)
+        return AV_NOPTS_VALUE;
+
+    url_fseek(&s->pb, pos, SEEK_SET);
+    rm->remaining_len=0;
+    for(;;){
+        pos= url_ftell(&s->pb);
+        len=sync(s, &dts, &flags, &stream_index2);
+        if(len<0)
+            return AV_NOPTS_VALUE;
+        av_log(s, AV_LOG_DEBUG, "%d %d-%d %Ld\n", flags, stream_index2, stream_index, dts);
+        if(flags&2){
+            av_add_index_entry(s->streams[stream_index2], pos, dts, 0, AVINDEX_KEYFRAME);
+            if(stream_index2 == stream_index){
+                break;
+            }
+        }
+        
+        url_fskip(&s->pb, len);
+    }
+    *ppos = pos;
+    return dts;
+}
+
 static AVInputFormat rm_iformat = {
     "rm",
     "rm format",
@@ -869,6 +916,8 @@ static AVInputFormat rm_iformat = {
     rm_read_header,
     rm_read_packet,
     rm_read_close,
+    NULL,
+    rm_read_dts,
 };
 
 #ifdef CONFIG_ENCODERS
