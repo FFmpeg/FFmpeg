@@ -245,6 +245,7 @@ int mjpeg_init(MpegEncContext *s)
     
     s->min_qcoeff=-1023;
     s->max_qcoeff= 1023;
+    s->intra_quant_bias= 1<<(QUANT_BIAS_SHIFT-1); //(a + x/2)/x
 
     /* build all the huffman tables */
     build_huffman_codes(m->huff_size_dc_luminance,
