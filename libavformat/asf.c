@@ -1401,6 +1401,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
     AVStream *st;
     int64_t pos;
     int64_t pos_min, pos_max, pts_min, pts_max, cur_pts, pos_limit;
+    int no_change;
     
     if (stream_index == -1)
         stream_index= av_find_default_stream_index(s);
@@ -1454,14 +1455,24 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
         pos_limit= pos_max;
     } 
 
+    no_change=0;
     while (pos_min < pos_limit) {
         int64_t start_pos;
         assert(pos_limit <= pos_max);
 
-        // interpolate position (better than dichotomy)
-        pos = (int64_t)((double)(pos_limit - pos_min) *
-                        (double)(pts - pts_min) /
-                        (double)(pts_max - pts_min)) + pos_min;
+        if(no_change==0){
+            int64_t approximate_keyframe_distance= pos_max - pos_limit;
+            // interpolate position (better than dichotomy)
+            pos = (int64_t)((double)(pos_max - pos_min) *
+                            (double)(pts - pts_min) /
+                            (double)(pts_max - pts_min)) + pos_min - approximate_keyframe_distance;
+        }else if(no_change==1){
+            // bisection, if interpolation failed to change min or max pos last time
+            pos = (pos_min + pos_limit)>>1;
+        }else{
+            // linear search if bisection failed, can only happen if there are very few or no keyframes between min/max
+            pos=pos_min;
+        }
         if(pos <= pos_min)
             pos= pos_min + 1;
         else if(pos > pos_limit)
@@ -1470,13 +1481,16 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts)
 
         // read the next timestamp 
     	cur_pts = asf_read_pts(s, &pos, stream_index);    
+        if(pos == pos_max)
+            no_change++;
+        else
+            no_change=0;
+
 #ifdef DEBUG_SEEK
 printf("%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%Ld\n", pos_min, pos, pos_max, pts_min, cur_pts, pts_max, pts, pos_limit, start_pos);
 #endif
-        if (cur_pts == AV_NOPTS_VALUE) {
-            printf("NOPTS\n");
-            return -1;
-        } else if (pts < cur_pts) {
+        assert (cur_pts != AV_NOPTS_VALUE);
+        if (pts < cur_pts) {
             pos_limit = start_pos - 1;
             pos_max = pos;
             pts_max = cur_pts;

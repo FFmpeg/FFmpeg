@@ -1037,9 +1037,9 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
 static int mpegps_read_seek(AVFormatContext *s, 
                             int stream_index, int64_t timestamp)
 {
-    int64_t pos_min, pos_max, pos;
+    int64_t pos_min, pos_max, pos, pos_limit;
     int64_t dts_min, dts_max, dts;
-    int index;
+    int index, no_change;
     AVStream *st;
 
     timestamp = (timestamp * 90000) / AV_TIME_BASE;
@@ -1057,6 +1057,7 @@ static int mpegps_read_seek(AVFormatContext *s,
     
     dts_max=
     dts_min= AV_NOPTS_VALUE;
+    pos_limit= -1; //gcc falsely says it may be uninitalized
 
     st= s->streams[stream_index];
     if(st->index_entries){
@@ -1080,6 +1081,7 @@ static int mpegps_read_seek(AVFormatContext *s,
             assert(e->timestamp >= timestamp);
             pos_max= e->pos;
             dts_max= e->timestamp;
+            pos_limit= pos_max - e->min_distance;
 #ifdef DEBUG_SEEK
         printf("unsing cached pos_max=0x%llx dts_max=%0.3f\n", 
                pos_max,dts_max / 90000.0);
@@ -1099,61 +1101,62 @@ static int mpegps_read_seek(AVFormatContext *s,
     if(dts_max == AV_NOPTS_VALUE){
         pos_max = url_filesize(url_fileno(&s->pb)) - 1;
         dts_max = mpegps_read_dts(s, stream_index, &pos_max, 0);
+        pos_limit= pos_max;
     }
-    
-    while (pos_min <= pos_max) {
+
+    no_change=0;
+    while (pos_min < pos_limit) {
 #ifdef DEBUG_SEEK
         printf("pos_min=0x%llx pos_max=0x%llx dts_min=%0.3f dts_max=%0.3f\n", 
                pos_min, pos_max,
                dts_min / 90000.0, dts_max / 90000.0);
 #endif
-        if (timestamp <= dts_min) {
-            pos = pos_min;
-            goto found;
-        } else if (timestamp >= dts_max) {
-            pos = pos_max;
-            goto found;
-        } else {
-            /* interpolate position (better than dichotomy) */
-            pos = (int64_t)((double)(pos_max - pos_min) * 
+        int64_t start_pos;
+        assert(pos_limit <= pos_max);
+
+        if(no_change==0){
+            int64_t approximate_keyframe_distance= pos_max - pos_limit;
+            // interpolate position (better than dichotomy)
+            pos = (int64_t)((double)(pos_max - pos_min) *
                             (double)(timestamp - dts_min) /
-                            (double)(dts_max - dts_min)) + pos_min;
+                            (double)(dts_max - dts_min)) + pos_min - approximate_keyframe_distance;
+        }else if(no_change==1){
+            // bisection, if interpolation failed to change min or max pos last time
+            pos = (pos_min + pos_limit)>>1;
+        }else{
+            // linear search if bisection failed, can only happen if there are very few or no keframes between min/max
+            pos=pos_min;
         }
+        if(pos <= pos_min)
+            pos= pos_min + 1;
+        else if(pos > pos_limit)
+            pos= pos_limit;
+        start_pos= pos;
+
+        // read the next timestamp 
+    	dts = mpegps_read_dts(s, stream_index, &pos, 1);
+        if(pos == pos_max)
+            no_change++;
+        else
+            no_change=0;
 #ifdef DEBUG_SEEK
-        printf("pos=0x%llx\n", pos);
+printf("%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%Ld noc:%d\n", pos_min, pos, pos_max, dts_min, dts, dts_max, timestamp, pos_limit, start_pos, no_change);
 #endif
-        /* read the next timestamp */
-        dts = mpegps_read_dts(s, stream_index, &pos, 1);
-        /* check if we are lucky */
-        if (dts == AV_NOPTS_VALUE) {
-            /* should never happen */
-            pos = pos_min;
-            goto found;
-        } else if (timestamp == dts) {
-            goto found;
-        } else if (timestamp < dts) {
+        assert(dts != AV_NOPTS_VALUE);
+        if (timestamp < dts) {
+            pos_limit = start_pos - 1;
             pos_max = pos;
-            dts_max = mpegps_read_dts(s, stream_index, &pos_max, 0);
-            if (dts_max == AV_NOPTS_VALUE) {
-                /* should never happen */
-                break;
-            } else if (timestamp >= dts_max) {
-                pos = pos_max;
-                goto found;
-            }
+            dts_max = dts;
         } else {
-            pos_min = pos + 1;
-            dts_min = mpegps_read_dts(s, stream_index, &pos_min, 1);
-            if (dts_min == AV_NOPTS_VALUE) {
-                /* should never happen */
-                goto found;
-            } else if (timestamp <= dts_min) {
-                goto found;
-            }
+            pos_min = pos;
+            dts_min = dts;
+            /* check if we are lucky */
+            if (timestamp == dts)
+                break;
         }
     }
+    
     pos = pos_min;
- found:
 #ifdef DEBUG_SEEK
     pos_min = pos;
     dts_min = mpegps_read_dts(s, stream_index, &pos_min, 1);
