@@ -942,13 +942,14 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 
  fail:
-    for(i=0;i<s->nb_streams;i++) {
+     for(i=0;i<s->nb_streams;i++) {
         AVStream *st = s->streams[i];
-	if (st)
+	if (st) {
 	    av_free(st->priv_data);
+            av_free(st->codec.extradata);
+	}
         av_free(st);
     }
-    //av_free(asf);
     return -1;
 }
 
@@ -1181,14 +1182,13 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int asf_read_close(AVFormatContext *s)
 {
-    //ASFContext *asf = s->priv_data;
     int i;
 
     for(i=0;i<s->nb_streams;i++) {
-        AVStream *st = s->streams[i];
-        av_free(st->priv_data);
+	AVStream *st = s->streams[i];
+	av_free(st->priv_data);
+	av_free(st->codec.extradata);
     }
-    //av_free(asf);
     return 0;
 }
 
