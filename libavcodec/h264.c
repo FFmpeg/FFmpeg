@@ -685,9 +685,7 @@ static inline int pred_intra_mode(H264Context *h, int n){
     const int top = h->intra4x4_pred_mode_cache[index8 - 8];
     const int min= FFMIN(left, top);
 
-#ifdef TRACE
-printf("mode:%d %d min:%d\n", left ,top, min);
-#endif
+    tprintf("mode:%d %d min:%d\n", left ,top, min);
 
     if(min<0) return DC_PRED;
     else      return min;
@@ -726,9 +724,7 @@ static inline int pred_non_zero_count(H264Context *h, int n){
     
     if(i<64) i= (i+1)>>1;
 
-#ifdef TRACE
-    printf("pred_nnz L%X T%X n%d s%d P%X\n", left, top, n, scan8[n], i&31);
-#endif
+    tprintf("pred_nnz L%X T%X n%d s%d P%X\n", left, top, n, scan8[n], i&31);
 
     return i&31;
 }
@@ -740,9 +736,8 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
         *C= h->mv_cache[list][ i - 8 + part_width ];
         return topright_ref;
     }else{
-#ifdef TRACE
-    printf("topright MV not available\n");
-#endif
+        tprintf("topright MV not available\n");
+
         *C= h->mv_cache[list][ i - 8 - 1 ];
         return h->ref_cache[list][ i - 8 - 1 ];
     }
@@ -802,9 +797,7 @@ static inline void pred_motion(H264Context * const h, int n, int part_width, int
         }
     }
         
-#ifdef TRACE
-printf("pred_motion (%2d %2d %2d) (%2d %2d %2d) (%2d %2d %2d) -> (%2d %2d %2d) at %2d %2d %d list %d\n", top_ref, B[0], B[1], diagonal_ref, C[0], C[1], left_ref, A[0], A[1], ref, *mx, *my, s->mb_x, s->mb_y, n, list);
-#endif
+    tprintf("pred_motion (%2d %2d %2d) (%2d %2d %2d) (%2d %2d %2d) -> (%2d %2d %2d) at %2d %2d %d list %d\n", top_ref, B[0], B[1],                    diagonal_ref, C[0], C[1], left_ref, A[0], A[1], ref, *mx, *my, s->mb_x, s->mb_y, n, list);
 }
 
 /**
@@ -819,9 +812,7 @@ static inline void pred_16x8_motion(H264Context * const h, int n, int list, int 
         const int top_ref=      h->ref_cache[list][ scan8[0] - 8 ];
         const int16_t * const B= h->mv_cache[list][ scan8[0] - 8 ];
 
-#ifdef TRACE
-printf("pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d", top_ref, B[0], B[1], s->mb_x, s->mb_y, n, list);
-#endif
+        tprintf("pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d", top_ref, B[0], B[1], s->mb_x, s->mb_y, n, list);
         
         if(top_ref == ref){
             *mx= B[0];
@@ -832,9 +823,7 @@ printf("pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d", top_ref, B[0], B[1], s-
         const int left_ref=     h->ref_cache[list][ scan8[8] - 1 ];
         const int16_t * const A= h->mv_cache[list][ scan8[8] - 1 ];
         
-#ifdef TRACE
-printf("pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d", left_ref, A[0], A[1], s->mb_x, s->mb_y, n, list);
-#endif
+        tprintf("pred_16x8: (%2d %2d %2d) at %2d %2d %d list %d", left_ref, A[0], A[1], s->mb_x, s->mb_y, n, list);
 
         if(left_ref == ref){
             *mx= A[0];
@@ -859,9 +848,7 @@ static inline void pred_8x16_motion(H264Context * const h, int n, int list, int 
         const int left_ref=      h->ref_cache[list][ scan8[0] - 1 ];
         const int16_t * const A=  h->mv_cache[list][ scan8[0] - 1 ];
         
-#ifdef TRACE
-printf("pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d", left_ref, A[0], A[1], s->mb_x, s->mb_y, n, list);
-#endif
+        tprintf("pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d", left_ref, A[0], A[1], s->mb_x, s->mb_y, n, list);
 
         if(left_ref == ref){
             *mx= A[0];
@@ -874,9 +861,7 @@ printf("pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d", left_ref, A[0], A[1], s
 
         diagonal_ref= fetch_diagonal_mv(h, &C, scan8[4], list, 2);
         
-#ifdef TRACE
-printf("pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d", diagonal_ref, C[0], C[1], s->mb_x, s->mb_y, n, list);
-#endif
+        tprintf("pred_8x16: (%2d %2d %2d) at %2d %2d %d list %d", diagonal_ref, C[0], C[1], s->mb_x, s->mb_y, n, list);
 
         if(diagonal_ref == ref){ 
             *mx= C[0];
@@ -894,9 +879,7 @@ static inline void pred_pskip_motion(H264Context * const h, int * const mx, int 
     const int top_ref = h->ref_cache[0][ scan8[0] - 8 ];
     const int left_ref= h->ref_cache[0][ scan8[0] - 1 ];
 
-#ifdef TRACE
-printf("pred_pskip: (%d) (%d) at %2d %2d", top_ref, left_ref, s->mb_x, s->mb_y);
-#endif
+    tprintf("pred_pskip: (%d) (%d) at %2d %2d", top_ref, left_ref, s->mb_x, s->mb_y);
 
     if(top_ref == PART_NOT_AVAILABLE || left_ref == PART_NOT_AVAILABLE
        || (top_ref == 0  && *(uint32_t*)h->mv_cache[0][ scan8[0] - 8 ] == 0)
@@ -1088,9 +1071,7 @@ static int decode_rbsp_trailing(uint8_t *src){
     int v= *src;
     int r;
 
-#ifdef TRACE
-printf("rbsp trailing %X\n", v);
-#endif
+    tprintf("rbsp trailing %X\n", v);
 
     for(r=1; r<9; r++){
         if(v&1) return r;
@@ -3073,9 +3054,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
         return 0;
         
     trailing_ones= coeff_token&3;
-#ifdef TRACE
-    printf("trailing:%d, total:%d\n", trailing_ones, total_coeff);
-#endif
+    tprintf("trailing:%d, total:%d\n", trailing_ones, total_coeff);
     assert(total_coeff<=16);
     
     for(i=0; i<trailing_ones; i++){
@@ -3119,9 +3098,7 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
         if((2+level_code)>>1) > (3<<(suffix_length-1)) && suffix_length<6) suffix_length++;
         ? == prefix > 2 or sth
 #endif
-#ifdef TRACE
-printf("level: %d suffix_length:%d\n", level[i], suffix_length);
-#endif
+        tprintf("level: %d suffix_length:%d\n", level[i], suffix_length);
     }
 
     if(total_coeff == max_coeff)
@@ -3190,9 +3167,7 @@ static int decode_mb(H264Context *h){
 
     memset(h->mb, 0, sizeof(int16_t)*24*16); //FIXME avoid if allready clear (move after skip handlong?
 
-#ifdef TRACE
-    printf("pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
-#endif
+    tprintf("pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
 
     if(h->slice_type != I_TYPE && h->slice_type != SI_TYPE){
         if(s->mb_skip_run==-1)
@@ -3410,9 +3385,8 @@ decode_intra_mb:
                         pred_motion(h, index, block_width, list, h->ref_cache[list][ scan8[index] ], &mx, &my);
                         mx += get_se_golomb(&s->gb);
                         my += get_se_golomb(&s->gb);
-#ifdef TRACE
-printf("final mv:%d %d\n", mx, my);
-#endif
+                        tprintf("final mv:%d %d\n", mx, my);
+
                         if(IS_SUB_8X8(sub_mb_type)){
                             mv_cache[ 0 ][0]= mv_cache[ 1 ][0]= 
                             mv_cache[ 8 ][0]= mv_cache[ 9 ][0]= mx;
@@ -3454,9 +3428,8 @@ printf("final mv:%d %d\n", mx, my);
                     pred_motion(h, 0, 4, list, h->ref_cache[list][ scan8[0] ], &mx, &my);
                     mx += get_se_golomb(&s->gb);
                     my += get_se_golomb(&s->gb);
-#ifdef TRACE
-printf("final mv:%d %d\n", mx, my);
-#endif
+                    tprintf("final mv:%d %d\n", mx, my);
+
                     fill_rectangle(h->mv_cache[list][ scan8[0] ], 4, 4, 8, (mx&0xFFFF) + (my<<16), 4);
                 }
             }
@@ -3478,9 +3451,8 @@ printf("final mv:%d %d\n", mx, my);
                         pred_16x8_motion(h, 8*i, list, h->ref_cache[list][scan8[0] + 16*i], &mx, &my);
                         mx += get_se_golomb(&s->gb);
                         my += get_se_golomb(&s->gb);
-#ifdef TRACE
-printf("final mv:%d %d\n", mx, my);
-#endif
+                        tprintf("final mv:%d %d\n", mx, my);
+
                         fill_rectangle(h->mv_cache[list][ scan8[0] + 16*i ], 4, 2, 8, (mx&0xFFFF) + (my<<16), 4);
                     }
                 }
@@ -3503,9 +3475,8 @@ printf("final mv:%d %d\n", mx, my);
                         pred_8x16_motion(h, i*4, list, h->ref_cache[list][ scan8[0] + 2*i ], &mx, &my);
                         mx += get_se_golomb(&s->gb);
                         my += get_se_golomb(&s->gb);
-#ifdef TRACE
-printf("final mv:%d %d\n", mx, my);
-#endif
+                        tprintf("final mv:%d %d\n", mx, my);
+
                         fill_rectangle(h->mv_cache[list][ scan8[0] + 2*i ], 2, 4, 8, (mx&0xFFFF) + (my<<16), 4);
                     }
                 }
@@ -3655,9 +3626,8 @@ static int decode_slice(H264Context *h){
             s->mb_x=0;
             ff_draw_horiz_band(s, 16*s->mb_y, 16);
             if(++s->mb_y >= s->mb_height){
-#ifdef TRACE
-printf("slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
-#endif
+                tprintf("slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
+
                 if(get_bits_count(&s->gb) == s->gb.size_in_bits){
                     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
 
