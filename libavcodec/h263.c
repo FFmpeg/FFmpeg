@@ -246,7 +246,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb,1,0); /* Slice Structured: off */
         put_bits(&s->pb,1,0); /* Reference Picture Selection: off */
         put_bits(&s->pb,1,0); /* Independent Segment Decoding: off */
-        put_bits(&s->pb,1,0); /* Alternative Inter VLC: off */
+        put_bits(&s->pb,1,s->alt_inter_vlc); /* Alternative Inter VLC */
         put_bits(&s->pb,1,0); /* Modified Quantization: off */
         put_bits(&s->pb,1,1); /* "1" to prevent start code emulation */
         put_bits(&s->pb,3,0); /* Reserved */
@@ -1071,9 +1071,10 @@ void h263_encode_mb(MpegEncContext * s,
         put_bits(&s->pb, 1, 0);	/* mb coded */
         
         cbpc = cbp & 3;
-        if(s->dquant) cbpc+= 8;
         cbpy = cbp >> 2;
-        cbpy ^= 0xf;
+        if(s->alt_inter_vlc==0 || cbpc!=3)
+            cbpy ^= 0xF;
+        if(s->dquant) cbpc+= 8;
         if(s->mv_type==MV_TYPE_16X16){
             put_bits(&s->pb,
                     inter_MCBPC_bits[cbpc],
@@ -1804,6 +1805,42 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
         i = 0;
         if (s->h263_aic && s->mb_intra)
             rl = &rl_intra_aic;
+            
+        if(s->alt_inter_vlc && !s->mb_intra){
+            int aic_vlc_bits=0;
+            int inter_vlc_bits=0;
+            int wrong_pos=-1;
+            int aic_code;
+            
+            last_index = s->block_last_index[n];
+            last_non_zero = i - 1;
+            for (; i <= last_index; i++) {
+                j = s->intra_scantable.permutated[i];
+                level = block[j];
+                if (level) {
+                    run = i - last_non_zero - 1;
+                    last = (i == last_index);
+                
+                    code = get_rl_index(rl, last, run, level);
+                    aic_code = get_rl_index(&rl_intra_aic, last, run, level);
+                    inter_vlc_bits += rl->table_vlc[code][1]+1;
+                    aic_vlc_bits   += rl_intra_aic.table_vlc[aic_code][1]+1;
+
+                    if (code == rl->n) {
+                        inter_vlc_bits += 1+6+8;
+                    }                
+                    if (aic_code == rl_intra_aic.n) {
+                        aic_vlc_bits += 1+6+8;
+                        wrong_pos += run + 1;
+                    }else
+                        wrong_pos += wrong_run[aic_code];
+                    last_non_zero = i;
+                }    
+            }
+            i = 0;
+            if(aic_vlc_bits < inter_vlc_bits && wrong_pos > 63)
+                rl = &rl_intra_aic;
+        }
     }
    
     /* AC coefs */
@@ -3474,7 +3511,11 @@ int ff_h263_decode_mb(MpegEncContext *s,
             s->mcsel= get_bits1(&s->gb);
         else s->mcsel= 0;
         cbpy = get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
-        cbp = (cbpc & 3) | ((cbpy ^ 0xf) << 2);
+        
+        if(s->alt_inter_vlc==0 || (cbpc & 3)!=3)
+            cbpy ^= 0xF;
+        
+        cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
             change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
         }
@@ -3865,6 +3906,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
     int code, level, i, j, last, run;
     RLTable *rl = &rl_inter;
     const uint8_t *scan_table;
+    GetBitContext gb= s->gb;
 
     scan_table = s->intra_scantable.permutated;
     if (s->h263_aic && s->mb_intra) {
@@ -3916,7 +3958,7 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
         s->block_last_index[n] = i - 1;
         return 0;
     }
-
+retry:
     for(;;) {
         code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
         if (code < 0){
@@ -3957,6 +3999,14 @@ static int h263_decode_block(MpegEncContext * s, DCTELEM * block,
         }
         i += run;
         if (i >= 64){
+            if(s->alt_inter_vlc && rl == &rl_inter && !s->mb_intra){
+                //looks like a hack but no, its the way its supposed to work ...
+                rl = &rl_intra_aic;
+                i = 0;
+                s->gb= gb;
+                memset(block, 0, sizeof(DCTELEM)*64);
+                goto retry;
+            }
             av_log(s->avctx, AV_LOG_ERROR, "run overflow at %dx%d\n", s->mb_x, s->mb_y);
             return -1;
         }
@@ -4408,9 +4458,7 @@ int h263_decode_picture_header(MpegEncContext *s)
             if (get_bits1(&s->gb) != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Independent Segment Decoding not supported\n");
             }
-            if (get_bits1(&s->gb) != 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "Alternative Inter VLC not supported\n");
-            }
+            s->alt_inter_vlc= get_bits1(&s->gb);
             if (get_bits1(&s->gb) != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Modified Quantization not supported\n");
             }
@@ -4491,14 +4539,15 @@ int h263_decode_picture_header(MpegEncContext *s)
     }
 
      if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s\n", 
+         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s\n", 
          s->qscale, av_get_pict_type_char(s->pict_type),
          s->gb.size_in_bits, 1-s->no_rounding,
          s->obmc ? " AP" : "",
          s->umvplus ? " UMV" : "",
          s->h263_long_vectors ? " LONG" : "",
          s->h263_plus ? " +" : "",
-         s->h263_aic ? " AIC" : ""
+         s->h263_aic ? " AIC" : "",
+         s->alt_inter_vlc ? " AIV" : ""
          ); 
      }
 #if 1

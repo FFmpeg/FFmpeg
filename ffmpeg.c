@@ -113,6 +113,7 @@ static int b_frames = 0;
 static int mb_decision = FF_MB_DECISION_SIMPLE;
 static int use_4mv = 0;
 static int use_aic = 0;
+static int use_aiv = 0;
 static int use_umv = 0;
 static int do_deinterlace = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
@@ -2267,6 +2268,9 @@ static void opt_output_file(const char *filename)
            	if (use_aic) {
                     video_enc->flags |= CODEC_FLAG_H263P_AIC;
                 }
+           	if (use_aiv) {
+                    video_enc->flags |= CODEC_FLAG_H263P_AIV;
+                }
                 if (use_4mv) {
                     video_enc->flags |= CODEC_FLAG_4MV;
                 }
@@ -2886,6 +2890,7 @@ const OptionDef options[] = {
     { "vstats", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
     { "aic", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aic}, "enable Advanced intra coding (h263+)" },
+    { "aiv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aiv}, "enable Alternative inter vlc (h263+)" },
     { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },

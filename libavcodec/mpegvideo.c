@@ -779,6 +779,7 @@ int MPV_encode_init(AVCodecContext *avctx)
 	/* Fx */
 	s->unrestricted_mv=(avctx->flags & CODEC_FLAG_H263P_UMV) ? 1:0;
 	s->h263_aic= (avctx->flags & CODEC_FLAG_H263P_AIC) ? 1:0;
+	s->alt_inter_vlc= (avctx->flags & CODEC_FLAG_H263P_AIV) ? 1:0;
 	/* /Fx */
         /* These are just to be sure */
         s->umvplus = 1;

@@ -519,12 +519,13 @@ typedef struct MpegEncContext {
     /* H.263 specific */
     int gob_number;
     int gob_index;
+    int obmc;                       ///< overlapped block motion compensation
         
     /* H.263+ specific */
     int umvplus;                    ///< == H263+ && unrestricted_mv 
     int h263_aic;                   ///< Advanded INTRA Coding (AIC) 
     int h263_aic_dir;               ///< AIC direction: 0 = left, 1 = top 
-    int obmc;                       ///< overlapped block motion compensation
+    int alt_inter_vlc;              ///< alternative inter vlc
     
     /* mpeg4 specific */
     int time_increment_resolution;

@@ -229,7 +229,7 @@ static const __attribute__((unused)) int Motion_Est_QTab[] =
 */
 
 #define CODEC_FLAG_QSCALE 0x0002  ///< use fixed qscale 
-#define CODEC_FLAG_4MV    0x0004  ///< 4 MV per MB allowed 
+#define CODEC_FLAG_4MV    0x0004  ///< 4 MV per MB allowed / Advanced prediction for H263
 #define CODEC_FLAG_QPEL   0x0010  ///< use qpel MC 
 #define CODEC_FLAG_GMC    0x0020  ///< use GMC 
 #define CODEC_FLAG_MV0    0x0040  ///< always try a MB with MV=<0,0> 
@@ -258,6 +258,7 @@ static const __attribute__((unused)) int Motion_Est_QTab[] =
 #define CODEC_FLAG_H263P_UMV      0x02000000 ///< Unlimited motion vector  
 #define CODEC_FLAG_CBP_RD         0x04000000 ///< use rate distortion optimization for cbp
 #define CODEC_FLAG_QP_RD          0x08000000 ///< use rate distortion optimization for qp selectioon
+#define CODEC_FLAG_H263P_AIV      0x00000008 ///< H263 Alternative inter vlc
 /* For advanced prediction mode, we reuse the 4MV flag */
 /* Unsupported options :
  * 		Syntax Arithmetic coding (SAC)
@@ -265,7 +266,6 @@ static const __attribute__((unused)) int Motion_Est_QTab[] =
  * 		Slice structured
  * 		Reference Picture Selection
  * 		Independant Segment Decoding
- * 		Alternative Inter * 		VLC
  * 		Modified Quantization */
 /* /Fx */
 /* codec capabilities */
