@@ -30,6 +30,8 @@
 #include "cabac.h"
 
 #define MAX_PLANES 4
+#define CONTEXT_SIZE 32
+
 #if 0
 #define DEFAULT_QDIFF_COUNT (9)
 
@@ -76,18 +78,18 @@ static const uint8_t default_quant_table[256]={
  };
 #endif
 
-static const int to8[16]={
-0,1,1,1,
-1,2,2,3,
-4,5,6,6,
-7,7,7,7
+static const int to5[16]={
+0,0,0,0,
+0,0,0,1,
+2,3,4,4,
+4,4,4,4,
 };
 
 typedef struct PlaneContext{
     uint8_t quant_table[256];
     int qdiff_count;
     int context_count;
-    uint8_t (*state)[64]; //FIXME 64
+    uint8_t (*state)[CONTEXT_SIZE];
     uint8_t interlace_bit_state[2];
 } PlaneContext;
 
@@ -162,27 +164,13 @@ static inline int get_symbol(CABACContext *c, uint8_t *state){
     }
 }
 #else
+
 /**
  * put 
  */
 static inline void put_symbol(CABACContext *c, uint8_t *state, int v, int is_signed){
     int i;
-#if 0
-    const int a= ABS(v);
-    const int e= av_log2(a+1);
 
-    put_cabac_u(c, state+0, e, 7, 6, 1); //0..6
-    if(e){
-        put_cabac(c, state+6 + e, v < 0); //7..13
-        
-        for(i=; i<e; i++){
-            
-        }
-    }
-#else
-// 0 1 2 3 4  5  6
-// 0 1 2 3 4  5  6
-// 0 0 1 3 6 10 15 21
     if(v){
         const int a= ABS(v);
         const int e= av_log2(a);
@@ -191,18 +179,15 @@ static inline void put_symbol(CABACContext *c, uint8_t *state, int v, int is_sig
         put_cabac_u(c, state+1, e, 7, 6, 1); //1..7
         if(e<7){
             for(i=e-1; i>=0; i--){
-                static const int offset[7]= {14+0, 14+0, 14+1, 14+3, 14+6, 14+10, 14+15};
-//                put_cabac(c, state+14+e-i, (a>>i)&1); //14..20
-               put_cabac(c, state+offset[e]+i, (a>>i)&1); //14..34
+                static const int offset[7]= {15+0, 15+0, 15+1, 15+3, 15+6, 15+10, 15+11};
+                put_cabac(c, state+offset[e]+i, (a>>i)&1); //15..31
             }
-
             if(is_signed)
                 put_cabac(c, state+8 + e, v < 0); //8..14
         }
     }else{
         put_cabac(c, state+0, 1);
     }
-#endif    
 }
 
 static inline int get_symbol(CABACContext *c, uint8_t *state, int is_signed){
@@ -217,8 +202,8 @@ static inline int get_symbol(CABACContext *c, uint8_t *state, int is_signed){
             int a= 1<<e;
 
             for(i=e-1; i>=0; i--){
-                static const int offset[7]= {14+0, 14+0, 14+1, 14+3, 14+6, 14+10, 14+15};
-                a += get_cabac(c, state+offset[e]+i)<<i; //14..34
+                static const int offset[7]= {15+0, 15+0, 15+1, 15+3, 15+6, 15+10, 15+11};
+                a += get_cabac(c, state+offset[e]+i)<<i; //14..31
             }
 
             if(is_signed && get_cabac(c, state+8 + e)) //8..14
@@ -257,14 +242,14 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
                 context= pred_diff[3+0][x-1] + 16*pred_diff[3-1][x+0];
             else
                 context=            pred_diff[3+0][x-1] + 16*pred_diff[3-1][x+0] 
-                        + 16*16*to8[pred_diff[3-1][x+1]] + 16*16*8*to8[pred_diff[3-0][x-2]] + 16*16*8*8*to8[pred_diff[3-2][x+0]];
-             
+                        + 16*16*to5[pred_diff[3-1][x+1]] + 16*16*5*to5[pred_diff[3-0][x-2]] + 16*16*5*5*to5[pred_diff[3-2][x+0]];
+
             diff = (int8_t)(temp_src[0] - predict(s, temp_src, stride, x, y));
             
             qdiff= p->quant_table[128+diff];
-            
+
             put_symbol(c, p->state[context], diff, 1);
-            
+
             pred_diff[3][x]= qdiff;
         }
     }
@@ -273,7 +258,7 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
 static void write_quant_table(CABACContext *c, uint8_t *quant_table){
     int last=0;
     int i;
-    uint8_t state[64]={0};
+    uint8_t state[CONTEXT_SIZE]={0};
 
     for(i=1; i<256 ; i++){
         if(quant_table[i] != quant_table[i-1]){
@@ -285,7 +270,7 @@ static void write_quant_table(CABACContext *c, uint8_t *quant_table){
 }
 
 static void write_header(FFV1Context *f){
-    uint8_t state[64]={0};
+    uint8_t state[CONTEXT_SIZE]={0};
     int i;
     CABACContext * const c= &f->c;
 
@@ -306,7 +291,7 @@ static void write_header(FFV1Context *f){
 
 static int common_init(AVCodecContext *avctx){
     FFV1Context *s = avctx->priv_data;
-    int i, j, width, height;
+    int width, height;
 
     s->avctx= avctx;
     s->flags= avctx->flags;
@@ -317,10 +302,6 @@ static int common_init(AVCodecContext *avctx){
     height= s->height= avctx->height;
     
     assert(width && height);
-
-    for(i=0; i<s->plane_count; i++){
-        PlaneContext *p= &s->plane[i];
-    }
 
     return 0;
 }
@@ -343,10 +324,10 @@ static int encode_init(AVCodecContext *avctx)
         
 #if 1
         p->context_count= 256;
-        p->state= av_malloc(64*p->context_count*sizeof(uint8_t));
+        p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
 #else        
-        p->context_count= 16*16*8*8*8; //256*16;
-        p->state= av_malloc(64*p->context_count*sizeof(uint8_t));
+        p->context_count= 16*16*128 /*5*5*5*/;
+        p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
 #endif
     }
 
@@ -372,7 +353,7 @@ static int encode_init(AVCodecContext *avctx)
 
 
 static void clear_state(FFV1Context *f){
-    int i;
+    int i, j;
 
     for(i=0; i<f->plane_count; i++){
         PlaneContext *p= &f->plane[i];
@@ -380,7 +361,10 @@ static void clear_state(FFV1Context *f){
         p->interlace_bit_state[0]= 0;
         p->interlace_bit_state[1]= 0;
         
-        memset(p->state, 0, p->context_count*sizeof(uint8_t)*64);
+        for(j=0; j<p->context_count; j++){
+            memset(p->state[j], 0, sizeof(uint8_t)*CONTEXT_SIZE);
+            p->state[j][7] = 2*62;
+        }
     }
 }
 
@@ -475,7 +459,7 @@ static void decode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
                 context= pred_diff[3+0][x-1] + 16*pred_diff[3-1][x+0];
             else
                 context=            pred_diff[3+0][x-1] + 16*pred_diff[3-1][x+0] 
-                        + 16*16*to8[pred_diff[3-1][x+1]] + 16*16*8*to8[pred_diff[3-0][x-2]] + 16*16*8*8*to8[pred_diff[3-2][x+0]];
+                        + 16*16*to5[pred_diff[3-1][x+1]] + 16*16*5*to5[pred_diff[3-0][x-2]] + 16*16*5*5*to5[pred_diff[3-2][x+0]];
 
             diff= get_symbol(c, p->state[context], 1);
 
@@ -493,7 +477,7 @@ static void decode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
 static int read_quant_table(CABACContext *c, uint8_t *quant_table){
     int v;
     int i=0;
-    uint8_t state[64]={0};
+    uint8_t state[CONTEXT_SIZE]={0};
 
     for(v=0; i<256 ; v++){
         int len= get_symbol(c, state, 0) + 1;
@@ -511,7 +495,7 @@ static int read_quant_table(CABACContext *c, uint8_t *quant_table){
 }
 
 static int read_header(FFV1Context *f){
-    uint8_t state[64]={0};
+    uint8_t state[CONTEXT_SIZE]={0};
     int i;
     CABACContext * const c= &f->c;
     
@@ -531,7 +515,7 @@ static int read_header(FFV1Context *f){
         if(p->qdiff_count < 0) return -1;
         
         if(!p->state)
-            p->state= av_malloc(64*p->context_count*sizeof(uint8_t));
+            p->state= av_malloc(CONTEXT_SIZE*p->context_count*sizeof(uint8_t));
     }
     
     return 0;
@@ -654,7 +638,7 @@ AVCodec ffv1_decoder = {
     NULL,
     decode_end,
     decode_frame,
-    /*CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND*/ 0,
+    CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
     NULL
 };
 
