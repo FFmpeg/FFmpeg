@@ -199,7 +199,7 @@ static void dump_floats(const char *name, int prec, const float *tab, int n)
 
 #else
 
-#define trace(fmt, ...)
+#define trace(fmt, args...)
 
 #endif
 
