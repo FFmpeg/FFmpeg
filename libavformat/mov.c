@@ -16,6 +16,9 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+#include <limits.h>
+ 
 #include "avformat.h"
 #include "avi.h"
 
@@ -1168,8 +1171,8 @@ static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int entries, i;
-    int duration=0;
-    int total_sample_count=0;
+    int64_t duration=0;
+    int64_t total_sample_count=0;
 
     print_atom("stts", atom);
 
@@ -1205,31 +1208,16 @@ printf("track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
 #endif
     }
 
-#define MAX(a,b) a>b?a:b
-#define MIN(a,b) a>b?b:a
     /*The stsd atom which contain codec type sometimes comes after the stts so we cannot check for codec_type*/
     if(duration>0)
     {
-        //Find greatest common divisor to avoid overflow using the Euclidean Algorithm...
-        uint32_t max=MAX(duration,total_sample_count);
-        uint32_t min=MIN(duration,total_sample_count);
-        uint32_t spare=max%min;
-
-        while(spare!=0)
-        {
-            max=min;
-            min=spare;
-            spare=max%min;
-        }
-        
-        duration/=min;
-        total_sample_count/=min;
-
-        //Only support constant frame rate. But lets calculate the average. Needed by .mp4-files created with nec e606 3g phone.
-        //To get better precision, we use the duration as frame_rate_base
-
-        st->codec.frame_rate_base=duration;
-        st->codec.frame_rate = c->streams[c->total_streams]->time_scale * total_sample_count;
+        av_reduce(
+            &st->codec.frame_rate, 
+            &st->codec.frame_rate_base, 
+            c->streams[c->total_streams]->time_scale * total_sample_count,
+            duration,
+            INT_MAX
+        );
 
 #ifdef DEBUG
         printf("FRAME RATE average (video or audio)= %f (tot sample count= %i ,tot dur= %i timescale=%d)\n", (float)st->codec.frame_rate/st->codec.frame_rate_base,total_sample_count,duration,c->streams[c->total_streams]->time_scale);
@@ -1240,8 +1228,6 @@ printf("track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
         st->codec.frame_rate_base = 1;
         st->codec.frame_rate = c->streams[c->total_streams]->time_scale;
     }
-#undef MAX
-#undef MIN
     return 0;
 }
 
