@@ -1,3 +1,11 @@
+version 0.4.6:
+
+- completely new mpeg audio layer 1/2/3 decoder rewritten from
+  scratch.
+- recoded dct and motion vector search with gcc (no longer depends on
+  nasm).
+- fix quantization bug in AC3 encoder.
+
 version 0.4.5:
 
 - some header fixes (Zdenek Kabelac <kabi@informatics.muni.cz>).
