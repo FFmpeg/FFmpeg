@@ -31,10 +31,10 @@ int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
     s->nbits = nbits;
     s->n = n;
     n4 = n >> 2;
-    s->tcos = malloc(n4 * sizeof(FFTSample));
+    s->tcos = av_malloc(n4 * sizeof(FFTSample));
     if (!s->tcos)
         goto fail;
-    s->tsin = malloc(n4 * sizeof(FFTSample));
+    s->tsin = av_malloc(n4 * sizeof(FFTSample));
     if (!s->tsin)
         goto fail;
 
