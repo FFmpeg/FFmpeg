@@ -197,15 +197,36 @@ void ff_flv_encode_picture_header(MpegEncContext * s, int picture_number)
 
 void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 {
-    int format;
+    int format, coded_frame_rate, coded_frame_rate_base, i, temp_ref;
+    int best_clock_code=1;
+    int best_divisor=60;
+    int best_error= INT_MAX;
+   
+    if(s->h263_plus){
+        for(i=0; i<2; i++){
+            int div, error;
+            div= (s->avctx->frame_rate_base*1800000LL + 500LL*s->avctx->frame_rate) / ((1000LL+i)*s->avctx->frame_rate);
+            div= clip(1, div, 127);
+            error= ABS(s->avctx->frame_rate_base*1800000LL - (1000LL+i)*s->avctx->frame_rate*div);
+            if(error < best_error){
+                best_error= error;
+                best_divisor= div;
+                best_clock_code= i;
+            }
+        }
+    }
+    s->custom_pcf= best_clock_code!=1 || best_divisor!=60;
+    coded_frame_rate= 1800000;
+    coded_frame_rate_base= (1000+best_clock_code)*best_divisor;
 
     align_put_bits(&s->pb);
 
     /* Update the pointer to last GOB */
     s->ptr_lastgob = pbBufPtr(&s->pb);
     put_bits(&s->pb, 22, 0x20); /* PSC */
-    put_bits(&s->pb, 8, ((s->picture_number * 30000LL * s->avctx->frame_rate_base) / 
-                         (1001LL  *s->avctx->frame_rate)) & 0xff); /* TemporalReference */
+    temp_ref= s->picture_number * (int64_t)coded_frame_rate * s->avctx->frame_rate_base / 
+                         (coded_frame_rate_base * (int64_t)s->avctx->frame_rate);
+    put_bits(&s->pb, 8, temp_ref & 0xff); /* TemporalReference */
 
     put_bits(&s->pb, 1, 1);	/* marker */
     put_bits(&s->pb, 1, 0);	/* h263 id */
@@ -228,16 +249,18 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb, 5, s->qscale);
         put_bits(&s->pb, 1, 0);	/* Continuous Presence Multipoint mode: off */
     } else {
+        int ufep=1;
         /* H.263v2 */
         /* H.263 Plus PTYPE */
+        
         put_bits(&s->pb, 3, 7);
-        put_bits(&s->pb,3,1); /* Update Full Extended PTYPE */
+        put_bits(&s->pb,3,ufep); /* Update Full Extended PTYPE */
         if (format == 7)
             put_bits(&s->pb,3,6); /* Custom Source Format */
         else
             put_bits(&s->pb, 3, format);
             
-        put_bits(&s->pb,1,0); /* Custom PCF: off */
+        put_bits(&s->pb,1, s->custom_pcf);
         put_bits(&s->pb,1, s->umvplus); /* Unrestricted Motion Vector */
         put_bits(&s->pb,1,0); /* SAC: off */
         put_bits(&s->pb,1,s->obmc); /* Advanced Prediction Mode */
@@ -274,6 +297,13 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
                 put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.num);
                 put_bits(&s->pb, 8, s->avctx->sample_aspect_ratio.den);
 	    }
+        }
+        if(s->custom_pcf){
+            if(ufep){
+                put_bits(&s->pb, 1, best_clock_code);
+                put_bits(&s->pb, 7, best_divisor);
+            }
+            put_bits(&s->pb, 2, (temp_ref>>8)&3);
         }
         
         /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
@@ -4961,9 +4991,7 @@ int h263_decode_picture_header(MpegEncContext *s)
             /* OPPTYPE */       
             format = get_bits(&s->gb, 3);
             dprintf("ufep=1, format: %d\n", format);
-            if (get_bits1(&s->gb) != 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "Custom PCF not supported\n");
-            }
+            s->custom_pcf= get_bits1(&s->gb);
             s->umvplus = get_bits(&s->gb, 1); /* Unrestricted Motion Vector */
             if (get_bits1(&s->gb) != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Syntax-based Arithmetic Coding (SAC) not supported\n");
@@ -5040,10 +5068,33 @@ int h263_decode_picture_header(MpegEncContext *s)
             }
             if ((width == 0) || (height == 0))
                 return -1;
-            s->avctx->frame_rate     = 30000;
-            s->avctx->frame_rate_base= 1001;
             s->width = width;
             s->height = height;
+
+            if(s->custom_pcf){
+                int gcd;
+                s->avctx->frame_rate= 1800000;
+                s->avctx->frame_rate_base= 1000 + get_bits1(&s->gb);
+                s->avctx->frame_rate_base*= get_bits(&s->gb, 7);
+                if(s->avctx->frame_rate_base == 0){
+                    av_log(s, AV_LOG_ERROR, "zero framerate\n");
+                    return -1;
+                }
+                gcd= ff_gcd(s->avctx->frame_rate, s->avctx->frame_rate_base);
+                s->avctx->frame_rate      /= gcd;
+                s->avctx->frame_rate_base /= gcd;
+//                av_log(s->avctx, AV_LOG_DEBUG, "%d/%d\n", s->avctx->frame_rate, s->avctx->frame_rate_base);
+            }else{
+                s->avctx->frame_rate     = 30000;
+                s->avctx->frame_rate_base= 1001;
+            }
+        }
+            
+        if(s->custom_pcf){
+            skip_bits(&s->gb, 2); //extended Temporal reference
+        }
+
+        if (ufep) {
             if (s->umvplus) {
                 if(get_bits1(&s->gb)==0) /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
                     skip_bits1(&s->gb); 
@@ -5090,7 +5141,7 @@ int h263_decode_picture_header(MpegEncContext *s)
     }
 
      if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s%s%s%s\n", 
+         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s%s%s%s %d/%d\n", 
          s->qscale, av_get_pict_type_char(s->pict_type),
          s->gb.size_in_bits, 1-s->no_rounding,
          s->obmc ? " AP" : "",
@@ -5101,7 +5152,8 @@ int h263_decode_picture_header(MpegEncContext *s)
          s->alt_inter_vlc ? " AIV" : "",
          s->modified_quant ? " MQ" : "",
          s->loop_filter ? " LOOP" : "",
-         s->h263_slice_structured ? " SS" : ""
+         s->h263_slice_structured ? " SS" : "",
+         s->avctx->frame_rate, s->avctx->frame_rate_base
          ); 
      }
 #if 1

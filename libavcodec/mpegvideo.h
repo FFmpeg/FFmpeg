@@ -537,6 +537,7 @@ typedef struct MpegEncContext {
     int alt_inter_vlc;              ///< alternative inter vlc
     int modified_quant;
     int loop_filter;    
+    int custom_pcf;
     
     /* mpeg4 specific */
     int time_increment_resolution;
