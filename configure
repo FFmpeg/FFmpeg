@@ -35,6 +35,10 @@ case "$cpu" in
     cpu="armv4l"
     mmx="no"
   ;;
+  alpha)
+    cpu="alpha"
+    mmx="no"
+  ;;
   *)
     mmx="no"
   ;;
@@ -145,6 +149,10 @@ fi
 if [ "$cpu" = "armv4l" ]; then
   echo "TARGET_ARCH_ARMV4L=yes" >> config.mak
   echo "#define ARCH_ARMV4L 1" >> config.h
+fi
+if [ "$cpu" = "alpha" ]; then
+  echo "TARGET_ARCH_ALPHA=yes" >> config.mak
+  echo "#define ARCH_ALPHA 1" >> config.h
 fi
 if [ "$mmx" = "yes" ] ; then
   echo "TARGET_MMX=yes" >> config.mak
