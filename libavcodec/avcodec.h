@@ -97,6 +97,8 @@ enum CodecID {
     CODEC_ID_VMDAUDIO,
     CODEC_ID_MSZH,
     CODEC_ID_ZLIB,
+    CODEC_ID_SONIC,
+    CODEC_ID_SONIC_LS,
     CODEC_ID_QTRLE,
     CODEC_ID_SNOW,
     CODEC_ID_TSCC,
@@ -1770,6 +1772,8 @@ extern AVCodec ffv1_encoder;
 extern AVCodec snow_encoder;
 extern AVCodec mdec_encoder;
 extern AVCodec zlib_encoder;
+extern AVCodec sonic_encoder;
+extern AVCodec sonic_ls_encoder;
 extern AVCodec svq1_encoder;
 
 extern AVCodec h263_decoder;
@@ -1843,6 +1847,7 @@ extern AVCodec ra_288_decoder;
 extern AVCodec roq_dpcm_decoder;
 extern AVCodec interplay_dpcm_decoder;
 extern AVCodec xan_dpcm_decoder;
+extern AVCodec sonic_decoder;
 extern AVCodec qtrle_decoder;
 extern AVCodec flac_decoder;
 extern AVCodec tscc_decoder;

@@ -80,6 +80,8 @@ void avcodec_register_all(void)
     register_avcodec(&snow_encoder);
     register_avcodec(&zlib_encoder);
     register_avcodec(&dvvideo_encoder);
+    register_avcodec(&sonic_encoder);
+    register_avcodec(&sonic_ls_encoder);
 #endif /* CONFIG_ENCODERS */
     register_avcodec(&rawvideo_encoder);
     register_avcodec(&rawvideo_decoder);
@@ -153,6 +155,7 @@ void avcodec_register_all(void)
     register_avcodec(&vmdaudio_decoder);
     register_avcodec(&mszh_decoder);
     register_avcodec(&zlib_decoder);
+    register_avcodec(&sonic_decoder);
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif
