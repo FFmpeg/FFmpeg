@@ -538,8 +538,8 @@ static void yuv422_to_yuv420p(AVPicture *dst, AVPicture *src,
  
     p1 = src->data[0];
     lum1 = dst->data[0];
-    cb1 = dst->data[0];
-    cr1 = dst->data[0];
+    cb1 = dst->data[1];
+    cr1 = dst->data[2];
 
     for(;height >= 2; height -= 2) {
         p = p1;
@@ -582,9 +582,9 @@ static void yuv422_to_yuv422p(AVPicture *dst, AVPicture *src,
 
     p1 = src->data[0];
     lum1 = dst->data[0];
-    cb1 = dst->data[0];
-    cr1 = dst->data[0];
-    for(;height >= 2; height -= 2) {
+    cb1 = dst->data[1];
+    cr1 = dst->data[2];
+    for(;height > 0; height--) {
         p = p1;
         lum = lum1;
         cb = cb1;
@@ -615,9 +615,9 @@ static void yuv422p_to_yuv422(AVPicture *dst, AVPicture *src,
 
     p1 = dst->data[0];
     lum1 = src->data[0];
-    cb1 = src->data[0];
-    cr1 = src->data[0];
-    for(;height >= 2; height -= 2) {
+    cb1 = src->data[1];
+    cr1 = src->data[2];
+    for(;height > 0; height--) {
         p = p1;
         lum = lum1;
         cb = cb1;
@@ -632,10 +632,10 @@ static void yuv422p_to_yuv422(AVPicture *dst, AVPicture *src,
             cb++;
             cr++;
         }
-        p1 += src->linesize[0];
-        lum1 += dst->linesize[0];
-        cb1 += dst->linesize[1];
-        cr1 += dst->linesize[2];
+        p1 += dst->linesize[0];
+        lum1 += src->linesize[0];
+        cb1 += src->linesize[1];
+        cr1 += src->linesize[2];
     }
 }
 
