@@ -118,7 +118,7 @@ void pgmyuv_save(const char *filename, int w, int h,
 
     rgb24_to_yuv420p(lum_tab, cb_tab, cr_tab, rgb_tab, w, h);
 
-    f = fopen(filename,"w");
+    f = fopen(filename,"wb");
     fprintf(f, "P5\n%d %d\n%d\n", w, (h * 3) / 2, 255);
     fwrite(lum_tab, 1, w * h, f);
     h2 = h / 2;
@@ -231,7 +231,7 @@ void init_demo(const char *filename) {
 
   FILE *fichier;
 
-  fichier = fopen(filename,"r");
+  fichier = fopen(filename,"rb");
   if (!fichier) {
       perror(filename);
       exit(1);
