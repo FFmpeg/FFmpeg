@@ -314,8 +314,19 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                 put_header(s, EXT_START_CODE);
                 put_bits(&s->pb, 4, 1); //seq ext
                 put_bits(&s->pb, 1, 0); //esc
-                put_bits(&s->pb, 3, 4); //profile
-                put_bits(&s->pb, 4, 8); //level
+                
+                if(s->avctx->profile == FF_PROFILE_UNKNOWN){
+                    put_bits(&s->pb, 3, 4); //profile
+                }else{
+                    put_bits(&s->pb, 3, s->avctx->profile); //profile
+                }
+
+                if(s->avctx->level == FF_LEVEL_UNKNOWN){
+                    put_bits(&s->pb, 4, 8); //level
+                }else{
+                    put_bits(&s->pb, 4, s->avctx->level); //level
+                }
+
                 put_bits(&s->pb, 1, s->progressive_sequence);
                 put_bits(&s->pb, 2, 1); //chroma format 4:2:0
                 put_bits(&s->pb, 2, 0); //horizontal size ext
@@ -1971,11 +1982,10 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
 {
     int horiz_size_ext, vert_size_ext;
     int bit_rate_ext;
-    int level, profile;
 
     skip_bits(&s->gb, 1); /* profil and level esc*/
-    profile= get_bits(&s->gb, 3);
-    level= get_bits(&s->gb, 4);
+    s->avctx->profile= get_bits(&s->gb, 3);
+    s->avctx->level= get_bits(&s->gb, 4);
     s->progressive_sequence = get_bits1(&s->gb); /* progressive_sequence */
     s->chroma_format = get_bits(&s->gb, 2); /* chroma_format 1=420, 2=422, 3=444 */
     horiz_size_ext = get_bits(&s->gb, 2);
@@ -1999,7 +2009,7 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
 
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG, "profile: %d, level: %d vbv buffer: %d, bitrate:%d\n", 
-               profile, level, s->avctx->rc_buffer_size, s->bit_rate);
+               s->avctx->profile, s->avctx->level, s->avctx->rc_buffer_size, s->bit_rate);
 
 }
 

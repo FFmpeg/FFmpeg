@@ -182,6 +182,8 @@ static int intra_dc_precision = 8;
 static int coder = 0;
 static int context = 0;
 static int predictor = 0;
+static int video_profile = FF_PROFILE_UNKNOWN;
+static int video_level = FF_LEVEL_UNKNOWN;
 extern int loop_input; /* currently a hack */
 
 static int gop_size = 12;
@@ -3150,6 +3152,8 @@ static void opt_output_file(const char *filename)
                 video_enc->coder_type= coder;
                 video_enc->context_model= context;
                 video_enc->prediction_method= predictor;
+                video_enc->profile= video_profile;
+                video_enc->level= video_level;
 
                 if(packet_size){
                     video_enc->rtp_mode= 1;
@@ -3839,6 +3843,8 @@ const OptionDef options[] = {
     { "coder", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&coder}, "coder type", "" },
     { "context", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&context}, "context model", "" },
     { "pred", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&predictor}, "prediction method", "" },
+    { "vprofile", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_profile}, "profile", "" },
+    { "vlevel", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_level}, "level", "" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
