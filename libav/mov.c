@@ -51,6 +51,10 @@
 
 //#define DEBUG
 
+/* allows chunk splitting - should work now... */
+/* in case you can't read a file, try commenting */
+#define MOV_SPLIT_CHUNKS
+
 #ifdef DEBUG
 /*
  * XXX: static sux, even more in a multithreaded environment...
@@ -66,7 +70,7 @@ void print_atom(const char *str, UINT32 type, UINT64 offset, UINT64 size)
     while(i--)
         printf("|");
     printf("parse:");
-    printf(" %s: tag=%c%c%c%c offset=%d size=0x%x\n",
+    printf(" %s: tag=%c%c%c%c offset=0x%x size=0x%x\n",
            str, tag & 0xff,
            (tag >> 8) & 0xff,
            (tag >> 16) & 0xff,
@@ -90,14 +94,15 @@ static const CodecTag mov_video_tags[] = {
 /* Animation */
 /* Apple video */
 /* Kodak Photo CD */
-/*    { CODEC_ID_JPEG, MKTAG('j', 'p', 'e', 'g') }, *//* JPEG ? */
+    { CODEC_ID_MJPEG, MKTAG('j', 'p', 'e', 'g') }, /* PhotoJPEG */
     { CODEC_ID_MPEG1VIDEO, MKTAG('m', 'p', 'e', 'g') }, /* MPEG */
-    { CODEC_ID_MJPEG, MKTAG('m', 'j', 'p', 'b') }, /* Motion-JPEG (format A) */
+    { CODEC_ID_MJPEG, MKTAG('m', 'j', 'p', 'a') }, /* Motion-JPEG (format A) */
     { CODEC_ID_MJPEG, MKTAG('m', 'j', 'p', 'b') }, /* Motion-JPEG (format B) */
 /*    { CODEC_ID_GIF, MKTAG('g', 'i', 'f', ' ') }, *//* embedded gif files as frames (usually one "click to play movie" frame) */
 /* Sorenson video */
     { CODEC_ID_SVQ1, MKTAG('S', 'V', 'Q', '1') }, /* Sorenson Video v1 */
     { CODEC_ID_SVQ1, MKTAG('s', 'v', 'q', '1') }, /* Sorenson Video v1 */
+    { CODEC_ID_SVQ1, MKTAG('s', 'v', 'q', 'i') }, /* Sorenson Video v1 (from QT specs)*/
     { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') }, /* OpenDiVX *//* yeah ! */
     { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X') }, /* OpenDiVX *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
 /*    { CODEC_ID_, MKTAG('I', 'V', '5', '0') }, *//* Indeo 5.0 */
@@ -144,10 +149,13 @@ typedef struct MOVStreamContext {
     INT64 *chunk_offsets;
     long sample_to_chunk_sz;
     MOV_sample_to_chunk_tbl *sample_to_chunk;
+    long sample_to_chunk_index;
     long sample_size;
     long sample_count;
     long *sample_sizes;
     long time_scale;
+    long current_sample;
+    long left_in_chunk; /* how many samples before next chunk */
 } MOVStreamContext;
 
 typedef struct MOVContext {
@@ -165,6 +173,7 @@ typedef struct MOVContext {
     MOVStreamContext *streams[MAX_STREAMS];
     
     INT64 next_chunk_offset;
+    int partial; /* != 0 : there is still to read in the current chunk (=id of the stream + 1) */
 } MOVContext;
 
 
@@ -337,6 +346,35 @@ static int parse_mdat(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     return 0; /* now go for moov */
 }
 
+/* this atom should be null (from specs), but some buggy files put the 'moov' atom inside it... */
+/* like the files created with Adobe Premiere 5.0, for samples see */
+/* http://graphics.tudelft.nl/~wouter/publications/soundtests/ */
+static int parse_wide(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
+{
+    int err;
+    UINT32 type;
+#ifdef DEBUG
+    print_atom("wide", atom_type, atom_offset, atom_size);
+    debug_indent++;
+#endif
+    if (atom_size < 8)
+        return 0; /* continue */
+    if (get_be32(pb) != 0) { /* 0 sized mdat atom... use the 'wide' atom size */
+        url_fskip(pb, atom_size - 4);
+        return 0;
+    }
+    type = get_le32(pb);
+    if (type != MKTAG('m', 'd', 'a', 't')) {
+        url_fskip(pb, atom_size - 8);
+        return 0;
+    }
+    err = parse_mdat(parse_table, pb, type, atom_offset + 8, atom_size - 8, param);
+#ifdef DEBUG
+    debug_indent--;
+#endif
+    return err;
+}
+
 static int parse_trak(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
@@ -347,14 +385,13 @@ static int parse_trak(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
 #endif
 
     c = (MOVContext *)param;
-    st = av_malloc(sizeof(AVStream));
+    st = av_new_stream(c->fc, c->fc->nb_streams);
     if (!st) return -2;
-    memset(st, 0, sizeof(AVStream));
-    c->fc->streams[c->fc->nb_streams] = st;
     sc = av_malloc(sizeof(MOVStreamContext));
+    sc->sample_to_chunk_index = -1;
     st->priv_data = sc;
     st->codec.codec_type = CODEC_TYPE_MOV_OTHER;
-    c->streams[c->fc->nb_streams++] = sc;
+    c->streams[c->fc->nb_streams-1] = sc;
     return parse_default(parse_table, pb, atom_type, atom_offset, atom_size, param);
 }
 
@@ -437,7 +474,7 @@ static int parse_mdhd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
 static int parse_hdlr(const MOVParseTableEntry *parse_table, ByteIOContext *pb, UINT32 atom_type, INT64 atom_offset, INT64 atom_size, void *param)
 {
     MOVContext *c;
-    int len;
+    int len = 0;
     char *buf;
     UINT32 type;
     AVStream *st;
@@ -627,6 +664,12 @@ static int parse_stsd(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
                 st->codec.frame_rate = 25 * FRAME_RATE_BASE;
                 st->codec.bit_rate = 100000;
             }
+//            if(format == MKTAG('m', 'p', '4', 'a')) { /* XXX */
+//                st->codec.codec_type=CODEC_TYPE_AUDIO; /* force things */
+//                st->codec.codec_id = CODEC_ID_AAC;
+////                st->codec.frame_rate = 25 * FRAME_RATE_BASE;
+////                st->codec.bit_rate = 100000;
+//            }
 
 #if 0
 
@@ -706,6 +749,9 @@ static int parse_stsc(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
 
     entries = get_be32(pb);
+#ifdef DEBUG
+printf("track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
+#endif
     sc->sample_to_chunk_sz = entries;
     sc->sample_to_chunk = av_malloc(entries * sizeof(MOV_sample_to_chunk_tbl));
     for(i=0; i<entries; i++) {
@@ -769,6 +815,9 @@ static int parse_stts(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
     get_byte(pb); /* version */
     get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
     entries = get_be32(pb);
+#ifdef DEBUG
+printf("track[%i].stts.entries = %i\n", c->fc->nb_streams-1, entries);
+#endif
     for(i=0; i<entries; i++) {
         int sample_duration;
 
@@ -776,9 +825,11 @@ static int parse_stts(const MOVParseTableEntry *parse_table, ByteIOContext *pb, 
         sample_duration = get_be32(pb);
 
         if (!i && st->codec.codec_type==CODEC_TYPE_VIDEO) {
-            st->codec.frame_rate = FRAME_RATE_BASE * c->streams[c->total_streams]->time_scale / sample_duration;
+            st->codec.frame_rate = FRAME_RATE_BASE * c->streams[c->total_streams]->time_scale;
+            if (sample_duration)
+                st->codec.frame_rate /= sample_duration;
 #ifdef DEBUG
-            printf("VIDEO FRAME RATE= %li (sd= %li)\n", st->codec.frame_rate, sample_duration);
+            printf("VIDEO FRAME RATE= %i (sd= %i)\n", st->codec.frame_rate, sample_duration);
 #endif
         }
     }
@@ -857,7 +908,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'u', 'u', 'i', 'd' ), parse_default },
 { MKTAG( 'f', 'r', 'e', 'e' ), parse_leaf },
 { MKTAG( 'h', 'd', 'l', 'r' ), parse_hdlr },
-{ MKTAG( 'h', 'm', 'h', 'd' ), parse_default },
+{ MKTAG( 'h', 'm', 'h', 'd' ), parse_leaf },
 { MKTAG( 'h', 'i', 'n', 't' ), parse_leaf },
 { MKTAG( 'n', 'm', 'h', 'd' ), parse_leaf },
 { MKTAG( 'm', 'p', '4', 's' ), parse_default },
@@ -904,7 +955,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 's', 'y', 'n', 'c' ), parse_leaf },
 { MKTAG( 's', 's', 'r', 'c' ), parse_leaf },
 { MKTAG( 't', 'c', 'm', 'd' ), parse_leaf },
-{ MKTAG( 'w', 'i', 'd', 'e' ), parse_leaf }, /* place holder */
+{ MKTAG( 'w', 'i', 'd', 'e' ), parse_wide }, /* place holder */
 #ifdef CONFIG_ZLIB
 { MKTAG( 'c', 'm', 'o', 'v' ), parse_cmov },
 #else
@@ -925,6 +976,8 @@ static void mov_free_stream_context(MOVStreamContext *sc)
 /* XXX: is it suffisant ? */
 static int mov_probe(AVProbeData *p)
 {
+    int offset;
+
     /* check file header */
     if (p->buf_size <= 12)
         return 0;
@@ -937,8 +990,24 @@ static int mov_probe(AVProbeData *p)
         (p->buf[4] == 'm' && p->buf[5] == 'd' &&
          p->buf[6] == 'a' && p->buf[7] == 't'))
         return AVPROBE_SCORE_MAX;
-    else
-        return 0;
+    if (p->buf[4] == 'f' && p->buf[5] == 't' &&
+        p->buf[6] == 'y' && p->buf[7] == 'p') {
+        offset = p->buf[0]; offset <<= 8;
+        offset |= p->buf[1]; offset <<= 8;
+        offset |= p->buf[2]; offset <<= 8;
+        offset |= p->buf[3];
+        if (offset > p->buf_size)
+            return 0;
+        if ((p->buf[offset+4] == 'm' && p->buf[offset+5] == 'o' &&
+             p->buf[offset+6] == 'o' && p->buf[offset+7] == 'v') ||
+            (p->buf[offset+4] == 'w' && p->buf[offset+5] == 'i' &&
+             p->buf[offset+6] == 'd' && p->buf[offset+7] == 'e') ||
+            (p->buf[offset+4] == 'm' && p->buf[offset+5] == 'd' &&
+             p->buf[offset+6] == 'a' && p->buf[offset+7] == 't'))
+            return AVPROBE_SCORE_MAX;
+
+    }
+    return 0;
 }
 
 static int mov_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -1019,44 +1088,85 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     int i;
     int st_id = 0, size;
     size = 0x0FFFFFFF;
-    
+
+#ifdef MOV_SPLIT_CHUNKS
+    if (mov->partial) {
+        
+        int idx;
+
+        st_id = mov->partial - 1;
+        idx = mov->streams[st_id]->sample_to_chunk_index;
+        if (idx < 0) return 0;
+        size = mov->streams[st_id]->sample_sizes[mov->streams[st_id]->current_sample];
+
+        mov->streams[st_id]->current_sample++;
+        mov->streams[st_id]->left_in_chunk--;
+
+        if(mov->streams[st_id]->left_in_chunk <= 0)
+            mov->partial = 0;
+        offset = mov->next_chunk_offset;
+        /* extract the sample */
+
+        goto readchunk;
+    }
+#endif
+
 again:
     for(i=0; i<mov->total_streams; i++) {
-/*        printf("%8ld ", mov->streams[i]->chunk_offsets[mov->streams[i]->next_chunk]); */
         if((mov->streams[i]->next_chunk < mov->streams[i]->chunk_count)
         && (mov->streams[i]->chunk_offsets[mov->streams[i]->next_chunk] < offset)) {
-/*            printf("y"); */
             st_id = i;
             offset = mov->streams[i]->chunk_offsets[mov->streams[i]->next_chunk];
         }
-/*         else printf("n"); */
     }
     mov->streams[st_id]->next_chunk++;
     if(offset==0x0FFFFFFFFFFFFFFF)
         return -1;
     
-    if(mov->next_chunk_offset < offset) /* some meta data */
+    if(mov->next_chunk_offset < offset) { /* some meta data */
         url_fskip(&s->pb, (offset - mov->next_chunk_offset));
+        mov->next_chunk_offset = offset;
+    }
+
+//printf("chunk: [%i] %lli -> %lli\n", st_id, mov->next_chunk_offset, offset);
     if(!mov->streams[st_id]->is_ff_stream) {
         url_fskip(&s->pb, (offset - mov->next_chunk_offset));
+        mov->next_chunk_offset = offset;
         offset = 0x0FFFFFFFFFFFFFFF;
-/*        puts("*"); */
         goto again;
     }
-/* printf("\nchunk offset = %ld\n", offset); */
 
     /* now get the chunk size... */
 
     for(i=0; i<mov->total_streams; i++) {
-/*        printf("%ld ", mov->streams[i]->chunk_offsets[mov->streams[i]->next_chunk] - offset); */
         if((mov->streams[i]->next_chunk < mov->streams[i]->chunk_count)
         && ((mov->streams[i]->chunk_offsets[mov->streams[i]->next_chunk] - offset) < size)) {
-/*            printf("y"); */
             size = mov->streams[i]->chunk_offsets[mov->streams[i]->next_chunk] - offset;
         }
-/*         else printf("n"); */
     }
-/* printf("\nchunk size = %ld\n", size); */
+#ifdef MOV_SPLIT_CHUNKS
+    /* split chunks into samples */
+    if(mov->streams[st_id]->sample_size == 0) {
+        int idx;
+        idx = mov->streams[st_id]->sample_to_chunk_index;
+        if ((idx + 1 < mov->streams[st_id]->sample_to_chunk_sz)
+               && (mov->streams[st_id]->next_chunk >= mov->streams[st_id]->sample_to_chunk[idx + 1].first))
+           idx++; 
+        mov->streams[st_id]->sample_to_chunk_index = idx;
+        if(idx >= 0 && mov->streams[st_id]->sample_to_chunk[idx].count != 1) {
+            mov->partial = st_id+1;
+            /* we'll have to get those samples before next chunk */
+            mov->streams[st_id]->left_in_chunk = (mov->streams[st_id]->sample_to_chunk[idx].count) - 1;
+            size = mov->streams[st_id]->sample_sizes[mov->streams[st_id]->current_sample];
+        }
+
+        mov->streams[st_id]->current_sample++;
+    }
+#endif
+
+readchunk:
+
+//printf("chunk: [%i] %lli -> %lli (%i)\n", st_id, offset, offset + size, size);
     if(size == 0x0FFFFFFF)
         size = mov->mdat_size + mov->mdat_offset - offset;
     if(size < 0)
