@@ -200,7 +200,7 @@ fi
 if [ -n "$do_mpeg4" ] ; then
 # mpeg4
 file=${outfile}odivx.mp4
-do_ffmpeg $file -y -4mv -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -4mv -hq -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
