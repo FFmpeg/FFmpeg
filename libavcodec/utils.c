@@ -264,13 +264,13 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         case CODEC_ID_PCM_S16BE:
         case CODEC_ID_PCM_U16LE:
         case CODEC_ID_PCM_U16BE:
-            bitrate = enc->sample_rate * 16;
+            bitrate = enc->sample_rate * enc->channels * 16;
             break;
         case CODEC_ID_PCM_S8:
         case CODEC_ID_PCM_U8:
         case CODEC_ID_PCM_ALAW:
         case CODEC_ID_PCM_MULAW:
-            bitrate = enc->sample_rate * 8;
+            bitrate = enc->sample_rate * enc->channels * 8;
             break;
         default:
             bitrate = enc->bit_rate;
