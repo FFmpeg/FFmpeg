@@ -28,6 +28,7 @@ else
     do_h263=y
     do_h263p=y
     do_mpeg4=y
+#    do_huffyuv=y
     do_mjpeg=y
     do_rv10=y
     do_mp2=y
@@ -146,6 +147,16 @@ do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_huffyuv" ] ; then
+# huffyuv
+file=${outfile}huffyuv.avi
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -an -vcodec huffyuv -strict -1 $file
+
+# huffyuv decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo -strict -1 $raw_dst
 fi
 
 ###################################

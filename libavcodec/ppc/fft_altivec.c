@@ -35,7 +35,7 @@
  */
 void fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
-    register const vector float vczero = (vector float)( 0., 0., 0., 0.);
+    register const vector float vczero = (const vector float)(0.);
     
     int ln = s->nbits;
     int	j, np, np2;

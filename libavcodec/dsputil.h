@@ -158,6 +158,10 @@ void ff_block_permute(INT16 *block, UINT8 *permutation, const UINT8 *scantable, 
 
 #define emms_c()
 
+/* should be defined by architectures supporting
+   one or more MultiMedia extension */
+int mm_support(void);
+
 #if defined(HAVE_MMX)
 
 #undef emms_c
@@ -170,7 +174,6 @@ void ff_block_permute(INT16 *block, UINT8 *permutation, const UINT8 *scantable, 
 
 extern int mm_flags;
 
-int mm_support(void);
 void add_pixels_clamped_mmx(const DCTELEM *block, UINT8 *pixels, int line_size);
 void put_pixels_clamped_mmx(const DCTELEM *block, UINT8 *pixels, int line_size);
 

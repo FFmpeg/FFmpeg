@@ -585,6 +585,62 @@ void diff_pixels_altivec(DCTELEM *restrict block, const UINT8 *s1,
     }
 }
 
+int sad16x16_altivec(void *s, uint8_t *a, uint8_t *b, int stride) {
+  return pix_abs16x16_altivec(a,b,stride);
+}
+
+int sad8x8_altivec(void *s, uint8_t *a, uint8_t *b, int stride) {
+  return pix_abs8x8_altivec(a,b,stride);
+}
+
+void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w) {
+#if 0
+    int i;
+    for(i=0; i+7<w; i++){
+        dst[i+0] += src[i+0];
+        dst[i+1] += src[i+1];
+        dst[i+2] += src[i+2];
+        dst[i+3] += src[i+3];
+        dst[i+4] += src[i+4];
+        dst[i+5] += src[i+5];
+        dst[i+6] += src[i+6];
+        dst[i+7] += src[i+7];
+    }
+    for(; i<w; i++)
+        dst[i+0] += src[i+0];
+#else
+    register int i;
+    register uint8_t *temp_src = src, *temp_dst = dst;
+    register vector unsigned char vdst, vsrc, temp1, temp2;
+    register vector unsigned char perm;
+    register int count = 0;
+
+    for (i = 0; (i < w) && ((unsigned long)temp_dst & 0x0000000F) ; i++)
+    {
+      dst[i] = src[i];
+      temp_src ++;
+      temp_dst ++;
+    }
+    /* temp_dst is a properly aligned pointer */
+    /* we still need to deal with ill-aligned src */
+    perm = vec_lvsl(0, temp_src);
+    temp1 = vec_ld(0, temp_src);
+    while ((i + 15) < w)
+    {
+      temp2 = vec_ld(count + 16, temp_src);
+      vdst = vec_ld(count, temp_dst);
+      vsrc = vec_perm(temp1, temp2, perm);
+      temp1 = temp2;
+      vdst = vec_add(vsrc, vdst);
+      vec_st(vdst, count, temp_dst);
+      count += 16;
+    }
+    for (; (i < w) ; i++)
+    {
+      dst[i] = src[i];
+    }
+#endif
+}
 
 int has_altivec(void)
 {
@@ -600,4 +656,3 @@ int has_altivec(void)
 #endif
     return 0;
 }
-

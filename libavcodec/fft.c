@@ -57,9 +57,9 @@ int fft_init(FFTContext *s, int nbits, int inverse)
 
 #if defined(HAVE_MMX)
         has_vectors = mm_support() & MM_SSE;
-#else
-        /* XXX: should also use mm_support() ? */
-        has_vectors = has_altivec() & MM_ALTIVEC;
+#endif
+#if defined(HAVE_ALTIVEC)
+        has_vectors = mm_support() & MM_ALTIVEC;
 #endif
         if (has_vectors) {
             int np, nblocks, np2, l;

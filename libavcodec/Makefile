@@ -85,7 +85,7 @@ endif
 ifeq ($(TARGET_ALTIVEC),yes)
 CFLAGS += -faltivec
 OBJS += ppc/dsputil_altivec.o ppc/mpegvideo_altivec.o ppc/idct_altivec.o \
-        ppc/fft_altivec.o
+        ppc/fft_altivec.o ppc/gmc_altivec.o
 endif
 
 SRCS := $(OBJS:.o=.c) $(ASM_OBJS:.o=.S)
