@@ -1979,6 +1979,8 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
                 if (level) {
                     run = i - last_non_zero - 1;
                     last = (i == last_index);
+                    
+                    if(level<0) level= -level;
                 
                     code = get_rl_index(rl, last, run, level);
                     aic_code = get_rl_index(&rl_intra_aic, last, run, level);
@@ -1986,10 +1988,10 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
                     aic_vlc_bits   += rl_intra_aic.table_vlc[aic_code][1]+1;
 
                     if (code == rl->n) {
-                        inter_vlc_bits += 1+6+8;
+                        inter_vlc_bits += 1+6+8-1;
                     }                
                     if (aic_code == rl_intra_aic.n) {
-                        aic_vlc_bits += 1+6+8;
+                        aic_vlc_bits += 1+6+8-1;
                         wrong_pos += run + 1;
                     }else
                         wrong_pos += wrong_run[aic_code];
