@@ -180,6 +180,7 @@ static uint32_t scale_factor_mult3[4] = {
     FIXR(1.68179283050742908605),
 };
 
+void ff_mpa_synth_init(MPA_INT *window);
 static MPA_INT window[512] __attribute__((aligned(16)));
     
 /* layer 1 unscaling */
@@ -350,20 +351,7 @@ static int decode_init(AVCodecContext * avctx)
                     scale_factor_mult[i][2]);
         }
         
-        /* window */
-        /* max = 18760, max sum over all 16 coefs : 44736 */
-        for(i=0;i<257;i++) {
-            int v;
-            v = mpa_enwindow[i];
-#if WFRAC_BITS < 16
-            v = (v + (1 << (16 - WFRAC_BITS - 1))) >> (16 - WFRAC_BITS);
-#endif
-            window[i] = v;
-            if ((i & 63) != 0)
-                v = -v;
-            if (i != 0)
-                window[512 - i] = v;
-        }
+	ff_mpa_synth_init(window);
         
         /* huffman decode tables */
         huff_code_table[0] = NULL;
@@ -850,12 +838,31 @@ static inline int round_sample(int64_t sum)
     sum2 op2 MULS((w2)[7 * 64], tmp);\
 }
 
+void ff_mpa_synth_init(MPA_INT *window)
+{
+    int i;
+
+    /* max = 18760, max sum over all 16 coefs : 44736 */
+    for(i=0;i<257;i++) {
+        int v;
+        v = mpa_enwindow[i];
+#if WFRAC_BITS < 16
+        v = (v + (1 << (16 - WFRAC_BITS - 1))) >> (16 - WFRAC_BITS);
+#endif
+        window[i] = v;
+        if ((i & 63) != 0)
+            v = -v;
+        if (i != 0)
+            window[512 - i] = v;
+    }	
+}
 
 /* 32 sub band synthesis filter. Input: 32 sub band samples, Output:
    32 samples. */
 /* XXX: optimize by avoiding ring buffer usage */
-static void synth_filter(MPADecodeContext *s1,
-                         int ch, int16_t *samples, int incr, 
+void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
+			 MPA_INT *window,
+                         int16_t *samples, int incr, 
                          int32_t sb_samples[SBLIMIT])
 {
     int32_t tmp[32];
@@ -868,11 +875,11 @@ static void synth_filter(MPADecodeContext *s1,
 #else
     int64_t sum, sum2;
 #endif
-    
+
     dct32(tmp, sb_samples);
     
-    offset = s1->synth_buf_offset[ch];
-    synth_buf = s1->synth_buf[ch] + offset;
+    offset = *synth_buf_offset;
+    synth_buf = synth_buf_ptr + offset;
 
     for(j=0;j<32;j++) {
         v = tmp[j];
@@ -926,7 +933,7 @@ static void synth_filter(MPADecodeContext *s1,
     *samples = round_sample(sum);
 
     offset = (offset - 32) & 511;
-    s1->synth_buf_offset[ch] = offset;
+    *synth_buf_offset = offset;
 }
 
 /* cos(pi*i/24) */
@@ -2505,7 +2512,9 @@ static int mp_decode_frame(MPADecodeContext *s,
     for(ch=0;ch<s->nb_channels;ch++) {
         samples_ptr = samples + ch;
         for(i=0;i<nb_frames;i++) {
-            synth_filter(s, ch, samples_ptr, s->nb_channels,
+            ff_mpa_synth_filter(s->synth_buf[ch], &(s->synth_buf_offset[ch]),
+			 window,
+			 samples_ptr, s->nb_channels,
                          s->sb_samples[ch][i]);
             samples_ptr += 32 * s->nb_channels;
         }
