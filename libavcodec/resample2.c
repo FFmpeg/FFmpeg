@@ -28,12 +28,6 @@
 #include "common.h"
 #include "dsputil.h"
 
-#define PHASE_SHIFT 10
-#define PHASE_COUNT (1<<PHASE_SHIFT)
-#define PHASE_MASK (PHASE_COUNT-1)
-#define FILTER_SIZE 16
-//#define LINEAR 1
-
 #if 1
 #define FILTER_SHIFT 15
 
@@ -60,6 +54,9 @@ typedef struct AVResampleContext{
     int frac;
     int src_incr;
     int compensation_distance;
+    int phase_shift;
+    int phase_mask;
+    int linear;
 }AVResampleContext;
 
 /**
@@ -133,21 +130,26 @@ void av_build_filter(FELEM *filter, double factor, int tap_count, int phase_coun
  * initalizes a audio resampler.
  * note, if either rate is not a integer then simply scale both rates up so they are
  */
-AVResampleContext *av_resample_init(int out_rate, int in_rate){
+AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, int phase_shift, int linear){
     AVResampleContext *c= av_mallocz(sizeof(AVResampleContext));
     double factor= FFMIN(out_rate / (double)in_rate, 1.0);
-
+    int phase_count= 1<<phase_shift;
+    
     memset(c, 0, sizeof(AVResampleContext));
+    
+    c->phase_shift= phase_shift;
+    c->phase_mask= phase_count-1;
+    c->linear= linear;
 
-    c->filter_length= ceil(FILTER_SIZE/factor);
-    c->filter_bank= av_mallocz(c->filter_length*(PHASE_COUNT+1)*sizeof(FELEM));
-    av_build_filter(c->filter_bank, factor, c->filter_length, PHASE_COUNT, 1<<FILTER_SHIFT, 1);
-    memcpy(&c->filter_bank[c->filter_length*PHASE_COUNT+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
-    c->filter_bank[c->filter_length*PHASE_COUNT]= c->filter_bank[c->filter_length - 1];
+    c->filter_length= ceil(filter_size/factor);
+    c->filter_bank= av_mallocz(c->filter_length*(phase_count+1)*sizeof(FELEM));
+    av_build_filter(c->filter_bank, factor, c->filter_length, phase_count, 1<<FILTER_SHIFT, 1);
+    memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
+    c->filter_bank[c->filter_length*phase_count]= c->filter_bank[c->filter_length - 1];
 
     c->src_incr= out_rate;
-    c->ideal_dst_incr= c->dst_incr= in_rate * PHASE_COUNT;
-    c->index= -PHASE_COUNT*((c->filter_length-1)/2);
+    c->ideal_dst_incr= c->dst_incr= in_rate * phase_count;
+    c->index= -phase_count*((c->filter_length-1)/2);
 
     return c;
 }
@@ -181,8 +183,8 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
     int compensation_distance= c->compensation_distance;
     
     for(dst_index=0; dst_index < dst_size; dst_index++){
-        FELEM *filter= c->filter_bank + c->filter_length*(index & PHASE_MASK);
-        int sample_index= index >> PHASE_SHIFT;
+        FELEM *filter= c->filter_bank + c->filter_length*(index & c->phase_mask);
+        int sample_index= index >> c->phase_shift;
         FELEM2 val=0;
                 
         if(sample_index < 0){
@@ -190,8 +192,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
                 val += src[ABS(sample_index + i) % src_size] * filter[i];
         }else if(sample_index + c->filter_length > src_size){
             break;
-        }else{
-#ifdef LINEAR
+        }else if(c->linear){
             int64_t v=0;
             int sub_phase= (frac<<8) / c->src_incr;
             for(i=0; i<c->filter_length; i++){
@@ -199,11 +200,10 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
                 v += src[sample_index + i] * coeff;
             }
             val= v>>8;
-#else
+        }else{
             for(i=0; i<c->filter_length; i++){
                 val += src[sample_index + i] * (FELEM2)filter[i];
             }
-#endif
         }
 
         val = (val + (1<<(FILTER_SHIFT-1)))>>FILTER_SHIFT;
@@ -222,7 +222,7 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
             dst_incr=      c->ideal_dst_incr / c->src_incr;
         }
     }
-    *consumed= FFMAX(index, 0) >> PHASE_SHIFT;
+    *consumed= FFMAX(index, 0) >> c->phase_shift;
     index= FFMIN(index, 0);
 
     if(compensation_distance){
