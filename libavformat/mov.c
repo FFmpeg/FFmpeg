@@ -87,7 +87,6 @@ void print_atom(const char *str, UINT32 type, UINT64 offset, UINT64 size)
 
 static const CodecTag mov_video_tags[] = {
 /*  { CODEC_ID_, MKTAG('c', 'v', 'i', 'd') }, *//* Cinepak */
-/*  { CODEC_ID_JPEG, MKTAG('j', 'p', 'e', 'g') }, *//* JPEG */
 /*  { CODEC_ID_H263, MKTAG('r', 'a', 'w', ' ') }, *//* Uncompressed RGB */
 /*  { CODEC_ID_H263, MKTAG('Y', 'u', 'v', '2') }, *//* Uncompressed YUV422 */
 /* Graphics */
