@@ -154,6 +154,7 @@ const CodecTag codec_bmp_tags[] = {
     { CODEC_ID_MSVIDEO1, MKTAG('W', 'H', 'A', 'M') },
     { CODEC_ID_MSVIDEO1, MKTAG('w', 'h', 'a', 'm') },
     { CODEC_ID_CINEPAK, MKTAG('c', 'v', 'i', 'd') },
+    { CODEC_ID_TRUEMOTION1, MKTAG('D', 'U', 'C', 'K') },
     { 0, 0 },
 };
 
