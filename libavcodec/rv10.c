@@ -393,6 +393,7 @@ static int rv10_decode_init(AVCodecContext *avctx)
 
     s->avctx= avctx;
     s->out_format = FMT_H263;
+    s->codec_id= avctx->codec_id;
 
     s->width = avctx->width;
     s->height = avctx->height;
@@ -414,9 +415,9 @@ static int rv10_decode_init(AVCodecContext *avctx)
         s->h263_rv10 = 1;
         break;
     case 0x20001000:
-    case 0x20100001:
+    case 0x20100001: //ok
     case 0x20200002:
-    case 0x20101001: //added
+    case 0x20101001: //ok
     default:
         av_log(s->avctx, AV_LOG_ERROR, "unknown header %X\n", avctx->sub_id);
     }
