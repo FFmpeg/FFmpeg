@@ -409,13 +409,20 @@ int estimate_motion(MpegEncContext * s,
     if (s->unrestricted_mv) {
         xmin = -16;
         ymin = -16;
-        xmax = s->width;
-        ymax = s->height;
+        if(s->avctx==NULL || s->avctx->codec->id!=CODEC_ID_MPEG4){
+            xmax = s->mb_width*16;
+            ymax = s->mb_height*16;
+        }else {
+            /* XXX: dunno if this is correct but ffmpeg4 decoder wont like it otherwise 
+	            (cuz the drawn edge isnt large enough))*/
+            xmax = s->width;
+            ymax = s->height;
+	}
     } else {
         xmin = 0;
         ymin = 0;
-        xmax = s->width - 16;
-        ymax = s->height - 16;
+        xmax = s->mb_width*16 - 16;
+        ymax = s->mb_height*16 - 16;
     }
 
     switch(s->full_search) {
