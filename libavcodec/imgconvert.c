@@ -22,6 +22,11 @@
  * Misc image convertion routines.
  */
 
+/* TODO:
+ * - write 'ffimg' program to test all the image related stuff
+ * - move all api to slice based system
+ * - integrate deinterlacing, postprocessing and scaling in the conversion process
+ */
 
 #include "avcodec.h"
 #include "dsputil.h"
@@ -210,6 +215,9 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
     case PIX_FMT_YUV444P:
     case PIX_FMT_YUV410P:
     case PIX_FMT_YUV411P:
+    case PIX_FMT_YUVJ420P:
+    case PIX_FMT_YUVJ422P:
+    case PIX_FMT_YUVJ444P:
         w2 = (width + (1 << pinfo->x_chroma_shift) - 1) >> pinfo->x_chroma_shift;
         h2 = (height + (1 << pinfo->y_chroma_shift) - 1) >> pinfo->y_chroma_shift;
         size2 = w2 * h2;
@@ -432,16 +440,20 @@ int avcodec_find_best_pix_fmt(int pix_fmt_mask, int src_pix_fmt,
 static void yuv422_to_yuv420p(AVPicture *dst, AVPicture *src,
                               int width, int height)
 {
-    uint8_t *lum, *cb, *cr;
-    int x, y;
-    const uint8_t *p;
+    const uint8_t *p, *p1;
+    uint8_t *lum, *cr, *cb, *lum1, *cr1, *cb1;
+    int x;
  
-    lum = dst->data[0];
-    cb = dst->data[1];
-    cr = dst->data[2];
-    p = src->data[0];
-   
-    for(y=0;y<height;y+=2) {
+    p1 = src->data[0];
+    lum1 = dst->data[0];
+    cb1 = dst->data[0];
+    cr1 = dst->data[0];
+
+    for(;height >= 2; height -= 2) {
+        p = p1;
+        lum = lum1;
+        cb = cb1;
+        cr = cr1;
         for(x=0;x<width;x+=2) {
             lum[0] = p[0];
             cb[0] = p[1];
@@ -452,124 +464,216 @@ static void yuv422_to_yuv420p(AVPicture *dst, AVPicture *src,
             cb++;
             cr++;
         }
+        p1 += src->linesize[0];
+        lum1 += dst->linesize[0];
+        p = p1;
+        lum = lum1;
         for(x=0;x<width;x+=2) {
             lum[0] = p[0];
             lum[1] = p[2];
             p += 4;
             lum += 2;
         }
+        p1 += src->linesize[0];
+        lum1 += dst->linesize[0];
+        cb1 += dst->linesize[1];
+        cr1 += dst->linesize[2];
     }
 }
 
-#define SCALEBITS 8
+static void yuv422_to_yuv422p(AVPicture *dst, AVPicture *src,
+                              int width, int height)
+{
+    const uint8_t *p, *p1;
+    uint8_t *lum, *cr, *cb, *lum1, *cr1, *cb1;
+    int w;
+
+    p1 = src->data[0];
+    lum1 = dst->data[0];
+    cb1 = dst->data[0];
+    cr1 = dst->data[0];
+    for(;height >= 2; height -= 2) {
+        p = p1;
+        lum = lum1;
+        cb = cb1;
+        cr = cr1;
+        for(w = width; w >= 2; w -= 2) {
+            lum[0] = p[0];
+            cb[0] = p[1];
+            lum[1] = p[2];
+            cr[0] = p[3];
+            p += 4;
+            lum += 2;
+            cb++;
+            cr++;
+        }
+        p1 += src->linesize[0];
+        lum1 += dst->linesize[0];
+        cb1 += dst->linesize[1];
+        cr1 += dst->linesize[2];
+    }
+}
+
+static void yuv422p_to_yuv422(AVPicture *dst, AVPicture *src,
+                              int width, int height)
+{
+    uint8_t *p, *p1;
+    const uint8_t *lum, *cr, *cb, *lum1, *cr1, *cb1;
+    int w;
+
+    p1 = dst->data[0];
+    lum1 = src->data[0];
+    cb1 = src->data[0];
+    cr1 = src->data[0];
+    for(;height >= 2; height -= 2) {
+        p = p1;
+        lum = lum1;
+        cb = cb1;
+        cr = cr1;
+        for(w = width; w >= 2; w -= 2) {
+            p[0] = lum[0];
+            p[1] = cb[0];
+            p[2] = lum[1];
+            p[3] = cr[0];
+            p += 4;
+            lum += 2;
+            cb++;
+            cr++;
+        }
+        p1 += src->linesize[0];
+        lum1 += dst->linesize[0];
+        cb1 += dst->linesize[1];
+        cr1 += dst->linesize[2];
+    }
+}
+
+#define SCALEBITS 10
 #define ONE_HALF  (1 << (SCALEBITS - 1))
-#define FIX(x)		((int) ((x) * (1L<<SCALEBITS) + 0.5))
+#define FIX(x)	  ((int) ((x) * (1<<SCALEBITS) + 0.5))
 
-#define SCALE_BITS 10
+#define YUV_TO_RGB1_CCIR(cb1, cr1)\
+{\
+    cb = (cb1) - 128;\
+    cr = (cr1) - 128;\
+    r_add = FIX(1.40200*255.0/224.0) * cr + ONE_HALF;\
+    g_add = - FIX(0.34414*255.0/224.0) * cb - FIX(0.71414*255.0/224.0) * cr + \
+            ONE_HALF;\
+    b_add = FIX(1.77200*255.0/224.0) * cb + ONE_HALF;\
+}
 
-#define C_Y  (76309 >> (16 - SCALE_BITS))
-#define C_RV (117504 >> (16 - SCALE_BITS))
-#define C_BU (138453 >> (16 - SCALE_BITS))
-#define C_GU (13954 >> (16 - SCALE_BITS))
-#define C_GV (34903 >> (16 - SCALE_BITS))
+#define YUV_TO_RGB2_CCIR(r, g, b, y1)\
+{\
+    y = ((y1) - 16) * FIX(255.0/219.0);\
+    r = cm[(y + r_add) >> SCALEBITS];\
+    g = cm[(y + g_add) >> SCALEBITS];\
+    b = cm[(y + b_add) >> SCALEBITS];\
+}
+
+#define YUV_TO_RGB1(cb1, cr1)\
+{\
+    cb = (cb1) - 128;\
+    cr = (cr1) - 128;\
+    r_add = FIX(1.40200) * cr + ONE_HALF;\
+    g_add = - FIX(0.34414) * cb - FIX(0.71414) * cr + ONE_HALF;\
+    b_add = FIX(1.77200) * cb + ONE_HALF;\
+}
 
 #define YUV_TO_RGB2(r, g, b, y1)\
 {\
-    y = (y1 - 16) * C_Y;\
-    r = cm[(y + r_add) >> SCALE_BITS];\
-    g = cm[(y + g_add) >> SCALE_BITS];\
-    b = cm[(y + b_add) >> SCALE_BITS];\
+    y = (y1) << SCALEBITS;\
+    r = cm[(y + r_add) >> SCALEBITS];\
+    g = cm[(y + g_add) >> SCALEBITS];\
+    b = cm[(y + b_add) >> SCALEBITS];\
 }
 
-/* XXX: use a table ? */
-#define CCIR_TO_GRAY(y)\
+#define Y_CCIR_TO_JPEG(y)\
  cm[((y) * FIX(255.0/219.0) + (ONE_HALF - 16 * FIX(255.0/219.0))) >> SCALEBITS]
 
-#define GRAY_TO_CCIR(y)\
+#define Y_JPEG_TO_CCIR(y)\
  (((y) * FIX(219.0/255.0) + (ONE_HALF + (16 << SCALEBITS))) >> SCALEBITS)
+
+#define C_CCIR_TO_JPEG(y)\
+ cm[(((y) - 128) * FIX(127.0/112.0) + (ONE_HALF + (128 << SCALEBITS))) >> SCALEBITS]
+
+/* NOTE: the clamp is really necessary! */
+#define C_JPEG_TO_CCIR(y)\
+({\
+    int __y;\
+    __y = ((((y) - 128) * FIX(112.0/127.0) + (ONE_HALF + (128 << SCALEBITS))) >> SCALEBITS);\
+    if (__y < 16)\
+         __y = 16;\
+    __y;\
+})
 
 #define RGB_TO_Y(r, g, b) \
 ((FIX(0.29900) * (r) + FIX(0.58700) * (g) + \
   FIX(0.11400) * (b) + ONE_HALF) >> SCALEBITS)
 
-#define RGB4_TO_U(r1, g1, b1)\
+#define RGB_TO_U(r1, g1, b1, shift)\
 (((- FIX(0.16874) * r1 - FIX(0.33126) * g1 +         \
-     FIX(0.50000) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128)
+     FIX(0.50000) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
 
-#define RGB4_TO_V(r1, g1, b1)\
+#define RGB_TO_V(r1, g1, b1, shift)\
 (((FIX(0.50000) * r1 - FIX(0.41869) * g1 -           \
-   FIX(0.08131) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128)
+   FIX(0.08131) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
 
 #define RGB_TO_Y_CCIR(r, g, b) \
 ((FIX(0.29900*219.0/255.0) * (r) + FIX(0.58700*219.0/255.0) * (g) + \
   FIX(0.11400*219.0/255.0) * (b) + (ONE_HALF + (16 << SCALEBITS))) >> SCALEBITS)
 
-#define RGB4_TO_U_CCIR(r1, g1, b1)\
+#define RGB_TO_U_CCIR(r1, g1, b1, shift)\
 (((- FIX(0.16874*224.0/255.0) * r1 - FIX(0.33126*224.0/255.0) * g1 +         \
-     FIX(0.50000*224.0/255.0) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128)
+     FIX(0.50000*224.0/255.0) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
 
-#define RGB4_TO_V_CCIR(r1, g1, b1)\
+#define RGB_TO_V_CCIR(r1, g1, b1, shift)\
 (((FIX(0.50000*224.0/255.0) * r1 - FIX(0.41869*224.0/255.0) * g1 -           \
-   FIX(0.08131*224.0/255.0) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128)
+   FIX(0.08131*224.0/255.0) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
 
-/* convert from CCIR luma (16 <= Y <= 235) to full scale gray (0 <= Y <= 255) */
-static void luma_ccir_to_gray(uint8_t *dst, int dst_wrap, 
-                              uint8_t *src, int src_wrap,
-                              int width, int height)
+static uint8_t y_ccir_to_jpeg[256];
+static uint8_t y_jpeg_to_ccir[256];
+static uint8_t c_ccir_to_jpeg[256];
+static uint8_t c_jpeg_to_ccir[256];
+
+/* init various conversion tables */
+static void img_convert_init(void)
 {
-    int n;
-    const uint8_t *s;
-    uint8_t *d;
+    int i;
     uint8_t *cm = cropTbl + MAX_NEG_CROP;
 
-    for(;height > 0; height--) {
-        s = src;
-        d = dst;
-        n = width;
-        while (n >= 4) {
-            d[0] = CCIR_TO_GRAY(s[0]);
-            d[1] = CCIR_TO_GRAY(s[1]);
-            d[2] = CCIR_TO_GRAY(s[2]);
-            d[3] = CCIR_TO_GRAY(s[3]);
-            d += 4;
-            s += 4;
-            n -= 4;
-        }
-        while (n > 0) {
-            d[0] = CCIR_TO_GRAY(s[0]);
-            d++;
-            s++;
-            n--;
-        }
-        dst += dst_wrap;
-        src += src_wrap;
+    for(i = 0;i < 256; i++) {
+        y_ccir_to_jpeg[i] = Y_CCIR_TO_JPEG(i);
+        y_jpeg_to_ccir[i] = Y_JPEG_TO_CCIR(i);
+        c_ccir_to_jpeg[i] = C_CCIR_TO_JPEG(i);
+        c_jpeg_to_ccir[i] = C_JPEG_TO_CCIR(i);
     }
 }
 
-/* convert from full scale gray (0 <= Y <= 255) to CCIR luma (16 <= Y <= 235) */
-static void gray_to_luma_ccir(uint8_t *dst, int dst_wrap, 
-                              uint8_t *src, int src_wrap,
-                              int width, int height)
+/* apply to each pixel the given table */
+static void img_apply_table(uint8_t *dst, int dst_wrap, 
+                            const uint8_t *src, int src_wrap,
+                            int width, int height, const uint8_t *table1)
 {
     int n;
     const uint8_t *s;
     uint8_t *d;
+    const uint8_t *table;
 
+    table = table1;
     for(;height > 0; height--) {
         s = src;
         d = dst;
         n = width;
         while (n >= 4) {
-            d[0] = GRAY_TO_CCIR(s[0]);
-            d[1] = GRAY_TO_CCIR(s[1]);
-            d[2] = GRAY_TO_CCIR(s[2]);
-            d[3] = GRAY_TO_CCIR(s[3]);
+            d[0] = table[s[0]];
+            d[1] = table[s[1]];
+            d[2] = table[s[2]];
+            d[3] = table[s[3]];
             d += 4;
             s += 4;
             n -= 4;
         }
         while (n > 0) {
-            d[0] = GRAY_TO_CCIR(s[0]);
+            d[0] = table[s[0]];
             d++;
             s++;
             n--;
@@ -731,23 +835,18 @@ static void yuv420p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
         d2 = d + dst->linesize[0];                                      \
         y2_ptr = y1_ptr + src->linesize[0];                             \
         for(w = width; w >= 2; w -= 2) {                                \
-            cb = cb_ptr[0] - 128;                                       \
-            cr = cr_ptr[0] - 128;                                       \
-            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
-            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
-            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
-                                                                        \
+            YUV_TO_RGB1_CCIR(cb_ptr[0], cr_ptr[0]);                     \
             /* output 4 pixels */                                       \
-            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            YUV_TO_RGB2_CCIR(r, g, b, y1_ptr[0]);                       \
             RGB_OUT(d1, r, g, b);                                       \
                                                                         \
-            YUV_TO_RGB2(r, g, b, y1_ptr[1]);                            \
+            YUV_TO_RGB2_CCIR(r, g, b, y1_ptr[1]);                       \
             RGB_OUT(d1 + BPP, r, g, b);                                 \
                                                                         \
-            YUV_TO_RGB2(r, g, b, y2_ptr[0]);                            \
+            YUV_TO_RGB2_CCIR(r, g, b, y2_ptr[0]);                       \
             RGB_OUT(d2, r, g, b);                                       \
                                                                         \
-            YUV_TO_RGB2(r, g, b, y2_ptr[1]);                            \
+            YUV_TO_RGB2_CCIR(r, g, b, y2_ptr[1]);                       \
             RGB_OUT(d2 + BPP, r, g, b);                                 \
                                                                         \
             d1 += 2 * BPP;                                              \
@@ -760,16 +859,11 @@ static void yuv420p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
         }                                                               \
         /* handle odd width */                                          \
         if (w) {                                                        \
-            cb = cb_ptr[0] - 128;                                       \
-            cr = cr_ptr[0] - 128;                                       \
-            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
-            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
-            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
-                                                                        \
-            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            YUV_TO_RGB1_CCIR(cb_ptr[0], cr_ptr[0]);                     \
+            YUV_TO_RGB2_CCIR(r, g, b, y1_ptr[0]);                       \
             RGB_OUT(d1, r, g, b);                                       \
                                                                         \
-            YUV_TO_RGB2(r, g, b, y2_ptr[0]);                            \
+            YUV_TO_RGB2_CCIR(r, g, b, y2_ptr[0]);                       \
             RGB_OUT(d2, r, g, b);                                       \
             d1 += BPP;                                                  \
             d2 += BPP;                                                  \
@@ -787,17 +881,12 @@ static void yuv420p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
     if (height) {                                                       \
         d1 = d;                                                         \
         for(w = width; w >= 2; w -= 2) {                                \
-            cb = cb_ptr[0] - 128;                                       \
-            cr = cr_ptr[0] - 128;                                       \
-            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
-            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
-            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
-                                                                        \
+            YUV_TO_RGB1_CCIR(cb_ptr[0], cr_ptr[0]);                     \
             /* output 2 pixels */                                       \
-            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            YUV_TO_RGB2_CCIR(r, g, b, y1_ptr[0]);                       \
             RGB_OUT(d1, r, g, b);                                       \
                                                                         \
-            YUV_TO_RGB2(r, g, b, y1_ptr[1]);                            \
+            YUV_TO_RGB2_CCIR(r, g, b, y1_ptr[1]);                       \
             RGB_OUT(d1 + BPP, r, g, b);                                 \
                                                                         \
             d1 += 2 * BPP;                                              \
@@ -808,14 +897,9 @@ static void yuv420p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
         }                                                               \
         /* handle width */                                              \
         if (w) {                                                        \
-            cb = cb_ptr[0] - 128;                                       \
-            cr = cr_ptr[0] - 128;                                       \
-            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
-            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
-            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
-                                                                        \
+            YUV_TO_RGB1_CCIR(cb_ptr[0], cr_ptr[0]);                     \
             /* output 2 pixels */                                       \
-            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            YUV_TO_RGB2_CCIR(r, g, b, y1_ptr[0]);                       \
             RGB_OUT(d1, r, g, b);                                       \
             d1 += BPP;                                                  \
                                                                         \
@@ -826,11 +910,10 @@ static void yuv420p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
     }                                                                   \
 }                                                                       \
                                                                         \
-/* XXX: no chroma interpolating is done */                              \
-static void yuv422p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
-                                    int width, int height)              \
+static void yuvj420p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,   \
+                                     int width, int height)             \
 {                                                                       \
-    uint8_t *y1_ptr, *cb_ptr, *cr_ptr, *d, *d1;                           \
+    uint8_t *y1_ptr, *y2_ptr, *cb_ptr, *cr_ptr, *d, *d1, *d2;             \
     int w, y, cb, cr, r_add, g_add, b_add, width2;                      \
     uint8_t *cm = cropTbl + MAX_NEG_CROP;                                 \
     unsigned int r, g, b;                                               \
@@ -840,20 +923,63 @@ static void yuv422p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
     cb_ptr = src->data[1];                                              \
     cr_ptr = src->data[2];                                              \
     width2 = (width + 1) >> 1;                                          \
-    for(;height > 0; height --) {                                       \
+    for(;height >= 2; height -= 2) {                                    \
         d1 = d;                                                         \
+        d2 = d + dst->linesize[0];                                      \
+        y2_ptr = y1_ptr + src->linesize[0];                             \
         for(w = width; w >= 2; w -= 2) {                                \
-            cb = cb_ptr[0] - 128;                                       \
-            cr = cr_ptr[0] - 128;                                       \
-            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
-            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
-            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
-                                                                        \
-            /* output 2 pixels */                                       \
-            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            YUV_TO_RGB1(cb_ptr[0], cr_ptr[0]);                     \
+            /* output 4 pixels */                                       \
+            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                       \
             RGB_OUT(d1, r, g, b);                                       \
                                                                         \
-            YUV_TO_RGB2(r, g, b, y1_ptr[1]);                            \
+            YUV_TO_RGB2(r, g, b, y1_ptr[1]);                       \
+            RGB_OUT(d1 + BPP, r, g, b);                                 \
+                                                                        \
+            YUV_TO_RGB2(r, g, b, y2_ptr[0]);                       \
+            RGB_OUT(d2, r, g, b);                                       \
+                                                                        \
+            YUV_TO_RGB2(r, g, b, y2_ptr[1]);                       \
+            RGB_OUT(d2 + BPP, r, g, b);                                 \
+                                                                        \
+            d1 += 2 * BPP;                                              \
+            d2 += 2 * BPP;                                              \
+                                                                        \
+            y1_ptr += 2;                                                \
+            y2_ptr += 2;                                                \
+            cb_ptr++;                                                   \
+            cr_ptr++;                                                   \
+        }                                                               \
+        /* handle odd width */                                          \
+        if (w) {                                                        \
+            YUV_TO_RGB1(cb_ptr[0], cr_ptr[0]);                     \
+            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                       \
+            RGB_OUT(d1, r, g, b);                                       \
+                                                                        \
+            YUV_TO_RGB2(r, g, b, y2_ptr[0]);                       \
+            RGB_OUT(d2, r, g, b);                                       \
+            d1 += BPP;                                                  \
+            d2 += BPP;                                                  \
+            y1_ptr++;                                                   \
+            y2_ptr++;                                                   \
+            cb_ptr++;                                                   \
+            cr_ptr++;                                                   \
+        }                                                               \
+        d += 2 * dst->linesize[0];                                      \
+        y1_ptr += 2 * src->linesize[0] - width;                         \
+        cb_ptr += src->linesize[1] - width2;                            \
+        cr_ptr += src->linesize[2] - width2;                            \
+    }                                                                   \
+    /* handle odd height */                                             \
+    if (height) {                                                       \
+        d1 = d;                                                         \
+        for(w = width; w >= 2; w -= 2) {                                \
+            YUV_TO_RGB1(cb_ptr[0], cr_ptr[0]);                     \
+            /* output 2 pixels */                                       \
+            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                       \
+            RGB_OUT(d1, r, g, b);                                       \
+                                                                        \
+            YUV_TO_RGB2(r, g, b, y1_ptr[1]);                       \
             RGB_OUT(d1 + BPP, r, g, b);                                 \
                                                                         \
             d1 += 2 * BPP;                                              \
@@ -864,14 +990,9 @@ static void yuv422p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
         }                                                               \
         /* handle width */                                              \
         if (w) {                                                        \
-            cb = cb_ptr[0] - 128;                                       \
-            cr = cr_ptr[0] - 128;                                       \
-            r_add = C_RV * cr + (1 << (SCALE_BITS - 1));                \
-            g_add = - C_GU * cb - C_GV * cr + (1 << (SCALE_BITS - 1));  \
-            b_add = C_BU * cb + (1 << (SCALE_BITS - 1));                \
-                                                                        \
+            YUV_TO_RGB1(cb_ptr[0], cr_ptr[0]);                     \
             /* output 2 pixels */                                       \
-            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                            \
+            YUV_TO_RGB2(r, g, b, y1_ptr[0]);                       \
             RGB_OUT(d1, r, g, b);                                       \
             d1 += BPP;                                                  \
                                                                         \
@@ -879,18 +1000,14 @@ static void yuv422p_to_ ## rgb_name (AVPicture *dst, AVPicture *src,    \
             cb_ptr++;                                                   \
             cr_ptr++;                                                   \
         }                                                               \
-        d += dst->linesize[0];                                          \
-        y1_ptr += src->linesize[0] - width;                             \
-        cb_ptr += src->linesize[1] - width2;                            \
-        cr_ptr += src->linesize[2] - width2;                            \
     }                                                                   \
 }                                                                       \
                                                                         \
 static void rgb_name ## _to_yuv420p(AVPicture *dst, AVPicture *src,     \
                                     int width, int height)              \
 {                                                                       \
-    int wrap, wrap3, x, y;                                              \
-    int r, g, b, r1, g1, b1;                                            \
+    int wrap, wrap3, width2;                                      \
+    int r, g, b, r1, g1, b1, w;                                         \
     uint8_t *lum, *cb, *cr;                                               \
     const uint8_t *p;                                                     \
                                                                         \
@@ -898,11 +1015,12 @@ static void rgb_name ## _to_yuv420p(AVPicture *dst, AVPicture *src,     \
     cb = dst->data[1];                                                  \
     cr = dst->data[2];                                                  \
                                                                         \
+    width2 = (width + 1) >> 1;                                          \
     wrap = dst->linesize[0];                                            \
     wrap3 = src->linesize[0];                                           \
     p = src->data[0];                                                   \
-    for(y=0;y<height;y+=2) {                                            \
-        for(x=0;x<width;x+=2) {                                         \
+    for(;height>=2;height -= 2) {                                       \
+        for(w = width; w >= 2; w -= 2) {                                \
             RGB_IN(r, g, b, p);                                         \
             r1 = r;                                                     \
             g1 = g;                                                     \
@@ -929,18 +1047,66 @@ static void rgb_name ## _to_yuv420p(AVPicture *dst, AVPicture *src,     \
             b1 += b;                                                    \
             lum[1] = RGB_TO_Y_CCIR(r, g, b);        \
                                                                         \
-            cb[0] = RGB4_TO_U_CCIR(r1, g1, b1);                         \
-            cr[0] = RGB4_TO_V_CCIR(r1, g1, b1);                         \
+            cb[0] = RGB_TO_U_CCIR(r1, g1, b1, 2);                         \
+            cr[0] = RGB_TO_V_CCIR(r1, g1, b1, 2);                         \
                                                                         \
             cb++;                                                       \
             cr++;                                                       \
             p += -wrap3 + 2 * BPP;                                      \
             lum += -wrap + 2;                                           \
         }                                                               \
+        if (w) {                                                        \
+            RGB_IN(r, g, b, p);                                         \
+            r1 = r;                                                     \
+            g1 = g;                                                     \
+            b1 = b;                                                     \
+            lum[0] = RGB_TO_Y_CCIR(r, g, b);        \
+            p += wrap3;                                                 \
+            lum += wrap;                                                \
+            RGB_IN(r, g, b, p);                                         \
+            r1 += r;                                                    \
+            g1 += g;                                                    \
+            b1 += b;                                                    \
+            lum[0] = RGB_TO_Y_CCIR(r, g, b);        \
+            cb[0] = RGB_TO_U_CCIR(r1, g1, b1, 1);                         \
+            cr[0] = RGB_TO_V_CCIR(r1, g1, b1, 1);                         \
+            cb++;                                                       \
+            cr++;                                                       \
+            p += -wrap3 + BPP;                                      \
+            lum += -wrap + 1;                                           \
+        }                                                               \
         p += wrap3 + (wrap3 - width * BPP);                             \
         lum += wrap + (wrap - width);                                   \
-        cb += dst->linesize[1] - width / 2;                             \
-        cr += dst->linesize[2] - width / 2;                             \
+        cb += dst->linesize[1] - width2;                             \
+        cr += dst->linesize[2] - width2;                             \
+    }                                                                   \
+    /* handle odd height */                                             \
+    if (height) {                                                       \
+        for(w = width; w >= 2; w -= 2) {                                \
+            RGB_IN(r, g, b, p);                                         \
+            r1 = r;                                                     \
+            g1 = g;                                                     \
+            b1 = b;                                                     \
+            lum[0] = RGB_TO_Y_CCIR(r, g, b);        \
+\
+            RGB_IN(r, g, b, p + BPP);                                   \
+            r1 += r;                                                    \
+            g1 += g;                                                    \
+            b1 += b;                                                    \
+            lum[1] = RGB_TO_Y_CCIR(r, g, b);        \
+            cb[0] = RGB_TO_U_CCIR(r1, g1, b1, 1);                         \
+            cr[0] = RGB_TO_V_CCIR(r1, g1, b1, 1);                         \
+            cb++;                                                       \
+            cr++;                                                       \
+            p += 2 * BPP;\
+           lum += 2;\
+        }                                                               \
+        if (w) {                                                        \
+            RGB_IN(r, g, b, p);                                         \
+            lum[0] = RGB_TO_Y_CCIR(r, g, b);        \
+            cb[0] = RGB_TO_U_CCIR(r, g, b, 0);                         \
+            cr[0] = RGB_TO_V_CCIR(r, g, b, 0);                         \
+        }                                                               \
     }                                                                   \
 }                                                                       \
                                                                         \
@@ -1125,6 +1291,239 @@ RGB_FUNCTIONS(bgr24)
 #define BPP 3
 
 RGB_FUNCTIONS(rgb24)
+
+static void yuv444p_to_rgb24(AVPicture *dst, AVPicture *src,
+                             int width, int height)
+{
+    uint8_t *y1_ptr, *cb_ptr, *cr_ptr, *d, *d1;
+    int w, y, cb, cr, r_add, g_add, b_add;
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    unsigned int r, g, b;
+
+    d = dst->data[0];
+    y1_ptr = src->data[0];
+    cb_ptr = src->data[1];
+    cr_ptr = src->data[2];
+    for(;height > 0; height --) {
+        d1 = d;
+        for(w = width; w > 0; w--) {
+            YUV_TO_RGB1_CCIR(cb_ptr[0], cr_ptr[0]);
+
+            YUV_TO_RGB2_CCIR(r, g, b, y1_ptr[0]);
+            RGB_OUT(d1, r, g, b);
+            d1 += BPP;
+
+            y1_ptr++;
+            cb_ptr++;
+            cr_ptr++;
+        }
+        d += dst->linesize[0];
+        y1_ptr += src->linesize[0] - width;
+        cb_ptr += src->linesize[1] - width;
+        cr_ptr += src->linesize[2] - width;
+    }
+}
+
+static void yuvj444p_to_rgb24(AVPicture *dst, AVPicture *src,
+                              int width, int height)
+{
+    uint8_t *y1_ptr, *cb_ptr, *cr_ptr, *d, *d1;
+    int w, y, cb, cr, r_add, g_add, b_add;
+    uint8_t *cm = cropTbl + MAX_NEG_CROP;
+    unsigned int r, g, b;
+
+    d = dst->data[0];
+    y1_ptr = src->data[0];
+    cb_ptr = src->data[1];
+    cr_ptr = src->data[2];
+    for(;height > 0; height --) {
+        d1 = d;
+        for(w = width; w > 0; w--) {
+            YUV_TO_RGB1(cb_ptr[0], cr_ptr[0]);
+
+            YUV_TO_RGB2(r, g, b, y1_ptr[0]);
+            RGB_OUT(d1, r, g, b);
+            d1 += BPP;
+
+            y1_ptr++;
+            cb_ptr++;
+            cr_ptr++;
+        }
+        d += dst->linesize[0];
+        y1_ptr += src->linesize[0] - width;
+        cb_ptr += src->linesize[1] - width;
+        cr_ptr += src->linesize[2] - width;
+    }
+}
+
+static void rgb24_to_yuv444p(AVPicture *dst, AVPicture *src,
+                             int width, int height)
+{
+    int src_wrap, x, y;
+    int r, g, b;
+    uint8_t *lum, *cb, *cr;
+    const uint8_t *p;
+
+    lum = dst->data[0];
+    cb = dst->data[1];
+    cr = dst->data[2];
+
+    src_wrap = src->linesize[0] - width * BPP;
+    p = src->data[0];
+    for(y=0;y<height;y++) {
+        for(x=0;x<width;x++) {
+            RGB_IN(r, g, b, p);
+            lum[0] = RGB_TO_Y_CCIR(r, g, b);
+            cb[0] = RGB_TO_U_CCIR(r, g, b, 0);
+            cr[0] = RGB_TO_V_CCIR(r, g, b, 0);
+            cb++;
+            cr++;
+            lum++;
+        }
+        p += src_wrap;
+        lum += dst->linesize[0] - width;
+        cb += dst->linesize[1] - width;
+        cr += dst->linesize[2] - width;
+    }
+}
+
+static void rgb24_to_yuvj420p(AVPicture *dst, AVPicture *src,
+                              int width, int height)
+{
+    int wrap, wrap3, width2;
+    int r, g, b, r1, g1, b1, w;
+    uint8_t *lum, *cb, *cr;
+    const uint8_t *p;
+
+    lum = dst->data[0];
+    cb = dst->data[1];
+    cr = dst->data[2];
+
+    width2 = (width + 1) >> 1;
+    wrap = dst->linesize[0];
+    wrap3 = src->linesize[0];
+    p = src->data[0];
+    for(;height>=2;height -= 2) {
+        for(w = width; w >= 2; w -= 2) {
+            RGB_IN(r, g, b, p);
+            r1 = r;
+            g1 = g;
+            b1 = b;
+            lum[0] = RGB_TO_Y(r, g, b);
+
+            RGB_IN(r, g, b, p + BPP);
+            r1 += r;
+            g1 += g;
+            b1 += b;
+            lum[1] = RGB_TO_Y(r, g, b);
+            p += wrap3;
+            lum += wrap;
+
+            RGB_IN(r, g, b, p);
+            r1 += r;
+            g1 += g;
+            b1 += b;
+            lum[0] = RGB_TO_Y(r, g, b);
+
+            RGB_IN(r, g, b, p + BPP);
+            r1 += r;
+            g1 += g;
+            b1 += b;
+            lum[1] = RGB_TO_Y(r, g, b);
+
+            cb[0] = RGB_TO_U(r1, g1, b1, 2);
+            cr[0] = RGB_TO_V(r1, g1, b1, 2);
+
+            cb++;
+            cr++;
+            p += -wrap3 + 2 * BPP;
+            lum += -wrap + 2;
+        }
+        if (w) {
+            RGB_IN(r, g, b, p);
+            r1 = r;
+            g1 = g;
+            b1 = b;
+            lum[0] = RGB_TO_Y(r, g, b);
+            p += wrap3;
+            lum += wrap;
+            RGB_IN(r, g, b, p);
+            r1 += r;
+            g1 += g;
+            b1 += b;
+            lum[0] = RGB_TO_Y(r, g, b);
+            cb[0] = RGB_TO_U(r1, g1, b1, 1);
+            cr[0] = RGB_TO_V(r1, g1, b1, 1);
+            cb++;
+            cr++;
+            p += -wrap3 + BPP;
+            lum += -wrap + 1;
+        }
+        p += wrap3 + (wrap3 - width * BPP);
+        lum += wrap + (wrap - width);
+        cb += dst->linesize[1] - width2;
+        cr += dst->linesize[2] - width2;
+    }
+    /* handle odd height */
+    if (height) {
+        for(w = width; w >= 2; w -= 2) {
+            RGB_IN(r, g, b, p);
+            r1 = r;
+            g1 = g;
+            b1 = b;
+            lum[0] = RGB_TO_Y(r, g, b);
+
+            RGB_IN(r, g, b, p + BPP);
+            r1 += r;
+            g1 += g;
+            b1 += b;
+            lum[1] = RGB_TO_Y(r, g, b);
+            cb[0] = RGB_TO_U(r1, g1, b1, 1);
+            cr[0] = RGB_TO_V(r1, g1, b1, 1);
+            cb++;
+            cr++;
+            p += 2 * BPP;
+           lum += 2;
+        }
+        if (w) {
+            RGB_IN(r, g, b, p);
+            lum[0] = RGB_TO_Y(r, g, b);
+            cb[0] = RGB_TO_U(r, g, b, 0);
+            cr[0] = RGB_TO_V(r, g, b, 0);
+        }
+    }
+}
+
+static void rgb24_to_yuvj444p(AVPicture *dst, AVPicture *src,
+                              int width, int height)
+{
+    int src_wrap, x, y;
+    int r, g, b;
+    uint8_t *lum, *cb, *cr;
+    const uint8_t *p;
+
+    lum = dst->data[0];
+    cb = dst->data[1];
+    cr = dst->data[2];
+
+    src_wrap = src->linesize[0] - width * BPP;
+    p = src->data[0];
+    for(y=0;y<height;y++) {
+        for(x=0;x<width;x++) {
+            RGB_IN(r, g, b, p);
+            lum[0] = RGB_TO_Y(r, g, b);
+            cb[0] = RGB_TO_U(r, g, b, 0);
+            cr[0] = RGB_TO_V(r, g, b, 0);
+            cb++;
+            cr++;
+            lum++;
+        }
+        p += src_wrap;
+        lum += dst->linesize[0] - width;
+        cb += dst->linesize[1] - width;
+        cr += dst->linesize[2] - width;
+    }
+}
 
 #undef RGB_IN
 #undef RGB_OUT
@@ -1408,9 +1807,20 @@ typedef struct ConvertEntry {
     void (*convert)(AVPicture *dst, AVPicture *src, int width, int height);
 } ConvertEntry;
 
-/* add each new convertion function in this table */
-/* constraints;
-   - all non YUV modes must convert at least to and from PIX_FMT_RGB24
+/* Add each new convertion function in this table. In order to be able
+   to convert from any format to any format, the following constraints
+   must be satisfied:
+
+   - all FF_COLOR_RGB formats must convert to and from PIX_FMT_RGB24 
+
+   - all FF_COLOR_GRAY formats must convert to and from PIX_FMT_GRAY8
+
+   - all FF_COLOR_RGB formats with alpha must convert to and from PIX_FMT_RGBA32
+
+   - all PIX_FMT_YUV444P and PIX_FMT_YUVJ444P must convert to and from
+     PIX_FMT_RGB24.
+
+   - PIX_FMT_422 must convert to and from PIX_FMT_422P.
 */
 static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
     [PIX_FMT_YUV420P] = {
@@ -1430,26 +1840,44 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
             .convert = yuv420p_to_rgba32
         },
     },
-    [PIX_FMT_YUV422P] = {
+    [PIX_FMT_YUV422P] = { 
+        [PIX_FMT_YUV422] = { 
+            .convert = yuv422p_to_yuv422,
+        },
+    },
+    [PIX_FMT_YUV444P] = { 
+        [PIX_FMT_RGB24] = { 
+            .convert = yuv444p_to_rgb24
+        },
+    },
+    [PIX_FMT_YUVJ420P] = {
         [PIX_FMT_RGB555] = { 
-            .convert = yuv422p_to_rgb555
+            .convert = yuvj420p_to_rgb555
         },
         [PIX_FMT_RGB565] = { 
-            .convert = yuv422p_to_rgb565
+            .convert = yuvj420p_to_rgb565
         },
         [PIX_FMT_BGR24] = { 
-            .convert = yuv422p_to_bgr24
+            .convert = yuvj420p_to_bgr24
         },
         [PIX_FMT_RGB24] = { 
-            .convert = yuv422p_to_rgb24
+            .convert = yuvj420p_to_rgb24
         },
         [PIX_FMT_RGBA32] = { 
-            .convert = yuv422p_to_rgba32
+            .convert = yuvj420p_to_rgba32
+        },
+    },
+    [PIX_FMT_YUVJ444P] = { 
+        [PIX_FMT_RGB24] = { 
+            .convert = yuvj444p_to_rgb24
         },
     },
     [PIX_FMT_YUV422] = { 
         [PIX_FMT_YUV420P] = { 
             .convert = yuv422_to_yuv420p,
+        },
+        [PIX_FMT_YUV422P] = { 
+            .convert = yuv422_to_yuv422p,
         },
     },
 
@@ -1468,6 +1896,15 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         },
         [PIX_FMT_PAL8] = { 
             .convert = rgb24_to_pal8
+        },
+        [PIX_FMT_YUV444P] = { 
+            .convert = rgb24_to_yuv444p
+        },
+        [PIX_FMT_YUVJ420P] = { 
+            .convert = rgb24_to_yuvj420p
+        },
+        [PIX_FMT_YUVJ444P] = { 
+            .convert = rgb24_to_yuvj444p
         },
     },
     [PIX_FMT_RGBA32] = {
@@ -1581,11 +2018,19 @@ static void avpicture_free(AVPicture *picture)
     av_free(picture->data[0]);
 }
 
+/* return true if yuv planar */
+static inline int is_yuv_planar(PixFmtInfo *ps)
+{
+    return (ps->color_type == FF_COLOR_YUV ||
+            ps->color_type == FF_COLOR_YUV_JPEG) && !ps->is_packed;
+}
+
 /* XXX: always use linesize. Return -1 if not supported */
 int img_convert(AVPicture *dst, int dst_pix_fmt,
                 AVPicture *src, int src_pix_fmt, 
                 int src_width, int src_height)
 {
+    static int inited;
     int i, ret, dst_width, dst_height, int_pix_fmt;
     PixFmtInfo *src_pix, *dst_pix;
     ConvertEntry *ce;
@@ -1596,6 +2041,11 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
         return -1;
     if (src_width <= 0 || src_height <= 0)
         return 0;
+
+    if (!inited) {
+        inited = 1;
+        img_convert_init();
+    }
 
     dst_width = src_width;
     dst_height = src_height;
@@ -1609,9 +2059,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
             int w, h;
             w = dst_width;
             h = dst_height;
-            if ((dst_pix->color_type == FF_COLOR_YUV || 
-                 dst_pix->color_type == FF_COLOR_YUV_JPEG) &&
-                (i == 1 || i == 2)) {
+            if (is_yuv_planar(dst_pix) && (i == 1 || i == 2)) {
                 w >>= dst_pix->x_chroma_shift;
                 h >>= dst_pix->y_chroma_shift;
             }
@@ -1630,8 +2078,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     }
 
     /* gray to YUV */
-    if ((dst_pix->color_type == FF_COLOR_YUV ||
-         dst_pix->color_type == FF_COLOR_YUV_JPEG) &&
+    if (is_yuv_planar(dst_pix) &&
         src_pix_fmt == PIX_FMT_GRAY8) {
         int w, h, y;
         uint8_t *d;
@@ -1641,9 +2088,10 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
                      src->data[0], src->linesize[0],
                      dst_width, dst_height);
         } else {
-            gray_to_luma_ccir(dst->data[0], dst->linesize[0],
-                              src->data[0], src->linesize[0],
-                              dst_width, dst_height);
+            img_apply_table(dst->data[0], dst->linesize[0],
+                            src->data[0], src->linesize[0],
+                            dst_width, dst_height,
+                            y_jpeg_to_ccir);
         }
         /* fill U and V with 128 */
         w = dst_width;
@@ -1661,24 +2109,23 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
     }
 
     /* YUV to gray */
-    if ((src_pix->color_type == FF_COLOR_YUV ||
-         src_pix->color_type == FF_COLOR_YUV_JPEG) && 
+    if (is_yuv_planar(src_pix) && 
         dst_pix_fmt == PIX_FMT_GRAY8) {
         if (src_pix->color_type == FF_COLOR_YUV_JPEG) {
             img_copy(dst->data[0], dst->linesize[0],
                      src->data[0], src->linesize[0],
                      dst_width, dst_height);
         } else {
-            luma_ccir_to_gray(dst->data[0], dst->linesize[0],
-                              src->data[0], src->linesize[0],
-                              dst_width, dst_height);
+            img_apply_table(dst->data[0], dst->linesize[0],
+                            src->data[0], src->linesize[0],
+                            dst_width, dst_height,
+                            y_ccir_to_jpeg);
         }
         return 0;
     }
 
-    /* YUV to YUV */
-    if (dst_pix->color_type == FF_COLOR_YUV &&
-        dst_pix->color_type == src_pix->color_type) {
+    /* YUV to YUV planar */
+    if (is_yuv_planar(dst_pix) && is_yuv_planar(src_pix)) {
         int x_shift, y_shift, w, h;
         void (*resize_func)(uint8_t *dst, int dst_wrap, 
                             uint8_t *src, int src_wrap,
@@ -1698,8 +2145,9 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
 
         x_shift = (dst_pix->x_chroma_shift - src_pix->x_chroma_shift);
         y_shift = (dst_pix->y_chroma_shift - src_pix->y_chroma_shift);
+
         if (x_shift == 0 && y_shift == 0) {
-            resize_func = img_copy; /* should never happen */
+            resize_func = img_copy;
         } else if (x_shift == 0 && y_shift == 1) {
             resize_func = shrink2;
         } else if (x_shift == 1 && y_shift == 1) {
@@ -1721,17 +2169,65 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
             resize_func(dst->data[i], dst->linesize[i],
                         src->data[i], src->linesize[i],
                         dst_width>>dst_pix->x_chroma_shift, dst_height>>dst_pix->y_chroma_shift);
-       return 0;
+        /* if yuv color space conversion is needed, we do it here on
+           the destination image */
+        if (dst_pix->color_type != src_pix->color_type) {
+            const uint8_t *y_table, *c_table;
+            if (dst_pix->color_type == FF_COLOR_YUV) {
+                y_table = y_jpeg_to_ccir;
+                c_table = c_jpeg_to_ccir;
+            } else {
+                y_table = y_ccir_to_jpeg;
+                c_table = c_ccir_to_jpeg;
+            }
+            img_apply_table(dst->data[0], dst->linesize[0],
+                            dst->data[0], dst->linesize[0],
+                            dst_width, dst_height,
+                            y_table);
+
+            for(i = 1;i <= 2; i++)
+                img_apply_table(dst->data[i], dst->linesize[i],
+                                dst->data[i], dst->linesize[i],
+                                dst_width>>dst_pix->x_chroma_shift, 
+                                dst_height>>dst_pix->y_chroma_shift,
+                                c_table);
+        }
+        return 0;
     }
 
     /* try to use an intermediate format */
-    if (src_pix_fmt == PIX_FMT_MONOWHITE ||
-        src_pix_fmt == PIX_FMT_MONOBLACK ||
-        dst_pix_fmt == PIX_FMT_MONOWHITE ||
-        dst_pix_fmt == PIX_FMT_MONOBLACK) {
+    if (src_pix_fmt == PIX_FMT_YUV422 ||
+        dst_pix_fmt == PIX_FMT_YUV422) {
+        /* specific case: convert to YUV422P first */
+        int_pix_fmt = PIX_FMT_YUV422P;
+    } else if ((src_pix->color_type == FF_COLOR_GRAY &&
+                src_pix_fmt != PIX_FMT_GRAY8) || 
+               (dst_pix->color_type == FF_COLOR_GRAY &&
+                dst_pix_fmt != PIX_FMT_GRAY8)) {
+        /* gray8 is the normalized format */
         int_pix_fmt = PIX_FMT_GRAY8;
+    } else if ((is_yuv_planar(src_pix) && 
+                src_pix_fmt != PIX_FMT_YUV444P &&
+                src_pix_fmt != PIX_FMT_YUVJ444P)) {
+        /* yuv444 is the normalized format */
+        if (src_pix->color_type == FF_COLOR_YUV_JPEG)
+            int_pix_fmt = PIX_FMT_YUVJ444P;
+        else
+            int_pix_fmt = PIX_FMT_YUV444P;
+    } else if ((is_yuv_planar(dst_pix) && 
+                dst_pix_fmt != PIX_FMT_YUV444P &&
+                dst_pix_fmt != PIX_FMT_YUVJ444P)) {
+        /* yuv444 is the normalized format */
+        if (dst_pix->color_type == FF_COLOR_YUV_JPEG)
+            int_pix_fmt = PIX_FMT_YUVJ444P;
+        else
+            int_pix_fmt = PIX_FMT_YUV444P;
     } else {
-        int_pix_fmt = PIX_FMT_RGB24;
+        /* the two formats are rgb or gray8 or yuv[j]444p */
+        if (src_pix->is_alpha && dst_pix->is_alpha)
+            int_pix_fmt = PIX_FMT_RGBA32;
+        else
+            int_pix_fmt = PIX_FMT_RGB24;
     }
     if (avpicture_alloc(tmp, int_pix_fmt, dst_width, dst_height) < 0)
         return -1;
