@@ -88,23 +88,24 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
 
 // using regr as temporary and for the output result
 // first argument is unmodifed and second is trashed
-// mm6 is supposed to contain 0xfefefefefefefefe
-#define PAVGB_MMX_NO_RND(rega, regb, regr) \
+// regfe is supposed to contain 0xfefefefefefefefe
+#define PAVGB_MMX_NO_RND(rega, regb, regr, regfe) \
     "movq " #rega ", " #regr "	\n\t"\
     "pand " #regb ", " #regr "	\n\t"\
     "pxor " #rega ", " #regb "	\n\t"\
-    "pand %%mm6, " #regb "	\n\t"\
+    "pand " #regfe "," #regb "	\n\t"\
     "psrlq $1, " #regb " 	\n\t"\
     "paddb " #regb ", " #regr "	\n\t"
 
-#define PAVGB_MMX(rega, regb, regr) \
+#define PAVGB_MMX(rega, regb, regr, regfe) \
     "movq " #rega ", " #regr "	\n\t"\
     "por  " #regb ", " #regr "	\n\t"\
     "pxor " #rega ", " #regb "	\n\t"\
-    "pand %%mm6, " #regb "     	\n\t"\
+    "pand " #regfe "," #regb "	\n\t"\
     "psrlq $1, " #regb "	\n\t"\
     "psubb " #regb ", " #regr "	\n\t"
 
+// mm6 is supposed to contain 0xfefefefefefefefe
 #define PAVGBP_MMX_NO_RND(rega, regb, regr,  regc, regd, regp) \
     "movq " #rega ", " #regr "	\n\t"\
     "movq " #regc ", " #regp "	\n\t"\
@@ -138,24 +139,28 @@ static const uint64_t mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002U
 #define DEF(x, y) x ## _no_rnd_ ## y ##_mmx
 #define SET_RND  MOVQ_WONE
 #define PAVGBP(a, b, c, d, e, f)	PAVGBP_MMX_NO_RND(a, b, c, d, e, f)
+#define PAVGB(a, b, c, e)		PAVGB_MMX_NO_RND(a, b, c, e)
 
 #include "dsputil_mmx_rnd.h"
 
 #undef DEF
 #undef SET_RND
 #undef PAVGBP
+#undef PAVGB
 /***********************************/
 /* MMX rounding */
 
 #define DEF(x, y) x ## _ ## y ##_mmx
 #define SET_RND  MOVQ_WTWO
 #define PAVGBP(a, b, c, d, e, f)	PAVGBP_MMX(a, b, c, d, e, f)
+#define PAVGB(a, b, c, e)		PAVGB_MMX(a, b, c, e)
 
 #include "dsputil_mmx_rnd.h"
 
 #undef DEF
 #undef SET_RND
 #undef PAVGBP
+#undef PAVGB
 
 /***********************************/
 /* 3Dnow specific */
@@ -340,8 +345,7 @@ static void add_pixels_clamped_mmx(const DCTELEM *block, UINT8 *pixels, int line
 
 static void put_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
-    asm volatile
-	(
+    __asm __volatile(
 	 "lea (%3, %3), %%eax		\n\t"
 	 ".balign 8			\n\t"
 	 "1:				\n\t"
@@ -365,360 +369,9 @@ static void put_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int
 	);
 }
 
-static void avg_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  MOVQ_WONE(mm6);
-  JUMPALIGN();
-  do {
-    __asm __volatile(
-	"movq	%0, %%mm0\n\t"
-	"movq	%1, %%mm1\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"paddusw %%mm6, %%mm0\n\t"
-	"paddusw %%mm6, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"+m"(*p)
-	:"m"(*pix)
-	:"memory");
-   pix += line_size;
-   p +=   line_size;
-  }
-  while (--h);
-}
-
-static void   avg_pixels_x2_mmx( UINT8  *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  MOVQ_WONE(mm6);
-  JUMPALIGN();
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm1\n\t"
-	"movq	%0, %%mm0\n\t"
-	"movq	1%1, %%mm4\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"movq	%%mm4, %%mm5\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpckhbw %%mm7, %%mm5\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"paddusw %%mm4, %%mm1\n\t"
-	"paddusw %%mm5, %%mm3\n\t"
-	"paddusw %%mm6, %%mm1\n\t"
-	"paddusw %%mm6, %%mm3\n\t"
-	"psrlw	$1, %%mm1\n\t"
-	"psrlw	$1, %%mm3\n\t"
-	"paddusw %%mm6, %%mm0\n\t"
-	"paddusw %%mm6, %%mm2\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"+m"(*p)
-	:"m"(*pix)
-	:"memory");
-   pix += line_size;
-   p +=   line_size;
-  } while (--h);
-}
-
-static void   avg_pixels_y2_mmx( UINT8  *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  MOVQ_WONE(mm6);
-  JUMPALIGN();
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm1\n\t"
-	"movq	%0, %%mm0\n\t"
-	"movq	%2, %%mm4\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"movq	%%mm4, %%mm5\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpckhbw %%mm7, %%mm5\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"paddusw %%mm4, %%mm1\n\t"
-	"paddusw %%mm5, %%mm3\n\t"
-	"paddusw %%mm6, %%mm1\n\t"
-	"paddusw %%mm6, %%mm3\n\t"
-	"psrlw	$1, %%mm1\n\t"
-	"psrlw	$1, %%mm3\n\t"
-	"paddusw %%mm6, %%mm0\n\t"
-	"paddusw %%mm6, %%mm2\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"+m"(*p)
-	:"m"(*pix), "m"(*(pix+line_size))
-	:"memory");
-   pix += line_size;
-   p +=   line_size ;
-  } while(--h);
-}
-
-static void   avg_pixels_xy2_mmx( UINT8  *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  // this doesn't seem to be used offten - so
-  // the inside usage of mm_wone is not optimized
-  MOVQ_WTWO(mm6);
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm0\n\t"
-	"movq	%2, %%mm1\n\t"
-	"movq	1%1, %%mm4\n\t"
-	"movq	1%2, %%mm5\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"movq	%%mm4, %%mm1\n\t"
-	"movq	%%mm5, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpcklbw %%mm7, %%mm5\n\t"
-	"punpckhbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm5, %%mm4\n\t"
-	"paddusw %%mm3, %%mm1\n\t"
-	"paddusw %%mm6, %%mm4\n\t"
-	"paddusw %%mm6, %%mm1\n\t"
-	"paddusw %%mm4, %%mm0\n\t"
-	"paddusw %%mm1, %%mm2\n\t"
-	"movq	%3, %%mm5\n\t"
-	"psrlw	$2, %%mm0\n\t"
-	"movq	%0, %%mm1\n\t"
-	"psrlw	$2, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"paddusw %%mm5, %%mm0\n\t"
-	"paddusw %%mm5, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"+m"(*p)
-	:"m"(*pix),
-	 "m"(*(pix+line_size)), "m"(mm_wone)
-	:"memory");
-   pix += line_size;
-   p +=   line_size ;
-  } while(--h);
-}
-
-static void avg_no_rnd_pixels_mmx( UINT8  *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm0\n\t"
-	"movq	%0, %%mm1\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"+m"(*p)
-	:"m"(*pix)
-	:"memory");
-   pix += line_size;
-   p +=   line_size ;
-  } while (--h);
-}
-
-static void   avg_no_rnd_pixels_x2_mmx( UINT8  *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm0\n\t"
-	"movq	1%1, %%mm1\n\t"
-	"movq	%0, %%mm4\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"movq	%%mm4, %%mm5\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpckhbw %%mm7, %%mm5\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"paddusw %%mm4, %%mm0\n\t"
-	"paddusw %%mm5, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"+m"(*p)
-	:"m"(*pix)
-	:"memory");
-   pix += line_size;
-   p +=   line_size;
- } while (--h);
-}
-
-static void   avg_no_rnd_pixels_y2_mmx( UINT8  *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm0\n\t"
-	"movq	%2, %%mm1\n\t"
-	"movq	%0, %%mm4\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"movq	%%mm4, %%mm5\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpckhbw %%mm7, %%mm5\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"paddusw %%mm4, %%mm0\n\t"
-	"paddusw %%mm5, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"+m"(*p)
-	:"m"(*pix), "m"(*(pix+line_size))
-	:"memory");
-   pix += line_size;
-   p +=   line_size ;
-  } while(--h);
-}
-
-static void   avg_no_rnd_pixels_xy2_mmx( UINT8  *block, const UINT8 *pixels, int line_size, int h)
-{
-  UINT8  *p;
-  const UINT8 *pix;
-  p = block;
-  pix = pixels;
-  MOVQ_ZERO(mm7);
-  MOVQ_WONE(mm6);
-  JUMPALIGN();
-  do {
-    __asm __volatile(
-	"movq	%1, %%mm0\n\t"
-	"movq	%2, %%mm1\n\t"
-	"movq	1%1, %%mm4\n\t"
-	"movq	1%2, %%mm5\n\t"
-	"movq	%%mm0, %%mm2\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm0\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm2\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"movq	%%mm4, %%mm1\n\t"
-	"movq	%%mm5, %%mm3\n\t"
-	"punpcklbw %%mm7, %%mm4\n\t"
-	"punpcklbw %%mm7, %%mm5\n\t"
-	"punpckhbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm5, %%mm4\n\t"
-	"paddusw %%mm3, %%mm1\n\t"
-	"paddusw %%mm6, %%mm4\n\t"
-	"paddusw %%mm6, %%mm1\n\t"
-	"paddusw %%mm4, %%mm0\n\t"
-	"paddusw %%mm1, %%mm2\n\t"
-	"movq	%0, %%mm1\n\t"
-	"psrlw	$2, %%mm0\n\t"
-	"movq	%%mm1, %%mm3\n\t"
-	"psrlw	$2, %%mm2\n\t"
-	"punpcklbw %%mm7, %%mm1\n\t"
-	"punpckhbw %%mm7, %%mm3\n\t"
-	"paddusw %%mm1, %%mm0\n\t"
-	"paddusw %%mm3, %%mm2\n\t"
-	"psrlw	$1, %%mm0\n\t"
-	"psrlw	$1, %%mm2\n\t"
-	"packuswb  %%mm2, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"+m"(*p)
-	:"m"(*pix),
-	 "m"(*(pix+line_size))
-	:"memory");
-   pix += line_size;
-   p += line_size;
-  } while(--h);
-}
-
 static void clear_blocks_mmx(DCTELEM *blocks)
 {
-        asm volatile(
+    __asm __volatile(
                 "pxor %%mm7, %%mm7		\n\t"
                 "movl $-128*6, %%eax		\n\t"
                 "1:				\n\t"
