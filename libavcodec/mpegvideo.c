@@ -4941,6 +4941,7 @@ static int dct_quantize_refine(MpegEncContext *s, //FIXME breaks denoise?
                         DCTELEM *block, int16_t *weight, DCTELEM *orig,
                         int n, int qscale){
     int16_t rem[64];
+    DCTELEM d1[64];
     const int *qmat;
     const uint8_t *scantable= s->intra_scantable.scantable;
     const uint8_t *perm_scantable= s->intra_scantable.permutated;
@@ -5061,10 +5062,31 @@ STOP_TIMER("init rem[]")
         int nochange_score= best_score;
         int best_coeff=0;
         int best_change=0;
-        int run2, best_unquant_change;
+        int run2, best_unquant_change, analyze_gradient;
 #ifdef REFINE_STATS
 {START_TIMER
 #endif
+        analyze_gradient = last_non_zero > 2 || s->avctx->quantizer_noise_shaping >= 3;
+
+        if(analyze_gradient){
+#ifdef REFINE_STATS
+{START_TIMER
+#endif
+            for(i=0; i<64; i++){
+                int w= weight[i];
+            
+                d1[i] = (rem[i]*w*w + (1<<(RECON_SHIFT+12-1)))>>(RECON_SHIFT+12);
+            }
+#ifdef REFINE_STATS
+STOP_TIMER("rem*w*w")}
+{START_TIMER
+#endif
+            s->dsp.fdct(d1);
+#ifdef REFINE_STATS
+STOP_TIMER("dct")}
+#endif
+        }
+
         if(start_i){
             const int level= block[0];
             int change, old_coeff;
@@ -5141,6 +5163,13 @@ STOP_TIMER("init rem[]")
                         }
                     }else{
                         assert(ABS(new_level)==1);
+                        
+                        if(analyze_gradient){
+                            int g= d1[ scantable[i] ];
+                            if(g && (g^new_level) >= 0)
+                                continue;
+                        }
+
                         if(i < last_non_zero){
                             int next_i= i + run2 + 1;
                             int next_level= block[ perm_scantable[next_i] ] + 64;
