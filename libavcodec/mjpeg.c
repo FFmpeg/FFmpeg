@@ -875,11 +875,11 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
     int len, code, start_code, input_size, i;
     AVPicture *picture = data;
 
+    *data_size = 0;
+
     /* no supplementary picture */
-    if (buf_size == 0) {
-        *data_size = 0;
+    if (buf_size == 0)
         return 0;
-    }
 
     buf_ptr = buf;
     buf_end = buf + buf_size;
