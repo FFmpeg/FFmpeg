@@ -29,10 +29,12 @@
 #endif
 
 //#define DEBUG
+//#define DEBUG_RTP_TCP
 
 typedef struct RTSPState {
     URLContext *rtsp_hd; /* RTSP TCP connexion handle */
-    ByteIOContext rtsp_gb;
+    /* XXX: currently we use unbuffered input */
+    //    ByteIOContext rtsp_gb;
     int seq;        /* RTSP command sequence number */
     char session_id[512];
     enum RTSPProtocol protocol;
@@ -55,7 +57,12 @@ int rtsp_abort_req = 0;
 
 /* XXX: currently, the only way to change the protocols consists in
    changing this variable */
+#if 1
 int rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_TCP) | (1 << RTSP_PROTOCOL_RTP_UDP) | (1 << RTSP_PROTOCOL_RTP_UDP_MULTICAST);
+#else
+/* try it if a proxy is used */
+int rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_TCP);
+#endif
 
 /* if non zero, then set a range for RTP ports */
 int rtsp_rtp_port_min = 0;
@@ -365,7 +372,7 @@ static int sdp_parse(AVFormatContext *s, const char *content)
         p++;
         /* get the content */
         q = buf;
-        while (*p != '\n' && *p != '\0') {
+        while (*p != '\n' && *p != '\r' && *p != '\0') {
             if ((q - buf) < sizeof(buf) - 1)
                 *q++ = *p;
             p++;
@@ -427,10 +434,11 @@ static void rtsp_parse_transport(RTSPHeader *reply, const char *p)
         get_word_sep(profile, sizeof(profile), "/;,", &p);
         lower_transport[0] = '\0';
         if (*p == '/') {
+            p++;
             get_word_sep(lower_transport, sizeof(lower_transport), 
                          ";,", &p);
         }
-        if (!strcmp(lower_transport, "TCP"))
+        if (!strcasecmp(lower_transport, "TCP"))
             th->protocol = RTSP_PROTOCOL_RTP_TCP;
         else
             th->protocol = RTSP_PROTOCOL_RTP_UDP;
@@ -526,13 +534,13 @@ static void rtsp_send_cmd(AVFormatContext *s,
 
     rt->seq++;
     pstrcpy(buf, sizeof(buf), cmd);
-    snprintf(buf1, sizeof(buf1), "CSeq: %d\n", rt->seq);
+    snprintf(buf1, sizeof(buf1), "CSeq: %d\r\n", rt->seq);
     pstrcat(buf, sizeof(buf), buf1);
     if (rt->session_id[0] != '\0' && !strstr(cmd, "\nIf-Match:")) {
-        snprintf(buf1, sizeof(buf1), "Session: %s\n", rt->session_id);
+        snprintf(buf1, sizeof(buf1), "Session: %s\r\n", rt->session_id);
         pstrcat(buf, sizeof(buf), buf1);
     }
-    pstrcat(buf, sizeof(buf), "\n");
+    pstrcat(buf, sizeof(buf), "\r\n");
 #ifdef DEBUG
     printf("Sending:\n%s--\n", buf);
 #endif
@@ -626,8 +634,8 @@ static int rtsp_read_header(AVFormatContext *s,
     
     /* describe the stream */
     snprintf(cmd, sizeof(cmd), 
-             "DESCRIBE %s RTSP/1.0\n"
-             "Accept: application/sdp\n",
+             "DESCRIBE %s RTSP/1.0\r\n"
+             "Accept: application/sdp\r\n",
              s->filename);
     rtsp_send_cmd(s, cmd, reply, &content);
     if (!content) {
@@ -708,10 +716,9 @@ static int rtsp_read_header(AVFormatContext *s,
                      sizeof(transport) - strlen(transport) - 1,
                      "RTP/AVP/UDP;multicast");
         }
-        
         snprintf(cmd, sizeof(cmd), 
-                 "SETUP %s RTSP/1.0\n"
-                 "Transport: %s\n",
+                 "SETUP %s RTSP/1.0\r\n"
+                 "Transport: %s\r\n",
                  rtsp_st->control_url, transport);
         rtsp_send_cmd(s, cmd, reply, NULL);
         if (reply->status_code != RTSP_STATUS_OK ||
@@ -794,7 +801,8 @@ static int rtsp_read_header(AVFormatContext *s,
                          
     /* start playing */
     snprintf(cmd, sizeof(cmd), 
-             "PLAY %s RTSP/1.0\n",
+             "PLAY %s RTSP/1.0\r\n"
+             "Range: npt=0-\r\n",
              s->filename);
     rtsp_send_cmd(s, cmd, reply, NULL);
     if (reply->status_code != RTSP_STATUS_OK) {
@@ -802,6 +810,7 @@ static int rtsp_read_header(AVFormatContext *s,
         goto fail;
     }
 
+#if 0
     /* open TCP with bufferized input */
     if (rt->protocol == RTSP_PROTOCOL_RTP_TCP) {
         if (url_fdopen(&rt->rtsp_gb, rt->rtsp_hd) < 0) {
@@ -809,6 +818,7 @@ static int rtsp_read_header(AVFormatContext *s,
             goto fail;
         }
     }
+#endif
 
     return 0;
  fail:
@@ -830,33 +840,46 @@ static int tcp_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     RTSPState *rt = s->priv_data;
-    ByteIOContext *rtsp_gb = &rt->rtsp_gb;
-    int c, id, len, i, ret;
+    int id, len, i, ret;
     AVStream *st;
     RTSPStream *rtsp_st;
-    char buf[RTP_MAX_PACKET_LENGTH];
+    uint8_t buf[RTP_MAX_PACKET_LENGTH];
 
+#ifdef DEBUG_RTP_TCP
+    printf("tcp_read_packet:\n");
+#endif
  redo:
     for(;;) {
-        c = url_fgetc(rtsp_gb);
-        if (c == URL_EOF)
+        ret = url_read(rt->rtsp_hd, buf, 1);
+#ifdef DEBUG_RTP_TCP
+        printf("ret=%d c=%02x [%c]\n", ret, buf[0], buf[0]);
+#endif
+        if (ret != 1)
             return AVERROR_IO;
-        if (c == '$')
+        if (buf[0] == '$')
             break;
     }
-    id = get_byte(rtsp_gb);
-    len = get_be16(rtsp_gb);
+    ret = url_read(rt->rtsp_hd, buf, 3);
+    if (ret != 3)
+        return AVERROR_IO;
+    id = buf[0];
+    len = (buf[1] << 8) | buf[2];
+#ifdef DEBUG_RTP_TCP
+    printf("id=%d len=%d\n", id, len);
+#endif
     if (len > RTP_MAX_PACKET_LENGTH || len < 12)
         goto redo;
     /* get the data */
-    get_buffer(rtsp_gb, buf, len);
-    
+    ret = url_read(rt->rtsp_hd, buf, len);
+    if (ret != len)
+        return AVERROR_IO;
+        
     /* find the matching stream */
     for(i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
         rtsp_st = st->priv_data;
-        if (i >= rtsp_st->interleaved_min && 
-            i <= rtsp_st->interleaved_max) 
+        if (id >= rtsp_st->interleaved_min && 
+            id <= rtsp_st->interleaved_max) 
             goto found;
     }
     goto redo;
@@ -945,13 +968,14 @@ static int rtsp_read_close(AVFormatContext *s)
     int i;
     char cmd[1024];
 
+#if 0
     /* NOTE: it is valid to flush the buffer here */
     if (rt->protocol == RTSP_PROTOCOL_RTP_TCP) {
         url_fclose(&rt->rtsp_gb);
     }
-
+#endif
     snprintf(cmd, sizeof(cmd), 
-             "TEARDOWN %s RTSP/1.0\n",
+             "TEARDOWN %s RTSP/1.0\r\n",
              s->filename);
     rtsp_send_cmd(s, cmd, reply, NULL);
 

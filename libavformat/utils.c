@@ -312,7 +312,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVFormatParameters *ap)
 {
     AVFormatContext *ic = NULL;
-    int err;
+    int err, must_open_file;
     char buf[PROBE_BUF_SIZE];
     AVProbeData probe_data, *pd = &probe_data;
 
@@ -331,7 +331,15 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
         fmt = av_probe_input_format(pd, 0);
     }
 
-    if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
+    /* do not open file if the format does not need it. XXX: specific
+       hack needed to handle RTSP/TCP */
+    must_open_file = 1;
+    if ((fmt->flags & AVFMT_NOFILE) ||
+        (fmt == &rtp_demux && !strcmp(filename, "null"))) {
+        must_open_file = 0;
+    }
+
+    if (!fmt || must_open_file) {
         /* if no file needed do not try to open one */
         if (url_fopen(&ic->pb, filename, URL_RDONLY) < 0) {
             err = AVERROR_IO;
@@ -397,7 +405,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     *ic_ptr = ic;
     return 0;
  fail1:
-    if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
+    if (!fmt || must_open_file) {
         url_fclose(&ic->pb);
     }
  fail:
@@ -664,7 +672,7 @@ int av_find_stream_info(AVFormatContext *ic)
  */
 void av_close_input_file(AVFormatContext *s)
 {
-    int i;
+    int i, must_open_file;
 
     if (s->iformat->read_close)
         s->iformat->read_close(s);
@@ -682,7 +690,12 @@ void av_close_input_file(AVFormatContext *s)
         }
         s->packet_buffer = NULL;
     }
-    if (!(s->iformat->flags & AVFMT_NOFILE)) {
+    must_open_file = 1;
+    if ((s->iformat->flags & AVFMT_NOFILE) ||
+        (s->iformat == &rtp_demux && !strcmp(s->filename, "null"))) {
+        must_open_file = 0;
+    }
+    if (must_open_file) {
         url_fclose(&s->pb);
     }
     av_freep(&s->priv_data);
