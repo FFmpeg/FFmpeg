@@ -293,6 +293,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                 frame_rate_index = buf[3] & 0xf;
                 pc->frame_rate = avctx->frame_rate = frame_rate_tab[frame_rate_index];
                 avctx->frame_rate_base = MPEG1_FRAME_RATE_BASE;
+                avctx->codec_id = CODEC_ID_MPEG1VIDEO;
+                avctx->sub_id = 1;
             }
             break;
         case EXT_START_CODE:
@@ -311,6 +313,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                         avctx->height = pc->height | (vert_size_ext << 12);
                         avctx->frame_rate = pc->frame_rate * (frame_rate_ext_n + 1);
                         avctx->frame_rate_base = MPEG1_FRAME_RATE_BASE * (frame_rate_ext_d + 1);
+                        avctx->codec_id = CODEC_ID_MPEG2VIDEO;
                         avctx->sub_id = 2; /* forces MPEG2 */
                     }
                     break;
