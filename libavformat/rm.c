@@ -744,18 +744,21 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         st = s->streams[0];
     } else {
     redo:
-      if(rm->remaining_len){
+        if (url_feof(pb))
+            return AVERROR_IO;
+      if(rm->remaining_len > 0){
         num= rm->current_stream;
         len= rm->remaining_len;
         timestamp = AV_NOPTS_VALUE;
         flags= 0;
       }else{
-        if (rm->nb_packets == 0)
-            return AVERROR_IO;
-        get_be16(pb);
+        if(get_byte(pb))
+            goto redo;
+        if(get_byte(pb))
+            goto redo;
         len = get_be16(pb);
         if (len < 12)
-            return AVERROR_IO;
+            goto redo;
         num = get_be16(pb);
         timestamp = get_be32(pb);
         res= get_byte(pb); /* reserved */
@@ -763,7 +766,6 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         
 //        av_log(s, AV_LOG_DEBUG, "%d %d %X %d\n", num, timestamp, flags, res);
         
-        rm->nb_packets--;
         len -= 12;
       }
         
