@@ -255,6 +255,10 @@ static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
       put_tag(pb, "mp4a");
     else if(track->enc->codec_id == CODEC_ID_AMR_NB)
       put_tag(pb, "samr");
+    else if(track->enc->codec_id == CODEC_ID_PCM_S16BE)
+      put_tag(pb, "twos");
+    else if(track->enc->codec_id == CODEC_ID_PCM_S16LE)
+      put_tag(pb, "sowt");
     else
       put_tag(pb, "    ");
 
@@ -432,6 +436,8 @@ static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
       put_tag(pb, "mp4v");
     else if(track->enc->codec_id == CODEC_ID_H263)
       put_tag(pb, "s263");
+    else if(track->enc->codec_id == CODEC_ID_DVVIDEO)
+      put_tag(pb, "dvc ");
     else
       put_tag(pb, "    "); /* Unknown tag */
 
@@ -577,7 +583,10 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
     put_be32(pb, 0); /* size */
     put_tag(pb, "hdlr");
     put_be32(pb, 0); /* Version & flags */
-    put_be32(pb, 0); /* reserved */
+    if (track->mode == MODE_MOV)
+        put_tag(pb, "mhlr"); /* handler */
+    else
+	put_be32(pb, 0); /* reserved */
     if(track->enc->codec_type == CODEC_TYPE_VIDEO)
         put_tag(pb, "vide"); /* handler type */
     else
