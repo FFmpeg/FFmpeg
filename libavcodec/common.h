@@ -901,6 +901,8 @@ static inline int clip(int a, int amin, int amax)
 }
 
 /* math */
+extern const UINT8 ff_sqrt_tab[128];
+
 int ff_gcd(int a, int b);
 
 static inline int ff_sqrt(int a)
@@ -908,7 +910,9 @@ static inline int ff_sqrt(int a)
     int ret=0;
     int s;
     int ret_sq=0;
-
+    
+    if(a<128) return ff_sqrt_tab[a];
+    
     for(s=15; s>=0; s--){
         int b= ret_sq + (1<<(s*2)) + (ret<<s)*2;
         if(b<=a){
