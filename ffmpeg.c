@@ -444,7 +444,7 @@ static void do_audio_out(AVFormatContext *s,
             if(verbose > 2)
                 fprintf(stderr, "compensating audio timestamp drift:%f compensation:%d in:%d\n", delta, comp, enc->sample_rate);
 //            fprintf(stderr, "drift:%f len:%d opts:%lld ipts:%lld fifo:%d\n", delta, len/4, ost->sync_opts, (int64_t)(ost->sync_ipts * enc->sample_rate), fifo_size(&ost->fifo, ost->fifo.rptr)/(ost->st->codec.channels * 2));
-            av_resample_compensate(*(struct AVResampleContext**)ost->resample, delta, enc->sample_rate);
+            av_resample_compensate(*(struct AVResampleContext**)ost->resample, comp, enc->sample_rate);
         }
     }else
         ost->sync_opts= lrintf(ost->sync_ipts * enc->sample_rate)
