@@ -4374,7 +4374,8 @@ static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
         }
         
         s->progressive_sequence= get_bits1(gb)^1;
-        if(!get_bits1(gb)) printf("OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
+        if(!get_bits1(gb) && (s->avctx->debug & FF_DEBUG_PICT_INFO)) 
+            printf("OBMC not supported (very likely buggy encoder)\n");   /* OBMC Disable */
         if (vo_ver_id == 1) {
             s->vol_sprite_usage = get_bits1(gb); /* vol_sprite_usage */
         } else {
