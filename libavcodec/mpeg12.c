@@ -1119,6 +1119,7 @@ typedef struct Mpeg1Context {
     UINT8 *buf_ptr;
     int buffer_size;
     int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
+    int repeat_field; /* true if we must repeat the field */
 } Mpeg1Context;
 
 static int mpeg_decode_init(AVCodecContext *avctx)
@@ -1131,6 +1132,7 @@ static int mpeg_decode_init(AVCodecContext *avctx)
     s->start_code = -1;
     s->buf_ptr = s->buffer;
     s->mpeg_enc_ctx.picture_number = 0;
+    s->repeat_field = 0;
     return 0;
 }
 
@@ -1203,7 +1205,7 @@ static void mpeg_decode_sequence_extension(MpegEncContext *s)
     int frame_rate_ext_n, frame_rate_ext_d;
 
     skip_bits(&s->gb, 8); /* profil and level */
-    skip_bits(&s->gb, 1); /* progressive_sequence */
+    s->progressive_sequence = get_bits1(&s->gb); /* progressive_sequence */
     skip_bits(&s->gb, 2); /* chroma_format */
     horiz_size_ext = get_bits(&s->gb, 2);
     vert_size_ext = get_bits(&s->gb, 2);
@@ -1279,12 +1281,13 @@ static void mpeg_decode_picture_coding_extension(MpegEncContext *s)
     s->chroma_420_type = get_bits1(&s->gb);
     s->progressive_frame = get_bits1(&s->gb);
     /* composite display not parsed */
-    dprintf("intra_dc_precion=%d\n", s->intra_dc_precision);
+    dprintf("intra_dc_precision=%d\n", s->intra_dc_precision);
     dprintf("picture_structure=%d\n", s->picture_structure);
     dprintf("conceal=%d\n", s->concealment_motion_vectors);
     dprintf("intra_vlc_format=%d\n", s->intra_vlc_format);
     dprintf("alternate_scan=%d\n", s->alternate_scan);
     dprintf("frame_pred_frame_dct=%d\n", s->frame_pred_frame_dct);
+    dprintf("progressive_frame=%d\n", s->progressive_frame);
 }
 
 static void mpeg_decode_extension(AVCodecContext *avctx, 
@@ -1434,6 +1437,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
         avctx->width = width;
         avctx->height = height;
         avctx->frame_rate = frame_rate_tab[s->frame_rate_index];
+        s->frame_rate = avctx->frame_rate;
         avctx->bit_rate = s->bit_rate;
         
         if (MPV_common_init(s) < 0)
@@ -1505,13 +1509,14 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
     UINT8 *buf_end, *buf_ptr, *buf_start;
     int len, start_code_found, ret, code, start_code, input_size;
     AVPicture *picture = data;
-
+    MpegEncContext *s2 = &s->mpeg_enc_ctx;
+            
     dprintf("fill_buffer\n");
 
     *data_size = 0;
+    
     /* special case for last picture */
     if (buf_size == 0) {
-        MpegEncContext *s2 = &s->mpeg_enc_ctx;
         if (s2->picture_number > 0) {
             picture->data[0] = s2->next_picture[0];
             picture->data[1] = s2->next_picture[1];
@@ -1526,6 +1531,15 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     buf_ptr = buf;
     buf_end = buf + buf_size;
+    
+    if (s->repeat_field % 2 == 1) {
+        s->repeat_field++;
+        //fprintf(stderr,"\nRepeating last frame: %d -> %d! pict: %d %d", avctx->frame_number-1, avctx->frame_number,
+        //                                                         s2->picture_number, s->repeat_field);
+        *data_size = 1;
+        goto the_end;
+    }
+        
     while (buf_ptr < buf_end) {
         buf_start = buf_ptr;
         /* find start next code */
@@ -1574,6 +1588,14 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                                                 start_code, s->buffer, input_size);
                         if (ret == 1) {
                             /* got a picture: exit */
+                            /* first check if we must repeat the frame */
+                            if (s2->progressive_frame && s2->repeat_first_field) {
+                                //fprintf(stderr,"\nRepeat this frame: %d! pict: %d",avctx->frame_number,s2->picture_number);
+                                s2->repeat_first_field = 0;
+                                s2->progressive_frame = 0;
+                                if (++s->repeat_field > 2)
+                                    s->repeat_field = 0;
+                            }
                             *data_size = sizeof(AVPicture);
                             goto the_end;
                         }

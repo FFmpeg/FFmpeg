@@ -473,9 +473,13 @@ static int mpeg_mux_read_header(AVFormatContext *s,
                know that this codec will be used */
             type = CODEC_TYPE_AUDIO;
             codec_id = CODEC_ID_AC3;
+            /* XXX: Another hack for DVD: it seems, that AC3 streams
+               aren't signaled on audio_bound on some DVDs (Matrix) */
+            if (audio_bound == 0)
+            	audio_bound++;
             n = audio_bound;
             c = 0x80;
-            /*            c = 0x1c0; */
+            //c = 0x1c0;
         } else if (c == 0xb9) {
             /* all video streams */
             type = CODEC_TYPE_VIDEO;

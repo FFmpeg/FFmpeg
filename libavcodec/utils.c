@@ -113,7 +113,8 @@ int avcodec_decode_video(AVCodecContext *avctx, AVPicture *picture,
 
     ret = avctx->codec->decode(avctx, picture, got_picture_ptr, 
                                buf, buf_size);
-    avctx->frame_number++;
+    if (*got_picture_ptr)                           
+        avctx->frame_number++;
     return ret;
 }
 
