@@ -822,10 +822,10 @@ static inline int get_vlc_trace(GetBitContext *s, VLC_TYPE (*table)[2], int bits
 
 #define get_bits(s, n)  get_bits_trace(s, n, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_bits1(s)    get_bits_trace(s, 1, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_vlc(s, vlc)            get_vlc_trace(s, vlc->table, vlc->bits, 3, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define get_vlc(s, vlc)            get_vlc_trace(s, (vlc)->table, (vlc)->bits, 3, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 #define get_vlc2(s, tab, bits, max) get_vlc_trace(s, tab, bits, max, __FILE__, __PRETTY_FUNCTION__, __LINE__)
 
-#endif
+#endif //TRACE
 
 /* define it to include statistics code (useful only for optimizing
    codec efficiency */
