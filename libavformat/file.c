@@ -35,6 +35,8 @@ static int file_open(URLContext *h, const char *filename, int flags)
     int access;
     int fd;
 
+    strstart(filename, "file:", &filename);
+
     if (flags & URL_WRONLY) {
         access = O_CREAT | O_TRUNC | O_WRONLY;
     } else {
