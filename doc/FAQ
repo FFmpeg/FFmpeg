@@ -1,7 +1,7 @@
 
-1) ffserver don't not work. 
+1) ffserver doesn't not work. 
 
-ffmpeg development are now concentrated on the codec and format
+ffmpeg development is now concentrated on the codec and format
 handling. New developments broke ffserver, so don't expect it to work
 correctly. It is planned to fix it ASAP.
 
@@ -14,7 +14,7 @@ page.
 3) I cannot read this Real Audio/Video file.
 
 See (2). ffmpeg only supports Real Video 1.0 and AC3 as Real
-codecs. It mean that you cannot view files encoding with real tools
+codecs. It mean that you cannot view files encoded with real tools
 after version 5.0.
 
 4) I get audio/video synchro problems when grabbing.
