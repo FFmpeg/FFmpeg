@@ -570,7 +570,6 @@ static int nut_write_header(AVFormatContext *s)
 	int nom, denom, gcd;
 
 	codec = &s->streams[i]->codec;
-        av_set_pts_info(s->streams[i], 60, 1, AV_TIME_BASE);
 	
 	put_be64(bc, STREAM_STARTCODE);
 	put_packetheader(nut, bc, 120 + codec->extradata_size, 1);
@@ -607,6 +606,7 @@ static int nut_write_header(AVFormatContext *s)
         denom /= gcd;
         nut->stream[i].rate_num= nom;
         nut->stream[i].rate_den= denom;
+        av_set_pts_info(s->streams[i], 60, denom, nom);
 
 	put_v(bc, codec->bit_rate);
 	put_vb(bc, 0); /* no language code */
@@ -706,8 +706,6 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
     if (stream_index > s->nb_streams)
 	return 1;
         
-    pts= av_rescale(pts, stream->rate_num, stream->rate_den*(int64_t)AV_TIME_BASE);
-
     enc = &s->streams[stream_index]->codec;
     key_frame = enc->coded_frame->key_frame;
     if(enc->coded_frame->pts != AV_NOPTS_VALUE)
@@ -944,7 +942,6 @@ static int decode_stream_header(NUTContext *nut){
     st = av_new_stream(s, stream_id);
     if (!st)
         return AVERROR_NOMEM;
-    av_set_pts_info(st, 60, 1, AV_TIME_BASE);
 
     class = get_v(bc);
     tmp = get_vb(bc);
@@ -1004,6 +1001,7 @@ static int decode_stream_header(NUTContext *nut){
         av_log(s, AV_LOG_ERROR, "Stream header %d checksum missmatch\n", stream_id);
         return -1;
     }
+    av_set_pts_info(s->streams[stream_id], 60, denom, nom);
     nut->stream[stream_id].rate_num= nom;
     nut->stream[stream_id].rate_den= denom;
     return 0;
@@ -1175,12 +1173,11 @@ static int decode_frame_header(NUTContext *nut, int *key_frame_ret, int64_t *pts
     }
 
     if(*key_frame_ret){
-        int64_t av_pts= pts * AV_TIME_BASE * stream->rate_den / stream->rate_num;
 //        av_log(s, AV_LOG_DEBUG, "stream:%d start:%lld pts:%lld length:%lld\n",stream_id, frame_start, av_pts, frame_start - nut->stream[stream_id].last_sync_pos);
         av_add_index_entry(
             s->streams[stream_id], 
             frame_start, 
-            av_pts, 
+            pts, 
             frame_start - nut->stream[stream_id].last_sync_pos,
             AVINDEX_KEYFRAME);
         nut->stream[stream_id].last_sync_pos= frame_start;
@@ -1202,7 +1199,7 @@ av_log(s, AV_LOG_DEBUG, "fs:%lld fc:%d ft:%d kf:%d pts:%lld size:%d mul:%d lsb:%
     }
     
     *stream_id_ret = stream_id;
-    *pts_ret = pts * AV_TIME_BASE * stream->rate_den / stream->rate_num;
+    *pts_ret = pts;
 
     update(nut, stream_id, frame_start, frame_type, frame_code, *key_frame_ret, size, pts);
 

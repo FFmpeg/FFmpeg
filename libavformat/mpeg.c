@@ -1312,7 +1312,7 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         int i;
         for(i=0; i<s->nb_streams; i++){
             if(startcode == s->streams[i]->id) {
-                av_add_index_entry(s->streams[i], *ppos, dts*AV_TIME_BASE/90000, 0, 0 /* FIXME keyframe? */);
+                av_add_index_entry(s->streams[i], *ppos, dts, 0, 0 /* FIXME keyframe? */);
             }
         }
     }
@@ -1430,7 +1430,7 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
     printf("pos=0x%llx dts=0x%llx %0.3f\n", pos, dts, dts / 90000.0);
 #endif
     *ppos = pos;
-    return dts*AV_TIME_BASE/90000;
+    return dts;
 }
 
 #ifdef CONFIG_ENCODERS

@@ -732,7 +732,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
     	    return AV_NOPTS_VALUE;
         }
         
-        pts= pkt->pts;
+        pts= pkt->pts * 1000 / AV_TIME_BASE;
 
         av_free_packet(pkt);
         if(pkt->flags&PKT_FLAG_KEY){

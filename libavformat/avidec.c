@@ -137,7 +137,6 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 st = av_new_stream(s, i);
                 if (!st)
                     goto fail;
-                av_set_pts_info(st, 64, 1, AV_TIME_BASE);
 
                 ast = av_mallocz(sizeof(AVIStream));
                 if (!ast)
@@ -204,14 +203,13 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 }
                 ast->rate = rate;
                 ast->scale = scale;
+                av_set_pts_info(st, 64, scale, rate);
                 st->codec.frame_rate = rate;
                 st->codec.frame_rate_base = scale;
                 get_le32(pb); /* start */
                 nb_frames = get_le32(pb);
                 st->start_time = 0;
-                st->duration = (double)nb_frames * 
-                    st->codec.frame_rate_base * AV_TIME_BASE / 
-                    st->codec.frame_rate;
+                st->duration = nb_frames;
 		url_fskip(pb, size - 9 * 4);
                 break;
             case MKTAG('a', 'u', 'd', 's'):
@@ -233,6 +231,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     get_le32(pb); /* initial frame */
                     ast->scale = get_le32(pb); /* scale */
                     ast->rate = get_le32(pb);
+                    av_set_pts_info(st, 64, ast->scale, ast->rate);
                     ast->start= get_le32(pb); /* start */
                     length = get_le32(pb); /* length, in samples or bytes */
                     get_le32(pb); /* buffer size */
@@ -240,8 +239,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     ast->sample_size = get_le32(pb); /* sample ssize */
 //av_log(NULL, AV_LOG_DEBUG, "%d %d %d %d\n", ast->scale, ast->rate, ast->sample_size, ast->start);
                     st->start_time = 0;
-                    if (ast->rate != 0)
-                        st->duration = (int64_t)length * AV_TIME_BASE / ast->rate;
+                    st->duration = length;
                     url_fskip(pb, size - 12 * 4);
                 }
                 break;
@@ -421,10 +419,9 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                 ast = st->priv_data;
 
                 /* XXX: how to handle B frames in avi ? */
+                pkt->pts = ast->frame_offset;
                 if(ast->sample_size)
-                    pkt->pts = ((int64_t)ast->frame_offset * ast->scale* AV_TIME_BASE) / (ast->rate * ast->sample_size);
-                else
-                    pkt->pts = ((int64_t)ast->frame_offset * ast->scale* AV_TIME_BASE) / ast->rate;
+                    pkt->pts /= ast->sample_size;
 //printf("%Ld %d %d %d %d\n", pkt->pts, ast->frame_offset, ast->scale,  AV_TIME_BASE,  ast->rate);
                 pkt->stream_index = n;
                 /* FIXME: We really should read index for that */

@@ -634,6 +634,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         }
         /* this is tricky: the dts must be incremented by the duration
            of the frame we are displaying, i.e. the last I or P frame */
+        //FIXME / XXX this is wrong if duration is wrong
         if (st->last_IP_duration == 0)
             st->cur_dts += pkt->duration;
         else
@@ -656,6 +657,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
             st->cur_dts = pkt->pts;
             pkt->dts = pkt->pts;
         }
+        //FIXME / XXX this will drift away from the exact solution
         st->cur_dts += pkt->duration;
     }
     
@@ -883,7 +885,10 @@ static void av_read_frame_flush(AVFormatContext *s)
     }
 }
 
-/* add a index entry into a sorted list updateing if it is already there */
+/**
+ * add a index entry into a sorted list updateing if it is already there.
+ * @param timestamp timestamp in the timebase of the given stream
+ */
 int av_add_index_entry(AVStream *st,
                             int64_t pos, int64_t timestamp, int distance, int flags)
 {
@@ -946,7 +951,8 @@ static void av_build_index_raw(AVFormatContext *s)
             break;
         if (pkt->stream_index == 0 && st->parser &&
             (pkt->flags & PKT_FLAG_KEY)) {
-            av_add_index_entry(st, st->parser->frame_offset, pkt->dts, 
+            int64_t dts= av_rescale(pkt->dts, st->time_base.den, AV_TIME_BASE*(int64_t)st->time_base.num);
+            av_add_index_entry(st, st->parser->frame_offset, dts, 
                             0, AVINDEX_KEYFRAME);
         }
         av_free_packet(pkt);
@@ -996,20 +1002,23 @@ int av_index_search_timestamp(AVStream *st, int wanted_timestamp)
 
 #define DEBUG_SEEK
 
+/**
+ * Does a binary search using av_index_search_timestamp() and AVCodec.read_timestamp().
+ * this isnt supposed to be called directly by a user application, but by demuxers
+ * @param target_ts target timestamp in the time base of the given stream
+ * @param stream_index stream number
+ */
 int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts){
     AVInputFormat *avif= s->iformat;
     int64_t pos_min, pos_max, pos, pos_limit;
     int64_t ts_min, ts_max, ts;
     int64_t start_pos;
-    int index, no_change;
+    int index, no_change, i;
     AVStream *st;
 
-    if (stream_index < 0) {
-        stream_index = av_find_default_stream_index(s);
-        if (stream_index < 0)
-            return -1;
-    }
-
+    if (stream_index < 0)
+        return -1;
+    
 #ifdef DEBUG_SEEK
     av_log(s, AV_LOG_DEBUG, "read_seek: %d %lld\n", stream_index, target_ts);
 #endif
@@ -1139,7 +1148,13 @@ av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%L
 #endif
     /* do the seek */
     url_fseek(&s->pb, pos, SEEK_SET);
-    st->cur_dts = ts_min;
+
+    ts= av_rescale(ts_min, AV_TIME_BASE*(int64_t)st->time_base.num, st->time_base.den);
+    for(i = 0; i < s->nb_streams; i++) {
+        st = s->streams[i];
+
+        st->cur_dts = ts;
+    }
 
     return 0;
 }
@@ -1147,7 +1162,7 @@ av_log(s, AV_LOG_DEBUG, "%Ld %Ld %Ld / %Ld %Ld %Ld target:%Ld limit:%Ld start:%L
 static int av_seek_frame_generic(AVFormatContext *s, 
                                  int stream_index, int64_t timestamp)
 {
-    int index;
+    int index, i;
     AVStream *st;
     AVIndexEntry *ie;
 
@@ -1160,8 +1175,6 @@ static int av_seek_frame_generic(AVFormatContext *s,
         s->index_built = 1;
     }
 
-    if (stream_index < 0)
-        stream_index = 0;
     st = s->streams[stream_index];
     index = av_index_search_timestamp(st, timestamp);
     if (index < 0)
@@ -1171,20 +1184,40 @@ static int av_seek_frame_generic(AVFormatContext *s,
     ie = &st->index_entries[index];
     av_read_frame_flush(s);
     url_fseek(&s->pb, ie->pos, SEEK_SET);
-    st->cur_dts = ie->timestamp;
+    
+    timestamp= av_rescale(ie->timestamp, AV_TIME_BASE*(int64_t)st->time_base.num, st->time_base.den);
+    for(i = 0; i < s->nb_streams; i++) {
+        st = s->streams[i];
+
+        st->cur_dts = timestamp;
+    }
+
     return 0;
 }
 
 /**
  * Seek to the key frame just before the frame at timestamp
- * 'timestamp' in 'stream_index'. If stream_index is (-1), a default
- * stream is selected 
+ * 'timestamp' in 'stream_index'.
+ * @param stream_index If stream_index is (-1), a default
+ * stream is selected
+ * @param timestamp timestamp in AV_TIME_BASE units
+ * @return >= 0 on success
  */
 int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp)
 {
     int ret;
+    AVStream *st;
     
     av_read_frame_flush(s);
+    
+    if(stream_index < 0){
+        stream_index= av_find_default_stream_index(s);
+        if(stream_index < 0)
+            return -1;
+    }
+    st= s->streams[stream_index];
+
+    timestamp = av_rescale(timestamp, st->time_base.den, AV_TIME_BASE * (int64_t)st->time_base.num);
 
     /* first, we try the format specific seek */
     if (s->iformat->read_seek)

@@ -768,7 +768,7 @@ static void mpegts_push_data(void *opaque,
                         }
                         st = av_new_stream(pes->stream, pes->pid);
                         if (st) {
-                            av_set_pts_info(st, 60, 1, 27000000);
+                            av_set_pts_info(st, 60, 1, 90000);
                             st->priv_data = pes;
                             st->codec.codec_type = codec_type;
                             st->codec.codec_id = codec_id;
@@ -1284,14 +1284,14 @@ static int mpegts_read_close(AVFormatContext *s)
 }
 
 static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index, 
-                              int64_t *ppos, int find_next)
+                              int64_t *ppos, int64_t pos_limit)
 {
     MpegTSContext *ts = s->priv_data;
     int64_t pos, timestamp;
     uint8_t buf[TS_PACKET_SIZE];
     int pcr_l, pid;
-
-    pos = *ppos;
+    const int find_next= 1;
+    pos = ((*ppos  + ts->raw_packet_size - 1) / ts->raw_packet_size) * ts->raw_packet_size;
     if (find_next) {
         for(;;) {
             url_fseek(&s->pb, pos, SEEK_SET);
@@ -1320,117 +1320,8 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
         }
     }
     *ppos = pos;
+
     return timestamp;
-}
-
-typedef int64_t ReadTimestampFunc(AVFormatContext *s, int stream_index, 
-                                  int64_t *ppos, int find_next);
-
-static int64_t do_block_align(int64_t val, int block_align)
-{
-    return (val / block_align) * block_align;
-}
-
-/* XXX: use it in other formats */
-static int timestamp_read_seek(AVFormatContext *s, 
-                               int stream_index, int64_t timestamp,
-                               ReadTimestampFunc *read_timestamp,
-                               int block_align)
-{
-    int64_t pos_min, pos_max, pos;
-    int64_t dts_min, dts_max, dts;
-
-#ifdef DEBUG_SEEK
-    printf("read_seek: %d %0.3f\n", stream_index, timestamp / 90000.0);
-#endif
-
-    pos_min = 0;
-    dts_min = read_timestamp(s, stream_index, &pos_min, 1);
-    if (dts_min == AV_NOPTS_VALUE) {
-        /* we can reach this case only if no PTS are present in
-           the whole stream */
-        return -1;
-    }
-    pos_max = do_block_align(url_filesize(url_fileno(&s->pb)), block_align) - 
-        block_align;
-    dts_max = read_timestamp(s, stream_index, &pos_max, 0);
-    
-    while (pos_min <= pos_max) {
-#ifdef DEBUG_SEEK
-        printf("pos_min=0x%llx pos_max=0x%llx dts_min=%0.3f dts_max=%0.3f\n", 
-               pos_min, pos_max,
-               dts_min / 90000.0, dts_max / 90000.0);
-#endif
-        if (timestamp <= dts_min) {
-            pos = pos_min;
-            goto found;
-        } else if (timestamp >= dts_max) {
-            pos = pos_max;
-            goto found;
-        } else {
-            /* interpolate position (better than dichotomy) */
-            pos = (int64_t)((double)(pos_max - pos_min) * 
-                            (double)(timestamp - dts_min) /
-                            (double)(dts_max - dts_min)) + pos_min;
-            pos = do_block_align(pos, block_align);
-        }
-#ifdef DEBUG_SEEK
-        printf("pos=0x%llx\n", pos);
-#endif
-        /* read the next timestamp */
-        dts = read_timestamp(s, stream_index, &pos, 1);
-        /* check if we are lucky */
-        if (dts == AV_NOPTS_VALUE) {
-            /* should never happen */
-            pos = pos_min;
-            goto found;
-        } else if (timestamp == dts) {
-            goto found;
-        } else if (timestamp < dts) {
-            pos_max = pos;
-            dts_max = read_timestamp(s, stream_index, &pos_max, 0);
-            if (dts_max == AV_NOPTS_VALUE) {
-                /* should never happen */
-                break;
-            } else if (timestamp >= dts_max) {
-                pos = pos_max;
-                goto found;
-            }
-        } else {
-            pos_min = pos + block_align;
-            dts_min = read_timestamp(s, stream_index, &pos_min, 1);
-            if (dts_min == AV_NOPTS_VALUE) {
-                /* should never happen */
-                goto found;
-            } else if (timestamp <= dts_min) {
-                goto found;
-            }
-        }
-    }
-    pos = pos_min;
- found:
-#ifdef DEBUG_SEEK
-    pos_min = pos;
-    dts_min = read_timestamp(s, stream_index, &pos_min, 1);
-    pos_min += block_align;
-    dts_max = read_timestamp(s, stream_index, &pos_min, 1);
-    printf("pos=0x%llx %0.3f<=%0.3f<=%0.3f\n", 
-           pos, dts_min / 90000.0, timestamp / 90000.0, dts_max / 90000.0);
-#endif
-    /* do the seek */
-    url_fseek(&s->pb, pos, SEEK_SET);
-    return 0;
-}
-
-static int mpegts_read_seek(AVFormatContext *s, 
-                            int stream_index, int64_t timestamp)
-{
-    MpegTSContext *ts = s->priv_data;
-
-    timestamp = (timestamp * 90000) / AV_TIME_BASE;
-
-    return timestamp_read_seek(s, stream_index, timestamp, 
-                               mpegts_get_pcr, ts->raw_packet_size);
 }
 
 /**************************************************************/
@@ -1494,7 +1385,8 @@ AVInputFormat mpegts_demux = {
     mpegts_read_header,
     mpegts_read_packet,
     mpegts_read_close,
-    mpegts_read_seek,
+    NULL, //mpegts_read_seek,
+    mpegts_get_pcr,
     .flags = AVFMT_SHOW_IDS,
 };
 
