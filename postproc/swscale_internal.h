@@ -19,6 +19,15 @@
 #ifndef SWSCALE_INTERNAL_H
 #define SWSCALE_INTERNAL_H
 
+#include "../mp_msg.h"
+
+#define MSG_WARN(args...) mp_msg(MSGT_SWS,MSGL_WARN, ##args )
+#define MSG_FATAL(args...) mp_msg(MSGT_SWS,MSGL_FATAL, ##args )
+#define MSG_ERR(args...) mp_msg(MSGT_SWS,MSGL_ERR, ##args )
+#define MSG_V(args...) mp_msg(MSGT_SWS,MSGL_V, ##args )
+#define MSG_DBG2(args...) mp_msg(MSGT_SWS,MSGL_DBG2, ##args )
+#define MSG_INFO(args...) mp_msg(MSGT_SWS,MSGL_INFO, ##args )
+
 #define MAX_FILTER_SIZE 256
 
 typedef int (*SwsFunc)(struct SwsContext *context, uint8_t* src[], int srcStride[], int srcSliceY,

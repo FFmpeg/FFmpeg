@@ -41,7 +41,6 @@
 #include "swscale.h"
 #include "swscale_internal.h"
 #include "../mangle.h"
-#include "../mp_msg.h"
 #include "../libvo/img_format.h" //FIXME try to reduce dependency of such stuff
 
 #ifdef HAVE_MLIB
@@ -608,7 +607,7 @@ SwsFunc yuv2rgb_get_func_ptr (SwsContext *c)
 	if(t) return t;
     }
 #endif
-    mp_msg(MSGT_SWS,MSGL_WARN,"No accelerated colorspace conversion found\n");
+    MSG_WARN("No accelerated colorspace conversion found\n");
 
     switch(c->dstFormat){
     case IMGFMT_RGB32:
@@ -826,7 +825,7 @@ int yuv2rgb_c_init_tables (SwsContext *c, const int inv_table[4], int fullRange,
 
     default:
 	table_start= NULL;
-	mp_msg(MSGT_SWS,MSGL_ERR,"%ibpp not supported by yuv2rgb\n", bpp);
+	MSG_ERR("%ibpp not supported by yuv2rgb\n", bpp);
 	//free mem?
 	return -1;
     }

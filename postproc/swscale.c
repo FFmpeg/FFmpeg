@@ -68,14 +68,6 @@ untested special converters
 #include "../libvo/img_format.h"
 #include "rgb2rgb.h"
 #include "../libvo/fastmemcpy.h"
-#include "../mp_msg.h"
-
-#define MSG_WARN(args...) mp_msg(MSGT_SWS,MSGL_WARN, ##args )
-#define MSG_FATAL(args...) mp_msg(MSGT_SWS,MSGL_FATAL, ##args )
-#define MSG_ERR(args...) mp_msg(MSGT_SWS,MSGL_ERR, ##args )
-#define MSG_V(args...) mp_msg(MSGT_SWS,MSGL_V, ##args )
-#define MSG_DBG2(args...) mp_msg(MSGT_SWS,MSGL_DBG2, ##args )
-#define MSG_INFO(args...) mp_msg(MSGT_SWS,MSGL_INFO, ##args )
 
 #undef MOVNTQ
 #undef PAVGB
