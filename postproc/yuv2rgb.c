@@ -392,6 +392,47 @@ static void yuv2rgb_c_16 (uint8_t * py_1, uint8_t * py_2,
     }
 }
 
+// This is exactly the same code as yuv2rgb_c_32 except for the types of
+// r, g, b, dst_1, dst_2
+static void yuv2rgb_c_8  (uint8_t * py_1, uint8_t * py_2,
+			  uint8_t * pu, uint8_t * pv,
+			  void * _dst_1, void * _dst_2, int h_size)
+{
+    int U, V, Y;
+    uint8_t * r, * g, * b;
+    uint8_t * dst_1, * dst_2;
+
+    h_size >>= 3;
+    dst_1 = _dst_1;
+    dst_2 = _dst_2;
+
+    while (h_size--) {
+	RGB(0);
+	DST1(0);
+	DST2(0);
+
+	RGB(1);
+	DST2(1);
+	DST1(1);
+
+	RGB(2);
+	DST1(2);
+	DST2(2);
+
+	RGB(3);
+	DST2(3);
+	DST1(3);
+
+	pu += 4;
+	pv += 4;
+	py_1 += 8;
+	py_2 += 8;
+	dst_1 += 8;
+	dst_2 += 8;
+    }
+}
+
+
 static int div_round (int dividend, int divisor)
 {
     if (dividend > 0)
@@ -407,6 +448,7 @@ static void yuv2rgb_c_init (int bpp, int mode)
     uint32_t *table_32 = 0;
     uint16_t *table_16 = 0;
     uint8_t *table_8 = 0;
+    uint8_t *table_332 = 0;
     int entry_size = 0;
     void *table_r = 0, *table_g = 0, *table_b = 0;
 
@@ -486,6 +528,42 @@ static void yuv2rgb_c_init (int bpp, int mode)
 		j <<= ((bpp==16) ? 11 : 10);
 
 	    ((uint16_t *)table_b)[i] = j;
+	}
+	break;
+
+    case 8:
+	yuv2rgb_c_internal = yuv2rgb_c_8;
+
+	table_332 = malloc ((197 + 2*682 + 256 + 132) * sizeof (uint8_t));
+
+	entry_size = sizeof (uint8_t);
+	table_r = table_332 + 197;
+	table_b = table_332 + 197 + 685;
+	table_g = table_332 + 197 + 2*682;
+
+	for (i = -197; i < 256+197; i++) {
+	    int j = table_Y[i+384] >> 5;
+
+	    if (mode == MODE_RGB)
+		j <<= 5;
+
+	    ((uint8_t *)table_r)[i] = j;
+	}
+	for (i = -132; i < 256+132; i++) {
+	    int j = table_Y[i+384] >> 5;
+
+	    if (mode == MODE_BGR)
+		j <<= 1;
+
+	    ((uint8_t *)table_g)[i] = j << 2;
+	}
+	for (i = -232; i < 256+232; i++) {
+	    int j = table_Y[i+384] >> 6;
+
+	    if (mode == MODE_BGR)
+		j <<= 6;
+
+	    ((uint8_t *)table_b)[i] = j;
 	}
 	break;
 
