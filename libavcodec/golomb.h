@@ -32,6 +32,10 @@ extern const uint8_t ff_ue_golomb_vlc_code[512];
 extern const  int8_t ff_se_golomb_vlc_code[512];
 extern const uint8_t ff_ue_golomb_len[256];
 
+extern const uint8_t ff_interleaved_golomb_vlc_len[256];
+extern const uint8_t ff_interleaved_ue_golomb_vlc_code[256];
+extern const  int8_t ff_interleaved_se_golomb_vlc_code[256];
+
  
  /**
  * read unsigned exp golomb code.
@@ -62,24 +66,33 @@ static inline int get_ue_golomb(GetBitContext *gb){
 }
 
 static inline int svq3_get_ue_golomb(GetBitContext *gb){
-    unsigned int buf;
+    uint32_t buf;
     int log;
 
     OPEN_READER(re, gb);
     UPDATE_CACHE(re, gb);
-    buf=GET_CACHE(re, gb)|1;
+    buf=GET_CACHE(re, gb);
+    
+    if(buf&0xAA800000){
+        buf >>= 32 - 8;
+        LAST_SKIP_BITS(re, gb, ff_interleaved_golomb_vlc_len[buf]);
+        CLOSE_READER(re, gb);
+        
+        return ff_interleaved_ue_golomb_vlc_code[buf];
+    }else{
+        buf|=1;
+        if((buf & 0xAAAAAAAA) == 0)
+            return INVALID_VLC;
 
-    if((buf & 0xAAAAAAAA) == 0)
-        return INVALID_VLC;
+        for(log=31; (buf & 0x80000000) == 0; log--){
+            buf = (buf << 2) - ((buf << log) >> (log - 1)) + (buf >> 30);
+        }
 
-    for(log=31; (buf & 0x80000000) == 0; log--){
-        buf = (buf << 2) - ((buf << log) >> (log - 1)) + (buf >> 30);
+        LAST_SKIP_BITS(re, gb, 63 - 2*log);
+        CLOSE_READER(re, gb);
+
+        return ((buf << log) >> log) - 1;
     }
-
-    LAST_SKIP_BITS(re, gb, 63 - 2*log);
-    CLOSE_READER(re, gb);
-
-    return ((buf << log) >> log) - 1;
 }
 
 /**
@@ -141,19 +154,28 @@ static inline int svq3_get_se_golomb(GetBitContext *gb){
 
     OPEN_READER(re, gb);
     UPDATE_CACHE(re, gb);
-    buf=GET_CACHE(re, gb)|1;
+    buf=GET_CACHE(re, gb);
 
-    if((buf & 0xAAAAAAAA) == 0)
-        return INVALID_VLC;
+    if(buf&0xAA800000){
+        buf >>= 32 - 8;
+        LAST_SKIP_BITS(re, gb, ff_interleaved_golomb_vlc_len[buf]);
+        CLOSE_READER(re, gb);
+        
+        return ff_interleaved_se_golomb_vlc_code[buf];
+    }else{
+        buf |=1;
+        if((buf & 0xAAAAAAAA) == 0)
+            return INVALID_VLC;
 
-    for(log=31; (buf & 0x80000000) == 0; log--){
-        buf = (buf << 2) - ((buf << log) >> (log - 1)) + (buf >> 30);
+        for(log=31; (buf & 0x80000000) == 0; log--){
+            buf = (buf << 2) - ((buf << log) >> (log - 1)) + (buf >> 30);
+        }
+
+        LAST_SKIP_BITS(re, gb, 63 - 2*log);
+        CLOSE_READER(re, gb);
+
+        return (signed) (((((buf << log) >> log) - 1) ^ -(buf & 0x1)) + 1) >> 1;
     }
-
-    LAST_SKIP_BITS(re, gb, 63 - 2*log);
-    CLOSE_READER(re, gb);
-
-    return (signed) (((((buf << log) >> log) - 1) ^ -(buf & 0x1)) + 1) >> 1;
 }
 
 #ifdef TRACE

@@ -729,6 +729,13 @@ static int svq3_decode_frame (AVCodecContext *avctx,
   while (get_bits (&s->gb, 1)) {
     get_bits (&s->gb, 8);
   }
+  
+  if(avctx->debug&FF_DEBUG_PICT_INFO){
+      printf("%c hpel:%d, tpel:%d aqp:%d qp:%d\n", 
+      ff_get_pict_type_char(s->pict_type), h->halfpel_flag, h->thirdpel_flag,
+      s->adaptive_quant, s->qscale
+      );
+  }
 
   /* B-frames are not supported */
   if (s->pict_type == B_TYPE/* && avctx->hurry_up*/)
