@@ -1681,7 +1681,7 @@ static int find_marker(uint8_t **pbuf_ptr, uint8_t *buf_end)
     while (buf_ptr < buf_end) {
         v = *buf_ptr++;
 	v2 = *buf_ptr;
-        if ((v == 0xff) && (v2 >= 0xc0) && (v2 <= 0xfe)) {
+        if ((v == 0xff) && (v2 >= 0xc0) && (v2 <= 0xfe) && buf_ptr < buf_end) {
 	    val = *buf_ptr++;
 	    goto found;
         }
@@ -1874,9 +1874,6 @@ not_the_end:
         }
     }
 the_end:
-    if(buf_ptr > buf_end)
-      buf_ptr = buf_end;
-
     dprintf("mjpeg decode frame unused %d bytes\n", buf_end - buf_ptr);
 //    return buf_end - buf_ptr;
     return buf_ptr - buf;
