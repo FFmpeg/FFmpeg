@@ -1224,6 +1224,22 @@ static void stream_component_close(VideoState *is, int stream_index)
     }
 }
 
+void dump_stream_info(AVFormatContext *s)
+{
+    if (s->track != 0)
+        fprintf(stderr, "Track: %d\n", s->track);
+    if (s->title[0] != '\0')
+        fprintf(stderr, "Title: %s\n", s->title);
+    if (s->author[0] != '\0')
+        fprintf(stderr, "Author: %s\n", s->author);
+    if (s->album[0] != '\0')
+        fprintf(stderr, "Album: %s\n", s->album);
+    if (s->year != 0)
+        fprintf(stderr, "Year: %d\n", s->year);
+    if (s->genre[0] != '\0')
+        fprintf(stderr, "Genre: %s\n", s->genre);
+}
+
 /* since we have only one decoding thread, we can use a global
    variable instead of a thread local variable */
 static VideoState *global_video_state;
@@ -1280,6 +1296,7 @@ static int decode_thread(void *arg)
     }
     if (show_status) {
         dump_format(ic, 0, is->filename, 0);
+        dump_stream_info(ic);
     }
 
     /* open the streams */
