@@ -1,4 +1,3 @@
-#include "../../config.h"
 #include "../dsputil.h"
 
 #ifdef HAVE_ALTIVEC
