@@ -3997,7 +3997,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
     int last_i= 0;
     int coeff[3][64];
     int coeff_count[64];
-    int lambda, qmul, qadd, start_i, last_non_zero, i;
+    int lambda, qmul, qadd, start_i, last_non_zero, i, dc;
     const int esc_length= s->ac_esc_length;
     uint8_t * length;
     uint8_t * last_length;
@@ -4206,11 +4206,51 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         }
     }
     
+    dc= block[0];
     last_non_zero= last_i - 1 + start_i;
     memset(block + start_i, 0, (64-start_i)*sizeof(DCTELEM));
     
     if(last_non_zero < start_i)
         return last_non_zero;
+    
+    if(last_non_zero == 0 && start_i == 0){
+        int best_level= 0;
+        int best_score= dc * dc;
+
+        for(i=0; i<coeff_count[0]; i++){
+            const int level= coeff[i][0];
+            int unquant_coeff, score, distoration;
+
+            if(s->out_format == FMT_H263){
+                if(level>0){
+                    unquant_coeff= (level*qmul + qadd)>>3;
+                }else{
+                    unquant_coeff= (level*qmul - qadd)>>3;
+                }
+            }else{ //MPEG1
+                    if (level < 0) {
+                        unquant_coeff = ((((-level) << 1) + 1) * qscale * ((int) s->inter_matrix[0])) >> 4;
+                        unquant_coeff = -((unquant_coeff - 1) | 1);
+                    } else {
+                        unquant_coeff = (((  level  << 1) + 1) * qscale * ((int) s->inter_matrix[0])) >> 4;
+                        unquant_coeff =   (unquant_coeff - 1) | 1;
+                    }
+            }
+            unquant_coeff = (unquant_coeff + 4) >> 3;
+            unquant_coeff<<= 3 + 3;
+
+            distoration= (unquant_coeff - dc) * (unquant_coeff - dc);
+            score= distoration + last_length[UNI_AC_ENC_INDEX(0, level+64)]*lambda;
+            if(score < best_score){
+                best_score= score;
+                best_level= level;
+            }
+        }
+        block[0]= best_level;
+        if(best_level == 0) 
+            last_non_zero=-1;
+        return last_non_zero;
+    }
     
     i= last_i;
     assert(last_level);
