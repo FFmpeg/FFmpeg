@@ -21,7 +21,7 @@
 /*
  * init MDCT or IMDCT computation
  */
-int mdct_init(MDCTContext *s, int nbits, int inverse)
+int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
 {
     int n, n4, i;
     float alpha;
@@ -69,8 +69,8 @@ int mdct_init(MDCTContext *s, int nbits, int inverse)
  * @param input N/2 samples
  * @param tmp N/2 samples
  */
-void imdct_calc(MDCTContext *s, FFTSample *output, 
-                const FFTSample *input, FFTSample *tmp)
+void ff_imdct_calc(MDCTContext *s, FFTSample *output, 
+                   const FFTSample *input, FFTSample *tmp)
 {
     int k, n8, n4, n2, n, j;
     const uint16_t *revtab = s->fft.revtab;
@@ -121,8 +121,8 @@ void imdct_calc(MDCTContext *s, FFTSample *output,
  * @param out N/2 samples
  * @param tmp temporary storage of N/2 samples
  */
-void mdct_calc(MDCTContext *s, FFTSample *out, 
-               const FFTSample *input, FFTSample *tmp)
+void ff_mdct_calc(MDCTContext *s, FFTSample *out, 
+                  const FFTSample *input, FFTSample *tmp)
 {
     int i, j, n, n8, n4, n2, n3;
     FFTSample re, im, re1, im1;
@@ -162,7 +162,7 @@ void mdct_calc(MDCTContext *s, FFTSample *out,
     }
 }
 
-void mdct_end(MDCTContext *s)
+void ff_mdct_end(MDCTContext *s)
 {
     av_freep(&s->tcos);
     av_freep(&s->tsin);

@@ -262,11 +262,11 @@ typedef struct MDCTContext {
     FFTContext fft;
 } MDCTContext;
 
-int mdct_init(MDCTContext *s, int nbits, int inverse);
-void imdct_calc(MDCTContext *s, FFTSample *output, 
+int ff_mdct_init(MDCTContext *s, int nbits, int inverse);
+void ff_imdct_calc(MDCTContext *s, FFTSample *output, 
                 const FFTSample *input, FFTSample *tmp);
-void mdct_calc(MDCTContext *s, FFTSample *out, 
+void ff_mdct_calc(MDCTContext *s, FFTSample *out, 
                const FFTSample *input, FFTSample *tmp);
-void mdct_end(MDCTContext *s);
+void ff_mdct_end(MDCTContext *s);
 
 #endif
