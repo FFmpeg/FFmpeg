@@ -90,6 +90,7 @@ typedef struct {
     int64_t packet_size_pos;
     int64_t last_frame_start[3];
     FrameCode frame_code[256];
+    int stream_count;
     StreamContext *stream;
 } NUTContext;
 
@@ -326,6 +327,39 @@ static int get_length(uint64_t val){
 	    return i;
 
     return 7; //not reached
+}
+
+static uint64_t find_any_startcode(ByteIOContext *bc, int64_t pos){
+    uint64_t state=0;
+    
+    if(pos >= 0)
+        url_fseek(bc, pos, SEEK_SET); //note, this may fail if the stream isnt seekable, but that shouldnt matter, as in this case we simply start where we are currently
+
+    while(bytes_left(bc)){
+        state= (state<<8) | get_byte(bc);
+        if((state>>56) != 'N')
+            continue;
+        switch(state){
+        case MAIN_STARTCODE:
+        case STREAM_STARTCODE:
+        case KEYFRAME_STARTCODE:
+        case INFO_STARTCODE:
+        case INDEX_STARTCODE:
+            return state;
+        }
+    }
+    return 0;
+}
+
+static int find_startcode(ByteIOContext *bc, uint64_t code, int64_t pos){
+    for(;;){
+        uint64_t startcode= find_any_startcode(bc, pos);
+        if(startcode == code)
+            return 0;
+        else if(startcode == 0)
+            return -1;
+        pos=-1;
+    }
 }
 
 #ifdef CONFIG_ENCODERS
@@ -763,28 +797,21 @@ static int nut_probe(AVProbeData *p)
     return 0;
 }
 
-static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
-{
-    NUTContext *nut = s->priv_data;
+static int decode_main_header(NUTContext *nut){
+    AVFormatContext *s= nut->avf;
     ByteIOContext *bc = &s->pb;
     uint64_t tmp;
-    int cur_stream, nb_streams, i, j;
-
-    nut->avf= s;
+    int i, j;
     
-    av_set_pts_info(s, 60, 1, AV_TIME_BASE);
-
-    /* main header */
-    tmp = get_be64(bc);
-    if (tmp != MAIN_STARTCODE)
-	av_log(s, AV_LOG_ERROR, "damaged? startcode!=1 (%Ld)\n", tmp);
     get_packetheader(nut, bc, 8, 1);
-    
+
     tmp = get_v(bc);
-    if (tmp != 1)
+    if (tmp != 1){
 	av_log(s, AV_LOG_ERROR, "bad version (%Ld)\n", tmp);
+        return -1;
+    }
     
-    nb_streams = get_v(bc);
+    nut->stream_count = get_v(bc);
     get_v(bc); //checksum threshold
 
     for(i=0; i<256;){
@@ -811,7 +838,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
 
         for(j=0; j<count; j++,i++){
-            if(tmp_stream > nb_streams + 1){
+            if(tmp_stream > nut->stream_count + 1){
                 av_log(s, AV_LOG_ERROR, "illegal stream number\n");
                 return -1;
             }
@@ -830,141 +857,205 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "illegal frame_code table\n");
         return -1;
     }
-    
+
     if(check_checksum(bc)){
         av_log(s, AV_LOG_ERROR, "Main header checksum missmatch\n");
         return -1;
     }
+
+    return 0;
+}
+
+static int decode_stream_header(NUTContext *nut){
+    AVFormatContext *s= nut->avf;
+    ByteIOContext *bc = &s->pb;
+    int class, nom, denom, stream_id, i;
+    uint64_t tmp;
+    AVStream *st;
+    
+    get_packetheader(nut, bc, 8, 1);
+    stream_id= get_v(bc);
+    if(stream_id >= nut->stream_count || s->streams[stream_id])
+        return -1;
+    
+    st = av_new_stream(s, stream_id);
+    if (!st)
+        return AVERROR_NOMEM;
+    class = get_v(bc);
+    tmp = get_v(bc);
+    switch(class)
+    {
+        case 0:
+            st->codec.codec_type = CODEC_TYPE_VIDEO;
+            st->codec.codec_id = codec_get_bmp_id(tmp);
+            if (st->codec.codec_id == CODEC_ID_NONE)
+                av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
+            break;
+        case 32:
+            st->codec.codec_type = CODEC_TYPE_AUDIO;
+            st->codec.codec_id = codec_get_wav_id(tmp);
+            if (st->codec.codec_id == CODEC_ID_NONE)
+                av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
+            break;
+        default:
+            av_log(s, AV_LOG_ERROR, "Unknown stream class (%d)\n", class);
+            return -1;
+    }
+    s->bit_rate += get_v(bc);
+    get_v(bc); /* language code */
+    nom = get_v(bc);
+    denom = get_v(bc);
+    nut->stream[stream_id].msb_timestamp_shift = get_v(bc);
+    for(i=0; i<3; i++)
+            nut->stream[stream_id].initial_pts_predictor[i]= get_v(bc);
+    for(i=0; i<2; i++)
+            nut->stream[stream_id].initial_size_predictor[i]= get_v(bc);
+    get_byte(bc); /* flags */
+
+    /* codec specific data headers */
+    while(get_v(bc) != 0){
+        st->codec.extradata_size= get_v(bc);
+        st->codec.extradata= av_mallocz(st->codec.extradata_size);
+        get_buffer(bc, st->codec.extradata, st->codec.extradata_size);            
+//	    url_fskip(bc, get_v(bc));
+    }
+    
+    if (class == 0) /* VIDEO */
+    {
+        st->codec.width = get_v(bc);
+        st->codec.height = get_v(bc);
+        st->codec.sample_aspect_ratio.num= get_v(bc);
+        st->codec.sample_aspect_ratio.den= get_v(bc);
+        get_v(bc); /* csp type */
+
+        st->codec.frame_rate = nom;
+        st->codec.frame_rate_base = denom;
+    }
+    if (class == 32) /* AUDIO */
+    {
+        st->codec.sample_rate = (get_v(bc) * nom) / denom;
+        st->codec.channels = get_v(bc);
+    }
+    if(check_checksum(bc)){
+        av_log(s, AV_LOG_ERROR, "Stream header %d checksum missmatch\n", stream_id);
+        return -1;
+    }
+    nut->stream[stream_id].rate_num= nom;
+    nut->stream[stream_id].rate_den= denom;
+    return 0;
+}
+
+static int decode_info_header(NUTContext *nut){
+    AVFormatContext *s= nut->avf;
+    ByteIOContext *bc = &s->pb;
+    
+    get_packetheader(nut, bc, 8, 1);
+
+    for(;;){
+        int id= get_v(bc);
+        char *name, *type, custom_name[256], custom_type[256];
+
+        if(!id)
+            break;
+        else if(id >= sizeof(info_table)/sizeof(info_table[0])){
+            av_log(s, AV_LOG_ERROR, "info id is too large %d %d\n", id, sizeof(info_table)/sizeof(info_table[0]));
+            return -1;
+        }
+
+        type= info_table[id][1];
+        name= info_table[id][0];
+//av_log(s, AV_LOG_DEBUG, "%d %s %s\n", id, type, name);
+
+        if(!type){
+            get_str(bc, custom_type, sizeof(custom_type));
+            type= custom_type;
+        }
+        if(!name){
+            get_str(bc, custom_name, sizeof(custom_name));
+            name= custom_name;
+        }
+        
+        if(!strcmp(type, "v")){
+            int value= get_v(bc);
+        }else{
+            if(!strcmp(name, "Author"))
+                get_str(bc, s->author, sizeof(s->author));
+            else if(!strcmp(name, "Title"))
+                get_str(bc, s->title, sizeof(s->title));
+            else if(!strcmp(name, "Copyright"))
+                get_str(bc, s->copyright, sizeof(s->copyright));
+            else if(!strcmp(name, "Description"))
+                get_str(bc, s->comment, sizeof(s->comment));
+            else
+                get_str(bc, NULL, 0);
+        }
+    }
+    if(check_checksum(bc)){
+        av_log(s, AV_LOG_ERROR, "Info header checksum missmatch\n");
+        return -1;
+    }
+    return 0;
+}
+
+static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
+{
+    NUTContext *nut = s->priv_data;
+    ByteIOContext *bc = &s->pb;
+    int64_t pos;
+    int inited_stream_count;
+
+    nut->avf= s;
+    
+    av_set_pts_info(s, 60, 1, AV_TIME_BASE);
+
+    /* main header */
+    pos=0;
+    for(;;){
+        if (find_startcode(bc, MAIN_STARTCODE, pos)<0){
+            av_log(s, AV_LOG_ERROR, "no main startcode found\n");
+            return -1;
+        }
+        pos= url_ftell(bc);
+        if(decode_main_header(nut) >= 0)
+            break;
+    }
+    
     
     s->bit_rate = 0;
 
-    nut->stream = av_malloc(sizeof(StreamContext)*nb_streams);
-    
-    /* stream header */
-    for (cur_stream = 0; cur_stream < nb_streams; cur_stream++)
-    {
-	int class, nom, denom;
-	AVStream *st;
-	
-	tmp = get_be64(bc);
-	if (tmp != STREAM_STARTCODE)
-	    av_log(s, AV_LOG_ERROR, "damaged? startcode!=1 (%Ld)\n", tmp);
-	get_packetheader(nut, bc, 8, 1);
-	st = av_new_stream(s, get_v(bc));
-	if (!st)
-	    return AVERROR_NOMEM;
-	class = get_v(bc);
-	tmp = get_v(bc);
-	switch(class)
-	{
-	    case 0:
-		st->codec.codec_type = CODEC_TYPE_VIDEO;
-		st->codec.codec_id = codec_get_bmp_id(tmp);
-		if (st->codec.codec_id == CODEC_ID_NONE)
-		    av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
-		break;
-	    case 32:
-		st->codec.codec_type = CODEC_TYPE_AUDIO;
-		st->codec.codec_id = codec_get_wav_id(tmp);
-		if (st->codec.codec_id == CODEC_ID_NONE)
-		    av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
-		break;
-	    default:
-		av_log(s, AV_LOG_ERROR, "Unknown stream class (%d)\n", class);
-		return -1;
-	}
-	s->bit_rate += get_v(bc);
-	get_v(bc); /* language code */
-	nom = get_v(bc);
-	denom = get_v(bc);
-	nut->stream[cur_stream].msb_timestamp_shift = get_v(bc);
-	for(i=0; i<3; i++)
-		nut->stream[cur_stream].initial_pts_predictor[i]= get_v(bc);
-	for(i=0; i<2; i++)
-		nut->stream[cur_stream].initial_size_predictor[i]= get_v(bc);
-	get_byte(bc); /* flags */
+    nut->stream = av_malloc(sizeof(StreamContext)*nut->stream_count);
 
-	/* codec specific data headers */
-	while(get_v(bc) != 0){
-            st->codec.extradata_size= get_v(bc);
-            st->codec.extradata= av_mallocz(st->codec.extradata_size);
-            get_buffer(bc, st->codec.extradata, st->codec.extradata_size);            
-//	    url_fskip(bc, get_v(bc));
-        }
-	
-	if (class == 0) /* VIDEO */
-	{
-	    st->codec.width = get_v(bc);
-	    st->codec.height = get_v(bc);
-	    st->codec.sample_aspect_ratio.num= get_v(bc);
-	    st->codec.sample_aspect_ratio.den= get_v(bc);
-	    get_v(bc); /* csp type */
-
-	    st->codec.frame_rate = nom;
-	    st->codec.frame_rate_base = denom;
-	}
-	if (class == 32) /* AUDIO */
-	{
-	    st->codec.sample_rate = (get_v(bc) * nom) / denom;
-	    st->codec.channels = get_v(bc);
-	}
-        if(check_checksum(bc)){
-            av_log(s, AV_LOG_ERROR, "Stream header %d checksum missmatch\n", cur_stream);
+    /* stream headers */
+    pos=0;
+    for(inited_stream_count=0; inited_stream_count < nut->stream_count;){
+        if (find_startcode(bc, STREAM_STARTCODE, pos)<0){
+            av_log(s, AV_LOG_ERROR, "not all stream headers found\n");
             return -1;
         }
-        nut->stream[cur_stream].rate_num= nom;
-        nut->stream[cur_stream].rate_den= denom;
+        pos= url_ftell(bc);
+        if(decode_stream_header(nut) >= 0)
+            inited_stream_count++;
     }
-        
-    tmp = get_be64(bc);
-    if (tmp == INFO_STARTCODE){
-	get_packetheader(nut, bc, 8, 1);
-    
-        for(;;){
-            int id= get_v(bc);
-            char *name, *type, custom_name[256], custom_type[256];
 
-            if(!id)
-                break;
-            else if(id >= sizeof(info_table)/sizeof(info_table[0])){
-                av_log(s, AV_LOG_ERROR, "info id is too large %d %d\n", id, sizeof(info_table)/sizeof(info_table[0]));
-                return -1;
-            }
+    /* info headers */
+    pos=0;
+    for(;;){
+        uint64_t startcode= find_any_startcode(bc, pos);
+        pos= url_ftell(bc);
 
-            type= info_table[id][1];
-            name= info_table[id][0];
-//av_log(s, AV_LOG_DEBUG, "%d %s %s\n", id, type, name);
-
-            if(!type){
-                get_str(bc, custom_type, sizeof(custom_type));
-                type= custom_type;
-            }
-            if(!name){
-                get_str(bc, custom_name, sizeof(custom_name));
-                name= custom_name;
-            }
-            
-            if(!strcmp(type, "v")){
-                int value= get_v(bc);
-            }else{
-                if(!strcmp(name, "Author"))
-                    get_str(bc, s->author, sizeof(s->author));
-                else if(!strcmp(name, "Title"))
-                    get_str(bc, s->title, sizeof(s->title));
-                else if(!strcmp(name, "Copyright"))
-                    get_str(bc, s->copyright, sizeof(s->copyright));
-                else if(!strcmp(name, "Description"))
-                    get_str(bc, s->comment, sizeof(s->comment));
-                else
-                    get_str(bc, NULL, 0);
-            }
+        if(startcode==0){
+            av_log(s, AV_LOG_ERROR, "EOF before video frames\n");
+            return -1;
+        }else if(startcode == KEYFRAME_STARTCODE){
+            url_fseek(bc, -8, SEEK_CUR); //FIXME
+            break;
+        }else if(startcode != INFO_STARTCODE){
+            continue;
         }
-        if(check_checksum(bc)){
-            av_log(s, AV_LOG_ERROR, "Info header checksum missmatch\n");
-        }
-    }else
-        url_fseek(bc, -8, SEEK_CUR);
-    
+
+        decode_info_header(nut);
+    }
+
     return 0;
 }
 
