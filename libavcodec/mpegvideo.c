@@ -3695,6 +3695,7 @@ void ff_mpeg_flush(AVCodecContext *avctx){
     s->parse_context.overread_index= 0;
     s->parse_context.index= 0;
     s->parse_context.last_index= 0;
+    s->bitstream_buffer_size=0;
 }
 
 #ifdef CONFIG_ENCODERS
