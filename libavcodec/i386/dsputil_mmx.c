@@ -963,8 +963,8 @@ static void   sub_pixels_xy2_mmx( DCTELEM  *block, const UINT8 *pixels, int line
 void dsputil_init_mmx(void)
 {
     mm_flags = mm_support();
-#if 0
-    printf("CPU flags:");
+#if 1
+    printf("libavcodec: CPU flags:");
     if (mm_flags & MM_MMX)
         printf(" mmx");
     if (mm_flags & MM_MMXEXT)
