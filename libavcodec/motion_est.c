@@ -1558,7 +1558,7 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
             score=fbmin;
             type= MB_TYPE_BIDIR;
         }
-        score= (score*score + 128*256)>>16;
+        score= ((unsigned)(score*score + 128*256))>>16;
         s->mc_mb_var_sum += score;
         s->mc_mb_var[mb_y*s->mb_width + mb_x] = score; //FIXME use SSD
     }
