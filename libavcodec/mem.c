@@ -71,6 +71,17 @@ void *av_malloc(unsigned int size)
     return ptr;
 }
 
+/**
+ * realloc which does nothing if the block is large enogh
+ */
+void *av_fast_realloc(void *ptr, int *size, int min_size){
+    if(min_size < *size) return ptr;
+    
+    *size= min_size + 10*1024;
+
+    return realloc(ptr, *size);
+}
+
 /* NOTE: ptr = NULL is explicetly allowed */
 void av_free(void *ptr)
 {

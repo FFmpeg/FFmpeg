@@ -1236,6 +1236,7 @@ void *av_mallocz(unsigned int size);
 void av_free(void *ptr);
 void __av_freep(void **ptr);
 #define av_freep(p) __av_freep((void **)(p))
+void *av_fast_realloc(void *ptr, int *size, int min_size);
 /* for static data only */
 /* call av_free_static to release all staticaly allocated tables */
 void av_free_static(void);

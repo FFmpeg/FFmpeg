@@ -604,6 +604,7 @@ void ff_draw_horiz_band(MpegEncContext *s);
 void ff_emulated_edge_mc(MpegEncContext *s, UINT8 *src, int linesize, int block_w, int block_h, 
                                     int src_x, int src_y, int w, int h);
 char ff_get_pict_type_char(int pict_type);
+int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size);
 
 extern enum PixelFormat ff_yuv420p_list[2];
 

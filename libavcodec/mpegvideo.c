@@ -2627,6 +2627,35 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
 #endif
 }
 
+/**
+ * combines the (truncated) bitstream to a complete frame
+ * @returns -1 if no complete frame could be created
+ */
+int ff_combine_frame( MpegEncContext *s, int next, uint8_t **buf, int *buf_size){
+    ParseContext *pc= &s->parse_context;
+        
+    pc->last_index= pc->index;
+
+    if(next==-1){
+        pc->buffer= av_fast_realloc(pc->buffer, &pc->buffer_size, (*buf_size) + pc->index + FF_INPUT_BUFFER_PADDING_SIZE);
+
+        memcpy(&pc->buffer[pc->index], *buf, *buf_size);
+        pc->index += *buf_size;
+        return -1;
+    }
+
+    if(pc->index){
+        pc->buffer= av_fast_realloc(pc->buffer, &pc->buffer_size, next + pc->index + FF_INPUT_BUFFER_PADDING_SIZE);
+
+        memcpy(&pc->buffer[pc->index], *buf, next + FF_INPUT_BUFFER_PADDING_SIZE );
+        pc->index = 0;
+        *buf= pc->buffer;
+        *buf_size= pc->last_index + next;
+    }
+
+    return 0;
+}
+
 void ff_copy_bits(PutBitContext *pb, UINT8 *src, int length)
 {
     int bytes= length>>4;

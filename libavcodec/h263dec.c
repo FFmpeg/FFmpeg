@@ -401,41 +401,19 @@ uint64_t time= rdtsc();
     if (buf_size == 0) {
         return 0;
     }
-    
+
     if(s->flags&CODEC_FLAG_TRUNCATED){
         int next;
-        ParseContext *pc= &s->parse_context;
         
-        pc->last_index= pc->index;
-
         if(s->codec_id==CODEC_ID_MPEG4){
             next= mpeg4_find_frame_end(s, buf, buf_size);
         }else{
             fprintf(stderr, "this codec doesnt support truncated bitstreams\n");
             return -1;
         }
-        if(next==-1){
-            if(buf_size + FF_INPUT_BUFFER_PADDING_SIZE + pc->index > pc->buffer_size){
-                pc->buffer_size= buf_size + pc->index + 10*1024;
-                pc->buffer= realloc(pc->buffer, pc->buffer_size);
-            }
-
-            memcpy(&pc->buffer[pc->index], buf, buf_size);
-            pc->index += buf_size;
+        
+        if( ff_combine_frame(s, next, &buf, &buf_size) < 0 )
             return buf_size;
-        }
-
-        if(pc->index){
-            if(next + FF_INPUT_BUFFER_PADDING_SIZE + pc->index > pc->buffer_size){
-                pc->buffer_size= next + pc->index + 10*1024;
-                pc->buffer= realloc(pc->buffer, pc->buffer_size);
-            }
-
-            memcpy(&pc->buffer[pc->index], buf, next + FF_INPUT_BUFFER_PADDING_SIZE );
-            pc->index = 0;
-            buf= pc->buffer;
-            buf_size= pc->last_index + next;
-        }
     }
 
 retry:
