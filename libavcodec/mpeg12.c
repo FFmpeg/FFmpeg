@@ -69,6 +69,16 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
 static UINT16 mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static UINT8 fcode_tab[MAX_MV*2+1];
 
+static inline int get_bits_diff(MpegEncContext *s){
+    int bits,ret;
+    
+    bits= get_bit_count(&s->pb);
+    ret= bits - s->last_bits;
+    s->last_bits=bits;
+    
+    return ret;
+}
+
 static void init_2d_vlc_rl(RLTable *rl)
 {
     int i;
@@ -299,6 +309,9 @@ void mpeg1_encode_mb(MpegEncContext *s,
            (mb_x == s->mb_width - 1 && mb_y == s->mb_height - 1)))) {
         s->mb_incr++;
         s->qscale -= s->dquant;
+        s->skip_count++;
+        s->misc_bits++;
+        s->last_bits++;
     } else {
         /* output mb incr */
         mb_incr = s->mb_incr;
@@ -318,6 +331,8 @@ void mpeg1_encode_mb(MpegEncContext *s,
                 put_bits(&s->pb, 1, 1); /* macroblock_type : macroblock_quant = 0 */
                 s->qscale -= s->dquant;
             }
+            s->misc_bits+= get_bits_diff(s);
+            s->i_count++;
         } else {
             if (s->mb_intra) {
                 if(s->dquant && cbp){
@@ -327,6 +342,8 @@ void mpeg1_encode_mb(MpegEncContext *s,
                     put_bits(&s->pb, 5, 0x03);
                     s->qscale -= s->dquant;
                 }
+                s->misc_bits+= get_bits_diff(s);
+                s->i_count++;
             } else {
                 if (cbp != 0) {
                     if (motion_x == 0 && motion_y == 0) {
@@ -336,6 +353,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
                         }else{
                             put_bits(&s->pb, 2, 1); /* macroblock_pattern only */
                         }
+                        s->misc_bits+= get_bits_diff(s);
                         put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
                     } else {
                         if(s->dquant){
@@ -344,8 +362,10 @@ void mpeg1_encode_mb(MpegEncContext *s,
                         }else{
                             put_bits(&s->pb, 1, 1); /* motion + cbp */
                         }
+                        s->misc_bits+= get_bits_diff(s);
                         mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0]); 
                         mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1]); 
+                        s->mv_bits+= get_bits_diff(s);
                         put_bits(&s->pb, mbPatTable[cbp - 1][1], mbPatTable[cbp - 1][0]);
                     }
                 } else {
@@ -353,7 +373,9 @@ void mpeg1_encode_mb(MpegEncContext *s,
                     mpeg1_encode_motion(s, motion_x - s->last_mv[0][0][0]); 
                     mpeg1_encode_motion(s, motion_y - s->last_mv[0][0][1]); 
                     s->qscale -= s->dquant;
+                    s->mv_bits+= get_bits_diff(s);
                 }
+                s->f_count++;
             }
         }
         for(i=0;i<6;i++) {
@@ -362,6 +384,10 @@ void mpeg1_encode_mb(MpegEncContext *s,
             }
         }
         s->mb_incr = 1;
+        if(s->mb_intra)
+            s->i_tex_bits+= get_bits_diff(s);
+        else
+            s->p_tex_bits+= get_bits_diff(s);
     }
     s->last_mv[0][0][0] = motion_x;
     s->last_mv[0][0][1] = motion_y;
