@@ -231,8 +231,8 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         ac3_5p1_mux(output, buftmp3[0], buftmp3[1], nb_samples1);
     }
 
-    av_free(bufin[0]);
-    av_free(bufin[1]);
+    for(i=0; i<s->filter_channels; i++)
+        av_free(bufin[i]);
 
     av_free(bufout[0]);
     av_free(bufout[1]);
