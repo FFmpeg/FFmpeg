@@ -45,14 +45,30 @@
 #include "framehook.h"
 #include "dsputil.h"
 
-#define SCALE_BITS 10
- 
-#define C_Y  (76309 >> (16 - SCALE_BITS))
-#define C_RV (117504 >> (16 - SCALE_BITS))
-#define C_BU (138453 >> (16 - SCALE_BITS))
-#define C_GU (13954 >> (16 - SCALE_BITS))
-#define C_GV (34903 >> (16 - SCALE_BITS))                                       
+#define SCALEBITS 10
+#define ONE_HALF  (1 << (SCALEBITS - 1))
+#define FIX(x)    ((int) ((x) * (1<<SCALEBITS) + 0.5))
 
+#define YUV_TO_RGB1_CCIR(cb1, cr1)\
+{\
+    cb = (cb1) - 128;\
+    cr = (cr1) - 128;\
+    r_add = FIX(1.40200*255.0/224.0) * cr + ONE_HALF;\
+    g_add = - FIX(0.34414*255.0/224.0) * cb - FIX(0.71414*255.0/224.0) * cr + \
+                    ONE_HALF;\
+    b_add = FIX(1.77200*255.0/224.0) * cb + ONE_HALF;\
+}
+
+#define YUV_TO_RGB2_CCIR(r, g, b, y1)\
+{\
+    yt = ((y1) - 16) * FIX(255.0/219.0);\
+    r = cm[(yt + r_add) >> SCALEBITS];\
+    g = cm[(yt + g_add) >> SCALEBITS];\
+    b = cm[(yt + b_add) >> SCALEBITS];\
+}
+
+
+ 
   
 typedef struct {
     int h;  /* 0 .. 360 */
@@ -154,6 +170,8 @@ int Configure(void **ctxp, int argc, char *argv[])
                         ci->bright.h,
                         ci->bright.s,
                         ci->bright.v);
+    fprintf(stderr, "    Threshold is %d%% pixels\n", ci->threshold / 10);
+
 
     return 0;
 }
@@ -234,25 +252,19 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
         pixcnt = ((h_start - h_end) >> 1) * (w_start - w_end);
 
         y = picture->data[0] + h_end * picture->linesize[0] + w_end * 2;
-        u = picture->data[1] + h_end * picture->linesize[1] + w_end;
-        v = picture->data[2] + h_end * picture->linesize[2] + w_end;
+        u = picture->data[1] + h_end * picture->linesize[1] / 2 + w_end;
+        v = picture->data[2] + h_end * picture->linesize[2] / 2 + w_end;
 
         for (h = h_start; h > h_end; h -= 2) {
             int w;
 
             for (w = w_start; w > w_end; w--) {
-                int r,g,b;
-                int Y, U, V;
+                unsigned int r,g,b;
                 HSV hsv;
+                int cb, cr, yt, r_add, g_add, b_add;
 
-                U = u[0] - 128;
-                V = v[0] - 128;
-
-                Y = (y[0] - 16) * C_Y;
-
-                r = cm[(Y + C_RV * V + (1 << (SCALE_BITS - 1))) >> SCALE_BITS];
-                g = cm[(Y + - C_GU * U - C_GV * V + (1 << (SCALE_BITS - 1))) >> SCALE_BITS];
-                b = cm[(Y + C_BU * U + (1 << (SCALE_BITS - 1))) >> SCALE_BITS];
+                YUV_TO_RGB1_CCIR(u[0], v[0]);
+                YUV_TO_RGB2_CCIR(r, g, b, y[0]);
 
                 get_hsv(&hsv, r, g, b);
 
@@ -266,7 +278,9 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
                     hsv.v >= ci->dark.v && hsv.v <= ci->bright.v) {            
                     inrange++;
                 } else if (ci->zapping) {
-                    y[0] = y[1] = y[rowsize] = y[rowsize + 1] = 0;
+                    y[0] = y[1] = y[rowsize] = y[rowsize + 1] = 16;
+                    u[0] = 128;
+                    v[0] = 128;
                 }
 
                 y+= 2;
