@@ -35,6 +35,7 @@ else
     do_ac3=y
     do_rc=y
     do_mpeg4adv=y
+    do_mpeg1b=y
 fi
 
 
@@ -176,6 +177,16 @@ file=${outfile}mpeg4-adv.avi
 do_ffmpeg $file -y -qscale 9 -4mv -hq -part -ps 1000 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
+fi
+
+###################################
+if [ -n "$do_mpeg1b" ] ; then
+# mpeg1
+file=${outfile}mpeg1b.mpg
+do_ffmpeg $file -y -qscale 8 -bf 3 -f pgmyuv -i $raw_src -an -vcodec mpeg1video $file
+
+# mpeg1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
 fi
 
