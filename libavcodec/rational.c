@@ -51,6 +51,10 @@ AVRational av_sub_q(AVRational b, AVRational c){
     return b;
 }
 
+/**
+ * Converts a double precission floating point number to a AVRational.
+ * @param max the maximum allowed numerator and denominator
+ */
 AVRational av_d2q(double d, int max){
     AVRational a;
     int exponent= FFMAX( (int)(log(ABS(d) + 1e-20)/log(2)), 0);
