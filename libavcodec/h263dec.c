@@ -372,6 +372,10 @@ uint64_t time= rdtsc();
             s->workaround_bugs|= FF_BUG_UMP4;
             s->workaround_bugs|= FF_BUG_AC_VLC;
         }
+
+        if(s->divx_version){
+            s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
+        }
 //printf("padding_bug_score: %d\n", s->padding_bug_score);
 #if 0
         if(s->divx_version==500)

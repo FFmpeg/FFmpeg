@@ -1384,7 +1384,7 @@ static inline void qpel_motion(MpegEncContext *s,
     if(field_based){
         mx= motion_x/2;
         my= motion_y>>1;
-    }else if(s->divx_version){
+    }else if(s->workaround_bugs&FF_BUG_QPEL_CHROMA){
         mx= (motion_x>>1)|(motion_x&1);
         my= (motion_y>>1)|(motion_y&1);
     }else{
