@@ -35,19 +35,18 @@
 
 typedef struct DVVideoDecodeContext {
     const DVprofile* sys;
-    GetBitContext gb;
     AVFrame picture;
-    DCTELEM block[5*6][64] __align8;
     
-    /* FIXME: the following is extracted from DSP */
     uint8_t dv_zigzag[2][64];
-    uint8_t idct_permutation[64];
+    uint8_t dv_idct_shift[2][22][64];
+    uint8_t dv_dct_shift[2][22][64];
+  
     void (*get_pixels)(DCTELEM *block, const uint8_t *pixels, int line_size);
-    void (*fdct)(DCTELEM *block);
-    
-    /* XXX: move it to static storage ? */
-    uint8_t dv_shift[2][22][64];
+    void (*fdct[2])(DCTELEM *block);
     void (*idct_put[2])(uint8_t *dest, int line_size, DCTELEM *block);
+    
+    GetBitContext gb;
+    DCTELEM block[5*6][64] __align8;
 } DVVideoDecodeContext;
 
 #define TEX_VLC_BITS 9
@@ -55,25 +54,29 @@ typedef struct DVVideoDecodeContext {
 static RL_VLC_ELEM *dv_rl_vlc[1];
 static VLC_TYPE dv_vlc_codes[15][23];
 
-static void dv_build_unquantize_tables(DVVideoDecodeContext *s)
+static void dv_build_unquantize_tables(DVVideoDecodeContext *s, uint8_t* perm)
 {
     int i, q, j;
 
     /* NOTE: max left shift is 6 */
     for(q = 0; q < 22; q++) {
-        /* 88 unquant */
+        /* 88DCT */
         for(i = 1; i < 64; i++) {
             /* 88 table */
-            j = s->idct_permutation[i];
-            s->dv_shift[0][q][j] =
+            j = perm[i];
+            s->dv_idct_shift[0][q][j] =
                 dv_quant_shifts[q][dv_88_areas[i]] + 1;
+            s->dv_dct_shift[0][q][i] =
+                dv_quant_shifts[q][dv_88_areas[ff_zigzag_direct[i]]] + 4;
         }
         
-        /* 248 unquant */
+        /* 248DCT */
         for(i = 1; i < 64; i++) {
             /* 248 table */
-            s->dv_shift[1][q][i] =  
-                    dv_quant_shifts[q][dv_248_areas[i]] + 1;
+            s->dv_idct_shift[1][q][i] =  
+                dv_quant_shifts[q][dv_248_areas[i]] + 1;
+	    s->dv_dct_shift[1][q][i] =  
+                dv_quant_shifts[q][dv_248_areas[ff_zigzag248_direct[i]]] + 4;
         }
     }
 }
@@ -81,8 +84,9 @@ static void dv_build_unquantize_tables(DVVideoDecodeContext *s)
 static int dvvideo_init(AVCodecContext *avctx)
 {
     DVVideoDecodeContext *s = avctx->priv_data;
-    MpegEncContext s2;
+    DSPContext dsp;
     static int done=0;
+    int i;
 
     if (!done) {
         int i;
@@ -124,27 +128,23 @@ static int dvvideo_init(AVCodecContext *avctx)
 	}
     }
 
-    /* ugly way to get the idct & scantable */
-    /* XXX: fix it */
-    memset(&s2, 0, sizeof(MpegEncContext));
-    s2.avctx = avctx;
-    dsputil_init(&s2.dsp, avctx);
-    if (DCT_common_init(&s2) < 0)
-       return -1;
+    /* Generic DSP setup */
+    dsputil_init(&dsp, avctx);
+    s->get_pixels = dsp.get_pixels;
 
-    s->get_pixels = s2.dsp.get_pixels;
-    s->fdct = s2.dsp.fdct;
-    
-    s->idct_put[0] = s2.dsp.idct_put;
-    memcpy(s->idct_permutation, s2.dsp.idct_permutation, 64);
-    memcpy(s->dv_zigzag[0], s2.intra_scantable.permutated, 64);
+    /* 88DCT setup */
+    s->fdct[0] = dsp.fdct;
+    s->idct_put[0] = dsp.idct_put;
+    for (i=0; i<64; i++)
+       s->dv_zigzag[0][i] = dsp.idct_permutation[ff_zigzag_direct[i]];
 
-    /* XXX: use MMX also for idct248 */
-    s->idct_put[1] = simple_idct248_put;
-    memcpy(s->dv_zigzag[1], dv_248_zigzag, 64);
+    /* 248DCT setup */
+    s->fdct[1] = dsp.fdct248;
+    s->idct_put[1] = simple_idct248_put;  // FIXME: need to add it to DSP
+    memcpy(s->dv_zigzag[1], ff_zigzag248_direct, 64);
 
     /* XXX: do it only for constant case */
-    dv_build_unquantize_tables(s);
+    dv_build_unquantize_tables(s, dsp.idct_permutation);
 
     /* FIXME: I really don't think this should be here */
     if (dv_codec_profile(avctx))
@@ -367,7 +367,7 @@ static inline void dv_decode_video_segment(DVVideoDecodeContext *s,
             mb->scan_table = s->dv_zigzag[dct_mode];
             class1 = get_bits(&s->gb, 2);
             mb->shift_offset = (class1 == 3);
-            mb->shift_table = s->dv_shift[dct_mode]
+            mb->shift_table = s->dv_idct_shift[dct_mode]
                 [quant + dv_quant_offset[class1]];
             dc = dc << 2;
             /* convert to unsigned because 128 is not added in the
@@ -571,6 +571,8 @@ typedef struct EncBlockInfo {
     int block_size;
     DCTELEM *mb;
     PutBitContext pb;
+    const uint8_t* zigzag_scan;
+    uint8_t *dv_shift;
 } EncBlockInfo;
 
 static inline int dv_bits_left(EncBlockInfo* bi)
@@ -583,11 +585,10 @@ static inline void dv_encode_ac(EncBlockInfo* bi, PutBitContext* heap)
     int i, level, size, run = 0;
     uint32_t vlc;
     PutBitContext* cpb = &bi->pb;
+    int bias = (bi->cno == 3);
     
     for (i=1; i<64; i++) {
-       level = bi->mb[ff_zigzag_direct[i]] / 
-               (1<<(dv_quant_shifts[bi->qno + dv_quant_offset[bi->cno]]
-			       [dv_88_areas[ff_zigzag_direct[i]]] + 4 + (bi->cno == 3)));
+       level = bi->mb[bi->zigzag_scan[i]] / (1<<(bi->dv_shift[i] + bias));
        if (level != 0) {
 	   size = dv_rl2vlc(run, level, &vlc);
 put_vlc:
@@ -663,11 +664,26 @@ static inline void dv_set_class_number(EncBlockInfo* bi, int j)
         bi->cno = 3;
 }
 
+#define SQ(a) ((a)*(a))
+static int dv_score_lines(DCTELEM *s, int stride) {
+    int score=0;
+    int x, y;
+    
+    for(y=0; y<4; y++) {
+        for(x=0; x<8; x+=4){
+            score+= SQ(s[x  ] - s[x  +stride]) + SQ(s[x+1] - s[x+1+stride]) 
+                   +SQ(s[x+2] - s[x+2+stride]) + SQ(s[x+3] - s[x+3+stride]);
+        }
+        s+= stride;
+    }
+    
+    return score;
+}
+
 /*
  * This is a very rough initial implementaion. The performance is
- * horrible and some features are missing, mainly 2-4-8 DCT encoding.
- * The weighting is missing as well, but it's missing from the decoding
- * step also -- so at least we're on the same page with decoder ;-)
+ * horrible and the weighting is missing. But it's missing from the 
+ * decoding step also -- so at least we're on the same page with decoder ;-)
  */
 static inline void dv_encode_video_segment(DVVideoDecodeContext *s, 
                                            uint8_t *dif, 
@@ -691,6 +707,7 @@ static inline void dv_encode_video_segment(DVVideoDecodeContext *s,
    
     /* Stage 1 -- doing DCT on 5 MBs */
     block = &s->block[0][0];
+    enc_blk = &enc_blks[0];
     for(mb_index = 0; mb_index < 5; mb_index++) {
         v = *mb_pos_ptr++;
         mb_x = v & 0xff;
@@ -731,36 +748,36 @@ static inline void dv_encode_video_segment(DVVideoDecodeContext *s,
 	    } else {             /* Simple copy: 8x8 -> 8x8 */
 	        s->get_pixels(block, data, linesize);
 	    }
-            
-	    s->fdct(block);
+	  
+	    if (dv_score_lines(block, 8) + dv_score_lines(block+8*4, 8) - 100 >
+	        dv_score_lines(block, 16) + dv_score_lines(block+8, 16)) {
+               enc_blk->dct_mode = 1;
+	       enc_blk->zigzag_scan = ff_zigzag248_direct; 
+	    } else {
+	       enc_blk->dct_mode = 0;
+	       enc_blk->zigzag_scan = ff_zigzag_direct;
+	    }
+	    enc_blk->mb = block;
+            enc_blk->block_size = block_sizes[j];
 	    
+	    s->fdct[enc_blk->dct_mode](block);
+	    
+	    dv_set_class_number(enc_blk, j/4*(j%2));
+
 	    block += 64;
+	    enc_blk++;
         }
     }
 
-    /* Stage 2 -- setup for encoding phase */
-    enc_blk = &enc_blks[0];
-    block = &s->block[0][0];
-    for (i=0; i<5; i++) {
-       for (j=0; j<6; j++) {
-	  enc_blk->mb = block;
-	  enc_blk->dct_mode = 0;
-	  enc_blk->block_size = block_sizes[j];
-	  
-	  dv_set_class_number(enc_blk, j/4*(j%2));
-	  
-	  block += 64;
-	  enc_blk++;
-       }
-    }
-   
-    /* Stage 3 -- encoding by trial-and-error */
+    /* Stage 2 -- encoding by trial-and-error */
 encode_vs:
     enc_blk = &enc_blks[0];
     for (i=0; i<5; i++) {
        uint8_t* p = dif + i*80 + 4;
        for (j=0; j<6; j++) {
           enc_blk->qno = QNO;
+	  enc_blk->dv_shift = &(s->dv_dct_shift[0]
+	                           [QNO + dv_quant_offset[enc_blk->cno]][0]);
 	  init_put_bits(&enc_blk->pb, p, block_sizes[j]/8);
 	  enc_blk++;
 	  p += block_sizes[j]/8;

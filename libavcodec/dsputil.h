@@ -37,6 +37,7 @@ typedef short DCTELEM;
 
 void fdct_ifast (DCTELEM *data);
 void ff_jpeg_fdct_islow (DCTELEM *data);
+void ff_fdct248_islow (DCTELEM *data);
 
 void j_rev_dct (DCTELEM *data);
 
@@ -47,6 +48,7 @@ void ff_fdct_mmx2(DCTELEM *block);
 extern const uint8_t ff_alternate_horizontal_scan[64];
 extern const uint8_t ff_alternate_vertical_scan[64];
 extern const uint8_t ff_zigzag_direct[64];
+extern const uint8_t ff_zigzag248_direct[64];
 
 /* pixel operations */
 #define MAX_NEG_CROP 384
@@ -244,6 +246,7 @@ typedef struct DSPContext {
     
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);
+    void (*fdct248)(DCTELEM *block/* align 16*/);
     
     /* IDCT really*/
     void (*idct)(DCTELEM *block/* align 16*/);

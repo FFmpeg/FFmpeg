@@ -44,6 +44,19 @@ const uint8_t ff_zigzag_direct[64] = {
     53, 60, 61, 54, 47, 55, 62, 63
 };
 
+/* Specific zigzag scan for 248 idct. NOTE that unlike the
+   specification, we interleave the fields */
+const uint8_t ff_zigzag248_direct[64] = {
+     0,  8,  1,  9, 16, 24,  2, 10,
+    17, 25, 32, 40, 48, 56, 33, 41,
+    18, 26,  3, 11,  4, 12, 19, 27,
+    34, 42, 49, 57, 50, 58, 35, 43,
+    20, 28,  5, 13,  6, 14, 21, 29,
+    36, 44, 51, 59, 52, 60, 37, 45,
+    22, 30,  7, 15, 23, 31, 38, 46,
+    53, 61, 54, 62, 39, 47, 55, 63,
+};
+
 /* not permutated inverse zigzag_direct + 1 for MMX quantizer */
 uint16_t __align8 inv_zigzag_direct16[64];
 
@@ -2869,12 +2882,18 @@ void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     int i;
 
 #ifdef CONFIG_ENCODERS
-    if(avctx->dct_algo==FF_DCT_FASTINT)
+    if(avctx->dct_algo==FF_DCT_FASTINT) {
         c->fdct = fdct_ifast;
-    else if(avctx->dct_algo==FF_DCT_FAAN)
+	c->fdct248 = ff_fdct248_islow; // FIXME: need an optimized version
+    } 
+    else if(avctx->dct_algo==FF_DCT_FAAN) {
         c->fdct = ff_faandct;
-    else
+	c->fdct248 = ff_fdct248_islow; // FIXME: need an optimized version
+    } 
+    else {
         c->fdct = ff_jpeg_fdct_islow; //slow/accurate/default
+	c->fdct248 = ff_fdct248_islow;
+    }
 #endif //CONFIG_ENCODERS
 
     if(avctx->idct_algo==FF_IDCT_INT){
