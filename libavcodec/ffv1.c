@@ -185,10 +185,8 @@ static inline int predict(uint8_t *src, uint8_t *last){
     const int LT= last[-1];
     const int  T= last[ 0];
     const int L =  src[-1];
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;    
-    const int gradient= cm[L + T - LT];
 
-    return mid_pred(L, gradient, T);
+    return mid_pred(L, L + T - LT, T);
 }
 
 static inline int get_context(FFV1Context *f, uint8_t *src, uint8_t *last, uint8_t *last2){
