@@ -21,6 +21,7 @@
 
 CodecTag codec_wav_tags[] = {
     { CODEC_ID_MP2, 0x55 },
+    { CODEC_ID_MP3LAME, 0x55 },
     { CODEC_ID_MP2, 0x50 },
     { CODEC_ID_AC3, 0x2000 },
     { CODEC_ID_PCM_S16LE, 0x01 },
@@ -45,13 +46,13 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
         enc->codec_id == CODEC_ID_PCM_ALAW ||
         enc->codec_id == CODEC_ID_PCM_MULAW) {
         bps = 8;
-    } else if (enc->codec_id == CODEC_ID_MP2) {
+    } else if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3LAME) {
         bps = 0;
     } else {
         bps = 16;
     }
     
-    if (enc->codec_id == CODEC_ID_MP2)
+    if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3LAME)
         blkalign = 1;
     else
         blkalign = enc->channels*bps >> 3;
@@ -64,7 +65,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     put_le32(pb, bytespersec); /* bytes per second */
     put_le16(pb, blkalign); /* block align */
     put_le16(pb, bps); /* bits per sample */
-    if (enc->codec_id == CODEC_ID_MP2) {
+    if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3LAME) {
         put_le16(pb, 12); /* wav_extra_size */
         put_le16(pb, 1); /* wID */
         put_le32(pb, 2); /* fdwFlags */

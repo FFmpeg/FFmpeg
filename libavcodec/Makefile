@@ -16,6 +16,10 @@ OBJS+= ac3dec.o \
        libac3/imdct.o  libac3/parse.o
 endif
 
+ifeq ($(CONFIG_MP3LAME),yes)
+OBJS += mp3lameaudio.o
+endif
+
 ifeq ($(TARGET_GPROF),yes)
 CFLAGS+=-p
 LDFLAGS+=-p

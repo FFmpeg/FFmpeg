@@ -127,6 +127,10 @@ void parse_specific_params(AVCodecContext *stream, int *au_byterate, int *au_ssi
         *au_ssize = 1;
         *au_scale = 1;
         *au_byterate = stream->bit_rate / 8;
+    case CODEC_ID_MP3LAME:
+        *au_ssize = 1;
+        *au_scale = 1;
+        *au_byterate = stream->bit_rate / 8;    
     default:
         *au_ssize = 1;
         *au_scale = 1; 
@@ -361,7 +365,7 @@ static int avi_write_trailer(AVFormatContext *s)
                     if (nb_frames < stream->frame_number)
                         nb_frames = stream->frame_number;
                 } else {
-                    if (stream->codec_id == CODEC_ID_MP2) {
+                    if (stream->codec_id == CODEC_ID_MP2 || stream->codec_id == CODEC_ID_MP3LAME) {
                         put_le32(pb, stream->frame_number);
                         nb_frames += stream->frame_number;
                     } else {
