@@ -944,6 +944,7 @@ You can use libavcodec or libavformat in your commercial program, but
 @emph{any patch you make must be published}. The best way to proceed is
 to send your patches to the ffmpeg mailing list.
 
+@node Coding Rules
 @section Coding Rules
 
 ffmpeg is programmed in the ISO C90 language with a few additional
@@ -985,14 +986,19 @@ The presentation is the one specified by 'indent -i4 -kr'.
 Main priority in ffmpeg is simplicity and small code size (=less
 bugs).
 
-Comments: for functions visible from other modules, use the JavaDoc
-format (see examples in @file{libav/utils.c}) so that a documentation
-can be generated automatically.
+Comments: use the JavaDoc/Doxygen 
+format (see examples in @file{libavformat/utils.c}) so that a documentation
+can be generated automatically. All non trivial functions should have a comment
+above it explaining what the function does, even if its just one sentance.
+All Structures and their member variables should be documented too.
+
 
 fprintf and printf are forbidden in libavformat and libavcodec, 
 please use av_log() instead.
 
 @section Submitting patches
+
+First, (@pxref{Coding Rules}) above if you didn't yet.
 
 When you submit your patch, try to send a unified diff (diff '-up'
 option). I cannot read other diffs :-)
