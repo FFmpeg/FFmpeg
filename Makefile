@@ -6,7 +6,7 @@ include config.mak
 
 VPATH=$(SRC_PATH)
 
-CFLAGS= $(OPTFLAGS) -Wall -g -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libav -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
+CFLAGS= $(OPTFLAGS) -Wall -g -I. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -I$(SRC_PATH)/libavformat -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 ifeq ($(CONFIG_DARWIN),yes)
 LDFLAGS+= -g -d
 FFSLDFLAGS= -Wl,-bind_at_load
@@ -33,9 +33,9 @@ EXTRALIBS+=-lmedia -lbe
 endif
 
 ifeq ($(BUILD_SHARED),yes)
-DEP_LIBS=libavcodec/libavcodec.so libav/libavformat.a
+DEP_LIBS=libavcodec/libavcodec.so libavformat/libavformat.a
 else
-DEP_LIBS=libavcodec/libavcodec.a libav/libavformat.a
+DEP_LIBS=libavcodec/libavcodec.a libavformat/libavformat.a
 ifeq ($(CONFIG_MP3LAME),yes)
 EXTRALIBS+=-lmp3lame
 endif
@@ -60,10 +60,10 @@ all: lib $(PROG) $(VHOOK)
 
 lib:
 	$(MAKE) -C libavcodec all
-	$(MAKE) -C libav all
+	$(MAKE) -C libavformat all
 
 ffmpeg_g$(EXE): ffmpeg.o $(DEP_LIBS)
-	$(CC) $(LDFLAGS) -o $@ ffmpeg.o -L./libavcodec -L./libav \
+	$(CC) $(LDFLAGS) -o $@ ffmpeg.o -L./libavcodec -L./libavformat \
               -lavformat -lavcodec $(EXTRALIBS)
 
 ffmpeg$(EXE): ffmpeg_g$(EXE)
@@ -71,7 +71,7 @@ ffmpeg$(EXE): ffmpeg_g$(EXE)
 
 ffserver$(EXE): ffserver.o $(DEP_LIBS)
 	$(CC) $(LDFLAGS) $(FFSLDFLAGS) \
-		-o $@ ffserver.o -L./libavcodec -L./libav \
+		-o $@ ffserver.o -L./libavcodec -L./libavformat \
               -lavformat -lavcodec -ldl $(EXTRALIBS) 
 
 ffplay: ffmpeg$(EXE)
@@ -97,7 +97,7 @@ $(prefix)/lib/vhook:
 
 installlib:
 	$(MAKE) -C libavcodec installlib
-	$(MAKE) -C libav installlib
+	$(MAKE) -C libavformat installlib
 
 dep:	depend
 
@@ -106,7 +106,7 @@ depend:
 
 clean: $(CLEANVHOOK)
 	$(MAKE) -C libavcodec clean
-	$(MAKE) -C libav clean
+	$(MAKE) -C libavformat clean
 	$(MAKE) -C tests clean
 	rm -f *.o *~ .depend gmon.out TAGS ffmpeg_g$(EXE) $(PROG) 
 
@@ -118,7 +118,7 @@ distclean: clean
 	rm -f config.mak config.h
 
 TAGS:
-	etags *.[ch] libav/*.[ch] libavcodec/*.[ch]
+	etags *.[ch] libavformat/*.[ch] libavcodec/*.[ch]
 
 # regression tests
 

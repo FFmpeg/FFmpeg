@@ -1,6 +1,6 @@
 include ../config.mak
 
-CFLAGS=-fPIC $(OPTFLAGS) -g -Wall -I.. -I../libav -I../libavcodec -DHAVE_AV_CONFIG_H
+CFLAGS=-fPIC $(OPTFLAGS) -g -Wall -I.. -I../libavformat -I../libavcodec -DHAVE_AV_CONFIG_H
 
 ifeq ($(CONFIG_DARWIN),yes)
 LDFLAGS+=-bundle -flat_namespace -undefined suppress
