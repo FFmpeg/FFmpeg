@@ -2047,16 +2047,6 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
-		/* yv12_to_yuy2 */
-		if((srcFormat == IMGFMT_YV12||srcFormat==IMGFMT_I420)&&dstFormat == IMGFMT_YUY2)
-		{
-			c->swScale= PlanarToYuy2Wrapper;
-
-			if(flags&SWS_PRINT_INFO)
-				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
-					vo_format_name(srcFormat), vo_format_name(dstFormat));
-			return c;
-		}
 		/* yuv2bgr */
 		if((srcFormat==IMGFMT_YV12 || srcFormat==IMGFMT_I420) && isBGR(dstFormat))
 		{
@@ -2121,6 +2111,17 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			  && (isBGR(dstFormat) || isRGB(dstFormat)) 
 			  && needsDither)
 				c->swScale= rgb2rgbWrapper;
+
+			/* yv12_to_yuy2 */
+			if((srcFormat == IMGFMT_YV12||srcFormat==IMGFMT_I420)&&dstFormat == IMGFMT_YUY2)
+			{
+				c->swScale= PlanarToYuy2Wrapper;
+
+				if(flags&SWS_PRINT_INFO)
+					MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+						vo_format_name(srcFormat), vo_format_name(dstFormat));
+				return c;
+			}
 		}
 
 		if(c->swScale){
