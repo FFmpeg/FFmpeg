@@ -312,7 +312,7 @@ typedef struct MpegEncContext {
     uint8_t *intra_ac_vlc_last_length;
     uint8_t *inter_ac_vlc_length;
     uint8_t *inter_ac_vlc_last_length;
-#define UNI_ENC_INDEX(run,level) ((run)*128 + (level))
+#define UNI_AC_ENC_INDEX(run,level) ((run)*128 + (level))
 
     /* precomputed matrix (combine qscale and DCT renorm) */
     int __align8 q_intra_matrix[32][64];

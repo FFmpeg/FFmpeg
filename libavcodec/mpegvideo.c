@@ -2780,7 +2780,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->no_rounding=1;
         else if(s->flipflop_rounding)
             s->no_rounding ^= 1;          
-    }else{
+    }else if(s->out_format == FMT_H263){
         if(s->pict_type==I_TYPE)
             s->no_rounding=0;
         else if(s->pict_type!=B_TYPE)
@@ -3307,7 +3307,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         start_i = 1;
         last_non_zero = 0;
         qmat = s->q_intra_matrix[qscale];
-        if(s->mpeg_quant)
+        if(s->mpeg_quant || s->codec_id== CODEC_ID_MPEG1VIDEO)
             bias= 1<<(QMAT_SHIFT-1);
         length     = s->intra_ac_vlc_length;
         last_length= s->intra_ac_vlc_last_length;
@@ -3381,13 +3381,33 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
                 }else{
                     unquant_coeff= level*qmul - qadd;
                 }
-            } //FIXME else
+            }else{ //MPEG1
+                j= s->idct_permutation[ scantable[i + start_i] ]; //FIXME optimize
+                if(s->mb_intra){
+                    if (level < 0) {
+                        unquant_coeff = (int)((-level) * qscale * s->intra_matrix[j]) >> 3;
+                        unquant_coeff = -((unquant_coeff - 1) | 1);
+                    } else {
+                        unquant_coeff = (int)(  level  * qscale * s->intra_matrix[j]) >> 3;
+                        unquant_coeff =   (unquant_coeff - 1) | 1;
+                    }
+                }else{
+                    if (level < 0) {
+                        unquant_coeff = ((((-level) << 1) + 1) * qscale * ((int) s->inter_matrix[j])) >> 4;
+                        unquant_coeff = -((unquant_coeff - 1) | 1);
+                    } else {
+                        unquant_coeff = (((  level  << 1) + 1) * qscale * ((int) s->inter_matrix[j])) >> 4;
+                        unquant_coeff =   (unquant_coeff - 1) | 1;
+                    }
+                }
+                unquant_coeff<<= 3;
+            }
 
             distoration= (unquant_coeff - dct_coeff) * (unquant_coeff - dct_coeff);
             level+=64;
             if((level&(~127)) == 0){
                 for(run=0; run<=i - left_limit; run++){
-                    int score= distoration + length[UNI_ENC_INDEX(run, level)]*lambda;
+                    int score= distoration + length[UNI_AC_ENC_INDEX(run, level)]*lambda;
                     score += score_tab[i-run];
                     
                     if(score < best_score){
@@ -3400,7 +3420,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
                 if(s->out_format == FMT_H263){
                     for(run=0; run<=i - left_limit; run++){
-                        int score= distoration + last_length[UNI_ENC_INDEX(run, level)]*lambda;
+                        int score= distoration + last_length[UNI_AC_ENC_INDEX(run, level)]*lambda;
                         score += score_tab[i-run];
                         if(score < last_score){
                             last_score= score;
@@ -3452,11 +3472,12 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
 
     if(s->out_format != FMT_H263){
         last_score= 256*256*256*120;
-        for(i=0; i<=last_non_zero - start_i + 1; i++){
+        for(i= left_limit; i<=last_non_zero - start_i + 1; i++){
             int score= score_tab[i];
+            if(i) score += lambda*2; //FIXME exacter?
+
             if(score < last_score){
                 last_score= score;
-                if(i) last_score += lambda*2; //FIXME exacter?
                 last_i= i;
                 last_level= level_tab[i];
                 last_run= run_tab[i];

@@ -66,8 +66,13 @@ static inline int mpeg2_decode_block_intra(MpegEncContext *s,
                                     int n);
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred);
 
+#ifdef CONFIG_ENCODERS
 static UINT16 mv_penalty[MAX_FCODE+1][MAX_MV*2+1];
 static UINT8 fcode_tab[MAX_MV*2+1];
+
+static uint32_t uni_mpeg1_ac_vlc_bits[64*64*2];
+static uint8_t  uni_mpeg1_ac_vlc_len [64*64*2];
+#endif
 
 static inline int get_bits_diff(MpegEncContext *s){
     int bits,ret;
@@ -118,6 +123,51 @@ static void init_2d_vlc_rl(RLTable *rl)
     }
 }
 
+static void init_uni_ac_vlc(RLTable *rl, uint32_t *uni_ac_vlc_bits, uint8_t *uni_ac_vlc_len){
+    int i;
+
+    for(i=0; i<128; i++){
+        int level= i-64;
+        int run;
+        for(run=0; run<64; run++){
+            int len, bits, code;
+            
+            int alevel= ABS(level);
+            int sign= (level>>31)&1;
+
+            if (alevel > rl->max_level[0][run])
+                code= 111; /*rl->n*/
+            else
+                code= rl->index_run[0][run] + alevel - 1;
+
+            if (code < 111 /* rl->n */) {
+	    	/* store the vlc & sign at once */
+                len=   mpeg1_vlc[code][1]+1;
+                bits= (mpeg1_vlc[code][0]<<1) + sign;
+            } else {
+                len=  mpeg1_vlc[111/*rl->n*/][1]+6;
+                bits= mpeg1_vlc[111/*rl->n*/][0]<<6;
+
+                bits|= run;
+                if (alevel < 128) {
+                    bits<<=8; len+=8;
+                    bits|= level & 0xff;
+                } else {
+                    bits<<=16; len+=16;
+                    bits|= level & 0xff;
+                    if (level < 0) {
+                        bits|= 0x8001 + level + 255;
+                    } else {
+                        bits|= level & 0xffff;
+                    }
+                }
+            }
+
+            uni_ac_vlc_bits[UNI_AC_ENC_INDEX(run, i)]= bits;
+            uni_ac_vlc_len [UNI_AC_ENC_INDEX(run, i)]= len;
+        }
+    }
+}
 
 static void put_header(MpegEncContext *s, int header)
 {
@@ -465,12 +515,14 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
 
         done=1;
         init_rl(&rl_mpeg1);
-	
+
 	for(i=0; i<64; i++)
 	{
 		mpeg1_max_level[0][i]= rl_mpeg1.max_level[0][i];
 		mpeg1_index_run[0][i]= rl_mpeg1.index_run[0][i];
 	}
+        
+        init_uni_ac_vlc(&rl_mpeg1, uni_mpeg1_ac_vlc_bits, uni_mpeg1_ac_vlc_len);
 
 	/* build unified dc encoding tables */
 	for(i=-255; i<256; i++)
@@ -532,6 +584,8 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
     s->max_qcoeff= 255;
     s->intra_quant_bias= 3<<(QUANT_BIAS_SHIFT-3); //(a + x*3/8)/x
     s->inter_quant_bias= 0;
+    s->intra_ac_vlc_length=
+    s->inter_ac_vlc_length= uni_mpeg1_ac_vlc_len;
 }
 
 static inline void encode_dc(MpegEncContext *s, int diff, int component)
@@ -602,12 +656,8 @@ static void mpeg1_encode_block(MpegEncContext *s,
             sign&=1;
 
 //            code = get_rl_index(rl, 0, run, alevel);
-            if (alevel > mpeg1_max_level[0][run])
-                code= 111; /*rl->n*/
-            else
+            if (alevel <= mpeg1_max_level[0][run]){
                 code= mpeg1_index_run[0][run] + alevel - 1;
-
-            if (code < 111 /* rl->n */) {
 	    	/* store the vlc & sign at once */
                 put_bits(&s->pb, mpeg1_vlc[code][1]+1, (mpeg1_vlc[code][0]<<1) + sign);
             } else {
