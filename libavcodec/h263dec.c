@@ -85,7 +85,6 @@ int ff_h263_decode_init(AVCodecContext *avctx)
         s->msmpeg4_version=5;
         break;
     case CODEC_ID_H263I:
-        s->h263_intel = 1;
         break;
     case CODEC_ID_FLV1:
         s->h263_flv = 1;
@@ -460,7 +459,7 @@ retry:
 
         if(s->flags& CODEC_FLAG_LOW_DELAY)
             s->low_delay=1;
-    } else if (s->h263_intel) {
+    } else if (s->codec_id == CODEC_ID_H263I) {
         ret = intel_h263_decode_picture_header(s);
     } else if (s->h263_flv) {
         ret = flv_h263_decode_picture_header(s);

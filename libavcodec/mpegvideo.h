@@ -236,25 +236,19 @@ typedef struct MpegEncContext {
     int gop_size;
     int intra_only;   ///< if true, only intra pictures are generated 
     int bit_rate;     ///< wanted bit rate 
-    int bit_rate_tolerance; ///< amount of +- bits (>0)
     enum OutputFormat out_format; ///< output format 
     int h263_pred;    ///< use mpeg4/h263 ac/dc predictions 
 
 /* the following codec id fields are deprecated in favor of codec_id */
     int h263_plus;    ///< h263 plus headers 
     int h263_msmpeg4; ///< generate MSMPEG4 compatible stream (deprecated, use msmpeg4_version instead)
-    int h263_intel;   ///< use I263 intel h263 header 
     int h263_flv;     ///< use flv h263 header 
     
     int codec_id;     /* see CODEC_ID_xxx */
     int fixed_qscale; ///< fixed qscale if non zero 
-    float qcompress;  ///< amount of qscale change between easy & hard scenes (0.0-1.0) 
-    float qblur;      ///< amount of qscale smoothing over time (0.0-1.0) 
-    int max_qdiff;    ///< max qscale difference between frames 
     int encoding;     ///< true if we are encoding (vs decoding) 
     int flags;        ///< AVCodecContext.flags (HQ, MV4, ...) 
     int max_b_frames; ///< max number of b-frames for encoding 
-    int b_frame_strategy;
     int luma_elim_threshold;
     int chroma_elim_threshold;
     int strict_std_compliance; ///< strictly follow the std (MPEG4, ...) 

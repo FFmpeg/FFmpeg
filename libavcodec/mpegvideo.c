@@ -634,7 +634,6 @@ int MPV_encode_init(AVCodecContext *avctx)
     avctx->pix_fmt = PIX_FMT_YUV420P; // FIXME
 
     s->bit_rate = avctx->bit_rate;
-    s->bit_rate_tolerance = avctx->bit_rate_tolerance;
     s->width = avctx->width;
     s->height = avctx->height;
     if(avctx->gop_size > 600){
@@ -642,13 +641,9 @@ int MPV_encode_init(AVCodecContext *avctx)
         avctx->gop_size=600;
     }
     s->gop_size = avctx->gop_size;
-    s->max_qdiff= avctx->max_qdiff;
-    s->qcompress= avctx->qcompress;
-    s->qblur= avctx->qblur;
     s->avctx = avctx;
     s->flags= avctx->flags;
     s->max_b_frames= avctx->max_b_frames;
-    s->b_frame_strategy= avctx->b_frame_strategy;
     s->codec_id= avctx->codec->id;
     s->luma_elim_threshold  = avctx->luma_elim_threshold;
     s->chroma_elim_threshold= avctx->chroma_elim_threshold;
@@ -1683,10 +1678,10 @@ static void select_input_picture(MpegEncContext *s){
                     av_log(s->avctx, AV_LOG_ERROR, "warning, too many bframes in a row\n");
                     b_frames = s->max_b_frames;
                 }
-            }else if(s->b_frame_strategy==0){
+            }else if(s->avctx->b_frame_strategy==0){
                 b_frames= s->max_b_frames;
                 while(b_frames && !s->input_picture[b_frames]) b_frames--;
-            }else if(s->b_frame_strategy==1){
+            }else if(s->avctx->b_frame_strategy==1){
                 for(i=1; i<s->max_b_frames+1; i++){
                     if(s->input_picture[i] && s->input_picture[i]->b_frame_score==0){
                         s->input_picture[i]->b_frame_score= 

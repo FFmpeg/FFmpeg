@@ -236,6 +236,7 @@ int ff_vbv_update(MpegEncContext *s, int frame_size){
  */
 static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_factor, int frame_num){
     RateControlContext *rcc= &s->rc_context;
+    AVCodecContext *a= s->avctx;
     double q, bits;
     const int pict_type= rce->new_pict_type;
     const double mb_num= s->mb_num;  
@@ -256,7 +257,7 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         rce->pict_type == P_TYPE,
         rce->pict_type == B_TYPE,
         rcc->qscale_sum[pict_type] / (double)rcc->frame_count[pict_type],
-        s->qcompress,
+        a->qcompress,
 /*        rcc->last_qscale_for[I_TYPE],
         rcc->last_qscale_for[P_TYPE],
         rcc->last_qscale_for[B_TYPE],
@@ -577,6 +578,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
     int picture_number= s->picture_number;
     int64_t wanted_bits;
     RateControlContext *rcc= &s->rc_context;
+    AVCodecContext *a= s->avctx;
     RateControlEntry local_rce, *rce;
     double bits;
     double rate_factor;
@@ -606,7 +608,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
     }
 
     diff= s->total_bits - wanted_bits;
-    br_compensation= (s->bit_rate_tolerance - diff)/s->bit_rate_tolerance;
+    br_compensation= (a->bit_rate_tolerance - diff)/a->bit_rate_tolerance;
     if(br_compensation<=0.0) br_compensation=0.001;
 
     var= pict_type == I_TYPE ? pic->mb_var_sum : pic->mc_mb_var_sum;
@@ -658,8 +660,8 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
         assert(q>0.0);
 
         if(pict_type==P_TYPE || s->intra_only){ //FIXME type dependant blur like in 2-pass
-            rcc->short_term_qsum*=s->qblur;
-            rcc->short_term_qcount*=s->qblur;
+            rcc->short_term_qsum*=a->qblur;
+            rcc->short_term_qcount*=a->qblur;
 
             rcc->short_term_qsum+= q;
             rcc->short_term_qcount++;
@@ -711,6 +713,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s)
 static int init_pass2(MpegEncContext *s)
 {
     RateControlContext *rcc= &s->rc_context;
+    AVCodecContext *a= s->avctx;
     int i;
     double fps= (double)s->avctx->frame_rate / (double)s->avctx->frame_rate_base;
     double complexity[5]={0,0,0,0,0};   // aproximate bits at quant=1
@@ -722,7 +725,7 @@ static int init_pass2(MpegEncContext *s)
     double rate_factor=0;
     double step;
     //int last_i_frame=-10000000;
-    const int filter_size= (int)(s->qblur*4) | 1;  
+    const int filter_size= (int)(a->qblur*4) | 1;  
     double expected_bits;
     double *qscale, *blured_qscale;
 
@@ -803,7 +806,7 @@ static int init_pass2(MpegEncContext *s)
             for(j=0; j<filter_size; j++){
                 int index= i+j-filter_size/2;
                 double d= index-i;
-                double coeff= s->qblur==0 ? 1.0 : exp(-d*d/(s->qblur * s->qblur));
+                double coeff= a->qblur==0 ? 1.0 : exp(-d*d/(a->qblur * a->qblur));
             
                 if(index < 0 || index >= rcc->num_entries) continue;
                 if(pict_type != rcc->entry[index].new_pict_type) continue;
