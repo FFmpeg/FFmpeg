@@ -44,6 +44,8 @@ typedef struct {
     int packet_number;
     uint8_t lpcm_header[3];
     int lpcm_align;
+    uint8_t *fifo_iframe_ptr;
+    int align_iframe;
 } StreamInfo;
 
 typedef struct {
@@ -161,7 +163,7 @@ static int put_system_header(AVFormatContext *ctx, uint8_t *buf,int only_for_str
         put_bits(&pb, 1, 0); /* non constrainted bit stream */
     }
     
-    if (s->is_vcd) {
+    if (s->is_vcd || s->is_dvd) {
         /* see VCD standard p IV-7 */
         put_bits(&pb, 1, 1); /* audio locked */
         put_bits(&pb, 1, 1); /* video locked */
@@ -177,41 +179,99 @@ static int put_system_header(AVFormatContext *ctx, uint8_t *buf,int only_for_str
         put_bits(&pb, 5, 0);
     } else
         put_bits(&pb, 5, s->video_bound);
-
-    put_bits(&pb, 8, 0xff); /* reserved byte */
     
-    /* audio stream info */
-    private_stream_coded = 0;
-    for(i=0;i<ctx->nb_streams;i++) {
-        StreamInfo *stream = ctx->streams[i]->priv_data;
+    if (s->is_dvd) {
+        put_bits(&pb, 1, 0);    /* packet_rate_restriction_flag */
+        put_bits(&pb, 7, 0x7f); /* reserved byte */
+    } else
+        put_bits(&pb, 8, 0xff); /* reserved byte */
+    
+    /* DVD-Video Stream_bound entries
+    id (0xB9) video, maximum P-STD for stream 0xE0. (P-STD_buffer_bound_scale = 1) 
+    id (0xB8) audio, maximum P-STD for any MPEG audio (0xC0 to 0xC7) streams. If there are none set to 4096 (32x128). (P-STD_buffer_bound_scale = 0) 
+    id (0xBD) private stream 1 (audio other than MPEG and subpictures). (P-STD_buffer_bound_scale = 1) 
+    id (0xBF) private stream 2, NAV packs, set to 2x1024. */
+    if (s->is_dvd) {
         
-        /* For VCDs, only include the stream info for the stream
-           that the pack which contains this system belongs to.
-           (see VCD standard p. IV-7) */
-        if ( !s->is_vcd || stream->id==only_for_stream_id
-            || only_for_stream_id==0) {
+        int P_STD_max_video = 0;
+        int P_STD_max_mpeg_audio = 0;
+        int P_STD_max_mpeg_PS1 = 0;
+        
+        for(i=0;i<ctx->nb_streams;i++) {
+            StreamInfo *stream = ctx->streams[i]->priv_data;
 
             id = stream->id;
-            if (id < 0xc0) {
-                /* special case for private streams (AC3 use that) */
-                if (private_stream_coded)
-                    continue;
-                private_stream_coded = 1;
-                id = 0xbd;
+            if (id == 0xbd && stream->max_buffer_size > P_STD_max_mpeg_PS1) {
+                P_STD_max_mpeg_PS1 = stream->max_buffer_size;
+            } else if (id >= 0xc0 && id <= 0xc7 && stream->max_buffer_size > P_STD_max_mpeg_audio) {
+                P_STD_max_mpeg_audio = stream->max_buffer_size;
+            } else if (id == 0xe0 && stream->max_buffer_size > P_STD_max_video) {
+                P_STD_max_video = stream->max_buffer_size;
             }
-            put_bits(&pb, 8, id); /* stream ID */
-            put_bits(&pb, 2, 3);
-            if (id < 0xe0) {
-                /* audio */
-                put_bits(&pb, 1, 0);
-                put_bits(&pb, 13, stream->max_buffer_size / 128);
-            } else {
-                /* video */
-                put_bits(&pb, 1, 1);
-                put_bits(&pb, 13, stream->max_buffer_size / 1024);
+        }
+
+        /* video */
+        put_bits(&pb, 8, 0xb9); /* stream ID */
+        put_bits(&pb, 2, 3);
+        put_bits(&pb, 1, 1);
+        put_bits(&pb, 13, P_STD_max_video / 1024);
+
+        /* audio */
+        if (P_STD_max_mpeg_audio == 0)
+            P_STD_max_mpeg_audio = 4096;
+        put_bits(&pb, 8, 0xb8); /* stream ID */
+        put_bits(&pb, 2, 3);
+        put_bits(&pb, 1, 0);
+        put_bits(&pb, 13, P_STD_max_mpeg_audio / 128);
+
+        /* private stream 1 */
+        put_bits(&pb, 8, 0xbd); /* stream ID */
+        put_bits(&pb, 2, 3);
+        put_bits(&pb, 1, 0);
+        put_bits(&pb, 13, P_STD_max_mpeg_PS1 / 128);
+
+        /* private stream 2 */
+        put_bits(&pb, 8, 0xbf); /* stream ID */
+        put_bits(&pb, 2, 3);
+        put_bits(&pb, 1, 1);
+        put_bits(&pb, 13, 2);
+    }
+    else {
+        /* audio stream info */
+        private_stream_coded = 0;
+        for(i=0;i<ctx->nb_streams;i++) {
+            StreamInfo *stream = ctx->streams[i]->priv_data;
+            
+
+            /* For VCDs, only include the stream info for the stream
+            that the pack which contains this system belongs to.
+            (see VCD standard p. IV-7) */
+            if ( !s->is_vcd || stream->id==only_for_stream_id
+                || only_for_stream_id==0) {
+
+                id = stream->id;
+                if (id < 0xc0) {
+                    /* special case for private streams (AC3 use that) */
+                    if (private_stream_coded)
+                        continue;
+                    private_stream_coded = 1;
+                    id = 0xbd;
+                }
+                put_bits(&pb, 8, id); /* stream ID */
+                put_bits(&pb, 2, 3);
+                if (id < 0xe0) {
+                    /* audio */
+                    put_bits(&pb, 1, 0);
+                    put_bits(&pb, 13, stream->max_buffer_size / 128);
+                } else {
+                    /* video */
+                    put_bits(&pb, 1, 1);
+                    put_bits(&pb, 13, stream->max_buffer_size / 1024);
+                }
             }
         }
     }
+
     flush_put_bits(&pb);
     size = pbBufPtr(&pb) - pb.buf;
     /* patch packet size */
@@ -225,6 +285,10 @@ static int get_system_header_size(AVFormatContext *ctx)
 {
     int buf_index, i, private_stream_coded;
     StreamInfo *stream;
+    MpegMuxContext *s = ctx->priv_data;
+
+    if (s->is_dvd)
+       return 18; // DVD-Video system headers are 18 bytes fixed length.
 
     buf_index = 12;
     private_stream_coded = 0;
@@ -1024,6 +1088,7 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     int64_t pts, dts;
     PacketDesc *pkt_desc;
     const int preload= av_rescale(ctx->preload, 90000, AV_TIME_BASE);
+    const int is_iframe = st->codec.codec_type == CODEC_TYPE_VIDEO && (pkt->flags & PKT_FLAG_KEY);
     
     pts= pkt->pts;
     dts= pkt->dts;
@@ -1046,6 +1111,16 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         av_log(ctx, AV_LOG_ERROR, "fifo overflow\n");
         return -1;
     }
+
+    if (s->is_dvd){
+        if (is_iframe) {
+            stream->fifo_iframe_ptr = stream->fifo.wptr;
+            stream->align_iframe = 1;
+        } else {
+            stream->align_iframe = 0;
+        }
+    }
+
     fifo_write(&stream->fifo, buf, size, &stream->fifo.wptr);
 
     for(;;){

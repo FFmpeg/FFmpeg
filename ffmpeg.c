@@ -3763,6 +3763,9 @@ static void opt_target(const char *arg)
         video_rc_min_rate = 0; //1500000;
         video_rc_buffer_size = 224*1024*8;
 
+        mux_packet_size= 2048;  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
+        mux_rate = 10080000;    // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
+
         audio_bit_rate = 448000;
         audio_sample_rate = 48000;
 
