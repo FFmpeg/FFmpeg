@@ -60,7 +60,7 @@ static uint32_t vp31_quality_threshold[64] =
 };
 
 /* table used to convert natural order <-> zigzag order */
-static const int dequant_index[64] =
+static const int dezigzag_index[64] =
 {   0,  1,  8,  16,  9,  2,  3, 10,
     17, 24, 32, 25, 18, 11,  4,  5,
     12, 19, 26, 33, 40, 48, 41, 34,
@@ -71,8 +71,8 @@ static const int dequant_index[64] =
     53, 60, 61, 54, 47, 55, 62, 63
 };
 
-/* inverse of dequant index */
-static int quant_index[64];
+/* inverse of dezigzag index */
+static int zigzag_index[64];
 
 static const uint16_t dc_bias[16][32][2] = {
   {  /* DC bias table 0 */

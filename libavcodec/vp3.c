@@ -862,7 +862,7 @@ static void init_dequantizer(Vp3DecodeContext *s)
      * the dequantization phase */
     for (i = 1; i < 64; i++) {
 
-        j = quant_index[i];
+        j = zigzag_index[i];
 
         s->intra_y_dequant[j] = vp31_intra_y_dequant[i] * quality_scale / 100;
         if (s->intra_y_dequant[j] < MIN_DEQUANT_VAL)
@@ -2065,6 +2065,7 @@ static void render_fragments(Vp3DecodeContext *s,
     int j;
     int16_t *dequantizer;
     DCTELEM dequant_block[64];
+    DCTELEM dequant_block_permuted[64];
     unsigned char *output_plane;
     unsigned char *last_plane;
     unsigned char *golden_plane;
@@ -2155,9 +2156,12 @@ static void render_fragments(Vp3DecodeContext *s,
                     i, s->all_fragments[i].coding_method, 
                     s->all_fragments[i].coeffs[0], dequantizer[0]);
                 for (j = 0; j < 64; j++)
-                    dequant_block[dequant_index[j]] =
+                    dequant_block[dezigzag_index[j]] =
                         s->all_fragments[i].coeffs[j] *
                         dequantizer[j];
+                for (j = 0; j < 64; j++)
+                    dequant_block_permuted[s->dsp.idct_permutation[j]] =
+                        dequant_block[j];
 
                 debug_idct("dequantized block:\n");
                 for (m = 0; m < 8; m++) {
@@ -2171,14 +2175,14 @@ static void render_fragments(Vp3DecodeContext *s,
                 /* invert DCT and place (or add) in final output */
 
                 if (s->all_fragments[i].coding_method == MODE_INTRA) {
-                    dequant_block[0] += 1024;
+                    dequant_block_permuted[0] += 1024;
                     s->dsp.idct_put(
                         output_plane + s->all_fragments[i].first_pixel,
-                        stride, dequant_block);
+                        stride, dequant_block_permuted);
                 } else {
                     s->dsp.idct_add(
                         output_plane + s->all_fragments[i].first_pixel,
-                        stride, dequant_block);
+                        stride, dequant_block_permuted);
                 }
 
                 debug_idct("block after idct_%s():\n",
@@ -2363,7 +2367,7 @@ static int vp3_decode_init(AVCodecContext *avctx)
 
     /* build quantization table */
     for (i = 0; i < 64; i++)
-        quant_index[dequant_index[i]] = i;
+        zigzag_index[dezigzag_index[i]] = i;
 
     /* work out the block mapping tables */
     s->superblock_fragments = av_malloc(s->superblock_count * 16 * sizeof(int));
