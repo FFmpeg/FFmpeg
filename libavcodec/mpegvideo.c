@@ -382,7 +382,8 @@ int MPV_common_init(MpegEncContext *s)
                      + (toupper((s->avctx->fourcc>>16)&0xFF)<<16) 
                      + (toupper((s->avctx->fourcc>>24)&0xFF)<<24);
 
-    CHECKED_ALLOCZ(s->edge_emu_buffer, (s->width+64)*2*17*2); //(width + edge + align)*interlaced*MBsize*tolerance
+    CHECKED_ALLOCZ(s->allocated_edge_emu_buffer, (s->width+64)*2*17*2); //(width + edge + align)*interlaced*MBsize*tolerance
+    s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*17;
 
     s->avctx->coded_frame= (AVFrame*)&s->current_picture;
 
@@ -513,7 +514,7 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->bitstream_buffer);
     av_freep(&s->tex_pb_buffer);
     av_freep(&s->pb2_buffer);
-    av_freep(&s->edge_emu_buffer);
+    av_freep(&s->allocated_edge_emu_buffer); s->edge_emu_buffer= NULL;
     av_freep(&s->co_located_type_table);
     av_freep(&s->field_mv_table);
     av_freep(&s->field_select_table);
