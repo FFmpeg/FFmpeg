@@ -83,6 +83,7 @@ static int frame_bottomBand = 0;
 static int frame_leftBand  = 0;
 static int frame_rightBand = 0;
 static int frame_rate = 25 * FRAME_RATE_BASE;
+extern int emulate_frame_rate;
 static int video_bit_rate = 200*1000;
 static int video_bit_rate_tolerance = 4000*1000;
 static int video_qscale = 0;
@@ -2560,6 +2561,7 @@ const OptionDef options[] = {
     /* video options */
     { "b", HAS_ARG, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
     { "r", HAS_ARG, {(void*)opt_frame_rate}, "set frame rate (in Hz)", "rate" },
+    { "em_rate", OPT_BOOL|OPT_EXPERT, {(void*)&emulate_frame_rate}, "makes img reading happen at nominal frame rate" },
     { "s", HAS_ARG, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "croptop", HAS_ARG, {(void*)opt_frame_crop_top}, "set top crop band size (in pixels)", "size" },
     { "cropbottom", HAS_ARG, {(void*)opt_frame_crop_bottom}, "set bottom crop band size (in pixels)", "size" },
