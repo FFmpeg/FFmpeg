@@ -836,6 +836,7 @@ static void mpegts_push_data(void *opaque,
                     memcpy(pkt->data, p, len);
                     pkt->stream_index = pes->st->index;
                     pkt->pts = pes->pts;
+                    pkt->dts = pes->dts;
                     /* reset pts values */
                     pes->pts = AV_NOPTS_VALUE;
                     pes->dts = AV_NOPTS_VALUE;

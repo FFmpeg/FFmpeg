@@ -625,8 +625,14 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     } else {
         /* presentation is not delayed : PTS and DTS are the same */
         if (pkt->pts == AV_NOPTS_VALUE) {
-            pkt->pts = st->cur_dts;
-            pkt->dts = st->cur_dts;
+            if (pkt->dts == AV_NOPTS_VALUE) {
+                pkt->pts = st->cur_dts;
+                pkt->dts = st->cur_dts;
+            }
+            else {
+                st->cur_dts = pkt->dts;
+                pkt->pts = pkt->dts;
+            }
         } else {
             st->cur_dts = pkt->pts;
             pkt->dts = pkt->pts;
