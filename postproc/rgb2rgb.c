@@ -512,6 +512,19 @@ void yvu9toyv12(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc,
 #endif
 }
 
+void planar2x(const uint8_t *src, uint8_t *dst, int width, int height, int srcStride, int dstStride)
+{
+#ifdef CAN_COMPILE_X86_ASM
+	// ordered per speed fasterst first
+	if(gCpuCaps.hasMMX2)
+		planar2x_MMX2(src, dst, width, height, srcStride, dstStride);
+	else if(gCpuCaps.has3DNow)
+		planar2x_3DNow(src, dst, width, height, srcStride, dstStride);
+	else
+#endif
+		planar2x_C(src, dst, width, height, srcStride, dstStride);
+}
+
 /**
  *
  * height should be a multiple of 2 and width should be a multiple of 2 (if this is a

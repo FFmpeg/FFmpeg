@@ -41,6 +41,7 @@ extern void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t
 extern void rgb24toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 	unsigned int width, unsigned int height,
 	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride);
+extern void planar2x(const uint8_t *src, uint8_t *dst, int width, int height, int srcStride, int dstStride);
 
 extern void interleaveBytes(uint8_t *src1, uint8_t *src2, uint8_t *dst,
 			    unsigned width, unsigned height, unsigned src1Stride,

@@ -1777,6 +1777,34 @@ static void bgr24toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], i
 		dstStride[0], dstStride[1], srcStride[0]);
 }
 
+static void yvu9toyv12Wrapper(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
+             int srcSliceH, uint8_t* dst[], int dstStride[]){
+	int i;
+
+	/* copy Y */
+	if(srcStride[0]==dstStride[0]) 
+		memcpy(dst[0]+ srcSliceY*dstStride[0], src[0], srcStride[0]*srcSliceH);
+	else{
+		uint8_t *srcPtr= src[0];
+		uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
+
+		for(i=0; i<srcSliceH; i++)
+		{
+			memcpy(dstPtr, srcPtr, c->srcW);
+			srcPtr+= srcStride[0];
+			dstPtr+= dstStride[0];
+		}
+	}
+
+	if(c->dstFormat==IMGFMT_YV12){
+		planar2x(src[1], dst[1], c->chrSrcW, c->chrSrcH, srcStride[1], dstStride[1]);
+		planar2x(src[2], dst[2], c->chrSrcW, c->chrSrcH, srcStride[2], dstStride[2]);
+	}else{
+		planar2x(src[1], dst[2], c->chrSrcW, c->chrSrcH, srcStride[1], dstStride[2]);
+		planar2x(src[2], dst[1], c->chrSrcW, c->chrSrcH, srcStride[2], dstStride[1]);
+	}
+}
+
 /**
  * bring pointers in YUV order instead of YVU
  */
@@ -2051,7 +2079,7 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
-#if 1
+		
 		/* simple copy */
 		if(   srcFormat == dstFormat
 		   || (srcFormat==IMGFMT_YV12 && dstFormat==IMGFMT_I420)
@@ -2067,7 +2095,17 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 					vo_format_name(srcFormat), vo_format_name(dstFormat));
 			return c;
 		}
-#endif
+		
+		if( srcFormat==IMGFMT_YVU9 && (dstFormat==IMGFMT_YV12 || dstFormat==IMGFMT_I420) )
+		{
+			c->swScale= yvu9toyv12Wrapper;
+
+			if(flags&SWS_PRINT_INFO)
+				MSG_INFO("SwScaler: using unscaled %s -> %s special converter\n", 
+					vo_format_name(srcFormat), vo_format_name(dstFormat));
+			return c;
+		}
+
 		/* bgr32to24 & rgb32to24*/
 		if((srcFormat==IMGFMT_BGR32 && dstFormat==IMGFMT_BGR24)
 		 ||(srcFormat==IMGFMT_RGB32 && dstFormat==IMGFMT_RGB24))
