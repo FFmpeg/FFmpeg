@@ -426,6 +426,11 @@ static inline void idct_put(FourXContext *f, int x, int y){
         for(i=4; i<6; i++) idct(block[i]);
     }
 
+/* Note transform is:
+y= ( 1b + 4g + 2r)/14
+cb=( 3b - 2g - 1r)/14
+cr=(-1b - 4g + 5r)/14
+*/ 
     for(y=0; y<8; y++){
         for(x=0; x<8; x++){
             DCTELEM *temp= block[(x>>2) + 2*(y>>2)] + 2*(x&3) + 2*8*(y&3); //FIXME optimize
