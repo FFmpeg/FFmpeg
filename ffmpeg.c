@@ -169,9 +169,13 @@ typedef struct AVOutputStream {
     double sync_ipts_offset;
     INT64 sync_opts;
     /* video only */
-    AVPicture pict_tmp;         /* temporary image for resizing */
-    int video_resample;
+    int video_resample;      /* video_resample and video_crop are mutually exclusive */
+    AVPicture pict_tmp;      /* temporary image for resampling */
     ImgReSampleContext *img_resample_ctx; /* for image resampling */
+
+    int video_crop;          /* video_resample and video_crop are mutually exclusive */
+    int topBand;             /* cropping area sizes */
+    int leftBand;
     
     /* audio only */
     int audio_resample;
@@ -499,12 +503,12 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
 static void do_video_out(AVFormatContext *s, 
                          AVOutputStream *ost, 
                          AVInputStream *ist,
-                         AVPicture *picture1,
+                         AVPicture *in_picture,
                          int *frame_size, AVOutputStream *audio_sync)
 {
     int nb_frames, i, ret;
-    AVPicture *picture, *pict;
-    AVPicture picture_tmp1;
+    AVPicture *final_picture, *formatted_picture;
+    AVPicture picture_format_temp, picture_crop_temp;
     static UINT8 *video_buffer;
     UINT8 *buf = NULL, *buf1 = NULL;
     AVCodecContext *enc, *dec;
@@ -583,27 +587,43 @@ static void do_video_out(AVFormatContext *s,
         buf = av_malloc(size);
         if (!buf)
             return;
-        pict = &picture_tmp1;
-        avpicture_fill(pict, buf, enc->pix_fmt, dec->width, dec->height);
+        formatted_picture = &picture_format_temp;
+        avpicture_fill(formatted_picture, buf, enc->pix_fmt, dec->width, dec->height);
         
-        if (img_convert(pict, enc->pix_fmt, 
-                        picture1, dec->pix_fmt, 
+        if (img_convert(formatted_picture, enc->pix_fmt, 
+                        in_picture, dec->pix_fmt, 
                         dec->width, dec->height) < 0) {
             fprintf(stderr, "pixel format conversion not handled\n");
             goto the_end;
         }
     } else {
-        pict = picture1;
+        formatted_picture = in_picture;
     }
 
     /* XXX: resampling could be done before raw format convertion in
        some cases to go faster */
     /* XXX: only works for YUV420P */
     if (ost->video_resample) {
-        picture = &ost->pict_tmp;
-        img_resample(ost->img_resample_ctx, picture, pict);
+        final_picture = &ost->pict_tmp;
+        img_resample(ost->img_resample_ctx, final_picture, formatted_picture);
+    } else if (ost->video_crop) {
+        picture_crop_temp.data[0] = formatted_picture->data[0] +
+                (ost->topBand * formatted_picture->linesize[0]) + ost->leftBand;
+
+        picture_crop_temp.data[1] = formatted_picture->data[1] +
+                ((ost->topBand >> 1) * formatted_picture->linesize[1]) +
+                (ost->leftBand >> 1);
+
+        picture_crop_temp.data[2] = formatted_picture->data[2] +
+                ((ost->topBand >> 1) * formatted_picture->linesize[2]) +
+                (ost->leftBand >> 1);
+
+        picture_crop_temp.linesize[0] = formatted_picture->linesize[0];
+        picture_crop_temp.linesize[1] = formatted_picture->linesize[1];
+        picture_crop_temp.linesize[2] = formatted_picture->linesize[2];
+        final_picture = &picture_crop_temp;
     } else {
-        picture = pict;
+        final_picture = formatted_picture;
     }
     /* duplicates frame if needed */
     /* XXX: pb because no interleaving */
@@ -612,7 +632,7 @@ static void do_video_out(AVFormatContext *s,
             AVVideoFrame big_picture;
             
             memset(&big_picture, 0, sizeof(AVVideoFrame));
-            *(AVPicture*)&big_picture= *picture;
+            *(AVPicture*)&big_picture= *final_picture;
                         
             /* handles sameq here. This is not correct because it may
                not be a global option */
@@ -640,9 +660,9 @@ static void do_video_out(AVFormatContext *s,
                    avoid any copies. We support temorarily the older
                    method. */
                 av_write_frame(s, ost->index, 
-                               (UINT8 *)picture, sizeof(AVPicture));
+                               (UINT8 *)final_picture, sizeof(AVPicture));
             } else {
-                write_picture(s, ost->index, picture, enc->pix_fmt, 
+                write_picture(s, ost->index, final_picture, enc->pix_fmt, 
                               enc->width, enc->height);
             }
         }
@@ -966,11 +986,27 @@ static int av_encode(AVFormatContext **output_files,
                 break;
             case CODEC_TYPE_VIDEO:
                 if (codec->width == icodec->width &&
-                    codec->height == icodec->height) {
+                    codec->height == icodec->height &&
+                    frame_topBand == 0 &&
+                    frame_bottomBand == 0 &&
+                    frame_leftBand == 0 &&
+                    frame_rightBand == 0)
+                {
                     ost->video_resample = 0;
+                    ost->video_crop = 0;
+                } else if ((codec->width == icodec->width -
+                                (frame_leftBand + frame_rightBand)) &&
+                        (codec->height == icodec->height -
+                                (frame_topBand  + frame_bottomBand)))
+                {
+                    ost->video_resample = 0;
+                    ost->video_crop = 1;
+                    ost->topBand = frame_topBand;
+                    ost->leftBand = frame_leftBand;
                 } else {
                     UINT8 *buf;
                     ost->video_resample = 1;
+                    ost->video_crop = 0; // cropping is handled as part of resample
                     buf = av_malloc((codec->width * codec->height * 3) / 2);
                     if (!buf)
                         goto fail;
@@ -1196,7 +1232,7 @@ static int av_encode(AVFormatContext **output_files,
             av_hex_dump(pkt.data, pkt.size);
         }
 
-        //        printf("read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
+        // printf("read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
 
         len = pkt.size;
         ptr = pkt.data;
