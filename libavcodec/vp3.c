@@ -277,6 +277,11 @@ typedef struct Vp3DecodeContext {
      * macroblock is coded. */
     unsigned char *macroblock_coded;
 
+    int first_coded_y_fragment;
+    int first_coded_c_fragment;
+    int last_coded_y_fragment;
+    int last_coded_c_fragment;
+
 } Vp3DecodeContext;
 
 /************************************************************************
@@ -1197,6 +1202,8 @@ static void unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     /* figure out which fragments are coded; iterate through each
      * superblock (all planes) */
     s->coded_fragment_list_index = 0;
+    s->first_coded_y_fragment = s->first_coded_c_fragment = 0;
+    s->last_coded_y_fragment = s->last_coded_c_fragment = -1;
     memset(s->macroblock_coded, 0, s->macroblock_count);
     for (i = 0; i < s->superblock_count; i++) {
 
@@ -1225,8 +1232,14 @@ static void unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                         /* mode will be decoded in the next phase */
                         s->all_fragments[current_fragment].coding_method = 
                             MODE_INTER_NO_MV;
-                        s->coded_fragment_list[s->coded_fragment_list_index++] = 
+                        s->coded_fragment_list[s->coded_fragment_list_index] = 
                             current_fragment;
+                        if ((current_fragment >= s->u_fragment_start) &&
+                            (s->last_coded_y_fragment == -1)) {
+                            s->first_coded_c_fragment = s->coded_fragment_list_index;
+                            s->last_coded_y_fragment = s->first_coded_c_fragment - 1;
+                        }
+                        s->coded_fragment_list_index++;
                         s->macroblock_coded[s->all_fragments[current_fragment].macroblock] = 1;
                         debug_block_coding("      superblock %d is partially coded, fragment %d is coded\n",
                             i, current_fragment);
@@ -1246,8 +1259,14 @@ static void unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                      * coding will be determined in next step */
                     s->all_fragments[current_fragment].coding_method = 
                         MODE_INTER_NO_MV;
-                    s->coded_fragment_list[s->coded_fragment_list_index++] = 
+                    s->coded_fragment_list[s->coded_fragment_list_index] = 
                         current_fragment;
+                    if ((current_fragment >= s->u_fragment_start) &&
+                        (s->last_coded_y_fragment == -1)) {
+                        s->first_coded_c_fragment = s->coded_fragment_list_index;
+                        s->last_coded_y_fragment = s->first_coded_c_fragment - 1;
+                    }
+                    s->coded_fragment_list_index++;
                     s->macroblock_coded[s->all_fragments[current_fragment].macroblock] = 1;
                     debug_block_coding("      superblock %d is fully coded, fragment %d is coded\n",
                         i, current_fragment);
@@ -1255,6 +1274,18 @@ static void unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
             }
         }
     }
+
+    if (s->first_coded_c_fragment == 0)
+        /* no C fragments coded */
+        s->last_coded_y_fragment = s->coded_fragment_list_index - 1;
+    else
+        s->last_coded_c_fragment = s->coded_fragment_list_index - 1;
+    debug_block_coding("    %d total coded fragments, y: %d -> %d, c: %d -> %d\n",
+        s->coded_fragment_list_index,
+        s->first_coded_y_fragment,
+        s->last_coded_y_fragment,
+        s->first_coded_c_fragment,
+        s->last_coded_c_fragment);
 }
 
 /*
@@ -1565,7 +1596,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     DCTELEM coeff;
     Vp3Fragment *fragment;
 
-    for (i = first_fragment; i < last_fragment; i++) {
+    for (i = first_fragment; i <= last_fragment; i++) {
 
         fragment = &s->all_fragments[s->coded_fragment_list[i]];
         if (fragment->coeff_count > coeff_index)
@@ -1610,42 +1641,6 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     int ac_c_table;
     int residual_eob_run = 0;
 
-    /* for the binary search */
-    int left, middle, right, found;
-    /* this indicates the first fragment of the color plane data */
-    int plane_split = 0;
-
-    debug_vp3("  vp3: unpacking DCT coefficients\n");
-
-    /* find the plane split (the first color plane fragment) using a binary 
-     * search; test the boundaries first */
-    if (s->coded_fragment_list_index == 0)
-        return;
-    if (s->u_fragment_start <= s->coded_fragment_list[0])
-        plane_split = 0;  /* this means no Y fragments */
-    else if (s->coded_fragment_list[s->coded_fragment_list_index - 1] >
-        s->u_fragment_start) {
-
-        left = 0;
-        right = s->coded_fragment_list_index - 1;
-        found = 0;
-        do {
-            middle = (left + right + 1) / 2;
-            if ((s->coded_fragment_list[middle] >= s->u_fragment_start) &&
-                (s->coded_fragment_list[middle - 1] < s->u_fragment_start))
-                found = 1;
-            else if (s->coded_fragment_list[middle] < s->u_fragment_start)
-                left = middle;
-            else
-                right = middle;
-        } while (!found);
-
-        plane_split = middle;
-    }
-
-    debug_vp3("  plane split @ index %d (fragment %d)\n", plane_split,
-        s->coded_fragment_list[plane_split]);
-
     /* fetch the DC table indices */
     dc_y_table = get_bits(gb, 4);
     dc_c_table = get_bits(gb, 4);
@@ -1654,13 +1649,13 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     debug_vp3("  vp3: unpacking Y plane DC coefficients using table %d\n",
         dc_y_table);
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_y_table], 0, 
-        0, plane_split, residual_eob_run);
+        s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
     /* unpack the C plane DC coefficients */
     debug_vp3("  vp3: unpacking C plane DC coefficients using table %d\n",
         dc_c_table);
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
-        plane_split, s->coded_fragment_list_index, residual_eob_run);
+        s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
 
     /* fetch the AC table indices */
     ac_y_table = get_bits(gb, 4);
@@ -1672,12 +1667,12 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
         debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
             i, ac_y_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_1[ac_y_table], i, 
-            0, plane_split, residual_eob_run);
+            s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
         debug_vp3("  vp3: unpacking level %d C plane AC coefficients using table %d\n",
             i, ac_c_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_1[ac_c_table], i, 
-            plane_split, s->coded_fragment_list_index, residual_eob_run);
+            s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
     }
 
     /* unpack the group 2 AC coefficients (coeffs 6-14) */
@@ -1686,12 +1681,12 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
         debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
             i, ac_y_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_2[ac_y_table], i, 
-            0, plane_split, residual_eob_run);
+            s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
         debug_vp3("  vp3: unpacking level %d C plane AC coefficients using table %d\n",
             i, ac_c_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_2[ac_c_table], i, 
-            plane_split, s->coded_fragment_list_index, residual_eob_run);
+            s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
     }
 
     /* unpack the group 3 AC coefficients (coeffs 15-27) */
@@ -1700,12 +1695,12 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
         debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
             i, ac_y_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_3[ac_y_table], i, 
-            0, plane_split, residual_eob_run);
+            s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
         debug_vp3("  vp3: unpacking level %d C plane AC coefficients using table %d\n",
             i, ac_c_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_3[ac_c_table], i, 
-            plane_split, s->coded_fragment_list_index, residual_eob_run);
+            s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
     }
 
     /* unpack the group 4 AC coefficients (coeffs 28-63) */
@@ -1714,12 +1709,12 @@ static void unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
         debug_vp3("  vp3: unpacking level %d Y plane AC coefficients using table %d\n",
             i, ac_y_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_4[ac_y_table], i, 
-            0, plane_split, residual_eob_run);
+            s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
 
         debug_vp3("  vp3: unpacking level %d C plane AC coefficients using table %d\n",
             i, ac_c_table);
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_4[ac_c_table], i, 
-            plane_split, s->coded_fragment_list_index, residual_eob_run);
+            s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
     }
 }
 
