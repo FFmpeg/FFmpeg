@@ -43,6 +43,7 @@ static int h263_decode_init(AVCodecContext *avctx)
 
     s->width = avctx->width;
     s->height = avctx->height;
+    s->workaround_bugs= avctx->workaround_bugs;
 
     /* select sub codec */
     switch(avctx->codec->id) {
@@ -211,7 +212,11 @@ uint64_t time= rdtsc();
             //fprintf(stderr,"\nFrame: %d\tMB: %d",avctx->frame_number, (s->mb_y * s->mb_width) + s->mb_x);
             /* DCT & quantize */
             if (s->h263_pred && s->msmpeg4_version!=2) {
-                h263_dc_scale(s);
+                /* old ffmpeg encoded msmpeg4v3 workaround */
+                if(s->workaround_bugs==1 && s->msmpeg4_version==3) 
+                    ff_old_msmpeg4_dc_scale(s);
+                else
+                    h263_dc_scale(s);                
             } else {
                 /* default quantization values */
                 s->y_dc_scale = 8;
@@ -277,9 +282,9 @@ uint64_t time= rdtsc();
   s->has_b_frames=1;
   for(mb_y=0; mb_y<s->mb_height; mb_y++){
     int mb_x;
-    int y= mb_y*16;
+    int y= mb_y*16 + 8;
     for(mb_x=0; mb_x<s->mb_width; mb_x++){
-      int x= mb_x*16;
+      int x= mb_x*16 + 8;
       uint8_t *ptr= s->last_picture[0];
       int xy= 1 + mb_x*2 + (mb_y*2 + 1)*(s->mb_width*2 + 2);
       int mx= (s->motion_val[xy][0]>>1) + x;
@@ -299,6 +304,7 @@ uint64_t time= rdtsc();
         int y1= y + (my-y)*i/max;
         ptr[y1*s->linesize + x1]+=100;
       }
+      ptr[y*s->linesize + x]+=100;
       s->mbskip_table[mb_x + mb_y*s->mb_width]=0;
     }
   }

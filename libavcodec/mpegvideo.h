@@ -99,6 +99,7 @@ typedef struct MpegEncContext {
     float b_quant_factor;/* qscale factor between ips and b frames */
     int rc_strategy;
     int b_frame_strategy;
+    int workaround_bugs;       /* workaround bugs in encoders which cannot be detected automatically */
     /* the following fields are managed internally by the encoder */
 
     /* bit output */
@@ -491,6 +492,7 @@ int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size);
 int msmpeg4_decode_mb(MpegEncContext *s, 
                       DCTELEM block[6][64]);
 int msmpeg4_decode_init_vlc(MpegEncContext *s);
+void ff_old_msmpeg4_dc_scale(MpegEncContext *s);
 
 /* mjpegenc.c */
 

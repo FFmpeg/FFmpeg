@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4609
-#define LIBAVCODEC_BUILD_STR   "4609"
+#define LIBAVCODEC_BUILD       4610
+#define LIBAVCODEC_BUILD_STR   "4610"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -231,6 +231,8 @@ typedef struct AVCodecContext {
     enum CodecType codec_type; /* see CODEC_TYPE_xxx */
     enum CodecID codec_id; /* see CODEC_ID_xxx */
     unsigned int codec_tag;  /* codec tag, only used if unknown codec */
+    
+    int workaround_bugs;       /* workaround bugs in encoders which cannot be detected automatically */
     /*
 	Note: Below are located reserved fields for further usage
 	It requires for ABI !!!
@@ -253,7 +255,7 @@ typedef struct AVCodecContext {
 	    ul_res6,ul_res7,ul_res8,ul_res9,ul_res10,ul_res11,ul_res12;
     unsigned int
 	    ui_res0,ui_res1,ui_res2,ui_res3,ui_res4,ui_res5,
-	    ui_res6,ui_res7,ui_res8,ui_res9,ui_res10,ui_res11,ui_res12;
+	    ui_res6,ui_res7,ui_res8,ui_res9,ui_res10,ui_res11;
     unsigned short int
 	    us_res0,us_res1,us_res2,us_res3,us_res4,us_res5,
 	    us_res6,us_res7,us_res8,us_res9,us_res10,us_res11,us_res12;
