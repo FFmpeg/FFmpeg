@@ -3221,6 +3221,9 @@ static inline int get_amv(MpegEncContext *s, int n){
     int x, y, mb_v, sum, dx, dy, shift;
     int len = 1 << (s->f_code + 4);
     const int a= s->sprite_warping_accuracy;
+    
+    if(s->workaround_bugs & FF_BUG_AMV)
+        len >>= s->quarter_sample;
 
     if(s->real_sprite_warping_points==1){
         if(s->divx_version==500 && s->divx_build==413)
