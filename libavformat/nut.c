@@ -50,6 +50,8 @@ typedef struct {
     int curr_frame_start;
     int last_frame_size;
     int curr_frame_size;
+    int *msb_timestamp_shift;
+    int64_t *last_msb_timestamp;
 } NUTContext;
 
 static int bytes_left(ByteIOContext *bc)
@@ -234,6 +236,11 @@ static int nut_write_header(AVFormatContext *s)
     
     update_packetheader(nut, bc, 0);
     
+    nut->msb_timestamp_shift =	
+	av_mallocz(sizeof(nut->msb_timestamp_shift)*s->nb_streams);
+    nut->last_msb_timestamp =
+	av_mallocz(sizeof(nut->last_msb_timestamp)*s->nb_streams);
+    
     /* stream headers */
     for (i = 0; i < s->nb_streams; i++)
     {
@@ -272,7 +279,8 @@ static int nut_write_header(AVFormatContext *s)
 	put_v(bc, 0); /* no language code */
 	put_v(bc, nom);
 	put_v(bc, denom);
-	put_v(bc, 0); /* msb timestamp_shift */
+	nut->msb_timestamp_shift[i] = 0;
+	put_v(bc, nut->msb_timestamp_shift[i]);
 	put_v(bc, 0); /* shuffle type */
 	put_byte(bc, 0); /* flags: 0x1 - fixed_fps, 0x2 - index_present */
 	
@@ -344,31 +352,45 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
 {
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
-    int key_frame = 0;
-    int flags;
+    int key_frame = 0, flags, msb_pts = 0;
     AVCodecContext *enc;
+    int64_t lsb_pts;
 
     if (stream_index > s->nb_streams)
 	return 1;
 
     enc = &s->streams[stream_index]->codec;
-    key_frame = enc->coded_frame->key_frame;
+    // FIXME, lavc reports always keyframes for audio, which will make
+    // _huge_ overhead
+    if (enc->codec_type == CODEC_TYPE_VIDEO)
+	key_frame = enc->coded_frame->key_frame;
 
-    if (key_frame)
-	put_be64(bc, KEYFRAME_STARTCODE);
+    if (key_frame /*||
+	((pts - (nut->last_msb_timestamp[stream_index] <<
+	nut->msb_timestamp_shift[stream_index])) > 1024)*/)
+    {
+	msb_pts = 1;
+	nut->last_msb_timestamp[stream_index] = pts >> nut->msb_timestamp_shift[stream_index];
+    }
+
+    lsb_pts = pts - (nut->last_msb_timestamp[stream_index] << nut->msb_timestamp_shift[stream_index]);
     
     flags=0;
     flags<<=2; flags|=1; //priority
     flags<<=1; flags|=0; //checksum
-    flags<<=1; flags|=0; //msb_timestamp_flag
+    flags<<=1; flags|=msb_pts; //msb_timestamp_flag
     flags<<=2; flags|=1; //subpacket_type
     flags<<=1; flags|=0; //reserved
 
+    if (key_frame)
+	put_be64(bc, KEYFRAME_STARTCODE);
     put_byte(bc, flags);
 
     put_packetheader(nut, bc, size+20);
     put_v(bc, stream_index);
-    put_s(bc, pts); /* lsb_timestamp */
+    if (msb_pts)
+	put_v(bc, nut->last_msb_timestamp[stream_index]);
+    put_v(bc, lsb_pts); /* lsb_timestamp */
     update_packetheader(nut, bc, size);
     
     put_buffer(bc, buf, size);
@@ -380,6 +402,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
 
 static int nut_write_trailer(AVFormatContext *s)
 {
+    NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
 #if 0
     int i;
@@ -398,6 +421,11 @@ static int nut_write_trailer(AVFormatContext *s)
 #endif
 
     put_flush_packet(bc);
+    
+    if (nut->last_msb_timestamp)
+	av_free(nut->last_msb_timestamp);
+    if (nut->msb_timestamp_shift)
+	av_free(nut->msb_timestamp_shift);
 
     return 0;
 }
@@ -439,6 +467,11 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     get_be32(bc); /* checkusm */
     
     s->bit_rate = 0;
+
+    nut->msb_timestamp_shift =	
+	av_malloc(sizeof(nut->msb_timestamp_shift)*s->nb_streams);
+    nut->last_msb_timestamp =
+	av_malloc(sizeof(nut->last_msb_timestamp)*s->nb_streams);
     
     /* stream header */
     for (cur_stream = 0; cur_stream < nb_streams; cur_stream++)
@@ -477,7 +510,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	get_b(bc, NULL, 0); /* language code */
 	nom = get_v(bc);
 	denom = get_v(bc);
-	get_v(bc); /* FIXME: msb timestamp base */
+	nut->msb_timestamp_shift[cur_stream] = get_v(bc);
 	get_v(bc); /* shuffle type */
 	get_byte(bc); /* flags */
 
@@ -512,10 +545,10 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
-    int id, timestamp, size;
+    int id, size;
     int key_frame = 0;
     uint64_t tmp;
-
+    int64_t pts = 0;
 
     if (url_feof(bc))
 	return -1;
@@ -540,10 +573,12 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
 	fprintf(stderr, "sanity check failed!\n");
 #endif
     id = get_v(bc);
-    timestamp = get_s(bc);
+    if ((tmp & 0x8) >> 3)
+	pts = get_v(bc) << nut->msb_timestamp_shift[id];
+    pts += get_v(bc);
     
     size = (nut->curr_frame_size - (url_ftell(bc)-nut->curr_frame_start));
-    dprintf("flags: 0x%Lx, timestamp: %d, packet size: %d\n", tmp, timestamp, size);
+    dprintf("flags: 0x%llx, timestamp: %llx, packet size: %d\n", tmp, pts, size);
     
     if (size < 0)
 	return -1;
@@ -553,7 +588,7 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = id;
     if (key_frame)
 	pkt->flags |= PKT_FLAG_KEY;
-    pkt->pts = timestamp;
+    pkt->pts = pts;
 
     return 0;
 }
