@@ -62,7 +62,9 @@ extern void (*get_pixels)(DCTELEM *block/*align 16*/, const UINT8 *pixels/*align
 extern void (*diff_pixels)(DCTELEM *block/*align 16*/, const UINT8 *s1/*align 8*/, const UINT8 *s2/*align 8*/, int stride);
 extern void (*put_pixels_clamped)(const DCTELEM *block/*align 16*/, UINT8 *pixels/*align 8*/, int line_size);
 extern void (*add_pixels_clamped)(const DCTELEM *block/*align 16*/, UINT8 *pixels/*align 8*/, int line_size);
-extern void (*gmc1)(UINT8 *dst/*align 8*/, UINT8 *src/*align 1*/, int srcStride, int h, int x16, int y16, int rounder);
+extern void (*ff_gmc1)(UINT8 *dst/*align 8*/, UINT8 *src/*align 1*/, int srcStride, int h, int x16, int y16, int rounder);
+extern void (*ff_gmc )(UINT8 *dst/*align 8*/, UINT8 *src/*align 1*/, int stride, int h, int ox, int oy, 
+                  int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
 extern void (*clear_blocks)(DCTELEM *blocks/*align 16*/);
 extern int (*pix_sum)(UINT8 * pix, int line_size);
 extern int (*pix_norm1)(UINT8 * pix, int line_size);

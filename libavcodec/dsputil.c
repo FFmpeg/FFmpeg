@@ -25,7 +25,9 @@ void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 void (*diff_pixels)(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
 void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
 void (*add_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
-void (*gmc1)(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder);
+void (*ff_gmc1)(UINT8 *dst, UINT8 *src, int srcStride, int h, int x16, int y16, int rounder);
+void (*ff_gmc )(UINT8 *dst, UINT8 *src, int stride, int h, int ox, int oy, 
+                  int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height);
 void (*clear_blocks)(DCTELEM *blocks);
 int (*pix_sum)(UINT8 * pix, int line_size);
 int (*pix_norm1)(UINT8 * pix, int line_size);
@@ -822,6 +824,7 @@ PIXOP(uint8_t, put_no_rnd, op_put, line_size)
 #define avg2(a,b) ((a+b+1)>>1)
 #define avg4(a,b,c,d) ((a+b+c+d+2)>>2)
 
+
 static void gmc1_c(UINT8 *dst, UINT8 *src, int stride, int h, int x16, int y16, int rounder)
 {
     const int A=(16-x16)*(16-y16);
@@ -829,7 +832,6 @@ static void gmc1_c(UINT8 *dst, UINT8 *src, int stride, int h, int x16, int y16, 
     const int C=(16-x16)*(   y16);
     const int D=(   x16)*(   y16);
     int i;
-    rounder= 128 - rounder;
 
     for(i=0; i<h; i++)
     {
@@ -843,6 +845,64 @@ static void gmc1_c(UINT8 *dst, UINT8 *src, int stride, int h, int x16, int y16, 
         dst[7]= (A*src[7] + B*src[8] + C*src[stride+7] + D*src[stride+8] + rounder)>>8;
         dst+= stride;
         src+= stride;
+    }
+}
+
+static void gmc_c(UINT8 *dst, UINT8 *src, int stride, int h, int ox, int oy, 
+                  int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height)
+{
+    int y, vx, vy;
+    const int s= 1<<shift;
+    
+    width--;
+    height--;
+
+    for(y=0; y<h; y++){
+        int x;
+
+        vx= ox;
+        vy= oy;
+        for(x=0; x<8; x++){ //XXX FIXME optimize
+            int src_x, src_y, frac_x, frac_y, index;
+
+            src_x= vx>>16;
+            src_y= vy>>16;
+            frac_x= src_x&(s-1);
+            frac_y= src_y&(s-1);
+            src_x>>=shift;
+            src_y>>=shift;
+  
+            if((unsigned)src_x < width){
+                if((unsigned)src_y < height){
+                    index= src_x + src_y*stride;
+                    dst[y*stride + x]= (  (  src[index         ]*(s-frac_x)
+                                           + src[index       +1]*   frac_x )*(s-frac_y)
+                                        + (  src[index+stride  ]*(s-frac_x)
+                                           + src[index+stride+1]*   frac_x )*   frac_y
+                                        + r)>>(shift*2);
+                }else{
+                    index= src_x + clip(src_y, 0, height)*stride;                    
+                    dst[y*stride + x]= ( (  src[index         ]*(s-frac_x) 
+                                          + src[index       +1]*   frac_x )*s
+                                        + r)>>(shift*2);
+                }
+            }else{
+                if((unsigned)src_y < height){
+                    index= clip(src_x, 0, width) + src_y*stride;                    
+                    dst[y*stride + x]= (  (  src[index         ]*(s-frac_y) 
+                                           + src[index+stride  ]*   frac_y )*s
+                                        + r)>>(shift*2);
+                }else{
+                    index= clip(src_x, 0, width) + clip(src_y, 0, height)*stride;                    
+                    dst[y*stride + x]=    src[index         ];
+                }
+            }
+            
+            vx+= dxx;
+            vy+= dyx;
+        }
+        ox += dxy;
+        oy += dyy;
     }
 }
 
@@ -1528,7 +1588,8 @@ void dsputil_init(void)
     diff_pixels = diff_pixels_c;
     put_pixels_clamped = put_pixels_clamped_c;
     add_pixels_clamped = add_pixels_clamped_c;
-    gmc1= gmc1_c;
+    ff_gmc1= gmc1_c;
+    ff_gmc= gmc_c;
     clear_blocks= clear_blocks_c;
     pix_sum= pix_sum_c;
     pix_norm1= pix_norm1_c;

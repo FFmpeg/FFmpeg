@@ -34,9 +34,6 @@
 //#undef NDEBUG
 //#include <assert.h>
 
-//rounded divison & shift
-#define RSHIFT(a,b) ((a) > 0 ? ((a) + (1<<((b)-1)))>>(b) : ((a) + (1<<((b)-1))-1)>>(b))
-
 #if 1
 #define PRINT_MB_TYPE(a) {}
 #else
@@ -2433,6 +2430,49 @@ int ff_h263_resync(MpegEncContext *s){
 }
 
 /**
+ * @param n either 0 for the x component or 1 for y
+ * @returns the average MV for a GMC MB
+ */
+static inline int get_amv(MpegEncContext *s, int n){
+    int x, y, mb_v, sum, dx, dy, shift;
+    int len = 1 << (s->f_code + 4);
+    const int a= s->sprite_warping_accuracy;
+
+    if(s->real_sprite_warping_points==1){
+        if(s->divx_version==500 && s->divx_build==413)
+            sum= s->sprite_offset[0][n] / (1<<(a - s->quarter_sample));
+        else
+            sum= RSHIFT(s->sprite_offset[0][n]<<s->quarter_sample, a);
+    }else{
+        dx= s->sprite_delta[n][0];
+        dy= s->sprite_delta[n][1];
+        shift= s->sprite_shift[0];
+        if(n) dy -= 1<<(shift + a + 1);
+        else  dx -= 1<<(shift + a + 1);
+        mb_v= s->sprite_offset[0][n] + dx*s->mb_x*16 + dy*s->mb_y*16;
+
+        sum=0;
+        for(y=0; y<16; y++){
+            int v;
+        
+            v= mb_v + dy*y;
+            //XXX FIXME optimize
+            for(x=0; x<16; x++){
+                sum+= v>>shift;
+                v+= dx;
+            }
+        }
+        sum /= 256;
+        sum= RSHIFT(sum<<s->quarter_sample, a);
+    }
+
+    if      (sum < -len) sum= -len;
+    else if (sum >= len) sum= len-1;
+
+    return sum;
+}
+
+/**
  * decodes first partition.
  * @return number of MBs decoded or <0 if an error occured
  */
@@ -2508,20 +2548,12 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                     /* skip mb */
                     s->mb_type[xy]= MB_TYPE_SKIPED;
                     if(s->pict_type==S_TYPE && s->vol_sprite_usage==GMC_SPRITE){
-                        const int a= s->sprite_warping_accuracy;
                         PRINT_MB_TYPE("G");
-                        if(s->divx_version==500 && s->divx_build==413){
-                            mx = s->sprite_offset[0][0] / (1<<(a-s->quarter_sample));
-                            my = s->sprite_offset[0][1] / (1<<(a-s->quarter_sample));
-                        }else{
-                            mx = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
-                            my = RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
-                            s->mb_type[xy]= MB_TYPE_GMC | MB_TYPE_SKIPED;
-                        }
+                        mx= get_amv(s, 0);
+                        my= get_amv(s, 1);
                     }else{
                         PRINT_MB_TYPE("S");
-                        mx = 0;
-                        my = 0;
+                        mx=my=0;
                     }
                     mot_val[0       ]= mot_val[2       ]=
                     mot_val[0+stride]= mot_val[2+stride]= mx;
@@ -2570,31 +2602,19 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                         s->mb_type[xy]= MB_TYPE_INTER;
 
                         h263_pred_motion(s, 0, &pred_x, &pred_y);
-                        if(!s->mcsel)
-                           mx = h263_decode_motion(s, pred_x, s->f_code);
-                        else {
-                            const int a= s->sprite_warping_accuracy;
-                            if(s->divx_version==500 && s->divx_build==413){
-                                mx = s->sprite_offset[0][0] / (1<<(a-s->quarter_sample));
-                            }else{
-                                mx = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
-                            }
+                        if(!s->mcsel){
+                            mx = h263_decode_motion(s, pred_x, s->f_code);
+                            if (mx >= 0xffff)
+                                return -1;
+
+                            my = h263_decode_motion(s, pred_y, s->f_code);
+                            if (my >= 0xffff)
+                                return -1;
+                        } else {
+                            mx = get_amv(s, 0);
+                            my = get_amv(s, 1);
                         }
-                        if (mx >= 0xffff)
-                            return -1;
-            
-                        if(!s->mcsel)
-                           my = h263_decode_motion(s, pred_y, s->f_code);
-                        else{
-                           const int a= s->sprite_warping_accuracy;
-                            if(s->divx_version==500 && s->divx_build==413){
-                                my = s->sprite_offset[0][1] / (1<<(a-s->quarter_sample));
-                            }else{
-                                my = RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
-                            }
-                        }
-                        if (my >= 0xffff)
-                            return -1;
+
                         mot_val[0       ]= mot_val[2       ] =
                         mot_val[0+stride]= mot_val[2+stride]= mx;
                         mot_val[1       ]= mot_val[3       ]=
@@ -2876,21 +2896,10 @@ int ff_h263_decode_mb(MpegEncContext *s,
             s->mv_dir = MV_DIR_FORWARD;
             s->mv_type = MV_TYPE_16X16;
             if(s->pict_type==S_TYPE && s->vol_sprite_usage==GMC_SPRITE){
-                const int a= s->sprite_warping_accuracy;
-//                int l = (1 << (s->f_code - 1)) * 32;
                 PRINT_MB_TYPE("G");
                 s->mcsel=1;
-                if(s->divx_version==500 && s->divx_build==413){
-                    s->mv[0][0][0] = s->sprite_offset[0][0] / (1<<(a-s->quarter_sample));
-                    s->mv[0][0][1] = s->sprite_offset[0][1] / (1<<(a-s->quarter_sample));
-                }else{
-                    s->mv[0][0][0] = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
-                    s->mv[0][0][1] = RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
-                }
-/*                if (s->mv[0][0][0] < -l) s->mv[0][0][0]= -l;
-                else if (s->mv[0][0][0] >= l) s->mv[0][0][0]= l-1;
-                if (s->mv[0][0][1] < -l) s->mv[0][0][1]= -l;
-                else if (s->mv[0][0][1] >= l) s->mv[0][0][1]= l-1;*/
+                s->mv[0][0][0]= get_amv(s, 0);
+                s->mv[0][0][1]= get_amv(s, 1);
 
                 s->mb_skiped = 0;
             }else{
@@ -2929,19 +2938,11 @@ int ff_h263_decode_mb(MpegEncContext *s,
         s->mv_dir = MV_DIR_FORWARD;
         if ((cbpc & 16) == 0) {
             if(s->mcsel){
-                const int a= s->sprite_warping_accuracy;
                 PRINT_MB_TYPE("G");
                 /* 16x16 global motion prediction */
                 s->mv_type = MV_TYPE_16X16;
-//        int l = (1 << (s->f_code - 1)) * 32;
-                if(s->divx_version==500 && s->divx_build==413){
-                    mx = s->sprite_offset[0][0] / (1<<(a-s->quarter_sample));
-                    my = s->sprite_offset[0][1] / (1<<(a-s->quarter_sample));
-                }else{
-                    mx = RSHIFT(s->sprite_offset[0][0], a-s->quarter_sample);
-                    my = RSHIFT(s->sprite_offset[0][1], a-s->quarter_sample);
-                }
-//       int l = (1 << (s->f_code - 1)) * 32;
+                mx= get_amv(s, 0);
+                my= get_amv(s, 1);
                 s->mv[0][0][0] = mx;
                 s->mv[0][0][1] = my;
             }else if((!s->progressive_sequence) && get_bits1(&s->gb)){
@@ -3862,11 +3863,12 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
     int d[4][2]={{0,0}, {0,0}, {0,0}, {0,0}};
     int sprite_ref[4][2];
     int virtual_ref[2][2];
-    int w2, h2;
+    int w2, h2, w3, h3;
     int alpha=0, beta=0;
     int w= s->width;
     int h= s->height;
-//printf("SP %d\n", s->sprite_warping_accuracy);
+    int min_ab;
+
     for(i=0; i<s->num_sprite_warping_points; i++){
         int length;
         int x=0, y=0;
@@ -3874,7 +3876,7 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
         length= get_vlc(&s->gb, &sprite_trajectory);
         if(length){
             x= get_bits(&s->gb, length);
-//printf("lx %d %d\n", length, x);
+
             if ((x >> (length - 1)) == 0) /* if MSB not set it is negative*/
                 x = - (x ^ ((1 << length) - 1));
         }
@@ -3883,14 +3885,12 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
         length= get_vlc(&s->gb, &sprite_trajectory);
         if(length){
             y=get_bits(&s->gb, length);
-//printf("ly %d %d\n", length, y);
+
             if ((y >> (length - 1)) == 0) /* if MSB not set it is negative*/
                 y = - (y ^ ((1 << length) - 1));
         }
         skip_bits1(&s->gb); /* marker bit */
 //printf("%d %d %d %d\n", x, y, i, s->sprite_warping_accuracy);
-//if(i>0 && (x!=0 || y!=0)) printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
-//x=y=0;
         d[i][0]= x;
         d[i][1]= y;
     }
@@ -3931,7 +3931,7 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
         + ROUNDED_DIV(((h - h2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + h2*(r*sprite_ref[2][0] - 16*vop_ref[2][0])),h);
     virtual_ref[1][1]= 16*(vop_ref[0][1] + h2) 
         + ROUNDED_DIV(((h - h2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + h2*(r*sprite_ref[2][1] - 16*vop_ref[2][1])),h);
-
+        
     switch(s->num_sprite_warping_points)
     {
         case 0:
@@ -3939,107 +3939,133 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
             s->sprite_offset[0][1]= 0;
             s->sprite_offset[1][0]= 0;
             s->sprite_offset[1][1]= 0;
-            s->sprite_delta[0][0][0]= a;
-            s->sprite_delta[0][0][1]= 0;
-            s->sprite_delta[0][1][0]= 0;
-            s->sprite_delta[0][1][1]= a;
-            s->sprite_delta[1][0][0]= a;
-            s->sprite_delta[1][0][1]= 0;
-            s->sprite_delta[1][1][0]= 0;
-            s->sprite_delta[1][1][1]= a;
-            s->sprite_shift[0][0]= 0;
-            s->sprite_shift[0][1]= 0;
-            s->sprite_shift[1][0]= 0;
-            s->sprite_shift[1][1]= 0;
+            s->sprite_delta[0][0]= a;
+            s->sprite_delta[0][1]= 0;
+            s->sprite_delta[1][0]= 0;
+            s->sprite_delta[1][1]= a;
+            s->sprite_shift[0]= 0;
+            s->sprite_shift[1]= 0;
             break;
         case 1: //GMC only
             s->sprite_offset[0][0]= sprite_ref[0][0] - a*vop_ref[0][0];
             s->sprite_offset[0][1]= sprite_ref[0][1] - a*vop_ref[0][1];
             s->sprite_offset[1][0]= ((sprite_ref[0][0]>>1)|(sprite_ref[0][0]&1)) - a*(vop_ref[0][0]/2);
             s->sprite_offset[1][1]= ((sprite_ref[0][1]>>1)|(sprite_ref[0][1]&1)) - a*(vop_ref[0][1]/2);
-            s->sprite_delta[0][0][0]= a;
-            s->sprite_delta[0][0][1]= 0;
-            s->sprite_delta[0][1][0]= 0;
-            s->sprite_delta[0][1][1]= a;
-            s->sprite_delta[1][0][0]= a;
-            s->sprite_delta[1][0][1]= 0;
-            s->sprite_delta[1][1][0]= 0;
-            s->sprite_delta[1][1][1]= a;
-            s->sprite_shift[0][0]= 0;
-            s->sprite_shift[0][1]= 0;
-            s->sprite_shift[1][0]= 0;
-            s->sprite_shift[1][1]= 0;
+            s->sprite_delta[0][0]= a;
+            s->sprite_delta[0][1]= 0;
+            s->sprite_delta[1][0]= 0;
+            s->sprite_delta[1][1]= a;
+            s->sprite_shift[0]= 0;
+            s->sprite_shift[1]= 0;
             break;
         case 2:
-        case 3: //FIXME
             s->sprite_offset[0][0]= (sprite_ref[0][0]<<(alpha+rho))
-                                                  + ((-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][0])
-                                                    +( r*sprite_ref[0][1] - virtual_ref[0][1])*(-vop_ref[0][1]));
+                                                  + (-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][0])
+                                                  + ( r*sprite_ref[0][1] - virtual_ref[0][1])*(-vop_ref[0][1])
+                                                  + (1<<(alpha+rho-1));
             s->sprite_offset[0][1]= (sprite_ref[0][1]<<(alpha+rho))
-                                                  + ((-r*sprite_ref[0][1] + virtual_ref[0][1])*(-vop_ref[0][0])
-                                                    +(-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][1]));
-            s->sprite_offset[1][0]= ((-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][0] + 1)
-                                 +( r*sprite_ref[0][1] - virtual_ref[0][1])*(-2*vop_ref[0][1] + 1)
-                                 +2*w2*r*sprite_ref[0][0] - 16*w2);
-            s->sprite_offset[1][1]= ((-r*sprite_ref[0][1] + virtual_ref[0][1])*(-2*vop_ref[0][0] + 1) 
-                                 +(-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][1] + 1)
-                                 +2*w2*r*sprite_ref[0][1] - 16*w2);
-            s->sprite_delta[0][0][0]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
-            s->sprite_delta[0][0][1]=   ( r*sprite_ref[0][1] - virtual_ref[0][1]);
-            s->sprite_delta[0][1][0]=   (-r*sprite_ref[0][1] + virtual_ref[0][1]);
-            s->sprite_delta[0][1][1]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
-            s->sprite_delta[1][0][0]= 4*(-r*sprite_ref[0][0] + virtual_ref[0][0]);
-            s->sprite_delta[1][0][1]= 4*( r*sprite_ref[0][1] - virtual_ref[0][1]);
-            s->sprite_delta[1][1][0]= 4*(-r*sprite_ref[0][1] + virtual_ref[0][1]);
-            s->sprite_delta[1][1][1]= 4*(-r*sprite_ref[0][0] + virtual_ref[0][0]);
-            s->sprite_shift[0][0]= alpha+rho;
-            s->sprite_shift[0][1]= alpha+rho;
-            s->sprite_shift[1][0]= alpha+rho+2;
-            s->sprite_shift[1][1]= alpha+rho+2;
+                                                  + (-r*sprite_ref[0][1] + virtual_ref[0][1])*(-vop_ref[0][0])
+                                                  + (-r*sprite_ref[0][0] + virtual_ref[0][0])*(-vop_ref[0][1])
+                                                  + (1<<(alpha+rho-1));
+            s->sprite_offset[1][0]= ( (-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][0] + 1)
+                                     +( r*sprite_ref[0][1] - virtual_ref[0][1])*(-2*vop_ref[0][1] + 1)
+                                     +2*w2*r*sprite_ref[0][0] 
+                                     - 16*w2 
+                                     + (1<<(alpha+rho+1)));
+            s->sprite_offset[1][1]= ( (-r*sprite_ref[0][1] + virtual_ref[0][1])*(-2*vop_ref[0][0] + 1) 
+                                     +(-r*sprite_ref[0][0] + virtual_ref[0][0])*(-2*vop_ref[0][1] + 1)
+                                     +2*w2*r*sprite_ref[0][1] 
+                                     - 16*w2
+                                     + (1<<(alpha+rho+1)));
+            s->sprite_delta[0][0]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
+            s->sprite_delta[0][1]=   (+r*sprite_ref[0][1] - virtual_ref[0][1]);
+            s->sprite_delta[1][0]=   (-r*sprite_ref[0][1] + virtual_ref[0][1]);
+            s->sprite_delta[1][1]=   (-r*sprite_ref[0][0] + virtual_ref[0][0]);
+            
+            s->sprite_shift[0]= alpha+rho;
+            s->sprite_shift[1]= alpha+rho+2;
             break;
-//        case 3:
+        case 3:
+            min_ab= MIN(alpha, beta);
+            w3= w2>>min_ab;
+            h3= h2>>min_ab;
+            s->sprite_offset[0][0]=  (sprite_ref[0][0]<<(alpha+beta+rho-min_ab))
+                                   + (-r*sprite_ref[0][0] + virtual_ref[0][0])*h3*(-vop_ref[0][0])
+                                   + (-r*sprite_ref[0][0] + virtual_ref[1][0])*w3*(-vop_ref[0][1])
+                                   + (1<<(alpha+beta+rho-min_ab-1));
+            s->sprite_offset[0][1]=  (sprite_ref[0][1]<<(alpha+beta+rho-min_ab))
+                                   + (-r*sprite_ref[0][1] + virtual_ref[0][1])*h3*(-vop_ref[0][0])
+                                   + (-r*sprite_ref[0][1] + virtual_ref[1][1])*w3*(-vop_ref[0][1])
+                                   + (1<<(alpha+beta+rho-min_ab-1));
+            s->sprite_offset[1][0]=  (-r*sprite_ref[0][0] + virtual_ref[0][0])*h3*(-2*vop_ref[0][0] + 1)
+                                   + (-r*sprite_ref[0][0] + virtual_ref[1][0])*w3*(-2*vop_ref[0][1] + 1)
+                                   + 2*w2*h3*r*sprite_ref[0][0]
+                                   - 16*w2*h3
+                                   + (1<<(alpha+beta+rho-min_ab+1));
+            s->sprite_offset[1][1]=  (-r*sprite_ref[0][1] + virtual_ref[0][1])*h3*(-2*vop_ref[0][0] + 1)
+                                   + (-r*sprite_ref[0][1] + virtual_ref[1][1])*w3*(-2*vop_ref[0][1] + 1)
+                                   + 2*w2*h3*r*sprite_ref[0][1]
+                                   - 16*w2*h3
+                                   + (1<<(alpha+beta+rho-min_ab+1));
+            s->sprite_delta[0][0]=   (-r*sprite_ref[0][0] + virtual_ref[0][0])*h3;
+            s->sprite_delta[0][1]=   (-r*sprite_ref[0][0] + virtual_ref[1][0])*w3;
+            s->sprite_delta[1][0]=   (-r*sprite_ref[0][1] + virtual_ref[0][1])*h3;
+            s->sprite_delta[1][1]=   (-r*sprite_ref[0][1] + virtual_ref[1][1])*w3;
+                                   
+            s->sprite_shift[0]= alpha + beta + rho - min_ab;
+            s->sprite_shift[1]= alpha + beta + rho - min_ab + 2;
             break;
     }
-/*printf("%d %d\n", s->sprite_delta[0][0][0], a<<s->sprite_shift[0][0]);
-printf("%d %d\n", s->sprite_delta[0][0][1], 0);
-printf("%d %d\n", s->sprite_delta[0][1][0], 0);
-printf("%d %d\n", s->sprite_delta[0][1][1], a<<s->sprite_shift[0][1]);
-printf("%d %d\n", s->sprite_delta[1][0][0], a<<s->sprite_shift[1][0]);
-printf("%d %d\n", s->sprite_delta[1][0][1], 0);
-printf("%d %d\n", s->sprite_delta[1][1][0], 0);
-printf("%d %d\n", s->sprite_delta[1][1][1], a<<s->sprite_shift[1][1]);*/
     /* try to simplify the situation */ 
-    if(   s->sprite_delta[0][0][0] == a<<s->sprite_shift[0][0]
-       && s->sprite_delta[0][0][1] == 0
-       && s->sprite_delta[0][1][0] == 0
-       && s->sprite_delta[0][1][1] == a<<s->sprite_shift[0][1]
-       && s->sprite_delta[1][0][0] == a<<s->sprite_shift[1][0]
-       && s->sprite_delta[1][0][1] == 0
-       && s->sprite_delta[1][1][0] == 0
-       && s->sprite_delta[1][1][1] == a<<s->sprite_shift[1][1])
+    if(   s->sprite_delta[0][0] == a<<s->sprite_shift[0]
+       && s->sprite_delta[0][1] == 0
+       && s->sprite_delta[1][0] == 0
+       && s->sprite_delta[1][1] == a<<s->sprite_shift[0])
     {
-        s->sprite_offset[0][0]>>=s->sprite_shift[0][0];
-        s->sprite_offset[0][1]>>=s->sprite_shift[0][1];
-        s->sprite_offset[1][0]>>=s->sprite_shift[1][0];
-        s->sprite_offset[1][1]>>=s->sprite_shift[1][1];
-        s->sprite_delta[0][0][0]= a;
-        s->sprite_delta[0][0][1]= 0;
-        s->sprite_delta[0][1][0]= 0;
-        s->sprite_delta[0][1][1]= a;
-        s->sprite_delta[1][0][0]= a;
-        s->sprite_delta[1][0][1]= 0;
-        s->sprite_delta[1][1][0]= 0;
-        s->sprite_delta[1][1][1]= a;
-        s->sprite_shift[0][0]= 0;
-        s->sprite_shift[0][1]= 0;
-        s->sprite_shift[1][0]= 0;
-        s->sprite_shift[1][1]= 0;
+        s->sprite_offset[0][0]>>=s->sprite_shift[0];
+        s->sprite_offset[0][1]>>=s->sprite_shift[0];
+        s->sprite_offset[1][0]>>=s->sprite_shift[1];
+        s->sprite_offset[1][1]>>=s->sprite_shift[1];
+        s->sprite_delta[0][0]= a;
+        s->sprite_delta[0][1]= 0;
+        s->sprite_delta[1][0]= 0;
+        s->sprite_delta[1][1]= a;
+        s->sprite_shift[0]= 0;
+        s->sprite_shift[1]= 0;
         s->real_sprite_warping_points=1;
     }
-    else
+    else{
+        int shift_y= 16 - s->sprite_shift[0];
+        int shift_c= 16 - s->sprite_shift[1];
+//printf("shifts %d %d\n", shift_y, shift_c);
+        for(i=0; i<2; i++){
+            s->sprite_offset[0][i]<<= shift_y;
+            s->sprite_offset[1][i]<<= shift_c;
+            s->sprite_delta[0][i]<<= shift_y;
+            s->sprite_delta[1][i]<<= shift_y;
+            s->sprite_shift[i]= 16;
+        }
         s->real_sprite_warping_points= s->num_sprite_warping_points;
-
-//printf("%d %d %d %d\n", d[0][0], d[0][1], s->sprite_offset[0][0], s->sprite_offset[0][1]);
+    }
+#if 0
+printf("vop:%d:%d %d:%d %d:%d, sprite:%d:%d %d:%d %d:%d, virtual: %d:%d %d:%d\n",
+    vop_ref[0][0], vop_ref[0][1],
+    vop_ref[1][0], vop_ref[1][1],
+    vop_ref[2][0], vop_ref[2][1],
+    sprite_ref[0][0], sprite_ref[0][1], 
+    sprite_ref[1][0], sprite_ref[1][1], 
+    sprite_ref[2][0], sprite_ref[2][1], 
+    virtual_ref[0][0], virtual_ref[0][1], 
+    virtual_ref[1][0], virtual_ref[1][1]
+    );
+    
+printf("offset: %d:%d , delta: %d %d %d %d, shift %d\n",
+    s->sprite_offset[0][0], s->sprite_offset[0][1],
+    s->sprite_delta[0][0], s->sprite_delta[0][1],
+    s->sprite_delta[1][0], s->sprite_delta[1][1],
+    s->sprite_shift[0]
+    );
+#endif
 }
 
 static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
@@ -4337,8 +4363,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
         printf("low_delay flag set, but shouldnt, clearing it\n");
         s->low_delay=0;
     }
-// printf("pic: %d, qpel:%d part:%d resync:%d\n", s->pict_type, s->quarter_sample, s->data_partitioning, s->resync_marker); 
-    
+ 
     s->partitioned_frame= s->data_partitioning && s->pict_type!=B_TYPE;
     if(s->partitioned_frame)
         s->decode_mb= mpeg4_decode_partitioned_mb;
@@ -4483,11 +4508,12 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
          }else
              s->b_code=1;
 #if 0
-printf("qp:%d fc:%d bc:%d type:%s size:%d pro:%d alt:%d top:%d qpel:%d part:%d resync:%d\n", 
+printf("qp:%d fc:%d bc:%d type:%s size:%d pro:%d alt:%d top:%d qpel:%d part:%d resync:%d w:%d a:%d\n", 
     s->qscale, s->f_code, s->b_code, 
     s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
     gb->size,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
-    s->quarter_sample, s->data_partitioning, s->resync_marker); 
+    s->quarter_sample, s->data_partitioning, s->resync_marker, s->num_sprite_warping_points,
+    s->sprite_warping_accuracy); 
 #endif
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {

@@ -369,9 +369,9 @@ typedef struct MpegEncContext {
     int sprite_brightness_change;
     int num_sprite_warping_points;
     int real_sprite_warping_points;
-    int sprite_offset[2][2];
-    int sprite_delta[2][2][2];
-    int sprite_shift[2][2];
+    int sprite_offset[2][2];         /* sprite offset[isChroma][isMVY] */
+    int sprite_delta[2][2];          /* sprite_delta [isY][isMVY] */ 
+    int sprite_shift[2];             /* sprite shift [isChroma] */
     int mcsel;
     int quant_precision;
     int quarter_sample;              /* 1->qpel, 0->half pel ME/MC */ 

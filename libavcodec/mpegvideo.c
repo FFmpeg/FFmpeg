@@ -1032,15 +1032,13 @@ if(s->max_b_frames==0)
 static inline void gmc1_motion(MpegEncContext *s,
                                UINT8 *dest_y, UINT8 *dest_cb, UINT8 *dest_cr,
                                int dest_offset,
-                               UINT8 **ref_picture, int src_offset,
-                               int h)
+                               UINT8 **ref_picture, int src_offset)
 {
     UINT8 *ptr;
     int offset, src_x, src_y, linesize, uvlinesize;
     int motion_x, motion_y;
     int emu=0;
 
-    if(s->real_sprite_warping_points>1) printf("more than 1 warp point isnt supported\n");
     motion_x= s->sprite_offset[0][0];
     motion_y= s->sprite_offset[0][1];
     src_x = s->mb_x * 16 + (motion_x >> (s->sprite_warping_accuracy+1));
@@ -1053,22 +1051,37 @@ static inline void gmc1_motion(MpegEncContext *s,
     src_y = clip(src_y, -16, s->height);
     if (src_y == s->height)
         motion_y =0;
-    
+
     linesize = s->linesize;
     uvlinesize = s->uvlinesize;
+    
     ptr = ref_picture[0] + (src_y * linesize) + src_x + src_offset;
 
     dest_y+=dest_offset;
     if(s->flags&CODEC_FLAG_EMU_EDGE){
         if(src_x<0 || src_y<0 || src_x + (motion_x&15) + 16 > s->h_edge_pos
-                              || src_y + (motion_y&15) + h  > s->v_edge_pos){
-            emulated_edge_mc(s, ptr, linesize, 17, h+1, src_x, src_y, s->h_edge_pos, s->v_edge_pos);
+                              || src_y + (motion_y&15) + 16 > s->v_edge_pos){
+            emulated_edge_mc(s, ptr, linesize, 17, 17, src_x, src_y, s->h_edge_pos, s->v_edge_pos);
             ptr= s->edge_emu_buffer;
             emu=1;
         }
     }
-    gmc1(dest_y  , ptr  , linesize, h, motion_x&15, motion_y&15, s->no_rounding);
-    gmc1(dest_y+8, ptr+8, linesize, h, motion_x&15, motion_y&15, s->no_rounding);
+    
+    if((motion_x|motion_y)&7){
+        ff_gmc1(dest_y  , ptr  , linesize, 16, motion_x&15, motion_y&15, 128 - s->no_rounding);
+        ff_gmc1(dest_y+8, ptr+8, linesize, 16, motion_x&15, motion_y&15, 128 - s->no_rounding);
+    }else{
+        int dxy;
+        
+        dxy= ((motion_x>>3)&1) | ((motion_y>>2)&2);
+        if (s->no_rounding){
+            put_no_rnd_pixels_tab[0][dxy](dest_y, ptr, linesize, 16);
+        }else{
+            put_pixels_tab       [0][dxy](dest_y, ptr, linesize, 16);
+        }        
+    }
+    
+    if(s->flags&CODEC_FLAG_GRAY) return;
 
     motion_x= s->sprite_offset[1][0];
     motion_y= s->sprite_offset[1][1];
@@ -1086,20 +1099,84 @@ static inline void gmc1_motion(MpegEncContext *s,
     offset = (src_y * uvlinesize) + src_x + (src_offset>>1);
     ptr = ref_picture[1] + offset;
     if(emu){
-        emulated_edge_mc(s, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, s->v_edge_pos>>1);
+        emulated_edge_mc(s, ptr, uvlinesize, 9, 9, src_x, src_y, s->h_edge_pos>>1, s->v_edge_pos>>1);
         ptr= s->edge_emu_buffer;
     }
-    gmc1(dest_cb + (dest_offset>>1), ptr, uvlinesize, h>>1, motion_x&15, motion_y&15, s->no_rounding);
+    ff_gmc1(dest_cb + (dest_offset>>1), ptr, uvlinesize, 8, motion_x&15, motion_y&15, 128 - s->no_rounding);
     
     ptr = ref_picture[2] + offset;
     if(emu){
-        emulated_edge_mc(s, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->h_edge_pos>>1, s->v_edge_pos>>1);
+        emulated_edge_mc(s, ptr, uvlinesize, 9, 9, src_x, src_y, s->h_edge_pos>>1, s->v_edge_pos>>1);
         ptr= s->edge_emu_buffer;
     }
-    gmc1(dest_cr + (dest_offset>>1), ptr, uvlinesize, h>>1, motion_x&15, motion_y&15, s->no_rounding);
+    ff_gmc1(dest_cr + (dest_offset>>1), ptr, uvlinesize, 8, motion_x&15, motion_y&15, 128 - s->no_rounding);
     
     return;
 }
+
+static inline void gmc_motion(MpegEncContext *s,
+                               UINT8 *dest_y, UINT8 *dest_cb, UINT8 *dest_cr,
+                               int dest_offset,
+                               UINT8 **ref_picture, int src_offset)
+{
+    UINT8 *ptr;
+    int linesize, uvlinesize;
+    const int a= s->sprite_warping_accuracy;
+    int ox, oy;
+
+    linesize = s->linesize;
+    uvlinesize = s->uvlinesize;
+
+    ptr = ref_picture[0] + src_offset;
+
+    dest_y+=dest_offset;
+    
+    ox= s->sprite_offset[0][0] + s->sprite_delta[0][0]*s->mb_x*16 + s->sprite_delta[0][1]*s->mb_y*16;
+    oy= s->sprite_offset[0][1] + s->sprite_delta[1][0]*s->mb_x*16 + s->sprite_delta[1][1]*s->mb_y*16;
+
+    ff_gmc(dest_y, ptr, linesize, 16, 
+           ox, 
+           oy, 
+           s->sprite_delta[0][0], s->sprite_delta[0][1],
+           s->sprite_delta[1][0], s->sprite_delta[1][1], 
+           a+1, (1<<(2*a+1)) - s->no_rounding,
+           s->h_edge_pos, s->v_edge_pos);
+    ff_gmc(dest_y+8, ptr, linesize, 16, 
+           ox + s->sprite_delta[0][0]*8, 
+           oy + s->sprite_delta[1][0]*8, 
+           s->sprite_delta[0][0], s->sprite_delta[0][1],
+           s->sprite_delta[1][0], s->sprite_delta[1][1], 
+           a+1, (1<<(2*a+1)) - s->no_rounding,
+           s->h_edge_pos, s->v_edge_pos);
+
+    if(s->flags&CODEC_FLAG_GRAY) return;
+
+
+    dest_cb+=dest_offset>>1;
+    dest_cr+=dest_offset>>1;
+    
+    ox= s->sprite_offset[1][0] + s->sprite_delta[0][0]*s->mb_x*8 + s->sprite_delta[0][1]*s->mb_y*8;
+    oy= s->sprite_offset[1][1] + s->sprite_delta[1][0]*s->mb_x*8 + s->sprite_delta[1][1]*s->mb_y*8;
+
+    ptr = ref_picture[1] + (src_offset>>1);
+    ff_gmc(dest_cb, ptr, uvlinesize, 8, 
+           ox, 
+           oy, 
+           s->sprite_delta[0][0], s->sprite_delta[0][1],
+           s->sprite_delta[1][0], s->sprite_delta[1][1], 
+           a+1, (1<<(2*a+1)) - s->no_rounding,
+           s->h_edge_pos>>1, s->v_edge_pos>>1);
+    
+    ptr = ref_picture[2] + (src_offset>>1);
+    ff_gmc(dest_cr, ptr, uvlinesize, 8, 
+           ox, 
+           oy, 
+           s->sprite_delta[0][0], s->sprite_delta[0][1],
+           s->sprite_delta[1][0], s->sprite_delta[1][1], 
+           a+1, (1<<(2*a+1)) - s->no_rounding,
+           s->h_edge_pos>>1, s->v_edge_pos>>1);
+}
+
 
 static void emulated_edge_mc(MpegEncContext *s, UINT8 *src, int linesize, int block_w, int block_h, 
                                     int src_x, int src_y, int w, int h){
@@ -1357,9 +1434,13 @@ static inline void MPV_motion(MpegEncContext *s,
     switch(s->mv_type) {
     case MV_TYPE_16X16:
         if(s->mcsel){
-            gmc1_motion(s, dest_y, dest_cb, dest_cr, 0,
-                        ref_picture, 0,
-                        16);
+            if(s->real_sprite_warping_points==1){
+                gmc1_motion(s, dest_y, dest_cb, dest_cr, 0,
+                            ref_picture, 0);
+            }else{
+                gmc_motion(s, dest_y, dest_cb, dest_cr, 0,
+                            ref_picture, 0);
+            }
         }else if(s->quarter_sample){
             qpel_motion(s, dest_y, dest_cb, dest_cr, 0,
                         ref_picture, 0,
