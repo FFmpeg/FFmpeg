@@ -475,13 +475,14 @@ uint64_t time= rdtsc();
                 break;
         }
         
-        if(s->msmpeg4_version!=4)
+        if(s->msmpeg4_version!=4 && s->h263_pred)
             ff_mpeg4_clean_buffers(s);
 
         decode_slice(s);
+
         s->error_status_table[s->resync_mb_x + s->resync_mb_y*s->mb_width]|= VP_START;
     }
-    
+
     if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==I_TYPE)
         if(msmpeg4_decode_ext_header(s, buf_size) < 0) return -1;
     

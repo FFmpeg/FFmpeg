@@ -225,8 +225,8 @@ int DCT_common_init(MpegEncContext *s)
 /* init common structure for both encoder and decoder */
 int MPV_common_init(MpegEncContext *s)
 {
-    int c_size, i;
     UINT8 *pict;
+    int y_size, c_size, yc_size, i;
 
     DCT_common_init(s);
     
@@ -234,6 +234,10 @@ int MPV_common_init(MpegEncContext *s)
 
     s->mb_width = (s->width + 15) / 16;
     s->mb_height = (s->height + 15) / 16;
+    
+    y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
+    c_size = (s->mb_width + 2) * (s->mb_height + 2);
+    yc_size = y_size + 2 * c_size;
     
     /* set default edge pos, will be overriden in decode_header if needed */
     s->h_edge_pos= s->mb_width*16;
@@ -246,36 +250,37 @@ int MPV_common_init(MpegEncContext *s)
                      + (toupper((s->avctx->fourcc>>24)&0xFF)<<24);
 
     s->mb_num = s->mb_width * s->mb_height;
+    
     if(!(s->flags&CODEC_FLAG_DR1)){
       s->linesize   = s->mb_width * 16 + 2 * EDGE_WIDTH;
       s->uvlinesize = s->mb_width * 8  +     EDGE_WIDTH;
 
       for(i=0;i<3;i++) {
-        int w, h, shift, pict_start;
+        int w, h, shift, pict_start, size;
 
         w = s->linesize;
         h = s->mb_height * 16 + 2 * EDGE_WIDTH;
         shift = (i == 0) ? 0 : 1;
-        c_size = (s->linesize>>shift) * (h >> shift);
+        size = (s->linesize>>shift) * (h >> shift);
         pict_start = (s->linesize>>shift) * (EDGE_WIDTH >> shift) + (EDGE_WIDTH >> shift);
 
-        CHECKED_ALLOCZ(pict, c_size)
+        CHECKED_ALLOCZ(pict, size)
         s->last_picture_base[i] = pict;
         s->last_picture[i] = pict + pict_start;
-        if(i>0) memset(s->last_picture_base[i], 128, c_size);
+        if(i>0) memset(s->last_picture_base[i], 128, size);
     
-        CHECKED_ALLOCZ(pict, c_size)
+        CHECKED_ALLOCZ(pict, size)
         s->next_picture_base[i] = pict;
         s->next_picture[i] = pict + pict_start;
-        if(i>0) memset(s->next_picture_base[i], 128, c_size);
+        if(i>0) memset(s->next_picture_base[i], 128, size);
         
         if (s->has_b_frames || s->codec_id==CODEC_ID_MPEG4) {
         /* Note the MPEG4 stuff is here cuz of buggy encoders which dont set the low_delay flag but 
            do low-delay encoding, so we cant allways distinguish b-frame containing streams from low_delay streams */
-            CHECKED_ALLOCZ(pict, c_size)
+            CHECKED_ALLOCZ(pict, size)
             s->aux_picture_base[i] = pict;
             s->aux_picture[i] = pict + pict_start;
-            if(i>0) memset(s->aux_picture_base[i], 128, c_size);
+            if(i>0) memset(s->aux_picture_base[i], 128, size);
         }
       }
       s->ip_buffer_count= 2;
@@ -310,14 +315,14 @@ int MPV_common_init(MpegEncContext *s)
             for(j=0; j<REORDER_BUFFER_SIZE; j++){
                 int i;
                 for(i=0;i<3;i++) {
-                    int w, h, shift;
+                    int w, h, shift, size;
 
                     w = s->linesize;
                     h = s->mb_height * 16;
                     shift = (i == 0) ? 0 : 1;
-                    c_size = (w >> shift) * (h >> shift);
+                    size = (w >> shift) * (h >> shift);
 
-                    CHECKED_ALLOCZ(pict, c_size);
+                    CHECKED_ALLOCZ(pict, size);
                     s->picture_buffer[j][i] = pict;
                 }
             }
@@ -356,21 +361,8 @@ int MPV_common_init(MpegEncContext *s)
     CHECKED_ALLOCZ(s->co_located_type_table, s->mb_num * sizeof(UINT8))
 
     if (s->h263_pred || s->h263_plus) {
-        int y_size, c_size, i, size;
-        
-        /* dc values */
-
-        y_size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
-        c_size = (s->mb_width + 2) * (s->mb_height + 2);
-        size = y_size + 2 * c_size;
-        CHECKED_ALLOCZ(s->dc_val[0], size * sizeof(INT16));
-        s->dc_val[1] = s->dc_val[0] + y_size;
-        s->dc_val[2] = s->dc_val[1] + c_size;
-        for(i=0;i<size;i++)
-            s->dc_val[0][i] = 1024;
-
         /* ac values */
-        CHECKED_ALLOCZ(s->ac_val[0], size * sizeof(INT16) * 16);
+        CHECKED_ALLOCZ(s->ac_val[0], yc_size * sizeof(INT16) * 16);
         s->ac_val[1] = s->ac_val[0] + y_size;
         s->ac_val[2] = s->ac_val[1] + c_size;
         
@@ -384,6 +376,17 @@ int MPV_common_init(MpegEncContext *s)
         CHECKED_ALLOCZ(s->cbp_table  , s->mb_num * sizeof(UINT8))
         CHECKED_ALLOCZ(s->pred_dir_table, s->mb_num * sizeof(UINT8))
     }
+    
+    if (s->h263_pred || s->h263_plus || !s->encoding) {
+        /* dc values */
+        //MN: we need these for error resilience of intra-frames
+        CHECKED_ALLOCZ(s->dc_val[0], yc_size * sizeof(INT16));
+        s->dc_val[1] = s->dc_val[0] + y_size;
+        s->dc_val[2] = s->dc_val[1] + c_size;
+        for(i=0;i<yc_size;i++)
+            s->dc_val[0][i] = 1024;
+    }
+
     CHECKED_ALLOCZ(s->qscale_table  , s->mb_num * sizeof(UINT8))
     
     /* which mb is a intra block */
