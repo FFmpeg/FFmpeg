@@ -221,6 +221,12 @@ static PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .pixel_type = FF_PIXEL_PALETTE,
         .depth = 8,
     },
+    [PIX_FMT_XVMC_MPEG2_MC] = {
+        .name = "xvmcmc",
+    },
+    [PIX_FMT_XVMC_MPEG2_IDCT] = {
+        .name = "xvmcidct",
+    },
 };
 
 void avcodec_get_chroma_sub_sample(int pix_fmt, int *h_shift, int *v_shift)
