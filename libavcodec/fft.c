@@ -28,7 +28,7 @@
  * The size of the FFT is 2^nbits. If inverse is TRUE, inverse FFT is
  * done 
  */
-int fft_init(FFTContext *s, int nbits, int inverse)
+int ff_fft_init(FFTContext *s, int nbits, int inverse)
 {
     int i, j, m, n;
     float alpha, c1, s1, s2;
@@ -53,7 +53,7 @@ int fft_init(FFTContext *s, int nbits, int inverse)
         s->exptab[i].re = c1;
         s->exptab[i].im = s1;
     }
-    s->fft_calc = fft_calc_c;
+    s->fft_calc = ff_fft_calc_c;
     s->exptab1 = NULL;
 
     /* compute constant table for HAVE_SSE version */
@@ -94,9 +94,9 @@ int fft_init(FFTContext *s, int nbits, int inverse)
             } while (nblocks != 0);
             av_freep(&s->exptab);
 #if defined(HAVE_MMX)
-            s->fft_calc = fft_calc_sse;
+            s->fft_calc = ff_fft_calc_sse;
 #else
-            s->fft_calc = fft_calc_altivec;
+            s->fft_calc = ff_fft_calc_altivec;
 #endif
         }
     }
@@ -142,11 +142,11 @@ int fft_init(FFTContext *s, int nbits, int inverse)
 }
 
 /**
- * Do a complex FFT with the parameters defined in fft_init(). The
+ * Do a complex FFT with the parameters defined in ff_fft_init(). The
  * input data must be permuted before with s->revtab table. No
  * 1.0/sqrt(n) normalization is done.  
  */
-void fft_calc_c(FFTContext *s, FFTComplex *z)
+void ff_fft_calc_c(FFTContext *s, FFTComplex *z)
 {
     int ln = s->nbits;
     int	j, np, np2;
@@ -221,9 +221,9 @@ void fft_calc_c(FFTContext *s, FFTComplex *z)
 }
 
 /**
- * Do the permutation needed BEFORE calling fft_calc()
+ * Do the permutation needed BEFORE calling ff_fft_calc()
  */
-void fft_permute(FFTContext *s, FFTComplex *z)
+void ff_fft_permute(FFTContext *s, FFTComplex *z)
 {
     int j, k, np;
     FFTComplex tmp;
@@ -241,7 +241,7 @@ void fft_permute(FFTContext *s, FFTComplex *z)
     }
 }
 
-void fft_end(FFTContext *s)
+void ff_fft_end(FFTContext *s)
 {
     av_freep(&s->revtab);
     av_freep(&s->exptab);

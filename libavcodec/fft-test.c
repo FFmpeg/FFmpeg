@@ -198,7 +198,7 @@ int main(int argc, char **argv)
             printf("IFFT");
         else
             printf("FFT");
-        fft_init(s, fft_nbits, do_inverse);
+        ff_fft_init(s, fft_nbits, do_inverse);
         fft_ref_init(fft_nbits, do_inverse);
     }
     printf(" %d test\n", fft_size);
@@ -227,8 +227,8 @@ int main(int argc, char **argv)
         }
     } else {
         memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
-        fft_permute(s, tab);
-        fft_calc(s, tab);
+        ff_fft_permute(s, tab);
+        ff_fft_calc(s, tab);
         
         fft_ref(tab_ref, tab1, fft_nbits);
         check_diff((float *)tab_ref, (float *)tab, fft_size * 2);
@@ -254,7 +254,7 @@ int main(int argc, char **argv)
                     }
                 } else {
                     memcpy(tab, tab1, fft_size * sizeof(FFTComplex));
-                    fft_calc(s, tab);
+                    ff_fft_calc(s, tab);
                 }
             }
             duration = gettime() - time_start;
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
     if (do_mdct) {
         ff_mdct_end(m);
     } else {
-        fft_end(s);
+        ff_fft_end(s);
     }
     return 0;
 }

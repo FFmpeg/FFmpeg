@@ -46,7 +46,7 @@ int mm_support(void)
 unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][powerpc_data_total];
 /* list below must match enum in dsputil_ppc.h */
 static unsigned char* perfname[] = {
-  "fft_calc_altivec",
+  "ff_fft_calc_altivec",
   "gmc1_altivec",
   "dct_unquantize_h263_altivec",
   "fdct_altivec",

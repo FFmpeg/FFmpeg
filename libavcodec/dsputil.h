@@ -508,17 +508,17 @@ typedef struct FFTContext {
     void (*fft_calc)(struct FFTContext *s, FFTComplex *z);
 } FFTContext;
 
-int fft_init(FFTContext *s, int nbits, int inverse);
-void fft_permute(FFTContext *s, FFTComplex *z);
-void fft_calc_c(FFTContext *s, FFTComplex *z);
-void fft_calc_sse(FFTContext *s, FFTComplex *z);
-void fft_calc_altivec(FFTContext *s, FFTComplex *z);
+int ff_fft_init(FFTContext *s, int nbits, int inverse);
+void ff_fft_permute(FFTContext *s, FFTComplex *z);
+void ff_fft_calc_c(FFTContext *s, FFTComplex *z);
+void ff_fft_calc_sse(FFTContext *s, FFTComplex *z);
+void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z);
 
-static inline void fft_calc(FFTContext *s, FFTComplex *z)
+static inline void ff_fft_calc(FFTContext *s, FFTComplex *z)
 {
     s->fft_calc(s, z);
 }
-void fft_end(FFTContext *s);
+void ff_fft_end(FFTContext *s);
 
 /* MDCT computation */
 

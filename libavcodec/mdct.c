@@ -48,7 +48,7 @@ int ff_mdct_init(MDCTContext *s, int nbits, int inverse)
         s->tcos[i] = -cos(alpha);
         s->tsin[i] = -sin(alpha);
     }
-    if (fft_init(&s->fft, s->nbits - 2, inverse) < 0)
+    if (ff_fft_init(&s->fft, s->nbits - 2, inverse) < 0)
         goto fail;
     return 0;
  fail:
@@ -98,7 +98,7 @@ void ff_imdct_calc(MDCTContext *s, FFTSample *output,
         in1 += 2;
         in2 -= 2;
     }
-    fft_calc(&s->fft, z);
+    ff_fft_calc(&s->fft, z);
 
     /* post rotation + reordering */
     /* XXX: optimize */
@@ -155,7 +155,7 @@ void ff_mdct_calc(MDCTContext *s, FFTSample *out,
         CMUL(x[j].re, x[j].im, re, im, -tcos[n8 + i], tsin[n8 + i]);
     }
 
-    fft_calc(&s->fft, x);
+    ff_fft_calc(&s->fft, x);
   
     /* post rotation */
     for(i=0;i<n4;i++) {
@@ -171,5 +171,5 @@ void ff_mdct_end(MDCTContext *s)
 {
     av_freep(&s->tcos);
     av_freep(&s->tsin);
-    fft_end(&s->fft);
+    ff_fft_end(&s->fft);
 }

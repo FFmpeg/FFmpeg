@@ -50,7 +50,7 @@
 
 
 /**
- * Do a complex FFT with the parameters defined in fft_init(). The
+ * Do a complex FFT with the parameters defined in ff_fft_init(). The
  * input data must be permuted before with s->revtab table. No
  * 1.0/sqrt(n) normalization is done.
  * AltiVec-enabled
@@ -60,7 +60,7 @@
  * that successive MUL + ADD/SUB have been merged into
  * fused multiply-add ('vec_madd' in altivec)
  */
-void fft_calc_altivec(FFTContext *s, FFTComplex *z)
+void ff_fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
 POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE

@@ -42,7 +42,7 @@ static void print_v4sf(const char *str, __m128 a)
 #endif
 
 /* XXX: handle reverse case */
-void fft_calc_sse(FFTContext *s, FFTComplex *z)
+void ff_fft_calc_sse(FFTContext *s, FFTComplex *z)
 {
     int ln = s->nbits;
     int	j, np, np2;
