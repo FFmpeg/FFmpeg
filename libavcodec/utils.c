@@ -412,6 +412,11 @@ unsigned avcodec_version( void )
   return LIBAVCODEC_VERSION_INT;
 }
 
+unsigned avcodec_build( void )
+{
+  return LIBAVCODEC_BUILD;
+}
+
 /* must be called before any other functions */
 void avcodec_init(void)
 {
