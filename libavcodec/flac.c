@@ -752,6 +752,14 @@ static int flac_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
+static void flac_flush(AVCodecContext *avctx){
+    int i;
+    FLACContext *s = avctx->priv_data;
+
+    s->bitstream_size=
+    s->bitstream_index= 0;
+}
+
 AVCodec flac_decoder = {
     "flac",
     CODEC_TYPE_AUDIO,
@@ -761,4 +769,5 @@ AVCodec flac_decoder = {
     NULL,
     flac_decode_close,
     flac_decode_frame,
+    .flush= flac_flush,    
 };
