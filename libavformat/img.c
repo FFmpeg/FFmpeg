@@ -33,6 +33,56 @@ typedef struct {
     void *ptr;
 } VideoData;
 
+
+/* return -1 if no image found */
+static int find_image_range(int *pfirst_index, int *plast_index, 
+                            const char *path)
+{
+    char buf[1024];
+    int range, last_index, range1, first_index;
+
+    /* find the first image */
+    for(first_index = 0; first_index < 5; first_index++) {
+        if (get_frame_filename(buf, sizeof(buf), path, first_index) < 0)
+            goto fail;
+        if (url_exist(buf))
+            break;
+    }
+    if (first_index == 5)
+        goto fail;
+    
+    /* find the last image */
+    last_index = first_index;
+    for(;;) {
+        range = 0;
+        for(;;) {
+            if (!range)
+                range1 = 1;
+            else
+                range1 = 2 * range;
+            if (get_frame_filename(buf, sizeof(buf), path, 
+                                   last_index + range1) < 0)
+                goto fail;
+            if (!url_exist(buf))
+                break;
+            range = range1;
+            /* just in case... */
+            if (range >= (1 << 30))
+                goto fail;
+        }
+        /* we are sure than image last_index + range exists */
+        if (!range)
+            break;
+        last_index += range;
+    }
+    *pfirst_index = first_index;
+    *plast_index = last_index;
+    return 0;
+ fail:
+    return -1;
+}
+
+
 static int image_probe(AVProbeData *p)
 {
     if (filename_number_test(p->filename) >= 0 && guess_image_format(p->filename))
@@ -55,7 +105,7 @@ static int read_header_alloc_cb(void *opaque, AVImageInfo *info)
 static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     VideoData *s = s1->priv_data;
-    int i, ret;
+    int ret, first_index, last_index;
     char buf[1024];
     ByteIOContext pb1, *f = &pb1;
     AVStream *st;
@@ -78,16 +128,26 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     else
         s->is_pipe = 1;
         
+    if (!ap || !ap->frame_rate) {
+        st->codec.frame_rate      = 25;
+        st->codec.frame_rate_base = 1;
+    } else {
+        st->codec.frame_rate      = ap->frame_rate;
+        st->codec.frame_rate_base = ap->frame_rate_base;
+    }
+    
     if (!s->is_pipe) {
-        /* try to find the first image */
-        for(i=0;i<5;i++) {
-            if (get_frame_filename(buf, sizeof(buf), s->path, s->img_number) < 0)
-                goto fail;
-            if (url_fopen(f, buf, URL_RDONLY) >= 0)
-                break;
-            s->img_number++;
-        }
-        if (i == 5)
+        if (find_image_range(&first_index, &last_index, s->path) < 0)
+            goto fail;
+        s->img_number = first_index;
+        /* compute duration */
+        st->start_time = 0;
+        st->duration = ((int64_t)AV_TIME_BASE * 
+                        (last_index - first_index + 1) * 
+                        st->codec.frame_rate_base) / st->codec.frame_rate;
+        if (get_frame_filename(buf, sizeof(buf), s->path, s->img_number) < 0)
+            goto fail;
+        if (url_fopen(f, buf, URL_RDONLY) < 0)
             goto fail;
     } else {
         f = &s1->pb;
@@ -110,14 +170,6 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.pix_fmt = s->pix_fmt;
     s->img_size = avpicture_get_size(s->pix_fmt, s->width, s->height);
 
-    if (!ap || !ap->frame_rate){
-        st->codec.frame_rate      = 25;
-        st->codec.frame_rate_base = 1;
-    }else{
-        st->codec.frame_rate      = ap->frame_rate;
-        st->codec.frame_rate_base = ap->frame_rate_base;
-    }
-    
     return 0;
  fail1:
     if (!s->is_pipe)
