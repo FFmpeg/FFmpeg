@@ -45,6 +45,9 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
+#define printf(...) {} //(f)printf() usage is forbidden in libavcodec, use av_log
+#define fprintf(...) {} 
+
 #define VMD_HEADER_SIZE 0x330
 #define PALETTE_COUNT 256
 

@@ -36,6 +36,9 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
+#define printf(...) {} //(f)printf() usage is forbidden in libavcodec, use av_log
+#define fprintf(...) {} 
+
 #include "truemotion1data.h"
 
 #define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])

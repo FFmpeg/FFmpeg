@@ -36,6 +36,9 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
+#define printf(...) {} //(f)printf() usage is forbidden in libavcodec, use av_log
+#define fprintf(...) {} 
+
 #define CPAIR 2
 #define CQUAD 4
 #define COCTET 8

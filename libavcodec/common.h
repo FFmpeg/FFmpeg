@@ -1156,21 +1156,23 @@ static inline long long rdtsc()
 }
 
 #define START_TIMER \
-static uint64_t tsum=0;\
-static int tcount=0;\
-static int tskip_count=0;\
 uint64_t tend;\
 uint64_t tstart= rdtsc();\
 
 #define STOP_TIMER(id) \
 tend= rdtsc();\
-if(tcount<2 || tend - tstart < 8*tsum/tcount){\
-    tsum+= tend - tstart;\
-    tcount++;\
-}else\
-    tskip_count++;\
-if(256*256*256*64%(tcount+tskip_count)==0){\
-    fprintf(stderr, "%Ld dezicycles in %s, %d runs, %d skips\n", tsum*10/tcount, id, tcount, tskip_count);\
+{\
+  static uint64_t tsum=0;\
+  static int tcount=0;\
+  static int tskip_count=0;\
+  if(tcount<2 || tend - tstart < 8*tsum/tcount){\
+      tsum+= tend - tstart;\
+      tcount++;\
+  }else\
+      tskip_count++;\
+  if(256*256*256*64%(tcount+tskip_count)==0){\
+      av_log(NULL, AV_LOG_DEBUG, "%Ld dezicycles in %s, %d runs, %d skips\n", tsum*10/tcount, id, tcount, tskip_count);\
+  }\
 }
 #endif
 
@@ -1180,6 +1182,10 @@ if(256*256*256*64%(tcount+tskip_count)==0){\
 #define malloc please_use_av_malloc
 #define free please_use_av_free
 #define realloc please_use_av_realloc
+#if !(defined(LIBAVFORMAT_BUILD) || defined(_FRAMEHOOK_H))
+#define printf please_use_av_log
+#define fprintf please_use_av_log
+#endif
 
 #define CHECKED_ALLOCZ(p, size)\
 {\

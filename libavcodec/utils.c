@@ -832,8 +832,10 @@ static void av_log_default_callback(AVCodecContext* avctx, int level, const char
 
     if(level>av_log_level)
 	    return;
+#undef fprintf
     if(avctx && print_prefix)
         fprintf(stderr, "[%s @ %p]", avctx->codec ? avctx->codec->name : "?", avctx);
+#define fprintf please_use_av_log
         
     print_prefix= strstr(fmt, "\n") != NULL;
         

@@ -403,7 +403,7 @@ static int rv20_decode_picture_header(MpegEncContext *s)
             s->time= seq;
             s->pb_time= s->pp_time - (s->last_non_b_time - s->time);
             if(s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0){
-                printf("messed up order, seeking?, skiping current b frame\n");
+                av_log(s->avctx, AV_LOG_DEBUG, "messed up order, seeking?, skiping current b frame\n");
                 return FRAME_SKIPED;
             }
         }

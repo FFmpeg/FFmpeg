@@ -18,8 +18,8 @@
  */
 #include <errno.h>
 #include "config.h"
-#include "framehook.h"
 #include "avformat.h"
+#include "framehook.h"
 
 #ifdef CONFIG_HAVE_DLFCN
 #include <dlfcn.h>
