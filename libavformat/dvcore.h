@@ -3,7 +3,7 @@
  * Copyright (c) 2003 Roman Shaposhnik
  *
  * Many thanks to Dan Dennedy <dan@dennedy.org> for providing wealth
- * of DV technical info, and SMPTE 314M specification.
+ * of DV technical info.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
