@@ -24,7 +24,7 @@
 #define F 100
 #define SIZE 2048
 
-uint64_t exp16_table[20]={
+uint64_t exp16_table[21]={
      65537,
      65538,
      65540,
@@ -45,6 +45,7 @@ uint64_t exp16_table[20]={
     484249,
    3578144,
  195360063,
+ 582360139072LL,
 };
 #if 1
 // 16.16 fixpoint exp()
@@ -60,14 +61,15 @@ static unsigned int exp16(unsigned int a){
     return out;
 }
 // 16.16 fixpoint log()
-static uint64_t log16(uint64_t a){
+static int64_t log16(uint64_t a){
     int i;
     int out=0;
-    
-    assert(a >= (1<<16));
+
+    if(a < 1<<16)
+        return -log16((1LL<<32) / a);
     a<<=16;
     
-    for(i=19;i>=0;i--){
+    for(i=20;i>=0;i--){
         int64_t b= exp16_table[i];
         if(a<(b<<16)) continue;
         out |= 1<<i;
@@ -100,8 +102,10 @@ int main(int argc,char* argv[]){
     FILE *f[2];
     uint8_t buf[2][SIZE];
     uint64_t psnr;
+    int len= argc<4 ? 1 : 2;
+    int64_t max= (1<<(8*len))-1;
     
-    if(argc!=3){
+    if(argc<3){
         printf("tiny_psnr <file1> <file2>\n");
         return -1;
     }
@@ -114,16 +118,20 @@ int main(int argc,char* argv[]){
         if( fread(buf[1], SIZE, 1, f[1]) != 1) break;
         
         for(j=0; j<SIZE; i++,j++){
-            const int a= buf[0][j];
-            const int b= buf[1][j];
+            int64_t a= buf[0][j];
+            int64_t b= buf[1][j];
+            if(len==2){
+                a= (int16_t)(a | (buf[0][++j]<<8));
+                b= (int16_t)(b | (buf[1][  j]<<8));
+            }
             sse += (a-b) * (a-b);
         }
     }
     
     if(!i) i=1;
-    dev= int_sqrt((sse*F*F)/i);
+    dev= int_sqrt( ((sse/i)*F*F) + (((sse%i)*F*F) + i/2)/i );
     if(sse)
-        psnr= (log16(256*256*255*255LL*i/sse)*284619LL*F + (1<<31)) / (1LL<<32);
+        psnr= ((2*log16(max<<16) + log16(i) - log16(sse))*284619LL*F + (1<<31)) / (1LL<<32);
     else
         psnr= 100*F-1; //floating point free infinity :)
     
