@@ -9,9 +9,14 @@ CFLAGS=-O2 -Wall -g
 
 REFFILE=$(SRC_PATH)/tests/ffmpeg.regression.ref
 
+SERVER_REFFILE=$(SRC_PATH)/tests/ffserver.regression.ref
+
 LIBAV_REFFILE=$(SRC_PATH)/tests/libav.regression.ref
 
-all: test
+all: test test-server
+
+test-server: vsynth1/0.pgm asynth1.sw
+	@$(SRC_PATH)/tests/server-regression.sh $(SERVER_REFFILE)
 
 # fast regression tests for all codecs
 test mpeg4 mpeg: vsynth1/0.pgm asynth1.sw
