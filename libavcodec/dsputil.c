@@ -129,6 +129,7 @@ static int pix_norm1_c(UINT8 * pix, int line_size)
     s = 0;
     for (i = 0; i < 16; i++) {
 	for (j = 0; j < 16; j += 8) {
+#if 0
 	    s += sq[pix[0]];
 	    s += sq[pix[1]];
 	    s += sq[pix[2]];
@@ -137,6 +138,30 @@ static int pix_norm1_c(UINT8 * pix, int line_size)
 	    s += sq[pix[5]];
 	    s += sq[pix[6]];
 	    s += sq[pix[7]];
+#else
+#if LONG_MAX > 2147483647
+	    register uint64_t x=*(uint64_t*)pix;
+	    s += sq[x&0xff];
+	    s += sq[(x>>8)&0xff];
+	    s += sq[(x>>16)&0xff];
+	    s += sq[(x>>24)&0xff];
+            s += sq[(x>>32)&0xff];
+            s += sq[(x>>40)&0xff];
+            s += sq[(x>>48)&0xff];
+            s += sq[(x>>56)&0xff];
+#else
+	    register uint32_t x=*(uint32_t*)pix;
+	    s += sq[x&0xff];
+	    s += sq[(x>>8)&0xff];
+	    s += sq[(x>>16)&0xff];
+	    s += sq[(x>>24)&0xff];
+            x=*(uint32_t*)(pix+4);
+            s += sq[x&0xff];
+            s += sq[(x>>8)&0xff];
+            s += sq[(x>>16)&0xff];
+            s += sq[(x>>24)&0xff];
+#endif
+#endif
 	    pix += 8;
 	}
 	pix += line_size - 16;
@@ -174,6 +199,38 @@ static int sse16_c(void *v, UINT8 * pix1, UINT8 * pix2, int line_size)
     s = 0;
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j += 8) {
+#if 1
+#if LONG_MAX > 2147483647
+	    uint64_t x,y;
+	    x=*(uint64_t*)pix1;
+	    y=*(uint64_t*)pix2;
+
+	    s += sq[(x&0xff) - (y&0xff)];
+	    s += sq[((x>>8)&0xff) - ((y>>8)&0xff)];
+	    s += sq[((x>>16)&0xff) - ((y>>16)&0xff)];
+	    s += sq[((x>>24)&0xff) - ((y>>24)&0xff)];
+	    s += sq[((x>>32)&0xff) - ((y>>32)&0xff)];
+	    s += sq[((x>>40)&0xff) - ((y>>40)&0xff)];
+	    s += sq[((x>>48)&0xff) - ((y>>48)&0xff)];
+	    s += sq[((x>>56)&0xff) - ((y>>56)&0xff)];
+#else
+	    uint32_t x,y;
+	    x=*(uint32_t*)pix1;
+	    y=*(uint32_t*)pix2;
+
+	    s += sq[(x&0xff) - (y&0xff)];
+	    s += sq[((x>>8)&0xff) - ((y>>8)&0xff)];
+	    s += sq[((x>>16)&0xff) - ((y>>16)&0xff)];
+	    s += sq[((x>>24)&0xff) - ((y>>24)&0xff)];
+
+	    x=*(uint32_t*)(pix1+4);
+	    y=*(uint32_t*)(pix2+4);
+	    s += sq[(x&0xff) - (y&0xff)];
+	    s += sq[((x>>8)&0xff) - ((y>>8)&0xff)];
+	    s += sq[((x>>16)&0xff) - ((y>>16)&0xff)];
+	    s += sq[((x>>24)&0xff) - ((y>>24)&0xff)];
+#endif
+#else
             s += sq[pix1[0] - pix2[0]];
             s += sq[pix1[1] - pix2[1]];
             s += sq[pix1[2] - pix2[2]];
@@ -182,6 +239,7 @@ static int sse16_c(void *v, UINT8 * pix1, UINT8 * pix2, int line_size)
             s += sq[pix1[5] - pix2[5]];
             s += sq[pix1[6] - pix2[6]];
             s += sq[pix1[7] - pix2[7]];
+#endif
             pix1 += 8;
             pix2 += 8;
         }

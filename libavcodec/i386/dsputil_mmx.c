@@ -485,6 +485,107 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
         dst[i+0] += src[i+0];
 }
 
+static int pix_norm1_mmx(uint8_t *pix, int line_size) {
+    int tmp;
+  asm volatile (
+      "movl $16,%%ecx\n"
+      "pxor %%mm0,%%mm0\n"
+      "pxor %%mm7,%%mm7\n"
+      "1:\n"
+      "movq (%0),%%mm2\n"	/* mm2 = pix[0-7] */
+      "movq 8(%0),%%mm3\n"	/* mm3 = pix[8-15] */
+
+      "movq %%mm2,%%mm1\n"	/* mm1 = mm2 = pix[0-7] */
+
+      "punpckhbw %%mm0,%%mm1\n"	/* mm1 = [pix4-7] */
+      "punpcklbw %%mm0,%%mm2\n"	/* mm2 = [pix0-3] */
+
+      "movq %%mm3,%%mm4\n"	/* mm4 = mm3 = pix[8-15] */
+      "punpckhbw %%mm0,%%mm3\n"	/* mm3 = [pix12-15] */
+      "punpcklbw %%mm0,%%mm4\n"	/* mm4 = [pix8-11] */
+
+      "pmaddwd %%mm1,%%mm1\n"	/* mm1 = (pix0^2+pix1^2,pix2^2+pix3^2) */
+      "pmaddwd %%mm2,%%mm2\n"	/* mm2 = (pix4^2+pix5^2,pix6^2+pix7^2) */
+
+      "pmaddwd %%mm3,%%mm3\n"
+      "pmaddwd %%mm4,%%mm4\n"
+
+      "paddd %%mm1,%%mm2\n"	/* mm2 = (pix0^2+pix1^2+pix4^2+pix5^2,
+					  pix2^2+pix3^2+pix6^2+pix7^2) */
+      "paddd %%mm3,%%mm4\n"
+      "paddd %%mm2,%%mm7\n"
+
+      "addl %2, %0\n"
+      "paddd %%mm4,%%mm7\n"
+      "dec %%ecx\n"
+      "jnz 1b\n"
+
+      "movq %%mm7,%%mm1\n"
+      "psrlq $32, %%mm7\n"	/* shift hi dword to lo */
+      "paddd %%mm7,%%mm1\n"
+      "movd %%mm1,%1\n"
+      : "+r" (pix), "=r"(tmp) : "r" (line_size) : "%ecx" );
+    return tmp;
+}
+
+static int sse16_mmx(void *v, UINT8 * pix1, UINT8 * pix2, int line_size) {
+    int tmp;
+  asm volatile (
+      "movl $16,%%ecx\n"
+      "pxor %%mm0,%%mm0\n"	/* mm0 = 0 */
+      "pxor %%mm7,%%mm7\n"	/* mm7 holds the sum */
+      "1:\n"
+      "movq (%0),%%mm1\n"	/* mm1 = pix1[0-7] */
+      "movq (%1),%%mm2\n"	/* mm2 = pix2[0-7] */
+      "movq 8(%0),%%mm3\n"	/* mm3 = pix1[8-15] */
+      "movq 8(%1),%%mm4\n"	/* mm4 = pix2[8-15] */
+
+      /* todo: mm1-mm2, mm3-mm4 */
+      /* algo: substract mm1 from mm2 with saturation and vice versa */
+      /*       OR the results to get absolute difference */
+      "movq %%mm1,%%mm5\n"
+      "movq %%mm3,%%mm6\n"
+      "psubusb %%mm2,%%mm1\n"
+      "psubusb %%mm4,%%mm3\n"
+      "psubusb %%mm5,%%mm2\n"
+      "psubusb %%mm6,%%mm4\n"
+
+      "por %%mm1,%%mm2\n"
+      "por %%mm3,%%mm4\n"
+
+      /* now convert to 16-bit vectors so we can square them */
+      "movq %%mm2,%%mm1\n"
+      "movq %%mm4,%%mm3\n"
+
+      "punpckhbw %%mm0,%%mm2\n"
+      "punpckhbw %%mm0,%%mm4\n"
+      "punpcklbw %%mm0,%%mm1\n"	/* mm1 now spread over (mm1,mm2) */
+      "punpcklbw %%mm0,%%mm3\n"	/* mm4 now spread over (mm3,mm4) */
+
+      "pmaddwd %%mm2,%%mm2\n"
+      "pmaddwd %%mm4,%%mm4\n"
+      "pmaddwd %%mm1,%%mm1\n"
+      "pmaddwd %%mm3,%%mm3\n"
+
+      "addl %3,%0\n"
+      "addl %3,%1\n"
+
+      "paddd %%mm2,%%mm1\n"
+      "paddd %%mm4,%%mm3\n"
+      "paddd %%mm1,%%mm7\n"
+      "paddd %%mm3,%%mm7\n"
+
+      "decl %%ecx\n"
+      "jnz 1b\n"
+
+      "movq %%mm7,%%mm1\n"
+      "psrlq $32, %%mm7\n"	/* shift hi dword to lo */
+      "paddd %%mm7,%%mm1\n"
+      "movd %%mm1,%2\n"
+      : "+r" (pix1), "+r" (pix2), "=r"(tmp) : "r" (line_size) : "ecx");
+    return tmp;
+}
+
 static void diff_bytes_mmx(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
     int i=0;
     asm volatile(
@@ -1416,6 +1517,9 @@ void dsputil_init_mmx(DSPContext* c, unsigned mask)
         
         c->sad[0]= sad16x16_mmx;
         c->sad[1]= sad8x8_mmx;
+
+	c->pix_norm1 = pix_norm1_mmx;
+	c->sse[0] = sse16_mmx;
         
         if (mm_flags & MM_MMXEXT) {
             c->pix_abs16x16     = pix_abs16x16_mmx2;
