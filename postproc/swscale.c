@@ -98,7 +98,6 @@ static int old_s_xinc= -1;
 
 #endif
 int canMMX2BeUsed=0;
-static int test=0;
 int srcWidth= (dstw*s_xinc + 0x8000)>>16;
 
 #ifdef HAVE_MMX2
@@ -119,7 +118,7 @@ s_xinc2=s_xinc>>1;
   s_last_y1pos=-99;
 
   if(y==0){
-      s_srcypos= s_yinc/2 - 0x8000;
+      s_srcypos=-0x8000;
       s_ypos=0;
 #ifdef HAVE_MMX2
 // cant downscale !!!
@@ -534,6 +533,12 @@ FUNNYUVCODE
 	  xpos+=s_xinc2;
       }
 #endif
+	// if this is the line before the first line
+	if(s_srcypos == s_xinc - 0x8000)
+	{
+		s_srcypos= s_yinc/2 - 0x8000;
+		continue;
+	}
     }
 
 
