@@ -51,6 +51,8 @@ typedef struct FFMContext {
     uint8_t packet[FFM_PACKET_SIZE];
 } FFMContext;
 
+static int64_t get_pts(AVFormatContext *s, offset_t pos);
+
 /* disable pts hack for testing */
 int ffm_nopts = 0;
 
@@ -63,6 +65,9 @@ static void flush_packet(AVFormatContext *s)
 
     fill_size = ffm->packet_end - ffm->packet_ptr;
     memset(ffm->packet_ptr, 0, fill_size);
+
+    if (url_ftell(pb) % ffm->packet_size) 
+        av_abort();
 
     /* put header */
     put_be16(pb, PACKET_ID);
@@ -202,6 +207,8 @@ static int ffm_write_header(AVFormatContext *s)
     /* init packet mux */
     ffm->packet_ptr = ffm->packet;
     ffm->packet_end = ffm->packet + ffm->packet_size - FFM_HEADER_SIZE;
+    if (ffm->packet_end < ffm->packet)
+        av_abort();
     ffm->frame_offset = 0;
     ffm->pts = 0;
     ffm->first_packet = 1;
@@ -330,6 +337,8 @@ static int ffm_read_data(AVFormatContext *s,
             frame_offset = get_be16(pb);
             get_buffer(pb, ffm->packet, ffm->packet_size - FFM_HEADER_SIZE);
             ffm->packet_end = ffm->packet + (ffm->packet_size - FFM_HEADER_SIZE - fill_size);
+            if (ffm->packet_end < ffm->packet)
+                av_abort();
             /* if first packet or resynchronization packet, we must
                handle it specifically */
             if (ffm->first_packet || (frame_offset & 0x8000)) {
@@ -363,6 +372,62 @@ static int ffm_read_data(AVFormatContext *s,
 }
 
 
+static void adjust_write_index(AVFormatContext *s)
+{
+    FFMContext *ffm = s->priv_data;
+    ByteIOContext *pb = &s->pb;
+    int64_t pts;
+    //offset_t orig_write_index = ffm->write_index;
+    offset_t pos_min, pos_max;
+    int64_t pts_start;
+    offset_t ptr = url_ftell(pb);
+
+
+    pos_min = 0;
+    pos_max = ffm->file_size - 2 * FFM_PACKET_SIZE;
+
+    pts_start = get_pts(s, pos_min);
+
+    pts = get_pts(s, pos_max);
+
+    if (pts - 100000 > pts_start) 
+        return;
+
+    ffm->write_index = FFM_PACKET_SIZE;
+
+    pts_start = get_pts(s, pos_min);
+
+    pts = get_pts(s, pos_max);
+
+    if (pts - 100000 <= pts_start) {
+        while (1) {
+            offset_t newpos;
+            int64_t newpts;
+
+            newpos = ((pos_max + pos_min) / (2 * FFM_PACKET_SIZE)) * FFM_PACKET_SIZE;
+
+            if (newpos == pos_min)
+                break;
+
+            newpts = get_pts(s, newpos);
+
+            if (newpts - 100000 <= pts) {
+                pos_max = newpos;
+                pts = newpts;
+            } else {
+                pos_min = newpos;
+            }
+        }
+        ffm->write_index += pos_max;
+    }
+
+    //printf("Adjusted write index from %lld to %lld: pts=%0.6f\n", orig_write_index, ffm->write_index, pts / 1000000.);
+    //printf("pts range %0.6f - %0.6f\n", get_pts(s, 0) / 1000000. , get_pts(s, ffm->file_size - 2 * FFM_PACKET_SIZE) / 1000000. );
+
+    url_fseek(pb, ptr, SEEK_SET);
+}
+
+
 static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     FFMContext *ffm = s->priv_data;
@@ -384,6 +449,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* get also filesize */
     if (!url_is_streamed(pb)) {
         ffm->file_size = url_filesize(url_fileno(pb));
+        adjust_write_index(s);
     } else {
         ffm->file_size = (uint64_t_C(1) << 63) - 1;
     }
