@@ -185,7 +185,16 @@ set the copyright
 @item -comment string     
 set the comment
 
-@item -hq                 
+@item -target type
+specify target file type ("vcd", "svcd" or "dvd"). All the format
+options (bitrate, codecs, buffer sizes) are automatically set by this
+option. You can just type:
+
+@example
+ffmpeg -i myfile.avi -target vcd /tmp/vcd.mpg
+@end example
+
+@item -hq
 activate high quality settings
 
 @end table
@@ -393,6 +402,12 @@ enable Unlimited Motion Vector (h263+)
 
 @item -deinterlace
 deinterlace pictures
+@item -interlace
+force interlacing support in encoder (only MPEG-2 and MPEG-4). Use this option
+if your input file is interlaced and if you want to keep the interlaced
+format for minimum losses. The alternative is to deinterlace the input
+stream with @option{-deinterlace}, but deinterlacing introduces more
+losses.
 @item -psnr
 calculate PSNR of compressed frames
 @item -vstats
