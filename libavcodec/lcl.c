@@ -843,7 +843,7 @@ static int encode_end(AVCodecContext *avctx)
     LclContext *c = avctx->priv_data;
 
     av_freep(&avctx->extradata);
-    av_freep(c->comp_buf);
+    av_freep(&c->comp_buf);
 #ifdef CONFIG_ZLIB
     deflateEnd(&(c->zstream));
 #endif
