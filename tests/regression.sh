@@ -229,7 +229,7 @@ fi
 if [ -n "$do_mpeg4adv" ] ; then
 # mpeg4
 file=${outfile}mpeg4-adv.avi
-do_ffmpeg $file -y -qscale 9 -4mv -hq -part -ps 200 -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
+do_ffmpeg $file -y -qscale 9 -4mv -hq -part -ps 200 -aic -f pgmyuv -i $raw_src -an -vcodec mpeg4 $file
 
 # mpeg4 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
@@ -367,7 +367,17 @@ file=${outfile}libav.flv
 do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
 do_ffmpeg_crc $file -i $file
 
-# XXX: need mov and mpegts tests (add bitstreams or add output capability in ffmpeg)
+# mov
+#file=${outfile}libav.mov
+#do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+#do_ffmpeg_crc $file -i $file
+
+# nut
+file=${outfile}libav.nut
+do_ffmpeg $file -t 1 -y -qscale 10 -f pgmyuv -i $raw_src -f s16le -i $pcm_src $file
+do_ffmpeg_crc $file -i $file
+
+# XXX: need mpegts tests (add bitstreams or add output capability in ffmpeg)
 
 ####################
 # streamed images

@@ -23,18 +23,18 @@ stddev:  8.18 bytes:7602176
 496df9fe47c457144aac4178c960ad66 *./data/a-h263p.avi
 79649b61321beaaaa6413af8c18e4696 *./data/out.yuv
 stddev:  2.05 bytes:7602176
-170cc33e7a786288d0e190aba76ce255 *./data/a-odivx.avi
-c753223d02441b59704c9859dbd7ff30 *./data/out.yuv
-stddev:  8.01 bytes:7602176
+74ab22f444b7f68f81624cabd69847be *./data/a-odivx.avi
+e48114a50ef4cfb4fe2016fa5b34ae4c *./data/out.yuv
+stddev:  8.02 bytes:7602176
 5704a082cc5c5970620123ae20566286 *./data/a-huffyuv.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 bytes:7602176
-6a359baea7b8b22d4a77ea1415c08d9b *./data/a-mpeg4-rc.avi
+2fce40764b56ac4eade4bf29ee962ba0 *./data/a-mpeg4-rc.avi
 580000bfe2d4359d9aa9a9415f953b3b *./data/out.yuv
 stddev: 10.53 bytes:7145472
-2cbab98ebef5fbd229c66fb6435bf9a2 *./data/a-mpeg4-adv.avi
-b54262af56f6681186fa2c44e4ef6ec7 *./data/out.yuv
-stddev:  7.32 bytes:7602176
+dfe8fcd409a0605ef0cb37fc5e76ecf7 *./data/a-mpeg4-adv.avi
+c8877a6b8ed290a637c2119860b468b0 *./data/out.yuv
+stddev:  7.31 bytes:7602176
 843225ac495abfcc480296143c26bde3 *./data/a-mpeg1b.mpg
 da8e21c7b78b7a25558dc319524b91d8 *./data/out.yuv
 stddev:  6.32 bytes:6842368

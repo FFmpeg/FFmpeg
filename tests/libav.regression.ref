@@ -1,5 +1,5 @@
 ffmpeg regression test
-55e7e5626717ced8d8709c43bd669fc1 *./data/b-libav.avi
+3dc28f3e65addfcf907624805e92c34e *./data/b-libav.avi
 ./data/b-libav.avi CRC=a08a5739
 f34176ef4f8577c93d51d7c403c8776d *./data/b-libav.asf
 ./data/b-libav.asf CRC=07970214
@@ -12,6 +12,8 @@ f34176ef4f8577c93d51d7c403c8776d *./data/b-libav.asf
 ./data/b-libav.ffm CRC=eb51d2a4
 964bf9fc730fa66e449b6670b705a56f *./data/b-libav.flv
 ./data/b-libav.flv CRC=e2e5bc81
+090ad4fe8f00144a2b782703d1e587d2 *./data/b-libav.nut
+./data/b-libav.nut CRC=a08a5739
 9a9da315747599f7718cc9a9a09c21ff *./data/b-libav.pbm
 ./data/b-libav.pbm CRC=a1057fd1
 6ea0e1faf08f6fcdb44db4a104361b57 *./data/b-libav.pgm
