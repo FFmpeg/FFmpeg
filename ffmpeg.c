@@ -3311,6 +3311,7 @@ static void prepare_grab(void)
     has_audio = 0;
     memset(ap, 0, sizeof(*ap));
     memset(vp, 0, sizeof(*vp));
+    vp->frame_rate_base= 1;
     for(j=0;j<nb_output_files;j++) {
         oc = output_files[j];
         for(i=0;i<oc->nb_streams;i++) {
@@ -3329,8 +3330,7 @@ static void prepare_grab(void)
                 if (enc->height > vp->height)
                     vp->height = enc->height;
                 
-                assert(enc->frame_rate_base == DEFAULT_FRAME_RATE_BASE);
-                if (enc->frame_rate > vp->frame_rate){
+                if (vp->frame_rate_base*(int64_t)enc->frame_rate > enc->frame_rate_base*(int64_t)vp->frame_rate){
                     vp->frame_rate      = enc->frame_rate;
                     vp->frame_rate_base = enc->frame_rate_base;
                 }
