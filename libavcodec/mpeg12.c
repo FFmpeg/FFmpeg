@@ -1421,6 +1421,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     }
     s->current_picture.pict_type= s->pict_type;
     s->current_picture.key_frame= s->pict_type == I_TYPE;
+    
     s->y_dc_scale = 8;
     s->c_dc_scale = 8;
     s->first_slice = 1;
@@ -1895,8 +1896,15 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                                           s->buffer, input_size);
                     break;
                 default:
+                    /* skip b frames if we dont have reference frames */
+                    if(s2->last_picture.data[0]==NULL && s2->pict_type==B_TYPE) break;
+                    /* skip b frames if we are in a hurry */
+                    if(avctx->hurry_up && s2->pict_type==B_TYPE) break;
+                    /* skip everything if we are in a hurry>=5 */
+                    if(avctx->hurry_up>=5) break;
+
                     if (start_code >= SLICE_MIN_START_CODE &&
-                        start_code <= SLICE_MAX_START_CODE && avctx->hurry_up<5) {
+                        start_code <= SLICE_MAX_START_CODE) {
                         ret = mpeg_decode_slice(avctx, picture,
                                                 start_code, s->buffer, input_size);
                         if (ret == DECODE_SLICE_EOP) {
