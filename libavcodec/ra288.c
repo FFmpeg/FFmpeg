@@ -406,33 +406,46 @@ static int ra288_decode_frame(AVCodecContext * avctx,
     int h=((short*)(avctx->extradata))[1];
     int cfs=((short*)(avctx->extradata))[3]; /* coded frame size */
     int i,j;
-    if(buf_size<w*h) goto no_interleave;
+    if(buf_size<w*h)
+    {
+	fprintf(stderr,"ffra288: warning! Context was not interleaved [%d<%d]\n",buf_size,w*h);
+	goto no_interleave;
+    }
     bp = buf;
     for (j = 0; j < h; j++)
 	for (i = 0; i < h/2; i++)
 	{
 	    memcpy(&b[i*2*w+j*cfs], bp, cfs);
 	    bp += cfs;
-	    if(bp-buf>=buf_size) break;
+	    if(bp-buf>buf_size)
+	    {
+		fprintf(stderr,"ffra288: warning! Context was partly interleaved [%d<%d]\n",buf_size,w*h);
+		break;
+	    }
 	}
     bret=bp-buf;
     bp = b;
   }
-  else { no_interleave: bret=buf_size; bp = buf; }
+  else
+  { 
+    fprintf(stderr,"ffra288: warning! Context was not interleaved [%d<%d]\n",avctx->extradata_size,6);
+    no_interleave:
+    bret=buf_size;
+    bp = buf; 
+  }
   datao = data;
   z=0;
   while(z<bret)
   {
-    unpack(buffer,bp,32);
+    unpack(buffer,&bp[z],32);
     for (x=0;x<32;x++)
     {
 	glob->phasep=(glob->phase=x&7)*5;
 	decode(glob,buffer[x]);
-	for (y=0;y<5;y++) *(((int16_t *)data)++)=8*glob->output[glob->phasep+y];
+	for (y=0;y<5;*(((int16_t *)data)++)=8*glob->output[glob->phasep+(y++)]);
 	if (glob->phase==3) update(glob);
     }
     z+=32;
-    bp+=32;
   }
   *data_size = data - datao;
   return bret;
