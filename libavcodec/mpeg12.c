@@ -1770,24 +1770,27 @@ static int mpeg_decode_init(AVCodecContext *avctx)
    state. Return -1 if no start code found */
 static int find_start_code(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
 {
-    const uint8_t *buf_ptr;
-    unsigned int state=0xFFFFFFFF, v;
-    int val;
+    const uint8_t *buf_ptr= *pbuf_ptr;
 
-    buf_ptr = *pbuf_ptr;
+    buf_ptr++; //gurantees that -1 is within the array
+    buf_end -= 2; // gurantees that +2 is within the array
+
     while (buf_ptr < buf_end) {
-        v = *buf_ptr++;
-        if (state == 0x000001) {
-            state = ((state << 8) | v) & 0xffffff;
-            val = state;
-            goto found;
+        if(*buf_ptr==0){
+            while(buf_ptr < buf_end && buf_ptr[1]==0)
+                buf_ptr++;
+
+            if(buf_ptr[-1] == 0 && buf_ptr[1] == 1){
+                *pbuf_ptr = buf_ptr+3;
+                return buf_ptr[2] + 0x100;
+            }
         }
-        state = ((state << 8) | v) & 0xffffff;
+        buf_ptr += 2;
     }
-    val = -1;
- found:
-    *pbuf_ptr = buf_ptr;
-    return val;
+    buf_end += 2; //undo the hack above
+    
+    *pbuf_ptr = buf_end;
+    return -1;
 }
 
 static int mpeg1_decode_picture(AVCodecContext *avctx, 
