@@ -32,7 +32,6 @@ typedef struct {
     int width, height;
     int frame_rate;
     INT64 time_frame;
-    INT64 time_frame_start;
     int frame_size;
     struct video_capability video_cap;
     struct video_audio audio_saved;
@@ -241,8 +240,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec.height = height;
     st->codec.frame_rate = frame_rate;
     
-    s->time_frame_start = s->time_frame;
-
     av_set_pts_info(s1, 48, 1, 1000000); /* 48 bits pts in us */
 
     return 0;
@@ -285,7 +282,6 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     INT64 curtime, delay;
     struct timespec ts;
     INT64 per_frame = (INT64_C(1000000) * FRAME_RATE_BASE) / s->frame_rate;
-    int dropped = 0;
 
     /* Calculate the time of the next frame */
     s->time_frame += per_frame;
@@ -297,7 +293,6 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
         if (delay <= 0) {
             if (delay < -per_frame) {
                 /* printf("grabbing is %d frames late (dropping)\n", (int) -(delay / 16666)); */
-                dropped = 1;
                 s->time_frame += per_frame;
             }
             break;
@@ -311,13 +306,6 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
         return -EIO;
 
     pkt->pts = curtime & ((1LL << 48) - 1);
-
-    if (dropped)
-        pkt->flags |= PKT_FLAG_DROPPED_FRAME;
-
-    pkt->pts = (s->time_frame - s->time_frame_start) * s1->pts_den / ((INT64)s1->pts_num * 1000000);
-
-    //printf("setting pkt->pts=%lld (time_frame=%lld)\n", pkt->pts, s->time_frame);
 
     /* read one frame */
     if (s->aiw_enabled) {
