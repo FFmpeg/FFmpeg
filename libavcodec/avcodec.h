@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4627
-#define LIBAVCODEC_BUILD_STR   "4627"
+#define LIBAVCODEC_BUILD       4628
+#define LIBAVCODEC_BUILD_STR   "4628"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -675,6 +675,14 @@ typedef struct AVCodecContext {
      * decoding: unused
      */
     float dark_masking;
+    
+    /**
+     * fourcc (LSB first, so "ABCD" -> ('D'<<24) + ('C'<<16) + ('B'<<8) + 'A')
+     * this is used to workaround some encoder bugs
+     * encoding: unused
+     * decoding: set by user
+     */
+    int fourcc;
 
     //FIXME this should be reordered after kabis API is finished ...
     //TODO kill kabi
