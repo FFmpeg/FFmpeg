@@ -494,7 +494,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
                                  UINT8 *buf, int buf_size)
 {
     DVVideoDecodeContext *s = avctx->priv_data;
-    int sct, dsf, apt, ds, nb_dif_segs, vs, size, width, height, i;
+    int sct, dsf, apt, ds, nb_dif_segs, vs, size, width, height, i, packet_size;
     UINT8 *buf_ptr;
     const UINT16 *mb_pos_ptr;
     AVPicture *picture;
@@ -531,17 +531,18 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     /* init size */
     width = 720;
     if (dsf) {
-        if (buf_size != PAL_FRAME_SIZE)
-            return -1;
+        packet_size = PAL_FRAME_SIZE;
         height = 576;
         nb_dif_segs = 12;
     } else {
-        if (buf_size != NTSC_FRAME_SIZE)
-            return -1;
+        packet_size = NTSC_FRAME_SIZE;
         height = 480;
         nb_dif_segs = 10;
     }
-
+    /* NOTE: we only accept several full frames */
+    if (buf_size < packet_size)
+        return -1;
+    
     /* XXX: is it correct to assume that 420 is always used in PAL
        mode ? */
     s->sampling_411 = !dsf;
@@ -604,8 +605,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
         picture->data[i] = s->current_picture[i];
         picture->linesize[i] = s->linesize[i];
     }
-
-    return buf_size;
+    return packet_size;
 }
 
 static int dvvideo_decode_end(AVCodecContext *avctx)
