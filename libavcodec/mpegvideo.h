@@ -17,12 +17,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* Macros for picture code type. */
-#define I_TYPE 1
-#define P_TYPE 2
-#define B_TYPE 3
-#define S_TYPE 4 //S(GMC)-VOP MPEG4
-
 #define FRAME_SKIPED 100 // return value for header parsers if frame is not coded
 
 enum OutputFormat {

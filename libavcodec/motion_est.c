@@ -25,7 +25,7 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 
-#define ABS(a) ((a)>0 ? (a) : -(a))
+//#define ABS(a) ((a)>0 ? (a) : -(a))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define INTER_BIAS	257
 

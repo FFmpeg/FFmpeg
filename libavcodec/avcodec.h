@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4605
-#define LIBAVCODEC_BUILD_STR   "4605"
+#define LIBAVCODEC_BUILD       4606
+#define LIBAVCODEC_BUILD_STR   "4606"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -145,11 +145,22 @@ typedef struct AVCodecContext {
     int sample_fmt;  /* sample format, currenly unused */
 
     /* the following data should not be initialized */
-    int frame_size; /* in samples, initialized when calling 'init' */
-    int frame_number; /* audio or video frame number */
-    int key_frame;    /* true if the previous compressed frame was 
-                         a key frame (intra, or seekable) */
-    int delay;        /* number of frames the decoded output will be delayed relative to the encoded input */
+    int frame_size;     /* in samples, initialized when calling 'init' */
+    int frame_number;   /* audio or video frame number */
+    int real_pict_num;  /* returns the real picture number of
+                           previous encoded frame */
+    int key_frame;      /* true if the previous compressed frame was 
+                           a key frame (intra, or seekable) */
+    int pict_type;      /* picture type of the previous 
+                           encoded frame */
+/* FIXME: these should have FF_ */
+#define I_TYPE 1 // Intra
+#define P_TYPE 2 // Predicted
+#define B_TYPE 3 // Bi-dir predicted
+#define S_TYPE 4 // S(GMC)-VOP MPEG4
+
+    int delay;          /* number of frames the decoded output 
+                           will be delayed relative to the encoded input */
     uint8_t *mbskip_table; /* =1 if MB didnt change, is only valid for I/P frames 
                               stride= mb_width = (width+15)>>4 */
     

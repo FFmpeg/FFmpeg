@@ -793,7 +793,9 @@ int MPV_encode_picture(AVCodecContext *avctx,
         MPV_frame_start(s);
 
         encode_picture(s, s->picture_number);
-        avctx->key_frame = (s->pict_type == I_TYPE);
+        avctx->key_frame   = (s->pict_type == I_TYPE);
+        avctx->pict_type   = s->pict_type;
+        avctx->real_pict_num  = s->picture_number;
         avctx->header_bits = s->header_bits;
         avctx->mv_bits     = s->mv_bits;
         avctx->misc_bits   = s->misc_bits;
