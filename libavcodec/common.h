@@ -157,7 +157,7 @@ typedef signed __int64 int64_t;
 #    include "bswap.h"
 
 #    if defined(__MINGW32__) || defined(__CYGWIN__) || \
-        defined(__OS2__) || defined (__OpenBSD__)
+        defined(__OS2__) || (defined (__OpenBSD__) && !defined(__ELF__))
 #        define MANGLE(a) "_" #a
 #    else
 #        define MANGLE(a) #a
