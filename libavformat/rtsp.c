@@ -31,11 +31,20 @@
 //#define DEBUG
 //#define DEBUG_RTP_TCP
 
+enum RTSPClientState {
+    RTSP_STATE_IDLE,
+    RTSP_STATE_PLAYING,
+    RTSP_STATE_PAUSED,
+};
+
 typedef struct RTSPState {
     URLContext *rtsp_hd; /* RTSP TCP connexion handle */
     int nb_rtsp_streams;
     struct RTSPStream **rtsp_streams;
-
+    
+    enum RTSPClientState state;
+    int64_t seek_timestamp;
+    
     /* XXX: currently we use unbuffered input */
     //    ByteIOContext rtsp_gb;
     int seq;        /* RTSP command sequence number */
@@ -59,9 +68,11 @@ typedef struct RTSPStream {
     int sdp_payload_type; /* payload type - only used in SDP */
 } RTSPStream;
 
+static int rtsp_read_play(AVFormatContext *s);
+
 /* XXX: currently, the only way to change the protocols consists in
    changing this variable */
-#if 1
+#if 0
 int rtsp_default_protocols = (1 << RTSP_PROTOCOL_RTP_TCP) | (1 << RTSP_PROTOCOL_RTP_UDP) | (1 << RTSP_PROTOCOL_RTP_UDP_MULTICAST);
 #else
 /* try it if a proxy is used */
@@ -512,6 +523,26 @@ static void rtsp_parse_transport(RTSPHeader *reply, const char *p)
     }
 }
 
+static void rtsp_parse_range_npt(RTSPHeader *reply, const char *p)
+{
+    char buf[256];
+
+    skip_spaces(&p);
+    if (!stristart(p, "npt=", &p))
+        return;
+
+    reply->range_start = AV_NOPTS_VALUE;
+    reply->range_end = AV_NOPTS_VALUE;
+    
+    get_word_sep(buf, sizeof(buf), "-", &p);
+    reply->range_start = parse_date(buf, 1);
+    if (*p == '-') {
+        p++;
+        get_word_sep(buf, sizeof(buf), "-", &p);
+        reply->range_end = parse_date(buf, 1);
+    }
+}
+
 void rtsp_parse_line(RTSPHeader *reply, const char *buf)
 {
     const char *p;
@@ -526,6 +557,8 @@ void rtsp_parse_line(RTSPHeader *reply, const char *buf)
         rtsp_parse_transport(reply, p);
     } else if (stristart(p, "CSeq:", &p)) {
         reply->seq = strtol(p, NULL, 10);
+    } else if (stristart(p, "Range:", &p)) {
+        rtsp_parse_range_npt(reply, p);
     }
 }
 
@@ -856,27 +889,18 @@ static int rtsp_read_header(AVFormatContext *s,
         }
     }
                          
-    /* start playing */
-    snprintf(cmd, sizeof(cmd), 
-             "PLAY %s RTSP/1.0\r\n"
-             "Range: npt=0-\r\n",
-             s->filename);
-    rtsp_send_cmd(s, cmd, reply, NULL);
-    if (reply->status_code != RTSP_STATUS_OK) {
-        err = AVERROR_INVALIDDATA;
-        goto fail;
-    }
 
-#if 0
-    /* open TCP with bufferized input */
-    if (rt->protocol == RTSP_PROTOCOL_RTP_TCP) {
-        if (url_fdopen(&rt->rtsp_gb, rt->rtsp_hd) < 0) {
-            err = AVERROR_NOMEM;
+    rt->state = RTSP_STATE_IDLE;
+    rt->seek_timestamp = 0; /* default is to start stream at position
+                               zero */
+    if (ap && ap->initial_pause) {
+        /* do not start immediately */
+    } else {
+        if (rtsp_read_play(s) < 0) {
+            err = AVERROR_INVALIDDATA;
             goto fail;
         }
     }
-#endif
-
     return 0;
  fail:
     rtsp_close_streams(rt);
@@ -1020,18 +1044,46 @@ static int rtsp_read_packet(AVFormatContext *s,
     return 0;
 }
 
-/* pause the stream */
-int rtsp_pause(AVFormatContext *s)
+static int rtsp_read_play(AVFormatContext *s)
 {
-    RTSPState *rt;
+    RTSPState *rt = s->priv_data;
     RTSPHeader reply1, *reply = &reply1;
     char cmd[1024];
 
-    if (s->iformat != &rtsp_demux)
+    printf("hello state=%d\n", rt->state);
+
+    if (rt->state == RTSP_STATE_PAUSED) {
+        snprintf(cmd, sizeof(cmd), 
+                 "PLAY %s RTSP/1.0\r\n",
+                 s->filename);
+    } else {
+        snprintf(cmd, sizeof(cmd), 
+                 "PLAY %s RTSP/1.0\r\n"
+                 "Range: npt=%0.3f-\r\n",
+                 s->filename,
+                 (double)rt->seek_timestamp / AV_TIME_BASE);
+    }
+    rtsp_send_cmd(s, cmd, reply, NULL);
+    if (reply->status_code != RTSP_STATUS_OK) {
         return -1;
-    
+    } else {
+        rt->state = RTSP_STATE_PLAYING;
+        return 0;
+    }
+}
+
+/* pause the stream */
+static int rtsp_read_pause(AVFormatContext *s)
+{
+    RTSPState *rt = s->priv_data;
+    RTSPHeader reply1, *reply = &reply1;
+    char cmd[1024];
+
     rt = s->priv_data;
     
+    if (rt->state != RTSP_STATE_PLAYING)
+        return 0;
+
     snprintf(cmd, sizeof(cmd), 
              "PAUSE %s RTSP/1.0\r\n",
              s->filename);
@@ -1039,31 +1091,30 @@ int rtsp_pause(AVFormatContext *s)
     if (reply->status_code != RTSP_STATUS_OK) {
         return -1;
     } else {
+        rt->state = RTSP_STATE_PAUSED;
         return 0;
     }
 }
 
-/* resume the stream */
-int rtsp_resume(AVFormatContext *s)
+static int rtsp_read_seek(AVFormatContext *s, int stream_index, 
+                          int64_t timestamp)
 {
-    RTSPState *rt;
-    RTSPHeader reply1, *reply = &reply1;
-    char cmd[1024];
-
-    if (s->iformat != &rtsp_demux)
-        return -1;
+    RTSPState *rt = s->priv_data;
     
-    rt = s->priv_data;
-    
-    snprintf(cmd, sizeof(cmd), 
-             "PLAY %s RTSP/1.0\r\n",
-             s->filename);
-    rtsp_send_cmd(s, cmd, reply, NULL);
-    if (reply->status_code != RTSP_STATUS_OK) {
-        return -1;
-    } else {
-        return 0;
+    rt->seek_timestamp = timestamp;
+    switch(rt->state) {
+    default:
+    case RTSP_STATE_IDLE:
+        break;
+    case RTSP_STATE_PLAYING:
+        if (rtsp_read_play(s) != 0)
+            return -1;
+        break;
+    case RTSP_STATE_PAUSED:
+        rt->state = RTSP_STATE_IDLE;
+        break;
     }
+    return 0;
 }
 
 static int rtsp_read_close(AVFormatContext *s)
@@ -1101,7 +1152,10 @@ AVInputFormat rtsp_demux = {
     rtsp_read_header,
     rtsp_read_packet,
     rtsp_read_close,
+    rtsp_read_seek,
     .flags = AVFMT_NOFILE,
+    .read_play = rtsp_read_play,
+    .read_pause = rtsp_read_pause,
 };
 
 static int sdp_probe(AVProbeData *p1)
