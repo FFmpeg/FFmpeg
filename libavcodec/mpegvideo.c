@@ -4076,6 +4076,8 @@ void ff_denoise_dct(MpegEncContext *s, DCTELEM *block){
     const int intra= s->mb_intra;
     int i;
 
+    s->dct_count[intra]++;
+
     for(i=0; i<64; i++){
         int level= block[i];
 
