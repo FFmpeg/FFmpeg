@@ -27,6 +27,8 @@
  */
  
 //#define DEBUG
+#include <assert.h>
+
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -277,6 +279,20 @@ int mjpeg_init(MpegEncContext *s)
 void mjpeg_close(MpegEncContext *s)
 {
     av_free(s->mjpeg_ctx);
+}
+
+static inline int predict(uint8_t *ptr, int stride, int predictor, int size){
+    switch(predictor){
+        case 0: return ptr[0];
+        case 1: return ptr[-size];
+        case 2: return ptr[-stride];
+        case 3: return ptr[-stride-size];
+        case 4: return ptr[-size]   +   ptr[-stride] - ptr[-stride-size];
+        case 5: return ptr[-size]   + ((ptr[-stride] - ptr[-stride-size])>>1);
+        case 6: return ptr[-stride] + ((ptr[-size]   - ptr[-stride-size])>>1);
+        case 7: return (ptr[-size] + ptr[-stride])>>1;
+        default: return 0xFFFF;
+    }
 }
 
 static inline void put_marker(PutBitContext *p, int code)
@@ -653,6 +669,8 @@ typedef struct MJpegDecodeContext {
     int first_picture;    /* true if decoding first picture */
     int interlaced;     /* true if interlaced */
     int bottom_field;   /* true if bottom field */
+    int lossless;
+    int rgb;
 
     int width, height;
     int nb_components;
@@ -810,15 +828,16 @@ static int mjpeg_decode_dht(MJpegDecodeContext *s)
     return 0;
 }
 
-static int mjpeg_decode_sof0(MJpegDecodeContext *s)
+static int mjpeg_decode_sof(MJpegDecodeContext *s)
 {
     int len, nb_components, i, width, height;
 
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
-    /* only 8 bits/component accepted */
-    if (get_bits(&s->gb, 8) != 8)
+    if (get_bits(&s->gb, 8) != 8){
+        printf("only 8 bits/component accepted\n");
         return -1;
+    }
     height = get_bits(&s->gb, 16);
     width = get_bits(&s->gb, 16);
     dprintf("sof0: picture: %dx%d\n", width, height);
@@ -863,7 +882,18 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s)
 	    s->bottom_field = 0;
         }
 
-        for(i=0;i<nb_components;i++) {
+        assert(s->rgb==0 || (s->h_max==1 && s->v_max==1));
+        if(s->rgb){
+            int w, h;
+            w = s->width;
+            h = s->height;
+            if (s->interlaced)
+                w *= 2;
+            s->linesize[0] = 4*w;
+            s->current_picture[0] = av_mallocz(4*w * h);
+            s->current_picture[1] = s->current_picture[2] = NULL;
+        }else{
+          for(i=0;i<nb_components;i++) {
             int w, h;
             w = (s->width  + 8 * s->h_max - 1) / (8 * s->h_max);
             h = (s->height + 8 * s->v_max - 1) / (8 * s->v_max);
@@ -878,6 +908,7 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s)
 		dprintf("error: no picture buffers allocated\n");
 		return -1;
 	    }
+          }
         }
         s->first_picture = 0;
     }
@@ -957,9 +988,12 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     return 0;
 }
 
+static void decode_lossless(MJpegDecodeContext *s, int point_transform, int predictor){
+}
+
 static int mjpeg_decode_sos(MJpegDecodeContext *s)
 {
-    int len, nb_components, i, j, n, h, v, ret;
+    int len, nb_components, i, j, n, h, v, ret, point_transform, predictor;
     int mb_width, mb_height, mb_x, mb_y, vmax, hmax, index, id;
     int comp_index[4];
     int dc_index[4];
@@ -967,7 +1001,8 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     int nb_blocks[4];
     int h_count[4];
     int v_count[4];
-    
+    const int block_size= s->lossless ? 1 : 8;
+
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
     nb_components = get_bits(&s->gb, 8);
@@ -1025,29 +1060,165 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
 		break;	
 	}
     }
-    skip_bits(&s->gb, 8); /* Ss */
+    predictor= get_bits(&s->gb, 8); /* lossless predictor or start of spectral (Ss) */
     skip_bits(&s->gb, 8); /* Se */
-    skip_bits(&s->gb, 8); /* Ah and Al (each are 4 bits) */
+    skip_bits(&s->gb, 4); /* Ah */
+    point_transform= get_bits(&s->gb, 4); /* Al */
 
     for(i=0;i<nb_components;i++) 
         s->last_dc[i] = 1024;
 
     if (nb_components > 1) {
         /* interleaved stream */
-        mb_width = (s->width + s->h_max * 8 - 1) / (s->h_max * 8);
-        mb_height = (s->height + s->v_max * 8 - 1) / (s->v_max * 8);
+        mb_width  = (s->width  + s->h_max * block_size - 1) / (s->h_max * block_size);
+        mb_height = (s->height + s->v_max * block_size - 1) / (s->v_max * block_size);
     } else {
         h = s->h_max / s->h_count[comp_index[0]];
         v = s->v_max / s->v_count[comp_index[0]];
-        mb_width = (s->width + h * 8 - 1) / (h * 8);
-        mb_height = (s->height + v * 8 - 1) / (v * 8);
+        mb_width  = (s->width  + h * block_size - 1) / (h * block_size);
+        mb_height = (s->height + v * block_size - 1) / (v * block_size);
         nb_blocks[0] = 1;
         h_count[0] = 1;
         v_count[0] = 1;
     }
-    
-    for(mb_y = 0; mb_y < mb_height; mb_y++) {
+
+    if(s->lossless){
+        if(s->rgb){ //FIXME cleanup
+            const int linesize= s->linesize[0];
+            for(mb_y = 0; mb_y < mb_height; mb_y++) {
+                for(mb_x = 0; mb_x < mb_width; mb_x++) {
+                    if (s->restart_interval && !s->restart_count)
+                        s->restart_count = s->restart_interval;
+
+                    if(mb_x==0 || mb_y==0 || s->interlaced || 1){
+                        for(i=0;i<3;i++) {
+                            uint8_t *ptr;
+                            int c, pred;
+                            c = comp_index[i];
+
+                            ptr = s->current_picture[0] + (linesize * mb_y) + 4*mb_x + c; //FIXME optimize this crap
+                            if(mb_y==0){
+                                if(mb_x==0){
+                                    pred= 128 << point_transform;
+                                }else{
+                                    pred= ptr[-4];
+                                }
+                            }else{
+                                if(mb_x==0){
+                                    pred= ptr[-linesize];
+                                }else{
+                                    pred= predict(ptr, linesize, predictor, 4);
+                                }
+                            }
+                            if (s->interlaced && s->bottom_field)
+                                ptr += linesize >> 1;
+                            *ptr= pred + (mjpeg_decode_dc(s, dc_index[i]) << point_transform);
+                        }
+                    }else{
+                        for(i=0;i<3;i++) {
+                            uint8_t *ptr;
+                            int c, pred;
+                            c = comp_index[i];
+
+                            ptr = s->current_picture[0] + (linesize * mb_y) + 4*mb_x + c; //FIXME optimize this crap
+                            pred= predict(ptr, linesize, predictor, 4);
+                            *ptr= pred + (mjpeg_decode_dc(s, dc_index[i]) << point_transform);
+                        }
+                    }
+                    /* (< 1350) buggy workaround for Spectralfan.mov, should be fixed */
+                    if (s->restart_interval && (s->restart_interval < 1350) &&
+                        !--s->restart_count) {
+                        align_get_bits(&s->gb);
+                        skip_bits(&s->gb, 16); /* skip RSTn */
+                    }
+                }
+            }
+        }else{
+            for(mb_y = 0; mb_y < mb_height; mb_y++) {
+                for(mb_x = 0; mb_x < mb_width; mb_x++) {
+                    if (s->restart_interval && !s->restart_count)
+                        s->restart_count = s->restart_interval;
+
+                    if(mb_x==0 || mb_y==0 || s->interlaced || 1){
+                        for(i=0;i<nb_components;i++) {
+                            uint8_t *ptr;
+                            int x, y, c, linesize;
+                            n = nb_blocks[i];
+                            c = comp_index[i];
+                            h = h_count[i];
+                            v = v_count[i];
+                            x = 0;
+                            y = 0;
+                            linesize= s->linesize[c];
+                            
+                            for(j=0; j<n; j++) {
+                                int pred;
+
+                                ptr = s->current_picture[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+                                if(y==0 && mb_y==0){
+                                    if(x==0 && mb_x==0){
+                                        pred= 128 << point_transform;
+                                    }else{
+                                        pred= ptr[-1];
+                                    }
+                                }else{
+                                    if(x==0 && mb_x==0){
+                                        pred= ptr[-linesize];
+                                    }else{
+                                        pred= predict(ptr, linesize, predictor, 1);
+                                    }
+                                }
+                                
+                                if (s->interlaced && s->bottom_field)
+                                    ptr += linesize >> 1;
+                                *ptr= pred + (mjpeg_decode_dc(s, dc_index[i]) << point_transform);
+
+                                if (++x == h) {
+                                    x = 0;
+                                    y++;
+                                }
+                            }
+                        }
+                    }else{
+                        for(i=0;i<nb_components;i++) {
+                            uint8_t *ptr;
+                            int x, y, c, linesize;
+                            n = nb_blocks[i];
+                            c = comp_index[i];
+                            h = h_count[i];
+                            v = v_count[i];
+                            x = 0;
+                            y = 0;
+                            linesize= s->linesize[c];
+                            
+                            for(j=0; j<n; j++) {
+                                int pred;
+
+                                ptr = s->current_picture[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+                                pred= predict(ptr, linesize, predictor, 1);
+                                *ptr= pred + (mjpeg_decode_dc(s, dc_index[i]) << point_transform);
+                                if (++x == h) {
+                                    x = 0;
+                                    y++;
+                                }
+                            }
+                        }
+                    }
+                    /* (< 1350) buggy workaround for Spectralfan.mov, should be fixed */
+                    if (s->restart_interval && (s->restart_interval < 1350) &&
+                        !--s->restart_count) {
+                        align_get_bits(&s->gb);
+                        skip_bits(&s->gb, 16); /* skip RSTn */
+                    }
+                }
+            }
+        }
+    }else{
+      for(mb_y = 0; mb_y < mb_height; mb_y++) {
         for(mb_x = 0; mb_x < mb_width; mb_x++) {
+            if (s->restart_interval && !s->restart_count)
+                s->restart_count = s->restart_interval;
+
             for(i=0;i<nb_components;i++) {
                 uint8_t *ptr;
                 int x, y, c;
@@ -1057,8 +1228,6 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
                 v = v_count[i];
                 x = 0;
                 y = 0;
-		if (s->restart_interval && !s->restart_count)
-		    s->restart_count = s->restart_interval;
                 for(j=0;j<n;j++) {
                     memset(s->block, 0, sizeof(s->block));
                     if (decode_block(s, s->block, i, 
@@ -1091,6 +1260,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
             }
         }
     }
+  }
     ret = 0;
  the_end:
     emms_c();
@@ -1418,7 +1588,15 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
                     mjpeg_decode_dht(s);
                     break;
                 case SOF0:
-                    if (mjpeg_decode_sof0(s) < 0)
+                    s->lossless=0;
+                    s->rgb=0;
+                    if (mjpeg_decode_sof(s) < 0) 
+			return -1;
+                    break;
+                case SOF3:
+                    s->lossless=1;
+                    s->rgb=1; //FIXME 
+                    if (mjpeg_decode_sof(s) < 0) 
 			return -1;
                     break;
 		case EOI:
@@ -1443,7 +1621,10 @@ eoi_parser:
                         /* XXX: not complete test ! */
                         switch((s->h_count[0] << 4) | s->v_count[0]) {
                         case 0x11:
-                            avctx->pix_fmt = PIX_FMT_YUV444P;
+                            if(s->rgb){
+                                avctx->pix_fmt = PIX_FMT_RGBA32;
+                            }else
+                                avctx->pix_fmt = PIX_FMT_YUV444P;
                             break;
                         case 0x21:
                             avctx->pix_fmt = PIX_FMT_YUV422P;
@@ -1471,7 +1652,6 @@ eoi_parser:
 		    break;
 		case SOF1:
 		case SOF2:
-		case SOF3:
 		case SOF5:
 		case SOF6:
 		case SOF7:
@@ -1570,7 +1750,7 @@ read_header:
     {
 	init_get_bits(&s->gb, buf+sof_offs, (buf_end - (buf+sof_offs))*8);
 	s->start_code = SOF0;
-	if (mjpeg_decode_sof0(s) < 0)
+	if (mjpeg_decode_sof(s) < 0)
 	    return -1;
     }
 
