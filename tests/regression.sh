@@ -238,7 +238,7 @@ file=${outfile}ac3.rm
 do_ffmpeg $file -y -ab 128 -ac 2 -f s16le  -i $pcm_src -vn $file 
 
 # ac3 decoding
-do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst 
+#do_ffmpeg $pcm_dst -y -i $file -f wav $pcm_dst 
 fi
 
 ###################################
