@@ -1,7 +1,7 @@
-version 0.4.6:
+version 0.4.6pre1:
 
-- completely new mpeg audio layer 1/2/3 decoder rewritten from
-  scratch.
+- completely new integer only mpeg audio layer 1/2/3 decoder rewritten
+  from scratch.
 - recoded dct and motion vector search with gcc (no longer depends on
   nasm).
 - fix quantization bug in AC3 encoder.
@@ -19,6 +19,16 @@ version 0.4.6:
 - added first regression tests
 - added MPEG2 TS demux
 - new demux API for libav
+- more accurate and faster IDCT (Michael)
+- faster and entropy controlled motion search (Michael)
+- two pass video encoding (Michael)
+- new video rate control (Michael)
+- added MSMPEG4V1, MSMPEGV2 and WMV1 support (Michael)
+- great performance improvement of video encoders and decoders (Michael)
+- new and faster bit readers and vlc parsers (Michael)
+- high quality encoding mode : tries all macroblock/VLC types (Michael)
+- added DV video decoder
+- preliminary RTP/RTSP support in ffserver and libavformat
 
 version 0.4.5:
 
