@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4613
-#define LIBAVCODEC_BUILD_STR   "4613"
+#define LIBAVCODEC_BUILD       4614
+#define LIBAVCODEC_BUILD_STR   "4614"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -23,6 +23,7 @@ enum CodecID {
     CODEC_ID_MSMPEG4V2,
     CODEC_ID_MSMPEG4V3,
     CODEC_ID_WMV1,
+    CODEC_ID_WMV2,
     CODEC_ID_H263P,
     CODEC_ID_H263I,
 
@@ -97,6 +98,7 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_PASS1 0x0200  /* use internal 2pass ratecontrol in first  pass mode */
 #define CODEC_FLAG_PASS2 0x0400  /* use internal 2pass ratecontrol in second pass mode */
 #define CODEC_FLAG_EXTERN_HUFF 0x1000 /* use external huffman table (for mjpeg) */
+#define CODEC_FLAG_GRAY  0x2000 /* only decode/encode grayscale */
 
 /* codec capabilities */
 

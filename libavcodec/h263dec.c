@@ -124,6 +124,7 @@ uint64_t time= rdtsc();
     s->hurry_up= avctx->hurry_up;
     s->error_resilience= avctx->error_resilience;
     s->workaround_bugs= avctx->workaround_bugs;
+    s->flags= avctx->flags;
 
     /* no supplementary picture */
     if (buf_size == 0) {

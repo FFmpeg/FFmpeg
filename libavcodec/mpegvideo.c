@@ -155,10 +155,12 @@ int MPV_common_init(MpegEncContext *s)
         CHECKED_ALLOCZ(pict, c_size)
         s->last_picture_base[i] = pict;
         s->last_picture[i] = pict + pict_start;
+        if(i>0) memset(s->last_picture_base[i], 128, c_size);
     
         CHECKED_ALLOCZ(pict, c_size)
         s->next_picture_base[i] = pict;
         s->next_picture[i] = pict + pict_start;
+        if(i>0) memset(s->next_picture_base[i], 128, c_size);
         
         if (s->has_b_frames || s->codec_id==CODEC_ID_MPEG4) {
         /* Note the MPEG4 stuff is here cuz of buggy encoders which dont set the low_delay flag but 
@@ -166,6 +168,7 @@ int MPV_common_init(MpegEncContext *s)
             CHECKED_ALLOCZ(pict, c_size)
             s->aux_picture_base[i] = pict;
             s->aux_picture[i] = pict + pict_start;
+            if(i>0) memset(s->aux_picture_base[i], 128, c_size);
         }
     }
     
@@ -886,6 +889,8 @@ if(s->quarter_sample)
     pix_op[dxy](dest_y, ptr, linesize, h);
     pix_op[dxy](dest_y + 8, ptr + 8, linesize, h);
 
+    if(s->flags&CODEC_FLAG_GRAY) return;
+
     if (s->out_format == FMT_H263) {
         dxy = 0;
         if ((motion_x & 3) != 0)
@@ -949,6 +954,8 @@ static inline void qpel_motion(MpegEncContext *s,
     qpix_op[dxy](dest_y + linesize*8    , ptr + linesize*8    , linesize, linesize, motion_x&3, motion_y&3);
     qpix_op[dxy](dest_y + linesize*8 + 8, ptr + linesize*8 + 8, linesize, linesize, motion_x&3, motion_y&3);
     
+    if(s->flags&CODEC_FLAG_GRAY) return;
+
     mx= (motion_x>>1) | (motion_x&1);
     my= (motion_y>>1) | (motion_y&1);
 
@@ -1037,6 +1044,8 @@ static inline void MPV_motion(MpegEncContext *s,
             dest = dest_y + ((i & 1) * 8) + (i >> 1) * 8 * s->linesize;
             pix_op[dxy](dest, ptr, s->linesize, 8);
         }
+    
+        if(s->flags&CODEC_FLAG_GRAY) break;
         /* In case of 8X8, we construct a single chroma motion vector
            with a special rounding */
         mx = 0;
@@ -1292,16 +1301,20 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
                 add_dequant_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
                 add_dequant_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
-                add_dequant_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
-                add_dequant_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+                if(!(s->flags&CODEC_FLAG_GRAY)){
+                    add_dequant_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
+                    add_dequant_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+                }
             } else {
                 add_dct(s, block[0], 0, dest_y, dct_linesize);
                 add_dct(s, block[1], 1, dest_y + 8, dct_linesize);
                 add_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
                 add_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
-                add_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
-                add_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+                if(!(s->flags&CODEC_FLAG_GRAY)){
+                    add_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
+                    add_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+                }
             }
         } else {
             /* dct only in intra block */
@@ -1310,8 +1323,10 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
             put_dct(s, block[2], 2, dest_y + dct_offset, dct_linesize);
             put_dct(s, block[3], 3, dest_y + dct_offset + 8, dct_linesize);
 
-            put_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
-            put_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+            if(!(s->flags&CODEC_FLAG_GRAY)){
+                put_dct(s, block[4], 4, dest_cb, s->linesize >> 1);
+                put_dct(s, block[5], 5, dest_cr, s->linesize >> 1);
+            }
         }
     }
  the_end:
