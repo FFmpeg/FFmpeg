@@ -790,8 +790,9 @@ void OPNAME ## mpeg4_qpel16_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstSt
         "addl %4, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b				\n\t"\
-        : "+r"(src), "+r"(dst), "+g"(h)\
-        : "r"(srcStride), "r"(dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
+        : "+a"(src), "+b"(dst), "+c"(h)\
+        : "d"(srcStride), "S"(dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
+        : "memory"\
     );\
 }\
 \
@@ -835,6 +836,7 @@ static void OPNAME ## mpeg4_qpel16_h_lowpass_3dnow(uint8_t *dst, uint8_t *src, i
             "packuswb %%mm1, %%mm0	\n\t"\
             OP_3DNOW(%%mm0, 8(%1), %%mm1, q)\
             :: "r"(temp), "r"(dst), "m"(ROUNDER)\
+            : "memory"\
         );\
         dst+=dstStride;\
         src+=srcStride;\
@@ -901,8 +903,9 @@ void OPNAME ## mpeg4_qpel8_h_lowpass_mmx2(uint8_t *dst, uint8_t *src, int dstStr
         "addl %4, %1			\n\t"\
         "decl %2			\n\t"\
         " jnz 1b			\n\t"\
-        : "+r"(src), "+r"(dst), "+r"(h)\
-        : "r"(srcStride), "r"(dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
+        : "+a"(src), "+b"(dst), "+c"(h)\
+        : "S"(srcStride), "D"(dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(temp), "m"(ROUNDER)\
+        : "memory"\
     );\
 }\
 \
@@ -930,6 +933,7 @@ static void OPNAME ## mpeg4_qpel8_h_lowpass_3dnow(uint8_t *dst, uint8_t *src, in
             "packuswb %%mm1, %%mm0	\n\t"\
             OP_3DNOW(%%mm0, (%1), %%mm1, q)\
             :: "r"(temp), "r"(dst), "m"(ROUNDER)\
+            :"memory"\
         );\
         dst+=dstStride;\
         src+=srcStride;\
@@ -965,6 +969,7 @@ static void OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src,
         " jnz 1b			\n\t"\
         : "+r" (src), "+r" (temp_ptr), "+r"(count)\
         : "r" (srcStride), "r"(2*8*17), "r"(3*8*17)\
+        : "memory"\
     );\
     \
     temp_ptr= temp;\
@@ -1011,6 +1016,7 @@ static void OPNAME ## mpeg4_qpel16_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src,
         \
         : "+r"(temp_ptr), "+r"(dst), "+r"(count)\
         : "r"(dstStride), "r"(2*dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(ROUNDER), "g"(4-14*dstStride)\
+        :"memory"\
     );\
 }\
 \
@@ -1035,6 +1041,7 @@ void OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dst
         " jnz 1b			\n\t"\
         : "+r" (src), "+r" (temp_ptr), "+r"(count)\
         : "r" (srcStride)\
+        : "memory"\
     );\
     \
     temp_ptr= temp;\
@@ -1069,7 +1076,8 @@ void OPNAME ## mpeg4_qpel8_v_lowpass_ ## MMX(uint8_t *dst, uint8_t *src, int dst
          \
         : "+r"(temp_ptr), "+r"(dst), "+g"(count)\
         : "r"(dstStride), "r"(2*dstStride), /*"m"(ff_pw_20), "m"(ff_pw_3),*/ "m"(ROUNDER), "g"(4-6*dstStride)\
-    );\
+        : "memory"\
+   );\
 }\
 \
 static void OPNAME ## qpel8_mc00_ ## MMX (UINT8 *dst, UINT8 *src, int stride){\

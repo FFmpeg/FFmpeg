@@ -85,8 +85,8 @@ static void DEF(put, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int
 	"addl	%5, %3			\n\t"
 	"subl	$4, %0			\n\t"
 	"jnz	1b			\n\t"
-	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
-	:"r"(src1Stride), "r"(dstStride)
+	:"+a"(h), "+b"(src1), "+c"(src2), "+d"(dst)
+	:"S"(src1Stride), "D"(dstStride)
 	:"memory");
 }
 
