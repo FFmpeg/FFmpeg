@@ -234,8 +234,7 @@ TARGET_OS=`( uname -s ) 2>&1`
 # find source path
 # XXX: we assume an absolute path is given when launching configure, 
 # except in './configure' case.
-source_path=${0%configure}
-source_path=${source_path%/}
+source_path="`echo $0 | sed -e 's#/configure##'`"
 source_path_used="yes"
 if test -z "$source_path" -o "$source_path" = "." ; then
     source_path=`pwd`
@@ -745,8 +744,7 @@ if test "$lshared" = "yes" ; then
   echo "PIC=-fPIC" >> config.mak
 fi
 echo "EXTRALIBS=$extralibs" >> config.mak
-echo -n "VERSION=" >>config.mak
-head $source_path/VERSION >>config.mak
+echo "VERSION=`head $source_path/VERSION`" >>config.mak
 echo "" >>config.mak
 # if you do not want to use encoders, disable that.
 echo "#define CONFIG_ENCODERS 1" >> $TMPH
