@@ -79,6 +79,7 @@ void clear_blocks_c(DCTELEM *blocks);
 
 /* add and put pixel (decoding) */
 // blocksizes for op_pixels_func are 8x4,8x8 16x8 16x16
+//h for op_pixels_func is limited to {width/2, width} but never larger than 16 and never smaller then 4
 typedef void (*op_pixels_func)(uint8_t *block/*align width (8 or 16)*/, const uint8_t *pixels/*align 1*/, int line_size, int h);
 typedef void (*tpel_mc_func)(uint8_t *block/*align width (8 or 16)*/, const uint8_t *pixels/*align 1*/, int line_size, int w, int h);
 typedef void (*qpel_mc_func)(uint8_t *dst/*align width (8 or 16)*/, uint8_t *src/*align 1*/, int stride);
@@ -109,7 +110,8 @@ static void a(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
 }
 
 /* motion estimation */
-
+// h is limited to {width/2, width, 2*width} but never larger than 16 and never smaller then 2
+// allthough currently h<4 is not used as functions with width <8 are not used and neither implemented
 typedef int (*me_cmp_func)(void /*MpegEncContext*/ *s, uint8_t *blk1/*align width (8 or 16)*/, uint8_t *blk2/*align 1*/, int line_size, int h)/* __attribute__ ((const))*/;
 
 
