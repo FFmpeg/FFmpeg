@@ -897,7 +897,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		    st->codec.extradata = av_mallocz(st->codec.extradata_size);
 		    get_buffer(pb, st->codec.extradata, st->codec.extradata_size);
 		}
-                st->codec.codec_tag = st->codec.fourcc = tag1;
+                st->codec.codec_tag = tag1;
 		st->codec.codec_id = codec_get_id(codec_bmp_tags, tag1);
             }
             pos2 = url_ftell(pb);

@@ -111,12 +111,11 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec,
     id = get_le16(pb);
     codec->codec_type = CODEC_TYPE_AUDIO;
     codec->codec_tag = id;
-    codec->fourcc = id;
     codec->channels = get_le16(pb);
     codec->sample_rate = get_le32(pb);
     codec->bit_rate = get_le32(pb) * 8;
     codec->block_align = get_le16(pb);
-    codec->frame_bits = get_le16(pb); /* bits per sample */
+    codec->bits_per_sample = get_le16(pb); /* bits per sample */
     codec->codec_id = wav_codec_get_id(id, codec->frame_bits);
     if (has_extra_data) {
 	codec->extradata_size = get_le16(pb);

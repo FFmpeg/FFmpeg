@@ -15,8 +15,8 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4660
-#define LIBAVCODEC_BUILD_STR   "4660"
+#define LIBAVCODEC_BUILD       4661
+#define LIBAVCODEC_BUILD_STR   "4661"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -535,10 +535,10 @@ typedef struct AVCodecContext {
     /**
      * number of bits used for the previously encoded frame.
      * - encoding: set by lavc
-     * - decoding: - for audio - bits_per_sample
+     * - decoding: unused
      */
     int frame_bits;
-                 
+
     /**
      * private data of the user, can be used to carry app specific stuff.
      * - encoding: set by user
@@ -549,7 +549,14 @@ typedef struct AVCodecContext {
     char codec_name[32];
     enum CodecType codec_type; /* see CODEC_TYPE_xxx */
     enum CodecID codec_id; /* see CODEC_ID_xxx */
-    unsigned int codec_tag;  ///< codec tag, only used if unknown codec
+    
+    /**
+     * fourcc (LSB first, so "ABCD" -> ('D'<<24) + ('C'<<16) + ('B'<<8) + 'A').
+     * this is used to workaround some encoder bugs
+     * - encoding: unused
+     * - decoding: set by user, will be converted to upper case by lavc during init
+     */
+    unsigned int codec_tag;
     
     /**
      * workaround bugs in encoders which sometimes cannot be detected automatically.
@@ -782,14 +789,6 @@ typedef struct AVCodecContext {
      */
     float dark_masking;
     
-    /**
-     * fourcc (LSB first, so "ABCD" -> ('D'<<24) + ('C'<<16) + ('B'<<8) + 'A').
-     * this is used to workaround some encoder bugs
-     * - encoding: unused
-     * - decoding: set by user, will be converted to upper case by lavc during init
-     */
-    int fourcc;
-
     /**
      * idct algorithm, see FF_IDCT_* below.
      * - encoding: set by user

@@ -339,10 +339,10 @@ int MPV_common_init(MpegEncContext *s)
     yc_size = y_size + 2 * c_size;
 
     /* convert fourcc to upper case */
-    s->avctx->fourcc=   toupper( s->avctx->fourcc     &0xFF)          
-                     + (toupper((s->avctx->fourcc>>8 )&0xFF)<<8 )
-                     + (toupper((s->avctx->fourcc>>16)&0xFF)<<16) 
-                     + (toupper((s->avctx->fourcc>>24)&0xFF)<<24);
+    s->avctx->codec_tag=   toupper( s->avctx->codec_tag     &0xFF)          
+                        + (toupper((s->avctx->codec_tag>>8 )&0xFF)<<8 )
+                        + (toupper((s->avctx->codec_tag>>16)&0xFF)<<16) 
+                        + (toupper((s->avctx->codec_tag>>24)&0xFF)<<24);
 
     CHECKED_ALLOCZ(s->allocated_edge_emu_buffer, (s->width+64)*2*17*2); //(width + edge + align)*interlaced*MBsize*tolerance
     s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*17;
