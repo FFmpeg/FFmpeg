@@ -449,7 +449,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, ByteIOContext *pb,
 
             /* load the palette into internal data structure */
             first_color = LE_16(&scratch[0]);
-            last_color = LE_16(&scratch[2]);
+            last_color = first_color + LE_16(&scratch[2]);
             /* sanity check (since they are 16 bit values) */
             if ((first_color > 0xFF) || (last_color > 0xFF)) {
                 debug_ipmovie("demux_ipmovie: set_palette indices out of range (%d -> %d)\n",
