@@ -149,8 +149,8 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
 //    printf("%d %d %d\n", picture_number, (int)wanted_bits, (int)s->total_bits);
     
     if(s->pict_type==B_TYPE){
-        qmin= (int)(qmin*s->b_quant_factor+0.5);
-        qmax= (int)(qmax*s->b_quant_factor+0.5);
+        qmin= (int)(qmin*s->b_quant_factor+s->b_quant_offset + 0.5);
+        qmax= (int)(qmax*s->b_quant_factor+s->b_quant_offset + 0.5);
     }
     if(qmin<1) qmin=1;
     if(qmax>31) qmax=31;
@@ -171,12 +171,12 @@ int ff_rate_estimate_qscale(MpegEncContext *s)
 
         q= 1/((1/long_term_q - 1/short_term_q)*s->qcompress + 1/short_term_q);
     }else if(s->pict_type==B_TYPE){
-        q= (int)(s->last_non_b_qscale*s->b_quant_factor+0.5);
+        q= (int)(s->last_non_b_qscale*s->b_quant_factor+s->b_quant_offset + 0.5);
     }else{ //P Frame
         int i;
         int diff, best_diff=1000000000;
         for(i=1; i<=31; i++){
-            diff= predict(&s->p_pred, i, s->mc_mb_var) - (double)s->bit_rate/fps;
+            diff= predict(&s->p_pred, i, s->mc_mb_var_sum) - (double)s->bit_rate/fps;
             if(diff<0) diff= -diff;
             if(diff<best_diff){
                 best_diff= diff;
@@ -288,7 +288,7 @@ static int init_pass2(MpegEncContext *s)
     avg_quantizer[P_TYPE]= 
     avg_quantizer[I_TYPE]=   (complexity[I_TYPE]+complexity[P_TYPE] + complexity[B_TYPE]/s->b_quant_factor) 
                            / (all_available_bits - all_const_bits);
-    avg_quantizer[B_TYPE]= avg_quantizer[P_TYPE]*s->b_quant_factor;
+    avg_quantizer[B_TYPE]= avg_quantizer[P_TYPE]*s->b_quant_factor + s->b_quant_offset;
 //printf("avg quantizer: %f %f\n", avg_quantizer[P_TYPE], avg_quantizer[B_TYPE]);
 
     for(i=0; i<5; i++){
@@ -308,8 +308,8 @@ static int init_pass2(MpegEncContext *s)
             int qmax= s->qmax;
 
             if(pict_type==B_TYPE){
-                qmin= (int)(qmin*s->b_quant_factor+0.5);
-                qmax= (int)(qmax*s->b_quant_factor+0.5);
+                qmin= (int)(qmin*s->b_quant_factor+s->b_quant_offset + 0.5);
+                qmax= (int)(qmax*s->b_quant_factor+s->b_quant_offset + 0.5);
             }
             if(qmin<1) qmin=1;
             if(qmax>31) qmax=31;
@@ -342,7 +342,7 @@ static int init_pass2(MpegEncContext *s)
             q= 1/((1/avg_quantizer[pict_type] - 1/short_term_q)*s->qcompress + 1/short_term_q);
             if     (q<qmin) q=qmin;
             else if(q>qmax) q=qmax;
-//printf("lq:%f, sq:%f t:%f q:%f\n", avg_quantizer[rce->pict_type], short_term_q, bits_left, q);
+printf("lq:%f, sq:%f t:%f q:%f\n", avg_quantizer[rce->pict_type], short_term_q, bits_left, q);
             rce->new_qscale= q;
         }
 
@@ -380,8 +380,8 @@ int ff_rate_estimate_qscale_pass2(MpegEncContext *s)
 //    printf("%d %d %d\n", picture_number, (int)wanted_bits, (int)s->total_bits);
     
     if(s->pict_type==B_TYPE){
-        qmin= (int)(qmin*s->b_quant_factor+0.5);
-        qmax= (int)(qmax*s->b_quant_factor+0.5);
+        qmin= (int)(qmin*s->b_quant_factor+s->b_quant_offset + 0.5);
+        qmax= (int)(qmax*s->b_quant_factor+s->b_quant_offset + 0.5);
     }
     if(qmin<1) qmin=1;
     if(qmax>31) qmax=31;
