@@ -1406,15 +1406,16 @@ static int decode_thread(void *arg)
 #endif
         if (is->seek_req) {
             /* XXX: must lock decoder threads */
-            if (is->audio_stream >= 0) {
-                packet_queue_flush(&is->audioq);
-            }
-            if (is->video_stream >= 0) {
-                packet_queue_flush(&is->videoq);
-            }
             ret = av_seek_frame(is->ic, -1, is->seek_pos);
             if (ret < 0) {
                 fprintf(stderr, "%s: error while seeking\n", is->ic->filename);
+            }else{
+                if (is->audio_stream >= 0) {
+                    packet_queue_flush(&is->audioq);
+                }
+                if (is->video_stream >= 0) {
+                    packet_queue_flush(&is->videoq);
+                }
             }
             is->seek_req = 0;
         }

@@ -496,7 +496,8 @@ static int avi_load_index(AVFormatContext *s)
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
     uint32_t tag, size;
-
+    offset_t pos= url_ftell(pb);
+    
     url_fseek(pb, avi->movi_end, SEEK_SET);
 #ifdef DEBUG_SEEK
     printf("movi_end=0x%llx\n", avi->movi_end);
@@ -529,6 +530,7 @@ static int avi_load_index(AVFormatContext *s)
         }
     }
  the_end:
+    url_fseek(pb, pos, SEEK_SET);
     return 0;
 }
 
