@@ -360,7 +360,7 @@ static void common_init(MpegEncContext *s)
 {
 
     s->y_dc_scale_table=
-    s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
+    s->c_dc_scale_table= mpeg2_dc_scale_table[s->intra_dc_precision];
 
 }
 
@@ -837,6 +837,27 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
 
 static inline void encode_dc(MpegEncContext *s, int diff, int component)
 {
+  if(((unsigned) (diff+255)) >= 511){
+        int index;
+
+        if(diff<0){
+            index= av_log2_16bit(-2*diff);
+            diff--;
+        }else{
+            index= av_log2_16bit(2*diff);
+        }
+        if (component == 0) {
+            put_bits(
+                &s->pb, 
+                vlc_dc_lum_bits[index] + index,
+                (vlc_dc_lum_code[index]<<index) + (diff & ((1 << index) - 1)));
+        }else{
+            put_bits(
+                &s->pb, 
+                vlc_dc_chroma_bits[index] + index,
+                (vlc_dc_chroma_code[index]<<index) + (diff & ((1 << index) - 1)));
+        }
+  }else{
     if (component == 0) {
         put_bits(
 	    &s->pb, 
@@ -848,6 +869,7 @@ static inline void encode_dc(MpegEncContext *s, int diff, int component)
 	    mpeg1_chr_dc_uni[diff+255]&0xFF,
 	    mpeg1_chr_dc_uni[diff+255]>>8);
     }
+  }
 }
 
 static void mpeg1_encode_block(MpegEncContext *s, 

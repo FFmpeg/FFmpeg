@@ -890,6 +890,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->quarter_sample= (avctx->flags & CODEC_FLAG_QPEL)!=0;
     s->mpeg_quant= avctx->mpeg_quant;
     s->rtp_mode= !!avctx->rtp_payload_size;
+    s->intra_dc_precision= avctx->intra_dc_precision;
 
     if (s->gop_size <= 1) {
         s->intra_only = 1;
@@ -4009,7 +4010,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
     for(i=0; i<3; i++){
         /* init last dc values */
         /* note: quant matrix value (8) is implied here */
-        s->last_dc[i] = 128;
+        s->last_dc[i] = 128 << s->intra_dc_precision;
         
         s->current_picture_ptr->error[i] = 0;
     }

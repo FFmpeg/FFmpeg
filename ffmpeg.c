@@ -164,6 +164,7 @@ static int debug = 0;
 static int debug_mv = 0;
 static int me_threshold = 0;
 static int mb_threshold = 0;
+static int intra_dc_precision = 0;
 extern int loop_input; /* currently a hack */
 
 static int gop_size = 12;
@@ -2893,6 +2894,7 @@ static void opt_output_file(const char *filename)
                 video_enc->idct_algo = idct_algo;
                 video_enc->me_threshold= me_threshold;
                 video_enc->mb_threshold= mb_threshold;
+                video_enc->intra_dc_precision= intra_dc_precision;
                 video_enc->strict_std_compliance = strict;
                 video_enc->error_rate = error_rate;
                 video_enc->noise_reduction= noise_reduction;
@@ -3580,6 +3582,7 @@ const OptionDef options[] = {
     { "qns", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qns}, "quantization noise shaping", "" },
     { "sc_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_sc_threshold}, "scene change threshold", "threshold" },
     { "me_range", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_range}, "limit motion vectors range (1023 for DivX player)", "range" },
+    { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },
