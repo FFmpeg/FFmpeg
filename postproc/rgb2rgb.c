@@ -1,7 +1,9 @@
 #include <inttypes.h>
 #include "../config.h"
 #include "rgb2rgb.h"
+#ifdef HAVE_MMX
 #include "mmx.h"
+#endif
 #include "../mmx_defs.h"
 
 void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
