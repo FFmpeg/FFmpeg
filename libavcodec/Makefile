@@ -71,7 +71,7 @@ tests: apiexample cpuid_test $(TESTS)
 
 $(LIB): $(OBJS) $(ASM_OBJS)
 	rm -f $@
-	$(AR) rcs $@ $(OBJS) $(ASM_OBJS)
+	$(AR) rc $@ $(OBJS) $(ASM_OBJS)
 
 $(SLIB): $(OBJS) $(ASM_OBJS)
 	rm -f $@
