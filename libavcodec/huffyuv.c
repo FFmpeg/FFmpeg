@@ -378,7 +378,7 @@ static int decode_init(AVCodecContext *avctx)
     s->avctx= avctx;
     s->flags= avctx->flags;
         
-    dsputil_init(&s->dsp, avctx->dsp_mask);
+    dsputil_init(&s->dsp, avctx);
     
     width= s->width= avctx->width;
     height= s->height= avctx->height;
@@ -499,7 +499,7 @@ static int encode_init(AVCodecContext *avctx)
     s->avctx= avctx;
     s->flags= avctx->flags;
         
-    dsputil_init(&s->dsp, avctx->dsp_mask);
+    dsputil_init(&s->dsp, avctx);
     
     width= s->width= avctx->width;
     height= s->height= avctx->height;
