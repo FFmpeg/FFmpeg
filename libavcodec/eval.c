@@ -115,12 +115,16 @@ static void evalPrimary(Parser *p){
     p->s++; // "("
     evalExpression(p);
     d= pop(p);
-    p->s++; // ")" or ","
-    if(p->s[-1]== ','){
+    if(p->s[0]== ','){
+        p->s++; // ","
         evalExpression(p);
         d2= pop(p);
-        p->s++; // ")"
     }
+    if(p->s[0] != ')'){
+        av_log(NULL, AV_LOG_ERROR, "Parser: missing ) in \"%s\"\n", next);
+        return;
+    }
+    p->s++; // ")"
     
          if( strmatch(next, "sinh"  ) ) d= sinh(d);
     else if( strmatch(next, "cosh"  ) ) d= cosh(d);
@@ -136,7 +140,9 @@ static void evalPrimary(Parser *p){
     else if( strmatch(next, "max"   ) ) d= d > d2 ? d : d2;
     else if( strmatch(next, "min"   ) ) d= d < d2 ? d : d2;
     else if( strmatch(next, "gt"    ) ) d= d > d2 ? 1.0 : 0.0;
+    else if( strmatch(next, "gte"    ) ) d= d >= d2 ? 1.0 : 0.0;
     else if( strmatch(next, "lt"    ) ) d= d > d2 ? 0.0 : 1.0;
+    else if( strmatch(next, "lte"    ) ) d= d >= d2 ? 0.0 : 1.0;
     else if( strmatch(next, "eq"    ) ) d= d == d2 ? 1.0 : 0.0;
 //    else if( strmatch(next, "l1"    ) ) d= 1 + d2*(d - 1);
 //    else if( strmatch(next, "sq01"  ) ) d= (d >= 0.0 && d <=1.0) ? 1.0 : 0.0;
@@ -164,10 +170,6 @@ static void evalPrimary(Parser *p){
         }
     }
     
-    if(p->s[-1]!= ')'){
-        av_log(NULL, AV_LOG_ERROR, "Parser: missing ) in \"%s\"\n", next);
-        return;
-    }
     push(p, d);
 }      
        
