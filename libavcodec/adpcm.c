@@ -524,12 +524,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_IMA_WAV:
-        if (buf_size > BLKSIZE) {
-            if (avctx->block_align != 0)
-                buf_size = avctx->block_align;
-            else
-                buf_size = BLKSIZE;
-        }
+        if (avctx->block_align != 0 && buf_size > avctx->block_align)
+            buf_size = avctx->block_align;
+
 	// XXX: do as per-channel loop
         cs = &(c->status[0]);
         cs->predictor = (*src++) & 0x0FF;
@@ -605,13 +602,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
         break;
     case CODEC_ID_ADPCM_MS:
-
-        if (buf_size > BLKSIZE) {
-            if (avctx->block_align != 0)
-                buf_size = avctx->block_align;
-            else
-                buf_size = BLKSIZE;
-        }
+        if (avctx->block_align != 0 && buf_size > avctx->block_align)
+            buf_size = avctx->block_align;
         n = buf_size - 7 * avctx->channels;
         if (n < 0)
             return -1;
