@@ -197,16 +197,18 @@ void j_rev_dct(DCTBLOCK data)
 
     register int *idataptr = (int*)dataptr;
 
+    /* WARNING: we do the same permutation as MMX idct to simplify the
+       video core */
     d0 = dataptr[0];
-    d1 = dataptr[1];
-    d2 = dataptr[2];
-    d3 = dataptr[3];
-    d4 = dataptr[4];
-    d5 = dataptr[5];
-    d6 = dataptr[6];
+    d2 = dataptr[1];
+    d4 = dataptr[2];
+    d6 = dataptr[3];
+    d1 = dataptr[4];
+    d3 = dataptr[5];
+    d5 = dataptr[6];
     d7 = dataptr[7];
 
-    if ((d1 == 0) && (idataptr[1] | idataptr[2] | idataptr[3]) == 0) {
+    if ((d1 | d2 | d3 | d4 | d5 | d6 | d7) == 0) {
       /* AC terms all zero */
       if (d0) {
 	  /* Compute a 32 bit value to assign. */
