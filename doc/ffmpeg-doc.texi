@@ -1124,6 +1124,10 @@ please use av_log() instead.
 
     Never revert changes made a long time ago or buggy code. Fix it in the
     normal way instead.
+@item
+    Never write to not allocated memory, never write over the end of arrays, 
+    always check values read from some untrusted source before using them as index
+    into an array or otherwise risky things.
 @end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
