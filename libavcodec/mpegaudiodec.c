@@ -224,7 +224,6 @@ static inline int l2_unscale_group(int steps, int mant, int scale_factor)
 /* compute value^(4/3) * 2^(exponent/4). It normalized to FRAC_BITS */
 static inline int l3_unscale(int value, int exponent)
 {
-
     unsigned int m;
     int e;
 
@@ -323,7 +322,7 @@ static int decode_init(AVCodecContext * avctx)
     avctx->sample_fmt= SAMPLE_FMT_S16;
 #endif    
     
-    if(avctx->antialias_algo == FF_AA_INT)
+    if(avctx->antialias_algo != FF_AA_FLOAT)
         s->compute_antialias= compute_antialias_integer;
     else
         s->compute_antialias= compute_antialias_float;
@@ -450,10 +449,10 @@ static int decode_init(AVCodecContext * avctx)
             ci = ci_table[i];
             cs = 1.0 / sqrt(1.0 + ci * ci);
             ca = cs * ci;
-            csa_table[i][0] = FIX(cs);
-            csa_table[i][1] = FIX(ca);
-            csa_table[i][2] = FIX(ca) + FIX(cs);
-            csa_table[i][3] = FIX(ca) - FIX(cs); 
+            csa_table[i][0] = FIXHR(cs/4);
+            csa_table[i][1] = FIXHR(ca/4);
+            csa_table[i][2] = FIXHR(ca/4) + FIXHR(cs/4);
+            csa_table[i][3] = FIXHR(ca/4) - FIXHR(cs/4); 
             csa_table_float[i][0] = cs;
             csa_table_float[i][1] = ca;
             csa_table_float[i][2] = ca + cs;
@@ -1911,8 +1910,8 @@ static void compute_stereo(MPADecodeContext *s,
 static void compute_antialias_integer(MPADecodeContext *s,
                               GranuleDef *g)
 {
-    int32_t *ptr, *p0, *p1, *csa;
-    int n, i, j;
+    int32_t *ptr, *csa;
+    int n, i;
 
     /* we antialias only "long" bands */
     if (g->block_type == 2) {
@@ -1926,35 +1925,24 @@ static void compute_antialias_integer(MPADecodeContext *s,
     
     ptr = g->sb_hybrid + 18;
     for(i = n;i > 0;i--) {
-        p0 = ptr - 1;
-        p1 = ptr;
-        csa = &csa_table[0][0];       
-        for(j=0;j<4;j++) {
-            int tmp0 = *p0;
-            int tmp1 = *p1;
-#if 0
-            *p0 = FRAC_RND(MUL64(tmp0, csa[0]) - MUL64(tmp1, csa[1]));
-            *p1 = FRAC_RND(MUL64(tmp0, csa[1]) + MUL64(tmp1, csa[0]));
-#else
-            int64_t tmp2= MUL64(tmp0 + tmp1, csa[0]);
-            *p0 = FRAC_RND(tmp2 - MUL64(tmp1, csa[2]));
-            *p1 = FRAC_RND(tmp2 + MUL64(tmp0, csa[3]));
-#endif
-            p0--; p1++;
-            csa += 4;
-            tmp0 = *p0;
-            tmp1 = *p1;
-#if 0
-            *p0 = FRAC_RND(MUL64(tmp0, csa[0]) - MUL64(tmp1, csa[1]));
-            *p1 = FRAC_RND(MUL64(tmp0, csa[1]) + MUL64(tmp1, csa[0]));
-#else
-            tmp2= MUL64(tmp0 + tmp1, csa[0]);
-            *p0 = FRAC_RND(tmp2 - MUL64(tmp1, csa[2]));
-            *p1 = FRAC_RND(tmp2 + MUL64(tmp0, csa[3]));
-#endif
-            p0--; p1++;
-            csa += 4;
-        }
+        int tmp0, tmp1, tmp2;
+        csa = &csa_table[0][0];
+#define INT_AA(j) \
+            tmp0 = 4*(ptr[-1-j]);\
+            tmp1 = 4*(ptr[   j]);\
+            tmp2= MULH(tmp0 + tmp1, csa[0+4*j]);\
+            ptr[-1-j] = tmp2 - MULH(tmp1, csa[2+4*j]);\
+            ptr[   j] = tmp2 + MULH(tmp0, csa[3+4*j]);
+
+        INT_AA(0)
+        INT_AA(1)
+        INT_AA(2)
+        INT_AA(3)
+        INT_AA(4)
+        INT_AA(5)
+        INT_AA(6)
+        INT_AA(7)
+            
         ptr += 18;       
     }
 }
@@ -1962,8 +1950,8 @@ static void compute_antialias_integer(MPADecodeContext *s,
 static void compute_antialias_float(MPADecodeContext *s,
                               GranuleDef *g)
 {
-    int32_t *ptr, *p0, *p1;
-    int n, i, j;
+    int32_t *ptr;
+    int n, i;
 
     /* we antialias only "long" bands */
     if (g->block_type == 2) {
@@ -1977,35 +1965,23 @@ static void compute_antialias_float(MPADecodeContext *s,
     
     ptr = g->sb_hybrid + 18;
     for(i = n;i > 0;i--) {
+        float tmp0, tmp1;
         float *csa = &csa_table_float[0][0];       
-        p0 = ptr - 1;
-        p1 = ptr;
-        for(j=0;j<4;j++) {
-            float tmp0 = *p0;
-            float tmp1 = *p1;
-#if 1
-            *p0 = lrintf(tmp0 * csa[0] - tmp1 * csa[1]);
-            *p1 = lrintf(tmp0 * csa[1] + tmp1 * csa[0]);
-#else
-            float tmp2= (tmp0 + tmp1) * csa[0];
-            *p0 = lrintf(tmp2 - tmp1 * csa[2]);
-            *p1 = lrintf(tmp2 + tmp0 * csa[3]);
-#endif
-            p0--; p1++;
-            csa += 4;
-            tmp0 = *p0;
-            tmp1 = *p1;
-#if 1
-            *p0 = lrintf(tmp0 * csa[0] - tmp1 * csa[1]);
-            *p1 = lrintf(tmp0 * csa[1] + tmp1 * csa[0]);
-#else
-            tmp2= (tmp0 + tmp1) * csa[0];
-            *p0 = lrintf(tmp2 - tmp1 * csa[2]);
-            *p1 = lrintf(tmp2 + tmp0 * csa[3]);
-#endif
-            p0--; p1++;
-            csa += 4;
-        }
+#define FLOAT_AA(j)\
+        tmp0= ptr[-1-j];\
+        tmp1= ptr[   j];\
+        ptr[-1-j] = lrintf(tmp0 * csa[0+4*j] - tmp1 * csa[1+4*j]);\
+        ptr[   j] = lrintf(tmp0 * csa[1+4*j] + tmp1 * csa[0+4*j]);
+        
+        FLOAT_AA(0)
+        FLOAT_AA(1)
+        FLOAT_AA(2)
+        FLOAT_AA(3)
+        FLOAT_AA(4)
+        FLOAT_AA(5)
+        FLOAT_AA(6)
+        FLOAT_AA(7)
+
         ptr += 18;       
     }
 }
