@@ -2813,7 +2813,7 @@ redo_frame:
                 }
             }
             s->avctx->error[plane_index] += error;
-            s->avctx->error[3] += error;
+            s->current_picture.error[plane_index] = error;
         }
     }
 
