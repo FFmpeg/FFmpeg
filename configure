@@ -267,6 +267,8 @@ ar="${cross_prefix}${ar}"
 ranlib="${cross_prefix}${ranlib}"
 strip="${cross_prefix}${strip}"
 
+if test -z "$cross_prefix" ; then
+
 # ---
 # big/little endian test
 cat > $TMPC << EOF
@@ -281,6 +283,15 @@ if $cc -o $TMPO $TMPC 2>/dev/null ; then
 $TMPO && bigendian="yes"
 else
 echo big/little test failed
+fi
+
+else
+
+# if cross compiling, cannot launch a program, so make a static guess
+if test "$cpu" = "powerpc" -o "$cpu" = "mips" ; then
+    bigendian="yes"
+fi
+
 fi
 
 # ---
