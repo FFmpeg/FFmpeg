@@ -56,9 +56,9 @@ typedef struct IpvideoContext {
 
     AVCodecContext *avctx;
     DSPContext dsp;
+    AVFrame second_last_frame;
     AVFrame last_frame;
     AVFrame current_frame;
-    int first_frame;
     unsigned char *decoding_map;
     int decoding_map_size;
 
@@ -105,18 +105,38 @@ static unsigned char *sg_stream_end;
 static unsigned char *sg_current_plane;
 static unsigned char *sg_output_plane;
 static unsigned char *sg_last_plane;
+static unsigned char *sg_second_last_plane;
 static int sg_line_inc;
 static int sg_stride;
 static int sg_upper_motion_limit_offset;
 static DSPContext sg_dsp;
 
-static int ipvideo_decode_block_opcode_0x0_0x1(void)
+static int ipvideo_decode_block_opcode_0x0(void)
 {
     int x, y;
     unsigned char *src_block;
 
     /* skip block, which actually means to copy from previous frame */
     src_block = sg_last_plane + (sg_output_plane - sg_current_plane);
+    for (y = 0; y < 8; y++) {
+        for (x = 0; x < 8; x++) {
+            *sg_output_plane++ = *src_block++;
+        }
+        sg_output_plane += sg_line_inc;
+        src_block += sg_line_inc;
+    }
+
+    /* report success */
+    return 0;
+}
+
+static int ipvideo_decode_block_opcode_0x1(void)
+{
+    int x, y;
+    unsigned char *src_block;
+
+    /* copy block from two frames behind */
+    src_block = sg_second_last_plane + (sg_output_plane - sg_current_plane);
     for (y = 0; y < 8; y++) {
         for (x = 0; x < 8; x++) {
             *sg_output_plane++ = *src_block++;
@@ -159,16 +179,27 @@ static int ipvideo_decode_block_opcode_0x0_0x1(void)
     sg_dsp.put_pixels_tab[0][0](sg_output_plane, \
         sg_last_plane + motion_offset, sg_stride, 8);
 
+#define COPY_FROM_SECOND_LAST() \
+    motion_offset = current_offset; \
+    motion_offset += y * sg_stride; \
+    motion_offset += x; \
+    if (motion_offset < 0) { \
+        printf (" Interplay video: motion offset < 0 (%d)\n", motion_offset); \
+        return -1; \
+    } else if (motion_offset > sg_upper_motion_limit_offset) { \
+        printf (" Interplay video: motion offset above limit (%d >= %d)\n", \
+            motion_offset, sg_upper_motion_limit_offset); \
+        return -1; \
+    } \
+    sg_dsp.put_pixels_tab[0][0](sg_output_plane, \
+        sg_second_last_plane + motion_offset, sg_stride, 8);
+
 static int ipvideo_decode_block_opcode_0x2(void)
 {
     unsigned char B;
     int x, y;
     int motion_offset;
     int current_offset = sg_output_plane - sg_current_plane;
-
-    /* This is the opcode which claims to copy data from within the same
-     * frame at a coordinate which has not been rendered yet. Assume that
-     * it is supposed to be copied from the previous frame. */
 
     /* need 1 more byte for motion */
     CHECK_STREAM_PTR(1);
@@ -183,7 +214,7 @@ static int ipvideo_decode_block_opcode_0x2(void)
     }
 
     debug_interplay ("    motion byte = %d, (x, y) = (%d, %d)\n", B, x, y);
-    COPY_FROM_PREVIOUS();
+    COPY_FROM_SECOND_LAST();
 
     /* report success */
     return 0;
@@ -313,15 +344,15 @@ static int ipvideo_decode_block_opcode_0x7(void)
         for (y = 0; y < 8; y += 2) {
             for (x = 0; x < 8; x += 2, bitmask <<= 1) {
                 if (flags & bitmask) {
-                    *(sg_output_plane + x) = P0;
-                    *(sg_output_plane + x + 1) = P0;
-                    *(sg_output_plane + sg_stride + x) = P0;
-                    *(sg_output_plane + sg_stride + x + 1) = P0;
-                } else {
                     *(sg_output_plane + x) = P1;
                     *(sg_output_plane + x + 1) = P1;
                     *(sg_output_plane + sg_stride + x) = P1;
                     *(sg_output_plane + sg_stride + x + 1) = P1;
+                } else {
+                    *(sg_output_plane + x) = P0;
+                    *(sg_output_plane + x + 1) = P0;
+                    *(sg_output_plane + sg_stride + x) = P0;
+                    *(sg_output_plane + sg_stride + x + 1) = P0;
                 }
             }
             sg_output_plane += sg_stride * 2;
@@ -379,7 +410,7 @@ static int ipvideo_decode_block_opcode_0x8(void)
                     ((B[3] & 0xF0) << 20) | ((B[7] & 0xF0) << 24) |
                     ((B[3] & 0x0F) << 16) | ((B[7] & 0x0F) << 20);
                 bitmask = 0x00000001;
-                lower_half = 4;
+                lower_half = 2;
             }
 
             for (x = 0; x < 8; x++, bitmask <<= 1) {
@@ -388,8 +419,8 @@ static int ipvideo_decode_block_opcode_0x8(void)
                     P0 = P[lower_half + 0];
                     P1 = P[lower_half + 1];
                 } else if (x == 4) {
-                    P0 = P[lower_half + 2];
-                    P1 = P[lower_half + 3];
+                    P0 = P[lower_half + 4];
+                    P1 = P[lower_half + 5];
                 }
 
                 if (flags & bitmask)
@@ -444,9 +475,9 @@ static int ipvideo_decode_block_opcode_0x8(void)
                     }
 
                     if (flags & bitmask)
-                        *sg_output_plane++ = P0;
-                    else
                         *sg_output_plane++ = P1;
+                    else
+                        *sg_output_plane++ = P0;
                 }
                 sg_output_plane += sg_line_inc;
             }
@@ -469,9 +500,9 @@ static int ipvideo_decode_block_opcode_0x8(void)
                 for (bitmask = 0x01; bitmask <= 0x80; bitmask <<= 1) {
 
                     if (flags & bitmask)
-                        *sg_output_plane++ = P0;
-                    else
                         *sg_output_plane++ = P1;
+                    else
+                        *sg_output_plane++ = P0;
                 }
                 sg_output_plane += sg_line_inc;
             }
@@ -832,6 +863,7 @@ static void ipvideo_decode_opcodes(IpvideoContext *s)
         sg_line_inc = sg_stride - 8;
         sg_current_plane = s->current_frame.data[0];
         sg_last_plane = s->last_frame.data[0];
+        sg_second_last_plane = s->second_last_frame.data[0];
         sg_upper_motion_limit_offset = (s->avctx->height - 8) * sg_stride
             + s->avctx->width - 8;
         sg_dsp = s->dsp;
@@ -889,14 +921,12 @@ static int ipvideo_decode_init(AVCodecContext *avctx)
     avctx->has_b_frames = 0;
     dsputil_init(&s->dsp, avctx);
 
-    s->first_frame = 1;
-
     /* decoding map contains 4 bits of information per 8x8 block */
     s->decoding_map_size = avctx->width * avctx->height / (8 * 8 * 2);
 
     /* assign block decode functions */
-    ipvideo_decode_block[0x0] = ipvideo_decode_block_opcode_0x0_0x1;
-    ipvideo_decode_block[0x1] = ipvideo_decode_block_opcode_0x0_0x1;
+    ipvideo_decode_block[0x0] = ipvideo_decode_block_opcode_0x0;
+    ipvideo_decode_block[0x1] = ipvideo_decode_block_opcode_0x1;
     ipvideo_decode_block[0x2] = ipvideo_decode_block_opcode_0x2;
     ipvideo_decode_block[0x3] = ipvideo_decode_block_opcode_0x3;
     ipvideo_decode_block[0x4] = ipvideo_decode_block_opcode_0x4;
@@ -911,6 +941,9 @@ static int ipvideo_decode_init(AVCodecContext *avctx)
     ipvideo_decode_block[0xD] = ipvideo_decode_block_opcode_0xD;
     ipvideo_decode_block[0xE] = ipvideo_decode_block_opcode_0xE;
     ipvideo_decode_block[0xF] = ipvideo_decode_block_opcode_0xF;
+
+    s->current_frame.data[0] = s->last_frame.data[0] =
+    s->second_last_frame.data[0] = NULL;
 
     return 0;
 }
@@ -932,6 +965,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
     s->buf = buf + s->decoding_map_size;
     s->size = buf_size - s->decoding_map_size;
 
+    s->current_frame.reference = 3;
     if (avctx->get_buffer(avctx, &s->current_frame)) {
         printf ("  Interplay Video: get_buffer() failed\n");
         return -1;
@@ -939,17 +973,15 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
 
     ipvideo_decode_opcodes(s);
 
-    /* release the last frame if it is allocated */
-    if (s->first_frame)
-        s->first_frame = 0;
-    else
-        avctx->release_buffer(avctx, &s->last_frame);
-
-    /* shuffle frames */
-    s->last_frame = s->current_frame;
-
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = s->current_frame;
+
+    /* shuffle frames */
+    if (s->second_last_frame.data[0])
+        avctx->release_buffer(avctx, &s->second_last_frame);
+    s->second_last_frame = s->last_frame;
+    s->last_frame = s->current_frame;
+    s->current_frame.data[0] = NULL;  /* catch any access attempts */
 
     /* report that the buffer was completely consumed */
     return buf_size;
@@ -960,7 +992,10 @@ static int ipvideo_decode_end(AVCodecContext *avctx)
     IpvideoContext *s = avctx->priv_data;
 
     /* release the last frame */
-    avctx->release_buffer(avctx, &s->last_frame);
+    if (s->last_frame.data[0])
+        avctx->release_buffer(avctx, &s->last_frame);
+    if (s->second_last_frame.data[0])
+        avctx->release_buffer(avctx, &s->second_last_frame);
 
     return 0;
 }
