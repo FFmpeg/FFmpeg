@@ -479,17 +479,19 @@ static void adaptive_quantization(MpegEncContext *s, double q){
     const int qmin= s->avctx->mb_qmin;
     const int qmax= s->avctx->mb_qmax;
     Picture * const pic= &s->current_picture;
+    int last_qscale=0;
     
     for(i=0; i<s->mb_num; i++){
-        float temp_cplx= sqrt(pic->mc_mb_var[i]);
-        float spat_cplx= sqrt(pic->mb_var[i]);
-        const int lumi= pic->mb_mean[i];
+        const int mb_xy= s->mb_index2xy[i];
+        float temp_cplx= sqrt(pic->mc_mb_var[mb_xy]);
+        float spat_cplx= sqrt(pic->mb_var[mb_xy]);
+        const int lumi= pic->mb_mean[mb_xy];
         float bits, cplx, factor;
         
         if(spat_cplx < q/3) spat_cplx= q/3; //FIXME finetune
         if(temp_cplx < q/3) temp_cplx= q/3; //FIXME finetune
         
-        if((s->mb_type[i]&MB_TYPE_INTRA)){//FIXME hq mode 
+        if((s->mb_type[mb_xy]&MB_TYPE_INTRA)){//FIXME hq mode 
             cplx= spat_cplx;
             factor= 1.0 + p_masking;
         }else{
@@ -530,6 +532,7 @@ static void adaptive_quantization(MpegEncContext *s, double q){
     }
    
     for(i=0; i<s->mb_num; i++){
+        const int mb_xy= s->mb_index2xy[i];
         float newq= q*cplx_tab[i]/bits_tab[i];
         int intq;
 
@@ -537,8 +540,8 @@ static void adaptive_quantization(MpegEncContext *s, double q){
             newq*= bits_sum/cplx_sum;
         }
 
-        if(i && ABS(pic->qscale_table[i-1] - newq)<0.75)
-            intq= pic->qscale_table[i-1];
+        if(i && ABS(last_qscale - newq)<0.75)
+            intq= last_qscale;
         else
             intq= (int)(newq + 0.5);
 
@@ -546,7 +549,8 @@ static void adaptive_quantization(MpegEncContext *s, double q){
         else if(intq < qmin) intq= qmin;
 //if(i%s->mb_width==0) printf("\n");
 //printf("%2d%3d ", intq, ff_sqrt(s->mc_mb_var[i]));
-        pic->qscale_table[i]= intq;
+        last_qscale=
+        pic->qscale_table[mb_xy]= intq;
     }
 }
 
