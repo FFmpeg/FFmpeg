@@ -88,9 +88,7 @@ void av_register_all(void)
     ogg_init();
 #endif
 
-#ifndef CONFIG_WIN32
     ffm_init();
-#endif
 #ifdef CONFIG_VIDEO4LINUX
     video_grab_init();
 #endif
