@@ -181,7 +181,7 @@ case "$gcc_version" in
 CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer"
 ;;
 *3.3*) 
-CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic -force_cpusubtype_ALL"
+CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic -force_cpusubtype_ALL -Wno-sign-compare"
 ;;
 *) 
 CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer -mdynamic-no-pic"
@@ -398,21 +398,21 @@ if test $tune != "generic"; then
 	    TUNECPU=ppc604
 	;;
 	G3|g3|75*|ppc75*|PowerPC75*)
-	    CFLAGS="$CFLAGS -mcpu=750 -mtune=750"
+	    CFLAGS="$CFLAGS -mcpu=750 -mtune=750 -mpowerpc-gfxopt"
 	    if test $altivec = "yes"; then
 		echo "WARNING: tuning for PPC75x but altivec enabled !";
 	    fi
 	    TUNECPU=ppc750
 	;;
 	G4|g4|745*|ppc745*|PowerPC745*)
-	    CFLAGS="$CFLAGS -mcpu=7450 -mtune=7450"
+	    CFLAGS="$CFLAGS -mcpu=7450 -mtune=7450 -mpowerpc-gfxopt"
 	    if test $altivec = "no"; then
 		echo "WARNING: tuning for PPC745x but altivec disabled !";
 	    fi
 	    TUNECPU=ppc7450
 	;;
 	74*|ppc74*|PowerPC74*)
-	    CFLAGS="$CFLAGS -mcpu=7400 -mtune=7400"
+	    CFLAGS="$CFLAGS -mcpu=7400 -mtune=7400 -mpowerpc-gfxopt"
 	    if test $altivec = "no"; then
 		echo "WARNING: tuning for PPC74xx but altivec disabled !";
 	    fi

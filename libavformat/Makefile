@@ -6,7 +6,7 @@ include ../config.mak
 
 VPATH=$(SRC_PATH)/libavformat
 
-CFLAGS= $(OPTFLAGS) -Wall -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
+CFLAGS= -Wall $(OPTFLAGS) -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 
 OBJS= utils.o cutils.o os_support.o allformats.o
 PPOBJS=
