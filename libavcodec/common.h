@@ -8,6 +8,8 @@
 #define CONFIG_WIN32
 #endif
 
+//#define ALT_BITSTREAM_READER
+
 #ifdef HAVE_AV_CONFIG_H
 /* only include the following when compiling package */
 #include "../config.h"
@@ -124,6 +126,7 @@ typedef signed long long INT64;
 
 #endif /* !CONFIG_WIN32 */
 
+
 /* debug stuff */
 #ifdef HAVE_AV_CONFIG_H
 
@@ -180,9 +183,14 @@ void jflush_put_bits(PutBitContext *s);
 /* bit input */
 
 typedef struct GetBitContext {
+#ifdef ALT_BITSTREAM_READER
+    int index;
+    UINT8 *buffer;
+#else
     UINT32 bit_buf;
     int bit_cnt;
     UINT8 *buf, *buf_ptr, *buf_end;
+#endif
 } GetBitContext;
 
 typedef struct VLC {
@@ -195,10 +203,23 @@ typedef struct VLC {
 void init_get_bits(GetBitContext *s, 
                    UINT8 *buffer, int buffer_size);
 
+#ifndef ALT_BITSTREAM_READER
 unsigned int get_bits_long(GetBitContext *s, int n);
 unsigned int show_bits_long(GetBitContext *s, int n);
+#endif
 
 static inline unsigned int get_bits(GetBitContext *s, int n){
+#ifdef ALT_BITSTREAM_READER
+    int index= s->index;
+    uint32_t result= be2me_32( *(uint32_t *)(((uint8_t *)s->buffer)+(index>>3)) );
+
+    result<<= (index&0x07);
+    result>>= 32 - n;
+    index+= n;
+    s->index= index;
+    
+    return result;
+#else
     if(s->bit_cnt>=n){
         /* most common case here */
         unsigned int val = s->bit_buf >> (32 - n);
@@ -210,9 +231,21 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
 	return val;
     }
     return get_bits_long(s,n);
+#endif
 }
 
 static inline unsigned int get_bits1(GetBitContext *s){
+#ifdef ALT_BITSTREAM_READER
+    int index= s->index;
+    uint32_t result= be2me_32( *(uint32_t *)(((uint8_t *)s->buffer)+(index>>3)) );
+
+    result<<= (index&0x07);
+    result>>= 32 - 1;
+    index++;
+    s->index= index;
+    
+    return result;
+#else
     if(s->bit_cnt>0){
         /* most common case here */
         unsigned int val = s->bit_buf >> 31;
@@ -224,6 +257,7 @@ static inline unsigned int get_bits1(GetBitContext *s){
 	return val;
     }
     return get_bits_long(s,1);
+#endif
 }
 
 /* This function is identical to get_bits(), the only */
@@ -231,15 +265,28 @@ static inline unsigned int get_bits1(GetBitContext *s){
 /* it is usefull to see the buffer.                   */
 static inline unsigned int show_bits(GetBitContext *s, int n)
 {
+#ifdef ALT_BITSTREAM_READER
+    int index= s->index;
+    uint32_t result= be2me_32( *(uint32_t *)(((uint8_t *)s->buffer)+(index>>3)) );
+
+    result<<= (index&0x07);
+    result>>= 32 - n;
+    
+    return result;
+#else
     if(s->bit_cnt>=n) {
         /* most common case here */
         unsigned int val = s->bit_buf >> (32 - n);
         return val;
     }
     return show_bits_long(s,n);
+#endif
 }
 
 static inline void skip_bits(GetBitContext *s, int n){
+#ifdef ALT_BITSTREAM_READER
+    s->index+= n;
+#else
     if(s->bit_cnt>=n){
         /* most common case here */
         s->bit_buf <<= n;
@@ -250,9 +297,13 @@ static inline void skip_bits(GetBitContext *s, int n){
     } else {
 	get_bits_long(s,n);
     }
+#endif
 }
 
 static inline void skip_bits1(GetBitContext *s){
+#ifdef ALT_BITSTREAM_READER
+    s->index++;
+#else
     if(s->bit_cnt>0){
         /* most common case here */
         s->bit_buf <<= 1;
@@ -263,11 +314,16 @@ static inline void skip_bits1(GetBitContext *s){
     } else {
 	get_bits_long(s,1);
     }
+#endif
 }
 
 static inline int get_bits_count(GetBitContext *s)
 {
+#ifdef ALT_BITSTREAM_READER
+    return s->index;
+#else
     return (s->buf_ptr - s->buf) * 8 - s->bit_cnt;
+#endif
 }
 
 void align_get_bits(GetBitContext *s);
@@ -276,6 +332,13 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *codes, int codes_wrap, int codes_size);
 void free_vlc(VLC *vlc);
 int get_vlc(GetBitContext *s, VLC *vlc);
+
+#ifdef ALT_BITSTREAM_READER
+#define SHOW_BITS(s, val, n) val= show_bits(s, n);
+#define FLUSH_BITS(n) skip_bits(s, n); 
+#define SAVE_BITS(s) ;
+#define RESTORE_BITS(s) ;
+#else
 
 /* macro to go faster */
 /* n must be <= 24 */
@@ -317,7 +380,7 @@ int get_vlc(GetBitContext *s, VLC *vlc);
     (s)->bit_buf = bit_buf;\
     (s)->bit_cnt = bit_cnt;\
 }
-
+#endif // !ALT_BITSTREAM_READER
 /* define it to include statistics code (useful only for optimizing
    codec efficiency */
 //#define STATS

@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * alternative bitstream reader by Michael Niedermayer <michaelni@gmx.at>
  */
 #include "common.h"
 #include <math.h>
@@ -174,6 +176,10 @@ void jflush_put_bits(PutBitContext *s)
 void init_get_bits(GetBitContext *s, 
                    UINT8 *buffer, int buffer_size)
 {
+#ifdef ALT_BITSTREAM_READER
+    s->index=0;
+    s->buffer= buffer;
+#else
     s->buf = buffer;
     s->buf_ptr = buffer;
     s->buf_end = buffer + buffer_size;
@@ -184,8 +190,10 @@ void init_get_bits(GetBitContext *s,
         s->bit_buf |= (*s->buf_ptr++ << (24 - s->bit_cnt));
         s->bit_cnt += 8;
     }
+#endif
 }
 
+#ifndef ALT_BITSTREAM_READER
 /* n must be >= 1 and <= 32 */
 /* also true: n > s->bit_cnt */
 unsigned int get_bits_long(GetBitContext *s, int n)
@@ -241,15 +249,22 @@ unsigned int get_bits_long(GetBitContext *s, int n)
     s->bit_cnt = bit_cnt;
     return val;
 }
+#endif
 
 void align_get_bits(GetBitContext *s)
 {
+#ifdef ALT_BITSTREAM_READER
+    s->index= (s->index + 7) & (~7); 
+#else
     int n;
     n = s->bit_cnt & 7;
     if (n > 0) {
         get_bits(s, n);
     }
+#endif
 }
+
+#ifndef ALT_BITSTREAM_READER
 /* This function is identical to get_bits_long(), the */
 /* only diference is that it doesn't touch the buffer */
 /* it is usefull to see the buffer.                   */
@@ -296,6 +311,7 @@ unsigned int show_bits_long(GetBitContext *s, int n)
     
     return val;
 }
+#endif
 
 /* VLC decoding */
 

@@ -1371,7 +1371,11 @@ static void seek_to_maindata(MPADecodeContext *s, long backstep)
     UINT8 *ptr;
 
     /* compute current position in stream */
+#ifdef ALT_BITSTREAM_READER
+    ptr = s->gb.buffer + (s->gb.index>>3);
+#else
     ptr = s->gb.buf_ptr - (s->gb.bit_cnt >> 3);
+#endif    
     /* copy old data before current one */
     ptr -= backstep;
     memcpy(ptr, s->inbuf1[s->inbuf_index ^ 1] + 
@@ -1528,15 +1532,25 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 /* some encoders generate an incorrect size for this
                    part. We must go back into the data */
                 s_index -= 4;
+#ifdef ALT_BITSTREAM_READER
+                s->gb.buffer = last_buf_ptr;
+                s->gb.index = last_bit_cnt;
+#else
                 s->gb.buf_ptr = last_buf_ptr;
                 s->gb.bit_buf = last_bit_buf;
                 s->gb.bit_cnt = last_bit_cnt;
+#endif            
             }
             break;
         }
+#ifdef ALT_BITSTREAM_READER
+        last_buf_ptr = s->gb.buffer;
+        last_bit_cnt = s->gb.index;
+#else
         last_buf_ptr = s->gb.buf_ptr;
         last_bit_buf = s->gb.bit_buf;
         last_bit_cnt = s->gb.bit_cnt;
+#endif
         
         code = get_vlc(&s->gb, vlc);
         dprintf("t=%d code=%d\n", g->count1table_select, code);
