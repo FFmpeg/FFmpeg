@@ -210,64 +210,101 @@ static always_inline void fdct_col(const int16_t *in, int16_t *out, int offset)
     movq_r2m(mm3, *(out + offset + 7 * 8));
 }
 
-static always_inline void fdct_row(const int16_t *in, int16_t *out, const int16_t *table, int mmx2)
+static always_inline void fdct_row_mmx2(const int16_t *in, int16_t *out, const int16_t *table)
 { 
-  if(mmx2){
     pshufw_m2r(*(in + 4), mm5, 0x1B);
     movq_m2r(*(in + 0), mm0);
-  }else{
+    movq_r2r(mm0, mm1);	
+    paddsw_r2r(mm5, mm0);
+    psubsw_r2r(mm5, mm1);
+    pshufw_r2r(mm1, mm5, 0x88);
+    pshufw_r2r(mm1, mm6, 0xDD);
+    pshufw_r2r(mm0, mm1, 0xDD);
+    pshufw_r2r(mm0, mm0, 0x88);
+    movq_m2r(*(table + 0), mm3);
+    movq_m2r(*(table + 4), mm4);
+    movq_m2r(*(table + 16), mm2);
+    movq_m2r(*(table + 20), mm7);
+    pmaddwd_r2r(mm0, mm3);
+    pmaddwd_r2r(mm1, mm4);
+    pmaddwd_r2r(mm5, mm2);
+    pmaddwd_r2r(mm6, mm7);
+    pmaddwd_m2r(*(table + 8), mm0);
+    pmaddwd_m2r(*(table + 12), mm1);
+    pmaddwd_m2r(*(table + 24), mm5);
+    pmaddwd_m2r(*(table + 28), mm6);
+    paddd_r2r(mm1, mm0);
+    paddd_r2r(mm6, mm5);
+    movq_m2r(*fdct_r_row, mm7);
+    paddd_r2r(mm7, mm3);
+    paddd_r2r(mm7, mm0);
+    paddd_r2r(mm7, mm2);
+    paddd_r2r(mm7, mm5);
+    psrad_i2r(SHIFT_FRW_ROW, mm3);
+    psrad_i2r(SHIFT_FRW_ROW, mm2);
+    psrad_i2r(SHIFT_FRW_ROW, mm0);
+    psrad_i2r(SHIFT_FRW_ROW, mm5);
+    packssdw_r2r(mm0, mm3);
+    packssdw_r2r(mm5, mm2);
+    movq_r2r(mm3, mm6);
+    punpcklwd_r2r(mm2, mm3);
+    punpckhwd_r2r(mm2, mm6);
+    movq_r2m(mm3, *(out + 0));
+    movq_r2m(mm6, *(out + 4));
+}
+
+static always_inline void fdct_row_mmx(const int16_t *in, int16_t *out, const int16_t *table)
+{ 
     movd_m2r(*(in + 6), mm5);
     punpcklwd_m2r(*(in + 4), mm5);
     movq_r2r(mm5, mm2);
     psrlq_i2r(0x20, mm5);
     movq_m2r(*(in + 0), mm0);
     punpcklwd_r2r(mm2, mm5);
-  }
     movq_r2r(mm0, mm1);	
     paddsw_r2r(mm5, mm0);
     psubsw_r2r(mm5, mm1);
     movq_r2r(mm0, mm2);
     punpcklwd_r2r(mm1, mm0);
     punpckhwd_r2r(mm1, mm2);
-    movq_r2r(mm2, mm1);
-    movq_r2r(mm0, mm2);
+    movq_r2r(mm0, mm1);
     movq_m2r(*(table + 0), mm3);
-    punpcklwd_r2r(mm1, mm0);
+    punpcklwd_r2r(mm2, mm0);
     movq_r2r(mm0, mm5);
     punpckldq_r2r(mm0, mm0);
     movq_m2r(*(table + 4), mm4);
-    punpckhwd_r2r(mm1, mm2);
+    punpckhwd_r2r(mm2, mm1);
     pmaddwd_r2r(mm0, mm3);
-    movq_r2r(mm2, mm6);
-    movq_m2r(*(table + 16), mm1);
-    punpckldq_r2r(mm2, mm2);
-    pmaddwd_r2r(mm2, mm4);
+    movq_r2r(mm1, mm6);
+    movq_m2r(*(table + 16), mm2);
+    punpckldq_r2r(mm1, mm1);
+    pmaddwd_r2r(mm1, mm4);
     punpckhdq_r2r(mm5, mm5);
     pmaddwd_m2r(*(table + 8), mm0);
     punpckhdq_r2r(mm6, mm6);
     movq_m2r(*(table + 20), mm7);
-    pmaddwd_r2r(mm5, mm1);
+    pmaddwd_r2r(mm5, mm2);
     paddd_m2r(*fdct_r_row, mm3);
     pmaddwd_r2r(mm6, mm7);
-    pmaddwd_m2r(*(table + 12), mm2);
+    pmaddwd_m2r(*(table + 12), mm1);
     paddd_r2r(mm4, mm3);
     pmaddwd_m2r(*(table + 24), mm5);
     pmaddwd_m2r(*(table + 28), mm6);
-    paddd_r2r(mm7, mm1);
+    paddd_r2r(mm7, mm2);
     paddd_m2r(*fdct_r_row, mm0);
     psrad_i2r(SHIFT_FRW_ROW, mm3);
-    paddd_m2r(*fdct_r_row, mm1);
-    paddd_r2r(mm2, mm0);
+    paddd_m2r(*fdct_r_row, mm2);
+    paddd_r2r(mm1, mm0);
     paddd_m2r(*fdct_r_row, mm5);
-    psrad_i2r(SHIFT_FRW_ROW, mm1);
+    psrad_i2r(SHIFT_FRW_ROW, mm2);
     paddd_r2r(mm6, mm5);
     psrad_i2r(SHIFT_FRW_ROW, mm0);
     psrad_i2r(SHIFT_FRW_ROW, mm5);
     packssdw_r2r(mm0, mm3);
-    packssdw_r2r(mm5, mm1);
+    packssdw_r2r(mm5, mm2);
     movq_r2r(mm3, mm6);
-    punpcklwd_r2r(mm1, mm3);
-    punpckhwd_r2r(mm1, mm6);
+    punpcklwd_r2r(mm2, mm3);
+    punpckhwd_r2r(mm2, mm6);
     movq_r2m(mm3, *(out + 0));
     movq_r2m(mm6, *(out + 4));
 }
@@ -288,7 +325,7 @@ void ff_fdct_mmx(int16_t *block)
     table = tab_frw_01234567;
     out = block;
     for(i=8;i>0;i--) {
-        fdct_row(block1, out, table, 0);
+        fdct_row_mmx(block1, out, table);
         block1 += 8;
         table += 32;
         out += 8;
@@ -311,7 +348,7 @@ void ff_fdct_mmx2(int16_t *block)
     table = tab_frw_01234567;
     out = block;
     for(i=8;i>0;i--) {
-        fdct_row(block1, out, table, 1);
+        fdct_row_mmx2(block1, out, table);
         block1 += 8;
         table += 32;
         out += 8;
