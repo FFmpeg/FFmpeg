@@ -1363,9 +1363,9 @@ static int av_encode(AVFormatContext **output_files,
                         /* no reencoding needed : output the packet directly */
                         /* force the input stream PTS */
                         
-                        //XXX/FIXME set keyframe flag from demuxer (or optionally from decoder)
                         memset(&avframe, 0, sizeof(AVFrame));
                         ost->st->codec.coded_frame= &avframe;
+			avframe.key_frame = pkt.flags & PKT_FLAG_KEY; 
                         
                         av_write_frame(os, ost->index, data_buf, data_size);
 			ost->st->codec.frame_number++;

@@ -184,6 +184,7 @@ static inline int __get_frame(struct dv1394_data *dv, AVPacket *pkt)
     pkt->size     = dv->frame_size;
     pkt->pts      = dv->pts;
     pkt->stream_index = dv->stream;
+    pkt->flags   |= PKT_FLAG_KEY;
 
     dv->stream ^= 1;
 

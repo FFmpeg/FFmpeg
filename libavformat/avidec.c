@@ -368,6 +368,7 @@ pkt_init:
     pkt->size = avi->buf_size;
     pkt->destruct = __destruct_pkt;
     pkt->stream_index = avi->stream_index;
+    pkt->flags |= PKT_FLAG_KEY; // FIXME: We really should read index for that
     avi->stream_index = !avi->stream_index;
     return 0;
 }

@@ -83,6 +83,7 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->data     = c->buf;
     pkt->size     = c->size;
     pkt->stream_index = c->is_audio;
+    pkt->flags   |= PKT_FLAG_KEY;
     
     c->is_audio = !c->is_audio;
     return c->size;

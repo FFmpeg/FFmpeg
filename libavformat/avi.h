@@ -7,6 +7,7 @@
 #define AVIF_COPYRIGHTED	0x00020000
 
 #define AVI_MAX_RIFF_SIZE       0x40000000LL
+#define AVI_MASTER_INDEX_SIZE   256
 
 offset_t start_tag(ByteIOContext *pb, const char *tag);
 void end_tag(ByteIOContext *pb, offset_t start);
