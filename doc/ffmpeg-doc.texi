@@ -366,7 +366,7 @@ FF_EC_DEBLOCK (default=enabled)
 @end table
 
 @item -bf frames
-use 'frames' B frames (only MPEG-4)
+use 'frames' B frames (supported for MPEG-1, MPEG-2 and MPEG-4)
 @item -mbd mode
 macroblock decision
 @table @samp
@@ -655,7 +655,7 @@ following image formats are supported:
 @multitable @columnfractions .4 .1 .1 .7
 @item Supported Codec @tab Encoding @tab Decoding @tab Comments
 @item MPEG1 video            @tab  X  @tab  X
-@item MPEG2 video            @tab     @tab  X 
+@item MPEG2 video            @tab  X  @tab  X 
 @item MPEG4                  @tab  X  @tab  X @tab Also known as DIVX4/5
 @item MSMPEG4 V1             @tab  X  @tab  X
 @item MSMPEG4 V2             @tab  X  @tab  X
@@ -748,13 +748,28 @@ features only found in GCC 3.2.
 @url{http://www.mingw.org/}. You can find detailed installation
 instructions in the download section and the FAQ.
 
-@item Extract the current version of ffmpeg (the latest release version or the current CVS snapshot whichever is recommended).
+@item If you want to test the FFmpeg Simple Media Player, also download 
+the MinGW development library of SDL 1.2.x
+(@file{SDL-devel-1.2.x-mingw32.tar.gz}) from
+@url{http://www.libsdl.org}. Unpack it in a temporary place, and
+unpack the archive @file{i386-mingw32msvc.tar.gz} in the MinGW tool
+directory.
+
+@item Extract the current version of FFmpeg (the latest release version or the current CVS snapshot whichever is recommended).
  
 @item Start the MSYS shell (file @file{msys.bat}).
 
-@item Change to the FFMPEG directory and create the libavcodec.a and libavformat.a libraries, following the instructions of how to compile ffmpeg (file @file{INSTALL}).
- 
+@item Change to the FFMPEG directory and follow
+ the instructions of how to compile ffmpeg (file
+@file{INSTALL}). Usually, launching @file{./configure} and @file{make}
+suffices. If you have problems using SDL, verify that
+@file{sdl-config} can be launched from the MSYS command line.
+
+@item You can install FFmpeg in @file{Program Files/FFmpeg} by typing @file{make install}.
+
 @end itemize
+
+Note: The target @file{make wininstaller} can be used to create a Nullsoft based Windows installer for FFmpeg and FFplay.
 
 @subsection How to create a single Windows DLL from libavcodec and libavformat
  
