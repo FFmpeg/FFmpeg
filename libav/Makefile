@@ -12,8 +12,7 @@ OBJS= utils.o cutils.o allformats.o
 
 # mux and demuxes
 OBJS+=mpeg.o mpegts.o ffm.o crc.o img.o raw.o rm.o asf.o \
-      avienc.o avidec.o wav.o swf.o au.o gif.o mov.o jpeg.o dv.o
-# framehook.o
+      avienc.o avidec.o wav.o swf.o au.o gif.o mov.o jpeg.o dv.o framehook.o
 # file I/O
 OBJS+= avio.o aviobuf.o file.o 
 
