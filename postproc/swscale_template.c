@@ -288,8 +288,9 @@ s_xinc&= -2; //clear last bit or uv and y might be shifted relative to each othe
 		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
 		"shll $8, %%edi			\n\t"
 		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+		"movl %1, %%edi			\n\t"
 		"shrl $1, %%esi			\n\t"
-		"movw %%si, (%1, %%eax, 2)	\n\t"
+		"movw %%si, (%%edi, %%eax, 2)	\n\t"
 		"addb %4, %%cl			\n\t" //2*xalpha += s_xinc&0xFF
 		"adcl %3, %%ebx			\n\t" //xx+= s_xinc>>8 + carry
 
@@ -299,8 +300,9 @@ s_xinc&= -2; //clear last bit or uv and y might be shifted relative to each othe
 		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
 		"shll $8, %%edi			\n\t"
 		"addl %%edi, %%esi		\n\t" //src[xx+1]*2*xalpha + src[xx]*(1-2*xalpha)
+		"movl %1, %%edi			\n\t"
 		"shrl $1, %%esi			\n\t"
-		"movw %%si, 2(%1, %%eax, 2)	\n\t"
+		"movw %%si, 2(%%edi, %%eax, 2)	\n\t"
 		"addb %4, %%cl			\n\t" //2*xalpha += s_xinc&0xFF
 		"adcl %3, %%ebx			\n\t" //xx+= s_xinc>>8 + carry
 
@@ -310,7 +312,7 @@ s_xinc&= -2; //clear last bit or uv and y might be shifted relative to each othe
 		" jb 1b				\n\t"
 
 
-		:: "r" (src), "r" (buf1), "m" (dstw), "m" (s_xinc>>8), "m" (s_xinc&0xFF)
+		:: "r" (src), "m" (buf1), "m" (dstw), "m" (s_xinc>>8), "m" (s_xinc&0xFF)
 		: "%eax", "%ebx", "%ecx", "%edi", "%esi"
 		);
 #else
@@ -416,8 +418,9 @@ s_xinc&= -2; //clear last bit or uv and y might be shifted relative to each othe
 		"xorl %%ebx, %%ebx		\n\t" // xx
 		"xorl %%ecx, %%ecx		\n\t" // 2*xalpha
 		"1:				\n\t"
-		"movzbl  (%0, %%ebx), %%edi	\n\t" //src[xx]
-		"movzbl 1(%0, %%ebx), %%esi	\n\t" //src[xx+1]
+		"movl %0, %%esi			\n\t"
+		"movzbl  (%%esi, %%ebx), %%edi	\n\t" //src[xx]
+		"movzbl 1(%%esi, %%ebx), %%esi	\n\t" //src[xx+1]
 		"subl %%edi, %%esi		\n\t" //src[xx+1] - src[xx]
 		"imull %%ecx, %%esi		\n\t" //(src[xx+1] - src[xx])*2*xalpha
 		"shll $8, %%edi			\n\t"
@@ -443,7 +446,7 @@ s_xinc&= -2; //clear last bit or uv and y might be shifted relative to each othe
 		" jb 1b				\n\t"
 
 
-		:: "r" (src1), "m" (uvbuf1), "m" (dstw), "m" (s_xinc2>>8), "m" (s_xinc2&0xFF),
+		:: "m" (src1), "m" (uvbuf1), "m" (dstw), "m" (s_xinc2>>8), "m" (s_xinc2&0xFF),
 		"r" (src2)
 		: "%eax", "%ebx", "%ecx", "%edi", "%esi"
 		);
