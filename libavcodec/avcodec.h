@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4635
-#define LIBAVCODEC_BUILD_STR   "4635"
+#define LIBAVCODEC_BUILD       4636
+#define LIBAVCODEC_BUILD_STR   "4636"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -122,7 +122,6 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_4MV    0x0004  /* 4 MV per MB allowed */
 #define CODEC_FLAG_QPEL   0x0010  /* use qpel MC */
 #define CODEC_FLAG_GMC    0x0020  /* use GMC */
-#define CODEC_FLAG_TYPE   0x0040  /* fixed I/P frame type, from avctx->key_frame */
 #define CODEC_FLAG_PART   0x0080  /* use data partitioning */
 /* parent program gurantees that the input for b-frame containing streams is not written to 
    for at least s->max_b_frames+1 frames, if this is not set than the input will be copied */
@@ -760,6 +759,13 @@ typedef struct AVCodecContext {
      * decoding: set by lavc
      */
      int8_t *display_qscale_table;
+     
+    /**
+     * force specific pict_type.
+     * encoding; set by user (I/P/B_TYPE)
+     * decoding: unused
+     */
+    int force_type;
 } AVCodecContext;
 
 typedef struct AVCodec {

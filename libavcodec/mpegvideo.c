@@ -410,7 +410,7 @@ int MPV_common_init(MpegEncContext *s)
         
         /* divx501 bitstream reorder buffer */
         CHECKED_ALLOCZ(s->bitstream_buffer, BITSTREAM_BUFFER_SIZE);
-        
+
         /* cbp, ac_pred, pred_dir */
         CHECKED_ALLOCZ(s->cbp_table  , s->mb_num * sizeof(UINT8))
         CHECKED_ALLOCZ(s->pred_dir_table, s->mb_num * sizeof(UINT8))
@@ -996,9 +996,9 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
 
-    if(avctx->flags&CODEC_FLAG_TYPE){
+    if(avctx->force_type){
         s->input_pict_type=
-        s->force_input_type= avctx->key_frame ? I_TYPE : P_TYPE;
+        s->force_input_type= avctx->force_type;
     }else if(s->flags&CODEC_FLAG_PASS2){
         s->input_pict_type=
         s->force_input_type= s->rc_context.entry[s->input_picture_number].new_pict_type;
