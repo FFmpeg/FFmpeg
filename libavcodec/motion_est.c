@@ -840,7 +840,8 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
         dmin4= s->me.sub_motion_search(s, &mx4, &my4, dmin4, 
 					  pred_x4, pred_y4, src_data, ref_data, stride, uvstride, size, h, mv_penalty);
         
-        if(s->dsp.me_sub_cmp[0] != s->dsp.mb_cmp[0]){
+        if(s->dsp.me_sub_cmp[0] != s->dsp.mb_cmp[0]
+           && s->avctx->mb_decision == FF_MB_DECISION_SIMPLE){
             int dxy;
             const int offset= ((block&1) + (block>>1)*stride)*8;
             uint8_t *dest_y = s->me.scratchpad + offset;
@@ -990,7 +991,8 @@ static int interlaced_search(MpegEncContext *s, uint8_t *frame_src_data[3], uint
             mv_table[xy][0]= mx_i;
             mv_table[xy][1]= my_i;
             
-            if(s->dsp.me_sub_cmp[0] != s->dsp.mb_cmp[0]){
+            if(s->dsp.me_sub_cmp[0] != s->dsp.mb_cmp[0]
+               && s->avctx->mb_decision == FF_MB_DECISION_SIMPLE){
                 int dxy;
 
                 //FIXME chroma ME
