@@ -21,8 +21,8 @@ test-server: vsynth1/0.pgm asynth1.sw
 
 # fast regression tests for all codecs
 test mpeg4 mpeg: vsynth1/0.pgm vsynth2/0.pgm asynth1.sw tiny_psnr
-	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE1) vsynth1 || true
-	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE2) vsynth2 || true
+	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE1) vsynth1
+	@$(SRC_PATH)/tests/regression.sh $@ $(REFFILE2) vsynth2
 
 # fast regression for libav formats
 libavtest: vsynth1/0.pgm asynth1.sw
