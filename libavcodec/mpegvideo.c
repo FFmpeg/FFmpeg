@@ -1426,7 +1426,6 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
 
 static void select_input_picture(MpegEncContext *s){
     int i;
-    const int encoding_delay= s->max_b_frames;
     int coded_pic_num=0;    
 
     if(s->reordered_input_picture[0])
@@ -2725,7 +2724,6 @@ static int pix_diff_vcmp16x8(uint8_t *s1, uint8_t*s2, int stride){ //FIXME move 
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
     if (s->avctx->draw_horiz_band) {
         AVFrame *src;
-        uint8_t *src_ptr[3];
         int offset[4];
         
         if(s->picture_structure != PICT_FRAME){

@@ -628,8 +628,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
 
 static int dvvideo_decode_end(AVCodecContext *avctx)
 {
-    DVVideoDecodeContext *s = avctx->priv_data;
-
     avcodec_default_free_buffers(avctx);    
 
     return 0;
