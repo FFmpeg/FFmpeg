@@ -100,11 +100,13 @@ motion-test: motion_test.o $(LIB)
 	$(CC) -o $@ $^
 
 install: all
-#	install -s -m 644 $(LIB) $(prefix)/lib
+#	install -m 644 $(LIB) $(prefix)/lib
 ifeq ($(BUILD_SHARED),yes)
 	install -s -m 755 $(SLIB) $(prefix)/lib
 	ln -sf $(prefix)/lib/$(SLIB) $(prefix)/lib/libffmpeg.so
 	ldconfig
+	mkdir -p $(prefix)/include/libffmpeg
+	install -m 644 avcodec.h $(prefix)/include/libffmpeg/avcodec.h
 endif
 #
 # include dependency files if they exist
