@@ -220,6 +220,8 @@ typedef struct MOVStreamContext {
     long sample_size;
     long sample_count;
     long *sample_sizes;
+    long keyframe_count;
+    long *keyframes;
     int time_scale;
     long current_sample;
     long left_in_chunk; /* how many samples before next chunk */
@@ -1102,6 +1104,34 @@ printf("track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
     return 0;
 }
 
+static int mov_read_stss(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
+{
+    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
+    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    int entries, i;
+
+    print_atom("stss", atom);
+
+    get_byte(pb); /* version */
+    get_byte(pb); get_byte(pb); get_byte(pb); /* flags */
+
+    entries = get_be32(pb);
+    sc->keyframe_count = entries;
+#ifdef DEBUG
+    av_log(NULL, AV_LOG_DEBUG, "keyframe_count = %ld\n", sc->keyframe_count);
+#endif
+    sc->keyframes = (long*) av_malloc(entries * sizeof(long));
+    if (!sc->keyframes)
+        return -1;
+    for(i=0; i<entries; i++) {
+        sc->keyframes[i] = get_be32(pb);
+#ifdef DEBUG
+/*        av_log(NULL, AV_LOG_DEBUG, "keyframes[]=%ld\n", sc->keyframes[i]); */
+#endif
+    }
+    return 0;
+}
+
 static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
@@ -1409,7 +1439,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 's', 't', 's', 'c' ), mov_read_stsc },
 { MKTAG( 's', 't', 's', 'd' ), mov_read_stsd }, /* sample description */
 { MKTAG( 's', 't', 's', 'h' ), mov_read_default },
-{ MKTAG( 's', 't', 's', 's' ), mov_read_leaf }, /* sync sample */
+{ MKTAG( 's', 't', 's', 's' ), mov_read_stss }, /* sync sample */
 { MKTAG( 's', 't', 's', 'z' ), mov_read_stsz }, /* sample size */
 { MKTAG( 's', 't', 't', 's' ), mov_read_stts },
 { MKTAG( 't', 'k', 'h', 'd' ), mov_read_tkhd }, /* track header */
@@ -1455,6 +1485,7 @@ static void mov_free_stream_context(MOVStreamContext *sc)
         av_free(sc->chunk_offsets);
         av_free(sc->sample_to_chunk);
         av_free(sc->sample_sizes);
+        av_free(sc->keyframes);
         av_free(sc->header_data);
         av_free(sc);
     }
@@ -1583,7 +1614,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     MOVContext *mov = (MOVContext *) s->priv_data;
     MOVStreamContext *sc;
     int64_t offset = 0x0FFFFFFFFFFFFFFFLL;
-    int i;
+    int i, a, b, m;
     int size;
     size = 0x0FFFFFFF;
 
@@ -1717,6 +1748,27 @@ readchunk:
         get_buffer(&s->pb, pkt->data, pkt->size);
     }
     pkt->stream_index = sc->ffindex;
+    
+    // If the keyframes table exists, mark any samples that are in the table as key frames.
+    // If no table exists, treat very sample as a key frame.
+    if (sc->keyframes) {        
+        a = 0;
+        b = sc->keyframe_count - 1;
+        
+        while (a < b) {
+            m = (a + b + 1) >> 1;
+            if (sc->keyframes[m] > sc->current_sample) {
+                b = m - 1;
+            } else {
+                a = m;
+            }    
+        }
+        
+        if (sc->keyframes[a] == sc->current_sample)
+            pkt->flags |= PKT_FLAG_KEY;
+    }
+    else
+        pkt->flags |= PKT_FLAG_KEY;
 
 #ifdef DEBUG
 /*
