@@ -1133,7 +1133,7 @@ static int decode_header(MPADecodeContext *s, UINT32 header)
     }
     s->sample_rate = sample_rate;
     
-#ifdef DEBUG
+#if defined(DEBUG)
     printf("layer%d, %d Hz, %d kbits/s, ",
            s->layer, s->sample_rate, s->bit_rate);
     if (s->nb_channels == 2) {
@@ -2459,8 +2459,6 @@ static int decode_frame(AVCodecContext * avctx,
 	    len = s->frame_size - len;
 	    if (len > buf_size)
 		len = buf_size;
-	    else if (len < 4)
-		len = buf_size > 4 ? 4 : buf_size;
 	    memcpy(s->inbuf_ptr, buf_ptr, len);
 	    buf_ptr += len;
 	    s->inbuf_ptr += len;
