@@ -18,6 +18,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <inttypes.h>
 #include <assert.h>
 
@@ -102,16 +103,18 @@ int main(int argc,char* argv[]){
     FILE *f[2];
     uint8_t buf[2][SIZE];
     uint64_t psnr;
-    int len= argc<4 ? 1 : 2;
+    int len= argc<4 ? 1 : atoi(argv[3]);
     int64_t max= (1<<(8*len))-1;
+    int shift= argc<5 ? 0 : atoi(argv[4]);
     
     if(argc<3){
-        printf("tiny_psnr <file1> <file2>\n");
+        printf("tiny_psnr <file1> <file2> [<elem size> [<shift>]]\n");
         return -1;
     }
     
     f[0]= fopen(argv[1], "rb");
     f[1]= fopen(argv[2], "rb");
+    fseek(f[shift<0], shift < 0 ? -shift : shift, SEEK_SET);
 
     for(i=0;;){
         if( fread(buf[0], SIZE, 1, f[0]) != 1) break;
