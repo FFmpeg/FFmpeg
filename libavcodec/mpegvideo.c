@@ -3401,6 +3401,8 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             mpeg4_encode_picture_header(s, picture_number);
         else if (s->h263_rv10) 
             rv10_encode_picture_header(s, picture_number);
+        else if (s->codec_id == CODEC_ID_FLV1)
+            ff_flv_encode_picture_header(s, picture_number);
         else
             h263_encode_picture_header(s, picture_number);
         break;

@@ -152,13 +152,12 @@ static void float_aspect_to_info(MpegEncContext * s, float aspect){
     s->aspect_ratio_info= FF_ASPECT_EXTENDED;
 }
 
-void h263_encode_picture_header(MpegEncContext * s, int picture_number)
+void ff_flv_encode_picture_header(MpegEncContext * s, int picture_number)
 {
-    int format;
+      int format;
 
-    align_put_bits(&s->pb);
+      align_put_bits(&s->pb);
 
-    if (s->h263_flv) {
       put_bits(&s->pb, 17, 1);
       put_bits(&s->pb, 5, (s->h263_flv-1)); /* 0: h263 escape codes 1: 11-bit escape codes */
       put_bits(&s->pb, 8, (((int64_t)s->picture_number * 30 * s->avctx->frame_rate_base) / 
@@ -197,8 +196,13 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         s->y_dc_scale_table=
           s->c_dc_scale_table= ff_mpeg1_dc_scale_table;
       }
-      return;
-    }
+}
+
+void h263_encode_picture_header(MpegEncContext * s, int picture_number)
+{
+    int format;
+
+    align_put_bits(&s->pb);
 
     /* Update the pointer to last GOB */
     s->ptr_lastgob = pbBufPtr(&s->pb);
@@ -1011,10 +1015,7 @@ void h263_encode_mb(MpegEncContext * s,
 
     for(i=0; i<6; i++) {
         /* encode each block */
-        if (s->h263_flv > 1)
-            h263_flv_encode_block(s, block[i], i);
-        else
-            h263_encode_block(s, block[i], i);
+        h263_encode_block(s, block[i], i);
     
         /* Update INTRADC for decoding */
         if (s->h263_aic && s->mb_intra) {
@@ -1613,6 +1614,7 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
             code = get_rl_index(rl, last, run, level);
             put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
             if (code == rl->n) {
+              if(s->h263_flv <= 1){
                 put_bits(&s->pb, 1, last);
                 put_bits(&s->pb, 6, run);
                 
@@ -1625,83 +1627,23 @@ static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
                     put_bits(&s->pb, 5, slevel & 0x1f);
                     put_bits(&s->pb, 6, (slevel>>5)&0x3f);
                 }
-            } else {
-                put_bits(&s->pb, 1, sign);
-            }
-	        last_non_zero = i;
-	    }
-    }
-}
+              }else{
+                    if(slevel < 64 && slevel > -64) {
+                        /* 7-bit level */
+                        put_bits(&s->pb, 1, 0);
+                        put_bits(&s->pb, 1, last);
+                        put_bits(&s->pb, 6, run);
 
-/**
- * encodes a 8x8 block.
- * @param block the 8x8 block
- * @param n block index (0-3 are luma, 4-5 are chroma)
- */
-static void h263_flv_encode_block(MpegEncContext * s, DCTELEM * block, int n)
-{
-    int level, run, last, i, j, last_index, last_non_zero, sign, slevel, code;
-    RLTable *rl;
+                        put_bits(&s->pb, 7, slevel & 0x7f);
+                    } else {
+                        /* 11-bit level */
+                        put_bits(&s->pb, 1, 1);
+                        put_bits(&s->pb, 1, last);
+                        put_bits(&s->pb, 6, run);
 
-    rl = &rl_inter;
-    if (s->mb_intra && !s->h263_aic) {
-        /* DC coef */
-        level = block[0];
-        /* 255 cannot be represented, so we clamp */
-        if (level > 254) {
-            level = 254;
-            block[0] = 254;
-        }
-        /* 0 cannot be represented also */
-        else if (level < 1) {
-            level = 1;
-            block[0] = 1;
-        }
-        if (level == 128) //FIXME check rv10
-            put_bits(&s->pb, 8, 0xff);
-        else
-            put_bits(&s->pb, 8, level & 0xff);
-        i = 1;
-    } else {
-        i = 0;
-        if (s->h263_aic && s->mb_intra)
-            rl = &rl_intra_aic;
-    }
-   
-    /* AC coefs */
-    last_index = s->block_last_index[n];
-    last_non_zero = i - 1;
-    for (; i <= last_index; i++) {
-        j = s->intra_scantable.permutated[i];
-        level = block[j];
-        if (level) {
-            run = i - last_non_zero - 1;
-            last = (i == last_index);
-            sign = 0;
-            slevel = level;
-            if (level < 0) {
-                sign = 1;
-                level = -level;
-            }
-            code = get_rl_index(rl, last, run, level);
-            put_bits(&s->pb, rl->table_vlc[code][1], rl->table_vlc[code][0]);
-            if (code == rl->n) {
-                assert(slevel != 0);
-                if(slevel < 64 && slevel > -64) {
-                    /* 7-bit level */
-                    put_bits(&s->pb, 1, 0);
-                    put_bits(&s->pb, 1, last);
-                    put_bits(&s->pb, 6, run);
-
-                    put_bits(&s->pb, 7, slevel & 0x7f);
-                } else {
-                    /* 11-bit level */
-                    put_bits(&s->pb, 1, 1);
-                    put_bits(&s->pb, 1, last);
-                    put_bits(&s->pb, 6, run);
-
-                    put_bits(&s->pb, 11, slevel & 0x7ff);
-                }
+                        put_bits(&s->pb, 11, slevel & 0x7ff);
+                    }
+              }
             } else {
                 put_bits(&s->pb, 1, sign);
             }
