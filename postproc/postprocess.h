@@ -64,8 +64,9 @@
 
 #define QP_STORE_T int
 
-char *postproc_help;
+char *pp_help;
 
+//FIXME decide if this should be exported at all
 typedef struct PPMode{
 	int lumMode; //acivates filters for luminance
 	int chromMode; //acivates filters for chrominance
@@ -82,18 +83,16 @@ typedef struct PPMode{
 	int forcedQuant; // quantizer if FORCE_QUANT is used
 } PPMode;
 
-void  postprocess(uint8_t * src[3], int srcStride[3],
+void  pp_postprocess(uint8_t * src[3], int srcStride[3],
                  uint8_t * dst[3], int dstStride[3],
                  int horizontalSize, int verticalSize,
                  QP_STORE_T *QP_store,  int QP_stride,
 		 PPMode *mode, void *ppContext, int pict_type);
 
 // name is the stuff after "-pp" on the command line
-PPMode getPPModeByNameAndQuality(char *name, int quality);
+PPMode pp_get_mode_by_name_and_quality(char *name, int quality);
 
-void *getPPContext(int width, int height);
-void freePPContext(void *ppContext);
-
-int readPPOpt(void *conf, char *arg);
+void *pp_get_context(int width, int height);
+void pp_free_context(void *ppContext);
 
 #endif

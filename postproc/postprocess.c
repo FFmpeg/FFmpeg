@@ -587,7 +587,7 @@ char *postproc_help=
  * name is the string after "-pp" on the command line
  * quality is a number from 0 to GET_PP_QUALITY_MAX
  */
-struct PPMode getPPModeByNameAndQuality(char *name, int quality)
+struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 {
 	char temp[GET_MODE_BUFFER_SIZE];
 	char *p= temp;
@@ -765,7 +765,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 	return ppMode;
 }
 
-void *getPPContext(int width, int height){
+void *pp_get_context(int width, int height){
 	PPContext *c= memalign(32, sizeof(PPContext));
 	int i;
 	int mbWidth = (width+15)>>4;
@@ -799,7 +799,7 @@ void *getPPContext(int width, int height){
 	return c;
 }
 
-void freePPContext(void *vc){
+void pp_free_context(void *vc){
 	PPContext *c = (PPContext*)vc;
 	int i;
 	
@@ -844,7 +844,7 @@ void revertPPOpt(void *conf, char* opt)
 }
 
 
-void  postprocess(uint8_t * src[3], int srcStride[3],
+void  pp_postprocess(uint8_t * src[3], int srcStride[3],
                  uint8_t * dst[3], int dstStride[3],
                  int width, int height,
                  QP_STORE_T *QP_store,  int QPStride,
