@@ -62,6 +62,7 @@ split this huge file
 fix warnings (unused vars, ...)
 noise reduction filters
 border remover
+optimize c versions
 ...
 
 Notes:
@@ -417,7 +418,6 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 #if defined (HAVE_MMX2) || defined (HAVE_3DNOW)
 	src+= stride*3;
 	asm volatile(	//"movv %0 %1 %2\n\t"
-		"pushl %0 \n\t"
 		"movq pQPb, %%mm0				\n\t"  // QP,..., QP
 
 		"movq (%0), %%mm6				\n\t"
@@ -535,7 +535,7 @@ static inline void doVertLowPass(uint8_t *src, int stride, int QP)
 		PAVGB(%%mm3, %%mm0)				      //      112	/4
 		PAVGB(%%mm0, %%mm5)				      //    112246	/16
 		"movq %%mm5, (%%eax, %1, 4)			\n\t" //        X
-		"popl %0\n\t"
+		"subl %1, %0					\n\t"
 
 		:
 		: "r" (src), "r" (stride)
@@ -1167,7 +1167,21 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 
 		"movq temp0, %%mm2				\n\t" // 2L0 - 5L1 + 5L2 - 2L3
 		"movq temp1, %%mm3				\n\t" // 2H0 - 5H1 + 5H2 - 2H3
-//FIXME pxor, psubw, pmax for abs
+
+#ifdef HAVE_MMX2
+		"movq %%mm7, %%mm6				\n\t" // 0
+		"psubw %%mm0, %%mm6				\n\t"
+		"pmaxsw %%mm6, %%mm0				\n\t" // |2L4 - 5L5 + 5L6 - 2L7|
+		"movq %%mm7, %%mm6				\n\t" // 0
+		"psubw %%mm1, %%mm6				\n\t"
+		"pmaxsw %%mm6, %%mm1				\n\t" // |2H4 - 5H5 + 5H6 - 2H7|
+		"movq %%mm7, %%mm6				\n\t" // 0
+		"psubw %%mm2, %%mm6				\n\t"
+		"pmaxsw %%mm6, %%mm2				\n\t" // |2L0 - 5L1 + 5L2 - 2L3|
+		"movq %%mm7, %%mm6				\n\t" // 0
+		"psubw %%mm3, %%mm6				\n\t"
+		"pmaxsw %%mm6, %%mm3				\n\t" // |2H0 - 5H1 + 5H2 - 2H3|
+#else
 		"movq %%mm7, %%mm6				\n\t" // 0
 		"pcmpgtw %%mm0, %%mm6				\n\t"
 		"pxor %%mm6, %%mm0				\n\t"
@@ -1176,7 +1190,6 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 		"pcmpgtw %%mm1, %%mm6				\n\t"
 		"pxor %%mm6, %%mm1				\n\t"
 		"psubw %%mm6, %%mm1				\n\t" // |2H4 - 5H5 + 5H6 - 2H7|
-
 		"movq %%mm7, %%mm6				\n\t" // 0
 		"pcmpgtw %%mm2, %%mm6				\n\t"
 		"pxor %%mm6, %%mm2				\n\t"
@@ -1185,6 +1198,7 @@ static inline void doVertDefFilter(uint8_t src[], int stride, int QP)
 		"pcmpgtw %%mm3, %%mm6				\n\t"
 		"pxor %%mm6, %%mm3				\n\t"
 		"psubw %%mm6, %%mm3				\n\t" // |2H0 - 5H1 + 5H2 - 2H3|
+#endif
 
 #ifdef HAVE_MMX2
 		"pminsw %%mm2, %%mm0				\n\t"
@@ -1981,13 +1995,13 @@ FIND_MIN_MAX((%0, %1, 8))
 		PAVGB(lx, pplx)					     \
 		"movq " #lx ", temp1				\n\t"\
 		"movq temp0, " #lx "				\n\t"\
-		"psubusb " #lx ", " #t1 "				\n\t"\
-		"psubusb " #lx ", " #t0 "				\n\t"\
-		"psubusb " #lx ", " #sx "				\n\t"\
+		"psubusb " #lx ", " #t1 "			\n\t"\
+		"psubusb " #lx ", " #t0 "			\n\t"\
+		"psubusb " #lx ", " #sx "			\n\t"\
 		"movq b00, " #lx "				\n\t"\
-		"pcmpeqb " #lx ", " #t1 "				\n\t" /* src[-1] > a ? 0 : -1*/\
-		"pcmpeqb " #lx ", " #t0 "				\n\t" /* src[+1] > a ? 0 : -1*/\
-		"pcmpeqb " #lx ", " #sx "				\n\t" /* src[0]  > a ? 0 : -1*/\
+		"pcmpeqb " #lx ", " #t1 "			\n\t" /* src[-1] > a ? 0 : -1*/\
+		"pcmpeqb " #lx ", " #t0 "			\n\t" /* src[+1] > a ? 0 : -1*/\
+		"pcmpeqb " #lx ", " #sx "			\n\t" /* src[0]  > a ? 0 : -1*/\
 		"paddb " #t1 ", " #t0 "				\n\t"\
 		"paddb " #t0 ", " #sx "				\n\t"\
 \
@@ -2002,10 +2016,10 @@ FIND_MIN_MAX((%0, %1, 8))
 		"paddb " #psx ", " #ppsx "			\n\t"\
 	"#paddb b02, " #ppsx "				\n\t"\
 		"pand b08, " #ppsx "				\n\t"\
-		"pcmpeqb " #lx ", " #ppsx "				\n\t"\
+		"pcmpeqb " #lx ", " #ppsx "			\n\t"\
 		"pand " #ppsx ", " #pplx "			\n\t"\
 		"pandn " #dst ", " #ppsx "			\n\t"\
-		"por " #pplx ", " #ppsx "				\n\t"\
+		"por " #pplx ", " #ppsx "			\n\t"\
 		"movq " #ppsx ", " #dst "			\n\t"\
 		"movq temp1, " #lx "				\n\t"
 
@@ -2996,6 +3010,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	long long memcpyTime=0, vertTime=0, horizTime=0, sumTime;
 	sumTime= rdtsc();
 #endif
+//mode= 0x7F;
 
 	if(tempDst==NULL)
 	{
