@@ -144,6 +144,7 @@ static int use_alt_scan = 0;
 static int use_trell = 0;
 static int use_scan_offset = 0;
 static int use_qpel = 0;
+static int use_qprd = 0;
 static int qns = 0;
 static int closed_gop = 0;
 static int do_deinterlace = 0;
@@ -2865,6 +2866,9 @@ static void opt_output_file(const char *filename)
            	if (use_qpel) {
                     video_enc->flags |= CODEC_FLAG_QPEL;
                 }
+           	if (use_qprd) {
+                    video_enc->flags |= CODEC_FLAG_QP_RD;
+                }
                 if (b_frames) {
                     video_enc->max_b_frames = b_frames;
                     video_enc->b_frame_strategy = 0;
@@ -3605,6 +3609,7 @@ const OptionDef options[] = {
     { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
     { "ssm", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_ss}, "enable Slice Structured mode (h263+)" },
     { "alt", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_alt_scan}, "enable alternate scantable (MPEG2/MPEG4)" },
+    { "qprd", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_qprd}, "" },
     { "trell", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_trell}, "enable trellis quantization" },
     { "cgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&closed_gop}, "closed gop" },
     { "scan_offset", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_scan_offset}, "enable SVCD Scan Offset placeholder" },
