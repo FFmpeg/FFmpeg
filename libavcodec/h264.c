@@ -2106,16 +2106,6 @@ static void init_pred_ptrs(H264Context *h){
     h->pred16x16[DC_128_PRED8x8 ]= pred16x16_128_dc_c;
 }
 
-//FIXME factorize
-#define CHECKED_ALLOCZ(p, size)\
-{\
-    p= av_mallocz(size);\
-    if(p==NULL){\
-        perror("malloc");\
-        goto fail;\
-    }\
-}
-
 static void free_tables(H264Context *h){
     av_freep(&h->intra4x4_pred_mode);
     av_freep(&h->non_zero_count);
