@@ -291,56 +291,71 @@ void palette8torgb15(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 }
 /**
  *
- * num_pixels must be a multiple of 16 for the MMX version
+ * width must be a multiple of 16 for the MMX version
  */
-void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst, unsigned num_pixels)
+void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
+	int width, int height, int lumStride, int chromStride, int dstStride)
 {
-#ifdef HAVE_MMX
-	asm volatile(
-		"xorl %%eax, %%eax		\n\t"
-		"1:				\n\t"
-		PREFETCH" 32(%1, %%eax, 2)	\n\t"
-		PREFETCH" 32(%2, %%eax)		\n\t"
-		PREFETCH" 32(%3, %%eax)		\n\t"
-		"movq (%2, %%eax), %%mm0	\n\t" // U(0)
-		"movq %%mm0, %%mm2		\n\t" // U(0)
-		"movq (%3, %%eax), %%mm1	\n\t" // V(0)
-		"punpcklbw %%mm1, %%mm0		\n\t" // UVUV UVUV(0)
-		"punpckhbw %%mm1, %%mm2		\n\t" // UVUV UVUV(8)
-
-		"movq (%1, %%eax,2), %%mm3	\n\t" // Y(0)
-		"movq 8(%1, %%eax,2), %%mm5	\n\t" // Y(8)
-		"movq %%mm3, %%mm4		\n\t" // Y(0)
-		"movq %%mm5, %%mm6		\n\t" // Y(8)
-		"punpcklbw %%mm0, %%mm3		\n\t" // YUYV YUYV(0)
-		"punpckhbw %%mm0, %%mm4		\n\t" // YUYV YUYV(4)
-		"punpcklbw %%mm2, %%mm5		\n\t" // YUYV YUYV(8)
-		"punpckhbw %%mm2, %%mm6		\n\t" // YUYV YUYV(12)
-
-		MOVNTQ" %%mm3, (%0, %%eax, 4)	\n\t"
-		MOVNTQ" %%mm4, 8(%0, %%eax, 4)	\n\t"
-		MOVNTQ" %%mm5, 16(%0, %%eax, 4)	\n\t"
-		MOVNTQ" %%mm6, 24(%0, %%eax, 4)	\n\t"
-
-		"addl $8, %%eax			\n\t"
-		"cmpl %4, %%eax			\n\t"
-		" jb 1b				\n\t"
-		EMMS" \n\t"
-		SFENCE
-		::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "r" (num_pixels>>1)
-		: "memory", "%eax"
-	);
-
-#else
-	int i;
-	num_pixels>>=1;
-	for(i=0; i<num_pixels; i++)
+	int y;
+	const int chromWidth= width>>1;
+	for(y=0; y<height; y++)
 	{
-		dst[4*i+0] = ysrc[2*i+0];
-		dst[4*i+1] = usrc[i];
-		dst[4*i+2] = ysrc[2*i+1];
-		dst[4*i+3] = vsrc[i];
+#ifdef HAVE_MMX
+//FIXME handle 2 lines a once (fewer prefetch, reuse some chrom, but very likely limited by mem anyway)
+		asm volatile(
+			"xorl %%eax, %%eax		\n\t"
+			"1:				\n\t"
+			PREFETCH" 32(%1, %%eax, 2)	\n\t"
+			PREFETCH" 32(%2, %%eax)		\n\t"
+			PREFETCH" 32(%3, %%eax)		\n\t"
+			"movq (%2, %%eax), %%mm0	\n\t" // U(0)
+			"movq %%mm0, %%mm2		\n\t" // U(0)
+			"movq (%3, %%eax), %%mm1	\n\t" // V(0)
+			"punpcklbw %%mm1, %%mm0		\n\t" // UVUV UVUV(0)
+			"punpckhbw %%mm1, %%mm2		\n\t" // UVUV UVUV(8)
+
+			"movq (%1, %%eax,2), %%mm3	\n\t" // Y(0)
+			"movq 8(%1, %%eax,2), %%mm5	\n\t" // Y(8)
+			"movq %%mm3, %%mm4		\n\t" // Y(0)
+			"movq %%mm5, %%mm6		\n\t" // Y(8)
+			"punpcklbw %%mm0, %%mm3		\n\t" // YUYV YUYV(0)
+			"punpckhbw %%mm0, %%mm4		\n\t" // YUYV YUYV(4)
+			"punpcklbw %%mm2, %%mm5		\n\t" // YUYV YUYV(8)
+			"punpckhbw %%mm2, %%mm6		\n\t" // YUYV YUYV(12)
+
+			MOVNTQ" %%mm3, (%0, %%eax, 4)	\n\t"
+			MOVNTQ" %%mm4, 8(%0, %%eax, 4)	\n\t"
+			MOVNTQ" %%mm5, 16(%0, %%eax, 4)	\n\t"
+			MOVNTQ" %%mm6, 24(%0, %%eax, 4)	\n\t"
+
+			"addl $8, %%eax			\n\t"
+			"cmpl %4, %%eax			\n\t"
+			" jb 1b				\n\t"
+			::"r"(dst), "r"(ysrc), "r"(usrc), "r"(vsrc), "r" (chromWidth)
+			: "%eax"
+		);
+#else
+		int i;
+		for(i=0; i<chromWidth; i++)
+		{
+			dst[4*i+0] = ysrc[2*i+0];
+			dst[4*i+1] = usrc[i];
+			dst[4*i+2] = ysrc[2*i+1];
+			dst[4*i+3] = vsrc[i];
+		}
+#endif
+		if(y&1)
+		{
+			usrc += chromStride;
+			vsrc += chromStride;
+		}
+		ysrc += lumStride;
+		dst += dstStride;
 	}
+#ifdef HAVE_MMX
+asm(    EMMS" \n\t"
+        SFENCE" \n\t"
+        :::"memory");
 #endif
 }
 
