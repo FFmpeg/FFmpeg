@@ -7,7 +7,6 @@
  */
 
 #include <stdio.h>
-#include <time.h>
 
 #include <ogg/ogg.h>
 #include <vorbis/vorbisenc.h>
@@ -42,8 +41,7 @@ static int ogg_write_header(AVFormatContext *avfcontext)
     ogg_packet header, header_comm, header_code ; 
     int n ;
     
-    srand(time(NULL));
-    ogg_stream_init(&context->os, rand());
+    ogg_stream_init(&context->os, 31415);
     
     for(n = 0 ; n < avfcontext->nb_streams ; n++) {
 	avccontext = &avfcontext->streams[n]->codec ;
@@ -196,7 +194,9 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
     char *buf ;
     ogg_page og ;
     AVStream *ast ;
-    
+     
+    avfcontext->ctx_flags |= AVFMTCTX_NOHEADER;
+     
     ogg_sync_init(&context->oy) ;
     buf = ogg_sync_buffer(&context->oy, DECODER_BUFFER_SIZE) ;
 

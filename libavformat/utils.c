@@ -1476,6 +1476,7 @@ int av_find_stream_info(AVFormatContext *ic)
             (st->codec.codec_id == CODEC_ID_FLV1 ||
              st->codec.codec_id == CODEC_ID_H264 ||
              st->codec.codec_id == CODEC_ID_H263 ||
+             st->codec.codec_id == CODEC_ID_VORBIS ||
              (st->codec.codec_id == CODEC_ID_MPEG4 && !st->need_parsing)))
             try_decode_frame(st, pkt->data, pkt->size);
         
@@ -1864,7 +1865,7 @@ int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
     } 
     else {
         /* Finally we give up and parse it as double */
-        *frame_rate_base = DEFAULT_FRAME_RATE_BASE;
+        *frame_rate_base = DEFAULT_FRAME_RATE_BASE; //FIXME use av_d2q()
         *frame_rate = (int)(strtod(arg, 0) * (*frame_rate_base) + 0.5);
     }
     if (!*frame_rate || !*frame_rate_base)

@@ -4,8 +4,6 @@
  * @author Mark Hills <mark@pogo.org.uk>
  */
 
-#include <time.h>
-
 #include <vorbis/vorbisenc.h>
 
 #include "avcodec.h"
@@ -185,22 +183,36 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext,
     OggVorbisContext *context = avccontext->priv_data ;
     ogg_packet *op = (ogg_packet*)buf ;
     float **pcm ;
-    int samples, total_samples, total_bytes ;
+    int samples, total_samples, total_bytes,i;
  
+    if(!buf_size){
+    //FIXME flush
+        *data_size=0;
+        return 0;
+    }
+    
     op->packet = (char*)op + sizeof(ogg_packet) ; /* correct data pointer */
 
+//    av_log(avccontext, AV_LOG_DEBUG, "%d %d %d %lld %lld %d %d\n", op->bytes, op->b_o_s, op->e_o_s, op->granulepos, op->packetno, buf_size, context->vi.rate);
+    
+/*    for(i=0; i<op->bytes; i++)
+      av_log(avccontext, AV_LOG_DEBUG, "%02X ", op->packet[i]);
+    av_log(avccontext, AV_LOG_DEBUG, "\n");*/
+//    op->b_o_s= op->packetno == 0;
     if(op->packetno < 3) {
-	vorbis_synthesis_headerin(&context->vi, &context->vc, op) ;
+	if(vorbis_synthesis_headerin(&context->vi, &context->vc, op)<0){
+            av_log(avccontext, AV_LOG_ERROR, "%lld. vorbis header damaged\n", op->packetno+1);
+            return -1;
+        }
+	avccontext->channels = context->vi.channels ;
+	avccontext->sample_rate = context->vi.rate ;
 	return buf_size ;
     }
 
     if(op->packetno == 3) {
-	av_log(avccontext, AV_LOG_ERROR, "vorbis_decode: %d channel, %ldHz, encoder `%s'\n",
-		context->vi.channels, context->vi.rate, context->vc.vendor);
+//	av_log(avccontext, AV_LOG_INFO, "vorbis_decode: %d channel, %ldHz, encoder `%s'\n",
+//		context->vi.channels, context->vi.rate, context->vc.vendor);
 
-	avccontext->channels = context->vi.channels ;
-	avccontext->sample_rate = context->vi.rate ;
-	
 	vorbis_synthesis_init(&context->vd, &context->vi) ;
 	vorbis_block_init(&context->vd, &context->vb); 
     }
