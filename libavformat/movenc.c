@@ -785,7 +785,7 @@ static AVOutputFormat mov_oformat = {
     "mov",
     sizeof(MOVContext),
     CODEC_ID_MP2,
-    CODEC_ID_SVQ1,
+    CODEC_ID_MPEG4,
     mov_write_header,
     mov_write_packet,
     mov_write_trailer,
