@@ -4564,6 +4564,17 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
         time_incr++;
 
     check_marker(gb, "before time_increment");
+    
+    if(s->picture_number==0 && (show_bits(gb, s->time_increment_bits+1)&1)==0){
+        printf("hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
+        
+
+        for(s->time_increment_bits=1 ;s->time_increment_bits<16; s->time_increment_bits++){
+            if(show_bits(gb, s->time_increment_bits+1)&1) break;
+        }
+        printf("my guess is %d bits ;)\n",s->time_increment_bits);
+    }
+    
     time_increment= get_bits(gb, s->time_increment_bits);
 //printf(" type:%d modulo_time_base:%d increment:%d\n", s->pict_type, time_incr, time_increment);
     if(s->pict_type!=B_TYPE){
@@ -4600,13 +4611,8 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
     if(s->avctx->debug&FF_DEBUG_PTS)
         printf("MPEG4 PTS: %f\n", s->current_picture.pts/(1000.0*1000.0));
     
-    if(check_marker(gb, "before vop_coded")==0 && s->picture_number==0){
-        printf("hmm, seems the headers arnt complete, trying to guess time_increment_bits\n");
-        for(s->time_increment_bits++ ;s->time_increment_bits<16; s->time_increment_bits++){
-            if(get_bits1(gb)) break;
-        }
-        printf("my guess is %d bits ;)\n",s->time_increment_bits);
-    }
+    check_marker(gb, "before vop_coded");
+    
     /* vop coded */
     if (get_bits1(gb) != 1){
         printf("vop not coded\n");
