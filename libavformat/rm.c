@@ -639,7 +639,8 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     goto fail;
                 }
                 st->codec.codec_tag = get_le32(pb);
-                if (st->codec.codec_tag != MKTAG('R', 'V', '1', '0'))
+                if (   st->codec.codec_tag != MKTAG('R', 'V', '1', '0')
+                    && st->codec.codec_tag != MKTAG('R', 'V', '2', '0'))
                     goto fail1;
                 st->codec.width = get_be16(pb);
                 st->codec.height = get_be16(pb);
@@ -656,10 +657,11 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 case 0x10000000:
                 case 0x10003000:
                 case 0x10003001:
+                default:
                     st->codec.sub_id = h263_hack_version;
                     st->codec.codec_id = CODEC_ID_RV10;
                     break;
-                default:
+//                default:
                     /* not handled */
                     st->codec.codec_id = CODEC_ID_NONE;
                     break;
