@@ -60,17 +60,17 @@ CodecTag codec_bmp_tags[] = {
     { CODEC_ID_H263P, MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263I, MKTAG('I', '2', '6', '3') }, /* intel h263 */
     { CODEC_ID_MJPEG, MKTAG('M', 'J', 'P', 'G') },
-    { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X'), invalid_asf: 1 },
-    { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x'), invalid_asf: 1},
-    { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0'), invalid_asf: 1 },
-    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D'), invalid_asf: 1 },
-    { CODEC_ID_MPEG4, MKTAG('x', 'v', 'i', 'd'), invalid_asf: 1 },
-    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 's'), invalid_asf: 1 },
+    { CODEC_ID_MPEG4, MKTAG('D', 'I', 'V', 'X'), .invalid_asf = 1 },
+    { CODEC_ID_MPEG4, MKTAG('d', 'i', 'v', 'x'), .invalid_asf = 1 },
+    { CODEC_ID_MPEG4, MKTAG('D', 'X', '5', '0'), .invalid_asf = 1 },
+    { CODEC_ID_MPEG4, MKTAG('X', 'V', 'I', 'D'), .invalid_asf = 1 },
+    { CODEC_ID_MPEG4, MKTAG('x', 'v', 'i', 'd'), .invalid_asf = 1 },
+    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 's'), .invalid_asf = 1 },
     { CODEC_ID_MPEG4, MKTAG('M', 'P', '4', 'S') },
     { CODEC_ID_MPEG4, MKTAG('M', '4', 'S', '2') },
     { CODEC_ID_MPEG4, MKTAG('m', '4', 's', '2') },
     { CODEC_ID_MPEG4, MKTAG(0x04, 0, 0, 0) }, /* some broken avi use this */
-    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3'), invalid_asf: 1 }, /* default signature when using MSMPEG4 */
+    { CODEC_ID_MSMPEG4V3, MKTAG('D', 'I', 'V', '3'), .invalid_asf = 1 }, /* default signature when using MSMPEG4 */
     { CODEC_ID_MSMPEG4V3, MKTAG('M', 'P', '4', '3') }, 
     { CODEC_ID_MSMPEG4V2, MKTAG('M', 'P', '4', '2') }, 
     { CODEC_ID_MSMPEG4V1, MKTAG('M', 'P', 'G', '4') }, 

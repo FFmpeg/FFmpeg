@@ -465,7 +465,7 @@ AVOutputFormat null_oformat = {
     raw_write_header,
     null_write_packet,
     raw_write_trailer,
-    flags: AVFMT_NOFILE | AVFMT_RAWPICTURE,
+    .flags = AVFMT_NOFILE | AVFMT_RAWPICTURE,
 };
 
 int raw_init(void)
