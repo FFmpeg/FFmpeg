@@ -87,6 +87,8 @@ typedef struct SPS{
     uint32_t time_scale;
     int fixed_frame_rate_flag;
     short offset_for_ref_frame[256]; //FIXME dyn aloc?
+    int bitstream_restriction_flag;
+    int num_reorder_frames;
 }SPS;
 
 /**
@@ -289,7 +291,7 @@ typedef struct H264Context{
     Picture ref_list[2][32]; //FIXME size?
     Picture field_ref_list[2][32]; //FIXME size?
     Picture *delayed_pic[16]; //FIXME size?
-    int delayed_output_poc;
+    Picture *delayed_output_pic;
     
     /**
      * memory management control operations buffer.
@@ -3249,36 +3251,40 @@ static void implicit_weight_table(H264Context *h){
     }
 }
 
+static inline void unreference_pic(H264Context *h, Picture *pic){
+    int i;
+    pic->reference=0;
+    if(pic == h->delayed_output_pic)
+        pic->reference=1;
+    else{
+        for(i = 0; h->delayed_pic[i]; i++)
+            if(pic == h->delayed_pic[i]){
+                pic->reference=1;
+                break;
+            }
+    }
+}
+
 /**
  * instantaneous decoder refresh.
  */
 static void idr(H264Context *h){
-    int i,j;
-
-#define CHECK_DELAY(pic) \
-    for(j = 0; h->delayed_pic[j]; j++) \
-        if(pic == h->delayed_pic[j]){ \
-            pic->reference=1; \
-            break; \
-        }
+    int i;
 
     for(i=0; i<16; i++){
         if (h->long_ref[i] != NULL) {
-            h->long_ref[i]->reference=0;
-            CHECK_DELAY(h->long_ref[i]);
+            unreference_pic(h, h->long_ref[i]);
             h->long_ref[i]= NULL;
         }
     }
     h->long_ref_count=0;
 
     for(i=0; i<h->short_ref_count; i++){
-        h->short_ref[i]->reference=0;
-        CHECK_DELAY(h->short_ref[i]);
+        unreference_pic(h, h->short_ref[i]);
         h->short_ref[i]= NULL;
     }
     h->short_ref_count=0;
 }
-#undef CHECK_DELAY
 
 /**
  *
@@ -3369,11 +3375,11 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         case MMCO_SHORT2UNUSED:
             pic= remove_short(h, mmco[i].short_frame_num);
             if(pic==NULL) return -1;
-            pic->reference= 0;
+            unreference_pic(h, pic);
             break;
         case MMCO_SHORT2LONG:
             pic= remove_long(h, mmco[i].long_index);
-            if(pic) pic->reference=0;
+            if(pic) unreference_pic(h, pic);
             
             h->long_ref[ mmco[i].long_index ]= remove_short(h, mmco[i].short_frame_num);
             h->long_ref[ mmco[i].long_index ]->long_ref=1;
@@ -3382,11 +3388,11 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
         case MMCO_LONG2UNUSED:
             pic= remove_long(h, mmco[i].long_index);
             if(pic==NULL) return -1;
-            pic->reference= 0;
+            unreference_pic(h, pic);
             break;
         case MMCO_LONG:
             pic= remove_long(h, mmco[i].long_index);
-            if(pic) pic->reference=0;
+            if(pic) unreference_pic(h, pic);
             
             h->long_ref[ mmco[i].long_index ]= s->current_picture_ptr;
             h->long_ref[ mmco[i].long_index ]->long_ref=1;
@@ -3399,17 +3405,17 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             // just remove the long term which index is greater than new max
             for(j = mmco[i].long_index; j<16; j++){
                 pic = remove_long(h, j);
-                if (pic) pic->reference=0;
+                if (pic) unreference_pic(h, pic);
             }
             break;
         case MMCO_RESET:
             while(h->short_ref_count){
                 pic= remove_short(h, h->short_ref[0]->frame_num);
-                pic->reference=0;
+                unreference_pic(h, pic);
             }
             for(j = 0; j < 16; j++) {
                 pic= remove_long(h, j);
-                if(pic) pic->reference=0;
+                if(pic) unreference_pic(h, pic);
             }
             break;
         default: assert(0);
@@ -3419,7 +3425,7 @@ static int execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
     if(!current_is_long){
         pic= remove_short(h, s->current_picture_ptr->frame_num);
         if(pic){
-            pic->reference=0;
+            unreference_pic(h, pic);
             av_log(h->s.avctx, AV_LOG_ERROR, "illegal short term buffer state detected\n");
         }
         
@@ -3756,7 +3762,7 @@ static int decode_slice_header(H264Context *h){
     else
         h->use_weight = 0;
     
-    if(s->current_picture.reference)
+    if(s->current_picture.reference == 3)
         decode_ref_pic_marking(h);
 
     if( h->slice_type != I_TYPE && h->slice_type != SI_TYPE && h->pps.cabac )
@@ -5974,9 +5980,27 @@ static int decode_slice(H264Context *h){
     return -1; //not reached
 }
 
+static inline void decode_hrd_parameters(H264Context *h, SPS *sps){
+    MpegEncContext * const s = &h->s;
+    int cpb_count, i;
+    cpb_count = get_ue_golomb(&s->gb) + 1;
+    get_bits(&s->gb, 4); /* bit_rate_scale */
+    get_bits(&s->gb, 4); /* cpb_size_scale */
+    for(i=0; i<cpb_count; i++){
+        get_ue_golomb(&s->gb); /* bit_rate_value_minus1 */
+        get_ue_golomb(&s->gb); /* cpb_size_value_minus1 */
+        get_bits1(&s->gb);     /* cbr_flag */
+    }
+    get_bits(&s->gb, 5); /* initial_cpb_removal_delay_length_minus1 */
+    get_bits(&s->gb, 5); /* cpb_removal_delay_length_minus1 */
+    get_bits(&s->gb, 5); /* dpb_output_delay_length_minus1 */
+    get_bits(&s->gb, 5); /* time_offset_length */
+}
+
 static inline int decode_vui_parameters(H264Context *h, SPS *sps){
     MpegEncContext * const s = &h->s;
     int aspect_ratio_info_present_flag, aspect_ratio_idc;
+    int nal_hrd_parameters_present_flag, vcl_hrd_parameters_present_flag;
 
     aspect_ratio_info_present_flag= get_bits1(&s->gb);
     
@@ -6023,29 +6047,27 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         sps->fixed_frame_rate_flag = get_bits1(&s->gb);
     }
 
-#if 0
-| nal_hrd_parameters_present_flag                   |0  |u(1)    |
-| if( nal_hrd_parameters_present_flag  = =  1)      |   |        |
-|  hrd_parameters( )                                |   |        |
-| vcl_hrd_parameters_present_flag                   |0  |u(1)    |
-| if( vcl_hrd_parameters_present_flag  = =  1)      |   |        |
-|  hrd_parameters( )                                |   |        |
-| if( ( nal_hrd_parameters_present_flag  = =  1  | ||   |        |
-|                                                   |   |        |
-|( vcl_hrd_parameters_present_flag  = =  1 ) )      |   |        |
-|  low_delay_hrd_flag                               |0  |u(1)    |
-| bitstream_restriction_flag                        |0  |u(1)    |
-| if( bitstream_restriction_flag ) {                |0  |u(1)    |
-|  motion_vectors_over_pic_boundaries_flag          |0  |u(1)    |
-|  max_bytes_per_pic_denom                          |0  |ue(v)   |
-|  max_bits_per_mb_denom                            |0  |ue(v)   |
-|  log2_max_mv_length_horizontal                    |0  |ue(v)   |
-|  log2_max_mv_length_vertical                      |0  |ue(v)   |
-|  num_reorder_frames                               |0  |ue(v)   |
-|  max_dec_frame_buffering                          |0  |ue(v)   |
-| }                                                 |   |        |
-|}                                                  |   |        |
-#endif
+    nal_hrd_parameters_present_flag = get_bits1(&s->gb);
+    if(nal_hrd_parameters_present_flag)
+        decode_hrd_parameters(h, sps);
+    vcl_hrd_parameters_present_flag = get_bits1(&s->gb);
+    if(vcl_hrd_parameters_present_flag)
+        decode_hrd_parameters(h, sps);
+    if(nal_hrd_parameters_present_flag || vcl_hrd_parameters_present_flag)
+        get_bits1(&s->gb);     /* low_delay_hrd_flag */
+    get_bits1(&s->gb);         /* pic_struct_present_flag */
+
+    sps->bitstream_restriction_flag = get_bits1(&s->gb);
+    if(sps->bitstream_restriction_flag){
+        get_bits1(&s->gb);     /* motion_vectors_over_pic_boundaries_flag */
+        get_ue_golomb(&s->gb); /* max_bytes_per_pic_denom */
+        get_ue_golomb(&s->gb); /* max_bits_per_mb_denom */
+        get_ue_golomb(&s->gb); /* log2_max_mv_length_horizontal */
+        get_ue_golomb(&s->gb); /* log2_max_mv_length_vertical */
+        sps->num_reorder_frames = get_ue_golomb(&s->gb);
+        get_ue_golomb(&s->gb); /* max_dec_frame_buffering */
+    }
+
     return 0;
 }
 
@@ -6390,13 +6412,12 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
 	default:
 	    av_log(avctx, AV_LOG_ERROR, "Unknown NAL code: %d\n", h->nal_unit_type);
         }        
-
-        //FIXME move after where irt is set
-        s->current_picture.pict_type= s->pict_type;
-        s->current_picture.key_frame= s->pict_type == I_TYPE && h->nal_unit_type == NAL_IDR_SLICE;
     }
     
     if(!s->current_picture_ptr) return buf_index; //no frame
+
+    s->current_picture_ptr->pict_type= s->pict_type;
+    s->current_picture_ptr->key_frame= s->pict_type == I_TYPE && h->nal_unit_type == NAL_IDR_SLICE;
     
     h->prev_frame_num_offset= h->frame_num_offset;
     h->prev_frame_num= h->frame_num;
@@ -6517,50 +6538,73 @@ static int decode_frame(AVCodecContext *avctx,
     {
 //#define DECODE_ORDER
         Picture *out = s->current_picture_ptr;
+        *data_size = sizeof(AVFrame);
 #ifndef DECODE_ORDER
         /* Sort B-frames into display order */
         Picture *cur = s->current_picture_ptr;
+        Picture *prev = h->delayed_output_pic;
         int out_idx = 0;
         int pics = 0;
+        int out_of_order;
+        int cross_idr = 0;
+        int dropped_frame = 0;
         int i;
-        out = NULL;
+
+        if(h->sps.bitstream_restriction_flag
+           && s->avctx->has_b_frames < h->sps.num_reorder_frames){
+            s->avctx->has_b_frames = h->sps.num_reorder_frames;
+            s->low_delay = 0;
+        }
 
         while(h->delayed_pic[pics]) pics++;
         h->delayed_pic[pics++] = cur;
+        if(cur->reference == 0)
+            cur->reference = 1;
+
+        for(i=0; h->delayed_pic[i]; i++)
+            if(h->delayed_pic[i]->key_frame)
+                cross_idr = 1;
+
         out = h->delayed_pic[0];
-        for(i=0; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame; i++)
-            if(!out || h->delayed_pic[i]->poc < out->poc){
+        for(i=1; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame; i++)
+            if(h->delayed_pic[i]->poc < out->poc){
                 out = h->delayed_pic[i];
                 out_idx = i;
             }
-        if(cur->reference == 0)
-            cur->reference = 1;
-        for(i=0; h->delayed_pic[i]; i++)
-            if(h->delayed_pic[i]->key_frame)
-                h->delayed_output_poc = -1;
-        if(pics > FFMAX(1, s->avctx->has_b_frames)){
-            if(out->reference == 1)
-                out->reference = 0;
+
+        out_of_order = !cross_idr && prev && out->poc < prev->poc;
+        if(prev && pics <= s->avctx->has_b_frames)
+            out = prev;
+        else if((out_of_order && pics-1 == s->avctx->has_b_frames)
+           || (s->low_delay && 
+            ((!cross_idr && prev && out->poc > prev->poc + 2)
+             || cur->pict_type == B_TYPE)))
+        {
+            s->low_delay = 0;
+            s->avctx->has_b_frames++;
+            out = prev;
+        }
+        else if(out_of_order)
+            out = prev;
+
+        if(out_of_order || pics > s->avctx->has_b_frames){
+            dropped_frame = (out != h->delayed_pic[out_idx]);
             for(i=out_idx; h->delayed_pic[i]; i++)
                 h->delayed_pic[i] = h->delayed_pic[i+1];
         }
 
-        if((h->delayed_output_poc >=0 && h->delayed_output_poc > cur->poc)
-          || (s->low_delay && (cur->pict_type == B_TYPE
-              || (!h->sps.gaps_in_frame_num_allowed_flag
-                && cur->poc - out->poc > 2)))){
-            s->low_delay = 0;
-            s->avctx->has_b_frames++;
-        }
-
-        h->delayed_output_poc = out->poc;
+        if(prev == out && !dropped_frame)
+            *data_size = 0;
+        if(prev && prev != out && prev->reference == 1)
+            prev->reference = 0;
+        h->delayed_output_pic = out;
 #endif
 
         *pict= *(AVFrame*)out;
     }
 
-    ff_print_debug_info(s, pict);
     assert(pict->data[0]);
+    ff_print_debug_info(s, pict);
 //printf("out %d\n", (int)pict->data[0]);
 #if 0 //?
 
@@ -6568,12 +6612,6 @@ static int decode_frame(AVCodecContext *avctx,
     /* we substract 1 because it is added on utils.c    */
     avctx->frame_number = s->picture_number - 1;
 #endif
-#if 0
-    /* dont output the last pic after seeking */
-    if(s->last_picture_ptr || s->low_delay)
-    //Note this isnt a issue as a IDR pic should flush the buffers
-#endif
-        *data_size = sizeof(AVFrame);
     return get_consumed_bytes(s, buf_index, buf_size);
 }
 #if 0
