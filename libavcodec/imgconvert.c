@@ -18,7 +18,7 @@
  */
 
 /**
- * @imgconvert.c
+ * @file imgconvert.c
  * Misc image convertion routines.
  */
 
