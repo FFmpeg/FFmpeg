@@ -25,10 +25,6 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 
-#ifdef USE_FASTMEMCPY
-#include "fastmemcpy.h"
-#endif
-
 /* use two quantizer tables (one for luminance and one for chrominance) */
 /* not yet working */
 #undef TWOMATRIXES
@@ -1299,10 +1295,10 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 				break;
 			}
 		    }
+		    init_get_bits(&s->gb, s->buffer, s->buffer_size);
 		}
 		else
-		    memcpy(s->buffer, buf_ptr, buf_end - buf_ptr);
-		init_get_bits(&s->gb, s->buffer, s->buffer_size);
+		    init_get_bits(&s->gb, buf_ptr, buf_end - buf_ptr);
 		
 		s->start_code = start_code;
 
