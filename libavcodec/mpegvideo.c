@@ -801,8 +801,8 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             }
         }
     }
-
-    if(!s->encoding){        
+alloc:
+    if(!s->encoding){
         /* find unused Picture */
         for(i=0; i<MAX_PICTURE_COUNT; i++){
             if(s->picture[i].data[0]==NULL) break;
@@ -829,14 +829,20 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         s->current_picture= s->picture[i];
     }
 
-    s->hurry_up= s->avctx->hurry_up;
-    s->error_resilience= avctx->error_resilience;
-
     if (s->pict_type != B_TYPE) {
         s->last_picture= s->next_picture;
         s->next_picture= s->current_picture;
     }
+    
+    if(s->pict_type != I_TYPE && s->last_picture.data[0]==NULL){
+        fprintf(stderr, "warning: first frame is no keyframe\n");
+        assert(s->pict_type != B_TYPE); //these should have been dropped if we dont have a reference
+        goto alloc;
+    }
    
+    s->hurry_up= s->avctx->hurry_up;
+    s->error_resilience= avctx->error_resilience;
+
     /* set dequantizer, we cant do it during init as it might change for mpeg4
        and we cant do it in the header decode as init isnt called for mpeg4 there yet */
     if(s->out_format == FMT_H263){
