@@ -2640,8 +2640,8 @@ static always_inline void mpeg_motion_lowres(MpegEncContext *s,
     src_y =(s->mb_y*2*block_s>>field_based) + (motion_y >> (lowres+1));
     
     if (s->out_format == FMT_H263) {
-        uvsx = sx | ((motion_x & 2)>>1);
-        uvsy = sy | ((motion_y & 2)>>1);
+        uvsx = ((motion_x>>1) & s_mask) | (sx&1);
+        uvsy = ((motion_y>>1) & s_mask) | (sy&1);
         uvsrc_x = src_x>>1;
         uvsrc_y = src_y>>1;
     }else if(s->out_format == FMT_H261){//even chroma mv's are full pel in H261
