@@ -479,6 +479,9 @@ int film_init(void);
 /* idcin.c */
 int idcin_init(void);
 
+/* flic.c */
+int flic_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"

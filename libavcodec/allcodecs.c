@@ -137,6 +137,7 @@ void avcodec_register_all(void)
     register_avcodec(&idcin_decoder);
     register_avcodec(&eightbps_decoder);
     register_avcodec(&smc_decoder);
+    register_avcodec(&flic_decoder);
 #ifdef CONFIG_AC3
     register_avcodec(&ac3_decoder);
 #endif

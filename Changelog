@@ -2,11 +2,14 @@ version <next>:
 - DV encoder, DV muxer
 - Microsoft RLE video decoder
 - Microsoft Video-1 decoder
+- Apple Graphics (SMC) decoder
 - Apple Video (RPZA) decoder
 - Cinepak decoder
 - Sega FILM (CPK) file demuxer
-- Westwood multimedia support (VQA/AUD file demuxer, audio decoder)
+- Westwood multimedia support (VQA & AUD files)
 - Id Quake II CIN playback support
+- 8BPS video decoder
+- FLIC playback support
 
 version 0.4.8:
 

@@ -613,6 +613,7 @@ library:
 @item Raw MJPEG @tab X  @tab  X 
 @item Raw MPEG video @tab X  @tab  X 
 @item Raw PCM8/16 bits, mulaw/Alaw@tab X  @tab  X 
+@item Raw CRI ADX audio @tab X  @tab  X 
 @item SUN AU format @tab X  @tab  X 
 @item NUT @tab X @tab X @tab NUT Open Container Format
 @item Quicktime        @tab X @tab  X 
@@ -635,6 +636,8 @@ library:
 @tab Multimedia formats used in Westwood Studios games
 @item Id Cinematic (.cin) @tab    @tab X
 @tab Used in Quake II
+@item FLIC format      @tab    @tab X
+@tab .fli/.flc files
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -695,6 +698,7 @@ following image formats are supported:
 @item Id RoQ                 @tab     @tab  X @tab used in Quake III, Jedi Knight 2, other computer games
 @item Xan/WC3                @tab     @tab  X @tab used in Wing Commander III .MVE files
 @item Interplay Video        @tab     @tab  X @tab used in Interplay .MVE files
+@item Apple Graphics         @tab     @tab  X @tab fourcc: 'smc '
 @item Apple Video            @tab     @tab  X @tab fourcc: rpza
 @item Cinepak                @tab     @tab  X
 @item Microsoft RLE          @tab     @tab  X
@@ -702,6 +706,7 @@ following image formats are supported:
 @item Westwood VQA           @tab     @tab  X
 @item Id Cinematic Video     @tab     @tab  X @tab used in Quake II
 @item Planar RGB             @tab     @tab  X @tab fourcc: 8BPS
+@item FLIC video             @tab     @tab  X
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -731,7 +736,10 @@ solutions.
 @item Duck DK4 IMA ADPCM     @tab      @tab X
 @tab used in some Sega Saturn console games
 @item Westwood Studios IMA ADPCM @tab      @tab X
-@tab used in Westwood Studios games likes Command and Conquer
+@tab used in Westwood Studios games like Command and Conquer
+@item CD-ROM XA ADPCM        @tab      @tab X
+@item CRI ADX ADPCM          @tab X    @tab X
+@tab used in Sega Dreamcast games
 @item RA144                  @tab      @tab X
 @tab Real 14400 bit/s codec
 @item RA288                  @tab      @tab X
