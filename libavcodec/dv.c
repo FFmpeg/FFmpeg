@@ -645,7 +645,7 @@ typedef struct EncBlockInfo {
 static always_inline int dv_bits_left(PutBitContext* s)
 {
     return (s->buf_end - s->buf) * 8 - 
-           ((s->buf_ptr - s->buf + s->data_out_size) * 8 + 32 - (int64_t)s->bit_left);
+           ((s->buf_ptr - s->buf) * 8 + 32 - (int64_t)s->bit_left);
 }
 
 static always_inline void dv_encode_ac(EncBlockInfo* bi, PutBitContext* pb_pool, 

@@ -48,7 +48,6 @@ void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size)
 {
     s->buf = buffer;
     s->buf_end = s->buf + buffer_size;
-    s->data_out_size = 0;
 #ifdef ALT_BITSTREAM_WRITER
     s->index=0;
     ((uint32_t*)(s->buf))[0]=0;
@@ -63,12 +62,12 @@ void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size)
 #ifdef CONFIG_ENCODERS
 
 /* return the number of bits output */
-int64_t get_bit_count(PutBitContext *s)
+int get_bit_count(PutBitContext *s)
 {
 #ifdef ALT_BITSTREAM_WRITER
-    return s->data_out_size * 8 + s->index;
+    return s->index;
 #else
-    return (s->buf_ptr - s->buf + s->data_out_size) * 8 + 32 - (int64_t)s->bit_left;
+    return (s->buf_ptr - s->buf) * 8 + 32 - s->bit_left;
 #endif
 }
 

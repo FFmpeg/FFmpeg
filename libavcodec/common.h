@@ -274,12 +274,11 @@ typedef struct PutBitContext {
     int bit_left;
     uint8_t *buf, *buf_ptr, *buf_end;
 #endif
-    int64_t data_out_size; /* in bytes */
 } PutBitContext;
 
 void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_size);
 
-int64_t get_bit_count(PutBitContext *s); /* XXX: change function name */
+int get_bit_count(PutBitContext *s); /* XXX: change function name */
 void align_put_bits(PutBitContext *s);
 void flush_put_bits(PutBitContext *s);
 void put_string(PutBitContext * pbc, char *s);

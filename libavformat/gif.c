@@ -274,7 +274,6 @@ static int gif_image_write_image(ByteIOContext *pb,
         if(pbBufPtr(&p) - p.buf > 0) {
             put_byte(pb, pbBufPtr(&p) - p.buf); /* byte count of the packet */
             put_buffer(pb, p.buf, pbBufPtr(&p) - p.buf); /* the actual buffer */
-            p.data_out_size += pbBufPtr(&p) - p.buf;
             p.buf_ptr = p.buf; /* dequeue the bytes off the bitstream */
         }
         if(left<=GIF_CHUNKS) {
