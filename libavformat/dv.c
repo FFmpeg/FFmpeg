@@ -391,12 +391,16 @@ static void dv_format_frame(DVMuxContext *c, uint8_t* buf)
 
 static void dv_inject_audio(DVMuxContext *c, const uint8_t* pcm, uint8_t* frame_ptr)
 {
-    int i, j, d, of;
+    int i, j, d, of, size;
+    size = 4 * dv_audio_frame_size(c->sys, c->frames);
     for (i = 0; i < c->sys->difseg_size; i++) {
        frame_ptr += 6 * 80; /* skip DIF segment header */
        for (j = 0; j < 9; j++) {
           for (d = 8; d < 80; d+=2) {
 	     of = c->sys->audio_shuffle[i][j] + (d - 8)/2 * c->sys->audio_stride;
+	     if (of*2 >= size)
+	         continue;
+	     
 	     frame_ptr[d] = pcm[of*2+1]; // FIXME: may be we have to admit
 	     frame_ptr[d+1] = pcm[of*2]; //        that DV is a big endian PCM       
           }
