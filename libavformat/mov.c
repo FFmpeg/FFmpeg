@@ -490,6 +490,7 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 	    url_fskip(pb, len);
     }
 
+    url_fskip(pb, atom.size - (url_ftell(pb) - atom.offset));
     return 0;
 }
 
@@ -1444,7 +1445,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG( 'n', 'm', 'h', 'd' ), mov_read_leaf },
 { MKTAG( 'o', 'd', 'h', 'd' ), mov_read_default },
 { MKTAG( 's', 'd', 'h', 'd' ), mov_read_default },
-{ MKTAG( 's', 'k', 'i', 'p' ), mov_read_default },
+{ MKTAG( 's', 'k', 'i', 'p' ), mov_read_leaf },
 { MKTAG( 's', 'm', 'h', 'd' ), mov_read_leaf }, /* sound media info header */
 { MKTAG( 'S', 'M', 'I', ' ' ), mov_read_smi }, /* Sorrenson extension ??? */
 { MKTAG( 's', 't', 'b', 'l' ), mov_read_default },
