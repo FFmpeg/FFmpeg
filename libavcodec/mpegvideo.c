@@ -40,11 +40,17 @@
 #ifdef CONFIG_ENCODERS
 static void encode_picture(MpegEncContext *s, int picture_number);
 #endif //CONFIG_ENCODERS
-static void dct_unquantize_mpeg1_c(MpegEncContext *s, 
+static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s, 
                                    DCTELEM *block, int n, int qscale);
-static void dct_unquantize_mpeg2_c(MpegEncContext *s,
+static void dct_unquantize_mpeg1_inter_c(MpegEncContext *s, 
                                    DCTELEM *block, int n, int qscale);
-static void dct_unquantize_h263_c(MpegEncContext *s, 
+static void dct_unquantize_mpeg2_intra_c(MpegEncContext *s,
+                                   DCTELEM *block, int n, int qscale);
+static void dct_unquantize_mpeg2_inter_c(MpegEncContext *s,
+                                   DCTELEM *block, int n, int qscale);
+static void dct_unquantize_h263_intra_c(MpegEncContext *s, 
+                                  DCTELEM *block, int n, int qscale);
+static void dct_unquantize_h263_inter_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale);
 static void draw_edges_c(uint8_t *buf, int wrap, int width, int height, int w);
 #ifdef CONFIG_ENCODERS
@@ -204,9 +210,12 @@ void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix){
 /* init common dct for both encoder and decoder */
 int DCT_common_init(MpegEncContext *s)
 {
-    s->dct_unquantize_h263 = dct_unquantize_h263_c;
-    s->dct_unquantize_mpeg1 = dct_unquantize_mpeg1_c;
-    s->dct_unquantize_mpeg2 = dct_unquantize_mpeg2_c;
+    s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
+    s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
+    s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_c;
+    s->dct_unquantize_mpeg1_inter = dct_unquantize_mpeg1_inter_c;
+    s->dct_unquantize_mpeg2_intra = dct_unquantize_mpeg2_intra_c;
+    s->dct_unquantize_mpeg2_inter = dct_unquantize_mpeg2_inter_c;
 
 #ifdef CONFIG_ENCODERS
     s->dct_quantize= dct_quantize_c;
@@ -1186,12 +1195,16 @@ alloc:
 
     /* set dequantizer, we cant do it during init as it might change for mpeg4
        and we cant do it in the header decode as init isnt called for mpeg4 there yet */
-    if(s->mpeg_quant || s->codec_id == CODEC_ID_MPEG2VIDEO) 
-        s->dct_unquantize = s->dct_unquantize_mpeg2;
-    else if(s->out_format == FMT_H263)
-        s->dct_unquantize = s->dct_unquantize_h263;
-    else 
-        s->dct_unquantize = s->dct_unquantize_mpeg1;
+    if(s->mpeg_quant || s->codec_id == CODEC_ID_MPEG2VIDEO){
+        s->dct_unquantize_intra = s->dct_unquantize_mpeg2_intra;
+        s->dct_unquantize_inter = s->dct_unquantize_mpeg2_inter;
+    }else if(s->out_format == FMT_H263){
+        s->dct_unquantize_intra = s->dct_unquantize_h263_intra;
+        s->dct_unquantize_inter = s->dct_unquantize_h263_inter;
+    }else{
+        s->dct_unquantize_intra = s->dct_unquantize_mpeg1_intra;
+        s->dct_unquantize_inter = s->dct_unquantize_mpeg1_inter;
+    }
 
     if(s->dct_error_sum){
         assert(s->avctx->noise_reduction && s->encoding);
@@ -2746,7 +2759,7 @@ static inline void MPV_motion(MpegEncContext *s,
 static inline void put_dct(MpegEncContext *s, 
                            DCTELEM *block, int i, uint8_t *dest, int line_size, int qscale)
 {
-    s->dct_unquantize(s, block, i, qscale);
+    s->dct_unquantize_intra(s, block, i, qscale);
     s->dsp.idct_put (dest, line_size, block);
 }
 
@@ -2763,7 +2776,7 @@ static inline void add_dequant_dct(MpegEncContext *s,
                            DCTELEM *block, int i, uint8_t *dest, int line_size, int qscale)
 {
     if (s->block_last_index[i] >= 0) {
-        s->dct_unquantize(s, block, i, qscale);
+        s->dct_unquantize_inter(s, block, i, qscale);
 
         s->dsp.idct_add (dest, line_size, block);
     }
@@ -4781,7 +4794,7 @@ static int dct_quantize_c(MpegEncContext *s,
 
 #endif //CONFIG_ENCODERS
 
-static void dct_unquantize_mpeg1_c(MpegEncContext *s, 
+static void dct_unquantize_mpeg1_intra_c(MpegEncContext *s, 
                                    DCTELEM *block, int n, int qscale)
 {
     int i, level, nCoeffs;
@@ -4789,62 +4802,60 @@ static void dct_unquantize_mpeg1_c(MpegEncContext *s,
 
     nCoeffs= s->block_last_index[n];
     
-    if (s->mb_intra) {
-        if (n < 4) 
-            block[0] = block[0] * s->y_dc_scale;
-        else
-            block[0] = block[0] * s->c_dc_scale;
-        /* XXX: only mpeg1 */
-        quant_matrix = s->intra_matrix;
-        for(i=1;i<=nCoeffs;i++) {
-            int j= s->intra_scantable.permutated[i];
-            level = block[j];
-            if (level) {
-                if (level < 0) {
-                    level = -level;
-                    level = (int)(level * qscale * quant_matrix[j]) >> 3;
-                    level = (level - 1) | 1;
-                    level = -level;
-                } else {
-                    level = (int)(level * qscale * quant_matrix[j]) >> 3;
-                    level = (level - 1) | 1;
-                }
-#ifdef PARANOID
-                if (level < -2048 || level > 2047)
-                    fprintf(stderr, "unquant error %d %d\n", i, level);
-#endif
-                block[j] = level;
+    if (n < 4) 
+        block[0] = block[0] * s->y_dc_scale;
+    else
+        block[0] = block[0] * s->c_dc_scale;
+    /* XXX: only mpeg1 */
+    quant_matrix = s->intra_matrix;
+    for(i=1;i<=nCoeffs;i++) {
+        int j= s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            if (level < 0) {
+                level = -level;
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = (level - 1) | 1;
+                level = -level;
+            } else {
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = (level - 1) | 1;
             }
-        }
-    } else {
-        i = 0;
-        quant_matrix = s->inter_matrix;
-        for(;i<=nCoeffs;i++) {
-            int j= s->intra_scantable.permutated[i];
-            level = block[j];
-            if (level) {
-                if (level < 0) {
-                    level = -level;
-                    level = (((level << 1) + 1) * qscale *
-                             ((int) (quant_matrix[j]))) >> 4;
-                    level = (level - 1) | 1;
-                    level = -level;
-                } else {
-                    level = (((level << 1) + 1) * qscale *
-                             ((int) (quant_matrix[j]))) >> 4;
-                    level = (level - 1) | 1;
-                }
-#ifdef PARANOID
-                if (level < -2048 || level > 2047)
-                    fprintf(stderr, "unquant error %d %d\n", i, level);
-#endif
-                block[j] = level;
-            }
+            block[j] = level;
         }
     }
 }
 
-static void dct_unquantize_mpeg2_c(MpegEncContext *s, 
+static void dct_unquantize_mpeg1_inter_c(MpegEncContext *s, 
+                                   DCTELEM *block, int n, int qscale)
+{
+    int i, level, nCoeffs;
+    const uint16_t *quant_matrix;
+
+    nCoeffs= s->block_last_index[n];
+    
+    quant_matrix = s->inter_matrix;
+    for(i=0; i<=nCoeffs; i++) {
+        int j= s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            if (level < 0) {
+                level = -level;
+                level = (((level << 1) + 1) * qscale *
+                         ((int) (quant_matrix[j]))) >> 4;
+                level = (level - 1) | 1;
+                level = -level;
+            } else {
+                level = (((level << 1) + 1) * qscale *
+                         ((int) (quant_matrix[j]))) >> 4;
+                level = (level - 1) | 1;
+            }
+            block[j] = level;
+        }
+    }
+}
+
+static void dct_unquantize_mpeg2_intra_c(MpegEncContext *s, 
                                    DCTELEM *block, int n, int qscale)
 {
     int i, level, nCoeffs;
@@ -4853,61 +4864,96 @@ static void dct_unquantize_mpeg2_c(MpegEncContext *s,
     if(s->alternate_scan) nCoeffs= 63;
     else nCoeffs= s->block_last_index[n];
     
-    if (s->mb_intra) {
+    if (n < 4) 
+        block[0] = block[0] * s->y_dc_scale;
+    else
+        block[0] = block[0] * s->c_dc_scale;
+    quant_matrix = s->intra_matrix;
+    for(i=1;i<=nCoeffs;i++) {
+        int j= s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            if (level < 0) {
+                level = -level;
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+                level = -level;
+            } else {
+                level = (int)(level * qscale * quant_matrix[j]) >> 3;
+            }
+            block[j] = level;
+        }
+    }
+}
+
+static void dct_unquantize_mpeg2_inter_c(MpegEncContext *s, 
+                                   DCTELEM *block, int n, int qscale)
+{
+    int i, level, nCoeffs;
+    const uint16_t *quant_matrix;
+    int sum=-1;
+
+    if(s->alternate_scan) nCoeffs= 63;
+    else nCoeffs= s->block_last_index[n];
+    
+    quant_matrix = s->inter_matrix;
+    for(i=0; i<=nCoeffs; i++) {
+        int j= s->intra_scantable.permutated[i];
+        level = block[j];
+        if (level) {
+            if (level < 0) {
+                level = -level;
+                level = (((level << 1) + 1) * qscale *
+                         ((int) (quant_matrix[j]))) >> 4;
+                level = -level;
+            } else {
+                level = (((level << 1) + 1) * qscale *
+                         ((int) (quant_matrix[j]))) >> 4;
+            }
+            block[j] = level;
+            sum+=level;
+        }
+    }
+    block[63]^=sum&1;
+}
+
+static void dct_unquantize_h263_intra_c(MpegEncContext *s, 
+                                  DCTELEM *block, int n, int qscale)
+{
+    int i, level, qmul, qadd;
+    int nCoeffs;
+    
+    assert(s->block_last_index[n]>=0);
+    
+    qmul = qscale << 1;
+    
+    if (!s->h263_aic) {
         if (n < 4) 
             block[0] = block[0] * s->y_dc_scale;
         else
             block[0] = block[0] * s->c_dc_scale;
-        quant_matrix = s->intra_matrix;
-        for(i=1;i<=nCoeffs;i++) {
-            int j= s->intra_scantable.permutated[i];
-            level = block[j];
-            if (level) {
-                if (level < 0) {
-                    level = -level;
-                    level = (int)(level * qscale * quant_matrix[j]) >> 3;
-                    level = -level;
-                } else {
-                    level = (int)(level * qscale * quant_matrix[j]) >> 3;
-                }
-#ifdef PARANOID
-                if (level < -2048 || level > 2047)
-                    fprintf(stderr, "unquant error %d %d\n", i, level);
-#endif
-                block[j] = level;
+        qadd = (qscale - 1) | 1;
+    }else{
+        qadd = 0;
+    }
+    if(s->ac_pred)
+        nCoeffs=63;
+    else
+        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
+
+    for(i=1; i<=nCoeffs; i++) {
+        level = block[i];
+        if (level) {
+            if (level < 0) {
+                level = level * qmul - qadd;
+            } else {
+                level = level * qmul + qadd;
             }
+            block[i] = level;
         }
-    } else {
-        int sum=-1;
-        i = 0;
-        quant_matrix = s->inter_matrix;
-        for(;i<=nCoeffs;i++) {
-            int j= s->intra_scantable.permutated[i];
-            level = block[j];
-            if (level) {
-                if (level < 0) {
-                    level = -level;
-                    level = (((level << 1) + 1) * qscale *
-                             ((int) (quant_matrix[j]))) >> 4;
-                    level = -level;
-                } else {
-                    level = (((level << 1) + 1) * qscale *
-                             ((int) (quant_matrix[j]))) >> 4;
-                }
-#ifdef PARANOID
-                if (level < -2048 || level > 2047)
-                    fprintf(stderr, "unquant error %d %d\n", i, level);
-#endif
-                block[j] = level;
-                sum+=level;
-            }
-        }
-        block[63]^=sum&1;
     }
 }
 
-
-static void dct_unquantize_h263_c(MpegEncContext *s, 
+static void dct_unquantize_h263_inter_c(MpegEncContext *s, 
                                   DCTELEM *block, int n, int qscale)
 {
     int i, level, qmul, qadd;
@@ -4918,22 +4964,9 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
     qadd = (qscale - 1) | 1;
     qmul = qscale << 1;
     
-    if (s->mb_intra) {
-        if (!s->h263_aic) {
-            if (n < 4) 
-                block[0] = block[0] * s->y_dc_scale;
-            else
-                block[0] = block[0] * s->c_dc_scale;
-        }else
-            qadd = 0;
-        i = 1;
-        nCoeffs= 63; //does not allways use zigzag table 
-    } else {
-        i = 0;
-        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-    }
+    nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
 
-    for(;i<=nCoeffs;i++) {
+    for(i=0; i<=nCoeffs; i++) {
         level = block[i];
         if (level) {
             if (level < 0) {
@@ -4941,15 +4974,10 @@ static void dct_unquantize_h263_c(MpegEncContext *s,
             } else {
                 level = level * qmul + qadd;
             }
-#ifdef PARANOID
-                if (level < -2048 || level > 2047)
-                    fprintf(stderr, "unquant error %d %d\n", i, level);
-#endif
             block[i] = level;
         }
     }
 }
-
 
 static const AVOption mpeg4_options[] =
 {

@@ -2766,7 +2766,7 @@ static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *s
     memcpy(bak, temp, 64*sizeof(DCTELEM));
     
     s->block_last_index[0/*FIXME*/]= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
-    s->dct_unquantize(s, temp, 0, s->qscale);
+    s->dct_unquantize_inter(s, temp, 0, s->qscale);
     simple_idct(temp); //FIXME 
     
     for(i=0; i<64; i++)
@@ -2839,7 +2839,10 @@ static int rd8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *src2, int
     }
 
     if(last>=0){
-        s->dct_unquantize(s, temp, 0, s->qscale);
+        if(s->mb_intra)
+            s->dct_unquantize_intra(s, temp, 0, s->qscale);
+        else
+            s->dct_unquantize_inter(s, temp, 0, s->qscale);
     }
     
     s->dsp.idct_add(bak, stride, temp);

@@ -645,13 +645,21 @@ typedef struct MpegEncContext {
 #define SLICE_END       -2 ///<end marker found
 #define SLICE_NOEND     -3 ///<no end marker or error found but mb count exceeded
     
-    void (*dct_unquantize_mpeg1)(struct MpegEncContext *s, 
+    void (*dct_unquantize_mpeg1_intra)(struct MpegEncContext *s, 
                            DCTELEM *block/*align 16*/, int n, int qscale);
-    void (*dct_unquantize_mpeg2)(struct MpegEncContext *s, 
+    void (*dct_unquantize_mpeg1_inter)(struct MpegEncContext *s, 
                            DCTELEM *block/*align 16*/, int n, int qscale);
-    void (*dct_unquantize_h263)(struct MpegEncContext *s, 
+    void (*dct_unquantize_mpeg2_intra)(struct MpegEncContext *s, 
                            DCTELEM *block/*align 16*/, int n, int qscale);
-    void (*dct_unquantize)(struct MpegEncContext *s, // unquantizer to use (mpeg4 can use both)
+    void (*dct_unquantize_mpeg2_inter)(struct MpegEncContext *s, 
+                           DCTELEM *block/*align 16*/, int n, int qscale);
+    void (*dct_unquantize_h263_intra)(struct MpegEncContext *s, 
+                           DCTELEM *block/*align 16*/, int n, int qscale);
+    void (*dct_unquantize_h263_inter)(struct MpegEncContext *s, 
+                           DCTELEM *block/*align 16*/, int n, int qscale);
+    void (*dct_unquantize_intra)(struct MpegEncContext *s, // unquantizer to use (mpeg4 can use both)
+                           DCTELEM *block/*align 16*/, int n, int qscale);
+    void (*dct_unquantize_inter)(struct MpegEncContext *s, // unquantizer to use (mpeg4 can use both)
                            DCTELEM *block/*align 16*/, int n, int qscale);
     int (*dct_quantize)(struct MpegEncContext *s, DCTELEM *block/*align 16*/, int n, int qscale, int *overflow);
     int (*fast_dct_quantize)(struct MpegEncContext *s, DCTELEM *block/*align 16*/, int n, int qscale, int *overflow);
