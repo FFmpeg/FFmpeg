@@ -25,7 +25,7 @@ endif
 
 # i386 mmx specific stuff
 ifeq ($(TARGET_MMX),yes)
-ASM_OBJS += i386/fdct_mmx.o i386/sad_mmx.o i386/cpuid.o
+ASM_OBJS += i386/fdct_mmx.o i386/sad_mmx.o
 OBJS += i386/fdctdata.o i386/cputest.o \
 	i386/dsputil_mmx.o i386/mpegvideo_mmx.o
 endif
@@ -46,9 +46,6 @@ dsputil.o: dsputil.c dsputil.h
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $< 
-
-i386/cpuid.o: i386/cpuid.s
-	$(CC) -c -o $@ $< 
 
 %.o: %.s
 	nasm -f elf -o $@ $<

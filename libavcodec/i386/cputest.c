@@ -4,8 +4,15 @@
 #include <stdlib.h>
 #include "../dsputil.h"
 
-/* need this external function to solve -fPIC ebx issues ! */
-extern void cpuid(int index, int *eax, int *ebx, int *ecx, int *edx);
+/* ebx saving is necessary for PIC. gcc seems unable to see it alone */
+#define cpuid(index,eax,ebx,ecx,edx)\
+    asm ("movl %%ebx, %%esi\n\t"\
+         "cpuid\n\t"\
+         "xchgl %%ebx, %%esi"\
+         : "=a" (eax), "=S" (ebx),\
+           "=c" (ecx), "=d" (edx)\
+         : "0" (index)\
+         : "cc")\
 
 /* Function to test if multimedia instructions are supported...  */
 int mm_support(void)
@@ -37,7 +44,7 @@ int mm_support(void)
     if (eax == ecx)
         return 0; /* CPUID not supported */
     
-    cpuid(0, &eax, &ebx, &ecx, &edx);
+    cpuid(0, eax, ebx, ecx, edx);
 
     if (ebx == 0x756e6547 &&
         edx == 0x49656e69 &&
@@ -45,7 +52,7 @@ int mm_support(void)
         
         /* intel */
     inteltest:
-        cpuid(1, &eax, &ebx, &ecx, &edx);
+        cpuid(1, eax, ebx, ecx, edx);
         if ((edx & 0x00800000) == 0)
             return 0;
         rval = MM_MMX;
@@ -58,10 +65,10 @@ int mm_support(void)
                edx == 0x69746e65 &&
                ecx == 0x444d4163) {
         /* AMD */
-        cpuid(0x80000000, &eax, &ebx, &ecx, &edx);
+        cpuid(0x80000000, eax, ebx, ecx, edx);
         if ((unsigned)eax < 0x80000001)
             goto inteltest;
-        cpuid(0x80000001, &eax, &ebx, &ecx, &edx);
+        cpuid(0x80000001, eax, ebx, ecx, edx);
         if ((edx & 0x00800000) == 0)
             return 0;
         rval = MM_MMX;
@@ -84,7 +91,7 @@ int mm_support(void)
         */
         if (eax != 2) 
             goto inteltest;
-        cpuid(0x80000001, &eax, &ebx, &ecx, &edx);
+        cpuid(0x80000001, eax, ebx, ecx, edx);
         if ((eax & 0x00800000) == 0)
             return 0;
         rval = MM_MMX;
