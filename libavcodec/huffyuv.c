@@ -438,14 +438,13 @@ static void store_table(HYuvContext *s, uint8_t *len){
     int index= s->avctx->extradata_size;
 
     for(i=0; i<256;){
-        int cur=i;
         int val= len[i];
-        int repeat;
+        int repeat=0;
         
-        for(; i<256 && len[i]==val; i++);
+        for(; i<256 && len[i]==val && repeat<255; i++)
+            repeat++;
         
-        repeat= i - cur;
-        
+        assert(val < 32 && val >0 && repeat<256 && repeat>0);
         if(repeat>7){
             ((uint8_t*)s->avctx->extradata)[index++]= val;
             ((uint8_t*)s->avctx->extradata)[index++]= repeat;
