@@ -17,9 +17,14 @@
 */
 
 /*
-  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24, Y8, Y800
+  supported Input formats: YV12, I420, IYUV, YUY2, BGR32, BGR24, RGB32, RGB24, Y8, Y800
   supported output formats: YV12, I420, IYUV, BGR15, BGR16, BGR24, BGR32 (grayscale soon too)
   BGR15/16 support dithering
+  
+  unscaled special converters
+  YV12/I420/IYUV -> BGR15/BGR16/BGR24/BGR32
+  YV12/I420/IYUV -> YV12/I420/IYUV
+  YUY2/BGR15/BGR16/BGR24/BGR32/RGB24/RGB32 -> same format
 */
 
 #include <inttypes.h>
@@ -33,6 +38,7 @@
 #endif
 #include "swscale.h"
 #include "../cpudetect.h"
+#include "../bswap.h"
 #include "../libvo/img_format.h"
 #include "rgb2rgb.h"
 #undef MOVNTQ
@@ -63,10 +69,11 @@
 #define isYUV(x)       ((x)==IMGFMT_YUY2 || isPlanarYUV(x))
 #define isHalfChrV(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
 #define isHalfChrH(x)  ((x)==IMGFMT_YUY2 || (x)==IMGFMT_YV12 || (x)==IMGFMT_I420)
-#define isPacked(x)    ((x)==IMGFMT_YUY2 || (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24)
+#define isPacked(x)    ((x)==IMGFMT_YUY2 || ((x)&IMGFMT_BGR_MASK)==IMGFMT_BGR || ((x)&IMGFMT_RGB_MASK)==IMGFMT_RGB)
 #define isGray(x)      ((x)==IMGFMT_Y800)
 #define isSupportedIn(x)  ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 || (x)==IMGFMT_YUY2 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24\
+			|| (x)==IMGFMT_RGB32|| (x)==IMGFMT_RGB24\
 			|| (x)==IMGFMT_Y800)
 #define isSupportedOut(x) ((x)==IMGFMT_YV12 || (x)==IMGFMT_I420 \
 			|| (x)==IMGFMT_BGR32|| (x)==IMGFMT_BGR24|| (x)==IMGFMT_BGR16|| (x)==IMGFMT_BGR15)
@@ -1066,12 +1073,12 @@ static void globalInit(){
     for(i=0; i<768; i++)
     {
 	int v= clip_table[i];
-	clip_table16b[i]= v>>3;
-	clip_table16g[i]= (v<<3)&0x07E0;
-	clip_table16r[i]= (v<<8)&0xF800;
-	clip_table15b[i]= v>>3;
-	clip_table15g[i]= (v<<2)&0x03E0;
-	clip_table15r[i]= (v<<7)&0x7C00;
+	clip_table16b[i]= le2me_16( v>>3);
+	clip_table16g[i]= le2me_16((v<<3)&0x07E0);
+	clip_table16r[i]= le2me_16((v<<8)&0xF800);
+	clip_table15b[i]= le2me_16( v>>3);
+	clip_table15g[i]= le2me_16((v<<2)&0x03E0);
+	clip_table15r[i]= le2me_16((v<<7)&0x7C00);
     }
 
 cpuCaps= gCpuCaps;
@@ -1173,14 +1180,12 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 			int i;
 			uint8_t *srcPtr= src[0];
 			uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
-			int length;
-			
-			if(c->srcFormat==IMGFMT_YUY2) 		length= c->srcW*2;
-			else if(c->srcFormat==IMGFMT_BGR15) 	length= c->srcW*2;
-			else if(c->srcFormat==IMGFMT_BGR16) 	length= c->srcW*2;
-			else if(c->srcFormat==IMGFMT_BGR24) 	length= c->srcW*3;
-			else if(c->srcFormat==IMGFMT_BGR32) 	length= c->srcW*4;
-			else return; /* that shouldnt happen */
+			int length=0;
+
+			/* universal length finder */
+			while(length+c->srcW <= dstStride[0] 
+			   && length+c->srcW <= srcStride[0]) length+= c->srcW;
+			ASSERT(length!=0);
 
 			for(i=0; i<srcSliceH; i++)
 			{
@@ -1198,7 +1203,7 @@ static void simpleCopy(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[],
 			int length= plane==0 ? c->srcW  : ((c->srcW+1)>>1);
 			int y=      plane==0 ? srcSliceY: ((srcSliceY+1)>>1);
 			int height= plane==0 ? srcSliceH: ((srcSliceH+1)>>1);
-printf("%d %d %d %d %d %d\n", plane, length, y, height, dstStride[plane], srcStride[plane] );
+
 			if(dstStride[plane]==srcStride[plane])
 				memcpy(dst[plane] + dstStride[plane]*y, src[plane], height*dstStride[plane]);
 			else

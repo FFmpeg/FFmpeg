@@ -1666,6 +1666,60 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1
 #endif
 }
 
+static inline void RENAME(rgb32ToY)(uint8_t *dst, uint8_t *src, int width)
+{
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int r= src[i*4+0];
+		int g= src[i*4+1];
+		int b= src[i*4+2];
+
+		dst[i]= ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
+	}
+}
+
+static inline void RENAME(rgb32ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+{
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int r= src1[8*i + 0] + src1[8*i + 4] + src2[8*i + 0] + src2[8*i + 4];
+		int g= src1[8*i + 1] + src1[8*i + 5] + src2[8*i + 1] + src2[8*i + 5];
+		int b= src1[8*i + 2] + src1[8*i + 6] + src2[8*i + 2] + src2[8*i + 6];
+
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
+	}
+}
+
+static inline void RENAME(rgb24ToY)(uint8_t *dst, uint8_t *src, int width)
+{
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int r= src[i*3+0];
+		int g= src[i*3+1];
+		int b= src[i*3+2];
+
+		dst[i]= ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
+	}
+}
+
+static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, uint8_t *src1, uint8_t *src2, int width)
+{
+	int i;
+	for(i=0; i<width; i++)
+	{
+		int r= src1[6*i + 0] + src1[6*i + 3] + src2[6*i + 0] + src2[6*i + 3];
+		int g= src1[6*i + 1] + src1[6*i + 4] + src2[6*i + 1] + src2[6*i + 4];
+		int b= src1[6*i + 2] + src1[6*i + 5] + src2[6*i + 2] + src2[6*i + 5];
+
+		dstU[i]= ((RU*r + GU*g + BU*b)>>(RGB2YUV_SHIFT+2)) + 128;
+		dstV[i]= ((RV*r + GV*g + BV*b)>>(RGB2YUV_SHIFT+2)) + 128;
+	}
+}
+
 
 // Bilinear / Bicubic scaling
 static inline void RENAME(hScale)(int16_t *dst, int dstW, uint8_t *src, int srcW, int xInc,
@@ -1849,6 +1903,16 @@ static inline void RENAME(hyscale)(uint16_t *dst, int dstWidth, uint8_t *src, in
 	RENAME(bgr24ToY)(formatConvBuffer, src, srcW);
 	src= formatConvBuffer;
     }
+    else if(srcFormat==IMGFMT_RGB32)
+    {
+	RENAME(rgb32ToY)(formatConvBuffer, src, srcW);
+	src= formatConvBuffer;
+    }
+    else if(srcFormat==IMGFMT_RGB24)
+    {
+	RENAME(rgb24ToY)(formatConvBuffer, src, srcW);
+	src= formatConvBuffer;
+    }
 
 #ifdef HAVE_MMX
 	// use the new MMX scaler if th mmx2 cant be used (its faster than the x86asm one)
@@ -1993,6 +2057,18 @@ inline static void RENAME(hcscale)(uint16_t *dst, int dstWidth, uint8_t *src1, u
     else if(srcFormat==IMGFMT_BGR24)
     {
 	RENAME(bgr24ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
+	src1= formatConvBuffer;
+	src2= formatConvBuffer+2048;
+    }
+    else if(srcFormat==IMGFMT_RGB32)
+    {
+	RENAME(rgb32ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
+	src1= formatConvBuffer;
+	src2= formatConvBuffer+2048;
+    }
+    else if(srcFormat==IMGFMT_RGB24)
+    {
+	RENAME(rgb24ToUV)(formatConvBuffer, formatConvBuffer+2048, src1, src2, srcW);
 	src1= formatConvBuffer;
 	src2= formatConvBuffer+2048;
     }
