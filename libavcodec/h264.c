@@ -2592,6 +2592,8 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                 int pic_id;
                 int i;
                 
+                if(reordering_of_pic_nums_idc==3) 
+                    break;
                 
                 if(index >= h->ref_count[list]){
                     av_log(h->s.avctx, AV_LOG_ERROR, "reference count overflow\n");
@@ -2634,9 +2636,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                         }
                         h->ref_list[list][index]= tmp;
                     }
-                }else if(reordering_of_pic_nums_idc==3) 
-                    break;
-                else{
+                }else{
                     av_log(h->s.avctx, AV_LOG_ERROR, "illegal reordering_of_pic_nums_idc\n");
                     return -1;
                 }
