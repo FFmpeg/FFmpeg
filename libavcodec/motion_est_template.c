@@ -946,7 +946,7 @@ static int RENAME(epzs_motion_search)(MpegEncContext * s,
         }else{
             CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16, 
                             (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
-            if(s->end_mb_y == s->mb_height || s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
+            if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
                 CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
                                 (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
         }
@@ -1048,7 +1048,7 @@ static int RENAME(epzs_motion_search4)(MpegEncContext * s,
     if(dmin>64*4){
         CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16, 
                         (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
-        if(s->end_mb_y == s->mb_height || s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
+        if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
             CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
                             (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
     }
@@ -1127,7 +1127,7 @@ static int RENAME(epzs_motion_search2)(MpegEncContext * s,
     if(dmin>64*4){
         CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16, 
                         (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
-        if(s->end_mb_y == s->mb_height || s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
+        if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
             CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
                             (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
     }
