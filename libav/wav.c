@@ -19,7 +19,7 @@
 #include "avformat.h"
 #include "avi.h"
 
-CodecTag codec_wav_tags[] = {
+const CodecTag codec_wav_tags[] = {
     { CODEC_ID_MP2, 0x50 },
     { CODEC_ID_MP3LAME, 0x55 },
     { CODEC_ID_AC3, 0x2000 },
@@ -106,7 +106,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, 
                     int has_extra_data)
 {
-    int id, bps;
+    int id;
 
     id = get_le16(pb);
     codec->codec_type = CODEC_TYPE_AUDIO;
@@ -116,8 +116,8 @@ void get_wav_header(ByteIOContext *pb, AVCodecContext *codec,
     codec->sample_rate = get_le32(pb);
     codec->bit_rate = get_le32(pb) * 8;
     codec->block_align = get_le16(pb);
-    bps = get_le16(pb); /* bits per sample */
-    codec->codec_id = wav_codec_get_id(id, bps);
+    codec->frame_bits = get_le16(pb); /* bits per sample */
+    codec->codec_id = wav_codec_get_id(id, codec->frame_bits);
     if (has_extra_data) {
 	codec->extradata_size = get_le16(pb);
 	if (codec->extradata_size > 0) {
