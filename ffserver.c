@@ -1,25 +1,25 @@
 /*
  * Multiple format streaming server
- * Copyright (c) 2000, 2001, 2002 Gerard Lantau.
+ * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
  *
- * This program is distributed in the hope that it will be useful,
+ * This library is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#define HAVE_AV_CONFIG_H
+#include "avformat.h"
+
 #include <stdarg.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -35,10 +35,6 @@
 #include <netdb.h>
 #include <ctype.h>
 #include <signal.h>
-#include <assert.h>
-
-#include "bswap.h" // needed for the bitstream writer in common.h which is included in avformat.h
-#include "avformat.h"
 
 /* maximum number of simultaneous HTTP connections */
 #define HTTP_MAX_CONNECTIONS 2000
@@ -1970,7 +1966,7 @@ static void write_packet(FFCodec *ffenc,
 
 void help(void)
 {
-    printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Gerard Lantau\n"
+    printf("ffserver version " FFMPEG_VERSION ", Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n"
            "usage: ffserver [-L] [-h] [-f configfile]\n"
            "Hyper fast multi format Audio/Video streaming server\n"
            "\n"
@@ -1984,20 +1980,20 @@ void licence(void)
 {
     printf(
     "ffserver version " FFMPEG_VERSION "\n"
-    "Copyright (c) 2000, 2001, 2002 Gerard Lantau\n"
-    "This program is free software; you can redistribute it and/or modify\n"
-    "it under the terms of the GNU General Public License as published by\n"
-    "the Free Software Foundation; either version 2 of the License, or\n"
-    "(at your option) any later version.\n"
+    "Copyright (c) 2000, 2001, 2002 Fabrice Bellard\n"
+    "This library is free software; you can redistribute it and/or\n"
+    "modify it under the terms of the GNU Lesser General Public\n"
+    "License as published by the Free Software Foundation; either\n"
+    "version 2 of the License, or (at your option) any later version.\n"
     "\n"
-    "This program is distributed in the hope that it will be useful,\n"
+    "This library is distributed in the hope that it will be useful,\n"
     "but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n"
-    "GNU General Public License for more details.\n"
+    "MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n"
+    "Lesser General Public License for more details.\n"
     "\n"
-    "You should have received a copy of the GNU General Public License\n"
-    "along with this program; if not, write to the Free Software\n"
-    "Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.\n"
+    "You should have received a copy of the GNU Lesser General Public\n"
+    "License along with this library; if not, write to the Free Software\n"
+    "Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA\n"
     );
 }
 
@@ -2058,7 +2054,7 @@ int main(int argc, char **argv)
     }
 
     if (http_server(my_addr) < 0) {
-        fprintf(stderr, "Could start http server\n");
+        fprintf(stderr, "Could not start http server\n");
         exit(1);
     }
 
