@@ -673,6 +673,12 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #define COMPILE_C
 #endif
 
+#ifdef ARCH_POWERPC
+#ifdef HAVE_ALTIVEC
+#define COMPILE_ALTIVEC
+#endif //HAVE_ALTIVEC
+#endif //ARCH_POWERPC
+
 #ifdef ARCH_X86
 
 #if (defined (HAVE_MMX) && !defined (HAVE_3DNOW) && !defined (HAVE_MMX2)) || defined (RUNTIME_CPUDETECT)
@@ -696,9 +702,19 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 #undef HAVE_MMX
 #undef HAVE_MMX2
 #undef HAVE_3DNOW
+#undef HAVE_ALTIVEC
 #define RENAME(a) a ## _C
 #include "swscale_template.c"
 #endif
+
+#ifdef ARCH_POWERPC
+#ifdef COMPILE_ALTIVEC
+#undef RENAME
+#define HAVE_ALTIVEC
+#define RENAME(a) a ## _altivec
+#include "swscale_template.c"
+#endif
+#endif //ARCH_POWERPC
 
 #ifdef ARCH_X86
 
@@ -1309,6 +1325,12 @@ static SwsFunc getSwsFunc(int flags){
 		return swScale_C;
 
 #else
+#ifdef ARCH_POWERPC
+	if(flags & SWS_CPU_CAPS_ALTIVEC)
+	  return swScale_altivec;
+	else
+	  return swScale_C;
+#endif
 	return swScale_C;
 #endif
 #else //RUNTIME_CPUDETECT
@@ -1318,6 +1340,8 @@ static SwsFunc getSwsFunc(int flags){
 	return swScale_3DNow;
 #elif defined (HAVE_MMX)
 	return swScale_MMX;
+#elif defined (HAVE_ALTIVEC)
+	return swScale_altivec;
 #else
 	return swScale_C;
 #endif
@@ -1720,13 +1744,15 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 #endif
 
 #ifndef RUNTIME_CPUDETECT //ensure that the flags match the compiled variant if cpudetect is off
-	flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW);
+	flags &= ~(SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2|SWS_CPU_CAPS_3DNOW|SWS_CPU_CAPS_ALTIVEC);
 #ifdef HAVE_MMX2
 	flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2;
 #elif defined (HAVE_3DNOW)
 	flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_3DNOW;
 #elif defined (HAVE_MMX)
 	flags |= SWS_CPU_CAPS_MMX;
+#elif defined (HAVE_ALTIVEC)
+	flags |= SWS_CPU_CAPS_ALTIVEC;
 #endif
 #endif
 	if(clip_table[512] != 255) globalInit();
@@ -2033,7 +2059,9 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 			MSG_INFO("using 3DNOW\n");
 		else if(flags & SWS_CPU_CAPS_MMX)
 			MSG_INFO("using MMX\n");
-		else
+		else if(flags & SWS_CPU_CAPS_ALTIVEC)
+			MSG_INFO("using AltiVec\n");
+		else 
 			MSG_INFO("using C\n");
 	}
 
