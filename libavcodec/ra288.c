@@ -440,7 +440,7 @@ static int ra288_decode_frame(AVCodecContext * avctx,
     }
     /* Phase 1: decode */
     bret = ptb-buf;
-    for(z=0;z<bret;z+=cfs) { decode_block(avctx,&tb[z],(signed short *)data); data += 320; }
+    for(z=0;z<bret;z+=cfs) data=decode_block(avctx,&tb[z],(signed short *)data);
     *data_size = data - datao;
     return bret;
   }
