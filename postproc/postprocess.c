@@ -104,8 +104,6 @@ static int verbose= 0;
 
 static const int deringThreshold= 20;
 
-static int cpuCaps=0;
-
 struct PPFilter{
 	char *shortName;
 	char *longName;
@@ -150,6 +148,8 @@ typedef struct PPContext{
 	int nonBQP;
 
 	int frameNum;
+	
+	int cpuCaps;
 
 	PPMode ppMode;
 } PPContext;
@@ -220,12 +220,6 @@ static inline void prefetcht2(void *p)
 	);
 }
 #endif
-
-int pp_init(int caps){
-    cpuCaps= caps;
-    
-    return 0;
-}
 
 // The horizontal Functions exist only in C cuz the MMX code is faster with vertical filters and transposing
 
@@ -495,7 +489,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 // minor note: the HAVE_xyz is messed up after that line so dont use it
 
 static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, int isColor, PPMode *ppMode, void *vc)
+	QP_STORE_T QPs[], int QPStride, int isColor, PPMode *ppMode, pp_context *vc)
 {
 	PPContext *c= (PPContext *)vc;
 	c->ppMode= *ppMode; //FIXME
@@ -506,11 +500,11 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 #ifdef RUNTIME_CPUDETECT
 #ifdef ARCH_X86
 	// ordered per speed fasterst first
-	if(cpuCaps & PP_CPU_CAPS_MMX2)
+	if(c->cpuCaps & PP_CPU_CAPS_MMX2)
 		postProcess_MMX2(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-	else if(cpuCaps & PP_CPU_CAPS_3DNOW)
+	else if(c->cpuCaps & PP_CPU_CAPS_3DNOW)
 		postProcess_3DNow(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
-	else if(cpuCaps & PP_CPU_CAPS_MMX)
+	else if(c->cpuCaps & PP_CPU_CAPS_MMX)
 		postProcess_MMX(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
 	else
 		postProcess_C(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
@@ -759,11 +753,13 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 	return ppMode;
 }
 
-void *pp_get_context(int width, int height){
+void *pp_get_context(int width, int height, int cpuCaps){
 	PPContext *c= memalign(32, sizeof(PPContext));
 	int i;
 	int mbWidth = (width+15)>>4;
 	int mbHeight= (height+15)>>4;
+	
+	c->cpuCaps= cpuCaps;
 
 	c->tempBlocks= (uint8_t*)memalign(8, 2*16*8);
 	c->yHistogram= (uint64_t*)memalign(8, 256*sizeof(uint64_t));

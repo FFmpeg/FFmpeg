@@ -95,10 +95,9 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
 // name is the stuff after "-pp" on the command line
 PPMode pp_get_mode_by_name_and_quality(char *name, int quality);
 
-pp_context *pp_get_context(int width, int height);
+pp_context *pp_get_context(int width, int height, int cpuCaps);
 void pp_free_context(pp_context *ppContext);
 
-int pp_init(int cpuCaps);
 #define PP_CPU_CAPS_MMX   0x80000000
 #define PP_CPU_CAPS_MMX2  0x20000000
 #define PP_CPU_CAPS_3DNOW 0x40000000
