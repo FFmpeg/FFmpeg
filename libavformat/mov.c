@@ -1247,7 +1247,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     for(i=0; i<entries; i++) {
         sc->sample_sizes[i] = get_be32(pb);
 #ifdef DEBUG
-/*        av_log(NULL, AV_LOG_DEBUG, "sample_sizes[]=%ld\n", sc->sample_sizes[i]); */
+        av_log(NULL, AV_LOG_DEBUG, "sample_sizes[]=%ld\n", sc->sample_sizes[i]);
 #endif
     }
     return 0;
@@ -1722,14 +1722,17 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 #ifdef MOV_SPLIT_CHUNKS
     if (mov->partial) {
-
-        int idx;
-
 	sc = mov->partial;
 	idx = sc->sample_to_chunk_index;
 
         if (idx < 0) return 0;
-	size = (sc->sample_size)?sc->sample_size:sc->sample_sizes[sc->current_sample];
+#ifdef DEBUG
+        fprintf(stderr, "sc[ffid %d]->sample_size = %d\n", sc->ffindex, sc->sample_size);
+#endif
+        //size = sc->sample_sizes[sc->current_sample];
+        // that ain't working...
+        //size = (sc->sample_size)?sc->sample_size:sc->sample_sizes[sc->current_sample];
+        size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
 
         sc->current_sample++;
         sc->left_in_chunk--;
@@ -1816,19 +1819,21 @@ again:
 
 #ifdef MOV_SPLIT_CHUNKS
     /* split chunks into samples */
-    idx = sc->sample_to_chunk_index;
-    if ((idx + 1 < sc->sample_to_chunk_sz)
-            && (sc->next_chunk >= sc->sample_to_chunk[idx + 1].first))
-        idx++;
-    sc->sample_to_chunk_index = idx;
-    if (idx >= 0 && sc->sample_to_chunk[idx].count != 1) {
-        mov->partial = sc;
-        /* we'll have to get those samples before next chunk */
-        sc->left_in_chunk = sc->sample_to_chunk[idx].count - 1;
-        size = (sc->sample_size)?sc->sample_size:sc->sample_sizes[sc->current_sample];
-    }
+    if (sc->sample_size == 0) {
+        idx = sc->sample_to_chunk_index;
+        if ((idx + 1 < sc->sample_to_chunk_sz)
+                && (sc->next_chunk >= sc->sample_to_chunk[idx + 1].first))
+            idx++;
+        sc->sample_to_chunk_index = idx;
+        if (idx >= 0 && sc->sample_to_chunk[idx].count != 1) {
+	    mov->partial = sc;
+            /* we'll have to get those samples before next chunk */
+            sc->left_in_chunk = sc->sample_to_chunk[idx].count - 1;
+            size = (sc->sample_size > 1)?sc->sample_size:sc->sample_sizes[sc->current_sample];
+        }
 
-    sc->current_sample++;
+        sc->current_sample++;
+    }
 #endif
 
 readchunk:
@@ -1879,14 +1884,14 @@ readchunk:
         pkt->flags |= PKT_FLAG_KEY;
 
 #ifdef DEBUG
-
+/*
     av_log(NULL, AV_LOG_DEBUG, "Packet (%d, %ld) ", pkt->stream_index, pkt->size);
     for(i=0; i<8; i++)
         av_log(NULL, AV_LOG_DEBUG, "%02x ", pkt->data[i]);
     for(i=0; i<8; i++)
         av_log(NULL, AV_LOG_DEBUG, "%c ", (pkt->data[i]) & 0x7F);
     av_log(NULL, AV_LOG_DEBUG, "\n");
-
+*/
 #endif
 
     mov->next_chunk_offset = offset + size;
