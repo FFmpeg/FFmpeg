@@ -9,6 +9,7 @@ VPATH=$(SRC_PATH)/libavformat
 CFLAGS= $(OPTFLAGS) -Wall -g -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 
 OBJS= utils.o cutils.o allformats.o
+PPOBJS=
 
 # mux and demuxes
 OBJS+=mpeg.o mpegts.o ffm.o crc.o img.o raw.o rm.o \
@@ -42,12 +43,12 @@ OBJS+= audio.o
 endif
 
 ifeq ($(CONFIG_AUDIO_BEOS),yes)
-OBJS+= beosaudio.o
+PPOBJS+= beosaudio.o
 endif
 
 ifeq ($(CONFIG_NETWORK),yes)
 OBJS+= udp.o tcp.o http.o rtsp.o rtp.o rtpproto.o
-# BeOS network stuff
+# BeOS and Darwin network stuff
 ifeq ($(NEED_INET_ATON),yes)
 OBJS+= barpainet.o
 endif
@@ -59,13 +60,13 @@ endif
 
 LIB= $(LIBPREF)avformat$(LIBSUF)
 
-SRCS := $(OBJS:.o=.c)
+SRCS := $(OBJS:.o=.c) $(PPOBJS:.o=.cpp)
 
 all: $(LIB)
 
-$(LIB): $(OBJS)
+$(LIB): $(OBJS) $(PPOBJS)
 	rm -f $@
-	$(AR) rc $@ $(OBJS)
+	$(AR) rc $@ $(OBJS) $(PPOBJS)
 ifneq ($(CONFIG_OS2),yes)
 	$(RANLIB) $@
 endif
