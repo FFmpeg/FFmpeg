@@ -835,7 +835,8 @@ INCLUDE_FILE_PATTERNS  =
 # or name=definition (no spaces). If the definition and the = are 
 # omitted =1 is assumed.
 
-PREDEFINED             = __attribute__(x)="" RENAME(x)=x
+PREDEFINED             = __attribute__(x)="" "RENAME(x)=x ## _TMPL" "DEF(x)=x ## _TMPL" \
+                         HAVE_BUILTIN_VECTOR ATTR_ALIGN(x)=""
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then 
 # this tag can be used to specify a list of macro names that should be expanded. 
@@ -843,6 +844,7 @@ PREDEFINED             = __attribute__(x)="" RENAME(x)=x
 # Use the PREDEFINED tag if you want to use a different macro definition.
 
 #EXPAND_AS_DEFINED      = FF_COMMON_FRAME
+EXPAND_AS_DEFINED      = declare_idct(idct, table, idct_row_head, idct_row, idct_row_tail, idct_row_mid)
 
 # If the SKIP_FUNCTION_MACROS tag is set to YES (the default) then 
 # doxygen's preprocessor will remove all function-like macros that are alone 
