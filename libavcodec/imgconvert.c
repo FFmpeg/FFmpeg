@@ -1370,7 +1370,7 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
         for(i = 1;i <= 2; i++)
             resize_func(dst->data[i], dst->linesize[i],
                         src->data[i], src->linesize[i],
-                        w, h);
+                        dst_width>>dst_pix->x_chroma_shift, dst_height>>dst_pix->y_chroma_shift);
        return 0;
     }
 
