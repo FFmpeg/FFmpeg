@@ -110,7 +110,7 @@ int url_feof(ByteIOContext *s);
 #define URL_EOF (-1)
 int url_fgetc(ByteIOContext *s);
 #ifdef __GNUC__
-int url_fprintf(ByteIOContext *s, const char *fmt, ...) __attribute__ ((format (printf, 2, 3)));
+int url_fprintf(ByteIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
 #else
 int url_fprintf(ByteIOContext *s, const char *fmt, ...);
 #endif
