@@ -2589,7 +2589,7 @@ FUNNYUVCODE
 }
 
 static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStrideParam[], int srcSliceY,
-             int srcSliceH, uint8_t* dstParam[], int dstStride[]){
+             int srcSliceH, uint8_t* dstParam[], int dstStrideParam[]){
 
 	/* load a few things into local vars to make the code more readable? and faster */
 	const int srcW= c->srcW;
@@ -2630,6 +2630,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 	int lastInLumBuf= c->lastInLumBuf;
 	int lastInChrBuf= c->lastInChrBuf;
 	int srcStride[3];
+	int dstStride[3];
 	uint8_t *src[3];
 	uint8_t *dst[3];
 	
@@ -2666,15 +2667,20 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		srcStride[2]= 0;
 	}
 
-	if(c->dstFormat == IMGFMT_I420){
+	if(dstFormat == IMGFMT_I420){
 		dst[0]= dstParam[0];
 		dst[1]= dstParam[2];
 		dst[2]= dstParam[1];
-		
+		dstStride[0]= dstStrideParam[0];
+		dstStride[1]= dstStrideParam[2];
+		dstStride[2]= dstStrideParam[1];
 	}else{
 		dst[0]= dstParam[0];
 		dst[1]= dstParam[1];
 		dst[2]= dstParam[2];
+		dstStride[0]= dstStrideParam[0];
+		dstStride[1]= dstStrideParam[1];
+		dstStride[2]= dstStrideParam[2];
 	}
 
 //printf("sws Strides:%d %d %d -> %d %d %d\n", srcStride[0],srcStride[1],srcStride[2],
@@ -2720,7 +2726,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 		ASSERT(firstChrSrcY >= lastInChrBuf - vChrBufSize + 1)
 
 		// Do we have enough lines in this slice to output the dstY line
-		if(lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < ((srcSliceY + srcSliceH)>>1))
+		if(lastLumSrcY < srcSliceY + srcSliceH && lastChrSrcY < ((srcSliceY + srcSliceH + 1)>>1))
 		{
 			//Do horizontal scaling
 			while(lastInLumBuf < lastLumSrcY)
@@ -2743,7 +2749,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 				uint8_t *src2= src[2]+(lastInChrBuf + 1 - (srcSliceY>>1))*srcStride[2];
 				chrBufIndex++;
 				ASSERT(chrBufIndex < 2*vChrBufSize)
-				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < (srcSliceH>>1))
+				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < ((srcSliceH+1)>>1))
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
 				//FIXME replace parameters through context struct (some at least)
 				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
@@ -2781,7 +2787,7 @@ static void RENAME(swScale)(SwsContext *c, uint8_t* srcParam[], int srcStridePar
 				uint8_t *src2= src[2]+(lastInChrBuf + 1 - (srcSliceY>>1))*srcStride[2];
 				chrBufIndex++;
 				ASSERT(chrBufIndex < 2*vChrBufSize)
-				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < (srcSliceH>>1))
+				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) < ((srcSliceH+1)>>1))
 				ASSERT(lastInChrBuf + 1 - (srcSliceY>>1) >= 0)
 				RENAME(hcscale)(chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, (srcW+1)>>1, chrXInc,
 						flags, canMMX2BeUsed, hChrFilter, hChrFilterPos, hChrFilterSize,
