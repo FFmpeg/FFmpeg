@@ -540,12 +540,12 @@ static void do_video_out(AVFormatContext *s,
         int size;
 
         /* create temporary picture */
-        size = avpicture_get_size(enc->pix_fmt, dec->width, dec->height);
+        size = avpicture_get_size(target_pixfmt, dec->width, dec->height);
         buf = av_malloc(size);
         if (!buf)
             return;
         formatted_picture = &picture_format_temp;
-        avpicture_fill(formatted_picture, buf, enc->pix_fmt, dec->width, dec->height);
+        avpicture_fill(formatted_picture, buf, target_pixfmt, dec->width, dec->height);
         
         if (img_convert(formatted_picture, target_pixfmt, 
                         in_picture, dec->pix_fmt, 
@@ -1256,7 +1256,7 @@ static int av_encode(AVFormatContext **output_files,
 
         len = pkt.size;
         ptr = pkt.data;
-        while (len > 0) {
+        do {    
             /* decode the packet if needed */
             data_buf = NULL; /* fail safe */
             data_size = 0;
@@ -1314,7 +1314,7 @@ static int av_encode(AVFormatContext **output_files,
                             av_free_packet(&pkt);
                             goto redo;
                         }
-                        if (!got_picture) {
+                        if (len != 0 && !got_picture) {
                             /* no picture yet */
                             ptr += ret;
                             len -= ret;
@@ -1431,7 +1431,7 @@ static int av_encode(AVFormatContext **output_files,
                 }
             }
             av_free(buffer_to_free);
-        }
+        } while (len > 0);
     discard_packet:
         av_free_packet(&pkt);
         
