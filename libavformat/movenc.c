@@ -236,31 +236,38 @@ static int mov_write_wave_tag(ByteIOContext *pb, MOVTrack* track)
     return updateSize (pb, pos);
 }
 
+const CodecTag codec_movaudio_tags[] = {
+    { CODEC_ID_PCM_MULAW, MKTAG('u', 'l', 'a', 'w') },
+    { CODEC_ID_PCM_ALAW, MKTAG('a', 'l', 'a', 'w') },
+    { CODEC_ID_ADPCM_IMA_QT, MKTAG('i', 'm', 'a', '4') },
+    { CODEC_ID_MACE3, MKTAG('M', 'A', 'C', '3') },
+    { CODEC_ID_MACE6, MKTAG('M', 'A', 'C', '6') },
+    { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') },
+    { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') },
+    { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') },
+    { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') },
+    { CODEC_ID_MP3, MKTAG('.', 'm', 'p', '3') },
+    { 0, 0 },
+};
+
 static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    int pos = url_ftell(pb), tag;
+    
     put_be32(pb, 0); /* size */
 
-    if(track->enc->codec_id == CODEC_ID_PCM_MULAW)
-      put_tag(pb, "ulaw");
-    else if(track->enc->codec_id == CODEC_ID_PCM_ALAW)
-      put_tag(pb, "alaw");
-    else if(track->enc->codec_id == CODEC_ID_ADPCM_IMA_QT)
-      put_tag(pb, "ima4");
-    else if(track->enc->codec_id == CODEC_ID_MACE3)
-      put_tag(pb, "MAC3");
-    else if(track->enc->codec_id == CODEC_ID_MACE6)
-      put_tag(pb, "MAC6");
-    else if(track->enc->codec_id == CODEC_ID_AAC)
-      put_tag(pb, "mp4a");
-    else if(track->enc->codec_id == CODEC_ID_AMR_NB)
-      put_tag(pb, "samr");
-    else if(track->enc->codec_id == CODEC_ID_PCM_S16BE)
-      put_tag(pb, "twos");
-    else if(track->enc->codec_id == CODEC_ID_PCM_S16LE)
-      put_tag(pb, "sowt");
+    tag = codec_get_tag(codec_movaudio_tags, track->enc->codec_id);
+    // if no mac fcc found, try with Microsoft tags
+    if (!tag)
+    {
+	int tmp = codec_get_tag(codec_wav_tags, track->enc->codec_id);
+	if (tmp)
+	    tag = MKTAG('m', 's', ((tmp >> 8) & 0xff), (tmp & 0xff));
+    }
+    if (!tag)
+	put_tag(pb, "    ");
     else
-      put_tag(pb, "    ");
+	put_le32(pb, tag); // store it byteswapped
 
     put_be32(pb, 0); /* Reserved */
     put_be16(pb, 0); /* Reserved */
@@ -424,22 +431,29 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     return updateSize (pb, pos);
 }
 
+const CodecTag codec_movvideo_tags[] = {
+    { CODEC_ID_SVQ1, MKTAG('S', 'V', 'Q', '1') },
+    { CODEC_ID_SVQ3, MKTAG('S', 'V', 'Q', '3') },
+    { CODEC_ID_MPEG4, MKTAG('m', 'p', '4', 'v') },
+    { CODEC_ID_H263, MKTAG('s', '2', '6', '3') },
+    { CODEC_ID_DVVIDEO, MKTAG('d', 'v', 'c', ' ') },
+    { 0, 0 },
+};
+
 static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int pos = url_ftell(pb);
+    int pos = url_ftell(pb), tag;
+
     put_be32(pb, 0); /* size */
-    if(track->enc->codec_id == CODEC_ID_SVQ1)
-      put_tag(pb, "SVQ1");
-    else if(track->enc->codec_id == CODEC_ID_SVQ3)
-      put_tag(pb, "SVQ3");
-    else if(track->enc->codec_id == CODEC_ID_MPEG4)
-      put_tag(pb, "mp4v");
-    else if(track->enc->codec_id == CODEC_ID_H263)
-      put_tag(pb, "s263");
-    else if(track->enc->codec_id == CODEC_ID_DVVIDEO)
-      put_tag(pb, "dvc ");
+
+    tag = codec_get_tag(codec_movvideo_tags, track->enc->codec_id);
+    // if no mac fcc found, try with Microsoft tags
+    if (!tag)
+	tag = codec_get_tag(codec_bmp_tags, track->enc->codec_id);
+    if (!tag)
+	put_tag(pb, "    ");
     else
-      put_tag(pb, "    "); /* Unknown tag */
+	put_le32(pb, tag); // store it byteswapped
 
     put_be32(pb, 0); /* Reserved */
     put_be16(pb, 0); /* Reserved */
