@@ -25,6 +25,10 @@
 #include <SDL.h>
 #include <SDL_thread.h>
 
+#ifdef CONFIG_WIN32
+#undef main /* We don't want SDL to override our main() */
+#endif
+
 #if defined(__linux__)
 #define HAVE_X11
 #endif
@@ -1359,7 +1363,10 @@ int main(int argc, char **argv)
     if (display_disable) {
         video_disable = 1;
     }
-    flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVENTTHREAD;
+    flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
+#ifndef CONFIG_WIN32
+    flags |= SDL_INIT_EVENTTHREAD; /* Not supported on win32 */
+#endif
     if (SDL_Init (flags)) {
         fprintf(stderr, "Could not initialize SDL - exiting\n");
         exit(1);
