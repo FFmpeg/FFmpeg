@@ -19,10 +19,63 @@
 
 #include <stdio.h>
 #include <inttypes.h>
+#include <assert.h>
 
 #define F 100
 #define SIZE 2048
 
+uint64_t exp16_table[20]={
+     65537,
+     65538,
+     65540,
+     65544,
+     65552,
+     65568,
+     65600,
+     65664,
+     65793,
+     66050,
+     66568,
+     67616,
+     69763,
+     74262,
+     84150,
+    108051,
+    178145,
+    484249,
+   3578144,
+ 195360063,
+};
+#if 1
+// 16.16 fixpoint exp()
+static unsigned int exp16(unsigned int a){
+    int i;
+    int out= 1<<16;
+
+    for(i=19;i>=0;i--){
+        if(a&(1<<i))
+            out= (out*exp16_table[i] + (1<<15))>>16;
+    }
+
+    return out;
+}
+// 16.16 fixpoint log()
+static uint64_t log16(uint64_t a){
+    int i;
+    int out=0;
+    
+    assert(a >= (1<<16));
+    a<<=16;
+    
+    for(i=19;i>=0;i--){
+        if(a<(exp16_table[i]<<16)) continue;
+        out |= 1<<i;
+        a = ((a<<16) + exp16_table[i]/2)/exp16_table[i];
+    }
+    return out;
+}
+
+#endif
 static uint64_t int_sqrt(uint64_t a)
 {
     uint64_t ret=0;
@@ -45,6 +98,7 @@ int main(int argc,char* argv[]){
     uint64_t dev;
     FILE *f[2];
     uint8_t buf[2][SIZE];
+    uint64_t psnr;
     
     if(argc!=3){
         printf("tiny_psnr <file1> <file2>\n");
@@ -66,9 +120,16 @@ int main(int argc,char* argv[]){
     }
     
     dev= int_sqrt((sse*F*F)/i);
+    if(sse)
+        psnr= (log16(256*256*255*255LL*i/sse)*284619LL*F + (1<<31)) / (1LL<<32);
+    else
+        psnr= 100*F-1; //floating point free infinity :)
     
-    //FIXME someone should write a integer fixpoint log() function for bitexact PSNR scores ...
-    printf("stddev:%3d.%02d bytes:%d\n", (int)(dev/F), (int)(dev%F), i);
-    
+    printf("stddev:%3d.%02d PSNR:%2d.%02d bytes:%d\n", 
+        (int)(dev/F), (int)(dev%F), 
+        (int)(psnr/F), (int)(psnr%F),
+        i);
     return 0;
 }
+
+
