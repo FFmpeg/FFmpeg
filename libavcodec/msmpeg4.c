@@ -670,10 +670,66 @@ static int decode012(GetBitContext *gb)
         return get_bits1(gb) + 1;
 }
 
-int msmpeg4_decode_picture_header(MpegEncContext * s)
+int msmpeg4v2_decode_picture_header(MpegEncContext * s)
 {
     int code;
 
+    s->pict_type = get_bits(&s->gb, 2) + 1;
+    if (s->pict_type != I_TYPE &&
+        s->pict_type != P_TYPE)
+        return -1;
+
+    s->qscale = get_bits(&s->gb, 5);
+
+    if (s->pict_type == I_TYPE) {
+        code = get_bits(&s->gb, 5); 
+        /* 0x17: one slice, 0x18: three slices */
+        /* XXX: implement it */
+	//printf("%d %d %d\n", code, s->slice_height, s->first_slice_line);
+        if (code < 0x17)
+            return -1;
+        s->slice_height = s->mb_height / (code - 0x16);
+/*        s->rl_chroma_table_index = decode012(&s->gb);
+        s->rl_table_index = decode012(&s->gb);
+
+        s->dc_table_index = get_bits1(&s->gb);*/
+        s->no_rounding = 1;
+    } else {
+        s->use_skip_mb_code = get_bits1(&s->gb);
+        
+/*        s->rl_table_index = decode012(&s->gb);
+        s->rl_chroma_table_index = s->rl_table_index;
+
+        s->dc_table_index = get_bits1(&s->gb);
+
+        s->mv_table_index = get_bits1(&s->gb);*/
+	if(s->flipflop_rounding){
+	    s->no_rounding ^= 1;
+	}else{
+	    s->no_rounding = 0;
+	}
+//	printf("%d", s->no_rounding);
+    }
+
+printf("%s q:%d s:%X ", s->pict_type == I_TYPE ? "I" : "P" , s->qscale,
+                        s->pict_type == I_TYPE ? code : s->use_skip_mb_code);
+
+    return 0;
+}
+
+int msmpeg4_decode_picture_header(MpegEncContext * s)
+{
+    int code;
+#if 0
+{
+int i;
+msmpeg4v2_decode_picture_header(s);
+for(i=0; i<s->gb.size*8; i++)
+    printf("%d", get_bits1(&s->gb));
+printf("END\n");
+return -1;
+}
+#endif
     s->pict_type = get_bits(&s->gb, 2) + 1;
     if (s->pict_type != I_TYPE &&
         s->pict_type != P_TYPE)
