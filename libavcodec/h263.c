@@ -1575,10 +1575,9 @@ int h263_decode_mb(MpegEncContext *s,
             s->mv[0][0][1] = 0;
             s->mv[1][0][0] = 0;
             s->mv[1][0][1] = 0;
-            s->last_mv[0][0][0]=
-            s->last_mv[0][0][1]= 
-            s->last_mv[1][0][0]= 
-            s->last_mv[1][0][1]= 0;
+//FIXME is this correct?
+/*            s->last_mv[0][0][0]=
+            s->last_mv[0][0][1]=0;*/
             s->mb_skiped = 1;
             return 0;
         }
@@ -2485,7 +2484,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
     }
 
     s->pict_type = get_bits(&s->gb, 2) + 1;	/* pict type: I = 0 , P = 1 */
-//printf("pic: %d\n", s->pict_type); 
+//printf("pic: %d, qpel:%d\n", s->pict_type, s->quarter_sample); 
     time_incr=0;
     while (get_bits1(&s->gb) != 0) 
         time_incr++;
