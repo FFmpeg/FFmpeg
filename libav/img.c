@@ -719,7 +719,7 @@ static int img_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-AVInputFormat pgm_iformat = {
+static AVInputFormat pgm_iformat = {
     "pgm",
     "pgm image format",
     sizeof(VideoData),
@@ -732,7 +732,7 @@ AVInputFormat pgm_iformat = {
     .extensions = "pgm",
 };
 
-AVOutputFormat pgm_oformat = {
+static AVOutputFormat pgm_oformat = {
     "pgm",
     "pgm image format",
     "",
@@ -746,7 +746,7 @@ AVOutputFormat pgm_oformat = {
     AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
-AVInputFormat pgmyuv_iformat = {
+static AVInputFormat pgmyuv_iformat = {
     "pgmyuv",
     "pgm with YUV content image format",
     sizeof(VideoData),
@@ -758,7 +758,7 @@ AVInputFormat pgmyuv_iformat = {
     AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
-AVOutputFormat pgmyuv_oformat = {
+static AVOutputFormat pgmyuv_oformat = {
     "pgmyuv",
     "pgm with YUV content image format",
     "",
@@ -772,7 +772,7 @@ AVOutputFormat pgmyuv_oformat = {
     AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
-AVInputFormat ppm_iformat = {
+static AVInputFormat ppm_iformat = {
     "ppm",
     "ppm image format",
     sizeof(VideoData),
@@ -785,7 +785,7 @@ AVInputFormat ppm_iformat = {
     .extensions = "ppm",
 };
 
-AVOutputFormat ppm_oformat = {
+static AVOutputFormat ppm_oformat = {
     "ppm",
     "ppm image format",
     "",
@@ -799,7 +799,7 @@ AVOutputFormat ppm_oformat = {
     AVFMT_NOFILE | AVFMT_NEEDNUMBER | AVFMT_RGB24,
 };
 
-AVInputFormat imgyuv_iformat = {
+static AVInputFormat imgyuv_iformat = {
     ".Y.U.V",
     ".Y.U.V format",
     sizeof(VideoData),
@@ -812,7 +812,7 @@ AVInputFormat imgyuv_iformat = {
     .extensions = "Y",
 };
 
-AVOutputFormat imgyuv_oformat = {
+static AVOutputFormat imgyuv_oformat = {
     ".Y.U.V",
     ".Y.U.V format",
     "",
@@ -826,7 +826,7 @@ AVOutputFormat imgyuv_oformat = {
     AVFMT_NOFILE | AVFMT_NEEDNUMBER,
 };
 
-AVInputFormat pgmpipe_iformat = {
+static AVInputFormat pgmpipe_iformat = {
     "pgmpipe",
     "PGM pipe format",
     sizeof(VideoData),
@@ -837,7 +837,7 @@ AVInputFormat pgmpipe_iformat = {
     NULL,
 };
 
-AVOutputFormat pgmpipe_oformat = {
+static AVOutputFormat pgmpipe_oformat = {
     "pgmpipe",
     "PGM pipe format",
     "",
@@ -850,7 +850,7 @@ AVOutputFormat pgmpipe_oformat = {
     img_write_trailer,
 };
 
-AVInputFormat pgmyuvpipe_iformat = {
+static AVInputFormat pgmyuvpipe_iformat = {
     "pgmyuvpipe",
     "PGM YUV pipe format",
     sizeof(VideoData),
@@ -861,7 +861,7 @@ AVInputFormat pgmyuvpipe_iformat = {
     NULL,
 };
 
-AVOutputFormat pgmyuvpipe_oformat = {
+static AVOutputFormat pgmyuvpipe_oformat = {
     "pgmyuvpipe",
     "PGM YUV pipe format",
     "",
@@ -874,7 +874,7 @@ AVOutputFormat pgmyuvpipe_oformat = {
     img_write_trailer,
 };
 
-AVInputFormat ppmpipe_iformat = {
+static AVInputFormat ppmpipe_iformat = {
     "ppmpipe",
     "PPM pipe format",
     sizeof(VideoData),
@@ -886,7 +886,7 @@ AVInputFormat ppmpipe_iformat = {
     .flags = AVFMT_RGB24,
 };
 
-AVOutputFormat ppmpipe_oformat = {
+static AVOutputFormat ppmpipe_oformat = {
     "ppmpipe",
     "PPM pipe format",
     "",
@@ -901,7 +901,7 @@ AVOutputFormat ppmpipe_oformat = {
 };
 
 
-AVOutputFormat yuv4mpegpipe_oformat = {
+static AVOutputFormat yuv4mpegpipe_oformat = {
     "yuv4mpegpipe",
     "YUV4MPEG pipe format",
     "",

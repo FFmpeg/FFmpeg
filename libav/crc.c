@@ -91,7 +91,7 @@ static int crc_write_trailer(struct AVFormatContext *s)
     return 0;
 }
 
-AVOutputFormat crc_format = {
+static AVOutputFormat crc_format = {
     "crc",
     "crc testing format",
     NULL,

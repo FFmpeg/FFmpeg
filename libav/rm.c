@@ -742,7 +742,7 @@ static int rm_probe(AVProbeData *p)
         return 0;
 }
 
-AVInputFormat rm_iformat = {
+static AVInputFormat rm_iformat = {
     "rm",
     "rm format",
     sizeof(RMContext),
@@ -752,7 +752,7 @@ AVInputFormat rm_iformat = {
     rm_read_close,
 };
 
-AVOutputFormat rm_oformat = {
+static AVOutputFormat rm_oformat = {
     "rm",
     "rm format",
     "audio/x-pn-realaudio",

@@ -651,7 +651,7 @@ static int ffm_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat ffm_iformat = {
+static AVInputFormat ffm_iformat = {
     "ffm",
     "ffm format",
     sizeof(FFMContext),
@@ -662,7 +662,7 @@ AVInputFormat ffm_iformat = {
     ffm_seek,
 };
 
-AVOutputFormat ffm_oformat = {
+static AVOutputFormat ffm_oformat = {
     "ffm",
     "ffm format",
     "",

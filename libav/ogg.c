@@ -148,7 +148,7 @@ static int ogg_write_trailer(AVFormatContext *avfcontext) {
 }
 
 
-AVOutputFormat ogg_oformat = {
+static AVOutputFormat ogg_oformat = {
     "ogg",
     "Ogg Vorbis",
     "audio/x-vorbis",

@@ -32,7 +32,7 @@
 #define AU_UNKOWN_SIZE ((UINT32)(~0))
 
 /* The ffmpeg codecs we support, and the IDs they have in the file */
-CodecTag codec_au_tags[] = {
+static const CodecTag codec_au_tags[] = {
     { CODEC_ID_PCM_MULAW, 1 },
     { CODEC_ID_PCM_S16BE, 3 },
     { CODEC_ID_PCM_ALAW, 27 },
@@ -40,7 +40,7 @@ CodecTag codec_au_tags[] = {
 };
 
 /* AUDIO_FILE header */
-int put_au_header(ByteIOContext *pb, AVCodecContext *enc)
+static int put_au_header(ByteIOContext *pb, AVCodecContext *enc)
 {
     int tag;
 

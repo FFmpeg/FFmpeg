@@ -312,7 +312,7 @@ static int grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
-AVInputFormat video_grab_device_format = {
+static AVInputFormat video_grab_device_format = {
     "video_grab_device",
     "video grab",
     sizeof(VideoData),
@@ -961,7 +961,7 @@ static int aiw_grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
-AVInputFormat aiw_grab_device_format = {
+static AVInputFormat aiw_grab_device_format = {
     "aiw_grab_device",
     "All-In-Wonder (km read-based) video grab",
     sizeof(AIWVideoData),

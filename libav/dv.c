@@ -49,8 +49,7 @@ static int dv_read_header(AVFormatContext *s,
 }
 
 /* XXX: build fake audio stream when DV audio decoder will be finished */
-int dv_read_packet(AVFormatContext *s,
-                   AVPacket *pkt)
+static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size, dsf;
     uint8_t buf[4];
@@ -77,12 +76,12 @@ int dv_read_packet(AVFormatContext *s,
     return ret;
 }
 
-int dv_read_close(AVFormatContext *s)
+static int dv_read_close(AVFormatContext *s)
 {
     return 0;
 }
 
-AVInputFormat dv_iformat = {
+static AVInputFormat dv_iformat = {
     "dv",
     "DV video format",
     sizeof(DVDemuxContext),

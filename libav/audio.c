@@ -272,7 +272,7 @@ static int audio_read_close(AVFormatContext *s1)
     return 0;
 }
 
-AVInputFormat audio_in_format = {
+static AVInputFormat audio_in_format = {
     "audio_device",
     "audio grab and output",
     sizeof(AudioData),
@@ -283,7 +283,7 @@ AVInputFormat audio_in_format = {
     .flags = AVFMT_NOFILE,
 };
 
-AVOutputFormat audio_out_format = {
+static AVOutputFormat audio_out_format = {
     "audio_device",
     "audio grab and output",
     "",

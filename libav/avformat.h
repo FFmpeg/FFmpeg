@@ -335,7 +335,6 @@ int strstart(const char *str, const char *val, const char **ptr);
 int stristart(const char *str, const char *val, const char **ptr);
 void pstrcpy(char *buf, int buf_size, const char *str);
 char *pstrcat(char *buf, int buf_size, const char *s);
-int match_ext(const char *filename, const char *extensions);
 
 struct in_addr;
 int resolve_host(struct in_addr *sin_addr, const char *hostname);
