@@ -21,10 +21,6 @@
  * and improved by Zdenek Kabelac <kabi@users.sf.net>
  */
 
-// will have to be check if it's better to have bigger
-// unrolled code also on Celerons - for now  yes
-#define LONG_UNROLL 1
-
 // put_pixels
 static void DEF(put, pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
@@ -34,30 +30,24 @@ static void DEF(put, pixels_x2)(UINT8 *block, const UINT8 *pixels, int line_size
 	".balign 8			\n\t"
 	"1:				\n\t"
 	"movq	(%1), %%mm0		\n\t"
-	"movq	(%1, %3), %%mm2		\n\t"
 	"movq	1(%1), %%mm1		\n\t"
+	"movq	(%1, %3), %%mm2		\n\t"
 	"movq	1(%1, %3), %%mm3	\n\t"
-	PAVGB(%%mm0, %%mm1)
-	"movq	%%mm6, (%2)		\n\t"
-	PAVGB(%%mm2, %%mm3)
+	PAVGBP(%%mm0, %%mm1, %%mm5,   %%mm2, %%mm3, %%mm6)
+	"movq	%%mm5, (%2)		\n\t"
 	"movq	%%mm6, (%2, %3)		\n\t"
 	"addl	%%eax, %1		\n\t"
 	"addl	%%eax, %2		\n\t"
-#if LONG_UNROLL
 	"movq	(%1), %%mm0		\n\t"
-	"movq	(%1, %3), %%mm2		\n\t"
 	"movq	1(%1), %%mm1		\n\t"
+	"movq	(%1, %3), %%mm2		\n\t"
 	"movq	1(%1, %3), %%mm3	\n\t"
-	PAVGB(%%mm0, %%mm1)
-	"movq	%%mm6, (%2)		\n\t"
-	PAVGB(%%mm2, %%mm3)
+	PAVGBP(%%mm0, %%mm1, %%mm5,   %%mm2, %%mm3, %%mm6)
+	"movq	%%mm5, (%2)		\n\t"
 	"movq	%%mm6, (%2, %3)		\n\t"
 	"addl	%%eax, %1		\n\t"
 	"addl	%%eax, %2		\n\t"
 	"subl	$4, %0			\n\t"
-#else
-	"subl	$2, %0			\n\t"
-#endif
 	"jnz	1b			\n\t"
 	:"+g"(h), "+S"(pixels), "+D"(block)
 	:"r"(line_size)
@@ -74,25 +64,19 @@ static void DEF(put, pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size
 	"1:				\n\t"
 	"movq	(%1, %3), %%mm1		\n\t"
 	"movq	(%1, %%eax),%%mm2	\n\t"
-	PAVGB(%%mm1, %%mm0)
-	"movq	%%mm6, (%2)		\n\t"
-	PAVGB(%%mm2, %%mm1)
-	"movq	%%mm6, (%2, %3)		\n\t"
+	PAVGBP(%%mm1, %%mm0, %%mm5,   %%mm2, %%mm1, %%mm6)
+        "movq	%%mm5, (%2)		\n\t"
+        "movq	%%mm6, (%2, %3)		\n\t"
 	"addl	%%eax, %1		\n\t"
 	"addl	%%eax, %2		\n\t"
-#ifdef LONG_UNROLL
 	"movq	(%1, %3), %%mm1		\n\t"
 	"movq	(%1, %%eax),%%mm0	\n\t"
-	PAVGB(%%mm1, %%mm2)
-	"movq	%%mm6, (%2)		\n\t"
-	PAVGB(%%mm0, %%mm1)
+	PAVGBP(%%mm1, %%mm2, %%mm5,   %%mm0, %%mm1, %%mm6)
+	"movq	%%mm5, (%2)		\n\t"
 	"movq	%%mm6, (%2, %3)		\n\t"
 	"addl	%%eax, %1		\n\t"
 	"addl	%%eax, %2		\n\t"
 	"subl	$4, %0			\n\t"
-#else
-	"subl	$2, %0			\n\t"
-#endif
 	"jnz	1b			\n\t"
 	:"+g"(h), "+S"(pixels), "+D"(block)
 	:"r"(line_size)
@@ -101,7 +85,8 @@ static void DEF(put, pixels_y2)(UINT8 *block, const UINT8 *pixels, int line_size
 
 // ((a + b)/2 + (c + d)/2)/2
 // not sure if this is properly replacing original code
-static void DEF(put, pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
+// - ok it's really unsable at this moment -> disabled
+static void DEF(put, disabled_pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
     __asm __volatile(
 	MOVQ_BFE(%%mm7)
@@ -113,15 +98,17 @@ static void DEF(put, pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_siz
 	"1:				\n\t"
 	"movq	(%1, %3), %%mm2		\n\t"
 	"movq	1(%1, %3), %%mm3	\n\t"
-	PAVGBR(%%mm2, %%mm0, %%mm4)
-	PAVGBR(%%mm3, %%mm1, %%mm5)
+	PAVGBP(%%mm2, %%mm0, %%mm4,   %%mm3, %%mm1, %%mm5)
+	//PAVGBR(%%mm2, %%mm0, %%mm4)
+	//PAVGBR(%%mm3, %%mm1, %%mm5)
 	PAVGB(%%mm4, %%mm5)
 	"movq	%%mm6, (%2)		\n\t"
 
 	"movq	(%1, %%eax), %%mm0	\n\t"
 	"movq	1(%1, %%eax), %%mm1	\n\t"
-	PAVGBR(%%mm0, %%mm2, %%mm4)
-	PAVGBR(%%mm1, %%mm3, %%mm5)
+	PAVGBP(%%mm0, %%mm2, %%mm4,   %%mm1, %%mm3, %%mm5)
+	//PAVGBR(%%mm0, %%mm2, %%mm4)
+	//PAVGBR(%%mm1, %%mm3, %%mm5)
 	PAVGB(%%mm4, %%mm5)
 	"movq	%%mm6, (%2, %3)		\n\t"
 	"addl	%%eax, %1		\n\t"
