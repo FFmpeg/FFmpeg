@@ -930,9 +930,9 @@ void estimate_motion(MpegEncContext * s,
             const int block_y= mb_y*2 + (block>>1);
 
             const int rel_xmin4= xmin - block_x*8;
-            const int rel_xmax4= xmax - block_x*8;
+            const int rel_xmax4= xmax - block_x*8 + 8;
             const int rel_ymin4= ymin - block_y*8;
-            const int rel_ymax4= ymax - block_y*8;
+            const int rel_ymax4= ymax - block_y*8 + 8;
 
             P[0][0] = s->motion_val[mot_xy    ][0];
             P[0][1] = s->motion_val[mot_xy    ][1];
@@ -951,6 +951,7 @@ void estimate_motion(MpegEncContext * s,
                 P[3][1] = s->motion_val[mot_xy - mot_stride + off[block]][1];
                 if(P[2][1] > (rel_ymax4<<shift)) P[2][1]= (rel_ymax4<<shift);
                 if(P[3][0] < (rel_xmin4<<shift)) P[3][0]= (rel_xmin4<<shift);
+                if(P[3][0] > (rel_xmax4<<shift)) P[3][0]= (rel_xmax4<<shift);
                 if(P[3][1] > (rel_ymax4<<shift)) P[3][1]= (rel_ymax4<<shift);
         
                 P[4][0]= mid_pred(P[1][0], P[2][0], P[3][0]);

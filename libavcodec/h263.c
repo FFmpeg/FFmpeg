@@ -263,7 +263,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
         if (s->block_last_index[i] >= 0)
             cbp |= 1 << (5 - i);
         }
-        if ((cbp | motion_x | motion_y) == 0) {
+        if ((cbp | motion_x | motion_y) == 0 && s->mv_type==MV_TYPE_16X16) {
             /* skip macroblock */
             put_bits(&s->pb, 1, 1);
             s->misc_bits++;
@@ -272,24 +272,45 @@ void mpeg4_encode_mb(MpegEncContext * s,
             return;
         }
         put_bits(&s->pb, 1, 0);	/* mb coded */
-        cbpc = cbp & 3;
-        put_bits(&s->pb,
-                inter_MCBPC_bits[cbpc],
-                inter_MCBPC_code[cbpc]);
-        cbpy = cbp >> 2;
-        cbpy ^= 0xf;
-        put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
-            
-        bits= get_bit_count(&s->pb);
-        s->misc_bits+= bits - s->last_bits;
-        s->last_bits=bits;
+        if(s->mv_type==MV_TYPE_16X16){
+            cbpc = cbp & 3;
+            put_bits(&s->pb,
+                    inter_MCBPC_bits[cbpc],
+                    inter_MCBPC_code[cbpc]);
+            cbpy = cbp >> 2;
+            cbpy ^= 0xf;
+            put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
+                
+            bits= get_bit_count(&s->pb);
+            s->misc_bits+= bits - s->last_bits;
+            s->last_bits=bits;
 
-        /* motion vectors: 16x16 mode only now */
-        h263_pred_motion(s, 0, &pred_x, &pred_y);
-      
-        h263_encode_motion(s, motion_x - pred_x);
-        h263_encode_motion(s, motion_y - pred_y);
+            /* motion vectors: 16x16 mode */
+            h263_pred_motion(s, 0, &pred_x, &pred_y);
+        
+            h263_encode_motion(s, motion_x - pred_x);
+            h263_encode_motion(s, motion_y - pred_y);
+        }else{
+            cbpc = (cbp & 3)+16;
+            put_bits(&s->pb,
+                    inter_MCBPC_bits[cbpc],
+                    inter_MCBPC_code[cbpc]);
+            cbpy = cbp >> 2;
+            cbpy ^= 0xf;
+            put_bits(&s->pb, cbpy_tab[cbpy][1], cbpy_tab[cbpy][0]);
 
+            bits= get_bit_count(&s->pb);
+            s->misc_bits+= bits - s->last_bits;
+            s->last_bits=bits;
+
+            for(i=0; i<4; i++){
+                /* motion vectors: 8x8 mode*/
+                h263_pred_motion(s, i, &pred_x, &pred_y);
+
+                h263_encode_motion(s, s->motion_val[ s->block_index[i] ][0] - pred_x);
+                h263_encode_motion(s, s->motion_val[ s->block_index[i] ][1] - pred_y);
+            }
+        }
         bits= get_bit_count(&s->pb);
         s->mv_bits+= bits - s->last_bits;
         s->last_bits=bits;
