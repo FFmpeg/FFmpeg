@@ -1,6 +1,6 @@
 /*
  * bitstream.h
- * Copyright (C) 2000-2002 Michel Lespinasse <walken@zoy.org>
+ * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
  * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of a52dec, a free ATSC A-52 stream decoder.
@@ -46,37 +46,32 @@
 #	endif
 #endif
 
-extern uint32_t a52_bits_left;
-extern uint32_t a52_current_word;
+void a52_bitstream_set_ptr (a52_state_t * state, uint8_t * buf);
+uint32_t a52_bitstream_get_bh (a52_state_t * state, uint32_t num_bits);
+int32_t a52_bitstream_get_bh_2 (a52_state_t * state, uint32_t num_bits);
 
-void a52_bitstream_set_ptr (uint8_t * buf);
-uint32_t a52_bitstream_get_bh(uint32_t num_bits);
-int32_t a52_bitstream_get_bh_2(uint32_t num_bits);
-
-static inline uint32_t 
-bitstream_get(uint32_t num_bits)
+static inline uint32_t bitstream_get (a52_state_t * state, uint32_t num_bits)
 {
     uint32_t result;
 	
-    if(num_bits < a52_bits_left) {
-	result = (a52_current_word << (32 - a52_bits_left)) >> (32 - num_bits);
-	a52_bits_left -= num_bits;
+    if (num_bits < state->bits_left) {
+	result = (state->current_word << (32 - state->bits_left)) >> (32 - num_bits);
+	state->bits_left -= num_bits;
 	return result;
     }
 
-    return a52_bitstream_get_bh(num_bits);
+    return a52_bitstream_get_bh (state, num_bits);
 }
 
-static inline int32_t 
-bitstream_get_2(uint32_t num_bits)
+static inline int32_t bitstream_get_2 (a52_state_t * state, uint32_t num_bits)
 {
     int32_t result;
 	
-    if(num_bits < a52_bits_left) {
-	result = (((int32_t)a52_current_word) << (32 - a52_bits_left)) >> (32 - num_bits);
-	a52_bits_left -= num_bits;
+    if (num_bits < state->bits_left) {
+	result = (((int32_t)state->current_word) << (32 - state->bits_left)) >> (32 - num_bits);
+	state->bits_left -= num_bits;
 	return result;
     }
 
-    return a52_bitstream_get_bh_2(num_bits);
+    return a52_bitstream_get_bh_2 (state, num_bits);
 }

@@ -1,6 +1,6 @@
 /*
  * bit_allocate.c
- * Copyright (C) 2000-2002 Michel Lespinasse <walken@zoy.org>
+ * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
  * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of a52dec, a free ATSC A-52 stream decoder.
@@ -20,6 +20,11 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+#include "config.h"
+
+#include <inttypes.h>
+
 #include "a52.h"
 #include "a52_internal.h"
 
@@ -226,7 +231,7 @@ void a52_bit_allocate (a52_state_t * state, ba_t * ba, int bndstart,
 	int startband, endband;
 
 	startband = j;
-	endband = ((bndtab-20)[i] < end) ? (bndtab-20)[i] : end;
+	endband = (bndtab[i-20] < end) ? bndtab[i-20] : end;
 	psd = 128 * exp[j++];
 	while (j < endband) {
 	    int next, delta;

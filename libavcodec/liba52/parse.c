@@ -1,6 +1,6 @@
 /*
  * parse.c
- * Copyright (C) 2000-2002 Michel Lespinasse <walken@zoy.org>
+ * Copyright (C) 2000-2003 Michel Lespinasse <walken@zoy.org>
  * Copyright (C) 1999-2000 Aaron Holtzman <aholtzma@ess.engr.uvic.ca>
  *
  * This file is part of a52dec, a free ATSC A-52 stream decoder.
@@ -21,12 +21,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "config.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <inttypes.h>
+
 #include "a52.h"
 #include "a52_internal.h"
 #include "bitstream.h"
 #include "tables.h"
 
-#ifdef HAVE_MEMALIGN
+#if defined(HAVE_MEMALIGN) && !defined(__cplusplus)
 /* some systems have memalign() but no declaration for it */
 void * memalign (size_t align, size_t size);
 #else
@@ -35,13 +41,13 @@ void * memalign (size_t align, size_t size);
 #endif
 
 typedef struct {
-    sample_t q1[2];
-    sample_t q2[2];
-    sample_t q4;
+    quantizer_t q1[2];
+    quantizer_t q2[2];
+    quantizer_t q4;
     int q1_ptr;
     int q2_ptr;
     int q4_ptr;
-} quantizer_t;
+} quantizer_set_t;
 
 static uint8_t halfrate[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3};
 
@@ -50,11 +56,11 @@ a52_state_t * a52_init (uint32_t mm_accel)
     a52_state_t * state;
     int i;
 
-    state = malloc (sizeof (a52_state_t));
+    state = (a52_state_t *) malloc (sizeof (a52_state_t));
     if (state == NULL)
 	return NULL;
 
-    state->samples = memalign (16, 256 * 12 * sizeof (sample_t));
+    state->samples = (sample_t *) memalign (16, 256 * 12 * sizeof (sample_t));
     if (state->samples == NULL) {
 	free (state);
 	return NULL;
@@ -64,6 +70,8 @@ a52_state_t * a52_init (uint32_t mm_accel)
 	state->samples[i] = 0;
 
     state->downmixed = 1;
+
+    state->lfsr_state = 1;
 
     a52_imdct_init (mm_accel);
 
@@ -121,10 +129,12 @@ int a52_syncinfo (uint8_t * buf, int * flags,
 }
 
 int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
-	       sample_t * level, sample_t bias)
+	       level_t * level, sample_t bias)
 {
-    static sample_t clev[4] = {LEVEL_3DB, LEVEL_45DB, LEVEL_6DB, LEVEL_45DB};
-    static sample_t slev[4] = {LEVEL_3DB, LEVEL_6DB, 0, LEVEL_6DB};
+    static level_t clev[4] = { LEVEL (LEVEL_3DB), LEVEL (LEVEL_45DB),
+			       LEVEL (LEVEL_6DB), LEVEL (LEVEL_45DB) };
+    static level_t slev[4] = { LEVEL (LEVEL_3DB), LEVEL (LEVEL_6DB), 
+			       0,                 LEVEL (LEVEL_6DB) };
     int chaninfo;
     int acmod;
 
@@ -132,19 +142,21 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
     state->halfrate = halfrate[buf[5] >> 3];
     state->acmod = acmod = buf[6] >> 5;
 
-    a52_bitstream_set_ptr (buf + 6);
-    bitstream_get (3);	/* skip acmod we already parsed */
+    a52_bitstream_set_ptr (state, buf + 6);
+    bitstream_get (state, 3);	/* skip acmod we already parsed */
 
-    if ((acmod == 2) && (bitstream_get (2) == 2))	/* dsurmod */
+    if ((acmod == 2) && (bitstream_get (state, 2) == 2))	/* dsurmod */
 	acmod = A52_DOLBY;
 
+    state->clev = state->slev = 0;
+
     if ((acmod & 1) && (acmod != 1))
-	state->clev = clev[bitstream_get (2)];	/* cmixlev */
+	state->clev = clev[bitstream_get (state, 2)];	/* cmixlev */
 
     if (acmod & 4)
-	state->slev = slev[bitstream_get (2)];	/* surmixlev */
+	state->slev = slev[bitstream_get (state, 2)];	/* surmixlev */
 
-    state->lfeon = bitstream_get (1);
+    state->lfeon = bitstream_get (state, 1);
 
     state->output = a52_downmix_init (acmod, *flags, level,
 				      state->clev, state->slev);
@@ -154,7 +166,7 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
 	state->output |= A52_LFE;
     *flags = state->output;
     /* the 2* compensates for differences in imdct */
-    state->dynrng = state->level = 2 * *level;
+    state->dynrng = state->level = MUL_C (*level, 2);
     state->bias = bias;
     state->dynrnge = 1;
     state->dynrngcall = NULL;
@@ -164,28 +176,28 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
 
     chaninfo = !acmod;
     do {
-	bitstream_get (5);	/* dialnorm */
-	if (bitstream_get (1))	/* compre */
-	    bitstream_get (8);	/* compr */
-	if (bitstream_get (1))	/* langcode */
-	    bitstream_get (8);	/* langcod */
-	if (bitstream_get (1))	/* audprodie */
-	    bitstream_get (7);	/* mixlevel + roomtyp */
+	bitstream_get (state, 5);	/* dialnorm */
+	if (bitstream_get (state, 1))	/* compre */
+	    bitstream_get (state, 8);	/* compr */
+	if (bitstream_get (state, 1))	/* langcode */
+	    bitstream_get (state, 8);	/* langcod */
+	if (bitstream_get (state, 1))	/* audprodie */
+	    bitstream_get (state, 7);	/* mixlevel + roomtyp */
     } while (chaninfo--);
 
-    bitstream_get (2);		/* copyrightb + origbs */
+    bitstream_get (state, 2);		/* copyrightb + origbs */
 
-    if (bitstream_get (1))	/* timecod1e */
-	bitstream_get (14);	/* timecod1 */
-    if (bitstream_get (1))	/* timecod2e */
-	bitstream_get (14);	/* timecod2 */
+    if (bitstream_get (state, 1))	/* timecod1e */
+	bitstream_get (state, 14);	/* timecod1 */
+    if (bitstream_get (state, 1))	/* timecod2e */
+	bitstream_get (state, 14);	/* timecod2 */
 
-    if (bitstream_get (1)) {	/* addbsie */
+    if (bitstream_get (state, 1)) {	/* addbsie */
 	int addbsil;
 
-	addbsil = bitstream_get (6);
+	addbsil = bitstream_get (state, 6);
 	do {
-	    bitstream_get (8);	/* addbsi */
+	    bitstream_get (state, 8);	/* addbsi */
 	} while (addbsil--);
     }
 
@@ -193,7 +205,7 @@ int a52_frame (a52_state_t * state, uint8_t * buf, int * flags,
 }
 
 void a52_dynrng (a52_state_t * state,
-		 sample_t (* call) (sample_t, void *), void * data)
+		 level_t (* call) (level_t, void *), void * data)
 {
     state->dynrnge = 0;
     if (call) {
@@ -203,13 +215,13 @@ void a52_dynrng (a52_state_t * state,
     }
 }
 
-static int parse_exponents (int expstr, int ngrps, uint8_t exponent,
-			    uint8_t * dest)
+static int parse_exponents (a52_state_t * state, int expstr, int ngrps,
+			    uint8_t exponent, uint8_t * dest)
 {
     int exps;
 
     while (ngrps--) {
-	exps = bitstream_get (7);
+	exps = bitstream_get (state, 7);
 
 	exponent += exp_1[exps];
 	if (exponent > 24)
@@ -257,18 +269,18 @@ static int parse_exponents (int expstr, int ngrps, uint8_t exponent,
     return 0;
 }
 
-static int parse_deltba (int8_t * deltba)
+static int parse_deltba (a52_state_t * state, int8_t * deltba)
 {
     int deltnseg, deltlen, delta, j;
 
     memset (deltba, 0, 50);
 
-    deltnseg = bitstream_get (3);
+    deltnseg = bitstream_get (state, 3);
     j = 0;
     do {
-	j += bitstream_get (5);
-	deltlen = bitstream_get (4);
-	delta = bitstream_get (3);
+	j += bitstream_get (state, 5);
+	deltlen = bitstream_get (state, 4);
+	delta = bitstream_get (state, 3);
 	delta -= (delta >= 4) ? 3 : 4;
 	if (!deltlen)
 	    continue;
@@ -295,29 +307,46 @@ static inline int zero_snr_offsets (int nfchans, a52_state_t * state)
     return 1;
 }
 
-static inline int16_t dither_gen (void)
+static inline int16_t dither_gen (a52_state_t * state)
 {
-    static uint16_t lfsr_state = 1;
-    int16_t state;
+    int16_t nstate;
 
-    state = dither_lut[lfsr_state >> 8] ^ (lfsr_state << 8);
+    nstate = dither_lut[state->lfsr_state >> 8] ^ (state->lfsr_state << 8);
 	
-    lfsr_state = (uint16_t) state;
+    state->lfsr_state = (uint16_t) nstate;
 
-    return state;
+    return (3 * nstate) >> 2;
 }
 
-static void coeff_get (sample_t * coeff, expbap_t * expbap,
-		       quantizer_t * quantizer, sample_t level,
-		       int dither, int end)
+#ifndef LIBA52_FIXED
+#define COEFF(c,t,l,s,e) (c) = (t) * (s)[e]
+#else
+#define COEFF(c,_t,_l,s,e) do {					\
+    quantizer_t t = (_t);					\
+    level_t l = (_l);						\
+    int shift = e - 5;						\
+    sample_t tmp = t * (l >> 16) + ((t * (l & 0xffff)) >> 16);	\
+    if (shift >= 0)						\
+	(c) = tmp >> shift;					\
+    else							\
+	(c) = tmp << -shift;					\
+} while (0)
+#endif
+
+static void coeff_get (a52_state_t * state, sample_t * coeff,
+		       expbap_t * expbap, quantizer_set_t * quant,
+		       level_t level, int dither, int end)
 {
     int i;
     uint8_t * exp;
     int8_t * bap;
+
+#ifndef LIBA52_FIXED
     sample_t factor[25];
 
     for (i = 0; i <= 24; i++)
 	factor[i] = scale_factor[i] * level;
+#endif
 
     exp = expbap->exp;
     bap = expbap->bap;
@@ -329,7 +358,7 @@ static void coeff_get (sample_t * coeff, expbap_t * expbap,
 	switch (bapi) {
 	case 0:
 	    if (dither) {
-		coeff[i] = dither_gen() * LEVEL_3DB * factor[exp[i]];
+		COEFF (coeff[i], dither_gen (state), level, factor, exp[i]);
 		continue;
 	    } else {
 		coeff[i] = 0;
@@ -337,76 +366,80 @@ static void coeff_get (sample_t * coeff, expbap_t * expbap,
 	    }
 
 	case -1:
-	    if (quantizer->q1_ptr >= 0) {
-		coeff[i] = quantizer->q1[quantizer->q1_ptr--] * factor[exp[i]];
+	    if (quant->q1_ptr >= 0) {
+		COEFF (coeff[i], quant->q1[quant->q1_ptr--], level,
+		       factor, exp[i]);
 		continue;
 	    } else {
 		int code;
 
-		code = bitstream_get (5);
+		code = bitstream_get (state, 5);
 
-		quantizer->q1_ptr = 1;
-		quantizer->q1[0] = q_1_2[code];
-		quantizer->q1[1] = q_1_1[code];
-		coeff[i] = q_1_0[code] * factor[exp[i]];
+		quant->q1_ptr = 1;
+		quant->q1[0] = q_1_2[code];
+		quant->q1[1] = q_1_1[code];
+		COEFF (coeff[i], q_1_0[code], level, factor, exp[i]);
 		continue;
 	    }
 
 	case -2:
-	    if (quantizer->q2_ptr >= 0) {
-		coeff[i] = quantizer->q2[quantizer->q2_ptr--] * factor[exp[i]];
+	    if (quant->q2_ptr >= 0) {
+		COEFF (coeff[i], quant->q2[quant->q2_ptr--], level,
+		       factor, exp[i]);
 		continue;
 	    } else {
 		int code;
 
-		code = bitstream_get (7);
+		code = bitstream_get (state, 7);
 
-		quantizer->q2_ptr = 1;
-		quantizer->q2[0] = q_2_2[code];
-		quantizer->q2[1] = q_2_1[code];
-		coeff[i] = q_2_0[code] * factor[exp[i]];
+		quant->q2_ptr = 1;
+		quant->q2[0] = q_2_2[code];
+		quant->q2[1] = q_2_1[code];
+		COEFF (coeff[i], q_2_0[code], level, factor, exp[i]);
 		continue;
 	    }
 
 	case 3:
-	    coeff[i] = q_3[bitstream_get (3)] * factor[exp[i]];
+	    COEFF (coeff[i], q_3[bitstream_get (state, 3)], level,
+		   factor, exp[i]);
 	    continue;
 
 	case -3:
-	    if (quantizer->q4_ptr == 0) {
-		quantizer->q4_ptr = -1;
-		coeff[i] = quantizer->q4 * factor[exp[i]];
+	    if (quant->q4_ptr == 0) {
+		quant->q4_ptr = -1;
+		COEFF (coeff[i], quant->q4, level, factor, exp[i]);
 		continue;
 	    } else {
 		int code;
 
-		code = bitstream_get (7);
+		code = bitstream_get (state, 7);
 
-		quantizer->q4_ptr = 0;
-		quantizer->q4 = q_4_1[code];
-		coeff[i] = q_4_0[code] * factor[exp[i]];
+		quant->q4_ptr = 0;
+		quant->q4 = q_4_1[code];
+		COEFF (coeff[i], q_4_0[code], level, factor, exp[i]);
 		continue;
 	    }
 
 	case 4:
-	    coeff[i] = q_5[bitstream_get (4)] * factor[exp[i]];
+	    COEFF (coeff[i], q_5[bitstream_get (state, 4)], level,
+		   factor, exp[i]);
 	    continue;
 
 	default:
-	    coeff[i] = ((bitstream_get_2 (bapi) << (16 - bapi)) *
-			  factor[exp[i]]);
+	    COEFF (coeff[i], bitstream_get_2 (state, bapi) << (16 - bapi),
+		   level, factor, exp[i]);
 	}
     }
 }
 
 static void coeff_get_coupling (a52_state_t * state, int nfchans,
-				sample_t * coeff, sample_t (* samples)[256],
-				quantizer_t * quantizer, uint8_t dithflag[5])
+				level_t * coeff, sample_t (* samples)[256],
+				quantizer_set_t * quant, uint8_t dithflag[5])
 {
     int cplbndstrc, bnd, i, i_end, ch;
     uint8_t * exp;
     int8_t * bap;
-    sample_t cplco[5];
+    level_t cplco[5];
 
     exp = state->cpl_expbap.exp;
     bap = state->cpl_expbap.bap;
@@ -421,22 +454,26 @@ static void coeff_get_coupling (a52_state_t * state, int nfchans,
 	}
 	cplbndstrc >>= 1;
 	for (ch = 0; ch < nfchans; ch++)
-	    cplco[ch] = state->cplco[ch][bnd] * coeff[ch];
+	    cplco[ch] = MUL_L (state->cplco[ch][bnd], coeff[ch]);
 	bnd++;
 
 	while (i < i_end) {
-	    sample_t cplcoeff;
+	    quantizer_t cplcoeff;
 	    int bapi;
 
 	    bapi = bap[i];
 	    switch (bapi) {
 	    case 0:
-		cplcoeff = LEVEL_3DB * scale_factor[exp[i]];
 		for (ch = 0; ch < nfchans; ch++)
 		    if ((state->chincpl >> ch) & 1) {
 			if (dithflag[ch])
-			    samples[ch][i] = (cplcoeff * cplco[ch] *
-					      dither_gen ());
+#ifndef LIBA52_FIXED
+			    samples[ch][i] = (scale_factor[exp[i]] *
+					      cplco[ch] * dither_gen (state));
+#else
+			    COEFF (samples[ch][i], dither_gen (state),
+				   cplco[ch], scale_factor, exp[i]);
+#endif
 			else
 			    samples[ch][i] = 0;
 		    }
@@ -444,69 +481,75 @@ static void coeff_get_coupling (a52_state_t * state, int nfchans,
 		continue;
 
 	    case -1:
-		if (quantizer->q1_ptr >= 0) {
-		    cplcoeff = quantizer->q1[quantizer->q1_ptr--];
+		if (quant->q1_ptr >= 0) {
+		    cplcoeff = quant->q1[quant->q1_ptr--];
 		    break;
 		} else {
 		    int code;
 
-		    code = bitstream_get (5);
+		    code = bitstream_get (state, 5);
 
-		    quantizer->q1_ptr = 1;
-		    quantizer->q1[0] = q_1_2[code];
-		    quantizer->q1[1] = q_1_1[code];
+		    quant->q1_ptr = 1;
+		    quant->q1[0] = q_1_2[code];
+		    quant->q1[1] = q_1_1[code];
 		    cplcoeff = q_1_0[code];
 		    break;
 		}
 
 	    case -2:
-		if (quantizer->q2_ptr >= 0) {
-		    cplcoeff = quantizer->q2[quantizer->q2_ptr--];
+		if (quant->q2_ptr >= 0) {
+		    cplcoeff = quant->q2[quant->q2_ptr--];
 		    break;
 		} else {
 		    int code;
 
-		    code = bitstream_get (7);
+		    code = bitstream_get (state, 7);
 
-		    quantizer->q2_ptr = 1;
-		    quantizer->q2[0] = q_2_2[code];
-		    quantizer->q2[1] = q_2_1[code];
+		    quant->q2_ptr = 1;
+		    quant->q2[0] = q_2_2[code];
+		    quant->q2[1] = q_2_1[code];
 		    cplcoeff = q_2_0[code];
 		    break;
 		}
 
 	    case 3:
-		cplcoeff = q_3[bitstream_get (3)];
+		cplcoeff = q_3[bitstream_get (state, 3)];
 		break;
 
 	    case -3:
-		if (quantizer->q4_ptr == 0) {
-		    quantizer->q4_ptr = -1;
-		    cplcoeff = quantizer->q4;
+		if (quant->q4_ptr == 0) {
+		    quant->q4_ptr = -1;
+		    cplcoeff = quant->q4;
 		    break;
 		} else {
 		    int code;
 
-		    code = bitstream_get (7);
+		    code = bitstream_get (state, 7);
 
-		    quantizer->q4_ptr = 0;
-		    quantizer->q4 = q_4_1[code];
+		    quant->q4_ptr = 0;
+		    quant->q4 = q_4_1[code];
 		    cplcoeff = q_4_0[code];
 		    break;
 		}
 
 	    case 4:
-		cplcoeff = q_5[bitstream_get (4)];
+		cplcoeff = q_5[bitstream_get (state, 4)];
 		break;
 
 	    default:
-		cplcoeff = bitstream_get_2 (bapi) << (16 - bapi);
+		cplcoeff = bitstream_get_2 (state, bapi) << (16 - bapi);
 	    }
-
+#ifndef LIBA52_FIXED
 	    cplcoeff *= scale_factor[exp[i]];
+#endif
 	    for (ch = 0; ch < nfchans; ch++)
-		if ((state->chincpl >> ch) & 1)
+	       if ((state->chincpl >> ch) & 1)
+#ifndef LIBA52_FIXED
 		    samples[ch][i] = cplcoeff * cplco[ch];
+#else
+		    COEFF (samples[ch][i], cplcoeff, cplco[ch],
+			   scale_factor, exp[i]);
+#endif
 	    i++;
 	}
     }
@@ -519,40 +562,44 @@ int a52_block (a52_state_t * state)
     int i, nfchans, chaninfo;
     uint8_t cplexpstr, chexpstr[5], lfeexpstr, do_bit_alloc, done_cpl;
     uint8_t blksw[5], dithflag[5];
-    sample_t coeff[5];
+    level_t coeff[5];
     int chanbias;
-    quantizer_t quantizer;
+    quantizer_set_t quant;
     sample_t * samples;
 
     nfchans = nfchans_tbl[state->acmod];
 
     for (i = 0; i < nfchans; i++)
-	blksw[i] = bitstream_get (1);
+	blksw[i] = bitstream_get (state, 1);
 
     for (i = 0; i < nfchans; i++)
-	dithflag[i] = bitstream_get (1);
+	dithflag[i] = bitstream_get (state, 1);
 
     chaninfo = !state->acmod;
     do {
-	if (bitstream_get (1)) {	/* dynrnge */
+	if (bitstream_get (state, 1)) {	/* dynrnge */
 	    int dynrng;
 
-	    dynrng = bitstream_get_2 (8);
+	    dynrng = bitstream_get_2 (state, 8);
 	    if (state->dynrnge) {
-		sample_t range;
+		level_t range;
 
+#if !defined(LIBA52_FIXED)
 		range = ((((dynrng & 0x1f) | 0x20) << 13) *
 			 scale_factor[3 - (dynrng >> 5)]);
+#else
+		range = ((dynrng & 0x1f) | 0x20) << (21 + (dynrng >> 5));
+#endif
 		if (state->dynrngcall)
 		    range = state->dynrngcall (range, state->dynrngdata);
-		state->dynrng = state->level * range;
+		state->dynrng = MUL_L (state->level, range);
 	    }
 	}
     } while (chaninfo--);
 
-    if (bitstream_get (1)) {	/* cplstre */
+    if (bitstream_get (state, 1)) {	/* cplstre */
 	state->chincpl = 0;
-	if (bitstream_get (1)) {	/* cplinu */
+	if (bitstream_get (state, 1)) {	/* cplinu */
 	    static uint8_t bndtab[16] = {31, 35, 37, 39, 41, 42, 43, 44,
 					 45, 45, 46, 46, 47, 47, 48, 48};
 	    int cplbegf;
@@ -560,15 +607,15 @@ int a52_block (a52_state_t * state)
 	    int ncplsubnd;
 
 	    for (i = 0; i < nfchans; i++)
-		state->chincpl |= bitstream_get (1) << i;
+		state->chincpl |= bitstream_get (state, 1) << i;
 	    switch (state->acmod) {
 	    case 0: case 1:
 		return 1;
 	    case 2:
-		state->phsflginu = bitstream_get (1);
+		state->phsflginu = bitstream_get (state, 1);
 	    }
-	    cplbegf = bitstream_get (4);
-	    cplendf = bitstream_get (4);
+	    cplbegf = bitstream_get (state, 4);
+	    cplendf = bitstream_get (state, 4);
 
 	    if (cplendf + 3 - cplbegf < 0)
 		return 1;
@@ -579,7 +626,7 @@ int a52_block (a52_state_t * state)
 
 	    state->cplbndstrc = 0;
 	    for (i = 0; i < ncplsubnd - 1; i++)
-		if (bitstream_get (1)) {
+		if (bitstream_get (state, 1)) {
 		    state->cplbndstrc |= 1 << i;
 		    state->ncplbnd--;
 		}
@@ -592,47 +639,52 @@ int a52_block (a52_state_t * state)
 	cplcoe = 0;
 	for (i = 0; i < nfchans; i++)
 	    if ((state->chincpl) >> i & 1)
-		if (bitstream_get (1)) {	/* cplcoe */
+		if (bitstream_get (state, 1)) {	/* cplcoe */
 		    int mstrcplco, cplcoexp, cplcomant;
 
 		    cplcoe = 1;
-		    mstrcplco = 3 * bitstream_get (2);
+		    mstrcplco = 3 * bitstream_get (state, 2);
 		    for (j = 0; j < state->ncplbnd; j++) {
-			cplcoexp = bitstream_get (4);
-			cplcomant = bitstream_get (4);
+			cplcoexp = bitstream_get (state, 4);
+			cplcomant = bitstream_get (state, 4);
 			if (cplcoexp == 15)
 			    cplcomant <<= 14;
 			else
 			    cplcomant = (cplcomant | 0x10) << 13;
+#ifndef LIBA52_FIXED
 			state->cplco[i][j] =
 			    cplcomant * scale_factor[cplcoexp + mstrcplco];
+#else
+			state->cplco[i][j] = (cplcomant << 11) >> (cplcoexp + mstrcplco);
+#endif
+
 		    }
 		}
 	if ((state->acmod == 2) && state->phsflginu && cplcoe)
 	    for (j = 0; j < state->ncplbnd; j++)
-		if (bitstream_get (1))	/* phsflg */
+		if (bitstream_get (state, 1))	/* phsflg */
 		    state->cplco[1][j] = -state->cplco[1][j];
     }
 
-    if ((state->acmod == 2) && (bitstream_get (1))) {	/* rematstr */
+    if ((state->acmod == 2) && (bitstream_get (state, 1))) {	/* rematstr */
 	int end;
 
 	state->rematflg = 0;
 	end = (state->chincpl) ? state->cplstrtmant : 253;	/* cplinu */
 	i = 0;
 	do
-	    state->rematflg |= bitstream_get (1) << i;
+	    state->rematflg |= bitstream_get (state, 1) << i;
 	while (rematrix_band[i++] < end);
     }
 
     cplexpstr = EXP_REUSE;
     lfeexpstr = EXP_REUSE;
     if (state->chincpl)	/* cplinu */
-	cplexpstr = bitstream_get (2);
+	cplexpstr = bitstream_get (state, 2);
     for (i = 0; i < nfchans; i++)
-	chexpstr[i] = bitstream_get (2);
+	chexpstr[i] = bitstream_get (state, 2);
     if (state->lfeon) 
-	lfeexpstr = bitstream_get (1);
+	lfeexpstr = bitstream_get (state, 1);
 
     for (i = 0; i < nfchans; i++)
 	if (chexpstr[i] != EXP_REUSE) {
@@ -641,7 +693,7 @@ int a52_block (a52_state_t * state)
 	    else {
 		int chbwcod;
 
-		chbwcod = bitstream_get (6);
+		chbwcod = bitstream_get (state, 6);
 		if (chbwcod > 60)
 		    return 1;
 		state->endmant[i] = chbwcod * 3 + 73;
@@ -656,8 +708,8 @@ int a52_block (a52_state_t * state)
 	do_bit_alloc = 64;
 	ncplgrps = ((state->cplendmant - state->cplstrtmant) /
 		    (3 << (cplexpstr - 1)));
-	cplabsexp = bitstream_get (4) << 1;
-	if (parse_exponents (cplexpstr, ncplgrps, cplabsexp,
+	cplabsexp = bitstream_get (state, 4) << 1;
+	if (parse_exponents (state, cplexpstr, ncplgrps, cplabsexp,
 			     state->cpl_expbap.exp + state->cplstrtmant))
 	    return 1;
     }
@@ -668,54 +720,54 @@ int a52_block (a52_state_t * state)
 	    do_bit_alloc |= 1 << i;
 	    grp_size = 3 << (chexpstr[i] - 1);
 	    nchgrps = (state->endmant[i] + grp_size - 4) / grp_size;
-	    state->fbw_expbap[i].exp[0] = bitstream_get (4);
-	    if (parse_exponents (chexpstr[i], nchgrps,
+	    state->fbw_expbap[i].exp[0] = bitstream_get (state, 4);
+	    if (parse_exponents (state, chexpstr[i], nchgrps,
 				 state->fbw_expbap[i].exp[0],
 				 state->fbw_expbap[i].exp + 1))
 		return 1;
-	    bitstream_get (2);	/* gainrng */
+	    bitstream_get (state, 2);	/* gainrng */
 	}
     if (lfeexpstr != EXP_REUSE) {
 	do_bit_alloc |= 32;
-	state->lfe_expbap.exp[0] = bitstream_get (4);
-	if (parse_exponents (lfeexpstr, 2, state->lfe_expbap.exp[0],
+	state->lfe_expbap.exp[0] = bitstream_get (state, 4);
+	if (parse_exponents (state, lfeexpstr, 2, state->lfe_expbap.exp[0],
 			     state->lfe_expbap.exp + 1))
 	    return 1;
     }
 
-    if (bitstream_get (1)) {	/* baie */
-	do_bit_alloc = -1;
-	state->bai = bitstream_get (11);
+    if (bitstream_get (state, 1)) {	/* baie */
+	do_bit_alloc = 127;
+	state->bai = bitstream_get (state, 11);
     }
-    if (bitstream_get (1)) {	/* snroffste */
-	do_bit_alloc = -1;
-	state->csnroffst = bitstream_get (6);
+    if (bitstream_get (state, 1)) {	/* snroffste */
+	do_bit_alloc = 127;
+	state->csnroffst = bitstream_get (state, 6);
 	if (state->chincpl)	/* cplinu */
-	    state->cplba.bai = bitstream_get (7);
+	    state->cplba.bai = bitstream_get (state, 7);
 	for (i = 0; i < nfchans; i++)
-	    state->ba[i].bai = bitstream_get (7);
+	    state->ba[i].bai = bitstream_get (state, 7);
 	if (state->lfeon)
-	    state->lfeba.bai = bitstream_get (7);
+	    state->lfeba.bai = bitstream_get (state, 7);
     }
-    if ((state->chincpl) && (bitstream_get (1))) {	/* cplinu, cplleake */
+    if ((state->chincpl) && (bitstream_get (state, 1))) { /* cplleake */
 	do_bit_alloc |= 64;
-	state->cplfleak = 9 - bitstream_get (3);
-	state->cplsleak = 9 - bitstream_get (3);
+	state->cplfleak = 9 - bitstream_get (state, 3);
+	state->cplsleak = 9 - bitstream_get (state, 3);
     }
 
-    if (bitstream_get (1)) {	/* deltbaie */
-	do_bit_alloc = -1;
+    if (bitstream_get (state, 1)) {	/* deltbaie */
+	do_bit_alloc = 127;
 	if (state->chincpl)	/* cplinu */
-	    state->cplba.deltbae = bitstream_get (2);
+	    state->cplba.deltbae = bitstream_get (state, 2);
 	for (i = 0; i < nfchans; i++)
-	    state->ba[i].deltbae = bitstream_get (2);
+	    state->ba[i].deltbae = bitstream_get (state, 2);
 	if (state->chincpl &&	/* cplinu */
 	    (state->cplba.deltbae == DELTA_BIT_NEW) &&
-	    parse_deltba (state->cplba.deltba))
+	    parse_deltba (state, state->cplba.deltba))
 	    return 1;
 	for (i = 0; i < nfchans; i++)
 	    if ((state->ba[i].deltbae == DELTA_BIT_NEW) &&
-		parse_deltba (state->ba[i].deltba))
+		parse_deltba (state, state->ba[i].deltba))
 		return 1;
     }
 
@@ -745,10 +797,10 @@ int a52_block (a52_state_t * state)
 	}
     }
 
-    if (bitstream_get (1)) {	/* skiple */
-	i = bitstream_get (9);	/* skipl */
+    if (bitstream_get (state, 1)) {	/* skiple */
+	i = bitstream_get (state, 9);	/* skipl */
 	while (i--)
-	    bitstream_get (8);
+	    bitstream_get (state, 8);
     }
 
     samples = state->samples;
@@ -758,20 +810,20 @@ int a52_block (a52_state_t * state)
     chanbias = a52_downmix_coeff (coeff, state->acmod, state->output,
 				  state->dynrng, state->clev, state->slev);
 
-    quantizer.q1_ptr = quantizer.q2_ptr = quantizer.q4_ptr = -1;
+    quant.q1_ptr = quant.q2_ptr = quant.q4_ptr = -1;
     done_cpl = 0;
 
     for (i = 0; i < nfchans; i++) {
 	int j;
 
-	coeff_get (samples + 256 * i, state->fbw_expbap +i, &quantizer,
+	coeff_get (state, samples + 256 * i, state->fbw_expbap +i, &quant,
 		   coeff[i], dithflag[i], state->endmant[i]);
 
 	if ((state->chincpl >> i) & 1) {
 	    if (!done_cpl) {
 		done_cpl = 1;
 		coeff_get_coupling (state, nfchans, coeff,
-				    (sample_t (*)[256])samples, &quantizer,
+				    (sample_t (*)[256])samples, &quant,
 				    dithflag);
 	    }
 	    j = state->cplendmant;
@@ -814,14 +866,14 @@ int a52_block (a52_state_t * state)
 
     if (state->lfeon) {
 	if (state->output & A52_LFE) {
-	    coeff_get (samples - 256, &state->lfe_expbap, &quantizer,
+	    coeff_get (state, samples - 256, &state->lfe_expbap, &quant,
 		       state->dynrng, 0, 7);
 	    for (i = 7; i < 256; i++)
 		(samples-256)[i] = 0;
 	    a52_imdct_512 (samples - 256, samples + 1536 - 256, state->bias);
 	} else {
 	    /* just skip the LFE coefficients */
-	    coeff_get (samples + 1280, &state->lfe_expbap, &quantizer,
+	    coeff_get (state, samples + 1280, &state->lfe_expbap, &quant,
 		       0, 0, 7);
 	}
     }
