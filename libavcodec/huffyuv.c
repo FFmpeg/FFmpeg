@@ -488,6 +488,10 @@ static int encode_init(AVCodecContext *avctx)
     
     switch(avctx->pix_fmt){
     case PIX_FMT_YUV420P:
+        if(avctx->strict_std_compliance>=0){
+            av_log(avctx, AV_LOG_ERROR, "Warning: YV12-huffyuv is not supported by windows huffyuv use a different colorspace or use (v)strict=-1\n");
+            return -1;
+        }
         s->bitstream_bpp= 12;
         break;
     case PIX_FMT_YUV422P:
@@ -501,6 +505,9 @@ static int encode_init(AVCodecContext *avctx)
     s->decorrelate= s->bitstream_bpp >= 24;
     s->predictor= avctx->prediction_method;
     s->interlaced= avctx->flags&CODEC_FLAG_INTERLACED_ME ? 1 : 0;
+    if(s->interlaced != ( height > 288 )){
+        av_log(avctx, AV_LOG_INFO, "using huffyuv 2.2.0 or newer interlacing flag\n");
+    }
     
     ((uint8_t*)avctx->extradata)[0]= s->predictor;
     ((uint8_t*)avctx->extradata)[1]= s->bitstream_bpp;
