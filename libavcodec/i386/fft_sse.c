@@ -19,10 +19,15 @@
 #include "../dsputil.h"
 #include <math.h>
 
+#ifdef HAVE_BUILTIN_VECTOR
+
 #include <xmmintrin.h>
 
 static const float p1p1p1m1[4] __attribute__((aligned(16))) = 
     { 1.0, 1.0, 1.0, -1.0 };
+
+static const float p1p1m1p1[4] __attribute__((aligned(16))) = 
+    { 1.0, 1.0, -1.0, 1.0 };
 
 static const float p1p1m1m1[4] __attribute__((aligned(16))) = 
     { 1.0, 1.0, -1.0, -1.0 };
@@ -54,6 +59,11 @@ void fft_calc_sse(FFTContext *s, FFTComplex *z)
         r = (__m128 *)&z[0];
         c1 = *(__m128 *)p1p1m1m1;
         c2 = *(__m128 *)p1p1p1m1;
+        if (s->inverse)
+            c2 = *(__m128 *)p1p1m1p1;
+        else
+            c2 = *(__m128 *)p1p1p1m1;
+
         j = (np >> 2);
         do {
             a = r[0];
@@ -126,3 +136,5 @@ void fft_calc_sse(FFTContext *s, FFTComplex *z)
         nloops = nloops << 1;
     } while (nblocks != 0);
 }
+
+#endif
