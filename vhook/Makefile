@@ -13,7 +13,7 @@ ifeq ($(HAVE_IMLIB2),yes)
     HOOKS += imlib2.so
 endif    
 
-all: $(HOOKS) hooks.html
+all: $(HOOKS) 
 
 install:
 	install -s -m 755 $(HOOKS) $(INSTDIR)
