@@ -1170,7 +1170,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                             }
                         } else {
                             /* MT_16X8 */
-                            mb_type |= MB_TYPE_16x8; 
+                            mb_type |= MB_TYPE_16x8 | MB_TYPE_INTERLACED; 
                             s->mv_type = MV_TYPE_16X8;
                             for(j=0;j<2;j++) {
                                 s->field_select[i][j] = get_bits1(&s->gb);
@@ -1201,7 +1201,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
                                 dprintf("fmy=%d\n", val);
                             }
                         } else {
-                            mb_type |= MB_TYPE_16x16; 
+                            mb_type |= MB_TYPE_16x16 | MB_TYPE_INTERLACED; 
                             s->field_select[i][0] = get_bits1(&s->gb);
                             for(k=0;k<2;k++) {
                                 val = mpeg_decode_motion(s, s->mpeg_f_code[i][k],
@@ -1259,6 +1259,9 @@ static int mpeg_decode_mb(MpegEncContext *s,
                             }
                         }
                         break;
+                    default:
+                        av_log(s->avctx, AV_LOG_ERROR, "00 motion_type at %d %d\n", s->mb_x, s->mb_y);
+                        return -1;
                     }
                 }
             }
