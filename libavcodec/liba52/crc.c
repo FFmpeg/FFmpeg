@@ -23,7 +23,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <inttypes.h>
+#include "../common.h"
 
 static const uint16_t crc_lut[256] = 
 {
