@@ -672,6 +672,12 @@ static int mpeg_decode_mb(MpegEncContext *s,
             }
         }
     }
+    if(s->mb_x==-1 /* first MB in a slice */ && s->mb_incr>1){
+        s->mb_x+= (s->mb_incr - 1) % s->mb_width;
+        s->mb_y+= (s->mb_incr - 1) / s->mb_width;
+        s->mb_incr= 1;
+    }
+
     if (++s->mb_x >= s->mb_width) {
         s->mb_x = 0;
         if (s->mb_y >= (s->mb_height - 1)){
