@@ -1,0 +1,605 @@
+/*
+ * Wing Commander/Xan Video Decoder
+ * Copyright (C) 2003 the ffmpeg project
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ */
+
+/**
+ * @file xan.c
+ * Xan video decoder for Wing Commander III & IV computer games
+ * by Mario Brito (mbrito@student.dei.uc.pt)
+ * and Mike Melanson (melanson@pcisys.net)
+ * For more information about the Xan format, visit:
+ *   http://www.pcisys.net/~melanson/codecs/
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "common.h"
+#include "avcodec.h"
+#include "dsputil.h"
+
+#define PALETTE_COUNT 256
+#define PALETTE_CONTROL_SIZE ((256 * 3) + 1)
+
+typedef struct XanContext {
+
+    AVCodecContext *avctx;
+    DSPContext dsp;
+    AVFrame last_frame;
+    AVFrame current_frame;
+
+    unsigned char *buf;
+    int size;
+
+    unsigned char palette[PALETTE_COUNT * 4];
+
+    /* scratch space */
+    unsigned char *buffer1;
+    unsigned char *buffer2;
+
+} XanContext;
+
+#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
+#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
+#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
+                   (((uint8_t*)(x))[2] << 16) | \
+                   (((uint8_t*)(x))[1] << 8) | \
+                    ((uint8_t*)(x))[0])
+
+/* RGB -> YUV conversion stuff */
+#define SCALEFACTOR 65536
+#define CENTERSAMPLE 128
+
+#define COMPUTE_Y(r, g, b) \
+  (unsigned char) \
+  ((y_r_table[r] + y_g_table[g] + y_b_table[b]) / SCALEFACTOR)
+#define COMPUTE_U(r, g, b) \
+  (unsigned char) \
+  ((u_r_table[r] + u_g_table[g] + u_b_table[b]) / SCALEFACTOR + CENTERSAMPLE)
+#define COMPUTE_V(r, g, b) \
+  (unsigned char) \
+  ((v_r_table[r] + v_g_table[g] + v_b_table[b]) / SCALEFACTOR + CENTERSAMPLE)
+
+#define Y_R (SCALEFACTOR *  0.29900)
+#define Y_G (SCALEFACTOR *  0.58700)
+#define Y_B (SCALEFACTOR *  0.11400)
+
+#define U_R (SCALEFACTOR * -0.16874)
+#define U_G (SCALEFACTOR * -0.33126)
+#define U_B (SCALEFACTOR *  0.50000)
+
+#define V_R (SCALEFACTOR *  0.50000)
+#define V_G (SCALEFACTOR * -0.41869)
+#define V_B (SCALEFACTOR * -0.08131)
+
+/*
+ * Precalculate all of the YUV tables since it requires fewer than
+ * 10 kilobytes to store them.
+ */
+static int y_r_table[256];
+static int y_g_table[256];
+static int y_b_table[256];
+
+static int u_r_table[256];
+static int u_g_table[256];
+static int u_b_table[256];
+
+static int v_r_table[256];
+static int v_g_table[256];
+static int v_b_table[256];
+
+static int xan_decode_init(AVCodecContext *avctx)
+{
+    XanContext *s = avctx->priv_data;
+    int i;
+
+    s->avctx = avctx;
+
+    if ((avctx->codec->id == CODEC_ID_XAN_WC3) && 
+        (s->avctx->extradata_size != PALETTE_CONTROL_SIZE)) {
+        printf (" WC3 Xan video: expected extradata_size of %d\n",
+            PALETTE_CONTROL_SIZE);
+        return -1;
+    }
+
+    avctx->pix_fmt = PIX_FMT_YUV444P;
+    avctx->has_b_frames = 0;
+    dsputil_init(&s->dsp, avctx);
+
+    /* initialize the RGB -> YUV tables */
+    for (i = 0; i < 256; i++) {
+        y_r_table[i] = Y_R * i;
+        y_g_table[i] = Y_G * i;
+        y_b_table[i] = Y_B * i;
+
+        u_r_table[i] = U_R * i;
+        u_g_table[i] = U_G * i;
+        u_b_table[i] = U_B * i;
+
+        v_r_table[i] = V_R * i;
+        v_g_table[i] = V_G * i;
+        v_b_table[i] = V_B * i;
+    }
+
+    s->buffer1 = av_malloc(avctx->width * avctx->height * 4);
+    s->buffer2 = av_malloc(avctx->width * avctx->height * 4);
+    if (!s->buffer1 || !s->buffer2)
+        return -1;
+
+    return 0;
+}
+
+/* This function is used in lieu of memcpy(). This decoder can not use 
+ * memcpy because the memory locations often overlap and
+ * memcpy doesn't like that; it's not uncommon, for example, for
+ * dest = src+1, to turn byte A into  pattern AAAAAAAA.
+ * This was originally repz movsb in Intel x86 ASM. */
+static inline void bytecopy(unsigned char *dest, unsigned char *src, int count)
+{
+    int i;
+
+    for (i = 0; i < count; i++)
+        dest[i] = src[i];
+}
+
+static int xan_decode_method_1(unsigned char *dest, unsigned char *src)
+{
+    unsigned char byte = *src++;
+    unsigned char ival = byte + 0x16;
+    unsigned char * ptr = src + byte*2;
+    unsigned char val = ival;
+    int counter = 0;
+
+    unsigned char bits = *ptr++;
+
+    while ( val != 0x16 ) {
+        if ( (1 << counter) & bits )
+            val = src[byte + val - 0x17];
+        else
+            val = src[val - 0x17];
+
+        if ( val < 0x16 ) {
+            *dest++ = val;
+            val = ival;
+        }
+
+        if (counter++ == 7) {
+            counter = 0;
+            bits = *ptr++;
+        }
+    }
+
+    return 0;
+}
+
+static int xan_decode_method_2(unsigned char *dest, unsigned char *src)
+{
+    unsigned char opcode;
+    int size;
+    int offset;
+    int byte1, byte2, byte3;
+
+    for (;;) {
+        opcode = *src++;
+
+        if ( (opcode & 0x80) == 0 ) {
+
+            offset = *src++;
+
+            size = opcode & 3;
+            bytecopy(dest, src, size);  dest += size;  src += size;
+
+            size = ((opcode & 0x1c) >> 2) + 3;
+            bytecopy (dest, dest - (((opcode & 0x60) << 3) + offset + 1), size);
+            dest += size;
+
+        } else if ( (opcode & 0x40) == 0 ) {
+
+            byte1 = *src++;
+            byte2 = *src++;
+
+            size = byte1 >> 6;
+            bytecopy (dest, src, size);  dest += size;  src += size;
+
+            size = (opcode & 0x3f) + 4;
+            bytecopy (dest, dest - (((byte1 & 0x3f) << 8) + byte2 + 1), size);
+            dest += size;
+
+        } else if ( (opcode & 0x20) == 0 ) {
+
+            byte1 = *src++;
+            byte2 = *src++;
+            byte3 = *src++;
+
+            size = opcode & 3;
+            bytecopy (dest, src, size);  dest += size;  src += size;
+
+            size = byte3 + 5 + ((opcode & 0xc) << 6);
+            bytecopy (dest,
+                dest - ((((opcode & 0x10) >> 4) << 0x10) + 1 + (byte1 << 8) + byte2),
+                size);
+            dest += size;
+        } else {
+            size = ((opcode & 0x1f) << 2) + 4;
+
+            if (size > 0x70)
+                break;
+
+            bytecopy (dest, src, size);  dest += size;  src += size;
+        }
+    }
+
+    size = opcode & 3;
+    bytecopy(dest, src, size);  dest += size;  src += size;
+
+    return 0;
+}
+
+static void inline xan_wc3_build_palette(XanContext *s, 
+    unsigned char *palette_data)
+{
+    int i;
+    unsigned char r, g, b;
+
+    /* transform the palette passed through the palette control structure
+     * into the necessary internal format depending on colorspace */
+
+    switch (s->avctx->pix_fmt) {
+
+    case PIX_FMT_YUV444P:
+        for (i = 0; i < PALETTE_COUNT; i++) {
+            r = *palette_data++;
+            g = *palette_data++;
+            b = *palette_data++;
+            s->palette[i * 4 + 0] = COMPUTE_Y(r, g, b);
+            s->palette[i * 4 + 1] = COMPUTE_U(r, g, b);
+            s->palette[i * 4 + 2] = COMPUTE_V(r, g, b);
+        }
+        break;
+
+    default:
+        printf (" Xan WC3: Unhandled colorspace\n");
+        break;
+    }
+}
+
+static void inline xan_wc3_output_pixel_run(XanContext *s, 
+    unsigned char *pixel_buffer, int x, int y, int pixel_count)
+{
+    int stride;
+    int line_inc;
+    int index;
+    int current_x;
+    int width = s->avctx->width;
+    unsigned char pixel;
+    unsigned char *y_plane;
+    unsigned char *u_plane;
+    unsigned char *v_plane;
+
+    switch (s->avctx->pix_fmt) {
+
+    case PIX_FMT_YUV444P:
+        y_plane = s->current_frame.data[0];
+        u_plane = s->current_frame.data[1];
+        v_plane = s->current_frame.data[2];
+        stride = s->current_frame.linesize[0];
+        line_inc = stride - width;
+        index = y * stride + x;
+        current_x = x;
+        while(pixel_count--) {
+            pixel = *pixel_buffer++;
+
+            y_plane[index] = s->palette[pixel * 4 + 0];
+            u_plane[index] = s->palette[pixel * 4 + 1];
+            v_plane[index] = s->palette[pixel * 4 + 2];
+
+            index++;
+            current_x++;
+            if (current_x >= width) {
+                /* reset accounting variables */
+                index += line_inc;
+                current_x = 0;
+            }
+        }
+        break;
+
+    default:
+        printf (" Xan WC3: Unhandled colorspace\n");
+        break;
+    }
+}
+
+static void inline xan_wc3_copy_pixel_run(XanContext *s, 
+    int x, int y, int pixel_count, int motion_x, int motion_y)
+{
+    int stride;
+    int line_inc;
+    int curframe_index, prevframe_index;
+    int curframe_x, prevframe_x;
+    int width = s->avctx->width;
+    unsigned char *y_plane, *u_plane, *v_plane;
+    unsigned char *prev_y_plane, *prev_u_plane, *prev_v_plane;
+
+    switch (s->avctx->pix_fmt) {
+
+    case PIX_FMT_YUV444P:
+        y_plane = s->current_frame.data[0];
+        u_plane = s->current_frame.data[1];
+        v_plane = s->current_frame.data[2];
+        prev_y_plane = s->last_frame.data[0];
+        prev_u_plane = s->last_frame.data[1];
+        prev_v_plane = s->last_frame.data[2];
+        stride = s->current_frame.linesize[0];
+        line_inc = stride - width;
+        curframe_index = y * stride + x;
+        curframe_x = x;
+        prevframe_index = (y + motion_x) * stride + x + motion_x;
+        prevframe_x = x + motion_x;
+        while(pixel_count--) {
+
+            y_plane[curframe_index] = prev_y_plane[prevframe_index];
+            u_plane[curframe_index] = prev_u_plane[prevframe_index];
+            v_plane[curframe_index] = prev_v_plane[prevframe_index];
+
+            curframe_index++;
+            curframe_x++;
+            if (curframe_x >= width) {
+                /* reset accounting variables */
+                curframe_index += line_inc;
+                curframe_x = 0;
+            }
+
+            prevframe_index++;
+            prevframe_x++;
+            if (prevframe_x >= width) {
+                /* reset accounting variables */
+                prevframe_index += line_inc;
+                prevframe_x = 0;
+            }
+        }
+        break;
+
+    default:
+        printf (" Xan WC3: Unhandled colorspace\n");
+        break;
+    }
+}
+
+static void xan_wc3_decode_frame(XanContext *s) {
+
+    int width = s->avctx->width;
+    int height = s->avctx->height;
+    int total_pixels = width * height;
+    unsigned char opcode;
+    unsigned char flag = 0;
+    int size = 0;
+    int motion_x, motion_y;
+    int x, y;
+
+    unsigned char *method1_buffer = s->buffer1;
+    unsigned char *method2_buffer = s->buffer2;
+
+    /* pointers to segments inside the compressed chunk */
+    unsigned char *method1_segment;
+    unsigned char *size_segment;
+    unsigned char *vector_segment;
+    unsigned char *method2_segment;
+
+    method1_segment = s->buf + LE_16(&s->buf[0]);
+    size_segment =    s->buf + LE_16(&s->buf[2]);
+    vector_segment =  s->buf + LE_16(&s->buf[4]);
+    method2_segment = s->buf + LE_16(&s->buf[6]);
+
+    xan_decode_method_1(method1_buffer, method1_segment);
+    if (method2_segment[0] == 2)
+        xan_decode_method_2(method2_buffer, method2_segment + 1);
+    else
+        method2_buffer = method2_segment + 1;
+
+    /* use the decoded data segments to build the frame */
+    x = y = 0;
+    while (total_pixels) {
+
+        opcode = *method1_buffer++;
+        size = 0;
+
+        switch (opcode) {
+
+        case 0:
+            flag ^= 1;
+            continue;
+
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+            size = opcode;
+            break;
+
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        case 16:
+        case 17:
+        case 18:
+            size += (opcode - 10);
+            break;
+
+        case 9:
+        case 19:
+            size = *size_segment++;
+            break;
+
+        case 10:
+        case 20:
+            size = BE_16(&size_segment[0]);
+            size_segment += 2;
+            break;
+
+        case 11:
+        case 21:
+            size = (size_segment[0] << 16) | (size_segment[1] << 8) |
+                size_segment[2];
+            size_segment += 3;
+            break;
+        }
+
+        if (opcode < 12) {
+            flag ^= 1;
+            if (flag) {
+                /* run of (size) pixels is unchanged from last frame */
+                xan_wc3_copy_pixel_run(s, x, y, size, 0, 0);
+            } else {
+                /* output a run of pixels from method2_buffer */
+                xan_wc3_output_pixel_run(s, method2_buffer, x, y, size);
+                method2_buffer += size;
+            }
+        } else {
+            /* run-based motion compensation from last frame */
+            motion_x = (*vector_segment >> 4) & 0xF;
+            motion_y = *vector_segment & 0xF;
+            vector_segment++;
+
+            /* sign extension */
+            if (motion_x & 0x8)
+                motion_x |= 0xFFFFFFF0;
+            if (motion_y & 0x8)
+                motion_y |= 0xFFFFFFF0;
+
+            /* copy a run of pixels from the previous frame */
+            xan_wc3_copy_pixel_run(s, x, y, size, motion_x, motion_y);
+
+            flag = 0;
+        }
+
+        /* coordinate accounting */
+        total_pixels -= size;
+        while (size) {
+            if (x + size >= width) {
+                y++;
+                size -= (width - x);
+                x = 0;
+            } else {
+                x += size;
+                size = 0;
+            }
+        }
+    }
+}
+
+static void xan_wc4_decode_frame(XanContext *s) {
+}
+
+static int xan_decode_frame(AVCodecContext *avctx,
+                            void *data, int *data_size,
+                            uint8_t *buf, int buf_size)
+{
+    XanContext *s = avctx->priv_data;
+    unsigned char *palette_control = avctx->extradata;
+    int keyframe = 0;
+
+    if (palette_control[0]) {
+        /* load the new palette and reset the palette control */
+        xan_wc3_build_palette(s, &palette_control[1]);
+        palette_control[0] = 0;
+        keyframe = 1;
+    }
+
+    if (avctx->get_buffer(avctx, &s->current_frame)) {
+        printf ("  Interplay Video: get_buffer() failed\n");
+        return -1;
+    }
+
+    s->buf = buf;
+    s->size = buf_size;
+
+    if (avctx->codec->id == CODEC_ID_XAN_WC3) {
+//        if (keyframe)
+        if (1)
+            xan_wc3_decode_frame(s);
+        else {
+            memcpy(s->current_frame.data[0], s->last_frame.data[0],
+                s->current_frame.linesize[0] * avctx->height);
+            memcpy(s->current_frame.data[1], s->last_frame.data[1],
+                s->current_frame.linesize[1] * avctx->height);
+            memcpy(s->current_frame.data[2], s->last_frame.data[2],
+                s->current_frame.linesize[2] * avctx->height);
+        }
+    } else if (avctx->codec->id == CODEC_ID_XAN_WC4)
+        xan_wc4_decode_frame(s);
+    
+    /* release the last frame if it is allocated */
+    if (s->last_frame.data[0])
+        avctx->release_buffer(avctx, &s->last_frame);
+
+    /* shuffle frames */
+    s->last_frame = s->current_frame;
+
+    *data_size = sizeof(AVFrame);
+    *(AVFrame*)data = s->current_frame;
+
+    /* always report that the buffer was completely consumed */
+    return buf_size;
+}
+
+static int xan_decode_end(AVCodecContext *avctx)
+{
+    XanContext *s = avctx->priv_data;
+
+    /* release the last frame */
+    avctx->release_buffer(avctx, &s->last_frame);
+
+    av_free(s->buffer1);
+    av_free(s->buffer2);
+
+    return 0;
+}
+
+AVCodec xan_wc3_decoder = {
+    "xan_wc3",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_XAN_WC3,
+    sizeof(XanContext),
+    xan_decode_init,
+    NULL,
+    xan_decode_end,
+    xan_decode_frame,
+    CODEC_CAP_DR1,
+};
+
+/*
+AVCodec xan_wc4_decoder = {
+    "xan_wc4",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_XAN_WC4,
+    sizeof(XanContext),
+    xan_decode_init,
+    NULL,
+    xan_decode_end,
+    xan_decode_frame,
+    CODEC_CAP_DR1,
+};
+*/

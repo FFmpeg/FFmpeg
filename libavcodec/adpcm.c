@@ -1,6 +1,6 @@
 /*
  * ADPCM codecs
- * Copyright (c) 2001 Fabrice Bellard.
+ * Copyright (c) 2001-2003 The ffmpeg Project
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -22,11 +22,13 @@
  * @file adpcm.c
  * ADPCM codecs.
  * First version by Francois Revol revol@free.fr
+ * Fringe ADPCM codecs (e.g., DK3 and DK4) 
+ *   by Mike Melanson (melanson@pcisys.net)
  *
  * Features and limitations:
  *
  * Reference documents:
- * http://www.pcisys.net/~melanson/codecs/adpcm.txt
+ * http://www.pcisys.net/~melanson/codecs/simpleaudio.html
  * http://www.geocities.com/SiliconValley/8682/aud3.txt
  * http://openquicktime.sourceforge.net/plugins.htm
  * XAnim sources (xa_codec.c) http://www.rasnaimaging.com/people/lapus/download.html
@@ -293,14 +295,10 @@ static inline short adpcm_ima_expand_nibble(ADPCMChannelStatus *c, char nibble)
 
     sign = nibble & 8;
     delta = nibble & 7;
-#if 0
-    diff = step >> 3;
-    if (delta & 4) diff += step;
-    if (delta & 2) diff += step >> 1;
-    if (delta & 1) diff += step >> 2;
-#else
-    diff = ((2 * delta + 1) * step) >> 3; // no jumps
-#endif
+    /* perform direct multiplication instead of series of jumps proposed by
+     * the reference ADPCM implementation since modern CPUs can do the mults
+     * quickly enough */
+    diff = ((2 * delta + 1) * step) >> 3;
     predictor = c->predictor;
     if (sign) predictor -= diff;
     else predictor += diff;
@@ -355,6 +353,21 @@ static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
     return (short)predictor;
 }
 
+/* DK3 ADPCM support macro */
+#define DK3_GET_NEXT_NIBBLE() \
+    if (decode_top_nibble_next) \
+    { \
+        nibble = (last_byte >> 4) & 0x0F; \
+        decode_top_nibble_next = 0; \
+    } \
+    else \
+    { \
+        last_byte = *src++; \
+        if (src >= buf + buf_size) break; \
+        nibble = last_byte & 0x0F; \
+        decode_top_nibble_next = 1; \
+    }
+
 static int adpcm_decode_frame(AVCodecContext *avctx,
 			    void *data, int *data_size,
 			    uint8_t *buf, int buf_size)
@@ -366,6 +379,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     short *samples;
     uint8_t *src;
     int st; /* stereo */
+
+    /* DK3 ADPCM accounting variables */
+    unsigned char last_byte = 0;
+    unsigned char nibble;
+    int decode_top_nibble_next = 0;
+    int diff_channel;
 
     samples = data;
     src = buf;
@@ -551,6 +570,94 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src ++;
         }
         break;
+    case CODEC_ID_ADPCM_IMA_DK4:
+        if (buf_size > BLKSIZE) {
+            if (avctx->block_align != 0)
+                buf_size = avctx->block_align;
+            else
+                buf_size = BLKSIZE;
+        }
+        c->status[0].predictor = (src[0] | (src[1] << 8));
+        c->status[0].step_index = src[2];
+        src += 4;
+        if(c->status[0].predictor & 0x8000)
+            c->status[0].predictor -= 0x10000;
+        *samples++ = c->status[0].predictor;
+        if (st) {
+            c->status[1].predictor = (src[0] | (src[1] << 8));
+            c->status[1].step_index = src[2];
+            src += 4;
+            if(c->status[1].predictor & 0x8000)
+                c->status[1].predictor -= 0x10000;
+            *samples++ = c->status[1].predictor;
+        }
+        while (src < buf + buf_size) {
+
+            /* take care of the top nibble (always left or mono channel) */
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0], 
+                (src[0] >> 4) & 0x0F);
+
+            /* take care of the bottom nibble, which is right sample for
+             * stereo, or another mono sample */
+            if (st)
+                *samples++ = adpcm_ima_expand_nibble(&c->status[1], 
+                    src[0] & 0x0F);
+            else
+                *samples++ = adpcm_ima_expand_nibble(&c->status[0], 
+                    src[0] & 0x0F);
+
+            src++;
+        }
+        break;
+    case CODEC_ID_ADPCM_IMA_DK3:
+        if (buf_size > BLKSIZE) {
+            if (avctx->block_align != 0)
+                buf_size = avctx->block_align;
+            else
+                buf_size = BLKSIZE;
+        }
+        c->status[0].predictor = (src[10] | (src[11] << 8));
+        c->status[1].predictor = (src[12] | (src[13] << 8));
+        c->status[0].step_index = src[14];
+        c->status[1].step_index = src[15];
+        /* sign extend the predictors */
+        if(c->status[0].predictor & 0x8000)
+            c->status[0].predictor -= 0x10000;
+        if(c->status[1].predictor & 0x8000)
+            c->status[1].predictor -= 0x10000;
+        src += 16;
+        diff_channel = c->status[1].predictor;
+
+        /* the DK3_GET_NEXT_NIBBLE macro issues the break statement when
+         * the buffer is consumed */
+        while (1) {
+
+            /* for this algorithm, c->status[0] is the sum channel and
+             * c->status[1] is the diff channel */
+
+            /* process the first predictor of the sum channel */
+            DK3_GET_NEXT_NIBBLE();
+            adpcm_ima_expand_nibble(&c->status[0], nibble);
+
+            /* process the diff channel predictor */
+            DK3_GET_NEXT_NIBBLE();
+            adpcm_ima_expand_nibble(&c->status[1], nibble);
+
+            /* process the first pair of stereo PCM samples */
+            diff_channel = (diff_channel + c->status[1].predictor) / 2;
+            *samples++ = c->status[0].predictor + c->status[1].predictor;
+            *samples++ = c->status[0].predictor - c->status[1].predictor;
+
+            /* process the second predictor of the sum channel */
+            DK3_GET_NEXT_NIBBLE();
+            adpcm_ima_expand_nibble(&c->status[0], nibble);
+
+            /* process the second pair of stereo PCM samples */
+            diff_channel = (diff_channel + c->status[1].predictor) / 2;
+            *samples++ = c->status[0].predictor + c->status[1].predictor;
+            *samples++ = c->status[0].predictor - c->status[1].predictor;
+        }
+        break;
     default:
         *data_size = 0;
         return -1;
@@ -583,8 +690,9 @@ AVCodec name ## _decoder = {                    \
 
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
+ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
+ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
 ADPCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
 ADPCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
 
 #undef ADPCM_CODEC
-

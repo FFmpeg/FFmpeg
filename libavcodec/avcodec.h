@@ -68,6 +68,8 @@ enum CodecID {
     CODEC_ID_MDEC,
     CODEC_ID_ROQ,
     CODEC_ID_INTERPLAY_VIDEO,
+    CODEC_ID_XAN_WC3,
+    CODEC_ID_XAN_WC4,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -82,6 +84,8 @@ enum CodecID {
     /* various adpcm codecs */
     CODEC_ID_ADPCM_IMA_QT,
     CODEC_ID_ADPCM_IMA_WAV,
+    CODEC_ID_ADPCM_IMA_DK3,
+    CODEC_ID_ADPCM_IMA_DK4,
     CODEC_ID_ADPCM_MS,
     CODEC_ID_ADPCM_4XM,
 
@@ -94,6 +98,7 @@ enum CodecID {
     /* various DPCM codecs */
     CODEC_ID_ROQ_DPCM,
     CODEC_ID_INTERPLAY_DPCM,
+    CODEC_ID_XAN_DPCM,
 };
 #define CODEC_ID_MPEGVIDEO CODEC_ID_MPEG1VIDEO
 
@@ -1356,10 +1361,12 @@ extern AVCodec fourxm_decoder;
 extern AVCodec mdec_decoder;
 extern AVCodec roq_decoder;
 extern AVCodec interplay_video_decoder;
+extern AVCodec xan_wc3_decoder;
 extern AVCodec ra_144_decoder;
 extern AVCodec ra_288_decoder;
 extern AVCodec roq_dpcm_decoder;
 extern AVCodec interplay_dpcm_decoder;
+extern AVCodec xan_dpcm_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
@@ -1379,6 +1386,8 @@ PCM_CODEC(CODEC_ID_PCM_MULAW, pcm_mulaw);
 
 PCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
 PCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
+PCM_CODEC(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
+PCM_CODEC(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
 PCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
 PCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
 

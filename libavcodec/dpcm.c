@@ -21,8 +21,17 @@
  * @file: dpcm.c
  * Assorted DPCM (differential pulse code modulation) audio codecs
  * by Mike Melanson (melanson@pcisys.net)
+ * Xan DPCM decoder by Mario Brito (mbrito@student.dei.uc.pt)
  * for more information on the specific data formats, visit:
  *   http://www.pcisys.net/~melanson/codecs/simpleaudio.html
+ *
+ * Note about using the Xan DPCM decoder: Xan DPCM is used in AVI files
+ * found in the Wing Commander IV computer game. These AVI files contain
+ * WAVEFORMAT headers which report the audio format as 0x01: raw PCM.
+ * Clearly incorrect. To detect Xan DPCM, you will probably have to
+ * special-case your AVI demuxer to use Xan DPCM if the file uses 'Xxan'
+ * (Xan video) for its video codec. Alternately, such AVI files also contain
+ * the fourcc 'Axan' in the 'auds' chunk of the AVI header.
  */
 
 #include "avcodec.h"
@@ -115,6 +124,9 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     int channel_number = 0;
     short *output_samples = data;
     int sequence_number;
+    int shift[2];
+    unsigned char byte;
+    short diff;
 
     switch(avctx->codec->id) {
 
@@ -171,6 +183,40 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             s->last_delta[i] = predictor[i];
 
         break;
+
+    case CODEC_ID_XAN_DPCM:
+        in = 0;
+        shift[0] = shift[1] = 4;
+        predictor[0] = LE_16(&buf[in]);
+        in += 2;
+        SE_16BIT(predictor[0]);
+        if (s->channels == 2) {
+            predictor[1] = LE_16(&buf[in]);
+            in += 2;
+            SE_16BIT(predictor[1]);
+        }
+
+        while (in < buf_size) {
+            byte = buf[in++];
+            diff = (byte & 0xFC) << 8;
+            if ((byte & 0x03) == 3)
+                shift[channel_number]++;
+            else
+                shift[channel_number] -= (2 * (byte & 3));
+            /* saturate the shifter to a lower limit of 0 */
+            if (shift[channel_number] < 0)
+                shift[channel_number] = 0;
+
+            diff >>= shift[channel_number];
+            predictor[channel_number] += diff;
+
+            SATURATE_S16(predictor[channel_number]);
+            output_samples[out++] = predictor[channel_number];
+
+            /* toggle channel */
+            channel_number ^= s->channels - 1;
+        }
+        break;
     }
 
     *data_size = out * sizeof(short);
@@ -192,6 +238,17 @@ AVCodec interplay_dpcm_decoder = {
     "interplay_dpcm",
     CODEC_TYPE_AUDIO,
     CODEC_ID_INTERPLAY_DPCM,
+    sizeof(DPCMContext),
+    dpcm_decode_init,
+    NULL,
+    NULL,
+    dpcm_decode_frame,
+};
+
+AVCodec xan_dpcm_decoder = {
+    "xan_dpcm",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_XAN_DPCM,
     sizeof(DPCMContext),
     dpcm_decode_init,
     NULL,
