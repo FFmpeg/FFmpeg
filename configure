@@ -987,7 +987,7 @@ fi
 
 case "`$cc -v 2>&1 | grep version`" in
     *gcc*)
-	CFLAGS="-Wall $CFLAGS"
+	CFLAGS="-Wall -Wno-switch $CFLAGS"
 	;;
     *)
 	;;
