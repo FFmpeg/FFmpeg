@@ -550,6 +550,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
 	    put_bits(&s->pb, 1, 1);
             s->last_bits++;
 	    s->misc_bits++;
+            s->skip_count++;
 
 	    return;
 	}
@@ -652,6 +653,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
             msmpeg4_encode_block(s, block[i], i);
         }
         s->i_tex_bits += get_bits_diff(s);
+        s->i_count++;
     }
 }
 
