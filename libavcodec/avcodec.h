@@ -237,4 +237,12 @@ int avcodec_close(AVCodecContext *avctx);
 
 void avcodec_register_all(void);
 
+#ifdef FF_POSTPROCESS
+#ifndef MBC
+#define MBC 48
+#define MBR 36
+#endif
+extern int quant_store[MBR+1][MBC+1]; // [Review]
+#endif
+
 #endif /* AVCODEC_H */

@@ -675,6 +675,11 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     mb_x = s->mb_x;
     mb_y = s->mb_y;
 
+#ifdef FF_POSTPROCESS
+    quant_store[mb_y][mb_x]=s->qscale;
+    //printf("[%02d][%02d] %d\n",mb_x,mb_y,s->qscale);
+#endif
+
     /* update DC predictors for P macroblocks */
     if (!s->mb_intra) {
         if (s->h263_pred) {
