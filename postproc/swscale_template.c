@@ -31,6 +31,8 @@ static uint64_t ugCoeff=   0xE5E2E5E2E5E2E5E2LL;
 static uint64_t vgCoeff=   0xF36EF36EF36EF36ELL;
 static uint64_t w80=       0x0080008000800080LL;
 static uint64_t w10=       0x0010001000100010LL;
+static uint64_t bm00000111=0x0000000000FFFFFFLL;
+static uint64_t bm11111000=0xFFFFFFFFFF000000LL;
 
 static uint64_t b16Dither= 0x0004000400040004LL;
 static uint64_t b16Dither1=0x0004000400040004LL;
@@ -412,7 +414,6 @@ s_xinc&= -2; //clear last bit or uv and y might be shifted relative to each othe
 	);
 
 #elif defined (ARCH_X86)
-	//NO MMX just normal asm ... FIXME try/write funny MMX2 variant
 	asm volatile(
 		"xorl %%eax, %%eax		\n\t" // i
 		"xorl %%ebx, %%ebx		\n\t" // xx
@@ -555,6 +556,55 @@ YSCALEYUV2RGB
 		: "%eax"
 		);
 	}
+	else if(dstbpp==24)
+	{
+		asm volatile(
+
+YSCALEYUV2RGB
+
+							// lsb ... msb
+		"punpcklbw %%mm1, %%mm3		\n\t" // BGBGBGBG
+		"punpcklbw %%mm7, %%mm0		\n\t" // R0R0R0R0
+
+		"movq %%mm3, %%mm1		\n\t"
+		"punpcklwd %%mm0, %%mm3		\n\t" // BGR0BGR0
+		"punpckhwd %%mm0, %%mm1		\n\t" // BGR0BGR0
+
+		"movq %%mm3, %%mm2		\n\t" // BGR0BGR0
+		"psrlq $8, %%mm3		\n\t" // GR0BGR00
+		"pand bm00000111, %%mm2		\n\t" // BGR00000
+		"pand bm11111000, %%mm3		\n\t" // 000BGR00
+		"por %%mm2, %%mm3		\n\t" // BGRBGR00
+		"movq %%mm1, %%mm2		\n\t"
+		"psllq $48, %%mm1		\n\t" // 000000BG
+		"por %%mm1, %%mm3		\n\t" // BGRBGRBG
+
+		"movq %%mm2, %%mm1		\n\t" // BGR0BGR0
+		"psrld $16, %%mm2		\n\t" // R000R000
+		"psrlq $24, %%mm1		\n\t" // 0BGR0000
+		"por %%mm2, %%mm1		\n\t" // RBGRR000
+
+		"movl %4, %%ebx			\n\t"
+		"addl %%eax, %%ebx		\n\t"
+#ifdef HAVE_MMX2
+		//FIXME Alignment
+		"movntq %%mm3, (%%ebx, %%eax, 2)\n\t"
+		"movntq %%mm1, 8(%%ebx, %%eax, 2)\n\t"
+#else
+		"movd %%mm3, (%%ebx, %%eax, 2)	\n\t"
+		"psrlq $32, %%mm3		\n\t"
+		"movd %%mm3, 4(%%ebx, %%eax, 2)	\n\t"
+		"movd %%mm1, 8(%%ebx, %%eax, 2)	\n\t"
+#endif
+		"addl $4, %%eax			\n\t"
+		"cmpl %5, %%eax			\n\t"
+		" jb 1b				\n\t"
+
+		:: "r" (buf0), "r" (buf1), "r" (uvbuf0), "r" (uvbuf1), "m" (dest), "m" (dstw),
+		"m" (yalpha1), "m" (uvalpha1)
+		: "%eax", "%ebx"
+		);
+	}
 	else if(dstbpp==16)
 	{
 		asm volatile(
@@ -603,7 +653,7 @@ YSCALEYUV2RGB
 			dest+=dstbpp>>3;
 		}
 	}
-	else if(dstbpp==16) //16bit
+	else if(dstbpp==16)
 	{
 		for(i=0;i<dstw;i++){
 			// vertical linear interpolation && yuv2rgb in a single step:
