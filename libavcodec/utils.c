@@ -199,6 +199,8 @@ const char *pix_fmt_str[] = {
     "bgr24",
     "yuv422p",
     "yuv444p",
+    "rgba32",
+    "bgra32",
     "yuv410p"
 };
     
@@ -299,7 +301,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         }
         break;
     default:
-        abort();
+        av_abort();
     }
     if (bitrate != 0) {
         snprintf(buf + strlen(buf), buf_size - strlen(buf), 
@@ -346,6 +348,13 @@ void avpicture_fill(AVPicture *picture, UINT8 *ptr,
         picture->data[2] = NULL;
         picture->linesize[0] = width * 3;
         break;
+    case PIX_FMT_RGBA32:
+    case PIX_FMT_BGRA32:
+        picture->data[0] = ptr;
+        picture->data[1] = NULL;
+        picture->data[2] = NULL;
+        picture->linesize[0] = width * 4;
+        break;
     case PIX_FMT_YUV422:
         picture->data[0] = ptr;
         picture->data[1] = NULL;
@@ -378,6 +387,10 @@ int avpicture_get_size(int pix_fmt, int width, int height)
     case PIX_FMT_RGB24:
     case PIX_FMT_BGR24:
         size = (size * 3);
+        break;
+    case PIX_FMT_RGBA32:
+    case PIX_FMT_BGRA32:
+        size = (size * 4);
         break;
     case PIX_FMT_YUV422:
         size = (size * 2);

@@ -59,6 +59,8 @@ enum PixelFormat {
     PIX_FMT_BGR24,
     PIX_FMT_YUV422P,
     PIX_FMT_YUV444P,
+    PIX_FMT_RGBA32,
+    PIX_FMT_BGRA32,
     PIX_FMT_YUV410P
 };
 
