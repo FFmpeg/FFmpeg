@@ -73,10 +73,10 @@ static const uint16_t table_mb_intra[64][2];
 
 /** Sequence quantizer mode */
 //@{
-#define QUANT_FRAME_IMPLICIT   0
-#define QUANT_FRAME_EXPLICIT   1
-#define QUANT_NON_UNIFORM      2
-#define QUANT_UNIFORM          3
+#define QUANT_FRAME_IMPLICIT   0 ///< Implicitly specified at frame level
+#define QUANT_FRAME_EXPLICIT   1 ///< Explicitly specified at frame level
+#define QUANT_NON_UNIFORM      2 ///< Non-uniform quant used for all frames
+#define QUANT_UNIFORM          3 ///< Uniform quant used for all frames
 //@}
 
 /** Where quant can be changed */
@@ -278,7 +278,7 @@ typedef struct VC9Context{
      * -# 3 -> [-1024, 1023.f] x [-256, 255.f]
      */
     uint8_t mvrange;
-    uint8_t pquantizer;
+    uint8_t pquantizer;           ///< Uniform (over sequence) quantizer in use
     uint8_t *previous_line_cbpcy; ///< To use for predicted CBPCY
     VLC *cbpcy_vlc;               ///< Current CBPCY VLC table
     VLC *ttmb_vlc;                ///< Current MB Transform Type VLC table
@@ -299,10 +299,10 @@ typedef struct VC9Context{
     uint8_t numpanscanwin;
     uint8_t tfcntr;
     uint8_t rptfrm, tff, rff;
-    uint8_t topleftx;
-    uint8_t toplefty;
-    uint8_t bottomrightx;
-    uint8_t bottomrighty;
+    uint16_t topleftx;
+    uint16_t toplefty;
+    uint16_t bottomrightx;
+    uint16_t bottomrighty;
     uint8_t uvsamp;
     uint8_t postproc;
     int hrd_num_leaky_buckets;
@@ -335,6 +335,7 @@ static int get_prefix(GetBitContext *gb, int stop, int len)
     tmp = get_bits(gb, 1);
     i++;
   }
+  if (i == len && tmp != stop) return len+1;
   return i;
 #else
   unsigned int buf;
@@ -366,7 +367,7 @@ static int get_prefix(GetBitContext *gb, int stop, int len)
 static int vc9_init_common(VC9Context *v)
 {
     static int done = 0;
-    int i;
+    int i = 0;
 
     /* Set the bit planes */
     v->mv_type_mb_plane = (struct BitPlane) { NULL, 0, 0, 0 };
@@ -1113,7 +1114,7 @@ static int vop_dquant_decoding(VC9Context *v)
 static int decode_b_picture_primary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
-    int pqindex, status;
+    int pqindex;
 
     /* Prolog common to all frametypes should be done in caller */
     if (v->profile == PROFILE_SIMPLE)
@@ -1121,7 +1122,6 @@ static int decode_b_picture_primary_header(VC9Context *v)
         av_log(v->s.avctx, AV_LOG_ERROR, "Found a B frame while in Simple Profile!\n");
         return FRAME_SKIPED;
     }
-
     v->bfraction = vc9_bfraction_lut[get_vlc2(gb, vc9_bfraction_vlc.table,
                                               VC9_BFRACTION_VLC_BITS, 2)];
     if (v->bfraction < -1)
@@ -1148,9 +1148,18 @@ static int decode_b_picture_primary_header(VC9Context *v)
     if (v->quantizer_mode == QUANT_FRAME_EXPLICIT)
         v->pquantizer = get_bits(gb, 1);
 
-    /* Read the MV type/mode */
-    if (v->extended_mv == 1)
-        v->mvrange = get_prefix(gb, 0, 3);
+    if (v->profile > PROFILE_MAIN)
+    {
+        if (v->postprocflag) v->postproc = get_bits(gb, 2);
+        if (v->extended_mv == 1 && v->s.pict_type != BI_TYPE)
+            v->mvrange = get_prefix(gb, 0, 3);
+    }
+    else
+    {
+        if (v->extended_mv == 1)
+            v->mvrange = get_prefix(gb, 0, 3);
+    }
+    /* Read the MV mode */
     if (v->s.pict_type != BI_TYPE)
     {
         v->mv_mode = get_bits(gb, 1);
@@ -1185,13 +1194,14 @@ static int decode_b_picture_primary_header(VC9Context *v)
  * @return Status
  * @warning Also handles BI frames
  * @warning To call once all MB arrays are allocated
+ * @todo Support Advanced Profile headers
  */
 static int decode_b_picture_secondary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     int status;
 
-    bitplane_decoding(&v->skip_mb_plane, v);
+    status = bitplane_decoding(&v->skip_mb_plane, v);
     if (status < 0) return -1;
 #if TRACE
     if (v->mv_mode == MV_PMODE_MIXED_MV)
@@ -1244,11 +1254,12 @@ static int decode_b_picture_secondary_header(VC9Context *v)
  * @see Tables 5+7, p53-54 and 55-57
  * @param v VC9 context
  * @return Status
+ * @todo Support Advanced Profile headers
  */
-static int decode_i_picture_header(VC9Context *v)
+static int decode_i_picture_primary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
-    int pqindex, status = 0;
+    int pqindex;
 
     /* Prolog common to all frametypes should be done in caller */
     //BF = Buffer Fullness
@@ -1270,33 +1281,37 @@ static int decode_i_picture_header(VC9Context *v)
         v->pquantizer = get_bits(gb, 1);
     av_log(v->s.avctx, AV_LOG_DEBUG, "I frame: QP=%i (+%i/2)\n",
            v->pq, v->halfpq);
+    return 0;
+}
+
+/** I frame header decoding, secondary part
+ * @param v VC9 context
+ * @return Status
+ * @todo Support Advanced Profile headers
+ */
+static int decode_i_picture_secondary_header(VC9Context *v)
+{
+    int status;
 #if HAS_ADVANCED_PROFILE
-    if (v->profile <= PROFILE_MAIN)
-#endif
+    if (v->profile > PROFILE_MAIN)
     {
-        if (v->extended_mv) v->mvrange = get_prefix(gb, 0, 3);
-        if (v->multires) v->respic = get_bits(gb, 2);
-    }
-#if HAS_ADVANCED_PROFILE
-    else
-    {
-        v->s.ac_pred = get_bits(gb, 1);
-        if (v->postprocflag) v->postproc = get_bits(gb, 1);
+        v->s.ac_pred = get_bits(&v->s.gb, 1);
+        if (v->postprocflag) v->postproc = get_bits(&v->s.gb, 1);
         /* 7.1.1.34 + 8.5.2 */
         if (v->overlap && v->pq<9)
         {
-            v->condover = get_bits(gb, 1);
+            v->condover = get_bits(&v->s.gb, 1);
             if (v->condover)
             {
-                v->condover = 2+get_bits(gb, 1);
+                v->condover = 2+get_bits(&v->s.gb, 1);
                 if (v->condover == 3)
                 {
                     status = bitplane_decoding(&v->over_flags_plane, v);
                     if (status < 0) return -1;
-#if TRACE
+#  if TRACE
                     av_log(v->s.avctx, AV_LOG_DEBUG, "Overflags plane encoding: "
                            "Imode: %i, Invert: %i\n", status>>1, status&1);
-#endif
+#  endif
                 }
             }
         }
@@ -1304,19 +1319,20 @@ static int decode_i_picture_header(VC9Context *v)
 #endif
 
     /* Epilog (AC/DC syntax) should be done in caller */
-    return status;
+    return 0;
 }
 
 /** P frame header decoding, primary part
  * @see Tables 5+7, p53-54 and 55-57
  * @param v VC9 context
+ * @todo Support Advanced Profile headers
  * @return Status
  */
 static int decode_p_picture_primary_header(VC9Context *v)
 {
     /* INTERFRM, FRMCNT, RANGEREDFRM read in caller */
     GetBitContext *gb = &v->s.gb;
-    int lowquant, pqindex, status = 0;
+    int lowquant, pqindex;
 
     pqindex = get_bits(gb, 5);
     if (v->quantizer_mode == QUANT_FRAME_IMPLICIT)
@@ -1418,6 +1434,8 @@ static int decode_p_picture_secondary_header(VC9Context *v)
 /** Frame header decoding, first part, in Simple and Main profiles
  * @see Tables 5+7, p53-54 and 55-57
  * @param v VC9 context
+ * @todo FIXME: RANGEREDFRM element not read if BI frame from Table6, P54
+ *              However, 7.1.1.8 says "all frame types, for main profiles"
  * @return Status
  */
 static int standard_decode_picture_primary_header(VC9Context *v)
@@ -1442,9 +1460,9 @@ static int standard_decode_picture_primary_header(VC9Context *v)
 
     switch (v->s.pict_type)
     {
-    case I_TYPE: status = decode_i_picture_header(v); break;
+    case I_TYPE: status = decode_i_picture_primary_header(v); break;
     case P_TYPE: status = decode_p_picture_primary_header(v); break;
-    case BI_TYPE:
+    case BI_TYPE: //Same as B
     case B_TYPE: status = decode_b_picture_primary_header(v); break;
     }
 
@@ -1470,7 +1488,10 @@ static int standard_decode_picture_secondary_header(VC9Context *v)
     {
     case P_TYPE: status = decode_p_picture_secondary_header(v); break;
     case B_TYPE: status = decode_b_picture_secondary_header(v); break;
+    case BI_TYPE:
+    case I_TYPE: break; //Nothing needed as it's done in the epilog
     }
+    if (status < 0) return FRAME_SKIPED;
 
     /* AC Syntax */
     v->ac_table_level = decode012(gb);
@@ -1504,7 +1525,7 @@ static int advanced_decode_picture_primary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
     static const int type_table[4] = { P_TYPE, B_TYPE, I_TYPE, BI_TYPE };
-    int type, i;
+    int type;
 
     if (v->interlace)
     {
@@ -1548,13 +1569,12 @@ static int advanced_decode_picture_primary_header(VC9Context *v)
 
     switch(v->s.pict_type)
     {
-    case I_TYPE: if (decode_i_picture_header(v) < 0) return -1;
+    case I_TYPE: if (decode_i_picture_primary_header(v) < 0) return -1;
     case P_TYPE: if (decode_p_picture_primary_header(v) < 0) return -1;
     case BI_TYPE:
     case B_TYPE: if (decode_b_picture_primary_header(v) < 0) return FRAME_SKIPED;
-    default: break;
+    default: return -1;
     }
-    return 0;
 }
 
 /** Frame header decoding, secondary part
@@ -1564,14 +1584,16 @@ static int advanced_decode_picture_primary_header(VC9Context *v)
 static int advanced_decode_picture_secondary_header(VC9Context *v)
 {
     GetBitContext *gb = &v->s.gb;
-    int index;
+    int index, status = 0;
 
     switch(v->s.pict_type)
     {
-    case P_TYPE: if (decode_p_picture_secondary_header(v) < 0) return -1;
-    case B_TYPE: if (decode_b_picture_secondary_header(v) < 0) return FRAME_SKIPED;
-    default: break;
+    case P_TYPE: status = decode_p_picture_secondary_header(v); break;
+    case B_TYPE: status = decode_b_picture_secondary_header(v); break;
+    case BI_TYPE:
+    case I_TYPE: status = decode_i_picture_secondary_header(v); break; 
     }
+    if (status<0) return FRAME_SKIPED;
 
     /* AC Syntax */
     v->ac_table_level = decode012(gb);
