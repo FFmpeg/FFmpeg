@@ -506,18 +506,15 @@ static inline void yuv2yuv(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, uin
 
 	for(i=0;i<dstw;i++)
 	{
-		((uint8_t*)dest)[0] = (buf0[i]*yalpha1+buf1[i]*yalpha)>>19;
-		dest++;
+		((uint8_t*)dest)[i] = (buf0[i]*yalpha1+buf1[i]*yalpha)>>19;
 	}
 
 	if(uvalpha != -1)
 	{
 		for(i=0; i<dstw/2; i++)
 		{
-			((uint8_t*)uDest)[0] = (uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19;
-			((uint8_t*)vDest)[0] = (uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19;
-			uDest++;
-			vDest++;
+			((uint8_t*)uDest)[i] = (uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19;
+			((uint8_t*)vDest)[i] = (uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19;
 		}
 	}
 }
@@ -704,11 +701,10 @@ FULL_YSCALEYUV2RGB
 				int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19);
 				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
 
-				((uint16_t*)dest)[0] =
+				((uint16_t*)dest)[i] =
 					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
 					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
 					((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
-				dest+=2;
 			}
 		}
 		else if(dstbpp==15)
@@ -719,11 +715,10 @@ FULL_YSCALEYUV2RGB
 				int U=((uvbuf0[i]*uvalpha1+uvbuf1[i]*uvalpha)>>19);
 				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
 
-				((uint16_t*)dest)[0] =
+				((uint16_t*)dest)[i] =
 					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
 					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
 					((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
-				dest+=2;
 			}
 		}
 #endif
@@ -814,11 +809,10 @@ FULL_YSCALEYUV2RGB
 				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
-				((uint16_t*)dest)[0] =
+				((uint16_t*)dest)[i] =
 					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
 					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
 					((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
-				dest+=2;
 			}
 		}
 		else if(dstbpp==15)
@@ -829,11 +823,10 @@ FULL_YSCALEYUV2RGB
 				int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
 				int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
-				((uint16_t*)dest)[0] =
+				((uint16_t*)dest)[i] =
 					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
 					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
 					((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
-				dest+=2;
 			}
 		}
 #endif
@@ -993,11 +986,10 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 			int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
 			int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
-			((uint16_t*)dest)[0] =
+			((uint16_t*)dest)[i] =
 				(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
 				((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
 				((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
-			dest+=2;
 		}
 	}
 	else if(dstbpp==15)
@@ -1008,11 +1000,10 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 			int U=((uvbuf0[i/2]*uvalpha1+uvbuf1[i/2]*uvalpha)>>19);
 			int V=((uvbuf0[i/2+2048]*uvalpha1+uvbuf1[i/2+2048]*uvalpha)>>19);
 
-			((uint16_t*)dest)[0] =
+			((uint16_t*)dest)[i] =
 				(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
 				((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
 				((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
-			dest+=2;
 		}
 	}
 #endif
