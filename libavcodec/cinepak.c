@@ -68,6 +68,8 @@ typedef struct CinepakContext {
     unsigned char *data;
     int size;
 
+    int width, height;
+
     unsigned char palette[PALETTE_COUNT * 4];
     int palette_video;
     cvid_strip_t strips[MAX_STRIPS];
@@ -289,9 +291,9 @@ static int cinepak_decode_strip (CinepakContext *s,
     int      chunk_id, chunk_size;
 
     /* coordinate sanity checks */
-    if (strip->x1 >= s->avctx->width  || strip->x2 > s->avctx->width  ||
-        strip->y1 >= s->avctx->height || strip->y2 > s->avctx->height ||
-        strip->x1 >= strip->x2        || strip->y1 >= strip->y2)
+    if (strip->x1 >= s->width  || strip->x2 > s->width  ||
+        strip->y1 >= s->height || strip->y2 > s->height ||
+        strip->x1 >= strip->x2 || strip->y1 >= strip->y2)
         return -1;
 
     while ((data + 4) <= eod) {
@@ -390,6 +392,8 @@ static int cinepak_decode_init(AVCodecContext *avctx)
 */
 
     s->avctx = avctx;
+    s->width = (avctx->width + 3) & ~3;
+    s->height = (avctx->height + 3) & ~3;
 
 // check for paletted data
 s->palette_video = 0;
