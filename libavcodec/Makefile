@@ -216,7 +216,7 @@ $(LIB): $(OBJS) $(AMRLIBS)
 
 $(SLIB): $(OBJS)
 ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C $(VPATH)/libpostproc
+	$(MAKE) -C libpostproc
 endif
 ifeq ($(CONFIG_WIN32),yes)
 	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
@@ -299,7 +299,7 @@ else
 	ldconfig || true
 endif
 ifeq ($(CONFIG_PP),yes)
-	$(MAKE) -C $(VPATH)/libpostproc $@
+	$(MAKE) -C libpostproc $@
 endif
 else
 install:
