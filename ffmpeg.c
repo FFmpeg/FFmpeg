@@ -1345,6 +1345,8 @@ const char *motion_str[] = {
     "full",
     "log",
     "phods",
+    "epzs",
+    "x1",
     NULL,
 };
 
