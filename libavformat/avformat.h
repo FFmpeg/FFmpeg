@@ -385,6 +385,9 @@ int crc_init(void);
 /* img.c */
 int img_init(void);
 
+/* img2.c */
+int img2_init(void);
+
 /* asf.c */
 int asf_init(void);
 

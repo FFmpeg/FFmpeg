@@ -34,6 +34,7 @@ void av_register_all(void)
 #ifdef CONFIG_ENCODERS
     crc_init();
     img_init();
+    img2_init();
 #endif //CONFIG_ENCODERS
     raw_init();
     mp3_init();
