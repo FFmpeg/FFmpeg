@@ -26,11 +26,13 @@
 #include "mpegaudio.h"
 #include <lame/lame.h>
 
+#define BUFFER_SIZE (2*MPA_FRAME_SIZE)
 typedef struct Mp3AudioContext {
 	lame_global_flags *gfp;
 	int stereo;
+        uint8_t buffer[BUFFER_SIZE];
+        int buffer_index;
 } Mp3AudioContext;
-
 
 static int MP3lame_encode_init(AVCodecContext *avctx)
 {
@@ -68,30 +70,107 @@ err:
 	return -1;
 }
 
+static const int sSampleRates[3] = {
+    44100, 48000,  32000
+};
+
+static const int sBitRates[2][3][15] = {
+    {   {  0, 32, 64, 96,128,160,192,224,256,288,320,352,384,416,448},
+        {  0, 32, 48, 56, 64, 80, 96,112,128,160,192,224,256,320,384},
+        {  0, 32, 40, 48, 56, 64, 80, 96,112,128,160,192,224,256,320}
+    },
+    {   {  0, 32, 48, 56, 64, 80, 96,112,128,144,160,176,192,224,256},
+        {  0,  8, 16, 24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160},
+        {  0,  8, 16, 24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160}
+    },
+};
+
+static const int sSamplesPerFrame[2][3] =
+{
+    {  384,     1152,    1152 },
+    {  384,     1152,     576 }
+};
+
+static const int sBitsPerSlot[3] = {
+    32,
+    8,
+    8
+};
+
+static int mp3len(void *data, int *samplesPerFrame, int *sampleRate)
+{
+    uint8_t *dataTmp = (uint8_t *)data;
+    uint32_t header = ( (uint32_t)dataTmp[0] << 24 ) | ( (uint32_t)dataTmp[1] << 16 ) | ( (uint32_t)dataTmp[2] << 8 ) | (uint32_t)dataTmp[3];
+    int layerID = 3 - ((header >> 17) & 0x03);
+    int bitRateID = ((header >> 12) & 0x0f);
+    int sampleRateID = ((header >> 10) & 0x03);
+    int bitsPerSlot = sBitsPerSlot[layerID];
+    int isPadded = ((header >> 9) & 0x01);
+    static int const mode_tab[4]= {2,3,1,0};
+    int mode= mode_tab[(header >> 19) & 0x03];
+    int mpeg_id= mode>0;
+    int temp0, temp1, bitRate;
+
+    if ( (( header >> 21 ) & 0x7ff) != 0x7ff || mode == 3 || layerID==3 || sampleRateID==3) {
+        return -1;
+    }
+    
+    if(!samplesPerFrame) samplesPerFrame= &temp0;
+    if(!sampleRate     ) sampleRate     = &temp1;
+
+//    *isMono = ((header >>  6) & 0x03) == 0x03;
+
+    *sampleRate = sSampleRates[sampleRateID]>>mode;
+    bitRate = sBitRates[mpeg_id][layerID][bitRateID] * 1000;
+    *samplesPerFrame = sSamplesPerFrame[mpeg_id][layerID];
+//av_log(NULL, AV_LOG_DEBUG, "sr:%d br:%d spf:%d l:%d m:%d\n", *sampleRate, bitRate, *samplesPerFrame, layerID, mode);
+    
+    return *samplesPerFrame * bitRate / (bitsPerSlot * *sampleRate) + isPadded;
+}
+
 int MP3lame_encode_frame(AVCodecContext *avctx,
                      unsigned char *frame, int buf_size, void *data)
 {
 	Mp3AudioContext *s = avctx->priv_data;
-	int num, i;
-//av_log(avctx, AV_LOG_DEBUG, "%X %d %X\n", (int)frame, buf_size, (int)data);
-//        if(data==NULL)
-//            return lame_encode_flush(s->gfp, frame, buf_size);
+	int len, i;
 
 	/* lame 3.91 dies on '1-channel interleaved' data */
 	if (s->stereo) {
-		num = lame_encode_buffer_interleaved(s->gfp, data,
-			MPA_FRAME_SIZE, frame, buf_size);
+            s->buffer_index += lame_encode_buffer_interleaved(
+                s->gfp, 
+                data,
+		MPA_FRAME_SIZE, 
+                s->buffer + s->buffer_index, 
+                BUFFER_SIZE - s->buffer_index
+                );
 	} else {
-		num = lame_encode_buffer(s->gfp, data, data, MPA_FRAME_SIZE,
-			frame, buf_size);
+            s->buffer_index += lame_encode_buffer(
+                s->gfp, 
+                data, 
+                data, 
+                MPA_FRAME_SIZE,
+                s->buffer + s->buffer_index, 
+                BUFFER_SIZE - s->buffer_index
+                );
+	}
+        if(s->buffer_index<4)
+            return 0;
 
-/*av_log(avctx, AV_LOG_DEBUG, "in:%d out:%d\n", MPA_FRAME_SIZE, num);
-for(i=0; i<num; i++){
+        len= mp3len(s->buffer, NULL, NULL);
+//av_log(avctx, AV_LOG_DEBUG, "in:%d packet-len:%d index:%d\n", MPA_FRAME_SIZE, len, s->buffer_index);
+        if(len <= s->buffer_index){
+            memcpy(frame, s->buffer, len);
+            s->buffer_index -= len;
+
+            memmove(s->buffer, s->buffer+len, s->buffer_index);
+            //FIXME fix the audio codec API, so we dont need the memcpy()
+            //FIXME fix the audio codec API, so we can output multiple packets if we have them
+/*for(i=0; i<len; i++){
     av_log(avctx, AV_LOG_DEBUG, "%2X ", frame[i]);
 }*/
-	}
-
-	return num;
+            return len;
+        }else
+            return 0;
 }
 
 int MP3lame_encode_close(AVCodecContext *avctx)
