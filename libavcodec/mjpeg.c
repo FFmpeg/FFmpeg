@@ -557,12 +557,7 @@ static inline void mjpeg_encode_dc(MpegEncContext *s, int val,
             mant--;
         }
         
-        /* compute the log (XXX: optimize) */
-        nbits = 0;
-        while (val != 0) {
-            val = val >> 1;
-            nbits++;
-        }
+        nbits= av_log2(val) + 1;
             
         put_bits(&s->pb, huff_size[nbits], huff_code[nbits]);
         
@@ -613,12 +608,7 @@ static void encode_block(MpegEncContext *s, DCTELEM *block, int n)
                 mant--;
             }
             
-            /* compute the log (XXX: optimize) */
-            nbits = 0;
-            while (val != 0) {
-                val = val >> 1;
-                nbits++;
-            }
+            nbits= av_log2(val) + 1;
             code = (run << 4) | nbits;
 
             put_bits(&s->pb, huff_size_ac[code], huff_code_ac[code]);
@@ -902,7 +892,7 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s)
 
 static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
 {
-    int code, diff;
+    int code;
     code = get_vlc2(&s->gb, s->vlcs[0][dc_index].table, 9, 2);
     if (code < 0)
     {
@@ -910,20 +900,18 @@ static inline int mjpeg_decode_dc(MJpegDecodeContext *s, int dc_index)
                 &s->vlcs[0][dc_index]);
         return 0xffff;
     }
-    if (code == 0) {
-        diff = 0;
-    } else {
-        diff = get_xbits(&s->gb, code);
-    }
-    return diff;
+
+    if(code)
+        return get_xbits(&s->gb, code);
+    else
+        return 0;
 }
 
 /* decode block and dequantize */
 static int decode_block(MJpegDecodeContext *s, DCTELEM *block, 
                         int component, int dc_index, int ac_index, int quant_index)
 {
-    int nbits, code, i, j, level;
-    int run, val;
+    int code, i, j, level, val;
     VLC *ac_vlc;
     int16_t *quant_matrix;
 
@@ -953,10 +941,8 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
         if (code == 0xf0) {
             i += 16;
         } else {
-            run = code >> 4;
-            nbits = code & 0xf;
-            level = get_xbits(&s->gb, nbits);
-            i += run;
+            level = get_xbits(&s->gb, code & 0xf);
+            i += code >> 4;
             if (i >= 64) {
                 dprintf("error count: %d\n", i);
                 return -1;
