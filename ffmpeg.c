@@ -1291,6 +1291,8 @@ static int av_encode(AVFormatContext **output_files,
                     break;
                 case CODEC_TYPE_VIDEO:
                     data_size = (ist->st->codec.width * ist->st->codec.height * 3) / 2;
+                    /* XXX: allocate picture correctly */
+                    memset(&picture, 0, sizeof(picture));
                     ret = avcodec_decode_video(&ist->st->codec, 
                                                &picture, &got_picture, ptr, len);
                     ist->st->quality= picture.quality;
