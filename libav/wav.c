@@ -16,11 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <errno.h>
 #include "avformat.h"
 #include "avi.h"
 
@@ -77,7 +72,7 @@ static int wav_write_trailer(AVFormatContext *s)
         /* update file size */
         file_size = url_ftell(pb);
         url_fseek(pb, 4, SEEK_SET);
-        put_le32(pb, file_size);
+        put_le32(pb, (UINT32)file_size);
         url_fseek(pb, file_size, SEEK_SET);
 
         put_flush_packet(pb);
@@ -89,7 +84,7 @@ static int wav_write_trailer(AVFormatContext *s)
 
 /* return the size of the found tag */
 /* XXX: > 2GB ? */
-static int find_tag(ByteIOContext *pb, int tag1)
+static int find_tag(ByteIOContext *pb, UINT32 tag1)
 {
     unsigned int tag;
     int size;

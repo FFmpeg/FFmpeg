@@ -16,17 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <errno.h>
-#include <sys/time.h>
-#include <getopt.h>
-#include <string.h>
-
 #include "avformat.h"
 
 #define IO_BUFFER_SIZE 32768
@@ -186,16 +175,16 @@ void put_be32(ByteIOContext *s, unsigned int val)
     put_byte(s, val);
 }
 
-void put_le64(ByteIOContext *s, unsigned long long val)
+void put_le64(ByteIOContext *s, UINT64 val)
 {
-    put_le32(s, val & 0xffffffff);
-    put_le32(s, val >> 32);
+    put_le32(s, (UINT32)(val & 0xffffffff));
+    put_le32(s, (UINT32)(val >> 32));
 }
 
-void put_be64(ByteIOContext *s, unsigned long long val)
+void put_be64(ByteIOContext *s, UINT64 val)
 {
-    put_be32(s, val >> 32);
-    put_be32(s, val & 0xffffffff);
+    put_be32(s, (UINT32)(val >> 32));
+    put_be32(s, (UINT32)(val & 0xffffffff));
 }
 
 void put_le16(ByteIOContext *s, unsigned int val)
@@ -287,7 +276,7 @@ unsigned int get_le32(ByteIOContext *s)
     return val;
 }
 
-unsigned long long get_le64(ByteIOContext *s)
+UINT64 get_le64(ByteIOContext *s)
 {
     UINT64 val;
     val = (UINT64)get_le32(s);
@@ -313,7 +302,7 @@ unsigned int get_be32(ByteIOContext *s)
     return val;
 }
 
-unsigned long long get_be64(ByteIOContext *s)
+UINT64 get_be64(ByteIOContext *s)
 {
     UINT64 val;
     val = (UINT64)get_be32(s) << 32;
@@ -335,7 +324,7 @@ int url_read_packet(void *opaque, UINT8 *buf, int buf_size)
     return url_read(h, buf, buf_size);
 }
 
-int url_seek_packet(void *opaque, long long offset, int whence)
+int url_seek_packet(void *opaque, INT64 offset, int whence)
 {
     URLContext *h = opaque;
     url_seek(h, offset, whence);

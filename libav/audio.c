@@ -16,6 +16,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+#include "avformat.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -24,10 +26,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-#include <errno.h>
 #include <sys/time.h>
-
-#include "avformat.h"
 
 const char *audio_device = "/dev/dsp";
 

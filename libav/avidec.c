@@ -16,12 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <errno.h>
-
 #include "avformat.h"
 #include "avi.h"
 
@@ -157,7 +151,7 @@ int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     st->codec.width = get_le32(pb);
                     st->codec.height = get_le32(pb);
                     if (frame_period)
-                        st->codec.frame_rate = (1000000LL * FRAME_RATE_BASE) / frame_period;
+                        st->codec.frame_rate = (INT64_C(1000000) * FRAME_RATE_BASE) / frame_period;
                     else
                         st->codec.frame_rate = 25 * FRAME_RATE_BASE;
                     get_le16(pb); /* panes */

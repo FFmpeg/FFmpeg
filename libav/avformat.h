@@ -1,8 +1,6 @@
 
 #include "avcodec.h"
 
-#define FFMPEG_VERSION "0.4.5"
-
 #include "avio.h"
 
 /* packet functions */

@@ -16,13 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <sys/time.h>
-
 #include "avformat.h"
 
 #define MAX_PAYLOAD_SIZE 4096
@@ -67,7 +60,7 @@ typedef struct {
 #define VIDEO_ID 0xe0
 
 static int put_pack_header(AVFormatContext *ctx, 
-                           UINT8 *buf, long long timestamp)
+                           UINT8 *buf, INT64 timestamp)
 {
     MpegMuxContext *s = ctx->priv_data;
     PutBitContext pb;
@@ -76,11 +69,11 @@ static int put_pack_header(AVFormatContext *ctx,
 
     put_bits(&pb, 32, PACK_START_CODE);
     put_bits(&pb, 4, 0x2);
-    put_bits(&pb, 3, (timestamp >> 30) & 0x07);
+    put_bits(&pb, 3, (UINT32)((timestamp >> 30) & 0x07));
     put_bits(&pb, 1, 1);
-    put_bits(&pb, 15, (timestamp >> 15) & 0x7fff);
+    put_bits(&pb, 15, (UINT32)((timestamp >> 15) & 0x7fff));
     put_bits(&pb, 1, 1);
-    put_bits(&pb, 15, (timestamp) & 0x7fff);
+    put_bits(&pb, 15, (UINT32)((timestamp) & 0x7fff));
     put_bits(&pb, 1, 1);
     put_bits(&pb, 1, 1);
     put_bits(&pb, 22, s->mux_rate);
@@ -281,8 +274,8 @@ static void flush_packet(AVFormatContext *ctx, int stream_index)
              (0x02 << 4) | 
              (((timestamp >> 30) & 0x07) << 1) | 
              1);
-    put_be16(&ctx->pb, (((timestamp >> 15) & 0x7fff) << 1) | 1);
-    put_be16(&ctx->pb, (((timestamp) & 0x7fff) << 1) | 1);
+    put_be16(&ctx->pb, (UINT16)((((timestamp >> 15) & 0x7fff) << 1) | 1));
+    put_be16(&ctx->pb, (UINT16)((((timestamp) & 0x7fff) << 1) | 1));
 
     if (startcode == PRIVATE_STREAM_1) {
         put_byte(&ctx->pb, id);
@@ -494,7 +487,6 @@ static int mpeg_mux_read_header(AVFormatContext *s,
             codec_id = 0;
             n = 0;
         }
-        
         for(i=0;i<n;i++) {
             st = av_mallocz(sizeof(AVStream));
             if (!st)

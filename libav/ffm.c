@@ -16,13 +16,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "avformat.h"
+#include <unistd.h>
 
 /* The FFM file is made of blocks of fixed size */
 #define FFM_HEADER_SIZE 14
@@ -345,7 +340,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!url_is_streamed(pb)) {
         ffm->file_size = url_filesize(url_fileno(pb));
     } else {
-        ffm->file_size = (1ULL << 63) - 1;
+        ffm->file_size = (UINT64_C(1) << 63) - 1;
     }
 
     s->nb_streams = get_be32(pb);

@@ -16,16 +16,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "avformat.h"
+#ifndef CONFIG_WIN32
 #include <unistd.h>
 #include <fcntl.h>
-#include <errno.h>
 #include <sys/time.h>
 #include <time.h>
-
-#include "avformat.h"
+#else
+#define strcasecmp _stricmp
+#include <sys/types.h>
+#include <sys/timeb.h>
+#endif
 
 AVFormat *first_format;
 
@@ -141,7 +142,9 @@ void register_all(void)
     register_avformat(&wav_format);
     register_avformat(&pcm_format);
     register_avformat(&rawvideo_format);
+#ifndef CONFIG_WIN32
     register_avformat(&ffm_format);
+#endif
     register_avformat(&pgm_format);
     register_avformat(&ppm_format);
     register_avformat(&pgmyuv_format);
@@ -152,10 +155,14 @@ void register_all(void)
 
     register_protocol(&file_protocol);
     register_protocol(&pipe_protocol);
+#ifdef CONFIG_GRAB
     register_protocol(&audio_protocol);
     register_protocol(&video_protocol);
+#endif
+#ifndef CONFIG_WIN32
     register_protocol(&udp_protocol);
     register_protocol(&http_protocol);
+#endif
 }
 
 /* memory handling */
@@ -422,9 +429,15 @@ int parse_image_size(int *width_ptr, int *height_ptr, const char *str)
 
 INT64 gettime(void)
 {
+#ifdef CONFIG_WIN32
+    struct _timeb tb;
+    _ftime(&tb);
+    return ((INT64)tb.time * INT64_C(1000) + (INT64)tb.millitm) * INT64_C(1000);
+#else
     struct timeval tv;
     gettimeofday(&tv,NULL);
     return (INT64)tv.tv_sec * 1000000 + tv.tv_usec;
+#endif
 }
 
 /* syntax: [YYYY-MM-DD ][[HH:]MM:]SS[.m...] . Return the date in micro seconds since 1970 */

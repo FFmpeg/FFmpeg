@@ -16,11 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <netinet/in.h>
-#include <string.h>
-
 #include "avformat.h"
 #include "avi.h"
 
@@ -53,7 +48,7 @@ void end_tag(ByteIOContext *pb, offset_t start)
 
     pos = url_ftell(pb);
     url_fseek(pb, start - 4, SEEK_SET);
-    put_le32(pb, pos - start);
+    put_le32(pb, (UINT32)(pos - start));
     url_fseek(pb, pos, SEEK_SET);
 }
 
@@ -179,7 +174,7 @@ static int avi_write_header(AVFormatContext *s)
     }
     nb_frames = 0;
 
-    put_le32(pb, 1000000LL * FRAME_RATE_BASE / video_enc->frame_rate);
+    put_le32(pb, (UINT32)(INT64_C(1000000) * FRAME_RATE_BASE / video_enc->frame_rate));
     put_le32(pb, bitrate / 8); /* XXX: not quite exact */
     put_le32(pb, 0); /* padding */
     put_le32(pb, AVIF_TRUSTCKTYPE | AVIF_HASINDEX | AVIF_ISINTERLEAVED); /* flags */
@@ -340,7 +335,7 @@ static int avi_write_trailer(AVFormatContext *s)
         /* update file size */
         file_size = url_ftell(pb);
         url_fseek(pb, 4, SEEK_SET);
-        put_le32(pb, file_size - 8);
+        put_le32(pb, (UINT32)(file_size - 8));
         url_fseek(pb, file_size, SEEK_SET);
     }
     put_flush_packet(pb);

@@ -16,14 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-
 #include "avformat.h"
-
-#include <assert.h>
 
 /* should have a generic way to indicate probable size */
 #define DUMMY_FILE_SIZE   (100 * 1024 * 1024)
@@ -51,8 +44,8 @@
 #define SHAPE_ID  1
 
 typedef struct {
-    long long duration_pos;
-    long long tag_pos;
+    offset_t duration_pos;
+    offset_t tag_pos;
     int tag;
 } SWFContext;
 
@@ -76,7 +69,7 @@ static void put_swf_end_tag(AVFormatContext *s)
 {
     SWFContext *swf = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    long long pos;
+    offset_t pos;
     int tag_len, tag;
 
     pos = url_ftell(pb);
@@ -237,7 +230,7 @@ static int swf_write_header(AVFormatContext *s)
     put_swf_rect(pb, 0, width, 0, height);
     put_le16(pb, (rate * 256) / FRAME_RATE_BASE); /* frame rate */
     swf->duration_pos = url_ftell(pb);
-    put_le16(pb, DUMMY_DURATION * (INT64)rate / FRAME_RATE_BASE); /* frame count */
+    put_le16(pb, (UINT16)(DUMMY_DURATION * (INT64)rate / FRAME_RATE_BASE)); /* frame count */
     
     /* define a shape with the jpeg inside */
 

@@ -16,14 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <string.h>
-#include <math.h>
-
 #include "avformat.h"
 
 #define IMGFMT_YUV     1
@@ -336,7 +328,7 @@ static int img_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
             /* XXX: hack hack */
             h = url_fileno(f);
-            img_size = lseek((int)h->priv_data, 0, SEEK_END);
+            img_size = url_seek(h, 0, SEEK_END);
             if (infer_size(&s->width, &s->height, img_size) < 0) {
                 goto fail1;
             }

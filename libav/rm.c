@@ -16,11 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-#include <errno.h>
-
 #include "avformat.h"
 
 /* in ms */
@@ -330,12 +325,15 @@ static int rm_write_header(AVFormatContext *s)
 
 static int rm_write_audio(AVFormatContext *s, UINT8 *buf, int size)
 {
-    UINT8 buf1[size];
+    UINT8 *buf1;
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     StreamInfo *stream = rm->audio_stream;
     int i;
 
+    /* XXX: suppress this malloc */
+    buf1= (UINT8*) malloc( size * sizeof(UINT8) );
+    
     write_packet_header(s, stream, size, stream->enc->key_frame);
     
     /* for AC3, the words seems to be reversed */
@@ -346,6 +344,7 @@ static int rm_write_audio(AVFormatContext *s, UINT8 *buf, int size)
     put_buffer(pb, buf1, size);
     put_flush_packet(pb);
     stream->nb_frames++;
+    free(buf1);
     return 0;
 }
 

@@ -16,10 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
 #include "avformat.h"
 #include "avi.h"
 
@@ -202,8 +198,8 @@ static INT64 unix_to_file_time(int ti)
 {
     INT64 t;
     
-    t = ti * 10000000LL;
-    t += 116444736000000000LL;
+    t = ti * INT64_C(10000000);
+    t += INT64_C(116444736000000000);
     return t;
 }
 
@@ -535,13 +531,13 @@ static int asf_write_packet(AVFormatContext *s, int stream_index,
     if (codec->codec_type == CODEC_TYPE_AUDIO) {
         timestamp = (int)((float)codec->frame_number * codec->frame_size * 1000.0 / 
                           codec->sample_rate);
-        duration = (codec->frame_number * codec->frame_size * 10000000LL) / 
+        duration = (codec->frame_number * codec->frame_size * INT64_C(10000000)) / 
             codec->sample_rate;
     } else {
         timestamp = (int)((float)codec->frame_number * 1000.0 * FRAME_RATE_BASE / 
                           codec->frame_rate);
         duration = codec->frame_number * 
-            ((10000000LL * FRAME_RATE_BASE) / codec->frame_rate);
+            ((INT64_C(10000000) * FRAME_RATE_BASE) / codec->frame_rate);
     }
     if (duration > asf->duration)
         asf->duration = duration;
@@ -553,7 +549,7 @@ static int asf_write_packet(AVFormatContext *s, int stream_index,
 static int asf_write_trailer(AVFormatContext *s)
 {
     ASFContext *asf = s->priv_data;
-    long long file_size;
+    INT64 file_size;
 
     /* flush the current packet */
     if (asf->pb.buf_ptr > asf->pb.buffer)
@@ -920,7 +916,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 break;
             }
         }
-    next_frame:
+    next_frame:;
     }
 
     return 0;

@@ -16,11 +16,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "avformat.h"
 #include <unistd.h>
-#include <errno.h>
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -28,7 +25,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
-#include "avformat.h"
 
 /* XXX: POST protocol is not completly implemented because ffmpeg use
    only a subset of it */
