@@ -276,9 +276,8 @@ static int get_num(GetBitContext *gb)
 /* read RV 1.0 compatible frame header */
 static int rv10_decode_picture_header(MpegEncContext *s)
 {
-    int mb_count, pb_frame, marker, full_frame, unk;
+    int mb_count, pb_frame, marker, unk, mb_xy;
     
-    full_frame= s->avctx->slice_count==1;
 //printf("ff:%d\n", full_frame);
     marker = get_bits(&s->gb, 1);
 
@@ -321,7 +320,9 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     }
     /* if multiple packets per frame are sent, the position at which
        to display the macro blocks is coded here */
-    if ((!full_frame) || show_bits(&s->gb, 12)==0) {
+
+    mb_xy= s->mb_x + s->mb_y*s->mb_width;
+    if(show_bits(&s->gb, 12)==0 || (mb_xy && mb_xy < s->mb_num)){
         s->mb_x = get_bits(&s->gb, 6);	/* mb_x */
         s->mb_y = get_bits(&s->gb, 6);	/* mb_y */
         mb_count = get_bits(&s->gb, 12);
