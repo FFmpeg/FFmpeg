@@ -17,22 +17,20 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
+#include "avi.h"
 #include "avio.h"
 #include <time.h>
 
 #undef NDEBUG
 #include <assert.h>
 
-/*
- * Limitations
- * - Currently supports h.263, MPEG4 video codecs, and AMR audio codec.
- */
-
 #define MOV_INDEX_CLUSTER_SIZE 16384
 #define globalTimescale 1000
 
 typedef struct MOVIentry {
     unsigned int flags, pos, len;
+    unsigned int chunkSize;
+    char         key_frame;
     unsigned int entries;
 } MOVIentry;
 
@@ -40,12 +38,13 @@ typedef struct MOVIndex {
     int         entry;
     int         samples;
     int         mdat_size;
-    offset_t    mdat_pos;
     int         ents_allocated;
     long        timescale;
     long        time;
-    long        frameDuration;
+    long        frameCount;
+    long        trackDuration;
     long        sampleDelta;
+    int         hasKeyframes;
     int         trackID;
     AVCodecContext *enc;
 
@@ -57,6 +56,8 @@ typedef struct MOVIndex {
 typedef struct {
     long    time;
     int     nb_streams;
+    int     mdat_written;
+    offset_t mdat_pos;
     offset_t movi_list;
     long    timescale;
     MOVTrack tracks[MAX_STREAMS];
@@ -76,7 +77,8 @@ static int updateSize (ByteIOContext *pb, int pos)
 static int mov_write_stco_tag(ByteIOContext *pb, MOVTrack* track)
 {
     int i;
-    put_be32(pb, 16+track->entry*4); /* size */
+    int pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
     put_tag(pb, "stco");
     put_be32(pb, 0); /* version & flags */
     put_be32(pb, track->entry); /* entry count */
@@ -85,81 +87,101 @@ static int mov_write_stco_tag(ByteIOContext *pb, MOVTrack* track)
         int id = i % MOV_INDEX_CLUSTER_SIZE;
         put_be32(pb, track->cluster[cl][id].pos);
     }
-    return 16+track->entry*4;
+    return updateSize (pb, pos);
 }
 
 static int mov_write_stsz_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int i, size;
+    int equalChunks = 1;
+    int i, tst = -1, oldtst = -1;
 
-    if(track->cluster[0][0].entries != 0) 
-        size = 20;
-    else
-        size = 20+track->samples*4;
-    put_be32(pb, size); /* size */
+    int pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
     put_tag(pb, "stsz");
     put_be32(pb, 0); /* version & flags */
 
-    /* TODO: Ugly (and false) assumption: if we have a chunk of samples, assume
-     * all sizes are same */
-    if(track->cluster[0][0].entries != 0)   {
-        int sSize = track->cluster[0][0].len/track->cluster[0][0].entries;
-        put_be32(pb, sSize); /* sample size */
-        put_be32(pb, track->samples); /* sample count */
+    for (i=0; i<track->entry; i++) {
+        int cl = i / MOV_INDEX_CLUSTER_SIZE;
+        int id = i % MOV_INDEX_CLUSTER_SIZE;
+        tst = track->cluster[cl][id].len;
+          if(oldtst != -1 && tst != oldtst) {
+          equalChunks = 0;
+          break;
+        }
+        oldtst = tst;
     }
-    else 
-    {
-        put_be32(pb, 0); /* sample size */
-        put_be32(pb, track->samples); /* sample count */
-        for (i=0; i<track->samples; i++) {
+    if(equalChunks ||
+       track->enc->codec_type == CODEC_TYPE_AUDIO) {
+        //int sSize = track->cluster[0][0].len/track->cluster[0][0].entries;
+        int sSize = track->cluster[0][0].len;
+        put_be32(pb, sSize); // sample size 
+        put_be32(pb, track->samples/track->enc->channels); // sample count 
+    }
+    else {
+        put_be32(pb, 0); // sample size 
+        put_be32(pb, track->entry); // sample count 
+        for (i=0; i<track->entry; i++) {
             int cl = i / MOV_INDEX_CLUSTER_SIZE;
             int id = i % MOV_INDEX_CLUSTER_SIZE;
             put_be32(pb, track->cluster[cl][id].len);
         }
     }
-    return size;
+    return updateSize (pb, pos);
 }
 
 static int mov_write_stsc_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int size;
-    if(track->cluster[0][0].entries != 0)
-        size = 16+track->entry*4*3;
-    else
-        size = 0x1c;
-    put_be32(pb, size); // size 
+    int index = 0, oldval = -1, i, entryPos, curpos;
+
+    int pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
     put_tag(pb, "stsc");
     put_be32(pb, 0); // version & flags 
-    if(track->cluster[0][0].entries != 0) {
-        int i;
-        put_be32(pb, track->entry); // entry count 
-        for (i=0; i<track->entry; i++) {
-            int cl = i / MOV_INDEX_CLUSTER_SIZE;
-            int id = i % MOV_INDEX_CLUSTER_SIZE;
+    entryPos = url_ftell(pb);
+    put_be32(pb, track->entry); // entry count 
+    for (i=0; i<track->entry; i++) {
+        int cl = i / MOV_INDEX_CLUSTER_SIZE;
+        int id = i % MOV_INDEX_CLUSTER_SIZE;
+        if(oldval != track->cluster[cl][id].chunkSize) 
+        {
             put_be32(pb, i+1); // first chunk 
-            put_be32(pb, track->cluster[cl][id].entries);
+            put_be32(pb, track->cluster[cl][id].chunkSize);
             put_be32(pb, 0x1); // sample description index 
+            oldval = track->cluster[cl][id].chunkSize;
+            index++;
         }
     }
-    else {
-        put_be32(pb, 1); // entry count 
-        put_be32(pb, 0x1); // first chunk 
-        put_be32(pb, 0x1); // samples per chunk 
-        put_be32(pb, 0x1); // sample description index 
-    }
+    curpos = url_ftell(pb);
+    url_fseek(pb, entryPos, SEEK_SET);
+    put_be32(pb, index); // rewrite size 
+    url_fseek(pb, curpos, SEEK_SET);
 
-    return size;
+    return updateSize (pb, pos);
 }
 
-//FIXME keyframes?
-static int mov_write_stss_tag(ByteIOContext *pb) //TRA OK
+static int mov_write_stss_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    put_be32(pb, 0x14); /* size */
+    long curpos;
+    int i, index = 0, entryPos;
+    int pos = url_ftell(pb);
+    put_be32(pb, 0); // size 
     put_tag(pb, "stss");
-    put_be32(pb, 0); /* version & flags */
-    put_be32(pb, 1); /* entry count */
-    put_be32(pb, 0x1); /* sample number */
-    return 0x14;
+    put_be32(pb, 0); // version & flags 
+    entryPos = url_ftell(pb);
+    put_be32(pb, track->entry); // entry count 
+    for (i=0; i<track->entry; i++) {
+        int cl = i / MOV_INDEX_CLUSTER_SIZE;
+        int id = i % MOV_INDEX_CLUSTER_SIZE;
+        if(track->cluster[cl][id].key_frame == 1) {
+            put_be32(pb, i+1);
+            index++;
+        }
+    }
+    curpos = url_ftell(pb);
+    url_fseek(pb, entryPos, SEEK_SET);
+    put_be32(pb, index); // rewrite size 
+    url_fseek(pb, curpos, SEEK_SET);
+    return updateSize (pb, pos);
 }
 
 static int mov_write_damr_tag(ByteIOContext *pb)
@@ -168,30 +190,53 @@ static int mov_write_damr_tag(ByteIOContext *pb)
     put_tag(pb, "damr");
     put_tag(pb, "FFMP");
     put_byte(pb, 0);
-    put_be16(pb, 0x81ff); /* Mode set (all modes for AMR_NB) */
-    put_be16(pb, 1); /* Mode change period (no restriction) */
+
+    put_be16(pb, 0x80); /* Mode set (all modes for AMR_NB) */
+    put_be16(pb, 0xa); /* Mode change period (no restriction) */
+    //put_be16(pb, 0x81ff); /* Mode set (all modes for AMR_NB) */
+    //put_be16(pb, 1); /* Mode change period (no restriction) */
     return 0x11;
 }
 
-static int mov_write_samr_tag(ByteIOContext *pb, MOVTrack* track)
+static int mov_write_audio_tag(ByteIOContext *pb, MOVTrack* track)
 {
     int pos = url_ftell(pb);
     put_be32(pb, 0); /* size */
-    /* "samr" for AMR NB, "sawb" for AMR WB */
-    put_tag(pb, "samr");
+
+    if(track->enc->codec_id == CODEC_ID_PCM_MULAW)
+      put_tag(pb, "ulaw");
+    else if(track->enc->codec_id == CODEC_ID_PCM_ALAW)
+      put_tag(pb, "alaw");
+    else if(track->enc->codec_id == CODEC_ID_ADPCM_IMA_QT)
+      put_tag(pb, "ima4");
+    else if(track->enc->codec_id == CODEC_ID_MACE3)
+      put_tag(pb, "MAC3");
+    else if(track->enc->codec_id == CODEC_ID_MACE6)
+      put_tag(pb, "MAC6");
+    else if(track->enc->codec_id == CODEC_ID_AAC)
+      put_tag(pb, "mp4a");
+    else if(track->enc->codec_id == CODEC_ID_AMR_NB)
+      put_tag(pb, "samr");
+    else
+      put_tag(pb, "    ");
+
     put_be32(pb, 0); /* Reserved */
     put_be16(pb, 0); /* Reserved */
     put_be16(pb, 1); /* Data-reference index, XXX  == 1 */
     put_be32(pb, 0); /* Reserved */
     put_be32(pb, 0); /* Reserved */
 
-    put_be16(pb, 2); /* Reserved */
+    put_be16(pb, track->enc->channels); /* Number of channels */
+    /* TODO: Currently hard-coded to 16-bit, there doesn't seem
+	         to be a good way to get number of bits of audio */
     put_be16(pb, 0x10); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
+    put_be16(pb, 0); /* compression ID (= 0) */
+    put_be16(pb, 0); /* packet size (= 0) */
     put_be16(pb, track->timescale); /* Time scale */
     put_be16(pb, 0); /* Reserved */
 
-    mov_write_damr_tag(pb);
+    if(track->enc->codec_id == CODEC_ID_AMR_NB)
+        mov_write_damr_tag(pb);
     return updateSize (pb, pos);
 }
 
@@ -205,36 +250,17 @@ static int mov_write_d263_tag(ByteIOContext *pb)
     return 0xf;
 }
 
-static int mov_write_s263_tag(ByteIOContext *pb, MOVTrack* track)
+/* TODO: No idea about these values */
+static int mov_write_svq3_tag(ByteIOContext *pb)
 {
-    int pos = url_ftell(pb);
-    put_be32(pb, 0); /* size */
-    put_tag(pb, "s263");
-    put_be32(pb, 0); /* Reserved */
-    put_be16(pb, 0); /* Reserved */
-    put_be16(pb, 1); /* Data-reference index */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be16(pb, track->enc->width); /* Video width */
-    put_be16(pb, track->enc->height); /* Video height */
-    put_be32(pb, 0x00480000); /* Reserved */
-    put_be32(pb, 0x00480000); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be16(pb, 1); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be32(pb, 0); /* Reserved */
-    put_be16(pb, 0x18); /* Reserved */
-    put_be16(pb, 0xffff); /* Reserved */
-    mov_write_d263_tag(pb);
-    return updateSize (pb, pos);
+    put_be32(pb, 0x15);
+    put_tag(pb, "SMI ");
+    put_tag(pb, "SEQH");
+    put_be32(pb, 0x5);
+    put_be32(pb, 0xe2c0211d);
+    put_be32(pb, 0xc0000000);
+    put_byte(pb, 0);   
+    return 0x15;
 }
 
 static unsigned int esdsLength(unsigned int len)
@@ -285,37 +311,54 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     return track->vosLen+18+14+17;
 }
 
-static int mov_write_mp4v_tag(ByteIOContext *pb, MOVTrack* track) // Basic
+static int mov_write_video_tag(ByteIOContext *pb, MOVTrack* track)
 {
     int pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
+    if(track->enc->codec_id == CODEC_ID_SVQ1)
+      put_tag(pb, "SVQ1");
+    else if(track->enc->codec_id == CODEC_ID_SVQ3)
+      put_tag(pb, "SVQ3");
+    else if(track->enc->codec_id == CODEC_ID_MPEG4)
+      put_tag(pb, "mp4v");
+    else if(track->enc->codec_id == CODEC_ID_H263)
+      put_tag(pb, "s263");
+    else
+      put_tag(pb, "    "); /* Unknown tag */
 
-    put_be32(pb, 0);
-    put_tag(pb, "mp4v");
-    put_be32(pb, 0);  // Reserved
-    put_be16(pb, 0);  // Reserved
-    put_be16(pb, 1);  // Data-reference index
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be16(pb, track->enc->width);  // Width
-    put_be16(pb, track->enc->height);  // Height
-    put_be32(pb, 0x00480000);  // Reserved
-    put_be32(pb, 0x00480000);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be16(pb, 1);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be32(pb, 0);  // Reserved
-    put_be16(pb, 24); // Reserved
-    put_be16(pb, 0xFFFF); // Reserved
-    mov_write_esds_tag(pb, track);
-    return updateSize(pb, pos);
+    put_be32(pb, 0); /* Reserved */
+    put_be16(pb, 0); /* Reserved */
+    put_be16(pb, 1); /* Data-reference index */
+
+    put_be32(pb, 0); /* Reserved (= 02000c) */
+    put_be32(pb, 0); /* Reserved ("SVis")*/
+    put_be32(pb, 0); /* Reserved */
+    put_be32(pb, 0); /* Reserved (400)*/
+    put_be16(pb, track->enc->width); /* Video width */
+    put_be16(pb, track->enc->height); /* Video height */
+    put_be32(pb, 0x00480000); /* Reserved */
+    put_be32(pb, 0x00480000); /* Reserved */
+    put_be32(pb, 0); /* Reserved */
+    put_be32(pb, 0); /* Reserved */
+    put_be32(pb, 0); /* Reserved */
+    put_be32(pb, 0); /* Reserved */
+    put_be32(pb, 0); /* Reserved */
+    put_be32(pb, 0); /* Reserved */
+
+    put_be16(pb, 0); /* Reserved */
+    put_be32(pb, 0); /* Reserved */
+    put_be32(pb, 0); /* Reserved */
+    put_be32(pb, 0); /* Reserved */
+    put_be16(pb, 0x18); /* Reserved */
+    put_be16(pb, 0xffff); /* Reserved */
+    if(track->enc->codec_id == CODEC_ID_MPEG4)
+        mov_write_esds_tag(pb, track);
+    else if(track->enc->codec_id == CODEC_ID_H263)
+        mov_write_d263_tag(pb);
+    else if(track->enc->codec_id == CODEC_ID_SVQ3)
+        mov_write_svq3_tag(pb);    
+
+    return updateSize (pb, pos);
 }
 
 static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack* track)
@@ -325,19 +368,14 @@ static int mov_write_stsd_tag(ByteIOContext *pb, MOVTrack* track)
     put_tag(pb, "stsd");
     put_be32(pb, 0); /* version & flags */
     put_be32(pb, 1); /* entry count */
-    if (track->enc->codec_type == CODEC_TYPE_VIDEO) {
-        if (track->enc->codec_id == CODEC_ID_H263) 
-            mov_write_s263_tag(pb, track);
-        else if (track->enc->codec_id == CODEC_ID_MPEG4) 
-            mov_write_mp4v_tag(pb, track);
-    }
-    else if (track->enc->codec_type == CODEC_TYPE_AUDIO) {
-        if (track->enc->codec_id == CODEC_ID_AMR_NB) 
-            mov_write_samr_tag(pb, track);
-    }
+    if (track->enc->codec_type == CODEC_TYPE_VIDEO)
+        mov_write_video_tag(pb, track);
+    else if (track->enc->codec_type == CODEC_TYPE_AUDIO)
+        mov_write_audio_tag(pb, track);
     return updateSize(pb, pos);
 }
 
+/* TODO?: Currently all samples/frames seem to have same duration */
 static int mov_write_stts_tag(ByteIOContext *pb, MOVTrack* track)
 {
     put_be32(pb, 0x18); /* size */
@@ -345,7 +383,7 @@ static int mov_write_stts_tag(ByteIOContext *pb, MOVTrack* track)
     put_be32(pb, 0); /* version & flags */
     put_be32(pb, 1); /* entry count */
 
-    put_be32(pb, track->samples); /* sample count */
+    put_be32(pb, track->frameCount); /* sample count */
     put_be32(pb, track->sampleDelta); /* sample delta */
     return 0x18;
 }
@@ -371,8 +409,9 @@ static int mov_write_stbl_tag(ByteIOContext *pb, MOVTrack* track)
     put_tag(pb, "stbl");
     mov_write_stsd_tag(pb, track);
     mov_write_stts_tag(pb, track);
-    if (track->enc->codec_type == CODEC_TYPE_VIDEO)
-        mov_write_stss_tag(pb);
+    if (track->enc->codec_type == CODEC_TYPE_VIDEO &&
+        track->hasKeyframes)
+        mov_write_stss_tag(pb, track);
     mov_write_stsc_tag(pb, track);
     mov_write_stsz_tag(pb, track);
     mov_write_stco_tag(pb, track);
@@ -423,9 +462,9 @@ static int mov_write_minf_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
 {
-    int size = 0;
-    size = 45;
-    put_be32(pb, size); /* size */
+    char *str;
+    int pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
     put_tag(pb, "hdlr");
     put_be32(pb, 0); /* Version & flags */
     put_be32(pb, 0); /* reserved */
@@ -433,23 +472,16 @@ static int mov_write_hdlr_tag(ByteIOContext *pb, MOVTrack* track)
         put_tag(pb, "vide"); /* handler type */
     else
         put_tag(pb, "soun"); /* handler type */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
-    put_byte(pb, 0); /* reserved */
+    put_be32(pb ,0); /* reserved */
+    put_be32(pb ,0); /* reserved */
+    put_be32(pb ,0); /* reserved */
     if(track->enc->codec_type == CODEC_TYPE_VIDEO)
-        put_buffer(pb, "VideoHandler", 13);
+        str = "VideoHandler";
     else
-        put_buffer(pb, "SoundHandler", 13);
-    return size;
+        str = "SoundHandler";
+    put_byte(pb, strlen(str)); /* string counter */
+    put_buffer(pb, str, strlen(str));
+    return updateSize(pb, pos);
 }
 
 static int mov_write_mdhd_tag(ByteIOContext *pb, MOVTrack* track)
@@ -459,9 +491,15 @@ static int mov_write_mdhd_tag(ByteIOContext *pb, MOVTrack* track)
     put_be32(pb, 0); /* Version & flags */
     put_be32(pb, track->time); /* creation time */
     put_be32(pb, track->time); /* modification time */
-    put_be32(pb, track->timescale); /* time scale */
-
-    put_be32(pb, track->timescale*track->entry*track->frameDuration/globalTimescale); /* duration */
+    if(track->enc->codec_type == CODEC_TYPE_VIDEO) {
+        int64_t rate = track->enc->frame_rate;
+        put_be32(pb, rate); 
+        put_be32(pb, rate*(int64_t)track->trackDuration/(int64_t)globalTimescale); // duration 
+    }
+    else {
+      put_be32(pb, track->timescale); /* time scale (sample rate for audio) */ 
+      put_be32(pb, track->trackDuration); /* duration */
+    }
     put_be16(pb, 0); /* language, 0 = english */
     put_be16(pb, 0); /* reserved (quality) */
     return 32;
@@ -480,14 +518,16 @@ static int mov_write_mdia_tag(ByteIOContext *pb, MOVTrack* track)
 
 static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack* track)
 {
+    int64_t maxTrackLenTemp;
     put_be32(pb, 0x5c); /* size (always 0x5c) */
     put_tag(pb, "tkhd");
-    put_be32(pb, 1); /* version & flags (track enabled) */
+    put_be32(pb, 0xf); /* version & flags (track enabled) */
     put_be32(pb, track->time); /* creation time */
     put_be32(pb, track->time); /* modification time */
     put_be32(pb, track->trackID); /* track-id */
     put_be32(pb, 0); /* reserved */
-    put_be32(pb, track->entry*track->frameDuration); /* duration */
+    maxTrackLenTemp = ((int64_t)globalTimescale*(int64_t)track->trackDuration)/(int64_t)track->timescale;
+    put_be32(pb, (long)maxTrackLenTemp); /* duration */
 
     put_be32(pb, 0); /* reserved */
     put_be32(pb, 0); /* reserved */
@@ -512,8 +552,8 @@ static int mov_write_tkhd_tag(ByteIOContext *pb, MOVTrack* track)
 
     /* Track width and height, for visual only */
     if(track->enc->codec_type == CODEC_TYPE_VIDEO) {
-        put_be32(pb, 0x01400000);
-        put_be32(pb, 0x00f00000);
+        put_be32(pb, track->enc->width*0x10000);
+        put_be32(pb, track->enc->height*0x10000);
     }
     else {
         put_be32(pb, 0);
@@ -549,6 +589,7 @@ static int mov_write_iods_tag(ByteIOContext *pb, MOVContext *mov)
 static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
 {
     int maxTrackID = 1, maxTrackLen = 0, i;
+    int64_t maxTrackLenTemp;
 
     put_be32(pb, 0x6c); /* size (always 0x6c) */
     put_tag(pb, "mvhd");
@@ -558,8 +599,9 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
     put_be32(pb, mov->timescale); /* timescale */
     for (i=0; i<MAX_STREAMS; i++) {
         if(mov->tracks[i].entry > 0) {
-            if(maxTrackLen < mov->tracks[i].entry*mov->tracks[i].frameDuration)
-                maxTrackLen = mov->tracks[i].entry*mov->tracks[i].frameDuration;
+            maxTrackLenTemp = ((int64_t)globalTimescale*(int64_t)mov->tracks[i].trackDuration)/(int64_t)mov->tracks[i].timescale;
+            if(maxTrackLen < maxTrackLenTemp)
+                maxTrackLen = maxTrackLenTemp;
             if(maxTrackID < mov->tracks[i].trackID)
                 maxTrackID = mov->tracks[i].trackID;
         }
@@ -605,20 +647,38 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov)
         if(mov->tracks[i].entry > 0) {
             if(mov->tracks[i].enc->codec_type == CODEC_TYPE_VIDEO) {
                 mov->tracks[i].timescale = globalTimescale;
-                mov->tracks[i].sampleDelta = mov->tracks[i].frameDuration =
-                    globalTimescale*mov->tracks[i].enc->frame_rate_base/mov->tracks[i].enc->frame_rate;
+                mov->tracks[i].sampleDelta = mov->tracks[i].enc->frame_rate_base;
+                mov->tracks[i].frameCount = mov->tracks[i].samples;
+                mov->tracks[i].trackDuration = (int64_t)((int64_t)mov->tracks[i].entry*
+                    (int64_t)globalTimescale*(int64_t)mov->tracks[i].enc->frame_rate_base)/(int64_t)mov->tracks[i].enc->frame_rate;
             }
             else if(mov->tracks[i].enc->codec_type == CODEC_TYPE_AUDIO) {
+                long trackDuration = 0;
                 /* If AMR, track timescale = 8000, AMR_WB = 16000 */
                 if(mov->tracks[i].enc->codec_id == CODEC_ID_AMR_NB) {
-                    mov->tracks[i].frameDuration = 20;
-                    mov->tracks[i].sampleDelta = 160;
+                    int j;
+                    for (j=0; j<mov->tracks[i].samples; j++) {
+                        int cl = j / MOV_INDEX_CLUSTER_SIZE;
+                        int id = j % MOV_INDEX_CLUSTER_SIZE;
+                        trackDuration += mov->tracks[i].cluster[cl][id].entries;
+                    }
+                    mov->tracks[i].sampleDelta = 160;  // Bytes per chunk
+                    mov->tracks[i].frameCount = mov->tracks[i].samples;
+                    mov->tracks[i].trackDuration = 
+                        mov->tracks[i].samples * mov->tracks[i].sampleDelta; //trackDuration
                     mov->tracks[i].timescale = 8000;
                 }
                 else {
-                    mov->tracks[i].timescale = globalTimescale;
-                    mov->tracks[i].frameDuration =
-                    globalTimescale*mov->tracks[i].enc->frame_rate_base/mov->tracks[i].enc->frame_rate;
+                    int j;
+                    for (j=0; j<=mov->tracks[i].entry; j++) {
+                        int cl = j / MOV_INDEX_CLUSTER_SIZE;
+                        int id = j % MOV_INDEX_CLUSTER_SIZE;
+                        trackDuration += mov->tracks[i].cluster[cl][id].len;
+                    }
+                    mov->tracks[i].frameCount = trackDuration;
+                    mov->tracks[i].timescale = mov->tracks[i].enc->sample_rate;
+                    mov->tracks[i].sampleDelta = 1;
+                    mov->tracks[i].trackDuration = trackDuration;
                 }
             }
             mov->tracks[i].time = mov->time;
@@ -637,9 +697,9 @@ static int mov_write_moov_tag(ByteIOContext *pb, MOVContext *mov)
     return updateSize(pb, pos);
 }
 
-int mov_write_mdat_tag(ByteIOContext *pb, MOVTrack* track)
+int mov_write_mdat_tag(ByteIOContext *pb, MOVContext* mov)
 {
-    track->mdat_pos = url_ftell(pb); 
+    mov->mdat_pos = url_ftell(pb); 
     put_be32(pb, 0); /* size placeholder*/
     put_tag(pb, "mdat");
     return 0;
@@ -660,9 +720,11 @@ static int mov_write_header(AVFormatContext *s)
 {
     ByteIOContext *pb = &s->pb;
 
-    /* write ftyp */
-    mov_write_ftyp_tag(pb);
-    
+    if(s->oformat != NULL) {
+    if(!strcmp("3gp", s->oformat->name))
+        mov_write_ftyp_tag(pb);
+    }
+
     put_flush_packet(pb);
 
     return 0;
@@ -686,26 +748,36 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
     if (!url_is_streamed(&s->pb)) {
         MOVTrack* trk = &mov->tracks[stream_index];
         int sampleCount = 0;
+        unsigned int chunkSize = 0;
 
-        /* We must find out how many AMR blocks there are in one packet */
-        if(enc->codec_id == CODEC_ID_AMR_NB) {
-            static uint16_t packed_size[16] = {13, 14, 16, 18, 20, 21, 27, 32, 6, 0, 0, 0, 0, 0, 0, 0};             
-            int len = 0;
+        if(enc->codec_type == CODEC_TYPE_AUDIO) {
+            /* We must find out how many AMR blocks there are in one packet */
+            if(enc->codec_id == CODEC_ID_AMR_NB) {
+                static uint16_t packed_size[16] = {13, 14, 16, 18, 20, 21, 27, 32, 6, 0, 0, 0, 0, 0, 0, 0};             
+                int len = 0;
 
-            while(len < size && sampleCount < 100) {
-                len += packed_size[(buf[len] >> 3) & 0x0F];
-                sampleCount++;
+                while(len < size && sampleCount < 100) {
+                    len += packed_size[(buf[len] >> 3) & 0x0F];
+                    sampleCount++;
+                }
+                chunkSize = 1;
+            }
+            else {
+                sampleCount = size;
+                chunkSize = size/enc->channels;
             }
         }
-        
-        if(enc->codec_id == CODEC_ID_MPEG4 &&
-           trk->vosLen == 0)
-        {
-            assert(enc->extradata_size);
+        else if(enc->codec_type == CODEC_TYPE_VIDEO) {
+            if(enc->codec_id == CODEC_ID_MPEG4 &&
+               trk->vosLen == 0)
+            {
+                assert(enc->extradata_size);
 
-            trk->vosLen = enc->extradata_size;
-            trk->vosData = av_malloc(trk->vosLen);
-            memcpy(trk->vosData, enc->extradata, trk->vosLen);
+                trk->vosLen = enc->extradata_size;
+                trk->vosData = av_malloc(trk->vosLen);
+                memcpy(trk->vosData, enc->extradata, trk->vosLen);
+            }
+            chunkSize = 1;
         }
 
         cl = trk->entry / MOV_INDEX_CLUSTER_SIZE;
@@ -720,14 +792,24 @@ static int mov_write_packet(AVFormatContext *s, int stream_index,
                 return -1;
             trk->ents_allocated += MOV_INDEX_CLUSTER_SIZE;
         }
-        if(stream_index == 0 && trk->entry == 0) {
-            mov_write_mdat_tag(pb, trk);
+        if(mov->mdat_written == 0) {
+            mov_write_mdat_tag(pb, mov);
+            mov->mdat_written = 1;
             mov->time = Timestamp();
         }
         
         trk->cluster[cl][id].pos = url_ftell(pb) - mov->movi_list;
-        trk->cluster[cl][id].len = size;
+        trk->cluster[cl][id].chunkSize = chunkSize;
+        if(enc->channels > 1)
+          trk->cluster[cl][id].len = size/enc->channels;
+        else
+          trk->cluster[cl][id].len = size;
         trk->cluster[cl][id].entries = sampleCount;
+        if(enc->codec_type == CODEC_TYPE_VIDEO) {
+            trk->cluster[cl][id].key_frame = enc->coded_frame->key_frame;
+            if(enc->coded_frame->pict_type == FF_I_TYPE)
+            trk->hasKeyframes = 1;
+        }
         trk->enc = enc;
         trk->entry++;
         if(sampleCount == 0)
@@ -759,7 +841,7 @@ static int mov_write_trailer(AVFormatContext *s)
             j += mov->tracks[i].mdat_size;
         }
     }
-    url_fseek(pb, mov->tracks[0].mdat_pos, SEEK_SET);
+    url_fseek(pb, mov->mdat_pos, SEEK_SET);
     put_be32(pb, j+8);
     url_fseek(pb, file_size, SEEK_SET);
 
@@ -784,7 +866,7 @@ static AVOutputFormat mov_oformat = {
     NULL,
     "mov",
     sizeof(MOVContext),
-    CODEC_ID_MP2,
+    CODEC_ID_PCM_ALAW,
     CODEC_ID_MPEG4,
     mov_write_header,
     mov_write_packet,
