@@ -250,7 +250,7 @@ static int decode_slice(MpegEncContext *s){
        &&   (s->workaround_bugs&FF_BUG_AUTODETECT) 
        &&    s->gb.size*8 - get_bits_count(&s->gb) >=0
        &&    s->gb.size*8 - get_bits_count(&s->gb) < 48
-       &&   !s->resync_marker
+//       &&   !s->resync_marker
        &&   !s->data_partitioning){
         
         const int bits_count= get_bits_count(&s->gb);
