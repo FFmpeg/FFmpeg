@@ -319,6 +319,8 @@ static inline void fill_rectangle(void *vp, int w, int h, int stride, uint32_t v
         *(uint16_t*)(p + 1*stride)=
         *(uint16_t*)(p + 2*stride)=
         *(uint16_t*)(p + 3*stride)= size==4 ? val : val*0x0101;
+    }else if(w==4 && h==1){
+        *(uint32_t*)(p + 0*stride)= size==4 ? val : val*0x01010101;
     }else if(w==4 && h==2){
         *(uint32_t*)(p + 0*stride)=
         *(uint32_t*)(p + 1*stride)= size==4 ? val : val*0x01010101;
@@ -3197,7 +3199,7 @@ static int decode_mb(H264Context *h){
     const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int mb_type, partition_count, cbp;
 
-    memset(h->mb, 0, sizeof(int16_t)*24*16); //FIXME avoid if allready clear (move after skip handlong?
+    s->dsp.clear_blocks(h->mb); //FIXME avoid if allready clear (move after skip handlong?    
 
     tprintf("pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
 
