@@ -186,9 +186,9 @@ void rgb15to16(const uint8_t *src,uint8_t *dst,uint32_t src_size)
 /**
  * Pallete is assumed to contain bgr32
  */
-void palette8torgb32(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palette)
+void palette8torgb32(const uint8_t *src, uint8_t *dst, uint32_t num_pixels, const uint8_t *palette)
 {
-	int i;
+	uint32_t i;
 	for(i=0; i<num_pixels; i++)
 		((uint32_t *)dst)[i] = ((uint32_t *)palette)[ src[i] ];
 }
@@ -196,9 +196,9 @@ void palette8torgb32(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palett
 /**
  * Pallete is assumed to contain bgr32
  */
-void palette8torgb24(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palette)
+void palette8torgb24(const uint8_t *src, uint8_t *dst, uint32_t num_pixels, const uint8_t *palette)
 {
-	int i;
+	uint32_t i;
 /*
 	writes 1 byte o much and might cause alignment issues on some architectures?
 	for(i=0; i<num_pixels; i++)
@@ -214,9 +214,9 @@ void palette8torgb24(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palett
 	}
 }
 
-void rgb32to16(uint8_t *src, uint8_t *dst, int num_pixels)
+void rgb32to16(const uint8_t *src, uint8_t *dst, uint32_t num_pixels)
 {
-	int i;
+	uint32_t i;
 	for(i=0; i<num_pixels; i+=4)
 	{
 		const int b= src[i+0];
@@ -227,9 +227,9 @@ void rgb32to16(uint8_t *src, uint8_t *dst, int num_pixels)
 	}
 }
 
-void rgb32to15(uint8_t *src, uint8_t *dst, int num_pixels)
+void rgb32to15(const uint8_t *src, uint8_t *dst, uint32_t num_pixels)
 {
-	int i;
+	uint32_t i;
 	for(i=0; i<num_pixels; i+=4)
 	{
 		const int b= src[i+0];
@@ -244,9 +244,9 @@ void rgb32to15(uint8_t *src, uint8_t *dst, int num_pixels)
 /**
  * Palette is assumed to contain bgr16, see rgb32to16 to convert the palette
  */
-void palette8torgb16(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palette)
+void palette8torgb16(const uint8_t *src, uint8_t *dst, uint32_t num_pixels, const uint8_t *palette)
 {
-	int i;
+	uint32_t i;
 	for(i=0; i<num_pixels; i++)
 		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
 }
@@ -254,9 +254,9 @@ void palette8torgb16(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palett
 /**
  * Pallete is assumed to contain bgr15, see rgb32to15 to convert the palette
  */
-void palette8torgb15(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palette)
+void palette8torgb15(const uint8_t *src, uint8_t *dst, uint32_t num_pixels, const uint8_t *palette)
 {
-	int i;
+	uint32_t i;
 	for(i=0; i<num_pixels; i++)
 		((uint16_t *)dst)[i] = ((uint16_t *)palette)[ src[i] ];
 }
@@ -264,7 +264,7 @@ void palette8torgb15(uint8_t *src, uint8_t *dst, int num_pixels, uint8_t *palett
  *
  * num_pixels must be a multiple of 16 for the MMX version
  */
-void yv12toyuy2(uint8_t *ysrc, uint8_t *usrc, uint8_t *vsrc, uint8_t *dst, int num_pixels)
+void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst, uint32_t num_pixels)
 {
 #ifdef HAVE_MMX
 	asm volatile(
@@ -315,7 +315,7 @@ void yv12toyuy2(uint8_t *ysrc, uint8_t *usrc, uint8_t *vsrc, uint8_t *dst, int n
 #endif
 }
 
-void yuy2toyv12(uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst, int num_pixels)
+void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst, uint32_t num_pixels)
 {
 #ifdef HAVE_MMX
 	asm volatile(
