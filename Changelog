@@ -12,6 +12,7 @@ version <next>:
 - FLIC playback support
 - RealVideo 2.0 (RV20) decoder
 - Duck TrueMotion v1 (DUCK) video decoder
+- Sierra VMD demuxer and video decoder
 
 version 0.4.8:
 

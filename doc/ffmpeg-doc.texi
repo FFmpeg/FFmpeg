@@ -653,6 +653,8 @@ library:
 @tab Used in Quake II
 @item FLIC format      @tab    @tab X
 @tab .fli/.flc files
+@item Sierra VMD       @tab    @tab X
+@tab used in Sierra CD-ROM games
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
@@ -723,6 +725,7 @@ following image formats are supported:
 @item Planar RGB             @tab     @tab  X @tab fourcc: 8BPS
 @item FLIC video             @tab     @tab  X
 @item Duck TrueMotion v1     @tab     @tab  X @tab fourcc: DUCK
+@item VMD Video              @tab     @tab  X @tab used in Sierra VMD files
 @end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
