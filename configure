@@ -754,6 +754,7 @@ fi
 if test "$mmx" = "yes" ; then
   echo "TARGET_MMX=yes" >> config.mak
   echo "#define HAVE_MMX 1" >> $TMPH
+  echo "#define __CPU__ 586" >> $TMPH
 fi
 if test "$builtin_vector" = "yes" ; then
   echo "TARGET_BUILTIN_VECTOR=yes" >> config.mak
