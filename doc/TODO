@@ -1,7 +1,7 @@
 ffmpeg TODO list:
 ----------------
 
-Fabrice's TODO list: (in approximate decreasing priority order)
+Fabrice's TODO list: (unordered)
 -------------------
 - add av_log() in libavcodec and suppress all printf
 - commit new imgconvert API and new PIX_FMT_xxx alpha formats
