@@ -1360,6 +1360,7 @@ static int nut_read_seek(AVFormatContext *s, int stream_index, int64_t target_ts
     StreamContext *stream;
     int64_t pos_min, pos_max, pos, pos_limit;
     int64_t ts_min, ts_max, ts;
+    int64_t start_pos;
     int index, no_change,i;
     AVStream *st;
 
@@ -1446,7 +1447,6 @@ static int nut_read_seek(AVFormatContext *s, int stream_index, int64_t target_ts
                pos_min, pos_max,
                ts_min, ts_max);
 #endif
-        int64_t start_pos;
         assert(pos_limit <= pos_max);
 
         if(no_change==0){
