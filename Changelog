@@ -8,6 +8,7 @@ version <next>
 - Miro VideoXL (VIXL) video decoder
 - H.261 video encoder
 - QPEG video decoder
+- Nullsoft Video (NSV) file demuxer
 
 version 0.4.9-pre1:
 

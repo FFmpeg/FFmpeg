@@ -686,9 +686,10 @@ library:
 @item Sierra Online    @tab    @tab X
 @tab .sol files used in Sierra Online games
 @item Matroska         @tab    @tab X
-@end multitable
 @item Electronic Arts Multimedia    @tab    @tab X
 @tab used in various EA games; files have extensions like WVE and UV2
+@item Nullsoft Video (NSV) format @tab    @tab X
+@end multitable
 
 @code{X} means that the encoding (resp. decoding) is supported.
 
