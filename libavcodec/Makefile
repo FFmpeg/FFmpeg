@@ -107,7 +107,7 @@ endif
 
 ifeq ($(CONFIG_X264),yes)
 OBJS+= x264.o
-EXTRALIBS += -L$(X264_DIR) -lx264
+EXTRALIBS += -lx264
 endif
 
 ifeq ($(CONFIG_PP),yes)
