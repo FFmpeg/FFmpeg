@@ -7,7 +7,7 @@ SRCS=postprocess.c swscale.c rgb2rgb.c yuv2rgb.c
 OBJS=$(SRCS:.c=.o)
 CS_TEST_OBJS=cs_test.o rgb2rgb.o ../cpudetect.o ../mp_msg.o
 
-CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. -Wall $(EXTRA_INC)
+CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 # -I/usr/X11R6/include/
 
 .SUFFIXES: .c .o
