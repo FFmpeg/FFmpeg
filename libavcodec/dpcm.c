@@ -39,7 +39,6 @@
 typedef struct DPCMContext {
     int channels;
     short roq_square_array[256];
-    int last_delta[2];
 } DPCMContext;
 
 #define SATURATE_S16(x)  if (x < -32768) x = -32768; \
@@ -119,11 +118,9 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 {
     DPCMContext *s = avctx->priv_data;
     int in, out = 0;
-    int i;
     int predictor[2];
     int channel_number = 0;
     short *output_samples = data;
-    int sequence_number;
     int shift[2];
     unsigned char byte;
     short diff;
@@ -152,21 +149,16 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         break;
 
     case CODEC_ID_INTERPLAY_DPCM:
-        in = 0;
-        sequence_number = LE_16(&buf[in]);
-        in += 6;  /* skip over the stream mask and stream length */
-        if (sequence_number == 1) {
-            predictor[0] = LE_16(&buf[in]);
+        in = 6;  /* skip over the stream mask and stream length */
+        predictor[0] = LE_16(&buf[in]);
+        in += 2;
+        SE_16BIT(predictor[0])
+        output_samples[out++] = predictor[0];
+        if (s->channels == 2) {
+            predictor[1] = LE_16(&buf[in]);
             in += 2;
-            SE_16BIT(predictor[0])
-            if (s->channels == 2) {
-                predictor[1] = LE_16(&buf[in]);
-                SE_16BIT(predictor[1])
-                in += 2;
-            }
-        } else {
-            for (i = 0; i < s->channels; i++)
-                predictor[i] = s->last_delta[i];
+            SE_16BIT(predictor[1])
+            output_samples[out++] = predictor[1];
         }
 
         while (in < buf_size) {
@@ -177,10 +169,6 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             /* toggle channel */
             channel_number ^= s->channels - 1;
         }
-
-        /* save predictors for next round */
-        for (i = 0; i < s->channels; i++)
-            s->last_delta[i] = predictor[i];
 
         break;
 
