@@ -2399,6 +2399,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->frame_pred_frame_dct = 1;
     s->codec_id= s->avctx->codec_id= CODEC_ID_MPEG1VIDEO;
     avctx->sub_id = 1; /* indicates mpeg1 */
+    if(s->flags & CODEC_FLAG_LOW_DELAY) s->low_delay=1;
     return 0;
 }
 
@@ -2574,7 +2575,7 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
         if (start_code < 0){
             if(s2->pict_type != B_TYPE || avctx->hurry_up==0){
                 if (slice_end(avctx, picture)) {
-                    if(s2->last_picture_ptr) //FIXME merge with the stuff in mpeg_decode_slice
+                    if(s2->last_picture_ptr || s2->low_delay) //FIXME merge with the stuff in mpeg_decode_slice
                         *data_size = sizeof(AVPicture);
                 }
             }
