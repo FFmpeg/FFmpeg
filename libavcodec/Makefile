@@ -1,6 +1,6 @@
 #
 # libavcodec Makefile
-# (c) 2000, 2001, 2002 Fabrice Bellard
+# (c) 2000-2003 Fabrice Bellard
 #
 include ../config.mak
 
@@ -158,7 +158,12 @@ $(LIB): $(OBJS) $(AMRLIBS)
 	$(RANLIB) $@
 
 $(SLIB): $(OBJS)
+ifeq ($(CONFIG_WIN32),yes)
+	$(CC) $(SHFLAGS) -Wl,--output-def,$(@:.dll=.def) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
+	-lib /machine:i386 /def:$(@:.dll=.def)
+else
 	$(CC) $(SHFLAGS) -o $@ $(OBJS) $(EXTRALIBS) $(AMREXTRALIBS)
+endif
 
 dsputil.o: dsputil.c dsputil.h
 
