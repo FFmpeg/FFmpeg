@@ -643,14 +643,21 @@ retry:
 
     ff_er_frame_start(s);
     
+    //the second part of the wmv2 header contains the MB skip bits which are stored in current_picture->mb_type
+    //which isnt available before MPV_frame_start()
+    if (s->msmpeg4_version==5){
+        if(ff_wmv2_decode_secondary_picture_header(s) < 0)
+            return -1;
+    }
+
     /* decode each macroblock */
     s->mb_x=0; 
     s->mb_y=0;
     
     decode_slice(s);
-    while(s->mb_y<s->mb_height && s->gb.size_in_bits - get_bits_count(&s->gb)>16){
+    while(s->mb_y<s->mb_height){
         if(s->msmpeg4_version){
-            if(s->mb_x!=0 || (s->mb_y%s->slice_height)!=0)
+            if(s->mb_x!=0 || (s->mb_y%s->slice_height)!=0 || get_bits_count(&s->gb) > s->gb.size_in_bits)
                 break;
         }else{
             if(ff_h263_resync(s)<0)
@@ -733,7 +740,6 @@ retry:
         *pict= *(AVFrame*)&s->last_picture;
         ff_print_debug_info(s, s->last_picture_ptr);
     }
-    
 
     /* Return the Picture timestamp as the frame number */
     /* we substract 1 because it is added on utils.c    */

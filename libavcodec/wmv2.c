@@ -349,7 +349,7 @@ static int decode_ext_header(Wmv2Context *w){
 int ff_wmv2_decode_picture_header(MpegEncContext * s)
 {
     Wmv2Context * const w= (Wmv2Context*)s;
-    int code, i;
+    int code;
 
 #if 0
 {
@@ -370,6 +370,15 @@ return -1;
         printf("I7:%X/\n", code);
     }
     s->qscale = get_bits(&s->gb, 5);
+    if(s->qscale < 0)
+       return -1;
+       
+    return 0;
+}
+
+int ff_wmv2_decode_secondary_picture_header(MpegEncContext * s)
+{
+    Wmv2Context * const w= (Wmv2Context*)s;
 
     if (s->pict_type == I_TYPE) {
         if(w->j_type_bit) w->j_type= get_bits1(&s->gb);
