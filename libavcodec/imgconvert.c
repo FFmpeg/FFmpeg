@@ -119,7 +119,7 @@ static PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     /* paletted formats */
     [PIX_FMT_PAL8] = {
         .name = "pal8",
-        .nb_components = 1, .is_packed = 1, .is_paletted = 1,
+        .nb_components = 1, .is_packed = 1, .is_alpha = 1, .is_paletted = 1,
     },
 };
 
@@ -989,7 +989,6 @@ static void gray_to_mono(AVPicture *dst, AVPicture *src,
 
     d = dst->data[0];
     dst_wrap = dst->linesize[0] - ((width + 7) >> 3);
-    printf("%d %d\n", width, height);
 
     for(y=0;y<height;y++) {
         n = width;
@@ -1085,6 +1084,34 @@ static void rgb24_to_pal8(AVPicture *dst, AVPicture *src,
         pal[i++] = 0;
 }
         
+static void rgba32_to_rgb24(AVPicture *dst, AVPicture *src,
+                            int width, int height)
+{
+    const uint8_t *s;
+    uint8_t *d;
+    int src_wrap, dst_wrap, j, y;
+    unsigned int v;
+
+    s = src->data[0];
+    src_wrap = src->linesize[0] - width * 4;
+
+    d = dst->data[0];
+    dst_wrap = dst->linesize[0] - width * 3;
+
+    for(y=0;y<height;y++) {
+        for(j = 0;j < width; j++) {
+            v = *(uint32_t *)s;
+            s += 4;
+            d[0] = v >> 16;
+            d[1] = v >> 8;
+            d[2] = v;
+            d += 3;
+        }
+        s += src_wrap;
+        d += dst_wrap;
+    }
+}
+
 typedef struct ConvertEntry {
     void (*convert)(AVPicture *dst, AVPicture *src, int width, int height);
 } ConvertEntry;
@@ -1157,6 +1184,9 @@ static ConvertEntry convert_table[PIX_FMT_NB][PIX_FMT_NB] = {
         },
         [PIX_FMT_GRAY8] = { 
             .convert = rgba32_to_gray
+        },
+        [PIX_FMT_RGB24] = { 
+            .convert = rgba32_to_rgb24
         },
     },
     [PIX_FMT_BGR24] = {
