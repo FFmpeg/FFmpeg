@@ -207,24 +207,39 @@ static int ff_h261_resync(H261Context *h){
 }
 
 /**
- * decodes a skipped macroblock, called when when mba_diff > 1.
+ * decodes skipped macroblocks
  * @return 0
  */
-static int h261_decode_mb_skipped(H261Context *h,
-                                  DCTELEM block[6][64])
+static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2 )
 {
     MpegEncContext * const s = &h->s;
     int i;
-    const int xy = s->mb_x + s->mb_y * s->mb_stride;
+    
     s->mb_intra = 0;
-    for(i=0;i<6;i++)
-        s->block_last_index[i] = -1;
-    s->mv_dir = MV_DIR_FORWARD;
-    s->mv_type = MV_TYPE_16X16;
-    s->current_picture.mb_type[xy]= MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
-    s->mv[0][0][0] = 0;
-    s->mv[0][0][1] = 0;
-    s->mb_skiped = 1;
+
+    for(i=mba1; i<mba2; i++){
+        int j, xy;
+
+        s->mb_x= ((h->gob_number-1) % 2) * 11 + i % 11;
+        s->mb_y= ((h->gob_number-1) / 2) * 3 + i / 11;
+        xy = s->mb_x + s->mb_y * s->mb_stride;
+        ff_init_block_index(s);
+        ff_update_block_index(s);
+        s->dsp.clear_blocks(s->block[0]);
+
+        for(j=0;j<6;j++)
+            s->block_last_index[j] = -1;
+
+        s->mv_dir = MV_DIR_FORWARD;
+        s->mv_type = MV_TYPE_16X16;
+        s->current_picture.mb_type[xy]= MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
+        s->mv[0][0][0] = 0;
+        s->mv[0][0][1] = 0;
+        s->mb_skiped = 1;
+
+        MPV_decode_mb(s, s->block);
+    }
+
     return 0;
 }
 
@@ -270,6 +285,7 @@ static int h261_decode_mb(H261Context *h,
 
     ff_init_block_index(s);
     ff_update_block_index(s);
+    s->dsp.clear_blocks(s->block[0]);
 
     // Read mtype
     old_mtype = h->mtype;
@@ -281,7 +297,7 @@ static int h261_decode_mb(H261Context *h,
 
     // Read mquant
     if ( IS_QUANT ( h->mtype ) ){
-        s->qscale = get_bits(&s->gb, 5);
+        ff_set_qscale(s, get_bits(&s->gb, 5));
     }
 
     s->mb_intra = IS_INTRA4x4(h->mtype);
@@ -432,7 +448,7 @@ static int h261_decode_block(H261Context * h, DCTELEM * block,
         block[j] = level;
         i++;
     }
-    s->block_last_index[n] = i;
+    s->block_last_index[n] = i-1;
     return 0;
 }
 
@@ -508,14 +524,26 @@ int h261_decode_picture_header(H261Context *h){
 
 static int h261_decode_gob(H261Context *h){
     MpegEncContext * const s = &h->s;
-    int i;
     
     ff_set_qscale(s, s->qscale);
+
+    /* check for empty gob */
+    int v= show_bits(&s->gb, 15);
+
+    if(get_bits_count(&s->gb) + 15 > s->gb.size_in_bits){
+        v>>= get_bits_count(&s->gb) + 15 - s->gb.size_in_bits;
+    }
+
+    if(v==0){
+        h261_decode_mb_skipped(h, 0, 33);
+        return 0;
+    }
+
+    /* decode mb's */
     while(h->current_mba <= MAX_MBA)
     {
         int ret;
         /* DCT & quantize */
-        s->dsp.clear_blocks(s->block[0]);
         ret= h261_decode_mb(h, s->block);
         if(ret<0){
             const int xy= s->mb_x + s->mb_y*s->mb_stride;
@@ -525,16 +553,8 @@ static int h261_decode_gob(H261Context *h){
                     ff_h261_loop_filter(h);
                 }
                 h->loop_filter = 0;
-                for(i=1; i<h->mba_diff; i++){
-                    s->mb_x= ((h->gob_number-1) % 2) * 11 + ((h->current_mba-1-i) % 11);
-                    s->mb_y= ((h->gob_number-1) / 2) * 3 + ((h->current_mba-1-i) / 11);
-                    ff_init_block_index(s);
-                    ff_update_block_index(s);
-                    s->dsp.clear_blocks(s->block[0]);
-                    ret= h261_decode_mb_skipped(h, s->block);
-                    MPV_decode_mb(s, s->block);
-                }
-                
+                h261_decode_mb_skipped(h, h->current_mba-h->mba_diff, h->current_mba-1);
+                h261_decode_mb_skipped(h, h->current_mba, 33);                
                 return 0;
             }else if(ret==SLICE_NOEND){
                 av_log(s->avctx, AV_LOG_ERROR, "Slice mismatch at MB: %d\n", xy);
@@ -549,15 +569,7 @@ static int h261_decode_gob(H261Context *h){
         }
 
         h->loop_filter = 0;
-        for(i=1; i<h->mba_diff; i++){
-            s->mb_x= ((h->gob_number-1) % 2) * 11 + ((h->current_mba-1-i) % 11);
-            s->mb_y= ((h->gob_number-1) / 2) * 3 + ((h->current_mba-1-i) / 11);
-            ff_init_block_index(s);
-            ff_update_block_index(s);
-            s->dsp.clear_blocks(s->block[0]);
-            ret= h261_decode_mb_skipped(h, s->block);
-            MPV_decode_mb(s, s->block);
-        }
+        h261_decode_mb_skipped(h, h->current_mba-h->mba_diff, h->current_mba-1);
     }
     
     return -1;
