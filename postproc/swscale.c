@@ -1284,8 +1284,12 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if(dstFormat==IMGFMT_BGR24)
 			printf("SwScaler: using %s YV12->BGR24 Converter\n",
 				cpuCaps.hasMMX2 ? "MMX2" : (cpuCaps.hasMMX ? "MMX" : "C"));
-		else
-			printf("SwScaler: using %s YV12->BGR Converter\n", cpuCaps.hasMMX ? "MMX" : "C");//FIXME print format
+		else if(dstFormat==IMGFMT_BGR32)
+			printf("SwScaler: using %s YV12->BGR32 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+		else if(dstFormat==IMGFMT_BGR16)
+			printf("SwScaler: using %s YV12->BGR16 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
+		else if(dstFormat==IMGFMT_BGR15)
+			printf("SwScaler: using %s YV12->BGR15 Converter\n", cpuCaps.hasMMX ? "MMX" : "C");
 
 		printf("SwScaler: %dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
 	}
