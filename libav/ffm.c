@@ -141,7 +141,7 @@ static int ffm_write_header(AVFormatContext *s)
     /* list of streams */
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        fst = av_mallocz(sizeof(FFMStream) + ffm->packet_size);
+        fst = av_mallocz(sizeof(FFMStream));
         if (!fst)
             goto fail;
         st->priv_data = fst;
@@ -383,7 +383,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (!st)
             goto fail;
         s->streams[i] = st;
-        fst = av_mallocz(sizeof(FFMStream) + ffm->packet_size);
+        fst = av_mallocz(sizeof(FFMStream));
         if (!fst)
             goto fail;
         st->priv_data = fst;
