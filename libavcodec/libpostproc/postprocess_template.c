@@ -2617,9 +2617,8 @@ Switch between
  * accurate deblock filter
  */
 static always_inline void RENAME(do_a_deblock)(uint8_t *src, int step, int stride, PPContext *c){
-	int y;
-	const int QP= c->QP;
 	int64_t dc_mask, eq_mask;
+	int64_t sums[10*8*2];
 	src+= step*3; // src points to begin of the 8x8 Block
 //START_TIMER
 asm volatile(
@@ -2725,9 +2724,188 @@ asm volatile(
 		: "%eax"
 		);
 
-	src+= step; // src points to begin of the 8x8 Block
+	if(dc_mask & eq_mask){
+		int offset= -8*step;
+		int64_t *temp_sums= sums;
+
+		asm volatile(
+		"movq %2, %%mm0					\n\t"  // QP,..., QP
+		"pxor %%mm4, %%mm4				\n\t"
+
+		"movq (%0), %%mm6				\n\t"
+		"movq (%0, %1), %%mm5				\n\t"
+		"movq %%mm5, %%mm1				\n\t"
+		"movq %%mm6, %%mm2				\n\t"
+		"psubusb %%mm6, %%mm5				\n\t"
+		"psubusb %%mm1, %%mm2				\n\t"
+		"por %%mm5, %%mm2				\n\t" // ABS Diff of lines
+		"psubusb %%mm2, %%mm0				\n\t" // diff >= QP -> 0
+		"pcmpeqb %%mm4, %%mm0				\n\t" // diff >= QP -> FF
+
+		"pxor %%mm6, %%mm1				\n\t"
+		"pand %%mm0, %%mm1				\n\t"
+		"pxor %%mm1, %%mm6				\n\t"
+		// 0:QP  6:First
+
+		"movq (%0, %1, 8), %%mm5			\n\t"
+		"addl %1, %0					\n\t" // %0 points to line 1 not 0
+		"movq (%0, %1, 8), %%mm7			\n\t"
+		"movq %%mm5, %%mm1				\n\t"
+		"movq %%mm7, %%mm2				\n\t"
+		"psubusb %%mm7, %%mm5				\n\t"
+		"psubusb %%mm1, %%mm2				\n\t"
+		"por %%mm5, %%mm2				\n\t" // ABS Diff of lines
+		"movq %2, %%mm0					\n\t"  // QP,..., QP
+		"psubusb %%mm2, %%mm0				\n\t" // diff >= QP -> 0
+		"pcmpeqb %%mm4, %%mm0				\n\t" // diff >= QP -> FF
+
+		"pxor %%mm7, %%mm1				\n\t"
+		"pand %%mm0, %%mm1				\n\t"
+		"pxor %%mm1, %%mm7				\n\t"
+		
+		"movq %%mm6, %%mm5				\n\t"
+		"punpckhbw %%mm4, %%mm6				\n\t"
+		"punpcklbw %%mm4, %%mm5				\n\t"
+		// 4:0 5/6:First 7:Last
+
+		"movq %%mm5, %%mm0				\n\t"
+		"movq %%mm6, %%mm1				\n\t"
+		"psllw $2, %%mm0				\n\t"
+		"psllw $2, %%mm1				\n\t"
+		"paddw "MANGLE(w04)", %%mm0			\n\t"
+		"paddw "MANGLE(w04)", %%mm1			\n\t"
+
+#define NEXT\
+		"movq (%0), %%mm2				\n\t"\
+		"movq (%0), %%mm3				\n\t"\
+		"addl %1, %0					\n\t"\
+		"punpcklbw %%mm4, %%mm2				\n\t"\
+		"punpckhbw %%mm4, %%mm3				\n\t"\
+		"paddw %%mm2, %%mm0				\n\t"\
+		"paddw %%mm3, %%mm1				\n\t"
+
+#define PREV\
+		"movq (%0), %%mm2				\n\t"\
+		"movq (%0), %%mm3				\n\t"\
+		"addl %1, %0					\n\t"\
+		"punpcklbw %%mm4, %%mm2				\n\t"\
+		"punpckhbw %%mm4, %%mm3				\n\t"\
+		"psubw %%mm2, %%mm0				\n\t"\
+		"psubw %%mm3, %%mm1				\n\t"
+
+				
+		NEXT //0
+		NEXT //1
+		NEXT //2
+		"movq %%mm0, (%3)				\n\t"
+		"movq %%mm1, 8(%3)				\n\t"
+
+		NEXT //3
+		"psubw %%mm5, %%mm0				\n\t"
+		"psubw %%mm6, %%mm1				\n\t"
+		"movq %%mm0, 16(%3)				\n\t"
+		"movq %%mm1, 24(%3)				\n\t"
+
+		NEXT //4
+		"psubw %%mm5, %%mm0				\n\t"
+		"psubw %%mm6, %%mm1				\n\t"
+		"movq %%mm0, 32(%3)				\n\t"
+		"movq %%mm1, 40(%3)				\n\t"
+
+		NEXT //5
+		"psubw %%mm5, %%mm0				\n\t"
+		"psubw %%mm6, %%mm1				\n\t"
+		"movq %%mm0, 48(%3)				\n\t"
+		"movq %%mm1, 56(%3)				\n\t"
+
+		NEXT //6
+		"psubw %%mm5, %%mm0				\n\t"
+		"psubw %%mm6, %%mm1				\n\t"
+		"movq %%mm0, 64(%3)				\n\t"
+		"movq %%mm1, 72(%3)				\n\t"
+
+		"movq %%mm7, %%mm6				\n\t"
+		"punpckhbw %%mm4, %%mm7				\n\t"
+		"punpcklbw %%mm4, %%mm6				\n\t"
+		
+		NEXT //7
+		"movl %4, %0					\n\t"
+		"addl %1, %0					\n\t"
+		PREV //0
+		"movq %%mm0, 80(%3)				\n\t"
+		"movq %%mm1, 88(%3)				\n\t"
+
+		PREV //1
+		"paddw %%mm6, %%mm0				\n\t"
+		"paddw %%mm7, %%mm1				\n\t"
+		"movq %%mm0, 96(%3)				\n\t"
+		"movq %%mm1, 104(%3)				\n\t"
+		
+		PREV //2
+		"paddw %%mm6, %%mm0				\n\t"
+		"paddw %%mm7, %%mm1				\n\t"
+		"movq %%mm0, 112(%3)				\n\t"
+		"movq %%mm1, 120(%3)				\n\t"
+
+		PREV //3
+		"paddw %%mm6, %%mm0				\n\t"
+		"paddw %%mm7, %%mm1				\n\t"
+		"movq %%mm0, 128(%3)				\n\t"
+		"movq %%mm1, 136(%3)				\n\t"
+
+		PREV //4
+		"paddw %%mm6, %%mm0				\n\t"
+		"paddw %%mm7, %%mm1				\n\t"
+		"movq %%mm0, 144(%3)				\n\t"
+		"movq %%mm1, 152(%3)				\n\t"
+
+		"movl %4, %0					\n\t" //FIXME
+
+		: "+&r"(src)
+		: "r" (step), "m" (c->pQPb), "r"(sums), "g"(src)
+		);
+
+		src+= step; // src points to begin of the 8x8 Block
+
+		asm volatile(
+		"movq %4, %%mm6					\n\t"
+		"pcmpeqb %%mm5, %%mm5				\n\t"
+		"pxor %%mm6, %%mm5				\n\t"
+		"pxor %%mm7, %%mm7				\n\t"
+
+		"1:						\n\t"
+		"movq (%1), %%mm0				\n\t"
+		"movq 8(%1), %%mm1				\n\t"
+		"paddw 32(%1), %%mm0				\n\t"
+		"paddw 40(%1), %%mm1				\n\t"
+		"movq (%0, %3), %%mm2				\n\t"
+		"movq %%mm2, %%mm3				\n\t"
+		"movq %%mm2, %%mm4				\n\t"
+		"punpcklbw %%mm7, %%mm2				\n\t"
+		"punpckhbw %%mm7, %%mm3				\n\t"
+		"paddw %%mm2, %%mm0				\n\t"
+		"paddw %%mm3, %%mm1				\n\t"
+		"paddw %%mm2, %%mm0				\n\t"
+		"paddw %%mm3, %%mm1				\n\t"
+		"psrlw $4, %%mm0				\n\t"
+		"psrlw $4, %%mm1				\n\t"
+		"packuswb %%mm1, %%mm0				\n\t"
+		"pand %%mm6, %%mm0				\n\t"
+		"pand %%mm5, %%mm4				\n\t"
+		"por %%mm4, %%mm0				\n\t"
+		"movq %%mm0, (%0, %3)				\n\t"
+		"addl $16, %1					\n\t"
+		"addl %2, %0					\n\t"
+		" js 1b						\n\t"
+
+		: "+r"(offset), "+r"(temp_sums)
+		: "r" (step), "r"(src - offset), "m"(dc_mask & eq_mask)
+		);
+	}else
+		src+= step; // src points to begin of the 8x8 Block
 
 	if(eq_mask != -1LL){
+		uint8_t *temp_src= src;
 		asm volatile(
 		"pxor %%mm7, %%mm7				\n\t"
 		"leal -40(%%esp), %%ecx				\n\t" // make space for 4 8-byte vars
@@ -2955,43 +3133,10 @@ asm volatile(
 		"psubb %%mm1, %%mm0				\n\t"
 		"movq %%mm0, (%0, %1)				\n\t"
 
-		: "+r" (src)
+		: "+r" (temp_src)
 		: "r" (step), "m" (c->pQPb), "m"(eq_mask)
 		: "%eax", "%ecx"
 		);
-		src-= 3*step; //reverse src change from asm
-	}
-
-	for(y=0; y<8; y++){
-		if((eq_mask>>(y*8))&1){
-			if((dc_mask>>(y*8))&1){
-				const int first= ABS(src[-1*step] - src[0]) < QP ? src[-1*step] : src[0];
-				const int last= ABS(src[8*step] - src[7*step]) < QP ? src[8*step] : src[7*step];
-				
-				int sums[10];
-				sums[0] = 4*first + src[0*step] + src[1*step] + src[2*step] + 4;
-				sums[1] = sums[0] - first       + src[3*step];
-				sums[2] = sums[1] - first       + src[4*step];
-				sums[3] = sums[2] - first       + src[5*step];
-				sums[4] = sums[3] - first       + src[6*step];
-				sums[5] = sums[4] - src[0*step] + src[7*step];
-				sums[6] = sums[5] - src[1*step] + last;
-				sums[7] = sums[6] - src[2*step] + last;
-				sums[8] = sums[7] - src[3*step] + last;
-				sums[9] = sums[8] - src[4*step] + last;
-
-				src[0*step]= (sums[0] + sums[2] + 2*src[0*step])>>4;
-				src[1*step]= (sums[1] + sums[3] + 2*src[1*step])>>4;
-				src[2*step]= (sums[2] + sums[4] + 2*src[2*step])>>4;
-				src[3*step]= (sums[3] + sums[5] + 2*src[3*step])>>4;
-				src[4*step]= (sums[4] + sums[6] + 2*src[4*step])>>4;
-				src[5*step]= (sums[5] + sums[7] + 2*src[5*step])>>4;
-				src[6*step]= (sums[6] + sums[8] + 2*src[6*step])>>4;
-				src[7*step]= (sums[7] + sums[9] + 2*src[7*step])>>4;
-			}
-		}
-
-		src += stride;
 	}
 /*if(step==16){
     STOP_TIMER("step16")
