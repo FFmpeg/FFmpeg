@@ -38,7 +38,7 @@
 #undef TWOMATRIXES
 
 typedef struct MJpegContext {
-    uint8_t huff_size_dc_luminance[12];
+    uint8_t huff_size_dc_luminance[12]; //FIXME use array [3] instead of lumi / chrom, for easier addressing 
     uint16_t huff_code_dc_luminance[12];
     uint8_t huff_size_dc_chrominance[12];
     uint16_t huff_code_dc_chrominance[12];
@@ -369,7 +369,7 @@ static void jpeg_put_comments(MpegEncContext *s)
     int size;
     uint8_t *ptr;
 
-    if (s->aspect_ratio_info)
+    if (s->aspect_ratio_info /* && !lossless */)
     {
     /* JFIF header */
     put_marker(p, APP0);
@@ -418,6 +418,8 @@ static void jpeg_put_comments(MpegEncContext *s)
 
 void mjpeg_picture_header(MpegEncContext *s)
 {
+    const int lossless= s->avctx->codec_id == CODEC_ID_LJPEG;
+
     put_marker(&s->pb, SOI);
 
     if (!s->mjpeg_data_only_frames)
@@ -426,10 +428,13 @@ void mjpeg_picture_header(MpegEncContext *s)
 
     if (s->mjpeg_write_tables) jpeg_table_header(s);
 
-    put_marker(&s->pb, SOF0);
+    put_marker(&s->pb, lossless ? SOF3 : SOF0);
 
     put_bits(&s->pb, 16, 17);
-    put_bits(&s->pb, 8, 8); /* 8 bits/component */
+    if(lossless && s->avctx->pix_fmt == PIX_FMT_RGBA32)
+        put_bits(&s->pb, 8, 9); /* 9 bits/component RCT */
+    else
+        put_bits(&s->pb, 8, 8); /* 8 bits/component */
     put_bits(&s->pb, 16, s->height);
     put_bits(&s->pb, 16, s->width);
     put_bits(&s->pb, 8, 3); /* 3 components */
@@ -445,7 +450,7 @@ void mjpeg_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 4, s->mjpeg_hsample[1]); /* H factor */
     put_bits(&s->pb, 4, s->mjpeg_vsample[1]); /* V factor */
 #ifdef TWOMATRIXES
-    put_bits(&s->pb, 8, 1); /* select matrix */
+    put_bits(&s->pb, 8, lossless ? 0 : 1); /* select matrix */
 #else
     put_bits(&s->pb, 8, 0); /* select matrix */
 #endif
@@ -455,7 +460,7 @@ void mjpeg_picture_header(MpegEncContext *s)
     put_bits(&s->pb, 4, s->mjpeg_hsample[2]); /* H factor */
     put_bits(&s->pb, 4, s->mjpeg_vsample[2]); /* V factor */
 #ifdef TWOMATRIXES
-    put_bits(&s->pb, 8, 1); /* select matrix */
+    put_bits(&s->pb, 8, lossless ? 0 : 1); /* select matrix */
 #else
     put_bits(&s->pb, 8, 0); /* select matrix */
 #endif
@@ -474,15 +479,15 @@ void mjpeg_picture_header(MpegEncContext *s)
     /* Cb component */
     put_bits(&s->pb, 8, 2); /* index */
     put_bits(&s->pb, 4, 1); /* DC huffman table index */
-    put_bits(&s->pb, 4, 1); /* AC huffman table index */
+    put_bits(&s->pb, 4, lossless ? 0 : 1); /* AC huffman table index */
     
     /* Cr component */
     put_bits(&s->pb, 8, 3); /* index */
     put_bits(&s->pb, 4, 1); /* DC huffman table index */
-    put_bits(&s->pb, 4, 1); /* AC huffman table index */
+    put_bits(&s->pb, 4, lossless ? 0 : 1); /* AC huffman table index */
 
-    put_bits(&s->pb, 8, 0); /* Ss (not used) */
-    put_bits(&s->pb, 8, 63); /* Se (not used) */
+    put_bits(&s->pb, 8, lossless ? s->avctx->prediction_method+1 : 0); /* Ss (not used) */
+    put_bits(&s->pb, 8, lossless ? 0 : 63); /* Se (not used) */
     put_bits(&s->pb, 8, 0); /* Ah/Al (not used) */
 }
 
@@ -645,6 +650,146 @@ void mjpeg_encode_mb(MpegEncContext *s,
     }
 }
 
+static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
+    MpegEncContext * const s = avctx->priv_data;
+    MJpegContext * const m = s->mjpeg_ctx;
+    AVFrame *pict = data;
+    const int width= s->width;
+    const int height= s->height;
+    AVFrame * const p= (AVFrame*)&s->current_picture;
+    const int predictor= avctx->prediction_method+1;
+
+    init_put_bits(&s->pb, buf, buf_size, NULL, NULL);
+
+    *p = *pict;
+    p->pict_type= FF_I_TYPE;
+    p->key_frame= 1;
+    
+    mjpeg_picture_header(s);
+
+    s->header_bits= get_bit_count(&s->pb);
+
+    if(avctx->pix_fmt == PIX_FMT_RGBA32){
+        int x, y, i;
+        const int linesize= p->linesize[0];
+        uint16_t buffer[2048][4];
+        int left[3], top[3], topleft[3];
+
+        for(i=0; i<3; i++){
+            buffer[0][i]= 1 << (9 - 1);
+        }
+
+        for(y = 0; y < height; y++) {
+            const int modified_predictor= y ? 1 : predictor;
+            uint8_t *ptr = p->data[0] + (linesize * y);
+
+            for(i=0; i<3; i++){
+                top[i]= left[i]= topleft[i]= buffer[0][i];
+            }
+            for(x = 0; x < width; x++) {
+                buffer[x][1] = ptr[4*x+0] - ptr[4*x+1] + 0x100;
+                buffer[x][2] = ptr[4*x+2] - ptr[4*x+1] + 0x100;
+                buffer[x][0] = (ptr[4*x+0] + 2*ptr[4*x+1] + ptr[4*x+2])>>2;
+
+                for(i=0;i<3;i++) {
+                    int pred, diff;
+
+                    PREDICT(pred, topleft[i], top[i], left[i], modified_predictor);
+                        
+                    topleft[i]= top[i];
+                    top[i]= buffer[x+1][i];
+                    
+                    left[i]= buffer[x][i];
+
+                    diff= ((left[i] - pred + 0x100)&0x1FF) - 0x100;
+                    
+                    if(i==0)
+                        mjpeg_encode_dc(s, diff, m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
+                    else
+                        mjpeg_encode_dc(s, diff, m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+                }
+            }
+        }
+    }else{
+        int mb_x, mb_y, i;
+        const int mb_width  = (width  + s->mjpeg_hsample[0] - 1) / s->mjpeg_hsample[0];
+        const int mb_height = (height + s->mjpeg_vsample[0] - 1) / s->mjpeg_vsample[0];
+        
+        for(mb_y = 0; mb_y < mb_height; mb_y++) {
+            for(mb_x = 0; mb_x < mb_width; mb_x++) {
+                if(mb_x==0 || mb_y==0){
+                    for(i=0;i<3;i++) {
+                        uint8_t *ptr;
+                        int x, y, h, v, linesize;
+                        h = s->mjpeg_hsample[i];
+                        v = s->mjpeg_vsample[i];
+                        linesize= p->linesize[i];
+
+                        for(y=0; y<v; y++){
+                            for(x=0; x<h; x++){
+                                int pred;
+
+                                ptr = p->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+                                if(y==0 && mb_y==0){
+                                    if(x==0 && mb_x==0){
+                                        pred= 128;
+                                    }else{
+                                        pred= ptr[-1];
+                                    }
+                                }else{
+                                    if(x==0 && mb_x==0){
+                                        pred= ptr[-linesize];
+                                    }else{
+                                        PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
+                                    }
+                                }
+                                
+                                if(i==0)
+                                    mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
+                                else
+                                    mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+                            }
+                        }
+                    }
+                }else{
+                    for(i=0;i<3;i++) {
+                        uint8_t *ptr;
+                        int x, y, h, v, linesize;
+                        h = s->mjpeg_hsample[i];
+                        v = s->mjpeg_vsample[i];
+                        linesize= p->linesize[i];
+                             
+                        for(y=0; y<v; y++){
+                            for(x=0; x<h; x++){
+                                int pred;
+
+                                ptr = p->data[i] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
+//printf("%d %d %d %d %8X\n", mb_x, mb_y, x, y, ptr); 
+                                PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
+
+                                if(i==0)
+                                    mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_luminance, m->huff_code_dc_luminance); //FIXME ugly
+                                else
+                                    mjpeg_encode_dc(s, (int8_t)(*ptr - pred), m->huff_size_dc_chrominance, m->huff_code_dc_chrominance);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    emms_c();
+    
+    mjpeg_picture_trailer(s);
+    s->picture_number++;
+
+    flush_put_bits(&s->pb);
+    return pbBufPtr(&s->pb) - s->pb.buf;
+//    return (get_bit_count(&f->pb)+7)/8;
+}
+
+
 /******************************************/
 /* decoding */
 
@@ -668,7 +813,8 @@ typedef struct MJpegDecodeContext {
     int bottom_field;   /* true if bottom field */
     int lossless;
     int rgb;
-    int rct;    /* pegasus reversible colorspace transform */  
+    int rct;            /* standard rct */  
+    int pegasus_rct;    /* pegasus reversible colorspace transform */  
     int bits;           /* bits per component */
 
     int width, height;
@@ -834,7 +980,9 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
     s->bits= get_bits(&s->gb, 8);
-    if(s->rct) s->bits=9;
+    
+    if(s->pegasus_rct) s->bits=9;  
+    if(s->bits==9 && !s->pegasus_rct) s->rct=1;    //FIXME ugly
 
     if (s->bits != 8 && !s->lossless){
         printf("only 8 bits/component accepted\n");
@@ -991,9 +1139,6 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
     return 0;
 }
 
-static void decode_lossless(MJpegDecodeContext *s, int point_transform, int predictor){
-}
-
 static int mjpeg_decode_sos(MJpegDecodeContext *s)
 {
     int len, nb_components, i, j, n, h, v, ret, point_transform, predictor;
@@ -1117,10 +1262,10 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
                     for(i=0;i<3;i++) {
                         int pred;
 
-                        PREDICT(pred, topleft[i], top[i], left[i], modified_predictor);
-                            
                         topleft[i]= top[i];
                         top[i]= buffer[mb_x][i];
+
+                        PREDICT(pred, topleft[i], top[i], left[i], modified_predictor);
                         
                         left[i]= 
                         buffer[mb_x][i]= mask & (pred + (mjpeg_decode_dc(s, dc_index[i]) << point_transform));
@@ -1133,6 +1278,12 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
                 }
 
                 if(s->rct){
+                    for(mb_x = 0; mb_x < mb_width; mb_x++) {
+                        ptr[4*mb_x+1] = buffer[mb_x][0] - ((buffer[mb_x][1] + buffer[mb_x][2] - 0x200)>>2);
+                        ptr[4*mb_x+0] = buffer[mb_x][1] + ptr[4*mb_x+1];
+                        ptr[4*mb_x+2] = buffer[mb_x][2] + ptr[4*mb_x+1];
+                    }
+                }else if(s->pegasus_rct){
                     for(mb_x = 0; mb_x < mb_width; mb_x++) {
                         ptr[4*mb_x+1] = buffer[mb_x][0] - ((buffer[mb_x][1] + buffer[mb_x][2])>>2);
                         ptr[4*mb_x+0] = buffer[mb_x][1] + ptr[4*mb_x+1];
@@ -1399,11 +1550,11 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         switch( get_bits(&s->gb, 8)){
         case 1:
             s->rgb= 1;
-            s->rct=0;
+            s->pegasus_rct=0;
             break;
         case 2:
             s->rgb= 1;
-            s->rct=1;
+            s->pegasus_rct=1;
             break;
         default:
             printf("unknown colorspace\n");
@@ -1660,11 +1811,7 @@ eoi_parser:
                         switch((s->h_count[0] << 4) | s->v_count[0]) {
                         case 0x11:
                             if(s->rgb){
-#ifdef WORDS_BIGENDIAN
-                                avctx->pix_fmt = PIX_FMT_ABGR32;
-#else                                            
                                 avctx->pix_fmt = PIX_FMT_RGBA32;
-#endif
                             }else
                                 avctx->pix_fmt = PIX_FMT_YUV444P;
                             break;
@@ -1889,4 +2036,14 @@ AVCodec mjpegb_decoder = {
     mjpegb_decode_frame,
     0,
     NULL
+};
+
+AVCodec ljpeg_encoder = { //FIXME avoid MPV_* lossless jpeg shouldnt need them
+    "ljpeg",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_LJPEG,
+    sizeof(MpegEncContext),
+    MPV_encode_init,
+    encode_picture_lossless,
+    MPV_encode_end,
 };

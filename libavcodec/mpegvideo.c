@@ -528,8 +528,7 @@ int MPV_encode_init(AVCodecContext *avctx)
 {
     MpegEncContext *s = avctx->priv_data;
     int i;
-
-    avctx->pix_fmt = PIX_FMT_YUV420P;
+    int chroma_h_shift, chroma_v_shift;
 
     s->bit_rate = avctx->bit_rate;
     s->bit_rate_tolerance = avctx->bit_rate_tolerance;
@@ -620,22 +619,25 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->intra_quant_bias= avctx->intra_quant_bias;
     if(avctx->inter_quant_bias != FF_DEFAULT_QUANT_BIAS)
         s->inter_quant_bias= avctx->inter_quant_bias;
-    
+        
+    avcodec_get_chroma_sub_sample(avctx->pix_fmt, &chroma_h_shift, &chroma_v_shift);
+
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;
         s->low_delay= 0; //s->max_b_frames ? 0 : 1;
         avctx->delay= s->low_delay ? 0 : (s->max_b_frames + 1);
         break;
+    case CODEC_ID_LJPEG:
     case CODEC_ID_MJPEG:
         s->out_format = FMT_MJPEG;
         s->intra_only = 1; /* force intra only for jpeg */
         s->mjpeg_write_tables = 1; /* write all tables */
 	s->mjpeg_data_only_frames = 0; /* write all the needed headers */
-        s->mjpeg_vsample[0] = 2; /* set up default sampling factors */
-        s->mjpeg_vsample[1] = 1; /* the only currently supported values */
+        s->mjpeg_vsample[0] = 1<<chroma_v_shift;
+        s->mjpeg_vsample[1] = 1;
         s->mjpeg_vsample[2] = 1; 
-        s->mjpeg_hsample[0] = 2;
+        s->mjpeg_hsample[0] = 1<<chroma_h_shift;
         s->mjpeg_hsample[1] = 1; 
         s->mjpeg_hsample[2] = 1; 
         if (mjpeg_init(s) < 0)

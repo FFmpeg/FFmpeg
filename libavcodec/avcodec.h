@@ -31,6 +31,7 @@ enum CodecID {
     CODEC_ID_AC3,
     CODEC_ID_MJPEG,
     CODEC_ID_MJPEGB,
+    CODEC_ID_LJPEG,
     CODEC_ID_MPEG4,
     CODEC_ID_RAWVIDEO,
     CODEC_ID_MSMPEG4V1,
@@ -98,7 +99,7 @@ enum PixelFormat {
     PIX_FMT_BGR24,     ///< Packed pixel, 3 bytes per pixel, BGRBGR...
     PIX_FMT_YUV422P,   ///< Planar YUV 4:2:2 (1 Cr & Cb sample per 2x1 Y samples)
     PIX_FMT_YUV444P,   ///< Planar YUV 4:4:4 (1 Cr & Cb sample per 1x1 Y samples)
-    PIX_FMT_RGBA32,    ///< always stored in cpu endianness 
+    PIX_FMT_RGBA32,    ///< Packed pixel, 4 bytes per pixel, BGRABGRA...
     PIX_FMT_YUV410P,   ///< Planar YUV 4:1:0 (1 Cr & Cb sample per 4x4 Y samples)
     PIX_FMT_YUV411P,   ///< Planar YUV 4:1:1 (1 Cr & Cb sample per 4x1 Y samples)
     PIX_FMT_RGB565,    ///< always stored in cpu endianness 
@@ -1226,6 +1227,7 @@ extern AVCodec h263_encoder;
 extern AVCodec h263p_encoder;
 extern AVCodec rv10_encoder;
 extern AVCodec mjpeg_encoder;
+extern AVCodec ljpeg_encoder;
 extern AVCodec mpeg4_encoder;
 extern AVCodec msmpeg4v1_encoder;
 extern AVCodec msmpeg4v2_encoder;
