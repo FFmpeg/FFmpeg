@@ -2237,6 +2237,10 @@ static int http_prepare_data(HTTPContext *c)
                         if (c->is_packetized) {
                             c->packet_stream_index = pkt.stream_index;
                             ctx = c->rtp_ctx[c->packet_stream_index];
+                            if(!ctx) {
+                              av_free_packet(&pkt);
+                              return -1;
+                            }
                             codec = &ctx->streams[0]->codec;
                             /* only one stream per RTP connection */
                             pkt.stream_index = 0;
