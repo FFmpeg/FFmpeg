@@ -411,10 +411,34 @@ static int msmpeg4_pred_dc(MpegEncContext * s, int n,
        necessitate to modify mpegvideo.c. The problem comes from the
        fact they decided to store the quantized DC (which would lead
        to problems if Q could vary !) */
+#ifdef ARCH_X86
+    /* using 16bit divisions as they are large enough and 2x as fast */
+    asm volatile(
+        "movl %3, %%eax		\n\t"
+	"shrl $1, %%eax		\n\t"
+	"addl %%eax, %2		\n\t"
+	"addl %%eax, %1		\n\t"
+	"addl %0, %%eax		\n\t"
+	"xorl %%edx, %%edx	\n\t"
+        "divw %w3		\n\t"
+	"movzwl %%ax, %0	\n\t"
+	"movl %1, %%eax		\n\t"
+	"xorl %%edx, %%edx	\n\t"
+        "divw %w3		\n\t"
+	"movzwl %%ax, %1	\n\t"
+	"movl %2, %%eax		\n\t"
+	"xorl %%edx, %%edx	\n\t"
+        "divw %w3		\n\t"
+	"movzwl %%ax, %2	\n\t"
+        : "+r" (a), "+r" (b), "+r" (c)
+	: "r" (scale)
+	: "%eax", "%edx"
+    );
+#else    
     a = (a + (scale >> 1)) / scale;
     b = (b + (scale >> 1)) / scale;
     c = (c + (scale >> 1)) / scale;
-
+#endif
     /* XXX: WARNING: they did not choose the same test as MPEG4. This
        is very important ! */
     if (abs(a - b) <= abs(b - c)) {
