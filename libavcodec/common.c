@@ -166,7 +166,7 @@ unsigned int get_bits_long(GetBitContext *s, int n)
         buf_ptr += 4;
         /* handle common case: we can read everything */
         if (buf_ptr <= s->buf_end) {
-#if ARCH_X86
+#ifdef ARCH_X86
 	    bit_buf = bswap_32(*((unsigned long*)(&buf_ptr[-4])));
 #else
 	    bit_buf = (buf_ptr[-4] << 24) |
