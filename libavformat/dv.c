@@ -816,20 +816,30 @@ int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
     return size;
 }
                            
-int64_t dv_frame_offset(DVDemuxContext *c, int64_t timestamp)
+static int64_t dv_frame_offset(AVFormatContext *s, DVDemuxContext *c,
+                              int64_t timestamp, int flags)
 {
-    const DVprofile* sys;
-    int64_t frame_number, offset;
-    
     // FIXME: sys may be wrong if last dv_read_packet() failed (buffer is junk)
-    sys = dv_codec_profile(&c->vst->codec);
+    const DVprofile* sys = dv_codec_profile(&c->vst->codec);
+    int64_t frame_number, offset;
+    int64_t size = url_filesize(url_fileno(&s->pb));
+    int64_t max_offset = ((size-1) / sys->frame_size) * sys->frame_size;
 
-    // timestamp was scaled by time_base/AV_BASE_RATE by av_seek_frame()
-    frame_number = (timestamp * sys->frame_rate) / 
-                   ((int64_t) 30000 * sys->frame_rate_base);
+    if (flags & AVSEEK_FLAG_BACKWARD) {
+       frame_number = av_rescale_rnd(timestamp, sys->frame_rate,
+                                     (int64_t) 30000 * sys->frame_rate_base,
+                                     AV_ROUND_DOWN);
+    }
+    else {
+       frame_number = av_rescale_rnd(timestamp, sys->frame_rate,
+                                     (int64_t) 30000 * sys->frame_rate_base,
+                                     AV_ROUND_UP);
+    }  
 
-    // offset must be a multiple of frame_size else dv_read_packet() will fail
-    offset = (int64_t) sys->frame_size * frame_number;
+    offset = sys->frame_size * frame_number;
+    
+    if (offset > max_offset) offset = max_offset;
+    else if (offset < 0) offset = 0;
 
     return offset;
 }
@@ -883,11 +893,36 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
     return size;
 }
 
-static int dv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp)
+static int dv_read_seek(AVFormatContext *s, int stream_index, 
+                       int64_t timestamp, int flags)
 {
-    RawDVContext *c = s->priv_data;
+    RawDVContext *r = s->priv_data;
+    DVDemuxContext *c = r->dv_demux;
+    int i;
+    int64_t offset= dv_frame_offset(s, c, timestamp, flags);
+    const DVprofile* sys = dv_codec_profile(&c->vst->codec);
 
-    return url_fseek(&s->pb, dv_frame_offset(c->dv_demux, timestamp), SEEK_SET);
+    c->frames= offset / sys->frame_size;
+    c->abytes= av_rescale(c->frames,
+                          c->ast[0]->codec.bit_rate * (int64_t)sys->frame_rate_base,
+                          8*sys->frame_rate);
+    for (i=0; i<c->ach; i++) {
+       if (c->ast[i] && c->audio_pkt[i].size) {
+           av_free_packet(&c->audio_pkt[i]);
+           c->audio_pkt[i].size = 0;
+       }
+    }
+
+    for(i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[stream_index];
+        AVStream *st2 = s->streams[i];
+
+        st->cur_dts = av_rescale(timestamp, 
+                                 st2->time_base.den * (int64_t)st ->time_base.num,
+                                 st ->time_base.den * (int64_t)st2->time_base.num);
+    }
+
+    return url_fseek(&s->pb, offset, SEEK_SET);
 }
 
 static int dv_read_close(AVFormatContext *s)
