@@ -62,7 +62,8 @@ typedef struct AVFormat {
        origin is defined by the stream */
     int (*read_seek)(struct AVFormatContext *, INT64 pts);
     int flags;
-#define AVFMT_NOFILE 0x0001 /* no file should be opened */
+#define AVFMT_NOFILE        0x0001 /* no file should be opened */
+#define AVFMT_NEEDNUMBER    0x0002 /* needs '%d' in filename */ 
     struct AVFormat *next;
 } AVFormat;
 
@@ -194,3 +195,5 @@ void ffm_set_write_index(AVFormatContext *s, offset_t pos, offset_t file_size);
 
 int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
 
+int get_frame_filename(char *buf, int buf_size,
+                       const char *path, int number);
