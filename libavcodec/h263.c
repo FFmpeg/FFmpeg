@@ -1196,7 +1196,7 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     mpeg4_stuffing(&s->pb);
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, 0x1B2);	/* user_data */
-    sprintf(buf, "FFmpeg v%s / libavcodec build: %s", FFMPEG_VERSION, LIBAVCODEC_BUILD_STR);
+    sprintf(buf, "FFmpeg%sb%s", FFMPEG_VERSION, LIBAVCODEC_BUILD_STR);
     put_string(&s->pb, buf);
 
     s->no_rounding = 0;
