@@ -25,11 +25,6 @@
 
 #include "mpeg12data.h"
 
-/* Stuff below is useful only for mplayer project */
-#ifdef HAVE_CONFIG_H
-#include "../config.h"
-#endif
-
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
 #endif
