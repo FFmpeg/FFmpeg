@@ -2498,6 +2498,48 @@ static inline int hpel_motion(MpegEncContext *s,
     return emu;
 }
 
+static inline int hpel_motion_lowres(MpegEncContext *s, 
+                                  uint8_t *dest, uint8_t *src,
+                                  int field_based, int field_select,
+                                  int src_x, int src_y,
+                                  int width, int height, int stride,
+                                  int h_edge_pos, int v_edge_pos,
+                                  int w, int h, h264_chroma_mc_func *pix_op,
+                                  int motion_x, int motion_y)
+{
+    const int lowres= s->avctx->lowres;
+    const int s_mask= (2<<lowres)-1;
+    int emu=0;
+    int sx, sy;
+
+    if(s->quarter_sample){
+        motion_x/=2;
+        motion_y/=2;
+    }
+
+    sx= motion_x & s_mask;
+    sy= motion_y & s_mask;
+    src_x += motion_x >> (lowres+1);
+    src_y += motion_y >> (lowres+1);
+                
+    src += src_y * stride + src_x;
+
+    if(   (unsigned)src_x > h_edge_pos                 - (!!sx) - w
+       || (unsigned)src_y >(v_edge_pos >> field_based) - (!!sy) - h){
+        ff_emulated_edge_mc(s->edge_emu_buffer, src, s->linesize, w+1, (h+1)<<field_based,
+                            src_x, src_y<<field_based, h_edge_pos, v_edge_pos);
+        src= s->edge_emu_buffer;
+        emu=1;
+    }
+
+    sx <<= 2 - lowres;
+    sy <<= 2 - lowres;
+    if(field_select)
+        src += s->linesize;
+    pix_op[lowres](dest, src, stride, h, sx, sy);
+    return emu;
+}
+
 /* apply one mpeg motion vector to the three components */
 static always_inline void mpeg_motion(MpegEncContext *s,
                                uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
@@ -2937,6 +2979,56 @@ static inline void chroma_4mv_motion(MpegEncContext *s,
     pix_op[dxy](dest_cr, ptr, s->uvlinesize, 8);
 }
 
+static inline void chroma_4mv_motion_lowres(MpegEncContext *s,
+                                     uint8_t *dest_cb, uint8_t *dest_cr,
+                                     uint8_t **ref_picture,
+                                     h264_chroma_mc_func *pix_op,
+                                     int mx, int my){
+    const int lowres= s->avctx->lowres;
+    const int block_s= 8>>lowres;
+    const int s_mask= (2<<lowres)-1;
+    const int h_edge_pos = s->h_edge_pos >> (lowres+1);
+    const int v_edge_pos = s->v_edge_pos >> (lowres+1);
+    int emu=0, src_x, src_y, offset, sx, sy;
+    uint8_t *ptr;
+    
+    if(s->quarter_sample){
+        mx/=2;
+        my/=2;
+    }
+
+    /* In case of 8X8, we construct a single chroma motion vector
+       with a special rounding */
+    mx= ff_h263_round_chroma(mx);
+    my= ff_h263_round_chroma(my);
+    
+    sx= mx & s_mask;
+    sy= my & s_mask;
+    src_x = s->mb_x*block_s + (mx >> (lowres+1));
+    src_y = s->mb_y*block_s + (my >> (lowres+1));
+    
+    offset = src_y * s->uvlinesize + src_x;
+    ptr = ref_picture[1] + offset;
+    if(s->flags&CODEC_FLAG_EMU_EDGE){
+        if(   (unsigned)src_x > h_edge_pos - (!!sx) - block_s
+           || (unsigned)src_y > v_edge_pos - (!!sy) - block_s){
+            ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9, src_x, src_y, h_edge_pos, v_edge_pos);
+            ptr= s->edge_emu_buffer;
+            emu=1;
+        }
+    }     
+    sx <<= 2 - lowres;
+    sy <<= 2 - lowres;
+    pix_op[lowres](dest_cb, ptr, s->uvlinesize, block_s, sx, sy);
+          
+    ptr = ref_picture[2] + offset;
+    if(emu){
+        ff_emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9, src_x, src_y, h_edge_pos, v_edge_pos);
+        ptr= s->edge_emu_buffer;
+    }
+    pix_op[lowres](dest_cr, ptr, s->uvlinesize, block_s, sx, sy);
+}
+
 /**
  * motion compesation of a single macroblock
  * @param s context
@@ -3204,9 +3296,8 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
                               int dir, uint8_t **ref_picture, 
                               h264_chroma_mc_func *pix_op)
 {
-    int dxy, mx, my, src_x, src_y, motion_x, motion_y;
+    int mx, my;
     int mb_x, mb_y, i;
-    uint8_t *ptr, *dest;
     const int lowres= s->avctx->lowres;
     const int block_s= 8>>lowres;    
 
@@ -3220,16 +3311,16 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
                     ref_picture, pix_op,
                     s->mv[dir][0][0], s->mv[dir][0][1], 2*block_s);
         break;
-/*    case MV_TYPE_8X8:
+    case MV_TYPE_8X8:
         mx = 0;
         my = 0;
             for(i=0;i<4;i++) {
-                hpel_motion(s, dest_y + ((i & 1) * 8) + (i >> 1) * 8 * s->linesize,
+                hpel_motion_lowres(s, dest_y + ((i & 1) + (i >> 1) * s->linesize)*block_s,
                             ref_picture[0], 0, 0,
-                            mb_x * 16 + (i & 1) * 8, mb_y * 16 + (i >>1) * 8,
+                            (2*mb_x + (i & 1))*block_s, (2*mb_y + (i >>1))*block_s,
                             s->width, s->height, s->linesize,
-                            s->h_edge_pos, s->v_edge_pos,
-                            8, 8, pix_op[1],
+                            s->h_edge_pos >> lowres, s->v_edge_pos >> lowres,
+                            block_s, block_s, pix_op,
                             s->mv[dir][i][0], s->mv[dir][i][1]);
 
                 mx += s->mv[dir][i][0];
@@ -3237,8 +3328,8 @@ static inline void MPV_motion_lowres(MpegEncContext *s,
             }
 
         if(!(s->flags&CODEC_FLAG_GRAY))
-            chroma_4mv_motion(s, dest_cb, dest_cr, ref_picture, pix_op[1], mx, my);
-        break;*/
+            chroma_4mv_motion_lowres(s, dest_cb, dest_cr, ref_picture, pix_op, mx, my);
+        break;
     case MV_TYPE_FIELD:
         if (s->picture_structure == PICT_FRAME) {
             /* top field */       
