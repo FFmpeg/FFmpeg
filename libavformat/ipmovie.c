@@ -34,7 +34,7 @@
 
 /* debugging support: #define DEBUG_IPMOVIE as non-zero to see extremely
  * verbose information about the demux process */
-#define DEBUG_IPMOVIE 1
+#define DEBUG_IPMOVIE 0
 
 #if DEBUG_IPMOVIE
 #define debug_ipmovie printf

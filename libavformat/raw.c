@@ -601,73 +601,6 @@ AVOutputFormat null_oformat = {
 };
 #endif //CONFIG_ENCODERS
 
-static int adx_probe(AVProbeData *p)
-{
-    if (is_adx(p->buf,p->buf_size))
-        return 100;
-    return 0;
-}
-
-static int adx_read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
-{
-    AVStream *st;
-
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR_NOMEM;
-
-    st->codec.codec_type = CODEC_TYPE_AUDIO;
-    st->codec.codec_id = CODEC_ID_ADPCM_ADX;
-    /* the parameters will be extracted from the compressed bitstream */
-    return 0;
-}
-
-AVInputFormat adx_iformat = {
-    "adx",
-    "SEGA CRI ADX audio",
-    0,
-    adx_probe,
-    adx_read_header,
-    raw_read_packet,
-    raw_read_close,
-    .extensions = "adx", //FIXME remove after writing mpeg4_probe
-};
-
-#ifdef CONFIG_ENCODERS
-
-static int adx_write_trailer(AVFormatContext *s)
-{
-    ByteIOContext *pb = &s->pb;
-    offset_t file_size;
-
-    if (!url_is_streamed(&s->pb)) {
-        /* update file size */
-        file_size = url_ftell(pb);
-        url_fseek(pb, 0, SEEK_SET);
-        put_be32(pb, (uint32_t)(file_size - 8));
-        url_fseek(pb, file_size, SEEK_SET);
-
-        put_flush_packet(pb);
-    }
-    return 0;
-}
-
-AVOutputFormat adx_oformat = {
-    "adx",
-    "SEGA CRI ADX audio",
-    NULL, 
-    "adx",
-    0,
-    CODEC_ID_ADPCM_ADX,
-    0,
-    raw_write_header,
-    raw_write_packet,
-    raw_write_trailer,
-};
-#endif //CONFIG_ENCODERS
-
-
 #ifndef CONFIG_ENCODERS
 #define av_register_output_format(format)
 #endif
@@ -718,9 +651,5 @@ int raw_init(void)
     av_register_output_format(&rawvideo_oformat);
 
     av_register_output_format(&null_oformat);
-
-    av_register_input_format(&adx_iformat);
-    av_register_output_format(&adx_oformat);
-
     return 0;
 }

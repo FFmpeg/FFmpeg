@@ -1351,14 +1351,6 @@ static int mpegps_read_packet(AVFormatContext *s,
            pkt->stream_index, pkt->pts / 90000.0, pkt->dts / 90000.0);
 #endif
 
-#if 1
-//#ifdef CONFIG_ADX
-    if (codec_id == CODEC_ID_MP2 && is_adx(pkt->data,pkt->size)) {
-printf ("found ADX...\n");
-        st->codec.codec_id = CODEC_ID_ADPCM_ADX;
-    }
-#endif //CONFIG_ADX
-
     return 0;
 }
 
