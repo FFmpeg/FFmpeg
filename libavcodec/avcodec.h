@@ -1,6 +1,13 @@
 #ifndef AVCODEC_H
 #define AVCODEC_H
 
+/**
+ * @file avcodec.h
+ * @brief 
+ *     external api header
+ */
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -523,6 +530,7 @@ typedef struct AVCodecContext {
 #define FF_BUG_AC_VLC           32
 #define FF_BUG_QPEL_CHROMA      64
 #define FF_BUG_STD_QPEL         128
+#define FF_BUG_QPEL_CHROMA2     256
 //#define FF_BUG_FAKE_SCALABILITY 16 //autodetection should work 100%
         
     /**

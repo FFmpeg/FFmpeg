@@ -20,12 +20,6 @@
 #include "dsputil.h"
 #include "mpegvideo.h"
 
-#if 1
-#define PRINT_QP(a, b) {}
-#else
-#define PRINT_QP(a, b) printf(a, b)
-#endif
-
 //#define DEBUG
 //#define PRINT_FRAME_TIME
 #ifdef PRINT_FRAME_TIME
@@ -205,7 +199,6 @@ static int decode_slice(MpegEncContext *s){
 //printf("%d %d %06X\n", ret, get_bits_count(&s->gb), show_bits(&s->gb, 24));
             ret= s->decode_mb(s, s->block);
             
-            PRINT_QP("%2d", s->qscale);
             MPV_decode_mb(s, s->block);
 
             if(ret<0){
@@ -238,8 +231,6 @@ static int decode_slice(MpegEncContext *s){
         }
         
         ff_draw_horiz_band(s);
-        
-        PRINT_QP("%s", "\n");
         
         s->mb_x= 0;
     }
@@ -493,6 +484,10 @@ retry:
 
         if(s->divx_version){
             s->workaround_bugs|= FF_BUG_QPEL_CHROMA;
+        }
+
+        if(s->divx_version>502){
+            s->workaround_bugs|= FF_BUG_QPEL_CHROMA2;
         }
 
         if(s->avctx->fourcc == ff_get_fourcc("XVID") && s->xvid_build==0)

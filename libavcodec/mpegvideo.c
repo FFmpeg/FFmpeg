@@ -1680,6 +1680,10 @@ static inline void qpel_motion(MpegEncContext *s,
     if(field_based){
         mx= motion_x/2;
         my= motion_y>>1;
+    }else if(s->workaround_bugs&FF_BUG_QPEL_CHROMA2){
+        static const int rtab[8]= {0,0,1,1,0,0,0,1};
+        mx= (motion_x>>1) + rtab[motion_x&7];
+        my= (motion_y>>1) + rtab[motion_y&7];
     }else if(s->workaround_bugs&FF_BUG_QPEL_CHROMA){
         mx= (motion_x>>1)|(motion_x&1);
         my= (motion_y>>1)|(motion_y&1);
@@ -1689,6 +1693,7 @@ static inline void qpel_motion(MpegEncContext *s,
     }
     mx= (mx>>1)|(mx&1);
     my= (my>>1)|(my&1);
+
     dxy= (mx&1) | ((my&1)<<1);
     mx>>=1;
     my>>=1;
