@@ -1,0 +1,23 @@
+
+1) ffserver don't not work. 
+
+ffmpeg development are now concentrated on the codec and format
+handling. New developments broke ffserver, so don't expect it to work
+correctly. It is planned to fix it ASAP.
+
+2) I cannot read this AVI file.
+
+Even if ffmpeg can read the AVI format, it does not support all its
+codecs. Please consult the supported codec list on the ffmpeg project
+page.
+
+3) I cannot read this Real Audio/Video file.
+
+See (2). ffmpeg only supports Real Video 1.0 and AC3 as Real
+codecs. It mean that you cannot view files encoding with real tools
+after version 5.0.
+
+4) I get audio/video synchro problems when grabbing.
+
+Currently, the grabbing stuff does not handle synchronisation
+correctly. You are free to correct it. It is planned to fix it ASAP.
