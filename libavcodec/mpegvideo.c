@@ -3025,12 +3025,6 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
             }else
                 s->block_last_index[i]= -1;
         }
-        if(s->flags & CODEC_FLAG_CBP_RD){
-            for(i=0;i<6;i++) {
-                if(s->block_last_index[i] == -1)
-                    s->coded_score[i]= INT_MAX/256;
-            }
-        }
         
         if(s->luma_elim_threshold && !s->mb_intra)
             for(i=0; i<4; i++)
@@ -3038,6 +3032,13 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
         if(s->chroma_elim_threshold && !s->mb_intra)
             for(i=4; i<6; i++)
                 dct_single_coeff_elimination(s, i, s->chroma_elim_threshold);
+
+        if(s->flags & CODEC_FLAG_CBP_RD){
+            for(i=0;i<6;i++) {
+                if(s->block_last_index[i] == -1)
+                    s->coded_score[i]= INT_MAX/256;
+            }
+        }
     }
 
     if((s->flags&CODEC_FLAG_GRAY) && s->mb_intra){
