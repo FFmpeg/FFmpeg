@@ -21,7 +21,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
-
+//#define PRINT_MB
 
 /*
  * You can also call this codec : MPEG4 with a twist ! 
@@ -674,13 +674,22 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
 #endif
     /* XXX: WARNING: they did not choose the same test as MPEG4. This
        is very important ! */
-    
-    if (abs(a - b) <= abs(b - c)) {
-	pred = c;
-        *dir_ptr = 1;
-    } else {
-	pred = a;
-        *dir_ptr = 0;
+    if(s->msmpeg4_version>3){
+        if (abs(a - b) < abs(b - c)) {
+            pred = c;
+            *dir_ptr = 1;
+        } else {
+            pred = a;
+            *dir_ptr = 0;
+        }
+    }else{
+        if (abs(a - b) <= abs(b - c)) {
+            pred = c;
+            *dir_ptr = 1;
+        } else {
+            pred = a;
+            *dir_ptr = 0;
+        }
     }
 
     /* update predictor */
@@ -703,10 +712,7 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
         *dc_val= level;
     }else{
         UINT16 *dc_val;
-        if(s->msmpeg4_version<=3)
-            pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
-        else
-            pred = ff_mpeg4_pred_dc(s, n, &dc_val, dir_ptr);
+        pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
 
         /* update predictor */
         if (n < 4) {
@@ -1374,6 +1380,12 @@ int msmpeg4_decode_mb(MpegEncContext *s,
     int cbp, code, i;
     UINT8 *coded_val;
 
+#ifdef PRINT_MB
+if(s->mb_x==0){
+    printf("\n");
+    if(s->mb_y==0) printf("\n");
+}
+#endif
     /* special slice handling */
     if (s->mb_x == 0) {
         if (s->slice_height && (s->mb_y % s->slice_height) == 0) {
@@ -1419,6 +1431,9 @@ int msmpeg4_decode_mb(MpegEncContext *s,
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
                 s->mb_skiped = 1;
+#ifdef PRINT_MB
+printf("S ");
+#endif
                 return 0;
             }
         }
@@ -1464,10 +1479,16 @@ int msmpeg4_decode_mb(MpegEncContext *s,
         s->mv_type = MV_TYPE_16X16;
         s->mv[0][0][0] = mx;
         s->mv[0][0][1] = my;
+#ifdef PRINT_MB
+printf("P ");
+#endif
     } else {
 //printf("I at %d %d %d %06X\n", s->mb_x, s->mb_y, ((cbp&3)? 1 : 0) +((cbp&0x3C)? 2 : 0), show_bits(&s->gb, 24));
         set_stat(ST_INTRA_MB);
         s->ac_pred = get_bits1(&s->gb);
+#ifdef PRINT_MB
+printf("%c", s->ac_pred ? 'A' : 'I');
+#endif
         if(s->per_mb_rl_table && cbp){
             s->rl_table_index = decode012(&s->gb);
             s->rl_chroma_table_index = s->rl_table_index;
@@ -1481,7 +1502,7 @@ int msmpeg4_decode_mb(MpegEncContext *s,
 	    return -1;
 	}
     }
-
+    
     return 0;
 }
 
@@ -1501,20 +1522,28 @@ static inline int msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 	/* DC coef */
         set_stat(ST_DC);
         level = msmpeg4_decode_dc(s, n, &dc_pred_dir);
+#ifdef PRINT_MB
+{
+    static int c;
+    if(n==0) c=0;
+    if(n==4) printf("%X", c);
+    c+= c +dc_pred_dir;
+}
+#endif
         if (level < 0){
-            fprintf(stderr, "dc overflow-\n");
+            fprintf(stderr, "dc overflow- block: %d qscale: %d//\n", n, s->qscale);
             return -1;
         }
         if (n < 4) {
             rl = &rl_table[s->rl_table_index];
             if(level > 256*s->y_dc_scale){
-                fprintf(stderr, "dc overflow+\n");
+                fprintf(stderr, "dc overflow+ L qscale: %d//\n", s->qscale);
                 return -1;
             }
         } else {
             rl = &rl_table[3 + s->rl_chroma_table_index];
             if(level > 256*s->c_dc_scale){
-                fprintf(stderr, "dc overflow+\n");
+                fprintf(stderr, "dc overflow+ C qscale: %d//\n", s->qscale);
                 return -1;
             }
         }
@@ -1730,10 +1759,7 @@ static int msmpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
         *dc_val= level;
     }else{
         UINT16 *dc_val;
-        if(s->msmpeg4_version<=3)
-            pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
-        else
-            pred = ff_mpeg4_pred_dc(s, n, &dc_val, dir_ptr);
+        pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
         level += pred;
 
         /* update predictor */
