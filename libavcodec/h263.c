@@ -2840,10 +2840,21 @@ int h263_decode_mb(MpegEncContext *s,
                 if(cbp)
                     s->interlaced_dct= get_bits1(&s->gb);
 
-                if(mb_type!=MB_TYPE_B_DIRECT && get_bits1(&s->gb))
+                if(mb_type!=MB_TYPE_B_DIRECT && get_bits1(&s->gb)){
                     field_mv=1;
+
+                    if(mb_type!=MB_TYPE_B_BACKW){
+                        s->field_select[0][0]= get_bits1(&s->gb);
+                        s->field_select[0][1]= get_bits1(&s->gb);
+                    }
+                    if(mb_type!=MB_TYPE_B_FORW){
+                        s->field_select[1][0]= get_bits1(&s->gb);
+                        s->field_select[1][1]= get_bits1(&s->gb);
+                    }
+                }
             }
 
+            s->mv_dir = 0;
             if(mb_type!=MB_TYPE_B_DIRECT && !field_mv){
                 s->mv_type= MV_TYPE_16X16;
                 if(mb_type!=MB_TYPE_B_BACKW){
@@ -2853,8 +2864,7 @@ int h263_decode_mb(MpegEncContext *s,
                     my = h263_decode_motion(s, s->last_mv[0][0][1], s->f_code);
                     s->last_mv[0][1][0]= s->last_mv[0][0][0]= s->mv[0][0][0] = mx;
                     s->last_mv[0][1][1]= s->last_mv[0][0][1]= s->mv[0][0][1] = my;
-                }else
-                    s->mv_dir = 0;
+                }
     
                 if(mb_type!=MB_TYPE_B_FORW){
                     s->mv_dir |= MV_DIR_BACKWARD;
@@ -2868,10 +2878,9 @@ int h263_decode_mb(MpegEncContext *s,
                     PRINT_MB_TYPE(mb_type==MB_TYPE_B_FORW ? "F" : (mb_type==MB_TYPE_B_BACKW ? "B" : "T"));
             }else if(mb_type!=MB_TYPE_B_DIRECT){
                 s->mv_type= MV_TYPE_FIELD;
+
                 if(mb_type!=MB_TYPE_B_BACKW){
                     s->mv_dir = MV_DIR_FORWARD;
-                    s->field_select[0][0]= get_bits1(&s->gb);
-                    s->field_select[0][1]= get_bits1(&s->gb);
                 
                     for(i=0; i<2; i++){
                         mx = h263_decode_motion(s, s->last_mv[0][i][0]  , s->f_code);
@@ -2879,13 +2888,10 @@ int h263_decode_mb(MpegEncContext *s,
                         s->last_mv[0][i][0]=  s->mv[0][i][0] = mx;
                         s->last_mv[0][i][1]= (s->mv[0][i][1] = my)*2;
                     }
-                }else
-                    s->mv_dir = 0;
+                }
     
                 if(mb_type!=MB_TYPE_B_FORW){
                     s->mv_dir |= MV_DIR_BACKWARD;
-                    s->field_select[1][0]= get_bits1(&s->gb);
-                    s->field_select[1][1]= get_bits1(&s->gb);
 
                     for(i=0; i<2; i++){
                         mx = h263_decode_motion(s, s->last_mv[1][i][0]  , s->b_code);
