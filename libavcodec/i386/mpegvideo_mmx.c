@@ -39,7 +39,7 @@ static void dct_unquantize_h263_mmx(MpegEncContext *s,
     qmul = qscale << 1;
     qadd = (qscale - 1) | 1;
 
-    assert(s->block_last_index[n]>=0);
+    assert(s->block_last_index[n]>=0 || s->h263_aic);
         
     if (s->mb_intra) {
         if (!s->h263_aic) {

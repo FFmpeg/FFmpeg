@@ -648,10 +648,6 @@ int MPV_encode_init(AVCodecContext *avctx)
         avctx->gop_size=600;
     }
     s->gop_size = avctx->gop_size;
-    s->rtp_mode = avctx->rtp_mode;
-    s->rtp_payload_size = avctx->rtp_payload_size;
-    if (avctx->rtp_callback)
-        s->rtp_callback = avctx->rtp_callback;
     s->max_qdiff= avctx->max_qdiff;
     s->qcompress= avctx->qcompress;
     s->qblur= avctx->qblur;
@@ -666,6 +662,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->data_partitioning= avctx->flags & CODEC_FLAG_PART;
     s->quarter_sample= (avctx->flags & CODEC_FLAG_QPEL)!=0;
     s->mpeg_quant= avctx->mpeg_quant;
+    s->rtp_mode= !!avctx->rtp_payload_size;
 
     if (s->gop_size <= 1) {
         s->intra_only = 1;
@@ -769,8 +766,7 @@ int MPV_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_MPEG1;
         s->low_delay= 0; //s->max_b_frames ? 0 : 1;
         avctx->delay= s->low_delay ? 0 : (s->max_b_frames + 1);
-        s->rtp_mode= 1; // mpeg2 must have slices
-        if(s->rtp_payload_size == 0) s->rtp_payload_size= 256*256*256;
+        s->rtp_mode= 1;
         break;
     case CODEC_ID_LJPEG:
     case CODEC_ID_MJPEG:
@@ -811,6 +807,7 @@ int MPV_encode_init(AVCodecContext *avctx)
 	s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
 	s->loop_filter= (avctx->flags & CODEC_FLAG_LOOP_FILTER) ? 1:0;
 	s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
+        s->h263_slice_structured= (s->flags & CODEC_FLAG_H263P_SLICE_STRUCT) ? 1:0;
         if(s->modified_quant)
             s->chroma_qscale_table= ff_h263_chroma_qscale_table;
 
@@ -3889,53 +3886,64 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
             /* write gob / video packet header  */
 #ifdef CONFIG_RISKY
-            if(s->rtp_mode && mb_y + mb_x>0){
+            if(s->rtp_mode){
                 int current_packet_size, is_gob_start;
                 
                 current_packet_size= pbBufPtr(&s->pb) - s->ptr_lastgob;
-                is_gob_start=0;
                 
-                if(s->codec_id==CODEC_ID_MPEG4){
-                    if(current_packet_size >= s->rtp_payload_size){
-
-                        if(s->partitioned_frame){
-                            ff_mpeg4_merge_partitions(s);
-                            ff_mpeg4_init_partitions(s);
-                        }
-                        ff_mpeg4_encode_video_packet_header(s);
-
-                        if(s->flags&CODEC_FLAG_PASS1){
-                            int bits= get_bit_count(&s->pb);
-                            s->misc_bits+= bits - s->last_bits;
-                            s->last_bits= bits;
-                        }
-                        ff_mpeg4_clean_buffers(s);
-                        is_gob_start=1;
-                    }
-                }else if(s->codec_id==CODEC_ID_MPEG1VIDEO){
-                    if(   current_packet_size >= s->rtp_payload_size 
-                       && s->mb_skip_run==0){
-                        ff_mpeg1_encode_slice_header(s);
-                        ff_mpeg1_clean_buffers(s);
-                        is_gob_start=1;
-                    }
-                }else if(s->codec_id==CODEC_ID_MPEG2VIDEO){
-                    if(   (   current_packet_size >= s->rtp_payload_size || mb_x==0)
-                       && s->mb_skip_run==0){
-                        ff_mpeg1_encode_slice_header(s);
-                        ff_mpeg1_clean_buffers(s);
-                        is_gob_start=1;
-                    }
-                }else{
-                    if(current_packet_size >= s->rtp_payload_size
-                       && s->mb_x==0 && s->mb_y%s->gob_index==0){
-                       
-                        h263_encode_gob_header(s, mb_y);                       
-                        is_gob_start=1;
-                    }
+                is_gob_start= s->avctx->rtp_payload_size && current_packet_size >= s->avctx->rtp_payload_size && mb_y + mb_x>0; 
+                
+                switch(s->codec_id){
+                case CODEC_ID_H263:
+                case CODEC_ID_H263P:
+                    if(!s->h263_slice_structured)
+                        if(s->mb_x || s->mb_y%s->gob_index) is_gob_start=0;
+                    break;
+                case CODEC_ID_MPEG2VIDEO:
+                    if(s->mb_x==0 && s->mb_y!=0) is_gob_start=1;
+                case CODEC_ID_MPEG1VIDEO:
+                    if(s->mb_skip_run) is_gob_start=0;
+                    break;
                 }
-
+                
                 if(is_gob_start){
+                    if(s->codec_id==CODEC_ID_MPEG4 && s->partitioned_frame){
+                        ff_mpeg4_merge_partitions(s);
+                        ff_mpeg4_init_partitions(s);
+                    }
+                
+                    if(s->codec_id==CODEC_ID_MPEG4) 
+                        ff_mpeg4_stuffing(&s->pb);
+
+                    align_put_bits(&s->pb);
+//                    flush_put_bits(&s->pb);
+                    current_packet_size= pbBufPtr(&s->pb) - s->ptr_lastgob;
+        
+                    if (s->avctx->rtp_callback)
+                        s->avctx->rtp_callback(s->ptr_lastgob, current_packet_size, 0);
+                    
+                    switch(s->codec_id){
+                    case CODEC_ID_MPEG4:
+                        ff_mpeg4_encode_video_packet_header(s);
+                        ff_mpeg4_clean_buffers(s);
+                    break;
+                    case CODEC_ID_MPEG1VIDEO:
+                    case CODEC_ID_MPEG2VIDEO:
+                        ff_mpeg1_encode_slice_header(s);
+                        ff_mpeg1_clean_buffers(s);
+                    break;
+                    case CODEC_ID_H263:
+                    case CODEC_ID_H263P:
+                        h263_encode_gob_header(s, mb_y);                       
+                    break;
+                    }
+
+                    if(s->flags&CODEC_FLAG_PASS1){
+                        int bits= get_bit_count(&s->pb);
+                        s->misc_bits+= bits - s->last_bits;
+                        s->last_bits= bits;
+                    }
+    
                     s->ptr_lastgob = pbBufPtr(&s->pb);
                     s->first_slice_line=1;
                     s->resync_mb_x=mb_x;
@@ -4256,18 +4264,12 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         ff_mpeg4_stuffing(&s->pb);
 #endif
 
-    //if (s->gob_number)
-    //    fprintf(stderr,"\nNumber of GOB: %d", s->gob_number);
-    
     /* Send the last GOB if RTP */    
-    if (s->rtp_mode) {
+    if (s->avctx->rtp_callback) {
         flush_put_bits(&s->pb);
         pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
         /* Call the RTP callback to send the last GOB */
-        if (s->rtp_callback)
-            s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
-        s->ptr_lastgob = pbBufPtr(&s->pb);
-        //fprintf(stderr,"\nGOB: %2d size: %d (last)", s->gob_number, pdif);
+        s->avctx->rtp_callback(s->ptr_lastgob, pdif, 0);
     }
 }
 

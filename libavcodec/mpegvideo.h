@@ -523,17 +523,17 @@ typedef struct MpegEncContext {
     ParseContext parse_context;
 
     /* H.263 specific */
-    int gob_number;
     int gob_index;
     int obmc;                       ///< overlapped block motion compensation
         
     /* H.263+ specific */
     int umvplus;                    ///< == H263+ && unrestricted_mv 
     int h263_aic;                   ///< Advanded INTRA Coding (AIC) 
-    int h263_aic_dir;               ///< AIC direction: 0 = left, 1 = top 
+    int h263_aic_dir;               ///< AIC direction: 0 = left, 1 = top
+    int h263_slice_structured;
     int alt_inter_vlc;              ///< alternative inter vlc
     int modified_quant;
-    int loop_filter;
+    int loop_filter;    
     
     /* mpeg4 specific */
     int time_increment_resolution;
@@ -663,12 +663,10 @@ typedef struct MpegEncContext {
     int interlaced_dct;
     int first_slice;
     int first_field;         ///< is 1 for the first field of a field picture 0 otherwise
-    
+
     /* RTP specific */
-    /* These are explained on avcodec.h */
     int rtp_mode;
-    int rtp_payload_size;
-    void (*rtp_callback)(void *data, int size, int packet_number);
+    
     uint8_t *ptr_lastgob;
     int swap_uv;//vcr2 codec is mpeg2 varint with UV swaped
     short * pblocks[12];
@@ -825,8 +823,6 @@ extern uint8_t ff_mpeg4_c_dc_scale_table[32];
 extern uint8_t ff_aic_dc_scale_table[32];
 extern const int16_t ff_mpeg4_default_intra_matrix[64];
 extern const int16_t ff_mpeg4_default_non_intra_matrix[64];
-extern const uint16_t ff_mba_max[6];
-extern const uint8_t ff_mba_length[6];
 extern const uint8_t ff_h263_chroma_qscale_table[32];
 extern const uint8_t ff_h263_loop_filter_strength[32];
 
@@ -844,7 +840,7 @@ void mpeg4_encode_mb(MpegEncContext *s,
                     int motion_x, int motion_y);
 void h263_encode_picture_header(MpegEncContext *s, int picture_number);
 void ff_flv_encode_picture_header(MpegEncContext *s, int picture_number);
-int h263_encode_gob_header(MpegEncContext * s, int mb_line);
+void h263_encode_gob_header(MpegEncContext * s, int mb_line);
 int16_t *h263_pred_motion(MpegEncContext * s, int block, 
                         int *px, int *py);
 void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n, 
@@ -859,7 +855,8 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb);
 void ff_h263_update_motion_val(MpegEncContext * s);
 void ff_h263_loop_filter(MpegEncContext * s);
 void ff_set_qscale(MpegEncContext * s, int qscale);
-
+int ff_h263_decode_mba(MpegEncContext *s);
+void ff_h263_encode_mba(MpegEncContext *s);
 
 int intel_h263_decode_picture_header(MpegEncContext *s);
 int flv_h263_decode_picture_header(MpegEncContext *s);

@@ -51,7 +51,6 @@ int ff_h263_decode_init(AVCodecContext *avctx)
     /* select sub codec */
     switch(avctx->codec->id) {
     case CODEC_ID_H263:
-        s->gob_number = 0;
         s->unrestricted_mv= 0;
         break;
     case CODEC_ID_MPEG4:

@@ -202,8 +202,6 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 
     /* Update the pointer to last GOB */
     s->ptr_lastgob = pbBufPtr(&s->pb);
-    s->gob_number = 0;
-
     put_bits(&s->pb, 22, 0x20); /* PSC */
     put_bits(&s->pb, 8, (((int64_t)s->picture_number * 30 * s->avctx->frame_rate_base) / 
                          s->avctx->frame_rate) & 0xff);
@@ -239,12 +237,12 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
             put_bits(&s->pb, 3, format);
             
         put_bits(&s->pb,1,0); /* Custom PCF: off */
-        put_bits(&s->pb, 1, s->umvplus); /* Unrestricted Motion Vector */
+        put_bits(&s->pb,1, s->umvplus); /* Unrestricted Motion Vector */
         put_bits(&s->pb,1,0); /* SAC: off */
         put_bits(&s->pb,1,s->obmc); /* Advanced Prediction Mode */
         put_bits(&s->pb,1,s->h263_aic); /* Advanced Intra Coding */
         put_bits(&s->pb,1,s->loop_filter); /* Deblocking Filter */
-        put_bits(&s->pb,1,0); /* Slice Structured: off */
+        put_bits(&s->pb,1,s->h263_slice_structured); /* Slice Structured */
         put_bits(&s->pb,1,0); /* Reference Picture Selection: off */
         put_bits(&s->pb,1,0); /* Independent Segment Decoding: off */
         put_bits(&s->pb,1,s->alt_inter_vlc); /* Alternative Inter VLC */
@@ -282,6 +280,8 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 //            put_bits(&s->pb,1,1); /* Limited according tables of Annex D */
 //FIXME check actual requested range
             put_bits(&s->pb,2,1); /* unlimited */
+        if(s->h263_slice_structured)
+            put_bits(&s->pb,2,0); /* no weird submodes */
 
         put_bits(&s->pb, 5, s->qscale);
     }
@@ -300,22 +300,27 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
 /**
  * Encodes a group of blocks header.
  */
-int h263_encode_gob_header(MpegEncContext * s, int mb_line)
+void h263_encode_gob_header(MpegEncContext * s, int mb_line)
 {
-           align_put_bits(&s->pb);
-           flush_put_bits(&s->pb);
-           /* Call the RTP callback to send the last GOB */
-           if (s->rtp_callback) {
-               int pdif = pbBufPtr(&s->pb) - s->ptr_lastgob;
-               s->rtp_callback(s->ptr_lastgob, pdif, s->gob_number);
-           }
-           put_bits(&s->pb, 17, 1); /* GBSC */
-           s->gob_number = mb_line / s->gob_index;
-           put_bits(&s->pb, 5, s->gob_number); /* GN */
-           put_bits(&s->pb, 2, s->pict_type == I_TYPE); /* GFID */
-           put_bits(&s->pb, 5, s->qscale); /* GQUANT */
-           //fprintf(stderr,"\nGOB: %2d size: %d", s->gob_number - 1, pdif);
-    return 0;
+    put_bits(&s->pb, 17, 1); /* GBSC */
+
+    if(s->h263_slice_structured){
+        put_bits(&s->pb, 1, 1);
+
+        ff_h263_encode_mba(s);
+
+        if(s->mb_num > 1583)
+            put_bits(&s->pb, 1, 1);
+        put_bits(&s->pb, 5, s->qscale); /* GQUANT */
+        put_bits(&s->pb, 1, 1);
+        put_bits(&s->pb, 2, s->pict_type == I_TYPE); /* GFID */
+    }else{
+        int gob_number= mb_line / s->gob_index;
+
+        put_bits(&s->pb, 5, gob_number); /* GN */
+        put_bits(&s->pb, 2, s->pict_type == I_TYPE); /* GFID */
+        put_bits(&s->pb, 5, s->qscale); /* GQUANT */
+    }
 }
 
 static inline int get_block_rate(MpegEncContext * s, DCTELEM block[64], int block_last_index, uint8_t scantable[64]){
@@ -2784,13 +2789,38 @@ int ff_h263_get_gob_height(MpegEncContext *s){
         return 4;
 }
 
+int ff_h263_decode_mba(MpegEncContext *s)
+{
+    int i, mb_pos;
+
+    for(i=0; i<6; i++){
+        if(s->mb_num < ff_mba_max[i]) break;
+    }
+    mb_pos= get_bits(&s->gb, ff_mba_length[i]);
+    s->mb_x= mb_pos % s->mb_width;
+    s->mb_y= mb_pos / s->mb_width;
+
+    return mb_pos;
+}
+
+void ff_h263_encode_mba(MpegEncContext *s)
+{
+    int i, mb_pos;
+
+    for(i=0; i<6; i++){
+        if(s->mb_num < ff_mba_max[i]) break;
+    }
+    mb_pos= s->mb_x + s->mb_width*s->mb_y;
+    put_bits(&s->pb, ff_mba_length[i], mb_pos);
+}
+
 /**
- * decodes the group of blocks header.
+ * decodes the group of blocks header or slice header.
  * @return <0 if an error occured
  */
 static int h263_decode_gob_header(MpegEncContext *s)
 {
-    unsigned int val, gfid;
+    unsigned int val, gfid, gob_number;
     int left;
     
     /* Check for GOB Start Code */
@@ -2808,22 +2838,34 @@ static int h263_decode_gob_header(MpegEncContext *s)
     if(left<=13) 
         return -1;
 
-#ifdef DEBUG
-    fprintf(stderr,"\nGOB Start Code at MB %d\n", (s->mb_y * s->mb_width) + s->mb_x);
-#endif
-    s->gob_number = get_bits(&s->gb, 5); /* GN */
-    gfid = get_bits(&s->gb, 2); /* GFID */
-    s->qscale = get_bits(&s->gb, 5); /* GQUANT */
+    if(s->h263_slice_structured){
+        if(get_bits1(&s->gb)==0)
+            return -1;
+
+        ff_h263_decode_mba(s);
+
+        if(s->mb_num > 1583)
+            if(get_bits1(&s->gb)==0)
+                return -1;
+        
+        s->qscale = get_bits(&s->gb, 5); /* SQUANT */
+        if(get_bits1(&s->gb)==0)
+            return -1;
+        gfid = get_bits(&s->gb, 2); /* GFID */
+    }else{
+        gob_number = get_bits(&s->gb, 5); /* GN */
+        s->mb_x= 0;
+        s->mb_y= s->gob_index* gob_number;
+        gfid = get_bits(&s->gb, 2); /* GFID */
+        s->qscale = get_bits(&s->gb, 5); /* GQUANT */
+    }
+        
+    if(s->mb_y >= s->mb_height) 
+        return -1;
+
     if(s->qscale==0) 
         return -1;
 
-    s->mb_x= 0;
-    s->mb_y= s->gob_index* s->gob_number;
-    if(s->mb_y >= s->mb_height) 
-        return -1;
-#ifdef DEBUG
-    fprintf(stderr, "\nGN: %u GFID: %u Quant: %u\n", s->gob_number, gfid, s->qscale);
-#endif
     return 0;
 }
 
@@ -2889,7 +2931,6 @@ void ff_mpeg4_encode_video_packet_header(MpegEncContext *s)
 {
     int mb_num_bits= av_log2(s->mb_num - 1) + 1;
 
-    ff_mpeg4_stuffing(&s->pb);
     put_bits(&s->pb, ff_mpeg4_get_video_packet_prefix_length(s), 0);
     put_bits(&s->pb, 1, 1);
     
@@ -4759,9 +4800,6 @@ int h263_decode_picture_header(MpegEncContext *s)
     skip_bits1(&s->gb);	/* camera  off */
     skip_bits1(&s->gb);	/* freeze picture release off */
 
-    /* Reset GOB number */
-    s->gob_number = 0;
-        
     format = get_bits(&s->gb, 3);
     /*
         0    forbidden
@@ -4820,9 +4858,7 @@ int h263_decode_picture_header(MpegEncContext *s)
             s->loop_filter= get_bits1(&s->gb);
             s->unrestricted_mv = s->umvplus || s->obmc || s->loop_filter;
             
-            if (get_bits1(&s->gb) != 0) {
-                av_log(s->avctx, AV_LOG_ERROR, "Slice Structured not supported\n");
-            }
+            s->h263_slice_structured= get_bits1(&s->gb);
             if (get_bits1(&s->gb) != 0) {
                 av_log(s->avctx, AV_LOG_ERROR, "Reference Picture Selection not supported\n");
             }
@@ -4894,6 +4930,14 @@ int h263_decode_picture_header(MpegEncContext *s)
                 if(get_bits1(&s->gb)==0) /* Unlimited Unrestricted Motion Vectors Indicator (UUI) */
                     skip_bits1(&s->gb); 
             }
+            if(s->h263_slice_structured){
+                if (get_bits1(&s->gb) != 0) {
+                    av_log(s->avctx, AV_LOG_ERROR, "rectangular slices not supported\n");
+                }
+                if (get_bits1(&s->gb) != 0) {
+                    av_log(s->avctx, AV_LOG_ERROR, "unordered slices not supported\n");
+                }
+            }
         }
             
         s->qscale = get_bits(&s->gb, 5);
@@ -4913,7 +4957,7 @@ int h263_decode_picture_header(MpegEncContext *s)
     }
 
      if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s%s%s\n", 
+         av_log(s->avctx, AV_LOG_DEBUG, "qp:%d %c size:%d rnd:%d%s%s%s%s%s%s%s%s%s\n", 
          s->qscale, av_get_pict_type_char(s->pict_type),
          s->gb.size_in_bits, 1-s->no_rounding,
          s->obmc ? " AP" : "",
@@ -4923,7 +4967,8 @@ int h263_decode_picture_header(MpegEncContext *s)
          s->h263_aic ? " AIC" : "",
          s->alt_inter_vlc ? " AIV" : "",
          s->modified_quant ? " MQ" : "",
-         s->loop_filter ? " LOOP" : ""
+         s->loop_filter ? " LOOP" : "",
+         s->h263_slice_structured ? " SS" : ""
          ); 
      }
 #if 1

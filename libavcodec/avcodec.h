@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4693
+#define LIBAVCODEC_BUILD       4694
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -263,14 +263,11 @@ static const __attribute__((unused)) int Motion_Est_QTab[] =
 #define CODEC_FLAG_H263P_AIV      0x00000008 ///< H263 Alternative inter vlc
 #define CODEC_FLAG_OBMC           0x00000001 ///< OBMC
 #define CODEC_FLAG_LOOP_FILTER    0x00000800 ///< loop filter
-/* For advanced prediction mode, we reuse the 4MV flag */
+#define CODEC_FLAG_H263P_SLICE_STRUCT 0x10000000 
 /* Unsupported options :
  * 		Syntax Arithmetic coding (SAC)
- * 		Deblocking filter internal loop
- * 		Slice structured
  * 		Reference Picture Selection
- * 		Independant Segment Decoding
- * 		Modified Quantization */
+ * 		Independant Segment Decoding */
 /* /Fx */
 /* codec capabilities */
 
@@ -696,11 +693,8 @@ typedef struct AVCodecContext {
     
     void *priv_data;
 
-    /* The following data is for RTP friendly coding */
-    /* By now only H.263/H.263+/MPEG4 coder honours this   */
-    int rtp_mode;   /* 1 for activate RTP friendly-mode           */
-                    /* highers numbers represent more error-prone */
-                    /* enviroments, by now just "1" exist         */
+    /* unused, FIXME remove*/
+    int rtp_mode;
     
     int rtp_payload_size;   /* The size of the RTP payload, the coder will  */
                             /* do it's best to deliver a chunk with size    */
@@ -1398,7 +1392,27 @@ typedef struct AVCodecContext {
      * - decoding: set by lavc, user can override
      */
     int (*reget_buffer)(struct AVCodecContext *c, AVFrame *pic);
-    
+
+    /**
+     * number of bits which should be loaded into the rc buffer before decoding starts
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int rc_initial_buffer_occupancy;
+
+    /**
+     *
+     * - encoding: set by user.
+     * - decoding: unused
+     */
+    int inter_threshold;
+
+    /**
+     * CODEC_FLAG2_*.
+     * - encoding: set by user.
+     * - decoding: set by user.
+     */
+    int flags2;
 } AVCodecContext;
 
 
