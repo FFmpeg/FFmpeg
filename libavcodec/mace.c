@@ -403,14 +403,18 @@ static int mace_decode_frame(AVCodecContext *avctx,
     samples = (short *)data;
     switch (avctx->codec->id) {
     case CODEC_ID_MACE3:
+#ifdef DEBUG
 puts("mace_decode_frame[3]()");
+#endif
         Exp1to3(c, buf, samples, buf_size / 2, avctx->channels, 1);
         if (avctx->channels == 2)
             Exp1to3(c, buf, samples+1, buf_size / 2, 2, 2);
         *data_size = 2 * 3 * buf_size;
         break;
     case CODEC_ID_MACE6:
+#ifdef DEBUG
 puts("mace_decode_frame[6]()");
+#endif
         Exp1to6(c, buf, samples, buf_size, avctx->channels, 1);
         if (avctx->channels == 2)
             Exp1to6(c, buf, samples+1, buf_size, 2, 2);
