@@ -6,7 +6,7 @@ include ../config.mak
 
 VPATH=$(SRC_PATH)/libavcodec
 
-CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H -I$(SRC_PATH) -I.. -fPIC -DPIC
+CFLAGS= $(OPTFLAGS) -Wall -g -DHAVE_AV_CONFIG_H -I$(SRC_PATH) -I..
 LDFLAGS= -g
 
 OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
