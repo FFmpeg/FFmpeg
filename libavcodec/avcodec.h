@@ -589,7 +589,7 @@ typedef struct AVCodecContext {
      * Info on struct for av_log
      * - set by avcodec_alloc_context
      */
-    AVClass class;
+    AVClass *av_class;
     /**
      * the average bitrate.
      * - encoding: set by user. unused for constant quantizer encoding

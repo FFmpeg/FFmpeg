@@ -241,7 +241,7 @@ typedef struct AVStream {
 
 /* format I/O context */
 typedef struct AVFormatContext {
-    AVClass class; /* set by av_alloc_format_context */
+    AVClass *av_class; /* set by av_alloc_format_context */
     /* can only be iformat or oformat, not both at the same time */
     struct AVInputFormat *iformat;
     struct AVOutputFormat *oformat;

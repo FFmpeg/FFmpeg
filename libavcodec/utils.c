@@ -342,9 +342,21 @@ enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, enum Pixel
     return fmt[0];
 }
 
+static const char* context_to_name(void* ptr) {
+    AVCodecContext *avc= ptr;
+
+    if(avc && avc->codec && avc->codec->name)
+        return avc->codec->name; 
+    else
+        return "NULL";
+}
+
+static AVClass av_codec_context_class = { "AVCodecContext", context_to_name };
+
 void avcodec_get_context_defaults(AVCodecContext *s){
     memset(s, 0, sizeof(AVCodecContext));
 
+    s->av_class= &av_codec_context_class;
     s->bit_rate= 800*1000;
     s->bit_rate_tolerance= s->bit_rate*10;
     s->qmin= 2;
@@ -386,16 +398,11 @@ void avcodec_get_context_defaults(AVCodecContext *s){
  * allocates a AVCodecContext and set it to defaults.
  * this can be deallocated by simply calling free() 
  */
-static const char* context_to_name(void* class_ptr) { return ((AVCodecContext*) class_ptr)->codec->name; }
-
-static AVClass av_codec_context_class = { "AVCodecContext", context_to_name };
-
 AVCodecContext *avcodec_alloc_context(void){
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
     
     if(avctx==NULL) return NULL;
     
-    avctx->class = av_codec_context_class;
     avcodec_get_context_defaults(avctx);
     
     return avctx;
@@ -840,23 +847,17 @@ int64_t av_rescale(int64_t a, int b, int c){
 
 /* av_log API */
 
-static const char* null_to_name(void* class_ptr) { return "NULL"; }
-
-static AVClass av_null_class = { "NULL", null_to_name };
-
 static int av_log_level = AV_LOG_DEBUG;
 
 static void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
-    AVClass* avcl = ptr;
-    if(!avcl || !avcl->class_name)
-	avcl = &av_null_class;
+    AVClass* avc= ptr ? *(AVClass**)ptr : NULL;
     if(level>av_log_level)
 	return;
 #undef fprintf
-    if(print_prefix) {
-	    fprintf(stderr, "[%s:%s @ %p]", avcl->class_name, avcl->item_name(avcl), avcl);
+    if(print_prefix && avc) {
+	    fprintf(stderr, "[%s @ %p]", avc->item_name(ptr), avc);
     }
 #define fprintf please_use_av_log
         
