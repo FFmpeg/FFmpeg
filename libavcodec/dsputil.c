@@ -1344,16 +1344,20 @@ static void clear_blocks_c(DCTELEM *blocks)
 
 void dsputil_init(DSPContext* c, unsigned mask)
 {
+    static int init_done = 0;
     int i;
 
-    for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
-    for(i=0;i<MAX_NEG_CROP;i++) {
-        cropTbl[i] = 0;
-        cropTbl[i + MAX_NEG_CROP + 256] = 255;
-    }
+    if (!init_done) {
+	for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
+	for(i=0;i<MAX_NEG_CROP;i++) {
+	    cropTbl[i] = 0;
+	    cropTbl[i + MAX_NEG_CROP + 256] = 255;
+	}
 
-    for(i=0;i<512;i++) {
-        squareTbl[i] = (i - 256) * (i - 256);
+	for(i=0;i<512;i++) {
+	    squareTbl[i] = (i - 256) * (i - 256);
+	}
+        init_done = 1;
     }
 
     c->get_pixels = get_pixels_c;
