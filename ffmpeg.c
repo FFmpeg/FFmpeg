@@ -604,14 +604,15 @@ static void do_video_out(AVFormatContext *s,
 #if defined(AVSYNC_DEBUG)
     {
         static char *action[] = { "drop frame", "copy frame", "dup frame" };
-        if (audio_sync)
+        if (audio_sync && verbose >=0) {
             fprintf(stderr, "Input APTS %12.6f, output APTS %12.6f, ",
                     (double) audio_sync->sync_ipts, 
                     (double) audio_sync->st->pts.val * s->pts_num / s->pts_den);
-        fprintf(stderr, "Input VPTS %12.6f, output VPTS %12.6f: %s\n",
-                (double) ost->sync_ipts, 
-                (double) ost->st->pts.val * s->pts_num / s->pts_den,
-                action[nb_frames]);
+            fprintf(stderr, "Input VPTS %12.6f, output VPTS %12.6f: %s\n",
+                    (double) ost->sync_ipts, 
+                    (double) ost->st->pts.val * s->pts_num / s->pts_den,
+                    action[nb_frames]);
+        }
     }
 #endif
 
@@ -640,7 +641,10 @@ static void do_video_out(AVFormatContext *s,
         if (img_convert(formatted_picture, target_pixfmt, 
                         (AVPicture *)in_picture, dec->pix_fmt, 
                         dec->width, dec->height) < 0) {
-            fprintf(stderr, "pixel format conversion not handled\n");
+
+            if (verbose >= 0)
+                fprintf(stderr, "pixel format conversion not handled\n");
+
             goto the_end;
         }
     } else {
@@ -675,7 +679,10 @@ static void do_video_out(AVFormatContext *s,
             if (img_convert(final_picture, enc->pix_fmt, 
                             &ost->pict_tmp, PIX_FMT_YUV420P, 
                             enc->width, enc->height) < 0) {
-                fprintf(stderr, "pixel format conversion not handled\n");
+
+                if (verbose >= 0)
+                    fprintf(stderr, "pixel format conversion not handled\n");
+
                 goto the_end;
             }
 	}
@@ -736,7 +743,10 @@ static void do_video_out(AVFormatContext *s,
             if (img_convert(final_picture, enc->pix_fmt, 
                         &ost->pict_tmp, PIX_FMT_YUV420P, 
                         enc->width, enc->height) < 0) {
-                fprintf(stderr, "pixel format conversion not handled\n");
+
+                if (verbose >= 0)
+                    fprintf(stderr, "pixel format conversion not handled\n");
+
                 goto the_end;
             }
         }
@@ -937,11 +947,13 @@ static void print_report(AVFormatContext **output_files,
             "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
             (double)total_size / 1024, ti1, bitrate);
         
-        fprintf(stderr, "%s    \r", buf);
+        if (verbose >= 0)
+            fprintf(stderr, "%s    \r", buf);
+
         fflush(stderr);
     }
         
-    if (is_last_report)
+    if (is_last_report && verbose >= 0)
         fprintf(stderr, "\n");
 }
 
@@ -1473,14 +1485,16 @@ static int av_encode(AVFormatContext **output_files,
     }
 
     /* dump the stream mapping */
-    fprintf(stderr, "Stream mapping:\n");
-    for(i=0;i<nb_ostreams;i++) {
-        ost = ost_table[i];
-        fprintf(stderr, "  Stream #%d.%d -> #%d.%d\n",
-                ist_table[ost->source_index]->file_index,
-                ist_table[ost->source_index]->index,
-                ost->file_index, 
-                ost->index);
+    if (verbose >= 0) {
+        fprintf(stderr, "Stream mapping:\n");
+        for(i=0;i<nb_ostreams;i++) {
+            ost = ost_table[i];
+            fprintf(stderr, "  Stream #%d.%d -> #%d.%d\n",
+                    ist_table[ost->source_index]->file_index,
+                    ist_table[ost->source_index]->index,
+                    ost->file_index, 
+                    ost->index);
+        }
     }
 
     /* open each encoder */
@@ -1547,7 +1561,7 @@ static int av_encode(AVFormatContext **output_files,
     }
 
 #ifndef CONFIG_WIN32
-    if ( !using_stdin ) {
+    if ( !using_stdin && verbose >= 0) {
         fprintf(stderr, "Press [q] to stop encoding\n");
         url_set_interrupt_cb(decode_interrupt_cb);
     }
@@ -1624,8 +1638,11 @@ static int av_encode(AVFormatContext **output_files,
 
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
         if (output_packet(ist, ist_index, ost_table, nb_ostreams, &pkt) < 0) {
-            fprintf(stderr, "Error while decoding stream #%d.%d\n",
-                    ist->file_index, ist->index);
+
+            if (verbose >= 0)
+                fprintf(stderr, "Error while decoding stream #%d.%d\n",
+                        ist->file_index, ist->index);
+
             av_free_packet(&pkt);
             goto redo;
         }
@@ -1840,6 +1857,7 @@ static void opt_vismv(const char *arg)
 static void opt_verbose(const char *arg)
 {
     verbose = atoi(arg);
+    av_log_set_level(atoi(arg));
 }
 
 static void opt_frame_rate(const char *arg)
@@ -2265,7 +2283,8 @@ static void opt_thread_count(const char *arg)
 {
     thread_count= atoi(arg);
 #if !defined(HAVE_PTHREADS) && !defined(HAVE_W32THREADS)
-    fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
+    if (verbose >= 0)
+        fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
 #endif
 }
 
@@ -2464,7 +2483,7 @@ static void opt_input_file(const char *filename)
     /* If not enough info to get the stream parameters, we decode the
        first frames to get it. (used in mpeg case for example) */
     ret = av_find_stream_info(ic);
-    if (ret < 0) {
+    if (ret < 0 && verbose >= 0) {
         fprintf(stderr, "%s: could not find codec parameters\n", filename);
         exit(1);
     }
@@ -2518,8 +2537,11 @@ static void opt_input_file(const char *filename)
 
             assert(enc->frame_rate_base == rfps_base); // should be true for now
             if (enc->frame_rate != rfps) { 
-                fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
-                    i, (float)enc->frame_rate / enc->frame_rate_base,
+
+                if (verbose >= 0)
+                    fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
+                            i, (float)enc->frame_rate / enc->frame_rate_base,
+
                     (float)rfps / rfps_base);
             }
             /* update the current frame rate to match the stream frame rate */
@@ -2537,7 +2559,9 @@ static void opt_input_file(const char *filename)
     
     input_files[nb_input_files] = ic;
     /* dump the file content */
-    dump_format(ic, nb_input_files, filename, 0);
+    if (verbose >= 0)
+        dump_format(ic, nb_input_files, filename, 0);
+
     nb_input_files++;
     file_iformat = NULL;
     file_oformat = NULL;
@@ -3021,7 +3045,10 @@ static void prepare_grab(void)
         ic->streams[0]->r_frame_rate      = vp->frame_rate;
         ic->streams[0]->r_frame_rate_base = vp->frame_rate_base;
         input_files[nb_input_files] = ic;
-        dump_format(ic, nb_input_files, "", 0);
+
+        if (verbose >= 0)
+            dump_format(ic, nb_input_files, "", 0);
+
         nb_input_files++;
     }
     if (has_audio && audio_grab_format) {
@@ -3033,7 +3060,10 @@ static void prepare_grab(void)
             exit(1);
         }
         input_files[nb_input_files] = ic;
-        dump_format(ic, nb_input_files, "", 0);
+
+        if (verbose >= 0)
+            dump_format(ic, nb_input_files, "", 0);
+
         nb_input_files++;
     }
 }

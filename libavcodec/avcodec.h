@@ -2113,6 +2113,7 @@ void img_copy(AVPicture *dst, const AVPicture *src,
 
 #include <stdarg.h>
 
+#define AV_LOG_QUIET -1
 #define AV_LOG_ERROR 0
 #define AV_LOG_INFO 1
 #define AV_LOG_DEBUG 2
