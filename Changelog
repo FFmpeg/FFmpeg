@@ -1,4 +1,6 @@
-Upcoming version 0.4.8:
+version 0.4.8:
+
+- MPEG2 video encoding (Michael)
 - Id RoQ playback subsystem (Mike Melanson and Tim Ferguson)
 - Wing Commander III Movie (.mve) file playback subsystem (Mike Melanson
   and Mario Brito)
