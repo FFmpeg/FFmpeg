@@ -23,7 +23,7 @@
  * along with GNU Make; see the file COPYING. If not, write to
  * the Free Software Foundation, 675 Mass Ave, Cambridge, MA 02139, USA.
  *
- * 15 and 24 bpp support from Michael Niedermayer (michaelni@gmx.at)
+ * 15,24 bpp and dithering from Michael Niedermayer (michaelni@gmx.at)
  */
 
 #include <stdio.h>
@@ -37,6 +37,8 @@
 
 #include "rgb2rgb.h"
 #include "../mmx_defs.h"
+
+#define DITHER1XBPP
 
 /* hope these constant values are cache line aligned */
 uint64_t __attribute__((aligned(8))) mmx_80w = 0x0080008000800080;
@@ -57,6 +59,22 @@ uint64_t __attribute__((aligned(8))) mmx_grnmask = 0xfcfcfcfcfcfcfcfc;
 uint64_t __attribute__((aligned(8))) M24A=   0x00FF0000FF0000FFLL;
 uint64_t __attribute__((aligned(8))) M24B=   0xFF0000FF0000FF00LL;
 uint64_t __attribute__((aligned(8))) M24C=   0x0000FF0000FF0000LL;
+
+// the volatile is required because gcc otherwise optimizes some writes away not knowing that these
+// are read in the asm block
+volatile uint64_t __attribute__((aligned(8))) b5Dither;
+volatile uint64_t __attribute__((aligned(8))) g5Dither;
+volatile uint64_t __attribute__((aligned(8))) g6Dither;
+volatile uint64_t __attribute__((aligned(8))) r5Dither;
+
+uint64_t __attribute__((aligned(8))) dither4[2]={
+	0x0103010301030103LL,
+	0x0200020002000200LL,};
+
+uint64_t __attribute__((aligned(8))) dither8[2]={
+	0x0602060206020602LL,
+	0x0004000400040004LL,};
+
 
 
 #define YUV2RGB \
@@ -150,6 +168,11 @@ static void yuv420_rgb16_mmx (uint8_t * image, uint8_t * py,
 	uint8_t *_pu = pu;
 	uint8_t *_pv = pv;
 
+	b5Dither= dither8[y&1];
+	g6Dither= dither4[y&1];
+	g5Dither= dither8[y&1];
+	r5Dither= dither8[(y+1)&1];
+
 	/* load data for start of next scan line */
 	__asm__ __volatile__ (
 		 "movd (%1), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
@@ -171,6 +194,11 @@ static void yuv420_rgb16_mmx (uint8_t * image, uint8_t * py,
 */
 YUV2RGB
 
+#ifdef DITHER1XBPP
+			"paddusb b5Dither, %%mm0;"
+			"paddusb g6Dither, %%mm2;"
+			"paddusb r5Dither, %%mm1;"
+#endif
 		     /* mask unneeded bits off */
 		     "pand mmx_redmask, %%mm0;" /* b7b6b5b4 b3_0_0_0 b7b6b5b4 b3_0_0_0 */
 		     "pand mmx_grnmask, %%mm2;" /* g7g6g5g4 g3g2_0_0 g7g6g5g4 g3g2_0_0 */
@@ -241,6 +269,11 @@ static void yuv420_rgb15_mmx (uint8_t * image, uint8_t * py,
 	uint8_t *_pu = pu;
 	uint8_t *_pv = pv;
 
+	b5Dither= dither8[y&1];
+	g6Dither= dither4[y&1];
+	g5Dither= dither8[y&1];
+	r5Dither= dither8[(y+1)&1];
+
 	/* load data for start of next scan line */
 	__asm__ __volatile__ (
 		 "movd (%1), %%mm0;" /* Load 4 Cb 00 00 00 00 u3 u2 u1 u0 */
@@ -255,6 +288,12 @@ static void yuv420_rgb15_mmx (uint8_t * image, uint8_t * py,
 
 	    __asm__ __volatile__ (
 YUV2RGB
+
+#ifdef DITHER1XBPP
+			"paddusb b5Dither, %%mm0	\n\t"
+			"paddusb g5Dither, %%mm2	\n\t"
+			"paddusb r5Dither, %%mm1	\n\t"
+#endif
 
 		     /* mask unneeded bits off */
 		     "pand mmx_redmask, %%mm0;" /* b7b6b5b4 b3_0_0_0 b7b6b5b4 b3_0_0_0 */
