@@ -161,7 +161,11 @@ void dct_error(const char *name, int is_idct,
         fdct_func(block);
         emms(); /* for ff_mmx_idct */
 
-        if (fdct_func == fdct_ifast) {
+        if (fdct_func == fdct_ifast 
+#ifndef FAAN_POSTSCALE        
+            || fdct_func == ff_faandct
+#endif
+            ) {
             for(i=0; i<64; i++) {
                 scale = 8*(1 << (AANSCALE_BITS + 11)) / aanscales[i];
                 block[i] = (block[i] * scale /*+ (1<<(AANSCALE_BITS-1))*/) >> AANSCALE_BITS;

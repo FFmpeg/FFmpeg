@@ -101,7 +101,11 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
 
     for(qscale=qmin; qscale<=qmax; qscale++){
         int i;
-        if (s->dsp.fdct == ff_jpeg_fdct_islow || s->dsp.fdct == ff_faandct) {
+        if (s->dsp.fdct == ff_jpeg_fdct_islow 
+#ifdef FAAN_POSTSCALE
+            || s->dsp.fdct == ff_faandct
+#endif
+            ) {
             for(i=0;i<64;i++) {
                 const int j= s->dsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
@@ -112,7 +116,11 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
                 qmat[qscale][i] = (int)((uint64_t_C(1) << QMAT_SHIFT) / 
                                 (qscale * quant_matrix[j]));
             }
-        } else if (s->dsp.fdct == fdct_ifast) {
+        } else if (s->dsp.fdct == fdct_ifast
+#ifndef FAAN_POSTSCALE
+                   || s->dsp.fdct == ff_faandct
+#endif
+                   ) {
             for(i=0;i<64;i++) {
                 const int j= s->dsp.idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
