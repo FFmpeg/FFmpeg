@@ -664,7 +664,7 @@ int msmpeg4_decode_mb(MpegEncContext *s,
 
     /* special slice handling */
     if (s->mb_x == 0) {
-        if ((s->mb_y % s->slice_height) == 0) {
+        if (s->slice_height && (s->mb_y % s->slice_height) == 0) {
             int wrap;
             /* reset DC pred (set previous line to 1024) */
             wrap = 2 * s->mb_width + 2;
