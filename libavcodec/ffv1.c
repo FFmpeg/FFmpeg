@@ -353,31 +353,29 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
     PlaneContext * const p= &s->plane[plane_index];
     CABACContext * const c= &s->c;
     int x,y;
-    uint8_t pred_diff_buffer[4][w+6]; //FIXME rema,e
-    uint8_t *pred_diff[4]= {pred_diff_buffer[0]+3, pred_diff_buffer[1]+3, pred_diff_buffer[2]+3, pred_diff_buffer[3]+3};
+    uint8_t sample_buffer[2][w+6];
+    uint8_t *sample[2]= {sample_buffer[0]+3, sample_buffer[1]+3};
     int run_index=0;
     
-    memset(pred_diff_buffer, 0, sizeof(pred_diff_buffer));
+    memset(sample_buffer, 0, sizeof(sample_buffer));
     
     for(y=0; y<h; y++){
-        uint8_t *temp= pred_diff[0]; //FIXME try a normal buffer
+        uint8_t *temp= sample[0]; //FIXME try a normal buffer
         int run_count=0;
         int run_mode=0;
 
-        pred_diff[0]= pred_diff[1];
-        pred_diff[1]= pred_diff[2];
-        pred_diff[2]= pred_diff[3];
-        pred_diff[3]= temp;
+        sample[0]= sample[1];
+        sample[1]= temp;
         
-        pred_diff[3][-1]= pred_diff[2][0  ];
-        pred_diff[2][ w]= pred_diff[2][w-1];
+        sample[1][-1]= sample[0][0  ];
+        sample[0][ w]= sample[0][w-1];
 
         for(x=0; x<w; x++){
             uint8_t *temp_src= src + x + stride*y;
             int diff, context;
             
-            context= get_context(s, pred_diff[3]+x, pred_diff[2]+x, pred_diff[1]+x);
-            diff= temp_src[0] - predict(pred_diff[3]+x, pred_diff[2]+x);
+            context= get_context(s, sample[1]+x, sample[0]+x, sample[1]+x);
+            diff= temp_src[0] - predict(sample[1]+x, sample[0]+x);
 
             if(context < 0){
                 context = -context;
@@ -416,7 +414,7 @@ static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
                     put_vlc_symbol(&s->pb, &p->vlc_state[context], diff);
             }
 
-            pred_diff[3][x]= temp_src[0];
+            sample[1][x]= temp_src[0];
         }
         if(run_mode){
             while(run_count >= 1<<log2_run[run_index]){
@@ -645,30 +643,28 @@ static void decode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
     PlaneContext * const p= &s->plane[plane_index];
     CABACContext * const c= &s->c;
     int x,y;
-    uint8_t pred_diff_buffer[4][w+6];
-    uint8_t *pred_diff[4]= {pred_diff_buffer[0]+3, pred_diff_buffer[1]+3, pred_diff_buffer[2]+3, pred_diff_buffer[3]+3};
+    uint8_t sample_buffer[2][w+6];
+    uint8_t *sample[2]= {sample_buffer[0]+3, sample_buffer[1]+3};
     int run_index=0;
     
-    memset(pred_diff_buffer, 0, sizeof(pred_diff_buffer));
+    memset(sample_buffer, 0, sizeof(sample_buffer));
     
     for(y=0; y<h; y++){
-        uint8_t *temp= pred_diff[0]; //FIXME try a normal buffer
+        uint8_t *temp= sample[0]; //FIXME try a normal buffer
         int run_count=0;
         int run_mode=0;
 
-        pred_diff[0]= pred_diff[1];
-        pred_diff[1]= pred_diff[2];
-        pred_diff[2]= pred_diff[3];
-        pred_diff[3]= temp;
+        sample[0]= sample[1];
+        sample[1]= temp;
 
-        pred_diff[3][-1]= pred_diff[2][0  ];
-        pred_diff[2][ w]= pred_diff[2][w-1];
+        sample[1][-1]= sample[0][0  ];
+        sample[0][ w]= sample[0][w-1];
 
         for(x=0; x<w; x++){
             uint8_t *temp_src= src + x + stride*y;
             int diff, context, sign;
              
-            context= get_context(s, pred_diff[3] + x, pred_diff[2] + x, pred_diff[1] + x);
+            context= get_context(s, sample[1] + x, sample[0] + x, sample[1] + x);
             if(context < 0){
                 context= -context;
                 sign=1;
@@ -709,8 +705,8 @@ static void decode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
 
             if(sign) diff= (int8_t)(-diff); //FIXME remove cast
 
-            pred_diff[3][x]=
-            temp_src[0] = predict(pred_diff[3] + x, pred_diff[2] + x) + diff;
+            sample[1][x]=
+            temp_src[0] = predict(sample[1] + x, sample[0] + x) + diff;
             
             assert(diff>= -128 && diff <= 127);
         }
