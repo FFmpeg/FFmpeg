@@ -265,32 +265,36 @@ void rgb16to15(const uint8_t *src,uint8_t *dst,unsigned src_size)
 void palette8torgb32(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
 {
 	unsigned i;
+
+/*
 	for(i=0; i<num_pixels; i++)
 		((unsigned *)dst)[i] = ((unsigned *)palette)[ src[i] ];
+*/
+
+	for(i=0; i<num_pixels; i++)
+	{
+		//FIXME slow?
+		dst[0]= palette[ src[i]*4+2 ];
+		dst[1]= palette[ src[i]*4+1 ];
+		dst[2]= palette[ src[i]*4+0 ];
+//		dst[3]= 0; /* do we need this cleansing? */
+		dst+= 4;
+	}
 }
 
-#if 0
 void palette8tobgr32(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
 {
 	unsigned i;
 	for(i=0; i<num_pixels; i++)
 	{
 		//FIXME slow?
-		dst[0]= palette[ src[i]*4+3 ];
-		dst[1]= palette[ src[i]*4+2 ];
-		dst[2]= palette[ src[i]*4+1 ];
-		dst[3]= palette[ src[i]*4+0 ];
+		dst[0]= palette[ src[i]*4+0 ];
+		dst[1]= palette[ src[i]*4+1 ];
+		dst[2]= palette[ src[i]*4+2 ];
+//		dst[3]= 0; /* do we need this cleansing? */
 		dst+= 4;
 	}
 }
-#else
-void palette8tobgr32(const uint8_t *src, uint8_t *dst, unsigned num_pixels, const uint8_t *palette)
-{
-	unsigned i;
-	for(i=0; i<num_pixels; i++)
-		((unsigned *)dst)[i] = bswap_32(((unsigned *)palette)[ src[i] ]);
-}
-#endif
 
 /**
  * Pallete is assumed to contain bgr32
@@ -306,9 +310,9 @@ void palette8torgb24(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 	for(i=0; i<num_pixels; i++)
 	{
 		//FIXME slow?
-		dst[0]= palette[ src[i]*4+0 ];
+		dst[0]= palette[ src[i]*4+2 ];
 		dst[1]= palette[ src[i]*4+1 ];
-		dst[2]= palette[ src[i]*4+2 ];
+		dst[2]= palette[ src[i]*4+0 ];
 		dst+= 3;
 	}
 }
@@ -324,9 +328,9 @@ void palette8tobgr24(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
 	for(i=0; i<num_pixels; i++)
 	{
 		//FIXME slow?
-		dst[0]= palette[ src[i]*4+3 ];
-		dst[1]= palette[ src[i]*4+2 ];
-		dst[2]= palette[ src[i]*4+1 ];
+		dst[0]= palette[ src[i]*4+0 ];
+		dst[1]= palette[ src[i]*4+1 ];
+		dst[2]= palette[ src[i]*4+2 ];
 		dst+= 3;
 	}
 }
