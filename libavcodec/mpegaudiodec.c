@@ -99,6 +99,7 @@ typedef struct MPADecodeContext {
 #endif
     void (*compute_antialias)(struct MPADecodeContext *s, struct GranuleDef *g);
     int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
+    unsigned int dither_state;
 } MPADecodeContext;
 
 /* layer 3 "granule" */
@@ -749,10 +750,11 @@ static void dct32(int32_t *out, int32_t *tab)
 
 #if FRAC_BITS <= 15
 
-static inline int round_sample(int sum)
+static inline int round_sample(int *sum)
 {
     int sum1;
-    sum1 = (sum + (1 << (OUT_SHIFT - 1))) >> OUT_SHIFT;
+    sum1 = (*sum) >> OUT_SHIFT;
+    *sum &= (1<<OUT_SHIFT)-1;
     if (sum1 < -32768)
         sum1 = -32768;
     else if (sum1 > 32767)
@@ -782,10 +784,11 @@ static inline int round_sample(int sum)
 
 #else
 
-static inline int round_sample(int64_t sum) 
+static inline int round_sample(int64_t *sum) 
 {
     int sum1;
-    sum1 = (int)((sum + (int64_t_C(1) << (OUT_SHIFT - 1))) >> OUT_SHIFT);
+    sum1 = (int)((*sum) >> OUT_SHIFT);
+    *sum &= (1<<OUT_SHIFT)-1;
     if (sum1 < -32768)
         sum1 = -32768;
     else if (sum1 > 32767)
@@ -900,37 +903,37 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
     w = window;
     w2 = window + 31;
 
-    sum = 0;
+    sum = s1->dither_state;
     p = synth_buf + 16;
     SUM8(sum, +=, w, p);
     p = synth_buf + 48;
     SUM8(sum, -=, w + 32, p);
-    *samples = round_sample(sum);
+    *samples = round_sample(&sum);
     samples += incr;
     w++;
 
     /* we calculate two samples at the same time to avoid one memory
        access per two sample */
     for(j=1;j<16;j++) {
-        sum = 0;
         sum2 = 0;
         p = synth_buf + 16 + j;
         SUM8P2(sum, +=, sum2, -=, w, w2, p);
         p = synth_buf + 48 - j;
         SUM8P2(sum, -=, sum2, -=, w + 32, w2 + 32, p);
 
-        *samples = round_sample(sum);
+        *samples = round_sample(&sum);
         samples += incr;
-        *samples2 = round_sample(sum2);
+        sum += sum2;
+        *samples2 = round_sample(&sum);
         samples2 -= incr;
         w++;
         w2--;
     }
     
     p = synth_buf + 32;
-    sum = 0;
     SUM8(sum, -=, w + 32, p);
-    *samples = round_sample(sum);
+    *samples = round_sample(&sum);
+    s1->dither_state= sum;
 
     offset = (offset - 32) & 511;
     *synth_buf_offset = offset;
@@ -1115,28 +1118,6 @@ static void imdct36(int *out, int *in)
     out[8 - 4] = t1;
 }
 
-/* fast header check for resync */
-static int check_header(uint32_t header)
-{
-    /* header */
-    if ((header & 0xffe00000) != 0xffe00000)
-	return -1;
-    /* layer check */
-    if (((header >> 17) & 3) == 0)
-	return -1;
-    /* bit rate */
-    if (((header >> 12) & 0xf) == 0xf)
-	return -1;
-    /* frequency */
-    if (((header >> 10) & 3) == 3)
-	return -1;
-    return 0;
-}
-
-/* header + layer + bitrate + freq + lsf/mpeg25 */
-#define SAME_HEADER_MASK \
-   (0xffe00000 | (3 << 17) | (0xf << 12) | (3 << 10) | (3 << 19))
-
 /* header decoding. MUST check the header before because no
    consistency check is done there. Return 1 if free format found and
    that the frame size must be computed externally */
@@ -1244,7 +1225,7 @@ int mpa_decode_header(AVCodecContext *avctx, uint32_t head)
     MPADecodeContext s1, *s = &s1;
     memset( s, 0, sizeof(MPADecodeContext) );
 
-    if (check_header(head) != 0)
+    if (ff_mpa_check_header(head) != 0)
         return -1;
 
     if (decode_header(s, head) != 0) {
@@ -2566,7 +2547,7 @@ static int decode_frame(AVCodecContext * avctx,
 		header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
 		    (s->inbuf[2] << 8) | s->inbuf[3];
 
-		if (check_header(header) < 0) {
+		if (ff_mpa_check_header(header) < 0) {
 		    /* no sync found : move by one byte (inefficient, but simple!) */
 		    memmove(s->inbuf, s->inbuf + 1, s->inbuf_ptr - s->inbuf - 1);
 		    s->inbuf_ptr--;
@@ -2712,7 +2693,7 @@ static int decode_frame_adu(AVCodecContext * avctx,
     header = (s->inbuf[0] << 24) | (s->inbuf[1] << 16) |
               (s->inbuf[2] << 8) | s->inbuf[3] | 0xffe00000;
 
-    if (check_header(header) < 0) { // Bad header, discard frame
+    if (ff_mpa_check_header(header) < 0) { // Bad header, discard frame
         *data_size = 0;
         return buf_size;
     }
