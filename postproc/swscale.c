@@ -35,11 +35,12 @@ tested special converters
  YV12/I420 -> BGR16
  YV12 -> YV12
  BGR15 -> BGR16
+ BGR16 -> BGR16
 
 untested special converters
-  YV12/I420/IYUV -> BGR15/BGR24/BGR32 (its the yuv2rgb stuff, so it should be ok)
-  YV12/I420/IYUV -> YV12/I420/IYUV 
-  YUY2/BGR15/BGR16/BGR24/BGR32/RGB24/RGB32 -> same format
+  YV12/I420 -> BGR15/BGR24/BGR32 (its the yuv2rgb stuff, so it should be ok)
+  YV12/I420 -> YV12/I420
+  YUY2/BGR15/BGR24/BGR32/RGB24/RGB32 -> same format
   BGR24 -> BGR32 & RGB24 -> RGB32
   BGR32 -> BGR24 & RGB32 -> RGB24
   BGR24 -> YV12
@@ -1408,7 +1409,11 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		if(isPlanarYUV(srcFormat) && isBGR(dstFormat))
 		{
 			// FIXME multiple yuv2rgb converters wont work that way cuz that thing is full of globals&statics
+#ifdef WORDS_BIGENDIAN
+			yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_BGR);
+#else
 			yuv2rgb_init( dstFormat&0xFF /* =bpp */, MODE_RGB);
+#endif
 			c->swScale= planarYuvToBgr;
 
 			if(flags&SWS_PRINT_INFO)
