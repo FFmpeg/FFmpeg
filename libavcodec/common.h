@@ -82,7 +82,7 @@ extern const struct AVOption avoptions_workaround_bug[11];
 #    define always_inline inline
 #endif
 
-#ifdef HAVE_INTTYPES_H
+#ifndef EMULATE_INTTYPES
 #   include <inttypes.h>
 #else
     typedef signed char  int8_t;

@@ -985,8 +985,8 @@ if test "$bigendian" = "yes" ; then
   echo "WORDS_BIGENDIAN=yes" >> config.mak
   echo "#define WORDS_BIGENDIAN 1" >> $TMPH
 fi
-if test "$inttypes" = "yes" ; then
-  echo "#define HAVE_INTTYPES_H 1" >> $TMPH
+if test "$inttypes" != "yes" ; then
+  echo "#define EMULATE_INTTYPES 1" >> $TMPH
 fi
 if test "$emu_fast_int" = "yes" ; then
   echo "#define EMULATE_FAST_INT 1" >> $TMPH
