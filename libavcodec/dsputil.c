@@ -34,6 +34,42 @@ op_pixels_abs_func pix_abs16x16_xy2;
 static UINT8 cropTbl[256 + 2 * MAX_NEG_CROP];
 UINT32 squareTbl[512];
 
+extern UINT16 default_intra_matrix[64];
+extern UINT16 default_non_intra_matrix[64];
+
+UINT8 zigzag_direct[64] = {
+    0, 1, 8, 16, 9, 2, 3, 10,
+    17, 24, 32, 25, 18, 11, 4, 5,
+    12, 19, 26, 33, 40, 48, 41, 34,
+    27, 20, 13, 6, 7, 14, 21, 28,
+    35, 42, 49, 56, 57, 50, 43, 36,
+    29, 22, 15, 23, 30, 37, 44, 51,
+    58, 59, 52, 45, 38, 31, 39, 46,
+    53, 60, 61, 54, 47, 55, 62, 63
+};
+
+UINT8 ff_alternate_horizontal_scan[64] = {
+    0,  1,  2,  3,  8,  9, 16, 17, 
+    10, 11,  4,  5,  6,  7, 15, 14,
+    13, 12, 19, 18, 24, 25, 32, 33, 
+    26, 27, 20, 21, 22, 23, 28, 29,
+    30, 31, 34, 35, 40, 41, 48, 49, 
+    42, 43, 36, 37, 38, 39, 44, 45,
+    46, 47, 50, 51, 56, 57, 58, 59, 
+    52, 53, 54, 55, 60, 61, 62, 63,
+};
+
+UINT8 ff_alternate_vertical_scan[64] = {
+    0,  8, 16, 24,  1,  9,  2, 10, 
+    17, 25, 32, 40, 48, 56, 57, 49,
+    41, 33, 26, 18,  3, 11,  4, 12, 
+    19, 27, 34, 42, 50, 58, 35, 43,
+    51, 59, 20, 28,  5, 13,  6, 14, 
+    21, 29, 36, 44, 52, 60, 37, 45,
+    53, 61, 22, 30,  7, 15, 23, 31, 
+    38, 46, 54, 62, 39, 47, 55, 63,
+};
+
 void get_pixels_c(DCTELEM *block, const UINT8 *pixels, int line_size)
 {
     DCTELEM *p;
@@ -350,9 +386,33 @@ int pix_abs16x16_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size, int h)
     return s;
 }
 
+/* permute block according so that it corresponds to the MMX idct
+   order */
+void block_permute(INT16 *block)
+{
+    int tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
+    int i;
+
+    for(i=0;i<8;i++) {
+        tmp1 = block[1];
+        tmp2 = block[2];
+        tmp3 = block[3];
+        tmp4 = block[4];
+        tmp5 = block[5];
+        tmp6 = block[6];
+        block[1] = tmp2;
+        block[2] = tmp4;
+        block[3] = tmp6;
+        block[4] = tmp1;
+        block[5] = tmp3;
+        block[6] = tmp5;
+        block += 8;
+    }
+}
+
 void dsputil_init(void)
 {
-    int i;
+    int i, j;
 
     for(i=0;i<256;i++) cropTbl[i + MAX_NEG_CROP] = i;
     for(i=0;i<MAX_NEG_CROP;i++) {
@@ -374,6 +434,18 @@ void dsputil_init(void)
     pix_abs16x16_y2 = pix_abs16x16_y2_c;
     pix_abs16x16_xy2 = pix_abs16x16_xy2_c;
     av_fdct = jpeg_fdct_ifast;
+
+    /* permute for IDCT */
+    for(i=0;i<64;i++) {
+        j = zigzag_direct[i];
+        zigzag_direct[i] = block_permute_op(j);
+        j = ff_alternate_horizontal_scan[i];
+        ff_alternate_horizontal_scan[i] = block_permute_op(j);
+        j = ff_alternate_vertical_scan[i];
+        ff_alternate_vertical_scan[i] = block_permute_op(j);
+    }
+    block_permute(default_intra_matrix);
+    block_permute(default_non_intra_matrix);
 
 #ifdef HAVE_MMX
     dsputil_init_mmx();

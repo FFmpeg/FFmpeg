@@ -15,6 +15,11 @@ void fdct_mmx(DCTELEM *block);
 
 void (*av_fdct)(DCTELEM *block);
 
+/* encoding scans */
+extern UINT8 ff_alternate_horizontal_scan[64];
+extern UINT8 ff_alternate_vertical_scan[64];
+extern UINT8 zigzag_direct[64];
+
 /* pixel operations */
 #define MAX_NEG_CROP 384
 
@@ -61,6 +66,13 @@ int pix_abs16x16_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 int pix_abs16x16_x2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 int pix_abs16x16_y2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
 int pix_abs16x16_xy2_c(UINT8 *blk1, UINT8 *blk2, int lx, int h);
+
+static inline int block_permute_op(int j)
+{
+    return (j & 0x38) | ((j & 6) >> 1) | ((j & 1) << 2);
+}
+
+void block_permute(INT16 *block);
 
 #ifdef HAVE_MMX
 
