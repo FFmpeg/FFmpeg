@@ -837,6 +837,8 @@ typedef struct MJpegDecodeContext {
 
     int buggy_avid;
     int interlace_polarity;
+
+    int mjpb_skiptosod;
 } MJpegDecodeContext;
 
 static int mjpeg_decode_dht(MJpegDecodeContext *s);
@@ -1517,6 +1519,10 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
     if(s->avctx->debug & FF_DEBUG_PICT_INFO)
         av_log(s->avctx, AV_LOG_DEBUG, "%s %s p:%d >>:%d\n", s->lossless ? "lossless" : "sequencial DCT", s->rgb ? "RGB" : "", predictor, point_transform);
     
+    /* mjpeg-b can have padding bytes between sos and image data, skip them */
+    for (i = s->mjpb_skiptosod; i > 0; i--)
+        skip_bits(&s->gb, 8);
+
     if(s->lossless){
             if(s->rgb){
                 if(ljpeg_decode_rgb_scan(s, predictor, point_transform) < 0)
@@ -1962,7 +1968,7 @@ static int mjpegb_decode_frame(AVCodecContext *avctx,
     AVFrame *picture = data;
     GetBitContext hgb; /* for the header */
     uint32_t dqt_offs, dht_offs, sof_offs, sos_offs, second_field_offs;
-    uint32_t field_size;
+    uint32_t field_size, sod_offs;
 
     /* no supplementary picture */
     if (buf_size == 0)
@@ -1974,6 +1980,7 @@ static int mjpegb_decode_frame(AVCodecContext *avctx,
 read_header:
     /* reset on every SOI */
     s->restart_interval = 0;
+    s->mjpb_skiptosod = 0;
 
     init_get_bits(&hgb, buf_ptr, /*buf_size*/(buf_end - buf_ptr)*8);
 
@@ -2023,15 +2030,16 @@ read_header:
 
     sos_offs = get_bits_long(&hgb, 32);
     dprintf("sos offs: 0x%x\n", sos_offs);
+    sod_offs = get_bits_long(&hgb, 32);
+    dprintf("sod offs: 0x%x\n", sod_offs);
     if (sos_offs)
     {
 //	init_get_bits(&s->gb, buf+sos_offs, (buf_end - (buf+sos_offs))*8);
 	init_get_bits(&s->gb, buf+sos_offs, field_size*8);
+	s->mjpb_skiptosod = (sod_offs - sos_offs - show_bits(&s->gb, 16));
 	s->start_code = SOS;
 	mjpeg_decode_sos(s);
     }
-
-    skip_bits(&hgb, 32); /* start of data offset */
 
     if (s->interlaced) {
         s->bottom_field ^= 1;
