@@ -588,10 +588,10 @@ void mpeg1_init_vlc(MpegEncContext *s)
     if (!done) {
         done = 1;
 
-        init_vlc(&dc_lum_vlc, DC_VLC_BITS, 10/*12*/, 
+        init_vlc(&dc_lum_vlc, DC_VLC_BITS, 12, 
                  vlc_dc_lum_bits, 1, 1,
                  vlc_dc_lum_code, 2, 2);
-        init_vlc(&dc_chroma_vlc,  DC_VLC_BITS, 10/*12*/, 
+        init_vlc(&dc_chroma_vlc,  DC_VLC_BITS, 12, 
                  vlc_dc_chroma_bits, 1, 1,
                  vlc_dc_chroma_code, 2, 2);
         init_vlc(&mv_vlc, MV_VLC_BITS, 17, 
@@ -674,8 +674,10 @@ static int mpeg_decode_mb(MpegEncContext *s,
     }
     if (++s->mb_x >= s->mb_width) {
         s->mb_x = 0;
-        if (s->mb_y >= (s->mb_height - 1))
+        if (s->mb_y >= (s->mb_height - 1)){
+            fprintf(stderr, "slice too long\n");
             return -1;
+        }
         s->mb_y++;
     }
     dprintf("decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
@@ -716,13 +718,17 @@ static int mpeg_decode_mb(MpegEncContext *s,
         break;
     case P_TYPE:
         mb_type = get_vlc2(&s->gb, mb_ptype_vlc.table, MB_PTYPE_VLC_BITS, 1);
-        if (mb_type < 0)
+        if (mb_type < 0){
+            fprintf(stderr, "invalid mb type in P Frame at %d %d\n", s->mb_x, s->mb_y);
             return -1;
+        }
         break;
     case B_TYPE:
         mb_type = get_vlc2(&s->gb, mb_btype_vlc.table, MB_BTYPE_VLC_BITS, 1);
-        if (mb_type < 0)
+        if (mb_type < 0){
+            fprintf(stderr, "invalid mb type in B Frame at %d %d\n", s->mb_x, s->mb_y);
             return -1;
+        }
         break;
     }
     dprintf("mb_type=%x\n", mb_type);
@@ -891,8 +897,10 @@ static int mpeg_decode_mb(MpegEncContext *s,
     
     if (mb_type & MB_PAT) {
         cbp = get_vlc2(&s->gb, mb_pat_vlc.table, MB_PAT_VLC_BITS, 1);
-        if (cbp < 0)
+        if (cbp < 0){
+            fprintf(stderr, "invalid cbp at %d %d\n", s->mb_x, s->mb_y);
             return -1;
+        }
         cbp++;
     }
     dprintf("cbp=%x\n", cbp);
@@ -968,12 +976,14 @@ static inline int decode_dc(MpegEncContext *s, int component)
     int code, diff;
 
     if (component == 0) {
-        code = get_vlc2(&s->gb, dc_lum_vlc.table, DC_VLC_BITS, 1);
+        code = get_vlc2(&s->gb, dc_lum_vlc.table, DC_VLC_BITS, 2);
     } else {
-        code = get_vlc2(&s->gb, dc_chroma_vlc.table, DC_VLC_BITS, 1);
+        code = get_vlc2(&s->gb, dc_chroma_vlc.table, DC_VLC_BITS, 2);
     }
-    if (code < 0)
+    if (code < 0){
+        fprintf(stderr, "invalid dc code at %d %d\n", s->mb_x, s->mb_y);
         return 0xffff;
+    }
     if (code == 0) {
         diff = 0;
     } else {
@@ -1102,8 +1112,10 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
     /* now quantify & encode AC coefs */
     for(;;) {
         code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
-        if (code < 0)
+        if (code < 0){
+            fprintf(stderr, "invalid ac code at %d %d\n", s->mb_x, s->mb_y);
             return -1;
+        }
         if (code == 112) {
             break;
         } else if (code == 111) {
@@ -1118,8 +1130,10 @@ static int mpeg2_decode_block_non_intra(MpegEncContext *s,
                 level = -level;
         }
         i += run;
-        if (i >= 64)
+        if (i >= 64){
+            fprintf(stderr, "run too long at %d %d\n", s->mb_x, s->mb_y);
             return -1;
+        }
     add_coef:
 	j = scan_table[i];
         dprintf("%d: run=%d level=%d\n", n, run, level);
@@ -1181,8 +1195,10 @@ static int mpeg2_decode_block_intra(MpegEncContext *s,
     /* now quantify & encode AC coefs */
     for(;;) {
         code = get_vlc2(&s->gb, rl->vlc.table, TEX_VLC_BITS, 2);
-        if (code < 0)
+        if (code < 0){
+            fprintf(stderr, "invalid ac code at %d %d\n", s->mb_x, s->mb_y);
             return -1;
+        }
         if (code == 112) {
             break;
         } else if (code == 111) {
@@ -1197,8 +1213,10 @@ static int mpeg2_decode_block_intra(MpegEncContext *s,
                 level = -level;
         }
         i += run;
-        if (i >= 64)
+        if (i >= 64){
+            fprintf(stderr, "run too long at %d %d\n", s->mb_x, s->mb_y);
             return -1;
+        }
 	j = scan_table[i];
         dprintf("%d: run=%d level=%d\n", n, run, level);
         level = (level * s->qscale * matrix[j]) / 16;
@@ -1440,8 +1458,10 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     int ret;
 
     start_code = (start_code - 1) & 0xff;
-    if (start_code >= s->mb_height)
+    if (start_code >= s->mb_height){
+        fprintf(stderr, "slice below image\n");
         return -1;
+    }
     s->last_dc[0] = 1 << (7 + s->intra_dc_precision);
     s->last_dc[1] = s->last_dc[0];
     s->last_dc[2] = s->last_dc[0];
@@ -1735,6 +1755,8 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                             }         
                             *data_size = sizeof(AVPicture);
                             goto the_end;
+                        }else if(ret==-1){
+                            printf("Error while decoding slice\n");
                         }
                     }
                     break;
