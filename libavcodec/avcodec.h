@@ -93,6 +93,7 @@ enum CodecID {
     CODEC_ID_VMDAUDIO,
     CODEC_ID_MSZH,
     CODEC_ID_ZLIB,
+    CODEC_ID_QTRLE,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1700,6 +1701,7 @@ extern AVCodec ra_288_decoder;
 extern AVCodec roq_dpcm_decoder;
 extern AVCodec interplay_dpcm_decoder;
 extern AVCodec xan_dpcm_decoder;
+extern AVCodec qtrle_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \

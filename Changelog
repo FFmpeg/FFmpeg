@@ -2,6 +2,7 @@ version <next>:
 - DV encoder, DV muxer
 - Microsoft RLE video decoder
 - Microsoft Video-1 decoder
+- Apple Animation (RLE) decoder
 - Apple Graphics (SMC) decoder
 - Apple Video (RPZA) decoder
 - Cinepak decoder

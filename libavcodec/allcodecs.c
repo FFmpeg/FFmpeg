@@ -153,6 +153,7 @@ void avcodec_register_all(void)
     register_avcodec(&roq_dpcm_decoder);
     register_avcodec(&interplay_dpcm_decoder);
     register_avcodec(&xan_dpcm_decoder);
+    register_avcodec(&qtrle_decoder);
 #endif /* CONFIG_DECODERS */
 
 #ifdef AMR_NB
