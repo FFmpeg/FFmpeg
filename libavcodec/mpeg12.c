@@ -1840,7 +1840,10 @@ uint8_t old_permutation[64];
             if(s->aspect_ratio_info > 1){
                 if( (s1->display_weight == 0 )||(s1->display_height == 0) ){
                     s->avctx->sample_aspect_ratio= 
-                        mpeg2_aspect[s->aspect_ratio_info];
+                        av_div_q(
+                         mpeg2_aspect[s->aspect_ratio_info], 
+                         (AVRational){s->width, s->height}
+                         );
                 }else{
                     s->avctx->sample_aspect_ratio= 
                         av_div_q(
@@ -1850,10 +1853,7 @@ uint8_t old_permutation[64];
         	}
             }else{
                 s->avctx->sample_aspect_ratio= 
-                    av_div_q(
-                     mpeg2_aspect[s->aspect_ratio_info], 
-                     (AVRational){s->width, s->height}
-                    );
+                    mpeg2_aspect[s->aspect_ratio_info];
             }
         }//mpeg2
 
@@ -2482,12 +2482,16 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 {
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
+    int width,height;
     int i, v, j;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
-    s->width = get_bits(&s->gb, 12);
-    s->height = get_bits(&s->gb, 12);
+    width = get_bits(&s->gb, 12);
+    height = get_bits(&s->gb, 12);
+    if (width <= 0 || height <= 0 ||
+        (width % 2) != 0 || (height % 2) != 0)
+        return -1;
     s->aspect_ratio_info= get_bits(&s->gb, 4);
     if (s->aspect_ratio_info == 0)
         return -1;
@@ -2497,8 +2501,8 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->bit_rate = get_bits(&s->gb, 18) * 400;
     if (get_bits1(&s->gb) == 0) /* marker */
         return -1;
-    if (s->width <= 0 || s->height <= 0)
-        return -1;
+    s->width = width;
+    s->height = height;
 
     s->avctx->rc_buffer_size= get_bits(&s->gb, 10) * 1024*16;
     skip_bits(&s->gb, 1);
@@ -2662,6 +2666,36 @@ static void mpeg_decode_user_data(AVCodecContext *avctx,
     }
 }
 
+static void mpeg_decode_gop(AVCodecContext *avctx, 
+                            const uint8_t *buf, int buf_size){
+    Mpeg1Context *s1 = avctx->priv_data;
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
+
+    int drop_frame_flag;
+    int time_code_hours, time_code_minutes;
+    int time_code_seconds, time_code_pictures;
+    int broken_link;
+
+    init_get_bits(&s->gb, buf, buf_size*8);
+
+    drop_frame_flag = get_bits1(&s->gb);
+    
+    time_code_hours=get_bits(&s->gb,5);
+    time_code_minutes = get_bits(&s->gb,6);
+    skip_bits1(&s->gb);//marker bit
+    time_code_seconds = get_bits(&s->gb,6);
+    time_code_pictures = get_bits(&s->gb,6);
+
+    /*broken_link indicate that after editing the
+      reference frames of the first B-Frames after GOP I-Frame
+      are missing (open gop)*/
+    broken_link = get_bits1(&s->gb);
+
+    if(s->avctx->debug & FF_DEBUG_PICT_INFO)
+        av_log(s->avctx, AV_LOG_DEBUG, "GOP (%2d:%02d:%02d.[%02d]) broken_link=%d\n",
+	    time_code_hours, time_code_minutes, time_code_seconds,
+	    time_code_pictures, broken_link);
+}
 /**
  * finds the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
@@ -2800,6 +2834,8 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
                     break;
                 case GOP_START_CODE:
                     s2->first_field=0;
+                    mpeg_decode_gop(avctx, 
+                                          buf_ptr, input_size);
                     break;
                 default:
                     if (start_code >= SLICE_MIN_START_CODE &&
