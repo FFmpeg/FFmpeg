@@ -120,6 +120,15 @@ typedef struct MPADecodeContext {
     unsigned int dither_state;
 } MPADecodeContext;
 
+/**
+ * Context for MP3On4 decoder
+ */
+typedef struct MP3On4DecodeContext {
+    int frames;   ///< number of mp3 frames per block (number of mp3 decoder instances)
+    int chan_cfg; ///< channel config number
+    MPADecodeContext *mp3decctx[5]; ///< MPADecodeContext for every decoder instance
+} MP3On4DecodeContext;
+
 /* layer 3 "granule" */
 typedef struct GranuleDef {
     uint8_t scfsi;
@@ -2678,6 +2687,170 @@ static int decode_frame_adu(AVCodecContext * avctx,
 }
 
 
+/* Next 3 arrays are indexed by channel config number (passed via codecdata) */
+static int mp3Frames[16] = {0,1,1,2,3,3,4,5,2};   /* number of mp3 decoder instances */
+static int mp3Channels[16] = {0,1,2,3,4,5,6,8,4}; /* total output channels */
+/* offsets into output buffer, assume output order is FL FR BL BR C LFE */
+static int chan_offset[9][5] = {
+    {0},
+    {0},            // C
+    {0},            // FLR
+    {2,0},          // C FLR
+    {2,0,3},        // C FLR BS
+    {4,0,2},        // C FLR BLRS
+    {4,0,2,5},      // C FLR BLRS LFE
+    {4,0,2,6,5},    // C FLR BLRS BLR LFE
+    {0,2}           // FLR BLRS
+};
+
+
+static int decode_init_mp3on4(AVCodecContext * avctx)
+{
+    MP3On4DecodeContext *s = avctx->priv_data;
+    int i;
+
+    if ((avctx->extradata_size < 2) || (avctx->extradata == NULL)) {
+        av_log(avctx, AV_LOG_ERROR, "Codec extradata missing or too short.\n");
+        return -1;
+    }
+
+    s->chan_cfg = (((unsigned char *)avctx->extradata)[1] >> 3) & 0x0f;
+    s->frames = mp3Frames[s->chan_cfg];
+    if(!s->frames) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid channel config number.\n");
+        return -1;
+    }
+    avctx->channels = mp3Channels[s->chan_cfg];
+
+    /* Init the first mp3 decoder in standard way, so that all tables get builded
+     * We replace avctx->priv_data with the context of the first decoder so that
+     * decode_init() does not have to be changed.
+     * Other decoders will be inited here copying data from the first context
+     */
+    // Allocate zeroed memory for the first decoder context
+    s->mp3decctx[0] = av_mallocz(sizeof(MPADecodeContext));
+    // Put decoder context in place to make init_decode() happy
+    avctx->priv_data = s->mp3decctx[0];
+    decode_init(avctx);
+    // Restore mp3on4 context pointer
+    avctx->priv_data = s;
+    s->mp3decctx[0]->adu_mode = 1; // Set adu mode
+
+    /* Create a separate codec/context for each frame (first is already ok).
+     * Each frame is 1 or 2 channels - up to 5 frames allowed
+     */
+    for (i = 1; i < s->frames; i++) {
+        s->mp3decctx[i] = av_mallocz(sizeof(MPADecodeContext));
+        s->mp3decctx[i]->compute_antialias = s->mp3decctx[0]->compute_antialias;
+        s->mp3decctx[i]->inbuf = &s->mp3decctx[i]->inbuf1[0][BACKSTEP_SIZE];
+        s->mp3decctx[i]->inbuf_ptr = s->mp3decctx[i]->inbuf;
+        s->mp3decctx[i]->adu_mode = 1;
+    }
+
+    return 0;
+}
+
+
+static int decode_close_mp3on4(AVCodecContext * avctx)
+{
+    MP3On4DecodeContext *s = avctx->priv_data;
+    int i;
+
+    for (i = 0; i < s->frames; i++)
+        if (s->mp3decctx[i])
+            av_free(s->mp3decctx[i]);
+
+    return 0;
+}
+
+
+static int decode_frame_mp3on4(AVCodecContext * avctx,
+			void *data, int *data_size,
+			uint8_t * buf, int buf_size)
+{
+    MP3On4DecodeContext *s = avctx->priv_data;
+    MPADecodeContext *m;
+    int len, out_size = 0;
+    uint32_t header;
+    OUT_INT *out_samples = data;
+    OUT_INT decoded_buf[MPA_FRAME_SIZE * MPA_MAX_CHANNELS];
+    OUT_INT *outptr, *bp;
+    int fsize;
+    unsigned char *start2 = buf, *start;
+    int fr, i, j, n;
+    int off = avctx->channels;
+    int *coff = chan_offset[s->chan_cfg];
+
+    len = buf_size;
+
+    // Discard too short frames
+    if (buf_size < HEADER_SIZE) {
+        *data_size = 0;
+        return buf_size;
+    }
+
+    // If only one decoder interleave is not needed
+    outptr = s->frames == 1 ? out_samples : decoded_buf;
+
+    for (fr = 0; fr < s->frames; fr++) {
+        start = start2;
+        fsize = (start[0] << 4) | (start[1] >> 4);
+        start2 += fsize;
+        if (fsize > len)
+            fsize = len;
+        len -= fsize;
+        if (fsize > MPA_MAX_CODED_FRAME_SIZE)
+            fsize = MPA_MAX_CODED_FRAME_SIZE;
+        m = s->mp3decctx[fr];
+        assert (m != NULL);
+        /* copy original to new */
+        m->inbuf_ptr = m->inbuf + fsize;
+        memcpy(m->inbuf, start, fsize);
+
+        // Get header
+        header = (m->inbuf[0] << 24) | (m->inbuf[1] << 16) |
+                  (m->inbuf[2] << 8) | m->inbuf[3] | 0xfff00000;
+
+        if (ff_mpa_check_header(header) < 0) { // Bad header, discard block
+            *data_size = 0;
+            return buf_size;
+        }
+
+        decode_header(m, header);
+        mp_decode_frame(m, decoded_buf);
+
+        n = MPA_FRAME_SIZE * m->nb_channels;
+        out_size += n * sizeof(OUT_INT);
+        if(s->frames > 1) {
+            /* interleave output data */
+            bp = out_samples + coff[fr];
+            if(m->nb_channels == 1) {
+                for(j = 0; j < n; j++) {
+                    *bp = decoded_buf[j];
+                    bp += off;
+                }
+            } else {
+                for(j = 0; j < n; j++) {
+                    bp[0] = decoded_buf[j++];
+                    bp[1] = decoded_buf[j];
+                    bp += off;
+                }
+            }
+        }
+    }
+
+    /* update codec info */
+    avctx->sample_rate = s->mp3decctx[0]->sample_rate;
+    avctx->frame_size= buf_size;
+    avctx->bit_rate = 0;
+    for (i = 0; i < s->frames; i++)
+        avctx->bit_rate += s->mp3decctx[i]->bit_rate;
+
+    *data_size = out_size;
+    return buf_size;
+}
+
+
 AVCodec mp2_decoder =
 {
     "mp2",
@@ -2715,4 +2888,17 @@ AVCodec mp3adu_decoder =
     NULL,
     decode_frame_adu,
     CODEC_CAP_PARSE_ONLY,
+};
+
+AVCodec mp3on4_decoder =
+{
+    "mp3on4",
+    CODEC_TYPE_AUDIO,
+    CODEC_ID_MP3ON4,
+    sizeof(MP3On4DecodeContext),
+    decode_init_mp3on4,
+    NULL,
+    decode_close_mp3on4,
+    decode_frame_mp3on4,
+    0
 };
