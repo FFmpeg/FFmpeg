@@ -2187,8 +2187,10 @@ static void mpeg4_encode_gop_header(MpegEncContext * s){
     put_bits(&s->pb, 1, 1);
     put_bits(&s->pb, 6, seconds);
     
-    put_bits(&s->pb, 1, 0); //closed gov == NO
+    put_bits(&s->pb, 1, !!(s->flags&CODEC_FLAG_CLOSED_GOP)); 
     put_bits(&s->pb, 1, 0); //broken link == NO
+    
+    s->last_time_base= s->time_base;
 
     ff_mpeg4_stuffing(&s->pb);
 }

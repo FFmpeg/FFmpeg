@@ -795,6 +795,14 @@ int MPV_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "closed gop with scene change detection arent supported yet\n");
         return -1;
     }
+
+    i= ff_gcd(avctx->frame_rate, avctx->frame_rate_base);
+    if(i > 1){
+        av_log(avctx, AV_LOG_INFO, "removing common factors from framerate\n");
+        avctx->frame_rate /= i;
+        avctx->frame_rate_base /= i;
+//        return -1;
+    }
     
     if(s->codec_id==CODEC_ID_MJPEG){
         s->intra_quant_bias= 1<<(QUANT_BIAS_SHIFT-1); //(a + x/2)/x
