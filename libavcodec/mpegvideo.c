@@ -295,7 +295,8 @@ static void copy_picture_attributes(MpegEncContext *s, AVFrame *dst, AVFrame *sr
         if(!src->ref_index[0])
             av_log(s->avctx, AV_LOG_ERROR, "AVFrame.ref_index not set!\n");
         if(src->motion_subsample_log2 != dst->motion_subsample_log2)
-            av_log(s->avctx, AV_LOG_ERROR, "AVFrame.motion_subsample_log2 doesnt match!\n");
+            av_log(s->avctx, AV_LOG_ERROR, "AVFrame.motion_subsample_log2 doesnt match! (%d!=%d)\n",
+            src->motion_subsample_log2, dst->motion_subsample_log2);
 
         memcpy(dst->mb_type, src->mb_type, s->mb_stride * s->mb_height * sizeof(dst->mb_type[0]));
         
@@ -2055,10 +2056,11 @@ static void select_input_picture(MpegEncContext *s){
                 s->reordered_input_picture[0]->data[i]= NULL;
             s->reordered_input_picture[0]->type= 0;
             
-            copy_picture_attributes(s, (AVFrame*)pic, (AVFrame*)s->reordered_input_picture[0]);
             pic->reference              = s->reordered_input_picture[0]->reference;
             
             alloc_picture(s, pic, 0);
+
+            copy_picture_attributes(s, (AVFrame*)pic, (AVFrame*)s->reordered_input_picture[0]);
 
             s->current_picture_ptr= pic;
         }else{
@@ -4676,7 +4678,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     
     /* Estimate motion for every MB */
     if(s->pict_type != I_TYPE){
-        if(s->pict_type != B_TYPE){
+        if(s->pict_type != B_TYPE && s->avctx->me_threshold==0){
             if((s->avctx->pre_me && s->last_non_b_pict_type==I_TYPE) || s->avctx->pre_me==2){
                 s->avctx->execute(s->avctx, pre_estimate_motion_thread, (void**)&(s->thread_context[0]), NULL, s->avctx->thread_count);
             }

@@ -159,6 +159,7 @@ static int noise_reduction = 0;
 static int sc_threshold = 0;
 static int debug = 0;
 static int debug_mv = 0;
+static int me_threshold = 0;
 extern int loop_input; /* currently a hack */
 
 static int gop_size = 12;
@@ -187,6 +188,7 @@ static int bitexact = 0;
 static char *pass_logfilename = NULL;
 static int audio_stream_copy = 0;
 static int video_stream_copy = 0;
+static int sync_method= 1;
 
 static int rate_emu = 0;
 
@@ -577,6 +579,7 @@ static void do_video_out(AVFormatContext *s,
     /* NOTE: the A/V sync is always done by considering the audio is
        the master clock. It is suffisant for transcoding or playing,
        but not for the general case */
+  if(sync_method){
     if (audio_sync) {
         /* compute the A-V delay and duplicate/remove frames if needed */
         double adelta, vdelta, av_delay;
@@ -588,11 +591,11 @@ static void do_video_out(AVFormatContext *s,
             s->pts_num / s->pts_den);
 
         av_delay = adelta - vdelta;
-        //            printf("delay=%f\n", av_delay);
         if (av_delay < -AV_DELAY_MAX)
             nb_frames = 2;
         else if (av_delay > AV_DELAY_MAX)
             nb_frames = 0;
+//        printf("delay=%f nb=%d (A)\n", av_delay, nb_frames);
     } else {
         double vdelta;
 
@@ -607,7 +610,9 @@ static void do_video_out(AVFormatContext *s,
             if (!ost->sync_ipts_offset)
                 ost->sync_ipts_offset = 0.000001; /* one microsecond */
         }
+//        printf("delay=%f nb=%d (V)\n",vdelta, nb_frames);
     }
+  }
     
 #if defined(AVSYNC_DEBUG)
     {
@@ -793,7 +798,8 @@ static void do_video_out(AVFormatContext *s,
                 big_picture.quality = ist->st->quality;
             }else
                 big_picture.quality = ost->st->quality;
-            big_picture.pict_type = 0;
+            if(!me_threshold)
+                big_picture.pict_type = 0;
             big_picture.pts = AV_NOPTS_VALUE; //FIXME
             ret = avcodec_encode_video(enc, 
                                        video_buffer, VIDEO_BUFFER_SIZE,
@@ -1853,6 +1859,11 @@ static void opt_idct_algo(const char *arg)
     idct_algo = atoi(arg);
 }
 
+static void opt_me_threshold(const char *arg)
+{
+    me_threshold = atoi(arg);
+}
+
 
 static void opt_error_resilience(const char *arg)
 {
@@ -1878,6 +1889,11 @@ static void opt_verbose(const char *arg)
 {
     verbose = atoi(arg);
     av_log_set_level(atoi(arg));
+}
+
+static void opt_sync_method(const char *arg)
+{
+    sync_method = atoi(arg);
 }
 
 static void opt_frame_rate(const char *arg)
@@ -2554,6 +2570,8 @@ static void opt_input_file(const char *filename)
             enc->debug_mv = debug_mv;            
             if(bitexact)
                 enc->flags|= CODEC_FLAG_BITEXACT;
+            if(me_threshold)
+                enc->debug |= FF_DEBUG_MV;
 
             assert(enc->frame_rate_base == rfps_base); // should be true for now
             if (enc->frame_rate != rfps) { 
@@ -2844,6 +2862,7 @@ static void opt_output_file(const char *filename)
                 video_enc->inter_quant_bias = video_inter_quant_bias;
                 video_enc->dct_algo = dct_algo;
                 video_enc->idct_algo = idct_algo;
+                video_enc->me_threshold= me_threshold;
                 video_enc->strict_std_compliance = strict;
                 video_enc->error_rate = error_rate;
                 video_enc->noise_reduction= noise_reduction;
@@ -3415,6 +3434,7 @@ const OptionDef options[] = {
     { "v", HAS_ARG, {(void*)opt_verbose}, "control amount of logging", "verbose" },
     { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\" or \"dvd\")", "type" },
     { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
+    { "sync", HAS_ARG | OPT_EXPERT, {(void*)opt_sync_method}, "sync method", "" },
 
     /* video options */
     { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_video_bitrate}, "set video bitrate (in kbit/s)", "bitrate" },
@@ -3461,6 +3481,7 @@ const OptionDef options[] = {
       "method" },
     { "dct_algo", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_dct_algo}, "set dct algo",  "algo" },
     { "idct_algo", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_idct_algo}, "set idct algo",  "algo" },
+    { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "" },
     { "er", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_resilience}, "set error resilience",  "n" },
     { "ec", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_error_concealment}, "set error concealment",  "bit_mask" },
     { "bf", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_b_frames}, "use 'frames' B frames", "frames" },
