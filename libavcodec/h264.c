@@ -198,8 +198,11 @@ typedef struct H264Context{
      */
     int mv_cache_clean[2];
 
-    int block_offset[16+8];
-    int chroma_subblock_offset[16]; //FIXME remove
+    /**
+     * block_offset[ 0..23] for frame macroblocks
+     * block_offset[24..47] for field macroblocks
+     */
+    int block_offset[2*(16+8)];
     
     uint16_t *mb2b_xy; //FIXME are these 4 a good idea?
     uint16_t *mb2b8_xy;
@@ -416,26 +419,87 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
     const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
     int topleft_xy, top_xy, topright_xy, left_xy[2];
     int topleft_type, top_type, topright_type, left_type[2];
-    int left_block[4];
+    int left_block[8];
     int i;
 
     //wow what a mess, why didnt they simplify the interlacing&intra stuff, i cant imagine that these complex rules are worth it 
     
+    top_xy     = mb_xy  - s->mb_stride;
+    topleft_xy = top_xy - 1;
+    topright_xy= top_xy + 1;
+    left_xy[1] = left_xy[0] = mb_xy-1;
+    left_block[0]= 0;
+    left_block[1]= 1;
+    left_block[2]= 2;
+    left_block[3]= 3;
+    left_block[4]= 7;
+    left_block[5]= 10;
+    left_block[6]= 8;
+    left_block[7]= 11;
     if(h->sps.mb_aff){
-    //FIXME
-        topleft_xy = 0; /* avoid warning */
-        top_xy = 0; /* avoid warning */
-        topright_xy = 0; /* avoid warning */
-    }else{
-        topleft_xy = mb_xy-1 - s->mb_stride;
-        top_xy     = mb_xy   - s->mb_stride;
-        topright_xy= mb_xy+1 - s->mb_stride;
-        left_xy[0]   = mb_xy-1;
-        left_xy[1]   = mb_xy-1;
-        left_block[0]= 0;
-        left_block[1]= 1;
-        left_block[2]= 2;
-        left_block[3]= 3;
+        const int pair_xy          = s->mb_x     + (s->mb_y & ~1)*s->mb_stride;
+        const int top_pair_xy      = pair_xy     - s->mb_stride;
+        const int topleft_pair_xy  = top_pair_xy - 1;
+        const int topright_pair_xy = top_pair_xy + 1;
+        const int topleft_mb_frame_flag  = !IS_INTERLACED(s->current_picture.mb_type[topleft_pair_xy]);
+        const int top_mb_frame_flag      = !IS_INTERLACED(s->current_picture.mb_type[top_pair_xy]);
+        const int topright_mb_frame_flag = !IS_INTERLACED(s->current_picture.mb_type[topright_pair_xy]);
+        const int left_mb_frame_flag = !IS_INTERLACED(s->current_picture.mb_type[pair_xy-1]);
+        const int curr_mb_frame_flag = !IS_INTERLACED(mb_type);
+        const int bottom = (s->mb_y & 1);
+        tprintf("fill_caches: curr_mb_frame_flag:%d, left_mb_frame_flag:%d, topleft_mb_frame_flag:%d, top_mb_frame_flag:%d, topright_mb_frame_flag:%d\n", curr_mb_frame_flag, left_mb_frame_flag, topleft_mb_frame_flag, top_mb_frame_flag, topright_mb_frame_flag);
+        if (bottom
+                ? !curr_mb_frame_flag // bottom macroblock
+                : (!curr_mb_frame_flag && !top_mb_frame_flag) // top macroblock
+                ) {
+            top_xy -= s->mb_stride;
+        }
+        if (bottom
+                ? !curr_mb_frame_flag // bottom macroblock
+                : (!curr_mb_frame_flag && !topleft_mb_frame_flag) // top macroblock
+                ) {
+            topleft_xy -= s->mb_stride;
+        }
+        if (bottom
+                ? !curr_mb_frame_flag // bottom macroblock
+                : (!curr_mb_frame_flag && !topright_mb_frame_flag) // top macroblock
+                ) {
+            topright_xy -= s->mb_stride;
+        }
+        if (left_mb_frame_flag != curr_mb_frame_flag) {
+            left_xy[1] = left_xy[0] = pair_xy - 1;
+            if (curr_mb_frame_flag) {
+                if (bottom) {
+                    left_block[0]= 2;
+                    left_block[1]= 2;
+                    left_block[2]= 3;
+                    left_block[3]= 3;
+                    left_block[4]= 8;
+                    left_block[5]= 11;
+                    left_block[6]= 8;
+                    left_block[7]= 11;
+                } else {
+                    left_block[0]= 0;
+                    left_block[1]= 0;
+                    left_block[2]= 1;
+                    left_block[3]= 1;
+                    left_block[4]= 7;
+                    left_block[5]= 10;
+                    left_block[6]= 7;
+                    left_block[7]= 10;
+                }
+            } else {
+                left_xy[1] += s->mb_stride;
+                //left_block[0]= 0;
+                left_block[1]= 2;
+                left_block[2]= 0;
+                left_block[3]= 2;
+                //left_block[4]= 7;
+                left_block[5]= 10;
+                left_block[6]= 7;
+                left_block[7]= 10;
+            }
+        }
     }
 
     if(for_deblock){
@@ -523,15 +587,15 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
 */
 //FIXME constraint_intra_pred & partitioning & nnz (lets hope this is just a typo in the spec)
     if(top_type){
-        h->non_zero_count_cache[4+8*0]= h->non_zero_count[top_xy][0];
-        h->non_zero_count_cache[5+8*0]= h->non_zero_count[top_xy][1];
-        h->non_zero_count_cache[6+8*0]= h->non_zero_count[top_xy][2];
+        h->non_zero_count_cache[4+8*0]= h->non_zero_count[top_xy][4];
+        h->non_zero_count_cache[5+8*0]= h->non_zero_count[top_xy][5];
+        h->non_zero_count_cache[6+8*0]= h->non_zero_count[top_xy][6];
         h->non_zero_count_cache[7+8*0]= h->non_zero_count[top_xy][3];
     
-        h->non_zero_count_cache[1+8*0]= h->non_zero_count[top_xy][7];
+        h->non_zero_count_cache[1+8*0]= h->non_zero_count[top_xy][9];
         h->non_zero_count_cache[2+8*0]= h->non_zero_count[top_xy][8];
     
-        h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][10];
+        h->non_zero_count_cache[1+8*3]= h->non_zero_count[top_xy][12];
         h->non_zero_count_cache[2+8*3]= h->non_zero_count[top_xy][11];
         
         h->top_cbp= h->cbp_table[top_xy];
@@ -551,34 +615,24 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
         else                  h->top_cbp= 0;
     }
     
-    if(left_type[0]){
-        h->non_zero_count_cache[3+8*1]= h->non_zero_count[left_xy[0]][6];
-        h->non_zero_count_cache[3+8*2]= h->non_zero_count[left_xy[0]][5];
-        h->non_zero_count_cache[0+8*1]= h->non_zero_count[left_xy[0]][9]; //FIXME left_block
-        h->non_zero_count_cache[0+8*4]= h->non_zero_count[left_xy[0]][12];
-        h->left_cbp= h->cbp_table[left_xy[0]]; //FIXME interlacing
-    }else{
-        h->non_zero_count_cache[3+8*1]= 
-        h->non_zero_count_cache[3+8*2]= 
-        h->non_zero_count_cache[0+8*1]= 
-        h->non_zero_count_cache[0+8*4]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
-        
-        if(IS_INTRA(mb_type)) h->left_cbp= 0x1C0;//FIXME interlacing
-        else                  h->left_cbp= 0;
+    for (i=0; i<2; i++) {
+        if(left_type[i]){
+            h->non_zero_count_cache[3+8*1 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[0+2*i]];
+            h->non_zero_count_cache[3+8*2 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[1+2*i]];
+            h->non_zero_count_cache[0+8*1 +   8*i]= h->non_zero_count[left_xy[i]][left_block[4+2*i]];
+            h->non_zero_count_cache[0+8*4 +   8*i]= h->non_zero_count[left_xy[i]][left_block[5+2*i]];
+            h->left_cbp= h->cbp_table[left_xy[i]]; //FIXME interlacing
+        }else{
+            h->non_zero_count_cache[3+8*1 + 2*8*i]= 
+            h->non_zero_count_cache[3+8*2 + 2*8*i]= 
+            h->non_zero_count_cache[0+8*1 +   8*i]= 
+            h->non_zero_count_cache[0+8*4 +   8*i]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
+            
+            if(IS_INTRA(mb_type)) h->left_cbp= 0x1C0;//FIXME interlacing
+            else                  h->left_cbp= 0;
+        }
     }
-    
-    if(left_type[1]){
-        h->non_zero_count_cache[3+8*3]= h->non_zero_count[left_xy[1]][4];
-        h->non_zero_count_cache[3+8*4]= h->non_zero_count[left_xy[1]][3];
-        h->non_zero_count_cache[0+8*2]= h->non_zero_count[left_xy[1]][8];
-        h->non_zero_count_cache[0+8*5]= h->non_zero_count[left_xy[1]][11];
-    }else{
-        h->non_zero_count_cache[3+8*3]= 
-        h->non_zero_count_cache[3+8*4]= 
-        h->non_zero_count_cache[0+8*2]= 
-        h->non_zero_count_cache[0+8*5]= h->pps.cabac && !IS_INTRA(mb_type) ? 0 : 64;
-    }
-    
+
 #if 1
     //FIXME direct mb can skip much of this
     if(IS_INTER(mb_type) || (IS_DIRECT(mb_type) && h->direct_spatial_mv_pred)){
@@ -851,21 +905,21 @@ static inline void write_back_non_zero_count(H264Context *h){
     MpegEncContext * const s = &h->s;
     const int mb_xy= s->mb_x + s->mb_y*s->mb_stride;
 
-    h->non_zero_count[mb_xy][0]= h->non_zero_count_cache[4+8*4];
-    h->non_zero_count[mb_xy][1]= h->non_zero_count_cache[5+8*4];
-    h->non_zero_count[mb_xy][2]= h->non_zero_count_cache[6+8*4];
+    h->non_zero_count[mb_xy][0]= h->non_zero_count_cache[7+8*1];
+    h->non_zero_count[mb_xy][1]= h->non_zero_count_cache[7+8*2];
+    h->non_zero_count[mb_xy][2]= h->non_zero_count_cache[7+8*3];
     h->non_zero_count[mb_xy][3]= h->non_zero_count_cache[7+8*4];
-    h->non_zero_count[mb_xy][4]= h->non_zero_count_cache[7+8*3];
-    h->non_zero_count[mb_xy][5]= h->non_zero_count_cache[7+8*2];
-    h->non_zero_count[mb_xy][6]= h->non_zero_count_cache[7+8*1];
+    h->non_zero_count[mb_xy][4]= h->non_zero_count_cache[4+8*4];
+    h->non_zero_count[mb_xy][5]= h->non_zero_count_cache[5+8*4];
+    h->non_zero_count[mb_xy][6]= h->non_zero_count_cache[6+8*4];
     
-    h->non_zero_count[mb_xy][7]= h->non_zero_count_cache[1+8*2];
+    h->non_zero_count[mb_xy][9]= h->non_zero_count_cache[1+8*2];
     h->non_zero_count[mb_xy][8]= h->non_zero_count_cache[2+8*2];
-    h->non_zero_count[mb_xy][9]= h->non_zero_count_cache[2+8*1];
+    h->non_zero_count[mb_xy][7]= h->non_zero_count_cache[2+8*1];
 
-    h->non_zero_count[mb_xy][10]=h->non_zero_count_cache[1+8*5];
+    h->non_zero_count[mb_xy][12]=h->non_zero_count_cache[1+8*5];
     h->non_zero_count[mb_xy][11]=h->non_zero_count_cache[2+8*5];
-    h->non_zero_count[mb_xy][12]=h->non_zero_count_cache[2+8*4];
+    h->non_zero_count[mb_xy][10]=h->non_zero_count_cache[2+8*4];
 }
 
 /**
@@ -2654,11 +2708,13 @@ static void frame_start(H264Context *h){
 
     for(i=0; i<16; i++){
         h->block_offset[i]= 4*((scan8[i] - scan8[0])&7) + 4*s->linesize*((scan8[i] - scan8[0])>>3);
-        h->chroma_subblock_offset[i]= 2*((scan8[i] - scan8[0])&7) + 2*s->uvlinesize*((scan8[i] - scan8[0])>>3);
+        h->block_offset[24+i]= 4*((scan8[i] - scan8[0])&7) + 8*s->linesize*((scan8[i] - scan8[0])>>3);
     }
     for(i=0; i<4; i++){
         h->block_offset[16+i]=
         h->block_offset[20+i]= 4*((scan8[i] - scan8[0])&7) + 4*s->uvlinesize*((scan8[i] - scan8[0])>>3);
+        h->block_offset[24+16+i]=
+        h->block_offset[24+20+i]= 4*((scan8[i] - scan8[0])&7) + 8*s->uvlinesize*((scan8[i] - scan8[0])>>3);
     }
 
     /* can't be in alloc_tables because linesize isn't known there.
@@ -2677,6 +2733,8 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
     src_cb -= uvlinesize;
     src_cr -= uvlinesize;
 
+    // There is two lines saved, the line above the the top macroblock of a pair,
+    // and the line above the bottom macroblock
     h->left_border[0]= h->top_border[s->mb_x][15];
     for(i=1; i<17; i++){
         h->left_border[i]= src_y[15+i*  linesize];
@@ -2748,12 +2806,10 @@ static void hl_decode_mb(H264Context *h){
     uint8_t  *dest_y, *dest_cb, *dest_cr;
     int linesize, uvlinesize /*dct_offset*/;
     int i;
+    int *block_offset = &h->block_offset[0];
 
     if(!s->decode)
         return;
-
-    if(s->mb_skiped){
-    }
 
     dest_y  = s->current_picture.data[0] + (mb_y * 16* s->linesize  ) + mb_x * 16;
     dest_cb = s->current_picture.data[1] + (mb_y * 8 * s->uvlinesize) + mb_x * 8;
@@ -2762,10 +2818,11 @@ static void hl_decode_mb(H264Context *h){
     if (h->mb_field_decoding_flag) {
         linesize = s->linesize * 2;
         uvlinesize = s->uvlinesize * 2;
+        block_offset = &h->block_offset[24];
         if(mb_y&1){ //FIXME move out of this func?
             dest_y -= s->linesize*15;
-            dest_cb-= s->linesize*7;
-            dest_cr-= s->linesize*7;
+            dest_cb-= s->uvlinesize*7;
+            dest_cr-= s->uvlinesize*7;
         }
     } else {
         linesize = s->linesize;
@@ -2781,21 +2838,21 @@ static void hl_decode_mb(H264Context *h){
         for(i=0; i<16; i++) {
             for (y=0; y<4; y++) {
                 for (x=0; x<4; x++) {
-                    *(dest_y + h->block_offset[i] + y*linesize + x) = h->mb[i*16+y*4+x];
+                    *(dest_y + block_offset[i] + y*linesize + x) = h->mb[i*16+y*4+x];
                 }
             }
         }
         for(i=16; i<16+4; i++) {
             for (y=0; y<4; y++) {
                 for (x=0; x<4; x++) {
-                    *(dest_cb + h->block_offset[i] + y*uvlinesize + x) = h->mb[i*16+y*4+x];
+                    *(dest_cb + block_offset[i] + y*uvlinesize + x) = h->mb[i*16+y*4+x];
                 }
             }
         }
         for(i=20; i<20+4; i++) {
             for (y=0; y<4; y++) {
                 for (x=0; x<4; x++) {
-                    *(dest_cr + h->block_offset[i] + y*uvlinesize + x) = h->mb[i*16+y*4+x];
+                    *(dest_cr + block_offset[i] + y*uvlinesize + x) = h->mb[i*16+y*4+x];
                 }
             }
         }
@@ -2812,14 +2869,14 @@ static void hl_decode_mb(H264Context *h){
             if(IS_INTRA4x4(mb_type)){
                 if(!s->encoding){
                     for(i=0; i<16; i++){
-                        uint8_t * const ptr= dest_y + h->block_offset[i];
+                        uint8_t * const ptr= dest_y + block_offset[i];
                         uint8_t *topright;
                         const int dir= h->intra4x4_pred_mode_cache[ scan8[i] ];
                         int tr;
 
                         if(dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED){
                             const int topright_avail= (h->topright_samples_available<<i)&0x8000;
-                            assert(mb_y || linesize <= h->block_offset[i]);
+                            assert(mb_y || linesize <= block_offset[i]);
                             if(!topright_avail){
                                 tr= ptr[3 - linesize]*0x01010101;
                                 topright= (uint8_t*) &tr;
@@ -2861,14 +2918,14 @@ static void hl_decode_mb(H264Context *h){
             if(s->codec_id == CODEC_ID_H264){
                 for(i=0; i<16; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
-                        uint8_t * const ptr= dest_y + h->block_offset[i];
+                        uint8_t * const ptr= dest_y + block_offset[i];
                         s->dsp.h264_idct_add(ptr, h->mb + i*16, linesize);
                     }
                 }
             }else{
                 for(i=0; i<16; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){ //FIXME benchmark weird rule, & below
-                        uint8_t * const ptr= dest_y + h->block_offset[i];
+                        uint8_t * const ptr= dest_y + block_offset[i];
                         svq3_add_idct_c(ptr, h->mb + i*16, linesize, s->qscale, IS_INTRA(mb_type) ? 1 : 0);
                     }
                 }
@@ -2881,26 +2938,26 @@ static void hl_decode_mb(H264Context *h){
             if(s->codec_id == CODEC_ID_H264){
                 for(i=16; i<16+4; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                        uint8_t * const ptr= dest_cb + h->block_offset[i];
+                        uint8_t * const ptr= dest_cb + block_offset[i];
                         s->dsp.h264_idct_add(ptr, h->mb + i*16, uvlinesize);
                     }
                 }
                 for(i=20; i<20+4; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                        uint8_t * const ptr= dest_cr + h->block_offset[i];
+                        uint8_t * const ptr= dest_cr + block_offset[i];
                         s->dsp.h264_idct_add(ptr, h->mb + i*16, uvlinesize);
                     }
                 }
             }else{
                 for(i=16; i<16+4; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                        uint8_t * const ptr= dest_cb + h->block_offset[i];
+                        uint8_t * const ptr= dest_cb + block_offset[i];
                         svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
                     }
                 }
                 for(i=20; i<20+4; i++){
                     if(h->non_zero_count_cache[ scan8[i] ] || h->mb[i*16]){
-                        uint8_t * const ptr= dest_cr + h->block_offset[i];
+                        uint8_t * const ptr= dest_cr + block_offset[i];
                         svq3_add_idct_c(ptr, h->mb + i*16, uvlinesize, chroma_qp[s->qscale + 12] - 12, 2);
                     }
                 }
@@ -3577,14 +3634,11 @@ static int decode_slice_header(H264Context *h){
     }
     
     s->mb_width= h->sps.mb_width;
-    s->mb_height= h->sps.mb_height;
+    s->mb_height= h->sps.mb_height * (2 - h->sps.frame_mbs_only_flag);
     
     h->b_stride=  s->mb_width*4 + 1;
     h->b8_stride= s->mb_width*2 + 1;
 
-    s->resync_mb_x = s->mb_x = first_mb_in_slice % s->mb_width;
-    s->resync_mb_y = s->mb_y = first_mb_in_slice / s->mb_width; //FIXME AFFW
-    
     s->width = 16*s->mb_width - 2*(h->sps.crop_left + h->sps.crop_right );
     if(h->sps.frame_mbs_only_flag)
         s->height= 16*s->mb_height - 2*(h->sps.crop_top  + h->sps.crop_bottom);
@@ -3626,10 +3680,15 @@ static int decode_slice_header(H264Context *h){
     }else{
         if(get_bits1(&s->gb)) //field_pic_flag
             s->picture_structure= PICT_TOP_FIELD + get_bits1(&s->gb); //bottom_field_flag
-        else
+        else {
             s->picture_structure= PICT_FRAME;
+            first_mb_in_slice <<= 1;
+        }
     }
 
+    s->resync_mb_x = s->mb_x = first_mb_in_slice % s->mb_width;
+    s->resync_mb_y = s->mb_y = first_mb_in_slice / s->mb_width; //FIXME AFFW
+    
     if(s->picture_structure==PICT_FRAME){
         h->curr_pic_num=   h->frame_num;
         h->max_pic_num= 1<< h->sps.log2_max_frame_num;
@@ -3742,8 +3801,10 @@ static int decode_slice_header(H264Context *h){
     h->slice_num++;
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-        av_log(h->s.avctx, AV_LOG_DEBUG, "slice:%d mb:%d %c pps:%d frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d weight:%d%s\n", 
-               h->slice_num, first_mb_in_slice, 
+        av_log(h->s.avctx, AV_LOG_DEBUG, "slice:%d %s mb:%d %c pps:%d frame:%d poc:%d/%d ref:%d/%d qp:%d loop:%d weight:%d%s\n", 
+               h->slice_num,
+               (s->picture_structure==PICT_FRAME ? "F" : s->picture_structure==PICT_TOP_FIELD ? "T" : "B"),
+               first_mb_in_slice, 
                av_get_pict_type_char(h->slice_type),
                pps_id, h->frame_num,
                s->current_picture_ptr->field_poc[0], s->current_picture_ptr->field_poc[1],
@@ -3994,11 +4055,11 @@ static int decode_mb_cavlc(H264Context *h){
             return 0;
         }
     }
-    if(h->sps.mb_aff /* && !field pic FIXME needed? */){
-        if((s->mb_y&1)==0)
+    if(h->sps.mb_aff && s->picture_structure==PICT_FRAME ){
+        if ( ((s->mb_y&1) == 0) || h->prev_mb_skiped)
             h->mb_field_decoding_flag = get_bits1(&s->gb);
     }else
-        h->mb_field_decoding_flag=0; //FIXME som ed note ?!
+        h->mb_field_decoding_flag= (s->picture_structure!=PICT_FRAME);
     
     h->prev_mb_skiped= 0;
     
@@ -4618,6 +4679,7 @@ static int decode_cabac_mb_cbp_luma( H264Context *h) {
         }
 
         /* No need to test for skip as we put 0 for skip block */
+        /* No need to test for IPCM as we put 1 for IPCM block */
         if( mba_xy >= 0 ) {
             int i8x8a = block_idx_xy[(x-1)&0x03][y]/4;
             if( ((h->cbp_table[mba_xy] >> i8x8a)&0x01) == 0 )
@@ -5764,7 +5826,7 @@ static int decode_slice(H264Context *h){
 
         for(;;){
             int ret = decode_mb_cabac(h);
-            int eos = get_cabac_terminate( &h->cabac ); /* End of Slice flag */
+            int eos;
 
             if(ret>=0) hl_decode_mb(h);
 
@@ -5773,11 +5835,11 @@ static int decode_slice(H264Context *h){
                 s->mb_y++;
 
                 if(ret>=0) ret = decode_mb_cabac(h);
-                eos = get_cabac_terminate( &h->cabac );
 
                 hl_decode_mb(h);
                 s->mb_y--;
             }
+            eos = get_cabac_terminate( &h->cabac );
 
             if( ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 1) {
                 av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
@@ -5789,6 +5851,9 @@ static int decode_slice(H264Context *h){
                 s->mb_x = 0;
                 ff_draw_horiz_band(s, 16*s->mb_y, 16);
                 ++s->mb_y;
+                if(h->sps.mb_aff && s->picture_structure==PICT_FRAME ) {
+                    ++s->mb_y;
+                }
             }
 
             if( eos || s->mb_y >= s->mb_height ) {
@@ -5829,7 +5894,11 @@ static int decode_slice(H264Context *h){
             if(++s->mb_x >= s->mb_width){
                 s->mb_x=0;
                 ff_draw_horiz_band(s, 16*s->mb_y, 16);
-                if(++s->mb_y >= s->mb_height){
+                ++s->mb_y;
+                if(h->sps.mb_aff && s->picture_structure==PICT_FRAME ) {
+                    ++s->mb_y;
+                }
+                if(s->mb_y >= s->mb_height){
                     tprintf("slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
 
                     if(get_bits_count(&s->gb) == s->gb.size_in_bits ) {
