@@ -103,26 +103,44 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
     return hdrsize;
 }
 
-void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, 
-                    int has_extra_data)
+/* We could be given one of the three possible structures here:
+ * WAVEFORMAT, PCMWAVEFORMAT or WAVEFORMATEX. Each structure
+ * is an expansion of the previous one with the fields added
+ * at the bottom. PCMWAVEFORMAT adds 'WORD wBitsPerSample' and
+ * WAVEFORMATEX adds 'WORD  cbSize' and basically makes itself
+ * an openended structure.
+ */
+void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size) 
 {
     int id;
 
     id = get_le16(pb);
+    codec->codec_id = wav_codec_get_id(id, codec->frame_bits);
     codec->codec_type = CODEC_TYPE_AUDIO;
     codec->codec_tag = id;
     codec->channels = get_le16(pb);
     codec->sample_rate = get_le32(pb);
     codec->bit_rate = get_le32(pb) * 8;
     codec->block_align = get_le16(pb);
-    codec->bits_per_sample = get_le16(pb); /* bits per sample */
-    codec->codec_id = wav_codec_get_id(id, codec->frame_bits);
-    if (has_extra_data) {
+    if (size == 14) {  /* We're dealing with plain vanilla WAVEFORMAT */
+        codec->bits_per_sample = 8;
+	return;
+    }
+    
+    codec->bits_per_sample = get_le16(pb);
+    if (size > 16) {  /* We're obviously dealing with WAVEFORMATEX */
 	codec->extradata_size = get_le16(pb);
 	if (codec->extradata_size > 0) {
+	    if (codec->extradata_size > size - 18)
+	        codec->extradata_size = size - 18;
             codec->extradata = av_mallocz(codec->extradata_size);
             get_buffer(pb, codec->extradata, codec->extradata_size);
-        }
+        } else
+	    codec->extradata_size = 0;
+	
+	/* It is possible for the chunk to contain garbage at the end */
+	if (size - codec->extradata_size - 18 > 0)
+	    url_fskip(pb, size - codec->extradata_size - 18);
     }
 }
 
@@ -259,7 +277,7 @@ static int wav_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR_NOMEM;
 
-    get_wav_header(pb, &st->codec, (size >= 18));
+    get_wav_header(pb, &st->codec, size);
     
     size = find_tag(pb, MKTAG('d', 'a', 't', 'a'));
     if (size < 0)

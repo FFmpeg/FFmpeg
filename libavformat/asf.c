@@ -806,7 +806,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    asf->packet_size = asf->hdr.max_pktsize;
             asf->nb_packets = asf->hdr.packets_count;
         } else if (!memcmp(&g, &stream_header, sizeof(GUID))) {
-            int type, total_size;
+            int type, total_size, type_specific_size;
             unsigned int tag1;
             int64_t pos1, pos2;
 
@@ -832,7 +832,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
             get_guid(pb, &g);
             total_size = get_le64(pb);
-            get_le32(pb);
+            type_specific_size = get_le32(pb);
             get_le32(pb);
 	    st->id = get_le16(pb) & 0x7f; /* stream id */
             // mapping of asf ID to AV stream ID;
@@ -842,7 +842,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	    st->codec.codec_type = type;
             st->codec.frame_rate = 15 * s->pts_den / s->pts_num; // 15 fps default
             if (type == CODEC_TYPE_AUDIO) {
-                get_wav_header(pb, &st->codec, 1);
+                get_wav_header(pb, &st->codec, type_specific_size);
 		/* We have to init the frame size at some point .... */
 		pos2 = url_ftell(pb);
 		if (gsize > (pos2 + 8 - pos1 + 24)) {

@@ -18,8 +18,7 @@ typedef struct CodecTag {
 void put_bmp_header(ByteIOContext *pb, AVCodecContext *enc, const CodecTag *tags, int for_asf);
 int put_wav_header(ByteIOContext *pb, AVCodecContext *enc);
 int wav_codec_get_id(unsigned int tag, int bps);
-void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, 
-                    int has_extra_data);
+void get_wav_header(ByteIOContext *pb, AVCodecContext *codec, int size); 
 
 extern const CodecTag codec_bmp_tags[];
 extern const CodecTag codec_wav_tags[];
