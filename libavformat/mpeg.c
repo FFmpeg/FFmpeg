@@ -730,6 +730,15 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
             }
         }
 
+        if (s->is_mpeg2) {
+            /* special stuffing byte that is always written
+               to prevent accidental generation of start codes. */
+            put_byte(&ctx->pb, 0xff);
+
+            for(i=0;i<stuffing_size;i++)
+                put_byte(&ctx->pb, 0xff);
+        }
+
         if (startcode == PRIVATE_STREAM_1) {
             put_byte(&ctx->pb, id);
             if (id >= 0xa0) {
@@ -744,15 +753,6 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
                 put_byte(&ctx->pb, stream->nb_frames);
                 put_be16(&ctx->pb, stream->frame_start_offset);
             }
-        }
-
-        if (s->is_mpeg2) {
-            /* special stuffing byte that is always written
-               to prevent accidental generation of start codes. */
-            put_byte(&ctx->pb, 0xff);
-
-            for(i=0;i<stuffing_size;i++)
-                put_byte(&ctx->pb, 0xff);
         }
 
         /* output data */
