@@ -1,7 +1,9 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#ifdef HAVE_AV_CONFIG_H
 #include "../config.h"
+#endif
 
 #ifndef __WINE_WINDEF16_H
 /* workaround for typedef conflict in MPlayer (wine typedefs) */
