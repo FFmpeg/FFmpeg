@@ -157,6 +157,7 @@ void jput_bits(PutBitContext *s, int n, unsigned int value)
 void jflush_put_bits(PutBitContext *s)
 {
     unsigned int b;
+    s->bit_buf |= ~1U >> s->bit_cnt; /* set all the unused bits to one */
 
     while (s->bit_cnt > 0) {
         b = s->bit_buf >> 24;
