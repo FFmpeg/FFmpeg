@@ -278,7 +278,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         
 	c->gmc1 = gmc1_altivec;
 
-#if (__GNUC__ * 100 + __GNUC_MINOR__ * 10 >= 330)
+#ifdef CONFIG_DARWIN // ATM gcc-3.3 and gcc-3.4 fail to compile these in linux...
 	c->hadamard8_diff[0] = hadamard8_diff16_altivec;
 	c->hadamard8_diff[1] = hadamard8_diff8x8_altivec;
 #endif

@@ -1302,7 +1302,7 @@ POWERPC_PERF_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 
-#if (__GNUC__ * 100 + __GNUC_MINOR__ * 10 >= 330)
+#ifdef CONFIG_DARWIN
 int hadamard8_diff8x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, uint8_t *src, int stride, int h){
 POWERPC_PERF_DECLARE(altivec_hadamard8_diff8x8_num, 1);
   int sum;
@@ -1612,7 +1612,7 @@ POWERPC_PERF_START_COUNT(altivec_hadamard8_diff16_num, 1);
 POWERPC_PERF_STOP_COUNT(altivec_hadamard8_diff16_num, 1);
   return score;
 }
-#endif // GCC >= 3.3
+#endif //CONFIG_DARWIN
 
 int has_altivec(void)
 {
