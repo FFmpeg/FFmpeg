@@ -1559,8 +1559,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         const int dct_algo = avctx->dct_algo;
         const int idct_algo= avctx->idct_algo;
 
+#ifdef CONFIG_ENCODERS
         if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX)
             c->fdct = ff_fdct_mmx;
+#endif //CONFIG_ENCODERS
 
         if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SIMPLEMMX){
             c->idct_put= ff_simple_idct_put_mmx;

@@ -67,6 +67,8 @@ void init_put_bits(PutBitContext *s,
 #endif
 }
 
+#ifdef CONFIG_ENCODERS
+
 /* return the number of bits output */
 int64_t get_bit_count(PutBitContext *s)
 {
@@ -86,6 +88,8 @@ void align_put_bits(PutBitContext *s)
 #endif
 }
 
+#endif //CONFIG_ENCODERS
+
 /* pad the end of the output stream with zeros */
 void flush_put_bits(PutBitContext *s)
 {
@@ -104,6 +108,8 @@ void flush_put_bits(PutBitContext *s)
 #endif
 }
 
+#ifdef CONFIG_ENCODERS
+
 void put_string(PutBitContext * pbc, char *s)
 {
     while(*s){
@@ -114,6 +120,8 @@ void put_string(PutBitContext * pbc, char *s)
 }
 
 /* bit input functions */
+
+#endif //CONFIG_ENCODERS
 
 void init_get_bits(GetBitContext *s,
                    const uint8_t *buffer, int bit_size)
