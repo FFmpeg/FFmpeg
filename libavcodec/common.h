@@ -224,11 +224,20 @@ static inline float floorf(float f) {
 
 #    include "bswap.h"
 
+// Use rip-relative addressing if compiling PIC code on x86-64.
 #    if defined(__MINGW32__) || defined(__CYGWIN__) || \
         defined(__OS2__) || (defined (__OpenBSD__) && !defined(__ELF__))
-#        define MANGLE(a) "_" #a
+#        if defined(ARCH_X86_64) && defined(PIC)
+#            define MANGLE(a) "_" #a"(%%rip)"
+#        else
+#            define MANGLE(a) "_" #a
+#        endif
 #    else
-#        define MANGLE(a) #a
+#        if defined(ARCH_X86_64) && defined(PIC)
+#            define MANGLE(a) #a"(%%rip)"
+#        else
+#            define MANGLE(a) #a
+#        endif
 #    endif
 
 /* debug stuff */
