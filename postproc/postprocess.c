@@ -638,7 +638,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 				else p--, *p=',';		//not last filter
 
 				plen= strlen(p);
-				spaceLeft= (int)p - (int)temp + plen;
+				spaceLeft= p - temp + plen;
 				if(spaceLeft + newlen  >= GET_MODE_BUFFER_SIZE)
 				{
 					ppMode.error++;
