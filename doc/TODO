@@ -14,7 +14,6 @@ Short term:
 - clean up (incompatible change, for 0.5.0): 
     * AVStream -> AVComponent
     * AVFormatContext -> AVInputStream/AVOutputStream
-    * CODEC_ID_MP3LAME and CODEC_ID_MP2 -> CODEC_ID_MPEGAUDIO
     * suppress rate_emu from AVCodecContext
 - add av_log() in libavcodec and suppress all printf
 - add new float/integer audio filterting and conversion : suppress

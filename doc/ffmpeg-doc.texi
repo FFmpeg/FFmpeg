@@ -754,7 +754,8 @@ the MinGW development library of SDL 1.2.x
 (@file{SDL-devel-1.2.x-mingw32.tar.gz}) from
 @url{http://www.libsdl.org}. Unpack it in a temporary place, and
 unpack the archive @file{i386-mingw32msvc.tar.gz} in the MinGW tool
-directory.
+directory. Edit the @file{sdl-config} script so that it gives the
+correct SDL directory when invoked.
 
 @item Extract the current version of FFmpeg (the latest release version or the current CVS snapshot whichever is recommended).
  
@@ -766,15 +767,31 @@ directory.
 suffices. If you have problems using SDL, verify that
 @file{sdl-config} can be launched from the MSYS command line.
 
-@item You can install FFmpeg in @file{Program Files/FFmpeg} by typing @file{make install}.
+@item You can install FFmpeg in @file{Program Files/FFmpeg} by typing @file{make install}. Don't forget to copy @file{SDL.dll} at the place you launch 
+@file{ffplay}.
 
 @end itemize
 
-Note: The target @file{make wininstaller} can be used to create a Nullsoft based Windows installer for FFmpeg and FFplay.
+Notes: 
+@itemize
 
-@subsection How to create a single Windows DLL from libavcodec and libavformat
- 
-Read @url{http://ffmpeg.org/win32.html}.
+@item The target @file{make wininstaller} can be used to create a
+Nullsoft based Windows installer for FFmpeg and FFplay. @file{SDL.dll}
+must be copied in the ffmpeg directory in order to build the
+installer.
+
+@item By using @code{./configure --enable-shared} when configuring ffmpeg, 
+you can build @file{avcodec.dll} and @file{avformat.dll}. With
+@code{make install} you install the FFmpeg DLLs and the associated
+headers in @file{Program Files/FFmpeg}. 
+
+@item Visual C++ compatibility: if you used @code{./configure --enable-shared} 
+when configuring FFmpeg, then FFmpeg tries to use the Microsoft Visual
+C++ @code{lib} tool to build @code{avcodec.lib} and
+@code{avformat.lib}. With these libraries, you can link your Visual C++
+code directly with the FFmpeg DLLs.
+
+@end itemize
 
 @subsection Cross compilation for Windows with Linux
 

@@ -69,11 +69,12 @@ No. Only GCC is supported. GCC is ported on most systems available and I
 don't see the need to pollute the source code with @code{#ifdef}s
 related to the compiler.
 
-@section I want to use ffmpeg or libavcodec under Windows. Can you support my proprietary C compiler XXX ?
+@section Can I use FFmpeg or libavcodec under Windows ?
 
-No. Use @code{mingw-gcc} available at @url{http://www.mingw.org/} to
-compile the code. It generates object files fully compatible with other
-windows compilers.
+Yes, but the MinGW tools @emph{must} be used to compile FFmpeg. You
+can link the resulting DLLs with any other Windows program. Read the
+@emph{Native Windows Compilation} section in the FFmpeg documentation
+to have more information.
 
 @section Can you add automake, libtool or autoconf support ?
 
