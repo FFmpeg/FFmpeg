@@ -500,19 +500,21 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
         st->codec.codec_type = CODEC_TYPE_AUDIO;
         st->codec.codec_id = CODEC_ID_RA_144;
     } else {
+        int flavor, sub_packet_h, coded_framesize;
         /* old version (4) */
         get_be32(pb); /* .ra4 */
-        get_be32(pb);
-        get_be16(pb);
+        get_be32(pb); /* data size */
+        get_be16(pb); /* version2 */
         get_be32(pb); /* header size */
-        get_be16(pb); /* add codec info */
-        get_be32(pb); /* coded frame size */
+        flavor= get_be16(pb); /* add codec info / flavor */
+        coded_framesize= get_be32(pb); /* coded frame size */
         get_be32(pb); /* ??? */
         get_be32(pb); /* ??? */
         get_be32(pb); /* ??? */
-        get_be16(pb); /* 1 */ 
-        get_be16(pb); /* coded frame size */
-        get_be32(pb);
+        sub_packet_h= get_be16(pb); /* 1 */ 
+        get_be16(pb); /* frame size */
+        get_be16(pb); /* sub packet size */
+        get_be16(pb); /* ??? */
         st->codec.sample_rate = get_be16(pb);
         get_be32(pb);
         st->codec.channels = get_be16(pb);
@@ -521,6 +523,16 @@ static void rm_read_audio_stream_info(AVFormatContext *s, AVStream *st,
         st->codec.codec_type = CODEC_TYPE_AUDIO;
         if (!strcmp(buf, "dnet")) {
             st->codec.codec_id = CODEC_ID_AC3;
+        } else if (!strcmp(buf, "28_8")) {
+            st->codec.codec_id = CODEC_ID_RA_288;
+            st->codec.extradata_size= 10;
+            st->codec.extradata= av_mallocz(st->codec.extradata_size);
+            /* this is completly braindead and broken, the idiot who added this codec and endianness
+               specific reordering to mplayer and libavcodec/ra288.c should be drowned in a see of cola */
+            //FIXME pass the unpermutated extradata
+            ((uint16_t*)st->codec.extradata)[1]= sub_packet_h;
+            ((uint16_t*)st->codec.extradata)[2]= flavor;
+            ((uint16_t*)st->codec.extradata)[3]= coded_framesize;
         } else {
             st->codec.codec_id = CODEC_ID_NONE;
             pstrcpy(st->codec.codec_name, sizeof(st->codec.codec_name),
