@@ -696,7 +696,7 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 #else
 #ifdef ARCH_POWERPC
 #ifdef HAVE_ALTIVEC
-        else if(c->cpuCaps & PP_CPU_CAPS_ALTIVEC)
+        if(c->cpuCaps & PP_CPU_CAPS_ALTIVEC)
 		postProcess_altivec(src, srcStride, dst, dstStride, width, height, QPs, QPStride, isColor, c);
         else
 #endif
