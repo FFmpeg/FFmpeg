@@ -76,6 +76,8 @@ endif
 # currently using libdts for dts decoding
 ifeq ($(CONFIG_DTS),yes)
 OBJS+= dtsdec.o
+CFLAGS += $(DTS_INC)
+EXTRALIBS += -ldts
 endif
 
 ifeq ($(CONFIG_FAAD),yes)
