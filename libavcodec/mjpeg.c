@@ -793,7 +793,7 @@ typedef struct MJpegDecodeContext {
     VLC vlcs[2][4];
     int qscale[4];      ///< quantizer scale calculated from quant_matrixes
 
-    int org_width, org_height;  /* size given at codec init */
+    int org_height;  /* size given at codec init */
     int first_picture;    /* true if decoding first picture */
     int interlaced;     /* true if interlaced */
     int bottom_field;   /* true if bottom field */
@@ -874,7 +874,6 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
 	return -1;
     s->start_code = -1;
     s->first_picture = 1;
-    s->org_width = avctx->width;
     s->org_height = avctx->height;
     
     build_vlc(&s->vlcs[0][0], bits_dc_luminance, val_dc_luminance, 12);
@@ -1027,13 +1026,17 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
             
         s->width = width;
         s->height = height;
+        s->avctx->width = s->width;
+        s->avctx->height = s->height;
+
         /* test interlaced mode */
         if (s->first_picture &&
             s->org_height != 0 &&
             s->height < ((s->org_height * 3) / 4)) {
             s->interlaced = 1;
 //	    s->bottom_field = (s->interlace_polarity) ? 1 : 0;
-	    s->bottom_field = 0;
+            s->bottom_field = 0;
+            s->avctx->height *= 2;
         }
 
         s->qscale_table= av_mallocz((s->width+15)/16);
@@ -1818,10 +1821,6 @@ eoi_parser:
                         }
                         *picture = s->picture;
                         *data_size = sizeof(AVFrame);
-                        avctx->height = s->height;
-                        if (s->interlaced)
-                            avctx->height *= 2;
-                        avctx->width = s->width;
 
                         if(!s->lossless){
                             picture->quality= FFMAX(FFMAX(s->qscale[0], s->qscale[1]), s->qscale[2]); 
@@ -1976,10 +1975,6 @@ read_header:
 
     *picture= s->picture;
     *data_size = sizeof(AVFrame);
-    avctx->height = s->height;
-    if (s->interlaced)
-        avctx->height *= 2;
-    avctx->width = s->width;
     
     if(!s->lossless){
         picture->quality= FFMAX(FFMAX(s->qscale[0], s->qscale[1]), s->qscale[2]); 
