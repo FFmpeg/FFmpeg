@@ -416,10 +416,11 @@ static int avi_write_header(AVFormatContext *s)
 	
 	if (!url_is_streamed(pb)) {
 	    unsigned char tag[5];
+	    int j;
     
             /* Starting to lay out AVI OpenDML master index. 
 	     * We want to make it JUNK entry for now, since we'd
-	     * like to get away without making AVI and OpenDML one 
+	     * like to get away without making AVI an OpenDML one 
 	     * for compatibility reasons.
 	     */
 	    avi->indexes[i].entry = avi->indexes[i].ents_allocated = 0;
@@ -432,7 +433,8 @@ static int avi_write_header(AVFormatContext *s)
 	                            /* dwChunkId */
 	    put_le64(pb, 0);        /* dwReserved[3]
 	    put_le32(pb, 0);           Must be 0.    */
-	    url_fskip(pb, AVI_MASTER_INDEX_SIZE * 4 * 4);
+	    for (j=0; j < AVI_MASTER_INDEX_SIZE * 2; j++)
+	         put_le64(pb, 0);
 	    end_tag(pb, avi->indexes[i].indx_start);
 	}
 	

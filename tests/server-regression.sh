@@ -1,5 +1,12 @@
 #!/bin/bash
-
+# Even in the 21st century some diffs are not supporting -u.
+diff -u $0 $0 > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  diff_cmd="diff -u"
+else
+  diff_cmd="diff"
+fi
+    
 # Make sure that the data directory exists
 mkdir -p data
 
@@ -22,7 +29,7 @@ sleep 2
         if [ `expr match $file "a-*"` -ne 0 ]; then
             wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file > ff-$file &
         else
-            wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file?date=19700101T000000Z | head --bytes=100000 > ff-$file &
+            wget $WGET_OPTIONS --output-document=- http://localhost:9999/$file?date=19700101T000000Z | dd bs=1 count=100000 > ff-$file 2>/dev/null &
         fi
         MDFILES="$MDFILES ff-$file"
     done    
@@ -32,7 +39,7 @@ sleep 2
 )
 kill $FFSERVER_PID
 wait > /dev/null 2>&1
-if diff -u data/ffserver.regression $1 ; then
+if $diff_cmd data/ffserver.regression $1 ; then
     echo 
     echo Server regression test succeeded.
     exit 0

@@ -2,40 +2,40 @@ ffmpeg regression test
 dda0ba041aef50a5101884291c06d4d9 *./data/a-mpeg1.mpg
 6713259d72260740bbddaea30631ea18 *./data/out.yuv
 stddev:  7.58 bytes:7299072
-60ead0315f310d7dd70e90fccf9cc64f *./data/a-msmpeg4v2.avi
+d0dc46dd831398237a690ebbeff18b64 *./data/a-msmpeg4v2.avi
 712aa6c959d1d90a78fe98657cbff19c *./data/out.yuv
 stddev:  8.11 bytes:7602176
-04c274a5e33e4ed672c96b55424a9f96 *./data/a-msmpeg4.avi
+dae855177b45cbe6e40c6777f95095ef *./data/a-msmpeg4.avi
 8786aa956838234fe3e48d0ef8cbd46c *./data/out.yuv
 stddev:  8.12 bytes:7602176
-fb7fb2dc6ac9b3b5f86a1312247e7ff1 *./data/a-wmv1.avi
+6633a1111c734c9156729b8b7e198c17 *./data/a-wmv1.avi
 7261e23fd8ad1de6efee022051b936be *./data/out.yuv
 stddev:  8.10 bytes:7602176
-b308178b516a268b69a8c4163b765388 *./data/a-wmv2.avi
+30dcbbe391149d981162a1f4727c43d6 *./data/a-wmv2.avi
 7261e23fd8ad1de6efee022051b936be *./data/out.yuv
 stddev:  8.10 bytes:7602176
-99bb47379a5323bb7622d584b074e727 *./data/a-h263.avi
+4bf9df20cdeb1aa01115761642b4e80b *./data/a-h263.avi
 545df74e0aa443499600faedd10a7065 *./data/out.yuv
 stddev:  8.18 bytes:7602176
-4a8c50bf0483b1bec7c7c3bbc3bbb2a6 *./data/a-h263p.avi
+496df9fe47c457144aac4178c960ad66 *./data/a-h263p.avi
 79649b61321beaaaa6413af8c18e4696 *./data/out.yuv
 stddev:  2.05 bytes:7602176
-ce7d9918b3d140acaedd249b2796a1de *./data/a-odivx.avi
+170cc33e7a786288d0e190aba76ce255 *./data/a-odivx.avi
 c753223d02441b59704c9859dbd7ff30 *./data/out.yuv
 stddev:  8.01 bytes:7602176
-c2bae3180c0b3b7e9fcc34b2f01855ad *./data/a-huffyuv.avi
+5704a082cc5c5970620123ae20566286 *./data/a-huffyuv.avi
 799d3db687f6cdd7a837ec156efc171f *./data/out.yuv
 stddev:  0.00 bytes:7602176
-306b8506ef8761e971d8e77bd8701b72 *./data/a-mpeg4-rc.avi
+6a359baea7b8b22d4a77ea1415c08d9b *./data/a-mpeg4-rc.avi
 580000bfe2d4359d9aa9a9415f953b3b *./data/out.yuv
 stddev: 10.53 bytes:7145472
-7fce203812794223bd238ad027522071 *./data/a-mpeg4-adv.avi
+2cbab98ebef5fbd229c66fb6435bf9a2 *./data/a-mpeg4-adv.avi
 b54262af56f6681186fa2c44e4ef6ec7 *./data/out.yuv
 stddev:  7.32 bytes:7602176
 a38cb11e3035a280f3dad3ccdff5997b *./data/a-mpeg1b.mpg
 da8e21c7b78b7a25558dc319524b91d8 *./data/out.yuv
 stddev:  6.32 bytes:6842368
-e9d0481d7b274de05a743ed3a87b70e1 *./data/a-mjpeg.avi
+07042f42b3119c39eb26537a84a451df *./data/a-mjpeg.avi
 f23a9e50a559e174766ee808c48fea22 *./data/out.yuv
 stddev:  8.87 bytes:7602176
 4b37703d3dc03873f99603165c0fe11e *./data/a-rv10.rm
