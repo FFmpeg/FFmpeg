@@ -685,7 +685,7 @@ DVMuxContext* dv_init_mux(AVFormatContext* s)
     /* Ok, everything seems to be in working order */
     c->frames = 0;
     c->has_audio = c->has_video = 0;
-    c->start_time = time(NULL);
+    c->start_time = 0;
     c->aspect = 0; /* 4:3 is the default */
     if ((int)(av_q2d(vst->codec.sample_aspect_ratio) * vst->codec.width / vst->codec.height * 10) == 17) /* 16:9 */ 
         c->aspect = 0x07;
