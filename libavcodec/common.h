@@ -129,6 +129,14 @@ typedef unsigned int  uint_fast16_t;
 typedef unsigned int  uint_fast32_t;
 #endif
 
+#ifndef INT_BIT
+#    if INT_MAX == INT64_MAX
+#        define INT_BIT 64
+#    else
+#        define INT_BIT 32
+#    endif
+#endif
+
 #if defined(CONFIG_OS2) || defined(CONFIG_SUNOS)
 static inline float floorf(float f) { 
     return floor(f); 

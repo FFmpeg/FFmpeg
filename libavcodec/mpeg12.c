@@ -696,7 +696,7 @@ void mpeg1_encode_mb(MpegEncContext *s,
 // RAL: Parameter added: f_or_b_code
 static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
 {
-    int code, bit_size, l, m, bits, range, sign;
+    int code, bit_size, l, bits, range, sign;
 
     if (val == 0) {
         /* zero vector */
@@ -708,13 +708,8 @@ static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code)
         bit_size = f_or_b_code - 1;
         range = 1 << bit_size;
         /* modulo encoding */
-        l = 16 * range;
-        m = 2 * l;
-        if (val < -l) {
-            val += m;
-        } else if (val >= l) {
-            val -= m;
-        }
+        l= INT_BIT - 5 - bit_size;
+        val= (val<<l)>>l;
 
         if (val >= 0) {
             val--;
@@ -1411,8 +1406,8 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
     val += pred;
     
     /* modulo decoding */
-    l = 1 << (shift+4);
-    val = ((val + l)&(l*2-1)) - l;
+    l= INT_BIT - 5 - shift;
+    val = (val<<l)>>l;
     return val;
 }
 

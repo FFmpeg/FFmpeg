@@ -1630,30 +1630,12 @@ void ff_h263_encode_motion(MpegEncContext * s, int val, int f_code)
         bit_size = f_code - 1;
         range = 1 << bit_size;
         /* modulo encoding */
-        l = range * 32;
-#if 1
-        val+= l;
-        val&= 2*l-1;
-        val-= l;
+        l= INT_BIT - 6 - bit_size;
+        val = (val<<l)>>l;
         sign = val>>31;
         val= (val^sign)-sign;
         sign&=1;
-#else
-        if (val < -l) {
-            val += 2*l;
-        } else if (val >= l) {
-            val -= 2*l;
-        }
 
-        assert(val>=-l && val<l);
-
-        if (val >= 0) {
-            sign = 0;
-        } else {
-            val = -val;
-            sign = 1;
-        }
-#endif
         val--;
         code = (val >> bit_size) + 1;
         bits = val & (range - 1);
@@ -4375,8 +4357,8 @@ static int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
 
     /* modulo decoding */
     if (!s->h263_long_vectors) {
-        l = 1 << (f_code + 4);
-        val = ((val + l)&(l*2-1)) - l;
+        l = INT_BIT - 5 - f_code;
+        val = (val<<l)>>l;
     } else {
         /* horrible h263 long vector mode */
         if (pred < -31 && val < -63)
