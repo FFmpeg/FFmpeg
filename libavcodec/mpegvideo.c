@@ -94,20 +94,20 @@ static uint8_t default_fcode_tab[MAX_MV*2+1];
 
 enum PixelFormat ff_yuv420p_list[2]= {PIX_FMT_YUV420P, -1};
 
-static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16)[2][64],
+static void convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][64],
                            const uint16_t *quant_matrix, int bias, int qmin, int qmax)
 {
     int qscale;
 
     for(qscale=qmin; qscale<=qmax; qscale++){
         int i;
-        if (s->dsp.fdct == ff_jpeg_fdct_islow 
+        if (dsp->fdct == ff_jpeg_fdct_islow 
 #ifdef FAAN_POSTSCALE
-            || s->dsp.fdct == ff_faandct
+            || dsp->fdct == ff_faandct
 #endif
             ) {
             for(i=0;i<64;i++) {
-                const int j= s->dsp.idct_permutation[i];
+                const int j= dsp->idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
                 /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
@@ -116,13 +116,13 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
                 qmat[qscale][i] = (int)((uint64_t_C(1) << QMAT_SHIFT) / 
                                 (qscale * quant_matrix[j]));
             }
-        } else if (s->dsp.fdct == fdct_ifast
+        } else if (dsp->fdct == fdct_ifast
 #ifndef FAAN_POSTSCALE
-                   || s->dsp.fdct == ff_faandct
+                   || dsp->fdct == ff_faandct
 #endif
                    ) {
             for(i=0;i<64;i++) {
-                const int j= s->dsp.idct_permutation[i];
+                const int j= dsp->idct_permutation[i];
                 /* 16 <= qscale * quant_matrix[i] <= 7905 */
                 /* 19952         <= aanscales[i] * qscale * quant_matrix[i]           <= 249205026 */
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
@@ -133,7 +133,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
             }
         } else {
             for(i=0;i<64;i++) {
-                const int j= s->dsp.idct_permutation[i];
+                const int j= dsp->idct_permutation[i];
                 /* We can safely suppose that 16 <= quant_matrix[i] <= 255
                    So 16           <= qscale * quant_matrix[i]             <= 7905
                    so (1<<19) / 16 >= (1<<19) / (qscale * quant_matrix[i]) >= (1<<19) / 7905
@@ -903,9 +903,9 @@ int MPV_encode_init(AVCodecContext *avctx)
     /* precompute matrix */
     /* for mjpeg, we do include qscale in the matrix */
     if (s->out_format != FMT_MJPEG) {
-        convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16, 
+        convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16, 
                        s->intra_matrix, s->intra_quant_bias, 1, 31);
-        convert_matrix(s, s->q_inter_matrix, s->q_inter_matrix16, 
+        convert_matrix(&s->dsp, s->q_inter_matrix, s->q_inter_matrix16, 
                        s->inter_matrix, s->inter_quant_bias, 1, 31);
     }
 
@@ -3522,7 +3522,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
             s->intra_matrix[j] = CLAMP_TO_8BIT((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
         }
-        convert_matrix(s, s->q_intra_matrix, s->q_intra_matrix16, 
+        convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16, 
                        s->intra_matrix, s->intra_quant_bias, 8, 8);
     }
     
