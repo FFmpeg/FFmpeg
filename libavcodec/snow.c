@@ -400,6 +400,7 @@ typedef struct SnowContext{
     uint8_t header_state[32];
     uint8_t block_state[128 + 32*128];
     int keyframe;
+    int always_reset;
     int version;
     int spatial_decomposition_type;
     int temporal_decomposition_type;
@@ -1526,7 +1527,7 @@ static inline void decode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTE
 static void reset_contexts(SnowContext *s){
     int plane_index, level, orientation;
 
-    for(plane_index=0; plane_index<2; plane_index++){
+    for(plane_index=0; plane_index<3; plane_index++){
         for(level=0; level<s->spatial_decomposition_count; level++){
             for(orientation=level ? 1:0; orientation<4; orientation++){
                 memset(s->plane[plane_index].band[level][orientation].state, 0, sizeof(s->plane[plane_index].band[level][orientation].state));
@@ -2261,10 +2262,14 @@ static void correlate(SnowContext *s, SubBand *b, DWTELEM *src, int stride, int 
 
 static void encode_header(SnowContext *s){
     int plane_index, level, orientation;
+    uint8_t kstate[32]={0};    
 
-    put_cabac(&s->c, s->header_state, s->keyframe); // state clearing stuff?
+    put_cabac(&s->c, kstate, s->keyframe);
+    if(s->keyframe || s->always_reset)
+        reset_contexts(s);
     if(s->keyframe){
         put_symbol(&s->c, s->header_state, s->version, 0);
+        put_cabac(&s->c, s->header_state, s->always_reset);
         put_symbol(&s->c, s->header_state, s->temporal_decomposition_type, 0);
         put_symbol(&s->c, s->header_state, s->temporal_decomposition_count, 0);
         put_symbol(&s->c, s->header_state, s->spatial_decomposition_count, 0);
@@ -2292,14 +2297,18 @@ static void encode_header(SnowContext *s){
 
 static int decode_header(SnowContext *s){
     int plane_index, level, orientation;
+    uint8_t kstate[32]={0};    
 
-    s->keyframe= get_cabac(&s->c, s->header_state);
+    s->keyframe= get_cabac(&s->c, kstate);
+    if(s->keyframe || s->always_reset)
+        reset_contexts(s);
     if(s->keyframe){
         s->version= get_symbol(&s->c, s->header_state, 0);
         if(s->version>0){
             av_log(s->avctx, AV_LOG_ERROR, "version %d not supported", s->version);
             return -1;
         }
+        s->always_reset= get_cabac(&s->c, s->header_state);
         s->temporal_decomposition_type= get_symbol(&s->c, s->header_state, 0);
         s->temporal_decomposition_count= get_symbol(&s->c, s->header_state, 0);
         s->spatial_decomposition_count= get_symbol(&s->c, s->header_state, 0);
@@ -2522,9 +2531,6 @@ static int frame_start(SnowContext *s){
    int w= s->avctx->width; //FIXME round up to x16 ?
    int h= s->avctx->height;
 
-   if(s->keyframe)
-        reset_contexts(s);
- 
     if(s->current_picture.data[0]){
         draw_edges(s->current_picture.data[0], s->current_picture.linesize[0], w   , h   , EDGE_WIDTH  );
         draw_edges(s->current_picture.data[1], s->current_picture.linesize[1], w>>1, h>>1, EDGE_WIDTH/2);
@@ -2557,8 +2563,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     
     s->input_picture = *pict;
 
-    memset(s->header_state, 0, sizeof(s->header_state));
-
     s->keyframe=avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
     pict->pict_type= s->keyframe ? FF_I_TYPE : FF_P_TYPE;
     
@@ -2571,6 +2575,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     }
 
     frame_start(s);
+    s->current_picture.key_frame= s->keyframe;
 
     if(pict->pict_type == P_TYPE){
         int block_width = (width +15)>>4;
@@ -2776,8 +2781,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     ff_init_cabac_decoder(c, buf, buf_size);
     ff_init_cabac_states(c, ff_h264_lps_range, ff_h264_mps_state, ff_h264_lps_state, 64);
-
-    memset(s->header_state, 0, sizeof(s->header_state));
 
     s->current_picture.pict_type= FF_I_TYPE; //FIXME I vs. P
     decode_header(s);
