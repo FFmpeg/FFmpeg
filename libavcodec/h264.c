@@ -289,8 +289,8 @@ typedef struct H264Context{
      * num_ref_idx_l0/1_active_minus1 + 1
      */
     int ref_count[2];// FIXME split for AFF
-    Picture *short_ref[16];
-    Picture *long_ref[16];
+    Picture *short_ref[32];
+    Picture *long_ref[32];
     Picture default_ref_list[2][32];
     Picture ref_list[2][32]; //FIXME size?
     Picture field_ref_list[2][32]; //FIXME size?
@@ -3126,7 +3126,7 @@ static int fill_default_ref_list(H264Context *h){
     MpegEncContext * const s = &h->s;
     int i;
     int smallest_poc_greater_than_current = -1;
-    Picture sorted_short_ref[16];
+    Picture sorted_short_ref[32];
     
     if(h->slice_type==B_TYPE){
         int out_i;
