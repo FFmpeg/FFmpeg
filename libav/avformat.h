@@ -129,6 +129,8 @@ typedef struct AVStream {
     int codec_info_state;     
     int codec_info_nb_repeat_frames;
     int codec_info_nb_real_frames;
+    /* ffmpeg.c private use */
+    int stream_copy; /* if TRUE, just copy stream */
 } AVStream;
 
 #define MAX_STREAMS 20
