@@ -79,7 +79,7 @@ static int decode_frame(AVCodecContext *avctx,
             for(i=0; i<4; i++)
                 a->offset[i]= *(bytestream++);
 
-            offset= a->offset[0];
+            offset= a->offset[0] - a->delta[ bytestream[2]&0xF ];
             for(x=0; x<avctx->width; x+=4){
                 luma[0]=( offset += a->delta[ bytestream[2]&0xF ]);
                 luma[1]=( offset += a->delta[ bytestream[2]>>4  ]);
@@ -87,13 +87,13 @@ static int decode_frame(AVCodecContext *avctx,
                 luma[3]=( offset += a->delta[ bytestream[0]>>4  ]);
                 luma += 4;
                 
-                *(cb++) = bytestream[1];
-                *(cr++) = bytestream[3];
+                *(cb++) = bytestream[3];
+                *(cr++) = bytestream[1];
                 
                 bytestream+= 4;
             }
         }else{
-            offset= a->offset[y&3];
+            offset= a->offset[y&3] - a->delta[ bytestream[2]&0xF ];
 
             for(x=0; x<avctx->width; x+=8){
                 luma[0]=( offset += a->delta[ bytestream[2]&0xF ]);
