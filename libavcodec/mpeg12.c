@@ -104,16 +104,19 @@ static uint8_t mpeg1_index_run[2][64];
 static int8_t mpeg1_max_level[2][64];
 #endif //CONFIG_ENCODERS
 
-static void init_2d_vlc_rl(RLTable *rl)
+static void init_2d_vlc_rl(RLTable *rl, int use_static)
 {
     int i;
     
     init_vlc(&rl->vlc, TEX_VLC_BITS, rl->n + 2, 
              &rl->table_vlc[0][1], 4, 2,
-             &rl->table_vlc[0][0], 4, 2);
+             &rl->table_vlc[0][0], 4, 2, use_static);
 
-    
-    rl->rl_vlc[0]= av_malloc(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
+    if(use_static)    
+        rl->rl_vlc[0]= av_mallocz_static(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
+    else
+        rl->rl_vlc[0]= av_malloc(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
+
     for(i=0; i<rl->vlc.table_size; i++){
         int code= rl->vlc.table[i][0];
         int len = rl->vlc.table[i][1];
@@ -763,7 +766,7 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
 	int i;
 
         done=1;
-        init_rl(&rl_mpeg1);
+        init_rl(&rl_mpeg1, 1);
 
 	for(i=0; i<64; i++)
 	{
@@ -991,31 +994,31 @@ static void init_vlcs(void)
 
         init_vlc(&dc_lum_vlc, DC_VLC_BITS, 12, 
                  vlc_dc_lum_bits, 1, 1,
-                 vlc_dc_lum_code, 2, 2);
+                 vlc_dc_lum_code, 2, 2, 1);
         init_vlc(&dc_chroma_vlc,  DC_VLC_BITS, 12, 
                  vlc_dc_chroma_bits, 1, 1,
-                 vlc_dc_chroma_code, 2, 2);
+                 vlc_dc_chroma_code, 2, 2, 1);
         init_vlc(&mv_vlc, MV_VLC_BITS, 17, 
                  &mbMotionVectorTable[0][1], 2, 1,
-                 &mbMotionVectorTable[0][0], 2, 1);
+                 &mbMotionVectorTable[0][0], 2, 1, 1);
         init_vlc(&mbincr_vlc, MBINCR_VLC_BITS, 36, 
                  &mbAddrIncrTable[0][1], 2, 1,
-                 &mbAddrIncrTable[0][0], 2, 1);
+                 &mbAddrIncrTable[0][0], 2, 1, 1);
         init_vlc(&mb_pat_vlc, MB_PAT_VLC_BITS, 64,
                  &mbPatTable[0][1], 2, 1,
-                 &mbPatTable[0][0], 2, 1);
+                 &mbPatTable[0][0], 2, 1, 1);
         
         init_vlc(&mb_ptype_vlc, MB_PTYPE_VLC_BITS, 7, 
                  &table_mb_ptype[0][1], 2, 1,
-                 &table_mb_ptype[0][0], 2, 1);
+                 &table_mb_ptype[0][0], 2, 1, 1);
         init_vlc(&mb_btype_vlc, MB_BTYPE_VLC_BITS, 11, 
                  &table_mb_btype[0][1], 2, 1,
-                 &table_mb_btype[0][0], 2, 1);
-        init_rl(&rl_mpeg1);
-        init_rl(&rl_mpeg2);
+                 &table_mb_btype[0][0], 2, 1, 1);
+        init_rl(&rl_mpeg1, 1);
+        init_rl(&rl_mpeg2, 1);
 
-        init_2d_vlc_rl(&rl_mpeg1);
-        init_2d_vlc_rl(&rl_mpeg2);
+        init_2d_vlc_rl(&rl_mpeg1, 1);
+        init_2d_vlc_rl(&rl_mpeg2, 1);
     }
 }
 

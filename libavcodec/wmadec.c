@@ -182,7 +182,7 @@ static void init_coef_vlc(VLC *vlc,
     const uint16_t *p;
     int i, l, j, level;
 
-    init_vlc(vlc, 9, n, table_bits, 1, 1, table_codes, 4, 4);
+    init_vlc(vlc, 9, n, table_bits, 1, 1, table_codes, 4, 4, 0);
 
     run_table = av_malloc(n * sizeof(uint16_t));
     level_table = av_malloc(n * sizeof(uint16_t));
@@ -493,13 +493,13 @@ static int wma_decode_init(AVCodecContext * avctx)
 #endif
         init_vlc(&s->hgain_vlc, 9, sizeof(hgain_huffbits), 
                  hgain_huffbits, 1, 1,
-                 hgain_huffcodes, 2, 2);
+                 hgain_huffcodes, 2, 2, 0);
     }
 
     if (s->use_exp_vlc) {
         init_vlc(&s->exp_vlc, 9, sizeof(scale_huffbits), 
                  scale_huffbits, 1, 1,
-                 scale_huffcodes, 4, 4);
+                 scale_huffcodes, 4, 4, 0);
     } else {
         wma_lsp_to_curve_init(s, s->frame_len);
     }

@@ -844,7 +844,7 @@ typedef struct MJpegDecodeContext {
 static int mjpeg_decode_dht(MJpegDecodeContext *s);
 
 static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_table, 
-                      int nb_codes)
+                      int nb_codes, int use_static)
 {
     uint8_t huff_size[256];
     uint16_t huff_code[256];
@@ -852,7 +852,7 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table, const uint8_t *val_tab
     memset(huff_size, 0, sizeof(huff_size));
     build_huffman_codes(huff_size, huff_code, bits_table, val_table);
     
-    return init_vlc(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2);
+    return init_vlc(vlc, 9, nb_codes, huff_size, 1, 1, huff_code, 2, 2, use_static);
 }
 
 static int mjpeg_decode_init(AVCodecContext *avctx)
@@ -882,10 +882,10 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     s->first_picture = 1;
     s->org_height = avctx->coded_height;
     
-    build_vlc(&s->vlcs[0][0], bits_dc_luminance, val_dc_luminance, 12);
-    build_vlc(&s->vlcs[0][1], bits_dc_chrominance, val_dc_chrominance, 12);
-    build_vlc(&s->vlcs[1][0], bits_ac_luminance, val_ac_luminance, 251);
-    build_vlc(&s->vlcs[1][1], bits_ac_chrominance, val_ac_chrominance, 251);
+    build_vlc(&s->vlcs[0][0], bits_dc_luminance, val_dc_luminance, 12, 0);
+    build_vlc(&s->vlcs[0][1], bits_dc_chrominance, val_dc_chrominance, 12, 0);
+    build_vlc(&s->vlcs[1][0], bits_ac_luminance, val_ac_luminance, 251, 0);
+    build_vlc(&s->vlcs[1][1], bits_ac_chrominance, val_ac_chrominance, 251, 0);
 
     if (avctx->flags & CODEC_FLAG_EXTERN_HUFF)
     {
@@ -1036,7 +1036,7 @@ static int mjpeg_decode_dht(MJpegDecodeContext *s)
         free_vlc(&s->vlcs[class][index]);
         dprintf("class=%d index=%d nb_codes=%d\n",
                class, index, code_max + 1);
-        if(build_vlc(&s->vlcs[class][index], bits_table, val_table, code_max + 1) < 0){
+        if(build_vlc(&s->vlcs[class][index], bits_table, val_table, code_max + 1, 0) < 0){
             return -1;
         }
     }

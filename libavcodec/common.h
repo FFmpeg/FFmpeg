@@ -939,7 +939,8 @@ int check_marker(GetBitContext *s, const char *msg);
 void align_get_bits(GetBitContext *s);
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
-             const void *codes, int codes_wrap, int codes_size);
+             const void *codes, int codes_wrap, int codes_size,
+             int use_static);
 void free_vlc(VLC *vlc);
 
 /**

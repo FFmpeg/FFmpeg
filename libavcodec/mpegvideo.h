@@ -841,8 +841,8 @@ typedef struct RLTable {
     RL_VLC_ELEM *rl_vlc[32];       ///< decoding only 
 } RLTable;
 
-void init_rl(RLTable *rl);
-void init_vlc_rl(RLTable *rl);
+void init_rl(RLTable *rl, int use_static);
+void init_vlc_rl(RLTable *rl, int use_static);
 
 static inline int get_rl_index(const RLTable *rl, int last, int run, int level)
 {

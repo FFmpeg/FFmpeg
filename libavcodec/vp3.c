@@ -2420,27 +2420,27 @@ static int vp3_decode_init(AVCodecContext *avctx)
         /* DC histograms */
         init_vlc(&s->dc_vlc[i], 5, 32,
             &dc_bias[i][0][1], 4, 2,
-            &dc_bias[i][0][0], 4, 2);
+            &dc_bias[i][0][0], 4, 2, 0);
 
         /* group 1 AC histograms */
         init_vlc(&s->ac_vlc_1[i], 5, 32,
             &ac_bias_0[i][0][1], 4, 2,
-            &ac_bias_0[i][0][0], 4, 2);
+            &ac_bias_0[i][0][0], 4, 2, 0);
 
         /* group 2 AC histograms */
         init_vlc(&s->ac_vlc_2[i], 5, 32,
             &ac_bias_1[i][0][1], 4, 2,
-            &ac_bias_1[i][0][0], 4, 2);
+            &ac_bias_1[i][0][0], 4, 2, 0);
 
         /* group 3 AC histograms */
         init_vlc(&s->ac_vlc_3[i], 5, 32,
             &ac_bias_2[i][0][1], 4, 2,
-            &ac_bias_2[i][0][0], 4, 2);
+            &ac_bias_2[i][0][0], 4, 2, 0);
 
         /* group 4 AC histograms */
         init_vlc(&s->ac_vlc_4[i], 5, 32,
             &ac_bias_3[i][0][1], 4, 2,
-            &ac_bias_3[i][0][0], 4, 2);
+            &ac_bias_3[i][0][0], 4, 2, 0);
     }
 
     /* build quantization zigzag table */

@@ -220,17 +220,12 @@ static void idct(DCTELEM block[64]){
 }
 
 static void init_vlcs(FourXContext *f){
-    static int done = 0;
     int i;
 
-    if (!done) {
-        done = 1;
-
-        for(i=0; i<4; i++){
-            init_vlc(&block_type_vlc[i], BLOCK_TYPE_VLC_BITS, 7, 
-                     &block_type_tab[i][0][1], 2, 1,
-                     &block_type_tab[i][0][0], 2, 1);
-        }
+    for(i=0; i<4; i++){
+        init_vlc(&block_type_vlc[i], BLOCK_TYPE_VLC_BITS, 7, 
+                 &block_type_tab[i][0][1], 2, 1,
+                 &block_type_tab[i][0][0], 2, 1, 1);
     }
 }
 
@@ -544,7 +539,7 @@ static uint8_t *read_huffman_tables(FourXContext *f, uint8_t * const buf){
     
     init_vlc(&f->pre_vlc, ACDC_VLC_BITS, 257, 
              len_tab , 1, 1,
-             bits_tab, 4, 4);
+             bits_tab, 4, 4, 0);
              
     return ptr;
 }

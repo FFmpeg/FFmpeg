@@ -1931,9 +1931,9 @@ void h263_encode_init(MpegEncContext *s)
 
         init_uni_dc_tab();
 
-        init_rl(&rl_inter);
-        init_rl(&rl_intra);
-        init_rl(&rl_intra_aic);
+        init_rl(&rl_inter, 1);
+        init_rl(&rl_intra, 1);
+        init_rl(&rl_intra_aic, 1);
         
         init_uni_mpeg4_rl_tab(&rl_intra, uni_mpeg4_intra_rl_bits, uni_mpeg4_intra_rl_len);
         init_uni_mpeg4_rl_tab(&rl_inter, uni_mpeg4_inter_rl_bits, uni_mpeg4_inter_rl_len);
@@ -2797,13 +2797,17 @@ static VLC mb_type_b_vlc;
 static VLC h263_mbtype_b_vlc;
 static VLC cbpc_b_vlc;
 
-void init_vlc_rl(RLTable *rl)
+void init_vlc_rl(RLTable *rl, int use_static)
 {
     int i, q;
-    
+ 
+    /* Return if static table is already initialized */
+    if(use_static && rl->rl_vlc[0])
+        return;    
+
     init_vlc(&rl->vlc, 9, rl->n + 1, 
              &rl->table_vlc[0][1], 4, 2,
-             &rl->table_vlc[0][0], 4, 2);
+             &rl->table_vlc[0][0], 4, 2, use_static);
 
     
     for(q=0; q<32; q++){
@@ -2814,8 +2818,10 @@ void init_vlc_rl(RLTable *rl)
             qmul=1;
             qadd=0;
         }
-        
-        rl->rl_vlc[q]= av_malloc(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
+        if(use_static)        
+            rl->rl_vlc[q]= av_mallocz_static(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
+        else
+            rl->rl_vlc[q]= av_malloc(rl->vlc.table_size*sizeof(RL_VLC_ELEM));
         for(i=0; i<rl->vlc.table_size; i++){
             int code= rl->vlc.table[i][0];
             int len = rl->vlc.table[i][1];
@@ -2856,44 +2862,44 @@ void h263_decode_init_vlc(MpegEncContext *s)
 
         init_vlc(&intra_MCBPC_vlc, INTRA_MCBPC_VLC_BITS, 9, 
                  intra_MCBPC_bits, 1, 1,
-                 intra_MCBPC_code, 1, 1);
+                 intra_MCBPC_code, 1, 1, 1);
         init_vlc(&inter_MCBPC_vlc, INTER_MCBPC_VLC_BITS, 28, 
                  inter_MCBPC_bits, 1, 1,
-                 inter_MCBPC_code, 1, 1);
+                 inter_MCBPC_code, 1, 1, 1);
         init_vlc(&cbpy_vlc, CBPY_VLC_BITS, 16,
                  &cbpy_tab[0][1], 2, 1,
-                 &cbpy_tab[0][0], 2, 1);
+                 &cbpy_tab[0][0], 2, 1, 1);
         init_vlc(&mv_vlc, MV_VLC_BITS, 33,
                  &mvtab[0][1], 2, 1,
-                 &mvtab[0][0], 2, 1);
-        init_rl(&rl_inter);
-        init_rl(&rl_intra);
-        init_rl(&rvlc_rl_inter);
-        init_rl(&rvlc_rl_intra);
-        init_rl(&rl_intra_aic);
-        init_vlc_rl(&rl_inter);
-        init_vlc_rl(&rl_intra);
-        init_vlc_rl(&rvlc_rl_inter);
-        init_vlc_rl(&rvlc_rl_intra);
-        init_vlc_rl(&rl_intra_aic);
+                 &mvtab[0][0], 2, 1, 1);
+        init_rl(&rl_inter, 1);
+        init_rl(&rl_intra, 1);
+        init_rl(&rvlc_rl_inter, 1);
+        init_rl(&rvlc_rl_intra, 1);
+        init_rl(&rl_intra_aic, 1);
+        init_vlc_rl(&rl_inter, 1);
+        init_vlc_rl(&rl_intra, 1);
+        init_vlc_rl(&rvlc_rl_inter, 1);
+        init_vlc_rl(&rvlc_rl_intra, 1);
+        init_vlc_rl(&rl_intra_aic, 1);
         init_vlc(&dc_lum, DC_VLC_BITS, 10 /* 13 */,
                  &DCtab_lum[0][1], 2, 1,
-                 &DCtab_lum[0][0], 2, 1);
+                 &DCtab_lum[0][0], 2, 1, 1);
         init_vlc(&dc_chrom, DC_VLC_BITS, 10 /* 13 */,
                  &DCtab_chrom[0][1], 2, 1,
-                 &DCtab_chrom[0][0], 2, 1);
+                 &DCtab_chrom[0][0], 2, 1, 1);
         init_vlc(&sprite_trajectory, SPRITE_TRAJ_VLC_BITS, 15,
                  &sprite_trajectory_tab[0][1], 4, 2,
-                 &sprite_trajectory_tab[0][0], 4, 2);
+                 &sprite_trajectory_tab[0][0], 4, 2, 1);
         init_vlc(&mb_type_b_vlc, MB_TYPE_B_VLC_BITS, 4,
                  &mb_type_b_tab[0][1], 2, 1,
-                 &mb_type_b_tab[0][0], 2, 1);
+                 &mb_type_b_tab[0][0], 2, 1, 1);
         init_vlc(&h263_mbtype_b_vlc, H263_MBTYPE_B_VLC_BITS, 15,
                  &h263_mbtype_b_tab[0][1], 2, 1,
-                 &h263_mbtype_b_tab[0][0], 2, 1);
+                 &h263_mbtype_b_tab[0][0], 2, 1, 1);
         init_vlc(&cbpc_b_vlc, CBPC_B_VLC_BITS, 4,
                  &cbpc_b_tab[0][1], 2, 1,
-                 &cbpc_b_tab[0][0], 2, 1);
+                 &cbpc_b_tab[0][0], 2, 1, 1);
     }
 }
 

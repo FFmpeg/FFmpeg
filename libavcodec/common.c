@@ -126,15 +126,19 @@ int check_marker(GetBitContext *s, const char *msg)
 }
 
 
-static int alloc_table(VLC *vlc, int size)
+static int alloc_table(VLC *vlc, int size, int use_static)
 {
     int index;
     index = vlc->table_size;
     vlc->table_size += size;
     if (vlc->table_size > vlc->table_allocated) {
         vlc->table_allocated += (1 << vlc->bits);
-        vlc->table = av_realloc(vlc->table,
-                                sizeof(VLC_TYPE) * 2 * vlc->table_allocated);
+        if(use_static)
+            vlc->table = av_realloc_static(vlc->table,
+                                           sizeof(VLC_TYPE) * 2 * vlc->table_allocated);
+        else
+            vlc->table = av_realloc(vlc->table,
+                                    sizeof(VLC_TYPE) * 2 * vlc->table_allocated);
         if (!vlc->table)
             return -1;
     }
@@ -145,14 +149,14 @@ static int build_table(VLC *vlc, int table_nb_bits,
                        int nb_codes,
                        const void *bits, int bits_wrap, int bits_size,
                        const void *codes, int codes_wrap, int codes_size,
-                       uint32_t code_prefix, int n_prefix)
+                       uint32_t code_prefix, int n_prefix, int use_static)
 {
     int i, j, k, n, table_size, table_index, nb, n1, index;
     uint32_t code;
     VLC_TYPE (*table)[2];
 
     table_size = 1 << table_nb_bits;
-    table_index = alloc_table(vlc, table_size);
+    table_index = alloc_table(vlc, table_size, use_static);
 #ifdef DEBUG_VLC
     printf("new table index=%d size=%d code_prefix=%x n=%d\n",
            table_index, table_size, code_prefix, n_prefix);
@@ -225,7 +229,7 @@ static int build_table(VLC *vlc, int table_nb_bits,
                                 bits, bits_wrap, bits_size,
                                 codes, codes_wrap, codes_size,
                                 (code_prefix << table_nb_bits) | i,
-                                n_prefix + table_nb_bits);
+                                n_prefix + table_nb_bits, use_static);
             if (index < 0)
                 return -1;
             /* note: realloc has been done, so reload tables */
@@ -257,15 +261,27 @@ static int build_table(VLC *vlc, int table_nb_bits,
 
    'wrap' and 'size' allows to use any memory configuration and types
    (byte/word/long) to store the 'bits' and 'codes' tables.  
+
+   'use_static' should be set to 1 for tables, which should be freed
+   with av_free_static(), 0 if free_vlc() will be used.
 */
 int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
              const void *bits, int bits_wrap, int bits_size,
-             const void *codes, int codes_wrap, int codes_size)
+             const void *codes, int codes_wrap, int codes_size,
+             int use_static)
 {
     vlc->bits = nb_bits;
-    vlc->table = NULL;
-    vlc->table_allocated = 0;
-    vlc->table_size = 0;
+    if(!use_static) {
+        vlc->table = NULL;
+        vlc->table_allocated = 0;
+        vlc->table_size = 0;
+    } else {
+        /* Static tables are initially always NULL, return
+           if vlc->table != NULL to avoid double allocation */
+        if(vlc->table)
+            return 0;
+    }
+
 #ifdef DEBUG_VLC
     printf("build table nb_codes=%d\n", nb_codes);
 #endif
@@ -273,7 +289,7 @@ int init_vlc(VLC *vlc, int nb_bits, int nb_codes,
     if (build_table(vlc, nb_bits, nb_codes,
                     bits, bits_wrap, bits_size,
                     codes, codes_wrap, codes_size,
-                    0, 0) < 0) {
+                    0, 0, use_static) < 0) {
         av_free(vlc->table);
         return -1;
     }

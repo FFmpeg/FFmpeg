@@ -308,7 +308,7 @@ printf("%6X, %2d,  %3d\n", s->bits[i][j], s->len[i][j], j);
 }
 #endif
         free_vlc(&s->vlc[i]);
-        init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4);
+        init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4, 0);
     }
     
     return (get_bits_count(&gb)+7)/8;
@@ -336,7 +336,7 @@ static int read_old_huffman_tables(HYuvContext *s){
     
     for(i=0; i<3; i++){
         free_vlc(&s->vlc[i]);
-        init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4);
+        init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4, 0);
     }
     
     return 0;

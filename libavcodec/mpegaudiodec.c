@@ -375,7 +375,7 @@ static int decode_init(AVCodecContext * avctx)
             n = xsize * xsize;
             /* XXX: fail test */
             init_vlc(&huff_vlc[i], 8, n, 
-                     h->bits, 1, 1, h->codes, 2, 2);
+                     h->bits, 1, 1, h->codes, 2, 2, 1);
             
             code_table = av_mallocz(n);
             j = 0;
@@ -387,7 +387,7 @@ static int decode_init(AVCodecContext * avctx)
         }
         for(i=0;i<2;i++) {
             init_vlc(&huff_quad_vlc[i], i == 0 ? 7 : 4, 16, 
-                     mpa_quad_bits[i], 1, 1, mpa_quad_codes[i], 1, 1);
+                     mpa_quad_bits[i], 1, 1, mpa_quad_codes[i], 1, 1, 1);
         }
 
         for(i=0;i<9;i++) {
