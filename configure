@@ -912,8 +912,8 @@ echo "#define restrict $_restrict" >> $TMPH
 # build tree in object directory if source path is different from current one
 if test "$source_path_used" = "yes" ; then
     DIRS="libavformat libavcodec libavcodec/alpha libavcodec/armv4l libavcodec/i386 \
-          libavcodec/ppc libavcodec/liba52 libavcodec/mlib tests vhook"
-    FILES="Makefile libavformat/Makefile libavcodec/Makefile tests/Makefile vhook/Makefile"
+          libavcodec/ppc libavcodec/liba52 libavcodec/mlib libavcodec/libpostproc tests vhook"
+    FILES="Makefile libavformat/Makefile libavcodec/Makefile libavcodec/libpostproc/Makefile tests/Makefile vhook/Makefile"
     for dir in $DIRS ; do
             mkdir -p $dir
     done
