@@ -655,6 +655,8 @@ typedef struct MpegEncContext {
     int rtp_payload_size;
     void (*rtp_callback)(void *data, int size, int packet_number);
     uint8_t *ptr_lastgob;
+    int swap_uv;//vcr2 codec is mpeg2 varint with UV swaped
+    short * pblocks[12];
     
     DCTELEM (*block)[64]; ///< points to one of the following blocks 
     DCTELEM (*blocks)[6][64]; // for HQ mode we need to keep the best block

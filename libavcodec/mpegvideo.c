@@ -56,7 +56,7 @@ static int sse_mb(MpegEncContext *s);
 #ifdef HAVE_XVMC
 extern int  XVMC_field_start(MpegEncContext*s, AVCodecContext *avctx);
 extern void XVMC_field_end(MpegEncContext *s);
-extern void XVMC_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
+extern void XVMC_decode_mb(MpegEncContext *s);
 #endif
 
 void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w)= draw_edges_c;
@@ -518,6 +518,10 @@ int MPV_common_init(MpegEncContext *s)
     CHECKED_ALLOCZ(s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE);
     
     s->block= s->blocks[0];
+
+    for(i=0;i<12;i++){
+        s->pblocks[i] = (short *)(&s->block[i]);
+    }
 
     s->parse_context.state= -1;
 
@@ -2485,7 +2489,7 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     const int mb_xy = s->mb_y * s->mb_stride + s->mb_x;
 #ifdef HAVE_XVMC
     if(s->avctx->xvmc_acceleration){
-        XVMC_decode_mb(s,block);
+        XVMC_decode_mb(s);//xvmc uses pblocks
         return;
     }
 #endif
