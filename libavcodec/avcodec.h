@@ -8,7 +8,7 @@ enum CodecID {
     CODEC_ID_MP2,
     CODEC_ID_AC3,
     CODEC_ID_MJPEG,
-    CODEC_ID_OPENDIVX,
+    CODEC_ID_MPEG4,
     CODEC_ID_PCM,
     CODEC_ID_RAWVIDEO,
     CODEC_ID_MSMPEG4,
@@ -45,6 +45,11 @@ extern int motion_estimation_method;
 #define CODEC_FLAG_HQ     0x0001 /* high quality (non real time) encoding */
 #define CODEC_FLAG_QSCALE 0x0002 /* use fixed qscale */
 
+/* codec capabilities */
+
+/* decoder can use draw_horiz_band callback */
+#define CODEC_CAP_DRAW_HORIZ_BAND 0x0001
+
 #define FRAME_RATE_BASE 10000
 
 typedef struct AVCodecContext {
@@ -57,6 +62,15 @@ typedef struct AVCodecContext {
     int width, height;
     int gop_size; /* 0 = intra only */
     int pix_fmt;  /* pixel format, see PIX_FMT_xxx */
+
+    /* if non NULL, 'draw_horiz_band' is called by the libavcodec
+       decoder to draw an horizontal band. It improve cache usage. Not
+       all codecs can do that. You must check the codec capabilities
+       before */
+    void (*draw_horiz_band)(struct AVCodecContext *s,
+                            UINT8 **src_ptr, int linesize,
+                            int y, int width, int height);
+
     /* audio only */
     int sample_rate; /* samples per sec */
     int channels;
@@ -72,6 +86,7 @@ typedef struct AVCodecContext {
     void *priv_data;
 
     /* the following fields are ignored */
+    void *opaque;   /* can be used to carry app specific stuff */
     char codec_name[32];
     int codec_type; /* see CODEC_TYPE_xxx */
     int codec_id; /* see CODEC_ID_xxx */
@@ -88,6 +103,7 @@ typedef struct AVCodec {
     int (*close)(AVCodecContext *);
     int (*decode)(AVCodecContext *, void *outdata, int *outdata_size, 
                   UINT8 *buf, int buf_size);
+    int capabilities;
     struct AVCodec *next;
 } AVCodec;
 
@@ -104,11 +120,11 @@ extern AVCodec h263_encoder;
 extern AVCodec h263p_encoder;
 extern AVCodec rv10_encoder;
 extern AVCodec mjpeg_encoder;
-extern AVCodec opendivx_encoder;
+extern AVCodec mpeg4_encoder;
 extern AVCodec msmpeg4_encoder;
 
 extern AVCodec h263_decoder;
-extern AVCodec opendivx_decoder;
+extern AVCodec mpeg4_decoder;
 extern AVCodec msmpeg4_decoder;
 extern AVCodec mpeg_decoder;
 extern AVCodec h263i_decoder;

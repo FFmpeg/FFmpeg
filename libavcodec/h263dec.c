@@ -30,6 +30,7 @@ static int h263_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = avctx->priv_data;
     int i;
 
+    s->avctx = avctx;
     s->out_format = FMT_H263;
 
     s->width = avctx->width;
@@ -39,7 +40,7 @@ static int h263_decode_init(AVCodecContext *avctx)
     switch(avctx->codec->id) {
     case CODEC_ID_H263:
         break;
-    case CODEC_ID_OPENDIVX:
+    case CODEC_ID_MPEG4:
         s->time_increment_bits = 4; /* default value for broken headers */
         s->h263_pred = 1;
         break;
@@ -148,6 +149,20 @@ static int h263_decode_frame(AVCodecContext *avctx,
             }
             MPV_decode_mb(s, s->block);
         }
+        if (avctx->draw_horiz_band) {
+            UINT8 *src_ptr[3];
+            int y, h, offset;
+            y = s->mb_y * 16;
+            h = s->height - y;
+            if (h > 16)
+                h = 16;
+            offset = y * s->linesize;
+            src_ptr[0] = s->current_picture[0] + offset;
+            src_ptr[1] = s->current_picture[1] + (offset >> 2);
+            src_ptr[2] = s->current_picture[2] + (offset >> 2);
+            avctx->draw_horiz_band(avctx, src_ptr, s->linesize,
+                                   y, s->width, h);
+        }
     }
 
     MPV_frame_end(s);
@@ -164,15 +179,16 @@ static int h263_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-AVCodec opendivx_decoder = {
-    "opendivx",
+AVCodec mpeg4_decoder = {
+    "mpeg4",
     CODEC_TYPE_VIDEO,
-    CODEC_ID_OPENDIVX,
+    CODEC_ID_MPEG4,
     sizeof(MpegEncContext),
     h263_decode_init,
     NULL,
     h263_decode_end,
     h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND,
 };
 
 AVCodec h263_decoder = {
@@ -184,6 +200,7 @@ AVCodec h263_decoder = {
     NULL,
     h263_decode_end,
     h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND,
 };
 
 AVCodec msmpeg4_decoder = {
@@ -195,6 +212,7 @@ AVCodec msmpeg4_decoder = {
     NULL,
     h263_decode_end,
     h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND,
 };
 
 AVCodec h263i_decoder = {
@@ -206,5 +224,6 @@ AVCodec h263i_decoder = {
     NULL,
     h263_decode_end,
     h263_decode_frame,
+    CODEC_CAP_DRAW_HORIZ_BAND,
 };
 
