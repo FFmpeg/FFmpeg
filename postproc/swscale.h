@@ -23,6 +23,7 @@
 #define SWS_X        8
 #define SWS_POINT    0x10
 #define SWS_AREA     0x20
+#define SWS_BICUBLIN 0x40
 
 #define SWS_SRC_V_CHR_DROP_MASK		0x300
 #define SWS_SRC_V_CHR_DROP_SHIFT	8

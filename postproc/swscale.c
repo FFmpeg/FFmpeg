@@ -257,6 +257,8 @@ IMGFMT_BGR15,
 IMGFMT_BGR16,
 IMGFMT_BGR24,
 IMGFMT_BGR32,
+IMGFMT_RGB24,
+IMGFMT_RGB32,
 //IMGFMT_Y8,
 IMGFMT_Y800,
 //IMGFMT_YUY2,
@@ -940,6 +942,7 @@ void swsGetFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, Sws
 		case 3: *flags|= SWS_X; break;
 		case 4: *flags|= SWS_POINT; break;
 		case 5: *flags|= SWS_AREA; break;
+		case 6: *flags|= SWS_BICUBLIN; break;
 		default:*flags|= SWS_BILINEAR; break;
 	}
 	
@@ -2251,10 +2254,12 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		const int filterAlign= cpuCaps.hasMMX ? 4 : 1;
 
 		initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
-				 srcW      ,       dstW, filterAlign, 1<<14, flags,
+				 srcW      ,       dstW, filterAlign, 1<<14,
+				 (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
 				 srcFilter->lumH, dstFilter->lumH);
 		initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
-				 c->chrSrcW, c->chrDstW, filterAlign, 1<<14, flags,
+				 c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
+				 (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
 				 srcFilter->chrH, dstFilter->chrH);
 
 #ifdef ARCH_X86
@@ -2276,11 +2281,13 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 
 	/* precalculate vertical scaler filter coefficients */
 	initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
-			srcH      ,        dstH, 1, (1<<12)-4, flags,
+			srcH      ,        dstH, 1, (1<<12)-4,
+			(flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
 			srcFilter->lumV, dstFilter->lumV);
 	initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
-			c->chrSrcH, c->chrDstH, 1, (1<<12)-4, flags,
-			 srcFilter->chrV, dstFilter->chrV);
+			c->chrSrcH, c->chrDstH, 1, (1<<12)-4,
+			(flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
+			srcFilter->chrV, dstFilter->chrV);
 
 	// Calculate Buffer Sizes so that they wont run out while handling these damn slices
 	c->vLumBufSize= c->vLumFilterSize;
@@ -2344,6 +2351,8 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 			MSG_INFO("\nSwScaler: Nearest Neighbor / POINT scaler, ");
 		else if(flags&SWS_AREA)
 			MSG_INFO("\nSwScaler: Area Averageing scaler, ");
+		else if(flags&SWS_BICUBLIN)
+			MSG_INFO("\nSwScaler: luma BICUBIC / chroma BILINEAR, ");
 		else
 			MSG_INFO("\nSwScaler: ehh flags invalid?! ");
 
