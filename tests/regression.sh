@@ -129,8 +129,15 @@ fi
 ###################################
 if [ -n "$do_mpeg2" ] ; then
 # mpeg2 encoding
-file=${outfile}mpeg2.vob
-do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video $file 
+file=${outfile}mpeg2.mpg
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video $file 
+
+# mpeg2 decoding
+do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
+
+# mpeg2 encoding interlaced
+file=${outfile}mpeg2i.mpg
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -interlace $file 
 
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
@@ -240,7 +247,7 @@ fi
 if [ -n "$do_mpeg1b" ] ; then
 # mpeg1
 file=${outfile}mpeg1b.mpg
-do_ffmpeg $file -y -qscale 8 -bf 3 -ps 200 -f pgmyuv -i $raw_src -an -vcodec mpeg1video $file
+do_ffmpeg $file -y -qscale 8 -bf 3 -ps 200 -f pgmyuv -i $raw_src -an -vcodec mpeg1video -f mpeg1video $file
 
 # mpeg1 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst 
