@@ -169,7 +169,7 @@ static int mpegvideo_probe(AVProbeData *p)
             if (code == SEQ_START_CODE ||
                 code == GOP_START_CODE ||
                 code == PICTURE_START_CODE)
-                return AVPROBE_SCORE_MAX - 1;
+                return 50 - 1;
             else
                 return 0;
         }
