@@ -15,7 +15,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4681
+#define LIBAVCODEC_BUILD       4682
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -199,6 +199,7 @@ typedef struct RcOverride{
 extern int motion_estimation_method;
 
 /* ME algos sorted by quality */
+//FIXME remove IMHO
 static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG, 
                                        ME_X1, ME_EPZS, ME_FULL };
 
@@ -234,7 +235,8 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 #define CODEC_FLAG_GLOBAL_HEADER  0x00400000 ///< place global headers in extradata instead of every keyframe 
 #define CODEC_FLAG_BITEXACT       0x00800000 ///< use only bitexact stuff (except (i)dct) 
 /* Fx : Flag for h263+ extra options */
-#define CODEC_FLAG_H263P_AIC      0x01000000 ///< Advanced intra coding 
+#define CODEC_FLAG_H263P_AIC      0x01000000 ///< H263 Advanced intra coding / MPEG4 AC prediction (remove this)
+#define CODEC_FLAG_AC_PRED        0x01000000 ///< H263 Advanced intra coding / MPEG4 AC prediction
 #define CODEC_FLAG_H263P_UMV      0x02000000 ///< Unlimited motion vector  
 #define CODEC_FLAG_CBP_RD         0x04000000 ///< use rate distortion optimization for cbp
 /* For advanced prediction mode, we reuse the 4MV flag */

@@ -69,8 +69,6 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                               int n, int coded, int intra, int rvlc);
 static int h263_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_ptr);
 #ifdef CONFIG_ENCODERS
-static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
-                              int dir);
 static void mpeg4_encode_visual_object_header(MpegEncContext * s);
 static void mpeg4_encode_vol_header(MpegEncContext * s, int vo_number, int vol_number);
 #endif //CONFIG_ENCODERS
@@ -325,14 +323,42 @@ int h263_encode_gob_header(MpegEncContext * s, int mb_line)
     return 0;
 }
 
-static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int dir[6])
+static inline int get_block_rate(MpegEncContext * s, DCTELEM block[64], int block_last_index, uint8_t scantable[64]){
+    int last=0;
+    int j;
+    int rate=0;
+
+    for(j=1; j<=block_last_index; j++){
+        const int index= scantable[j];
+        int level= block[index];
+        if(level){
+            level+= 64;
+            if((level&(~127)) == 0){
+                if(j<block_last_index) rate+= s->intra_ac_vlc_length     [UNI_AC_ENC_INDEX(j-last-1, level)];
+                else                   rate+= s->intra_ac_vlc_last_length[UNI_AC_ENC_INDEX(j-last-1, level)];
+            }else
+                rate += s->ac_esc_length;
+            level-= 64;
+
+            last= j;
+        }
+    }
+    
+    return rate;
+}
+
+static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int dir[6], uint8_t *st[6], int zigzag_last_index[6])
 {
-    int score0=0, score1=0;
+    int score= 0;
     int i, n;
     int8_t * const qscale_table= s->current_picture.qscale_table;
 
+    memcpy(zigzag_last_index, s->block_last_index, sizeof(int)*6);
+    
     for(n=0; n<6; n++){
         int16_t *ac_val, *ac_val1;
+        
+        score -= get_block_rate(s, block[n], s->block_last_index[n], s->intra_scantable.permutated);
 
         ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
         ac_val1= ac_val;
@@ -344,8 +370,7 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
                 /* same qscale */
                 for(i=1; i<8; i++){
                     const int level= block[n][s->dsp.idct_permutation[i   ]];
-                    score0+= ABS(level);
-                    score1+= ABS(level - ac_val[i+8]);
+                    block[n][s->dsp.idct_permutation[i   ]] = level - ac_val[i+8];
                     ac_val1[i  ]=    block[n][s->dsp.idct_permutation[i<<3]];
                     ac_val1[i+8]= level;
                 }
@@ -353,12 +378,12 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
                 /* different qscale, we must rescale */
                 for(i=1; i<8; i++){
                     const int level= block[n][s->dsp.idct_permutation[i   ]];
-                    score0+= ABS(level);
-                    score1+= ABS(level - ROUNDED_DIV(ac_val[i + 8]*qscale_table[xy], s->qscale));
+                    block[n][s->dsp.idct_permutation[i   ]] = level - ROUNDED_DIV(ac_val[i + 8]*qscale_table[xy], s->qscale);
                     ac_val1[i  ]=    block[n][s->dsp.idct_permutation[i<<3]];
                     ac_val1[i+8]= level;
                 }
             }
+            st[n]= s->intra_h_scantable.permutated;
         }else{
             const int xy= s->mb_x-1 + s->mb_y*s->mb_stride;
             /* left prediction */
@@ -367,8 +392,7 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
                 /* same qscale */
                 for(i=1; i<8; i++){
                     const int level= block[n][s->dsp.idct_permutation[i<<3]];
-                    score0+= ABS(level);
-                    score1+= ABS(level - ac_val[i]);
+                    block[n][s->dsp.idct_permutation[i<<3]]= level - ac_val[i];
                     ac_val1[i  ]= level;
                     ac_val1[i+8]=    block[n][s->dsp.idct_permutation[i   ]];
                 }
@@ -376,16 +400,45 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], int d
                 /* different qscale, we must rescale */
                 for(i=1; i<8; i++){
                     const int level= block[n][s->dsp.idct_permutation[i<<3]];
-                    score0+= ABS(level);
-                    score1+= ABS(level - ROUNDED_DIV(ac_val[i]*qscale_table[xy], s->qscale));
+                    block[n][s->dsp.idct_permutation[i<<3]]= level - ROUNDED_DIV(ac_val[i]*qscale_table[xy], s->qscale);
                     ac_val1[i  ]= level;
                     ac_val1[i+8]=    block[n][s->dsp.idct_permutation[i   ]];
                 }
             }
+            st[n]= s->intra_v_scantable.permutated;
         }
+
+        for(i=63; i>0; i--) //FIXME optimize
+            if(block[n][ st[n][i] ]) break;
+        s->block_last_index[n]= i;
+
+        score += get_block_rate(s, block[n], s->block_last_index[n], st[n]);
     }
 
-    return score0 > score1 ? 1 : 0;    
+    return score < 0;
+}
+
+static inline void restore_ac_coeffs(MpegEncContext * s, DCTELEM block[6][64], int dir[6], uint8_t *st[6], int zigzag_last_index[6])
+{
+    int i, n;
+    memcpy(s->block_last_index, zigzag_last_index, sizeof(int)*6);
+
+    for(n=0; n<6; n++){
+        int16_t *ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
+
+        st[n]= s->intra_scantable.permutated;
+        if(dir[n]){
+            /* top prediction */
+            for(i=1; i<8; i++){
+                block[n][s->dsp.idct_permutation[i   ]] = ac_val[i+8];
+            }
+        }else{
+            /* left prediction */
+            for(i=1; i<8; i++){
+                block[n][s->dsp.idct_permutation[i<<3]]= ac_val[i  ];
+            }
+        }
+    }
 }
 
 /**
@@ -939,23 +992,10 @@ void mpeg4_encode_mb(MpegEncContext * s,
             }
         }
 
-        s->ac_pred= decide_ac_pred(s, block, dir);
-
-        if(s->ac_pred){
-            for(i=0; i<6; i++){
-                uint8_t *st;
-                int last_index;
-
-                mpeg4_inv_pred_ac(s, block[i], i, dir[i]);
-                if (dir[i]==0) st = s->intra_v_scantable.permutated; /* left */
-                else           st = s->intra_h_scantable.permutated; /* top */
-
-                for(last_index=63; last_index>=0; last_index--) //FIXME optimize
-                    if(block[i][st[last_index]]) break;
-                zigzag_last_index[i]= s->block_last_index[i];
-                s->block_last_index[i]= last_index;
-                scan_table[i]= st;
-            }
+        if(s->flags & CODEC_FLAG_AC_PRED){
+            s->ac_pred= decide_ac_pred(s, block, dir, scan_table, zigzag_last_index);
+            if(!s->ac_pred)
+                restore_ac_coeffs(s, block, dir, scan_table, zigzag_last_index);
         }else{
             for(i=0; i<6; i++)
                 scan_table[i]= s->intra_scantable.permutated;
@@ -1006,23 +1046,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
         s->i_count++;
 
         /* restore ac coeffs & last_index stuff if we messed them up with the prediction */
-        if(s->ac_pred){
-            for(i=0; i<6; i++){
-                int j;    
-                int16_t *ac_val;
-
-                ac_val = s->ac_val[0][0] + s->block_index[i] * 16;
-
-                if(dir[i]){
-                    for(j=1; j<8; j++) 
-                        block[i][s->dsp.idct_permutation[j   ]]= ac_val[j+8];
-                }else{
-                    for(j=1; j<8; j++) 
-                        block[i][s->dsp.idct_permutation[j<<3]]= ac_val[j  ];
-                }
-                s->block_last_index[i]= zigzag_last_index[i];
-            }
-        }
+        if(s->ac_pred)
+            restore_ac_coeffs(s, block, dir, scan_table, zigzag_last_index);
     }
 }
 
@@ -2194,49 +2219,6 @@ void mpeg4_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
 }
 
 #ifdef CONFIG_ENCODERS
-
-static void mpeg4_inv_pred_ac(MpegEncContext * s, DCTELEM *block, int n,
-                              int dir)
-{
-    int i;
-    int16_t *ac_val;
-    int8_t * const qscale_table= s->current_picture.qscale_table;
-
-    /* find prediction */
-    ac_val = s->ac_val[0][0] + s->block_index[n] * 16;
- 
-    if (dir == 0) {
-        const int xy= s->mb_x-1 + s->mb_y*s->mb_stride;
-        /* left prediction */
-        ac_val -= 16;
-        if(s->mb_x==0 || s->qscale == qscale_table[xy] || n==1 || n==3){
-            /* same qscale */
-            for(i=1;i<8;i++) {
-                block[s->dsp.idct_permutation[i<<3]] -= ac_val[i];
-            }
-        }else{
-            /* different qscale, we must rescale */
-            for(i=1;i<8;i++) {
-                block[s->dsp.idct_permutation[i<<3]] -= ROUNDED_DIV(ac_val[i]*qscale_table[xy], s->qscale);
-            }
-        }
-    } else {
-        const int xy= s->mb_x + s->mb_y*s->mb_stride - s->mb_stride;
-        /* top prediction */
-        ac_val -= 16 * s->block_wrap[n];
-        if(s->mb_y==0 || s->qscale == qscale_table[xy] || n==2 || n==3){
-            /* same qscale */
-            for(i=1;i<8;i++) {
-                block[s->dsp.idct_permutation[i]] -= ac_val[i + 8];
-            }
-        }else{
-            /* different qscale, we must rescale */
-            for(i=1;i<8;i++) {
-                block[s->dsp.idct_permutation[i]] -= ROUNDED_DIV(ac_val[i + 8]*qscale_table[xy], s->qscale);
-            }
-        }
-    }
-}
 
 /**
  * encodes the dc value.
