@@ -776,15 +776,11 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
 
     assert(den != 0);
 
-    if(den < 0){
-        den= -den;
-        nom= -nom;
-    }
+    if(den < 0)
+        return av_reduce(dst_nom, dst_den, -nom, -den, max);
     
-    if(nom < 0){
-        nom= -nom;
-        sign= 1;
-    }
+    sign= nom < 0;
+    nom= ABS(nom);
     
     gcd = ff_gcd(nom, den);
     nom /= gcd;
@@ -814,9 +810,7 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
     
     assert(ff_gcd(nom, den) == 1);
     
-    if(sign) nom= -nom;
-    
-    *dst_nom = nom;
+    *dst_nom = sign ? -nom : nom;
     *dst_den = den;
     
     return exact;
