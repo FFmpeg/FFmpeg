@@ -751,7 +751,7 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
 {
     AVStream *st;
     INT64 pts_mask;
-    int ret;
+    int ret, frame_size;
 
     st = s->streams[stream_index];
     pts_mask = (1LL << s->pts_wrap_bits) - 1;
@@ -763,8 +763,24 @@ int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf,
     /* update pts */
     switch (st->codec.codec_type) {
     case CODEC_TYPE_AUDIO:
+        if (st->codec.frame_size <= 1) {
+            frame_size = size / st->codec.channels;
+            /* specific hack for pcm codecs because no frame size is provided */
+            switch(st->codec.codec->id) {
+            case CODEC_ID_PCM_S16LE:
+            case CODEC_ID_PCM_S16BE:
+            case CODEC_ID_PCM_U16LE:
+            case CODEC_ID_PCM_U16BE:
+                frame_size >>= 1;
+                break;
+            default:
+                break;
+            }
+        } else {
+            frame_size = st->codec.frame_size;
+        }
         av_frac_add(&st->pts, 
-                    (INT64)s->pts_den * st->codec.frame_size);
+                    (INT64)s->pts_den * frame_size);
         break;
     case CODEC_TYPE_VIDEO:
         av_frac_add(&st->pts, 
