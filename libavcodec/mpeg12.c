@@ -1411,7 +1411,8 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
             break;
         MPV_decode_mb(s, s->block);
     }
-    
+    emms_c();
+
     /* end of slice reached */
     if (s->mb_x == (s->mb_width - 1) &&
         s->mb_y == (s->mb_height - 1)) {
