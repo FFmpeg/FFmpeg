@@ -489,11 +489,11 @@ static void do_video_out(AVFormatContext *s,
             ret = avcodec_encode_video(enc, 
                                        video_buffer, sizeof(video_buffer), 
                                        picture);
-            //enc->frame_number = enc->r_pict_num;
+            //enc->frame_number = enc->real_pict_num;
             s->format->write_packet(s, ost->index, video_buffer, ret, 0);
             *frame_size = ret;
             //fprintf(stderr,"\nFrame: %3d %3d size: %5d type: %d",
-            //        enc->frame_number-1, enc->r_pict_num, ret,
+            //        enc->frame_number-1, enc->real_pict_num, ret,
             //        enc->pict_type);
         } else {
             write_picture(s, ost->index, picture, enc->pix_fmt, enc->width, enc->height);
@@ -841,6 +841,8 @@ static int av_encode(AVFormatContext **output_files,
                         ist->file_index, ist->index);
                 exit(1);
             }
+            if (ist->st->codec.codec_type == CODEC_TYPE_VIDEO)
+                ist->st->codec.repeat_pict = 1;
         }
     }
 
