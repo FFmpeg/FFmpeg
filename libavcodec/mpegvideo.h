@@ -173,6 +173,10 @@ typedef struct MpegEncContext {
     int interlaced_dct;
     int last_qscale;
     int first_slice;
+
+    DCTELEM block[6][64] __align8;
+    void (*dct_unquantize)(struct MpegEncContext *s, 
+                           DCTELEM *block, int n, int qscale);
 } MpegEncContext;
 
 extern const UINT8 zigzag_direct[64];
@@ -182,6 +186,9 @@ void MPV_common_end(MpegEncContext *s);
 void MPV_decode_mb(MpegEncContext *s, DCTELEM block[6][64]);
 void MPV_frame_start(MpegEncContext *s);
 void MPV_frame_end(MpegEncContext *s);
+#ifdef HAVE_MMX
+void MPV_common_init_mmx(MpegEncContext *s);
+#endif
 
 /* motion_est.c */
 
