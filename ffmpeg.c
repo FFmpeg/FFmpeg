@@ -192,9 +192,9 @@ static int read_key(void)
 /* main loop for grabbing */
 int av_grab(AVFormatContext *s)
 {
-    UINT8 audio_buf[AUDIO_FIFO_SIZE/2];
-    UINT8 audio_buf1[AUDIO_FIFO_SIZE/2];
-    UINT8 audio_out[AUDIO_FIFO_SIZE/2];
+    UINT8 audio_buf[AUDIO_FIFO_SIZE];
+    UINT8 audio_buf1[AUDIO_FIFO_SIZE];
+    UINT8 audio_out[AUDIO_FIFO_SIZE];
     UINT8 video_buffer[1024*1024];
     char buf[256];
     short *samples;
@@ -364,8 +364,8 @@ int av_grab(AVFormatContext *s)
                 ost->resample = audio_resample_init(enc->channels, channels,
                                                     enc->sample_rate, sample_rate);
             }
-            if (fifo_init(&ost->fifo, (2 * audio_fifo_size * enc->sample_rate) / 
-                          sample_rate))
+            if (fifo_init(&ost->fifo, (2 * audio_fifo_size * enc->sample_rate *
+                                       enc->channels) / sample_rate))
                 goto fail;
             break;
         case CODEC_TYPE_VIDEO:
