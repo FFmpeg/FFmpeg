@@ -245,6 +245,9 @@ int MPV_common_init(MpegEncContext *s)
             CHECKED_ALLOCZ(   s->pb2_buffer, PB_BUFFER_SIZE);
         }
         
+        if(s->msmpeg4_version){
+            CHECKED_ALLOCZ(s->ac_stats, 2*2*(MAX_LEVEL+1)*(MAX_RUN+1)*2*sizeof(int));
+        }
         CHECKED_ALLOCZ(s->avctx->stats_out, 256);
     }
     
@@ -349,6 +352,7 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->edge_emu_buffer);
     av_freep(&s->non_b_mv4_table);
     av_freep(&s->avctx->stats_out);
+    av_freep(&s->ac_stats);
     
     for(i=0;i<3;i++) {
         int j;
