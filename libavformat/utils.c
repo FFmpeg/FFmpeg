@@ -1783,6 +1783,11 @@ int av_find_stream_info(AVFormatContext *ic)
         if (ret < 0) {
             /* EOF or error */
             ret = -1; /* we could not have all the codec parameters before EOF */
+            for(i=0;i<ic->nb_streams;i++) {
+                st = ic->streams[i];
+                if (!has_codec_parameters(&st->codec))
+                    break;
+            }
             if ((ic->ctx_flags & AVFMTCTX_NOHEADER) &&
                 i == ic->nb_streams)
                 ret = 0;
