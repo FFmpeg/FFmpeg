@@ -1723,26 +1723,24 @@ SwsContext *getSwsContext(int srcW, int srcH, int srcFormat, int dstW, int dstH,
 		char *dither= "";
 #endif
 		if(flags&SWS_FAST_BILINEAR)
-			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: FAST_BILINEAR scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: FAST_BILINEAR scaler, ");
 		else if(flags&SWS_BILINEAR)
-			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: BILINEAR scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: BILINEAR scaler, ");
 		else if(flags&SWS_BICUBIC)
-			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: BICUBIC scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: BICUBIC scaler, ");
 		else if(flags&SWS_X)
-			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: Experimental scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: Experimental scaler, ");
 		else if(flags&SWS_POINT)
-			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: Nearest Neighbor / POINT scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: Nearest Neighbor / POINT scaler, ");
 		else if(flags&SWS_AREA)
-			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: Area Averageing scaler, ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: Area Averageing scaler, ");
 		else
-			mp_msg(MSGT_SWS,MSGL_INFO,"\nSwScaler: ehh flags invalid?! ");
+			mp_msg(MSGT_SWS,MSGL_INFO,"SwScaler: ehh flags invalid?! ");
 
-		if(dstFormat==IMGFMT_BGR15 || dstFormat==IMGFMT_BGR16)
-			mp_msg(MSGT_SWS,MSGL_INFO,"from %s to%s %s ", 
-				vo_format_name(srcFormat), dither, vo_format_name(dstFormat));
-		else
-			mp_msg(MSGT_SWS,MSGL_INFO,"from %s to %s ", 
-				vo_format_name(srcFormat), vo_format_name(dstFormat));
+		mp_msg(MSGT_SWS,MSGL_INFO,"%dx%d %s -> %dx%d%s %s ", 
+			srcW,srcH, vo_format_name(srcFormat), dstW,dstH,
+			(dstFormat==IMGFMT_BGR15 || dstFormat==IMGFMT_BGR16) ?
+			dither : "", vo_format_name(dstFormat));
 
 		if(cpuCaps.hasMMX2)
 			mp_msg(MSGT_SWS,MSGL_INFO,"using MMX2\n");
