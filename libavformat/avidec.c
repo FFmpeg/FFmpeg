@@ -222,38 +222,51 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;
-    int n, d1, d2, size;
-
- find_next:
-    if (url_feof(pb) || url_ftell(pb) >= avi->movi_end)
-        return -1;
-    d1 = get_byte(pb);
-    if (d1 < '0' || d1 > '9')
-        goto find_next;
-    d2 = get_byte(pb);
-    if (d2 < '0' || d2 > '9')
-        goto find_next;
-    n = (d1 - '0') * 10 + (d2 - '0');
+    int n, d[8], size, i;
     
-    if (n < 0 || n >= s->nb_streams)
-        goto find_next;
+    memset(d, -1, sizeof(int)*8);
+
+    for(i=url_ftell(pb); (!url_feof(pb)) && i < avi->movi_end; i++){
+        int j;
+
+        for(j=0; j<7; j++)
+            d[j]= d[j+1];
+        d[7]= get_byte(pb);
+        
+        size= d[4] + (d[5]<<8) + (d[6]<<16) + (d[7]<<24);
+        
+        //parse ix##
+        n= (d[2] - '0') * 10 + (d[3] - '0');
+        if(    d[2] >= '0' && d[2] <= '9'
+            && d[3] >= '0' && d[3] <= '9'
+            && d[0] == 'i' && d[1] == 'x'
+            && n < s->nb_streams
+            && i + size <= avi->movi_end){
+            
+            url_fskip(pb, size);
+        }
+        
+        //parse ##dc/##wb
+        n= (d[0] - '0') * 10 + (d[1] - '0');
+        if(    d[0] >= '0' && d[0] <= '9'
+            && d[1] >= '0' && d[1] <= '9'
+            &&((d[2] == 'd' && d[3] == 'c') || (d[2] == 'w' && d[3] == 'b'))
+            && n < s->nb_streams
+            && i + size <= avi->movi_end){
+        
+            av_new_packet(pkt, size);
+            pkt->stream_index = n;
+
+            get_buffer(pb, pkt->data, pkt->size);
+
+            if (size & 1)
+                get_byte(pb);
+ 
+            return 0;
+        }
+    }
     
-    d1 = get_byte(pb);
-    d2 = get_byte(pb);
-    if ((d1 != 'd' && d2 != 'c') &&
-        (d1 != 'w' && d2 != 'b'))
-        goto find_next;
-    
-    size = get_le32(pb);
-    av_new_packet(pkt, size);
-    pkt->stream_index = n;
-
-    get_buffer(pb, pkt->data, pkt->size);
-
-    if (size & 1)
-        get_byte(pb);
-
-    return 0;
+    return -1;
 }
 
 static int avi_read_close(AVFormatContext *s)
