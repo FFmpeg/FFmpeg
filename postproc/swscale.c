@@ -356,7 +356,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 			((uint8_t*)dest)[3]= r[Y2];\
 			((uint8_t*)dest)[4]= g[Y2];\
 			((uint8_t*)dest)[5]= b[Y2];\
-			((uint8_t*)dest)+=6;\
+			dest+=6;\
 		}\
 		break;\
 	case IMGFMT_BGR24:\
@@ -367,7 +367,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 			((uint8_t*)dest)[3]= b[Y2];\
 			((uint8_t*)dest)[4]= g[Y2];\
 			((uint8_t*)dest)[5]= r[Y2];\
-			((uint8_t*)dest)+=6;\
+			dest+=6;\
 		}\
 		break;\
 	case IMGFMT_RGB16:\
@@ -449,7 +449,7 @@ static inline void yuv2yuvXinC(int16_t *lumFilter, int16_t **lumSrc, int lumFilt
 				acc+= acc + g[((buf0[i+6]*yalpha1+buf1[i+6]*yalpha)>>19) + d128[6]];\
 				acc+= acc + g[((buf0[i+7]*yalpha1+buf1[i+7]*yalpha)>>19) + d128[7]];\
 				((uint8_t*)dest)[0]= acc;\
-				((uint8_t*)dest)++;\
+				dest++;\
 			}\
 \
 /*\
@@ -539,7 +539,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			((uint8_t*)dest)[3]= r[Y2];
 			((uint8_t*)dest)[4]= g[Y2];
 			((uint8_t*)dest)[5]= b[Y2];
-			((uint8_t*)dest)+=6;
+			dest+=6;
 		}
 		break;
 	case IMGFMT_BGR24:
@@ -550,7 +550,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 			((uint8_t*)dest)[3]= b[Y2];
 			((uint8_t*)dest)[4]= g[Y2];
 			((uint8_t*)dest)[5]= r[Y2];
-			((uint8_t*)dest)+=6;
+			dest+=6;
 		}
 		break;
 	case IMGFMT_RGB16:
@@ -645,7 +645,7 @@ static inline void yuv2packedXinC(SwsContext *c, int16_t *lumFilter, int16_t **l
 				acc+= acc + g[Y2+d128[(i+1)&7]];
 				if((i&7)==6){
 					((uint8_t*)dest)[0]= acc;
-					((uint8_t*)dest)++;
+					dest++;
 				}
 			}
 		}

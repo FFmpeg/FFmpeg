@@ -388,7 +388,7 @@ static inline void RENAME(rgb32to16)(const uint8_t *src, uint8_t *dst, unsigned 
 #endif
 	while(s < end)
 	{
-		const int src= *((uint32_t*)s)++;
+		const int src= *s; s += 4;
 		*d++ = ((src&0xFF)>>3) + ((src&0xFC00)>>5) + ((src&0xF80000)>>8);
 //		*d++ = ((src>>3)&0x1F) + ((src>>5)&0x7E0) + ((src>>8)&0xF800);
 	}
@@ -450,7 +450,7 @@ static inline void RENAME(rgb32tobgr16)(const uint8_t *src, uint8_t *dst, unsign
 #endif
 	while(s < end)
 	{
-		const int src= *((uint32_t*)s)++;
+		const int src= *s; s += 4;
 		*d++ = ((src&0xF8)<<8) + ((src&0xFC00)>>5) + ((src&0xF80000)>>19);
 	}
 }
@@ -546,7 +546,7 @@ static inline void RENAME(rgb32to15)(const uint8_t *src, uint8_t *dst, unsigned 
 #endif
 	while(s < end)
 	{
-		const int src= *((uint32_t*)s)++;
+		const int src= *s; s += 4;
 		*d++ = ((src&0xFF)>>3) + ((src&0xF800)>>6) + ((src&0xF80000)>>9);
 	}
 }
@@ -607,7 +607,7 @@ static inline void RENAME(rgb32tobgr15)(const uint8_t *src, uint8_t *dst, unsign
 #endif
 	while(s < end)
 	{
-		const int src= *((uint32_t*)s)++;
+		const int src= *s; s += 4;
 		*d++ = ((src&0xF8)<<7) + ((src&0xF800)>>6) + ((src&0xF80000)>>19);
 	}
 }
