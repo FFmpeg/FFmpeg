@@ -1922,6 +1922,21 @@ v= (int)(128 + r*sin(theta*3.141592/180));
                         for(y=0; y<16; y++)
                             pict->data[0][16*mb_x + 8 + (16*mb_y + y)*pict->linesize[0]]^= 0x80;
                     }
+                    if(IS_8X8(mb_type) && mv_sample_log2 >= 2){
+                        int dm= 1 << (mv_sample_log2-2);
+                        for(i=0; i<4; i++){
+                            int sx= mb_x*16 + 8*(i&1);
+                            int sy= mb_y*16 + 8*(i>>1);
+                            int xy= (mb_x*2 + (i&1) + (mb_y*2 + (i>>1))*mv_stride) << (mv_sample_log2-1);
+                            //FIXME bidir
+                            int32_t *mv = (int32_t*)&pict->motion_val[0][xy];
+                            if(mv[0] != mv[dm] || mv[dm*mv_stride] != mv[dm*(mv_stride+1)])
+                                for(y=0; y<8; y++)
+                                    pict->data[0][sx + 4 + (sy + y)*pict->linesize[0]]^= 0x80;
+                            if(mv[0] != mv[dm*mv_stride] || mv[dm] != mv[dm*(mv_stride+1)])
+                                *(uint64_t*)(pict->data[0] + sx + (sy + 4)*pict->linesize[0])^= 0x8080808080808080ULL;
+                        }
+                    }
                         
                     if(IS_INTERLACED(mb_type) && s->codec_id == CODEC_ID_H264){
                         // hmm
