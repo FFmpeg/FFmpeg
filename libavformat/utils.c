@@ -17,24 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
-#ifdef CONFIG_WIN32
-#define strcasecmp _stricmp
-#include <sys/types.h>
-#include <sys/timeb.h>
-#elif defined(CONFIG_OS2)
-#include <string.h>
-#define strcasecmp stricmp
-#include <sys/time.h>
-#else
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/time.h>
-#endif
-#include <time.h>
-
-#ifndef HAVE_STRPTIME
-#include "strptime.h"
-#endif
 
 AVInputFormat *first_iformat;
 AVOutputFormat *first_oformat;
@@ -1300,38 +1282,6 @@ int parse_frame_rate(int *frame_rate, int *frame_rate_base, const char *arg)
         return 0;
 }
 
-int64_t av_gettime(void)
-{
-#ifdef CONFIG_WIN32
-    struct _timeb tb;
-    _ftime(&tb);
-    return ((int64_t)tb.time * int64_t_C(1000) + (int64_t)tb.millitm) * int64_t_C(1000);
-#else
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (int64_t)tv.tv_sec * 1000000 + tv.tv_usec;
-#endif
-}
-
-static time_t mktimegm(struct tm *tm)
-{
-    time_t t;
-
-    int y = tm->tm_year + 1900, m = tm->tm_mon + 1, d = tm->tm_mday;
-
-    if (m < 3) {
-        m += 12;
-        y--;
-    }
-
-    t = 86400 * 
-        (d + (153 * m - 457) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 719469);
-
-    t += 3600 * tm->tm_hour + 60 * tm->tm_min + tm->tm_sec;
-
-    return t;
-}
-
 /* Syntax:
  * - If not a duration:
  *  [{YYYY-MM-DD|YYYYMMDD}]{T| }{HH[:MM[:SS[.m...]]][Z]|HH[MM[SS[.m...]]][Z]}
@@ -1373,7 +1323,7 @@ int64_t parse_date(const char *datestr, int duration)
     q = NULL;
     if (!duration) {
         for (i = 0; i < sizeof(date_fmt) / sizeof(date_fmt[0]); i++) {
-            q = strptime(p, date_fmt[i], &dt);
+            q = small_strptime(p, date_fmt[i], &dt);
             if (q) {
                 break;
             }
@@ -1394,13 +1344,13 @@ int64_t parse_date(const char *datestr, int duration)
             p++;
 
         for (i = 0; i < sizeof(time_fmt) / sizeof(time_fmt[0]); i++) {
-            q = strptime(p, time_fmt[i], &dt);
+            q = small_strptime(p, time_fmt[i], &dt);
             if (q) {
                 break;
             }
         }
     } else {
-        q = strptime(p, time_fmt[0], &dt);
+        q = small_strptime(p, time_fmt[0], &dt);
         if (!q) {
             dt.tm_sec = strtol(p, (char **)&q, 10);
             dt.tm_min = 0;

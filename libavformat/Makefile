@@ -8,7 +8,7 @@ VPATH=$(SRC_PATH)/libavformat
 
 CFLAGS= $(OPTFLAGS) -Wall -g -I.. -I$(SRC_PATH) -I$(SRC_PATH)/libavcodec -DHAVE_AV_CONFIG_H -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_GNU_SOURCE
 
-OBJS= utils.o cutils.o allformats.o
+OBJS= utils.o cutils.o os_support.o allformats.o
 PPOBJS=
 
 # mux and demuxes
@@ -30,14 +30,6 @@ OBJS+= pnm.o yuv.o png.o jpeg.o gifdec.o
 # file I/O
 OBJS+= avio.o aviobuf.o file.o 
 OBJS+= framehook.o 
-
-ifeq ($(BUILD_STRPTIME),yes)
-OBJS+= strptime.o
-endif
-
-ifeq ($(BUILD_LOCALTIME_R),yes)
-OBJS+= localtime_r.o
-endif
 
 ifeq ($(CONFIG_VIDEO4LINUX),yes)
 OBJS+= grab.o

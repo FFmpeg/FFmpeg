@@ -12,6 +12,8 @@ extern "C" {
 
 #define LIBAVFORMAT_IDENT	"FFmpeg" LIBAVFORMAT_VERSION "b" LIBAVFORMAT_BUILD_STR
 
+#include <time.h>
+
 #include "avcodec.h"
 
 #include "avio.h"
@@ -487,6 +489,9 @@ int audio_init(void);
 int dv1394_init(void);
 
 #ifdef HAVE_AV_CONFIG_H
+
+#include "os_support.h"
+
 int strstart(const char *str, const char *val, const char **ptr);
 int stristart(const char *str, const char *val, const char **ptr);
 void pstrcpy(char *buf, int buf_size, const char *str);
@@ -501,6 +506,10 @@ do {\
     (void)sizeof(**_tab == _elem); /* check that types are compatible */\
     __dynarray_add((unsigned long **)_tab, nb_ptr, (unsigned long)_elem);\
 } while(0)
+
+time_t mktimegm(struct tm *tm);
+const char *small_strptime(const char *p, const char *fmt, 
+                           struct tm *dt);
 
 struct in_addr;
 int resolve_host(struct in_addr *sin_addr, const char *hostname);
