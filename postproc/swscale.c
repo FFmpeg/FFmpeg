@@ -1724,7 +1724,7 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
 	//FIXME factorize
 
 #ifdef HAVE_ALTIVEC
-	yuv2rgb_altivec_init_tables (c, inv_table);
+	yuv2rgb_altivec_init_tables (c, inv_table, brightness, contrast, saturation);
 #endif	
 	return 0;
 }

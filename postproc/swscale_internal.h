@@ -23,6 +23,12 @@
 #include <altivec.h>
 #endif
 
+#ifdef CONFIG_DARWIN
+#define AVV(x...) (x)
+#else
+#define AVV(x...) {x}
+#endif
+
 #include "../mp_msg.h"
 
 #define MSG_WARN(args...) mp_msg(MSGT_SWS,MSGL_WARN, ##args )

@@ -119,13 +119,13 @@ typedef signed char   sbyte;
 */
 static
 const vector unsigned char
-  perm_rgb_0 = (vector unsigned char)(0x00,0x01,0x10,0x02,0x03,0x11,0x04,0x05,
+  perm_rgb_0 = (const vector unsigned char)AVV(0x00,0x01,0x10,0x02,0x03,0x11,0x04,0x05,
 				      0x12,0x06,0x07,0x13,0x08,0x09,0x14,0x0a),
-  perm_rgb_1 = (vector unsigned char)(0x0b,0x15,0x0c,0x0d,0x16,0x0e,0x0f,0x17,
+  perm_rgb_1 = (const vector unsigned char)AVV(0x0b,0x15,0x0c,0x0d,0x16,0x0e,0x0f,0x17,
 				      0x18,0x19,0x1a,0x1b,0x1c,0x1d,0x1e,0x1f),
-  perm_rgb_2 = (vector unsigned char)(0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,
+  perm_rgb_2 = (const vector unsigned char)AVV(0x10,0x11,0x12,0x13,0x14,0x15,0x16,0x17,
 				      0x00,0x01,0x18,0x02,0x03,0x19,0x04,0x05),
-  perm_rgb_3 = (vector unsigned char)(0x1a,0x06,0x07,0x1b,0x08,0x09,0x1c,0x0a,
+  perm_rgb_3 = (const vector unsigned char)AVV(0x1a,0x06,0x07,0x1b,0x08,0x09,0x1c,0x0a,
 				      0x0b,0x1d,0x0c,0x0d,0x1e,0x0e,0x0f,0x1f);
 
 #define vec_merge3(x2,x1,x0,y0,y1,y2)    \
@@ -198,27 +198,27 @@ do {										       \
 
 #define vec_unh(x) \
   (vector signed short) \
-    vec_perm(x,(typeof(x))(0),\
-             (vector unsigned char)(0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03,\
+    vec_perm(x,(typeof(x))AVV(0),\
+             (vector unsigned char)AVV(0x10,0x00,0x10,0x01,0x10,0x02,0x10,0x03,\
                                     0x10,0x04,0x10,0x05,0x10,0x06,0x10,0x07))
 #define vec_unl(x) \
   (vector signed short) \
-    vec_perm(x,(typeof(x))(0),\
-             (vector unsigned char)(0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B,\
+    vec_perm(x,(typeof(x))AVV(0),\
+             (vector unsigned char)AVV(0x10,0x08,0x10,0x09,0x10,0x0A,0x10,0x0B,\
                                     0x10,0x0C,0x10,0x0D,0x10,0x0E,0x10,0x0F))
 
 #define vec_clip(x) \
-  vec_max (vec_min (x, (typeof(x))(255)), (typeof(x))(0))
+  vec_max (vec_min (x, (typeof(x))AVV(235)), (typeof(x))AVV(16))
 
 #define vec_packclp_a(x,y) \
   (vector unsigned char)vec_pack (vec_clip (x), vec_clip (y))
 
 #define vec_packclp(x,y) \
   (vector unsigned char)vec_packs \
-      ((vector unsigned short)vec_max (x,(vector signed short) (0)), \
-       (vector unsigned short)vec_max (y,(vector signed short) (0)))
+      ((vector unsigned short)vec_max (x,(vector signed short) AVV(0)), \
+       (vector unsigned short)vec_max (y,(vector signed short) AVV(0)))
 
-//#define out_pixels(a,b,c,ptr) vec_mstrgb32(typeof(a),((typeof (a))(0)),a,a,a,ptr)
+//#define out_pixels(a,b,c,ptr) vec_mstrgb32(typeof(a),((typeof (a))AVV(0)),a,a,a,ptr)
 
 
 static inline void cvtyuvtoRGB (SwsContext *c,
@@ -228,9 +228,10 @@ static inline void cvtyuvtoRGB (SwsContext *c,
   vector signed   short vx,ux,uvx;
 
   Y = vec_mradds (Y, c->CY, c->OY);
-
-  U = vec_sub (U,(vector signed short)(128));
-  V = vec_sub (V,(vector signed short)(128));
+  U  = vec_sub (U,(vector signed short)
+  			vec_splat((vector signed short)AVV(128),0));
+  V  = vec_sub (V,(vector signed short)
+  			vec_splat((vector signed short)AVV(128),0));
 
   //   ux  = (CBU*(u<<c->CSHIFT)+0x4000)>>15;
   ux = vec_sl (U, c->CSHIFT);
@@ -324,8 +325,13 @@ static int altivec_##name (SwsContext *c,                                  \
       align_perm = vec_lvsl (0, vi);					   \
       v = (vector signed char)vec_perm (vivP[0], vivP[1], align_perm);	   \
 									   \
-      u  = (vector signed char)vec_sub (u, (vector signed char)(128));	   \
-      v  = (vector signed char)vec_sub (v, (vector signed char)(128));	   \
+      u  = (vector signed char)						   \
+     		vec_sub (u,(vector signed char)                            \
+				vec_splat((vector signed char)AVV(128),0));\
+      v  = (vector signed char)						   \
+     		vec_sub (v,(vector signed char)				   \
+				vec_splat((vector signed char)AVV(128),0));\
+									   \
       U  = vec_unpackh (u);						   \
       V  = vec_unpackh (v);						   \
 									   \
@@ -342,18 +348,18 @@ static int altivec_##name (SwsContext *c,                                  \
 									   \
 	/*   ux  = (CBU*(u<<CSHIFT)+0x4000)>>15 */			   \
 	ux = vec_sl (U, lCSHIFT);					   \
-	ux = vec_mradds (ux, lCBU, (vector signed short)(0));		   \
+	ux = vec_mradds (ux, lCBU, (vector signed short)AVV(0));		   \
 	ux0  = vec_mergeh (ux,ux);					   \
 	ux1  = vec_mergel (ux,ux);					   \
 									   \
 	/* vx  = (CRV*(v<<CSHIFT)+0x4000)>>15;	*/			   \
 	vx = vec_sl (V, lCSHIFT);					   \
-	vx = vec_mradds (vx, lCRV, (vector signed short)(0));		   \
+	vx = vec_mradds (vx, lCRV, (vector signed short)AVV(0));		   \
 	vx0  = vec_mergeh (vx,vx);					   \
 	vx1  = vec_mergel (vx,vx);					   \
 									   \
 	/* uvx = ((CGU*u) + (CGV*v))>>15 */				   \
-	uvx = vec_mradds (U, lCGU, (vector signed short)(0));		   \
+	uvx = vec_mradds (U, lCGU, (vector signed short)AVV(0));		   \
 	uvx = vec_mradds (V, lCGV, uvx);				   \
 	uvx0 = vec_mergeh (uvx,uvx);					   \
 	uvx1 = vec_mergel (uvx,uvx);					   \
@@ -403,15 +409,167 @@ static int altivec_##name (SwsContext *c,                                  \
 }
 
 
-#define out_abgr(a,b,c,ptr)  vec_mstrgb32(typeof(a),((typeof (a))(0)),c,b,a,ptr)
-#define out_bgra(a,b,c,ptr)  vec_mstrgb32(typeof(a),c,b,a,((typeof (a))(0)),ptr)
-#define out_rgba(a,b,c,ptr)  vec_mstrgb32(typeof(a),a,b,c,((typeof (a))(0)),ptr)
-#define out_argb(a,b,c,ptr)  vec_mstrgb32(typeof(a),((typeof (a))(0)),a,b,c,ptr)
+#define out_abgr(a,b,c,ptr)  vec_mstrgb32(typeof(a),((typeof (a))AVV(0)),c,b,a,ptr)
+#define out_bgra(a,b,c,ptr)  vec_mstrgb32(typeof(a),c,b,a,((typeof (a))AVV(0)),ptr)
+#define out_rgba(a,b,c,ptr)  vec_mstrgb32(typeof(a),a,b,c,((typeof (a))AVV(0)),ptr)
+#define out_argb(a,b,c,ptr)  vec_mstrgb32(typeof(a),((typeof (a))AVV(0)),a,b,c,ptr)
 #define out_rgb24(a,b,c,ptr) vec_mstrgb24(a,b,c,ptr)
-#define out_bgr24(a,b,c,ptr) vec_mstrgb24(c,b,a,ptr)
+#define out_bgr24(a,b,c,ptr) vec_mstbgr24(c,b,a,ptr)
 
 DEFCSP420_CVT (yuv2_abgr32, out_abgr)
+#if 1
 DEFCSP420_CVT (yuv2_bgra32, out_argb)
+#else
+static int altivec_yuv2_bgra32 (SwsContext *c,                                  
+				unsigned char **in, int *instrides,	   
+				int srcSliceY,	int srcSliceH,		   
+				unsigned char **oplanes, int *outstrides)  
+{									   
+  int w = c->srcW;							   
+  int h = srcSliceH;							   
+  int i,j;								   
+  int instrides_scl[3];							   
+  vector unsigned char y0,y1;						   
+									   
+  vector signed char  u,v;						   
+									   
+  vector signed short Y0,Y1,Y2,Y3;					   
+  vector signed short U,V;						   
+  vector signed short vx,ux,uvx;					   
+  vector signed short vx0,ux0,uvx0;					   
+  vector signed short vx1,ux1,uvx1;					   
+  vector signed short R0,G0,B0;						   
+  vector signed short R1,G1,B1;						   
+  vector unsigned char R,G,B;						   
+									   
+  vector unsigned char *uivP, *vivP;			   		   
+  vector unsigned char align_perm;					   
+									   
+  vector signed short 							   
+    lCY  = c->CY,							   
+    lOY  = c->OY,							   
+    lCRV = c->CRV,							   
+    lCBU = c->CBU,							   
+    lCGU = c->CGU,							   
+    lCGV = c->CGV;							   
+									   
+  vector unsigned short lCSHIFT = c->CSHIFT;				   
+									   
+  ubyte *y1i   = in[0];							   
+  ubyte *y2i   = in[0]+w;						   
+  ubyte *ui    = in[1];							   
+  ubyte *vi    = in[2];							   
+									   
+  vector unsigned char *oute						   
+    = (vector unsigned char *)						   
+        (oplanes[0]+srcSliceY*outstrides[0]);				   
+  vector unsigned char *outo						   
+    = (vector unsigned char *)						   
+        (oplanes[0]+srcSliceY*outstrides[0]+outstrides[0]);		   
+									   
+									   
+  instrides_scl[0] = instrides[0];					   
+  instrides_scl[1] = instrides[1]-w/2;  /* the loop moves ui by w/2 */	   
+  instrides_scl[2] = instrides[2]-w/2;  /* the loop moves vi by w/2 */	   
+									   
+									   
+  for (i=0;i<h/2;i++) {							   
+    vec_dstst (outo, (0x02000002|(((w*3+32)/32)<<16)), 0);                 
+    vec_dstst (oute, (0x02000002|(((w*3+32)/32)<<16)), 1);                 
+									   
+    for (j=0;j<w/16;j++) {						   
+									   
+      y0 = vec_ldl (0,y1i);						   
+      y1 = vec_ldl (0,y2i);						   
+      uivP = (vector unsigned char *)ui;				   
+      vivP = (vector unsigned char *)vi;				   
+									   
+      align_perm = vec_lvsl (0, ui);					   
+      u = (vector signed char)vec_perm (uivP[0], uivP[1], align_perm);	   
+									   
+      align_perm = vec_lvsl (0, vi);					   
+      v = (vector signed char)vec_perm (vivP[0], vivP[1], align_perm);
+      u  = (vector signed char)
+     		vec_sub (u,(vector signed char)
+				vec_splat((vector signed char)AVV(128),0));
+      
+      v  = (vector signed char)
+      		vec_sub (v, (vector signed char)
+				vec_splat((vector signed char)AVV(128),0));
+      
+      U  = vec_unpackh (u);						   
+      V  = vec_unpackh (v);						   
+									   
+									   
+	Y0 = vec_unh (y0);						   
+	Y1 = vec_unl (y0);						   
+	Y2 = vec_unh (y1);						   
+	Y3 = vec_unl (y1);						   
+									   
+        Y0 = vec_mradds (Y0, lCY, lOY);					   
+        Y1 = vec_mradds (Y1, lCY, lOY);					   
+        Y2 = vec_mradds (Y2, lCY, lOY);					   
+        Y3 = vec_mradds (Y3, lCY, lOY);					   
+									   
+	/*   ux  = (CBU*(u<<CSHIFT)+0x4000)>>15 */			   
+	ux = vec_sl (U, lCSHIFT);					   
+	ux = vec_mradds (ux, lCBU, (vector signed short)AVV(0));
+	ux0  = vec_mergeh (ux,ux);					   
+	ux1  = vec_mergel (ux,ux);					   
+									   
+	/* vx  = (CRV*(v<<CSHIFT)+0x4000)>>15;	*/			   
+	vx = vec_sl (V, lCSHIFT);					   
+	vx = vec_mradds (vx, lCRV, (vector signed short)AVV(0));
+	vx0  = vec_mergeh (vx,vx);
+	vx1  = vec_mergel (vx,vx);
+	/* uvx = ((CGU*u) + (CGV*v))>>15 */
+	uvx = vec_mradds (U, lCGU, (vector signed short)AVV(0));
+	uvx = vec_mradds (V, lCGV, uvx);
+	uvx0 = vec_mergeh (uvx,uvx);
+	uvx1 = vec_mergel (uvx,uvx);
+	R0 = vec_add (Y0,vx0);
+	G0 = vec_add (Y0,uvx0);
+	B0 = vec_add (Y0,ux0);
+	R1 = vec_add (Y1,vx1);
+	G1 = vec_add (Y1,uvx1);
+	B1 = vec_add (Y1,ux1);
+	R  = vec_packclp (R0,R1);
+	G  = vec_packclp (G0,G1);
+	B  = vec_packclp (B0,B1);
+	
+	out_argb(R,G,B,oute);
+	R0 = vec_add (Y2,vx0);
+	G0 = vec_add (Y2,uvx0);
+	B0 = vec_add (Y2,ux0);
+	R1 = vec_add (Y3,vx1);
+	G1 = vec_add (Y3,uvx1);
+	B1 = vec_add (Y3,ux1);
+	R  = vec_packclp (R0,R1);
+	G  = vec_packclp (G0,G1);
+	B  = vec_packclp (B0,B1);
+	
+	out_argb(R,G,B,outo);
+	y1i  += 16;							   
+	y2i  += 16;							   
+	ui   += 8;
+	vi   += 8;							   
+									   
+    }									   
+									   
+    outo += (outstrides[0])>>4;					           
+    oute += (outstrides[0])>>4;					           
+									   
+    ui    += instrides_scl[1];						   
+    vi    += instrides_scl[2];						   
+    y1i   += instrides_scl[0];						   
+    y2i   += instrides_scl[0];						   
+  }									   
+  return srcSliceH;							   
+}
+
+#endif
+
+
 DEFCSP420_CVT (yuv2_rgba32, out_rgba)
 DEFCSP420_CVT (yuv2_argb32, out_argb)
 DEFCSP420_CVT (yuv2_rgb24,  out_rgb24)
@@ -422,15 +580,15 @@ DEFCSP420_CVT (yuv2_bgr24,  out_bgr24)
 // 0123 4567 89ab cdef
 static
 const vector unsigned char
-  demux_u = (vector unsigned char)(0x10,0x00,0x10,0x00,
+  demux_u = (const vector unsigned char)AVV(0x10,0x00,0x10,0x00,
 				   0x10,0x04,0x10,0x04,
 				   0x10,0x08,0x10,0x08,
 				   0x10,0x0c,0x10,0x0c),
-  demux_v = (vector unsigned char)(0x10,0x02,0x10,0x02,
+  demux_v = (const vector unsigned char)AVV(0x10,0x02,0x10,0x02,
 				   0x10,0x06,0x10,0x06,
 				   0x10,0x0A,0x10,0x0A,
 				   0x10,0x0E,0x10,0x0E),
-  demux_y = (vector unsigned char)(0x10,0x01,0x10,0x03,
+  demux_y = (const vector unsigned char)AVV(0x10,0x01,0x10,0x03,
 				   0x10,0x05,0x10,0x07,
 				   0x10,0x09,0x10,0x0B,
 				   0x10,0x0D,0x10,0x0F);
@@ -461,25 +619,25 @@ static int altivec_uyvy_rgb32 (SwsContext *c,
     for (j=0;j<w/16;j++) {
       uyvy = vec_ld (0, img);
       U = (vector signed short)
-	vec_perm (uyvy, (vector unsigned char)(0), demux_u);
+	vec_perm (uyvy, (vector unsigned char)AVV(0), demux_u);
 
       V = (vector signed short)
-	vec_perm (uyvy, (vector unsigned char)(0), demux_v);
+	vec_perm (uyvy, (vector unsigned char)AVV(0), demux_v);
 
       Y = (vector signed short)
-	vec_perm (uyvy, (vector unsigned char)(0), demux_y);
+	vec_perm (uyvy, (vector unsigned char)AVV(0), demux_y);
 
       cvtyuvtoRGB (c, Y,U,V,&R0,&G0,&B0);
 
       uyvy = vec_ld (16, img);
       U = (vector signed short)
-	vec_perm (uyvy, (vector unsigned char)(0), demux_u);
+	vec_perm (uyvy, (vector unsigned char)AVV(0), demux_u);
 
       V = (vector signed short)
-	vec_perm (uyvy, (vector unsigned char)(0), demux_v);
+	vec_perm (uyvy, (vector unsigned char)AVV(0), demux_v);
 
       Y = (vector signed short)
-	vec_perm (uyvy, (vector unsigned char)(0), demux_y);
+	vec_perm (uyvy, (vector unsigned char)AVV(0), demux_y);
 
       cvtyuvtoRGB (c, Y,U,V,&R1,&G1,&B1);
 
@@ -564,67 +722,44 @@ SwsFunc yuv2rgb_init_altivec (SwsContext *c)
   return NULL;
 }
 
-void yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4])
+static uint16_t roundToInt16(int64_t f){
+	int r= (f + (1<<15))>>16;
+	     if(r<-0x7FFF) return 0x8000;
+	else if(r> 0x7FFF) return 0x7FFF;
+	else               return r;
+}
+
+void yuv2rgb_altivec_init_tables (SwsContext *c, const int inv_table[4],int brightness,int contrast, int saturation)
 {
-  vector signed short CY, CRV, CBU, CGU, CGV, OY, Y0;
-  int64_t crv __attribute__ ((aligned(16))) = inv_table[0];
-  int64_t cbu __attribute__ ((aligned(16))) = inv_table[1];
-  int64_t cgu __attribute__ ((aligned(16))) = inv_table[2];
-  int64_t cgv __attribute__ ((aligned(16))) = inv_table[3];
-  int64_t cy = (1<<16)-1;
-  int64_t oy = 0;
-  short tmp __attribute__ ((aligned(16)));
+  union {
+  	signed short tmp[8] __attribute__ ((aligned(16)));
+	vector signed short vec;
+	} buf;
 
-  if ((c->flags & SWS_CPU_CAPS_ALTIVEC) == 0)
-    return;
+  buf.tmp[0] =  ( (0xffffLL) * contrast>>8 )>>9;			//cy
+  buf.tmp[1] =  -256*brightness;					//oy
+  buf.tmp[2] =  (inv_table[0]>>3) *(contrast>>16)*(saturation>>16);	//crv
+  buf.tmp[3] =  (inv_table[1]>>3) *(contrast>>16)*(saturation>>16);	//cbu
+  buf.tmp[4] = -((inv_table[2]>>1)*(contrast>>16)*(saturation>>16));	//cgu
+  buf.tmp[5] = -((inv_table[3]>>1)*(contrast>>16)*(saturation>>16));	//cgv
 
-  cy = (cy *c->contrast             )>>17;
-  crv= (crv*c->contrast * c->saturation)>>32;
-  cbu= (cbu*c->contrast * c->saturation)>>32;
-  cgu= (cgu*c->contrast * c->saturation)>>32;
-  cgv= (cgv*c->contrast * c->saturation)>>32;
 
-  oy -= 256*c->brightness;
-
-  tmp = cy;
-  CY = vec_lde (0, &tmp);
-  CY  = vec_splat (CY, 0);
-
-  tmp = oy;
-  OY = vec_lde (0, &tmp);
-  OY  = vec_splat (OY, 0);
-
-  tmp = crv>>3;
-  CRV = vec_lde (0, &tmp);
-  CRV  = vec_splat (CRV, 0);
-  tmp = cbu>>3;
-  CBU = vec_lde (0, &tmp);
-  CBU  = vec_splat (CBU, 0);
-
-  tmp = -(cgu>>1);
-  CGU = vec_lde (0, &tmp);
-  CGU  = vec_splat (CGU, 0);
-  tmp = -(cgv>>1);
-  CGV = vec_lde (0, &tmp);
-  CGV  = vec_splat (CGV, 0);
-
-  c->CSHIFT = (vector unsigned short)(2);
-  c->CY = CY;
-  c->OY = OY;
-  c->CRV = CRV;
-  c->CBU = CBU;
-  c->CGU = CGU;
-  c->CGV = CGV;
-
+  c->CSHIFT = (vector unsigned short)vec_splat((vector unsigned short)AVV(2),0);
+  c->CY  = vec_splat ((vector signed short)buf.vec, 0);
+  c->OY  = vec_splat ((vector signed short)buf.vec, 1);
+  c->CRV  = vec_splat ((vector signed short)buf.vec, 2);
+  c->CBU  = vec_splat ((vector signed short)buf.vec, 3);
+  c->CGU  = vec_splat ((vector signed short)buf.vec, 4);
+  c->CGV  = vec_splat ((vector signed short)buf.vec, 5);
 #if 0
-  printf ("cy:  %hvx\n", CY);
-  printf ("oy:  %hvx\n", OY);
-  printf ("crv: %hvx\n", CRV);
-  printf ("cbu: %hvx\n", CBU);
-  printf ("cgv: %hvx\n", CGV);
-  printf ("cgu: %hvx\n", CGU);
+{
+int i;
+char *v[6]={"cy","oy","crv","cbu","cgu","cgv"};
+for (i=0; i<6;i++)
+  printf("%s %d ", v[i],buf.tmp[i] );
+  printf("\n");
+}
 #endif
-
  return;
 }
 
@@ -637,15 +772,16 @@ altivec_yuv2packedX (SwsContext *c,
 {
   int i,j;
   short tmp __attribute__((aligned (16)));
-  short *p;
+  int16_t *p;
   short *f;
   vector signed short X,X0,X1,Y0,U0,V0,Y1,U1,V1,U,V;
   vector signed short R0,G0,B0,R1,G1,B1;
 
   vector unsigned char R,G,B,pels[3];
   vector unsigned char *out,*nout;
-  vector signed short   RND = (vector signed short)(1<<3);
-  vector unsigned short SCL = (vector unsigned short)(4);
+
+  vector signed short   RND = vec_splat((vector signed short)AVV(1<<3),0);
+  vector unsigned short SCL = vec_splat((vector unsigned short)AVV(4),0);
   unsigned long scratch[16] __attribute__ ((aligned (16)));
 
   vector signed short *vYCoeffsBank, *vCCoeffsBank;
