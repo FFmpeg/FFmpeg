@@ -153,7 +153,7 @@ static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
                  * We have to reset :(.
                  */
   
-                fprintf(stderr, "DV1394: Ring buffer overflow. Reseting ..\n");
+                av_log(context, AV_LOG_ERROR, "DV1394: Ring buffer overflow. Reseting ..\n");
  
                 dv1394_reset(dv);
                 dv1394_start(dv);
@@ -191,7 +191,7 @@ restart_poll:
         dv->done  = 0;
 
         if (s.dropped_frames) {
-            fprintf(stderr, "DV1394: Frame drop detected (%d). Reseting ..\n",
+            av_log(context, AV_LOG_ERROR, "DV1394: Frame drop detected (%d). Reseting ..\n",
                     s.dropped_frames);
 
             dv1394_reset(dv);

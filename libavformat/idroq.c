@@ -135,7 +135,7 @@ static int roq_read_header(AVFormatContext *s,
             break;
 
         default:
-            printf (" unknown RoQ chunk type (%04X)\n", LE_16(&preamble[0]));
+            av_log(s, AV_LOG_ERROR, " unknown RoQ chunk type (%04X)\n", LE_16(&preamble[0]));
             return AVERROR_INVALIDDATA;
             break;
         }
@@ -268,7 +268,7 @@ static int roq_read_packet(AVFormatContext *s,
             break;
 
         default:
-            printf ("  unknown RoQ chunk (%04X)\n", chunk_type);
+            av_log(s, AV_LOG_ERROR, "  unknown RoQ chunk (%04X)\n", chunk_type);
             return AVERROR_INVALIDDATA;
             break;
         }

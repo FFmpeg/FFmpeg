@@ -1050,7 +1050,7 @@ static int rtsp_read_play(AVFormatContext *s)
     RTSPHeader reply1, *reply = &reply1;
     char cmd[1024];
 
-    printf("hello state=%d\n", rt->state);
+    av_log(s, AV_LOG_DEBUG, "hello state=%d\n", rt->state);
 
     if (rt->state == RTSP_STATE_PAUSED) {
         snprintf(cmd, sizeof(cmd), 

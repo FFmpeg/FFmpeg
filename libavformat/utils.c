@@ -300,6 +300,26 @@ AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
 /**
  * open a media file from an IO stream. 'fmt' must be specified.
  */
+
+static const char* format_to_name(void* class_ptr)
+{
+    AVFormatContext* fc = (AVFormatContext*) class_ptr;
+    if(fc->iformat) return fc->iformat->name;
+    else if(fc->oformat) return fc->oformat->name;
+    else return "NULL";
+}
+
+static const AVClass av_format_context_class = { "AVFormatContext", format_to_name };
+
+AVFormatContext *av_alloc_format_context(void)
+{
+    AVFormatContext *ic;
+    ic = av_mallocz(sizeof(AVFormatContext));
+    if (!ic) return ic;
+    ic->class = av_format_context_class;
+    return ic;
+}
+
 int av_open_input_stream(AVFormatContext **ic_ptr, 
                          ByteIOContext *pb, const char *filename, 
                          AVInputFormat *fmt, AVFormatParameters *ap)
@@ -307,7 +327,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     int err;
     AVFormatContext *ic;
 
-    ic = av_mallocz(sizeof(AVFormatContext));
+    ic = av_alloc_format_context();
     if (!ic) {
         err = AVERROR_NOMEM;
         goto fail;
@@ -1725,13 +1745,13 @@ void dump_format(AVFormatContext *ic,
     int i, flags;
     char buf[256];
 
-    fprintf(stderr, "%s #%d, %s, %s '%s':\n", 
+    av_log(ic, AV_LOG_DEBUG, "%s #%d, %s, %s '%s':\n", 
             is_output ? "Output" : "Input",
             index, 
             is_output ? ic->oformat->name : ic->iformat->name, 
             is_output ? "to" : "from", url);
     if (!is_output) {
-        fprintf(stderr, "  Duration: ");
+        av_log(ic, AV_LOG_DEBUG, "  Duration: ");
         if (ic->duration != AV_NOPTS_VALUE) {
             int hours, mins, secs, us;
             secs = ic->duration / AV_TIME_BASE;
@@ -1740,23 +1760,23 @@ void dump_format(AVFormatContext *ic,
             secs %= 60;
             hours = mins / 60;
             mins %= 60;
-            fprintf(stderr, "%02d:%02d:%02d.%01d", hours, mins, secs, 
+            av_log(ic, AV_LOG_DEBUG, "%02d:%02d:%02d.%01d", hours, mins, secs, 
                    (10 * us) / AV_TIME_BASE);
         } else {
-            fprintf(stderr, "N/A");
+            av_log(ic, AV_LOG_DEBUG, "N/A");
         }
-        fprintf(stderr, ", bitrate: ");
+        av_log(ic, AV_LOG_DEBUG, ", bitrate: ");
         if (ic->bit_rate) {
-            fprintf(stderr,"%d kb/s", ic->bit_rate / 1000);
+            av_log(ic, AV_LOG_DEBUG,"%d kb/s", ic->bit_rate / 1000);
         } else {
-            fprintf(stderr, "N/A");
+            av_log(ic, AV_LOG_DEBUG, "N/A");
         }
-        fprintf(stderr, "\n");
+        av_log(ic, AV_LOG_DEBUG, "\n");
     }
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
         avcodec_string(buf, sizeof(buf), &st->codec, is_output);
-        fprintf(stderr, "  Stream #%d.%d", index, i);
+        av_log(ic, AV_LOG_DEBUG, "  Stream #%d.%d", index, i);
         /* the pid is an important information, so we display it */
         /* XXX: add a generic system */
         if (is_output)
@@ -1764,9 +1784,9 @@ void dump_format(AVFormatContext *ic,
         else
             flags = ic->iformat->flags;
         if (flags & AVFMT_SHOW_IDS) {
-            fprintf(stderr, "[0x%x]", st->id);
+            av_log(ic, AV_LOG_DEBUG, "[0x%x]", st->id);
         }
-        fprintf(stderr, ": %s\n", buf);
+        av_log(ic, AV_LOG_DEBUG, ": %s\n", buf);
     }
 }
 

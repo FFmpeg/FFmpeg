@@ -77,7 +77,7 @@ static int yuv4_write_packet(AVFormatContext *s, int stream_index,
     if (*first_pkt) {
         *first_pkt = 0;
 	if (yuv4_generate_header(s, buf2) < 0) {
-	    fprintf(stderr, "Error. YUV4MPEG stream header write failed.\n");
+	    av_log(s, AV_LOG_ERROR, "Error. YUV4MPEG stream header write failed.\n");
 	    return -EIO;
 	} else {
 	    put_buffer(pb, buf2, strlen(buf2)); 
@@ -122,10 +122,10 @@ static int yuv4_write_header(AVFormatContext *s)
         return -EIO;
     
     if (s->streams[0]->codec.pix_fmt == PIX_FMT_YUV411P) {
-        fprintf(stderr, "Warning: generating non-standard 4:1:1 YUV stream, some mjpegtools might not work.\n");
+        av_log(s, AV_LOG_ERROR, "Warning: generating non-standard 4:1:1 YUV stream, some mjpegtools might not work.\n");
     } 
     else if (s->streams[0]->codec.pix_fmt != PIX_FMT_YUV420P) {
-        fprintf(stderr, "ERROR: yuv4mpeg only handles 4:2:0, 4:1:1 YUV data. Use -pix_fmt to select one.\n");
+        av_log(s, AV_LOG_ERROR, "ERROR: yuv4mpeg only handles 4:2:0, 4:1:1 YUV data. Use -pix_fmt to select one.\n");
 	return -EIO;
     }
     

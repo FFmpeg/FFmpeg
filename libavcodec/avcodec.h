@@ -570,9 +570,26 @@ typedef struct AVFrame {
 #define DEFAULT_FRAME_RATE_BASE 1001000
 
 /**
+ * Used by av_log
+ */
+typedef struct AVCLASS AVClass;
+struct AVCLASS {
+    const char* class_name;
+    const char* (*item_name)(void*); /* actually passing a pointer to an AVCodecContext
+					or AVFormatContext, which begin with an AVClass.
+					Needed because av_log is in libavcodec and has no visibility
+					of AVIn/OutputFormat */
+};
+
+/**
  * main external api structure.
  */
 typedef struct AVCodecContext {
+    /**
+     * Info on struct for av_log
+     * - set by avcodec_alloc_context
+     */
+    AVClass class;
     /**
      * the average bitrate.
      * - encoding: set by user. unused for constant quantizer encoding
@@ -2095,19 +2112,11 @@ void img_copy(AVPicture *dst, const AVPicture *src,
 #define AV_LOG_INFO 1
 #define AV_LOG_DEBUG 2
 
-extern void av_log(AVCodecContext*, int level, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 3, 4)));
-extern void av_vlog(AVCodecContext*, int level, const char *fmt, va_list);
+extern void av_log(void*, int level, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 3, 4)));
+extern void av_vlog(void*, int level, const char *fmt, va_list);
 extern int av_log_get_level(void);
 extern void av_log_set_level(int);
-extern void av_log_set_callback(void (*)(AVCodecContext*, int, const char*, va_list));
-
-#undef  AV_LOG_TRAP_PRINTF
-#ifdef AV_LOG_TRAP_PRINTF
-#define printf DO NOT USE
-#define fprintf DO NOT USE
-#undef stderr
-#define stderr DO NOT USE
-#endif
+extern void av_log_set_callback(void (*)(void*, int, const char*, va_list));
 
 #ifdef __cplusplus
 }

@@ -610,7 +610,7 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
     if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
         /* FIXME: we have to have more sensible approach than this one */
 	if (c->has_video)
-	    fprintf(stderr, "Can't process DV frame #%d. Insufficient audio data or severe sync problem.\n", c->frames);
+	    av_log(&st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient audio data or severe sync problem.\n", c->frames);
 	    
         dv_inject_video(c, data, *frame);
 	c->has_video = 1;
@@ -635,7 +635,7 @@ int dv_assemble_frame(DVMuxContext *c, AVStream* st,
     
         /* FIXME: we have to have more sensible approach than this one */
         if (fifo_size(&c->audio_data, c->audio_data.rptr) + data_size >= 100*AVCODEC_MAX_AUDIO_FRAME_SIZE)
-	    fprintf(stderr, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
+	    av_log(&st->codec, AV_LOG_ERROR, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
 	fifo_write(&c->audio_data, (uint8_t *)data, data_size, &c->audio_data.wptr);
     }
 
@@ -848,7 +848,7 @@ static int dv_write_header(AVFormatContext *s)
 {
     s->priv_data = dv_init_mux(s);
     if (!s->priv_data) {
-        fprintf(stderr, "Can't initialize DV format!\n"
+        av_log(s, AV_LOG_ERROR, "Can't initialize DV format!\n"
 		    "Make sure that you supply exactly two streams:\n"
 		    "     video: 25fps or 29.97fps, audio: 2ch/48Khz/PCM\n");
 	return -1;

@@ -102,7 +102,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
     skip:
         /* skip packet */
-        printf("skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
+        av_log(s, AV_LOG_ERROR, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
         url_fskip(&s->pb, size);
         goto redo;
     }

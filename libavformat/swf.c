@@ -341,7 +341,7 @@ static int swf_write_header(AVFormatContext *s)
             if ( enc->codec_id == CODEC_ID_FLV1 || enc->codec_id == CODEC_ID_MJPEG ) {
                 video_enc = enc;
             } else {
-                fprintf(stderr, "SWF only supports FLV1 and MJPEG\n");
+                av_log(enc, AV_LOG_ERROR, "SWF only supports FLV1 and MJPEG\n");
                 return -1;
             }
         }
@@ -479,7 +479,7 @@ static int swf_write_video(AVFormatContext *s,
     
     /* Flash Player limit */
     if ( swf->swf_frame_number == 16000 ) {
-        fprintf(stderr, "warning: Flash Player limit of 16000 frames reached\n");
+        av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
     }
 
     /* Store video data in queue */
@@ -680,7 +680,7 @@ static int swf_write_audio(AVFormatContext *s,
 
     /* Flash Player limit */
     if ( swf->swf_frame_number == 16000 ) {
-        fprintf(stderr, "warning: Flash Player limit of 16000 frames reached\n");
+        av_log(enc, AV_LOG_INFO, "warning: Flash Player limit of 16000 frames reached\n");
     }
 
     if (enc->codec_id == CODEC_ID_MP3 ) {
@@ -825,7 +825,7 @@ static int swf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 }
                 break;
             }
-            fprintf(stderr, "No media found in SWF\n");
+            av_log(s, AV_LOG_ERROR, "No media found in SWF\n");
             return -EIO;
         }
         if ( tag == TAG_VIDEOSTREAM && !vst) {

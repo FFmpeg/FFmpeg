@@ -1070,12 +1070,12 @@ static int asf_get_packet(AVFormatContext *s)
     c = get_byte(pb);
     if (c != 0x82) {
         if (!url_feof(pb))
-	    printf("ff asf bad header %x  at:%lld\n", c, url_ftell(pb));
+	    av_log(s, AV_LOG_ERROR, "ff asf bad header %x  at:%lld\n", c, url_ftell(pb));
     }
     if ((c & 0x0f) == 2) { // always true for now
 	if (get_le16(pb) != 0) {
             if (!url_feof(pb))
-		printf("ff asf bad non zero\n");
+		av_log(s, AV_LOG_ERROR, "ff asf bad non zero\n");
 	    return -EIO;
 	}
         rsize+=2;
@@ -1190,7 +1190,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 		/* unhandled packet (should not happen) */
 		url_fskip(pb, asf->packet_frag_size);
 		asf->packet_size_left -= asf->packet_frag_size;
-		printf("ff asf skip %d  %d\n", asf->packet_frag_size, num & 0x7f);
+		av_log(s, AV_LOG_ERROR, "ff asf skip %d  %d\n", asf->packet_frag_size, num & 0x7f);
                 continue;
 	    }
 	    asf->asf_st = s->streams[asf->stream_index]->priv_data;
@@ -1203,7 +1203,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	   ) {
 	    /* cannot continue current packet: free it */
 	    // FIXME better check if packet was already allocated
-	    printf("ff asf parser skips: %d - %d     o:%d - %d    %d %d   fl:%d\n",
+	    av_log(s, AV_LOG_INFO, "ff asf parser skips: %d - %d     o:%d - %d    %d %d   fl:%d\n",
 		   asf_st->pkt.size,
 		   asf->packet_obj_size,
 		   asf->packet_frag_offset, asf_st->frag_offset,
@@ -1213,7 +1213,7 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    asf_st->frag_offset = 0;
 	    if (asf->packet_frag_offset != 0) {
 		url_fskip(pb, asf->packet_frag_size);
-		printf("ff asf parser skiping %db\n", asf->packet_frag_size);
+		av_log(s, AV_LOG_INFO, "ff asf parser skiping %db\n", asf->packet_frag_size);
 		asf->packet_size_left -= asf->packet_frag_size;
 		continue;
 	    }
@@ -1367,7 +1367,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int64_t *ppos, int stream_index)
     asf_reset_header(s);
     for(;;){
         if (av_read_frame(s, pkt) < 0){
-            printf("seek failed\n");
+            av_log(s, AV_LOG_INFO, "seek failed\n");
     	    return AV_NOPTS_VALUE;
         }
         pts= pkt->pts;

@@ -456,12 +456,12 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
     /* main header */
     tmp = get_be64(bc);
     if (tmp != MAIN_STARTCODE)
-	fprintf(stderr, "damaged? startcode!=1 (%Ld)\n", tmp);
+	av_log(s, AV_LOG_ERROR, "damaged? startcode!=1 (%Ld)\n", tmp);
     get_packetheader(nut, bc);
     
     tmp = get_v(bc);
     if (tmp != 0)
-	fprintf(stderr, "bad version (%Ld)\n", tmp);
+	av_log(s, AV_LOG_ERROR, "bad version (%Ld)\n", tmp);
     
     nb_streams = get_v(bc);
     get_be32(bc); /* checkusm */
@@ -481,7 +481,7 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 	
 	tmp = get_be64(bc);
 	if (tmp != STREAM_STARTCODE)
-	    fprintf(stderr, "damaged? startcode!=1 (%Ld)\n", tmp);
+	    av_log(s, AV_LOG_ERROR, "damaged? startcode!=1 (%Ld)\n", tmp);
 	get_packetheader(nut, bc);
 	st = av_new_stream(s, get_v(bc));
 	if (!st)
@@ -494,16 +494,16 @@ static int nut_read_header(AVFormatContext *s, AVFormatParameters *ap)
 		st->codec.codec_type = CODEC_TYPE_VIDEO;
 		st->codec.codec_id = codec_get_bmp_id(tmp);
 		if (st->codec.codec_id == CODEC_ID_NONE)
-		    fprintf(stderr, "Unknown codec?!\n");
+		    av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
 		break;
 	    case 32:
 		st->codec.codec_type = CODEC_TYPE_AUDIO;
 		st->codec.codec_id = codec_get_wav_id(tmp);
 		if (st->codec.codec_id == CODEC_ID_NONE)
-		    fprintf(stderr, "Unknown codec?!\n");
+		    av_log(s, AV_LOG_ERROR, "Unknown codec?!\n");
 		break;
 	    default:
-		fprintf(stderr, "Unknown stream class (%d)\n", class);
+		av_log(s, AV_LOG_ERROR, "Unknown stream class (%d)\n", class);
 		return -1;
 	}
 	s->bit_rate += get_v(bc);
@@ -565,12 +565,12 @@ static int nut_read_packet(AVFormatContext *s, AVPacket *pkt)
 	    tmp = get_byte(bc); /* flags */
 	}
 	else
-	    fprintf(stderr, "error in zero bit / startcode %LX\n", tmp);
+	    av_log(s, AV_LOG_ERROR, "error in zero bit / startcode %LX\n", tmp);
     }
     get_packetheader(nut, bc);
 #if 0
     if (((tmp & 0x60)>>5) > 3) /* priority <= 3 */
-	fprintf(stderr, "sanity check failed!\n");
+	av_log(s, AV_LOG_ERROR, "sanity check failed!\n");
 #endif
     id = get_v(bc);
     if ((tmp & 0x8) >> 3)

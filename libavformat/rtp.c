@@ -301,7 +301,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
         return -1;
 #if defined(DEBUG) || 1
     if (seq != ((s->seq + 1) & 0xffff)) {
-        printf("RTP: PT=%02x: bad cseq %04x expected=%04x\n", 
+        av_log(&s->st->codec, AV_LOG_ERROR, "RTP: PT=%02x: bad cseq %04x expected=%04x\n", 
                payload_type, seq, ((s->seq + 1) & 0xffff));
     }
     s->seq = seq;

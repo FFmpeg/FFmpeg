@@ -106,7 +106,7 @@ static int audio_open(AudioData *s, int is_output, const char *audio_device)
         s->codec_id = CODEC_ID_PCM_S16BE;
         break;
     default:
-        fprintf(stderr, "Soundcard does not support 16 bit sample format\n");
+        av_log(NULL, AV_LOG_ERROR, "Soundcard does not support 16 bit sample format\n");
         close(audio_fd);
         return -EIO;
     }

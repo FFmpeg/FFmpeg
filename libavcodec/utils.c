@@ -386,11 +386,16 @@ void avcodec_get_context_defaults(AVCodecContext *s){
  * allocates a AVCodecContext and set it to defaults.
  * this can be deallocated by simply calling free() 
  */
+static const char* context_to_name(void* class_ptr) { return ((AVCodecContext*) class_ptr)->codec->name; }
+
+static AVClass av_codec_context_class = { "AVCodecContext", context_to_name };
+
 AVCodecContext *avcodec_alloc_context(void){
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
     
     if(avctx==NULL) return NULL;
     
+    avctx->class = av_codec_context_class;
     avcodec_get_context_defaults(avctx);
     
     return avctx;
@@ -835,22 +840,24 @@ int64_t av_rescale(int64_t a, int b, int c){
 
 /* av_log API */
 
-#ifdef AV_LOG_TRAP_PRINTF
-#undef stderr
-#undef fprintf
-#endif
+static const char* null_to_name(void* class_ptr) { return "NULL"; }
+
+static AVClass av_null_class = { "NULL", null_to_name };
 
 static int av_log_level = AV_LOG_DEBUG;
 
-static void av_log_default_callback(AVCodecContext* avctx, int level, const char* fmt, va_list vl)
+static void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix=1;
-
+    AVClass* avcl = ptr;
+    if(!avcl || !avcl->class_name)
+	avcl = &av_null_class;
     if(level>av_log_level)
-	    return;
+	return;
 #undef fprintf
-    if(avctx && print_prefix)
-        fprintf(stderr, "[%s @ %p]", avctx->codec ? avctx->codec->name : "?", avctx);
+    if(print_prefix) {
+	    fprintf(stderr, "[%s:%s @ %p]", avcl->class_name, avcl->item_name(avcl), avcl);
+    }
 #define fprintf please_use_av_log
         
     print_prefix= strstr(fmt, "\n") != NULL;
@@ -858,19 +865,19 @@ static void av_log_default_callback(AVCodecContext* avctx, int level, const char
     vfprintf(stderr, fmt, vl);
 }
 
-static void (*av_log_callback)(AVCodecContext*, int, const char*, va_list) = av_log_default_callback;
+static void (*av_log_callback)(void*, int, const char*, va_list) = av_log_default_callback;
 
-void av_log(AVCodecContext* avctx, int level, const char *fmt, ...)
+void av_log(void* avcl, int level, const char *fmt, ...)
 {
     va_list vl;
     va_start(vl, fmt);
-    av_vlog(avctx, level, fmt, vl);
+    av_vlog(avcl, level, fmt, vl);
     va_end(vl);
 }
 
-void av_vlog(AVCodecContext* avctx, int level, const char *fmt, va_list vl)
+void av_vlog(void* avcl, int level, const char *fmt, va_list vl)
 {
-    av_log_callback(avctx, level, fmt, vl);
+    av_log_callback(avcl, level, fmt, vl);
 }
 
 int av_log_get_level(void)
@@ -883,7 +890,7 @@ void av_log_set_level(int level)
     av_log_level = level;
 }
 
-void av_log_set_callback(void (*callback)(AVCodecContext*, int, const char*, va_list))
+void av_log_set_callback(void (*callback)(void*, int, const char*, va_list))
 {
     av_log_callback = callback;
 }

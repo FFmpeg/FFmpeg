@@ -773,7 +773,7 @@ static void compute_pts_dts(AVStream *st, int64_t *ppts, int64_t *pdts,
             }
         }
 #if 1
-        printf("pts=%0.3f dts=%0.3f pict_type=%c\n", 
+        av_log(&st->codec, AV_LOG_DEBUG, "pts=%0.3f dts=%0.3f pict_type=%c\n", 
                pts / 90000.0, dts / 90000.0, 
                av_get_pict_type_char(st->codec.coded_frame->pict_type));
 #endif

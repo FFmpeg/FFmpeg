@@ -3124,7 +3124,7 @@ static int rtp_new_av_stream(HTTPContext *c,
     int max_packet_size;
     
     /* now we can open the relevant output stream */
-    ctx = av_mallocz(sizeof(AVFormatContext));
+    ctx = av_alloc_format_context();
     if (!ctx)
         return -1;
     ctx->oformat = &rtp_mux;

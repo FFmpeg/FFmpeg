@@ -636,7 +636,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             } else {
                 if (get_le32(pb) != MKTAG('V', 'I', 'D', 'O')) {
                 fail1:
-                    fprintf(stderr, "Unsupported video codec\n");
+                    av_log(&st->codec, AV_LOG_ERROR, "Unsupported video codec\n");
                     goto fail;
                 }
                 st->codec.codec_tag = get_le32(pb);

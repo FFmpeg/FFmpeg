@@ -408,7 +408,7 @@ int main(int argc, char **argv)
     }
     
     /* allocate the output media context */
-    oc = av_mallocz(sizeof(AVFormatContext));
+    oc = av_alloc_format_context();
     if (!oc) {
         fprintf(stderr, "Memory error\n");
         exit(1);

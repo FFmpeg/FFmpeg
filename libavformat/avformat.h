@@ -241,6 +241,7 @@ typedef struct AVStream {
 
 /* format I/O context */
 typedef struct AVFormatContext {
+    AVClass class; /* set by av_alloc_format_context */
     /* can only be iformat or oformat, not both at the same time */
     struct AVInputFormat *iformat;
     struct AVOutputFormat *oformat;
@@ -523,6 +524,8 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
                        AVFormatParameters *ap);
+/* no av_open for output, so applications will need this: */
+AVFormatContext *av_alloc_format_context(void);
 
 #define AVERROR_UNKNOWN     (-1)  /* unknown error */
 #define AVERROR_IO          (-2)  /* i/o error */

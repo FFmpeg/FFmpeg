@@ -2352,7 +2352,7 @@ static void opt_output_file(const char *filename)
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
-    oc = av_mallocz(sizeof(AVFormatContext));
+    oc = av_alloc_format_context();
 
     if (!file_oformat) {
         file_oformat = guess_format(NULL, filename, NULL);

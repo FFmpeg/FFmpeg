@@ -123,11 +123,11 @@ static void dump(unsigned char *buf,size_t len)
 {
     int i;
     for(i=0;i<len;i++) {
-        if ((i&15)==0) printf("%04x  ",i);
-        printf("%02x ",buf[i]);
-        if ((i&15)==15) printf("\n");
+        if ((i&15)==0) av_log(NULL, AV_LOG_DEBUG, "%04x  ",i);
+        av_log(NULL, AV_LOG_DEBUG, "%02x ",buf[i]);
+        if ((i&15)==15) av_log(NULL, AV_LOG_DEBUG, "\n");
     }
-    printf("\n");
+    av_log(NULL, AV_LOG_DEBUG, "\n");
 }
 
 static int str_read_header(AVFormatContext *s,
@@ -239,11 +239,11 @@ static int str_read_header(AVFormatContext *s,
     }
 
 if (str->video_channel != -1)
-  printf (" video channel = %d, %d x %d %d\n", str->video_channel,
+  av_log (s, AV_LOG_DEBUG, " video channel = %d, %d x %d %d\n", str->video_channel,
     str->channels[str->video_channel].width,
     str->channels[str->video_channel].height,str->channels[str->video_channel].video_stream_index);
 if (str->audio_channel != -1)
-  printf (" audio channel = %d, %d Hz, %d channels, %d bits/sample %d\n", 
+   av_log (s, AV_LOG_DEBUG, " audio channel = %d, %d Hz, %d channels, %d bits/sample %d\n", 
     str->audio_channel,
     str->channels[str->audio_channel].sample_rate,
     str->channels[str->audio_channel].channels,

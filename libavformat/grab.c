@@ -99,7 +99,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
 
     if (!(s->video_cap.type & VID_TYPE_CAPTURE)) {
-        fprintf(stderr, "Fatal: grab device does not handle capture\n");
+	av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not handle capture\n");
         goto fail;
     }
 
@@ -223,9 +223,9 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         if (ret < 0) {
             if (errno != EAGAIN) {
             fail1:
-                fprintf(stderr, "Fatal: grab device does not support suitable format\n");
+                av_log(s1, AV_LOG_ERROR, "Fatal: grab device does not support suitable format\n");
             } else {
-                fprintf(stderr,"Fatal: grab device does not receive any video signal\n");
+                av_log(s1, AV_LOG_ERROR,"Fatal: grab device does not receive any video signal\n");
             }
             goto fail;
         }
@@ -277,7 +277,7 @@ static int v4l_mm_read_picture(VideoData *s, uint8_t *buf)
     s->gb_buf.frame = (s->gb_frame + 1) % s->gb_buffers.frames;
     if (ioctl(s->fd, VIDIOCMCAPTURE, &s->gb_buf) < 0) {
         if (errno == EAGAIN)
-            fprintf(stderr,"Cannot Sync\n");
+            av_log(NULL, AV_LOG_ERROR, "Cannot Sync\n");
         else
             perror("VIDIOCMCAPTURE");
         return -EIO;
@@ -387,8 +387,8 @@ static int aiw_init(VideoData *s)
         if (height == s->video_cap.maxheight*2) s->deint=1;
         if (width == s->video_cap.maxwidth/2) s->halfw=1;
     } else {
-        fprintf(stderr,"\nIncorrect Grab Size Supplied - Supported Sizes Are:\n");
-        fprintf(stderr," %dx%d  %dx%d %dx%d\n\n",
+        av_log(NULL, AV_LOG_ERROR, "\nIncorrect Grab Size Supplied - Supported Sizes Are:\n");
+        av_log(NULL, AV_LOG_ERROR, " %dx%d  %dx%d %dx%d\n\n",
                 s->video_cap.maxwidth,s->video_cap.maxheight,
                 s->video_cap.maxwidth,s->video_cap.maxheight*2,
                 s->video_cap.maxwidth/2,s->video_cap.maxheight);

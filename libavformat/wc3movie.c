@@ -230,7 +230,7 @@ static int wc3_read_header(AVFormatContext *s,
             break;
 
         default:
-            printf ("  unrecognized WC3 chunk: %c%c%c%c (0x%02X%02X%02X%02X)\n",
+            av_log(s, AV_LOG_ERROR, "  unrecognized WC3 chunk: %c%c%c%c (0x%02X%02X%02X%02X)\n",
                 preamble[0], preamble[1], preamble[2], preamble[3],
                 preamble[0], preamble[1], preamble[2], preamble[3]);
             return AVERROR_INVALIDDATA;
@@ -352,12 +352,12 @@ static int wc3_read_packet(AVFormatContext *s,
                 ret = -EIO;
             else {
                 int i = 0;
-                printf ("Subtitle time!\n");
-                printf ("  inglish: %s\n", &text[i + 1]);
+                av_log (s, AV_LOG_DEBUG, "Subtitle time!\n");
+                av_log (s, AV_LOG_DEBUG, "  inglish: %s\n", &text[i + 1]);
                 i += text[i] + 1;
-                printf ("  doytsch: %s\n", &text[i + 1]);
+                av_log (s, AV_LOG_DEBUG, "  doytsch: %s\n", &text[i + 1]);
                 i += text[i] + 1;
-                printf ("  fronsay: %s\n", &text[i + 1]);
+                av_log (s, AV_LOG_DEBUG, "  fronsay: %s\n", &text[i + 1]);
             }
 #endif
             break;
@@ -379,7 +379,7 @@ static int wc3_read_packet(AVFormatContext *s,
             break;
 
         default:
-            printf ("  unrecognized WC3 chunk: %c%c%c%c (0x%02X%02X%02X%02X)\n",
+	    av_log (s, AV_LOG_ERROR, "  unrecognized WC3 chunk: %c%c%c%c (0x%02X%02X%02X%02X)\n",
                 preamble[0], preamble[1], preamble[2], preamble[3],
                 preamble[0], preamble[1], preamble[2], preamble[3]);
             ret = AVERROR_INVALIDDATA;
