@@ -585,8 +585,10 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->input_picture);
     av_freep(&s->reordered_input_picture);
 
-    for(i=0; i<MAX_PICTURE_COUNT; i++){
-        free_picture(s, &s->picture[i]);
+    if(s->picture){
+        for(i=0; i<MAX_PICTURE_COUNT; i++){
+            free_picture(s, &s->picture[i]);
+        }
     }
     av_freep(&s->picture);
     avcodec_default_free_buffers(s->avctx);
