@@ -49,6 +49,7 @@ typedef struct {
     int tag;
 } SWFContext;
 
+#ifdef CONFIG_ENCODERS
 static void put_swf_tag(AVFormatContext *s, int tag)
 {
     SWFContext *swf = s->priv_data;
@@ -418,6 +419,7 @@ static int swf_write_trailer(AVFormatContext *s)
     }
     return 0;
 }
+#endif //CONFIG_ENCODERS
 
 /***********************************/
 /* just to extract MP3 from swf */
@@ -551,6 +553,7 @@ static AVInputFormat swf_iformat = {
     swf_read_close,
 };
 
+#ifdef CONFIG_ENCODERS
 static AVOutputFormat swf_oformat = {
     "swf",
     "Flash format",
@@ -563,10 +566,13 @@ static AVOutputFormat swf_oformat = {
     swf_write_packet,
     swf_write_trailer,
 };
+#endif //CONFIG_ENCODERS
 
 int swf_init(void)
 {
     av_register_input_format(&swf_iformat);
+#ifdef CONFIG_ENCODERS
     av_register_output_format(&swf_oformat);
+#endif //CONFIG_ENCODERS
     return 0;
 }

@@ -22,6 +22,7 @@
 
 #define BOUNDARY_TAG "ffserver"
 
+#ifdef CONFIG_ENCODERS
 static int mpjpeg_write_header(AVFormatContext *s)
 {
     uint8_t buf1[256];
@@ -106,3 +107,4 @@ int jpeg_init(void)
     av_register_output_format(&single_jpeg_format);
     return 0;
 }
+#endif //CONFIG_ENCODERS

@@ -30,6 +30,7 @@ typedef struct OggContext {
 } OggContext ;
 
 
+#ifdef CONFIG_ENCODERS
 static int ogg_write_header(AVFormatContext *avfcontext) 
 {
     OggContext *context = avfcontext->priv_data;
@@ -162,6 +163,7 @@ static AVOutputFormat ogg_oformat = {
     ogg_write_packet,
     ogg_write_trailer,
 } ;
+#endif //CONFIG_ENCODERS
 
 
 static int next_packet(AVFormatContext *avfcontext, ogg_packet *op) {
@@ -257,7 +259,9 @@ static AVInputFormat ogg_iformat = {
 
 
 int ogg_init(void) {
+#ifdef CONFIG_ENCODERS
     av_register_output_format(&ogg_oformat) ;
+#endif
     av_register_input_format(&ogg_iformat);
     return 0 ;
 }

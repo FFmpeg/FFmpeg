@@ -171,6 +171,7 @@ static const uint64_t ff_pw_15 __attribute__ ((aligned(8))) = 0x000F000F000F000F
 /***********************************/
 /* standard MMX */
 
+#ifdef CONFIG_ENCODERS
 static void get_pixels_mmx(DCTELEM *block, const uint8_t *pixels, int line_size)
 {
     asm volatile(
@@ -227,6 +228,7 @@ static inline void diff_pixels_mmx(DCTELEM *block, const uint8_t *s1, const uint
         : "%eax"
     );
 }
+#endif //CONFIG_ENCODERS
 
 void put_pixels_clamped_mmx(const DCTELEM *block, uint8_t *pixels, int line_size)
 {
@@ -401,6 +403,7 @@ static void clear_blocks_mmx(DCTELEM *blocks)
         );
 }
 
+#ifdef CONFIG_ENCODERS
 static int pix_sum16_mmx(uint8_t * pix, int line_size){
     const int h=16;
     int sum;
@@ -438,6 +441,7 @@ static int pix_sum16_mmx(uint8_t * pix, int line_size){
 
         return sum;
 }
+#endif //CONFIG_ENCODERS
 
 static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
     int i=0;
@@ -461,6 +465,7 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
         dst[i+0] += src[i+0];
 }
 
+#ifdef CONFIG_ENCODERS
 static int pix_norm1_mmx(uint8_t *pix, int line_size) {
     int tmp;
   asm volatile (
@@ -856,6 +861,7 @@ static int hadamard8_diff_mmx2(void *s, uint8_t *src1, uint8_t *src2, int stride
 
 WARPER88_1616(hadamard8_diff_mmx, hadamard8_diff16_mmx)
 WARPER88_1616(hadamard8_diff_mmx2, hadamard8_diff16_mmx2)
+#endif //CONFIG_ENCODERS
 
 #define put_no_rnd_pixels8_mmx(a,b,c,d) put_pixels8_mmx(a,b,c,d)
 #define put_no_rnd_pixels16_mmx(a,b,c,d) put_pixels16_mmx(a,b,c,d)
@@ -1619,12 +1625,16 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->idct_permutation_type= FF_LIBMPEG2_IDCT_PERM;
         }
         
+#ifdef CONFIG_ENCODERS
         c->get_pixels = get_pixels_mmx;
         c->diff_pixels = diff_pixels_mmx;
+#endif //CONFIG_ENCODERS
         c->put_pixels_clamped = put_pixels_clamped_mmx;
         c->add_pixels_clamped = add_pixels_clamped_mmx;
         c->clear_blocks = clear_blocks_mmx;
+#ifdef CONFIG_ENCODERS
         c->pix_sum = pix_sum16_mmx;
+#endif //CONFIG_ENCODERS
 
         c->put_pixels_tab[0][0] = put_pixels16_mmx;
         c->put_pixels_tab[0][1] = put_pixels16_x2_mmx;
@@ -1667,6 +1677,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels8_xy2_mmx;
                 
         c->add_bytes= add_bytes_mmx;
+#ifdef CONFIG_ENCODERS
         c->diff_bytes= diff_bytes_mmx;
         
         c->hadamard8_diff[0]= hadamard8_diff16_mmx;
@@ -1674,6 +1685,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         
 	c->pix_norm1 = pix_norm1_mmx;
 	c->sse[0] = sse16_mmx;
+#endif //CONFIG_ENCODERS
         
         if (mm_flags & MM_MMXEXT) {
             c->put_pixels_tab[0][1] = put_pixels16_x2_mmx2;
@@ -1690,8 +1702,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->avg_pixels_tab[1][1] = avg_pixels8_x2_mmx2;
             c->avg_pixels_tab[1][2] = avg_pixels8_y2_mmx2;
 
+#ifdef CONFIG_ENCODERS
             c->hadamard8_diff[0]= hadamard8_diff16_mmx2;
             c->hadamard8_diff[1]= hadamard8_diff_mmx2;
+#endif //CONFIG_ENCODERS
 
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
                 c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2_mmx2;
@@ -1797,7 +1811,9 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
     }
         
+#ifdef CONFIG_ENCODERS
     dsputil_init_pix_mmx(c, avctx);
+#endif //CONFIG_ENCODERS
 #if 0
     // for speed testing
     get_pixels = just_return;

@@ -173,6 +173,7 @@ void ff_init_scantable(uint8_t *permutation, ScanTable *st, const uint8_t *src_s
     }
 }
 
+#ifdef CONFIG_ENCODERS
 void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix){
     int i;
 
@@ -184,6 +185,7 @@ void ff_write_quant_matrix(PutBitContext *pb, int16_t *matrix){
     }else
         put_bits(pb, 1, 0);
 }
+#endif //CONFIG_ENCODERS
 
 /* init common dct for both encoder and decoder */
 int DCT_common_init(MpegEncContext *s)

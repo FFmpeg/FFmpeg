@@ -133,6 +133,7 @@ static int get_length(uint64_t val){
     return 7; //not reached
 }
 
+#ifdef CONFIG_ENCODERS
 static int put_v(ByteIOContext *bc, uint64_t val)
 {
     int i;
@@ -393,6 +394,7 @@ static int nut_write_trailer(AVFormatContext *s)
 
     return 0;
 }
+#endif //CONFIG_ENCODERS
 
 static int nut_probe(AVProbeData *p)
 {
@@ -561,6 +563,7 @@ static AVInputFormat nut_iformat = {
     .extensions = "nut",
 };
 
+#ifdef CONFIG_ENCODERS
 static AVOutputFormat nut_oformat = {
     "nut",
     "nut format",
@@ -579,10 +582,13 @@ static AVOutputFormat nut_oformat = {
     nut_write_packet,
     nut_write_trailer,
 };
+#endif //CONFIG_ENCODERS
 
 int nut_init(void)
 {
     av_register_input_format(&nut_iformat);
+#ifdef CONFIG_ENCODERS
     av_register_output_format(&nut_oformat);
+#endif //CONFIG_ENCODERS
     return 0;
 }

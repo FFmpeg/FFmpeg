@@ -52,6 +52,7 @@ int init_put_byte(ByteIOContext *s,
 }
                   
 
+#ifdef CONFIG_ENCODERS
 static void flush_buffer(ByteIOContext *s)
 {
     if (s->buf_ptr > s->buffer) {
@@ -93,6 +94,7 @@ void put_flush_packet(ByteIOContext *s)
     flush_buffer(s);
     s->must_flush = 0;
 }
+#endif //CONFIG_ENCODERS
 
 offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
 {
@@ -101,6 +103,7 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
     if (whence != SEEK_CUR && whence != SEEK_SET)
         return -EINVAL;
     
+#ifdef CONFIG_ENCODERS
     if (s->write_flag) {
         if (whence == SEEK_CUR) {
             offset1 = s->pos + (s->buf_ptr - s->buffer);
@@ -122,7 +125,9 @@ offset_t url_fseek(ByteIOContext *s, offset_t offset, int whence)
             s->seek(s->opaque, offset, SEEK_SET);
             s->pos = offset;
         }
-    } else {
+    } else 
+#endif //CONFIG_ENCODERS
+    {
         if (whence == SEEK_CUR) {
             offset1 = s->pos - (s->buf_end - s->buffer) + (s->buf_ptr - s->buffer);
             if (offset == 0)
@@ -161,6 +166,7 @@ int url_feof(ByteIOContext *s)
     return s->eof_reached;
 }
 
+#ifdef CONFIG_ENCODERS
 void put_le32(ByteIOContext *s, unsigned int val)
 {
     put_byte(s, val);
@@ -226,6 +232,7 @@ void put_tag(ByteIOContext *s, const char *tag)
         put_byte(s, *tag++);
     }
 }
+#endif //CONFIG_ENCODERS
 
 /* Input stream */
 
@@ -382,11 +389,15 @@ uint64_t get_be64(ByteIOContext *s)
 
 /* link with avio functions */
 
+#ifdef CONFIG_ENCODERS
 static void url_write_packet(void *opaque, uint8_t *buf, int buf_size)
 {
     URLContext *h = opaque;
     url_write(h, buf, buf_size);
 }
+#else
+#define	url_write_packet NULL
+#endif //CONFIG_ENCODERS
 
 static int url_read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
@@ -479,6 +490,7 @@ URLContext *url_fileno(ByteIOContext *s)
     return s->opaque;
 }
 
+#ifdef CONFIG_ENCODERS
 /* XXX: currently size is limited */
 int url_fprintf(ByteIOContext *s, const char *fmt, ...)
 {
@@ -492,6 +504,7 @@ int url_fprintf(ByteIOContext *s, const char *fmt, ...)
     put_buffer(s, buf, strlen(buf));
     return ret;
 }
+#endif //CONFIG_ENCODERS
 
 /* note: unlike fgets, the EOL character is not returned and a whole
    line is parsed. return NULL if first char read was EOF */
@@ -529,6 +542,7 @@ int url_fget_max_packet_size(ByteIOContext *s)
     return s->max_packet_size;
 }
 
+#ifdef CONFIG_ENCODERS
 /* buffer handling */
 int url_open_buf(ByteIOContext *s, uint8_t *buf, int buf_size, int flags)
 {
@@ -682,3 +696,4 @@ int url_close_dyn_buf(ByteIOContext *s, uint8_t **pbuffer)
     av_free(d);
     return size;
 }
+#endif //CONFIG_ENCODERS

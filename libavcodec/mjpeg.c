@@ -243,6 +243,7 @@ static void build_huffman_codes(uint8_t *huff_size, uint16_t *huff_code,
     }
 }
 
+#ifdef CONFIG_ENCODERS
 int mjpeg_init(MpegEncContext *s)
 {
     MJpegContext *m;
@@ -280,6 +281,7 @@ void mjpeg_close(MpegEncContext *s)
 {
     av_free(s->mjpeg_ctx);
 }
+#endif //CONFIG_ENCODERS
 
 #define PREDICT(ret, topleft, top, left, predictor)\
     switch(predictor){\

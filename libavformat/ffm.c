@@ -54,6 +54,7 @@ typedef struct FFMContext {
 /* disable pts hack for testing */
 int ffm_nopts = 0;
 
+#ifdef CONFIG_ENCODERS
 static void flush_packet(AVFormatContext *s)
 {
     FFMContext *ffm = s->priv_data;
@@ -273,6 +274,7 @@ static int ffm_write_trailer(AVFormatContext *s)
         av_freep(&s->streams[i]->priv_data);
     return 0;
 }
+#endif //CONFIG_ENCODERS
 
 /* ffm demux */
 
@@ -663,6 +665,7 @@ static AVInputFormat ffm_iformat = {
     ffm_seek,
 };
 
+#ifdef CONFIG_ENCODERS
 static AVOutputFormat ffm_oformat = {
     "ffm",
     "ffm format",
@@ -676,10 +679,13 @@ static AVOutputFormat ffm_oformat = {
     ffm_write_packet,
     ffm_write_trailer,
 };
+#endif //CONFIG_ENCODERS
 
 int ffm_init(void)
 {
     av_register_input_format(&ffm_iformat);
+#ifdef CONFIG_ENCODERS
     av_register_output_format(&ffm_oformat);
+#endif //CONFIG_ENCODERS
     return 0;
 }

@@ -31,26 +31,36 @@ void av_register_all(void)
 
     mpegps_init();
     mpegts_init();
+#ifdef CONFIG_ENCODERS
     crc_init();
     img_init();
+#endif //CONFIG_ENCODERS
     raw_init();
     mp3_init();
     rm_init();
 #ifdef CONFIG_RISKY
     asf_init();
 #endif
+#ifdef CONFIG_ENCODERS
     avienc_init();
+#endif //CONFIG_ENCODERS
     avidec_init();
     wav_init();
     swf_init();
     au_init();
+#ifdef CONFIG_ENCODERS
     gif_init();
+#endif //CONFIG_ENCODERS
     mov_init();
+#ifdef CONFIG_ENCODERS
     movenc_init();
     jpeg_init();
+#endif //CONFIG_ENCODERS
     dv_init();
     fourxm_init();
+#ifdef CONFIG_ENCODERS
     flvenc_init();
+#endif //CONFIG_ENCODERS
     flvdec_init();
     str_init();
     roq_init();
@@ -59,6 +69,7 @@ void av_register_all(void)
     westwood_init();
     film_init();
     idcin_init();
+    vmd_init();
 
 #if defined(AMR_NB) || defined(AMR_NB_FIXED) || defined(AMR_WB)
     amr_init();
@@ -85,6 +96,7 @@ void av_register_all(void)
 
     nut_init();
 
+#ifdef CONFIG_ENCODERS
     /* image formats */
     av_register_image_format(&pnm_image_format);
     av_register_image_format(&pbm_image_format);
@@ -98,6 +110,7 @@ void av_register_all(void)
 #endif
     av_register_image_format(&jpeg_image_format);
     av_register_image_format(&gif_image_format);
+#endif //CONFIG_ENCODERS
 
     /* file protocols */
     register_protocol(&file_protocol);

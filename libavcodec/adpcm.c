@@ -107,6 +107,7 @@ typedef struct ADPCMContext {
 
 /* XXX: implement encoding */
 
+#ifdef CONFIG_ENCODERS
 static int adpcm_encode_init(AVCodecContext *avctx)
 {
     if (avctx->channels > 2)
@@ -265,6 +266,7 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
     }
     return dst - frame;
 }
+#endif //CONFIG_ENCODERS
 
 static int adpcm_decode_init(AVCodecContext * avctx)
 {
@@ -685,7 +687,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     return src - buf;
 }
 
-#define ADPCM_CODEC(id, name)                   \
+
+
+#ifdef CONFIG_ENCODERS
+#define ADPCM_ENCODER(id,name)                  \
 AVCodec name ## _encoder = {                    \
     #name,                                      \
     CODEC_TYPE_AUDIO,                           \
@@ -695,7 +700,13 @@ AVCodec name ## _encoder = {                    \
     adpcm_encode_frame,                         \
     adpcm_encode_close,                         \
     NULL,                                       \
-};                                              \
+};
+#else
+#define ADPCM_ENCODER(id,name)
+#endif
+
+#ifdef CONFIG_DECODERS
+#define ADPCM_DECODER(id,name)                  \
 AVCodec name ## _decoder = {                    \
     #name,                                      \
     CODEC_TYPE_AUDIO,                           \
@@ -706,6 +717,12 @@ AVCodec name ## _decoder = {                    \
     NULL,                                       \
     adpcm_decode_frame,                         \
 };
+#else
+#define ADPCM_DECODER(id,name)
+#endif
+
+#define ADPCM_CODEC(id, name)                   \
+ADPCM_ENCODER(id,name) ADPCM_DECODER(id,name)
 
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);

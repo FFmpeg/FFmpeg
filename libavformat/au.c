@@ -39,6 +39,7 @@ static const CodecTag codec_au_tags[] = {
     { 0, 0 },
 };
 
+#ifdef CONFIG_ENCODERS
 /* AUDIO_FILE header */
 static int put_au_header(ByteIOContext *pb, AVCodecContext *enc)
 {
@@ -97,6 +98,7 @@ static int au_write_trailer(AVFormatContext *s)
 
     return 0;
 }
+#endif //CONFIG_ENCODERS
 
 static int au_probe(AVProbeData *p)
 {
@@ -187,6 +189,7 @@ static AVInputFormat au_iformat = {
     au_read_close,
 };
 
+#ifdef CONFIG_ENCODERS
 static AVOutputFormat au_oformat = {
     "au",
     "SUN AU Format",
@@ -199,10 +202,13 @@ static AVOutputFormat au_oformat = {
     au_write_packet,
     au_write_trailer,
 };
+#endif //CONFIG_ENCODERS
 
 int au_init(void)
 {
     av_register_input_format(&au_iformat);
+#ifdef CONFIG_ENCODERS
     av_register_output_format(&au_oformat);
+#endif //CONFIG_ENCODERS
     return 0;
 }

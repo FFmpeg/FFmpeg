@@ -36,6 +36,7 @@ const CodecTag codec_wav_tags[] = {
     { 0, 0 },
 };
 
+#ifdef CONFIG_ENCODERS
 /* WAVEFORMATEX header */
 /* returns the size or -1 on error */
 int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
@@ -106,6 +107,7 @@ int put_wav_header(ByteIOContext *pb, AVCodecContext *enc)
 
     return hdrsize;
 }
+#endif //CONFIG_ENCODERS
 
 /* We could be given one of the three possible structures here:
  * WAVEFORMAT, PCMWAVEFORMAT or WAVEFORMATEX. Each structure
@@ -160,6 +162,7 @@ int wav_codec_get_id(unsigned int tag, int bps)
     return id;
 }
 
+#ifdef CONFIG_ENCODERS
 typedef struct {
     offset_t data;
 } WAVContext;
@@ -217,6 +220,7 @@ static int wav_write_trailer(AVFormatContext *s)
     }
     return 0;
 }
+#endif //CONFIG_ENCODERS
 
 /* return the size of the found tag */
 /* XXX: > 2GB ? */
@@ -325,6 +329,7 @@ static AVInputFormat wav_iformat = {
     wav_read_close,
 };
 
+#ifdef CONFIG_ENCODERS
 static AVOutputFormat wav_oformat = {
     "wav",
     "wav format",
@@ -337,10 +342,13 @@ static AVOutputFormat wav_oformat = {
     wav_write_packet,
     wav_write_trailer,
 };
+#endif //CONFIG_ENCODERS
 
 int wav_init(void)
 {
     av_register_input_format(&wav_iformat);
+#ifdef CONFIG_ENCODERS
     av_register_output_format(&wav_oformat);
+#endif //CONFIG_ENCODERS
     return 0;
 }

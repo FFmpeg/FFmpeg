@@ -182,6 +182,7 @@ static const GUID my_guid = {
     0, 0, 0, { 0, 0, 0, 0, 0, 0, 0, 0 },
 };
 
+#ifdef CONFIG_ENCODERS
 static void put_guid(ByteIOContext *s, const GUID *g)
 {
     int i;
@@ -661,6 +662,7 @@ static int asf_write_trailer(AVFormatContext *s)
     put_flush_packet(&s->pb);
     return 0;
 }
+#endif //CONFIG_ENCODERS
 
 /**********************************/
 /* decoding */
@@ -1245,6 +1247,7 @@ static AVInputFormat asf_iformat = {
     asf_read_seek,
 };
 
+#ifdef CONFIG_ENCODERS
 static AVOutputFormat asf_oformat = {
     "asf",
     "asf format",
@@ -1278,11 +1281,14 @@ static AVOutputFormat asf_stream_oformat = {
     asf_write_packet,
     asf_write_trailer,
 };
+#endif //CONFIG_ENCODERS
 
 int asf_init(void)
 {
     av_register_input_format(&asf_iformat);
+#ifdef CONFIG_ENCODERS
     av_register_output_format(&asf_oformat);
     av_register_output_format(&asf_stream_oformat);
+#endif //CONFIG_ENCODERS
     return 0;
 }

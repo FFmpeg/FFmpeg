@@ -100,6 +100,7 @@ int url_read(URLContext *h, unsigned char *buf, int size)
     return ret;
 }
 
+#ifdef CONFIG_ENCODERS
 int url_write(URLContext *h, unsigned char *buf, int size)
 {
     int ret;
@@ -111,6 +112,7 @@ int url_write(URLContext *h, unsigned char *buf, int size)
     ret = h->prot->url_write(h, buf, size);
     return ret;
 }
+#endif //CONFIG_ENCODERS
 
 offset_t url_seek(URLContext *h, offset_t pos, int whence)
 {

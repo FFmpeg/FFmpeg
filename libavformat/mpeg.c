@@ -61,6 +61,7 @@ typedef struct {
 #define AUDIO_ID 0xc0
 #define VIDEO_ID 0xe0
 
+#ifdef CONFIG_ENCODERS
 extern AVOutputFormat mpeg1system_mux;
 extern AVOutputFormat mpeg1vcd_mux;
 extern AVOutputFormat mpeg2vob_mux;
@@ -396,6 +397,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 
     return 0;
 }
+#endif //CONFIG_ENCODERS
 
 /*********************************************/
 /* demux code */
@@ -650,6 +652,7 @@ static int mpegps_read_close(AVFormatContext *s)
     return 0;
 }
 
+#ifdef CONFIG_ENCODERS
 static AVOutputFormat mpeg1system_mux = {
     "mpeg",
     "MPEG1 System format",
@@ -688,6 +691,7 @@ static AVOutputFormat mpeg2vob_mux = {
     mpeg_mux_write_packet,
     mpeg_mux_end,
 };
+#endif //CONFIG_ENCODERS
 
 AVInputFormat mpegps_demux = {
     "mpeg",
@@ -702,9 +706,11 @@ AVInputFormat mpegps_demux = {
 
 int mpegps_init(void)
 {
+#ifdef CONFIG_ENCODERS
     av_register_output_format(&mpeg1system_mux);
     av_register_output_format(&mpeg1vcd_mux);
     av_register_output_format(&mpeg2vob_mux);
+#endif //CONFIG_ENCODERS
     av_register_input_format(&mpegps_demux);
     return 0;
 }

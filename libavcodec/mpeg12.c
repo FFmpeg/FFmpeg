@@ -48,10 +48,12 @@
 #define MB_BTYPE_VLC_BITS 6
 #define TEX_VLC_BITS 9
 
+#ifdef CONFIG_ENCODERS
 static void mpeg1_encode_block(MpegEncContext *s, 
                          DCTELEM *block, 
                          int component);
 static void mpeg1_encode_motion(MpegEncContext *s, int val, int f_or_b_code);    // RAL: f_code parameter added
+#endif //CONFIG_ENCODERS
 static void mpeg1_skip_picture(MpegEncContext *s, int pict_num);
 static inline int mpeg1_decode_block_inter(MpegEncContext *s, 
                               DCTELEM *block, 
@@ -85,7 +87,7 @@ static uint32_t mpeg1_chr_dc_uni[512];
 
 static uint8_t mpeg1_index_run[2][64];
 static int8_t mpeg1_max_level[2][64];
-#endif
+#endif //CONFIG_ENCODERS
 
 static void init_2d_vlc_rl(RLTable *rl)
 {
@@ -361,7 +363,7 @@ static void mpeg1_skip_picture(MpegEncContext *s, int pict_num)
     put_bits(&s->pb, 1, 1); 
     put_bits(&s->pb, 1, 1); 
 }
-#endif
+#endif //CONFIG_ENCODERS
 
 static void common_init(MpegEncContext *s)
 {
