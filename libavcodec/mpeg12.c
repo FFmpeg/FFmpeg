@@ -489,6 +489,22 @@ static inline int get_dmv(MpegEncContext *s)
         return 0;
 }
 
+static inline int get_qscale(MpegEncContext *s)
+{
+    int qscale;
+    if (s->mpeg2) {
+        if (s->q_scale_type) {
+            qscale = non_linear_qscale[get_bits(&s->gb, 5)];
+        } else {
+            qscale = get_bits(&s->gb, 5) << 1;
+        }
+    } else {
+        /* for mpeg1, we use the generic unquant code */
+        qscale = get_bits(&s->gb, 5);
+    }
+    return qscale;
+}
+
 /* motion type (for mpeg2) */
 #define MT_FIELD 1
 #define MT_FRAME 2
@@ -594,16 +610,7 @@ static int mpeg_decode_mb(MpegEncContext *s,
     }
 
     if (mb_type & MB_QUANT) {
-        if (s->mpeg2) {
-            if (s->q_scale_type) {
-                s->qscale = non_linear_qscale[get_bits(&s->gb, 5)];
-            } else {
-                s->qscale = get_bits(&s->gb, 5) << 1;
-            }
-        } else {
-            /* for mpeg1, we use the generic unquant code */
-            s->qscale = get_bits(&s->gb, 5);
-        }
+        s->qscale = get_qscale(s);
     }
     if (mb_type & MB_INTRA) {
         if (s->concealment_motion_vectors) {
@@ -1287,7 +1294,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
 
     init_get_bits(&s->gb, buf, buf_size);
 
-    s->qscale = get_bits(&s->gb, 5);
+    s->qscale = get_qscale(s);
     /* extra slice info */
     while (get_bits1(&s->gb) != 0) {
         skip_bits(&s->gb, 8);
