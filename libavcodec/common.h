@@ -109,10 +109,6 @@ typedef signed long long INT64;
 
 #ifdef HAVE_AV_CONFIG_H
 
-#ifdef __FreeBSD__
-#include <sys/param.h>
-#endif
-
 #ifndef INT64_C
 #define INT64_C(c)     (c ## LL)
 #define UINT64_C(c)    (c ## ULL)
