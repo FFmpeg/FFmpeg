@@ -8,7 +8,9 @@
 
 #include "avcodec.h"
 
-//#define OGGVORBIS_FRAME_SIZE 1024
+#undef NDEBUG
+#include <assert.h>
+
 #define OGGVORBIS_FRAME_SIZE 64
 
 #define BUFFER_SIZE (1024*64)
@@ -19,6 +21,7 @@ typedef struct OggVorbisContext {
     vorbis_block vb ;
     uint8_t buffer[BUFFER_SIZE];
     int buffer_index;
+    int64_t fake_pts; //pts which libavformat will guess, HACK FIXME
 
     /* decoder */
     vorbis_comment vc ;
@@ -130,20 +133,27 @@ static int oggvorbis_encode_frame(AVCodecContext *avccontext,
 	}
     }
 
+    l=0;
     if(context->buffer_index){
         ogg_packet *op2= (ogg_packet*)context->buffer;
         op2->packet = context->buffer + sizeof(ogg_packet);
-        l=  op2->bytes;
-        
-        memcpy(packets, op2->packet, l);
-        context->buffer_index -= l + sizeof(ogg_packet);
-        memcpy(context->buffer, context->buffer + l + sizeof(ogg_packet), context->buffer_index);
-        
+
+        if(op2->granulepos <= context->fake_pts /*&& (context->fake_pts || context->buffer_index > 4*1024)*/){
+            assert(op2->granulepos == context->fake_pts);
+            l=  op2->bytes;
+
+            memcpy(packets, op2->packet, l);
+            context->buffer_index -= l + sizeof(ogg_packet);
+            memcpy(context->buffer, context->buffer + l + sizeof(ogg_packet), context->buffer_index);
+        }
 //        av_log(avccontext, AV_LOG_DEBUG, "E%d\n", l);
-        return l;
     }
 
-    return 0;
+    if(l || context->fake_pts){
+        context->fake_pts += avccontext->frame_size;
+    }
+        
+    return l;
 }
 
 
