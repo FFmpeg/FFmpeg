@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #include "avformat.h"
-#include "tick.h"
 #include <ctype.h>
 #ifndef CONFIG_WIN32
 #include <unistd.h>
@@ -695,25 +694,76 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
  */
 int av_write_header(AVFormatContext *s)
 {
+    int ret, i;
+    AVStream *st;
+
     s->priv_data = av_mallocz(s->oformat->priv_data_size);
     if (!s->priv_data)
         return AVERROR_NOMEM;
     /* default pts settings is MPEG like */
     av_set_pts_info(s, 33, 1, 90000);
-    return s->oformat->write_header(s);
+    ret = s->oformat->write_header(s);
+    if (ret < 0)
+        return ret;
+
+    /* init PTS generation */
+    for(i=0;i<s->nb_streams;i++) {
+        st = s->streams[i];
+
+        switch (st->codec.codec_type) {
+        case CODEC_TYPE_AUDIO:
+            av_frac_init(&st->pts, 0, 0, 
+                         (INT64)s->pts_num * st->codec.sample_rate);
+            break;
+        case CODEC_TYPE_VIDEO:
+            av_frac_init(&st->pts, 0, 0, 
+                         (INT64)s->pts_num * st->codec.frame_rate);
+            break;
+        default:
+            break;
+        }
+    }
+    return 0;
 }
 
 /**
- * write a packet to an output media file
+ * Write a packet to an output media file. The packet shall contain
+ * one audio or video frame.
  *
  * @param s media file handle
- * @param pkt packet to write
- * @param force_pts XXX: need to suppress that
+ * @param stream_index stream index
+ * @param buf buffer containing the frame data
+ * @param size size of buffer
+ * @return non zero if error.
  */
-int av_write_packet(AVFormatContext *s, AVPacket *pkt, int force_pts)
+int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf, 
+                   int size)
 {
-    /* XXX: currently, an emulation because internal API must change */
-    return s->oformat->write_packet(s, pkt->stream_index, pkt->data, pkt->size, force_pts);
+    AVStream *st;
+    INT64 pts_mask;
+    int ret;
+
+    st = s->streams[stream_index];
+    pts_mask = (1LL << s->pts_wrap_bits) - 1;
+    ret = s->oformat->write_packet(s, stream_index, (uint8_t *)buf, size, 
+                                   st->pts.val & pts_mask);
+    if (ret < 0)
+        return ret;
+
+    /* update pts */
+    switch (st->codec.codec_type) {
+    case CODEC_TYPE_AUDIO:
+        av_frac_add(&st->pts, 
+                    (INT64)s->pts_den * st->codec.frame_size);
+        break;
+    case CODEC_TYPE_VIDEO:
+        av_frac_add(&st->pts, 
+                    (INT64)s->pts_den * FRAME_RATE_BASE);
+        break;
+    default:
+        break;
+    }
+    return 0;
 }
 
 /**

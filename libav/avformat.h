@@ -84,6 +84,7 @@ typedef struct AVOutputFormat {
     enum CodecID audio_codec; /* default audio codec */
     enum CodecID video_codec; /* default video codec */
     int (*write_header)(struct AVFormatContext *);
+    /* XXX: change prototype for 64 bit pts */
     int (*write_packet)(struct AVFormatContext *, 
                         int stream_index,
                         unsigned char *buf, int size, int force_pts);
@@ -142,6 +143,8 @@ typedef struct AVStream {
     int codec_info_state;     
     int codec_info_nb_repeat_frames;
     int codec_info_nb_real_frames;
+    /* PTS generation when outputing stream */
+    AVFrac pts;
     /* ffmpeg.c private use */
     int stream_copy; /* if TRUE, just copy stream */
 } AVStream;
@@ -297,7 +300,8 @@ void av_set_pts_info(AVFormatContext *s, int pts_wrap_bits,
 
 /* media file output */
 int av_write_header(AVFormatContext *s);
-int av_write_packet(AVFormatContext *s, AVPacket *pkt, int force_pts);
+int av_write_frame(AVFormatContext *s, int stream_index, const uint8_t *buf, 
+                   int size);
 int av_write_trailer(AVFormatContext *s);
 
 void dump_format(AVFormatContext *ic,
