@@ -77,6 +77,9 @@ enum CodecID {
 
 	/* AMR */
     CODEC_ID_AMR_NB,
+    /* RealAudio codecs*/
+    CODEC_ID_RA_144,
+    CODEC_ID_RA_288,
 };
 
 enum CodecType {
@@ -1253,6 +1256,8 @@ extern AVCodec mpeg4aac_decoder;
 extern AVCodec asv1_decoder;
 extern AVCodec ffv1_decoder;
 extern AVCodec fourxm_decoder;
+extern AVCodec ra_144_decoder;
+extern AVCodec ra_288_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
