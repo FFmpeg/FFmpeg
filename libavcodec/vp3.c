@@ -216,6 +216,7 @@ static int ModeAlphabet[7][CODING_MODE_COUNT] =
 typedef struct Vp3DecodeContext {
     AVCodecContext *avctx;
     int theora, theora_tables;
+    int version;
     int width, height;
     AVFrame golden_frame;
     AVFrame last_frame;
@@ -301,6 +302,9 @@ typedef struct Vp3DecodeContext {
     uint8_t edge_emu_buffer[9*2048]; //FIXME dynamic alloc
     uint8_t qscale_table[2048]; //FIXME dynamic alloc (width+15)/16
 } Vp3DecodeContext;
+
+static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb);
+static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb);
 
 /************************************************************************
  * VP3 I/DCT
@@ -2611,6 +2615,11 @@ static int vp3_decode_init(AVCodecContext *avctx)
     int y_superblock_count;
     int c_superblock_count;
 
+    if (avctx->codec_tag == MKTAG('V','P','3','0'))
+	s->version = 0;
+    else
+	s->version = 1;
+
     s->avctx = avctx;
 #if 0
     s->width = avctx->width;
@@ -2756,30 +2765,32 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     
     if (s->theora && get_bits1(&gb))
     {
-	av_log(s->avctx, AV_LOG_ERROR, "Theora: bad frame indicator\n");
-	return -1;
+	int ptype = get_bits(&gb, 7);
+
+	skip_bits(&gb, 6*8); /* "theora" */
+	
+	switch(ptype)
+	{
+	    case 1:
+		theora_decode_comments(avctx, gb);
+		break;
+	    case 2:
+		theora_decode_tables(avctx, gb);
+    		init_dequantizer(s);
+		break;
+	    default:
+		av_log(avctx, AV_LOG_ERROR, "Unknown Theora config packet: %d\n", ptype);
+	}
+	return buf_size;
     }
 
     s->keyframe = !get_bits1(&gb);
-    if (s->theora)
-    {
-	s->last_quality_index = s->quality_index;
-	s->quality_index = get_bits(&gb, 6);
-	if (s->theora >= 0x030300)
-	    skip_bits1(&gb);
-	if (s->keyframe)
-	{
-	    if (get_bits1(&gb))
-		av_log(s->avctx, AV_LOG_ERROR, "Theora: warning, unsupported keyframe coding type?!\n");
-	    skip_bits(&gb, 2); /* reserved? */
-	}
-    }
-    else
-    {
+    if (!s->theora)
 	skip_bits(&gb, 1);
-	s->last_quality_index = s->quality_index;
-	s->quality_index = get_bits(&gb, 6);
-    }
+    s->last_quality_index = s->quality_index;
+    s->quality_index = get_bits(&gb, 6);
+    if (s->theora >= 0x030300)
+        skip_bits1(&gb);
 
     debug_vp3(" VP3 %sframe #%d: Q index = %d\n",
 	s->keyframe?"key":"", counter, s->quality_index);
@@ -2789,8 +2800,24 @@ static int vp3_decode_frame(AVCodecContext *avctx,
         init_dequantizer(s);
 
     if (s->keyframe) {
-        /* skip the other 2 header bytes for now */
-        if (!s->theora) skip_bits(&gb, 16);
+	if (!s->theora)
+	{
+	    skip_bits(&gb, 4); /* width code */
+	    skip_bits(&gb, 4); /* height code */
+	    if (s->version)
+	    {
+		s->version = get_bits(&gb, 5);
+		if (counter == 1)
+		    av_log(s->avctx, AV_LOG_DEBUG, "VP version: %d\n", s->version);
+	    }
+	}
+	if (s->version || s->theora)
+	{
+    	    if (get_bits1(&gb))
+    	        av_log(s->avctx, AV_LOG_ERROR, "Warning, unsupported keyframe coding type?!\n");
+	    skip_bits(&gb, 2); /* reserved? */
+	}
+
         if (s->last_frame.data[0] == s->golden_frame.data[0]) {
             if (s->golden_frame.data[0])
                 avctx->release_buffer(avctx, &s->golden_frame);
@@ -2979,14 +3006,17 @@ static int theora_decode_comments(AVCodecContext *avctx, GetBitContext gb)
     int nb_comments, i, tmp;
 
     tmp = get_bits(&gb, 32);
-    while(tmp-=8)
-	skip_bits(&gb, 8);
+    tmp = be2me_32(tmp);
+    while(tmp--)
+	    skip_bits(&gb, 8);
 
     nb_comments = get_bits(&gb, 32);
+    nb_comments = be2me_32(nb_comments);
     for (i = 0; i < nb_comments; i++)
     {
 	tmp = get_bits(&gb, 32);
-	while(tmp-=8)
+	tmp = be2me_32(tmp);
+	while(tmp--)
 	    skip_bits(&gb, 8);
     }
     
@@ -3017,6 +3047,8 @@ static int theora_decode_tables(AVCodecContext *avctx, GetBitContext gb)
     /* inter coeffs */
     for (i = 0; i < 64; i++)
 	s->coded_inter_dequant[i] = get_bits(&gb, 8);
+
+    /* FIXME: read huffmann tree.. */
     
     s->theora_tables = 1;
     
