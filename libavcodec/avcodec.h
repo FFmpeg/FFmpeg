@@ -18,6 +18,7 @@ enum CodecID {
     CODEC_ID_VORBIS,
     CODEC_ID_AC3,
     CODEC_ID_MJPEG,
+    CODEC_ID_MJPEGB,
     CODEC_ID_MPEG4,
     CODEC_ID_RAWVIDEO,
     CODEC_ID_MSMPEG4V1,
@@ -858,6 +859,7 @@ extern AVCodec dvaudio_decoder;
 extern AVCodec wmav1_decoder;
 extern AVCodec wmav2_decoder;
 extern AVCodec mjpeg_decoder;
+extern AVCodec mjpegb_decoder;
 extern AVCodec mp2_decoder;
 extern AVCodec mp3_decoder;
 extern AVCodec mace3_decoder;

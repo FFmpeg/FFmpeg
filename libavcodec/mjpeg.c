@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Support for external huffman table, various fixes (AVID workaround),
- * aspecting and new decode_frame mechanism
+ * aspecting, new decode_frame mechanism and apple mjpeg-b support
  *                                  by Alex Beregszaszi <alex@naxine.org>
  */
 //#define DEBUG
@@ -1061,7 +1061,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
         h_count[0] = 1;
         v_count[0] = 1;
     }
-
+    
     for(mb_y = 0; mb_y < mb_height; mb_y++) {
         for(mb_x = 0; mb_x < mb_width; mb_x++) {
             for(i=0;i<nb_components;i++) {
@@ -1098,8 +1098,8 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
                 }
             }
 	    /* (< 1350) buggy workaround for Spectralfan.mov, should be fixed */
-	    
-            if ((s->restart_interval < 1350) && !--s->restart_count) {
+            if (s->restart_interval && (s->restart_interval < 1350) &&
+		!--s->restart_count) {
                 align_get_bits(&s->gb);
                 skip_bits(&s->gb, 16); /* skip RSTn */
                 for (j=0; j<nb_components; j++) /* reset dc */
@@ -1373,10 +1373,6 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		    {
 			UINT8 x = *(src++);
 
-#if 0
-			if (x == 0xff && *src == 0xff)
-			    break;
-#endif
 			*(dst++) = x;
 			if (x == 0xff)
 			{
@@ -1510,11 +1506,134 @@ not_the_end:
         }
     }
 the_end:
-
     dprintf("mjpeg decode frame unused %d bytes\n", buf_end - buf_ptr);
 //    return buf_end - buf_ptr;
     return buf_ptr - buf;
 }
+
+static int mjpegb_decode_frame(AVCodecContext *avctx, 
+                              void *data, int *data_size,
+                              UINT8 *buf, int buf_size)
+{
+    MJpegDecodeContext *s = avctx->priv_data;
+    UINT8 *buf_end, *buf_ptr;
+    int i;
+    AVPicture *picture = data;
+    GetBitContext hgb; /* for the header */
+    uint32_t dqt_offs, dht_offs, sof_offs, sos_offs, second_field_offs;
+    uint32_t field_size;
+
+    *data_size = 0;
+
+    /* no supplementary picture */
+    if (buf_size == 0)
+        return 0;
+
+    buf_ptr = buf;
+    buf_end = buf + buf_size;
+    
+read_header:
+    /* reset on every SOI */
+    s->restart_interval = 0;
+
+    init_get_bits(&hgb, buf_ptr, /*buf_size*/buf_end - buf_ptr);
+
+    skip_bits(&hgb, 32); /* reserved zeros */
+    
+    if (get_bits(&hgb, 32) != be2me_32(ff_get_fourcc("mjpg")))
+    {
+	dprintf("not mjpeg-b (bad fourcc)\n");
+	return 0;
+    }
+
+    field_size = get_bits(&hgb, 32); /* field size */
+    dprintf("field size: 0x%x\n", field_size);
+    skip_bits(&hgb, 32); /* padded field size */
+    second_field_offs = get_bits(&hgb, 32);
+    dprintf("second field offs: 0x%x\n", second_field_offs);
+    if (second_field_offs)
+	s->interlaced = 1;
+
+    dqt_offs = get_bits(&hgb, 32);
+    dprintf("dqt offs: 0x%x\n", dqt_offs);
+    if (dqt_offs)
+    {
+	init_get_bits(&s->gb, buf+dqt_offs, buf_end - (buf+dqt_offs));
+	s->start_code = DQT;
+	mjpeg_decode_dqt(s);
+    }
+    
+    dht_offs = get_bits(&hgb, 32);
+    dprintf("dht offs: 0x%x\n", dht_offs);
+    if (dht_offs)
+    {
+	init_get_bits(&s->gb, buf+dht_offs, buf_end - (buf+dht_offs));
+	s->start_code = DHT;
+	mjpeg_decode_dht(s);
+    }
+
+    sof_offs = get_bits(&hgb, 32);
+    dprintf("sof offs: 0x%x\n", sof_offs);
+    if (sof_offs)
+    {
+	init_get_bits(&s->gb, buf+sof_offs, buf_end - (buf+sof_offs));
+	s->start_code = SOF0;
+	mjpeg_decode_sof0(s);
+    }
+
+    sos_offs = get_bits(&hgb, 32);
+    dprintf("sos offs: 0x%x\n", sos_offs);
+    if (sos_offs)
+    {
+//	init_get_bits(&s->gb, buf+sos_offs, buf_end - (buf+sos_offs));
+	init_get_bits(&s->gb, buf+sos_offs, field_size);
+	s->start_code = SOS;
+	mjpeg_decode_sos(s);
+    }
+
+    skip_bits(&hgb, 32); /* start of data offset */
+
+    if (s->interlaced) {
+        s->bottom_field ^= 1;
+        /* if not bottom field, do not output image yet */
+        if (s->bottom_field && second_field_offs)
+	{
+	    buf_ptr = buf + second_field_offs;
+	    second_field_offs = 0;
+	    goto read_header;
+    	}
+    }
+
+    for(i=0;i<3;i++) {
+        picture->data[i] = s->current_picture[i];
+        picture->linesize[i] = (s->interlaced) ?
+    	    s->linesize[i] >> 1 : s->linesize[i];
+    }
+    *data_size = sizeof(AVPicture);
+    avctx->height = s->height;
+    if (s->interlaced)
+        avctx->height *= 2;
+    avctx->width = s->width;
+    /* XXX: not complete test ! */
+    switch((s->h_count[0] << 4) | s->v_count[0]) {
+        case 0x11:
+    	    avctx->pix_fmt = PIX_FMT_YUV444P;
+            break;
+        case 0x21:
+            avctx->pix_fmt = PIX_FMT_YUV422P;
+            break;
+        default:
+	case 0x22:
+            avctx->pix_fmt = PIX_FMT_YUV420P;
+            break;
+    }
+    /* dummy quality */
+    /* XXX: infer it with matrix */
+    avctx->quality = 3; 
+
+    return buf_ptr - buf;
+}
+
 
 static int mjpeg_decode_end(AVCodecContext *avctx)
 {
@@ -1540,6 +1659,19 @@ AVCodec mjpeg_decoder = {
     NULL,
     mjpeg_decode_end,
     mjpeg_decode_frame,
+    0,
+    NULL
+};
+
+AVCodec mjpegb_decoder = {
+    "mjpegb",
+    CODEC_TYPE_VIDEO,
+    CODEC_ID_MJPEGB,
+    sizeof(MJpegDecodeContext),
+    mjpeg_decode_init,
+    NULL,
+    mjpeg_decode_end,
+    mjpegb_decode_frame,
     0,
     NULL
 };
