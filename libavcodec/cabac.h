@@ -165,7 +165,7 @@ static inline int put_cabac_terminate(CABACContext *c, int bit){
     c->symCount++;
 #endif
 
-    return (get_bit_count(&c->pb)+7)>>3;
+    return (put_bits_count(&c->pb)+7)>>3;
 }
 
 /**
