@@ -173,7 +173,8 @@ AVOutputFormat yuv4mpegpipe_oformat = {
     .flags = AVFMT_RAWPICTURE,
 };
 
-#define MAX_YUV4_HEADER 50
+/* Header size increased to allow room for optional flags */
+#define MAX_YUV4_HEADER 80
 #define MAX_FRAME_HEADER 10
 
 static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)

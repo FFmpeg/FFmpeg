@@ -162,6 +162,8 @@ static char *video_standard = "ntsc";
 static char *audio_grab_format = "audio_device";
 static char *audio_device = NULL;
 
+static int using_stdin = 0;
+
 #define DEFAULT_PASS_LOGFILENAME "ffmpeg2pass"
 
 typedef struct AVOutputStream {
@@ -1139,14 +1141,15 @@ static int av_encode(AVFormatContext **output_files,
     }
 
 #ifndef CONFIG_WIN32
-    fprintf(stderr, "Press [q] to stop encoding\n");
+    if ( !using_stdin )
+        fprintf(stderr, "Press [q] to stop encoding\n");
 #endif
     term_init();
 
     stream_no_data = 0;
     key = -1;
 
-    for(;;) {
+    for(; received_sigterm == 0;) {
         int file_index, ist_index;
         AVPacket pkt;
         uint8_t *ptr;
@@ -1160,7 +1163,7 @@ static int av_encode(AVFormatContext **output_files,
         
     redo:
         /* if 'q' pressed, exits */
-        if (key) {
+        if (!using_stdin) {
             /* read_key() returns 0 on EOF */
             key = read_key();
             if (key == 'q')
@@ -1991,6 +1994,9 @@ static void opt_input_file(const char *filename)
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
+    using_stdin |= !strcmp(filename, "pipe:" ) || 
+                   !strcmp( filename, "/dev/stdin" );
+
     /* get default parameters from command line */
     memset(ap, 0, sizeof(*ap));
     ap->sample_rate = audio_sample_rate;
@@ -2366,13 +2372,19 @@ static void opt_output_file(const char *filename)
             if (url_exist(filename)) {
                 int c;
                 
-                printf("File '%s' already exists. Overwrite ? [y/N] ", filename);
-                fflush(stdout);
-                c = getchar();
-                if (toupper(c) != 'Y') {
-                    fprintf(stderr, "Not overwriting - exiting\n");
+                if ( !using_stdin ) {
+                    fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
+                    fflush(stderr);
+                    c = getchar();
+                    if (toupper(c) != 'Y') {
+                        fprintf(stderr, "Not overwriting - exiting\n");
+                        exit(1);
+                    }
+				}
+				else {
+                    fprintf(stderr,"File '%s' already exists. Exiting.\n", filename);
                     exit(1);
-                }
+				}
             }
         }
         
