@@ -1336,7 +1336,13 @@ static inline int check_bidir_mv(MpegEncContext * s,
     dxy = ((motion_fy & 1) << 1) | (motion_fx & 1);
     src_x = mb_x * 16 + (motion_fx >> 1);
     src_y = mb_y * 16 + (motion_fy >> 1);
-            
+    src_x = clip(src_x, -16, s->width);
+    if (src_x == s->width)
+        dxy&= 2;
+    src_y = clip(src_y, -16, s->height);
+    if (src_y == s->height)
+        dxy&= 1;
+
     ptr = s->last_picture[0] + (src_y * s->linesize) + src_x;
     put_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize, 16);
     
@@ -1345,6 +1351,12 @@ static inline int check_bidir_mv(MpegEncContext * s,
     dxy = ((motion_by & 1) << 1) | (motion_bx & 1);
     src_x = mb_x * 16 + (motion_bx >> 1);
     src_y = mb_y * 16 + (motion_by >> 1);
+    src_x = clip(src_x, -16, s->width);
+    if (src_x == s->width)
+        dxy&= 2;
+    src_y = clip(src_y, -16, s->height);
+    if (src_y == s->height)
+        dxy&= 1;
             
     ptr = s->next_picture[0] + (src_y * s->linesize) + src_x;
     avg_pixels_tab[0][dxy](dest_y    , ptr    , s->linesize, 16);
