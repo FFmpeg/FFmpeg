@@ -395,6 +395,9 @@ int ipmovie_init(void);
 /* nut.c */
 int nut_init(void);
 
+/* wc3movie.c */
+int wc3_init(void);
+
 #include "rtp.h"
 
 #include "rtsp.h"

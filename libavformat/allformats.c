@@ -54,6 +54,7 @@ void av_register_all(void)
     str_init();
     roq_init();
     ipmovie_init();
+    wc3_init();
 
 #ifdef AMR_NB
     amr_init();
