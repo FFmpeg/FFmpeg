@@ -281,6 +281,7 @@ struct PutBitContext;
 
 typedef void (*WriteDataFunc)(void *, uint8_t *, int);
 
+/* buf and buf_end must be present and used by every alternative writer. */
 typedef struct PutBitContext {
 #ifdef ALT_BITSTREAM_WRITER
     uint8_t *buf, *buf_end;
@@ -317,11 +318,6 @@ static inline int put_bits_count(PutBitContext *s)
 #endif
 }
 
-static inline int put_bits_left(PutBitContext* s)
-{
-    return (s->buf_end - s->buf) * 8 - put_bits_count(s);
-}
-
 /* pad the end of the output stream with zeros */
 static inline void flush_put_bits(PutBitContext *s)
 {
@@ -344,7 +340,7 @@ void align_put_bits(PutBitContext *s);
 void put_string(PutBitContext * pbc, char *s, int put_zero);
 
 /* bit input */
-
+/* buffer, buffer_end and size_in_bits must be present and used by every reader */
 typedef struct GetBitContext {
     const uint8_t *buffer, *buffer_end;
 #ifdef ALT_BITSTREAM_READER
@@ -912,16 +908,6 @@ static inline void init_get_bits(GetBitContext *s,
 #ifdef A32_BITSTREAM_READER
     s->cache1 = 0;
 #endif
-}
-
-static inline int get_bits_left(GetBitContext *s)
-{
-    return s->size_in_bits - get_bits_count(s);
-}
-
-static inline int get_bits_size(GetBitContext *s)
-{
-    return s->size_in_bits;
 }
 
 int check_marker(GetBitContext *s, const char *msg);
