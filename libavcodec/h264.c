@@ -482,10 +482,10 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
                 h->intra4x4_pred_mode_cache[7+8*0]= h->intra4x4_pred_mode[top_xy][3];
             }else{
                 int pred;
-                if(IS_INTRA16x16(top_type) || (IS_INTER(top_type) && !h->pps.constrained_intra_pred))
-                    pred= 2;
-                else{
+                if(!top_type || (IS_INTER(top_type) && h->pps.constrained_intra_pred))
                     pred= -1;
+                else{
+                    pred= 2;
                 }
                 h->intra4x4_pred_mode_cache[4+8*0]=
                 h->intra4x4_pred_mode_cache[5+8*0]=
@@ -498,10 +498,10 @@ static inline void fill_caches(H264Context *h, int mb_type, int for_deblock){
                     h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= h->intra4x4_pred_mode[left_xy[i]][left_block[1+2*i]];
                 }else{
                     int pred;
-                    if(IS_INTRA16x16(left_type[i]) || (IS_INTER(left_type[i]) && !h->pps.constrained_intra_pred))
-                        pred= 2;
-                    else{
+                    if(!left_type[i] || (IS_INTER(left_type[i]) && h->pps.constrained_intra_pred))
                         pred= -1;
+                    else{
+                        pred= 2;
                     }
                     h->intra4x4_pred_mode_cache[3+8*1 + 2*8*i]=
                     h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= pred;
@@ -2739,6 +2739,34 @@ static void hl_decode_mb(H264Context *h){
 //        dct_offset = s->linesize * 16;
     }
 
+    if (IS_INTRA_PCM(mb_type)) {
+        unsigned int x, y;
+
+        // The pixels are stored in h->mb array in the same order as levels,
+        // copy them in output in the correct order.
+        for(i=0; i<16; i++) {
+            for (y=0; y<4; y++) {
+                for (x=0; x<4; x++) {
+                    *(dest_y + h->block_offset[i] + y*linesize + x) = h->mb[i*16+y*4+x];
+                }
+            }
+        }
+        for(i=16; i<16+4; i++) {
+            for (y=0; y<4; y++) {
+                for (x=0; x<4; x++) {
+                    *(dest_cb + h->block_offset[i] + y*uvlinesize + x) = h->mb[i*16+y*4+x];
+                }
+            }
+        }
+        for(i=20; i<20+4; i++) {
+            for (y=0; y<4; y++) {
+                for (x=0; x<4; x++) {
+                    *(dest_cr + h->block_offset[i] + y*uvlinesize + x) = h->mb[i*16+y*4+x];
+                }
+            }
+        }
+        goto deblock;
+    }
     if(IS_INTRA(mb_type)){
         if(h->deblocking_filter)
             xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 1);
@@ -2845,6 +2873,7 @@ static void hl_decode_mb(H264Context *h){
             }
         }
     }
+deblock:
     if(h->deblocking_filter) {
         backup_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize);
         fill_caches(h, mb_type, 1); //FIXME dont fill stuff which isnt used by filter_mb
@@ -3984,38 +4013,39 @@ decode_intra_mb:
     h->slice_table[ mb_xy ]= h->slice_num;
     
     if(IS_INTRA_PCM(mb_type)){
-        const uint8_t *ptr;
-        int x, y;
+        unsigned int x, y;
         
         // we assume these blocks are very rare so we dont optimize it
         align_get_bits(&s->gb);
         
-        ptr= s->gb.buffer + get_bits_count(&s->gb);
-    
+        // The pixels are stored in the same order as levels in h->mb array.
         for(y=0; y<16; y++){
-            const int index= 4*(y&3) + 64*(y>>2);
+            const int index= 4*(y&3) + 32*((y>>2)&1) + 128*(y>>3);
             for(x=0; x<16; x++){
-                h->mb[index + (x&3) + 16*(x>>2)]= *(ptr++);
+                tprintf("LUMA ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
+                h->mb[index + (x&3) + 16*((x>>2)&1) + 64*(x>>3)]= get_bits(&s->gb, 8);
             }
         }
         for(y=0; y<8; y++){
             const int index= 256 + 4*(y&3) + 32*(y>>2);
             for(x=0; x<8; x++){
-                h->mb[index + (x&3) + 16*(x>>2)]= *(ptr++);
+                tprintf("CHROMA U ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
+                h->mb[index + (x&3) + 16*(x>>2)]= get_bits(&s->gb, 8);
             }
         }
         for(y=0; y<8; y++){
             const int index= 256 + 64 + 4*(y&3) + 32*(y>>2);
             for(x=0; x<8; x++){
-                h->mb[index + (x&3) + 16*(x>>2)]= *(ptr++);
+                tprintf("CHROMA V ICPM LEVEL (%3d)\n", show_bits(&s->gb, 8));
+                h->mb[index + (x&3) + 16*(x>>2)]= get_bits(&s->gb, 8);
             }
         }
     
-        skip_bits(&s->gb, 384); //FIXME check /fix the bitstream readers
-        
-        //FIXME deblock filter, non_zero_count_cache init ...
+        // In deblocking, the quantiser is 0
+        s->current_picture.qscale_table[mb_xy]= 0;
+        h->chroma_qp = get_chroma_qp(h, 0);
+        // All coeffs are presents
         memset(h->non_zero_count[mb_xy], 16, 16);
-        s->current_picture.qscale_table[mb_xy]= s->qscale;
         
         return 0;
     }
@@ -4919,13 +4949,49 @@ decode_intra_mb:
     h->slice_table[ mb_xy ]= h->slice_num;
 
     if(IS_INTRA_PCM(mb_type)) {
-        /* TODO */
-        assert(0);
-        h->cbp_table[mb_xy] = 0xf +4*2; //FIXME ?!
-        h->cbp_table[mb_xy] |= 0x1C0;
+        const uint8_t *ptr;
+        unsigned int x, y;
+        
+        // We assume these blocks are very rare so we dont optimize it.
+        // FIXME The two following lines get the bitstream position in the cabac
+        // decode, I think it should be done by a function in cabac.h (or cabac.c).
+        ptr= h->cabac.bytestream;
+        if (h->cabac.low&0x1) ptr-=CABAC_BITS/8;
+
+        // The pixels are stored in the same order as levels in h->mb array.
+        for(y=0; y<16; y++){
+            const int index= 4*(y&3) + 32*((y>>2)&1) + 128*(y>>3);
+            for(x=0; x<16; x++){
+                tprintf("LUMA ICPM LEVEL (%3d)\n", *ptr);
+                h->mb[index + (x&3) + 16*((x>>2)&1) + 64*(x>>3)]= *ptr++;
+            }
+        }
+        for(y=0; y<8; y++){
+            const int index= 256 + 4*(y&3) + 32*(y>>2);
+            for(x=0; x<8; x++){
+                tprintf("CHROMA U ICPM LEVEL (%3d)\n", *ptr);
+                h->mb[index + (x&3) + 16*(x>>2)]= *ptr++;
+            }
+        }
+        for(y=0; y<8; y++){
+            const int index= 256 + 64 + 4*(y&3) + 32*(y>>2);
+            for(x=0; x<8; x++){
+                tprintf("CHROMA V ICPM LEVEL (%3d)\n", *ptr);
+                h->mb[index + (x&3) + 16*(x>>2)]= *ptr++;
+            }
+        }
+
+        ff_init_cabac_decoder(&h->cabac, ptr, h->cabac.bytestream_end - ptr);
+
+        // All blocks are presents
+        h->cbp_table[mb_xy] = 0x1ef;
         h->chroma_pred_mode_table[mb_xy] = 0;
-        s->current_picture.qscale_table[mb_xy]= s->qscale;
-        return -1;
+        // In deblocking, the quantiser is 0
+        s->current_picture.qscale_table[mb_xy]= 0;
+        h->chroma_qp = get_chroma_qp(h, 0);
+        // All coeffs are presents
+        memset(h->non_zero_count[mb_xy], 16, 16);
+        return 0;
     }
 
     fill_caches(h, mb_type, 0);
@@ -5605,7 +5671,9 @@ static void filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8
             }
 
             /* Filter edge */
-            qp = ( s->qscale + s->current_picture.qscale_table[mbn_xy] + 1 ) >> 1;
+            // Do not use s->qscale as luma quantiser because it has not the same
+            // value in IPCM macroblocks.
+            qp = ( s->current_picture.qscale_table[mb_xy] + s->current_picture.qscale_table[mbn_xy] + 1 ) >> 1;
             //tprintf("filter mb:%d/%d dir:%d edge:%d, QPy:%d, QPc:%d, QPcn:%d\n", mb_x, mb_y, dir, edge, qp, h->chroma_qp, s->current_picture.qscale_table[mbn_xy]);
             if( dir == 0 ) {
                 filter_mb_edgev( h, &img_y[4*edge], linesize, bS, qp );
