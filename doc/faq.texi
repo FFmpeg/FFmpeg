@@ -133,4 +133,8 @@ No. These tools are too blowted and they complicate the build. Moreover,
 since only @samp{gcc} is supported they would add little advantages in
 terms of portability.
 
+@section ffmpeg doesnt contain any debugging symbols ?
+
+try ffmpeg_g, ffplay_g, ...
+
 @bye
