@@ -433,23 +433,24 @@ int MPV_encode_init(AVCodecContext *avctx)
     } else {
         s->intra_only = 0;
     }
-    
+
     /* ME algorithm */
     if (avctx->me_method == 0)
         /* For compatibility */
         s->me_method = motion_estimation_method;
     else
         s->me_method = avctx->me_method;
-        
+
     /* Fixed QSCALE */
     s->fixed_qscale = (avctx->flags & CODEC_FLAG_QSCALE);
     
     s->adaptive_quant= (   s->avctx->lumi_masking
+                        || s->avctx->dark_masking
                         || s->avctx->temporal_cplx_masking 
                         || s->avctx->spatial_cplx_masking
                         || s->avctx->p_masking)
                        && !s->fixed_qscale;
-    
+
     switch(avctx->codec->id) {
     case CODEC_ID_MPEG1VIDEO:
         s->out_format = FMT_MPEG1;

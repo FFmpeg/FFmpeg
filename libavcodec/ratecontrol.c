@@ -465,6 +465,7 @@ static void update_predictor(Predictor *p, double q, double var, double size)
 static void adaptive_quantization(MpegEncContext *s, double q){
     int i;
     const float lumi_masking= s->avctx->lumi_masking / (128.0*128.0);
+    const float dark_masking= s->avctx->dark_masking / (128.0*128.0);
     const float temp_cplx_masking= s->avctx->temporal_cplx_masking;
     const float spatial_cplx_masking = s->avctx->spatial_cplx_masking;
     const float p_masking = s->avctx->p_masking;
@@ -492,7 +493,11 @@ static void adaptive_quantization(MpegEncContext *s, double q){
             factor= pow(temp_cplx, - temp_cplx_masking);
         }
         factor*=pow(spat_cplx, - spatial_cplx_masking);
-        factor*= (1.0 - (lumi-128)*(lumi-128)*lumi_masking);
+
+        if(lumi>127)
+            factor*= (1.0 - (lumi-128)*(lumi-128)*lumi_masking);
+        else
+            factor*= (1.0 - (lumi-128)*(lumi-128)*dark_masking);
         
         if(factor<0.00001) factor= 0.00001;
         
