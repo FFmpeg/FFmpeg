@@ -4082,10 +4082,10 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         fprintf(stderr, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
                         return -1;
                     }
-#if 1 
-                    {
+#if 0
+                    if(s->error_resilience >= FF_ER_COMPLIANT){
                         const int abs_level= ABS(level);
-                        if(abs_level<=MAX_LEVEL && run<=MAX_RUN && !(s->workaround_bugs&FF_BUG_AC_VLC)){
+                        if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
                             const int run1= run - rl->max_run[last][abs_level] - 1;
                             if(abs_level <= rl->max_level[last][run]){
                                 fprintf(stderr, "illegal 3. esc, vlc encoding possible\n");

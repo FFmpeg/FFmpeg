@@ -508,7 +508,6 @@ retry:
 
         if(s->avctx->codec_tag == ff_get_fourcc("UMP4")){
             s->workaround_bugs|= FF_BUG_UMP4;
-            s->workaround_bugs|= FF_BUG_AC_VLC;
         }
 
         if(s->divx_version>=500){
