@@ -77,6 +77,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 //#define DEBUG_BRIGHTNESS
 #include "../libvo/fastmemcpy.h"
 #include "postprocess.h"
+#include "postprocess_internal.h"
 #include "../mangle.h"
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
@@ -104,55 +105,6 @@ static int verbose= 0;
 
 static const int deringThreshold= 20;
 
-struct PPFilter{
-	char *shortName;
-	char *longName;
-	int chromDefault; 	// is chrominance filtering on by default if this filter is manually activated
-	int minLumQuality; 	// minimum quality to turn luminance filtering on
-	int minChromQuality;	// minimum quality to turn chrominance filtering on
-	int mask; 		// Bitmask to turn this filter on
-};
-
-typedef struct PPContext{
-	uint8_t *tempBlocks; //used for the horizontal code
-
-	/* we need 64bit here otherwise we´ll going to have a problem
-	   after watching a black picture for 5 hours*/
-	uint64_t *yHistogram;
-
-	uint64_t __attribute__((aligned(8))) packedYOffset;
-	uint64_t __attribute__((aligned(8))) packedYScale;
-
-	/* Temporal noise reducing buffers */
-	uint8_t *tempBlured[3];
-	int32_t *tempBluredPast[3];
-
-	/* Temporary buffers for handling the last row(s) */
-	uint8_t *tempDst;
-	uint8_t *tempSrc;
-
-	/* Temporary buffers for handling the last block */
-	uint8_t *tempDstBlock;
-	uint8_t *tempSrcBlock;
-	uint8_t *deintTemp;
-
-	uint64_t __attribute__((aligned(8))) pQPb;
-	uint64_t __attribute__((aligned(8))) pQPb2;
-
-	uint64_t __attribute__((aligned(8))) mmxDcOffset[32];
-	uint64_t __attribute__((aligned(8))) mmxDcThreshold[32];
-	
-	QP_STORE_T *nonBQPTable;
-	
-	int QP;
-	int nonBQP;
-
-	int frameNum;
-	
-	int cpuCaps;
-
-	PPMode ppMode;
-} PPContext;
 
 static struct PPFilter filters[]=
 {
@@ -489,9 +441,10 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 // minor note: the HAVE_xyz is messed up after that line so dont use it
 
 static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, int isColor, PPMode *ppMode, pp_context_t *vc)
+	QP_STORE_T QPs[], int QPStride, int isColor, pp_mode_t *vm, pp_context_t *vc)
 {
 	PPContext *c= (PPContext *)vc;
+	PPMode *ppMode= (PPMode *)vm;
 	c->ppMode= *ppMode; //FIXME
 
 	// useing ifs here as they are faster than function pointers allthough the
@@ -570,27 +523,29 @@ char *pp_help=
  * name is the string after "-pp" on the command line
  * quality is a number from 0 to GET_PP_QUALITY_MAX
  */
-struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
+pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
 {
 	char temp[GET_MODE_BUFFER_SIZE];
 	char *p= temp;
 	char *filterDelimiters= ",/";
 	char *optionDelimiters= ":";
-	struct PPMode ppMode;
+	struct PPMode *ppMode;
 	char *filterToken;
 
-	ppMode.lumMode= 0;
-	ppMode.chromMode= 0;
-	ppMode.maxTmpNoise[0]= 700;
-	ppMode.maxTmpNoise[1]= 1500;
-	ppMode.maxTmpNoise[2]= 3000;
-	ppMode.maxAllowedY= 234;
-	ppMode.minAllowedY= 16;
-	ppMode.baseDcDiff= 256/4;
-	ppMode.flatnessThreshold=40;
-	ppMode.flatnessThreshold= 56-16;
-	ppMode.maxClippedThreshold= 0.01;
-	ppMode.error=0;
+	ppMode= memalign(8, sizeof(PPMode));
+	
+	ppMode->lumMode= 0;
+	ppMode->chromMode= 0;
+	ppMode->maxTmpNoise[0]= 700;
+	ppMode->maxTmpNoise[1]= 1500;
+	ppMode->maxTmpNoise[2]= 3000;
+	ppMode->maxAllowedY= 234;
+	ppMode->minAllowedY= 16;
+	ppMode->baseDcDiff= 256/4;
+	ppMode->flatnessThreshold=40;
+	ppMode->flatnessThreshold= 56-16;
+	ppMode->maxClippedThreshold= 0.01;
+	ppMode->error=0;
 
 	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
@@ -652,7 +607,7 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 				spaceLeft= p - temp + plen;
 				if(spaceLeft + newlen  >= GET_MODE_BUFFER_SIZE)
 				{
-					ppMode.error++;
+					ppMode->error++;
 					break;
 				}
 				memmove(p + newlen, p, plen+1);
@@ -667,30 +622,30 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 			if(   !strcmp(filters[i].longName, filterName)
 			   || !strcmp(filters[i].shortName, filterName))
 			{
-				ppMode.lumMode &= ~filters[i].mask;
-				ppMode.chromMode &= ~filters[i].mask;
+				ppMode->lumMode &= ~filters[i].mask;
+				ppMode->chromMode &= ~filters[i].mask;
 
 				filterNameOk=1;
 				if(!enable) break; // user wants to disable it
 
 				if(q >= filters[i].minLumQuality)
-					ppMode.lumMode|= filters[i].mask;
+					ppMode->lumMode|= filters[i].mask;
 				if(chrom==1 || (chrom==-1 && filters[i].chromDefault))
 					if(q >= filters[i].minChromQuality)
-						ppMode.chromMode|= filters[i].mask;
+						ppMode->chromMode|= filters[i].mask;
 
 				if(filters[i].mask == LEVEL_FIX)
 				{
 					int o;
-					ppMode.minAllowedY= 16;
-					ppMode.maxAllowedY= 234;
+					ppMode->minAllowedY= 16;
+					ppMode->maxAllowedY= 234;
 					for(o=0; options[o]!=NULL; o++)
 					{
 						if(  !strcmp(options[o],"fullyrange")
 						   ||!strcmp(options[o],"f"))
 						{
-							ppMode.minAllowedY= 0;
-							ppMode.maxAllowedY= 255;
+							ppMode->minAllowedY= 0;
+							ppMode->maxAllowedY= 255;
 							numOfUnknownOptions--;
 						}
 					}
@@ -703,7 +658,7 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 					for(o=0; options[o]!=NULL; o++)
 					{
 						char *tail;
-						ppMode.maxTmpNoise[numOfNoises]=
+						ppMode->maxTmpNoise[numOfNoises]=
 							strtol(options[o], &tail, 0);
 						if(tail!=options[o])
 						{
@@ -724,14 +679,14 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 						if(tail==options[o]) break;
 
 						numOfUnknownOptions--;
-						if(o==0) ppMode.baseDcDiff= val;
-						else ppMode.flatnessThreshold= val;
+						if(o==0) ppMode->baseDcDiff= val;
+						else ppMode->flatnessThreshold= val;
 					}
 				}
 				else if(filters[i].mask == FORCE_QUANT)
 				{
 					int o;
-					ppMode.forcedQuant= 15;
+					ppMode->forcedQuant= 15;
 
 					for(o=0; options[o]!=NULL && o<1; o++)
 					{
@@ -740,20 +695,30 @@ struct PPMode pp_get_mode_by_name_and_quality(char *name, int quality)
 						if(tail==options[o]) break;
 
 						numOfUnknownOptions--;
-						ppMode.forcedQuant= val;
+						ppMode->forcedQuant= val;
 					}
 				}
 			}
 		}
-		if(!filterNameOk) ppMode.error++;
-		ppMode.error += numOfUnknownOptions;
+		if(!filterNameOk) ppMode->error++;
+		ppMode->error += numOfUnknownOptions;
 	}
 
-	if(verbose>1) printf("pp: lumMode=%X, chromMode=%X\n", ppMode.lumMode, ppMode.chromMode);
+	if(verbose>1) printf("pp: lumMode=%X, chromMode=%X\n", ppMode->lumMode, ppMode->chromMode);
+	if(ppMode->error)
+	{
+		fprintf(stderr, "%d errors in postprocess string \"%s\"\n", ppMode->error, name);
+		free(ppMode);
+		return NULL;
+	}
 	return ppMode;
 }
 
-void *pp_get_context(int width, int height, int cpuCaps){
+void pp_free_mode(pp_mode_t *mode){
+    if(mode) free(mode);
+}
+
+pp_context_t *pp_get_context(int width, int height, int cpuCaps){
 	PPContext *c= memalign(32, sizeof(PPContext));
 	int i;
 	int mbWidth = (width+15)>>4;
@@ -812,11 +777,12 @@ void  pp_postprocess(uint8_t * src[3], int srcStride[3],
                  uint8_t * dst[3], int dstStride[3],
                  int width, int height,
                  QP_STORE_T *QP_store,  int QPStride,
-		 PPMode *mode,  void *vc, int pict_type)
+		 pp_mode_t *vm,  void *vc, int pict_type)
 {
 	int mbWidth = (width+15)>>4;
 	int mbHeight= (height+15)>>4;
 	QP_STORE_T quantArray[2048/8];
+	PPMode *mode = (PPMode*)vm;
 	PPContext *c = (PPContext*)vc;
 
 	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)) 

@@ -16,84 +16,27 @@
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-// POSTPROCESS_H is defined by opendivx's postprocess.h
 #ifndef NEWPOSTPROCESS_H
 #define NEWPOSTPROCESS_H
 
-#define V_DEBLOCK	0x01
-#define H_DEBLOCK	0x02
-#define DERING		0x04
-#define LEVEL_FIX	0x08 /* Brightness & Contrast */
-
-#define LUM_V_DEBLOCK	V_DEBLOCK		//   1
-#define LUM_H_DEBLOCK	H_DEBLOCK		//   2
-#define CHROM_V_DEBLOCK	(V_DEBLOCK<<4)		//  16
-#define CHROM_H_DEBLOCK	(H_DEBLOCK<<4)		//  32
-#define LUM_DERING	DERING			//   4
-#define CHROM_DERING	(DERING<<4)		//  64
-#define LUM_LEVEL_FIX	LEVEL_FIX		//   8
-#define CHROM_LEVEL_FIX	(LEVEL_FIX<<4)		// 128 (not implemented yet)
-
-// Experimental vertical filters
-#define V_X1_FILTER	0x0200			// 512
-
-// Experimental horizontal filters
-#define H_X1_FILTER	0x2000			// 8192
-
-// select between full y range (255-0) or standart one (234-16)
-#define FULL_Y_RANGE	0x8000			// 32768
-
-//Deinterlacing Filters
-#define	LINEAR_IPOL_DEINT_FILTER	0x10000	// 65536
-#define	LINEAR_BLEND_DEINT_FILTER	0x20000	// 131072
-#define	CUBIC_BLEND_DEINT_FILTER	0x8000	// (not implemented yet)
-#define	CUBIC_IPOL_DEINT_FILTER		0x40000	// 262144
-#define	MEDIAN_DEINT_FILTER		0x80000	// 524288
-#define	FFMPEG_DEINT_FILTER		0x400000
-
-#define TEMP_NOISE_FILTER		0x100000
-#define FORCE_QUANT			0x200000
-
 #define GET_PP_QUALITY_MAX 6
-
-//use if u want a faster postprocessing code
-//cant differentiate between chroma & luma filters (both on or both off)
-//obviosly the -pp option at the commandline has no effect except turning the here selected
-//filters on
-//#define COMPILE_TIME_MODE 0x77
 
 #define QP_STORE_T int8_t
 
 typedef void pp_context_t;
+typedef void pp_mode_t;
 
-extern char *pp_help;
-
-//FIXME decide if this should be exported at all
-typedef struct PPMode{
-	int lumMode; 			// acivates filters for luminance
-	int chromMode; 			// acivates filters for chrominance
-	int error; 			// non zero on error
-
-	int minAllowedY; 		// for brigtness correction
-	int maxAllowedY; 		// for brihtness correction
-	float maxClippedThreshold;	// amount of "black" u r willing to loose to get a brightness corrected picture
-
-	int maxTmpNoise[3]; 		// for Temporal Noise Reducing filter (Maximal sum of abs differences)
-
-	int baseDcDiff;
-	int flatnessThreshold;
-
-	int forcedQuant; 		// quantizer if FORCE_QUANT is used
-} PPMode;
+extern char *pp_help; //a simple help text
 
 void  pp_postprocess(uint8_t * src[3], int srcStride[3],
                  uint8_t * dst[3], int dstStride[3],
                  int horizontalSize, int verticalSize,
                  QP_STORE_T *QP_store,  int QP_stride,
-		 PPMode *mode, pp_context_t *ppContext, int pict_type);
+		 pp_mode_t *mode, pp_context_t *ppContext, int pict_type);
 
 // name is the stuff after "-pp" on the command line
-PPMode pp_get_mode_by_name_and_quality(char *name, int quality);
+pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality);
+void pp_free_mode(pp_mode_t *mode);
 
 pp_context_t *pp_get_context(int width, int height, int cpuCaps);
 void pp_free_context(pp_context_t *ppContext);
