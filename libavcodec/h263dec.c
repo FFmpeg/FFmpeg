@@ -139,6 +139,7 @@ static int get_consumed_bytes(MpegEncContext *s, int buf_size){
 
 static int decode_slice(MpegEncContext *s){
     const int part_mask= s->partitioned_frame ? (AC_END|AC_ERROR) : 0x7F;
+    const int mb_size= 16>>s->avctx->lowres;
     s->last_resync_gb= s->gb;
     s->first_slice_line= 1;
         
@@ -214,7 +215,7 @@ static int decode_slice(MpegEncContext *s){
                         
                     if(++s->mb_x >= s->mb_width){
                         s->mb_x=0;
-                        ff_draw_horiz_band(s, s->mb_y*16, 16);
+                        ff_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
                         s->mb_y++;
                     }
                     return 0; 
@@ -234,7 +235,7 @@ static int decode_slice(MpegEncContext *s){
                 ff_h263_loop_filter(s);
         }
         
-        ff_draw_horiz_band(s, s->mb_y*16, 16);
+        ff_draw_horiz_band(s, s->mb_y*mb_size, mb_size);
         
         s->mb_x= 0;
     }

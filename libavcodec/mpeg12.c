@@ -2526,8 +2526,9 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
         MPV_decode_mb(s, s->block);
         
         if (++s->mb_x >= s->mb_width) {
+            const int mb_size= 16>>s->avctx->lowres;
 
-            ff_draw_horiz_band(s, 16*s->mb_y, 16);
+            ff_draw_horiz_band(s, mb_size*s->mb_y, mb_size);
 
             s->mb_x = 0;
             s->mb_y++;
