@@ -29,7 +29,7 @@
     The fixed-point (TS26.073) can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.073/26073-510.zip
     Extract the soure into ffmpeg/libavcodec/amr
-    To use the fixed version run "./configure" with "--enable-amr-nb-fixed"
+    To use the fixed version run "./configure" with "--enable-amr_nb-fixed"
     
     The float version (default) can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-510.zip
@@ -43,7 +43,7 @@
     The reference code can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.204/26204-510.zip
     It should be extracted to "libavcodec/amrwb_float". Enable it with
-    "--enable-amr-wb".
+    "--enable-amr_wb".
     
     The specification for amr-wb can be downloaded from:
     http://www.3gpp.org/ftp/Specs/archive/26_series/26.171/26171-500.zip
