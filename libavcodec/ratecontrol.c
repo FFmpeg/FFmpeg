@@ -714,38 +714,7 @@ static int init_pass2(MpegEncContext *s)
     for(i=0; i<rcc->num_entries; i++){
         RateControlEntry *rce= &rcc->entry[i];
         
-        if(s->b_frame_strategy==0 || s->max_b_frames==0){
-            rce->new_pict_type= rce->pict_type;
-        }else{
-            int j;
-            int next_non_b_type=P_TYPE;
-
-            switch(rce->pict_type){
-            case I_TYPE:
-                if(i-last_i_frame>s->gop_size/2){ //FIXME this is not optimal
-                    rce->new_pict_type= I_TYPE;
-                    last_i_frame= i;
-                }else{
-                    rce->new_pict_type= P_TYPE; // will be caught by the scene detection anyway
-                }
-                break;
-            case P_TYPE:
-                rce->new_pict_type= P_TYPE;
-                break;
-            case B_TYPE:
-                for(j=i+1; j<i+s->max_b_frames+2 && j<rcc->num_entries; j++){
-                    if(rcc->entry[j].pict_type != B_TYPE){
-                        next_non_b_type= rcc->entry[j].pict_type;
-                        break;
-                    }
-                }
-                if(next_non_b_type==I_TYPE)
-                    rce->new_pict_type= P_TYPE;
-                else
-                    rce->new_pict_type= B_TYPE;
-                break;
-            }
-        }
+        rce->new_pict_type= rce->pict_type;
         rcc->i_cplx_sum [rce->pict_type] += rce->i_tex_bits*rce->qscale;
         rcc->p_cplx_sum [rce->pict_type] += rce->p_tex_bits*rce->qscale;
         rcc->mv_bits_sum[rce->pict_type] += rce->mv_bits;

@@ -780,7 +780,6 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     
     /* mark&release old frames */
     if (s->pict_type != B_TYPE && s->last_picture.data[0]) {
-        Picture *pic= NULL;
         for(i=0; i<MAX_PICTURE_COUNT; i++){
             if(s->picture[i].data[0] == s->last_picture.data[0]){
 //                s->picture[i].reference=0;
@@ -898,6 +897,39 @@ void MPV_frame_end(MpegEncContext *s)
     }
 }
 
+static int get_sae(uint8_t *src, int ref, int stride){
+    int x,y;
+    int acc=0;
+    
+    for(y=0; y<16; y++){
+        for(x=0; x<16; x++){
+            acc+= ABS(src[x+y*stride] - ref);
+        }
+    }
+    
+    return acc;
+}
+
+static int get_intra_count(MpegEncContext *s, uint8_t *src, uint8_t *ref, int stride){
+    int x, y, w, h;
+    int acc=0;
+    
+    w= s->width &~15;
+    h= s->height&~15;
+    
+    for(y=0; y<h; y+=16){
+        for(x=0; x<w; x+=16){
+            int offset= x + y*stride;
+            int sad = s->dsp.pix_abs16x16(src + offset, ref + offset, stride);
+            int mean= (s->dsp.pix_sum(src + offset, stride) + 128)>>8;
+            int sae = get_sae(src + offset, mean, stride);
+            
+            acc+= sae + 500 < sad;
+        }
+    }
+    return acc;
+}
+
 static int load_input_picture(MpegEncContext *s, AVVideoFrame *pic_arg){
     AVVideoFrame *pic;
     int i,r;
@@ -991,50 +1023,75 @@ static void select_input_picture(MpegEncContext *s){
 
     /* set next picture types & ordering */
     if(s->reordered_input_picture[0]==NULL && s->input_picture[0]){
-        if(s->input_picture[0]->pict_type){
-            /* user selected pict_type */
-            if(s->input_picture[0]->pict_type == I_TYPE){
-                s->reordered_input_picture[0]= s->input_picture[0];
-                s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
-            }else{
-                int b_frames;
-
+        if(/*s->picture_in_gop_number >= s->gop_size ||*/ s->next_picture.data[0]==NULL || s->intra_only){
+            s->reordered_input_picture[0]= s->input_picture[0];
+            s->reordered_input_picture[0]->pict_type= I_TYPE;
+            s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+        }else{
+            int b_frames;
+            
+            if(s->flags&CODEC_FLAG_PASS2){
+                for(i=0; i<s->max_b_frames+1; i++){
+                    int pict_num= s->input_picture[0]->display_picture_number + i;
+                    int pict_type= s->rc_context.entry[pict_num].new_pict_type;
+                    s->input_picture[i]->pict_type= pict_type;
+                    
+                    if(i + 1 >= s->rc_context.num_entries) break;
+                }
+            }
+        
+            if(s->input_picture[0]->pict_type){
+                /* user selected pict_type */
                 for(b_frames=0; b_frames<s->max_b_frames+1; b_frames++){
                     if(s->input_picture[b_frames]->pict_type!=B_TYPE) break;
                 }
-                
+            
                 if(b_frames > s->max_b_frames){
                     fprintf(stderr, "warning, too many bframes in a row\n");
                     b_frames = s->max_b_frames;
-                    s->input_picture[b_frames]->pict_type= I_TYPE;
                 }
-                
-                s->reordered_input_picture[0]= s->input_picture[b_frames];
-                s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
-                for(i=0; i<b_frames; i++){
-                    coded_pic_num++;
-                    s->reordered_input_picture[i+1]= s->input_picture[i];
-                    s->reordered_input_picture[i+1]->coded_picture_number= coded_pic_num;
-                }    
-            }
-        }else{
-            if(/*s->picture_in_gop_number >= s->gop_size ||*/ s->next_picture.data[0]==NULL || s->intra_only){
-                s->reordered_input_picture[0]= s->input_picture[0];
-                s->reordered_input_picture[0]->pict_type= I_TYPE;
-                s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
-            }else{
-                s->reordered_input_picture[0]= s->input_picture[s->max_b_frames];
-                if(s->picture_in_gop_number + s->max_b_frames >= s->gop_size)
-                    s->reordered_input_picture[0]->pict_type= I_TYPE;
-                else
-                    s->reordered_input_picture[0]->pict_type= P_TYPE;
-                s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+            }else if(s->b_frame_strategy==0){
+                b_frames= s->max_b_frames;
+            }else if(s->b_frame_strategy==1){
+                for(i=1; i<s->max_b_frames+1; i++){
+                    if(s->input_picture[i]->b_frame_score==0){
+                        s->input_picture[i]->b_frame_score= 
+                            get_intra_count(s, s->input_picture[i  ]->data[0] + 16, 
+                                               s->input_picture[i-1]->data[0] + 16, s->linesize) + 1;
+                    }
+                }
                 for(i=0; i<s->max_b_frames; i++){
-                    coded_pic_num++;
-                    s->reordered_input_picture[i+1]= s->input_picture[i];
-                    s->reordered_input_picture[i+1]->pict_type= B_TYPE;
-                    s->reordered_input_picture[i+1]->coded_picture_number= coded_pic_num;
-                }    
+                    if(s->input_picture[i]->b_frame_score - 1 > s->mb_num/40) break;
+                }
+                                
+                b_frames= FFMAX(0, i-1);
+                
+                /* reset scores */
+                for(i=0; i<b_frames+1; i++){
+                    s->input_picture[i]->b_frame_score=0;
+                }
+            }else{
+                fprintf(stderr, "illegal b frame strategy\n");
+                b_frames=0;
+            }
+
+            emms_c();
+//static int b_count=0;
+//b_count+= b_frames;
+//printf("b_frames: %d\n", b_count);
+                        
+            s->reordered_input_picture[0]= s->input_picture[b_frames];
+            if(   s->picture_in_gop_number + b_frames >= s->gop_size 
+               || s->reordered_input_picture[0]->pict_type== I_TYPE)
+                s->reordered_input_picture[0]->pict_type= I_TYPE;
+            else
+                s->reordered_input_picture[0]->pict_type= P_TYPE;
+            s->reordered_input_picture[0]->coded_picture_number= coded_pic_num;
+            for(i=0; i<b_frames; i++){
+                coded_pic_num++;
+                s->reordered_input_picture[i+1]= s->input_picture[i];
+                s->reordered_input_picture[i+1]->pict_type= B_TYPE;
+                s->reordered_input_picture[i+1]->coded_picture_number= coded_pic_num;
             }
         }
     }

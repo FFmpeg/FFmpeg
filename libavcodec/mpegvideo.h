@@ -38,7 +38,7 @@ enum OutputFormat {
 #define MAX_FCODE 7
 #define MAX_MV 2048
 
-#define MAX_PICTURE_COUNT 7
+#define MAX_PICTURE_COUNT 15
 
 #define ME_MAP_SIZE 64
 #define ME_MAP_SHIFT 3
@@ -117,6 +117,7 @@ typedef struct Picture{
     uint16_t *mb_var;           /* Table for MB variances */
     uint16_t *mc_mb_var;        /* Table for motion compensated MB variances */
     uint8_t *mb_mean;           /* Table for MB luminance */
+    int b_frame_score;          /* */
 } Picture;
 
 typedef struct ParseContext{
