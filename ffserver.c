@@ -2119,7 +2119,7 @@ static int http_prepare_data(HTTPContext *c)
                             /* XXX: potential leak */
                             return -1;
                         }
-                        if (av_write_packet(ctx, &pkt, pkt.pts)) {
+                        if (av_write_frame(ctx, pkt.stream_index, pkt.data, pkt.size)) {
                             c->state = HTTPSTATE_SEND_DATA_TRAILER;
                         }
                         
