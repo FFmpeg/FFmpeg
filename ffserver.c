@@ -1456,6 +1456,7 @@ static int http_parse_request(HTTPContext *c)
             }
             
             sprintf(msg, "POST command not handled");
+            c->stream = 0;
             goto send_error;
         }
         if (http_start_receive_data(c) < 0) {
