@@ -2667,5 +2667,6 @@ int main(int argc, char **argv)
     for(i=0;i<nb_input_files;i++)
         av_close_input_file(input_files[i]);
 
+    av_free_static();
     return 0;
 }

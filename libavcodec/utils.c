@@ -30,6 +30,43 @@ void *av_mallocz(unsigned int size)
     return ptr;
 }
 
+/* allocation of static arrays - do not use for normal allocation */
+static unsigned int last_static = 0;
+static char*** array_static = NULL;
+static const unsigned int grow_static = 64; // ^2
+void *__av_mallocz_static(void** location, unsigned int size)
+{
+    int l = (last_static + grow_static) & ~(grow_static - 1);
+    void *ptr = av_mallocz(size);
+    if (!ptr)
+	return NULL;
+
+    if (location)
+    {
+	if (l > last_static)
+	    array_static = realloc(array_static, l);
+	array_static[last_static++] = (char**) location;
+	*location = ptr;
+    }
+    return ptr;
+}
+/* free all static arrays and reset pointers to 0 */
+void av_free_static()
+{
+    if (array_static)
+    {
+	unsigned i;
+	for (i = 0; i < last_static; i++)
+	{
+	    free(*array_static[i]);
+            *array_static[i] = NULL;
+	}
+	free(array_static);
+	array_static = 0;
+    }
+    last_static = 0;
+}
+
 /* cannot call it directly because of 'void **' casting is not automatic */
 void __av_freep(void **ptr)
 {
