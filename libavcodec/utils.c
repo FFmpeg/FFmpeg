@@ -31,7 +31,7 @@
 #include <stdarg.h>
 #include <limits.h>
 
-static void avcodec_default_free_buffers(AVCodecContext *s);
+void avcodec_default_free_buffers(AVCodecContext *s);
 
 void *av_mallocz(unsigned int size)
 {
@@ -760,7 +760,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
         avctx->codec->flush(avctx);
 }
 
-static void avcodec_default_free_buffers(AVCodecContext *s){
+void avcodec_default_free_buffers(AVCodecContext *s){
     int i, j;
 
     if(s->internal_buffer==NULL) return;
