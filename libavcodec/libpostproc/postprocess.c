@@ -719,13 +719,7 @@ static inline void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int 
 /* -pp Command line Help
 */
 char *pp_help=
-"<filterName>[:<option>[:<option>...]][[,|/][-]<filterName>[:<option>...]]...\n"
-"long form example:\n"
-"vdeblock:autoq/hdeblock:autoq/linblenddeint	default,-vdeblock\n"
-"short form example:\n"
-"vb:a/hb:a/lb					de,-vb\n"
-"more examples:\n"
-"tn:64:128:256\n"
+"Available postprocessing filters:\n"
 "Filters			Options\n"
 "short	long name	short	long option	Description\n"
 "*	*		a	autoq		CPU power dependent enabler\n"
@@ -754,6 +748,14 @@ char *pp_help=
 "tn	tmpnoise	(3 threshold)		temporal noise reducer\n"
 "			1. <= 2. <= 3.		larger -> stronger filtering\n"
 "fq	forceQuant	<quantizer>		force quantizer\n"
+"Usage:\n"
+"<filterName>[:<option>[:<option>...]][[,|/][-]<filterName>[:<option>...]]...\n"
+"long form example:\n"
+"vdeblock:autoq/hdeblock:autoq/linblenddeint	default,-vdeblock\n"
+"short form example:\n"
+"vb:a/hb:a/lb					de,-vb\n"
+"more examples:\n"
+"tn:64:128:256\n"
 ;
 
 pp_mode_t *pp_get_mode_by_name_and_quality(char *name, int quality)
