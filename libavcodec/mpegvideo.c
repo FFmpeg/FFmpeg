@@ -2875,16 +2875,12 @@ static inline void MPV_motion(MpegEncContext *s,
     case MV_TYPE_FIELD:
         if (s->picture_structure == PICT_FRAME) {
             if(s->quarter_sample){
-                /* top field */
-                qpel_motion(s, dest_y, dest_cb, dest_cr,
-                            1, 0, s->field_select[dir][0],
-                            ref_picture, pix_op, qpix_op,
-                            s->mv[dir][0][0], s->mv[dir][0][1], 8);
-                /* bottom field */
-                qpel_motion(s, dest_y, dest_cb, dest_cr,
-                            1, 1, s->field_select[dir][1],
-                            ref_picture, pix_op, qpix_op,
-                            s->mv[dir][1][0], s->mv[dir][1][1], 8);
+                for(i=0; i<2; i++){
+                    qpel_motion(s, dest_y, dest_cb, dest_cr,
+                                1, i, s->field_select[dir][i],
+                                ref_picture, pix_op, qpix_op,
+                                s->mv[dir][i][0], s->mv[dir][i][1], 8);
+                }
             }else{
                 /* top field */       
                 mpeg_motion(s, dest_y, dest_cb, dest_cr,
@@ -2908,83 +2904,53 @@ static inline void MPV_motion(MpegEncContext *s,
                         s->mv[dir][0][0], s->mv[dir][0][1], 16);
         }
         break;
-    case MV_TYPE_16X8:{
-         uint8_t ** ref2picture;
+    case MV_TYPE_16X8:
+        for(i=0; i<2; i++){
+            uint8_t ** ref2picture;
 
-            if(s->picture_structure == s->field_select[dir][0] + 1 || s->pict_type == B_TYPE || s->first_field){
+            if(s->picture_structure == s->field_select[dir][i] + 1 || s->pict_type == B_TYPE || s->first_field){
                 ref2picture= ref_picture;
             }else{
                 ref2picture= s->current_picture_ptr->data;
             } 
 
             mpeg_motion(s, dest_y, dest_cb, dest_cr, 
-                        0, 0, s->field_select[dir][0],
+                        0, 0, s->field_select[dir][i],
                         ref2picture, pix_op,
-                        s->mv[dir][0][0], s->mv[dir][0][1], 8);
-
-
-            if(s->picture_structure == s->field_select[dir][1] + 1 || s->pict_type == B_TYPE || s->first_field){
-                ref2picture= ref_picture;
-            }else{
-                ref2picture= s->current_picture_ptr->data;
-            } 
-            // I know it is ugly but this is the only way to fool emu_edge without rewrite mpeg_motion
-            mpeg_motion(s, dest_y+16*s->linesize, dest_cb+8*s->uvlinesize, dest_cr+8*s->uvlinesize,
-                        0, 0, s->field_select[dir][1],
-                        ref2picture, pix_op,
-                        s->mv[dir][1][0], s->mv[dir][1][1]+16, 8);
-        }
-        
+                        s->mv[dir][i][0], s->mv[dir][i][1] + 16*i, 8);
+                
+            dest_y += 16*s->linesize;
+            dest_cb+=  8*s->uvlinesize;
+            dest_cr+=  8*s->uvlinesize;
+        }        
         break;
     case MV_TYPE_DMV:
-        pix_op = s->dsp.put_pixels_tab;
-
         if(s->picture_structure == PICT_FRAME){
-            //put top field from top field
-            mpeg_motion(s, dest_y, dest_cb, dest_cr,
-                        1, 0, 0,
-                        ref_picture, pix_op,
-                        s->mv[dir][0][0], s->mv[dir][0][1], 8);
-            //put bottom field from bottom field
-            mpeg_motion(s, dest_y, dest_cb, dest_cr,
-                        1, 1, 1,
-                        ref_picture, pix_op,
-                        s->mv[dir][0][0], s->mv[dir][0][1], 8);
-
-            pix_op = s->dsp.avg_pixels_tab; 
-        
-            //avg top field from bottom field
-            mpeg_motion(s, dest_y, dest_cb, dest_cr,
-                        1, 0, 1,
-                        ref_picture, pix_op,
-                        s->mv[dir][2][0], s->mv[dir][2][1], 8);
-            //avg bottom field from top field
-            mpeg_motion(s, dest_y, dest_cb, dest_cr,
-                        1, 1, 0,
-                        ref_picture, pix_op,
-                        s->mv[dir][3][0], s->mv[dir][3][1], 8);
-
-        }else{
-            //put field from the same parity
-            //same parity is never in the same frame
-            mpeg_motion(s, dest_y, dest_cb, dest_cr, 
-                        0, 0, s->picture_structure == PICT_BOTTOM_FIELD,
-                        ref_picture, pix_op,
-                        s->mv[dir][0][0],s->mv[dir][0][1],16);
-
-            // after put we make avg of the same block
-            pix_op=s->dsp.avg_pixels_tab; 
-
-            //opposite parity is always in the same frame if this is second field
-            if(!s->first_field){
-                ref_picture = s->current_picture_ptr->data;    
+            for(i=0; i<2; i++){
+                int j;
+                for(j=0; j<2; j++){
+                    mpeg_motion(s, dest_y, dest_cb, dest_cr,
+                                1, j, j^i,
+                                ref_picture, pix_op,
+                                s->mv[dir][2*i + j][0], s->mv[dir][2*i + j][1], 8);
+                }
+                pix_op = s->dsp.avg_pixels_tab; 
             }
+        }else{
+            for(i=0; i<2; i++){
+                mpeg_motion(s, dest_y, dest_cb, dest_cr, 
+                            0, 0, s->picture_structure != i+1,
+                            ref_picture, pix_op,
+                            s->mv[dir][2*i][0],s->mv[dir][2*i][1],16);
 
-            //avg field from the opposite parity
-            mpeg_motion(s, dest_y, dest_cb, dest_cr,
-                        0, 0, s->picture_structure != PICT_BOTTOM_FIELD,
-                        ref_picture, pix_op,
-                        s->mv[dir][2][0],s->mv[dir][2][1],16);
+                // after put we make avg of the same block
+                pix_op=s->dsp.avg_pixels_tab; 
+
+                //opposite parity is always in the same frame if this is second field
+                if(!s->first_field){
+                    ref_picture = s->current_picture_ptr->data;    
+                }
+            }
         }
     break;
     default: assert(0);
