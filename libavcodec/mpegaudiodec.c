@@ -465,7 +465,9 @@ static int decode_init(AVCodecContext * avctx)
         for(i=0;i<36;i++) {
             for(j=0; j<4; j++){
                 double d;
-                if(j==2) continue;
+                
+                if(j==2 && i%3 != 1)
+                    continue;
                 
                 d= sin(M_PI * (i + 0.5) / 36.0);
                 if(j==1){
@@ -478,18 +480,16 @@ static int decode_init(AVCodecContext * avctx)
                     else if(i< 18) d= 1;
                 }
                 //merge last stage of imdct into the window coefficients
-                if     (i/9 == 0) d*= 0.5 / cos(M_PI*(2*(     i) +19)/72);
-                else if(i/9 == 1) d*= 0.5 / cos(M_PI*(2*(17 - i) +19)/72);
-                else if(i/9 == 2) d*= 0.5 / cos(M_PI*(2*(     i) +19)/72);
-                else              d*=-0.5 / cos(M_PI*(2*(17 - i) +19)/72);
-                mdct_win[j][i] = FIXHR((d / (1<<5)));
+                d*= 0.5 / cos(M_PI*(2*i + 19)/72);
+
+                if(j==2)
+                    mdct_win[j][i/3] = FIXHR((d / (1<<5)));
+                else
+                    mdct_win[j][i  ] = FIXHR((d / (1<<5)));
 //                av_log(NULL, AV_LOG_DEBUG, "%2d %d %f\n", i,j,d / (1<<5));
             }
         }
 
-        for(i=0;i<12;i++)
-            mdct_win[2][i] = FIXR(sin(M_PI * (i + 0.5) / 12.0));
-        
         /* NOTE: we do frequency inversion adter the MDCT by changing
            the sign of the right window coefs */
         for(j=0;j<4;j++) {
@@ -931,58 +931,62 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
     *synth_buf_offset = offset;
 }
 
-/* cos(pi*i/24) */
-#define C1  FIXR(0.99144486137381041114)
-#define C3  FIXR(0.92387953251128675612)
-#define C5  FIXR(0.79335334029123516458)
-#define C7  FIXR(0.60876142900872063941)
-#define C9  FIXR(0.38268343236508977173)
-#define C11 FIXR(0.13052619222005159154)
+#define C3 FIXHR(0.86602540378443864676/2)
+
+/* 0.5 / cos(pi*(2*i+1)/36) */
+static const int icos36[9] = {
+    FIXR(0.50190991877167369479),
+    FIXR(0.51763809020504152469), //0
+    FIXR(0.55168895948124587824),
+    FIXR(0.61038729438072803416),
+    FIXR(0.70710678118654752439), //1
+    FIXR(0.87172339781054900991),
+    FIXR(1.18310079157624925896),
+    FIXR(1.93185165257813657349), //2
+    FIXR(5.73685662283492756461),
+};
 
 /* 12 points IMDCT. We compute it "by hand" by factorizing obvious
    cases. */
 static void imdct12(int *out, int *in)
 {
-    int tmp;
-    int64_t in1_3, in1_9, in4_3, in4_9;
+    int in0, in1, in2, in3, in4, in5, t1, t2;
+    in0= in[0*3]<<5;
+    in1= (in[1*3] + in[0*3])<<5;
+    in2= (in[2*3] + in[1*3])<<5;
+    in3= (in[3*3] + in[2*3])<<5;
+    in4= (in[4*3] + in[3*3])<<5;
+    in5= (in[5*3] + in[4*3])<<5;
+    in5 += in3;
+    in3 += in1;
 
-    in1_3 = MUL64(in[1], C3);
-    in1_9 = MUL64(in[1], C9);
-    in4_3 = MUL64(in[4], C3);
-    in4_9 = MUL64(in[4], C9);
+    in2= MULH(2*in2, C3);
+    in3= MULH(2*in3, C3);
     
-    tmp = FRAC_RND(MUL64(in[0], C7) - in1_3 - MUL64(in[2], C11) + 
-                   MUL64(in[3], C1) - in4_9 - MUL64(in[5], C5));
-    out[0] = tmp;
-    out[5] = -tmp;
-    tmp = FRAC_RND(MUL64(in[0] - in[3], C9) - in1_3 + 
-                   MUL64(in[2] + in[5], C3) - in4_9);
-    out[1] = tmp;
-    out[4] = -tmp;
-    tmp = FRAC_RND(MUL64(in[0], C11) - in1_9 + MUL64(in[2], C7) -
-                   MUL64(in[3], C5) + in4_3 - MUL64(in[5], C1));
-    out[2] = tmp;
-    out[3] = -tmp;
-    tmp = FRAC_RND(MUL64(-in[0], C5) + in1_9 + MUL64(in[2], C1) + 
-                   MUL64(in[3], C11) - in4_3 - MUL64(in[5], C7));
-    out[6] = tmp;
-    out[11] = tmp;
-    tmp = FRAC_RND(MUL64(-in[0] + in[3], C3) - in1_9 + 
-                   MUL64(in[2] + in[5], C9) + in4_3);
-    out[7] = tmp;
-    out[10] = tmp;
-    tmp = FRAC_RND(-MUL64(in[0], C1) - in1_3 - MUL64(in[2], C5) -
-                   MUL64(in[3], C7) - in4_9 - MUL64(in[5], C11));
-    out[8] = tmp;
-    out[9] = tmp;
-}
+    t1 = in0 - in4;
+    t2 = MULL(in1 - in5, icos36[4]);
 
-#undef C1
-#undef C3
-#undef C5
-#undef C7
-#undef C9
-#undef C11
+    out[ 7]= 
+    out[10]= t1 + t2;
+    out[ 1]=
+    out[ 4]= t1 - t2;
+
+    in0 += in4>>1;
+    in4 = in0 + in2;
+    in1 += in5>>1;
+    in5 = MULL(in1 + in3, icos36[1]);    
+    out[ 8]= 
+    out[ 9]= in4 + in5;
+    out[ 2]=
+    out[ 3]= in4 - in5;
+    
+    in0 -= in2;
+    in1 = MULL(in1 - in3, icos36[7]);
+    out[ 0]=
+    out[ 5]= in0 - in1;
+    out[ 6]=
+    out[11]= in0 + in1;    
+}
 
 /* cos(pi*i/18) */
 #define C1 FIXHR(0.98480775301220805936/2)
@@ -995,18 +999,6 @@ static void imdct12(int *out, int *in)
 #define C8 FIXHR(0.17364817766693034885/2)
 
 
-/* 0.5 / cos(pi*(2*i+1)/36) */
-static const int icos36[9] = {
-    FIXR(0.50190991877167369479),
-    FIXR(0.51763809020504152469),
-    FIXR(0.55168895948124587824),
-    FIXR(0.61038729438072803416),
-    FIXR(0.70710678118654752439),
-    FIXR(0.87172339781054900991),
-    FIXR(1.18310079157624925896),
-    FIXR(1.93185165257813657349),
-    FIXR(5.73685662283492756461),
-};
 /* using Lee like decomposition followed by hand coded 9 points DCT */
 static void imdct36(int *out, int *buf, int *in, int *win)
 {
@@ -1092,14 +1084,14 @@ static void imdct36(int *out, int *buf, int *in, int *win)
         
         t0 = (s0 + s1) << 5;
         t1 = (s0 - s1) << 5;
-        out[(9 + j)*SBLIMIT] = -MULH(t1, win[9 + j]) + buf[9 + j];
+        out[(9 + j)*SBLIMIT] =  MULH(t1, win[9 + j]) + buf[9 + j];
         out[(8 - j)*SBLIMIT] =  MULH(t1, win[8 - j]) + buf[8 - j];
         buf[9 + j] = MULH(t0, win[18 + 9 + j]);
         buf[8 - j] = MULH(t0, win[18 + 8 - j]);
         
         t0 = (s2 + s3) << 5;
         t1 = (s2 - s3) << 5;
-        out[(9 + 8 - j)*SBLIMIT] = -MULH(t1, win[9 + 8 - j]) + buf[9 + 8 - j];
+        out[(9 + 8 - j)*SBLIMIT] =  MULH(t1, win[9 + 8 - j]) + buf[9 + 8 - j];
         out[(        j)*SBLIMIT] =  MULH(t1, win[        j]) + buf[        j];
         buf[9 + 8 - j] = MULH(t0, win[18 + 9 + 8 - j]);
         buf[      + j] = MULH(t0, win[18         + j]);
@@ -1110,7 +1102,7 @@ static void imdct36(int *out, int *buf, int *in, int *win)
     s1 = MULL(tmp[17], icos36[4]);
     t0 = (s0 + s1) << 5;
     t1 = (s0 - s1) << 5;
-    out[(9 + 4)*SBLIMIT] = -MULH(t1, win[9 + 4]) + buf[9 + 4];
+    out[(9 + 4)*SBLIMIT] =  MULH(t1, win[9 + 4]) + buf[9 + 4];
     out[(8 - 4)*SBLIMIT] =  MULH(t1, win[8 - 4]) + buf[8 - 4];
     buf[9 + 4] = MULH(t0, win[18 + 9 + 4]);
     buf[8 - 4] = MULH(t0, win[18 + 8 - 4]);
@@ -1991,11 +1983,9 @@ static void compute_imdct(MPADecodeContext *s,
                           int32_t *sb_samples,
                           int32_t *mdct_buf)
 {
-    int32_t *ptr, *win, *win1, *buf, *buf2, *out_ptr, *ptr1;
-    int32_t in[6];
-    int32_t out[36];
+    int32_t *ptr, *win, *win1, *buf, *out_ptr, *ptr1;
     int32_t out2[12];
-    int i, j, k, mdct_long_end, v, sblimit;
+    int i, j, mdct_long_end, v, sblimit;
 
     /* find last non zero block */
     ptr = g->sb_hybrid + 576;
@@ -2036,35 +2026,31 @@ static void compute_imdct(MPADecodeContext *s,
         buf += 18;
     }
     for(j=mdct_long_end;j<sblimit;j++) {
-        for(i=0;i<6;i++) {
-            out[i] = 0;
-            out[6 + i] = 0;
-            out[30+i] = 0;
-        }
         /* select frequency inversion */
         win = mdct_win[2] + ((4 * 36) & -(j & 1));
-        buf2 = out + 6;
-        for(k=0;k<3;k++) {
-            /* reorder input for short mdct */
-            ptr1 = ptr + k;
-            for(i=0;i<6;i++) {
-                in[i] = *ptr1;
-                ptr1 += 3;
-            }
-            imdct12(out2, in);
-            /* apply 12 point window and do small overlap */
-            for(i=0;i<6;i++) {
-                buf2[i] = MULL(out2[i], win[i]) + buf2[i];
-                buf2[i + 6] = MULL(out2[i + 6], win[i + 6]);
-            }
-            buf2 += 6;
-        }
-        /* overlap */
         out_ptr = sb_samples + j;
-        for(i=0;i<18;i++) {
-            *out_ptr = out[i] + buf[i];
-            buf[i] = out[i + 18];
+        
+        for(i=0; i<6; i++){
+            *out_ptr = buf[i];
             out_ptr += SBLIMIT;
+        }
+        imdct12(out2, ptr + 0);
+        for(i=0;i<6;i++) {
+            *out_ptr = MULH(out2[i], win[i]) + buf[i + 6*1];
+            buf[i + 6*2] = MULH(out2[i + 6], win[i + 6]);
+            out_ptr += SBLIMIT;
+        }
+        imdct12(out2, ptr + 1);
+        for(i=0;i<6;i++) {
+            *out_ptr = MULH(out2[i], win[i]) + buf[i + 6*2];
+            buf[i + 6*0] = MULH(out2[i + 6], win[i + 6]);
+            out_ptr += SBLIMIT;
+        }
+        imdct12(out2, ptr + 2);
+        for(i=0;i<6;i++) {
+            buf[i + 6*0] = MULH(out2[i], win[i]) + buf[i + 6*0];
+            buf[i + 6*1] = MULH(out2[i + 6], win[i + 6]);
+            buf[i + 6*2] = 0;
         }
         ptr += 18;
         buf += 18;
