@@ -38,6 +38,8 @@ static int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, 
 
 int (*dct_quantize)(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow)= dct_quantize_c;
 void (*draw_edges)(UINT8 *buf, int wrap, int width, int height, int w)= draw_edges_c;
+static void emulated_edge_mc(MpegEncContext *s, UINT8 *src, int linesize, int block_w, int block_h, 
+                                    int src_x, int src_y, int w, int h);
 
 #define EDGE_WIDTH 16
 
@@ -878,6 +880,7 @@ static inline void gmc1_motion(MpegEncContext *s,
     UINT8 *ptr;
     int offset, src_x, src_y, linesize, uvlinesize;
     int motion_x, motion_y;
+    int emu=0;
 
     if(s->real_sprite_warping_points>1) printf("more than 1 warp point isnt supported\n");
     motion_x= s->sprite_offset[0][0];
@@ -898,6 +901,14 @@ static inline void gmc1_motion(MpegEncContext *s,
     ptr = ref_picture[0] + (src_y * linesize) + src_x + src_offset;
 
     dest_y+=dest_offset;
+    if(s->flags&CODEC_FLAG_EMU_EDGE){
+        if(src_x<0 || src_y<0 || src_x + (motion_x&15) + 16 > s->width
+                              || src_y + (motion_y&15) + h  > s->height){
+            emulated_edge_mc(s, ptr, linesize, 17, h+1, src_x, src_y, s->width, s->height);
+            ptr= s->edge_emu_buffer;
+            emu=1;
+        }
+    }
     gmc1(dest_y  , ptr  , linesize, h, motion_x&15, motion_y&15, s->no_rounding);
     gmc1(dest_y+8, ptr+8, linesize, h, motion_x&15, motion_y&15, s->no_rounding);
 
@@ -916,18 +927,38 @@ static inline void gmc1_motion(MpegEncContext *s,
 
     offset = (src_y * uvlinesize) + src_x + (src_offset>>1);
     ptr = ref_picture[1] + offset;
+    if(emu){
+        emulated_edge_mc(s, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, s->height>>1);
+        ptr= s->edge_emu_buffer;
+    }
     gmc1(dest_cb + (dest_offset>>1), ptr, uvlinesize, h>>1, motion_x&15, motion_y&15, s->no_rounding);
+    
     ptr = ref_picture[2] + offset;
+    if(emu){
+        emulated_edge_mc(s, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, s->height>>1);
+        ptr= s->edge_emu_buffer;
+    }
     gmc1(dest_cr + (dest_offset>>1), ptr, uvlinesize, h>>1, motion_x&15, motion_y&15, s->no_rounding);
     
     return;
 }
 
-static void emulated_edge_mc(UINT8 *buf, UINT8 *src, int linesize, int block_w, int block_h, 
+static void emulated_edge_mc(MpegEncContext *s, UINT8 *src, int linesize, int block_w, int block_h, 
                                     int src_x, int src_y, int w, int h){
     int x, y;
     int start_y, start_x, end_y, end_x;
-    
+    UINT8 *buf= s->edge_emu_buffer;
+#if 0
+    if(s->codec_id!=CODEC_ID_MPEG4 || s->divx_version>=500){
+        if(block_w < 10){
+            w= (w+7)&(~7);
+            h= (h+7)&(~7);
+        }else{
+            w= (w+15)&(~15);
+            h= (h+15)&(~15);
+        }
+    }
+#endif
     if(src_y>= h){
         src+= (h-1-src_y)*linesize;
         src_y=h-1;
@@ -947,7 +978,7 @@ static void emulated_edge_mc(UINT8 *buf, UINT8 *src, int linesize, int block_w, 
     start_x= MAX(0, -src_x);
     end_y= MIN(block_h, h-src_y);
     end_x= MIN(block_w, w-src_x);
-    
+
     // copy existing part
     for(y=start_y; y<end_y; y++){
         for(x=start_x; x<end_x; x++){
@@ -1020,7 +1051,7 @@ if(s->quarter_sample)
     if(s->flags&CODEC_FLAG_EMU_EDGE){
         if(src_x<0 || src_y<0 || src_x + (motion_x&1) + 16 > s->width
                               || src_y + (motion_y&1) + h  > height){
-            emulated_edge_mc(s->edge_emu_buffer, ptr, linesize, 17, h+1, src_x, src_y, s->width, height);
+            emulated_edge_mc(s, ptr, linesize, 17, h+1, src_x, src_y, s->width, height);
             ptr= s->edge_emu_buffer;
             emu=1;
         }
@@ -1057,14 +1088,14 @@ if(s->quarter_sample)
     offset = (src_y * uvlinesize) + src_x + (src_offset >> 1);
     ptr = ref_picture[1] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
     pix_op[dxy](dest_cb + (dest_offset >> 1), ptr, uvlinesize, h >> 1);
 
     ptr = ref_picture[2] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s, ptr, uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
     pix_op[dxy](dest_cr + (dest_offset >> 1), ptr, uvlinesize, h >> 1);
@@ -1101,7 +1132,7 @@ static inline void qpel_motion(MpegEncContext *s,
     if(s->flags&CODEC_FLAG_EMU_EDGE){
         if(src_x<0 || src_y<0 || src_x + (motion_x&3) + 16 > s->width
                               || src_y + (motion_y&3) + h  > height){
-            emulated_edge_mc(s->edge_emu_buffer, ptr, linesize, 17, h+1, src_x, src_y, s->width, height);
+            emulated_edge_mc(s, ptr, linesize, 17, h+1, src_x, src_y, s->width, height);
             ptr= s->edge_emu_buffer;
             emu=1;
         }
@@ -1136,14 +1167,14 @@ static inline void qpel_motion(MpegEncContext *s,
     offset = (src_y * s->uvlinesize) + src_x + (src_offset >> 1);
     ptr = ref_picture[1] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr,  s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s, ptr,  s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
     pix_op[dxy](dest_cb + (dest_offset >> 1), ptr,  s->uvlinesize, h >> 1);
     
     ptr = ref_picture[2] + offset;
     if(emu){
-        emulated_edge_mc(s->edge_emu_buffer, ptr,  s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
+        emulated_edge_mc(s, ptr,  s->uvlinesize, 9, (h>>1)+1, src_x, src_y, s->width>>1, height>>1);
         ptr= s->edge_emu_buffer;
     }
     pix_op[dxy](dest_cr + (dest_offset >> 1), ptr,  s->uvlinesize, h >> 1);
@@ -1211,7 +1242,7 @@ static inline void MPV_motion(MpegEncContext *s,
             if(s->flags&CODEC_FLAG_EMU_EDGE){
                 if(src_x<0 || src_y<0 || src_x + (motion_x&1) + 8 > s->width
                                       || src_y + (motion_y&1) + 8 > s->height){
-                    emulated_edge_mc(s->edge_emu_buffer, ptr, s->linesize, 9, 9, src_x, src_y, s->width, s->height);
+                    emulated_edge_mc(s, ptr, s->linesize, 9, 9, src_x, src_y, s->width, s->height);
                     ptr= s->edge_emu_buffer;
                 }
             }
@@ -1258,7 +1289,7 @@ static inline void MPV_motion(MpegEncContext *s,
         if(s->flags&CODEC_FLAG_EMU_EDGE){
                 if(src_x<0 || src_y<0 || src_x + (dxy &1) + 8 > s->width >>1
                                       || src_y + (dxy>>1) + 8 > s->height>>1){
-                    emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
+                    emulated_edge_mc(s, ptr, s->uvlinesize, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
                     ptr= s->edge_emu_buffer;
                     emu=1;
                 }
@@ -1267,7 +1298,7 @@ static inline void MPV_motion(MpegEncContext *s,
 
         ptr = ref_picture[2] + offset;
         if(emu){
-            emulated_edge_mc(s->edge_emu_buffer, ptr, s->uvlinesize, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
+            emulated_edge_mc(s, ptr, s->uvlinesize, 9, 9, src_x, src_y, s->width>>1, s->height>>1);
             ptr= s->edge_emu_buffer;
         }
         pix_op[dxy](dest_cr, ptr, s->uvlinesize, 8);
