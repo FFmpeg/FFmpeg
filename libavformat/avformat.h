@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#define LIBAVFORMAT_BUILD       4619
+#define LIBAVFORMAT_BUILD       4620
 
 #define LIBAVFORMAT_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVFORMAT_VERSION     FFMPEG_VERSION
@@ -310,6 +310,8 @@ typedef struct AVFormatContext {
     
     int mux_rate;
     int packet_size;
+    int preload;
+    int max_delay;
 } AVFormatContext;
 
 typedef struct AVPacketList {

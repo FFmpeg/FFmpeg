@@ -205,6 +205,8 @@ static int audio_codec_tag = 0;
 
 static int mux_rate= 0;
 static int mux_packet_size= 0;
+static float mux_preload= 0.5;
+static float mux_max_delay= 0.7;
 
 static int64_t recording_time = 0;
 static int64_t start_time = 0;
@@ -3328,6 +3330,8 @@ static void opt_output_file(const char *filename)
 
     oc->packet_size= mux_packet_size;
     oc->mux_rate= mux_rate;
+    oc->preload= (int)(mux_preload*AV_TIME_BASE);
+    oc->max_delay= (int)(mux_max_delay*AV_TIME_BASE);
 
     /* reset some options */
     file_oformat = NULL;
@@ -3692,6 +3696,12 @@ static void opt_target(const char *arg)
         mux_packet_size= 2324;
         mux_rate= 2352 * 75 * 8;
 
+        /* We have to offset the PTS, so that it is consistent with the SCR.
+           SCR starts at 36000, but the first two packs contain only padding
+           and the first pack from the other stream, respectively, may also have
+           been written before.
+           So the real data starts at SCR 36000+3*1200. */
+        mux_preload= (36000+3*1200) / 90000.0; //0.44
     } else if(!strcmp(arg, "svcd")) {
 
         opt_video_codec("mpeg2video");
@@ -3916,6 +3926,8 @@ const OptionDef options[] = {
     /* muxer options */   
     { "muxrate", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&mux_rate}, "set mux rate", "rate" },
     { "packetsize", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&mux_packet_size}, "set packet size", "size" },
+    { "muxdelay", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_max_delay}, "set the maximum demux-decode delay", "seconds" },
+    { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_preload}, "set the initial demux-decode delay", "seconds" },
     { NULL, },
 };
 

@@ -19,7 +19,6 @@
 #include "avformat.h"
 
 #define MAX_PAYLOAD_SIZE 4096
-#define PRELOAD 45000 //0.5sec
 //#define DEBUG_SEEK
 
 #undef NDEBUG
@@ -904,6 +903,7 @@ static int output_packet(AVFormatContext *ctx, int flush){
     int ignore_constraints=0;
     int64_t scr= s->last_scr;
     PacketDesc *timestamp_packet;
+    const int64_t max_delay= av_rescale(ctx->max_delay, 90000, AV_TIME_BASE);
 
 retry:
     for(i=0; i<ctx->nb_streams; i++){
@@ -912,6 +912,7 @@ retry:
         const int avail_data=  fifo_size(&stream->fifo, stream->fifo.rptr);
         const int space= stream->max_buffer_size - stream->buffer_index;
         int rel_space= 1024*space / stream->max_buffer_size;
+        PacketDesc *next_pkt= stream->premux_packet;
 
         if(s->packet_size > avail_data && !flush)
             return 0;
@@ -920,6 +921,9 @@ retry:
         assert(avail_data>0);
 
         if(space < s->packet_size && !ignore_constraints)
+            continue;
+            
+        if(next_pkt && next_pkt->dts - scr > max_delay)
             continue;
             
         if(rel_space > best_score){
@@ -1019,22 +1023,14 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     StreamInfo *stream = st->priv_data;
     int64_t pts, dts;
     PacketDesc *pkt_desc;
+    const int preload= av_rescale(ctx->preload, 90000, AV_TIME_BASE);
     
     pts= pkt->pts;
     dts= pkt->dts;
 
-    if(s->is_vcd) {
-        /* We have to offset the PTS, so that it is consistent with the SCR.
-           SCR starts at 36000, but the first two packs contain only padding
-           and the first pack from the other stream, respectively, may also have
-           been written before.
-           So the real data starts at SCR 36000+3*1200. */
-        if(pts != AV_NOPTS_VALUE) pts += 36000 + 3600;
-        if(dts != AV_NOPTS_VALUE) dts += 36000 + 3600;
-    }else{
-        if(pts != AV_NOPTS_VALUE) pts += PRELOAD;
-        if(dts != AV_NOPTS_VALUE) dts += PRELOAD;
-    }
+    if(pts != AV_NOPTS_VALUE) pts += preload;
+    if(dts != AV_NOPTS_VALUE) dts += preload;
+
 //av_log(ctx, AV_LOG_DEBUG, "dts:%f pts:%f flags:%d stream:%d nopts:%d\n", dts/90000.0, pts/90000.0, pkt->flags, pkt->stream_index, pts != AV_NOPTS_VALUE);
     *stream->next_packet=
     pkt_desc= av_mallocz(sizeof(PacketDesc));
