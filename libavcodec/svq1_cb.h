@@ -769,7 +769,7 @@ static const int8_t* const svq1_inter_codebooks[4] = {
     svq1_inter_codebook_8x4, svq1_inter_codebook_8x8
 };
 
-static const int8_t const svq1_inter_codebook_sum[4][16*6] = {
+static const int8_t svq1_inter_codebook_sum[4][16*6] = {
  {
  -1,  1, -2,  0,  1, -1, -1, -1, -2, -1,  1, -1, -1,  0, -1, -1,
   0, -1, -1, -1, -1,  0, -1,  0,  0,  0, -3,  1, -1,  0,  1, -1,
@@ -1543,7 +1543,7 @@ static const int8_t* const svq1_intra_codebooks[4] = {
     svq1_intra_codebook_8x4, svq1_intra_codebook_8x8
 };
 
-static const int8_t const svq1_intra_codebook_sum[4][16*6] = {
+static const int8_t svq1_intra_codebook_sum[4][16*6] = {
  {
   0,  0,  0, -1, -1, -1, -1, -2,  0, -1, -1,  0, -1,  0,  1,  0,
   1,  0, -1,  1,  0,  0, -1,  1, -1,  0,  0,  0, -1,  1,  0,  0,

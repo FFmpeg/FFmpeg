@@ -26,8 +26,6 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include <math.h>
-
 #include "dsputil.h"
 #include "faandct.h"
 

@@ -426,7 +426,7 @@ static int av_mpeg4_decode_header(AVCodecParserContext *s1,
     return ret;
 }
 
-int mpeg4video_parse_init(AVCodecParserContext *s)
+static int mpeg4video_parse_init(AVCodecParserContext *s)
 {
     ParseContext1 *pc = s->priv_data;
 

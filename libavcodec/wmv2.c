@@ -59,6 +59,8 @@ static void wmv2_common_init(Wmv2Context * w){
     ff_init_scantable(s->dsp.idct_permutation, &w->abt_scantable[1], wmv2_scantableB);
 }
 
+#ifdef CONFIG_ENCODERS
+
 static int encode_ext_header(Wmv2Context *w){
     MpegEncContext * const s= &w->s;
     PutBitContext pb;
@@ -84,7 +86,6 @@ static int encode_ext_header(Wmv2Context *w){
     return 0;
 }
 
-#ifdef CONFIG_ENCODERS
 static int wmv2_encode_init(AVCodecContext *avctx){
     Wmv2Context * const w= avctx->priv_data;
     

@@ -158,13 +158,6 @@ static char *replaceTable[]=
 	NULL //End Marker
 };
 
-#ifdef ARCH_X86
-static inline void unusedVariableWarningFixer()
-{
-	if(w05 + w20 + b00 + b01 + b02 + b08 + b80 == 0) b00=0;
-}
-#endif
-
 
 #ifdef ARCH_X86
 static inline void prefetchnta(void *p)

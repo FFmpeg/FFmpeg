@@ -359,7 +359,7 @@ static void DEF(avg, pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line
     } while (--h);
 }
 
-static void DEF(avg, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+static __attribute__((unused)) void DEF(avg, pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();
@@ -406,7 +406,7 @@ static void DEF(avg, pixels16_x2)(uint8_t *block, const uint8_t *pixels, int lin
     } while (--h);
 }
 
-static void DEF(avg, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+static __attribute__((unused)) void DEF(avg, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     MOVQ_BFE(mm6);
     JUMPALIGN();

@@ -564,6 +564,11 @@ static inline long int lrintf(float x)
     return (int)(rint(x));
 #endif
 }
+#else
+#ifndef _ISOC9X_SOURCE
+#define _ISOC9X_SOURCE
+#endif
+#include <math.h>
 #endif
 
 #endif

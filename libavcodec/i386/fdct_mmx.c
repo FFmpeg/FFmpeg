@@ -14,6 +14,7 @@
  * Skal's fdct at http://skal.planet-d.net/coding/dct.html
  */
 #include "../common.h"
+#include "../dsputil.h"
 #include "mmx.h"
 
 #define ATTR_ALIGN(align) __attribute__ ((__aligned__ (align)))

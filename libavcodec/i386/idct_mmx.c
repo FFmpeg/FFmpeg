@@ -23,6 +23,7 @@
  */
 
 #include "../common.h"
+#include "../dsputil.h"
 
 #include "mmx.h"
 
@@ -588,6 +589,8 @@ void idct (int16_t * block)					\
     idct_col (block, 4);						\
 }
 
+void ff_mmx_idct(DCTELEM *block);
+void ff_mmxext_idct(DCTELEM *block);
 
 declare_idct (ff_mmxext_idct, mmxext_table,
 	      mmxext_row_head, mmxext_row, mmxext_row_tail, mmxext_row_mid)

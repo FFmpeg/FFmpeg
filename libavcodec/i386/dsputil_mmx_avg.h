@@ -53,7 +53,7 @@ static void DEF(put_pixels8_x2)(uint8_t *block, const uint8_t *pixels, int line_
 	:"%eax", "memory");
 }
 
-static void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+static __attribute__((unused)) void DEF(put_pixels8_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     __asm __volatile(
 	"1:				\n\t"
@@ -125,7 +125,7 @@ static void DEF(put_pixels16_x2)(uint8_t *block, const uint8_t *pixels, int line
 	:"%eax", "memory");
 }
 
-static void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
+static __attribute__((unused)) void DEF(put_pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, int dstStride, int src1Stride, int h)
 {
     __asm __volatile(
 	"1:				\n\t"

@@ -109,7 +109,7 @@ asm volatile(
 static void dct_unquantize_h263_inter_mmx(MpegEncContext *s,
                                   DCTELEM *block, int n, int qscale)
 {
-    int level, qmul, qadd, nCoeffs;
+    int qmul, qadd, nCoeffs;
 
     qmul = qscale << 1;
     qadd = (qscale - 1) | 1;

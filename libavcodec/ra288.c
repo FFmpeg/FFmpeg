@@ -206,7 +206,7 @@ static void prodsum(float *tgt, float *src, int len, int n)
   }
 }
 
-void * decode_block(AVCodecContext * avctx, unsigned char *in, signed short int *out,unsigned len)
+static void * decode_block(AVCodecContext * avctx, unsigned char *in, signed short int *out,unsigned len)
 {
   int x,y;
   Real288_internal *glob=avctx->priv_data;
@@ -255,7 +255,7 @@ static int ra288_decode_frame(AVCodecContext * avctx,
 	    data=decode_block(avctx,&buf[j*cfs+cfs*i*h/2],(signed short *)data,cfs);
 	    bret += cfs;
     }
-    *data_size = data - datao;
+    *data_size = (char *)data - (char *)datao;
     return bret;
   }
   else

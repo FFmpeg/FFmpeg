@@ -25,12 +25,11 @@
  * The simplest mpeg encoder (well, it was the simplest!).
  */ 
  
-#include <limits.h>
-#include <math.h> //for PI
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "faandct.h"
+#include <limits.h>
 
 #ifdef USE_FASTMEMCPY
 #include "fastmemcpy.h"
@@ -567,7 +566,7 @@ void MPV_decode_defaults(MpegEncContext *s){
  */
 
 #ifdef CONFIG_ENCODERS
-void MPV_encode_defaults(MpegEncContext *s){
+static void MPV_encode_defaults(MpegEncContext *s){
     static int done=0;
     
     MPV_common_defaults(s);
@@ -1708,7 +1707,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
                 if((s->avctx->debug_mv) && pict->motion_val){
                   int type;
                   for(type=0; type<3; type++){
-                    int direction;
+                    int direction = 0;
                     switch (type) {
                       case 0: if ((!(s->avctx->debug_mv&FF_DEBUG_VIS_MV_P_FOR)) || (pict->pict_type!=FF_P_TYPE))
                                 continue;
@@ -4589,7 +4588,7 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
 
 static void encode_picture(MpegEncContext *s, int picture_number)
 {
-    int i, j;
+    int i;
     int bits;
 
     s->picture_number = picture_number;
@@ -4671,6 +4670,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             ff_fix_long_p_mvs(s);
             ff_fix_long_mvs(s, NULL, 0, s->p_mv_table, s->f_code, CANDIDATE_MB_TYPE_INTER, 0);
             if(s->flags & CODEC_FLAG_INTERLACED_ME){
+                int j;
                 for(i=0; i<2; i++){
                     for(j=0; j<2; j++)
                         ff_fix_long_mvs(s, s->p_field_select_table[i], j, 
@@ -4695,7 +4695,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             ff_fix_long_mvs(s, NULL, 0, s->b_bidir_forw_mv_table, s->f_code, CANDIDATE_MB_TYPE_BIDIR, 1);
             ff_fix_long_mvs(s, NULL, 0, s->b_bidir_back_mv_table, s->b_code, CANDIDATE_MB_TYPE_BIDIR, 1);
             if(s->flags & CODEC_FLAG_INTERLACED_ME){
-                int dir;
+                int dir, j;
                 for(dir=0; dir<2; dir++){
                     for(i=0; i<2; i++){
                         for(j=0; j<2; j++){
@@ -5260,7 +5260,7 @@ STOP_TIMER("init rem[]")
         int best_score=s->dsp.try_8x8basis(rem, weight, basis[0], 0);
         int best_coeff=0;
         int best_change=0;
-        int run2, best_unquant_change, analyze_gradient;
+        int run2, best_unquant_change=0, analyze_gradient;
 #ifdef REFINE_STATS
 {START_TIMER
 #endif

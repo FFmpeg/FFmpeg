@@ -3,7 +3,7 @@
 
 /* these coefficients dequantize intraframe Y plane coefficients
  * (note: same as JPEG) */
-static int16_t vp31_intra_y_dequant[64] =
+static const int16_t vp31_intra_y_dequant[64] =
 {       16,  11,  10,  16,  24,  40,  51,  61,
         12,  12,  14,  19,  26,  58,  60,  55,
         14,  13,  16,  24,  40,  57,  69,  56,
@@ -16,7 +16,7 @@ static int16_t vp31_intra_y_dequant[64] =
 
 /* these coefficients dequantize intraframe C plane coefficients 
  * (note: same as JPEG) */
-static int16_t vp31_intra_c_dequant[64] =
+static const int16_t vp31_intra_c_dequant[64] =
 {       17,  18,     24,     47,     99,     99,     99,     99,
         18,  21,     26,     66,     99,     99,     99,     99,
         24,  26,     56,     99,     99,     99,     99,     99,
@@ -28,7 +28,7 @@ static int16_t vp31_intra_c_dequant[64] =
 };
 
 /* these coefficients dequantize interframe coefficients (all planes) */
-static int16_t vp31_inter_dequant[64] =
+static const int16_t vp31_inter_dequant[64] =
 {   16,  16,  16,  20,  24,  28,  32,  40,
     16,  16,  20,  24,  28,  32,  40,  48,
     16,  20,  24,  28,  32,  40,  48,  64,
@@ -39,7 +39,7 @@ static int16_t vp31_inter_dequant[64] =
     40,  48,  64,  64,  64,  96,  128, 128
 };
 
-static int16_t vp31_dc_scale_factor[64] =
+static const int16_t vp31_dc_scale_factor[64] =
 { 220, 200, 190, 180, 170, 170, 160, 160,
   150, 150, 140, 140, 130, 130, 120, 120,
   110, 110, 100, 100, 90,  90,  90,  80,
@@ -50,7 +50,7 @@ static int16_t vp31_dc_scale_factor[64] =
   20,  10,  10,  10,  10,  10,  10,  10
 };
 
-static uint32_t vp31_ac_scale_factor[64] =
+static const uint32_t vp31_ac_scale_factor[64] =
 { 500,  450,  400,  370,  340,  310, 285, 265,
   245,  225,  210,  195,  185,  180, 170, 160,
   150,  145,  135,  130,  125,  115, 110, 107,
@@ -74,7 +74,7 @@ static const int dezigzag_index[64] =
 };
 
 /* inverse of dezigzag index */
-static int zigzag_index[64];
+static __attribute__((unused)) int zigzag_index[64];
 
 static const uint16_t dc_bias[16][32][2] = {
   {  /* DC bias table 0 */
