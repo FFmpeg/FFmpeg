@@ -1896,7 +1896,6 @@ static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, uint8_t *src
 {
 	asm(
 		"leal (%0, %1), %%eax				\n\t"
-		"leal (%%eax, %1, 4), %%edx			\n\t"
 //	0	1	2	3	4	5	6	7	8	9
 //	%0	eax	eax+%1	eax+2%1	%0+4%1	edx	edx+%1	edx+2%1	%0+8%1	edx+4%1
 		"movq (%0), %%mm0		\n\t" // 12345678
@@ -1933,14 +1932,16 @@ static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, uint8_t *src
 		"psrlq $32, %%mm1		\n\t"
 		"movd %%mm1, 112(%3)		\n\t"
 
+		"leal (%%eax, %1, 4), %%eax	\n\t"
+		
 		"movq (%0, %1, 4), %%mm0	\n\t" // 12345678
-		"movq (%%edx), %%mm1		\n\t" // abcdefgh
+		"movq (%%eax), %%mm1		\n\t" // abcdefgh
 		"movq %%mm0, %%mm2		\n\t" // 12345678
 		"punpcklbw %%mm1, %%mm0		\n\t" // 1a2b3c4d
 		"punpckhbw %%mm1, %%mm2		\n\t" // 5e6f7g8h
 
-		"movq (%%edx, %1), %%mm1	\n\t"
-		"movq (%%edx, %1, 2), %%mm3	\n\t"
+		"movq (%%eax, %1), %%mm1	\n\t"
+		"movq (%%eax, %1, 2), %%mm3	\n\t"
 		"movq %%mm1, %%mm4		\n\t"
 		"punpcklbw %%mm3, %%mm1		\n\t"
 		"punpckhbw %%mm3, %%mm4		\n\t"
@@ -1969,7 +1970,7 @@ static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, uint8_t *src
 
 
 	:: "r" (src), "r" (srcStride), "r" (dst1), "r" (dst2)
-	: "%eax", "%edx"
+	: "%eax"
 	);
 }
 
