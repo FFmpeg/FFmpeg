@@ -30,11 +30,12 @@
 #include "mpeg4data.h"
 
 //rounded divison & shift
-#define RDIV(a,b) ((a) > 0 ? ((a)+((b)>>1))/(b) : ((a)-((b)>>1))/(b))
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + (1<<((b)-1)))>>(b) : ((a) + (1<<((b)-1))-1)>>(b))
-#define ABS(a) (((a)>=0)?(a):(-(a)))
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
+
+#define PRINT_MB_TYPE(a) ;
+//#define PRINT_MB_TYPE(a) printf(a);
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block,
 			      int n);
@@ -1765,6 +1766,8 @@ int h263_decode_mb(MpegEncContext *s,
     INT16 *mot_val;
     static INT8 quant_tab[4] = { -1, -2, 1, 2 };
 
+    if(s->mb_x==0) PRINT_MB_TYPE("\n")
+
     if(s->resync_marker){
         if(   s->resync_x_pos == s->mb_x+1
            || s->resync_x_pos == s->mb_x){
@@ -1797,7 +1800,7 @@ int h263_decode_mb(MpegEncContext *s,
             if(s->pict_type==S_TYPE && s->vol_sprite_usage==GMC_SPRITE){
                 const int a= s->sprite_warping_accuracy;
 //                int l = (1 << (s->f_code - 1)) * 32;
-
+                PRINT_MB_TYPE("G");
                 s->mcsel=1;
                 if(s->divx_version==500 && s->divx_build==413){
                     s->mv[0][0][0] = s->sprite_offset[0][0] / (1<<(a-s->quarter_sample));
@@ -1813,6 +1816,7 @@ int h263_decode_mb(MpegEncContext *s,
 
                 s->mb_skiped = 0;
             }else{
+                PRINT_MB_TYPE("S");
                 s->mcsel=0;
                 s->mv[0][0][0] = 0;
                 s->mv[0][0][1] = 0;
@@ -1848,6 +1852,7 @@ int h263_decode_mb(MpegEncContext *s,
         }
         s->mv_dir = MV_DIR_FORWARD;
         if ((cbpc & 16) == 0) {
+            PRINT_MB_TYPE("P");
             /* 16x16 motion prediction */
             s->mv_type = MV_TYPE_16X16;
             h263_pred_motion(s, 0, &pred_x, &pred_y);
@@ -1895,6 +1900,7 @@ int h263_decode_mb(MpegEncContext *s,
                skip_bits1(&s->gb); /* Bit stuffing to prevent PSC */
                            
         } else {
+            PRINT_MB_TYPE("4");
             s->mv_type = MV_TYPE_8X8;
             for(i=0;i<4;i++) {
                 mot_val = h263_pred_motion(s, i, &pred_x, &pred_y);
@@ -1935,7 +1941,6 @@ int h263_decode_mb(MpegEncContext *s,
             s->last_mv[0][0][1]= 
             s->last_mv[1][0][0]= 
             s->last_mv[1][0][1]= 0;
-//            printf("\n");
         }
 
         /* if we skipped it in the future P Frame than skip it now too */
@@ -1955,7 +1960,7 @@ int h263_decode_mb(MpegEncContext *s,
 //FIXME is this correct?
 /*            s->last_mv[0][0][0]=
             s->last_mv[0][0][1]=0;*/
-//            printf("S");
+            PRINT_MB_TYPE("s")
             return 0;
         }
 
@@ -2004,7 +2009,7 @@ int h263_decode_mb(MpegEncContext *s,
             s->mv[0][0][1] = 
             s->mv[1][0][0] = 
             s->mv[1][0][1] = 1000;*/
-//            printf("D");
+            PRINT_MB_TYPE("D");
             break;
         case 1: 
             s->mv_dir = MV_DIR_FORWARD | MV_DIR_BACKWARD;
@@ -2017,7 +2022,7 @@ int h263_decode_mb(MpegEncContext *s,
             my = h263_decode_motion(s, s->last_mv[1][0][1], s->b_code);
             s->last_mv[1][0][0]= s->mv[1][0][0] = mx;
             s->last_mv[1][0][1]= s->mv[1][0][1] = my;
-//            printf("I");
+            PRINT_MB_TYPE("i");
             break;
         case 2: 
             s->mv_dir = MV_DIR_BACKWARD;
@@ -2025,7 +2030,7 @@ int h263_decode_mb(MpegEncContext *s,
             my = h263_decode_motion(s, s->last_mv[1][0][1], s->b_code);
             s->last_mv[1][0][0]= s->mv[1][0][0] = mx;
             s->last_mv[1][0][1]= s->mv[1][0][1] = my;
-//            printf("B");
+            PRINT_MB_TYPE("B");
             break;
         case 3:
             s->mv_dir = MV_DIR_FORWARD;
@@ -2033,7 +2038,7 @@ int h263_decode_mb(MpegEncContext *s,
             my = h263_decode_motion(s, s->last_mv[0][0][1], s->f_code);
             s->last_mv[0][0][0]= s->mv[0][0][0] = mx;
             s->last_mv[0][0][1]= s->mv[0][0][1] = my;
-//            printf("F");
+            PRINT_MB_TYPE("F");
             break;
         default: return -1;
         }
@@ -2044,6 +2049,7 @@ int h263_decode_mb(MpegEncContext *s,
         dquant = cbpc & 4;
         s->mb_intra = 1;
 intra:
+        PRINT_MB_TYPE("I");
         s->ac_pred = 0;
         if (s->h263_pred || s->h263_aic) {
             s->ac_pred = get_bits1(&s->gb);
@@ -2606,13 +2612,13 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s)
 // the idea behind this virtual_ref mess is to be able to use shifts later per pixel instead of divides
 // so the distance between points is converted from w&h based to w2&h2 based which are of the 2^x form
     virtual_ref[0][0]= 16*(vop_ref[0][0] + w2) 
-        + RDIV(((w - w2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + w2*(r*sprite_ref[1][0] - 16*vop_ref[1][0])),w);
+        + ROUNDED_DIV(((w - w2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + w2*(r*sprite_ref[1][0] - 16*vop_ref[1][0])),w);
     virtual_ref[0][1]= 16*vop_ref[0][1] 
-        + RDIV(((w - w2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + w2*(r*sprite_ref[1][1] - 16*vop_ref[1][1])),w);
+        + ROUNDED_DIV(((w - w2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + w2*(r*sprite_ref[1][1] - 16*vop_ref[1][1])),w);
     virtual_ref[1][0]= 16*vop_ref[0][0] 
-        + RDIV(((h - h2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + h2*(r*sprite_ref[2][0] - 16*vop_ref[2][0])),h);
+        + ROUNDED_DIV(((h - h2)*(r*sprite_ref[0][0] - 16*vop_ref[0][0]) + h2*(r*sprite_ref[2][0] - 16*vop_ref[2][0])),h);
     virtual_ref[1][1]= 16*(vop_ref[0][1] + h2) 
-        + RDIV(((h - h2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + h2*(r*sprite_ref[2][1] - 16*vop_ref[2][1])),h);
+        + ROUNDED_DIV(((h - h2)*(r*sprite_ref[0][1] - 16*vop_ref[0][1]) + h2*(r*sprite_ref[2][1] - 16*vop_ref[2][1])),h);
 
     switch(s->num_sprite_warping_points)
     {

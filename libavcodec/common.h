@@ -159,6 +159,7 @@ inline void dprintf(const char* fmt,...) {}
 
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
+#define ABS(a) ((a) >= 0 ? (a) : (-(a)))
 
 /* bit output */
 
