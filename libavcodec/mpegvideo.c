@@ -1310,9 +1310,9 @@ static void rate_control_init(MpegEncContext *s)
  */
 static int rate_estimate_qscale(MpegEncContext *s)
 {
-    INT64 total_bits = s->total_bits;
+    INT64 diff, total_bits = s->total_bits;
     float q;
-    int qscale, diff, qmin;
+    int qscale, qmin;
 
     if (s->pict_type == I_TYPE) {
         s->wanted_bits += s->I_frame_bits;
