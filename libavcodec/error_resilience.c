@@ -673,11 +673,16 @@ void ff_er_frame_end(MpegEncContext *s){
     
     if(s->current_picture.motion_val[0] == NULL){
         int size = (2 * s->mb_width + 2) * (2 * s->mb_height + 2);
+        Picture *pic= s->current_picture_ptr;
         
         av_log(s->avctx, AV_LOG_ERROR, "Warning MVs not available\n");
-        
-        s->current_picture.motion_val[0]= av_mallocz(size * 2 * sizeof(int16_t)); //FIXME
-        s->current_picture.motion_val[1]= av_mallocz(size * 2 * sizeof(int16_t));
+            
+        for(i=0; i<2; i++){
+            pic->motion_val_base[i]= av_mallocz((size+1) * 2 * sizeof(uint16_t)); //FIXME size
+            pic->motion_val[i]= pic->motion_val_base[i]+1;
+        }
+        pic->motion_subsample_log2= 3;
+        s->current_picture= *s->current_picture_ptr;
     }
     
     if(s->avctx->debug&FF_DEBUG_ER){
