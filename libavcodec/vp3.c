@@ -2765,7 +2765,9 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     {
 	s->last_quality_index = s->quality_index;
 	s->quality_index = get_bits(&gb, 6);
-	if ( s->keyframe)
+	if (s->theora >= 0x030300)
+	    skip_bits1(&gb);
+	if (s->keyframe)
 	{
 	    if (get_bits1(&gb))
 		av_log(s->avctx, AV_LOG_ERROR, "Theora: warning, unsupported keyframe coding type?!\n");
@@ -2924,9 +2926,12 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     av_log(avctx, AV_LOG_INFO, "Theora bitstream version %d.%d.%d\n",
 	major, minor, micro);
 
+    /* FIXME: endianess? */
+    s->theora = (major << 16) | (minor << 8) | micro;
+
     /* 3.3.0 aka alpha3 has the same frame orientation as original vp3 */
     /* but previous versions have the image flipped relative to vp3 */
-    if ((major <= 3) && (minor < 3))
+    if (s->theora < 0x030300)
     {
 	s->flipped_image = 1;
         av_log(avctx, AV_LOG_DEBUG, "Old (<alpha3) Theora bitstream, flipped image\n");
@@ -2946,11 +2951,18 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext gb)
     skip_bits(&gb, 24); /* aspect numerator */
     skip_bits(&gb, 24); /* aspect denumerator */
     
-    skip_bits(&gb, 5); /* keyframe frequency force */
+    if (s->theora < 0x030300)
+	skip_bits(&gb, 5); /* keyframe frequency force */
     skip_bits(&gb, 8); /* colorspace */
     skip_bits(&gb, 24); /* bitrate */
 
     skip_bits(&gb, 6); /* last(?) quality index */
+    
+    if (s->theora >= 0x030300)
+    {
+	skip_bits(&gb, 5); /* keyframe frequency force */
+	skip_bits(&gb, 5); /* spare bits */
+    }
     
 //    align_get_bits(&gb);
     
