@@ -165,7 +165,7 @@ typedef struct DSPContext {
     void (*fdct)(DCTELEM *block/* align 16*/);
     
     /**
-     * block -> idct -> clip to unsigned 8 bit -> dest.<br>
+     * block -> idct -> clip to unsigned 8 bit -> dest.
      * (-1392, 0, 0, ...) -> idct -> (-174, -174, ...) -> put -> (0, 0, ...)
      * @param line_size size in pixels of a horizotal line of dest
      */
@@ -178,7 +178,7 @@ typedef struct DSPContext {
     void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
     
     /**
-     * idct input permutation.<br>
+     * idct input permutation.
      * an example to avoid confusion:
      * - (->decode coeffs -> zigzag reorder -> dequant -> reference idct ->...)
      * - (x -> referece dct -> reference idct -> x)
@@ -203,7 +203,7 @@ void dsputil_init(DSPContext* p, AVCodecContext *avctx);
 void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scantable, int last);
 
 /**
- * Empty mmx state.<br>
+ * Empty mmx state.
  * this must be called between any dsp function and float/double code.
  * for example sin(); dsp->idct_put(); emms_c(); cos()
  */
