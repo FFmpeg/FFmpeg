@@ -637,6 +637,12 @@ void MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         for(i=0;i<3;i++) {
             if(avctx->flags&CODEC_FLAG_DR1)
                 s->aux_picture[i]= avctx->dr_buffer[i];
+            
+            //FIXME the following should never be needed, the decoder should drop b frames if no reference is available
+            if(s->next_picture[i]==NULL)
+                s->next_picture[i]= s->aux_picture[i];
+            if(s->last_picture[i]==NULL)
+                s->last_picture[i]= s->next_picture[i];
 
             s->current_picture[i] = s->aux_picture[i];
         }
