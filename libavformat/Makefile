@@ -12,7 +12,7 @@ OBJS= utils.o cutils.o allformats.o
 
 # mux and demuxes
 OBJS+=mpeg.o mpegts.o ffm.o crc.o img.o raw.o rm.o \
-      avienc.o avidec.o wav.o swf.o au.o gif.o mov.o jpeg.o dv.o \
+      avienc.o avidec.o wav.o swf.o au.o gif.o mov.o mpjpeg.o dv.o \
       yuv4mpeg.o
 
 ifeq ($(CONFIG_RISKY),yes)
@@ -20,7 +20,7 @@ OBJS+= asf.o
 endif
 
 # image formats
-OBJS+= pnm.o yuv.o png.o libpng/png.o libpng/pngread.o libpng/pngrutil.o libpng/pngwrite.o libpng/pngwutil.o
+OBJS+= pnm.o yuv.o png.o libpng/png.o libpng/pngread.o libpng/pngrutil.o libpng/pngwrite.o libpng/pngwutil.o jpeg.o gifdec.o
 # file I/O
 OBJS+= avio.o aviobuf.o file.o 
 OBJS+= framehook.o 

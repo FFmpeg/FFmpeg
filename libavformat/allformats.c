@@ -76,6 +76,7 @@ void av_register_all(void)
     av_register_image_format(&pgmyuv_image_format);
     av_register_image_format(&yuv_image_format);
     av_register_image_format(&png_image_format);
+    av_register_image_format(&jpeg_image_format);
 
     /* file protocols */
     register_protocol(&file_protocol);

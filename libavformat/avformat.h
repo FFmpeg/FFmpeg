@@ -236,6 +236,7 @@ extern AVImageFormat ppm_image_format;
 extern AVImageFormat pgmyuv_image_format;
 extern AVImageFormat yuv_image_format;
 extern AVImageFormat png_image_format;
+extern AVImageFormat jpeg_image_format;
 
 /* XXX: use automatic init with either ELF sections or C file parser */
 /* modules */

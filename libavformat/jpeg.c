@@ -1,6 +1,6 @@
 /*
- * JPEG based formats
- * Copyright (c) 2000, 2001 Fabrice Bellard.
+ * JPEG image format
+ * Copyright (c) 2003 Fabrice Bellard.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -18,251 +18,190 @@
  */
 #include "avformat.h"
 
-/* Multipart JPEG */
-
-#define BOUNDARY_TAG "ffserver"
-
-static int mpjpeg_write_header(AVFormatContext *s)
+static int jpeg_probe(AVProbeData *pd)
 {
-    UINT8 buf1[256];
-
-    snprintf(buf1, sizeof(buf1), "--%s\n", BOUNDARY_TAG);
-    put_buffer(&s->pb, buf1, strlen(buf1));
-    put_flush_packet(&s->pb);
-    return 0;
-}
-
-static int mpjpeg_write_packet(AVFormatContext *s, int stream_index, 
-                               UINT8 *buf, int size, int force_pts)
-{
-    UINT8 buf1[256];
-
-    snprintf(buf1, sizeof(buf1), "Content-type: image/jpeg\n\n");
-    put_buffer(&s->pb, buf1, strlen(buf1));
-    put_buffer(&s->pb, buf, size);
-
-    snprintf(buf1, sizeof(buf1), "\n--%s\n", BOUNDARY_TAG);
-    put_buffer(&s->pb, buf1, strlen(buf1));
-    put_flush_packet(&s->pb);
-    return 0;
-}
-
-static int mpjpeg_write_trailer(AVFormatContext *s)
-{
-    return 0;
-}
-
-static AVOutputFormat mpjpeg_format = {
-    "mpjpeg",
-    "Mime multipart JPEG format",
-    "multipart/x-mixed-replace;boundary=" BOUNDARY_TAG,
-    "mjpg",
-    0,
-    CODEC_ID_NONE,
-    CODEC_ID_MJPEG,
-    mpjpeg_write_header,
-    mpjpeg_write_packet,
-    mpjpeg_write_trailer,
-};
-
-
-/*************************************/
-/* single frame JPEG */
-
-static int single_jpeg_write_header(AVFormatContext *s)
-{
-    return 0;
-}
-
-static int single_jpeg_write_packet(AVFormatContext *s, int stream_index,
-                            UINT8 *buf, int size, int force_pts)
-{
-    put_buffer(&s->pb, buf, size);
-    put_flush_packet(&s->pb);
-    return 1; /* no more data can be sent */
-}
-
-static int single_jpeg_write_trailer(AVFormatContext *s)
-{
-    return 0;
-}
-
-static AVOutputFormat single_jpeg_format = {
-    "singlejpeg",
-    "single JPEG image",
-    "image/jpeg",
-    NULL, /* note: no extension to favorize jpeg multiple images match */
-    0,
-    CODEC_ID_NONE,
-    CODEC_ID_MJPEG,
-    single_jpeg_write_header,
-    single_jpeg_write_packet,
-    single_jpeg_write_trailer,
-};
-
-/*************************************/
-/* multiple jpeg images */
-
-typedef struct JpegContext {
-    char path[1024];
-    int img_number;
-} JpegContext;
-
-static int jpeg_write_header(AVFormatContext *s1)
-{
-    JpegContext *s;
-
-    s = av_mallocz(sizeof(JpegContext));
-    if (!s)
-        return -1;
-    s1->priv_data = s;
-    pstrcpy(s->path, sizeof(s->path), s1->filename);
-    s->img_number = 1;
-    return 0;
-}
-
-static int jpeg_write_packet(AVFormatContext *s1, int stream_index,
-                            UINT8 *buf, int size, int force_pts)
-{
-    JpegContext *s = s1->priv_data;
-    char filename[1024];
-    ByteIOContext f1, *pb = &f1;
-
-    if (get_frame_filename(filename, sizeof(filename), 
-                           s->path, s->img_number) < 0)
-        return -EIO;
-    if (url_fopen(pb, filename, URL_WRONLY) < 0)
-        return -EIO;
-
-    put_buffer(pb, buf, size);
-    put_flush_packet(pb);
-
-    url_fclose(pb);
-    s->img_number++;
-
-    return 0;
-}
-
-static int jpeg_write_trailer(AVFormatContext *s1)
-{
-    return 0;
-}
-
-/***/
-
-static int jpeg_read_header(AVFormatContext *s1, AVFormatParameters *ap)
-{
-    JpegContext *s;
-    int i;
-    char buf[1024];
-    ByteIOContext pb1, *f = &pb1;
-    AVStream *st;
-
-    s = av_mallocz(sizeof(JpegContext));
-    if (!s)
-        return -1;
-    s1->priv_data = s;
-    pstrcpy(s->path, sizeof(s->path), s1->filename);
-
-    s1->nb_streams = 1;
-    st = av_mallocz(sizeof(AVStream));
-    if (!st) {
-        av_free(s);
-        return -ENOMEM;
-    }
-    avcodec_get_context_defaults(&st->codec);
-
-    s1->streams[0] = st;
-    s->img_number = 0;
-
-    /* try to find the first image */
-    for(i=0;i<5;i++) {
-        if (get_frame_filename(buf, sizeof(buf), s->path, s->img_number) < 0)
-            goto fail;
-        if (url_fopen(f, buf, URL_RDONLY) >= 0)
-            break;
-        s->img_number++;
-    }
-    if (i == 5)
-        goto fail;
-    url_fclose(f);
-    st->codec.codec_type = CODEC_TYPE_VIDEO;
-    st->codec.codec_id = CODEC_ID_MJPEG;
-    
-    if (!ap || !ap->frame_rate)
-        st->codec.frame_rate = 25 * FRAME_RATE_BASE;
+    if (pd->buf_size >= 64 &&
+        pd->buf[0] == 0xff && pd->buf[1] == 0xd8 && pd->buf[2] == 0xff)
+        return AVPROBE_SCORE_MAX;
     else
-        st->codec.frame_rate = ap->frame_rate;
-    return 0;
+        return 0;
+}
+
+typedef struct JpegOpaque {
+    int (*alloc_cb)(void *opaque, AVImageInfo *info);
+    void *opaque;
+    int ret_code;
+} JpegOpaque;
+
+/* called by the codec to allocate the image */
+static int jpeg_get_buffer(AVCodecContext *c, AVFrame *picture)
+{
+    JpegOpaque *jctx = c->opaque;
+    AVImageInfo info1, *info = &info1;
+    int ret, i;
+
+    info->width = c->width;
+    info->height = c->height;
+    info->pix_fmt = c->pix_fmt;
+    ret = jctx->alloc_cb(jctx->opaque, info);
+    if (ret) {
+        jctx->ret_code = ret;
+        return -1;
+    } else {
+        for(i=0;i<3;i++) {
+            picture->data[i] = info->pict.data[i];
+            picture->linesize[i] = info->pict.linesize[i];
+        }
+        return 0;
+    }
+}
+
+static void img_copy(UINT8 *dst, int dst_wrap, 
+                     UINT8 *src, int src_wrap,
+                     int width, int height)
+{
+    for(;height > 0; height--) {
+        memcpy(dst, src, width);
+        dst += dst_wrap;
+        src += src_wrap;
+    }
+}
+
+/* XXX: libavcodec is broken for truncated jpegs! */
+#define IO_BUF_SIZE (1024*1024)
+
+static int jpeg_read(ByteIOContext *f, 
+                     int (*alloc_cb)(void *opaque, AVImageInfo *info), void *opaque)
+{
+    AVCodecContext *c;
+    AVFrame *picture, picture1;
+    int len, size, got_picture, i;
+    uint8_t *inbuf_ptr, inbuf[IO_BUF_SIZE];
+    JpegOpaque jctx;
+
+    jctx.alloc_cb = alloc_cb;
+    jctx.opaque = opaque;
+    jctx.ret_code = -1; /* default return code is error */
+    
+    c = avcodec_alloc_context();
+    if (!c)
+        return -1;
+    picture= avcodec_alloc_frame();
+    if (!picture) {
+        av_free(c);
+        return -1;
+    }
+    c->opaque = &jctx;
+    c->get_buffer = jpeg_get_buffer;
+    c->flags |= CODEC_FLAG_TRUNCATED; /* we dont send complete frames */
+    if (avcodec_open(c, &mjpeg_decoder) < 0)
+        goto fail1;
+    for(;;) {
+        size = get_buffer(f, inbuf, sizeof(inbuf));
+        if (size == 0)
+            break;
+        inbuf_ptr = inbuf;
+        while (size > 0) {
+            len = avcodec_decode_video(c, &picture1, &got_picture, 
+                                       inbuf_ptr, size);
+            if (len < 0)
+                goto fail;
+            if (got_picture)
+                goto the_end;
+            size -= len;
+            inbuf_ptr += len;
+        }
+    }
+ the_end:
+    /* XXX: currently, the mjpeg decoder does not use AVFrame, so we
+       must do it by hand */
+    if (jpeg_get_buffer(c, picture) < 0)
+        goto fail;
+    for(i=0;i<3;i++) {
+        int w, h;
+        w = c->width;
+        h = c->height;
+        if (i >= 1) {
+            switch(c->pix_fmt) {
+            default:
+            case PIX_FMT_YUV420P:
+                w >>= 1;
+                h >>= 1;
+                break;
+            case PIX_FMT_YUV422P:
+                w >>= 1;
+                break;
+            case PIX_FMT_YUV444P:
+                break;
+            }
+        }
+        img_copy(picture->data[i], picture->linesize[i],
+                 picture1.data[i], picture1.linesize[i],
+                 w, h);
+    }
+    jctx.ret_code = 0;
  fail:
-    av_free(s);
-    return -EIO;
+    avcodec_close(c);
+ fail1:
+    av_free(picture);
+    av_free(c);
+    return jctx.ret_code;
 }
 
-static int jpeg_read_packet(AVFormatContext *s1, AVPacket *pkt)
+static int jpeg_write(ByteIOContext *pb, AVImageInfo *info)
 {
-    JpegContext *s = s1->priv_data;
-    char filename[1024];
-    int size;
-    ByteIOContext f1, *f = &f1;
+    AVCodecContext *c;
+    uint8_t *outbuf = NULL;
+    int outbuf_size, ret, size, i;
+    AVFrame *picture;
 
-    if (get_frame_filename(filename, sizeof(filename), 
-                           s->path, s->img_number) < 0)
-        return -EIO;
+    ret = -1;
+    c = avcodec_alloc_context();
+    if (!c)
+        return -1;
+    picture = avcodec_alloc_frame();
+    if (!picture)
+        goto fail2;
+    c->width = info->width;
+    c->height = info->height;
+    c->pix_fmt = info->pix_fmt;
+    for(i=0;i<3;i++) {
+        picture->data[i] = info->pict.data[i];
+        picture->linesize[i] = info->pict.linesize[i];
+    }
+    /* set the quality */
+    picture->quality = 3; /* XXX: a parameter should be used */
+    c->flags |= CODEC_FLAG_QSCALE;
     
-    f = &f1;
-    if (url_fopen(f, filename, URL_RDONLY) < 0)
-        return -EIO;
+    if (avcodec_open(c, &mjpeg_encoder) < 0)
+        goto fail1;
     
-    size = url_seek(url_fileno(f), 0, SEEK_END);
-    url_seek(url_fileno(f), 0, SEEK_SET);
+    /* XXX: needs to sort out that size problem */
+    outbuf_size = 1000000;
+    outbuf = av_malloc(outbuf_size);
 
-    av_new_packet(pkt, size);
-    pkt->stream_index = 0;
-    get_buffer(f, pkt->data, size);
+    size = avcodec_encode_video(c, outbuf, outbuf_size, picture);
+    if (size < 0)
+        goto fail;
+    put_buffer(pb, outbuf, size);
+    put_flush_packet(pb);
+    ret = 0;
 
-    url_fclose(f);
-    s->img_number++;
-    return 0;
+ fail:
+    avcodec_close(c);
+    av_free(outbuf);
+ fail1:
+    av_free(picture);
+ fail2:
+    av_free(c);
+    return ret;
 }
 
-static int jpeg_read_close(AVFormatContext *s1)
-{
-    return 0;
-}
-
-static AVInputFormat jpeg_iformat = {
+AVImageFormat jpeg_image_format = {
     "jpeg",
-    "JPEG image",
-    sizeof(JpegContext),
-    NULL,
-    jpeg_read_header,
-    jpeg_read_packet,
-    jpeg_read_close,
-    NULL,
-    .flags = AVFMT_NOFILE | AVFMT_NEEDNUMBER,
-    .extensions = "jpg,jpeg",
-};
-
-static AVOutputFormat jpeg_oformat = {
-    "jpeg",
-    "JPEG image",
-    "image/jpeg",
     "jpg,jpeg",
-    sizeof(JpegContext),
-    CODEC_ID_NONE,
-    CODEC_ID_MJPEG,
-    jpeg_write_header,
-    jpeg_write_packet,
-    jpeg_write_trailer,
-    .flags = AVFMT_NOFILE | AVFMT_NEEDNUMBER,
+    jpeg_probe,
+    jpeg_read,
+    (1 << PIX_FMT_YUV420P) | (1 << PIX_FMT_YUV422P) | (1 << PIX_FMT_YUV444P),
+    jpeg_write,
 };
-
-int jpeg_init(void)
-{
-    av_register_output_format(&mpjpeg_format);
-    av_register_output_format(&single_jpeg_format);
-    av_register_input_format(&jpeg_iformat);
-    av_register_output_format(&jpeg_oformat);
-    return 0;
-}
