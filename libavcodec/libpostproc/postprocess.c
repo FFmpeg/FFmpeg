@@ -33,6 +33,7 @@ isHorizDC		Ec	Ec
 isHorizMinMaxOk		a	E
 doHorizLowPass		E		e	e
 doHorizDefFilter	Ec	Ec	e	e
+do_a_deblock		Ec	E	Ec	E
 deRing			E		e	e*	Ecp
 Vertical RKAlgo1	E		a	a
 Horizontal RKAlgo1			a	a
@@ -476,7 +477,7 @@ static inline void horizX1Filter(uint8_t *src, int stride, int QP)
 /**
  * accurate deblock filter
  */
-static always_inline void do_a_deblock(uint8_t *src, int step, int stride, PPContext *c){
+static always_inline void do_a_deblock_C(uint8_t *src, int step, int stride, PPContext *c){
 	int y;
 	const int QP= c->QP;
 	const int dcOffset= ((c->nonBQP*c->ppMode.baseDcDiff)>>8) + 1;
