@@ -31,7 +31,7 @@ distclean:
 dep:    depend
 
 depend:
-	$(CC) -MM $(CFLAGS) $(SWSSRCS) postprocess.c 1>.depend
+	$(CC) -MM $(CFLAGS) $(SWSSRCS) 1>.depend
 
 cs_test: $(CS_TEST_OBJS)
 	$(CC) $(CS_TEST_OBJS) -o cs_test
