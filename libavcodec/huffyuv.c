@@ -61,6 +61,7 @@ typedef struct HYuvContext{
     int bgr32;                              //use bgr32 instead of bgr24
     int width, height;
     int flags;
+    int context;
     int picture_number;
     int last_slice_end;
     uint8_t __align8 temp[3][2560];
@@ -306,10 +307,11 @@ for(j=0; j<256; j++){
 printf("%6X, %2d,  %3d\n", s->bits[i][j], s->len[i][j], j);
 }
 #endif
+        free_vlc(&s->vlc[i]);
         init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4);
     }
     
-    return 0;
+    return (get_bits_count(&gb)+7)/8;
 }
 
 static int read_old_huffman_tables(HYuvContext *s){
@@ -332,8 +334,10 @@ static int read_old_huffman_tables(HYuvContext *s){
     memcpy(s->bits[2], s->bits[1], 256*sizeof(uint32_t));
     memcpy(s->len[2] , s->len [1], 256*sizeof(uint8_t));
     
-    for(i=0; i<3; i++)
+    for(i=0; i<3; i++){
+        free_vlc(&s->vlc[i]);
         init_vlc(&s->vlc[i], VLC_BITS, 256, s->len[i], 1, 1, s->bits[i], 4, 4);
+    }
     
     return 0;
 #else
@@ -351,6 +355,7 @@ static int decode_init(AVCodecContext *avctx)
     s->flags= avctx->flags;
         
     dsputil_init(&s->dsp, avctx);
+    memset(s->vlc, 0, 3*sizeof(VLC));
     
     width= s->width= avctx->width;
     height= s->height= avctx->height;
@@ -377,6 +382,7 @@ s->bgr32=1;
         s->bitstream_bpp= ((uint8_t*)avctx->extradata)[1];
         if(s->bitstream_bpp==0) 
             s->bitstream_bpp= avctx->bits_per_sample&~7;
+        s->context= ((uint8_t*)avctx->extradata)[2] & 0x40 ? 1 : 0;
             
         if(read_huffman_tables(s, ((uint8_t*)avctx->extradata)+4, avctx->extradata_size) < 0)
             return -1;
@@ -404,6 +410,7 @@ s->bgr32=1;
             break;
         }
         s->bitstream_bpp= avctx->bits_per_sample & ~7;
+        s->context= 0;
         
         if(read_old_huffman_tables(s) < 0)
             return -1;
@@ -442,9 +449,9 @@ s->bgr32=1;
     return 0;
 }
 
-static void store_table(HYuvContext *s, uint8_t *len){
+static int store_table(HYuvContext *s, uint8_t *len, uint8_t *buf){
     int i;
-    int index= s->avctx->extradata_size;
+    int index= 0;
 
     for(i=0; i<256;){
         int val= len[i];
@@ -455,14 +462,14 @@ static void store_table(HYuvContext *s, uint8_t *len){
         
         assert(val < 32 && val >0 && repeat<256 && repeat>0);
         if(repeat>7){
-            ((uint8_t*)s->avctx->extradata)[index++]= val;
-            ((uint8_t*)s->avctx->extradata)[index++]= repeat;
+            buf[index++]= val;
+            buf[index++]= repeat;
         }else{
-            ((uint8_t*)s->avctx->extradata)[index++]= val | (repeat<<5);
+            buf[index++]= val | (repeat<<5);
         }
     }
     
-    s->avctx->extradata_size= index;
+    return index;
 }
 
 static int encode_init(AVCodecContext *avctx)
@@ -508,10 +515,24 @@ static int encode_init(AVCodecContext *avctx)
     if(s->interlaced != ( height > 288 )){
         av_log(avctx, AV_LOG_INFO, "using huffyuv 2.2.0 or newer interlacing flag\n");
     }
+    if(avctx->context_model==1){
+        s->context= avctx->context_model;
+        if(avctx->strict_std_compliance>=0){
+            av_log(avctx, AV_LOG_ERROR, "Warning: per-frame huffman tables are not supported by windows huffyuv; use context=0 or use (v)strict=-1\n");
+            return -1;
+        }
+        if(s->flags & (CODEC_FLAG_PASS1|CODEC_FLAG_PASS2)){
+            av_log(avctx, AV_LOG_ERROR, "context=1 is not compatible with 2 pass huffyuv encoding\n");
+            return -1;
+        }
+        av_log(avctx, AV_LOG_INFO, "using per-frame huffman tables\n");
+    }else s->context= 0;
     
     ((uint8_t*)avctx->extradata)[0]= s->predictor;
     ((uint8_t*)avctx->extradata)[1]= s->bitstream_bpp;
     ((uint8_t*)avctx->extradata)[2]= 0x20 | (s->interlaced ? 0x10 : 0);
+    if(s->context)
+        ((uint8_t*)avctx->extradata)[2]|= 0x40;
     ((uint8_t*)avctx->extradata)[3]= 0;
     s->avctx->extradata_size= 4;
     
@@ -550,12 +571,23 @@ static int encode_init(AVCodecContext *avctx)
             return -1;
         }
         
-        store_table(s, s->len[i]);
+        s->avctx->extradata_size+=
+        store_table(s, s->len[i], &((uint8_t*)s->avctx->extradata)[s->avctx->extradata_size]);
     }
 
-    for(i=0; i<3; i++)
-        for(j=0; j<256; j++)
-            s->stats[i][j]= 0;
+    if(s->context){
+        for(i=0; i<3; i++){
+            int pels = width*height / (i?40:10);
+            for(j=0; j<256; j++){
+                int d= FFMIN(j, 256-j);
+                s->stats[i][j]= pels/(d+1);
+            }
+        }
+    }else{
+        for(i=0; i<3; i++)
+            for(j=0; j<256; j++)
+                s->stats[i][j]= 0;
+    }
     
 //    printf("pred:%d bpp:%d hbpp:%d il:%d\n", s->predictor, s->bitstream_bpp, avctx->bits_per_sample, s->interlaced);
 
@@ -599,6 +631,17 @@ static void encode_422_bitstream(HYuvContext *s, int count){
             s->stats[0][ s->temp[0][2*i+1] ]++;
             s->stats[2][ s->temp[2][  i  ] ]++;
         }
+    }else if(s->context){
+        for(i=0; i<count; i++){
+            s->stats[0][ s->temp[0][2*i  ] ]++;
+            put_bits(&s->pb, s->len[0][ s->temp[0][2*i  ] ], s->bits[0][ s->temp[0][2*i  ] ]);
+            s->stats[1][ s->temp[1][  i  ] ]++;
+            put_bits(&s->pb, s->len[1][ s->temp[1][  i  ] ], s->bits[1][ s->temp[1][  i  ] ]);
+            s->stats[0][ s->temp[0][2*i+1] ]++;
+            put_bits(&s->pb, s->len[0][ s->temp[0][2*i+1] ], s->bits[0][ s->temp[0][2*i+1] ]);
+            s->stats[2][ s->temp[2][  i  ] ]++;
+            put_bits(&s->pb, s->len[2][ s->temp[2][  i  ] ], s->bits[2][ s->temp[2][  i  ] ]);
+        }
     }else{
         for(i=0; i<count; i++){
             put_bits(&s->pb, s->len[0][ s->temp[0][2*i  ] ], s->bits[0][ s->temp[0][2*i  ] ]);
@@ -617,6 +660,13 @@ static void encode_gray_bitstream(HYuvContext *s, int count){
         for(i=0; i<count; i++){
             s->stats[0][ s->temp[0][2*i  ] ]++;
             s->stats[0][ s->temp[0][2*i+1] ]++;
+        }
+    }else if(s->context){
+        for(i=0; i<count; i++){
+            s->stats[0][ s->temp[0][2*i  ] ]++;
+            put_bits(&s->pb, s->len[0][ s->temp[0][2*i  ] ], s->bits[0][ s->temp[0][2*i  ] ]);
+            s->stats[0][ s->temp[0][2*i+1] ]++;
+            put_bits(&s->pb, s->len[0][ s->temp[0][2*i+1] ], s->bits[0][ s->temp[0][2*i+1] ]);
         }
     }else{
         for(i=0; i<count; i++){
@@ -696,6 +746,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     const int height= s->height;
     int fake_ystride, fake_ustride, fake_vstride;
     AVFrame * const p= &s->picture;
+    int table_size= 0;
 
     AVFrame *picture = data;
 
@@ -705,8 +756,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
 
     s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer, (uint32_t*)buf, buf_size/4);
     
-    init_get_bits(&s->gb, s->bitstream_buffer, buf_size*8);
-
     if(p->data[0])
         avctx->release_buffer(avctx, p);
 
@@ -715,6 +764,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
+    
+    if(s->context){
+        table_size = read_huffman_tables(s, s->bitstream_buffer, buf_size);
+        if(table_size < 0)
+            return -1;
+    }
+
+    init_get_bits(&s->gb, s->bitstream_buffer+table_size, (buf_size-table_size)*8);
 
     fake_ystride= s->interlaced ? p->linesize[0]*2  : p->linesize[0];
     fake_ustride= s->interlaced ? p->linesize[1]*2  : p->linesize[1];
@@ -943,14 +1000,27 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     const int fake_ustride= s->interlaced ? pict->linesize[1]*2  : pict->linesize[1];
     const int fake_vstride= s->interlaced ? pict->linesize[2]*2  : pict->linesize[2];
     AVFrame * const p= &s->picture;
-    int i, size;
+    int i, j, size=0;
 
-    init_put_bits(&s->pb, buf, buf_size);
-    
     *p = *pict;
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
     
+    if(s->context){
+        for(i=0; i<3; i++){
+            generate_len_table(s->len[i], s->stats[i], 256);
+            if(generate_bits_table(s->bits[i], s->len[i])<0)
+                return -1;
+            size+= store_table(s, s->len[i], &buf[size]);
+        }
+
+        for(i=0; i<3; i++)
+            for(j=0; j<256; j++)
+                s->stats[i][j] >>= 1;
+    }
+
+    init_put_bits(&s->pb, buf+size, buf_size-size);
+
     if(avctx->pix_fmt == PIX_FMT_YUV422P || avctx->pix_fmt == PIX_FMT_YUV420P){
         int lefty, leftu, leftv, y, cy;
 
@@ -1060,7 +1130,8 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     }
     emms_c();
     
-    size= (put_bits_count(&s->pb)+31)/32;
+    size+= (put_bits_count(&s->pb)+31)/8;
+    size/= 4;
     
     if((s->flags&CODEC_FLAG_PASS1) && (s->picture_number&31)==0){
         int j;
