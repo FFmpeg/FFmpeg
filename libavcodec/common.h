@@ -46,6 +46,8 @@
 
 #define AVOPTION_CODEC_BOOL(name, help, field) \
     { name, help, offsetof(AVCodecContext, field), FF_OPT_TYPE_BOOL }
+#define AVOPTION_CODEC_DOUBLE(name, help, field, minv, maxv, defval) \
+    { name, help, offsetof(AVCodecContext, field), FF_OPT_TYPE_DOUBLE, minv, maxv, defval }
 #define AVOPTION_CODEC_FLAG(name, help, field, flag, defval) \
     { name, help, offsetof(AVCodecContext, field), FF_OPT_TYPE_FLAG, flag, 0, defval }
 #define AVOPTION_CODEC_INT(name, help, field, minv, maxv, defval) \
