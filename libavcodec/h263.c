@@ -3767,8 +3767,17 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             }
             s->low_delay= get_bits1(&s->gb);
             if(get_bits1(&s->gb)){ /* vbv parameters */
-                printf("vbv parameters not supported\n");
-                return -1;
+                get_bits(&s->gb, 15);	/* first_half_bitrate */
+                skip_bits1(&s->gb);	/* marker */
+                get_bits(&s->gb, 15);	/* latter_half_bitrate */
+                skip_bits1(&s->gb);	/* marker */
+                get_bits(&s->gb, 15);	/* first_half_vbv_buffer_size */
+                skip_bits1(&s->gb);	/* marker */
+                get_bits(&s->gb, 3);	/* latter_half_vbv_buffer_size */
+                get_bits(&s->gb, 11);	/* first_half_vbv_occupancy */
+                skip_bits1(&s->gb);	/* marker */
+                get_bits(&s->gb, 15);	/* latter_half_vbv_occupancy */
+                skip_bits1(&s->gb);	/* marker */               
             }
         }else{
             // set low delay flag only once so the smart? low delay detection wont be overriden
