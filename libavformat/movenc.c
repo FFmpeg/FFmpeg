@@ -415,7 +415,7 @@ static int mov_write_esds_tag(ByteIOContext *pb, MOVTrack* track) // Basic
     }
 
     // SL descriptor
-    putDescr(pb, 0x06, descrLength(1));
+    putDescr(pb, 0x06, 1);
     put_byte(pb, 0x02);
     return updateSize (pb, pos);
 }
