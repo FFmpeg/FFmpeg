@@ -1732,7 +1732,7 @@ int avoption_parse(void* strct, const AVOption* list, const char* opts);
 typedef struct AVCodec {
     const char *name;
     enum CodecType type;
-    int id;
+    enum CodecID id;
     int priv_data_size;
     int (*init)(AVCodecContext *);
     int (*encode)(AVCodecContext *, uint8_t *buf, int buf_size, void *data);
