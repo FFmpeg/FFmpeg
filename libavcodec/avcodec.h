@@ -797,6 +797,10 @@ typedef struct AVCodecContext {
      */
     float dark_masking;
     
+    
+    /* for binary compatibility */
+    int unused;
+    
     /**
      * idct algorithm, see FF_IDCT_* below.
      * - encoding: set by user
