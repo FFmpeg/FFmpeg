@@ -354,6 +354,7 @@ void avcodec_get_context_defaults(AVCodecContext *s){
     s->lmin= FF_QP2LAMBDA * s->qmin;
     s->lmax= FF_QP2LAMBDA * s->qmax;
     s->sample_aspect_ratio= (AVRational){0,1};
+    s->ildct_cmp= FF_CMP_VSAD;
     
     s->intra_quant_bias= FF_DEFAULT_QUANT_BIAS;
     s->inter_quant_bias= FF_DEFAULT_QUANT_BIAS;
