@@ -24,7 +24,8 @@
  * For more information about the RPZA format, visit:
  *   http://www.pcisys.net/~melanson/codecs/
  *
- * The VQA video decoder outputs PAL8 colorspace data.
+ * The VQA video decoder outputs PAL8 or RGB555 colorspace data, depending
+ * on the type of data in the file.
  *
  * This decoder needs the 42-byte VQHD header from the beginning
  * of the VQA file passed through the extradata field. The VQHD header
@@ -32,12 +33,12 @@
  *
  *   bytes 0-3   chunk fourcc: 'VQHD'
  *   bytes 4-7   chunk size in big-endian format, should be 0x0000002A
- *   bytes 8-50  VQHD chunk data
+ *   bytes 8-49  VQHD chunk data
  *
- * Bytes 8-50 are what this decoder expects to see.
+ * Bytes 8-49 are what this decoder expects to see.
  *
  * Briefly, VQA is a vector quantized animation format that operates in a
- * 6-bit VGA palettized colorspace. It operates on pixel vectors (blocks)
+ * VGA palettized colorspace. It operates on pixel vectors (blocks)
  * of either 4x2 or 4x4 in size. Compressed VQA chunks can contain vector
  * codebooks, palette information, and code maps for rendering vectors onto
  * frames. Any of these components can also be compressed with a run-length
@@ -55,7 +56,7 @@
  * V1,2 VQA uses 12-bit codebook indices. If the 12-bit indices were
  * packed into bytes and then RLE compressed, bytewise, the results would
  * be poor. That is why the coding method divides each index into 2 parts,
- * the top 4 bits and the bottom 8 bits, the RL encodes the 4-bit pieces
+ * the top 4 bits and the bottom 8 bits, then RL encodes the 4-bit pieces
  * together and the 8-bit pieces together. If most of the vectors are
  * clustered into one group of 256 vectors, most of the 4-bit index pieces
  * should be the same.
@@ -74,12 +75,12 @@
 #define VQA_HEADER_SIZE 0x2A
 #define CHUNK_PREAMBLE_SIZE 8
 
-/* v1, v2 files: each vector codebook entry is 4x2=8 pixels = 8 bytes */
-#define V1_2_VECTOR_SIZE 8
-#define V1_2_MAX_VECTORS 0xF00
-/* v3 files: each vector codebook entry is 4x4=16 pixels = 16 bytes */
-#define V3_VECTOR_SIZE 16
-#define V3_MAX_VECTORS 0xFF00
+/* allocate the maximum vector space, regardless of the file version:
+ * (0xFF00 codebook vectors + 0x100 solid pixel vectors) * (4x4 pixels/block) */
+#define MAX_CODEBOOK_VECTORS 0xFF00
+#define SOLID_PIXEL_VECTORS 0x100
+#define MAX_VECTORS (MAX_CODEBOOK_VECTORS + SOLID_PIXEL_VECTORS)
+#define MAX_CODEBOOK_SIZE (MAX_VECTORS * 4 * 4)
 
 #define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
 #define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
@@ -128,6 +129,7 @@ typedef struct VqaContext {
     int vqa_version;  /* this should be either 1, 2 or 3 */
 
     unsigned char *codebook;         /* the current codebook */
+    int codebook_size;
     unsigned char *next_codebook_buffer;  /* accumulator for next codebook */
     int next_codebook_buffer_index;
 
@@ -144,6 +146,7 @@ static int vqa_decode_init(AVCodecContext *avctx)
 {
     VqaContext *s = (VqaContext *)avctx->priv_data;
     unsigned char *vqa_header;
+    int i, j, codebook_index;;
 
     s->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
@@ -173,12 +176,21 @@ static int vqa_decode_init(AVCodecContext *avctx)
     }
 
     /* allocate codebooks */
-    if (s->vqa_version == 3) {
-        s->codebook = av_malloc(V3_VECTOR_SIZE * V3_MAX_VECTORS);
-        s->next_codebook_buffer = av_malloc(V3_VECTOR_SIZE * V3_MAX_VECTORS);
+    s->codebook_size = MAX_CODEBOOK_SIZE;
+    s->codebook = av_malloc(s->codebook_size);
+    s->next_codebook_buffer = av_malloc(s->codebook_size);
+
+    /* initialize the solid-color vectors */
+    if (s->vector_height == 4) {
+        codebook_index = 0xFF00 * 16;
+        for (i = 0; i < 256; i++)
+            for (j = 0; j < 16; j++)
+                s->codebook[codebook_index++] = i;
     } else {
-        s->codebook = av_malloc(V1_2_VECTOR_SIZE * V1_2_MAX_VECTORS);
-        s->next_codebook_buffer = av_malloc(V1_2_VECTOR_SIZE * V1_2_MAX_VECTORS);
+        codebook_index = 0xF00 * 8;
+        for (i = 0; i < 256; i++)
+            for (j = 0; j < 8; j++)
+                s->codebook[codebook_index++] = i;
     }
     s->next_codebook_buffer_index = 0;
 
@@ -194,14 +206,14 @@ static int vqa_decode_init(AVCodecContext *avctx)
 
 #define CHECK_COUNT() \
     if (dest_index + count > dest_size) { \
-        printf ("vqavideo: decode_format80 problem: next op would overflow dest_index\n"); \
-        printf ("vqavideo: current dest_index = %d, count = %d, dest_size = %d\n", \
+        printf ("  VQA video: decode_format80 problem: next op would overflow dest_index\n"); \
+        printf ("  VQA video: current dest_index = %d, count = %d, dest_size = %d\n", \
             dest_index, count, dest_size); \
         return; \
     }
 
 static void decode_format80(unsigned char *src, int src_size,
-    unsigned char *dest, int dest_size) {
+    unsigned char *dest, int dest_size, int check_size) {
 
     int src_index = 0;
     int dest_index = 0;
@@ -219,7 +231,7 @@ static void decode_format80(unsigned char *src, int src_size,
             return;
 
         if (dest_index >= dest_size) {
-            printf ("vqavideo: decode_format80 problem: dest_index (%d) exceeded dest_size (%d)\n",
+            printf ("  VQA video: decode_format80 problem: dest_index (%d) exceeded dest_size (%d)\n",
                 dest_index, dest_size);
             return;
         }
@@ -281,15 +293,18 @@ static void decode_format80(unsigned char *src, int src_size,
         }
     }
 
-    if (dest_index < dest_size)
-        printf ("vqavideo: decode_format80 problem: decode finished with dest_index (%d) < dest_size (%d)\n",
-            dest_index, dest_size);
+    /* validate that the entire destination buffer was filled; this is
+     * important for decoding frame maps since each vector needs to have a
+     * codebook entry; it is not important for compressed codebooks because
+     * not every entry needs to be filled */
+    if (check_size)
+        if (dest_index < dest_size)
+            printf ("  VQA video: decode_format80 problem: decode finished with dest_index (%d) < dest_size (%d)\n",
+                dest_index, dest_size);
 }
 
 static void vqa_decode_chunk(VqaContext *s)
 {
-
-//static int frame = 0;
     unsigned int chunk_type;
     unsigned int chunk_size;
     int byte_skip;
@@ -315,7 +330,6 @@ static void vqa_decode_chunk(VqaContext *s)
     int lobytes = 0;
     int hibytes = s->decode_buffer_size / 2;
 
-//printf (" **** decoding frame #%d, stride = %d\n", frame++, s->frame.linesize[0]);
     /* first, traverse through the frame and find the subchunks */
     while (index < s->size) {
 
@@ -387,7 +401,7 @@ static void vqa_decode_chunk(VqaContext *s)
         chunk_size = BE_32(&s->buf[cpl0_chunk + 4]);
         /* sanity check the palette size */
         if (chunk_size / 3 > 256) {
-            printf ("vqavideo: problem: found a palette chunk with %d colors\n",
+            printf ("  VQA video: problem: found a palette chunk with %d colors\n",
                 chunk_size / 3);
             return;
         }
@@ -410,34 +424,24 @@ static void vqa_decode_chunk(VqaContext *s)
         return;
     }
 
-    /* decompress the full codebook chunk into the codebook accumulation
-     * buffer; this is safe since only the first frame is supposed to have 
-     * a full codebook */
+    /* decompress the full codebook chunk */
     if (cbfz_chunk != -1) {
 
-/* yet to be handled */
-
+        chunk_size = BE_32(&s->buf[cbfz_chunk + 4]);
+        cbfz_chunk += CHUNK_PREAMBLE_SIZE;
+        decode_format80(&s->buf[cbfz_chunk], chunk_size,
+            s->codebook, s->codebook_size, 0);
     }
 
     /* copy a full codebook */
     if (cbf0_chunk != -1) {
 
-        index = cbf0_chunk;
-
         chunk_size = BE_32(&s->buf[cbf0_chunk + 4]);
         /* sanity check the full codebook size */
-        if (s->vqa_version == 3) {
-            if (chunk_size / (V3_VECTOR_SIZE) > V3_MAX_VECTORS) {
-                printf ("  VQA video: problem: CBF0 chunk too large (0x%X bytes)\n",
-                    chunk_size);
-                return;
-            }
-        } else {
-            if (chunk_size / (V1_2_VECTOR_SIZE) > V1_2_MAX_VECTORS) {
-                printf ("  VQA video: problem: CBF0 chunk too large (0x%X bytes)\n",
-                    chunk_size);
-                return;
-            }
+        if (chunk_size > MAX_CODEBOOK_SIZE) {
+            printf ("  VQA video: problem: CBF0 chunk too large (0x%X bytes)\n",
+                chunk_size);
+            return;
         }
         cbf0_chunk += CHUNK_PREAMBLE_SIZE;
 
@@ -452,23 +456,10 @@ static void vqa_decode_chunk(VqaContext *s)
         return;
     }
 
-    /* decode frame */
     chunk_size = BE_32(&s->buf[vptz_chunk + 4]);
     vptz_chunk += CHUNK_PREAMBLE_SIZE;
     decode_format80(&s->buf[vptz_chunk], chunk_size,
-        s->decode_buffer, s->decode_buffer_size);
-
-
-if (0)
-{
-int count = 0;
-printf (" finished decoding frame...");
-for (index = 8000; index < 16000; index++)
-  if (s->decode_buffer[index] > 0x0F)
-    count++;
-printf ("  %d/8000 hibytes exceeded 0x0F\n", count);
-}
-
+        s->decode_buffer, s->decode_buffer_size, 1);
 
     /* render the final PAL8 frame */
     for (y = 0; y < s->frame.linesize[0] * s->height; 
@@ -490,15 +481,9 @@ printf ("  %d/8000 hibytes exceeded 0x0F\n", count);
             case 2:
                 lobyte = s->decode_buffer[lobytes];
                 hibyte = s->decode_buffer[hibytes];
-                if (hibyte > 0x0F) {
-                    printf ("  VQA video: problem: vector #%d/%d high byte out of range (0x%X >= 0x0F)\n",
-                        lobytes, s->decode_buffer_size / 2, hibyte);
-                    hibyte = lobyte = 0;
-                } else if (hibyte == 0x0F)
-                    hibyte = 0;
                 vector_index = (hibyte << 8) | lobyte;
-                vector_index *= V1_2_VECTOR_SIZE;
-                lines = 2;
+                vector_index *= 8;
+                lines = s->vector_height;
                 break;
 
             case 3:
@@ -549,8 +534,26 @@ printf ("  %d/8000 hibytes exceeded 0x0F\n", count);
 
     if (cbpz_chunk != -1) {
 
-/* more partial codebook handling ... */
+        chunk_size = BE_32(&s->buf[cbpz_chunk + 4]);
+        cbpz_chunk += CHUNK_PREAMBLE_SIZE;
 
+        /* accumulate partial codebook */
+        memcpy(&s->next_codebook_buffer[s->next_codebook_buffer_index],
+            &s->buf[cbpz_chunk], chunk_size);
+        s->next_codebook_buffer_index += chunk_size;
+
+        s->partial_countdown--;
+        if (s->partial_countdown == 0) {
+
+            /* decompress codebook */
+            decode_format80(s->next_codebook_buffer, 
+                s->next_codebook_buffer_index, 
+                s->codebook, s->codebook_size, 0);
+
+            /* reset accounting */
+            s->next_codebook_buffer_index = 0;
+            s->partial_countdown = s->partial_count;
+        }
     }
 }
 
