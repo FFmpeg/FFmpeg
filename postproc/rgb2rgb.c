@@ -295,7 +295,8 @@ void palette8torgb15(const uint8_t *src, uint8_t *dst, unsigned num_pixels, cons
  * problem for anyone then tell me, and ill fix it)
  */
 void yv12toyuy2(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
-	int width, int height, int lumStride, int chromStride, int dstStride)
+	unsigned int width, unsigned int height,
+	unsigned int lumStride, unsigned int chromStride, unsigned int dstStride)
 {
 	int y;
 	const int chromWidth= width>>1;
@@ -366,7 +367,8 @@ asm(    EMMS" \n\t"
  * problem for anyone then tell me, and ill fix it)
  */
 void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-	int width, int height, int lumStride, int chromStride, int srcStride)
+	unsigned int width, unsigned int height,
+	unsigned int lumStride, unsigned int chromStride, unsigned int srcStride)
 {
 	int y;
 	const int chromWidth= width>>1;
@@ -420,7 +422,12 @@ void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 			"addl $8, %%eax			\n\t"
 			"cmpl %4, %%eax			\n\t"
 			" jb 1b				\n\t"
+			::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "r" (chromWidth)
+			: "memory", "%eax"
+		);
 
+		asm volatile(
+			"xorl %%eax, %%eax		\n\t"
 			"1:				\n\t"
 			PREFETCH" 64(%0, %%eax, 4)	\n\t"
 			"movq (%0, %%eax, 4), %%mm0	\n\t" // YUYV YUYV(0)
@@ -438,10 +445,10 @@ void yuy2toyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
 			MOVNTQ" %%mm2, 8(%1, %%eax, 2)	\n\t"
 
 			"addl $8, %%eax			\n\t"
-			"cmpl %5, %%eax			\n\t"
+			"cmpl %4, %%eax			\n\t"
 			" jb 1b				\n\t"
 
-			::"r"(src), "r"(ydst), "r"(udst), "r"(vdst), "r" (chromWidth), "m"(width)
+			::"r"(src+srcStride), "r"(ydst+lumStride), "r"(udst), "r"(vdst), "r" (chromWidth)
 			: "memory", "%eax"
 		);
 #else
