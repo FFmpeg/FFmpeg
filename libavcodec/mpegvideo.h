@@ -117,6 +117,7 @@ typedef struct MpegEncContext {
     int mb_x, mb_y;
     int mb_incr;
     int mb_intra;
+    INT16 *mb_var;      /* Table for MB variances */
     char *mb_type;    /* Table for MB type */
     
     /* matrix transmitted in the bitstream */

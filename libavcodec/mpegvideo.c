@@ -150,16 +150,21 @@ int MPV_common_init(MpegEncContext *s)
     
     if (s->encoding) {
         /* Allocate MB type table */
-        s->mb_type = malloc(s->mb_num * sizeof(char));
+        s->mb_type = av_mallocz(s->mb_num * sizeof(char));
         if (s->mb_type == NULL) {
             perror("malloc");
             goto fail;
         }
-    
+        
+        s->mb_var = av_mallocz(s->mb_num * sizeof(INT16));
+        if (s->mb_var == NULL) {
+            perror("malloc");
+            goto fail;
+        }
         /* Allocate MV table */
         /* By now we just have one MV per MB */
-        s->mv_table[0] = malloc(s->mb_num * sizeof(INT16));
-        s->mv_table[1] = malloc(s->mb_num * sizeof(INT16));
+        s->mv_table[0] = av_mallocz(s->mb_num * sizeof(INT16));
+        s->mv_table[1] = av_mallocz(s->mb_num * sizeof(INT16));
         if (s->mv_table[1] == NULL || s->mv_table[0] == NULL) {
             perror("malloc");
             goto fail;
@@ -225,6 +230,8 @@ int MPV_common_init(MpegEncContext *s)
  fail:
     if (s->mb_type)
         free(s->mb_type);
+    if (s->mb_var)
+        free(s->mb_var);
     if (s->mv_table[0])
         free(s->mv_table[0]);
     if (s->mv_table[1])
@@ -259,6 +266,8 @@ void MPV_common_end(MpegEncContext *s)
 
     if (s->mb_type)
         free(s->mb_type);
+    if (s->mb_var)
+        free(s->mb_var);
     if (s->mv_table[0])
         free(s->mv_table[0]);
     if (s->mv_table[1])
@@ -1079,7 +1088,10 @@ static void encode_picture(MpegEncContext *s, int picture_number)
                 sub_pixels_2(s->block[5], ptr, s->linesize >> 1, dxy);
             }
             emms_c();
-
+            //if (s->avg_mb_var)
+            //    printf("\nqscale=%2d dquant=%2d var=%4d avgvar=%4d", s->qscale,
+            //        s->qscale*(s->mb_var[s->mb_width*mb_y+mb_x]/s->avg_mb_var),
+            //        s->mb_var[s->mb_width*mb_y+mb_x], s->avg_mb_var);
             /* DCT & quantize */
             if (s->h263_msmpeg4) {
                 msmpeg4_dc_scale(s);

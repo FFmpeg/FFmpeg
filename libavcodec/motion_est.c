@@ -458,7 +458,7 @@ int estimate_motion(MpegEncContext * s,
     vard = vard >> 8;
     sum = sum >> 8;
     varc = (varc >> 8) - (sum * sum);
-    
+    s->mb_var[s->mb_width * mb_y + mb_x] = varc;
     s->avg_mb_var += varc;
      
 #if 0
