@@ -112,6 +112,7 @@ static int same_quality = 0;
 static int b_frames = 0;
 static int mb_decision = FF_MB_DECISION_SIMPLE;
 static int use_4mv = 0;
+static int use_obmc = 0;
 static int use_aic = 0;
 static int use_aiv = 0;
 static int use_umv = 0;
@@ -2275,6 +2276,10 @@ static void opt_output_file(const char *filename)
                 if (use_4mv) {
                     video_enc->flags |= CODEC_FLAG_4MV;
                 }
+                if (use_obmc) {
+                    video_enc->flags |= CODEC_FLAG_OBMC;
+                }
+            
                 if(use_part) {
                     video_enc->flags |= CODEC_FLAG_PART;
                 }
@@ -2877,6 +2882,7 @@ const OptionDef options[] = {
     { "hq", OPT_BOOL, {(void*)&mb_decision}, "activate high quality settings" },
     { "mbd", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_mb_decision}, "macroblock decision", "mode" },
     { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (MPEG4)" },
+    { "obmc", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_obmc}, "use overlapped block motion compensation (h263+)" },
     { "part", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_part}, "use data partitioning (MPEG4)" },
     { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
