@@ -62,6 +62,7 @@ static unsigned char* perfname[] = {
   "put_no_rnd_pixels16_xy2_altivec",
   "hadamard8_diff8x8_altivec",
   "hadamard8_diff16_altivec",
+  "avg_pixels8_xy2_altivec",
   "clear_blocks_dcbz32_ppc",
   "clear_blocks_dcbz128_ppc"
 };
@@ -268,10 +269,8 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         /* the two functions do the same thing, so use the same code */
         c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;
         c->avg_pixels_tab[0][0] = avg_pixels16_altivec;
-// next one disabled as it's untested.
-#if 0
         c->avg_pixels_tab[1][0] = avg_pixels8_altivec;
-#endif /* 0 */
+	c->avg_pixels_tab[1][3] = avg_pixels8_xy2_altivec;
         c->put_pixels_tab[1][3] = put_pixels8_xy2_altivec;
         c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2_altivec;
         c->put_pixels_tab[0][3] = put_pixels16_xy2_altivec;

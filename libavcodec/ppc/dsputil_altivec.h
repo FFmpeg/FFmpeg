@@ -48,6 +48,7 @@ extern void put_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, in
 extern void put_no_rnd_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h);
 extern int hadamard8_diff8x8_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, uint8_t *src, int stride, int h);
 extern int hadamard8_diff16_altivec(/*MpegEncContext*/ void *s, uint8_t *dst, uint8_t *src, int stride, int h);
+extern void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h);
 
 extern void gmc1_altivec(uint8_t *dst, uint8_t *src, int stride, int h, int x16, int y16, int rounder);
 

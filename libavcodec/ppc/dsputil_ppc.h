@@ -52,6 +52,7 @@ enum powerpc_perf_index {
   altivec_put_no_rnd_pixels16_xy2_num,
   altivec_hadamard8_diff8x8_num,
   altivec_hadamard8_diff16_num,
+  altivec_avg_pixels8_xy2_num,
   powerpc_clear_blocks_dcbz32,
   powerpc_clear_blocks_dcbz128,
   powerpc_perf_total
