@@ -21,17 +21,15 @@
 */
 
 #ifdef CONFIG_DARWIN
-static const vector signed int vzero =
-  (vector signed int)(0, 0, 0, 0);
-static const vector unsigned int altivec_vectorShiftInt19 =
-  (vector unsigned int)(19, 19, 19, 19);
+#define AVV(x...) (x)
 #else
-static const vector signed int vzero =
-  (vector signed int){0,0,0,0};
-static const vector unsigned int altivec_vectorShiftInt19 =
-  (vector unsigned int){19, 19, 19, 19};
-
+#define AVV(x...) {x}
 #endif
+
+static const vector signed int vzero =
+  (const vector signed int)AVV(0, 0, 0, 0);
+static const vector unsigned int altivec_vectorShiftInt19 =
+  (const vector unsigned int)AVV(19, 19, 19, 19);
 
 static inline void
 altivec_packIntArrayToCharArray(int *val, uint8_t* dest, int dstW) {
