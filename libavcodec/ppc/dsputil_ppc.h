@@ -40,6 +40,7 @@ enum powerpc_perf_index {
   altivec_fft_num = 0,
   altivec_gmc1_num,
   altivec_dct_unquantize_h263_num,
+  altivec_fdct,
   altivec_idct_add_num,
   altivec_idct_put_num,
   altivec_put_pixels16_num,
