@@ -94,7 +94,7 @@ int main(int argc, char **argv)
         exit(1);
     }
     
-    outfile = fopen(argv[1], "w");
+    outfile = fopen(argv[1], "wb");
     if (!outfile) {
         perror(argv[1]);
         return 1;
