@@ -720,13 +720,14 @@ static int get_num(ByteIOContext *pb, int *len)
 /* multiple of 20 bytes for ra144 (ugly) */
 #define RAW_PACKET_SIZE 1000
 
-static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_index){
+static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_index, int64_t *pos){
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
     int len, num, res, i;
     AVStream *st;
 
     while(!url_feof(pb)){
+        *pos= url_ftell(pb);
         if(rm->remaining_len > 0){
             num= rm->current_stream;
             len= rm->remaining_len;
@@ -744,8 +745,7 @@ static int sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stream_
             *timestamp = get_be32(pb);
             res= get_byte(pb); /* reserved */
             *flags = get_byte(pb); /* flags */
-            
-//            av_log(s, AV_LOG_DEBUG, "%d %Ld %X %X\n", num, *timestamp, *flags, res);
+
             
             len -= 12;
         }
@@ -773,7 +773,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = &s->pb;
     AVStream *st;
     int i, len, tmp, j;
-    int64_t timestamp;
+    int64_t timestamp, pos;
     uint8_t *ptr;
     int flags;
 
@@ -790,7 +790,9 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->size = len;
         st = s->streams[0];
     } else {
-        len=sync(s, &timestamp, &flags, &i);
+        int seq=1;
+
+        len=sync(s, &timestamp, &flags, &i, &pos);
         if(len<0)
             return AVERROR_IO;
         st = s->streams[i];
@@ -800,8 +802,7 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             h= get_byte(pb); len--;
             if(!(h & 0x40)){
-                int seq = get_byte(pb);
-                len--;
+                seq = get_byte(pb); len--;
             }
 
             if((h & 0xc0) == 0x40){
@@ -838,8 +839,11 @@ static int rm_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 #endif
         pkt->pts= timestamp;
-        if(flags&2) 
+        if(flags&2){
             pkt->flags |= PKT_FLAG_KEY;
+            if((seq&0x7F) == 1)
+                av_add_index_entry(st, pos, timestamp, 0, AVINDEX_KEYFRAME);
+        }
     }
 
     /* for AC3, needs to swap bytes */
@@ -880,7 +884,7 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
 {
     RMContext *rm = s->priv_data;
     int64_t pos, dts;
-    int stream_index2, flags, len;
+    int stream_index2, flags, len, h;
 
     pos = *ppos;
     
@@ -890,18 +894,28 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
     url_fseek(&s->pb, pos, SEEK_SET);
     rm->remaining_len=0;
     for(;;){
-        pos= url_ftell(&s->pb);
-        len=sync(s, &dts, &flags, &stream_index2);
+        int seq=1;
+        AVStream *st;
+
+        len=sync(s, &dts, &flags, &stream_index2, &pos);
         if(len<0)
             return AV_NOPTS_VALUE;
-        av_log(s, AV_LOG_DEBUG, "%d %d-%d %Ld\n", flags, stream_index2, stream_index, dts);
-        if(flags&2){
-            av_add_index_entry(s->streams[stream_index2], pos, dts, 0, AVINDEX_KEYFRAME);
-            if(stream_index2 == stream_index){
-                break;
+
+        st = s->streams[stream_index2];
+        if (st->codec.codec_type == CODEC_TYPE_VIDEO) {
+            h= get_byte(&s->pb); len--;
+            if(!(h & 0x40)){
+                seq = get_byte(&s->pb); len--;
             }
         }
-        
+            
+        if((flags&2) && (seq&0x7F) == 1){
+//            av_log(s, AV_LOG_DEBUG, "%d %d-%d %Ld %d\n", flags, stream_index2, stream_index, dts, seq);
+            av_add_index_entry(st, pos, dts, 0, AVINDEX_KEYFRAME);
+            if(stream_index2 == stream_index)
+                break;
+        }
+
         url_fskip(&s->pb, len);
     }
     *ppos = pos;
