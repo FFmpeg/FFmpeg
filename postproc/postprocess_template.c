@@ -2824,7 +2824,15 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 			dstBlock+=8;
 			srcBlock+=8;
 		}
-		memcpy(dst, tempDst + 9*dstStride, copyAhead*dstStride );
+		if(width==dstStride)
+			memcpy(dst, tempDst + 9*dstStride, copyAhead*dstStride);
+		else
+		{
+			for(i=0; i<copyAhead; i++)
+			{
+				memcpy(dst + i*dstStride, tempDst + (9+i)*dstStride, width);
+			}
+		}
 	}
 
 //printf("\n");
@@ -3050,7 +3058,15 @@ static void RENAME(postProcess)(uint8_t src[], int srcStride, uint8_t dst[], int
 		if(y+15 >= height)
 		{
 			uint8_t *dstBlock= &(dst[y*dstStride]);
-			memcpy(dstBlock, tempDst + dstStride, dstStride*(height-y) );
+			if(width==dstStride)
+				memcpy(dstBlock, tempDst + dstStride, dstStride*(height-y));
+			else
+			{
+				for(i=0; i<height-y; i++)
+				{
+					memcpy(dstBlock + i*dstStride, tempDst + (i+1)*dstStride, width);
+				}
+			}
 		}
 /*
 		for(x=0; x<width; x+=32)
