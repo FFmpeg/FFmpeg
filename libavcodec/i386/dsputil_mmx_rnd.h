@@ -163,9 +163,9 @@ static void DEF(put, pixels16_l2)(uint8_t *dst, uint8_t *src1, uint8_t *src2, in
 	"addl	$32, %2			\n\t"
 	"subl	$2, %0			\n\t"
 	"jnz	1b			\n\t"
-	:"+g"(h), "+r"(src1), "+r"(src2), "+r"(dst)
-	:"r"(src1Stride), "r"(dstStride)
-	:"memory");
+	:"+a"(h), "+b"(src1), "+c"(src2), "+d"(dst)
+	:"S"(src1Stride), "D"(dstStride)
+	:"memory"); 
 }
 
 static void DEF(put, pixels8_y2)(UINT8 *block, const UINT8 *pixels, int line_size, int h)
