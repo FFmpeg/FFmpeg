@@ -925,9 +925,40 @@ to send your patches to the ffmpeg mailing list.
 
 @section Coding Rules
 
-ffmpeg is programmed in ANSI C language. GCC extensions are
-tolerated. Indent size is 4. The TAB character should not be used.
+ffmpeg is programmed in the ISO C90 language with a few additional
+features from ISO C99, namely:
+@itemize @bullet
+@item
+the @samp{inline} keyword;
+@item
+@samp{//} comments;
+@item
+designated struct initializers (@samp{struct s x = @{ .i = 17 @};})
+@item
+compound literals (@samp{x = (struct s) { 17, 23 @};})
+@end itemize
 
+These features are supported by all compilers we care about, so we won't
+accept patches to remove their use unless they absolutely don't impair
+clarity and performance.
+
+All code must compile with gcc 2.95 and gcc 3.3. Currently, ffmpeg also
+compiles with several other compilers, such as the Compaq ccc compiler
+or Sun Studio 9, and we would like to keep it that way unless it would
+be exceedingly involved. To ensure compatibility, please don't use any
+additional C99 features or gcc extensions. Watch out especially for:
+@itemize @bullet
+@item
+mixing statements and declarations;
+@item
+@samp{long long} (use @samp{int64_t} instead);
+@item
+@samp{__attribute__} not protected by @samp{#ifdef __GNUC__} or similar;
+@item
+gcc statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
+@end itemize
+
+Indent size is 4. The TAB character should not be used.
 The presentation is the one specified by 'indent -i4 -kr'.
 
 Main priority in ffmpeg is simplicity and small code size (=less
