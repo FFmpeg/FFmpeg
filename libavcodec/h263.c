@@ -1236,7 +1236,7 @@ void h263_encode_mb(MpegEncContext * s,
 }
 #endif
 
-int ff_h263_loop_filter(MpegEncContext * s){
+void ff_h263_loop_filter(MpegEncContext * s){
     int qp_c;
     const int linesize  = s->linesize;
     const int uvlinesize= s->uvlinesize;
@@ -3572,7 +3572,11 @@ static void preview_obmc(MpegEncContext *s){
     }else{
         get_vlc2(&s->gb, cbpy_vlc.table, CBPY_VLC_BITS, 1);
         if (cbpc & 8) {
-            skip_bits(&s->gb, 2);
+            if(s->modified_quant){
+                if(get_bits1(&s->gb)) skip_bits(&s->gb, 1);
+                else                  skip_bits(&s->gb, 5);
+            }else
+                skip_bits(&s->gb, 2);
         }
         
         if ((cbpc & 16) == 0) {
@@ -3624,12 +3628,24 @@ end:
     s->gb= gb;
 }
 
+static void h263_decode_dquant(MpegEncContext *s){
+    static const int8_t quant_tab[4] = { -1, -2, 1, 2 };
+
+    if(s->modified_quant){
+        if(get_bits1(&s->gb))
+            s->qscale= modified_quant_tab[get_bits1(&s->gb)][ s->qscale ];
+        else
+            s->qscale= get_bits(&s->gb, 5);
+    }else
+        s->qscale += quant_tab[get_bits(&s->gb, 2)];
+    ff_set_qscale(s, s->qscale);
+}
+
 int ff_h263_decode_mb(MpegEncContext *s,
                       DCTELEM block[6][64])
 {
     int cbpc, cbpy, i, cbp, pred_x, pred_y, mx, my, dquant;
     int16_t *mot_val;
-    static int8_t quant_tab[4] = { -1, -2, 1, 2 };
     const int xy= s->mb_x + s->mb_y * s->mb_stride;
     
     assert(!s->h263_pred);
@@ -3668,14 +3684,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
         
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
-            if(s->modified_quant){
-                if(get_bits1(&s->gb))
-                    s->qscale= modified_quant_tab[get_bits1(&s->gb)][ s->qscale ];
-                else
-                    s->qscale= get_bits(&s->gb, 5);
-            }else
-                s->qscale += quant_tab[get_bits(&s->gb, 2)];
-            ff_set_qscale(s, s->qscale);
+            h263_decode_dquant(s);
         }
         
         s->mv_dir = MV_DIR_FORWARD;
@@ -3783,14 +3792,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
         assert(!s->mb_intra);
 
         if(IS_QUANT(mb_type)){
-            if(s->modified_quant){ //FIXME factorize
-                if(get_bits1(&s->gb))
-                    s->qscale= modified_quant_tab[get_bits1(&s->gb)][ s->qscale ];
-                else
-                    s->qscale= get_bits(&s->gb, 5);
-            }else
-                s->qscale += quant_tab[get_bits(&s->gb, 2)];
-            ff_set_qscale(s, s->qscale);
+            h263_decode_dquant(s);
         }
 
         if(IS_DIRECT(mb_type)){
@@ -3857,14 +3859,7 @@ intra:
         }
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
-            if(s->modified_quant){
-                if(get_bits1(&s->gb))
-                    s->qscale= modified_quant_tab[get_bits1(&s->gb)][ s->qscale ];
-                else
-                    s->qscale= get_bits(&s->gb, 5);
-            }else
-                s->qscale += quant_tab[get_bits(&s->gb, 2)];
-            ff_set_qscale(s, s->qscale);
+            h263_decode_dquant(s);
         }
     }
 
