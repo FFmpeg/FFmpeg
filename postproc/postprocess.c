@@ -580,7 +580,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 
 	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
-	if(verbose) printf("%s\n", name);
+	if(verbose>1) printf("pp: %s\n", name);
 
 	for(;;){
 		char *filterName;
@@ -597,7 +597,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 		if(filterToken == NULL) break;
 		p+= strlen(filterToken) + 1; // p points to next filterToken
 		filterName= strtok(filterToken, optionDelimiters);
-		if(verbose) printf("%s::%s\n", filterToken, filterName);
+		if(verbose>1) printf("pp: %s::%s\n", filterToken, filterName);
 
 		if(*filterName == '-')
 		{
@@ -609,7 +609,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 			option= strtok(NULL, optionDelimiters);
 			if(option == NULL) break;
 
-			if(verbose) printf(" option: %s\n", option);
+			if(verbose>1) printf("pp: option: %s\n", option);
 			if(!strcmp("autoq", option) || !strcmp("a", option)) q= quality;
 			else if(!strcmp("nochrom", option) || !strcmp("y", option)) chrom=0;
 			else if(!strcmp("chrom", option) || !strcmp("c", option)) chrom=1;
@@ -751,7 +751,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 	if(ppMode.chromMode & DERING) ppMode.oldMode |= PP_DERING_C;
 #endif
 
-	if(verbose) printf("lumMode=%X, chromMode=%X\n", ppMode.lumMode, ppMode.chromMode);
+	if(verbose>1) printf("pp: lumMode=%X, chromMode=%X\n", ppMode.lumMode, ppMode.chromMode);
 	return ppMode;
 }
 
@@ -794,6 +794,7 @@ void  postprocess(unsigned char * src[], int src_stride,
 {
 	struct PPMode ppMode;
 	static QP_STORE_T zeroArray[2048/8];
+	static int firstTime=1;
 
 	if(newPPFlag)
 	{
@@ -804,7 +805,13 @@ void  postprocess(unsigned char * src[], int src_stride,
 
 		return;
 	}
-	
+
+	if(firstTime && verbose)
+	{
+		printf("using pp filters 0x%X\n", mode);
+		firstTime=0;
+	}
+
 	if(QP_store==NULL)
 	{
 		QP_store= zeroArray;
@@ -874,6 +881,8 @@ void  postprocess2(unsigned char * src[], int src_stride,
 {
 
 	QP_STORE_T quantArray[2048/8];
+	static int firstTime=1;
+	
 	if(QP_store==NULL || (mode->lumMode & FORCE_QUANT)) 
 	{
 		int i;
@@ -883,6 +892,12 @@ void  postprocess2(unsigned char * src[], int src_stride,
 			for(i=0; i<2048/8; i++) quantArray[i]= mode->forcedQuant;
 		else
 			for(i=0; i<2048/8; i++) quantArray[i]= 1;
+	}
+
+	if(firstTime && verbose)
+	{
+		printf("using npp filters 0x%X/0x%X\n", mode->lumMode, mode->chromMode);
+		firstTime=0;
 	}
 
 #ifdef HAVE_ODIVX_POSTPROCESS
