@@ -36,6 +36,10 @@ OBJS+= liba52/bit_allocate.o liba52/bitstream.o liba52/downmix.o \
 endif
 endif
 
+ifeq ($(CONFIG_FAAD),yes)
+OBJS+= faad.o
+endif
+
 ifeq ($(CONFIG_PP),yes)
 ifeq ($(SHARED_PP),yes)
 EXTRALIBS += -lpostproc

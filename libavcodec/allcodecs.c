@@ -85,6 +85,10 @@ void avcodec_register_all(void)
     register_avcodec(&wmav1_decoder);
     register_avcodec(&wmav2_decoder);
     register_avcodec(&indeo3_decoder);
+#ifdef CONFIG_FAAD
+    register_avcodec(&aac_decoder);
+    register_avcodec(&mpeg4aac_decoder);
+#endif
 #endif
     register_avcodec(&mpeg_decoder);
     register_avcodec(&dvvideo_decoder);
