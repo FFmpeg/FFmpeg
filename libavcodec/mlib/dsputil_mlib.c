@@ -226,7 +226,7 @@ static void ff_fdct_mlib(DCTELEM *data)
     mlib_VideoDCT8x8_S16_S16 (data, data);
 }
 
-void dsputil_init_mlib(DSPContext* c, unsigned mask)
+void dsputil_init_mlib(DSPContext* c, AVCodecContext *avctx)
 {
     c->put_pixels_tab[0][0] = put_pixels16_mlib;
     c->put_pixels_tab[0][1] = put_pixels16_x2_mlib;
@@ -258,12 +258,12 @@ void MPV_common_init_mlib(MpegEncContext *s)
     int i;
 
     if(s->avctx->dct_algo==FF_DCT_AUTO || s->avctx->dct_algo==FF_DCT_MLIB){
-	s->fdct = ff_fdct_mlib;
+	s->dsp.fdct = ff_fdct_mlib;
     }
 
     if(s->avctx->idct_algo==FF_IDCT_AUTO || s->avctx->idct_algo==FF_IDCT_MLIB){
-        s->idct_put= ff_idct_put_mlib;
-        s->idct_add= ff_idct_add_mlib;
-        s->idct_permutation_type= FF_NO_IDCT_PERM;
+        s->dsp.idct_put= ff_idct_put_mlib;
+        s->dsp.idct_add= ff_idct_add_mlib;
+        s->dsp.idct_permutation_type= FF_NO_IDCT_PERM;
     }
 }
