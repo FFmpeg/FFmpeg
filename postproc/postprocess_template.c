@@ -29,15 +29,16 @@ doHorizDefFilter	Ec	Ec	Ec
 deRing			E		e	e*
 Vertical RKAlgo1	E		a	a
 Horizontal RKAlgo1			a	a
-Vertical X1		a		E	E
-Horizontal X1		a		E	E
+Vertical X1#		a		E	E
+Horizontal X1#		a		E	E
 LinIpolDeinterlace	e		E	E*
 CubicIpolDeinterlace	a		e	e*
 LinBlendDeinterlace	e		E	E*
-MedianDeinterlace	 	Ec	Ec
+MedianDeinterlace#	 	Ec	Ec
+TempDeNoiser#		a
 
-
-* i dont have a 3dnow CPU -> its untested
+* i dont have a 3dnow CPU -> its untested, but noone said it doesnt work so it seems to work
+# more or less selfinvented filters so the exactness isnt too meaningfull
 E = Exact implementation
 e = allmost exact implementation (slightly different rounding,...)
 a = alternative / approximate impl
@@ -48,21 +49,18 @@ c = checked against the other implementations (-vo md5)
 TODO:
 verify that everything workes as it should (how?)
 reduce the time wasted on the mem transfer
-implement dering
 implement everything in C at least (done at the moment but ...)
 unroll stuff if instructions depend too much on the prior one
 we use 8x8 blocks for the horizontal filters, opendivx seems to use 8x4?
 move YScale thing to the end instead of fixing QP
 write a faster and higher quality deblocking filter :)
-do something about the speed of the horizontal filters
 make the mainloop more flexible (variable number of blocks at once
 	(the if/else stuff per block is slowing things down)
 compare the quality & speed of all filters
 split this huge file
-fix warnings (unused vars, ...)
-noise reduction filters
 border remover
 optimize c versions
+try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 ...
 
 Notes:
@@ -182,15 +180,16 @@ static struct PPFilter filters[]=
 	{"li", "linipoldeint", 		0, 1, 6, LINEAR_IPOL_DEINT_FILTER},
 	{"ci", "cubicipoldeint",	0, 1, 6, CUBIC_IPOL_DEINT_FILTER},
 	{"md", "mediandeint", 		0, 1, 6, MEDIAN_DEINT_FILTER},
+	{"tn", "tmpnoise", 		1, 7, 8, TEMP_NOISE_FILTER},
 	{NULL, NULL,0,0,0,0} //End Marker
 };
 
 static char *replaceTable[]=
 {
-	"default", 	"hdeblock:a,vdeblock:a,dering:a,autolevels",
-	"de", 		"hdeblock:a,vdeblock:a,dering:a,autolevels",
-	"fast", 	"x1hdeblock:a,x1vdeblock:a,dering:a,autolevels",
-	"fa", 		"x1hdeblock:a,x1vdeblock:a,dering:a,autolevels",
+	"default", 	"hdeblock:a,vdeblock:a,dering:a,autolevels,tmpnoise:a:150:200:400",
+	"de", 		"hdeblock:a,vdeblock:a,dering:a,autolevels,tmpnoise:a:150:200:400",
+	"fast", 	"x1hdeblock:a,x1vdeblock:a,dering:a,autolevels,tmpnoise:a:150:200:400",
+	"fa", 		"x1hdeblock:a,x1vdeblock:a,dering:a,autolevels,tmpnoise:a:150:200:400",
 	NULL //End Marker
 };
 
@@ -2594,13 +2593,104 @@ static inline void transpose2(uint8_t *dst, int dstStride, uint8_t *src)
 }
 #endif
 
+static void inline tempNoiseReducer(uint8_t *src, int stride,
+				    uint8_t *tempBlured, int *maxNoise)
+{
+	int y;
+	int d=0;
+	int sysd=0;
+
+	for(y=0; y<8; y++)
+	{
+		int x;
+		for(x=0; x<8; x++)
+		{
+			int ref= tempBlured[ x + y*stride ];
+			int cur= src[ x + y*stride ];
+			int d1=ref - cur;
+			d+= ABS(d1); //d1*d1;
+			sysd+= d1;
+		}
+	}
+//printf("%d %d %d\n", maxNoise[0], maxNoise[1], maxNoise[2]);
+/*
+Switch between
+ 1  0  0  0  0  0  0  (0)
+64 32 16  8  4  2  1  (1)
+64 48 36 27 20 15 11 (33) (approx)
+64 56 49 43 37 33 29 (200) (approx)
+*/
+	if(d > maxNoise[1])
+	{
+		if(d < maxNoise[2])
+		{
+			for(y=0; y<8; y++)
+			{
+				int x;
+				for(x=0; x<8; x++)
+				{
+					int ref= tempBlured[ x + y*stride ];
+					int cur= src[ x + y*stride ];
+					tempBlured[ x + y*stride ]=
+					src[ x + y*stride ]=
+						(ref + cur + 1)>>1;
+				}
+			}
+		}
+		else
+		{
+			for(y=0; y<8; y++)
+			{
+				int x;
+				for(x=0; x<8; x++)
+				{
+					tempBlured[ x + y*stride ]= src[ x + y*stride ];
+				}
+			}
+		}
+	}
+	else
+	{
+		if(d < maxNoise[0])
+		{
+			for(y=0; y<8; y++)
+			{
+				int x;
+				for(x=0; x<8; x++)
+				{
+					int ref= tempBlured[ x + y*stride ];
+					int cur= src[ x + y*stride ];
+					tempBlured[ x + y*stride ]=
+					src[ x + y*stride ]=
+						(ref*7 + cur + 4)>>3;
+				}
+			}
+		}
+		else
+		{
+			for(y=0; y<8; y++)
+			{
+				int x;
+				for(x=0; x<8; x++)
+				{
+					int ref= tempBlured[ x + y*stride ];
+					int cur= src[ x + y*stride ];
+					tempBlured[ x + y*stride ]=
+					src[ x + y*stride ]=
+						(ref*3 + cur + 2)>>2;
+				}
+			}
+		}
+	}
+}
+
 #ifdef HAVE_ODIVX_POSTPROCESS
 #include "../opendivx/postprocess.h"
 int use_old_pp=0;
 #endif
 
 static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, int isColor, int mode);
+	QP_STORE_T QPs[], int QPStride, int isColor, struct PPMode *ppMode);
 
 /* -pp Command line Help
 NOTE/FIXME: put this at an appropriate place (--help, html docs, man mplayer)?
@@ -2611,6 +2701,8 @@ long form example:
 -pp vdeblock:autoq,hdeblock:autoq,linblenddeint		-pp default,-vdeblock
 short form example:
 -pp vb:a,hb:a,lb					-pp de,-vb
+more examples:
+-pp tn:64:128:256
 
 Filters			Options
 short	long name	short	long option	Description
@@ -2631,6 +2723,7 @@ ci	cubicipoldeint				cubic interpolating deinterlacer
 md	mediandeint				median deinterlacer
 de	default					hdeblock:a,vdeblock:a,dering:a,autolevels
 fa	fast					x1hdeblock:a,x1vdeblock:a,dering:a,autolevels
+tn	tmpnoise	(3 Thresholds)		Temporal Noise Reducer
 */
 
 /**
@@ -2644,14 +2737,16 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 	char *p= temp;
 	char *filterDelimiters= ",";
 	char *optionDelimiters= ":";
-	struct PPMode ppMode= {0,0,0,0,0,0};
+	struct PPMode ppMode= {0,0,0,0,0,0,{150,200,400}};
 	char *filterToken;
 
 	strncpy(temp, name, GET_MODE_BUFFER_SIZE);
 
+	printf("%s\n", name);
+
 	for(;;){
 		char *filterName;
-		int q= GET_PP_QUALITY_MAX;
+		int q= 1000000; //GET_PP_QUALITY_MAX;
 		int chrom=-1;
 		char *option;
 		char *options[OPTIONS_ARRAY_SIZE];
@@ -2662,7 +2757,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 
 		filterToken= strtok(p, filterDelimiters);
 		if(filterToken == NULL) break;
-		p+= strlen(filterToken) + 1;
+		p+= strlen(filterToken) + 1; // p points to next filterToken
 		filterName= strtok(filterToken, optionDelimiters);
 		printf("%s::%s\n", filterToken, filterName);
 
@@ -2671,6 +2766,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 			enable=0;
 			filterName++;
 		}
+
 		for(;;){ //for all options
 			option= strtok(NULL, optionDelimiters);
 			if(option == NULL) break;
@@ -2683,10 +2779,10 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 			{
 				options[numOfUnknownOptions] = option;
 				numOfUnknownOptions++;
-				options[numOfUnknownOptions] = NULL;
 			}
 			if(numOfUnknownOptions >= OPTIONS_ARRAY_SIZE-1) break;
 		}
+		options[numOfUnknownOptions] = NULL;
 
 		/* replace stuff from the replace Table */
 		for(i=0; replaceTable[2*i]!=NULL; i++)
@@ -2715,6 +2811,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 
 		for(i=0; filters[i].shortName!=NULL; i++)
 		{
+//			printf("Compareing %s, %s, %s\n", filters[i].shortName,filters[i].longName, filterName);
 			if(   !strcmp(filters[i].longName, filterName)
 			   || !strcmp(filters[i].shortName, filterName))
 			{
@@ -2744,6 +2841,27 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 							numOfUnknownOptions--;
 						}
 				}
+				else if(filters[i].mask == TEMP_NOISE_FILTER)
+				{
+					int o;
+					int numOfNoises=0;
+					ppMode.maxTmpNoise[0]= 150;
+					ppMode.maxTmpNoise[1]= 200;
+					ppMode.maxTmpNoise[2]= 400;
+
+					for(o=0; options[o]!=NULL; o++)
+					{
+						char *tail;
+						ppMode.maxTmpNoise[numOfNoises]=
+							strtol(options[o], &tail, 0);
+						if(tail!=options[o])
+						{
+							numOfNoises++;
+							numOfUnknownOptions--;
+							if(numOfNoises >= 3) break;
+						}
+					}
+				}
 			}
 		}
 		if(!filterNameOk) ppMode.error++;
@@ -2763,7 +2881,7 @@ struct PPMode getPPModeByNameAndQuality(char *name, int quality)
 }
 
 /**
- * ...
+ * Obsolete, dont use it, use postprocess2() instead
  */
 void  postprocess(unsigned char * src[], int src_stride,
                  unsigned char * dst[], int dst_stride,
@@ -2771,24 +2889,34 @@ void  postprocess(unsigned char * src[], int src_stride,
                  QP_STORE_T *QP_store,  int QP_stride,
 					  int mode)
 {
+	struct PPMode ppMode;
+	static QP_STORE_T zeroArray[2048/8];
 /*
 	static int qual=0;
 
-	struct PPMode ppMode= getPPModeByNameAndQuality("fast,default,-hdeblock,-vdeblock", qual);
+	ppMode= getPPModeByNameAndQuality("fast,default,-hdeblock,-vdeblock,tmpnoise:150:200:300", qual);
+	printf("OK\n");
 	qual++;
 	qual%=7;
-	printf("\n%d %d %d %d\n", ppMode.lumMode, ppMode.chromMode, ppMode.oldMode, ppMode.error);
+	printf("\n%X %X %X %X :%d: %d %d %d\n", ppMode.lumMode, ppMode.chromMode, ppMode.oldMode, ppMode.error,
+		qual, ppMode.maxTmpNoise[0], ppMode.maxTmpNoise[1], ppMode.maxTmpNoise[2]);
 	postprocess2(src, src_stride, dst, dst_stride,
                  horizontal_size, vertical_size, QP_store, QP_stride, &ppMode);
 
 	return;
 */
-	static QP_STORE_T zeroArray[2048/8];
 	if(QP_store==NULL)
 	{
 		QP_store= zeroArray;
 		QP_stride= 0;
 	}
+
+	ppMode.lumMode= mode;
+	mode= ((mode&0xFF)>>4) | (mode&0xFFFFFF00);
+	ppMode.chromMode= mode;
+	ppMode.maxTmpNoise[0]= 150;
+	ppMode.maxTmpNoise[1]= 200;
+	ppMode.maxTmpNoise[2]= 400;
 
 #ifdef HAVE_ODIVX_POSTPROCESS
 // Note: I could make this shit outside of this file, but it would mean one
@@ -2800,27 +2928,28 @@ void  postprocess(unsigned char * src[], int src_stride,
 #endif
 
 	postProcess(src[0], src_stride, dst[0], dst_stride,
-		horizontal_size, vertical_size, QP_store, QP_stride, 0, mode);
+		horizontal_size, vertical_size, QP_store, QP_stride, 0, &ppMode);
 
 	horizontal_size >>= 1;
 	vertical_size   >>= 1;
 	src_stride      >>= 1;
 	dst_stride      >>= 1;
-	mode= ((mode&0xFF)>>4) | (mode&0xFFFFFF00);
 //	mode&= ~(LINEAR_IPOL_DEINT_FILTER | LINEAR_BLEND_DEINT_FILTER |
 //		 MEDIAN_DEINT_FILTER | CUBIC_IPOL_DEINT_FILTER);
 
 	if(1)
 	{
 		postProcess(src[1], src_stride, dst[1], dst_stride,
-			horizontal_size, vertical_size, QP_store, QP_stride, 1, mode);
+			horizontal_size, vertical_size, QP_store, QP_stride, 1, &ppMode);
 		postProcess(src[2], src_stride, dst[2], dst_stride,
-			horizontal_size, vertical_size, QP_store, QP_stride, 2, mode);
+			horizontal_size, vertical_size, QP_store, QP_stride, 2, &ppMode);
 	}
 	else
 	{
-		memcpy(dst[1], src[1], src_stride*horizontal_size);
-		memcpy(dst[2], src[2], src_stride*horizontal_size);
+		memset(dst[1], 128, dst_stride*vertical_size);
+		memset(dst[2], 128, dst_stride*vertical_size);
+//		memcpy(dst[1], src[1], src_stride*horizontal_size);
+//		memcpy(dst[2], src[2], src_stride*horizontal_size);
 	}
 }
 
@@ -2849,7 +2978,7 @@ void  postprocess2(unsigned char * src[], int src_stride,
 #endif
 
 	postProcess(src[0], src_stride, dst[0], dst_stride,
-		horizontal_size, vertical_size, QP_store, QP_stride, 0, mode->lumMode);
+		horizontal_size, vertical_size, QP_store, QP_stride, 0, mode);
 
 	horizontal_size >>= 1;
 	vertical_size   >>= 1;
@@ -2857,9 +2986,9 @@ void  postprocess2(unsigned char * src[], int src_stride,
 	dst_stride      >>= 1;
 
 	postProcess(src[1], src_stride, dst[1], dst_stride,
-		horizontal_size, vertical_size, QP_store, QP_stride, 1, mode->chromMode);
+		horizontal_size, vertical_size, QP_store, QP_stride, 1, mode);
 	postProcess(src[2], src_stride, dst[2], dst_stride,
-		horizontal_size, vertical_size, QP_store, QP_stride, 2, mode->chromMode);
+		horizontal_size, vertical_size, QP_store, QP_stride, 2, mode);
 }
 
 
@@ -3023,9 +3152,11 @@ SIMPLE_CPY
  * Filters array of bytes (Y or U or V values)
  */
 static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-	QP_STORE_T QPs[], int QPStride, int isColor, int mode)
+	QP_STORE_T QPs[], int QPStride, int isColor, struct PPMode *ppMode)
 {
 	int x,y;
+	const int mode= isColor ? ppMode->chromMode : ppMode->lumMode;
+
 	/* we need 64bit here otherwise we´ll going to have a problem
 	   after watching a black picture for 5 hours*/
 	static uint64_t *yHistogram= NULL;
@@ -3039,6 +3170,9 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 	/* Temporary buffers for handling the last block */
 	static uint8_t *tempDstBlock= NULL;
 	static uint8_t *tempSrcBlock= NULL;
+
+	/* Temporal noise reducing buffers */
+	static uint8_t *tempBlured[3]= {NULL,NULL,NULL};
 
 #ifdef PP_FUNNY_STRIDE
 	uint8_t *dstBlockPtrBackup;
@@ -3060,6 +3194,16 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		tempSrc= (uint8_t*)memalign(8, 1024*24);
 		tempDstBlock= (uint8_t*)memalign(8, 1024*24);
 		tempSrcBlock= (uint8_t*)memalign(8, 1024*24);
+	}
+
+	if(tempBlured[isColor]==NULL && (mode & TEMP_NOISE_FILTER))
+	{
+//		printf("%d %d %d\n", isColor, dstStride, height);
+		//FIXME works only as long as the size doesnt increase
+		//Note:the +17*1024 is just there so i dont have to worry about r/w over te end
+		tempBlured[isColor]= (uint8_t*)memalign(8, dstStride*((height+7)&(~7)) + 17*1024);
+
+		memset(tempBlured[isColor], 0, dstStride*((height+7)&(~7)) + 17*1024);
 	}
 
 	if(!yHistogram)
@@ -3219,26 +3363,28 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		uint8_t *tempBlock1= tempBlocks;
 		uint8_t *tempBlock2= tempBlocks + 8;
 #endif
+		int QP=0;
 		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
 		   if not than use a temporary buffer */
 		if(y+15 >= height)
 		{
+			int i;
 			/* copy from line 8 to 15 of src, these will be copied with
 			   blockcopy to dst later */
 			memcpy(tempSrc + srcStride*8, srcBlock + srcStride*8,
 				srcStride*MAX(height-y-8, 0) );
 
-			/* duplicate last line to fill the void upto line 15 */
-			if(y+15 >= height)
-			{
-				int i;
-				for(i=height-y; i<=15; i++)
-					memcpy(tempSrc + srcStride*i,
-						src + srcStride*(height-1), srcStride);
-			}
+			/* duplicate last line of src to fill the void upto line 15 */
+			for(i=MAX(height-y, 8); i<=15; i++)
+				memcpy(tempSrc + srcStride*i, src + srcStride*(height-1), srcStride);
 
-			/* copy up to 9 lines of dst */
+			/* copy up to 9 lines of dst (line -1 to 7)*/
 			memcpy(tempDst, dstBlock - dstStride, dstStride*MIN(height-y+1, 9) );
+
+			/* duplicate last line of dst to fill the void upto line 8 */
+			for(i=height-y+1; i<=8; i++)
+				memcpy(tempDst + dstStride*i, dst + dstStride*(height-1), dstStride);
+
 			dstBlock= tempDst + dstStride;
 			srcBlock= tempSrc;
 		}
@@ -3251,7 +3397,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			const int stride= dstStride;
 			uint8_t *tmpXchg;
 #ifdef ARCH_X86
-			int QP= *QPptr;
+			QP= *QPptr;
 			asm volatile(
 				"addl %2, %1		\n\t"
 				"sbbl %%eax, %%eax	\n\t"
@@ -3262,7 +3408,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				: "%eax"
 			);
 #else
-			int QP= isColor ?
+			QP= isColor ?
                                 QPs[(y>>3)*QPStride + (x>>3)]:
                                 QPs[(y>>4)*QPStride + (x>>4)];
 #endif
@@ -3442,13 +3588,14 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				//FIXME filter first line
 					if(y>0) dering(dstBlock - stride - 8, stride, QP);
 				}
-			}
-			else if(mode & DERING)
-			{
-			 //FIXME y+15 is required cuz of the tempBuffer thing -> bottom right block isnt filtered
-					if(y > 8 && y+15 < height) dering(dstBlock - stride*9 + width - 8, stride, QP);
-			}
 
+				if(mode & TEMP_NOISE_FILTER)
+				{
+					tempNoiseReducer(dstBlock-8, stride,
+						tempBlured[isColor] + y*dstStride + x,
+						ppMode->maxTmpNoise);
+				}
+			}
 
 #ifdef PP_FUNNY_STRIDE
 			/* did we use a tmp-block buffer */
@@ -3473,6 +3620,18 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			tempBlock1= tempBlock2;
 			tempBlock2 = tmpXchg;
 #endif
+		}
+
+		if(mode & DERING)
+		{
+				if(y > 0) dering(dstBlock - dstStride - 8, dstStride, QP);
+		}
+
+		if((mode & TEMP_NOISE_FILTER))
+		{
+			tempNoiseReducer(dstBlock-8, dstStride,
+				tempBlured[isColor] + y*dstStride + x,
+				ppMode->maxTmpNoise);
 		}
 
 		/* did we use a tmp buffer for the last lines*/

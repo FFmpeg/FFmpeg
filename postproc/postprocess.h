@@ -56,6 +56,8 @@
 #define	CUBIC_IPOL_DEINT_FILTER		0x40000	// 262144
 #define	MEDIAN_DEINT_FILTER		0x80000	// 524288
 
+#define TEMP_NOISE_FILTER		0x100000
+
 
 #define GET_PP_QUALITY_MAX 6
 
@@ -73,19 +75,22 @@ struct PPMode{
 	int oldMode; // will be passed to odivx
 	int error; // non zero on error
 
-	int minAllowedY;
-	int maxAllowedY;
+	int minAllowedY; // for brigtness correction
+	int maxAllowedY; // for brihtness correction
+
+	int maxTmpNoise[3]; // for Temporal Noise Reducing filter (Maximal sum of abs differences)
 };
 
 struct PPFilter{
 	char *shortName;
 	char *longName;
-	int chromDefault;
-	int minLumQuality;
-	int minChromQuality;
-	int mask;
+	int chromDefault; 	// is chrominance filtering on by default if this filter is manually activated
+	int minLumQuality; 	// minimum quality to turn luminance filtering on
+	int minChromQuality;	// minimum quality to turn chrominance filtering on
+	int mask; 		// Bitmask to turn this filter on
 };
 
+/* Obsolete, dont use it, use postprocess2() instead */
 void postprocess(unsigned char * src[], int src_stride,
                  unsigned char * dst[], int dst_stride,
                  int horizontal_size,   int vertical_size,
@@ -97,8 +102,10 @@ void postprocess2(unsigned char * src[], int src_stride,
                  QP_STORE_T *QP_store,  int QP_stride, struct PPMode *mode);
 
 
+/* Obsolete, dont use it, use getPpModeByNameAndQuality() instead */
 int getPpModeForQuality(int quality);
 
+// name is the stuff after "-pp" on the command line
 struct PPMode getPpModeByNameAndQuality(char *name, int quality);
 
 #endif
