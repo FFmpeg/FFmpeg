@@ -1434,7 +1434,7 @@ static inline int direct_search(MpegEncContext * s,
     const int time_pb= time_pp - time_bp;
     int bx, by;
     int mx, my, mx2, my2;
-    uint8_t *ref_picture= s->me_scratchpad - (mb_x + 1 + (mb_y + 1)*s->linesize)*16;
+    uint8_t *ref_picture= s->me_scratchpad - (mb_x - 1 + (mb_y - 1)*s->linesize)*16;
     int16_t (*mv_table)[2]= s->b_direct_mv_table;
     uint16_t *mv_penalty= s->mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
 
