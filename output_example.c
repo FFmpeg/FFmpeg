@@ -63,9 +63,6 @@ AVStream *add_audio_stream(AVFormatContext *oc, int codec_id)
         exit(1);
     }
     c = &st->codec;
-
-    avcodec_get_context_defaults(c);
-
     c->codec_type = CODEC_TYPE_AUDIO;
 
     /* put sample parameters */
@@ -161,9 +158,6 @@ AVStream *add_video_stream(AVFormatContext *oc, int codec_id)
     }
 
     c = &st->codec;
-    
-    avcodec_get_context_defaults(c);
-
     c->codec_type = CODEC_TYPE_VIDEO;
 
     /* put sample parameters */
