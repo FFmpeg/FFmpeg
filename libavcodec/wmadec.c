@@ -19,8 +19,8 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#define DEBUG_PARAMS
-#define DEBUG_TRACE
+//#define DEBUG_PARAMS
+//#define DEBUG_TRACE
 
 /* size of blocks */
 #define BLOCK_MIN_BITS 7
