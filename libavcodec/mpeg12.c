@@ -2161,11 +2161,14 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         if (ret < 0)
             return -1;
 
-        if(s->current_picture.motion_val[0]){ //note motion_val is normally NULL unless we want to extract the MVs
-            const int wrap = s->block_wrap[0];
-            const int xy = s->mb_x*2 + 1 + (s->mb_y*2 +1)*wrap;
+        if(s->current_picture.motion_val[0] && !s->encoding){ //note motion_val is normally NULL unless we want to extract the MVs
+            const int wrap = field_pic ? 2*s->block_wrap[0] : s->block_wrap[0];
+            int xy = s->mb_x*2 + 1 + (s->mb_y*2 +1)*wrap;
             int motion_for_top_x, motion_for_top_y, motion_back_top_x, motion_back_top_y;
             int motion_for_bottom_x, motion_for_bottom_y, motion_back_bottom_x, motion_back_bottom_y;
+            if(field_pic && !s->first_field)
+                xy += wrap/2;
+
             if (s->mb_intra) {
                 motion_for_top_x = motion_for_top_y = motion_back_top_x = motion_back_top_y =
                 motion_for_bottom_x = motion_for_bottom_y = motion_back_bottom_x = motion_back_bottom_y = 0;
