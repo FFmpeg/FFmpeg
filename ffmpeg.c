@@ -520,7 +520,7 @@ static void do_audio_out(AVFormatContext *s,
         AVPacket pkt;
         av_init_packet(&pkt);
 
-        ost->sync_opts += size_out / enc->channels;
+        ost->sync_opts += size_out / (2 * enc->channels);
 
         /* output a pcm frame */
         /* XXX: change encoding codec API to avoid this ? */
