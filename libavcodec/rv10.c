@@ -527,9 +527,7 @@ static int rv10_decode_packet(AVCodecContext *avctx,
     if(s->modified_quant)
         s->chroma_qscale_table= ff_h263_chroma_qscale_table;
         
-    s->chroma_qscale= s->chroma_qscale_table[ s->qscale ];
-    s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-    s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
+    ff_set_qscale(s, s->qscale);
 
     s->rv10_first_dc_coded[0] = 0;
     s->rv10_first_dc_coded[1] = 0;

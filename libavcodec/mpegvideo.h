@@ -825,6 +825,7 @@ extern const uint8_t ff_mba_length[6];
 extern const uint8_t ff_h263_chroma_qscale_table[32];
 extern const uint8_t ff_h263_loop_filter_strength[32];
 
+
 int ff_h263_decode_init(AVCodecContext *avctx);
 int ff_h263_decode_frame(AVCodecContext *avctx, 
                              void *data, int *data_size,
@@ -852,6 +853,7 @@ int ff_h263_decode_gob_header(MpegEncContext *s);
 int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb);
 void ff_h263_update_motion_val(MpegEncContext * s);
 int ff_h263_loop_filter(MpegEncContext * s);
+void ff_set_qscale(MpegEncContext * s, int qscale);
 
 
 int intel_h263_decode_picture_header(MpegEncContext *s);

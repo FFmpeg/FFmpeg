@@ -3123,10 +3123,7 @@ static void encode_mb(MpegEncContext *s, int motion_x, int motion_y)
                 }
             }
         }
-        s->qscale= last_qp + s->dquant;
-        s->chroma_qscale= s->chroma_qscale_table[ s->qscale ];
-        s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-        s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
+        ff_set_qscale(s, last_qp + s->dquant);
     }
 
     if (s->mb_intra) {
@@ -3864,9 +3861,7 @@ static void encode_picture(MpegEncContext *s, int picture_number)
         s->mb_x=0;
         s->mb_y= mb_y;
 
-        s->chroma_qscale= s->chroma_qscale_table[ s->qscale ];
-        s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-        s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
+        ff_set_qscale(s, s->qscale);
         ff_init_block_index(s);
         
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {

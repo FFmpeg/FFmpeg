@@ -2239,20 +2239,19 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
 #endif //CONFIG_ENCODERS
 
 /**
- * change qscale by given dquant and update qscale dependant variables.
+ * set qscale and update qscale dependant variables.
  */
-static void change_qscale(MpegEncContext * s, int dquant)
+void ff_set_qscale(MpegEncContext * s, int qscale)
 {
-    s->qscale += dquant;
-
-    if (s->qscale < 1)
-        s->qscale = 1;
-    else if (s->qscale > 31)
-        s->qscale = 31;
+    if (qscale < 1)
+        qscale = 1;
+    else if (qscale > 31)
+        qscale = 31;
         
-    s->chroma_qscale= s->chroma_qscale_table[s->qscale];
+    s->qscale = qscale;
+    s->chroma_qscale= s->chroma_qscale_table[qscale];
 
-    s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
+    s->y_dc_scale= s->y_dc_scale_table[ qscale ];
     s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
 }
 
@@ -2746,7 +2745,6 @@ static int h263_decode_gob_header(MpegEncContext *s)
     s->qscale = get_bits(&s->gb, 5); /* GQUANT */
     if(s->qscale==0) 
         return -1;
-    s->chroma_qscale= s->chroma_qscale_table[s->qscale];
 
     s->mb_x= 0;
     s->mb_y= s->gob_index* s->gob_number;
@@ -3123,7 +3121,7 @@ static int mpeg4_decode_partition_a(MpegEncContext *s){
                 s->mb_intra = 1;
 
                 if(cbpc & 4) {
-                    change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
+                    ff_set_qscale(s, s->qscale + quant_tab[get_bits(&s->gb, 2)]);
                 }
                 s->current_picture.qscale_table[xy]= s->qscale;
 
@@ -3286,7 +3284,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
                     }
                     
                     if(s->cbp_table[xy] & 8) {
-                        change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
+                        ff_set_qscale(s, s->qscale + quant_tab[get_bits(&s->gb, 2)]);
                     }
                     s->current_picture.qscale_table[xy]= s->qscale;
 
@@ -3316,7 +3314,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
                     }
                     
                     if(s->cbp_table[xy] & 8) {
-                        change_qscale(s, quant_tab[get_bits(&s->gb, 2)]);
+                        ff_set_qscale(s, s->qscale + quant_tab[get_bits(&s->gb, 2)]);
                     }
                     s->current_picture.qscale_table[xy]= s->qscale;
 
@@ -3393,9 +3391,7 @@ static int mpeg4_decode_partitioned_mb(MpegEncContext *s, DCTELEM block[6][64])
     cbp = s->cbp_table[xy];
 
     if(s->current_picture.qscale_table[xy] != s->qscale){
-        s->chroma_qscale=s->qscale= s->current_picture.qscale_table[xy];
-        s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-        s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
+        ff_set_qscale(s, s->current_picture.qscale_table[xy] );
     }
     
     if (s->pict_type == P_TYPE || s->pict_type==S_TYPE) {
@@ -3608,7 +3604,7 @@ int ff_h263_decode_mb(MpegEncContext *s,
                     s->qscale= get_bits(&s->gb, 5);
             }else
                 s->qscale += quant_tab[get_bits(&s->gb, 2)];
-            change_qscale(s, 0);
+            ff_set_qscale(s, s->qscale);
         }
         
         s->mv_dir = MV_DIR_FORWARD;
@@ -3700,7 +3696,7 @@ intra:
                     s->qscale= get_bits(&s->gb, 5);
             }else
                 s->qscale += quant_tab[get_bits(&s->gb, 2)];
-            change_qscale(s, 0);
+            ff_set_qscale(s, s->qscale);
         }
         
         /* decode each block */
@@ -3793,8 +3789,7 @@ int ff_mpeg4_decode_mb(MpegEncContext *s,
         
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
-            s->qscale += quant_tab[get_bits(&s->gb, 2)];
-            change_qscale(s, 0);
+            ff_set_qscale(s, s->qscale + quant_tab[get_bits(&s->gb, 2)]);
         }
         if((!s->progressive_sequence) && (cbp || (s->workaround_bugs&FF_BUG_XVID_ILACE)))
             s->interlaced_dct= get_bits1(&s->gb);
@@ -3918,7 +3913,7 @@ int ff_mpeg4_decode_mb(MpegEncContext *s,
 
             if ((!IS_DIRECT(mb_type)) && cbp) {
                 if(get_bits1(&s->gb)){
-                    change_qscale(s, get_bits1(&s->gb)*4 - 2);
+                    ff_set_qscale(s, s->qscale + get_bits1(&s->gb)*4 - 2);
                 }
             }
 
@@ -4026,8 +4021,7 @@ intra:
         }
         cbp = (cbpc & 3) | (cbpy << 2);
         if (dquant) {
-            s->qscale += quant_tab[get_bits(&s->gb, 2)];
-            change_qscale(s, 0);
+            ff_set_qscale(s, s->qscale + quant_tab[get_bits(&s->gb, 2)]);
         }
         
         if(!s->progressive_sequence)
@@ -4749,7 +4743,6 @@ int h263_decode_picture_header(MpegEncContext *s)
         }
             
         s->qscale = get_bits(&s->gb, 5);
-        s->chroma_qscale= s->chroma_qscale_table[s->qscale];
     }
     /* PEI */
     while (get_bits1(&s->gb) != 0) {

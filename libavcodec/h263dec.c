@@ -146,8 +146,7 @@ static int decode_slice(MpegEncContext *s){
     s->resync_mb_x= s->mb_x;
     s->resync_mb_y= s->mb_y;
 
-    s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-    s->c_dc_scale= s->c_dc_scale_table[ s->chroma_qscale ];
+    ff_set_qscale(s, s->qscale);
     
     if(s->partitioned_frame){
         const int qscale= s->qscale;
@@ -161,9 +160,7 @@ static int decode_slice(MpegEncContext *s){
         s->first_slice_line=1;
         s->mb_x= s->resync_mb_x;
         s->mb_y= s->resync_mb_y;
-        s->chroma_qscale= s->qscale= qscale;
-        s->y_dc_scale= s->y_dc_scale_table[ s->qscale ];
-        s->c_dc_scale= s->c_dc_scale_table[ s->qscale ];
+        ff_set_qscale(s, qscale);
     }
 
     for(; s->mb_y < s->mb_height; s->mb_y++) {
