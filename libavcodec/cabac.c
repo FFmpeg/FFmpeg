@@ -150,6 +150,9 @@ void ff_init_cabac_states(CABACContext *c, uint8_t const (*lps_range)[4],
 
 #if 0 //selftest
 #define SIZE 10240
+
+#include "avcodec.h"
+
 int main(){
     CABACContext c;
     uint8_t b[9*SIZE];
@@ -197,33 +200,33 @@ STOP_TIMER("put_cabac_ueg")
     for(i=0; i<SIZE; i++){
 START_TIMER
         if( (r[i]&1) != get_cabac_bypass(&c) )
-            printf("CABAC bypass failure at %d\n", i);
+            av_log(NULL, AV_LOG_ERROR, "CABAC bypass failure at %d\n", i);
 STOP_TIMER("get_cabac_bypass")
     }
     
     for(i=0; i<SIZE; i++){
 START_TIMER
         if( (r[i]&1) != get_cabac(&c, state) )
-            printf("CABAC failure at %d\n", i);
+            av_log(NULL, AV_LOG_ERROR, "CABAC failure at %d\n", i);
 STOP_TIMER("get_cabac")
     }
-
+#if 0
     for(i=0; i<SIZE; i++){
 START_TIMER
         if( r[i] != get_cabac_u(&c, state, (i&1) ? 6 : 7, 3, i&1) )
-            printf("CABAC unary (truncated) binarization failure at %d\n", i);
+            av_log(NULL, AV_LOG_ERROR, "CABAC unary (truncated) binarization failure at %d\n", i);
 STOP_TIMER("get_cabac_u")
     }
 
     for(i=0; i<SIZE; i++){
 START_TIMER
         if( r[i] != get_cabac_ueg(&c, state, 3, 0, 1, 2))
-            printf("CABAC unary (truncated) binarization failure at %d\n", i);
+            av_log(NULL, AV_LOG_ERROR, "CABAC unary (truncated) binarization failure at %d\n", i);
 STOP_TIMER("get_cabac_ueg")
     }
-
+#endif
     if(!get_cabac_terminate(&c))
-        printf("where's the Terminator?\n");
+        av_log(NULL, AV_LOG_ERROR, "where's the Terminator?\n");
     
     return 0;
 }
