@@ -2639,7 +2639,7 @@ void sws_freeContext(SwsContext *c){
 	c->hChrFilterPos = NULL;
 
 #if defined(ARCH_X86) || defined(ARCH_X86_64)
-#ifdef HAVE_SYS_MMAN_H
+#ifdef MAP_ANONYMOUS
 	if(c->funnyYCode) munmap(c->funnyYCode, MAX_FUNNY_CODE_SIZE);
 	if(c->funnyUVCode) munmap(c->funnyUVCode, MAX_FUNNY_CODE_SIZE);
 #else
