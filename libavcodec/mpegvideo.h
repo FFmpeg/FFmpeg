@@ -173,6 +173,8 @@ typedef struct Picture{
     int frame_num;              ///< h264 frame_num
     int pic_id;                 ///< h264 pic_num or long_term_pic_idx
     int long_ref;               ///< 1->long term reference 0->short term reference
+    int ref_poc[2][16];         ///< h264 POCs of the frames used as reference
+    int ref_count[2];           ///< number of entries in ref_poc
 
     int mb_var_sum;             ///< sum of MB variance for current frame 
     int mc_mb_var_sum;          ///< motion compensated MB variance for current frame 

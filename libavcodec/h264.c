@@ -274,6 +274,7 @@ typedef struct H264Context{
     
     int direct_spatial_mv_pred;
     int dist_scale_factor[16];
+    int map_col_to_list0[2][16];
 
     /**
      * num_ref_idx_l0/1_active_minus1 + 1
@@ -285,6 +286,7 @@ typedef struct H264Context{
     Picture ref_list[2][32]; //FIXME size?
     Picture field_ref_list[2][32]; //FIXME size?
     Picture *delayed_pic[16]; //FIXME size?
+    int delayed_output_poc;
     
     /**
      * memory management control operations buffer.
@@ -1060,6 +1062,34 @@ static inline void direct_dist_scale_factor(H264Context * const h){
         }
     }
 }
+static inline void direct_ref_list_init(H264Context * const h){
+    MpegEncContext * const s = &h->s;
+    Picture * const ref1 = &h->ref_list[1][0];
+    Picture * const cur = s->current_picture_ptr;
+    int list, i, j;
+    if(cur->pict_type == I_TYPE)
+        cur->ref_count[0] = 0;
+    if(cur->pict_type != B_TYPE)
+        cur->ref_count[1] = 0;
+    for(list=0; list<2; list++){
+        cur->ref_count[list] = h->ref_count[list];
+        for(j=0; j<h->ref_count[list]; j++)
+            cur->ref_poc[list][j] = h->ref_list[list][j].poc;
+    }
+    if(cur->pict_type != B_TYPE || h->direct_spatial_mv_pred)
+        return;
+    for(list=0; list<2; list++){
+        for(i=0; i<ref1->ref_count[list]; i++){
+            const int poc = ref1->ref_poc[list][i];
+            h->map_col_to_list0[list][i] = PART_NOT_AVAILABLE;
+            for(j=0; j<h->ref_count[list]; j++)
+                if(h->ref_list[list][j].poc == poc){
+                    h->map_col_to_list0[list][i] = j;
+                    break;
+                }
+        }
+    }
+}
 
 static inline void pred_direct_motion(H264Context * const h, int *mb_type){
     MpegEncContext * const s = &h->s;
@@ -1069,6 +1099,7 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
     const int mb_type_col = h->ref_list[1][0].mb_type[mb_xy];
     const int16_t (*l1mv0)[2] = (const int16_t (*)[2]) &h->ref_list[1][0].motion_val[0][b4_xy];
     const int8_t *l1ref0 = &h->ref_list[1][0].ref_index[0][b8_xy];
+    const int8_t *l1ref1 = &h->ref_list[1][0].ref_index[1][b8_xy];
     const int is_b8x8 = IS_8X8(*mb_type);
     int sub_mb_type;
     int i8, i4;
@@ -1178,7 +1209,6 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
             }
         }
     }else{ /* direct temporal mv pred */
-        /* FIXME assumes that L1ref0 used the same ref lists as current frame */
         if(IS_16X16(*mb_type)){
             fill_rectangle(&h->ref_cache[1][scan8[0]], 4, 4, 8, 0, 1);
             if(IS_INTRA(mb_type_col)){
@@ -1186,7 +1216,9 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 fill_rectangle(&h-> mv_cache[0][scan8[0]], 4, 4, 8, 0, 4);
                 fill_rectangle(&h-> mv_cache[1][scan8[0]], 4, 4, 8, 0, 4);
             }else{
-                const int ref0 = l1ref0[0];
+                const int ref0 = l1ref0[0] >= 0 ? h->map_col_to_list0[0][l1ref0[0]]
+                                                : h->map_col_to_list0[1][l1ref1[0]];
+                assert(ref0 >= 0);
                 const int dist_scale_factor = h->dist_scale_factor[ref0];
                 const int16_t *mv_col = l1mv0[0];
                 int mv_l0[2];
@@ -1214,6 +1246,11 @@ static inline void pred_direct_motion(H264Context * const h, int *mb_type){
                 }
     
                 ref0 = l1ref0[x8 + y8*h->b8_stride];
+                if(ref0 >= 0)
+                    ref0 = h->map_col_to_list0[0][ref0];
+                else
+                    ref0 = h->map_col_to_list0[1][l1ref1[x8 + y8*h->b8_stride]];
+                assert(ref0 >= 0);
                 dist_scale_factor = h->dist_scale_factor[ref0];
     
                 fill_rectangle(&h->ref_cache[0][scan8[i8*4]], 2, 2, 8, ref0, 1);
@@ -2961,12 +2998,12 @@ static int fill_default_ref_list(H264Context *h){
             }
         }else{
             int index=0;
-            for(i=0; i<h->short_ref_count && index < h->ref_count[0]; i++){
+            for(i=0; i<h->short_ref_count; i++){
                 if(h->short_ref[i]->reference != 3) continue; //FIXME refernce field shit
                 h->default_ref_list[0][index  ]= *h->short_ref[i];
                 h->default_ref_list[0][index++].pic_id= h->short_ref[i]->frame_num;
             }
-            for(i = 0; i < 16 && index < h->ref_count[0]; i++){
+            for(i = 0; i < 16; i++){
                 if(h->long_ref[i] == NULL) continue;
                 if(h->long_ref[i]->reference != 3) continue;
                 h->default_ref_list[0][index  ]= *h->long_ref[i];
@@ -3016,6 +3053,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                 int reordering_of_pic_nums_idc= get_ue_golomb(&s->gb);
                 int pic_id;
                 int i;
+                Picture *ref = NULL;
                 
                 if(reordering_of_pic_nums_idc==3) 
                     break;
@@ -3038,31 +3076,21 @@ static int decode_ref_pic_list_reordering(H264Context *h){
                         else                                pred+= abs_diff_pic_num;
                         pred &= h->max_pic_num - 1;
                     
-                        for(i= h->ref_count[list]-1; i>=0; i--){
-                            if(h->ref_list[list][i].data[0] != NULL && h->ref_list[list][i].pic_id == pred && h->ref_list[list][i].long_ref==0) // ignore non existing pictures by testing data[0] pointer
+                        for(i= h->short_ref_count-1; i>=0; i--){
+                            ref = h->short_ref[i];
+                            if(ref->data[0] != NULL && ref->frame_num == pred && ref->long_ref == 0) // ignore non existing pictures by testing data[0] pointer
                                 break;
                         }
                     }else{
                         pic_id= get_ue_golomb(&s->gb); //long_term_pic_idx
-
-                        for(i= h->ref_count[list]-1; i>=0; i--){
-                            if(h->ref_list[list][i].pic_id == pic_id && h->ref_list[list][i].long_ref==1) // no need to ignore non existing pictures as non existing pictures have long_ref==0
-                                break;
-                        }
+                        ref = h->long_ref[pic_id];
                     }
 
                     if (i < 0) {
                         av_log(h->s.avctx, AV_LOG_ERROR, "reference picture missing during reorder\n");
                         memset(&h->ref_list[list][index], 0, sizeof(Picture)); //FIXME
-                    } else if (i != index) /* this test is not necessary, it is only an optimisation to skip double copy of Picture structure in this case */ {
-                        Picture tmp= h->ref_list[list][i];
-                        if (i < index) {
-                            i = h->ref_count[list];
-                        }
-                        for(; i > index; i--){
-                            h->ref_list[list][i]= h->ref_list[list][i-1];
-                        }
-                        h->ref_list[list][index]= tmp;
+                    } else {
+                        h->ref_list[list][index]= *ref;
                     }
                 }else{
                     av_log(h->s.avctx, AV_LOG_ERROR, "illegal reordering_of_pic_nums_idc\n");
@@ -3076,6 +3104,7 @@ static int decode_ref_pic_list_reordering(H264Context *h){
     
     if(h->slice_type==B_TYPE && !h->direct_spatial_mv_pred)
         direct_dist_scale_factor(h);
+    direct_ref_list_init(h);
     return 0;    
 }
 
@@ -3509,6 +3538,7 @@ static int decode_slice_header(H264Context *h){
     int default_ref_list_done = 0;
 
     s->current_picture.reference= h->nal_ref_idc != 0;
+    s->dropable= h->nal_ref_idc == 0;
 
     first_mb_in_slice= get_ue_golomb(&s->gb);
 
@@ -6298,7 +6328,7 @@ static int decode_nal_units(H264Context *h, uint8_t *buf, int buf_size){
 
         //FIXME move after where irt is set
         s->current_picture.pict_type= s->pict_type;
-        s->current_picture.key_frame= s->pict_type == I_TYPE;
+        s->current_picture.key_frame= s->pict_type == I_TYPE && h->nal_unit_type == NAL_IDR_SLICE;
     }
     
     if(!s->current_picture_ptr) return buf_index; //no frame
@@ -6423,31 +6453,43 @@ static int decode_frame(AVCodecContext *avctx,
 //#define DECODE_ORDER
         Picture *out = s->current_picture_ptr;
 #ifndef DECODE_ORDER
-        /* Sort B-frames into display order
-         * FIXME doesn't allow for multiple delayed frames */
+        /* Sort B-frames into display order */
         Picture *cur = s->current_picture_ptr;
-        Picture *prev = h->delayed_pic[0];
+        int out_idx = 0;
+        int pics = 0;
+        int i;
+        out = NULL;
 
-        if(s->low_delay
-           && (cur->pict_type == B_TYPE
-           || (!h->sps.gaps_in_frame_num_allowed_flag
-               && prev && cur->poc - prev->poc > 2))){
+        while(h->delayed_pic[pics]) pics++;
+        h->delayed_pic[pics++] = cur;
+        out = h->delayed_pic[0];
+        for(i=0; h->delayed_pic[i] && !h->delayed_pic[i]->key_frame; i++)
+            if(!out || h->delayed_pic[i]->poc < out->poc){
+                out = h->delayed_pic[i];
+                out_idx = i;
+            }
+        if(cur->reference == 0)
+            cur->reference = 1;
+        if(pics > FFMAX(1, s->avctx->has_b_frames)){
+            if(out->reference == 1)
+                out->reference = 0;
+            for(i=out_idx; h->delayed_pic[i]; i++)
+                h->delayed_pic[i] = h->delayed_pic[i+1];
+        }
+
+        for(i=0; h->delayed_pic[i]; i++)
+            if(h->delayed_pic[i]->key_frame)
+                h->delayed_output_poc = -1;
+
+        if((h->delayed_output_poc >=0 && h->delayed_output_poc > cur->poc)
+          || (s->low_delay && (cur->pict_type == B_TYPE
+              || (!h->sps.gaps_in_frame_num_allowed_flag
+                && cur->poc - out->poc > 2)))){
             s->low_delay = 0;
-            s->avctx->has_b_frames = 1;
-            if(prev && prev->poc > cur->poc)
-                // too late to display this frame
-                cur = prev;
+            s->avctx->has_b_frames++;
         }
 
-        if(s->low_delay || !prev || cur->pict_type == B_TYPE)
-            out = cur;
-        else
-            out = prev;
-        if(s->low_delay || !prev || out == prev){
-            if(prev && prev->reference == 1)
-                prev->reference = 0;
-            h->delayed_pic[0] = cur;
-        }
+        h->delayed_output_poc = out->poc;
 #endif
 
         *pict= *(AVFrame*)out;
