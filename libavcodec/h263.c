@@ -587,15 +587,68 @@ static void put_string(PutBitContext * pbc, char *s)
     put_bits(pbc, 8, 0);
 }
 
-/* write mpeg4 VOP header */
-void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
+static void mpeg4_encode_vol_header(MpegEncContext * s)
 {
+    int vo_ver_id=1; //must be 2 if we want GMC or q-pel
+
+    if(get_bit_count(&s->pb)!=0) mpeg4_stuffing(&s->pb);
+    put_bits(&s->pb, 16, 0);
+    put_bits(&s->pb, 16, 0x100);        /* video obj */
+    put_bits(&s->pb, 16, 0);
+    put_bits(&s->pb, 16, 0x120);        /* video obj layer */
+
+    put_bits(&s->pb, 1, 0);		/* random access vol */
+    put_bits(&s->pb, 8, 1);		/* video obj type indication= simple obj */
+    put_bits(&s->pb, 1, 1);		/* is obj layer id= yes */
+      put_bits(&s->pb, 4, vo_ver_id);	/* is obj layer ver id */
+      put_bits(&s->pb, 3, 1);		/* is obj layer priority */
+    put_bits(&s->pb, 4, 1);		/* aspect ratio info= sqare pixel */ //FIXME real aspect
+    put_bits(&s->pb, 1, 0);		/* vol control parameters= no */
+    put_bits(&s->pb, 2, RECT_SHAPE);	/* vol shape= rectangle */
+    put_bits(&s->pb, 1, 1);		/* marker bit */
+    put_bits(&s->pb, 16, s->time_increment_resolution=30000);
+    s->time_increment_bits = av_log2(s->time_increment_resolution - 1) + 1;
+    if (s->time_increment_bits < 1)
+        s->time_increment_bits = 1;
+    put_bits(&s->pb, 1, 1);		/* marker bit */
+    put_bits(&s->pb, 1, 0);		/* fixed vop rate=no */
+    put_bits(&s->pb, 1, 1);		/* marker bit */
+    put_bits(&s->pb, 13, s->width);	/* vol width */
+    put_bits(&s->pb, 1, 1);		/* marker bit */
+    put_bits(&s->pb, 13, s->height);	/* vol height */
+    put_bits(&s->pb, 1, 1);		/* marker bit */
+    put_bits(&s->pb, 1, 0);		/* interlace */
+    put_bits(&s->pb, 1, 1);		/* obmc disable */
+    if (vo_ver_id == 1) {
+        put_bits(&s->pb, 1, s->vol_sprite_usage=0);		/* sprite enable */
+    }else{ /* vo_ver_id == 2 */
+        put_bits(&s->pb, 2, s->vol_sprite_usage=0);		/* sprite enable */
+    }
+    put_bits(&s->pb, 1, 0);		/* not 8 bit */
+    put_bits(&s->pb, 1, 0);		/* quant type= h263 style*/
+    if (vo_ver_id != 1)
+        put_bits(&s->pb, 1, s->quarter_sample=0);
+    put_bits(&s->pb, 1, 1);		/* complexity estimation disable */
+    put_bits(&s->pb, 1, 1);		/* resync marker disable */
+    put_bits(&s->pb, 1, 0);		/* data partitioned */
+    if (vo_ver_id != 1){
+        put_bits(&s->pb, 1, 0);		/* newpred */
+        put_bits(&s->pb, 1, 0);		/* reduced res vop */
+    }
+    put_bits(&s->pb, 1, 0);		/* scalability */
+
     mpeg4_stuffing(&s->pb);
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, 0x1B2);	/* user_data */
     put_string(&s->pb, "ffmpeg"); //FIXME append some version ...
-    
-    mpeg4_stuffing(&s->pb);
+}
+
+/* write mpeg4 VOP header */
+void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
+{
+    if(s->pict_type==I_TYPE) mpeg4_encode_vol_header(s);
+
+    if(get_bit_count(&s->pb)!=0) mpeg4_stuffing(&s->pb);
     put_bits(&s->pb, 16, 0);	        /* vop header */
     put_bits(&s->pb, 16, 0x1B6);	/* vop header */
     put_bits(&s->pb, 2, s->pict_type - 1);	/* pict type: I = 0 , P = 1 */
@@ -604,19 +657,23 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     put_bits(&s->pb, 1, 0);
 
     put_bits(&s->pb, 1, 1);	/* marker */
-    put_bits(&s->pb, 4, 1);	/* XXX: correct time increment */
+    put_bits(&s->pb, s->time_increment_bits, 1);	/* XXX: correct time increment */
     put_bits(&s->pb, 1, 1);	/* marker */
     put_bits(&s->pb, 1, 1);	/* vop coded */
-    if (s->pict_type == P_TYPE) {
-        s->no_rounding = 0;
+    if (    s->pict_type == P_TYPE 
+        || (s->pict_type == S_TYPE && s->vol_sprite_usage==GMC_SPRITE)) {
+        s->no_rounding ^= 1;
 	put_bits(&s->pb, 1, s->no_rounding);	/* rounding type */
     }
     put_bits(&s->pb, 3, 0);	/* intra dc VLC threshold */
+    //FIXME sprite stuff
 
     put_bits(&s->pb, 5, s->qscale);
 
     if (s->pict_type != I_TYPE)
 	put_bits(&s->pb, 3, s->f_code);	/* fcode_for */
+    if (s->pict_type == B_TYPE)
+	put_bits(&s->pb, 3, s->b_code);	/* fcode_back */
     //    printf("****frame %d\n", picture_number);
 }
 
@@ -1871,8 +1928,10 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
         }
         state = ((state << 8) | v) & 0xffffff;
         /* XXX: really detect end of frame */
-        if (state == 0)
+        if (state == 0){
+            printf("illegal zero code found\n");
             return -1;
+        }
     }
 //printf("startcode %X %d\n", startcode, get_bits_count(&s->gb));
     if (startcode == 0x120) { // Video Object Layer
