@@ -412,16 +412,18 @@ s->bgr32=1;
     
     y_size= height*stride;
     
-    s->linesize[0]= stride;
-    s->picture[0]= av_mallocz(y_size);
+    if(!(avctx->flags&CODEC_FLAG_DR1)){
+        s->linesize[0]= stride;
+        s->picture[0]= av_mallocz(y_size);
  
-    if(c_size){
-        s->picture[1]= av_mallocz(c_size);
-        s->picture[2]= av_mallocz(c_size);
-        s->linesize[1]= s->linesize[2]= stride/2;
+        if(c_size){
+            s->picture[1]= av_mallocz(c_size);
+            s->picture[2]= av_mallocz(c_size);
+            s->linesize[1]= s->linesize[2]= stride/2;
         
-        memset(s->picture[1], 128, c_size);
-        memset(s->picture[2], 128, c_size);
+            memset(s->picture[1], 128, c_size);
+            memset(s->picture[2], 128, c_size);
+        }
     }
     
 //    printf("pred:%d bpp:%d hbpp:%d il:%d\n", s->predictor, s->bitstream_bpp, avctx->bits_per_sample, s->interlaced);
@@ -651,9 +653,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     const int width= s->width;
     const int width2= s->width>>1;
     const int height= s->height;
-    const int fake_ystride= s->interlaced ? s->linesize[0]*2  : s->linesize[0];
-    const int fake_ustride= s->interlaced ? s->linesize[1]*2  : s->linesize[1];
-    const int fake_vstride= s->interlaced ? s->linesize[2]*2  : s->linesize[2];
+    int fake_ystride, fake_ustride, fake_vstride;
     int i;
 
     AVPicture *picture = data;
@@ -667,7 +667,24 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     bswap_buf((uint32_t*)s->bitstream_buffer, (uint32_t*)buf, buf_size/4);
     
     init_get_bits(&s->gb, s->bitstream_buffer, buf_size);
-    
+
+    if(avctx->flags&CODEC_FLAG_DR1){
+        if(avctx->get_buffer_callback(avctx, s->width, s->height, I_TYPE) < 0){
+            fprintf(stderr, "get_buffer() failed\n");
+            return -1;
+        }
+
+        s->linesize[0]= avctx->dr_stride;
+        s->linesize[1]=
+        s->linesize[2]= avctx->dr_uvstride;
+
+        for(i=0; i<3;i++)
+            s->picture[i]= avctx->dr_buffer[i];
+    }
+    fake_ystride= s->interlaced ? s->linesize[0]*2  : s->linesize[0];
+    fake_ustride= s->interlaced ? s->linesize[1]*2  : s->linesize[1];
+    fake_vstride= s->interlaced ? s->linesize[2]*2  : s->linesize[2];
+        
     if(s->bitstream_bpp<24){
         int y, cy;
         int lefty, leftu, leftv;
@@ -870,7 +887,9 @@ static int decode_end(AVCodecContext *avctx)
     int i;
     
     for(i=0; i<3; i++){
-        av_freep(&s->picture[i]);
+        if(!(avctx->flags&CODEC_FLAG_DR1))
+            av_freep(&s->picture[i]);
+
         free_vlc(&s->vlc[i]);
     }
 
@@ -1050,7 +1069,7 @@ AVCodec huffyuv_decoder = {
     NULL,
     decode_end,
     decode_frame,
-    0,
+    CODEC_CAP_DR1,
     NULL
 };
 
