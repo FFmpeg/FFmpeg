@@ -15,14 +15,15 @@ extern "C" {
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4671
-#define LIBAVCODEC_BUILD_STR   "4671"
+#define LIBAVCODEC_BUILD       4672
+#define LIBAVCODEC_BUILD_STR   "4672"
 
 #define LIBAVCODEC_IDENT	"FFmpeg" LIBAVCODEC_VERSION "b" LIBAVCODEC_BUILD_STR
 
 enum CodecID {
     CODEC_ID_NONE, 
     CODEC_ID_MPEG1VIDEO,
+    CODEC_ID_MPEG2VIDEO_XVMC,
     CODEC_ID_H263,
     CODEC_ID_RV10,
     CODEC_ID_MP2,
@@ -113,6 +114,8 @@ enum PixelFormat {
     PIX_FMT_YUVJ420P,  ///< Planar YUV 4:2:0 full scale (jpeg)
     PIX_FMT_YUVJ422P,  ///< Planar YUV 4:2:2 full scale (jpeg)
     PIX_FMT_YUVJ444P,  ///< Planar YUV 4:4:4 full scale (jpeg)
+    PIX_FMT_XVMC_MPEG2_MC,///< XVideo Motion Acceleration via common packet passing(xvmc_render.h)
+    PIX_FMT_XVMC_MPEG2_IDCT,
     PIX_FMT_NB,
 };
 
@@ -1163,6 +1166,13 @@ typedef struct AVCodecContext {
 #define SLICE_FLAG_ALLOW_FIELD    0x0002 ///< allow draw_horiz_band() with field slices (MPEG2 field pics)
 #define SLICE_FLAG_ALLOW_PLANE    0x0004 ///< allow draw_horiz_band() with 1 component at a time (SVQ1)
 
+    /**
+     * XVideo Motion Acceleration
+     * - encoding: forbidden
+     * - decoding: set by decoder
+     */
+    int xvmc_acceleration;
+
 } AVCodecContext;
 
 
@@ -1269,6 +1279,7 @@ extern AVCodec msmpeg4v3_decoder;
 extern AVCodec wmv1_decoder;
 extern AVCodec wmv2_decoder;
 extern AVCodec mpeg_decoder;
+extern AVCodec mpeg_xvmc_decoder;
 extern AVCodec h263i_decoder;
 extern AVCodec flv_decoder;
 extern AVCodec rv10_decoder;
