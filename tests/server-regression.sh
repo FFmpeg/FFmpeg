@@ -8,6 +8,7 @@ FFSERVER_PID=$!
 sleep 1
 (
     cd data
+    rm -f $FILES;
     for file in $FILES; do
         wget --user-agent=NSPlayer -q --output-document=- http://localhost:9999/$file?date=19700101T000000Z | head --bytes=100000 > $file &
     done    
