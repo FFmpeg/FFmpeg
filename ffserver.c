@@ -325,6 +325,16 @@ static int compute_datarate(DataRateData *drd, INT64 count)
     return ((count - drd->count1) * 1000) / (cur_time - drd->time1);
 }
 
+static int get_longterm_datarate(DataRateData *drd, INT64 count)
+{
+    /* You get the first 3 seconds flat out */
+    if (cur_time - drd->time1 < 3000)
+        return 0;
+
+    return compute_datarate(drd, count);
+}
+
+
 static void start_children(FFStream *feed)
 {
     if (no_launch)
@@ -1936,6 +1946,11 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
 static int compute_send_delay(HTTPContext *c)
 {
+    int datarate = 8 * get_longterm_datarate(&c->datarate, c->data_count); 
+
+    if (datarate > c->bandwidth * 2000) {
+        return 1000;
+    }
     return 0;
 }
 
@@ -2010,7 +2025,7 @@ static int http_prepare_data(HTTPContext *c)
                 /* We have timed out */
                 c->state = HTTPSTATE_SEND_DATA_TRAILER;
             } else {
-                if (c->is_packetized) {
+                if (1 || c->is_packetized) {
                     if (compute_send_delay(c) > 0) {
                         c->state = HTTPSTATE_WAIT;
                         return 1; /* state changed */
@@ -3278,6 +3293,16 @@ void add_codec(FFStream *stream, AVCodecContext *av)
         av->qcompress = 0.5;
         av->qblur = 0.5;
 
+        if (!av->rc_eq)
+            av->rc_eq = "tex^qComp";
+        if (!av->i_quant_factor)
+            av->i_quant_factor = 0.8;
+        if (!av->b_quant_factor)
+            av->b_quant_factor = 1.25;
+        if (!av->b_quant_offset)
+            av->b_quant_offset = 1.25;
+            
+
         break;
     default:
         av_abort();
@@ -3705,6 +3730,7 @@ int parse_ffconfig(const char *filename)
                 video_enc.flags |= CODEC_FLAG_HQ;
             }
         } else if (!strcasecmp(cmd, "VideoQDiff")) {
+            get_arg(arg, sizeof(arg), &p);
             if (stream) {
                 video_enc.max_qdiff = atoi(arg);
                 if (video_enc.max_qdiff < 1 || video_enc.max_qdiff > 31) {
@@ -3714,6 +3740,7 @@ int parse_ffconfig(const char *filename)
                 }
             }
         } else if (!strcasecmp(cmd, "VideoQMax")) {
+            get_arg(arg, sizeof(arg), &p);
             if (stream) {
                 video_enc.qmax = atoi(arg);
                 if (video_enc.qmax < 1 || video_enc.qmax > 31) {
@@ -3723,6 +3750,7 @@ int parse_ffconfig(const char *filename)
                 }
             }
         } else if (!strcasecmp(cmd, "VideoQMin")) {
+            get_arg(arg, sizeof(arg), &p);
             if (stream) {
                 video_enc.qmin = atoi(arg);
                 if (video_enc.qmin < 1 || video_enc.qmin > 31) {
