@@ -284,8 +284,8 @@ static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_f
         NULL
     };
     static double (*func1[])(void *, double)={
-        bits2qp,
-        qp2bits,
+        (void *)bits2qp,
+        (void *)qp2bits,
         NULL
     };
     char *func1_names[]={
