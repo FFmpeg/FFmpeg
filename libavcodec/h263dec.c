@@ -123,6 +123,7 @@ static int h263_decode_frame(AVCodecContext *avctx,
     if (!s->context_initialized) {
         avctx->width = s->width;
         avctx->height = s->height;
+        avctx->aspect_ratio_info= s->aspect_ratio_info;
         if (MPV_common_init(s) < 0)
             return -1;
     } else if (s->width != avctx->width || s->height != avctx->height) {

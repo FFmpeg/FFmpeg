@@ -335,13 +335,15 @@ static int phods_motion_search(MpegEncContext * s,
 #define Z_THRESHOLD 256
 
 #define CHECK_MV(x,y)\
+{\
     d = pix_abs16x16(new_pic, old_pic + (x) + (y)*pic_stride, pic_stride, 16);\
     d += (mv_penalty[((x)<<shift)-pred_x] + mv_penalty[((y)<<shift)-pred_y])*quant;\
     if(d<dmin){\
         best[0]=x;\
         best[1]=y;\
         dmin=d;\
-    }
+    }\
+}
 
 #define CHECK_MV_DIR(x,y,new_dir)\
 {\
@@ -354,6 +356,13 @@ static int phods_motion_search(MpegEncContext * s,
         next_dir= new_dir;\
     }\
 }
+
+#define check(x,y,S,v)\
+if( (x)<(xmin<<(S)) ) printf("%d %d %d %d xmin" #v, (x), (y), s->mb_x, s->mb_y);\
+if( (x)>(xmax<<(S)) ) printf("%d %d %d %d xmax" #v, (x), (y), s->mb_x, s->mb_y);\
+if( (y)<(ymin<<(S)) ) printf("%d %d %d %d ymin" #v, (x), (y), s->mb_x, s->mb_y);\
+if( (y)>(ymax<<(S)) ) printf("%d %d %d %d ymax" #v, (x), (y), s->mb_x, s->mb_y);\
+
 
 static inline int small_diamond_search(MpegEncContext * s, int *best, int dmin,
                                        UINT8 *new_pic, UINT8 *old_pic, int pic_stride,
@@ -379,6 +388,91 @@ static inline int small_diamond_search(MpegEncContext * s, int *best, int dmin,
             return dmin;
         }
     }
+
+/*    for(;;){
+        int d;
+        const int x= best[0];
+        const int y= best[1];
+        const int last_min=dmin;
+        if(x>xmin) CHECK_MV(x-1, y  )
+        if(y>xmin) CHECK_MV(x  , y-1)
+        if(x<xmax) CHECK_MV(x+1, y  )
+        if(y<xmax) CHECK_MV(x  , y+1)
+        if(x>xmin && y>ymin) CHECK_MV(x-1, y-1)
+        if(x>xmin && y<ymax) CHECK_MV(x-1, y+1)
+        if(x<xmax && y>ymin) CHECK_MV(x+1, y-1)
+        if(x<xmax && y<ymax) CHECK_MV(x+1, y+1)
+        if(x-1>xmin) CHECK_MV(x-2, y  )
+        if(y-1>xmin) CHECK_MV(x  , y-2)
+        if(x+1<xmax) CHECK_MV(x+2, y  )
+        if(y+1<xmax) CHECK_MV(x  , y+2)
+        if(x-1>xmin && y-1>ymin) CHECK_MV(x-2, y-2)
+        if(x-1>xmin && y+1<ymax) CHECK_MV(x-2, y+2)
+        if(x+1<xmax && y-1>ymin) CHECK_MV(x+2, y-2)
+        if(x+1<xmax && y+1<ymax) CHECK_MV(x+2, y+2)
+        if(dmin==last_min) return dmin;
+    }
+    */
+}
+
+static inline int snake_search(MpegEncContext * s, int *best, int dmin,
+                                       UINT8 *new_pic, UINT8 *old_pic, int pic_stride,
+                                       int pred_x, int pred_y, UINT16 *mv_penalty, int quant,
+                                       int xmin, int ymin, int xmax, int ymax, int shift)
+{
+    int dir=0;
+    int c=1;
+    static int x_dir[8]= {1,1,0,-1,-1,-1, 0, 1};
+    static int y_dir[8]= {0,1,1, 1, 0,-1,-1,-1};
+    int fails=0;
+    int last_d[2]={dmin, dmin};
+
+/*static int good=0;
+static int bad=0;
+static int point=0;
+
+point++;
+if(256*256*256*64%point==0)
+{
+    printf("%d %d %d\n", good, bad, point);
+}*/
+
+    for(;;){
+        int x= best[0];
+        int y= best[1];
+        int d;
+        x+=x_dir[dir];
+        y+=y_dir[dir];
+        if(x>=xmin && x<=xmax && y>=ymin && y<=ymax){
+            d = pix_abs16x16(new_pic, old_pic + (x) + (y)*pic_stride, pic_stride, 16);
+            d += (mv_penalty[((x)<<shift)-pred_x] + mv_penalty[((y)<<shift)-pred_y])*quant;
+        }else{
+            d = dmin + 10000; //FIXME smarter boundary handling
+        }
+        if(d<dmin){
+            best[0]=x;
+            best[1]=y;
+            dmin=d;
+
+            if(last_d[1] - last_d[0] > last_d[0] - d) c= -c;
+            dir+=c;
+
+            fails=0;
+//good++;
+            last_d[1]=last_d[0];
+            last_d[0]=d;
+        }else{
+//bad++;
+            if(fails){
+                if(fails>=3) return dmin;
+            }else{
+                c= -c;
+            }
+            dir+=c*2;
+            fails++;
+        }
+        dir&=7;
+    }
 }
 
 static int epzs_motion_search(MpegEncContext * s,
@@ -397,8 +491,7 @@ static int epzs_motion_search(MpegEncContext * s,
 
     new_pic = s->new_picture[0] + pic_xy;
     old_pic = s->last_picture[0] + pic_xy;
-//printf("%d %d %d %d\n", xmin, ymin, xmax, ymax);
-    
+   
     dmin = pix_abs16x16(new_pic, old_pic, pic_stride, 16);
     if(dmin<Z_THRESHOLD){
         *mx_ptr= 0;
@@ -424,13 +517,18 @@ static int epzs_motion_search(MpegEncContext * s,
     }
     CHECK_MV(P[0][0]>>shift, P[0][1]>>shift)
 
-    dmin= small_diamond_search(s, best, dmin, new_pic, old_pic, pic_stride, 
-                               pred_x, pred_y, mv_penalty, quant, xmin, ymin, xmax, ymax, shift);
+//check(best[0],best[1],0, b0)
+    if(s->full_search==ME_EPZS)
+        dmin= small_diamond_search(s, best, dmin, new_pic, old_pic, pic_stride, 
+                                   pred_x, pred_y, mv_penalty, quant, xmin, ymin, xmax, ymax, shift);
+    else
+        dmin=         snake_search(s, best, dmin, new_pic, old_pic, pic_stride, 
+                                   pred_x, pred_y, mv_penalty, quant, xmin, ymin, xmax, ymax, shift);
+//check(best[0],best[1],0, b1)
     *mx_ptr= best[0];
     *my_ptr= best[1];    
 
 //    printf("%d %d %d \n", best[0], best[1], dmin);
-
     return dmin;
 }
 
@@ -563,8 +661,8 @@ int estimate_motion(MpegEncContext * s,
         rel_ymax= ymax - s->mb_y*16;
         if(s->out_format == FMT_H263){
             static const int off[4]= {2, 1, 1, -1};
-            const int mot_stride = s->block_wrap[0];
-            const int mot_xy = s->block_index[0];
+            const int mot_stride = s->mb_width*2 + 2;
+            const int mot_xy = (s->mb_y*2 + 1)*mot_stride + s->mb_x*2 + 1;
          
             P[0][0] = s->motion_val[mot_xy    ][0];
             P[0][1] = s->motion_val[mot_xy    ][1];
@@ -618,7 +716,8 @@ int estimate_motion(MpegEncContext * s,
                 P[4][1]= mid_pred(P[1][1], P[2][1], P[3][1]);
             }
         }
-	dmin = epzs_motion_search(s, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax);
+        dmin = epzs_motion_search(s, &mx, &my, P, pred_x, pred_y, rel_xmin, rel_ymin, rel_xmax, rel_ymax);
+ 
         mx+= s->mb_x*16;
         my+= s->mb_y*16;
         break;
@@ -654,6 +753,8 @@ int estimate_motion(MpegEncContext * s,
             mx -= 16 * s->mb_x;
             my -= 16 * s->mb_y;
         }
+//        check(mx + 32*s->mb_x, my + 32*s->mb_y, 1, end)
+        
 	*mx_ptr = mx;
 	*my_ptr = my;
 	return 0;

@@ -309,6 +309,7 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
 void mpeg1_encode_mb(MpegEncContext *s,
                      DCTELEM block[6][64],
                      int motion_x, int motion_y);
+void mpeg1_encode_init(MpegEncContext *s);
 
 /* h263enc.c */
 

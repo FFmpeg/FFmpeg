@@ -781,7 +781,10 @@ static void mpeg4_encode_vol_header(MpegEncContext * s)
     put_bits(&s->pb, 1, 1);		/* is obj layer id= yes */
       put_bits(&s->pb, 4, vo_ver_id);	/* is obj layer ver id */
       put_bits(&s->pb, 3, 1);		/* is obj layer priority */
-    put_bits(&s->pb, 4, 1);		/* aspect ratio info= sqare pixel */ //FIXME real aspect
+    if(s->aspect_ratio_info) 
+        put_bits(&s->pb, 4, s->aspect_ratio_info);/* aspect ratio info */
+    else
+        put_bits(&s->pb, 4, 1);		/* aspect ratio info= sqare pixel */
     put_bits(&s->pb, 1, 0);		/* vol control parameters= no */
     put_bits(&s->pb, 2, RECT_SHAPE);	/* vol shape= rectangle */
     put_bits(&s->pb, 1, 1);		/* marker bit */
@@ -2149,6 +2152,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             skip_bits(&s->gb, 8); //par_width
             skip_bits(&s->gb, 8); // par_height
         }
+
         if(get_bits1(&s->gb)){ /* vol control parameter */
             printf("vol control parameter not supported\n");
             return -1;   
@@ -2388,7 +2392,6 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
 //printf("b-code %d\n", s->b_code);
          }
 //printf("quant:%d fcode:%d\n", s->qscale, s->f_code);
-
          if(!s->scalability){
              if (s->shape!=RECT_SHAPE && s->pict_type!=I_TYPE) {
                  skip_bits1(&s->gb); // vop shape coding type

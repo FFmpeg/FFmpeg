@@ -294,6 +294,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     s->qcompress= avctx->qcompress;
     s->qblur= avctx->qblur;
     s->avctx = avctx;
+    s->aspect_ratio_info= avctx->aspect_ratio_info;
     
     if (s->gop_size <= 1) {
         s->intra_only = 1;
@@ -377,6 +378,8 @@ int MPV_encode_init(AVCodecContext *avctx)
 
     if (s->out_format == FMT_H263)
         h263_encode_init(s);
+    else if (s->out_format == FMT_MPEG1)
+        mpeg1_encode_init(s);
 
     s->encoding = 1;
 
@@ -1075,7 +1078,6 @@ static void encode_picture(MpegEncContext *s, int picture_number)
     /* Reset the average MB variance */
     s->avg_mb_var = 0;
     s->mc_mb_var = 0;
-
     /* Estimate motion for every MB */
     for(mb_y=0; mb_y < s->mb_height; mb_y++) {
         for(mb_x=0; mb_x < s->mb_width; mb_x++) {
@@ -1132,12 +1134,13 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
         for(i=MAX_FCODE; i>1; i--){
             loose+= mv_num[i];
-            if(loose > 4) break;
+            if(loose > 4) break; //FIXME this is pretty ineffective
         }
         s->f_code= i;
     }else{
         s->f_code= 1;
     }
+
 //printf("f_code %d ///\n", s->f_code);
     /* convert MBs with too long MVs to I-Blocks */
     if(s->pict_type==P_TYPE){
