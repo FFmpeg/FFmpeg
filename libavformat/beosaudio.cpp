@@ -34,26 +34,20 @@ extern "C" {
 /* enable performance checks */
 //#define PERF_CHECK
 
-/* Pipes are 4k in BeOS IIRC */
 #define AUDIO_BLOCK_SIZE 4096
 //#define AUDIO_BLOCK_SIZE 2048
 #define AUDIO_BLOCK_COUNT 8
 
 #define AUDIO_BUFFER_SIZE (AUDIO_BLOCK_SIZE*AUDIO_BLOCK_COUNT)
 
-/* pipes suck for realtime */
-#define USE_RING_BUFFER 1
-
 typedef struct {
-    int fd;
+    int fd; // UNUSED
     int sample_rate;
     int channels;
     int frame_size; /* in bytes ! */
     CodecID codec_id;
-    int flip_left : 1;
     uint8_t buffer[AUDIO_BUFFER_SIZE];
     int buffer_ptr;
-    int pipefd; /* the other end of the pipe */
     /* ring buffer */
     sem_id input_sem;
     int input_index;
@@ -120,7 +114,6 @@ static void audioplay_callback(void *cookie, void *buffer, size_t bufferSize, co
         bigtime_t t;
         t = system_time();
 #endif
-#ifdef USE_RING_BUFFER
         len = MIN(AUDIO_BLOCK_SIZE, bufferSize);
         if (acquire_sem_etc(s->output_sem, len, B_CAN_INTERRUPT, 0LL) < B_OK) {
             s->has_quit = 1;
@@ -137,25 +130,9 @@ static void audioplay_callback(void *cookie, void *buffer, size_t bufferSize, co
             s->output_index %= AUDIO_BUFFER_SIZE;
         }
         release_sem_etc(s->input_sem, len, 0);
-#else
-        len = read(s->pipefd, buf, bufferSize);
-#endif
 #ifdef PERF_CHECK
         t = system_time() - t;
         s->starve_time = MAX(s->starve_time, t);
-#endif
-#ifndef USE_RING_BUFFER
-        if (len < B_OK) {
-            puts("EPIPE");
-            s->player->SetHasData(false);
-            snooze(100000);
-            return;
-        }
-        if (len == 0) {
-            s->player->SetHasData(false);
-            snooze(100000);
-            return;
-        }
 #endif
         buf += len;
         bufferSize -= len;
@@ -170,7 +147,6 @@ static int audio_open(AudioData *s, int is_output)
 
     if (!is_output)
         return -EIO; /* not for now */
-#ifdef USE_RING_BUFFER
     s->input_sem = create_sem(AUDIO_BUFFER_SIZE, "ffmpeg_ringbuffer_input");
 //    s->input_sem = create_sem(AUDIO_BLOCK_SIZE, "ffmpeg_ringbuffer_input");
     if (s->input_sem < B_OK)
@@ -183,21 +159,7 @@ static int audio_open(AudioData *s, int is_output)
     s->input_index = 0;
     s->output_index = 0;
     s->queued = 0;
-#else
-    ret = pipe(p);
-    if (ret < 0)
-        return -EIO;
-    s->fd = p[is_output?1:0];
-    s->pipefd = p[is_output?0:1];
-    if (s->fd < 0) {
-        perror(is_output?"audio out":"audio in");
-        return -EIO;
-    }
-#endif
     create_bapp_if_needed();
-    /* non blocking mode */
-//    fcntl(s->fd, F_SETFL, O_NONBLOCK);
-//    fcntl(s->pipefd, F_SETFL, O_NONBLOCK);
     s->frame_size = AUDIO_BLOCK_SIZE;
     format = media_raw_audio_format::wildcard;
     format.format = media_raw_audio_format::B_AUDIO_SHORT;
@@ -209,15 +171,10 @@ static int audio_open(AudioData *s, int is_output)
     if (s->player->InitCheck() != B_OK) {
         delete s->player;
         s->player = NULL;
-#ifdef USE_RING_BUFFER
     if (s->input_sem)
         delete_sem(s->input_sem);
     if (s->output_sem)
         delete_sem(s->output_sem);
-#else
-        close(s->fd);
-        close(s->pipefd);
-#endif
         return -EIO;
     }
     s->player->SetCookie(s);
@@ -231,22 +188,16 @@ static int audio_open(AudioData *s, int is_output)
 
 static int audio_close(AudioData *s)
 {
-#ifdef USE_RING_BUFFER
     if (s->input_sem)
         delete_sem(s->input_sem);
     if (s->output_sem)
         delete_sem(s->output_sem);
-#endif
     s->has_quit = 1;
     if (s->player) {
         s->player->Stop();
     }
     if (s->player)
         delete s->player;
-#ifndef USE_RING_BUFFER
-    close(s->pipefd);
-    close(s->fd);
-#endif
     destroy_bapp_if_needed();
     return 0;
 }
@@ -277,7 +228,6 @@ static int audio_write_packet(AVFormatContext *s1, int stream_index,
     s->starve_time = 0;
     printf("starve_time: %lld    \n", t);
 #endif
-#ifdef USE_RING_BUFFER
     while (size > 0) {
         int amount;
         len = MIN(size, AUDIO_BLOCK_SIZE);
@@ -295,28 +245,6 @@ static int audio_write_packet(AVFormatContext *s1, int stream_index,
         buf += len;
         size -= len;
     }
-#else
-    while (size > 0) {
-        len = AUDIO_BLOCK_SIZE - s->buffer_ptr;
-        if (len > size)
-            len = size;
-        memcpy(s->buffer + s->buffer_ptr, buf, len);
-        s->buffer_ptr += len;
-        if (s->buffer_ptr >= AUDIO_BLOCK_SIZE) {
-            for(;;) {
-//snooze(1000);
-                ret = write(s->fd, s->buffer, AUDIO_BLOCK_SIZE);
-                if (ret != 0)
-                    break;
-                if (ret < 0 && (errno != EAGAIN && errno != EINTR))
-                    return -EIO;
-            }
-            s->buffer_ptr = 0;
-        }
-        buf += len;
-        size -= len;
-    }
-#endif
     return 0;
 }
 
@@ -382,15 +310,6 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
     }
     pkt->size = ret;
-    if (s->flip_left && s->channels == 2) {
-        int i;
-        short *p = (short *) pkt->data;
-
-        for (i = 0; i < ret; i += 4) {
-            *p = ~*p;
-            p += 2;
-        }
-    }
     return 0;
 }
 
