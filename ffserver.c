@@ -744,8 +744,12 @@ static void close_connection(HTTPContext *c)
         }
     }
 
+    ctx = &c->fmt_ctx;
+
+    for(i=0; i<ctx->nb_streams; i++) 
+        av_free(ctx->streams[i]) ; 
+
     if (!c->last_packet_sent) {
-        ctx = &c->fmt_ctx;
         if (ctx->oformat) {
             /* prepare header */
             if (url_open_dyn_buf(&ctx->pb) >= 0) {

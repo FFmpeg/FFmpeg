@@ -569,12 +569,9 @@ static void dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
     }
     
     if (new_allocated_size > d->allocated_size) {
-        new_buffer = av_malloc(new_allocated_size);
-        if (!new_buffer)
-            return;
-        memcpy(new_buffer, d->buffer, d->size);
-        av_free(d->buffer);
-        d->buffer = new_buffer;
+        d->buffer = av_realloc(d->buffer, new_allocated_size);
+        if(d->buffer == NULL)
+             return ;
         d->allocated_size = new_allocated_size;
     }
     memcpy(d->buffer + d->pos, buf, buf_size);
