@@ -578,9 +578,6 @@ void mjpeg_encode_mb(MpegEncContext *s,
 /******************************************/
 /* decoding */
 
-/* compressed picture size */
-#define PICTURE_BUFFER_SIZE 100000
-
 #define MAX_COMPONENTS 4
 
 typedef struct MJpegDecodeContext {
@@ -615,7 +612,7 @@ typedef struct MJpegDecodeContext {
     int buggy_avid;
     int restart_interval;
     int restart_count;
-    int interleaved_rows;
+    int interlace_polarity;
     ScanTable scantable;
     void (*idct_put)(UINT8 *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
 } MJpegDecodeContext;
@@ -655,8 +652,8 @@ static int mjpeg_decode_init(AVCodecContext *avctx)
     MPV_common_end(&s2);
 
     s->mpeg_enc_ctx_allocated = 0;
-    s->buffer_size = PICTURE_BUFFER_SIZE - 1; /* minus 1 to take into
-                                                 account FF 00 case */
+    s->buffer_size = 102400; /* smaller buffer should be enough,
+				but photojpg files could ahive bigger sizes */
     s->buffer = av_malloc(s->buffer_size);
     s->start_code = -1;
     s->first_picture = 1;
@@ -802,6 +799,7 @@ static int mjpeg_decode_sof0(MJpegDecodeContext *s)
             s->org_height != 0 &&
             s->height < ((s->org_height * 3) / 4)) {
             s->interlaced = 1;
+//	    s->bottom_field = (s->interlace_polarity) ? 1 : 0;
 	    s->bottom_field = 0;
         }
 
@@ -1034,7 +1032,7 @@ static int mjpeg_decode_sos(MJpegDecodeContext *s)
                     }
                 }
             }
-            if (s->restart_interval && !--s->restart_count) {
+            if ((s->restart_interval <= 8) && !--s->restart_count) {
                 align_get_bits(&s->gb);
                 skip_bits(&s->gb, 16); /* skip RSTn */
                 for (j=0; j<nb_components; j++) /* reset dc */
@@ -1061,8 +1059,7 @@ static int mjpeg_decode_dri(MJpegDecodeContext *s)
     return 0;
 }
 
-#define FOURCC(a,b,c,d) ((a << 24) | (b << 16) | (c << 8) | d)
-static int mjpeg_decode_app(MJpegDecodeContext *s, int start_code)
+static int mjpeg_decode_app(MJpegDecodeContext *s)
 {
     int len, id;
 
@@ -1071,13 +1068,13 @@ static int mjpeg_decode_app(MJpegDecodeContext *s, int start_code)
     if (len < 5)
 	return -1;
 
-    id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
+    id = be2me_32((get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16));
     len -= 6;
 
     /* buggy AVID, it puts EOI only at every 10th frame */
     /* also this fourcc is used by non-avid files too, it means
        interleaving, but it's always present in AVID files */
-    if (id == FOURCC('A','V','I','1'))
+    if (id == ff_get_fourcc("AVI1"))
     {
 	/* structure:
 	    4bytes	AVI1
@@ -1087,23 +1084,23 @@ static int mjpeg_decode_app(MJpegDecodeContext *s, int start_code)
 	    4bytes	field_size_less_padding
 	*/
     	s->buggy_avid = 1;
-	if (s->first_picture)
-	    printf("mjpeg: workarounding buggy AVID\n");
-	s->interleaved_rows = get_bits(&s->gb, 8);
+//	if (s->first_picture)
+//	    printf("mjpeg: workarounding buggy AVID\n");
+	s->interlace_polarity = get_bits(&s->gb, 8);
 #if 0
 	skip_bits(&s->gb, 8);
 	skip_bits(&s->gb, 32);
 	skip_bits(&s->gb, 32);
 	len -= 10;
 #endif
-	if (s->interleaved_rows)
-	    printf("mjpeg: interleaved rows: %d\n", s->interleaved_rows);
+//	if (s->interlace_polarity)
+//	    printf("mjpeg: interlace polarity: %d\n", s->interlace_polarity);
 	goto out;
     }
     
     len -= 2;
     
-    if (id == FOURCC('J','F','I','F'))
+    if (id == ff_get_fourcc("JFIF"))
     {
 	skip_bits(&s->gb, 8); /* the trailing zero-byte */
 	printf("mjpeg: JFIF header found (version: %x.%x)\n",
@@ -1125,11 +1122,11 @@ static int mjpeg_decode_app(MJpegDecodeContext *s, int start_code)
     }
     
     /* Apple MJPEG-A */
-    if ((start_code == APP1) && (len > (0x28 - 8)))
+    if ((s->start_code == APP1) && (len > (0x28 - 8)))
     {
-	id = (get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16);
+	id = be2me_32((get_bits(&s->gb, 16) << 16) | get_bits(&s->gb, 16));
 	len -= 4;
-        if (id == FOURCC('m','j','p','g')) /* Apple MJPEG-A */
+	if (id == ff_get_fourcc("mjpg")) /* Apple MJPEG-A */
 	{
 #if 0
 	    skip_bits(&s->gb, 32); /* field size */
@@ -1147,11 +1144,8 @@ static int mjpeg_decode_app(MJpegDecodeContext *s, int start_code)
     }
 
 out:
-    /* should check for further values.. */
-
     return 0;
 }
-#undef FOURCC
 
 static int mjpeg_decode_com(MJpegDecodeContext *s)
 {
@@ -1271,6 +1265,8 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		    av_free(s->buffer);
 		    s->buffer_size = buf_end-buf_ptr;
 		    s->buffer = av_malloc(s->buffer_size);
+		    dprintf("buffer too small, expanding to %d bytes\n",
+			s->buffer_size);
 		}
 		
 		/* unescape buffer of SOS */
@@ -1306,7 +1302,7 @@ static int mjpeg_decode_frame(AVCodecContext *avctx,
 		} else if (s->first_picture) {
 		    /* APP fields */
 		    if (start_code >= 0xe0 && start_code <= 0xef)
-			mjpeg_decode_app(s, start_code);
+			mjpeg_decode_app(s);
 		    /* Comment */
 		    else if (start_code == COM)
 			mjpeg_decode_com(s);
