@@ -1292,7 +1292,7 @@ void ff_spatial_idwt(DWTELEM *buffer, int width, int height, int stride, int typ
     }
 }
 
-static void encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
+static int encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){
     const int w= b->width;
     const int h= b->height;
     int x, y;
@@ -1347,6 +1347,10 @@ static void encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTEL
         put_symbol2(&s->c, b->state[1], run, 3);
         
         for(y=0; y<h; y++){
+            if(&s->c.bytestream_end - &s->c.bytestream < w*40){
+                av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+                return -1;
+            }
             for(x=0; x<w; x++){
                 int v, p=0;
                 int /*ll=0, */l=0, lt=0, t=0, rt=0;
@@ -1398,12 +1402,13 @@ static void encode_subband_c0run(SnowContext *s, SubBand *b, DWTELEM *src, DWTEL
             }
         }
     }
+    return 0;
 }
 
-static void encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){    
+static int encode_subband(SnowContext *s, SubBand *b, DWTELEM *src, DWTELEM *parent, int stride, int orientation){    
 //    encode_subband_qtree(s, b, src, parent, stride, orientation);
 //    encode_subband_z0run(s, b, src, parent, stride, orientation);
-    encode_subband_c0run(s, b, src, parent, stride, orientation);
+    return encode_subband_c0run(s, b, src, parent, stride, orientation);
 //    encode_subband_dzr(s, b, src, parent, stride, orientation);
 }
 
@@ -1918,6 +1923,10 @@ static void encode_blocks(SnowContext *s){
     int h= s->b_height;
 
     for(y=0; y<h; y++){
+        if(&s->c.bytestream_end - &s->c.bytestream < w*MB_SIZE*MB_SIZE*3){ //FIXME nicer limit
+            av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+            return;
+        }
         for(x=0; x<w; x++){
             encode_q_branch(s, 0, x, y);
         }

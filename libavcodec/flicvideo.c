@@ -176,7 +176,7 @@ static int flic_decode_frame(AVCodecContext *avctx,
                 for (j = 0; j < color_changes; j++) {
 
                     /* wrap around, for good measure */
-                    if (palette_ptr >= 256)
+                    if ((unsigned)palette_ptr >= 256)
                         palette_ptr = 0;
 
                     r = buf[stream_ptr++] << color_shift;

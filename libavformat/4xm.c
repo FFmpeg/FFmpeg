@@ -279,7 +279,7 @@ static int fourxm_read_packet(AVFormatContext *s,
 
             /* allocate 8 more bytes than 'size' to account for fourcc
              * and size */
-            if (av_new_packet(pkt, size + 8))
+            if (size + 8 < size || av_new_packet(pkt, size + 8))
                 return AVERROR_IO;
             pkt->stream_index = fourxm->video_stream_index;
             pkt->pts = fourxm->video_pts;

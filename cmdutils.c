@@ -35,10 +35,10 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
                 printf("%s", msg);
                 first = 0;
             }
-            strcpy(buf, po->name);
+            pstrcpy(buf, sizeof(buf), po->name);
             if (po->flags & HAS_ARG) {
-                strcat(buf, " ");
-                strcat(buf, po->argname);
+                pstrcat(buf, sizeof(buf), " ");
+                pstrcat(buf, sizeof(buf), po->argname);
             }
             printf("-%-17s  %s\n", buf, po->help);
         }

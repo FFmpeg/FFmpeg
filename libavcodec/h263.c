@@ -6115,7 +6115,7 @@ int flv_h263_decode_picture_header(MpegEncContext *s)
         width = height = 0;
         break;
     }
-    if ((width == 0) || (height == 0))
+    if(avcodec_check_dimensions(s->avctx, width, height))
         return -1;
     s->width = width;
     s->height = height;

@@ -196,6 +196,10 @@ static unsigned long iv_decode_frame(Indeo3DecodeContext *s,
   hdr_height = le2me_16(*(uint16_t *)buf_pos);
   buf_pos += 2;
   hdr_width = le2me_16(*(uint16_t *)buf_pos);
+  
+  if(avcodec_check_dimensions(NULL, hdr_width, hdr_height))
+      return -1;
+  
   buf_pos += 2;
   chroma_height = ((hdr_height >> 2) + 3) & 0x7ffc;
   chroma_width = ((hdr_width >> 2) + 3) & 0x7ffc;

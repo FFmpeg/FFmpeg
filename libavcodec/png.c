@@ -140,6 +140,8 @@ static int png_probe(AVProbeData *pd)
 #endif
 static void *png_zalloc(void *opaque, unsigned int items, unsigned int size)
 {
+    if(items >= UINT_MAX / size)
+        return NULL;
     return av_malloc(items * size);
 }
 
@@ -522,6 +524,10 @@ static int decode_frame(AVCodecContext *avctx,
                 goto fail;
             s->width = get32(&s->bytestream);
             s->height = get32(&s->bytestream);
+            if(avcodec_check_dimensions(avctx, s->width, s->height)){
+                s->width= s->height= 0;
+                goto fail;
+            }
             s->bit_depth = *s->bytestream++;
             s->color_type = *s->bytestream++;
             s->compression_type = *s->bytestream++;
@@ -727,7 +733,8 @@ static int png_write_row(PNGContext *s, const uint8_t *data, int size)
         if (ret != Z_OK)
             return -1;
         if (s->zstream.avail_out == 0) {
-            png_write_chunk(&s->bytestream, MKTAG('I', 'D', 'A', 'T'), s->buf, IOBUF_SIZE);
+            if(s->bytestream_end - s->bytestream > IOBUF_SIZE + 100)
+                png_write_chunk(&s->bytestream, MKTAG('I', 'D', 'A', 'T'), s->buf, IOBUF_SIZE);
             s->zstream.avail_out = IOBUF_SIZE;
             s->zstream.next_out = s->buf;
         }
@@ -895,7 +902,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         ret = deflate(&s->zstream, Z_FINISH);
         if (ret == Z_OK || ret == Z_STREAM_END) {
             len = IOBUF_SIZE - s->zstream.avail_out;
-            if (len > 0) {
+            if (len > 0 && s->bytestream_end - s->bytestream > len + 100) {
                 png_write_chunk(&s->bytestream, MKTAG('I', 'D', 'A', 'T'), s->buf, len);
             }
             s->zstream.avail_out = IOBUF_SIZE;

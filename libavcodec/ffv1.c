@@ -354,13 +354,25 @@ static inline int get_vlc_symbol(GetBitContext *gb, VlcState * const state, int 
     return ret;
 }
 
-static inline void encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
+static inline int encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], int plane_index, int bits){
     PlaneContext * const p= &s->plane[plane_index];
     RangeCoder * const c= &s->c;
     int x;
     int run_index= s->run_index;
     int run_count=0;
     int run_mode=0;
+
+    if(s->ac){
+        if(c->bytestream_end - c->bytestream < w*20){
+            av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+            return -1;
+        }
+    }else{
+        if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < w*4){
+            av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+            return -1;
+        }
+    }
 
     for(x=0; x<w; x++){
         int diff, context;
@@ -416,6 +428,8 @@ static inline void encode_line(FFV1Context *s, int w, int_fast16_t *sample[2], i
             put_bits(&s->pb, 1, 1);
     }
     s->run_index= run_index;
+    
+    return 0;
 }
 
 static void encode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride, int plane_index){
@@ -896,7 +910,7 @@ static int read_header(FFV1Context *f){
     context_count=1;
     for(i=0; i<5; i++){
         context_count*= read_quant_table(c, f->quant_table[i], context_count);
-        if(context_count < 0){
+        if(context_count < 0 || context_count > 32768){
             av_log(f->avctx, AV_LOG_ERROR, "read_quant_table error\n");
             return -1;
         }

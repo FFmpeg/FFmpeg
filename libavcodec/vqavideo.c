@@ -151,6 +151,10 @@ static int vqa_decode_init(AVCodecContext *avctx)
     s->vqa_version = vqa_header[0];
     s->width = LE_16(&vqa_header[6]);
     s->height = LE_16(&vqa_header[8]);
+    if(avcodec_check_dimensions(avctx, s->width, s->height)){
+        s->width= s->height= 0;
+        return -1;
+    }
     s->vector_width = vqa_header[10];
     s->vector_height = vqa_header[11];
     s->partial_count = s->partial_countdown = vqa_header[13];

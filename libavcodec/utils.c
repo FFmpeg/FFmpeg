@@ -82,7 +82,7 @@ void *av_fast_realloc(void *ptr, unsigned int *size, unsigned int min_size)
     if(min_size < *size) 
         return ptr;
     
-    *size= 17*min_size/16 + 32;
+    *size= FFMAX(17*min_size/16 + 32, min_size);
 
     return av_realloc(ptr, *size);
 }
@@ -101,6 +101,8 @@ void *av_mallocz_static(unsigned int size)
 
     if(ptr){ 
         array_static =av_fast_realloc(array_static, &allocated_static, sizeof(void*)*(last_static+1));
+        if(!array_static)
+            return NULL;
         array_static[last_static++] = ptr;
     }
 
@@ -233,15 +235,26 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
     *height= ALIGN(*height, h_align);
 }
 
+int avcodec_check_dimensions(void *av_log_ctx, unsigned int w, unsigned int h){
+    if((int)w>0 && (int)h>0 && (w+128)*(uint64_t)(h+128) < INT_MAX/4)
+        return 0;
+    
+    av_log(av_log_ctx, AV_LOG_ERROR, "picture size invalid (%ux%u)\n", w, h);
+    return -1;
+}
+
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
     int w= s->width;
     int h= s->height;
     InternalBuffer *buf;
     int *picture_number;
-    
+
     assert(pic->data[0]==NULL);
     assert(INTERNAL_BUFFER_SIZE > s->internal_buffer_count);
+
+    if(avcodec_check_dimensions(s,w,h))
+        return -1;
 
     if(s->internal_buffer==NULL){
         s->internal_buffer= av_mallocz(INTERNAL_BUFFER_SIZE*sizeof(InternalBuffer));
@@ -509,6 +522,11 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
     else if(avctx->width && avctx->height)
         avcodec_set_dimensions(avctx, avctx->width, avctx->height);
 
+    if((avctx->coded_width||avctx->coded_height) && avcodec_check_dimensions(avctx,avctx->coded_width,avctx->coded_height)){
+        av_freep(&avctx->priv_data);
+        return -1;
+    }
+
     ret = avctx->codec->init(avctx);
     if (ret < 0) {
         av_freep(&avctx->priv_data);
@@ -520,6 +538,10 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
                          const short *samples)
 {
+    if(buf_size < FF_MIN_BUFFER_SIZE && 0){
+        av_log(avctx, AV_LOG_ERROR, "buffer smaller then minimum size\n");
+        return -1;
+    }
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || samples){
         int ret = avctx->codec->encode(avctx, buf, buf_size, (void *)samples);
         avctx->frame_number++;
@@ -531,6 +553,12 @@ int avcodec_encode_audio(AVCodecContext *avctx, uint8_t *buf, int buf_size,
 int avcodec_encode_video(AVCodecContext *avctx, uint8_t *buf, int buf_size, 
                          const AVFrame *pict)
 {
+    if(buf_size < FF_MIN_BUFFER_SIZE){
+        av_log(avctx, AV_LOG_ERROR, "buffer smaller then minimum size\n");
+        return -1;
+    }
+    if(avcodec_check_dimensions(avctx,avctx->width,avctx->height))
+        return -1;
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || pict){
         int ret = avctx->codec->encode(avctx, buf, buf_size, (void *)pict);
         avctx->frame_number++;
@@ -557,6 +585,8 @@ int avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
     int ret;
     
     *got_picture_ptr= 0;
+    if((avctx->coded_width||avctx->coded_height) && avcodec_check_dimensions(avctx,avctx->coded_width,avctx->coded_height))
+        return -1;
     ret = avctx->codec->decode(avctx, picture, got_picture_ptr, 
                                buf, buf_size);
 

@@ -268,6 +268,9 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
     int size, w2, h2, size2;
     PixFmtInfo *pinfo;
     
+    if(avcodec_check_dimensions(NULL, width, height))
+        goto fail;
+
     pinfo = &pix_fmt_info[pix_fmt];
     size = width * height;
     switch(pix_fmt) {
@@ -344,6 +347,7 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
         picture->linesize[1] = 4;
         return size2 + 256 * 4;
     default:
+fail:
         picture->data[0] = NULL;
         picture->data[1] = NULL;
         picture->data[2] = NULL;
@@ -360,7 +364,7 @@ int avpicture_layout(const AVPicture* src, int pix_fmt, int width, int height,
     const unsigned char* s; 
     int size = avpicture_get_size(pix_fmt, width, height);
 
-    if (size > dest_size)
+    if (size > dest_size || size < 0)
         return -1;
 
     if (pf->pixel_type == FF_PIXEL_PACKED || pf->pixel_type == FF_PIXEL_PALETTE) {
@@ -1920,6 +1924,8 @@ int avpicture_alloc(AVPicture *picture,
     void *ptr;
 
     size = avpicture_get_size(pix_fmt, width, height);
+    if(size<0)
+        goto fail;
     ptr = av_malloc(size);
     if (!ptr)
         goto fail;

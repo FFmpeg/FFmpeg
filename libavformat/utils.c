@@ -57,7 +57,7 @@ int match_ext(const char *filename, const char *extensions)
         p = extensions;
         for(;;) {
             q = ext1;
-            while (*p != '\0' && *p != ',') 
+            while (*p != '\0' && *p != ',' && q-ext1<sizeof(ext1)-1) 
                 *q++ = *p++;
             *q = '\0';
             if (!strcasecmp(ext1, ext)) 

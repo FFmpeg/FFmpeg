@@ -171,7 +171,7 @@ static int flic_read_packet(AVFormatContext *s,
         size = LE_32(&preamble[0]);
         magic = LE_16(&preamble[4]);
 
-        if ((magic == FLIC_CHUNK_MAGIC_1) || (magic == FLIC_CHUNK_MAGIC_2)) {
+        if (((magic == FLIC_CHUNK_MAGIC_1) || (magic == FLIC_CHUNK_MAGIC_2)) && size > FLIC_PREAMBLE_SIZE) {
             if (av_new_packet(pkt, size)) {
                 ret = AVERROR_IO;
                 break;

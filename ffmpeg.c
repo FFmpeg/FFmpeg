@@ -1020,21 +1020,21 @@ static void print_report(AVFormatContext **output_files,
         os = output_files[ost->file_index];
         enc = &ost->st->codec;
         if (vid && enc->codec_type == CODEC_TYPE_VIDEO) {
-            sprintf(buf + strlen(buf), "q=%2.1f ",
+            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ",
                     enc->coded_frame->quality/(float)FF_QP2LAMBDA);
         }
         if (!vid && enc->codec_type == CODEC_TYPE_VIDEO) {
             frame_number = ost->frame_number;
-            sprintf(buf + strlen(buf), "frame=%5d q=%2.1f ",
+            snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d q=%2.1f ",
                     frame_number, enc->coded_frame ? enc->coded_frame->quality/(float)FF_QP2LAMBDA : 0);
             if(is_last_report)
-                sprintf(buf + strlen(buf), "L");
+                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "L");
             if (enc->flags&CODEC_FLAG_PSNR){
                 int j;
                 double error, error_sum=0;
                 double scale, scale_sum=0;
                 char type[3]= {'Y','U','V'};
-                sprintf(buf + strlen(buf), "PSNR=");
+                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "PSNR=");
                 for(j=0; j<3; j++){
                     if(is_last_report){
                         error= enc->error[j];
@@ -1046,9 +1046,9 @@ static void print_report(AVFormatContext **output_files,
                     if(j) scale/=4;
                     error_sum += error;
                     scale_sum += scale;
-                    sprintf(buf + strlen(buf), "%c:%2.2f ", type[j], psnr(error/scale));
+                    snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "%c:%2.2f ", type[j], psnr(error/scale));
                 }
-                sprintf(buf + strlen(buf), "*:%2.2f ", psnr(error_sum/scale_sum));
+                snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "*:%2.2f ", psnr(error_sum/scale_sum));
             }
             vid = 1;
         }
@@ -1063,12 +1063,12 @@ static void print_report(AVFormatContext **output_files,
     if (verbose || is_last_report) {
         bitrate = (double)(total_size * 8) / ti1 / 1000.0;
         
-        sprintf(buf + strlen(buf), 
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), 
             "size=%8.0fkB time=%0.1f bitrate=%6.1fkbits/s",
             (double)total_size / 1024, ti1, bitrate);
 
 	if (verbose > 1)
-	  sprintf(buf + strlen(buf), " dup=%d drop=%d",
+	  snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
 		  nb_frames_dup, nb_frames_drop);
         
         if (verbose >= 0)
@@ -3331,7 +3331,7 @@ static void opt_output_file(const char *filename)
 
     output_files[nb_output_files++] = oc;
 
-    strcpy(oc->filename, filename);
+    pstrcpy(oc->filename, sizeof(oc->filename), filename);
 
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER) {

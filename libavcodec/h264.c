@@ -5862,6 +5862,10 @@ static inline int decode_seq_parameter_set(H264Context *h){
     sps->gaps_in_frame_num_allowed_flag= get_bits1(&s->gb);
     sps->mb_width= get_ue_golomb(&s->gb) + 1;
     sps->mb_height= get_ue_golomb(&s->gb) + 1;
+    if((unsigned)sps->mb_width >= INT_MAX/16 || (unsigned)sps->mb_height >= INT_MAX/16 || 
+       avcodec_check_dimensions(NULL, 16*sps->mb_width, 16*sps->mb_height))
+        return -1;
+
     sps->frame_mbs_only_flag= get_bits1(&s->gb);
     if(!sps->frame_mbs_only_flag)
         sps->mb_aff= get_bits1(&s->gb);

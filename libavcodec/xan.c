@@ -132,6 +132,9 @@ static int xan_decode_init(AVCodecContext *avctx)
         v_b_table[i] = V_B * i;
     }
 
+    if(avcodec_check_dimensions(avctx, avctx->width, avctx->height))
+        return -1;
+    
     s->buffer1 = av_malloc(avctx->width * avctx->height);
     s->buffer2 = av_malloc(avctx->width * avctx->height);
     if (!s->buffer1 || !s->buffer2)

@@ -1081,7 +1081,7 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref, uint8_t *dec
 
 #ifdef CONFIG_ENCODERS
 
-static void svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane, unsigned char *ref_plane, unsigned char *decoded_plane,
+static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane, unsigned char *ref_plane, unsigned char *decoded_plane,
     int width, int height, int src_stride, int stride)
 {
     int x, y;
@@ -1188,6 +1188,11 @@ static void svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plan
             uint8_t *ref= ref_plane + offset;
             int score[4]={0,0,0,0}, best;
             uint8_t temp[16*stride];
+            
+            if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < 3000){ //FIXME check size
+                av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+                return -1;
+            }
 
             s->m.mb_x= x;
             ff_init_block_index(&s->m);
@@ -1280,6 +1285,7 @@ static void svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plan
         }
         s->m.first_slice_line=0;
     }
+    return 0;
 }
 
 static int svq1_encode_init(AVCodecContext *avctx)
@@ -1341,10 +1347,11 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
     svq1_write_header(s, p->pict_type);
     for(i=0; i<3; i++){
-        svq1_encode_plane(s, i,
+        if(svq1_encode_plane(s, i,
             s->picture.data[i], s->last_picture.data[i], s->current_picture.data[i],
             s->frame_width / (i?4:1), s->frame_height / (i?4:1), 
-            s->picture.linesize[i], s->current_picture.linesize[i]);
+            s->picture.linesize[i], s->current_picture.linesize[i]) < 0)
+                return -1;
     }
 
 //    align_put_bits(&s->pb);

@@ -323,13 +323,19 @@ static int decode_p_frame(FourXContext *f, uint8_t *buf, int length){
     uint16_t *src= (uint16_t*)f->last_picture.data[0];
     uint16_t *dst= (uint16_t*)f->current_picture.data[0];
     const int stride= f->current_picture.linesize[0]>>1;
-    const int bitstream_size= get32(buf+8);
-    const int bytestream_size= get32(buf+16);
-    const int wordstream_size= get32(buf+12);
+    const unsigned int bitstream_size= get32(buf+8);
+    const unsigned int bytestream_size= get32(buf+16);
+    const unsigned int wordstream_size= get32(buf+12);
     
-    if(bitstream_size+ bytestream_size+ wordstream_size + 20 != length)
+    if(bitstream_size+ bytestream_size+ wordstream_size + 20 != length
+       || bitstream_size  > (1<<26)
+       || bytestream_size > (1<<26)
+       || wordstream_size > (1<<26)
+       ){
         av_log(f->avctx, AV_LOG_ERROR, "lengths %d %d %d %d\n", bitstream_size, bytestream_size, wordstream_size, 
         bitstream_size+ bytestream_size+ wordstream_size - length);
+        return -1;
+    }
     
     f->bitstream_buffer= av_fast_realloc(f->bitstream_buffer, &f->bitstream_buffer_size, bitstream_size + FF_INPUT_BUFFER_PADDING_SIZE);
     f->dsp.bswap_buf((uint32_t*)f->bitstream_buffer, (uint32_t*)(buf + 20), bitstream_size/4);
@@ -550,13 +556,17 @@ static int decode_i_frame(FourXContext *f, uint8_t *buf, int length){
     const int height= f->avctx->height;
     uint16_t *dst= (uint16_t*)f->current_picture.data[0];
     const int stride= f->current_picture.linesize[0]>>1;
-    const int bitstream_size= get32(buf);
+    const unsigned int bitstream_size= get32(buf);
     const int token_count __attribute__((unused)) = get32(buf + bitstream_size + 8);
-    int prestream_size= 4*get32(buf + bitstream_size + 4);
+    unsigned int prestream_size= 4*get32(buf + bitstream_size + 4);
     uint8_t *prestream= buf + bitstream_size + 12;
     
-    if(prestream_size + bitstream_size + 12 != length)
+    if(prestream_size + bitstream_size + 12 != length
+       || bitstream_size > (1<<26)
+       || prestream_size > (1<<26)){
         av_log(f->avctx, AV_LOG_ERROR, "size missmatch %d %d %d\n", prestream_size, bitstream_size, length);
+        return -1;
+    }
    
     prestream= read_huffman_tables(f, prestream);
 

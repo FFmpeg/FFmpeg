@@ -196,6 +196,8 @@ static int roq_read_packet(AVFormatContext *s,
 
         chunk_type = LE_16(&preamble[0]);
         chunk_size = LE_32(&preamble[2]);
+        if(chunk_size > INT_MAX)
+            return AVERROR_INVALIDDATA;
 
         switch (chunk_type) {
 

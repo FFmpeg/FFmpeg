@@ -724,9 +724,8 @@ retry:
     if(s->codec_id==CODEC_ID_MPEG4 && s->bitstream_buffer_size==0 && s->divx_packed){
         int current_pos= get_bits_count(&s->gb)>>3;
         int startcode_found=0;
-
-        if(   buf_size - current_pos > 5 
-           && buf_size - current_pos < BITSTREAM_BUFFER_SIZE){
+        
+        if(buf_size - current_pos > 5){
             int i;
             for(i=current_pos; i<buf_size-3; i++){
                 if(buf[i]==0 && buf[i+1]==0 && buf[i+2]==1 && buf[i+3]==0xB6){
@@ -741,6 +740,10 @@ retry:
         }
 
         if(startcode_found){
+            s->bitstream_buffer= av_fast_realloc(
+                s->bitstream_buffer, 
+                &s->allocated_bitstream_buffer_size, 
+                buf_size - current_pos + FF_INPUT_BUFFER_PADDING_SIZE);
             memcpy(s->bitstream_buffer, buf + current_pos, buf_size - current_pos);
             s->bitstream_buffer_size= buf_size - current_pos;
         }

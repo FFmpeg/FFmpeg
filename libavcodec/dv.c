@@ -931,7 +931,9 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
     s->sys = dv_codec_profile(c);
     if (!s->sys)
 	return -1;
-    
+    if(buf_size < s->sys->frame_size)
+        return -1;
+
     c->pix_fmt = s->sys->pix_fmt;
     s->picture = *((AVFrame *)data);
 

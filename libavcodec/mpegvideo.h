@@ -68,6 +68,8 @@ enum OutputFormat {
 #define SI_TYPE FF_SI_TYPE  ///< Switching Intra
 #define SP_TYPE FF_SP_TYPE  ///< Switching Predicted
 
+#define MAX_MB_BYTES (30*16*16*3/8 + 120)
+
 typedef struct Predictor{
     double coeff;
     double count;
@@ -599,9 +601,9 @@ typedef struct MpegEncContext {
     int divx_version;
     int divx_build;
     int divx_packed;
-#define BITSTREAM_BUFFER_SIZE 1024*256
     uint8_t *bitstream_buffer; //Divx 5.01 puts several frames in a single one, this is used to reorder them
     int bitstream_buffer_size;
+    int allocated_bitstream_buffer_size;
     
     int xvid_build;
     

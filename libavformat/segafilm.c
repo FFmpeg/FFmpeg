@@ -231,6 +231,8 @@ static int film_read_packet(AVFormatContext *s,
         (film->video_type == CODEC_ID_CINEPAK)) {
         if (av_new_packet(pkt, sample->sample_size - film->cvid_extra_bytes))
             return AVERROR_NOMEM;
+        if(pkt->size < 10)
+            return -1;
         ret = get_buffer(pb, pkt->data, 10);
         /* skip the non-spec CVID bytes */
         url_fseek(pb, film->cvid_extra_bytes, SEEK_CUR);

@@ -169,14 +169,16 @@ static int wc3_read_header(AVFormatContext *s,
             if ((ret = get_buffer(pb, preamble, 4)) != 4)
                 return AVERROR_IO;
             wc3->palette_count = LE_32(&preamble[0]);
-            if((unsigned)wc3->palette_count >= UINT_MAX / PALETTE_SIZE)
+            if((unsigned)wc3->palette_count >= UINT_MAX / PALETTE_SIZE){
+                wc3->palette_count= 0;
                 return -1;
+            }
             wc3->palettes = av_malloc(wc3->palette_count * PALETTE_SIZE);
             break;
 
         case BNAM_TAG:
             /* load up the name */
-            if (size < 512)
+            if ((unsigned)size < 512)
                 bytes_to_read = size;
             else
                 bytes_to_read = 512;
@@ -195,7 +197,7 @@ static int wc3_read_header(AVFormatContext *s,
 
         case PALT_TAG:
             /* one of several palettes */
-            if (current_palette >= wc3->palette_count)
+            if ((unsigned)current_palette >= wc3->palette_count)
                 return AVERROR_INVALIDDATA;
             if ((ret = get_buffer(pb, 
                 &wc3->palettes[current_palette * PALETTE_SIZE], 
@@ -331,7 +333,7 @@ static int wc3_read_packet(AVFormatContext *s,
 #if 0
             url_fseek(pb, size, SEEK_CUR);
 #else
-            if ((ret = get_buffer(pb, text, size)) != size)
+            if ((unsigned)size > sizeof(text) || (ret = get_buffer(pb, text, size)) != size)
                 ret = AVERROR_IO;
             else {
                 int i = 0;

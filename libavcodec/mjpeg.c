@@ -659,11 +659,11 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
     mjpeg_picture_header(s);
 
     s->header_bits= put_bits_count(&s->pb);
-
+    
     if(avctx->pix_fmt == PIX_FMT_RGBA32){
         int x, y, i;
         const int linesize= p->linesize[0];
-        uint16_t buffer[2048][4];
+        uint16_t (*buffer)[4]= s->rd_scratchpad;
         int left[3], top[3], topleft[3];
 
         for(i=0; i<3; i++){
@@ -674,6 +674,11 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
             const int modified_predictor= y ? predictor : 1;
             uint8_t *ptr = p->data[0] + (linesize * y);
 
+            if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < width*3*4){
+                av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+                return -1;
+            }
+            
             for(i=0; i<3; i++){
                 top[i]= left[i]= topleft[i]= buffer[0][i];
             }
@@ -707,6 +712,10 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
         const int mb_height = (height + s->mjpeg_vsample[0] - 1) / s->mjpeg_vsample[0];
         
         for(mb_y = 0; mb_y < mb_height; mb_y++) {
+            if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < mb_width * 4 * 3 * s->mjpeg_hsample[0] * s->mjpeg_vsample[0]){
+                av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+                return -1;
+            }
             for(mb_x = 0; mb_x < mb_width; mb_x++) {
                 if(mb_x==0 || mb_y==0){
                     for(i=0;i<3;i++) {
@@ -1060,7 +1069,10 @@ static int mjpeg_decode_sof(MJpegDecodeContext *s)
     }
     height = get_bits(&s->gb, 16);
     width = get_bits(&s->gb, 16);
+    
     dprintf("sof0: picture: %dx%d\n", width, height);
+    if(avcodec_check_dimensions(s->avctx, width, height))
+        return -1;
 
     nb_components = get_bits(&s->gb, 8);
     if (nb_components <= 0 ||
@@ -1228,10 +1240,13 @@ static int decode_block(MJpegDecodeContext *s, DCTELEM *block,
 
 static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point_transform){
     int i, mb_x, mb_y;
-    uint16_t buffer[2048][4];
+    uint16_t buffer[32768][4];
     int left[3], top[3], topleft[3];
     const int linesize= s->linesize[0];
     const int mask= (1<<s->bits)-1;
+    
+    if((unsigned)s->mb_width > 32768) //dynamic alloc
+        return -1;
     
     for(i=0; i<3; i++){
         buffer[0][i]= 1 << (s->bits + point_transform - 1);

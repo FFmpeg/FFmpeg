@@ -561,6 +561,8 @@ ImgReSampleContext *img_resample_full_init(int owidth, int oheight,
     s = av_mallocz(sizeof(ImgReSampleContext));
     if (!s)
         return NULL;
+    if((unsigned)owidth >= UINT_MAX / (LINE_BUF_HEIGHT + NB_TAPS))
+        return NULL;
     s->line_buf = av_mallocz(owidth * (LINE_BUF_HEIGHT + NB_TAPS));
     if (!s->line_buf) 
         goto fail;

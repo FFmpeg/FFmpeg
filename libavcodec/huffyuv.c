@@ -65,13 +65,14 @@ typedef struct HYuvContext{
     int context;
     int picture_number;
     int last_slice_end;
-    uint8_t __align8 temp[3][2560];
+    uint8_t *temp[3];
     uint64_t stats[3][256];
     uint8_t len[3][256];
     uint32_t bits[3][256];
     VLC vlc[3];
     AVFrame picture;
-    uint8_t __align8 bitstream_buffer[1024*1024*3]; //FIXME dynamic alloc or some other solution
+    uint8_t *bitstream_buffer;
+    int bitstream_buffer_size;
     DSPContext dsp; 
 }HYuvContext;
 
@@ -347,24 +348,36 @@ static int read_old_huffman_tables(HYuvContext *s){
 #endif
 }
 
-static int decode_init(AVCodecContext *avctx)
-{
+static int common_init(AVCodecContext *avctx){
     HYuvContext *s = avctx->priv_data;
-    int width, height;
+    int i;
 
     s->avctx= avctx;
     s->flags= avctx->flags;
         
     dsputil_init(&s->dsp, avctx);
+    
+    s->width= avctx->width;
+    s->height= avctx->height;
+    assert(s->width>0 && s->height>0);
+    
+    for(i=0; i<3; i++){
+        s->temp[i]= av_malloc(avctx->width + 16);
+    }
+    return 0;
+}
+
+static int decode_init(AVCodecContext *avctx)
+{
+    HYuvContext *s = avctx->priv_data;
+
+    common_init(avctx);
     memset(s->vlc, 0, 3*sizeof(VLC));
     
-    width= s->width= avctx->width;
-    height= s->height= avctx->height;
     avctx->coded_frame= &s->picture;
-    s->interlaced= height > 288;
+    s->interlaced= s->height > 288;
 
 s->bgr32=1;
-    assert(width && height);
 //if(avctx->extradata)
 //  printf("extradata:%X, extradata_size:%d\n", *(uint32_t*)avctx->extradata, avctx->extradata_size);
     if(avctx->extradata_size){
@@ -474,20 +487,12 @@ static int store_table(HYuvContext *s, uint8_t *len, uint8_t *buf){
 static int encode_init(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
-    int i, j, width, height;
+    int i, j;
 
-    s->avctx= avctx;
-    s->flags= avctx->flags;
-        
-    dsputil_init(&s->dsp, avctx);
+    common_init(avctx);
     
-    width= s->width= avctx->width;
-    height= s->height= avctx->height;
-    
-    assert(width && height);
-    
-    avctx->extradata= av_mallocz(1024*30);
-    avctx->stats_out= av_mallocz(1024*30);
+    avctx->extradata= av_mallocz(1024*30); // 256*3+4 == 772
+    avctx->stats_out= av_mallocz(1024*30); // 21*256*3(%llu ) + 3(\n) + 1(0) = 16132
     s->version=2;
     
     avctx->coded_frame= &s->picture;
@@ -524,7 +529,7 @@ static int encode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "Error: per-frame huffman tables are not supported by huffyuv; use vcodec=ffvhuff\n");
             return -1;
         }
-        if(s->interlaced != ( height > 288 ))
+        if(s->interlaced != ( s->height > 288 ))
             av_log(avctx, AV_LOG_INFO, "using huffyuv 2.2.0 or newer interlacing flag\n");
     }else if(avctx->strict_std_compliance>=0){
         av_log(avctx, AV_LOG_ERROR, "This codec is under development; files encoded with it may not be decodeable with future versions!!! Set vstrict=-1 to use it anyway.\n");
@@ -580,7 +585,7 @@ static int encode_init(AVCodecContext *avctx)
 
     if(s->context){
         for(i=0; i<3; i++){
-            int pels = width*height / (i?40:10);
+            int pels = s->width*s->height / (i?40:10);
             for(j=0; j<256; j++){
                 int d= FFMIN(j, 256-j);
                 s->stats[i][j]= pels/(d+1);
@@ -623,8 +628,13 @@ static void decode_gray_bitstream(HYuvContext *s, int count){
     }
 }
 
-static void encode_422_bitstream(HYuvContext *s, int count){
+static int encode_422_bitstream(HYuvContext *s, int count){
     int i;
+    
+    if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < 2*4*count){
+        av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+        return -1;
+    }
     
     count/=2;
     if(s->flags&CODEC_FLAG_PASS1){
@@ -653,11 +663,17 @@ static void encode_422_bitstream(HYuvContext *s, int count){
             put_bits(&s->pb, s->len[2][ s->temp[2][  i  ] ], s->bits[2][ s->temp[2][  i  ] ]);
         }
     }
+    return 0;
 }
 
-static void encode_gray_bitstream(HYuvContext *s, int count){
+static int encode_gray_bitstream(HYuvContext *s, int count){
     int i;
     
+    if(s->pb.buf_end - s->pb.buf - (put_bits_count(&s->pb)>>3) < 4*count){
+        av_log(s->avctx, AV_LOG_ERROR, "encoded frame too large\n");
+        return -1;
+    }
+
     count/=2;
     if(s->flags&CODEC_FLAG_PASS1){
         for(i=0; i<count; i++){
@@ -677,6 +693,7 @@ static void encode_gray_bitstream(HYuvContext *s, int count){
             put_bits(&s->pb, s->len[0][ s->temp[0][2*i+1] ], s->bits[0][ s->temp[0][2*i+1] ]);
         }
     }
+    return 0;
 }
 
 static void decode_bgr_bitstream(HYuvContext *s, int count){
@@ -756,6 +773,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     /* no supplementary picture */
     if (buf_size == 0)
         return 0;
+        
+    s->bitstream_buffer= av_fast_realloc(s->bitstream_buffer, &s->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
 
     s->dsp.bswap_buf((uint32_t*)s->bitstream_buffer, (uint32_t*)buf, buf_size/4);
     
@@ -981,10 +1000,22 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, uint8
     return (get_bits_count(&s->gb)+31)/32*4;
 }
 
+static int common_end(HYuvContext *s){
+    int i;
+    
+    for(i=0; i<3; i++){
+        av_freep(&s->temp[i]);
+    }
+    return 0;
+}
+
 static int decode_end(AVCodecContext *avctx)
 {
     HYuvContext *s = avctx->priv_data;
     int i;
+    
+    common_end(s);
+    av_freep(&s->bitstream_buffer);
     
     for(i=0; i<3; i++){
         free_vlc(&s->vlc[i]);
@@ -1161,7 +1192,9 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 
 static int encode_end(AVCodecContext *avctx)
 {
-//    HYuvContext *s = avctx->priv_data;
+    HYuvContext *s = avctx->priv_data;
+    
+    common_end(s);
 
     av_freep(&avctx->extradata);
     av_freep(&avctx->stats_out);

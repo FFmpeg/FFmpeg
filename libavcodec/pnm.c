@@ -109,8 +109,9 @@ static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
             }
         }
         /* check that all tags are present */
-        if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0')
+        if (w <= 0 || h <= 0 || maxval <= 0 || depth <= 0 || tuple_type[0] == '\0' || avcodec_check_dimensions(avctx, w, h))
             return -1;
+                   
         avctx->width = w;
         avctx->height = h;
         if (depth == 1) {
@@ -135,7 +136,7 @@ static int pnm_decode_header(AVCodecContext *avctx, PNMContext * const s){
         return -1;
     pnm_get(s, buf1, sizeof(buf1));
     avctx->height = atoi(buf1);
-    if (avctx->height <= 0)
+    if(avcodec_check_dimensions(avctx, avctx->width, avctx->height))
         return -1;
     if (avctx->pix_fmt != PIX_FMT_MONOWHITE) {
         pnm_get(s, buf1, sizeof(buf1));
@@ -264,6 +265,11 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     int i, h, h1, c, n, linesize;
     uint8_t *ptr, *ptr1, *ptr2;
 
+    if(buf_size < avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height) + 200){
+        av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
+        return -1;
+    }
+
     *p = *pict;
     p->pict_type= FF_I_TYPE;
     p->key_frame= 1;
@@ -337,6 +343,11 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf, int bu
     int i, h, w, n, linesize, depth, maxval;
     const char *tuple_type;
     uint8_t *ptr;
+
+    if(buf_size < avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height) + 200){
+        av_log(avctx, AV_LOG_ERROR, "encoded frame too large\n");
+        return -1;
+    }
 
     *p = *pict;
     p->pict_type= FF_I_TYPE;

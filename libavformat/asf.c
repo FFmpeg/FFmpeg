@@ -333,7 +333,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                         {
                                 value = (char *)av_mallocz(value_len);
                                 get_str16_nolen(pb, value_len, value, value_len);
-                                if (strcmp(name,"WM/AlbumTitle")==0) { strcpy(s->album, value); }
+                                if (strcmp(name,"WM/AlbumTitle")==0) { pstrcpy(s->album, sizeof(s->album), value); }
                                 av_free(value);
                         }
                         if ((value_type >= 2) || (value_type <= 5)) // boolean or DWORD or QWORD or WORD

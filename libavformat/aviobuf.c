@@ -350,6 +350,9 @@ int get_buffer(ByteIOContext *s, unsigned char *buf, int size)
 int get_partial_buffer(ByteIOContext *s, unsigned char *buf, int size)
 {
     int len;
+    
+    if(size<0)
+        return -1;
 
     len = s->buf_end - s->buf_ptr;
     if (len == 0) {

@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4736
+#define LIBAVCODEC_BUILD       4737
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -234,6 +234,12 @@ enum SampleFormat {
  * MPEG bitstreams could cause overread and segfault
  */
 #define FF_INPUT_BUFFER_PADDING_SIZE 8
+
+/**
+ * minimum encoding buffer size.
+ * used to avoid some checks during header writing
+ */
+#define FF_MIN_BUFFER_SIZE 16384
 
 /* motion estimation type, EPZS by default */
 enum Motion_Est_ID {
@@ -2112,6 +2118,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic);
 int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic);
 void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
+int avcodec_check_dimensions(void *av_log_ctx, unsigned int w, unsigned int h);
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
 
 int avcodec_thread_init(AVCodecContext *s, int thread_count);
