@@ -554,12 +554,18 @@ static void build_filter(int16_t *filter, float factor)
     for(ph=0;ph<NB_PHASES;ph++) {
         norm = 0;
         for(i=0;i<NB_TAPS;i++) {
-            
+#if 1
+            const float d= -0.5; //first order derivative = -0.5
+            x = fabs(((float)(i - FCENTER) - (float)ph / NB_PHASES) * factor);
+            if(x<1.0) y= 1 - 3*x*x + 2*x*x*x + d*(            -x*x + x*x*x);
+            else      y=                       d*(-4 + 8*x - 5*x*x + x*x*x);
+#else
             x = M_PI * ((float)(i - FCENTER) - (float)ph / NB_PHASES) * factor;
             if (x == 0)
                 y = 1.0;
             else
                 y = sin(x) / x;
+#endif
             tab[i] = y;
             norm += y;
         }
