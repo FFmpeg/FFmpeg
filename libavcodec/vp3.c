@@ -210,8 +210,6 @@ static int ModeAlphabet[7][CODING_MODE_COUNT] =
 typedef struct Vp3DecodeContext {
     AVCodecContext *avctx;
     int width, height;
-    unsigned char *current_picture[3]; /* picture structure */
-    int linesize[3];
     AVFrame golden_frame;
     AVFrame last_frame;
     AVFrame current_frame;
@@ -1966,20 +1964,20 @@ static void render_fragments(Vp3DecodeContext *s,
     if (plane == 0) {
         dequantizer = s->intra_y_dequant;
         output_plane = s->current_frame.data[0];
-        last_plane = s->current_frame.data[0];
-        golden_plane = s->current_frame.data[0];
+        last_plane = s->last_frame.data[0];
+        golden_plane = s->golden_frame.data[0];
         stride = -s->current_frame.linesize[0];
     } else if (plane == 1) {
         dequantizer = s->intra_c_dequant;
         output_plane = s->current_frame.data[1];
-        last_plane = s->current_frame.data[1];
-        golden_plane = s->current_frame.data[1];
+        last_plane = s->last_frame.data[1];
+        golden_plane = s->golden_frame.data[1];
         stride = -s->current_frame.linesize[1];
     } else {
         dequantizer = s->intra_c_dequant;
         output_plane = s->current_frame.data[2];
-        last_plane = s->current_frame.data[2];
-        golden_plane = s->current_frame.data[2];
+        last_plane = s->last_frame.data[2];
+        golden_plane = s->golden_frame.data[2];
         stride = -s->current_frame.linesize[2];
     }
 
@@ -2189,6 +2187,12 @@ static int vp3_decode_init(AVCodecContext *avctx)
     s->macroblock_coded = av_malloc(s->macroblock_count + 1);
     init_block_mapping(s);
 
+    /* make sure that frames are available to be freed on the first decode */
+    if(avctx->get_buffer(avctx, &s->golden_frame) < 0) {
+        printf("vp3: get_buffer() failed\n");
+        return -1;
+    }
+
     return 0;
 }
 
@@ -2220,8 +2224,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     if (s->keyframe) {
         /* release the previous golden frame and get a new one */
-        if (counter > 1)
-            avctx->release_buffer(avctx, &s->golden_frame);
+        avctx->release_buffer(avctx, &s->golden_frame);
 
         s->golden_frame.reference = 0;
         if(avctx->get_buffer(avctx, &s->golden_frame) < 0) {
@@ -2229,11 +2232,8 @@ static int vp3_decode_frame(AVCodecContext *avctx,
             return -1;
         }
 
-        /* last frame is hereby invalidated */
-        avctx->release_buffer(avctx, &s->last_frame);
-
         /* golden frame is also the current frame */
-        s->current_frame = s->golden_frame;
+        memcpy(&s->current_frame, &s->golden_frame, sizeof(AVFrame));
 
         /* time to figure out pixel addresses? */
         if (!s->pixel_addresses_inited)
@@ -2276,15 +2276,14 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     render_fragments(s, s->v_fragment_start,
         s->fragment_width / 2, s->fragment_height / 2, 2);
 
-
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data= s->current_frame;
 
     /* release the last frame, if it was allocated */
     avctx->release_buffer(avctx, &s->last_frame);
 
-    /* shuffle frames */
-    s->last_frame = s->current_frame;
+    /* shuffle frames (last = current) */
+    memcpy(&s->last_frame, &s->current_frame, sizeof(AVFrame));
 
     return buf_size;
 }
