@@ -203,7 +203,7 @@ static void build_frame_code(AVFormatContext *s){
             start2++;
         }
 #endif
-        pred_count= 2 + codec->has_b_frames;
+        pred_count= 2 + codec->has_b_frames + (codec->codec_id == CODEC_ID_VORBIS);
         for(pred=0; pred<pred_count; pred++){
             int start3= start2 + (end2-start2)*pred / pred_count;
             int end3  = start2 + (end2-start2)*(pred+1) / pred_count;
@@ -443,7 +443,7 @@ static int nut_write_header(AVFormatContext *s)
 	codec = &s->streams[i]->codec;
 	
 	put_be64(bc, STREAM_STARTCODE);
-	put_packetheader(nut, bc, 120);
+	put_packetheader(nut, bc, 120 + codec->extradata_size);
 	put_v(bc, i /*s->streams[i]->index*/);
 	put_v(bc, (codec->codec_type == CODEC_TYPE_AUDIO) ? 32 : 0);
 	if (codec->codec_tag)
