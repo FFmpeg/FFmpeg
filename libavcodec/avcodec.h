@@ -182,7 +182,11 @@ static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG,
 /* codec capabilities */
 
 #define CODEC_CAP_DRAW_HORIZ_BAND 0x0001 ///< decoder can use draw_horiz_band callback 
-#define CODEC_CAP_DR1             0x0002 ///< direct rendering method 1 
+/**
+ * Codec uses get_buffer() for allocating buffers.
+ * direct rendering method 1
+ */
+#define CODEC_CAP_DR1             0x0002
 /* if 'parse_only' field is true, then avcodec_parse_frame() can be
    used */
 #define CODEC_CAP_PARSE_ONLY      0x0004
