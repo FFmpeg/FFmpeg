@@ -270,9 +270,7 @@ static void put_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int
     asm volatile
 	(
 	 "lea (%3, %3), %%eax		\n\t"
-#ifdef PIC
 	 ".balign 16			\n\t"
-#endif
 	 "1:				\n\t"
 	 "movq (%1), %%mm0		\n\t"
 	 "movq (%1, %3), %%mm1		\n\t"
