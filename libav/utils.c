@@ -132,12 +132,14 @@ void register_all(void)
     register_avformat(&ac3_format);
     register_avformat(&mpeg_mux_format);
     register_avformat(&mpeg1video_format);
+    register_avformat(&mjpeg_format);
     register_avformat(&h263_format);
     register_avformat(&rm_format);
     register_avformat(&asf_format);
     register_avformat(&avi_format);
     register_avformat(&mpjpeg_format);
     register_avformat(&jpeg_format);
+    register_avformat(&single_jpeg_format);
     register_avformat(&swf_format);
     register_avformat(&wav_format);
     register_avformat(&pcm_format);

@@ -76,11 +76,10 @@ static int raw_read_header(AVFormatContext *s,
             st->codec.height = ap->height;
             break;
         default:
-            abort();
-            break;
+            return -1;
         }
     } else {
-        abort();
+        return -1;
     }
     return 0;
 }
@@ -130,9 +129,7 @@ static int mp3_read_header(AVFormatContext *s,
 
     st->codec.codec_type = CODEC_TYPE_AUDIO;
     st->codec.codec_id = CODEC_ID_MP2;
-    /* XXX: read the first frame and extract rate and channels */
-    st->codec.sample_rate = 44100;
-    st->codec.channels = 2;
+    /* the parameters will be extracted from the compressed bitstream */
     return 0;
 }
 
@@ -150,6 +147,14 @@ static int video_read_header(AVFormatContext *s,
 
     st->codec.codec_type = CODEC_TYPE_VIDEO;
     st->codec.codec_id = s->format->video_codec;
+    /* for mjpeg, specify frame rate */
+    if (st->codec.codec_id == CODEC_ID_MJPEG) {
+        if (ap) {
+            st->codec.frame_rate = ap->frame_rate;
+        } else {
+            st->codec.frame_rate = 25 * FRAME_RATE_BASE;
+        }
+    }
     return 0;
 }
 
@@ -203,6 +208,21 @@ AVFormat mpeg1video_format = {
     "mpg,mpeg",
     0,
     CODEC_ID_MPEG1VIDEO,
+    raw_write_header,
+    raw_write_packet,
+    raw_write_trailer,
+    video_read_header,
+    raw_read_packet,
+    raw_read_close,
+};
+
+AVFormat mjpeg_format = {
+    "mjpeg",
+    "MJPEG video",
+    "video/x-mjpeg",
+    "mjpg,mjpeg",
+    0,
+    CODEC_ID_MJPEG,
     raw_write_header,
     raw_write_packet,
     raw_write_trailer,
