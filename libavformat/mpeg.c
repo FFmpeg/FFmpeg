@@ -395,6 +395,10 @@ static int mpeg_mux_end(AVFormatContext *ctx)
     /* write the end header */
     //put_be32(&ctx->pb, ISO_11172_END_CODE);
     //put_flush_packet(&ctx->pb);
+
+    for(i=0;i<ctx->nb_streams;i++)
+        av_freep(&ctx->streams[i]->priv_data);
+
     return 0;
 }
 
