@@ -1846,9 +1846,18 @@ int av_find_stream_info(AVFormatContext *ic)
                 st->codec.codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec.pix_fmt);
 
             if(best_duration[i] < INT64_MAX && st->codec.frame_rate_base*1000 <= st->codec.frame_rate){
+                int int_fps;
+
                 st->r_frame_rate= st->codec.frame_rate;
                 st->r_frame_rate_base= av_rescale(best_duration[i], st->codec.frame_rate, AV_TIME_BASE);
                 av_reduce(&st->r_frame_rate, &st->r_frame_rate_base, st->r_frame_rate, st->r_frame_rate_base, 1<<15);
+                
+                int_fps= av_rescale(st->r_frame_rate, 1, st->r_frame_rate_base);
+                
+                if(av_rescale(st->r_frame_rate, 1, int_fps) == st->r_frame_rate_base){
+                    st->r_frame_rate= int_fps;
+                    st->r_frame_rate_base= 1;
+                }               
             }
 
             /* set real frame rate info */
