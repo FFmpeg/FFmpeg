@@ -261,7 +261,9 @@ installlib: all install-headers
 
 install-headers:
 	mkdir -p "$(prefix)/include/ffmpeg"
-	install -m 644 $(SRC_PATH)/libavcodec/avcodec.h $(SRC_PATH)/libavcodec/common.h \
+	install -m 644 $(SRC_PATH)/libavcodec/avcodec.h \
+	               $(SRC_PATH)/libavcodec/common.h \
+	               $(SRC_PATH)/libavcodec/rational.h \
                 "$(prefix)/include/ffmpeg"
 
 #
