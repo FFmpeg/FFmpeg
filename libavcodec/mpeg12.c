@@ -2288,7 +2288,7 @@ eos: // end of slice
 
 static int slice_decode_thread(AVCodecContext *c, void *arg){
     MpegEncContext *s= arg;
-    uint8_t *buf= s->gb.buffer;
+    const uint8_t *buf= s->gb.buffer;
     int mb_y= s->start_mb_y;
 
     s->error_count= 3*(s->end_mb_y - s->start_mb_y)*s->mb_width;
