@@ -93,6 +93,10 @@ typedef struct HTTPContext {
     struct FFStream *stream;
     AVFormatContext fmt_ctx;
     int last_packet_sent; /* true if last data packet was sent */
+    int suppress_log;
+    char protocol[16];
+    char method[16];
+    char url[128];
     UINT8 buffer[IOBUFFER_MAX_SIZE];
     UINT8 pbuffer[PACKET_MAX_SIZE];
 } HTTPContext;
@@ -161,9 +165,32 @@ static void http_log(char *fmt, ...)
     va_list ap;
     va_start(ap, fmt);
     
-    if (logfile)
+    if (logfile) {
         vfprintf(logfile, fmt, ap);
+        fflush(logfile);
+    }
     va_end(ap);
+}
+
+static void log_connection(HTTPContext *c)
+{
+    char buf1[32], buf2[32], *p;
+    time_t ti;
+
+    if (c->suppress_log) 
+        return;
+
+    /* XXX: reentrant function ? */
+    p = inet_ntoa(c->from_addr.sin_addr);
+    strcpy(buf1, p);
+    ti = time(NULL);
+    p = ctime(&ti);
+    strcpy(buf2, p);
+    p = buf2 + strlen(p) - 1;
+    if (*p == '\n')
+        *p = '\0';
+    http_log("%s - - [%s] \"%s %s %s\" %d %lld\n", 
+             buf1, buf2, c->method, c->url, c->protocol, (c->http_error ? c->http_error : 200), c->data_count);
 }
 
 /* main loop of the http server */
@@ -264,6 +291,7 @@ static int http_server(struct sockaddr_in my_addr)
             c = *cp;
             if (handle_http (c, cur_time) < 0) {
                 /* close and free the connection */
+                log_connection(c);
                 close(c->fd);
                 if (c->fmt_in)
                     av_close_input_file(c->fmt_in);
@@ -408,11 +436,13 @@ static int handle_http(HTTPContext *c, long cur_time)
     return 0;
 }
 
+
 /* parse http request and prepare header */
 static int http_parse_request(HTTPContext *c)
 {
     char *p;
     int post;
+    int doing_asx;
     char cmd[32];
     char info[1024], *filename;
     char url[1024], *q;
@@ -429,6 +459,9 @@ static int http_parse_request(HTTPContext *c)
         p++;
     }
     *q = '\0';
+
+    strlcpy(c->method, cmd, sizeof(c->method));
+
     if (!strcmp(cmd, "GET"))
         post = 0;
     else if (!strcmp(cmd, "POST"))
@@ -445,6 +478,8 @@ static int http_parse_request(HTTPContext *c)
     }
     *q = '\0';
 
+    strlcpy(c->url, url, sizeof(c->url));
+
     while (isspace(*p)) p++;
     q = protocol;
     while (!isspace(*p) && *p != '\0') {
@@ -455,6 +490,8 @@ static int http_parse_request(HTTPContext *c)
     *q = '\0';
     if (strcmp(protocol, "HTTP/1.0") && strcmp(protocol, "HTTP/1.1"))
         return -1;
+
+    strlcpy(c->protocol, protocol, sizeof(c->protocol));
     
     /* find the filename and the optional info string in the request */
     p = url;
@@ -463,10 +500,17 @@ static int http_parse_request(HTTPContext *c)
     filename = p;
     p = strchr(p, '?');
     if (p) {
-        strcpy(info, p);
+        strlcpy(info, p, sizeof(info));
         *p = '\0';
     } else {
         info[0] = '\0';
+    }
+
+    if (strlen(filename) > 4 && strcmp(".asx", filename + strlen(filename) - 4) == 0) {
+        doing_asx = 1;
+        filename[strlen(filename)-1] = 'f';
+    } else {
+        doing_asx = 0;
     }
 
     stream = first_stream;
@@ -479,30 +523,98 @@ static int http_parse_request(HTTPContext *c)
         sprintf(msg, "File '%s' not found", url);
         goto send_error;
     }
-    c->stream = stream;
-    
-    /* should do it after so that the size can be computed */
-    {
-        char buf1[32], buf2[32], *p;
-        time_t ti;
-        /* XXX: reentrant function ? */
-        p = inet_ntoa(c->from_addr.sin_addr);
-        strcpy(buf1, p);
-        ti = time(NULL);
-        p = ctime(&ti);
-        strcpy(buf2, p);
-        p = buf2 + strlen(p) - 1;
-        if (*p == '\n')
-            *p = '\0';
-        http_log("%s - - [%s] \"%s %s %s\" %d %d\n", 
-                 buf1, buf2, cmd, url, protocol, 200, 1024);
+    if (doing_asx) {
+        char *hostinfo = 0;
+        
+        for (p = c->buffer; *p && *p != '\r' && *p != '\n'; ) {
+            if (strncasecmp(p, "Host:", 5) == 0) {
+                hostinfo = p + 5;
+                break;
+            }
+            p = strchr(p, '\n');
+            if (!p)
+                break;
+
+            p++;
+        }
+
+        if (hostinfo) {
+            char *eoh;
+            char hostbuf[260];
+
+            while (isspace(*hostinfo))
+                hostinfo++;
+
+            eoh = strchr(hostinfo, '\n');
+            if (eoh) {
+                if (eoh[-1] == '\r')
+                    eoh--;
+
+                if (eoh - hostinfo < sizeof(hostbuf) - 1) {
+                    memcpy(hostbuf, hostinfo, eoh - hostinfo);
+                    hostbuf[eoh - hostinfo] = 0;
+
+                    c->http_error = 200;
+                    q = c->buffer;
+                    q += sprintf(q, "HTTP/1.0 200 ASX Follows\r\n");
+                    q += sprintf(q, "Content-type: video/x-ms-asf\r\n");
+                    q += sprintf(q, "\r\n");
+                    q += sprintf(q, "<ASX Version=\"3\">\r\n");
+                    q += sprintf(q, "<!-- Autogenerated by ffserver -->\r\n");
+                    q += sprintf(q, "<ENTRY><REF HREF=\"http://%s/%s%s\"/></ENTRY>\r\n", 
+                            hostbuf, filename, info);
+                    q += sprintf(q, "</ASX>\r\n");
+
+                    /* prepare output buffer */
+                    c->buffer_ptr = c->buffer;
+                    c->buffer_end = q;
+                    c->state = HTTPSTATE_SEND_HEADER;
+                    return 0;
+                }
+            }
+        }
+
+        sprintf(msg, "ASX file not handled");
+        goto send_error;
     }
+
+    c->stream = stream;
 
     /* XXX: add there authenticate and IP match */
 
     if (post) {
         /* if post, it means a feed is being sent */
         if (!stream->is_feed) {
+            /* However it might be a status report from WMP! Lets log the data
+             * as it might come in handy one day
+             */
+            char *logline = 0;
+            
+            for (p = c->buffer; *p && *p != '\r' && *p != '\n'; ) {
+                if (strncasecmp(p, "Pragma: log-line=", 17) == 0) {
+                    logline = p;
+                    break;
+                }
+                p = strchr(p, '\n');
+                if (!p)
+                    break;
+
+                p++;
+            }
+
+            if (logline) {
+                char *eol = strchr(logline, '\n');
+
+                logline += 17;
+
+                if (eol) {
+                    if (eol[-1] == '\r')
+                        eol--;
+                    http_log("%.*s\n", eol - logline, logline);
+                    c->suppress_log = 1;
+                }
+            }
+            
             sprintf(msg, "POST command not handled");
             goto send_error;
         }
@@ -535,7 +647,9 @@ static int http_parse_request(HTTPContext *c)
     /* for asf, we need extra headers */
     if (!strcmp(c->stream->fmt->name,"asf")) {
         q += sprintf(q, "Server: Cougar 4.1.0.3923\r\nCache-Control: no-cache\r\nPragma: client-id=1234\r\nPragma: features=\"broadcast\"\r\n");
-        mime_type = "application/octet-stream";
+        /* mime_type = "application/octet-stream"; */
+        /* video/x-ms-asf seems better -- netscape doesn't crash any more! */
+        mime_type = "video/x-ms-asf";
     }
     q += sprintf(q, "Content-Type: %s\r\n", mime_type);
     q += sprintf(q, "\r\n");
