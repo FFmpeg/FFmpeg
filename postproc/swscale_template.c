@@ -2364,8 +2364,8 @@ if(!canMMX2BeUsed && lumXInc <= 0x10000 && (srcW&15)==0 && sws_flags==SWS_FAST_B
 
 if(firstTime)
 {
-#ifdef DITHER1X
-	char *dither= "dithered";
+#if defined (DITHER1XBPP) && defined (HAVE_MMX)
+	char *dither= " dithered";
 #else
 	char *dither= "";
 #endif
@@ -2379,9 +2379,9 @@ if(firstTime)
 		fprintf(stderr, "SwScaler: ehh flags invalid?! ");
 
 	if(dstbpp==15)
-		fprintf(stderr, "with %s BGR15 output ", dither);
+		fprintf(stderr, "with%s BGR15 output ", dither);
 	else if(dstbpp==16)
-		fprintf(stderr, "with %s BGR16 output ", dither);
+		fprintf(stderr, "with%s BGR16 output ", dither);
 	else if(dstbpp==24)
 		fprintf(stderr, "with BGR24 output ");
 	else if(dstbpp==32)
