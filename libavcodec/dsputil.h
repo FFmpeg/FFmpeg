@@ -16,11 +16,19 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+
+/**
+ * @file dsputil.h
+ * @brief DSP utils
+ *
+ */
+
 #ifndef DSPUTIL_H
 #define DSPUTIL_H
 
 #include "common.h"
 #include "avcodec.h"
+
 
 //#define DEBUG
 /* dct code */
@@ -100,6 +108,9 @@ typedef int (*op_pixels_abs_func)(uint8_t *blk1/*align width (8 or 16)*/, uint8_
 
 typedef int (*me_cmp_func)(void /*MpegEncContext*/ *s, uint8_t *blk1/*align width (8 or 16)*/, uint8_t *blk2/*align 1*/, int line_size)/* __attribute__ ((const))*/;
 
+/**
+ * DSPContext.
+ */
 typedef struct DSPContext {
     /* pixel ops : interface with DCT */
     void (*get_pixels)(DCTELEM *block/*align 16*/, const uint8_t *pixels/*align 8*/, int line_size);
@@ -152,8 +163,28 @@ typedef struct DSPContext {
     
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);
+    
+    /**
+     * block -> idct -> clip to unsigned 8 bit -> dest.<br>
+     * (-1392, 0, 0, ...) -> idct -> (-174, -174, ...) -> put -> (0, 0, ...)
+     * @param line_size size in pixels of a horizotal line of dest
+     */
     void (*idct_put)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    
+    /**
+     * block -> idct -> add dest -> clip to unsigned 8 bit -> dest.
+     * @param line_size size in pixels of a horizotal line of dest
+     */
     void (*idct_add)(uint8_t *dest/*align 8*/, int line_size, DCTELEM *block/*align 16*/);
+    
+    /**
+     * idct input permutation.<br>
+     * an example to avoid confusion:
+     * - (->decode coeffs -> zigzag reorder -> dequant -> reference idct ->...)
+     * - (x -> referece dct -> reference idct -> x)
+     * - (x -> referece dct -> simple_mmx_perm = idct_permutation -> simple_idct_mmx -> x)
+     * - (->decode coeffs -> zigzag reorder -> simple_mmx_perm -> dequant -> simple_idct_mmx ->...)
+     */
     uint8_t idct_permutation[64];
     int idct_permutation_type;
 #define FF_NO_IDCT_PERM 1
@@ -171,6 +202,11 @@ void dsputil_init(DSPContext* p, AVCodecContext *avctx);
  */
 void ff_block_permute(DCTELEM *block, uint8_t *permutation, const uint8_t *scantable, int last);
 
+/**
+ * Empty mmx state.<br>
+ * this must be called between any dsp function and float/double code.
+ * for example sin(); dsp->idct_put(); emms_c(); cos()
+ */
 #define emms_c()
 
 /* should be defined by architectures supporting
