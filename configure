@@ -27,6 +27,7 @@ make="make"
 strip="strip"
 cpu=`uname -m`
 tune="generic"
+powerpc_perf="no"
 mmx="default"
 altivec="default"
 mmi="default"
@@ -275,6 +276,8 @@ for opt do
   ;;
   --tune=*) tune=`echo $opt | cut -d '=' -f 2`
   ;;
+  --powerpc-perf-enable) powerpc_perf="yes"
+  ;;
   --disable-mmx) mmx="no"
   ;;
   --disable-altivec) altivec="no"
@@ -398,7 +401,7 @@ if test $tune != "generic"; then
 	    if test $altivec = "no"; then
 		echo "WARNING: tuning for PPC74xx but altivec disabled !";
 	    fi
-	    TUNECPU=ppc7450
+	    TUNECPU=ppc7400
 	;;
 	G5|970|ppc970|PowerPC970|power4*|Power4*)
 	    CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc64 -force_cpusubtype_ALL "
@@ -749,6 +752,7 @@ echo "  --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]"
 echo "  --extra-libs=ELIBS       add ELIBS [$ELIBS]"
 echo "  --cpu=CPU                force cpu to CPU  [$cpu]"
 echo "  --tune=PROCESSOR         tune code for a particular CPU (may fails or misperforms on other CPUs)"
+echo "  --powerpc-perf-enable    enable performance report on PPC (requires enabling PMC)"
 echo "  --disable-mmx            disable mmx usage"
 echo "  --disable-altivec        disable AltiVec usage"
 echo "  --disable-audio-oss      disable OSS audio support [default=no]"
@@ -847,10 +851,9 @@ elif test "$cpu" = "sparc64" ; then
 elif test "$cpu" = "powerpc" ; then
   echo "TARGET_ARCH_POWERPC=yes" >> config.mak
   echo "#define ARCH_POWERPC 1" >> $TMPH
-  echo "// Enable the next line to get PowerPC performance report" >> $TMPH
-  echo "// #define POWERPC_TBL_PERFORMANCE_REPORT 1" >> $TMPH
-  echo "// Enable the next line to use PMC registers instead of TBL" >> $TMPH
-  echo "// #define POWERPC_PERF_USE_PMC 1" >> $TMPH
+  if test "$powerpc_perf" = "yes"; then
+    echo "#define POWERPC_PERFORMANCE_REPORT 1" >> $TMPH
+  fi
 elif test "$cpu" = "mips" ; then
   echo "TARGET_ARCH_MIPS=yes" >> config.mak
   echo "#define ARCH_MIPS 1" >> $TMPH

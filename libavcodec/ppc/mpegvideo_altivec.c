@@ -522,13 +522,13 @@ int dct_quantize_altivec(MpegEncContext* s,
 void dct_unquantize_h263_altivec(MpegEncContext *s, 
                                  DCTELEM *block, int n, int qscale)
 {
-POWERPC_TBL_DECLARE(altivec_dct_unquantize_h263_num, 1);
+POWERPC_PERF_DECLARE(altivec_dct_unquantize_h263_num, 1);
     int i, level, qmul, qadd;
     int nCoeffs;
     
     assert(s->block_last_index[n]>=0);
 
-POWERPC_TBL_START_COUNT(altivec_dct_unquantize_h263_num, 1);
+POWERPC_PERF_START_COUNT(altivec_dct_unquantize_h263_num, 1);
     
     qadd = (qscale - 1) | 1;
     qmul = qscale << 1;
@@ -641,5 +641,5 @@ POWERPC_TBL_START_COUNT(altivec_dct_unquantize_h263_num, 1);
     }
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 
-POWERPC_TBL_STOP_COUNT(altivec_dct_unquantize_h263_num, nCoeffs == 63);
+POWERPC_PERF_STOP_COUNT(altivec_dct_unquantize_h263_num, nCoeffs == 63);
 }

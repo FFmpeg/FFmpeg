@@ -41,8 +41,8 @@ int mm_support(void)
     return result;
 }
 
-#ifdef POWERPC_TBL_PERFORMANCE_REPORT
-unsigned long long perfdata[powerpc_perf_total][powerpc_data_total];
+#ifdef POWERPC_PERFORMANCE_REPORT
+unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][powerpc_data_total];
 /* list below must match enum in dsputil_ppc.h */
 static unsigned char* perfname[] = {
   "fft_calc_altivec",
@@ -60,53 +60,32 @@ static unsigned char* perfname[] = {
   "clear_blocks_dcbz32_ppc",
   "clear_blocks_dcbz128_ppc"
 };
-#ifdef POWERPC_PERF_USE_PMC
-unsigned long long perfdata_pmc2[powerpc_perf_total][powerpc_data_total];
-unsigned long long perfdata_pmc3[powerpc_perf_total][powerpc_data_total];
-#endif
 #include <stdio.h>
 #endif
 
-#ifdef POWERPC_TBL_PERFORMANCE_REPORT
+#ifdef POWERPC_PERFORMANCE_REPORT
 void powerpc_display_perf_report(void)
 {
-  int i;
-#ifndef POWERPC_PERF_USE_PMC
-  fprintf(stderr, "PowerPC performance report\n Values are from the Time Base register, and represent 4 bus cycles.\n");
-#else /* POWERPC_PERF_USE_PMC */
+  int i, j;
   fprintf(stderr, "PowerPC performance report\n Values are from the PMC registers, and represent whatever the registers are set to record.\n");
-#endif /* POWERPC_PERF_USE_PMC */
   for(i = 0 ; i < powerpc_perf_total ; i++)
   {
-    if (perfdata[i][powerpc_data_num] != (unsigned long long)0)
-      fprintf(stderr, " Function \"%s\" (pmc1):\n\tmin: %llu\n\tmax: %llu\n\tavg: %1.2lf (%llu)\n",
-              perfname[i],
-              perfdata[i][powerpc_data_min],
-              perfdata[i][powerpc_data_max],
-              (double)perfdata[i][powerpc_data_sum] /
-              (double)perfdata[i][powerpc_data_num],
-              perfdata[i][powerpc_data_num]);
-#ifdef POWERPC_PERF_USE_PMC
-    if (perfdata_pmc2[i][powerpc_data_num] != (unsigned long long)0)
-      fprintf(stderr, " Function \"%s\" (pmc2):\n\tmin: %llu\n\tmax: %llu\n\tavg: %1.2lf (%llu)\n",
-              perfname[i],
-              perfdata_pmc2[i][powerpc_data_min],
-              perfdata_pmc2[i][powerpc_data_max],
-              (double)perfdata_pmc2[i][powerpc_data_sum] /
-              (double)perfdata_pmc2[i][powerpc_data_num],
-              perfdata_pmc2[i][powerpc_data_num]);
-    if (perfdata_pmc3[i][powerpc_data_num] != (unsigned long long)0)
-      fprintf(stderr, " Function \"%s\" (pmc3):\n\tmin: %llu\n\tmax: %llu\n\tavg: %1.2lf (%llu)\n",
-              perfname[i],
-              perfdata_pmc3[i][powerpc_data_min],
-              perfdata_pmc3[i][powerpc_data_max],
-              (double)perfdata_pmc3[i][powerpc_data_sum] /
-              (double)perfdata_pmc3[i][powerpc_data_num],
-              perfdata_pmc3[i][powerpc_data_num]);
-#endif
+    for (j = 0; j < POWERPC_NUM_PMC_ENABLED ; j++)
+      {
+	if (perfdata[j][i][powerpc_data_num] != (unsigned long long)0)
+	  fprintf(stderr,
+		  " Function \"%s\" (pmc%d):\n\tmin: %llu\n\tmax: %llu\n\tavg: %1.2lf (%llu)\n",
+		  perfname[i],
+		  j+1,
+		  perfdata[j][i][powerpc_data_min],
+		  perfdata[j][i][powerpc_data_max],
+		  (double)perfdata[j][i][powerpc_data_sum] /
+		  (double)perfdata[j][i][powerpc_data_num],
+		  perfdata[j][i][powerpc_data_num]);
+      }
   }
 }
-#endif /* POWERPC_TBL_PERFORMANCE_REPORT */
+#endif /* POWERPC_PERFORMANCE_REPORT */
 
 /* ***** WARNING ***** WARNING ***** WARNING ***** */
 /*
@@ -135,10 +114,10 @@ void powerpc_display_perf_report(void)
 */
 void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
 {
-POWERPC_TBL_DECLARE(powerpc_clear_blocks_dcbz32, 1);
+POWERPC_PERF_DECLARE(powerpc_clear_blocks_dcbz32, 1);
     register int misal = ((unsigned long)blocks & 0x00000010);
     register int i = 0;
-POWERPC_TBL_START_COUNT(powerpc_clear_blocks_dcbz32, 1);
+POWERPC_PERF_START_COUNT(powerpc_clear_blocks_dcbz32, 1);
 #if 1
     if (misal) {
       ((unsigned long*)blocks)[0] = 0L;
@@ -160,7 +139,7 @@ POWERPC_TBL_START_COUNT(powerpc_clear_blocks_dcbz32, 1);
 #else
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
 #endif
-POWERPC_TBL_STOP_COUNT(powerpc_clear_blocks_dcbz32, 1);
+POWERPC_PERF_STOP_COUNT(powerpc_clear_blocks_dcbz32, 1);
 }
 
 /* same as above, when dcbzl clear a whole 128B cache line
@@ -168,10 +147,10 @@ POWERPC_TBL_STOP_COUNT(powerpc_clear_blocks_dcbz32, 1);
 #ifndef NO_DCBZL
 void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
 {
-POWERPC_TBL_DECLARE(powerpc_clear_blocks_dcbz128, 1);
+POWERPC_PERF_DECLARE(powerpc_clear_blocks_dcbz128, 1);
     register int misal = ((unsigned long)blocks & 0x0000007f);
     register int i = 0;
-POWERPC_TBL_START_COUNT(powerpc_clear_blocks_dcbz128, 1);
+POWERPC_PERF_START_COUNT(powerpc_clear_blocks_dcbz128, 1);
 #if 1
  if (misal) {
    // we could probably also optimize this case,
@@ -186,7 +165,7 @@ POWERPC_TBL_START_COUNT(powerpc_clear_blocks_dcbz128, 1);
 #else
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
 #endif
-POWERPC_TBL_STOP_COUNT(powerpc_clear_blocks_dcbz128, 1);
+POWERPC_PERF_STOP_COUNT(powerpc_clear_blocks_dcbz128, 1);
 }
 #else
 void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
@@ -277,6 +256,8 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         c->add_bytes= add_bytes_altivec;
 #endif /* 0 */
         c->put_pixels_tab[0][0] = put_pixels16_altivec;
+        /* the tow functions do the same thing, so use the same code */
+        c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;
         c->avg_pixels_tab[0][0] = avg_pixels16_altivec;
 // next one disabled as it's untested.
 #if 0
@@ -301,28 +282,21 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
         }
         
-#ifdef POWERPC_TBL_PERFORMANCE_REPORT
+#ifdef POWERPC_PERFORMANCE_REPORT
         {
-          int i;
+          int i, j;
           for (i = 0 ; i < powerpc_perf_total ; i++)
           {
-            perfdata[i][powerpc_data_min] = 0xFFFFFFFFFFFFFFFF;
-            perfdata[i][powerpc_data_max] = 0x0000000000000000;
-            perfdata[i][powerpc_data_sum] = 0x0000000000000000;
-            perfdata[i][powerpc_data_num] = 0x0000000000000000;
-#ifdef POWERPC_PERF_USE_PMC
-            perfdata_pmc2[i][powerpc_data_min] = 0xFFFFFFFFFFFFFFFF;
-            perfdata_pmc2[i][powerpc_data_max] = 0x0000000000000000;
-            perfdata_pmc2[i][powerpc_data_sum] = 0x0000000000000000;
-            perfdata_pmc2[i][powerpc_data_num] = 0x0000000000000000;
-            perfdata_pmc3[i][powerpc_data_min] = 0xFFFFFFFFFFFFFFFF;
-            perfdata_pmc3[i][powerpc_data_max] = 0x0000000000000000;
-            perfdata_pmc3[i][powerpc_data_sum] = 0x0000000000000000;
-            perfdata_pmc3[i][powerpc_data_num] = 0x0000000000000000;
-#endif /* POWERPC_PERF_USE_PMC */
-          }
+	    for (j = 0; j < POWERPC_NUM_PMC_ENABLED ; j++)
+	      {
+		perfdata[j][i][powerpc_data_min] = (unsigned long long)0xFFFFFFFFFFFFFFFF;
+		perfdata[j][i][powerpc_data_max] = (unsigned long long)0x0000000000000000;
+		perfdata[j][i][powerpc_data_sum] = (unsigned long long)0x0000000000000000;
+		perfdata[j][i][powerpc_data_num] = (unsigned long long)0x0000000000000000;
+	      }
+	  }
         }
-#endif /* POWERPC_TBL_PERFORMANCE_REPORT */
+#endif /* POWERPC_PERFORMANCE_REPORT */
     } else
 #endif /* HAVE_ALTIVEC */
     {

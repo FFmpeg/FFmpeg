@@ -2757,10 +2757,10 @@ int main(int argc, char **argv)
     av_free_static();
 
     
-#ifdef POWERPC_TBL_PERFORMANCE_REPORT
+#ifdef POWERPC_PERFORMANCE_REPORT
     extern void powerpc_display_perf_report(void);
     powerpc_display_perf_report();
-#endif /* POWERPC_TBL_PERFORMANCE_REPORT */
+#endif /* POWERPC_PERFORMANCE_REPORT */
 
 #ifndef CONFIG_WIN32
     if (received_sigterm) {

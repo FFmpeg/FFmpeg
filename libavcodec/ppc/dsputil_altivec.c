@@ -655,11 +655,11 @@ void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w) {
 /* next one assumes that ((line_size % 16) == 0) */
 void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-POWERPC_TBL_DECLARE(altivec_put_pixels16_num, 1);
+POWERPC_PERF_DECLARE(altivec_put_pixels16_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int i;
 
-POWERPC_TBL_START_COUNT(altivec_put_pixels16_num, 1);
+POWERPC_PERF_START_COUNT(altivec_put_pixels16_num, 1);
 
     for(i=0; i<h; i++) {
       *((uint32_t*)(block )) = (((const struct unaligned_32 *) (pixels))->l);
@@ -670,15 +670,27 @@ POWERPC_TBL_START_COUNT(altivec_put_pixels16_num, 1);
       block +=line_size;
     }
 
-POWERPC_TBL_STOP_COUNT(altivec_put_pixels16_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_put_pixels16_num, 1);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
     register vector unsigned char pixelsv1, pixelsv2;
+    register vector unsigned char pixelsv1B, pixelsv2B;
+    register vector unsigned char pixelsv1C, pixelsv2C;
+    register vector unsigned char pixelsv1D, pixelsv2D;
+
     register vector unsigned char perm = vec_lvsl(0, pixels);
     int i;
+    register int line_size_2 = line_size << 1;
+    register int line_size_3 = line_size + line_size_2;
+    register int line_size_4 = line_size << 2;
 
-POWERPC_TBL_START_COUNT(altivec_put_pixels16_num, 1);
-
+POWERPC_PERF_START_COUNT(altivec_put_pixels16_num, 1);
+// hand-unrolling the loop by 4 gains about 15%
+// mininum execution time goes from 74 to 60 cycles
+// it's faster than -funroll-loops, but using
+// -funroll-loops w/ this is bad - 74 cycles again.
+// all this is on a 7450, tuning for the 7450
+#if 0
     for(i=0; i<h; i++) {
       pixelsv1 = vec_ld(0, (unsigned char*)pixels);
       pixelsv2 = vec_ld(16, (unsigned char*)pixels);
@@ -687,8 +699,29 @@ POWERPC_TBL_START_COUNT(altivec_put_pixels16_num, 1);
       pixels+=line_size;
       block +=line_size;
     }
-
-POWERPC_TBL_STOP_COUNT(altivec_put_pixels16_num, 1);
+#else
+    for(i=0; i<h; i+=4) {
+      pixelsv1 = vec_ld(0, (unsigned char*)pixels);
+      pixelsv2 = vec_ld(16, (unsigned char*)pixels);
+      pixelsv1B = vec_ld(line_size, (unsigned char*)pixels);
+      pixelsv2B = vec_ld(16 + line_size, (unsigned char*)pixels);
+      pixelsv1C = vec_ld(line_size_2, (unsigned char*)pixels);
+      pixelsv2C = vec_ld(16 + line_size_2, (unsigned char*)pixels);
+      pixelsv1D = vec_ld(line_size_3, (unsigned char*)pixels);
+      pixelsv2D = vec_ld(16 + line_size_3, (unsigned char*)pixels);
+      vec_st(vec_perm(pixelsv1, pixelsv2, perm),
+             0, (unsigned char*)block);
+      vec_st(vec_perm(pixelsv1B, pixelsv2B, perm),
+             line_size, (unsigned char*)block);
+      vec_st(vec_perm(pixelsv1C, pixelsv2C, perm),
+             line_size_2, (unsigned char*)block);
+      vec_st(vec_perm(pixelsv1D, pixelsv2D, perm),
+             line_size_3, (unsigned char*)block);
+      pixels+=line_size_4;
+      block +=line_size_4;
+    }
+#endif
+POWERPC_PERF_STOP_COUNT(altivec_put_pixels16_num, 1);
 
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
@@ -697,11 +730,11 @@ POWERPC_TBL_STOP_COUNT(altivec_put_pixels16_num, 1);
 #define op_avg(a,b)  a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEUL)>>1) )
 void avg_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-POWERPC_TBL_DECLARE(altivec_avg_pixels16_num, 1);
+POWERPC_PERF_DECLARE(altivec_avg_pixels16_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int i;
 
-POWERPC_TBL_START_COUNT(altivec_avg_pixels16_num, 1);
+POWERPC_PERF_START_COUNT(altivec_avg_pixels16_num, 1);
 
     for(i=0; i<h; i++) {
       op_avg(*((uint32_t*)(block)),(((const struct unaligned_32 *)(pixels))->l));
@@ -712,14 +745,14 @@ POWERPC_TBL_START_COUNT(altivec_avg_pixels16_num, 1);
       block +=line_size;
     }
 
-POWERPC_TBL_STOP_COUNT(altivec_avg_pixels16_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_avg_pixels16_num, 1);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
     register vector unsigned char pixelsv1, pixelsv2, pixelsv, blockv;
     register vector unsigned char perm = vec_lvsl(0, pixels);
     int i;
 
-POWERPC_TBL_START_COUNT(altivec_avg_pixels16_num, 1);
+POWERPC_PERF_START_COUNT(altivec_avg_pixels16_num, 1);
 
     for(i=0; i<h; i++) {
       pixelsv1 = vec_ld(0, (unsigned char*)pixels);
@@ -732,7 +765,7 @@ POWERPC_TBL_START_COUNT(altivec_avg_pixels16_num, 1);
       block +=line_size;
     }
 
-POWERPC_TBL_STOP_COUNT(altivec_avg_pixels16_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_avg_pixels16_num, 1);
 
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
@@ -740,10 +773,10 @@ POWERPC_TBL_STOP_COUNT(altivec_avg_pixels16_num, 1);
 /* next one assumes that ((line_size % 8) == 0) */
 void avg_pixels8_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h)
 {
-POWERPC_TBL_DECLARE(altivec_avg_pixels8_num, 1);
+POWERPC_PERF_DECLARE(altivec_avg_pixels8_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int i;
-POWERPC_TBL_START_COUNT(altivec_avg_pixels8_num, 1);
+POWERPC_PERF_START_COUNT(altivec_avg_pixels8_num, 1);
     for (i = 0; i < h; i++) {
         *((uint32_t *) (block)) =
             (((*((uint32_t *) (block))) |
@@ -761,13 +794,13 @@ POWERPC_TBL_START_COUNT(altivec_avg_pixels8_num, 1);
         pixels += line_size;
         block += line_size;
     }
-POWERPC_TBL_STOP_COUNT(altivec_avg_pixels8_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_avg_pixels8_num, 1);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
     register vector unsigned char pixelsv1, pixelsv2, pixelsv, blockv;
     int i;
 
-POWERPC_TBL_START_COUNT(altivec_avg_pixels8_num, 1);
+POWERPC_PERF_START_COUNT(altivec_avg_pixels8_num, 1);
  
    for (i = 0; i < h; i++) {
      /*
@@ -798,7 +831,7 @@ POWERPC_TBL_START_COUNT(altivec_avg_pixels8_num, 1);
      block += line_size;
    }
    
-POWERPC_TBL_STOP_COUNT(altivec_avg_pixels8_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_avg_pixels8_num, 1);
  
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
@@ -806,10 +839,10 @@ POWERPC_TBL_STOP_COUNT(altivec_avg_pixels8_num, 1);
 /* next one assumes that ((line_size % 8) == 0) */
 void put_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-POWERPC_TBL_DECLARE(altivec_put_pixels8_xy2_num, 1);
+POWERPC_PERF_DECLARE(altivec_put_pixels8_xy2_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int j;
-POWERPC_TBL_START_COUNT(altivec_put_pixels8_xy2_num, 1);
+POWERPC_PERF_START_COUNT(altivec_put_pixels8_xy2_num, 1);
     for (j = 0; j < 2; j++) {
       int i;
       const uint32_t a = (((const struct unaligned_32 *) (pixels))->l);
@@ -842,7 +875,7 @@ POWERPC_TBL_START_COUNT(altivec_put_pixels8_xy2_num, 1);
       block += 4 - line_size * h;
     }
 
-POWERPC_TBL_STOP_COUNT(altivec_put_pixels8_xy2_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_put_pixels8_xy2_num, 1);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
    register int i;
@@ -873,7 +906,7 @@ POWERPC_TBL_STOP_COUNT(altivec_put_pixels8_xy2_num, 1);
                         (vector unsigned short)pixelsv2);
    pixelssum1 = vec_add(pixelssum1, vctwo);
    
-POWERPC_TBL_START_COUNT(altivec_put_pixels8_xy2_num, 1); 
+POWERPC_PERF_START_COUNT(altivec_put_pixels8_xy2_num, 1); 
    for (i = 0; i < h ; i++) {
      int rightside = ((unsigned long)block & 0x0000000F);
      blockv = vec_ld(0, block);
@@ -914,17 +947,17 @@ POWERPC_TBL_START_COUNT(altivec_put_pixels8_xy2_num, 1);
      pixels += line_size;
    }
    
-POWERPC_TBL_STOP_COUNT(altivec_put_pixels8_xy2_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_put_pixels8_xy2_num, 1);
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 
 /* next one assumes that ((line_size % 8) == 0) */
 void put_no_rnd_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 {
-POWERPC_TBL_DECLARE(altivec_put_no_rnd_pixels8_xy2_num, 1);
+POWERPC_PERF_DECLARE(altivec_put_no_rnd_pixels8_xy2_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int j;
-POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
+POWERPC_PERF_START_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
     for (j = 0; j < 2; j++) {
       int i;
       const uint32_t a = (((const struct unaligned_32 *) (pixels))->l);
@@ -957,7 +990,7 @@ POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
       block += 4 - line_size * h;
     }
     
-POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
    register int i;
@@ -989,7 +1022,7 @@ POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
                         (vector unsigned short)pixelsv2);
    pixelssum1 = vec_add(pixelssum1, vcone);
    
-POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1); 
+POWERPC_PERF_START_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1); 
    for (i = 0; i < h ; i++) {
      int rightside = ((unsigned long)block & 0x0000000F);
      blockv = vec_ld(0, block);
@@ -1030,17 +1063,17 @@ POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
      pixels += line_size;
    }
    
-POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_put_no_rnd_pixels8_xy2_num, 1);
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 
 /* next one assumes that ((line_size % 16) == 0) */
 void put_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h)
 {
-POWERPC_TBL_DECLARE(altivec_put_pixels16_xy2_num, 1);
+POWERPC_PERF_DECLARE(altivec_put_pixels16_xy2_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int j;
-POWERPC_TBL_START_COUNT(altivec_put_pixels16_xy2_num, 1);
+POWERPC_PERF_START_COUNT(altivec_put_pixels16_xy2_num, 1);
       for (j = 0; j < 4; j++) {
       int i;
       const uint32_t a = (((const struct unaligned_32 *) (pixels))->l);
@@ -1073,7 +1106,7 @@ POWERPC_TBL_START_COUNT(altivec_put_pixels16_xy2_num, 1);
       block += 4 - line_size * h;
     }
 
-POWERPC_TBL_STOP_COUNT(altivec_put_pixels16_xy2_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_put_pixels16_xy2_num, 1);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
    register int i;
@@ -1087,7 +1120,7 @@ POWERPC_TBL_STOP_COUNT(altivec_put_pixels16_xy2_num, 1);
    register const vector unsigned char vczero = (const vector unsigned char)vec_splat_u8(0);
    register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
 
-POWERPC_TBL_START_COUNT(altivec_put_pixels16_xy2_num, 1);
+POWERPC_PERF_START_COUNT(altivec_put_pixels16_xy2_num, 1);
  
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
@@ -1151,17 +1184,17 @@ POWERPC_TBL_START_COUNT(altivec_put_pixels16_xy2_num, 1);
      pixels += line_size;
    }
    
-POWERPC_TBL_STOP_COUNT(altivec_put_pixels16_xy2_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_put_pixels16_xy2_num, 1);
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 
 /* next one assumes that ((line_size % 16) == 0) */
 void put_no_rnd_pixels16_xy2_altivec(uint8_t * block, const uint8_t * pixels, int line_size, int h)
 {
-POWERPC_TBL_DECLARE(altivec_put_no_rnd_pixels16_xy2_num, 1);
+POWERPC_PERF_DECLARE(altivec_put_no_rnd_pixels16_xy2_num, 1);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int j;
-POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
+POWERPC_PERF_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
       for (j = 0; j < 4; j++) {
       int i;
       const uint32_t a = (((const struct unaligned_32 *) (pixels))->l);
@@ -1194,7 +1227,7 @@ POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
       block += 4 - line_size * h;
     }
 
-POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
    register int i;
@@ -1209,7 +1242,7 @@ POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
    register const vector unsigned short vcone = (const vector unsigned short)vec_splat_u16(1);
    register const vector unsigned short vctwo = (const vector unsigned short)vec_splat_u16(2);
 
-POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
+POWERPC_PERF_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
  
    temp1 = vec_ld(0, pixels);
    temp2 = vec_ld(16, pixels);
@@ -1273,7 +1306,7 @@ POWERPC_TBL_START_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
      pixels += line_size;
    }
    
-POWERPC_TBL_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
+POWERPC_PERF_STOP_COUNT(altivec_put_no_rnd_pixels16_xy2_num, 1);
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
 

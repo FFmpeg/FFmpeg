@@ -62,7 +62,7 @@
  */
 void fft_calc_altivec(FFTContext *s, FFTComplex *z)
 {
-POWERPC_TBL_DECLARE(altivec_fft_num, s->nbits >= 6);
+POWERPC_PERF_DECLARE(altivec_fft_num, s->nbits >= 6);
 #ifdef ALTIVEC_USE_REFERENCE_C_CODE
     int ln = s->nbits;
     int	j, np, np2;
@@ -72,7 +72,7 @@ POWERPC_TBL_DECLARE(altivec_fft_num, s->nbits >= 6);
     int l;
     FFTSample tmp_re, tmp_im;
     
-POWERPC_TBL_START_COUNT(altivec_fft_num, s->nbits >= 6);
+POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
  
     np = 1 << ln;
 
@@ -137,7 +137,7 @@ POWERPC_TBL_START_COUNT(altivec_fft_num, s->nbits >= 6);
         nloops = nloops << 1;
     } while (nblocks != 0);
 
-POWERPC_TBL_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
+POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
 
 #else /* ALTIVEC_USE_REFERENCE_C_CODE */
 #ifdef CONFIG_DARWIN
@@ -153,7 +153,7 @@ POWERPC_TBL_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
     FFTComplex *cptr, *cptr1;
     int k;
 
-POWERPC_TBL_START_COUNT(altivec_fft_num, s->nbits >= 6);
+POWERPC_PERF_START_COUNT(altivec_fft_num, s->nbits >= 6);
 
     np = 1 << ln;
 
@@ -241,7 +241,7 @@ POWERPC_TBL_START_COUNT(altivec_fft_num, s->nbits >= 6);
         nloops = nloops << 1;
     } while (nblocks != 0);
 
-POWERPC_TBL_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
+POWERPC_PERF_STOP_COUNT(altivec_fft_num, s->nbits >= 6);
 
 #endif /* ALTIVEC_USE_REFERENCE_C_CODE */
 }
