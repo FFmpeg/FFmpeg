@@ -2440,7 +2440,12 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, int level, int *di
         }
     }
     level *=scale;
-    if(level&(~2047)) level= level<0 ? 0 : 2047;
+    if(level&(~2047)){
+        if(level<0) 
+            level=0;
+        else if(!(s->workaround_bugs&FF_BUG_DC_CLIP))
+            level=2047;
+    }
     dc_val[0]= level;
 
     return ret;

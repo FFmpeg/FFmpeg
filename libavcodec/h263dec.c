@@ -548,6 +548,9 @@ retry:
         if(s->xvid_build && s->xvid_build<=12)
             s->workaround_bugs|= FF_BUG_EDGE;
 
+        if(s->xvid_build && s->xvid_build<=32)
+            s->workaround_bugs|= FF_BUG_DC_CLIP;
+
 #define SET_QPEL_FUNC(postfix1, postfix2) \
     s->dsp.put_ ## postfix1 = ff_put_ ## postfix2;\
     s->dsp.put_no_rnd_ ## postfix1 = ff_put_no_rnd_ ## postfix2;\
@@ -562,6 +565,9 @@ retry:
         if(s->lavc_build && s->lavc_build<4670){
             s->workaround_bugs|= FF_BUG_EDGE;
         }
+        
+        if(s->lavc_build && s->lavc_build<=4712)
+            s->workaround_bugs|= FF_BUG_DC_CLIP;
 
         if(s->divx_version)
             s->workaround_bugs|= FF_BUG_DIRECT_BLOCKSIZE;

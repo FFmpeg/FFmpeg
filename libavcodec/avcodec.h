@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4712
+#define LIBAVCODEC_BUILD       4713
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -849,6 +849,7 @@ typedef struct AVCodecContext {
 #define FF_BUG_DIRECT_BLOCKSIZE 512
 #define FF_BUG_EDGE             1024
 #define FF_BUG_HPEL_CHROMA      2048
+#define FF_BUG_DC_CLIP          4096
 //#define FF_BUG_FAKE_SCALABILITY 16 //autodetection should work 100%
         
     /**
