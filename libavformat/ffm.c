@@ -82,7 +82,7 @@ static void flush_packet(AVFormatContext *s)
 
 /* 'first' is true if first data of a frame */
 static void ffm_write_data(AVFormatContext *s,
-                           uint8_t *buf, int size,
+                           const uint8_t *buf, int size,
                            int64_t pts, int first)
 {
     FFMContext *ffm = s->priv_data;
@@ -215,7 +215,7 @@ static int ffm_write_header(AVFormatContext *s)
 }
 
 static int ffm_write_packet(AVFormatContext *s, int stream_index,
-                            uint8_t *buf, int size, int force_pts)
+                            const uint8_t *buf, int size, int64_t force_pts)
 {
     AVStream *st = s->streams[stream_index];
     FFMStream *fst = st->priv_data;

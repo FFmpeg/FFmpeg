@@ -7,8 +7,8 @@ extern "C" {
 
 #define LIBAVFORMAT_VERSION_INT 0x000408
 #define LIBAVFORMAT_VERSION     "0.4.8"
-#define LIBAVFORMAT_BUILD       4607
-#define LIBAVFORMAT_BUILD_STR   "4607"
+#define LIBAVFORMAT_BUILD       4608
+#define LIBAVFORMAT_BUILD_STR   "4608"
 
 #define LIBAVFORMAT_IDENT	"FFmpeg" LIBAVFORMAT_VERSION "b" LIBAVFORMAT_BUILD_STR
 
@@ -124,10 +124,9 @@ typedef struct AVOutputFormat {
     enum CodecID audio_codec; /* default audio codec */
     enum CodecID video_codec; /* default video codec */
     int (*write_header)(struct AVFormatContext *);
-    /* XXX: change prototype for 64 bit pts */
     int (*write_packet)(struct AVFormatContext *, 
                         int stream_index,
-                        unsigned char *buf, int size, int force_pts);
+                        const uint8_t *buf, int size, int64_t pts);
     int (*write_trailer)(struct AVFormatContext *);
     /* can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER */
     int flags;

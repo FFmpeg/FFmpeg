@@ -347,7 +347,7 @@ static void flush_packet(AVFormatContext *ctx, int stream_index, int last_pkt)
 }
 
 static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
-                                 uint8_t *buf, int size, int pts)
+                                 const uint8_t *buf, int size, int64_t pts)
 {
     MpegMuxContext *s = ctx->priv_data;
     AVStream *st = ctx->streams[stream_index];

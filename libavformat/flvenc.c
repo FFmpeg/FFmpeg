@@ -242,7 +242,7 @@ static int flv_write_trailer(AVFormatContext *s)
 }
 
 static int flv_write_packet(AVFormatContext *s, int stream_index,
-                            uint8_t *buf, int size, int timestamp)
+                            const uint8_t *buf, int size, int64_t timestamp)
 {
     ByteIOContext *pb = &s->pb;
     AVCodecContext *enc = &s->streams[stream_index]->codec;

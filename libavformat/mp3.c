@@ -323,7 +323,7 @@ static int mp3_write_header(struct AVFormatContext *s)
 }
 
 static int mp3_write_packet(struct AVFormatContext *s, int stream_index,
-			    unsigned char *buf, int size, int force_pts)
+			    const uint8_t *buf, int size, int64_t pts)
 {
     put_buffer(&s->pb, buf, size);
     put_flush_packet(&s->pb);

@@ -33,7 +33,7 @@ static int mpjpeg_write_header(AVFormatContext *s)
 }
 
 static int mpjpeg_write_packet(AVFormatContext *s, int stream_index, 
-                               uint8_t *buf, int size, int force_pts)
+                               const uint8_t *buf, int size, int64_t pts)
 {
     uint8_t buf1[256];
 
@@ -75,7 +75,7 @@ static int single_jpeg_write_header(AVFormatContext *s)
 }
 
 static int single_jpeg_write_packet(AVFormatContext *s, int stream_index,
-                            uint8_t *buf, int size, int force_pts)
+                                    const uint8_t *buf, int size, int64_t pts)
 {
     put_buffer(&s->pb, buf, size);
     put_flush_packet(&s->pb);

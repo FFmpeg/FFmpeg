@@ -59,14 +59,14 @@ typedef struct DVMuxContext {
 } DVMuxContext;
 
 void dv_format_frame(DVMuxContext *, uint8_t*);
-void dv_inject_audio(DVMuxContext *, uint8_t*, uint8_t*);
-void dv_inject_video(DVMuxContext *, uint8_t*, uint8_t*);
+void dv_inject_audio(DVMuxContext *, const uint8_t*, uint8_t*);
+void dv_inject_video(DVMuxContext *, const uint8_t*, uint8_t*);
 
 int  dv_extract_audio(uint8_t*, uint8_t*, AVCodecContext*);
 
 int  dv_audio_frame_size(const DVprofile*, int);
 
-void dv_assemble_frame(DVMuxContext *, uint8_t*, uint8_t*, int);
+void dv_assemble_frame(DVMuxContext *c, const uint8_t*, const uint8_t*, int);
 int  dv_core_init(DVMuxContext *, AVStream*[]);
 void dv_core_delete(DVMuxContext *);
 

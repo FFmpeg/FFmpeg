@@ -220,12 +220,12 @@ static inline unsigned char gif_clut_index(uint8_t r, uint8_t g, uint8_t b)
 
 static int gif_image_write_image(ByteIOContext *pb, 
                                  int x1, int y1, int width, int height,
-                                 uint8_t *buf, int linesize, int pix_fmt)
+                                 const uint8_t *buf, int linesize, int pix_fmt)
 {
     PutBitContext p;
     uint8_t buffer[200]; /* 100 * 9 / 8 = 113 */
     int i, left, w, v;
-    uint8_t *ptr;
+    const uint8_t *ptr;
     /* image block */
 
     put_byte(pb, 0x2c);
@@ -331,7 +331,7 @@ static int gif_write_header(AVFormatContext *s)
 }
 
 static int gif_write_video(AVFormatContext *s, 
-                           AVCodecContext *enc, uint8_t *buf, int size)
+                           AVCodecContext *enc, const uint8_t *buf, int size)
 {
     ByteIOContext *pb = &s->pb;
     GIFContext *gif = s->priv_data;
@@ -366,7 +366,7 @@ static int gif_write_video(AVFormatContext *s,
 }
 
 static int gif_write_packet(AVFormatContext *s, int stream_index, 
-                           uint8_t *buf, int size, int force_pts)
+                            const uint8_t *buf, int size, int64_t pts)
 {
     AVCodecContext *codec = &s->streams[stream_index]->codec;
     if (codec->codec_type == CODEC_TYPE_AUDIO)

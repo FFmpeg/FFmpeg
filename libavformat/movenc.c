@@ -675,7 +675,7 @@ static int Timestamp() {
 }
 
 static int mov_write_packet(AVFormatContext *s, int stream_index,
-                            uint8_t *buf, int size, int force_pts)
+                            const uint8_t *buf, int size, int64_t pts)
 {
     MOVContext *mov = s->priv_data;
     ByteIOContext *pb = &s->pb;

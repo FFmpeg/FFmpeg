@@ -425,7 +425,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time)
 
 /* send an rtp packet. sequence number is incremented, but the caller
    must update the timestamp itself */
-static void rtp_send_data(AVFormatContext *s1, uint8_t *buf1, int len)
+static void rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len)
 {
     RTPContext *s = s1->priv_data;
 
@@ -451,7 +451,7 @@ static void rtp_send_data(AVFormatContext *s1, uint8_t *buf1, int len)
 /* send an integer number of samples and compute time stamp and fill
    the rtp send buffer before sending. */
 static void rtp_send_samples(AVFormatContext *s1,
-                             uint8_t *buf1, int size, int sample_size)
+                             const uint8_t *buf1, int size, int sample_size)
 {
     RTPContext *s = s1->priv_data;
     int len, max_packet_size, n;
@@ -484,7 +484,7 @@ static void rtp_send_samples(AVFormatContext *s1,
 /* NOTE: we suppose that exactly one frame is given as argument here */
 /* XXX: test it */
 static void rtp_send_mpegaudio(AVFormatContext *s1,
-                               uint8_t *buf1, int size)
+                               const uint8_t *buf1, int size)
 {
     RTPContext *s = s1->priv_data;
     AVStream *st = s1->streams[0];
@@ -540,7 +540,7 @@ static void rtp_send_mpegaudio(AVFormatContext *s1,
 /* NOTE: a single frame must be passed with sequence header if
    needed. XXX: use slices. */
 static void rtp_send_mpegvideo(AVFormatContext *s1,
-                               uint8_t *buf1, int size)
+                               const uint8_t *buf1, int size)
 {
     RTPContext *s = s1->priv_data;
     AVStream *st = s1->streams[0];
@@ -587,7 +587,7 @@ static void rtp_send_mpegvideo(AVFormatContext *s1,
 }
 
 static void rtp_send_raw(AVFormatContext *s1,
-                         uint8_t *buf1, int size)
+                         const uint8_t *buf1, int size)
 {
     RTPContext *s = s1->priv_data;
     AVStream *st = s1->streams[0];
@@ -613,7 +613,7 @@ static void rtp_send_raw(AVFormatContext *s1,
 
 /* write an RTP packet. 'buf1' must contain a single specific frame. */
 static int rtp_write_packet(AVFormatContext *s1, int stream_index,
-                            uint8_t *buf1, int size, int force_pts)
+                            const uint8_t *buf1, int size, int64_t pts)
 {
     RTPContext *s = s1->priv_data;
     AVStream *st = s1->streams[0];
@@ -630,7 +630,7 @@ static int rtp_write_packet(AVFormatContext *s1, int stream_index,
     if (s->first_packet || rtcp_bytes >= 28) {
         /* compute NTP time */
         /* XXX: 90 kHz timestamp hardcoded */
-        ntp_time = ((int64_t)force_pts << 28) / 5625;
+        ntp_time = (pts << 28) / 5625;
         rtcp_send_sr(s1, ntp_time); 
         s->last_octet_count = s->octet_count;
         s->first_packet = 0;

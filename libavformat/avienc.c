@@ -590,7 +590,7 @@ static int avi_write_idx1(AVFormatContext *s)
 }
 
 static int avi_write_packet(AVFormatContext *s, int stream_index,
-                            uint8_t *buf, int size, int force_pts)
+                            const uint8_t *buf, int size, int64_t pts)
 {
     AVIContext *avi = s->priv_data;
     ByteIOContext *pb = &s->pb;

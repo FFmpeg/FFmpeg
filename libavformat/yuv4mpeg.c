@@ -113,7 +113,7 @@ static int yuv4_write_header(AVFormatContext *s)
 }
 
 static int yuv4_write_packet(AVFormatContext *s, int stream_index,
-                             uint8_t *buf, int size, int force_pts)
+                             const uint8_t *buf, int size, int64_t pts)
 {
     AVStream *st = s->streams[stream_index];
     ByteIOContext *pb = &s->pb;

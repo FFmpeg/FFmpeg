@@ -318,7 +318,7 @@ static int swf_write_header(AVFormatContext *s)
 }
 
 static int swf_write_video(AVFormatContext *s, 
-                           AVCodecContext *enc, uint8_t *buf, int size)
+                           AVCodecContext *enc, const uint8_t *buf, int size)
 {
     ByteIOContext *pb = &s->pb;
     static int tag_id = 0;
@@ -366,7 +366,7 @@ static int swf_write_video(AVFormatContext *s,
     return 0;
 }
 
-static int swf_write_audio(AVFormatContext *s, uint8_t *buf, int size)
+static int swf_write_audio(AVFormatContext *s, const uint8_t *buf, int size)
 {
     ByteIOContext *pb = &s->pb;
 
@@ -380,7 +380,7 @@ static int swf_write_audio(AVFormatContext *s, uint8_t *buf, int size)
 }
 
 static int swf_write_packet(AVFormatContext *s, int stream_index, 
-                           uint8_t *buf, int size, int force_pts)
+                           const uint8_t *buf, int size, int64_t pts)
 {
     AVCodecContext *codec = &s->streams[stream_index]->codec;
     if (codec->codec_type == CODEC_TYPE_AUDIO)

@@ -323,7 +323,7 @@ static int rm_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int rm_write_audio(AVFormatContext *s, uint8_t *buf, int size)
+static int rm_write_audio(AVFormatContext *s, const uint8_t *buf, int size)
 {
     uint8_t *buf1;
     RMContext *rm = s->priv_data;
@@ -348,7 +348,7 @@ static int rm_write_audio(AVFormatContext *s, uint8_t *buf, int size)
     return 0;
 }
 
-static int rm_write_video(AVFormatContext *s, uint8_t *buf, int size)
+static int rm_write_video(AVFormatContext *s, const uint8_t *buf, int size)
 {
     RMContext *rm = s->priv_data;
     ByteIOContext *pb = &s->pb;
@@ -389,7 +389,7 @@ static int rm_write_video(AVFormatContext *s, uint8_t *buf, int size)
 }
 
 static int rm_write_packet(AVFormatContext *s, int stream_index, 
-                           uint8_t *buf, int size, int force_pts)
+                           const uint8_t *buf, int size, int64_t pts)
 {
     if (s->streams[stream_index]->codec.codec_type == 
         CODEC_TYPE_AUDIO)

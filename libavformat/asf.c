@@ -584,7 +584,7 @@ static void put_frame_header(AVFormatContext *s, ASFStream *stream, int timestam
    crap. They have misread the MPEG Systems spec !
  */
 static void put_frame(AVFormatContext *s, ASFStream *stream, int timestamp,
-                      uint8_t *buf, int payload_size)
+                      const uint8_t *buf, int payload_size)
 {
     ASFContext *asf = s->priv_data;
     int frag_pos, frag_len, frag_len1;
@@ -617,7 +617,7 @@ static void put_frame(AVFormatContext *s, ASFStream *stream, int timestamp,
 
 
 static int asf_write_packet(AVFormatContext *s, int stream_index,
-                            uint8_t *buf, int size, int timestamp)
+                            const uint8_t *buf, int size, int64_t timestamp)
 {
     ASFContext *asf = s->priv_data;
     ASFStream *stream;

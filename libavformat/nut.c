@@ -344,7 +344,7 @@ static int nut_write_header(AVFormatContext *s)
 }
 
 static int nut_write_packet(AVFormatContext *s, int stream_index, 
-			    uint8_t *buf, int size, int force_pts)
+			    const uint8_t *buf, int size, int64_t pts)
 {
     NUTContext *nut = s->priv_data;
     ByteIOContext *bc = &s->pb;
@@ -372,7 +372,7 @@ static int nut_write_packet(AVFormatContext *s, int stream_index,
 
     put_packetheader(nut, bc, size+20);
     put_v(bc, stream_index);
-    put_s(bc, force_pts); /* lsb_timestamp */
+    put_s(bc, pts); /* lsb_timestamp */
     update_packetheader(nut, bc, size);
     
     put_buffer(bc, buf, size);

@@ -418,7 +418,7 @@ void dv_format_frame(DVMuxContext *c, uint8_t* buf)
     }
 }
 
-void dv_inject_audio(DVMuxContext *c, uint8_t* pcm, uint8_t* frame_ptr)
+void dv_inject_audio(DVMuxContext *c, const uint8_t* pcm, uint8_t* frame_ptr)
 {
     int i, j, d, of;
     for (i = 0; i < c->sys->difseg_size; i++) {
@@ -434,7 +434,7 @@ void dv_inject_audio(DVMuxContext *c, uint8_t* pcm, uint8_t* frame_ptr)
     }
 }
 
-void dv_inject_video(DVMuxContext *c, uint8_t* video_data, uint8_t* frame_ptr)
+void dv_inject_video(DVMuxContext *c, const uint8_t* video_data, uint8_t* frame_ptr)
 {
     int i, j;
     int ptr = 0;
@@ -565,7 +565,7 @@ out:
 }
 
 /* FIXME: The following three functions could be underengineered ;-) */
-void dv_assemble_frame(DVMuxContext *c, uint8_t* video, uint8_t* audio, int asize)
+void dv_assemble_frame(DVMuxContext *c, const uint8_t* video, const uint8_t* audio, int asize)
 {
     uint8_t pcm[8192];
     uint8_t* frame = &c->frame_buf[0];
@@ -604,7 +604,7 @@ void dv_assemble_frame(DVMuxContext *c, uint8_t* video, uint8_t* audio, int asiz
         /* FIXME: we have to have more sensible approach than this one */
         if (fifo_size(&c->audio_data, c->audio_data.rptr) + asize >= AVCODEC_MAX_AUDIO_FRAME_SIZE)
 	    fprintf(stderr, "Can't process DV frame #%d. Insufficient video data or severe sync problem.\n", c->frames);
-	fifo_write(&c->audio_data, audio, asize, &c->audio_data.wptr);
+	fifo_write(&c->audio_data, (uint8_t *)audio, asize, &c->audio_data.wptr);
     }
 }
 

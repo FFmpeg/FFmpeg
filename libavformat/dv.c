@@ -102,8 +102,8 @@ int dv_write_header(struct AVFormatContext *s)
 }
 
 int dv_write_packet(struct AVFormatContext *s, 
-                     int stream_index,
-                     unsigned char *buf, int size, int force_pts)
+                    int stream_index,
+                    const uint8_t *buf, int size, int64_t pts)
 {
     DVMuxContext *c = s->priv_data;
    
