@@ -674,39 +674,6 @@ static int mpeg_decode_mb(MpegEncContext *s,
 {
     int i, j, k, cbp, val, code, mb_type, motion_type;
     
-    /* skip mb handling */
-    if (s->mb_incr == 0) {
-        /* read again increment */
-        s->mb_incr = 1;
-        for(;;) {
-            code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
-            if (code < 0)
-                return 1; /* error = end of slice */
-            if (code >= 33) {
-                if (code == 33) {
-                    s->mb_incr += 33;
-                }
-                /* otherwise, stuffing, nothing to do */
-            } else {
-                s->mb_incr += code;
-                break;
-            }
-        }
-    }
-    if(s->mb_x==-1 /* first MB in a slice */ && s->mb_incr>1){
-        s->mb_x+= (s->mb_incr - 1) % s->mb_width;
-        s->mb_y+= (s->mb_incr - 1) / s->mb_width;
-        s->mb_incr= 1;
-    }
-
-    if (++s->mb_x >= s->mb_width) {
-        s->mb_x = 0;
-        if (s->mb_y >= (s->mb_height - 1)){
-            fprintf(stderr, "slice too long\n");
-            return -1;
-        }
-        s->mb_y++;
-    }
     dprintf("decode_mb: x=%d y=%d\n", s->mb_x, s->mb_y);
 
     if (--s->mb_incr != 0) {
@@ -1585,9 +1552,6 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     s->last_dc[1] = s->last_dc[0];
     s->last_dc[2] = s->last_dc[0];
     memset(s->last_mv, 0, sizeof(s->last_mv));
-    s->mb_x = -1;
-    s->mb_y = start_code;
-    s->mb_incr = 0;
     /* start frame decoding */
     if (s->first_slice) {
         s->first_slice = 0;
@@ -1602,27 +1566,95 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
         skip_bits(&s->gb, 8);
     }
 
+    s->mb_x=0;
+    for(;;) {
+        int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
+        if (code < 0)
+            return -1; /* error = end of slice, but empty slice is bad or?*/
+        if (code >= 33) {
+            if (code == 33) {
+                s->mb_x += 33;
+            }
+            /* otherwise, stuffing, nothing to do */
+        } else {
+            s->mb_x += code;
+            break;
+        }
+    }
+    s->mb_y = start_code;
+    s->mb_incr= 1;
+
     for(;;) {
         clear_blocks(s->block[0]);
         emms_c();
+        
         ret = mpeg_decode_mb(s, s->block);
         dprintf("ret=%d\n", ret);
         if (ret < 0)
             return -1;
-        if (ret == 1)
-            break;
     
-        if(s->mb_x==0)
-            PRINT_QP("%s", "\n");
-        PRINT_QP("%2d", s->qscale);
-        
         MPV_decode_mb(s, s->block);
+
+        if (++s->mb_x >= s->mb_width) {
+            if (    avctx->draw_horiz_band 
+                && (s->num_available_buffers>=1 || (!s->has_b_frames)) ) {
+                UINT8 *src_ptr[3];
+                int y, h, offset;
+                y = s->mb_y * 16;
+                h = s->height - y;
+                if (h > 16)
+                    h = 16;
+                offset = y * s->linesize;
+                if(s->pict_type==B_TYPE || (!s->has_b_frames)){
+                    src_ptr[0] = s->current_picture[0] + offset;
+                    src_ptr[1] = s->current_picture[1] + (offset >> 2);
+                    src_ptr[2] = s->current_picture[2] + (offset >> 2);
+                } else {
+                    src_ptr[0] = s->last_picture[0] + offset;
+                    src_ptr[1] = s->last_picture[1] + (offset >> 2);
+                    src_ptr[2] = s->last_picture[2] + (offset >> 2);
+                }
+                avctx->draw_horiz_band(avctx, src_ptr, s->linesize,
+                                   y, s->width, h);
+            }
+
+            s->mb_x = 0;
+            s->mb_y++;
+            PRINT_QP("%s", "\n");
+        }
+        PRINT_QP("%2d", s->qscale);
+
+        /* skip mb handling */
+        if (s->mb_incr == 0) {
+            /* read again increment */
+            s->mb_incr = 1;
+            for(;;) {
+                int code = get_vlc2(&s->gb, mbincr_vlc.table, MBINCR_VLC_BITS, 2);
+                if (code < 0)
+                    goto eos; /* error = end of slice */
+                if (code >= 33) {
+                    if (code == 33) {
+                        s->mb_incr += 33;
+                    }
+                    /* otherwise, stuffing, nothing to do */
+                } else {
+                    s->mb_incr += code;
+                    break;
+                }
+            }
+        }
+        if(s->mb_y >= s->mb_height){
+            fprintf(stderr, "slice too long\n");
+            return -1;
+        }
     }
+eos: //end of slice
+    
     emms_c();
 
     /* end of slice reached */
-    if (s->mb_x == (s->mb_width - 1) &&
-        s->mb_y == (s->mb_height - 1)) {
+    if (/*s->mb_x == 0 &&*/
+        s->mb_y == s->mb_height) {
         /* end of image */
         UINT8 **picture;
 
@@ -1921,5 +1953,5 @@ AVCodec mpeg_decoder = {
     NULL,
     mpeg_decode_end,
     mpeg_decode_frame,
-    CODEC_CAP_DR1,
+    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
 };
