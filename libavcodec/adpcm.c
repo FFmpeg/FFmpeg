@@ -25,6 +25,7 @@
  * Fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
  *   by Mike Melanson (melanson@pcisys.net)
  * CD-ROM XA ADPCM codec by BERO
+ * EA ADPCM decoder by Robin Kay (komadori@myrealbox.com)
  *
  * Features and limitations:
  *
@@ -43,6 +44,13 @@
  */
 
 #define BLKSIZE 1024
+
+#define BE_16(x)  ((((uint8_t*)(x))[0] << 8) | ((uint8_t*)(x))[1])
+#define LE_16(x)  ((((uint8_t*)(x))[1] << 8) | ((uint8_t*)(x))[0])
+#define LE_32(x)  ((((uint8_t*)(x))[3] << 24) | \
+                   (((uint8_t*)(x))[2] << 16) | \
+                   (((uint8_t*)(x))[1] << 8) | \
+                    ((uint8_t*)(x))[0])
 
 #define CLAMP_TO_SHORT(value) \
 if (value > 32767) \
@@ -95,6 +103,11 @@ static const int xa_adpcm_table[5][2] = {
    { 115, -52 },
    {  98, -55 },
    { 122, -60 }
+};
+
+static int ea_adpcm_table[] = {
+    0, 240, 460, 392, 0, 0, -208, -220, 0, 1,
+    3, 4, 7, 8, 10, 11, 0, -1, -3, -4
 };
 
 /* end of tables */
@@ -444,6 +457,15 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     int decode_top_nibble_next = 0;
     int diff_channel;
 
+    /* EA ADPCM state variables */
+    uint32_t samples_in_chunk;
+    int32_t previous_left_sample, previous_right_sample;
+    int32_t current_left_sample, current_right_sample;
+    int32_t next_left_sample, next_right_sample;
+    int32_t coeff1l, coeff2l, coeff1r, coeff2r;
+    uint8_t shift_left, shift_right;
+    int count1, count2;
+
     if (!buf_size)
         return 0;
 
@@ -715,6 +737,69 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             buf_size -= 128;
         }
         break;
+    case CODEC_ID_ADPCM_EA:
+        samples_in_chunk = LE_32(src);
+        if (samples_in_chunk >= ((buf_size - 12) * 2)) {
+            src += buf_size;
+            break;
+        }
+        src += 4;
+        current_left_sample = (int16_t)LE_16(src);
+        src += 2;
+        previous_left_sample = (int16_t)LE_16(src);
+        src += 2;
+        current_right_sample = (int16_t)LE_16(src);
+        src += 2;
+        previous_right_sample = (int16_t)LE_16(src);
+        src += 2;
+
+        for (count1 = 0; count1 < samples_in_chunk/28;count1++) {
+            coeff1l = ea_adpcm_table[(*src >> 4) & 0x0F];
+            coeff2l = ea_adpcm_table[((*src >> 4) & 0x0F) + 4];
+            coeff1r = ea_adpcm_table[*src & 0x0F];
+            coeff2r = ea_adpcm_table[(*src & 0x0F) + 4];
+            src++;
+
+            shift_left = ((*src >> 4) & 0x0F) + 8;
+            shift_right = (*src & 0x0F) + 8;
+            src++;
+
+            for (count2 = 0; count2 < 28; count2++) {
+                next_left_sample = (((*src & 0xF0) << 24) >> shift_left);
+                next_right_sample = (((*src & 0x0F) << 28) >> shift_right);
+                src++;
+
+                next_left_sample = (next_left_sample + 
+                    (current_left_sample * coeff1l) + 
+                    (previous_left_sample * coeff2l) + 0x80) >> 8;
+                next_right_sample = (next_right_sample + 
+                    (current_right_sample * coeff1r) + 
+                    (previous_right_sample * coeff2r) + 0x80) >> 8;
+                CLAMP_TO_SHORT(next_left_sample);
+                CLAMP_TO_SHORT(next_right_sample);
+
+                previous_left_sample = current_left_sample;
+                current_left_sample = next_left_sample;
+                previous_right_sample = current_right_sample;
+                current_right_sample = next_right_sample;
+                *samples++ = (unsigned short)current_left_sample;
+                *samples++ = (unsigned short)current_right_sample;
+            }
+        }
+        break;
+    case CODEC_ID_ADPCM_IMA_SMJPEG:
+        c->status[0].predictor = *src;
+        src += 2;
+        c->status[0].step_index = *src++;
+        src++;  /* skip another byte before getting to the meat */
+        while (src < buf + buf_size) {
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0],
+                *src & 0x0F, 3);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0],
+                (*src >> 4) & 0x0F, 3);
+            src++;
+        }
+        break;
     default:
         *data_size = 0;
         return -1;
@@ -765,9 +850,11 @@ ADPCM_CODEC(CODEC_ID_ADPCM_IMA_WAV, adpcm_ima_wav);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK3, adpcm_ima_dk3);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_DK4, adpcm_ima_dk4);
 ADPCM_CODEC(CODEC_ID_ADPCM_IMA_WS, adpcm_ima_ws);
+ADPCM_CODEC(CODEC_ID_ADPCM_IMA_SMJPEG, adpcm_ima_smjpeg);
 ADPCM_CODEC(CODEC_ID_ADPCM_MS, adpcm_ms);
 ADPCM_CODEC(CODEC_ID_ADPCM_4XM, adpcm_4xm);
 ADPCM_CODEC(CODEC_ID_ADPCM_XA, adpcm_xa);
 ADPCM_CODEC(CODEC_ID_ADPCM_ADX, adpcm_adx);
+ADPCM_CODEC(CODEC_ID_ADPCM_EA, adpcm_ea);
 
 #undef ADPCM_CODEC

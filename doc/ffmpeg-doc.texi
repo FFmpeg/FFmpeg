@@ -758,9 +758,13 @@ solutions.
 @tab used in some Sega Saturn console games
 @item Westwood Studios IMA ADPCM @tab      @tab X
 @tab used in Westwood Studios games like Command and Conquer
+@item SMJPEG IMA ADPCM       @tab      @tab X
+@tab used in certain Loki game ports
 @item CD-ROM XA ADPCM        @tab      @tab X
 @item CRI ADX ADPCM          @tab X    @tab X
 @tab used in Sega Dreamcast games
+@item Electronic Arts ADPCM  @tab      @tab X
+@tab used in various EA titles
 @item RA144                  @tab      @tab X
 @tab Real 14400 bit/s codec
 @item RA288                  @tab      @tab X
