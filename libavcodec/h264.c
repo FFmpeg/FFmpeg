@@ -3565,7 +3565,7 @@ decode_intra_mb:
                     }
                 }
             }else{
-                memset(&h->non_zero_count_cache[8], 0, 8*4); //FIXME stupid & slow
+                fill_rectangle(&h->non_zero_count_cache[scan8[0]], 4, 4, 8, 0, 1);
             }
         }else{
             for(i8x8=0; i8x8<4; i8x8++){
