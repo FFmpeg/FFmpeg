@@ -167,9 +167,13 @@ static int next_packet(AVFormatContext *avfcontext, ogg_packet *op) {
 static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
 {
     OggContext *context = avfcontext->priv_data;
+    ogg_packet op ;    
     char *buf ;
     ogg_page og ;
     AVStream *ast ;
+    AVCodecContext *codec;
+    uint8_t *p;
+    int i;
      
     avfcontext->ctx_flags |= AVFMTCTX_NOHEADER;
      
@@ -183,16 +187,28 @@ static int ogg_read_header(AVFormatContext *avfcontext, AVFormatParameters *ap)
     ogg_sync_pageout(&context->oy, &og) ;
     ogg_stream_init(&context->os, ogg_page_serialno(&og)) ;
     ogg_stream_pagein(&context->os, &og) ;
-  
+    
     /* currently only one vorbis stream supported */
 
     ast = av_new_stream(avfcontext, 0) ;
     if(!ast)
 	return AVERROR_NOMEM ;
 
-    ast->codec.codec_type = CODEC_TYPE_AUDIO ;
-    ast->codec.codec_id = CODEC_ID_VORBIS ;
-    
+    codec= &ast->codec;
+    codec->codec_type = CODEC_TYPE_AUDIO;
+    codec->codec_id = CODEC_ID_VORBIS;
+    for(i=0; i<3; i++){
+        if(next_packet(avfcontext, &op)){
+            return -1;
+        }
+        codec->extradata_size+= 2 + op.bytes;
+        codec->extradata= av_realloc(codec->extradata, codec->extradata_size);
+        p= codec->extradata + codec->extradata_size - 2 - op.bytes;
+        *(p++)= op.bytes>>8;
+        *(p++)= op.bytes&0xFF;
+        memcpy(p, op.packet, op.bytes);
+    }
+
     return 0 ;
 }
 
@@ -216,6 +232,7 @@ static int ogg_read_close(AVFormatContext *avfcontext) {
 
     ogg_stream_clear(&context->os) ;
     ogg_sync_clear(&context->oy) ;
+    av_freep(&avfcontext->streams[0]->codec.extradata);
 
     return 0 ;
 }
