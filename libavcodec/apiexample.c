@@ -409,82 +409,6 @@ void video_decode_example(const char *outfilename, const char *filename)
     printf("\n");
 }
 
-// simple example how the options could be used
-int options_example(int argc, char* argv[])
-{
-    AVCodec* codec = avcodec_find_encoder_by_name((argc > 1) ? argv[2] : "mpeg4");
-    const AVOption* c;
-    AVCodecContext* avctx;
-#define DEF_SIZE 5000
-    char* def = av_malloc(DEF_SIZE);
-    const char* col = "";
-    int i = 0;
-
-    if (!codec)
-	return -1;
-    c = codec->options;
-    avctx = avcodec_alloc_context();
-    *def = 0;
-
-    if (c) {
-	const AVOption *stack[FF_OPT_MAX_DEPTH];
-	int depth = 0;
-	for (;;) {
-	    if (!c->name) {
-		if (c->help) {
-		    stack[depth++] = c;
-		    c = (const AVOption*)c->help;
-		} else {
-		    if (depth == 0)
-			break; // finished
-		    c = stack[--depth];
-                    c++;
-		}
-	    } else {
-		int t = c->type & FF_OPT_TYPE_MASK;
-		printf("Config   %s  %s\n",
-		       t == FF_OPT_TYPE_BOOL ? "bool   " :
-		       t == FF_OPT_TYPE_DOUBLE ? "double  " :
-		       t == FF_OPT_TYPE_INT ? "integer" :
-		       t == FF_OPT_TYPE_STRING ? "string " :
-		       "unknown??", c->name);
-		switch (t) {
-		case FF_OPT_TYPE_BOOL:
-		    i += snprintf(def + i, DEF_SIZE-i, "%s%s=%s",
-				 col, c->name,
-				 c->defval != 0. ? "on" : "off");
-		    break;
-		case FF_OPT_TYPE_DOUBLE:
-		    i += snprintf(def + i, DEF_SIZE-i, "%s%s=%f",
-				 col, c->name, c->defval);
-		    break;
-		case FF_OPT_TYPE_INT:
-		    i += snprintf(def + i, DEF_SIZE-i, "%s%s=%d",
-				 col, c->name, (int) c->defval);
-		    break;
-		case FF_OPT_TYPE_STRING:
-		    if (c->defstr) {
-			char* d = av_strdup(c->defstr);
-			char* f = strchr(d, ',');
-			if (f)
-                            *f = 0;
-			i += snprintf(def + i, DEF_SIZE-i, "%s%s=%s",
-				     col, c->name, d);
-                        av_free(d);
-		    }
-		    break;
-		}
-		col = ":";
-		c++;
-	    }
-	}
-    }
-    printf("Default Options: %s\n", def);
-    av_free(def);
-    return 0;
-}
-
-
 int main(int argc, char **argv)
 {
     const char *filename;
@@ -496,9 +420,6 @@ int main(int argc, char **argv)
        you wish to have smaller code */
     avcodec_register_all();
 
-#ifdef OPT_TEST
-    options_example(argc, argv);
-#else
     if (argc <= 1) {
         audio_encode_example("/tmp/test.mp2");
         audio_decode_example("/tmp/test.sw", "/tmp/test.mp2");
@@ -511,7 +432,6 @@ int main(int argc, char **argv)
 
     //    audio_decode_example("/tmp/test.sw", filename);
     video_decode_example("/tmp/test%d.pgm", filename);
-#endif
 
     return 0;
 }

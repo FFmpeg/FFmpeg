@@ -783,12 +783,6 @@ printf("%Ld\n", rdtsc()-time);
     return get_consumed_bytes(s, buf_size);
 }
 
-static const AVOption mpeg4_decoptions[] =
-{
-    AVOPTION_SUB(avoptions_workaround_bug),
-    AVOPTION_END()
-};
-
 AVCodec mpeg4_decoder = {
     "mpeg4",
     CODEC_TYPE_VIDEO,
@@ -799,7 +793,6 @@ AVCodec mpeg4_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY,
-    .options = mpeg4_decoptions,
     .flush= ff_mpeg_flush,
 };
 
@@ -826,7 +819,6 @@ AVCodec msmpeg4v1_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    mpeg4_decoptions,
 };
 
 AVCodec msmpeg4v2_decoder = {
@@ -839,7 +831,6 @@ AVCodec msmpeg4v2_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    mpeg4_decoptions,
 };
 
 AVCodec msmpeg4v3_decoder = {
@@ -852,7 +843,6 @@ AVCodec msmpeg4v3_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    .options = mpeg4_decoptions,
 };
 
 AVCodec wmv1_decoder = {
@@ -865,7 +855,6 @@ AVCodec wmv1_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    mpeg4_decoptions,
 };
 
 AVCodec h263i_decoder = {
@@ -878,7 +867,6 @@ AVCodec h263i_decoder = {
     ff_h263_decode_end,
     ff_h263_decode_frame,
     CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
-    mpeg4_decoptions,
 };
 
 AVCodec flv_decoder = {

@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000409
 #define FFMPEG_VERSION         "0.4.9-pre1"
-#define LIBAVCODEC_BUILD       4746
+#define LIBAVCODEC_BUILD       4747
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1818,15 +1818,6 @@ typedef struct AVOption {
 } AVOption;
 
 /**
- * Parse option(s) and sets fields in passed structure
- * @param strct	structure where the parsed results will be written
- * @param list  list with AVOptions
- * @param opts	string with options for parsing
- */
-int avoption_parse(void* strct, const AVOption* list, const char* opts);
-
-
-/**
  * AVCodec.
  */
 typedef struct AVCodec {
@@ -1840,7 +1831,7 @@ typedef struct AVCodec {
     int (*decode)(AVCodecContext *, void *outdata, int *outdata_size,
                   uint8_t *buf, int buf_size);
     int capabilities;
-    const AVOption *options;
+    void *dummy; // FIXME remove next time we break binary compatibility
     struct AVCodec *next;
     void (*flush)(AVCodecContext *);
     const AVRational *supported_framerates; ///array of supported framerates, or NULL if any, array is terminated by {0,0}

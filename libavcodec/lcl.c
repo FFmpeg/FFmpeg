@@ -917,7 +917,6 @@ AVCodec zlib_encoder = {
     encode_init,
     encode_frame,
     encode_end,
-//    .options = lcl_options,
 };
 
 #endif //CONFIG_ENCODERS

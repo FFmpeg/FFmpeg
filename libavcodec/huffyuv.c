@@ -1219,20 +1219,6 @@ static int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-static const AVOption huffyuv_options[] =
-{
-    AVOPTION_CODEC_INT("prediction_method", "prediction_method", prediction_method, 0, 2, 0),
-    AVOPTION_END()
-};
-
-static const AVOption ffvhuff_options[] =
-{
-    AVOPTION_CODEC_INT("prediction_method", "prediction_method", prediction_method, 0, 2, 0),
-    AVOPTION_CODEC_INT("context_model", "context_model", context_model, 0, 2, 0),
-    AVOPTION_END()
-};
-
-
 AVCodec huffyuv_decoder = {
     "huffyuv",
     CODEC_TYPE_VIDEO,
@@ -1269,7 +1255,6 @@ AVCodec huffyuv_encoder = {
     encode_init,
     encode_frame,
     encode_end,
-    .options = huffyuv_options,
 };
 
 AVCodec ffvhuff_encoder = {
@@ -1280,7 +1265,6 @@ AVCodec ffvhuff_encoder = {
     encode_init,
     encode_frame,
     encode_end,
-    .options = ffvhuff_options,
 };
 
 #endif //CONFIG_ENCODERS

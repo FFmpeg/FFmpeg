@@ -6399,80 +6399,6 @@ static void dct_unquantize_h263_inter_c(MpegEncContext *s,
     }
 }
 
-static const AVOption mpeg4_options[] =
-{
-    AVOPTION_CODEC_INT("bitrate", "desired video bitrate", bit_rate, 4, 240000000, 800000),
-    AVOPTION_CODEC_INT("ratetol", "number of bits the bitstream is allowed to diverge from the reference"
-		       "the reference can be CBR (for CBR pass1) or VBR (for pass2)",
-		       bit_rate_tolerance, 4, 240000000, 8000),
-    AVOPTION_CODEC_INT("qmin", "minimum quantizer", qmin, 1, 31, 2),
-    AVOPTION_CODEC_INT("qmax", "maximum quantizer", qmax, 1, 31, 31),
-    AVOPTION_CODEC_STRING("rc_eq", "rate control equation",
-			  rc_eq, "tex^qComp,option1,options2", 0),
-    AVOPTION_CODEC_INT("rc_minrate", "rate control minimum bitrate",
-		       rc_min_rate, 4, 24000000, 0),
-    AVOPTION_CODEC_INT("rc_maxrate", "rate control maximum bitrate",
-		       rc_max_rate, 4, 24000000, 0),
-    AVOPTION_CODEC_DOUBLE("rc_buf_aggresivity", "rate control buffer aggresivity",
-			  rc_buffer_aggressivity, 4, 24000000, 0),
-    AVOPTION_CODEC_DOUBLE("rc_initial_cplx", "initial complexity for pass1 ratecontrol",
-			  rc_initial_cplx, 0., 9999999., 0),
-    AVOPTION_CODEC_DOUBLE("i_quant_factor", "qscale factor between p and i frames",
-			  i_quant_factor, 0., 0., 0),
-    AVOPTION_CODEC_DOUBLE("i_quant_offset", "qscale offset between p and i frames",
-			  i_quant_factor, -999999., 999999., 0),
-    AVOPTION_CODEC_INT("dct_algo", "dct alghorithm",
-		       dct_algo, 0, 5, 0), // fixme - "Auto,FastInt,Int,MMX,MLib,Altivec"
-    AVOPTION_CODEC_DOUBLE("lumi_masking", "luminance masking",
-			  lumi_masking, 0., 999999., 0),
-    AVOPTION_CODEC_DOUBLE("temporal_cplx_masking", "temporary complexity masking",
-			  temporal_cplx_masking, 0., 999999., 0),
-    AVOPTION_CODEC_DOUBLE("spatial_cplx_masking", "spatial complexity masking",
-			  spatial_cplx_masking, 0., 999999., 0),
-    AVOPTION_CODEC_DOUBLE("p_masking", "p block masking",
-			  p_masking, 0., 999999., 0),
-    AVOPTION_CODEC_DOUBLE("dark_masking", "darkness masking",
-			  dark_masking, 0., 999999., 0),
-    AVOPTION_CODEC_INT("idct_algo", "idct alghorithm",
-		       idct_algo, 0, 8, 0), // fixme - "Auto,Int,Simple,SimpleMMX,LibMPEG2MMX,PS2,MLib,ARM,Altivec"
-
-    AVOPTION_CODEC_INT("mb_qmin", "minimum MB quantizer",
-		       mb_qmin, 0, 8, 0),
-    AVOPTION_CODEC_INT("mb_qmax", "maximum MB quantizer",
-		       mb_qmin, 0, 8, 0),
-
-    AVOPTION_CODEC_INT("me_cmp", "ME compare function",
-		       me_cmp, 0, 24000000, 0),
-    AVOPTION_CODEC_INT("me_sub_cmp", "subpixel ME compare function",
-		       me_sub_cmp, 0, 24000000, 0),
-
-
-    AVOPTION_CODEC_INT("dia_size", "ME diamond size & shape",
-		       dia_size, 0, 24000000, 0),
-    AVOPTION_CODEC_INT("last_predictor_count", "amount of previous MV predictors",
-		       last_predictor_count, 0, 24000000, 0),
-
-    AVOPTION_CODEC_INT("pre_me", "pre pass for ME",
-		       pre_me, 0, 24000000, 0),
-    AVOPTION_CODEC_INT("me_pre_cmp", "ME pre pass compare function",
-		       me_pre_cmp, 0, 24000000, 0),
-
-    AVOPTION_CODEC_INT("me_range", "maximum ME search range",
-		       me_range, 0, 24000000, 0),
-    AVOPTION_CODEC_INT("pre_dia_size", "ME pre pass diamod size & shape",
-		       pre_dia_size, 0, 24000000, 0),
-    AVOPTION_CODEC_INT("me_subpel_quality", "subpel ME quality",
-		       me_subpel_quality, 0, 24000000, 0),
-    AVOPTION_CODEC_INT("me_range", "maximum ME search range",
-		       me_range, 0, 24000000, 0),
-    AVOPTION_CODEC_FLAG("psnr", "calculate PSNR of compressed frames",
-		        flags, CODEC_FLAG_PSNR, 0),
-    AVOPTION_CODEC_RCOVERRIDE("rc_override", "ratecontrol override (=startframe,endframe,qscale,quality_factor)",
-			      rc_override),
-    AVOPTION_SUB(avoptions_common),
-    AVOPTION_END()
-};
-
 #ifdef CONFIG_ENCODERS
 AVCodec h263_encoder = {
     "h263",
@@ -6538,7 +6464,6 @@ AVCodec mpeg4_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
-    .options = mpeg4_options,
     .capabilities= CODEC_CAP_DELAY,
 };
 
@@ -6551,7 +6476,6 @@ AVCodec msmpeg4v1_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
-    .options = mpeg4_options,
 };
 
 AVCodec msmpeg4v2_encoder = {
@@ -6563,7 +6487,6 @@ AVCodec msmpeg4v2_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
-    .options = mpeg4_options,
 };
 
 AVCodec msmpeg4v3_encoder = {
@@ -6575,7 +6498,6 @@ AVCodec msmpeg4v3_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
-    .options = mpeg4_options,
 };
 
 AVCodec wmv1_encoder = {
@@ -6587,7 +6509,6 @@ AVCodec wmv1_encoder = {
     MPV_encode_picture,
     MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUV420P, -1},
-    .options = mpeg4_options,
 };
 
 AVCodec mjpeg_encoder = {
