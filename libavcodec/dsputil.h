@@ -269,9 +269,10 @@ void ff_mdct_calc(MDCTContext *s, FFTSample *out,
                const FFTSample *input, FFTSample *tmp);
 void ff_mdct_end(MDCTContext *s);
 
-#if defined(__FreeBSD__) || (__bsdi__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__bsdi__)
 /* XXX: add ISOC specific test to avoid specific BSD testing. */
 /* better than nothing implementation. */
+/* btw, rintf() is existing on fbsd too -- alex */
 static inline long int lrintf(float x)
 {
     return (int)(rint(x));
