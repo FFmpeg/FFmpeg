@@ -11,10 +11,7 @@
  */
 
 #include "avcodec.h"
-
-#ifdef CONFIG_OS2
-#define strcasecmp(s1,s2) stricmp(s1,s2)
-#endif
+#include "os_support.h"
 
 const AVOption avoptions_common[] = {
     AVOPTION_CODEC_FLAG("bit_exact", "use only bit-exact stuff", flags, CODEC_FLAG_BITEXACT, 0),

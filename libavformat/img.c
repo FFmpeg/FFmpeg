@@ -18,7 +18,7 @@
  */
 #include <unistd.h>
 #include "avformat.h"
-#include "../os_support.h"
+#include "os_support.h"
 
 typedef struct {
     int width;
