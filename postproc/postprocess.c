@@ -26,7 +26,7 @@ isHorizDC		Ec	Ec
 isHorizMinMaxOk		a	E
 doHorizLowPass		E		e	e
 doHorizDefFilter	Ec	Ec	Ec
-deRing
+deRing					e
 Vertical RKAlgo1	E		a	a
 Horizontal RKAlgo1			a	a
 Vertical X1		a		E	E
@@ -65,7 +65,6 @@ border remover
 ...
 
 Notes:
-fixed difference with -vo md5 between doVertDefFilter() C and MMX / MMX2 versions
 */
 
 //Changelog: use the CVS log
@@ -116,6 +115,8 @@ static uint64_t b00= 		0x0000000000000000LL;
 static uint64_t b01= 		0x0101010101010101LL;
 static uint64_t b02= 		0x0202020202020202LL;
 static uint64_t b0F= 		0x0F0F0F0F0F0F0F0FLL;
+static uint64_t b04= 		0x0404040404040404LL;
+static uint64_t b08= 		0x0808080808080808LL;
 static uint64_t bFF= 		0xFFFFFFFFFFFFFFFFLL;
 static uint64_t b20= 		0x2020202020202020LL;
 static uint64_t b80= 		0x8080808080808080LL;
@@ -129,6 +130,7 @@ static uint64_t temp3=0;
 static uint64_t temp4=0;
 static uint64_t temp5=0;
 static uint64_t pQPb=0;
+static uint64_t pQPb2=0;
 static uint8_t tempBlocks[8*16*2]; //used for the horizontal code
 
 int hFlatnessThreshold= 56 - 16;
@@ -1806,33 +1808,33 @@ Implemented	Exact 7-Tap
 
 static inline void dering(uint8_t src[], int stride, int QP)
 {
-//FIXME
-
-#ifdef HAVE_MMX2X
+#ifdef HAVE_MMX2
 	asm volatile(
+		"movq pQPb, %%mm0				\n\t"
+		"paddusb %%mm0, %%mm0				\n\t"
+		"movq %%mm0, pQPb2				\n\t"
+
 		"leal (%0, %1), %%eax				\n\t"
 		"leal (%%eax, %1, 4), %%ebx			\n\t"
 //	0	1	2	3	4	5	6	7	8	9
 //	%0	eax	eax+%1	eax+2%1	%0+4%1	ebx	ebx+%1	ebx+2%1	%0+8%1	ebx+4%1
 
-		"pcmpeq %%mm6, %%mm6				\n\t"
+		"pcmpeqb %%mm6, %%mm6				\n\t"
 		"pxor %%mm7, %%mm7				\n\t"
 
 #define FIND_MIN_MAX(addr)\
-		"movq (" #addr "), %%mm0,			\n\t"\
+		"movq " #addr ", %%mm0				\n\t"\
 		"pminub %%mm0, %%mm6				\n\t"\
 		"pmaxub %%mm0, %%mm7				\n\t"
 
-FIND_MIN_MAX(%0)
-FIND_MIN_MAX(%%eax)
-FIND_MIN_MAX(%%eax, %1)
-FIND_MIN_MAX(%%eax, %1, 2)
-FIND_MIN_MAX(%0, %1, 4)
-FIND_MIN_MAX(%%ebx)
-FIND_MIN_MAX(%%ebx, %1)
-FIND_MIN_MAX(%%ebx, %1, 2)
-FIND_MIN_MAX(%0, %1, 8)
-FIND_MIN_MAX(%%ebx, %1, 2)
+FIND_MIN_MAX((%%eax))
+FIND_MIN_MAX((%%eax, %1))
+FIND_MIN_MAX((%%eax, %1, 2))
+FIND_MIN_MAX((%0, %1, 4))
+FIND_MIN_MAX((%%ebx))
+FIND_MIN_MAX((%%ebx, %1))
+FIND_MIN_MAX((%%ebx, %1, 2))
+FIND_MIN_MAX((%0, %1, 8))
 
 		"movq %%mm6, %%mm4				\n\t"
 		"psrlq $8, %%mm6				\n\t"
@@ -1866,15 +1868,125 @@ FIND_MIN_MAX(%%ebx, %1, 2)
 		"psrlq $32, %%mm7				\n\t"
 #endif
 		"pmaxub %%mm4, %%mm7				\n\t"
-		PAVGB(%%mm6, %%mm7)				      // (max + min)/2
+		PAVGB(%%mm6, %%mm7)				      // a=(max + min)/2
 		"punpcklbw %%mm7, %%mm7				\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
 		"punpcklbw %%mm7, %%mm7				\n\t"
+		"movq %%mm7, temp0				\n\t"
 
-		"movq (%0), %%mm0				\n\t"
-		"movq %%mm0, %%mm1				\n\t"
+		"movq (%0), %%mm0				\n\t" // L10
+		"movq %%mm0, %%mm1				\n\t" // L10
+		"movq %%mm0, %%mm2				\n\t" // L10
+		"psllq $8, %%mm1				\n\t"
+		"psrlq $8, %%mm2				\n\t"
+		"movd -4(%0), %%mm3				\n\t"
+		"movd 8(%0), %%mm4				\n\t"
+		"psrlq $24, %%mm3				\n\t"
+		"psllq $56, %%mm4				\n\t"
+		"por %%mm3, %%mm1				\n\t" // L00
+		"por %%mm4, %%mm2				\n\t" // L20
+		"movq %%mm1, %%mm3				\n\t" // L00
+		PAVGB(%%mm2, %%mm1)				      // (L20 + L00)/2
+		PAVGB(%%mm0, %%mm1)				      // (L20 + L00 + 2L10)/4
+		"psubusb %%mm7, %%mm0				\n\t"
+		"psubusb %%mm7, %%mm2				\n\t"
+		"psubusb %%mm7, %%mm3				\n\t"
+		"pcmpeqb b00, %%mm0				\n\t" // L10 > a ? 0 : -1
+		"pcmpeqb b00, %%mm2				\n\t" // L20 > a ? 0 : -1
+		"pcmpeqb b00, %%mm3				\n\t" // L00 > a ? 0 : -1
+		"paddb %%mm2, %%mm0				\n\t"
+		"paddb %%mm3, %%mm0				\n\t"
 
+		"movq (%%eax), %%mm2				\n\t" // L11
+		"movq %%mm2, %%mm3				\n\t" // L11
+		"movq %%mm2, %%mm4				\n\t" // L11
+		"psllq $8, %%mm3				\n\t"
+		"psrlq $8, %%mm4				\n\t"
+		"movd -4(%%eax), %%mm5				\n\t"
+		"movd 8(%%eax), %%mm6				\n\t"
+		"psrlq $24, %%mm5				\n\t"
+		"psllq $56, %%mm6				\n\t"
+		"por %%mm5, %%mm3				\n\t" // L01
+		"por %%mm6, %%mm4				\n\t" // L21
+		"movq %%mm3, %%mm5				\n\t" // L01
+		PAVGB(%%mm4, %%mm3)				      // (L21 + L01)/2
+		PAVGB(%%mm2, %%mm3)				      // (L21 + L01 + 2L11)/4
+		"psubusb %%mm7, %%mm2				\n\t"
+		"psubusb %%mm7, %%mm4				\n\t"
+		"psubusb %%mm7, %%mm5				\n\t"
+		"pcmpeqb b00, %%mm2				\n\t" // L11 > a ? 0 : -1
+		"pcmpeqb b00, %%mm4				\n\t" // L21 > a ? 0 : -1
+		"pcmpeqb b00, %%mm5				\n\t" // L01 > a ? 0 : -1
+		"paddb %%mm4, %%mm2				\n\t"
+		"paddb %%mm5, %%mm2				\n\t"
+// 0, 2, 3, 1
+#define DERING_CORE(dst,src,ppsx,psx,sx,pplx,plx,lx,t0,t1) \
+		"movq " #src ", " #sx "				\n\t" /* src[0] */\
+		"movq " #sx ", " #lx "				\n\t" /* src[0] */\
+		"movq " #sx ", " #t0 "				\n\t" /* src[0] */\
+		"psllq $8, " #lx "				\n\t"\
+		"psrlq $8, " #t0 "				\n\t"\
+		"movd -4" #src ", " #t1 "			\n\t"\
+		"psrlq $24, " #t1 "				\n\t"\
+		"por " #t1 ", " #lx "				\n\t" /* src[-1] */\
+		"movd 8" #src ", " #t1 "			\n\t"\
+		"psllq $56, " #t1 "				\n\t"\
+		"por " #t1 ", " #t0 "				\n\t" /* src[+1] */\
+		"movq " #lx ", " #t1 "				\n\t" /* src[-1] */\
+		PAVGB(t0, lx)				              /* (src[-1] + src[+1])/2 */\
+		PAVGB(sx, lx)				      /* (src[-1] + 2src[0] + src[+1])/4 */\
+		"psubusb temp0, " #t1 "				\n\t"\
+		"psubusb temp0, " #t0 "				\n\t"\
+		"psubusb temp0, " #sx "				\n\t"\
+		"pcmpeqb b00, " #t1 "				\n\t" /* src[-1] > a ? 0 : -1*/\
+		"pcmpeqb b00, " #t0 "				\n\t" /* src[+1] > a ? 0 : -1*/\
+		"pcmpeqb b00, " #sx "				\n\t" /* src[0]  > a ? 0 : -1*/\
+		"paddb " #t1 ", " #t0 "				\n\t"\
+		"paddb " #t0 ", " #sx "				\n\t"\
+\
+		PAVGB(lx, pplx)					     \
+		PAVGB(plx, pplx)				      /* filtered */\
+		"movq " #dst ", " #t0 "				\n\t" /* dst */\
+		"movq " #pplx ", " #t1 "			\n\t"\
+		"psubusb " #t0 ", " #pplx "			\n\t"\
+		"psubusb " #t1 ", " #t0 "			\n\t"\
+		"por " #t0 ", " #pplx "				\n\t" /* |filtered - dst| */\
+		"psubusb pQPb2, " #pplx "			\n\t"\
+		"pcmpeqb b00, " #pplx "				\n\t"\
+		"paddb " #sx ", " #ppsx "			\n\t"\
+		"paddb " #psx ", " #ppsx "			\n\t"\
+	"#paddb b02, " #ppsx "				\n\t"\
+		"pand b08, " #ppsx "				\n\t"\
+		"pcmpeqb b00, " #ppsx "				\n\t"\
+		"pand " #pplx ", " #ppsx "			\n\t"\
+		"pand " #ppsx ", " #t1 "			\n\t"\
+		"pandn " #dst ", " #ppsx "			\n\t"\
+		"por " #t1 ", " #ppsx "				\n\t"\
+		"movq " #ppsx ", " #dst "			\n\t"
+/*
+0000000
+1111111
 
+1111110
+1111101
+1111100
+1111011
+1111010
+1111001
+
+1111000
+1110111
+
+*/
+//DERING_CORE(dst,src                  ,ppsx ,psx  ,sx   ,pplx ,plx  ,lx   ,t0   ,t1)
+DERING_CORE((%%eax),(%%eax, %1)        ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
+DERING_CORE((%%eax, %1),(%%eax, %1, 2) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
+DERING_CORE((%%eax, %1, 2),(%0, %1, 4) ,%%mm4,%%mm0,%%mm2,%%mm5,%%mm1,%%mm3,%%mm6,%%mm7)
+DERING_CORE((%0, %1, 4),(%%ebx)        ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
+DERING_CORE((%%ebx),(%%ebx, %1)        ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
+DERING_CORE((%%ebx, %1), (%%ebx, %1, 2),%%mm4,%%mm0,%%mm2,%%mm5,%%mm1,%%mm3,%%mm6,%%mm7)
+DERING_CORE((%%ebx, %1, 2),(%0, %1, 8) ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,%%mm6,%%mm7)
+DERING_CORE((%0, %1, 8),(%%ebx, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
 
 
 		: : "r" (src), "r" (stride), "r" (QP)
@@ -2874,11 +2986,11 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		uint8_t *tempBlock1= tempBlocks;
 		uint8_t *tempBlock2= tempBlocks + 8;
 #endif
-		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards, if not
-		   than use a temporary buffer */
+		/* can we mess with a 8x16 block from srcBlock/dstBlock downwards and 1 line upwards
+		   if not than use a temporary buffer */
 		if(y+15 >= height)
 		{
-			/* copy from line 5 to 12 of src, these will e copied with
+			/* copy from line 5 to 12 of src, these will be copied with
 			   blockcopy to dst later */
 			memcpy(tempSrc + srcStride*5, srcBlock + srcStride*5,
 				srcStride*MAX(height-y-5, 0) );
@@ -2893,9 +3005,9 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 			}
 
 
-			/* copy up to 5 lines of dst */
-			memcpy(tempDst, dstBlock, dstStride*MIN(height-y, 5) );
-			dstBlock= tempDst;
+			/* copy up to 6 lines of dst */
+			memcpy(tempDst, dstBlock - dstStride, dstStride*MIN(height-y+1, 6) );
+			dstBlock= tempDst + dstStride;
 			srcBlock= tempSrc;
 		}
 
@@ -3046,6 +3158,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				T0=T1;
 #endif
 			}
+
 #ifdef HAVE_MMX
 			transpose1(tempBlock1, tempBlock2, dstBlock, dstStride);
 #endif
@@ -3092,11 +3205,18 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 				horizTime+= T1-T0;
 				T0=T1;
 #endif
-				dering(dstBlock - 9 - stride, stride, QP);
+				if(mode & DERING)
+				{
+				//FIXME filter first line
+					if(y>0) dering(dstBlock - stride - 8, stride, QP);
+				}
 			}
-			else if(y!=0)
-				dering(dstBlock - stride*9 + width-9, stride, QP);
-			//FIXME dering filter will not be applied to last block (bottom right)
+			else if(mode & DERING)
+			{
+			 //FIXME y+15 is required cuz of the tempBuffer thing -> bottom right block isnt filtered
+					if(y > 8 && y+15 < height) dering(dstBlock - stride*9 + width - 8, stride, QP);
+			}
+
 
 #ifdef PP_FUNNY_STRIDE
 			/* did we use a tmp-block buffer */
@@ -3127,7 +3247,7 @@ static void postProcess(uint8_t src[], int srcStride, uint8_t dst[], int dstStri
 		if(y+15 >= height)
 		{
 			uint8_t *dstBlock= &(dst[y*dstStride]);
-			memcpy(dstBlock, tempDst, dstStride*(height-y) );
+			memcpy(dstBlock, tempDst + dstStride, dstStride*(height-y) );
 		}
 	}
 #ifdef HAVE_3DNOW
