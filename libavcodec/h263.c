@@ -102,6 +102,11 @@ max run: 29/41
 */
 #endif
 
+#if 0 //3IV1 is quite rare and tis slows things down a tiny bit
+#define IS_3IV1 s->avctx->codec_tag == ff_get_fourcc("3IV1")
+#else 
+#define IS_3IV1 0
+#endif
 
 int h263_get_picture_format(int width, int height)
 {
@@ -643,6 +648,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                         s->last_bits++;
                     }
                     s->skip_count++;
+                    
                     return;
                 }
             }
@@ -1828,6 +1834,9 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext * s, int n, uint16_t **dc_val_
     } else {
 	scale = s->c_dc_scale;
     }
+    if(IS_3IV1)
+        scale= 8;
+
     wrap= s->block_wrap[n];
     dc_val = s->dc_val[0] + s->block_index[n];
 
@@ -3603,7 +3612,19 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
     if (code == 0) {
         level = 0;
     } else {
-        level = get_xbits(&s->gb, code);
+        if(IS_3IV1){
+            if(code==1)
+                level= 2*get_bits1(&s->gb)-1;
+            else{
+                if(get_bits1(&s->gb))
+                    level = get_bits(&s->gb, code-1) + (1<<(code-1));
+                else
+                    level = -get_bits(&s->gb, code-1) - (1<<(code-1));
+            }
+        }else{
+            level = get_xbits(&s->gb, code);
+        }
+
         if (code > 8){
             if(get_bits1(&s->gb)==0){ /* marker */
                 if(s->error_resilience>=2){
@@ -3627,6 +3648,9 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
     } else {
         *dc_val = level * s->c_dc_scale;
     }
+    if(IS_3IV1)
+        *dc_val = level * 8;
+    
     if(s->error_resilience>=3){
         if(*dc_val > 2048 + s->y_dc_scale + s->c_dc_scale){
             fprintf(stderr, "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
@@ -3750,10 +3774,14 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 SKIP_COUNTER(re, &s->gb, 1+11+5+1);
 
                 i+= run + 1;
-                if(last) i+=192;    
+                if(last) i+=192;
           }else{
             int cache;
             cache= GET_CACHE(re, &s->gb);
+
+            if(IS_3IV1) 
+                cache ^= 0xC0000000;
+
             if (cache&0x80000000) {
                 if (cache&0x40000000) {
                     /* third escape */
@@ -3763,20 +3791,24 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     SKIP_COUNTER(re, &s->gb, 2+1+6);
                     UPDATE_CACHE(re, &s->gb);
 
-                    if(SHOW_UBITS(re, &s->gb, 1)==0){
-                        fprintf(stderr, "1. marker bit missing in 3. esc\n");
-                        return -1;
-                    }; SKIP_CACHE(re, &s->gb, 1);
-                    
-                    level= SHOW_SBITS(re, &s->gb, 12); SKIP_CACHE(re, &s->gb, 12);
+                    if(IS_3IV1){
+                        level= SHOW_SBITS(re, &s->gb, 12); LAST_SKIP_BITS(re, &s->gb, 12);
+                    }else{
+                        if(SHOW_UBITS(re, &s->gb, 1)==0){
+                            fprintf(stderr, "1. marker bit missing in 3. esc\n");
+                            return -1;
+                        }; SKIP_CACHE(re, &s->gb, 1);
+
+                        level= SHOW_SBITS(re, &s->gb, 12); SKIP_CACHE(re, &s->gb, 12);
+
+                        if(SHOW_UBITS(re, &s->gb, 1)==0){
+                            fprintf(stderr, "2. marker bit missing in 3. esc\n");
+                            return -1;
+                        }; LAST_SKIP_CACHE(re, &s->gb, 1);
+
+                        SKIP_COUNTER(re, &s->gb, 1+12+1);
+                    }
  
-                    if(SHOW_UBITS(re, &s->gb, 1)==0){
-                        fprintf(stderr, "2. marker bit missing in 3. esc\n");
-                        return -1;
-                    }; LAST_SKIP_CACHE(re, &s->gb, 1);
-                    
-                    SKIP_COUNTER(re, &s->gb, 1+12+1);
-                    
                     if(level*s->qscale>1024 || level*s->qscale<-1024){
                         fprintf(stderr, "|level| overflow in 3. esc, qp=%d\n", s->qscale);
                         return -1;
@@ -4738,12 +4770,12 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
              s->b_code=1;
 
          if(s->avctx->debug&FF_DEBUG_PICT_INFO){
-             printf("qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d\n", 
+             printf("qp:%d fc:%d,%d %s size:%d pro:%d alt:%d top:%d %spel part:%d resync:%d w:%d a:%d rnd:%d\n", 
                  s->qscale, s->f_code, s->b_code, 
                  s->pict_type == I_TYPE ? "I" : (s->pict_type == P_TYPE ? "P" : (s->pict_type == B_TYPE ? "B" : "S")), 
                  gb->size_in_bits,s->progressive_sequence, s->alternate_scan, s->top_field_first, 
                  s->quarter_sample ? "q" : "h", s->data_partitioning, s->resync_marker, s->num_sprite_warping_points,
-                 s->sprite_warping_accuracy); 
+                 s->sprite_warping_accuracy, 1-s->no_rounding); 
          }
 
          if(!s->scalability){
