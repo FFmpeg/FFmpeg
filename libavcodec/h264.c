@@ -1681,42 +1681,35 @@ static void pred16x16_128_dc_c(uint8_t *src, int stride){
 }
 
 static void pred16x16_plane_c(uint8_t *src, int stride){
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
-    int i, dx, dy, dc;
-    int temp[16];
-    
-    dc= 16*(src[15-stride] + src[-1+15*stride]);
-    
-    dx=dy=0;
-    for(i=1; i<9; i++){
-        dx += i*(src[7+i-stride] - src[7-i-stride]);
-        dy += i*(src[-1+(7+i)*stride] - src[-1+(7-i)*stride]);
-    }
-    dx= (5*dx+32)>>6;
-    dy= (5*dy+32)>>6;
-    
-    dc += 16;
+  int i, j, k;
+  int a;
+  uint8_t *cm = cropTbl + MAX_NEG_CROP;
+  const uint8_t * const src0 = src+7-stride;
+  const uint8_t *src1 = src+8*stride-1;
+  const uint8_t *src2 = src1-2*stride;      // == src+6*stride-1;
+  int H = src0[1] - src0[-1];
+  int V = src1[0] - src2[ 0];
+  for(k=2; k<=8; ++k) {
+    src1 += stride; src2 -= stride;
+    H += k*(src0[k] - src0[-k]);
+    V += k*(src1[0] - src2[ 0]);
+  }
+  H = ( 5*H+32 ) >> 6;
+  V = ( 5*V+32 ) >> 6;
 
-    //FIXME modifiy dc,dx,dy to avoid -7
-    
-    for(i=0; i<16; i++)
-        temp[i]= dx*(i-7) + dc;
-    
-    if(   (dc - ABS(dx)*8 - ABS(dy)*8)>>5 < 0
-       || (dc + ABS(dx)*8 + ABS(dy)*8)>>5 > 255){
-    
-        for(i=0; i<16; i++){
-            int j;
-            for(j=0; j<16; j++)
-                src[j + i*stride]= cm[ (temp[j] + dy*(i-7))>>5 ];
-        }
-    }else{
-        for(i=0; i<16; i++){
-            int j;
-            for(j=0; j<16; j++)
-                src[j + i*stride]= (temp[j] + dy*(i-7))>>5;
-        }
+  a = 16*(src1[0] + src2[16] + 1) - 7*(V+H);
+  for(j=16; j>0; --j) {
+    int b = a;
+    a += V;
+    for(i=-16; i<0; i+=4) {
+      src[16+i] = cm[ (b    ) >> 5 ];
+      src[17+i] = cm[ (b+  H) >> 5 ];
+      src[18+i] = cm[ (b+2*H) >> 5 ];
+      src[19+i] = cm[ (b+3*H) >> 5 ];
+      b += 4*H;
     }
+    src += stride;
+  }
 }
 
 static void pred8x8_vertical_c(uint8_t *src, int stride){
@@ -1823,42 +1816,36 @@ static void pred8x8_dc_c(uint8_t *src, int stride){
 }
 
 static void pred8x8_plane_c(uint8_t *src, int stride){
-    uint8_t *cm = cropTbl + MAX_NEG_CROP;
-    int i, dx, dy, dc;
-    int temp[8];
+  int j, k;
+  int a;
+  uint8_t *cm = cropTbl + MAX_NEG_CROP;
+  const uint8_t * const src0 = src+3-stride;
+  const uint8_t *src1 = src+4*stride-1;
+  const uint8_t *src2 = src1-2*stride;      // == src+2*stride-1;
+  int H = src0[1] - src0[-1];
+  int V = src1[0] - src2[ 0];
+  for(k=2; k<=4; ++k) {
+    src1 += stride; src2 -= stride;
+    H += k*(src0[k] - src0[-k]);
+    V += k*(src1[0] - src2[ 0]);
+  }
+  H = ( 17*H+16 ) >> 5;
+  V = ( 17*V+16 ) >> 5;
 
-    dc= 16*(src[7-stride] + src[-1+7*stride]);
-    
-    dx=dy=0;
-    for(i=1; i<5; i++){
-        dx += i*(src[3+i-stride] - src[3-i-stride]);
-        dy += i*(src[-1+(3+i)*stride] - src[-1+(3-i)*stride]);
-    }
-    dx= (17*dx+16)>>5;
-    dy= (17*dy+16)>>5;
-    
-    dc += 16;
-    
-    //FIXME modifiy dc,dx,dy to avoid -3
-    
-    for(i=0; i<8; i++)
-        temp[i]= dx*(i-3) + dc;
-    
-    if(   (dc - ABS(dx)*4 - ABS(dy)*4)>>5 < 0
-       || (dc + ABS(dx)*4 + ABS(dy)*4)>>5 > 255){
-    
-        for(i=0; i<8; i++){
-            int j;
-            for(j=0; j<8; j++)
-                src[j + i*stride]= cm[ (temp[j] + dy*(i-3))>>5 ];
-        }
-    }else{
-        for(i=0; i<8; i++){
-            int j;
-            for(j=0; j<8; j++)
-                src[j + i*stride]= (temp[j] + dy*(i-3))>>5;
-        }
-    }
+  a = 16*(src1[0] + src2[8]+1) - 3*(V+H);
+  for(j=8; j>0; --j) {
+    int b = a;
+    a += V;
+    src[0] = cm[ (b    ) >> 5 ];
+    src[1] = cm[ (b+  H) >> 5 ];
+    src[2] = cm[ (b+2*H) >> 5 ];
+    src[3] = cm[ (b+3*H) >> 5 ];
+    src[4] = cm[ (b+4*H) >> 5 ];
+    src[5] = cm[ (b+5*H) >> 5 ];
+    src[6] = cm[ (b+6*H) >> 5 ];
+    src[7] = cm[ (b+7*H) >> 5 ];
+    src += stride;
+  }
 }
 
 static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, int chroma_height, int delta, int list,
