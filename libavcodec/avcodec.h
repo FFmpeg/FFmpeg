@@ -47,6 +47,7 @@ enum CodecID {
     CODEC_ID_MACE3,
     CODEC_ID_MACE6,
     CODEC_ID_HUFFYUV,
+    CODEC_ID_CYUV,
 
     /* various pcm "codecs" */
     CODEC_ID_PCM_S16LE,
@@ -1011,6 +1012,7 @@ extern AVCodec mace3_decoder;
 extern AVCodec mace6_decoder;
 extern AVCodec huffyuv_decoder;
 extern AVCodec oggvorbis_decoder;
+extern AVCodec cyuv_decoder;
 
 /* pcm codecs */
 #define PCM_CODEC(id, name) \
