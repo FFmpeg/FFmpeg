@@ -3,26 +3,16 @@ ffmpeg TODO list:
 
 (in approximate decreasing priority order)
 
-Short term glantau's fixes:
-- regression tests (done).
-- mpeg1/2 decode fix (unfortunately not much speed increase) (done)
-- fix WORDS_BIGENDIAN issue (done)
-- remove win project files (done)
-- remove sub_xxx functions (done)
-- mpeg2 transport stream support (decoding done)
-- improved auto guess for formats (api change again in demux) (done)
-- fix mpeg format tracking + handle frame rate change (done)
-- suppress strlcpy (done)
-
-- split mux/demux functions. (done)
-- use av_new_stream() (partially done)
-
-- reconstruct mpeg header frame rate in telecine case so that we do
-  not need to ifner the real rate if it is not possible.
-- remove unused DCT code.
+Short term fixes:
 - mpeg audio fix
-- AV sync fix (new api for demux)
-- RTP streaming support in ffserver
+- ffserver fix
+- fix stream selection (aka map) syntax. Start stream numbers at 1 in
+  listing. Find a syntax for stream ids (such as TS pids).
+- reconstruct mpeg header frame rate in telecine case so that we do
+  not need to infer the real rate if it is not possible.
+- remove unused DCT code.
+- AV sync fix
+- RTP/RTSP streaming support in ffserver and in libav
 - minimal support of video in ffplay
 
 Planned in next releases:

@@ -27,20 +27,23 @@ Video:
   vectors. Currently, only fcode = 1 is used for both H263/MPEG1. Half
   pel vectors are used.
 
-I also plan to improve the bitrate control which is too simplistic.
-
 Audio:
 -----
 
-- I rewrote the mpeg audio layer 2 compatible encoder from scratch. It
-  is one of the simplest encoder you can imagine (800 lines of C code
-  !). It is also one of the fastest because of its simplicity. There
-  are still some problems of overflow. A minimal psycho acoustic model
-  could be added. Currently, stereo is supported, but not joint
-  stereo.
+- The mpeg audio layer 2 compatible encoder was rewritten from
+  scratch. It is one of the simplest encoder you can imagine (800
+  lines of C code !). It is also one of the fastest because of its
+  simplicity. There are still some problems of overflow. A minimal
+  psycho acoustic model could be added. Currently, stereo is
+  supported, but not joint stereo.
 
-- I rewrote the AC3 audio encoder from scratch. It is fairly naive,
-  but the result are quiet interesting at 64 kbit/s. It includes
-  extensions for low sampling rates used in some Internet
+- The AC3 audio encoder was rewritten from scratch. It is fairly
+  naive, but the result are quiet interesting at 64 kbit/s. It
+  includes extensions for low sampling rates used in some Internet
   formats. Differential and coupled stereo is not handled. Stereo
   channels are simply handled as two mono channels.
+
+- The mpeg audio layer 3 decoder was rewritten from scratch. It uses
+  only integers and can be 16 bit precision for the synthesis filter
+  at the expense of a slight precision loss. A slower bit exact mode
+  is available too for compliance testing.
