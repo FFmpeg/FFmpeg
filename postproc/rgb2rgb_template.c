@@ -2,30 +2,7 @@
 #include "../config.h"
 #include "rgb2rgb.h"
 #include "mmx.h"
-
-#ifdef HAVE_3DNOW
-#define PREFETCH "prefetch"
-#define PREFETCHW "prefetchw"
-#elif defined ( HAVE_MMX2 )
-#define PREFETCH "prefetchnta"
-#define PREFETCHW "prefetcht0"
-#endif
-
-#ifdef HAVE_3DNOW
-#define EMMS "femms"
-#else
-#define EMMS "emms"
-#endif
-
-#ifdef HAVE_MMX2
-#define MOVNTQ "movntq"
-#else
-#define MOVNTQ "movq"
-#endif
-
-#ifdef HAVE_MMX2
-#define SFENCE "sfence"
-#endif
+#include "../mmx_defs.h"
 
 void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
 {
@@ -38,21 +15,14 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
 #endif
   end = s + src_size;
 #ifdef HAVE_MMX
-#ifdef PREFETCH
-  __asm __volatile(
-    PREFETCH" %0\n\t"
-    ::"m"(*s):"memory");
-#endif
-  mm_end = (uint8_t*)((((unsigned long)end)/16)*16);
+  __asm __volatile(PREFETCH" %0\n\t"::"m"(*s):"memory");
+  mm_end = (uint8_t*)((((unsigned long)end)/(MMREG_SIZE*2))*(MMREG_SIZE*2));
   __asm __volatile("movq %0, %%mm7"::"m"(mask32):"memory");
+  if(mm_end == end) mm_end -= MMREG_SIZE*2;
   while(s < mm_end)
   {
-#ifdef PREFETCH
     __asm __volatile(
-	PREFETCH" 32%0\n\t"
-	::"m"(*s):"memory");
-#endif
-    __asm __volatile(
+	PREFETCH" 32%1\n\t"
 	"movd	%1, %%mm0\n\t"
 	"movd	3%1, %%mm1\n\t"
 	"movd	6%1, %%mm2\n\t"
@@ -69,9 +39,7 @@ void rgb24to32(uint8_t *src,uint8_t *dst,uint32_t src_size)
     dest += 16;
     s += 12;
   }
-#ifdef SFENCE
   __asm __volatile(SFENCE:::"memory");
-#endif
   __asm __volatile(EMMS:::"memory");
 #endif
   while(s < end)
