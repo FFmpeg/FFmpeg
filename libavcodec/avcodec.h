@@ -64,7 +64,8 @@ enum PixelFormat {
     PIX_FMT_YUV444P,
     PIX_FMT_RGBA32,
     PIX_FMT_BGRA32,
-    PIX_FMT_YUV410P
+    PIX_FMT_YUV410P,
+    PIX_FMT_YUV411P
 };
 
 /* currently unused, may be used if 24/32 bits samples ever supported */

@@ -521,6 +521,14 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
         nb_dif_segs = 10;
     }
 
+    /* XXX: is it correct to assume that 420 is always used in PAL
+       mode ? */
+    s->sampling_411 = !dsf;
+    if (s->sampling_411)
+        mb_pos_ptr = dv_place_411;
+    else
+        mb_pos_ptr = dv_place_420;
+
     /* (re)alloc picture if needed */
     if (s->width != width || s->height != height) {
         for(i=0;i<3;i++)
@@ -530,7 +538,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
             s->linesize[i] = width;
             if (i >= 1) {
                 size >>= 2;
-                s->linesize[i] >>= 1;
+                s->linesize[i] >>= s->sampling_411 ? 2 : 1;
             }
             s->current_picture[i] = av_malloc(size);
             if (!s->current_picture[i])
@@ -540,14 +548,6 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
         s->height = height;
     }
 
-    /* XXX: is it correct to assume that 420 is always used in PAL
-       mode ? */
-    s->sampling_411 = !dsf;
-    if (s->sampling_411)
-        mb_pos_ptr = dv_place_411;
-    else
-        mb_pos_ptr = dv_place_420;
-    
     /* for each DIF segment */
     buf_ptr = buf;
     for (ds = 0; ds < nb_dif_segs; ds++) {
@@ -568,7 +568,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     avctx->width = width;
     avctx->height = height;
     if (s->sampling_411)
-        avctx->pix_fmt = PIX_FMT_YUV420P; /* XXX: incorrect, add PIX_FMT_YUV411P */
+        avctx->pix_fmt = PIX_FMT_YUV411P;
     else
         avctx->pix_fmt = PIX_FMT_YUV420P;
     if (dsf)
