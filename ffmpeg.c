@@ -140,6 +140,7 @@ static int use_ss = 0;
 static int use_alt_scan = 0;
 static int use_trell = 0;
 static int use_scan_offset = 0;
+static int use_qpel = 0;
 static int qns = 0;
 static int closed_gop = 0;
 static int do_deinterlace = 0;
@@ -2807,6 +2808,9 @@ static void opt_output_file(const char *filename)
            	if (closed_gop) {
                     video_enc->flags |= CODEC_FLAG_CLOSED_GOP;
                 }
+           	if (use_qpel) {
+                    video_enc->flags |= CODEC_FLAG_QPEL;
+                }
                 if (b_frames) {
                     video_enc->max_b_frames = b_frames;
                     video_enc->b_frame_strategy = 0;
@@ -3535,6 +3539,7 @@ const OptionDef options[] = {
     { "trell", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_trell}, "enable trellis quantization" },
     { "cgop", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&closed_gop}, "closed gop" },
     { "scan_offset", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_scan_offset}, "enable SVCD Scan Offset placeholder" },
+    { "qpel", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_qpel}, "enable 1/4-pel" },
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
