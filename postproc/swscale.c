@@ -52,6 +52,7 @@ untested special converters
 #include <stdio.h>
 #include "../config.h"
 #include "../mangle.h"
+#include <assert.h>
 #ifdef HAVE_MALLOC_H
 #include <malloc.h>
 #endif
@@ -76,7 +77,7 @@ untested special converters
 #define RET 0xC3 //near return opcode for X86
 
 #ifdef MP_DEBUG
-#define ASSERT(x) if(!(x)) { printf("ASSERT " #x " failed\n"); *((int*)0)=0; }
+#define ASSERT(x) assert(x);
 #else
 #define ASSERT(x) ;
 #endif
@@ -806,6 +807,8 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	else // downscale
 	{
 		int xDstInSrc;
+		ASSERT(dstW <= srcW)
+
 		if(flags&SWS_BICUBIC)	filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
 		else if(flags&SWS_X)	filterSize= (int)ceil(1 + 4.0*srcW / (double)dstW);
 		else if(flags&SWS_AREA)	filterSize= (int)ceil(1 + 1.0*srcW / (double)dstW);
@@ -858,9 +861,11 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	/* apply src & dst Filter to filter -> filter2
 	   free(filter);
 	*/
+	ASSERT(filterSize>0)
 	filter2Size= filterSize;
 	if(srcFilter) filter2Size+= srcFilter->length - 1;
 	if(dstFilter) filter2Size+= dstFilter->length - 1;
+	ASSERT(filter2Size>0)
 	filter2= (double*)memalign(8, filter2Size*dstW*sizeof(double));
 
 	for(i=0; i<dstW; i++)
@@ -929,7 +934,9 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 		if(min>minFilterSize) minFilterSize= min;
 	}
 
+	ASSERT(minFilterSize > 0)
 	filterSize= (minFilterSize +(filterAlign-1)) & (~(filterAlign-1));
+	ASSERT(filterSize > 0)
 	filter= (double*)memalign(8, filterSize*dstW*sizeof(double));
 	*outFilterSize= filterSize;
 
@@ -948,7 +955,6 @@ static inline void initFilter(int16_t **outFilter, int16_t **filterPos, int *out
 	}
 	free(filter2); filter2=NULL;
 	
-	ASSERT(filterSize > 0)
 
 	//FIXME try to align filterpos if possible
 
