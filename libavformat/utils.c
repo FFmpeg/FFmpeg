@@ -475,18 +475,18 @@ int av_find_stream_info(AVFormatContext *ic)
     int min_read_size, max_read_size;
 
     /* typical mpeg ts rate is 40 Mbits. DVD rate is about 10
-       Mbits. We read at most 0.1 second of file to find all streams */
+       Mbits. We read at most 0.2 second of file to find all streams */
 
     /* XXX: base it on stream bitrate when possible */
     if (ic->iformat == &mpegts_demux) {
         /* maximum number of bytes we accept to read to find all the streams
            in a file */
-        min_read_size = 3000000;
+        min_read_size = 6000000;
     } else {
-        min_read_size = 125000;
+        min_read_size = 250000;
     }
     /* max read size is 2 seconds of video max */
-    max_read_size = min_read_size * 20;
+    max_read_size = min_read_size * 10;
 
     /* set initial codec state */
     for(i=0;i<ic->nb_streams;i++) {
