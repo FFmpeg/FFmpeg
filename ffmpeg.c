@@ -1256,8 +1256,8 @@ static int av_encode(AVFormatContext **output_files,
 
         len = pkt.size;
         ptr = pkt.data;
-        do {    
-            /* decode the packet if needed */
+        while (len > 0) {
+	    /* decode the packet if needed */
             data_buf = NULL; /* fail safe */
             data_size = 0;
             if (ist->decoding_needed) {
@@ -1314,7 +1314,7 @@ static int av_encode(AVFormatContext **output_files,
                             av_free_packet(&pkt);
                             goto redo;
                         }
-                        if (len != 0 && !got_picture) {
+                        if (!got_picture) {
                             /* no picture yet */
                             ptr += ret;
                             len -= ret;
@@ -1431,7 +1431,7 @@ static int av_encode(AVFormatContext **output_files,
                 }
             }
             av_free(buffer_to_free);
-        } while (len > 0);
+        }
     discard_packet:
         av_free_packet(&pkt);
         
