@@ -230,9 +230,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
 {
     UINT8 *ptr;
-    struct timeval tv_s;
-    //struct timeval tv_e;
-    //int delay;
 
     /* Setup to capture the next frame */
     gb_buf.frame = (gb_frame + 1) % gb_buffers.frames;
@@ -243,8 +240,6 @@ static int v4l_mm_read_picture(VideoData *s, UINT8 *buf)
             perror("VIDIOCMCAPTURE");
         return -EIO;
     }
-
-    gettimeofday(&tv_s, 0);
 
     while (ioctl(s->fd, VIDIOCSYNC, &gb_frame) < 0 &&
            (errno == EAGAIN || errno == EINTR));
