@@ -1015,7 +1015,10 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
     if (!st)
         return NULL;
     avcodec_get_context_defaults(&st->codec);
-
+    if (s->iformat) {
+        /* no default bitrate if decoding */
+        st->codec.bit_rate = 0;
+    }
     st->index = s->nb_streams;
     st->id = id;
     st->start_time = AV_NOPTS_VALUE;
