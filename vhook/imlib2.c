@@ -249,7 +249,7 @@ void Process(void *ctx, AVPicture *picture, enum PixelFormat pix_fmt, int width,
             }
         }
 
-        strftime(buff, sizeof(buff), tbp, localtime(&now));
+        strftime(buff, sizeof(buff), tbp ? tbp : "[No data]", localtime(&now));
 
         x = ci->x;
         y = ci->y;
