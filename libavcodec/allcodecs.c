@@ -108,6 +108,8 @@ void avcodec_register_all(void)
     register_avcodec(&msmpeg4v3_decoder);
     register_avcodec(&wmv1_decoder);
     register_avcodec(&wmv2_decoder);
+    register_avcodec(&vc9_decoder);
+    register_avcodec(&wmv3_decoder);
     register_avcodec(&h263i_decoder);
     register_avcodec(&flv_decoder);
     register_avcodec(&rv10_decoder);
