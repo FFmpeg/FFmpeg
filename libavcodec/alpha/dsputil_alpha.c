@@ -39,11 +39,11 @@ void get_pixels_mvi(DCTELEM *restrict block,
                     const uint8_t *restrict pixels, int line_size);
 void diff_pixels_mvi(DCTELEM *block, const uint8_t *s1, const uint8_t *s2,
                      int stride);
-int pix_abs8x8_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
+int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 int pix_abs16x16_mvi_asm(uint8_t *pix1, uint8_t *pix2, int line_size);
-int pix_abs16x16_x2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
-int pix_abs16x16_y2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
-int pix_abs16x16_xy2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size);
+int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+int pix_abs16x16_y2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+int pix_abs16x16_xy2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 
 #if 0
 /* These functions were the base for the optimized assembler routines,
@@ -290,11 +290,6 @@ static int sad16x16_mvi(void *s, uint8_t *a, uint8_t *b, int stride)
     return pix_abs16x16_mvi_asm(a, b, stride);
 }
 
-static int sad8x8_mvi(void *s, uint8_t *a, uint8_t *b, int stride)
-{
-    return pix_abs8x8_mvi(a, b, stride);
-}
-
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
 {
     c->put_pixels_tab[0][0] = put_pixels16_axp_asm;
@@ -347,12 +342,13 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
         c->get_pixels       = get_pixels_mvi;
         c->diff_pixels      = diff_pixels_mvi;
         c->sad[0]           = sad16x16_mvi;
-        c->sad[1]           = sad8x8_mvi;
-        c->pix_abs8x8       = pix_abs8x8_mvi;
-        c->pix_abs16x16     = pix_abs16x16_mvi_asm;
-        c->pix_abs16x16_x2  = pix_abs16x16_x2_mvi;
-        c->pix_abs16x16_y2  = pix_abs16x16_y2_mvi;
-        c->pix_abs16x16_xy2 = pix_abs16x16_xy2_mvi;
+        c->sad[1]           = pix_abs8x8_mvi;
+//        c->pix_abs[0][0]    = pix_abs16x16_mvi_asm; //FIXME function arguments for the asm must be fixed
+        c->pix_abs[0][0]    = sad16x16_mvi;
+        c->pix_abs[1][0]    = pix_abs8x8_mvi;
+        c->pix_abs[0][1]    = pix_abs16x16_x2_mvi;
+        c->pix_abs[0][2]    = pix_abs16x16_y2_mvi;
+        c->pix_abs[0][3]    = pix_abs16x16_xy2_mvi;
     }
 
     put_pixels_clamped_axp_p = c->put_pixels_clamped;

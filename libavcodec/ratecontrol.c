@@ -520,7 +520,7 @@ static void adaptive_quantization(MpegEncContext *s, double q){
         if(spat_cplx < 4) spat_cplx= 4; //FIXME finetune
         if(temp_cplx < 4) temp_cplx= 4; //FIXME finetune
 
-        if((s->mb_type[mb_xy]&MB_TYPE_INTRA)){//FIXME hq mode 
+        if((s->mb_type[mb_xy]&CANDIDATE_MB_TYPE_INTRA)){//FIXME hq mode 
             cplx= spat_cplx;
             factor= 1.0 + p_masking;
         }else{

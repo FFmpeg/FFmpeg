@@ -137,6 +137,7 @@ typedef struct Picture{
     int16_t (*motion_val_base[2])[2];
     int8_t *ref_index[2];
     uint32_t *mb_type_base;
+#define MB_TYPE_INTRA MB_TYPE_INTRA4x4 //default mb_type if theres just one type
 #define IS_INTRA4x4(a)   ((a)&MB_TYPE_INTRA4x4)
 #define IS_INTRA16x16(a) ((a)&MB_TYPE_INTRA16x16)
 #define IS_PCM(a)        ((a)&MB_TYPE_INTRA_PCM)
@@ -206,23 +207,28 @@ typedef struct MotionEstContext{
     int mb_penalty_factor;
     int pre_pass;                      ///< = 1 for the pre pass 
     int dia_size;
+    int xmin;
+    int xmax;
+    int ymin;
+    int ymax;
     uint8_t (*mv_penalty)[MAX_MV*2+1];  ///< amount of bits needed to encode a MV 
     int (*sub_motion_search)(struct MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
-				  int xmin, int ymin, int xmax, int ymax,
-                                  int pred_x, int pred_y, Picture *ref_picture, 
-                                  int n, int size, uint8_t * const mv_penalty);
-    int (*motion_search[7])(struct MpegEncContext * s, int block,
+                                  int pred_x, int pred_y, uint8_t *src_data[3],
+                                  uint8_t *ref_data[6], int stride, int uvstride,
+                                  int size, int h, uint8_t * const mv_penalty);
+    int (*motion_search[7])(struct MpegEncContext * s,
                              int *mx_ptr, int *my_ptr,
-                             int P[10][2], int pred_x, int pred_y,
-                             int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
+                             int P[10][2], int pred_x, int pred_y, uint8_t *src_data[3],
+                             uint8_t *ref_data[6], int stride, int uvstride, int16_t (*last_mv)[2], 
                              int ref_mv_scale, uint8_t * const mv_penalty);
-    int (*pre_motion_search)(struct MpegEncContext * s, int block,
+    int (*pre_motion_search)(struct MpegEncContext * s,
                              int *mx_ptr, int *my_ptr,
-                             int P[10][2], int pred_x, int pred_y,
-                             int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
+                             int P[10][2], int pred_x, int pred_y, uint8_t *src_data[3], 
+                             uint8_t *ref_data[6], int stride, int uvstride, int16_t (*last_mv)[2], 
                              int ref_mv_scale, uint8_t * const mv_penalty);
-    int (*get_mb_score)(struct MpegEncContext * s, int mx, int my, int pred_x, int pred_y, Picture *ref_picture, 
+    int (*get_mb_score)(struct MpegEncContext * s, int mx, int my, int pred_x, int pred_y, uint8_t *src_data[3],
+                                  uint8_t *ref_data[6], int stride, int uvstride,    
                                   uint8_t * const mv_penalty);
 }MotionEstContext;
 
@@ -351,12 +357,18 @@ typedef struct MpegEncContext {
     int16_t (*b_bidir_forw_mv_table_base)[2]; 
     int16_t (*b_bidir_back_mv_table_base)[2]; 
     int16_t (*b_direct_mv_table_base)[2];
+    int16_t (*p_field_mv_table_base[2][2])[2];
+    int16_t (*b_field_mv_table_base[2][2][2])[2];
     int16_t (*p_mv_table)[2];            ///< MV table (1MV per MB) p-frame encoding 
     int16_t (*b_forw_mv_table)[2];       ///< MV table (1MV per MB) forward mode b-frame encoding 
     int16_t (*b_back_mv_table)[2];       ///< MV table (1MV per MB) backward mode b-frame encoding 
     int16_t (*b_bidir_forw_mv_table)[2]; ///< MV table (1MV per MB) bidir mode b-frame encoding 
     int16_t (*b_bidir_back_mv_table)[2]; ///< MV table (1MV per MB) bidir mode b-frame encoding 
     int16_t (*b_direct_mv_table)[2];     ///< MV table (1MV per MB) direct mode b-frame encoding 
+    int16_t (*p_field_mv_table[2][2])[2];   ///< MV table (2MV per MB) interlaced p-frame encoding
+    int16_t (*b_field_mv_table[2][2][2])[2];///< MV table (4MV per MB) interlaced b-frame encoding
+    uint8_t (*p_field_select_table[2]);
+    uint8_t (*b_field_select_table[2][2]);
     int me_method;                       ///< ME algorithm 
     int scene_change_score;
     int mv_dir;
@@ -391,17 +403,22 @@ typedef struct MpegEncContext {
     int mb_x, mb_y;
     int mb_skip_run;
     int mb_intra;
-    uint8_t *mb_type;       ///< Table for MB type FIXME remove and use picture->mb_type
-#define MB_TYPE_INTRA    0x01
-#define MB_TYPE_INTER    0x02
-#define MB_TYPE_INTER4V  0x04
-#define MB_TYPE_SKIPED   0x08
+    uint16_t *mb_type;           ///< Table for candidate MB types for encoding
+#define CANDIDATE_MB_TYPE_INTRA    0x01
+#define CANDIDATE_MB_TYPE_INTER    0x02
+#define CANDIDATE_MB_TYPE_INTER4V  0x04
+#define CANDIDATE_MB_TYPE_SKIPED   0x08
 //#define MB_TYPE_GMC      0x10
 
-#define MB_TYPE_DIRECT   0x10
-#define MB_TYPE_FORWARD  0x20
-#define MB_TYPE_BACKWARD 0x40
-#define MB_TYPE_BIDIR    0x80
+#define CANDIDATE_MB_TYPE_DIRECT   0x10
+#define CANDIDATE_MB_TYPE_FORWARD  0x20
+#define CANDIDATE_MB_TYPE_BACKWARD 0x40
+#define CANDIDATE_MB_TYPE_BIDIR    0x80
+
+#define CANDIDATE_MB_TYPE_INTER_I    0x100
+#define CANDIDATE_MB_TYPE_FORWARD_I  0x200
+#define CANDIDATE_MB_TYPE_BACKWARD_I 0x400
+#define CANDIDATE_MB_TYPE_BIDIR_I    0x800
 
     int block_index[6]; ///< index to current MB in block based arrays with edges
     int block_wrap[6];
@@ -551,8 +568,6 @@ typedef struct MpegEncContext {
     uint8_t *tex_pb_buffer;          
     uint8_t *pb2_buffer;
     int mpeg_quant;
-    int16_t (*field_mv_table)[2][2];   ///< used for interlaced b frame decoding 
-    int8_t (*field_select_table)[2];   ///< wtf, no really another table for interlaced b frames 
     int t_frame;                       ///< time distance of first I -> B, used for interlaced b frames 
     int padding_bug_score;             ///< used to detect the VERY common padding bug in MPEG4 
 
@@ -748,7 +763,8 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
                              int mb_x, int mb_y);
 int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type);
 void ff_fix_long_p_mvs(MpegEncContext * s);
-void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, int type);
+void ff_fix_long_mvs(MpegEncContext * s, uint8_t *field_select_table, int field_select,
+                     int16_t (*mv_table)[2], int f_code, int type, int truncate);
 void ff_init_me(MpegEncContext *s);
 int ff_pre_estimate_p_frame_motion(MpegEncContext * s, int mb_x, int mb_y);
 

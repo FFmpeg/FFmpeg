@@ -22,29 +22,31 @@
  * @file motion_est_template.c
  * Motion estimation template.
  */
-
+//FIXME ref2_y next_pic?
 //lets hope gcc will remove the unused vars ...(gcc 3.2.2 seems to do it ...)
 //Note, the last line is there to kill these ugly unused var warnings
-#define LOAD_COMMON(x, y)\
+#define LOAD_COMMON\
     uint32_t * const score_map= s->me.score_map;\
-    const int stride= s->linesize;\
-    const int uvstride= s->uvlinesize;\
     const int time_pp= s->pp_time;\
     const int time_pb= s->pb_time;\
-    uint8_t * const src_y= s->new_picture.data[0] + ((y) * stride) + (x);\
-    uint8_t * const src_u= s->new_picture.data[1] + (((y)>>1) * uvstride) + ((x)>>1);\
-    uint8_t * const src_v= s->new_picture.data[2] + (((y)>>1) * uvstride) + ((x)>>1);\
-    uint8_t * const ref_y= ref_picture->data[0] + ((y) * stride) + (x);\
-    uint8_t * const ref_u= ref_picture->data[1] + (((y)>>1) * uvstride) + ((x)>>1);\
-    uint8_t * const ref_v= ref_picture->data[2] + (((y)>>1) * uvstride) + ((x)>>1);\
-    uint8_t * const ref2_y= s->next_picture.data[0] + ((y) * stride) + (x);\
+    const int xmin= s->me.xmin;\
+    const int ymin= s->me.ymin;\
+    const int xmax= s->me.xmax;\
+    const int ymax= s->me.ymax;\
+    uint8_t * const src_y= src_data[0];\
+    uint8_t * const src_u= src_data[1];\
+    uint8_t * const src_v= src_data[2];\
+    uint8_t * const ref_y= ref_data[0];\
+    uint8_t * const ref_u= ref_data[1];\
+    uint8_t * const ref_v= ref_data[2];\
     op_pixels_func (*hpel_put)[4];\
     op_pixels_func (*hpel_avg)[4]= &s->dsp.avg_pixels_tab[size];\
     op_pixels_func (*chroma_hpel_put)[4];\
     qpel_mc_func (*qpel_put)[16];\
     qpel_mc_func (*qpel_avg)[16]= &s->dsp.avg_qpel_pixels_tab[size];\
     const __attribute__((unused)) int unu= time_pp + time_pb + (size_t)src_u + (size_t)src_v + (size_t)ref_u + (size_t)ref_v\
-                                           + (size_t)ref2_y + (size_t)hpel_avg + (size_t)qpel_avg + (size_t)score_map;\
+                                           + (size_t)hpel_avg + (size_t)qpel_avg + (size_t)score_map\
+                                           + xmin + xmax + ymin + ymax;\
     if(s->no_rounding /*FIXME b_type*/){\
         hpel_put= &s->dsp.put_no_rnd_pixels_tab[size];\
         chroma_hpel_put= &s->dsp.put_no_rnd_pixels_tab[size+1];\
@@ -70,9 +72,8 @@
 #if 0
 static int RENAME(hpel_motion_search)(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
-				  int xmin, int ymin, int xmax, int ymax,
-                                  int pred_x, int pred_y, Picture *ref_picture, 
-                                  int n, int size, uint8_t * const mv_penalty)
+                                  int pred_x, int pred_y, uint8_t *ref_data[3], 
+                                  int size, uint8_t * const mv_penalty)
 {
     const int xx = 16 * s->mb_x + 8*(n&1);
     const int yy = 16 * s->mb_y + 8*(n>>1);
@@ -80,7 +81,7 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
     const int my = *my_ptr;
     const int penalty_factor= s->me.sub_penalty_factor;
     
-    LOAD_COMMON(xx, yy);
+    LOAD_COMMON
     
  //   INIT;
  //FIXME factorize
@@ -139,19 +140,17 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
 #else
 static int RENAME(hpel_motion_search)(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
-				  int xmin, int ymin, int xmax, int ymax,
-                                  int pred_x, int pred_y, Picture *ref_picture, 
-                                  int n, int size, uint8_t * const mv_penalty)
+                                  int pred_x, int pred_y, uint8_t *src_data[3], 
+                                  uint8_t *ref_data[3], int stride, int uvstride,
+                                  int size, int h, uint8_t * const mv_penalty)
 {
-    const int xx = 16 * s->mb_x + 8*(n&1);
-    const int yy = 16 * s->mb_y + 8*(n>>1);
     const int mx = *mx_ptr;
     const int my = *my_ptr;   
     const int penalty_factor= s->me.sub_penalty_factor;
     me_cmp_func cmp_sub, chroma_cmp_sub;
     int bx=2*mx, by=2*my;
 
-    LOAD_COMMON(xx, yy);
+    LOAD_COMMON
     
  //FIXME factorize
 
@@ -247,20 +246,18 @@ static int RENAME(hpel_motion_search)(MpegEncContext * s,
 }
 #endif
 
-static int RENAME(hpel_get_mb_score)(MpegEncContext * s, int mx, int my, int pred_x, int pred_y, Picture *ref_picture, 
+static int RENAME(hpel_get_mb_score)(MpegEncContext * s, int mx, int my, int pred_x, int pred_y, uint8_t *src_data[3], 
+                                  uint8_t *ref_data[3], int stride, int uvstride,
                                   uint8_t * const mv_penalty)
 {
 //    const int check_luma= s->dsp.me_sub_cmp != s->dsp.mb_cmp;
     const int size= 0;
-    const int xx = 16 * s->mb_x;
-    const int yy = 16 * s->mb_y;
+    const int h= 16;
     const int penalty_factor= s->me.mb_penalty_factor;
-    const int xmin= -256*256, ymin= -256*256, xmax= 256*256, ymax= 256*256; //assume that the caller checked these
-    const __attribute__((unused)) int unu2= xmin + xmax +ymin + ymax; //no unused warning shit
     me_cmp_func cmp_sub, chroma_cmp_sub;
     int d;
 
-    LOAD_COMMON(xx, yy);
+    LOAD_COMMON
     
  //FIXME factorize
 
@@ -295,12 +292,10 @@ static int RENAME(hpel_get_mb_score)(MpegEncContext * s, int mx, int my, int pre
 
 static int RENAME(qpel_motion_search)(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
-				  int xmin, int ymin, int xmax, int ymax,
-                                  int pred_x, int pred_y, Picture *ref_picture, 
-                                  int n, int size, uint8_t * const mv_penalty)
+                                  int pred_x, int pred_y, uint8_t *src_data[3], 
+                                  uint8_t *ref_data[3], int stride, int uvstride,                                  
+                                  int size, int h, uint8_t * const mv_penalty)
 {
-    const int xx = 16 * s->mb_x + 8*(n&1);
-    const int yy = 16 * s->mb_y + 8*(n>>1);
     const int mx = *mx_ptr;
     const int my = *my_ptr;   
     const int penalty_factor= s->me.sub_penalty_factor;
@@ -310,7 +305,7 @@ static int RENAME(qpel_motion_search)(MpegEncContext * s,
     me_cmp_func cmp, chroma_cmp;
     me_cmp_func cmp_sub, chroma_cmp_sub;
 
-    LOAD_COMMON(xx, yy);
+    LOAD_COMMON
     
     cmp= s->dsp.me_cmp[size];
     chroma_cmp= s->dsp.me_cmp[size+1]; //factorize FIXME
@@ -514,19 +509,17 @@ static int RENAME(qpel_motion_search)(MpegEncContext * s,
     return dmin;
 }
 
-static int RENAME(qpel_get_mb_score)(MpegEncContext * s, int mx, int my, int pred_x, int pred_y, Picture *ref_picture, 
+static int RENAME(qpel_get_mb_score)(MpegEncContext * s, int mx, int my, int pred_x, int pred_y, uint8_t *src_data[3], 
+                                  uint8_t *ref_data[3], int stride, int uvstride,
                                   uint8_t * const mv_penalty)
 {
     const int size= 0;
-    const int xx = 16 * s->mb_x;
-    const int yy = 16 * s->mb_y;
+    const int h= 16;
     const int penalty_factor= s->me.mb_penalty_factor;
-    const int xmin= -256*256, ymin= -256*256, xmax= 256*256, ymax= 256*256; //assume that the caller checked these
-    const __attribute__((unused)) int unu2= xmin + xmax +ymin + ymax; //no unused warning shit
     me_cmp_func cmp_sub, chroma_cmp_sub;
     int d;
 
-    LOAD_COMMON(xx, yy);
+    LOAD_COMMON
     
  //FIXME factorize
 
@@ -597,15 +590,16 @@ if( (y)>(ymax<<(S)) ) printf("%d %d %d %d %d ymax" #v, ymax, (x), (y), s->mb_x, 
 
 
 static inline int RENAME(small_diamond_search)(MpegEncContext * s, int *best, int dmin,
-                                       Picture *ref_picture,
+                                       uint8_t *src_data[3],
+                                       uint8_t *ref_data[3], int stride, int uvstride,
                                        int const pred_x, int const pred_y, int const penalty_factor,
-                                       int const xmin, int const ymin, int const xmax, int const ymax, int const shift,
-                                       uint32_t *map, int map_generation, int size, uint8_t * const mv_penalty
+                                       int const shift,
+                                       uint32_t *map, int map_generation, int size, int h, uint8_t * const mv_penalty
                                        )
 {
     me_cmp_func cmp, chroma_cmp;
     int next_dir=-1;
-    LOAD_COMMON(s->mb_x*16, s->mb_y*16);
+    LOAD_COMMON
     
     cmp= s->dsp.me_cmp[size];
     chroma_cmp= s->dsp.me_cmp[size+1];
@@ -639,15 +633,16 @@ static inline int RENAME(small_diamond_search)(MpegEncContext * s, int *best, in
 }
 
 static inline int RENAME(funny_diamond_search)(MpegEncContext * s, int *best, int dmin,
-                                       Picture *ref_picture,
+                                       uint8_t *src_data[3],
+                                       uint8_t *ref_data[3], int stride, int uvstride,
                                        int const pred_x, int const pred_y, int const penalty_factor,
-                                       int const xmin, int const ymin, int const xmax, int const ymax, int const shift,
-                                       uint32_t *map, int map_generation, int size, uint8_t * const mv_penalty
+                                       int const shift,
+                                       uint32_t *map, int map_generation, int size, int h, uint8_t * const mv_penalty
                                        )
 {
     me_cmp_func cmp, chroma_cmp;
     int dia_size;
-    LOAD_COMMON(s->mb_x*16, s->mb_y*16);
+    LOAD_COMMON
     
     cmp= s->dsp.me_cmp[size];
     chroma_cmp= s->dsp.me_cmp[size+1];
@@ -730,17 +725,18 @@ if(256*256*256*64 % (stats[0]+1)==0){
 
 #define MAX_SAB_SIZE 16
 static inline int RENAME(sab_diamond_search)(MpegEncContext * s, int *best, int dmin,
-                                       Picture *ref_picture,
+                                       uint8_t *src_data[3],
+                                       uint8_t *ref_data[3], int stride, int uvstride,
                                        int const pred_x, int const pred_y, int const penalty_factor,
-                                       int const xmin, int const ymin, int const xmax, int const ymax, int const shift,
-                                       uint32_t *map, int map_generation, int size, uint8_t * const mv_penalty
+                                       int const shift,
+                                       uint32_t *map, int map_generation, int size, int h, uint8_t * const mv_penalty
                                        )
 {
     me_cmp_func cmp, chroma_cmp;
     Minima minima[MAX_SAB_SIZE];
     const int minima_count= ABS(s->me.dia_size);
     int i, j;
-    LOAD_COMMON(s->mb_x*16, s->mb_y*16);
+    LOAD_COMMON
     
     cmp= s->dsp.me_cmp[size];
     chroma_cmp= s->dsp.me_cmp[size+1];
@@ -810,15 +806,16 @@ static inline int RENAME(sab_diamond_search)(MpegEncContext * s, int *best, int 
 }
 
 static inline int RENAME(var_diamond_search)(MpegEncContext * s, int *best, int dmin,
-                                       Picture *ref_picture,
+                                       uint8_t *src_data[3],
+                                       uint8_t *ref_data[3], int stride, int uvstride,
                                        int const pred_x, int const pred_y, int const penalty_factor,
-                                       int const xmin, int const ymin, int const xmax, int const ymax, int const shift,
-                                       uint32_t *map, int map_generation, int size, uint8_t * const mv_penalty
+                                       int const shift,
+                                       uint32_t *map, int map_generation, int size, int h, uint8_t * const mv_penalty
                                        )
 {
     me_cmp_func cmp, chroma_cmp;
     int dia_size;
-    LOAD_COMMON(s->mb_x*16, s->mb_y*16);
+    LOAD_COMMON
     
     cmp= s->dsp.me_cmp[size];
     chroma_cmp= s->dsp.me_cmp[size+1];
@@ -886,10 +883,10 @@ if(256*256*256*64 % (stats[0]+1)==0){
     return dmin;    
 }
 
-static int RENAME(epzs_motion_search)(MpegEncContext * s, int block,
+static int RENAME(epzs_motion_search)(MpegEncContext * s,
                              int *mx_ptr, int *my_ptr,
-                             int P[10][2], int pred_x, int pred_y,
-                             int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
+                             int P[10][2], int pred_x, int pred_y, uint8_t *src_data[3], 
+                             uint8_t *ref_data[3], int stride, int uvstride, int16_t (*last_mv)[2], 
                              int ref_mv_scale, uint8_t * const mv_penalty)
 {
     int best[2]={0, 0};
@@ -899,10 +896,11 @@ static int RENAME(epzs_motion_search)(MpegEncContext * s, int block,
     int map_generation;
     const int penalty_factor= s->me.penalty_factor;
     const int size=0;
-    const int ref_mv_stride= s->mb_stride;
-    const int ref_mv_xy= s->mb_x + s->mb_y*ref_mv_stride;
+    const int h=16;
+    const int ref_mv_stride= s->mb_stride; //pass as arg  FIXME
+    const int ref_mv_xy= s->mb_x + s->mb_y*ref_mv_stride; //add to last_mv beforepassing FIXME
     me_cmp_func cmp, chroma_cmp;
-    LOAD_COMMON(s->mb_x*16, s->mb_y*16);
+    LOAD_COMMON
     
     cmp= s->dsp.me_cmp[size];
     chroma_cmp= s->dsp.me_cmp[size+1];
@@ -973,21 +971,21 @@ static int RENAME(epzs_motion_search)(MpegEncContext * s, int block,
 
 //check(best[0],best[1],0, b0)
     if(s->me.dia_size==-1)
-        dmin= RENAME(funny_diamond_search)(s, best, dmin, ref_picture,
-                                   pred_x, pred_y, penalty_factor, xmin, ymin, xmax, ymax, 
-				   shift, map, map_generation, size, mv_penalty);
+        dmin= RENAME(funny_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
     else if(s->me.dia_size<-1)
-        dmin= RENAME(sab_diamond_search)(s, best, dmin, ref_picture,
-                                   pred_x, pred_y, penalty_factor, xmin, ymin, xmax, ymax, 
-				   shift, map, map_generation, size, mv_penalty);
+        dmin= RENAME(sab_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
     else if(s->me.dia_size<2)
-        dmin= RENAME(small_diamond_search)(s, best, dmin, ref_picture,
-                                   pred_x, pred_y, penalty_factor, xmin, ymin, xmax, ymax, 
-				   shift, map, map_generation, size, mv_penalty);
+        dmin= RENAME(small_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
     else
-        dmin= RENAME(var_diamond_search)(s, best, dmin, ref_picture,
-                                   pred_x, pred_y, penalty_factor, xmin, ymin, xmax, ymax, 
-				   shift, map, map_generation, size, mv_penalty);
+        dmin= RENAME(var_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
 
 //check(best[0],best[1],0, b1)
     *mx_ptr= best[0];
@@ -998,10 +996,11 @@ static int RENAME(epzs_motion_search)(MpegEncContext * s, int block,
 }
 
 #ifndef CMP_DIRECT /* no 4mv search needed in direct mode */
-static int RENAME(epzs_motion_search4)(MpegEncContext * s, int block,
+static int RENAME(epzs_motion_search4)(MpegEncContext * s,
                              int *mx_ptr, int *my_ptr,
                              int P[10][2], int pred_x, int pred_y,
-                             int xmin, int ymin, int xmax, int ymax, Picture *ref_picture, int16_t (*last_mv)[2], 
+                             uint8_t *src_data[3], 
+                             uint8_t *ref_data[3], int stride, int uvstride, int16_t (*last_mv)[2], 
                              int ref_mv_scale, uint8_t * const mv_penalty)
 {
     int best[2]={0, 0};
@@ -1011,10 +1010,11 @@ static int RENAME(epzs_motion_search4)(MpegEncContext * s, int block,
     int map_generation;
     const int penalty_factor= s->me.penalty_factor;
     const int size=1;
+    const int h=8;
     const int ref_mv_stride= s->mb_stride;
     const int ref_mv_xy= s->mb_x + s->mb_y *ref_mv_stride;
     me_cmp_func cmp, chroma_cmp;
-    LOAD_COMMON((s->mb_x*2 + (block&1))*8, (s->mb_y*2 + (block>>1))*8);
+    LOAD_COMMON
     
     cmp= s->dsp.me_cmp[size];
     chroma_cmp= s->dsp.me_cmp[size+1];
@@ -1024,7 +1024,7 @@ static int RENAME(epzs_motion_search4)(MpegEncContext * s, int block,
     dmin = 1000000;
 //printf("%d %d %d %d //",xmin, ymin, xmax, ymax); 
     /* first line */
-    if (s->mb_y == 0 && block<2) {
+    if (s->mb_y == 0/* && block<2*/) {
 	CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
         CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
                         (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
@@ -1049,21 +1049,100 @@ static int RENAME(epzs_motion_search4)(MpegEncContext * s, int block,
     }
 
     if(s->me.dia_size==-1)
-        dmin= RENAME(funny_diamond_search)(s, best, dmin, ref_picture,
-                                   pred_x, pred_y, penalty_factor, xmin, ymin, xmax, ymax, 
-				   shift, map, map_generation, size, mv_penalty);
+        dmin= RENAME(funny_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
     else if(s->me.dia_size<-1)
-        dmin= RENAME(sab_diamond_search)(s, best, dmin, ref_picture,
-                                   pred_x, pred_y, penalty_factor, xmin, ymin, xmax, ymax, 
-				   shift, map, map_generation, size, mv_penalty);
+        dmin= RENAME(sab_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
     else if(s->me.dia_size<2)
-        dmin= RENAME(small_diamond_search)(s, best, dmin, ref_picture,
-                                   pred_x, pred_y, penalty_factor, xmin, ymin, xmax, ymax, 
-				   shift, map, map_generation, size, mv_penalty);
+        dmin= RENAME(small_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
     else
-        dmin= RENAME(var_diamond_search)(s, best, dmin, ref_picture,
-                                   pred_x, pred_y, penalty_factor, xmin, ymin, xmax, ymax, 
-				   shift, map, map_generation, size, mv_penalty);
+        dmin= RENAME(var_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
+
+
+    *mx_ptr= best[0];
+    *my_ptr= best[1];    
+
+//    printf("%d %d %d \n", best[0], best[1], dmin);
+    return dmin;
+}
+
+//try to merge with above FIXME (needs PSNR test)
+static int RENAME(epzs_motion_search2)(MpegEncContext * s,
+                             int *mx_ptr, int *my_ptr,
+                             int P[10][2], int pred_x, int pred_y,
+                             uint8_t *src_data[3], 
+                             uint8_t *ref_data[3], int stride, int uvstride, int16_t (*last_mv)[2], 
+                             int ref_mv_scale, uint8_t * const mv_penalty)
+{
+    int best[2]={0, 0};
+    int d, dmin; 
+    const int shift= 1+s->quarter_sample;
+    uint32_t *map= s->me.map;
+    int map_generation;
+    const int penalty_factor= s->me.penalty_factor;
+    const int size=0; //FIXME pass as arg
+    const int h=8;
+    const int ref_mv_stride= s->mb_stride;
+    const int ref_mv_xy= s->mb_x + s->mb_y *ref_mv_stride;
+    me_cmp_func cmp, chroma_cmp;
+    LOAD_COMMON
+    
+    cmp= s->dsp.me_cmp[size];
+    chroma_cmp= s->dsp.me_cmp[size+1];
+
+    map_generation= update_map_generation(s);
+
+    dmin = 1000000;
+//printf("%d %d %d %d //",xmin, ymin, xmax, ymax); 
+    /* first line */
+    if (s->mb_y == 0) {
+	CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
+        CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
+                        (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
+        CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
+    }else{
+        CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
+        //FIXME try some early stop
+        if(dmin>64*2){
+            CHECK_MV(P_MEDIAN[0]>>shift, P_MEDIAN[1]>>shift)
+            CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
+            CHECK_MV(P_TOP[0]>>shift, P_TOP[1]>>shift)
+            CHECK_MV(P_TOPRIGHT[0]>>shift, P_TOPRIGHT[1]>>shift)
+            CHECK_CLIPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16, 
+                            (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
+        }
+    }
+    if(dmin>64*4){
+        CHECK_CLIPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16, 
+                        (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
+        CHECK_CLIPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16, 
+                        (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
+    }
+
+    if(s->me.dia_size==-1)
+        dmin= RENAME(funny_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
+    else if(s->me.dia_size<-1)
+        dmin= RENAME(sab_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
+    else if(s->me.dia_size<2)
+        dmin= RENAME(small_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
+    else
+        dmin= RENAME(var_diamond_search)(s, best, dmin, src_data, ref_data, stride, uvstride,
+                                   pred_x, pred_y, penalty_factor, 
+				   shift, map, map_generation, size, h, mv_penalty);
+
 
     *mx_ptr= best[0];
     *my_ptr= best[1];    

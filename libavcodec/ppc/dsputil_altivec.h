@@ -24,16 +24,14 @@
 
 #ifdef HAVE_ALTIVEC
 
-extern int pix_abs16x16_x2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
-extern int pix_abs16x16_y2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
-extern int pix_abs16x16_xy2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
-extern int pix_abs16x16_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
-extern int pix_abs8x8_altivec(uint8_t *pix1, uint8_t *pix2, int line_size);
-extern int sad16x16_altivec(void *s, uint8_t *a, uint8_t *b, int stride);
-extern int sad8x8_altivec(void *s, uint8_t *a, uint8_t *b, int stride);
+extern int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+extern int sad16_y2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+extern int sad16_xy2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+extern int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+extern int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 extern int pix_norm1_altivec(uint8_t *pix, int line_size);
-extern int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size);
-extern int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size);
+extern int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
+extern int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h);
 extern int pix_sum_altivec(uint8_t * pix, int line_size);
 extern void diff_pixels_altivec(DCTELEM* block, const uint8_t* s1, const uint8_t* s2, int stride);
 extern void get_pixels_altivec(DCTELEM* block, const uint8_t * pixels, int line_size);

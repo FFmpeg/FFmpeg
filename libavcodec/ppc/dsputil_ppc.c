@@ -240,13 +240,13 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         mm_flags |= MM_ALTIVEC;
         
         // Altivec specific optimisations
-        c->pix_abs16x16_x2 = pix_abs16x16_x2_altivec;
-        c->pix_abs16x16_y2 = pix_abs16x16_y2_altivec;
-        c->pix_abs16x16_xy2 = pix_abs16x16_xy2_altivec;
-        c->pix_abs16x16 = pix_abs16x16_altivec;
-        c->pix_abs8x8 = pix_abs8x8_altivec;
-        c->sad[0]= sad16x16_altivec;
-        c->sad[1]= sad8x8_altivec;
+        c->pix_abs[0][1] = sad16_x2_altivec;
+        c->pix_abs[0][2] = sad16_y2_altivec;
+        c->pix_abs[0][3] = sad16_xy2_altivec;
+        c->pix_abs[0][0] = sad16_altivec;
+        c->pix_abs[1][0] = sad8_altivec;
+        c->sad[0]= sad16_altivec;
+        c->sad[1]= sad8_altivec;
         c->pix_norm1 = pix_norm1_altivec;
         c->sse[1]= sse8_altivec;
         c->sse[0]= sse16_altivec;

@@ -119,8 +119,10 @@ static int use_obmc = 0;
 static int use_aic = 0;
 static int use_aiv = 0;
 static int use_umv = 0;
+static int use_alt_scan = 0;
 static int do_deinterlace = 0;
-static int do_interlace = 0;
+static int do_interlace_dct = 0;
+static int do_interlace_me = 0;
 static int workaround_bugs = FF_BUG_AUTODETECT;
 static int error_resilience = 2;
 static int error_concealment = 3;
@@ -130,6 +132,8 @@ static int use_part = 0;
 static int packet_size = 0;
 static int error_rate = 0;
 static int strict = 0;
+static int top_field_first = -1;
+static int noise_reduction = 0;
 static int debug = 0;
 static int debug_mv = 0;
 extern int loop_input; /* currently a hack */
@@ -635,7 +639,12 @@ static void do_video_out(AVFormatContext *s,
             /* better than nothing: use input picture interlaced
                settings */
             big_picture.interlaced_frame = in_picture->interlaced_frame;
-            big_picture.top_field_first = in_picture->top_field_first;
+            if(do_interlace_me || do_interlace_dct){
+                if(top_field_first == -1)
+                    big_picture.top_field_first = in_picture->top_field_first;
+                else
+                    big_picture.top_field_first = 1;
+            }
 
             /* handles sameq here. This is not correct because it may
                not be a global option */
@@ -1946,6 +1955,16 @@ static void opt_strict(const char *arg)
     strict= atoi(arg);
 }
 
+static void opt_top_field_first(const char *arg)
+{
+    top_field_first= atoi(arg);
+}
+
+static void opt_noise_reduction(const char *arg)
+{
+    noise_reduction= atoi(arg);
+}
+
 static void opt_audio_bitrate(const char *arg)
 {
     audio_bit_rate = atoi(arg) * 1000;
@@ -2373,13 +2392,19 @@ static void opt_output_file(const char *filename)
                 if(use_part) {
                     video_enc->flags |= CODEC_FLAG_PART;
                 }
+           	if (use_alt_scan) {
+                    video_enc->flags |= CODEC_FLAG_ALT_SCAN;
+                }
                 if (b_frames) {
                     video_enc->max_b_frames = b_frames;
                     video_enc->b_frame_strategy = 0;
                     video_enc->b_quant_factor = 2.0;
                 }
-                if (do_interlace) {
+                if (do_interlace_dct) {
                     video_enc->flags |= CODEC_FLAG_INTERLACED_DCT;
+                }
+                if (do_interlace_me) {
+                    video_enc->flags |= CODEC_FLAG_INTERLACED_ME;
                 }
                 video_enc->qmin = video_qmin;
                 video_enc->qmax = video_qmax;
@@ -2430,6 +2455,7 @@ static void opt_output_file(const char *filename)
                 video_enc->idct_algo = idct_algo;
                 video_enc->strict_std_compliance = strict;
                 video_enc->error_rate = error_rate;
+                video_enc->noise_reduction= noise_reduction;
                 if(packet_size){
                     video_enc->rtp_mode= 1;
                     video_enc->rtp_payload_size= packet_size;
@@ -2992,16 +3018,21 @@ const OptionDef options[] = {
     { "passlogfile", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void*)&pass_logfilename}, "select two pass log file name", "file" },
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace}, 
       "deinterlace pictures" },
-    { "interlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_interlace}, 
-      "force interlacing support in encoder (MPEG2/MPEG4)" },
+    { "ildct", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_interlace_dct}, 
+      "force interlaced dct support in encoder (MPEG2/MPEG4)" },
+    { "ilme", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_interlace_me}, 
+      "force interlacied me support in encoder MPEG2" },
     { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_vstats}, "dump video coding statistics to file" }, 
     { "vhook", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)add_frame_hooker}, "insert video processing module", "module" },
     { "aic", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aic}, "enable Advanced intra coding (h263+)" },
     { "aiv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_aiv}, "enable Alternative inter vlc (h263+)" },
     { "umv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_umv}, "enable Unlimited Motion Vector (h263+)" },
+    { "alt", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_alt_scan}, "enable alternate scantable (mpeg2)" },
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
+    { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
+    { "nr", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_noise_reduction}, "noise reduction", "" },
 
     /* audio options */
     { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_bitrate}, "set audio bitrate (in kbit/s)", "bitrate", },

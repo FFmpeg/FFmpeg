@@ -45,7 +45,7 @@ static void sigill_handler (int sig)
 }
 #endif /* CONFIG_DARWIN */
 
-int pix_abs16x16_x2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
+int sad16_x2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
@@ -57,7 +57,7 @@ int pix_abs16x16_x2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
 
     s = 0;
     sad = (vector unsigned int)vec_splat_u32(0);
-    for(i=0;i<16;i++) {
+    for(i=0;i<h;i++) {
         /*
            Read unaligned pixels into our vectors. The vectors are as follows:
            pix1v: pix1[0]-pix1[15]
@@ -92,7 +92,7 @@ int pix_abs16x16_x2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     return s;
 }
 
-int pix_abs16x16_y2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
+int sad16_y2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
@@ -118,7 +118,7 @@ int pix_abs16x16_y2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     tv = (vector unsigned char *) &pix2[0];
     pix2v = vec_perm(tv[0], tv[1], vec_lvsl(0, &pix2[0]));
     
-    for(i=0;i<16;i++) {
+    for(i=0;i<h;i++) {
         /*
            Read unaligned pixels into our vectors. The vectors are as follows:
            pix1v: pix1[0]-pix1[15]
@@ -152,7 +152,7 @@ int pix_abs16x16_y2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     return s;    
 }
 
-int pix_abs16x16_xy2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
+int sad16_xy2_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
@@ -194,7 +194,7 @@ int pix_abs16x16_xy2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     t1 = vec_add(pix2hv, pix2ihv);
     t2 = vec_add(pix2lv, pix2ilv);
     
-    for(i=0;i<16;i++) {
+    for(i=0;i<h;i++) {
         /*
            Read unaligned pixels into our vectors. The vectors are as follows:
            pix1v: pix1[0]-pix1[15]
@@ -253,7 +253,7 @@ int pix_abs16x16_xy2_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     return s;
 }
 
-int pix_abs16x16_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
+int sad16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
@@ -266,7 +266,7 @@ int pix_abs16x16_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     sad = (vector unsigned int)vec_splat_u32(0);
 
 
-    for(i=0;i<16;i++) {
+    for(i=0;i<h;i++) {
 	/* Read potentially unaligned pixels into t1 and t2 */
         perm1 = vec_lvsl(0, pix1);
         pix1v = (vector unsigned char *) pix1;
@@ -295,7 +295,7 @@ int pix_abs16x16_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
     return s;
 }
 
-int pix_abs8x8_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
+int sad8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
@@ -309,7 +309,7 @@ int pix_abs8x8_altivec(uint8_t *pix1, uint8_t *pix2, int line_size)
 
     permclear = (vector unsigned char)AVV(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
 
-    for(i=0;i<8;i++) {
+    for(i=0;i<h;i++) {
 	/* Read potentially unaligned pixels into t1 and t2
 	   Since we're reading 16 pixels, and actually only want 8,
 	   mask out the last 8 pixels. The 0s don't change the sum. */
@@ -374,9 +374,9 @@ int pix_norm1_altivec(uint8_t *pix, int line_size)
 /**
  * Sum of Squared Errors for a 8x8 block.
  * AltiVec-enhanced.
- * It's the pix_abs8x8_altivec code above w/ squaring added.
+ * It's the sad8_altivec code above w/ squaring added.
  */
-int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
+int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
@@ -391,7 +391,7 @@ int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
     permclear = (vector unsigned char)AVV(255,255,255,255,255,255,255,255,0,0,0,0,0,0,0,0);
 
     
-    for(i=0;i<8;i++) {
+    for(i=0;i<h;i++) {
 	/* Read potentially unaligned pixels into t1 and t2
 	   Since we're reading 16 pixels, and actually only want 8,
 	   mask out the last 8 pixels. The 0s don't change the sum. */
@@ -430,9 +430,9 @@ int sse8_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
 /**
  * Sum of Squared Errors for a 16x16 block.
  * AltiVec-enhanced.
- * It's the pix_abs16x16_altivec code above w/ squaring added.
+ * It's the sad16_altivec code above w/ squaring added.
  */
-int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
+int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int i;
     int s __attribute__((aligned(16)));
@@ -444,7 +444,7 @@ int sse16_altivec(void *v, uint8_t *pix1, uint8_t *pix2, int line_size)
     
     sum = (vector unsigned int)vec_splat_u32(0);
     
-    for(i=0;i<16;i++) {
+    for(i=0;i<h;i++) {
 	/* Read potentially unaligned pixels into t1 and t2 */
         perm1 = vec_lvsl(0, pix1);
         pix1v = (vector unsigned char *) pix1;
@@ -607,14 +607,6 @@ void diff_pixels_altivec(DCTELEM *restrict block, const uint8_t *s1,
         s2 += stride;
         block += 8;
     }
-}
-
-int sad16x16_altivec(void *s, uint8_t *a, uint8_t *b, int stride) {
-  return pix_abs16x16_altivec(a,b,stride);
-}
-
-int sad8x8_altivec(void *s, uint8_t *a, uint8_t *b, int stride) {
-  return pix_abs8x8_altivec(a,b,stride);
 }
 
 void add_bytes_altivec(uint8_t *dst, uint8_t *src, int w) {

@@ -84,10 +84,9 @@ static inline uint64_t avg4(uint64_t l1, uint64_t l2, uint64_t l3, uint64_t l4)
     return r1 + r2;
 }
 
-int pix_abs8x8_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
+int pix_abs8x8_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
-    int h = 8;
 
     if ((size_t) pix2 & 0x7) {
         /* works only when pix2 is actually unaligned */
@@ -160,10 +159,9 @@ int pix_abs16x16_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
 }
 #endif
 
-int pix_abs16x16_x2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
+int pix_abs16x16_x2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
-    int h = 16;
     uint64_t disalign = (size_t) pix2 & 0x7;
 
     switch (disalign) {
@@ -234,10 +232,9 @@ int pix_abs16x16_x2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
     return result;
 }
 
-int pix_abs16x16_y2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
+int pix_abs16x16_y2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
-    int h = 16;
 
     if ((size_t) pix2 & 0x7) {
         uint64_t t, p2_l, p2_r;
@@ -288,10 +285,9 @@ int pix_abs16x16_y2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
     return result;
 }
 
-int pix_abs16x16_xy2_mvi(uint8_t *pix1, uint8_t *pix2, int line_size)
+int pix_abs16x16_xy2_mvi(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
 {
     int result = 0;
-    int h = 16;
     
     uint64_t p1_l, p1_r;
     uint64_t p2_l, p2_r, p2_x;

@@ -138,7 +138,7 @@ do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
 
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2i.mpg
-do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -interlace $file 
+do_ffmpeg $file -y -qscale 10 -f pgmyuv -i $raw_src -vcodec mpeg2video -f mpeg1video -ildct $file 
 
 # mpeg2 decoding
 do_ffmpeg $raw_dst -y -i $file -f rawvideo $raw_dst
