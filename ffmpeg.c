@@ -104,7 +104,7 @@ static int video_rc_min_rate=0;
 static float video_rc_initial_cplx=0;
 static float video_b_qfactor = 1.25;
 static float video_b_qoffset = 1.25;
-static float video_i_qfactor = 0.8;
+static float video_i_qfactor = -0.5;
 static float video_i_qoffset = 0.0;
 static int me_method = 0;
 static int video_disable = 0;
@@ -1548,6 +1548,23 @@ void opt_qcomp(const char *arg)
     video_qcomp = atof(arg);
 }
 
+void opt_b_qfactor(const char *arg)
+{
+    video_b_qfactor = atof(arg);
+}
+void opt_i_qfactor(const char *arg)
+{
+    video_i_qfactor = atof(arg);
+}
+void opt_b_qoffset(const char *arg)
+{
+    video_b_qoffset = atof(arg);
+}
+void opt_i_qoffset(const char *arg)
+{
+    video_i_qoffset = atof(arg);
+}
+
 void opt_audio_bitrate(const char *arg)
 {
     audio_bit_rate = atoi(arg) * 1000;
@@ -2235,6 +2252,10 @@ const OptionDef options[] = {
     { "qdiff", HAS_ARG | OPT_EXPERT, {(void*)opt_qdiff}, "max difference between the quantiser scale (VBR)", "q" },
     { "qblur", HAS_ARG | OPT_EXPERT, {(void*)opt_qblur}, "video quantiser scale blur (VBR)", "blur" },
     { "qcomp", HAS_ARG | OPT_EXPERT, {(void*)opt_qcomp}, "video quantiser scale compression (VBR)", "compression" },
+    { "b_qfactor", HAS_ARG | OPT_EXPERT, {(void*)opt_b_qfactor}, "qp factor between p and b frames", "factor" },
+    { "i_qfactor", HAS_ARG | OPT_EXPERT, {(void*)opt_i_qfactor}, "qp factor between p and i frames", "factor" },
+    { "b_qoffset", HAS_ARG | OPT_EXPERT, {(void*)opt_b_qoffset}, "qp offset between p and b frames", "offset" },
+    { "i_qoffset", HAS_ARG | OPT_EXPERT, {(void*)opt_i_qoffset}, "qp offset between p and i frames", "offset" },
     { "rc_eq", HAS_ARG | OPT_EXPERT, {(void*)opt_video_rc_eq}, "", "equation" },
     { "bt", HAS_ARG, {(void*)opt_video_bitrate_tolerance}, "set video bitrate tolerance (in kbit/s)", "tolerance" },
     { "maxrate", HAS_ARG, {(void*)opt_video_bitrate_max}, "set max video bitrate tolerance (in kbit/s)", "bitrate" },
