@@ -3001,7 +3001,7 @@ static void opt_target(const char *arg)
 
         opt_video_codec("mpeg2video");
         opt_audio_codec("mp2");
-        opt_format("vcd");
+        opt_format("svcd");
 
         opt_frame_size(norm ? "480x480" : "480x576");
         opt_gop_size(norm ? "18" : "15");
