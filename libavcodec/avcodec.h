@@ -208,8 +208,8 @@ extern int motion_estimation_method;
 
 /* ME algos sorted by quality */
 //FIXME remove IMHO
-static const int Motion_Est_QTab[] = { ME_ZERO, ME_PHODS, ME_LOG, 
-                                       ME_X1, ME_EPZS, ME_FULL };
+static const __attribute__((unused)) int Motion_Est_QTab[] =
+ { ME_ZERO, ME_PHODS, ME_LOG, ME_X1, ME_EPZS, ME_FULL };
 
 
 #define FF_MAX_B_FRAMES 8

@@ -185,9 +185,9 @@ inline void dprintf(const char* fmt,...) {}
 #    else
 
 #        ifdef DEBUG
-#            define dprintf(fmt,args...) printf(fmt, ## args)
+#            define dprintf(fmt,...) printf(fmt, __VA_ARGS__)
 #        else
-#            define dprintf(fmt,args...)
+#            define dprintf(fmt,...)
 #        endif
 
 #    endif /* !CONFIG_WIN32 */

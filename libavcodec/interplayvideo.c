@@ -876,7 +876,7 @@ static int ipvideo_decode_init(AVCodecContext *avctx)
 
     if (s->avctx->extradata_size != sizeof(AVPaletteControl)) {
         printf (" Interplay video: expected extradata_size of %d\n",
-            sizeof(AVPaletteControl));
+		(int)sizeof(AVPaletteControl));
         return -1;
     }
 

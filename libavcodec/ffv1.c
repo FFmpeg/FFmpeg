@@ -21,7 +21,7 @@
  
 /**
  * @file ffv1.c
- * FF Video Codec 1 (a experimental lossless codec)
+ * FF Video Codec 1 (an experimental lossless codec)
  */
 
 #include "common.h"
