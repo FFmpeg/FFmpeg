@@ -3746,7 +3746,7 @@ const OptionDef options[] = {
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
     { "loop", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "control amount of logging", "verbose" },
-    { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\" or \"dvd\")", "type" },
+    { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },

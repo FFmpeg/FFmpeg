@@ -190,12 +190,19 @@ set the copyright
 set the comment
 
 @item -target type
-specify target file type ("vcd", "svcd" or "dvd"). All the format
+specify target file type ("vcd", "svcd", "dvd", "pal-vcd", "ntsc-svcd", ... ). All the format
 options (bitrate, codecs, buffer sizes) are automatically set by this
 option. You can just type:
 
 @example
 ffmpeg -i myfile.avi -target vcd /tmp/vcd.mpg
+@end example
+
+Nevertheless you can specify additional options as long as you know they do not compromise the
+standard, as in:
+
+@example
+ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
 @item -hq
