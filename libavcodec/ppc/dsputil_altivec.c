@@ -1329,6 +1329,7 @@ POWERPC_PERF_START_COUNT(altivec_hadamard8_diff8x8_num, 1);
        0x00, 0x01, 0x02, 0x03,
        0x04, 0x05, 0x06, 0x07);
 #else
+  {
     register const_vector signed short vprod1 = (const_vector signed short){ 1,-1, 1,-1, 1,-1, 1,-1};
     register const_vector signed short vprod2 = (const_vector signed short){ 1, 1,-1,-1, 1, 1,-1,-1};
     register const_vector signed short vprod3 = (const_vector signed short){ 1, 1, 1, 1,-1,-1,-1,-1};
