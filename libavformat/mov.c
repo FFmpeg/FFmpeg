@@ -655,7 +655,6 @@ static int mov_read_smi(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     st->codec.extradata = (uint8_t*) av_mallocz(st->codec.extradata_size);
 
     if (st->codec.extradata) {
-        int i;
 	strcpy(st->codec.extradata, "SVQ3"); // fake
 	get_buffer(pb, st->codec.extradata + 0x5a, atom.size);
 	//printf("Reading SMI %Ld  %s\n", atom.size, (char*)st->codec.extradata + 0x5a);
