@@ -2439,7 +2439,7 @@ void normalizeVec(SwsVector *a, double height){
 	inv= height/sum;
 
 	for(i=0; i<a->length; i++)
-		a->coeff[i]*= height;
+		a->coeff[i]*= inv;
 }
 
 void scaleVec(SwsVector *a, double scalar){
