@@ -46,9 +46,9 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     if (s->mb_intra) {
         int dummy;
         if (n < 4)
-            q = s->y_dc_scale<<3;
+            q = s->y_dc_scale;
         else
-            q = s->c_dc_scale<<3;
+            q = s->c_dc_scale;
         /* note: block[0] is assumed to be positive */
         if (!s->h263_aic) {
 #if 1
@@ -56,7 +56,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         	"xorl %%edx, %%edx	\n\t"
         	"mul %%ecx		\n\t"
         	: "=d" (level), "=a"(dummy)
-        	: "a" (block[0] + (q >> 1)), "c" (inverse[q])
+        	: "a" ((block[0]>>2) + q), "c" (inverse[q<<1])
         );
 #else
         asm volatile (
@@ -64,13 +64,13 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         	"divw %%cx		\n\t"
         	"movzwl %%ax, %%eax	\n\t"
         	: "=a" (level)
-        	: "a" (block[0] + (q >> 1)), "c" (q)
+        	: "a" ((block[0]>>2) + q), "c" (q<<1)
         	: "%edx"
         );
 #endif
         } else
             /* For AIC we skip quant/dequant of INTRADC */
-            level = block[0]>>3;
+            level = (block[0] + 4)>>3;
             
         block[0]=0; //avoid fake overflow
 //        temp_block[0] = (block[0] + (q >> 1)) / q;
