@@ -383,7 +383,6 @@ static int mov_read_hdlr(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
     int len = 0;
-    uint8_t *buf;
     uint32_t type;
     uint32_t ctype;
 
@@ -576,8 +575,6 @@ static int mov_read_moov(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 
 static int mov_read_mdhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
-    AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-
     print_atom("mdhd", atom);
 
     get_byte(pb); /* version */
@@ -674,7 +671,7 @@ static int mov_read_stco(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int entries, frames_per_sample;
     uint32_t format;
 
@@ -924,7 +921,7 @@ static int mov_read_stsz(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_stts(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     AVStream *st = c->fc->streams[c->fc->nb_streams-1];
-    MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
+    //MOVStreamContext *sc = (MOVStreamContext *)st->priv_data;
     int entries, i;
 
     print_atom("stts", atom);
@@ -1023,7 +1020,6 @@ static int mov_read_tkhd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
 {
     int err;
-    uint32_t type;
 
 #ifdef DEBUG
     print_atom("wide", atom);
@@ -1038,7 +1034,7 @@ static int mov_read_wide(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
     atom.type = get_le32(pb);
     atom.offset += 8;
     atom.size -= 8;
-    if (type != MKTAG('m', 'd', 'a', 't')) {
+    if (atom.type != MKTAG('m', 'd', 'a', 't')) {
         url_fskip(pb, atom.size);
         return 0;
     }
