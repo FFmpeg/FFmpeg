@@ -290,7 +290,7 @@ static void DEF(avg_pixels_xy2)(UINT8 *block, const UINT8 *pixels, int line_size
 	"addl %%eax, %2			\n\t"
 	"subl $4, %0			\n\t"
 	"jnz 1b				\n\t"
-	:"+g"(h), "+D"(pixels), "+S"(block)
+	:"+g"(h), "+S"(pixels), "+D"(block)
 	:"r" (line_size)
 	:"%eax",  "memory");
 }
