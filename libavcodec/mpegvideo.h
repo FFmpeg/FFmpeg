@@ -471,8 +471,8 @@ void ff_fix_long_p_mvs(MpegEncContext * s);
 void ff_fix_long_b_mvs(MpegEncContext * s, int16_t (*mv_table)[2], int f_code, int type);
 
 /* mpeg12.c */
-extern INT16 default_intra_matrix[64];
-extern INT16 default_non_intra_matrix[64];
+extern INT16 ff_mpeg1_default_intra_matrix[64];
+extern INT16 ff_mpeg1_default_non_intra_matrix[64];
 extern UINT8 ff_mpeg1_dc_scale_table[128];
 
 void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);

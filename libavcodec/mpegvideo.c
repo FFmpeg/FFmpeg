@@ -520,11 +520,11 @@ int MPV_encode_init(AVCodecContext *avctx)
     /* init default q matrix */
     for(i=0;i<64;i++) {
         if(s->out_format == FMT_H263)
-            s->intra_matrix[i] = default_non_intra_matrix[i];
+            s->intra_matrix[i] = ff_mpeg1_default_non_intra_matrix[i];
         else
-            s->intra_matrix[i] = default_intra_matrix[i];
+            s->intra_matrix[i] = ff_mpeg1_default_intra_matrix[i];
 
-        s->inter_matrix[i] = default_non_intra_matrix[i];
+        s->inter_matrix[i] = ff_mpeg1_default_non_intra_matrix[i];
     }
 
     /* precompute matrix */
@@ -1796,9 +1796,9 @@ static void encode_picture(MpegEncContext *s, int picture_number)
 
     if (s->out_format == FMT_MJPEG) {
         /* for mjpeg, we do include qscale in the matrix */
-        s->intra_matrix[0] = default_intra_matrix[0];
+        s->intra_matrix[0] = ff_mpeg1_default_intra_matrix[0];
         for(i=1;i<64;i++)
-            s->intra_matrix[i] = CLAMP_TO_8BIT((default_intra_matrix[i] * s->qscale) >> 3);
+            s->intra_matrix[i] = CLAMP_TO_8BIT((ff_mpeg1_default_intra_matrix[i] * s->qscale) >> 3);
         convert_matrix(s->q_intra_matrix, s->q_intra_matrix16, 
                        s->q_intra_matrix16_bias, s->intra_matrix, s->intra_quant_bias);
     }

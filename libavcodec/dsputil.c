@@ -46,8 +46,8 @@ op_pixels_abs_func pix_abs8x8_xy2;
 UINT8 cropTbl[256 + 2 * MAX_NEG_CROP];
 UINT32 squareTbl[512];
 
-extern INT16 default_intra_matrix[64];
-extern INT16 default_non_intra_matrix[64];
+extern INT16 ff_mpeg1_default_intra_matrix[64];
+extern INT16 ff_mpeg1_default_non_intra_matrix[64];
 extern INT16 ff_mpeg4_default_intra_matrix[64];
 extern INT16 ff_mpeg4_default_non_intra_matrix[64];
 
@@ -1322,8 +1322,8 @@ void dsputil_init(void)
             j = ff_alternate_vertical_scan[i];
             ff_alternate_vertical_scan[i] = block_permute_op(j);
         }
-        block_permute(default_intra_matrix);
-        block_permute(default_non_intra_matrix);
+        block_permute(ff_mpeg1_default_intra_matrix);
+        block_permute(ff_mpeg1_default_non_intra_matrix);
         block_permute(ff_mpeg4_default_intra_matrix);
         block_permute(ff_mpeg4_default_non_intra_matrix);
     }

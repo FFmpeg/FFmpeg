@@ -1540,7 +1540,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #endif
     } else {
         for(i=0;i<64;i++) {
-            v = default_intra_matrix[i];
+            v = ff_mpeg1_default_intra_matrix[i];
             s->intra_matrix[i] = v;
             s->chroma_intra_matrix[i] = v;
         }
@@ -1560,7 +1560,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
 #endif
     } else {
         for(i=0;i<64;i++) {
-            v = default_non_intra_matrix[i];
+            v = ff_mpeg1_default_non_intra_matrix[i];
             s->inter_matrix[i] = v;
             s->chroma_inter_matrix[i] = v;
         }
