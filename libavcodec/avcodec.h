@@ -13,8 +13,8 @@ extern "C" {
 
 #include "common.h"
 
-#define LIBAVCODEC_VERSION_INT 0x000406
-#define LIBAVCODEC_VERSION     "0.4.6"
+#define LIBAVCODEC_VERSION_INT 0x000408
+#define LIBAVCODEC_VERSION     "0.4.8"
 #define LIBAVCODEC_BUILD       4677
 #define LIBAVCODEC_BUILD_STR   "4677"
 
