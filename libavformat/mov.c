@@ -137,7 +137,7 @@ static const CodecTag mov_audio_tags[] = {
     { CODEC_ID_MP2, 0x5500736D }, /* MPEG layer 3 *//* XXX: check endianness */
 /*    { CODEC_ID_OGG_VORBIS, MKTAG('O', 'g', 'g', 'S') }, *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
 /* MP4 tags */
-    { CODEC_ID_MPEG4AAC, MKTAG('m', 'p', '4', 'a') }, /* MPEG-4 AAC */
+    { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') }, /* MPEG-4 AAC */
     /* The standard for mpeg4 audio is still not normalised AFAIK anyway */
     { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
@@ -1071,6 +1071,7 @@ static int mov_read_stsd(MOVContext *c, ByteIOContext *pb, MOV_atom_t atom)
                    // 5 bits objectTypeIndex, 4 bits sampleRateIndex, 4 bits channels
                    int samplerate_index = ((px[0] & 7) << 1) + ((px[1] >> 7) & 1);
                    st->codec.sample_rate = samplerate_table[samplerate_index];
+                   st->codec.channels = (px[1] >> 3) & 15;
                 }
             }
 	    else if(size>=(16+20))
