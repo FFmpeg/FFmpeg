@@ -776,6 +776,219 @@ static int mov_write_mvhd_tag(ByteIOContext *pb, MOVContext *mov)
     return 0x6c;
 }
 
+static int mov_write_itunes_hdlr_tag(ByteIOContext *pb, MOVContext* mov,
+                                     AVFormatContext *s)
+{
+    int pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
+    put_tag(pb, "hdlr");
+    put_be32(pb, 0);
+    put_be32(pb, 0);
+    put_tag(pb, "mdir");
+    put_tag(pb, "appl");
+    put_be32(pb, 0);
+    put_be32(pb, 0);
+    put_be16(pb, 0);
+    return updateSize(pb, pos);
+}
+
+/* helper function to write a data tag with the specified string as data */
+static int mov_write_string_data_tag(ByteIOContext *pb, MOVContext* mov,
+                                     AVFormatContext *s, const char *data)
+{
+    int pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
+    put_tag(pb, "data");
+    put_be32(pb, 1);
+    put_be32(pb, 0);
+    put_buffer(pb, data, strlen(data));
+    return updateSize(pb, pos);
+}
+
+/* iTunes name of the song/movie */
+static int mov_write_nam_tag(ByteIOContext *pb, MOVContext* mov,
+                             AVFormatContext *s)
+{
+    int size = 0;
+    if ( s->title[0] ) {
+        int pos = url_ftell(pb);
+        put_be32(pb, 0); /* size */
+        put_tag(pb, "\251nam");
+        mov_write_string_data_tag(pb, mov, s, s->title);
+        size = updateSize(pb, pos);
+    }
+    return size;
+}
+
+/* iTunes name of the artist/performer */
+static int mov_write_ART_tag(ByteIOContext *pb, MOVContext* mov,
+                             AVFormatContext *s)
+{
+    int size = 0;
+    if ( s->author[0] ) {
+        int pos = url_ftell(pb);
+        put_be32(pb, 0); /* size */
+        put_tag(pb, "\251ART");
+        // we use the author here as this is the only thing that we have...
+        mov_write_string_data_tag(pb, mov, s, s->author);
+        size = updateSize(pb, pos);
+    }
+    return size;
+}
+
+/* iTunes name of the writer */
+static int mov_write_wrt_tag(ByteIOContext *pb, MOVContext* mov,
+                             AVFormatContext *s)
+{
+    int size = 0;
+    if ( s->author[0] ) {
+        int pos = url_ftell(pb);
+        put_be32(pb, 0); /* size */
+        put_tag(pb, "\251wrt");
+        mov_write_string_data_tag(pb, mov, s, s->author);
+        size = updateSize(pb, pos);
+    }
+    return size;
+}
+
+/* iTunes name of the album */
+static int mov_write_alb_tag(ByteIOContext *pb, MOVContext* mov,
+                             AVFormatContext *s)
+{
+    int size = 0;
+    if ( s->album[0] ) {
+        int pos = url_ftell(pb);
+        put_be32(pb, 0); /* size */
+        put_tag(pb, "\251alb");
+        mov_write_string_data_tag(pb, mov, s, s->album);
+        size = updateSize(pb, pos);
+    }
+    return size;
+}
+
+/* iTunes year */
+static int mov_write_day_tag(ByteIOContext *pb, MOVContext* mov,
+                             AVFormatContext *s)
+{
+    char year[5];
+    int size = 0;
+    if ( s->year ) {
+        int pos = url_ftell(pb);
+        put_be32(pb, 0); /* size */
+        put_tag(pb, "\251day");
+        snprintf(year, 5, "%04d", s->year);
+        mov_write_string_data_tag(pb, mov, s, year);
+        size = updateSize(pb, pos);
+    }
+    return size;
+}
+
+/* iTunes tool used to create the file */
+static int mov_write_too_tag(ByteIOContext *pb, MOVContext* mov,
+                             AVFormatContext *s)
+{
+    int pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
+    put_tag(pb, "\251too");
+    mov_write_string_data_tag(pb, mov, s, LIBAVFORMAT_IDENT);
+    return updateSize(pb, pos);
+}
+
+/* iTunes comment */
+static int mov_write_cmt_tag(ByteIOContext *pb, MOVContext* mov,
+                             AVFormatContext *s)
+{
+    int size = 0;
+    if ( s->comment[0] ) {
+        int pos = url_ftell(pb);
+        put_be32(pb, 0); /* size */
+        put_tag(pb, "\251cmt");
+        mov_write_string_data_tag(pb, mov, s, s->comment);
+        size = updateSize(pb, pos);
+    }
+    return size;
+}
+
+/* iTunes custom genre */
+static int mov_write_gen_tag(ByteIOContext *pb, MOVContext* mov,
+                             AVFormatContext *s)
+{
+    int size = 0;
+    if ( s->genre[0] ) {
+        int pos = url_ftell(pb);
+        put_be32(pb, 0); /* size */
+        put_tag(pb, "\251gen");
+        mov_write_string_data_tag(pb, mov, s, s->genre);
+        size = updateSize(pb, pos);
+    }
+    return size;
+}
+
+/* iTunes track number */
+static int mov_write_trkn_tag(ByteIOContext *pb, MOVContext* mov,
+                              AVFormatContext *s)
+{
+    int size = 0;
+    if ( s->track ) {
+        int pos = url_ftell(pb);
+        put_be32(pb, 0); /* size */
+        put_tag(pb, "trkn");
+        {
+            int pos = url_ftell(pb);
+            put_be32(pb, 0); /* size */
+            put_tag(pb, "data");
+            put_be32(pb, 0);        // 8 bytes empty
+            put_be32(pb, 0);
+            put_be16(pb, 0);        // empty
+            put_be16(pb, s->track); // track number
+            put_be16(pb, 0);        // total track number
+            put_be16(pb, 0);        // empty
+            updateSize(pb, pos);
+        }
+        size = updateSize(pb, pos);
+    }
+    return size;
+}
+
+/* iTunes meta data list */
+static int mov_write_ilst_tag(ByteIOContext *pb, MOVContext* mov,
+                              AVFormatContext *s)
+{
+    int pos = url_ftell(pb);
+    put_be32(pb, 0); /* size */
+    put_tag(pb, "ilst");
+    mov_write_nam_tag(pb, mov, s);
+    mov_write_ART_tag(pb, mov, s);
+    mov_write_wrt_tag(pb, mov, s);
+    mov_write_alb_tag(pb, mov, s);
+    mov_write_day_tag(pb, mov, s);
+    mov_write_too_tag(pb, mov, s);
+    mov_write_cmt_tag(pb, mov, s);
+    mov_write_gen_tag(pb, mov, s);
+    mov_write_trkn_tag(pb, mov, s);
+    return updateSize(pb, pos);
+}
+
+/* iTunes meta data tag */
+static int mov_write_meta_tag(ByteIOContext *pb, MOVContext* mov,
+                              AVFormatContext *s)
+{
+    int size = 0;
+
+    // only save meta tag if required
+    if ( s->title[0] || s->author[0] || s->album[0] || s->year || 
+         s->comment[0] || s->genre[0] || s->track ) {
+        int pos = url_ftell(pb);
+        put_be32(pb, 0); /* size */
+        put_tag(pb, "meta");
+        put_be32(pb, 0);
+        mov_write_itunes_hdlr_tag(pb, mov, s);
+        mov_write_ilst_tag(pb, mov, s);
+        size = updateSize(pb, pos);
+    }
+    return size;
+}
+    
 static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
                               AVFormatContext *s)
 {
@@ -784,6 +997,9 @@ static int mov_write_udta_tag(ByteIOContext *pb, MOVContext* mov,
 
     put_be32(pb, 0); /* size */
     put_tag(pb, "udta");
+
+    /* iTunes meta data */
+    mov_write_meta_tag(pb, mov, s);
 
     /* Requirements */
     for (i=0; i<MAX_STREAMS; i++) {
