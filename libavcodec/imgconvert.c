@@ -184,6 +184,90 @@ static void rgba32_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
     }
 }
 
+#define rgb565_to_yuv420p(lum,cb,cr,src,width,height) rgbmisc_to_yuv420p((lum),(cb),(cr),(src),(width),(height),0x0800,31, 0x0020,63,0x0001,31)
+#define rgb555_to_yuv420p(lum,cb,cr,src,width,height) rgbmisc_to_yuv420p((lum),(cb),(cr),(src),(width),(height),0x0400,31, 0x0020,31,0x0001,31)
+#define rgb5551_to_yuv420p(lum,cb,cr,src,width,height) rgbmisc_to_yuv420p((lum),(cb),(cr),(src),(width),(height),0x0800,31, 0x0040,31,0x0002,31)
+#define bgr565_to_yuv420p(lum,cb,cr,src,width,height) rgbmisc_to_yuv420p((lum),(cb),(cr),(src),(width),(height),0x0001,31, 0x0020,63,0x0800,31)
+#define bgr555_to_yuv420p(lum,cb,cr,src,width,height) rgbmisc_to_yuv420p((lum),(cb),(cr),(src),(width),(height),0x0001,31, 0x0020,31,0x0400,31)
+#define gbr565_to_yuv420p(lum,cb,cr,src,width,height) rgbmisc_to_yuv420p((lum),(cb),(cr),(src),(width),(height),0x0001,31, 0x0800,31,0x0040,63)
+#define gbr555_to_yuv420p(lum,cb,cr,src,width,height) rgbmisc_to_yuv420p((lum),(cb),(cr),(src),(width),(height),0x0001,31, 0x0400,31,0x0020,31)
+
+static void rgbmisc_to_yuv420p
+  (UINT8 *lum, UINT8 *cb, UINT8 *cr,
+   UINT8 *src, int width, int height,
+   
+   UINT16 R_LOWMASK, UINT16 R_MAX,
+   UINT16 G_LOWMASK, UINT16 G_MAX,
+   UINT16 B_LOWMASK, UINT16 B_MAX
+  )
+{
+    int wrap, wrap2, x, y;
+    int r, g, b, r1, g1, b1;
+    UINT8 *p;
+    UINT16 pixel;
+
+    wrap = width;
+    wrap2 = width * 2;
+    p = src;
+    for(y=0;y<height;y+=2) {
+        for(x=0;x<width;x+=2) {
+            pixel = p[0] | (p[1]<<8);
+            r = (((pixel/R_LOWMASK) & R_MAX) * (0x100 / (R_MAX+1)));
+            g = (((pixel/G_LOWMASK) & G_MAX) * (0x100 / (G_MAX+1)));
+            b = (((pixel/B_LOWMASK) & B_MAX) * (0x100 / (B_MAX+1)));
+            r1 = r;
+            g1 = g;
+            b1 = b;
+            lum[0] = (FIX(0.29900) * r + FIX(0.58700) * g + 
+                      FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
+
+            pixel = p[2] | (p[3]<<8);
+            r = (((pixel/R_LOWMASK) & R_MAX) * (0x100 / (R_MAX+1)));
+            g = (((pixel/G_LOWMASK) & G_MAX) * (0x100 / (G_MAX+1)));
+            b = (((pixel/B_LOWMASK) & B_MAX) * (0x100 / (B_MAX+1)));
+            r1 += r;
+            g1 += g;
+            b1 += b;
+            lum[1] = (FIX(0.29900) * r + FIX(0.58700) * g + 
+                      FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
+            p += wrap2;
+            lum += wrap;
+
+            pixel = p[0] | (p[1]<<8);
+            r = (((pixel/R_LOWMASK) & R_MAX) * (0x100 / (R_MAX+1)));
+            g = (((pixel/G_LOWMASK) & G_MAX) * (0x100 / (G_MAX+1)));
+            b = (((pixel/B_LOWMASK) & B_MAX) * (0x100 / (B_MAX+1)));
+            r1 += r;
+            g1 += g;
+            b1 += b;
+            lum[0] = (FIX(0.29900) * r + FIX(0.58700) * g + 
+                      FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
+            pixel = p[2] | (p[3]<<8);
+            r = (((pixel/R_LOWMASK) & R_MAX) * (0x100 / (R_MAX+1)));
+            g = (((pixel/G_LOWMASK) & G_MAX) * (0x100 / (G_MAX+1)));
+            b = (((pixel/B_LOWMASK) & B_MAX) * (0x100 / (B_MAX+1)));
+            r1 += r;
+            g1 += g;
+            b1 += b;
+            lum[1] = (FIX(0.29900) * r + FIX(0.58700) * g + 
+                      FIX(0.11400) * b + ONE_HALF) >> SCALEBITS;
+            
+            cb[0] = ((- FIX(0.16874) * r1 - FIX(0.33126) * g1 + 
+                      FIX(0.50000) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128;
+            cr[0] = ((FIX(0.50000) * r1 - FIX(0.41869) * g1 - 
+                     FIX(0.08131) * b1 + 4 * ONE_HALF - 1) >> (SCALEBITS + 2)) + 128;
+
+            cb++;
+            cr++;
+            p += -wrap2 + 2 * 2;
+            lum += -wrap + 2;
+        }
+        p += wrap2;
+        lum += wrap;
+    }
+}
+
+
 static void bgr24_to_yuv420p(UINT8 *lum, UINT8 *cb, UINT8 *cr,
                               UINT8 *src, int width, int height)
 {
@@ -730,6 +814,34 @@ int img_convert(AVPicture *dst, int dst_pix_fmt,
             bgra32_to_yuv420p(dst->data[0], dst->data[1], dst->data[2], 
                              src->data[0], width, height);
             break;
+        case PIX_FMT_RGB565:
+            rgb565_to_yuv420p(dst->data[0], dst->data[1], dst->data[2], 
+                             src->data[0], width, height);
+            break;
+        case PIX_FMT_RGB555:
+            rgb555_to_yuv420p(dst->data[0], dst->data[1], dst->data[2], 
+                             src->data[0], width, height);
+            break;
+/*        case PIX_FMT_RGB5551:
+            rgb5551_to_yuv420p(dst->data[0], dst->data[1], dst->data[2], 
+                             src->data[0], width, height);
+            break;*/
+        case PIX_FMT_BGR565:
+            bgr565_to_yuv420p(dst->data[0], dst->data[1], dst->data[2], 
+                             src->data[0], width, height);
+            break;
+        case PIX_FMT_BGR555:
+            bgr555_to_yuv420p(dst->data[0], dst->data[1], dst->data[2], 
+                             src->data[0], width, height);
+            break;
+/*        case PIX_FMT_GBR565:
+            gbr565_to_yuv420p(dst->data[0], dst->data[1], dst->data[2], 
+                             src->data[0], width, height);
+            break;
+        case PIX_FMT_GBR555:
+            gbr555_to_yuv420p(dst->data[0], dst->data[1], dst->data[2],
+                             src->data[0], width, height);
+            break;*/
         default:
             return -1;
         }

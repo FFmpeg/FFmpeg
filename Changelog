@@ -33,6 +33,7 @@ version 0.4.6pre1:
 - VCD MPEG-PS mode. (Juanjo)
 - PSNR stuff. (Juanjo)
 - Simple stats output. (Juanjo)
+- 16-bit and 15-bit rgb/bgr/gbr support (Bisqwit)
 
 version 0.4.5:
 
