@@ -21,6 +21,7 @@
 
 #include "../dsputil.h"
 #include "../simple_idct.h"
+#include "../mangle.h"
 
 int mm_flags; /* multimedia extension flags */
 
@@ -49,6 +50,7 @@ void ff_mmx_idct(DCTELEM *block);
 void ff_mmxext_idct(DCTELEM *block);
 
 /* pixel operations */
+static const unsigned long long int mm_bone __attribute__ ((aligned(8))) = 0x0101010101010101LL;
 static const unsigned long long int mm_wone __attribute__ ((aligned(8))) = 0x0001000100010001LL;
 static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x0002000200020002LL;
 //static const unsigned short mm_wone[4] __attribute__ ((aligned(8))) = { 0x1, 0x1, 0x1, 0x1 };
@@ -90,7 +92,7 @@ static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x000
 /***********************************/
 /* MMX2 specific */
 
-#define DEF(x) x ## _sse
+#define DEF(x) x ## _mmx2
 
 /* Introduced only in MMX2 set */
 #define PAVGB "pavgb"
@@ -105,41 +107,38 @@ static const unsigned long long int mm_wtwo __attribute__ ((aligned(8))) = 0x000
 
 static void get_pixels_mmx(DCTELEM *block, const UINT8 *pixels, int line_size)
 {
-    DCTELEM *p;
-    const UINT8 *pix;
-    int i;
-
-    /* read the pixels */
-    p = block;
-    pix = pixels;
-    MOVQ_ZERO(mm7);
-    for(i=0;i<4;i++) {
-	__asm __volatile(
-		"movq	%1, %%mm0\n\t"
-		"movq	%2, %%mm1\n\t"
-		"movq	%%mm0, %%mm2\n\t"
-		"movq	%%mm1, %%mm3\n\t"
-		"punpcklbw %%mm7, %%mm0\n\t"
-		"punpckhbw %%mm7, %%mm2\n\t"
-		"punpcklbw %%mm7, %%mm1\n\t"
-		"punpckhbw %%mm7, %%mm3\n\t"
-		"movq	%%mm0, %0\n\t"
-		"movq	%%mm2, 8%0\n\t"
-		"movq	%%mm1, 16%0\n\t"
-		"movq	%%mm3, 24%0\n\t"
-		:"=m"(*p)
-		:"m"(*pix), "m"(*(pix+line_size))
-		:"memory");
-        pix += line_size*2;
-        p += 16;
-    }
+    asm volatile(
+        "movl $-128, %%eax	\n\t"
+        "pxor %%mm7, %%mm7	\n\t"
+        ".balign 16		\n\t"
+        "1:			\n\t"
+        "movq (%0), %%mm0	\n\t"
+        "movq (%0, %2), %%mm2	\n\t"
+        "movq %%mm0, %%mm1	\n\t"
+        "movq %%mm2, %%mm3	\n\t"
+        "punpcklbw %%mm7, %%mm0	\n\t"
+        "punpckhbw %%mm7, %%mm1	\n\t"
+        "punpcklbw %%mm7, %%mm2	\n\t"
+        "punpckhbw %%mm7, %%mm3	\n\t"
+        "movq %%mm0, (%1, %%eax)\n\t"
+        "movq %%mm1, 8(%1, %%eax)\n\t"
+        "movq %%mm2, 16(%1, %%eax)\n\t"
+        "movq %%mm3, 24(%1, %%eax)\n\t"
+        "addl %3, %0		\n\t"
+        "addl $32, %%eax	\n\t"
+        "js 1b			\n\t"
+        : "+r" (pixels)
+        : "r" (block+64), "r" (line_size), "r" (line_size*2)
+        : "%eax"
+    );
 }
 
 static void diff_pixels_mmx(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride)
 {
     asm volatile(
-        ".balign 16		\n\t"
+        "pxor %%mm7, %%mm7	\n\t"
         "movl $-128, %%eax	\n\t"
+        ".balign 16		\n\t"
         "1:			\n\t"
         "movq (%0), %%mm0	\n\t"
         "movq (%1), %%mm2	\n\t"
@@ -261,56 +260,62 @@ static void add_pixels_clamped_mmx(const DCTELEM *block, UINT8 *pixels, int line
 
 static void put_pixels_mmx(UINT8 *block, const UINT8 *pixels, int line_size, int h)
 {
-    int hh;
-    UINT8 *p;
-    const UINT8 *pix;
-
-    p   = block;
-    pix = pixels; // 2s
-#if 0
-    do {
-      __asm __volatile(
-	"movq	%1, %%mm0\n\t"
-	"movq	%%mm0, %0\n\t"
-	:"=m"(*p)
-	:"m"(*pix)
-	:"memory");
-	pix += line_size;
-	p += line_size;
-    } while (--h);
+#if 0 //FIXME h==4 case
+    asm volatile(
+        "xorl %%eax, %%eax		\n\t"
+        "movl %3, %%esi			\n\t"
+        "1:				\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "subl $8, %%esi			\n\t"
+        " jnz 1b			\n\t"
+    :: "r" (block), "r" (pixels), "r"(line_size), "m"(h)
+    : "%eax", "%esi", "memory"
+    );
 #else
-    // this optimized code is not very usefull
-    // the above loop is definitely faster
-    // at least on Celeron 500MHz
-    hh = h & 3;
-    while (hh) {
-      __asm __volatile(
-	  "movq	%1, %%mm0\n\t"
-	  "movq	%%mm0, %0\n\t"
-	  :"=m"(*p)
-	  :"m"(*pix)
-	  :"memory");
-	pix += line_size;
-	p += line_size;
-	hh--;
-    }
-    hh=h>>2;
-    while (hh) {
-    __asm __volatile(
-	"movq	(%1), %%mm0		\n\t"
-	"movq	(%1, %2), %%mm1		\n\t"
-	"movq	(%1, %2, 2), %%mm2	\n\t"
-	"movq	(%1, %3), %%mm3		\n\t"
-	"movq	%%mm0, (%0)		\n\t"
-	"movq	%%mm1, (%0, %2)		\n\t"
-	"movq	%%mm2, (%0, %2, 2)	\n\t"
-	"movq	%%mm3, (%0, %3)		\n\t"
-	::"r"(p), "r"(pix), "r"(line_size), "r"(line_size*3)
-	:"memory");
-        pix += line_size*4;
-	p += line_size*4;
-        hh--;
-    }
+    asm volatile(
+        "xorl %%eax, %%eax		\n\t"
+        "movl %3, %%esi			\n\t"
+        "1:				\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "movq (%1, %%eax), %%mm0	\n\t"
+        "movq %%mm0, (%0, %%eax)	\n\t"
+        "addl %2, %%eax			\n\t"
+        "subl $4, %%esi			\n\t"
+        " jnz 1b			\n\t"
+    :: "r" (block), "r" (pixels), "r"(line_size), "m"(h)
+    : "%eax", "%esi", "memory"
+    );
 #endif
 }
 
@@ -1124,7 +1129,7 @@ void dsputil_init_mmx(void)
         avg_no_rnd_pixels_tab[1] = avg_no_rnd_pixels_x2_mmx;
         avg_no_rnd_pixels_tab[2] = avg_no_rnd_pixels_y2_mmx;
         avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels_xy2_mmx;
-        
+
         sub_pixels_tab[0] = sub_pixels_mmx;
         sub_pixels_tab[1] = sub_pixels_x2_mmx;
         sub_pixels_tab[2] = sub_pixels_y2_mmx;
@@ -1140,20 +1145,24 @@ void dsputil_init_mmx(void)
             pix_abs8x8_x2 = pix_abs8x8_x2_mmx2;
             pix_abs8x8_y2 = pix_abs8x8_y2_mmx2;
             pix_abs8x8_xy2= pix_abs8x8_xy2_mmx2;
-            
-            put_pixels_tab[1] = put_pixels_x2_sse;
-            put_pixels_tab[2] = put_pixels_y2_sse;
-            
-            avg_pixels_tab[0] = avg_pixels_sse;
-            avg_pixels_tab[1] = avg_pixels_x2_sse;
-            avg_pixels_tab[2] = avg_pixels_y2_sse;
-            avg_pixels_tab[3] = avg_pixels_xy2_sse;
 
-            sub_pixels_tab[1] = sub_pixels_x2_sse;
-            sub_pixels_tab[2] = sub_pixels_y2_sse;
+            put_pixels_tab[1] = put_pixels_x2_mmx2;
+            put_pixels_tab[2] = put_pixels_y2_mmx2;
+            put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_mmx2;
+            put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_mmx2;
+            
+            avg_pixels_tab[0] = avg_pixels_mmx2;
+            avg_pixels_tab[1] = avg_pixels_x2_mmx2;
+            avg_pixels_tab[2] = avg_pixels_y2_mmx2;
+            avg_pixels_tab[3] = avg_pixels_xy2_mmx2;
+
+            sub_pixels_tab[1] = sub_pixels_x2_mmx2;
+            sub_pixels_tab[2] = sub_pixels_y2_mmx2;
         } else if (mm_flags & MM_3DNOW) {
             put_pixels_tab[1] = put_pixels_x2_3dnow;
             put_pixels_tab[2] = put_pixels_y2_3dnow;
+            put_no_rnd_pixels_tab[1] = put_no_rnd_pixels_x2_3dnow;
+            put_no_rnd_pixels_tab[2] = put_no_rnd_pixels_y2_3dnow;
             
             avg_pixels_tab[0] = avg_pixels_3dnow;
             avg_pixels_tab[1] = avg_pixels_x2_3dnow;
