@@ -98,6 +98,13 @@ static uint16_t pix_buf_uv[2][2048*2];
 // clipping helper table for C implementations:
 static unsigned char clip_table[768];
 
+static unsigned short clip_table16b[768];
+static unsigned short clip_table16g[768];
+static unsigned short clip_table16r[768];
+static unsigned short clip_table15b[768];
+static unsigned short clip_table15g[768];
+static unsigned short clip_table15r[768];
+
 // yuv->rgb conversion tables:
 static    int yuvtab_2568[256];
 static    int yuvtab_3343[256];
@@ -702,9 +709,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[i] =
-					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<3)&0x07E0) |
-					((clip_table[(Y + yuvtab_3343[V]) >>13]<<8)&0xF800);
+					clip_table16b[(Y + yuvtab_40cf[U]) >>13] |
+					clip_table16g[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13] |
+					clip_table16r[(Y + yuvtab_3343[V]) >>13];
 			}
 		}
 		else if(dstbpp==15)
@@ -716,9 +723,9 @@ FULL_YSCALEYUV2RGB
 				int V=((uvbuf0[i+2048]*uvalpha1+uvbuf1[i+2048]*uvalpha)>>19);
 
 				((uint16_t*)dest)[i] =
-					(clip_table[(Y + yuvtab_40cf[U]) >>13]>>3) |
-					((clip_table[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13]<<2)&0x03E0) |
-					((clip_table[(Y + yuvtab_3343[V]) >>13]<<7)&0x7C00);
+					clip_table15b[(Y + yuvtab_40cf[U]) >>13] |
+					clip_table15g[(Y + yuvtab_1a1e[V] + yuvtab_0c92[U]) >>13] |
+					clip_table15r[(Y + yuvtab_3343[V]) >>13];
 			}
 		}
 #endif
@@ -846,14 +853,14 @@ FULL_YSCALEYUV2RGB
 				int Cr= yuvtab_3343[V];
 
 				((uint16_t*)dest)[i] =
-					(clip_table[(Y1 + Cb) >>13]>>3) |
-					((clip_table[(Y1 + Cg) >>13]<<3)&0x07E0) |
-					((clip_table[(Y1 + Cr) >>13]<<8)&0xF800);
+					clip_table16b[(Y1 + Cb) >>13] |
+					clip_table16g[(Y1 + Cg) >>13] |
+					clip_table16r[(Y1 + Cr) >>13];
 
 				((uint16_t*)dest)[i+1] =
-					(clip_table[(Y2 + Cb) >>13]>>3) |
-					((clip_table[(Y2 + Cg) >>13]<<3)&0x07E0) |
-					((clip_table[(Y2 + Cr) >>13]<<8)&0xF800);
+					clip_table16b[(Y2 + Cb) >>13] |
+					clip_table16g[(Y2 + Cg) >>13] |
+					clip_table16r[(Y2 + Cr) >>13];
 			}
 		}
 		else if(dstbpp==15)
@@ -870,13 +877,14 @@ FULL_YSCALEYUV2RGB
 				int Cr= yuvtab_3343[V];
 
 				((uint16_t*)dest)[i] =
-					(clip_table[(Y1 + Cb) >>13]>>3) |
-					((clip_table[(Y1 + Cg) >>13]<<2)&0x03E0) |
-					((clip_table[(Y1 + Cr) >>13]<<7)&0x7C00);
+					clip_table15b[(Y1 + Cb) >>13] |
+					clip_table15g[(Y1 + Cg) >>13] |
+					clip_table15r[(Y1 + Cr) >>13];
+
 				((uint16_t*)dest)[i+1] =
-					(clip_table[(Y2 + Cb) >>13]>>3) |
-					((clip_table[(Y2 + Cg) >>13]<<2)&0x03E0) |
-					((clip_table[(Y2 + Cr) >>13]<<7)&0x7C00);
+					clip_table15b[(Y2 + Cb) >>13] |
+					clip_table15g[(Y2 + Cg) >>13] |
+					clip_table15r[(Y2 + Cr) >>13];
 			}
 		}
 #endif
@@ -1075,14 +1083,14 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 			int Cr= yuvtab_3343[V];
 
 			((uint16_t*)dest)[i] =
-				(clip_table[(Y1 + Cb) >>13]>>3) |
-				((clip_table[(Y1 + Cg) >>13]<<3)&0x07E0) |
-				((clip_table[(Y1 + Cr) >>13]<<8)&0xF800);
+				clip_table16b[(Y1 + Cb) >>13] |
+				clip_table16g[(Y1 + Cg) >>13] |
+				clip_table16r[(Y1 + Cr) >>13];
 
 			((uint16_t*)dest)[i+1] =
-				(clip_table[(Y2 + Cb) >>13]>>3) |
-				((clip_table[(Y2 + Cg) >>13]<<3)&0x07E0) |
-				((clip_table[(Y2 + Cr) >>13]<<8)&0xF800);
+				clip_table16b[(Y2 + Cb) >>13] |
+				clip_table16g[(Y2 + Cg) >>13] |
+				clip_table16r[(Y2 + Cr) >>13];
 		}
 	}
 	else if(dstbpp==15)
@@ -1099,13 +1107,14 @@ static inline void yuv2rgb1(uint16_t *buf0, uint16_t *buf1, uint16_t *uvbuf0, ui
 			int Cr= yuvtab_3343[V];
 
 			((uint16_t*)dest)[i] =
-				(clip_table[(Y1 + Cb) >>13]>>3) |
-				((clip_table[(Y1 + Cg) >>13]<<2)&0x03E0) |
-				((clip_table[(Y1 + Cr) >>13]<<7)&0x7C00);
+				clip_table15b[(Y1 + Cb) >>13] |
+				clip_table15g[(Y1 + Cg) >>13] |
+				clip_table15r[(Y1 + Cr) >>13];
+
 			((uint16_t*)dest)[i+1] =
-				(clip_table[(Y2 + Cb) >>13]>>3) |
-				((clip_table[(Y2 + Cg) >>13]<<2)&0x03E0) |
-				((clip_table[(Y2 + Cr) >>13]<<7)&0x7C00);
+				clip_table15b[(Y2 + Cb) >>13] |
+				clip_table15g[(Y2 + Cg) >>13] |
+				clip_table15r[(Y2 + Cr) >>13];
 		}
 	}
 #endif
@@ -1664,6 +1673,17 @@ void SwScale_Init(){
 	yuvtab_0c92[i]=-0x0c92*(i-128);
 	yuvtab_1a1e[i]=-0x1a1e*(i-128);
 	yuvtab_40cf[i]=0x40cf*(i-128);
+    }
+
+    for(i=0; i<768; i++)
+    {
+    	int v= clip_table[i];
+	clip_table16b[i]= v>>3;
+	clip_table16g[i]= (v<<3)&0x07E0;
+	clip_table16r[i]= (v<<8)&0xF800;
+	clip_table15b[i]= v>>3;
+	clip_table15g[i]= (v<<2)&0x03E0;
+	clip_table15r[i]= (v<<7)&0x7C00;
     }
 
 }
