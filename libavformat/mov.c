@@ -1985,9 +1985,10 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
     // Update other streams    
     for (i = 0; i<mov->total_streams; i++) {
+        MOVStreamContext *msc;
         if (i == mov_idx) continue;
         // Find the nearest 'next' chunk
-        MOVStreamContext *msc = mov->streams[i];
+        msc = mov->streams[i];
         a = 0;
         b = msc->chunk_count - 1;
         while (a < b) {
