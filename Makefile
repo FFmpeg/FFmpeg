@@ -10,7 +10,13 @@ CFLAGS+=-p
 LDFLAGS+=-p
 endif
 
-PROG= ffmpeg ffserver
+ifeq ($(CONFIG_WIN32),yes)
+EXE=.exe
+PROG=ffmpeg$(EXE)
+else
+EXT=
+PROG=ffmpeg ffserver
+endif
 
 all: lib $(PROG)
 
@@ -18,14 +24,14 @@ lib:
 	$(MAKE) -C libavcodec all
 	$(MAKE) -C libav all
 
-ffmpeg: ffmpeg.o libav/libav.a libavcodec/libavcodec.a
-	gcc $(LDFLAGS) -o $@ $^ -lm
+ffmpeg$(EXE): ffmpeg.o libav/libav.a libavcodec/libavcodec.a
+	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
-ffserver: ffserver.o libav/libav.a libavcodec/libavcodec.a
-	gcc $(LDFLAGS) -o $@ $^ -lm
+ffserver$(EXE): ffserver.o libav/libav.a libavcodec/libavcodec.a
+	$(CC) $(LDFLAGS) -o $@ $^ -lm
 
 %.o: %.c
-	gcc $(CFLAGS) -c -o $@ $< 
+	$(CC) $(CFLAGS) -c -o $@ $< 
 
 install: all
 	install -s -m 755 $(PROG) $(prefix)/bin

@@ -16,12 +16,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
+#define HAVE_AV_CONFIG_H
+#include "avformat.h"
+
 #ifndef CONFIG_WIN32
-#include "config.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -33,7 +31,6 @@
 #include <ctype.h>
 #endif
 
-#include "avformat.h"
 
 #define MAXINT64 INT64_C(0x7fffffffffffffff)
 
