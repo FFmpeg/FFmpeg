@@ -234,6 +234,10 @@ int ff_xvid_encode_init(AVCodecContext *avctx)  {
         }
         strcpy(x->twopassfile, "/tmp/xvidff.XXXXXX");
         fd = mkstemp(x->twopassfile);
+        if(fd < 0){
+            strcpy(x->twopassfile, "./xvidff.XXXXXX");
+            fd = mkstemp(x->twopassfile);
+        }
         if( fd == -1 ) {
             av_log(avctx, AV_LOG_ERROR,
                 "XviD: Cannot write 2-pass pipe\n");
