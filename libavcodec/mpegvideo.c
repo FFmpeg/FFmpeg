@@ -470,7 +470,7 @@ int MPV_common_init(MpegEncContext *s)
 
     CHECKED_ALLOCZ(s->error_status_table, mb_array_size*sizeof(uint8_t))
     
-    if (s->out_format == FMT_H263 || s->encoding) {
+    if (s->out_format == FMT_H263 || s->encoding || (s->avctx->debug&FF_DEBUG_VIS_MV)) {
         int size;
 
         /* MV prediction */
