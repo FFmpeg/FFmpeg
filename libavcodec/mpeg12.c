@@ -2334,7 +2334,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
                 for(dir=0; dir<2; dir++){
                     if (s->mb_intra || (dir==1 && s->pict_type != B_TYPE)) {
                         motion_x = motion_y = 0;
-                    }else if (s->mv_type == MV_TYPE_16X16){
+                    }else if (s->mv_type == MV_TYPE_16X16 || (s->mv_type == MV_TYPE_FIELD && field_pic)){
                         motion_x = s->mv[dir][0][0];
                         motion_y = s->mv[dir][0][1];
                     } else /*if ((s->mv_type == MV_TYPE_FIELD) || (s->mv_type == MV_TYPE_16X8))*/ {
