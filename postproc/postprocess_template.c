@@ -26,7 +26,7 @@ isHorizDC		Ec	Ec
 isHorizMinMaxOk		a	E
 doHorizLowPass		E		e	e
 doHorizDefFilter	Ec	Ec	Ec
-deRing					e	e*
+deRing			E		e	e*
 Vertical RKAlgo1	E		a	a
 Horizontal RKAlgo1			a	a
 Vertical X1		a		E	E
@@ -92,6 +92,24 @@ Notes:
 #elif defined (HAVE_3DNOW)
 #define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
+
+#ifdef HAVE_MMX2
+#define PMINUB(a,b,t) "pminub " #a ", " #b " \n\t"
+#elif defined (HAVE_MMX)
+#define PMINUB(b,a,t) \
+	"movq " #a ", " #t " \n\t"\
+	"psubusb " #b ", " #t " \n\t"\
+	"psubb " #t ", " #a " \n\t"
+#endif
+
+#ifdef HAVE_MMX2
+#define PMAXUB(a,b) "pmaxub " #a ", " #b " \n\t"
+#elif defined (HAVE_MMX)
+#define PMAXUB(a,b) \
+	"psubusb " #a ", " #b " \n\t"\
+	"paddb " #a ", " #b " \n\t"
+#endif
+
 
 #define GET_MODE_BUFFER_SIZE 500
 #define OPTIONS_ARRAY_SIZE 10
@@ -1972,22 +1990,21 @@ FIND_MIN_MAX((%0, %1, 8))
 		PAVGB(lx, pplx)					     \
 		PAVGB(plx, pplx)				      /* filtered */\
 		"movq " #dst ", " #t0 "				\n\t" /* dst */\
-		"movq " #pplx ", " #t1 "			\n\t"\
-		"psubusb " #t0 ", " #pplx "			\n\t"\
-		"psubusb " #t1 ", " #t0 "			\n\t"\
-		"por " #t0 ", " #pplx "				\n\t" /* |filtered - dst| */\
-		"psubusb pQPb2, " #pplx "			\n\t"\
-		"pcmpeqb b00, " #pplx "				\n\t"\
+		"movq " #t0 ", " #t1 "				\n\t" /* dst */\
+		"psubusb pQPb2, " #t0 "				\n\t"\
+		"paddusb pQPb2, " #t1 "				\n\t"\
+		PMAXUB(t0, pplx)\
+		PMINUB(t1, pplx, t0)\
 		"paddb " #sx ", " #ppsx "			\n\t"\
 		"paddb " #psx ", " #ppsx "			\n\t"\
 	"#paddb b02, " #ppsx "				\n\t"\
 		"pand b08, " #ppsx "				\n\t"\
 		"pcmpeqb b00, " #ppsx "				\n\t"\
-		"pand " #pplx ", " #ppsx "			\n\t"\
-		"pand " #ppsx ", " #t1 "			\n\t"\
+		"pand " #ppsx ", " #pplx "			\n\t"\
 		"pandn " #dst ", " #ppsx "			\n\t"\
-		"por " #t1 ", " #ppsx "				\n\t"\
+		"por " #pplx ", " #ppsx "				\n\t"\
 		"movq " #ppsx ", " #dst "			\n\t"
+
 /*
 0000000
 1111111
@@ -2018,8 +2035,65 @@ DERING_CORE((%0, %1, 8),(%%ebx, %1, 4) ,%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm
 		: "%eax", "%ebx"
 	);
 #else
+	int y;
+	int min=255;
+	int max=0;
+	int avg;
+	uint8_t *p;
+	int s[10];
 
-//FIXME
+	for(y=1; y<9; y++)
+	{
+		int x;
+		p= src + stride*y;
+		for(x=1; x<9; x++)
+		{
+			p++;
+			if(*p > max) max= *p;
+			if(*p < min) min= *p;
+		}
+	}
+	avg= (min + max + 1)/2;
+
+	for(y=0; y<10; y++)
+	{
+		int x;
+		int t = 0;
+		p= src + stride*y;
+		for(x=0; x<10; x++)
+		{
+			if(*p > avg) t |= (1<<x);
+			p++;
+		}
+		t |= (~t)<<16;
+		t &= (t<<1) & (t>>1);
+		s[y] = t;
+	}
+
+	for(y=1; y<9; y++)
+	{
+		int x;
+		int t = s[y-1] & s[y] & s[y+1];
+		t|= t>>16;
+
+		p= src + stride*y;
+		for(x=1; x<9; x++)
+		{
+			p++;
+			if(t & (1<<x))
+			{
+				int f= (*(p-stride-1)) + 2*(*(p-stride)) + (*(p-stride+1))
+				      +2*(*(p     -1)) + 4*(*p         ) + 2*(*(p     +1))
+				      +(*(p+stride-1)) + 2*(*(p+stride)) + (*(p+stride+1));
+				f= (f + 8)>>4;
+
+				if     (*p + 2*QP < f) *p= *p + 2*QP;
+				else if(*p - 2*QP > f) *p= *p - 2*QP;
+				else *p=f;
+			}
+		}
+	}
+
 #endif
 }
 
