@@ -220,12 +220,11 @@ void ff_h261_encode_mb(MpegEncContext * s,
          int motion_x, int motion_y)
 {
     H261Context * h = (H261Context *)s;
-    int old_mtype, mvd, mv_diff_x, mv_diff_y, i, cbp;
+    int mvd, mv_diff_x, mv_diff_y, i, cbp;
     cbp = 63; // avoid warning
     mvd = 0;
  
     h->current_mba++;
-    old_mtype = h->mtype;
     h->mtype = 0;
  
     if (!s->mb_intra){
@@ -233,14 +232,8 @@ void ff_h261_encode_mb(MpegEncContext * s,
         cbp= get_cbp(s, block);
    
         /* mvd indicates if this block is motion compensated */
-        if(((motion_x >> 1) - h->current_mv_x != 0) || ((motion_y >> 1 ) - h->current_mv_y) != 0){
-            mvd = 1;
-        }
-        else if((motion_x >> 1 == 0) && (motion_y >> 1 == 0)){
-            mvd = 0;
-        }
-        else
-            mvd = 1;
+        mvd = motion_x | motion_y;
+
         if((cbp | mvd | s->dquant ) == 0) {
             /* skip macroblock */
             s->skip_count++;
@@ -255,14 +248,15 @@ void ff_h261_encode_mb(MpegEncContext * s,
  
     /* calculate MTYPE */
     if(!s->mb_intra){
-        h->mtype+=2;
-    if(mvd == 1){   
-        h->mtype+=2;
-        if(cbp!=0)
-            h->mtype+=1;
+        h->mtype++;
+        
+        if(mvd || s->loop_filter)
+            h->mtype+=3;
         if(s->loop_filter)
             h->mtype+=3;
-        }
+        if(cbp || s->dquant)
+            h->mtype++;
+        assert(h->mtype > 1);
     }
 
     if(s->dquant) 

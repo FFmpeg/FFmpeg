@@ -35,8 +35,8 @@ a5bd577163968edab00058f2c8d5efab *./data/a-wmv2.avi
 682132 ./data/a-wmv2.avi
 09253222ab4eb95628c931a86006a2b1 *./data/out.yuv
 stddev:  8.02 PSNR:30.04 bytes:7602176
-394b91b7ef6b94e375316cc3037e68c5 *./data/a-h261.avi
-779660 ./data/a-h261.avi
+c12437d78325d6634ff77a49bf1869e8 *./data/a-h261.avi
+779222 ./data/a-h261.avi
 1dd0be7be463c1a338d1b848e926a0b8 *./data/out.yuv
 stddev:  9.17 PSNR:28.87 bytes:7602176
 fa556e599181bf9328a811a1ce9aa022 *./data/a-h263.avi
