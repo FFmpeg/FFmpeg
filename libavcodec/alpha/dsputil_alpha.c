@@ -105,6 +105,24 @@ void add_pixels_clamped_mvi(const DCTELEM *block, uint8_t *pixels,
 }
 #endif
 
+static void clear_blocks_axp(DCTELEM *blocks) {
+    uint64_t *p = (uint64_t *) blocks;
+    int n = sizeof(DCTELEM) * 6 * 64;
+
+    do {
+        p[0] = 0;
+        p[1] = 0;
+        p[2] = 0;
+        p[3] = 0;
+        p[4] = 0;
+        p[5] = 0;
+        p[6] = 0;
+        p[7] = 0;
+        p += 8;
+        n -= 8 * 8;
+    } while (n);
+}
+
 static inline uint64_t avg2_no_rnd(uint64_t a, uint64_t b)
 {
     return (a & b) + (((a ^ b) & BYTE_VEC(0xfe)) >> 1);
@@ -258,6 +276,8 @@ void dsputil_init_alpha(void)
     avg_no_rnd_pixels_tab[1] = avg_no_rnd_pixels_x2_axp;
     avg_no_rnd_pixels_tab[2] = avg_no_rnd_pixels_y2_axp;
     avg_no_rnd_pixels_tab[3] = avg_no_rnd_pixels_xy2_axp;
+
+    clear_blocks = clear_blocks_axp;
 
     /* amask clears all bits that correspond to present features.  */
     if (amask(AMASK_MVI) == 0) {
