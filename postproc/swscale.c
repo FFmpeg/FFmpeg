@@ -1963,10 +1963,9 @@ SwsContext *sws_getContext(int srcW, int srcH, int origSrcFormat, int dstW, int 
 		int chrI= i*c->chrDstH / dstH;
 		int nextSlice= MAX(c->vLumFilterPos[i   ] + c->vLumFilterSize - 1,
 				 ((c->vChrFilterPos[chrI] + c->vChrFilterSize - 1)<<c->chrSrcVSubSample));
-		if(c->chrSrcVSubSample > 1) 
-		    nextSlice&= ~3; // Slices start at boundaries which are divisable through 4
-		else
-		    nextSlice&= ~1; // Slices start at boundaries which are divisable through 2
+
+		nextSlice>>= c->chrSrcVSubSample;
+		nextSlice<<= c->chrSrcVSubSample;
 		if(c->vLumFilterPos[i   ] + c->vLumBufSize < nextSlice)
 			c->vLumBufSize= nextSlice - c->vLumFilterPos[i   ];
 		if(c->vChrFilterPos[chrI] + c->vChrBufSize < (nextSlice>>c->chrSrcVSubSample))
