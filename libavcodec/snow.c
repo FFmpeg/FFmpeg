@@ -1988,29 +1988,6 @@ START_TIMER
 STOP_TIMER("mc_block")
 }
 
-#define mcb(dx,dy,b_w)\
-static void mc_block ## dx ## dy(uint8_t *dst, uint8_t *src, int stride){\
-    uint8_t tmp[stride*(b_w+5)];\
-    mc_block(dst, src-2-2*stride, tmp, stride, b_w, b_w, dx, dy);\
-}
-
-mcb( 0, 0,16)
-mcb( 4, 0,16)
-mcb( 8, 0,16)
-mcb(12, 0,16)
-mcb( 0, 4,16)
-mcb( 4, 4,16)
-mcb( 8, 4,16)
-mcb(12, 4,16)
-mcb( 0, 8,16)
-mcb( 4, 8,16)
-mcb( 8, 8,16)
-mcb(12, 8,16)
-mcb( 0,12,16)
-mcb( 4,12,16)
-mcb( 8,12,16)
-mcb(12,12,16)
-
 #define mca(dx,dy,b_w)\
 static void mc_block_hpel ## dx ## dy(uint8_t *dst, uint8_t *src, int stride, int h){\
     uint8_t tmp[stride*(b_w+5)];\
@@ -2036,6 +2013,8 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *src, uint8_t *tmp,
         const int scale= plane_index ?  s->mv_scale : 2*s->mv_scale;
         int mx= block->mx*scale;
         int my= block->my*scale;
+        const int dx= mx&15;
+        const int dy= my&15;
         sx += (mx>>4) - 2;
         sy += (my>>4) - 2;
         src += sx + sy*stride;
@@ -2044,7 +2023,10 @@ static void pred_block(SnowContext *s, uint8_t *dst, uint8_t *src, uint8_t *tmp,
             ff_emulated_edge_mc(tmp + MB_SIZE, src, stride, b_w+5, b_h+5, sx, sy, w, h);
             src= tmp + MB_SIZE;
         }
-        mc_block(dst, src, tmp, stride, b_w, b_h, mx&15, my&15);
+        if((dx&3) || (dy&3) || b_w!=b_h || (b_w!=4 && b_w!=8 && b_w!=16))
+            mc_block(dst, src, tmp, stride, b_w, b_h, dx, dy);
+        else
+            s->dsp.put_h264_qpel_pixels_tab[2-(b_w>>3)][dy+(dx>>2)](dst,src + 2 + 2*stride,stride);
     }
 }
 
@@ -2464,7 +2446,7 @@ static int common_init(AVCodecContext *avctx){
 #define mcf(dx,dy)\
     s->dsp.put_qpel_pixels_tab       [0][dy+dx/4]=\
     s->dsp.put_no_rnd_qpel_pixels_tab[0][dy+dx/4]=\
-        mc_block ## dx ## dy;
+        s->dsp.put_h264_qpel_pixels_tab[0][dy+dx/4];
 
     mcf( 0, 0)
     mcf( 4, 0)
