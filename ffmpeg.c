@@ -96,6 +96,7 @@ static int b_frames = 0;
 static int use_hq = 0;
 static int use_4mv = 0;
 static int do_deinterlace = 0;
+static int workaround_bugs = 0;
 
 static int gop_size = 12;
 static int intra_only = 0;
@@ -1333,6 +1334,11 @@ void opt_video_bitrate_tolerance(const char *arg)
     video_bit_rate_tolerance = atoi(arg) * 1000;
 }
 
+void opt_workaround_bugs(const char *arg)
+{
+    workaround_bugs = atoi(arg);
+}
+
 void opt_frame_rate(const char *arg)
 {
     frame_rate = (int)(strtod(arg, 0) * FRAME_RATE_BASE);
@@ -1589,6 +1595,7 @@ void opt_input_file(const char *filename)
             frame_height = enc->height;
             frame_width = enc->width;
             rfps = ic->streams[i]->r_frame_rate;
+            enc->workaround_bugs = workaround_bugs;
             if (enc->frame_rate != rfps) {
                 fprintf(stderr,"\nSeems that stream %d comes from film source: %2.2f->%2.2f\n",
                     i, (float)enc->frame_rate / FRAME_RATE_BASE,
@@ -2098,6 +2105,7 @@ const OptionDef options[] = {
     { "bf", HAS_ARG | OPT_EXPERT, {(void*)opt_b_frames}, "use 'frames' B frames (only MPEG-4)", "frames" },
     { "hq", OPT_BOOL | OPT_EXPERT, {(void*)&use_hq}, "activate high quality settings" },
     { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
+    { "bug", HAS_ARG | OPT_EXPERT, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "sameq", OPT_BOOL, {(void*)&same_quality}, 
       "use same video quality as source (implies VBR)" },
     /* audio options */
