@@ -991,7 +991,9 @@ void ff_er_frame_end(MpegEncContext *s){
         v_block_filter(s, s->current_picture.data[2], s->mb_width  , s->mb_height  , s->uvlinesize, 0);
     }
 
+#ifdef HAVE_XVMC
 ec_clean:
+#endif
     /* clean a few tables */
     for(i=0; i<s->mb_num; i++){
         const int mb_xy= s->mb_index2xy[i];
