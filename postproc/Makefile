@@ -5,7 +5,6 @@ SWSLIB = libswscale.a
 
 SWSSRCS=swscale.c rgb2rgb.c yuv2rgb.c
 SWSOBJS=$(SWSSRCS:.c=.o)
-CS_TEST_OBJS=cs_test.o rgb2rgb.o ../cpudetect.o ../mp_msg.o ../libvo/aclib.o
 
 CFLAGS  = $(OPTFLAGS) $(MLIB_INC) -I. -I.. $(EXTRA_INC)
 # -I/usr/X11R6/include/
@@ -33,8 +32,8 @@ dep:    depend
 depend:
 	$(CC) -MM $(CFLAGS) $(SWSSRCS) 1>.depend
 
-cs_test: $(CS_TEST_OBJS)
-	$(CC) $(CS_TEST_OBJS) -o cs_test
+cs_test: cs_test.o $(SWSLIB)
+	$(CC) cs_test.o $(SWSLIB) ../cpudetect.o -DFOR_MENCODER ../mp_msg.c -o cs_test -W -Wall
 
 swscale-example: swscale-example.o $(SWSLIB)
 	$(CC) swscale-example.o $(SWSLIB) ../libmpcodecs/img_format.o -lm -o swscale-example -W -Wall
