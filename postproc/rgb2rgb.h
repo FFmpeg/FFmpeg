@@ -127,4 +127,6 @@ static void yuv2rgb_init (unsigned bpp, int mode){
 printf("broken, this should use the swscaler\n");
 }
 
+void sws_rgb2rgb_init(int flags);
+
 #endif
