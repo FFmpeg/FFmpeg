@@ -525,10 +525,16 @@ retry:
         fprintf(stderr, "header damaged\n");
         return -1;
     }
+    
+    s->avctx->key_frame   = (s->pict_type == I_TYPE);
+    s->avctx->pict_type   = s->pict_type;
+
     /* skip b frames if we dont have reference frames */
     if(s->num_available_buffers<2 && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
     /* skip b frames if we are in a hurry */
     if(s->hurry_up && s->pict_type==B_TYPE) return get_consumed_bytes(s, buf_size);
+    /* skip everything if we are in a hurry>=5 */
+    if(s->hurry_up>=5) return get_consumed_bytes(s, buf_size);
     
     if(s->next_p_frame_damaged){
         if(s->pict_type==B_TYPE)

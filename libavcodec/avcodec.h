@@ -5,8 +5,8 @@
 
 #define LIBAVCODEC_VERSION_INT 0x000406
 #define LIBAVCODEC_VERSION     "0.4.6"
-#define LIBAVCODEC_BUILD       4636
-#define LIBAVCODEC_BUILD_STR   "4636"
+#define LIBAVCODEC_BUILD       4637
+#define LIBAVCODEC_BUILD_STR   "4637"
 
 enum CodecID {
     CODEC_ID_NONE, 
@@ -356,7 +356,7 @@ typedef struct AVCodecContext {
 
     /**
      * encoding: unused
-     * decoding: set by user. 1-> skip b frames, 2-> skip idct/dequant too
+     * decoding: set by user. 1-> skip b frames, 2-> skip idct/dequant too, 5-> skip everything except header
      */
     int hurry_up;
     
