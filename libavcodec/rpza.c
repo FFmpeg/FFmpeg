@@ -106,7 +106,7 @@ static void rpza_decode_stream(RpzaContext *s)
     chunk_size = s->size;
 
     /* Number of 4x4 blocks in frame. */
-    total_blocks = (s->avctx->width * s->avctx->height) / (4 * 4);
+    total_blocks = ((s->avctx->width + 3) / 4) * ((s->avctx->height + 3) / 4);
 
     /* Process chunk data */
     while (stream_ptr < chunk_size) {
