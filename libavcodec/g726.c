@@ -55,16 +55,6 @@ static inline int16_t mult(Float11* f1, Float11* f2)
 	return (f1->sign ^ f2->sign) ? -res : res;
 }
 
-static inline int clamp(int value, int min, int max)
-{
-   if (value < min)
-       return min;
-   else if (value > max)
-       return max;
-   else 
-       return value;
-}
-
 static inline int sgn(int value)
 {
    return (value < 0) ? -1 : 1;
@@ -220,12 +210,12 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
 	   c->b[i] = 0;
     } else {
 	/* This is a bit crazy, but it really is +255 not +256 */
-	fa1 = clamp((-c->a[0]*c->pk[0]*pk0)>>5, -256, 255);
+	fa1 = clip((-c->a[0]*c->pk[0]*pk0)>>5, -256, 255);
 	
 	c->a[1] += 128*pk0*c->pk[1] + fa1 - (c->a[1]>>7);
-	c->a[1] = clamp(c->a[1], -12288, 12288);
+	c->a[1] = clip(c->a[1], -12288, 12288);
         c->a[0] += 64*3*pk0*c->pk[0] - (c->a[0] >> 8);
-	c->a[0] = clamp(c->a[0], -(15360 - c->a[1]), 15360 - c->a[1]);
+	c->a[0] = clip(c->a[0], -(15360 - c->a[1]), 15360 - c->a[1]);
 
         for (i=0; i<6; i++)
 	     c->b[i] += 128*dq0*sgn(-c->dq[i].sign) - (c->b[i]>>8);
@@ -255,7 +245,7 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
        c->ap += (0x200 - c->ap) >> 4; 
 
     /* Update Yu and Yl */
-    c->yu = clamp(c->y + (((c->tbls->W[I] << 5) - c->y) >> 5), 544, 5120);
+    c->yu = clip(c->y + (((c->tbls->W[I] << 5) - c->y) >> 5), 544, 5120);
     c->yl += c->yu + ((-c->yl)>>6);
  
     /* Next iteration for Y */
@@ -271,7 +261,7 @@ static inline int16_t g726_iterate(G726Context* c, int16_t I)
        c->se += mult(i2f(c->a[i] >> 2, &f), &c->sr[i]);
     c->se >>= 1;
 
-    return clamp(re_signal << 2, -0xffff, 0xffff);
+    return clip(re_signal << 2, -0xffff, 0xffff);
 }
 
 static int g726_reset(G726Context* c, int bit_rate)
@@ -329,9 +319,13 @@ static int g726_init(AVCodecContext * avctx)
 {
     AVG726Context* c = (AVG726Context*)avctx->priv_data;
     
-    if (avctx->sample_rate != 8000 || avctx->channels != 1 ||
+    if (avctx->channels != 1 ||
         (avctx->bit_rate != 16000 && avctx->bit_rate != 24000 &&
 	 avctx->bit_rate != 32000 && avctx->bit_rate != 40000)) {
+        av_log(avctx, AV_LOG_ERROR, "G726: unsupported audio format\n");
+	return -1;
+    }
+    if (avctx->sample_rate != 8000 && avctx->strict_std_compliance>=0) {
         av_log(avctx, AV_LOG_ERROR, "G726: unsupported audio format\n");
 	return -1;
     }
