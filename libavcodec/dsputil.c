@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include "avcodec.h"
 #include "dsputil.h"
+#include "simple_idct.h"
 
 void (*ff_idct)(DCTELEM *block);
 void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
@@ -388,6 +389,27 @@ int pix_abs16x16_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size, int h)
 
 /* permute block according so that it corresponds to the MMX idct
    order */
+#ifdef SIMPLE_IDCT
+void block_permute(INT16 *block)
+{
+	int i;
+	INT16 temp[64];
+
+//	for(i=0; i<64; i++) temp[i] = block[ block_permute_op(i) ];
+	for(i=0; i<64; i++) temp[ block_permute_op(i) ] = block[i];
+
+	for(i=0; i<64; i++) block[i] = temp[i];
+/*
+	for(i=0; i<64; i++)
+	{
+		if((i&7)==0) printf("\n");
+		printf("%2d ", block[i]);
+	}
+*/
+}
+
+#else
+
 void block_permute(INT16 *block)
 {
     int tmp1, tmp2, tmp3, tmp4, tmp5, tmp6;
@@ -409,6 +431,7 @@ void block_permute(INT16 *block)
         block += 8;
     }
 }
+#endif
 
 void dsputil_init(void)
 {
@@ -425,7 +448,11 @@ void dsputil_init(void)
         squareTbl[i] = (i - 256) * (i - 256);
     }
 
+#ifdef SIMPLE_IDCT
+    ff_idct = simple_idct;
+#else
     ff_idct = j_rev_dct;
+#endif
     get_pixels = get_pixels_c;
     put_pixels_clamped = put_pixels_clamped_c;
     add_pixels_clamped = add_pixels_clamped_c;
@@ -447,6 +474,10 @@ void dsputil_init(void)
 #ifdef HAVE_MLIB
     dsputil_init_mlib();
     use_permuted_idct = 0;
+#endif
+
+#ifdef SIMPLE_IDCT
+    if(ff_idct == simple_idct) use_permuted_idct=0;
 #endif
 
     if (use_permuted_idct) {

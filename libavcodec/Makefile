@@ -6,7 +6,7 @@ LDFLAGS= -g
 OBJS= common.o utils.o mpegvideo.o h263.o jrevdct.o jfdctfst.o \
       mpegaudio.o ac3enc.o mjpeg.o resample.o dsputil.o \
       motion_est.o imgconvert.o imgresample.o msmpeg4.o \
-      mpeg12.o h263dec.o rv10.o mpegaudiodec.o pcm.o
+      mpeg12.o h263dec.o rv10.o mpegaudiodec.o pcm.o simple_idct.o
 ASM_OBJS=
 
 # currently using libac3 for ac3 decoding
@@ -20,7 +20,8 @@ endif
 ifeq ($(TARGET_MMX),yes)
 OBJS += i386/fdct_mmx.o i386/cputest.o \
 	i386/dsputil_mmx.o i386/mpegvideo_mmx.o \
-        i386/idct_mmx.o i386/motion_est_mmx.o
+        i386/idct_mmx.o i386/motion_est_mmx.o \
+	i386/simple_idct_mmx.o
 endif
 
 # armv4l specific stuff

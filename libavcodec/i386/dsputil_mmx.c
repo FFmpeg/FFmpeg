@@ -20,6 +20,7 @@
  */
 
 #include "../dsputil.h"
+#include "../simple_idct.h"
 
 int mm_flags; /* multimedia extension flags */
 
@@ -1047,5 +1048,9 @@ void dsputil_init_mmx(void)
         } else {
             ff_idct = ff_mmx_idct;
         }
+#ifdef SIMPLE_IDCT
+//	ff_idct = simple_idct;
+	ff_idct = simple_idct_mmx;
+#endif
     }
 }

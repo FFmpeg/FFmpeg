@@ -554,7 +554,7 @@ static int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *di
     return pred;
 }
 
-void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n, 
+void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
                    int dir)
 {
     int x, y, wrap, i;
@@ -579,22 +579,22 @@ void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n,
             /* left prediction */
             ac_val -= 16;
             for(i=1;i<8;i++) {
-                block[i*8] += ac_val[i];
+                block[block_permute_op(i*8)] += ac_val[i];
             }
         } else {
             /* top prediction */
             ac_val -= 16 * wrap;
             for(i=1;i<8;i++) {
-                block[i] += ac_val[i + 8];
+                block[block_permute_op(i)] += ac_val[i + 8];
             }
         }
     }
     /* left copy */
     for(i=1;i<8;i++)
-        ac_val1[i] = block[i * 8];
+        ac_val1[i] = block[block_permute_op(i * 8)];
     /* top copy */
     for(i=1;i<8;i++)
-        ac_val1[8 + i] = block[i];
+        ac_val1[8 + i] = block[block_permute_op(i)];
 }
 
 static inline void mpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr)
