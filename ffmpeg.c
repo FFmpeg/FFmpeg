@@ -126,6 +126,7 @@ static float tcplx_mask = 0;
 static float p_mask = 0;
 static int use_4mv = 0;
 static int use_obmc = 0;
+static int use_loop = 0;
 static int use_aic = 0;
 static int use_aiv = 0;
 static int use_umv = 0;
@@ -2497,6 +2498,9 @@ static void opt_output_file(const char *filename)
                 if (use_obmc) {
                     video_enc->flags |= CODEC_FLAG_OBMC;
                 }
+                if (use_loop) {
+                    video_enc->flags |= CODEC_FLAG_LOOP_FILTER;
+                }
             
                 if(use_part) {
                     video_enc->flags |= CODEC_FLAG_PART;
@@ -3195,6 +3199,7 @@ const OptionDef options[] = {
     { "p_mask", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_p_mask}, "inter masking", "" },
     { "4mv", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_4mv}, "use four motion vector by macroblock (MPEG4)" },
     { "obmc", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_obmc}, "use overlapped block motion compensation (h263+)" },
+    { "lf", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_loop}, "use loop filter (h263+)" },
     { "part", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&use_part}, "use data partitioning (MPEG4)" },
     { "bug", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_workaround_bugs}, "workaround not auto detected encoder bugs", "param" },
     { "ps", HAS_ARG | OPT_EXPERT, {(void*)opt_packet_size}, "set packet size in bits", "size" },
