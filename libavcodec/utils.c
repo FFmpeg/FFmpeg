@@ -27,7 +27,9 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "integer.h"
 #include <stdarg.h>
+#include <limits.h>
 
 static void avcodec_default_free_buffers(AVCodecContext *s);
 
@@ -816,23 +818,25 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
     return exact;
 }
 
-int64_t av_rescale(int64_t a, int b, int c){
-    uint64_t h, l;
+int64_t av_rescale(int64_t a, int64_t b, int64_t c){
+    AVInteger ai, ci;
     assert(c > 0);
     assert(b >=0);
     
     if(a<0) return -av_rescale(-a, b, c);
     
-    h= a>>32;
-    if(h==0) return a*b/c;
+    if(b<=INT_MAX && c<=INT_MAX){
+        if(a<=INT_MAX)
+            return (a * b + c/2)/c;
+        else
+            return a/c*b + (a%c*b + c/2)/c;
+    }
     
-    l= a&0xFFFFFFFF;
-    l *= b;
-    h *= b;
-
-    l += (h%c)<<32;
-
-    return ((h/c)<<32) + l/c;
+    ai= av_mul_i(av_int2i(a), av_int2i(b));
+    ci= av_int2i(c);
+    ai= av_add_i(ai, av_shr_i(ci,1));
+    
+    return av_i2int(av_div_i(ai, ci));
 }
 
 /* av_log API */

@@ -17,7 +17,7 @@ extern "C" {
 
 #define FFMPEG_VERSION_INT     0x000408
 #define FFMPEG_VERSION         "0.4.8"
-#define LIBAVCODEC_BUILD       4711
+#define LIBAVCODEC_BUILD       4712
 
 #define LIBAVCODEC_VERSION_INT FFMPEG_VERSION_INT
 #define LIBAVCODEC_VERSION     FFMPEG_VERSION
@@ -1986,7 +1986,7 @@ int av_reduce(int *dst_nom, int *dst_den, int64_t nom, int64_t den, int64_t max)
  * rescale a 64bit integer.
  * a simple a*b/c isnt possible as it can overflow
  */
-int64_t av_rescale(int64_t a, int b, int c);
+int64_t av_rescale(int64_t a, int64_t b, int64_t c);
 
 
 /**
