@@ -144,11 +144,14 @@ static int put_system_header(AVFormatContext *ctx, uint8_t *buf,int only_for_str
     } else
         put_bits(&pb, 6, s->audio_bound);
 
-    if (s->is_vcd)
-        put_bits(&pb, 1, 0); /* see VCD standard, p. IV-7*/
-    else
-        put_bits(&pb, 1, 1); /* variable bitrate*/
-    put_bits(&pb, 1, 1); /* non constrainted bit stream */
+    if (s->is_vcd) {
+        /* see VCD standard, p. IV-7*/
+        put_bits(&pb, 1, 0); 
+        put_bits(&pb, 1, 1);
+    } else {
+        put_bits(&pb, 1, 0); /* variable bitrate*/
+        put_bits(&pb, 1, 0); /* non constrainted bit stream */
+    }
     
     if (s->is_vcd) {
         /* see VCD standard p IV-7 */
@@ -286,6 +289,9 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             } else {
                 stream->id = mpa_id++;
             }
+
+            /* This value HAS to be used for VCD (see VCD standard, p. IV-7).
+               Right now it is also used for everything else.*/
             stream->max_buffer_size = 4 * 1024; 
             s->audio_bound++;
             break;
@@ -294,7 +300,13 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             if (s->scr_stream_index == -1)
                 s->scr_stream_index = i;
             stream->id = mpv_id++;
-            stream->max_buffer_size = 46 * 1024; 
+            if (s->is_vcd)
+                /* see VCD standard, p. IV-7*/
+                stream->max_buffer_size = 46 * 1024; 
+            else
+                /* This value HAS to be used for SVCD (see SVCD standard, p. 26 V.2.3.2).
+                   Right now it is also used for everything else.*/
+                stream->max_buffer_size = 230 * 1024; 
             s->video_bound++;
             break;
         default:
@@ -465,7 +477,8 @@ static int get_packet_payload_size(AVFormatContext *ctx, int stream_index,
         }
     }
 
-    if (s->is_vcd && stream->packet_number==0)
+    if ((s->is_vcd && stream->packet_number==0)
+        || (s->is_svcd && s->packet_number==0))
         /* the first pack of each stream contains only the pack header,
            the system header and some padding (see VCD standard p. IV-6) 
            Add the padding size, so that the actual payload becomes 0.*/
@@ -473,8 +486,12 @@ static int get_packet_payload_size(AVFormatContext *ctx, int stream_index,
     else {
         /* packet header size */
         buf_index += 6;
-        if (s->is_mpeg2)
+        if (s->is_mpeg2) {
             buf_index += 3;
+            if (stream->packet_number==0)
+                buf_index += 3; /* PES extension */
+            buf_index += 1;    /* obligatory stuffing byte */
+        }
         if (pts != AV_NOPTS_VALUE) {
             if (dts != pts)
                 buf_index += 5 + 5;
@@ -554,6 +571,8 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
     uint8_t buffer[128];
     int zero_trail_bytes = 0;
     int pad_packet_bytes = 0;
+    int pes_flags;
+    int general_pack = 0;  /*"general" pack without data specific to one stream?*/
     
     id = stream->id;
     
@@ -595,11 +614,16 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
            each audio pack (see standard p. IV-8).*/
         zero_trail_bytes += 20;
             
-    if (s->is_vcd && stream->packet_number==0) {
-        /* the first pack of each stream contains only the pack header,
+    if ((s->is_vcd && stream->packet_number==0)
+        || (s->is_svcd && s->packet_number==0)) {
+        /* for VCD the first pack of each stream contains only the pack header,
            the system header and lots of padding (see VCD standard p. IV-6).
            In the case of an audio pack, 20 zero bytes are also added at
            the end.*/
+        /* For SVCD we fill the very first pack to increase compatibility with
+           some DVD players. Not mandated by the standard.*/
+        if (s->is_svcd)
+            general_pack = 1;    /* the system header refers to both streams and no stream data*/
         pad_packet_bytes = packet_size - zero_trail_bytes;
     }
 
@@ -613,6 +637,9 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
         /* packet header */
         if (s->is_mpeg2) {
             header_len = 3;
+            if (stream->packet_number==0)
+                header_len += 3; /* PES extension */
+            header_len += 1; /* obligatory stuffing byte */
         } else {
             header_len = 0;
         }
@@ -639,6 +666,13 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
         stuffing_size = payload_size - stream->buffer_ptr;
         if (stuffing_size < 0)
             stuffing_size = 0;
+        if (stuffing_size > 16) {    /*<=16 for MPEG-1, <=32 for MPEG-2*/
+            pad_packet_bytes += stuffing_size;
+            packet_size -= stuffing_size;
+            payload_size -= stuffing_size;
+            stuffing_size = 0;
+        }
+
         put_be32(&ctx->pb, startcode);
 
         put_be16(&ctx->pb, packet_size);
@@ -650,21 +684,39 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
         if (s->is_mpeg2) {
             put_byte(&ctx->pb, 0x80); /* mpeg2 id */
 
+            pes_flags=0;
+
             if (pts != AV_NOPTS_VALUE) {
-                if (dts != pts) {
-                    put_byte(&ctx->pb, 0xc0); /* flags */
-                    put_byte(&ctx->pb, header_len - 3 + stuffing_size);
-                    put_timestamp(&ctx->pb, 0x03, pts);
-                    put_timestamp(&ctx->pb, 0x01, dts);
-                } else {
-                    put_byte(&ctx->pb, 0x80); /* flags */
-                    put_byte(&ctx->pb, header_len - 3 + stuffing_size);
-                    put_timestamp(&ctx->pb, 0x02, pts);
-                }
-            } else {
-                put_byte(&ctx->pb, 0x00); /* flags */
-                put_byte(&ctx->pb, header_len - 3 + stuffing_size);
+                pes_flags |= 0x80;
+                if (dts != pts)
+                    pes_flags |= 0x40;
             }
+
+            /* Both the MPEG-2 and the SVCD standards demand that the
+               P-STD_buffer_size field be included in the first packet of
+               every stream. (see SVCD standard p. 26 V.2.3.1 and V.2.3.2
+               and MPEG-2 standard 2.7.7) */
+            if (stream->packet_number == 0)
+                pes_flags |= 0x01;
+
+            put_byte(&ctx->pb, pes_flags); /* flags */
+            put_byte(&ctx->pb, header_len - 3 + stuffing_size);
+
+            if (pes_flags & 0x80)  /*write pts*/
+                put_timestamp(&ctx->pb, (pes_flags & 0x40) ? 0x03 : 0x02, pts);
+            if (pes_flags & 0x40)  /*write dts*/
+                put_timestamp(&ctx->pb, 0x01, dts);
+            
+            if (pes_flags & 0x01) {  /*write pes extension*/
+                put_byte(&ctx->pb, 0x10); /* flags */
+
+                /* P-STD buffer info */                
+                if (id == AUDIO_ID)
+                    put_be16(&ctx->pb, 0x4000 | stream->max_buffer_size/128);
+                else
+                    put_be16(&ctx->pb, 0x6000 | stream->max_buffer_size/1024);
+            }
+
         } else {
             if (pts != AV_NOPTS_VALUE) {
                 if (dts != pts) {
@@ -694,9 +746,14 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
             }
         }
 
-        if (s->is_mpeg2)
+        if (s->is_mpeg2) {
+            /* special stuffing byte that is always written
+               to prevent accidental generation of start codes. */
+            put_byte(&ctx->pb, 0xff);
+
             for(i=0;i<stuffing_size;i++)
                 put_byte(&ctx->pb, 0xff);
+        }
 
         /* output data */
         put_buffer(&ctx->pb, stream->buffer, payload_size - stuffing_size);
@@ -711,7 +768,12 @@ static void flush_packet(AVFormatContext *ctx, int stream_index,
     put_flush_packet(&ctx->pb);
     
     s->packet_number++;
-    stream->packet_number++;
+
+    /* only increase the stream packet number if this pack actually contains
+       something that is specific to this stream! I.e. a dedicated header
+       or some data.*/
+    if (!general_pack)
+        stream->packet_number++;
     stream->nb_frames = 0;
     stream->frame_start_offset = 0;
 }
@@ -781,6 +843,7 @@ static void compute_pts_dts(AVStream *st, int64_t *ppts, int64_t *pdts,
         pts = timestamp;
         dts = timestamp;
     }
+
     *ppts = pts & ((1LL << 33) - 1);
     *pdts = dts & ((1LL << 33) - 1);
 }
@@ -789,8 +852,10 @@ static int64_t update_scr(AVFormatContext *ctx,int stream_index,int64_t pts)
 {
     MpegMuxContext *s = ctx->priv_data;
     int64_t scr;
+    StreamInfo *stream;
+    int i;
 
-    if (s->is_vcd)
+    if (s->is_vcd) {
         /* Since the data delivery rate is constant, SCR is computed
            using the formula C + i * 1200 where C is the start constant
            and i is the pack index.
@@ -802,7 +867,21 @@ static int64_t update_scr(AVFormatContext *ctx,int stream_index,int64_t pts)
            will still be correct according to the standard. It just won't have
            the "recommended" value).*/
         scr = 36000 + s->packet_number * 1200;
+
+
+#if 0
+        for(i=0;i<ctx->nb_streams;i++) {
+            stream = ctx->streams[i]->priv_data;
+            
+            if(scr > stream->start_pts && stream->start_pts!=AV_NOPTS_VALUE) {
+                av_log(ctx, AV_LOG_DEBUG, "mpeg vcd: SCR above PTS (scr=%0.3f, stream index=%d, stream_pts=%0.3f).\n", scr/90000.0, i, stream->start_pts / 90000.0);                 
+            }
+        }
+#endif
+    }
     else {
+        
+        
         /* XXX I believe this calculation of SCR is wrong. SCR
            specifies at which time the data should enter the decoder.
            Two packs cannot enter the decoder at the same time. */
@@ -814,6 +893,17 @@ static int64_t update_scr(AVFormatContext *ctx,int stream_index,int64_t pts)
             scr = pts;
         else
             scr = s->last_scr;
+
+        /* "Sanity hack": make sure that the SCR does not overtake the pts of
+           buffered data that is still waiting to be written.*/
+        for(i=0;i<ctx->nb_streams;i++) {
+            stream = ctx->streams[i]->priv_data;
+            
+            if(scr > stream->start_pts && stream->start_pts!=AV_NOPTS_VALUE) {
+                /* av_log(ctx, AV_LOG_DEBUG, "mpeg: restricting scr to stream pts (scr=%0.3f, stream index=%d, stream_pts=%0.3f).\n", scr/90000.0, i, stream->start_pts / 90000.0); */
+                scr = stream->start_pts;
+            }
+        }
     }
 
     s->last_scr=scr;
@@ -834,6 +924,28 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, int stream_index,
     
     compute_pts_dts(st, &pts, &dts, timestamp);
 
+    if(s->is_svcd) {
+        /* offset pts and dts slightly into the future to be able
+           to do the compatibility fix below.*/
+        pts = (pts + 2) & ((1LL << 33) - 1);
+        dts = (dts + 2) & ((1LL << 33) - 1);
+
+        if (stream->packet_number == 0 && dts == pts)
+            /* For the very first packet we want to force the DTS to be included.
+               This increases compatibility with lots of DVD players.
+               Since the MPEG-2 standard mandates that DTS is only written when
+               it is different from PTS we have to move it slightly into the past.*/
+            dts = (dts - 2) & ((1LL << 33) - 1);
+    }
+    if(s->is_vcd) {
+        /* We have to offset the PTS, so that it is consistent with the SCR.
+           SCR starts at 36000, but the first two packs contain only padding
+           and the first pack from the other stream, respectively, may also have
+           been written before.
+           So the real data starts at SCR 36000+3*1200. */
+        pts = (pts + 36000 + 3600) & ((1LL << 33) - 1);
+        dts = (dts + 36000 + 3600) & ((1LL << 33) - 1);
+    }
     
 #if 0
     update_scr(ctx,stream_index,pts);
