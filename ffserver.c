@@ -116,6 +116,7 @@ typedef struct FFStream {
     AVFormat *fmt;
     int nb_streams;
     int prebuffer;      /* Number of millseconds early to start */
+    int send_on_key;
     AVStream *streams[MAX_STREAMS];
     int feed_streams[MAX_STREAMS]; /* index of streams in the feed */
     char feed_filename[1024]; /* file name of the feed storage, or
@@ -768,9 +769,9 @@ static void compute_stats(HTTPContext *c)
     q += sprintf(q, "<HEAD><TITLE>FFServer Status</TITLE></HEAD>\n<BODY>");
     q += sprintf(q, "<H1>FFServer Status</H1>\n");
     /* format status */
-    q += sprintf(q, "<H1>Available Streams</H1>\n");
+    q += sprintf(q, "<H2>Available Streams</H2>\n");
     q += sprintf(q, "<TABLE>\n");
-    q += sprintf(q, "<TR><TD>Path<TD>Format<TD>Bit rate (kbits/s)<TD>Video<TD>Audio<TD>Feed\n");
+    q += sprintf(q, "<TR><Th>Path<Th>Format<Th>Bit rate (kbits/s)<Th COLSPAN=2>Video<Th COLSPAN=2>Audio<Th align=left>Feed\n");
     stream = first_stream;
     while (stream != NULL) {
         char sfilename[1024];
@@ -793,24 +794,40 @@ static void compute_stats(HTTPContext *c)
             {
                 int audio_bit_rate = 0;
                 int video_bit_rate = 0;
+                char *audio_codec_name = "";
+                char *video_codec_name = "";
+                char *audio_codec_name_extra = "";
+                char *video_codec_name_extra = "";
 
                 for(i=0;i<stream->nb_streams;i++) {
                     AVStream *st = stream->streams[i];
+                    AVCodec *codec = avcodec_find_encoder(st->codec.codec_id);
                     switch(st->codec.codec_type) {
                     case CODEC_TYPE_AUDIO:
                         audio_bit_rate += st->codec.bit_rate;
+                        if (codec) {
+                            if (*audio_codec_name)
+                                audio_codec_name_extra = "...";
+                            audio_codec_name = codec->name;
+                        }
                         break;
                     case CODEC_TYPE_VIDEO:
                         video_bit_rate += st->codec.bit_rate;
+                        if (codec) {
+                            if (*video_codec_name)
+                                video_codec_name_extra = "...";
+                            video_codec_name = codec->name;
+                        }
                         break;
                     default:
                         abort();
                     }
                 }
-                q += sprintf(q, "<TD> %s <TD> %d <TD> %d <TD> %d", 
+                q += sprintf(q, "<TD> %s <TD> %d <TD> %d <TD> %s %s <TD> %d <TD> %s %s", 
                              stream->fmt->name,
                              (audio_bit_rate + video_bit_rate) / 1000,
-                             video_bit_rate / 1000, audio_bit_rate / 1000);
+                             video_bit_rate / 1000, video_codec_name, video_codec_name_extra,
+                             audio_bit_rate / 1000, audio_codec_name, audio_codec_name_extra);
                 if (stream->feed) {
                     q += sprintf(q, "<TD>%s", stream->feed->filename);
                 } else {
@@ -820,7 +837,7 @@ static void compute_stats(HTTPContext *c)
             }
             break;
         default:
-            q += sprintf(q, "<TD> - <TD> - <TD> - <TD> -\n");
+            q += sprintf(q, "<TD> - <TD> - <TD COLSPAN=2> - <TD COLSPAN=2> -\n");
             break;
         }
         stream = stream->next;
@@ -858,7 +875,7 @@ static void compute_stats(HTTPContext *c)
 #endif
 
     /* connection status */
-    q += sprintf(q, "<H1>Connection Status</H1>\n");
+    q += sprintf(q, "<H2>Connection Status</H2>\n");
 
     q += sprintf(q, "Number of connections: %d / %d<BR>\n",
                  nb_connections, nb_max_connections);
@@ -1098,7 +1115,7 @@ static int http_prepare_data(HTTPContext *c)
                              * audio streams (for which every frame is 
                              * typically a key frame). 
                              */
-                            if ((c->got_key_frame + 1) >> c->stream->nb_streams) {
+                            if (!c->stream->send_on_key || ((c->got_key_frame + 1) >> c->stream->nb_streams)) {
                                 goto send_it;
                             }
                         }
@@ -1715,6 +1732,10 @@ int parse_ffconfig(const char *filename)
             get_arg(arg, sizeof(arg), &p);
             if (stream) {
                 stream->prebuffer = atoi(arg) * 1000;
+            }
+        } else if (!strcasecmp(cmd, "StartSendOnKey")) {
+            if (stream) {
+                stream->send_on_key = 1;
             }
         } else if (!strcasecmp(cmd, "AudioCodec")) {
             get_arg(arg, sizeof(arg), &p);
