@@ -61,7 +61,7 @@ void audio_encode_example(const char *filename)
     outbuf_size = 10000;
     outbuf = malloc(outbuf_size);
 
-    f = fopen(filename, "w");
+    f = fopen(filename, "wb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
         exit(1);
@@ -122,12 +122,12 @@ void audio_decode_example(const char *outfilename, const char *filename)
     
     outbuf = malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
 
-    f = fopen(filename, "r");
+    f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
         exit(1);
     }
-    outfile = fopen(outfilename, "w");
+    outfile = fopen(outfilename, "wb");
     if (!outfile) {
         free(c);
         exit(1);
@@ -208,7 +208,7 @@ void video_encode_example(const char *filename)
     
     /* the codec gives us the frame size, in samples */
 
-    f = fopen(filename, "w");
+    f = fopen(filename, "wb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
         exit(1);
@@ -333,7 +333,7 @@ void video_decode_example(const char *outfilename, const char *filename)
     
     /* the codec gives us the frame size, in samples */
 
-    f = fopen(filename, "r");
+    f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
         exit(1);
