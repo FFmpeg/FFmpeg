@@ -85,6 +85,7 @@ static float video_qcomp = 0.5;
 static int video_disable = 0;
 static int video_codec_id = CODEC_ID_NONE;
 static int same_quality = 0;
+static int use_4mv = 0;
 static int do_deinterlace = 0;
 
 static int gop_size = 12;
@@ -1762,6 +1763,10 @@ void opt_output_file(const char *filename)
                 video_enc->quality = video_qscale;
             }
             
+            if (use_4mv) {
+                video_enc->flags |= CODEC_FLAG_HQ;
+                video_enc->flags |= CODEC_FLAG_4MV;
+            }
             video_enc->qmin= video_qmin;
             video_enc->qmax= video_qmax;
             video_enc->max_qdiff= video_qdiff;
@@ -2110,6 +2115,7 @@ const OptionDef options[] = {
     { "vcodec", HAS_ARG | OPT_EXPERT, {(void*)opt_video_codec}, "force video codec", "codec" },
     { "me", HAS_ARG | OPT_EXPERT, {(void*)opt_motion_estimation}, "set motion estimation method", 
       "method" },
+    { "4mv", OPT_BOOL | OPT_EXPERT, {(void*)&use_4mv}, "use four motion vector by macroblock (only MPEG-4)" },
     { "sameq", OPT_BOOL, {(void*)&same_quality}, 
       "use same video quality as source (implies VBR)" },
     /* audio options */
