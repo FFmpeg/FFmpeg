@@ -1080,6 +1080,14 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int inter_quant_bias;
+
+    /**
+     * color table ID.
+     * - encoding: unused.
+     * - decoding: which clrtable should be used for 8bit RGB images
+     *             table have to be stored somewhere FIXME
+     */
+    int color_table_id;
     
 } AVCodecContext;
 
