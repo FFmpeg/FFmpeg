@@ -1553,16 +1553,25 @@ int pix_abs8x8_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
-/* permute block according so that it corresponds to the MMX idct
-   order */
-void block_permute(INT16 *block, UINT8 *permutation)
+void ff_block_permute(INT16 *block, UINT8 *permutation, const UINT8 *scantable, int last)
 {
-	int i;
-	INT16 temp[64];
+    int i;
+    INT16 temp[64];
+    
+    if(last<=0) return;
+    if(permutation[1]==1) return; //FIXME its ok but not clean and might fail for some perms
 
-	for(i=0; i<64; i++) temp[ permutation[i] ] = block[i];
-
-	for(i=0; i<64; i++) block[i] = temp[i];
+    for(i=0; i<=last; i++){
+        const int j= scantable[i];
+        temp[j]= block[j];
+        block[j]=0;
+    }
+    
+    for(i=0; i<=last; i++){
+        const int j= scantable[i];
+        const int perm_j= permutation[j];
+        block[perm_j]= temp[j];
+    }
 }
 
 void clear_blocks_c(DCTELEM *blocks)

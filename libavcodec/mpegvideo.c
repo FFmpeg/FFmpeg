@@ -94,7 +94,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
                 /* 3444240       >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= 275 */
                 
-                qmat[qscale][j] = (int)((UINT64_C(1) << QMAT_SHIFT) / 
+                qmat[qscale][i] = (int)((UINT64_C(1) << QMAT_SHIFT) / 
                                 (qscale * quant_matrix[j]));
             }
         } else if (s->fdct == fdct_ifast) {
@@ -105,7 +105,7 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
                 /* (1<<36)/19952 >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= (1<<36)/249205026 */
                 /* 3444240       >= (1<<36)/(aanscales[i] * qscale * quant_matrix[i]) >= 275 */
                 
-                qmat[qscale][j] = (int)((UINT64_C(1) << (QMAT_SHIFT + 14)) / 
+                qmat[qscale][i] = (int)((UINT64_C(1) << (QMAT_SHIFT + 14)) / 
                                 (aanscales[i] * qscale * quant_matrix[j]));
             }
         } else {
@@ -138,6 +138,8 @@ static void convert_matrix(MpegEncContext *s, int (*qmat)[64], uint16_t (*qmat16
 void ff_init_scantable(MpegEncContext *s, ScanTable *st, const UINT8 *src_scantable){
     int i;
     int end;
+    
+    st->scantable= src_scantable;
 
     for(i=0; i<64; i++){
         int j;
@@ -2968,17 +2970,12 @@ static int dct_quantize_c(MpegEncContext *s,
 {
     int i, j, level, last_non_zero, q;
     const int *qmat;
+    const UINT8 *scantable= s->intra_scantable.scantable;
     int bias;
     int max=0;
     unsigned int threshold1, threshold2;
     
     s->fdct (block);
-
-#ifndef ARCH_ALPHA              /* Alpha uses unpermuted matrix */
-    /* we need this permutation so that we correct the IDCT
-       permutation. will be moved into DCT code */
-    block_permute(block, s->idct_permutation); //FIXME remove
-#endif
 
     if (s->mb_intra) {
         if (!s->h263_aic) {
@@ -3007,7 +3004,7 @@ static int dct_quantize_c(MpegEncContext *s,
     threshold2= (threshold1<<1);
 
     for(;i<64;i++) {
-        j = s->intra_scantable.permutated[i];
+        j = scantable[i];
         level = block[j];
         level = level * qmat[j];
 
@@ -3029,6 +3026,9 @@ static int dct_quantize_c(MpegEncContext *s,
     }
     *overflow= s->max_qcoeff < max; //overflow might have happend
     
+    /* we need this permutation so that we correct the IDCT, we only permute the !=0 elements */
+    ff_block_permute(block, s->idct_permutation, scantable, last_non_zero);
+
     return last_non_zero;
 }
 

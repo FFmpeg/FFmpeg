@@ -115,7 +115,11 @@ int pix_abs16x16_x2_c(UINT8 *blk1, UINT8 *blk2, int lx);
 int pix_abs16x16_y2_c(UINT8 *blk1, UINT8 *blk2, int lx);
 int pix_abs16x16_xy2_c(UINT8 *blk1, UINT8 *blk2, int lx);
 
-void block_permute(INT16 *block, UINT8 *permutation);
+/**
+ * permute block according to permuatation.
+ * @param last last non zero element in scantable order
+ */
+void ff_block_permute(INT16 *block, UINT8 *permutation, const UINT8 *scantable, int last);
 
 #if defined(HAVE_MMX)
 

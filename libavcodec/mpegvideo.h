@@ -100,6 +100,7 @@ typedef struct ReorderBuffer{
 } ReorderBuffer;
 
 typedef struct ScanTable{
+    const UINT8 *scantable;
     UINT8 permutated[64];
     UINT8 raster_end[64];
 } ScanTable;
