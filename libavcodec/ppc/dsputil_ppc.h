@@ -51,6 +51,7 @@ enum powerpc_perf_index {
   altivec_put_pixels16_xy2_num,
   altivec_put_no_rnd_pixels16_xy2_num,
   altivec_hadamard8_diff8x8_num,
+  altivec_hadamard8_diff16_num,
   powerpc_clear_blocks_dcbz32,
   powerpc_clear_blocks_dcbz128,
   powerpc_perf_total
@@ -64,6 +65,8 @@ enum powerpc_data_index {
 };
 extern unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][powerpc_data_total];
 
+#ifndef POWERPC_MODE_64BITS
+#define POWERP_PMC_DATATYPE unsigned long
 #define POWERPC_GET_PMC1(a) asm volatile("mfspr %0, 937" : "=r" (a))
 #define POWERPC_GET_PMC2(a) asm volatile("mfspr %0, 938" : "=r" (a))
 #if (POWERPC_NUM_PMC_ENABLED > 2)
@@ -80,7 +83,30 @@ extern unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][
 #define POWERPC_GET_PMC5(a) do {} while (0)
 #define POWERPC_GET_PMC6(a) do {} while (0)
 #endif
-#define POWERPC_PERF_DECLARE(a, cond) unsigned long pmc_start[POWERPC_NUM_PMC_ENABLED], pmc_stop[POWERPC_NUM_PMC_ENABLED], pmc_loop_index;
+#else /* POWERPC_MODE_64BITS */
+#define POWERP_PMC_DATATYPE unsigned long long
+#define POWERPC_GET_PMC1(a) asm volatile("mfspr %0, 771" : "=r" (a))
+#define POWERPC_GET_PMC2(a) asm volatile("mfspr %0, 772" : "=r" (a))
+#if (POWERPC_NUM_PMC_ENABLED > 2)
+#define POWERPC_GET_PMC3(a) asm volatile("mfspr %0, 773" : "=r" (a))
+#define POWERPC_GET_PMC4(a) asm volatile("mfspr %0, 774" : "=r" (a))
+#else
+#define POWERPC_GET_PMC3(a) do {} while (0)
+#define POWERPC_GET_PMC4(a) do {} while (0)
+#endif
+#if (POWERPC_NUM_PMC_ENABLED > 4)
+#define POWERPC_GET_PMC5(a) asm volatile("mfspr %0, 775" : "=r" (a))
+#define POWERPC_GET_PMC6(a) asm volatile("mfspr %0, 776" : "=r" (a))
+#else
+#define POWERPC_GET_PMC5(a) do {} while (0)
+#define POWERPC_GET_PMC6(a) do {} while (0)
+#endif
+#endif /* POWERPC_MODE_64BITS */
+#define POWERPC_PERF_DECLARE(a, cond)				\
+  POWERP_PMC_DATATYPE						\
+    pmc_start[POWERPC_NUM_PMC_ENABLED],				\
+    pmc_stop[POWERPC_NUM_PMC_ENABLED],				\
+    pmc_loop_index;
 #define POWERPC_PERF_START_COUNT(a, cond) do { \
   POWERPC_GET_PMC6(pmc_start[5]); \
   POWERPC_GET_PMC5(pmc_start[4]); \
@@ -102,9 +128,9 @@ extern unsigned long long perfdata[POWERPC_NUM_PMC_ENABLED][powerpc_perf_total][
         pmc_loop_index < POWERPC_NUM_PMC_ENABLED; \
         pmc_loop_index++)         \
     {                             \
-      if (pmc_stop[pmc_loop_index] >= pmc_start[pmc_loop_index]) \
-      {                           \
-        unsigned long diff =      \
+      if (pmc_stop[pmc_loop_index] >= pmc_start[pmc_loop_index])  \
+	{							  \
+        POWERP_PMC_DATATYPE diff =				  \
           pmc_stop[pmc_loop_index] - pmc_start[pmc_loop_index];   \
         if (diff < perfdata[pmc_loop_index][a][powerpc_data_min]) \
           perfdata[pmc_loop_index][a][powerpc_data_min] = diff;   \

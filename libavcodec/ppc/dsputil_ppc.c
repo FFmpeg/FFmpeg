@@ -61,6 +61,7 @@ static unsigned char* perfname[] = {
   "put_pixels16_xy2_altivec",
   "put_no_rnd_pixels16_xy2_altivec",
   "hadamard8_diff8x8_altivec",
+  "hadamard8_diff16_altivec",
   "clear_blocks_dcbz32_ppc",
   "clear_blocks_dcbz128_ppc"
 };
@@ -224,12 +225,6 @@ long check_dcbzl_effect(void)
 {
   return 0;
 }
-#endif
-
-#ifdef HAVE_ALTIVEC
-// can't put that in dsputil_altivec.c,
-// has WARPER8_16_SQ declare the function "static" ...
-WARPER8_16_SQ(hadamard8_diff8x8_altivec, hadamard8_diff16_altivec)
 #endif
 
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)

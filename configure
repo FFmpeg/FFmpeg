@@ -516,6 +516,7 @@ fi
 
 # Add processor-specific flags
 TUNECPU="generic"
+POWERPCMODE="32bits"
 if test $tune != "generic"; then
     case $tune in
 	601|ppc601|PowerPC601)
@@ -561,11 +562,12 @@ if test $tune != "generic"; then
 	    TUNECPU=ppc7400
 	;;
 	G5|g5|970|ppc970|PowerPC970|power4*|Power4*)
-	    CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc64 -force_cpusubtype_ALL "
+	    CFLAGS="$CFLAGS -mcpu=970 -mtune=970 -mpowerpc-gfxopt -mpowerpc64"
 	    if test $altivec = "no"; then
 		echo "WARNING: tuning for PPC970 but altivec disabled !";
 	    fi
 	    TUNECPU=ppc970
+            POWERPCMODE="64bits"
 	;;
 	*)
 	echo "WARNING: unknown CPU "$tune", ignored"
@@ -1027,6 +1029,11 @@ elif test "$cpu" = "sparc64" ; then
 elif test "$cpu" = "powerpc" ; then
   echo "TARGET_ARCH_POWERPC=yes" >> config.mak
   echo "#define ARCH_POWERPC 1" >> $TMPH
+  if test $POWERPCMODE = "32bits"; then
+    echo "#define POWERPC_MODE_32BITS 1" >> $TMPH
+  else
+    echo "#define POWERPC_MODE_64BITS 1" >> $TMPH
+  fi
   if test "$powerpc_perf" = "yes"; then
     echo "#define POWERPC_PERFORMANCE_REPORT 1" >> $TMPH
   fi
