@@ -370,6 +370,7 @@ void MPV_frame_start(MpegEncContext *s)
     int i;
     UINT8 *tmp;
 
+    s->mb_skiped = 0;
     if (s->pict_type == B_TYPE) {
         for(i=0;i<3;i++) {
             s->current_picture[i] = s->aux_picture[i];
