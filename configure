@@ -177,7 +177,7 @@ prefix="/boot/home/config"
 # helps building libavcodec
 CFLAGS="-DPIC -fomit-frame-pointer"
 # 3 gcc releases known for BeOS, each with ugly bugs
-gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
+gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
 case "$gcc_version" in
 2.9-beos-991026*|2.9-beos-000224*) echo "R5/GG gcc"
 mmx="no"
@@ -418,10 +418,10 @@ fi
 
 #Darwin CC versions
 if test $targetos = Darwin; then
-    if test -n "$($cc -v 2>&1 | grep xlc)"; then
+    if test -n "`$cc -v 2>&1 | grep xlc`"; then
 	CFLAGS="-qpdf2 -qlanglvl=extc99 -qmaxmem=-1 -qarch=auto -qtune=auto"
     else
-	gcc_version="$($cc -v 2>&1 | grep version | cut -d ' ' -f3-)"
+	gcc_version="`$cc -v 2>&1 | grep version | cut -d ' ' -f3-`"
 	case "$gcc_version" in
 	    *2.95*) 
 		CFLAGS="-no-cpp-precomp -pipe -fomit-frame-pointer"
@@ -510,7 +510,7 @@ fi
 # AltiVec flags: The FSF version of GCC differs from the Apple version 
 if test $cpu = "powerpc"; then
     if test $altivec = "yes"; then
-        if test -n "$($cc -v 2>&1 | grep version | grep Apple)"; then
+        if test -n "`$cc -v 2>&1 | grep version | grep Apple`"; then
             CFLAGS="$CFLAGS -faltivec"
         else
             CFLAGS="$CFLAGS -maltivec -mabi=altivec"
@@ -800,7 +800,7 @@ sdl=yes
 fi
 fi
 
-case "$($cc -v 2>&1 | grep version)" in
+case "`$cc -v 2>&1 | grep version`" in
     *gcc*)
 	CFLAGS="-Wall $CFLAGS"
 	;;
@@ -822,7 +822,7 @@ if test "$optimize" = "small"; then
 fi
 
 if test "$optimize" = "yes"; then
-    if test -n "$($cc -v 2>&1 | grep xlc)"; then
+    if test -n "`$cc -v 2>&1 | grep xlc`"; then
 	CFLAGS="$CFLAGS -O5"
 	LDFLAGS="$LDFLAGS -O5"
     else
