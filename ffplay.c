@@ -165,6 +165,7 @@ static int display_disable;
 static int show_status;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
+static int debug = 0;
 
 /* current context */
 static int is_full_screen;
@@ -1191,6 +1192,7 @@ static int stream_component_open(VideoState *is, int stream_index)
 
         packet_queue_init(&is->videoq);
         is->video_tid = SDL_CreateThread(video_thread, is);
+        enc->debug= debug;
         break;
     default:
         break;
@@ -1741,8 +1743,13 @@ void opt_seek(const char *arg)
     start_time = parse_date(arg, 1);
 }
 
+static void opt_debug(const char *arg)
+{
+    debug = atoi(arg);
+}
+    
 const OptionDef options[] = {
-    { "h", 0, {(void*)show_help}, "show help" },
+    { "h", 0, {(void*)show_help}, "show help" },    
     { "x", HAS_ARG, {(void*)opt_width}, "force displayed width", "width" },
     { "y", HAS_ARG, {(void*)opt_height}, "force displayed height", "height" },
 #if 0
@@ -1756,6 +1763,7 @@ const OptionDef options[] = {
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
     { "img", HAS_ARG, {(void*)opt_image_format}, "force image format", "img_fmt" },
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
+    { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
 #ifdef CONFIG_NETWORK
     { "rtp_tcp", OPT_EXPERT, {(void*)&opt_rtp_tcp}, "force RTP/TCP protocol usage", "" },
 #endif
