@@ -1,5 +1,6 @@
 Upcoming version 0.4.7:
 
+- Current version now also compiles with older GCC (Fabrice)
 - 4X multimedia playback system including 4xm file demuxer (Mike
   Melanson), and 4X video and audio codecs (Michael)
 - Creative YUV (CYUV) decoder (Mike Melanson)
@@ -13,7 +14,7 @@ Upcoming version 0.4.7:
 - Sorenson Version 3 codec (SVQ3) support has been added (decoding only) - donated
   by anonymous
 - AMR format has been added (Johannes Carlsson)
-- 3gp support has been added (Johannes Carlsson, improved by Johannes Carlsson)
+- 3gp support has been added (Johannes Carlsson)
 - VP3 codec has been added (Mike Melanson)
 - more MPEG-1/2 fixes
 - Better Multi platform support, MS Visual Studio fixes (various)
