@@ -266,6 +266,7 @@ static int64_t extra_size = 0;
 static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int input_sync;
+static int limit_filesize = 0; //
 
 static int pgmyuv_compatibility_hack=0;
 
@@ -1880,6 +1881,10 @@ static int av_encode(AVFormatContext **output_files,
 
         /* finish if recording time exhausted */
         if (recording_time > 0 && opts_min >= (recording_time / 1000000.0))
+            break;
+
+        /* finish if limit size exhausted */
+        if (limit_filesize != 0 && (limit_filesize * 1024) < url_ftell(&output_files[0]->pb))
             break;
 
         /* read a frame from it and output it in the fifo */
@@ -3905,6 +3910,7 @@ const OptionDef options[] = {
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file:stream" },
     { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "set meta data information of outfile from infile", "outfile:infile" },
     { "t", HAS_ARG, {(void*)opt_recording_time}, "set the recording time", "duration" },
+    { "fs", HAS_ARG | OPT_INT, {(void*)&limit_filesize}, "set the limit file size", "limit_size" }, //
     { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "itsoffset", HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
     { "title", HAS_ARG | OPT_STRING, {(void*)&str_title}, "set the title", "string" },
