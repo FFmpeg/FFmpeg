@@ -59,7 +59,7 @@ case $targetos in
 BeOS)
 prefix="/boot/home/config"
 # helps building libavcodec
-CFLAGS="-O2 -DPIC"
+CFLAGS="-O3 -DPIC"
 v4l="no"
 # no need for libm, but the inet stuff
 # Check for BONE
@@ -147,7 +147,7 @@ fi
 
 # Checking for CFLAGS
 if test -z "$CFLAGS"; then
-    CFLAGS="-O2"
+    CFLAGS="-O3"
 fi
 
 if test "$win32" = "yes" ; then
