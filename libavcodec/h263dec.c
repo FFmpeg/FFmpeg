@@ -208,7 +208,9 @@ static int decode_slice(MpegEncContext *s){
                     s->error_status_table[xy]|= AC_END;
                     if(!s->partitioned_frame)
                         s->error_status_table[xy]|= MV_END|DC_END;
-                    
+
+                    s->padding_bug_score--;
+                        
                     if(++s->mb_x >= s->mb_width){
                         s->mb_x=0;
                         ff_draw_horiz_band(s);
@@ -237,6 +239,35 @@ static int decode_slice(MpegEncContext *s){
     
     assert(s->mb_x==0 && s->mb_y==s->mb_height);
 
+    /* try to detect the padding bug */
+    if(      s->codec_id==CODEC_ID_MPEG4
+       &&   (s->workaround_bugs&FF_BUG_AUTODETECT) 
+       &&    s->gb.size*8 - get_bits_count(&s->gb) >=0
+       &&    s->gb.size*8 - get_bits_count(&s->gb) < 48
+       &&   !s->resync_marker
+       &&   !s->data_partitioning){
+        
+        const int bits_count= get_bits_count(&s->gb);
+        const int bits_left = s->gb.size*8 - bits_count;
+        
+        if(bits_left==0 || bits_left>8){
+            s->padding_bug_score++;
+        } else {
+            int v= show_bits(&s->gb, 8);
+            v|= 0x7F >> (7-(bits_count&7));
+                
+            if(v==0x7F)
+                s->padding_bug_score--;
+            else
+                s->padding_bug_score++;            
+        }
+        
+        if(s->padding_bug_score > -2)
+            s->workaround_bugs |=  FF_BUG_NO_PADDING;
+        else
+            s->workaround_bugs &= ~FF_BUG_NO_PADDING;
+    }
+
     // handle formats which dont have unique end markers
     if(s->msmpeg4_version || (s->workaround_bugs&FF_BUG_NO_PADDING)){ //FIXME perhaps solve this more cleanly
         int left= s->gb.size*8 - get_bits_count(&s->gb);
@@ -262,7 +293,7 @@ static int decode_slice(MpegEncContext *s){
         
         return 0;
     }
-        
+
     fprintf(stderr, "slice end not reached but screenspace end (%d left %06X)\n", 
             s->gb.size*8 - get_bits_count(&s->gb),
             show_bits(&s->gb, 24));
@@ -341,7 +372,8 @@ uint64_t time= rdtsc();
             s->workaround_bugs|= FF_BUG_UMP4;
             s->workaround_bugs|= FF_BUG_AC_VLC;
         }
-        
+//printf("padding_bug_score: %d\n", s->padding_bug_score);
+#if 0
         if(s->divx_version==500)
             s->workaround_bugs|= FF_BUG_NO_PADDING;
 
@@ -354,6 +386,7 @@ uint64_t time= rdtsc();
         
         if(s->lavc_build && s->lavc_build<4609) //FIXME not sure about the version num but a 4609 file seems ok
             s->workaround_bugs|= FF_BUG_NO_PADDING;
+#endif
     }
     
 

@@ -404,6 +404,7 @@ typedef struct MpegEncContext {
     INT16 (*field_mv_table)[2][2];   /* used for interlaced b frame decoding */
     INT8 (*field_select_table)[2];   /* wtf, no really another table for interlaced b frames */
     int t_frame;                     /* time distance of first I -> B, used for interlaced b frames */
+    int padding_bug_score;           /* used to detect the VERY common padding bug in MPEG4 */
 
     /* divx specific, used to workaround (many) bugs in divx5 */
     int divx_version;
