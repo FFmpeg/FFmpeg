@@ -128,6 +128,7 @@ void init_get_bits(GetBitContext *s,
         s->bit_cnt += 8;
     }
 #endif
+    s->size= buffer_size;
 }
 
 #ifndef ALT_BITSTREAM_READER

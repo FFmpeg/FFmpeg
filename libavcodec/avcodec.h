@@ -57,6 +57,8 @@ extern int motion_estimation_method;
 #define ME_FULL   1
 #define ME_LOG    2
 #define ME_PHODS  3
+#define ME_EPZS   4
+#define ME_X1     5
 
 /* encoding support */
 

@@ -197,6 +197,7 @@ typedef struct GetBitContext {
     int bit_cnt;
     UINT8 *buf, *buf_ptr, *buf_end;
 #endif
+    int size;
 } GetBitContext;
 
 typedef struct VLC {
@@ -785,6 +786,24 @@ static inline int av_log2(unsigned int v)
         n++;
     }
     return n;
+}
+
+/* median of 3 */
+static inline int mid_pred(int a, int b, int c)
+{
+    int vmin, vmax;
+    vmax = vmin = a;
+    if (b < vmin)
+        vmin = b;
+    else
+	vmax = b;
+
+    if (c < vmin)
+        vmin = c;
+    else if (c > vmax)
+        vmax = c;
+
+    return a + b + c - vmin - vmax;
 }
 
 /* memory */

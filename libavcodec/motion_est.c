@@ -16,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * new Motion Estimation (X1/EPZS) by Michael Niedermayer <michaelni@gmx.at>
  */
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,7 +27,8 @@
 
 static void halfpel_motion_search(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
-				  int xmin, int ymin, int xmax, int ymax);
+				  int xmin, int ymin, int xmax, int ymax,
+                                  int pred_x, int pred_y);
 
 /* config it to test motion vector encoding (send random vectors) */
 //#define CONFIG_TEST_MV_ENCODE
@@ -328,67 +331,209 @@ static int phods_motion_search(MpegEncContext * s,
     return dminy;
 }
 
+
+#define Z_THRESHOLD 256
+
+#define CHECK_MV(x,y)\
+    d = pix_abs16x16(new_pic, old_pic + (x) + (y)*pic_stride, pic_stride, 16);\
+    d += (mv_penalty[((x)<<shift)-pred_x] + mv_penalty[((y)<<shift)-pred_y])*quant;\
+    if(d<dmin){\
+        best[0]=x;\
+        best[1]=y;\
+        dmin=d;\
+    }
+
+#define CHECK_MV_DIR(x,y,new_dir)\
+{\
+    d = pix_abs16x16(new_pic, old_pic + (x) + (y)*pic_stride, pic_stride, 16);\
+    d += (mv_penalty[((x)<<shift)-pred_x] + mv_penalty[((y)<<shift)-pred_y])*quant;\
+    if(d<dmin){\
+        best[0]=x;\
+        best[1]=y;\
+        dmin=d;\
+        next_dir= new_dir;\
+    }\
+}
+
+static inline int small_diamond_search(MpegEncContext * s, int *best, int dmin,
+                                       UINT8 *new_pic, UINT8 *old_pic, int pic_stride,
+                                       int pred_x, int pred_y, UINT16 *mv_penalty, int quant,
+                                       int xmin, int ymin, int xmax, int ymax, int shift)
+{
+    int next_dir=-1;
+
+    for(;;){
+        int d;
+        const int dir= next_dir;
+        const int x= best[0];
+        const int y= best[1];
+        next_dir=-1;
+
+//printf("%d", dir);
+        if(dir!=2 && x-1>=xmin) CHECK_MV_DIR(x-1, y  , 0)
+        if(dir!=3 && y-1>=ymin) CHECK_MV_DIR(x  , y-1, 1)
+        if(dir!=0 && x+1<=xmax) CHECK_MV_DIR(x+1, y  , 2)
+        if(dir!=1 && y+1<=ymax) CHECK_MV_DIR(x  , y+1, 3)
+
+        if(next_dir==-1){
+            return dmin;
+        }
+    }
+}
+
+static int epzs_motion_search(MpegEncContext * s,
+                             int *mx_ptr, int *my_ptr,
+                             int *px_ptr, int *py_ptr,
+                             int xmin, int ymin, int xmax, int ymax)
+{
+    INT16 P_left[2], P_top[2], P_topright[2], P_last[2];
+    static const int off[4]= {2, 1, 1, -1};
+    int best[2]={0, 0};
+    int d, dmin; 
+    UINT8 *new_pic, *old_pic;
+    const int pic_stride= s->linesize;
+    const int pic_xy= (s->mb_y*pic_stride + s->mb_x)*16;
+    const int mot_stride = s->block_wrap[0];
+    const int mot_xy = s->block_index[0];
+    UINT16 *mv_penalty= s->mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
+    int quant= s->qscale; // qscale of the prev frame
+    int pred_x, pred_y;
+    const int shift= 1+s->quarter_sample;
+
+    new_pic = s->new_picture[0] + pic_xy;
+    old_pic = s->last_picture[0] + pic_xy;
+
+    xmin-=s->mb_x*16;
+    xmax-=s->mb_x*16;
+    ymin-=s->mb_y*16;
+    ymax-=s->mb_y*16;
+    
+    dmin = pix_abs16x16(new_pic, old_pic, pic_stride, 16);
+    if(dmin<Z_THRESHOLD){
+        *mx_ptr= 0;
+        *my_ptr= 0;
+//printf("Z");
+        return dmin;
+    }
+
+    P_last[0] = s->motion_val[mot_xy    ][0];
+    P_last[1] = s->motion_val[mot_xy    ][1];
+    P_left[0] = s->motion_val[mot_xy - 1][0];
+    P_left[1] = s->motion_val[mot_xy - 1][1];
+    if(P_left[0] > (xmax<<shift)) P_left[0]= (xmax<<shift);
+
+    /* special case for first line */
+    if ((s->mb_y == 0 || s->first_slice_line || s->first_gob_line)) {
+        *px_ptr= pred_x = P_left[0];
+        *py_ptr= pred_y = P_left[1];
+        CHECK_MV(pred_x>>shift, pred_y>>shift)
+        if(dmin<Z_THRESHOLD){
+            *mx_ptr= pred_x>>shift;
+            *my_ptr= pred_y>>shift;
+//printf("M");
+            return dmin;
+        }
+    } else {
+        P_top     [0] = s->motion_val[mot_xy - mot_stride             ][0];
+        P_top     [1] = s->motion_val[mot_xy - mot_stride             ][1];
+        P_topright[0] = s->motion_val[mot_xy - mot_stride + off[0]    ][0];
+        P_topright[1] = s->motion_val[mot_xy - mot_stride + off[0]    ][1];
+        if(P_top     [1] > (ymax<<shift)) P_top     [1]= (ymax<<shift);
+        if(P_topright[0] < (xmin<<shift)) P_topright[0]= (xmin<<shift);
+        if(P_topright[1] > (ymax<<shift)) P_topright[1]= (ymax<<shift);
+
+        *px_ptr= pred_x = mid_pred(P_left[0], P_top[0], P_topright[0]);
+        *py_ptr= pred_y = mid_pred(P_left[1], P_top[1], P_topright[1]);
+        
+        CHECK_MV(pred_x>>shift, pred_y>>shift)
+        if(dmin<Z_THRESHOLD){
+            *mx_ptr= pred_x>>shift;
+            *my_ptr= pred_y>>shift;
+//printf("M");
+            return dmin;
+        }
+
+        CHECK_MV(P_left    [0]>>shift, P_left    [1]>>shift)
+        CHECK_MV(P_top     [0]>>shift, P_top     [1]>>shift)
+        CHECK_MV(P_topright[0]>>shift, P_topright[1]>>shift)
+        CHECK_MV(P_last    [0]>>shift, P_last    [1]>>shift)
+    }
+
+    dmin= small_diamond_search(s, best, dmin, new_pic, old_pic, pic_stride, 
+                               pred_x, pred_y, mv_penalty, quant, xmin, ymin, xmax, ymax, shift);
+    *mx_ptr= best[0];
+    *my_ptr= best[1];
+
+//    printf("%d %d %d \n", best[0], best[1], dmin);
+
+    return dmin;
+}
+
+#define CHECK_HALF_MV(suffix, x, y) \
+    d= pix_abs16x16_ ## suffix(pix, ptr+((x)>>1), s->linesize, 16);\
+    d += (mv_penalty[pen_x + x] + mv_penalty[pen_y + y])*quant;\
+    if(d<dminh){\
+        dminh= d;\
+        mx= mx1 + x;\
+        my= my1 + y;\
+    }
+
 /* The idea would be to make half pel ME after Inter/Intra decision to 
    save time. */
-static void halfpel_motion_search(MpegEncContext * s,
+static inline void halfpel_motion_search(MpegEncContext * s,
 				  int *mx_ptr, int *my_ptr, int dmin,
-				  int xmin, int ymin, int xmax, int ymax)
+				  int xmin, int ymin, int xmax, int ymax,
+                                  int pred_x, int pred_y)
 {
+    UINT16 *mv_penalty= s->mv_penalty[s->f_code] + MAX_MV; // f_code of the prev frame
+    const int quant= s->qscale;
+    int pen_x, pen_y;
     int mx, my, mx1, my1, d, xx, yy, dminh;
-    UINT8 *pix;
+    UINT8 *pix, *ptr;
 
-    mx = *mx_ptr << 1;
-    my = *my_ptr << 1;
+    
+    mx = *mx_ptr;
+    my = *my_ptr;
+    ptr = s->last_picture[0] + (my * s->linesize) + mx;
 
     xx = 16 * s->mb_x;
     yy = 16 * s->mb_y;
-
+    pix =  s->new_picture[0] + (yy * s->linesize) + xx;
+    
     dminh = dmin;
 
-    /* Half pixel search */
-    mx1 = mx;
-    my1 = my;
+    if (mx > xmin && mx < xmax && 
+        my > ymin && my < ymax) {
 
-    pix = s->new_picture[0] + (yy * s->linesize) + xx;
-
-    if ((mx > (xmin << 1)) && mx < (xmax << 1) && 
-        (my > (ymin << 1)) && my < (ymax << 1)) {
-	    int dx, dy, px, py;
-	    UINT8 *ptr;
-        for (dy = -1; dy <= 1; dy++) {
-            for (dx = -1; dx <= 1; dx++) {
-                if (dx != 0 || dy != 0) {
-                    px = mx1 + dx;
-                    py = my1 + dy;
-                    ptr = s->last_picture[0] + ((py >> 1) * s->linesize) + (px >> 1);
-                    switch (((py & 1) << 1) | (px & 1)) {
-                    default:
-                    case 0:
-                        d = pix_abs16x16(pix, ptr, s->linesize, 16);
-                        break;
-                    case 1:
-                        d = pix_abs16x16_x2(pix, ptr, s->linesize, 16);
-                        break;
-                    case 2:
-                        d = pix_abs16x16_y2(pix, ptr, s->linesize, 16);
-                        break;
-                    case 3:
-                        d = pix_abs16x16_xy2(pix, ptr, s->linesize, 16);
-                        break;
-                    }
-                    if (d < dminh) {
-                        dminh = d;
-                        mx = px;
-                        my = py;
-                    }
-                }
-            }
+        mx= mx1= 2*(mx - xx);
+        my= my1= 2*(my - yy);
+        if(dmin < Z_THRESHOLD && mx==0 && my==0){
+            *mx_ptr = 0;
+            *my_ptr = 0;
+            return;
         }
+        
+        pen_x= pred_x + mx;
+        pen_y= pred_y + my;
+
+        ptr-= s->linesize;
+        CHECK_HALF_MV(xy2, -1, -1)
+        CHECK_HALF_MV(y2 ,  0, -1)
+        CHECK_HALF_MV(xy2, +1, -1)
+        
+        ptr+= s->linesize;
+        CHECK_HALF_MV(x2 , -1,  0)
+        CHECK_HALF_MV(x2 , +1,  0)
+        CHECK_HALF_MV(xy2, -1, +1)
+        CHECK_HALF_MV(y2 ,  0, +1)
+        CHECK_HALF_MV(xy2, +1, +1)
+    }else{
+        mx= 2*(mx - xx);
+        my= 2*(my - yy);
     }
 
-    *mx_ptr = mx - (xx << 1);
-    *my_ptr = my - (yy << 1);
-    //fprintf(stderr,"half  - MX: %d\tMY: %d\n",*mx_ptr ,*my_ptr);
+    *mx_ptr = mx;
+    *my_ptr = my;
 }
 
 #ifndef CONFIG_TEST_MV_ENCODE
@@ -400,6 +545,7 @@ int estimate_motion(MpegEncContext * s,
     UINT8 *pix, *ppix;
     int sum, varc, vard, mx, my, range, dmin, xx, yy;
     int xmin, ymin, xmax, ymax;
+    int pred_x=0, pred_y=0;
     
     range = 8 * (1 << (s->f_code - 1));
     /* XXX: temporary kludge to avoid overflow for msmpeg4 */
@@ -426,7 +572,6 @@ int estimate_motion(MpegEncContext * s,
         xmax = s->mb_width*16 - 16;
         ymax = s->mb_height*16 - 16;
     }
-
     switch(s->full_search) {
     case ME_ZERO:
     default:
@@ -442,8 +587,13 @@ int estimate_motion(MpegEncContext * s,
     case ME_PHODS:
 	dmin = phods_motion_search(s, &mx, &my, range / 2, xmin, ymin, xmax, ymax);
         break;
+    case ME_X1: // just reserving some space for experiments ...
+    case ME_EPZS:
+	dmin = epzs_motion_search(s, &mx, &my, &pred_x, &pred_y, xmin, ymin, xmax, ymax);
+        mx+= s->mb_x*16;
+        my+= s->mb_y*16;
+        break;
     }
-    emms_c();
 
     /* intra / predictive decision */
     xx = mb_x * 16;
@@ -470,7 +620,7 @@ int estimate_motion(MpegEncContext * s,
 #endif
     if (vard <= 64 || vard < varc) {
         if (s->full_search != ME_ZERO) {
-            halfpel_motion_search(s, &mx, &my, dmin, xmin, ymin, xmax, ymax);
+            halfpel_motion_search(s, &mx, &my, dmin, xmin, ymin, xmax, ymax, pred_x, pred_y);
         } else {
             mx -= 16 * s->mb_x;
             my -= 16 * s->mb_y;

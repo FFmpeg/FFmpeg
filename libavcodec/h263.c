@@ -17,6 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ *
+ * ac prediction encoding by Michael Niedermayer <michaelni@gmx.at>
  */
 #include "common.h"
 #include "dsputil.h"
@@ -45,8 +47,10 @@ static int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
 static inline int mpeg4_pred_dc(MpegEncContext * s, int n, UINT16 **dc_val_ptr, int *dir_ptr);
 static void mpeg4_inv_pred_ac(MpegEncContext * s, INT16 *block, int n,
                               int dir);
-
 extern UINT32 inverse[256];
+
+static UINT16 mv_penalty[MAX_FCODE][MAX_MV*2+1];
+static UINT8 fcode_tab[MAX_MV*2+1];
 
 int h263_get_picture_format(int width, int height)
 {
@@ -524,24 +528,6 @@ void h263_pred_acdc(MpegEncContext * s, INT16 *block, int n)
         ac_val1[8 + i] = block[block_permute_op(i)];
 }
 
-
-static inline int mid_pred(int a, int b, int c)
-{
-    int vmin, vmax;
-    vmax = vmin = a;
-    if (b < vmin)
-        vmin = b;
-    else
-	vmax = b;
-
-    if (c < vmin)
-        vmin = c;
-    else if (c > vmax)
-        vmax = c;
-
-    return a + b + c - vmin - vmax;
-}
-
 INT16 *h263_pred_motion(MpegEncContext * s, int block, 
                         int *px, int *py)
 {
@@ -648,7 +634,46 @@ static void h263p_encode_umotion(MpegEncContext * s, int val)
     }
 }
 
-void h263_encode_init_vlc(MpegEncContext *s)
+static void init_mv_penalty_and_fcode(MpegEncContext *s)
+{
+    int f_code;
+    int mv;
+    for(f_code=1; f_code<=MAX_FCODE; f_code++){
+        for(mv=-MAX_MV; mv<=MAX_MV; mv++){
+            int len;
+
+            if(mv==0) len= mvtab[0][1];
+            else{
+                int val, bit_size, range, code;
+
+                bit_size = s->f_code - 1;
+                range = 1 << bit_size;
+
+                val=mv;
+                if (val < 0) 
+                    val = -val;
+                val--;
+                code = (val >> bit_size) + 1;
+                if(code<33){
+                    len= mvtab[code][1] + 1 + bit_size;
+                }else{
+                    len= mvtab[32][1] + 2 + bit_size;
+                }
+            }
+
+            mv_penalty[f_code][mv+MAX_MV]= len;
+        }
+    }
+    
+
+    for(f_code=MAX_FCODE; f_code>0; f_code--){
+        for(mv=-(16<<f_code); mv<(16<<f_code); mv++){
+            fcode_tab[mv+MAX_MV]= f_code;
+        }
+    }
+}
+
+void h263_encode_init(MpegEncContext *s)
 {
     static int done = 0;
 
@@ -656,7 +681,13 @@ void h263_encode_init_vlc(MpegEncContext *s)
         done = 1;
         init_rl(&rl_inter);
         init_rl(&rl_intra);
+
+        init_mv_penalty_and_fcode(s);
     }
+    s->mv_penalty= mv_penalty;
+    
+    // use fcodes >1 only for mpeg4 FIXME
+    if(!s->h263_msmpeg4 && s->h263_pred) s->fcode_tab= fcode_tab;
 }
 
 static void h263_encode_block(MpegEncContext * s, DCTELEM * block, int n)
@@ -2094,9 +2125,8 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
             break;
         }
         state = ((state << 8) | v) & 0xffffff;
-        /* XXX: really detect end of frame */
-        if (state == 0){
-            printf("illegal zero code found\n");
+        if( get_bits_count(&s->gb) > s->gb.size*8){
+            printf("no VOP startcode found\n");
             return -1;
         }
     }
@@ -2152,6 +2182,7 @@ int mpeg4_decode_picture_header(MpegEncContext * s)
                 if(width && height){ /* they should be non zero but who knows ... */
                     s->width = width;
                     s->height = height;
+//                    printf("%d %d\n", width, height);
                 }
             }
             

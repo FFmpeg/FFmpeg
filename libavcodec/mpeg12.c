@@ -66,7 +66,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         int n;
         UINT64 time_code;
         
-        if ((s->picture_number % s->gop_size) == 0) {
+        if (s->picture_in_gop_number == 0) {
             /* mpeg1 header repeated every gop */
             put_header(s, SEQ_START_CODE);
             

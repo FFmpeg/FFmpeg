@@ -67,6 +67,9 @@ static UINT8 h263_chroma_roundtab[16] = {
     0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2,
 };
 
+static UINT16 default_mv_penalty[MAX_FCODE][MAX_MV*2+1];
+static UINT8 default_fcode_tab[MAX_MV*2+1];
+
 /* default motion estimation */
 int motion_estimation_method = ME_LOG;
 
@@ -356,8 +359,24 @@ int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    { /* set up some save defaults, some codecs might override them later */
+        static int done=0;
+        if(!done){
+            int i;
+            done=1;
+            memset(default_mv_penalty, 0, sizeof(UINT16)*MAX_FCODE*(2*MAX_MV+1));
+            memset(default_fcode_tab , 0, sizeof(UINT8)*(2*MAX_MV+1));
+
+            for(i=-16; i<16; i++){
+                default_fcode_tab[i + MAX_MV]= 1;
+            }
+        }
+    }
+    s->mv_penalty= default_mv_penalty;
+    s->fcode_tab= default_fcode_tab;
+
     if (s->out_format == FMT_H263)
-        h263_encode_init_vlc(s);
+        h263_encode_init(s);
 
     s->encoding = 1;
 
@@ -375,6 +394,7 @@ int MPV_encode_init(AVCodecContext *avctx)
     rate_control_init(s);
 
     s->picture_number = 0;
+    s->picture_in_gop_number = 0;
     s->fake_picture_number = 0;
     /* motion detector init */
     s->f_code = 1;
@@ -480,9 +500,10 @@ int MPV_encode_picture(AVCodecContext *avctx,
 
     if (!s->intra_only) {
         /* first picture of GOP is intra */
-        if ((s->picture_number % s->gop_size) == 0)
+        if (s->picture_in_gop_number >= s->gop_size){
+            s->picture_in_gop_number=0;
             s->pict_type = I_TYPE;
-        else
+        }else
             s->pict_type = P_TYPE;
     } else {
         s->pict_type = I_TYPE;
@@ -521,6 +542,7 @@ int MPV_encode_picture(AVCodecContext *avctx,
     
     MPV_frame_end(s);
     s->picture_number++;
+    s->picture_in_gop_number++;
 
     if (s->out_format == FMT_MJPEG)
         mjpeg_picture_trailer(s);
@@ -1077,17 +1099,66 @@ static void encode_picture(MpegEncContext *s, int picture_number)
             s->mv_table[1][xy] = motion_y;
         }
     }
+    emms_c();
 
     if(s->avg_mb_var < s->mc_mb_var && s->pict_type != B_TYPE){ //FIXME subtract MV bits
         int i;
         s->pict_type= I_TYPE;
-        for(i=0; i<s->mb_height*s->mb_width; i++){
-            s->mb_type[i] = I_TYPE;
+        s->picture_in_gop_number=0;
+        for(i=0; i<s->mb_num; i++){
+            s->mb_type[i] = 1;
             s->mv_table[0][i] = 0;
             s->mv_table[1][i] = 0;
         }
     }
-        
+
+    /* find best f_code */
+    if(s->pict_type==P_TYPE){
+        int mv_num[8];
+        int i;
+        int loose=0;
+        UINT8 * fcode_tab= s->fcode_tab;
+
+        for(i=0; i<8; i++) mv_num[i]=0;
+
+        for(i=0; i<s->mb_num; i++){
+            if(s->mb_type[i] == 0){
+                mv_num[ fcode_tab[s->mv_table[0][i] + MAX_MV] ]++;
+                mv_num[ fcode_tab[s->mv_table[1][i] + MAX_MV] ]++;
+//printf("%d %d %d\n", s->mv_table[0][i], fcode_tab[s->mv_table[0][i] + MAX_MV], i);
+            }
+//else printf("I");
+        }
+
+        for(i=MAX_FCODE; i>1; i--){
+            loose+= mv_num[i];
+            if(loose > 4) break;
+        }
+        s->f_code= i;
+    }else{
+        s->f_code= 1;
+    }
+//printf("f_code %d ///\n", s->f_code);
+    /* convert MBs with too long MVs to I-Blocks */
+    if(s->pict_type==P_TYPE){
+        int i;
+        const int f_code= s->f_code;
+        UINT8 * fcode_tab= s->fcode_tab;
+
+        for(i=0; i<s->mb_num; i++){
+            if(s->mb_type[i] == 0){
+                if(   fcode_tab[s->mv_table[0][i] + MAX_MV] > f_code
+                   || fcode_tab[s->mv_table[0][i] + MAX_MV] == 0
+                   || fcode_tab[s->mv_table[1][i] + MAX_MV] > f_code
+                   || fcode_tab[s->mv_table[1][i] + MAX_MV] == 0 ){
+                    s->mb_type[i] = 1;
+                    s->mv_table[0][i] = 0;
+                    s->mv_table[1][i] = 0;
+                }
+            }
+        }
+    }
+
 //    printf("%d %d\n", s->avg_mb_var, s->mc_mb_var);
 
     if (!s->fixed_qscale) 

@@ -34,6 +34,9 @@ enum OutputFormat {
 #define QMAT_SHIFT_MMX 19
 #define QMAT_SHIFT 25
 
+#define MAX_FCODE 7
+#define MAX_MV 2048
+
 typedef struct Predictor{
     double coeff;
     double count;
@@ -71,7 +74,8 @@ typedef struct MpegEncContext {
     int context_initialized;
     int picture_number;
     int fake_picture_number; /* picture number at the bitstream frame rate */
-    int gop_picture_number;  /* index of the first picture of a GOP */
+    int gop_picture_number;  /* index of the first picture of a GOP based on fake_pic_num & mpeg1 specific */
+    int picture_in_gop_number; /* 0-> first pic in gop, ... */
     int mb_width, mb_height;
     int mb_num;                /* number of MBs of a picture */
     int linesize;              /* line size, in bytes, may be different from width */
@@ -114,7 +118,7 @@ typedef struct MpegEncContext {
 #define MV_DIRECT        4 // bidirectional mode where the difference equals the MV of the last P/S/I-Frame (mpeg4)
     int mv_type;
 #define MV_TYPE_16X16       0   /* 1 vector for the whole mb */
-#define MV_TYPE_8X8         1   /* 4 vectors (h263) */
+#define MV_TYPE_8X8         1   /* 4 vectors (h263, mpeg4 4MV) */
 #define MV_TYPE_16X8        2   /* 2 vectors, one per 16x8 block */ 
 #define MV_TYPE_FIELD       3   /* 2 vectors, one per field */ 
 #define MV_TYPE_DMV         4   /* 2 vectors, special mpeg2 Dual Prime Vectors */
@@ -126,6 +130,8 @@ typedef struct MpegEncContext {
     int mv[2][4][2];
     int field_select[2][2];
     int last_mv[2][2][2];
+    UINT16 (*mv_penalty)[MAX_MV*2+1]; /* amount of bits needed to encode a MV, used for ME */
+    UINT8 *fcode_tab; /* smallest fcode needed for each MV */
 
     int has_b_frames;
     int no_rounding; /* apply no rounding to motion estimation (MPEG4) */
@@ -350,7 +356,7 @@ INT16 *h263_pred_motion(MpegEncContext * s, int block,
 void mpeg4_pred_ac(MpegEncContext * s, INT16 *block, int n, 
                    int dir);
 void mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
-void h263_encode_init_vlc(MpegEncContext *s);
+void h263_encode_init(MpegEncContext *s);
 
 void h263_decode_init_vlc(MpegEncContext *s);
 int h263_decode_picture_header(MpegEncContext *s);
