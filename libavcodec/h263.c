@@ -538,7 +538,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                         if(s->coded_order[i+1].pict_type!=B_TYPE) break;
 
                         b_pic= s->coded_order[i+1].picture[0] + offset;
-                        diff= pix_abs16x16(p_pic, b_pic, s->linesize);
+			diff= s->dsp.pix_abs16x16(p_pic, b_pic, s->linesize);
                         if(diff>s->qscale*70){ //FIXME check that 70 is optimal
                             s->mb_skiped=0;
                             break;

@@ -1623,7 +1623,7 @@ static int mpeg_decode_slice(AVCodecContext *avctx,
     s->mb_incr= 1;
 
     for(;;) {
-        clear_blocks(s->block[0]);
+	s->dsp.clear_blocks(s->block[0]);
         
         ret = mpeg_decode_mb(s, s->block);
         dprintf("ret=%d\n", ret);

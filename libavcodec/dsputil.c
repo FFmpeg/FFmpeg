@@ -20,7 +20,7 @@
  */
 #include "avcodec.h"
 #include "dsputil.h"
-
+/*
 void (*get_pixels)(DCTELEM *block, const UINT8 *pixels, int line_size);
 void (*diff_pixels)(DCTELEM *block, const UINT8 *s1, const UINT8 *s2, int stride);
 void (*put_pixels_clamped)(const DCTELEM *block, UINT8 *pixels, int line_size);
@@ -41,7 +41,7 @@ op_pixels_abs_func pix_abs8x8;
 op_pixels_abs_func pix_abs8x8_x2;
 op_pixels_abs_func pix_abs8x8_y2;
 op_pixels_abs_func pix_abs8x8_xy2;
-
+*/
 int ff_bit_exact=0;
 
 UINT8 cropTbl[256 + 2 * MAX_NEG_CROP];
@@ -84,7 +84,7 @@ const UINT8 ff_alternate_vertical_scan[64] = {
 };
 
 /* a*inverse[b]>>32 == a/b for all 0<=a<=65536 && 2<=b<=255 */
-UINT32 inverse[256]={
+const UINT32 inverse[256]={
          0, 4294967295U,2147483648U,1431655766, 1073741824,  858993460,  715827883,  613566757, 
  536870912,  477218589,  429496730,  390451573,  357913942,  330382100,  306783379,  286331154, 
  268435456,  252645136,  238609295,  226050911,  214748365,  204522253,  195225787,  186737709, 
@@ -119,7 +119,7 @@ UINT32 inverse[256]={
   17318417,   17248865,   17179870,   17111424,   17043522,   16976156,   16909321,   16843010,
 };
 
-int pix_sum_c(UINT8 * pix, int line_size)
+static int pix_sum_c(UINT8 * pix, int line_size)
 {
     int s, i, j;
 
@@ -141,7 +141,7 @@ int pix_sum_c(UINT8 * pix, int line_size)
     return s;
 }
 
-int pix_norm1_c(UINT8 * pix, int line_size)
+static int pix_norm1_c(UINT8 * pix, int line_size)
 {
     int s, i, j;
     UINT32 *sq = squareTbl + 256;
@@ -165,7 +165,7 @@ int pix_norm1_c(UINT8 * pix, int line_size)
 }
 
 
-void get_pixels_c(DCTELEM *restrict block, const UINT8 *pixels, int line_size)
+static void get_pixels_c(DCTELEM *restrict block, const UINT8 *pixels, int line_size)
 {
     int i;
 
@@ -184,8 +184,8 @@ void get_pixels_c(DCTELEM *restrict block, const UINT8 *pixels, int line_size)
     }
 }
 
-void diff_pixels_c(DCTELEM *restrict block, const UINT8 *s1, const UINT8 *s2,
-		   int stride){
+static void diff_pixels_c(DCTELEM *restrict block, const UINT8 *s1,
+			  const UINT8 *s2, int stride){
     int i;
 
     /* read the pixels */
@@ -205,8 +205,8 @@ void diff_pixels_c(DCTELEM *restrict block, const UINT8 *s1, const UINT8 *s2,
 }
 
 
-void put_pixels_clamped_c(const DCTELEM *block, UINT8 *restrict pixels,
-                          int line_size)
+static void put_pixels_clamped_c(const DCTELEM *block, UINT8 *restrict pixels,
+				 int line_size)
 {
     int i;
     UINT8 *cm = cropTbl + MAX_NEG_CROP;
@@ -227,7 +227,7 @@ void put_pixels_clamped_c(const DCTELEM *block, UINT8 *restrict pixels,
     }
 }
 
-void add_pixels_clamped_c(const DCTELEM *block, UINT8 *restrict pixels,
+static void add_pixels_clamped_c(const DCTELEM *block, UINT8 *restrict pixels,
                           int line_size)
 {
     int i;
@@ -1353,7 +1353,7 @@ QPEL_MC(0, avg_       , _       , op_avg)
 #undef op_put
 #undef op_put_no_rnd
 
-int pix_abs16x16_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static int pix_abs16x16_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
 
@@ -1381,7 +1381,7 @@ int pix_abs16x16_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
-int pix_abs16x16_x2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static int pix_abs16x16_x2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
 
@@ -1409,7 +1409,7 @@ int pix_abs16x16_x2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
-int pix_abs16x16_y2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static int pix_abs16x16_y2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
     UINT8 *pix3 = pix2 + line_size;
@@ -1439,7 +1439,7 @@ int pix_abs16x16_y2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
-int pix_abs16x16_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static int pix_abs16x16_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
     UINT8 *pix3 = pix2 + line_size;
@@ -1469,7 +1469,7 @@ int pix_abs16x16_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
-int pix_abs8x8_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static int pix_abs8x8_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
 
@@ -1489,7 +1489,7 @@ int pix_abs8x8_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
-int pix_abs8x8_x2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static int pix_abs8x8_x2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
 
@@ -1509,7 +1509,7 @@ int pix_abs8x8_x2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
-int pix_abs8x8_y2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static int pix_abs8x8_y2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
     UINT8 *pix3 = pix2 + line_size;
@@ -1531,7 +1531,7 @@ int pix_abs8x8_y2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
     return s;
 }
 
-int pix_abs8x8_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
+static int pix_abs8x8_xy2_c(UINT8 *pix1, UINT8 *pix2, int line_size)
 {
     int s, i;
     UINT8 *pix3 = pix2 + line_size;
@@ -1574,12 +1574,12 @@ void ff_block_permute(INT16 *block, UINT8 *permutation, const UINT8 *scantable, 
     }
 }
 
-void clear_blocks_c(DCTELEM *blocks)
+static void clear_blocks_c(DCTELEM *blocks)
 {
     memset(blocks, 0, sizeof(DCTELEM)*6*64);
 }
 
-void dsputil_init(void)
+void dsputil_init(DSPContext* c, unsigned mask)
 {
     int i;
 
@@ -1593,42 +1593,82 @@ void dsputil_init(void)
         squareTbl[i] = (i - 256) * (i - 256);
     }
 
-    get_pixels = get_pixels_c;
-    diff_pixels = diff_pixels_c;
-    put_pixels_clamped = put_pixels_clamped_c;
-    add_pixels_clamped = add_pixels_clamped_c;
-    ff_gmc1= gmc1_c;
-    ff_gmc= gmc_c;
-    clear_blocks= clear_blocks_c;
-    pix_sum= pix_sum_c;
-    pix_norm1= pix_norm1_c;
+    c->get_pixels = get_pixels_c;
+    c->diff_pixels = diff_pixels_c;
+    c->put_pixels_clamped = put_pixels_clamped_c;
+    c->add_pixels_clamped = add_pixels_clamped_c;
+    c->gmc1 = gmc1_c;
+    c->gmc = gmc_c;
+    c->clear_blocks = clear_blocks_c;
+    c->pix_sum = pix_sum_c;
+    c->pix_norm1 = pix_norm1_c;
 
-    pix_abs16x16     = pix_abs16x16_c;
-    pix_abs16x16_x2  = pix_abs16x16_x2_c;
-    pix_abs16x16_y2  = pix_abs16x16_y2_c;
-    pix_abs16x16_xy2 = pix_abs16x16_xy2_c;
-    pix_abs8x8     = pix_abs8x8_c;
-    pix_abs8x8_x2  = pix_abs8x8_x2_c;
-    pix_abs8x8_y2  = pix_abs8x8_y2_c;
-    pix_abs8x8_xy2 = pix_abs8x8_xy2_c;
+    c->pix_abs16x16     = pix_abs16x16_c;
+    c->pix_abs16x16_x2  = pix_abs16x16_x2_c;
+    c->pix_abs16x16_y2  = pix_abs16x16_y2_c;
+    c->pix_abs16x16_xy2 = pix_abs16x16_xy2_c;
+    c->pix_abs8x8     = pix_abs8x8_c;
+    c->pix_abs8x8_x2  = pix_abs8x8_x2_c;
+    c->pix_abs8x8_y2  = pix_abs8x8_y2_c;
+    c->pix_abs8x8_xy2 = pix_abs8x8_xy2_c;
+
+    c->put_pixels_tab[0][0] = put_pixels16;
+    c->put_pixels_tab[0][1] = put_pixels16_x2;
+    c->put_pixels_tab[0][2] = put_pixels16_y2;
+    c->put_pixels_tab[0][3] = put_pixels16_xy2;
+
+    c->put_no_rnd_pixels_tab[0][0] = put_pixels16;
+    c->put_no_rnd_pixels_tab[0][1] = put_no_rnd_pixels16_x2;
+    c->put_no_rnd_pixels_tab[0][2] = put_no_rnd_pixels16_y2;
+    c->put_no_rnd_pixels_tab[0][3] = put_no_rnd_pixels16_xy2;
+
+    c->avg_pixels_tab[0][0] = avg_pixels16;
+    c->avg_pixels_tab[0][1] = avg_pixels16_x2;
+    c->avg_pixels_tab[0][2] = avg_pixels16_y2;
+    c->avg_pixels_tab[0][3] = avg_pixels16_xy2;
+
+    c->avg_no_rnd_pixels_tab[0][0] = avg_no_rnd_pixels16;
+    c->avg_no_rnd_pixels_tab[0][1] = avg_no_rnd_pixels16_x2;
+    c->avg_no_rnd_pixels_tab[0][2] = avg_no_rnd_pixels16_y2;
+    c->avg_no_rnd_pixels_tab[0][3] = avg_no_rnd_pixels16_xy2;
+
+    c->put_pixels_tab[1][0] = put_pixels8;
+    c->put_pixels_tab[1][1] = put_pixels8_x2;
+    c->put_pixels_tab[1][2] = put_pixels8_y2;
+    c->put_pixels_tab[1][3] = put_pixels8_xy2;
+
+    c->put_no_rnd_pixels_tab[1][0] = put_pixels8;
+    c->put_no_rnd_pixels_tab[1][1] = put_no_rnd_pixels8_x2;
+    c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2;
+    c->put_no_rnd_pixels_tab[1][3] = put_no_rnd_pixels8_xy2;
+
+    c->avg_pixels_tab[1][0] = avg_pixels8;
+    c->avg_pixels_tab[1][1] = avg_pixels8_x2;
+    c->avg_pixels_tab[1][2] = avg_pixels8_y2;
+    c->avg_pixels_tab[1][3] = avg_pixels8_xy2;
+
+    c->avg_no_rnd_pixels_tab[1][0] = avg_no_rnd_pixels8;
+    c->avg_no_rnd_pixels_tab[1][1] = avg_no_rnd_pixels8_x2;
+    c->avg_no_rnd_pixels_tab[1][2] = avg_no_rnd_pixels8_y2;
+    c->avg_no_rnd_pixels_tab[1][3] = avg_no_rnd_pixels8_xy2;
 
 #ifdef HAVE_MMX
-    dsputil_init_mmx();
+    dsputil_init_mmx(c, mask);
 #endif
 #ifdef ARCH_ARMV4L
-    dsputil_init_armv4l();
+    dsputil_init_armv4l(c, mask);
 #endif
 #ifdef HAVE_MLIB
-    dsputil_init_mlib();
+    dsputil_init_mlib(c, mask);
 #endif
 #ifdef ARCH_ALPHA
-    dsputil_init_alpha();
+    dsputil_init_alpha(c, mask);
 #endif
 #ifdef ARCH_POWERPC
-    dsputil_init_ppc();
+    dsputil_init_ppc(c, mask);
 #endif
 #ifdef HAVE_MMI
-    dsputil_init_mmi();
+    dsputil_init_mmi(c, mask);
 #endif
 
     for(i=0; i<64; i++) inv_zigzag_direct16[ff_zigzag_direct[i]]= i+1;
@@ -1639,7 +1679,8 @@ void avcodec_set_bit_exact(void)
 {
     ff_bit_exact=1;
 #ifdef HAVE_MMX
-    dsputil_set_bit_exact_mmx();
+#warning FIXME - set_bit_exact
+//    dsputil_set_bit_exact_mmx();
 #endif
 }
 

@@ -804,7 +804,7 @@ static void svq1_skip_block (uint8_t *current, uint8_t *previous, int pitch, int
   }
 }
 
-static int svq1_motion_inter_block (bit_buffer_t *bitbuf,
+static int svq1_motion_inter_block (MpegEncContext *s, bit_buffer_t *bitbuf,
 			       uint8_t *current, uint8_t *previous, int pitch,
 			       svq1_pmv_t *motion, int x, int y) {
   uint8_t    *src;
@@ -839,12 +839,12 @@ static int svq1_motion_inter_block (bit_buffer_t *bitbuf,
   src = &previous[(x + (mv.x >> 1)) + (y + (mv.y >> 1))*pitch];
   dst = current;
 
-  put_pixels_tab[0][((mv.y & 1) << 1) | (mv.x & 1)](dst,src,pitch,16);
+  s->dsp.put_pixels_tab[0][((mv.y & 1) << 1) | (mv.x & 1)](dst,src,pitch,16);
 
   return 0;
 }
 
-static int svq1_motion_inter_4v_block (bit_buffer_t *bitbuf,
+static int svq1_motion_inter_4v_block (MpegEncContext *s, bit_buffer_t *bitbuf,
 				  uint8_t *current, uint8_t *previous, int pitch,
 				  svq1_pmv_t *motion,int x, int y) {
   uint8_t    *src;
@@ -906,7 +906,7 @@ static int svq1_motion_inter_4v_block (bit_buffer_t *bitbuf,
     src = &previous[(x + (pmv[i]->x >> 1)) + (y + (pmv[i]->y >> 1))*pitch];
     dst = current;
 
-    put_pixels_tab[1][((pmv[i]->y & 1) << 1) | (pmv[i]->x & 1)](dst,src,pitch,8);
+    s->dsp.put_pixels_tab[1][((pmv[i]->y & 1) << 1) | (pmv[i]->x & 1)](dst,src,pitch,8);
 
     /* select next block */
     if (i & 1) {
@@ -921,7 +921,7 @@ static int svq1_motion_inter_4v_block (bit_buffer_t *bitbuf,
   return 0;
 }
 
-static int svq1_decode_delta_block (bit_buffer_t *bitbuf,
+static int svq1_decode_delta_block (MpegEncContext *s, bit_buffer_t *bitbuf,
 			uint8_t *current, uint8_t *previous, int pitch,
 			svq1_pmv_t *motion, int x, int y) {
   uint32_t bit_cache;
@@ -951,7 +951,7 @@ static int svq1_decode_delta_block (bit_buffer_t *bitbuf,
     break;
 
   case SVQ1_BLOCK_INTER:
-    result = svq1_motion_inter_block (bitbuf, current, previous, pitch, motion, x, y);
+    result = svq1_motion_inter_block (s, bitbuf, current, previous, pitch, motion, x, y);
 
     if (result != 0)
     {
@@ -964,7 +964,7 @@ static int svq1_decode_delta_block (bit_buffer_t *bitbuf,
     break;
 
   case SVQ1_BLOCK_INTER_4V:
-    result = svq1_motion_inter_4v_block (bitbuf, current, previous, pitch, motion, x, y);
+    result = svq1_motion_inter_4v_block (s, bitbuf, current, previous, pitch, motion, x, y);
 
     if (result != 0)
     {
@@ -1142,8 +1142,8 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 
       for (y=0; y < height; y+=16) {
 	for (x=0; x < width; x+=16) {
-	  result = svq1_decode_delta_block (&s->gb, &current[x], previous,
-				       linesize, pmv, x, y);
+	  result = svq1_decode_delta_block (s, &s->gb, &current[x], previous,
+					    linesize, pmv, x, y);
 	  if (result != 0)
 	  {
 #ifdef DEBUG_SVQ1

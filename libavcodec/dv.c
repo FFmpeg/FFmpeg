@@ -114,6 +114,7 @@ static int dvvideo_decode_init(AVCodecContext *avctx)
     /* XXX: fix it */
     memset(&s2, 0, sizeof(MpegEncContext));
     s2.avctx = avctx;
+    dsputil_init(&s2.dsp, avctx->dsp_mask);
     if (DCT_common_init(&s2) < 0)
        return -1;
 

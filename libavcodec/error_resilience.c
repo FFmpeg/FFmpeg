@@ -331,7 +331,7 @@ static void guess_mv(MpegEncContext *s){
                 s->mv_type = MV_TYPE_16X16;
                 s->mb_skiped=0;
 
-                clear_blocks(s->block[0]);
+		s->dsp.clear_blocks(s->block[0]);
 
                 s->mb_x= mb_x;
                 s->mb_y= mb_y;
@@ -458,7 +458,7 @@ int score_sum=0;
                     s->mv_type = MV_TYPE_16X16;
                     s->mb_skiped=0;
 
-                    clear_blocks(s->block[0]);
+		    s->dsp.clear_blocks(s->block[0]);
 
                     s->mb_x= mb_x;
                     s->mb_y= mb_y;
@@ -559,8 +559,8 @@ static int is_intra_more_likely(MpegEncContext *s){
                 UINT8 *mb_ptr     = s->current_picture[0] + mb_x*16 + mb_y*16*s->linesize;
                 UINT8 *last_mb_ptr= s->last_picture   [0] + mb_x*16 + mb_y*16*s->linesize;
     
-                is_intra_likely += pix_abs16x16(last_mb_ptr, mb_ptr                    , s->linesize);
-                is_intra_likely -= pix_abs16x16(last_mb_ptr, last_mb_ptr+s->linesize*16, s->linesize);
+		is_intra_likely += s->dsp.pix_abs16x16(last_mb_ptr, mb_ptr                    , s->linesize);
+                is_intra_likely -= s->dsp.pix_abs16x16(last_mb_ptr, last_mb_ptr+s->linesize*16, s->linesize);
             }else{
                 if(s->mbintra_table[i]) //HACK (this is allways inited but we should use mb_type[])
                    is_intra_likely++;
@@ -738,7 +738,7 @@ void ff_error_resilience(MpegEncContext *s){
                 s->mv[0][0][1] = s->motion_val[ mb_x*2+1 + (mb_y*2+1)*s->block_wrap[0] ][1];
             }
         
-            clear_blocks(s->block[0]);
+	    s->dsp.clear_blocks(s->block[0]);
 
             s->mb_x= mb_x;
             s->mb_y= mb_y;
@@ -778,8 +778,8 @@ void ff_error_resilience(MpegEncContext *s){
                     s->mv[1][0][0]= 0;
                     s->mv[1][0][1]= 0;
                 }
-                                
-                clear_blocks(s->block[0]);
+
+                s->dsp.clear_blocks(s->block[0]);
                 s->mb_x= mb_x;
                 s->mb_y= mb_y;
                 MPV_decode_mb(s, s->block);
