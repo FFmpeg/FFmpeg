@@ -37,6 +37,7 @@ typedef struct CABACContext{
     uint8_t lps_range[2*64][4];   ///< rangeTabLPS
     uint8_t lps_state[2*64];      ///< transIdxLPS
     uint8_t mps_state[2*64];      ///< transIdxMPS
+    uint8_t *bytestream_start;
     uint8_t *bytestream;
     int bits_left;                ///<
     PutBitContext pb;
@@ -138,7 +139,11 @@ static inline void put_cabac_bypass(CABACContext *c, int bit){
 #endif
 }
 
-static inline void put_cabac_terminate(CABACContext *c, int bit){
+/**
+ *
+ * @return the number of bytes written
+ */
+static inline int put_cabac_terminate(CABACContext *c, int bit){
     c->range -= 2;
 
     if(!bit){
@@ -159,6 +164,8 @@ static inline void put_cabac_terminate(CABACContext *c, int bit){
 #ifdef STRICT_LIMITS
     c->symCount++;
 #endif
+
+    return (get_bit_count(&c->pb)+7)>>3;
 }
 
 /**
@@ -303,13 +310,17 @@ static inline int get_cabac_bypass(CABACContext *c){
     }
 }
 
+/**
+ *
+ * @return the number of bytes read or 0 if no end
+ */
 static inline int get_cabac_terminate(CABACContext *c){
     c->range -= 2<<8;
     if(c->low < c->range){
         renorm_cabac_decoder(c);    
         return 0;
     }else{
-        return 1;
+        return c->bytestream - c->bytestream_start;
     }    
 }
 
