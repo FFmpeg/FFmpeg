@@ -1284,7 +1284,7 @@ static void dct_unquantize_mpeg1_c(MpegEncContext *s,
     } else {
         i = 0;
         quant_matrix = s->non_intra_matrix;
-        for(i=1;i<nCoeffs;i++) {
+        for(;i<nCoeffs;i++) {
             int j= zigzag_direct[i];
             level = block[j];
             if (level) {
