@@ -641,6 +641,10 @@ sdl=yes
 fi
 fi
 
+if test "$sdl" = "no" ; then
+   ffplay=no
+fi
+
 if test "$small" = "yes"; then
 #  CFLAGS=${CFLAGS//-O3/-Os}
   CFLAGS="$CFLAGS -Os"
