@@ -162,7 +162,7 @@ typedef struct DSPContext {
 
     /**
      * Halfpel motion compensation with rounding (a+b+1)>>1.
-     * This is an array[2][4] of motion compensation functions for 2 
+     * This is an array[4][4] of motion compensation functions for 4 
      * horizontal blocksizes (2,4,8,16) and the 4 halfpel positions<br>
      * *pixels_tab[ 0->16xH 1->8xH ][ xhalfpel + 2*yhalfpel ]
      * @param block destination into which the result is averaged (a+b+1)>>1
